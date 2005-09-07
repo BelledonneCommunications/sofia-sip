@@ -446,6 +446,8 @@ void sdp_parser_free(sdp_parser_t *p);
 
 int sdp_sanity_check(sdp_parser_t *);
 
+su_home_t *sdp_parser_home(sdp_parser_t *);
+
 /* ======================================================================== */
 
 /** SDP printer handle */

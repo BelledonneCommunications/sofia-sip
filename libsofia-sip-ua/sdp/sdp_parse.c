@@ -138,6 +138,16 @@ sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
   return (sdp_parser_t*)&no_mem_error;
 }
 
+
+/** Obtain memory home used by parser */
+su_home_t *sdp_parser_home(sdp_parser_t *parser)
+{
+  if (parser != &no_mem_error)
+    return parser->pr_home;
+  else
+    return NULL;
+}
+
 /** Retrieve an SDP session structure.
  *
  * The function sdp_session() returns a pointer to the SDP session
