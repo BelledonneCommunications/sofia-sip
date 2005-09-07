@@ -294,6 +294,17 @@ typedef struct su_msg_s su_msg_t;
 /** Message reference type. */
 typedef su_msg_t *su_msg_r[1];
 
+/** Does reference contain a message? */
+#if SU_HAVE_INLINE
+static SU_INLINE
+int su_msg_is_non_null(su_msg_r msg)
+{
+  return *msg != NULL;
+}
+#else
+#define su_msg_is_non_null(msg) ((*msg) != NULL)
+#endif
+
 /** Initializer for a message reference. @HI */
 #define SU_MSG_R_INIT   { NULL }
 
