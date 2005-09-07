@@ -1,0 +1,9 @@
+PROJECT_NAME         = "sresolv"
+OUTPUT_DIRECTORY     = ../docs/html/sresolv
+
+INPUT 		     = sresolv.docs . 
+
+@INCLUDE 	     = ../docs/Doxyfile.conf
+
+TAGFILES             += ../docs/su/doxytags=../su
+GENERATE_TAGFILE     = ../docs/sresolv/doxytags

@@ -1,0 +1,21 @@
+LIBRARY      "tport"
+
+DESCRIPTION  'Sofia Transport DLL for Win32'
+
+EXPORTS
+	tport_create
+	tport_bind
+	tport_tbind
+	tport_destroy
+	tport_send
+	tport_tsend
+	tport_is_reliable
+	tport_set_magic
+	tport_magic
+	tport_name
+	tport_next
+	tport_sub
+	tport_by_name
+	tport_name_by_url
+	tport_name_dup
+	tport_hostport

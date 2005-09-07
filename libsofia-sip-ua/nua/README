@@ -1,0 +1,38 @@
+Using nua_cli
+=============
+
+The nua example application, nua_cli, is a command line tool for testing
+NUA.  It can be used to call, messaging, and as presence client.  Currently,
+it works properly only on Linux.
+
+To run the program:
+-------------------
+At least two nua_cli is needed to talk to each other. You must specify each ip/port
+as follows at startup (sip:ip_address:port) eg.
+
+./nua_cli sip:10.0.0.1:5060
+and
+./nua_cli sip:10.0.0.2:5061
+
+There is also a script NUA which sets some sip environment variables which nua_cli
+reads on startup which you can edit by hand if needed.
+
+The commands are as follows:
+----------------------------
+
+  i - invite user, e.g., i sip:user@host
+  b - bye user, tear down call
+  c - cancel call request
+  m - send an instant message, e.g., m sip:user@host
+  ref - send a refer ref sip:user@host
+  r - register, e.g., r sip:registrar.com
+  u - unregister
+  s - subscribe, e.g., s sip:user@host
+  us - unsubscribe
+  q, x - quit, exit
+
+When a call is received, it can be either answered or declined:
+
+  a - answer/accept
+  d - decline
+

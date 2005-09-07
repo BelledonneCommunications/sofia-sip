@@ -1,0 +1,130 @@
+/* $Id: url.docs,v 1.1.1.1 2005/07/20 20:36:03 kaiv Exp $ */
+
+/**@mainpage Sofia URL Module
+
+@section url_meta Module Meta Information
+
+The Sofia @b url module contains macros and functions for using URL
+datatype, parsing and printing URLs. 
+
+@CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
+
+@STATUS Core library
+
+@LICENSE LGPL
+
+@section url_syntax Using URL Library
+
+The URL library provides URL datatype and helper functions related to it. 
+There is URL parser, which separates the URL components to the url_t
+structure.
+
+@note 
+Please note that we use terms URL and URI interchangeable.
+
+The formal URI syntax is defined in the 
+<a href="http://www.ietf.org/rfc/rfc2396.txt">RFC2396</a>.
+
+The URLs consist of a subset of printable ASCII (ECMA-5) characters. The
+subset excludes space and characters commonly used as @e delimiters in
+text-based protocols, such as "<" ">" "#" "%" and <"> (double quote), and so
+called @e unwise characters whose positions are reserved for national
+extensions in ECMA-5 (in US-ASCII, those characters are "{" "}" "|" "\" "^"
+"[" "]" and "`").
+
+There are also nine characters that can have special syntactic meaning in
+some parts of the URI. These @e reserved characters are used to separate
+syntactical parts of the URLs from each other. The reserved characters are
+as follows: ":" "@" "/" ";" "?" "&" "=" "+" and "$".
+
+The URL library understands two alternative URL syntaxes. First, the
+basic syntax used by, e.g., @b ftp:, @b http: and @b rtsp: URLs:
+
+<i>
+scheme ":" ["//" [ user [":" password ] "@"] host [":" port ] ] 
+      ["/" path ] ["?" query ] ["#" fragment ]
+</i>
+
+Alternatively, the syntax used by @b mailto:, @b sip:, @b im:, @b tel,
+and @b pres: URLs:
+
+<i>
+scheme ":" [ [ user [":" password ] "@"] host [":" port ] ]
+      [";" params ] ["?" query ] ["#" fragment ]
+</i>
+
+Note that also "*" is a valid URL (with type url_any).
+
+@subsection url_parsing Converting a String to url_t
+
+The decoding function url_d() takes a string and splits it into parts as
+shown above. The substrings are stored into the #url_t structure. When
+decoding, the hex encoding using % is removed if the encoded character can
+syntactically be part of the field. For instance, "%41" is decoded as
+"A" in the user part, but "%40" (@) is left as is. (This is called
+canonization of the URL fields.)
+
+For example, when we parse the url below
+@code
+sip:pekka%2Epessi@nokia%2Ecom;method=%4D%45%53%53%41%47%45?body=CANNED%20MSG
+@endcode
+the components are NUL-terminated, canonized and assigned to the structure
+as follows:
+@code
+ url_type = url_sip
+ url_root = 0 
+ url_scheme = "sip"
+ url_user = "pekka.pessi"
+ url_password = NULL
+ url_host = "nokia.com"
+ url_port = NULL
+ url_path = NULL
+ url_params = "method=MESSAGE"
+ url_headers = "body=CANNED%20MSG"
+ url_fragment = NULL
+@endcode
+
+Other functions parsing URLs are as follows:
+- url_hdup() (it takes a string as @a url parameter)
+
+@subsection url_parsing Converting a url_t structure to string
+
+The url_e() encodes the url, in other words, it joins the substrings in
+#url_t to the provided buffer.
+
+@subsection url_reference Functions and Macros in URL Module
+
+The @b url parsing, printing, copying and access functions are defined in
+the url.h include file:
+
+- url_d()
+- url_len()
+- url_e()
+- url_xtra()
+- url_dup()
+- url_hdup()
+- url_as_string()
+- url_reserved_p()
+- url_esclen()
+- url_escape()
+- url_unescape()
+- url_param()
+- url_param_add()
+- url_cmp()
+- url_strip_transport()
+- url_have_transport()
+- url_port()
+- url_sanitize()
+- url_update()
+- url_digest()
+
+In addition to the basic URL structure, url_t, the library interface
+provides an union type #url_string_t for passing unparsed strings instead
+of parsed URLs as function arguments:
+- url_string_p()
+- URL_STRING_P()
+- URL_STRING_MAKE()
+
+For printf()-style formatting, macros #URL_PRINT_FORMAT and
+URL_PRINT_ARGS() are provided.
+ */

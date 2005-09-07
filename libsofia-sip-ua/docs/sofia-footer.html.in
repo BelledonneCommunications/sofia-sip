@@ -1,0 +1,5 @@
+<!-- $Id: sofia-footer.html.in,v 1.1.1.1 2005/07/20 20:34:54 kaiv Exp $ -->
+<hr />
+Sofia-SIP @VERSION@ -
+Copyright (C) 2005 Nokia Corporation. All rights reserved.
+Licensed under the terms of the GNU Lesser General Public License.

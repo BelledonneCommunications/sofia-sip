@@ -1,0 +1,20 @@
+PROJECT_NAME         = "su"
+OUTPUT_DIRECTORY     = ../docs/html/su
+
+INPUT 		     = su.docs . 
+
+@INCLUDE = ../docs/Doxyfile.conf
+
+GENERATE_TAGFILE     = ../docs/su/doxytags
+
+ALIASES +=  "SU_TAG=@ingroup su_tag\n"
+
+PREDEFINED += \
+ TSTFLAGS=1 \
+ SU_HAVE_BSDSOCK=0 \
+ su_root_s=su_root_t \
+ _su_task_r=su_task_r
+
+# Exclude Windows IPv6 files
+EXCLUDE_PATTERNS      += tpipv6.h wspiapi.h aton.c ntoa.c
+

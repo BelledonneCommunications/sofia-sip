@@ -1,0 +1,32 @@
+; ipt.def : Declares the module parameters for the DLL.
+
+LIBRARY      "ipt"
+DESCRIPTION  'Sofia IPT Utilities Win32 DLL $Id: ipt.def,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $'
+
+EXPORTS
+
+base64_d
+base64_e
+token64_e
+rc4_init
+rc4
+;guid_generate
+;guid_sprintf
+;randint
+;randmem
+;utf8_ctrlquotes
+utf8_width
+ucs18decode
+ucs1encode
+ucs1declen
+ucs1enclen
+ucs2decode
+ucs2encode
+ucs2declen
+ucs2enclen
+ucs2len
+ucs2cmp
+ucs2ncmp
+ucs4len
+ucs4cmp
+ucs4ncmp

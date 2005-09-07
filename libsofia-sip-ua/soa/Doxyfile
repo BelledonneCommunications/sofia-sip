@@ -1,0 +1,23 @@
+PROJECT_NAME         = "soa"
+OUTPUT_DIRECTORY     = ../docs/html/soa
+
+INPUT 		     = soa.docs soa.h soa.c
+
+@INCLUDE             = ../docs/Doxyfile.conf
+
+TAGFILES            += ../docs/docs/doxytags=../docs
+TAGFILES            += ../docs/su/doxytags=../su
+TAGFILES            += ../docs/ipt/doxytags=../ipt
+TAGFILES            += ../docs/bnf/doxytags=../bnf
+TAGFILES            += ../docs/url/doxytags=../url
+TAGFILES            += ../docs/msg/doxytags=../msg
+TAGFILES            += ../docs/sip/doxytags=../sip
+TAGFILES            += ../docs/sresolv/doxytags=../sresolv
+TAGFILES            += ../docs/tport/doxytags=../tport
+TAGFILES            += ../docs/nta/doxytags=../nta
+TAGFILES            += ../docs/sdp/doxytags=../sdp
+TAGFILES            += ../docs/nua/doxytags=../nua
+
+GENERATE_TAGFILE     = ../docs/soa/doxytags
+
+ALIASES             +=

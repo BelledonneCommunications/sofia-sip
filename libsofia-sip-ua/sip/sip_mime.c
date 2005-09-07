@@ -1,0 +1,674 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@CFILE sip_mime.c 
+ *
+ * MIME-related SIP headers
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
+ *
+ * @date Created: Tue Jun 13 02:57:51 2000 ppessi
+ * $Date: 2005/08/03 17:18:11 $
+ */
+
+#include "config.h"
+
+const char _sip_mime_id[] =
+"$Id: sip_mime.c,v 1.2 2005/08/03 17:18:11 ppessi Exp $";
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
+
+#include "sip_parser.h"
+
+#include "msg_mime_protos.h"
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_accept Accept Header
+ *
+ * The @b Accept request-header field can be used to specify certain media
+ * types which are acceptable for the response. Its syntax is defined in
+ * [H14.1, S10.6] as follows:
+ * 
+ * @code
+ *    Accept         =  "Accept" HCOLON
+ *                       [ accept-range *(COMMA accept-range) ]
+ *    accept-range   =  media-range *(SEMI accept-param)
+ *    media-range    =  ( "*" "/" "*"
+ *                      / ( m-type SLASH "*" )
+ *                      / ( m-type SLASH m-subtype )
+ *                      ) *( SEMI m-parameter )
+ *    accept-param   =  ("q" EQUAL qvalue) / generic-param
+ *    qvalue         =  ( "0" [ "." 0*3DIGIT ] )
+ *                      / ( "1" [ "." 0*3("0") ] )
+ *    generic-param  =  token [ EQUAL gen-value ]
+ *    gen-value      =  token / host / quoted-string
+ * @endcode
+ *
+ */
+
+/**@ingroup sip_accept
+ * @typedef typedef struct sip_accept_s sip_accept_t;
+ *
+ * The structure #sip_accept_t contains representation of SIP @b
+ * Accept header.
+ *
+ * The #sip_accept_t is defined as follows:
+ * @code
+ * typedef struct sip_accept_s {
+ *   sip_common_t        ac_common[1]; // Common fragment info
+ *   sip_accept_t       *ac_next;      // Pointer to next Accept header
+ *   char const         *ac_type;      // Pointer to type/subtype
+ *   char const         *ac_subtype;   // Points after first slash in type
+ *   sip_param_t const  *ac_params;    // List of parameters
+ *   sip_param_t         ac_q;         // Value of q parameter
+ * } sip_accept_t;
+ * @endcode
+ */
+
+#define sip_accept_dup_xtra msg_accept_dup_xtra
+#define sip_accept_dup_one  msg_accept_dup_one
+
+msg_hclass_t sip_accept_class[] = 
+SIP_HEADER_CLASS(accept, "Accept", "", ac_params, apndlist, accept);
+
+int sip_accept_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return msg_accept_d(home, h, s, slen);
+}
+
+int sip_accept_e(char b[], int bsiz, sip_header_t const *h, int flags)
+{
+  return msg_accept_e(b, bsiz, h, flags);
+}
+
+#if SIP_HAVE_ACCEPT_DISPOSITION
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_accept_disposition Accept-Disposition Header
+ *
+ * The Accept-Disposition header field is used to indicate what content
+ * disposition types are acceptable to a client or server.  Its syntax is
+ * defined in draft-lennox-sip-reg-payload-01.txt section 3.2 as follows:
+ * 
+ * @code
+ *    Accept-Disposition = "Accept-Disposition" ":" 
+ *                         #( (disposition-type | "*") *( ";" generic-param ) )
+ * @endcode
+ *
+ */
+
+msg_hclass_t sip_accept_disposition_class[] = 
+SIP_HEADER_CLASS(accept_disposition, "Accept-Disposition", "", 
+		 ad_params, apndlist, accept_disposition);
+
+int sip_accept_disposition_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  sip_header_t **hh = &h->sh_succ, *h0 = h;
+  sip_accept_disposition_t *ad = h->sh_accept_disposition;
+
+  assert(h);
+
+  for (;*s;) {
+    /* Ignore empty entries (comma-whitespace) */
+    if (*s == ',') { *s++ = '\0'; skip_lws(&s); continue; }
+
+    if (!h) {      /* Allocate next header structure */
+      if (!(h = sip_header_alloc(home, sip_accept_disposition_class, 0)))
+	return -1;
+      *hh = h, hh = &h->sh_succ;
+      m = ad->ad_next = h->sh_accept_disposition;
+    }
+    
+    /* "Accept:" #(type/subtyp ; *(parameters))) */
+    if (/* Parse protocol */
+	sip_version_d(&s, &ad->ad_type) == -1 ||
+	(ad->ad_subtype = strchr(ad->ad_type, '/')) == NULL ||
+	(*s == ';' && msg_params_d(home, &s, &ad->ad_params) == -1) ||
+	(*s != '\0' && *s != ','))
+      goto error;
+
+    if (ad->ad_subtype) ad->ad_subtype++;
+
+    if (ad->ad_params)
+      sip_accept_disposition_update(ad);
+
+    h = NULL;
+  }
+
+  if (h)
+    return -1;
+
+  return 0;
+}
+
+int sip_accept_disposition_e(char b[], int bsiz, sip_header_t const *h, int flags)
+{
+  char *b0 = b, *end = b + bsiz;
+  sip_accept_disposition_t const *ad = h->sh_accept_disposition;
+
+  SIP_STRING_E(b, end, ad->ad_type);
+  SIP_PARAMS_E(b, end, ad->ad_params, flags);
+  MSG_TERM_E(b, end);
+    
+  return b - b0;
+}
+#endif
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_accept_encoding Accept-Encoding Header
+ *
+ * The Accept-Encoding header is similar to Accept, but restricts the
+ * content-codings that are acceptable in the response.  Its syntax is
+ * defined in [H14.3, S10.7] as follows:
+ * 
+ * @code
+ *    Accept-Encoding  =  "Accept-Encoding" HCOLON
+ *                         [ encoding *(COMMA encoding) ]
+ *    encoding         =  codings *(SEMI accept-param)
+ *    codings          =  content-coding / "*"
+ *    content-coding   =  token
+ * @endcode
+ *
+ */
+
+/**@ingroup sip_accept_encoding
+ * @typedef typedef struct msg_accept_any_s sip_accept_encoding_t;
+ *
+ * The structure #sip_accept_encoding_t contains representation of SIP @b
+ * Accept-Encoding header.
+ *
+ * The #sip_accept_encoding_t is defined as follows:
+ * @code
+ * typedef struct {
+ *   msg_common_t        aa_common[1]; // Common fragment info
+ *   sip_accept_encoding_t *aa_next;   // Pointer to next Accept-Encoding header
+ *   char const            *aa_value;  // Encoding token
+ *   msg_param_t const     *aa_params; // List of parameters
+ *   char const            *aa_q;      // Value of q parameter 
+ * } sip_accept_encoding_t;
+ * @endcode
+ */
+
+#define sip_accept_encoding_dup_xtra msg_accept_any_dup_xtra
+#define sip_accept_encoding_dup_one  msg_accept_any_dup_one
+
+msg_hclass_t sip_accept_encoding_class[] = 
+SIP_HEADER_CLASS(accept_encoding, "Accept-Encoding", "", 
+		 aa_params, apndlist, accept_encoding);
+
+int sip_accept_encoding_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  int retval = msg_accept_encoding_d(home, h, s, slen);
+
+  if (retval == -2) {
+    /* Empty Accept-Encoding list is not an error */
+    ((sip_accept_encoding_t *)h)->aa_value = "";
+    retval = 0;
+  }
+
+  return retval;
+}
+
+int sip_accept_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return msg_accept_encoding_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_accept_language Accept-Language Header
+ *
+ * The Accept-Language header can be used to allow the client to indicate to
+ * the server in which language it would prefer to receive reason phrases,
+ * session descriptions or status responses carried as message bodies.  Its
+ * syntax is defined in [H14.4, S10.8] as follows:
+ * 
+ * @code
+ *    Accept-Language  =  "Accept-Language" HCOLON
+ *                         [ language *(COMMA language) ]
+ *    language         =  language-range *(SEMI accept-param)
+ *    language-range   =  ( ( 1*8ALPHA *( "-" 1*8ALPHA ) ) / "*" )
+ * @endcode
+ *
+ */
+
+/**@ingroup sip_accept_language
+ * @typedef typedef struct msg_accept_any_s sip_accept_language_t;
+ *
+ * The structure #sip_accept_language_t contains representation of SIP @b
+ * Accept-Language header.
+ *
+ * The #sip_accept_language_t is defined as follows:
+ * @code
+ * typedef struct {
+ *   msg_common_t        aa_common[1]; // Common fragment info
+ *   sip_accept_language_t *aa_next;   // Pointer to next Accept-Language header
+ *   char const            *aa_value;  // Language-range
+ *   msg_param_t const     *aa_params; // List of accept-parameters
+ *   char const            *aa_q;      // Value of q parameter 
+ * } sip_accept_language_t;
+ * @endcode
+ */
+
+#define sip_accept_language_dup_xtra msg_accept_any_dup_xtra
+#define sip_accept_language_dup_one  msg_accept_any_dup_one
+
+msg_hclass_t sip_accept_language_class[] = 
+SIP_HEADER_CLASS(accept_language, "Accept-Language", "", 
+		 aa_params, apndlist, accept_language);
+
+int sip_accept_language_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  int retval = msg_accept_language_d(home, h, s, slen);
+
+  if (retval == -2) {
+    /* Empty Accept-Language list is not an error */
+    ((sip_accept_language_t *)h)->aa_value = "";
+    retval = 0;
+  }
+
+  return retval;
+}
+
+int sip_accept_language_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return msg_accept_language_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_content_disposition Content-Disposition Header
+ *
+ * The Content-Disposition header field describes how the message body or,
+ * in the case of multipart messages, a message body part is to be
+ * interpreted by the UAC or UAS.  Its syntax is defined in [S10.15]
+ * as follows:
+ * 
+ * @code
+ *    Content-Disposition   =  "Content-Disposition" HCOLON
+ *                             disp-type *( SEMI disp-param )
+ *    disp-type             =  "render" / "session" / "icon" / "alert"
+ *                             / disp-extension-token
+ *    disp-param            =  handling-param / generic-param
+ *    handling-param        =  "handling" EQUAL
+ *                             ( "optional" / "required"
+ *                             / other-handling )
+ *    other-handling        =  token
+ *    disp-extension-token  =  token
+ * @endcode
+ * 
+ * The Content-Disposition header was extended by
+ * draft-lennox-sip-reg-payload-01.txt section 3.1 as follows:
+ *
+ * @code
+ *    Content-Disposition      =  "Content-Disposition" ":"
+ *                                disposition-type *( ";" disposition-param )
+ *    disposition-type         =  "script" | "sip-cgi" | token
+ *    disposition-param        =  action-param
+ *                             |  modification-date-param
+ *                             |  generic-param
+ *    action-param             =  "action" "=" action-value
+ *    action-value             =  "store" | "remove" | token
+ *    modification-date-param  =  "modification-date" "=" quoted-date-time
+ *    quoted-date-time         =  <"> SIP-date <">
+ * @endcode
+ */
+
+static msg_xtra_f sip_content_disposition_dup_xtra;
+static msg_dup_f sip_content_disposition_dup_one;
+
+msg_hclass_t sip_content_disposition_class[] = 
+SIP_HEADER_CLASS(content_disposition, "Content-Disposition", "", cd_params,
+		 single, content_disposition);
+
+static void sip_content_disposition_update(sip_content_disposition_t *cd);
+
+int sip_content_disposition_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  sip_content_disposition_t *cd = h->sh_content_disposition;
+
+  if (msg_token_d(&s, &cd->cd_type) < 0 ||
+      (*s == ';' && msg_params_d(home, &s, &cd->cd_params) < 0))
+      return -1;
+  
+  if (cd->cd_params)
+    sip_content_disposition_update(cd);
+
+  return 0;
+}
+
+int sip_content_disposition_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  char *b0 = b, *end = b + bsiz;
+  sip_content_disposition_t const *cd = h->sh_content_disposition;
+
+  SIP_STRING_E(b, end, cd->cd_type);
+  SIP_PARAMS_E(b, end, cd->cd_params, f);
+
+  MSG_TERM_E(b, end);
+    
+  return b - b0;
+}
+
+static
+int sip_content_disposition_dup_xtra(sip_header_t const *h, int offset)
+{
+  int rv = offset;
+  sip_content_disposition_t const *cd = h->sh_content_disposition;
+
+  SIP_PARAMS_SIZE(rv, cd->cd_params);
+  rv += SIP_STRING_SIZE(cd->cd_type);
+
+  return rv;
+}
+
+/** Duplicate one sip_content_disposition_t object */ 
+static
+char *sip_content_disposition_dup_one(sip_header_t *dst, 
+				     sip_header_t const *src,
+				     char *b, int xtra)
+{
+  sip_content_disposition_t *cd = dst->sh_content_disposition;
+  sip_content_disposition_t const *o = src->sh_content_disposition;
+  char *end = b + xtra;
+
+  b = sip_params_dup(&cd->cd_params, o->cd_params, b, xtra);
+  SIP_STRING_DUP(b, cd->cd_type, o->cd_type);
+
+  if (cd->cd_params) 
+    sip_content_disposition_update(dst->sh_content_disposition);
+
+  assert(b <= end);
+
+  return b;
+}
+
+static void sip_content_disposition_update(sip_content_disposition_t *cd)
+{
+  int i; 
+  sip_param_t h;
+
+  /* cd->cd_action = NULL, cd->cd_store = 0, cd->cd_remove = 0; */
+  cd->cd_handling = NULL, cd->cd_required = 0, cd->cd_optional = 0;
+
+  if (cd->cd_params) 
+    for (i = 0; (h = cd->cd_params[i]); i++) {
+#if 0
+      if (strncasecmp(h, "action=", strlen("action=")) == 0) {
+	h += strlen("action=");
+	cd->cd_action = h;
+	cd->cd_store = strcasecmp(h, "store") == 0;
+	cd->cd_remove = strcasecmp(h, "remove") == 0;
+      } else 
+#endif
+      if (strncasecmp(h, "handling=", strlen("handling=")) == 0) {
+	h += strlen("handling=");
+	cd->cd_handling = h;
+	cd->cd_required = strcasecmp(h, "required") == 0;
+	cd->cd_optional = strcasecmp(h, "optional") == 0;
+      }
+    }
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_content_encoding Content-Encoding Header
+ *
+ * The Content-Encoding header indicates what additional content codings
+ * have been applied to the entity-body.  Its syntax is defined in [S10.16]
+ * as follows:
+ * 
+ * @code
+ * Content-Encoding  =  ( "Content-Encoding" / "e" ) HCOLON
+ *                      content-coding *(COMMA content-coding)
+ * content-coding    =  token
+ * @endcode
+ */
+
+msg_hclass_t sip_content_encoding_class[] = 
+SIP_HEADER_CLASS_G(content_encoding, "Content-Encoding", "e", append);
+
+int sip_content_encoding_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return sip_generic_d(home, h, s, slen);
+}
+
+int sip_content_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return sip_generic_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_content_language Content-Language Header
+ *
+ * The Content-Language header [H14.12] describes the natural language(s) of
+ * the intended audience for the enclosed entity. Note that this might not
+ * be equivalent to all the languages used within the entity-body. Its
+ * syntax is defined in RFC 3261 as follows:
+ * 
+ * @code
+ *    Content-Language  =  "Content-Language" HCOLON
+ *                         language-tag *(COMMA language-tag)
+ *    language-tag      =  primary-tag *( "-" subtag )
+ *    primary-tag       =  1*8ALPHA
+ *    subtag            =  1*8ALPHA
+ * @endcode
+ */
+
+msg_hclass_t sip_content_language_class[] = 
+SIP_HEADER_CLASS_LIST(content_language, "Content-Language", "", list);
+
+int sip_content_language_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return msg_list_d(home, h, s, slen);
+}
+
+int sip_content_language_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return msg_list_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_content_type Content-Type Header
+ *
+ * The Content-Type header indicates the media type of the message-body sent
+ * to the recipient.  Its syntax is defined in [H3.7, S] as
+ * follows:
+ * 
+ * @code
+ * Content-Type     =  ( "Content-Type" / "c" ) HCOLON media-type
+ * media-type       =  m-type SLASH m-subtype *(SEMI m-parameter)
+ * m-type           =  discrete-type / composite-type
+ * discrete-type    =  "text" / "image" / "audio" / "video"
+ *                     / "application" / extension-token
+ * composite-type   =  "message" / "multipart" / extension-token
+ * extension-token  =  ietf-token / x-token
+ * ietf-token       =  token
+ * x-token          =  "x-" token
+ * m-subtype        =  extension-token / iana-token
+ * iana-token       =  token
+ * m-parameter      =  m-attribute EQUAL m-value
+ * m-attribute      =  token
+ * m-value          =  token / quoted-string
+ * @endcode
+ */
+
+/**@ingroup sip_content_type
+ * @typedef typedef struct sip_content_type_s sip_content_type_t;
+ *
+ * The structure #sip_content_type_t contains representation of SIP @b
+ * Content-Type header.
+ *
+ * The #sip_content_type_t is defined as follows:
+ * @code
+ * typedef struct sip_content_type_s {
+ *   sip_common_t        c_common[1];  // Common fragment info
+ *   sip_unknown_t      *c_next;       // Dummy link to next
+ *   char const         *c_type;       // Pointer to type/subtype
+ *   char const         *c_subtype;    // Points after first slash in type
+ *   sip_param_t const  *c_params;     // List of parameters
+ * } sip_content_type_t;
+ * @endcode
+ *
+ * The whitespace in the @a c_type is always removed when parsing.
+ */
+
+static msg_xtra_f sip_content_type_dup_xtra;
+static msg_dup_f sip_content_type_dup_one;
+msg_hclass_t sip_content_type_class[] = 
+SIP_HEADER_CLASS(content_type, "Content-Type", "c", c_params, 
+		 single, content_type);
+
+int sip_content_type_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  sip_content_type_t *c;
+
+  assert(h);
+
+  c = h->sh_content_type;
+
+  /* "Content-type:" type/subtyp *(; parameter))) */
+  if (/* Parse protocol */
+      sip_version_d(&s, &c->c_type) == -1 || /* compacts token / token */
+      (c->c_subtype = strchr(c->c_type, '/')) == NULL ||
+      (*s == ';' && msg_params_d(home, &s, &c->c_params) == -1) ||
+      (*s != '\0'))
+    return -1;
+
+  c->c_subtype++;
+
+  return 0;
+}
+
+int sip_content_type_e(char b[], int bsiz, sip_header_t const *h, int flags)
+{
+  char *b0 = b, *end = b + bsiz;
+  sip_content_type_t const *c = h->sh_content_type;
+
+  SIP_STRING_E(b, end, c->c_type);
+  SIP_PARAMS_E(b, end, c->c_params, flags);
+  MSG_TERM_E(b, end);
+
+  return b - b0;
+}
+
+static
+int sip_content_type_dup_xtra(sip_header_t const *h, int offset)
+{
+  int rv = offset;
+  sip_content_type_t const *c = h->sh_content_type;
+
+  SIP_PARAMS_SIZE(rv, c->c_params);
+  rv += SIP_STRING_SIZE(c->c_type);
+
+  return rv;
+}
+
+/** Duplicate one sip_content_type_t object */ 
+static
+char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
+			       char *b, int xtra)
+{
+  sip_content_type_t *c = dst->sh_content_type;
+  sip_content_type_t const *o = src->sh_content_type;
+  char *end = b + xtra;
+
+  b = sip_params_dup(&c->c_params, o->c_params, b, xtra);
+  SIP_STRING_DUP(b, c->c_type, o->c_type);
+  c->c_subtype = strchr(c->c_type, '/');
+  c->c_subtype++;
+
+  assert(b <= end);
+
+  return b;
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_mime_version MIME-Version Header
+ *
+ * MIME-Version header indicates what version of the MIME protocol was used
+ * to construct the message.  Its syntax is defined in [H19.4.1, S10.28]
+ * as follows:
+ * 
+ * @code
+ *    MIME-Version  =  "MIME-Version" HCOLON 1*DIGIT "." 1*DIGIT
+ * @endcode
+ */
+
+msg_hclass_t sip_mime_version_class[] = 
+SIP_HEADER_CLASS_G(mime_version, "MIME-Version", "", single);
+
+int sip_mime_version_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return sip_generic_d(home, h, s, slen);
+}
+
+int sip_mime_version_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return sip_generic_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_warning Warning Header
+ * 
+ * The Warning response-header field is used to carry additional information
+ * about the status of a response. Its syntax is defined in [S10.47] as
+ * follows:
+ * 
+ * @code
+ *    Warning        =  "Warning" HCOLON warning-value *(COMMA warning-value)
+ *    warning-value  =  warn-code SP warn-agent SP warn-text
+ *    warn-code      =  3DIGIT
+ *    warn-agent     =  hostport / pseudonym
+ *                      ;  the name or pseudonym of the server adding
+ *                      ;  the Warning header, for use in debugging
+ *    warn-text      =  quoted-string
+ *    pseudonym      =  token
+ * @endcode
+ */
+
+#define sip_warning_dup_xtra msg_warning_dup_xtra
+#define sip_warning_dup_one msg_warning_dup_one
+
+msg_hclass_t sip_warning_class[] = 
+SIP_HEADER_CLASS(warning, "Warning", "", w_common, append, warning);
+
+int sip_warning_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return msg_warning_d(home, h, s, slen);
+}
+int sip_warning_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return msg_warning_e(b, bsiz, h, f);
+}

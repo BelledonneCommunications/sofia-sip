@@ -1,0 +1,24 @@
+2005-08-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Now we can start agent without any transports.
+
+	added flag for disabling server-side rport.
+
+2005-08-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Fixed running tests on IPv6. Added portbind.
+
+2005-07-14  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* nta_internal.h, nta_tag.h, nta_tag.c, nta.c: Added bitmasks for
+	detecting parsing errors.
+
+	* nta.c: Accept CANCELs for non-INVITEs, too.
+
+2005-07-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* run_nta_test: Fixed portbind/bind test.
+
+2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Initial import of the module to Sofia-SIP tree.

@@ -1,0 +1,7 @@
+2005-07-24  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* sha1.c: Added RFC 3174 copyright notice.
+
+2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Initial import of the module to Sofia-SIP tree.

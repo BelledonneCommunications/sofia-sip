@@ -1,0 +1,20 @@
+LIBRARY      "iptsec"
+DESCRIPTION  'Sofia Security Library'
+
+EXPORTS
+	auc_challenge
+	auc_credentials
+	auc_authorize
+	auc_basic_authorization
+	auc_digest_authorization
+	auth_digest_challenge_get
+	auth_digest_response_get
+	auth_digest_sessionkey
+	auth_digest_response
+	auth_mod_create
+	auth_mod_destroy
+	auth_mod_check
+	auth_mod_challenge
+	auth_mod_check_ireq
+	auth_mod_check_ireq2
+	auth_mod_check_msg

@@ -1,0 +1,31 @@
+# Doxyfile 1.0.0 format
+#
+
+ALIASES = \
+ "CONTACT=\par Contact:\n" \
+ "STATUS=\par Status:\n" \
+ "LICENSE=\par License:\n" \
+ "DEF=\hideinitializer\n \def" \
+ "TAGS=\par Related Tags:\n" \
+ "TAG=\par\n" \
+ "EVENTS=\par Events:\n" \
+ "RESPONSES=\par Related Response Codes:\n" \
+ "CFILE=\file" \
+ "IFILE=\file" \
+ "HI=\hideinitializer\n" \
+ "HIDE=\hideinitializer\n" \
+ "SHOW=\showinitializer\n" \
+ "LGPL2=\par Lesser GNU Public License Version 2:\n\ref lgpl2\n\if 0\n" \
+ "ENDLGPL2=\endif\n" \
+ "GPL2=\par GNU Public License Version 2:\n\ref gpl2\n\if 0\n" \
+ "ENDGPL2=\endif\n" \
+ "ERRORS=\par Errors:\n" \
+ "ERROR=\par\n\b " \
+
+PREDEFINED = DOX \
+ DOXYGEN_ONLY=1 \
+ DOCUMENTATION_ONLY=1 \
+ SU_HAVE_INLINE=1 su_inline=inline \
+ SU_DLL SIP_DLL RTSP_DLL SU_DLL NTA_DLL NUA_DLL MSG_DLL AUTH_DLL \
+ NTH_DLL HTTP_DLL \
+ __attribute__()=

@@ -1,0 +1,132 @@
+LIBRARY      "msg"
+DESCRIPTION  'MSG NT Windows Dynamic Link Library'
+
+EXPORTS
+	; msg.h
+
+	msg_create
+	msg_destroy
+
+	msg_clone
+     
+	msg_object
+	msg_public
+
+	msg_extract
+	msg_prepare
+
+	msg_buf_alloc
+	msg_buf_commit
+	msg_buf_committed
+	msg_buf_size
+	msg_buf_move
+	msg_buf_set
+
+	msg_header_add_dup
+	msg_header_add_dup_as
+	msg_extract_payload
+	msg_extract_separator
+	msg_hclass_offset
+	msg_header_add_str
+	
+	; msg_stream.h
+
+	msg_addrinfo
+	msg_addr
+	msg_addrlen
+	msg_addr_copy
+	msg_addr_zero
+
+	msg_iovec
+	
+	; msg_parser.h
+
+	msg_find_hclass
+	msg_header_offset
+	msg_header_copy_as
+	msg_header_copy
+	msg_header_dup_as
+	msg_header_dup
+	msg_header_make
+	msg_numeric_d
+	msg_numeric_e
+	msg_generic_d
+	msg_generic_e
+	msg_generic_dup_xtra
+	msg_generic_dup_one
+	msg_payload_d
+	msg_payload_e
+	msg_payload_dup_xtra
+	msg_payload_dup_one
+	msg_separator_d
+	msg_separator_e
+	msg_header_vformat
+	msg_hostport_d
+	msg_comment_d
+	msg_quoted_d
+	msg_name_addr_d
+	msg_name_addr_e
+	msg_params_d
+	msg_params_dup
+;	msg_params_count
+
+    msg_date_e
+    msg_date_d
+    msg_now
+    msg_auth_d
+    msg_list_d
+    msg_params_e
+    msg_unquote_dup
+
+    msg_firstline_d
+    msg_header_alloc
+    msg_header_alloc
+    msg_header_alloc
+    msg_params_find
+    msg_params_find
+    msg_params_find
+    msg_params_find
+    msg_params_replace
+    msg_params_replace
+    msg_date_delta_d
+    msg_date_delta_d
+    msg_delta_e
+	msg_delta_d
+    msg_params_cmp
+    msg_params_cmp
+    msg_list_dup_one
+    msg_list_dup_one
+    msg_list_dup_xtra
+    msg_list_dup_xtra
+    msg_list_e
+    msg_list_e
+    msg_header_d
+    msg_header_e
+    msg_object_e
+    msg_serialize
+    msg_copy_all
+    msg_header_insert
+    msg_header_remove
+    msg_header_remove
+    msg_token_d
+    msg_auth_dup_one
+    msg_auth_dup_xtra
+    msg_auth_e
+    msg_params_add
+	; msg_hostport
+	msg_hash_string
+	msg_next
+
+	msg_default_dup_xtra
+	msg_default_dup_one
+
+    msgobjtag_snprintf
+    msgobjtag_dup
+    msgobjtag_xtra
+    msghdrtag_snprintf 
+    msghdrtag_dup
+    msghdrtag_xtra
+
+	msg_recv_commit
+	msg_recv_iovec
+

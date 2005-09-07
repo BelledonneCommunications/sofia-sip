@@ -1,0 +1,4 @@
+2005-07-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Makefile.am: Added doxygen target.
+

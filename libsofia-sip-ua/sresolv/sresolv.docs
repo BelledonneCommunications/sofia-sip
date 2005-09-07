@@ -1,0 +1,28 @@
+/* $Id: sresolv.docs,v 1.2 2005/08/03 17:25:14 ppessi Exp $ */
+
+/**@mainpage Sofia Asynchronous DNS Resolver
+
+@section sresolv_meta Module Information
+
+The Sofia @b sresolv module consists of an asynchronous DNS resolver with
+EDNS extensions. The interface to library is defined in <sresolv.h>.
+
+@CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
+
+@STATUS Core library
+
+@LICENSE LGPL
+
+@section sresolv_oveview Using SResolv
+
+The sresolv works asynchronously, in other words, it sends a query to DNS
+server and returns immediately to the caller. When the query is completed,
+sresolv signals application through a callback function. The application can
+etieher explicitly poll(2) on file descriptors used by resolver and call
+driver functions, or it canuse @ref su_root_t "su root" a pointer to a
+su_root_t object.
+
+There is an internal cache used by sresolv. 
+
+*/
+

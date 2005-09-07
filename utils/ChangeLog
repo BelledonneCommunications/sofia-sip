@@ -1,0 +1,7 @@
+2005-09-07  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* nua_cli.c: Cleaned up unused ifdefs.
+
+2005-09-07  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* ChangeLog: File created.

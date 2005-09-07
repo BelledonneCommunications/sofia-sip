@@ -1,0 +1,23 @@
+/* -*- c -*- */
+
+/* $Id: nth.docs,v 1.1.1.1 2005/07/20 20:35:31 kaiv Exp $ */
+
+/**@mainpage Sofia HTTP Transaction Engine - "nth"
+ * 
+ * @section nth_meta Module Meta Information
+ *
+ * NTH provides interface to simple HTTP transaction engines for both HTTP
+ * servers and clients. The transaction interface for both client and server
+ * is available through <nth.h>, tags controlling the options in
+ * <nth_tag.h>.
+ *
+ * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
+ *
+ * @STATUS Core library
+ *
+ * @LICENSE LGPL
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
+ *
+ */
+

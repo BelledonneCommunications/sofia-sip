@@ -1,0 +1,1573 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@ingroup msg_parser
+ * @CFILE msg_parser_util.c
+ *
+ * Text-message parser helper functions.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ *
+ * @date Created: Tue Aug 28 16:26:34 2001 ppessi
+ *
+ * $Date: 2005/07/20 20:35:25 $
+ */
+
+#include "config.h"
+
+const char msg_parser_util_c_id[] =
+"$Id: msg_parser_util.c,v 1.1.1.1 2005/07/20 20:35:25 kaiv Exp $";
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
+#include <limits.h>
+
+#include <stdarg.h>
+#include <su_tagarg.h>
+
+#include <su.h>
+#include <su_alloc.h>
+
+#include "msg_internal.h"
+#include "msg_parser.h"
+#include "bnf.h"
+
+#include "url.h"
+
+static int msg_comma_scanner(char *start);
+
+/**
+ * Parse first line.
+ *
+ * Splits the first line from a message into three whitespace-separated
+ * parts.
+ */
+int msg_firstline_d(char *s, char **return_part2, char **return_part3)
+{
+  char *s1 = s, *s2, *s3;
+  int n;
+
+  /* Split line into three segments separated by whitespace */
+  if (s1[n = span_non_ws(s1)]) {
+    s1[n] = '\0';
+    s2 = s1 + n + 1;
+    while (IS_WS(*s2))
+      s2++;
+  }
+  else {
+    /* Hopeless - no WS in first line */
+    return -1;
+  }
+
+  n = span_non_ws(s2);
+
+  if (s2[n]) {
+    s2[n++] = '\0';
+    while (IS_WS(s2[n]))
+      n++;
+  }
+
+  s3 = s2 + n;
+
+  *return_part2 = s2;
+
+  *return_part3 = s3;
+
+  return 0;
+}
+
+/**Parse a token.
+ *
+ * Parses a token from string pointed by @a *ss. It stores the token value
+ * in @a return_token, and updates the @a ss to the end of token and
+ * possible whitespace.
+ */
+int msg_token_d(char **ss, char const **return_token) 
+{
+  char *s = *ss;
+  int n = span_token(s);
+  if (n) {
+    for (; IS_LWS(s[n]); n++)
+      s[n] = '\0';
+    *return_token = s;
+    *ss = s + n;
+    return 0;
+  }
+  else
+    return -1;
+}
+
+/** Parse a 32-bit unsigned int.
+ *
+ * The function msg_uint32_d() parses a 32-bit unsigned integer in string
+ * pointed by @a *ss. It stores the value in @a return_token and updates the
+ * @a ss to the end of integer and possible whitespace.
+ */
+int msg_uint32_d(char **ss, uint32_t *return_value)
+{
+  char const *s = *ss, *s0 = s;
+  uint32_t value;
+  unsigned digit;
+
+  if (!IS_DIGIT(*s))	
+    return -1;
+
+  for (value = 0; IS_DIGIT(*s); s++) {
+    digit = *s - '0';
+    if (value > 429496729U)
+      return -1;
+    else if (value == 429496729U && digit > 5)
+      return -1;
+    value = 10 * value + digit;
+  }
+
+  if (*s) {
+    if (!IS_LWS(*s))
+      return -1;
+    skip_lws(&s);
+  }
+
+  *ss = (char *)s;
+  *return_value = value;
+
+  return s - s0;
+}
+
+
+/** Parse any list.
+ *
+ * Parses a list of items, separated by @a sep. The parsed string is passed
+ * in @a *ss, which is updated to point to the first non-linear-whitespace
+ * character after the list. The function modifies the string as it parses
+ * it.
+ *
+ * A pointer to the resulting list is returned in the return-value parameter
+ * @a return_list. If there already is a list in @a return_list, new items
+ * are appended. Empty list items are ignored, and are not included in the
+ * list.
+ *
+ * The function must be passed a scanning function @a scanner. The scanning
+ * function scans for a legitimate list item, for example, a token. It
+ * should also compact the list item, for instance, if the item consists of
+ * @c name=value parameter definitions. The scanning function returns the
+ * length of the scanned item, including any linear whitespace after it.
+ *
+ * @param home    memory home used to allocate memory for list pointers [IN]
+ * @param ss      pointer to pointer to string to be parsed [IN/OUT]
+ * @param return_list  return-value parameter for parsed list [IN/OUT]
+ * @param sep     separator character [IN]
+ * @param scanner pointer to function scanning a single item (optional) [IN]
+ * 
+ * @retval 0  if successful.
+ * @retval -1 upon an error.
+ */
+int msg_any_list_d(su_home_t *home, 
+		   char **ss, 
+		   msg_param_t **return_list,
+		   int (*scanner)(char *s), 
+		   int sep)
+{
+  char const *auto_list[MSG_N_PARAMS];
+  char const **list = auto_list, **re_list;
+  int N = MSG_N_PARAMS, n = 0, tlen;
+  char *s = *ss;
+  char const **start;
+
+  if (!scanner)
+    return -1;
+
+  if (*return_list) {
+    list = *return_list;
+    while (list[n])
+      n++;
+    N = MSG_PARAMS_NUM(n + 1);
+  }
+
+  start = &list[n];
+
+  skip_lws(&s);
+
+  while (*s) {
+    tlen = scanner(s);
+
+    if (tlen < 0 || (s[tlen] && s[tlen] != sep && s[tlen] != ','))
+      goto error;
+
+    if (tlen > 0) {
+      if (n + 1 == N) {		/* Reallocate list? */
+	N = MSG_PARAMS_NUM(N + 1);
+	if (list == auto_list || list == *return_list) {
+	  re_list = su_alloc(home, N * sizeof(*list));
+	  if (re_list)
+	    memcpy(re_list, list, n * sizeof(*list));
+	}
+	else
+	  re_list = su_realloc(home, list, N * sizeof(*list));
+	if (!re_list)
+	  goto error;
+	list = re_list;
+      }
+      
+      list[n++] = s;
+      s += tlen;
+    }
+
+    if (*s == sep) {
+      *s++ = '\0';
+      skip_lws(&s);
+    } 
+    else if (*s)
+      break;
+  }
+
+  *ss = s;
+
+  if (n > 0 && list == auto_list) {
+    int size = sizeof(*list) * MSG_PARAMS_NUM(n + 1);
+    list = su_alloc(home, size);
+    if (!list) return -1;
+    memcpy((void *)list, auto_list, n * sizeof(*list));
+  }
+
+  list[n] = NULL;
+  if (n == 0)
+    list = NULL;
+
+  *return_list = list;
+  return 0;
+
+ error:
+  *start = NULL;
+  if (list != auto_list && list != *return_list)
+    su_free(home, list);
+  return -1;
+}
+
+/** Scan an attribute [= value] pair  */
+int msg_attribute_value_scanner(char *s)
+{
+  char *p = s;
+  unsigned tlen;
+
+  skip_token(&s);
+
+  if (s == p)		/* invalid parameter name */
+    return -1;
+
+  tlen = s - p;
+
+  if (IS_LWS(*s)) { *s++ = '\0'; skip_lws(&s); }
+
+  if (*s == '=') {
+    char *v;
+    s++;
+    skip_lws(&s);
+
+    /* get value */
+    if (*s == '"') {
+      int qlen = span_quoted(s);
+      if (!qlen)
+	return -1;
+      v = s; s += qlen;
+    }
+    else {
+      v = s; 
+      skip_param(&s);
+      if (s == v) 
+	return -1;
+    }
+
+    if (p + tlen + 1 != v) {
+      memmove(p + tlen + 1, v, s - v);
+      p[tlen] = '=';
+      p[tlen + 1 + (s - v)] = '\0';
+    }
+  }
+
+  if (IS_LWS(*s)) { *s++ = '\0'; skip_lws(&s); }
+
+  return s - p;
+}
+
+/**Parse an attribute-value list.
+ *
+ * Parses an attribute-value list, which has syntax as follows:
+ * @code
+ *  av-list = (av-pair *(";" av-pair)
+ *  av-pair = token ["=" ( value / quoted-string) ]        ; optional value
+ * @endcode
+ *
+ * @param home      pointer to a memory home [IN]
+ * @param ss        pointer to string at the start of parameter list [IN/OUT]
+ * @param return_list return-value parameter for parsed list [IN/OUT]
+ *
+ * @retval 0 if successful
+ * @retval -1 upon an error
+ */
+int msg_avlist_d(su_home_t *home, 
+		 char **ss, 
+		 msg_param_t const **return_list)
+{
+  char const *stack[MSG_N_PARAMS];
+  int N;
+  char const **params;
+  int n = 0;
+  char *s = *ss;
+
+  if (!*s)
+    return -1;
+
+  if (*return_list) {
+    params = (char const **)*return_list;
+    for (n = 0; params[n]; n++)
+      ;
+    N = MSG_PARAMS_NUM(n + 1);
+  } else {
+    params = stack;
+    N = MSG_PARAMS_NUM(1);
+  }
+  
+  for (;;) {
+    char *p; int tlen;
+
+    /* XXX - we should handle also quoted parameters */
+
+    skip_lws(&s);
+    p = s;
+    skip_token(&s);
+    tlen = s - p;
+    if (!tlen)		/* invalid parameter name */
+      goto error;
+
+    if (IS_LWS(*s)) { *s++ = '\0'; skip_lws(&s); }
+
+    if (*s == '=') {
+      char *v;
+      s++;
+      skip_lws(&s);
+
+      /* get value */
+      if (*s == '"') {
+	int qlen = span_quoted(s);
+	if (!qlen)
+	  goto error;
+	v = s; s += qlen;
+      }
+      else {
+	v = s; 
+	skip_param(&s);
+	if (s == v) 
+	  goto error;
+      }
+      if (p + tlen + 1 != v) {
+	p = memmove(v - tlen - 1, p, tlen);
+	p[tlen] = '=';
+      }
+
+    }
+
+    if (IS_LWS(*s)) { *s++ = '\0'; skip_lws(&s); }
+
+    if (n == N) {
+      /* Reallocate params */
+      char **nparams = su_alloc(home,
+				(N = MSG_PARAMS_NUM(N + 1)) * sizeof(*params));
+      if (!nparams) {
+	goto error;
+      }
+      params = memcpy(nparams, params, n * sizeof(*params));
+    }
+
+    params[n++] = p;
+
+    if (*s != ';')
+      break;
+
+    *s++ = '\0';
+  }
+
+  *ss = s;
+
+  if (params == stack) {
+    int size = sizeof(*params) * MSG_PARAMS_NUM(n + 1);
+    params = su_alloc(home, size);
+    if (!params) return -1;
+    memcpy((void *)params, stack, n * sizeof(*params));
+  }
+  else if (n == N) {
+    /* Reallocate params */
+    char **nparams = su_alloc(home, 
+			      (N = MSG_PARAMS_NUM(N + 1)) * sizeof(*params));
+    if (!nparams) {
+      goto error;
+    }
+    params = memcpy(nparams, params, n * sizeof(*params));
+  }
+
+  params[n] = NULL;
+
+  *return_list = params;
+
+  return 0;
+
+ error:
+  if (params != stack)
+    su_free(home, params);
+  return -1;
+}
+
+/**Parse a semicolon-separated parameter list starting with semicolon.
+ *
+ * Parse a parameter list, which has syntax as follows:
+ * @code
+ *  *(";" token [ "=" (token | quoted-string)]).
+ * @endcode
+ *
+ * @param home      pointer to a memory home [IN]
+ * @param ss        pointer to string at the start of parameter list [IN/OUT]
+ * @param return_list   return-value parameter for the parsed list [IN/OUT]
+ *
+ * @retval 0 if successful
+ * @retval -1 upon an error
+ *
+ * @sa msg_avlist_d()
+ */
+int msg_params_d(su_home_t *home, 
+		 char **ss, 
+		 msg_param_t const **return_list)
+{
+  if (**ss == ';') {
+    *(*ss)++ = '\0';
+    *return_list = NULL;
+    return msg_avlist_d(home, ss, return_list);
+  }
+
+  if (IS_LWS(**ss)) { 
+    *(*ss)++ = '\0'; skip_lws(ss);
+  }
+
+  return 0;
+}
+
+/** Encode a list of parameters */
+int msg_params_e(char b[], int bsiz, msg_param_t const pparams[])
+{
+  int i;
+  char *end = b + bsiz, *b0 = b;
+  msg_param_t p;
+
+  if (pparams) 
+    for (i = 0; (p = pparams[i]); i++) {
+      if (p[0]) {
+	MSG_CHAR_E(b, end, ';');
+	MSG_STRING_E(b, end, p);
+      }
+    }
+
+  return b - b0;
+}
+
+/** Duplicate a parameter list */
+char *msg_params_dup(msg_param_t const **d, msg_param_t const s[],
+		     char *b, int xtra)
+{
+  char *end = b + xtra;
+  char **pp;
+  int i, n;
+
+  n = msg_params_count(s);
+
+  if (n == 0) {
+    *d = NULL;
+    return b;
+  }
+
+  MSG_STRUCT_ALIGN(b);
+  pp = (char **)b;
+
+  b += sizeof(*pp) * MSG_PARAMS_NUM(n + 1);
+
+  for (i = 0; s[i]; i++) {
+    MSG_STRING_DUP(b, pp[i], s[i]);
+  }
+  pp[i] = NULL;
+ 
+  assert(b <= end);
+ 
+  *d = (msg_param_t const *)pp;
+
+  return b;
+} 
+
+
+/** Parse a comma-separated list.
+ *
+ * Parses a comma-separated list. The parsed string is passed in @a *ss,
+ * which is updated to point to the first non-linear-whitespace character
+ * after the list. The function modifies the string as it parses it.
+ *
+ * A pointer to the resulting list is returned in @a *retval. If there
+ * already is a list in @a *retval, new items are appended. Empty list items
+ * are ignored, and are not included in the list.
+ *
+ * The function can be passed an optional scanning function. The scanning
+ * function scans for a legitimate list item, for example, a token. It also
+ * compacts the list item, for instance, if the item consists of @c
+ * name=value parameter definitions.  The scanning function returns the
+ * length of the scanned item, including any linear whitespace after it.
+ *
+ * By default, the scanning function accepts tokens, quoted strings or
+ * separators (except comma, of course).
+ *
+ * @param home    memory home used to allocate memory for list pointers [in]
+ * @param ss      pointer to pointer to string to be parsed [in/out]
+ * @param return_list  return-value parameter for parsed list [in/out]
+ * @param scanner pointer to function scanning a single item (optional) [in]
+ * 
+ * @retval 0  if successful.
+ * @retval -1 upon an error.
+ */
+int msg_commalist_d(su_home_t *home, 
+		    char **ss, 
+		    msg_param_t **return_list,
+		    int (*scanner)(char *s))
+{
+  scanner = scanner ? scanner : msg_comma_scanner;
+  return msg_any_list_d(home, ss, return_list, scanner, ',');
+}
+
+/** Scan a token */
+int msg_token_scan(char *start)
+{
+  char *s = start;
+  skip_token(&s);
+
+  if (IS_LWS(*s))
+    *s++ = '\0';
+  skip_lws(&s);
+
+  return s - start;
+}
+
+/** Scan and compact a comma-separated item */
+static
+int msg_comma_scanner(char *start)
+{
+  int tlen;
+  char *s, *p;
+  
+  s = p = start;
+
+  if (s[0] == ',')
+    return 0;
+
+  for (;;) {
+    /* Grab next section - token, quoted string, or separator character */
+    char c = *s;
+
+    if (IS_TOKEN(c)) 
+      tlen = span_token(s);
+    else if (c == '"')
+      tlen = span_quoted(s);
+    else /* if (IS_SEPARATOR(c)) */
+      tlen = 1;
+    
+    if (tlen == 0)
+      return -1;
+
+    if (p != s)
+      memmove(p, s, tlen);	/* Move section to end of paramexter */
+    p += tlen; s += tlen;
+    
+    skip_lws(&s);		/* Skip possible LWS */
+    
+    if (*s == '\0' || *s == ',') {		/* Test for possible end */
+      if (p != s) *p = '\0';
+      return s - start;
+    }
+
+    if (IS_TOKEN(c) && IS_TOKEN(*s))
+      *p++ = ' ';		/* Two tokens must be separated by LWS */
+  }
+}
+
+/** Parse a comment.
+ *
+ * Parses a multilevel comment. The comment assigned to return-value
+ * parameter @a return_comment is NUL-terminated. The string at return-value
+ * parameter @a ss is updated to point to first non-linear-whitespace
+ * character after the comment.
+ */
+int msg_comment_d(char **ss, char const **return_comment)
+{
+  /* skip comment */
+  int level = 1;
+  char *s = *ss;
+
+  assert(s[0] == '(');
+
+  if (*s != '(')
+    return -1;
+
+  *s++ = '\0';
+
+  if (return_comment)
+    *return_comment = s;
+      
+  while (level) switch (*s++) {
+  case '(': level++; break;
+  case ')': level--; break;
+  case '\0': /* ERROR */ return -1;
+  }
+      
+  assert(s[-1] == ')');
+      
+  s[-1] = '\0';
+  skip_lws(&s);
+  *ss = s;
+
+  return 0;
+}
+
+/** Parse a quoted string */
+int msg_quoted_d(char **ss, char **return_quoted)
+{
+  char *s = *ss;
+  int n = span_quoted(s);
+
+  if (n <= 0)
+    return -1;
+
+  *return_quoted = s;
+  s += n;
+  if (IS_LWS(*s)) {
+    *s++ = '\0';
+    skip_lws(&s);		/* skip linear whitespace */
+  }
+
+  *ss = s;
+  return 0;
+}
+
+#if 0
+/** Calculate length of string when quoted. */
+int msg_quoted_len(char const *u)
+{
+  int rv;
+
+  if (!u)
+    return 0;
+
+  rv = span_token_lws(u);
+  if (u[rv]) {
+    /* We need to quote string */
+    int n;
+    int extra = 2; /* quote chars */
+
+    /* Find all characters to quote */
+    for (n = strcspn(u + rv, "\\\""); u[rv + n]; rv += n)
+      extra++;
+
+    rv += extra;
+  }
+
+  return rv;
+}
+#endif
+
+/**Parse @e host[":"port] pair.
+ *
+ * Parses a @e host[":"port] pair. The caller passes function a pointer to a
+ * string via @a ss, and pointers to which parsed host and port are assigned
+ * via @a hhost and @a pport, respectively. The value-result parameter @a
+ * *pport must be initialized to default value (e.g., NULL).
+ * 
+ * @param ss    pointer to pointer to string to be parsed
+ * @param return_host value-result parameter for @e host
+ * @param return_port value-result parameter for @e port
+
+ * @return 
+ * Returns zero when successful, and a negative value upon an error. The
+ * parsed values for host and port are assigned via @a return_host and @a
+ * return_port, respectively. The function also updates the pointer @a *ss,
+ * so if call is successful, the @a *ss points to first
+ * non-linear-whitespace character after @e host[":"port] pair.
+ *
+ * @note
+ * If there is no whitespace after @e port, the value in @a *pport may not be
+ * NUL-terminated.  The calling function @b must NUL terminate the value by
+ * setting the @a **ss to NUL after first examining its value.
+ */
+int msg_hostport_d(char **ss, 
+		   char const **return_host, 
+		   char const **return_port)
+{
+  char *host, *s = *ss;
+  char *port = NULL;
+
+  /* Host name */
+  host = s; 
+  if (s[0] != '[') {
+    skip_token(&s); if (host == s) return -1;
+  }
+  else {
+    /* IPv6 */
+    int n = strspn(++s, HEX ":.");
+    if (s[n] != ']') return -1;
+    s += n + 1;
+  }
+
+  if (IS_LWS(*s)) { *s++ = '\0'; skip_lws(&s); }
+
+  if (s[0] == ':') {
+    unsigned long nport;
+    *s++ = '\0'; skip_lws(&s);
+    if (!IS_DIGIT(*s))
+      return -1;
+    port = s;
+    nport = strtoul(s, &s, 10);
+    if (nport > 65535)
+      return -1;
+    if (IS_LWS(*s)) {
+      *s++ = '\0';
+      skip_lws(&s);
+    }
+  }
+
+  *return_host = host;
+  *return_port = port;
+  
+  *ss = s;
+
+  return 0;
+}
+
+/**Parse @e name-addr.
+ *
+ * The function @c msg_name_addr_d() is used to parse @e name-addr
+ * construction on @b From, @b To, @b Contact, @b Route, and @b Route-Record
+ * headers.  It splits the argument string in four parts:
+ *
+ * @par
+ * @e [display-name] @e addr-spec @e [parameters] @e [comment] @e [ss]
+ *
+ * @param home           pointer to memory home
+ * @param ss             pointer to pointer to string to be parsed
+ * @param return_display value-result parameter for @e display-name
+ * @param return_url     value-result parameter for @e addr-spec
+ * @param return_params  value-result paramater for @e parameters 
+ * @param return_comment value-result parameter for @e comment
+ *
+ * @note After succesful call to the function @c msg_name_addr_d(), *ss
+ * contains pointer to the first character not beloging to @e name-addr.  If
+ * that character is a separator, the last parameter may not be NUL
+ * terminated.  So, after examining value of @a **ss, the calling function
+ * @b MUST set it to NUL.
+ *
+ * @return 
+ * The function @c msg_name_addr_d() returns 0 if successful, and -1 upon an
+ * error.
+ */
+int msg_name_addr_d(su_home_t *home,
+		    char **ss,
+		    char const **return_display,
+		    url_t *return_url,
+		    msg_param_t const **return_params,
+		    char const **return_comment)
+{
+  char c, *s = *ss;
+  char *display = NULL, *addr_spec = NULL;
+  int n;
+
+  if (return_display && *s == '"') {
+    /* Quoted string */
+    if (msg_quoted_d(&s, &display) == -1)
+      return -1;
+
+    /* Now, we should have a '<' in s[0] */
+    if (s[0] != '<')
+      return -1;
+    s++[0] = '\0';		/* NUL terminate quoted string... */
+    n = strcspn(s, ">");
+    addr_spec = s; s += n; 
+    if (*s) *s++ = '\0'; else return -1;
+  } 
+  else {
+    if (return_display) 
+      n = span_token_lws(s);
+    else
+      n = 0;
+
+    if (s[n] == '<') {
+      /* OK, we got a display name */
+      display = s; s += n + 1; 
+      /* NUL terminate display name */
+      while (n > 0 && IS_LWS(display[n - 1]))
+	n--;
+      if (n > 0)
+	display[n] = '\0';
+      else 
+	display = "";
+
+      n = strcspn(s, ">");
+      addr_spec = s; s += n; if (*s) *s++ = '\0'; else return -1;
+    }
+    else {
+      /* No display name */
+      addr_spec = s;
+      n = strcspn(s, " ,;?");	/* we DO NOT accept ? in URL */
+      s += n;
+      if (IS_LWS(*s))
+	*s++ = '\0';
+    }
+  }
+
+  skip_lws(&s);
+
+  *ss = s;
+  if (return_display)
+    *return_display = display;
+  
+  /* Now, url may still not be NUL terminated, e.g., if 
+   * it is like "Route: url:foo,sip:bar,sip:zunk"
+   */
+  c = *s; *s = '\0';
+  if (url_d(return_url, addr_spec) == -1)
+    return -1;
+  *s = c;
+
+  if (**ss == ';' && return_params)
+    if (msg_params_d(home, ss, return_params) == -1)
+      return -1;
+
+  if (**ss == '(' && return_comment)
+    if (msg_comment_d(ss, return_comment) == -1)
+      return -1;
+
+  return 0;
+}
+
+/**Encode @e name-addr and parameter list.
+ *
+ * Encodes @e name-addr headers, like From, To, Call-Info, Error-Info,
+ * Route, and Record-Route.
+ *
+ * @param b        buffer to store the encoding result
+ * @param bsiz     size of the buffer @a b
+ * @param flags    encoding flags
+ * @param display  display name encoded before the @a url (may be NULL)
+ * @param brackets if true, use always brackets around @a url
+ * @param url      pointer to URL structure
+ * @param params   pointer to parameter list (may be NULL)
+ * @param comment  comment string encoded after others (may be NULL)
+ *
+ * @return 
+ * Returns number of characters in encoding result, excluding the
+ * final NUL.
+ *
+ * @note
+ * The encoding result may be incomplete if the buffer size is not large
+ * enough to store the whole encoding result.
+ */
+int msg_name_addr_e(char b[], int bsiz, 
+		    int flags, 
+		    char const *display, 
+		    int brackets, url_t const url[],
+		    msg_param_t const params[], 
+		    char const *comment)
+{
+  int const compact = MSG_IS_COMPACT(flags);
+  char const *u;
+  char *b0 = b, *end = b + bsiz;
+
+  brackets = brackets || display || 
+    (url && (url->url_params || 
+	     url->url_headers ||
+	     ((u = url->url_user) && u[strcspn(u, ";,?")]) ||
+	     ((u = url->url_password) && u[strcspn(u, ",")])));
+
+  if (display && display[0]) {
+    MSG_STRING_E(b, end, display);
+    if (!compact) MSG_CHAR_E(b, end, ' ');
+  }
+  if (url) {
+    if (brackets) MSG_CHAR_E(b, end, '<');
+    URL_E(b, end, url);
+    if (brackets) MSG_CHAR_E(b, end, '>');
+  }
+
+  MSG_PARAMS_E(b, end, params, flags);
+
+  if (comment) {
+    if (!compact) MSG_CHAR_E(b, end, ' ');
+    MSG_CHAR_E(b, end, '(');
+    MSG_STRING_E(b, end, comment);
+    MSG_CHAR_E(b, end, ')');
+  }
+
+  MSG_TERM_E(b, end);
+    
+  return b - b0;
+}
+
+/** Find a parameter from a parameter list.
+ *
+ * Searches for given parameter @a token from the parameter list. If
+ * parameter is found, it returns a non-NULL pointer to the parameter value. 
+ * If there is no value for the parameter (the parameter is of form "name"
+ * or "name="), the returned pointer points to a NUL character.
+ *
+ * @param params list (or vector) of parameters 
+ * @param token  parameter name (with or without "=" sign)
+ *
+ * @return
+ * A pointer to parameter value, or NULL if parameter was not found.
+ */
+msg_param_t msg_params_find(msg_param_t const params[], msg_param_t token)
+{
+  if (params && token) {
+    int i, n = strcspn(token, "=");
+
+    assert(n > 0);
+
+    for (i = 0; params[i]; i++) {
+      msg_param_t param = params[i];
+      if (strncasecmp(param, token, n) == 0) {
+	if (param[n] == '=')
+	  return param + n + 1;
+        else if (param[n] == 0)
+	  return param + n;
+      }
+    }
+
+  }
+
+  return NULL;
+}
+
+/** Find a slot for parameter from a parameter list.
+ *
+ * Searches for given parameter @a token from the parameter list. If
+ * parameter is found, it returns a non-NULL pointer to the item containing
+ * the parameter.
+ *
+ * @param params list (or vector) of parameters 
+ * @param token  parameter name (with or without "=" sign)
+ *
+ * @return
+ * A pointer to parameter slot, or NULL if parameter was not found.
+ */
+msg_param_t *msg_params_find_slot(msg_param_t params[], msg_param_t token)
+{
+  if (params && token) {
+    int i, n = strlen(token);
+
+    assert(n > 0);
+
+    for (i = 0; params[i]; i++) {
+      msg_param_t param = params[i];
+      if (strncasecmp(param, token, n) == 0) {
+	if (param[n] == '=')
+	  return params + i;
+        else if (param[n] == 0 || token[n - 1] == '=')
+	  return params + i;
+      }
+    }
+
+  }
+
+  return NULL;
+}
+
+/** Find a matching parameter from a parameter list.
+ *
+ * Searches for a matching parameter @a token from the parameter list. If a
+ * matching parameter is found, it returns a non-NULL pointer to the
+ * parameter value. If there is no value for the parameter (the parameter is
+ * of form "name"), the returned pointer points to a NUL character.
+ *
+ * @param params list (or vector) of parameters 
+ * @param param  parameter to be matched
+ *
+ * @return
+ * A pointer to parameter value, or NULL if no matching parameter was not
+ * found.
+ */
+msg_param_t msg_params_matching(msg_param_t const params[], 
+				msg_param_t param)
+{
+  if (params && param) {
+    int i, n = strcspn(param, "=");
+
+    assert(n > 0);
+
+    for (i = 0; params[i]; i++) {
+      msg_param_t match = params[i];
+      if (strncasecmp(match, param, n) == 0) {
+	if (match[n] == '=' && match[n + 1] != '\0')
+	  return match + n + 1;
+        else if (match[n] == 0)
+	  return match + n;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+/** Replace or add a parameter from a list. 
+ *
+ */
+int msg_params_replace(su_home_t *home,
+		       msg_param_t **pparams, 
+		       msg_param_t param)
+{
+  msg_param_t *params;
+  int i, n;
+
+  assert(pparams);
+
+  if (param == NULL || param[0] == '=' || param[0] == '\0')
+    return -1;
+
+  params = *pparams;
+
+  n = strcspn(param, "=");
+  assert(n > 0);
+
+  if (params) {
+    /* Existing list, try to replace or remove  */
+    for (i = 0; params[i]; i++) {
+      msg_param_t maybe = params[i];
+
+      if (strncasecmp(maybe, param, n) == 0) {
+	if (maybe[n] == '=' || maybe[n] == 0) {
+	  params[i] = param;	
+	  return 0;
+	}
+      }
+    }
+  }
+
+  return msg_params_add(home, pparams, param);
+}
+
+/** Remove a parameter from a list. 
+ *
+ */
+int msg_params_remove(msg_param_t *params, msg_param_t param)
+{
+  int i, n;
+
+  if (!params || !param || !param[0])
+    return -1;
+
+  n = strlen(param);
+  assert(n > 0);
+
+  for (i = 0; params[i]; i++) {
+    msg_param_t maybe = params[i];
+
+    if (strncasecmp(maybe, param, n) == 0) {
+      if (maybe[n] == '=' || maybe[n] == 0) {
+	/* Remove */
+	do {
+	  params[i] = params[i + 1];
+	} while (params[i++]);
+	return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+/** Calculate lenght of a parameter list */
+size_t msg_params_length(msg_param_t const params[])
+{
+  size_t len;
+
+  if (!params)
+    return 0;
+
+  for (len = 0; params[len]; len++)
+    ;
+
+  return len;
+}
+
+
+/**
+ * Add a parameter to a list.
+ *
+ * The function @c msg_params_add() is used add a parameter to the list; the
+ * list must have been created by @c msg_params_d() or by @c
+ * msg_params_dup() (or it may contain only @c NULL).
+ *
+ * @note This function does not duplicate @p param.
+ *
+ * @param home      memory home
+ * @param pparams   pointer to pointer to parameter list
+ * @param param     parameter to be added
+ *
+ * @return
+ * The function @c msg_params_add() returns 0 if successful, or a negative
+ * value upon an error.
+ */
+int msg_params_add(su_home_t *home,
+		   msg_param_t **pparams,
+		   msg_param_t param)
+{
+  int n, m_before, m_after;
+  msg_param_t *p = *pparams;  
+
+  if (param == NULL)
+    return -1;
+
+  /* Count number of parameters */
+  for (n = 0; p && p[n]; n++)
+    ;
+
+  m_before = MSG_PARAMS_NUM(n + 1);
+  m_after =  MSG_PARAMS_NUM(n + 2);
+  
+  if (m_before != m_after || !p) {
+    p = su_alloc(home, m_after * sizeof(*p)); 
+    assert(p); if (!p) return -1;
+    if (n)
+      memcpy(p, *pparams, n * sizeof(*p));
+    *pparams = p;
+  }
+
+  p[n] = param;
+  p[n + 1] = NULL;
+
+  return 0;
+}
+
+static 
+int msg_param_prune(msg_param_t const d[], msg_param_t p, unsigned prune)
+{
+  int i, nlen;
+
+  if (prune == 1)
+    nlen = strcspn(p, "=");
+  else
+    nlen = 0;
+
+  for (i = 0; d[i]; i++) {
+    if ((prune == 1 && 
+	 strncasecmp(p, d[i], nlen) == 0 
+	 && (d[i][nlen] == '=' || d[i][nlen] == '\0'))
+	|| 
+	(prune == 2 && strcasecmp(p, d[i]) == 0)
+	||
+	(prune == 3 && strcmp(p, d[i]) == 0))
+      return 1;
+  }
+
+  return 0;
+}
+
+/**Join two parameter lists.
+ *
+ * The function @c msg_params_join() joins two parameter lists; the
+ * first list must have been created by @c msg_params_d() or by @c
+ * msg_params_dup() (or it may contain only @c NULL).
+ *
+ * @param home    memory home
+ * @param dst     pointer to pointer to destination parameter list
+ * @param src     source list
+ * @param prune   prune duplicates 
+ * @param dup     duplicate parameters in src list
+ *
+ * @par Pruning 
+ * <table>
+ * <tr><td>0<td>do not prune</tr>
+ * <tr><td>1<td>prune parameters with identical names</tr>
+ * <tr><td>2<td>case-insensitive values</tr>
+ * <tr><td>3<td>case-sensitive values</tr>
+ * </table>
+ *
+ * @return
+ * The function @c msg_params_join() returns 0 if successful, or a negative
+ * value upon an error.
+ */
+int msg_params_join(su_home_t *home,
+		    msg_param_t **dst,
+		    msg_param_t const *src,
+		    unsigned prune,
+		    int dup)
+{
+  int n, m, n_before, n_after, pruned, total = 0;
+  msg_param_t *d = *dst;  
+
+  if (prune > 3)
+    return -1;
+
+  if (src == NULL || *src == NULL)
+    return 0;
+
+  /* Count number of parameters */
+  for (n = 0; d && d[n]; n++)
+    ;
+
+  n_before = MSG_PARAMS_NUM(n + 1);
+
+  for (m = 0, pruned = 0; src[m]; m++) {
+    if (n > 0 && prune > 0 && msg_param_prune(d, src[m], prune)) {
+      pruned++;
+      if (prune > 1)
+	continue;
+    }
+    if (dup)
+      total += strlen(src[m]) + 1;
+  }
+
+  n_after = MSG_PARAMS_NUM(n + m - pruned + 1);
+  
+  if (n_before != n_after || !d) {
+    d = su_alloc(home, n_after * sizeof(*d)); 
+    assert(d); if (!d) return -1;
+    if (n)
+      memcpy(d, *dst, n * sizeof(*d));
+    *dst = d;
+  }
+
+  for (m = 0; src[m]; m++) {
+    if (pruned && msg_param_prune(d, src[m], prune)) {
+      pruned--;
+      if (prune > 1)
+	continue;
+    }
+
+    if (dup)
+      d[n++] = su_strdup(home, src[m]);	/* XXX */
+    else
+      d[n++] = src[m];
+  }  
+
+  d[n] = NULL;
+
+  return 0;
+}
+
+/**Compare parameter lists.
+ * 
+ * Compares parameter lists.
+ *
+ * @param a pointer to a parameter list
+ * @param b pointer to a parameter list
+ *
+ * @retval an integer less than zero if @a is less than @a b
+ * @retval an integer zero if @a match with @a b
+ * @retval an integer greater than zero if @a is greater than @a b
+ */
+int msg_params_cmp(msg_param_t const a[], msg_param_t const b[])
+{
+  int c;
+  int nlen;
+
+  if (a == NULL || b == NULL)
+    return (a != NULL) - (b != NULL);
+
+  for (;;) {
+    if (*a == NULL || *b == NULL)
+      return (*a != NULL) - (*b != NULL);
+    nlen = strcspn(*a, "=");
+    if ((c = strncasecmp(*a, *b, nlen)))
+      return c;
+    if ((c = strcmp(*a + nlen, *b + nlen)))
+      return c;
+    a++, b++;
+  }
+}
+
+
+/** Unquote string 
+ *
+ * Duplicates the string @a q in unquoted form.
+ */
+char *msg_unquote_dup(su_home_t *home, char const *q)
+{
+  char *d;
+  int total, n, m;
+
+  /* First, easy case */
+  if (q[0] == '"')
+    q++;
+  n = strcspn(q, "\"\\");
+  if (q[n] == '\0' || q[n] == '"')
+    return su_strndup(home, q, n);
+
+  /* Hairy case - backslash-escaped chars */
+  total = n;
+  for (;;) {
+    if (q[n] == '\0' || q[n] == '"' || q[n + 1] == '\0')
+      break;
+    m = strcspn(q + n + 2, "\"\\");
+    total += m + 1;
+    n += m + 2; 
+  }
+
+  if (!(d = su_alloc(home, total + 1)))
+    return NULL;
+
+  for (n = 0;;) {
+    m = strcspn(q, "\"\\");
+    memcpy(d + n, q, m); 
+    n += m, q += m;
+    if (q[0] == '\0' || q[0] == '"' || q[1] == '\0')
+      break;
+    d[n++] = q[1]; 
+    q += 2;
+  }
+  assert(total == n);
+  d[n] = '\0';
+  
+  return d;
+}
+
+/** Unquote string */
+char *msg_unquote(char *dst, char const *s)
+{
+  int copy = dst != NULL;
+  char *d = dst;
+
+  if (*s++ != '"')
+    return NULL;
+
+  for (;;) {
+    int n = strcspn(s, "\"\\");
+    if (copy)
+      memmove(d, s, n);
+    s += n;
+    d += n;
+
+    if (*s == '\0')
+      return NULL;
+    else if (*s == '"') {
+      if (copy) *d = '\0';
+      return dst;
+    }
+    else {
+      /* Copy quoted char */
+      if ((copy ? (*d++ = *++s) : *++s) == '\0')
+	return NULL;
+      s++;
+    }
+  }
+}
+
+/** Quote string */
+int msg_unquoted_e(char *b, int bsiz, char const *s)
+{
+  char *begin = b;
+  char *end = b + bsiz;
+
+  if (b && b + 1 < end)
+    *b = '"';
+  b++;
+  
+  for (;*s;) {
+    int n = strcspn(s, "\"\\");
+
+    if (n == 0) {
+      if (b && b + 2 < end)
+	b[0] = '\\', b[1] = s[0];
+      b += 2;
+      s++;
+    }
+    else {
+      if (b && b + n < end)
+	memcpy(b, s, n);
+      b += n;
+      s += n;
+    }
+  }
+
+  if (b && b + 1 < end)
+    *b = '"';
+  b++;
+
+  return b - begin;
+}
+
+
+/** Calculate a simple hash over a string */
+unsigned long msg_hash_string(char const *id)
+{
+  unsigned long hash = 0;
+
+  if (id)
+    for (; *id; id++) {
+      hash += (unsigned)*id;
+      hash *= 38501U;
+    }
+  else
+    hash *= 38501U;
+
+  if (hash == 0)
+    hash = (unsigned long)-1;
+  
+  return hash;
+}
+
+
+/** Calculate the size of a duplicate of a header structure. */
+int msg_header_size(msg_header_t const *h)
+{
+  if (h == NULL || h == MSG_HEADER_NONE)
+    return 0;
+  else
+    return h->sh_class->hc_dxtra(h, h->sh_class->hc_size);
+}
+
+/** Encode a message to the buffer. */
+int msg_object_e(char b[], int size, msg_pub_t const *mo, int flags)
+{
+  int rv = 0, n;
+  msg_header_t const *h;
+
+  if (mo->msg_request)
+    h = mo->msg_request;
+  else
+    h = mo->msg_status;
+
+  for (; h; h = h->sh_succ) {
+    n = msg_header_e(b, size, h, flags);
+    if ((unsigned)n < (unsigned)size)
+      b += n, size -= n;
+    else
+      b = NULL, size = 0;
+    rv += n;
+  }
+
+  return rv;
+}
+
+/** Encode header contents. */
+int msg_header_field_e(char b[], int bsiz, msg_header_t const *h, int flags)
+{
+  assert(h); assert(h->sh_class); 
+
+  return h->sh_class->hc_print(b, bsiz, h, flags);
+}
+
+/** Get offset of header @a h from structure @a mo. */
+msg_header_t **
+msg_header_offset(msg_t *msg, msg_pub_t *mo, msg_header_t const *h)
+{
+  if (h == NULL || h->sh_class == NULL) 
+    return NULL;
+
+  return msg_hclass_offset(msg->m_class, mo, h->sh_class);
+}
+
+/**Get a header from the public message structure.
+ *
+ * Gets a pointer to header from a message structure.
+ *
+ * @param pub public message structure from which header is obtained
+ * @param hc  header class
+ */
+msg_header_t *
+msg_header_access(msg_pub_t const *pub, msg_hclass_t *hc)
+{
+  msg_header_t * const * hh;
+
+  if (pub == NULL || hc == NULL)
+    return NULL;
+
+  hh = msg_hclass_offset((void *)pub->msg_ident, (msg_pub_t *)pub, hc);
+
+  if (hh)
+    return *hh;
+  else 
+    return NULL;
+}
+
+#include <su_uniqueid.h>
+
+/** Generates a random token.
+ *
+ */
+int msg_random_token(char token[], int tlen, 
+		     void const *rmemp, int rsize)
+{
+  uint32_t random = 0, rword;
+  uint8_t rbyte;
+  uint8_t const *rmem = rmemp;
+  int i, n;
+
+  static char const token_chars[32] = 
+    /* Create aesthetically pleasing raNDom capS LooK */
+    "aBcDeFgHjKmNpQrStUvXyZ0123456789";
+
+  if (rmem == NULL && rsize == 0)
+    rsize = UINT_MAX;
+
+  if (rsize == 0) {
+    if (token && tlen > 0)
+      strcpy(token, "+");
+    return 1;
+  }
+
+  if (token == NULL) {
+    if (rsize >= tlen * 5 / 8)
+      return tlen;
+    else
+      return rsize / 5 * 8;
+  }
+    
+  for (i = 0, n = 0; i < tlen;) {
+    if (n < 5) {
+      if (rsize == 0)
+	;
+      else if (rmem) {
+	rbyte = *rmem++, rsize--;
+	random = random | (rbyte << n);
+	n += 8;
+      } else {
+	rword = su_randint(0, UINT_MAX);
+	random = (rword >> 13) & 31;
+	n = 6;
+      }
+    }
+
+    token[i] = token_chars[random & 31];
+    random >>= 5;
+    i++, n -= 5;
+
+    if (n < 0 || (n == 0 && rsize == 0))
+      break;
+  }
+  
+  token[i] = 0;
+
+  return i;
+}

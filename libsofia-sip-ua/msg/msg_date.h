@@ -1,0 +1,64 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifndef MSG_DATE_H /** Defined when msg_date.h has been included. */
+#define MSG_DATE_H \
+"$Id: msg_date.h,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $"
+
+/**@ingroup msg_parser
+ * @file msg_date.h 
+ * @brief Types and functions for handling dates and times.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ *
+ * @date Created: Thu Jun  8 19:28:55 2000 ppessi
+ * 
+ * $Date: 2005/07/20 20:35:22 $
+ */
+
+#ifndef MSG_TIME_T_DEFINED
+#define MSG_TIME_T_DEFINED unsigned long
+/** Time in seconds since epoch (1900-Jan-01 00:00:00). */
+typedef unsigned long msg_time_t;
+#endif
+
+/* Current time. */
+msg_time_t msg_now(void);
+
+#define MSG_TIME_MAX (ULONG_MAX)
+
+int msg_date_delta_d(char const **ss, msg_time_t *date, msg_time_t *delta);
+
+int msg_delta_d(char const **ss, msg_time_t *delta);
+int msg_delta_e(char b[], int bsiz, msg_time_t delta);
+
+/** Decode RFC1123-date, RFC822-date or asctime-date. */
+int msg_date_d(char const **ss, msg_time_t *date);
+
+/** Encode RFC1123-date. */
+int msg_date_e(char b[], int bsiz, msg_time_t date);
+
+enum { msg_date_string_size = 29 };
+
+#endif /* !defined(MSG_DATE_H) */

@@ -1,0 +1,358 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifndef AUTH_MODULE_H
+/** Defined when <auth_module.h> has been included. @HI */
+#define AUTH_MODULE_H \
+  "$Id: auth_module.h,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $"
+
+/**@file auth_module.h  
+ * @brief Authentication verification interface for NTA network elements.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
+ *
+ * @date Created: Mon Jul 23 19:21:24 2001 ppessi
+ * $Date: 2005/07/20 20:35:21 $
+ */
+
+#ifndef SU_TAG_H
+#include <su_tag.h>
+#endif
+#ifndef AUTH_DLL_H
+#include <auth_dll.h>
+#endif
+#ifndef SU_WAIT_H
+#include <su_wait.h>
+#endif
+#ifndef MSG_TYPES_H
+#include <msg_types.h>
+#endif
+#ifndef URL_H
+#include <url.h>
+#endif
+#ifndef URL_TAG_H
+#include <url_tag.h>
+#endif
+
+typedef struct auth_mod_t auth_mod_t;
+/** Authentication operation. */
+typedef struct auth_status_t auth_status_t;
+
+#ifdef  AUTH_MAGIC_T 
+typedef AUTH_MAGIC_T auth_magic_t;
+#else
+typedef void auth_magic_t;
+#endif
+
+/** Virtual table for authentication plugin. */
+typedef struct auth_scheme_t const auth_scheme_t;
+
+/** Opaque data used by authentication plugin module. */
+typedef struct auth_plugin_t  auth_plugin_t;
+/** Opaque user data used by plugin module. */
+typedef struct auth_splugin_t auth_splugin_t;
+/** Opaque authentication operation data used by plugin module. */
+typedef struct auth_uplugin_t auth_uplugin_t;
+
+/** Callback from completeted asynchronous authentication operation. */
+typedef void auth_callback_t(auth_magic_t *, auth_status_t *);
+
+struct auth_status_t
+{
+  su_home_t       as_home[1];	/**< Memory home for authentication */
+
+  int          	  as_status;	/**< Return authorization status [out] */
+  char const   	 *as_phrase;	/**< Return response phrase [out] */
+  char const   	 *as_user;	/**< Authenticated user name [in/out] */
+  char const   	 *as_display;	/**< Return user's real name [out] */
+  url_t const    *as_user_uri;	/**< Return user's identity [in/out] */
+
+  msg_time_t      as_nonce_issued; /**< Nonce issue time [out] */
+  unsigned        as_anonymous:1;/**< Return true if user is anonymous [out] */
+  unsigned        as_stale:1;	/**< Credentials were stale [out] */
+  unsigned        as_allow:1;	/**< Method cannot be challenged [out] */
+  unsigned        as_nextnonce:1; /**< Client used nextnonce [out] */
+  unsigned :0;
+  char const   	 *as_realm;	/**< Authentication realm [in] */
+  char const  	 *as_domain;	/**< Hostname [in] */
+  char const  	 *as_uri;	/**< Request-URI [in] */
+  char const     *as_pdomain;	/**< Domain parameter [in] (ignored). */
+  char const   	 *as_method;	/**< Method name to authenticate [in] */
+  void const   	 *as_body;	/**< Message body to protect [in] */
+  int          	  as_bodylen;	/**< Length of message body [in] */
+  su_addrinfo_t  *as_source;	/**< Source address [in] */
+
+  msg_header_t 	 *as_response;	/**< Authentication challenge [out] */
+  msg_header_t   *as_info;	/**< Authentication-Info [out] */
+  msg_header_t 	 *as_match;	/**< Used authentication header [out] */
+  unsigned     	  as_blacklist; /**< Blacklist time [out] */
+
+  auth_magic_t   *as_magic;	/**< Application data [in] */
+  auth_callback_t*as_callback;	/**< Completion callback [in] */
+
+  /** Pointer to extended state, used exclusively by plugin modules. */
+  auth_splugin_t *as_plugin;	
+};
+
+/** Authentication challenge.
+ *
+ * This structure defines what kind of response and challenge header is
+ * returned to the user. For example, a server authentication is implemented
+ * with 401 response code and phrase along with header class for
+ * @b WWW-Authenticate header in the @a ach structure.
+ */
+typedef struct auth_challenger 
+{
+  int           ach_status;	/**< Response status for challenge response */
+  char const   *ach_phrase;	/**< Response phrase for challenge response */
+  msg_hclass_t *ach_header;	/**< Header class for challenge header */
+  msg_hclass_t *ach_info;
+} auth_challenger_t;
+
+extern char const auth_internal_server_error[];
+
+#define AUTH_STATUS_INIT \
+  {{ SU_HOME_INIT(auth_status_t) }, 500, auth_internal_server_error, NULL }
+
+#define AUTH_STATUS_DEINIT(as) \
+  su_home_deinit(as->as_home)
+
+#define AUTH_RESPONSE_INIT(as) AUTH_STATUS_INIT
+#define AUTH_RESPONSE_DEINIT(as) AUTH_STATUS_DEINIT(as)
+
+int auth_mod_register_plugin(auth_scheme_t *asch);
+
+auth_mod_t *auth_mod_create(su_root_t *root, tag_type_t, tag_value_t, ...);
+void auth_mod_destroy(auth_mod_t *);
+
+auth_mod_t *auth_mod_ref(auth_mod_t *am);
+void auth_mod_unref(auth_mod_t *am);
+
+auth_status_t *auth_status_init(void *, int size);
+
+auth_status_t *auth_status_new(su_home_t *);
+
+void auth_status_unref(auth_status_t *as);
+
+void auth_mod_method(auth_mod_t *am,
+		     auth_status_t *as,
+		     msg_auth_t *credentials,
+		     auth_challenger_t const *ach);
+
+void auth_mod_challenge(auth_mod_t *am, 
+			auth_status_t *as,
+			auth_challenger_t const *ach);
+
+void auth_mod_cancel(auth_mod_t *am, auth_status_t *as);
+
+/* ====================================================================== */
+/* Compatibility interface */
+
+typedef enum { 
+  auth_server, 
+  auth_proxy, 
+  auth_proxy_consume,
+  auth_consume
+} auth_kind_t;
+
+void auth_mod_check_client(auth_mod_t *am,
+			   auth_status_t *as,
+			   msg_auth_t *credentials,
+			   auth_challenger_t const *ach);
+
+void auth_mod_challenge_client(auth_mod_t *am,
+			       auth_status_t *as,
+			       auth_challenger_t const *ach);
+
+#ifdef NTA_H
+void auth_mod_check(auth_mod_t *am,
+		    auth_status_t *as,
+		    sip_t const *sip,
+		    auth_kind_t proxy);
+
+int auth_mod_check_ireq(auth_mod_t *, nta_leg_t *,
+			nta_incoming_t *, sip_t const *, auth_kind_t);
+int auth_mod_check_ireq2(auth_mod_t *, nta_incoming_t *,
+			 msg_t *, sip_t *, auth_kind_t);
+int auth_mod_check_msg(auth_mod_t *, nta_agent_t *, msg_t *, 
+		       sip_t *, auth_kind_t);
+
+#endif
+
+#ifdef HTTP_H
+const char *auth_mod_check_http(auth_mod_t *am,
+		                auth_status_t *as,
+	                        http_t const *http,
+		                auth_kind_t proxy);
+#endif
+
+/** Pointer to an authentication server (auth_mod_t). */
+#define AUTHTAG_MODULE(x)	authtag_module, authtag_module_v((x))
+AUTH_DLL extern tag_typedef_t authtag_module;
+
+#define AUTHTAG_MODULE_REF(x)	authtag_module_ref, authtag_module_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_module_ref;
+
+#if SU_HAVE_INLINE
+static inline tag_value_t authtag_module_v(auth_mod_t *v) { return (tag_value_t)v; }
+static inline tag_value_t authtag_module_vr(auth_mod_t **vp) {return(tag_value_t)vp;}
+#else
+#define authtag_module_v(v)   (tag_value_t)(v)
+#define authtag_module_vr(v)  (tag_value_t)(v)
+#endif
+
+/** Authentication scheme used by authentication module. */
+#define AUTHTAG_METHOD(x)	authtag_method, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_method;
+
+#define AUTHTAG_METHOD_REF(x)	authtag_method_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_method_ref;
+
+/** Authentication realm used by authentication server. */
+#define AUTHTAG_REALM(x)	authtag_realm, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_realm;
+
+#define AUTHTAG_REALM_REF(x)	authtag_realm_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_realm_ref;
+
+/** Opaque authentication data always included in challenge. */
+#define AUTHTAG_OPAQUE(x)	authtag_opaque, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_opaque;
+
+#define AUTHTAG_OPAQUE_REF(x)	authtag_opaque_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_opaque_ref;
+
+/** Name of authentication database used by authentication server. */
+#define AUTHTAG_DB(x)		authtag_db, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_db;
+
+#define AUTHTAG_DB_REF(x)		authtag_db_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_db_ref;
+
+/** Quality-of-protection used by digest authentication. */
+#define AUTHTAG_QOP(x)	        authtag_qop, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_qop;
+
+#define AUTHTAG_QOP_REF(x)	        authtag_qop_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_qop_ref;
+
+/** Algorithm used by digest authentication. */
+#define AUTHTAG_ALGORITHM(x)    authtag_algorithm, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_algorithm;
+
+#define AUTHTAG_ALGORITHM_REF(x)    authtag_algorithm_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_algorithm_ref;
+
+/** Nonce lifetime. */
+#define AUTHTAG_EXPIRES(x)    authtag_expires, tag_uint_v((x))
+AUTH_DLL extern tag_typedef_t authtag_expires;
+
+#define AUTHTAG_EXPIRES_REF(x)    authtag_expires_ref, tag_uint_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_expires_ref;
+
+/** Next nonce lifetime. */
+#define AUTHTAG_NEXT_EXPIRES(x)    authtag_next_expires, tag_uint_v((x))
+AUTH_DLL extern tag_typedef_t authtag_next_expires;
+
+#define AUTHTAG_NEXT_EXPIRES_REF(x)   authtag_next_expires_ref, tag_uint_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_next_expires_ref;
+
+/** Extra delay when responding if provided invalid credentials or nonce. */
+#define AUTHTAG_BLACKLIST(x)    authtag_blacklist, tag_uint_v((x))
+AUTH_DLL extern tag_typedef_t authtag_blacklist;
+
+#define AUTHTAG_BLACKLIST_REF(x)    authtag_blacklist_ref, tag_uint_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_blacklist_ref;
+
+/** Respond with 403 Forbidden if given invalid credentials. */
+#define AUTHTAG_FORBIDDEN(x)    authtag_forbidden, tag_bool_v((x))
+AUTH_DLL extern tag_typedef_t authtag_forbidden;
+
+#define AUTHTAG_FORBIDDEN_REF(x)    authtag_forbidden_ref, tag_bool_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_forbidden_ref;
+
+/** Allow anonymous access. */
+#define AUTHTAG_ANONYMOUS(x)    authtag_anonymous, tag_bool_v((x))
+AUTH_DLL extern tag_typedef_t authtag_anonymous;
+
+#define AUTHTAG_ANONYMOUS_REF(x)    authtag_anonymous_ref, tag_bool_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_anonymous_ref;
+
+/** Fake authentication procedure - do not check result. */
+#define AUTHTAG_FAKE(x)    authtag_fake, tag_bool_v((x))
+AUTH_DLL extern tag_typedef_t authtag_fake;
+
+#define AUTHTAG_FAKE_REF(x)    authtag_fake_ref, tag_bool_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_fake_ref;
+
+/** HSS client structure. */
+#define AUTHTAG_HSS(x)        authtag_hss, tag_ptr_v((x))
+AUTH_DLL extern tag_typedef_t authtag_hss;
+
+#define AUTHTAG_HSS_REF(x)    authtag_hss_ref, tag_ptr_vr((&x), (x))
+AUTH_DLL extern tag_typedef_t authtag_hss_ref;
+
+/** Remote authenticator URL. */
+#define AUTHTAG_REMOTE(x)     authtag_remote, urltag_url_v((x))
+AUTH_DLL extern tag_typedef_t authtag_remote;
+
+#define AUTHTAG_REMOTE_REF(x) authtag_remote_ref, urltag_url_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_remote_ref;
+
+/** Comma-separated list of methods never challenged. */
+#define AUTHTAG_ALLOW(x)      authtag_allow, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_allow;
+
+#define AUTHTAG_ALLOW_REF(x)  authtag_allow_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_allow_ref;
+
+/** Check that user exists, don't do authentication. */
+#define AUTHTAG_FAKE(x)	authtag_fake, tag_bool_v((x))
+AUTH_DLL extern tag_typedef_t authtag_fake;
+
+#define AUTHTAG_FAKE_REF(x) authtag_fake_ref, tag_bool_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_fake_ref;
+
+/** Master key in base64 for the authentication module. */
+#define AUTHTAG_MASTER_KEY(x)	authtag_master_key, tag_str_v((x))
+AUTH_DLL extern tag_typedef_t authtag_master_key;
+
+#define AUTHTAG_MASTER_KEY_REF(x) authtag_master_key_ref, tag_str_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_master_key_ref;
+
+/** Cache time for authentication data. */
+#define AUTHTAG_CACHE_USERS(x)	authtag_cache_users, tag_uint_v((x))
+AUTH_DLL extern tag_typedef_t authtag_cache_users;
+
+#define AUTHTAG_CACHE_USERS_REF(x) authtag_cache_users_ref, tag_uint_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_cache_users_ref;
+
+/** Cache time for errors. */
+#define AUTHTAG_CACHE_ERRORS(x)	authtag_cache_errors, tag_uint_v((x))
+AUTH_DLL extern tag_typedef_t authtag_cache_errors;
+
+#define AUTHTAG_CACHE_ERRORS_REF(x) authtag_cache_errors_ref, tag_uint_vr((&x))
+AUTH_DLL extern tag_typedef_t authtag_cache_errors_ref;
+
+#endif

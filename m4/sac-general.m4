@@ -1,0 +1,400 @@
+dnl =====================================================================
+dnl This file contains autoconf macros shared by Sofia modules.
+dnl 
+dnl Author: Pekka Pessi <Pekka.Pessi@nokia.com>
+dnl 
+dnl License:
+dnl
+dnl Copyright (c) 2001,2004 Nokia and others. All Rights Reserved.
+dnl
+dnl Please note that every macro contained in this file is copyrighted by
+dnl its respective author, unless the macro source explicitely says
+dnl otherwise. Permission has been granted, though, to use and distribute
+dnl all macros under the following license, which is a modified version of
+dnl the GNU General Public License version 2:
+dnl 
+dnl Each Autoconf macro in this file is free software; you can redistribute it
+dnl and/or modify it under the terms of the GNU General Public License as
+dnl published by the Free Software Foundation; either version 2, or (at your
+dnl option) any later version.
+dnl 
+dnl They are distributed in the hope that they will be useful, but WITHOUT ANY
+dnl WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+dnl FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+dnl details. (You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software Foundation,
+dnl Inc., 59 Temple Place -- Suite 330, Boston, MA 02111-1307, USA.)
+dnl 
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that are
+dnl the output of Autoconf. You need not follow the terms of the GNU General
+dnl Public License when using or distributing such scripts, even though
+dnl portions of the text of Autoconf appear in them. The GNU General Public
+dnl License (GPL) does govern all other use of the material that constitutes
+dnl the Autoconf program.
+dnl 
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of Autoconf. 
+dnl We call these the "data" portions. The rest of the Autoconf source text
+dnl consists of comments plus executable code that decides which of the data
+dnl portions to output in any given case. We call these comments and
+dnl executable code the "non-data" portions. Autoconf never copies any of
+dnl the non-data portions into its output.
+dnl 
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation. When you make and distribute a
+dnl modified version of Autoconf, you may extend this special exception to
+dnl the GPL to apply to your modified version as well, *unless* your
+dnl modified version has the potential to copy into its output some of the
+dnl text that was the non-data portion of the version that you started with. 
+dnl (In other words, unless your change moves or copies text from the
+dnl non-data portions to the data portions.) If your modification has such
+dnl potential, you must delete any notice of this special exception to the
+dnl GPL from your modified version.
+dnl
+dnl =====================================================================
+
+AC_DEFUN([SOFIA_M4_ID], [
+AC_SUBST([SOFIA_M4_ID], 
+[$Id: sac-general.m4,v 1.1.1.1 2005/07/20 20:34:54 kaiv Exp $])])
+
+dnl ===================================================================
+dnl Get host, target and build variables filled with appropriate info,
+dnl and check the validity of the cache 
+dnl ===================================================================
+
+AC_DEFUN([SAC_CANONICAL_SYSTEM_CACHE_CHECK], [
+
+dnl Get host, target and build variables filled with appropriate info.
+
+AC_CANONICAL_SYSTEM
+
+dnl Check to assure the cached information is valid.
+
+AC_MSG_CHECKING(cached information)
+hostcheck="$host"
+AC_CACHE_VAL(ac_cv_hostcheck, [ ac_cv_hostcheck="$hostcheck" ])
+if test "$ac_cv_hostcheck" != "$hostcheck"; then
+  AC_MSG_RESULT(changed)
+  AC_MSG_WARN(config.cache exists!)
+  AC_MSG_ERROR([you must do 'make distclean' first to compile 
+ for different host or different parameters.])
+else
+  AC_MSG_RESULT(ok)
+fi
+
+dnl SOSXXX: AC_PATH_ADJUST
+
+])
+
+dnl ======================================================================
+dnl Check if ranlib is needed
+dnl ======================================================================
+AC_DEFUN([AX_PROG_RANLIB], [
+AC_REQUIRE([SAC_CANONICAL_SYSTEM_CACHE_CHECK])
+if test -z "$no_ranlib"; then
+  AC_CHECK_TOOL([RANLIB], ranlib, ranlib)
+else
+  AC_SUBST([RANLIB], [":"])
+fi
+])
+
+dnl ======================================================================
+dnl Find C compiler
+dnl ======================================================================
+
+AC_DEFUN([AX_TOOL_CC], [
+AC_BEFORE([$0], [AC_PROG_CPP])dnl
+AC_CHECK_TOOL(CC, gcc, gcc)
+if test -z "$CC"; then
+  AC_CHECK_TOOL(CC, cc, cc, , , /usr/ucb/cc)
+  if test -z "$CC"; then
+    case "`uname -s`" in
+    *win32* | *WIN32* ) AC_CHECK_PROG(CC, cl, cl) ;;
+    esac
+  fi
+  test -z "$CC" && AC_MSG_ERROR([no acceptable cc found in \$PATH])
+fi
+AC_PROG_CC
+
+#
+# GCoverage
+#
+AC_ARG_ENABLE(coverage,
+[  --enable-coverage       compile test-coverage (disabled)],
+ , enable_coverage=no)
+if test X$enable_coverage != Xno ; then
+case "${CC-cc}" in
+  *gcc*) 
+	CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage" 
+	;;
+  *) AC_MSG_ERROR([--enable-coverage requires gcc])
+esac
+fi
+
+AC_SUBST([MOSTLYCLEANFILES], "*.bb *.bbg *.da *.[hc].gcov")
+])
+
+dnl ======================================================================
+dnl Check for sockaddr_in6
+dnl ======================================================================
+AC_DEFUN([AC_STRUCT_SIN6], [
+AC_CACHE_CHECK([for sockaddr_in6],
+  ac_cv_sin6,
+[AC_EGREP_HEADER(struct sockaddr_in6, netinet/in.h, 
+  ac_cv_sin6=yes, ac_cv_sin6=no)])
+if test $ac_cv_sin6 = yes ;then
+	AC_DEFINE([HAVE_SIN6], 1, 
+		[Define this as 1 if you have IPv6 structures and constants])
+fi
+])
+
+dnl ======================================================================
+dnl Check for sa_len in struct sockaddr
+dnl ======================================================================
+AC_DEFUN([AC_SYS_SA_LEN], [
+AC_CACHE_CHECK([for sa_len],
+  ac_cv_sa_len,
+[AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/socket.h>], [int main(void) {
+ struct sockaddr t;t.sa_len = 0;}],
+  ac_cv_sa_len=yes,ac_cv_sa_len=no)])
+if test "$ac_cv_sa_len" = yes ;then
+	AC_DEFINE([HAVE_SA_LEN], 1, 
+		[Define this as 1 if you have sa_len in struct sockaddr])
+fi
+])
+
+dnl ======================================================================
+dnl Check for MSG_NOSIGNAL flag
+dnl ======================================================================
+AC_DEFUN([AC_FLAG_MSG_NOSIGNAL], [
+AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK([for MSG_NOSIGNAL], 
+  ac_cv_flag_msg_nosignal, [
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>], [
+int main() {
+  int flags = MSG_NOSIGNAL;
+}
+], ac_cv_flag_msg_nosignal=yes, ac_cv_flag_msg_nosignal=no)])
+if test "$ac_cv_flag_msg_nosignal" = yes ; then
+	AC_DEFINE([HAVE_MSG_NOSIGNAL], 1,
+		[Define this as 1 if you have MSG_NOSIGNAL flag for send()]) 
+fi
+])dnl
+
+dnl ======================================================================
+dnl Check for MSG_ERRQUEUE flag
+dnl ======================================================================
+AC_DEFUN([AC_SYS_MSG_ERRQUEUE], [
+AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK([for MSG_ERRQUEUE], 
+  ac_cv_flag_msg_errqueue, [
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>], [
+int main() {
+  int flags = MSG_ERRQUEUE;
+}
+], ac_cv_flag_msg_errqueue=yes, ac_cv_flag_msg_errqueue=no)])
+if test "$ac_cv_flag_msg_errqueue" = yes; then
+	AC_DEFINE([HAVE_MSG_ERRQUEUE], 1,
+		[Define this as 1 if you have MSG_ERRQUEUE flag for send()]) 
+fi
+])dnl
+
+dnl ======================================================================
+dnl Check for IP_RECVERR option
+dnl ======================================================================
+AC_DEFUN([AC_SYS_IP_RECVERR], [
+AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK([for IP_RECVERR], 
+  ac_cv_sys_ip_recverr, [
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+], [
+  int one = 1;
+  int s = 0;
+  setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one));
+], ac_cv_sys_ip_recverr=yes,
+ac_cv_sys_ip_recverr=no)])
+if test "$ac_cv_sys_ip_recverr" = yes ; then
+	AC_DEFINE([HAVE_IP_RECVERR], 1, 
+		[Define this as 1 if you have IP_RECVERR in <netinet/in.h>])
+fi
+])dnl
+
+dnl ======================================================================
+dnl Check for IPV6_RECVERR option
+dnl ======================================================================
+AC_DEFUN([AC_SYS_IPV6_RECVERR], [
+AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK([for IPV6_RECVERR], 
+  ac_cv_sys_ipv6_recverr, [
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+], [
+  int one = 1;
+  int s = 0;
+  setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one));
+], ac_cv_sys_ipv6_recverr=yes, ac_cv_sys_ipv6_recverr=no)])
+if test "$ac_cv_sys_ipv6_recverr" = yes ; then
+	AC_DEFINE([HAVE_IPV6_RECVERR], 1,
+		[Define this as 1 if you have IPV6_RECVERR in <netinet/in6.h>])
+fi
+])dnl
+
+dnl ======================================================================
+dnl Version of AC_CHECK_HEADER with a list of alternative locations
+dnl ======================================================================
+dnl AX_CHECK_HEADER_IN(HEADER-FILE, 
+dnl         LIST-OF-PATHS, [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
+AC_DEFUN([AX_CHECK_HEADER_IN], [
+ax_safe=`echo "$1" | sed 'y%./+-%__p_%'`
+AC_MSG_CHECKING([for $1])
+AC_CACHE_VAL(ax_cv_header_$ax_safe,
+   [eval ax_cv_header_$ax_safe="no"
+    for ax_path in yes $2
+    do
+	old_CPPFLAGS="$CPPFLAGS"
+       	test "$ax_path" != "yes" && CPPFLAGS="-I$ax_path $CPPFLAGS"
+      	AC_TRY_CPP([#include <$1>], 
+	 [eval ax_cv_header_$ax_safe="$ax_path";
+	  CPPFLAGS="$old_CPPFLAGS";
+          break],
+	 CPPFLAGS="$old_CPPFLAGS"
+	 )
+   done
+])
+
+if eval "test \"`echo '$ax_cv_header_'$ax_safe`\" != no"; then
+   if eval 'test "$ax_cv_header_'$ax_safe'" != "yes"'
+   then
+     eval ax_path='"$ax_cv_header_'$ax_safe'"'
+     CPPFLAGS="-I$ax_path $CPPFLAGS"
+   else
+     unset ax_path
+   fi 
+   AC_MSG_RESULT([yes${ax_path+ (in $ax_path)}])
+   ifelse([$3], , :, [$3])
+else
+   AC_MSG_RESULT(no)
+   ifelse([$4], , , [$4])dnl
+fi
+])
+
+dnl AX_CHECK_HEADERS_IN(HEADER-FILE..., 
+dnl                 LIST-OF-PATHS [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
+AC_DEFUN([AX_CHECK_HEADERS_IN],
+[for ax_hdr in $1
+do
+AX_CHECK_HEADER_IN($ax_hdr, $2,
+[ ax_tr_hdr=HAVE_`echo $ax_hdr | sed 'y%abcdefghijklmnopqrstuvwxyz./-%ABCDEFGHIJKLMNOPQRSTUVWXYZ___%'`
+  AC_DEFINE_UNQUOTED($ax_tr_hdr, 1, [Define 1 if you have the <$ax_hdr> header file])
+  $3], $4)dnl
+done
+])
+
+dnl ======================================================================
+dnl @synopsis AC_C_VAR_FUNC
+dnl
+dnl This macro tests if the C compiler supports the C99 standard
+dnl __func__ indentifier.
+dnl
+dnl The new C99 standard for the C language stipulates that the
+dnl identifier __func__ shall be implictly declared by the compiler
+dnl as if, immediately following the opening brace of each function
+dnl definition, the declaration
+dnl
+dnl     static const char __func__[] = "function-name";
+dnl
+dnl appeared, where function-name is the name of the function where
+dnl the __func__ identifier is used.
+dnl
+dnl @author Christopher Currie <christopher@currie.com>
+dnl @author Pekka Pessi <Pekka.Pessi@nokia.com>
+dnl ======================================================================
+
+AC_DEFUN([AC_C_VAR_FUNC],
+[AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK(whether $CC recognizes __func__, ac_cv_c_var_func,
+AC_TRY_COMPILE(,
+[int main() {
+char *s = __func__;
+}],
+ac_cv_c_var_func=yes, ac_cv_c_var_func=no))
+if test $ac_cv_c_var_func = "yes"; then
+AC_DEFINE([HAVE_FUNC], 1, [Define as 1 if the C compiler supports __func__]) 
+fi
+])dnl
+
+AC_DEFUN([AC_C_MACRO_FUNCTION],
+[AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK(whether $CC recognizes __FUNCTION__, ac_cv_c_macro_function,
+AC_TRY_COMPILE(,
+[int main() {
+char *s = __FUNCTION__;
+}], ac_cv_c_macro_function=yes, ac_cv_c_macro_function=no))
+if test $ac_cv_c_macro_function = "yes"; then
+AC_DEFINE([HAVE_FUNCTION], 1, [Define as 1 if the C compiler supports __FUNCTION__]) 
+fi
+])dnl
+
+dnl ======================================================================
+dnl AC_C_INLINE_DEFINE
+dnl ======================================================================
+AC_DEFUN([AC_C_INLINE_DEFINE], [
+AC_C_INLINE
+case "$ac_cv_c_inline" in *inline* | yes) 
+	AC_DEFINE([HAVE_INLINE], 1, [Define this as 1 if you have inlining compiler]) ;; 
+esac
+])
+
+dnl ======================================================================
+dnl AC_C_KEYWORD_STRUCT
+dnl ======================================================================
+AC_DEFUN([AC_C_KEYWORD_STRUCT], [
+AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK(whether $CC recognizes field names in struct initialization, ac_cv_c_keyword_struct,
+AC_TRY_COMPILE(,
+[int main() {
+  struct { int foo; char *bar; } test = { foo: 1, bar: "bar" };
+  return 0;
+}],
+ac_cv_c_keyword_struct=yes, ac_cv_c_keyword_struct=no))
+if test $ac_cv_c_keyword_struct = "yes"; then
+AC_DEFINE([HAVE_STRUCT_KEYWORDS], 1, [
+Define this as 1 if your CC supports C99 struct initialization]) 
+fi
+])
+
+dnl ======================================================================
+dnl autoconf-version
+dnl should be removed after automake conversion is finished
+dnl ======================================================================
+
+AC_DEFUN([AC_AUTOCONF_PARAM], 
+[
+if autoconf --version | fgrep '2.13' > /dev/null ; then
+    AUTOCONF_PARAM="-l"
+else
+    AUTOCONF_PARAM="-I"
+fi
+AC_SUBST(AUTOCONF_PARAM)
+])
+
+dnl ======================================================================
+dnl SAC_ENABLE_NDEBUG
+dnl ======================================================================
+AC_DEFUN([SAC_ENABLE_NDEBUG],[
+AC_ARG_ENABLE(ndebug,
+[  --enable-ndebug             compile with NDEBUG (disabled)],
+ , enable_ndebug=no)
+AM_CONDITIONAL(NDEBUG, test x$enable_ndebug = yes)
+])

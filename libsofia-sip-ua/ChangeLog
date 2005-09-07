@@ -1,0 +1,16 @@
+2005-08-25  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Makefile.am: soa depends on ipt and sip, so has to
+	be after them in SUBDIRS.
+
+2005-08-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Fixed BEGIN()/END() pairs in test programs. 
+
+2005-08-04  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Added soa module.
+
+2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* libsofia-sip-ua created.

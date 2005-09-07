@@ -1,0 +1,1198 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@CFILE tport_test.c
+ *
+ * Test functions for transports
+ *
+ * @internal
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ *
+ * @date Created: Wed Apr  3 11:25:13 2002 ppessi
+ * $Date: 2005/08/17 14:40:34 $
+ */
+
+#include "config.h"
+
+const char _tport_test_c_rcs_id[] =
+"$Id: tport_test.c,v 1.3 2005/08/17 14:40:34 ppessi Exp $";
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <stdio.h>
+#include <assert.h>
+
+typedef struct tp_test_s tp_test_t;
+
+#define TP_STACK_T tp_test_t
+ 
+#include <su_wait.h>
+#include <su_md5.h>
+
+#include "msg_test_class.h"
+#include "msg_test_protos.h"
+#include "msg.h"
+#include "msg_mclass.h"
+#include "msg_addr.h"
+
+#if HAVE_SIGCOMP
+#include <sigcomp.h>
+#endif
+
+#include <base64.h>
+
+#include <su_log.h>
+
+#include "tport.h"
+
+struct tp_test_s {
+  su_home_t  tt_home[1];
+  int        tt_flags;
+  su_root_t *tt_root;
+  msg_mclass_t *tt_mclass;
+  tport_t   *tt_srv_tports;
+  tport_t   *tt_tports;
+
+  tport_t   *tt_rtport;
+
+  tp_name_t tt_udp_name[1];
+  tp_name_t tt_udp_comp[1];
+
+  tp_name_t tt_tcp_name[1];
+  tp_name_t tt_tcp_comp[1];
+
+  tp_name_t tt_sctp_name[1];
+  tp_name_t tt_sctp_comp[1];
+
+  tp_name_t tt_tls_name[1];
+  tp_name_t tt_tls_comp[1];
+
+#if HAVE_SIGCOMP
+  struct sigcomp_state_handler *state_handler;
+  struct sigcomp_algorithm const *algorithm;
+  struct sigcomp_compartment *master_cc;
+
+#define IF_SIGCOMP_TPTAG_COMPARTMENT(cc) TAG_IF(cc, TPTAG_COMPARTMENT(cc)),
+#else
+#define IF_SIGCOMP_TPTAG_COMPARTMENT(cc)
+#endif
+
+  int        tt_status;
+  int        tt_received;
+  msg_t     *tt_rmsg;
+  uint8_t    tt_digest[SU_MD5_DIGEST_SIZE];
+};
+
+#define TSTFLAGS tt->tt_flags
+
+#include <tstdef.h>
+
+char const name[] = "tport_test";
+
+extern su_log_t tport_log[];
+
+void usage(void)
+{
+  fprintf(stderr, "usage: %s [-v]\n", name);
+}
+
+static int name_test(tp_test_t *tt)
+{
+  BEGIN();
+
+  END();
+}
+
+/* Count number of transports in chain */
+static
+int count_tports(tport_t *tp)
+{
+  int n = 0;
+
+  for (tp = tport_primaries(tp); tp; tp = tport_next(tp))
+    n++;
+  
+  return n;
+}
+
+static int check_msg(tp_test_t *tt, msg_t *msg, char const *ident)
+{
+  msg_test_t *tst;
+  msg_payload_t *pl;
+  int i, len;
+
+  BEGIN();
+  
+  TEST_1(tst = msg_object(msg));
+  TEST_1(pl = tst->msg_payload);
+
+  if (ident) {
+    if (!tst->msg_content_location ||
+	strcmp(ident, tst->msg_content_location->g_string))
+      return 1;
+  }
+
+  len = pl->pl_len;
+
+  for (i = 0; i < len; i++) {
+    if (pl->pl_data[i] != (char) (i % 240))
+      break;
+  }
+
+  return i != len;
+
+  END();
+}
+
+static int test_create_md5(tp_test_t *tt, msg_t *msg)
+{
+  msg_test_t *tst;
+  msg_payload_t *pl;
+  su_md5_t md5[1];
+  
+  BEGIN();
+
+  TEST_1(tst = msg_object(msg));
+  TEST_1(pl = tst->msg_payload);
+
+  su_md5_init(md5);
+  su_md5_update(md5, pl->pl_data, pl->pl_len);
+  su_md5_digest(md5, tt->tt_digest);
+
+  END();
+}
+
+static int test_check_md5(tp_test_t *tt, msg_t *msg)
+{
+  msg_test_t *tst;
+  msg_payload_t *pl;
+  su_md5_t md5[1];
+  uint8_t digest[SU_MD5_DIGEST_SIZE];
+
+  BEGIN();
+
+  TEST_1(tst = msg_object(msg));
+  TEST_1(pl = tst->msg_payload);
+
+  su_md5_init(md5);
+  su_md5_update(md5, pl->pl_data, pl->pl_len);
+  su_md5_digest(md5, digest);
+
+  TEST(memcmp(digest, tt->tt_digest, sizeof digest), 0);
+
+  END();
+
+  return 0;
+}
+
+static int test_msg_md5(tp_test_t *tt, msg_t *msg)
+{
+  msg_test_t *tst;
+
+  BEGIN();
+
+  TEST_1(tst = msg_object(msg));
+
+  if (tst->msg_content_md5) {
+    su_md5_t md5sum[1];
+    uint8_t digest[SU_MD5_DIGEST_SIZE];
+    char b64[BASE64_SIZE(SU_MD5_DIGEST_SIZE) + 1];
+
+    msg_payload_t *pl =tst->msg_payload;
+
+    su_md5_init(md5sum);
+    su_md5_update(md5sum, pl->pl_data, pl->pl_len);
+    su_md5_digest(md5sum, digest);
+
+    base64_e(b64, sizeof(b64), digest, sizeof(digest));
+
+    if (strcmp(b64, tst->msg_content_md5->g_string)) {
+      ;
+    }
+    
+    TEST_S(b64, tst->msg_content_md5->g_string);
+  } else {
+    TEST_1(tst->msg_content_md5);
+  }
+
+  END();
+}
+
+static int new_test_msg(tp_test_t *tt, msg_t **retval, 
+			char const *ident,
+			int N, int len)
+{
+  msg_t *msg;
+  msg_test_t *tst;
+  su_home_t *home;
+  msg_request_t *rq;
+  msg_unknown_t *u;
+  msg_content_location_t *cl;
+  msg_content_md5_t *md5;
+  msg_content_length_t *l;
+  msg_separator_t *sep;
+  msg_payload_t payload[1];
+  msg_header_t *h;
+  int i;
+
+  su_md5_t md5sum[1];
+  uint8_t digest[SU_MD5_DIGEST_SIZE];
+  char b64[BASE64_SIZE(SU_MD5_DIGEST_SIZE) + 1];
+
+  BEGIN();
+
+  TEST_1(msg = msg_create(tt->tt_mclass, 0));
+  TEST_1(tst = msg_object(msg));
+  TEST_1(home = msg_home(msg));
+
+  TEST(msg_maxsize(msg, 1024 + N * len), 0);
+
+  TEST_1(rq = msg_request_make(home, "DO im:foo@faa MSG/1.0"));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)rq), 0);
+
+  TEST_1(u = msg_unknown_make(home, "Foo: faa"));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)u), 0);
+
+  TEST_1(u = msg_unknown_make(home, "Foo: faa"));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)u), 0);
+
+  TEST_1(cl = msg_content_location_make(home, ident));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)cl), 0);
+
+  msg_payload_init(payload);
+
+  payload->pl_len = len;
+  TEST_1(payload->pl_data = su_zalloc(home, payload->pl_len));
+
+  for (i = 0; i < len; i++) {
+    payload->pl_data[i] = (char) (i % 240);
+  }
+
+  su_md5_init(md5sum);
+
+  for (i = 0; i < N; i++) {
+    h = msg_header_dup(home, (msg_header_t*)payload);
+    TEST_1(h);
+    TEST(msg_header_insert(msg, tst, h), 0);
+    su_md5_update(md5sum, payload->pl_data, payload->pl_len);
+  }
+
+  TEST_1(l = msg_content_length_format(home, "%u", N * payload->pl_len));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)l), 0);
+
+  su_md5_digest(md5sum, digest);
+
+  base64_e(b64, sizeof(b64), digest, sizeof(digest));
+
+  TEST_1(md5 = msg_content_md5_make(home, b64));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)md5), 0);
+  
+  TEST_1(sep = msg_separator_create(home));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)sep), 0);
+
+  TEST(msg_serialize(msg, tst), 0);
+
+  *retval = msg;
+
+  END();
+
+  return 0;
+}
+
+static
+struct sigcomp_compartment *
+tp_sigcomp_compartment(tp_test_t *tt, tport_t *tp, tp_name_t const *tpn);
+
+static void tp_test_recv(tp_test_t *tt,
+			 tport_t *tp,
+			 msg_t *msg,
+			 tp_magic_t *magic,
+			 su_time_t now)
+{
+#if HAVE_SIGCOMP
+  tp_name_t frm[1];
+
+  if (tport_delivered_from(tp, msg, frm) != -1 && frm->tpn_comp) {
+    struct sigcomp_compartment *cc = tp_sigcomp_compartment(tt, tp, frm);
+   
+    tport_sigcomp_accept(tp, cc, msg);
+  }
+#endif
+
+  tt->tt_status = 1;
+  tt->tt_received++;
+
+  if (test_msg_md5(tt, msg))
+    msg_destroy(msg);
+  else if (tt->tt_rmsg) 
+    msg_destroy(msg);
+  else {
+    tt->tt_rmsg = msg;
+    tt->tt_rtport = tp;
+  }
+}
+
+static void tp_test_error(tp_test_t *tt,
+			  tport_t *tp,
+			  int errcode,
+			  char const *remote)
+{
+  tt->tt_status = -1;
+  fprintf(stderr, "tp_test_error(%p): error %d (%s) from %s\n", 
+	  tp, errcode, su_strerror(errcode), 
+	  remote ? remote : "<unknown destination>");
+}
+
+msg_t *tp_test_msg(tp_test_t *tt, int flags,
+		   char const data[], unsigned size,
+		   tport_t const *tp, 
+		   tp_client_t *tpc)
+{
+  msg_t *msg = msg_create(tt->tt_mclass, flags);
+
+  msg_maxsize(msg, 2 * 1024 * 1024);
+
+  return msg;
+}
+
+
+static
+struct sigcomp_compartment *
+tp_sigcomp_compartment(tp_test_t *tt, 
+		       tport_t *tp, 
+		       tp_name_t const *tpn)
+{
+  struct sigcomp_compartment *cc = NULL;
+#if HAVE_SIGCOMP
+  char name[256];
+  int namesize;
+  
+  namesize = snprintf(name, sizeof name, "TEST_%s/%s:%s",
+		     tpn->tpn_proto,
+		     tpn->tpn_host,
+		     tpn->tpn_port);
+
+  if (namesize <= 0 || namesize >= sizeof name)
+    return NULL;
+
+  cc = sigcomp_compartment_access(tt->state_handler, 
+				  0, name, namesize, NULL, 0);
+
+  if (cc == NULL) {
+    cc = sigcomp_compartment_create(tt->algorithm, tt->state_handler, 
+				    0, name, namesize, NULL, 0);
+
+    sigcomp_compartment_option(cc, "dms=32768");
+  }
+#endif
+
+  return cc;
+}
+
+/* Accept/reject early SigComp message */
+int tp_sigcomp_accept(tp_stack_t *tt, tport_t *tp, msg_t *msg)
+{
+  struct sigcomp_compartment *cc = NULL;
+
+  cc = tp_sigcomp_compartment(tt, tp, tport_name(tp));
+
+  if (cc)
+    tport_sigcomp_assign(tp, cc);
+
+  return tport_sigcomp_accept(tp, cc, msg);
+}
+
+
+tp_stack_class_t const tp_test_class[1] =
+  {{
+      /* tpac_size */ sizeof(tp_test_class),
+      /* tpac_recv */  tp_test_recv,
+      /* tpac_error */ tp_test_error,
+      /* tpac_alloc */ tp_test_msg,
+      /* tpac_sigcomp_accept */ tp_sigcomp_accept
+  }};
+
+static int init_test(tp_test_t *tt)
+{
+  tp_name_t myname[1] = {{ "*", "*", "*", "*", "sigcomp" }};
+  char const * transports[] = { "udp", "tcp", "sctp", NULL };
+  tp_name_t const *tpn;
+  tport_t *tp;
+
+  BEGIN();
+
+  TEST_1(tt->tt_root = su_root_create(NULL));
+
+  myname->tpn_host = "127.0.0.1";
+  myname->tpn_ident = "client";
+
+  /* Create message class */
+  TEST_1(tt->tt_mclass = msg_mclass_clone(msg_test_mclass, 0, 0));
+
+  /* Try to insert Content-Length header (expecting failure) */
+  TEST(msg_mclass_insert(tt->tt_mclass, msg_content_length_href), -1);
+
+#if HAVE_SIGCOMP
+  TEST_1(tt->state_handler = sigcomp_state_handler_create());
+  TEST_1(tt->algorithm = 
+	 sigcomp_algorithm_by_name(getenv("SIGCOMP_ALGORITHM")));
+  TEST_1(tt->master_cc = 
+	 sigcomp_compartment_create(tt->algorithm, tt->state_handler, 
+				    0, "", 0, NULL, 0));
+  TEST(sigcomp_compartment_option(tt->master_cc, "stateless"), 1);
+#endif
+
+  /* Create client transport */
+  TEST_1(tt->tt_tports = 
+	 tport_tcreate(tt, tp_test_class, tt->tt_root,
+		       IF_SIGCOMP_TPTAG_COMPARTMENT(tt->master_cc)
+		       TAG_END()));
+
+  /* Bind client transports */
+  TEST(tport_tbind(tt->tt_tports, myname, transports,
+		   TPTAG_SERVER(0), TAG_END()), 
+       0);
+
+  if (getenv("TPORT_TEST_HOST"))
+    myname->tpn_host = getenv("TPORT_TEST_HOST");
+  else
+    myname->tpn_host = "*";
+
+  if (getenv("TPORT_TEST_PORT"))
+    myname->tpn_port = getenv("TPORT_TEST_PORT");
+
+  myname->tpn_ident = "server";
+
+  /* Create server transport */
+  TEST_1(tt->tt_srv_tports = 
+	 tport_tcreate(tt, tp_test_class, tt->tt_root,
+		       IF_SIGCOMP_TPTAG_COMPARTMENT(tt->master_cc)
+		       TAG_END()));
+
+  /* Bind server transports */
+  TEST(tport_tbind(tt->tt_srv_tports, myname, transports, 
+		   TPTAG_SERVER(1),
+		   TAG_END()), 
+       0);
+
+  for (tp = tport_primaries(tt->tt_srv_tports); tp; tp = tport_next(tp))
+    TEST_S(tport_name(tp)->tpn_ident, "server");
+
+  {
+    su_sockaddr_t su[1];
+    socklen_t sulen;
+    int s;
+    int i, before, after;
+    char port[8];
+
+    tp_name_t rname[1];
+
+    *rname = *myname;
+
+    memset(su, 0, sulen = sizeof(su->su_sin));
+    s = socket(su->su_family = AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
+    TEST_1(bind(s, &su->su_sa, sulen) != -1);
+    TEST_1(listen(s, 5) != -1);
+    TEST_1(getsockname(s, &su->su_sa, &sulen) != -1);
+
+    sprintf(port, "%u", ntohs(su->su_port));
+
+    rname->tpn_port = port;
+    rname->tpn_ident = "failure";
+    
+    before = count_tports(tt->tt_srv_tports);
+
+    /* Bind server transports to an reserved port */
+    TEST(tport_tbind(tt->tt_srv_tports, rname, transports, 
+		     TPTAG_SERVER(1),
+		     TAG_END()), 
+	 -1);
+
+    after = count_tports(tt->tt_srv_tports);
+
+    TEST(before, after);
+
+    for (tp = tport_primaries(tt->tt_srv_tports); tp; tp = tport_next(tp))
+      TEST_S(tport_name(tp)->tpn_ident, "server");
+
+    rname->tpn_port = "*";
+    rname->tpn_ident = "server2";
+
+    /* Bind server transports to another port */
+    TEST(tport_tbind(tt->tt_srv_tports, rname, transports, 
+		     TPTAG_SERVER(1),
+		     TAG_END()), 
+	 0);
+
+    tp = tport_primaries(tt->tt_srv_tports);
+
+    for (i = 0; i++ < before; tp = tport_next(tp))
+      TEST_S(tport_name(tp)->tpn_ident, "server");
+
+    for (; tp; tp = tport_next(tp))
+      TEST_S(tport_name(tp)->tpn_ident, "server2");
+  }
+
+#if HAVE_TLS
+  {
+    tp_name_t tlsname[1] = {{ "tls", "*", "*", "*", NULL }};
+    char const * transports[] = { "tls", NULL };
+
+    char const *srcdir = getenv("srcdir");
+
+    if (srcdir == NULL)
+      srcdir = ".";
+
+    tlsname->tpn_host = myname->tpn_host;
+    tlsname->tpn_ident = "server";
+
+    /* Bind client transports */
+    TEST(tport_tbind(tt->tt_tports, tlsname, transports,
+		     TPTAG_SERVER(0), 
+		     TPTAG_CERTIFICATE(srcdir),
+		     TAG_END()), 
+	 0);
+
+    /* Bind tls server transport */
+    TEST(tport_tbind(tt->tt_srv_tports, tlsname, transports, 
+		     TPTAG_SERVER(1),
+		     TPTAG_CERTIFICATE(srcdir),
+		     TAG_END()), 
+	 0);
+  }
+#endif
+
+  for (tp = tport_primaries(tt->tt_srv_tports); tp; tp = tport_next(tp)) {
+    TEST_1(tpn = tport_name(tp));
+
+    if (1 || tt->tt_flags & tst_verbatim)
+      printf("bound transport to %s/%s:%s;maddr=%s%s%s\n",
+	     tpn->tpn_proto, tpn->tpn_canon, tpn->tpn_port, tpn->tpn_host,
+	     tpn->tpn_comp ? ";comp=" : "", 
+	     tpn->tpn_comp ? tpn->tpn_comp : "");
+
+    /* Ignore server2 tports for now */
+    if (strcmp(tpn->tpn_ident, "server"))
+      continue;
+
+    if (strcmp(tpn->tpn_proto, "udp") == 0) {
+      *tt->tt_udp_name = *tpn;
+      tt->tt_udp_name->tpn_comp = NULL;
+      tt->tt_udp_name->tpn_ident = NULL;
+      *tt->tt_udp_comp = *tpn;
+      tt->tt_udp_comp->tpn_ident = NULL;
+    }
+    else if (strcmp(tpn->tpn_proto, "tcp") == 0) {
+      *tt->tt_tcp_name = *tpn;
+      tt->tt_tcp_name->tpn_comp = NULL;
+      tt->tt_tcp_name->tpn_ident = NULL;
+      *tt->tt_tcp_comp = *tpn;
+      tt->tt_tcp_comp->tpn_ident = NULL;
+    } 
+    else if (strcmp(tpn->tpn_proto, "sctp") == 0) {
+      *tt->tt_sctp_name = *tpn;
+      tt->tt_sctp_name->tpn_ident = NULL;
+    }
+    else if (strcmp(tpn->tpn_proto, "tls") == 0) {
+      *tt->tt_tls_name = *tpn;
+      tt->tt_tls_name->tpn_ident = NULL;
+    }
+  }
+
+  END();
+}
+
+char const payload[] = 
+"Some data\n"
+"More data\n";
+
+#include <time.h>
+
+int 
+tport_test_run(tp_test_t *tt, unsigned timeout)
+{
+  time_t now = time(NULL);
+
+  tt->tt_status = 0;
+
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  tt->tt_rtport = NULL;
+
+  while (!tt->tt_status) {
+    if (tt->tt_flags & tst_verbatim) {
+      fputs(".", stdout); fflush(stdout);
+    }
+    su_root_step(tt->tt_root, 500L);
+
+    if (!getenv("TPORT_TEST_DEBUG") && 
+	time(NULL) > now + timeout)
+      return 0;
+  }
+
+  return tt->tt_status;
+}
+
+static int udp_test(tp_test_t *tt)
+{
+  tport_t *tp;
+  msg_t *msg;
+  msg_test_t *tst;
+  su_home_t *home;
+  msg_request_t *rq;
+  msg_unknown_t *u;
+  msg_content_length_t *l;
+  msg_content_md5_t *md5;
+  msg_separator_t *sep;
+  msg_payload_t *pl;
+
+  BEGIN();
+
+  TEST_1(msg = msg_create(tt->tt_mclass, 0));
+  TEST_1(tst = msg_object(msg));
+  TEST_1(home = msg_home(msg));
+
+  TEST_1(rq = msg_request_make(home, "DO im:foo@faa MSG/1.0"));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)rq), 0);
+
+  TEST_1(u = msg_unknown_make(home, "Foo: faa"));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)u), 0);
+
+  TEST_1(pl = msg_payload_make(home, payload));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)pl), 0);
+
+  TEST_1(l = msg_content_length_format(home, "%u", pl->pl_len));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)l), 0);
+
+  TEST_1(md5 = msg_content_md5_make(home, "R6nitdrtJFpxYzrPaSXfrA=="));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)md5), 0);
+  
+  TEST_1(sep = msg_separator_create(home));
+  TEST(msg_header_insert(msg, tst, (msg_header_t *)sep), 0);
+
+  TEST(msg_serialize(msg, tst), 0);
+
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_udp_name, TAG_END()));
+
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+
+  TEST(tport_test_run(tt, 5), 1);
+
+  msg_destroy(msg);
+
+#if 0
+  tp_name_t tpn[1] = {{ NULL }};
+
+  TEST_1(msg = tt->tt_rmsg); tt->tt_rmsg = NULL;
+
+  TEST_1(home = msg_home(msg));
+
+  TEST_1(tport_convert_addr(home, tpn, "udp", NULL, msg_addr(msg)) == 0);
+
+  tpn->tpn_comp = tport_name(tt->tt_rtport)->tpn_comp;
+
+  /* reply */
+  TEST_1(tport_tsend(tt->tt_rtport, msg, tpn, TAG_END()) != NULL);
+
+  msg_destroy(msg);
+
+  TEST(tport_test_run(tt, 5), 1);
+
+  msg_destroy(msg);
+#endif
+
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  END();
+}
+
+static int tcp_test(tp_test_t *tt)
+{
+  msg_t *msg = NULL;
+  int i;
+  tport_t *tp, *tp0;
+  char ident[16];
+
+  BEGIN();
+
+  /* Create a large message, just to force queueing in sending end */
+  TEST(new_test_msg(tt, &msg, "tcp-0", 1, 16 * 64 * 1024), 0);
+  test_create_md5(tt, msg);
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  tp0 = tport_incref(tp);
+  msg_destroy(msg);
+
+  /* Fill up the queue */
+  for (i = 1; i < TPORT_QUEUESIZE; i++) {
+    snprintf(ident, sizeof ident, "tcp-%u", i);
+
+    TEST(new_test_msg(tt, &msg, ident, 1, 1024), 0);
+    TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
+    TEST_S(tport_name(tp)->tpn_ident, "client");
+    TEST(tport_incref(tp), tp0); tport_decref(&tp);
+    msg_destroy(msg);
+  }
+
+  /* This overflows the queue */
+  TEST(new_test_msg(tt, &msg, "tcp-overflow", 1, 1024), 0);
+  TEST_1(!tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
+  msg_destroy(msg);
+
+  tt->tt_received = 0;
+
+  TEST(tport_test_run(tt, 60), 1);
+  TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-0"));
+  test_check_md5(tt, tt->tt_rmsg);
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  snprintf(ident, sizeof ident, "tcp-%u", tt->tt_received);
+  TEST(tport_test_run(tt, 5), 1);
+  TEST_1(!check_msg(tt, tt->tt_rmsg, ident));
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  /* This uses a new connection */
+  TEST_1(!new_test_msg(tt, &msg, "tcp-no-reuse", 1, 1024));
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, 
+			  TPTAG_REUSE(0), TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  TEST_1(tport_incref(tp) != tp0); tport_decref(&tp);
+  msg_destroy(msg);
+
+  /* This uses the old connection */
+  TEST_1(!new_test_msg(tt, &msg, "tcp-reuse", 1, 1024));
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, 
+			  TPTAG_REUSE(1), TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  TEST_1(tport_incref(tp) == tp0); tport_decref(&tp);
+  msg_destroy(msg);
+
+  /* Receive every message from queue */
+  while (tt->tt_received < TPORT_QUEUESIZE + 2) {
+    TEST(tport_test_run(tt, 5), 1);
+    /* Validate message */
+    TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  }
+
+  /* Try to send a single message */
+  TEST_1(!new_test_msg(tt, &msg, "tcp-last", 1, 1024));
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  TEST(tport_incref(tp), tp0); tport_decref(&tp);
+  msg_destroy(msg);
+
+  TEST(tport_test_run(tt, 5), 1);
+
+  TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-last"));
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  tport_decref(&tp0);
+
+  END();
+}
+
+static int reuse_test(tp_test_t *tt)
+{
+  msg_t *msg = NULL;
+  int i, reuse = -1;
+  tport_t *tp, *tp0, *tp1;
+  tp_name_t tpn[1];
+
+  BEGIN();
+
+  /* Flush existing connections */
+  *tpn = *tt->tt_tcp_name;
+  tpn->tpn_port = "*";
+  TEST_1(tp = tport_by_name(tt->tt_tports, tpn));
+  TEST_1(tport_is_primary(tp));
+  TEST(tport_flush(tp), 0);
+  
+  for (i = 0; i < 10; i++)
+    su_root_step(tt->tt_root, 10L);
+
+  TEST(tport_set_params(tp, TPTAG_REUSE(0), TAG_END()), 1);
+
+  /* Send two messages */
+  TEST(new_test_msg(tt, &msg, "reuse-1", 1, 1024), 0);
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  TEST_1(tp0 = tport_incref(tp));
+  TEST(tport_get_params(tp, TPTAG_REUSE_REF(reuse), TAG_END()), 1);
+  TEST(reuse, 0);
+  msg_destroy(msg), msg = NULL;
+
+  TEST(new_test_msg(tt, &msg, "reuse-2", 1, 1024), 0);
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  TEST_1(tp1 = tport_incref(tp)); TEST_1(tp0 != tp1);
+  TEST(tport_get_params(tp, TPTAG_REUSE_REF(reuse), TAG_END()), 1);
+  TEST(reuse, 0);
+  msg_destroy(msg), msg = NULL;
+
+  /* Receive every message from queue */
+  for (tt->tt_received = 0;
+       tt->tt_received < 2;) {
+    TEST(tport_test_run(tt, 5), 1);
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  }
+
+  /* Enable reuse on single connection */
+  TEST(tport_set_params(tp1, TPTAG_REUSE(1), TAG_END()), 1);
+  TEST(new_test_msg(tt, &msg, "reuse-3", 1, 1024), 0);
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, 
+			  TPTAG_REUSE(1),
+			  TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  TEST_1(tp1 == tp);
+  TEST(tport_get_params(tp, TPTAG_REUSE_REF(reuse), TAG_END()), 1);
+  TEST(reuse, 1);
+  msg_destroy(msg), msg = NULL;
+
+  TEST(tport_test_run(tt, 5), 1);
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  tport_decref(&tp0);
+  tport_decref(&tp1);
+
+  END();
+}
+
+static int sctp_test(tp_test_t *tt)
+{
+  BEGIN();
+
+  msg_t *msg = NULL;
+  int i, n;
+  tport_t *tp;
+
+  if (!tt->tt_sctp_name->tpn_proto) 
+    return 0;
+
+  /* Just a small and nice message first */
+  TEST_1(!new_test_msg(tt, &msg, "sctp-small", 1, 1024));
+  test_create_md5(tt, msg);
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_sctp_name, TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  msg_destroy(msg);
+  
+  TEST(tport_test_run(tt, 5), 1);
+    
+  TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
+  test_check_md5(tt, tt->tt_rmsg);
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  
+  /* Create large messages, just to force queueing in sending end */
+  for (n = 0; !tport_queuelen(tp); n++) {
+    TEST_1(!new_test_msg(tt, &msg, NULL, 1, 32000));
+    test_create_md5(tt, msg);
+    TEST_1(tport_tsend(tp, msg, tt->tt_sctp_name, TAG_END()));
+    TEST_S(tport_name(tp)->tpn_ident, "client");
+    msg_destroy(msg);
+  }
+  
+  /* Fill up the queue */
+  for (i = 1; i < TPORT_QUEUESIZE; i++) {
+    TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+    TEST_1(tport_tsend(tp, msg, tt->tt_sctp_name, TAG_END()));
+    msg_destroy(msg);
+  }
+
+  /* This overflows the queue */
+  TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+  TEST_1(!tport_tsend(tt->tt_tports, msg, tt->tt_sctp_name, TAG_END()));
+  msg_destroy(msg);
+  
+  TEST(tport_test_run(tt, 5), 1);
+    
+  TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
+  test_check_md5(tt, tt->tt_rmsg);
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  /* This uses a new connection */
+  TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+  TEST_1(tport_tsend(tt->tt_tports, msg, tt->tt_sctp_name, 
+		     TPTAG_REUSE(0), TAG_END()));
+  msg_destroy(msg);
+
+  /* Receive every message from queue */
+  while (tt->tt_received < TPORT_QUEUESIZE + n) {
+    TEST(tport_test_run(tt, 5), 1);
+    /* Validate message */
+    TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  }
+  
+  /* Try to send a single message */
+  TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+  TEST_1(tport_tsend(tt->tt_tports, msg, tt->tt_sctp_name, TAG_END()));
+  msg_destroy(msg);
+  
+  TEST(tport_test_run(tt, 5), 1);
+  
+  TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  END();
+}
+
+static int tls_test(tp_test_t *tt)
+{
+  BEGIN(); 
+
+#if HAVE_TLS
+  tp_name_t const *dst = tt->tt_tls_name;
+  msg_t *msg = NULL;
+  int i;
+  char ident[16];
+
+  TEST_S(dst->tpn_proto, "tls");
+
+  tt->tt_received = 0;
+
+  /* Create a large message, just to force queueing in sending end */
+  TEST_1(!new_test_msg(tt, &msg, "tls-0", 16, 64 * 1024));
+  test_create_md5(tt, msg);
+  TEST_1(tport_tsend(tt->tt_tports, msg, dst, TAG_END()));
+  msg_destroy(msg);
+
+  /* Fill up the queue */
+  for (i = 1; i < TPORT_QUEUESIZE; i++) {
+    snprintf(ident, sizeof ident, "tls-%u", i);
+
+    TEST_1(!new_test_msg(tt, &msg, ident, 2, 512));
+    TEST_1(tport_tsend(tt->tt_tports, msg, dst, TAG_END()));
+    msg_destroy(msg);
+  }
+
+  /* This overflows the queue */
+  TEST_1(!new_test_msg(tt, &msg, "tls-overflow", 1, 1024));
+  TEST_1(!tport_tsend(tt->tt_tports, msg, dst, TAG_END()));
+  msg_destroy(msg);
+
+  TEST(tport_test_run(tt, 60), 1);
+
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  /* This uses a new connection */
+  TEST_1(!new_test_msg(tt, &msg, "tls-no-reuse", 1, 1024));
+  TEST_1(tport_tsend(tt->tt_tports, msg, dst, 
+		     TPTAG_REUSE(0), TAG_END()));
+  msg_destroy(msg);
+
+  /* Receive every message from queue */
+  while (tt->tt_received < TPORT_QUEUESIZE + 1) {
+    TEST(tport_test_run(tt, 5), 1);
+    /* Validate message */
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  }
+
+  /* Try to send a single message */
+  TEST_1(!new_test_msg(tt, &msg, "tls-last", 1, 1024));
+  TEST_1(tport_tsend(tt->tt_tports, msg, dst, TAG_END()));
+  msg_destroy(msg);
+
+  TEST(tport_test_run(tt, 5), 1);
+
+  TEST_1(!check_msg(tt, tt->tt_rmsg, "tls-last"));
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+  END();
+#endif
+
+  return 0;
+}
+
+static int sigcomp_test(tp_test_t *tt)
+{
+  BEGIN();
+
+#if HAVE_SIGCOMP
+  su_home_t *home;
+  tp_name_t tpn[1] = {{ NULL }};
+  struct sigcomp_compartment *cc;
+  
+  if (tt->tt_udp_comp->tpn_comp) {
+    msg_t *msg = NULL;
+
+    TEST_1(cc = tp_sigcomp_compartment(tt, tt->tt_tports, tt->tt_udp_comp));
+
+    TEST_1(!new_test_msg(tt, &msg, "udp-sigcomp", 1, 1200));
+    test_create_md5(tt, msg);
+    TEST_1(tport_tsend(tt->tt_tports, 
+		       msg, 
+		       tt->tt_udp_comp,
+		       TPTAG_COMPARTMENT(cc),
+		       TAG_END()));
+    msg_destroy(msg);
+
+    TEST(tport_test_run(tt, 5), 1);
+
+    TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
+
+    test_check_md5(tt, tt->tt_rmsg);
+
+    TEST_1(msg = tt->tt_rmsg); tt->tt_rmsg = NULL;
+    
+    TEST_1(home = msg_home(msg));
+    
+    TEST_1(tport_convert_addr(home, tpn, "udp", NULL, msg_addr(msg)) == 0);
+    
+    tpn->tpn_comp = tport_name(tt->tt_rtport)->tpn_comp;
+    
+    /* reply */
+    TEST_1(cc = tp_sigcomp_compartment(tt, tt->tt_tports, tpn));
+    TEST_1(tport_tsend(tt->tt_rtport, msg, tpn, 
+		       TPTAG_COMPARTMENT(cc),
+		       TAG_END()) != NULL);
+    
+    msg_destroy(msg);
+    
+    TEST(tport_test_run(tt, 5), 1);
+
+    TEST_1(!check_msg(tt, tt->tt_rmsg, NULL)); 
+    test_check_md5(tt, tt->tt_rmsg); 
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  }
+
+  if (tt->tt_tcp_comp->tpn_comp) {
+    tport_t *tp;
+    msg_t *msg = NULL;
+
+    *tpn = *tt->tt_tcp_comp;
+
+    TEST_1(!new_test_msg(tt, &msg, "tcp-sigcomp", 1, 1500));
+    test_create_md5(tt, msg);
+
+    tport_log->log_level = 9;
+
+    TEST_1(cc = tp_sigcomp_compartment(tt, tt->tt_tports, tpn));
+    TEST_1(tp = tport_tsend(tt->tt_tports, 
+			    msg, 
+			    tpn, 
+			    TPTAG_COMPARTMENT(cc),
+			    TAG_END()));
+    TEST_1(tport_incref(tp)); tport_decref(&tp);
+    msg_destroy(msg);
+
+    TEST(tport_test_run(tt, 5), 1);
+
+    TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-sigcomp"));
+    test_check_md5(tt, tt->tt_rmsg);
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+    TEST_1(!new_test_msg(tt, &msg, "tcp-sigcomp-2", 1, 3000));
+    test_create_md5(tt, msg);
+    TEST_1(tp = tport_tsend(tt->tt_tports, 
+			    msg, 
+			    tt->tt_tcp_comp, 
+			    TPTAG_COMPARTMENT(cc),
+			    TAG_END()));
+    TEST_1(tport_incref(tp)); tport_decref(&tp);
+    msg_destroy(msg);
+
+    TEST(tport_test_run(tt, 5), 1);
+
+    TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-sigcomp-2"));
+    test_check_md5(tt, tt->tt_rmsg); 
+
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+    TEST_1(!new_test_msg(tt, &msg, "tcp-sigcomp-3", 1, 45500));
+    test_create_md5(tt, msg);
+    TEST_1(tp = tport_tsend(tt->tt_tports, 
+			    msg, 
+			    tt->tt_tcp_comp, 
+			    TPTAG_COMPARTMENT(cc),
+			    TAG_END()));
+    TEST_1(tport_incref(tp));
+    msg_destroy(msg);
+
+    TEST(tport_test_run(tt, 5), 1);
+
+    tport_decref(&tp);
+    TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-sigcomp-3"));
+    test_check_md5(tt, tt->tt_rmsg);
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  }
+#endif
+
+  END();
+}
+
+static int deinit_test(tp_test_t *tt)
+{
+  BEGIN();
+
+  /* Destroy client transports */
+  tport_destroy(tt->tt_tports), tt->tt_tports = NULL;
+
+  /* Destroy server transports */
+  tport_destroy(tt->tt_srv_tports), tt->tt_srv_tports = NULL;
+
+#if HAVE_SIGCOMP
+  sigcomp_state_handler_free(tt->state_handler); tt->state_handler = NULL;
+#endif
+
+  END();
+}
+
+int main(int argc, char *argv[])
+{
+  int flags = 0;	/* XXX */
+  int retval = 0;
+  int i;
+  tp_test_t tt[1] = {{{ SU_HOME_INIT(tt) }}};
+
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      tt->tt_flags |= tst_verbatim;
+    else
+      usage();
+  }
+
+  /* Use log */
+  if (flags & tst_verbatim)
+    tport_log->log_default = 9;
+  else
+    tport_log->log_default = 1;
+
+  retval |= name_test(tt); fflush(stdout);
+
+  retval |= init_test(tt); fflush(stdout);
+  if (retval == 0) {
+    retval |= sigcomp_test(tt); fflush(stdout);
+    retval |= sctp_test(tt); fflush(stdout);
+    retval |= udp_test(tt); fflush(stdout);
+    retval |= tcp_test(tt); fflush(stdout);
+    retval |= reuse_test(tt); fflush(stdout);
+    retval |= tls_test(tt); fflush(stdout);
+    retval |= deinit_test(tt); fflush(stdout);
+  }
+
+  return retval;
+}
+

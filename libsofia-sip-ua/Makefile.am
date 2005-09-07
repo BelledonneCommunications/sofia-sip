@@ -1,0 +1,59 @@
+# ref: http://www.gnu.org/software/automake/manual/automake.html
+
+AUTOMAKE_OPTIONS = foreign
+
+# note: order does matter in the subdir list
+SUBDIRS = docs su bnf sresolv sdp url msg sip stun ipt soa tport http nea nta iptsec nth nua 
+EXTRA_DIST = sofia.am
+
+lib_LTLIBRARIES = libsofia-sip-ua.la
+
+libsofia_sip_ua_la_SOURCES = 
+libsofia_sip_ua_la_LIBADD = 	bnf/bnf_objs.o \
+				ipt/ipt_objs.o \
+				iptsec/iptsec_objs.o \
+				msg/msg_objs.o \
+				nea/nea_objs.o \
+				nta/nta_objs.o \
+				nth/nth_objs.o \
+				nua/nua_objs.o \
+				http/http_objs.o \
+				sdp/sdp_objs.o \
+				sip/sip_objs.o \
+				soa/soa_objs.o \
+				sresolv/sresolv_objs.o \
+				su/su_objs.o \
+				tport/tport_objs.o \
+				stun/stun_objs.o \
+				url/url_objs.o
+
+# XXX: does not work with automake-1.9
+RECURSIVE_TARGETS =
+RECURSIVE_TARGETS += built-sources-recursive 
+
+built-sources: built-sources-recursive
+built-sources-am:
+
+empty-doxytags:
+	@echo Generating empty doxytags ; \
+	cd ${srcdir}; \
+	for d in $(DIST_SUBDIRS); do \
+	  test -r $$d/Doxyfile || continue ; \
+	  test -d docs/$$d || mkdir docs/$$d ; \
+	  test -r $$d/docs/doxytags || \
+		echo '<?xml version="1.0"?>\
+<tagfile />' >>  docs/$$d/doxytags ; \
+	done
+
+doxygen: built-sources empty-doxytags 
+	@cd ${srcdir} ;\
+	for d in $(DIST_SUBDIRS); do \
+	  test -r ${srcdir}/$$d/Doxyfile \
+	  && pushd $$d > /dev/null \
+	  && echo running doxygen in $$d \
+          && doxygen \
+          && popd > /dev/null ; \
+	done ; \
+	cd ${srcdir}/docs/html && ../hide_emails.sh
+
+.PHONY: built-sources built-sources-am empty-doxytags doxygen 

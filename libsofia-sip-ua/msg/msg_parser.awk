@@ -1,0 +1,431 @@
+#! /usr/bin/env awk
+#
+# This script recreates C files containing header-specific boilerplate stuff
+# using the given list of headers (usually obtained from the master structure).
+#
+# It can also create a parser table.
+#
+# --------------------------------------------------------------------
+#
+# This file is part of the Sofia-SIP package
+#
+# Copyright (C) 2005 Nokia Corporation.
+#
+# Contact: Pekka Pessi <pekka.pessi@nokia.com>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1 of
+# the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+#
+# --------------------------------------------------------------------
+#
+# Contributor(s): Pekka.Pessi@nokia.com.
+#
+# Created: Fri Apr  6 12:59:59 2001 ppessi
+#
+
+BEGIN {
+  "date '+%a %b %e %H:%M:%S %Y'" | getline date;
+  "whoami" | getline whoami;
+
+  ascii =			       \
+     "                               " \
+    " !\"#$%&'()*+,-./0123456789:;<=>?" \
+    "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_" \
+    "`abcdefghijklmnopqrstuvwxyz{|}~";
+  lower_case = "abcdefghijklmnopqrstuvwxyz";
+
+  N=0;
+  # Initialize these as arrays
+  split("", symbols);
+  split("", names);
+  split("", comments); 
+  split("", hashes);
+  split("", NAMES);
+  split("", Comments);
+  split("", COMMENTS);
+}
+
+function name_hash (name)
+{
+  hash = 0;
+
+  len = split(name, chars, "");
+
+  for (i = 1; i <= len; i++) {
+    c = tolower(chars[i]);
+    hash = (38501 * (hash + index(ascii, c))) % 65536;
+  }
+
+  if (0) {
+    # Test that hash algorithm above agrees with the C version
+    pipe = ("../msg/msg_name_hash " name);
+    pipe | getline;
+    close(pipe);
+    if (hash != $0) {
+      print name ": " hash " != " $0 > "/dev/stderr";
+    }
+  }
+
+  return hash "";
+}
+
+#
+# Replace magic patterns in template p with header-specific values
+#
+function protos (name, comment, hash)
+{
+  NAME=toupper(name);
+  sub(/.*[\/][*][*][<][ 	]*/, "", comment); 
+  sub(/[ 	]*[*][\/].*/, "", comment);
+  sub(/[ 	]+/, " ", comment);
+
+  short = match(comment, /[(][a-z][)]/);
+  if (short) {
+    short = substr(comment, short + 1, 1);
+    sub(/ *[(][a-z][)]/, "", comment);
+    shorts[index(lower_case, short)] = name;
+  }
+
+  do_hash = hash == 0;
+
+  if (do_hash) {
+    split(comment, parts, " ");
+    name2 = tolower(parts[1]);
+    gsub(/-/, "_", name2);
+    if (name2 != name) {
+      print name " mismatch with " comment " (" real ")" > "/dev/stderr";
+    }
+    
+    hash = name_hash(parts[1]);
+
+    hashed[name] = hash;
+
+    if (comment !~ /header/) { 
+      comment = comment " header";
+    }
+  }
+
+  Comment = comment;
+  if (!do_hash) {
+    comment = tolower(comment);
+  }
+  COMMENT = toupper(comment);
+
+  # Store the various forms into an array for the footer processing
+  N++; 
+  hashes[N] = hash; 
+  names[N] = name;
+  NAMES[N] = NAME; 
+  comments[N] = comment; 
+  Comments[N] = comment; 
+  COMMENTS[N] = COMMENT; 
+
+  symbols[name] = comment;
+
+  if (PR) {
+    replace(template, hash, name, NAME, comment, Comment, COMMENT);
+    replace(template1, hash, name, NAME, comment, Comment, COMMENT);
+    replace(template2, hash, name, NAME, comment, Comment, COMMENT);
+    replace(template3, hash, name, NAME, comment, Comment, COMMENT);
+  }
+}
+
+function replace (p, hash, name, NAME, comment, Comment, COMMENT)
+{
+  if (p) {
+    gsub(/#hash#/, hash, p);
+    gsub(/#xxxxxx#/, name, p); 
+    gsub(/#XXXXXX#/, NAME, p);
+    gsub(/#xxxxxxx_xxxxxxx#/, comment, p);
+    gsub(/#Xxxxxxx_Xxxxxxx#/, Comment, p);
+    gsub(/#XXXXXXX_XXXXXXX#/, COMMENT, p);
+    	    
+    print p > PR NEW;
+  }
+}
+
+# 
+# Repeat each line in the footer containing the magic replacement
+# pattern with a instance of all headers
+#
+function process_footer (text)
+{ 
+  if (!match(tolower(text), /#(xxxxxx(x_xxxxxxx)?|hash)#/)) {
+    n = length(text);
+    while (substr(text, n) == "\n") {
+      n = n - 1;
+      text = substr(text, 1, n);
+    }
+    if (n > 0)
+      print text > PR NEW;
+    return;
+  }
+  
+  n = split(text, lines, RS);
+
+  for (i = 1; i <= n; i++) {
+    l = lines[i];
+    if (match(tolower(l), /#(xxxxxx(x_xxxxxxx)?|hash)#/)) {
+      for (j = 1; j <= N; j++) {
+	l = lines[i];
+	gsub(/#hash#/, hashes[j], l);
+	gsub(/#xxxxxxx_xxxxxxx#/, comments[j], l);
+	gsub(/#Xxxxxxx_Xxxxxxx#/, Comments[j], l);
+	gsub(/#XXXXXXX_XXXXXXX#/, COMMENTS[j], l);
+	gsub(/#xxxxxx#/, names[j], l); 
+	gsub(/#XXXXXX#/, NAMES[j], l);
+	print l > PR NEW;
+      }
+    } else {
+      print l > PR NEW;
+    }
+  }
+}
+
+#
+# Read flags used with headers
+#
+function read_header_flags (flagfile,    line, tokens, name, value)
+{
+  while ((getline line < flagfile) > 0) {
+    sub(/^[ \t]+/, "", line);
+    sub(/[ \t]+$/, "", line);
+    if (line ~ /^#/ || line ~ /^$/)
+      continue;
+
+    split(line, tokens,  /[ \t]*=[ \t]*/); 
+    name = tolower(tokens[1]);
+    gsub(/-/, "_", name);
+    gsub(/,/, " ", name);
+    # print "FLAG: " name " = " tokens[2]
+
+    if (header_flags[name]) {
+      print flagfile ": already defined " tokens[1];
+    }
+    else if (!symbols[name]) {
+      print flagfile ": unknown header \"" tokens[1] "\"";
+    }
+    else {
+      header_flags[name] = tokens[2];
+    }
+  }
+  close(flagfile);
+}
+
+/^ *\/\* === Headers start here \*\// { 
+
+  in_header_list=1; 
+
+  if (!auto) {
+    auto = FILENAME; 
+    sub(/.*\//, "", auto);
+    auto = "This file is automatically generated from <" auto "> by msg_parser.awk.";
+
+    if (PR) {
+      if (TEMPLATE == "") { TEMPLATE = PR ".in"; }
+      RS0=RS; RS="\n";
+      getline theader < TEMPLATE;
+      getline header < TEMPLATE;
+      getline template < TEMPLATE;
+      getline footer < TEMPLATE;
+
+      if (TEMPLATE1) {
+	getline dummy < TEMPLATE1;
+	getline dummy < TEMPLATE1;
+	getline template1 < TEMPLATE1;
+	getline dummy < TEMPLATE1;
+      }
+
+      if (TEMPLATE2) {
+	getline dummy < TEMPLATE2;
+	getline dummy < TEMPLATE2;
+	getline template2 < TEMPLATE2;
+	getline dummy < TEMPLATE2;
+      }
+
+      if (TEMPLATE3) {
+	getline dummy < TEMPLATE3;
+	getline dummy < TEMPLATE3;
+	getline template3 < TEMPLATE3;
+	getline dummy < TEMPLATE3;
+      }
+
+      sub(/.*[\/]/, "", TEMPLATE);
+      gsub(/#AUTO#/, auto, header);
+      gsub(/#DATE#/, "@date Generated: " date, header);
+      print header > PR NEW;
+
+      RS=RS0;
+    }
+
+    if (!NO_FIRST) {
+      protos("request", "/**< Request line */", -1);
+      protos("status", "/**< Status line */", -2);
+    }
+  }
+}
+
+in_header_list && /^ *\/\* === Headers end here \*\// { in_header_list=0;}
+
+in_header_list && PT && /^ *\/\* === Hash headers end here \*\// { in_header_list=0;}
+
+in_header_list && /^  (sip|rtsp|http|msg|mp)_[a-z_0-9]+_t/ { 
+  n=$0
+  sub(/;.*$/, "", n);   
+  sub(/^ *(sip|rtsp|http|msg|mp)_[a-z0-9_]*_t[ 	]*/, "", n);
+  sub(/^[*](sip|rtsp|http|msg|mp)_/, "", n);
+
+  if ($0 !~ /[\/][*][*][<]/) {
+    getline; 
+  }
+  if ($0 !~ /[\/][*][*][<]/) {
+    printf "msg_protos.awk: header %s is malformed\n", n;
+    exit 1;
+  }
+
+  if (!NO_MIDDLE)
+    protos(n, $0, 0);
+
+  headers[total++] = n;
+}
+
+END {
+  if (!prefix) { prefix = module; }
+  if (!tprefix) { tprefix = prefix; }
+
+  if (!NO_LAST) {
+    protos("unknown", "/**< Unknown headers */", -3);
+    protos("error", "/**< Erroneous headers */", -4);
+    protos("separator", "/**< Separator line between headers and payload */", -5);
+    protos("payload", "/**< Message payload */", -6);
+    if (multipart)
+      protos("multipart", "/**< Multipart payload */", -7);
+  }
+    
+  if (PR) {
+    process_footer(footer);
+  }
+  else if (PT) {
+    if (FLAGFILE)
+      read_header_flags(FLAGFILE);
+
+    if (TEMPLATE == "") { TEMPLATE = PT ".in"; }
+    RS0=RS; RS="\n";
+    getline theader < TEMPLATE;
+    getline header < TEMPLATE;
+    getline template < TEMPLATE;
+    getline footer < TEMPLATE;
+    RS=RS0;
+
+    sub(/.*[\/]/, "", TEMPLATE);
+    gsub(/#AUTO#/, auto, header);
+    gsub(/#DATE#/, "@date Generated: " date, header);
+    print header > PT NEW;
+
+    if (MC_SHORT_SIZE) {
+      printf("static msg_href_t const " \
+	     "%s_short_forms[MC_SHORT_SIZE] = \n{\n", 
+	     module) > PT NEW;      
+
+      for (i = 1; i <= MC_SHORT_SIZE; i = i + 1) {
+	c = (i == MC_SHORT_SIZE) ? "" : ",";
+	if (i in shorts) {
+	  n = shorts[i];
+        flags = header_flags[n]; if (flags) flags = ",\n      " flags;
+	  
+	  printf("  { /* %s */ %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
+		 substr(lower_case, i, 1), 
+		 tprefix, n, module, prefix, n, flags, c)	\
+	    > PT NEW;
+	}
+	else {
+	  printf("  { NULL }%s\n", c) \
+	    > PT NEW;
+	}
+      }
+      printf("};\n\n") > PT NEW;      
+    }
+
+    # printf("extern msg_hclass_t msg_multipart_class[];\n\n") > PT NEW;
+
+    printf("msg_mclass_t const %s_mclass[1] = \n{{\n", module) > PT NEW;
+    printf("# if defined (%s_HCLASS)\n", toupper(module)) > PT NEW;
+    printf("  %s_HCLASS,\n", toupper(module)) > PT NEW;
+    printf("#else\n") > PT NEW;
+    printf("  {{ 0 }},\n") > PT NEW;
+    printf("#endif\n") > PT NEW;
+    printf("  %s_VERSION_CURRENT,\n", toupper(module)) > PT NEW;
+    printf("  %s_PROTOCOL_TAG,\n", toupper(module)) > PT NEW;
+    printf("#if defined (%s_PARSER_FLAGS)\n", toupper(module)) > PT NEW;
+    printf("  %s_PARSER_FLAGS,\n", toupper(module)) > PT NEW;
+    printf("#else\n") > PT NEW;
+    printf("  0,\n") > PT NEW;
+    printf("#endif\n") > PT NEW;
+    printf("  sizeof(%s_t),\n", module) > PT NEW;
+    printf("  %s_extract_body,\n", module) > PT NEW;
+
+    len = split("request status separator payload unknown error", unnamed, " ");
+
+    for (i = 1; i <= len; i++) {
+      printf("  {{ %s_%s_class, offsetof(%s_t, %s_%s) }},\n", 
+	     tprefix, unnamed[i], module, prefix, unnamed[i]) > PT NEW;
+    }
+    if (multipart) {
+      printf("  {{ %s_class, offsetof(%s_t, %s_multipart) }},\n",
+	     multipart, module, prefix) > PT NEW;
+    } else {
+      printf("  {{ NULL, 0 }},\n") > PT NEW;
+    }
+    if (MC_SHORT_SIZE) {
+      printf("  %s_short_forms, \n", module) > PT NEW;      
+    }
+    else {
+      printf("  NULL, \n") > PT NEW;
+    }
+    printf("  %d, %d, \n", MC_HASH_SIZE, total) > PT NEW;
+    printf("  {\n") > PT NEW;
+
+    for (i = 0; i < total; i++) {
+      n = headers[i];
+      h = hashed[n];
+
+      if (h < 0)
+	continue;
+
+      for (j = h % MC_HASH_SIZE; j in header_hash;) {
+	if (++j == MC_HASH_SIZE) {
+	  j = 0;
+	}
+      }
+
+      header_hash[j] = n;
+    }
+
+    for (i = 0; i < MC_HASH_SIZE; i++) {
+      c = (i + 1 == MC_HASH_SIZE) ? "" : ",";
+      if (i in header_hash) {
+	n = header_hash[i];
+        flags = header_flags[n]; if (flags) flags = ",\n      " flags;
+
+	printf("    { %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
+	       tprefix, n, module, prefix, n, flags, c) > PT NEW;
+      }
+      else {
+	printf("    { NULL, 0 }%s\n", c) > PT NEW;
+      }
+    }
+    printf("  }\n}};\n\n") > PT NEW;
+  }
+}

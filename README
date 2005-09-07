@@ -1,0 +1,52 @@
+===============================================================
+README / Sofia-SIP - a RFC3261 compliant SIP User-Agent library
+===============================================================
+
+Introduction
+------------
+
+This package is a work-in-progress version of the Sofia-SIP 
+User-Agent library.
+
+
+Quick start
+-----------
+
+Sofia-SIP uses the GNU autotools, so building procedure
+is the usual:
+
+sh> ./autogen.sh (if building from CVS)
+sh> ./configure
+sh> make
+sh> make install
+
+See the "options-client-example" module in Sofia-SIP CVS-tree
+for an example of a small app that is utilizing Sofia-SIP,
+and specifically the libsofia-sip-ua library component.
+
+There are also multiple example clients under
+the "sofia-sip/utils" directory:
+
+- nua_cli, console mode test application for Sofia-SIP
+- options, query SIP OPTIONS
+- sip_date, SIP date printer/parser
+
+
+References
+----------
+
+Project website:
+http://www.sourceforge.net/projects/sofia-sip
+
+Mailing list:
+http://sourceforge.net/mail/?group_id=143636
+
+CVS repository:
+http://sourceforge.net/cvs/?group_id=143636
+
+
+Licensing
+---------
+
+Sofia-SIP is licensed under terms of the GNU LGPL.
+See the file "COPYING" for more infromation.

@@ -1,0 +1,444 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifndef SU_WAIT_H /** Defined when su_wait.h has been included. */
+#define SU_WAIT_H "$Id: su_wait.h,v 1.2 2005/08/03 17:24:28 ppessi Exp $"
+
+/**@ingroup su_wait
+ * @file su_wait.h Syncronization and threading interface.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * 
+ * @date Created: Tue Sep 14 15:51:04 1999 ppessi
+ * $Date: 2005/08/03 17:24:28 $
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Includes */
+
+#ifndef SU_H
+#include "su.h"
+#endif
+
+#ifndef SU_TIME_H
+#include "su_time.h"
+#endif
+#if SU_HAVE_POLL
+#include <stropts.h>		/* stream operations */
+#include <poll.h>		/* poll is part of streams  */
+#endif
+
+/* ---------------------------------------------------------------------- */
+/* Constants */
+
+/** @DEF SU_WAIT_IN     Incoming data is available on socket. @HI */
+/** @DEF SU_WAIT_OUT    Data can be sent on socket. @HI */
+/** @DEF SU_WAIT_ERR    An error occurred on socket. @HI */
+/** @DEF SU_WAIT_HUP    The socket connection was closed. @HI */
+/** @DEF SU_WAIT_ACCEPT A listening socket accepted a new connection. @HI */
+
+/** @DEF SU_WAIT_FOREVER No timeout for su_wait(). */
+/** @DEF SU_WAIT_TIMEOUT The return value of su_wait() if timeout occurred. */
+/** @DEF SU_WAIT_INIT   Initializer for a wait object. */
+
+#if SU_HAVE_POLL
+#define SU_WAIT_CMP(x, y) \
+ (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
+
+#define SU_WAIT_IN      (POLLIN)
+#define SU_WAIT_OUT     (POLLOUT)
+#define SU_WAIT_ERR     (POLLERR)
+#define SU_WAIT_HUP     (POLLHUP)
+#define SU_WAIT_ACCEPT  (POLLIN)
+
+#define SU_WAIT_FOREVER (-1)
+#define SU_WAIT_TIMEOUT (-2)
+
+#define SU_WAIT_INIT    { INVALID_SOCKET, 0, 0 }
+
+#elif SU_HAVE_WINSOCK
+
+#define SU_WAIT_CMP(x, y) ((long)(x) - (long)(y))
+
+#define SU_WAIT_IN      (FD_READ)
+#define SU_WAIT_OUT     (FD_WRITE)
+#define SU_WAIT_ERR     (0)	/* fuck this shit */
+#define SU_WAIT_HUP     (FD_CLOSE)
+#define SU_WAIT_ACCEPT  (FD_ACCEPT)
+
+#define SU_WAIT_FOREVER (WSA_INFINITE)
+#define SU_WAIT_TIMEOUT (WSA_WAIT_TIMEOUT)
+
+#define SU_WAIT_INIT    NULL
+
+#else
+#define SU_WAIT_CMP(x, y) 
+#define SU_WAIT_IN      
+#define SU_WAIT_OUT     
+#define SU_WAIT_ERR     
+#define SU_WAIT_HUP     
+#define SU_WAIT_ACCEPT  
+#define SU_WAIT_FOREVER 
+#define SU_WAIT_TIMEOUT 
+
+#define SU_WAIT_INIT
+
+#endif
+
+/* ---------------------------------------------------------------------- */
+/* Types */
+
+#if SU_HAVE_BSDSOCK
+typedef struct pollfd su_wait_t;
+#elif SU_HAVE_WINSOCK
+typedef HANDLE su_wait_t;
+#else
+/** Wait object. */
+typedef struct os_specific su_wait_t;
+#endif
+
+/* Used by AD */
+typedef int su_success_t;
+
+/* ---------------------------------------------------------------------- */
+
+/** <a href="#su_root_t">Root object</a> type. */
+typedef struct su_root_s su_root_t;
+
+#ifndef SU_ROOT_MAGIC_T
+/**Default type of application context for <a href="#su_root_t">su_root_t</a>.
+ *
+ * Application may define the typedef ::su_root_magic_t to appropriate type
+ * by defining macro #SU_ROOT_MAGIC_T before including <su_wait.h>, for
+ * example,
+ * @code
+ * #define SU_ROOT_MAGIC_T struct context
+ * #include <su_wait.h>
+ * @endcode
+ */
+#define SU_ROOT_MAGIC_T void
+#endif
+
+/** <a href="#su_root_t">Root context</a> pointer type.
+ *
+ * Application may define the typedef ::su_root_magic_t to appropriate type
+ * by defining macro #SU_ROOT_MAGIC_T before including <su_wait.h>, for
+ * example,
+ * @code
+ * #define SU_ROOT_MAGIC_T struct context
+ * #include <su_wait.h>
+ * @endcode
+ */
+typedef SU_ROOT_MAGIC_T su_root_magic_t;
+
+#ifndef SU_WAKEUP_ARG_T
+/**Default type of @link ::su_wakeup_f wakeup function @endlink 
+ * @link ::su_wakeup_arg_t argument type @endlink.  
+ *
+ * The application can define the typedef ::su_wakeup_arg_t by defining
+ * the #SU_WAKEUP_ARG_T before including <su_wait.h>, for example,
+ * @code
+ * #define SU_WAKEUP_ARG_T struct transport
+ * #include <su_wait.h>
+ * @endcode
+ */
+#define SU_WAKEUP_ARG_T void
+#endif
+
+/** @link ::su_wakeup_f Wakeup callback @endlink argument type. 
+ *
+ * The application can define the typedef ::su_wakeup_arg_t by defining
+ * the #SU_WAKEUP_ARG_T before including <su_wait.h>, for example,
+ * @code
+ * #define SU_WAKEUP_ARG_T struct transport
+ * #include <su_wait.h>
+ * @endcode
+ */
+typedef SU_WAKEUP_ARG_T su_wakeup_arg_t;
+
+/** Wakeup callback function prototype. 
+ *
+ * Whenever a registered wait object receives an event, the @link
+ * ::su_wakeup_f callback function @endlink is invoked.
+ */
+typedef int (*su_wakeup_f)(su_root_magic_t *,
+			   su_wait_t *,
+			   su_wakeup_arg_t *arg);
+
+enum { 
+  su_pri_normal,		/**< Normal priority */
+  su_pri_first,			/**< Elevated priority */
+  su_pri_realtime		/**< Real-time priority */
+};
+
+struct _GSource;
+
+/** Hint for number of registered fds in su_root */
+SU_DLL extern int su_root_size_hint;
+
+/* ---------------------------------------------------------------------- */
+/* Pre-poll callback */
+
+#ifndef SU_PREPOLL_MAGIC_T
+/**Default type of application context for prepoll function.
+ *
+ * Application may define the typedef ::su_prepoll_magic_t to appropriate type
+ * by defining macro #SU_PREPOLL_MAGIC_T before including <su_wait.h>, for
+ * example,
+ * @code
+ * #define SU_PREPOLL_MAGIC_T struct context
+ * #include <su_wait.h>
+ * @endcode
+ */
+#define SU_PREPOLL_MAGIC_T void
+#endif
+
+/** <a href="#su_root_t">Root context</a> pointer type.
+ *
+ * Application may define the typedef ::su_prepoll_magic_t to appropriate type
+ * by defining macro #SU_PREPOLL_MAGIC_T before including <su_wait.h>, for
+ * example,
+ * @code
+ * #define SU_PREPOLL_MAGIC_T struct context
+ * #include <su_wait.h>
+ * @endcode
+ */
+typedef SU_PREPOLL_MAGIC_T su_prepoll_magic_t;
+
+
+/** Pre-poll callback function prototype. 
+ *
+ * 
+ */
+typedef void su_prepoll_f(su_prepoll_magic_t *, su_root_t *);
+
+/* ---------------------------------------------------------------------- */
+
+/* Timers */
+#ifdef SU_TIMER_T
+#error SU_TIMER_T defined
+#endif
+
+#ifndef SU_TIMER_ARG_T
+/** Default type of timer expiration callback function argument type.
+ * Application may define this to appropriate type before including
+ * <su_wait.h>. */
+#define SU_TIMER_ARG_T void 
+#endif
+
+/** Timer object type. */
+typedef struct su_timer_s su_timer_t;
+
+/** Timer callback argument type. */
+typedef SU_TIMER_ARG_T su_timer_arg_t;
+
+/** Timeout function type. */
+typedef void (*su_timer_f)(su_root_magic_t *magic, 
+			   su_timer_t *t,
+			   su_timer_arg_t *arg);
+
+/* ---------------------------------------------------------------------- */
+
+/* Tasks */
+
+/** Port type. */
+typedef struct su_port_s su_port_t;
+
+typedef struct { su_port_t *sut_port; su_root_t *sut_root; } _su_task_t;
+
+/** Task reference type. */
+typedef _su_task_t su_task_r[1];
+
+/** Initializer for a task reference. @HI */
+#define SU_TASK_R_INIT  {{ NULL, NULL }}
+
+/* This must be used instead of su_task_r as return value type. */
+typedef _su_task_t const *_su_task_r;
+
+/* ---------------------------------------------------------------------- */
+
+/* Messages */
+#ifndef SU_MSG_ARG_T
+/** Default type of su_msg_t message data.  Application may define this to
+ * appropriate type before including <su_wait.h>. */
+#define SU_MSG_ARG_T void 
+#endif
+
+/** Message argument type. */
+typedef SU_MSG_ARG_T su_msg_arg_t;
+
+/** Message type. */
+typedef struct su_msg_s su_msg_t;
+
+/** Message reference type. */
+typedef su_msg_t *su_msg_r[1];
+
+/** Initializer for a message reference. @HI */
+#define SU_MSG_R_INIT   { NULL }
+
+/** Message delivery function type. */
+typedef void (*su_msg_f)(su_root_magic_t *magic, 
+			 su_msg_r msg,
+			 su_msg_arg_t *arg);
+
+/* ---------------------------------------------------------------------- */
+
+/* Clones */
+#ifndef SU_CLONE_T
+#define SU_CLONE_T struct su_clone_s
+#endif
+
+/** Clone reference. */
+typedef SU_CLONE_T *su_clone_r[1];
+
+/** Clone reference initializer. */
+#define SU_CLONE_R_INIT  {NULL}
+
+/** Clone initialization function type. */
+typedef int (*su_root_init_f)(su_root_t *, su_root_magic_t *);
+
+/** Clone finalization function type. */
+typedef void (*su_root_deinit_f)(su_root_t *, su_root_magic_t *);
+
+/* ---------------------------------------------------------------------- */
+/* Functions */
+
+/* Wait */
+void su_wait_init(su_wait_t dst[1]);
+int su_wait_create(su_wait_t *dst, su_socket_t s, int events);
+int su_wait_destroy(su_wait_t *dst);
+int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout);
+int su_wait_events(su_wait_t *wait, su_socket_t s);
+int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
+
+/* Root */
+su_root_t *su_root_create(su_root_magic_t *magic)
+     __attribute__((__malloc__));
+void su_root_destroy(su_root_t*);
+int su_root_set_magic(su_root_t *self, su_root_magic_t *magic);
+su_root_magic_t *su_root_magic(su_root_t *root);
+int su_root_register(su_root_t*, su_wait_t *, 
+		     su_wakeup_f, su_wakeup_arg_t *,
+		     int priority);
+int su_root_unregister(su_root_t*, su_wait_t *, 
+		       su_wakeup_f, su_wakeup_arg_t*);
+int su_root_deregister(su_root_t*, int);
+int su_root_eventmask(su_root_t *, int index, int socket, int events);
+su_duration_t su_root_step(su_root_t *root, su_duration_t timeout);
+su_duration_t su_root_sleep(su_root_t *root, su_duration_t duration);
+int su_root_multishot(su_root_t *root, int multishot);
+void su_root_run(su_root_t *root);
+void su_root_break(su_root_t *root);
+_su_task_r su_root_task(su_root_t const *root);
+_su_task_r su_root_parent(su_root_t const *root);
+
+int su_root_add_prepoll(su_root_t *root, 
+			su_prepoll_f *, 
+			su_prepoll_magic_t *);
+
+int su_root_remove_prepoll(su_root_t *root);
+
+struct _GSource *su_root_gsource(su_root_t *self);
+
+/* Timers */
+su_timer_t *su_timer_create(su_task_r const, su_duration_t msec)
+     __attribute__((__malloc__));
+void su_timer_destroy(su_timer_t *);
+int su_timer_set(su_timer_t *, su_timer_f, su_timer_arg_t *);
+int su_timer_set_at(su_timer_t *, su_timer_f, su_timer_arg_t *, su_time_t);
+int su_timer_run(su_timer_t *, su_timer_f, su_timer_arg_t *);
+int su_timer_set_for_ever(su_timer_t *, su_timer_f, su_timer_arg_t *);
+int su_timer_reset(su_timer_t *);
+
+su_root_t *su_timer_root(su_timer_t const *);
+
+int su_timer_expire(su_timer_t ** const, 
+		    su_duration_t *tout,
+		    su_time_t now);
+
+/* Tasks */
+
+/** NULL task. */
+extern su_task_r const su_task_null;
+
+_su_task_r su_task_init(su_task_r task);
+void su_task_deinit(su_task_r task);
+
+void su_task_copy(su_task_r dst, su_task_r const src);
+void su_task_move(su_task_r dst, su_task_r src);
+int  su_task_cmp(su_task_r const, su_task_r const);
+int su_task_is_running(su_task_r const);
+
+su_root_t *su_task_root(su_task_r const self);
+su_timer_t **su_task_timers(su_task_r const self);
+
+/* Messages */
+int su_msg_create(su_msg_r msg, su_task_r const to, su_task_r const from, 
+		  su_msg_f wakeup, int size);
+int su_msg_report(su_msg_r msg, su_msg_f report);
+int su_msg_reply(su_msg_r reply, su_msg_r const msg,
+		  su_msg_f wakeup, int size);
+void su_msg_destroy(su_msg_r msg);
+void su_msg_save(su_msg_r msg, su_msg_r msg0);
+su_msg_arg_t *su_msg_data(su_msg_r msg);
+int su_msg_size(su_msg_r msg);
+_su_task_r su_msg_from(su_msg_r const msg);
+_su_task_r su_msg_to(su_msg_r const msg);
+int su_msg_send(su_msg_r msg);
+
+/* Clones */
+int su_root_threading(su_root_t *self, int enable);
+int su_clone_start(su_root_t *root, 
+		   su_clone_r,
+		   su_root_magic_t *magic,
+		   su_root_init_f, 
+		   su_root_deinit_f);
+_su_task_r su_clone_task(su_clone_r);
+void su_clone_forget(su_clone_r);
+void su_clone_stop(su_clone_r);
+void su_clone_wait(su_root_t *root, su_clone_r clone);
+
+/* ---------------------------------------------------------------------- */
+/* Compatibility */
+
+#ifndef nomore
+typedef su_root_t *su_root_p;
+typedef int (*su_root_reg_f)(su_root_t*, su_wait_t *, 
+			     su_wakeup_f, su_wakeup_arg_t *,
+			     int priority);
+typedef int (*su_root_unreg_f)(su_root_t*, su_wait_t *, 
+			       su_wakeup_f, su_wakeup_arg_t *);
+
+#define su_create_wait   su_wait_create
+#define su_destroy_wait  su_wait_destroy
+#define su_create_root   su_root_create
+#define su_destroy_root  su_root_destroy
+#define su_root_free     su_root_destroy
+#define su_create_timer  su_timer_create
+#define su_destroy_timer su_timer_destroy
+#define SU_MSG_RINITIALIZER SU_MSG_R_INIT
+#define SU_TASK_INIT  SU_TASK_R_INIT
+#endif
+
+#endif /* SU_WAIT_H */

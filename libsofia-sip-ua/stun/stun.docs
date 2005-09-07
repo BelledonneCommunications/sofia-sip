@@ -1,0 +1,20 @@
+/* $Id: stun.docs,v 1.1.1.1 2005/07/20 20:35:55 kaiv Exp $ */
+
+/**@mainpage Sofia STUN Module
+
+@section stun_meta Module Meta Information
+
+The Sofia @b stun module contains macros and functions for STUN server and
+client library.
+
+@CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
+
+@STATUS Core library
+
+@LICENSE LGPL
+
+@section stun_usage Using Sofia STUN Library
+
+<i>To be written.</i>
+
+*/

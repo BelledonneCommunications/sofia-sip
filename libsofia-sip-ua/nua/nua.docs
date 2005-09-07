@@ -1,0 +1,1455 @@
+/* -*- text -*- */
+
+/**@mainpage Sofia User Agent Library - nua
+
+@section nua_meta Module Meta Information
+
+The @b nua module contains the user-agent library taking care of basic
+SIP User Agent functions. Its functionality includes call management,
+messaging and event retrieval.
+
+@CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
+
+@STATUS Core library
+
+@LICENSE LGPL
+
+@par Contributor(s): 
+- Pekka Pessi <Pekka.Pessi@nokia.com>
+- Pasi Rinne-Rahkola <Pasi.Rinne-Rahkola@nokia.com>
+
+@section nua_overview Overview
+
+The NUA API gives the high-level application programmer transparent and
+full control to the SIP protocol engine below it. NUA provides the call
+semantics on top of existing transaction semantics found in
+<a href="../nta/index.html"><b>nta</b></a> module. 
+API makes it possible to create different kind of User Agents,
+like terminals, gateways or MCUs.
+
+The @b nua engine hides many low-level signaling and media management
+aspects from the application programmer. It is possible to use different
+kind of media interfaces - even remote ones - in a fully transparent way.
+
+The application and the protocol engine within User Agent library can be
+run in separate threads. Communications from the protocol engine is
+conveyed through a callback function. The callback function is called
+within context of the application, so the application must provide
+appropriate handle to a #su_root_t object.
+
+@section nua_concepts_user Sofia Concepts for NUA User
+
+@subsection nua_intro Introduction
+
+The Sofia software suite is based on certain basic ideas and concepts that 
+are used in all levels of Sofia software. Many of those are implemented in 
+Sofia system utility library (<a href="../su/index.html"><b>su</b></a>) 
+providing unified interface to certain OS services and utilities. 
+
+The following sections contain descriptions of the concepts that a user of 
+NUA library must understand to create a working application. The other 
+utilities (in the SU library and other libraries of Sofia software suite) 
+might also be useful for an application developer but one must be careful 
+when using them because they might change the behavior of the Sofia 
+software suite in a way that causes NUA library to work incorrectly. 
+See [<a href="../su/index.html"><b>su</b></a>] for more detailed 
+description of the SU services.
+
+@subsection nua_root Root object
+
+The NUA uses the reactor pattern (also known as dispatcher pattern and 
+notifier pattern) for event driven systems (see [Using Design Patterns 
+to Develop Reusable Object-oriented Communication Software, D.C. Schmidt, 
+CACM October '95, 38(10): 65-74]). Sofia uses a task as basic execution 
+unit for the programming model. According to the model, the program can 
+ask that the event loop invokes a callback function when a certain event 
+occurs. Such events include I/O activity, timers or a asynchronously 
+delivered messages from other task.
+
+The root object is a handle representing the task in the application. 
+Another way of seeing the same thing is that the root object represents 
+the main event loop of the task. Through the root object the task code 
+can access its context information (magic) and thread-synchronization 
+features like wait objects, timers, and messages.
+ 
+An application using NUA services must create a root object and the 
+callback routine to handle events. The root object is created with 
+su_root_create() function and the callback routine is registered with 
+nua_create() function.
+
+Root object has type #su_root_t.
+
+See documentation of <su_wait.h> and <su_root.c> for more information 
+of root object.
+
+See section #nua_event_e for more information of the callback function.
+
+@subsection nua_magic Magic
+
+The magic is a term used for the context information that can be connected 
+to various entities in Sofia stack (for example root object and operation 
+handle) by the application code. This context information is passed back 
+to the application code when the registered callback function is called by 
+the main event loop. The Sofia stack retains the context information between 
+calls to the callback function. An application can use the context information
+to store any information it needs for processing the events.
+
+@subsection nua_memmgmt Memory Handling
+
+The home-based memory management is useful when a lot of memory blocks are 
+allocated for given task. The allocations are done via the memory home, 
+which keeps a reference to each allocated memory block. When the memory 
+home is then freed, it will free all memory blocks to which it has 
+reference. This simplifies application logic because application code does 
+not need to keep track of the allocated memory and free every allocated block 
+separately.
+
+An application using NUA services can use the memory management services 
+provided by the SU library but it is not mandatory. 
+
+See documentation of <su_alloc.h> for more information of memory management 
+services.
+
+@subsection nua_tags Tags
+
+Tagging is the mechanism used in Sofia software for packing parameters to 
+functions. It enables passing a variable number of parameters having 
+non-fixed types. For an application programmer the tagging is visible as 
+macros that are used to encapsulate the passed parameters. When evaluated a 
+tagging macro creates a structure that contains a tag (telling what is the 
+type of a parameter) and a value (pointer to opaque data). By checking the 
+tag the layers of Sofia software check whether they can handle the parameter 
+or should it just be passed to lower layers for processing.
+
+There are some tags with special meaning:
+- TAG_NULL() end of tag list
+- TAG_END()  end of tag list
+- TAG_SKIP()  empty tag item
+- TAG_NEXT() tag item pointing to another tag list
+- TAG_ANY() filter tag accepting any tag
+- TAG_IF() conditional inclusion of tag item
+
+The NUA functions can be called with a list of tagged values if they have 
+following parameters at the end of parameter list:
+
+@code
+tag_type_t   tag,
+tag_value_t  value,
+...);
+@endcode
+
+The last tagged value on the parameter list must be TAG_NULL() 
+(synonym for TAG_END()).
+
+Every tag has two versions: \n
+NUTAG_<tagname> \n
+which takes a value parameter and \n
+NUTAG_<tagname>_REF \n
+which takes a reference parameter and is used with 
+tl_gets() function to retrieve tag values from tag list.
+
+For some Sofia layers (for example SIP) there exists also additional 
+version of tags: \n
+SIPTAG_<tagname>_STR \n
+This tag version takes a C-language character string as parameter. 
+The corresponding tag without _STR suffix takes a parsed value structure 
+as parameter.
+
+The following is an example of call to NUA function containing tagged values:
+@code
+nua_unregister(op->op_handle,
+               TAG_IF(registrar, NUTAG_REGISTRAR(registrar)),
+               SIPTAG_CONTACT_STR("*"),
+               SIPTAG_EXPIRES_STR("0"),
+               TAG_NULL());
+@endcode
+
+An application using NUA services must use tagging for the function 
+parameter passing.
+
+See documentation of <su_tag.h> for more information of tags and the 
+module-specific documentation of each Sofia module for information of 
+tags specific for that module.
+
+@subsection nua_debugandlogging Debugging and Logging
+
+The modules of Sofia stack contain configurable debugging and logging 
+functionality based on the services defined in <su_log.h>. The debugging 
+and logging details (for example level of details on output and output 
+file name) can be configured by environment variables, directives in 
+configuration files and compilation directives in the source files. 
+
+Examples of useful directives/ environment variables are: 
+- #SOFIA_DEBUG	Default debug level (0..9)
+- #MSS_DEBUG	Media subsystem debug level (0..9)
+- #NUA_DEBUG	NUA debug level (0..9)
+- #NTA_DEBUG	Transaction engine debug level (0..9)
+- #TPORT_DEBUG	Transport event debug level (0..9)
+- #TPORT_LOG	If set, print out all parsed SIP messages on transport layer
+- #TPORT_DUMP	Filename for dumping unparsed messages from transport
+
+The defined debug output levels are:
+- 0 fatal errors, panic
+- 1 critical errors, minimal progress at subsystem level
+- 2 non-critical errors
+- 3 warnings, progress messages
+- 5 signaling protocol actions (incoming packets, ...)
+- 7 media protocol actions (incoming packets, ...)
+- 9 entering/exiting functions, very verbatim progress
+
+An application using NUA services can also use the debugging and 
+logging services provided by the Sofia stack but it is not mandatory.
+
+See documentation of <su_log.h> for more information of debugging and 
+logging services.
+
+@section nua_concepts NUA Concepts
+
+@subsection nua_stackobject NUA Stack Object
+
+Stack object represents an instance of SIP stack and media engine. It 
+contains reference to root object of that stack, user-agent-specific 
+settings, and reference to the SIP transaction engine, for example.
+
+A NUA stack object is created by nua_create() function and deleted by 
+nua_destroy() function. The nua_shutdown() function is used to gracefully
+release active the sessions by @b nua engine.
+
+NUA stack object has type nua_t.
+
+@subsection nua_operationhandle NUA Operation Handle
+
+Operation handle represents an abstract SIP call/session. It contains 
+information of SIP dialog and media session, and state machine that 
+takes care of the call, high-level SDP offer-answer protocol, registration, 
+subscriptions, publications and simple SIP transactions. An operation 
+handle may contain list of tags used when SIP messages are created by 
+NUA (e.g. From and To headers).
+
+An operation handle is created explicitly by the application using NUA 
+for sending messages (function nua_handle()) and by stack for incoming 
+calls/sessions (starting with INVITE or MESSAGE). The handle is destroyed 
+by the application using NUA (function nua_handle_destroy()).
+
+Indication and response events are associated with an operation handle.
+
+NUA operation handle has type nua_handle_t.
+
+@subsection nua_stacktread Stack Thread and Message Passing Concepts
+
+The stack thread is a separate thread from application that provides the 
+real-time protocol stack operations so that application thread can for 
+example block or redraw UI as it likes.
+
+The communication between stack thread and application thread is asynchronous. 
+Most of the NUA API functions cause a send of a message to the stack thread 
+for processing and similarly when something happens in the stack thread it 
+sends a message to the application thread. The messages to the application 
+thread are delivered as invokes of the application callback function when 
+the application calls su_root_run() or su_root_step() function.
+
+@subsection nua_sipmessage SIP Message and Header Manipulation
+
+SIP messages are manipulated with typesafe SIPTAG_ tags. There are 
+three versions of each SIP tag:
+- SIPTAG_<tagname>() takes a parsed value as parameter.
+- SIPTAG_<tagname>_STR() takes an unparsed string as parameter.
+- SIPTAG_<tagname>_REF() takes a reference as parameter, is used 
+        with tl_gets() function to retrieve tag values from tag list.
+
+For example a header named "Example" would have tags names SIPTAG_EXAMPLE(),  
+SIPTAG_EXAMPLE_STR(), and SIPTAG_EXAMPLE_REF().
+
+When tags are used in NUA calls the corresponding headers are added to 
+the message. In case the header can be present only once in a message 
+and there already exists a value for the header the value given by 
+tag replaces the existing header value. Passing tag value NULL has no 
+effect on headers. Passing tag value (void *)-1 removes corresponding 
+headers from the message.
+
+For example: 
+
+sending a SUBSCRIBE with Event: header and two Accept: headers:
+
+@code
+	nua_subscribe(nh,
+                      SIPTAG_EVENT_STR("presence"),
+                      SIPTAG_ACCEPT(accept1),
+                      SIPTAG_ACCEPT(accept2),
+                      TAG_END());
+@endcode
+
+fetching tag values when processing nua_r_subscribe event:
+
+@code
+           sip_accept_t *ac = NULL;
+           sip_event_t  *o  = NULL;
+
+           tl_gets(tl,
+                   SIPTAG_EVENT_REF(o),   /* _REF takes a reference! */
+                   SIPTAG_ACCEPT_REF(ac),
+                   TAG_END());
+@endcode
+
+@subsection nua_media Media Handling
+
+The media session is taken care mainly by the MSS module of the Sofia stack. 
+There is at most one media session per NUA operation handle. 
+
+The descriptions of the media session parameters are held in a SDP template 
+file (also called as "media profile") that contains named templates for 
+the media session parameters. A single template is a description of media 
+parameters with session description protocol (SDP) syntax. The name of 
+the template (also called as "media path") is given on s= line and it has 
+a Unix directory path like structure. 
+
+The name of the template file and the name of the template to use can be set 
+when a NUA operation handle is created by using tags #NUTAG_MEDIA_DESCS 
+and #NUTAG_MEDIA_PATH. A new media template can be given as argument to 
+re-INVITE (that is: nua_invite() is called using operation handle of existing 
+call). Media parameters can also be given directly with #NUTAG_MEDIA_PARAMS
+tags when calling NUA and MSS API functions.
+
+NUA takes care of setting up the media session when an INVITE is sent, or 
+received and responded. NUA also handles the start of media playback and 
+recording.
+
+Application and the media subsystem can communicate by using event API 
+provided by NUA. Application can send information to media subsystem by 
+using function nua_media_event() and correspondingly media subsystem can 
+send information to application by using #nua_i_media_event callback event. 
+Subscription to the events is done with #NUTAG_MEDIA_EVENT_PATH tags.
+
+@section nua_tutorial SIP/NUA tutorial
+
+This section describes basic usage scenarios of NUA/Sofia stack using 
+message sequence charts.
+
+@subsection nua_outgoingcall Outgoing Call
+
+@image latex SIP_outgoing_call.eps
+
+@image html SIP_outgoing_call.gif
+
+
+@subsection nua_incomingcall Incoming Call
+
+@image latex SIP_incoming_call.eps
+
+@image html SIP_incoming_call.gif
+
+@subsection nua_basicoutgoingoperation Basic Outgoing Operation
+
+@image latex SIP_basic_outgoing_operation.eps
+
+@image html SIP_basic_outgoing_operation.gif
+
+
+@subsection nua_basicincomingoperation Basic Incoming Operation
+
+@image latex SIP_basic_incoming_operation.eps
+
+@image html SIP_basic_incoming_operation.gif
+
+
+@subsection nua_outgoingoperationwithauth Outgoing Operation with Authentication
+
+@image latex SIP_outgoing_operation_with_auth.eps
+
+@image html SIP_outgoing_operation_with_auth.gif
+
+
+@section nua_simpleapplication Simple Application
+
+The following sections will present code examples from a simple application 
+that uses services of NUA. The example is not complete but should present 
+all relevant details of the basic use of NUA.
+
+The source distribution of Sofia stack contains in directory nua an example 
+application nua_cli.c that can be studied for more complete example.
+
+@subsection nua_datastructures Data Structures & Defines
+
+An application using services of NUA normally defines data areas that are 
+used to store context information (i.e., "Magic"). The types of pointers 
+to these context information areas are passed to NUA by defines.
+
+@code
+/* application context information type */
+typedef struct app_ctx_s app_ctx_t;
+#define NUA_MAGIC_T   app_ctx_t
+
+/* operation handle context information type */
+typedef union oper_ctx_u oper_ctx_t;
+#define NUA_HMAGIC_T  oper_ctx_t
+@endcode
+
+The information area contents themselves can be defined as 
+C structures or unions:
+
+@code
+/* example of application context information structure */
+struct app_ctx_s
+{
+  su_home_t       home[1];  /* memory home */
+  su_root_t      *root;     /* root object */
+  nua_t          *nua;      /* NUA stack object */
+
+  /* other data as needed ... */
+};
+
+/* Example of operation handle context information structure */
+union oper_ctx_u
+{
+  nua_handle_t    *handle;  /* operation handle /
+
+  struct 
+  {
+    nua_handle_t  *handle;  /* operation handle /
+    ...                     /* call-related information */
+  } call;
+
+  /* other data as needed ... */
+};
+@endcode
+
+NUA stack object and handle are opaque to the application programmer. 
+Likewise, the application context is completely opaque to the NUA stack 
+module. NUA functions are passed a pointer, and that pointer is then 
+given back to the application within the callback parameters. In this 
+case the application context information structure is also used to 
+store a root object and memory home for memory handling. The application 
+context information also contains the NUA stack object information.
+
+@subsection nua_initanddeinit Initialization and deinitialization
+
+The following code is an example of application function that initializes 
+the system, enters the main loop for processing the messages, and, after 
+message processing is ended, deinitalizes the system. 
+
+If the application is not just responding to incoming SIP messages there must 
+also be means to send messages to NUA. This can be handled for example by 
+having a separate thread that calls NUA functions to send messages or by 
+having a socket connection to the application for sending commands to the 
+application (see documentation of su_wait_create() and su_root_register()).
+
+@code
+/* initialize application context area */
+app_ctx_t app_ctx[1] = {{{{sizeof(app_ctx_t)}}}};
+
+/* initialize system utilities */
+su_init();
+
+/* initialize memory handling */
+su_home_init(app_ctx->home);
+
+/* initialize root object */
+app_ctx->root = su_root_create(app_ctx);
+
+if (app_ctx->root != NULL) {
+  /* create NUA stack */
+  app_ctx->nua = nua_create(app_ctx->root,
+                             app_callback,
+                             app_ctx,
+                             /* tags as necessary ...*/
+                             TAG_NULL());
+
+  if (app_ctx->nua != NULL) {
+    /* set necessary parameters */
+    nua_set_params(app_ctx->nua,
+                    /* tags as necessary ... */
+                    TAG_NULL());
+
+    /* enter main loop for processing of messages */ 
+    su_root_run(app_ctx->nua);
+
+    /* destroy NUA stack */
+    nua_destroy(app_ctx->nua);
+  }
+
+  /* deinit root object */
+  su_root_destroy(app_ctx->root);
+  app_ctx->root = NULL;
+}
+
+/* deinitialize memory handling */
+su_home_deinit(app_ctx->home);
+
+/* deinitialize system utilities */
+su_deinit();
+@endcode
+
+@subsection nua_handlingevents Handling events
+
+Handling of the events coming from NUA stack is done in the callback 
+function that is registered for NUA stack with the nua_create() function 
+when the application is initialized. The content of callback function is 
+in its simplest form just a switch/case statement that dispatches the 
+incoming events for processing to separate functions.
+
+@code
+void app_callback(nua_event_t   event,
+                  int           status, 
+                  char const   *phrase,
+                  nua_t        *nua, 
+                  nua_magic_t  *magic,
+                  nua_handle_t *nh, 
+                  nua_hmagic_t *hmagic,
+                  sip_t const  *sip,
+                  tagi_t        tags[])
+{
+  switch (event) {
+  case nua_i_invite:
+    app_i_invite(status, phrase, nua, magic, nh, hmagic, sip, tags);
+    break;
+
+  case nua_r_invite:
+    app_r_invite(status, phrase, nua, magic, nh, hmagic, sip, tags);
+    break;
+
+  /* and so on ... */
+
+  default:
+    /* unknown event -> print out error message */
+    if (status > 100) {
+      printf("unknown event %d: %03d %s\n", 
+             event, 
+             status, 
+             phrase);
+    }
+    else {
+      printf("unknown event %d\n", event);
+    }
+    tl_print(stdout, "", tags);
+    break;
+  }
+} /* app_callback */
+@endcode
+
+@subsection nua_placeacall Place a call
+
+The following three functions show an example of how a basic SIP 
+call is created.
+
+The place_a_call() function creates an operation handle and invokes the 
+SIP INVITE method.
+
+@code
+void place_a_call(void)
+{
+  oper_ctx_t *oper_ctx;
+
+  /* create operation context information */
+  oper_ctx = su_zalloc(app_ctx->home, sizeof(oper_ctx_t));
+  if (oper_ctx = NULL) {
+    printf("cannot create operation context information\n");
+    return;
+  }
+
+  /* how we create destination_address? */
+
+  /* create operation handle */
+  oper_ctx->handle = nua_handle(app_ctx->nua,
+                                oper_ctx,
+                                NUTAG_URL(destination_address),
+                                TAG_END());
+
+  if (oper_ctx->handle == NULL) {
+    printf("cannot create operation handle\n");
+    return;
+  }
+
+  nua_invite(oper_ctx->handle,
+              /* other tags as needed ... */
+              TAG_END());
+
+} /* place_a_call */
+@endcode
+
+The app_r_invite() function is called by callback function when response to 
+INVITE message is received. Here it is assumed that automatic acknowledge 
+is not enabled so ACK response must be sent explicitly.
+
+@code
+void app_r_invite(int           status, 
+                  char const   *phrase,
+                  nua_t        *nua, 
+                  nua_magic_t  *magic,
+                  nua_handle_t *nh, 
+                  nua_hmagic_t *hmagic,
+                  sip_t const  *sip,
+                  tagi_t        tags[])
+{
+  if (status == 200) {
+    nua_ack(nh, TAG_END());
+  }
+  else {
+    printf("response to INVITE: %03d %s\n", status, phrase);
+  }
+} /* app_r_invite */
+@endcode
+
+The app_i_active() function is called by callback function when call has 
+been successfully set up and the media has been activated.
+
+@code
+void app_i_active(int           status, 
+                  char const   *phrase,
+                  nua_t        *nua, 
+                  nua_magic_t  *magic,
+                  nua_handle_t *nh, 
+                  nua_hmagic_t *hmagic,
+                  sip_t const  *sip,
+                  tagi_t        tags[])
+{
+  printf("call active\n");
+
+} /* app_i_active */
+@endcode
+
+@subsection nua_receiveacall Receive a call
+
+The app_i_invite() function is called by callback function when incoming 
+INVITE message is received. This example assumes that autoanswer is 
+not enabled so the response must be sent explicitly.
+
+@code
+void app_i_invite(int           status, 
+                  char const   *phrase,
+                  nua_t        *nua, 
+                  nua_magic_t  *magic,
+                  nua_handle_t *nh, 
+                  nua_hmagic_t *hmagic,
+                  sip_t const  *sip,
+                  tagi_t        tags[])
+{
+  printf("incoming call\n");
+
+  nua_respond(nh, 200, "OK", TAG_END());
+
+} /* app_i_invite */
+@endcode
+
+The app_i_active() function is called by the callback function when call has 
+been successfully set up and the media has been activated.
+
+@code
+void app_i_active(int           status, 
+                   char const   *phrase,
+                   nua_t        *nua, 
+                   nua_magic_t  *magic,
+                   nua_handle_t *nh, 
+                   nua_hmagic_t *hmagic,
+                   sip_t const  *sip,
+                   tagi_t        tags[])
+{
+  printf("call active\n");
+
+} /* app_i_active */
+@endcode
+
+@subsection nua_terminatingcall Terminating a call
+
+The following three functions show an example of how a basic SIP 
+call is terminated.
+
+The terminate_call() function sends the SIP BYE message.
+
+@code
+void terminate_call(void)
+{
+  nua_bye(oper_ctx->handle, TAG_END());
+
+} /* terminate call */
+@endcode
+
+The app_r_bye() function is called by the callback function when answer to 
+the BYE message is received. The function destroys the call handle and 
+releases the memory allocated to operation context information.
+
+@code
+void app_r_bye(int           status, 
+               char const   *phrase,
+               nua_t        *nua, 
+               nua_magic_t  *magic,
+               nua_handle_t *nh, 
+               nua_hmagic_t *hmagic,
+               sip_t const  *sip,
+               tagi_t        tags[])
+{
+  if (status < 200)
+     return;	
+
+  printf("call released\n");
+
+  /* release operation handle */
+  nua_handle_destroy(hmagic->handle);
+  oper_ctx->handle = NULL;
+
+  /* release operation context information */
+  su_free(app_ctx->home, hmagic);
+
+} /* app_r_bye */
+@endcode
+
+The app_i_bye() function is called by the callback function when an incoming 
+BYE message is received. The function destroys the call handle and releases 
+the memory allocated to operation context information.
+
+@code
+void app_i_bye(int           status, 
+               char const   *phrase,
+               nua_t        *nua, 
+               nua_magic_t  *magic,
+               nua_handle_t *nh, 
+               nua_hmagic_t *hmagic,
+               sip_t const  *sip,
+               tagi_t        tags[])
+{
+  printf("call released\n");
+
+  /* release operation handle */
+  nua_handle_destroy(hmagic->handle);
+  oper_ctx->handle = NULL;
+
+  /* release operation context information */
+  su_free(app_ctx->home, hmagic);
+
+} /* app_i_bye */
+@endcode
+
+@subsection nua_sendamessage Sending a message
+
+The following functions show an example of how a SIP MESSAGE is sent.
+
+The send_message() function sends the SIP MESSAGE.
+
+@code
+void send_message(void)
+{
+  oper_ctx_t *oper_ctx;
+
+  /* create operation context information */
+  oper_ctx = su_zalloc(app_ctx->home, sizeof(oper_ctx_t));
+  if (oper_ctx = NULL) {
+    printf("cannot create operation context information\n");
+    return;
+  }
+
+  /* how we create destination_address? */
+
+  /* create operation handle */
+  oper_ctx->handle = nua_handle(app_ctx->nua,
+                                oper_ctx,
+                                NUTAG_URL(destination_address),
+                                TAG_END());
+
+  if (oper_ctx->handle == NULL) {
+    printf("cannot create operation handle\n");
+    return;
+  }
+
+  /* send MESSAGE */
+  nua_message(oper_ctx->handle,
+               SIPTAG_CONTENT_TYPE_STR("text/plain"),
+               SIPTAG_PAYLOAD_STR("Hello, world!"),
+               /* other tags as needed ... */
+               TAG_END());
+
+} /* send_message */
+@endcode
+
+The app_r_message() function is called by the callback function when 
+answer to the MESSAGE is received.
+
+@code
+void app_r_message(int           status, 
+                    char const   *phrase,
+                    nua_t        *nua, 
+                    nua_magic_t  *magic,
+                    nua_handle_t *nh, 
+                    nua_hmagic_t *hmagic,
+                    sip_t const  *sip,
+                    tagi_t        tags[])
+{
+  printf("response to MESSAGE: %03d %s\n", status, phrase);
+} /* app_r_message */
+@endcode
+
+@subsection nua_receivemessage Receiving a message
+
+The following function shows an example of how a SIP MESSAGE is received.
+
+The app_i_message() function is called by the callback function when 
+a SIP MESSAGE is received.
+
+@code
+void app_i_message(int           status, 
+                   char const   *phrase,
+                   nua_t        *nua, 
+                   nua_magic_t  *magic,
+                   nua_handle_t *nh, 
+                   nua_hmagic_t *hmagic,
+                   sip_t const  *sip,
+                   tagi_t        tags[])
+{
+  printf("received MESSAGE: %03d %s\n", status, phrase);
+
+  printf("From: %s%s" URL_PRINT_FORMAT "\n", 
+         sip->sip_from->a_display ? sip->sip_from->a_display : "", 
+         sip->sip_from->a_display ? " " : "",
+         URL_PRINT_ARGS(sip->sip_from->a_url));
+
+  if (sip->sip_subject) {
+    printf("Subject: %s\n", sip->sip_subject->g_value);
+  }
+
+  if (sip->sip_payload) {
+    fwrite(sip->sip_payload->pl_data, sip->sip_payload->pl_len, 1, stdout);
+    fputs("\n", stdout);
+  }
+} /* app_i_message */
+@endcode
+
+@subsection nua_shutting_down Shutdown
+
+The following functions show an example of how application terminates 
+the NUA stack.
+
+The shutdown() function starts the termination.
+
+@code
+void shutdown(void)
+{
+  nua_shutdown(app_ctx->nua);
+
+} /* shutdown */
+@endcode
+
+The app_r_shutdown() function is called by the callback function when NUA
+stack termination is either finished or failed.
+
+@code
+void app_r_shutdown(int           status, 
+                    char const   *phrase,
+                    nua_t        *nua, 
+                    nua_magic_t  *magic,
+                    nua_handle_t *nh, 
+                    nua_hmagic_t *hmagic,
+                    sip_t const  *sip,
+                    tagi_t        tags[])
+{
+  printf("shutdown: %d %s\n", status, phrase);
+
+  if (status < 200) {
+    /* shutdown in progress -> return */
+    return;
+  }
+
+  /* end the event loop. su_root_run() will return */
+  su_root_break(magic->root);
+
+} /* app_r_shutdown */
+@endcode
+
+*/
+
+/**@var nua_event_e 
+ *
+ * @brief Events
+ *
+ * The NUA event loop calls an event callback function when an application
+ * needs to act on something that happened in the Sofia stack. The callback 
+ * function is registered when nua_create() function call is used to create 
+ * the NUA stack object.
+ *
+ * The prototype of the event callback function is:
+ * @code
+ * void nua_callback_f(nua_event_t   event,
+ *                     int           status, 
+ *                     char const   *phrase,
+ *                     nua_t        *nua, 
+ *                     nua_magic_t  *magic,
+ *                     nua_handle_t *nh, 
+ *                     nua_hmagic_t *hmagic,
+ *                     sip_t const  *sip,
+ *                     tagi_t        tags[]);
+ * @endcode
+ *   
+ * @param event  Callback event identification. \n
+ *               Always present
+ * @param status Protocol status code. \n
+ *               Always present
+ * @param phrase Text corresponding to status code. \n
+ *               Always present
+ * @param nua    Pointer to NUA stack object. \n
+ *               Always present
+ * @param magic  Pointer to callback context from nua_create(). \n
+ *               Always present
+ * @param nh     Pointer to operation handle.
+ * @param hmagic Pointer to callback context from nua_handle().
+ * @param sip    Parsed incoming message.
+ * @param tags   Tag list containing more information about the state of NUA.
+ *
+ * Note that the contents of the last four parameters vary depending on 
+ * the event. The descriptions can be found from the description of the 
+ * individual event.
+ *
+ * The events can be divided into the following categories: \n
+ * @par Indications:
+ * #nua_i_active           \n
+ * #nua_i_bye              \n
+ * #nua_i_cancel           \n
+ * #nua_i_chat             \n
+ * #nua_i_error            \n
+ * #nua_i_fork             \n
+ * #nua_i_info             \n
+ * #nua_i_invite           \n
+ * #nua_i_media_error      \n
+ * #nua_i_media_event      \n
+ * #nua_i_message          \n
+ * #nua_i_method           \n
+ * #nua_i_notify           \n
+ * #nua_i_options          \n
+ * #nua_i_publish          \n
+ * #nua_i_refer            \n
+ * #nua_i_subscribe        \n
+ * #nua_i_terminated       \n
+ * #nua_i_update
+ *
+ * @par Responses:
+ * #nua_r_get_media_param  \n
+ * #nua_r_get_params       \n
+ * #nua_r_media_describe   \n
+ * #nua_r_media_event      \n
+ * #nua_r_media_setup      \n
+ * #nua_r_notifier         \n
+ * #nua_r_shutdown         \n
+ * #nua_r_set_media_param  \n
+ * #nua_r_terminate        
+ *
+ * @par SIP responses:
+ * #nua_r_bye         \n
+ * #nua_r_chat        \n
+ * #nua_r_info        \n
+ * #nua_r_invite      \n
+ * #nua_r_message     \n
+ * #nua_r_notify      \n
+ * #nua_r_options     \n
+ * #nua_r_publish     \n
+ * #nua_r_refer       \n
+ * #nua_r_register    \n
+ * #nua_r_subscribe   \n
+ * #nua_r_unregister  \n
+ * #nua_r_unsubscribe \n
+ * #nua_r_update
+ */
+
+/** @var nua_event_e::nua_i_active
+ *
+ * A call has been activated.
+ *
+ * This event will be sent after succesful response to the initial
+ * INVITE has been received and the media has been activated.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   NUTAG_ACTIVE_* tags
+ */
+
+/** @var nua_event_e::nua_i_bye
+ *
+ * Incoming call hangup.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    pointer to BYE request
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_cancel
+ *
+ * Incoming INVITE has been cancelled
+ *
+ * Incoming INVITE has been cancelled or 
+ * no ACK has been received for an accepted call.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    incoming CANCEL request or NULL if time-out occured
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_chat
+ *
+ * Incoming chat MESSAGE 
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    incoming char MESSAGE
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_error
+ *
+ * Error indication.
+ *
+ * Will be sent when an internal error happened or 
+ * an error occurred while responding a request.
+ *
+ * @param nh     NULL or operation handle associated with the call
+ * @param hmagic NULL or operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   empty or error specific information
+ */
+
+/** @var nua_event_e::nua_i_fork
+ *
+ * Outgoing call has been forked. 
+ *
+ * This is sent when an INVITE request is answered with multiple 200 responses.
+ *
+ * @param nh     operation handle associated with the original call
+ * @param hmagic operation magic associated with the original call
+ * @param sip    200 series response to INVITE
+ * @param tags   #NUTAG_HANDLE of the new forked call 
+ */
+
+/** @var nua_event_e::nua_i_info
+ *
+ * Incoming session INFO
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    incoming INFO request
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_invite
+ *
+ * Incoming call
+ *
+ * @param nh     operation handle associated with this call 
+ *               (maybe created for this call)
+ * @param hmagic operation magic associated with this call 
+ *               (maybe NULL if call handle was created for this call)
+ * @param sip    incoming INVITE request
+ * @param tags   NUTAG_ACTIVE_*
+ */
+
+/** @var nua_event_e::nua_i_media_error
+ *
+ * Media error indication.
+ *
+ * This may be sent after an implicit 
+ * media operation has failed while processing incoming or outgoing call.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with this call 
+ *               (maybe NULL if call handle was created for this call)
+ * @param sip    NULL
+ * @param tags   #NUTAG_MEDIA_SESSION (optionally)
+ */
+
+/** @var nua_event_e::nua_i_media_event
+ *
+ * Incoming media event
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with this call 
+ * @param sip    NULL
+ * @param tags   #NUTAG_MEDIA_EVENT_PATH \n
+ *               #NUTAG_MEDIA_EVENT_DATA \n
+ *               #NUTAG_MEDIA_EVENT_DLEN
+ */
+
+/** @var nua_event_e::nua_i_message
+ *
+ * Incoming MESSAGE
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ *               (maybe NULL if outside session)
+ * @param sip    incoming MESSAGE request
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_method
+ *
+ * Unknown incoming method.
+ *
+ * The extension method must be listed using #SIPTAG_ALLOW 
+ * tag in nua_set_options().
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    incoming request with unknown method
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_notify
+ *
+ * Incoming event.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    incoming NOTIFY request
+ * @param tags   #NUTAG_SUBSTATE indicating the subscription state
+ */
+
+/** @var nua_event_e::nua_i_options
+ *
+ * Incoming options.
+ *
+ * @param nh     operation handle associated with the call
+ *               (default operation handle if outside session)
+ * @param hmagic operation magic associated with the call
+ *               (NULL if outside session)
+ * @param sip    incoming OPTIONS request
+ * @param tags   empty
+ */
+
+
+/** @var nua_event_e::nua_i_publish
+ *
+ * Incoming PUBLISH.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ *               (NULL if outside session)
+ * @param sip    incoming PUBLISH request
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_refer
+ *
+ * Incoming call transfer.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ *               (NULL if outside session)
+ * @param sip    incoming REFER request
+ * @param tags   #NUTAG_REFER_EVENT \n
+ *               #SIPTAG_REFERRED_BY
+ */
+
+/** @var nua_event_e::nua_i_terminated
+ *
+ * A call has been terminated.
+ *
+ * This event will be sent after a call has been terminated. A call is
+ * terminated, when 
+ * 1) an error response (300..599) is sent to an incoming initial INVITE
+ * 2) a reliable response (200..299 or reliable preliminary response) to 
+ *    an incoming initial INVITE is not acknowledged with ACK or PRACK
+ * 3) BYE is received or sent
+ * 
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_subscribe
+ *
+ * Incoming subscription.
+ *
+ * Not implemented.
+ *
+ * @param nh     
+ * @param hmagic 
+ * @param sip    
+ * @param tags   
+ */
+
+/** @var nua_event_e::nua_i_update
+ *
+ * Incoming session UPDATE.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    incoming UPDATE request
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_bye
+ *
+ * Answer to outgoing BYE.
+ *
+ * The BYE may be sent explicitly by nua_bye() or 
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to BYE request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_chat
+ *
+ * Answer to outgoing chat MESSAGE.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to MESSAGE request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_get_media_param
+ *
+ * Answer to nua_get_media_param().
+ *
+ * Not implemented (returns error 501).
+ *
+ * @param nh     
+ * @param hmagic 
+ * @param sip    
+ * @param tags   
+ */
+
+/** @var nua_event_e::nua_r_get_params
+ *
+ * Answer to nua_get_params().
+ *
+ * @param nh     NULL
+ * @param hmagic NULL
+ * @param sip    NULL
+ * @param tags   NUTAG_* \n
+ *               SIPTAG_* \n
+ *               NTATAG_*
+ */
+
+/** @var nua_event_e::nua_r_info
+ *
+ * Answer to outgoing INFO.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to INFO or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_invite
+ *
+ * Answer to outgoing INVITE.
+ *
+ * The INVITE may be sent explicitly by nua_invite() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to INFO or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_media_describe
+ *
+ * Answer to nua_media_describe()
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   tag list including
+ *     #SDPTAG_SESSION \n
+ *     #NUTAG_ACTIVE_AUDIO \n
+ *     #NUTAG_ACTIVE_VIDEO \n
+ *     #NUTAG_ACTIVE_CHAT \n
+ */
+
+/** @var nua_event_e::nua_r_media_event
+ *
+ * Answer to nua_media_event()
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_media_setup
+ *
+ * Answer to nua_media_setup()
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   #NUTAG_MEDIA_SESSION
+ */
+
+/** @var nua_event_e::nua_r_message
+ *
+ * Answer to outgoing MESSAGE
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to MESSAGE request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_notifier
+ *
+ * Answer to nua_notitier()
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   #SIPTAG_EVENT \n
+ *               #SIPTAG_CONTENT_TYPE
+ */
+
+/** @var nua_event_e::nua_r_notify
+ *
+ * Answer to outgoing NOTIFY. 
+ *
+ * The NOTIFY may be sent explicitly by nua_notify() or 
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to NOTIFY request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_options
+ *
+ * Answer to outgoing OPTIONS. 
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to OPTIONS request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_publish
+ *
+ * Answer to outgoing PUBLISH. 
+ *
+ * The PUBLISH may be sent explicitly by nua_publish() or 
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to PUBLISH request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_refer
+ *
+ * Answer to outgoing REFER. 
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to REFER request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   #NUTAG_REFER_EVENT \n
+ *               #NUTAG_SUBSTATE
+ */
+
+/** @var nua_event_e::nua_r_register
+ *
+ * Answer to outgoing REGISTER. 
+ *
+ * The REGISTER may be sent explicitly by nua_register() or 
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to REGISTER request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_set_media_param
+ *
+ * Answer to nua_set_media_param(). 
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_shutdown
+ *
+ * Answer to nua_shutdown(). 
+ *
+ * Status codes
+ * 100 shutdown started \n
+ * 101 shutdown in progress (sent when shutdown has been progressed) \n
+ * 200 shutdown was successful \n
+ * 500 shutdown timeout after 30 sec \n
+ *
+ * @param nh     NULL
+ * @param hmagic NULL
+ * @param sip    NULL
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_subscribe
+ *
+ * Answer to outgoing SUBSCRIBE. 
+ *
+ * The SUBSCRIBE may be sent explicitly by nua_subscribe() or 
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to SUBSCRIBE request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   #NUTAG_SUBSTATE
+ */
+
+/** @var nua_event_e::nua_r_terminate
+ *
+ * Answer to nua_terminate(). 
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_unregister
+ *
+ * Answer to outgoing un-REGISTER.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to REGISTER request or NULL upon an error
+ *               (error code and message are in status and phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_unsubscribe
+ *
+ * Answer to outgoing un-SUBSCRIBE.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to SUBSCRIBE request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_r_update
+ *
+ * Answer to outgoing UPDATE.
+ *
+ * The UPDATE may be sent explicitly by nua_update() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to UPDATE request or NULL upon an error 
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */

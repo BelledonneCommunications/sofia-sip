@@ -1,0 +1,42 @@
+LIBRARY      "sdp"
+DESCRIPTION  'SDP NT Windows Dynamic Link Library'
+
+EXPORTS
+    ; Explicit exports can go here
+
+	sdp_parse
+	sdp_parsing_error
+	sdp_session
+	sdp_parser_free
+	sdp_print
+	sdp_printing_error
+	sdp_message
+	sdp_message_size
+	sdp_printer_free
+
+	sdp_origin_dup
+	sdp_session_dup
+
+	sdp_connection_dup
+	sdp_bandwidth_dup
+	sdp_time_dup
+	sdp_repeat_dup
+	sdp_repeat_dup
+	sdp_zone_dup
+	sdp_key_dup
+	sdp_attribute_dup
+	sdp_media_dup
+	sdp_media_dup_ex
+	sdp_list_dup
+	sdp_rtpmap_dup
+
+	sdp_printer_free
+	sdp_message_size
+	sdp_message
+	sdp_print
+
+	sdp_attribute_find
+	sdp_attribute_find2
+	sdp_attribute_mode
+	sdp_attribute_by_mode
+	sdp_attribute_mapped_find

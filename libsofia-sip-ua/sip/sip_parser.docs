@@ -1,0 +1,34 @@
+/* -*- c -*- */
+
+/*$Id: sip_parser.docs,v 1.1.1.1 2005/07/20 20:35:42 kaiv Exp $*/
+
+/**@ingroup sip 
+ * @defgroup sip_parser SIP Parser
+ *
+ * This part of the Sofia documentation describes the internal working of
+ * SIP parser. It documents the internal functions and macros used when a
+ * new parser is added.
+ *
+ * The @b sip module contains interface to the SIP headers and message
+ * objects. The interface is abstracted using objects known as 
+ * @ref msg_hclass_s "header classes" and @ref msg_mclass_s "message classes".
+ *
+ * The @ref msg_mclass_s "message class" defines how a message is handled:
+ * parsed and encoded. It contains a parser table with references to header
+ * classes. It also contains function pointers used by the parser to handle
+ * message body and other details that vary between protocols.
+ *
+ * A @ref msg_hclass_s "header class" defines how a single header is parsed. 
+ * Each header has its own header class. There are also header classes for
+ * message elements that are not really headers, like @ref sip_request
+ * "request" and @ref sip_status "status line", 
+ * @ref sip_separator "separator between headers" and 
+ * @ref sip_payload "message body"
+ * (which is also known as payload). There is also a header classes
+ * for @ref sip_unknown "unknown headers" and 
+ * @ref sip_error "headers that contained parsing errors".
+ *
+ * @{
+ */
+
+/**@}*/

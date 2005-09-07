@@ -1,0 +1,29 @@
+2005-08-15  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Makefile.am: Do not include msg_test_class.o in libmsg.
+
+2005-08-01  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* msg_mime.c: Returning -2 from msg_accept_any_d() if the list is
+	empty.
+
+	* msg_internal.h, msg_mclass.h, msg_mclass.c, msg_parser.awk:
+
+	Added header-specific flags in parser table for
+	msg_extract_errors().
+
+	* msg.h, msg.c: Added msg_extract_errors().
+
+	* msg_parser.c: Using header-specific flags to classify parsing
+	errors with msg_extract_errors().
+	
+	Added support for apndlist headers.
+
+	* msg_header.h: Added support for apndlist headers.
+
+	* msg_mime.c: Various Accept* headers are now apndlist meaning
+	that they are printed on single line by default.
+	
+2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Initial import of the module to Sofia-SIP tree.

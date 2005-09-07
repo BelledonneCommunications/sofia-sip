@@ -1,0 +1,9 @@
+; Root zone for testing
+. 3600000  IN  SOA ns root (
+	    2002042901 ; SERIAL
+	    7200       ; REFRESH
+	    600        ; RETRY
+	    36000000   ; EXPIRE
+	    60         ; MINIMUM
+	    )
+

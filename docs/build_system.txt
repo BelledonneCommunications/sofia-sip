@@ -1,0 +1,97 @@
+=============================
+Sofia-SIP build system README
+=============================
+
+:Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
+:Version: 20050722-4
+:Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
+
+------------
+Introduction
+------------
+
+The Sofia-SIP build system practices are documented in this
+file. The instructions are aimed at developers.
+
+-----------
+Quick start
+-----------
+
+To build Sofia-IP::
+sh> ``./autogen.sh`` (if building from a fresh CVS checkout)
+sh> ``./configure``
+sh> ``make``
+
+--------------
+Autotool notes
+--------------
+
+Macros
+------
+
+Sofia-SIP specific macros are prefixed with "``SAC\_``" and are
+defined in files under the toplevel "m4/" directory.
+
+Makefile target notes
+---------------------
+
+- all optionally compiled source files should be listed
+  separately in ``DIST_SOURCES`` variable (otherwise ``make dist``
+  will fail)
+
+Maintainer mode
+---------------
+
+Sofia-SIP tree is by default configured with automake
+maintainer mode disable. In other words, Makefiles do not
+contain rules for recreating or updating configure, Makefiles
+or other autotool-generated files. To update these files,
+you need to run top-level autogen.sh script.
+
+Those developers who need to often modify configure.ac, Makefile.am
+and macro files, can enable maintainer mode with configure
+option '--enable-maintainer-mode'.
+
+----------------
+Code-tree layout
+----------------
+
+Most of the code resides in the libsofia-sip-ua directory.
+The main library, libsofia-sip-ua.so, is created by 
+collecting object files (for example bnf/bnf_objs.o) from 
+individual modules.
+
+There are some portability issues with the way the
+shared library is currently built, and we are looking
+for ways to improve the situation.
+
+---------------
+Making releases
+---------------
+
+Checklist
+---------
+
+- check contents of configure.ac (especially the version number)
+- ``make distchek``
+- upload the resulting tar.gz file to Source forge and make an
+  announcement on the sofia-sip-devel@lists.sourceforge.net mailing list
+ 
+-----------------------
+Developer documentation
+-----------------------
+
+Generating reference documentation from source code 
+---------------------------------------------------
+
+The libsofia-sip-ua library has a top-level make target
+"doxygen" for generating the HTML reference documentation.
+The pages will be created to libsofia-sip-ua/docs 
+subdirectory. 
+
+This special target is primarily meant for use by
+the Sofia-SIP website admins, but can be used by anyone
+with the proper set of tools:
+
+- Doxygen, http://www.stack.nl/~dimitri/doxygen/
+- Dot graph tool, http://www.research.att.com/sw/tools/graphviz/

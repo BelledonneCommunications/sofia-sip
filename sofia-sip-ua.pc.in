@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+libexecdir=@libexecdir@
+includedir=@includedir@
+
+Name: sofia-sip-ua
+Description: Sofia-SIP - a RFC3261 compliant SIP User-Agent library
+Version: @VERSION@
+Requires: glib-2.0
+Libs: -L${libdir} -lsofia-sip-ua
+Cflags: -I${includedir}

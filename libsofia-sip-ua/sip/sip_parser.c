@@ -1,0 +1,609 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@ingroup sip_parser
+ * @CFILE sip_parser.c
+ *
+ * SIP parser.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
+ *
+ * @date Created: Thu Oct  5 14:01:24 2000 ppessi
+ * $Date: 2005/08/08 19:10:14 $
+ */
+
+#include "config.h"
+
+const char sip_parser_c_id[] =
+"$Id: sip_parser.c,v 1.2 2005/08/08 19:10:14 ppessi Exp $";
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
+#include <limits.h>
+
+#include <stdarg.h>
+#include <su_tagarg.h>
+
+#include "sip_parser.h"
+#include <msg_mclass.h>
+
+const char sip_parser_h_id[] = SIP_PARSER_H;
+
+/** Version of the SIP module */
+char const sip_parser_version[] = VERSION;
+
+/** SIP version 2.0. */
+char const sip_version_2_0[] = "SIP/2.0";
+
+/** Default message class */
+extern msg_mclass_t sip_mclass[];
+
+msg_mclass_t *sip_default_mclass(void)
+{
+  return sip_mclass;
+}
+
+/** Extract the SIP message body, including separator line. 
+ *
+ * @param msg  message object [IN]
+ * @param sip  public SIP message structure [IN/OUT]
+ * @param b    buffer containing unparsed data [IN]
+ * @param bsiz buffer size [IN]
+ * @param eos  true if buffer contains whole message [IN]
+ *
+ * @retval -1 error
+ * @retval 0  cannot proceed
+ * @retval m 
+ */
+int sip_extract_body(msg_t *msg, sip_t *sip, char b[], int bsiz, int eos)
+{
+  int m = 0;
+  unsigned body_len;
+  
+  if (!(sip->sip_flags & MSG_FLG_BODY)) {
+    /* We are looking at a potential empty line */
+    m = msg_extract_separator(msg, sip, b, bsiz, eos);
+    if (m <= 0)
+      return m;
+    sip->sip_flags |= MSG_FLG_BODY;
+    b += m;
+    bsiz -= m;
+  }
+
+  if (sip->sip_content_length)
+    body_len = sip->sip_content_length->l_length;
+  else if (MSG_IS_MAILBOX(sip->sip_flags)) /* message fragments */
+    body_len = 0;
+  else if (eos)
+    body_len = bsiz;
+  else if (bsiz == 0)
+    return m;
+  else
+    return -1;
+
+  if (body_len == 0) {
+    sip->sip_flags |= MSG_FLG_COMPLETE;
+    return m;
+  }
+
+  if (m)
+    return m;
+
+  if (eos && body_len > bsiz) {
+    sip->sip_flags |= MSG_FLG_TRUNC | MSG_FLG_ERROR;
+    return bsiz;
+  }
+
+  if ((m = msg_extract_payload(msg, sip, NULL, body_len, b, bsiz, eos)) == -1)
+    return -1;
+  
+  sip->sip_flags |= MSG_FLG_FRAGS;
+  if (bsiz >= body_len)
+    sip->sip_flags |= MSG_FLG_COMPLETE;
+
+  return m;
+}
+
+/** Parse SIP version.
+ *
+ * The function sip_version_d() parses a SIP version string. It updates the 
+ * pointer at @a ss to first non-LWS character after the version string.
+ *
+ * @param ss   string to be parsed [IN/OUT]
+ * @param ver  value result for version [OUT]
+ *
+ * @retval 0 when successful,
+ * @retval -1 upon an error.
+ */
+int sip_version_d(char **ss, char const **ver)
+{
+  char *s = *ss;
+  char const *result;
+  int const version_size = sizeof(sip_version_2_0) - 1;
+
+  if (strncasecmp(s, sip_version_2_0, version_size) == 0 && 
+      !IS_TOKEN(s[version_size])) {
+    result = sip_version_2_0;
+    s += version_size;
+  }
+  else {
+    /* Version consists of two tokens, separated by / */
+    int l1 = 0, l2 = 0, n;
+
+    result = s;
+
+    l1 = span_token(s);
+    for (n = l1; IS_LWS(s[n]); n++);
+    if (s[n] == '/') {
+      for (n++; IS_LWS(s[n]); n++);
+      l2 = span_token(s + n);
+      n += l2;
+    }
+
+    if (l1 == 0 || l2 == 0)
+      return -1;
+
+    /* If there is extra ws between tokens, compact version */
+    if (n > l1 + 1 + l2) {
+      s[l1] = '/';
+      memmove(s + l1 + 1, s + n - l2, l2);
+      s[l1 + 1 + l2] = 0;
+
+      /* Compare again with compacted version */ 
+      if (strcasecmp(s, sip_version_2_0) == 0)
+	result = sip_version_2_0;
+    }
+
+    s += n;
+  }
+
+  while (IS_WS(*s)) *s++ = '\0';
+  
+  *ss = s;
+
+  if (ver) 
+    *ver = result;
+
+  return 0;
+}
+
+/** Calculate extra space required by version string */
+int sip_version_xtra(char const *version)
+{
+  if (version == SIP_VERSION_CURRENT)
+    return 0;
+  return SIP_STRING_SIZE(version);
+}
+
+/** Duplicate a transport string */
+void sip_version_dup(char **pp, char const **dd, char const *s)
+{
+  if (s == SIP_VERSION_CURRENT)
+    *dd = s;
+  else
+    SIP_STRING_DUP(*pp, *dd, s);
+}
+
+char const sip_method_name_invite[] =  	 "INVITE";
+char const sip_method_name_ack[] =     	 "ACK";
+char const sip_method_name_cancel[] =  	 "CANCEL";
+char const sip_method_name_bye[] =     	 "BYE";
+char const sip_method_name_options[] = 	 "OPTIONS";
+char const sip_method_name_register[] =  "REGISTER";
+char const sip_method_name_info[] =      "INFO";
+char const sip_method_name_prack[] =     "PRACK";
+char const sip_method_name_update[] =    "UPDATE";
+char const sip_method_name_message[] =   "MESSAGE";
+char const sip_method_name_subscribe[] = "SUBSCRIBE";
+char const sip_method_name_notify[] =    "NOTIFY";
+char const sip_method_name_refer[] =     "REFER";
+char const sip_method_name_publish[] =   "PUBLISH";
+
+/** Well-known SIP method names. */
+char const * const sip_method_names[] = {
+  "<UNKNOWN>",
+  sip_method_name_invite,
+  sip_method_name_ack,
+  sip_method_name_cancel,
+  sip_method_name_bye,
+  sip_method_name_options,
+  sip_method_name_register,
+  sip_method_name_info,
+  sip_method_name_prack,
+  sip_method_name_update,
+  sip_method_name_message,
+  sip_method_name_subscribe,
+  sip_method_name_notify,
+  sip_method_name_refer,
+  sip_method_name_publish,
+  /* If you add something here, add also them to sip_method_d! */
+  NULL
+};
+
+/** Get canonic method name. */
+char const *sip_method_name(sip_method_t method, char const *name)
+{
+  const size_t N = sizeof(sip_method_names)/sizeof(sip_method_names[0]);
+  if (method > 0 && method <= N)
+    return sip_method_names[method];
+  else if (method == 0)
+    return name;
+  else
+    return NULL;
+}
+
+/**Parse a SIP method name.
+ *
+ * The function sip_method_d() parses a SIP method, and returns a code
+ * corresponding to the method.  It stores the address of the first non-LWS
+ * character after method name in @a *ss.
+ *
+ * @param ss    pointer to pointer to string to be parsed
+ * @param return_name  value-result parameter for method name
+ *
+ * @note
+ * If there is no whitespace after method name, the value in @a *nname
+ * may not be NUL-terminated.  The calling function @b must NUL terminate
+ * the value by setting the @a **ss to NUL after first examining its value.
+ *
+ * @return The function  sip_method_d returns the method code if method
+ * was identified, 0 (sip_method_unknown()) if method is not known, or @c -1
+ * (sip_method_invalid()) if an error occurred.
+ *
+ * If the value-result argument @a nname is not @c NULL, sip_method_d()
+ * stores a pointer to the method name to it.
+ */
+sip_method_t sip_method_d(char **ss, char const **return_name)
+{
+  char *s = *ss, c = *s;
+  char const *name;
+  int code = sip_method_unknown;
+  int n = 0;
+
+#define MATCH(s, m) (strncmp(s, m, n = sizeof(m) - 1) == 0)
+
+  switch (c) {
+  case 'A': if (MATCH(s, "ACK")) code = sip_method_ack; break;
+  case 'B': if (MATCH(s, "BYE")) code = sip_method_bye; break;
+  case 'C': 
+    if (MATCH(s, "CANCEL")) 
+      code = sip_method_cancel; 
+    break;
+  case 'I': 
+    if (MATCH(s, "INVITE"))
+      code = sip_method_invite;
+    else if (MATCH(s, "INFO"))
+      code = sip_method_info;
+    break;
+  case 'M': if (MATCH(s, "MESSAGE")) code = sip_method_message; break;
+  case 'N': if (MATCH(s, "NOTIFY")) code = sip_method_notify; break;
+  case 'O': if (MATCH(s, "OPTIONS")) code = sip_method_options; break;
+  case 'P': 
+    if (MATCH(s, "PRACK")) code = sip_method_prack; 
+    else if (MATCH(s, "PUBLISH")) code = sip_method_publish; 
+    break;
+  case 'R': 
+    if (MATCH(s, "REGISTER")) 
+      code = sip_method_register; 
+    else if (MATCH(s, "REFER"))
+      code = sip_method_refer; 
+    break;
+  case 'S': 
+    if (MATCH(s, "SUBSCRIBE")) 
+      code = sip_method_subscribe; 
+    break;
+  case 'U':
+    if (MATCH(s, "UPDATE"))
+      code = sip_method_update;
+    break;
+  }
+
+#undef MATCH
+
+  if (IS_NON_WS(s[n])) 
+    /* Unknown method */
+    code = sip_method_unknown;
+
+  if (code == sip_method_unknown) {
+    name = s;
+    for (n = 0; IS_UNRESERVED(s[n]); n++)
+      ;
+    if (s[n]) {
+      if (!IS_LWS(s[n]))
+	return sip_method_invalid;
+      if (return_name)
+	s[n++] = '\0';
+    }
+  }
+  else {
+    name = sip_method_names[code];
+  }
+
+  while (IS_LWS(s[n]))
+    n++;
+
+  *ss = (s + n);
+  if (return_name) *return_name = name;
+
+  return code;
+}
+
+/** Get method enum corresponding to method name */
+sip_method_t sip_method_code(char const *name)
+{
+  /* Note that sip_method_d() does not change string if return_name is NULL */
+  return sip_method_d((char **)&name, NULL);
+}
+
+char const sip_transport_udp[] = "SIP/2.0/UDP";
+char const sip_transport_tcp[] = "SIP/2.0/TCP";
+char const sip_transport_sctp[] = "SIP/2.0/SCTP";
+char const sip_transport_tls[] = "SIP/2.0/TLS";
+
+/** Decode transport */
+int sip_transport_d(char **ss, char const **ttransport)
+{
+  char const *transport;
+  char *pn, *pv, *pt;
+  int  pn_len, pv_len, pt_len;
+  char *s = *ss;
+
+#define TRANSPORT_MATCH(t) \
+  (strncasecmp(s+7,t+7,sizeof(t)-8) == 0 && (transport = t, s += sizeof(t) - 1))
+
+  if (strncasecmp(s, "SIP/2.0", 7) != 0 ||
+      (!TRANSPORT_MATCH(sip_transport_udp) &&
+       !TRANSPORT_MATCH(sip_transport_tcp) &&
+       !TRANSPORT_MATCH(sip_transport_sctp) &&
+       !TRANSPORT_MATCH(sip_transport_tls))) {
+    /* Protocol name */ 
+    transport = pn = s;
+    skip_token(&s);
+    pn_len = s - pn;
+    skip_lws(&s);
+    if (pn_len == 0 || *s++ != '/') return -1;
+    skip_lws(&s);
+    
+    /* Protocol version */
+    pv = s;
+    skip_token(&s);
+    pv_len = s - pv;
+    skip_lws(&s);
+    if (pv_len == 0 || *s++ != '/') return -1;
+    skip_lws(&s);
+    
+    /* Transport protocol */
+    pt = s;
+    skip_token(&s);
+    pt_len = s - pt;
+    if (pt_len == 0) return -1;
+    
+    /* Remove whitespace between protocol name and version */
+    if (pn + pn_len + 1 != pv) {
+      pn[pn_len] = '/';
+      pv = memmove(pn + pn_len + 1, pv, pv_len);
+    }
+
+    /* Remove whitespace between protocol version and transport */
+    if (pv + pv_len + 1 != pt) {
+      pv[pv_len] = '/';
+      pt = memmove(pv + pv_len + 1, pt, pt_len);
+      pt[pt_len] = '\0';
+      
+      /* extra whitespace? */
+      if (!strcasecmp(transport, sip_transport_udp))
+	transport = sip_transport_udp;
+      else if (!strcasecmp(transport, sip_transport_tcp))
+	transport = sip_transport_tcp;
+      else if (!strcasecmp(transport, sip_transport_sctp))
+	transport = sip_transport_sctp;
+      else if (!strcasecmp(transport, sip_transport_tls))
+	transport = sip_transport_tls;
+    }
+  }
+
+  if (IS_LWS(*s)) { *s++ = '\0'; skip_lws(&s); }
+  *ss = s;
+  *ttransport = transport;
+  return 0;
+}
+
+/** Calculate extra space required by sip_transport_dup() */
+int sip_transport_xtra(char const *transport)
+{
+  if (transport == sip_transport_udp ||
+      transport == sip_transport_tcp ||
+      transport == sip_transport_sctp ||
+      transport == sip_transport_tls ||
+      strcasecmp(transport, sip_transport_udp) == 0 ||
+      strcasecmp(transport, sip_transport_tcp) == 0 ||
+      strcasecmp(transport, sip_transport_sctp) == 0 ||
+      strcasecmp(transport, sip_transport_tls) == 0)
+    return 0;
+
+  return SIP_STRING_SIZE(transport);
+}
+
+/** Duplicate a transport string */
+void sip_transport_dup(char **pp, char const **dd, char const *s)
+{
+  if (s == sip_transport_udp)
+    *dd = s;
+  else if (s == sip_transport_tcp)
+    *dd = s;
+  else if (s == sip_transport_sctp)
+    *dd = s;
+  else if (s == sip_transport_tls)
+    *dd = s;
+  else if (strcasecmp(s, sip_transport_udp) == 0)
+    *dd = sip_transport_udp;
+  else if (strcasecmp(s, sip_transport_tcp) == 0)
+    *dd = sip_transport_tcp;
+  else if (strcasecmp(s, sip_transport_sctp) == 0)
+    *dd = sip_transport_sctp;
+  else if (strcasecmp(s, sip_transport_tls) == 0)
+    *dd = sip_transport_tls;
+  else
+    SIP_STRING_DUP(*pp, *dd, s);
+}
+
+/** Parse SIP word "@" word construct. */
+char *sip_word_at_word_d(char **ss)
+{
+  char *rv = *ss, *s0 = *ss;
+
+  skip_word(ss);
+  if (s0 == *ss)
+    return NULL;
+  if (**ss == '@') {
+    (*ss)++;
+    s0 = *ss;
+    skip_word(ss);
+    if (s0 == *ss)
+      return NULL;
+  }
+  if (IS_LWS(**ss))
+    (*ss)++;
+  skip_lws(ss);
+
+  return rv;
+}
+
+/**Add message separator, then test if message is complete. 
+ *
+ * The function adds sip_content_length and sip_separator components, if
+ * they are missing. It then tests that all necessary message components (@b
+ * From, @b To, @b CSeq, @b Call-ID, @b Content-Length and message separator
+ * are present.
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ */
+int sip_complete_message(msg_t *msg)
+{
+  sip_t *sip = sip_object(msg);
+  su_home_t *home = msg_home(msg);
+  unsigned len = 0;
+
+  if (sip == NULL)
+    return -1;
+
+  if (!sip->sip_separator)
+    sip->sip_separator = sip_separator_create(msg_home(msg));
+
+  if (sip->sip_multipart) {
+    sip_content_type_t *c = sip->sip_content_type;
+    msg_multipart_t *mp = sip->sip_multipart;
+    sip_common_t *head;
+
+    if (!c || msg_multipart_complete(msg_home(msg), c, mp) < 0)
+      return -1;
+
+    if (sip->sip_payload)
+      head = sip->sip_payload->pl_common;
+    else
+      head = sip->sip_separator->sep_common;
+
+    if (!head || !msg_multipart_serialize(&head->h_succ, mp))
+      return -1;
+
+    len = (unsigned)msg_multipart_prepare(msg, mp, sip->sip_flags);
+    if (len == (unsigned)-1)
+      return -1;
+  } 
+
+  if (sip->sip_payload)
+    len += sip->sip_payload->pl_len;
+
+  if (!sip->sip_content_length) {
+    msg_header_insert(msg, sip, (msg_header_t*)
+		      sip_content_length_create(home, len));
+  }
+  else {
+    if (sip->sip_content_length->l_length != len) {
+      sip->sip_content_length->l_length = len;
+      sip_fragment_clear(sip->sip_content_length->l_common);
+    }
+  }
+  
+  if (!sip->sip_cseq || 
+      !sip->sip_call_id ||
+      !sip->sip_to ||
+      !sip->sip_from ||
+      !sip->sip_separator ||
+      !sip->sip_content_length)
+    return -1;
+  
+  return 0;
+}
+
+/** Add headers from the request to the response message. */
+int sip_complete_response(msg_t *msg, 
+			  int status, char const *phrase, 
+			  sip_t const *request)
+{
+  su_home_t *home = msg_home(msg);
+  sip_t *sip = msg_object(msg);
+  int incomplete = 0;
+
+  if (!sip || !request || !request->sip_request)
+    return -1;
+
+  if (!sip->sip_status)
+    sip->sip_status = sip_status_create(home, status, phrase, NULL);
+  if (!sip->sip_via)
+    sip->sip_via = sip_via_dup(home, request->sip_via);
+  if (!sip->sip_from)
+    sip->sip_from = sip_from_dup(home, request->sip_from);
+  if (!sip->sip_to)
+    sip->sip_to = sip_to_dup(home, request->sip_to);
+  if (!sip->sip_call_id)
+    sip->sip_call_id = sip_call_id_dup(home, request->sip_call_id);
+  if (!sip->sip_cseq)
+    sip->sip_cseq = sip_cseq_dup(home, request->sip_cseq);
+
+  if (!sip->sip_record_route && request->sip_record_route)
+    sip_add_dup(msg, sip, (void*)request->sip_record_route);
+
+  incomplete = sip_complete_message(msg) < 0;
+
+  sip_serialize(msg, sip);
+
+  if (incomplete ||
+      !sip->sip_status ||
+      !sip->sip_via ||
+      !sip->sip_from ||
+      !sip->sip_to ||
+      !sip->sip_call_id ||
+      !sip->sip_cseq ||
+      !sip->sip_content_length ||
+      !sip->sip_separator ||
+      (request->sip_record_route && !sip->sip_record_route))
+    return -1;
+
+  return 0;
+}

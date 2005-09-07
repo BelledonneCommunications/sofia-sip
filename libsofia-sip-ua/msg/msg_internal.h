@@ -1,0 +1,99 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifndef MSG_INTERNAL_H /** Defined when msg_internal.h has been included. */
+#define MSG_INTERNAL_H \
+"$Id: msg_internal.h,v 1.2 2005/08/03 17:17:54 ppessi Exp $"
+
+/**@ingroup msg 
+ * @IFILE msg_internal.h 
+ * @brief Abstract messages - internal interface 
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ *
+ * @date Created: Thu Jun 29 15:58:06 2000 ppessi
+ *
+ * $Date: 2005/08/03 17:17:54 $
+ */
+
+#ifdef MSG_H
+#error "msg_internal.h" should be included before "msg.h"
+#endif
+
+#include "msg.h"
+#include "msg_addr.h"
+#include "msg_buffer.h"
+
+#ifndef SU_ALLOC_H
+#include <su_alloc.h>
+#endif
+
+struct msg_s {
+  su_home_t           m_home[1]; /**< Memory home */
+
+  msg_mclass_t const *m_class;	/**< Message class */
+  int                 m_oflags;	/**< Original flags */
+
+  msg_pub_t          *m_object;	/**< Public view to parsed message */
+
+  unsigned            m_maxsize;/**< Maximum size */
+  unsigned            m_size;	/**< Total size of fragments */
+
+  msg_header_t       *m_chain;	/**< Fragment chain */
+  msg_header_t      **m_tail;	/**< Tail of fragment chain */
+
+  msg_payload_t      *m_chunk;	/**< Incomplete payload fragment */
+
+  /* Parsing/printing buffer */
+  struct msg_mbuffer_s {
+    char     *mb_data;		/**< Pointer to data */
+    unsigned  mb_size;		/**< Size of buffer */
+    unsigned  mb_used;		/**< Used data */
+    unsigned  mb_commit;	/**< Data committed to msg */
+    unsigned  mb_eos:1;		/**< End-of-stream flag */
+    unsigned :0;
+  } m_buffer[1];
+
+  msg_buffer_t  *m_stream;	/**< User-provided buffers */
+  unsigned       m_ssize;	/**< Stream size */
+
+  unsigned short m_extract_err; /**< Bitmask of erroneous headers */
+  /* Internal flags */
+  unsigned     	 m_set_buffer:1;/**< Buffer has been set */
+  unsigned     	 m_streaming:1; /**< Use streaming with message */
+  unsigned       m_prepared:1;	/**< Prepared/not */
+  unsigned  :0;
+
+  msg_t        	*m_next;	/**< Next message */
+
+  msg_t        	*m_parent;	/**< Reference to a parent message */
+  int          	 m_refs;	/**< Number of references to this message */
+
+  su_addrinfo_t	 m_addrinfo;	/**< Message addressing info (protocol) */
+  su_sockaddr_t	 m_addr[1];	/**< Message address */
+
+  int          	 m_errno;	/**< Errno */
+};
+
+#endif /* MSG_INTERNAL_H */

@@ -1,0 +1,79 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifndef SU_ALLOC_STAT_H /** Defined when su_alloc_stat.h has been included. */
+#define SU_ALLOC_STAT_H \
+"$Id: su_alloc_stat.h,v 1.2 2005/08/08 19:10:16 ppessi Exp $"
+/**@ingroup su_alloc
+ *
+ * @file su_alloc_stat.h Home-based memory management statistics
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * 
+ * @date Created: Tue Apr  9 10:24:05 2002 ppessi
+ * $Date: 2005/08/08 19:10:16 $
+ */
+
+#ifndef SU_ALLOC_H
+#include <su_alloc.h>
+#endif
+
+#ifndef SU_TYPES_H
+#include <su_types.h>
+#endif
+
+typedef struct su_home_stat_t su_home_stat_t;
+
+SU_DLL void su_home_init_stats(su_home_t *h);
+SU_DLL void su_home_get_stats(su_home_t *, int include_clones, 
+			      su_home_stat_t *stats);
+
+SU_DLL void su_home_stat_add(su_home_stat_t *total, 
+			     su_home_stat_t const *hs);
+
+struct su_home_stat_t
+{
+  int      hs_size;
+  unsigned hs_clones;		/**< Number of clones */
+  unsigned hs_rehash;		/**< Number of (re)allocations of hash table. */
+  unsigned hs_blocksize;	/**< Current size of hash table */
+  struct {
+    uint64_t hsa_number;
+    uint64_t hsa_bytes;
+    uint64_t hsa_rbytes;
+    uint64_t hsa_maxrbytes;
+  } hs_allocs;
+  struct {
+    uint64_t hsf_number;
+    uint64_t hsf_bytes;
+    uint64_t hsf_rbytes;
+  } hs_frees;
+  struct {
+    uint64_t hsb_number;
+    uint64_t hsb_bytes;
+    uint64_t hsb_rbytes;
+  } hs_blocks;
+};
+
+#endif /* ! defined(SU_ALLOC_H) */

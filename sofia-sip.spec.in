@@ -1,0 +1,94 @@
+#
+# Template for Sofia SIP UA RPM spec file
+#
+# Options:
+# --with doxygen   - Generate documents using doxygen and dot
+# --with check     - Run tests
+# --without openssl - No OpenSSL (TLS)
+#
+
+Summary: Sofia SIP User-Agent library 
+Name: sofia-sip
+Version: @VERSION@
+Release: 2
+License: Lesser GNU Public License 2.1
+Group: System Environment/Libraries
+URL: http://sf.net/projects/sofia-sip
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+Packager: Pekka.Pessi@Nokia.com
+
+%{?_with_doxygen:BuildRequires: doxygen >= 1.3.4}
+%{?_with_doxygen:BuildRequires: graphviz >= 1.9}
+%{?!_without_openssl:BuildRequires: openssl-devel >= 0.9.7}
+
+%description
+Sofia SIP is a RFC-3261-compliant library for SIP user agents and other
+network elements.
+
+This package contains code derived from RFC 3174 (SHA1). The package is
+distributed with the following copyright notice by the Internet Society:
+
+Partly copyright (C) The Internet Society (2001).  All Rights Reserved.
+
+This document [RFC3174] and translations of it may be copied and furnished
+to others, and derivative works that comment on or otherwise explain it or
+assist in its implementation may be prepared, copied, published and
+distributed, in whole or in part, without restriction of any kind, provided
+that the above copyright notice and this paragraph are included on all such
+copies and derivative works. However, this document itself may not be
+modified in any way, such as by removing the copyright notice or references
+to the Internet Society or other Internet organizations, except as needed
+for the purpose of developing Internet standards in which case the
+procedures for copyrights defined in the Internet Standards process must be
+followed, or as required to translate it into languages other than English.
+
+%prep
+%setup -q -n sofia-sip-%{version}
+
+%build
+%configure --with-pic --enable-shared --disable-dependency-tracking --includedir=%{_prefix}/include/sofia-sip
+#make %{_smp_mflags}
+make 
+%{?_with_check:make check}
+%{?_with_doxygen:make check}
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+rm $RPM_BUILD_ROOT/%{_prefix}/bin/addrinfo
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%{_prefix}/bin/localinfo
+%{_prefix}/bin/nua_cli
+%{_prefix}/bin/options
+%{_prefix}/bin/sip_date
+%{_prefix}/lib/libsofia-sip-ua.so
+%{_prefix}/lib/libsofia-sip-ua.so.*
+%doc
+
+%package	devel
+Summary:        Sofia SigComp Development Package
+Group:     	Development/Libraries
+Requires:	sofia-sip = %{version}-%{release}
+Obsoletes:	sofia-devel
+%description	devel
+Development package for Sofia SIP UA library. This package includes 
+%{?_with_doxygen:HTML documentation}, static libraries and include files.
+
+%files devel
+%{_prefix}/include/sofia-sip/*.h
+%{_prefix}/libexec/sofia/tag_dll.awk
+%{_prefix}/libexec/sofia/msg_parser.awk
+%{_prefix}/lib/libsofia-sip-ua.la
+%{_prefix}/lib/libsofia-sip-ua.a
+%{_prefix}/lib/pkgconfig/%{name}-ua.pc
+%{?_with_doxygen:docs/*}
+
+%changelog
+* Sat Jul 23 2005 Pekka Pessi <Pekka.Pessi@nokia.com> - 1.10.1
+- Initial build.

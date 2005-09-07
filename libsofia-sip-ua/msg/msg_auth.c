@@ -1,0 +1,168 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@ingroup msg_parser
+ * @CFILE msg_auth.c
+ *
+ * Functions for handling authentication-related headers
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ *
+ * @date Created: Tue Jun 13 02:57:51 2000 ppessi
+ *
+ * $Date: 2005/07/20 20:35:22 $
+ */
+
+#include "config.h"
+
+const char msg_auth_c_id[] =
+"$Id: msg_auth.c,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $";
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
+
+#include <msg.h>
+#include <msg_parser.h>
+#include <msg_header.h>
+#include <msg_auth.h>
+#include <bnf.h>
+
+const char msg_auth_h_id[] = MSG_AUTH_H;
+
+#if 0
+/**
+ * Scan and compact an authentication parameter.
+ *
+ * The function msg_auth_item_scan() is used to scan an authentication
+ * parameter, which has syntax as follows:
+ * @code
+ * auth-item = auth-param | base64-string
+ * auth-param = token [ "=" (token | quoted-string)]
+ * @endcode
+ *
+ * Parameters:
+ * @param s      pointer to string to scan
+ *
+ * @return 
+ * The function msg_auth_item_scan() returns number of characters scanned,
+ * or zero upon an error.
+ */
+static int msg_auth_item_scan(char *start)
+{
+  int tlen;
+  char *p, *s;
+
+  p = s = start;
+
+  /* XXX */
+
+  return start - s;
+}
+#endif
+
+/* ====================================================================== */
+/*
+ * auth           = ("Authorization" | "Encryption" | 
+ *                   "Proxy-Authenticate" | "Proxy-Authorization" |
+ *                   "Response-Key" | "WWW-Authenticate") ":" 
+ *                    scheme 1*SP #auth-param
+ * scheme         = token
+ * auth-param     = token | token "=" token | token "=" quoted-string
+ */
+
+/** Parse security headers. */
+int msg_auth_d(su_home_t *home,
+	       msg_header_t *h,
+	       char *s,
+	       int slen)
+{
+  msg_auth_t *au = (msg_auth_t *)h;
+
+  au->au_scheme = s;
+  
+  skip_token(&s);
+  if (!IS_LWS(*s)) return -1;
+  *s++ = '\0';			/* NUL-terminate scheme */
+
+  return msg_commalist_d(home, &s, (msg_param_t **)&au->au_params, 
+			 NULL /* msg_auth_item_scan */);
+}
+
+int msg_auth_e(char b[], int bsiz, msg_header_t const *h, int f)
+{
+  msg_auth_t const *au = (msg_auth_t *)h;
+  int compact = MSG_IS_COMPACT(f);
+  char *b0 = b, *end = b + bsiz;
+
+  MSG_STRING_E(b, end, au->au_scheme);
+  if (au->au_params) {
+    MSG_CHAR_E(b, end, ' ');
+    MSG_COMMALIST_E(b, end, au->au_params, compact);
+  }
+  MSG_TERM_E(b, end);
+  
+  return b - b0;
+}
+
+/**@internal 
+ * Extra size of a msg_auth_t object.
+ *
+ * This function calculates extra size required by a msg_auth_t object.
+ *
+ * @param a pointer to a msg_auth_t object
+ *
+ * @return
+ *   Size of strings related to msg_auth_t object.
+ */
+int msg_auth_dup_xtra(msg_header_t const *h, int offset)
+{
+  int rv = offset;
+  msg_auth_t const *au = h->sh_auth;
+
+  MSG_PARAMS_SIZE(rv, au->au_params);
+  rv += MSG_STRING_SIZE(au->au_scheme);
+    
+  return rv;
+}
+
+/**Duplicate one msg_auth_t object. */
+char *msg_auth_dup_one(msg_header_t *dst,
+		       msg_header_t const *src,
+		       char *b,
+		       int xtra)
+{
+  msg_auth_t *au = dst->sh_auth;
+  msg_auth_t const *o = src->sh_auth;
+  char *end = b + xtra;
+
+  b = msg_params_dup(&au->au_params, o->au_params, b, xtra);
+  MSG_STRING_DUP(b, au->au_scheme, o->au_scheme);
+    
+  assert(b <= end);
+
+  return b;
+}

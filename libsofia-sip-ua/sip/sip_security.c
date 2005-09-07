@@ -1,0 +1,619 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@CFILE sip_security.c
+ *
+ * Security-related SIP header handling.
+ *
+ * This file contains implementation of headers related to HTTP authentication
+ * (RFC 2617):
+ * @ref sip_authorization "Authorization", 
+ * @ref sip_authentication_info "Authentication-Info",
+ * @ref sip_proxy_authenticate "Proxy-Authenticate",
+ * @ref sip_proxy_authentication_info "Proxy-Authentication-Info",
+ * @ref sip_proxy_authorization "Proxy-Authorization", and
+ * @ref sip_www_authenticate "WWW-Authenticate".
+ *
+ * There is also implementation of headers related to security agreement
+ * (RFC 3329):
+ * @ref sip_security_client "Security-Client",
+ * @ref sip_security_server "Security-Server", and
+ * @ref sip_security_verify "Security-Verify" headers.
+ *
+ * The implementation of @ref sip_privacy "Privacy" header (RFC 3323) is
+ * also here. 
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
+ *
+ * @date Created: Tue Jun 13 02:57:51 2000 ppessi
+ * $Date: 2005/08/03 17:18:11 $
+ */
+
+#include "config.h"
+
+const char sip_security_id[] =
+"$Id: sip_security.c,v 1.2 2005/08/03 17:18:11 ppessi Exp $";
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
+
+#include "sip_parser.h"
+#include <msg_auth.h>
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_authorization Authorization Header
+ *
+ * The Authorization header consists of credentials containing the
+ * authentication information of the user agent for the realm of the
+ * resource being requested.  Its syntax is defined in [RFC2617, S19]
+ * as follows:
+ *
+ * @code
+ *    Authorization     =  "Authorization" HCOLON credentials
+ *    credentials       =  ("Digest" LWS digest-response)
+ *                         / other-response
+ *    digest-response   =  dig-resp *(COMMA dig-resp)
+ *    dig-resp          =  username / realm / nonce / digest-uri
+ *                          / dresponse / algorithm / cnonce
+ *                          / opaque / message-qop
+ *                          / nonce-count / auth-param
+ *    username          =  "username" EQUAL username-value
+ *    username-value    =  quoted-string
+ *    digest-uri        =  "uri" EQUAL LDQUOT digest-uri-value RDQUOT
+ *    digest-uri-value  =  rquest-uri ; Equal to request-uri as specified
+ *                         by HTTP/1.1
+ *    message-qop       =  "qop" EQUAL qop-value
+ *    cnonce            =  "cnonce" EQUAL cnonce-value
+ *    cnonce-value      =  nonce-value
+ *    nonce-count       =  "nc" EQUAL nc-value
+ *    nc-value          =  8LHEX
+ *    dresponse         =  "response" EQUAL request-digest
+ *    request-digest    =  LDQUOT 32LHEX RDQUOT
+ *    auth-param        =  auth-param-name EQUAL
+ *                         ( token / quoted-string )
+ *    auth-param-name   =  token
+ *    other-response    =  auth-scheme LWS auth-param
+ *                         *(COMMA auth-param)
+ *    auth-scheme       =  token
+ * @endcode
+ *
+ */
+
+msg_hclass_t sip_authorization_class[] =
+SIP_HEADER_CLASS_AUTH(authorization, "Authorization", single);
+
+int sip_authorization_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return msg_auth_d(home, h, s, slen);
+}
+
+int sip_authorization_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  assert(sip_is_authorization(h));
+  return msg_auth_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_proxy_authenticate Proxy-Authenticate Header
+ *
+ * The Proxy-Authenticate header consists of a challenge that indicates the
+ * authentication scheme and parameters applicable to the proxy.  Its syntax
+ * is defined in [H14.33, S10.31] as follows:
+ *
+ * @code
+ *    Proxy-Authenticate  =  "Proxy-Authenticate" HCOLON challenge
+ *    challenge           =  ("Digest" LWS digest-cln *(COMMA digest-cln))
+ *                           / other-challenge
+ *    other-challenge     =  auth-scheme LWS auth-param
+ *                           *(COMMA auth-param)
+ *    digest-cln          =  realm / domain / nonce
+ *                            / opaque / stale / algorithm
+ *                            / qop-options / auth-param
+ *    realm               =  "realm" EQUAL realm-value
+ *    realm-value         =  quoted-string
+ *    domain              =  "domain" EQUAL LDQUOT URI
+ *                           *( 1*SP URI ) RDQUOT
+ *    URI                 =  absoluteURI / abs-path
+ *    nonce               =  "nonce" EQUAL nonce-value
+ *    nonce-value         =  quoted-string
+ *    opaque              =  "opaque" EQUAL quoted-string
+ *    stale               =  "stale" EQUAL ( "true" / "false" )
+ *    algorithm           =  "algorithm" EQUAL ( "MD5" / "MD5-sess"
+ *                           / token )
+ *    qop-options         =  "qop" EQUAL LDQUOT qop-value
+ *                           *("," qop-value) RDQUOT
+ *    qop-value           =  "auth" / "auth-int" / token
+ * @endcode
+ *
+ * @todo Currently the parser fails if several challenges are included in
+ * one header.
+ */
+
+msg_hclass_t sip_proxy_authenticate_class[] =
+SIP_HEADER_CLASS_AUTH(proxy_authenticate, "Proxy-Authenticate", append);
+
+int sip_proxy_authenticate_d(su_home_t *home,
+			     sip_header_t *h, char *s, int slen)
+{
+  return msg_auth_d(home, h, s, slen);
+}
+
+int sip_proxy_authenticate_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  assert(sip_is_proxy_authenticate(h));
+  return msg_auth_e(b, bsiz, h, f);
+}
+
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_proxy_authorization Proxy-Authorization Header
+ *
+ * The Proxy-Authorization header consists of credentials containing the
+ * authentication information of the user agent for the proxy and/or realm
+ * of the resource being requested.  Its syntax is defined in [H14.34,
+ * S10.32] (as follows:
+ *
+ * @code
+ *    Proxy-Authorization  = "Proxy-Authorization" ":" credentials
+ *    credentials          =  ("Digest" LWS digest-response)
+ *                            / other-response
+ * @endcode
+ *
+ */
+
+msg_hclass_t sip_proxy_authorization_class[] =
+SIP_HEADER_CLASS_AUTH(proxy_authorization, "Proxy-Authorization", append);
+
+int sip_proxy_authorization_d(su_home_t *home,
+			      sip_header_t *h, char *s, int slen)
+{
+  return msg_auth_d(home, h, s, slen);
+}
+
+int sip_proxy_authorization_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  assert(sip_is_proxy_authorization(h));
+  return msg_auth_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_www_authenticate WWW-Authenticate Header
+ *
+ * The WWW-Authenticate header consists of at least one challenge that
+ * indicates the authentication scheme(s) and parameters applicable to the
+ * Request-URI.  Its syntax is defined in [H14.47, S10.48] as
+ * follows:
+ *
+ * @code
+ *    WWW-Authenticate  = "WWW-Authenticate" ":" 1#challenge
+ *    challenge         = auth-scheme 1*SP #auth-param
+ * @endcode
+ *
+ * @todo Currently the parser fails if several challenges are included one
+ * header.
+ */
+
+msg_hclass_t sip_www_authenticate_class[] =
+SIP_HEADER_CLASS_AUTH(www_authenticate, "WWW-Authenticate", single);
+
+int sip_www_authenticate_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return msg_auth_d(home, h, s, slen);
+}
+
+int sip_www_authenticate_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  assert(sip_is_www_authenticate(h));
+  return msg_auth_e(b, bsiz, h, f);
+}
+
+/**@SIP_HEADER sip_authentication_info Authentication-Info Header
+ *
+ * The @b Authentication-Info header contains either a next-nonce used by
+ * next request and/or authentication from server used in mutual
+ * authentication. The syntax of @b Authentication-Info header is defined in
+ * RFC 2617 and [S20.6] as follows:
+ *
+ * @code
+ *   Authentication-Info  = "Authentication-Info" HCOLON ainfo
+ *                           *(COMMA ainfo)
+ *   ainfo                =  nextnonce / message-qop
+ *                            / response-auth / cnonce
+ *                            / nonce-count
+ *   nextnonce            =  "nextnonce" EQUAL nonce-value
+ *   response-auth        =  "rspauth" EQUAL response-digest
+ *   response-digest      =  LDQUOT *LHEX RDQUOT
+ * @endcode
+ */
+
+#define sip_authentication_info_dup_xtra msg_list_dup_xtra
+#define sip_authentication_info_dup_one msg_list_dup_one
+
+msg_hclass_t sip_authentication_info_class[] =
+  SIP_HEADER_CLASS(authentication_info, "Authentication-Info", "",
+		   ai_params, append, authentication_info);
+
+int sip_authentication_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return msg_list_d(home, (msg_header_t *)h, s, slen);
+}
+
+
+int sip_authentication_info_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  assert(sip_is_authentication_info(h));
+  return msg_list_e(b, bsiz, h, f);
+}
+
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_proxy_authentication_info Proxy-Authentication-Info Header
+ *
+ * The @b Proxy-Authentication-Info header contains either a next-nonce used
+ * by next request and/or authentication from proxy used in mutual
+ * authentication. The syntax of @b Proxy-Authentication-Info header is defined
+ * in RFC 2617 as follows:
+ *
+ * @code
+ *   Proxy-Authentication-Info  = "Proxy-Authentication-Info" HCOLON ainfo
+ *                           *(COMMA ainfo)
+ *   ainfo                =  nextnonce / message-qop
+ *                            / response-auth / cnonce
+ *                            / nonce-count
+ *   nextnonce            =  "nextnonce" EQUAL nonce-value
+ *   response-auth        =  "rspauth" EQUAL response-digest
+ *   response-digest      =  LDQUOT *LHEX RDQUOT
+ * @endcode
+ *
+ * @note @b Proxy-Authentication-Info is not specified RFC 3261 and it is
+ * mentioned by RFC 2617 but in passage.
+ */
+
+#define sip_proxy_authentication_info_dup_xtra msg_list_dup_xtra
+#define sip_proxy_authentication_info_dup_one msg_list_dup_one
+
+msg_hclass_t sip_proxy_authentication_info_class[] =
+  SIP_HEADER_CLASS(proxy_authentication_info, "Proxy-Authentication-Info", "",
+		   ai_params, append, proxy_authentication_info);
+
+int sip_proxy_authentication_info_d(su_home_t *home, 
+				    sip_header_t *h, char *s, int slen)
+{
+  return msg_list_d(home, (msg_header_t *)h, s, slen);
+}
+
+int sip_proxy_authentication_info_e(char b[], int bsiz, 
+				    sip_header_t const *h, int f)
+{
+  assert(sip_is_authentication_info(h));
+  return msg_list_e(b, bsiz, h, f);
+}
+/* ====================================================================== */
+
+/* Functions parsing RFC 3329 SIP Security Agreement headers */
+
+typedef struct sip_security_agree_s sip_security_agree_t;
+#define sh_security_agree sh_security_client
+
+static void sip_security_agree_update(sip_security_agree_t *sa);
+
+static 
+int sip_security_agree_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  sip_header_t **hh = &h->sh_succ, *h0 = h;
+  sip_security_agree_t *sa = h->sh_security_agree;
+
+  int n;
+
+  for (;*s;) {
+    /* Ignore empty entries (comma-whitespace) */
+    if (*s == ',') { 
+      *s++ = '\0'; skip_lws(&s); 
+      continue; 
+    }
+
+    if (!h) {      /* Allocate next header structure */
+      if (!(h = sip_header_alloc(home, h0->sh_class, 0)))
+	return -1;
+      *hh = h; h->sh_prev = hh; hh = &h->sh_succ;
+      sa = sa->sa_next = h->sh_security_agree;
+    }
+
+    sa = h->sh_security_agree;
+
+    if ((n = span_token(s)) == 0) 
+      return -1;
+    sa->sa_mec = s; s += n; while (IS_LWS(*s)) *s++ = '\0'; 
+    if (*s == ';' && msg_params_d(home, &s, &sa->sa_params) < 0)
+      return -1;
+    if (*s != '\0' && *s != ',')
+      return -1;
+
+    if (sa->sa_params)
+      sip_security_agree_update(sa);
+
+    h = NULL;
+  }
+
+  if (h)			/* Empty list -> error */
+     return -1;
+
+  return 0;
+}
+
+static 
+int sip_security_agree_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  char *end = b + bsiz, *b0 = b;
+  sip_security_agree_t const *sa = h->sh_security_agree;
+
+  SIP_STRING_E(b, end, sa->sa_mec);
+  SIP_PARAMS_E(b, end, sa->sa_params, flags);
+
+  return b - b0;
+}
+
+static 
+int sip_security_agree_dup_xtra(sip_header_t const *h, int offset)
+{
+  sip_security_agree_t const *sa = h->sh_security_agree;
+
+  SIP_PARAMS_SIZE(offset, sa->sa_params);
+  offset += SIP_STRING_SIZE(sa->sa_mec);
+
+  return offset;
+}
+
+/** Duplicate one sip_security_agree_t object */ 
+static 
+char *sip_security_agree_dup_one(sip_header_t *dst, sip_header_t const *src,
+			char *b, int xtra)
+{
+  sip_security_agree_t *sa_dst = dst->sh_security_agree;
+  sip_security_agree_t const *sa_src = src->sh_security_agree;
+
+  char *end = b + xtra;
+  b = sip_params_dup(&sa_dst->sa_params, sa_src->sa_params, b, xtra);
+  SIP_STRING_DUP(b, sa_dst->sa_mec, sa_src->sa_mec);
+  if (sa_dst->sa_params)
+    sip_security_agree_update(sa_dst);
+  assert(b <= end);
+
+  return b;
+}
+
+/* Update shortcuts */
+static void sip_security_agree_update(sip_security_agree_t *sa)
+{
+  int i;
+
+  if (sa->sa_params)
+    for (i = 0; sa->sa_params[i]; i++) {
+      if (strncasecmp(sa->sa_params[i], "q=", strlen("q=")) == 0)
+	sa->sa_q = sa->sa_params[i] + strlen("q=");
+    }
+}
+
+/**@SIP_HEADER sip_security_client Security-Client Header
+ *
+ * The Security-Client header is defined by RFC 3329, "Security Mechanism
+ * Agreement for the Session Initiation Protocol (SIP)".
+ *
+ * @code
+ *    security-client  = "Security-Client" HCOLON
+ *                       sec-mechanism *(COMMA sec-mechanism)
+ *    security-server  = "Security-Server" HCOLON
+ *                       sec-mechanism *(COMMA sec-mechanism)
+ *    security-verify  = "Security-Verify" HCOLON
+ *                       sec-mechanism *(COMMA sec-mechanism)
+ *    sec-mechanism    = mechanism-name *(SEMI mech-parameters)
+ *    mechanism-name   = ( "digest" / "tls" / "ipsec-ike" /
+ *                        "ipsec-man" / token )
+ *    mech-parameters  = ( preference / digest-algorithm /
+ *                         digest-qop / digest-verify / extension )
+ *    preference       = "q" EQUAL qvalue
+ *    qvalue           = ( "0" [ "." 0*3DIGIT ] )
+ *                        / ( "1" [ "." 0*3("0") ] )
+ *    digest-algorithm = "d-alg" EQUAL token
+ *    digest-qop       = "d-qop" EQUAL token
+ *    digest-verify    = "d-ver" EQUAL LDQUOT 32LHEX RDQUOT
+ *    extension        = generic-param
+ * @endcode
+ *
+ * @sa sip_security_server, sip_security_verify
+ */
+
+msg_hclass_t sip_security_client_class[] = 
+SIP_HEADER_CLASS(security_client, "Security-Client", "", 
+		 sa_params, append, security_agree);
+
+int sip_security_client_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return sip_security_agree_d(home, h, s, slen);
+}
+
+int sip_security_client_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return sip_security_agree_e(b, bsiz, h, f);
+}
+
+/**@SIP_HEADER sip_security_server Security-Server Header
+ *
+ * The Security-Server header is defined by RFC 3329, "Security Mechanism
+ * Agreement for the Session Initiation Protocol (SIP)".
+ *
+ * @sa sip_security_client, sip_security_verify
+ */
+
+msg_hclass_t sip_security_server_class[] = 
+SIP_HEADER_CLASS(security_server, "Security-Server", "", 
+		 sa_params, append, security_agree);
+
+int sip_security_server_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return sip_security_agree_d(home, h, s, slen);
+}
+
+int sip_security_server_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return sip_security_agree_e(b, bsiz, h, f);
+}
+
+
+/**@SIP_HEADER sip_security_verify Security-Verify Header
+ *
+ * The Security-Verify header is defined by RFC 3329, "Security Mechanism
+ * Agreement for the Session Initiation Protocol (SIP)".
+ *
+ * @sa sip_security_client, sip_security_server
+ */
+
+msg_hclass_t sip_security_verify_class[] = 
+SIP_HEADER_CLASS(security_verify, "Security-Verify", "", 
+		 sa_params, append, security_agree);
+
+int sip_security_verify_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  return sip_security_agree_d(home, h, s, slen);
+}
+
+int sip_security_verify_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  return sip_security_agree_e(b, bsiz, h, f);
+}
+
+/* ====================================================================== */
+/* RFC 3323 */
+
+/**@SIP_HEADER sip_privacy Privacy Header
+ * 
+ * The Privacy header is used by User-Agent to request privacy services from
+ * the network. Its syntax is defined in [RFC3323] as follows:
+ * 
+ * @code
+ *    Privacy-hdr  =  "Privacy" HCOLON priv-value *(";" priv-value)
+ *    priv-value   =   "header" / "session" / "user" / "none" / "critical"
+ *                     / token
+ * @endcode
+ */
+
+msg_xtra_f sip_privacy_dup_xtra;
+msg_dup_f sip_privacy_dup_one;
+
+msg_hclass_t sip_privacy_class[] = 
+SIP_HEADER_CLASS(privacy, "Privacy", "", priv_values, single, privacy);
+
+static 
+int sip_privacy_token_scan(char *start)
+{
+  char *s = start;
+  skip_token(&s);
+
+  if (s == start)
+    return -1;
+
+  if (IS_LWS(*s))
+    *s++ = '\0';
+  skip_lws(&s);
+
+  return s - start;
+}
+
+int sip_privacy_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+{
+  sip_privacy_t *priv = h->sh_privacy;
+
+  while (*s == ';' || *s == ',') {
+    s++;
+    skip_lws(&s);
+  }
+
+  for (;;) {
+    if (msg_any_list_d(home, &s, (msg_param_t **)&priv->priv_values,
+		       sip_privacy_token_scan, ';') < 0)
+      return -1;
+
+    if (*s == '\0')
+      return 0;			/* Success! */
+
+    if (*s == ',')
+      *s++ = '\0';		/* We accept comma-separated list, too */
+    else if (IS_TOKEN(*s))
+      ;				/* LWS separated list...  */
+    else
+      return -1;
+  }
+}
+
+int sip_privacy_e(char b[], int bsiz, sip_header_t const *h, int f)
+{
+  sip_privacy_t *priv = h->sh_privacy;
+  char *b0 = b, *end = b + bsiz;
+  int i;
+
+  if (priv->priv_values) {
+    for (i = 0; priv->priv_values[i]; i++) {
+      if (i > 0) SIP_CHAR_E(b, end, ';');
+      SIP_STRING_E(b, end, priv->priv_values[i]);
+    }
+  }
+
+  MSG_TERM_E(b, end);
+    
+  return b - b0;
+}
+
+int sip_privacy_dup_xtra(sip_header_t const *h, int offset)
+{
+  sip_privacy_t const *priv = h->sh_privacy;
+
+  SIP_PARAMS_SIZE(offset, priv->priv_values);
+
+  return offset;
+}
+
+char *sip_privacy_dup_one(sip_header_t *dst,
+			      sip_header_t const *src,
+			      char *b,
+			      int xtra)
+{
+  sip_privacy_t *priv = dst->sh_privacy;
+  sip_privacy_t const *o = src->sh_privacy;
+  char *end = b + xtra;
+
+  b = sip_params_dup(&priv->priv_values, o->priv_values, b, xtra);
+
+  assert(b <= end);
+
+  return b;
+}
+

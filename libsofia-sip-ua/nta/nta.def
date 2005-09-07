@@ -1,0 +1,92 @@
+LIBRARY      "nta"
+DESCRIPTION  'NTA NT Windows Dynamic Link Library'
+
+EXPORTS
+    ; Explicit exports can go here
+
+	nta_agent_create
+	nta_agent_destroy
+	nta_agent_contact
+	nta_agent_magic
+	nta_agent_set_params
+	nta_agent_get_params
+
+	nta_leg_create
+	nta_leg_tcreate
+	nta_leg_destroy
+	;nta_leg_magic
+	nta_leg_bind
+	nta_leg_stateful
+	nta_leg_tag
+	nta_leg_rtag
+	nta_leg_client_route
+	nta_leg_server_route
+
+	nta_incoming_bind
+	nta_incoming_tag
+	nta_incoming_getrequest
+	nta_incoming_getresponse
+	nta_incoming_reply
+	nta_incoming_treply
+	nta_incoming_mreply
+	nta_incoming_destroy
+
+	nta_outgoing_mcreate
+	nta_outgoing_getresponse
+	nta_outgoing_getrequest
+	nta_outgoing_cancel
+	nta_outgoing_tcancel
+	nta_outgoing_destroy
+
+; Functions for stateless processing
+
+	nta_msg_create
+	nta_msg_tsend
+	nta_msg_treply
+	nta_msg_discard
+	nta_msg_ackbye
+	nta_msg_complete
+
+	nta_msg_response_complete
+	nta_msg_request_complete
+
+; Compatibility functions
+
+	nta_agent_set_branch
+	nta_agent_tag
+	nta_agent_set_uas
+	nta_agent_set_proxy
+	nta_msg_send
+	nta_msg_reply
+	nta_msg_leg
+	nta_leg_branch
+	nta_leg_route
+	nta_incoming_forward
+
+	nta_outgoing_create
+	nta_outgoing_tcreate
+	nta_outgoing_fork
+	nta_outgoing_forward
+	nta_outgoing_tclone
+	nta_outgoing_tbye
+
+; Tags
+
+	ntatag_ua
+	ntatag_branch_key
+	ntatag_retry_timer_ini
+	ntatag_retry_timer_max
+	ntatag_linger_timer
+	ntatag_retry_count
+	ntatag_invite_count
+	ntatag_debug_drop_prob
+	ntatag_user_via
+	ntatag_pass_100
+	ntatag_timeout_408
+	ntatag_contact
+	ntatag_default_proxy
+
+	sl_contact_print
+	sl_from_print
+	sl_message_log
+	sl_to_print
