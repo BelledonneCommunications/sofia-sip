@@ -449,7 +449,7 @@ int http_content_range_d(su_home_t *home, http_header_t *h, char *s, int slen)
     return -1;
   s += 5; skip_lws(&s);
   if (s[0] == '*') {
-    cr->cr_first = cr->cr_last = (off_t)-1;
+    cr->cr_first = cr->cr_last = (http_off_t)-1;
     s++; skip_lws(&s);
   } else {
     if (msg_delta_d((char const **)&s, &cr->cr_first) < 0)
@@ -466,7 +466,7 @@ int http_content_range_d(su_home_t *home, http_header_t *h, char *s, int slen)
   s++; skip_lws(&s);
 
   if (s[0] == '*') {
-    cr->cr_length = (off_t)-1;
+    cr->cr_length = (http_off_t)-1;
     s++; skip_lws(&s);
   } else {
     if (msg_delta_d((char const **)&s, &cr->cr_length) < 0)
@@ -480,14 +480,14 @@ int http_content_range_e(char b[], int bsiz, http_header_t const *h, int f)
 {
   http_content_range_t const *cr = h->sh_content_range;
 
-  if (cr->cr_first == (off_t)-1) {
-    if (cr->cr_length == (off_t)-1)
+  if (cr->cr_first == (http_off_t)-1) {
+    if (cr->cr_length == (http_off_t)-1)
       return snprintf(b, bsiz, "bytes */*");
     else
       return snprintf(b, bsiz, "bytes */%lu", cr->cr_length);
   }
   else {
-    if (cr->cr_length == (off_t)-1)
+    if (cr->cr_length == (http_off_t)-1)
       return snprintf(b, bsiz, "bytes %lu-%lu/*", cr->cr_first, cr->cr_last);
     else
       return snprintf(b, bsiz, "bytes %lu-%lu/%lu",
