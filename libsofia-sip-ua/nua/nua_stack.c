@@ -2493,7 +2493,7 @@ int nmedia_save_params(struct nua_media_state *nm,
 #endif
   int hold = nm->nm_hold_remote;
   int clone = nm->nm_clone;
-  enum nua_af af = nm->nm_af;
+  int af = nm->nm_af;
 
   if (!tags)
     return 0;

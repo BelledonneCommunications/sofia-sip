@@ -1507,7 +1507,7 @@ void tport_zap_secondary(tport_t *self)
 
   if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
     size_t n = 0, i, N = self->tp_params->tpp_qsize;
-    for (i = self->tp_qhead; self->tp_queue[i]; i = ++i % N) {
+    for (i = self->tp_qhead; self->tp_queue[i]; i = (i + 1) % N) {
       msg_destroy(self->tp_queue[i]), self->tp_queue[i] = NULL;
       n++;
     }
@@ -3438,7 +3438,7 @@ static int tport_recv_sigcomp_r(tport_t *self,
   int veclen;
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
   su_sockaddr_t su[1];
-  int su_size = sizeof(su);
+  socklen_t su_size = sizeof(su);
   struct sigcomp_buffer *input, *output;
   void *data;
   unsigned dlen;
@@ -3673,7 +3673,7 @@ void tport_try_accept_sigcomp(tport_t *self, msg_t *msg)
     else {
       if (tport_log->log_level >= 5) {
 	char const *name; 
-	unsigned namelen;
+	int namelen;
       
 	name = sigcomp_compartment_name(self->tp_sigcomp->sc_cc, &namelen);
 	SU_DEBUG_5(("tport(%p): msg %p SigComp implicit accept '%.*s'\n", 
@@ -3704,7 +3704,7 @@ tport_sigcomp_accept(tport_t *self,
   if (udvm) {
     if (tport_log->log_level >= 5) {
       char const *name; 
-      unsigned namelen;
+      int namelen;
    
       if (cc) {
 	name = sigcomp_compartment_name(cc, &namelen);
@@ -6062,7 +6062,7 @@ typedef struct
   struct sigcomp_compartment *tpd_cc;
 #endif
   struct sigcomp_udvm *tpd_udvm;
-  int tpd_namelen;
+  socklen_t tpd_namelen;
   su_sockaddr_t tpd_name[1];
 } thrp_udp_deliver_t;
 
@@ -6370,7 +6370,7 @@ int thrp_udp_recv(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd)
 #if HAVE_SIGCOMP
   else if (thrp->thrp_compartment) {
     struct sigcomp_buffer *input;
-    char *data;
+    void *data;
     int dlen;
 
     tpd->tpd_udvm = sigcomp_udvm_create_for_compartment(thrp->thrp_compartment);
@@ -6432,7 +6432,7 @@ int thrp_udvm_decompress(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd)
   su_addrinfo_t *ai;
   tport_t *tp = thrp->thrp_tport->pri_primary;
   unsigned n, m, i, eos, dlen;
-  char *data;
+  void *data;
   int veclen;
 
   output = sigcomp_udvm_output_buffer(udvm, -1);

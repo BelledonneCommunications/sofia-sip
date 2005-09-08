@@ -919,7 +919,7 @@ int auth_readdb_internal(auth_mod_t *am, int always)
   f = fopen(am->am_db, "rb");
 
   if (f) {
-    void *buffer;
+    void *buffer = NULL;
     auth_passwd_t *fresh = NULL;
 
 #if HAVE_FLOCK

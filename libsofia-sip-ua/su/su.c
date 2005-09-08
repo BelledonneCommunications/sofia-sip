@@ -294,7 +294,7 @@ struct in_addr6 const *su_in6addr_loopback(void)
 
 /** Scatter/gather send */
 int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags, 
-             su_sockaddr_t const *su, int sulen)
+             su_sockaddr_t const *su, socklen_t sulen)
 {
   DWORD bytes_sent = 0;
   DWORD ret;

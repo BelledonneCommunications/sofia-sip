@@ -131,7 +131,7 @@ tag_typedef_t nutag_phrase = STRTAG_TYPEDEF(phrase);
 
 tag_typedef_t nutag_handle = PTRTAG_TYPEDEF(handle);
 
-tag_typedef_t nutag_hold = INTTAG_TYPEDEF(hold);
+tag_typedef_t nutag_hold = BOOLTAG_TYPEDEF(hold);
 
 tag_typedef_t nutag_notify_refer = PTRTAG_TYPEDEF(notify_refer);
 tag_typedef_t nutag_refer_event = SIPHDRTAG_NAMED_TYPEDEF(refer_event, event);

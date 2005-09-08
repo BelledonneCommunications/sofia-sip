@@ -174,7 +174,7 @@ int prefix##_resize(void *realloc_arg, \
 \
   pr->pr##table = new_hash, pr->pr##size = new_size; \
 \
-  if (old_hash) halloc(realloc_arg, old_hash, 0); \
+  if (old_hash) old_hash = halloc(realloc_arg, old_hash, 0);	\
 \
   assert(pr->pr##used == used);\
 \

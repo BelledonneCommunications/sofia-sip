@@ -196,7 +196,7 @@ int base64_e(char buf[], int bsiz, void *data, int dsiz)
   unsigned char *s = (unsigned char *)buf;
   unsigned char *b = (unsigned char *)data;
   unsigned long w;
-  size_t i, n, slack = (size_t)dsiz % 3;
+  size_t i, n, slack = (unsigned)dsiz % 3;
   size_t dsize = (size_t)dsiz - slack, bsize = (size_t)bsiz;
 
   if (bsize == 0)

@@ -470,7 +470,7 @@ extern tag_typedef_t nutag_early_media_ref;
  *    nua_get_params()
  *
  * @par Parameter type
- *    unsigned int
+ *    int (enum nua_af)
  *
  * @par Values
  *    @c 0  no timer \n
@@ -718,7 +718,7 @@ extern tag_typedef_t nutag_enableMessenger_ref;
  *    nua_get_params()
  *
  * @par Parameter type
- *    int
+ *    boolean
  *
  * @par Values
  *    @c 0   S/MIME is Disabled \n
@@ -1151,7 +1151,7 @@ extern tag_typedef_t nutag_handle_ref;
  *    nua_update()
  *
  * @par Parameter type
- *    unsigned int
+ *    int (boolean)
  *
  * @par Values
  *    @c 1 hold call \n
@@ -1159,10 +1159,10 @@ extern tag_typedef_t nutag_handle_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_HOLD_REF()
  */
-#define NUTAG_HOLD(x)           nutag_hold, tag_uint_v(x)
+#define NUTAG_HOLD(x)           nutag_hold, tag_bool_v(x)
 extern tag_typedef_t nutag_hold;
 
-#define NUTAG_HOLD_REF(x)       nutag_hold_ref, tag_uint_vr(&(x))
+#define NUTAG_HOLD_REF(x)       nutag_hold_ref, tag_bool_vr(&(x))
 extern tag_typedef_t nutag_hold_ref;
 
 /** Refer reply handle (used with refer)
