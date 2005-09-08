@@ -446,21 +446,21 @@ int validate_dump(char *b, off_t size, context_t *ctx)
   return 0;
 }
 
-typedef long long unsigned llu;
+typedef unsigned longlong ull;
 
 static
 void report_memstats(char const *title, su_home_stat_t const hs[1])
 {
   printf("%s%smemory statistics\n", title, strlen(title) ? " " : "");
   if (hs->hs_allocs.hsa_number)
-    printf("\t%llu allocs, %llu bytes, %llu rounded,"
-	   " %llu max\n",
-	   (llu)hs->hs_allocs.hsa_number, (llu)hs->hs_allocs.hsa_bytes,
-	   (llu)hs->hs_allocs.hsa_rbytes, (llu)hs->hs_allocs.hsa_maxrbytes);
+    printf("\t"LLU" allocs, "LLU" bytes, "LLU" rounded,"
+	   " "LLU" max\n",
+	   (ull)hs->hs_allocs.hsa_number, (ull)hs->hs_allocs.hsa_bytes,
+	   (ull)hs->hs_allocs.hsa_rbytes, (ull)hs->hs_allocs.hsa_maxrbytes);
   if (hs->hs_frees.hsf_number)
-    printf("\t%llu frees, %llu bytes, rounded to %llu bytes\n",
-	   (llu)hs->hs_frees.hsf_number, (llu)hs->hs_frees.hsf_bytes,
-	   (llu)hs->hs_frees.hsf_rbytes);
+    printf("\t"LLU" frees, "LLU" bytes, rounded to "LLU" bytes\n",
+	   (ull)hs->hs_frees.hsf_number, (ull)hs->hs_frees.hsf_bytes,
+	   (ull)hs->hs_frees.hsf_rbytes);
   if (hs->hs_rehash || hs->hs_clones)
     printf("\t%d rehashes, %d clones\n", hs->hs_rehash, hs->hs_clones);
 }
@@ -498,13 +498,13 @@ void memstats(msg_t *msg, uint32_t msize, context_t *ctx)
 
 void report_sipstat(char const *what, sipstat_t const *sss)
 {
-  printf("%s: %llu with %.1f headers (total %llu)\n",
-	 what, (llu)sss->number, (double)sss->headers / sss->number, 
-	 (llu)sss->headers);
+  printf("%s: "LLU" with %.1f headers (total "LLU")\n",
+	 what, (ull)sss->number, (double)sss->headers / sss->number, 
+	 (ull)sss->headers);
   if (sss->payloads)
-    printf("\t%llu with body of %.1f bytes (total %llu)\n",
-	   (llu)sss->payloads, (double)sss->pl_bytes / sss->payloads, 
-	   (llu)sss->payloads);
+    printf("\t"LLU" with body of %.1f bytes (total "LLU")\n",
+	   (ull)sss->payloads, (double)sss->pl_bytes / sss->payloads, 
+	   (ull)sss->payloads);
 }
 
 void sipstats(msg_t *msg, uint32_t msize, sipstats_t *ss, context_t *ctx)
@@ -587,15 +587,15 @@ int report(context_t const *ctx)
   if (!n)
     return -1;
 
-  printf("total %llu messages with %llu bytes (mean size %llu)\n",
-	 (llu)n, (llu)ctx->bytes, (llu)(ctx->bytes / n));
+  printf("total "LLU" messages with "LLU" bytes (mean size "LLU")\n",
+	 (ull)n, (ull)ctx->bytes, (ull)(ctx->bytes / n));
 
   if (ctx->hist_msgsize)
     report_histogram("Message size", ctx->hist_msgsize);
 
   if (o->o_times && ctx->files > 1) 
-    printf("total %llu messages in %g seconds (%g msg/sec)\n",
-	   (llu)n, ctx->time, (double)n / ctx->time);
+    printf("total "LLU" messages in %g seconds (%g msg/sec)\n",
+	   (ull)n, ctx->time, (double)n / ctx->time);
 
   if (o->o_sipstats) {
     sipstats_t *ss = ctx->sipstats;

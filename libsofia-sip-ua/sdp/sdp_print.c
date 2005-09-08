@@ -50,11 +50,11 @@ const char _sdp_print_c_id[] =
 /* Printing API */
 /* */
 
-typedef long long unsigned LLU;
-
 #define SDP_BLOCK   (512)
 
 #define CRLF "\015\012"
+
+typedef unsigned long long ull;
 
 struct sdp_printer_s {
   int        pr_size;
@@ -306,10 +306,10 @@ static void print_origin(sdp_printer_t *p, sdp_origin_t const *o)
     return;
   }
 
-  sdp_printf(p, "o=%s %llu %llu ", 
+  sdp_printf(p, "o=%s "LLU" "LLU" ", 
 	     o->o_username,
-	     (LLU)o->o_id,
-	     (LLU)o->o_version);
+	     (ull)o->o_id,
+	     (ull)o->o_version);
 
   print_connection2(p, o->o_address);
 }

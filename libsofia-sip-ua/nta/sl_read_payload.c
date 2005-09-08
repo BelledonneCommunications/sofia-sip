@@ -79,7 +79,7 @@ sip_payload_t *sl_fread_payload(su_home_t *home, FILE *f)
   int n;
   char *buf;
   char const *who;
-  off_t used, size;
+  size_t used, size;
 
   if (f == NULL) {
     errno = EINVAL;

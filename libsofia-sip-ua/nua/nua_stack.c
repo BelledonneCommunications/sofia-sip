@@ -114,8 +114,7 @@ const char _nua_stack_c_id[] =
 
 #include "nua_stack.h"
 
-typedef long long unsigned LLU;
-
+typedef unsigned longlong ull;
 
 /* ========================================================================
  *
@@ -2952,9 +2951,9 @@ char const *nh_recv_offer_answer(nua_handle_t *nh,
     *return_new_version = 0;
   }
 
-  SU_DEBUG_5(("nua: %s: %s (o=%s %llu %llu)\n",
+  SU_DEBUG_5(("nua: %s: %s (o=%s "LLU" "LLU")\n",
 	      "nh_recv_offer_answer", verdict ? verdict : "ignored",
-	      o->o_username, (LLU)o->o_id, (LLU)o->o_version));
+	      o->o_username, (ull)o->o_id, (ull)o->o_version));
   
   return verdict;
 }
@@ -2992,9 +2991,9 @@ char const *nh_sent_offer_answer(nua_handle_t *nh,
     ss->ss_o_local = sdp_origin_dup(nh->nh_home, o);
   }
 
-  SU_DEBUG_5(("nua: %s: %s (o=%s %llu %llu)\n",
+  SU_DEBUG_5(("nua: %s: %s (o=%s "LLU" "LLU")\n",
 	      "nh_sent_offer_answer", verdict ? verdict : "ignored", 
-	      o->o_username, (LLU)o->o_id, (LLU)o->o_version));
+	      o->o_username, (ull)o->o_id, (ull)o->o_version));
 
   return verdict;
 }

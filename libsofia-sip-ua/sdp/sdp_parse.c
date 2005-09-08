@@ -1664,12 +1664,12 @@ static int parse_ul(sdp_parser_t *p, char **r,
 }
 
 /*
- * parse_ul: parse an unsigned long
+ * parse_ull: parse an unsigned long long
  */
 static int parse_ull(sdp_parser_t *p, char **r, 
 		     uint64_t *result, uint64_t max)
 {
-  unsigned long long ull;
+  unsigned longlong ull;
 
   char *s = *r; 
 
@@ -1685,7 +1685,6 @@ static int parse_ull(sdp_parser_t *p, char **r,
 
   return -1;
 }
-
 
 static char *token(char **message, 
 		   const char *sep, 

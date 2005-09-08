@@ -165,7 +165,7 @@ enum {
 #define END(flags) } END_(flags) 
 #endif
 
-#define LLU long long unsigned
+typedef unsigned long long ull;
 
 /** @HIDE */
 #define TEST_1_(flags, suite) do { \
@@ -209,9 +209,9 @@ enum {
   if ((_value = (uint64_t)(suite)) == (_expect = (uint64_t)(expect))) \
   { if (flags & tst_verbatim) \
   printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); break; } \
-  fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or %llu != %llu\n", \
+  fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or "LLU" != "LLU"\n", \
 	 __FILE__, __LINE__, TSTNAME, \
-         #suite, #expect, (LLU)_value, (LLU)_expect); fflush(stderr); \
+         #suite, #expect, (ull)_value, (ull)_expect); fflush(stderr); \
     return 1; \
   } while(0)
 

@@ -253,7 +253,7 @@ uint32_t su_ntp_hi(su_ntp_t ntp)
 
 su_ntp_t su_ntp_hilo(uint32_t hi, uint32_t lo)
 {
-  return (((su_ntp_t)hi << 32) & 0xffffffff00000000LLU) | lo;
+  return ((((su_ntp_t)hi) << 32)) | lo;
 }
 
 /** Low 32 bit of NTP timestamp.

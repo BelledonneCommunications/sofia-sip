@@ -58,7 +58,8 @@ const char soa_add_h_id[] = SOA_ADD_H;
 
 #define NONE ((void *)-1)
 #define XXX assert(!"implemented")
-typedef long long unsigned llu;
+
+typedef unsigned longlong ull;
 
 /* ======================================================================== */
 
@@ -1119,9 +1120,9 @@ int soa_remote_sdp(soa_session_t *ss, sdp_parser_t *parser,
     ss->ss_answer_sent = 0;
   }
 
-  SU_DEBUG_5(("%s(%p): %s%s (o=%s %llu %llu)\n",
+  SU_DEBUG_5(("%s(%p): %s%s (o=%s "LLU" "LLU")\n",
 	      "soa_parse_sdp", ss, new_version ? "new " : "", verdict,
-	      o->o_username, (llu)o->o_id, (llu)o->o_version));
+	      o->o_username, (ull)o->o_id, (ull)o->o_version));
 
   return new_version;
 }
