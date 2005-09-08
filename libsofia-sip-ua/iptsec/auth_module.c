@@ -592,7 +592,7 @@ void auth_method_digest(auth_mod_t *am,
 			msg_auth_t *au,
 			auth_challenger_t const *ach)
 {
-  as->as_allow = auth_allow_check(am, as) == 0;
+  as->as_allow = as->as_allow || auth_allow_check(am, as) == 0;
 
   if (as->as_realm)
     au = auth_digest_credentials(au, as->as_realm, am->am_opaque);
