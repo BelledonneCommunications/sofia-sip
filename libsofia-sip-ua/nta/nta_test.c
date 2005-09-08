@@ -3191,11 +3191,11 @@ static int test_api_errors(void)
     TEST(nta_msg_complete(NULL), -1);
 
     TEST(nta_msg_response_complete(NULL, NULL, 800, "foo"), -1);
-    TEST(nta_msg_request_complete(NULL, NULL, SIP_METHOD("FOO"), NULL), -1);
+    TEST(nta_msg_request_complete(NULL, NULL, sip_method_unknown, "FOO", NULL), -1);
     TEST_1(msg = nta_msg_create(nta, 0));
     TEST(nta_msg_complete(msg), -1);
     TEST(nta_msg_response_complete(msg, NULL, 800, "foo"), -1);
-    TEST(nta_msg_request_complete(msg, NULL, SIP_METHOD("FOO"), NULL), -1);
+    TEST(nta_msg_request_complete(msg, NULL, sip_method_unknown, "FOO", NULL), -1);
     TEST(nta_is_internal_msg(NULL), 0);
     TEST(nta_is_internal_msg(msg), 0);
     TEST_1(msg_set_flags(msg, NTA_INTERNAL_MSG));
