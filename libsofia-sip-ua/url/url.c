@@ -132,6 +132,11 @@ const char url_h_id[] = URL_H;
   else if (a < 128)				\
     mask96 &= ~(1U << (127 - a))
 
+
+#define RMASK1 0xbe19003f
+#define RMASK2 0x8000001e
+#define RMASK3 0x8000001d
+
 #define RESERVED_MASK 0xbe19003f, 0x8000001e, 0x8000001d
 #define URIC_MASK     0xb400000a, 0x0000001e, 0x8000001d
 
@@ -150,7 +155,7 @@ int url_reserved_p(char const *s)
     while (*s) {
       unsigned char u = *s++;
 
-      if (IS_EXCLUDED_MASK(u, RESERVED_MASK))
+      if (IS_EXCLUDED(u, RMASK1, RMASK2, RMASK3))
 	return 1;
     }
 
