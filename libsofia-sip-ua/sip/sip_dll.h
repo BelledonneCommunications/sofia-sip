@@ -35,17 +35,10 @@
 #if !defined(WIN32)
 /** Attribute for symbols exported from sip() library */
 #define SIP_DLL
-#define SIP_DLL_VAR
 #elif defined(SIP_EXPORTS)
-/* SIP_DLL puts constants into text (code) segment */
-/* #pragma code_seg(".text") */
-/* #define SIP_DLL __declspec(allocate(".text")) __declspec(dllexport) */
-/* SIP_DLL_VAR creates a thunk for exporting variables from DLL. */
 #define SIP_DLL      __declspec(dllexport)
-#define SIP_DLL_VAR  __declspec(dllexport)
 #else
 #define SIP_DLL     __declspec(dllimport)
-#define SIP_DLL_VAR __declspec(dllimport)
 #endif
 
 #endif 
