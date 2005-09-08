@@ -110,8 +110,7 @@ void su_vector_destroy(su_vector_t *vector)
       }
     }
 
-    su_home_deinit(vector->v_home);
-    su_free(vector->v_parent, vector->v_home);
+    su_home_zap(vector->v_home);
   }
 }
 

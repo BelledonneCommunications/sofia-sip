@@ -526,7 +526,7 @@ server_t *server_create(url_t const *url,
 
   if (!root || !url || 
       (url->url_type != url_http && url->url_type != url_https)
-      || !(srv = su_salloc(NULL, sizeof(*srv)))) {
+      || !(srv = su_home_new(sizeof(*srv)))) {
     ta_end(ta);
     return NULL;
   }
@@ -575,8 +575,7 @@ void server_destroy(server_t *srv)
 {
   tport_destroy(srv->srv_tports);
   su_timer_destroy(srv->srv_timer);
-  su_home_deinit(srv->srv_home);
-  su_free(NULL, srv);
+  su_home_unref(srv->srv_home);
 }
 
 /** Initialize server timer. */

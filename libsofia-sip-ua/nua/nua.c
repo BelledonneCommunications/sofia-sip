@@ -286,11 +286,10 @@ void nua_destroy(nua_t *nua)
 
   if (nua) {
     su_clone_wait(nua->nua_api_root, nua->nua_clone);
-    su_home_deinit(nua->nua_home);
 #if HAVE_SMIME		/* Start NRC Boston */
     sm_destroy(nua->sm);
 #endif			/* End NRC Boston */
-    su_free(NULL, nua);
+    su_home_unref(nua->nua_home);
   }
 }
 
