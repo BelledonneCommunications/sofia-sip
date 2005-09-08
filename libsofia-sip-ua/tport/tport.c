@@ -3565,6 +3565,13 @@ static int tport_recv_sigcomp_r(tport_t *self,
 	sigcomp_udvm_reject(udvm); /* Reject empty message */
       }
     }
+    else {
+      SU_DEBUG_5(("%s(%p): sigcomp recv = %u => %u %s\n", __func__, self, 
+		  N, dlen, eos ? " (complete)" : ""));
+      if (complete || !tport_is_stream(self)) {
+	sigcomp_udvm_reject(udvm); /* Reject empty message */
+      }
+    }
 
     if (self->tp_pri->pri_socktype == SOCK_STREAM) {
       if (eos)
