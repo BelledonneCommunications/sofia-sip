@@ -875,6 +875,11 @@ static int reuse_test(tp_test_t *tt)
   TEST(tport_test_run(tt, 5), 1);
   msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
 
+  TEST_1(tport_shutdown(tp0, 2) >= 0);
+  TEST_1(tport_shutdown(tp1, 2) >= 0);
+  TEST_1(tport_shutdown(tp0, 1) >= 0);
+  TEST(tport_shutdown(NULL, 0), -1);
+
   tport_decref(&tp0);
   tport_decref(&tp1);
 

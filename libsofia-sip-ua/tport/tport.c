@@ -2262,8 +2262,6 @@ void tport_close(tport_t *self)
  */
 int tport_shutdown(tport_t *self, int how)
 {
-  assert(self); assert(how >= 0 && how <= 2);
-
   if (self == NULL || tport_is_primary(self))
     return -1;
 
