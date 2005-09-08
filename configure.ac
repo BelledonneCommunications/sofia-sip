@@ -28,8 +28,8 @@ AC_CHECK_TOOL(AR, ar, ar)
 AC_CHECK_TOOL(LD, ld, ld)
 AC_PROG_LIBTOOL
 
-dnl checks for libraries
-dnl --------------------
+### checks for libraries
+### --------------------
 AC_CHECK_LIB(pthread, pthread_create)
 
 PKG_CHECK_MODULES(GLIB, glib-2.0)
@@ -43,8 +43,8 @@ SAC_OPENSSL
 SAC_TPORT
 SAC_SU
 
-dnl internal modules
-dnl ----------------
+### internal modules
+### ----------------
 AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define as 1 always])
 AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define as 1 if we use DNS library])
 AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define as 1 if we use S/MIME library])
@@ -58,9 +58,8 @@ AC_DEFINE_UNQUOTED([HAVE_SOFIA_STUN], $HAVE_OPENSSL, [Define as 1 if we use STUN
 AC_DEFINE([HAVE_SRTP], 0, [Define as 1 if we use SRTP])
 AC_DEFINE([HAVE_UPNP], 0, [Define as 1 if we use UPnP])
 
-dnl checks for header files
-dnl -----------------------
-dnl XXX
+### checks for header files
+### -----------------------
 
 ### checks for types
 ### ----------------
@@ -73,15 +72,15 @@ AC_DEFINE([LLI], ["%lli"], [Define as format (%lli) for long long])dnl
 AC_DEFINE([LLX], ["%llx"], [Define as format (%llx) for long long hex])dnl
 ])dnl
 
-dnl checks for structures
-dnl ---------------------
+### checks for structures
+### ---------------------
 AC_HEADER_STDC
 AC_CHECK_HEADERS(pthread.h)
 AC_CHECK_HEADERS(stdint.h)
 AC_CHECK_HEADERS(inttypes.h)
 
-dnl checks for typedefs, structures, and compiler characteristics.
-dnl --------------------------------------------------------------
+### checks for typedefs, structures, and compiler characteristics.
+### --------------------------------------------------------------
 AC_C_CONST
 AC_C_INLINE
 AC_C_INLINE_DEFINE
@@ -97,8 +96,8 @@ AC_TYPE_SIZE_T
 AC_STRUCT_SIN6
 AC_SYS_SA_LEN
 
-dnl checks for library functions
-dnl ----------------------------
+### checks for library functions
+### ----------------------------
 AC_SEARCH_LIBS(gethostbyname, xnet nsl)
 AC_SEARCH_LIBS(getipnodebyname, xnet socket nsl)
 AC_SEARCH_LIBS(getaddrinfo, xnet socket nsl)
@@ -106,12 +105,12 @@ AC_SEARCH_LIBS(socket, xnet socket)
 AC_SEARCH_LIBS(inet_ntop, socket nsl)
 AC_SEARCH_LIBS(inet_pton, socket nsl)
 
-dnl checks for system services
-dnl --------------------------
+### checks for system services
+### --------------------------
 dnl XXX
 
-dnl output
-dnl ------
+### output
+### ------
 
 AC_CONFIG_FILES([
 Makefile
