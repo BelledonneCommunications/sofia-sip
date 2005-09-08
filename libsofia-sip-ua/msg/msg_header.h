@@ -52,43 +52,6 @@ typedef char *msg_dup_f(msg_header_t *dst, msg_header_t const *src,
 			char *buf, int bufsiz);
 typedef int msg_xtra_f(msg_header_t const *h, int offset);
 
-/**Define how to handle existing headers 
- * when a new header is added to a message. 
- */
-typedef enum {
-  msg_kind_single,		/**< Only one header is allowed */
-  msg_kind_append,		/**< New header is appended */
-  msg_kind_list,		/**< A token list header, 
-				 * new header is combined with old one. */
-  msg_kind_apndlist,		/**< A complex list header. */
-  msg_kind_prepend		/**< New header is prepended */
-} msg_header_kind_t;
-
-/** Factory object for a header. 
- * 
- * The #msg_hclass_t object, "header class", defines how a header is
- * handled. It has parsing and printing functions, functions used to copy
- * header objects, header name and other information used when parsing,
- * printing, removing, adding and replacing headers within a message.
- */
-struct msg_hclass_s
-{
-  int               hc_hash;	/**< Header name hash or ID */
-  msg_parse_f      *hc_parse;	/**< Parse header. */
-  msg_print_f      *hc_print;	/**< Print header. */
-  msg_xtra_f       *hc_dxtra;	/**< Calculate extra size for dup */
-  msg_dup_f        *hc_dup_one;	/**< Duplicate one header. */
-  char const 	   *hc_name;	/**< Full name. */
-  short             hc_len;	/**< Length of hc_name. */
-  char              hc_short[2];/**< Short name, if any. */
-  unsigned char     hc_size;	/**< Size of header structure. */
-  unsigned char     hc_params;	/**< Offset of parameters */
-  msg_header_kind_t hc_kind:3;	/**< Kind of header: 
-				 * single, append, list, apndlist, prepend. */
-  unsigned          hc_critical:1; /**< True if header is critical */
-  unsigned          /*pad*/:0;
-};
-
 /* These headers are critical for understanding the message */
 #define msg_kind_single_critical msg_kind_single, 1
 #define msg_kind_list_critical   msg_kind_list, 1
