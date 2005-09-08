@@ -1824,7 +1824,7 @@ int sip_retry_after_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 
 int sip_retry_after_e(char b[], int bsiz, sip_header_t const *h, int f)
 {
-  sip_retry_after_t *af = h->sh_retry_after;
+  sip_retry_after_t const *af = h->sh_retry_after;
   int const compact = MSG_IS_COMPACT(f);
   char *b0 = b, *end = b + bsiz;
 

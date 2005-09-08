@@ -302,7 +302,7 @@ unsigned msg_buf_size(msg_t const *msg)
 {
   assert(msg);
   if (msg) {
-    struct msg_mbuffer_s *mb = msg->m_buffer;
+    struct msg_mbuffer_s const *mb = msg->m_buffer;
     return mb->mb_size - mb->mb_commit - mb->mb_used;
   }
   else

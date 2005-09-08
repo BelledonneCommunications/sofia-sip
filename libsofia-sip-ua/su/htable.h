@@ -97,9 +97,9 @@ typedef struct prefix##_s { \
 HTABLE_SCOPE int prefix##_resize(su_home_t *, prefix##_t pr[1], unsigned); \
 HTABLE_SCOPE int prefix##_is_full(prefix##_t const *); \
 HTABLE_SCOPE entry_t **prefix##_hash(prefix##_t const *, hash_value_t hv); \
-HTABLE_SCOPE entry_t **prefix##_next(prefix##_t const *, entry_t **ee); \
-HTABLE_SCOPE void prefix##_append(prefix##_t *pr, entry_t *e); \
-HTABLE_SCOPE void prefix##_insert(prefix##_t *pr, entry_t *e); \
+HTABLE_SCOPE entry_t **prefix##_next(prefix##_t const *, entry_t * const *ee); \
+HTABLE_SCOPE void prefix##_append(prefix##_t *pr, entry_t const *e); \
+HTABLE_SCOPE void prefix##_insert(prefix##_t *pr, entry_t const *e); \
 HTABLE_SCOPE void prefix##_remove(prefix##_t *, entry_t const *e)
 
 /** Hash table implementation.
@@ -176,27 +176,27 @@ entry_t **prefix##_hash(prefix##_t const *pr, hash_value_t hv) \
 } \
 \
 HTABLE_SCOPE \
-entry_t **prefix##_next(prefix##_t const *pr, entry_t **ee) \
+entry_t **prefix##_next(prefix##_t const *pr, entry_t * const *ee) \
 { \
   if (++ee < pr->pr##_table + pr->pr##_size && ee >= pr->pr##_table) \
-    return ee; \
+    return (entry_t **)ee; \
   else \
     return pr->pr##_table; \
 }  \
 \
 HTABLE_SCOPE \
-void prefix##_append(prefix##_t *pr, entry_t *e) \
+void prefix##_append(prefix##_t *pr, entry_t const *e) \
 { \
   entry_t **ee; \
 \
   pr->pr##_used++; \
   for (ee = prefix##_hash(pr, hfun(e)); *ee; ee = prefix##_next(pr, ee)) \
    ; \
-  *ee = e; \
+  *ee = (entry_t *)e; \
 } \
 \
 HTABLE_SCOPE \
-void prefix##_insert(prefix##_t *pr, entry_t *e) \
+void prefix##_insert(prefix##_t *pr, entry_t const *e) \
 { \
   entry_t *e0, **ee; \
 \
@@ -205,8 +205,8 @@ void prefix##_insert(prefix##_t *pr, entry_t *e) \
   for (ee = prefix##_hash(pr, hfun(e));  \
        (e0 = *ee); \
        ee = prefix##_next(pr, ee)) \
-    *ee = e, e = e0; \
-  *ee = e; \
+    *ee = (entry_t *)e, e = e0; \
+  *ee = (entry_t *)e; \
 } \
 \
 HTABLE_SCOPE \

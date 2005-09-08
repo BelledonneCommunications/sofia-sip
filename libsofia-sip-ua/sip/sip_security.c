@@ -576,7 +576,7 @@ int sip_privacy_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 
 int sip_privacy_e(char b[], int bsiz, sip_header_t const *h, int f)
 {
-  sip_privacy_t *priv = h->sh_privacy;
+  sip_privacy_t const *priv = h->sh_privacy;
   char *b0 = b, *end = b + bsiz;
   int i;
 

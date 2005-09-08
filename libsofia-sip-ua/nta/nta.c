@@ -4570,7 +4570,7 @@ nta_incoming_t *incoming_find(nta_agent_t const *agent,
   sip_from_t const *from = sip->sip_from;
   sip_request_t *rq = sip->sip_request;
   int is_uas_ack = ack && agent->sa_is_a_uas && rq->rq_method == sip_method_ack;
-  incoming_htable_t *iht = agent->sa_incoming;
+  incoming_htable_t const *iht = agent->sa_incoming;
   hash_value_t hash = NTA_HASH(i, cseq->cs_seq);
 
   nta_incoming_t **ii, *irq, *maybe;
@@ -7201,9 +7201,9 @@ nta_outgoing_t *outgoing_find(nta_agent_t const *sa,
 			      sip_via_t const *v)
 {
   nta_outgoing_t **oo, *orq;
-  outgoing_htable_t *oht = sa->sa_outgoing;
-  sip_cseq_t *cseq = sip->sip_cseq;
-  sip_call_id_t *i = sip->sip_call_id;
+  outgoing_htable_t const *oht = sa->sa_outgoing;
+  sip_cseq_t const *cseq = sip->sip_cseq;
+  sip_call_id_t const *i = sip->sip_call_id;
   hash_value_t hash;
   sip_method_t method, method2;
   unsigned short status = sip->sip_status ? sip->sip_status->st_status : 0;

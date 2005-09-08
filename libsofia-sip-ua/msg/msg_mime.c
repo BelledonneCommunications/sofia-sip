@@ -615,7 +615,7 @@ int msg_multipart_complete(su_home_t *home,
 
   if (!(b = msg_params_find(c->c_params, "boundary="))) {
     /* Generate boundary */
-    int tlen = 16 * 4 / 3;
+    enum { tlen = 16 * 4 / 3 };
     char token[sizeof("boundary=") + tlen + 1];
 
     if (mp->mp_data) {
@@ -906,13 +906,13 @@ int msg_multipart_e(char b[], int bsiz, msg_header_t const *h, int flags)
 /** Calculate extra size of a multipart */
 int msg_multipart_dup_xtra(msg_header_t const *h, int offset)
 {
-  msg_multipart_t *mp = h->sh_multipart;
-  msg_header_t **hh;
+  msg_multipart_t const *mp = h->sh_multipart;
+  msg_header_t const **hh;
 
   offset = msg_payload_dup_xtra(h, offset);
 
-  for (hh = (msg_header_t **)&mp->mp_content_type; 
-       hh <= (msg_header_t **)&mp->mp_close_delim; 
+  for (hh = (msg_header_t const **)&mp->mp_content_type; 
+       hh <= (msg_header_t const **)&mp->mp_close_delim; 
        hh++) {
     for (h = *hh; h; h = h->sh_next) {
       MSG_STRUCT_SIZE_ALIGN(offset);
@@ -2008,7 +2008,7 @@ int msg_warning_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 
 int msg_warning_e(char b[], int bsiz, msg_header_t const *h, int f)
 {
-  msg_warning_t *w = h->sh_warning;
+  msg_warning_t const *w = h->sh_warning;
   char const *port = w->w_port;
   int n;
 

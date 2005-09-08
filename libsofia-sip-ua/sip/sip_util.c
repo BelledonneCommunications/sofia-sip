@@ -501,7 +501,7 @@ static void sip_fragment_clear_chain(sip_header_t *h)
   void const *next;
 
   for (h = h; h; h = h->sh_succ) {
-    next = h->sh_data + h->sh_len;
+    next = (char *)h->sh_data + h->sh_len;
 
     sip_fragment_clear(h->sh_common);
 
@@ -527,7 +527,7 @@ sip_route_t *sip_route_fix(sip_route_t *route)
   for (r = route; r; r = r->r_next) {
     /* Keep track of first header structure on this header line */
     if (!h 
-	|| h->sh_data + h->sh_len != r->r_common->h_data
+	|| (char *)h->sh_data + h->sh_len != r->r_common->h_data
 	|| r->r_common->h_len)
       h = (sip_header_t *)r;
 
