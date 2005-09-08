@@ -6143,7 +6143,7 @@ int tport_launch_threadpool(tport_primary_t *pri)
   return 0;
 
  error:
-  assert(!tport_launch_threadpool);
+  assert(!"tport_launch_threadpool");
   return -1;
 }
 
