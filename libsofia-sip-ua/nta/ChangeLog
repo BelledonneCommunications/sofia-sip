@@ -1,8 +1,16 @@
+2005-08-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* nta.c (nta_agent_set_params()): Returning -1 upon an error.
+
+2005-08-26  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* nta.c, nta_test.c: Fixed alias usage.
+
 2005-08-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
-	* Now we can start agent without any transports.
+	* Now we can start agent without any transport interfaces.
 
-	added flag for disabling server-side rport.
+	Added flag for disabling server-side rport.
 
 2005-08-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
