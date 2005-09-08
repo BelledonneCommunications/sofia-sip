@@ -122,7 +122,29 @@ void usage(void)
 
 static int name_test(tp_test_t *tt)
 {
+  tp_name_t tpn[1];
+
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+
+  su_sockaddr_t su[1];
+
   BEGIN();
+
+  memset(su, 0, sizeof su);
+
+  su->su_port = htons(5060);
+  su->su_family = AF_INET;
+
+  TEST(tport_convert_addr(home, tpn, "tcp", "localhost", su), 0);
+
+  su->su_family = AF_INET;
+
+  TEST(tport_convert_addr(home, tpn, "tcp", "localhost", su), 0);
+
+  su->su_family = AF_INET6;
+#if SU_HAVE_IN6
+  TEST(tport_convert_addr(home, tpn, "tcp", "localhost", su), 0);
+#endif
 
   END();
 }
