@@ -21,7 +21,7 @@ bin_PROGRAMS =
 
 noinst_PROGRAMS =	tport_test tport_objs.o
 
-TESTS =			tport_test $(TLS_TEST)
+TESTS =			tport_test
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
