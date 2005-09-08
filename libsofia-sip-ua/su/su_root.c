@@ -1010,7 +1010,7 @@ int su_clone_start(su_root_t *parent,
 #if !SU_HAVE_PTHREADS
   else {
     /* if we don't have threads, we *must* have parent root */
-    return NULL;
+    return -1;
   }
 #endif
 
