@@ -48,7 +48,9 @@ const char tport_c_id[] =
 
 #include <su.h>
 
+#if HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
+#endif
 
 #ifndef SU_DEBUG
 #define SU_DEBUG 3
@@ -687,6 +689,7 @@ int tport_has_sigcomp(tport_t const *self)
   return self->tp_name->tpn_comp != NULL;
 }
 
+static
 int tport_events(tport_t const *self)
 {
   int events = self->tp_events;
@@ -2770,7 +2773,9 @@ static int tport_recv(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
 	      events & SU_WAIT_OUT ? " OUT" : "",
 	      events & SU_WAIT_ERR ? " ERR" : ""));
 
+#if HAVE_POLL
   assert(w->fd == self->tp_socket);
+#endif
 
   if (events & SU_WAIT_ERR)
     tport_error_event(self, events);
@@ -5210,10 +5215,12 @@ void tport_stamp(tport_t const *self, msg_t *msg,
   minute = (unsigned short)((now.tv_sec / 60) % 60);
   hour = (unsigned short)((now.tv_sec / 3600) % 24);
 
+#if SU_HAVE_IN6
   if (su->su_family == AF_INET6) {
     if (su->su_sin6.sin6_flowinfo)
       snprintf(label, sizeof(label), "/%u", ntohl(su->su_sin6.sin6_flowinfo));
   }
+#endif
 
   if (tport_has_sigcomp(self) &&
       msg_addrinfo(msg)->ai_flags & TP_AI_COMPRESSED)
@@ -6214,7 +6221,9 @@ static int thrp_udp_event(tport_threadpool_t *thrp,
 			  su_wait_t *w, 
 			  tport_t *tp)
 {
+#if HAVE_POLL
   assert(w->fd == tp->tp_socket);
+#endif
 
   for (;;) {
     thrp_udp_deliver_t *tpd;
