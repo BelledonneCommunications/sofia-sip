@@ -683,6 +683,21 @@ int test_init(agent_t *ag, char const *resolv_conf)
 			      NTATAG_USE_SRV(1),
 			      TAG_END()),
 	 5);
+
+    TEST(nta_agent_set_params(ag->ag_agent, 
+			      NTATAG_ALIASES(ag->ag_aliases),
+			      NTATAG_DEFAULT_PROXY("sip:127.0.0.1"),
+			      TAG_END()), 2);
+
+    TEST(nta_agent_set_params(ag->ag_agent, 
+			      NTATAG_ALIASES(ag->ag_aliases),
+			      NTATAG_DEFAULT_PROXY(NULL),
+			      TAG_END()), 2);
+
+    TEST(nta_agent_set_params(ag->ag_agent, 
+			      NTATAG_DEFAULT_PROXY("tel:+35878008000"),
+			      TAG_END()), -1);
+
   }
   
   {
@@ -796,7 +811,8 @@ int test_tports(agent_t *ag)
      * Send a message from default leg to default leg 
      */
     char const p_acid[] = "P-Access-Network-Info: IEEE-802.11g\n";
-
+    msg_t *msg;
+    sip_t *sip;
     ag->ag_expect_leg = ag->ag_default_leg;
     TEST_1(ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, 
@@ -810,6 +826,11 @@ int test_tports(agent_t *ag)
 			       SIPTAG_CONTACT(ag->ag_m_alice),
 			       SIPTAG_HEADER_STR(p_acid),
 			       TAG_END()));
+
+    TEST(nta_outgoing_getresponse_ref(ag->ag_orq), NULL);
+    TEST_1(msg = nta_outgoing_getrequest_ref(ag->ag_orq));
+    TEST_S(nta_outgoing_method_name(ag->ag_orq), "MESSAGE");
+
     TEST(nta_outgoing_delay(ag->ag_orq), UINT_MAX);
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
@@ -883,7 +904,7 @@ int test_tports(agent_t *ag)
     ag->ag_expect_leg = ag->ag_server_leg;
     TEST_1(ag->ag_orq = 
           nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
-			       ag->ag_obp,
+			       NULL,
 			       SIP_METHOD_MESSAGE,
 			       (url_string_t *)url,
 			       SIPTAG_SUBJECT_STR("Test 0.2"),
@@ -891,6 +912,7 @@ int test_tports(agent_t *ag)
 			       SIPTAG_TO(ag->ag_alice),
 			       SIPTAG_CONTACT(ag->ag_m_bob),
 			       SIPTAG_PAYLOAD(pl),
+			       NTATAG_DEFAULT_PROXY(ag->ag_obp),
 			       TAG_END()));
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
@@ -1172,6 +1194,8 @@ int test_tports(agent_t *ag)
 			 NTATAG_TIMEOUT_408(1),
 			 NTATAG_SIP_T1(25), 
 			 NTATAG_SIP_T1X64(64 * 25), 
+			 NTATAG_SIP_T2(8 * 25),
+			 NTATAG_SIP_T4(10 * 25),
 			 TAG_END());
 
     *url = *ag->ag_aliases->m_url;
@@ -1199,6 +1223,8 @@ int test_tports(agent_t *ag)
     nta_agent_set_params(ag->ag_agent,
 			 NTATAG_SIP_T1(500),
 			 NTATAG_SIP_T1X64(64 * 500),
+			 NTATAG_SIP_T2(NTA_SIP_T2),
+			 NTATAG_SIP_T4(NTA_SIP_T4),
 			 TAG_END());
   }
   
@@ -2324,6 +2350,8 @@ int test_call(agent_t *ag)
 			      SIPTAG_CONTACT(ag->ag_m_alice),
 			      SIPTAG_CONTENT_TYPE(c),
 			      SIPTAG_PAYLOAD(sdp),
+			      NTATAG_USE_TIMESTAMP(1),
+			      NTATAG_PASS_100(1),
 			      TAG_END()));
 
   /* Try to CANCEL it immediately */
@@ -2538,6 +2566,11 @@ int invite_prack_callback(agent_t *ag,
 
   if (status < 300) {
     nta_outgoing_t *ack;
+    msg_t *msg;
+    sip_t *osip;
+
+    TEST_1(msg = nta_outgoing_getrequest_ref(orq));
+    TEST_1(osip = sip_object(msg));
 
     TEST(nta_leg_rtag(ag->ag_call_leg, sip->sip_to->a_tag), 0);
     
@@ -2550,6 +2583,7 @@ int invite_prack_callback(agent_t *ag,
 			       SIP_METHOD_ACK,
 			       NULL,
 			       SIPTAG_CSEQ(sip->sip_cseq),
+			       NTATAG_ACK_BRANCH(osip->sip_via->v_branch),
 			       TAG_END());
     TEST_1(ack);
     nta_outgoing_destroy(ack);
@@ -2854,6 +2888,7 @@ int test_fix_467(agent_t *ag)
 			     SIPTAG_PAYLOAD(sdp),
 			     TAG_END()));
 
+  
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   TEST(ag->ag_orq, NULL);
@@ -3215,6 +3250,13 @@ static int test_api_errors(void)
   TEST(nta_leg_by_uri(NULL, NULL), NULL);
   TEST(nta_leg_by_dialog(NULL,  NULL, NULL, NULL, NULL, NULL, NULL), NULL);
   TEST(nta_leg_by_dialog(nta, NULL, NULL, NULL, NULL, NULL, NULL), NULL);
+
+  TEST(nta_outgoing_tmcreate(NULL, NULL, NULL, NULL, NULL, TAG_END()), NULL);
+  TEST(nta_outgoing_tcancel(NULL, NULL, NULL, TAG_END()), NULL);
+  TEST(nta_outgoing_method_name(NULL), NULL);
+  TEST(nta_outgoing_getresponse_ref(NULL), NULL);
+  TEST(nta_outgoing_getrequest(NULL), NULL);
+  TEST(nta_outgoing_getrequest_ref(NULL), NULL);
 
 #if 0
 void nta_incoming_bind(nta_incoming_t *irq, 

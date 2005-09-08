@@ -873,7 +873,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
     m = tport_set_params(tport, TAG_NEXT(tags));
   }
 
-  if (n == 0)
+  if (n == 0 || m == -1)
     return m;
 
   n += m;
@@ -901,7 +901,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
       agent->sa_default_proxy = dp;
     }
     else
-      n -= 1;
+      n = -1;
   }
 
 #if HAVE_SIGCOMP
