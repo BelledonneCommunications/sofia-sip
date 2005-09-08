@@ -1059,6 +1059,7 @@ int test_tports(agent_t *ag)
     sip_via_add_param(ag->ag_home, via, "branch=MagicalBranch");
 
     nta_agent_set_params(ag->ag_agent, 
+			 NTATAG_ALIASES(ag->ag_aliases),
 			 NTATAG_USER_VIA(1),
 			 TAG_END());
 

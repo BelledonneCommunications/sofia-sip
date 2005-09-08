@@ -1793,7 +1793,7 @@ static int agent_check_request_via(nta_agent_t *agent,
 				   sip_t *sip,
 				   sip_via_t *v,
 				   tport_t *tport);
-static void agent_aliases(nta_agent_t const *, url_t [], tport_t *);
+static int agent_aliases(nta_agent_t const *, url_t [], tport_t *);
 static void agent_recv_response(nta_agent_t*, msg_t *, sip_t *,
 				sip_via_t *, tport_t*);
 static void agent_recv_garbage(nta_agent_t*, msg_t*, tport_t*);
@@ -2124,16 +2124,19 @@ int agent_check_request_via(nta_agent_t *agent,
   return 0;
 }
 
-/** @internal Handle aliases of local node. */
+/** @internal Handle aliases of local node. 
+ *
+ * Return true if @a url is modified.
+ */
 static
-void agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
+int agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
 {
   sip_contact_t *m;
   sip_via_t *lv;
   char const *tport_port = "";
 
   if (!url->url_host)
-    return;
+    return 0;
 
   if (tport)
     tport_port = tport_name(tport)->tpn_port;
@@ -2164,7 +2167,7 @@ void agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
   }
 
   if (!m)
-    return;
+    return 0;
 
   SU_DEBUG_7(("nta: canonizing " URL_PRINT_FORMAT " with %s\n",
 	      URL_PRINT_ARGS(url),
@@ -2176,6 +2179,7 @@ void agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
     url->url_type = agent->sa_aliases->m_url->url_type;
     url->url_scheme = agent->sa_aliases->m_url->url_scheme;
     url->url_port = agent->sa_aliases->m_url->url_port;
+    return 1;
   }
   else {
     /* Canonize the request URL port */
@@ -2184,11 +2188,14 @@ void agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
       if (lv->v_port)
 	/* Add non-default port */
 	url->url_port = lv->v_port;
+      return 1;
     }
     if (url->url_port &&
 	strcmp(url->url_port, url_port_default(url->url_type)) == 0)
       /* Remove default port */
       url->url_port = NULL;
+
+    return 0;
   }
 }
 
@@ -3059,9 +3066,18 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
     leg->leg_target = sip_contact_dup(home, m);
   }
 
+  url = url_hdup(home, url_string->us_url);
+
+  /* Match to local hosts */
+  if (url && agent_aliases(agent, url, NULL)) {
+    url_t *changed = url_hdup(home, url);
+    su_free(home, url);
+    url = changed;
+  }	
+
   leg->leg_rseq = rseq;
   leg->leg_seq = seq;
-  leg->leg_url = url = url_hdup(home, url_string->us_url);
+  leg->leg_url = url;
 
   if (from && from != NONE && leg->leg_local == NULL) {
     SU_DEBUG_3(("nta_leg_tcreate(): cannot duplicate local address\n"));
@@ -3083,9 +3099,6 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
     SU_DEBUG_3(("nta_leg_tcreate(): cannot duplicate local destination\n"));
     goto err;
   }
-
-  if (url)
-    agent_aliases(agent, url, NULL);	/* Match to local hosts */
 
   if (!no_dialog) {
     if (!leg->leg_local || !leg->leg_remote) {
