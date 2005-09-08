@@ -54,35 +54,58 @@ char const su_alloc_c_id[] =
  * }
  * @endcode
  * 
- * A new home memory pool can be created with su_home_clone():
+ * A new home memory pool can be created with su_home_new():
+ * @code
+ * struct context *ctx = su_home_new(sizeof (struct context));
+ * @endcode
+ *
+ * It is also possible to create a secondary memory pool that can be
+ * released separately:
+ *
  * @code
  * struct context *ctx = su_home_clone(tophome, sizeof (struct context));
  * @endcode
  *
- * Note that the tophome has now a reference to @a ctx structure; whenever
- * tophome is freed, the @a ctx is also freed. You can also create an
- * independent home object by passing NULL as @a tophome argument.
+ * Note that in this case, the tophome has a reference to @a ctx
+ * structure; whenever tophome is freed, the @a ctx is also freed. 
+ * 
+ * You can also create an independent home object by passing NULL as @a
+ * tophome argument.
  *
  * The memory allocations using @a ctx proceed  then as follows:
  * @code
- *    zeroblock = su_home_zalloc(ctx->ctx_home, sizeof (*zeroblock));
+ *    zeroblock = su_zalloc(ctx->ctx_home, sizeof (*zeroblock));
  * @endcode
  *
  * The home memory pool - the home object and all the memory blocks
- * allocated using it - are freed when su_home_zap() is called:
+ * allocated using it - are freed when su_home_unref() is called:
  *
  * @code
- *    su_home_zap(ctx->ctx_home).
+ *    su_home_unref(ctx->ctx_home).
  * @endcode
  *
- * Alternatively, the memory blocks are freed when the object with home
- * itself is freed:
+ * @note For historical reasons, su_home_unref() is also known as
+ * su_home_zap().
+ *
+ * As you might have guessed, it is also possible to use reference counting
+ * with home objects. The function su_home_ref() increases the reference
+ * count, su_home_unref() decreases. A newly allocated home object has
+ * reference count of 1.
+ *
+ * @note Please note that it is not possible to create new references to
+ * secondary home objects which have a parent home. Reference counting is
+ * possible only with objects returned from su_home_new().
+ *
+ * The memory blocks in a cloned home object are freed when the object with
+ * home itself is freed:
  * @code
  *    su_free(tophome, ctx);
  * @endcode
  * 
  * @note 
- * The su_home_create() and su_home_destroy() are deprecated.
+ * The su_home_create() and su_home_destroy() are deprecated. The
+ * function su_home_create() creates a home object with infinite reference
+ * count. Likewise, su_home_init() does the same.
  *
  * @section su_home_move_example Combining Allocations
  *
@@ -115,8 +138,8 @@ char const su_alloc_c_id[] =
  *
  * If multiple threads need to access same home object, it must be marked as
  * @c threadsafe by calling su_home_threadsafe() with the home pointer as
- * argument. The threadsafeness is not inherited to clones. 
- * 
+ * argument. A cloned home cannot be marked as threadsafe. The
+ * threadsafeness is not inherited by clones.
  */
 
 #include <stdlib.h>
@@ -137,7 +160,10 @@ char const su_alloc_stat_h_id[] = SU_ALLOC_STAT_H;
 void (*su_home_locker)(void *mutex);
 void (*su_home_unlocker)(void *mutex);
 
-#define LOCK(h)   \
+void (*su_home_mutex_locker)(void *mutex);
+void (*su_home_mutex_unlocker)(void *mutex);
+
+#define MEMLOCK(h)   \
   (((h) && (h)->suh_lock ? su_home_locker((h)->suh_lock) : (void)0), (h)->suh_blocks)
 #define UNLOCK(h) (((h) && (h)->suh_lock ? su_home_unlocker((h)->suh_lock) : (void)0), NULL)
 
@@ -164,20 +190,20 @@ enum {
 #define SIZEBITS (sizeof (unsigned) * 8 - 1)
 
 typedef struct {
-  unsigned sua_size:SIZEBITS;	/**< Size of the block */
-  unsigned sua_clone:1;		/**< Is this a clone? */
-  char    *sua_data;		/**< Data pointer */
+  unsigned long sua_size:SIZEBITS; /**< Size of the block */
+  unsigned sua_home:1;		/**< Is this another home? */
+  void    *sua_data;		/**< Data pointer */
 } su_alloc_t;
 
 struct su_block_s {
+  su_home_t  *sub_parent;	/**< Parent home */
+  unsigned    sub_ref;		/**< Reference count */
   unsigned    sub_used;		/**< Number of blocks allocated */
   unsigned    sub_n;		/**< Size of hash table  */
-  su_home_t  *sub_parent;	/**< Pointer to parent (if this is clone) */
-  su_home_stat_t
-             *sub_stats;	/**< Statistics.. */
-  char       *sub_preload;
   unsigned short sub_prsize;
   unsigned short sub_prused;
+  char       *sub_preload;
+  su_home_stat_t *sub_stats;	/**< Statistics.. */
   su_alloc_t  sub_nodes[SUB_N];	/**< Pointers to data/lower blocks */
 };
 
@@ -185,6 +211,8 @@ static void su_home_check_blocks(su_block_t const *b);
 
 static void su_home_stats_alloc(su_block_t *sub, void *p, unsigned size);
 static void su_home_stats_free(su_block_t *sub, void *p, unsigned size);
+
+static void _su_home_deinit(su_home_t *home);
 
 #define SU_ALLOC_STATS 1
 
@@ -269,7 +297,7 @@ static inline int su_alloc_check(su_block_t const *sub, su_alloc_t const *sua)
   assert(sua);
   if (sua) {
     size = sua->sua_size;
-    memcpy(&term, sua->sua_data + size, sizeof (term));
+    memcpy(&term, (char *)sua->sua_data + size, sizeof (term));
     assert(-term == size);
     return -term == size;
   }
@@ -291,9 +319,9 @@ static inline int su_alloc_check(su_block_t const *sub, su_alloc_t const *sua)
  *   This function returns a pointer to the allocated hash table or
  *   NULL if an error occurred.
  */
-static inline su_block_t *su_hash_alloc(su_home_t *home, int n)
+static inline su_block_t *su_hash_alloc(int n)
 {
-  su_block_t *b = su_zalloc(NULL, offsetof(su_block_t, sub_nodes[n]));
+  su_block_t *b = calloc(1, offsetof(su_block_t, sub_nodes[n]));
 
   if (b) {
     b->sub_n = n;
@@ -301,6 +329,259 @@ static inline su_block_t *su_hash_alloc(su_home_t *home, int n)
   }
 
   return b;
+}
+
+/** Allocate a memory block.
+ *
+ * Precondition: locked home
+ *
+ * @param home home to allocate
+ * @param sub  block structure used to allocate
+ * @param size
+ * @param zero if true, zero allocated block;
+ *             if > 1, allocate a subhome
+ *
+ */
+static 
+void *sub_alloc(su_home_t *home, 
+		su_block_t *sub,
+		long size, 
+		int zero)
+{
+  void *data;
+  int preload = 0;
+  
+  assert (size >= 0);
+
+  if (sub == NULL || 3 * sub->sub_used > 2 * sub->sub_n) {
+    int i, n, n2, used;
+    su_block_t *b2;
+
+    if (sub)
+      n = home->suh_blocks->sub_n, n2 = 4 * n + 3, used = sub->sub_used;
+    else
+      n = 0, n2 = SUB_N, used = 0;
+
+    // assert(n2 % SUB_P != 0);
+    // printf("su_alloc(home = %p): realloc block hash of size %d\n", home, n2);
+
+    if (!(b2 = su_hash_alloc(n2)))
+      return NULL;
+
+    for (i = 0; i < n; i++) {
+      if (sub->sub_nodes[i].sua_data) 
+	su_block_add(b2, sub->sub_nodes[i].sua_data)[0] = sub->sub_nodes[i];
+    }
+
+    if (sub) {
+      b2->sub_parent = sub->sub_parent;
+      b2->sub_ref = sub->sub_ref;
+      b2->sub_preload = sub->sub_preload;
+      b2->sub_prsize = sub->sub_prsize;
+      b2->sub_prused = sub->sub_prused;
+      b2->sub_stats = sub->sub_stats;
+    }
+
+    home->suh_blocks = b2;
+
+    free(sub), sub = b2;
+  }
+
+  /* Use preloaded memory */
+  if (size && sub && sub->sub_preload && zero <= 1) {
+    preload = sub->sub_prused + size + MEMCHECK_EXTRA; 
+    preload = ALIGN(preload);
+    if (preload <= sub->sub_prsize) {
+      data = (char *)sub->sub_preload + sub->sub_prused;
+      sub->sub_prused = preload;
+      if (zero)
+	memset(data, 0, size);
+    }
+    else {
+      preload = 0;
+    }
+  }
+
+  if (preload)
+    ;
+  else if (zero)
+    data = calloc(1, size + MEMCHECK_EXTRA);
+  else
+    data = malloc(size + MEMCHECK_EXTRA);
+
+  if (data) {
+    su_alloc_t *sua;
+
+#if MEMCHECK_EXTRA
+    int term = -size;
+    memcpy((char *)data + size, &term, sizeof (term));
+#endif
+
+    if (zero > 1) {
+      su_home_t *subhome = data;
+
+      assert(preload == 0);
+
+      subhome->suh_blocks = su_hash_alloc(SUB_N);
+      if (!subhome->suh_blocks) 
+	return (void)free(data), NULL;
+	
+      subhome->suh_blocks->sub_parent = home;
+    }
+
+    sua = su_block_add(sub, data); assert(sua);
+    sua->sua_size = size;
+    sua->sua_home = zero > 1;
+
+    if (sub->sub_stats)
+      su_home_stats_alloc(sub, data, size);
+  }
+
+  return data;
+}
+
+/**Create a new su_home_t object.
+ *
+ * Create a home object used to collect multiple memory allocations under
+ * one handle. The memory allocations made using this home object is freed
+ * either when this home is destroyed. An independent home object is created
+ * if NULL is passed as @a parent argument.
+ *
+ * @param parent  a parent object (may be NULL)
+ * @param size    size of home object
+ *
+ * The memory home object allocated with su_home_new() can be freed with
+ * su_home_unref().
+ *
+ * @return
+ * This function returns a pointer to an su_home_t object, or NULL upon
+ * an error.
+ */
+void *su_home_new(int size)
+{
+  su_home_t *home;
+
+  assert(size >= sizeof (*home));
+
+  if (size < sizeof (*home))
+    return NULL;
+
+  home = calloc(1, size);
+  if (home) {
+    home->suh_blocks = su_hash_alloc(SUB_N);
+    if (home->suh_blocks)
+      home->suh_blocks->sub_ref = 1;
+    else
+      free(home), home = NULL;
+  }
+
+  return home;
+}
+
+/** Create a new reference to a home object. */
+void *su_home_ref(su_home_t *home)
+{
+  if (home) {
+    su_block_t *sub = MEMLOCK(home);
+
+    if (sub == NULL || sub->sub_ref == 0) {
+      assert(sub && sub->sub_ref != 0);
+      UNLOCK(home);
+      return NULL;
+    }
+    
+    if (sub->sub_ref != UINT_MAX)
+      sub->sub_ref++;
+    UNLOCK(home);
+  }
+
+  return home;
+}
+
+/**Unreference a su_home_t object.
+ *
+ * The function su_home_unref() decrements the reference count on a home
+ * object and destroys and frees it and the memory allocations using it.
+ *
+ * @param home memory pool object to be destroyed
+ */
+void su_home_unref(su_home_t *home)
+{
+  su_block_t *sub;
+
+  if (home == NULL)
+    return;
+
+  sub = MEMLOCK(home);
+
+  if (sub == NULL) {
+    /* Xyzzy */
+  }
+  else if (sub->sub_parent) {
+    assert(sub->sub_ref == 0);
+    assert(home->suh_lock == NULL);
+    su_free(sub->sub_parent, home);
+  }
+  else if (sub->sub_ref == UINT_MAX) {
+    UNLOCK(home);
+  }
+  else if (--sub->sub_ref > 0) {
+    UNLOCK(home);
+  }
+  else {
+    _su_home_deinit(home);
+    free(home);
+    /* UNLOCK(home); */
+  }
+}
+
+
+/**Clone a su_home_t object.
+ *
+ * Clone a secondary home object used to collect multiple memoryf
+ * allocations under one handle. The memory is freed either when the cloned
+ * home is destroyed or when the parent home is destroyed. A cloned home
+ * cannot be reference counted, or made threadsafe.
+ *
+ * An independent
+ * home object is created if NULL is passed as @a parent argument.
+ *
+ * @param parent  a parent object (may be NULL)
+ * @param size    size of home object
+ *
+ * The memory home object allocated with su_home_new() can be freed with
+ * su_home_unref().
+ *
+ * @return
+ * This function returns a pointer to an su_home_t object, or NULL upon
+ * an error.
+ */
+void *su_home_clone(su_home_t *parent, int size)
+{
+  su_home_t *home;
+
+  assert(size >= sizeof (*home));
+
+  if (size < sizeof (*home))
+    return NULL;
+
+  if (parent) {
+    su_block_t *sub = MEMLOCK(parent);
+    home = sub_alloc(parent, sub, size, 2);
+    UNLOCK(parent);
+  }
+  else {
+    home = su_home_new(size);
+  }
+
+  return home;
+}
+
+/** Return true if home is a clone. */
+int su_home_has_parent(su_home_t const *home)
+{
+  return home && !home->suh_lock && 
+    home->suh_blocks && home->suh_blocks->sub_parent;
 }
 
 /** Allocate a memory block.
@@ -318,79 +599,14 @@ static inline su_block_t *su_hash_alloc(su_home_t *home, int n)
  */
 void *su_alloc(su_home_t *home, int size)
 {
-  void *data = NULL;
-  su_block_t *sub;
-  int preload = 0;
+  void *data;
 
-  assert(size <= 0x7fffffff);
-
-  if (home == NULL)
-    return malloc(size);
-
-  sub = LOCK(home);
-
-  if (sub == NULL || 3 * sub->sub_used > 2 * sub->sub_n) {
-    int i, n, n2, used;
-    su_block_t *b2;
-
-    if (sub)
-      n = home->suh_blocks->sub_n, n2 = 4 * n + 3, used = sub->sub_used;
-    else
-      n = 0, n2 = SUB_N, used = 0;
-
-    // assert(n2 % SUB_P != 0);
-    // printf("su_alloc(home = %p): realloc block hash of size %d\n", home, n2);
-
-    if (!(b2 = su_hash_alloc(home, n2)))
-      return UNLOCK(home);
-
-    home->suh_blocks = b2;
-
-    for (i = 0; i < n; i++) {
-      if (sub->sub_nodes[i].sua_data) 
-	su_block_add(b2, sub->sub_nodes[i].sua_data)[0] = sub->sub_nodes[i];
-    }
-
-    if (sub) {
-      b2->sub_parent = sub->sub_parent;
-      b2->sub_preload = sub->sub_preload;
-      b2->sub_prsize = sub->sub_prsize;
-      b2->sub_prused = sub->sub_prused;
-      b2->sub_stats = sub->sub_stats;
-    }
-
-    free(sub), sub = b2;
-  }
-
-  /* Use preloaded memory */
-  if (size && sub && sub->sub_preload) {
-    preload = sub->sub_prused + size + MEMCHECK_EXTRA; 
-    preload = ALIGN(preload);
-    if (preload <= sub->sub_prsize) {
-      data = (char *)sub->sub_preload + sub->sub_prused;
-      sub->sub_prused = preload;
-    }
-    else {
-      preload = 0;
-      data = malloc(size + MEMCHECK_EXTRA);
-    }
+  if (home) {
+    data = sub_alloc(home, MEMLOCK(home), size, 1);
+    UNLOCK(home);
   }
   else
-    data = malloc(size + MEMCHECK_EXTRA);
-
-  if (data) {
-#if MEMCHECK_EXTRA
-    int term = -size;
-    memcpy((char *)data + size, &term, sizeof (term));
-#endif
-
-    su_block_add(sub, data)->sua_size = size;
-
-    if (sub->sub_stats)
-      su_home_stats_alloc(sub, data, size);
-  }
-
-  UNLOCK(home);
+    data = malloc(size);
 
   return data;
 }
@@ -408,7 +624,7 @@ void su_free(su_home_t *home, void *data)
 {
   if (home && data) {
     su_alloc_t *allocation;
-    su_block_t *sub = LOCK(home);
+    su_block_t *sub = MEMLOCK(home);
 
     assert(sub);
     allocation = su_block_find(sub, data);
@@ -419,7 +635,7 @@ void su_free(su_home_t *home, void *data)
       if (sub->sub_stats)
 	su_home_stats_free(sub, data, allocation->sua_size);
 
-      if (allocation->sua_clone)
+      if (allocation->sua_home)
 	su_home_deinit(data);
 
 #if MEMCHECK != 0
@@ -427,9 +643,8 @@ void su_free(su_home_t *home, void *data)
 #endif
 
       /* Is this preloaded data? */
-      if (su_is_preloaded(sub, data)) {
+      if (su_is_preloaded(sub, data))
 	data = NULL;
-      }
 
       memset(allocation, 0, sizeof (*allocation));
       sub->sub_used--;
@@ -452,7 +667,7 @@ void su_free(su_home_t *home, void *data)
 void su_home_check(su_home_t const *home)
 {
 #if MEMCHECK != 0
-  su_block_t const *b = LOCK(home);
+  su_block_t const *b = MEMLOCK(home);
 
   su_home_check_blocks(b);
 
@@ -472,7 +687,7 @@ void su_home_check_blocks(su_block_t const *b)
     for (i = 0, used = 0; i < b->sub_n; i++)
       if (b->sub_nodes[i].sua_data) {
 	su_alloc_check(b, &b->sub_nodes[i]), used++;
-	if (b->sub_nodes[i].sua_clone)
+	if (b->sub_nodes[i].sua_home)
 	  su_home_check((su_home_t *)b->sub_nodes[i].sua_data);
       }
 
@@ -513,7 +728,7 @@ su_home_t *su_home_create(void)
  *   @param home pointer to a home object
  *
  * @deprecated
- * Use su_home_zap() or su_home_deinit() instead of su_home_destroy().
+ * Use su_home_deinit() instead of su_home_destroy().
  */
 void su_home_destroy(su_home_t *home)
 {
@@ -523,37 +738,29 @@ void su_home_destroy(su_home_t *home)
 
 /** Initialize an su_home_t object.
  *
- *   The function su_home_init() initializes an object derived from
- *   su_home_t. It checks that the suh_size field is valid. 
+ * The function su_home_init() initializes an object derived from su_home_t.
  *
  * @param home pointer to home object
  *
  * @return
  *    The function su_home_init() returns 0 when successful,
  *    or -1 upon an error.
- *
- * 
  */
 int su_home_init(su_home_t *home)
 {
   if (home == NULL)
     return -1;
 
-  assert(home->suh_size >= sizeof (*home));
+  home->suh_blocks = su_hash_alloc(SUB_N);
 
-  if (home->suh_size >= sizeof (*home)) {
-    home->suh_blocks = su_hash_alloc(home, SUB_N);
-    return 0;
-  }
-
-  return -1;
+  return 0;
 }
 
 /** Internal deinitialization */
 static
 void _su_home_deinit(su_home_t *home)
 {
-  if (home && home->suh_blocks) {
+  if (home->suh_blocks) {
     unsigned i;
     su_block_t *b;
 
@@ -563,10 +770,13 @@ void _su_home_deinit(su_home_t *home)
 
     for (i = 0; i < b->sub_n; i++) {
       if (b->sub_nodes[i].sua_data) {
-	if (b->sub_nodes[i].sua_clone)
-	  su_home_deinit((su_home_t *)b->sub_nodes[i].sua_data);
-	if (!su_is_preloaded(b, b->sub_nodes[i].sua_data))
-	  free(b->sub_nodes[i].sua_data);
+	if (b->sub_nodes[i].sua_home) {
+	  su_home_t *subhome = b->sub_nodes[i].sua_data;
+	  su_home_deinit((su_home_t *)subhome);
+	}
+	else if (su_is_preloaded(b, b->sub_nodes[i].sua_data))
+	  continue;
+	free(b->sub_nodes[i].sua_data);
       }
     }
 
@@ -579,8 +789,7 @@ void _su_home_deinit(su_home_t *home)
     home->suh_blocks = NULL;
   }
 
-  if (home->suh_lock)
-    home->suh_lock = NULL;
+  home->suh_lock = NULL;
 }
 
 /** Free memory blocks allocated through home.
@@ -592,9 +801,11 @@ void _su_home_deinit(su_home_t *home)
  */
 void su_home_deinit(su_home_t *home)
 {
-  if (LOCK(home))
+  if (MEMLOCK(home)) {
+    assert(home->suh_blocks && home->suh_blocks->sub_ref == 0);
     _su_home_deinit(home);
-  /* UNLOCK(home); */
+    /* UNLOCK(home); */
+  }
 }
 
 /**Move allocations from a su_home_t object to another.
@@ -620,7 +831,7 @@ int su_home_move(su_home_t *dst, su_home_t *src)
     return 0;
 
   if (dst) {
-    s = LOCK(src); d = LOCK(dst);
+    s = MEMLOCK(src); d = MEMLOCK(dst);
 
     if (s && s->sub_n) {
       if (d) 
@@ -634,7 +845,8 @@ int su_home_move(su_home_t *dst, su_home_t *src)
 	    ;
 	else
 	  n = 0, n2 = s->sub_n;
-	if (!(d2 = su_hash_alloc(dst, n2))) {
+
+	if (!(d2 = su_hash_alloc(n2))) {
 	  UNLOCK(dst); UNLOCK(src);
 	  return -1;
 	}
@@ -647,6 +859,7 @@ int su_home_move(su_home_t *dst, su_home_t *src)
 
 	if (d) {
 	  d2->sub_parent = d->sub_parent;
+	  d2->sub_ref = d->sub_ref;
 	  d2->sub_preload = d->sub_preload;
 	  d2->sub_prsize = d->sub_prsize;
 	  d2->sub_prused = d->sub_prused;
@@ -674,7 +887,7 @@ int su_home_move(su_home_t *dst, su_home_t *src)
     UNLOCK(dst); UNLOCK(src);
   }
   else {
-    s = LOCK(src); 
+    s = MEMLOCK(src); 
 
     if (s && s->sub_used) {
       s->sub_used = 0;
@@ -685,73 +898,6 @@ int su_home_move(su_home_t *dst, su_home_t *src)
   }
 
   return 0;
-}
-
-/** Clone a su_home_t object.
- *
- * The function su_home_clone() clones a home object used to collect
- * multiple memory allocations under one handle. The memory is freed
- * either when the cloned home is destroyed, or when the parent is
- * destroyed. An * independent home object is created if NULL is passed as
- * @a parent argument.
- *
- * @param parent  a parent object (may be NULL)
- * @param size    size of home object
- *
- * The memory home object allocated with su_home_clone() can be freed with
- * su_home_zap().
- *
- * @return
- * This function returns a pointer to an su_home_t object, or NULL upon
- * an error.
- */
-void *su_home_clone(su_home_t *parent, int size)
-{
-  su_home_t *home;
-
-  assert(size >= sizeof (*home));
-
-  if (size < sizeof (*home) || !(home = su_alloc(parent, size)))
-    return NULL;
-
-  memset(home, 0, size);
-  home->suh_size = size;
-
-  if (su_home_init(home) == 0) {
-    if (parent) {
-      su_block_find(LOCK(parent), home)->sua_clone = 1;
-      UNLOCK(parent);
-    }
-    home->suh_blocks->sub_parent = parent;
-  }
-  else
-    su_free(parent, home), home = NULL;
-
-  return home;
-}
-
-/** Zap a su_home_t object.
- *
- * The function su_home_zap() destroys and frees a home object used to
- * collect multiple memory allocations under one handle.
- *
- * @param home memory pool object to be destroyed
- */
-void su_home_zap(su_home_t *home)
-{
-  if (home) {
-    su_home_t *parent;
-    su_block_t *sub = LOCK(home);
-    assert(sub);
-
-    parent = sub->sub_parent;
-
-    _su_home_deinit(home);
-
-    /* UNLOCK(home); */
-
-    su_free(parent, home);
-  }
 }
 
 /** Preload a memory home.
@@ -768,7 +914,7 @@ void su_home_preload(su_home_t *home, int n, int isize)
   if (home->suh_blocks == NULL) 
     su_home_init(home);
 
-  sub = LOCK(home);
+  sub = MEMLOCK(home);
   if (!sub->sub_preload) {
     int size;
     void *preload;
@@ -783,17 +929,6 @@ void su_home_preload(su_home_t *home, int n, int isize)
     home->suh_blocks->sub_prsize = size;
   }
   UNLOCK(home);
-}
-
-/** Set locker function */
-int su_home_set_locker_(su_home_t *home, su_alock_f locker)
-{
-  if (home == NULL || home->suh_lock)
-    return -1;
-
-  home->suh_lock = locker;
-
-  return 0;
 }
 
 /** Reallocate a memory block.
@@ -832,15 +967,15 @@ void *su_realloc(su_home_t *home, void *data, int size)
   if (!data)
     return su_alloc(home, size);
 
-  sub = LOCK(home);
+  sub = MEMLOCK(home);
   sua = su_block_find(sub, data);
 
   if (!su_alloc_check(sub, sua))
     return UNLOCK(home);
   
-  assert(!sua->sua_clone);
+  assert(!sua->sua_home);
   
-  if (sua->sua_clone)
+  if (sua->sua_home)
     return UNLOCK(home);
   
   if (!su_is_preloaded(sub, data)) {
@@ -939,9 +1074,18 @@ void *su_realloc(su_home_t *home, void *data, int size)
  */
 void *su_zalloc(su_home_t *home, int  size)
 {
-  void *b = su_alloc(home, size);
-  if (b) memset(b, 0, size);
-  return b;
+  void *data;
+
+  assert (size >= 0);
+
+  if (home) {
+    data = sub_alloc(home, MEMLOCK(home), size, 1);
+    UNLOCK(home);
+  }
+  else
+    data = calloc(1, size);
+
+  return data;
 }
 
 /** Allocate a structure
@@ -977,17 +1121,24 @@ void *su_zalloc(su_home_t *home, int  size)
  */
 void *su_salloc(su_home_t *home, int size)
 {
+  void *data;
+
   struct { int size; } *retval;
 
   if (size < sizeof (*retval))
     size = sizeof (*retval);
 
-  retval = su_alloc(home, size);
+  assert (size >= 0);
 
-  if (retval) {
-    memset(retval, 0, size);
-    retval->size = size;
+  if (home) {
+    retval = sub_alloc(home, MEMLOCK(home), size, 1);
+    UNLOCK(home);
   }
+  else
+    retval = calloc(1, size);
+
+  if (retval)
+    retval->size = size;
 
   return retval;
 }
@@ -995,10 +1146,17 @@ void *su_salloc(su_home_t *home, int size)
 /** Obtain exclusive lock on home (if home is threadsafe). */
 int su_home_mutex_lock(su_home_t *home)
 {
-  if (home->suh_lock == NULL)
+  if (home == NULL)
     return -1;
 
-  su_home_locker(home->suh_lock);
+  if (home->suh_lock) {
+    su_home_ref(home);
+    su_home_mutex_locker(home->suh_lock);
+  }
+  else if (home->suh_blocks) {
+    if (!su_home_ref(home))
+      return -1;
+  }
 
   return 0;
 }
@@ -1006,10 +1164,16 @@ int su_home_mutex_lock(su_home_t *home)
 /** Release exclusive lock on home (if home is threadsafe) */
 int su_home_mutex_unlock(su_home_t *home)
 {
-  if (home->suh_lock == NULL)
+  if (home == NULL)
     return -1;
 
-  su_home_unlocker(home->suh_lock);
+  if (home->suh_lock) {
+    su_home_mutex_unlocker(home->suh_lock);
+    su_home_unref(home);
+  }
+  else if (home->suh_blocks) {
+    su_home_unref(home);
+  }
 
   return 0;
 }
@@ -1021,7 +1185,7 @@ void su_home_init_stats(su_home_t *home)
   int size;
 
   if (!sub)
-    sub = home->suh_blocks = su_hash_alloc(home, SUB_N);
+    sub = home->suh_blocks = su_hash_alloc(SUB_N);
   if (!sub)
     return;
 

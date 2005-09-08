@@ -751,7 +751,7 @@ static int test_warning(void)
 
   BEGIN();
 
-  TEST_1(home = su_home_create());
+  TEST_1(home = su_home_new(sizeof *home));
 
   TEST_1((w = msg_warning_make(home, 
 			       "399 host:5060 \"Ok\", "
@@ -772,7 +772,7 @@ static int test_warning(void)
 
   TEST_S(buf, "399 [::1]:39999 \"foo\\\" bar\"");
 
-  su_home_destroy(home), su_free(NULL, home);
+  su_home_unref(home);
 
   END();
 }

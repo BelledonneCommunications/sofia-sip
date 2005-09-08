@@ -46,6 +46,22 @@ char const su_alloc_lock_c_id[] =
 extern void (*su_home_locker)(void *mutex);
 extern void (*su_home_unlocker)(void *mutex);
 
+extern void (*su_home_mutex_locker)(void *mutex);
+extern void (*su_home_mutex_unlocker)(void *mutex);
+
+/** Mutex */
+static void mutex_locker(void *_mutex)
+{
+  pthread_mutex_t *mutex = _mutex;
+  pthread_mutex_lock(mutex + 1);
+}
+
+static void mutex_unlocker(void *_mutex)
+{
+  pthread_mutex_t *mutex = _mutex;
+  pthread_mutex_unlock(mutex + 1);
+}
+
 /** Convert su_home_t object to a thread-safe one.
  *
  * The function su_home_threadsafe() converts a memory home object
@@ -58,22 +74,29 @@ extern void (*su_home_unlocker)(void *mutex);
  */
 int su_home_threadsafe(su_home_t *home)
 {
-  static int locker_set = 0;
   pthread_mutex_t *mutex;
-
-  if (!locker_set) {
-    /* Avoid linking pthread library just for memory management...  */
-    su_home_locker = (void *)pthread_mutex_lock;
-    su_home_unlocker = (void *)pthread_mutex_unlock;
-    locker_set = 1;
-  }
 
   if (home == NULL || home->suh_lock)
     return 0;
 
-  mutex = su_alloc(home, sizeof (pthread_mutex_t));
+  assert(!su_home_has_parent(home));
+  if (su_home_has_parent(home))
+    return -1;
+
+  if (!su_home_unlocker) {
+    /* Avoid linking pthread library just for memory management */
+    su_home_mutex_locker = mutex_locker;
+    su_home_mutex_unlocker = mutex_unlocker;
+    su_home_locker = (void *)pthread_mutex_lock;
+    su_home_unlocker = (void *)pthread_mutex_unlock;
+  }
+
+  mutex = su_alloc(home, 2 * sizeof (pthread_mutex_t));
   if (mutex) {
+    /* Mutex for memory operations */
     pthread_mutex_init(mutex, NULL);
+    /* Mutex used for explicit locking */ 
+    pthread_mutex_init(mutex + 1, NULL);
     home->suh_lock = (void *)mutex;
     return 0;
   }

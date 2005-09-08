@@ -221,7 +221,7 @@ int header_size(http_header_t *h)
 /** Test header filtering and duplicating */
 static int tag_test(void)
 {
-  su_home_t *home = su_home_create();
+  su_home_t *home = su_home_new(sizeof *home);
   http_request_t *request =
     http_request_make(home, "GET /test/path HTTP/1.1");
   http_via_t *via = http_via_make(home, "1.1 http.example.com, 1.0 fred");
@@ -268,7 +268,7 @@ static int tag_test(void)
   su_free(NULL, dup);
   tl_vfree(lst);
 
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }
@@ -288,7 +288,7 @@ static int tag_test2(void)
   su_home_t *home;
   int xtra;
 
-  home = su_home_create();
+  home = su_home_new(sizeof *home);
 
   msg = read_message("HTTP/2.0 401 Unauthorized\r\n"
 		     "Content-Length: 0\r\n"
@@ -392,7 +392,7 @@ static int tag_test2(void)
 
   su_home_check(home);
 
-  su_home_destroy(home);
+  su_home_unref(home);
 #endif
 
   END();
@@ -523,7 +523,7 @@ static int http_header_handling_test(void)
   http_content_type_init(http_content_type);
   http_content_length_init(http_content_length);
 
-  home = su_home_create();
+  home = su_home_new(sizeof *home);
 
   {
     int i;
@@ -815,7 +815,7 @@ static int http_header_handling_test(void)
   TEST(http_content_length_class->hc_params,
        offsetof(http_content_length_t, l_common));
 
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }

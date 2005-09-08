@@ -50,16 +50,26 @@ typedef SU_HOME_T su_home_t;
 typedef struct su_block_s su_block_t;
 
 /** Thread-locking function. @internal */
-typedef void (su_alock_f)(int what);
+typedef struct su_alock su_alock_t;
 
 /** Memory home structure */
 struct su_home_s { 
-  int         suh_size;
+  int  suh_size;
   su_block_t *suh_blocks;
-  su_alock_f *suh_lock;
+  su_alock_t *suh_lock;
 };
 
-#define SU_HOME_INIT(obj) { sizeof (obj), 0 }
+#define SU_HOME_INIT(obj) { 0 }
+
+SU_DLL void *su_home_new(int size)
+     __attribute__((__malloc__));
+SU_DLL void *su_home_ref(su_home_t *);
+SU_DLL void su_home_unref(su_home_t *);
+
+SU_DLL void *su_home_clone(su_home_t *parent, int size)
+     __attribute__((__malloc__));
+
+#define su_home_zap(h) su_home_unref((h))
 
 SU_DLL su_home_t *su_home_create(void)
      __attribute__((__malloc__));
@@ -70,14 +80,15 @@ SU_DLL void su_home_deinit(su_home_t *h);
 
 SU_DLL void su_home_preload(su_home_t *h, int n, int size);
 
-SU_DLL void *su_home_clone(su_home_t *, int n)
-     __attribute__((__malloc__));
+SU_DLL su_home_t *su_home_incref(su_home_t const *);
 
-SU_DLL void su_home_zap(su_home_t *);
+SU_DLL void su_home_decref(su_home_t *);
 
 SU_DLL int su_home_move(su_home_t *dst, su_home_t *src);
 
 SU_DLL int su_home_threadsafe(su_home_t *home);
+
+SU_DLL int su_home_has_parent(su_home_t const *home);
 
 SU_DLL void su_home_check(su_home_t const *home);
 
@@ -109,8 +120,5 @@ SU_DLL char *su_vsprintf(su_home_t *home, char const *fmt, va_list ap)
 
 /* free an independent block */
 SU_DLL void su_free(su_home_t *h, void *);		
-
-/** Add a thread-locking function to the home. @internal */
-SU_DLL int su_home_set_locker_(su_home_t *h, su_alock_f locker);
 
 #endif /* ! defined(SU_ALLOC_H) */

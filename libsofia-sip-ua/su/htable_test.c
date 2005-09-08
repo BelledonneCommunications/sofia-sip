@@ -244,5 +244,8 @@ int table_test(int flags)
     TEST(count(c, h), 9);
   }
 
+  TEST_VOID(su_home_unref(c->c_home));
+
   END();
 }
+

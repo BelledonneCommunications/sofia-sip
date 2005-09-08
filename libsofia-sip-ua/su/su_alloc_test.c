@@ -94,16 +94,18 @@ int test_alloc(void)
 
   BEGIN();
 
-  TEST_1(h0 = su_home_clone(NULL, sizeof(*h0)));
+  TEST_1(h0 = su_home_new(sizeof(*h0)));
+  TEST_1(h1 = su_home_clone(h0, sizeof(*h1)));
+  TEST_1(h2 = su_home_ref(h0));
+  su_home_unref(h0);
+  su_home_unref(h2);
+
+  TEST_1(h0 = su_home_new(sizeof(*h0)));
   TEST_1(h1 = su_home_clone(h0, sizeof(*h1)));
   TEST_1(h2 = su_home_clone(h1, sizeof(*h2)));
   TEST_1(h3 = su_home_clone(h2, sizeof(*h3)));
 
   TEST(su_home_threadsafe(h0), 0);
-  TEST(su_home_threadsafe(h1), 0);
-  TEST(su_home_threadsafe(h2), 0);
-  TEST(su_home_threadsafe(h3), 0);
-  TEST(su_home_threadsafe(home), 0);
 
   for (i = 0; i < N; i++) {
     TEST_1(m0[i] = su_zalloc(h3, 20));
@@ -136,6 +138,7 @@ int test_alloc(void)
   TEST(c = su_realloc(home, c, 0), NULL);
 
   su_home_check(home);
+  su_home_deinit(home);
 
   su_home_check(h0);
   su_home_zap(h2);
@@ -181,6 +184,7 @@ static int test_strlst(void)
   TEST_1(!su_strlst_copy(home, NULL));
 
   TEST_VOID(su_strlst_destroy(NULL));
+  TEST_VOID(su_strlst_destroy(l));
 
   TEST_1(!su_strlst_dup_append(NULL, "aa"));
   TEST_1(!su_strlst_append(NULL, "bee"));
@@ -196,6 +200,7 @@ static int test_strlst(void)
   TEST_1(l = su_strlst_split(home, s, NULL));
   TEST_S(su_strlst_item(l, 0), "aaa");
   TEST_VOID(su_strlst_destroy(l));
+
   TEST_VOID(su_free(home, s));
 
   TEST_1(!su_strlst_dup_split(home, NULL, "."));
@@ -207,6 +212,8 @@ static int test_strlst(void)
   TEST(su_strlst_len(NULL), 0);
   TEST_1(!su_strlst_get_array(NULL));
   TEST_VOID(su_strlst_free_array(NULL, NULL));
+
+
   TEST_1(l = su_strlst_create(home));
   TEST_VOID(su_strlst_free_array(l, NULL));
   TEST_S(su_strlst_dup_append(l, "oh"), "oh");
