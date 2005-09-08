@@ -49,9 +49,9 @@ typedef SOA_MAGIC_T soa_magic_t;
 
 typedef int soa_callback_f(soa_magic_t *arg, soa_session_t *session);
 
-soa_session_t *soa_create(su_root_t *, char const *name);
+soa_session_t *soa_create(char const *name, su_root_t *, soa_magic_t *);
 
-soa_session_t *soa_clone(soa_session_t *, su_root_t *);
+soa_session_t *soa_clone(soa_session_t *, su_root_t *, soa_magic_t *);
 
 void soa_destroy(soa_session_t *);
 
@@ -67,6 +67,7 @@ int soa_error_as_sip_response(soa_session_t *soa,
 char const *soa_error_as_sip_reason(soa_session_t *soa);
 
 int soa_parse_sdp(soa_session_t *ss, 
+		  int live,
 		  char const *sdp,
 		  int len);
 
@@ -122,10 +123,28 @@ int soa_is_remote_video_active(soa_session_t const *ss);
 int soa_is_remote_image_active(soa_session_t const *ss);
 int soa_is_remote_chat_active(soa_session_t const *ss);
 
-/* SOA engine and media parameters
- * set by soa_set_params(), get by soa_get_params() 
- * or soa_get_paramlist() 
+/*
+ * SOA engine and media parameters set by soa_set_params(), get by
+ * soa_get_params() or soa_get_paramlist()
  */
+
+#define SOATAG_CAPS_SDP_STR(x)  soatag_caps_sdp_str, tag_str_v(x)
+extern tag_typedef_t soatag_caps_sdp_str;
+#define SOATAG_CAPS_SDP_STR_REF(x) \
+  soatag_caps_sdp_str_ref, tag_str_vr(&(x))
+extern tag_typedef_t soatag_caps_sdp_str_ref;
+
+#define SOATAG_LOCAL_SDP_STR(x)  soatag_local_sdp_str, tag_str_v(x)
+extern tag_typedef_t soatag_local_sdp_str;
+#define SOATAG_LOCAL_SDP_STR_REF(x) \
+  soatag_local_sdp_str_ref, tag_str_vr(&(x))
+extern tag_typedef_t soatag_local_sdp_str_ref;
+
+#define SOATAG_REMOTE_SDP_STR(x)  soatag_remote_sdp_str, tag_str_v(x)
+extern tag_typedef_t soatag_remote_sdp_str;
+#define SOATAG_REMOTE_SDP_STR_REF(x) \
+  soatag_remote_sdp_str_ref, tag_str_vr(&(x))
+extern tag_typedef_t soatag_remote_sdp_str_ref;
 
 #define SOATAG_AF(x)             soatag_af, tag_uint_v((x))
 extern tag_typedef_t soatag_af;

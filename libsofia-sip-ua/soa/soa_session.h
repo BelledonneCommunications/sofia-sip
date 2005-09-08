@@ -54,30 +54,42 @@ struct soa_session_actions
   char **(*soa_media_features)(soa_session_t *, int live, su_home_t *);
   char const * const *(*soa_sip_required)(soa_session_t const *ss);
   char const * const *(*soa_sip_support)(soa_session_t const *ss);
-  int (*soa_remote_sip_features)(soa_session_t *ss, 
+  int (*soa_remote_sip_features)(soa_session_t *ss,
 				 char const * const * support,
 				 char const * const * required);
+  int (*soa_config_sdp)(soa_session_t *ss, sdp_session_t *sdp,
+			char const *sdp_str, int strlen);
   int (*soa_generate_offer)(soa_session_t *ss, soa_callback_f *completed);
   int (*soa_generate_answer)(soa_session_t *ss, soa_callback_f *completed);
   void (*soa_activate_session)(soa_session_t *ss, char const *option);
   void (*soa_terminate_session)(soa_session_t *ss, char const *option);
 };
 
-int soa_default_init(char const *name, soa_session_t *, soa_session_t *parent);
-void soa_default_deinit(soa_session_t *ss);
-int soa_default_set_params(soa_session_t *ss, tagi_t const *tags);
-int soa_default_get_params(soa_session_t const *ss, tagi_t *tags);
-tagi_t *soa_default_get_paramlist(soa_session_t const *ss);
-char **soa_default_media_features(soa_session_t *, int live, su_home_t *);
-char const * const * soa_default_sip_required(soa_session_t const *ss);
-char const * const * soa_default_sip_support(soa_session_t const *ss);
-int soa_default_remote_sip_features(soa_session_t *ss, 
+soa_session_t *soa_session_ref(soa_session_t *ss);
+void soa_session_unref(soa_session_t *ss);
+
+int soa_base_init(char const *name, soa_session_t *, soa_session_t *parent);
+void soa_base_deinit(soa_session_t *ss);
+int soa_base_set_params(soa_session_t *ss, tagi_t const *tags);
+int soa_base_get_params(soa_session_t const *ss, tagi_t *tags);
+tagi_t *soa_base_get_paramlist(soa_session_t const *ss);
+char **soa_base_media_features(soa_session_t *, int live, su_home_t *);
+char const * const * soa_base_sip_required(soa_session_t const *ss);
+char const * const * soa_base_sip_support(soa_session_t const *ss);
+int soa_base_remote_sip_features(soa_session_t *ss,
 				    char const * const * support,
 				    char const * const * required);
-int soa_default_generate_offer(soa_session_t *ss, soa_callback_f *completed);
-int soa_default_generate_answer(soa_session_t *ss, soa_callback_f *completed);
-void soa_default_activate_session(soa_session_t *ss, char const *option);
-void soa_default_terminate_session(soa_session_t *ss, char const *option);
+int soa_base_config_sdp(soa_session_t *ss, sdp_session_t *sdp,
+			   char const *sdp0, int sdp0_len);
+int soa_base_generate_offer(soa_session_t *ss, soa_callback_f *completed);
+int soa_base_generate_answer(soa_session_t *ss, soa_callback_f *completed);
+void soa_base_activate(soa_session_t *ss, char const *option);
+void soa_base_terminate(soa_session_t *ss, char const *option);
+
+int soa_default_generate_offer(soa_session_t *ss,
+			       soa_callback_f *completed);
+int soa_default_generate_answer(soa_session_t *ss,
+				soa_callback_f *completed);
 
 struct soa_session
 {
@@ -86,10 +98,14 @@ struct soa_session
   struct soa_session_actions const *ss_actions;
 
   su_root_t *ss_root;
+  soa_magic_t *ss_magic;	/**< Application data */
+
+  soa_callback_f *ss_in_progress;/**< Operation in progress */
+
+  /** Incremented once each time session is terminated */
+  unsigned  ss_terminated;
 
   unsigned  ss_active:1;	/**< Session has been activated */
-
-  unsigned  ss_in_progress:1;	/**< Operation in progress */
 
   /* Current Offer-Answer status */
 
@@ -102,7 +118,7 @@ struct soa_session
   unsigned  ss_answer_sent:2;	/**< We have answered (reliably, if >1) */
   unsigned  :0;			/* Pad */
 
-  unsigned        ss_oa_rounds;		/**< Number of O/A rounds completed */
+  unsigned  ss_oa_rounds;	/**< Number of O/A rounds completed */
 
   struct soa_media_activity
   {
@@ -112,12 +128,18 @@ struct soa_session
     int ma_chat:3;  /**< Chat activity (send/recv) */
   } ss_local_activity[1], ss_remote_activity[1];
 
+  /** Capabilities as specified by application */
+  char const     *ss_caps_str0;
+  char const     *ss_caps_str;	/**< Session capabilities as string */
   sdp_session_t  *ss_caps;	/**< Session capabilities */
+
+  /** Session description specified by application */
+  char const     *ss_local_str0;
+  char const     *ss_local_str;	/**< Local session description as string */
   sdp_session_t  *ss_local;	/**< Local session description */
-  sdp_session_t  *ss_remote;	/**< Remote session description */
-  sdp_origin_t   *ss_o_remote;
 
   sdp_parser_t   *ss_parser;  	/**< SDP from incoming request */
+  sdp_session_t  *ss_remote;	/**< Remote session description */
 
   /** SIP features required */
   char const * const *ss_local_required;
@@ -152,10 +174,15 @@ struct soa_session
 
   su_strlst_t    *ss_events;
 
-  unsigned ss_srtp_enable:1, 
-    ss_srtp_confidentiality:1, 
+  unsigned ss_srtp_enable:1,
+    ss_srtp_confidentiality:1,
     ss_srtp_integrity:1;
 };
+
+/* ====================================================================== */
+
+int soa_set_status(soa_session_t *ss, int status, char const *phrase);
+void soa_set_activity(soa_session_t *ss, sdp_media_t const *m, int remote);
 
 /* ====================================================================== */
 /* Debug log settings */

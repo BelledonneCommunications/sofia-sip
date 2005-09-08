@@ -159,7 +159,7 @@ SAC_CHECK_SU_LIBS
 # ===========================================================================
 
 AC_CHECK_FUNCS(gettimeofday strerror random initstate tcsetattr flock)
-AC_CHECK_FUNCS(socketpair gethostname getipnodebyname getaddrinfo)
+AC_CHECK_FUNCS(socketpair gethostname getipnodebyname getaddrinfo alarm)
 
 if false; then
 	# not yet

@@ -42,6 +42,70 @@ const char soa_tag_c_id[] =
 #include <soa.h>
 #include <su_tag_class.h>
 
+/**@def SOATAG_CAPS_SDP_STR(x)
+ *  Pass media description file name to the NUA stack.
+ *
+ * Pass name of media description file that contains media templates
+ * (normally mss.sdp) to the NUA stack.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_create()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    NULL terminated character string
+ *
+ * Corresponding tag taking reference parameter is SOATAG_CAPS_SDP_STR_REF()
+ */
+tag_typedef_t soatag_caps_sdp_str = STRTAG_TYPEDEF(caps_sdp_str);
+
+/**@def SOATAG_LOCAL_SDP_STR(x)
+ *  Pass media description file name to the NUA stack.
+ *
+ * Pass name of media description file that contains media templates
+ * (normally mss.sdp) to the NUA stack.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_create()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    NULL terminated character string
+ *
+ * Corresponding tag taking reference parameter is SOATAG_LOCAL_SDP_STR_REF()
+ */
+tag_typedef_t soatag_local_sdp_str = STRTAG_TYPEDEF(local_sdp_str);
+
+/**@def SOATAG_REMOTE_SDP_STR(x)
+ *  Pass media description file name to the NUA stack.
+ *
+ * Pass name of media description file that contains media templates
+ * (normally mss.sdp) to the NUA stack.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_create()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    NULL terminated character string
+ *
+ * Corresponding tag taking reference parameter is SOATAG_REMOTE_SDP_STR_REF()
+ */
+tag_typedef_t soatag_remote_sdp_str = STRTAG_TYPEDEF(remote_sdp_str);
+
+
 
 /**@def SOATAG_AF(x)
  *

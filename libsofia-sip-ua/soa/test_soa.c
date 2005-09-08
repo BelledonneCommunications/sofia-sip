@@ -51,6 +51,7 @@ struct context;
 #define SOA_MAGIC_T struct context
 
 #include "soa.h"
+#include "soa_add.h"
 
 #include <su_log.h>
 
@@ -69,9 +70,19 @@ int tstflags = 0;
 #define __func__ name
 #endif
 
+#define NONE ((void*)-1)
+
 struct context 
 {
   su_home_t home[1];
+  su_root_t *root;
+
+  struct {
+    soa_session_t *a;
+    soa_session_t *b;
+  } synch, asynch;
+
+  soa_session_t *completed;
 };
 
 int test_api_completed(struct context *arg, soa_session_t *session)
@@ -87,8 +98,8 @@ int test_api_errors(struct context *ctx)
   char const *null = NULL;
   char const * const *featurelist;
 
-  TEST_1(!soa_create(NULL, "default"));
-  TEST_1(!soa_clone(NULL, NULL));
+  TEST_1(!soa_create("default", NULL, NULL));
+  TEST_1(!soa_clone(NULL, NULL, NULL));
   TEST_VOID(soa_destroy(NULL));
 
   TEST_1(-1 == soa_set_params(NULL, TAG_END()));
@@ -101,7 +112,7 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(soa_error_as_sip_reason(NULL));
 
-  TEST_1(-1 == soa_parse_sdp(NULL, NULL, 0));
+  TEST_1(-1 == soa_parse_sdp(NULL, 0, NULL, 0));
 
   TEST_VOID(soa_clear_sdp(NULL));
 
@@ -144,6 +155,43 @@ int test_init(struct context *ctx, char *argv[])
 {
   BEGIN();
 
+  int n;
+
+  ctx->root = su_root_create(ctx); TEST_1(ctx->root);
+
+  ctx->asynch.a = soa_create("asynch", ctx->root, ctx); 
+  TEST_1(!ctx->asynch.a);
+
+  TEST_1(!soa_find("asynch"));
+  TEST_1(soa_find("default"));
+
+  n = soa_add("asynch", &soa_asynch_actions); TEST(n, 0);
+
+  TEST_1(soa_find("asynch"));
+
+  ctx->asynch.a = soa_create("asynch", ctx->root, ctx); 
+  TEST_1(ctx->asynch.a);
+
+  ctx->asynch.b = soa_create("asynch", ctx->root, ctx);
+  TEST_1(ctx->asynch.b);
+
+  /* Create asynchronous endpoints */
+
+  ctx->synch.a = soa_create("static", ctx->root, ctx); 
+  TEST_1(!ctx->synch.a);
+
+  TEST_1(!soa_find("static"));
+  TEST_1(soa_find("default"));
+
+  n = soa_add("static", &soa_static_actions); TEST(n, 0);
+
+  TEST_1(soa_find("static"));
+
+  ctx->synch.a = soa_create("static", ctx->root, ctx);
+  TEST_1(ctx->synch.a);
+
+  ctx->synch.b = soa_create("static", ctx->root, ctx);
+  TEST_1(ctx->synch.b);
 
   END();
 }
@@ -151,6 +199,172 @@ int test_init(struct context *ctx, char *argv[])
 int test_params(struct context *ctx)
 {
   BEGIN();
+  int n;
+
+  n = soa_set_params(ctx->asynch.a, TAG_END()); TEST(n, 0);
+  n = soa_set_params(ctx->asynch.b, TAG_END()); TEST(n, 0);
+
+  END();
+}
+
+int test_completed(struct context *ctx, soa_session_t *session)
+{
+  ctx->completed = session;
+  su_root_break(ctx->root);
+  return 0;
+}
+
+int test_static_offer_answer(struct context *ctx)
+{
+  BEGIN();
+  int n;
+  
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+
+  char *caps = NONE, *offer = NONE, *answer = NONE;
+  int capslen = -1, offerlen = -1, answerlen = -1;
+
+  char const a[] = 
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5004 RTP/AVP 0 8\r\n";
+
+  char const b[] = 
+    "v=0\n"
+    "o=right 93298573265 321974 IN IP4 127.0.0.3\n"
+    "c=IN IP4 127.0.0.3\n"
+    "m=audio 5006 RTP/AVP 96\n"
+    "m=rtpmap:96 GSM/8000\n";
+
+  n = soa_parse_sdp(ctx->synch.a, 0, "m=audio 5004 RTP/AVP 0 8", -1); 
+  TEST(n, 1);
+
+  n = soa_parse_sdp(ctx->synch.a, 0, a, strlen(a)); TEST(n, 1);
+  n = soa_print_sdp(ctx->synch.a, 0, home, &caps, &capslen); TEST(n, 1);
+
+  TEST_1(caps != NULL && caps != NONE);
+  TEST_1(capslen > 0);
+
+  su_free(home, caps);
+
+  n = soa_parse_sdp(ctx->synch.b, 0, b, strlen(b)); TEST(n, 1);
+
+  n = soa_offer(ctx->synch.a, 1, test_completed); TEST(n, 0);
+
+  n = soa_print_sdp(ctx->synch.a, 1, home, &offer, &offerlen); TEST(n, 1);
+
+  n = soa_parse_sdp(ctx->synch.b, 1, offer, offerlen); TEST(n, 1);
+
+  n = soa_offer_answer(ctx->synch.b, 0, test_completed); TEST(n, 0);
+
+  TEST_VOID(soa_activate(ctx->synch.b, NULL));
+
+  n = soa_print_sdp(ctx->synch.b, 1, home, &answer, &answerlen); TEST(n, 1);
+
+  n = soa_parse_sdp(ctx->synch.a, 1, answer, answerlen); TEST(n, 1);
+
+  n = soa_offer_answer(ctx->synch.a, 0, test_completed); TEST(n, 0);
+
+  TEST_VOID(soa_activate(ctx->synch.a, NULL));
+
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(ctx->synch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(ctx->synch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_image_active(ctx->synch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_chat_active(ctx->synch.a));
+
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(ctx->synch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(ctx->synch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(ctx->synch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(ctx->synch.a));
+
+  su_home_deinit(home);
+
+  TEST_VOID(soa_terminate(ctx->synch.a, NULL));
+
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_audio_active(ctx->synch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_audio_active(ctx->synch.a));
+
+  TEST_VOID(soa_terminate(ctx->synch.b, NULL));
+  
+  END();
+}
+
+
+int test_asynch_offer_answer(struct context *ctx)
+{
+  BEGIN();
+  int n;
+  
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+
+  char *caps = NONE, *offer = NONE, *answer = NONE;
+  int capslen = -1, offerlen = -1, answerlen = -1;
+
+  char const a[] = 
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5004 RTP/AVP 0 8\r\n";
+
+  char const b[] = 
+    "v=0\n"
+    "o=right 93298573265 321974 IN IP4 127.0.0.3\n"
+    "c=IN IP4 127.0.0.3\n"
+    "m=audio 5006 RTP/AVP 96\n"
+    "m=rtpmap:96 GSM/8000\n";
+
+  n = soa_parse_sdp(ctx->asynch.a, 0, a, strlen(a)); TEST(n, 1);
+  n = soa_print_sdp(ctx->asynch.a, 0, home, &caps, &capslen); TEST(n, 1);
+
+  TEST_1(caps != NULL && caps != NONE);
+  TEST_1(capslen > 0);
+
+  su_free(home, caps);
+
+  n = soa_parse_sdp(ctx->asynch.b, 0, b, strlen(b)); TEST(n, 1);
+
+  n = soa_offer(ctx->asynch.a, 1, test_completed); TEST(n, 1);
+
+  su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.a); ctx->completed = NULL;
+
+  n = soa_print_sdp(ctx->asynch.a, 1, home, &offer, &offerlen); TEST(n, 1);
+
+  n = soa_parse_sdp(ctx->asynch.b, 1, offer, offerlen); TEST(n, 1);
+
+  n = soa_offer_answer(ctx->asynch.b, 0, test_completed); TEST(n, 1);
+
+  su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.b); ctx->completed = NULL;
+
+  TEST_VOID(soa_activate(ctx->asynch.b, NULL));
+
+  n = soa_print_sdp(ctx->asynch.b, 1, home, &answer, &answerlen); TEST(n, 1);
+
+  n = soa_parse_sdp(ctx->asynch.a, 1, answer, answerlen); TEST(n, 1);
+
+  n = soa_offer_answer(ctx->asynch.a, 0, test_completed); TEST(n, 0);
+
+  TEST_VOID(soa_activate(ctx->asynch.a, NULL));
+
+  su_home_deinit(home);
+
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(ctx->asynch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(ctx->asynch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_image_active(ctx->asynch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_chat_active(ctx->asynch.a));
+
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(ctx->asynch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(ctx->asynch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(ctx->asynch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(ctx->asynch.a));
+
+  TEST_VOID(soa_terminate(ctx->asynch.a, NULL));
+
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_audio_active(ctx->asynch.a));
+  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_audio_active(ctx->asynch.a));
+
+  TEST_VOID(soa_terminate(ctx->asynch.b, NULL));
+  
   END();
 }
 
@@ -240,15 +454,18 @@ int main(int argc, char *argv[])
   }
 
 #define SINGLE_FAILURE_CHECK()						\
-  do { if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
+  do { fflush(stdout);							\
+    if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
   } while(0)
 
   retval |= test_api_errors(ctx); SINGLE_FAILURE_CHECK();
-  retval |= test_init(ctx, argv + i); fflush(stdout); SINGLE_FAILURE_CHECK();
+  retval |= test_init(ctx, argv + i); SINGLE_FAILURE_CHECK();
   if (retval == 0) {
-    retval |= test_params(ctx); fflush(stdout); SINGLE_FAILURE_CHECK();
+    retval |= test_params(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_static_offer_answer(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_asynch_offer_answer(ctx); SINGLE_FAILURE_CHECK();
   }
-  retval |= test_deinit(ctx); fflush(stdout); 
+  retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();
 
   su_deinit();
 

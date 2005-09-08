@@ -34,9 +34,12 @@
 
 struct soa_session_actions;
 
-int soa_add(char const *name, struct soa_session_actions const *handler);
-struct soa_session_actions const *soa_find(char const *name);
-
 extern struct soa_session_actions const soa_default_actions;
+extern struct soa_session_actions const soa_static_actions;
+extern struct soa_session_actions const soa_asynch_actions;
+
+int soa_add(char const *name, struct soa_session_actions const *handler);
+
+struct soa_session_actions const *soa_find(char const *name);
 
 #endif /* SOA_ADD_H */
