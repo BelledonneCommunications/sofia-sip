@@ -201,6 +201,10 @@ void auth_challenge_basic(auth_mod_t *am,
 			  auth_challenger_t const *ach);
 
 /** Digest scheme */
+msg_auth_t *auth_digest_credentials(msg_auth_t *auth, 
+				    char const *realm,
+				    char const *opaque);
+
 void auth_method_digest(auth_mod_t *am,
 			auth_status_t *as,
 			msg_auth_t *au,

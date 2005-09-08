@@ -595,7 +595,7 @@ void auth_method_digest(auth_mod_t *am,
   as->as_allow = auth_allow_check(am, as) == 0;
 
   if (as->as_realm)
-    au = auth_mod_credentials(au, "Digest", as->as_realm);
+    au = auth_digest_credentials(au, as->as_realm, am->am_opaque);
   else
     au = NULL;
 
@@ -1199,6 +1199,83 @@ msg_auth_t *auth_mod_credentials(msg_auth_t *auth,
       if (strcmp(arealm, realm) == 0)
 	return auth;
     }
+  }
+
+  return NULL;
+}
+
+/** Find a Digest credential header with matching realm and opaque. */
+msg_auth_t *auth_digest_credentials(msg_auth_t *auth, 
+				    char const *realm,
+				    char const *opaque)
+{
+  char const *arealm, *aopaque;
+
+  for (;auth; auth = auth->au_next) {
+    if (strcasecmp(auth->au_scheme, "Digest"))
+      continue;
+
+    if (realm) {
+      int cmp = 1;
+
+      arealm = msg_params_find(auth->au_params, "realm=");
+      if (!arealm)
+	continue;
+
+      if (arealm[0] == '"') {
+	/* Compare quoted arealm with unquoted realm */
+	int i, j;
+	for (i = 1, j = 0, cmp = 1; arealm[i] != 0; i++, j++) {
+	  if (arealm[i] == '"' && realm[j] == 0) {
+	    cmp = 0;
+	    break;
+	  }
+
+	  if (arealm[i] == '\\' && arealm[i + 1] != '\0')
+	    i++;
+
+	  if (arealm[i] != realm[j])
+	    break;
+	}
+      } else {
+	cmp = strcmp(arealm, realm);
+      }
+
+      if (cmp)
+	continue;
+    }
+
+    if (opaque) {
+      int cmp = 1;
+
+      aopaque = msg_params_find(auth->au_params, "opaque=");
+      if (!aopaque)
+	continue;
+
+      if (aopaque[0] == '"') {
+	/* Compare quoted aopaque with unquoted opaque */
+	int i, j;
+	for (i = 1, j = 0, cmp = 1; aopaque[i] != 0; i++, j++) {
+	  if (aopaque[i] == '"' && opaque[j] == 0) {
+	    cmp = 0;
+	    break;
+	  }
+
+	  if (aopaque[i] == '\\' && aopaque[i + 1] != '\0')
+	    i++;
+
+	  if (aopaque[i] != opaque[j])
+	    break;
+	}
+      } else {
+	cmp = strcmp(aopaque, opaque);
+      }
+
+      if (cmp)
+	continue;
+    }
+
+    return auth;
   }
 
   return NULL;

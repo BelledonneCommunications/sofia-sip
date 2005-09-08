@@ -574,11 +574,12 @@ int test_digest_client()
 				AUTHTAG_METHOD("Digest"),
 				AUTHTAG_REALM("ims3.so.noklab.net"),
 				AUTHTAG_DB(testpasswd),
+				AUTHTAG_OPAQUE("+GNywA=="),
 				TAG_END()));
 
     init_as(as);
     auth_mod_check_client(am, as, sip->sip_authorization, ach);
-    TEST(as->as_status, 400);
+    TEST(as->as_status, 401);
 
     TEST_1(au = sip_authorization_make(home, 
 				       "Digest username=\"user1\", "
@@ -622,7 +623,7 @@ int test_digest_client()
       TEST(msg_params_remove((msg_param_t *)au->au_params, "opaque"), 1);
       reinit_as(as);
       auth_mod_check_client(am, as, au, ach);
-      TEST(as->as_status, 400);
+      TEST(as->as_status, 401);	/* We use opaque to match authorization */
       msg_params_add(home, (msg_param_t **) &au->au_params, opaque);
 
       TEST(msg_params_remove((msg_param_t *)au->au_params, "uri"), 1);
