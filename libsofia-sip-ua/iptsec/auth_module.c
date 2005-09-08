@@ -795,17 +795,17 @@ auth_passwd_t *auth_mod_getpass(auth_mod_t *am,
 				char const *realm)
 {
   auth_passwd_t *apw, **slot;
-  hash_value_t hash;
+  unsigned index;
 
   if (am == NULL || user == NULL)
     return NULL;
   
-  hash = msg_hash_string(user);
+  index = msg_hash_string(user);
   
-  for (slot = auth_htable_hash(am->am_users, hash);
+  for (slot = auth_htable_hash(am->am_users, index);
        (apw = *slot);
        slot = auth_htable_next(am->am_users, slot)) {
-    if (hash != apw->apw_index)
+    if (index != apw->apw_index)
       continue;
     if (strcmp(user, apw->apw_user))
       continue;
@@ -823,7 +823,7 @@ auth_passwd_t *auth_mod_addpass(auth_mod_t *am,
 				char const *realm)
 {
   auth_passwd_t *apw, **slot;
-  hash_value_t index;
+  unsigned index;
 
   if (am == NULL || user == NULL)
     return NULL;
