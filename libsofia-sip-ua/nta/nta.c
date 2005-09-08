@@ -57,6 +57,9 @@ char const nta_version[] = VERSION;
 #include <assert.h>
 #include <string0.h>
 #include <limits.h>
+#include <errno.h>
+
+#include <string0.h>
 
 /** @internal SU message argument structure type */
 #define SU_MSG_ARG_T   union sm_arg_u

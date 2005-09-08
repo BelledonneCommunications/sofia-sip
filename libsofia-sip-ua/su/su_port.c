@@ -60,6 +60,7 @@ char const su_port_c[] =
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
 
 #define SU_PORT_IMPLEMENTATION 1
 #define SU_MSG_ARG_T union { char anoymous[4]; }

@@ -44,6 +44,7 @@ const char msg_mclass_c_id[] =
 #include <stdio.h>
 #include <assert.h>
 #include <limits.h>
+#include <errno.h>
 
 #include <stdarg.h>
 #include <su_tagarg.h>

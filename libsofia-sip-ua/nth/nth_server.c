@@ -40,7 +40,9 @@ const char nth_server_c_id[] =
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <errno.h>
 #include <assert.h>
+
 #include <string0.h>
 
 typedef struct server_s server_t;

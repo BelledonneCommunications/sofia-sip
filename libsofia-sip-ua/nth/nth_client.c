@@ -48,6 +48,8 @@ const char nth_client_c_id[] =
 #include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <errno.h>
+
 #include <string0.h>
 
 /** @internal SU message argument structure type */

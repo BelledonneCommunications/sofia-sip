@@ -46,6 +46,7 @@ const char _msg_mime_c_id[] =
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
 #include <assert.h>
 
 #include <su_alloc.h>

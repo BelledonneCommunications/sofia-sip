@@ -42,6 +42,8 @@ const char msg_c_id[] =
 #include <stdarg.h>
 #include <stdio.h>
 #include <limits.h>
+#include <errno.h>
+
 #include <assert.h>
 
 #include <su_alloc.h>		/* XXX */
