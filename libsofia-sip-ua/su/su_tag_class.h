@@ -86,6 +86,18 @@ SU_DLL extern tag_class_t str_tag_class[];
 
 SU_DLL extern tag_class_t ref_tag_class[];
 
+SU_DLL extern tag_class_t int_tag_class[];
+SU_DLL extern tag_class_t uint_tag_class[];
+SU_DLL extern tag_class_t bool_tag_class[];
+SU_DLL extern tag_class_t ptr_tag_class[];
+SU_DLL extern tag_class_t cstr_tag_class[];
+SU_DLL extern tag_class_t str_tag_class[];
+
+#define REFTAG_TYPEDEF(tag) \
+  {{ TAG_NAMESPACE, #tag "_ref", ref_tag_class, (tag_value_t)tag }}
+
+SU_DLL extern tag_class_t ref_tag_class[];
+
 SU_DLL int t_ptr_snprintf(tagi_t const *t, char b[], size_t size);
 SU_DLL int t_ptr_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
 SU_DLL int t_ptr_scan(tag_type_t, su_home_t *, char const *, tag_value_t *);

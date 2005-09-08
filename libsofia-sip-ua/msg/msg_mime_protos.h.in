@@ -50,6 +50,9 @@
 #ifndef MSG_MCLASS_H
 #include <msg_mclass.h>
 #endif
+#ifndef MSG_MCLASS_H
+#include <msg_mclass.h>
+#endif
 
 MSG_DLL extern msg_mclass_t const msg_multipart_mclass[1];
 

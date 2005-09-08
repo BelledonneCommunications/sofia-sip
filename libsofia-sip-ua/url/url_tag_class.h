@@ -42,6 +42,9 @@
 #ifndef SU_TAG_CLASS_H
 #include <su_tag_class.h>
 #endif
+#ifndef SU_TAG_CLASS_H
+#include <su_tag_class.h>
+#endif
 
 #include <url_dll.h>
 

@@ -99,7 +99,7 @@ static inline tagi_t *t_dup(tagi_t *dst, tagi_t const *src, void **bb)
   return dst + 1;
 }
 
-static inline tagi_t const *t_find(tag_type_t tt, tagi_t const lst[])
+static inline tagi_t const *t_find(tag_type_t tt, tagi_t const *lst)
 {
   if (!tt)
     return NULL;
