@@ -46,14 +46,9 @@ SAC_SU
 ### internal modules
 ### ----------------
 AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define as 1 always])
+AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
 AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define as 1 if we use DNS library])
 AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define as 1 if we use S/MIME library])
-
-dnl compile STUN only if OPENSSL is available
-if test x${HAVE_OPENSSL} != x1 ; then
-  AC_MSG_WARN([** STUN support disabled as OpenSSL headers and/or libraries were not found **])
-fi
-AC_DEFINE_UNQUOTED([HAVE_SOFIA_STUN], $HAVE_OPENSSL, [Define as 1 if we use STUN library])
 
 AC_DEFINE([HAVE_SRTP], 0, [Define as 1 if we use SRTP])
 AC_DEFINE([HAVE_UPNP], 0, [Define as 1 if we use UPnP])

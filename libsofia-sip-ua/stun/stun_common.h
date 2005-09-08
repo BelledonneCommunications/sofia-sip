@@ -47,12 +47,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
+
+#if HAVE_OPENSSL
 /* avoid krb5-related build failures */
 #define OPENSSL_NO_KRB5
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
+#endif
 
 #ifdef WIN32
 #ifndef uint16_t
