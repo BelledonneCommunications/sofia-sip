@@ -168,4 +168,8 @@ int sip_security_verify_compare(sip_security_server_t const *s,
 				sip_security_verify_t const *v,
 				sip_param_t *return_d_ver);
 
+sip_security_client_t const *
+sip_security_client_select(sip_security_client_t const *client,
+			   sip_security_server_t const *server);
+
 #endif /** !defined(SIP_UTIL_H) */

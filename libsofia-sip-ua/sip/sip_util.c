@@ -676,9 +676,11 @@ int sip_security_verify_compare(sip_security_server_t const *s,
     if (digest && s_params == NULL && v_params != NULL)
       s_params = empty;
 
-    if (s_params == NULL || v_params == NULL)
+    if (s_params == NULL || v_params == NULL) {
       if ((retval = (s_params == NULL) - (v_params == NULL)))
 	return retval;
+      continue;
+    }
 
     for (i = 0, j = 0;; i++, j++) {
       if (digest && v_params[j] && 
@@ -699,54 +701,29 @@ int sip_security_verify_compare(sip_security_server_t const *s,
   }
 }
 
-#if 0
 /** Select best mechanism from Security-Client header. 
  *
  * @note We assume that Security-Server header in @a s is sorted by
  * preference.
  */
 sip_security_client_t const *
-sip_security_client_select(sip_security_client_t const *c,
-			   sip_security_server_t const *s)
+sip_security_client_select(sip_security_client_t const *client,
+			   sip_security_server_t const *server)
 {
-  if (s == NULL)
+  sip_security_server_t const *c, *s;
+
+  if (server == NULL || client == NULL)
     return NULL;
 
-  for (;;s = s->sa_next, v = v->sa_next) {
-    if (s == NULL || v == NULL)
-      return (s == NULL) - (v == NULL);
-    
-    if ((retval = str0cmp(s->sa_mec, v->sa_mec)))
-      return retval;
-
-    digest = strcasecmp(s->sa_mec, "Digest") == 0;
-
-    if (digest && s_params == NULL && v_params != NULL)
-      s_params = empty;
-
-    if (s_params == NULL || v_params == NULL)
-      if ((retval = (s_params == NULL) - (v_params == NULL)))
-	return retval;
-
-    for (i = 0, j = 0;; i++, j++) {
-      if (digest && v_params[j] && 
-	  strncasecmp(v_params[j], "d-ver=", 6) == 0) {
-	if (return_d_ver)
-	  *return_d_ver = v_params[j] + strlen("d-ver=");
-	j++;
-      }
-
-      retval = str0cmp(s_params[i], v_params[j]);
-      
-      if (retval || s_params[i] == NULL || v_params[j] == NULL) 
-	break;
+  for (s = server; s; s = s->sa_next) {
+    for (c = client; c; c = c->sa_next) {
+      if (str0cmp(s->sa_mec, c->sa_mec) == 0)
+	return c;
     }
-
-    if (retval)
-      return retval;
   }
+
+  return NULL;
 }
-#endif
 
 /**Checks if the response with given response code terminates dialog or
  * dialog usage.
