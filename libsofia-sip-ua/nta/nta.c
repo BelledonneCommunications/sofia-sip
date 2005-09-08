@@ -5530,9 +5530,6 @@ static int outgoing_timer_bf(outgoing_queue_t *q,
 			     char const *timer, 
 			     su_duration_t now);
 
-static int outgoing_other_destinations(nta_outgoing_t const *orq);
-static int outgoing_try_another(nta_outgoing_t *orq);
-
 static void outgoing_ack(nta_outgoing_t *orq, msg_t *msg, sip_t *sip);
 static msg_t *outgoing_ackmsg(nta_outgoing_t *, sip_method_t, char const *,
 			      tagi_t const *tags);
@@ -5558,6 +5555,11 @@ static int outgoing_default_cb(nta_outgoing_magic_t *magic,
 static void outgoing_resolve(nta_outgoing_t *orq);
 static inline void outgoing_cancel_resolver(nta_outgoing_t *orq);
 static inline void outgoing_destroy_resolver(nta_outgoing_t *orq);
+static int outgoing_other_destinations(nta_outgoing_t const *orq);
+static int outgoing_try_another(nta_outgoing_t *orq);
+#else
+#define outgoing_other_destinations(orq) (0)
+#define outgoing_try_another(orq) (0) 
 #endif
 
 /**Create an outgoing request and client transaction belonging to the leg.
