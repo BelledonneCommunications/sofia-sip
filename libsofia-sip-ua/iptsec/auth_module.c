@@ -1366,5 +1366,5 @@ void auth_mod_challenge_client(auth_mod_t *am,
 			       auth_status_t *as,
 			       auth_challenger_t const *ach)
 {
-  return auth_mod_challenge(am, as, ach);
+  auth_mod_challenge(am, as, ach);
 }
