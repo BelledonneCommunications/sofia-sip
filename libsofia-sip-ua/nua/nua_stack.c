@@ -4606,8 +4606,6 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   }
 
  error:
-  
-
   msg_destroy(msg);
   if (du && !du->du_ready) 
     dialog_usage_remove(nh, nh->nh_ds, du);
@@ -4912,12 +4910,12 @@ process_response_to_prack(nua_handle_t *nh,
   struct nua_client_request *cr = nh->nh_cr;
   int status = sip ? sip->sip_status->st_status : 408;
 
+  SU_DEBUG_1(("nua: process_response_to_prack\n"));
+
 #if 0
   if (crequest_check_restart(nh, cr, orq, sip, restart_prack))
     return 0;
 #endif
-
-  SU_DEBUG_1(("nua: process_response_to_prack\n"));
 
   if (status >= 200) {
     crequest_deinit(cr, orq);
