@@ -1,3 +1,14 @@
+2005-09-06  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* auth_digest_test.c: Using opaque to match credentials (as per
+	auth_digest_credentials()).
+
+	* auth_plugin.h, auth_module.c: Added auth_digest_credentials.
+
+2005-08-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* auth_module.c: Using unsigned as type of hash!
+
 2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Initial import of the module to Sofia-SIP tree.
