@@ -142,6 +142,15 @@ typedef struct {
 
 #include <tport_tag.h>
 
+#if !defined(WIN32)
+#define TPORT_DLL /** Attribute for symbols exported from tport library */
+#elif defined(TPORT_EXPORTS)
+#define TPORT_DLL      __declspec(dllexport)
+#else
+#define TPORT_DLL     __declspec(dllimport)
+#endif
+
+
 /** Create first primary transport. */
 tport_t *tport_tcreate(tp_stack_t *stack,
 		       tp_stack_class_t const *tpac,
@@ -215,34 +224,34 @@ int tport_release(tport_t *self, int pendd,
 		  int still_pending);
 
 /** Return true if transport is master. */
-int tport_is_master(tport_t const *self);
+TPORT_DLL int tport_is_master(tport_t const *self);
 
 /** Return true if transport is primary. */
-int tport_is_primary(tport_t const *self);
+TPORT_DLL int tport_is_primary(tport_t const *self);
 
 /** Return true if transport is secondary. */
-int tport_is_secondary(tport_t const *self);
+TPORT_DLL int tport_is_secondary(tport_t const *self);
 
 /** Return true if transport is reliable, false otherwise */
-int tport_is_reliable(tport_t const *tport);
+TPORT_DLL int tport_is_reliable(tport_t const *tport);
 
 /** Return true if transport is a stream (no message boundaries). */
-int tport_is_stream(tport_t const *tport);
+TPORT_DLL int tport_is_stream(tport_t const *tport);
 
 /** Return true if transport supports IPv4 */
-int tport_has_ip4(tport_t const *tport);
+TPORT_DLL int tport_has_ip4(tport_t const *tport);
 
 /** Return true if transport supports IPv6 */
-int tport_has_ip6(tport_t const *tport);
+TPORT_DLL int tport_has_ip6(tport_t const *tport);
 
 /** Test if transport is udp. */
-int tport_is_udp(tport_t const *self);
+TPORT_DLL int tport_is_udp(tport_t const *self);
  
 /** Test if transport is tcp. */
-int tport_is_tcp(tport_t const *self);
+TPORT_DLL int tport_is_tcp(tport_t const *self);
 
 /** Test if transport has TLS. */
-int tport_has_tls(tport_t const *tport);
+TPORT_DLL int tport_has_tls(tport_t const *tport);
 
 /** Test if transport has just been accepted. */
 int tport_is_newly_accepted(tport_t *self);
