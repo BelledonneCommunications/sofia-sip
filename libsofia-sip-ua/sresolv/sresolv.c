@@ -49,16 +49,19 @@ char const sresolv_c_id[] =
 #include <errno.h>
 #include <fcntl.h>
 
+#include <time.h>
+#include <limits.h>
+
+#include <assert.h>
+
+#if !HAVE_SOFIA_SU
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <time.h>
-#include <limits.h>
-
-#include <assert.h>
+#endif
 
 #include <su_alloc.h>
 #include <su_strlst.h>

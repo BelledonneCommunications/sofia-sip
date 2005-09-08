@@ -55,7 +55,6 @@ char const nta_version[] = VERSION;
 #include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
-#include <string0.h>
 #include <limits.h>
 #include <errno.h>
 
@@ -72,7 +71,7 @@ char const nta_version[] = VERSION;
 #include <su_tagarg.h>
 
 #include <base64.h>
-#include <uniqueid.h>
+#include <su_uniqueid.h>
 
 #include <sip.h>
 #include <sip_header.h>

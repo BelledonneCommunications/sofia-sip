@@ -34,7 +34,7 @@
  * $Date: 2005/07/20 20:35:54 $
  */
 
-#include <netinet/in.h>
+#include <su.h>
 
 typedef union  sres_record          sres_record_t;
 typedef struct sres_common          sres_common_t;
