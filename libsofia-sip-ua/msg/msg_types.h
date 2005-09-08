@@ -250,6 +250,15 @@ typedef enum {
   msg_kind_prepend		/**< New header is prepended */
 } msg_header_kind_t;
 
+struct su_home_s;
+
+typedef int msg_parse_f(struct su_home_s *, msg_header_t *, char *, int);
+typedef int msg_print_f(char buf[], int bufsiz, 
+			msg_header_t const *, int flags);
+typedef char *msg_dup_f(msg_header_t *dst, msg_header_t const *src, 
+			char *buf, int bufsiz);
+typedef int msg_xtra_f(msg_header_t const *h, int offset);
+
 /** Factory object for a header. 
  * 
  * The #msg_hclass_t object, "header class", defines how a header is

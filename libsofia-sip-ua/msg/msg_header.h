@@ -45,13 +45,6 @@
 #include <su_types.h>
 #endif
 
-typedef int msg_parse_f(su_home_t *, msg_header_t *, char *, int);
-typedef int msg_print_f(char buf[], int bufsiz, 
-			msg_header_t const *, int flags);
-typedef char *msg_dup_f(msg_header_t *dst, msg_header_t const *src, 
-			char *buf, int bufsiz);
-typedef int msg_xtra_f(msg_header_t const *h, int offset);
-
 /* These headers are critical for understanding the message */
 #define msg_kind_single_critical msg_kind_single, 1
 #define msg_kind_list_critical   msg_kind_list, 1
