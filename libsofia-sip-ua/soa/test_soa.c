@@ -374,11 +374,13 @@ int test_deinit(struct context *ctx)
   END();
 }
 
-void sig_alarm(int s)
+#if HAVE_ALARM
+static RETSIGTYPE sig_alarm(int s)
 {
   fprintf(stderr, "%s: FAIL! test timeout!\n", name);
   exit(1);
 }
+#endif
 
 void usage(void)
 {

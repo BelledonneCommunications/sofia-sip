@@ -94,7 +94,7 @@ print_X(struct tester *x, su_timer_t *t1, struct timing *ti)
 
 su_msg_r intr_msg = SU_MSG_R_INIT;
 
-static void intr_handler(int signum)
+static RETSIGTYPE intr_handler(int signum)
 {
   su_msg_send(intr_msg);
 }

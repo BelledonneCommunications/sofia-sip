@@ -364,7 +364,7 @@ init_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 }
 
 static
-void term(int n)
+RETSIGTYPE term(int n)
 {
   exit(1);
 }

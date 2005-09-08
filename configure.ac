@@ -62,9 +62,10 @@ dnl checks for header files
 dnl -----------------------
 dnl XXX
 
-dnl checks for types
-dnl ----------------
-dnl XXX
+### checks for types
+### ----------------
+
+AC_TYPE_SIGNAL
 
 dnl checks for structures
 dnl ---------------------

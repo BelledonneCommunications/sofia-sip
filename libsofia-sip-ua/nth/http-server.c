@@ -81,7 +81,7 @@ static int request(context_t *context,
 		   http_t const *http,
 		   char const *path);
 su_msg_r server_intr_msg = SU_MSG_R_INIT;
-static void server_intr_handler(int signum);
+static RETSIGTYPE server_intr_handler(int signum);
 static void server_break(context_t *c, su_msg_r msg, su_msg_arg_t *arg);
 
 static msg_payload_t *read_payload(su_home_t *home, char const *fname);
@@ -179,7 +179,7 @@ static void server_break(context_t *c, su_msg_r msg, su_msg_arg_t *arg)
   su_root_break(c->c_root);
 }
 
-static void server_intr_handler(int signum)
+static RETSIGTYPE server_intr_handler(int signum)
 {
   su_msg_send(server_intr_msg);
 }
