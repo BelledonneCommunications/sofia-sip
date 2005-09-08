@@ -86,6 +86,7 @@ static const struct sdp_parser_s no_mem_error =
 
 /* Internal prototypes */
 static void parse_message(sdp_parser_t *p);
+static void parsing_error(sdp_parser_t *p, char const *fmt, ...);
 
 /** Parse an SDP message.
  *
@@ -113,7 +114,17 @@ sdp_parser_t *
 sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
 {
   sdp_parser_t *p = su_home_clone(home, sizeof(*p));
-  char *b = su_alloc(p->pr_home, msgsize + 1);
+  char *b;
+
+  if (msgsize == -1 && msg)
+    msgsize = strlen(msg);
+
+  if (msgsize < 0 || msg == NULL) {
+    parsing_error(p, "invalid input message");
+    return p;
+  }
+
+  b = su_alloc(p->pr_home, msgsize + 1);
 
   if (p && b) {
     p->pr_orig_home = home;
@@ -242,7 +253,6 @@ static void parse_alloc_error(sdp_parser_t *p, const char *typename);
 static char *next(char **message, const char *sep, const char *strip);
 static char *token(char **message, const char *sep, const char *legal, 
 		   const char *strip);
-static void parsing_error(sdp_parser_t *p, char const *fmt, ...);
 #if 0
 static void check_mandatory(sdp_parser_t *p, sdp_session_t *sdp);
 #endif
@@ -321,17 +331,23 @@ static void parse_message(sdp_parser_t *p)
 
   /* Require that version comes first */
   record = next(&message, CRLF, strip);
+
   if (!record || strcmp(record, "v=0")) {
-    parsing_error(p, "bad SDP message");
-    return;
+    if (!p->pr_config || !record || record[1] != '=') {
+      parsing_error(p, "bad SDP message");
+      return;
+    }
+  }
+  else {
+    record = next(&message, CRLF, strip);
   }
 
-  /* XXX For stricter parsing we might want to parse o= and s=
-     next. Also, the lines in SDP are in certain order, which we don't
-     check here. */
+  /*
+    XXX - the lines in SDP are in certain order, which we don't check here.
+     For stricter parsing we might want to parse o= and s= next.
+  */
 
-
-  for (record = next(&message, CRLF, strip);
+  for (;
        record && p->pr_ok;
        record = next(&message, CRLF, strip)) {
     field = record[0]; 
