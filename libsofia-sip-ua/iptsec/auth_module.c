@@ -1061,6 +1061,9 @@ int auth_readdb_internal(auth_mod_t *am, int always)
     if (am->am_buffer)
       su_free(am->am_home, am->am_buffer); /* Free old passwd file contents */
 
+    SU_DEBUG_5(("auth(%s): read %u entries from \"%s\"\n",
+		am->am_scheme->asch_method, (unsigned)N, am->am_db));
+
     am->am_locals = fresh;
     am->am_local_count = N;
     am->am_buffer = buffer;
