@@ -236,7 +236,7 @@ int auth_digest_challenge_get(su_home_t *home,
 
   auth_struct_copy(ac0, ac, sizeof(ac));
 
-  SU_DEBUG_5(("%s(): got %d\n", __func__, n));
+  SU_DEBUG_5(("%s(): got %d\n", "auth_digest_challenge_get", n));
   
   return n;
 }
@@ -296,7 +296,7 @@ int auth_digest_response_get(su_home_t *home,
 
   auth_struct_copy(ar0, ar, sizeof(ar));
 
-  SU_DEBUG_7(("%s: %d\n", __func__, n));
+  SU_DEBUG_7(("%s: %d\n", "auth_digest_response_get", n));
 
   return n;
 }
