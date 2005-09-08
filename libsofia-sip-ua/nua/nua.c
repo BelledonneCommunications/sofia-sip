@@ -197,7 +197,7 @@ nua_t *nua_create(su_root_t *root,
 
   assert(callback);
 
-  if ((nua = su_home_clone(NULL, sizeof(*nua)))) {
+  if ((nua = su_home_new(sizeof(*nua)))) {
     ta_list ta;
 
     assert(root); /* for now, later we can create an own root for API */
@@ -227,8 +227,7 @@ nua_t *nua_create(su_root_t *root,
       nua->nua_magic = magic;
     }
     else {
-      su_home_deinit(nua->nua_home);
-      su_free(NULL, nua);
+      su_home_unref(nua->nua_home);
       nua = NULL;
     }
 #endif
