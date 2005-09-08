@@ -1119,7 +1119,8 @@ sres_sockaddr2string(char name[],
 #endif
   else {
     errno = EPROTONOSUPPORT;
-    SU_DEBUG_3(("%s: %s\n", __func__, su_strerror(EPROTONOSUPPORT)));
+    SU_DEBUG_3(("%s: %s\n", "sres_sockaddr2string", 
+                su_strerror(EPROTONOSUPPORT)));
     return 0;
   }
 }
@@ -1426,8 +1427,8 @@ sres_query_report_error(sres_resolver_t *res, sres_query_t *q,
     }
 
 
-    SU_DEBUG_5(("%s(%p): reporting errors for %u %s\n",
-		__func__, res, q->q_type, q->q_name));
+    SU_DEBUG_5(("sres(%p): reporting errors for %u %s\n",
+		res, q->q_type, q->q_name));
  
     sres_remove_query(res, q, 1);
     UNLOCK(res);
