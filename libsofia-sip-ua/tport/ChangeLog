@@ -1,3 +1,8 @@
+2005-09-08  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* tport_test.c: Fixed error when building without
+	SSL support.
+
 2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Initial import of the module to Sofia-SIP tree.

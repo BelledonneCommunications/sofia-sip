@@ -1020,8 +1020,9 @@ static int tls_test(tp_test_t *tt)
   TEST_1(!check_msg(tt, tt->tt_rmsg, "tls-last"));
   msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
 
-  END();
 #endif
+
+  END();
 
   return 0;
 }

@@ -369,7 +369,7 @@ struct tport_master {
 #endif
 #if HAVE_UPNP
 #endif
-#ifdef HAVE_SOFIA_STUN
+#if HAVE_SOFIA_STUN
     char *stun_server;
     stun_socket_t *stun_socket;
     stun_engine_t *stun;
