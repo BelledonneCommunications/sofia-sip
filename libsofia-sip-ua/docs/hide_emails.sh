@@ -2,7 +2,7 @@
 #
 # description: Mangle email addresses in the HTML documentation
 # author: Kai Vehmanen <kai.vehmanen@nokia.com>
-# version: 20050719-2
+# version: 20050908-3
 #
 # --------------------------------------------------------------------
 #
@@ -32,7 +32,7 @@
 find . -name '*.html' -print | while read i ; do 
   (
     echo "Hiding email addresses in ${i}."
-    sed -r 's/([:>;][a-Z\.]+)(@[a-z]+)\.[a-z]+(["<\&])/\1\2-email.address.hidden\3/gi' <$i >$i.tmp
+    sed -r 's/([:>;][a-z-\.]+)(@[a-z]+)\.[a-z]+(["<\&])/\1\2-email.address.hidden\3/gi' <$i >$i.tmp
     mv -v $i.tmp $i
  )
 done
