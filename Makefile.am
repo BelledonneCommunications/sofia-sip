@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign 1.6.1
 
 SUBDIRS = libsofia-sip-ua utils
 
