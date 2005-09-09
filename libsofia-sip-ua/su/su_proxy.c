@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed May 23 17:42:40 2001 ppessi
- * $Date: 2005/08/08 19:10:16 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
@@ -58,7 +58,7 @@ typedef struct buffer_s buffer_t;
 #include "su_module_debug.h"
 
 char const su_proxy_c_id[] = 
-"$Id: su_proxy.c,v 1.2 2005/08/08 19:10:16 ppessi Exp $";
+"$Id: su_proxy.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

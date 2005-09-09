@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed Aug 22 13:53:24 2001 ppessi
- * $Date: 2005/08/17 14:40:34 $
+ * $Date: 2005/09/09 10:56:31 $
  *
  * @par Example Program
  *

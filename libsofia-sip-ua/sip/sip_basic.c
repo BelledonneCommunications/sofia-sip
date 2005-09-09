@@ -33,13 +33,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date  Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/08/03 17:18:10 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char sip_basic_id[] =
-"$Id: sip_basic.c,v 1.2 2005/08/03 17:18:10 ppessi Exp $";
+"$Id: sip_basic.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

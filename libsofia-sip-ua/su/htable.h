@@ -23,7 +23,7 @@
  */
 
 #ifndef HTABLE_H /** Defined when htable.h has been included. */
-#define HTABLE_H "$Id: htable.h,v 1.1.1.1 2005/07/20 20:35:55 kaiv Exp $"
+#define HTABLE_H "$Id: htable.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
 
 /**@ingroup su_htable
  * @file htable.h
@@ -53,7 +53,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Sep 25 17:42:40 2001 ppessi
- * $Date: 2005/07/20 20:35:55 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 typedef unsigned long hash_value_t;

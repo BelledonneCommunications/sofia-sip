@@ -35,7 +35,7 @@
 #include "config.h"
 
 const char _auth_digest_test_id[] =
-"$Id: auth_digest_test.c,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $";
+"$Id: auth_digest_test.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

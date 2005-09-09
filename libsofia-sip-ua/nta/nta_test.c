@@ -30,13 +30,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Aug 21 15:18:26 2001 ppessi
- * $Date: 2005/08/17 14:40:34 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char _nta_test_c_rcs_id[] =
-"$Id: nta_test.c,v 1.4 2005/08/17 14:40:34 ppessi Exp $";
+"$Id: nta_test.c,v 1.5 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

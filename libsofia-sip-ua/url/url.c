@@ -30,13 +30,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun 29 22:44:37 2000 ppessi
- * $Date: 2005/08/12 10:42:44 $
+ * $Date: 2005/09/09 10:56:41 $
  */
 
 #include "config.h"
 
 const char url_c_id[] =
-"$Id: url.c,v 1.2 2005/08/12 10:42:44 ppessi Exp $";
+"$Id: url.c,v 1.3 2005/09/09 10:56:41 ppessi Exp $";
 
 #include <string.h>
 #include <stdlib.h>

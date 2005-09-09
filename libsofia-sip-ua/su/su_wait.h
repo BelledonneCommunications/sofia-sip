@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_WAIT_H /** Defined when su_wait.h has been included. */
-#define SU_WAIT_H "$Id: su_wait.h,v 1.2 2005/08/03 17:24:28 ppessi Exp $"
+#define SU_WAIT_H "$Id: su_wait.h,v 1.3 2005/09/09 10:56:31 ppessi Exp $"
 
 /**@ingroup su_wait
  * @file su_wait.h Syncronization and threading interface.
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
- * $Date: 2005/08/03 17:24:28 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 /* ---------------------------------------------------------------------- */

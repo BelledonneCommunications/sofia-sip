@@ -37,7 +37,7 @@
 #include "config.h"
 
 const char _auth_module_c_id[] =
-"$Id: auth_module.c,v 1.2 2005/08/08 19:09:56 ppessi Exp $";
+"$Id: auth_module.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

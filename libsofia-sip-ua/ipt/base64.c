@@ -31,7 +31,7 @@
  */
 
 char const base64_c_id[] =
-"$Id: base64.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
+"$Id: base64.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdio.h>
 #include <string.h>

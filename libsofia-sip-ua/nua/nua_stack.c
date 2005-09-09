@@ -31,13 +31,13 @@
  * @author Tat Chan <Tat.Chan@nokia.com>
  *
  * @date Created: Wed Feb 14 18:32:58 2001 ppessi
- * $Date: 2005/08/10 11:34:35 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char _nua_stack_c_id[] =
-"$Id: nua_stack.c,v 1.3 2005/08/10 11:34:35 ppessi Exp $";
+"$Id: nua_stack.c,v 1.4 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

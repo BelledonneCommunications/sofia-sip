@@ -39,13 +39,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Fri Sep 27 14:43:29 2002 ppessi
- * $Date: 2005/07/20 20:35:59 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char su_vector_c_id[] = 
-  "$Id: su_vector.c,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $";
+  "$Id: su_vector.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdlib.h>
 #include <stddef.h>

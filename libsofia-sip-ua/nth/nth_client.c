@@ -35,13 +35,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/07/20 20:35:32 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char nth_client_c_id[] =
-  "$Id: nth_client.c,v 1.1.1.1 2005/07/20 20:35:32 kaiv Exp $";
+  "$Id: nth_client.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

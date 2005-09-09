@@ -24,7 +24,7 @@
 
 #ifndef SU_TAG_INLINE_H /** Defined when su_tag_inline.h has been included */
 #define SU_TAG_INLINE_H \
-"$Id: su_tag_inline.h,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $"
+"$Id: su_tag_inline.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
 
 /**@SU_TAG
  * @file su_tag_inline.h  Inline functions for object tags and tag lists.
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Feb 20 19:48:18 2001 ppessi
- * $Date: 2005/07/20 20:35:58 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #define tt_next     tt_class->tc_next

@@ -29,7 +29,7 @@
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>
  *
- * $Date: 2005/08/08 19:10:15 $
+ * $Date: 2005/09/09 10:56:31 $
  * 
  * @todo The resolver should allow handling arbitrary records.
  */
@@ -37,7 +37,7 @@
 #include "config.h"
 
 char const sresolv_c_id[] = 
-  "$Id: sresolv.c,v 1.2 2005/08/08 19:10:15 ppessi Exp $";
+  "$Id: sresolv.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdlib.h>
 #include <stdarg.h>

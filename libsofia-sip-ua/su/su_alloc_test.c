@@ -31,13 +31,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu May  2 18:17:46 2002 ppessi
- * $Date: 2005/08/17 14:43:13 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char su_alloc_test_c_id[] =
-"$Id: su_alloc_test.c,v 1.2 2005/08/17 14:43:13 ppessi Exp $";
+"$Id: su_alloc_test.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdio.h>
 #include <string.h>

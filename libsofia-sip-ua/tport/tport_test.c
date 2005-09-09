@@ -31,13 +31,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Apr  3 11:25:13 2002 ppessi
- * $Date: 2005/08/17 14:40:34 $
+ * $Date: 2005/09/09 10:56:41 $
  */
 
 #include "config.h"
 
 const char _tport_test_c_rcs_id[] =
-"$Id: tport_test.c,v 1.3 2005/08/17 14:40:34 ppessi Exp $";
+"$Id: tport_test.c,v 1.5 2005/09/09 10:56:41 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -28,13 +28,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Aug  3 20:27:15 EEST 2005
- * $Date: 2005/08/17 14:51:22 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char soa_c_id[] =
-"$Id: soa.c,v 1.2 2005/08/17 14:51:22 ppessi Exp $";
+"$Id: soa.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -34,7 +34,7 @@
 #include "config.h"
 
 const char msg_c_id[] =
-"$Id: msg.c,v 1.2 2005/08/03 17:17:54 ppessi Exp $";
+"$Id: msg.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

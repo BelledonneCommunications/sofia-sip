@@ -23,14 +23,14 @@
  */
 
 #ifndef TPORT_H /** Defined when <tport.h> has been included. */
-#define TPORT_H "$Id: tport.h,v 1.2 2005/08/17 14:57:08 ppessi Exp $"
+#define TPORT_H "$Id: tport.h,v 1.3 2005/09/09 10:56:41 ppessi Exp $"
 /**@file tport.h
  * @brief Transport interface 
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun 29 15:58:06 2000 ppessi
- * $Date: 2005/08/17 14:57:08 $
+ * $Date: 2005/09/09 10:56:41 $
  */
 
 #ifndef SU_H

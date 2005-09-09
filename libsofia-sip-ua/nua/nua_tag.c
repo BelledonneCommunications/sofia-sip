@@ -27,13 +27,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 10:13:29 2001 ppessi
- * $Date: 2005/08/08 19:10:14 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #include "config.h"
 
 const char _nua_tag_c_id[] =
-"$Id: nua_tag.c,v 1.2 2005/08/08 19:10:14 ppessi Exp $";
+"$Id: nua_tag.c,v 1.4 2005/09/09 10:56:31 ppessi Exp $";
 
 #define TAG_NAMESPACE "nua"
 

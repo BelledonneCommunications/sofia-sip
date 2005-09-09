@@ -24,7 +24,7 @@
 
 #ifndef SU_TAG_CLASS_H /** Defined when su_tag_class.h has been included. */
 #define SU_TAG_CLASS_H \
-"$Id: su_tag_class.h,v 1.2 2005/08/08 19:10:16 ppessi Exp $"
+"$Id: su_tag_class.h,v 1.3 2005/09/09 10:56:31 ppessi Exp $"
 
 /**@SU_TAG
  * @file  su_tag_class.h
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed Feb 21 00:49:41 2001 ppessi
- * $Date: 2005/08/08 19:10:16 $
+ * $Date: 2005/09/09 10:56:31 $
  */
 
 #ifndef SU_TAG_H

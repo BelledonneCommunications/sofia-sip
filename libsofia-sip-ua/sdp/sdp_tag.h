@@ -23,7 +23,7 @@
  */
 
 #ifndef SDP_TAG_H /** Defined when <sdp_tag.h> has been included. */
-#define SDP_TAG_H "$Id: sdp_tag.h,v 1.2 2005/08/08 19:10:14 ppessi Exp $";
+#define SDP_TAG_H "$Id: sdp_tag.h,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 /**@file sdp_tag.h   
  * @brief SDP tags
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Mon May 12 12:06:20 EEST 2003 ppessi
- * $Date: 2005/08/08 19:10:14 $
+ * $Date: 2005/09/09 10:56:31 $
  * @{
  */
 
