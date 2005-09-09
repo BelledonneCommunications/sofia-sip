@@ -1,3 +1,55 @@
+2005-09-09  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* darcs changes --from-tag pessi-darcs-1:
+
+	Fri Sep  9 11:38:44 EEST 2005  Pekka.Pessi@nokia.com
+	  * Added --with sigcomp.
+
+	    M ./sofia-sip.spec.in +4
+
+	Fri Sep  9 00:33:36 EEST 2005  Pekka.Pessi@nokia.com
+	  * Including *.h.in files in devel package.
+
+	    M ./sofia-sip.spec.in +1
+
+	Thu Sep  8 18:52:06 EEST 2005  Pekka.Pessi@nokia.com
+	  * New version.
+
+	    M ./configure.ac -1 +1
+
+	Thu Sep  8 18:51:27 EEST 2005  Pekka.Pessi@nokia.com
+	  * Keeping section headers in configure script.
+
+	    M ./configure.ac -17 +16
+
+	Thu Sep  8 18:26:35 EEST 2005  Pekka.Pessi@nokia.com
+	  * Using autoconf to figure out 64-bit types. Avoid off_t and
+	    64-bit constants.
+
+	    M ./configure.ac +6
+	    M ./libsofia-sip-ua/nta/sl_read_payload.c -1 +1
+	    M ./libsofia-sip-ua/nua/nua_stack.c -6 +5
+	    M ./libsofia-sip-ua/sdp/sdp_parse.c -3 +2
+	    M ./libsofia-sip-ua/sdp/sdp_print.c -5 +5
+	    M ./libsofia-sip-ua/sip/validator.c -18 +18
+	    M ./libsofia-sip-ua/soa/soa.c -3 +4
+	    M ./libsofia-sip-ua/su/su_time.c -1 +1
+	    M ./libsofia-sip-ua/su/tstdef.h -3 +3
+
+	Thu Sep  8 18:17:58 EEST 2005  Pekka.Pessi@nokia.com
+	  * Using RETSIGTYPE.
+
+	    M ./configure.ac -3 +4
+	    M ./libsofia-sip-ua/nth/http-server.c -2 +2
+	    M ./libsofia-sip-ua/soa/test_soa.c -1 +3
+	    M ./libsofia-sip-ua/su/su_test.c -1 +1
+	    M ./libsofia-sip-ua/su/su_timer_test.c -1 +1
+
+	Thu Sep  8 18:02:14 EEST 2005  Pekka.Pessi@nokia.com
+	  * Checking for netinet/tcp.h, too.
+
+	    M ./m4/sac-tport.m4 +2
+
 2005-09-08  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Makefile.am: Added requirement for automake-1.6.1
