@@ -5,6 +5,7 @@
 # --with doxygen   - Generate documents using doxygen and dot
 # --with check     - Run tests
 # --without openssl - No OpenSSL (TLS)
+# --with sigcomp   - with Sofia SigComp
 #
 
 Summary: Sofia SIP User-Agent library 
@@ -21,6 +22,9 @@ Packager: Pekka.Pessi@Nokia.com
 %{?_with_doxygen:BuildRequires: doxygen >= 1.3.4}
 %{?_with_doxygen:BuildRequires: graphviz >= 1.9}
 %{?!_without_openssl:BuildRequires: openssl-devel >= 0.9.7}
+
+%{?_with_sigcomp:BuildRequires: sofia-sigcomp-devel >= 2.5.0}
+%{?_with_sigcomp:Requires: sofia-sigcomp >= 2.5.0}
 
 %description
 Sofia SIP is a RFC-3261-compliant library for SIP user agents and other
