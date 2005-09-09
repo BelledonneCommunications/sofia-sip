@@ -40,6 +40,7 @@ const char _nua_tag_c_id[] =
 #include <string.h>
 #include <su.h>
 #include <nua_tag.h>
+#include <msg_header.h>
 #include <su_tag_class.h>
 #include <url_tag_class.h>
 #include <sip_tag_class.h>
