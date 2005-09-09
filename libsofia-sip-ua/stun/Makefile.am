@@ -15,9 +15,16 @@ INCLUDES = 		-I$(srcdir)/../su
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libstun.a
+if HAVE_TLS
+stun_lib_targets = 	libstun.a
+stun_prog_targets =	stun_objs.o stunc torture_stun
+else
+stun_lib_targets = 
+stun_prog_targets =
+endif
 
-noinst_PROGRAMS = 	stun_objs.o stunc torture_stun 
+noinst_LIBRARIES = 	${stun_lib_targets}
+noinst_PROGRAMS = 	${stun_prog_targets}
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

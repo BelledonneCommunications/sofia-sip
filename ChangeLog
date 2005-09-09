@@ -1,3 +1,8 @@
+2005-09-08  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* configure.ac: Do not compile STUN if OpenSSL is not
+	available.
+
 2005-07-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Makefile.am: Added doxygen target.

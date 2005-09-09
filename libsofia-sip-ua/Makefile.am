@@ -8,6 +8,10 @@ EXTRA_DIST = sofia.am
 
 lib_LTLIBRARIES = libsofia-sip-ua.la
 
+if HAVE_TLS
+tls_objs=stun/stun_objs.o
+endif
+
 libsofia_sip_ua_la_SOURCES = 
 libsofia_sip_ua_la_LIBADD = 	bnf/bnf_objs.o \
 				ipt/ipt_objs.o \
@@ -24,8 +28,8 @@ libsofia_sip_ua_la_LIBADD = 	bnf/bnf_objs.o \
 				sresolv/sresolv_objs.o \
 				su/su_objs.o \
 				tport/tport_objs.o \
-				stun/stun_objs.o \
-				url/url_objs.o
+				url/url_objs.o \
+				${tls_objs}
 
 all-recursive: built-sources-recursive
 built-sources: built-sources-recursive
