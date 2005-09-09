@@ -5,6 +5,7 @@ EXTRA_DIST = 	Doxyfile Doxyfile.aliases Doxyfile.conf \
 		mainpage.docs \
 		Doxyfile.version.in \
 		sofia-footer.html.in \
-		hide_emails.sh
+		hide_emails.sh \
+		ChangeLog
 
 include ../sofia.am
