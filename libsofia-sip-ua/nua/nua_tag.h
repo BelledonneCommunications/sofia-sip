@@ -221,6 +221,31 @@ extern tag_typedef_t nutag_media_path;
 #define NUTAG_MEDIA_PATH_REF(x) nutag_media_path_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_media_path_ref;
 
+#if 1
+
+/**Pointer to a SDP Offer-Answer session object.
+ *
+ * Pointer to the media session object.
+ *
+ * @par Used with nua_create(), nua_handle().
+ *
+ * @par Parameter type
+ *    void * (actually soa_session_t *)
+ *
+ * @par Values
+ *    Pointer to MSS media session.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_SOA_SESSION_REF.
+ */
+#define NUTAG_SOA_SESSION(x)  nutag_soa_session, tag_ptr_v(x)
+extern tag_typedef_t nutag_soa_session;
+
+#define NUTAG_SOA_SESSION_REF(x) \
+ nutag_soa_session_ref, tag_ptr_vr(&(x),(x))
+extern tag_typedef_t nutag_soa_session_ref;
+
+#else
+
 /** Pointer to a media subsystem.
  *
  * Pointer to MSS media subsystem object. The mss object can be used to
@@ -265,6 +290,8 @@ extern tag_typedef_t nutag_media_session;
 #define NUTAG_MEDIA_SESSION_REF(x) \
  nutag_media_session_ref, tag_ptr_vr(&(x),(x))
 extern tag_typedef_t nutag_media_session_ref;
+
+#endif
 
 /** Clone media session.
  *
@@ -439,7 +466,7 @@ extern tag_typedef_t nutag_video_remote;
 #define NUTAG_VIDEO_REMOTE_REF(x) nutag_video_remote_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_video_remote_ref;
 
-/** Establish early media session using 183 responses and prac requests.
+/** Establish early media session using 183 responses and PRACK requests.
  *
  * @par Used with
  *    nua_set_params() \n
