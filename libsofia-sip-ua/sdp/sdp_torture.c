@@ -147,6 +147,9 @@ static int test_session(int flags)
   /* clone the session using 'home2' */
   TEST_1((sdp_target = sdp_session_dup(home2, sdp_src)));
 
+  /* Check comparing */
+  TEST(sdp_session_cmp(sdp_src, sdp_target), 0);
+
   /* check the cloned session */
   TEST_1(sdp_target->sdp_subject);
   TEST_S(sdp_target->sdp_subject, "/sdp_torture");
@@ -510,6 +513,8 @@ static int test_media(int flags)
   TEST_1((parser = sdp_parse(home, media_msg, sizeof(media_msg), 0)));
   TEST_1((sdp = sdp_session(parser)));
   TEST_1((media = sdp_media_dup(home, m0, sdp)));
+  /* Check comparing */
+  TEST(sdp_media_cmp(media, m0), 0);
 
   TEST(media->m_type, sdp_media_audio);
   TEST(media->m_port, 1234);

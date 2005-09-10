@@ -364,16 +364,32 @@ sdp_list_t       *sdp_list_dup(su_home_t *home, sdp_list_t const *);
 /** Duplicate an rtpmap structure. */
 sdp_rtpmap_t     *sdp_rtpmap_dup(su_home_t *home, sdp_rtpmap_t const *);
 
+/** Compare two session descriptions. */
+int sdp_session_cmp(sdp_session_t const *a, sdp_session_t const *b);
+
 /** Compare two origin fields */
 int sdp_origin_cmp(sdp_origin_t const *a, sdp_origin_t const *b);
+
+/** Compare two connection fields */
+int sdp_connection_cmp(sdp_connection_t const *a, sdp_connection_t const *b);
+
+/** Compare two bandwidth (b=) fields */
+int sdp_bandwidth_cmp(sdp_bandwidth_t const *a, sdp_bandwidth_t const *b);
 
 /** Compare two time fields */
 int sdp_time_cmp(sdp_time_t const *a, sdp_time_t const *b);
 
 /* Compare two repeat (r=) fields */
 int sdp_repeat_cmp(sdp_repeat_t const *a, sdp_repeat_t const *b);
+
 /* Compare two zone (z=) fields */
 int sdp_zone_cmp(sdp_zone_t const *a, sdp_zone_t const *b);
+
+/** Compare two key (k=) fields. */
+int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b);
+
+/** Compare two attribute (a=) fields */
+int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b);
 
 /** Get connections of a media description */
 sdp_connection_t *sdp_media_connections(sdp_media_t *m);
@@ -408,8 +424,6 @@ sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t *a,
 					   int pt, char **result);
 
 #define sdp_mapped_attribute_find sdp_attribute_mapped_find
-
-sdp_attribute_t *sdp_attribute_by_mode(su_home_t *home, sdp_mode_t mode);
 
 /* ======================================================================== */
 

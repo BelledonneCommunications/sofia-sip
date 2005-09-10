@@ -1122,6 +1122,74 @@ tag_class_t sdptag_session_class[1] =
 
 
 /* ---------------------------------------------------------------------- */
+
+/* Compare two string pointers */
+static inline 
+int str0cmp(char const *a, char const *b)
+{
+  if (a == NULL) a = "";
+  if (b == NULL) b = "";
+  return strcmp(a, b);
+}
+
+/** Compare two session descriptions 
+ */
+int sdp_session_cmp(sdp_session_t const *a, sdp_session_t const *b)
+{
+  int rv; 
+  sdp_bandwidth_t const *ab, *bb;
+  sdp_attribute_t const *aa, *ba;
+  sdp_media_t const *am, *bm;
+ 
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
+  if (a == b)
+    return 0;
+  if ((rv = (a->sdp_version[0] - b->sdp_version[0])))
+    return rv;
+  if ((rv = sdp_origin_cmp(a->sdp_origin, b->sdp_origin)))
+    return rv;
+  if ((rv = str0cmp(a->sdp_subject, b->sdp_subject)))
+    return rv;
+  if ((rv = str0cmp(a->sdp_information, b->sdp_information)))
+    return rv;
+  if ((rv = str0cmp(a->sdp_uri, b->sdp_uri)))
+    return rv;
+#if 0
+  if ((rv = sdp_list_cmp(a->sdp_emails, b->sdp_emails)))
+    return rv;
+  if ((rv = sdp_list_cmp(a->sdp_phones, b->sdp_phones)))
+    return rv;
+#endif
+  if ((rv = sdp_connection_cmp(a->sdp_connection, b->sdp_connection)))
+    return rv;
+
+  for (ab = a->sdp_bandwidths, bb = b->sdp_bandwidths; 
+       ab || bb; 
+       ab = ab->b_next, bb = bb->b_next)
+    if ((rv = sdp_bandwidth_cmp(a->sdp_bandwidths, b->sdp_bandwidths)))
+      return rv;
+
+  if ((rv = sdp_time_cmp(a->sdp_time, b->sdp_time)))
+    return rv;
+  if ((rv = sdp_key_cmp(a->sdp_key, b->sdp_key)))
+    return rv;
+
+  for (aa = a->sdp_attributes, ba = b->sdp_attributes; 
+       aa || bb; 
+       aa = aa->a_next, ba = ba->a_next)
+    if ((rv = sdp_attribute_cmp(aa, ba)))
+      return rv;
+
+  for (am = a->sdp_media, bm = b->sdp_media; 
+       am || bb; 
+       am = am->m_next, bm = bm->m_next)
+    if ((rv = sdp_media_cmp(am, bm)))
+      return rv;
+
+  return 0;
+}
+
 /** Compare two origin fields 
  */
 int sdp_origin_cmp(sdp_origin_t const *a, sdp_origin_t const *b)
@@ -1142,6 +1210,45 @@ int sdp_origin_cmp(sdp_origin_t const *a, sdp_origin_t const *b)
     return rv;
 
   return 0;
+}
+
+/** Compare two connection fields 
+ */
+int sdp_connection_cmp(sdp_connection_t const *a, sdp_connection_t const *b)
+{
+  int rv; int64_t rv64;
+
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
+  if (a == b)
+    return 0;
+  if ((rv = a->c_nettype - b->c_nettype))
+    return rv;
+  if ((rv = a->c_addrtype - b->c_addrtype))
+    return rv;
+  if ((rv = a->c_ttl - b->c_ttl))
+    return rv;
+  if ((rv = a->c_groups - b->c_groups))
+    return rv;
+
+  return 0;
+}
+
+/** Compare two bandwidth (b=) fields */
+int sdp_bandwidth_cmp(sdp_bandwidth_t const *a, sdp_bandwidth_t const *b)
+{
+  int rv; int64_t rv64;
+
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
+  if (a == b)
+    return 0;
+  if ((rv = a->b_modifier - b->b_modifier))
+    return rv;
+  if (a->b_modifier == sdp_bw_x && 
+      (rv = a->b_modifier_name - b->b_modifier_name))
+    return rv;
+  return a->b_value - b->b_value;
 }
 
 /** Compare two time fields */
@@ -1210,6 +1317,93 @@ int sdp_zone_cmp(sdp_zone_t const *a, sdp_zone_t const *b)
 
   if ((rv = a->z_number_of_adjustments - b->z_number_of_adjustments))
     return rv;
+
+  return 0;
+}
+
+/** Compare two key (k=) fields */
+int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b)
+{
+  int rv; int64_t rv64;
+
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
+  if (a == b)
+    return 0;
+  if ((rv = a->k_method - b->k_method))
+    return rv;
+  if (a->k_method == sdp_key_x && 
+      (rv = str0cmp(a->k_method_name, b->k_method_name)))
+    return rv;
+  return str0cmp(a->k_material, b->k_material);
+}
+
+/** Compare two attribute (a=) fields */
+int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b)
+{
+  int rv; int64_t rv64;
+
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
+  if (a == b)
+    return 0;
+  if ((rv = str0cmp(a->a_name, b->a_name)))
+    return rv;
+  return str0cmp(a->a_value, b->a_value);
+}
+
+/** Compare two media (m=) fields */
+int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
+{
+  int rv; 
+
+  sdp_connection_t const *ac, *bc;
+  sdp_bandwidth_t const *ab, *bb;
+  sdp_attribute_t const *aa, *ba;
+  sdp_media_t const *am, *bm;
+
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
+  if (a == b)
+    return 0;
+  if ((rv = a->m_type - b->m_type))
+    return rv;
+  if (a->m_type == sdp_media_x)
+    if ((rv = str0cmp(a->m_type_name, b->m_type_name)))
+      return rv;
+  if ((rv = a->m_port - b->m_port))
+    return rv;
+  if ((rv = a->m_number_of_ports - b->m_number_of_ports))
+    return rv;
+  if ((rv = a->m_proto - b->m_proto))
+    return rv;
+  if (a->m_proto == sdp_media_x)
+    if ((rv = str0cmp(a->m_proto_name, b->m_proto_name)))
+      return rv;
+#if 0 /* XXX */
+  m_formats, m_rtpmaps;
+#endif
+
+  for (ac = a->m_connections, bc = b->m_connections; 
+       ac || bc; 
+       ac = ac->c_next, bc = bc->c_next)
+  if ((rv = sdp_connection_cmp(ac, bc)))
+    return rv;
+
+  for (ab = a->m_bandwidths, bb = b->m_bandwidths; 
+       ab || bb; 
+       ab = ab->b_next, bb = bb->b_next)
+    if ((rv = sdp_bandwidth_cmp(a->m_bandwidths, b->m_bandwidths)))
+      return rv;
+
+  if ((rv = sdp_key_cmp(a->m_key, b->m_key)))
+    return rv;
+
+  for (aa = a->m_attributes, ba = b->m_attributes; 
+       aa || bb; 
+       aa = aa->a_next, ba = ba->a_next)
+    if ((rv = sdp_attribute_cmp(aa, ba)))
+      return rv;
 
   return 0;
 }
