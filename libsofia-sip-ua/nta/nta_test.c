@@ -812,7 +812,7 @@ int test_tports(agent_t *ag)
      */
     char const p_acid[] = "P-Access-Network-Info: IEEE-802.11g\n";
     msg_t *msg;
-    sip_t *sip;
+
     ag->ag_expect_leg = ag->ag_default_leg;
     TEST_1(ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, 
@@ -837,6 +837,8 @@ int test_tports(agent_t *ag)
     TEST(ag->ag_orq, NULL);
     TEST(ag->ag_latest_leg, ag->ag_default_leg);
     TEST_1(ag->ag_request);
+
+    msg_destroy(msg);
   }
 
 #if HAVE_SIGCOMP
