@@ -134,7 +134,7 @@ enum {
 /** Begin a test function. @HIDE */
 #define BEGIN() BEGIN_(TSTFLAGS); { extern int tstdef_dummy
 /** End a test function. @HIDE */
-#define END() } END_(TSTFLAGS)
+#define END() (void) tstdef_dummy; } END_(TSTFLAGS)
 /**Test that @a suite returns a nonzero value. @HIDE
  * @deprecated Use TEST_1() 
  */
@@ -162,7 +162,7 @@ enum {
 #define TEST64(flags, suite, expect) TEST64_(flags, suite, expect)
 #define TEST_S(flags, suite, expect) TEST_S_(flags, suite, expect)
 #define BEGIN(flags) BEGIN_(flags) { extern int tstdef_dummy
-#define END(flags) } END_(flags) 
+#define END(flags) (void) tstdef_dummy;  } END_(flags) 
 #endif
 
 typedef unsigned long long ull;
