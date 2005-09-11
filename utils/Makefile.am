@@ -10,6 +10,7 @@ INCLUDES = 	-I$(sofiasrc)/ipt \
 		-I$(sofiasrc)/msg \
 		-I$(sofiasrc)/nta \
 		-I$(sofiasrc)/nua \
+		-I$(sofiasrc)/soa \
 		-I$(sofiasrc)/sdp \
 		-I$(sofiasrc)/sip \
 		-I$(sofiasrc)/sresolv \
@@ -25,4 +26,4 @@ include_HEADERS = 	apps_utils.h
 
 bin_PROGRAMS =		nua_cli options sip_date
 
-LDADD =			-L../libsofia-sip-ua -lsofia-sip-ua $(GLIB_LIBS)
+LDADD =			../libsofia-sip-ua/libsofia-sip-ua.la $(GLIB_LIBS)
