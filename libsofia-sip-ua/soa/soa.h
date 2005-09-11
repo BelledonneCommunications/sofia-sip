@@ -128,6 +128,12 @@ int soa_is_remote_chat_active(soa_session_t const *ss);
  * soa_get_params() or soa_get_paramlist()
  */
 
+#define SOATAG_CAPS_SDP(x)  soatag_caps_sdp, tag_ptr_v(x)
+extern tag_typedef_t soatag_caps_sdp;
+#define SOATAG_CAPS_SDP_REF(x) \
+  soatag_caps_sdp_ref, tag_ptr_vr(&(x), (x))
+extern tag_typedef_t soatag_caps_sdp_ref;
+
 #define SOATAG_CAPS_SDP_STR(x)  soatag_caps_sdp_str, tag_str_v(x)
 extern tag_typedef_t soatag_caps_sdp_str;
 #define SOATAG_CAPS_SDP_STR_REF(x) \

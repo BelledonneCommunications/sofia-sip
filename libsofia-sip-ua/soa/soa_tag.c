@@ -42,8 +42,26 @@ const char soa_tag_c_id[] =
 #include <soa.h>
 #include <su_tag_class.h>
 
+/**@def SOATAG_CAPS_SDP(x)
+ *  Pass parsed capability description to soa session object.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_create()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    NULL terminated character string
+ *
+ * Corresponding tag taking reference parameter is SOATAG_CAPS_SDP_REF()
+ */
+tag_typedef_t soatag_caps_sdp = PTRTAG_TYPEDEF(caps_sdp);
+
 /**@def SOATAG_CAPS_SDP_STR(x)
- *  Pass media description file name to the NUA stack.
+ *  Pass capability description to soa session object.
  *
  * Pass name of media description file that contains media templates
  * (normally mss.sdp) to the NUA stack.
