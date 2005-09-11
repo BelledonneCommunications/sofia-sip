@@ -348,8 +348,7 @@ void *sub_alloc(su_home_t *home,
 		long size, 
 		int zero)
 {
-  void *data;
-  int preload = 0;
+  void *data, *preload = NULL;
   
   assert (size >= 0);
 
@@ -393,15 +392,15 @@ void *sub_alloc(su_home_t *home,
     int prused = sub->sub_prused + size + MEMCHECK_EXTRA; 
     prused = ALIGN(prused);
     if (prused <= sub->sub_prsize) {
-      preload = sub->sub_prused;
+      preload = (char *)sub->sub_preload + sub->sub_prused;
       sub->sub_prused = prused;
     }
   }
 
   if (preload && zero)
-    data = memset((char *)sub->sub_preload + preload, 0, size);
+    data = memset(preload, 0, size);
   else if (preload)
-    data = (char *)sub->sub_preload + preload;
+    data = preload;
   else if (zero)
     data = calloc(1, size + MEMCHECK_EXTRA);
   else
