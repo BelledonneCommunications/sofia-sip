@@ -104,7 +104,9 @@ dnl Find C compiler
 dnl ======================================================================
 
 AC_DEFUN([AX_TOOL_CC], [
+AC_REQUIRE([SAC_CANONICAL_SYSTEM_CACHE_CHECK])
 AC_BEFORE([$0], [AC_PROG_CPP])dnl
+
 AC_CHECK_TOOL(CC, gcc, gcc)
 if test -z "$CC"; then
   AC_CHECK_TOOL(CC, cc, cc, , , /usr/ucb/cc)
@@ -115,7 +117,26 @@ if test -z "$CC"; then
   fi
   test -z "$CC" && AC_MSG_ERROR([no acceptable cc found in \$PATH])
 fi
+
 AC_PROG_CC
+
+#
+# Wall
+#
+AC_CACHE_CHECK([for maximum warnings compiler flag],
+  ac_cv_cwflag,
+[case "${CC-cc}" in
+  *gcc*) ac_cv_cwflag=-Wall;;
+  *)	case "$host" in
+    *irix*)	ac_cv_cwflag=-fullwarn ;;
+    *solaris*)  ac_cv_cwflag="-erroff=%none,E_END_OF_LOOP_CODE_NOT_REACHED -xCC"
+	        ;;
+    *)		ac_cv_cwflag=;;
+		esac 
+  ;;
+esac])
+CFLAGS="$CFLAGS $ac_cv_cwflag"
+AC_SUBST([CWFLAG], [$ac_cv_cwflag])
 
 #
 # GCoverage
