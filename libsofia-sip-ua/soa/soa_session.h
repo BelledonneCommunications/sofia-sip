@@ -162,6 +162,8 @@ struct soa_session
   /** Remote session description */
   struct soa_description ss_remote[1];
 
+  sdp_session_t *ss_rsession;	/**< Processed remote SDP */
+
   /** SIP features required */
   char const * const *ss_local_required;
   /** SIP features supported */

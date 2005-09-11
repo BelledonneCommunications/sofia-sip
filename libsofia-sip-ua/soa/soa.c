@@ -994,11 +994,13 @@ int soa_generate_answer(soa_session_t *ss,
 int soa_base_generate_answer(soa_session_t *ss,
 			     soa_callback_f *completed)
 {
-  sdp_session_t const *sdp = ss->ss_local->ssd_sdp;
+  sdp_session_t const *l_sdp = ss->ss_local->ssd_sdp;
+  sdp_session_t const *r_sdp = ss->ss_remote->ssd_sdp;
+  sdp_session_t *rsession;
 
   (void)completed;
 
-  if (!sdp)
+  if (!l_sdp || !r_sdp)
     return -1;
 
   soa_set_activity(ss, sdp->sdp_media, 0);
@@ -1042,14 +1044,20 @@ int soa_process_answer(soa_session_t *ss,
   return ss->ss_actions->soa_process_answer(ss, completed);
 }
 
+/** Process answer from remote end.
+ * 
+ * 
+ */
 int soa_base_process_answer(soa_session_t *ss,
 			    soa_callback_f *completed)
 {
-  sdp_session_t const *sdp = ss->ss_local->ssd_sdp;
+  sdp_session_t const *l_sdp = ss->ss_local->ssd_sdp;
+  sdp_session_t const *r_sdp = ss->ss_remote->ssd_sdp;
+  sdp_session_t *rsession;
 
   (void)completed;
 
-  if (!sdp)
+  if (!l_sdp || !r_sdp)
     return -1;
 
   soa_set_activity(ss, sdp->sdp_media, 0);
