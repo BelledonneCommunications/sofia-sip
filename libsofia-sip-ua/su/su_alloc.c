@@ -388,22 +388,20 @@ void *sub_alloc(su_home_t *home,
   }
 
   /* Use preloaded memory */
-  if (size && sub && sub->sub_preload && zero <= 1) {
-    preload = sub->sub_prused + size + MEMCHECK_EXTRA; 
-    preload = ALIGN(preload);
-    if (preload <= sub->sub_prsize) {
-      data = (char *)sub->sub_preload + sub->sub_prused;
-      sub->sub_prused = preload;
-      if (zero)
-	memset(data, 0, size);
-    }
-    else {
-      preload = 0;
+  if (size && sub && zero <= 1 &&
+      sub->sub_preload && size <= sub->sub_prsize) {
+    int prused = sub->sub_prused + size + MEMCHECK_EXTRA; 
+    prused = ALIGN(prused);
+    if (prused <= sub->sub_prsize) {
+      preload = sub->sub_prused;
+      sub->sub_prused = prused;
     }
   }
 
-  if (preload)
-    ;
+  if (preload && zero)
+    data = memset((char *)sub->sub_preload + preload, 0, size);
+  else if (preload)
+    data = (char *)sub->sub_preload + preload;
   else if (zero)
     data = calloc(1, size + MEMCHECK_EXTRA);
   else
