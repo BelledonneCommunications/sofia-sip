@@ -66,6 +66,11 @@ struct sres_context_s;
 #include <pthread.h>
 #include <su_alloc.h>
 
+#if HAVE_ALARM
+#include <unistd.h>
+#include <signal.h>
+#endif
+
 char const name[] = "test_sresolv";
 
 struct sres_context_s
@@ -1826,6 +1831,14 @@ fill_stack(void)
     array[i] = i ^ 0xdeadbeef;
 }
 
+#if HAVE_ALARM
+static RETSIGTYPE sig_alarm(int s)
+{
+  fprintf(stderr, "%s: FAIL! test timeout!\n", name);
+  exit(1);
+}
+#endif
+
 void usage(void)
 {
   fprintf(stderr, 
@@ -1841,6 +1854,7 @@ int main(int argc, char **argv)
 {
   int i;
   int error = 0;
+  int o_alarm = 1;
   sres_context_t ctx[1] = {{{SU_HOME_INIT(ctx)}}};
 
   for (i = 1; argv[i]; i++) {
@@ -1851,6 +1865,9 @@ int main(int argc, char **argv)
     }
     else if (strcmp(argv[i], "-v") == 0)
       tstflags |= tst_verbatim;
+    else if (strcmp(argv[i], "--no-alarm") == 0) {
+      o_alarm = 0;
+    }
     else if (strncmp(argv[i], "-l", 2) == 0) {
       int level = 3;
       char *rest = NULL;
@@ -1871,6 +1888,13 @@ int main(int argc, char **argv)
   }
 
   su_init();
+
+#if HAVE_ALARM
+  if (o_alarm) {
+    alarm(60);
+    signal(SIGALRM, sig_alarm); 
+  }
+#endif
 
   if (!(TSTFLAGS & tst_verbatim)) {
     su_log_soft_set_level(sresolv_log, 0);
