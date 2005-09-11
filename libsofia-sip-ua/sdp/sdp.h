@@ -391,6 +391,9 @@ int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b);
 /** Compare two attribute (a=) fields */
 int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b);
 
+/** Compare two media (m=) descriptions */
+int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b);
+
 /** Get connections of a media description */
 sdp_connection_t *sdp_media_connections(sdp_media_t *m);
 
