@@ -650,37 +650,6 @@ char const *soa_error_as_sip_reason(soa_session_t *ss)
   return "SIP;cause=501;text=\"Unimplemented media\"";
 }
 
-/**Parse and store session description received from remote end.
- *
- * @param ss session handle
- * @param live
- * @param sdp pointer to session description
- * @param len length of session description
- *
- * @retval 1 when description is new
- * @retval 0 when description is old
- * @retval -1 upon an error
- */
-int soa_parse_sdp(soa_session_t *ss,
-		  int live,
-		  char const *sdp,
-		  int len)
-{
-  sdp_parser_t *parser;
-
-  if (ss == NULL || sdp == NULL || len == 0)
-    return -1;
-
-  if (len == -1)
-    len = strlen(sdp);
-
-  if (live > 0)
-    return soa_set_sdp(ss, soa_remote_sdp_kind, NULL, sdp, len);
-  else if (live == 0)
-    return soa_set_sdp(ss, soa_capability_sdp_kind, NULL, sdp, len);
-  else
-    return soa_set_sdp(ss, soa_local_sdp_kind, NULL, sdp, len);
-}
 
 /** Return SDP description of capabilities.
  *

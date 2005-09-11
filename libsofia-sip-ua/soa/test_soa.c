@@ -112,8 +112,6 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(soa_error_as_sip_reason(NULL));
 
-  TEST_1(-1 == soa_parse_sdp(NULL, 0, NULL, 0));
-
   TEST_1(!soa_media_features(NULL, 0, NULL));
 
   TEST_1(!soa_sip_required(NULL));
