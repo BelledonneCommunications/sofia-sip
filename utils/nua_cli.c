@@ -62,6 +62,9 @@ typedef struct cli_oper_s cli_oper_t;
 #include <su_tagarg.h>
 #include <sl_utils.h>
 
+#include <soa.h>
+#include <soa_add.h>
+
 #include <su_debug.h>
 
 #ifdef WIN32
@@ -141,6 +144,8 @@ struct cli_s {
 
   char const   *cli_media;	/**< Media address */
   nua_t        *cli_nua;        /**< Pointer to NUA object */
+
+  soa_session_t *cli_soa;	/**< SOA object */
 
   char const   *cli_address;	/**< Our SIP address */
 
@@ -319,15 +324,19 @@ int main(int ac, char *av[])
   
   su_init();
 
+  soa_add("static", &soa_static_actions);
+
   su_home_init(cli->cli_home);
 
   if ((cli->cli_root = su_root_create(cli))) {
     if (cli_init(cli, av) != -1) {
+
       if ((cli->cli_nua = 
 	   nua_create(cli->cli_root, 
 		      cli_callback, cli,
 		      NUTAG_URL(cli->cli_contact),
 		      NUTAG_MEDIA_ADDRESS(cli->cli_media),
+		      NUTAG_SOA_SESSION(cli->cli_soa),
 		      TAG_NULL()))) {
 	int min_se = 0;
 	int s_e = 0;
@@ -1970,6 +1979,10 @@ int cli_init(cli_t *cli, char *av[])
     return -1;
   su_timer_set(cli->cli_input, handle_input, NULL);
 #endif
+
+  cli->cli_soa = soa_create("static", cli->cli_root, cli);
+  if (cli->cli_soa)
+    soa_set_capability_sdp(cli->cli_soa, "m=audio 5004 RTP/AVP 8 0", -1);
 
   cli->cli_init = 1;
 
