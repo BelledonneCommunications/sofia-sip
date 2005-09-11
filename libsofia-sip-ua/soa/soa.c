@@ -688,7 +688,7 @@ int soa_parse_sdp(soa_session_t *ss,
  * @retval 1 if description is returned
  * @retval -1 upon an error
  */
-int soa_get_capability_sdp(soa_session_t *ss, 
+int soa_get_capability_sdp(soa_session_t const *ss,
 			   char const **return_sdp,
 			   int *return_len)
 {
@@ -729,7 +729,7 @@ int soa_set_capability_sdp_str(soa_session_t *ss,
  * @retval 1 if description is returned
  * @retval -1 upon an error
  */
-int soa_get_local_sdp(soa_session_t *ss, 
+int soa_get_local_sdp(soa_session_t const *ss,
 		      char const **return_sdp,
 		      int *return_len)
 {
@@ -770,7 +770,7 @@ int soa_set_local_sdp_str(soa_session_t *ss,
  * @retval 1 if description is returned
  * @retval -1 upon an error
  */
-int soa_get_remote_sdp(soa_session_t *ss, 
+int soa_get_remote_sdp(soa_session_t const *ss,
 		       char const **return_sdp,
 		       int *return_len)
 {

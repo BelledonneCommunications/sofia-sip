@@ -69,21 +69,21 @@ char const *soa_error_as_sip_reason(soa_session_t *soa);
 int soa_set_capability_sdp(soa_session_t *ss,
 			   char const *str, int len);
 
-int soa_get_capability_sdp(soa_session_t *ss,
+int soa_get_capability_sdp(soa_session_t const *ss,
 			   char const **return_sdp,
 			   int *return_len);
 
 int soa_set_remote_sdp(soa_session_t *ss,
 		       char const *str, int len);
 
-int soa_get_remote_sdp(soa_session_t *ss,
+int soa_get_remote_sdp(soa_session_t const *ss,
 		       char const **return_sdp,
 		       int *return_len);
 
 int soa_set_local_sdp(soa_session_t *ss,
 		      char const *str, int len);
 
-int soa_get_local_sdp(soa_session_t *ss,
+int soa_get_local_sdp(soa_session_t const *ss,
 		      char const **return_sdp,
 		      int *return_len);
 
