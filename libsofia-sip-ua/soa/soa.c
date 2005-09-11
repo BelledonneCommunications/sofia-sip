@@ -806,6 +806,17 @@ int soa_set_remote_sdp_str(soa_session_t *ss,
   return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);
 }
 
+int soa_clear_remote_sdp(soa_session_t *ss)
+{
+  if (!ss)
+    return (void)(errno = EFAULT), -1;
+
+  ss->ss_unprocessed_remote = 0;
+
+  return 0;
+}
+
+
 
 /** Initialize offer/answer state machine */
 int soa_init_offer_answer(soa_session_t *ss)
