@@ -108,8 +108,6 @@ static int soa_static_init(char const *name,
 			   soa_session_t *ss,
 			   soa_session_t *parent)
 {
-  soa_static_session_t *myss = (void *)ss;
-
   return soa_base_init(name, ss, parent);
 }
 
@@ -139,7 +137,6 @@ static int soa_static_generate_offer(soa_session_t *ss,
   sdp_session_t *sdp;
   sdp_media_t *m;
   uint16_t port = 5004;
-  su_msg_r msg;
 
   if (ss->ss_local->ssd_sdp == NULL) {
     if (ss->ss_caps->ssd_unparsed == NULL)
@@ -167,7 +164,6 @@ static int soa_static_generate_answer(soa_session_t *ss,
   sdp_session_t *sdp;
   sdp_media_t *m;
   uint16_t port = 5004;
-  su_msg_r msg;
 
   if (ss->ss_local->ssd_sdp == NULL) {
     if (ss->ss_caps->ssd_unparsed == NULL)

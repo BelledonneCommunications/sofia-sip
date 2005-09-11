@@ -115,8 +115,6 @@ static int soa_asynch_init(char const *name,
 			   soa_session_t *ss,
 			   soa_session_t *parent)
 {
-  soa_asynch_session_t *myss = (void *)ss;
-
   return soa_base_init(name, ss, parent);
 }
 
