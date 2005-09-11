@@ -1219,8 +1219,6 @@ int soa_set_sdp(soa_session_t *ss,
 		sdp_session_t const *sdp0,
 		char const *sdp_str, int str_len)
 {
-  int retval;
-
   struct soa_description *ssd;
   int flags, new_version;
   sdp_parser_t *parser = NULL;
@@ -1240,8 +1238,7 @@ int soa_set_sdp(soa_session_t *ss,
     flags = sdp_f_mode_0000;
     break;
   default:
-    retval = -1;
-    break;
+    return -1;
   }
 
   if (sdp0)
@@ -1562,10 +1559,10 @@ soa_init_sdp_connection(soa_session_t *ss,
 
   switch (ss->ss_af) {
   case SOA_AF_IP4_ONLY:
-    hints->li_family = AF_INET, ip4 = 1;
+    hints->li_family = AF_INET, ip4 = 1, ip6 = 0;
     break;
   case SOA_AF_IP6_ONLY:
-    hints->li_family = AF_INET6, ip6 = 1;
+    hints->li_family = AF_INET6, ip6 = 1, ip4 = 0;
     break;
   case SOA_AF_IP4_IP6:
     ip4 = 2, ip6 = 1;
