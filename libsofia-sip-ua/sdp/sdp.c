@@ -1216,7 +1216,7 @@ int sdp_origin_cmp(sdp_origin_t const *a, sdp_origin_t const *b)
  */
 int sdp_connection_cmp(sdp_connection_t const *a, sdp_connection_t const *b)
 {
-  int rv; int64_t rv64;
+  int rv;
 
   if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
@@ -1237,7 +1237,7 @@ int sdp_connection_cmp(sdp_connection_t const *a, sdp_connection_t const *b)
 /** Compare two bandwidth (b=) fields */
 int sdp_bandwidth_cmp(sdp_bandwidth_t const *a, sdp_bandwidth_t const *b)
 {
-  int rv; int64_t rv64;
+  int rv;
 
   if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
@@ -1324,7 +1324,7 @@ int sdp_zone_cmp(sdp_zone_t const *a, sdp_zone_t const *b)
 /** Compare two key (k=) fields */
 int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b)
 {
-  int rv; int64_t rv64;
+  int rv;
 
   if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
@@ -1341,7 +1341,7 @@ int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b)
 /** Compare two attribute (a=) fields */
 int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b)
 {
-  int rv; int64_t rv64;
+  int rv;
 
   if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
@@ -1360,7 +1360,6 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
   sdp_connection_t const *ac, *bc;
   sdp_bandwidth_t const *ab, *bb;
   sdp_attribute_t const *aa, *ba;
-  sdp_media_t const *am, *bm;
 
   if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
