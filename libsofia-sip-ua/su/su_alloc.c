@@ -1121,8 +1121,6 @@ void *su_zalloc(su_home_t *home, int  size)
  */
 void *su_salloc(su_home_t *home, int size)
 {
-  void *data;
-
   struct { int size; } *retval;
 
   if (size < sizeof (*retval))
