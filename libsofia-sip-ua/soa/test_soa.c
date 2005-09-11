@@ -96,7 +96,6 @@ int test_api_errors(struct context *ctx)
 
   char const *phrase = NULL;
   char const *null = NULL;
-  char const * const *featurelist;
 
   TEST_1(!soa_create("default", NULL, NULL));
   TEST_1(!soa_clone(NULL, NULL, NULL));

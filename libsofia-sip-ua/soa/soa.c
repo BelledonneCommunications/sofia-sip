@@ -55,6 +55,9 @@ const char soa_add_h_id[] = SOA_ADD_H;
 
 #include <su_tagarg.h>
 #include <su_localinfo.h>
+#include <su_uniqueid.h>
+
+#include <string0.h>
 
 #define NONE ((void *)-1)
 #define XXX assert(!"implemented")
@@ -64,25 +67,11 @@ typedef unsigned longlong ull;
 /* ======================================================================== */
 
 /* Internal prototypes */
-static int soa_remote_sdp(soa_session_t *ss, sdp_parser_t *,
-			  char const *sdp, int len);
-static int soa_config_sdp(soa_session_t *ss, sdp_parser_t *,
-			  char const *sdp, int len);
-
 void soa_set_activity(soa_session_t *ss,
 		      sdp_media_t const *,
 		      int remote);
 
 static inline int soa_media_is_ready(soa_session_t const *ss);
-
-static
-char const *soa_recv_offer_answer(soa_session_t *ss,
-				  sdp_session_t const *sdp,
-				  int *return_new_version);
-static
-char const *soa_sent_offer_answer(soa_session_t *soa,
-				  sdp_session_t const *sdp,
-				  int reliable);
 
 enum soa_sdp_kind { 
   soa_capability_sdp_kind,
@@ -316,7 +305,6 @@ int soa_base_init(char const *name,
 {
   if (parent) {
 #define DUP(d, dup, s) if ((s) && !((d) = dup(ss->ss_home, (s)))) return -1
-    static char const *null = NULL;
     su_home_t *h = ss->ss_home;
 
     if (soa_description_dup(h, ss->ss_caps, parent->ss_caps) < 0)
@@ -1453,10 +1441,9 @@ int soa_base_set_local_sdp(soa_session_t *ss,
   sdp_session_t *prev = ss->ss_local->ssd_sdp;
 
   sdp_origin_t o[1] = {{ sizeof(o) }};
-  sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
+  sdp_connection_t c0[1] = {{ sizeof(c0) }};
   char c_address[64];
   sdp_time_t t[1] = {{ sizeof(t) }};
-  sdp_media_t *m;
 
   if (sdp->sdp_origin) {
     if (prev && sdp_origin_cmp(sdp->sdp_origin, prev->sdp_origin) == 0) {
