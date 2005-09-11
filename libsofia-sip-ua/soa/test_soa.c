@@ -398,7 +398,7 @@ int main(int argc, char *argv[])
   int retval = 0, quit_on_single_failure = 0;
   int i, o_attach = 0, o_alarm = 1;
 
-  struct context ctx[1] = {{ SU_HOME_INIT(ctx) }};
+  struct context ctx[1] = {{{ SU_HOME_INIT(ctx) }}};
 
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
