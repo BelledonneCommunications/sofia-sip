@@ -1438,9 +1438,10 @@ int soa_base_set_local_sdp(soa_session_t *ss,
   sdp_session_t *prev = ss->ss_local->ssd_sdp;
 
   sdp_origin_t o[1] = {{ sizeof(o) }};
-  sdp_connection_t c0[1] = {{ sizeof(c0) }};
+  sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
   char c_address[64];
   sdp_time_t t[1] = {{ sizeof(t) }};
+  sdp_media_t *m;
 
   if (sdp->sdp_origin) {
     if (prev && sdp_origin_cmp(sdp->sdp_origin, prev->sdp_origin) == 0) {
@@ -1466,6 +1467,17 @@ int soa_base_set_local_sdp(soa_session_t *ss,
 
   if (!sdp->sdp_time)
     sdp->sdp_time = t;
+
+  c = sdp->sdp_origin->o_address;
+
+  if (sdp->sdp_connection == NULL) {
+    /* Make sure that every m= line (even rejected one) has c= line */
+    for (m = sdp->sdp_media; m; m = m->m_next)
+      if (m->m_connections == NULL)
+	break;
+    if (m)
+      sdp->sdp_connection = c;
+  }
 
   return soa_description_set(ss, ss->ss_local, sdp, str0, len0);
 }
