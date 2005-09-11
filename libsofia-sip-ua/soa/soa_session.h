@@ -204,7 +204,10 @@ struct soa_session
 
 /* ====================================================================== */
 
+int soa_has_received_sdp(soa_session_t const *ss);
+
 int soa_set_status(soa_session_t *ss, int status, char const *phrase);
+
 void soa_set_activity(soa_session_t *ss, sdp_media_t const *m, int remote);
 
 int soa_set_capability_sdp_str(soa_session_t *ss, 
@@ -230,6 +233,9 @@ void soa_description_free(soa_session_t *, struct soa_description *ssd);
 int soa_description_dup(su_home_t *, 
 			struct soa_description *ssd,
 			struct soa_description const *ssd0);
+
+int soa_init_sdp_origin(soa_session_t *ss, sdp_origin_t *o, char buf[64]);
+int soa_init_sdp_connection(soa_session_t *, sdp_connection_t *, char buf[64]);
 
 /* ====================================================================== */
 /* Debug log settings */
