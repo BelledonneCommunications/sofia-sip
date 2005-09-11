@@ -108,9 +108,9 @@ RBTREE_HEIGHT(static, prefix, Node, LEFT, RIGHT, PARENT);
 
 #endif
 
-RBTREE_PROTOS(static, redblack, Node);
+RBTREE_PROTOS(static inline, redblack, Node);
 
-RBTREE_BODIES(static, redblack, Node, LEFT, RIGHT, PARENT,
+RBTREE_BODIES(static inline, redblack, Node, LEFT, RIGHT, PARENT,
 	      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR,
 	      CMP, INSERT, REMOVE);
 
