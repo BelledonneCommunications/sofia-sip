@@ -90,20 +90,9 @@ const char _nua_stack_c_id[] =
 #include <tport_tag.h>
 #include <auth_client.h>
 
-#if HAVE_SMIME 		/* Start NRC Boston */
+#if HAVE_SOFIA_SMIME 
 #include "smimec.h"
-#endif                  /* End NRC Boston */
-
-#include <sdp.h>
-
-#define MSS_EVENT_HANDLER_T nua_handle_t
-
-/* XXX: */
-#if HAVE_MSS
-#include <mss.h>
-#include <mss_event.h>
-#include <mss_status.h>
-#endif
+#endif                  
 
 #include <sl_utils.h>
 
@@ -111,6 +100,8 @@ const char _nua_stack_c_id[] =
 #include <sigcomp.h>
 #include <nta_tport.h>
 #endif
+
+#include "soa.h"
 
 #include "nua_stack.h"
 
@@ -135,53 +126,6 @@ static int nh_challenge(nua_handle_t *nh, sip_t const *sip);
 static void dialog_uac_route(nua_handle_t *nh, sip_t const *sip, int rtag);
 static void dialog_uas_route(nua_handle_t *nh, sip_t const *sip, int rtag);
 static void dialog_get_peer_info(nua_handle_t *nh, sip_t const *sip);
-
-static inline int nmedia_is_enabled(struct nua_media_state *nm);
-static inline int nmedia_is_ready(struct nua_media_state *nm);
-
-static sdp_session_t *nmedia_describe(nua_t *nua,
-				      struct nua_media_state *nm,
-				      nua_handle_t *,
-				      su_home_t *home);
-static int nmedia_setup(nua_t *, 
-			struct nua_media_state *nm,
-			nua_handle_t *, 
-			nua_event_t ee, 
-			sdp_session_t const *, 
-			char const *offer_answer, int required);
-static int nmedia_play(nua_t *nua, struct nua_media_state *nm);
-static int nmedia_record(nua_t *nua, struct nua_media_state *nm);
-static int nmedia_pause(nua_t *nua, struct nua_media_state *nm, 
-			char const *direction);
-static int nmedia_teardown(nua_t *nua, struct nua_media_state *nm,
-			   nua_handle_t *nh);
-static int nmedia_features(su_home_t *, msg_param_t **, 
-			     sdp_media_t *, int live);
-
-static void nmedia_event_bind(nua_t *nua,
-			      struct nua_media_state *nm,
-			      nua_handle_t *nh);
-
-/* XXX: */
-#if HAVE_MSS
-static void nmedia_event_handler(mss_t *mss, ms_t *mms, 
-				 mss_event_handler_t *context,
-				 char const *path,
-				 char const *params[],
-				 void const *data, int dlen);
-#endif
-
-static int nmedia_save_params(struct nua_media_state *nm,
-			      su_home_t *home,
-			      int copy,
-			      tagi_t const *tags);
-
-
-static int nmedia_set_param(struct nua_media_state *nm,
-			    su_home_t *home,
-			    char const *mss_name,
-			    char const **pparam,
-			    char const *value);
 
 static
 int nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
@@ -238,32 +182,22 @@ int ua_init(su_root_t *root, nua_t *nua)
   url_string_t const *sips_contact = NULL;
 
   char const *certificate_dir = NULL;
-  char const *media_address = NULL;
-  char const *media_descs = NULL;
-  char const *media_params = NULL;
   char const *uicc_name = "default";
 
   nua_handle_t *nh;
   int media_enable = 1;
+  soa_session_t *soa = NULL;
 
   static int initialized_logs = 0;
 
   enter;
 
   if (!initialized_logs) {
-/* XXX: */
-#if HAVE_MSS
-    extern su_log_t mss_log[];
-#endif
     extern su_log_t tport_log[];
     extern su_log_t nta_log[];
     extern su_log_t nea_log[];
     extern su_log_t iptsec_log[];
 
-/* XXX: */
-#if HAVE_MSS
-    su_log_init(mss_log);
-#endif
     su_log_init(tport_log);
     su_log_init(nta_log);
     su_log_init(nea_log);
@@ -293,11 +227,9 @@ int ua_init(su_root_t *root, nua_t *nua)
 	  NUTAG_SIPS_URL_REF(sips_contact),
 	  NUTAG_CERTIFICATE_DIR_REF(certificate_dir),
 	  NUTAG_SIP_PARSER_REF(sip_parser),
-	  NUTAG_MEDIA_ADDRESS_REF(media_address),
-	  NUTAG_MEDIA_DESCS_REF(media_descs),
-	  NUTAG_MEDIA_PARAMS_REF(media_params),
-	  NUTAG_MEDIA_ENABLE_REF(media_enable),
 	  NUTAG_UICC_REF(uicc_name),
+	  NUTAG_MEDIA_ENABLE_REF(media_enable),
+	  NUTAG_SOA_SESSION_REF(soa),
 	  TAG_NULL());
 
 #if HAVE_UICC_H
@@ -342,39 +274,17 @@ int ua_init(su_root_t *root, nua_t *nua)
 		       NTATAG_UA(1),
 		       NTATAG_MERGE_482(1),
 		       NTATAG_RPORT(1),	/* XXX */
-#if HAVE_SMIME
+#if HAVE_SOFIA_SMIME
 		       NTATAG_SMIME(nua->sm),
 #endif
 		       TAG_NEXT(nua->nua_args));
 
   nua->nua_sdp_content = sip_content_type_make(home, SDP_MIME_TYPE);
-
   nua->nua_invite_accept = sip_accept_make(home, SDP_MIME_TYPE);
 
-  nua->nua_media_address = su_strdup(home, media_address);
-
-/* XXX: */
-#if HAVE_MSS
-  nua->nua_media_descs = 
-    su_sprintf(nua->nua_home, MSS_CREATE_DESCS "%s", media_descs);
-  nua->nua_media_events = su_strlst_create(home);
-
-  /* XXX: instantiate the media subsystem, and store
-     a pointer to nua_mss */
-#endif
-
-  if (!nua->nua_media_path) {
-    nua->nua_media_path = su_strdup(home, "/");
-  }
-
-  if (!nua->nua_media_cname) {
-    char hostname[64];
-    gethostname(hostname, sizeof(hostname));
-/* XXX: */
-#if HAVE_MSS
-    nua->nua_media_cname = 
-      su_sprintf(home, MS_SETUP_EMAIL "=%s@%s", getenv("USER"), hostname);
-#endif
+  if (media_enable && soa) {
+    nh->nh_soa = soa;
+    soa_set_params(soa, TAG_NEXT(nua->nua_args));
   }
 
   nh->nh_ds->ds_leg = nta_leg_tcreate(nua->nua_nta, process_request, nh,
@@ -386,11 +296,10 @@ int ua_init(su_root_t *root, nua_t *nua)
   if (!nua->nua_supported)
     nua->nua_supported = sip_supported_make(home, "timer, 100rel");
 
-  nua->nua_timer = su_timer_create(su_root_task(root), UA_INTERVAL * 1000);
-
   ua_init_contact(nua);
-
   ua_set_from(nua, NULL);
+
+  nua->nua_timer = su_timer_create(su_root_task(root), UA_INTERVAL * 1000);
 
   if (!(nh->nh_ds->ds_leg &&
 	nua->nua_allow &&
@@ -398,21 +307,17 @@ int ua_init(su_root_t *root, nua_t *nua)
 	(nua->nua_contact || nua->nua_sips_contact) &&
 	nua->nua_from &&
 	nua->nua_sdp_content &&
-/* XXX: */
-#if HAVE_MSS
-	nua->nua_media_events &&
-	nua->nua_mss &&
-#endif
 	nua->nua_timer))
     return -1;
-
-  ua_timer(nua, nua->nua_timer, NULL);
 
 #if HAVE_HERBIE
   /* Enable polyphonic ringing tones */
   nua->nua_herbie = nua_herbie_create(home, getenv("NUA_HERBIE_TONE"));
   if (!nua->nua_herbie);
+    return -1;
 #endif
+
+  ua_timer(nua, nua->nua_timer, NULL);
 
   nua->nua_args = NULL;
 
@@ -435,7 +340,6 @@ void ua_deinit(su_root_t *root, nua_t *nua)
   /* XXX: clean up media subsystem resources (nua->nua_mss) */
 #endif
 }
-
 
 /** Set the default from field */
 void ua_set_from(nua_t *nua, sip_from_t const *f)
@@ -508,13 +412,14 @@ void ua_init_contact(nua_t *nua)
   su_home_deinit(home);
 }
 
+
+
 static 
 void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
 {
-  msg_param_t **m_params = (msg_param_t **)&m->m_params;
+  char const ***m_params = (msg_param_t **)&m->m_params;
   su_strlst_t *l = su_strlst_create(home);
   nua_handle_t *nh = nua->nua_default;
-  sdp_session_t *sdp;
   int i;
 
   if (nh->nh_callee_caps) {
@@ -527,11 +432,15 @@ void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
       methods = su_sprintf(home, "methods=\"%s\"", methods);
       msg_params_replace(home, m_params, methods);
     }
-    
-    sdp = nmedia_describe(nua, nh->nh_nm, nh, home);
-      
-    if (sdp)
-      nmedia_features(home, m_params, sdp->sdp_media, 0);
+
+    if (nh->nh_soa) {
+      char **media = soa_media_features(nh->nh_soa, 0, home);
+
+      while (*media) {
+	msg_params_replace(home, m_params, *media);
+	media++;
+      }
+    }
   }
 
   m = sip_contact_dup(nua->nua_home, m);
@@ -555,12 +464,16 @@ void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
 static void 
   ua_shutdown(nua_t *),
   ua_set_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_get_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
+  ua_get_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *);
+
+#if 0
+static void
   ua_set_media_param(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_get_media_param(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_media_setup(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_media_describe(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_media_event(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *);
+#endif
 
 static int
   ua_register(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
@@ -806,6 +719,7 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
   case nua_r_shutdown:
     ua_shutdown(nua);
     break;
+#if 0
   case nua_r_set_media_param:
     ua_set_media_param(nua, nh, e->e_event, tags);
     break;
@@ -821,6 +735,7 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
   case nua_r_media_event:
     ua_media_event(nua, nh, e->e_event, tags);
     break;
+#endif
   case nua_r_register:
   case nua_r_unregister:
     ua_register(nua, nh, e->e_event, tags);
@@ -1005,15 +920,15 @@ void ua_shutdown(nua_t *nua)
 
     ss = nh->nh_ss;
 
-    if (ss->ss_respond_to_invite) {
-      ss->ss_respond_to_invite(nua, nh, SIP_410_GONE, NULL);
+    if (ss->ss_srequest->sr_respond) {
+      ss->ss_srequest->sr_respond(nua, nh, SIP_410_GONE, NULL);
       busy++;
     }
 
     busy += nh_call_pending(nh, 0);
 
-    if (nmedia_is_ready(nh->nh_nm)) {
-      nmedia_teardown(nua, nh->nh_nm, nh);
+    if (nh->nh_soa) {
+      soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
       busy++;
     }
 
@@ -1045,7 +960,6 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 {
   su_home_t     tmphome[1] = { SU_HOME_INIT(tmphome) }; 
 
-  int           af = nua->nua_media_af;
   int           autoAlert = nua->nua_autoAlert;
   int           autoAnswer = nua->nua_autoAnswer;
   int           autoACK = nua->nua_default->nh_auto_ack;
@@ -1053,7 +967,8 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   int           enableMessage = nua->nua_enableMessage;
   int           enableMessenger = nua->nua_enableMessenger;
   int           early_media = nua->nua_default->nh_early_media;
-#if HAVE_SMIME		/* Start NRC Boston */
+
+#if HAVE_SOFIA_SMIME
   int           smime_enable = nua->sm->sm_enable;
   int           smime_opt = nua->sm->sm_opt;
   int           smime_protection_mode = nua->sm->sm_protection_mode;
@@ -1062,15 +977,11 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   char const   *smime_key_encryption = NONE;
   char const   *smime_message_encryption = NONE;
   char const   *smime_path = NONE;
-#endif			/* End NRC Boston */
+#endif			
 
-  char const   *media_address = NONE;
-  char const   *media_path = NONE;
-  char const   *media_descs = NONE;
-  char const   *media_params = NONE;
-  unsigned      invite_timer = nua->nua_invite_timer;
-  unsigned      session_timer = nua->nua_session_timer;
-  unsigned      min_se = nua->nua_min_se;
+  int           invite_timer = nua->nua_invite_timer;
+  int           session_timer = nua->nua_session_timer;
+  int           min_se = nua->nua_min_se;
   int           refresher = nua->nua_refresher;
   int           update_refresh = nua->nua_default->nh_update_refresh;
   int           media_features = nua->nua_default->nh_media_features;
@@ -1086,18 +997,14 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sip_organization_t const *organization = NONE;
   char const   *organization_str = NONE;
   char const   *user_agent = nua->nua_ua_name;
-  char const   *media_event = NULL;
 
   enter;
 
   nta_agent_set_params(nua->nua_nta, TAG_NEXT(tags));
+  
+  soa_set_params(nua->nua_default->nh_soa, TAG_NEXT(tags));
 
   if (!tl_gets(tags,
-	       NUTAG_AF_REF(af),
-	       NUTAG_MEDIA_ADDRESS_REF(media_address),
-	       NUTAG_MEDIA_PATH_REF(media_path),
-	       NUTAG_MEDIA_DESCS_REF(media_descs),
-	       NUTAG_MEDIA_PARAMS_REF(media_params),
 	       NUTAG_INVITE_TIMER_REF(invite_timer),
 	       NUTAG_SESSION_TIMER_REF(session_timer),
 	       NUTAG_MIN_SE_REF(min_se),
@@ -1113,7 +1020,7 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	       NUTAG_CALLEE_CAPS_REF(callee_caps),
 	       NUTAG_PATH_ENABLE_REF(path_enable),
 	       NUTAG_SERVICE_ROUTE_ENABLE_REF(service_route_enable),
-#if HAVE_SMIME
+#if HAVE_SOFIA_SMIME
 	       NUTAG_SMIME_ENABLE_REF(smime_enable),
 	       NUTAG_SMIME_OPT_REF(smime_opt),
 	       NUTAG_SMIME_PROTECTION_MODE_REF(smime_protection_mode),
@@ -1139,7 +1046,6 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	       SIPTAG_ALLOW_STR_REF(allow_str),
 	       NUTAG_USER_AGENT_REF(user_agent),
 	       NUTAG_MEDIA_FEATURES_REF(media_features),
-	       NUTAG_MEDIA_EVENT_PATH_REF(media_event),
 	       TAG_NULL()))
     return;
 
@@ -1149,10 +1055,6 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     media_path != NONE ||
     allow != NONE || allow_str != NONE;
 #endif
-
-  if (af != nua->nua_media_af &&
-      af >= NUTAG_AF_ANY && af <= NUTAG_AF_IP6_IP4)
-    nua->nua_media_af = af;
 
   if (invite_timer > 0 && invite_timer < 30)
     invite_timer = 30;
@@ -1187,10 +1089,10 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   nua->nua_path_enable = path_enable != 0;
   nua->nua_service_route_enable = service_route_enable != 0;
   
-#if HAVE_SMIME 		/* Start NRC Boston */
+#if HAVE_SOFIA_SMIME 
   /* XXX - all S/MIME other parameters? */
   sm_set_params(nua->sm, smime_enable, smime_opt, smime_protection_mode, smime_path);
-#endif                  /* End NRC Boston */
+#endif                  
 
 #define update_header(nua, name, header, str) \
   if (header != NONE || str != NONE) { \
@@ -1228,44 +1130,6 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     nua->nua_organization = su_strdup(nua->nua_home, organization_str);
   } 
 
-  if (media_address != NONE &&
-      str0casecmp(media_address, nua->nua_media_address)) {
-    su_free(nua->nua_home, (void *)nua->nua_media_address);
-    nua->nua_media_address = su_strdup(nua->nua_home, media_address);
-  }
-
-/* XXX: */
-#if HAVE_MSS
-  /* Media description */
-#if 0
-  // pp: check this
-  if (nua->nua_mss == NULL) {
-#endif
-
-    if (media_descs != NONE) {
-      su_free(nua->nua_home, (void *)nua->nua_media_descs);
-      if (media_descs)
-	nua->nua_media_descs = 	
-	  su_sprintf(nua->nua_home, MSS_CREATE_DESCS "%s", media_descs);
-      else
-	 nua->nua_media_descs = NULL;
-    }
-
-    if (media_params != NONE) {
-      su_free(nua->nua_home, (void *)nua->nua_media_params);
-      nua->nua_media_params = su_strdup(nua->nua_home, media_params);
-    }
-#if 0
-  }
-#endif
-#endif /* HAVE_MSS */
-
-  if (media_path != NONE) {
-    if (media_path == NULL) media_path = "/";
-    su_free(nua->nua_home, (void *)nua->nua_media_path);
-    nua->nua_media_path = su_strdup(nua->nua_home, media_path);
-  }
-
   if (registrar != NONE) {
     if (registrar &&
 	(url_string_p(registrar) ? 
@@ -1301,25 +1165,6 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 			    nta_agent_version(nua->nua_nta));
   }
 
-  if (media_event) {
-    su_strlst_t *events = nua->nua_media_events;
-    tagi_t const *tl;
-    
-    for (tl = (tagi_t *)tags; tl; tl = tl_next(tl)) {
-      if ((tl = tl_find(tl, nutag_media_event_path))) {
-	msg_param_t path = (msg_param_t)tl->t_value;
-	size_t i, len = su_strlst_len(events);
-
-	for (i = 0; i < len; i++) 
-	  if (strcmp(path, su_strlst_item(events, i)) == 0)
-	    break;
-
-	if (i == len)
-	  su_strlst_dup_append(events, path);
-      }
-    }
-  }
-
   ua_init_contact(nua);
 
   su_home_deinit(tmphome);
@@ -1336,9 +1181,11 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   url_string_t const *proxy = NULL;
   sip_contact_t const *aliases = NULL;
   unsigned flags = 0;
-  char const *media_descs;
   sip_organization_t organization[1];
-  tagi_t *media_events;
+
+  tagi_t *media_params;
+
+  su_home_t home[1] = { SU_HOME_INIT(home) };
 
   enter;
 
@@ -1355,42 +1202,12 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 		       TAG_END());
 
   *from = *nua->nua_from; from->a_params = NULL;
-  media_descs = NULL;
-/* XXX: */
-#if HAVE_MSS
-  if (nua->nua_media_descs)
-    media_descs = nua->nua_media_descs + strlen(MSS_CREATE_DESCS);
-  else
-#endif
 
   sip_organization_init(organization)->g_string = nua->nua_organization;
 
-  if (nua->nua_media_events) {
-    su_strlst_t *events = nua->nua_media_events;
-    size_t i, len = su_strlst_len(events);
-    media_events = su_zalloc(NULL, (len + 1) * sizeof *media_events);
-    if (media_events) {
-      for (i = 0; i < len; i++) {
-	media_events[i].t_tag = nutag_media_event_path;
-	media_events[i].t_value = (tag_value_t)su_strlst_item(events, i);
-      }
-    }
-  } 
-  else {
-    media_events = NULL;
-  }
+  media_params = soa_get_paramlist(nh->nh_soa);
 
-  params = tl_list(NUTAG_AF(nua->nua_media_af),
-/* XXX: */
-#if HAVE_MSS
-		   NUTAG_MEDIA_SUBSYSTEM(nua->nua_mss),
-#endif
-		   NUTAG_MEDIA_ENABLE(nua->nua_media_enable),
-		   NUTAG_MEDIA_FEATURES(nua->nua_default->nh_media_features),
-		   NUTAG_MEDIA_ADDRESS(nua->nua_media_address),
-		   NUTAG_MEDIA_PATH(nua->nua_media_path),
-		   NUTAG_MEDIA_DESCS(media_descs),
-		   NUTAG_MEDIA_PARAMS(nua->nua_media_params),
+  params = tl_list(NUTAG_MEDIA_ENABLE(nua->nua_media_enable),
 		   NUTAG_EARLY_MEDIA(nua->nua_default->nh_early_media),
 		   NUTAG_INVITE_TIMER(nua->nua_invite_timer),
 		   NUTAG_SESSION_TIMER(nua->nua_session_timer),
@@ -1406,7 +1223,7 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 		   NUTAG_CALLEE_CAPS(nua->nua_default->nh_callee_caps),
 		   NUTAG_PATH_ENABLE(nua->nua_path_enable),
 		   NUTAG_SERVICE_ROUTE_ENABLE(nua->nua_service_route_enable),
-#if HAVE_SMIME		/* Start NRC Boston */
+#if HAVE_SOFIA_SMIME
 		   NUTAG_SMIME_ENABLE(nua->sm->sm_enable),
 		   NUTAG_SMIME_OPT(nua->sm->sm_opt),
 		   NUTAG_SMIME_PROTECTION_MODE(nua->sm->sm_protection_mode),
@@ -1414,7 +1231,7 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 		   NUTAG_SMIME_SIGNATURE(nua->sm->sm_signature),
 		   NUTAG_SMIME_KEY_ENCRYPTION(nua->sm->sm_key_encryption),
 		   NUTAG_SMIME_MESSAGE_ENCRYPTION(nua->sm->sm_message_encryption),
-#endif                  /* End NRC Boston */
+#endif                  
 #if HAVE_SRTP
 		   NUTAG_SRTP_ENABLE(nua->srtp->srtp_enable),
 		   NUTAG_SRTP_CONFIDENTIALITY(nua->srtp->srtp_confidentiality),
@@ -1438,13 +1255,15 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 		   NTATAG_DEFAULT_PROXY(proxy),
 		   NTATAG_ALIASES(aliases),
 		   NTATAG_SIPFLAGS(flags),
-		   TAG_NEXT(media_events));
+		   TAG_NEXT(media_params));
 
-  lst = tl_afilter(NULL, tags, params);
+  lst = tl_afilter(home, tags, params);
+
   ua_event(nua, nh, NULL, nua_r_get_params, SIP_200_OK, TAG_NEXT(lst));
-  su_free(NULL, lst);
-  if (media_events)
-    su_free(NULL, media_events);
+
+  su_home_deinit(home);
+
+  tl_vfree(media_params);
   tl_vfree(params);
 }
 
@@ -1545,13 +1364,13 @@ void nh_destroy(nua_t *nua, nua_handle_t *nh)
     nta_leg_destroy(nh->nh_ds->ds_leg), nh->nh_ds->ds_leg = NULL;
   }
 
-  if (nh->nh_ss->ss_invite_irq) {
-    nta_incoming_destroy(nh->nh_ss->ss_invite_irq);
-    nh->nh_ss->ss_invite_irq = NULL;
+  if (nh->nh_ss->ss_srequest->sr_irq) {
+    nta_incoming_destroy(nh->nh_ss->ss_srequest->sr_irq);
+    nh->nh_ss->ss_srequest->sr_irq = NULL;
   }
 
-  if (nmedia_is_ready(nh->nh_nm))
-    nmedia_teardown(nua, nh->nh_nm, nh);
+  if (nh->nh_soa)
+    soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
 
   if (nh_is_inserted(nh))
     nh_remove(nua, nh);
@@ -1564,7 +1383,7 @@ void crequest_deinit(struct nua_client_request *cr, nta_outgoing_t *orq)
 {
   if (orq == NULL || orq == cr->cr_orq) {
     cr->cr_retry_count = 0;
-    cr->cr_sent_offer = cr->cr_recv_answer = 0;
+    cr->cr_offer_sent = cr->cr_answer_recv = 0;
 
     if (cr->cr_msg)
       msg_destroy(cr->cr_msg);
@@ -1668,27 +1487,15 @@ void nh_init(nua_t *nua, nua_handle_t *nh,
   nh->nh_update_refresh = update_refresh;
   nh->nh_auto_ack = autoACK != 0;
 
-/* XXX: */
-#if HAVE_MSS
-  if (media_enable && nua->nua_mss) {
-    struct nua_media_state *nm = nh->nh_nm;
-
-    nm->nm_mss = nua->nua_mss;
-    nm->nm_af = nua->nua_default->nh_nm->nm_af;
-    nmedia_set_param(nm, nh->nh_home, MS_CONN_LIST,
-		     &nm->nm_address, nua->nua_media_address);
+  if (media_enable && nh->nh_soa) {
+    soa_session_t *soa = nh->nh_soa;
 
     if (nh->nh_tags)
-      nmedia_save_params(nm, nh->nh_home, 0, nh->nh_tags);
-    nmedia_save_params(nm, nh->nh_home, 0, ta_args(ta));
-
-    if (!nm->nm_path)
-      nm->nm_path = su_strdup(nh->nh_home, nua->nua_media_path);
+      soa_set_params(soa, TAG_NEXT(nh->nh_tags));
+    soa_set_params(soa, ta_tags(ta));
   }
-#endif
 
   ta_end(ta);
-
 
   nh->nh_init = 1;
 }
@@ -2071,727 +1878,25 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
   return NULL;
 }
 
-/* ====================================================================== */
-/* Default media handling */
-
-static inline 
-void *nmedia_set_status(struct nua_media_state *nm, 
-			int status, char const *phrase);
-static int nmedia_get_status(struct nua_media_state *nm, int except, ...);
-static void nmedia_error_to_sip_response(struct nua_media_state *nm,
-					 int *return_status,
-					 char const **return_phrase);
-
-static void nmedia_set_activity(struct nua_media_a *, 
-				sdp_media_t const *, 
-				int remote);
-
-static char const ** nmedia_param_list(nua_t *nua,
-				       struct nua_media_state *nm, 
-				       nua_handle_t *nh,
-				       su_strlst_t *l,
-				       tagi_t const *tags);
-
-static inline int nmedia_is_enabled(struct nua_media_state *nm)
-{
-/* XXX: */
-#if HAVE_MSS
-  return nm->nm_mss != NULL;
-#else
-  return 0;
-#endif
-}
-
-static inline int nmedia_is_ready(struct nua_media_state *nm)
-{
-/* XXX: */
-#if HAVE_MSS
-  return nm->nm_session != NULL;
-#else
-  return 0;
-#endif
-}
-
-sdp_session_t *nmedia_describe(nua_t *nua,
-			       struct nua_media_state *nm,
-			       nua_handle_t *nh, 
-			       su_home_t *home)
-{
-  su_strlst_t *l;
-  char const **params;
-  sdp_session_t *sdp = NULL;
-
-  assert(home);
-
-  if (!nmedia_is_enabled(nm))
-    return nmedia_set_status(nm, 500, "Media is disabled");
-
-/* XXX: */
-#if HAVE_MSS
-  if (nm->nm_session == NULL || nm->nm_modified) {
-    l = su_strlst_create(home); 
-    if (!l)
-      return nmedia_set_status(nm, 500, "Internal error");
-    params = nmedia_param_list(nua, nm, nh, l, NULL);
-  }
-  else {
-    l = NULL;
-    params = NULL;
-  }
-
-  /* XXX: get the local SDP */
-
-  if (l)
-    su_strlst_destroy(l);
-
-  if (nmedia_get_status(nm, 0) < 0)
-    return NULL;
-
-  if (!sdp) {
-    nmedia_set_status(nm, 500, "Internal media error");
-    return NULL;
-  }
-
-  if (nm->nm_session)
-    nmedia_set_activity(nm->nm_active, sdp->sdp_media, 0);
-#endif
-
-  return sdp;
-}
-
-/**
- *
- * @retval 1 real mss_setup() done
- * @retval 0 no mss_setup()
- * @retval -1 error
- */
-int nmedia_setup(nua_t *nua,
-		 struct nua_media_state *nm,
-		 nua_handle_t *nh,
-		 nua_event_t ee,
-		 sdp_session_t const *sdp, char const *offer_answer, 
-		 int required)
-{
-/* XXX: */
-#if HAVE_MSS
-  ms_t *old_session = nm->nm_session;
-  su_strlst_t *l;
-  char const **params;
-
-  if (!nmedia_is_enabled(nm))
-    return 0;
-
-  /* Can we avoid setup?? */
-  if (!required && 
-      ee == nua_i_media_error &&
-      old_session != NULL &&
-      !(sdp && offer_answer) &&
-      !nm->nm_modified) {
-    SU_DEBUG_5(("nua(%p): avoiding local media setup\n", nh));
-    return 0;
-  }
-
-  l = su_strlst_create(nh->nh_home); if (!l) return -1;
-
-  if (sdp && offer_answer)
-    su_strlst_append(l, offer_answer);
-
-  params = nmedia_param_list(nua, nm, nh, l, NULL);
-  nua->nua_media_handle = nh;	/* used by callback */
-  mss_setup(nm->nm_mss, &nm->nm_session, nm->nm_path, params, sdp);
-  nua->nua_media_handle = NULL;
-  su_strlst_destroy(l);
-
-  if (nmedia_get_status(nm, 0) < 0) {
-    /* XXX - warning header */
-    assert(nm->nm_session == NULL || nm->nm_session == old_session);
-    ua_event(nua, nh, NULL, ee,
-	     nm->nm_status, nm->nm_phrase, 
-	     NUTAG_MEDIA_SESSION(nm->nm_session),
-	     TAG_END());
-    return -1;
-  } 
-  assert(nm->nm_session != NULL);
-
-  nmedia_set_status(nm, SIP_200_OK);
-
-  nm->nm_clone = 0;
-  nm->nm_modified = 0;  
-  nm->nm_muted = nm->nm_hold_remote;
-
-  if (sdp)
-    nmedia_set_activity(nm->nm_active, sdp->sdp_media, 1);
-
-  if (ee != nua_i_media_error)
-    ua_event(nua, nh, NULL, ee,
-	     nm->nm_status, nm->nm_phrase, 
-	     NUTAG_MEDIA_SESSION(nm->nm_session),
-	     TAG_END());
-  
-  if (old_session != nm->nm_session)
-    nmedia_event_bind(nua, nm, nh);
-
-#endif  
-  return 1;
-}
-
-/** Start playing media 
- *
- * The function nmedia_play() starts to receive media and play it out to
- * user.
- */
-int nmedia_play(nua_t *nua, struct nua_media_state *nm)
-{
-  if (!nmedia_is_enabled(nm))
-    return 0;
-
-/* XXX: */
-#if HAVE_MSS
-  /* XXX: activate media subsystem to process incoming streams */
-#endif
-
-  return nmedia_get_status(nm, 200, 405, 455, 0);
-}
-
-int nmedia_record(nua_t *nua, struct nua_media_state *nm)
-{
-  if (!nmedia_is_enabled(nm) || nm->nm_muted)
-    return 0;
-
-/* XXX: */
-#if HAVE_MSS
-  /* XXX: activate media subsystem to start generating outgoing streams */
-#endif
-
-  return nmedia_get_status(nm, 200, 405, 455, 0);
-}
-
-int nmedia_pause(nua_t *nua, struct nua_media_state *nm, char const *direction)
-{
-  char const *params[2] = { NULL };
-
-  if (!nmedia_is_enabled(nm))
-    return 0;
-  
-  params[1] = direction;
-
-/* XXX: */
-#if HAVE_MSS
-  /* XXX: temporarily disable media subsystem operation */
-#endif
-
-  return nmedia_get_status(nm, 200, 405, 455, 0);
-}
-
-int nmedia_teardown(nua_t *nua, struct nua_media_state *nm,
-		    nua_handle_t *nh)
-{
-  if (nm->nm_session == NULL) {
-    nmedia_set_status(nm, SIP_200_OK);
-    return 0;
-  }
-
-  nmedia_set_activity(nm->nm_active, NULL, 0);
-
-  nua->nua_media_handle = nh;
-/* XXX: */
-#if HAVE_MSS
-  /* XXX: close down media subsystem resources */
-#endif
-  nua->nua_media_handle = NULL;
-
-  return nmedia_get_status(nm, 0);
-}
-
-void nmedia_event_bind(nua_t *nua,
-		       struct nua_media_state *nm,
-		       nua_handle_t *nh)
-{
-  su_strlst_t *eventlist;
-
-  int i, len;
-
-/* XXX: */
-#if HAVE_MSS
-  /* XXX: subscribe to events from the media subsystem */
-#endif
-
-  return;
-}
-
-void nmedia_event_handler(mss_t *mss, ms_t *mms, 
-			  nua_handle_t *nh,
-			  char const *path,
-			  char const *params[],
-			  void const *data, int dlen)
-{
-/* XXX: */
-#if HAVE_MSS
-  /* XXX: receive events from the media subsystem */
-#endif
-}
-
-/** Send an event to mss.
- *
- * @retval 0 success
- * @retval -1 error
- */
-int nmedia_event(nua_t *nua,
-		 struct nua_media_state *nm,
-		 nua_handle_t *nh,
-		 tagi_t const *tags)
-{
-  char const *path = nm->nm_path;
-  void *data = NULL;
-  unsigned dlen = 0;
-
-  if (!nmedia_is_enabled(nm))
-    return 0;
-
-/* XXX: */
-#if HAVE_MSS
-  
-  /* XXX: send an event to media subsystem */
-  nmedia_get_status(nm, 0);
-
-#endif
-
-  return 0;
-}
-
-static inline 
-void *
-nmedia_set_status(struct nua_media_state *nm, int status, char const *phrase)
-{
-  nm->nm_status = status, nm->nm_phrase = phrase;
-  return NULL;
-}
-
-/**Get status from MSS.
- *
- * Store it in nua_media_state structure unless it is one 
- * of status numbers or classes listed as exceptions.
- *
- * @return 0 if status indicated success or it was an exception
- * @return -1 if status indicated failure
- */
-static 
-int nmedia_get_status(struct nua_media_state *nm,
-		      int except, 
-		      ...)
-{
-  int status; 
-  char const *phrase;
-
-/* XXX: */
-#if HAVE_MSS
-
-  /* XXX: query current status of media subsystem */
-
-#endif
-
-  if (status >= 200 && status < 300) 
-    return 0;
-  else
-    return -1;
-}
-   
-/**Convert MSS status to SIP status.
- *
- */
-static 
-void nmedia_error_to_sip_response(struct nua_media_state *nm,
-				  int *return_status,
-				  char const **return_phrase)
-{
-  int status = nm->nm_status;
-
-  if (200 <= status && status < 300)
-    return;
-  else if (status == 406 || status == 412 || status == 415 || 
-	   status == 451 || status == 456 || status == 461)
-    *return_status = 488, *return_phrase = sip_488_Not_acceptable;
-  else
-    *return_status = 500, *return_phrase = "Internal Media Error";
-}
-
-/**Convert MSS status to SIP reason.
- *
- */
-static 
-char const *
-nmedia_error_to_sip_reason(struct nua_media_state *nm)
-{
-  int status = nm->nm_status;
-
-  if (200 <= status && status < 300)
-    return NULL;
-  else if (status == 406 || status == 412 || status == 415 || 
-	   status == 451 || status == 456 || status == 461)
-    return "SIP;cause=488;text=\"Not acceptable here\"";
-  else
-    return "SIP;cause=500;text=\"Internal media error\"";
-}
-
-   
-static void nmedia_set_activity(struct nua_media_a *ma, 
-				sdp_media_t const *m,
-				int remote)
-{
-  sdp_connection_t const *c;
-  int mode;
-
-  remote = !!remote;
-
-  ma->ma_audio = ma->ma_video = ma->ma_chat = ma->ma_image = 
-    nua_active_disabled;
-      
-  for (; m; m = m->m_next) {
-    if (m->m_rejected)
-      continue;
-
-    mode = m->m_mode;
-
-    c = sdp_media_connections((sdp_media_t *)m);
-
-    if (remote != (c && c->c_mcast))
-      mode = ((mode << 1) & 2) | ((mode >> 1) & 1); 
-
-    if (m->m_type == sdp_media_audio)
-      ma->ma_audio |= mode;
-    else if (m->m_type == sdp_media_video)
-      ma->ma_video |= mode;
-    else if (m->m_type == sdp_media_image)
-      ma->ma_image |= mode;
-    else if (strcasecmp(m->m_type_name, "message") == 0)
-      ma->ma_chat |= mode;
-  }
-  
-  if (ma->ma_audio != nua_active_disabled)
-    ma->ma_audio &= ~nua_active_disabled;
-  if (ma->ma_video != nua_active_disabled)
-    ma->ma_video &= ~nua_active_disabled;
-  if (ma->ma_image != nua_active_disabled)
-    ma->ma_image &= ~nua_active_disabled;
-  if (ma->ma_chat != nua_active_disabled)
-    ma->ma_chat &= ~nua_active_disabled;
-}
-
-static
-int nmedia_save_params(struct nua_media_state *nm,
-		       su_home_t *home,
-		       int copy,
-		       tagi_t const *tags)
-{
-#if HAVE_MSS
-  /* XXX: save media parameters described in */
-  ms_t *session = nm->nm_session;
-#if HAVE_SRTP
-  unsigned srtp_enable = nm->nm_srtp_enable;
-  unsigned srtp_confidentiality = nm->nm_srtp_confidentiality;
-  unsigned srtp_integrity_protection = nm->nm_srtp_integrity_protection;
-#endif
-  int hold = nm->nm_hold_remote;
-  int clone = nm->nm_clone;
-  int af = nm->nm_af;
-
-  if (!tags)
-    return 0;
-
-  if (tl_gets(tags, 
-#if HAVE_SRTP
-	      NUTAG_SRTP_ENABLE_REF(srtp_enable),
-	      NUTAG_SRTP_INTEGRITY_PROTECTION_REF(srtp_integrity_protection),
-	      NUTAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
-#endif
-	      NUTAG_MEDIA_SESSION_REF(session),
-	      NUTAG_AF_REF(af),
-	      NUTAG_MEDIA_CLONE_REF(clone),
-	      NUTAG_HOLD_REF(hold),
-	      TAG_END())) {
-    if (session != nm->nm_session
-#if HAVE_SRTP
-	|| srtp_enable != nm->nm_srtp_enable
-	|| srtp_confidentiality != nm->nm_srtp_confidentiality
-	|| srtp_integrity_protection != nm->nm_srtp_integrity_protection
-#endif
-	|| hold != nm->nm_hold_remote
-	|| clone != nm->nm_clone
-	|| af != nm->nm_af)
-      nm->nm_modified = 1;
-  }
-
-#if HAVE_SRTP
-  nm->nm_srtp_enable = srtp_enable;
-  nm->nm_srtp_confidentiality = srtp_confidentiality;
-  nm->nm_srtp_integrity_protection = srtp_integrity_protection;
-#endif
-  nm->nm_hold_remote = hold;
-  nm->nm_clone = clone;
-  nm->nm_af = af;
-
-  if (session) {
-    if (nm->nm_session == NULL || copy)
-      nm->nm_session = session;
-    else if (nm->nm_session != session) {
-      SU_DEBUG_1(("nua: got media session %p, but already has session %p\n",
-		  session, nm->nm_session));
-    }
-  }
-
-  nmedia_save_param(nm, home, copy, tags, NULL, 
-		    NUTAG_MEDIA_PATH_REF(nm->nm_path));
-  nmedia_save_param(nm, home, copy, tags, MS_CONN_LIST, 
-		    NUTAG_MEDIA_ADDRESS_REF(nm->nm_address));
-  nmedia_save_param(nm, home, copy, tags, MS_VIDEO_LOCAL_WINDOW, 
-		    NUTAG_VIDEO_LOCAL_REF(nm->nm_video_lw));
-  nmedia_save_param(nm, home, copy, tags, MS_VIDEO_REMOTE_WINDOW, 
-		    NUTAG_VIDEO_REMOTE_REF(nm->nm_video_rw));
-  nmedia_save_param(nm, home, copy, tags, MS_TARGET_IMAGE_NAME, 
-		    NUTAG_IMAGE_LOCAL_REF(nm->nm_image_lw));
-  nmedia_save_param(nm, home, copy, tags, MS_TARGET_IMAGE_NAME, 
-		    NUTAG_TARGET_IMAGE_NAME_REF(nm->nm_image_name));
-
-  for (; tags; tags = tl_next(tags))
-    if ((tags = tl_find(tags, nutag_media_event_path))) {
-      su_strlst_t *el = nm->nm_event_list;
-      if (el == NULL)
-	el = nm->nm_event_list = su_strlst_create(home);
-      if (el) {
-	char *name = su_strdup(su_strlst_home(el), (void *)tags->t_value);
-	if (name)
-	  su_strlst_append(el, name);
-      }
-    }
-
-#endif /* HAVE_MSS */
-
-  return nm->nm_modified;
-}
-
-static int
-nmedia_save_param(struct nua_media_state *nm,
-		  su_home_t *home,
-		  int copy,
-		  tagi_t const *tags,
-		  char const *mss_name,
-		  tag_type_t tag,
-		  tag_value_t tvalue)
-{
-  char const **pparam = (char const **)tvalue;
-  char const *param = *pparam;
-  char const *value = NULL;
-  size_t prefix;
-  
-  if (tl_gets(tags, tag, (tag_value_t)&value, TAG_END()) != 1)
-    return 0;
-
-  if (param == value)
-    return 0;
-
-  prefix = mss_name ? strlen(mss_name) + 1 : 0;
-
-  if (param && value && strcmp(param + prefix, value) == 0)
-    return 0;
-
-  if (value && 
-      !(prefix
-	? (value = su_sprintf(home, "%s=%s", mss_name, value))
-	: (value = su_strdup(home, value))))
-    return 0;
-
-  if (!copy && param) 
-    su_free(home, (void *)param); 
-
-  SU_DEBUG_7(("nua(%p): %s %s\n", home, copy ? "setting" : "saving", value));
-
-  *pparam = value; 
-
-  return nm->nm_modified = 1;
-}
-
-static int
-nmedia_set_param(struct nua_media_state *nm,
-		 su_home_t *home,
-		 char const *mss_name,
-		 char const **pparam,
-		 char const *value)
-{
-  char const *param = *pparam;
-  size_t prefix;
-  
-  if (param == value)
-    return 0;
-
-  prefix = mss_name ? strlen(mss_name) + 1 : 0;
-
-  if (param && value && strcmp(param + prefix, value) == 0)
-    return 0;
-
-  if (value && 
-      !(prefix
-	? (value = su_sprintf(home, "%s=%s", mss_name, value))
-	: (value = su_strdup(home, value))))
-    return 0;
-
-  if (param) 
-    su_free(home, (void *)param); 
-
-  SU_DEBUG_7(("nua(%p): %s %s\n", home, "default", value));
-
-  *pparam = value; 
-
-  return nm->nm_modified = 1;
-}
-
-static
-char const **nmedia_param_list(nua_t *nua,
-			       struct nua_media_state *nm, 
-			       nua_handle_t *nh,
-			       su_strlst_t *l,
-			       tagi_t const *tags)
-{
-  su_home_t *home;
-
-#if HAVE_SRTP
-  srtp_object_t *srtp = nm->nm_srtp;
-#endif
-
-#define PARAM(s) (su_strlst_append(l, (s)))
-
-  if (l == NULL)
-    return NULL;
-
-  home = su_strlst_home(l);
-
-  if (nm->nm_clone)
-    su_strlst_append(l, MS_SETUP_CLONE);
-  if (nm->nm_hold_remote)
-    su_strlst_append(l, MS_HOLD_REMOTE);
-
-  if (nm->nm_video_lw) PARAM(nm->nm_video_lw);
-  if (nm->nm_video_rw) PARAM(nm->nm_video_rw);
-#if HAVE_JPIP
-  if (nm->nm_image_lw) PARAM(nm->nm_image_lw);
-  if (nm->nm_target_image_name) PARAM(nm->nm_target_image_name);
-#endif 
-#if HAVE_SRTP && 0
-  if (srtp->srtp_enable) PARAM(MS_SRTP_ENABLE);
-  if (srtp->srtp_confidentiality) PARAM(MS_SRTP_CONFIDENTIALITY);
-  if (srtp->srtp_integrity_protection) PARAM(MS_SRTP_INTEGRITY_PROTECTION);
-#endif  
-
-  if (nh && nh->nh_ds->ds_local)
-    PARAM(su_sprintf(home, MS_LOCAL_URI "=" URL_PRINT_FORMAT,
-		     URL_PRINT_ARGS(nh->nh_ds->ds_local->a_url)));
-  if (nh && nh->nh_ds->ds_remote)
-    PARAM(su_sprintf(home, MS_REMOTE_URI "=" URL_PRINT_FORMAT,
-		     URL_PRINT_ARGS(nh->nh_ds->ds_remote->a_url)));
-  if (nua->nua_contact) {
-    sip_contact_t const *m = nua->nua_contact;
-    PARAM(su_sprintf(home, MS_LOCAL_CONTACT"="URL_PRINT_FORMAT,
-		     URL_PRINT_ARGS(m->m_url)));
-  }
-  if (nh && nh->nh_ds->ds_leg) {
-    sip_contact_t const *m = NULL;
-    nta_leg_get_route(nh->nh_ds->ds_leg, NULL, &m);
-    if (m)
-      PARAM(su_sprintf(home, MS_REMOTE_CONTACT"="URL_PRINT_FORMAT,
-		       URL_PRINT_ARGS(m->m_url)));
-  }
-
-  if (nua->nua_media_cname)
-    su_strlst_dup_append(l, nua->nua_media_cname);
-
-  if (nm->nm_address) 
-    PARAM(nm->nm_address);
-  else switch (nm->nm_af) {
-  case nutag_af_ip4_only:
-    PARAM(MS_CONN_IN_IP4); break;
-  case nutag_af_ip6_only:
-    PARAM(MS_CONN_IN_IP6); break;
-  case nutag_af_ip4_ip6:
-    PARAM(MS_CONN_IN_IP4_IP6); break;
-  case nutag_af_ip6_ip4:
-    PARAM(MS_CONN_IN_IP6_IP4); break;
-  default:
-    break;
-  }
-
-  /* Search for all NUTAG_MEDIA_PARAMS instances */
-  for (; tags; tags = tl_next(tags)) {
-    tags = tl_find(tags, nutag_media_params);
-    if (tags && tags->t_value) 
-      PARAM((char const *)tags->t_value);
-  }
-
-#undef PARAM  
-
-  return su_strlst_get_array(l);
-}
-
-
-/** Obtain a list of media features from SDP media */
-static int
-nmedia_features(su_home_t *home, 
-		msg_param_t **m_params, 
-		sdp_media_t *m,
-		int live)
-{
-  char const *param;
-  int retval = 0;
-
-  for (; m; m = m->m_next) {
-    if (live && m->m_port == 0)	/* Skip canceled media */
-      continue;
-
-    switch (m->m_type) {
-    case sdp_media_audio:
-    case sdp_media_video:
-    case sdp_media_image:
-    case sdp_media_data:
-    case sdp_media_control:
-    case sdp_media_application:
-      param = su_strdup(home, m->m_type_name);
-      break;
-    default:
-      param = su_sprintf(home, "+%s", m->m_type_name);
-    }
-
-    if (!msg_params_find(*m_params, param)) {
-      msg_params_replace(home, m_params, param);
-      retval++;
-    } else {
-      su_free(home, (char *)param);
-    }
-  }
-
-  return retval;
-}
-
 /* ======================================================================== */
 
-char const application_sdp[] = "application/sdp";
+static char const application_sdp[] = "application/sdp";
 
-/** Get SDP from message payload.
- *
- * @retval pointer to SDP if there is non-duplicate SDP 
- * @retval NULL if there is no SDP or SDP is duplicate
- * @retval NONE upon an error
- */
-sdp_session_t const *
-nmedia_parse_sdp(nua_handle_t *nh,
-		 msg_payload_t const *pl,
-		 msg_content_type_t const *ct,
-		 struct nua_media_a *ma)
+/** Get SDP from a SIP message */
+static
+int session_get_description(msg_t *msg, 
+			    sip_t const *sip,
+			    char const **return_sdp, 
+			    size_t *return_len)
 {
-  struct nua_media_state *nm = nh->nh_nm;
-  sdp_session_t *sdp;
+  sip_payload_t const *pl = sip->sip_payload;
+  sip_content_type_t const *ct = sip->sip_content_type;
+  int matching_content_type = 0;
 
   if (pl == NULL)
-    ;
-  else if (pl->pl_len == 0)
-    pl = NULL, SU_DEBUG_5(("nua: empty payload\n"));
+    return 0;
+  else if (pl->pl_len == 0 || pl->pl_data == NULL)
+    return 0;
   else if (ct == NULL)
     /* Be bug-compatible with our old gateways */
     SU_DEBUG_3(("nua: no %s, assuming %s\n", 
@@ -2799,369 +1904,202 @@ nmedia_parse_sdp(nua_handle_t *nh,
   else if (ct->c_type == NULL)
     SU_DEBUG_3(("nua: empty %s, assuming %s\n", 
 		"Content-Type", application_sdp));
-  else if (strcasecmp(ct->c_type, SDP_MIME_TYPE))
-    pl = NULL, 
-    SU_DEBUG_3(("nua: unknown %s: %s\n", "Content-Type", ct->c_type));
-
-  if (pl) {
-    sdp_parser_t *sdp = sdp_parse(nh->nh_home, pl->pl_data, pl->pl_len, 
-				  sdp_f_mode_0000);
-    if (sdp_parsing_error(sdp)) {
-      if (ct && ct->c_type) {
-	SU_DEBUG_1(("nua: SDP parsing error: %s\n", sdp_parsing_error(sdp)));
-	sdp_parser_free(sdp);
-	nmedia_set_status(nm, 400, "Bad Session Description");
-	return NONE;
-      }
-      sdp_parser_free(sdp);	/* This probably was not SDP after all */
-    }
-    else {
-      if (nm->nm_sdp)
-	sdp_parser_free(nm->nm_sdp);
-      nm->nm_sdp = sdp;
-    }
+  else if (strcasecmp(ct->c_type, SDP_MIME_TYPE)) {
+    SU_DEBUG_5(("nua: unknown %s: %s\n", "Content-Type", ct->c_type));
+    return 0;
   }
-  
-  sdp = sdp_session(nm->nm_sdp);
+  else
+    matching_content_type = 1;
 
-  if (sdp && ma)
-    nmedia_set_activity(ma, sdp->sdp_media, 1);
+  if (pl == NULL)
+    return 0;
 
-  return sdp;
-}
-
-void 
-nmedia_clear_sdp(nua_handle_t *nh)
-{
-  if (nh->nh_nm->nm_sdp)
-    sdp_parser_free(nh->nh_nm->nm_sdp), nh->nh_nm->nm_sdp = NULL;
-}
-
-/** Get application/sdp payload from sip.
- *    
- * @retval NULL no SDP in payload
- * @retval NONE error in processing SDP payload
- * @retval 493  encryption error
- * @retval other pointer to sdp_session_t structure
- */
-sdp_session_t const *
-nmedia_parse_sdp_from_sip(nua_handle_t *nh,
-			  sip_t const *sip,
-			  struct nua_media_a *ma)
-{
-  nmedia_clear_sdp(nh);
-
-  return nmedia_parse_sdp(nh, 
-			  sip->sip_payload, 
-			  (msg_content_type_t *)sip->sip_content_type, 
-			  ma);
-}
-
-int nh_sdp_insert(nua_handle_t *nh,
-		  su_home_t *home,
-		  msg_t *msg,
-		  sip_t *sip,
-		  sdp_session_t const *sdp)
-{
-  sdp_printer_t *printer;
-
-  printer = sdp_print(home, sdp, NULL, 0, sdp_f_realloc);
-
-  if (sdp_message(printer)) {
-    sip_payload_t *pl;
-
-    pl = sip_payload_create(msg_home(msg), 
-			    (void *)sdp_message(printer),
-			    sdp_message_size(printer));
-
-    sdp_printer_free(printer);
-
-    if (pl) {
-      sip_header_insert(msg, sip, (sip_header_t *)pl);
-      sip_add_dup(msg, sip, (sip_header_t *)nh->nh_nua->nua_sdp_content);
-      // sip_add_make(msg, sip, sip_content_disposition_class, "session");
+  if (!matching_content_type) {
+    /* Make sure we got SDP */
+    if (pl->pl_len < 3 || strncasecmp(pl->pl_data, "v=0", 3))
       return 0;
-    }
-  } else {
-    SU_DEBUG_3(("nh_sdp_insert: sdp_print: %s\n",
-		sdp_printing_error(printer)));
-    sdp_printer_free(printer), printer = NULL;
   }
-	     
-  return -1;
+
+  *return_sdp = pl->pl_data;
+  *return_len = pl->pl_len;
+
+  return 1;
 }
 
-/* ======================================================================== */
-/* Update offer/answer states */
-
-/** Initialize offer/answer state machine */
-static inline
-void nh_init_offer_answer(nua_handle_t *nh)
+/** Insert SDP into SIP message */ 
+int session_include_description(nua_handle_t *nh,
+				msg_t *msg, 
+				sip_t *sip)
 {
-  nh->nh_ss->ss_complete = 0;
-  nh->nh_ss->ss_offer_sent = 0;
-  nh->nh_ss->ss_offer_recv = 0;
-  nh->nh_ss->ss_answer_sent = 0;
-  nh->nh_ss->ss_answer_recv = 0;
+  su_home_t *home = msg_home(msg);
+
+  char const *sdp;
+  int len;
+
+  sip_content_disposition_t *cd;
+  sip_content_type_t *ct;
+  sip_payload_t *pl;
+  
+  if (!nh->nh_soa)
+    return 0;
+
+  if (soa_get_local_sdp(nh->nh_soa, &sdp, &len) < 0)
+    return -1;
+    
+  pl = sip_payload_create(home, sdp, len);
+  ct = sip_content_type_make(home, application_sdp);
+  cd = sip_content_disposition_make(home, "session");
+
+  if (pl == NULL || ct == NULL || cd == NULL ||
+      sip_header_insert(msg, sip, (sip_header_t *)cd) < 0 ||
+      sip_header_insert(msg, sip, (sip_header_t *)ct) < 0 ||
+      sip_header_insert(msg, sip, (sip_header_t *)pl) < 0)
+    return -1;
+
+  return 0;
 }
 
-/**Updates O/A state with the received SDP.
- *
- * @param nh nua handle
- * @param sdp (NULL, if o= is identical to previous one)
+/** Generate SDP headers */ 
+int session_make_description(nua_handle_t *nh,
+			     su_home_t *home,
+			     sip_content_disposition_t **return_cd,
+			     sip_content_type_t **return_ct,
+			     sip_payload_t **return_pl)
+{
+  char const *sdp;
+  int len;
+
+  if (!nh->nh_soa)
+    return 0;
+
+  if (soa_get_local_sdp(nh->nh_soa, &sdp, &len) < 0)
+    return -1;
+    
+  *return_pl = sip_payload_create(home, sdp, len);
+  *return_ct = sip_content_type_make(home, application_sdp);
+  *return_cd = sip_content_disposition_make(home, "session");
+
+  return 0;
+}
+
+
+
+/** Store SDP from incoming response. 
+ * 
+ * @retval 1 if there was SDP to process
  */
-static
-char const *nh_recv_offer_answer(nua_handle_t *nh, 
-				 sdp_session_t const *sdp,
-				 int *return_new_version)
-{
-  struct nua_session_state *ss = nh->nh_ss;
-  char const *verdict;
-  sdp_origin_t const *o;
-
-  assert(sdp); assert(sdp->sdp_origin); assert(ss);
-
-  o = sdp->sdp_origin; 
-
-  if (ss->ss_offer_sent && ss->ss_answer_recv) {
-    /* Ignore this for now? */
-    verdict = NULL;
-    sdp = NULL;
-    *return_new_version = 0;
-  }
-  else if (ss->ss_offer_sent && !ss->ss_answer_recv) {
-    verdict = "answer";
-    ss->ss_oa_rounds++;
-    ss->ss_complete = 1;
-    ss->ss_answer_recv = 1;
-  }
-  else {
-    verdict = "offer";
-    ss->ss_complete = 0;
-    ss->ss_offer_recv = 1; 
-    ss->ss_answer_sent = 0;
-  }
-
-  if (sdp && sdp_origin_cmp(o, ss->ss_o_remote)) {
-    *return_new_version = 1;
-    if (ss->ss_o_remote)
-      su_free(nh->nh_home, ss->ss_o_remote);
-    ss->ss_o_remote = sdp_origin_dup(nh->nh_home, o);
-  } else {
-    *return_new_version = 0;
-  }
-
-  SU_DEBUG_5(("nua: %s: %s (o=%s "LLU" "LLU")\n",
-	      "nh_recv_offer_answer", verdict ? verdict : "ignored",
-	      o->o_username, (ull)o->o_id, (ull)o->o_version));
-  
-  return verdict;
-}
-
-/** Updates O/A state when sending SDP */
-static
-char const *nh_sent_offer_answer(nua_handle_t *nh, 
-				 sdp_session_t const *sdp,
-				 int reliable)
-{
-  struct nua_session_state *ss = nh->nh_ss;
-  char const *verdict;
-  sdp_origin_t const *o;
-
-  assert(sdp); assert(ss);
-
-  if (ss->ss_offer_recv && !ss->ss_answer_sent) {
-    verdict = "answer";
-    ss->ss_oa_rounds++;
-    ss->ss_complete = 1;
-    ss->ss_answer_sent = reliable ? 2 : 1;
-  } 
-  else {
-    verdict = "offer";
-    ss->ss_complete = 0;
-    ss->ss_offer_sent = 1;
-    ss->ss_answer_recv = 0;
-  }
-
-  o = sdp->sdp_origin; assert(o);
-  
-  if (sdp_origin_cmp(o, ss->ss_o_local)) {
-    if (ss->ss_o_local)
-      su_free(nh->nh_home, ss->ss_o_local);
-    ss->ss_o_local = sdp_origin_dup(nh->nh_home, o);
-  }
-
-  SU_DEBUG_5(("nua: %s: %s (o=%s "LLU" "LLU")\n",
-	      "nh_sent_offer_answer", verdict ? verdict : "ignored", 
-	      o->o_username, (ull)o->o_id, (ull)o->o_version));
-
-  return verdict;
-}
-
-/* ======================================================================== */
-
-/** Store SDP from incoming response */
 static
 int session_process_response(nua_handle_t *nh,
 			     struct nua_client_request *cr,
 			     nta_outgoing_t *orq,
 			     sip_t const *sip)
 {
-  sdp_session_t const *sdp;
-  struct nua_media_a ma[1];
+  char const *method = nta_outgoing_method_name(orq);
+  msg_t *msg = nta_outgoing_getresponse_ref(orq);
+  int retval = 0;
+  char const *sdp = NULL;
+  int len;
 
-  if (!nmedia_is_enabled(nh->nh_nm))
-    return process_response(nh, cr, orq, sip, TAG_END());
-
-  sdp = nmedia_parse_sdp_from_sip(nh, sip, ma);
-
-  if (sdp == NONE) {
-    process_response(nh, cr, orq, sip, TAG_END());
-    return -1;
+  if (nh->nh_soa == NULL)
+    /* Xyzzy */;
+  else if (!session_get_description(msg, sip, &sdp, &len)) 
+    /* No SDP */;
+  else if (cr->cr_answer_recv) {
+    /* Ignore spurious answers after completing O/A */
+    SU_DEBUG_3(("nua(%p): %s: ignoring duplicate SDP in %u %s\n", 
+		nh, method,
+		sip->sip_status->st_status, sip->sip_status->st_phrase));
+    sdp = NULL;
   }
+  else if (!cr->cr_offer_sent && 
+	   nta_outgoing_method(orq) != sip_method_invite) {
+    /* If non-invite request did not have offer, ignore SDP in response */
+    SU_DEBUG_3(("nua(%p): %s: ignoring extra SDP in %u %s\n", 
+		nh, method,
+		sip->sip_status->st_status, sip->sip_status->st_phrase));
+    sdp = NULL;
+  }
+  else {
+    if (cr->cr_offer_sent)
+      cr->cr_answer_recv = sip->sip_status->st_status;
+    else 
+      cr->cr_offer_recv = 1, cr->cr_answer_sent = 0;
 
-  if (sdp && cr->cr_sent_offer) {
-    if (cr->cr_recv_answer) {
-      /* Ignore spurious answers after completing O/A */
-      SU_DEBUG_5(("nua: ignoring duplicate SDP in %u %s\n", 
-		  sip->sip_status->st_status, sip->sip_status->st_phrase));
-      nmedia_clear_sdp(nh);
+    if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+      SU_DEBUG_5(("nua(%p): %s: error parsing SDP in %u %s\n", 
+		  nh, method,
+		  sip->sip_status->st_status, 
+		  sip->sip_status->st_phrase));
+      retval = -1;
+      sdp = NULL;
+    }
+    else if (cr->cr_offer_recv) {
+      SU_DEBUG_5(("nua(%p): %s: get SDP %s in %u %s\n", 
+		  nh, method, "offer",
+		  sip->sip_status->st_status, 
+		  sip->sip_status->st_phrase));
+      retval = 1;
+    }
+    else if (soa_process_answer(nh->nh_soa, NULL) < 0) {
+      SU_DEBUG_5(("nua(%p): %s: error processing SDP answer in %u %s\n", 
+		  nh, method,
+		  sip->sip_status->st_status, 
+		  sip->sip_status->st_phrase));
       sdp = NULL;
     }
     else {
-      cr->cr_recv_answer = 1;
+      SU_DEBUG_5(("nua(%p): %s: processed SDP answer in %u %s\n", 
+		  nh, method, 
+		  sip->sip_status->st_status, 
+		  sip->sip_status->st_phrase));
     }
   }
 
+  msg_destroy(msg);		/* unref */
+   
+  process_response(nh, cr, orq, sip, 
+		   NH_REMOTE_MEDIA_TAGS(sdp != NULL, nh->nh_soa),
+		   TAG_END());
+
+  return retval;
+}
+
+#if 0
+/** Parse and store SDP from incoming request */
+static
+int session_process_request(nua_handle_t *nh,
+			    nta_incoming_t *irq,
+			    sip_t const *sip)
+{
+  char const *sdp = NULL;
+  int len;
+    
+  if (nh->nh_soa) {
+    msg_t *msg = nta_outgoing_getresponse_ref(irq);
+
+    if (session_get_description(msg, sip, &sdp, &len)) {
+      if (soa_is_complete(nh->nh_soa)) {
+	/* Ignore spurious answers after completing O/A */
+	SU_DEBUG_5(("nua: ignoring duplicate SDP in %u %s\n", 
+		    sip->sip_status->st_status, sip->sip_status->st_phrase));
+	sdp = NULL;
+      }
+      else if (soa_parse_sdp(nh->nh_soa, sdp, len) < 0) {
+	SU_DEBUG_5(("nua: error parsing SDP in %u %s\n", 
+		    sip->sip_status->st_status, 
+		    sip->sip_status->st_phrase));
+	sdp = NULL;
+      }
+    }
+
+    msg_destroy(msg);
+  }
+   
   return process_response(nh, cr, orq, sip, 
-			  NH_ACTIVE_MEDIA_TAGS(sdp != NULL, ma),
+			  NH_REMOTE_MEDIA_TAGS(sdp != NULL, nh->nh_soa),
 			  TAG_END());
 }
-
-/** Process remote sdp (offer/answer) for a session */
-static
-int 
-session_offer_answer(nua_handle_t *nh,
-		     su_home_t *home,
-		     sip_content_disposition_t **return_disposition,
-		     sip_content_type_t **return_type,
-		     sip_payload_t **return_payload,
-		     int should_send_offer)
-{
-  nua_t *nua = nh->nh_nua;
-  struct nua_media_state *nm = nh->nh_nm;
-  int new_sdp, setup;
-  sdp_session_t *remote_sdp;
-  char const *offer_answer;
-  
-  *return_disposition = NULL;
-  *return_type = NULL;
-  *return_payload = NULL;
-
-  remote_sdp = sdp_session(nm->nm_sdp);
-
-  if (!remote_sdp)
-    return 0;
-
-  offer_answer = nh_recv_offer_answer(nh, remote_sdp, &new_sdp);
-
-  if (offer_answer || should_send_offer) 
-    setup = nmedia_setup(nua, nm, 
-			 nh, nua_i_media_error, 
-			 remote_sdp, offer_answer, new_sdp);
-  else
-    setup = 0;
-
-  if (setup < 0) {
-    /* XXX */
-    setup = 0;
-    ua_event(nua, nh, NULL, nua_i_media_error, 
-	     500, "Cannot setup local media",
-	     TAG_END());
-  }
-
-  if (should_send_offer ||
-      (nh->nh_ss->ss_offer_recv && !nh->nh_ss->ss_answer_sent)) {
-    sdp_session_t *local_sdp = nmedia_describe(nua, nm, nh, home);
-
-    if (local_sdp) {
-      sdp_printer_t *printer = sdp_print(home, local_sdp, NULL, 0, 
-					 sdp_f_realloc);
-	  
-      if (sdp_message(printer)) {
-	sip_content_type_t *ct;
-	sip_payload_t *pl;
-
-	/* This is always sent reliably (ie. not in non-PRACKed 1XX) */
-	nh_sent_offer_answer(nh, local_sdp, 1);
-
-	ct = sip_content_type_dup(home, nua->nua_sdp_content);
-	pl = sip_payload_create(home, 
-				(void *)sdp_message(printer),
-				sdp_message_size(printer));
-
-	*return_type = ct;
-	*return_payload = pl;
-      }
-      sdp_printer_free(printer);
-    }
-    else {
-      ua_event(nua, nh, NULL, nua_i_media_error, 
-	       nm->nm_status, nm->nm_phrase,
-	       TAG_END());
-      setup = -1;
-    }
-  }
-      
-  if (setup >= 0 && nmedia_play(nua, nm) < 0)
-    setup = -1;
-  if (setup >= 0 && nmedia_record(nua, nm) < 0)
-    setup = -1;
-
-  return setup;
-}
-
-/** Process remote sdp answer for a session */
-static
-int 
-session_answer(nua_handle_t *nh)
-{
-  nua_t *nua = nh->nh_nua;
-  struct nua_media_state *nm = nh->nh_nm;
-  int new_sdp, setup;
-  sdp_session_t *remote_sdp;
-  char const *offer_answer;
-  
-  if (!nh->nh_ss->ss_offer_sent || nh->nh_ss->ss_answer_recv) 
-    return 0;
-
-  remote_sdp = sdp_session(nm->nm_sdp);
-
-  if (!remote_sdp)
-    return 0;
-
-  offer_answer = nh_recv_offer_answer(nh, remote_sdp, &new_sdp);
-
-  if (!offer_answer) 
-    return 0;
-
-  setup = nmedia_setup(nua, nm, 
-		       nh, nua_i_media_error, 
-		       remote_sdp, offer_answer, new_sdp);
-  if (setup < 0) {
-    ua_event(nua, nh, NULL, nua_i_media_error, 
-	     500, "Cannot setup local media",
-	     TAG_END());
-  }
-
-  if (setup >= 0 && nmedia_play(nua, nm) < 0)
-    setup = -1;
-  if (setup >= 0 && nmedia_record(nua, nm) < 0)
-    setup = -1;
-
-  return setup;
-}
-
+#endif
 
 /* ======================================================================== */
 /* Dialog handling */
@@ -3590,6 +2528,11 @@ dialog_terminated(nua_handle_t *nh,
 	     status, phrase, TAG_END());
 }
 
+char const *convert_soa_error_to_sip_reason(soa_session_t *soa)
+{
+
+  return "SIP;cause=500;text=\"Internal media error\"";
+}
 
 /* ======================================================================== */
 /* Request validation */
@@ -3852,6 +2795,7 @@ static int process_response(nua_handle_t *nh,
     cr->cr_event = nua_i_error;
 
   ta_end(ta);
+
   return 0;
 }
 
@@ -3956,17 +2900,15 @@ int crequest_check_restart(nua_handle_t *nh,
       status = 100, phrase = "Authorized request";
     }
     else {
-      if (nmedia_is_ready(nh->nh_nm))
-	nmedia_teardown(nh->nh_nua, nh->nh_nm, nh);
       cr->cr_restart = f;
     }
 
     restarted = 1;
   }
-#if HAVE_SMIME		/* Start NRC Boston */
+#if HAVE_SOFIA_SMIME
   else if (status == 493)     /* try detached signature */
     ;
-#endif                  /* End NRC Boston */
+#endif                  
   else if (status == 422 && method == sip_method_invite) {
     if (sip->sip_min_se && nua->nua_min_se < sip->sip_min_se->min_delta)
       nh->nh_ss->ss_min_se = sip->sip_min_se->min_delta;
@@ -4031,6 +2973,18 @@ crequest_restart(nua_handle_t *nh,
 
 /* ======================================================================== */
 /* Media parameters */
+
+#if 0
+
+/** Set media params */
+static
+int ua_set_media_params(nua_handle_t *nh, tagi_t *tags)
+{
+  if (nh && nh->nh_soa)
+    return soa_set_params(nh->nh_soa, TAG_NEXT(tags));
+  else
+    return 0;
+}
 
 void 
 ua_set_media_param(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
@@ -4133,6 +3087,7 @@ ua_media_setup(nua_t *nua, nua_handle_t *nh,
     nmedia_save_params(nh->nh_nm, nh->nh_home, 0, tags);
 
   nmedia_setup(nua, nh->nh_nm, nh, e, NULL, NULL, 1);
+
   /* That's it, nmedia_setup will send event e to application */
 }
 
@@ -4181,7 +3136,7 @@ ua_media_describe(nua_t *nua, nua_handle_t *nh,
 
   su_home_deinit(home);
 }
-
+#endif
 
 /* ======================================================================== */
 /* REGISTER */
@@ -4493,6 +3448,9 @@ ua_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   UA_EVENT2(e, 500, what);
   if (ss->ss_state == init_session)
     UA_EVENT2(nua_i_terminated, 500, what);
+
+  if (tags && nh->nh_soa)
+    soa_set_params(nh->nh_soa, TAG_NEXT(tags));
   
   return e;
 }
@@ -4504,27 +3462,37 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   nua_session_state_t *ss = nh->nh_ss;
   struct nua_client_request *cr = ss->ss_crequest;
   nua_dialog_usage_t *du;
-  int sent_offer = 0;
+  int offer_sent = 0;
 
-  msg_t *msg = crequest_message(nua, nh, cr, restarted,
-				SIP_METHOD_INVITE,
-				NUTAG_USE_LEG(1),
-				NUTAG_ADD_CONTACT(1),
-				TAG_NEXT(tags));
-  sip_t *sip = sip_object(msg);
+  msg_t *msg = NULL;
+  sip_t *sip;
 
   char const *what;
-
-  assert(cr->cr_orq == NULL);
 
   du = dialog_usage_add(nh, nh->nh_ds, nua_session_usage, NULL);
   what = (char const *)NUA_500_ERROR;	/* Internal error */
 
-  if (du && sip) {
-    struct nua_media_state *nm = nh->nh_nm;
-    sdp_session_t const *sdp = NULL;
-    int setup = 0, already = 0;
+  msg = du ? crequest_message(nua, nh, cr, restarted,
+			      SIP_METHOD_INVITE,
+			      NUTAG_USE_LEG(1),
+			      NUTAG_ADD_CONTACT(1),
+			      TAG_NEXT(tags)) : NULL;
+  sip = sip_object(msg);
 
+  if (nh->nh_soa) {
+    soa_init_offer_answer(nh->nh_soa);
+
+    if (sip->sip_payload)
+      offer_sent = 0;
+    else if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0)
+      offer_sent = -1;
+    else
+      offer_sent = 1;
+  }
+
+  assert(cr->cr_orq == NULL);
+
+  if (du && sip && offer_sent >= 0) {
     if (use_session_timer(nua, nh, msg, sip))
       dialog_usage_set_refresh(du, 
 			       nua->nua_invite_timer == 0 
@@ -4535,57 +3503,25 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 
     if (ss->ss_precondition)
       ss->ss_update_needed = nh->nh_early_media = 1;
-    ss->ss_oa_rounds = 0;
 
-    if (nmedia_is_enabled(nm) && !sip->sip_payload) {
-      su_home_t home[1] = { SU_HOME_INIT(home) };
+    if (offer_sent > 0 &&
+	session_include_description(nh, msg, sip) < 0)
+      sip = NULL;
+     
+    if (sip && nh->nh_soa &&
+	nh->nh_media_features && !dialog_is_established(nh->nh_ds) && 
+	!sip->sip_accept_contact && !sip->sip_reject_contact) {
+      sip_accept_contact_t ac[1];
+      sip_accept_contact_init(ac);
 
-      already = nh->nh_ss->ss_complete;
-	
-      nh_init_offer_answer(nh);
-
-      if (tags)
-	nmedia_save_params(nm, nh->nh_home, 0, tags);
+      ac->cp_params = (msg_param_t *)
+	soa_media_features(nh->nh_soa, 1, msg_home(msg));
       
-      if (restarted && nm->nm_session)
-	setup = 0;
-      else if (nmedia_setup(nua, nm, nh, nua_i_media_error, NULL, NULL, 0) < 0)
-	setup = -1, what = "SETUP on Local Media Failed";
-      else if (nmedia_play(nua, nm) < 0)
-	setup = -1, what = "PLAY on Local Media Failed";
-      else if (already && nmedia_record(nua, nm) < 0)
-	setup = -1, what = "RECORD on Local Media Failed";
-      else
-	setup = 0;
-      if (setup >= 0 && !(sdp = nmedia_describe(nua, nm, nh, home)))
-	setup = -1, what = "DESCRIBE on Local Media Failed";
-
-      if (!sdp) {
-	su_home_deinit(home);
-	goto error;
+      if (ac->cp_params) {
+	msg_params_replace(msg_home(msg), (msg_param_t **)&ac->cp_params, 
+			   "explicit");
+	sip_add_dup(msg, sip, (sip_header_t *)ac);
       }
-
-      sent_offer = 1;
-
-      nh_sent_offer_answer(nh, sdp, 1);
-      nh_sdp_insert(nh, home, msg, sip, sdp);
-
-      if (nh->nh_media_features && !dialog_is_established(nh->nh_ds) && 
-	  !sip->sip_accept_contact && !sip->sip_reject_contact) {
-	sip_accept_contact_t ac[1];
-
-	sip_accept_contact_init(ac);
-	  
-	if (nmedia_features(msg_home(msg),
-			    (msg_param_t **)&ac->cp_params,
-			    sdp->sdp_media, 1)) {
-	  msg_params_replace(msg_home(msg), (msg_param_t **)&ac->cp_params, 
-			     "explicit");
-	  sip_add_dup(msg, sip, (sip_header_t *)ac);
-	}
-      }
-
-      su_home_deinit(home);
     }
 
     if (sip)
@@ -4596,7 +3532,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 					 TAG_END());
 
     if (cr->cr_orq) {
-      cr->cr_sent_offer = sent_offer;
+      cr->cr_offer_sent = offer_sent;
       cr->cr_usage = du;
       du->du_pending = cancel_invite;
       if (nh->nh_ss->ss_state < ready_session)
@@ -4605,7 +3541,6 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
     }
   }
 
- error:
   msg_destroy(msg);
   if (du && !du->du_ready) 
     dialog_usage_remove(nh, nh->nh_ds, du);
@@ -4667,7 +3602,7 @@ static int process_response_to_invite(nua_handle_t *nh,
 
     set_session_timer(nh);
 
-#if HAVE_SMIME
+#if HAVE_SOFIA_SMIME
     if (status < 300) {
       int sm_status;
       msg_t *response;
@@ -4777,26 +3712,20 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 			 TAG_NEXT(tags));
   sip = sip_object(msg);
 
-  if (sip && nmedia_is_enabled(nh->nh_nm)) {
+  if (sip && nh->nh_soa) {
     if (tags)
-      nmedia_save_params(nh->nh_nm, nh->nh_home, 0, tags);
+      soa_set_params(nh->nh_soa, TAG_NEXT(tags));
 
     if (needed > 1) {
-      sip_content_disposition_t *cd;
-      sip_content_type_t *ct;
-      sip_payload_t *pl;
-
-      if (session_offer_answer(nh, msg_home(msg), &cd, &ct, &pl, 0) < 0) {
-	reason = nmedia_error_to_sip_reason(nh->nh_nm);
-      }
-      else {
-	sip_header_insert(msg, sip, (sip_header_t *)cd);
-	sip_header_insert(msg, sip, (sip_header_t *)ct);
-	sip_header_insert(msg, sip, (sip_header_t *)pl);
+      if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
+	  session_include_description(nh, msg, sip) < 0) {
+	reason = soa_error_as_sip_reason(nh->nh_soa);
       }
     }
 
-    if (!reason && ss->ss_offer_sent && !ss->ss_answer_recv) {
+    if (!reason && 
+	/* ss->ss_offer_sent && !ss->ss_answer_recv */
+	!soa_is_complete(nh->nh_soa)) {
       /* No SDP answer in 2XX response -> terminate call */
       reason = "SIP;cause=488;text=\"Incomplete offer/answer\"";
       UA_EVENT2(nua_i_media_error, 500, "Incomplete offer/answer");
@@ -4823,10 +3752,9 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 
   ss->ss_active = 1;
 
-  return ua_event(nua, nh, NULL, nua_i_active, 
+  return ua_event(nua, nh, NULL, nua_i_active,
 		  200, "Call is active", 
-		  TAG_IF(nmedia_is_enabled(nh->nh_nm),
-			 NMEDIA_ACTIVE_TAGS(nh->nh_nm)),
+		  NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 		  TAG_END());
 }
 
@@ -4846,7 +3774,7 @@ process_100rel(nua_handle_t *nh,
 
   nta_outgoing_t *prack;
 
-  int sent_offer_in_prack = 0;		
+  int offer_sent_in_prack = 0, answer_sent_in_prack = 0;
 
   su_home_t home[1] = { SU_HOME_INIT(home) };
 
@@ -4868,15 +3796,24 @@ process_100rel(nua_handle_t *nh,
     orq = cr_invite->cr_orq;
   }
 
-  if (nmedia_is_enabled(nh->nh_nm)) {
-    int offer_is_needed;
-
-    session_process_response(nh, cr_invite, orq, sip);
-    offer_is_needed = ss->ss_precondition && ss->ss_oa_rounds < 2;
-    session_offer_answer(nh, home, &cd, &ct, &pl, offer_is_needed);
-
-    sent_offer_in_prack = 
-      pl && nh->nh_ss->ss_offer_sent && !nh->nh_ss->ss_answer_recv;
+  if (nh->nh_soa) {
+    if (session_process_response(nh, cr_invite, orq, sip) < 0) {
+      /* XXX */
+    }
+    else if (cr_invite->cr_offer_recv && !cr_invite->cr_answer_sent) {
+      if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
+	  session_make_description(nh, home, &cd, &ct, &pl) < 0)
+	/* XXX */;
+      else
+	answer_sent_in_prack = 1;
+    }
+    else if (ss->ss_precondition) {
+      if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
+	  session_make_description(nh, home, &cd, &ct, &pl) < 0)
+	/* XXX */;
+      else
+	offer_sent_in_prack = 1;
+    }
   }
 
   prack = nta_outgoing_prack(nh->nh_ds->ds_leg, orq, 
@@ -4889,7 +3826,10 @@ process_100rel(nua_handle_t *nh,
 
   if (prack) {
     cr_prack->cr_orq = prack;
-    cr_prack->cr_sent_offer = sent_offer_in_prack;
+    if (answer_sent_in_prack)
+      cr_invite->cr_answer_sent = 1;
+    else if (offer_sent_in_prack)
+      cr_prack->cr_offer_sent = 1;
   }
   else {
     ua_event(nh->nh_nua, nh, NULL, nua_i_error, 
@@ -4922,8 +3862,6 @@ process_response_to_prack(nua_handle_t *nh,
 
     if (status < 300) {
       session_process_response(nh, cr, orq, sip);
-
-      session_answer(nh);
 
       if (nh->nh_ss->ss_update_needed)
 	ua_update(nh->nh_nua, nh, nua_r_update, NULL);
@@ -5003,10 +3941,8 @@ static void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 			      tagi_t const *tags);
 
 static int 
-  process_invite1(nua_t *, nua_handle_t**, nta_incoming_t *, 
-		  msg_t *, sip_t *, struct nua_media_a ma[]),
-  process_invite2(nua_t *, nua_handle_t *, nta_incoming_t *, 
-		  msg_t *, sip_t *, struct nua_media_a ma[]),
+  process_invite1(nua_t *, nua_handle_t**, nta_incoming_t *, msg_t *, sip_t *),
+  process_invite2(nua_t *, nua_handle_t *, nta_incoming_t *, msg_t *, sip_t *),
   process_ack_or_cancel(nua_handle_t *, nta_incoming_t *, sip_t const *),
   process_ack(nua_handle_t *, nta_incoming_t *, sip_t const *),
   process_prack(nua_handle_t *nh, nta_reliable_t *rel, 
@@ -5022,10 +3958,9 @@ int process_invite(nua_t *nua,
 {
   nua_handle_t *nh = nh0;
   msg_t *msg = nta_incoming_getrequest(irq); 
-  struct nua_media_a ma[1];
   int status;
 
-  status = process_invite1(nua, &nh, irq, msg, (sip_t *)sip, ma);
+  status = process_invite1(nua, &nh, irq, msg, (sip_t *)sip);
 
   if (status) {
     msg_destroy(msg);
@@ -5034,7 +3969,7 @@ int process_invite(nua_t *nua,
     return status;
   }
 
-  return process_invite2(nua, nh, irq, msg, (sip_t *)sip, ma);
+  return process_invite2(nua, nh, irq, msg, (sip_t *)sip);
 }
 
 /** Preprocess incoming invite - sure we have a valid request. */
@@ -5043,12 +3978,12 @@ int process_invite1(nua_t *nua,
 		    nua_handle_t **return_nh,
 		    nta_incoming_t *irq,
 		    msg_t *msg,
-		    sip_t *sip,
-		    struct nua_media_a ma[])
+		    sip_t *sip)
 {
   nua_handle_t *nh = *return_nh;
+  nua_server_request_t *sr;
 
-#if HAVE_SMIME 
+#if HAVE_SOFIA_SMIME 
   int sm_status;
 
   sm_status = sm_decode_message(nua->sm, msg, sip);
@@ -5065,7 +4000,7 @@ int process_invite1(nua_t *nua,
   }
 #endif
 
-  if (nh ? nmedia_is_enabled(nh->nh_nm) : nua->nua_media_enable) {
+  if (nh ? nh->nh_soa : nua->nua_default->nh_soa) {
     /* Make sure caller uses application/sdp without compression */
     if (uas_check_content(irq, sip, 
 			  SIPTAG_USER_AGENT(nua->nua_user_agent),
@@ -5094,7 +4029,7 @@ int process_invite1(nua_t *nua,
     if (!(nh = nh_create_from_incoming(nua, irq, sip, nh_has_invite, 1)))
       return 500;
   }
-  else if (nh->nh_ss->ss_invite_irq) {
+  else if (nh->nh_ss->ss_srequest->sr_irq) {
     /* Overlapping invites - RFC 3261 14.2 */
     sip_retry_after_t af[1];
 
@@ -5114,13 +4049,23 @@ int process_invite1(nua_t *nua,
   }
 
   *return_nh = nh;
-  nh_init_offer_answer(nh);
-  nmedia_set_activity(ma, NULL, 0);
 
-  if (nmedia_is_enabled(nh->nh_nm) &&
-      nmedia_parse_sdp_from_sip(nh, sip, ma) == NONE) {
-    nta_incoming_treply(irq, 400, "Bad Session Description", TAG_END());
-    return 400;
+  sr = nh->nh_ss->ss_srequest; memset(sr, 0, sizeof *sr);
+  
+  if (nh->nh_soa) {
+    char const *sdp;
+    int len;
+
+    soa_init_offer_answer(nh->nh_soa);
+
+    if (session_get_description(msg, sip, &sdp, &len)) {
+      if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+	SU_DEBUG_5(("nua(%p): error parsing SDP in INVITE\n", nh));
+	nta_incoming_treply(irq, 400, "Bad Session Description", TAG_END());
+	return 400;
+      }
+      sr->sr_offer_recv = 1;
+    }
   }
 
   /** Add a dialog usage */
@@ -5132,7 +4077,7 @@ int process_invite1(nua_t *nua,
     return 500;
   }
 
-  nh->nh_ss->ss_invite_irq = irq;
+  sr->sr_irq = irq;
   
   return 0;
 }
@@ -5143,8 +4088,7 @@ int process_invite2(nua_t *nua,
 		    nua_handle_t *nh,
 		    nta_incoming_t *irq,
 		    msg_t *msg,
-		    sip_t *sip, 
-		    struct nua_media_a ma[])
+		    sip_t *sip)
 {
   nua_session_state_t *ss;
 
@@ -5163,11 +4107,11 @@ int process_invite2(nua_t *nua,
   if (ss->ss_state < ready_session) {
     assert(ss->ss_state == init_session);
 
-    ss->ss_respond_to_invite = respond_to_invite;
+    ss->ss_srequest->sr_respond = respond_to_invite;
 
     ua_event(nh->nh_nua, nh, msg, 
 	     nua_i_invite, 0, NULL,
-	     NH_ACTIVE_MEDIA_TAGS(nmedia_is_enabled(nh->nh_nm), ma),
+	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 	     TAG_END());
   }
 
@@ -5202,19 +4146,20 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 		       tagi_t const *tags)
 {
   su_home_t home[1] = { SU_HOME_INIT(home) };
-  sdp_session_t *sdp;
   msg_t *msg;
   sip_t *sip;
-  int setup = 0, reliable;
+  int reliable;
   int original_status = status;
-  nua_session_state_t *ss = nh->nh_ss;
   nua_dialog_state_t *ds = nh->nh_ds;
-  nua_media_state_t *nm = nh->nh_nm;
+  nua_session_state_t *ss = nh->nh_ss;
+  nua_server_request_t *sr = ss->ss_srequest;
+
+  int offer = 0, answer = 0;
 
   enter; 
 
-  if (ss->ss_invite_irq == NULL ||
-      nta_incoming_status(ss->ss_invite_irq) >= 200) {
+  if (ss->ss_srequest->sr_irq == NULL ||
+      nta_incoming_status(ss->ss_srequest->sr_irq) >= 200) {
     ua_event(nh->nh_nua, nh, NULL,
 	     nua_i_error, 500, "No INVITE request to response", TAG_END());
     return;
@@ -5232,59 +4177,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 	(sip_has_feature(ds->ds_remote_ua->nr_require, "100rel") ||
 	 sip_has_feature(ds->ds_remote_ua->nr_require, "precondition")));
 
-  sdp = NULL;
-
-  if (!nmedia_is_enabled(nm))
-    /* Xyzzy */;
-  else if (status >= 300) {
-    nmedia_clear_sdp(nh);
-  }
-  else if (status >= 200 || nh->nh_early_media) {
-    char const *offer_answer = NULL;
-    sdp_session_t *received_sdp ;
-    int new_sdp = 0;
-
-    if (tags)
-      nmedia_save_params(nm, nh->nh_home, 0, tags);
-
-    received_sdp = sdp_session(nm->nm_sdp);
-    
-    if (received_sdp)
-      offer_answer = nh_recv_offer_answer(nh, received_sdp, &new_sdp);
-
-    if (received_sdp || !nmedia_is_ready(nm))
-      setup = nmedia_setup(nua, nm, nh, nua_i_media_error, 
-			   received_sdp, offer_answer, new_sdp);
-
-    nmedia_clear_sdp(nh);
-    
-    if (setup >= 0 &&
-	((ss->ss_offer_recv && ss->ss_answer_sent < 2) ||
-	 (reliable && !ss->ss_offer_recv && !ss->ss_offer_sent))) {
-      sdp = nmedia_describe(nua, nm, nh, home);
-
-      if (sdp) {
-	nh_sent_offer_answer(nh, sdp, reliable);
-
-	if (setup >= 0 && nmedia_play(nua, nm) < 0)
-	  setup = -1;
-
-	if (ss->ss_complete && setup >= 0 && nmedia_record(nua, nm) < 0)
-	  setup = -1;
-
-      } else {
-	ua_event(nua, nh, NULL, nua_i_media_error, 
-		 500, "Cannot describe local media",
-		 TAG_END());
-	setup = -1;
-      }
-    }
-
-    if (setup < 0 && status)
-      nmedia_error_to_sip_response(nm, &status, &phrase);
-  }
-
-  msg = nh_make_response(nua, nh, ss->ss_invite_irq, 
+  msg = nh_make_response(nua, nh, ss->ss_srequest->sr_irq, 
 			 status, phrase, 
 			 TAG_IF(status < 300, NUTAG_ADD_CONTACT(1)),
 			 SIPTAG_SUPPORTED(nua->nua_supported),
@@ -5293,13 +4186,39 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   assert(sip);			/* XXX */
 
-  if (sdp && !sip->sip_payload)
-    nh_sdp_insert(nh, home, msg, sip, sdp);
+  if (!nh->nh_soa)
+    /* Xyzzy */;
+  else if (status >= 300) {
+    soa_clear_remote_sdp(nh->nh_soa);
+  }
+  else if (status >= 200 || nh->nh_early_media) {
+
+    if ((sr->sr_offer_recv && sr->sr_answer_sent) ||
+	(sr->sr_offer_sent && !sr->sr_answer_recv))
+      /* Nothing to do */;
+    else if (sr->sr_offer_recv && !sr->sr_answer_sent) {
+      if (soa_generate_answer(nh->nh_soa, NULL) < 0)
+	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+      else
+	answer = 1;
+    }
+    else if (!sr->sr_offer_recv && !sr->sr_offer_sent) {
+      if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0)
+	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+      else
+	offer = 1;
+    }
+
+    if (offer || answer) {
+      if (session_include_description(nh, msg, sip) < 0)
+	status = 500, phrase = sip_500_Internal_server_error;
+    }
+  }
 
   if (ss->ss_refresher && 200 <= status && status < 300)
     use_session_timer(nua, nh, msg, sip);
 
-#if HAVE_SMIME
+#if HAVE_SOFIA_SMIME
   if (nua->sm->sm_enable && sdp) {
     int sm_status;
 
@@ -5350,28 +4269,36 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   if (reliable && status < 200) {
     nta_reliable_t *rel;
-    rel = nta_reliable_mreply(ss->ss_invite_irq, process_prack, nh, msg);
+    rel = nta_reliable_mreply(ss->ss_srequest->sr_irq, process_prack, nh, msg);
     if (!rel)
       status = 500, phrase = sip_500_Internal_server_error;
   }
   else {
-    nta_incoming_mreply(ss->ss_invite_irq, msg);
+    nta_incoming_mreply(ss->ss_srequest->sr_irq, msg);
+  }
+
+  if ((offer || answer) && status < 300) {
+    if (offer)
+      sr->sr_offer_sent = 1;
+    else if (answer)
+      sr->sr_answer_sent = 1 + reliable;
   }
 
   if (status >= 200) {
     ss->ss_usage->du_ready = 1;
-    ss->ss_respond_to_invite = NULL;
+    ss->ss_srequest->sr_respond = NULL;
 
 #if HAVE_HERBIE
-  if (nua->nua_herbie)
-    nua_herbie_stop(nua->nua_herbie);
+    if (nua->nua_herbie)
+      nua_herbie_stop(nua->nua_herbie);
 #endif
   }
 
   if (status >= 300) {
-    nh_init_offer_answer(nh);
-    nmedia_teardown(nua, nm, nh);
-    nta_incoming_destroy(ss->ss_invite_irq), ss->ss_invite_irq = NULL;
+    if (nh->nh_soa)
+      soa_init_offer_answer(nh->nh_soa);
+    nta_incoming_destroy(ss->ss_srequest->sr_irq), 
+      ss->ss_srequest->sr_irq = NULL;
   }
 
   su_home_deinit(home);
@@ -5393,6 +4320,7 @@ int process_ack_or_cancel(nua_handle_t *nh,
 			  sip_t const *sip)
 {
   int retval;
+  nua_server_request_t *sr = nh->nh_ss->ss_srequest;
 
   enter;
 
@@ -5403,8 +4331,9 @@ int process_ack_or_cancel(nua_handle_t *nh,
   else
     retval = process_timeout(nh, irq);
 
-  assert(nh->nh_ss->ss_invite_irq == irq);
-  nta_incoming_destroy(nh->nh_ss->ss_invite_irq), nh->nh_ss->ss_invite_irq = NULL;
+  assert(sr->sr_irq == irq);
+  nta_incoming_destroy(sr->sr_irq);
+  memset(sr, 0, sizeof *sr);
 
   return retval;
 }
@@ -5416,8 +4345,8 @@ int process_prack(nua_handle_t *nh,
 		  sip_t const *sip)
 {
   struct nua_session_state *ss = nh->nh_ss;
-  sdp_session_t const *remote;
-  int response = 200;
+  nua_server_request_t *sr = ss->ss_srequest;
+  int status = 200; char const *phrase = sip_200_OK;
 
   nta_reliable_destroy(rel);
 
@@ -5426,7 +4355,7 @@ int process_prack(nua_handle_t *nh,
     nua_herbie_stop(nh->nh_nua->nua_herbie);
 #endif
 
-  if (!ss->ss_invite_irq) /* XXX  */
+  if (!sr->sr_irq) /* XXX  */
     return 481;
 
   if (sip == NULL) {
@@ -5435,20 +4364,40 @@ int process_prack(nua_handle_t *nh,
     return 500;
   }
 
-  if (nmedia_is_enabled(nh->nh_nm)) {
-    remote = nmedia_parse_sdp_from_sip(nh, sip, NULL);
+  if (nh->nh_soa) {
+    msg_t *msg = nta_incoming_getrequest(irq);
+    char const *sdp;
+    int len;
 
-    if (remote) {
-      /* Respond to PRACK */
+    if (session_get_description(msg, sip, &sdp, &len)) {
+      su_home_t home[1] = { SU_HOME_INIT(home) };
+
       sip_content_disposition_t *cd = NULL;
       sip_content_type_t *ct = NULL;
       sip_payload_t *pl = NULL;
 
-      su_home_t home[1] = { SU_HOME_INIT(home) };
+      if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+	SU_DEBUG_5(("nua(%p): error parsing SDP in INVITE\n", nh));
+	msg_destroy(msg);
+	nta_incoming_treply(irq, 400, "Bad Session Description", TAG_END());
+	return 400;
+      }
 
-      session_offer_answer(nh, home, &cd, &ct, &pl, 0);
+      /* Respond to PRACK */
 
-      nta_incoming_treply(irq, SIP_200_OK,
+      if (sr->sr_offer_sent) {
+	sr->sr_answer_recv = 1;
+	if (soa_process_answer(nh->nh_soa, NULL) < 0)
+	  status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+      }
+      else {
+	if (soa_generate_answer(nh->nh_soa, NULL) < 0)
+	  status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+	else
+	  session_make_description(nh, home, &cd, &ct, &pl);
+      }
+
+      nta_incoming_treply(irq, status, phrase,
 			  SIPTAG_CONTENT_DISPOSITION(cd),
 			  SIPTAG_CONTENT_TYPE(ct),
 			  SIPTAG_PAYLOAD(pl),
@@ -5456,9 +4405,10 @@ int process_prack(nua_handle_t *nh,
 
       su_home_deinit(home);
 
-      /* Respond with 500 in case nta_incoming_treply() failed */ 
-      response = 500; 
+      status = 500; /* Respond with 500 if nta_incoming_treply() failed */ 
     }
+
+    msg_destroy(msg);
   }
 
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
@@ -5469,7 +4419,7 @@ int process_prack(nua_handle_t *nh,
       && !ss->ss_precondition)
     respond_to_invite(nh->nh_nua, nh, SIP_180_RINGING, NULL);
 
-  return response;
+  return status;
 }
 
 static
@@ -5478,54 +4428,39 @@ int process_ack(nua_handle_t *nh,
 		sip_t const *sip)
 {
   struct nua_session_state *ss = nh->nh_ss;
+  nua_server_request_t *sr = ss->ss_srequest;
 
-  if (ss && ss->ss_offer_sent && !ss->ss_answer_recv) {
-    struct nua_media_state *nm = nh->nh_nm;
-    sdp_session_t const *sdp;
+  if (nh->nh_soa && sr->sr_offer_sent && !sr->sr_answer_recv) {
+    msg_t *msg = nta_incoming_getrequest(irq);
+    char const *sdp;
+    int len;
 
-    sdp = nmedia_parse_sdp_from_sip(nh, sip, NULL);
+    if (session_get_description(msg, sip, &sdp, &len)) {
+      if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0 ||
+	  soa_process_answer(nh->nh_soa, NULL) < 0) {
+	int status; char const *phrase;
+	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
 
-    if (sdp) {
-      char const *offer_answer;
-      int setup = 0, new_sdp;
-      
-      offer_answer = nh_recv_offer_answer(nh, sdp, &new_sdp);
-
-      setup = nmedia_setup(nh->nh_nua, nm, nh, nua_i_media_error, 
-			   sdp, offer_answer, new_sdp);
-
-      if (setup >= 0 && nmedia_play(nh->nh_nua, nm) < 0)
-	setup = -1;
-      else if (setup >= 0 && nmedia_record(nh->nh_nua, nm) < 0)
-	setup = -1;
-
-      if (setup > 0) {
-	su_home_t home[1] = { SU_HOME_INIT(home) };
-
-	/* Get our current SDP, update nh accordingly */
-	nmedia_describe(nh->nh_nua, nm, nh, home);
-	
-	su_home_deinit(home);
-      }
-
-      if (setup < 0) {
 	ua_event(nh->nh_nua, nh, NULL, 
-		 nua_i_media_error, 
-		 nh->nh_nm->nm_status, nh->nh_nm->nm_phrase, 
-		 TAG_END());
+		 nua_i_media_error, status, phrase, TAG_END());
+
+	msg_destroy(msg);
+
 	/* XXX - what about call status, ua_bye()?? */
 	return 0;
-      } 
+      }
     }
+
+    msg_destroy(msg);
   }
 
-  nmedia_clear_sdp(nh);
+  soa_clear_remote_sdp(nh->nh_soa);
 
   ss->ss_active = 1;
 
   ua_event(nh->nh_nua, nh, NULL, nua_i_active, 
 	   200, "Call is active", 
-	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_nm->nm_active),
+	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 	   TAG_END());
 
   set_session_timer(nh);
@@ -5543,7 +4478,8 @@ int process_cancel(nua_handle_t *nh,
   msg_t *msg = nta_incoming_getrequest_ackcancel(irq);
 
   if (ss->ss_state < ready_session) {
-    nmedia_teardown(nh->nh_nua, nh->nh_nm, nh); /* XXX */
+    if (nh->nh_soa)
+      soa_terminate(nh->nh_soa, NULL);
     ss->ss_active = 0;
     ss->ss_state = init_session;
     ua_event(nh->nh_nua, nh, NULL, nua_i_terminated,
@@ -5565,7 +4501,8 @@ int process_timeout(nua_handle_t *nh,
   struct nua_session_state *ss = nh->nh_ss;
 
   if (ss->ss_state < ready_session) {
-    nmedia_teardown(nh->nh_nua, nh->nh_nm, nh); /* XXX */
+    if (nh->nh_soa)
+      soa_terminate(nh->nh_soa, NULL);
     ss->ss_active = 0;
     ss->ss_state = init_session;
   }
@@ -5740,9 +4677,12 @@ nh_referral_check(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
     ref->ref_handle = nh_incref(ref_handle);
   }
 
-  if (pause) 
+#if 0
+  if (pause) {
     /* Pause media on REFER handle */
     nmedia_pause(nua, ref_handle->nh_nm, NULL);
+  }
+#endif
 
   return 0;
 }
@@ -5812,17 +4752,10 @@ void nsession_destroy(nua_handle_t *nh)
 
   nh->nh_has_invite = 0;
 
-  nh_init_offer_answer(nh);
+  if (nh->nh_soa)
+    soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
 
-  if (ss->ss_o_remote)
-    su_free(nh->nh_home, ss->ss_o_remote), ss->ss_o_remote = NULL;
-  if (ss->ss_o_local)
-    su_free(nh->nh_home, ss->ss_o_local), ss->ss_o_local = NULL;
-
-  nmedia_teardown(nh->nh_nua, nh->nh_nm, nh);
-  nmedia_clear_sdp(nh);
-
-  ss->ss_respond_to_invite = NULL;
+  ss->ss_srequest->sr_respond = NULL;
 
   SU_DEBUG_5(("nua: terminated session %p\n", nh));
 }
@@ -5904,8 +4837,11 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
   struct nua_session_state *ss = nh->nh_ss;
   struct nua_client_request *cr = nh->nh_cr;
+  struct nua_client_request *cri = ss->ss_crequest;
+  struct nua_server_request *sri = ss->ss_srequest;
   msg_t *msg;
   sip_t *sip;
+  int offer_sent = 0;
 
   if (!nh_has_session(nh))
     return UA_EVENT2(e, 500, "Invalid handle for UPDATE");
@@ -5913,6 +4849,9 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     return UA_EVENT2(e, 500, "Request already in progress");
 
   nh_init(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+
+  if (nh->nh_soa && tags)
+    soa_set_params(nh->nh_soa, TAG_NEXT(tags));
 
   msg = crequest_message(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_UPDATE,
@@ -5922,41 +4861,23 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   sip = sip_object(msg);
 
   if (sip) {
-    su_home_t home[1] = { SU_HOME_INIT(home) };
-    sdp_session_t const *sdp = NULL;
-    int setup = 0, already = 0;
-    struct nua_media_state *nm = nh->nh_nm;
-
-    if (nmedia_is_enabled(nm) && !sip->sip_payload) {
-      char const *what = "SETUP on Local Media Failed";
-
-      already = ss->ss_complete;
+    if (nh->nh_soa && !sip->sip_payload &&
+	!(cri->cr_offer_sent && !cri->cr_answer_recv) &&
+	!(cri->cr_offer_recv && !cri->cr_answer_sent) &&
+	!(sri->sr_offer_sent && !sri->sr_answer_recv) &&
+	!(sri->sr_offer_recv && !sri->sr_answer_sent)) {
+      soa_init_offer_answer(nh->nh_soa);
 	
-      nh_init_offer_answer(nh);
-
-      if (tags)
-	nmedia_save_params(nm, nh->nh_home, 0, tags);
-      
-      setup = nmedia_setup(nua, nm, nh, nua_i_media_error, NULL, NULL, 0);
-
-      if (setup >= 0 && nmedia_play(nua, nm) < 0)
-	setup = -1, what = "PLAY on Local Media Failed";
-      if (setup >= 0 && already && nmedia_record(nua, nm) < 0)
-	setup = -1, what = "RECORD on Local Media Failed";
-      if (setup >= 0 && !(sdp = nmedia_describe(nua, nm, nh, home)))
-	setup = -1, what = "DESCRIBE on Local Media Failed";
-
-      if (setup < 0) {
+      if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
+	  session_include_description(nh, msg, sip) < 0) {
 	if (ss->ss_state < ready_session) {
 	  /* XXX */
 	}
-
 	msg_destroy(msg);
-	return UA_EVENT2(e, 500, what);
-      }      
+	return UA_EVENT2(e, 500, "Local media failed");
+      }
 
-      nh_sent_offer_answer(nh, sdp, 1);
-      nh_sdp_insert(nh, home, msg, sip, sdp);
+      offer_sent = 1;
     }
 
     if (nh->nh_auth) {
@@ -5968,6 +4889,8 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 				      process_response_to_update, nh, NULL,
 				      msg);
     if (cr->cr_orq) {
+      if (offer_sent)
+	cr->cr_offer_sent = 1;
       ss->ss_update_needed = 0;
       return cr->cr_event = e;
     }
@@ -6026,10 +4949,7 @@ static int process_response_to_update(nua_handle_t *nh,
     dialog_uac_route(nh, sip, 1);	/* Set route, contact, nh_ds->ds_remote_tag */
     dialog_get_peer_info(nh, sip);
 
-    if (session_process_response(nh, cr, orq, sip) >= 0) {
-      session_answer(nh);
-    } 
-    else {
+    if (session_process_response(nh, cr, orq, sip) < 0) {
       ua_event(nua, nh, NULL, nua_i_error, 
 	       400, "Bad Session Description", TAG_END());
     }
@@ -6055,6 +4975,10 @@ int process_update(nua_t *nua,
   struct nua_session_state *ss = nh->nh_ss;
   nua_dialog_usage_t *du = ss->ss_usage;
   int response = 500;
+  msg_t *msg = nta_incoming_getrequest(irq);
+
+  int len;
+  char const *sdp;
 
   assert(nh);
 
@@ -6073,32 +4997,42 @@ int process_update(nua_t *nua,
 			       SIPTAG_ALLOW_STR("SUBSCRIBE, REFER")),
 			TAG_END());
   }
-  else if (nmedia_is_enabled(nh->nh_nm)) {
-    sdp_session_t const *offer;
-    nh_init_offer_answer(nh);
+  else if (nh->nh_soa && session_get_description(msg, sip, &sdp, &len)) {
+    su_home_t home[1] = { SU_HOME_INIT(home) };
+    
+    sip_content_disposition_t *cd = NULL;
+    sip_content_type_t *ct = NULL;
+    sip_payload_t *pl = NULL;
 
-    offer = nmedia_parse_sdp_from_sip(nh, sip, NULL);
+    int status; char const *phrase;
 
-    if (offer) {
-      /* Respond to UPDATE */
-      sip_content_disposition_t *cd = NULL;
-      sip_content_type_t *ct = NULL;
-      sip_payload_t *pl = NULL;
-
-      su_home_t home[1] = { SU_HOME_INIT(home) };
-
-      session_offer_answer(nh, home, &cd, &ct, &pl, 0);
-
-      nta_incoming_treply(irq, SIP_200_OK,
-			  SIPTAG_CONTENT_DISPOSITION(cd),
-			  SIPTAG_CONTENT_TYPE(ct),
-			  SIPTAG_PAYLOAD(pl),
-			  TAG_END());
-
-      su_home_deinit(home);
-
-      nmedia_clear_sdp(nh);
+    if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+      SU_DEBUG_5(("nua(%p): error parsing SDP in UPDATE\n", nh));
+      msg_destroy(msg);
+      status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+      nta_incoming_treply(irq, status, phrase, TAG_END());
+      return status;
     }
+
+    /* Respond to UPDATE */
+    if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
+      SU_DEBUG_5(("nua(%p): error proce SDP in INVITE\n", nh));
+      msg_destroy(msg);
+      status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+      nta_incoming_treply(irq, status, phrase, TAG_END());
+      return status;
+    }
+    
+
+    session_make_description(nh, home, &cd, &ct, &pl);
+
+    nta_incoming_treply(irq, SIP_200_OK,
+			SIPTAG_CONTENT_DISPOSITION(cd),
+			SIPTAG_CONTENT_TYPE(ct),
+			SIPTAG_PAYLOAD(pl),
+			TAG_END());
+    
+    su_home_deinit(home);
   }
   else 
     nta_incoming_treply(irq, response = SIP_200_OK, TAG_END());
@@ -6109,7 +5043,7 @@ int process_update(nua_t *nua,
       && ss->ss_precondition)
     respond_to_invite(nh->nh_nua, nh, SIP_180_RINGING, NULL);
 
-  ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
+  ua_event(nh->nh_nua, nh, msg,
 	   nua_i_update, 0, NULL, TAG_END());
 
   return response;
@@ -6290,12 +5224,14 @@ int process_options(nua_t *nua,
 
   if (msg) {
     su_home_t home[1] = { SU_HOME_INIT(home) };
+#if 0				/* XXX */
     sdp_session_t *sdp;
     sip_t *sip = sip_object(msg);
 
     if ((sdp = nmedia_describe(nua, nh->nh_nm, nh, home))) {
       nh_sdp_insert(nh, home, msg, sip, sdp);
     }
+#endif
 
     nta_incoming_mreply(irq, msg);
     nta_incoming_destroy(irq);
@@ -6467,7 +5403,7 @@ ua_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 			 TAG_NEXT(tags));
   sip = sip_object(msg);
 
-#if HAVE_SMIME_OLD 		/* Start NRC Boston */
+#if HAVE_SOFIA_SMIME_OLD 
   if (sip) {
     int status, bOverride;
     sm_option_t sm_opt; 
@@ -6496,7 +5432,7 @@ ua_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 	}
     } 
   }
-#endif                   /* End NRC Boston */
+#endif                   
 
   if (sip)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
@@ -6540,7 +5476,7 @@ int process_message(nua_t *nua,
 
   msg = nta_incoming_getrequest(irq);
 
-#if HAVE_SMIME		/* Start NRC Boston */
+#if HAVE_SOFIA_SMIME
   if (nua->sm->sm_enable) {
     int sm_status = sm_decode_message(nua->sm, msg, sip);
 
@@ -6557,7 +5493,7 @@ int process_message(nua_t *nua,
       break;
     }
   }
-#endif 			/* End NRC Boston */
+#endif
 
   ua_event(nh->nh_nua, nh, msg, nua_i_message, 0, NULL, TAG_END());
 
@@ -7560,9 +6496,10 @@ ua_respond(nua_t *nua, nua_handle_t *nh,
 	   int status, char const *phrase, tagi_t const *tags)
 {
   struct nua_session_state *ss = nh->nh_ss;
+  nua_server_request_t *sr = ss->ss_srequest;
 
-  if (ss->ss_respond_to_invite) {
-    ss->ss_respond_to_invite(nua, nh, status, phrase, tags);
+  if (sr->sr_respond) {
+    sr->sr_respond(nua, nh, status, phrase, tags);
   }
 #if 0
   else if (nta_incoming_status(nh->nh_irq) < 200) {
@@ -7586,7 +6523,7 @@ ua_respond(nua_t *nua, nua_handle_t *nh,
   }
 #endif
 
-  else if (ss->ss_invite_irq) {
+  else if (ss->ss_srequest->sr_irq) {
     ua_event(nua, nh, NULL, nua_i_error,
 	     500, "Already Sent Final Response", TAG_END());
   } else {

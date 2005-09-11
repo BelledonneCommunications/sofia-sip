@@ -51,6 +51,8 @@
 #include <sigcomp.h>
 #endif
 
+#include "soa.h"
+
 typedef struct event_s event_t;
 
 struct event_s {
@@ -91,6 +93,7 @@ typedef struct nua_remote_s nua_remote_t;
 typedef struct nua_dialog_state nua_dialog_state_t;
 typedef union  nua_dialog_usage nua_dialog_usage_t;
 typedef struct nua_client_request nua_client_request_t; 
+typedef struct nua_server_request nua_server_request_t; 
 
 typedef void nh_pending_f(nua_handle_t *nh, 
 			  nua_dialog_usage_t *du,
@@ -211,8 +214,12 @@ struct nua_client_request
   msg_t              *cr_msg;
   nua_dialog_usage_t *cr_usage;
   unsigned short      cr_retry_count;   /**< Retry count for this request */
-  unsigned            cr_sent_offer:1;  /**< Sent offer in this request */
-  unsigned            cr_recv_answer:1; /**< Recv answer in response */
+
+  unsigned short      cr_answer_recv;   /**< Recv answer in response */
+  unsigned            cr_offer_sent:1;  /**< Sent offer in this request */
+
+  unsigned            cr_offer_recv:1;  /**< Recv offer in a response */
+  unsigned            cr_answer_sent:1; /**< Sent answer in (PR)ACK */
 };
 
 typedef struct nua_session_state
@@ -225,6 +232,7 @@ typedef struct nua_session_state
   
   unsigned        ss_alerting:1;	/**< 180 is sent/received */
   
+#if 0
   unsigned        ss_complete:1;	/**< Completed SDP offer-answer */
 
   unsigned        ss_offer_sent:1;	/**< We have offered SDP */
@@ -232,7 +240,7 @@ typedef struct nua_session_state
 
   unsigned        ss_offer_recv:1;	/**< We have received an offer */
   unsigned        ss_answer_sent:2;	/**< We have answered (reliably, if >1) */
-
+#endif
   unsigned        ss_ack_needed:2;	/**< Send an ACK (do O/A, if >1) */
   unsigned        ss_update_needed:2;	/**< Send an UPDATE (do O/A if > 1) */
 
@@ -246,9 +254,11 @@ typedef struct nua_session_state
   unsigned        ss_min_se;		/**< Minimum session expires */
   enum nua_session_refresher ss_refresher; /**< none, local or remote */
 
+#if 0
   unsigned        ss_oa_rounds;		/**< Number of O/A rounds completed */
   sdp_origin_t   *ss_o_remote;
   sdp_origin_t   *ss_o_local;
+#endif
 
   nua_dialog_usage_t *ss_usage;
 
@@ -256,17 +266,24 @@ typedef struct nua_session_state
   struct nua_client_request ss_crequest[1];
 
   /* Incoming invite */
+  struct nua_server_request {
 
   /** Respond to an incoming INVITE transaction.
    *
    * When the application responds to an incoming INVITE transaction with
    * nua_respond(), the ss_respond_to_invite() is called (if non-NULL).
    */
-  void (*ss_respond_to_invite)(nua_t *nua, nua_handle_t *nh,
-			       int status, char const *phrase, 
-			       tagi_t const *tags);
-  nta_incoming_t *ss_invite_irq;
+    void (*sr_respond)(nua_t *nua, nua_handle_t *nh,
+		       int status, char const *phrase, 
+		       tagi_t const *tags);
+    nta_incoming_t *sr_irq;
 
+    unsigned sr_offer_recv:1;	/**< We have received an offer */
+    unsigned sr_answer_sent:2;	/**< We have answered (reliably, if >1) */
+
+    unsigned sr_offer_sent:1;	/**< We have offered SDP */
+    unsigned sr_answer_recv:1;	/**< We have received SDP answer */
+  } ss_srequest[1];
 } nua_session_state_t;
 
 
@@ -328,6 +345,7 @@ typedef void mss_t;
 /* --cut-- for media subsystem parameters */
 #endif
 
+#if 0
 /** Media-related state */
 typedef struct nua_media_state
 {
@@ -352,7 +370,7 @@ typedef struct nua_media_state
     int ma_chat:3;  /**< Chat activity (send/recv) */
   } nm_active[1];
 
-  /* These two flags help us avoid unnecessary setups */
+  /* These two flags help us to avoid unnecessary setups */
   unsigned   nm_modified:1;    /**< Important media parameter(s) changed */
   unsigned   nm_setup_with_remote:1; /** Last setup was with remote */
 
@@ -399,6 +417,30 @@ typedef struct nua_media_state
   TAG_IF((include) && (ma)->ma_video >= 0, NUTAG_ACTIVE_VIDEO(ma->ma_video)), \
   TAG_IF((include) && (ma)->ma_image >= 0, NUTAG_ACTIVE_IMAGE(ma->ma_image)), \
   TAG_IF((include) && (ma)->ma_chat >= 0, NUTAG_ACTIVE_CHAT(ma->ma_chat))
+
+#endif
+
+#define \
+  NH_ACTIVE_MEDIA_TAGS(include, soa)					\
+  TAG_IF((include) && (soa) && soa_is_audio_active(soa) >= 0,		\
+	 NUTAG_ACTIVE_AUDIO(soa_is_audio_active(soa))),			\
+  TAG_IF((include) && (soa) && soa_is_video_active(soa) >= 0,		\
+	 NUTAG_ACTIVE_VIDEO(soa_is_video_active(soa))),			\
+  TAG_IF((include) && (soa) && soa_is_image_active(soa) >= 0,		\
+	 NUTAG_ACTIVE_IMAGE(soa_is_image_active(soa))),			\
+  TAG_IF((include) && (soa) && soa_is_chat_active(soa) >= 0,		\
+	 NUTAG_ACTIVE_CHAT(soa_is_chat_active(soa)))
+
+#define \
+  NH_REMOTE_MEDIA_TAGS(include, soa)					\
+  TAG_IF((include) && (soa) && soa_is_remote_audio_active(soa) >= 0,	\
+	 NUTAG_ACTIVE_AUDIO(soa_is_remote_audio_active(soa))),		\
+  TAG_IF((include) && (soa) && soa_is_remote_video_active(soa) >= 0,	\
+	 NUTAG_ACTIVE_VIDEO(soa_is_remote_video_active(soa))),		\
+  TAG_IF((include) && (soa) && soa_is_remote_image_active(soa) >= 0,	\
+	 NUTAG_ACTIVE_IMAGE(soa_is_remote_image_active(soa))),		\
+  TAG_IF((include) && (soa) && soa_is_remote_chat_active(soa) >= 0,	\
+	 NUTAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
 
 /** NUA handle. 
  *
@@ -450,11 +492,13 @@ struct nua_handle_s
 
   nua_dialog_state_t nh_ds[1];
   nua_session_state_t nh_ss[1];
-  nua_media_state_t nh_nm[1];
 
   auth_client_t  *nh_auth;	/**< Authorization objects */
 
+  soa_session_t  *nh_soa;	/**< Media session */
 #if 0
+  nua_media_state_t nh_nm[1];
+
   url_t const   *nh_uri;
   sip_content_type_t
                  *nh_content_type; /**< Original Content-Type */
@@ -523,6 +567,7 @@ struct nua_s {
   nua_herbie_t       *nua_herbie;
 #endif
 
+#if 0
 #if HAVE_MSS
   mss_t              *nua_mss;	/**< Media manager */
 #else
@@ -533,6 +578,7 @@ struct nua_s {
   char const         *nua_media_params;
   nua_handle_t       *nua_media_handle;
   su_strlst_t        *nua_media_events;
+#endif
 
 #if HAVE_UICC_H
   uicc_t             *nua_uicc;
@@ -671,11 +717,13 @@ int ua_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 			       tagi_t *tags);
 
+#if 0
 sdp_session_t const *nmedia_parse_sdp(nua_handle_t *nh,
 				    msg_payload_t const *pl,
 				    msg_content_type_t const *ct,
 				    struct nua_media_a *ma);
 void nmedia_clear_sdp(nua_handle_t *nh);
+#endif
 
 /* Private prototypes (XXX: move to nua_priv.h; nua.c interface) */
 void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
