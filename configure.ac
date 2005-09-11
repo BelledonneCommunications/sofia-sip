@@ -10,7 +10,7 @@ AC_INIT([sofia-sip], [1.10.1.2005.09.08])
 AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sip.h])
 
 # dnl calls AC_CANONICAL_ macros that are required by AM_INIT_AUTOMAKE
-AX_PROG_RANLIB
+SAC_CANONICAL_SYSTEM_CACHE_CHECK
 
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
