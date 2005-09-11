@@ -158,8 +158,8 @@ SAC_CHECK_SU_LIBS
 # Checks for library functions.
 # ===========================================================================
 
-AC_CHECK_FUNCS(gettimeofday strerror random initstate tcsetattr flock)
-AC_CHECK_FUNCS(socketpair gethostname getipnodebyname getaddrinfo alarm)
+AC_CHECK_FUNCS(gettimeofday strerror random initstate tcsetattr flock alarm)
+AC_CHECK_FUNCS(socketpair gethostname getipnodebyname getaddrinfo poll)
 
 if false; then
 	# not yet
