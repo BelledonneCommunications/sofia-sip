@@ -80,6 +80,8 @@ int soa_get_remote_sdp(soa_session_t const *ss,
 		       char const **return_sdp,
 		       int *return_len);
 
+int soa_clear_remote_sdp(soa_session_t *ss);
+
 int soa_set_local_sdp(soa_session_t *ss,
 		      char const *str, int len);
 

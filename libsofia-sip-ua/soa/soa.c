@@ -1002,8 +1002,16 @@ int soa_base_generate_answer(soa_session_t *ss,
 
   if (!l_sdp || !r_sdp)
     return -1;
+  rsession = sdp_session_dup(ss->ss_home, r_sdp);
+  if (!rsession)
+    return -1;
 
-  soa_set_activity(ss, sdp->sdp_media, 0);
+  if (ss->ss_rsession)
+    su_free(ss->ss_home, ss->ss_rsession);
+  ss->ss_rsession = rsession;
+
+  soa_set_activity(ss, l_sdp->sdp_media, 0);
+  soa_set_activity(ss, r_sdp->sdp_media, 1);
 
   ss->ss_offer_recv = 1;
   ss->ss_answer_sent = 1;
@@ -1059,8 +1067,16 @@ int soa_base_process_answer(soa_session_t *ss,
 
   if (!l_sdp || !r_sdp)
     return -1;
+  rsession = sdp_session_dup(ss->ss_home, r_sdp);
+  if (!rsession)
+    return -1;
 
-  soa_set_activity(ss, sdp->sdp_media, 0);
+  if (ss->ss_rsession)
+    su_free(ss->ss_home, ss->ss_rsession);
+  ss->ss_rsession = rsession;
+
+  soa_set_activity(ss, l_sdp->sdp_media, 0);
+  soa_set_activity(ss, r_sdp->sdp_media, 1);
 
   ss->ss_answer_recv = 1;
   ss->ss_complete = 1;
