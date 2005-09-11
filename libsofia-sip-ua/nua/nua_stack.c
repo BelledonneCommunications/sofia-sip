@@ -1183,7 +1183,7 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   unsigned flags = 0;
   sip_organization_t organization[1];
 
-  tagi_t *media_params;
+  tagi_t *media_params = NULL;
 
   su_home_t home[1] = { SU_HOME_INIT(home) };
 
@@ -1205,7 +1205,8 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
   sip_organization_init(organization)->g_string = nua->nua_organization;
 
-  media_params = soa_get_paramlist(nh->nh_soa);
+  if (nh)
+    media_params = soa_get_paramlist(nh->nh_soa);
 
   params = tl_list(NUTAG_MEDIA_ENABLE(nua->nua_media_enable),
 		   NUTAG_EARLY_MEDIA(nua->nua_default->nh_early_media),
@@ -1449,17 +1450,6 @@ void nh_init(nua_t *nua, nua_handle_t *nh,
 	  NUTAG_UPDATE_REFRESH_REF(update_refresh),
 	  TAG_END());
 
-  tl_gets(ta_args(ta),
-	  SIPTAG_ALLOW_REF(allow),
-	  SIPTAG_ALLOW_STR_REF(allowstr),
-	  NUTAG_ALLOW_REF(default_allow),
-	  NUTAG_MEDIA_ENABLE_REF(media_enable),
-	  NUTAG_MEDIA_FEATURES_REF(media_features),
-	  NUTAG_AUTOACK_REF(autoACK),
-	  NUTAG_EARLY_MEDIA_REF(early_media),
-	  NUTAG_UPDATE_REFRESH_REF(update_refresh),
-	  TAG_END());
-
 #if HAVE_UICC_H
   if (nh->nh_has_register && nua->nua_uicc)
     auc_with_uicc(&nh->nh_auth, nh->nh_home, nua->nua_uicc);
@@ -1487,8 +1477,13 @@ void nh_init(nua_t *nua, nua_handle_t *nh,
   nh->nh_update_refresh = update_refresh;
   nh->nh_auto_ack = autoACK != 0;
 
-  if (media_enable && nh->nh_soa) {
-    soa_session_t *soa = nh->nh_soa;
+  if (media_enable && nua->nua_default->nh_soa) {
+    soa_session_t *soa;
+
+    soa = soa_clone(nua->nua_default->nh_soa, nua->nua_root, nh);
+
+    if (soa)
+      nh->nh_soa = soa;
 
     if (nh->nh_tags)
       soa_set_params(soa, TAG_NEXT(nh->nh_tags));
