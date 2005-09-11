@@ -66,37 +66,42 @@ int soa_error_as_sip_response(soa_session_t *soa,
 
 char const *soa_error_as_sip_reason(soa_session_t *soa);
 
-int soa_parse_sdp(soa_session_t *ss, 
-		  int live,
-		  char const *sdp,
-		  int len);
+int soa_set_capability_sdp(soa_session_t *ss,
+			   char const *str, int len);
 
-void soa_clear_sdp(soa_session_t *ss);
+int soa_get_capability_sdp(soa_session_t *ss,
+			   char const **return_sdp,
+			   int *return_len);
 
-int soa_print_sdp(soa_session_t *ss, 
-		  int live,
-		  su_home_t *home,
-		  char **sdp,
-		  int *return_len);
+int soa_set_remote_sdp(soa_session_t *ss,
+		       char const *str, int len);
 
+int soa_get_remote_sdp(soa_session_t *ss,
+		       char const **return_sdp,
+		       int *return_len);
+
+int soa_set_local_sdp(soa_session_t *ss,
+		      char const *str, int len);
+
+int soa_get_local_sdp(soa_session_t *ss,
+		      char const **return_sdp,
+		      int *return_len);
 
 char const * const * soa_sip_required(soa_session_t const *ss);
 char const * const * soa_sip_support(soa_session_t const *ss);
 
-int soa_remote_sip_features(soa_session_t *ss, 
+int soa_remote_sip_features(soa_session_t *ss,
 			    char const * const * support,
 			    char const * const * required);
 
 char **soa_media_features(soa_session_t *ss, int live, su_home_t *home);
 
-/* Run offer step */
-int soa_offer(soa_session_t *, int always, soa_callback_f *completed); 
-
-/* Run O/A step */
-int soa_offer_answer(soa_session_t *, int always, soa_callback_f *completed); 
-
-/* Run answer step */
-int soa_answer(soa_session_t *, int always, soa_callback_f *completed); 
+/* Generate offer */
+int soa_generate_offer(soa_session_t *, int always, soa_callback_f *);
+/* Process offer, generate answer */
+int soa_generate_answer(soa_session_t *, soa_callback_f *);
+/* Process answer */
+int soa_process_answer(soa_session_t *, soa_callback_f *);
 
 void soa_activate(soa_session_t *, char const *option);
 void soa_terminate(soa_session_t *, char const *option);

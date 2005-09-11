@@ -57,10 +57,16 @@ struct soa_session_actions
   int (*soa_remote_sip_features)(soa_session_t *ss,
 				 char const * const * support,
 				 char const * const * required);
-  int (*soa_config_sdp)(soa_session_t *ss, sdp_session_t *sdp,
-			char const *sdp_str, int strlen);
+  int (*soa_set_capability_sdp)(soa_session_t *, sdp_session_t *,
+				char const *, int);
+  int (*soa_set_remote_sdp)(soa_session_t *, int new_version,
+			    sdp_session_t *, char const *, int);
+  int (*soa_set_local_sdp)(soa_session_t *, sdp_session_t *,
+			   char const *, int);
   int (*soa_generate_offer)(soa_session_t *ss, soa_callback_f *completed);
   int (*soa_generate_answer)(soa_session_t *ss, soa_callback_f *completed);
+  int (*soa_process_answer)(soa_session_t *ss, 
+				   soa_callback_f *completed);
   void (*soa_activate_session)(soa_session_t *ss, char const *option);
   void (*soa_terminate_session)(soa_session_t *ss, char const *option);
 };
@@ -79,10 +85,20 @@ char const * const * soa_base_sip_support(soa_session_t const *ss);
 int soa_base_remote_sip_features(soa_session_t *ss,
 				    char const * const * support,
 				    char const * const * required);
-int soa_base_config_sdp(soa_session_t *ss, sdp_session_t *sdp,
-			   char const *sdp0, int sdp0_len);
+int soa_base_set_capability_sdp(soa_session_t *ss, 
+				sdp_session_t *sdp,
+				char const *, int);
+int soa_base_set_remote_sdp(soa_session_t *ss, 
+			    int new_version,
+			    sdp_session_t *sdp,
+			    char const *, int);
+int soa_base_set_local_sdp(soa_session_t *ss, 
+			   sdp_session_t *sdp,
+			   char const *, int);
 int soa_base_generate_offer(soa_session_t *ss, soa_callback_f *completed);
 int soa_base_generate_answer(soa_session_t *ss, soa_callback_f *completed);
+int soa_base_process_answer(soa_session_t *ss, 
+				   soa_callback_f *completed);
 void soa_base_activate(soa_session_t *ss, char const *option);
 void soa_base_terminate(soa_session_t *ss, char const *option);
 
@@ -90,6 +106,16 @@ int soa_default_generate_offer(soa_session_t *ss,
 			       soa_callback_f *completed);
 int soa_default_generate_answer(soa_session_t *ss,
 				soa_callback_f *completed);
+int soa_default_process_answer(soa_session_t *ss, 
+				      soa_callback_f *completed);
+
+struct soa_description 
+{
+  sdp_session_t  *ssd_sdp;	/**< Session description  */
+  char const     *ssd_unparsed;	/**< Original session description as string */
+  char const     *ssd_str;	/**< Session description as string */
+  sdp_printer_t  *ssd_printer;	/**< SDP printer object */
+};
 
 struct soa_session
 {
@@ -108,8 +134,9 @@ struct soa_session
   unsigned  ss_active:1;	/**< Session has been activated */
 
   /* Current Offer-Answer status */
-
   unsigned  ss_complete:1;	/**< Completed SDP offer-answer */
+
+  unsigned  ss_unprocessed_remote:1; /**< We have received remote SDP */
 
   unsigned  ss_offer_sent:2;	/**< We have offered SDP */
   unsigned  ss_answer_recv:2;	/**< We have received SDP answer */
@@ -129,17 +156,11 @@ struct soa_session
   } ss_local_activity[1], ss_remote_activity[1];
 
   /** Capabilities as specified by application */
-  char const     *ss_caps_str0;
-  char const     *ss_caps_str;	/**< Session capabilities as string */
-  sdp_session_t  *ss_caps;	/**< Session capabilities */
-
-  /** Session description specified by application */
-  char const     *ss_local_str0;
-  char const     *ss_local_str;	/**< Local session description as string */
-  sdp_session_t  *ss_local;	/**< Local session description */
-
-  sdp_parser_t   *ss_parser;  	/**< SDP from incoming request */
-  sdp_session_t  *ss_remote;	/**< Remote session description */
+  struct soa_description ss_caps[1];
+  /** Local session description */
+  struct soa_description ss_local[1];
+  /** Remote session description */
+  struct soa_description ss_remote[1];
 
   /** SIP features required */
   char const * const *ss_local_required;
@@ -183,6 +204,36 @@ struct soa_session
 
 int soa_set_status(soa_session_t *ss, int status, char const *phrase);
 void soa_set_activity(soa_session_t *ss, sdp_media_t const *m, int remote);
+
+int soa_set_capability_sdp_str(soa_session_t *ss, 
+			       sdp_session_t const *sdp,
+			       char const *str, int len);
+
+int soa_set_remote_sdp_str(soa_session_t *ss, 
+			   sdp_session_t const *sdp,
+			   char const *str, int len);
+
+int soa_set_local_sdp_str(soa_session_t *ss, 
+			  sdp_session_t const *sdp,
+			  char const *str, int len);
+
+int soa_description_set(soa_session_t *ss, 
+			struct soa_description *ssd,
+			sdp_session_t *sdp,
+			char const *sdp_str,
+			int sdp_len);
+
+void soa_description_free(soa_session_t *, struct soa_description *ssd);
+
+int soa_description_dup(su_home_t *, 
+			struct soa_description *ssd,
+			struct soa_description const *ssd0);
+
+int soa_print_sdp(soa_session_t *ss, 
+		  int live,
+		  su_home_t *home,
+		  char **sdp,
+		  int *return_len);
 
 /* ====================================================================== */
 /* Debug log settings */

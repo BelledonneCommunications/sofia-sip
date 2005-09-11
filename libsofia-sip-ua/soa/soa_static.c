@@ -75,6 +75,8 @@ static int soa_static_generate_offer(soa_session_t *ss,
 				    soa_callback_f *completed);
 static int soa_static_generate_answer(soa_session_t *ss,
 				     soa_callback_f *completed);
+static int soa_static_process_answer(soa_session_t *ss,
+					    soa_callback_f *completed);
 static void soa_static_activate(soa_session_t *ss, char const *option);
 static void soa_static_terminate(soa_session_t *ss, char const *option);
 
@@ -91,9 +93,12 @@ struct soa_session_actions const soa_static_actions =
     soa_base_sip_required,
     soa_base_sip_support,
     soa_base_remote_sip_features,
-    soa_base_config_sdp,
+    soa_base_set_capability_sdp,
+    soa_base_set_remote_sdp,
+    soa_base_set_local_sdp,
     soa_static_generate_offer,
     soa_static_generate_answer,
+    soa_static_process_answer,
     soa_static_activate,
     soa_static_terminate
   };
@@ -131,61 +136,63 @@ static tagi_t *soa_static_get_paramlist(soa_session_t const *ss)
 static int soa_static_generate_offer(soa_session_t *ss,
 				     soa_callback_f *completed)
 {
+  sdp_session_t *sdp;
   sdp_media_t *m;
   uint16_t port = 5004;
   su_msg_r msg;
 
-  if (ss->ss_local == NULL) {
-    if (ss->ss_caps == NULL)
+  if (ss->ss_local->ssd_sdp == NULL) {
+    if (ss->ss_caps->ssd_unparsed == NULL)
       return soa_set_status(ss, 500, "No local session available");
   }
 
-  if (ss->ss_local)
+  if (ss->ss_local->ssd_sdp)
     return 0;			/* We are done */
 
-  /* Generate a dummy offer based on our capabilities */
-  ss->ss_local = sdp_session_dup(ss->ss_home, ss->ss_caps);
-  if (!ss->ss_local) {
-    return soa_set_status(ss, 500, "Internal error");
-  }
+  /* Generate a dummy SDP offer based on our capabilities */
+  if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
+    return -1;
+  sdp = ss->ss_local->ssd_sdp; assert(ss->ss_local->ssd_sdp);
 
-  for (m = ss->ss_local->sdp_media; m; m = m->m_next)
+  for (m = sdp->sdp_media; m; m = m->m_next)
     if (m->m_port == 0)
       m->m_port = port, port += 2;
 
-  soa_set_activity(ss, ss->ss_local->sdp_media, 0);
-
-  return 0;
+  return soa_base_generate_offer(ss, NULL);
 }
 
 static int soa_static_generate_answer(soa_session_t *ss,
 				      soa_callback_f *completed)
 {
+  sdp_session_t *sdp;
   sdp_media_t *m;
   uint16_t port = 5004;
   su_msg_r msg;
 
-  if (ss->ss_local == NULL) {
-    if (ss->ss_caps == NULL)
+  if (ss->ss_local->ssd_sdp == NULL) {
+    if (ss->ss_caps->ssd_unparsed == NULL)
       return soa_set_status(ss, 500, "No local session available");
   }
 
-  if (ss->ss_local)
+  if (ss->ss_local->ssd_sdp)
     return 0;			/* We are done */
 
-  /* Generate a dummy answer based on our capabilities */
-  ss->ss_local = sdp_session_dup(ss->ss_home, ss->ss_caps);
-  if (!ss->ss_local) {
-    return soa_set_status(ss, 500, "Internal error");
-  }
+  /* Generate a dummy SDP offer based on our capabilities */
+  if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
+    return -1;
+  sdp = ss->ss_local->ssd_sdp; assert(ss->ss_local->ssd_sdp);
 
-  for (m = ss->ss_local->sdp_media; m; m = m->m_next)
+  for (m = sdp->sdp_media; m; m = m->m_next)
     if (m->m_port == 0)
       m->m_port = port, port += 2;
 
-  soa_set_activity(ss, ss->ss_local->sdp_media, 0);
+  return soa_base_generate_answer(ss, NULL);
+}
 
-  return 0;
+static int soa_static_process_answer(soa_session_t *ss,
+					    soa_callback_f *completed)
+{
+  return soa_base_process_answer(ss, NULL);
 }
 
 static void soa_static_activate(soa_session_t *ss, char const *option)
@@ -195,7 +202,6 @@ static void soa_static_activate(soa_session_t *ss, char const *option)
 
 static void soa_static_terminate(soa_session_t *ss, char const *option)
 {
-  if (ss->ss_local)
-    su_free(ss->ss_home, ss->ss_local), ss->ss_local = NULL;
+  soa_description_free(ss, ss->ss_local);
   soa_base_terminate(ss, option);
 }

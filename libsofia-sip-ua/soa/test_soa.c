@@ -114,10 +114,6 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(-1 == soa_parse_sdp(NULL, 0, NULL, 0));
 
-  TEST_VOID(soa_clear_sdp(NULL));
-
-  TEST_1(-1 == soa_print_sdp(NULL, 0, NULL, NULL, NULL));
-
   TEST_1(!soa_media_features(NULL, 0, NULL));
 
   TEST_1(!soa_sip_required(NULL));
@@ -125,11 +121,19 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(-1 == soa_remote_sip_features(NULL, &null, &null));
 
-  TEST_1(-1 == soa_offer(NULL, 0, test_api_completed)); 
+  TEST_1(soa_set_capability_sdp(NULL, NULL, -1) < 0);
+  TEST_1(soa_set_remote_sdp(NULL, NULL, -1) < 0);
+  TEST_1(soa_set_local_sdp(NULL, NULL, -1) < 0);
 
-  TEST_1(-1 == soa_offer_answer(NULL, 0, test_api_completed)); 
+  TEST_1(soa_get_capability_sdp(NULL, NULL, NULL) < 0);
+  TEST_1(soa_get_local_sdp(NULL, NULL, NULL) < 0);
+  TEST_1(soa_get_remote_sdp(NULL, NULL, NULL) < 0);
 
-  TEST_1(-1 == soa_answer(NULL, 0, test_api_completed)); 
+  TEST_1(-1 == soa_generate_offer(NULL, 0, test_api_completed)); 
+
+  TEST_1(-1 == soa_generate_answer(NULL, test_api_completed)); 
+
+  TEST_1(-1 == soa_process_answer(NULL, test_api_completed)); 
 
   TEST_VOID(soa_activate(NULL, "both"));
   TEST_VOID(soa_terminate(NULL, "both"));
@@ -219,9 +223,7 @@ int test_static_offer_answer(struct context *ctx)
   BEGIN();
   int n;
   
-  su_home_t home[1] = { SU_HOME_INIT(home) };
-
-  char *caps = NONE, *offer = NONE, *answer = NONE;
+  char const *caps = NONE, *offer = NONE, *answer = NONE;
   int capslen = -1, offerlen = -1, answerlen = -1;
 
   char const a[] = 
@@ -237,34 +239,38 @@ int test_static_offer_answer(struct context *ctx)
     "m=audio 5006 RTP/AVP 96\n"
     "m=rtpmap:96 GSM/8000\n";
 
-  n = soa_parse_sdp(ctx->synch.a, 0, "m=audio 5004 RTP/AVP 0 8", -1); 
+  n = soa_set_capability_sdp(ctx->synch.a, "m=audio 5004 RTP/AVP 0 8", -1); 
   TEST(n, 1);
 
-  n = soa_parse_sdp(ctx->synch.a, 0, a, strlen(a)); TEST(n, 1);
-  n = soa_print_sdp(ctx->synch.a, 0, home, &caps, &capslen); TEST(n, 1);
+  n = soa_set_capability_sdp(ctx->synch.a, a, strlen(a)); TEST(n, 1);
+  n = soa_get_capability_sdp(ctx->synch.a, &caps, &capslen); TEST(n, 1);
 
   TEST_1(caps != NULL && caps != NONE);
   TEST_1(capslen > 0);
 
-  su_free(home, caps);
+  n = soa_set_capability_sdp(ctx->synch.b, b, strlen(b)); TEST(n, 1);
 
-  n = soa_parse_sdp(ctx->synch.b, 0, b, strlen(b)); TEST(n, 1);
+  n = soa_get_local_sdp(ctx->synch.a, &offer, &offerlen); TEST(n, 0);
 
-  n = soa_offer(ctx->synch.a, 1, test_completed); TEST(n, 0);
+  n = soa_generate_offer(ctx->synch.a, 1, test_completed); TEST(n, 0);
 
-  n = soa_print_sdp(ctx->synch.a, 1, home, &offer, &offerlen); TEST(n, 1);
+  n = soa_get_local_sdp(ctx->synch.a, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
 
-  n = soa_parse_sdp(ctx->synch.b, 1, offer, offerlen); TEST(n, 1);
+  n = soa_set_remote_sdp(ctx->synch.b, offer, offerlen); TEST(n, 1);
 
-  n = soa_offer_answer(ctx->synch.b, 0, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(ctx->synch.b, &answer, &answerlen); TEST(n, 0);
+
+  n = soa_generate_answer(ctx->synch.b, test_completed); TEST(n, 0);
 
   TEST_VOID(soa_activate(ctx->synch.b, NULL));
 
-  n = soa_print_sdp(ctx->synch.b, 1, home, &answer, &answerlen); TEST(n, 1);
+  n = soa_get_local_sdp(ctx->synch.b, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
 
-  n = soa_parse_sdp(ctx->synch.a, 1, answer, answerlen); TEST(n, 1);
+  n = soa_set_remote_sdp(ctx->synch.a, answer, -1); TEST(n, 1);
 
-  n = soa_offer_answer(ctx->synch.a, 0, test_completed); TEST(n, 0);
+  n = soa_process_answer(ctx->synch.a, test_completed); TEST(n, 0);
 
   TEST_VOID(soa_activate(ctx->synch.a, NULL));
 
@@ -277,8 +283,6 @@ int test_static_offer_answer(struct context *ctx)
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(ctx->synch.a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(ctx->synch.a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(ctx->synch.a));
-
-  su_home_deinit(home);
 
   TEST_VOID(soa_terminate(ctx->synch.a, NULL));
 
@@ -296,9 +300,7 @@ int test_asynch_offer_answer(struct context *ctx)
   BEGIN();
   int n;
   
-  su_home_t home[1] = { SU_HOME_INIT(home) };
-
-  char *caps = NONE, *offer = NONE, *answer = NONE;
+  char const *caps = NONE, *offer = NONE, *answer = NONE;
   int capslen = -1, offerlen = -1, answerlen = -1;
 
   char const a[] = 
@@ -314,39 +316,43 @@ int test_asynch_offer_answer(struct context *ctx)
     "m=audio 5006 RTP/AVP 96\n"
     "m=rtpmap:96 GSM/8000\n";
 
-  n = soa_parse_sdp(ctx->asynch.a, 0, a, strlen(a)); TEST(n, 1);
-  n = soa_print_sdp(ctx->asynch.a, 0, home, &caps, &capslen); TEST(n, 1);
+  n = soa_set_capability_sdp(ctx->asynch.a, "m=audio 5004 RTP/AVP 0 8", -1); 
+  TEST(n, 1);
+
+  n = soa_set_capability_sdp(ctx->asynch.a, a, strlen(a)); TEST(n, 1);
+  n = soa_get_capability_sdp(ctx->asynch.a, &caps, &capslen); TEST(n, 1);
 
   TEST_1(caps != NULL && caps != NONE);
   TEST_1(capslen > 0);
 
-  su_free(home, caps);
+  n = soa_set_capability_sdp(ctx->asynch.b, b, strlen(b)); TEST(n, 1);
 
-  n = soa_parse_sdp(ctx->asynch.b, 0, b, strlen(b)); TEST(n, 1);
+  n = soa_generate_offer(ctx->asynch.a, 1, test_completed); TEST(n, 1);
 
-  n = soa_offer(ctx->asynch.a, 1, test_completed); TEST(n, 1);
+  su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.a); 
+  ctx->completed = NULL;
 
-  su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.a); ctx->completed = NULL;
+  n = soa_get_local_sdp(ctx->asynch.a, &offer, &offerlen); TEST(n, 1);
 
-  n = soa_print_sdp(ctx->asynch.a, 1, home, &offer, &offerlen); TEST(n, 1);
+  n = soa_set_remote_sdp(ctx->asynch.b, offer, offerlen); TEST(n, 1);
 
-  n = soa_parse_sdp(ctx->asynch.b, 1, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(ctx->asynch.b, test_completed); TEST(n, 1);
 
-  n = soa_offer_answer(ctx->asynch.b, 0, test_completed); TEST(n, 1);
-
-  su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.b); ctx->completed = NULL;
+  su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.b); 
+  ctx->completed = NULL;
 
   TEST_VOID(soa_activate(ctx->asynch.b, NULL));
 
-  n = soa_print_sdp(ctx->asynch.b, 1, home, &answer, &answerlen); TEST(n, 1);
+  n = soa_get_local_sdp(ctx->asynch.b, &answer, &answerlen); TEST(n, 1);
 
-  n = soa_parse_sdp(ctx->asynch.a, 1, answer, answerlen); TEST(n, 1);
+  n = soa_set_remote_sdp(ctx->asynch.a, answer, answerlen); TEST(n, 1);
 
-  n = soa_offer_answer(ctx->asynch.a, 0, test_completed); TEST(n, 0);
+  n = soa_process_answer(ctx->asynch.a, test_completed); TEST(n, 1);
+
+  su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.a); 
+  ctx->completed = NULL;
 
   TEST_VOID(soa_activate(ctx->asynch.a, NULL));
-
-  su_home_deinit(home);
 
   TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(ctx->asynch.a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(ctx->asynch.a));
