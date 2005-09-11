@@ -270,7 +270,7 @@ soa_session_t *soa_clone(soa_session_t *parent_ss,
 {
   soa_session_t *ss;
 
-  if (parent_ss == NULL || root == NULL);
+  if (parent_ss == NULL || root == NULL)
     return (void)(errno = EFAULT), NULL;
 
   ss = su_home_new(parent_ss->ss_actions->sizeof_soa_session);
