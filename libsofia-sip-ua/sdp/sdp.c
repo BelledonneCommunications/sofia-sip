@@ -1383,6 +1383,9 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
   m_formats, m_rtpmaps;
 #endif
 
+  if ((rv = str0cmp(a->m_information, b->m_information)))
+    return rv;
+
   for (ac = a->m_connections, bc = b->m_connections; 
        ac || bc; 
        ac = ac->c_next, bc = bc->c_next)
