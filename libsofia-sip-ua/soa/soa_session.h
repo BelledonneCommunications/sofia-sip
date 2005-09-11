@@ -231,12 +231,6 @@ int soa_description_dup(su_home_t *,
 			struct soa_description *ssd,
 			struct soa_description const *ssd0);
 
-int soa_print_sdp(soa_session_t *ss, 
-		  int live,
-		  su_home_t *home,
-		  char **sdp,
-		  int *return_len);
-
 /* ====================================================================== */
 /* Debug log settings */
 
