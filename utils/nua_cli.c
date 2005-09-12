@@ -63,7 +63,6 @@ typedef struct cli_oper_s cli_oper_t;
 #include <sl_utils.h>
 
 #include <soa.h>
-#include <soa_add.h>
 
 #include <su_debug.h>
 
@@ -323,8 +322,6 @@ int main(int ac, char *av[])
   cli_t cli[1] = {{{{sizeof(cli)}}}};
   
   su_init();
-
-  soa_add("static", &soa_static_actions);
 
   su_home_init(cli->cli_home);
 
@@ -1980,7 +1977,7 @@ int cli_init(cli_t *cli, char *av[])
   su_timer_set(cli->cli_input, handle_input, NULL);
 #endif
 
-  cli->cli_soa = soa_create("static", cli->cli_root, cli);
+  cli->cli_soa = soa_create("", cli->cli_root, cli);
   if (cli->cli_soa)
     soa_set_capability_sdp(cli->cli_soa, "m=audio 5004 RTP/AVP 8 0", -1);
 

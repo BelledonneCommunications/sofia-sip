@@ -97,6 +97,7 @@ static int soa_set_sdp(soa_session_t *ss,
    (a)->soa_activate_session != NULL &&				\
    (a)->soa_terminate_session != NULL)
 
+#if 0
 /*
  * The default soa objct stores the offer from parameters,
  * sends it when requested.
@@ -127,6 +128,7 @@ struct soa_session_actions const soa_default_actions =
     soa_base_activate,
     soa_base_terminate
   };
+#endif
 
 /* ======================================================================== */
 

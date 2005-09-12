@@ -103,6 +103,29 @@ struct soa_session_actions const soa_static_actions =
     soa_static_terminate
   };
 
+struct soa_session_actions const soa_default_actions = 
+  {
+    (sizeof soa_static_actions),
+    sizeof (struct soa_static_session),
+    soa_static_init,
+    soa_static_deinit,
+    soa_static_set_params,
+    soa_static_get_params,
+    soa_static_get_paramlist,
+    soa_base_media_features,
+    soa_base_sip_required,
+    soa_base_sip_support,
+    soa_base_remote_sip_features,
+    soa_base_set_capability_sdp,
+    soa_base_set_remote_sdp,
+    soa_base_set_local_sdp,
+    soa_static_generate_offer,
+    soa_static_generate_answer,
+    soa_static_process_answer,
+    soa_static_activate,
+    soa_static_terminate
+  };
+
 /* Initialize session */
 static int soa_static_init(char const *name,
 			   soa_session_t *ss,
