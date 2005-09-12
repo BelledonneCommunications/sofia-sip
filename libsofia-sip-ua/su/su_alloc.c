@@ -422,7 +422,8 @@ void *sub_alloc(su_home_t *home,
       subhome->suh_blocks = su_hash_alloc(SUB_N);
       if (!subhome->suh_blocks) 
 	return (void)free(data), NULL;
-	
+
+      subhome->suh_size = size;
       subhome->suh_blocks->sub_parent = home;
     }
 
@@ -465,6 +466,7 @@ void *su_home_new(int size)
 
   home = calloc(1, size);
   if (home) {
+    home->suh_size = size;
     home->suh_blocks = su_hash_alloc(SUB_N);
     if (home->suh_blocks)
       home->suh_blocks->sub_ref = 1;
