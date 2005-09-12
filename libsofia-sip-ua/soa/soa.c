@@ -232,7 +232,7 @@ soa_session_t *soa_create(char const *name,
 
   soa_session_t *ss;
 
-  if (name) {
+  if (name && name[0]) {
     struct soa_namenode const *n;
     size_t baselen = strcspn(name, ":/");
 
