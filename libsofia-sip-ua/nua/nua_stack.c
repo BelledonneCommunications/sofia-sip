@@ -187,6 +187,7 @@ int ua_init(su_root_t *root, nua_t *nua)
   nua_handle_t *nh;
   int media_enable = 1;
   soa_session_t *soa = NULL;
+  char const *soa_name = NULL;
 
   static int initialized_logs = 0;
 
@@ -230,6 +231,7 @@ int ua_init(su_root_t *root, nua_t *nua)
 	  NUTAG_UICC_REF(uicc_name),
 	  NUTAG_MEDIA_ENABLE_REF(media_enable),
 	  NUTAG_SOA_SESSION_REF(soa),
+	  NUTAG_SOA_NAME_REF(soa_name),
 	  TAG_NULL());
 
 #if HAVE_UICC_H
@@ -282,7 +284,9 @@ int ua_init(su_root_t *root, nua_t *nua)
   nua->nua_sdp_content = sip_content_type_make(home, SDP_MIME_TYPE);
   nua->nua_invite_accept = sip_accept_make(home, SDP_MIME_TYPE);
 
-  if (media_enable && soa) {
+  if (media_enable) {
+    if (soa == NULL)
+      soa = soa_create(soa_name, nua->nua_root, nua->nua_default);
     nh->nh_soa = soa;
     soa_set_params(soa, TAG_NEXT(nua->nua_args));
   }

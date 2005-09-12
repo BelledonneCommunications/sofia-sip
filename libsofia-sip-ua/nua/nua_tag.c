@@ -59,6 +59,7 @@ tag_typedef_t nutag_media_enable = BOOLTAG_TYPEDEF(media_enable);
 tag_typedef_t nutag_media_address = STRTAG_TYPEDEF(media_address);
 
 tag_typedef_t nutag_soa_session = PTRTAG_TYPEDEF(soa_session);
+tag_typedef_t nutag_soa_name = STRTAG_TYPEDEF(soa_name);
 
 tag_typedef_t nutag_media_subsystem = PTRTAG_TYPEDEF(media_session);
 tag_typedef_t nutag_media_session = PTRTAG_TYPEDEF(media_session);

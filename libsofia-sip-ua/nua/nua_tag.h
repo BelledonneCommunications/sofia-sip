@@ -244,6 +244,27 @@ extern tag_typedef_t nutag_soa_session;
  nutag_soa_session_ref, tag_ptr_vr(&(x),(x))
 extern tag_typedef_t nutag_soa_session_ref;
 
+/**Name for SDP Offer-Answer session object.
+ *
+ * SDP Offer-Answer session object name.
+ *
+ * @par Used with nua_create(), nua_handle().
+ *
+ * @par Parameter type
+ *    void * (actually soa_session_t *)
+ *
+ * @par Values
+ *    Pointer to MSS media session.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_SOA_SESSION_REF.
+ */
+#define NUTAG_SOA_NAME(x)  nutag_soa_name, tag_str_v(x)
+extern tag_typedef_t nutag_soa_name;
+
+#define NUTAG_SOA_NAME_REF(x) \
+ nutag_soa_name_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_soa_name_ref;
+
 #else
 
 /** Pointer to a media subsystem.
