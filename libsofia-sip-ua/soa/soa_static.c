@@ -77,7 +77,8 @@ static int soa_static_generate_answer(soa_session_t *ss,
 				     soa_callback_f *completed);
 static int soa_static_process_answer(soa_session_t *ss,
 					    soa_callback_f *completed);
-static void soa_static_activate(soa_session_t *ss, char const *option);
+static int soa_static_activate(soa_session_t *ss, char const *option);
+static int soa_static_deactivate(soa_session_t *ss, char const *option);
 static void soa_static_terminate(soa_session_t *ss, char const *option);
 
 struct soa_session_actions const soa_static_actions =
@@ -100,6 +101,7 @@ struct soa_session_actions const soa_static_actions =
     soa_static_generate_answer,
     soa_static_process_answer,
     soa_static_activate,
+    soa_static_deactivate,
     soa_static_terminate
   };
 
@@ -123,6 +125,7 @@ struct soa_session_actions const soa_default_actions =
     soa_static_generate_answer,
     soa_static_process_answer,
     soa_static_activate,
+    soa_static_deactivate,
     soa_static_terminate
   };
 
@@ -214,9 +217,14 @@ static int soa_static_process_answer(soa_session_t *ss,
   return soa_base_process_answer(ss, NULL);
 }
 
-static void soa_static_activate(soa_session_t *ss, char const *option)
+static int soa_static_activate(soa_session_t *ss, char const *option)
 {
-  soa_base_activate(ss, option);
+  return soa_base_activate(ss, option);
+}
+
+static int soa_static_deactivate(soa_session_t *ss, char const *option)
+{
+  return soa_base_deactivate(ss, option);
 }
 
 static void soa_static_terminate(soa_session_t *ss, char const *option)

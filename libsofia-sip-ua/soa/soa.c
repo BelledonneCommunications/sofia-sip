@@ -126,6 +126,7 @@ struct soa_session_actions const soa_default_actions =
     soa_default_generate_answer,
     soa_default_process_answer,
     soa_base_activate,
+    soa_base_deactivate,
     soa_base_terminate
   };
 #endif
@@ -1052,22 +1053,41 @@ int soa_default_process_answer(soa_session_t *ss,
 }
 
 /** Activate session */
-void soa_activate(soa_session_t *ss, char const *option)
+int soa_activate(soa_session_t *ss, char const *option)
 {
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
-    return;
+    return -1;
 
   ss->ss_active = 1;
 
-  ss->ss_actions->soa_activate_session(ss, option);
+  return ss->ss_actions->soa_activate_session(ss, option);
 }
 
-void soa_base_activate(soa_session_t *ss,
-			  char const *option)
+int soa_base_activate(soa_session_t *ss, char const *option)
 {
   (void)ss;
   (void)option;
+  return 0;
+}
+
+/** Deactivate session */
+int soa_deactivate(soa_session_t *ss, char const *option)
+{
+  /** @ERROR EFAULT Bad address as @a ss. */
+  if (ss == NULL)
+    return -1;
+
+  ss->ss_active = 0;
+
+  return ss->ss_actions->soa_deactivate_session(ss, option);
+}
+
+int soa_base_deactivate(soa_session_t *ss, char const *option)
+{
+  (void)ss;
+  (void)option;
+  return 0;
 }
 
 /** Terminate session */

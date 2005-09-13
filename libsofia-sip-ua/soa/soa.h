@@ -105,7 +105,9 @@ int soa_generate_answer(soa_session_t *, soa_callback_f *);
 /* Process answer */
 int soa_process_answer(soa_session_t *, soa_callback_f *);
 
-void soa_activate(soa_session_t *, char const *option);
+int soa_activate(soa_session_t *, char const *option);
+int soa_deactivate(soa_session_t *, char const *option);
+
 void soa_terminate(soa_session_t *, char const *option);
 
 int soa_is_complete(soa_session_t const *ss);

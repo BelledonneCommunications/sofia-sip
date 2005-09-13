@@ -67,7 +67,8 @@ struct soa_session_actions
   int (*soa_generate_answer)(soa_session_t *ss, soa_callback_f *completed);
   int (*soa_process_answer)(soa_session_t *ss, 
 				   soa_callback_f *completed);
-  void (*soa_activate_session)(soa_session_t *ss, char const *option);
+  int (*soa_activate_session)(soa_session_t *ss, char const *option);
+  int (*soa_deactivate_session)(soa_session_t *ss, char const *option);
   void (*soa_terminate_session)(soa_session_t *ss, char const *option);
 };
 
@@ -99,7 +100,8 @@ int soa_base_generate_offer(soa_session_t *ss, soa_callback_f *completed);
 int soa_base_generate_answer(soa_session_t *ss, soa_callback_f *completed);
 int soa_base_process_answer(soa_session_t *ss, 
 				   soa_callback_f *completed);
-void soa_base_activate(soa_session_t *ss, char const *option);
+int soa_base_activate(soa_session_t *ss, char const *option);
+int soa_base_deactivate(soa_session_t *ss, char const *option);
 void soa_base_terminate(soa_session_t *ss, char const *option);
 
 int soa_default_generate_offer(soa_session_t *ss,

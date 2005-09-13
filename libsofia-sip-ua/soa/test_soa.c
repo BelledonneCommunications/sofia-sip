@@ -132,7 +132,8 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(-1 == soa_process_answer(NULL, test_api_completed)); 
 
-  TEST_VOID(soa_activate(NULL, "both"));
+  TEST(soa_activate(NULL, "both"), -1);
+  TEST(soa_deactivate(NULL, "both"), -1);
   TEST_VOID(soa_terminate(NULL, "both"));
 
   TEST_1(!soa_is_complete(NULL));
@@ -265,7 +266,8 @@ int test_static_offer_answer(struct context *ctx)
 
   n = soa_generate_answer(b, test_completed); TEST(n, 0);
 
-  TEST_VOID(soa_activate(b, NULL));
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
 
   n = soa_get_local_sdp(b, &answer, &answerlen); TEST(n, 1);
   TEST_1(answer != NULL && answer != NONE);
@@ -274,7 +276,8 @@ int test_static_offer_answer(struct context *ctx)
 
   n = soa_process_answer(a, test_completed); TEST(n, 0);
 
-  TEST_VOID(soa_activate(a, NULL));
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
 
   TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(a));
@@ -346,7 +349,8 @@ int test_asynch_offer_answer(struct context *ctx)
   su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.b); 
   ctx->completed = NULL;
 
-  TEST_VOID(soa_activate(ctx->asynch.b, NULL));
+  TEST_1(soa_is_complete(ctx->asynch.b));
+  TEST(soa_activate(ctx->asynch.b, NULL), 0);
 
   n = soa_get_local_sdp(ctx->asynch.b, &answer, &answerlen); TEST(n, 1);
 
@@ -357,7 +361,8 @@ int test_asynch_offer_answer(struct context *ctx)
   su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.a); 
   ctx->completed = NULL;
 
-  TEST_VOID(soa_activate(ctx->asynch.a, NULL));
+  TEST_1(soa_is_complete(ctx->asynch.a));
+  TEST(soa_activate(ctx->asynch.a, NULL), 0);
 
   TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(ctx->asynch.a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(ctx->asynch.a));
@@ -368,6 +373,9 @@ int test_asynch_offer_answer(struct context *ctx)
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(ctx->asynch.a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(ctx->asynch.a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(ctx->asynch.a));
+
+  TEST(soa_deactivate(ctx->asynch.a, NULL), 0);
+  TEST(soa_deactivate(ctx->asynch.b, NULL), 0);
 
   TEST_VOID(soa_terminate(ctx->asynch.a, NULL));
 

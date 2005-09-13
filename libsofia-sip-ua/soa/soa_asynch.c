@@ -84,7 +84,8 @@ static int soa_asynch_generate_answer(soa_session_t *ss,
 				     soa_callback_f *completed);
 static int soa_asynch_process_answer(soa_session_t *ss,
 					    soa_callback_f *completed);
-static void soa_asynch_activate(soa_session_t *ss, char const *option);
+static int soa_asynch_activate(soa_session_t *ss, char const *option);
+static int soa_asynch_deactivate(soa_session_t *ss, char const *option);
 static void soa_asynch_terminate(soa_session_t *ss, char const *option);
 
 struct soa_session_actions const soa_asynch_actions =
@@ -107,6 +108,7 @@ struct soa_session_actions const soa_asynch_actions =
     soa_asynch_generate_answer,
     soa_asynch_process_answer,
     soa_asynch_activate,
+    soa_asynch_deactivate,
     soa_asynch_terminate
   };
 
@@ -273,9 +275,14 @@ static int soa_asynch_process_answer(soa_session_t *ss,
 }
 
 
-static void soa_asynch_activate(soa_session_t *ss, char const *option)
+static int soa_asynch_activate(soa_session_t *ss, char const *option)
 {
-  soa_base_activate(ss, option);
+  return soa_base_activate(ss, option);
+}
+
+static int soa_asynch_deactivate(soa_session_t *ss, char const *option)
+{
+  return soa_base_deactivate(ss, option);
 }
 
 static void soa_asynch_terminate(soa_session_t *ss, char const *option)
