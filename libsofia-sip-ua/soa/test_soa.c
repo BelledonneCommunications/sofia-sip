@@ -202,9 +202,26 @@ int test_params(struct context *ctx)
 {
   BEGIN();
   int n;
+  char const *value;
 
   n = soa_set_params(ctx->asynch.a, TAG_END()); TEST(n, 0);
   n = soa_set_params(ctx->asynch.b, TAG_END()); TEST(n, 0);
+
+  value = "foo";
+  TEST(soa_get_params(ctx->asynch.a,
+		      SOATAG_MEDIA_PROFILE_REF(value),
+		      TAG_END()),
+       1);
+  TEST_S(value, "/");
+  TEST(soa_set_params(ctx->asynch.a,
+		      SOATAG_MEDIA_PROFILE("/bar"),
+		      TAG_END()),
+       1);
+  TEST(soa_get_params(ctx->asynch.a,
+		      SOATAG_MEDIA_PROFILE_REF(value),
+		      TAG_END()),
+       1);
+  TEST_S(value, "/bar");
 
   END();
 }

@@ -340,6 +340,9 @@ int soa_base_init(char const *name,
     ss->ss_srtp_integrity = parent->ss_srtp_integrity;
   }
 
+  if (ss->ss_path == NULL)
+    ss->ss_path = su_strdup(ss->ss_home, "/");
+
   return 0;
 }
 
@@ -401,6 +404,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   media_address = ss->ss_address;
   mss_sdp = ss->ss_mss_sdp;
   mss_cfg = ss->ss_mss_cfg;
+  media_profile = ss->ss_path;
   media_event_path = NONE;
 
   image_local = ss->ss_image_local;
