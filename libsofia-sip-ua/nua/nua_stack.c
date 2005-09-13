@@ -170,6 +170,9 @@ static char const nua_allow_str[] =
 "INVITE, ACK, BYE, CANCEL, OPTIONS, PRACK, INFO, "
 "MESSAGE, SUBSCRIBE, NOTIFY, REFER, UPDATE";
 
+/** Default internal error */
+char const nua_500_error[] = "Internal NUA Error";
+
 /* ----------------------------------------------------------------------
  * Initialization & deinitialization
  */
@@ -3478,7 +3481,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   char const *what;
 
   du = dialog_usage_add(nh, nh->nh_ds, nua_session_usage, NULL);
-  what = (char const *)NUA_500_ERROR;	/* Internal error */
+  what = nua_500_error;		/* Internal error */
 
   msg = du ? crequest_message(nua, nh, cr, restarted,
 			      SIP_METHOD_INVITE,

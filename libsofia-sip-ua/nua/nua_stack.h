@@ -522,7 +522,9 @@ struct nua_handle_s
   (nh)->nh_phrase, \
   SIPTAG_WARNING_STR(nh->nh_warning)
 
-#define NUA_500_ERROR 500, "Internal NUA Error"
+extern char const nua_500_error[];
+
+#define NUA_500_ERROR 500, nua_500_error
 
 #define SET_STATUS(_status, _phrase) status = _status, phrase = _phrase
 
