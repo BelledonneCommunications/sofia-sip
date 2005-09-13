@@ -2047,10 +2047,19 @@ int session_process_response(nua_handle_t *nh,
       sdp = NULL;
     }
     else {
-      SU_DEBUG_5(("nua(%p): %s: processed SDP answer in %u %s\n", 
-		  nh, method, 
-		  sip->sip_status->st_status, 
-		  sip->sip_status->st_phrase));
+      if (soa_activate(nh->nh_soa, NULL) < 0) {
+	SU_DEBUG_5(("nua(%p): %s: error activating media after %u %s\n", 
+		    nh, method,
+		    sip->sip_status->st_status, 
+		    sip->sip_status->st_phrase));
+	/* XXX */
+      }
+      else {
+	SU_DEBUG_5(("nua(%p): %s: processed SDP answer in %u %s\n", 
+		    nh, method, 
+		    sip->sip_status->st_status, 
+		    sip->sip_status->st_phrase));
+      }
     }
   }
 
@@ -3719,6 +3728,9 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 	  session_include_description(nh, msg, sip) < 0) {
 	reason = soa_error_as_sip_reason(nh->nh_soa);
       }
+      cr->cr_answer_sent = 1;
+
+      soa_activate(nh->nh_soa, NULL);
     }
 
     if (!reason && 
@@ -3802,8 +3814,10 @@ process_100rel(nua_handle_t *nh,
       if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
 	  session_make_description(nh, home, &cd, &ct, &pl) < 0)
 	/* XXX */;
-      else
+      else {
 	answer_sent_in_prack = 1;
+	soa_activate(nh->nh_soa, NULL);
+      }
     }
     else if (ss->ss_precondition) {
       if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
@@ -4197,8 +4211,10 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
     else if (sr->sr_offer_recv && !sr->sr_answer_sent) {
       if (soa_generate_answer(nh->nh_soa, NULL) < 0)
 	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
-      else
+      else {
 	answer = 1;
+	soa_activate(nh->nh_soa, NULL);
+      }
     }
     else if (!sr->sr_offer_recv && !sr->sr_offer_sent) {
       if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0)
@@ -4395,6 +4411,9 @@ int process_prack(nua_handle_t *nh,
 	  session_make_description(nh, home, &cd, &ct, &pl);
       }
 
+      if (status < 300)
+	soa_activate(nh->nh_soa, NULL);
+
       nta_incoming_treply(irq, status, phrase,
 			  SIPTAG_CONTENT_DISPOSITION(cd),
 			  SIPTAG_CONTENT_TYPE(ct),
@@ -4435,7 +4454,8 @@ int process_ack(nua_handle_t *nh,
 
     if (session_get_description(msg, sip, &sdp, &len)) {
       if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0 ||
-	  soa_process_answer(nh->nh_soa, NULL) < 0) {
+	  soa_process_answer(nh->nh_soa, NULL) < 0 ||
+	  soa_activate(nh->nh_soa, NULL)) {
 	int status; char const *phrase;
 	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
 
@@ -5021,6 +5041,10 @@ int process_update(nua_t *nua,
       return status;
     }
     
+
+    if (soa_activate(nh->nh_soa, NULL) < 0) {
+      /* XXX */
+    }
 
     session_make_description(nh, home, &cd, &ct, &pl);
 
