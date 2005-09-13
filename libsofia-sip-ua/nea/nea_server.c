@@ -110,6 +110,8 @@ struct nea_server_s {
   sip_contact_t            *nes_eventity_uri;
   sip_allow_events_t       *nes_allow_events;
 
+  sip_allow_t              *nes_allow_methods;
+
   nea_new_event_f          *nes_callback;
   nea_smagic_t             *nes_context;
 
@@ -449,6 +451,8 @@ nea_server_t *nea_server_create(nta_agent_t *agent,
       nes->nes_allow_events = sip_allow_events_dup(home, allow_events);
     else
       nes->nes_allow_events = sip_allow_events_make(home, "");
+
+    nes->nes_allow_methods = sip_allow_make(home, "SUBSCRIBE");
 
     nes->nes_server = 
       su_sprintf(home, "%s%snea/" NEA_VERSION_STR " %s", 
@@ -1552,6 +1556,8 @@ int nea_sub_process_subscribe(nea_sub_t *s,
   if (sip->sip_payload && !sip->sip_content_type) {
     nta_incoming_treply(irq, 400, "Missing Content-Type", 
 			SIPTAG_SERVER_STR(nes->nes_server),
+			SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			SIPTAG_ALLOW(nes->nes_allow_methods),
 			TAG_NULL());
     return 0;
   }
@@ -1569,6 +1575,8 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 			SIPTAG_ACCEPT(accept),
 			SIPTAG_MIN_EXPIRES(me),
 			SIPTAG_SERVER_STR(nes->nes_server),
+			SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			SIPTAG_ALLOW(nes->nes_allow_methods),
 			TAG_NULL());
     return 0;
   }
@@ -1585,6 +1593,8 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 			  SIPTAG_REQUIRE(nes->nes_require),
 			  SIPTAG_UNSUPPORTED(unsupported),
 			  SIPTAG_SERVER_STR(nes->nes_server),
+			  SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			  SIPTAG_ALLOW(nes->nes_allow_methods),
 			  TAG_NULL());
       su_free(nes->nes_home, unsupported);
 
@@ -1648,8 +1658,9 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 
   if (ev_maybe == NULL && ev == NULL) {
     nta_incoming_treply(irq, SIP_489_BAD_EVENT, 
-			SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
 			SIPTAG_SERVER_STR(nes->nes_server),
+			SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			SIPTAG_ALLOW(nes->nes_allow_methods),
 			NULL);
     return 0;
   } else if (ev == NULL) {
@@ -1663,6 +1674,8 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 			SIPTAG_REQUIRE(ev->ev_require),
 			SIPTAG_SUPPORTED(ev->ev_supported),
 			SIPTAG_SERVER_STR(nes->nes_server),
+			SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			SIPTAG_ALLOW(nes->nes_allow_methods),
 			TAG_NULL());
 
     su_free(nes->nes_home, unsupported);
@@ -1768,6 +1781,8 @@ int nea_sub_process_subscribe(nea_sub_t *s,
     return nta_incoming_treply(irq, SIP_406_NOT_ACCEPTABLE, 
 			       SIPTAG_ACCEPT(ev->ev_accept),
 			       SIPTAG_SERVER_STR(nes->nes_server),
+			       SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			       SIPTAG_ALLOW(nes->nes_allow_methods),
 			       TAG_NULL());
   }
 
@@ -1819,10 +1834,12 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 
   if (nes->nes_202_before_notify) {
     nta_incoming_treply(irq, SIP_202_ACCEPTED, 
+			SIPTAG_SERVER_STR(nes->nes_server),
+			SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			SIPTAG_ALLOW(nes->nes_allow_methods),
 			SIPTAG_REQUIRE(ev->ev_require),
 			SIPTAG_SUPPORTED(ev->ev_supported),
 			SIPTAG_EXPIRES(expires),
-			SIPTAG_SERVER_STR(nes->nes_server),
 			SIPTAG_CONTACT(s->s_local),
 			TAG_END());
     nta_incoming_destroy(irq), s->s_irq = irq = NULL;
@@ -1857,6 +1874,8 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 			  SIPTAG_EXPIRES(expires),
 			  SIPTAG_SERVER_STR(nes->nes_server),
 			  SIPTAG_CONTACT(s->s_local),
+			  SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			  SIPTAG_ALLOW(nes->nes_allow_methods),
 			  TAG_END());
     else
       nta_incoming_treply(irq, SIP_202_ACCEPTED, 
@@ -1864,9 +1883,10 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 			  SIPTAG_SUPPORTED(ev->ev_supported),
 			  SIPTAG_EXPIRES(expires),
 			  SIPTAG_SERVER_STR(nes->nes_server),
+			  SIPTAG_ALLOW_EVENTS(nes->nes_allow_events),
+			  SIPTAG_ALLOW(nes->nes_allow_methods),
 			  SIPTAG_CONTACT(s->s_local),
 			  TAG_END());
-
   }
 
   return 0;
