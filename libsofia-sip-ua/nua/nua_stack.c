@@ -3727,6 +3727,8 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
       if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
 	  session_include_description(nh, msg, sip) < 0) {
 	reason = soa_error_as_sip_reason(nh->nh_soa);
+	/* XXX */
+	reason = "SIP;cause=500;text=\"Internal media error\"";
       }
       cr->cr_answer_sent = 1;
 
@@ -5034,13 +5036,12 @@ int process_update(nua_t *nua,
 
     /* Respond to UPDATE */
     if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
-      SU_DEBUG_5(("nua(%p): error proce SDP in INVITE\n", nh));
+      SU_DEBUG_5(("nua(%p): error processing SDP in INVITE\n", nh));
       msg_destroy(msg);
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
       nta_incoming_treply(irq, status, phrase, TAG_END());
       return status;
     }
-    
 
     if (soa_activate(nh->nh_soa, NULL) < 0) {
       /* XXX */
