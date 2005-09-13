@@ -3629,7 +3629,6 @@ static int process_response_to_invite(nua_handle_t *nh,
       status = 400, phrase = "Bad Session Description";
 
     if (status < 300) {
-      ss->ss_ack_needed = 2;
       if (nh->nh_auto_ack)
 	ua_ack(nua, nh, NULL);
       nh_referral_respond(nh, SIP_200_OK);
@@ -3715,7 +3714,7 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
     if (tags)
       soa_set_params(nh->nh_soa, TAG_NEXT(tags));
 
-    if (needed > 1) {
+    if (cr->cr_offer_recv && !cr->cr_answer_sent) {
       if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
 	  session_include_description(nh, msg, sip) < 0) {
 	reason = soa_error_as_sip_reason(nh->nh_soa);
