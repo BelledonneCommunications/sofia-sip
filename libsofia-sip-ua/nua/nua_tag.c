@@ -51,12 +51,10 @@ const char _nua_tag_h_id[] = NUA_TAG_H;
 tag_typedef_t nutag_url = URLTAG_TYPEDEF(url);
 tag_typedef_t nutag_address = STRTAG_TYPEDEF(address);
 tag_typedef_t nutag_uicc = STRTAG_TYPEDEF(uicc);
-tag_typedef_t nutag_af = INTTAG_TYPEDEF(af);
 tag_typedef_t nutag_media_features = BOOLTAG_TYPEDEF(media_features);
 tag_typedef_t nutag_callee_caps = BOOLTAG_TYPEDEF(callee_caps);
 tag_typedef_t nutag_early_media = BOOLTAG_TYPEDEF(early_media);
 tag_typedef_t nutag_media_enable = BOOLTAG_TYPEDEF(media_enable);
-tag_typedef_t nutag_media_address = STRTAG_TYPEDEF(media_address);
 
 tag_typedef_t nutag_soa_session = PTRTAG_TYPEDEF(soa_session);
 tag_typedef_t nutag_soa_name = STRTAG_TYPEDEF(soa_name);
@@ -64,21 +62,6 @@ tag_typedef_t nutag_soa_name = STRTAG_TYPEDEF(soa_name);
 tag_typedef_t nutag_media_subsystem = PTRTAG_TYPEDEF(media_session);
 tag_typedef_t nutag_media_session = PTRTAG_TYPEDEF(media_session);
 
-tag_typedef_t nutag_media_clone = BOOLTAG_TYPEDEF(media_clone);
-tag_typedef_t nutag_media_path = STRTAG_TYPEDEF(media_path);
-tag_typedef_t nutag_media_params = STRTAG_TYPEDEF(media_params);
-tag_typedef_t nutag_media_descs = STRTAG_TYPEDEF(media_descs);
-tag_typedef_t nutag_media_event_path = STRTAG_TYPEDEF(media_event_path);
-tag_typedef_t nutag_media_event_data = PTRTAG_TYPEDEF(media_event_data);
-tag_typedef_t nutag_media_event_dlen = INTTAG_TYPEDEF(media_event_dlen);
-tag_typedef_t nutag_video_local = STRTAG_TYPEDEF(video_local);
-tag_typedef_t nutag_video_remote = STRTAG_TYPEDEF(video_remote);
-// Addition for JPIP - START
-tag_typedef_t nutag_image_local = STRTAG_TYPEDEF(image_local);
-tag_typedef_t nutag_image_remote = STRTAG_TYPEDEF(image_remote);
-tag_typedef_t nutag_target_image_name = STRTAG_TYPEDEF(target_image_name);
-tag_typedef_t nutag_active_image = INTTAG_TYPEDEF(active_image);
-// Addition for JPIP - END
 tag_typedef_t nutag_active_audio = INTTAG_TYPEDEF(active_audio);
 tag_typedef_t nutag_active_video = INTTAG_TYPEDEF(active_video);
 tag_typedef_t nutag_active_chat = INTTAG_TYPEDEF(active_chat);
@@ -109,12 +92,6 @@ tag_typedef_t nutag_smime_key_encryption =
 tag_typedef_t nutag_smime_message_encryption = 
   STRTAG_TYPEDEF(smime_message_encryption);
 /* End NRC Boston */
-
-tag_typedef_t nutag_srtp_enable = BOOLTAG_TYPEDEF(srtp_enable);
-tag_typedef_t nutag_srtp_confidentiality = 
-  BOOLTAG_TYPEDEF(srtp_confidentiality);
-tag_typedef_t nutag_srtp_integrity_protection = 
-  BOOLTAG_TYPEDEF(srtp_integrity_protection);
 
 tag_typedef_t nutag_sips_url = URLTAG_TYPEDEF(sips_url);
 tag_typedef_t nutag_certificate_dir = STRTAG_TYPEDEF(certificate_dir);

@@ -52,6 +52,9 @@
 #ifndef NUA_H
 #include <nua.h>
 #endif
+#ifndef SOA_H
+#include <soa.h>
+#endif
 
 /** List of all NUA tags. */
 extern tag_type_t nua_tag_list[];
@@ -133,93 +136,6 @@ extern tag_typedef_t nutag_use_session_ref;
 
 /* Protocol engine parameters,
  * set by nua_set_params(), get by nua_get_params() */
-
-/** Preferred address family for transport media
- *
- * @par Used with
- *    nua_set_params() \n
- *    nua_get_params() \n
- *    nua_invite() \n
- *    nua_respond()
- *
- * @par Parameter type
- *    int (enum nua_af)
- *
- * @par Values
- *    @c NUTAG_AF_ANY (default) (0) any address family \n
- *    @c NUTAG_AF_IP4_ONLY      (1) only IP version 4 \n
- *    @c NUTAG_AF_IP6_ONLY      (2) only IP version 6 \n
- *    @c NUTAG_AF_IP4_IP6       (3) either IP version 4 or 6,
- *                                  version 4 preferred \n
- *    @c NUTAG_AF_IP6_IP4       (4) either IP version 4 or 6,
- *                                  version 6 preferred
- *
- * Corresponding tag taking reference parameter is NUTAG_AF_REF()
- */
-#define NUTAG_AF(x)             nutag_af, tag_int_v((x))
-extern tag_typedef_t nutag_af;
-
-#define NUTAG_AF_REF(x)         nutag_af_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_af_ref;
-
-enum nua_af {
-  nutag_af_any,
-  nutag_af_ip4_only,
-  nutag_af_ip6_only,
-  nutag_af_ip4_ip6,
-  nutag_af_ip6_ip4
-};
-
-#define NUTAG_AF_ANY      nutag_af_any
-#define NUTAG_AF_IP4_ONLY nutag_af_ip4_only
-#define NUTAG_AF_IP6_ONLY nutag_af_ip6_only
-#define NUTAG_AF_IP4_IP6  nutag_af_ip4_ip6
-#define NUTAG_AF_IP6_IP4  nutag_af_ip6_ip4
-
-/** Pass media address to the NUA stack.
- *
- * @par Used with
- *    nua_set_params() \n
- *    nua_get_params() \n
- *    nua_invite() \n
- *    nua_respond()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated character string containing a domain name,
- *    IPv4 address, or IPv6 address.
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_ADDRESS_REF()
-*/
-#define NUTAG_MEDIA_ADDRESS(x)  nutag_media_address, tag_str_v(x)
-extern tag_typedef_t nutag_media_address;
-
-#define NUTAG_MEDIA_ADDRESS_REF(x) nutag_media_address_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_media_address_ref;
-
-/** Name of the media template for the NUA stack.
- *
- * @par Used with
- *    nua_invite() \n
- *    nua_update() \n
- *    nua_set_params() \n
- *    nua_get_params()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated character string
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_PATH_REF()
-*/
-#define NUTAG_MEDIA_PATH(x)  nutag_media_path, tag_str_v(x)
-extern tag_typedef_t nutag_media_path;
-
-#define NUTAG_MEDIA_PATH_REF(x) nutag_media_path_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_media_path_ref;
 
 #if 1
 
@@ -313,179 +229,6 @@ extern tag_typedef_t nutag_media_session;
 extern tag_typedef_t nutag_media_session_ref;
 
 #endif
-
-/** Clone media session.
- *
- * @par Used with
- *    nua_set_params() \n
- *    nua_get_params() \n
- *    nua_invite() \n
- *    nua_respond()
- *
- * @par Parameter type
- *    int
- *
- * @par Values
- *    @c 0   False \n
- *    @c !=0 True
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_CLONE_REF()
-*/
-#define NUTAG_MEDIA_CLONE(x)  nutag_media_clone, tag_bool_v(x)
-extern tag_typedef_t nutag_media_clone;
-
-#define NUTAG_MEDIA_CLONE_REF(x) nutag_media_clone_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_media_clone_ref;
-
-/** Media parameter file name to the NUA stack.
- *
- * Media parameter file name to the NUA stack (mss.cfg).
- * Used for debugging RTP and RTCP.
- *
- * @par Used with
- *    nua_set_params() \n
- *    nua_get_params() \n
- *    nua_invite() \n
- *    nua_update()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated character string
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_PARAMS_REF()
-*/
-#define NUTAG_MEDIA_PARAMS(x)  nutag_media_params, tag_str_v(x)
-extern tag_typedef_t nutag_media_params;
-
-#define NUTAG_MEDIA_PARAMS_REF(x) nutag_media_params_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_media_params_ref;
-
-/** Pass media description file name to the NUA stack.
- *
- * Pass name of media description file that contains media templates
- * (normally mss.sdp) to the NUA stack.
- *
- * @par Used with
- *    nua_set_params() \n
- *    nua_get_params() \n
- *    nua_create()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated character string
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_DESCS_REF()
- */
-#define NUTAG_MEDIA_DESCS(x)  nutag_media_descs, tag_str_v(x)
-extern tag_typedef_t nutag_media_descs;
-
-#define NUTAG_MEDIA_DESCS_REF(x) nutag_media_descs_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_media_descs_ref;
-
-// Addition for JPIP - START
-extern tag_typedef_t nutag_image_local;
-/** Local image window passed to mss_setup().
- *
- * The contents of tag item NUTAG_IMAGE_LOCAL() is passed to media session
- * as parameters to mss_setup().
- */
-#define NUTAG_IMAGE_LOCAL(x)   nutag_image_local, tag_str_v(x)
-                                                                                                                                                                                                     
-                                                                                                                                                                                                     
-extern tag_typedef_t nutag_image_local_ref;
-#define NUTAG_IMAGE_LOCAL_REF(x) nutag_image_local_ref, tag_str_vr(&(x))
-                                                                                                                                                                                                     
-                                                                                                                                                                                                     
-extern tag_typedef_t nutag_image_remote;
-/**Remote image window passed to mss_setup().
- *
- * The contents of tag item NUTAG_IMAGE_REMOTE() is passed to media session
- * as parameters to mss_setup().
- */
-#define NUTAG_IMAGE_REMOTE(x)  nutag_image_remote, tag_str_v(x)
-                                                                                                                                                                                                                                                                                                                                                                                   
-extern tag_typedef_t nutag_image_remote_ref;
-#define NUTAG_IMAGE_REMOTE_REF(x) nutag_image_remote_ref, tag_str_vr(&(x))
-                                                                                                                                                                                                     
-                                                                                                                                                                                                     
-extern tag_typedef_t nutag_target_image_name;
-/** Target image name used in JPIP session passed to mss_setup()
- *
- * The content of tag item NUTAG_TARGET_IMAGE_NAME() is passed to media session
- * as parameter to mss_setup().
- *
- */
-#define NUTAG_TARGET_IMAGE_NAME(x) nutag_target_image_name, tag_str_v(x)
-                                                                                                                                                                                                     
-                                                                                                                                                                                                     
-extern tag_typedef_t nutag_target_image_name_ref;
-#define NUTAG_TARGET_IMAGE_NAME_REF(x) nutag_target_image_name_ref, tag_str_vr(&(x))
-
-/** Active image call */
-#define NUTAG_ACTIVE_IMAGE(x) nutag_active_image, tag_int_v(x)
-extern tag_typedef_t nutag_active_image;
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-#define NUTAG_ACTIVE_IMAGE_REF(x) nutag_active_image_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_active_image_ref;
-                                                                              
-
-// Addition for JPIP - END
-
-/** Local video window passed to mss_setup().
- *
- * The content of this tag is passed to media session
- * in parameters to mss_setup().
- *
- * @par Used with
- *    nua_invite() \n
- *    nua_respond()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated character string X window handle of
- *    drawing window. Pointer printed with printf \%p format string.
- *
- * Corresponding tag taking reference parameter is NUTAG_VIDEO_LOCAL_REF()
- */
-#define NUTAG_VIDEO_LOCAL(x)   nutag_video_local, tag_str_v(x)
-extern tag_typedef_t nutag_video_local;
-
-#define NUTAG_VIDEO_LOCAL_REF(x) nutag_video_local_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_video_local_ref;
-
-/**Remote video window passed to mss_setup().
- *
- * The content of this tag is passed to media session
- * in parameters to mss_setup().
- *
- * @par Used with
- *    nua_invite() \n
- *    nua_respond()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated character string
- *    X window handle of drawing window. Pointer printed with \%p
- *    format string of printf().
- *
- * Corresponding tag taking reference parameter is NUTAG_VIDEO_REMOTE_REF()
- */
-#define NUTAG_VIDEO_REMOTE(x)  nutag_video_remote, tag_str_v(x)
-extern tag_typedef_t nutag_video_remote;
-
-#define NUTAG_VIDEO_REMOTE_REF(x) nutag_video_remote_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_video_remote_ref;
 
 /** Establish early media session using 183 responses and PRACK requests.
  *
@@ -919,27 +662,6 @@ extern tag_typedef_t nutag_smime_message_encryption;
 #define NUTAG_SMIME_MESSAGE_ENCRYPTION_REF(x) \
            nutag_smime_message_encryption_ref, tag_str_vr((&x))
 extern tag_typedef_t nutag_smime_message_encryption_ref;
-
-/** Enable SRTP */
-#define NUTAG_SRTP_ENABLE(x)  nutag_srtp_enable, tag_bool_v(x)
-extern tag_typedef_t nutag_srtp_enable;
-
-#define NUTAG_SRTP_ENABLE_REF(x) nutag_srtp_enable_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_srtp_enable_ref;
-
-/** Enable SRTP confidentiality */
-#define NUTAG_SRTP_CONFIDENTIALITY(x)  nutag_srtp_confidentiality, tag_bool_v(x)
-extern tag_typedef_t nutag_srtp_confidentiality;
-
-#define NUTAG_SRTP_CONFIDENTIALITY_REF(x) nutag_srtp_confidentiality_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_srtp_confidentiality_ref;
-
-/** Enable SRTP integrity protection */
-#define NUTAG_SRTP_INTEGRITY_PROTECTION(x)  nutag_srtp_integrity_protection, tag_bool_v(x)
-extern tag_typedef_t nutag_srtp_integrity_protection;
-
-#define NUTAG_SRTP_INTEGRITY_PROTECTION_REF(x) nutag_srtp_integrity_protection_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_srtp_integrity_protection_ref;
 
 /** x.500 certificate directory
  *
@@ -1507,79 +1229,6 @@ extern tag_typedef_t nutag_media_enable;
           nutag_media_enable_ref, tag_bool_vr(&(x))
 extern tag_typedef_t nutag_media_enable_ref;
 
-/** Media event path name
- *
- * @par Used with
- *    nua_invite() \n
- *    nua_update() \n
- *    nua_set_params() \n
- *    nua_get_params()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated character string
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_EVENT_PATH_REF()
- */
-#define NUTAG_MEDIA_EVENT_PATH(x) nutag_media_event_path, tag_str_v(x)
-extern tag_typedef_t nutag_media_event_path;
-
-#define NUTAG_MEDIA_EVENT_PATH_REF(x) \
-          nutag_media_event_path_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_media_event_path_ref;
-
-/** Media event data
- *
- * @par Used with
- *    nua_media_event() \n
- *    #nua_i_media_event \n
- *    nua_invite() \n
- *    nua_update() \n
- *    nua_handle()
- *
- * @par Parameter type
- *    void *
- *
- * @par Values
- *    Free format data
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_EVENT_DATA_REF()
- */
-#define NUTAG_MEDIA_EVENT_DATA(x) \
-          nutag_media_event_data, tag_ptr_v(x)
-extern tag_typedef_t nutag_media_event_data;
-
-#define NUTAG_MEDIA_EVENT_DATA_REF(x) \
-          nutag_media_event_data_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t nutag_media_event_data_ref;
-
-/** Media event data length
- *
- * @par Used with
- *    nua_media_event()   \n
- *    #nua_i_media_event \n
- *    nua_invite() \n
- *    nua_update() \n
- *    nua_handle()
- *
- * @par Parameter type
- *    unsigned int
- *
- * @par Values
- *    Length of media event data in octets
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_EVENT_DLEN_REF()
- */
-#define NUTAG_MEDIA_EVENT_DLEN(x) nutag_media_event_dlen, tag_uint_v(x)
-extern tag_typedef_t nutag_media_event_dlen;
-
-#define NUTAG_MEDIA_EVENT_DLEN_REF(x) \
-          nutag_media_event_dlen_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_media_event_dlen_ref;
-
-
 #if SU_HAVE_INLINE
 su_inline tag_value_t nutag_handle_v(nua_handle_t *v) { return (tag_value_t)v; }
 su_inline tag_value_t nutag_handle_vr(nua_handle_t **vp) {return(tag_value_t)vp;}
@@ -1587,5 +1236,65 @@ su_inline tag_value_t nutag_handle_vr(nua_handle_t **vp) {return(tag_value_t)vp;
 #define nutag_handle_v(v)   (tag_value_t)(v)
 #define nutag_handle_vr(v)  (tag_value_t)(v)
 #endif
+
+#define NUTAG_AF(x) SOATAG_AF((x))
+#define NUTAG_AF_REF(x) SOATAG_AF_REF((x))
+
+enum nua_af {
+  nutag_af_any = SOA_AF_ANY,
+  nutag_af_ip4_only = SOA_AF_IP4_ONLY,
+  nutag_af_ip6_only = SOA_AF_IP6_ONLY,
+  nutag_af_ip4_ip6 = SOA_AF_IP4_IP6,
+  nutag_af_ip6_ip4 = SOA_AF_IP6_IP4
+};
+
+#define NUTAG_AF_ANY      nutag_af_any
+#define NUTAG_AF_IP4_ONLY nutag_af_ip4_only
+#define NUTAG_AF_IP6_ONLY nutag_af_ip6_only
+#define NUTAG_AF_IP4_IP6  nutag_af_ip4_ip6
+#define NUTAG_AF_IP6_IP4  nutag_af_ip6_ip4
+
+#define NUTAG_MEDIA_ADDRESS(x)  SOATAG_ADDRESS((x))
+#define NUTAG_MEDIA_ADDRESS_REF(x)   SOATAG_ADDRESS_REF((x))
+#define NUTAG_MEDIA_PATH(x)  SOATAG_MEDIA_PROFILE((x))
+#define NUTAG_MEDIA_PATH_REF(x)   SOATAG_MEDIA_PROFILE_REF((x))
+
+#define NUTAG_MEDIA_CLONE(x)  SOATAG_MEDIA_CLONE(x)
+#define NUTAG_MEDIA_CLONE_REF(x) SOATAG_MEDIA_CLONE_REF(x)
+
+#define NUTAG_MEDIA_PARAMS(x)  SOATAG_MSS_CFG((x))
+#define NUTAG_MEDIA_PARAMS_REF(x) SOATAG_MSS_CFG_REF((x))
+
+#define NUTAG_MEDIA_DESCS(x)  SOATAG_MSS_SDP((x))
+#define NUTAG_MEDIA_DESCS_REF(x) SOATAG_MSS_SDP_REF((x))
+
+#define NUTAG_IMAGE_LOCAL(x)   SOATAG_IMAGE_LOCAL((x))
+#define NUTAG_IMAGE_LOCAL_REF(x) SOATAG_IMAGE_LOCAL_REF((x))
+
+#define NUTAG_IMAGE_REMOTE(x)  SOATAG_IMAGE_REMOTE((x))
+#define NUTAG_IMAGE_REMOTE_REF(x) SOATAG_IMAGE_REMOTE_REF((x))
+#define NUTAG_TARGET_IMAGE_NAME(x) SOATAG_TARGET_IMAGE_NAME((x))
+#define NUTAG_TARGET_IMAGE_NAME_REF(x) SOATAG_TARGET_IMAGE_NAME_REF((x))
+
+#define NUTAG_ACTIVE_IMAGE(x) SOATAG_ACTIVE_IMAGE((x))
+#define NUTAG_ACTIVE_IMAGE_REF(x) SOATAG_ACTIVE_IMAGE_REF((x))
+
+#define NUTAG_VIDEO_LOCAL(x)   SOATAG_VIDEO_LOCAL((x))
+#define NUTAG_VIDEO_LOCAL_REF(x) SOATAG_VIDEO_LOCAL_REF((x))
+#define NUTAG_VIDEO_REMOTE(x)  SOATAG_VIDEO_REMOTE((x))
+#define NUTAG_VIDEO_REMOTE_REF(x) SOATAG_VIDEO_REMOTE_REF((x))
+
+#define NUTAG_SRTP_ENABLE(x)  SOATAG_SRTP_ENABLE((x))
+#define NUTAG_SRTP_ENABLE_REF(x) SOATAG_SRTP_ENABLE_REF((x))
+#define NUTAG_SRTP_CONFIDENTIALITY(x)  SOATAG_SRTP_CONFIDENTIALITY((x))
+#define NUTAG_SRTP_CONFIDENTIALITY_REF(x) SOATAG_SRTP_CONFIDENTIALITY_REF((x))
+#define NUTAG_SRTP_INTEGRITY_PROTECTION(x)  SOATAG_SRTP_INTEGRITY_PROTECTION((x))
+#define NUTAG_SRTP_INTEGRITY_PROTECTION_REF(x) SOATAG_SRTP_INTEGRITY_PROTECTION_REF((x))
+#define NUTAG_MEDIA_EVENT_PATH(x) SOATAG_MEDIA_EVENT_PATH((x))
+#define NUTAG_MEDIA_EVENT_PATH_REF(x) SOATAG_MEDIA_EVENT_PATH_REF((x))
+#define NUTAG_MEDIA_EVENT_DATA(x) SOATAG_MEDIA_EVENT_DATA((x))
+#define NUTAG_MEDIA_EVENT_DATA_REF(x) SOATAG_MEDIA_EVENT_DATA_REF((x))
+#define NUTAG_MEDIA_EVENT_DLEN(x) SOATAG_MEDIA_EVENT_DLEN((x))
+#define NUTAG_MEDIA_EVENT_DLEN_REF(x) SOATAG_MEDIA_EVENT_DLEN_REF((x))
 
 #endif

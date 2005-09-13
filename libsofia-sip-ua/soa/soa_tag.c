@@ -430,6 +430,9 @@ tag_typedef_t soatag_image_remote = STRTAG_TYPEDEF(image_remote);
  *
  */
 tag_typedef_t soatag_target_image_name = STRTAG_TYPEDEF(target_image_name);
+
+tag_typedef_t soatag_active_image = INTTAG_TYPEDEF(active_image);
+
 // Addition for JPIP - END
 
 
