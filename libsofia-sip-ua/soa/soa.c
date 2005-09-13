@@ -477,7 +477,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   }
 
   if (media_profile == NULL) media_profile = "/";
-  if (str0casecmp(mss_sdp, ss->ss_path)) {
+  if (str0casecmp(media_profile, ss->ss_path)) {
     su_free(ss->ss_home, (void *)ss->ss_path);
     ss->ss_path = su_strdup(ss->ss_home, media_profile);
   }
