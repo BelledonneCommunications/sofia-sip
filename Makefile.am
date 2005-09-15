@@ -12,5 +12,9 @@ ACLOCAL_AMFLAGS = -I m4
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = sofia-sip-ua.pc
 
+m4dir = /usr/share/aclocal
+
+dist_m4_DATA = m4/sac-general.m4 m4/sac-su.m4 m4/sac-su2.m4
+
 doxygen:
 	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua doxygen
