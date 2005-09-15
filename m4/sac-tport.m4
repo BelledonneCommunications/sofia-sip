@@ -7,7 +7,7 @@ AC_ARG_WITH(sigcomp,
 [  --with-sigcomp=dir      use Sofia SigComp package (not used by default)],,
 	with_sigcomp=no)
 
-if test -n "${with_sigcomp}" && test "${with_sigcomp}" != no ; then
+if test -n "${with_sigcomp}"  ; then
 	if test "${with_sigcomp}" != yes ; then
 		CPPFLAGS="-I${with_sigcomp}/include $CPPFLAGS"
 		LIBS="-L${with_sigcomp}/lib -lsigcomp $LIBS"
