@@ -419,3 +419,14 @@ AC_ARG_ENABLE(ndebug,
  , enable_ndebug=no)
 AM_CONDITIONAL(NDEBUG, test x$enable_ndebug = yes)
 ])
+
+dnl ======================================================================
+dnl SAC_GNU_SOURCE 
+dnl ======================================================================
+AC_DEFUN([SAC_GNU_SOURCE],[
+AH_VERBATIM([_GNU_SOURCE],
+[/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE 1
+#endif])])
+

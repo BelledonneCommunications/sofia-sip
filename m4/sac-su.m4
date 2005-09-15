@@ -17,16 +17,6 @@ AC_ARG_WITH(rt,
 ])
 
 dnl ======================================================================
-dnl SAC_GNU_SOURCE 
-dnl ======================================================================
-AC_DEFUN([SAC_GNU_SOURCE],[
-AH_VERBATIM([_GNU_SOURCE],
-[/* Enable GNU extensions on systems that have them.  */
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE 1
-#endif])])
-
-dnl ======================================================================
 dnl SAC_CHECK_SU_LIBS - check for libraries used by su
 dnl ======================================================================
 AC_DEFUN([SAC_CHECK_SU_LIBS], [
