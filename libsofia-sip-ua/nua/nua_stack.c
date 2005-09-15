@@ -2239,7 +2239,7 @@ dialog_usage_add(nua_handle_t *nh,
     prev_du = dialog_usage_at(ds, kind, event);
     du = *prev_du;
     if (du) {		/* Already exists */
-      SU_DEBUG_5(("nta(%p): adding already existing %s usage%s%s\n",
+      SU_DEBUG_5(("nua(%p): adding already existing %s usage%s%s\n",
 		  nh, dialog_usage_name(du), 
 		  event ? " with event " : "", event ? event->o_type : ""));
       
@@ -2287,7 +2287,7 @@ dialog_usage_add(nua_handle_t *nh,
 
       du->du_next = ds->ds_usage;
 
-      SU_DEBUG_5(("nta(%p): adding %s usage%s%s\n",
+      SU_DEBUG_5(("nua(%p): adding %s usage%s%s\n",
 		  nh, dialog_usage_name(du), 
 		  event ? "with event " : "", event ? event->o_type :""));
 
@@ -2340,7 +2340,7 @@ dialog_usage_remove_at(nua_handle_t *nh,
     if (kind == nua_notifier_usage || kind == nua_subscriber_usage)
       o = du->du_event;
 
-    SU_DEBUG_5(("nta(%p): removing %s usage%s%s\n",
+    SU_DEBUG_5(("nua(%p): removing %s usage%s%s\n",
 		nh, dialog_usage_name(du), 
 		o ? "with event " : "", o ? o->o_type :""));
 
