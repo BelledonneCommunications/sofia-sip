@@ -486,11 +486,18 @@ int tls_post_connection_check(tls_t *tls)
     
     for (j = 0; j < sk_CONF_VALUE_num(values); j++) {
       value = sk_CONF_VALUE_value(values, j);
-      if (strcmp(value->name, "DNS"))
-	continue;
-      if (k < TLS_MAX_HOSTS) {
-	tls->hosts[k] = tls_strdup(value->value);
-	k += tls->hosts[k] != NULL;
+      if (strcmp(value->name, "DNS") == 0) {
+	if (k < TLS_MAX_HOSTS) {
+	  tls->hosts[k] = tls_strdup(value->value);
+	  k += tls->hosts[k] != NULL;
+	}
+      }
+      else if (strcmp(value->name, "URI") == 0) {
+	char const *uri = strchr(value->value, ':');
+	if (uri ++ && k < TLS_MAX_HOSTS) {
+	  tls->hosts[k] = tls_strdup(uri);
+	  k += tls->hosts[k] != NULL;
+	}
       }
     }
   }
