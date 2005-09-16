@@ -1290,8 +1290,8 @@ struct sipdns_tport {
 const sipdns_tports[SIPDNS_TRANSPORTS] = {
   { "udp",  "5060", "_sip._udp.",  "SIP+D2U"  },
   { "tcp",  "5060", "_sip._tcp.",  "SIP+D2T"  },
-  { "sctp", "5060", "_sip._sctp.", "SIPS+D2T" },
-  { "tls",  "5061", "_sips._tcp.", "SIP+D2S"  },
+  { "sctp", "5060", "_sip._sctp.", "SIP+D2S" },
+  { "tls",  "5061", "_sips._tcp.", "SIPS+D2T"  },
 };
 
 static char const * const tports_sip[] =
