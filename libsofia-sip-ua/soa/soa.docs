@@ -51,7 +51,7 @@ The advanced capabilities are required by more complicated negotiation
 involving two or more offer-answer rounds. For instance, an extension known
 as session <i>preconditions</i> is defined
 <a href="http://ietf.org/rfc/rfc3312.txt">RFC 3312</a>.
-Another example of two-phase negotiation is in RFC
+Another example of two-phase negotiation is presented in RFC
 3264 section 10.2, showing how a single codec can be selected. 
 
 @section soa_motivation SOA Design 
@@ -92,15 +92,15 @@ non-INVITE request may be pending within a dialog (in one
 direction): it is not possible to send UPDATE if no final response
 has been received to PRACK.
 
-If there is already a offer/answer exchange in progress, no offer MUST be
-sent. Offer/answer exchange is in progress, if offer has been sent, but no
-answer has been received, or if answer has been received, but no answer has
-been generated.
+If there is already an offer/answer exchange in progress, no offer
+MUST be sent. Offer/answer exchange is in progress if offer has
+been sent but no answer has been received, or if an offer has been
+received but no answer has been generated.
 
 The rules for sending answer:
 - when offer is received with INVITE
   - answer MAY be sent with next end-to-end 1XX or 2XX response
-  - answer MUST be sent in a reliable response
+  - answer MUST be sent in a reliable response (100rel or 2XX)
 - when offer is received in 2XX response
   - answer MUST be sent in ACK
 - when offer is received with 100rel response
@@ -108,16 +108,26 @@ The rules for sending answer:
 - when offer is received with PRACK or UPDATE
   - answer MUST be sent with 2XX response to PRACK or UPDATE
 
+Offer or answer in PRACK MUST be processed even if we have already
+sent 2XX to INVITE.
+
 The rules for receiving answer:
 - if offer was sent in INVITE, first session description in any
-  non-error response to INVITE is treated as the answer (session
-  descriptions in subsequent responses are ignored)
+  non-error response to INVITE is treated as the answer
 - if offer was sent in 2XX response, session description in
   ACK is answer 
 - if offer was sent in 100rel response, session description in
   PRACK is answer 
 - if offer was sent in PRACK or UPDATE, session description in 
   2XX response is answer
+
+Rules for situations when endpoint MUST ignore the SDP: 
+- If offer was sent in INVITE, only the first session description in
+  any non-error (1XX or 2XX) response to INVITE is processed, rest
+  are ignored
+- If no offer was sent in 2XX response to INVITE, SDP in ACK is ignored
+- If no offer was sent in PRACK, SDP in response to it is ignored
+- If no offer was sent in UPDATE, SDP in response to it is ignored
 
 The re-INVITEs and UPDATEs are sent for two different purposes:
 updating or modifying SIP state, or updating or modifying the
