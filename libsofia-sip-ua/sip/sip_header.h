@@ -190,6 +190,9 @@ SIP_DLL extern char const sip_parser_version[];
 /** Get SIP service name */
 #define SIP_PORT(s) ((s) ? (s) : "5060")
 
+/** Get SIPS service name */
+#define SIPS_PORT(s) ((s) ? (s) : "5061")
+
 /** Return string corresponding to the method. */
 char const *sip_method_name(sip_method_t method, char const *name);
 
