@@ -319,7 +319,7 @@ The mirror of the previous scenario:
 </pre>
 <b>Note 1:</b> the user expectation (set by ordinary telephone) here is
 that callee sends a ringing tone towards caller and discards any media sent
-by callee until the call is accepted (200 OK is sent towards caller).
+by caller until the call is accepted (200 OK is sent towards caller).
 
 @subsection sua_uc_100rel_out Call Out with PRACK
 
