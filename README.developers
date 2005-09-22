@@ -1,0 +1,80 @@
+===============================================================
+README.developers - Sofia-SIP development practises
+===============================================================
+
+Introduction
+---------------------------------------------------------------
+
+This file is a collection of practices and rules for Sofia-SIP
+development. If you have questions, or would like to make 
+changes, raise the issue on sofia-sip-devel (see 
+http://lists.sourceforge.net/lists/listinfo/sofia-sip-devel ).
+
+
+Important files for developers
+---------------------------------------------------------------
+
+AUTHORS
+	List of contributors. When contributing new code, add 
+	yourself to AUTHORS, and also remember to update the
+	per source file copyright statements.
+	
+README.developers 
+	This file.
+
+TODO (XXX: to be added)
+	Not in active use yet.
+
+*/ChangeLog files
+	All non-trivial changes to the source code should
+	be documented in the ChangeLog files.
+
+
+Version numbering 
+---------------------------------------------------------------
+
+Package version
+~~~~~~~~~~~~~~~
+
+For public releases, the package version is:
+     vMAJOR.MINOR.REVISION
+
+XXX: Policy for updating the version.
+
+For development releases the version is:
+     vMAJOR.MINOR.REVISION.YEAR.MONTH.DAY 
+
+The development version should be changed in configure.ac 
+before making snapshot releases. The person doing the release is 
+responsible for updating the version number.
+
+
+Library interface versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+
+Sending patches
+---------------------------------------------------------------
+
+People without CVS-access
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Send your patches to sofia-sip-devel. Someone from the 
+development team (see AUTHORS) will handle the patch.
+
+People with CVS-access
+~~~~~~~~~~~~~~~~~~~~~~
+
+Trivial changes can be committed without review. For non-trivial 
+changes, you should first send a proposal to sofia-sip-devel and
+wait for comments. There are no strict approval rules so use of
+common sense is recommended. ;)
+
+Tips for making patches
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- test your patch on a clean CVS-checkout
+- remember to run cvs update before making commits
+
