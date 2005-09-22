@@ -1,0 +1,75 @@
+/** Defined when su_configure_win32.h has been included. */
+#define SU_CONFIGURE_WIN32_H \
+"$Id: su_configure_win32.h,v 1.16 2004/10/15 10:59:25 pessi Exp $"
+/** @SU @file su_configure_win32.h 
+ * 
+ * @b su library configuration for WIN32.
+ * 
+ * The file <su_configure_win32.h> contains configuration information needed
+ * by WIN32 programs using @b su library.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ *
+ * Copyright (c) 1999, 2002 Nokia Research Center. All rights reserved.
+ *
+ * Created: Thu Jan 18 15:30:55 2001 ppessi
+ * $Date: 2004/10/15 10:59:25 $
+ */
+
+#define WIN32_LEAN_AND_MEAN
+
+#define SU_HAVE_WIN32		1
+#define SU_HAVE_WINSOCK         1
+#define SU_HAVE_WINSOCK2        1
+#define SU_HAVE_POLL            0
+#define SU_HAVE_BSDSOCK         0
+#define SU_HAVE_STDINT          (0)
+#define SU_HAVE_NT              0
+#define SU_HAVE_IN6             (0)
+
+#define SU_HAVE_PTHREADS        (1)
+
+/* Define this as 1 if you have if_nameindex() */
+#define SU_HAVE_IF_NAMEINDEX   (0) 
+
+/* Define this as 1 if you have getaddrinfo() */
+#define SU_HAVE_GETADDRINFO     1
+
+#define SU_INLINE                  __inline
+#define su_inline                  static __inline
+#define SU_HAVE_INLINE             (1)
+
+#define SU_INTPTR_T unsigned __int32
+#define SU_S64_T __int64
+#define SU_U64_T unsigned __int64
+#define SU_S32_T __int32
+#define SU_U32_T unsigned __int32
+#define SU_S16_T __int16
+#define SU_U16_T unsigned __int16
+#define SU_S8_T  __int8
+#define SU_U8_T  unsigned __int8
+
+#define SU_S64_C(i) (SU_S64_T)(i ## L)
+#define SU_U64_C(i) (SU_U64_T)(i ## UL)
+#define SU_S32_C(i) (SU_S32_T)(i ## L)
+#define SU_U32_C(i) (SU_U32_T)(i ## UL)
+#define SU_S16_C(i) (SU_S16_T)(i)
+#define SU_U16_C(i) (SU_U16_T)(i ## U)
+#define SU_S8_C(i)  (SU_S8_T)(i)
+#define SU_U8_C(i)  (SU_U8_T)(i ## U)
+
+#define strcasecmp  _stricmp
+#define strncasecmp _strnicmp
+#define snprintf    _snprintf
+#define vsnprintf   _vsnprintf
+
+#define srandom(x)    srand((x))
+#define random()      rand()
+
+#define EBADMSG EINVAL
+#define ENOBUFS         (20001)
+#define EMSGSIZE        (20002)
+#define EPROTONOSUPPORT (20003)
+#define EALREADY        (20004)
+
+#define ssize_t SSIZE_T
