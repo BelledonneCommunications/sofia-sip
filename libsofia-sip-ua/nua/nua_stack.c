@@ -326,10 +326,6 @@ void ua_deinit(su_root_t *root, nua_t *nua)
 
   su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
   nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
-/* XXX: */
-#if HAVE_MSS
-  /* XXX: clean up media subsystem resources (nua->nua_mss) */
-#endif
 }
 
 /** Set the default from field */
@@ -457,15 +453,6 @@ static void
   ua_set_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_get_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *);
 
-#if 0
-static void
-  ua_set_media_param(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_get_media_param(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_media_setup(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_media_describe(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_media_event(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *);
-#endif
-
 static int
   ua_register(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_invite(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
@@ -573,7 +560,6 @@ char const *nua_event_name(nua_event_t event)
 {
   switch (event) {
   case nua_i_error: return "nua_i_error";
-  case nua_i_media_error: return "nua_i_media_error";
   case nua_i_invite: return "nua_i_invite";
   case nua_i_fork: return "nua_i_fork";
   case nua_i_active: return "nua_i_active";
@@ -591,28 +577,11 @@ char const *nua_event_name(nua_event_t event)
   case nua_i_subscribe: return "nua_i_subscribe";
   case nua_i_notify: return "nua_i_notify";
   case nua_i_method: return "nua_i_method";
-  case nua_i_media_event: return "nua_i_media_event";
   case nua_i_terminated: return "nua_i_terminated";
-
-  case nua_i_announce: return "nua_i_announce (rtsp)";
-  case nua_i_describe: return "nua_i_describe (rtsp)";
-  case nua_i_get_parameter: return "nua_i_get_parameter (rtsp)";
-  case nua_i_pause: return "nua_i_pause (rtsp)";
-  case nua_i_options2: return "nua_i_options (rtsp)";
-  case nua_i_play: return "nua_i_play (rtsp)";
-  case nua_i_record: return "nua_i_record (rtsp)";
-  case nua_i_set_parameter: return "nua_i_set_parameter (rtsp)";
-  case nua_i_setup: return "nua_i_setup (rtsp)";
-  case nua_i_teardown: return "nua_i_teardown (rtsp)";
 
   /* Responses */
   case nua_r_get_params: return "nua_r_get_params";
   case nua_r_shutdown: return "nua_r_shutdown";
-  case nua_r_set_media_param: return "nua_r_set_media_param";
-  case nua_r_get_media_param: return "nua_r_get_media_param";
-  case nua_r_media_setup: return "nua_r_media_setup";
-  case nua_r_media_describe: return "nua_r_media_describe";
-  case nua_r_media_event: return "nua_r_media_event";
   case nua_r_notifier: return "nua_r_notifier";
   case nua_r_terminate: return "nua_r_terminate";
 
@@ -630,17 +599,6 @@ char const *nua_event_name(nua_event_t event)
   case nua_r_subscribe: return "nua_r_subscribe";
   case nua_r_unsubscribe: return "nua_r_unsubscribe";
   case nua_r_notify: return "nua_r_notify";
-
-  case nua_r_setup: return "nua_r_setup (rtsp)";
-  case nua_r_play: return "nua_r_play (rtsp)";
-  case nua_r_record: return "nua_r_record (rtsp)";
-  case nua_r_pause: return "nua_r_pause (rtsp)";
-  case nua_r_describe: return "nua_r_describe (rtsp)";
-  case nua_r_teardown: return "nua_r_teardown (rtsp)";
-  case nua_r_options2: return "nua_r_options2 (rtsp)";
-  case nua_r_announce: return "nua_r_announce (rtsp)";
-  case nua_r_get_parameter: return "nua_r_get_parameter (rtsp)";
-  case nua_r_set_parameter: return "nua_r_set_parameter (rtsp)";
 
   case nua_r_method: return "nua_r_method";
 
@@ -710,23 +668,6 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
   case nua_r_shutdown:
     ua_shutdown(nua);
     break;
-#if 0
-  case nua_r_set_media_param:
-    ua_set_media_param(nua, nh, e->e_event, tags);
-    break;
-  case nua_r_get_media_param:
-    ua_get_media_param(nua, nh, e->e_event, tags);
-    break;
-  case nua_r_media_setup:
-    ua_media_setup(nua, nh, e->e_event, tags);
-    break;
-  case nua_r_media_describe:
-    ua_media_describe(nua, nh, e->e_event, tags);
-    break;
-  case nua_r_media_event:
-    ua_media_event(nua, nh, e->e_event, tags);
-    break;
-#endif
   case nua_r_register:
   case nua_r_unregister:
     ua_register(nua, nh, e->e_event, tags);
@@ -2964,174 +2905,6 @@ crequest_restart(nua_handle_t *nh,
 
   return 1;
 }
-
-
-/* ======================================================================== */
-/* Media parameters */
-
-#if 0
-
-/** Set media params */
-static
-int ua_set_media_params(nua_handle_t *nh, tagi_t *tags)
-{
-  if (nh && nh->nh_soa)
-    return soa_set_params(nh->nh_soa, TAG_NEXT(tags));
-  else
-    return 0;
-}
-
-void 
-ua_set_media_param(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
-		   tagi_t const *tags)
-{
-  su_home_t home[1] = { SU_HOME_INIT(home) };
-  char const *path = nh->nh_nm->nm_path;
-  msg_param_t *params = NULL;
-  int status;
-  char const *phrase;
-
-#if HAVE_MSS
-
-  if (!nh->nh_nm->nm_session) {
-    ua_event(nua, nh, NULL, e, MSS_455_INVALID_METHOD, TAG_END());
-    return;
-  }
-
-  tl_gets(tags,
-	  NUTAG_MEDIA_PATH_REF(path),
-	  TAG_END());
-
-  /* Search for all NUTAG_MEDIA_PARAMS instances */
-  for (; tags; tags = tl_next(tags)) {
-    tags = tl_find(tags, nutag_media_params);
-    if (tags) 
-      msg_params_replace(home, &params, (msg_param_t)tags->t_value);
-  }
-
-  if (params) {
-    struct nua_media_state *nm = nh->nh_nm;
-    mss_set_param(nm->nm_mss, &nm->nm_session, path, params);
-    mss_get_status(nm->nm_mss, &status, &phrase);
-    ua_event(nua, nh, NULL, e, status, phrase, TAG_END());
-  }
-  else
-    ua_event(nua, nh, NULL, e, 451, "No parameter to set", TAG_END());
-
-#endif /* HAVE_MSS */
-
-  su_home_deinit(home);
-}
-
-void
-ua_get_media_param(nua_t *nua, nua_handle_t *nh, 
-		   nua_event_t e, tagi_t const *tags)
-{
-  ua_event(nua, nh, NULL, e, SIP_501_NOT_IMPLEMENTED, TAG_END());
-}
-
-
-void
-ua_media_event(nua_t *nua, nua_handle_t *nh, 
-	       nua_event_t e, tagi_t const *tags)
-{
-  struct nua_media_state *nm = nh->nh_nm;
-
-  if (nh_is_special(nh)) {
-    ua_event(nua, nh, NULL, e, 500, "Invalid handle for media SETUP", 
-	     TAG_END());
-    return;
-  }
-
-  nh_init(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags)); 
-
-  if (!nmedia_is_enabled(nm)) {
-    ua_event(nua, nh, NULL, e, 500, "Media is disabled", TAG_END());
-    return;
-  }
-
-  if (!nm->nm_session) {
-    ua_event(nua, nh, NULL, e, 500, "No active media session", TAG_END());
-    return;
-  }
-
-  nmedia_event(nua, nm, nh, tags);
-
-  ua_event(nua, nh, NULL, e, nm->nm_status, nm->nm_phrase, TAG_END());
-}
-
-
-void
-ua_media_setup(nua_t *nua, nua_handle_t *nh, 
-	       nua_event_t e, tagi_t const *tags)
-{
-  if (nh_is_special(nh)) {
-    ua_event(nua, nh, NULL, e, 500, "Invalid handle for media SETUP", 
-	     TAG_END());
-    return;
-  }
-
-  nh_init(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags)); 
-
-  if (!nmedia_is_enabled(nh->nh_nm)) {
-    ua_event(nua, nh, NULL, e, 500, "Media is disabled", TAG_END());
-    return;
-  }
-
-  if (tags)
-    nmedia_save_params(nh->nh_nm, nh->nh_home, 0, tags);
-
-  nmedia_setup(nua, nh->nh_nm, nh, e, NULL, NULL, 1);
-
-  /* That's it, nmedia_setup will send event e to application */
-}
-
-
-void
-ua_media_describe(nua_t *nua, nua_handle_t *nh, 
-		  nua_event_t e, tagi_t const *tags)
-{
-  struct nua_media_state *nm = nh->nh_nm;
-  sdp_session_t *sdp;
-  su_home_t home[1] = { SU_HOME_INIT(home) };
-
-  if (nh_is_special(nh)) {
-    ua_event(nua, nh, NULL, e, 500, "Invalid handle for media SETUP", 
-	     TAG_END());
-    return;
-  }
-
-  nh_init(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags)); 
-
-  if (!nmedia_is_enabled(nm)) {
-    ua_event(nua, nh, NULL, e, 500, "Media is disabled", TAG_END());
-    return;
-  }
-
-  {
-    struct nua_media_state nm0[1];
-    *nm0 = *nm;
-
-    if (tags)
-      nmedia_save_params(nm0, home, 1, tags);
-
-    sdp = nmedia_describe(nua, nm0, nh, home);
-  }
-
-  if (sdp) {
-    ua_event(nua, nh, NULL, e, 200, "Ok", 
-	     SDPTAG_SESSION(sdp),
-	     NH_ACTIVE_MEDIA_TAGS(1, nm->nm_active),
-	     TAG_END());
-  }
-  else {
-    ua_event(nua, nh, NULL, e, nm->nm_status, nm->nm_phrase,
-	     TAG_END());
-  }
-
-  su_home_deinit(home);
-}
-#endif
 
 /* ======================================================================== */
 /* REGISTER */
