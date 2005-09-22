@@ -34,7 +34,7 @@
  *    for header X.
  * 
  * In addition to this interface, the parser provider interface is
- * documented in the <a href="group_sip_parser.html">SIP Parser module</a>.
+ * documented in the <a href="../sip/group__sip__parser.html">SIP Parser module</a>.
  * The parser provider interface makes it possible to extend HTTP parser with
  * new headers or extend existing ones.
  */

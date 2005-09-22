@@ -29,13 +29,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Aug 16 17:06:06 EEST 2005
- * $Date: 2005/08/17 14:51:23 $
+ * $Date: 2005/09/19 11:12:10 $
  */
 
 #include "config.h"
 
 const char soa_asynch_c_id[] =
-"$Id: soa_asynch.c,v 1.1 2005/08/17 14:51:23 ppessi Exp $";
+"$Id: soa_asynch.c,v 1.2 2005/09/19 11:12:10 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

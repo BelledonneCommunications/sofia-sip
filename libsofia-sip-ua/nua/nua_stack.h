@@ -29,12 +29,12 @@
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
- * $Date: 2005/08/10 11:34:35 $
+ * $Date: 2005/09/19 11:12:10 $
  */
 
 #ifndef NUA_STACK_H
 /** Defined when <nua_stack.h> has been included. */
-#define NUA_STACK_H "$Id: nua_stack.h,v 1.2 2005/08/10 11:34:35 ppessi Exp $"
+#define NUA_STACK_H "$Id: nua_stack.h,v 1.3 2005/09/19 11:12:10 kaiv Exp $"
 
 /* SOXXX: pthread doesn't seem to work...? */
 #undef HAVE_PTHREAD_H

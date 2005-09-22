@@ -32,13 +32,13 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  *
  * @date Created: Tue Mar  6 18:33:42 2001 ppessi
- * $Date: 2005/07/20 20:35:37 $
+ * $Date: 2005/09/19 11:12:10 $
  */
 
 #include "config.h"
 
 const char sdp_torture_c_id[] =
-"$Id: sdp_torture.c,v 1.1.1.1 2005/07/20 20:35:37 kaiv Exp $";
+"$Id: sdp_torture.c,v 1.2 2005/09/19 11:12:10 kaiv Exp $";
 
 #include <stdio.h>
 #include <string.h>
