@@ -66,10 +66,6 @@ const char _nua_stack_c_id[] =
 #include "nua.h"
 #include "nua_tag.h"
 
-#if HAVE_HERBIE
-#include "nua_herbie.h"
-#endif
-
 #define NTA_AGENT_MAGIC_T    struct nua_s
 #define NTA_LEG_MAGIC_T      struct nua_handle_s
 #define NTA_OUTGOING_MAGIC_T struct nua_handle_s
@@ -317,13 +313,6 @@ int ua_init(su_root_t *root, nua_t *nua)
 	nua->nua_timer))
     return -1;
 
-#if HAVE_HERBIE
-  /* Enable polyphonic ringing tones */
-  nua->nua_herbie = nua_herbie_create(home, getenv("NUA_HERBIE_TONE"));
-  if (!nua->nua_herbie);
-    return -1;
-#endif
-
   ua_timer(nua, nua->nua_timer, NULL);
 
   nua->nua_args = NULL;
@@ -334,11 +323,6 @@ int ua_init(su_root_t *root, nua_t *nua)
 void ua_deinit(su_root_t *root, nua_t *nua)
 {
   enter;
-
-#if HAVE_HERBIE
-  if (nua->nua_herbie)
-    nua_herbie_free(nua->nua_herbie), nua->nua_herbie = NULL;
-#endif
 
   su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
   nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
@@ -4276,12 +4260,6 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   if (status == 180) {
     ss->ss_alerting = 1;
-
-#if HAVE_HERBIE
-    if (nua->nua_herbie)
-      nua_herbie_play(nua->nua_herbie);
-#endif
-
   }
   else if (status >= 200)
     ss->ss_alerting = 0;
@@ -4306,11 +4284,6 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   if (status >= 200) {
     ss->ss_usage->du_ready = 1;
     ss->ss_srequest->sr_respond = NULL;
-
-#if HAVE_HERBIE
-    if (nua->nua_herbie)
-      nua_herbie_stop(nua->nua_herbie);
-#endif
   }
 
   if (status >= 300) {
@@ -4368,11 +4341,6 @@ int process_prack(nua_handle_t *nh,
   int status = 200; char const *phrase = sip_200_OK;
 
   nta_reliable_destroy(rel);
-
-#if HAVE_HERBIE
-  if (nh->nh_nua->nua_herbie)
-    nua_herbie_stop(nh->nh_nua->nua_herbie);
-#endif
 
   if (!sr->sr_irq) /* XXX  */
     return 481;
