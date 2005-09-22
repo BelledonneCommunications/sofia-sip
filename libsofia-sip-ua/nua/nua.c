@@ -99,12 +99,6 @@ char const nua_version[] = VERSION;
 
 #include <sdp.h>
 
-#if HAVE_MSS
-#define MSS_EVENT_HANDLER_T nua_handle_t
-#include <mss.h>
-#include <mss_status.h>
-#endif
-
 #include <sl_utils.h>
 
 #include "nua_stack.h"
@@ -680,148 +674,6 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
     ta_end(ta); \
   }
 
-/** Set a media parameter. 
- *
- * Set media parameters using mss_set_param() function. 
- * The media parameters are media-specific and they are 
- * documented in the #mss.h header.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_MEDIA_PATH \n
- *     #NUTAG_MEDIA_PARAMS \n
- *     #NUTAG_MEDIA_PATH \n
- *     #NUTAG_VIDEO_LOCAL \n
- *     #NUTAG_VIDEO_REMOTE \n
- *     #NUTAG_IMAGE_LOCAL \n
- *     #NUTAG_TARGET_IMAGE_NAME \n
- *     #NUTAG_SRTP_ENABLE \n
- *     #NUTAG_SRTP_INTEGRITY_PROTECTION \n
- *     #NUTAG_SRTP_CONFIDENTIALITY 
- *
- * @par Events:
- *     #nua_r_set_media_param
- */
-void
-nua_set_media_param(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_set_media_param, tag, value);
-}
-
-/** Get a media parameter. 
- *
- * \b Not \b implemented.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_MEDIA_PATH
- *
- * @par Events:
- *     #nua_r_get_media_param
- */
-void
-nua_get_media_param(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_get_media_param, tag, value);
-}
-
-/** Setup a local media session. 
- *
- * Setup local media with mss_setup() function. The media template is 
- * selected with #NUTAG_MEDIA_PATH tag. The status from the MSS is 
- * returned with #nua_r_media_setup event. \n
- * \n
- * This function directly manipulates MSS resources. Use of it is not 
- * required during the normal operation.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_MEDIA_PATH \n
- *     #NUTAG_MEDIA_PARAMS \n
- *     #NUTAG_MEDIA_ADDRESS \n
- *     #NUTAG_MEDIA_CLONE \n
- *     #NUTAG_MEDIA_SESSION \n
- *     #NUTAG_MEDIA_EVENT_PATH \n
- *     #NUTAG_AF \n
- *     #NUTAG_HOLD \n
- *     #NUTAG_VIDEO_LOCAL \n
- *     #NUTAG_VIDEO_REMOTE
- *
- * @par Events:
- *     #nua_r_media_setup
- */
-void
-nua_media_setup(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_media_setup, tag, value);
-}
-
-/** Describe a media session using SDP. 
- *
- * The description is either for active session or for the capabilities 
- * used with the handle.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_MEDIA_PATH [IN] \n
- *     #NUTAG_MEDIA_ADDRESS [IN] \n
- *     #NUTAG_AF [IN] \n
- *     #NUTAG_MEDIA_SESSION [IN] \n
- *
- * @par Events:
- *     #nua_r_media_describe
- */
-void
-nua_media_describe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_media_describe, tag, value);
-}
-
-/** Send an event to media subsystem. 
- * The event target is determined by the #NUTAG_MEDIA_EVENT_PATH tag, 
- * the event contents with #NUTAG_MEDIA_EVENT_DATA and #NUTAG_MEDIA_EVENT_DLEN 
- * tags. The common media events are documented in mss.h header.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_MEDIA_EVENT_DATA \n
- *     #NUTAG_MEDIA_EVENT_DLEN \n
- *     #NUTAG_MEDIA_EVENT_PATH
- *
- * @par Events:
- *     #nua_r_media_event
- */
-void
-nua_media_event(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_media_event, tag, value);
-}
-
 /** Send SIP REGISTER request to the registrar. 
  *
  * Request status will be delivered to the application using #nua_r_register
@@ -926,7 +778,8 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    #nua_r_invite \n
  *    #nua_i_media_error \n
  *    #nua_i_fork \n
- *    #nua_i_active
+ *    #nua_i_active \n
+ *    #nua_i_media_update
  *
  * \sa nua_handle_has_active_call() \n
  *     nua_handle_has_call_on_hold()\n
@@ -1303,7 +1156,8 @@ void nua_info(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *
  * @par Events:
  *    #nua_r_update \n
- *    #nua_i_media_error
+ *    #nua_i_media_error \n
+ *    #nua_i_media_update
  */
 void nua_update(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
@@ -1339,70 +1193,6 @@ void nua_authenticate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 void nua_redirect(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_redirect, tag, value);
-}
-
-/* RTSP: */
-
-/*# Play. */
-void nua_play(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_play, tag, value);
-}
-
-/*# Setup. */
-void nua_setup(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_setup, tag, value);
-}
-
-/*# Options2. */
-void nua_options2(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_options2, tag, value);
-}
-
-/*# Describe. */
-void nua_describe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_describe, tag, value);
-}
-
-/*# Announce. */
-void nua_announce(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_announce, tag, value);
-}
-
-/*# Get parameter. */
-void nua_get_parameter(nua_handle_t *nh, tag_type_t tag,
-		       tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_get_parameter, tag, value);
-}
-
-/*# Set parameter. */
-void nua_set_parameter(nua_handle_t *nh, tag_type_t tag,
-		       tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_set_parameter, tag, value);
-}
-
-/*# Record. */
-void nua_record(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_record, tag, value);
-}
-
-/*# Pause. */
-void nua_pause(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_pause, tag, value);
-}
-
-/*# Teardown. */
-void nua_teardown(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
-{
-  NUA_SIGNAL(nh, nua_r_teardown, tag, value);
 }
 
 /** Respond with given status. 
@@ -1568,4 +1358,114 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
 
   if (e->e_msg)
     msg_destroy(e->e_msg);
+}
+
+/*******************************************************
+ * Obsoleted API functions (to-be-removed)
+ *******************************************************/
+
+void
+nua_set_media_param(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+void
+nua_get_media_param(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+void
+nua_media_setup(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+void
+nua_media_describe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+void
+nua_media_event(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Play. */
+void nua_play(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Setup. */
+void nua_setup(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Options2. */
+void nua_options2(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Describe. */
+void nua_describe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Announce. */
+void nua_announce(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+void nua_get_parameter(nua_handle_t *nh, tag_type_t tag,
+                      tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Set parameter. */
+void nua_set_parameter(nua_handle_t *nh, tag_type_t tag,
+                      tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Record. */
+void nua_record(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Pause. */
+void nua_pause(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
+}
+
+/*# Teardown. */
+void nua_teardown(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  /* XXX: to-be-removed */
+  SU_DEBUG_0(("**WARNING** Using obsolete API function: %s", __func__));
 }
