@@ -36,7 +36,7 @@
 /** Defined when <nua_stack.h> has been included. */
 #define NUA_STACK_H "$Id: nua_stack.h,v 1.3 2005/09/19 11:12:10 kaiv Exp $"
 
-/* SOXXX: pthread doesn't seem to work...? */
+/* XXX: pthread doesn't seem to work...? */
 #undef HAVE_PTHREAD_H
 
 #if HAVE_UICC_H
@@ -287,139 +287,6 @@ typedef struct nua_session_state
 } nua_session_state_t;
 
 
-typedef struct srtp_object_s
-{
-  int srtp_enable,
-      srtp_confidentiality,
-      srtp_integrity_protection;
-
-} srtp_object_t;
-
-#if !HAVE_MSS
-typedef void ms_t;
-typedef void mss_t;
-
-/* XXX: Media subsystem parameters */
-
-/* --cut-- for media subsystem parameters */
-#define MS_SETUP_CLONE  "clone"
-/** Sets the RTCP email parameter */ 
-#define MS_SETUP_EMAIL  "email"
-/** Provides the local SIP URI */
-#define MS_LOCAL_URI  "local-uri"
-/** Provides the remote SIP URI */
-#define MS_REMOTE_URI  "remote-uri"
-/** Provides the local SIP contact. */
-#define MS_LOCAL_CONTACT  "local-contact"
-/** Provides the remote SIP contact URI. */
-#define MS_REMOTE_CONTACT  "remote-contact"
-/** Sets the connection type */
-#define MS_CONN_LIST       "connection-list"
-#define MS_CONN_IN         "connection"
-#define MS_CONN_IN_IP4     "connection=ip4"
-#define MS_CONN_IN_IP6     "connection=ip6"
-#define MS_CONN_IN_IP4_IP6 "connection=ip4+ip6"
-#define MS_CONN_IN_IP6_IP4 "connection=ip6+ip4"
-/** Hold mode */
-#define MS_HOLD_NONE    "sendrecv"
-#define MS_HOLD_REMOTE  "sendonly"
-#define MS_HOLD_LOCAL   "recvonly"
-#define MS_HOLD_BOTH    "inactive"
-/* Offer-answer stage */
-#define MS_OFFER        "offer"
-#define MS_ANSWER       "answer"
-/* Audio device */
-#define MS_AUDIO_DEVICE   "audio-device"
-/** Specifies window for local video. */
-#define MS_VIDEO_LOCAL_WINDOW  "video-lw"
-/** Specifies window for remote video. */
-#define MS_VIDEO_REMOTE_WINDOW "video-rw"
-/** Video device. */
-#define MS_VIDEO_DEVICE   "video-device"
-/* Specify window for local image */
-#define MS_IMAGE_LOCAL_WINDOW "image-lw_image"
-/** Whether to enable SRTP in RTP sessions. */
-#define MS_SRTP_ENABLE "srtp-enable"
-#define MS_SRTP_CONFIDENTIALITY "srtp-confidentiality"
-#define MS_SRTP_INTEGRITY_PROTECTION "srtp-integrity-protection"
-/* --cut-- for media subsystem parameters */
-#endif
-
-#if 0
-/** Media-related state */
-typedef struct nua_media_state
-{
-  /** Media subsystem.
-   *
-   * Local media is enabled if nm_mss is non-null
-   */
-
-#if HAVE_MSS
-  mss_t          *nm_mss;	
-  ms_t           *nm_session;	/**< Media session */
-#else
-  void           *nm_mss;
-  void           *nm_session;
-#endif
-
-  struct nua_media_a
-  {
-    int ma_audio:3; /**< Audio activity (send/recv) */
-    int ma_video:3; /**< Video activity (send/recv) */
-    int ma_image:3; /**< Image activity (send/recv) for JPIP */
-    int ma_chat:3;  /**< Chat activity (send/recv) */
-  } nm_active[1];
-
-  /* These two flags help us to avoid unnecessary setups */
-  unsigned   nm_modified:1;    /**< Important media parameter(s) changed */
-  unsigned   nm_setup_with_remote:1; /** Last setup was with remote */
-
-  unsigned   nm_hold_remote:1; /**< We are holding remote */
-  unsigned   nm_muted:1;	/**< We are muted */
-  unsigned   nm_clone:1;
-#if HAVE_SRTP
-  unsigned   nm_srtp_enable:1;
-  unsigned   nm_srtp_confidentiality:1;
-  unsigned   nm_srtp_integrity_protection:1;
-#endif /* HAVE_SRTP */
-  unsigned:0;
-
-  nua_chat_t     *nm_chat;	/**< Chat session */
-
-  sdp_parser_t   *nm_sdp;  	/**< SDP from incoming request */
-
-  int             nm_status;	/**< Status from last media operation */
-  char const     *nm_phrase;	/**< Phrase from last media operation */
-  char const     *nm_warning;	/**< Warnings from last media operation */
-
-  /* Media parameters */
-  char const     *nm_path;
-
-  char const     *nm_address;
-  enum nua_af     nm_af;
-
-  char const     *nm_video_lw;
-  char const     *nm_video_rw;
-
-  char const     *nm_image_lw;
-  char const     *nm_image_name; /**< JPIP target-id */
-#define nm_target_image_name nm_image_name
-
-  su_strlst_t    *nm_event_list;
-} nua_media_state_t;
-
-#define NMEDIA_ACTIVE_TAGS(nm) \
-  NH_ACTIVE_MEDIA_TAGS((nm)->nm_mss != NULL, (nm)->nm_active)
-
-#define \
-  NH_ACTIVE_MEDIA_TAGS(include, ma) \
-  TAG_IF((include) && (ma)->ma_audio >= 0, NUTAG_ACTIVE_AUDIO(ma->ma_audio)), \
-  TAG_IF((include) && (ma)->ma_video >= 0, NUTAG_ACTIVE_VIDEO(ma->ma_video)), \
-  TAG_IF((include) && (ma)->ma_image >= 0, NUTAG_ACTIVE_IMAGE(ma->ma_image)), \
-  TAG_IF((include) && (ma)->ma_chat >= 0, NUTAG_ACTIVE_CHAT(ma->ma_chat))
-
-#endif
-
 #define \
   NH_ACTIVE_MEDIA_TAGS(include, soa)					\
   TAG_IF((include) && (soa) && soa_is_audio_active(soa) >= 0,		\
@@ -567,19 +434,6 @@ struct nua_s {
 
 #if HAVE_HERBIE
   nua_herbie_t       *nua_herbie;
-#endif
-
-#if 0
-#if HAVE_MSS
-  mss_t              *nua_mss;	/**< Media manager */
-#else
-  void               *nua_mss;
-#endif
-  char const         *nua_media_cname;
-  char const         *nua_media_descs;
-  char const         *nua_media_params;
-  nua_handle_t       *nua_media_handle;
-  su_strlst_t        *nua_media_events;
 #endif
 
 #if HAVE_UICC_H
