@@ -1987,6 +1987,13 @@ int session_process_response(nua_handle_t *nh,
 		    nh, method, 
 		    sip->sip_status->st_status, 
 		    sip->sip_status->st_phrase));
+
+	/* signal that O/A round is complete */
+	ua_event(nh->nh_nua, nh, NULL, nua_i_media_update,
+		 200, "O/A round completed", 
+		 NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		 NUTAG_SOA_SESSION(nh->nh_soa),
+		 TAG_END());
       }
     }
   }
@@ -3527,6 +3534,7 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
   return ua_event(nua, nh, NULL, nua_i_active,
 		  200, "Call is active", 
 		  NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		  NUTAG_SOA_SESSION(nh->nh_soa),
 		  TAG_END());
 }
 
@@ -4225,6 +4233,7 @@ int process_ack(nua_handle_t *nh,
   ua_event(nh->nh_nua, nh, NULL, nua_i_active, 
 	   200, "Call is active", 
 	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+	   NUTAG_SOA_SESSION(nh->nh_soa),
 	   TAG_END());
 
   set_session_timer(nh);
