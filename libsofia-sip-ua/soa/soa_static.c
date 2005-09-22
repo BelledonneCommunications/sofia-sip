@@ -169,9 +169,6 @@ static int soa_static_generate_offer(soa_session_t *ss,
       return soa_set_status(ss, 500, "No local session available");
   }
 
-  if (ss->ss_local->ssd_sdp)
-    return 0;			/* We are done */
-
   /* Generate a dummy SDP offer based on our capabilities */
   if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
     return -1;
@@ -195,9 +192,6 @@ static int soa_static_generate_answer(soa_session_t *ss,
     if (ss->ss_caps->ssd_unparsed == NULL)
       return soa_set_status(ss, 500, "No local session available");
   }
-
-  if (ss->ss_local->ssd_sdp)
-    return 0;			/* We are done */
 
   /* Generate a dummy SDP offer based on our capabilities */
   if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
