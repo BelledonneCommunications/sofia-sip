@@ -76,10 +76,6 @@ const char nua_common_c_id[] =
 
 #include <sdp.h>
 
-#if HAVE_MSS
-#include <mss.h>
-#endif
-
 #include "nua_stack.h"
 
 /** Create an operation handle 
