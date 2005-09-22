@@ -395,10 +395,6 @@ extern char const nua_500_error[];
 
 #define SET_STATUS(_status, _phrase) status = _status, phrase = _phrase
 
-#if HAVE_HERBIE
-#include "nua_herbie.h"
-#endif
-
 struct nua_s {
   su_home_t            nua_home[1];
 
@@ -431,10 +427,6 @@ struct nua_s {
   su_task_r           nua_server;
   nta_agent_t        *nua_nta;
   su_timer_t         *nua_timer;
-
-#if HAVE_HERBIE
-  nua_herbie_t       *nua_herbie;
-#endif
 
 #if HAVE_UICC_H
   uicc_t             *nua_uicc;
