@@ -71,8 +71,7 @@ typedef NUA_HMAGIC_T nua_hmagic_t;
 /** Events */
 typedef enum nua_event_e {
   /* Indications */
-  nua_i_error,			/* Error indication */
-  nua_i_media_error,		/**< Media error indication */
+  nua_i_error,			/**< Error indication */
 
   nua_i_invite,			/**< Incoming call */
   nua_i_fork,			/**< Outgoing call has been forked */
@@ -93,30 +92,14 @@ typedef enum nua_event_e {
   nua_i_notify,			/**< Incoming event */
   nua_i_method,			/**< Incoming, unknown method */
 
-  nua_i_media_event,		/**< Incoming media event */
   nua_i_terminated,		/**< Subscription has been terminated */
 
-  /* RTSP methods */
-
-  nua_i_announce,               /*#< Incoming RTSP record announce */
-  nua_i_describe,               /*#< Incoming RTSP presentation description */
-  nua_i_get_parameter,          /*#< Incoming RTSP server parameter fetch */
-  nua_i_pause,                  /*#< Incoming RTSP pause  */
-  nua_i_options2,               /*#< Incoming RTSP options */
-  nua_i_play,                   /*#< Incoming RTSP play */
-  nua_i_record,                 /*#< Incoming RTSP record  */
-  nua_i_set_parameter,          /*#< Incoming RTSP server parameter setting  */
-  nua_i_setup,                  /*#< Incoming RTSP setup */
-  nua_i_teardown,               /*#< Incoming RTSP teardown the session */
+  nua_i_media_error,		/**< Offer-answer error indication */
+  nua_i_media_update,           /**< Offer-answer negotiation completed */
 
   /* Responses */
   nua_r_get_params,		/**< Answer to nua_get_params() */
   nua_r_shutdown,		/**< Answer to nua_shutdown() */
-  nua_r_set_media_param,	/**< Answer to nua_set_media_param() */
-  nua_r_get_media_param,	/**< Answer to nua_get_media_param() */
-  nua_r_media_setup,		/**< Answer to nua_media_setup() */
-  nua_r_media_describe,		/**< Answer to nua_media_describe() */
-  nua_r_media_event,		/**< Answer to nua_media_event() */
   nua_r_notifier,		/**< Answer to nua_notifier() */
   nua_r_terminate,		/**< Answer to nua_terminate() */
 
@@ -135,8 +118,39 @@ typedef enum nua_event_e {
   nua_r_subscribe,		/**< Answer to outgoing SUBSCRIBE */
   nua_r_unsubscribe,		/**< Answer to outgoing un-SUBSCRIBE */
   nua_r_notify,			/**< Answer to outgoing NOTIFY */
+  nua_r_method,			/**< Answer to unknown outgoing method */
 
-  /* RTSP responses */
+  /* Internal events */
+  nua_r_cancel,
+  nua_r_authenticate,
+  nua_r_redirect,
+  nua_r_destroy,
+  nua_r_respond,
+  nua_r_set_params,		/*#< Answer to nua_set_params() */
+  nua_r_ack,			/*#< Answer to ACK */
+
+
+  /************************************
+   * Obsolete events (to-be-removed): *
+   ************************************/
+  nua_i_media_event,		/**< Incoming media event */
+  nua_r_set_media_param,	/**< Answer to nua_set_media_param() */
+  nua_r_get_media_param,	/**< Answer to nua_get_media_param() */
+  nua_r_media_setup,		/**< Answer to nua_media_setup() */
+  nua_r_media_describe,		/**< Answer to nua_media_describe() */
+  nua_r_media_event,		/**< Answer to nua_media_event() */
+  /* RTSP methods (obsolete) */
+  nua_i_announce,               /*#< Incoming RTSP record announce */
+  nua_i_describe,               /*#< Incoming RTSP presentation description */
+  nua_i_get_parameter,          /*#< Incoming RTSP server parameter fetch */
+  nua_i_pause,                  /*#< Incoming RTSP pause  */
+  nua_i_options2,               /*#< Incoming RTSP options */
+  nua_i_play,                   /*#< Incoming RTSP play */
+  nua_i_record,                 /*#< Incoming RTSP record  */
+  nua_i_set_parameter,          /*#< Incoming RTSP server parameter setting  */
+  nua_i_setup,                  /*#< Incoming RTSP setup */
+  nua_i_teardown,               /*#< Incoming RTSP teardown the session */
+  /* RTSP responses (obsolete) */
   nua_r_setup,                  /*#< Answer to outgoing SETUP */
   nua_r_play,                   /*#< Answer to outgoing PLAY */
   nua_r_record,                 /*#< Answer to outgoing RECORD */
@@ -146,18 +160,7 @@ typedef enum nua_event_e {
   nua_r_options2,               /*#< Answer to outgoing OPTIONS */
   nua_r_announce,               /*#< Answer to outgoing ANNOUNCE */
   nua_r_get_parameter,          /*#< Answer to outgoing GET_PARAMETER */
-  nua_r_set_parameter,          /*#< Answer to outgoing SET_PARAMETER */
-
-  nua_r_method,			/*#< Answer to unknown outgoing method */
-
-  /* Internal events */
-  nua_r_cancel,
-  nua_r_authenticate,
-  nua_r_redirect,
-  nua_r_destroy,
-  nua_r_respond,
-  nua_r_set_params,		/*#< Answer to nua_set_params() */
-  nua_r_ack			/*#< Answer to ACK */
+  nua_r_set_parameter           /*#< Answer to outgoing SET_PARAMETER */
 
 } nua_event_t;
 
