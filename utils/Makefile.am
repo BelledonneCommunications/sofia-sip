@@ -13,6 +13,7 @@ INCLUDES = 	-I$(sofiasrc)/ipt \
 		-I$(sofiasrc)/soa \
 		-I$(sofiasrc)/sdp \
 		-I$(sofiasrc)/sip \
+		-I$(sofiasrc)/soa \
 		-I$(sofiasrc)/sresolv \
 		-I$(sofiasrc)/tport \
 		-I$(sofiasrc)/url \
