@@ -294,12 +294,6 @@ void cli_r_options(int status, char const *phrase,
 void cli_cancel(cli_t *cli);
 void cli_zap(cli_t *cli, char *d);
 
-void cli_media_describe(cli_t *cli, char *rest);
-void cli_r_media_describe(int status, char const *phrase,
-			  nua_t *nua, cli_t *cli,
-			  nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
-			  tagi_t tags[]);
-
 void cli_media_event(cli_t *cli, char *rest);
 void cli_r_media_event(int status, char const *phrase,
 		       nua_t *nua, cli_t *cli,
@@ -385,14 +379,6 @@ void cli_callback(nua_event_t event,
 
   case nua_r_get_params:    
     cli_r_get_params(status, phrase, nua, cli, nh, op, sip, tags);
-    return;
-
-  case nua_r_media_describe:    
-    cli_r_media_describe(status, phrase, nua, cli, nh, op, sip, tags);
-    return;
-
-  case nua_r_media_event:    
-    cli_r_media_event(status, phrase, nua, cli, nh, op, sip, tags);
     return;
 
   case nua_r_register:
@@ -1811,95 +1797,6 @@ void cli_r_publish(int status, char const *phrase,
   cli_prompt(cli);
 }
 
-void cli_media_describe(cli_t *cli, char *rest)
-{
-  cli_oper_t *op = oper_find_call(cli);
-  nua_handle_t *nh;
-
-  if (op)
-    nh = op->op_handle;
-  else
-    nh = nua_handle(cli->cli_nua, NULL, TAG_END());
-
-  if (nh)
-    nua_media_describe(nh, 
-		       TAG_IF(rest, NUTAG_MEDIA_PATH(rest)),
-		       TAG_END());
-}
-
-void cli_r_media_describe(int status, char const *phrase,
-			  nua_t *nua, cli_t *cli,
-			  nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
-			  tagi_t tags[])
-{
-  printf("%s: Media DESCRIBE: %d %s\n", cli->cli_name, status, phrase);
-  
-  if (status < 200)
-    return;
-
-  if (status < 300) {
-    sdp_session_t const *sdp;
-    sdp_printer_t *print;
-
-    tl_gets(tags, SDPTAG_SESSION_REF(sdp), TAG_END());
-
-    if (sdp) {
-      print = sdp_print(cli->cli_home, sdp, NULL, 0, 0);
-      if (sdp_message(print)) {
-	printf("Local SDP is:\n%s", sdp_message(print));
-      }
-      else {
-	printf("SDP print error: %s\n", sdp_printing_error(print));
-      }
-      sdp_printer_free(print);
-    }
-  }
-
-  if (op == NULL)
-    nua_handle_destroy(nh);
-
-  cli_prompt(cli);
-}
-
-void cli_media_event(cli_t *cli, char *rest)
-{
-  cli_oper_t *op = oper_find_call(cli);
-  nua_handle_t *nh;
-  char *path, *data = NULL;
-
-  if (op)
-    nh = op->op_handle;
-  else
-    nh = nua_handle(cli->cli_nua, NULL, TAG_END());
-
-  rest += strcspn(path = rest, " \t\r\n");
-
-  if (*rest) {
-    *rest++ = '\0';
-    data += strspn(data = rest, " \t\r\n");
-  }
-
-  if (nh)
-    nua_media_event(nh, 
-		    TAG_IF(path, NUTAG_MEDIA_EVENT_PATH(path)),
-		    NUTAG_MEDIA_EVENT_DATA(data),
-		    NUTAG_MEDIA_EVENT_DLEN(data ? strlen(data) : 0),
-		    TAG_END());
-}
-
-void cli_r_media_event(int status, char const *phrase,
-		       nua_t *nua, cli_t *cli,
-		       nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
-		       tagi_t tags[])
-{
-  printf("%s: Media event sent: %d %s\n", cli->cli_name, status, phrase);
-  
-  if (status < 200)
-    return;
-  
-  cli_prompt(cli);
-}
-
 /* ====================================================================== */
 void cli_shutdown(cli_t *cli)
 {
@@ -2176,16 +2073,6 @@ int handle_input(cli_t *cli, su_wait_t *w, void *p)
   }
   else if (match("m") || match("message")) {
     cli_message(cli, rest);
-    return 0;
-  }
-  else if (match("md") || match("media-describe")) {
-    /* md [path] */
-    cli_media_describe(cli, rest);
-    return 0;
-  }
-  else if (match("me") || match("media-event")) {
-    /* me path event-string */
-    cli_media_event(cli, rest);
     return 0;
   }
   else if (match("s") || match("subscribe")) {
