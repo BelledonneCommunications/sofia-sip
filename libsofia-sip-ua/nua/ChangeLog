@@ -1,3 +1,18 @@
+2005-09-21  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* nua_stack.h, nua_common.c, nua.c: Removed obsolete
+	code related to old media subsystem interface (HAVE_MSS).
+	Added nua_i_media_update event. Removed code related
+	to ring-tone generation (HAVE_HERBIE).
+	
+2005-09-20  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* nua.h, nua.c: Removed implementation for obsolete media
+	param functions. Added dummy implementations that print 
+	a warning to users of the removed interfaces.
+
+	* nua_stack.c: Removed obsolete media param code.
+	
 2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Initial import of the module to Sofia-SIP tree.
