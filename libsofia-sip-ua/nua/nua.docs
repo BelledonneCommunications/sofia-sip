@@ -1123,6 +1123,23 @@ void app_r_shutdown(int           status,
  * @param tags   
  */
 
+/** @var nua_event_e::nua_i_terminated
+ *
+ * A call has been terminated.
+ *
+ * This event will be sent after a call has been terminated. A call is
+ * terminated, when 
+ * 1) an error response (300..599) is sent to an incoming initial INVITE
+ * 2) a reliable response (200..299 or reliable preliminary response) to 
+ *    an incoming initial INVITE is not acknowledged with ACK or PRACK
+ * 3) BYE is received or sent
+ * 
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   empty
+ */
+
 /** @var nua_event_e::nua_i_update
  *
  * Incoming session UPDATE.

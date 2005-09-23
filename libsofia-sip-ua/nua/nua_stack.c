@@ -1995,7 +1995,7 @@ int session_process_response(nua_handle_t *nh,
 
       assert(!cr->cr_offer_recv);
       /* signal that O/A round is complete (answer in response) */
-      signal_call_state_change(nh, 200, NULL, nh_a_recv);
+      signal_call_state_change(nh, 200, NULL, nh_a_recv | nh_active);
     }
   }
 
@@ -2754,6 +2754,9 @@ static int process_response(nua_handle_t *nh,
  */
 static void signal_call_state_change(nua_handle_t *nh, int status, char const *phrase, int flags)
 {
+  struct nua_session_state *ss = nh->nh_ss;
+  nua_server_request_t *sr = ss->ss_srequest;
+
   SU_DEBUG_7(("nua: call state change: %d\n", flags));
 
   /* XXX: 
@@ -2774,6 +2777,7 @@ static void signal_call_state_change(nua_handle_t *nh, int status, char const *p
 		 NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 		 NUTAG_SOA_SESSION(nh->nh_soa),
 		 TAG_END());
+	ss->ss_active = 1;
 	break;
       }
       
@@ -2781,6 +2785,7 @@ static void signal_call_state_change(nua_handle_t *nh, int status, char const *p
       {
 	ua_event(nh->nh_nua, nh, NULL, nua_i_terminated, status, phrase, 
 		 TAG_END());
+	ss->ss_active = 0;
 	break;
       }
     case nh_o_sent:
@@ -3521,6 +3526,7 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
   sip_t *sip;
   char const *reason = NULL;
   int needed = ss->ss_ack_needed;
+  int state_flags = 0;
 
   if (!needed) {
     return UA_EVENT2(nua_i_error, 500, "No response to ACK");
@@ -3555,7 +3561,7 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
       soa_activate(nh->nh_soa, NULL);
 
       /* signal that O/A round is complete */
-      signal_call_state_change(nh, 200, NULL, nh_a_sent);
+      state_flags += nh_a_sent;
     }
 
     if (!reason && 
@@ -3585,7 +3591,7 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
     return 0;
   }
 
-  ss->ss_active = 1;
+  signal_call_state_change(nh, 200, NULL, state_flags | nh_active);
 
   return 0;
 }
@@ -4260,6 +4266,7 @@ int process_ack(nua_handle_t *nh,
 {
   struct nua_session_state *ss = nh->nh_ss;
   nua_server_request_t *sr = ss->ss_srequest;
+  int state_flags = 0;
 
   if (nh->nh_soa && sr->sr_offer_sent && !sr->sr_answer_recv) {
     msg_t *msg = nta_incoming_getrequest(irq);
@@ -4281,6 +4288,10 @@ int process_ack(nua_handle_t *nh,
 	/* XXX - what about call status, ua_bye()?? */
 	return 0;
       }
+      else {
+	/* signal that O/A round is complete (answer in ack) */
+	state_flags += nh_active;
+      }
     }
 
     msg_destroy(msg);
@@ -4288,10 +4299,7 @@ int process_ack(nua_handle_t *nh,
 
   soa_clear_remote_sdp(nh->nh_soa);
 
-  ss->ss_active = 1;
-
-  /* signal that O/A round is complete (answer in ack) */
-  signal_call_state_change(nh, 200, NULL, nh_a_recv);
+  signal_call_state_change(nh, 200, NULL, state_flags | nh_a_recv);
 
   set_session_timer(nh);
 
@@ -4310,7 +4318,6 @@ int process_cancel(nua_handle_t *nh,
   if (ss->ss_state < ready_session) {
     if (nh->nh_soa)
       soa_terminate(nh->nh_soa, NULL);
-    ss->ss_active = 0;
     ss->ss_state = init_session;
     signal_call_state_change(nh, 0, "Caller canceled the call", nh_terminated);
   }
