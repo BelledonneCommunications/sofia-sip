@@ -17,6 +17,7 @@ messaging and event retrieval.
 @par Contributor(s): 
 - Pekka Pessi <Pekka.Pessi@nokia.com>
 - Pasi Rinne-Rahkola <Pasi.Rinne-Rahkola@nokia.com>
+- Kai Vehmanen <Kai.Vehmanen@nokia.com>
 
 @section nua_overview Overview
 
@@ -883,6 +884,7 @@ void app_r_shutdown(int           status,
  * #nua_i_publish          \n
  * #nua_i_refer            \n
  * #nua_i_subscribe        \n
+ * #nua_i_state            \n
  * #nua_i_terminated       \n
  * #nua_i_update
  *
@@ -1086,21 +1088,27 @@ void app_r_shutdown(int           status,
  *               #SIPTAG_REFERRED_BY
  */
 
-/** @var nua_event_e::nua_i_terminated
+/** @var nua_event_e::nua_i_state
  *
- * A call has been terminated.
+ * Call state has changed.
  *
- * This event will be sent after a call has been terminated. A call is
- * terminated, when 
- * 1) an error response (300..599) is sent to an incoming initial INVITE
- * 2) a reliable response (200..299 or reliable preliminary response) to 
- *    an incoming initial INVITE is not acknowledged with ACK or PRACK
- * 3) BYE is received or sent
- * 
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * This event will be sent whenever the call state changes. 
+ * In addition to basic changes of session status, also 
+ * SDP O/A negotiation status is included.
+ *
+ * Note that nua_event_e::nua_i_state also covers call
+ * establisment (@see nua_event_e::nua_i_active ) and
+ * termination (@see nua_event_e::nua_i_terminated ).
+ *  
+ * @param status Protocol status code. \n
+ *               Always present
+ * @param phrase Text corresponding to status code. \n
+ *               Always present
+ * @param nh     Operation handle associated with the call
+ * @param hmagic Operation magic associated with the call
  * @param sip    NULL
- * @param tags   empty
+ * @param tags   NUTAG_ACTIVE_* \n
+ *               NUTAG_SOA_SESSION
  */
 
 /** @var nua_event_e::nua_i_subscribe
