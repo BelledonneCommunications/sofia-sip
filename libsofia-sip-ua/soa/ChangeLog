@@ -1,3 +1,12 @@
+2005-09-22  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* soa.c (soa_get_remote_version): Added.
+
+	* soa.c (soa_get_local_version): Added.
+
+	* soa_session.h: Added ssd_version field to
+	soa_description struct.
+
 2005-09-19  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* soa_static.c: Fix generating offers.

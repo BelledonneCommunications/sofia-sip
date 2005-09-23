@@ -714,6 +714,17 @@ int soa_get_local_sdp(soa_session_t const *ss,
   return 1;
 }
 
+/** 
+ * Returns the version number of local session
+ * description. The version numbering starts from
+ * zero and is incremented for each modification.
+ */
+int soa_get_local_version(soa_session_t const *ss)
+{
+  assert(ss != NULL);
+  return ss->ss_local->ssd_version;
+} 
+
 int soa_set_local_sdp(soa_session_t *ss, 
 		      char const *str, int len)
 {
@@ -755,6 +766,16 @@ int soa_get_remote_sdp(soa_session_t const *ss,
   return 1;
 }
 
+/** 
+ * Returns the version number of remote session
+ * description. The version numbering starts from
+ * zero and is incremented for each modification.
+ */
+int soa_get_remote_version(soa_session_t const *ss)
+{
+  assert(ss != NULL);
+  return ss->ss_remote->ssd_version;
+} 
 
 int soa_set_remote_sdp(soa_session_t *ss, 
 		       char const *str, int len)
@@ -1238,7 +1259,15 @@ void soa_set_activity(soa_session_t *ss,
 
 /* API functions */
 
-/** Parse and store session description */
+/**
+ * Parses and stores session description
+ * 
+ * @param ss instance pointer
+ * @param what caps, local or remote
+ * @param sdp0 new sdp (parsed)
+ * @param sdp_str new sdp (unparsed)
+ * @param str_len length on unparsed data
+ **/
 static
 int soa_set_sdp(soa_session_t *ss, 
 		enum soa_sdp_kind what,
@@ -1285,12 +1314,16 @@ int soa_set_sdp(soa_session_t *ss,
 						sdp, sdp_str, str_len);
     }
     return 0;
+  } else {
+    ++ssd->ssd_version;
   }
 
   if (sdp0) {
+    /* note: case 1 - src in parsed form */
     *sdp = *sdp0;
   } 
   else /* if (sdp_str) */ {
+    /* note: case 2 - src in unparsed form */
     parser = sdp_parse(ss->ss_home, sdp_str, str_len, flags);
 
     if (sdp_parsing_error(parser)) {
@@ -1370,6 +1403,7 @@ int soa_description_dup(su_home_t *home,
   if (ssd0->ssd_sdp) {
     int len = ssd0->ssd_str ? strlen(ssd0->ssd_str) + 1 : 0;
 
+    ssd->ssd_version = ssd0->ssd_version;
     ssd->ssd_sdp = sdp_session_dup(home, ssd0->ssd_sdp);
     ssd->ssd_printer = sdp_print(home, ssd->ssd_sdp, NULL, len, 0);
     ssd->ssd_str = (char *)sdp_message(ssd->ssd_printer);
@@ -1504,6 +1538,8 @@ int soa_base_set_local_sdp(soa_session_t *ss,
     if (m)
       sdp->sdp_connection = c;
   }
+
+  ++ss->ss_local->ssd_version;
 
   return soa_description_set(ss, ss->ss_local, sdp, str0, len0);
 }

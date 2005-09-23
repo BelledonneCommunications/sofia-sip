@@ -113,6 +113,7 @@ int soa_default_process_answer(soa_session_t *ss,
 
 struct soa_description 
 {
+  int             ssd_version;  /**< Version incremented at each change */
   sdp_session_t  *ssd_sdp;	/**< Session description  */
   char const     *ssd_unparsed;	/**< Original session description as string */
   char const     *ssd_str;	/**< Session description as string */

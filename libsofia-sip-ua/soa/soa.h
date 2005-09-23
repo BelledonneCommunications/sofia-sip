@@ -80,6 +80,9 @@ int soa_get_remote_sdp(soa_session_t const *ss,
 		       char const **return_sdp,
 		       int *return_len);
 
+int soa_get_remote_version(soa_session_t const *ss);
+
+
 int soa_clear_remote_sdp(soa_session_t *ss);
 
 int soa_set_local_sdp(soa_session_t *ss,
@@ -88,6 +91,8 @@ int soa_set_local_sdp(soa_session_t *ss,
 int soa_get_local_sdp(soa_session_t const *ss,
 		      char const **return_sdp,
 		      int *return_len);
+
+int soa_get_local_version(soa_session_t const *ss);
 
 char const * const * soa_sip_required(soa_session_t const *ss);
 char const * const * soa_sip_support(soa_session_t const *ss);
