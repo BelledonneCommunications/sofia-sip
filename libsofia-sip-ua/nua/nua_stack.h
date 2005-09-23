@@ -87,6 +87,15 @@ enum nh_session {
   terminated_session		/**< BYE complete */
 };
 
+enum nh_call_state_event_e {
+  nh_active,                    /**< Call is activated */
+  nh_terminated,                /**< Call is terminated */
+  nh_o_sent,                    /**< O/A-1 offer sent */
+  nh_a_recv,                    /**< O/A-2 answer received */
+  nh_o_recv,                    /**< O/A-3 offer received */
+  nh_a_sent                     /**< O/A-4 answer sent */
+};
+
 typedef struct nua_chat_s nua_chat_t;
 typedef struct nua_remote_s nua_remote_t;
 
