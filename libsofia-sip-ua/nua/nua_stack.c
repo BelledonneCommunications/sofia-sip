@@ -565,7 +565,6 @@ char const *nua_event_name(nua_event_t event)
   case nua_i_invite: return "nua_i_invite";
   case nua_i_fork: return "nua_i_fork";
   case nua_i_active: return "nua_i_active";
-  case nua_i_terminate: return "nua_i_terminate";
   case nua_i_cancel: return "nua_i_cancel";
   case nua_i_bye: return "nua_i_bye";
   case nua_i_options: return "nua_i_options";
@@ -4847,7 +4846,7 @@ int process_update(nua_t *nua,
 
     /* Respond to UPDATE */
     if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
-      SU_DEBUG_5(("nua(%p): error processing SDP in INVITE\n", nh));
+      SU_DEBUG_5(("nua(%p): error processing SDP in UPDATE\n", nh));
       msg_destroy(msg);
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
       nta_incoming_treply(irq, status, phrase, TAG_END());
