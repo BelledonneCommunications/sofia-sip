@@ -37,16 +37,15 @@ Package version
 ~~~~~~~~~~~~~~~
 
 For public releases, the package version is:
-     vMAJOR.MINOR.REVISION
+     vMAJOR.MINOR.REVISION, where MINOR is even
 
-XXX: Policy for updating the version.
+For development releases and snaphots the version is one of:
+     vMAJOR.MINOR.REVISION, where minor is odd
+     vMAJOR.MINOR.REVISION.YEAR.MONTH.DAY, where minor is odd
 
-For development releases the version is:
-     vMAJOR.MINOR.REVISION.YEAR.MONTH.DAY 
-
-The development version should be changed in configure.ac 
-before making snapshot releases. The person doing the release is 
-responsible for updating the version number.
+For all releases, the version should be changed in configure.ac 
+and committed to CVS before making the release package. The person 
+doing the release is responsible for updating the version number.
 
 
 Library interface versions
