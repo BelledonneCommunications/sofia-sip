@@ -51,7 +51,7 @@ followed, or as required to translate it into languages other than English.
 %setup -q -n sofia-sip-%{version}
 
 %build
-%configure --with-pic --enable-shared --disable-dependency-tracking --includedir=%{_prefix}/include/sofia-sip
+%configure --with-pic --enable-shared --disable-dependency-tracking --includedir=%{_prefix}/include/sofia-sip --with-aclocal=aclocal
 #make %{_smp_mflags}
 make 
 %{?_with_check:make check}

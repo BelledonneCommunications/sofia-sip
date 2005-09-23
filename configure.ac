@@ -28,6 +28,17 @@ AC_CHECK_TOOL(AR, ar, ar)
 AC_CHECK_TOOL(LD, ld, ld)
 AC_PROG_LIBTOOL
 
+
+AC_ARG_WITH([aclocal],
+[  --with-aclocal          Install m4 files in aclocal --print-ac-dir],
+[if test "$with_aclocal" = "yes" ;  then
+	m4dir=`$ACLOCAL --print-ac-dir`
+else
+	m4dir=`$with_aclocal --print-ac-dir`
+fi], [m4dir='${datadir}/aclocal'])
+
+AC_SUBST([m4dir])
+
 ### checks for libraries
 ### --------------------
 AC_CHECK_LIB(pthread, pthread_create)
