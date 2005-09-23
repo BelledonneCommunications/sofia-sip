@@ -76,7 +76,8 @@ typedef enum nua_event_e {
   nua_i_invite,			/**< Incoming call */
   nua_i_fork,			/**< Outgoing call has been forked */
   nua_i_active,			/**< A call has been activated */
-  nua_i_terminate,		/**< A call has been terminated */
+  nua_i_terminated,		/**< A call has been terminated */
+  nua_i_state,		        /**< Call state has changed */
   nua_i_cancel,			/**< Incoming INVITE has been cancelled */
 
   nua_i_bye,			/**< Incoming call hangup */
@@ -92,10 +93,7 @@ typedef enum nua_event_e {
   nua_i_notify,			/**< Incoming event */
   nua_i_method,			/**< Incoming, unknown method */
 
-  nua_i_terminated,		/**< Subscription has been terminated */
-
   nua_i_media_error,		/**< Offer-answer error indication */
-  nua_i_media_update,           /**< Offer-answer negotiation completed */
 
   /* Responses */
   nua_r_get_params,		/**< Answer to nua_get_params() */
