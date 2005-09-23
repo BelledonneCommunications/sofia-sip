@@ -23,13 +23,13 @@
  */
 
 #ifndef SOA_H
-#define SOA_H "$Id: soa.h,v 1.4 2005/09/19 11:12:10 kaiv Exp $"
+#define SOA_H "$Id: soa.h,v 1.5 2005/09/22 19:38:05 kaiv Exp $"
 /**@file soa.h  SDP Offer/Answer (RFC 3264) Interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Fri Jul 15 15:43:53 EEST 2005 ppessi
- * $Date: 2005/09/19 11:12:10 $
+ * $Date: 2005/09/22 19:38:05 $
  */
 
 #ifndef SU_WAIT_H

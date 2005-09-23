@@ -29,7 +29,7 @@
  *
  * Copyright 2001, 2002 Nokia Research Center.  All rights reserved.
  *
- * $Date: 2005/08/08 19:10:17 $
+ * $Date: 2005/09/23 14:53:50 $
  *
  */
 

@@ -25,7 +25,7 @@
  * @par Contributor(s):
  *
  * @date Created: Tue Sep 12 19:22:54 2000 ppessi
- * $Id: win-config.h,v 1.5 2005/02/07 16:57:08 ppessi Exp $
+ * $Id: config.h,v 1.1 2005/09/23 14:43:46 ppessi Exp $
  */
 
 /* Define this as 1 if you have AAC */

@@ -37,7 +37,7 @@
 #include "config.h"
 
 const char tport_c_id[] =
-"$Id: tport.c,v 1.5 2005/09/09 10:56:41 ppessi Exp $";
+"$Id: tport.c,v 1.6 2005/09/23 14:53:50 ppessi Exp $";
 
 #include <string0.h>
 #include <stdlib.h>
