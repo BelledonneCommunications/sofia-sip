@@ -5,7 +5,7 @@ SUBDIRS = libsofia-sip-ua utils
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-EXTRA_DIST = AUTHORS COPYING sofia-sip.spec sofia-sip.spec.in sofia-sip-ua.pc.in
+EXTRA_DIST = AUTHORS COPYING TODO sofia-sip.spec sofia-sip.spec.in sofia-sip-ua.pc.in
 
 ACLOCAL_AMFLAGS = -I m4
 

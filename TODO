@@ -1,0 +1,23 @@
+===============================================================
+TODO / Sofia-SIP
+===============================================================
+
+version: 20050923-1
+
+Release roadmap
+---------------
+
+1.11/1.12 series
+    - first version of the new nua+soa API 
+    - doxygen documentation updates
+    - rpm and dpkg packaging
+
+1.13/1.14 series 
+    - NAT work: STUN fixes (DNS support)
+    - expand the call-state-change mechanism
+
+1.15/1.16 series
+    - TBD
+
+
+See README.developers for information about versioning.
