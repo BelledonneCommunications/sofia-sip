@@ -232,15 +232,6 @@ typedef struct nua_session_state
   
   unsigned        ss_alerting:1;	/**< 180 is sent/received */
   
-#if 0
-  unsigned        ss_complete:1;	/**< Completed SDP offer-answer */
-
-  unsigned        ss_offer_sent:1;	/**< We have offered SDP */
-  unsigned        ss_answer_recv:1;	/**< We have received SDP answer */
-
-  unsigned        ss_offer_recv:1;	/**< We have received an offer */
-  unsigned        ss_answer_sent:2;	/**< We have answered (reliably, if >1) */
-#endif
   unsigned        ss_ack_needed:2;	/**< Send an ACK (do O/A, if >1) */
   unsigned        ss_update_needed:2;	/**< Send an UPDATE (do O/A if > 1) */
 
@@ -253,12 +244,6 @@ typedef struct nua_session_state
   unsigned        ss_session_timer;	/**< Value of Session-Expires (delta) */
   unsigned        ss_min_se;		/**< Minimum session expires */
   enum nua_session_refresher ss_refresher; /**< none, local or remote */
-
-#if 0
-  unsigned        ss_oa_rounds;		/**< Number of O/A rounds completed */
-  sdp_origin_t   *ss_o_remote;
-  sdp_origin_t   *ss_o_local;
-#endif
 
   nua_dialog_usage_t *ss_usage;
 
@@ -564,14 +549,6 @@ int ua_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 
 nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 			       tagi_t *tags);
-
-#if 0
-sdp_session_t const *nmedia_parse_sdp(nua_handle_t *nh,
-				    msg_payload_t const *pl,
-				    msg_content_type_t const *ct,
-				    struct nua_media_a *ma);
-void nmedia_clear_sdp(nua_handle_t *nh);
-#endif
 
 /* Private prototypes (XXX: move to nua_priv.h; nua.c interface) */
 void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
