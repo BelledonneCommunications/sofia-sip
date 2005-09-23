@@ -142,6 +142,7 @@ libsofia-sip-ua/tport/Makefile
 libsofia-sip-ua/url/Makefile
 utils/Makefile
 sofia-sip-ua.pc
+win32/Makefile
 ])
 
 AC_OUTPUT
