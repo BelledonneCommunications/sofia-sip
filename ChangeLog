@@ -1,5 +1,38 @@
 2005-09-23  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
+	* darcs changes:
+	
+	Fri Sep 23 18:58:29 EEST 2005  Pekka.Pessi@nokia.com
+	  * Building msg_test class into msg_test library, use that in tport.
+
+	    M ./libsofia-sip-ua/msg/Makefile.am -5 +7
+	    M ./libsofia-sip-ua/tport/Makefile.am -6 +2
+
+	Fri Sep 23 18:57:20 EEST 2005  Pekka.Pessi@nokia.com
+	  * Using --with-aclocal and ${ACLOCAL} to get correct aclocal
+	    install directory.
+
+	    M ./Makefile.am -2
+	    M ./configure.ac +11
+	    M ./sofia-sip.spec.in -1 +1
+
+	Fri Sep 23 18:36:46 EEST 2005  Pekka.Pessi@nokia.com
+	  * Added win32 into dist.
+
+	    M ./Makefile.am -1 +1
+	    M ./configure.ac +1
+	    A ./win32/Makefile.am
+
+	Fri Sep 23 18:18:30 EEST 2005  Pekka.Pessi@nokia.com
+	  * Added nta/{agent.pem,cafile.pem} to EXTRA_DIST
+
+	    M ./libsofia-sip-ua/nta/Makefile.am -1 +2
+
+	Fri Sep 23 18:10:45 EEST 2005  Pekka.Pessi@nokia.com
+	  * Respect --without-sigcomp.
+
+	    M ./m4/sac-tport.m4 -1 +1
+
 	* darcs changes --from-tag pessi-darcs-2:
 
 	Fri Sep 23 17:46:00 EEST 2005  Pekka.Pessi@nokia.com
