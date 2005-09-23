@@ -144,6 +144,8 @@ static int process_response(nua_handle_t *nh,
 			    sip_t const *sip,
 			    tag_type_t tag, tag_value_t value, ...);
 
+static void signal_call_state_change(nua_handle_t *nh, int status, char const *phrase, int flags);
+
 #define SIP_METHOD_UNKNOWN sip_method_unknown, NULL
 
 #define UA_INTERVAL 5
@@ -1911,7 +1913,8 @@ int session_make_description(nua_handle_t *nh,
 
 
 
-/** Store SDP from incoming response. 
+/**
+ * Stores and processes SDP from incoming response. 
  * 
  * @retval 1 if there was SDP to process
  */
@@ -1961,6 +1964,7 @@ int session_process_response(nua_handle_t *nh,
       sdp = NULL;
     }
     else if (cr->cr_offer_recv) {
+      /* note: case 1: incoming offer */
       SU_DEBUG_5(("nua(%p): %s: get SDP %s in %u %s\n", 
 		  nh, method, "offer",
 		  sip->sip_status->st_status, 
@@ -1975,6 +1979,7 @@ int session_process_response(nua_handle_t *nh,
       sdp = NULL;
     }
     else {
+      /* note: case 2: answer to our offer */
       if (soa_activate(nh->nh_soa, NULL) < 0) {
 	SU_DEBUG_5(("nua(%p): %s: error activating media after %u %s\n", 
 		    nh, method,
@@ -1987,14 +1992,11 @@ int session_process_response(nua_handle_t *nh,
 		    nh, method, 
 		    sip->sip_status->st_status, 
 		    sip->sip_status->st_phrase));
-
-	/* signal that O/A round is complete */
-	ua_event(nh->nh_nua, nh, NULL, nua_i_media_update,
-		 200, "O/A round completed", 
-		 NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-		 NUTAG_SOA_SESSION(nh->nh_soa),
-		 TAG_END());
       }
+
+      assert(!cr->cr_offer_recv);
+      /* signal that O/A round is complete (answer in response) */
+      signal_call_state_change(nh, 200, NULL, nh_a_recv);
     }
   }
 
@@ -2466,9 +2468,9 @@ dialog_terminated(nua_handle_t *nh,
     dialog_usage_remove_at(nh, ds, &ds->ds_usage);
   }
 
-  if (call)
-    ua_event(nh->nh_nua, nh, NULL, nua_i_terminated, 
-	     status, phrase, TAG_END());
+  if (call) {
+    signal_call_state_change(nh, status, phrase, nh_terminated);
+  }
 }
 
 char const *convert_soa_error_to_sip_reason(soa_session_t *soa)
@@ -2740,6 +2742,56 @@ static int process_response(nua_handle_t *nh,
   ta_end(ta);
 
   return 0;
+}
+
+/**
+ * Delivers call state changed event to the nua client.
+ *
+ * @param nh call handle
+ * @param status status code
+ * @param flags, see nh_call_state_event_e
+ *
+ * @return the delivered nua_event_t
+ */
+static void signal_call_state_change(nua_handle_t *nh, int status, char const *phrase, int flags)
+{
+  SU_DEBUG_7(("nua: call state change: %d\n", flags));
+
+  /* XXX: 
+   * - add delivery of complete session and transaction state 
+   * - build tag list once and reuse it for all ua_event()s 
+   **/
+
+  ua_event(nh->nh_nua, nh, NULL, nua_i_state, status, "Call state change", 
+	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa), 
+	   NUTAG_SOA_SESSION(nh->nh_soa),
+	   TAG_END());
+
+  switch(flags)
+    {
+    case nh_active: /**< Call is activated */
+      {
+	ua_event(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active", 
+		 NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		 NUTAG_SOA_SESSION(nh->nh_soa),
+		 TAG_END());
+	break;
+      }
+      
+    case nh_terminated: /**< Call is terminated */
+      {
+	ua_event(nh->nh_nua, nh, NULL, nua_i_terminated, status, phrase, 
+		 TAG_END());
+	break;
+      }
+    case nh_o_sent:
+    case nh_a_recv:
+    case nh_o_recv:
+    case nh_a_sent:
+      {
+	break;
+      }
+    }
 }
 
 static inline
@@ -3221,8 +3273,9 @@ ua_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   }
 
   UA_EVENT2(e, 500, what);
-  if (ss->ss_state == init_session)
-    UA_EVENT2(nua_i_terminated, 500, what);
+  if (ss->ss_state == init_session) {
+    signal_call_state_change(nh, 500, what, nh_terminated);
+  }
 
   if (tags && nh->nh_soa)
     soa_set_params(nh->nh_soa, TAG_NEXT(tags));
@@ -3321,8 +3374,9 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
     dialog_usage_remove(nh, nh->nh_ds, du);
 
   UA_EVENT2(e, 500, what);
-  if (ss->ss_state == init_session)
-    UA_EVENT2(nua_i_terminated, 500, what);
+  if (ss->ss_state == init_session) {
+    signal_call_state_change(nh, 500, what, nh_terminated);
+  }
 
   return e;
 }
@@ -3442,7 +3496,7 @@ static int process_response_to_invite(nua_handle_t *nh,
   }
   else if (terminated > 0) {
     dialog_usage_remove(nh, nh->nh_ds, du);
-    ua_event(nua, nh, NULL, nua_i_terminated, status, phrase, TAG_END());
+    signal_call_state_change(nh, status, phrase, nh_terminated);
   }
   else if (gracefully) {
     char *reason = 
@@ -3500,6 +3554,9 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
       cr->cr_answer_sent = 1;
 
       soa_activate(nh->nh_soa, NULL);
+
+      /* signal that O/A round is complete */
+      signal_call_state_change(nh, 200, NULL, nh_a_sent);
     }
 
     if (!reason && 
@@ -3531,11 +3588,7 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 
   ss->ss_active = 1;
 
-  return ua_event(nua, nh, NULL, nua_i_active,
-		  200, "Call is active", 
-		  NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-		  NUTAG_SOA_SESSION(nh->nh_soa),
-		  TAG_END());
+  return 0;
 }
 
 static int 
@@ -3587,6 +3640,8 @@ process_100rel(nua_handle_t *nh,
       else {
 	answer_sent_in_prack = 1;
 	soa_activate(nh->nh_soa, NULL);
+	/* signal that O/A answer sent */
+	signal_call_state_change(nh, 200, NULL, nh_a_sent);
       }
     }
     else if (ss->ss_precondition) {
@@ -3984,6 +4039,8 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
       else {
 	answer = 1;
 	soa_activate(nh->nh_soa, NULL);
+	/* signal that O/A answer sent (answer to invite) */
+	signal_call_state_change(nh, 200, NULL, nh_a_sent);
       }
     }
     else if (!sr->sr_offer_recv && !sr->sr_offer_sent) {
@@ -4081,7 +4138,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   if (ss->ss_state == init_session) {
     nsession_destroy(nh);
-    ua_event(nua, nh, NULL, nua_i_terminated, 0, phrase, TAG_END());
+    signal_call_state_change(nh, 0, phrase, nh_terminated);
   } 
 }
 
@@ -4165,8 +4222,12 @@ int process_prack(nua_handle_t *nh,
 	  session_make_description(nh, home, &cd, &ct, &pl);
       }
 
-      if (status < 300)
+      if (status < 300) {
 	soa_activate(nh->nh_soa, NULL);
+
+	/* signal that O/A round is complete (answer in response) */
+	signal_call_state_change(nh, 200, NULL, nh_a_recv);
+      }
 
       nta_incoming_treply(irq, status, phrase,
 			  SIPTAG_CONTENT_DISPOSITION(cd),
@@ -4230,11 +4291,8 @@ int process_ack(nua_handle_t *nh,
 
   ss->ss_active = 1;
 
-  ua_event(nh->nh_nua, nh, NULL, nua_i_active, 
-	   200, "Call is active", 
-	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-	   NUTAG_SOA_SESSION(nh->nh_soa),
-	   TAG_END());
+  /* signal that O/A round is complete (answer in ack) */
+  signal_call_state_change(nh, 200, NULL, nh_a_recv);
 
   set_session_timer(nh);
 
@@ -4255,8 +4313,7 @@ int process_cancel(nua_handle_t *nh,
       soa_terminate(nh->nh_soa, NULL);
     ss->ss_active = 0;
     ss->ss_state = init_session;
-    ua_event(nh->nh_nua, nh, NULL, nua_i_terminated,
-	     0, "Caller canceled the call", TAG_END());
+    signal_call_state_change(nh, 0, "Caller canceled the call", nh_terminated);
   }
 
   ua_event(nh->nh_nua, nh, msg, nua_i_cancel,
@@ -4286,8 +4343,7 @@ int process_timeout(nua_handle_t *nh,
 		 SIPTAG_REASON_STR("SIP;cause=408;text=\"ACK Timeout\""),
 		 TAG_END());
 
-  ua_event(nh->nh_nua, nh, NULL, nua_i_terminated,
-	   500, "Response timeout", TAG_END());
+  signal_call_state_change(nh, 0, "Response timeout", nh_terminated);
 
   return 0;
 }
@@ -4732,10 +4788,12 @@ static int process_response_to_update(nua_handle_t *nh,
 
   process_response(nh, cr, orq, sip, TAG_END());
 
-  if (terminated)
-    ua_event(nua, nh, NULL, nua_i_terminated, 
-	     sip->sip_status->st_status, sip->sip_status->st_phrase, 
-	     TAG_END());
+  if (terminated) {
+    signal_call_state_change(nh, 
+			     sip->sip_status->st_status, 
+			     sip->sip_status->st_phrase, 
+			     nh_terminated);
+  }
 
   return 0;
 }
@@ -4799,6 +4857,9 @@ int process_update(nua_t *nua,
     if (soa_activate(nh->nh_soa, NULL) < 0) {
       /* XXX */
     }
+
+    /* signal that O/A answer sent (answer to update) */
+    signal_call_state_change(nh, 200, NULL, nh_a_sent);
 
     session_make_description(nh, home, &cd, &ct, &pl);
 
@@ -4868,7 +4929,7 @@ ua_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     ss->ss_state = terminated_session;
     msg_destroy(msg);
     UA_EVENT2(e, 400, "Internal error");
-    return UA_EVENT2(nua_i_terminated, 400, "Failure sending BYE");
+    signal_call_state_change(nh, 400, "Failure sending BYE", nh_terminated);
   }
   else 
     ss->ss_state = terminating_session;
@@ -4899,7 +4960,7 @@ static int process_response_to_bye(nua_handle_t *nh,
   if (status >= 200) {
     if (du)
       dialog_usage_remove(nh, nh->nh_ds, du);
-    ua_event(nh->nh_nua, nh, NULL, nua_i_terminated, 0, "Sent BYE", TAG_END());
+    signal_call_state_change(nh, 0, "Sent BYE", nh_terminated);
   }
 
   return 0;
@@ -4921,7 +4982,7 @@ int process_bye(nua_t *nua,
 
   nsession_destroy(nh);
 
-  UA_EVENT2(nua_i_terminated, 0, "Received BYE");
+  signal_call_state_change(nh, 0, "Received BYE", nh_terminated);
 
   return 200;			/* Respond automatically with 200 Ok */
 }
