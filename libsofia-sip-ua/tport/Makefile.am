@@ -45,16 +45,12 @@ tport_objs_o_LDADD =
 LDADD = 		libtport.a \
 			-L../stun -lstun \
 			-L../ipt -lipt \
-			-L../msg -lmsg \
+			-L../msg -lmsg_test -lmsg \
 			-L../url -lurl \
 			-L../bnf -lbnf \
 			-L../su -lsu 
 
-tport_test_SOURCES = 	tport_test.c $(MSG_TEST_CLASS)
-
-m = ${srcdir}/../msg
-
-MSG_TEST_CLASS = $m/msg_test_class.c $m/msg_test_table.c
+tport_test_SOURCES = 	tport_test.c
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

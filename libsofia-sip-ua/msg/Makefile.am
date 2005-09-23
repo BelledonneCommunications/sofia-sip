@@ -12,13 +12,13 @@ INCLUDES = 	-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libmsg.a
+noinst_LIBRARIES = 	libmsg.a libmsg_test.a
 noinst_PROGRAMS = 	msg_name_hash msg_test msg_objs.o
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-GENERATED_H = msg_protos.h msg_mime_protos.h msg_test_protos.h 
+GENERATED_H = msg_protos.h msg_mime_protos.h
 PUBLIC_H = msg.h msg_header.h msg_types.h \
 	msg_mclass.h	msg_mclass_hash.h msg_parser.h msg_bnf.h \
 	msg_auth.h msg_addr.h msg_date.h msg_buffer.h \
@@ -27,7 +27,7 @@ INTERNAL_H = msg_internal.h msg_test_class.h
 
 include_HEADERS = $(GENERATED_H) $(PUBLIC_H) 
 
-BUILT_SOURCES = $(GENERATED_H) msg_test_table.c
+BUILT_SOURCES = $(GENERATED_H) msg_test_table.c msg_test_protos.h
 
 libmsg_a_SOURCES = $(INTERNAL_H) \
 	msg.c msg_tag.c \
@@ -40,12 +40,14 @@ libmsg_a_SOURCES = $(INTERNAL_H) \
 msg_objs_o_SOURCES =	$(libmsg_a_SOURCES)
 msg_objs_o_LDADD =	
 
-LDADD = 		libmsg.a \
+libmsg_test_a_SOURCES = msg_test_class.c msg_test_table.c msg_test_protos.h
+
+LDADD = 		libmsg_test.a libmsg.a \
 			-L../bnf -lbnf \
 			-L../url -lurl \
 			-L../su -lsu 
 
-msg_test_SOURCES = 	msg_test.c msg_test_class.c msg_test_table.c
+msg_test_SOURCES = 	msg_test.c
 
 msg_name_hash_SOURCES = msg_name_hash.c
 
