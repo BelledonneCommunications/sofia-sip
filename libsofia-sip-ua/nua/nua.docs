@@ -181,7 +181,6 @@ configuration files and compilation directives in the source files.
 
 Examples of useful directives/ environment variables are: 
 - #SOFIA_DEBUG	Default debug level (0..9)
-- #MSS_DEBUG	Media subsystem debug level (0..9)
 - #NUA_DEBUG	NUA debug level (0..9)
 - #NTA_DEBUG	Transaction engine debug level (0..9)
 - #TPORT_DEBUG	Transport event debug level (0..9)
@@ -290,35 +289,6 @@ fetching tag values when processing nua_r_subscribe event:
                    SIPTAG_ACCEPT_REF(ac),
                    TAG_END());
 @endcode
-
-@subsection nua_media Media Handling
-
-The media session is taken care mainly by the MSS module of the Sofia stack. 
-There is at most one media session per NUA operation handle. 
-
-The descriptions of the media session parameters are held in a SDP template 
-file (also called as "media profile") that contains named templates for 
-the media session parameters. A single template is a description of media 
-parameters with session description protocol (SDP) syntax. The name of 
-the template (also called as "media path") is given on s= line and it has 
-a Unix directory path like structure. 
-
-The name of the template file and the name of the template to use can be set 
-when a NUA operation handle is created by using tags #NUTAG_MEDIA_DESCS 
-and #NUTAG_MEDIA_PATH. A new media template can be given as argument to 
-re-INVITE (that is: nua_invite() is called using operation handle of existing 
-call). Media parameters can also be given directly with #NUTAG_MEDIA_PARAMS
-tags when calling NUA and MSS API functions.
-
-NUA takes care of setting up the media session when an INVITE is sent, or 
-received and responded. NUA also handles the start of media playback and 
-recording.
-
-Application and the media subsystem can communicate by using event API 
-provided by NUA. Application can send information to media subsystem by 
-using function nua_media_event() and correspondingly media subsystem can 
-send information to application by using #nua_i_media_event callback event. 
-Subscription to the events is done with #NUTAG_MEDIA_EVENT_PATH tags.
 
 @section nua_tutorial SIP/NUA tutorial
 
@@ -906,7 +876,6 @@ void app_r_shutdown(int           status,
  * #nua_i_info             \n
  * #nua_i_invite           \n
  * #nua_i_media_error      \n
- * #nua_i_media_event      \n
  * #nua_i_message          \n
  * #nua_i_method           \n
  * #nua_i_notify           \n
@@ -918,14 +887,9 @@ void app_r_shutdown(int           status,
  * #nua_i_update
  *
  * @par Responses:
- * #nua_r_get_media_param  \n
  * #nua_r_get_params       \n
- * #nua_r_media_describe   \n
- * #nua_r_media_event      \n
- * #nua_r_media_setup      \n
  * #nua_r_notifier         \n
  * #nua_r_shutdown         \n
- * #nua_r_set_media_param  \n
  * #nua_r_terminate        
  *
  * @par SIP responses:
@@ -1050,18 +1014,6 @@ void app_r_shutdown(int           status,
  *               (maybe NULL if call handle was created for this call)
  * @param sip    NULL
  * @param tags   #NUTAG_MEDIA_SESSION (optionally)
- */
-
-/** @var nua_event_e::nua_i_media_event
- *
- * Incoming media event
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with this call 
- * @param sip    NULL
- * @param tags   #NUTAG_MEDIA_EVENT_PATH \n
- *               #NUTAG_MEDIA_EVENT_DATA \n
- *               #NUTAG_MEDIA_EVENT_DLEN
  */
 
 /** @var nua_event_e::nua_i_message
@@ -1198,18 +1150,6 @@ void app_r_shutdown(int           status,
  * @param tags   empty
  */
 
-/** @var nua_event_e::nua_r_get_media_param
- *
- * Answer to nua_get_media_param().
- *
- * Not implemented (returns error 501).
- *
- * @param nh     
- * @param hmagic 
- * @param sip    
- * @param tags   
- */
-
 /** @var nua_event_e::nua_r_get_params
  *
  * Answer to nua_get_params().
@@ -1245,40 +1185,6 @@ void app_r_shutdown(int           status,
  * @param sip    response to INFO or NULL upon an error 
  *               (error code and message are in status an phrase parameters)
  * @param tags   empty
- */
-
-/** @var nua_event_e::nua_r_media_describe
- *
- * Answer to nua_media_describe()
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    NULL
- * @param tags   tag list including
- *     #SDPTAG_SESSION \n
- *     #NUTAG_ACTIVE_AUDIO \n
- *     #NUTAG_ACTIVE_VIDEO \n
- *     #NUTAG_ACTIVE_CHAT \n
- */
-
-/** @var nua_event_e::nua_r_media_event
- *
- * Answer to nua_media_event()
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    NULL
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_r_media_setup
- *
- * Answer to nua_media_setup()
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    NULL
- * @param tags   #NUTAG_MEDIA_SESSION
  */
 
 /** @var nua_event_e::nua_r_message
@@ -1365,16 +1271,6 @@ void app_r_shutdown(int           status,
  * @param hmagic operation magic associated with the call
  * @param sip    response to REGISTER request or NULL upon an error 
  *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_r_set_media_param
- *
- * Answer to nua_set_media_param(). 
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    NULL
  * @param tags   empty
  */
 
