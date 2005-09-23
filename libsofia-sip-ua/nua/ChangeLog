@@ -1,3 +1,14 @@
+2005-09-22  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* nua.docs: Updated event documentation.
+
+	* nua_stack.c: Unused nua_i_terminate event removed.
+
+	* nua_tag.h: Removed NUTAG_MEDIA_SUBSYSTEM.
+
+	* nua.h: Added nua_i_state_change event. Removed 
+	nua_i_media_update (replaced by nua_i_state_change).
+
 2005-09-21  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* nua_stack.h, nua_common.c, nua.c: Removed obsolete
