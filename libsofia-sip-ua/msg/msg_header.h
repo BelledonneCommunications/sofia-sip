@@ -87,6 +87,10 @@ int msg_header_remove_all(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
 
 int msg_header_insert(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
 
+int msg_header_replace(msg_t *msg, msg_pub_t *mo, 
+		       msg_header_t *old_header,
+		       msg_header_t *new_header);
+
 int msg_header_add_dup(msg_t *msg,
 		       msg_pub_t *pub,
 		       msg_header_t const *o);

@@ -2734,6 +2734,91 @@ int msg_header_remove_all(msg_t *msg, msg_pub_t *pub, msg_header_t *h)
 }
 
 
+/** Replace a header item with a (list of) header(s).
+ *
+ * The function @c msg_header_replace() removes a header structure from
+ * message and replaces it with a new one or a list of headers. It inserts
+ * the new headers into the the message fragment chain, if it exists.
+ *
+ * @param msg message object owning the fragment chain
+ * @param pub public message structure to which header is added
+ * @param replaces   old header to be removed
+ * @param h   list of header(s) to be added
+ */
+int msg_header_replace(msg_t *msg, msg_pub_t *pub, 
+		       msg_header_t *replaced,
+		       msg_header_t *h)
+{
+  msg_header_t *h0, *last, **hh, **hh0;
+
+  assert(msg);
+
+  if (msg == NULL || pub == NULL || replaced == NULL)
+    return -1;
+
+  if (h == NULL || h == MSG_HEADER_NONE || h->sh_class == NULL)
+    return msg_header_remove(msg, pub, replaced);
+
+  hh = hh0 = msg_hclass_offset(msg->m_class, pub, h->sh_class);
+  if (hh == NULL)
+    return -1;
+  if (replaced == NULL)
+    return msg_header_add(msg, pub, hh, h);
+
+  assert(h->sh_prev == NULL);	/* Must not be in existing chain! */
+
+  for (last = h; last->sh_next; last = last->sh_next) {
+    if ((last->sh_succ = last->sh_next))
+      last->sh_next->sh_prev = &last->sh_succ;
+  }
+
+  for (h0 = *hh; h0; hh = &h0->sh_next, h0 = *hh) {
+    if (replaced == h0)
+      break;
+  }
+
+  if (h0 == NULL)
+    return -1;
+
+  *hh = h;			/* Replace in list */
+  last->sh_next = replaced->sh_next;
+
+  if (replaced->sh_prev) {
+    *replaced->sh_prev = h;
+    h->sh_prev = replaced->sh_prev;
+    if ((last->sh_succ = replaced->sh_succ))
+      last->sh_succ->sh_prev = &last->sh_succ;
+    if (msg->m_tail == &replaced->sh_succ)
+      msg->m_tail = &last->sh_succ;
+  }
+
+  assert(msg->m_tail != &replaced->sh_succ);
+
+  replaced->sh_next = NULL;
+  replaced->sh_prev = NULL;
+  replaced->sh_succ = NULL;
+
+  if (replaced->sh_data) {
+    /* Remove cached encoding if it is shared with two header fragments */
+    int cleared = 0;
+    void const *data = (char *)replaced->sh_data + replaced->sh_len;
+
+    for (hh = hh0; *hh; hh = &(*hh)->sh_next) {
+      if (data == (char *)(*hh)->sh_data + (*hh)->sh_len) {
+	(*hh)->sh_data = NULL, (*hh)->sh_len = 0, cleared = 1;
+      }
+    }
+
+    if (cleared)
+      replaced->sh_data = NULL, replaced->sh_len = 0;
+  }
+
+  return 0;
+}
+
+
+
+
 /* ====================================================================== */
 /* Copying or duplicating all headers in a message */
 

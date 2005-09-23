@@ -675,6 +675,82 @@ int test_msg_parsing(void)
 
   msg_destroy(msg);
 
+  /* Bug #2624: */
+  msg = read_msg("GET /replaces HTTP/1.1" CRLF
+		 "Accept-Encoding: gzip" CRLF
+		 "Accept-Encoding: bzip2" CRLF
+		 "Accept-Encoding: deflate" CRLF
+		 "Accept-Language: en;q=0.8, fi, se ; q = 0.6" CRLF
+		 );
+  TEST_1(msg);
+  tst = msg_public(msg, MSG_TEST_PROTOCOL_TAG);
+  TEST_1(tst);
+
+  {
+    msg_accept_encoding_t *gzip, *bzip2, *deflate;
+    msg_accept_encoding_t *lzss;
+    msg_accept_language_t *en, *fi, *se;
+    msg_accept_language_t *de, *sv, *sv_fi;
+
+    TEST_1(gzip = tst->msg_accept_encoding);
+    TEST_1(bzip2 = gzip->aa_next);
+    TEST_1(deflate = bzip2->aa_next);
+
+    TEST_1(gzip->aa_common->h_data);
+    TEST_1(lzss = msg_accept_encoding_make(msg_home(msg), "lzss"));
+    TEST(msg_header_replace(msg, tst, (void *)bzip2, (void *)lzss), 0);
+    TEST_1(gzip->aa_common->h_data);
+
+    TEST_1(en = tst->msg_accept_language);
+    TEST_1(fi = en->aa_next);
+    TEST_1(se = fi->aa_next);
+
+    TEST_S(en->aa_value, "en");
+    TEST_M(en->aa_common->h_data, 
+	   "Accept-Language: en;q=0.8, fi, se ; q = 0.6" CRLF,
+	   en->aa_common->h_len);
+
+    TEST((char *)en->aa_common->h_data + en->aa_common->h_len, 
+	 fi->aa_common->h_data);
+
+    TEST_1(de = msg_accept_language_make(msg_home(msg), "de;q=0.3"));
+
+    TEST(msg_header_replace(msg, tst, (void *)se, (void *)de), 0);
+    TEST(en->aa_common->h_data, NULL);
+    TEST(en->aa_next, fi); TEST(fi->aa_next, de); TEST(de->aa_next, NULL);
+
+    TEST(en->aa_common->h_succ, fi); 
+    TEST(en->aa_common->h_prev, &deflate->aa_common->h_succ);
+    TEST(fi->aa_common->h_succ, de); 
+    TEST(fi->aa_common->h_prev, &en->aa_common->h_succ);
+    TEST(de->aa_common->h_succ, NULL);
+    TEST(de->aa_common->h_prev, &fi->aa_common->h_succ);
+
+    TEST(se->aa_next, NULL);
+    TEST(se->aa_common->h_succ, NULL);
+    TEST(se->aa_common->h_prev, NULL);
+
+    TEST_1(sv = msg_accept_language_make(msg_home(msg), 
+					 "sv;q=0.6,sv_FI;q=0.7"));
+    TEST_1(sv_fi = sv->aa_next);
+
+    TEST(msg_header_replace(msg, tst, (void *)fi, (void *)sv), 0);
+
+    TEST(en->aa_next, sv); TEST(sv->aa_next->aa_next, de); 
+    TEST(de->aa_next, NULL);
+
+    TEST(en->aa_common->h_succ, sv); 
+    TEST(en->aa_common->h_prev, &deflate->aa_common->h_succ);
+    TEST(sv->aa_common->h_succ, sv_fi); 
+    TEST(sv->aa_common->h_prev, &en->aa_common->h_succ);
+    TEST(sv_fi->aa_common->h_succ, de); 
+    TEST(sv_fi->aa_common->h_prev, &sv->aa_common->h_succ);
+    TEST(de->aa_common->h_succ, NULL);
+    TEST(de->aa_common->h_prev, &sv_fi->aa_common->h_succ);
+
+    TEST(msg_serialize(msg, tst), 0);
+  }
+
   /* Bug #2429 */
   orig = read_msg("GET a-life HTTP/1.1" CRLF
 		 "Accept-Language: en;q=0.8, fi, se ; q = 0.6" CRLF
