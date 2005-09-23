@@ -183,29 +183,6 @@ extern tag_typedef_t nutag_soa_name_ref;
 
 #else
 
-/** Pointer to a media subsystem.
- *
- * Pointer to MSS media subsystem object. The mss object can be used to
- * customize the media with mss_config_add(), for example.
- *
- * @par Used with
- *    nua_get_param()
- *
- * @par Parameter type
- *    void * (actually mss_t*)
- *
- * @par Values
- *    Pointer to MSS media subsystem.
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_SUBSYSTEM_REF.
- */
-#define NUTAG_MEDIA_SUBSYSTEM(x)  nutag_media_subsystem, tag_ptr_v(x)
-extern tag_typedef_t nutag_media_subsystem;
-
-#define NUTAG_MEDIA_SUBSYSTEM_REF(x) \
- nutag_media_subsystem_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t nutag_media_subsystem_ref;
-
 /** Pointer to a media session.
  *
  * Pointer to MSS media session. Used with NUTAG_MEDIA_CLONE()
