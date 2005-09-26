@@ -563,6 +563,17 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 	       SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp),
 	       SOATAG_CAPS_SDP_STR(ss->ss_caps->ssd_str),
 
+	       SOATAG_LOCAL_SDP(ss->ss_local->ssd_sdp),
+	       SOATAG_LOCAL_SDP_STR(ss->ss_local->ssd_str),
+
+	       SOATAG_REMOTE_SDP(ss->ss_remote->ssd_sdp),
+	       SOATAG_REMOTE_SDP_STR(ss->ss_remote->ssd_str),
+
+	       /* XXX 
+	       SOATAG_SESSION_SDP(ss->ss_desc->ssd_sdp),
+	       SOATAG_SESSION_SDP_STR(ss->ss_desc->ssd_str),
+	       */
+
 	       SOATAG_AF(ss->ss_af),
 	       SOATAG_ADDRESS(ss->ss_address),
 	       SOATAG_MEDIA_PROFILE(ss->ss_path),
