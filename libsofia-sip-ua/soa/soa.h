@@ -97,6 +97,10 @@ int soa_get_local_version(soa_session_t const *ss);
 char const * const * soa_sip_required(soa_session_t const *ss);
 char const * const * soa_sip_support(soa_session_t const *ss);
 
+int soa_get_session_sdp(soa_session_t const *ss,
+			char const **return_sdp,
+			int *return_len);
+
 int soa_remote_sip_features(soa_session_t *ss,
 			    char const * const * support,
 			    char const * const * required);
@@ -177,6 +181,18 @@ extern tag_typedef_t soatag_remote_sdp_str;
 #define SOATAG_REMOTE_SDP_STR_REF(x) \
   soatag_remote_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_remote_sdp_str_ref;
+
+#define SOATAG_SESSION_SDP(x)  soatag_session_sdp, tag_ptr_v(x)
+extern tag_typedef_t soatag_session_sdp;
+#define SOATAG_SESSION_SDP_REF(x) \
+  soatag_session_sdp_ref, tag_ptr_vr(&(x), (x))
+extern tag_typedef_t soatag_session_sdp_ref;
+
+#define SOATAG_SESSION_SDP_STR(x)  soatag_session_sdp_str, tag_str_v(x)
+extern tag_typedef_t soatag_session_sdp_str;
+#define SOATAG_SESSION_SDP_STR_REF(x) \
+  soatag_session_sdp_str_ref, tag_str_vr(&(x))
+extern tag_typedef_t soatag_session_sdp_str_ref;
 
 #define SOATAG_AF(x)             soatag_af, tag_uint_v((x))
 extern tag_typedef_t soatag_af;
