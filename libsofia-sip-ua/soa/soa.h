@@ -154,11 +154,23 @@ extern tag_typedef_t soatag_caps_sdp_str;
   soatag_caps_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_caps_sdp_str_ref;
 
+#define SOATAG_LOCAL_SDP(x)  soatag_local_sdp, tag_ptr_v(x)
+extern tag_typedef_t soatag_local_sdp;
+#define SOATAG_LOCAL_SDP_REF(x) \
+  soatag_local_sdp_ref, tag_ptr_vr(&(x), (x))
+extern tag_typedef_t soatag_local_sdp_ref;
+
 #define SOATAG_LOCAL_SDP_STR(x)  soatag_local_sdp_str, tag_str_v(x)
 extern tag_typedef_t soatag_local_sdp_str;
 #define SOATAG_LOCAL_SDP_STR_REF(x) \
   soatag_local_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_local_sdp_str_ref;
+
+#define SOATAG_REMOTE_SDP(x)  soatag_remote_sdp, tag_ptr_v(x)
+extern tag_typedef_t soatag_remote_sdp;
+#define SOATAG_REMOTE_SDP_REF(x) \
+  soatag_remote_sdp_ref, tag_ptr_vr(&(x), (x))
+extern tag_typedef_t soatag_remote_sdp_ref;
 
 #define SOATAG_REMOTE_SDP_STR(x)  soatag_remote_sdp_str, tag_str_v(x)
 extern tag_typedef_t soatag_remote_sdp_str;
