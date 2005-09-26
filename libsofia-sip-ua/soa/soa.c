@@ -1291,8 +1291,6 @@ void soa_set_activity(soa_session_t *ss,
 /* Handle SDP */
 
 
-/* API functions */
-
 /**
  * Parses and stores session description
  * 
@@ -1492,6 +1490,8 @@ soa_base_set_capability_sdp(soa_session_t *ss,
     sdp->sdp_subject = "-";
 
   sdp->sdp_time = t;
+
+  /* Set port to zero - or should we check that port is already zero? */
   for (m = sdp->sdp_media; m; m = m->m_next)
     m->m_port = 0;
 
