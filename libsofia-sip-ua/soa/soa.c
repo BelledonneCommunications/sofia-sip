@@ -389,6 +389,9 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   sdp_session_t *caps_sdp;
   char const *caps_sdp_str;
 
+  sdp_session_t *local_sdp;
+  char const *local_sdp_str;
+
   char const *media_address, *media_profile, *mss_sdp, *mss_cfg;
   char const *media_event_path;
   char const *image_local, *image_remote, *image_name;
@@ -398,6 +401,9 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   caps_sdp = NONE;
   caps_sdp_str = NONE;
+
+  local_sdp = NONE;
+  local_sdp_str = NONE;
 
   af = ss->ss_af;
 
@@ -422,6 +428,9 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
 	      SOATAG_CAPS_SDP_REF(caps_sdp),
 	      SOATAG_CAPS_SDP_STR_REF(caps_sdp_str),
+
+	      SOATAG_LOCAL_SDP_REF(local_sdp),
+	      SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
 
 	      SOATAG_AF_REF(af),
 	      SOATAG_ADDRESS_REF(media_address),
@@ -451,13 +460,27 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     if (caps_sdp_str == NONE) caps_sdp_str = NULL;
 
     if (caps_sdp || caps_sdp_str) {
-      if (soa_set_sdp(ss, soa_capability_sdp_kind, 
-		      caps_sdp, caps_sdp_str, -1) < 0) {
+      if (soa_set_capability_sdp_str(ss, caps_sdp, caps_sdp_str, -1) < 0) {
 	return -1;
       }
     }
     else {
       soa_description_free(ss, ss->ss_caps);
+    }
+  }
+
+
+  if (local_sdp != NONE || local_sdp_str != NONE) {
+    if (local_sdp == NONE) local_sdp = NULL;
+    if (local_sdp_str == NONE) local_sdp_str = NULL;
+
+    if (local_sdp || local_sdp_str) {
+      if (soa_set_local_sdp_str(ss, local_sdp, local_sdp_str, -1) < 0) {
+	return -1;
+      }
+    }
+    else {
+      soa_description_free(ss, ss->ss_local);
     }
   }
 
