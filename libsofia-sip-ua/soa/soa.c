@@ -1529,52 +1529,7 @@ int soa_base_set_remote_sdp(soa_session_t *ss,
 int soa_base_set_local_sdp(soa_session_t *ss, 
 			   sdp_session_t *sdp, char const *str0, int len0)
 {
-  sdp_session_t *prev = ss->ss_local->ssd_sdp;
-
-  sdp_origin_t o[1] = {{ sizeof(o) }};
-  sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
-  char c_address[64];
-  sdp_time_t t[1] = {{ sizeof(t) }};
-  sdp_media_t *m;
-
-  if (sdp->sdp_origin) {
-    if (prev && sdp_origin_cmp(sdp->sdp_origin, prev->sdp_origin) == 0) {
-      /* Increment version */
-      *o = *sdp->sdp_origin; o->o_version++; sdp->sdp_origin = o;
-    }
-  }
-  else {
-    if (prev && prev->sdp_origin) {
-      /* Increment version from previous */
-      *o = *prev->sdp_origin; o->o_version++; sdp->sdp_origin = o;
-    }
-    else {
-      /* Generate new o= line */
-      o->o_address = c0; sdp->sdp_origin = o;
-      if (soa_init_sdp_origin(ss, o, c_address) < 0)
-	return -1;
-    }
-  }
-
-  if (!sdp->sdp_subject)
-    sdp->sdp_subject = "-";
-
-  if (!sdp->sdp_time)
-    sdp->sdp_time = t;
-
-  c = sdp->sdp_origin->o_address;
-
-  if (sdp->sdp_connection == NULL) {
-    /* Make sure that every m= line (even rejected one) has c= line */
-    for (m = sdp->sdp_media; m; m = m->m_next)
-      if (m->m_connections == NULL)
-	break;
-    if (m)
-      sdp->sdp_connection = c;
-  }
-
   ++ss->ss_local->ssd_version;
-
   return soa_description_set(ss, ss->ss_local, sdp, str0, len0);
 }
 
