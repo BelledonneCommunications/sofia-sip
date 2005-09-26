@@ -247,16 +247,16 @@ int test_static_offer_answer(struct context *ctx)
     "v=0\r\n"
     "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
     "c=IN IP4 127.0.0.2\r\n"
-    "m=audio 5004 RTP/AVP 0 8\r\n";
+    "m=audio 0 RTP/AVP 0 8\r\n";
 
   char const b_caps[] = 
     "v=0\n"
     "o=right 93298573265 321974 IN IP4 127.0.0.3\n"
     "c=IN IP4 127.0.0.3\n"
-    "m=audio 5006 RTP/AVP 96\n"
+    "m=audio 0 RTP/AVP 96\n"
     "m=rtpmap:96 GSM/8000\n";
 
-  n = soa_set_capability_sdp(ctx->synch.a, "m=audio 5004 RTP/AVP 0 8", -1); 
+  n = soa_set_capability_sdp(ctx->synch.a, "m=audio 0 RTP/AVP 0 8", -1);
   TEST(n, 1);
 
   n = soa_set_capability_sdp(ctx->synch.a, a_caps, strlen(a_caps)); TEST(n, 1);
@@ -272,6 +272,8 @@ int test_static_offer_answer(struct context *ctx)
 
   n = soa_get_local_sdp(a, &offer, &offerlen); TEST(n, 0);
 
+  n = soa_set_local_sdp(a, "m=audio 5004 RTP/AVP 0 8", -1); TEST(n, 1);
+
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
 
   n = soa_get_local_sdp(a, &offer, &offerlen); TEST(n, 1);
@@ -281,6 +283,10 @@ int test_static_offer_answer(struct context *ctx)
 
   n = soa_get_local_sdp(b, &answer, &answerlen); TEST(n, 0);
 
+  n = soa_set_params(b,
+		     SOATAG_LOCAL_SDP_STR("m=audio 5004 RTP/AVP 8"),
+		     TAG_END());
+  
   n = soa_generate_answer(b, test_completed); TEST(n, 0);
 
   TEST_1(soa_is_complete(b));
