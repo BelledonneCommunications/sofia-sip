@@ -198,23 +198,64 @@ static int soa_static_set_local_sdp(soa_session_t *ss,
 static int soa_static_generate_offer(soa_session_t *ss,
 				     soa_callback_f *completed)
 {
-  sdp_session_t *sdp;
+#if notyet
+  su_home_t tmphome[1] = { SU_HOME_INIT(tmphome) };
+
+  sdp_session_t *sdp, sdp0[1];
+  sdp_origin_t o[1] = {{ sizeof(o) }};
+  sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
+  char c_address[64];
+  sdp_time_t t[1] = {{ sizeof(t) }};
   sdp_media_t *m;
-  uint16_t port = 5004;
+#endif
 
-  if (ss->ss_local->ssd_sdp == NULL) {
-    if (ss->ss_caps->ssd_unparsed == NULL)
-      return soa_set_status(ss, 500, "No local session available");
+  sdp_session_t *local = ss->ss_local->ssd_sdp;
+
+  if (local == NULL)
+    return soa_set_status(ss, 500, "No local session available");
+
+#if notyet
+  sdp = ss->ss_desc->ssd_sdp;
+
+  if (sdp == NULL) {
+    /* Generate based on local SDP */
+    sdp = sdp0, *sdp = *local;
+
+    if (sdp->sdp_origin) {
+      o->o_username = sdp->sdp_origin->o_username;
+      o->o_address = sdp->sdp_origin->o_address;
+    }
+
+    if (!o->o_address)
+      o->o_address = c0; 
+    sdp->sdp_origin = o;
+
+    if (soa_init_sdp_origin(ss, o, c_address) < 0) {
+      return -1;
+    }
+
+    if (!sdp->sdp_subject)
+      sdp->sdp_subject = "-";
+
+    if (!sdp->sdp_time)
+      sdp->sdp_time = t;
   }
+  else if (ss->ss_local->ssd_version > ss->ss_desc->ssd_version) {
+    /* Local SDP changed, align it with session */
+    /* XXX - ordering of media lines */
+  }
+  
+  c = sdp->sdp_origin->o_address;
 
-  /* Generate a dummy SDP offer based on our capabilities */
-  if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
-    return -1;
-  sdp = ss->ss_local->ssd_sdp; assert(ss->ss_local->ssd_sdp);
-
-  for (m = sdp->sdp_media; m; m = m->m_next)
-    if (m->m_port == 0)
-      m->m_port = port, port += 2;
+  if (sdp->sdp_connection == NULL) {
+    /* Make sure that every m= line (even rejected one) has c= line */
+    for (m = sdp->sdp_media; m; m = m->m_next)
+      if (m->m_connections == NULL)
+	break;
+    if (m)
+      sdp->sdp_connection = c;
+  }
+#endif
 
   return soa_base_generate_offer(ss, NULL);
 }
@@ -222,14 +263,14 @@ static int soa_static_generate_offer(soa_session_t *ss,
 static int soa_static_generate_answer(soa_session_t *ss,
 				      soa_callback_f *completed)
 {
+  if (ss->ss_local->ssd_sdp == NULL) {
+    return soa_set_status(ss, 500, "No local session available");
+  }
+
+#if 0
   sdp_session_t *sdp;
   sdp_media_t *m;
   uint16_t port = 5004;
-
-  if (ss->ss_local->ssd_sdp == NULL) {
-    if (ss->ss_caps->ssd_unparsed == NULL)
-      return soa_set_status(ss, 500, "No local session available");
-  }
 
   /* Generate a dummy SDP offer based on our capabilities */
   if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
@@ -239,6 +280,7 @@ static int soa_static_generate_answer(soa_session_t *ss,
   for (m = sdp->sdp_media; m; m = m->m_next)
     if (m->m_port == 0)
       m->m_port = port, port += 2;
+#endif
 
   return soa_base_generate_answer(ss, NULL);
 }
