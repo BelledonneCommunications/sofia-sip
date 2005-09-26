@@ -192,7 +192,7 @@ static int soa_static_set_local_sdp(soa_session_t *ss,
 				    char const *sdp_str, 
 				    int sdp_len)
 {
-  return soa_base_set_local_sdp(ss, new_version, sdp, sdp_str, sdp_len);
+  return soa_base_set_local_sdp(ss, sdp, sdp_str, sdp_len);
 }
 
 static int soa_static_generate_offer(soa_session_t *ss,
