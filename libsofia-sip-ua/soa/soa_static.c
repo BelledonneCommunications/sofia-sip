@@ -71,6 +71,16 @@ static void soa_static_deinit(soa_session_t *);
 static int soa_static_set_params(soa_session_t *ss, tagi_t const *tags);
 static int soa_static_get_params(soa_session_t const *ss, tagi_t *tags);
 static tagi_t *soa_static_get_paramlist(soa_session_t const *ss);
+static int soa_static_set_capability_sdp(soa_session_t *ss, 
+				       sdp_session_t *sdp,
+				       char const *, int);
+static int soa_static_set_remote_sdp(soa_session_t *ss, 
+				   int new_version,
+				   sdp_session_t *sdp,
+				   char const *, int);
+static int soa_static_set_local_sdp(soa_session_t *ss, 
+				  sdp_session_t *sdp,
+				  char const *, int);
 static int soa_static_generate_offer(soa_session_t *ss,
 				    soa_callback_f *completed);
 static int soa_static_generate_answer(soa_session_t *ss,
@@ -94,9 +104,9 @@ struct soa_session_actions const soa_static_actions =
     soa_base_sip_required,
     soa_base_sip_support,
     soa_base_remote_sip_features,
-    soa_base_set_capability_sdp,
-    soa_base_set_remote_sdp,
-    soa_base_set_local_sdp,
+    soa_static_set_capability_sdp,
+    soa_static_set_remote_sdp,
+    soa_static_set_local_sdp,
     soa_static_generate_offer,
     soa_static_generate_answer,
     soa_static_process_answer,
@@ -118,9 +128,9 @@ struct soa_session_actions const soa_default_actions =
     soa_base_sip_required,
     soa_base_sip_support,
     soa_base_remote_sip_features,
-    soa_base_set_capability_sdp,
-    soa_base_set_remote_sdp,
-    soa_base_set_local_sdp,
+    soa_static_set_capability_sdp,
+    soa_static_set_remote_sdp,
+    soa_static_set_local_sdp,
     soa_static_generate_offer,
     soa_static_generate_answer,
     soa_static_process_answer,
@@ -149,12 +159,40 @@ static int soa_static_set_params(soa_session_t *ss, tagi_t const *tags)
 
 static int soa_static_get_params(soa_session_t const *ss, tagi_t *tags)
 {
+  
   return soa_base_get_params(ss, tags);
 }
 
 static tagi_t *soa_static_get_paramlist(soa_session_t const *ss)
 {
   return soa_base_get_paramlist(ss);
+}
+
+static int soa_static_set_capability_sdp(soa_session_t *ss, 
+					 sdp_session_t *sdp,
+					 char const *sdp_str, 
+					 int sdp_len)
+{
+  return soa_base_set_capability_sdp(ss, sdp, sdp_str, sdp_len);
+}
+
+
+static int soa_static_set_remote_sdp(soa_session_t *ss, 
+				     int new_version,
+				     sdp_session_t *sdp,
+				     char const *sdp_str, 
+				     int sdp_len)
+{
+  return soa_base_set_remote_sdp(ss, new_version, sdp, sdp_str, sdp_len);
+}
+
+
+static int soa_static_set_local_sdp(soa_session_t *ss, 
+				    sdp_session_t *sdp,
+				    char const *sdp_str, 
+				    int sdp_len)
+{
+  return soa_base_set_local_sdp(ss, new_version, sdp, sdp_str, sdp_len);
 }
 
 static int soa_static_generate_offer(soa_session_t *ss,
