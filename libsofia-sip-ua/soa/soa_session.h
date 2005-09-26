@@ -164,6 +164,8 @@ struct soa_session
   struct soa_description ss_local[1];
   /** Remote session description */
   struct soa_description ss_remote[1];
+  /** Session description */
+  struct soa_description ss_desc[1];
 
   sdp_session_t *ss_rsession;	/**< Processed remote SDP */
 
