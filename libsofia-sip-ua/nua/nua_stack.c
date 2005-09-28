@@ -231,7 +231,7 @@ int ua_init(su_root_t *root, nua_t *nua)
 	  NUTAG_SIP_PARSER_REF(sip_parser),
 	  NUTAG_UICC_REF(uicc_name),
 	  NUTAG_MEDIA_ENABLE_REF(media_enable),
-	  /* NUTAG_SOA_SESSION_REF(soa), *
+	  /* NUTAG_SOA_SESSION_REF(soa), */
 	  NUTAG_SOA_NAME_REF(soa_name),
 	  TAG_NULL());
 
@@ -661,10 +661,10 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
   }
   else switch (e->e_event) {
   case nua_r_get_params:
-    ua_get_params(nua, nh, e->e_event, tags);
+    ua_get_params(nua, nua->nua_default, e->e_event, tags);
     break;
   case nua_r_set_params:
-    ua_set_params(nua, nh, e->e_event, tags);
+    ua_set_params(nua, nua->nua_default, e->e_event, tags);
     break;
   case nua_r_shutdown:
     ua_shutdown(nua);
@@ -1106,7 +1106,7 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 void
 ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
-  tagi_t *lst, *params;
+  tagi_t *lst;
   sip_from_t from[1];
 
   unsigned udp_mtu = 0, sip_t1 = 0, sip_t2 = 0, sip_t4 = 0, sip_t1x64 = 0;
@@ -1118,9 +1118,11 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
   tagi_t *media_params = NULL;
 
-  su_home_t home[1] = { SU_HOME_INIT(home) };
+  su_home_t tmphome[SU_HOME_AUTO_SIZE(16536)];
 
   enter;
+
+  su_home_auto(tmphome, sizeof(tmphome));
 
   nta_agent_get_params(nua->nua_nta,
 		       NTATAG_UDP_MTU_REF(udp_mtu),
@@ -1135,70 +1137,64 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 		       TAG_END());
 
   *from = *nua->nua_from; from->a_params = NULL;
-
   sip_organization_init(organization)->g_string = nua->nua_organization;
 
-  if (nh)
-    media_params = soa_get_paramlist(nh->nh_soa);
-
-  params = tl_list(NUTAG_MEDIA_ENABLE(nua->nua_media_enable),
-		   NUTAG_EARLY_MEDIA(nua->nua_default->nh_early_media),
-		   NUTAG_INVITE_TIMER(nua->nua_invite_timer),
-		   NUTAG_SESSION_TIMER(nua->nua_session_timer),
-		   NUTAG_MIN_SE(nua->nua_min_se),
-		   NUTAG_SESSION_REFRESHER(nua->nua_default->nh_ss->ss_refresher),
-		   NUTAG_UPDATE_REFRESH(nua->nua_default->nh_update_refresh),
-		   NUTAG_AUTOALERT(nua->nua_autoAlert),
-		   NUTAG_AUTOANSWER(nua->nua_autoAnswer),
-		   NUTAG_AUTOACK(nua->nua_default->nh_auto_ack),
-		   NUTAG_ENABLEINVITE(nua->nua_enableInvite),
-		   NUTAG_ENABLEMESSAGE(nua->nua_enableMessage),
-		   NUTAG_ENABLEMESSENGER(nua->nua_enableMessenger),
-		   NUTAG_CALLEE_CAPS(nua->nua_default->nh_callee_caps),
-		   NUTAG_PATH_ENABLE(nua->nua_path_enable),
-		   NUTAG_SERVICE_ROUTE_ENABLE(nua->nua_service_route_enable),
+  lst = tl_filtered_tlist
+    (tmphome, tags, 
+     NUTAG_MEDIA_ENABLE(nua->nua_media_enable),
+     NUTAG_EARLY_MEDIA(nua->nua_default->nh_early_media),
+     NUTAG_INVITE_TIMER(nua->nua_invite_timer),
+     NUTAG_SESSION_TIMER(nua->nua_session_timer),
+     NUTAG_MIN_SE(nua->nua_min_se),
+     NUTAG_SESSION_REFRESHER(nua->nua_default->nh_ss->ss_refresher),
+     NUTAG_UPDATE_REFRESH(nua->nua_default->nh_update_refresh),
+     NUTAG_AUTOALERT(nua->nua_autoAlert),
+     NUTAG_AUTOANSWER(nua->nua_autoAnswer),
+     NUTAG_AUTOACK(nua->nua_default->nh_auto_ack),
+     NUTAG_ENABLEINVITE(nua->nua_enableInvite),
+     NUTAG_ENABLEMESSAGE(nua->nua_enableMessage),
+     NUTAG_ENABLEMESSENGER(nua->nua_enableMessenger),
+     NUTAG_CALLEE_CAPS(nua->nua_default->nh_callee_caps),
+     NUTAG_PATH_ENABLE(nua->nua_path_enable),
+     NUTAG_SERVICE_ROUTE_ENABLE(nua->nua_service_route_enable),
 #if HAVE_SOFIA_SMIME
-		   NUTAG_SMIME_ENABLE(nua->sm->sm_enable),
-		   NUTAG_SMIME_OPT(nua->sm->sm_opt),
-		   NUTAG_SMIME_PROTECTION_MODE(nua->sm->sm_protection_mode),
-		   NUTAG_SMIME_MESSAGE_DIGEST(nua->sm->sm_message_digest),
-		   NUTAG_SMIME_SIGNATURE(nua->sm->sm_signature),
-		   NUTAG_SMIME_KEY_ENCRYPTION(nua->sm->sm_key_encryption),
-		   NUTAG_SMIME_MESSAGE_ENCRYPTION(nua->sm->sm_message_encryption),
+     NUTAG_SMIME_ENABLE(nua->sm->sm_enable),
+     NUTAG_SMIME_OPT(nua->sm->sm_opt),
+     NUTAG_SMIME_PROTECTION_MODE(nua->sm->sm_protection_mode),
+     NUTAG_SMIME_MESSAGE_DIGEST(nua->sm->sm_message_digest),
+     NUTAG_SMIME_SIGNATURE(nua->sm->sm_signature),
+     NUTAG_SMIME_KEY_ENCRYPTION(nua->sm->sm_key_encryption),
+     NUTAG_SMIME_MESSAGE_ENCRYPTION(nua->sm->sm_message_encryption),
 #endif                  
 #if HAVE_SRTP
-		   NUTAG_SRTP_ENABLE(nua->srtp->srtp_enable),
-		   NUTAG_SRTP_CONFIDENTIALITY(nua->srtp->srtp_confidentiality),
-		   NUTAG_SRTP_INTEGRITY_PROTECTION(nua->srtp->srtp_integrity_protection),
+     NUTAG_SRTP_ENABLE(nua->srtp->srtp_enable),
+     NUTAG_SRTP_CONFIDENTIALITY(nua->srtp->srtp_confidentiality),
+     NUTAG_SRTP_INTEGRITY_PROTECTION(nua->srtp->srtp_integrity_protection),
 #endif
-		   NUTAG_REGISTRAR(nua->nua_registrar),
-		   NTATAG_CONTACT(nua->nua_contact ? nua->nua_contact :
-				  nua->nua_sips_contact),
-		   SIPTAG_FROM(from),
-		   SIPTAG_ALLOW(nua->nua_allow),
-		   SIPTAG_SUPPORTED(nua->nua_supported),
-		   SIPTAG_ORGANIZATION(nua->nua_organization ? 
-				       organization : NULL),
-		   SIPTAG_ORGANIZATION_STR(nua->nua_organization),
-		   NTATAG_UDP_MTU(udp_mtu),
-		   NTATAG_SIP_T1(sip_t1),
-		   NTATAG_SIP_T2(sip_t2),
-		   NTATAG_SIP_T4(sip_t4),
-		   NTATAG_SIP_T1X64(sip_t1x64),
-		   NTATAG_DEBUG_DROP_PROB(debug_drop_prob),
-		   NTATAG_DEFAULT_PROXY(proxy),
-		   NTATAG_ALIASES(aliases),
-		   NTATAG_SIPFLAGS(flags),
-		   TAG_NEXT(media_params));
-
-  lst = tl_afilter(home, tags, params);
+     NUTAG_REGISTRAR(nua->nua_registrar),
+     NTATAG_CONTACT(nua->nua_contact ? nua->nua_contact : 
+		    nua->nua_sips_contact),
+     SIPTAG_FROM(from),
+     SIPTAG_ALLOW(nua->nua_allow),
+     SIPTAG_SUPPORTED(nua->nua_supported),
+     SIPTAG_ORGANIZATION(nua->nua_organization ? organization : NULL),
+     SIPTAG_ORGANIZATION_STR(nua->nua_organization),
+     NTATAG_UDP_MTU(udp_mtu),
+     NTATAG_SIP_T1(sip_t1),
+     NTATAG_SIP_T2(sip_t2),
+     NTATAG_SIP_T4(sip_t4),
+     NTATAG_SIP_T1X64(sip_t1x64),
+     NTATAG_DEBUG_DROP_PROB(debug_drop_prob),
+     NTATAG_DEFAULT_PROXY(proxy),
+     NTATAG_ALIASES(aliases),
+     NTATAG_SIPFLAGS(flags),
+     TAG_NEXT(media_params = soa_get_paramlist(nh->nh_soa, TAG_END())));
 
   ua_event(nua, nh, NULL, nua_r_get_params, SIP_200_OK, TAG_NEXT(lst));
 
-  su_home_deinit(home);
+  su_home_deinit(tmphome);
 
   tl_vfree(media_params);
-  tl_vfree(params);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1954,7 +1950,7 @@ int session_process_response(nua_handle_t *nh,
     else 
       cr->cr_offer_recv = 1, cr->cr_answer_sent = 0;
 
-    if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+    if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
       SU_DEBUG_5(("nua(%p): %s: error parsing SDP in %u %s\n", 
 		  nh, method,
 		  sip->sip_status->st_status, 
@@ -2763,6 +2759,8 @@ static void signal_call_state_change(nua_handle_t *nh, int status, char const *p
    * - add delivery of complete session and transaction state 
    * - build tag list once and reuse it for all ua_event()s 
    **/
+
+  (void)sr;
 
   ua_event(nh->nh_nua, nh, NULL, nua_i_state, status, "Call state change", 
 	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa), 
@@ -3901,7 +3899,7 @@ int process_invite1(nua_t *nua,
     soa_init_offer_answer(nh->nh_soa);
 
     if (session_get_description(msg, sip, &sdp, &len)) {
-      if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+      if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
 	SU_DEBUG_5(("nua(%p): error parsing SDP in INVITE\n", nh));
 	nta_incoming_treply(irq, 400, "Bad Session Description", TAG_END());
 	return 400;
@@ -4206,7 +4204,7 @@ int process_prack(nua_handle_t *nh,
       sip_content_type_t *ct = NULL;
       sip_payload_t *pl = NULL;
 
-      if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+      if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
 	SU_DEBUG_5(("nua(%p): error parsing SDP in INVITE\n", nh));
 	msg_destroy(msg);
 	nta_incoming_treply(irq, 400, "Bad Session Description", TAG_END());
@@ -4274,7 +4272,7 @@ int process_ack(nua_handle_t *nh,
     int len;
 
     if (session_get_description(msg, sip, &sdp, &len)) {
-      if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0 ||
+      if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0 ||
 	  soa_process_answer(nh->nh_soa, NULL) < 0 ||
 	  soa_activate(nh->nh_soa, NULL)) {
 	int status; char const *phrase;
@@ -4843,7 +4841,7 @@ int process_update(nua_t *nua,
 
     int status; char const *phrase;
 
-    if (soa_set_remote_sdp(nh->nh_soa, sdp, len) < 0) {
+    if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
       SU_DEBUG_5(("nua(%p): error parsing SDP in UPDATE\n", nh));
       msg_destroy(msg);
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
