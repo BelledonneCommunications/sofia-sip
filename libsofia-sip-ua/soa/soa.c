@@ -540,6 +540,11 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
 		   TAG_IF(ss->ss_user->ssd_str,
 			  SOATAG_LOCAL_SDP_STR(ss->ss_local->ssd_str)),
 
+		   TAG_IF(ss->ss_remote->ssd_sdp,
+			  SOATAG_REMOTE_SDP(ss->ss_remote->ssd_sdp)),
+		   TAG_IF(ss->ss_remote->ssd_str,
+			  SOATAG_REMOTE_SDP_STR(ss->ss_remote->ssd_str)),
+
 		   SOATAG_AF(ss->ss_af),
 		   TAG_IF(ss->ss_address, 
 			  SOATAG_ADDRESS(ss->ss_address)),
