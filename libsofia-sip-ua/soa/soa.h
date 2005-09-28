@@ -59,7 +59,8 @@ int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...);
 int soa_get_params(soa_session_t const *ss, 
 		   tag_type_t tag, tag_value_t value, ...);
 
-tagi_t *soa_get_paramlist(soa_session_t const *ss);
+tagi_t *soa_get_paramlist(soa_session_t const *ss,
+			  tag_type_t tag, tag_value_t value, ...);
 
 int soa_error_as_sip_response(soa_session_t *soa, 
 			      char const **return_phrase);

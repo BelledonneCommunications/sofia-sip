@@ -517,21 +517,35 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 }
 
 /** Return a list of parameters */
-tagi_t *soa_get_paramlist(soa_session_t const *ss)
+tagi_t *soa_get_paramlist(soa_session_t const *ss,
+			  tag_type_t tag, tag_value_t value, ...)
 {
-  if (ss)
-    return ss->ss_actions->soa_get_paramlist(ss);
-  else
-    return (void)(errno = EFAULT), NULL;
+  if (ss) {
+    ta_list ta;
+    tagi_t *params;
+
+    ta_start(ta, tag, value);
+    params = ss->ss_actions->soa_get_paramlist(ss, ta_tags(ta));
+    ta_end(ta);
+
+    return params;
+  }
+
+  return (void)(errno = EFAULT), NULL;
 }
 
 
-tagi_t *soa_base_get_paramlist(soa_session_t const *ss)
+tagi_t *soa_base_get_paramlist(soa_session_t const *ss, 
+			       tag_type_t tag, tag_value_t value, 
+			       ...)
 {
-  tagi_t *params, *media_events = NULL;
+  ta_list ta;
+  tagi_t *params;
 
   if (ss == NULL)
     return NULL;
+  
+  ta_start(ta, tag, value);
 
   params = tl_list(
 
@@ -545,9 +559,9 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss)
 		   SOATAG_SRTP_CONFIDENTIALITY(ss->ss_srtp_confidentiality),
 		   SOATAG_SRTP_INTEGRITY(ss->ss_srtp_integrity),
 
-		   TAG_NEXT(media_events));
+		   ta_tags(ta));
 
-  free(media_events);
+  ta_end(ta);
 
   return params;
 }

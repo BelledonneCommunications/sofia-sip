@@ -105,7 +105,7 @@ int test_api_errors(struct context *ctx)
   TEST_1(-1 == soa_set_params(NULL, TAG_END()));
   TEST_1(-1 == soa_get_params(NULL, TAG_END()));
 
-  TEST_1(!soa_get_paramlist(NULL));
+  TEST_1(!soa_get_paramlist(NULL, TAG_END()));
 
   TEST(soa_error_as_sip_response(NULL, &phrase), 500);
   TEST_S(phrase, "Internal Server Error");

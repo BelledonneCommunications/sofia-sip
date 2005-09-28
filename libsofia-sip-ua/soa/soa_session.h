@@ -53,7 +53,8 @@ struct soa_session_actions
   void (*soa_deinit)(soa_session_t *ss);
   int (*soa_set_params)(soa_session_t *ss, tagi_t const *tags);
   int (*soa_get_params)(soa_session_t const *ss, tagi_t *tags);
-  tagi_t *(*soa_get_paramlist)(soa_session_t const *ss);
+  tagi_t *(*soa_get_paramlist)(soa_session_t const *ss, 
+			       tag_type_t, tag_value_t, ...);
   char **(*soa_media_features)(soa_session_t *, int live, su_home_t *);
   char const * const *(*soa_sip_required)(soa_session_t const *ss);
   char const * const *(*soa_sip_support)(soa_session_t const *ss);
@@ -82,7 +83,8 @@ int soa_base_init(char const *name, soa_session_t *, soa_session_t *parent);
 void soa_base_deinit(soa_session_t *ss);
 int soa_base_set_params(soa_session_t *ss, tagi_t const *tags);
 int soa_base_get_params(soa_session_t const *ss, tagi_t *tags);
-tagi_t *soa_base_get_paramlist(soa_session_t const *ss);
+tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
+			       tag_type_t, tag_value_t, ...);
 char **soa_base_media_features(soa_session_t *, int live, su_home_t *);
 char const * const * soa_base_sip_required(soa_session_t const *ss);
 char const * const * soa_base_sip_support(soa_session_t const *ss);
