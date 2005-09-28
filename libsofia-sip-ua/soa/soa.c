@@ -499,18 +499,16 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 tagi_t *soa_get_paramlist(soa_session_t const *ss,
 			  tag_type_t tag, tag_value_t value, ...)
 {
-  if (ss) {
-    ta_list ta;
-    tagi_t *params;
+  ta_list ta;
+  tagi_t *params = NULL;
 
+  if (ss) {
     ta_start(ta, tag, value);
     params = ss->ss_actions->soa_get_paramlist(ss, ta_tags(ta));
     ta_end(ta);
-
-    return params;
   }
 
-  return (void)(errno = EFAULT), NULL;
+  return params;
 }
 
 
