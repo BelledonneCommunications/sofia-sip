@@ -327,17 +327,78 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_generate_offer(a, 1, test_completed), 0);
   TEST(soa_get_local_sdp(a, &offer, &offerlen), 1);
   TEST_1(offer != NULL && offer != NONE);
-  /* TEST_1(strstr(offer, "a=sendonly")); */
-  /*TEST*/(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
+  TEST_1(strstr(offer, "a=sendonly"));
+  TEST(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
   TEST(soa_generate_answer(b, test_completed), 0);
   TEST_1(soa_is_complete(b));
   TEST(soa_activate(b, NULL), 0);
   TEST(soa_get_local_sdp(b, &answer, &answerlen), 1);
   TEST_1(answer != NULL && answer != NONE);
-  /* TEST_1(strstr(answer, "a=recvonly")); */
-  /*TEST*/(soa_set_remote_sdp(a, 0, answer, -1), 1);
+  TEST_1(strstr(answer, "a=recvonly"));
+  TEST(soa_set_remote_sdp(a, 0, answer, -1), 1);
   TEST(soa_process_answer(a, test_completed), 0);
+  TEST(soa_activate(a, NULL), 0);
 
+  TEST_1(SOA_ACTIVE_SENDONLY == soa_is_audio_active(a));
+  TEST_1(SOA_ACTIVE_SENDONLY == soa_is_remote_audio_active(a));
+
+  /* 'A' will release hold, propose adding video. */ 
+  /* 'B' will reject. */ 
+  TEST(soa_set_params(a, 
+		      SOATAG_HOLD(NULL), 
+		      SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8\r\n"
+					  "m=video 5006 RTP/AVP 34\r\n"),
+		      TAG_END()), 2);
+
+  TEST(soa_generate_offer(a, 1, test_completed), 0);
+  TEST(soa_get_local_sdp(a, &offer, &offerlen), 1);
+  TEST_1(offer != NULL && offer != NONE);
+  TEST_1(!strstr(offer, "a=sendonly"));
+  TEST_1(strstr(offer, "m=video"));
+  TEST(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
+  TEST(soa_generate_answer(b, test_completed), 0);
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+  TEST(soa_get_local_sdp(b, &answer, &answerlen), 1);
+  TEST_1(answer != NULL && answer != NONE);
+  TEST_1(!strstr(answer, "a=recvonly"));
+  TEST_1(strstr(answer, "m=video"));
+  TEST(soa_set_remote_sdp(a, 0, answer, -1), 1);
+  TEST(soa_process_answer(a, test_completed), 0);
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(a));
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(a));
+  TEST_1(SOA_ACTIVE_REJECTED == soa_is_video_active(a));
+
+  /* 'B' will now propose adding video. */
+  /* 'A' will accept. */
+  TEST(soa_set_params(b, 
+		      SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8\r\n"
+					  "m=video 5006 RTP/AVP 34\r\n"),
+		      TAG_END()), 1);
+
+  TEST(soa_generate_offer(b, 1, test_completed), 0);
+  TEST(soa_get_local_sdp(b, &offer, &offerlen), 1);
+  TEST_1(offer != NULL && offer != NONE);
+  TEST_1(!strstr(offer, "b=sendonly"));
+  TEST_1(strstr(offer, "m=video"));
+  TEST(soa_set_remote_sdp(a, 0, offer, offerlen), 1);
+  TEST(soa_generate_answer(a, test_completed), 0);
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+  TEST(soa_get_local_sdp(a, &answer, &answerlen), 1);
+  TEST_1(answer != NULL && answer != NONE);
+  TEST_1(!strstr(answer, "b=recvonly"));
+  TEST_1(strstr(answer, "m=video"));
+  TEST(soa_set_remote_sdp(b, 0, answer, -1), 1);
+  TEST(soa_process_answer(b, test_completed), 0);
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(a));
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(a));
+  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_video_active(a));
+  
   TEST_VOID(soa_terminate(a, NULL));
 
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_audio_active(a));

@@ -74,6 +74,8 @@ struct soa_static_complete;
 #define NONE ((void *)-1)
 #define XXX assert(!"implemented")
 
+#define str0cmp(a, b) strcmp(a ? a : "", b ? b : "")
+
 typedef struct soa_static_session
 {
   soa_session_t sss_session[1];
@@ -254,8 +256,8 @@ sdp_session_t *soa_sdp_expand_media(su_home_t *home,
 }
 
 /** Check if @a session should be upgraded with @a upgrader */ 
-int soa_sdp_needs_upgrade(sdp_session_t const *session,
-			  sdp_session_t const *upgrader)
+int soa_sdp_upgrade_is_needed(sdp_session_t const *session,
+			      sdp_session_t const *upgrader)
 {
   sdp_media_t const *um, *m;
   unsigned in_session, in_upgrader;
@@ -309,14 +311,15 @@ sdp_media_t *soa_sdp_matching(sdp_media_t *mm[], sdp_media_t const *with)
 }
 
 /** Upgrade m= lines within session */ 
-int soa_sdp_upgrade(su_home_t *home,
+int soa_sdp_upgrade(soa_session_t *ss,
+		    su_home_t *home,
 		    sdp_session_t *session,
 		    sdp_session_t const *caps,
 		    sdp_session_t const *upgrader)
 {
   int Ns, Nc, Nu, size, i, j;
-  sdp_media_t *m, **mm;
-  sdp_media_t **s_media, **c_media;
+  sdp_media_t *m, **mm, *cm;
+  sdp_media_t **s_media, **o_media, **c_media;
   sdp_media_t const **u_media;
 
   Ns = sdp_media_count(session, sdp_media_any, 0, 0, 0);
@@ -331,16 +334,19 @@ int soa_sdp_upgrade(su_home_t *home,
     size = Ns + 1;
 
   s_media = su_zalloc(home, size * (sizeof *s_media));
+  o_media = su_zalloc(home, (Ns + 1) * (sizeof *o_media));
   c_media = su_zalloc(home, (Nc + 1) * (sizeof *c_media));
   u_media = su_zalloc(home, (Nu + 1) * (sizeof *u_media));
 
-  if (!s_media || !c_media || !u_media)
+  cm = sdp_media_dup_all(home, caps->sdp_media, session); 
+
+  if (!s_media || !c_media || !u_media || !cm)
     return -1;
 
   for (i = 0, m = session->sdp_media; m && i < Ns; m = m->m_next)
-    s_media[i++] = m;
+    o_media[i++] = m;
   assert(i == Ns);
-  for (i = 0, m = caps->sdp_media; m && i < Nc; m = m->m_next)
+  for (i = 0, m = cm; m && i < Nc; m = m->m_next)
     c_media[i++] = m;
   assert(i == Nc);
   for (i = 0, m = upgrader->sdp_media; m && i < Nu; m = m->m_next)
@@ -359,9 +365,9 @@ int soa_sdp_upgrade(su_home_t *home,
   else {
     /* Update session according to local */
     for (i = 0; i < Ns; i++) {
-      m = soa_sdp_matching(c_media, s_media[i]);
+      m = soa_sdp_matching(c_media, o_media[i]);
       if (!m)
-	m = soa_sdp_make_rejected_media(home, s_media[i], session);
+	m = soa_sdp_make_rejected_media(home, o_media[i], session);
       s_media[i] = m;
     }
     /* Here we just append new media at the end */
@@ -372,16 +378,16 @@ int soa_sdp_upgrade(su_home_t *home,
 
   mm = &session->sdp_media;
   for (i = 0; s_media[i]; i++) {
-    *mm = sdp_media_dup(home, s_media[i], session); if (!*mm) return -1;
-    mm = &(*mm)->m_next;
+    m = s_media[i]; *mm = m; mm = &m->m_next;
   }
-  
+  *mm = NULL;
+
   return 0;
 }
 
-/** Check if @a session contains media that are rejected by @a remote */ 
-int soa_sdp_needs_reject(sdp_session_t const *session,
-			  sdp_session_t const *remote)
+/** Check if @a session contains media that are rejected by @a remote. */ 
+int soa_sdp_reject_is_needed(sdp_session_t const *session,
+			     sdp_session_t const *remote)
 {
   sdp_media_t const *sm, *rm;
 
@@ -392,8 +398,15 @@ int soa_sdp_needs_reject(sdp_session_t const *session,
 
   for (sm = session->sdp_media, rm = remote->sdp_media; 
        sm && rm; sm = sm->m_next, rm = rm->m_next) {
-    if (rm->m_rejected && !sm->m_rejected)
-      return 1;
+    if (rm->m_rejected) {
+      if (!sm->m_rejected)
+	return 1;
+    }
+    else {
+      sdp_mode_t send_mode = (rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0;
+      if (send_mode != (sm->m_mode & sdp_sendonly))
+	return 1;
+    }
   }
 
   if (sm)
@@ -402,7 +415,7 @@ int soa_sdp_needs_reject(sdp_session_t const *session,
   return 0;
 }
 
-/** If m= line is rejected by remote mark m= line rejected within session */ 
+/** If m= line is rejected by, remote mark m= line rejected within session */ 
 int soa_sdp_reject(su_home_t *home,
 		   sdp_session_t *session,
 		   sdp_session_t const *remote)
@@ -410,12 +423,8 @@ int soa_sdp_reject(su_home_t *home,
   sdp_media_t *sm;
   sdp_media_t const *rm;
 
-  if (!session || session->sdp_media || !remote)
+  if (!session || !session->sdp_media || !remote)
     return 0;
-
-  session->sdp_media = sdp_media_dup_all(home, session->sdp_media, session);
-  if (!session->sdp_media)
-    return -1;
 
   rm = remote->sdp_media;
 
@@ -437,8 +446,84 @@ int soa_sdp_reject(su_home_t *home,
       sm->m_attributes = NULL;
       sm->m_user = NULL;
     }
+
     if (rm)
       rm = rm->m_next;
+  }
+
+  return 0;
+}
+
+/** Check if @a session mode should be changed. */ 
+int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
+			       sdp_session_t const *remote,
+			       char const *hold)
+{
+  sdp_media_t const *sm, *rm, *rm_next;
+  int hold_all;
+  sdp_mode_t send_mode, recv_mode;
+
+  if (!session )
+    return 0;
+
+  hold_all = str0cmp(hold, "*") == 0;
+
+  rm = remote ? remote->sdp_media : NULL, rm_next = NULL;
+
+  for (sm = session->sdp_media; sm; sm = sm->m_next, rm = rm_next) {
+    rm_next = rm ? rm->m_next : NULL;
+
+    if (sm->m_rejected)
+      continue;
+
+    if (rm) {
+      send_mode = (rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0;
+      if (send_mode != (sm->m_mode & sdp_sendonly))
+	return 1;
+    }
+
+    recv_mode = sm->m_mode & sdp_recvonly;
+    if (recv_mode && hold &&
+	(hold_all || strcasestr(hold, sm->m_type_name)))
+      return 1;
+  }
+
+  return 0;
+}
+
+
+/** Update mode within session */ 
+int soa_sdp_mode_set(sdp_session_t *session,
+		     sdp_session_t const *remote,
+		     char const *hold)
+{
+  sdp_media_t *sm;
+  sdp_media_t const *rm, *rm_next;
+  int hold_all;
+  sdp_mode_t send_mode, recv_mode;
+
+  if (!session || !session->sdp_media)
+    return 0;
+
+  rm = remote ? remote->sdp_media : NULL, rm_next = NULL;
+
+  hold_all = str0cmp(hold, "*") == 0;
+
+  for (sm = session->sdp_media; sm; sm = sm->m_next, rm = rm_next) {
+    rm_next = rm ? rm->m_next : NULL;
+
+    if (sm->m_rejected)
+      continue;
+
+    send_mode = sdp_sendonly;
+    if (rm)
+      send_mode = (rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0;
+
+    recv_mode = sm->m_mode & sdp_recvonly;
+    if (recv_mode && hold && (hold_all || strcasestr(hold, sm->m_type_name)))
+      recv_mode = 0;
+
+    sm->m_mode = recv_mode | send_mode;
   }
 
   return 0;
@@ -472,15 +557,22 @@ static int offer_answer_step(soa_session_t *ss,
   sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
   sdp_time_t t[1] = {{ sizeof(t) }};
 
-  su_home_t tmphome[1] = {{ sizeof(tmphome) }};
+  char const *phrase = "Internal Media Error";
+
+  su_home_t tmphome[SU_HOME_AUTO_SIZE(8192)];
+
+  su_home_auto(tmphome, sizeof tmphome);
 
   if (user == NULL)
     return soa_set_status(ss, 500, "No session set by user");
 
-  if (local) switch (action) {
+  if (action == generate_offer)
+    remote = NULL;
+
+  /* Pre-negotiation Step: Expand truncated remote SDP */
+  if (local && remote) switch (action) {
   case generate_answer:
   case process_answer:
-    /* Step A: Expand truncated remote SDP */
     if (sdp_media_count(remote, sdp_media_any, "*", 0, 0) < 
 	sdp_media_count(local, sdp_media_any, "*", 0, 0)) {
       SU_DEBUG_5(("%s: remote %s is truncated\n",
@@ -490,11 +582,11 @@ static int offer_answer_step(soa_session_t *ss,
   default:
     break;
   }
-  else /* if (local == NULL) */ switch (action) {
+  
+  /* Step A: Create local SDP (based on user-supplied SDP) */
+  if (local == NULL) switch (action) {
   case generate_offer:
   case generate_answer:
-    /* Step A: Generate local SDP based on user-supplied SDP */
-
     local = local0;
     *local = *user, local->sdp_media = NULL;
 
@@ -507,15 +599,14 @@ static int offer_answer_step(soa_session_t *ss,
     local->sdp_origin = o;
 
     if (soa_init_sdp_origin(ss, o, c_address) < 0) {
-      su_home_deinit(tmphome);
-      return soa_set_status(ss, 500, "Cannot generate media address");
+      phrase = "Cannot Get IP Address for Media";
+      goto internal_error;
     }
     break;
 
   case process_answer:
   default:
-    su_home_deinit(tmphome);
-    return soa_set_status(ss, 500, "Cannot process answer");
+    goto internal_error;
   }
 
   /* Step B: upgrade local SDP (add m= lines to it)  */
@@ -524,20 +615,18 @@ static int offer_answer_step(soa_session_t *ss,
     /* Upgrade local SDP based on user SDP */
     if (ss->ss_local_user_version == user_version)
       break;
-    if (soa_sdp_needs_upgrade(local, user)) {
-      if (local != local0)
-	*local0 = *local, local = local0;
-      soa_sdp_upgrade(tmphome, local, user, user);
-    }
+    if (local != local0)
+      *local0 = *local, local = local0;
+    soa_sdp_upgrade(ss, tmphome, local, user, user);
     break;
   case generate_answer:
     /* Upgrade local SDP based on remote SDP */
     if (ss->ss_local_remote_version == remote_version)
       break;
-    if (soa_sdp_needs_upgrade(local, remote)) {
+    if (soa_sdp_upgrade_is_needed(local, remote)) {
       if (local != local0)
 	*local0 = *local, local = local0;
-      soa_sdp_upgrade(tmphome, local, user, remote);
+      soa_sdp_upgrade(ss, tmphome, local, user, remote);
     }
     break;
   default:
@@ -553,11 +642,41 @@ static int offer_answer_step(soa_session_t *ss,
   case process_answer:
     if (ss->ss_local_remote_version == remote_version)
       break;
-    if (soa_sdp_needs_reject(local, remote)) {
-      if (local != local0)
+    if (soa_sdp_reject_is_needed(local, remote)) {
+      if (local != local0) {
 	*local0 = *local, local = local0;
+#define DUP_LOCAL(local)					 \
+	do {							 \
+	  if (!local->sdp_media) break;				 \
+	  local->sdp_media =					 \
+	    sdp_media_dup_all(tmphome, local->sdp_media, local); \
+	  if (!local->sdp_media)				 \
+	    goto internal_error;				 \
+	} while (0)
+
+	DUP_LOCAL(local);
+      }
       soa_sdp_reject(tmphome, local, remote);
     }
+    break;
+  default:
+    break;
+  }
+
+  /* Step D: Set media mode bits */
+  switch (action) {
+  case generate_offer:
+  case generate_answer:
+  case process_answer:
+    if (soa_sdp_mode_set_is_needed(local, remote, ss->ss_hold)) {
+      if (local != local0) {
+	*local = *local, local = local0;
+	DUP_LOCAL(local);
+      }
+
+      soa_sdp_mode_set(local, remote, ss->ss_hold);
+    }
+    break;
   default:
     break;
   }
@@ -565,16 +684,14 @@ static int offer_answer_step(soa_session_t *ss,
   soa_description_free(ss, ss->ss_previous);
 
   if (local == local0) {
-    /* step D: update origin-line */
+    /* We have modfied local session: update origin-line */
     if (local->sdp_origin != o)
       *o = *local->sdp_origin, local->sdp_origin = o;
     o->o_version++;
 
-    /* step E: sanity checks for the created SDP */
-
+    /* Do sanity checks for the created SDP */
     if (!local->sdp_subject)	/* s= is mandatory */
       local->sdp_subject = "-";
-
     if (!local->sdp_time)	/* t= is mandatory */
       local->sdp_time = t;
 
@@ -582,6 +699,7 @@ static int offer_answer_step(soa_session_t *ss,
      * or there must be a c= line at session level
      */
     c = local->sdp_origin->o_address;
+
     if (local->sdp_connection == NULL) {
       sdp_media_t *m;
 
@@ -592,17 +710,18 @@ static int offer_answer_step(soa_session_t *ss,
 	local->sdp_connection = c;
     }
 
-    /* step F: update the unparsed and pretty-printed descriptions  */
     if (action == generate_offer) {
-      /* Keep a copy of previous offer */
+      /* Keep a copy of previous session state */
       *ss->ss_previous = *ss->ss_local;
       memset(ss->ss_local, 0, (sizeof *ss->ss_local));
       ss->ss_previous_user_version = ss->ss_local_user_version;
       ss->ss_previous_remote_version = ss->ss_local_remote_version;
     }
 
-    if (soa_description_set(ss, ss->ss_local, local, NULL, 0) < 0)
-      return -1;
+    /* Update the unparsed and pretty-printed descriptions  */
+    if (soa_description_set(ss, ss->ss_local, local, NULL, 0) < 0) {
+      goto internal_error;
+    }
   }
 
   /* Update version numbers */
@@ -621,8 +740,11 @@ static int offer_answer_step(soa_session_t *ss,
   }
 
   su_home_deinit(tmphome);
-
   return 0;
+
+ internal_error:
+  su_home_deinit(tmphome);
+  return soa_set_status(ss, 500, phrase);
 }
 
 /**

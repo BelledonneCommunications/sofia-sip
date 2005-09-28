@@ -169,10 +169,12 @@ struct soa_session
   /** Local session description */
   struct soa_description ss_local[1];
   unsigned ss_local_user_version, ss_local_remote_version;
+  char const *ss_hold_local;
 
   /** Previous session description (return to this if offer is rejected) */
   struct soa_description ss_previous[1];
   unsigned ss_previous_user_version, ss_previous_remote_version;
+  char const *ss_hold_previous;
 
   sdp_session_t *ss_rsession;	/**< Processed remote SDP */
 
