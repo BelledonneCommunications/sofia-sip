@@ -9,6 +9,9 @@ Release roadmap
 
 1.11/1.12 series
     - first version of the new nua+soa API 
+ 	- nua_respond_nit() (non-INVITEs)
+	- nua_set_handle_params()
+	- session object ownership changes (DONE)
     - doxygen documentation updates
     - rpm and dpkg packaging
 
