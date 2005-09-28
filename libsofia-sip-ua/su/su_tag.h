@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_TAG_H /** Defined when su_tag.h has been included. */
-#define SU_TAG_H "$Id: su_tag.h,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $"
+#define SU_TAG_H "$Id: su_tag.h,v 1.2 2005/09/28 20:05:24 ppessi Exp $"
 
 /**@SU_TAG
  * @file su_tag.h  Object-oriented tags and tag list interface.
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Feb 20 19:48:18 2001 ppessi
- * $Date: 2005/07/20 20:35:58 $
+ * $Date: 2005/09/28 20:05:24 $
  */
 
 #ifndef SU_CONFIG_H

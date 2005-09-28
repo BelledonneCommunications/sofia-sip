@@ -23,13 +23,13 @@
  */
 
 #ifndef SOA_SESSION_H
-#define SOA_SESSION_H "$Id: soa_session.h,v 1.4 2005/09/22 19:38:05 kaiv Exp $"
+#define SOA_SESSION_H "$Id: soa_session.h,v 1.5 2005/09/28 20:05:24 ppessi Exp $"
 /**@file soa_session.h  Internal API for SDP Offer/Answer Interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Mon Aug 1 15:43:53 EEST 2005 ppessi
- * $Date: 2005/09/22 19:38:05 $
+ * $Date: 2005/09/28 20:05:24 $
  */
 
 #ifndef SOA_H

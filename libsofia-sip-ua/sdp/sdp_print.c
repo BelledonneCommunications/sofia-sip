@@ -23,7 +23,7 @@
  */
 
 const char _sdp_print_c_id[] =
-"$Id: sdp_print.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
+"$Id: sdp_print.c,v 1.3 2005/09/28 20:05:24 ppessi Exp $";
 /**@ingroup sdp_printer 
  *
  * @CFILE sdp_print.c  Simple SDP printer interface.

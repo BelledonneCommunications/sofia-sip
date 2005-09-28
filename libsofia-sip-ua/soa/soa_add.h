@@ -23,13 +23,13 @@
  */
 
 #ifndef SOA_ADD_H
-#define SOA_ADD_H "$Id: soa_add.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
+#define SOA_ADD_H "$Id: soa_add.h,v 1.3 2005/09/28 20:05:24 ppessi Exp $"
 /**@file soa_add.h  Register SDP Offer/Answer Interface Instances.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Mon Aug 1 15:43:53 EEST 2005 ppessi
- * $Date: 2005/09/09 10:56:31 $
+ * $Date: 2005/09/28 20:05:24 $
  */
 
 struct soa_session_actions;

@@ -28,13 +28,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  * 
  * @date Created: Thu Aug 19 01:12:25 1999 ppessi
- * $Date: 2005/09/19 11:12:10 $
+ * $Date: 2005/09/28 20:05:24 $
  */
 
 #include "config.h"
 
 char const su_alloc_c_id[] =
-"$Id: su_alloc.c,v 1.3 2005/09/19 11:12:10 kaiv Exp $";
+"$Id: su_alloc.c,v 1.4 2005/09/28 20:05:24 ppessi Exp $";
 
 /**@defgroup su_alloc Memory Management Tutorial
  *

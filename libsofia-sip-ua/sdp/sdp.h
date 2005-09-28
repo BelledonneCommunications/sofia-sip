@@ -23,14 +23,14 @@
  */
 
 #ifndef SDP_H
-#define SDP_H "$Id: sdp.h,v 1.4 2005/09/19 11:12:10 kaiv Exp $"
+#define SDP_H "$Id: sdp.h,v 1.5 2005/09/28 20:05:24 ppessi Exp $"
 /**@file sdp.h  Simple SDP (RFC 2327) Interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  *
  * @date Created: Fri Feb 18 08:54:48 2000 ppessi
- * $Date: 2005/09/19 11:12:10 $
+ * $Date: 2005/09/28 20:05:24 $
  */
 
 #ifndef SU_ALLOC_H
