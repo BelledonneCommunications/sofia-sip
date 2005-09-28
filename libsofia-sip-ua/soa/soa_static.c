@@ -70,7 +70,9 @@ static int soa_static_init(char const *, soa_session_t *, soa_session_t *);
 static void soa_static_deinit(soa_session_t *);
 static int soa_static_set_params(soa_session_t *ss, tagi_t const *tags);
 static int soa_static_get_params(soa_session_t const *ss, tagi_t *tags);
-static tagi_t *soa_static_get_paramlist(soa_session_t const *ss);
+static tagi_t *soa_static_get_paramlist(soa_session_t const *ss,
+					tag_type_t tag, tag_value_t value, 
+					...);
 static int soa_static_set_capability_sdp(soa_session_t *ss, 
 				       sdp_session_t *sdp,
 				       char const *, int);
@@ -163,9 +165,20 @@ static int soa_static_get_params(soa_session_t const *ss, tagi_t *tags)
   return soa_base_get_params(ss, tags);
 }
 
-static tagi_t *soa_static_get_paramlist(soa_session_t const *ss)
+static tagi_t *soa_static_get_paramlist(soa_session_t const *ss,
+					tag_type_t tag, tag_value_t value, 
+					...)
 {
-  return soa_base_get_paramlist(ss);
+  ta_list ta;
+  tagi_t *tl;
+
+  ta_start(ta, tag, value);
+
+  tl = soa_base_get_paramlist(ss, TAG_NEXT(ta_args(ta)));
+
+  ta_end(ta);
+
+  return tl;
 }
 
 static int soa_static_set_capability_sdp(soa_session_t *ss, 
