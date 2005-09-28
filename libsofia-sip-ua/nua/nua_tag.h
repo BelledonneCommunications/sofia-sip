@@ -49,11 +49,11 @@
 #ifndef NTA_TAG_H
 #include <nta_tag.h>
 #endif
+#ifndef SOA_TAG_H
+#include <soa_tag.h>
+#endif
 #ifndef NUA_H
 #include <nua.h>
-#endif
-#ifndef SOA_H
-#include <soa.h>
 #endif
 
 /** List of all NUA tags. */
