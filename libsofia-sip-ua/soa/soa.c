@@ -1217,17 +1217,33 @@ void soa_set_activity(soa_session_t *ss,
   struct soa_media_activity *ma;
   sdp_connection_t const *c;
   int mode;
+  int ma_audio = SOA_ACTIVE_DISABLED;
+  int ma_video = SOA_ACTIVE_DISABLED;
+  int ma_chat = SOA_ACTIVE_DISABLED;
+  int ma_image = SOA_ACTIVE_DISABLED;
+  int *p;
 
   remote = !!remote;
 
   ma = remote ? ss->ss_remote_activity : ss->ss_local_activity;
 
-  ma->ma_audio = ma->ma_video = ma->ma_chat = ma->ma_image =
-    SOA_ACTIVE_DISABLED;
-
   for (; m; m = m->m_next) {
-    if (m->m_rejected)
+    if (m->m_type == sdp_media_audio)
+      p = &ma_audio;
+    else if (m->m_type == sdp_media_video)
+      p = &ma_video;
+    else if (m->m_type == sdp_media_image)
+      p = &ma_image;
+    else if (strcasecmp(m->m_type_name, "message") == 0)
+      p = &ma_chat;
+    else
       continue;
+
+    if (m->m_rejected) {
+      if (*p < 0)
+	*p = SOA_ACTIVE_REJECTED;
+      continue;
+    }
 
     mode = m->m_mode;
 
@@ -1236,24 +1252,16 @@ void soa_set_activity(soa_session_t *ss,
     if (remote != (c && c->c_mcast))
       mode = ((mode << 1) & 2) | ((mode >> 1) & 1);
 
-    if (m->m_type == sdp_media_audio)
-      ma->ma_audio |= mode;
-    else if (m->m_type == sdp_media_video)
-      ma->ma_video |= mode;
-    else if (m->m_type == sdp_media_image)
-      ma->ma_image |= mode;
-    else if (strcasecmp(m->m_type_name, "message") == 0)
-      ma->ma_chat |= mode;
+    if (*p < 0)
+      *p = mode;
+    else
+      *p |= mode;
   }
 
-  if (ma->ma_audio != SOA_ACTIVE_DISABLED)
-    ma->ma_audio &= ~SOA_ACTIVE_DISABLED;
-  if (ma->ma_video != SOA_ACTIVE_DISABLED)
-    ma->ma_video &= ~SOA_ACTIVE_DISABLED;
-  if (ma->ma_image != SOA_ACTIVE_DISABLED)
-    ma->ma_image &= ~SOA_ACTIVE_DISABLED;
-  if (ma->ma_chat != SOA_ACTIVE_DISABLED)
-    ma->ma_chat &= ~SOA_ACTIVE_DISABLED;
+  ma->ma_audio = ma_audio;
+  ma->ma_video = ma_video;
+  ma->ma_image = ma_image;
+  ma->ma_chat = ma_chat;
 }
 
 /* ----------------------------------------------------------------------*/
