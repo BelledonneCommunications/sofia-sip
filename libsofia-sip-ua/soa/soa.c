@@ -319,29 +319,14 @@ int soa_base_init(char const *name,
 
     DUP(ss->ss_address, su_strdup, parent->ss_address);
     ss->ss_af = parent->ss_af;
+    DUP(ss->ss_hold, su_strdup, parent->ss_hold);
 
     DUP(ss->ss_cname, su_strdup, parent->ss_cname);
-
-    DUP(ss->ss_path, su_strdup, parent->ss_path);
-    DUP(ss->ss_mss_sdp, su_strdup, parent->ss_mss_sdp);
-    DUP(ss->ss_mss_cfg, su_strdup, parent->ss_mss_cfg);
-
-    DUP(ss->ss_video_local, su_strdup, parent->ss_video_local);
-    DUP(ss->ss_video_remote, su_strdup, parent->ss_video_remote);
-
-    DUP(ss->ss_image_local, su_strdup, parent->ss_image_local);
-    DUP(ss->ss_image_remote, su_strdup, parent->ss_image_remote);
-    DUP(ss->ss_image_name, su_strdup, parent->ss_image_name);
-
-    DUP(ss->ss_events, su_strlst_dup, parent->ss_events);
 
     ss->ss_srtp_enable = parent->ss_srtp_enable;
     ss->ss_srtp_confidentiality = parent->ss_srtp_confidentiality;
     ss->ss_srtp_integrity = parent->ss_srtp_integrity;
   }
-
-  if (ss->ss_path == NULL)
-    ss->ss_path = su_strdup(ss->ss_home, "/");
 
   return 0;
 }
@@ -392,11 +377,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   sdp_session_t *local_sdp;
   char const *local_sdp_str;
 
-  char const *media_address, *media_profile, *mss_sdp, *mss_cfg;
-  char const *media_event_path;
-  char const *image_local, *image_remote, *image_name;
-  char const *video_local, *video_remote;
-
+  char const *media_address, *hold;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
 
   caps_sdp = NONE;
@@ -407,18 +388,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   af = ss->ss_af;
 
+  hold = ss->ss_hold;
   media_address = ss->ss_address;
-  mss_sdp = ss->ss_mss_sdp;
-  mss_cfg = ss->ss_mss_cfg;
-  media_profile = ss->ss_path;
-  media_event_path = NONE;
-
-  image_local = ss->ss_image_local;
-  image_remote = ss->ss_image_remote;
-  image_name = ss->ss_image_name;
-
-  video_local = ss->ss_video_local;
-  video_remote = ss->ss_video_remote;
 
   srtp_enable = ss->ss_srtp_enable;
   srtp_confidentiality = ss->ss_srtp_confidentiality;
@@ -434,17 +405,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
 	      SOATAG_AF_REF(af),
 	      SOATAG_ADDRESS_REF(media_address),
-	      SOATAG_MEDIA_PROFILE_REF(media_profile),
-	      SOATAG_MSS_SDP_REF(mss_sdp),
-	      SOATAG_MSS_CFG_REF(mss_cfg),
-	      SOATAG_MEDIA_EVENT_PATH_REF(media_event_path),
-
-	      SOATAG_IMAGE_LOCAL_REF(image_local),
-	      SOATAG_IMAGE_REMOTE_REF(image_remote),
-	      SOATAG_TARGET_IMAGE_NAME_REF(image_name),
-
-	      SOATAG_VIDEO_LOCAL_REF(video_local),
-	      SOATAG_VIDEO_REMOTE_REF(video_remote),
+	      SOATAG_HOLD_REF(hold),
 
 	      SOATAG_SRTP_ENABLE_REF(srtp_enable),
 	      SOATAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
@@ -493,39 +454,12 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     ss->ss_address = su_strdup(ss->ss_home, media_address);
   }
 
-  if (str0casecmp(mss_sdp, ss->ss_mss_sdp)) {
-    su_free(ss->ss_home, (void *)ss->ss_mss_sdp);
-    ss->ss_mss_sdp = su_strdup(ss->ss_home, mss_sdp);
-  }
+  if (hold == (char const *)1)
+    hold = "*";
 
-  if (str0casecmp(mss_cfg, ss->ss_mss_cfg)) {
-    su_free(ss->ss_home, (void *)ss->ss_mss_cfg);
-    ss->ss_mss_cfg = su_strdup(ss->ss_home, mss_cfg);
-  }
-
-  if (media_profile == NULL) media_profile = "/";
-  if (str0casecmp(media_profile, ss->ss_path)) {
-    su_free(ss->ss_home, (void *)ss->ss_path);
-    ss->ss_path = su_strdup(ss->ss_home, media_profile);
-  }
-
-  if (media_event_path != NONE) {
-    su_strlst_t *events = ss->ss_events;
-    tagi_t const *tl;
-
-    for (tl = tags; tl; tl = tl_next(tl)) {
-      if ((tl = tl_find(tl, soatag_media_event_path))) {
-	char const *path = (char const *)tl->t_value;
-	size_t i, len = su_strlst_len(events);
-
-	for (i = 0; i < len; i++)
-	  if (str0cmp(path, su_strlst_item(events, i)) == 0)
-	    break;
-
-	if (i == len)
-	  su_strlst_dup_append(events, path);
-      }
-    }
+  if (str0casecmp(hold, ss->ss_hold)) {
+    su_free(ss->ss_home, (void *)ss->ss_hold);
+    ss->ss_hold = su_strdup(ss->ss_home, hold);
   }
 
   return n;
@@ -554,11 +488,6 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 {
   int n;
 
-  char const *media_event_path = NULL;
-
-  if (ss->ss_events)
-    media_event_path = su_strlst_item(ss->ss_events, 0);
-
   n = tl_tgets(tags,
 	       SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp),
 	       SOATAG_CAPS_SDP_STR(ss->ss_caps->ssd_str),
@@ -576,17 +505,7 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 
 	       SOATAG_AF(ss->ss_af),
 	       SOATAG_ADDRESS(ss->ss_address),
-	       SOATAG_MEDIA_PROFILE(ss->ss_path),
-	       SOATAG_MSS_SDP(ss->ss_mss_sdp),
-	       SOATAG_MSS_CFG(ss->ss_mss_cfg),
-	       SOATAG_MEDIA_EVENT_PATH(media_event_path),
-
-	       SOATAG_IMAGE_LOCAL(ss->ss_image_local),
-	       SOATAG_IMAGE_REMOTE(ss->ss_image_remote),
-	       SOATAG_TARGET_IMAGE_NAME(ss->ss_image_name),
-
-	       SOATAG_VIDEO_LOCAL(ss->ss_video_local),
-	       SOATAG_VIDEO_REMOTE(ss->ss_video_remote),
+	       SOATAG_HOLD(ss->ss_hold),
 
 	       SOATAG_SRTP_ENABLE(ss->ss_srtp_enable),
 	       SOATAG_SRTP_CONFIDENTIALITY(ss->ss_srtp_confidentiality),
@@ -614,37 +533,13 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss)
   if (ss == NULL)
     return NULL;
 
-  if (ss->ss_events) {
-    su_strlst_t *events = ss->ss_events;
-    size_t i, len = su_strlst_len(events);
+  params = tl_list(
 
-    media_events = malloc((len + 1) * sizeof *media_events);
-
-    if (media_events) {
-      for (i = 0; i < len; i++) {
-	media_events[i].t_tag = soatag_media_event_path;
-	media_events[i].t_value = (tag_value_t)su_strlst_item(events, i);
-      }
-      media_events[len].t_tag = NULL;
-      media_events[len].t_value = 0;
-    }
-  }
-
-  params = tl_list(SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp),
+		   SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp),
 		   SOATAG_CAPS_SDP_STR(ss->ss_caps->ssd_str),
 
 		   SOATAG_AF(ss->ss_af),
 		   SOATAG_ADDRESS(ss->ss_address),
-		   SOATAG_MEDIA_PROFILE(ss->ss_path),
-		   SOATAG_MSS_SDP(ss->ss_mss_sdp),
-		   SOATAG_MSS_CFG(ss->ss_mss_cfg),
-
-		   SOATAG_IMAGE_LOCAL(ss->ss_image_local),
-		   SOATAG_IMAGE_REMOTE(ss->ss_image_remote),
-		   SOATAG_TARGET_IMAGE_NAME(ss->ss_image_name),
-
-		   SOATAG_VIDEO_LOCAL(ss->ss_video_local),
-		   SOATAG_VIDEO_REMOTE(ss->ss_video_remote),
 
 		   SOATAG_SRTP_ENABLE(ss->ss_srtp_enable),
 		   SOATAG_SRTP_CONFIDENTIALITY(ss->ss_srtp_confidentiality),

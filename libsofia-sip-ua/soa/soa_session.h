@@ -184,23 +184,11 @@ struct soa_session
   char const     *ss_warning;	/**< Warnings from last media operation */
 
   /* Media parameters */
-  char const     *ss_path;
-
   char const     *ss_address;
   enum soa_af     ss_af;
+  char const     *ss_hold;	/**< Media on hold locally */
 
   char const     *ss_cname;
-  char const     *ss_mss_sdp; /**< mss.sdp */
-  char const     *ss_mss_cfg; /**< mss.cfg */
-
-  char const     *ss_video_local;
-  char const     *ss_video_remote;
-
-  char const     *ss_image_local;
-  char const     *ss_image_remote;
-  char const     *ss_image_name; /**< JPIP target-id */
-
-  su_strlst_t    *ss_events;
 
   unsigned ss_srtp_enable:1,
     ss_srtp_confidentiality:1,
