@@ -149,10 +149,10 @@ struct soa_session
 
   struct soa_media_activity
   {
-    int ma_audio:3; /**< Audio activity (send/recv) */
-    int ma_video:3; /**< Video activity (send/recv) */
-    int ma_image:3; /**< Image activity (send/recv) for JPIP */
-    int ma_chat:3;  /**< Chat activity (send/recv) */
+    int ma_audio:4; /**< Audio activity (send/recv) */
+    int ma_video:4; /**< Video activity (send/recv) */
+    int ma_image:4; /**< Image activity (send/recv) for JPIP */
+    int ma_chat:4;  /**< Chat activity (send/recv) */
   } ss_local_activity[1], ss_remote_activity[1];
 
   /** Capabilities as specified by application */
