@@ -1,3 +1,7 @@
+2005-09-23  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* nua_stack.c: Fix delivering nua_i_active.
+
 2005-09-22  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* nua.docs: Updated event documentation.
