@@ -231,7 +231,7 @@ int ua_init(su_root_t *root, nua_t *nua)
 	  NUTAG_SIP_PARSER_REF(sip_parser),
 	  NUTAG_UICC_REF(uicc_name),
 	  NUTAG_MEDIA_ENABLE_REF(media_enable),
-	  NUTAG_SOA_SESSION_REF(soa),
+	  /* NUTAG_SOA_SESSION_REF(soa), *
 	  NUTAG_SOA_NAME_REF(soa_name),
 	  TAG_NULL());
 
@@ -2766,7 +2766,7 @@ static void signal_call_state_change(nua_handle_t *nh, int status, char const *p
 
   ua_event(nh->nh_nua, nh, NULL, nua_i_state, status, "Call state change", 
 	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa), 
-	   NUTAG_SOA_SESSION(nh->nh_soa),
+	   /* NUTAG_SOA_SESSION(nh->nh_soa), */
 	   TAG_END());
 
   switch(flags)
@@ -2775,7 +2775,7 @@ static void signal_call_state_change(nua_handle_t *nh, int status, char const *p
       {
 	ua_event(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active", 
 		 NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-		 NUTAG_SOA_SESSION(nh->nh_soa),
+		 /* NUTAG_SOA_SESSION(nh->nh_soa), */
 		 TAG_END());
 	ss->ss_active = 1;
 	break;
