@@ -170,18 +170,18 @@ static int soa_asynch_generate_offer(soa_session_t *ss,
   uint16_t port = 5004;
   su_msg_r msg;
 
-  if (ss->ss_local->ssd_sdp == NULL) {
+  if (ss->ss_user->ssd_sdp == NULL) {
     if (ss->ss_caps->ssd_unparsed == NULL)
       return soa_set_status(ss, 500, "No local session available");
   }
 
-  if (ss->ss_local->ssd_sdp)
+  if (ss->ss_user->ssd_sdp)
     return 0;			/* We are done */
 
   /* Generate a dummy SDP offer based on our capabilities */
   if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
     return -1;
-  sdp = ss->ss_local->ssd_sdp; assert(ss->ss_local->ssd_sdp);
+  sdp = ss->ss_user->ssd_sdp; assert(ss->ss_user->ssd_sdp);
 
   for (m = sdp->sdp_media; m; m = m->m_next)
     if (m->m_port == 0)
@@ -214,18 +214,18 @@ static int soa_asynch_generate_answer(soa_session_t *ss,
   uint16_t port = 5004;
   su_msg_r msg;
 
-  if (ss->ss_local->ssd_sdp == NULL) {
+  if (ss->ss_user->ssd_sdp == NULL) {
     if (ss->ss_caps->ssd_unparsed == NULL)
       return soa_set_status(ss, 500, "No local session available");
   }
 
-  if (ss->ss_local->ssd_sdp)
+  if (ss->ss_user->ssd_sdp)
     return 0;			/* We are done */
 
   /* Generate a dummy SDP offer based on our capabilities */
   if (soa_set_local_sdp(ss, ss->ss_caps->ssd_unparsed, -1) < 0)
     return -1;
-  sdp = ss->ss_local->ssd_sdp; assert(ss->ss_local->ssd_sdp);
+  sdp = ss->ss_user->ssd_sdp; assert(ss->ss_user->ssd_sdp);
 
   for (m = sdp->sdp_media; m; m = m->m_next)
     if (m->m_port == 0)
@@ -288,6 +288,6 @@ static int soa_asynch_deactivate(soa_session_t *ss, char const *option)
 static void soa_asynch_terminate(soa_session_t *ss, char const *option)
 {
   ss->ss_in_progress = NULL;
-  soa_description_free(ss, ss->ss_local);
+  soa_description_free(ss, ss->ss_user);
   soa_base_terminate(ss, option);
 }
