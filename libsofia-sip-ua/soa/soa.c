@@ -200,6 +200,7 @@ soa_session_t *soa_create(char const *name,
   struct soa_session_actions const *actions = &soa_default_actions;
 
   soa_session_t *ss;
+  size_t namelen;
 
   if (name && name[0]) {
     struct soa_namenode const *n;
@@ -214,17 +215,22 @@ soa_session_t *soa_create(char const *name,
 
     actions = n->actions; assert(actions);
   }
+  else
+    name = "default";
 
   assert(SOA_VALID_ACTIONS(actions));
 
   if (root == NULL)
     return (void)(errno = EFAULT), NULL;
 
-  ss = su_home_new(actions->sizeof_soa_session);
+  namelen = strlen(name) + 1;
+  
+  ss = su_home_new(actions->sizeof_soa_session + namelen);
   if (ss) {
     ss->ss_root = root;
     ss->ss_magic = magic;
     ss->ss_actions = actions;
+    ss->ss_name = strcpy((char *)ss + actions->sizeof_soa_session, name);
 
     if (ss->ss_actions->soa_init(name, ss, NULL) < 0)
       ss->ss_actions->soa_deinit(ss), ss = NULL;
@@ -238,15 +244,20 @@ soa_session_t *soa_clone(soa_session_t *parent_ss,
 			 soa_magic_t *magic)
 {
   soa_session_t *ss;
+  size_t namelen;
 
   if (parent_ss == NULL || root == NULL)
     return (void)(errno = EFAULT), NULL;
 
-  ss = su_home_new(parent_ss->ss_actions->sizeof_soa_session);
+  namelen = strlen(parent_ss->ss_name) + 1;
+
+  ss = su_home_new(parent_ss->ss_actions->sizeof_soa_session + namelen);
   if (ss) {
     ss->ss_root = root;
     ss->ss_magic = magic;
     ss->ss_actions = parent_ss->ss_actions;
+    ss->ss_name = strcpy((char *)ss + ss->ss_actions->sizeof_soa_session,
+			 parent_ss->ss_name);
 
     if (ss->ss_actions->soa_init(NULL, ss, parent_ss) < 0)
       ss->ss_actions->soa_deinit(ss), ss = NULL;

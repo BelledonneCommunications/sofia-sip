@@ -122,6 +122,7 @@ struct soa_session
   su_home_t ss_home[1];
 
   struct soa_session_actions const *ss_actions;
+  char const *ss_name;		/**< Our name */
 
   su_root_t *ss_root;
   soa_magic_t *ss_magic;	/**< Application data */
