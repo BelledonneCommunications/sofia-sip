@@ -57,11 +57,15 @@ struct sdp_parser_s {
   } pr_output;
   char      *pr_message;
   su_home_t *pr_orig_home;
+
+  sdp_mode_t pr_session_mode;
+
   unsigned   pr_ok : 1;
 
   unsigned   pr_strict : 1;
   unsigned   pr_anynet : 1;
   unsigned   pr_mode_0000 : 1;
+  unsigned   pr_mode_manual : 1;
   unsigned   pr_insane : 1;
   unsigned   pr_c_missing : 1;
   unsigned   pr_config : 1;
@@ -138,6 +142,9 @@ sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
     p->pr_c_missing = (flags & sdp_f_c_missing) != 0;
     if (flags & sdp_f_config)
       p->pr_c_missing = 1, p->pr_config = 1;
+    p->pr_mode_manual = (flags & sdp_f_mode_manual) != 0;
+    p->pr_session_mode = sdp_sendrecv;
+
     parse_message(p);
     
     return p;
@@ -457,7 +464,6 @@ int sdp_connection_is_inaddr_any(sdp_connection_t const *c)
 static void post_session(sdp_parser_t *p, sdp_session_t *sdp)
 {
   sdp_media_t *m;
-  sdp_mode_t mode;
   sdp_connection_t const *c;
 
   if (!p->pr_ok)
@@ -466,7 +472,6 @@ static void post_session(sdp_parser_t *p, sdp_session_t *sdp)
   /* Set session back-pointer */
   for (m = sdp->sdp_media; m; m = m->m_next) {
     m->m_session = sdp;
-    m->m_mode = sdp_sendrecv;
   }
 
   if (p->pr_config) {
@@ -475,8 +480,6 @@ static void post_session(sdp_parser_t *p, sdp_session_t *sdp)
     return;
   }
   
-  mode = sdp_attribute_mode(sdp->sdp_attributes, sdp_sendrecv);
-
   /* Go through all media and set mode */
   for (m = sdp->sdp_media; m; m = m->m_next) {
     if (m->m_port == 0) {
@@ -484,8 +487,6 @@ static void post_session(sdp_parser_t *p, sdp_session_t *sdp)
       m->m_rejected = 1;
       continue;
     }
-
-    m->m_mode = sdp_attribute_mode(m->m_attributes, mode);
 
     c = sdp_media_connections(m);
 
@@ -1179,14 +1180,25 @@ static void parse_session_attr(sdp_parser_t *p, char *r, sdp_attribute_t **resul
 
   if (strcasecmp(name, "charset") == 0) {
     p->pr_session->sdp_charset = value;
+    return;
   }
-  else {
-    PARSE_ALLOC(p, sdp_attribute_t, a);
-    *result = a;
 
-    a->a_name  = name;
-    a->a_value = value;
-  }
+  if (p->pr_mode_manual) 
+    ;
+  else if (strcasecmp(name, "inactive") == 0)
+    p->pr_session_mode = sdp_inactive;
+  else if (strcasecmp(name, "sendonly") == 0)
+    p->pr_session_mode = sdp_sendonly;
+  else if (strcasecmp(name, "recvonly") == 0)
+    p->pr_session_mode = sdp_recvonly;
+  else if (strcasecmp(name, "sendrecv") == 0)
+    p->pr_session_mode = sdp_sendrecv;
+
+  PARSE_ALLOC(p, sdp_attribute_t, a);
+  *result = a;
+
+  a->a_name  = name;
+  a->a_value = value;
 }
 
 /* -------------------------------------------------------------------------
@@ -1463,6 +1475,25 @@ static void parse_media_attr(sdp_parser_t *p, char *r, sdp_media_t *m,
   else 
     PARSE_CHECK_REST(p, r, "a");
 
+  if (p->pr_mode_manual) 
+    ;
+  else if (strcasecmp(name, "inactive") == 0) {
+    m->m_mode = sdp_inactive;
+    return;
+  }
+  else if (strcasecmp(name, "sendonly") == 0) {
+    m->m_mode = sdp_sendonly;
+    return;
+  }
+  else if (strcasecmp(name, "recvonly") == 0) {
+    m->m_mode = sdp_recvonly;
+    return;
+  }
+  else if (strcasecmp(name, "sendrecv") == 0) {
+    m->m_mode = sdp_sendrecv;
+    return;
+  }
+
   if (rtp && strcasecmp(name, "rtpmap") == 0) {
     if ((n = parse_rtpmap(p, r, m)) == 0 || n < -1)
       return;
@@ -1626,6 +1657,7 @@ static void parse_descs(sdp_parser_t *p,
       parse_media(p, rest, medias);
       m = *medias;
       if (m) {
+	m->m_mode = p->pr_session_mode;
 	medias = &m->m_next;
 	connections = &m->m_connections;
 	bandwidths = &m->m_bandwidths;

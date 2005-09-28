@@ -65,9 +65,11 @@ struct sdp_printer_s {
   /* various flags */
   int        pr_ok : 1;
   int        pr_strict : 1;
-  int        pr_owns_buffer : 1;
-  int        pr_may_realloc : 1;
-  int        pr_all_rtpmaps : 1;
+  unsigned   pr_owns_buffer:1;
+  unsigned   pr_may_realloc:1;
+  unsigned   pr_all_rtpmaps:1;
+  unsigned   pr_mode_manual:1;
+  unsigned   pr_mode_always:1;
 };
 
 static struct sdp_printer_s printer_memory_error = {
@@ -105,6 +107,8 @@ static void print_session(sdp_printer_t *p, sdp_session_t const *session);
  * @li @c sdp_f_prefix - The buffer provided by caller already contains valid 
  * data. The function sdp_print() will concatenate its result to the buffer.
  *
+ * @li @c sdp_f_mode - Add mode attributes.
+ *
  * @return 
  * The function sdp_print() always returns a handle to an sdp_printer_t
  * object.
@@ -135,6 +139,8 @@ sdp_printer_t *sdp_print(su_home_t *home,
     }
     p->pr_strict = (flags & sdp_f_strict) != 0;
     p->pr_all_rtpmaps = (flags & sdp_f_all_rtpmaps) != 0;
+    p->pr_mode_manual = (flags & sdp_f_mode_manual) != 0;
+    p->pr_mode_always = (flags & sdp_f_mode_always) != 0;
 
     print_session(p, session);
 
@@ -518,6 +524,23 @@ static void print_attributes(sdp_printer_t *p, sdp_attribute_t const *a)
   }
 }
 
+static void 
+print_attributes_without_mode(sdp_printer_t *p, sdp_attribute_t const *a)
+{
+  for (;a; a = a->a_next) {
+    char const *name = a->a_name;
+    char const *value = a->a_value;
+
+    if (strcasecmp(name, "inactive") == 0 ||
+	strcasecmp(name, "sendonly") == 0 ||
+	strcasecmp(name, "recvonly") == 0 ||
+	strcasecmp(name, "sendrecv") == 0)
+      continue;
+
+    sdp_printf(p, "a=%s%s%s" CRLF, name, value ? ":" : "", value ? value : "");
+  }
+}
+
 static void print_charset(sdp_printer_t *p, sdp_text_t *charset)
 {
   sdp_printf(p, "a=charset%s%s" CRLF, charset ? ":" : "", charset ? charset : "");
@@ -529,6 +552,11 @@ static void print_media(sdp_printer_t *p,
 {
   char const *media, *proto;
   sdp_rtpmap_t *rm;
+
+  sdp_mode_t session_mode = sdp_sendrecv;
+
+  if (!p->pr_mode_manual)
+    session_mode = sdp_attribute_mode(sdp->sdp_attributes, sdp_sendrecv);
 
   for (;m ; m = m->m_next) {
     switch (m->m_type) {
@@ -596,9 +624,30 @@ static void print_media(sdp_printer_t *p,
 		   rm->rm_pt, rm->rm_fmtp);
     }
 
-    if (m->m_attributes)
+    if (!p->pr_mode_manual && !m->m_rejected &&
+	(m->m_mode != session_mode || p->pr_mode_always)) {
+      switch (m->m_mode) {
+      case sdp_inactive:
+	sdp_printf(p, "a=inactive" CRLF);
+	break;
+      case sdp_sendonly:
+	sdp_printf(p, "a=sendonly" CRLF);
+	break;
+      case sdp_recvonly:
+	sdp_printf(p, "a=recvonly" CRLF);
+	break;
+      case sdp_sendrecv:
+	sdp_printf(p, "a=sendrecv" CRLF);
+	break;
+      default:
+	break;
+      }
+    }
+
+    if (p->pr_mode_manual)
       print_attributes(p, m->m_attributes);
-    
+    else
+      print_attributes_without_mode(p, m->m_attributes);
   }
 }
 

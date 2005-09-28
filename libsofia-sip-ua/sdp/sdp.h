@@ -475,7 +475,11 @@ enum sdp_parse_flags_e {
   /** Don't require c= for each media line */
   sdp_f_c_missing = 128,
   /** Parse SDP config files */
-  sdp_f_config = 256
+  sdp_f_config = 256,
+  /** Do not generate or parse SDP mode */
+  sdp_f_mode_manual = 512,
+  /** Include sendrecv mode, too. */
+  sdp_f_mode_always = 1024
 };
 
 /** SDP parser handle. */
