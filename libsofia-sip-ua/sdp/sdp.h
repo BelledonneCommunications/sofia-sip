@@ -394,6 +394,12 @@ int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b);
 /** Compare two media (m=) descriptions */
 int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b);
 
+/** Compare two rtpmap structures. */
+int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b);
+
+/** Compare two text lists */
+int sdp_list_cmp(sdp_list_t const *a, sdp_list_t const *b);
+
 /** Get connections of a media description */
 sdp_connection_t *sdp_media_connections(sdp_media_t *m);
 

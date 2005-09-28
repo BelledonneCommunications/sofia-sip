@@ -1155,12 +1155,10 @@ int sdp_session_cmp(sdp_session_t const *a, sdp_session_t const *b)
     return rv;
   if ((rv = str0cmp(a->sdp_uri, b->sdp_uri)))
     return rv;
-#if 0
   if ((rv = sdp_list_cmp(a->sdp_emails, b->sdp_emails)))
     return rv;
   if ((rv = sdp_list_cmp(a->sdp_phones, b->sdp_phones)))
     return rv;
-#endif
   if ((rv = sdp_connection_cmp(a->sdp_connection, b->sdp_connection)))
     return rv;
 
@@ -1326,10 +1324,10 @@ int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b)
 {
   int rv;
 
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
   if (a == b)
     return 0;
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
   if ((rv = a->k_method - b->k_method))
     return rv;
   if (a->k_method == sdp_key_x && 
@@ -1343,13 +1341,48 @@ int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b)
 {
   int rv;
 
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
   if (a == b)
     return 0;
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
   if ((rv = str0cmp(a->a_name, b->a_name)))
     return rv;
   return str0cmp(a->a_value, b->a_value);
+}
+
+/** Compare two rtpmap structures. */
+int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b)
+{
+  int rv;
+
+  if (a == b)
+    return 0;
+  if ((rv = (a != NULL) - (b != NULL))) 
+    return rv;
+  if ((rv = str0cmp(a->rm_encoding, b->rm_encoding)))
+    return rv;
+  if ((rv = a->rm_pt - b->rm_pt))
+    return rv;
+  if ((rv = str0cmp(a->rm_params, b->rm_params)))
+    return rv;
+  return str0cmp(a->rm_fmtp, b->rm_fmtp);
+}
+
+/** Compare two lists. */
+int sdp_list_cmp(sdp_list_t const *a, sdp_list_t const *b)
+{
+  int rv;
+
+  for (;a || b; a = a->l_next, b = b->l_next) {
+    if (a == b)
+      return 0;
+    if ((rv = (a != NULL) - (b != NULL))) 
+      return rv;
+    if ((rv = str0cmp(a->l_text, b->l_text)))
+      return rv;
+  }
+
+  return 0;
 }
 
 /** Compare two media (m=) fields */
@@ -1359,6 +1392,7 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
 
   sdp_connection_t const *ac, *bc;
   sdp_bandwidth_t const *ab, *bb;
+  sdp_rtpmap_t const *arm, *brm;
   sdp_attribute_t const *aa, *ba;
 
   if ((rv = (a != NULL) - (b != NULL))) 
@@ -1372,6 +1406,11 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
       return rv;
   if ((rv = a->m_port - b->m_port))
     return rv;
+
+  if (a->m_port == 0 /* && b->m_port == 0 */)
+    /* Ignore transport protocol and media list if media has been rejected */
+    return 0;
+
   if ((rv = a->m_number_of_ports - b->m_number_of_ports))
     return rv;
   if ((rv = a->m_proto - b->m_proto))
@@ -1379,9 +1418,15 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
   if (a->m_proto == sdp_media_x)
     if ((rv = str0cmp(a->m_proto_name, b->m_proto_name)))
       return rv;
-#if 0 /* XXX */
-  m_formats, m_rtpmaps;
-#endif
+
+  for (arm = a->m_rtpmaps, brm = b->m_rtpmaps; 
+       arm || brm; 
+       arm = arm->rm_next, brm = brm->rm_next)
+    if ((rv = sdp_rtpmap_cmp(arm, brm)))
+      return rv;
+
+  if ((rv = sdp_list_cmp(a->m_format, b->m_format)))
+    return rv;
 
   if ((rv = str0cmp(a->m_information, b->m_information)))
     return rv;
