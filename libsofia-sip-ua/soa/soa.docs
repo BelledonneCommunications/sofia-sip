@@ -20,6 +20,13 @@ Offer-Answer Model" to establish the multimedia sessions. The
 SDP Offer-Answer negotiation is specified in 
 <a href="http://ietf.org/rfc/rfc3264.txt">RFC 3264</a>.
 
+The soa engine is implemented in object-oriented manner. The default soa
+object just implements the basic SDP negotiation and basic SIP call model. A
+more complex soa object implementation can manipulate the call model and
+initiate actions on behalf of application.
+
+@section soa_model SDP Offer/Answer Model
+
 The basic capabilities provided by Offer/Answer mechanism include
 -# generating SDP offer (section 5)
 -# processing SDP offer, generating SDP answer (section 6)
@@ -138,17 +145,24 @@ re-INVITE, there might be quite different things happening. The
 application can just return a 200 OK with previous SDP, sometimes
 it must indicate call being on hold and sometimes ask user for
 permission (for adding video).
- 
+
+Rules for resolving glare (both endpoints trying to send offer at the same
+time):
+- if a offer is received while UAS has generated an offer, 
+  it must be rejected (with SIP 491 response).
+
 @section soa_use_cases SOA and SDP Offer/Answer Scenarios
 
 Note that due to limitations in space
 - soa_set_params() is referred as @c set_params
 - soa_set_remote_sdp() is referred as @c set_remote
-- soa_generate_offer() is referred as @c gen_offer  
-- soa_generate_answer() is referred as @c gen_answer 
+- soa_generate_offer() followed by soa_get_session_sdp() 
+  is referred as @c gen_offer  
+- soa_generate_answer() followed by soa_get_session_sdp() 
+  is referred as @c gen_answer 
 - soa_process_answer() is referred as @c proc_answer 
 
-@subsection sua_uc_basic_out Basic Call Out
+@subsection soa_uc_basic_out Basic Call Out
 
 This is the "basic" outbound call model.
 
@@ -181,7 +195,7 @@ This is the "basic" outbound call model.
         |		|		|			|
 </pre>
 
-@subsection sua_uc_basic_in Basic Call In
+@subsection soa_uc_basic_in Basic Call In
 
 This is the "basic" inbound call model.
 
@@ -216,7 +230,7 @@ This is the "basic" inbound call model.
 	|		|		|			|
 </pre>
 
-@subsection sua_uc_basic_3p 3rd Party Call In 
+@subsection soa_uc_basic_3p 3rd Party Call In 
 
 The 3rd-party call model just reverses the O/A roles of callee and caller.
 
@@ -249,7 +263,7 @@ The 3rd-party call model just reverses the O/A roles of callee and caller.
         |		|		|			|
 </pre>
 
-@subsection sua_uc_early_out Callout with Early Media
+@subsection soa_uc_early_out Callout with Early Media
 
 It is possible to establish media session before call is completed. In this
 case, the 180 Ringing contains the SDP answer. A copy of SDP answer is
@@ -290,7 +304,7 @@ time to establish the media session.
 	|		|		|			|
 </pre>
 
-@subsection sua_uc_early_in Call In Establishing Early Media
+@subsection soa_uc_early_in Call In Establishing Early Media
 
 The mirror of the previous scenario:
 
@@ -328,7 +342,7 @@ The mirror of the previous scenario:
 that callee sends a ringing tone towards caller and discards any media sent
 by caller until the call is accepted (200 OK is sent towards caller).
 
-@subsection sua_uc_100rel_out Call Out with PRACK
+@subsection soa_uc_100rel_out Call Out with PRACK
 
 Here is second alternative establishing media session before call is
 completed. In this case, the 180 Ringing contains the SDP answer. The 180
@@ -374,7 +388,7 @@ request.
 	|		|		|			|
 </pre>
 
-@subsection sua_uc_100rel_in Call In with PRACK
+@subsection soa_uc_100rel_in Call In with PRACK
 
 The mirror of the previous scenario:
 
@@ -703,5 +717,60 @@ establishes the call:
 	|			|----------ACK--------->|
 	|			|			|
 </pre>
+
+@section soa_use_case_10 Case #10: Upgrade Session with Re-INVITE
+
+The session is upgraded: a new media is added to the session. 
+
+<pre>
+	A		        B
+	|			|
+	|----INVITE (offer1)--->|
+	|			|
+	|			|
+	|< - - 180 Ringing - - -|
+	|			|
+	|			|
+	|<----200 (answer2)-----|
+	|----------ACK--------->|
+	|			|
+	|			|
+	|			|
+	|			|
+	|----INVITE (offer2)--->|
+	|			|
+	|<----200 (answer2)-----|
+	|----------ACK--------->|
+	|			|
+	|			|
+</pre>
+
+@section soa_use_case_10 Case #10: Upgrade Session with Re-INVITE
+
+The session upgraded is rejected.
+
+<pre>
+	A		        B
+	|			|
+	|----INVITE (offer1)--->|
+	|			|
+	|			|
+	|< - - 180 Ringing - - -|
+	|			|
+	|			|
+	|<----200 (answer2)-----|
+	|----------ACK--------->|
+	|			|
+	|			|
+	|			|
+	|			|
+	|----INVITE (offer2)--->|
+	|			|
+	|<---------488----------|
+	|----------ACK--------->|
+	|			|
+	|			|
+</pre>
+
 
 */
