@@ -75,7 +75,7 @@ static inline int soa_media_is_ready(soa_session_t const *ss);
 
 enum soa_sdp_kind { 
   soa_capability_sdp_kind,
-  soa_local_sdp_kind,
+  soa_user_sdp_kind,
   soa_remote_sdp_kind
 };
 
@@ -278,6 +278,8 @@ int soa_base_init(char const *name,
 
     if (soa_description_dup(h, ss->ss_caps, parent->ss_caps) < 0)
       return -1;
+    if (soa_description_dup(h, ss->ss_user, parent->ss_user) < 0)
+      return -1;
     if (soa_description_dup(h, ss->ss_local, parent->ss_local) < 0)
       return -1;
     if (soa_description_dup(h, ss->ss_remote, parent->ss_remote) < 0)
@@ -337,20 +339,11 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   int af;
 
-  sdp_session_t *caps_sdp;
-  char const *caps_sdp_str;
-
-  sdp_session_t *local_sdp;
-  char const *local_sdp_str;
+  sdp_session_t *caps_sdp, *user_sdp;
+  char const *caps_sdp_str, *user_sdp_str;
 
   char const *media_address, *hold;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
-
-  caps_sdp = NONE;
-  caps_sdp_str = NONE;
-
-  local_sdp = NONE;
-  local_sdp_str = NONE;
 
   af = ss->ss_af;
 
@@ -361,13 +354,16 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   srtp_confidentiality = ss->ss_srtp_confidentiality;
   srtp_integrity = ss->ss_srtp_integrity;
 
+  caps_sdp = user_sdp = NONE;
+  caps_sdp_str = user_sdp_str = NONE;
+
   n = tl_gets(tags,
 
 	      SOATAG_CAPS_SDP_REF(caps_sdp),
 	      SOATAG_CAPS_SDP_STR_REF(caps_sdp_str),
 
-	      SOATAG_LOCAL_SDP_REF(local_sdp),
-	      SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
+	      SOATAG_USER_SDP_REF(user_sdp),
+	      SOATAG_USER_SDP_STR_REF(user_sdp_str),
 
 	      SOATAG_AF_REF(af),
 	      SOATAG_ADDRESS_REF(media_address),
@@ -387,7 +383,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     if (caps_sdp_str == NONE) caps_sdp_str = NULL;
 
     if (caps_sdp || caps_sdp_str) {
-      if (soa_set_capability_sdp_str(ss, caps_sdp, caps_sdp_str, -1) < 0) {
+      if (soa_set_capability_sdp(ss, caps_sdp, caps_sdp_str, -1) < 0) {
 	return -1;
       }
     }
@@ -396,18 +392,19 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     }
   }
 
+  if (user_sdp != NONE || user_sdp_str != NONE) {
+    if (user_sdp == NONE) user_sdp = NULL;
+    if (user_sdp_str == NONE) user_sdp_str = NULL;
 
-  if (local_sdp != NONE || local_sdp_str != NONE) {
-    if (local_sdp == NONE) local_sdp = NULL;
-    if (local_sdp_str == NONE) local_sdp_str = NULL;
-
-    if (local_sdp || local_sdp_str) {
-      if (soa_set_local_sdp_str(ss, local_sdp, local_sdp_str, -1) < 0) {
+    if (user_sdp || user_sdp_str) {
+      if (soa_set_user_sdp(ss, user_sdp, user_sdp_str, -1) < 0) {
 	return -1;
       }
+      if (ss->ss_caps->ssd_str == NULL)
+	soa_set_capability_sdp(ss, user_sdp, user_sdp_str, -1);
     }
     else {
-      soa_description_free(ss, ss->ss_local);
+      soa_description_free(ss, ss->ss_user);
     }
   }
 
@@ -458,16 +455,14 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 	       SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp),
 	       SOATAG_CAPS_SDP_STR(ss->ss_caps->ssd_str),
 
+	       SOATAG_USER_SDP(ss->ss_local->ssd_sdp),
+	       SOATAG_USER_SDP_STR(ss->ss_local->ssd_str),
+
 	       SOATAG_LOCAL_SDP(ss->ss_local->ssd_sdp),
 	       SOATAG_LOCAL_SDP_STR(ss->ss_local->ssd_str),
 
 	       SOATAG_REMOTE_SDP(ss->ss_remote->ssd_sdp),
 	       SOATAG_REMOTE_SDP_STR(ss->ss_remote->ssd_str),
-
-	       /* XXX 
-	       SOATAG_SESSION_SDP(ss->ss_desc->ssd_sdp),
-	       SOATAG_SESSION_SDP_STR(ss->ss_desc->ssd_str),
-	       */
 
 	       SOATAG_AF(ss->ss_af),
 	       SOATAG_ADDRESS(ss->ss_address),
@@ -584,16 +579,53 @@ int soa_get_capability_sdp(soa_session_t const *ss,
 
 
 int soa_set_capability_sdp(soa_session_t *ss, 
+			   sdp_session_t const *sdp,
 			   char const *str, int len)
 {
-  return soa_set_sdp(ss, soa_capability_sdp_kind, NULL, str, len);
+  return soa_set_sdp(ss, soa_capability_sdp_kind, sdp, str, len);
 }
 
-int soa_set_capability_sdp_str(soa_session_t *ss, 
-			       sdp_session_t const *sdp,
-			       char const *str, int len)
+/** Set capabilities */
+int 
+soa_base_set_capability_sdp(soa_session_t *ss, 
+			    sdp_session_t *sdp, char const *str0, int len0)
 {
-  return soa_set_sdp(ss, soa_capability_sdp_kind, sdp, str, len);
+  sdp_origin_t o[1] = {{ sizeof(o) }};
+  sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
+  char c_address[64];
+  sdp_time_t t[1] = {{ sizeof(t) }};
+  sdp_media_t *m;
+
+  if (sdp->sdp_origin)
+    *o = *sdp->sdp_origin;
+  else
+    o->o_address = c0;
+
+  sdp->sdp_origin = o;
+
+  if (soa_init_sdp_origin(ss, o, c_address) < 0)
+    return -1;
+
+  if (!sdp->sdp_subject)
+    sdp->sdp_subject = "-";
+
+  sdp->sdp_time = t;
+
+  /* Set port to zero - or should we check that port is already zero? */
+  for (m = sdp->sdp_media; m; m = m->m_next)
+    m->m_port = 0;
+
+  c = sdp->sdp_origin->o_address;
+
+  if (sdp->sdp_connection == NULL) {
+    for (m = sdp->sdp_media; m; m = m->m_next)
+      if (m->m_connections == NULL)
+	break;
+    if (m)
+      sdp->sdp_connection = c;
+  }
+
+  return soa_description_set(ss, ss->ss_caps, sdp, str0, len0);
 }
 
 /** Return SDP description of the session.
@@ -602,51 +634,56 @@ int soa_set_capability_sdp_str(soa_session_t *ss,
  * @retval 1 if description is returned
  * @retval -1 upon an error
  */
-int soa_get_local_sdp(soa_session_t const *ss,
+int soa_get_user_sdp(soa_session_t const *ss,
 		      char const **return_sdp,
 		      int *return_len)
 {
-  char const *sdp;
+  char const *sdp_str;
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
 
-  sdp = ss->ss_local->ssd_str;
+  /* return modified user SDP if available */
+  if (ss->ss_local->ssd_str)
+    sdp_str = ss->ss_local->ssd_str;
+  else
+    sdp_str = ss->ss_user->ssd_str;
 
-  if (sdp == NULL)
+  if (sdp_str == NULL)
     return 0;
   if (return_sdp)
-    *return_sdp = sdp;
+    *return_sdp = sdp_str;
   if (return_len)
-    *return_len = strlen(sdp);
+    *return_len = strlen(sdp_str);
 
   return 1;
 }
 
 /** 
- * Returns the version number of local session
+ * Returns the version number of user session
  * description. The version numbering starts from
  * zero and is incremented for each modification.
  */
-int soa_get_local_version(soa_session_t const *ss)
+int soa_get_user_version(soa_session_t const *ss)
 {
   assert(ss != NULL);
-  return ss->ss_local->ssd_version;
+  return ss->ss_user_version;
 } 
 
-int soa_set_local_sdp(soa_session_t *ss, 
-		      char const *str, int len)
+int soa_set_user_sdp(soa_session_t *ss, 
+		     sdp_session_t const *sdp,
+		     char const *str, int len)
 {
-  return soa_set_sdp(ss, soa_local_sdp_kind, NULL, str, len);
+  return soa_set_sdp(ss, soa_user_sdp_kind, sdp, str, len);
 }
 
-int soa_set_local_sdp_str(soa_session_t *ss, 
-			  sdp_session_t const *sdp,
-			  char const *str, int len)
+/** Set user SDP (base version). */
+int soa_base_set_user_sdp(soa_session_t *ss, 
+			   sdp_session_t *sdp, char const *str0, int len0)
 {
-  return soa_set_sdp(ss, soa_local_sdp_kind, sdp, str, len);
+  ++ss->ss_user_version;
+  return soa_description_set(ss, ss->ss_user, sdp, str0, len0);
 }
-
 
 /** Return remote SDP description of the session.
  *
@@ -683,21 +720,32 @@ int soa_get_remote_sdp(soa_session_t const *ss,
 int soa_get_remote_version(soa_session_t const *ss)
 {
   assert(ss != NULL);
-  return ss->ss_remote->ssd_version;
+  return ss->ss_remote_version;
 } 
 
 int soa_set_remote_sdp(soa_session_t *ss, 
+		       sdp_session_t const *sdp,
 		       char const *str, int len)
 {
-  return soa_set_sdp(ss, soa_remote_sdp_kind, NULL, str, len);
+  return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);
 }
 
-
-int soa_set_remote_sdp_str(soa_session_t *ss, 
-			   sdp_session_t const *sdp,
-			   char const *str, int len)
+/** Set remote SDP (base version). */
+int soa_base_set_remote_sdp(soa_session_t *ss,
+			    int new_version,
+			    sdp_session_t *sdp, char const *str0, int len0)
 {
-  return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);
+  /* This is cleared in soa_generate_answer() or soa_process_answer(). */
+  ss->ss_unprocessed_remote = 1;
+
+  if (!new_version)
+    return 0;
+    
+  soa_set_activity(ss, sdp->sdp_media, 1);
+
+  ss->ss_remote_version++;
+  
+  return soa_description_set(ss, ss->ss_remote, sdp, str0, len0);
 }
 
 int soa_clear_remote_sdp(soa_session_t *ss)
@@ -710,7 +758,26 @@ int soa_clear_remote_sdp(soa_session_t *ss)
   return 0;
 }
 
+int soa_get_local_sdp(soa_session_t const *ss,
+		      char const **return_sdp,
+		      int *return_len)
+{
+  char const *sdp;
 
+  if (ss == NULL)
+    return (void)(errno = EFAULT), -1;
+
+  sdp = ss->ss_local->ssd_str;
+
+  if (sdp == NULL)
+    return 0;
+  if (return_sdp)
+    *return_sdp = sdp;
+  if (return_len)
+    *return_len = strlen(sdp);
+
+  return 1;
+}
 
 /** Initialize offer/answer state machine */
 int soa_init_offer_answer(soa_session_t *ss)
@@ -727,6 +794,8 @@ int soa_init_offer_answer(soa_session_t *ss)
   ss->ss_offer_recv = 0;
   ss->ss_answer_sent = 0;
   ss->ss_answer_recv = 0;
+
+  ss->ss_unprocessed_remote = 0;
 
   return complete;
 }
@@ -840,7 +909,7 @@ int soa_generate_offer(soa_session_t *ss,
 int soa_base_generate_offer(soa_session_t *ss,
 			    soa_callback_f *completed)
 {
-  sdp_session_t const *sdp = ss->ss_local->ssd_sdp;
+  sdp_session_t const *sdp = ss->ss_user->ssd_sdp;
 
   (void)completed;
 
@@ -850,6 +919,7 @@ int soa_base_generate_offer(soa_session_t *ss,
   soa_set_activity(ss, sdp->sdp_media, 0);
 
   ss->ss_offer_sent = 1;
+  ss->ss_answer_recv = 0;
 
   return 0;
 }
@@ -880,7 +950,7 @@ int soa_generate_answer(soa_session_t *ss,
 int soa_base_generate_answer(soa_session_t *ss,
 			     soa_callback_f *completed)
 {
-  sdp_session_t const *l_sdp = ss->ss_local->ssd_sdp;
+  sdp_session_t const *l_sdp = ss->ss_user->ssd_sdp;
   sdp_session_t const *r_sdp = ss->ss_remote->ssd_sdp;
   sdp_session_t *rsession;
 
@@ -902,13 +972,14 @@ int soa_base_generate_answer(soa_session_t *ss,
   ss->ss_offer_recv = 1;
   ss->ss_answer_sent = 1;
   ss->ss_complete = 1;
+  ss->ss_unprocessed_remote = 0;
 
   return 0;
 }
 
 /** Complete offer-answer after receiving answer */
 int soa_process_answer(soa_session_t *ss,
-			      soa_callback_f *completed)
+		       soa_callback_f *completed)
 {
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
@@ -930,9 +1001,8 @@ int soa_process_answer(soa_session_t *ss,
   return ss->ss_actions->soa_process_answer(ss, completed);
 }
 
-/** Process answer from remote end.
- * 
- * 
+/** 
+ * Processes answer from remote end.
  */
 int soa_base_process_answer(soa_session_t *ss,
 			    soa_callback_f *completed)
@@ -958,16 +1028,49 @@ int soa_base_process_answer(soa_session_t *ss,
 
   ss->ss_answer_recv = 1;
   ss->ss_complete = 1;
+  ss->ss_unprocessed_remote = 0;
 
   return 0;
 }
 
-int soa_default_process_answer(soa_session_t *ss,
-				      soa_callback_f *completed)
+/** Process rejection of offer */
+int soa_process_reject(soa_session_t *ss,
+		       soa_callback_f *completed)
 {
+  /** @ERROR EFAULT Bad address as @a ss. */
+  if (ss == NULL)
+    return (errno = EFAULT), -1;
+
+  /** @ERROR An operation is already in progress. */
+  if (ss->ss_in_progress)
+    return (errno = EALREADY), -1;
+
+  /** @ERROR EPROTO We have not sent an offer 
+      or already have received answer. */
+  if (!ss->ss_offer_sent || ss->ss_answer_recv)
+    return (errno = EPROTO), -1;
+
+  return ss->ss_actions->soa_process_reject(ss, completed);
+}
+
+/** 
+ * Process reject from remote end.
+ */
+int soa_base_process_reject(soa_session_t *ss,
+			    soa_callback_f *completed)
+{
+  sdp_session_t const *l_sdp = ss->ss_local->ssd_sdp;
+
   (void)completed;
-  soa_set_status(ss, 501, "Not Implemented");
-  return -1;
+
+  if (!l_sdp)
+    return -1;
+
+  soa_set_activity(ss, l_sdp->sdp_media, 0);
+
+  ss->ss_offer_sent = 0;
+
+  return 0;
 }
 
 /** Activate session */
@@ -1175,8 +1278,8 @@ int soa_set_sdp(soa_session_t *ss,
     ssd = ss->ss_caps;
     flags = sdp_f_config;
     break;
-  case soa_local_sdp_kind:
-    ssd = ss->ss_local;
+  case soa_user_sdp_kind:
+    ssd = ss->ss_user;
     flags = sdp_f_config;
     break;
   case soa_remote_sdp_kind:
@@ -1188,9 +1291,9 @@ int soa_set_sdp(soa_session_t *ss,
   }
 
   if (sdp0)
-    new_version = sdp_session_cmp(sdp0, ssd->ssd_sdp);
+    new_version = sdp_session_cmp(sdp0, ssd->ssd_sdp) != 0;
   else if (sdp_str)
-    new_version = str0cmp(sdp_str, ssd->ssd_unparsed);
+    new_version = str0cmp(sdp_str, ssd->ssd_unparsed) != 0;
   else
     return (void)(errno = EINVAL), -1;
 
@@ -1205,9 +1308,7 @@ int soa_set_sdp(soa_session_t *ss,
 						sdp, sdp_str, str_len);
     }
     return 0;
-  } else {
-    ++ssd->ssd_version;
-  }
+  } 
 
   if (sdp0) {
     /* note: case 1 - src in parsed form */
@@ -1215,7 +1316,7 @@ int soa_set_sdp(soa_session_t *ss,
   } 
   else /* if (sdp_str) */ {
     /* note: case 2 - src in unparsed form */
-    parser = sdp_parse(ss->ss_home, sdp_str, str_len, flags);
+    parser = sdp_parse(ss->ss_home, sdp_str, str_len, flags | sdp_f_anynet);
 
     if (sdp_parsing_error(parser)) {
       sdp_parser_free(parser);
@@ -1224,18 +1325,19 @@ int soa_set_sdp(soa_session_t *ss,
 
     *sdp = *sdp_session(parser);
   }
-
+ 
   switch (what) {
   case soa_capability_sdp_kind:
     return ss->ss_actions->soa_set_capability_sdp(ss, sdp, sdp_str, str_len);
-  case soa_local_sdp_kind:
-    return ss->ss_actions->soa_set_local_sdp(ss, sdp, sdp_str, str_len);
+  case soa_user_sdp_kind:
+    return ss->ss_actions->soa_set_user_sdp(ss, sdp, sdp_str, str_len);
   case soa_remote_sdp_kind:
     return ss->ss_actions->soa_set_remote_sdp(ss, 1, sdp, sdp_str, str_len);
   default:
     return -1;
   }
 }
+
 
 /** Set session descriptions. */
 int soa_description_set(soa_session_t *ss,
@@ -1286,6 +1388,7 @@ int soa_description_set(soa_session_t *ss,
   return retval;
 }
 
+
 /** Duplicate a session descriptions. */
 int soa_description_dup(su_home_t *home, 
 			struct soa_description *ssd,
@@ -1294,7 +1397,6 @@ int soa_description_dup(su_home_t *home,
   if (ssd0->ssd_sdp) {
     int len = ssd0->ssd_str ? strlen(ssd0->ssd_str) + 1 : 0;
 
-    ssd->ssd_version = ssd0->ssd_version;
     ssd->ssd_sdp = sdp_session_dup(home, ssd0->ssd_sdp);
     ssd->ssd_printer = sdp_print(home, ssd->ssd_sdp, NULL, len, 0);
     ssd->ssd_str = (char *)sdp_message(ssd->ssd_printer);
@@ -1322,74 +1424,6 @@ void soa_description_free(soa_session_t *ss,
   sdp_printer_free(tbf2);
   if (tbf3 != tbf4)
     su_free(ss->ss_home, tbf4);
-}
-
-/** Set capabilities */
-int 
-soa_base_set_capability_sdp(soa_session_t *ss, 
-			    sdp_session_t *sdp, char const *str0, int len0)
-{
-  sdp_origin_t o[1] = {{ sizeof(o) }};
-  sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
-  char c_address[64];
-  sdp_time_t t[1] = {{ sizeof(t) }};
-  sdp_media_t *m;
-
-  if (sdp->sdp_origin)
-    *o = *sdp->sdp_origin;
-  else
-    o->o_address = c0;
-
-  sdp->sdp_origin = o;
-
-  if (soa_init_sdp_origin(ss, o, c_address) < 0)
-    return -1;
-
-  if (!sdp->sdp_subject)
-    sdp->sdp_subject = "-";
-
-  sdp->sdp_time = t;
-
-  /* Set port to zero - or should we check that port is already zero? */
-  for (m = sdp->sdp_media; m; m = m->m_next)
-    m->m_port = 0;
-
-  c = sdp->sdp_origin->o_address;
-
-  if (sdp->sdp_connection == NULL) {
-    for (m = sdp->sdp_media; m; m = m->m_next)
-      if (m->m_connections == NULL)
-	break;
-    if (m)
-      sdp->sdp_connection = c;
-  }
-
-  return soa_description_set(ss, ss->ss_caps, sdp, str0, len0);
-}
-
-/** Set remote SDP (base version). */
-int soa_base_set_remote_sdp(soa_session_t *ss,
-			    int new_version,
-			    sdp_session_t *sdp, char const *str0, int len0)
-{
-  /* This is cleared in soa_generate_answer() or soa_complete(). */
-  ss->ss_unprocessed_remote = 1;
-
-  if (new_version)
-    soa_set_activity(ss, sdp->sdp_media, 1);
-  else
-    return 0;
-  
-  return soa_description_set(ss, ss->ss_remote, sdp, str0, len0);
-}
-
-
-/** Set local SDP (base version). */
-int soa_base_set_local_sdp(soa_session_t *ss, 
-			   sdp_session_t *sdp, char const *str0, int len0)
-{
-  ++ss->ss_local->ssd_version;
-  return soa_description_set(ss, ss->ss_local, sdp, str0, len0);
 }
 
 

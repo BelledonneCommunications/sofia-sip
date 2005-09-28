@@ -27,6 +27,7 @@
 /**@file soa.h  SDP Offer/Answer (RFC 3264) Interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Fri Jul 15 15:43:53 EEST 2005 ppessi
  * $Date: 2005/09/22 19:38:05 $
@@ -40,6 +41,8 @@
 #endif
 
 typedef struct soa_session soa_session_t;
+
+struct sdp_session_s;
 
 #ifndef SOA_MAGIC_T
 #define SOA_MAGIC_T void
@@ -67,40 +70,42 @@ int soa_error_as_sip_response(soa_session_t *soa,
 
 char const *soa_error_as_sip_reason(soa_session_t *soa);
 
-int soa_set_capability_sdp(soa_session_t *ss,
+int soa_set_capability_sdp(soa_session_t *ss, 
+			   struct sdp_session_s const *sdp,
 			   char const *str, int len);
 
 int soa_get_capability_sdp(soa_session_t const *ss,
 			   char const **return_sdp,
 			   int *return_len);
 
-int soa_set_remote_sdp(soa_session_t *ss,
+int soa_set_remote_sdp(soa_session_t *ss, 
+		       struct sdp_session_s const *sdp,
 		       char const *str, int len);
 
 int soa_get_remote_sdp(soa_session_t const *ss,
 		       char const **return_sdp,
 		       int *return_len);
 
-int soa_get_remote_version(soa_session_t const *ss);
-
-
 int soa_clear_remote_sdp(soa_session_t *ss);
 
-int soa_set_local_sdp(soa_session_t *ss,
-		      char const *str, int len);
+int soa_get_remote_version(soa_session_t const *ss);
+
+int soa_set_user_sdp(soa_session_t *ss, 
+		     struct sdp_session_s const *sdp,
+		     char const *str, int len);
+
+int soa_get_user_sdp(soa_session_t const *ss,
+		     char const **return_sdp,
+		     int *return_len);
+
+int soa_get_user_version(soa_session_t const *ss);
 
 int soa_get_local_sdp(soa_session_t const *ss,
 		      char const **return_sdp,
 		      int *return_len);
 
-int soa_get_local_version(soa_session_t const *ss);
-
 char const * const * soa_sip_required(soa_session_t const *ss);
 char const * const * soa_sip_support(soa_session_t const *ss);
-
-int soa_get_session_sdp(soa_session_t const *ss,
-			char const **return_sdp,
-			int *return_len);
 
 int soa_remote_sip_features(soa_session_t *ss,
 			    char const * const * support,
@@ -114,6 +119,8 @@ int soa_generate_offer(soa_session_t *, int always, soa_callback_f *);
 int soa_generate_answer(soa_session_t *, soa_callback_f *);
 /* Process answer */
 int soa_process_answer(soa_session_t *, soa_callback_f *);
+/* Process rejected offer */
+int soa_process_reject(soa_session_t *, soa_callback_f *);
 
 int soa_activate(soa_session_t *, char const *option);
 int soa_deactivate(soa_session_t *, char const *option);

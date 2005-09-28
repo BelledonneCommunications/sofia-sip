@@ -65,12 +65,12 @@ struct soa_session_actions
 				char const *, int);
   int (*soa_set_remote_sdp)(soa_session_t *, int new_version,
 			    sdp_session_t *, char const *, int);
-  int (*soa_set_local_sdp)(soa_session_t *, sdp_session_t *,
-			   char const *, int);
+  int (*soa_set_user_sdp)(soa_session_t *, sdp_session_t *,
+			  char const *, int);
   int (*soa_generate_offer)(soa_session_t *ss, soa_callback_f *completed);
   int (*soa_generate_answer)(soa_session_t *ss, soa_callback_f *completed);
-  int (*soa_process_answer)(soa_session_t *ss, 
-				   soa_callback_f *completed);
+  int (*soa_process_answer)(soa_session_t *ss, soa_callback_f *completed);
+  int (*soa_process_reject)(soa_session_t *ss, soa_callback_f *completed);
   int (*soa_activate_session)(soa_session_t *ss, char const *option);
   int (*soa_deactivate_session)(soa_session_t *ss, char const *option);
   void (*soa_terminate_session)(soa_session_t *ss, char const *option);
@@ -88,37 +88,29 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
 char **soa_base_media_features(soa_session_t *, int live, su_home_t *);
 char const * const * soa_base_sip_required(soa_session_t const *ss);
 char const * const * soa_base_sip_support(soa_session_t const *ss);
+
 int soa_base_remote_sip_features(soa_session_t *ss,
 				    char const * const * support,
 				    char const * const * required);
 int soa_base_set_capability_sdp(soa_session_t *ss, 
-				sdp_session_t *sdp,
-				char const *, int);
+				sdp_session_t *sdp, char const *, int);
 int soa_base_set_remote_sdp(soa_session_t *ss, 
 			    int new_version,
-			    sdp_session_t *sdp,
-			    char const *, int);
-int soa_base_set_local_sdp(soa_session_t *ss, 
-			   sdp_session_t *sdp,
-			   char const *, int);
+			    sdp_session_t *sdp, char const *, int);
+int soa_base_set_user_sdp(soa_session_t *ss,
+			  sdp_session_t *sdp, char const *, int);
+
 int soa_base_generate_offer(soa_session_t *ss, soa_callback_f *completed);
 int soa_base_generate_answer(soa_session_t *ss, soa_callback_f *completed);
-int soa_base_process_answer(soa_session_t *ss, 
-				   soa_callback_f *completed);
+int soa_base_process_answer(soa_session_t *ss, soa_callback_f *completed);
+int soa_base_process_reject(soa_session_t *ss, soa_callback_f *completed);
+
 int soa_base_activate(soa_session_t *ss, char const *option);
 int soa_base_deactivate(soa_session_t *ss, char const *option);
 void soa_base_terminate(soa_session_t *ss, char const *option);
 
-int soa_default_generate_offer(soa_session_t *ss,
-			       soa_callback_f *completed);
-int soa_default_generate_answer(soa_session_t *ss,
-				soa_callback_f *completed);
-int soa_default_process_answer(soa_session_t *ss, 
-				      soa_callback_f *completed);
-
 struct soa_description 
 {
-  int             ssd_version;  /**< Version incremented at each change */
   sdp_session_t  *ssd_sdp;	/**< Session description  */
   char const     *ssd_unparsed;	/**< Original session description as string */
   char const     *ssd_str;	/**< Session description as string */
@@ -165,12 +157,22 @@ struct soa_session
 
   /** Capabilities as specified by application */
   struct soa_description ss_caps[1];
-  /** Local session description */
-  struct soa_description ss_local[1];
+
+  /** Session description provided by user */
+  struct soa_description ss_user[1];
+  unsigned ss_user_version;  /**< Version incremented at each change */
+
   /** Remote session description */
   struct soa_description ss_remote[1];
-  /** Session description */
-  struct soa_description ss_desc[1];
+  unsigned ss_remote_version;  /**< Version incremented at each change */
+
+  /** Local session description */
+  struct soa_description ss_local[1];
+  unsigned ss_local_user_version, ss_local_remote_version;
+
+  /** Previous session description (return to this if offer is rejected) */
+  struct soa_description ss_previous[1];
+  unsigned ss_previous_user_version, ss_previous_remote_version;
 
   sdp_session_t *ss_rsession;	/**< Processed remote SDP */
 
@@ -208,17 +210,9 @@ int soa_set_status(soa_session_t *ss, int status, char const *phrase);
 
 void soa_set_activity(soa_session_t *ss, sdp_media_t const *m, int remote);
 
-int soa_set_capability_sdp_str(soa_session_t *ss, 
-			       sdp_session_t const *sdp,
-			       char const *str, int len);
-
-int soa_set_remote_sdp_str(soa_session_t *ss, 
-			   sdp_session_t const *sdp,
-			   char const *str, int len);
-
-int soa_set_local_sdp_str(soa_session_t *ss, 
-			  sdp_session_t const *sdp,
-			  char const *str, int len);
+int soa_set_user_sdp(soa_session_t *ss,
+		     struct sdp_session_s const *sdp,
+		     char const *str, int len);
 
 int soa_description_set(soa_session_t *ss, 
 			struct soa_description *ssd,

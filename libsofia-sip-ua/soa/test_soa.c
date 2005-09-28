@@ -119,9 +119,9 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(-1 == soa_remote_sip_features(NULL, &null, &null));
 
-  TEST_1(soa_set_capability_sdp(NULL, NULL, -1) < 0);
-  TEST_1(soa_set_remote_sdp(NULL, NULL, -1) < 0);
-  TEST_1(soa_set_local_sdp(NULL, NULL, -1) < 0);
+  TEST_1(soa_set_capability_sdp(NULL, NULL, NULL, -1) < 0);
+  TEST_1(soa_set_remote_sdp(NULL, NULL, NULL, -1) < 0);
+  TEST_1(soa_set_user_sdp(NULL, NULL, NULL, -1) < 0);
 
   TEST_1(soa_get_capability_sdp(NULL, NULL, NULL) < 0);
   TEST_1(soa_get_local_sdp(NULL, NULL, NULL) < 0);
@@ -132,6 +132,8 @@ int test_api_errors(struct context *ctx)
   TEST_1(-1 == soa_generate_answer(NULL, test_api_completed)); 
 
   TEST_1(-1 == soa_process_answer(NULL, test_api_completed)); 
+
+  TEST_1(-1 == soa_process_reject(NULL, test_api_completed));
 
   TEST(soa_activate(NULL, "both"), -1);
   TEST(soa_deactivate(NULL, "both"), -1);
@@ -259,36 +261,34 @@ int test_static_offer_answer(struct context *ctx)
     "m=audio 0 RTP/AVP 0 8\r\n";
 
   char const b_caps[] = 
-    "v=0\n"
-    "o=right 93298573265 321974 IN IP4 127.0.0.3\n"
-    "c=IN IP4 127.0.0.3\n"
-    "m=audio 0 RTP/AVP 96\n"
+    "m=audio 5004 RTP/AVP 96\n"
     "m=rtpmap:96 GSM/8000\n";
 
-  n = soa_set_capability_sdp(ctx->synch.a, "m=audio 0 RTP/AVP 0 8", -1);
-  TEST(n, 1);
-
-  n = soa_set_capability_sdp(ctx->synch.a, a_caps, strlen(a_caps)); TEST(n, 1);
-  n = soa_get_capability_sdp(ctx->synch.a, &caps, &capslen); TEST(n, 1);
+  TEST(soa_set_capability_sdp(ctx->synch.a, 0, "m=audio 0 RTP/AVP 0 8", -1), 
+       1);
+  TEST(soa_set_capability_sdp(ctx->synch.a, 0, a_caps, strlen(a_caps)), 
+       1);
+  TEST(soa_get_capability_sdp(ctx->synch.a, &caps, &capslen), 1);
 
   TEST_1(caps != NULL && caps != NONE);
   TEST_1(capslen > 0);
 
-  n = soa_set_capability_sdp(ctx->synch.b, b_caps, strlen(b_caps)); TEST(n, 1);
+  TEST(soa_set_user_sdp(ctx->synch.b, 0, b_caps, strlen(b_caps)), 1);
+  TEST(soa_get_capability_sdp(ctx->synch.a, &caps, &capslen), 1);
 
   TEST_1(a = soa_clone(ctx->synch.a, ctx->root, ctx));
   TEST_1(b = soa_clone(ctx->synch.b, ctx->root, ctx));
 
   n = soa_get_local_sdp(a, &offer, &offerlen); TEST(n, 0);
 
-  n = soa_set_local_sdp(a, "m=audio 5004 RTP/AVP 0 8", -1); TEST(n, 1);
+  n = soa_set_user_sdp(a, 0, "m=audio 5004 RTP/AVP 0 8", -1); TEST(n, 1);
 
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
 
   n = soa_get_local_sdp(a, &offer, &offerlen); TEST(n, 1);
   TEST_1(offer != NULL && offer != NONE);
 
-  n = soa_set_remote_sdp(b, offer, offerlen); TEST(n, 1);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
 
   n = soa_get_local_sdp(b, &answer, &answerlen); TEST(n, 0);
 
@@ -304,7 +304,7 @@ int test_static_offer_answer(struct context *ctx)
   n = soa_get_local_sdp(b, &answer, &answerlen); TEST(n, 1);
   TEST_1(answer != NULL && answer != NONE);
 
-  n = soa_set_remote_sdp(a, answer, -1); TEST(n, 1);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
 
   n = soa_process_answer(a, test_completed); TEST(n, 0);
 
@@ -320,6 +320,23 @@ int test_static_offer_answer(struct context *ctx)
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(a));
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(a));
+
+  /* 'A' will put call on hold */
+  TEST(soa_set_params(a, SOATAG_HOLD("*"), TAG_END()), 1);
+
+  TEST(soa_generate_offer(a, 1, test_completed), 0);
+  TEST(soa_get_local_sdp(a, &offer, &offerlen), 1);
+  TEST_1(offer != NULL && offer != NONE);
+  /* TEST_1(strstr(offer, "a=sendonly")); */
+  /*TEST*/(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
+  TEST(soa_generate_answer(b, test_completed), 0);
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+  TEST(soa_get_local_sdp(b, &answer, &answerlen), 1);
+  TEST_1(answer != NULL && answer != NONE);
+  /* TEST_1(strstr(answer, "a=recvonly")); */
+  /*TEST*/(soa_set_remote_sdp(a, 0, answer, -1), 1);
+  TEST(soa_process_answer(a, test_completed), 0);
 
   TEST_VOID(soa_terminate(a, NULL));
 
@@ -358,16 +375,17 @@ int test_asynch_offer_answer(struct context *ctx)
     "m=audio 5006 RTP/AVP 96\n"
     "m=rtpmap:96 GSM/8000\n";
 
-  n = soa_set_capability_sdp(ctx->asynch.a, "m=audio 5004 RTP/AVP 0 8", -1); 
+  n = soa_set_capability_sdp(ctx->asynch.a, 0, 
+			     "m=audio 5004 RTP/AVP 0 8", -1); 
   TEST(n, 1);
 
-  n = soa_set_capability_sdp(ctx->asynch.a, a, strlen(a)); TEST(n, 1);
-  n = soa_get_capability_sdp(ctx->asynch.a, &caps, &capslen); TEST(n, 1);
+  n = soa_set_capability_sdp(ctx->asynch.a, 0, a, strlen(a)); TEST(n, 1);
+  n = soa_get_capability_sdp(ctx->asynch.a, 0, &caps, &capslen); TEST(n, 1);
 
   TEST_1(caps != NULL && caps != NONE);
   TEST_1(capslen > 0);
 
-  n = soa_set_capability_sdp(ctx->asynch.b, b, strlen(b)); TEST(n, 1);
+  n = soa_set_capability_sdp(ctx->asynch.b, 0, b, strlen(b)); TEST(n, 1);
 
   n = soa_generate_offer(ctx->asynch.a, 1, test_completed); TEST(n, 1);
 
@@ -376,7 +394,7 @@ int test_asynch_offer_answer(struct context *ctx)
 
   n = soa_get_local_sdp(ctx->asynch.a, &offer, &offerlen); TEST(n, 1);
 
-  n = soa_set_remote_sdp(ctx->asynch.b, offer, offerlen); TEST(n, 1);
+  n = soa_set_remote_sdp(ctx->asynch.b, 0, offer, offerlen); TEST(n, 1);
 
   n = soa_generate_answer(ctx->asynch.b, test_completed); TEST(n, 1);
 
@@ -388,7 +406,7 @@ int test_asynch_offer_answer(struct context *ctx)
 
   n = soa_get_local_sdp(ctx->asynch.b, &answer, &answerlen); TEST(n, 1);
 
-  n = soa_set_remote_sdp(ctx->asynch.a, answer, answerlen); TEST(n, 1);
+  n = soa_set_remote_sdp(ctx->asynch.a, 0, answer, answerlen); TEST(n, 1);
 
   n = soa_process_answer(ctx->asynch.a, test_completed); TEST(n, 1);
 
