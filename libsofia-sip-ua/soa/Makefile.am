@@ -26,7 +26,7 @@ BUILT_SOURCES =		soa_tag_ref.c
 
 include_HEADERS =       soa.h soa_session.h soa_add.h
 
-libsoa_a_SOURCES = 	soa.c soa_static.c soa_asynch.c \
+libsoa_a_SOURCES = 	soa.c soa_static.c \
 			soa_tag.c soa_tag_ref.c 
 
 soa_objs_o_SOURCES =	$(libsoa_a_SOURCES)
