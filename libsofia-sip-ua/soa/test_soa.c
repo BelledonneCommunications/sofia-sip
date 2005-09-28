@@ -51,6 +51,7 @@ struct context;
 #define SOA_MAGIC_T struct context
 
 #include "soa.h"
+#include "soa_tag.h"
 #include "soa_add.h"
 
 #include <su_log.h>
@@ -202,26 +203,32 @@ int test_params(struct context *ctx)
 {
   BEGIN();
   int n;
-  char const *value;
+  unsigned af;
+  char const *address;
+  soa_session_t *a = ctx->synch.a, *b = ctx->synch.b;
 
-  n = soa_set_params(ctx->asynch.a, TAG_END()); TEST(n, 0);
-  n = soa_set_params(ctx->asynch.b, TAG_END()); TEST(n, 0);
+  n = soa_set_params(a, TAG_END()); TEST(n, 0);
+  n = soa_set_params(b, TAG_END()); TEST(n, 0);
 
-  value = "foo";
-  TEST(soa_get_params(ctx->asynch.a,
-		      SOATAG_MEDIA_PROFILE_REF(value),
+  af = -42;
+  address = NONE;
+  TEST(soa_get_params(a,
+		      SOATAG_AF_REF(af),
+		      SOATAG_ADDRESS_REF(address),
+		      TAG_END()),
+       2);
+  TEST(af, SOA_AF_ANY);
+  TEST(address, 0);
+
+  TEST(soa_set_params(a,
+		      SOATAG_AF(SOA_AF_IP4_IP6),
 		      TAG_END()),
        1);
-  TEST_S(value, "/");
-  TEST(soa_set_params(ctx->asynch.a,
-		      SOATAG_MEDIA_PROFILE("/bar"),
+  TEST(soa_get_params(a,
+		      SOATAG_AF_REF(af),
 		      TAG_END()),
        1);
-  TEST(soa_get_params(ctx->asynch.a,
-		      SOATAG_MEDIA_PROFILE_REF(value),
-		      TAG_END()),
-       1);
-  TEST_S(value, "/bar");
+  TEST(af, SOA_AF_IP4_IP6);
 
   END();
 }
