@@ -82,7 +82,7 @@ tag_typedef_t soatag_caps_sdp = PTRTAG_TYPEDEF(caps_sdp);
 tag_typedef_t soatag_caps_sdp_str = STRTAG_TYPEDEF(caps_sdp_str);
 
 /**@def SOATAG_LOCAL_SDP(x)
- *  Pass parsed local session description to soa session object.
+ *  Get parsed local session description from soa session object.
  *
  * @par Used with
  *    soa_set_params(), soa_get_params(), soa_get_paramlist() \n
@@ -98,21 +98,16 @@ tag_typedef_t soatag_caps_sdp_str = STRTAG_TYPEDEF(caps_sdp_str);
 tag_typedef_t soatag_local_sdp = PTRTAG_TYPEDEF(local_sdp);
 
 /**@def SOATAG_LOCAL_SDP_STR(x)
- *  Pass media description file name to the NUA stack.
- *
- * Pass name of media description file that contains media templates
- * (normally mss.sdp) to the NUA stack.
+ * Get local session description as a string from soa session object.
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params() \n
- *    nua_create()
+ * soa_set_paramas(), soa_get_params(), soa_get_paramlist().
  *
  * @par Parameter type
- *    char const *
+ * char const *
  *
  * @par Values
- *    NULL terminated character string
+ * NULL terminated character string
  *
  * Corresponding tag taking reference parameter is SOATAG_LOCAL_SDP_STR_REF()
  */
@@ -154,6 +149,43 @@ tag_typedef_t soatag_remote_sdp = PTRTAG_TYPEDEF(remote_sdp);
  * Corresponding tag taking reference parameter is SOATAG_REMOTE_SDP_STR_REF()
  */
 tag_typedef_t soatag_remote_sdp_str = STRTAG_TYPEDEF(remote_sdp_str);
+
+/**@def SOATAG_USER_SDP(x)
+ *  Pass parsed user session description to soa session object.
+ *
+ * @par Used with
+ *    soa_set_params(), soa_get_params(), soa_get_paramlist() \n
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    pointer to #sdp_session_t.
+ *
+ * Corresponding tag taking reference parameter is SOATAG_USER_SDP_REF()
+ */
+tag_typedef_t soatag_user_sdp = PTRTAG_TYPEDEF(user_sdp);
+
+/**@def SOATAG_USER_SDP_STR(x)
+ *  Pass media description file name to the NUA stack.
+ *
+ * Pass name of media description file that contains media templates
+ * (normally mss.sdp) to the NUA stack.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_create()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    NULL terminated character string
+ *
+ * Corresponding tag taking reference parameter is SOATAG_USER_SDP_STR_REF()
+ */
+tag_typedef_t soatag_user_sdp_str = STRTAG_TYPEDEF(user_sdp_str);
 
 
 
