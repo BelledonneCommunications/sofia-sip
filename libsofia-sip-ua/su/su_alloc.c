@@ -200,10 +200,15 @@ struct su_block_s {
   unsigned    sub_ref;		/**< Reference count */
   unsigned    sub_used;		/**< Number of blocks allocated */
   unsigned    sub_n;		/**< Size of hash table  */
-  unsigned short sub_prsize;
-  unsigned short sub_prused;
-  char       *sub_preload;
   su_home_stat_t *sub_stats;	/**< Statistics.. */
+
+  char       *sub_preload;
+  unsigned    sub_prsize:16;	/**< Preload size */
+  unsigned    sub_prused:16;	/**< Used from preload */
+  unsigned    sub_auto:1;	/**< This struct is from stack! */
+  unsigned    sub_preauto:1;	/**< Preload is from stack! */
+  unsigned    sub_auto_all:1;	/**< Everything is from stack! */
+  unsigned :0;
   su_alloc_t  sub_nodes[SUB_N];	/**< Pointers to data/lower blocks */
 };
 
@@ -323,10 +328,8 @@ static inline su_block_t *su_hash_alloc(int n)
 {
   su_block_t *b = calloc(1, offsetof(su_block_t, sub_nodes[n]));
 
-  if (b) {
+  if (b)
     b->sub_n = n;
-    b->sub_used = 0; 
-  }
 
   return b;
 }
@@ -378,12 +381,15 @@ void *sub_alloc(su_home_t *home,
       b2->sub_preload = sub->sub_preload;
       b2->sub_prsize = sub->sub_prsize;
       b2->sub_prused = sub->sub_prused;
+      b2->sub_preauto = sub->sub_preauto;
       b2->sub_stats = sub->sub_stats;
     }
 
     home->suh_blocks = b2;
 
-    free(sub), sub = b2;
+    if (sub && !sub->sub_auto)
+      free(sub);
+    sub = b2;
   }
 
   /* Use preloaded memory */
@@ -779,11 +785,12 @@ void _su_home_deinit(su_home_t *home)
       }
     }
 
-    if (b->sub_preload)
+    if (b->sub_preload && !b->sub_preauto)
       free(b->sub_preload);
     if (b->sub_stats)
       free(b->sub_stats);
-    free(b);
+    if (!b->sub_auto)
+      free(b);
 
     home->suh_blocks = NULL;
   }
@@ -862,10 +869,14 @@ int su_home_move(su_home_t *dst, su_home_t *src)
 	  d2->sub_preload = d->sub_preload;
 	  d2->sub_prsize = d->sub_prsize;
 	  d2->sub_prused = d->sub_prused;
+	  d2->sub_preauto = d->sub_preauto;
 	  d2->sub_stats = d->sub_stats;
 	}
 
-	free(d), d = d2;
+	if (d && !d->sub_auto)
+	  free(d);
+
+	d = d2;
       }
 
       if ((n = s->sub_n)) {
@@ -929,6 +940,40 @@ void su_home_preload(su_home_t *home, int n, int isize)
   }
   UNLOCK(home);
 }
+
+/** Preload a memory home from stack.
+ *
+ * The function su_home_auto() initalizes a memory home using an area
+ * allocated from stack. Poor mans alloca().
+ */
+su_home_t *su_home_auto(void *area, int size)
+{
+  su_home_t *home;
+  su_block_t *sub;
+  size_t homesize = ALIGN(sizeof *home);
+  size_t subsize = ALIGN(sizeof *sub);
+
+  char *p = area;
+
+  if (area == NULL || size < homesize + subsize)
+    return NULL;
+
+  home = memset(p, 0, homesize);
+  home->suh_size = size;
+
+  sub = memset(p + homesize, 0, subsize);
+  home->suh_blocks = sub;
+
+  sub->sub_n = SUB_N;
+  sub->sub_preload = p + homesize + subsize;
+  sub->sub_prsize = size - (homesize + subsize);
+  sub->sub_preauto = 1;
+  sub->sub_auto = 1;
+  sub->sub_auto_all = 1;
+
+  return home;
+}
+
 
 /** Reallocate a memory block.
  *

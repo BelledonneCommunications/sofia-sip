@@ -56,6 +56,7 @@ static int test_alloc(void);
 static int test_strdupcat(void);
 static int test_strlst(void);
 static int test_vectors(void);
+static int test_auto(void);
 
 void usage(void)
 {
@@ -78,6 +79,7 @@ int main(int argc, char *argv[])
   retval |= test_strdupcat();
   retval |= test_strlst();
   retval |= test_vectors();
+  retval |= test_auto();
 
   return retval;
 }
@@ -473,5 +475,36 @@ static int test_vectors(void)
   su_home_check(home);
   su_home_deinit(home);
 
+  END();
+}
+
+#define ALIGNMENT (8)
+#define ALIGN(n)  (((n) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
+
+static int test_auto(void)
+{
+  BEGIN();
+
+  int i;
+  su_home_t tmphome[SU_HOME_AUTO_SIZE(8192)];
+  char *b = NULL;
+
+  TEST_1(!su_home_auto(tmphome, sizeof tmphome[0]));
+  TEST_1(su_home_auto(tmphome, sizeof tmphome));
+  
+  for (i = 0; i < 8192; i++)
+    TEST_1(su_alloc(tmphome, 12));
+
+  TEST_VOID(su_home_deinit(tmphome));
+
+  TEST_1(su_home_auto(tmphome, sizeof tmphome));
+  
+  for (i = 1; i < 8192; i++) {
+    TEST_1(b = su_realloc(tmphome, b, i));
+    b[i - 1] = 0xaa;
+  }
+
+  TEST_VOID(su_home_deinit(tmphome));
+  
   END();
 }
