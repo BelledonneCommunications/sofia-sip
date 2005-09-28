@@ -1,3 +1,9 @@
+2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
+	
+	* Not using soa directly anymore. 
+
+	    M ./utils/nua_cli.c -5 +3
+
 2005-09-07  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* nua_cli.c: Cleaned up unused ifdefs.

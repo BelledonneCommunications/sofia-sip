@@ -1,3 +1,168 @@
+2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Returning remote sdp via soa_get_paramlist().
+
+    M soa.c +5
+
+  * soa_get_paramlist() just returns NULL if given NULL session.
+
+    M soa.c -6 +4
+
+  * Returning local and user SDP via tags.
+
+    M soa.c -5 +17
+
+  * Keeping track of soa instance name.
+
+    M soa.c -2 +13
+    M soa_session.h +1
+
+  * Always upgrading a freshly created session.
+
+    M soa_static.c -1 +1
+
+  * Updated documentation. Glare.
+
+    M soa.docs -10 +79
+
+  * Added (selective!) hold, media upgrade.
+
+    M soa_session.h +2
+    M soa_static.c -52 +174
+    M test_soa.c -4 +65
+
+  * Added more bits to activity (so we can indicate SOA_ACTIVE_REJECTED).
+
+    M soa_session.h -4 +4
+
+  * Updated the mode update: keep track of rejected status, too.
+
+    M soa.c -20 +28
+
+  * Bump ss_user_version if parameters change.
+
+    M soa.c -2 +9
+
+  * Removed soa_static_actions.
+
+    M soa_static.c -24
+
+  * Updated API to handle separately user-supplied SDP and negotiated SDP.
+
+    M soa.c -146 +180
+    M soa.h -11 +18
+    M soa_session.h -36 +30
+    M soa_static.c -73 +475
+    M test_soa.c -22 +40
+
+  * Not using soa_static_actions.
+
+    M test_soa.c -1 +1
+
+  * Updated soa_static_get_paramlist() prototype.
+
+    M soa_static.c -3 +16
+
+  * Removed last traces of "default".
+
+    M soa.c -51 +1
+    M soa_add.h -2
+
+  * Added tag parameters to soa_get_paramlist() prototype.
+
+    M soa.c -9 +23
+    M soa.h -1 +2
+    M soa_session.h -2 +4
+    M test_soa.c -1 +1
+
+  * Not testing asynch.
+
+    M test_soa.c +6
+
+  * Not testing removed parameters.
+
+    M test_soa.c -13 +20
+
+  * Not compiling soa_asynch.c
+
+    M Makefile.am -1 +1
+
+  * Include "soa_tag.h" in "soa_session.h", too.
+
+    M soa_session.h +3
+
+  * Moved tags to soa_tag.h
+
+    M soa.h -200
+
+  * Removed mss-related parameters. Added hold.
+
+    M soa.c -117 +12
+    M soa_session.h -13 +1
+
+  * Renamed "local" as "user".
+
+    M soa_asynch.c -7 +7
+
+  * Added soatag_user_sdp().
+
+    M soa_tag.c -10 +42
+
+  * Added soa_tag.h.
+
+    A soa_tag.h
+
+2005-09-26  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Updated call flows.
+
+    M soa.docs -57 +67
+
+  * Added some code for soa_static_generate_offer().
+
+    M soa_static.c -18 +60
+
+  * Fixed soa_static_set_local_sdp().
+
+    M soa_static.c -1 +1
+
+  * Added setter functions for sdp in soa_static.
+
+    M soa_static.c -6 +44
+
+  * Using explicit soa_set_local_sdp() with "static" soa instance.
+
+    M test_soa.c -3 +9
+
+  * Added session sdp: soa_get_session_sdp(), soatag_session_sdp.
+
+    M soa.h +16
+
+  * Comments.
+
+    M soa.c -2 +2
+
+  * Not expanding "local" sdp with o=, s=, t= and c=.
+
+    M soa.c -45
+
+  * Added local/remote/session sdp to soa_get_params().
+
+    M soa.c +11
+
+  * Added handling of soatag_local_sdp tag.
+
+    M soa.c -2 +25
+
+  * Added session description ss_desc
+
+    M soa_session.h +2
+
+  * Added soatag_local_sdp and soatag_remote_sdp.
+
+    M soa.h +12
+    M soa_tag.c +32
+
 2005-09-22  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* soa.c (soa_get_remote_version): Added.

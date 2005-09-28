@@ -1,3 +1,25 @@
+2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Handle mode attributes (inactive, sendonly, recvonly, sendrecv).
+
+    M ./libsofia-sip-ua/sdp/sdp.h -1 +5
+    M ./libsofia-sip-ua/sdp/sdp_parse.c -12 +44
+    M ./libsofia-sip-ua/sdp/sdp_print.c -5 +54
+
+  * Setting mode flags on config sdp, too.
+
+    M ./libsofia-sip-ua/sdp/sdp_parse.c -3 +3
+
+  * Added sdp_media_match*(), sdp_media_count*()
+
+    M ./libsofia-sip-ua/sdp/sdp.c +91
+    M ./libsofia-sip-ua/sdp/sdp.h +20
+
+  * Added sdp_list_cmp() and sdp_rtpmap_cmp().
+
+    M ./libsofia-sip-ua/sdp/sdp.c -9 +54
+    M ./libsofia-sip-ua/sdp/sdp.h +6
+
 2005-07-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Initial import of the module to Sofia-SIP tree.

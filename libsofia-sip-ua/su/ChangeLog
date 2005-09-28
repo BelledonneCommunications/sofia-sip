@@ -1,3 +1,16 @@
+2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added tl_filtered_tlist().
+
+    M ./libsofia-sip-ua/su/su_tag.h +3
+    M ./libsofia-sip-ua/su/su_taglist.c +16
+
+  * Added su_home_auto().
+
+    M ./libsofia-sip-ua/su/su_alloc.c -10 +55
+    M ./libsofia-sip-ua/su/su_alloc.h +4
+    M ./libsofia-sip-ua/su/su_alloc_test.c +33
+
 2005-08-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Added su_strlst_dup() and su_strlst_copy(). 
