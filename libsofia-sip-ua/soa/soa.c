@@ -97,40 +97,6 @@ static int soa_set_sdp(soa_session_t *ss,
    (a)->soa_activate_session != NULL &&				\
    (a)->soa_terminate_session != NULL)
 
-#if 0
-/*
- * The default soa objct stores the offer from parameters,
- * sends it when requested.
- *
- * Likewise it stores the remote offer and sends the SDP from parameters as
- * an answer.
- */
-
-struct soa_session_actions const soa_default_actions =
-  {
-    (sizeof soa_default_actions),
-    sizeof (struct soa_session),
-    soa_base_init,
-    soa_base_deinit,
-    soa_base_set_params,
-    soa_base_get_params,
-    soa_base_get_paramlist,
-    soa_base_media_features,
-    soa_base_sip_required,
-    soa_base_sip_support,
-    soa_base_remote_sip_features,
-    soa_base_set_capability_sdp,
-    soa_base_set_remote_sdp,
-    soa_base_set_local_sdp,
-    soa_default_generate_offer,
-    soa_default_generate_answer,
-    soa_default_process_answer,
-    soa_base_activate,
-    soa_base_deactivate,
-    soa_base_terminate
-  };
-#endif
-
 /* ======================================================================== */
 
 /**@var SOA_DEBUG
@@ -888,14 +854,6 @@ int soa_base_generate_offer(soa_session_t *ss,
   return 0;
 }
 
-int soa_default_generate_offer(soa_session_t *ss,
-			       soa_callback_f *completed)
-{
-  (void)completed;
-  soa_set_status(ss, 501, "Not Implemented");
-  return -1;
-}
-
 /* Generate answer */
 int soa_generate_answer(soa_session_t *ss,
 			soa_callback_f *completed)
@@ -948,15 +906,7 @@ int soa_base_generate_answer(soa_session_t *ss,
   return 0;
 }
 
-int soa_default_generate_answer(soa_session_t *ss,
-				soa_callback_f *completed)
-{
-  (void)completed;
-  soa_set_status(ss, 501, "Not Implemented");
-  return -1;
-}
-
-/* Complete offer-answer after receiving answer */
+/** Complete offer-answer after receiving answer */
 int soa_process_answer(soa_session_t *ss,
 			      soa_callback_f *completed)
 {
