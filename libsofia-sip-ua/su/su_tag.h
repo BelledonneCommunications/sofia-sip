@@ -135,6 +135,9 @@ tagi_t const *tl_find(tagi_t const lst[], tag_type_t tt);
 tagi_t *tl_filter(tagi_t *, tagi_t const filter[], tagi_t const lst[], void **b);
 tagi_t *tl_afilter(su_home_t *, tagi_t const filter[], tagi_t const lst[]);
 
+tagi_t *tl_filtered_tlist(su_home_t *home, tagi_t const filter[], 
+			  tag_type_t tag, tag_value_t value, ...);
+
 size_t  tl_vlen(va_list ap);
 tagi_t *tl_list(tag_type_t tag, tag_value_t value, ...);
 tagi_t *tl_vlist2(tag_type_t tag, tag_value_t value, va_list ap);

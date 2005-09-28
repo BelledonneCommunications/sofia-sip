@@ -571,6 +571,22 @@ tagi_t *tl_tfilter(su_home_t *home, tagi_t const src[],
   return tl;
 }
 
+/** Create a filtered tag list.
+ */
+tagi_t *tl_filtered_tlist(su_home_t *home, tagi_t const filter[], 
+			  tag_type_t tag, tag_value_t value, ...)
+{
+  tagi_t *tl;
+  ta_list ta;
+
+  ta_start(ta, tag, value);
+  tl = tl_afilter(home, filter, ta_args(ta));
+  ta_end(ta);
+
+  return tl;
+}
+
+
 /** Remove listed tags from the list @a lst. */
 int tl_tremove(tagi_t lst[], tag_type_t tag, tag_value_t value, ...)
 {
