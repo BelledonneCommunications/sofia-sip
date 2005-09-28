@@ -188,7 +188,7 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(!soa_find("static"));
   TEST_1(soa_find("default"));
 
-  n = soa_add("static", &soa_static_actions); TEST(n, 0);
+  n = soa_add("static", &soa_default_actions); TEST(n, 0);
 
   TEST_1(soa_find("static"));
 
