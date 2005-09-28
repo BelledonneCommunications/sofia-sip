@@ -327,7 +327,9 @@ int main(int ac, char *av[])
 		      cli_callback, cli,
 		      NUTAG_URL(cli->cli_contact),
 		      NUTAG_MEDIA_ADDRESS(cli->cli_media),
-		      NUTAG_SOA_SESSION(cli->cli_soa),
+		      NUTAG_SOA_NAME("default"),
+		      /* Used in OPTIONS */
+		      SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 8 0"),
 		      TAG_NULL()))) {
 	int min_se = 0;
 	int s_e = 0;
@@ -1873,10 +1875,6 @@ int cli_init(cli_t *cli, char *av[])
     return -1;
   su_timer_set(cli->cli_input, handle_input, NULL);
 #endif
-
-  cli->cli_soa = soa_create("", cli->cli_root, cli);
-  if (cli->cli_soa)
-    soa_set_capability_sdp(cli->cli_soa, "m=audio 5004 RTP/AVP 8 0", -1);
 
   cli->cli_init = 1;
 
