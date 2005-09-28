@@ -613,7 +613,7 @@ static int offer_answer_step(soa_session_t *ss,
   switch (action) {
   case generate_offer:
     /* Upgrade local SDP based on user SDP */
-    if (ss->ss_local_user_version == user_version)
+    if (local != local0 && ss->ss_local_user_version == user_version)
       break;
     if (local != local0)
       *local0 = *local, local = local0;
