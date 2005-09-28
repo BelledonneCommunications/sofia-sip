@@ -35,6 +35,9 @@
 #ifndef SOA_H
 #include "soa.h"
 #endif
+#ifndef SOA_TAG_H
+#include "soa_tag.h"
+#endif
 #ifndef SDP_H
 #include <sdp.h>
 #endif
