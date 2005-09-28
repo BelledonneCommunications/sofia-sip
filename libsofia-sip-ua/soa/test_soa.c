@@ -165,6 +165,7 @@ int test_init(struct context *ctx, char *argv[])
   ctx->asynch.a = soa_create("asynch", ctx->root, ctx); 
   TEST_1(!ctx->asynch.a);
 
+#if 0
   TEST_1(!soa_find("asynch"));
   TEST_1(soa_find("default"));
 
@@ -177,6 +178,7 @@ int test_init(struct context *ctx, char *argv[])
 
   ctx->asynch.b = soa_create("asynch", ctx->root, ctx);
   TEST_1(ctx->asynch.b);
+#endif
 
   /* Create asynchronous endpoints */
 
@@ -336,6 +338,8 @@ int test_static_offer_answer(struct context *ctx)
 int test_asynch_offer_answer(struct context *ctx)
 {
   BEGIN();
+
+#if 0
   int n;
   
   char const *caps = NONE, *offer = NONE, *answer = NONE;
@@ -413,6 +417,8 @@ int test_asynch_offer_answer(struct context *ctx)
   TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_audio_active(ctx->asynch.a));
 
   TEST_VOID(soa_terminate(ctx->asynch.b, NULL));
+
+#endif
   
   END();
 }
