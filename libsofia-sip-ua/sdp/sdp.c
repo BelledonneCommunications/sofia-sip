@@ -1572,3 +1572,94 @@ sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t *a,
 
   return NULL;
 }
+
+/* Return 1 if m= line struct matches with given type and name */
+unsigned sdp_media_match(sdp_media_t const *m,
+			 sdp_media_e type,
+			 sdp_text_t *type_name,
+			 sdp_proto_e proto,
+			 sdp_text_t *proto_name)
+{
+  if (m == NULL)
+    return 0;
+
+  if (type == sdp_media_any || m->m_type == sdp_media_any)
+    return 1;
+
+  if (type_name == NULL)
+    type_name = "";
+
+  if (type != m->m_type ||
+      (type == sdp_media_x && strcasecmp(m->m_type_name, type_name)))
+    return 0;
+
+  if (proto == sdp_proto_any || m->m_proto == sdp_proto_any)
+    return 1;
+
+  if (proto_name == NULL)
+    proto_name = "";
+
+  if (proto != m->m_proto ||
+      (proto == sdp_proto_x && strcasecmp(m->m_proto_name, proto_name)))
+    return 0;
+
+  return 1;
+}
+
+/* Return 1 if media type and protocol of m= line structs matches */
+unsigned sdp_media_match_with(sdp_media_t const *a,
+			      sdp_media_t const *b)
+{
+  if (a == NULL || b == NULL)
+    return a == b;
+
+  if (a->m_type == sdp_media_any || b->m_type == sdp_media_any)
+    return 1;
+
+  if (a->m_type != b->m_type ||
+      (a->m_type == sdp_media_x &&
+       strcasecmp(b->m_type_name, a->m_type_name)))
+    return 0;
+
+  if (a->m_proto == sdp_proto_any || b->m_proto == sdp_proto_any)
+    return 1;
+
+  if (a->m_proto != b->m_proto ||
+      (a->m_proto == sdp_proto_x &&
+       strcasecmp(b->m_proto_name, a->m_proto_name)))
+    return 0;
+
+  return 1;
+}
+
+
+/** Count matching media lines in SDP. */
+unsigned sdp_media_count(sdp_session_t const *sdp,
+			 sdp_media_e type,
+			 sdp_text_t *type_name,
+			 sdp_proto_e proto,
+			 sdp_text_t *proto_name)
+{
+  unsigned count = 0;
+  sdp_media_t const *m;
+
+  if (sdp != NULL)
+    for (m = sdp->sdp_media; m; m = m->m_next)
+      count += sdp_media_match(m, type, type_name, proto, proto_name);
+
+  return count;
+}
+
+/** Count matching media lines in SDP. */
+unsigned sdp_media_count_with(sdp_session_t const *sdp,
+			      sdp_media_t const *m0)
+{
+  unsigned count = 0;
+  sdp_media_t const *m;
+
+  if (sdp != NULL)
+    for (m = sdp->sdp_media; m; m = m->m_next)
+      count += sdp_media_match_with(m, m0);
+
+  return count;
+}

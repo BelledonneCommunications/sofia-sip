@@ -434,6 +434,26 @@ sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t *a,
 
 #define sdp_mapped_attribute_find sdp_attribute_mapped_find
 
+/* Return 1 if m= line struct matches with given type and name */
+unsigned sdp_media_match(sdp_media_t const *m,
+			 sdp_media_e type,
+			 sdp_text_t *type_name,
+			 sdp_proto_e proto,
+			 sdp_text_t *proto_name);
+
+unsigned sdp_media_match_with(sdp_media_t const *a,
+			      sdp_media_t const *b);
+
+/** Count media lines in SDP. */
+unsigned sdp_media_count(sdp_session_t const *sdp,
+			 sdp_media_e type,
+			 sdp_text_t *type_name,
+			 sdp_proto_e proto,
+			 sdp_text_t *proto_name);
+
+unsigned sdp_media_count_with(sdp_session_t const *sdp,
+			      sdp_media_t const *m0);
+
 /* ======================================================================== */
 
 /** Flags given to sdp_parse()/sdp_print(). */
