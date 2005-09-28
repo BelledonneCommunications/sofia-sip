@@ -475,9 +475,6 @@ static void post_session(sdp_parser_t *p, sdp_session_t *sdp)
     return;
   }
   
-  if (p->pr_insane)
-    return;
-
   mode = sdp_attribute_mode(sdp->sdp_attributes, sdp_sendrecv);
 
   /* Go through all media and set mode */
@@ -500,6 +497,9 @@ static void post_session(sdp_parser_t *p, sdp_session_t *sdp)
 	m->m_mode &= ~sdp_recvonly;
     }
   }
+
+  if (p->pr_insane)
+    return;
 
   /* Verify that all mandatory fields are present */
   if (sdp_sanity_check(p) < 0)
