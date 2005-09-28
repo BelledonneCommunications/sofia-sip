@@ -335,7 +335,7 @@ int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
 
 int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 {
-  int n;
+  int n, change_session = 0;
 
   int af;
 
@@ -409,12 +409,15 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   }
 
   if (af != ss->ss_af &&
-      af >= SOA_AF_ANY && af <= SOA_AF_IP6_IP4)
+      af >= SOA_AF_ANY && af <= SOA_AF_IP6_IP4) {
     ss->ss_af = af;
+    change_session = 1;
+  }
 
   if (str0casecmp(media_address, ss->ss_address)) {
     su_free(ss->ss_home, (void *)ss->ss_address);
     ss->ss_address = su_strdup(ss->ss_home, media_address);
+    change_session = 1;
   }
 
   if (hold == (char const *)1)
@@ -423,7 +426,11 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   if (str0casecmp(hold, ss->ss_hold)) {
     su_free(ss->ss_home, (void *)ss->ss_hold);
     ss->ss_hold = su_strdup(ss->ss_home, hold);
+    change_session = 1;
   }
+
+  if (change_session)
+    ss->ss_user_version++;
 
   return n;
 }
