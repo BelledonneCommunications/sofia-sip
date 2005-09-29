@@ -4198,8 +4198,8 @@ int process_prack(nua_handle_t *nh,
 
   if (sip == NULL) {
     /* Timeout */ 
-    respond_to_invite(nh->nh_nua, nh, 500, "Reliable Response Timeout", NULL);
-    return 500;
+    respond_to_invite(nh->nh_nua, nh, 504, "Reliable Response Timeout", NULL);
+    return 504;
   }
 
   if (nh->nh_soa) {
