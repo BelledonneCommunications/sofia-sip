@@ -24,7 +24,7 @@ TESTS = 		test_soa
 
 BUILT_SOURCES =		soa_tag_ref.c
 
-include_HEADERS =       soa.h soa_session.h soa_add.h
+include_HEADERS =       soa.h soa_session.h soa_add.h soa_tag.h
 
 libsoa_a_SOURCES = 	soa.c soa_static.c \
 			soa_tag.c soa_tag_ref.c 
