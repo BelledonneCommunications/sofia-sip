@@ -846,6 +846,13 @@ extern tag_typedef_t nutag_event_ref;
  *    unsigned int
  *
  * @par Values
+ * 100 - preliminary response, request is being processed by next hop \n
+ * 1XX - preliminary response, request is being processed by UAS \n
+ * 2XX - successful final response \n
+ * 3XX - redirection error response \n
+ * 4XX - client error response \n
+ * 5XX - server error response \n
+ * 6XX - global error response \n
  *
  * Corresponding tag taking reference parameter is NUTAG_STATUS_REF()
  */
@@ -1236,6 +1243,8 @@ su_inline tag_value_t nutag_handle_vr(nua_handle_t **vp) {return(tag_value_t)vp;
 #define nutag_handle_v(v)   (tag_value_t)(v)
 #define nutag_handle_vr(v)  (tag_value_t)(v)
 #endif
+
+/* Tags for compatibility */
 
 #define NUTAG_AF(x) SOATAG_AF((x))
 #define NUTAG_AF_REF(x) SOATAG_AF_REF((x))
