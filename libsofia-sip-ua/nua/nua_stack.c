@@ -557,64 +557,6 @@ int ua_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
   return event;
 }
 
-/** Get name for NUA event. */
-char const *nua_event_name(nua_event_t event)
-{
-  switch (event) {
-  case nua_i_error: return "nua_i_error";
-  case nua_i_invite: return "nua_i_invite";
-  case nua_i_fork: return "nua_i_fork";
-  case nua_i_active: return "nua_i_active";
-  case nua_i_cancel: return "nua_i_cancel";
-  case nua_i_bye: return "nua_i_bye";
-  case nua_i_options: return "nua_i_options";
-  case nua_i_refer: return "nua_i_refer";
-  case nua_i_publish: return "nua_i_publish";
-  case nua_i_prack: return "nua_i_prack";
-  case nua_i_info: return "nua_i_info";
-  case nua_i_update: return "nua_i_update";
-  case nua_i_message: return "nua_i_message";
-  case nua_i_chat: return "nua_i_chat";
-  case nua_i_subscribe: return "nua_i_subscribe";
-  case nua_i_notify: return "nua_i_notify";
-  case nua_i_method: return "nua_i_method";
-  case nua_i_terminated: return "nua_i_terminated";
-
-  /* Responses */
-  case nua_r_get_params: return "nua_r_get_params";
-  case nua_r_shutdown: return "nua_r_shutdown";
-  case nua_r_notifier: return "nua_r_notifier";
-  case nua_r_terminate: return "nua_r_terminate";
-
-  case nua_r_register: return "nua_r_register";
-  case nua_r_unregister: return "nua_r_unregister";
-  case nua_r_invite: return "nua_r_invite";
-  case nua_r_bye: return "nua_r_bye";
-  case nua_r_options: return "nua_r_options";
-  case nua_r_refer: return "nua_r_refer";
-  case nua_r_publish: return "nua_r_publish";
-  case nua_r_info: return "nua_r_info";
-  case nua_r_update: return "nua_r_update";
-  case nua_r_message: return "nua_r_message";
-  case nua_r_chat: return "nua_r_chat";
-  case nua_r_subscribe: return "nua_r_subscribe";
-  case nua_r_unsubscribe: return "nua_r_unsubscribe";
-  case nua_r_notify: return "nua_r_notify";
-
-  case nua_r_method: return "nua_r_method";
-
-  case nua_r_cancel: return "nua_r_cancel";
-  case nua_r_authenticate: return "nua_r_authenticate";
-  case nua_r_redirect: return "nua_r_redirect";
-  case nua_r_destroy: return "nua_r_destroy";
-  case nua_r_respond: return "nua_r_respond";
-  case nua_r_set_params: return "nua_r_set_params";
-  case nua_r_ack: return "nua_r_ack";
-  default: return "NUA_UNKNOWN";
-  }
-}
-
-
 /* ----------------------------------------------------------------------
  * Post signal to stack client
  */

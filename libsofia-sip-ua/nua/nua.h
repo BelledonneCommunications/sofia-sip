@@ -125,6 +125,7 @@ typedef enum nua_event_e {
   nua_r_redirect,
   nua_r_destroy,
   nua_r_respond,
+  nua_r_nit_respond,
   nua_r_set_params,		/*#< Answer to nua_set_params() */
   nua_r_ack,			/*#< Answer to ACK */
 
