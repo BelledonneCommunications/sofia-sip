@@ -101,6 +101,15 @@ const char _nua_stack_c_id[] =
 
 #include "nua_stack.h"
 
+#ifndef SDP_MIME_TYPE
+static char const nua_application_sdp[] = "application/sdp";
+#define SDP_MIME_TYPE (nua_application_sdp)
+#endif
+
+#ifndef SDP_H
+typedef struct sdp_session_s sdp_session_t;
+#endif
+
 typedef unsigned longlong ull;
 
 /* ========================================================================
