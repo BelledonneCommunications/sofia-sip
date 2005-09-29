@@ -376,6 +376,12 @@ void cli_callback(nua_event_t event,
 {
   assert(cli);
 
+  if (cli->cli_debug) {
+    printf("%s: event %s (%d)\n", 
+	   cli->cli_name, nua_event_name(event), event);
+    tl_print(stdout, "", tags);
+  }
+
   switch (event) {
   case nua_r_shutdown:    
     cli_r_shutdown(status, phrase, nua, cli, nh, op, sip, tags);
@@ -482,12 +488,15 @@ void cli_callback(nua_event_t event,
   }
 
   if (status > 100)
-    printf("%s: unknown event %d: %03d %s\n", 
-	   cli->cli_name, event, status, phrase);
+    printf("%s: event %s (%d) not handled: %03d %s\n", 
+	   cli->cli_name, nua_event_name(event), event, status, phrase);
   else
-    printf("%s: unknown event %d\n", cli->cli_name, event);
+    printf("%s: event %s (%d) not handled\n",
+	   cli->cli_name, nua_event_name(event), event);
 
-  tl_print(stdout, "", tags);
+  if (!cli->cli_debug)
+    tl_print(stdout, "", tags);
+
   cli_prompt(cli);
 }
 
@@ -1857,6 +1866,8 @@ int cli_init(cli_t *cli, char *av[])
   if (av[1] && strncmp(av[1], "--media=", 8) == 0)
     cli->cli_media = av++[1] + 8;
   cli->cli_contact = av[1];
+
+  cli->cli_debug = 1;
 
   /* Disable threading by command line switch? */
   su_root_threading(cli->cli_root, 0);
