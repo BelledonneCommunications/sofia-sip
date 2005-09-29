@@ -964,11 +964,6 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	       NUTAG_SMIME_MESSAGE_ENCRYPTION_REF(smime_message_encryption),
 	       NUTAG_CERTIFICATE_DIR_REF(smime_path),
 #endif
-#if HAVE_SRTP
-	       NUTAG_SRTP_ENABLE_REF(nua->srtp->srtp_enable),
-	       NUTAG_SRTP_INTEGRITY_PROTECTION_REF(nua->srtp->srtp_integrity_protection),
-	       NUTAG_SRTP_CONFIDENTIALITY_REF(nua->srtp->srtp_confidentiality),
-#endif
 	       NUTAG_REGISTRAR_REF(registrar),
 	       SIPTAG_FROM_REF(from),
 	       SIPTAG_FROM_STR_REF(fromstr),
@@ -1167,11 +1162,6 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
      NUTAG_SMIME_KEY_ENCRYPTION(nua->sm->sm_key_encryption),
      NUTAG_SMIME_MESSAGE_ENCRYPTION(nua->sm->sm_message_encryption),
 #endif                  
-#if HAVE_SRTP
-     NUTAG_SRTP_ENABLE(nua->srtp->srtp_enable),
-     NUTAG_SRTP_CONFIDENTIALITY(nua->srtp->srtp_confidentiality),
-     NUTAG_SRTP_INTEGRITY_PROTECTION(nua->srtp->srtp_integrity_protection),
-#endif
      NUTAG_REGISTRAR(nua->nua_registrar),
      NTATAG_CONTACT(nua->nua_contact ? nua->nua_contact : 
 		    nua->nua_sips_contact),

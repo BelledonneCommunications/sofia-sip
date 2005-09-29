@@ -463,9 +463,6 @@ struct nua_s {
 #if HAVE_SMIME		/* Start NRC Boston */
   sm_object_t          *sm;
 #endif                  /* End NRC Boston */
-#if HAVE_SRTP
-  srtp_object_t        srtp[1];   
-#endif
 
   nua_handle_t        *nua_handles;
   nua_handle_t       **nua_handles_tail;
