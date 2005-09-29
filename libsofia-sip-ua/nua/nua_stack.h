@@ -272,24 +272,24 @@ typedef struct nua_session_state
 #define \
   NH_ACTIVE_MEDIA_TAGS(include, soa)					\
   TAG_IF((include) && (soa) && soa_is_audio_active(soa) >= 0,		\
-	 NUTAG_ACTIVE_AUDIO(soa_is_audio_active(soa))),			\
+	 SOATAG_ACTIVE_AUDIO(soa_is_audio_active(soa))),		\
   TAG_IF((include) && (soa) && soa_is_video_active(soa) >= 0,		\
-	 NUTAG_ACTIVE_VIDEO(soa_is_video_active(soa))),			\
+	 SOATAG_ACTIVE_VIDEO(soa_is_video_active(soa))),		\
   TAG_IF((include) && (soa) && soa_is_image_active(soa) >= 0,		\
-	 NUTAG_ACTIVE_IMAGE(soa_is_image_active(soa))),			\
+	 SOATAG_ACTIVE_IMAGE(soa_is_image_active(soa))),		\
   TAG_IF((include) && (soa) && soa_is_chat_active(soa) >= 0,		\
-	 NUTAG_ACTIVE_CHAT(soa_is_chat_active(soa)))
+	 SOATAG_ACTIVE_CHAT(soa_is_chat_active(soa)))
 
 #define \
   NH_REMOTE_MEDIA_TAGS(include, soa)					\
   TAG_IF((include) && (soa) && soa_is_remote_audio_active(soa) >= 0,	\
-	 NUTAG_ACTIVE_AUDIO(soa_is_remote_audio_active(soa))),		\
+	 SOATAG_ACTIVE_AUDIO(soa_is_remote_audio_active(soa))),		\
   TAG_IF((include) && (soa) && soa_is_remote_video_active(soa) >= 0,	\
-	 NUTAG_ACTIVE_VIDEO(soa_is_remote_video_active(soa))),		\
+	 SOATAG_ACTIVE_VIDEO(soa_is_remote_video_active(soa))),		\
   TAG_IF((include) && (soa) && soa_is_remote_image_active(soa) >= 0,	\
-	 NUTAG_ACTIVE_IMAGE(soa_is_remote_image_active(soa))),		\
+	 SOATAG_ACTIVE_IMAGE(soa_is_remote_image_active(soa))),		\
   TAG_IF((include) && (soa) && soa_is_remote_chat_active(soa) >= 0,	\
-	 NUTAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
+	 SOATAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
 
 /** NUA handle. 
  *
