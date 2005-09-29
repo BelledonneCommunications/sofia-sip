@@ -2708,6 +2708,8 @@ static void signal_call_state_change(nua_handle_t *nh,
   sdp_session_t const *local_sdp = NULL;
   char const *local_sdp_str = NULL;
 
+  int offer_recv, answer_recv, offer_sent, answer_sent;
+
   if (ss->ss_state != nua_callstate_ready || next_state > nua_callstate_ready)
     SU_DEBUG_5(("nua(%p): call state changed: %s -> %s%s%s%s%s\n", 
 		nh, nua_callstate_name(ss->ss_state),
@@ -2730,6 +2732,11 @@ static void signal_call_state_change(nua_handle_t *nh,
 		   SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
 		   TAG_END());
 
+  offer_recv = oa_recv && strcasecmp(oa_recv, "offer") == 0;
+  answer_recv = oa_recv && strcasecmp(oa_recv, "answer") == 0;
+  offer_sent = oa_sent && strcasecmp(oa_sent, "offer") == 0;
+  answer_sent = oa_sent && strcasecmp(oa_sent, "answer") == 0;
+
   /* XXX: 
    * - add delivery of complete session and transaction state 
    * - build tag list once and reuse it for all ua_event()s 
@@ -2750,6 +2757,10 @@ static void signal_call_state_change(nua_handle_t *nh,
 	   NUTAG_CALLSTATE(ss_state),
 	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa), 
 	   /* NUTAG_SOA_SESSION(nh->nh_soa), */
+	   TAG_IF(offer_recv, NUTAG_OFFER_RECV(offer_recv)),
+	   TAG_IF(answer_recv, NUTAG_ANSWER_RECV(answer_recv)),
+	   TAG_IF(offer_sent, NUTAG_OFFER_SENT(offer_sent)),
+	   TAG_IF(answer_sent, NUTAG_ANSWER_SENT(answer_sent)),
 	   TAG_IF(oa_recv, SOATAG_REMOTE_SDP(remote_sdp)),
 	   TAG_IF(oa_recv, SOATAG_REMOTE_SDP_STR(remote_sdp_str)),
 	   TAG_IF(oa_sent, SOATAG_LOCAL_SDP(local_sdp)),
