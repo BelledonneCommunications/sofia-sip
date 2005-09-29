@@ -1046,6 +1046,9 @@ enum nua_callstate {
   nua_callstate_terminated	/**< BYE complete */
 };
 
+/** Get name for NUA call state */
+char const *nua_callstate_name(enum nua_callstate state);
+
 /** Subscription state
  *
  * @par Used with

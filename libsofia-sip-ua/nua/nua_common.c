@@ -229,3 +229,20 @@ char const *nua_event_name(nua_event_t event)
   default: return "NUA_UNKNOWN";
   }
 }
+
+/** Return name of call state */
+char const *nua_callstate_name(enum nua_callstate state)
+{
+  switch (state) {
+  case nua_callstate_init: return "init";
+  case nua_callstate_calling: return "calling";
+  case nua_callstate_proceeding: return "proceeding";
+  case nua_callstate_received: return "received";
+  case nua_callstate_early: return "early";
+  case nua_callstate_ready: return "ready";
+  case nua_callstate_terminating: return "terminating";
+  case nua_callstate_terminated: return "terminated";
+  default: return "UNKNOWN";
+  }
+}
+
