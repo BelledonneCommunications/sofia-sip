@@ -84,4 +84,7 @@ tag_value_t sdptag_session_vr(struct sdp_session_s const **vp) {
 
 extern tag_class_t sdptag_session_class[];
 
+#define SDPTAG_TYPEDEF(name) \
+  {{ TAG_NAMESPACE, #name, sdptag_session_class }}
+
 #endif /* !defined(SDP_TAG_H) */
