@@ -141,61 +141,6 @@ extern tag_typedef_t soatag_address;
 #define SOATAG_ADDRESS_REF(x) soatag_address_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_address_ref;
 
-#define SOATAG_MEDIA_PROFILE(x)  soatag_media_profile, tag_str_v(x)
-extern tag_typedef_t soatag_media_profile;
-#define SOATAG_MEDIA_PROFILE_REF(x) soatag_media_profile_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_media_profile_ref;
-
-#define SOATAG_MEDIA_CLONE(x)  soatag_media_clone, tag_bool_v(x)
-extern tag_typedef_t soatag_media_clone;
-#define SOATAG_MEDIA_CLONE_REF(x) soatag_media_clone_ref, tag_bool_vr(&(x))
-extern tag_typedef_t soatag_media_clone_ref;
-
-#define SOATAG_MSS_SDP(x)  soatag_mss_sdp, tag_str_v(x)
-extern tag_typedef_t soatag_mss_sdp;
-#define SOATAG_MSS_SDP_REF(x) soatag_mss_sdp_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_mss_sdp_ref;
-
-#define SOATAG_MSS_CFG(x)  soatag_mss_cfg, tag_str_v(x)
-extern tag_typedef_t soatag_mss_cfg;
-#define SOATAG_MSS_CFG_REF(x) soatag_mss_cfg_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_mss_cfg_ref;
-
-extern tag_typedef_t soatag_image_local;
-#define SOATAG_IMAGE_LOCAL(x)   soatag_image_local, tag_str_v(x)
-extern tag_typedef_t soatag_image_local_ref;
-#define SOATAG_IMAGE_LOCAL_REF(x) soatag_image_local_ref, tag_str_vr(&(x))
-
-extern tag_typedef_t soatag_image_remote;
-#define SOATAG_IMAGE_REMOTE(x)  soatag_image_remote, tag_str_v(x)
-
-extern tag_typedef_t soatag_image_remote_ref;
-#define SOATAG_IMAGE_REMOTE_REF(x) soatag_image_remote_ref, tag_str_vr(&(x))
-
-extern tag_typedef_t soatag_target_image_name;
-#define SOATAG_TARGET_IMAGE_NAME(x) soatag_target_image_name, tag_str_v(x)
-extern tag_typedef_t soatag_target_image_name_ref;
-#define SOATAG_TARGET_IMAGE_NAME_REF(x) soatag_target_image_name_ref, tag_str_vr(&(x))
-
-/* XXX - Active image call */
-#define SOATAG_ACTIVE_IMAGE(x) soatag_active_image, tag_int_v(x)
-extern tag_typedef_t soatag_active_image;
-
-#define SOATAG_ACTIVE_IMAGE_REF(x) soatag_active_image_ref, tag_int_vr(&(x))
-extern tag_typedef_t soatag_active_image_ref;
-
-#define SOATAG_VIDEO_LOCAL(x)   soatag_video_local, tag_str_v(x)
-extern tag_typedef_t soatag_video_local;
-
-#define SOATAG_VIDEO_LOCAL_REF(x) soatag_video_local_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_video_local_ref;
-
-#define SOATAG_VIDEO_REMOTE(x)  soatag_video_remote, tag_str_v(x)
-extern tag_typedef_t soatag_video_remote;
-
-#define SOATAG_VIDEO_REMOTE_REF(x) soatag_video_remote_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_video_remote_ref;
-
 /** Enable SRTP */
 #define SOATAG_SRTP_ENABLE(x)  soatag_srtp_enable, tag_bool_v(x)
 extern tag_typedef_t soatag_srtp_enable;
@@ -220,39 +165,5 @@ extern tag_typedef_t soatag_srtp_integrity_ref;
 extern tag_typedef_t soatag_hold;
 #define SOATAG_HOLD_REF(x)       soatag_hold_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_hold_ref;
-
-#define SOATAG_MEDIA_EVENT_PATH(x) soatag_media_event_path, tag_str_v(x)
-extern tag_typedef_t soatag_media_event_path;
-
-#define SOATAG_MEDIA_EVENT_PATH_REF(x) \
-          soatag_media_event_path_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_media_event_path_ref;
-
-#define SOATAG_MEDIA_EVENT_DATA(x) \
-          soatag_media_event_data, tag_ptr_v(x)
-extern tag_typedef_t soatag_media_event_data;
-
-#define SOATAG_MEDIA_EVENT_DATA_REF(x) \
-          soatag_media_event_data_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t soatag_media_event_data_ref;
-
-#define SOATAG_MEDIA_EVENT_DLEN(x) soatag_media_event_dlen, tag_uint_v(x)
-extern tag_typedef_t soatag_media_event_dlen;
-
-#define SOATAG_MEDIA_EVENT_DLEN_REF(x) \
-          soatag_media_event_dlen_ref, tag_uint_vr(&(x))
-extern tag_typedef_t soatag_media_event_dlen_ref;
-
-#define SOATAG_MEDIA_SUBSYSTEM(x)  soatag_media_subsystem, tag_ptr_v(x)
-extern tag_typedef_t soatag_media_subsystem;
-#define SOATAG_MEDIA_SUBSYSTEM_REF(x) \
- soatag_media_subsystem_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t soatag_media_subsystem_ref;
-
-#define SOATAG_MEDIA_SESSION(x)  soatag_media_session, tag_ptr_v(x)
-extern tag_typedef_t soatag_media_session;
-#define SOATAG_MEDIA_SESSION_REF(x) \
- soatag_media_session_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t soatag_media_session_ref;
 
 #endif /* SOA_TAG_H */
