@@ -63,6 +63,10 @@ tag_typedef_t nutag_media_subsystem = PTRTAG_TYPEDEF(media_session);
 tag_typedef_t nutag_media_session = PTRTAG_TYPEDEF(media_session);
 
 tag_typedef_t nutag_callstate = INTTAG_TYPEDEF(callstate);
+tag_typedef_t nutag_offer_recv = BOOLTAG_TYPEDEF(offer_recv);
+tag_typedef_t nutag_answer_recv = BOOLTAG_TYPEDEF(answer_recv);
+tag_typedef_t nutag_offer_sent = BOOLTAG_TYPEDEF(offer_sent);
+tag_typedef_t nutag_answer_sent = BOOLTAG_TYPEDEF(answer_sent);
 tag_typedef_t nutag_substate = INTTAG_TYPEDEF(substate);
 tag_typedef_t nutag_invite_timer = INTTAG_TYPEDEF(invite_timer);
 tag_typedef_t nutag_session_timer = INTTAG_TYPEDEF(session_timer);

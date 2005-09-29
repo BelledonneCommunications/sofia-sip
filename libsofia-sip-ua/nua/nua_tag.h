@@ -1165,6 +1165,70 @@ extern tag_typedef_t nutag_media_enable;
           nutag_media_enable_ref, tag_bool_vr(&(x))
 extern tag_typedef_t nutag_media_enable_ref;
 
+/** Indicate that SDP offer has been received.
+ *
+ * @par Used with
+ *    #nua_i_state
+ *
+ * @par Parameter type
+ *    boolean
+ *
+ * Corresponding tag taking reference parameter is NUTAG_OFFER_RECV_REF()
+ */
+#define NUTAG_OFFER_RECV(x) nutag_offer_recv, tag_bool_v(x)
+extern tag_typedef_t nutag_offer_recv;
+
+#define NUTAG_OFFER_RECV_REF(x) nutag_offer_recv_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_offer_recv_ref;
+
+/** Indicate that SDP answer has been received.
+ *
+ * @par Used with
+ *    #nua_i_state
+ *
+ * @par Parameter type
+ *    boolean
+ *
+ * Corresponding tag taking reference parameter is NUTAG_ANSWER_RECV_REF()
+ */
+#define NUTAG_ANSWER_RECV(x) nutag_answer_recv, tag_bool_v(x)
+extern tag_typedef_t nutag_answer_recv;
+
+#define NUTAG_ANSWER_RECV_REF(x) nutag_answer_recv_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_answer_recv_ref;
+
+/** Indicate that SDP offer has been sent.
+ *
+ * @par Used with
+ *    #nua_i_state
+ *
+ * @par Parameter type
+ *    boolean
+ *
+ * Corresponding tag taking reference parameter is NUTAG_OFFER_SENT_REF()
+ */
+#define NUTAG_OFFER_SENT(x) nutag_offer_sent, tag_bool_v(x)
+extern tag_typedef_t nutag_offer_sent;
+
+#define NUTAG_OFFER_SENT_REF(x) nutag_offer_sent_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_offer_sent_ref;
+
+/** Indicate that SDP answer has been sent.
+ *
+ * @par Used with
+ *    #nua_i_state
+ *
+ * @par Parameter type
+ *    boolean
+ *
+ * Corresponding tag taking reference parameter is NUTAG_ANSWER_SENT_REF()
+ */
+#define NUTAG_ANSWER_SENT(x) nutag_answer_sent, tag_bool_v(x)
+extern tag_typedef_t nutag_answer_sent;
+
+#define NUTAG_ANSWER_SENT_REF(x) nutag_answer_sent_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_answer_sent_ref;
+
 #if SU_HAVE_INLINE
 su_inline tag_value_t nutag_handle_v(nua_handle_t *v) { return (tag_value_t)v; }
 su_inline tag_value_t nutag_handle_vr(nua_handle_t **vp) {return(tag_value_t)vp;}
