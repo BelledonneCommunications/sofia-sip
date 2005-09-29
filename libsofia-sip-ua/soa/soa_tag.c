@@ -236,6 +236,104 @@ tag_typedef_t soatag_af = INTTAG_TYPEDEF(af);
 */
 tag_typedef_t soatag_address = STRTAG_TYPEDEF(address);
 
+/**@def SOATAG_ACTIVE_AUDIO(x)
+ * 
+ * Audio session status
+ *
+ * @par Used with
+ *
+ * @par Parameter type
+ *    enum { SOA_ACTIVE_DISABLED, SOA_ACTIVE_REJECTED, 
+ *           SOA_ACTIVE_INACTIVE, SOA_ACTIVE_SENDONLY, 
+ *           SOA_ACTIVE_RECVONLY, SOA_ACTIVE_SENDRECV }
+ *
+ * @par Values
+ *    @c SOA_ACTIVE_INACTIVE  (0) \n
+ *    @c SOA_ACTIVE_SENDONLY  (1) \n
+ *    @c SOA_ACTIVE_RECVONLY  (2) \n
+ *    @c SOA_ACTIVE_SENDRECV  (3) \n
+ *
+ *  Corresponding tag taking reference parameter is SOATAG_ACTIVE_AUDIO_REF()
+ *
+ */
+tag_typedef_t soatag_active_audio = INTTAG_TYPEDEF(active_audio);
+
+/**@def SOATAG_ACTIVE_VIDEO(x)
+ * 
+ * Video session status
+ *
+ * @par Used with
+ *
+ * @par Parameter type
+ *    enum { SOA_ACTIVE_DISABLED, SOA_ACTIVE_REJECTED, 
+ *           SOA_ACTIVE_INACTIVE, SOA_ACTIVE_SENDONLY, 
+ *           SOA_ACTIVE_RECVONLY, SOA_ACTIVE_SENDRECV }
+ *
+ * @par Values
+ *    @c SOA_ACTIVE_INACTIVE  (0) \n
+ *    @c SOA_ACTIVE_SENDONLY  (1) \n
+ *    @c SOA_ACTIVE_RECVONLY  (2) \n
+ *    @c SOA_ACTIVE_SENDRECV  (3) \n
+ *
+ * Corresponding tag taking reference parameter is SOATAG_ACTIVE_VIDEO_REF()
+ */
+tag_typedef_t soatag_active_video = INTTAG_TYPEDEF(active_video);
+
+/**@def SOATAG_ACTIVE_IMAGE(x)
+ * 
+ * Active image session status
+ *
+ * @par Used with
+ *    #nua_i_active \n
+ *    #nua_i_state \n
+ *
+ * @par Parameter type
+ *    enum { SOA_ACTIVE_DISABLED, SOA_ACTIVE_REJECTED, 
+ *           SOA_ACTIVE_INACTIVE, SOA_ACTIVE_SENDONLY, 
+ *           SOA_ACTIVE_RECVONLY, SOA_ACTIVE_SENDRECV }
+ *
+ * @par Values
+ *    @c SOA_ACTIVE_INACTIVE  (0) \n
+ *    @c SOA_ACTIVE_SENDONLY  (1) \n
+ *    @c SOA_ACTIVE_RECVONLY  (2) \n
+ *    @c SOA_ACTIVE_SENDRECV  (3) \n
+ *
+ * @par Parameter type
+ *    enum { SOA_ACTIVE_DISABLED, SOA_ACTIVE_REJECTED, 
+ *           SOA_ACTIVE_INACTIVE, SOA_ACTIVE_SENDONLY, 
+ *           SOA_ACTIVE_RECVONLY, SOA_ACTIVE_SENDRECV }
+ *
+ * @par Values
+ *    @c SOA_ACTIVE_INACTIVE  (0) \n
+ *    @c SOA_ACTIVE_SENDONLY  (1) \n
+ *    @c SOA_ACTIVE_RECVONLY  (2) \n
+ *    @c SOA_ACTIVE_SENDRECV  (3) \n
+ *
+ * Corresponding tag taking reference parameter is SOATAG_ACTIVE_IMAGE_REF()
+ */
+tag_typedef_t soatag_active_image = INTTAG_TYPEDEF(active_image);
+
+/**@def SOATAG_ACTIVE_CHAT(x)
+ * 
+ *  Active chat session status
+ *
+ * @par Used with
+ *
+ * @par Parameter type
+ *    enum { SOA_ACTIVE_DISABLED, SOA_ACTIVE_REJECTED, 
+ *           SOA_ACTIVE_INACTIVE, SOA_ACTIVE_SENDONLY, 
+ *           SOA_ACTIVE_RECVONLY, SOA_ACTIVE_SENDRECV }
+ *
+ * @par Values
+ *    @c SOA_ACTIVE_INACTIVE  (0) \n
+ *    @c SOA_ACTIVE_SENDONLY  (1) \n
+ *    @c SOA_ACTIVE_RECVONLY  (2) \n
+ *    @c SOA_ACTIVE_SENDRECV  (3) \n
+ *
+ * Corresponding tag taking reference parameter is SOATAG_ACTIVE_CHAT_REF()
+ */
+tag_typedef_t soatag_active_chat = INTTAG_TYPEDEF(active_chat);
+
 /**@def SOATAG_SRTP_ENABLE(x)
  *  
  * Enable SRTP

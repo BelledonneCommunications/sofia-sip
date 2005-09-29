@@ -51,6 +51,13 @@ enum {
   SOA_ACTIVE_SENDRECV = SOA_ACTIVE_SENDONLY | SOA_ACTIVE_RECVONLY
 };
 
+#define SOA_ACTIVE_DISABLED SOA_ACTIVE_DISABLED
+#define SOA_ACTIVE_REJECTED SOA_ACTIVE_REJECTED
+#define SOA_ACTIVE_INACTIVE SOA_ACTIVE_INACTIVE
+#define SOA_ACTIVE_SENDONLY SOA_ACTIVE_SENDONLY
+#define SOA_ACTIVE_RECVONLY SOA_ACTIVE_RECVONLY
+#define SOA_ACTIVE_SENDRECV SOA_ACTIVE_SENDRECV
+
 /*
  * SOA engine and media parameters set by soa_set_params(), get by
  * soa_get_params() or soa_get_paramlist()
@@ -140,6 +147,30 @@ enum soa_af {
 extern tag_typedef_t soatag_address;
 #define SOATAG_ADDRESS_REF(x) soatag_address_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_address_ref;
+
+#define SOATAG_ACTIVE_AUDIO(x) soatag_active_audio, tag_int_v(x)
+extern tag_typedef_t soatag_active_audio;
+
+#define SOATAG_ACTIVE_AUDIO_REF(x) soatag_active_audio_ref, tag_int_vr(&(x))
+extern tag_typedef_t soatag_active_audio_ref;
+
+#define SOATAG_ACTIVE_VIDEO(x) soatag_active_video, tag_int_v(x)
+extern tag_typedef_t soatag_active_video;
+
+#define SOATAG_ACTIVE_VIDEO_REF(x) soatag_active_video_ref, tag_int_vr(&(x))
+extern tag_typedef_t soatag_active_video_ref;
+
+#define SOATAG_ACTIVE_IMAGE(x) soatag_active_image, tag_int_v(x)
+extern tag_typedef_t soatag_active_image;
+
+#define SOATAG_ACTIVE_IMAGE_REF(x) soatag_active_image_ref, tag_int_vr(&(x))
+extern tag_typedef_t soatag_active_image_ref;
+
+#define SOATAG_ACTIVE_CHAT(x) soatag_active_chat, tag_int_v(x)
+extern tag_typedef_t soatag_active_chat;
+
+#define SOATAG_ACTIVE_CHAT_REF(x) soatag_active_chat_ref, tag_int_vr(&(x))
+extern tag_typedef_t soatag_active_chat_ref;
 
 /** Enable SRTP */
 #define SOATAG_SRTP_ENABLE(x)  soatag_srtp_enable, tag_bool_v(x)
