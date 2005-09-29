@@ -689,6 +689,7 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
     ua_refer(nua, nh, e->e_event, tags);
     break;
   case nua_r_publish:
+  case nua_r_unpublish:
     ua_publish(nua, nh, e->e_event, tags);
     break;
   case nua_r_info:

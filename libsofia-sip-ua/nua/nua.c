@@ -1088,10 +1088,10 @@ void nua_refer(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 
 /** Send PUBLISH request to publication server. 
  *
- * Request status will be delivered to the application using 
- * #nua_r_publish event. When successful the publication will 
- * be updated periodically. The handle used for publication 
- * cannot be used for any other purposes.
+ * Request status will be delivered to the application using #nua_r_publish
+ * event. When successful the publication will be updated periodically until
+ * nua_unpublish() is called or handle is destroyed. The handle used for
+ * publication cannot be used for any other purposes.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -1109,6 +1109,30 @@ void nua_refer(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 void nua_publish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_publish, tag, value);
+}
+
+/** Send un-PUBLISH request to publication server. 
+ *
+ * Request status will be delivered to the application using 
+ * #nua_r_publish event. The handle used for un-publication 
+ * cannot be used for any other purposes.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    #NUTAG_URL \n
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_publish
+ */
+void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  NUA_SIGNAL(nh, nua_r_unpublish, tag, value);
 }
 
 /** Send an INFO request. 
