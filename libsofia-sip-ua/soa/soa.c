@@ -350,7 +350,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   int af;
 
-  sdp_session_t *caps_sdp, *user_sdp;
+  sdp_session_t const *caps_sdp, *user_sdp;
   char const *caps_sdp_str, *user_sdp_str;
 
   char const *media_address, *hold;

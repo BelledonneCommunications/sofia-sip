@@ -54,6 +54,8 @@ struct context;
 #include "soa_tag.h"
 #include "soa_add.h"
 
+#include <sdp.h>
+
 #include <su_log.h>
 
 extern su_log_t soa_log[];
@@ -370,6 +372,24 @@ int test_static_offer_answer(struct context *ctx)
   TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(a));
   TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(a));
   TEST_1(SOA_ACTIVE_REJECTED == soa_is_video_active(a));
+
+  {
+    /* Test tags */
+    sdp_session_t const *l = NULL, *u = NULL, *r = NULL;
+    sdp_media_t const *m;
+
+    TEST(soa_get_params(b, 
+			SOATAG_LOCAL_SDP_REF(l),
+			SOATAG_USER_SDP_REF(u),
+			SOATAG_REMOTE_SDP_REF(r),
+			TAG_END()), 3);
+
+    TEST_1(l); TEST_1(u); TEST_1(r);
+    TEST_1(m = l->sdp_media); TEST(m->m_type, sdp_media_audio);
+    TEST_1(!m->m_rejected);
+    TEST_1(m = m->m_next); TEST(m->m_type, sdp_media_video);
+    TEST_1(m->m_rejected);
+  }
 
   /* 'B' will now propose adding video. */
   /* 'A' will accept. */

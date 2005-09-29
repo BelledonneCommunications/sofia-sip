@@ -35,6 +35,9 @@
 #ifndef SU_TAG_H
 #include <su_tag.h>
 #endif
+#ifndef SDP_TAG_H
+#include <sdp_tag.h>
+#endif
 
 /**
  * Media states 
@@ -53,10 +56,10 @@ enum {
  * soa_get_params() or soa_get_paramlist()
  */
 
-#define SOATAG_LOCAL_SDP(x)  soatag_local_sdp, tag_ptr_v(x)
+#define SOATAG_LOCAL_SDP(x)  soatag_local_sdp, sdptag_session_v(x)
 extern tag_typedef_t soatag_local_sdp;
 #define SOATAG_LOCAL_SDP_REF(x) \
-  soatag_local_sdp_ref, tag_ptr_vr(&(x), (x))
+  soatag_local_sdp_ref, sdptag_session_vr(&(x))
 extern tag_typedef_t soatag_local_sdp_ref;
 
 #define SOATAG_LOCAL_SDP_STR(x)  soatag_local_sdp_str, tag_str_v(x)
@@ -65,10 +68,10 @@ extern tag_typedef_t soatag_local_sdp_str;
   soatag_local_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_local_sdp_str_ref;
 
-#define SOATAG_USER_SDP(x)  soatag_user_sdp, tag_ptr_v(x)
+#define SOATAG_USER_SDP(x)  soatag_user_sdp, sdptag_session_v(x)
 extern tag_typedef_t soatag_user_sdp;
 #define SOATAG_USER_SDP_REF(x) \
-  soatag_user_sdp_ref, tag_ptr_vr(&(x), (x))
+  soatag_user_sdp_ref, sdptag_session_vr(&(x))
 extern tag_typedef_t soatag_user_sdp_ref;
 
 #define SOATAG_USER_SDP_STR(x)  soatag_user_sdp_str, tag_str_v(x)
@@ -77,10 +80,10 @@ extern tag_typedef_t soatag_user_sdp_str;
   soatag_user_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_user_sdp_str_ref;
 
-#define SOATAG_CAPS_SDP(x)  soatag_caps_sdp, tag_ptr_v(x)
+#define SOATAG_CAPS_SDP(x)  soatag_caps_sdp, sdptag_session_v(x)
 extern tag_typedef_t soatag_caps_sdp;
 #define SOATAG_CAPS_SDP_REF(x) \
-  soatag_caps_sdp_ref, tag_ptr_vr(&(x), (x))
+  soatag_caps_sdp_ref, sdptag_session_vr(&(x))
 extern tag_typedef_t soatag_caps_sdp_ref;
 
 #define SOATAG_CAPS_SDP_STR(x)  soatag_caps_sdp_str, tag_str_v(x)
@@ -89,10 +92,10 @@ extern tag_typedef_t soatag_caps_sdp_str;
   soatag_caps_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_caps_sdp_str_ref;
 
-#define SOATAG_REMOTE_SDP(x)  soatag_remote_sdp, tag_ptr_v(x)
+#define SOATAG_REMOTE_SDP(x)  soatag_remote_sdp, sdptag_session_v(x)
 extern tag_typedef_t soatag_remote_sdp;
 #define SOATAG_REMOTE_SDP_REF(x) \
-  soatag_remote_sdp_ref, tag_ptr_vr(&(x), (x))
+  soatag_remote_sdp_ref, sdptag_session_vr(&(x))
 extern tag_typedef_t soatag_remote_sdp_ref;
 
 #define SOATAG_REMOTE_SDP_STR(x)  soatag_remote_sdp_str, tag_str_v(x)
@@ -101,16 +104,16 @@ extern tag_typedef_t soatag_remote_sdp_str;
   soatag_remote_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_remote_sdp_str_ref;
 
-#define SOATAG_SESSION_SDP(x)  soatag_session_sdp, tag_ptr_v(x)
-extern tag_typedef_t soatag_session_sdp;
-#define SOATAG_SESSION_SDP_REF(x) \
-  soatag_session_sdp_ref, tag_ptr_vr(&(x), (x))
-extern tag_typedef_t soatag_session_sdp_ref;
+#define SOATAG_LOCAL_SDP(x)  soatag_local_sdp, sdptag_session_v(x)
+extern tag_typedef_t soatag_local_sdp;
+#define SOATAG_LOCAL_SDP_REF(x) \
+  soatag_local_sdp_ref, sdptag_session_vr(&(x))
+extern tag_typedef_t soatag_local_sdp_ref;
 
-#define SOATAG_SESSION_SDP_STR(x)  soatag_session_sdp_str, tag_str_v(x)
-extern tag_typedef_t soatag_session_sdp_str;
-#define SOATAG_SESSION_SDP_STR_REF(x) \
-  soatag_session_sdp_str_ref, tag_str_vr(&(x))
+#define SOATAG_LOCAL_SDP_STR(x)  soatag_local_sdp_str, tag_str_v(x)
+extern tag_typedef_t soatag_local_sdp_str;
+#define SOATAG_LOCAL_SDP_STR_REF(x) \
+  soatag_local_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_session_sdp_str_ref;
 
 #define SOATAG_AF(x)             soatag_af, tag_uint_v((x))

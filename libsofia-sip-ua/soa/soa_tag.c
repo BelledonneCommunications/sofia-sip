@@ -41,6 +41,7 @@ const char soa_tag_c_id[] =
 
 #include <soa.h>
 #include <su_tag_class.h>
+#include <sdp_tag.h>
 
 /**@def SOATAG_CAPS_SDP(x)
  *  Pass parsed capability description to soa session object.
@@ -58,7 +59,7 @@ const char soa_tag_c_id[] =
  *
  * Corresponding tag taking reference parameter is SOATAG_CAPS_SDP_REF()
  */
-tag_typedef_t soatag_caps_sdp = PTRTAG_TYPEDEF(caps_sdp);
+tag_typedef_t soatag_caps_sdp = SDPTAG_TYPEDEF(caps_sdp);
 
 /**@def SOATAG_CAPS_SDP_STR(x)
  *  Pass capability description to soa session object.
@@ -95,7 +96,7 @@ tag_typedef_t soatag_caps_sdp_str = STRTAG_TYPEDEF(caps_sdp_str);
  *
  * Corresponding tag taking reference parameter is SOATAG_LOCAL_SDP_REF()
  */
-tag_typedef_t soatag_local_sdp = PTRTAG_TYPEDEF(local_sdp);
+tag_typedef_t soatag_local_sdp = SDPTAG_TYPEDEF(local_sdp);
 
 /**@def SOATAG_LOCAL_SDP_STR(x)
  * Get local session description as a string from soa session object.
@@ -127,7 +128,7 @@ tag_typedef_t soatag_local_sdp_str = STRTAG_TYPEDEF(local_sdp_str);
  *
  * Corresponding tag taking reference parameter is SOATAG_REMOTE_SDP_REF()
  */
-tag_typedef_t soatag_remote_sdp = PTRTAG_TYPEDEF(remote_sdp);
+tag_typedef_t soatag_remote_sdp = SDPTAG_TYPEDEF(remote_sdp);
 
 /**@def SOATAG_REMOTE_SDP_STR(x)
  *  Pass media description file name to the NUA stack.
@@ -164,7 +165,7 @@ tag_typedef_t soatag_remote_sdp_str = STRTAG_TYPEDEF(remote_sdp_str);
  *
  * Corresponding tag taking reference parameter is SOATAG_USER_SDP_REF()
  */
-tag_typedef_t soatag_user_sdp = PTRTAG_TYPEDEF(user_sdp);
+tag_typedef_t soatag_user_sdp = SDPTAG_TYPEDEF(user_sdp);
 
 /**@def SOATAG_USER_SDP_STR(x)
  *  Pass media description file name to the NUA stack.
@@ -186,8 +187,6 @@ tag_typedef_t soatag_user_sdp = PTRTAG_TYPEDEF(user_sdp);
  * Corresponding tag taking reference parameter is SOATAG_USER_SDP_STR_REF()
  */
 tag_typedef_t soatag_user_sdp_str = STRTAG_TYPEDEF(user_sdp_str);
-
-
 
 /**@def SOATAG_AF(x)
  *
