@@ -1009,6 +1009,43 @@ extern tag_typedef_t nutag_user_agent;
 #define NUTAG_USER_AGENT_REF(x) nutag_user_agent_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_user_agent_ref;
 
+/** Call state
+ *
+ * @par Used with
+ *    #nua_i_state
+ *
+ * @par Parameter type
+ *    int
+ *
+ * @par Values
+ * - @c nua_callstate_init - Initial state
+ * - @c nua_callstate_calling - INVITE sent
+ * - @c nua_callstate_proceeding - 18X received
+ * - @c nua_callstate_received - INVITE received
+ * - @c nua_callstate_early - 18X sent (w/SDP)
+ * - @c nua_callstate_ready        - 2XX received or sent
+ * - @c nua_callstate_terminating - BYE sent
+ * - @c nua_callstate_terminated  - BYE complete
+ *
+ * Corresponding tag taking reference parameter is NUTAG_CALLSTATE_REF()
+ */
+#define NUTAG_CALLSTATE(x) nutag_callstate, tag_int_v(x)
+extern tag_typedef_t nutag_callstate;
+
+#define NUTAG_CALLSTATE_REF(x) nutag_callstate_ref, tag_int_vr(&(x))
+extern tag_typedef_t nutag_callstate_ref;
+
+enum nua_callstate {
+  nua_callstate_init,		/**< Initial state */
+  nua_callstate_calling,	/**< INVITE sent */
+  nua_callstate_proceeding,	/**< 18X received */
+  nua_callstate_received,	/**< INVITE received */
+  nua_callstate_early,		/**< 18X sent (w/SDP) */
+  nua_callstate_ready,		/**< 2XX received or sent */
+  nua_callstate_terminating,	/**< BYE sent */
+  nua_callstate_terminated	/**< BYE complete */
+};
+
 /** Audio session status
  *
  * @par Used with
@@ -1116,7 +1153,7 @@ extern tag_typedef_t nutag_substate;
 #define NUTAG_SUBSTATE_REF(x) nutag_substate_ref, tag_int_vr(&(x))
 extern tag_typedef_t nutag_substate_ref;
 
-enum {
+enum nua_substate {
   nua_substate_embryonic = 0,
   nua_substate_pending,
   nua_substate_active,

@@ -76,24 +76,12 @@ enum nh_kind {
   nh_has_streaming
 };
 
-enum nh_session {
-  init_session,			/**< Initial state */
-  calling_session,		/**< INVITE sent */
-  proceeding_session,		/**< 18X received */
-  received_session,		/**< INVITE received */
-  early_session,		/**< 18X sent (w/SDP) */
-  ready_session,		/**< 2XX received or sent */
-  terminating_session,		/**< BYE sent */
-  terminated_session		/**< BYE complete */
-};
-
-enum nh_call_state_event_e {
-  nh_active,                    /**< Call is activated */
-  nh_terminated,                /**< Call is terminated */
-  nh_o_sent,                    /**< O/A-1 offer sent */
-  nh_a_recv,                    /**< O/A-2 answer received */
-  nh_o_recv,                    /**< O/A-3 offer received */
-  nh_a_sent                     /**< O/A-4 answer sent */
+enum nh_oa_event {
+  nua_sdp_none,
+  nua_sdp_offer_sent,		/**< O/A-1 offer sent */
+  nua_sdp_answer_recv,		/**< O/A-2 answer received */
+  nua_sdp_offer_recv,		/**< O/A-3 offer received */
+  nua_sdp_answer_sent		/**< O/A-4 answer sent */
 };
 
 typedef struct nua_chat_s nua_chat_t;
@@ -236,8 +224,8 @@ typedef struct nua_session_state
   /** Session-related state */
   unsigned        ss_active:1;		/**< Session is currently active. */
   
-  /* enum nh_session */
-  unsigned        ss_state:4;		/**< Session status (enum nh_session) */
+  /* enum nua_callstate */
+  unsigned        ss_state:4;		/**< Session status (enum nua_callstate) */
   
   unsigned        ss_alerting:1;	/**< 180 is sent/received */
   
