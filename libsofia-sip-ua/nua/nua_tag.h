@@ -1046,87 +1046,6 @@ enum nua_callstate {
   nua_callstate_terminated	/**< BYE complete */
 };
 
-/** Audio session status
- *
- * @par Used with
- *    #nua_i_active \n
- *    #nua_r_media_describe
- *
- * @par Parameter type
- *    enum { nua_active_inactive, nua_active_sendonly, 
- *           nua_active_recvonly, nua_active_sendrecv }
- *
- * @par Values
- *    @c nua_active_inactive  (0) \n
- *    @c nua_active_sendonly  (1) \n
- *    @c nua_active_recvonly  (2) \n
- *    @c nua_active_sendrecv  (3) \n
- *
- *  Corresponding tag taking reference parameter is NUTAG_ACTIVE_AUDIO_REF()
- *
- */
-#define NUTAG_ACTIVE_AUDIO(x) nutag_active_audio, tag_int_v(x)
-extern tag_typedef_t nutag_active_audio;
-
-#define NUTAG_ACTIVE_AUDIO_REF(x) nutag_active_audio_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_active_audio_ref;
-
-/** Video session status
- *
- * @par Used with
- *    #nua_i_active \n
- *    #nua_r_media_describe
- *
- * @par Parameter type
- *    enum { nua_active_inactive, nua_active_sendonly, 
- *           nua_active_recvonly, nua_active_sendrecv }
- *
- * @par Values
- *    @c nua_active_inactive (0) \n
- *    @c nua_active_sendonly (1) \n
- *    @c nua_active_recvonly (2) \n
- *    @c nua_active_sendrecv (3) \n
- *
- * Corresponding tag taking reference parameter is NUTAG_ACTIVE_VIDEO_REF()
- */
-#define NUTAG_ACTIVE_VIDEO(x) nutag_active_video, tag_int_v(x)
-extern tag_typedef_t nutag_active_video;
-
-#define NUTAG_ACTIVE_VIDEO_REF(x) nutag_active_video_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_active_video_ref;
-
-/** Active chat session status
- *
- * @par Used with
- *    #nua_i_active \n
- *    #nua_r_media_describe
- *
- * @par Parameter type
- *    enum { nua_active_inactive, nua_active_sendonly, 
- *           nua_active_recvonly, nua_active_sendrecv }
- *
- * @par Values
- *    @c nua_active_inactive (0) \n
- *    @c nua_active_sendonly (1) \n
- *    @c nua_active_recvonly (2) \n
- *    @c nua_active_sendrecv (3) \n
- *
- * Corresponding tag taking reference parameter is NUTAG_ACTIVE_CHAT_REF()
- */
-#define NUTAG_ACTIVE_CHAT(x)     nutag_active_chat, tag_int_v(x)
-extern tag_typedef_t nutag_active_chat;
-
-#define NUTAG_ACTIVE_CHAT_REF(x) nutag_active_chat_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_active_chat_ref;
-
-enum {
-  nua_active_disabled = -4,
-  nua_active_inactive = 0,
-  nua_active_sendonly = 1,
-  nua_active_recvonly = 2,
-  nua_active_sendrecv = nua_active_sendonly | nua_active_recvonly
-};
-
 /** Subscription state
  *
  * @par Used with
@@ -1270,6 +1189,36 @@ enum nua_af {
 
 #define NUTAG_MEDIA_ADDRESS(x)  SOATAG_ADDRESS((x))
 #define NUTAG_MEDIA_ADDRESS_REF(x)   SOATAG_ADDRESS_REF((x))
+
+#define NUTAG_ACTIVE_AUDIO(x) SOATAG_ACTIVE_AUDIO((x))
+#define NUTAG_ACTIVE_AUDIO_REF(x) SOATAG_ACTIVE_AUDIO_REF((x))
+#define NUTAG_ACTIVE_VIDEO(x) SOATAG_ACTIVE_VIDEO((x))
+#define NUTAG_ACTIVE_VIDEO_REF(x) SOATAG_ACTIVE_VIDEO_REF((x))
+#define NUTAG_ACTIVE_IMAGE(x) SOATAG_ACTIVE_IMAGE((x))
+#define NUTAG_ACTIVE_IMAGE_REF(x) SOATAG_ACTIVE_IMAGE_REF((x))
+#define NUTAG_ACTIVE_CHAT(x) SOATAG_ACTIVE_CHAT((x))
+#define NUTAG_ACTIVE_CHAT_REF(x) SOATAG_ACTIVE_CHAT_REF((x))
+
+enum {
+  nua_active_rejected = SOA_ACTIVE_REJECTED,
+  nua_active_disabled = SOA_ACTIVE_DISABLED,
+  nua_active_inactive = SOA_ACTIVE_INACTIVE,
+  nua_active_sendonly = SOA_ACTIVE_SENDONLY,
+  nua_active_recvonly = SOA_ACTIVE_RECVONLY,
+  nua_active_sendrecv = SOA_ACTIVE_SENDRECV
+};
+
+#define NUTAG_SRTP_ENABLE(x)  SOATAG_SRTP_ENABLE((x))
+#define NUTAG_SRTP_ENABLE_REF(x) SOATAG_SRTP_ENABLE_REF((x))
+#define NUTAG_SRTP_CONFIDENTIALITY(x)  SOATAG_SRTP_CONFIDENTIALITY((x))
+#define NUTAG_SRTP_CONFIDENTIALITY_REF(x) SOATAG_SRTP_CONFIDENTIALITY_REF((x))
+#define NUTAG_SRTP_INTEGRITY_PROTECTION(x)  SOATAG_SRTP_INTEGRITY((x))
+#define NUTAG_SRTP_INTEGRITY_PROTECTION_REF(x) SOATAG_SRTP_INTEGRITY_REF((x))
+
+#if HAVE_SOFIA_MSS
+
+#include <soa_mss.h>
+
 #define NUTAG_MEDIA_PATH(x)  SOATAG_MEDIA_PROFILE((x))
 #define NUTAG_MEDIA_PATH_REF(x)   SOATAG_MEDIA_PROFILE_REF((x))
 
@@ -1284,31 +1233,23 @@ enum nua_af {
 
 #define NUTAG_IMAGE_LOCAL(x)   SOATAG_IMAGE_LOCAL((x))
 #define NUTAG_IMAGE_LOCAL_REF(x) SOATAG_IMAGE_LOCAL_REF((x))
-
 #define NUTAG_IMAGE_REMOTE(x)  SOATAG_IMAGE_REMOTE((x))
 #define NUTAG_IMAGE_REMOTE_REF(x) SOATAG_IMAGE_REMOTE_REF((x))
 #define NUTAG_TARGET_IMAGE_NAME(x) SOATAG_TARGET_IMAGE_NAME((x))
 #define NUTAG_TARGET_IMAGE_NAME_REF(x) SOATAG_TARGET_IMAGE_NAME_REF((x))
-
-#define NUTAG_ACTIVE_IMAGE(x) SOATAG_ACTIVE_IMAGE((x))
-#define NUTAG_ACTIVE_IMAGE_REF(x) SOATAG_ACTIVE_IMAGE_REF((x))
 
 #define NUTAG_VIDEO_LOCAL(x)   SOATAG_VIDEO_LOCAL((x))
 #define NUTAG_VIDEO_LOCAL_REF(x) SOATAG_VIDEO_LOCAL_REF((x))
 #define NUTAG_VIDEO_REMOTE(x)  SOATAG_VIDEO_REMOTE((x))
 #define NUTAG_VIDEO_REMOTE_REF(x) SOATAG_VIDEO_REMOTE_REF((x))
 
-#define NUTAG_SRTP_ENABLE(x)  SOATAG_SRTP_ENABLE((x))
-#define NUTAG_SRTP_ENABLE_REF(x) SOATAG_SRTP_ENABLE_REF((x))
-#define NUTAG_SRTP_CONFIDENTIALITY(x)  SOATAG_SRTP_CONFIDENTIALITY((x))
-#define NUTAG_SRTP_CONFIDENTIALITY_REF(x) SOATAG_SRTP_CONFIDENTIALITY_REF((x))
-#define NUTAG_SRTP_INTEGRITY_PROTECTION(x)  SOATAG_SRTP_INTEGRITY((x))
-#define NUTAG_SRTP_INTEGRITY_PROTECTION_REF(x) SOATAG_SRTP_INTEGRITY_REF((x))
 #define NUTAG_MEDIA_EVENT_PATH(x) SOATAG_MEDIA_EVENT_PATH((x))
 #define NUTAG_MEDIA_EVENT_PATH_REF(x) SOATAG_MEDIA_EVENT_PATH_REF((x))
 #define NUTAG_MEDIA_EVENT_DATA(x) SOATAG_MEDIA_EVENT_DATA((x))
 #define NUTAG_MEDIA_EVENT_DATA_REF(x) SOATAG_MEDIA_EVENT_DATA_REF((x))
 #define NUTAG_MEDIA_EVENT_DLEN(x) SOATAG_MEDIA_EVENT_DLEN((x))
 #define NUTAG_MEDIA_EVENT_DLEN_REF(x) SOATAG_MEDIA_EVENT_DLEN_REF((x))
+
+#endif
 
 #endif

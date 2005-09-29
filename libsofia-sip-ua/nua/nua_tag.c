@@ -62,9 +62,6 @@ tag_typedef_t nutag_soa_name = STRTAG_TYPEDEF(soa_name);
 tag_typedef_t nutag_media_subsystem = PTRTAG_TYPEDEF(media_session);
 tag_typedef_t nutag_media_session = PTRTAG_TYPEDEF(media_session);
 
-tag_typedef_t nutag_active_audio = INTTAG_TYPEDEF(active_audio);
-tag_typedef_t nutag_active_video = INTTAG_TYPEDEF(active_video);
-tag_typedef_t nutag_active_chat = INTTAG_TYPEDEF(active_chat);
 tag_typedef_t nutag_callstate = INTTAG_TYPEDEF(callstate);
 tag_typedef_t nutag_substate = INTTAG_TYPEDEF(substate);
 tag_typedef_t nutag_invite_timer = INTTAG_TYPEDEF(invite_timer);
