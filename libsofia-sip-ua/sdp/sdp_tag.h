@@ -41,12 +41,17 @@
 #ifndef SU_TAG_CLASS_H
 #include <su_tag_class.h>
 #endif
-#ifndef SU_TAG_CLASS_H
-#include <su_tag_class.h>
+
+#if defined(SDP_DLL)
+#elif !defined(WIN32)
+#define SDP_DLL
+#elif defined(SDP_EXPORTS)
+#define SDP_DLL __declspec(dllexport)
+#else
+#define SDP_DLL __declspec(dllimport)
 #endif
-#ifndef SDP_H
-#include <sdp.h>
-#endif
+
+struct sdp_session_s;
 
 /* Tags for parameters */
 
@@ -63,11 +68,11 @@ sdptag_session_ref, sdptag_session_vr(&(x))
 
 #if HAVE_INLINE
 static inline
-tag_value_t sdptag_session_v(sdp_session_t const *v) { 
+tag_value_t sdptag_session_v(struct sdp_session_s const *v) { 
   return (tag_value_t)v; 
 }
 static inline 
-tag_value_t sdptag_session_vr(sdp_session_t const **vp) { 
+tag_value_t sdptag_session_vr(struct sdp_session_s const **vp) { 
   return (tag_value_t)vp; 
 }
 #else
