@@ -1,3 +1,13 @@
+2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added SDPTAG_TYPEDEF().
+
+    M ./libsofia-sip-ua/sdp/sdp_tag.h +3
+
+  * Not including <sdp.h>.
+
+    M ./libsofia-sip-ua/sdp/sdp_tag.h -7 +12
+
 2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Handle mode attributes (inactive, sendonly, recvonly, sendrecv).

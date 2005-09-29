@@ -29,13 +29,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 18:37:04 EET 2001 ppessi
- * $Date: 2005/09/28 20:05:24 $
+ * $Date: 2005/09/29 18:35:22 $
  */
 
 #include "config.h"
 
 const char _nua_cli_c_id[] =
-"$Id: nua_cli.c,v 1.5 2005/09/28 20:05:24 ppessi Exp $";
+"$Id: nua_cli.c,v 1.6 2005/09/29 18:35:22 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

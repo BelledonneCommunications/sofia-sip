@@ -1,3 +1,68 @@
+2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added nua_callstate_name().
+
+    M ./libsofia-sip-ua/nua/nua_common.c +17
+    M ./libsofia-sip-ua/nua/nua_tag.h +3
+
+  * Responding with 504 if 100rel times out.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +2
+
+  * Using SOATAG_ACTIVE_*.
+
+    M ./libsofia-sip-ua/nua/nua_stack.h -8 +8
+
+  * Using offer/answer tags.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c +11
+
+  * Commenting.
+
+    M ./libsofia-sip-ua/nua/nua_tag.h +9
+
+  * Added NUTAG_OFFER_RECV(), NUTAG_ANSWER_SENT(), NUTAG_OFFER_SENT(),
+    NUTAG_ANSWER_RECV().
+
+    M ./libsofia-sip-ua/nua/nua_tag.c +4
+    M ./libsofia-sip-ua/nua/nua_tag.h +64
+
+  * Using SOATAG_ACTIVE_*().
+
+    M ./libsofia-sip-ua/nua/nua_tag.c -3
+    M ./libsofia-sip-ua/nua/nua_tag.h -91 +32
+
+  * Updated signal_call_state_change() to take more versatile args.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -302 +375
+
+  * Added NUTAG_CALLSTATE(), enum nua_callstate.
+
+    M ./libsofia-sip-ua/nua/nua_stack.h -20 +8
+    M ./libsofia-sip-ua/nua/nua_tag.c +1
+    M ./libsofia-sip-ua/nua/nua_tag.h -1 +38
+
+  * Added sdp_session_t and SDP_MIME_TYPE.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c +9
+
+  * Moved nua_event_name() to nua_common.c
+
+    M ./libsofia-sip-ua/nua/nua.h +1
+    M ./libsofia-sip-ua/nua/nua_common.c +62
+    M ./libsofia-sip-ua/nua/nua_stack.c -58
+
+  * Removed SRTP things (they are in soa).
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -10
+    M ./libsofia-sip-ua/nua/nua_stack.h -3
+
+  * Added nua_unpublish()
+
+    M ./libsofia-sip-ua/nua/nua.c -4 +28
+    M ./libsofia-sip-ua/nua/nua.h +1
+    M ./libsofia-sip-ua/nua/nua_stack.c +1
+
 2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Including <soa_tag.h> in <nua_tag.h>.

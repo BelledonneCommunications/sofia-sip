@@ -1,3 +1,22 @@
+2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added SOATAG_ACTIVE_* stuff.
+
+    M ./libsofia-sip-ua/soa/soa_tag.c +98
+    M ./libsofia-sip-ua/soa/soa_tag.h +31
+
+  * Removed mss-related tags.
+
+    M ./libsofia-sip-ua/soa/soa_tag.c -263
+    M ./libsofia-sip-ua/soa/soa_tag.h -89
+
+  * Using sdp tags to pass session descriptions.
+
+    M ./libsofia-sip-ua/soa/soa.c -1 +1
+    M ./libsofia-sip-ua/soa/soa_tag.c -6 +5
+    M ./libsofia-sip-ua/soa/soa_tag.h -17 +20
+    M ./libsofia-sip-ua/soa/test_soa.c +20
+
 2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Returning remote sdp via soa_get_paramlist().

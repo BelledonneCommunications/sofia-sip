@@ -27,12 +27,12 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
- * $Date: 2005/09/22 20:40:10 $
+ * $Date: 2005/09/29 18:35:22 $
  */
 
 #ifndef NUA_H
 /** Defined when @b <nua.h> has been included. */
-#define NUA_H "$Id: nua.h,v 1.4 2005/09/22 20:40:10 kaiv Exp $"
+#define NUA_H "$Id: nua.h,v 1.5 2005/09/29 18:35:22 ppessi Exp $"
 
 #ifndef SU_WAIT_H
 #include <su_wait.h>

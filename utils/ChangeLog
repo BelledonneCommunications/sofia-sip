@@ -1,3 +1,13 @@
+2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Printing all events.
+
+    M ./utils/nua_cli.c -4 +15
+
+  * Not using MSS-related tags.
+
+    M ./utils/nua_cli.c +2
+
 2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
 	
 	* Not using soa directly anymore. 
