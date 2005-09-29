@@ -346,7 +346,9 @@ int main(int ac, char *av[])
 		       NUTAG_SESSION_TIMER(s_e),
 		       NUTAG_MIN_SE(min_se),
 		       SIPTAG_FROM_STR(getenv("SIPADDRESS")),
+#if HAVE_SOFIA_MSS
 		       NUTAG_MEDIA_PATH(getenv("MSS_PATH")),
+#endif
 		       NUTAG_CERTIFICATE_DIR(getenv("SIPCERTDIR")),
 		       TAG_NULL());
 	nua_get_params(cli->cli_nua, TAG_ANY(), TAG_NULL());
