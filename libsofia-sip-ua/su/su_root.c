@@ -1328,7 +1328,7 @@ void su_msg_destroy(su_msg_r rmsg)
  *
  * @return A pointer to the message data area is returned.  
  */
-su_msg_arg_t *su_msg_data(su_msg_r rmsg)
+su_msg_arg_t *su_msg_data(su_msg_cr rmsg)
 {
   if (rmsg[0] && rmsg[0]->sum_size > sizeof(su_msg_t))
     return rmsg[0]->sum_data;
@@ -1337,7 +1337,7 @@ su_msg_arg_t *su_msg_data(su_msg_r rmsg)
 }
 
 /** Get size of message data area. */
-int su_msg_size(su_msg_r rmsg)
+int su_msg_size(su_msg_cr rmsg)
 {
   return rmsg[0] ? rmsg[0]->sum_size - sizeof(su_msg_t) : 0;
 }

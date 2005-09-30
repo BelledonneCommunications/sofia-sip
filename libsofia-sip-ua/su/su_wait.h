@@ -294,16 +294,8 @@ typedef struct su_msg_s su_msg_t;
 /** Message reference type. */
 typedef su_msg_t *su_msg_r[1];
 
-/** Does reference contain a message? */
-#if SU_HAVE_INLINE
-static SU_INLINE
-int su_msg_is_non_null(su_msg_r msg)
-{
-  return *msg != NULL;
-}
-#else
-#define su_msg_is_non_null(msg) ((*msg) != NULL)
-#endif
+/** Contstant reference to su_msg */
+typedef su_msg_t * const su_msg_cr[1];
 
 /** Initializer for a message reference. @HI */
 #define SU_MSG_R_INIT   { NULL }
@@ -412,11 +404,22 @@ int su_msg_reply(su_msg_r reply, su_msg_r const msg,
 		  su_msg_f wakeup, int size);
 void su_msg_destroy(su_msg_r msg);
 void su_msg_save(su_msg_r msg, su_msg_r msg0);
-su_msg_arg_t *su_msg_data(su_msg_r msg);
-int su_msg_size(su_msg_r msg);
-_su_task_r su_msg_from(su_msg_r const msg);
-_su_task_r su_msg_to(su_msg_r const msg);
+su_msg_arg_t *su_msg_data(su_msg_cr msg);
+int su_msg_size(su_msg_cr msg);
+_su_task_r su_msg_from(su_msg_cr const msg);
+_su_task_r su_msg_to(su_msg_cr const msg);
 int su_msg_send(su_msg_r msg);
+
+/** Does reference contain a message? */
+#if SU_HAVE_INLINE
+static SU_INLINE
+int su_msg_is_non_null(su_msg_cr msg)
+{
+  return *msg != NULL;
+}
+#else
+#define su_msg_is_non_null(msg) ((*msg) != NULL)
+#endif
 
 /* Clones */
 int su_root_threading(su_root_t *self, int enable);
