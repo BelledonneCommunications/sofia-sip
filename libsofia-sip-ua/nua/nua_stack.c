@@ -4025,6 +4025,9 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   assert(ss->ss_usage);
 
+  if (nh->nh_soa)
+    soa_set_params(nh->nh_soa, tags);
+
   reliable = 
     (status >= 200)
     || (status == 183 &&
