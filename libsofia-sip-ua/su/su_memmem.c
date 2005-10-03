@@ -185,6 +185,7 @@ bm_memcasemem(char const *haystack, size_t hlen,
 	  bm_fwd_table_t *fwd)
 {
   size_t i, j;
+  bm_fwd_table_t fwd0[1];
 
   if (nlen == 0)
     return haystack;
@@ -199,7 +200,6 @@ bm_memcasemem(char const *haystack, size_t hlen,
   }
 
   if (!fwd) {
-    bm_fwd_table_t fwd0[1];
     fwd = bm_memcasemem_study0(needle, nlen, fwd0);
   }
 
