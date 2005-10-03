@@ -144,6 +144,7 @@ AC_SUBST([CWFLAG], [$ac_cv_cwflag])
 AC_ARG_ENABLE(coverage,
 [  --enable-coverage       compile test-coverage (disabled)],
  , enable_coverage=no)
+
 if test X$enable_coverage != Xno ; then
 case "${CC-cc}" in
   *gcc*) 
@@ -152,6 +153,8 @@ case "${CC-cc}" in
   *) AC_MSG_ERROR([--enable-coverage requires gcc])
 esac
 fi
+
+AM_CONDITIONAL([ENABLE_COVERAGE], test X$enable_coverage != Xno)
 
 AC_SUBST([MOSTLYCLEANFILES], "*.bb *.bbg *.da *.[hc].gcov")
 ])
