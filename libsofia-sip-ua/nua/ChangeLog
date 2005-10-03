@@ -1,3 +1,9 @@
+2005-10-04  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed soa_set_params() in respond_to_invite().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -1 +1
+
 2005-10-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added soa_set_params() to respond_to_invite().

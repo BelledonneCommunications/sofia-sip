@@ -2,7 +2,7 @@
 #
 # Calculate coverage of source files
 #
-# $Id: calculate-coverage,v 1.1 2005/08/26 09:58:34 ppessi Exp $
+# $Id: coverage,v 1.1 2005/10/03 22:59:22 ppessi Exp $
 #
 
 {

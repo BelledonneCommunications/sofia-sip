@@ -1,3 +1,15 @@
+2005-10-04  Pekka Pessi  <Pekka.Pessi@iki.fi>
+
+	* Importing darcs-to-cvs-2005-10-04.
+
+  * Using DIST_SUBDIRS when including dist-only dirs 
+
+    M ./Makefile.am -1 +2
+    M ./libsofia-sip-ua/Makefile.am -1 +4
+    M ./libsofia-sip-ua/docs/Makefile.am -3 +1
+    M ./libsofia-sip-ua/sdp/Makefile.am -1 +1
+    M ./libsofia-sip-ua/sip/Makefile.am -1 +1
+
 2005-10-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Importing darcs-to-cvs-2005-10-03.
