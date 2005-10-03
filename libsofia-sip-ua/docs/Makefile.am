@@ -1,4 +1,4 @@
-SUBDIRS = 	pictures
+DIST_SUBDIRS = 	pictures
 
 EXTRA_DIST = 	Doxyfile Doxyfile.aliases Doxyfile.conf \
 		docguide.docs \
@@ -7,5 +7,3 @@ EXTRA_DIST = 	Doxyfile Doxyfile.aliases Doxyfile.conf \
 		sofia-footer.html.in \
 		hide_emails.sh \
 		ChangeLog
-
-include ../sofia.am

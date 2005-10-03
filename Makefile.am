@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = foreign 1.6.1
 
-SUBDIRS = libsofia-sip-ua utils win32
+SUBDIRS = libsofia-sip-ua utils
+DIST_SUBDIRS = $(SUBDIRS) win32
 
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@

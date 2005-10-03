@@ -2,7 +2,7 @@
 # Makefile.am for sdp module
 #
 
-SUBDIRS = 		tests
+DIST_SUBDIRS = 		tests
 
 # ----------------------------------------------------------------------
 # Header paths

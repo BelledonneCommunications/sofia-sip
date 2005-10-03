@@ -70,7 +70,7 @@ EXTRA_DIST =		Doxyfile sip.docs sip_parser.docs \
 			sip_rfc2543.h.in sip_rfc2543.c \
 			sip_bad_mask
 
-SUBDIRS = 		images tests
+DIST_SUBDIRS = 		images tests
 
 # ----------------------------------------------------------------------
 # Tests

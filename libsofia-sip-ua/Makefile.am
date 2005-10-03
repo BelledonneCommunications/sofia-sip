@@ -3,7 +3,10 @@
 AUTOMAKE_OPTIONS = foreign
 
 # note: order does matter in the subdir list
-SUBDIRS = docs su bnf sresolv sdp url msg sip stun ipt soa tport http nea nta iptsec nth nua 
+SUBDIRS = su bnf sresolv sdp url msg sip stun ipt soa \
+	  tport http nea nta iptsec nth nua 
+DIST_SUBDIRS = docs $(SUBDIRS)
+
 EXTRA_DIST = sofia.am
 
 lib_LTLIBRARIES = libsofia-sip-ua.la
