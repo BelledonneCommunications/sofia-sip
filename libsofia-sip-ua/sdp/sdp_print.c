@@ -168,7 +168,7 @@ char const *sdp_printing_error(sdp_printer_t *p)
     if (!p->pr_ok)
       return p->pr_buffer;
     else
-      return "no error";
+      return NULL;
   else
     return "null sdp_printer_t*";
 }
