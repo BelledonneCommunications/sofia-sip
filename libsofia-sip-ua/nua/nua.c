@@ -63,6 +63,8 @@ char const nua_version[] = VERSION;
 
 #include <su_strlst.h>
 
+#define NUA_SAVED_EVENT_T su_msg_t *
+
 #include "nua.h"
 #include "nua_tag.h"
 
@@ -1352,15 +1354,16 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   enter;
 
   if (nh && nh != nh->nh_nua->nua_default) {
-    if (!nh->nh_ref_by_user) 
+    if (!nh->nh_ref_by_user && nh->nh_valid) {
       nh->nh_ref_by_user = 1;
-    else if (!nh_decref(nh)) {
-      SU_DEBUG_9(("nua(%p): freed by application\n", nh));
-      nh = NULL;
+      nh_incref(nh);
     }
   }
 
   if (!nh || !nh->nh_valid) {	/* Handle has been destroyed */
+    if (nh && nh != nh->nh_nua->nua_default && nh_decref(nh)) {
+      SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+    }
     if (e->e_msg)
       msg_destroy(e->e_msg);
     return;
@@ -1374,14 +1377,87 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   if (nh == nua->nua_default)
     nh = NULL;
 
+  su_msg_save(nua->nua_current, sumsg);
+
+  e->e_nh = NULL;
+
   nua->nua_callback(e->e_event, e->e_status, e->e_phrase,
 		    nua, nua->nua_magic,
 		    nh, nh ? nh->nh_magic : NULL,
 		    e->e_msg ? sip_object(e->e_msg) : NULL,
 		    e->e_tags);
 
+  if (!su_msg_is_non_null(nua->nua_current))
+    return;
+
   if (e->e_msg)
     msg_destroy(e->e_msg);
+
+  if (nh && nh != nh->nh_nua->nua_default && nh_decref(nh)) {
+    SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+  }
+
+  su_msg_destroy(nua->nua_current);
+}
+
+/** Save nua event and its arguments */
+int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1])
+{
+  if (nua && return_saved) {
+    su_msg_save(return_saved, nua->nua_current);
+    return su_msg_is_non_null(return_saved);
+  }
+  return 0;
+}
+
+/** Get information from saved event */
+int nua_info_event(nua_saved_event_t const saved[1],
+		    nua_event_t return_event[1],
+		    int return_status[1], 
+		    char const *return_phrase[1],
+		    nua_magic_t *return_magic[1],
+		    nua_handle_t *return_handle[1], 
+		    nua_hmagic_t *return_hmagic[1],
+		    sip_t const *return_sip[1],
+		    tagi_t *return_tags[1])
+{
+  if (su_msg_is_non_null(saved)) {
+    event_t *e = su_msg_data(saved);
+    nua_handle_t *nh = e->e_nh;
+
+    if (nh && nh == nh->nh_nua->nua_default)
+      nh = NULL;
+
+    if (return_event)  *return_event = e->e_event;
+    if (return_status) *return_status = e->e_status;
+    if (return_phrase) *return_phrase = e->e_phrase;
+    if (return_magic)  *return_magic = nh ? nh->nh_magic : NULL;
+    if (return_handle) *return_handle = nh;
+    if (return_sip)    *return_sip = e->e_msg ? sip_object(e->e_msg) : NULL;
+    if (return_tags)   *return_tags = e->e_tags;
+
+    return 1;
+  }
+
+  return 0;
+}
+
+/** Destroy saved event */
+void nua_destroy_event(nua_saved_event_t saved[1])
+{
+  if (su_msg_is_non_null(saved)) {
+    event_t *e = su_msg_data(saved);
+    nua_handle_t *nh = e->e_nh;
+
+    if (e->e_msg)
+      msg_destroy(e->e_msg);
+
+    if (nh && nh != nh->nh_nua->nua_default && nh_decref(nh)) {
+      SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+    }
+
+    su_msg_destroy(saved);
+  }
 }
 
 /*******************************************************

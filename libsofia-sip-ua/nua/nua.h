@@ -361,4 +361,24 @@ void nua_invite_respond(nua_handle_t *nh,
 
 #define nua_handle_home(nh) ((su_home_t *)(nh))
 
+#ifndef NUA_SAVED_EVENT_T
+#define NUA_SAVED_EVENT_T struct nua_saved_event *
+#endif
+typedef NUA_SAVED_EVENT_T nua_saved_event_t;
+
+int nua_save_event(nua_t *nua, nua_saved_event_t *return_saved);
+
+/*# Get information from saved event */
+int nua_info_event(nua_saved_event_t const saved[1],
+		   nua_event_t return_event[1],
+		   int return_status[1], 
+		   char const *return_phrase[1],
+		   nua_magic_t *return_magic[1],
+		   nua_handle_t *return_handle[1], 
+		   nua_hmagic_t *return_hmagic[1],
+		   sip_t const *return_sip[1],
+		   tagi_t *return_tags[1]);
+
+void nua_destroy_event(nua_saved_event_t *saved);
+
 #endif

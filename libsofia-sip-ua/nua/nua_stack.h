@@ -387,6 +387,8 @@ struct nua_s {
   nua_callback_f       nua_callback;
   nua_magic_t         *nua_magic;
 
+  nua_saved_event_t    nua_current[1];
+
   /**< Used by stop-and-wait args calls */
   tagi_t const        *nua_args;
   tagi_t              *nua_filter;
