@@ -1,3 +1,15 @@
+2005-10-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added soa_set_params() to respond_to_invite().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c +3
+
+  * Added API for saving nua events.
+
+    M ./libsofia-sip-ua/nua/nua.c -4 +80
+    M ./libsofia-sip-ua/nua/nua.h +20
+    M ./libsofia-sip-ua/nua/nua_stack.h +2
+
 2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added nua_callstate_name().

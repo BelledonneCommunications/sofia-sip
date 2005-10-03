@@ -28,13 +28,13 @@
  *
  * @date Created: Wed Feb 14 18:32:58 2001 ppessi
  *
- * $Date: 2005/09/29 18:35:22 $
+ * $Date: 2005/10/03 16:48:22 $
  */
 
 #include "config.h"
 
 const char _nua_c_id[] =
-"$Id: nua.c,v 1.6 2005/09/29 18:35:22 ppessi Exp $";
+"$Id: nua.c,v 1.7 2005/10/03 16:48:22 ppessi Exp $";
 
 /* From AM_INIT/AC_INIT in our "config.h" */
 char const nua_version[] = VERSION;

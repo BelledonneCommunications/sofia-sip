@@ -1,3 +1,17 @@
+2005-10-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed documentation of sdp_parsing_error() and sdp_parsing_error()
+  contradicting with implementation. Use sdp_session() and sdp_message() to
+  check for error.
+
+    M ./libsofia-sip-ua/sdp/sdp.docs -2 +8
+
+2005-10-03  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* sdp_print.c (sdp_printing_error): Fixed return
+	for success to be NULL as defined in function
+	documentation.
+	
 2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added SDPTAG_TYPEDEF().

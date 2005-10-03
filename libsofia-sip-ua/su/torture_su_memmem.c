@@ -28,13 +28,13 @@
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @date Created: Sun Apr 17 21:02:10 2005 ppessi
- * $Date: 2005/07/20 20:36:00 $
+ * $Date: 2005/10/03 16:48:22 $
  */
 
 #include "config.h"
 
 const char torture_su_memmem_c_id[] = 
-  "$Id: torture_su_memmem.c,v 1.1.1.1 2005/07/20 20:36:00 kaiv Exp $";
+  "$Id: torture_su_memmem.c,v 1.2 2005/10/03 16:48:22 ppessi Exp $";
 
 #define TSTFLAGS tstflags
 

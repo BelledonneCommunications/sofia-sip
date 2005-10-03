@@ -1,3 +1,32 @@
+2005-10-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Importing darcs-to-cvs-2005-10-03.
+	
+  * Removed old .def files.
+
+    R ./libsofia-sip-ua/ipt/ipt.def
+    R ./libsofia-sip-ua/iptsec/iptsec.def
+    R ./libsofia-sip-ua/msg/msg.def
+    M ./libsofia-sip-ua/nta/nta.def -92
+    M ./libsofia-sip-ua/nta/sl_utils.def -15
+    R ./libsofia-sip-ua/nua/nua.def
+    M ./libsofia-sip-ua/sdp/sdp.def -42
+    R ./libsofia-sip-ua/sip/sip.def
+    R ./libsofia-sip-ua/su/su.def
+    M ./libsofia-sip-ua/tport/tport.def -21
+
+  * Added automake conditional ENABLE_COVERAGE.
+
+    M ./m4/sac-general.m4 +3
+
+  * Added make target for calculating coverage.
+
+    M ./libsofia-sip-ua/Makefile.am -1 +5
+    M ./libsofia-sip-ua/sofia.am +5
+    M ./libsofia-sip-ua/su/Makefile.am +2
+    A ./libsofia-sip-ua/testutils/
+    A ./libsofia-sip-ua/testutils/coverage
+
 2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Importing darcs-to-cvs-2005-09-29.

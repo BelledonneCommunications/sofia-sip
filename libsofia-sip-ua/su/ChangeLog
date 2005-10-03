@@ -1,3 +1,19 @@
+2005-10-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed bug in stack allocation.
+
+    M ./libsofia-sip-ua/su/su_memmem.c -1 +1
+
+  * Improved test coverage. Fixed bug in allocating arrays from stack.
+
+    M ./libsofia-sip-ua/su/su_memmem.c -11 +10
+    M ./libsofia-sip-ua/su/torture_su_memmem.c +119
+
+  * Added constant reference type su_msg_cr[].
+
+    M ./libsofia-sip-ua/su/su_root.c -2 +2
+    M ./libsofia-sip-ua/su/su_wait.h -14 +17
+
 2005-09-28  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added tl_filtered_tlist().
