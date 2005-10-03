@@ -31,8 +31,12 @@ libsofia_sip_ua_la_LIBADD = 	bnf/bnf_objs.o \
 				url/url_objs.o \
 				${tls_objs}
 
+if ENABLE_COVERAGE
+COVERAGE_RECURSIVE = coverage-recursive
+endif
+
 all-recursive: built-sources-recursive
-built-sources: built-sources-recursive
+built-sources: built-sources-recursive $(COVERAGE_RECURSIVE)
 built-sources-recursive:
 	list='$(SUBDIRS)'; for subdir in $$list; do \
 	  echo "Making build-sources-recursive in $$subdir"; \

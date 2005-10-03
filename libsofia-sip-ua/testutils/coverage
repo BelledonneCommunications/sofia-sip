@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# Calculate coverage of source files
+#
+# $Id: calculate-coverage,v 1.1 2005/08/26 09:58:34 ppessi Exp $
+#
+
+{
+for f 
+do 
+    case "$f" in 
+    *.c ) gcov -n "$f" 2>/dev/null ;;
+    esac
+done 
+} |
+awk '
+BEGIN { i=1; }
+
+/^File/ {
+    if (sub(/^File `\/home\/ppessi\/sofia-proxy\/(proxy\/..\/)?/, "")) {
+	sub(/.$/, "");
+	file=$0;
+	if (file ~ /torture/) file = "";
+    }
+    else
+	file = "";
+}
+file ~ /\.c$/ && /Lines executed/ { 
+	sub(/Lines executed:/, ""); 
+	covered = int($3*$1/100 + 0.5);
+	
+#	printf "%-5u %-5u %-5u %-7s %s\n", $3, covered, $3 - covered, $1, file;
+	if ($3 == 0) {
+		/* skip */
+        }
+	else if (!lines[file]) {
+          	names[i++] = file; lines[file] = $3; coverage[file] = covered;
+		coverage[file] = $3*$1/100;
+        }
+	else if (coverage[file] < covered) {
+		lines[file] = $3; coverage[file] = covered;
+		coverage[file] = $3*$1/100;
+        }
+}
+
+/torture/ { next; } /test/ { next; }
+
+/source lines executed in file [-A-Za-z_0-9]+\.c/ { 
+        file = $9;
+	sub(/lines executed/, ""); 
+#	covered = int($3*$1/100 + 0.5);
+#	printf "%-5u %-5u %-5u %-7s %s\n", $3, covered, $3 - covered, $1, file;
+	if ($3 == 0) {
+		/* skip */
+        }
+	else if (!lines[file]) {
+          	names[i++] = file; 
+		lines[file] = $3; coverage[file] = $3*$1/100;
+        }
+	else if (coverage[file] < covered) {
+		lines[file] = $3; coverage[file] = $3*$1/100;
+        }
+}
+
+END {
+    for (j=1; j < i; j++) {
+        file = names[j];
+	l = lines[file]; c = coverage[file];
+	covered = int(c + 0.5);
+	total += l; total_coverage += c;
+	printf "%-5u %-5u %-5u %6.2f%%  %s\n", 
+		l, covered, l - covered, 100.0 * c / l, file;
+    }
+    if (total) {
+      printf "%-5u %-5u %-5u %6.2f%%  %s\n", 
+	total, total_coverage, total - total_coverage,
+	100.0 * total_coverage / total, "TOTAL";
+  }
+}
+'

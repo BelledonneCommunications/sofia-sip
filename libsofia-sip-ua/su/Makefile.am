@@ -66,6 +66,8 @@ libsu_a_SOURCES = \
 su_objs_o_SOURCES =	$(libsu_a_SOURCES)
 su_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(su_objs_o_SOURCES) torture_su_memmem.c
+
 LDADD = 		libsu.a $(GLIB_LIBS)
 
 if NDEBUG
