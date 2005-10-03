@@ -89,6 +89,124 @@ int test_bm(void)
 
     s = bm_memcasemem(hs, strlen(hs), "OnG", 3, NULL);
     TEST_S(s, hs + 53);
+
+    /* Special cases */
+    TEST_1(bm_memmem(hs, strlen(hs), "", 0, NULL) == hs);
+    TEST_1(bm_memmem(NULL, strlen(hs), "ong", 3, NULL) == NULL);
+    TEST_1(bm_memmem(hs, strlen(hs), NULL, 1, NULL) == NULL);
+    TEST_1(bm_memmem("ong", 3, hs, strlen(hs), NULL) == NULL);
+    TEST_1(bm_memmem(hs, 0, "ong", 3, NULL) == NULL);
+    TEST_1(bm_memmem(hs, strlen(hs), "Z", 1, NULL) == NULL);
+
+    TEST_1(bm_memcasemem(hs, strlen(hs), "", 0, NULL) == hs);
+    TEST_1(bm_memcasemem(NULL, strlen(hs), "OnG", 3, NULL) == NULL);
+    TEST_1(bm_memcasemem(hs, strlen(hs), NULL, 1, NULL) == NULL);
+    TEST_1(bm_memcasemem("OnG", 3, hs, strlen(hs), NULL) == NULL);
+    TEST_1(bm_memcasemem(hs, 0, "OnG", 3, NULL) == NULL);
+    TEST_1(bm_memcasemem(hs, strlen(hs), "Z", 1, NULL) == NULL);
+  }
+
+  END();
+}
+
+int test_bm_long(void)
+{
+  BEGIN();
+  
+  {
+    char const hs[] = 
+"A Boyer-Moore string searching test consisting of a Very Long String\n"
+
+"Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer felis. "
+"Suspendisse potenti. Morbi malesuada erat eget enim. Sed dui lorem, aliquam "
+"eu, lobortis eget, dapibus vitae, velit. Cras non purus. Suspendisse massa. "
+"Curabitur gravida condimentum massa. Donec nunc magna, lacinia non, "
+"pellentesque ac, laoreet vel, eros. Praesent lectus leo, vestibulum eu, "
+"tempus eu, ullamcorper tristique, mi. Duis fringilla ultricies lacus. Ut "
+"non pede. Donec id libero. Cum sociis natoque penatibus et magnis dis "
+"parturient montes, nascetur ridiculus mus. Phasellus bibendum.\n"
+
+"Vestibulum turpis. Nunc euismod. Maecenas venenatis, purus at pharetra "
+"ultrices, orci orci blandit nisl, eget vulputate enim tortor sed nunc. "
+"Proin sit amet elit. Donec ut justo. In quis nisi. Praesent posuere. "
+"Maecenas porta. Curabitur pharetra. Class aptent taciti sociosqu ad litora "
+"torquent per conubia nostra, per inceptos hymenaeos. Donec suscipit ligula. "
+"Quisque facilisis ante eget mi. Nunc ac est.\n"
+
+"Quisque in sapien eget justo aliquam laoreet. Nullam ultricies est id dolor. "
+"Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Suspendisse ante "
+"velit, eleifend at, ullamcorper ut, rutrum et, ipsum. Mauris luctus, tellus "
+"non elementum convallis, nunc ipsum hendrerit lectus, ut lacinia elit nulla "
+"ac tellus. In sit amet velit. Maecenas non dolor. Sed commodo diam a pede. "
+"Ut non pede. Vestibulum condimentum turpis vel lacus consectetuer dictum. "
+"Nulla ullamcorper mi eu pede. Donec mauris tortor, facilisis vitae, "
+"hendrerit nec, lobortis nec, eros. Nam sit amet mi. Ut pharetra, orci nec "
+"porta convallis, lacus velit blandit sapien, luctus nonummy lacus dolor vel "
+"sapien. Suspendisse placerat. Donec ante turpis, volutpat eu, hendrerit "
+"vel, eleifend ac, arcu. Nulla facilisi. Sed faucibus facilisis lectus. "
+"Aliquam congue justo nec dui.\n"
+
+"Donec dapibus dui sed nisl. Proin congue. Curabitur placerat diam id eros. "
+"Pellentesque vitae nulla. Quisque at lorem et dolor auctor consequat. Sed "
+"sed tellus non nibh imperdiet venenatis. Integer ultrices dapibus nisi. "
+"Aenean vehicula malesuada risus. Fusce egestas malesuada leo. In "
+"ullamcorper pretium lorem. Vestibulum ante ipsum primis in faucibus orci "
+"luctus et ultrices posuere cubilia Curae;\n"
+
+"Phasellus congue. Morbi lectus arcu, mattis non, pulvinar et, condimentum "
+"non, mi. Suspendisse vestibulum nunc eu neque. Sed rutrum felis aliquam "
+"urna. Ut tincidunt orci vitae ipsum. Nullam eros. Quisque augue. Quisque "
+"lacinia. Nunc ligula diam, nonummy a, porta in, tristique quis, leo. "
+"Phasellus nunc nulla, fringilla vel, lacinia et, suscipit a, turpis. " 
+"Integer a est. Curabitur mauris lacus, vehicula sit amet, sodales vel, "
+"iaculis vitae, massa. Nam diam est, ultrices vitae, varius et, tempor a, "
+"leo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, "
+"per inceptos hymenaeos. Fusce felis nibh, ullamcorper non, malesuada eget, "
+      "facilisis vel, purus.\n";
+
+char const needle[] = 
+"Proin congue. Curabitur placerat diam id eros. "
+"Pellentesque vitae nulla. Quisque at lorem et dolor auctor consequat. Sed "
+"sed tellus non nibh imperdiet venenatis. Integer ultrices dapibus nisi. "
+"Aenean vehicula malesuada risus. Fusce egestas malesuada leo. In "
+"ullamcorper pretium lorem. Vestibulum ante ipsum primis in faucibus orci "
+"luctus et ultrices posuere cubilia Curae;\n";
+
+char const Needle[] = 
+"PROIN CONGUE. CURABITUR PLACERAT DIAM ID EROS. "
+"PELLENTESQUE VITAE NULLA. QUISQUE AT LOREM ET DOLOR AUCTOR CONSEQUAT. SED "
+"SED TELLUS NON NIBH IMPERDIET VENENATIS. INTEGER ULTRICES DAPIBUS NISI. "
+"AENEAN VEHICULA MALESUADA RISUS. FUSCE EGESTAS MALESUADA LEO. IN "
+"ULLAMCORPER PRETIUM LOREM. VESTIBULUM ANTE IPSUM PRIMIS IN FAUCIBUS ORCI "
+"LUCTUS ET ULTRICES POSUERE CUBILIA CURAE;\n";
+
+    int nlen = strlen(needle);
+
+    bm_fwd_table_t *fwd;
+
+    char const *s;
+
+    s = bm_memmem(hs, strlen(hs), needle, nlen, NULL);
+
+    TEST_S(s, hs + 1919);
+
+    fwd = bm_memmem_study(needle, nlen);
+
+    s = bm_memmem(hs, strlen(hs), needle, nlen, fwd);
+
+    TEST_S(s, hs + 1919);
+
+    TEST_1(bm_memmem(hs, strlen(hs), Needle, nlen, NULL) == 0);
+
+    s = bm_memcasemem(hs, strlen(hs), Needle, nlen, NULL);
+
+    fwd = bm_memcasemem_study(Needle, nlen);
+
+    s = bm_memcasemem(hs, strlen(hs), Needle, nlen, fwd);
+
+    TEST_S(s, hs + 1919);
+
+    free(fwd);
   }
 
   END();
@@ -123,6 +241,7 @@ int main(int argc, char *argv[])
   }
 
   retval |= test_bm(); fflush(stdout);
+  retval |= test_bm_long(); fflush(stdout);
 
   return retval;
 }
