@@ -30,7 +30,7 @@ Typically, the SDP parser is used as follows:
 @code
  sdp_parser parser = sdp_parse(home, message, len, 0);
 
- if (!sdp_parsing_error(parser)) {
+ if (!sdp_session(parser)) {
    show(sdp_parsing_error(parser));
  } else {
    sdp_session_t *sdp = sdp_session(parser);
@@ -40,6 +40,12 @@ Typically, the SDP parser is used as follows:
  }
  sdp_parser_free(parser);
 @endcode
+
+There are various flags indicating what kind of SDP variants parser accepts. 
+The sanity check run after parsing can be disabled by including flag
+#sdp_f_insane. The parser can be used to parse syntactically vague
+configuration files when using flag #sdp_f_config. The parser will then
+accept * for media, protocol and port, for instance.
 
 @todo strict (parser accepts some non-conforming SDP even with strict)
 
@@ -53,7 +59,7 @@ Typically, the SDP printer is used as follows:
  char buffer[512];
  sdp_printer printer = sdp_print(home, session, buffer, sizeof(buffer), 0);
 
- if (!sdp_parsing_error(printer)) {
+ if (sdp_message(printer)) {
    char const *msg = sdp_message(printer);
    int  msgsize = sdp_message_size(printer);
 @endcode
