@@ -14,6 +14,6 @@ $(srcdir)/%_tag_ref.c: $(srcdir)/%_tag.c
 	$(AWK) -f $(TAG_AWK) NODLL=1 $(TAG_DLL_FLAGS) $<
 
 if ENABLE_COVERAGE
-coverage: check
-	$(srcdir)/../testutils/coverage $(COVERAGE_INPUT)
+coverage:
+	@$(srcdir)/../testutils/coverage $(COVERAGE_INPUT)
 endif
