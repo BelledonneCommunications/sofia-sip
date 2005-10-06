@@ -25,6 +25,6 @@ INCLUDES = 	-I$(sofiasrc)/ipt \
 
 include_HEADERS = 	apps_utils.h
 
-bin_PROGRAMS =		nua_cli options sip_date
+bin_PROGRAMS =		nua_cli sip-options sip-date
 
 LDADD =			../libsofia-sip-ua/libsofia-sip-ua.la $(GLIB_LIBS)
