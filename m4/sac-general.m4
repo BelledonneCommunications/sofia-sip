@@ -424,6 +424,19 @@ AM_CONDITIONAL(NDEBUG, test x$enable_ndebug = yes)
 ])
 
 dnl ======================================================================
+dnl SAC_ENABLE_EXPENSIVE_CHECKS
+dnl ======================================================================
+AC_DEFUN([SAC_ENABLE_EXPENSIVE_CHECKS],[
+AC_ARG_ENABLE(expensive-checks,
+[  --enable-expensive-checks   run also expensive checks (disabled)],
+ , enable_expensive_checks=no)
+if test $enable_expensive_checks != no; then
+AC_SUBST([TESTS_ENVIRONMENT], [EXPENSIVE_CHECKS=1])
+fi
+AM_CONDITIONAL(EXPENSIVE_CHECKS, test x$enable_expensive_checks != no)
+])
+
+dnl ======================================================================
 dnl SAC_GNU_SOURCE 
 dnl ======================================================================
 AC_DEFUN([SAC_GNU_SOURCE],[

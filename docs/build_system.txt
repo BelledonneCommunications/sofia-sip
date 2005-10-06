@@ -52,6 +52,17 @@ Those developers who need to often modify configure.ac, Makefile.am
 and macro files, can enable maintainer mode with configure
 option '--enable-maintainer-mode'.
 
+-------------
+Running tests
+-------------
+
+Sofia-SIP has quite complete suite of test cases. It is prudent to
+run them while making changes and before committing them to revision
+control system. However, running certain tests takes quite a long
+time. Therefore, they are run only if the environment variable
+EXPENSIVE_CHECKS has been set. EXPENSIVE_CHECKS is also set by the build
+system if configure option '--enable-expensive-checks' has been used.
+
 ----------------
 Code-tree layout
 ----------------

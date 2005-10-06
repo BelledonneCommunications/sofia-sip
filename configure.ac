@@ -17,6 +17,7 @@ AM_MAINTAINER_MODE
 AM_CONFIG_HEADER(config.h)
 
 SAC_ENABLE_NDEBUG
+SAC_ENABLE_EXPENSIVE_CHECKS
 
 dnl checks for programs
 dnl -------------------
