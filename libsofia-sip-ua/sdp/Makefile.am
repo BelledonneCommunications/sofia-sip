@@ -2,8 +2,6 @@
 # Makefile.am for sdp module
 #
 
-DIST_SUBDIRS = 		tests
-
 # ----------------------------------------------------------------------
 # Header paths
 
@@ -41,7 +39,17 @@ LDADD = 		libsdp.a \
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST =		Doxyfile sdp.docs $(BUILT_SOURCES)
+EXTRA_DIST =		Doxyfile sdp.docs $(BUILT_SOURCES) \
+			tests/message-1.sdp \
+			tests/message-2.sdp \
+			tests/message-3.sdp \
+			tests/message-4.sdp \
+			tests/message-5.sdp \
+			tests/message-6.sdp \
+			tests/message-7.sdp \
+			tests/message-8.sdp \
+			tests/message-9.sdp \
+			tests/message-10.sdp
 
 # ----------------------------------------------------------------------
 # Sofia specific rules

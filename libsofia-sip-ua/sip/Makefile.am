@@ -70,9 +70,25 @@ EXTRA_DIST =		Doxyfile sip.docs sip_parser.docs \
 			ADD-A-HEADER GRAMMAR sip_bad_mask \
 			sip_parser_table.c.in sip_tag.c.in \
 			sip_rfc2543.h.in sip_rfc2543.c \
-			sip_bad_mask
-
-DIST_SUBDIRS = 		images tests
+			sip_bad_mask \
+	images/sip-parser.eps images/sip-parser.gif \
+	images/sip-parser2.eps images/sip-parser2.gif \
+	images/sip-parser3.eps images/sip-parser3.gif \
+	images/sip-parser4.eps images/sip-parser4.gif \
+	tests/own0.txt tests/own1.txt tests/own2.txt tests/own3.txt \
+	tests/own4.txt tests/own5.txt tests/own6.txt \
+	tests/test1.txt tests/test-ack-1.txt tests/test2.txt tests/test3.txt \
+	tests/test4.txt tests/test5.txt tests/test6.txt tests/test7.txt	     \
+	tests/test8.txt tests/test9.txt tests/test10.txt tests/test10b.txt   \
+	tests/test10c.txt tests/test11.txt tests/test12.txt tests/test13.txt \
+	tests/test14-req.txt tests/test14.txt tests/test15.txt		     \
+	tests/test16.txt tests/test17.txt tests/test18.txt tests/test19.txt  \
+	tests/test1a.txt tests/test20.txt tests/test21.txt tests/test22.txt  \
+	tests/test23.txt tests/test24.txt tests/test25.txt tests/test26.txt  \
+	tests/test27.txt tests/test28.txt tests/test29.txt tests/test30.txt  \
+	tests/test31.txt tests/test32.txt tests/test33.txt tests/test34.txt  \
+	tests/test35.txt tests/test36.txt tests/test37.txt tests/test38.txt  \
+	tests/test39.txt tests/test40.txt tests/test41.txt tests/test42.txt
 
 # ----------------------------------------------------------------------
 # Tests

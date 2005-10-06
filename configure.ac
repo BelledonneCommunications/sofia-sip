@@ -131,7 +131,6 @@ packages/sofia-sip-ua.pc
 libsofia-sip-ua/Makefile
 libsofia-sip-ua/bnf/Makefile
 libsofia-sip-ua/docs/Makefile
-libsofia-sip-ua/docs/pictures/Makefile
 libsofia-sip-ua/docs/Doxyfile.version
 libsofia-sip-ua/docs/sofia-footer.html
 libsofia-sip-ua/http/Makefile
@@ -143,11 +142,8 @@ libsofia-sip-ua/nta/Makefile
 libsofia-sip-ua/nth/Makefile
 libsofia-sip-ua/nua/Makefile
 libsofia-sip-ua/sdp/Makefile
-libsofia-sip-ua/sdp/tests/Makefile
 libsofia-sip-ua/soa/Makefile
 libsofia-sip-ua/sip/Makefile
-libsofia-sip-ua/sip/images/Makefile
-libsofia-sip-ua/sip/tests/Makefile
 libsofia-sip-ua/sresolv/Makefile 
 libsofia-sip-ua/stun/Makefile
 libsofia-sip-ua/su/Makefile

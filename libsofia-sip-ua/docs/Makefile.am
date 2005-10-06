@@ -1,9 +1,27 @@
-DIST_SUBDIRS = 	pictures
-
 EXTRA_DIST = 	Doxyfile Doxyfile.aliases Doxyfile.conf \
 		docguide.docs \
 		mainpage.docs \
 		Doxyfile.version.in \
 		sofia-footer.html.in \
 		hide_emails.sh \
-		ChangeLog
+		ChangeLog \
+	pictures/SIP_basic_incoming_operation.eps \
+	pictures/SIP_basic_incoming_operation.gif \
+	pictures/SIP_basic_incoming_operation.vsd \
+	pictures/SIP_basic_outgoing_operation.eps \
+	pictures/SIP_basic_outgoing_operation.gif \
+	pictures/SIP_basic_outgoing_operation.vsd \
+	pictures/SIP_incoming_call.eps \
+	pictures/SIP_incoming_call.gif \
+	pictures/SIP_incoming_call.vsd \
+	pictures/SIP_outgoing_call.eps \
+	pictures/SIP_outgoing_call.gif \
+	pictures/SIP_outgoing_call.vsd \
+	pictures/SIP_outgoing_operation_with_auth.eps \
+	pictures/SIP_outgoing_operation_with_auth.gif \
+	pictures/SIP_outgoing_operation_with_auth.vsd \
+	pictures/autotools.eps \
+	pictures/autotools.gif \
+	pictures/autotools.vsd \
+	pictures/nta-receiving-message.eps \
+	pictures/nta-receiving-message.gif 
