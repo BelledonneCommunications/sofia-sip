@@ -6,7 +6,8 @@ DIST_SUBDIRS = $(SUBDIRS) win32
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-EXTRA_DIST = AUTHORS COPYING TODO sofia-sip.spec sofia-sip.spec.in sofia-sip-ua.pc.in
+EXTRA_DIST = AUTHORS COPYING TODO \
+   packages/sofia-sip.spec packages/sofia-sip.spec.in packages/sofia-sip-ua.pc.in
 
 ACLOCAL_AMFLAGS = -I m4
 

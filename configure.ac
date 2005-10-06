@@ -126,7 +126,8 @@ dnl XXX
 
 AC_CONFIG_FILES([
 Makefile
-sofia-sip.spec
+packages/sofia-sip.spec
+packages/sofia-sip-ua.pc
 libsofia-sip-ua/Makefile
 libsofia-sip-ua/bnf/Makefile
 libsofia-sip-ua/docs/Makefile
@@ -153,7 +154,6 @@ libsofia-sip-ua/su/Makefile
 libsofia-sip-ua/tport/Makefile
 libsofia-sip-ua/url/Makefile
 utils/Makefile
-sofia-sip-ua.pc
 win32/Makefile
 ])
 
