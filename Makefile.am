@@ -12,7 +12,7 @@ EXTRA_DIST = AUTHORS COPYING TODO \
 ACLOCAL_AMFLAGS = -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = sofia-sip-ua.pc
+pkgconfig_DATA = packages/sofia-sip-ua.pc
 
 dist_m4_DATA = m4/sac-general.m4 m4/sac-su.m4 m4/sac-su2.m4
 
