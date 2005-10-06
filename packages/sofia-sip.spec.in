@@ -11,7 +11,7 @@
 Summary: Sofia SIP User-Agent library 
 Name: sofia-sip
 Version: @VERSION@
-Release: 1%{?dist}
+Release: 3%{?dist}
 License: Lesser GNU Public License 2.1
 Group: System Environment/Libraries
 URL: http://sf.net/projects/sofia-sip
@@ -29,23 +29,6 @@ Packager: Pekka.Pessi@Nokia.com
 %description
 Sofia SIP is a RFC-3261-compliant library for SIP user agents and other
 network elements.
-
-This package contains code derived from RFC 3174 (SHA1). The package is
-distributed with the following copyright notice by the Internet Society:
-
-Partly copyright (C) The Internet Society (2001).  All Rights Reserved.
-
-This document [RFC3174] and translations of it may be copied and furnished
-to others, and derivative works that comment on or otherwise explain it or
-assist in its implementation may be prepared, copied, published and
-distributed, in whole or in part, without restriction of any kind, provided
-that the above copyright notice and this paragraph are included on all such
-copies and derivative works. However, this document itself may not be
-modified in any way, such as by removing the copyright notice or references
-to the Internet Society or other Internet organizations, except as needed
-for the purpose of developing Internet standards in which case the
-procedures for copyrights defined in the Internet Standards process must be
-followed, or as required to translate it into languages other than English.
 
 %prep
 %setup -q -n sofia-sip-%{version}
@@ -67,16 +50,12 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_prefix}/bin/localinfo
-%{_prefix}/bin/nua_cli
-%{_prefix}/bin/options
-%{_prefix}/bin/sip_date
 %{_prefix}/lib/libsofia-sip-ua.so
 %{_prefix}/lib/libsofia-sip-ua.so.*
-%doc
+%doc AUTHORS COPYING COPYRIGHTS README
 
 %package	devel
-Summary:        Sofia SigComp Development Package
+Summary:        Sofia-SIP Development Package
 Group:     	Development/Libraries
 Requires:	sofia-sip = %{version}-%{release}
 Obsoletes:	sofia-devel
@@ -97,8 +76,27 @@ Development package for Sofia SIP UA library. This package includes
 %{_prefix}/lib/libsofia-sip-ua.a
 %{_prefix}/lib/pkgconfig/%{name}-ua.pc
 %{?_with_doxygen:docs/*}
+%doc TODO README.developers
+
+%package	utils
+Summary:        Sofia-SIP Development Package
+Group:     	Development/Libraries
+Requires:	sofia-sip = %{version}-%{release}
+Obsoletes:	sofia-utils
+%description	utils
+Command line utilities for Sofia SIP UA library.
+
+%files
+%defattr(-,root,root,-)
+%{_prefix}/bin/nua_cli
+%{_prefix}/bin/localinfo
+%{_prefix}/bin/sip-options
+%{_prefix}/bin/sip-date
 
 %changelog
+* Thu Oct  6 2005 Pekka Pessi <Pekka.Pessi@iki.fi> - @VERSION@
+- Added sub-package utils
+
 * Thu Oct  6 2005 Pekka Pessi <Pekka.Pessi@nokia.com> - 1.11.0
 - Added %%{?dist} to release
 
