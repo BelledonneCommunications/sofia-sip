@@ -27,6 +27,8 @@ liburl_a_SOURCES = 	url.c url_tag.c url_tag_ref.c
 url_objs_o_SOURCES =	$(liburl_a_SOURCES)
 url_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(url_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		liburl.a \
 			-L../bnf -lbnf \
 			-L../su -lsu 

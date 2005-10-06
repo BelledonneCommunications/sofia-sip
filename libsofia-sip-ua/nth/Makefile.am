@@ -36,6 +36,8 @@ nth_objs_o_SOURCES =	$(libnth_a_SOURCES)
 nth_objs_o_LDADD =	
 nth_objs_o_LDFLAGS =
 
+COVERAGE_INPUT = 	$(nth_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libnth.a \
 			-L../iptsec -liptsec \
 			-L../ipt -lipt \

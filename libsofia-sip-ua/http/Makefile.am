@@ -41,6 +41,8 @@ libhttp_a_SOURCES = 	$(INTERNAL_H) \
 http_objs_o_SOURCES =	$(libhttp_a_SOURCES)
 http_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(http_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libhttp.a \
 			-L../bnf -lbnf \
 			-L../msg -lmsg \

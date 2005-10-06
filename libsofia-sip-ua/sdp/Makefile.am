@@ -33,6 +33,8 @@ libsdp_a_SOURCES = 	sdp.c sdp_parse.c sdp_print.c \
 sdp_objs_o_SOURCES =	$(libsdp_a_SOURCES)
 sdp_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(sdp_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libsdp.a \
 			-L../su -lsu
 

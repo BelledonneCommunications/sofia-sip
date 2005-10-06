@@ -40,6 +40,8 @@ libmsg_a_SOURCES = $(INTERNAL_H) \
 msg_objs_o_SOURCES =	$(libmsg_a_SOURCES)
 msg_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(msg_objs_o_SOURCES) $(include_HEADERS)
+
 libmsg_test_a_SOURCES = msg_test_class.c msg_test_table.c msg_test_protos.h
 
 LDADD = 		libmsg_test.a libmsg.a \

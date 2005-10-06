@@ -42,6 +42,8 @@ BUILT_SOURCES =		tport_tag_ref.c
 tport_objs_o_SOURCES =	$(libtport_a_SOURCES)
 tport_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(tport_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libtport.a \
 			-L../stun -lstun \
 			-L../ipt -lipt \

@@ -29,6 +29,8 @@ libipt_a_SOURCES = 	utf8internal.h \
 ipt_objs_o_SOURCES =	$(libipt_a_SOURCES)
 ipt_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(ipt_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libipt.a
 			-L../sresolv -lsresolv \
 			-L../su -lsu

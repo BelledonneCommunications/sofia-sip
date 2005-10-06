@@ -52,6 +52,8 @@ libsip_a_SOURCES = 	$(INTERNAL_H) \
 sip_objs_o_SOURCES =	$(libsip_a_SOURCES)
 sip_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(sip_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libsip.a \
 			-L../msg -lmsg \
 			-L../bnf -lbnf \

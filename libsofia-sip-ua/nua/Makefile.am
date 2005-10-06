@@ -42,6 +42,8 @@ libnua_a_SOURCES = 	nua.c nua_common.c nua_stack.c \
 nua_objs_o_SOURCES =	$(libnua_a_SOURCES)
 nua_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(nua_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libnua.a \
 			-L../iptsec -liptsec \
 			-L../ipt -lipt \

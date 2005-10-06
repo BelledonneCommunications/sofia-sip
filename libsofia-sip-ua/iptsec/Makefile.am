@@ -44,6 +44,8 @@ HTTPSOURCES = 		auth_module_http.c
 iptsec_objs_o_SOURCES =	$(libiptsec_a_SOURCES)
 iptsec_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(iptsec_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libiptsec.a \
 			-L../ipt -lipt \
 			-L../http -lhttp \

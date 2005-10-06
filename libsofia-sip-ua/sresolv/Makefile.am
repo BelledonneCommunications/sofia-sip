@@ -34,6 +34,8 @@ test_sresolv_SOURCES = 	test_sresolv.c
 sresolv_objs_o_SOURCES= $(libsresolv_a_SOURCES)
 sresolv_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(sresolv_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libsresolv.a \
 			-L../su -lsu
 

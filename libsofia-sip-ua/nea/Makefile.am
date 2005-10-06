@@ -36,6 +36,8 @@ libnea_a_SOURCES = 	nea.c nea_event.c \
 nea_objs_o_SOURCES =	$(libnea_a_SOURCES)
 nea_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(nea_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libnea.a \
 			-L../nta -lnta \
 			-L../ipt -lipt \

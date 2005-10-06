@@ -40,6 +40,8 @@ libnta_a_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
 nta_objs_o_SOURCES =	$(libnta_a_SOURCES)
 nta_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(nta_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libnta.a \
 			-L../ipt -lipt \
 			-L../sip -lsip \

@@ -32,6 +32,8 @@ libsoa_a_SOURCES = 	soa.c soa_static.c \
 soa_objs_o_SOURCES =	$(libsoa_a_SOURCES)
 soa_objs_o_LDADD =
 
+COVERAGE_INPUT = 	$(soa_objs_o_SOURCES) $(include_HEADERS)
+
 LDADD = 		libsoa.a \
 			-L../sip -lsip \
 			-L../sdp -lsdp \

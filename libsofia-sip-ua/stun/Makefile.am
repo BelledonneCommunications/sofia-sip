@@ -36,6 +36,8 @@ libstun_a_SOURCES = 	stun.c stun_common.c
 stun_objs_o_SOURCES =	$(libstun_a_SOURCES)
 stun_objs_o_LDADD =	
 
+COVERAGE_INPUT = 	$(stun_objs_o_SOURCES) $(include_HEADERS)
+
 # common LDFLAGS to all utils
 LDADD =			libstun.a \
 			-L../su -lsu
