@@ -15,5 +15,5 @@ pkgconfig_DATA = sofia-sip-ua.pc
 
 dist_m4_DATA = m4/sac-general.m4 m4/sac-su.m4 m4/sac-su2.m4
 
-doxygen:
-	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua doxygen
+doxygen coverage built-sources:
+	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
