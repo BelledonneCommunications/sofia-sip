@@ -52,7 +52,7 @@ file ~ /\.[hc]$/ && /Lines executed/ {
 
 /(source )?lines executed in file (.*\/)?[-A-Za-z_0-9]+\.[ch]/ { 
         file = $0;
-	sub(/ in file /, "", file);
+	sub(/.* in file /, "", file);
 	sub(/.*\//, "", file);
 	covered = int($3*$1/100 + 0.5);
 	#printf "%-5u %-5u %-5u %-7s %s\n", $3, covered, $3 - covered, $1, file;
@@ -79,9 +79,13 @@ END {
 		l, covered, l - covered, 100.0 * c / l, file;
     }
     if (total) {
-      printf "%-5u %-5u %-5u %6.2f%%  %s\n", 
+      module = ENVIRON["PWD"];
+      gsub(/\/+$/, "", module);
+      gsub(/.*\//, "", module);
+      printf "%-5u %-5u %-5u %6.2f%%  %s in %s\n",
 	total, total_coverage, total - total_coverage,
-	100.0 * total_coverage / total, "TOTAL";
+	100.0 * total_coverage / total, "TOTAL", module;
   }
 }
-'
+' |
+sort -n
