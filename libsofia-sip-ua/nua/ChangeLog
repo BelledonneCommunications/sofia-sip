@@ -1,3 +1,8 @@
+2005-10-04  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* nua.h (nua_invite_respond): Removed, no implementation
+	available.
+
 2005-10-04  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed soa_set_params() in respond_to_invite().

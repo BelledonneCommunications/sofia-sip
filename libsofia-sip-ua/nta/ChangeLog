@@ -1,3 +1,7 @@
+2005-10-04  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Added agent.pem and cafile.pem for TLS testing.
+
 2005-08-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* nta.c (nta_agent_set_params()): Returning -1 upon an error.

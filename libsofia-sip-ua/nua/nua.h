@@ -27,12 +27,12 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
- * $Date: 2005/10/03 16:48:22 $
+ * $Date: 2005/10/04 13:07:45 $
  */
 
 #ifndef NUA_H
 /** Defined when @b <nua.h> has been included. */
-#define NUA_H "$Id: nua.h,v 1.6 2005/10/03 16:48:22 ppessi Exp $"
+#define NUA_H "$Id: nua.h,v 1.7 2005/10/04 13:07:45 kaiv Exp $"
 
 #ifndef SU_WAIT_H
 #include <su_wait.h>
@@ -238,21 +238,6 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh);
 /** Get name for NUA event. */
 char const *nua_event_name(nua_event_t event);
 
-/** Set media parameter. */ 
-void nua_set_media_param(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** Get a media parameter. */ 
-void nua_get_media_param(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** Setup a local media session. */
-void nua_media_setup(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** Describe a media session using SDP. */
-void nua_media_describe(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** Send an event to media subsystem. */
-void nua_media_event(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
 /** Send SIP REGISTER request to the registrar. */ 
 void nua_register(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 
@@ -312,52 +297,14 @@ void nua_authenticate(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
 int nua_handle_has_streaming(nua_handle_t const *nh);
 
-/*# Redirect an operation. */
+/** Redirect an operation. */
 void nua_redirect(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
-/*# Play. */ 
-void nua_play(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Setup. */ 
-void nua_setup(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Options2. */ 
-void nua_options2(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Describe. */ 
-void nua_describe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Announce. */ 
-void nua_announce(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Get RTSP parameter. */ 
-void nua_get_parameter(nua_handle_t *nh, tag_type_t tag,
-		       tag_value_t value, ...);
-
-/*# Set RTSP parameter. */ 
-void nua_set_parameter(nua_handle_t *nh, tag_type_t tag,
-		       tag_value_t value, ...);
-
-/*# Record. */ 
-void nua_record(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Pause. */ 
-void nua_pause(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Teardown. */ 
-void nua_teardown(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# Respond with given status. */
+/** Respond with given status. */
 void nua_respond(nua_handle_t *nh, 
 		 int status, char const *phrase,
 		 tag_type_t tag, tag_value_t value, 
 		 ...);
-
-/*# Respond with given status to INVITE. */
-void nua_invite_respond(nua_handle_t *nh, 
-			int status, char const *phrase,
-			tag_type_t tag, tag_value_t value, 
-			...);
 
 #define nua_handle_home(nh) ((su_home_t *)(nh))
 
@@ -380,5 +327,56 @@ int nua_info_event(nua_saved_event_t const saved[1],
 		   tagi_t *return_tags[1]);
 
 void nua_destroy_event(nua_saved_event_t *saved);
+
+/***************************************
+ * Obsolete functions (to-be-removed): *
+ ***************************************/
+
+/** XXX/obsolete: Set media parameter. */ 
+void nua_set_media_param(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
+
+/** XXX/obsolete: Get a media parameter. */ 
+void nua_get_media_param(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
+
+/** XXX/obsolete: Setup a local media session. */
+void nua_media_setup(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
+
+/** XXX/obsolete: Describe a media session using SDP. */
+void nua_media_describe(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
+
+/** XXX/obsolete: Send an event to media subsystem. */
+void nua_media_event(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
+
+/*# XXX/obsolete: Play. */ 
+void nua_play(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/*# XXX/obsolete: Setup. */ 
+void nua_setup(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/*# XXX/obsolete: Options2. */ 
+void nua_options2(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/*# XXX/obsolete: Describe. */ 
+void nua_describe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/*# XXX/obsolete: Announce. */ 
+void nua_announce(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/*# XXX/obsolete: Get RTSP parameter. */ 
+void nua_get_parameter(nua_handle_t *nh, tag_type_t tag,
+		       tag_value_t value, ...);
+
+/*# XXX/obsolete: Set RTSP parameter. */ 
+void nua_set_parameter(nua_handle_t *nh, tag_type_t tag,
+		       tag_value_t value, ...);
+
+/*# XXX/obsolete: Record. */ 
+void nua_record(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/*# XXX/obsolete: Pause. */ 
+void nua_pause(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/*# XXX/obsolete: Teardown. */ 
+void nua_teardown(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 
 #endif

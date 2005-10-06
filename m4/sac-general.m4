@@ -56,7 +56,7 @@ dnl =====================================================================
 
 AC_DEFUN([SOFIA_M4_ID], [
 AC_SUBST([SOFIA_M4_ID], 
-[$Id: sac-general.m4,v 1.4 2005/10/03 16:48:22 ppessi Exp $])])
+[$Id: sac-general.m4,v 1.5 2005/10/06 13:37:20 ppessi Exp $])])
 
 dnl ===================================================================
 dnl Get host, target and build variables filled with appropriate info,
