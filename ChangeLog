@@ -1,3 +1,83 @@
+2005-10-06  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added %{?dist} to release.
+
+    M ./packages/sofia-sip.spec.in -1 +4
+
+  * sofia-sip-ua.pc is in packages, too.
+
+    M ./Makefile.am -1 +1
+
+  * DIST_SUBDIR too deep in directory structure does not work.
+
+    M ./configure.ac -4
+    M ./libsofia-sip-ua/docs/Makefile.am -3 +21
+    R ./libsofia-sip-ua/docs/pictures/Makefile.am
+    M ./libsofia-sip-ua/sdp/Makefile.am -3 +11
+    M ./libsofia-sip-ua/sdp/tests/Makefile.am -11
+    M ./libsofia-sip-ua/sip/Makefile.am -3 +19
+    M ./libsofia-sip-ua/sip/images/Makefile.am -5
+    M ./libsofia-sip-ua/sip/tests/Makefile.am -55
+
+  * Added packages subdirectory for package stuff.
+
+     ./sofia-sip-ua.pc.in -> ./packages/sofia-sip-ua.pc.in
+     ./sofia-sip.spec.in -> ./packages/sofia-sip.spec.in
+    M ./Makefile.am -1 +2
+    M ./configure.ac -2 +2
+    A ./packages/
+
+  * Added coverage and built-sources targets at top-level.
+
+    M ./Makefile.am -2 +2
+
+  * Fixed coverage target in libsofia-sip-ua/Makefile.am.
+
+    M ./libsofia-sip-ua/Makefile.am -4 +6
+    M ./libsofia-sip-ua/bnf/Makefile.am +2
+    M ./libsofia-sip-ua/http/Makefile.am +2
+    M ./libsofia-sip-ua/ipt/Makefile.am +2
+    M ./libsofia-sip-ua/iptsec/Makefile.am +2
+    M ./libsofia-sip-ua/msg/Makefile.am +2
+    M ./libsofia-sip-ua/nea/Makefile.am +2
+    M ./libsofia-sip-ua/nta/Makefile.am +2
+    M ./libsofia-sip-ua/nth/Makefile.am +2
+    M ./libsofia-sip-ua/nua/Makefile.am +2
+    M ./libsofia-sip-ua/sdp/Makefile.am +2
+    M ./libsofia-sip-ua/sip/Makefile.am +2
+    M ./libsofia-sip-ua/soa/Makefile.am +2
+    M ./libsofia-sip-ua/sresolv/Makefile.am +2
+    M ./libsofia-sip-ua/stun/Makefile.am +2
+    M ./libsofia-sip-ua/tport/Makefile.am +2
+    M ./libsofia-sip-ua/url/Makefile.am +2
+
+  * Removed su/su.mak.
+
+    R ./libsofia-sip-ua/su/su.mak
+
+  * Added EXPENSIVE_CHECKS.
+
+    M ./configure.ac +1
+    M ./docs/build_system.txt +11
+    M ./m4/sac-general.m4 +13
+
+  * Moved 'testutils' as 'scripts' in toplevel.
+
+     ./libsofia-sip-ua/testutils -> ./scripts
+    M ./libsofia-sip-ua/sofia.am -1 +1
+
+  * Including only library sources in coverage output.
+
+    M ./libsofia-sip-ua/su/Makefile.am -1 +1
+
+  * coverage prints error if check is not made, doesn't depend on check.
+
+    M ./libsofia-sip-ua/sofia.am -2 +2
+
+  * Including all input files in output.
+
+    M ./libsofia-sip-ua/testutils/coverage -20 +27
+
 2005-10-04  Pekka Pessi  <Pekka.Pessi@iki.fi>
 
 	* Importing darcs-to-cvs-2005-10-04.
