@@ -11,7 +11,7 @@
 Summary: Sofia SIP User-Agent library 
 Name: sofia-sip
 Version: @VERSION@
-Release: 2
+Release: 1%{?dist}
 License: Lesser GNU Public License 2.1
 Group: System Environment/Libraries
 URL: http://sf.net/projects/sofia-sip
@@ -99,5 +99,8 @@ Development package for Sofia SIP UA library. This package includes
 %{?_with_doxygen:docs/*}
 
 %changelog
+* Thu Oct  6 2005 Pekka Pessi <Pekka.Pessi@nokia.com> - 1.11.0
+- Added %%{?dist} to release
+
 * Sat Jul 23 2005 Pekka Pessi <Pekka.Pessi@nokia.com> - 1.10.1
 - Initial build.
