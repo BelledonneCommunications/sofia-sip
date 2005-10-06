@@ -83,7 +83,7 @@
 #include "config.h"
 
 const char _options_c_id[] = 
- "$Id: options.c,v 1.1.1.1 2005/07/20 20:36:03 kaiv Exp $";
+ "$Id: sip-options.c,v 1.1 2005/10/06 20:00:54 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

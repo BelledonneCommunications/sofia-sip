@@ -6,7 +6,7 @@ AC_PREREQ(2.57)
 dnl information on the package
 dnl ---------------------------
 
-AC_INIT([sofia-sip], [1.11.0.2005.09.23])
+AC_INIT([sofia-sip], [1.11.0.2005.10.06])
 AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sip.h])
 
 # dnl calls AC_CANONICAL_ macros that are required by AM_INIT_AUTOMAKE

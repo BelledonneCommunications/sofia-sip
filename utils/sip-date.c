@@ -32,13 +32,13 @@
  * - Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Thu Sep  6 13:15:25 EEST 2001 ppessi
- * $Date: 2005/07/20 20:36:03 $
+ * $Date: 2005/10/06 20:00:37 $
  */
 
 #include "config.h"
 
 const char _sipdate_c_id[] =
-"$Id: sip_date.c,v 1.1.1.1 2005/07/20 20:36:03 kaiv Exp $";
+"$Id: sip-date.c,v 1.1 2005/10/06 20:00:37 ppessi Exp $";
 
 #include <stdio.h>
 #include <string.h>
