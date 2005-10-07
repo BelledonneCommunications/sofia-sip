@@ -16,7 +16,7 @@ AC_REQUIRE([SAC_WITH_RT])
 # ======================================================================
 # Check for features used by su
 
-# Define compilation options for su_configure.h
+dnl Define compilation options for su_configure.h
 SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
 
 case "$target" in 
@@ -152,7 +152,28 @@ AC_EGREP_CPP(yes, [
     AC_DEFINE(HAVE_IFNUM, 1, [Define this as 1 if you have SIOCGIFNUM ioctl])], 
    [HAVE_IFNUM=0; AC_MSG_RESULT(no)])
 
+# ===========================================================================
+# Checks for libraries
+# ===========================================================================
+
 SAC_CHECK_SU_LIBS
+
+AC_ARG_WITH(glib,
+[  --with-glib=version     use GLib (default=2.0)], [
+case "$with_glib" in 
+yes | "" ) with_glib=2.0 ;;
+esac
+], [with_glib=2.0])
+
+PKG_CHECK_MODULES(GLIB, glib-$with_glib, [dnl
+SAC_SU_DEFINE([SU_HAVE_GLIB], 1, [Define as 1 if you have >= glib-2.0])
+HAVE_GLIB=yes
+])
+
+AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" != x])
+AC_SUBST(GLIB_LIBS)
+AC_SUBST(GLIB_CFLAGS)
+AC_SUBST(GLIB_VERSION)
 
 # ===========================================================================
 # Checks for library functions.

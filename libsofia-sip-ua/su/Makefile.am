@@ -36,8 +36,10 @@ TESTS = 		su_torture torture_su_port \
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
+if HAVE_GLIB
 GHEADERS = su_source.h
 GSOURCES = su_source.c
+endif
 
 BUILT_SOURCES = su_tag_ref.c
 
