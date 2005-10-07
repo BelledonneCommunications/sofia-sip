@@ -82,7 +82,8 @@ SU_DLL void su_home_preload(su_home_t *h, int n, int size);
 
 SU_DLL su_home_t *su_home_auto(void *area, int size);
 
-#define SU_HOME_AUTO_SIZE(n) (((n) + sizeof(su_home_t) - 1)/sizeof(su_home_t))
+#define SU_HOME_AUTO_SIZE(n) \
+  (((n) + sizeof(su_home_t) + 74 * sizeof(void *) - 1)/sizeof(su_home_t))
 
 SU_DLL su_home_t *su_home_incref(su_home_t const *);
 

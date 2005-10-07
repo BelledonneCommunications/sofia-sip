@@ -44,6 +44,7 @@ const char su_alloc_test_c_id[] =
 
 #include <su_alloc.h>
 #include <su_strlst.h>
+#include <su_alloc_stat.h>
 
 #define TSTFLAGS tstflags
 #include <tstdef.h>
@@ -57,32 +58,6 @@ static int test_strdupcat(void);
 static int test_strlst(void);
 static int test_vectors(void);
 static int test_auto(void);
-
-void usage(void)
-{
-  fprintf(stderr, "usage: %s [-v]\n", name);
-}
-
-int main(int argc, char *argv[])
-{
-  int retval = 0;
-  int i;
-
-  for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
-      tstflags |= tst_verbatim;
-    else
-      usage();
-  }
-  
-  retval |= test_alloc();
-  retval |= test_strdupcat();
-  retval |= test_strlst();
-  retval |= test_vectors();
-  retval |= test_auto();
-
-  return retval;
-}
 
 /** Test tl_list and tl_dup */
 int test_alloc(void)
@@ -165,6 +140,31 @@ static int test_strdupcat(void)
   END();
 }
 
+#include <stdarg.h>
+
+static int test_sprintf(char const *fmt, ...)
+{
+  BEGIN();
+
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+  va_list va;
+
+  TEST_S(su_sprintf(home, "foo%s", "bar"), "foobar");
+
+  va_start(va, fmt);
+  TEST_S(su_vsprintf(home, fmt, va), "foo.bar");
+
+  TEST_S(su_sprintf(home, "foo%200s", "bar"), 
+	 "foo                                                             "
+	 "                                                                "
+	 "                                                                "
+	 "        bar");
+
+  su_home_deinit(home);
+  
+  END();
+}
+
 static int test_strlst(void)
 {
   su_home_t home[1] = { SU_HOME_INIT(home) };
@@ -174,7 +174,15 @@ static int test_strlst(void)
   char bar[] = "bar";
   char baz[] = "baz";
 
+  su_home_stat_t parent[1], kids[2];
+
   BEGIN();
+
+  parent->hs_size = (sizeof parent);
+  kids[0].hs_size = (sizeof kids[0]);
+  kids[1].hs_size = (sizeof kids[1]);
+ 
+  su_home_init_stats(home);
 
   /* Test API for invalid arguments */
   TEST_1(l = su_strlst_create(NULL));
@@ -215,7 +223,6 @@ static int test_strlst(void)
   TEST_1(!su_strlst_get_array(NULL));
   TEST_VOID(su_strlst_free_array(NULL, NULL));
 
-
   TEST_1(l = su_strlst_create(home));
   TEST_VOID(su_strlst_free_array(l, NULL));
   TEST_S(su_strlst_dup_append(l, "oh"), "oh");
@@ -224,6 +231,9 @@ static int test_strlst(void)
 
   /* Test functionality */
   TEST_1(l = su_strlst_create(home));
+
+  su_home_init_stats(su_strlst_home(l));
+  
   TEST_S(su_strlst_join(l, home, "bar"), "");  
   TEST_S(su_strlst_append(l, foo), "foo");
   TEST_S(su_strlst_dup_append(l, bar), "bar");
@@ -240,16 +250,30 @@ static int test_strlst(void)
   TEST_1(l2 = su_strlst_dup(su_strlst_home(l), l));
     
   strcpy(foo, "hum"); strcpy(bar, "pah"); strcpy(baz, "hah");
+ 
+  TEST_S(su_strlst_dup_append(l1, "kuik"), "kuik");
+  TEST_S(su_strlst_dup_append(l2, "uik"), "uik");
     
   TEST_S((s = su_strlst_join(l, home, ".")), "hum.bar.hah");  
-  TEST_S((su_strlst_join(l1, home, ".")), "hum.bar.hah");  
-  TEST_S((su_strlst_join(l2, home, ".")), "foo.bar.baz");  
+  TEST_S((su_strlst_join(l1, home, ".")), "hum.bar.hah.kuik");  
+  TEST_S((su_strlst_join(l2, home, ".")), "foo.bar.baz.uik");  
+
+  su_strlst_destroy(l2);
+
+  su_home_get_stats(su_strlst_home(l), 0, kids, sizeof kids);
+
+  TEST(kids->hs_clones, 2);
+  TEST(kids->hs_allocs.hsa_number, 3);
+  TEST(kids->hs_frees.hsf_number, 1);
 
   su_strlst_destroy(l);
 
   TEST_S(s, "hum.bar.hah");
 
   TEST_1(l = su_strlst_create(home));
+
+  su_home_init_stats(su_strlst_home(l));
+
   TEST_S(su_strlst_join(l, home, "bar"), "");
   TEST_S(su_strlst_append(l, "a"), "a");
   TEST_S(su_strlst_append(l, "b"), "b");
@@ -276,7 +300,12 @@ static int test_strlst(void)
 
   TEST_S((s = su_strlst_join(l, home, "")), "abcdefghijabcdefghij");  
 
+  su_home_get_stats(su_strlst_home(l), 0, kids + 1, (sizeof kids[1]));
+  su_home_stat_add(kids, kids + 1);
+
   su_strlst_destroy(l);
+
+  su_home_get_stats(home, 1, parent, (sizeof parent));
     
   su_home_check(home);
   su_home_deinit(home);
@@ -486,8 +515,9 @@ static int test_auto(void)
   BEGIN();
 
   int i;
-  su_home_t tmphome[SU_HOME_AUTO_SIZE(8192)];
+  su_home_t tmphome[SU_HOME_AUTO_SIZE(8000)];
   char *b = NULL;
+  su_home_stat_t hs[1];
 
   TEST_1(!su_home_auto(tmphome, sizeof tmphome[0]));
   TEST_1(su_home_auto(tmphome, sizeof tmphome));
@@ -498,13 +528,52 @@ static int test_auto(void)
   TEST_VOID(su_home_deinit(tmphome));
 
   TEST_1(su_home_auto(tmphome, sizeof tmphome));
-  
+ 
+  su_home_init_stats(tmphome);
+
   for (i = 1; i < 8192; i++) {
     TEST_1(b = su_realloc(tmphome, b, i));
     b[i - 1] = 0xaa;
+ 
+    if ((i % 32) == 0)
+      TEST_1(b = su_realloc(tmphome, b, 1));
   }
+
+  su_home_get_stats(tmphome, 0, hs, sizeof *hs);
+
+  TEST(hs->hs_allocs.hsa_preload + hs->hs_allocs.hsa_number, 8191 + 8191 / 32);
+  TEST(hs->hs_frees.hsf_preload + hs->hs_frees.hsf_number, 8191 + 8191 / 32 - 1);
+  TEST_1(hs->hs_frees.hsf_preload == hs->hs_allocs.hsa_preload);
 
   TEST_VOID(su_home_deinit(tmphome));
   
   END();
 }
+
+void usage(void)
+{
+  fprintf(stderr, "usage: %s [-v]\n", name);
+}
+
+int main(int argc, char *argv[])
+{
+  int retval = 0;
+  int i;
+
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      tstflags |= tst_verbatim;
+    else
+      usage();
+  }
+  
+  retval |= test_alloc();
+  retval |= test_strdupcat();
+  retval |= test_sprintf("%s.%s", "foo", "bar");
+  retval |= test_strlst();
+  retval |= test_vectors();
+  retval |= test_auto();
+
+  return retval;
+}
+

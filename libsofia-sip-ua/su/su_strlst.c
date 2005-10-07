@@ -148,7 +148,7 @@ su_strlst_t *su_strlst_copy_by(su_home_t *home,
     self->sl_total = orig->sl_total;
 
     if (deeply) {
-      char *s = (char *)(self->sl_list + N);
+      char *s = (char *)(self->sl_list + self->sl_size);
       char *end = s + deepsize;
       for (i = 0; i < N; i++) {
 	self->sl_list[i] = s;

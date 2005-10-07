@@ -470,9 +470,7 @@ void memstats(msg_t *msg, uint32_t msize, context_t *ctx)
   options_t *o = ctx->options;
   su_home_stat_t hs[1];
 
-  hs->hs_size = sizeof(hs);
-
-  su_home_get_stats(msg_home(msg), 1, hs);
+  su_home_get_stats(msg_home(msg), 1, hs, sizeof(hs));
   su_home_stat_add(ctx->hs, hs);
 
   if (o->o_histogram) {
