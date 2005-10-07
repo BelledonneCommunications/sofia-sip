@@ -4494,8 +4494,9 @@ use_session_timer(nua_t *nua, nua_handle_t *nh, msg_t *msg, sip_t *sip)
   static sip_param_t const x_params_uas[] = {"refresher=uas", NULL};
 
   /* Session-Expires timer */
-  if (!ss->ss_session_timer || 
-      /* Check if feature is supported */
+  if ((NH_PGET(nh, refresher) == 0 &&
+       NH_PGET(nh, session_timer) == 0) ||
+      /* Is timer feature supported? */
       !sip_has_supported(NH_PGET(nh, supported), "timer"))
     return 0;
     
@@ -4508,13 +4509,14 @@ use_session_timer(nua_t *nua, nua_handle_t *nh, msg_t *msg, sip_t *sip)
     session_expires->x_params = x_params_uac;
     
   sip_add_tl(msg, sip,  
-	     SIPTAG_SESSION_EXPIRES(session_expires),
+	     TAG_IF(ss->ss_session_timer,
+		    SIPTAG_SESSION_EXPIRES(session_expires)),
 	     TAG_IF(ss->ss_min_se != 0 
 		    /* Min-SE: 0 is optional with initial INVITE */
 		    || ss->ss_state != nua_callstate_init, 
 		    SIPTAG_MIN_SE(min_se)), 
 	     TAG_IF(ss->ss_refresher == nua_remote_refresher, 
-		      SIPTAG_REQUIRE_STR("timer")),
+		    SIPTAG_REQUIRE_STR("timer")),
 	     TAG_END());
   
   return 1;
@@ -4534,7 +4536,7 @@ init_session_timer(nua_t *nua, nua_handle_t *nh, sip_t const *sip)
       !sip_has_supported(NH_PGET(nh, supported), "timer")) {
     return 0;
   }
-    
+
   ss->ss_session_timer = sip->sip_session_expires->x_delta;
 
   if (sip->sip_min_se != NULL 
@@ -4550,8 +4552,8 @@ init_session_timer(nua_t *nua, nua_handle_t *nh, sip_t const *sip)
   else if (!server)
     return 0;			/* XXX */
   /* User preferences */
-  else if (NH_PGET(nh, refresher))
-    ss->ss_refresher = NH_PGET(nh, refresher);
+  else if (nua_local_refresher == NH_PGET(nh, refresher))
+    ss->ss_refresher = nua_local_refresher;
   else
     ss->ss_refresher = nua_remote_refresher;
 
