@@ -355,7 +355,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
 
   ta_start(ta, tag, value);
 
-  if ((agent = su_salloc(NULL, sizeof(*agent)))) {
+  if ((agent = su_home_new(sizeof(*agent)))) {
     agent->sa_root = root;
     agent->sa_callback = callback;
     agent->sa_magic = magic;
@@ -542,7 +542,7 @@ void nta_agent_destroy(nta_agent_t *agent)
 
     agent_kill_terminator(agent);
 
-    su_home_zap(agent->sa_home);
+    su_home_unref(agent->sa_home);
   }
 }
 
