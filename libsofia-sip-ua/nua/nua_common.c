@@ -128,6 +128,8 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
       p_from = (void *)-1;
     }
 
+    nh->nh_prefs = nua->nua_dhandle->nh_prefs;
+
     if (!p_to && url) {
       void *tbf = NULL;
 

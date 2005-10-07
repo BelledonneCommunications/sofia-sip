@@ -293,6 +293,8 @@ void nua_destroy(nua_t *nua)
     }
 
     su_task_deinit(nua->nua_server);
+    su_task_deinit(nua->nua_client);
+
     su_clone_wait(nua->nua_api_root, nua->nua_clone);
 #if HAVE_SMIME		/* Start NRC Boston */
     sm_destroy(nua->sm);
@@ -587,7 +589,6 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh)
  *     nothing
  *
  * @par Related tags:
- *     #NUTAG_AF \n
  *     #NUTAG_ALLOW \n
  *     #NUTAG_AUTOACK \n
  *     #NUTAG_AUTOALERT \n
@@ -597,13 +598,7 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh)
  *     #NUTAG_ENABLEMESSAGE \n
  *     #NUTAG_ENABLEMESSENGER \n
  *     #NUTAG_INVITE_TIMER \n
- *     #NUTAG_MEDIA_ADDRESS \n
- *     #NUTAG_MEDIA_CLONE \n
- *     #NUTAG_MEDIA_DESCS \n
- *     #NUTAG_MEDIA_EVENT_PATH \n
  *     #NUTAG_MEDIA_FEATURES \n
- *     #NUTAG_MEDIA_PATH \n
- *     #NUTAG_MEDIA_PARAMS \n
  *     #NUTAG_MIN_SE \n
  *     #NUTAG_PROXY \n
  *     #NUTAG_REGISTRAR \n
@@ -634,6 +629,9 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh)
  *     #NTATAG_DEBUG_DROP_PROB \n
  *     #NTATAG_SIPFLAGS
  *
+ * nua_set_params() also accepts any soa tags from <soa_tag.h> (or
+ * <mss_soa.h>).
+ * 
  * @par Events:
  *     none
  */
@@ -690,6 +688,91 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
     SU_DEBUG_1(("nua: " #event " with invalid handle %p\n", nh));	\
   }
 
+/** Set handle-specific parameters.
+ *
+ * @param nua             Pointer to NUA stack object
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return
+ *     nothing
+ *
+ * @par Related tags:
+ *     #NUTAG_AF \n
+ *     #NUTAG_ALLOW \n
+ *     #NUTAG_AUTOACK \n
+ *     #NUTAG_AUTOALERT \n
+ *     #NUTAG_AUTOANSWER \n
+ *     #NUTAG_EARLY_MEDIA \n
+ *     #NUTAG_ENABLEINVITE \n
+ *     #NUTAG_ENABLEMESSAGE \n
+ *     #NUTAG_ENABLEMESSENGER \n
+ *     #NUTAG_INVITE_TIMER \n
+ *     #NUTAG_MEDIA_ADDRESS \n
+ *     #NUTAG_MEDIA_CLONE \n
+ *     #NUTAG_MEDIA_DESCS \n
+ *     #NUTAG_MEDIA_EVENT_PATH \n
+ *     #NUTAG_MEDIA_FEATURES \n
+ *     #NUTAG_MEDIA_PATH \n
+ *     #NUTAG_MEDIA_PARAMS \n
+ *     #NUTAG_MIN_SE \n
+ *     #NUTAG_PROXY \n
+ *     #NUTAG_REGISTRAR \n
+ *     #NUTAG_SESSION_REFRESHER \n
+ *     #NUTAG_SESSION_TIMER \n
+ *     #NUTAG_URL \n
+ *     #NUTAG_USER_AGENT \n
+ *     #NUTAG_UPDATE_REFRESH \n
+ *     #NUTAG_SIP_PARSER \n
+ *     #NUTAG_CERTIFICATE_DIR \n
+ *     #NUTAG_SMIME_ENABLE \n
+ *     #NUTAG_SMIME_OPT \n
+ *     #NUTAG_SMIME_PROTECTION_MODE \n
+ *     #NUTAG_SMIME_MESSAGE_DIGEST \n
+ *     #NUTAG_SMIME_SIGNATURE \n
+ *     #NUTAG_SMIME_KEY_ENCRYPTION \n
+ *     #NUTAG_SMIME_MESSAGE_ENCRYPTION \n
+ *     #NUTAG_SIPS_URL \n
+ *     #SIPTAG_FROM_STR \n
+ *     #SIPTAG_ORGANIZATION_STR \n
+ *     #SIPTAG_SUPPORTED_STR \n
+ *     #SIPTAG_ALLOW_STR \n
+ *     #NTATAG_DEFAULT_PROXY \n
+ *     #NTATAG_SIP_T1 \n
+ *     #NTATAG_SIP_T2 \n
+ *     #NTATAG_SIP_T4 \n
+ *     #NTATAG_SIP_T1X64 \n
+ *     #NTATAG_DEBUG_DROP_PROB \n
+ *     #NTATAG_SIPFLAGS
+ *
+ * @par Events:
+ *     none
+ */
+void nua_set_handle_params(nua_handle_t *nh, 
+			   tag_type_t tag, tag_value_t value, ...)
+{
+  NUA_SIGNAL(nh, nua_r_set_params, tag, value);
+}
+
+/** Get values of handle-specific parameters in nua_r_get_params event.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return
+ *     nothing
+ *
+ * @par Related tags:
+ *     #TAG_ANY \n
+ *     othervise same tags as nua_set_handle_params()
+ *
+ * @par Events:
+ *     #nua_r_get_params
+ */
+void nua_get_handle_params(nua_handle_t *nh, 
+			   tag_type_t tag, tag_value_t value, ...)
+{
+  NUA_SIGNAL(nh, nua_r_get_params, tag, value);
+}
 
 /** Send SIP REGISTER request to the registrar. 
  *

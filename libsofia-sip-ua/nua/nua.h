@@ -96,7 +96,8 @@ typedef enum nua_event_e {
   nua_i_media_error,		/**< Offer-answer error indication */
 
   /* Responses */
-  nua_r_get_params,		/**< Answer to nua_get_params() */
+  nua_r_get_params,		/**< Answer to nua_get_params() or 
+				 * nua_get_handle_params(). */
   nua_r_shutdown,		/**< Answer to nua_shutdown() */
   nua_r_notifier,		/**< Answer to nua_notifier() */
   nua_r_terminate,		/**< Answer to nua_terminate() */
@@ -207,6 +208,12 @@ void nua_handle_destroy(nua_handle_t *h);
 
 /** Bind a callback context to an operation handle. */
 void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *magic);
+
+/** Set handle parameters. */
+void nua_set_handle_params(nua_handle_t *, tag_type_t, tag_value_t, ...);
+
+/** Get handle parameters. */
+void nua_get_handle_params(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
 /** Check if operation handle is used for INVITE */
 int nua_handle_has_invite(nua_handle_t const *nh);

@@ -36,8 +36,8 @@
 /** Defined when <nua_stack.h> has been included. */
 #define NUA_STACK_H "$Id: nua_stack.h,v 1.8 2005/10/03 16:48:22 ppessi Exp $"
 
-/* XXX: pthread doesn't seem to work...? */
-#undef HAVE_PTHREAD_H
+/* XXX: pthread doesn't seem to work...? ...how comes? */
+/* #undef HAVE_PTHREAD_H */
 
 #if HAVE_UICC_H
 #include <uicc.h>
@@ -227,6 +227,7 @@ typedef struct nua_session_state
   /* enum nua_callstate */
   unsigned        ss_state:4;		/**< Session status (enum nua_callstate) */
   
+  unsigned        ss_100rel:1;	        /**< Use 100rel, send 183 */
   unsigned        ss_alerting:1;	/**< 180 is sent/received */
   
   unsigned        ss_ack_needed:2;	/**< Send an ACK (do O/A, if >1) */
@@ -291,6 +292,105 @@ typedef struct nua_session_state
   TAG_IF((include) && (soa) && soa_is_remote_chat_active(soa) >= 0,	\
 	 SOATAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
 
+typedef struct nua_handle_preferences
+{
+  unsigned         nhp_retry_count;	/**< times to retry a request */
+  unsigned         nhp_max_subscriptions;
+
+  /* Session-related preferences */
+  unsigned     	   nhp_invite_enable:1;
+  unsigned     	   nhp_auto_alert:1;
+  unsigned         nhp_early_media:1;/**< Establish early media session */
+  unsigned         nhp_auto_answer:1;
+  unsigned         nhp_auto_ack:1; /**< Automatically ACK a final response */
+  unsigned         :0;
+
+  /** INVITE timeout. 
+   * If no response is received in nhp_invite_timeout INVITE client
+   * transaction times out
+   */
+  unsigned         nhp_invite_timeout;
+
+  /** Default session timer (in seconds, 0 disables) */
+  unsigned         nhp_session_timer;
+  /** Default Min-SE Delta value */
+  unsigned         nhp_min_se;
+  /** no (preference), local or remote */
+  enum nua_session_refresher nhp_refresher; 
+  unsigned         nhp_update_refresh:1; /**< Use UPDATE to refresh */
+  
+  /* Messaging preferences */
+  unsigned     	   nhp_message_enable : 1;
+  /** Be bug-compatible with Windows Messenger */
+  unsigned     	   nhp_win_messenger_enable : 1;
+  /** PIM-IW hack */
+  unsigned         nhp_message_auto_respond : 1;
+
+  /* Preferences for registration (and dialog establishment) */
+  unsigned         nhp_callee_caps:1; /**< Add callee caps to contact */
+  unsigned         nhp_media_features:1;/**< Add media features to caps*/
+  /** Enable Service-Route */
+  unsigned         nhp_service_route_enable:1;
+  /** Enable Path */
+  unsigned         nhp_path_enable:1;
+
+  unsigned:0;
+
+  sip_allow_t        *nhp_allow;
+  sip_supported_t    *nhp_supported;
+  sip_user_agent_t   *nhp_user_agent;
+  char const         *nhp_ua_name;
+  sip_organization_t *nhp_organization;
+  
+  /* A bit for each feature set by application */
+  union {
+    uint32_t set_any;
+    struct {
+      unsigned nhp_retry_count:1;
+      unsigned nhp_max_subscriptions:1;
+      unsigned nhp_invite_enable:1;
+      unsigned nhp_auto_alert:1;
+      unsigned nhp_early_media:1;
+      unsigned nhp_auto_answer:1;
+      unsigned nhp_auto_ack:1;
+      unsigned nhp_invite_timeout:1;
+      unsigned nhp_session_timer:1;
+      unsigned nhp_min_se:1;
+      unsigned nhp_refresher:1; 
+      unsigned nhp_update_refresh:1;
+      unsigned nhp_message_enable:1;
+      unsigned nhp_win_messenger_enable:1;
+      unsigned nhp_message_auto_respond:1;
+      unsigned nhp_callee_caps:1;
+      unsigned nhp_media_features:1;
+      unsigned nhp_service_route_enable:1;
+      unsigned nhp_path_enable:1;
+      unsigned nhp_allow:1;
+      unsigned nhp_supported:1;
+      unsigned nhp_user_agent:1;
+      unsigned nhp_ua_name:1;
+      unsigned nhp_organization:1;
+      unsigned :0;
+    } set_bits;
+  } nhp_set;
+} nua_handle_preferences_t;
+
+#define DNH_PGET(dnh, pref)						\
+  DNHP_GET((dnh)->nh_prefs, pref)
+#define DNHP_GET(dnhp, pref) ((dnhp)->nhp_##pref)
+#define DNHP_SET(dnhp, pref, value) \
+  ((dnhp)->nhp_##pref = (value), (dnhp)->nhp_set.set_bits.nhp_##pref = 1)
+
+#define NH_PGET(nh, pref)						\
+  NHP_GET((nh)->nh_prefs, (nh)->nh_nua->nua_dhandle->nh_prefs, pref)
+#define NHP_GET(nhp, dnhp, pref)					\
+  ((nhp)->nhp_set.set_bits.nhp_##pref					\
+   ? (nhp)->nhp_##pref : (dnhp)->nhp_##pref)
+
+#define NHP_UNSET_ALL(nhp) ((nhp)->nhp_set.set_any = 0)
+#define NHP_SET_ALL(nhp) ((nhp)->nhp_set.set_any = 0xffffffffU)
+#define NHP_IS_ANY_SET(nhp) ((nhp)->nhp_set.set_any != 0)
+
 /** NUA handle. 
  *
  */
@@ -312,7 +412,11 @@ struct nua_handle_s
   unsigned        nh_refcount;
 #endif
 
+  nua_handle_preferences_t *nh_prefs; /**< Preferences */
+
   /* Handle state */
+  nua_event_t     nh_special;	/**< Special event */
+
   unsigned        nh_ref_by_stack:1;	/**< Has stack used the handle? */
   unsigned        nh_ref_by_user:1;	/**< Has user used the handle? */
   unsigned        nh_init:1;
@@ -323,20 +427,6 @@ struct nua_handle_s
   unsigned        nh_has_register:1;   /**< Has registration */
   unsigned        nh_has_streaming:1;  /**< Has RTSP-related session */
 
-  /* Preferences */
-  unsigned        nh_auto_ack:1; /**< Automatically ACK a final response */
-  unsigned        nh_early_media:1;/**< Establish early media session */
-  unsigned        nh_update_refresh:1; /**< Use UPDATE to refresh */
-  unsigned        nh_media_features:1;/**< Add media features */
-  unsigned        nh_callee_caps:1; /**< Add callee caps */
-
-  unsigned:0;
-
-  sip_allow_t    *nh_allow;
-  sip_supported_t *nh_supported;
-
-  nua_event_t     nh_special;	/**< Special event */
-
   struct nua_client_request nh_cr[1];
 
   nua_dialog_state_t nh_ds[1];
@@ -345,19 +435,9 @@ struct nua_handle_s
   auth_client_t  *nh_auth;	/**< Authorization objects */
 
   soa_session_t  *nh_soa;	/**< Media session */
-#if 0
-  nua_media_state_t nh_nm[1];
-
-  url_t const   *nh_uri;
-  sip_content_type_t
-                 *nh_content_type; /**< Original Content-Type */
-  sip_content_disposition_t
-                 *nh_disposition; /**< Original Content-Disposition */
-  sip_payload_t  *nh_payload;	/**< Original request payload */
-#endif
 
   struct nua_referral {
-    nua_handle_t  *ref_handle;	 /**< Referring handle */
+    nua_handle_t  *ref_handle;	/**< Referring handle */
     sip_event_t   *ref_event;	/**< Event used with NOTIFY */
   } nh_referral[1];
 
@@ -398,18 +478,16 @@ struct nua_s {
   tagi_t const        *nua_args;
   tagi_t              *nua_filter;
 
-  /**< Local SIP address. This is never modified. */ 
-  sip_from_t const   *nua_from;
+  /**< Local SIP address. Contents are kept around for ever. */
+  sip_from_t          nua_from[1];
 
   /* Protocol (server) side */
   sip_contact_t      *nua_contact;
   sip_contact_t      *nua_sips_contact;
   sip_content_type_t *nua_sdp_content;
   sip_accept_t       *nua_invite_accept; /* What we accept for invite */
-  sip_supported_t    *nua_supported;
-  char const         *nua_ua_name;
-  sip_user_agent_t   *nua_user_agent;
-  char const         *nua_organization;
+
+  /* char const         *nua_ua_name; => nhp_ua_name */
   url_t        	     *nua_registrar;
 
   su_root_t          *nua_root;
@@ -421,17 +499,6 @@ struct nua_s {
   uicc_t             *nua_uicc;
 #endif
 
-  /**< Default time to wait until call is completed (in seconds) */
-  unsigned             nua_invite_timer;
-  /** Default session timer (in seconds, 0 disables) */
-# define               nua_session_timer nua_default->nh_ss->ss_session_timer
-  /** Default Min-SE Delta value */
-# define               nua_min_se        nua_default->nh_ss->ss_min_se
-
-  int                  nua_retry_count;	/**< times to retry a request */
-
-  int                  nua_max_subscriptions;
-
   void         	      *nua_sip_parser;
 
   sip_time_t           nua_shutdown;
@@ -439,19 +506,8 @@ struct nua_s {
   /* Route */
   sip_service_route_t *nua_service_route;
 
-  /* Parameters */
+  /* User-agent parameters */
   unsigned             nua_media_enable:1;
-  unsigned     	       nua_autoAlert : 1;
-  unsigned     	       nua_autoAnswer : 1;
-  unsigned     	       nua_enableInvite : 1;
-  unsigned     	       nua_enableMessage : 1;
-  /** Be bug-compatible with Windows Messenger */
-  unsigned     	       nua_enableMessenger : 1;
-  /** PIM-IW hack */
-  unsigned             nua_messageRespond : 1;
-
-  unsigned             nua_service_route_enable:1;
-  unsigned             nua_path_enable:1;
 
   unsigned     	       :0;
 
@@ -463,14 +519,7 @@ struct nua_s {
   nua_handle_t       **nua_handles_tail;
 };
 
-#define nua_default    nua_handles
-#define nua_allow      nua_handles->nh_allow
-
-#define nua_media_path     nua_handles->nh_nm->nm_path
-#define nua_media_af       nua_handles->nh_nm->nm_af
-#define nua_media_address  nua_handles->nh_nm->nm_address
-
-#define nua_refresher  nua_handles->nh_ss->ss_refresher
+#define nua_dhandle    nua_handles
 
 #if HAVE_FUNC
 #define enter (void)SU_DEBUG_9(("nua: %s: entering\n", __func__))
