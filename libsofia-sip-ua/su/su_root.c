@@ -1344,8 +1344,7 @@ int su_msg_size(su_msg_cr rmsg)
 
 /** Get sending task.
  *
- * The function @c su_msg_from returns the task handle belonging to the
- * sender of the message.
+ * Returns the task handle belonging to the sender of the message.
  *
  * If the message handle contains NULL the function @c su_msg_from
  * returns NULL.
@@ -1374,6 +1373,18 @@ _su_task_r su_msg_from(su_msg_r const msg)
 _su_task_r su_msg_to(su_msg_r const msg)
 {
   return msg[0] ? msg[0]->sum_to : NULL;
+}
+
+/** Remove references to 'from' and 'to' tasks from a message. 
+ *
+ * @param msg       message handle
+ */
+void su_msg_remove_refs(su_msg_r const msg)
+{
+  if (msg[0]) {
+    su_task_deinit(msg[0]->sum_to);
+    su_task_deinit(msg[0]->sum_from);
+  }
 }
 
 /**Send a message. 
