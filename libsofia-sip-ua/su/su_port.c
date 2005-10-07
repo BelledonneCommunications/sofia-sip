@@ -263,6 +263,12 @@ struct su_port_s {
   pthread_rwlock_unlock(p->sup_ref); \
   if (pthread_rwlock_trywrlock(p->sup_ref) == 0) su_port_destroy(p); } while(0)
 
+#define SU_PORT_ZAPREF(p, f)    do { printf("zapref(%p) by %s\n", (p), f), \
+  pthread_rwlock_unlock(p->sup_ref); \
+  if (pthread_rwlock_trywrlock(p->sup_ref) != 0) { \
+    assert(!"SU_PORT_ZAPREF"); pthread_rwlock_wrlock(p->sup_ref); } \
+  su_port_destroy(p); } while(0)
+
 #define SU_PORT_INITLOCK(p) \
    (pthread_mutex_init((p)->sup_mutex, NULL), printf("init_lock(%p)\n", p))
 
