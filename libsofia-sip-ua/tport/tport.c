@@ -1994,7 +1994,7 @@ int tport_bind_server(tport_master_t *mr,
 	  if (strcasecmp(tpn->tpn_proto, "tls") == 0) {
 	    pri->pri_primary->tp_tls = tport_init_tls(tags);
 	    if (!pri->pri_primary->tp_tls)
-	      return -1;
+	      goto error;
 	  }
 #endif
 	  not_supported = 0;
@@ -2039,6 +2039,9 @@ int tport_bind_server(tport_master_t *mr,
   }
   while (!pri && ephemeral_port && !not_supported);
 
+  if (li)
+    su_freelocalinfo(li);
+
   if (not_supported)
     error = EPROTONOSUPPORT;
 
@@ -2052,6 +2055,11 @@ int tport_bind_server(tport_master_t *mr,
   }
 
   return 0;
+
+ error:
+  if (li)
+    su_freelocalinfo(li);
+  return -1;
 }
 
 
