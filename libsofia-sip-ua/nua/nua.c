@@ -258,6 +258,8 @@ void nua_shutdown(nua_t *nua)
 {
   enter;
 
+  if (nua)
+    nua->nua_shutdown_started = 1;
   nua_signal(nua, NULL, NULL, 1, nua_r_shutdown, 0, NULL, TAG_END());
 }
 
@@ -284,6 +286,13 @@ void nua_destroy(nua_t *nua)
   enter;
 
   if (nua) {
+    if (!nua->nua_shutdown_final) {
+      SU_DEBUG_0(("nua_destroy(%p): FATAL: nua_shutdown not completed\n", nua));
+      assert(nua->nua_shutdown);
+      return;
+    }
+
+    su_task_deinit(nua->nua_server);
     su_clone_wait(nua->nua_api_root, nua->nua_clone);
 #if HAVE_SMIME		/* Start NRC Boston */
     sm_destroy(nua->sm);
@@ -1317,6 +1326,9 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
   int len, xtra, e_len, l_len = 0, l_xtra = 0;
   ta_list ta;
 
+  if (nua == NULL || (nua->nua_shutdown_started && event != nua_r_shutdown))
+    return;
+
   ta_start(ta, tag, value);
 
   e_len = offsetof(event_t, e_tags);
@@ -1377,7 +1389,10 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
     return;
   }
 
-  nua = nh->nh_nua;
+  nua = nh->nh_nua; assert(nua);
+
+  if (e->e_event == nua_r_shutdown && e->e_status >= 200)
+    nua->nua_shutdown_final = 1;
 
   if (!nua->nua_callback)
     return;
@@ -1413,7 +1428,11 @@ int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1])
 {
   if (nua && return_saved) {
     su_msg_save(return_saved, nua->nua_current);
-    return su_msg_is_non_null(return_saved);
+    if (su_msg_is_non_null(return_saved)) {
+      /* Remove references to tasks */
+      su_msg_remove_refs(return_saved);
+      return 1;
+    }
   }
   return 0;
 }

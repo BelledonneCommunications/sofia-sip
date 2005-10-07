@@ -389,6 +389,11 @@ struct nua_s {
 
   nua_saved_event_t    nua_current[1];
 
+  /* Engine state flags */
+  unsigned             nua_shutdown_started:1; /**< Shutdown initiated */
+  unsigned             nua_shutdown_final:1; /**< Shutdown is complete */
+  unsigned :0;
+  
   /**< Used by stop-and-wait args calls */
   tagi_t const        *nua_args;
   tagi_t              *nua_filter;
