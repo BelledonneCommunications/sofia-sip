@@ -687,7 +687,7 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
     ta_end(ta); \
   } \
   else { \
-    su_log("nua: " #event " with invalid handle %p\n", nh); \
+    SU_DEBUG_1(("nua: " #event " with invalid handle %p\n", nh));	\
   }
 
 
@@ -1283,7 +1283,7 @@ void nua_respond(nua_handle_t *nh,
     ta_end(ta);
   }
   else {
-    su_log("nua: respond with invalid handle %p\n", nh);
+    SU_DEBUG_1(("nua: respond with invalid handle %p\n", nh));
   }
 }
 

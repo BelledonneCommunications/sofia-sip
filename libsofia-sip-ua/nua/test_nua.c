@@ -150,9 +150,15 @@ int test_api_errors(struct context *ctx)
 {
   BEGIN();
 
-  /* Invoke every API function with (invalid) arguments */
+  /* Invoke every API function with invalid arguments */
 
-  /* su_log_redirect(su_log_default, nolog, stderr); */
+  int level;
+
+  su_log_init(nua_log);
+
+  level = nua_log->log_level;
+  if (!(tstflags & tst_verbatim))
+    su_log_set_level(nua_log, 0);
 
   TEST_1(!nua_create(NULL, NULL, NULL, TAG_END()));
   TEST_VOID(nua_shutdown(NULL));
@@ -173,7 +179,6 @@ int test_api_errors(struct context *ctx)
   TEST_1(!nua_handle_remote(NULL));
   TEST_1(!nua_handle_local(NULL));
   TEST_S(nua_event_name(-1), "NUA_UNKNOWN");
-#if 1 || defined(NDEBUG)
   TEST_VOID(nua_register(NULL, TAG_END()));
   TEST_VOID(nua_unregister(NULL, TAG_END()));
   TEST_VOID(nua_invite(NULL, TAG_END()));
@@ -195,7 +200,7 @@ int test_api_errors(struct context *ctx)
   TEST_VOID(nua_authenticate(NULL, TAG_END()));
   TEST_VOID(nua_redirect(NULL, TAG_END()));
   TEST_VOID(nua_respond(NULL, 0, "", TAG_END()));
-#endif
+
   TEST_1(!nua_handle_home(NULL));
   TEST_1(!nua_save_event(NULL, NULL));
   TEST_1(!nua_info_event(NULL, NULL, NULL, NULL, NULL, 
@@ -213,7 +218,7 @@ int test_api_errors(struct context *ctx)
     TEST_VOID(nua_destroy_event(event));
   }
 
-  /* su_log_redirect(su_log_default, NULL, stderr); */
+  su_log_set_level(nua_log, level);
 
   END();
 }
