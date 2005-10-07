@@ -909,7 +909,7 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   char const   *allow_str = NONE;
   sip_supported_t const *supported = NONE;
   char const *supported_str = NONE;
-  sip_user_agent_t *user_agent = NONE;
+  sip_user_agent_t const *user_agent = NONE;
   char const *user_agent_str = NONE, *ua_name = NONE;
   sip_organization_t const *organization = NONE;
   char const *organization_str = NONE;
@@ -969,7 +969,7 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	       SIPTAG_SUPPORTED_STR_REF(supported_str),
 	       SIPTAG_ALLOW_REF(allow),
 	       SIPTAG_ALLOW_STR_REF(allow_str),
-	       SIPTAG_USER_AGENT(user_agent),
+	       SIPTAG_USER_AGENT_REF(user_agent),
 	       SIPTAG_USER_AGENT_STR_REF(user_agent_str),
 	       NUTAG_USER_AGENT_REF(ua_name),
 
