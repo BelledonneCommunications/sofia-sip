@@ -193,7 +193,8 @@ nua_t *nua_create(su_root_t *root,
 
   enter;
 
-  assert(callback);
+  if (callback == NULL)
+    return (void)(errno = EFAULT), NULL;
 
   if ((nua = su_home_new(sizeof(*nua)))) {
     ta_list ta;
@@ -670,12 +671,14 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
 
 #define NUA_SIGNAL(nh, event, tag, value) \
   enter; \
-  assert(nh); assert(NH_IS_VALID((nh))); \
   if (NH_IS_VALID((nh))) { \
     ta_list ta; \
     ta_start(ta, tag, value); \
     nua_signal((nh)->nh_nua, nh, NULL, 0, event, 0, NULL, ta_tags(ta));	\
     ta_end(ta); \
+  } \
+  else { \
+    su_log("nua: " #event " with invalid handle %p\n", nh); \
   }
 
 
@@ -1263,13 +1266,15 @@ void nua_respond(nua_handle_t *nh,
 {
   enter;
 
-  assert(NH_IS_VALID(nh));
   if (NH_IS_VALID(nh)) {
     ta_list ta;
     ta_start(ta, tag, value);
     nua_signal(nh->nh_nua, nh, NULL, 0, nua_r_respond,
 	       status, phrase, ta_tags(ta));
     ta_end(ta);
+  }
+  else {
+    su_log("nua: respond with invalid handle %p\n", nh);
   }
 }
 
