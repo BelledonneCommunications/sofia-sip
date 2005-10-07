@@ -3,15 +3,38 @@
 # Calculate coverage of source files
 #
 
+gcovflags=-n
+
+usage ()
+{
+    cat <<EOF
+usage: coverage [OPTIONS] [output-files]
+    where OPTIONS are:
+    --output      generate .gcov files
+    --help -h -?  print this message
+EOF
+    exit $1
+}
+
+while true; do
+case "$1" in
+--output ) gcovflags= ; shift ;;
+'-?' | -h | --help ) usage ;;
+- ) shift ; break ;;
+-* ) usage 1 ;;
+* ) break ;;
+esac
+done
+
 {
 for f in *.bb
 do 
     test "$f" = "*.bb" && { echo "run 'make check' first"; exit 1; }
-    gcov -n "$f" 2>/dev/null
+    gcov $gcovflags "$f" 2>/dev/null
 done 
 for f in $@
 do 
-    gcov -n "$f" 2>/dev/null
+    gcov $gcovflags "$f" 2>/dev/null
 done 
 } |
 awk '

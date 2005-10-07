@@ -15,5 +15,5 @@ $(srcdir)/%_tag_ref.c: $(srcdir)/%_tag.c
 
 if ENABLE_COVERAGE
 coverage:
-	@$(srcdir)/../../scripts/coverage $(COVERAGE_INPUT)
+	@$(srcdir)/../../scripts/coverage $(COVERAGE_FLAGS) $(COVERAGE_INPUT)
 endif
