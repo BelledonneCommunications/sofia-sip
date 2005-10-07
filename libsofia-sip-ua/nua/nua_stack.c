@@ -818,7 +818,6 @@ void ua_shutdown(nua_t *nua)
 
     if (nh->nh_soa) {
       soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
-      busy++;
     }
 
     if (nh->nh_cr->cr_orq || nh->nh_ss->ss_crequest->cr_orq)
@@ -837,6 +836,11 @@ void ua_shutdown(nua_t *nua)
     SET_STATUS(101, "Shutdown in progress");
   else
     SET_STATUS(500, "Shutdown timeout");
+
+  if (status >= 200) {
+    su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
+    nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
+  }
 
   ua_event(nua, NULL, NULL, nua_r_shutdown, status, phrase, TAG_END());
 }
