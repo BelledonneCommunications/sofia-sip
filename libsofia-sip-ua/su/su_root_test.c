@@ -38,8 +38,7 @@
 
 #include "config.h"
 
-const char su_root_test_c_id[] =
-"$Id: su_root_test.c,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $";
+char const *name = "su_root_test";
 
 #include <stdio.h>
 #include <string.h>
@@ -56,18 +55,9 @@ typedef struct test_ep_s   test_ep_t;
 #include <su_wait.h>
 #include <su_alloc.h>
 
-char const *name = "su_root_test";
-
-static int init_test(root_test_t *rt);
-static int register_test(root_test_t *rt);
-static int deinit_test(root_test_t *rt);
-
-void usage(void)
-{
-  fprintf(stderr, 
-	  "usage: %s [-v]\n", 
-	  name);
-}
+#if SU_HAVE_GLIB
+#include <su_source.h>
+#endif
 
 typedef struct test_ep_s {
   int           i;
@@ -81,38 +71,22 @@ typedef struct test_ep_s {
 struct root_test_s {
   su_home_t  rt_home[1];
   int        rt_flags;
+
   su_root_t *rt_root;
   short      rt_family;
   int        rt_status;
   int        rt_received;
   int        rt_wakeup;
 
+  su_clone_r rt_clone;
+
+  unsigned   rt_fail_init:1;
+  unsigned   rt_fail_deinit:1;
+  unsigned   rt_success_init:1;
+  unsigned   rt_success_deinit:1;
+
   test_ep_at rt_ep[5];
 };
-
-int main(int argc, char *argv[])
-{
-  root_test_t rt[1] = {{{ SU_HOME_INIT(rt) }}};
-  int retval = 0;
-  int i;
-
-  rt->rt_family = AF_INET;
-
-  for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
-      rt->rt_flags |= tst_verbatim;
-    else if (strcmp(argv[i], "-6") == 0)
-      rt->rt_family = AF_INET6;
-    else
-      usage();
-  }
-
-  retval |= init_test(rt);
-  retval |= register_test(rt);
-  retval |= deinit_test(rt);
-
-  return retval;
-}
 
 /** Test root initialization */
 int init_test(root_test_t *rt)
@@ -137,6 +111,18 @@ int init_test(root_test_t *rt)
     TEST_1(su_wait_create(ep->wait, ep->s, SU_WAIT_IN|SU_WAIT_ERR) != -1);
     TEST_1(getsockname(ep->s, &ep->addr->su_sa, &ep->addrlen) != -1);
   }
+
+  END();
+}
+
+static int deinit_test(root_test_t *rt)
+{
+  BEGIN();
+
+  TEST_VOID(su_root_destroy(rt->rt_root)); rt->rt_root = NULL;
+  TEST_VOID(su_root_destroy(NULL));
+
+  su_deinit();
 
   END();
 }
@@ -272,14 +258,90 @@ static int register_test(root_test_t *rt)
   END();
 }
 
-static int deinit_test(root_test_t *rt)
+int fail_init(su_root_t *root, root_test_t *rt)
+{
+  rt->rt_fail_init = 1;
+  return -1;
+}
+
+void fail_deinit(su_root_t *root, root_test_t *rt)
+{
+  rt->rt_fail_deinit = 1;
+}
+
+int success_init(su_root_t *root, root_test_t *rt)
+{
+  rt->rt_success_init = 1;
+  return 0;
+}
+
+void success_deinit(su_root_t *root, root_test_t *rt)
+{
+  rt->rt_success_deinit = 1;
+}
+
+static int clone_test(root_test_t rt[1])
 {
   BEGIN();
 
-  TEST_VOID(su_root_destroy(rt->rt_root)); rt->rt_root = NULL;
-  TEST_VOID(su_root_destroy(NULL));
+  rt->rt_fail_init = 0;
+  rt->rt_fail_deinit = 0;
+  rt->rt_success_init = 0;
+  rt->rt_success_deinit = 0;
 
-  su_deinit();
+  TEST(su_clone_start(rt->rt_root,
+		      rt->rt_clone,
+		      rt,
+		      fail_init,
+		      fail_deinit), SU_FAILURE);
+  TEST_1(rt->rt_fail_init);
+  TEST_1(rt->rt_fail_deinit);
 
+  TEST(su_clone_start(rt->rt_root,
+		      rt->rt_clone,
+		      rt,
+		      success_init,
+		      success_deinit), SU_SUCCESS);
+  TEST_1(rt->rt_success_init);
+  TEST_1(!rt->rt_success_deinit);
+
+  TEST_VOID(su_clone_wait(rt->rt_root, rt->rt_clone));
+
+  TEST_1(rt->rt_success_deinit);
+  
   END();
+}
+
+void usage(void)
+{
+  fprintf(stderr, 
+	  "usage: %s [-v]\n", 
+	  name);
+}
+
+int main(int argc, char *argv[])
+{
+  root_test_t rt[1] = {{{ SU_HOME_INIT(rt) }}};
+  int retval = 0;
+  int i;
+
+  rt->rt_family = AF_INET;
+
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      rt->rt_flags |= tst_verbatim;
+    else if (strcmp(argv[i], "-6") == 0)
+      rt->rt_family = AF_INET6;
+    else
+      usage();
+  }
+
+  retval |= init_test(rt);
+  retval |= register_test(rt);
+  retval |= clone_test(rt);
+  su_root_threading(rt->rt_root, 0);
+  retval |= clone_test(rt);
+  retval |= deinit_test(rt);
+
+  return retval;
 }
