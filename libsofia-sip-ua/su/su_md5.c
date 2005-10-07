@@ -489,37 +489,3 @@ su_md5_transform(uint32_t buf[4], const unsigned char inraw[64])
   buf[3] += d;
 }
 #endif
-
-#ifdef TEST
-/* Simple test program.  Can use it to manually run the tests from
-   RFC1321 for example.  */
-#include <stdio.h>
-
-int
-main (int argc, char **argv)
-{
-  su_md5_t context;
-  unsigned char checksum[16];
-  int i;
-  int j;
-
-  if (argc < 2)
-    {
-      fprintf (stderr, "usage: %s string-to-hash\n", argv[0]);
-      exit (1);
-    }
-  for (j = 1; j < argc; ++j)
-    {
-      printf ("MD5 (\"%s\") = ", argv[j]);
-      su_md5_init(&context);
-      su_md5_update(&context, argv[j], strlen (argv[j]));
-      su_md5_digest(&context, checksum);
-      for (i = 0; i < 16; i++)
-	{
-	  printf ("%02x", (unsigned int) checksum[i]);
-	}
-      printf ("\n");
-    }
-  return 0;
-}
-#endif /* TEST */
