@@ -259,9 +259,11 @@ struct su_port_s {
 /* Debugging versions */
 #define SU_PORT_INITREF(p)      (pthread_rwlock_init((p)->sup_ref, NULL), printf("initref(%p)\n", (p)))
 #define SU_PORT_INCREF(p, f)    (pthread_rwlock_rdlock(p->sup_ref), printf("incref(%p) by %s\n", (p), f))
-#define SU_PORT_DECREF(p, f)    do { printf("decref(%p) by %s\n", (p), f), \
-  pthread_rwlock_unlock(p->sup_ref); \
-  if (pthread_rwlock_trywrlock(p->sup_ref) == 0) su_port_destroy(p); } while(0)
+#define SU_PORT_DECREF(p, f)    do {					\
+    pthread_rwlock_unlock(p->sup_ref);					\
+    if (pthread_rwlock_trywrlock(p->sup_ref) == 0) {			\
+      printf("decref(%p) to 0 by %s\n", (p), f); su_port_destroy(p); }	\
+    else { printf("decref(%p) by %s\n", (p), f); }  } while(0)
 
 #define SU_PORT_ZAPREF(p, f)    do { printf("zapref(%p) by %s\n", (p), f), \
   pthread_rwlock_unlock(p->sup_ref); \
