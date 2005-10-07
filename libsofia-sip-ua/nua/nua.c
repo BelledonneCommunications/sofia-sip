@@ -105,6 +105,8 @@ char const nua_version[] = VERSION;
 
 #include "nua_stack.h"
 
+#undef nua_default
+
 const char _nua_h_id[] = NUA_H;
 
 /**@var NUA_DEBUG
@@ -305,10 +307,10 @@ void nua_destroy(nua_t *nua)
  * @par Events:
  *    none
  *
-*/
+ */
 nua_handle_t *nua_default(nua_t *nua)
 {
-  return nua ? nua->nua_default : NULL;
+  return nua ? nua->nua_handles : NULL;
 }
 
 /** Create an operation handle 
@@ -675,6 +677,7 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
     nua_signal((nh)->nh_nua, nh, NULL, 0, event, 0, NULL, ta_tags(ta));	\
     ta_end(ta); \
   }
+
 
 /** Send SIP REGISTER request to the registrar. 
  *
@@ -1353,7 +1356,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
 
   enter;
 
-  if (nh && nh != nh->nh_nua->nua_default) {
+  if (nh && nh != nh->nh_nua->nua_handles) {
     if (!nh->nh_ref_by_user && nh->nh_valid) {
       nh->nh_ref_by_user = 1;
       nh_incref(nh);
@@ -1361,7 +1364,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   }
 
   if (!nh || !nh->nh_valid) {	/* Handle has been destroyed */
-    if (nh && nh != nh->nh_nua->nua_default && nh_decref(nh)) {
+    if (nh && nh != nh->nh_nua->nua_handles && nh_decref(nh)) {
       SU_DEBUG_9(("nua(%p): freed by application\n", nh));
     }
     if (e->e_msg)
@@ -1374,7 +1377,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   if (!nua->nua_callback)
     return;
 
-  if (nh == nua->nua_default)
+  if (nh == nua->nua_handles)
     nh = NULL;
 
   su_msg_save(nua->nua_current, sumsg);
@@ -1393,7 +1396,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   if (e->e_msg)
     msg_destroy(e->e_msg);
 
-  if (nh && nh != nh->nh_nua->nua_default && nh_decref(nh)) {
+  if (nh && nh != nh->nh_nua->nua_handles && nh_decref(nh)) {
     SU_DEBUG_9(("nua(%p): freed by application\n", nh));
   }
 
@@ -1425,7 +1428,7 @@ int nua_info_event(nua_saved_event_t const saved[1],
     event_t *e = su_msg_data(saved);
     nua_handle_t *nh = e->e_nh;
 
-    if (nh && nh == nh->nh_nua->nua_default)
+    if (nh && nh == nh->nh_nua->nua_handles)
       nh = NULL;
 
     if (return_event)  *return_event = e->e_event;
@@ -1452,7 +1455,7 @@ void nua_destroy_event(nua_saved_event_t saved[1])
     if (e->e_msg)
       msg_destroy(e->e_msg);
 
-    if (nh && nh != nh->nh_nua->nua_default && nh_decref(nh)) {
+    if (nh && nh != nh->nh_nua->nua_handles && nh_decref(nh)) {
       SU_DEBUG_9(("nua(%p): freed by application\n", nh));
     }
 
