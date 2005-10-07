@@ -40,6 +40,7 @@ const char su_torture_c_id[] =
 "$Id: su_torture.c,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $";
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <su.h>
