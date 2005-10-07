@@ -101,6 +101,54 @@ extern tag_typedef_t nutag_address;
 #define NUTAG_ADDRESS_REF(x)    nutag_address_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_address_ref;
 
+/**Set request retry count.
+ *
+ * Retry count determines how many times stack will automatically retry
+ * after an recoverable error response, like 302, 401 or 407.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *
+ * @par Parameter type
+ *    unsigned
+ *
+ * @par Values
+ *    @c 0   Never retry automatically \n
+ *
+ * Corresponding tag taking reference parameter is NUTAG_RETRY_COUNT_REF()
+ */
+#define NUTAG_RETRY_COUNT(x)      nutag_retry_count, tag_uint_v(x)
+extern tag_typedef_t nutag_retry_count;
+
+#define NUTAG_RETRY_COUNT_REF(x)  nutag_retry_count_ref, tag_uint_vr(&(x))
+extern tag_typedef_t nutag_retry_count_ref;
+
+/**Set maximum number of simultaneous subscribers per single event server.
+ *
+ * Determines how many subscribers can simultaneously subscribe to a single
+ * event.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *
+ * @par Parameter type
+ *    unsigned
+ *
+ * @par Values
+ *    @c 0   Do not allow any subscriptions \n
+ *
+ * Corresponding tag taking reference parameter is NUTAG_MAX_SUBSCRIPTIONS_REF()
+ */
+#define NUTAG_MAX_SUBSCRIPTIONS(x)      nutag_max_subscriptions, tag_uint_v(x)
+extern tag_typedef_t nutag_max_subscriptions;
+
+#define NUTAG_MAX_SUBSCRIPTIONS_REF(x) \
+nutag_max_subscriptions_ref, tag_uint_vr(&(x))
+extern tag_typedef_t nutag_max_subscriptions_ref;
+
+/* Intentionally undocumented */
 #define NUTAG_UICC(x)  nutag_uicc, tag_str_v(x)
 extern tag_typedef_t nutag_uicc;
 
@@ -299,7 +347,7 @@ extern tag_typedef_t nutag_min_se;
 extern tag_typedef_t nutag_min_se_ref;
 
 enum nua_session_refresher {
-  nua_no_refresher, nua_local_refresher, nua_remote_refresher
+  nua_no_refresher, nua_local_refresher, nua_remote_refresher, nua_any_refresher
 };
 
 /** Specify preferred refresher.
@@ -311,12 +359,14 @@ enum nua_session_refresher {
  *    nua_get_params()
  *
  * @par Parameter type
- *    enum { nua_no_refresher,  nua_local_refresher, nua_remote_refresher }
+ *   enum { #nua_no_refresher,  #nua_local_refresher, #nua_remote_refresher,
+ *          #nua_any_refresher }
  *
  * @par Values
- *    @c nua_no_refresher    \n
+ *    @c nua_no_refresher (session timers are disabled) \n
  *    @c nua_local_refresher \n
- *    @c nua_remote_refresher
+ *    @c nua_remote_refresher \n
+ *    @c nua_any_refresher (default) \n
  *
  * Corresponding tag taking reference parameter is NUTAG_SESSION_REFRESHER_REF()
  */

@@ -941,8 +941,8 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     return;
 
   n =  tl_gets(tags,
-	       /* NUTAG_RETRY_COUNT_REF(retry_count), */
-	       /* NUTAG_MAX_SUBSCRIPTIONS_REF(max_subscriptions), */
+	       NUTAG_RETRY_COUNT_REF(retry_count),
+	       NUTAG_MAX_SUBSCRIPTIONS_REF(max_subscriptions),
 
 	       NUTAG_ENABLEINVITE_REF(invite_enable),
 	       NUTAG_AUTOALERT_REF(auto_alert),
@@ -1209,8 +1209,8 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     (tmphome, tags, 
      TAG_IF(has_from, SIPTAG_FROM(from)),
 
-     /* TIF(NUTAG_RETRY_COUNT, retry_count), */
-     /* TIF(NUTAG_MAX_SUBSCRIPTIONS, max_subscriptions), */
+     TIF(NUTAG_RETRY_COUNT, retry_count),
+     TIF(NUTAG_MAX_SUBSCRIPTIONS, max_subscriptions),
 
      TIF(NUTAG_ENABLEINVITE, invite_enable),
      TIF(NUTAG_AUTOALERT, auto_alert),
