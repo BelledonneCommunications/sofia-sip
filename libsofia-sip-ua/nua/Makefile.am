@@ -27,7 +27,9 @@ noinst_LIBRARIES = 	libnua.a
 
 noinst_PROGRAMS =	nua_objs.o
 
-TESTS = 
+noinst_PROGRAMS +=	test_nua
+
+TESTS = 		test_nua
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
