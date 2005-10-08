@@ -487,12 +487,11 @@ void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
  * Sending events to client application
  */
 
-static void 
-  ua_shutdown(nua_t *),
-  ua_set_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_get_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *);
+static void ua_shutdown(nua_t *);
 
 static int
+  ua_set_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
+  ua_get_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_register(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_invite(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_ack(nua_t *, nua_handle_t *, tagi_t const *),
@@ -872,8 +871,8 @@ void ua_shutdown(nua_t *nua)
 /* ----------------------------------------------------------------------
  * Parameters
  */
-void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
-		   tagi_t const *tags)
+int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
+		  tagi_t const *tags)
 {
   nua_handle_t *dnh = nua->nua_dhandle;
   nua_handle_preferences_t nhp[1], *ohp = nh->nh_prefs;
@@ -935,10 +934,10 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   if (nh == dnh) 
     if (nta_agent_set_params(nua->nua_nta, TAG_NEXT(tags)) < 0)
-      return;
+      return UA_EVENT2(e, 400, "Error setting NTA parameters");
 
-  if (soa_set_params(nh->nh_soa, TAG_NEXT(tags)) < 0)
-    return;
+  if (nh->nh_soa && soa_set_params(nh->nh_soa, TAG_NEXT(tags)) < 0)
+    return UA_EVENT2(e, 400, "Error setting SOA parameters");
 
   n =  tl_gets(tags,
 	       NUTAG_RETRY_COUNT_REF(retry_count),
@@ -994,7 +993,7 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 #endif
 	       TAG_NULL());
   if (n < 0)
-    return;
+    return UA_EVENT2(e, 400, "Error obtaining NUA parameters");
   
   memcpy(nhp, ohp, sizeof(*nhp));
   NHP_UNSET_ALL(nhp);
@@ -1123,8 +1122,11 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   su_home_deinit(tmphome);
 
-  if (n < 0 || nh != dnh)
-    return;
+  if (n < 0)
+    return UA_EVENT2(e, 500, "Error storing parameters");
+
+  if (nh != dnh)
+    return UA_EVENT2(e, 200, "OK");
 
   if (registrar != NONE) {
     if (registrar &&
@@ -1149,9 +1151,25 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sm_set_params(nua->sm, smime_enable, smime_opt, 
 		smime_protection_mode, smime_path);
 #endif                  
+  return UA_EVENT2(e, 200, "OK");
 }
 
-void
+/** Get NUA parameters.
+ *
+ * The ua_get_params() sends a list of parameters to the application.  It
+ * gets invoked when application calls either nua_get_params() or
+ * nua_get_hparams(). 
+ *
+ * The parameter tag list will initially contain all the relevant parameter
+ * tags, and it will be filtered down to parameters asked by application.
+ *
+ * The handle-specific parameters will contain only the parameters actually
+ * modified by application, either by nua_set_hparams() or some other
+ * handle-specific call. NTA parameters are returned only when application
+ * asks for user-agent-level parameters using nua_get_params().
+ *
+ */
+int
 ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
   nua_handle_t *dnh = nua->nua_dhandle;
@@ -1283,6 +1301,8 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   su_home_deinit(tmphome);
 
   tl_vfree(media_params);
+
+  return 0;
 }
 
 /* ---------------------------------------------------------------------- */
