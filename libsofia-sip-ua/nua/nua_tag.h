@@ -790,25 +790,6 @@ extern tag_typedef_t nutag_registrar;
 #define NUTAG_REGISTRAR_REF(x)  nutag_registrar_ref, urltag_url_vr(&(x))
 extern tag_typedef_t nutag_registrar_ref;
 
-/** Allowed sip methods. If this tag is not used all methods are allowed by default.
- * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    NULL terminated string of allowed SIP methods separated by commas
- *
- * Corresponding tag taking reference parameter is NUTAG_ALLOW_REF()
- */
-#define NUTAG_ALLOW(x)          nutag_allow, tag_str_v(x)
-extern tag_typedef_t nutag_allow;
-
-#define NUTAG_ALLOW_REF(x)      nutag_allow_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_allow_ref;
-
 /** Pointer to SIP parser structure
  *
  * @par Used with

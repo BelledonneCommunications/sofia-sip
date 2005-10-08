@@ -103,7 +103,6 @@ tag_typedef_t nutag_certificate_dir = STRTAG_TYPEDEF(certificate_dir);
 tag_typedef_t nutag_certificate_phrase = STRTAG_TYPEDEF(certificate_phrase);
 
 tag_typedef_t nutag_registrar = URLTAG_TYPEDEF(registrar);
-tag_typedef_t nutag_allow = STRTAG_TYPEDEF(allow);
 tag_typedef_t nutag_sip_parser = PTRTAG_TYPEDEF(sip_parser);
 
 tag_typedef_t nutag_use_leg = BOOLTAG_TYPEDEF(use_leg);
