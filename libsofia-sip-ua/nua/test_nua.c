@@ -487,7 +487,6 @@ int test_params(struct context *ctx)
   }
   nua_destroy_event(ctx->a.saved_event);
 
-  if (0)
   {
     sip_from_t const *from = NONE;
     char const *from_str = "NONE";
@@ -579,13 +578,14 @@ int test_params(struct context *ctx)
 	       	NUTAG_REGISTRAR_REF(registrar),
 
 		TAG_END());
-    TEST(n, 1);
+    TEST(n, 3);
 
     TEST(invite_timeout, 90);
 
-    TEST(from, NONE);
-    TEST_S(from_str, "NONE");
-
+    TEST_1(from != NULL && from != NONE);
+    TEST_1(strcmp(from_str, "NONE"));
+    
+    /* Nothing else should be set */
     TEST(retry_count, -1);
     TEST(max_subscriptions, -1);
 
@@ -594,7 +594,6 @@ int test_params(struct context *ctx)
     TEST(early_media, -1);
     TEST(auto_answer, -1);
     TEST(auto_ack, -1);
-    TEST(invite_timeout, -1);
 
     TEST(session_timer, -1);
     TEST(min_se, -1);

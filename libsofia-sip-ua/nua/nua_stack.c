@@ -1091,10 +1091,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       /* We have made changes to handle-specific settings
        * but we don't have a prefs structure owned by handle yet */
       nua_handle_preferences_t *ahp = su_alloc(nh->nh_home, sizeof *ahp);
-      if (ahp == NULL || su_home_move(nh->nh_home, tmphome) < 0) {
-	n = -1;
-      }
-      else {
+      if (ahp && su_home_move(nh->nh_home, tmphome) >= 0) {
 	memcpy(ahp, nhp, sizeof *ahp);
 	/* Zap pointers which are not set */
 #define NHP_ZAP_UNSET_PTR(nhp, pref) \
@@ -1105,6 +1102,11 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	NHP_ZAP_UNSET_PTR(ahp, user_agent);
 	NHP_ZAP_UNSET_PTR(ahp, ua_name);
 	NHP_ZAP_UNSET_PTR(ahp, organization);
+
+	nh->nh_prefs = ahp;
+      }
+      else {
+	n = -1;
       }
     }
     else if (su_home_move(nh->nh_home, tmphome) >= 0) {
