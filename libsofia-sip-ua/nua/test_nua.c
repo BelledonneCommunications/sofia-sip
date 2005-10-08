@@ -53,6 +53,7 @@ struct call;
 #include "nua_tag.h"
 
 #include <sdp.h>
+#include <sip_header.h>
 
 #include <su_log.h>
 
@@ -74,75 +75,125 @@ int tstflags = 0;
 
 #define NONE ((void*)-1)
 
-typedef 
+struct endpoint;
+
+typedef
 int condition_function(nua_event_t event,
 		       int status, char const *phrase,
 		       nua_t *nua, struct context *ctx,
+		       struct endpoint *ep,
 		       nua_handle_t *nh, struct call *call,
 		       sip_t const *sip,
 		       tagi_t tags[]);
 
-struct context 
+struct context
 {
   su_home_t home[1];
   su_root_t *root;
 
   int running;
 
-  condition_function *next_condition;
-  nua_event_t next_event, last_event;
   nua_t *next_stack, *last_stack;
 
-  struct {
+  struct endpoint {
+    condition_function *next_condition;
+    nua_event_t next_event, last_event;
     nua_t *nua;
+    nua_handle_t *nh;
+    nua_saved_event_t saved_event[1];
   } a, b;
 };
 
-void callback(nua_event_t event,
-	      int status, char const *phrase,
-	      nua_t *nua, struct context *ctx,
-	      nua_handle_t *nh, struct call *call,
-	      sip_t const *sip,
-	      tagi_t tags[])
+void a_callback(nua_event_t event,
+		int status, char const *phrase,
+		nua_t *nua, struct context *ctx,
+		nua_handle_t *nh, struct call *call,
+		sip_t const *sip,
+		tagi_t tags[])
 {
-  fprintf(stderr, "%c.nua(%p): event %s status %u %s\n", 
-	  nua == ctx->a.nua ? 'a' : 'b', call,
-	  nua_event_name(event), status, phrase);
+  fprintf(stderr, "a.nua(%p): event %s status %u %s\n",
+	  nh, nua_event_name(event), status, phrase);
 
-  if ((ctx->next_stack == NULL || ctx->next_stack == nua) &&
-      (ctx->next_event == -1 || ctx->next_event == event) &&
-      (ctx->next_condition == NULL || 
-       ctx->next_condition(event, status, phrase, 
-			   nua, ctx, nh, call, sip, tags)))
+  if ((ctx->a.next_event == -1 || ctx->a.next_event == event) &&
+      (ctx->a.next_condition == NULL ||
+       ctx->a.next_condition(event, status, phrase,
+			     nua, ctx, &ctx->a, nh, call, sip, tags)))
     ctx->running = 0;
 
-  ctx->last_event = event;
-  ctx->last_stack = nua;
+  ctx->a.last_event = event;
+  ctx->b.last_event = -1;
 }
 
-int run_until(struct context *ctx, nua_event_t event, nua_t *nua, 
-	      condition_function *condition)
+void b_callback(nua_event_t event,
+		int status, char const *phrase,
+		nua_t *nua, struct context *ctx,
+		nua_handle_t *nh, struct call *call,
+		sip_t const *sip,
+		tagi_t tags[])
 {
-  ctx->next_stack = nua;
-  ctx->next_event = event;
-  ctx->next_condition = condition;
+  fprintf(stderr, "a.nua(%p): event %s status %u %s\n",
+	  nh, nua_event_name(event), status, phrase);
+
+  if ((ctx->b.next_event == -1 || ctx->b.next_event == event) &&
+      (ctx->b.next_condition == NULL ||
+       ctx->b.next_condition(event, status, phrase,
+			     nua, ctx, &ctx->a, nh, call, sip, tags)))
+    ctx->running = 0;
+
+
+  ctx->a.last_event = -1;
+  ctx->b.last_event = event;
+}
+
+void run_until(struct context *ctx,
+	       nua_event_t a_event, condition_function *a_condition,
+	       nua_event_t b_event, condition_function *b_condition)
+{
+  ctx->a.next_event = a_event;
+  ctx->a.next_condition = a_condition;
+  ctx->a.last_event = -1;
+  ctx->b.next_event = b_event;
+  ctx->b.next_condition = b_condition;
+  ctx->b.last_event = -1;
 
   for (ctx->running = 1; ctx->running;) {
     su_root_step(ctx->root, 1000);
   }
-
-  return ctx->last_event;
 }
 
-#define CONDITION_FUNCTION(name) \
-  int name(nua_event_t event, \
-		       int status, char const *phrase, \
-		       nua_t *nua, struct context *ctx,\
-		       nua_handle_t *nh, struct call *call,\
-		       sip_t const *sip,\
-		       tagi_t tags[])
+int run_a_until(struct context *ctx,
+		nua_event_t a_event,
+		condition_function *a_condition)
+{
+  run_until(ctx, a_event, a_condition, -1, NULL);
+  return ctx->a.last_event;
+}
+
+int run_b_until(struct context *ctx,
+		nua_event_t b_event,
+		condition_function *b_condition)
+{
+  run_until(ctx, -1, NULL, b_event, b_condition);
+  return ctx->b.last_event;
+}
+
+#define CONDITION_FUNCTION(name)		\
+  int name(nua_event_t event,			\
+	   int status, char const *phrase,	\
+	   nua_t *nua, struct context *ctx,	\
+	   struct endpoint *ep,			\
+	   nua_handle_t *nh, struct call *call, \
+	   sip_t const *sip,			\
+	   tagi_t tags[])
 
 CONDITION_FUNCTION(condition_final_response){ return status >= 200; }
+CONDITION_FUNCTION(save_final_response)
+{
+  if (status < 200)
+    return 0;
+  nua_save_event(ep->nua, ep->saved_event);
+  return 1;
+}
 
 void nolog(void *stream, char const *fmt, va_list ap) {}
 
@@ -203,17 +254,17 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(!nua_handle_home(NULL));
   TEST_1(!nua_save_event(NULL, NULL));
-  TEST_1(!nua_info_event(NULL, NULL, NULL, NULL, NULL, 
+  TEST_1(!nua_info_event(NULL, NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL));
   TEST_VOID(nua_destroy_event(NULL));
-  
+
   {
     nua_saved_event_t event[1];
 
     memset(event, 0, sizeof event);
-    
+
     TEST_1(!nua_save_event(NULL, event));
-    TEST_1(!nua_info_event(event, NULL, NULL, NULL, NULL, 
+    TEST_1(!nua_info_event(event, NULL, NULL, NULL, NULL,
 			   NULL, NULL, NULL, NULL));
     TEST_VOID(nua_destroy_event(event));
   }
@@ -230,14 +281,14 @@ int test_init(struct context *ctx, char *argv[])
   ctx->root = su_root_create(ctx); TEST_1(ctx->root);
 
   /* Disable threading by command line switch? */
-  su_root_threading(ctx->root, 1);
+  su_root_threading(ctx->root, 0);
 
-  ctx->a.nua = nua_create(ctx->root, callback, ctx, 
+  ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  NUTAG_URL("sip:*:*"),
 			  TAG_END());
   TEST_1(ctx->a.nua);
 
-  ctx->b.nua = nua_create(ctx->root, callback, ctx, 
+  ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
 			  NUTAG_URL("sip:*:*"),
 			  TAG_END());
   TEST_1(ctx->b.nua);
@@ -248,43 +299,337 @@ int test_init(struct context *ctx, char *argv[])
 int test_params(struct context *ctx)
 {
   BEGIN();
-#if 0
-  int n;
-  unsigned af;
-  char const *address;
-  nua_session_t *a = ctx->synch.a, *b = ctx->synch.b;
 
-  n = nua_set_params(a, TAG_END()); TEST(n, 0);
-  n = nua_set_params(b, TAG_END()); TEST(n, 0);
+  char const Alice[] = "Alice <sip:a@wonderland.org>";
+  sip_from_t const *from;
+  su_home_t tmphome[SU_HOME_AUTO_SIZE(16384)];
+  nua_handle_t *nh;
 
-  af = -42;
-  address = NONE;
-  TEST(nua_get_params(a,
-		      NUATAG_AF_REF(af),
-		      NUATAG_ADDRESS_REF(address),
-		      TAG_END()),
-       2);
-  TEST(af, NUA_AF_ANY);
-  TEST(address, 0);
+  su_home_auto(tmphome, sizeof(tmphome));
 
-  TEST(nua_set_params(a,
-		      NUATAG_AF(NUA_AF_IP4_IP6),
-		      TAG_END()),
-       1);
-  TEST(nua_get_params(a,
-		      NUATAG_AF_REF(af),
-		      TAG_END()),
-       1);
-  TEST(af, NUA_AF_IP4_IP6);
-#endif
+  from = sip_from_make(tmphome, Alice);
+
+  nh = nua_handle(ctx->a.nua, NULL, TAG_END());
+
+  nua_set_handle_params(nh, NUTAG_INVITE_TIMER(90), TAG_END());
+
+  /* Modify everything from their default value */
+  nua_set_params(ctx->a.nua,
+		 SIPTAG_FROM(from),
+		 NUTAG_RETRY_COUNT(5),
+		 NUTAG_MAX_SUBSCRIPTIONS(6),
+
+		 NUTAG_ENABLEINVITE(0),
+		 NUTAG_AUTOALERT(1),
+		 NUTAG_EARLY_MEDIA(1),
+		 NUTAG_AUTOANSWER(1),
+		 NUTAG_AUTOACK(0),
+		 NUTAG_INVITE_TIMER(60),
+
+		 NUTAG_SESSION_TIMER(600),
+		 NUTAG_MIN_SE(35),
+		 NUTAG_SESSION_REFRESHER(nua_remote_refresher),
+		 NUTAG_UPDATE_REFRESH(1),
+
+		 NUTAG_ENABLEMESSAGE(0),
+		 NUTAG_ENABLEMESSENGER(1),
+		 /* NUTAG_MESSAGE_AUTOANSWER(0), */
+
+		 NUTAG_CALLEE_CAPS(1),
+		 NUTAG_MEDIA_FEATURES(1),
+		 NUTAG_SERVICE_ROUTE_ENABLE(0),
+		 NUTAG_PATH_ENABLE(0),
+
+		 SIPTAG_SUPPORTED_STR("humppaa,kuole"),
+		 SIPTAG_ALLOW_STR("OPTIONS, INFO"),
+		 SIPTAG_USER_AGENT_STR("test_nua"),
+
+		 SIPTAG_ORGANIZATION_STR("Pussy Galore's Flying Circus"),
+
+		 NUTAG_MEDIA_ENABLE(0),
+		 NUTAG_REGISTRAR("sip:sip.wonderland.org"),
+		
+		 TAG_END());
+
+  nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
+
+  run_a_until(ctx, nua_r_get_params, save_final_response);
+
+  {
+    sip_from_t const *from = NONE;
+    char const *from_str = "NONE";
+
+    int retry_count = -1;
+    int max_subscriptions = -1;
+    
+    int invite_enable = -1;
+    int auto_alert = -1;
+    int early_media = -1;
+    int auto_answer = -1;
+    int auto_ack = -1;
+    int invite_timeout = -1;
+    
+    int session_timer = -1;
+    int min_se = -1;
+    int refresher = -1;
+    int update_refresh = -1;
+    
+    int message_enable = -1;
+    int win_messenger_enable = -1;
+    int message_auto_respond = -1;
+    
+    int callee_caps = -1;
+    int media_features = -1;
+    int service_route_enable = -1;
+    int path_enable = -1;
+
+    sip_allow_t const *allow = NONE;
+    char const   *allow_str = "NONE";
+    sip_supported_t const *supported = NONE;
+    char const *supported_str = "NONE";
+    sip_user_agent_t const *user_agent = NONE;
+    char const *user_agent_str = "NONE";
+    sip_organization_t const *organization = NONE;
+    char const *organization_str = "NONE";
+
+    url_string_t const *registrar = NONE;
+
+    int n;
+    nua_event_t event = nua_i_error;
+    tagi_t const *tags = NULL;
+
+    TEST(nua_info_event(ctx->a.saved_event, 
+			&event, NULL, NULL, NULL, NULL, NULL, NULL, &tags), 1);
+    TEST(event, nua_r_get_params);
+
+    n = tl_gets(tags,
+	       	SIPTAG_FROM_REF(from),
+	       	SIPTAG_FROM_STR_REF(from_str),
+
+	       	NUTAG_RETRY_COUNT_REF(retry_count),
+	       	NUTAG_MAX_SUBSCRIPTIONS_REF(max_subscriptions),
+
+	       	NUTAG_ENABLEINVITE_REF(invite_enable),
+	       	NUTAG_AUTOALERT_REF(auto_alert),
+	       	NUTAG_EARLY_MEDIA_REF(early_media),
+	       	NUTAG_AUTOANSWER_REF(auto_answer),
+	       	NUTAG_AUTOACK_REF(auto_ack),
+	       	NUTAG_INVITE_TIMER_REF(invite_timeout),
+
+	       	NUTAG_SESSION_TIMER_REF(session_timer),
+	       	NUTAG_MIN_SE_REF(min_se),
+	       	NUTAG_SESSION_REFRESHER_REF(refresher),
+	       	NUTAG_UPDATE_REFRESH_REF(update_refresh),
+
+	       	NUTAG_ENABLEMESSAGE_REF(message_enable),
+	       	NUTAG_ENABLEMESSENGER_REF(win_messenger_enable),
+	       	/* NUTAG_MESSAGE_AUTOANSWER(message_auto_respond), */
+
+	       	NUTAG_CALLEE_CAPS_REF(callee_caps),
+	       	NUTAG_MEDIA_FEATURES_REF(media_features),
+	       	NUTAG_SERVICE_ROUTE_ENABLE_REF(service_route_enable),
+	       	NUTAG_PATH_ENABLE_REF(path_enable),
+
+	       	SIPTAG_SUPPORTED_REF(supported),
+	       	SIPTAG_SUPPORTED_STR_REF(supported_str),
+	       	SIPTAG_ALLOW_REF(allow),
+	       	SIPTAG_ALLOW_STR_REF(allow_str),
+	       	SIPTAG_USER_AGENT_REF(user_agent),
+	       	SIPTAG_USER_AGENT_STR_REF(user_agent_str),
+
+	       	SIPTAG_ORGANIZATION_REF(organization),
+	       	SIPTAG_ORGANIZATION_STR_REF(organization_str),
+
+	       	NUTAG_REGISTRAR_REF(registrar),
+
+		TAG_END());
+    TEST(n, 29);
+
+    TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
+    TEST_S(from_str, Alice);
+
+    TEST(retry_count, 5);
+    TEST(max_subscriptions, 6);
+
+    TEST(invite_enable, 0);
+    TEST(auto_alert, 1);
+    TEST(early_media, 1);
+    TEST(auto_answer, 1);
+    TEST(auto_ack, 0);
+    TEST(invite_timeout, 60);
+
+    TEST(session_timer, 600);
+    TEST(min_se, 35);
+    TEST(refresher, nua_remote_refresher);
+    TEST(update_refresh, 1);
+
+    TEST(message_enable, 0);
+    TEST(win_messenger_enable, 1);
+    TEST(message_auto_respond, -1); /* XXX */
+
+    TEST(callee_caps, 1);
+    TEST(media_features, 1);
+    TEST(service_route_enable, 0);
+    TEST(path_enable, 0);
+
+    TEST_S(sip_header_as_string(tmphome, (void *)allow), "OPTIONS, INFO");
+    TEST_S(allow_str, "OPTIONS, INFO");
+    TEST_S(sip_header_as_string(tmphome, (void *)supported), "humppaa, kuole");
+    TEST_S(supported_str, "humppaa, kuole");
+    TEST_S(sip_header_as_string(tmphome, (void *)user_agent), "test_nua");
+    TEST_S(user_agent_str, "test_nua");
+    TEST_S(sip_header_as_string(tmphome, (void *)organization), 
+	   "Pussy Galore's Flying Circus");
+    TEST_S(organization_str, "Pussy Galore's Flying Circus");
+
+    TEST_S(url_as_string(tmphome, registrar->us_url), 
+	   "sip:sip.wonderland.org");
+  }
+  nua_destroy_event(ctx->a.saved_event);
+
+  if (0)
+  {
+    sip_from_t const *from = NONE;
+    char const *from_str = "NONE";
+
+    int retry_count = -1;
+    int max_subscriptions = -1;
+    
+    int invite_enable = -1;
+    int auto_alert = -1;
+    int early_media = -1;
+    int auto_answer = -1;
+    int auto_ack = -1;
+    int invite_timeout = -1;
+    
+    int session_timer = -1;
+    int min_se = -1;
+    int refresher = -1;
+    int update_refresh = -1;
+    
+    int message_enable = -1;
+    int win_messenger_enable = -1;
+    int message_auto_respond = -1;
+    
+    int callee_caps = -1;
+    int media_features = -1;
+    int service_route_enable = -1;
+    int path_enable = -1;
+
+    sip_allow_t const *allow = NONE;
+    char const   *allow_str = "NONE";
+    sip_supported_t const *supported = NONE;
+    char const *supported_str = "NONE";
+    sip_user_agent_t const *user_agent = NONE;
+    char const *user_agent_str = "NONE";
+    sip_organization_t const *organization = NONE;
+    char const *organization_str = "NONE";
+
+    url_string_t const *registrar = NONE;
+
+    int n;
+    nua_event_t event = nua_i_error;
+    tagi_t const *tags = NULL;
+
+    nua_get_handle_params(nh, TAG_ANY(), TAG_END());
+    run_a_until(ctx, nua_r_get_params, save_final_response);
+
+    TEST(nua_info_event(ctx->a.saved_event, 
+			&event, NULL, NULL, NULL, NULL, NULL, NULL, &tags), 1);
+    TEST(event, nua_r_get_params);
+
+    n = tl_gets(tags,
+	       	SIPTAG_FROM_REF(from),
+	       	SIPTAG_FROM_STR_REF(from_str),
+
+	       	NUTAG_RETRY_COUNT_REF(retry_count),
+	       	NUTAG_MAX_SUBSCRIPTIONS_REF(max_subscriptions),
+
+	       	NUTAG_ENABLEINVITE_REF(invite_enable),
+	       	NUTAG_AUTOALERT_REF(auto_alert),
+	       	NUTAG_EARLY_MEDIA_REF(early_media),
+	       	NUTAG_AUTOANSWER_REF(auto_answer),
+	       	NUTAG_AUTOACK_REF(auto_ack),
+	       	NUTAG_INVITE_TIMER_REF(invite_timeout),
+
+	       	NUTAG_SESSION_TIMER_REF(session_timer),
+	       	NUTAG_MIN_SE_REF(min_se),
+	       	NUTAG_SESSION_REFRESHER_REF(refresher),
+	       	NUTAG_UPDATE_REFRESH_REF(update_refresh),
+
+	       	NUTAG_ENABLEMESSAGE_REF(message_enable),
+	       	NUTAG_ENABLEMESSENGER_REF(win_messenger_enable),
+	       	/* NUTAG_MESSAGE_AUTOANSWER(message_auto_respond), */
+
+	       	NUTAG_CALLEE_CAPS_REF(callee_caps),
+	       	NUTAG_MEDIA_FEATURES_REF(media_features),
+	       	NUTAG_SERVICE_ROUTE_ENABLE_REF(service_route_enable),
+	       	NUTAG_PATH_ENABLE_REF(path_enable),
+
+	       	SIPTAG_SUPPORTED_REF(supported),
+	       	SIPTAG_SUPPORTED_STR_REF(supported_str),
+	       	SIPTAG_ALLOW_REF(allow),
+	       	SIPTAG_ALLOW_STR_REF(allow_str),
+	       	SIPTAG_USER_AGENT_REF(user_agent),
+	       	SIPTAG_USER_AGENT_STR_REF(user_agent_str),
+
+	       	SIPTAG_ORGANIZATION_REF(organization),
+	       	SIPTAG_ORGANIZATION_STR_REF(organization_str),
+
+	       	NUTAG_REGISTRAR_REF(registrar),
+
+		TAG_END());
+    TEST(n, 1);
+
+    TEST(invite_timeout, 90);
+
+    TEST(from, NONE);
+    TEST_S(from_str, "NONE");
+
+    TEST(retry_count, -1);
+    TEST(max_subscriptions, -1);
+
+    TEST(invite_enable, -1);
+    TEST(auto_alert, -1);
+    TEST(early_media, -1);
+    TEST(auto_answer, -1);
+    TEST(auto_ack, -1);
+    TEST(invite_timeout, -1);
+
+    TEST(session_timer, -1);
+    TEST(min_se, -1);
+    TEST(refresher, -1);
+    TEST(update_refresh, -1);
+
+    TEST(message_enable, -1);
+    TEST(win_messenger_enable, -1);
+    TEST(message_auto_respond, -1); /* XXX */
+
+    TEST(callee_caps, -1);
+    TEST(media_features, -1);
+    TEST(service_route_enable, -1);
+    TEST(path_enable, -1);
+
+    TEST(allow, NONE);
+    TEST_S(allow_str, "NONE");
+    TEST(supported, NONE);
+    TEST_S(supported_str, "NONE");
+    TEST(user_agent, NONE);
+    TEST_S(user_agent_str, "NONE");
+    TEST(organization, NONE);
+    TEST_S(organization_str, "NONE");
+
+    TEST(registrar->us_url, NONE);
+  }
+
+  nua_handle_destroy(nh);
+
   END();
 }
 
 int test_basic_call(struct context *ctx)
 {
   BEGIN();
-  
-
   END();
 }
 
@@ -295,15 +640,15 @@ int test_deinit(struct context *ctx)
   BEGIN();
 
   nua_shutdown(ctx->a.nua);
-  run_until(ctx, nua_r_shutdown, ctx->a.nua, condition_final_response);
+  run_a_until(ctx, nua_r_shutdown, condition_final_response);
   nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
 
   nua_shutdown(ctx->b.nua);
-  run_until(ctx, nua_r_shutdown, ctx->b.nua, condition_final_response);
+  run_b_until(ctx, nua_r_shutdown, condition_final_response);
   nua_destroy(ctx->b.nua), ctx->b.nua = NULL;
 
   su_root_destroy(ctx->root);
-  
+
   END();
 }
 
@@ -317,8 +662,8 @@ static RETSIGTYPE sig_alarm(int s)
 
 void usage(void)
 {
-  fprintf(stderr, 
-	  "usage: %s [-v|-q] [-l level] [-p outbound-proxy-uri]\n", 
+  fprintf(stderr,
+	  "usage: %s [-v|-q] [-l level] [-p outbound-proxy-uri]\n",
 	  name);
   exit(1);
 }
@@ -350,7 +695,7 @@ int main(int argc, char *argv[])
 
       if (rest == NULL || *rest)
 	usage();
-      
+
       su_log_set_level(nua_log, level);
     }
     else if (strcmp(argv[i], "--attach") == 0) {
