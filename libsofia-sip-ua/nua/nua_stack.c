@@ -881,29 +881,29 @@ void ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   su_home_t tmphome[1] = { SU_HOME_INIT(tmphome) };
 
-  int retry_count = NHP_GET(nhp, dnhp, retry_count);
-  int max_subscriptions = NHP_GET(nhp, dnhp, max_subscriptions);
+  int retry_count = NHP_GET(ohp, dnhp, retry_count);
+  int max_subscriptions = NHP_GET(ohp, dnhp, max_subscriptions);
 
-  int invite_enable = NHP_GET(nhp, dnhp, invite_enable);
-  int auto_alert = NHP_GET(nhp, dnhp, auto_alert);
-  int early_media = NHP_GET(nhp, dnhp, early_media);
-  int auto_answer = NHP_GET(nhp, dnhp, auto_answer);
-  int auto_ack = NHP_GET(nhp, dnhp, auto_ack);
-  int invite_timeout = NHP_GET(nhp, dnhp, invite_timeout);
+  int invite_enable = NHP_GET(ohp, dnhp, invite_enable);
+  int auto_alert = NHP_GET(ohp, dnhp, auto_alert);
+  int early_media = NHP_GET(ohp, dnhp, early_media);
+  int auto_answer = NHP_GET(ohp, dnhp, auto_answer);
+  int auto_ack = NHP_GET(ohp, dnhp, auto_ack);
+  int invite_timeout = NHP_GET(ohp, dnhp, invite_timeout);
 
-  int session_timer = NHP_GET(nhp, dnhp, session_timer);
-  int min_se = NHP_GET(nhp, dnhp, min_se);
-  int refresher = NHP_GET(nhp, dnhp, refresher);
-  int update_refresh = NHP_GET(nhp, dnhp, update_refresh);
+  int session_timer = NHP_GET(ohp, dnhp, session_timer);
+  int min_se = NHP_GET(ohp, dnhp, min_se);
+  int refresher = NHP_GET(ohp, dnhp, refresher);
+  int update_refresh = NHP_GET(ohp, dnhp, update_refresh);
 
-  int message_enable = NHP_GET(nhp, dnhp, message_enable);
-  int win_messenger_enable = NHP_GET(nhp, dnhp, win_messenger_enable);
-  int message_auto_respond = NHP_GET(nhp, dnhp, message_auto_respond);
+  int message_enable = NHP_GET(ohp, dnhp, message_enable);
+  int win_messenger_enable = NHP_GET(ohp, dnhp, win_messenger_enable);
+  int message_auto_respond = NHP_GET(ohp, dnhp, message_auto_respond);
 
-  int callee_caps = NHP_GET(nhp, dnhp, callee_caps);
-  int media_features = NHP_GET(nhp, dnhp, media_features);
-  int service_route_enable = NHP_GET(nhp, dnhp, service_route_enable);
-  int path_enable = NHP_GET(nhp, dnhp, path_enable);
+  int callee_caps = NHP_GET(ohp, dnhp, callee_caps);
+  int media_features = NHP_GET(ohp, dnhp, media_features);
+  int service_route_enable = NHP_GET(ohp, dnhp, service_route_enable);
+  int path_enable = NHP_GET(ohp, dnhp, path_enable);
 
   sip_allow_t const *allow = NONE;
   char const   *allow_str = NONE;
@@ -1208,6 +1208,10 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   lst = tl_filtered_tlist
     (tmphome, tags, 
      TAG_IF(has_from, SIPTAG_FROM(from)),
+     TAG_IF(has_from,
+	    SIPTAG_FROM_STR(has_from
+			    ? sip_header_as_string(tmphome, (void *)from)
+			    : NULL)),
 
      TIF(NUTAG_RETRY_COUNT, retry_count),
      TIF(NUTAG_MAX_SUBSCRIPTIONS, max_subscriptions),
