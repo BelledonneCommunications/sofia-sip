@@ -1529,7 +1529,7 @@ int nua_info_event(nua_saved_event_t const saved[1],
 		    nua_handle_t *return_handle[1], 
 		    nua_hmagic_t *return_hmagic[1],
 		    sip_t const *return_sip[1],
-		    tagi_t *return_tags[1])
+		    tagi_t const *return_tags[1])
 {
   if (su_msg_is_non_null(saved)) {
     event_t *e = su_msg_data(saved);

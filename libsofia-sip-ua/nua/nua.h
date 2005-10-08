@@ -320,7 +320,7 @@ void nua_respond(nua_handle_t *nh,
 #endif
 typedef NUA_SAVED_EVENT_T nua_saved_event_t;
 
-int nua_save_event(nua_t *nua, nua_saved_event_t *return_saved);
+int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1]);
 
 /*# Get information from saved event */
 int nua_info_event(nua_saved_event_t const saved[1],
@@ -331,7 +331,7 @@ int nua_info_event(nua_saved_event_t const saved[1],
 		   nua_handle_t *return_handle[1], 
 		   nua_hmagic_t *return_hmagic[1],
 		   sip_t const *return_sip[1],
-		   tagi_t *return_tags[1]);
+		   tagi_t const *return_tags[1]);
 
 void nua_destroy_event(nua_saved_event_t *saved);
 
