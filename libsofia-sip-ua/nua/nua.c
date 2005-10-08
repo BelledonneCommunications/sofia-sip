@@ -747,8 +747,7 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
  * @par Events:
  *     none
  */
-void nua_set_handle_params(nua_handle_t *nh, 
-			   tag_type_t tag, tag_value_t value, ...)
+void nua_set_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_set_params, tag, value);
 }
@@ -768,8 +767,7 @@ void nua_set_handle_params(nua_handle_t *nh,
  * @par Events:
  *     #nua_r_get_params
  */
-void nua_get_handle_params(nua_handle_t *nh, 
-			   tag_type_t tag, tag_value_t value, ...)
+void nua_get_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_get_params, tag, value);
 }

@@ -311,7 +311,7 @@ int test_params(struct context *ctx)
 
   nh = nua_handle(ctx->a.nua, NULL, TAG_END());
 
-  nua_set_handle_params(nh, NUTAG_INVITE_TIMER(90), TAG_END());
+  nua_set_hparams(nh, NUTAG_INVITE_TIMER(90), TAG_END());
 
   /* Modify everything from their default value */
   nua_set_params(ctx->a.nua,
@@ -531,7 +531,7 @@ int test_params(struct context *ctx)
     nua_event_t event = nua_i_error;
     tagi_t const *tags = NULL;
 
-    nua_get_handle_params(nh, TAG_ANY(), TAG_END());
+    nua_get_hparams(nh, TAG_ANY(), TAG_END());
     run_a_until(ctx, nua_r_get_params, save_final_response);
 
     TEST(nua_info_event(ctx->a.saved_event, 
