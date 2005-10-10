@@ -117,7 +117,7 @@ struct event
 {
   struct event *next, **prev;
   nua_saved_event_t saved_event[1];
-  nua_event_data_t const *e;
+  nua_event_data_t const *data;
 };
 
 #define CONDITION_FUNCTION(name)		\
@@ -230,10 +230,12 @@ int save_event_in_list(struct context *ctx,
   *(e->prev = ep->events.tail) = e;
   ep->events.tail = &e->next;
 
-  if (nua_save_event(ep->nua, e->saved_event))
-    return 0;
-  else
+  if (!nua_save_event(ep->nua, e->saved_event))
     return -1;
+
+  e->data = nua_event_data(e->saved_event);
+  
+  return 0;
 }
 
 void nolog(void *stream, char const *fmt, va_list ap) {}
@@ -744,13 +746,14 @@ CONDITION_FUNCTION(receive_basic_call)
     return 0;
   }
 
+  if (event == nua_i_active || event == nua_i_terminated)
+    return 0;
+
   ep->nh = nh;
 
   save_event_in_list(ctx, ep);
 
-  if (event == nua_i_ack)
-
-  if (event == nua_i_state) 
+  if (event != nua_i_state) 
     return 0;
 
   tl_gets(tags, NUTAG_CALLSTATE_REF(state), TAG_END());
@@ -813,7 +816,7 @@ int test_basic_call(struct context *ctx)
 
   run_until(ctx, -1, save_events, -1, receive_basic_call);
 
-  TEST_1(e = ctx->b.events->head); TEST(e->data->e_event, nua_i_invite); 
+  TEST_1(e = ctx->b.events.head); TEST(e->data->e_event, nua_i_invite); 
 
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
   TEST(callstate(e), nua_callstate_received); /* RECEIVED */
