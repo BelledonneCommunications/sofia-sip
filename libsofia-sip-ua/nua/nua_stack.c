@@ -3424,7 +3424,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 			      TAG_NEXT(tags)) : NULL;
   sip = sip_object(msg);
 
-  if (nh->nh_soa) {
+  if (du && sip && nh->nh_soa) {
     soa_init_offer_answer(nh->nh_soa);
 
     if (sip->sip_payload)
