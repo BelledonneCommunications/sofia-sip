@@ -4269,7 +4269,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 			   status >= 300 
 			   ? nua_callstate_init 
 			   : status >= 200 
-			   ? nua_callstate_complete
+			   ? nua_callstate_completed
 			   : nua_callstate_early,
 			   autoanswer && sr->sr_offer_recv ? "offer" : 0,
 			   offer ? "offer" : answer ? "answer" : 0);

@@ -775,7 +775,7 @@ CONDITION_FUNCTION(receive_basic_call)
 				    "a=rtcp:5011"),
 		TAG_END());
     return 0;
-  case nua_callstate_complete:
+  case nua_callstate_completed:
     return 0;
   case nua_callstate_ready:
     fprintf(stderr, "%s.nua(%p): nua_bye()\n", ep->name, nh);
@@ -820,7 +820,7 @@ int test_basic_call(struct context *ctx)
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
   TEST(callstate(e), nua_callstate_early); /* EARLY */
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
-  TEST(callstate(e), nua_callstate_complete); /* COMPLETE */
+  TEST(callstate(e), nua_callstate_completed); /* COMPLETE */
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack); 
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
   TEST(callstate(e), nua_callstate_ready); /* READY */

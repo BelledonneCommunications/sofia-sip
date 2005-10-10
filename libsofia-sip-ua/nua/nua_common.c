@@ -244,7 +244,7 @@ char const *nua_callstate_name(enum nua_callstate state)
   case nua_callstate_completing: return "completing";
   case nua_callstate_received: return "received";
   case nua_callstate_early: return "early";
-  case nua_callstate_complete: return "complete";
+  case nua_callstate_completed: return "completed";
   case nua_callstate_ready: return "ready";
   case nua_callstate_terminating: return "terminating";
   case nua_callstate_terminated: return "terminated";
