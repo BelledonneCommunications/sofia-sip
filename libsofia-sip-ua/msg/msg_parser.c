@@ -2742,10 +2742,11 @@ int msg_header_remove_all(msg_t *msg, msg_pub_t *pub, msg_header_t *h)
  *
  * @param msg message object owning the fragment chain
  * @param pub public message structure to which header is added
- * @param replaces   old header to be removed
+ * @param replaced   old header to be removed
  * @param h   list of header(s) to be added
  */
-int msg_header_replace(msg_t *msg, msg_pub_t *pub, 
+int msg_header_replace(msg_t *msg, 
+		       msg_pub_t *pub, 
 		       msg_header_t *replaced,
 		       msg_header_t *h)
 {
