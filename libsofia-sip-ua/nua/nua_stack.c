@@ -2894,14 +2894,16 @@ static void signal_call_state_change(nua_handle_t *nh,
 	   TAG_IF(oa_sent, SOATAG_LOCAL_SDP_STR(local_sdp_str)),
 	   TAG_END());
 
-  if (next_state == nua_callstate_ready && ss->ss_state <= nua_callstate_ready) {
+  if (next_state == nua_callstate_ready &&
+      ss->ss_state <= nua_callstate_ready) {
     ua_event(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active", 
 	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 	     /* NUTAG_SOA_SESSION(nh->nh_soa), */
 	     TAG_END());
     ss->ss_active = 1;
   }
-  else if (next_state == nua_callstate_terminated || ss_state == nua_callstate_init) {
+  else if (next_state == nua_callstate_terminated || 
+	   ss_state == nua_callstate_init) {
     ua_event(nh->nh_nua, nh, NULL, nua_i_terminated, status, phrase, 
 	     TAG_END());
     ss->ss_active = 0;
@@ -6538,7 +6540,8 @@ ua_respond(nua_t *nua, nua_handle_t *nh,
   else if (ss->ss_srequest->sr_irq) {
     ua_event(nua, nh, NULL, nua_i_error,
 	     500, "Already Sent Final Response", TAG_END());
-  } else {
+  }
+  else {
     ua_event(nua, nh, NULL, nua_i_error,
 	     500, "Responding to a Non-Existing Request", TAG_END());
   }
