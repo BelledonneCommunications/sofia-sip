@@ -2874,14 +2874,14 @@ static void signal_call_state_change(nua_handle_t *nh,
   if (next_state > ss_state)
     ss_state = next_state;
   else if (next_state == nua_callstate_init && ss_state < nua_callstate_ready)
-    ss_state = nua_callstate_init;
+    ss_state = nua_callstate_init, next_state = nua_callstate_terminated;
 
   if (phrase == NULL)
     phrase = "Call state";
 
   ua_event(nh->nh_nua, nh, NULL, nua_i_state, 
 	   status, phrase, 
-	   NUTAG_CALLSTATE(ss_state),
+	   NUTAG_CALLSTATE(next_state),
 	   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa), 
 	   /* NUTAG_SOA_SESSION(nh->nh_soa), */
 	   TAG_IF(offer_recv, NUTAG_OFFER_RECV(offer_recv)),
