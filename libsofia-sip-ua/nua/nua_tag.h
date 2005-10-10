@@ -1077,9 +1077,11 @@ enum nua_callstate {
   nua_callstate_init,		/**< Initial state */
   nua_callstate_calling,	/**< INVITE sent */
   nua_callstate_proceeding,	/**< 18X received */
+  nua_callstate_completing,	/**< 2XX received */
   nua_callstate_received,	/**< INVITE received */
   nua_callstate_early,		/**< 18X sent (w/SDP) */
-  nua_callstate_ready,		/**< 2XX received or sent */
+  nua_callstate_completed,	/**< 2XX sent */
+  nua_callstate_ready,		/**< 2XX received, ACK sent, or vice versa */
   nua_callstate_terminating,	/**< BYE sent */
   nua_callstate_terminated	/**< BYE complete */
 };
