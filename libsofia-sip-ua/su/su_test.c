@@ -37,9 +37,6 @@
 
 #include "config.h"
 
-char const su_test_c_id[] = 
-"$Id: su_test.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -54,6 +51,7 @@ struct pinger;
 
 #include "su.h"
 #include "su_wait.h"
+#include "su_source.h"
 
 struct pinger {
   enum { PINGER = 1, PONGER = 2 } const sort;
@@ -67,6 +65,8 @@ struct pinger {
   int           rindex;
   su_time_t     when;
   su_sockaddr_t addr;
+  double        rtt_total;
+  int           rtt_n;
 };
 
 short opt_family = AF_INET;
@@ -132,7 +132,6 @@ do_ping(struct pinger *p, su_timer_t *t, void *p0)
 	     &p->addr.su_sa, su_sockaddr_size(&p->addr)) == -1) {
     su_perror("do_ping: send");
   }
-  su_timer_set(t, do_ping, p);
 
   if (opt_verbatim) {
     puts(buf);
@@ -150,12 +149,14 @@ do_rtt(struct pinger *p, su_wait_t *w, void *p0)
   char nbuf[1024];
   int n;
   su_time_t now = su_now();
-  su_duration_t rtt;
+  double rtt;
 
   assert(p0 == p);
   assert(p->sort == PINGER);
 
-  rtt = su_duration(now, p->when);
+  rtt = su_time_diff(now, p->when);
+
+  p->rtt_total += rtt, p->rtt_n++;
 
   su_wait_events(w, p->s);
 
@@ -167,9 +168,11 @@ do_rtt(struct pinger *p, su_wait_t *w, void *p0)
   buf[n] = 0;
 
   if (opt_verbatim)
-    printf("do_rtt: %d bytes from [%s]:%u: \"%s\", rtt = %lu ms\n",
+    printf("do_rtt: %d bytes from [%s]:%u: \"%s\", rtt = %lg ms\n",
 	   n, inet_ntop(su.su_family, SU_ADDR(&su), nbuf, sizeof(nbuf)),
-	   ntohs(su.su_sin.sin_port), buf, rtt);
+	   ntohs(su.su_sin.sin_port), buf, rtt / 1000);
+
+  do_ping(p, p->t, NULL);
 
   return 0;
 }
@@ -218,9 +221,6 @@ do_recv(struct pinger *p, su_wait_t *w, void *p0)
   }
   buf[n] = 0;
 
-  if (p->id)
-    puts("do_recv: already a pending reply");
-
   if (opt_verbatim)
     printf("do_recv: %d bytes from [%s]:%u: \"%s\" at %s\n",
 	   n, inet_ntop(su.su_family, SU_ADDR(&su), nbuf, sizeof(nbuf)),
@@ -228,12 +228,19 @@ do_recv(struct pinger *p, su_wait_t *w, void *p0)
 
   fflush(stdout);
 
+#if 0
+  if (p->id)
+    puts("do_recv: already a pending reply");
+
   if (su_timer_set(p->t, do_pong, p) < 0) {
     fprintf(stderr, "do_recv: su_timer_set() error\n");
     return 0;
   }
 
   p->id = 1;
+#else
+  do_pong(p, p->t, NULL);
+#endif
 
   return 0;
 }
@@ -389,11 +396,13 @@ time_test(void)
     printf("time_test: passed\n");
 }
 
+char const name[] = "su_test";
+
 void
-usage(char const *name)
+usage(int exitcode)
 {
-  fprintf(stderr, "usage: %s [-6vs] [pid]\n", name);
-  exit(1);
+  fprintf(stderr, "usage: %s [-6vsg] [pid]\n", name);
+  exit(exitcode);
 }
 
 /*
@@ -415,6 +424,8 @@ int main(int argc, char *argv[])
   su_timer_t *t;
   unsigned long sleeppid = 0;
 
+  int opt_glib = getenv("USE_SU_SOURCE") != NULL;
+
   struct pinger 
     pinger = { PINGER, "ping", 1 }, 
     ponger = { PONGER, "pong", 1 };
@@ -434,12 +445,16 @@ int main(int argc, char *argv[])
       opt_singlethread = 1;
       argv++;
     }
+    else if (strcmp(argv[1], "-g") == 0) {
+      opt_glib = 1;
+      argv++;
+    }
     else if (strlen(argv[1]) == strspn(argv[1], "0123456789")) {
       sleeppid = strtoul(argv[1], NULL, 10);
       argv++;
     }
     else {
-      usage(argv0);
+      usage(1);
     }
   }
 
@@ -449,17 +464,28 @@ int main(int argc, char *argv[])
 
   time_test();
 
-  root = su_root_create(NULL);
+  if (opt_glib) {
+    root = su_root_source_create(NULL); 
+
+    if (!root) perror("su_root_glib_create"), exit(1);
+
+    if (!g_source_attach(su_root_gsource(root), NULL)) 
+      perror("g_source_attach"), exit(1);
+  }
+  else {
+    root = su_root_create(NULL);
+    if (!root) perror("su_root_create"), exit(1);
+  }
   
-  su_root_threading(root, !opt_singlethread);
+  su_root_threading(root, 0 && !opt_singlethread);
 
   if (su_clone_start(root, ping, &pinger, do_init, do_destroy) != 0)
     perror("su_clone_start"), exit(1);
   if (su_clone_start(root, pong, &ponger, do_init, do_destroy) != 0)
     perror("su_clone_start"), exit(1); 
 
-  /* Guard timer, exiting after 3 seconds */
-  t = su_timer_create(su_root_task(root), 3000L);
+  /* Test timer, exiting after 200 milliseconds */
+  t = su_timer_create(su_root_task(root), 200L);
   if (t == NULL)
     su_perror("su_timer_create"), exit(1);
   su_timer_set(t, (su_timer_f)do_exit, NULL);
@@ -471,19 +497,22 @@ int main(int argc, char *argv[])
   su_root_run(root);
 
   su_clone_wait(root, ping);
-
   su_clone_wait(root, pong);
 
   su_timer_destroy(t);
 
+  if (pinger.rtt_n) {
+    printf("%s: %u pings, mean rtt=%g sec\n", name, 
+	   pinger.rtt_n, pinger.rtt_total / pinger.rtt_n);
+  }
   su_root_destroy(root);
 
   if (opt_verbatim)
     printf("%s: exiting\n", argv0); 
 
 #ifndef HAVE_WIN32
-  if (sleeppid)
-    kill(sleeppid, SIGTERM);
+   if (sleeppid)
+     kill(sleeppid, SIGTERM);
 #endif
 
   return 0;
