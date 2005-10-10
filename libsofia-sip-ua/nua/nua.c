@@ -690,7 +690,7 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
 
 /** Set handle-specific parameters.
  *
- * @param nua             Pointer to NUA stack object
+ * @param nh              Pointer to a NUA handle
  * @param tag, value, ... List of tagged parameters
  *
  * @return
