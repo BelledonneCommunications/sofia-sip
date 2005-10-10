@@ -1,3 +1,9 @@
+2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed memory leak in nta_agent_create()/nta_agent_destroy().
+
+    M ./libsofia-sip-ua/nta/nta.c -2 +2
+
 2005-10-04  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Added agent.pem and cafile.pem for TLS testing.

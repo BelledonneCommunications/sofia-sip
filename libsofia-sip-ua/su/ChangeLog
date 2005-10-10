@@ -1,3 +1,30 @@
+2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Using glib in the clone test, too.
+
+    M ./libsofia-sip-ua/su/run_su_test -4 +26
+    M ./libsofia-sip-ua/su/su_test.c -22 +51
+
+  * Fixed su_home_new() documentation.
+
+    M ./libsofia-sip-ua/su/su_alloc.c -4 +2
+
+  * Remove su_home_incref()/su_home_decref() - they were never implemented.
+
+    M ./libsofia-sip-ua/su/su_alloc.h -4
+
+  * Added more debugging information from SU_PORT_DECREF().
+
+    M ./libsofia-sip-ua/su/su_port.c -3 +5
+
+  * Added su_clone_start()/su_clone_wait() tests.
+
+    M ./libsofia-sip-ua/su/su_root_test.c -42 +104
+
+  * Fixed warning about getenv().
+
+    M ./libsofia-sip-ua/su/su_torture.c +1
+
 2005-10-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed bug in stack allocation.

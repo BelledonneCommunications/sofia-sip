@@ -1,3 +1,9 @@
+2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Dox fix to msg_header_replace().
+
+    M ./libsofia-sip-ua/msg/msg_parser.c -2 +3
+
 2005-08-15  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Makefile.am: Do not include msg_test_class.o in libmsg.

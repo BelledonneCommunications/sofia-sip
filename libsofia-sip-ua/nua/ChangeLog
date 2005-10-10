@@ -1,3 +1,140 @@
+2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed basic call test run. 
+
+    M ./libsofia-sip-ua/nua/test_nua.c -8 +11
+
+  * It is nua_callstate_completed, not nua_callstate_complete.
+
+    M ./libsofia-sip-ua/nua/nua_common.c -1 +1
+    M ./libsofia-sip-ua/nua/nua_stack.c -1 +1
+    M ./libsofia-sip-ua/nua/test_nua.c -2 +2
+	
+  * Running a basic call test case.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -24 +109
+
+  * Added separate nua_i_ack event. Generating it after ACK is received.
+
+    M ./libsofia-sip-ua/nua/nua.h -1 +2
+    M ./libsofia-sip-ua/nua/nua_common.c -1 +3
+    M ./libsofia-sip-ua/nua/nua_stack.c -11 +24
+    M ./libsofia-sip-ua/nua/nua_stack.h -1 +4
+
+  * ua_invite2() crashed if there was problem creating SIP message.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -1 +1
+
+  * Fixed indenting in nua_stack.c.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -3 +6
+
+  * Including nua_callstate_terminated in the NUTAG_CALLSTATE always when call
+  is terminated.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +2
+
+  * nua_handle_has_streaming() is obsolete.
+
+    M ./libsofia-sip-ua/nua/nua.h -2 +3
+
+  * Using nua_callstate_complete.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -8 +10
+
+  * Added nua_callstate_completing and nua_callstate_completed.
+
+    M ./libsofia-sip-ua/nua/nua_common.c +2
+    M ./libsofia-sip-ua/nua/nua_tag.h -1 +3
+
+  * Added nua_call_model @page.
+
+    M ./libsofia-sip-ua/nua/nua.docs -1 +355
+
+  * Used picture-mode here. 
+
+    M ./libsofia-sip-ua/nua/nua.docs -227 +227
+
+  * Fixed nua_set_hparams() documentation. 
+
+    M ./libsofia-sip-ua/nua/nua.c -1 +1
+
+  * Exposed struct event_s as nua_event_data_t.
+  Replaced clumsy nua_info_event() with nua_event_data(). Added tests for new
+  function.
+
+    M ./libsofia-sip-ua/nua/nua.c -31 +6
+    M ./libsofia-sip-ua/nua/nua.h -10 +14
+    M ./libsofia-sip-ua/nua/nua_stack.h -10
+    M ./libsofia-sip-ua/nua/test_nua.c -60 +182
+
+  * Fixed nua_set_hparams()/nua_get_hparams().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -4 +6
+    M ./libsofia-sip-ua/nua/test_nua.c -6 +5
+
+  * nua_set_(h)params() now also returns an event.
+
+    M ./libsofia-sip-ua/nua/nua.h -1 +1
+    M ./libsofia-sip-ua/nua/nua_stack.c -13 +33
+
+  * Removed superfluous tags from nua_tag.h and from documentation.
+
+    M ./libsofia-sip-ua/nua/nua.c -21 +19
+    M ./libsofia-sip-ua/nua/nua_tag.c -1
+    M ./libsofia-sip-ua/nua/nua_tag.h -19
+
+  * Renamed nua_set/get_handle_params() as nua_set/get_hparams().
+
+    M ./libsofia-sip-ua/nua/nua.c -4 +2
+    M ./libsofia-sip-ua/nua/nua.h -3 +3
+    M ./libsofia-sip-ua/nua/test_nua.c -2 +2
+
+  * Added test for nua_set_params() and nua_get_params().
+
+    M ./libsofia-sip-ua/nua/test_nua.c -75 +420
+
+  * Fixed ua_set_params(), added SIPTAG_FROM_STR() to ua_get_params().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -19 +23
+
+  * Fixed prototypes of nua_save_event() and nua_info_event().
+
+    M ./libsofia-sip-ua/nua/nua.c -1 +1
+    M ./libsofia-sip-ua/nua/nua.h -2 +2
+
+  * Using nua_any_refresher.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -7 +9
+
+  * Fixed user_agent handling in ua_set_params()
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +2
+
+  * Added NUTAG_RETRY_COUNT() and NUTAG_MAX_SUBSCRIPTIONS().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -4 +4
+    M ./libsofia-sip-ua/nua/nua_tag.c -1 +4
+    M ./libsofia-sip-ua/nua/nua_tag.h -4 +54
+
+  * Added nua_set_handle_params() and nua_get_handle_params().
+  Revised the internal handling of parameters. They can be now set at handle
+  or user agent level. Once a parameter is set at handle level, changes at
+  user agent level does modify its value within a handle.
+
+    M ./libsofia-sip-ua/nua/nua.c -7 +90
+    M ./libsofia-sip-ua/nua/nua.h -1 +8
+    M ./libsofia-sip-ua/nua/nua_common.c +2
+    M ./libsofia-sip-ua/nua/nua_stack.c -378 +486
+    M ./libsofia-sip-ua/nua/nua_stack.h -64 +113
+
+  * Silenced test run.
+  Disabled debug output from nua functions getting invalid input during test
+  run.
+
+    M ./libsofia-sip-ua/nua/nua.c -2 +2
+    M ./libsofia-sip-ua/nua/test_nua.c -5 +10
+
 2005-10-04  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* nua.h (nua_invite_respond): Removed, no implementation

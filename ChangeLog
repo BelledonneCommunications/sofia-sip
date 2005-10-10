@@ -1,3 +1,17 @@
+2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added --without-glib option, added SU_HAVE_GLIB in su_configure.h.
+
+    M ./configure.ac -5
+    M ./libsofia-sip-ua/su/Makefile.am +2
+    M ./libsofia-sip-ua/su/su_configure.h.in +2
+    M ./m4/sac-su2.m4 -1 +22
+
+  * Added --output (and --help) options to coverage script.
+
+    M ./libsofia-sip-ua/sofia.am -1 +1
+    M ./scripts/coverage -2 +25
+
 2005-10-06  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Renamed options as sip-options, sip_date as sip-date.
