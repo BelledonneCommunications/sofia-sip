@@ -312,8 +312,6 @@ void nua_cancel(nua_handle_t *, tag_type_t, tag_value_t, ...);
 /** Authenticate an operation. */
 void nua_authenticate(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
-int nua_handle_has_streaming(nua_handle_t const *nh);
-
 /** Redirect an operation. */
 void nua_redirect(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
@@ -342,6 +340,9 @@ void nua_destroy_event(nua_saved_event_t *saved);
 /***************************************
  * Obsolete functions (to-be-removed): *
  ***************************************/
+
+/** XXX/obsolete: Check for RTSP support. */ 
+int nua_handle_has_streaming(nua_handle_t const *nh);
 
 /** XXX/obsolete: Set media parameter. */ 
 void nua_set_media_param(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
