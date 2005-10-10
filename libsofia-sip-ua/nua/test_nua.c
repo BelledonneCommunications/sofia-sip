@@ -57,6 +57,7 @@ struct call;
 #include <sip_header.h>
 
 #include <su_log.h>
+#include <su_tag_io.h>
 
 extern su_log_t nua_log[];
 extern su_log_t su_log_default[];
@@ -97,6 +98,7 @@ struct context
   nua_t *next_stack, *last_stack;
 
   struct endpoint {
+    char name[4];
     condition_function *next_condition;
     nua_event_t next_event, last_event;
     nua_t *nua;
@@ -144,16 +146,20 @@ void a_callback(nua_event_t event,
 		sip_t const *sip,
 		tagi_t tags[])
 {
-  fprintf(stderr, "a.nua(%p): event %s status %u %s\n",
-	  nh, nua_event_name(event), status, phrase);
+  struct endpoint *ep = &ctx->a;
 
-  if ((ctx->a.next_event == -1 || ctx->a.next_event == event) &&
-      (ctx->a.next_condition == NULL ||
-       ctx->a.next_condition(event, status, phrase,
-			     nua, ctx, &ctx->a, nh, call, sip, tags)))
+  fprintf(stderr, "%s.nua(%p): event %s status %u %s\n",
+	  ep->name, nh, nua_event_name(event), status, phrase);
+  if (tstflags & tst_verbatim)
+    tl_print(stderr, "", tags);
+
+  if ((ep->next_event == -1 || ep->next_event == event) &&
+      (ep->next_condition == NULL ||
+       ep->next_condition(event, status, phrase,
+			  nua, ctx, ep, nh, call, sip, tags)))
     ctx->running = 0;
 
-  ctx->a.last_event = event;
+  ep->last_event = event;
   ctx->b.last_event = -1;
 }
 
@@ -164,18 +170,22 @@ void b_callback(nua_event_t event,
 		sip_t const *sip,
 		tagi_t tags[])
 {
-  fprintf(stderr, "a.nua(%p): event %s status %u %s\n",
-	  nh, nua_event_name(event), status, phrase);
+  struct endpoint *ep = &ctx->b;
 
-  if ((ctx->b.next_event == -1 || ctx->b.next_event == event) &&
-      (ctx->b.next_condition == NULL ||
-       ctx->b.next_condition(event, status, phrase,
-			     nua, ctx, &ctx->b, nh, call, sip, tags)))
+  fprintf(stderr, "%s.nua(%p): event %s status %u %s\n",
+	  ep->name, nh, nua_event_name(event), status, phrase);
+  if (tstflags & tst_verbatim)
+    tl_print(stderr, "", tags);
+
+  if ((ep->next_event == -1 || ep->next_event == event) &&
+      (ep->next_condition == NULL ||
+       ep->next_condition(event, status, phrase,
+			  nua, ctx, ep, nh, call, sip, tags)))
     ctx->running = 0;
 
 
-  ctx->b.last_event = -1;
-  ctx->b.last_event = event;
+  ep->last_event = -1;
+  ep->last_event = event;
 }
 
 void run_until(struct context *ctx,
@@ -220,7 +230,10 @@ int save_event_in_list(struct context *ctx,
   *(e->prev = ep->events.tail) = e;
   ep->events.tail = &e->next;
 
-  return nua_save_event(ep->nua, e->saved_event);
+  if (nua_save_event(ep->nua, e->saved_event))
+    return 0;
+  else
+    return -1;
 }
 
 void nolog(void *stream, char const *fmt, va_list ap) {}
@@ -651,6 +664,7 @@ int test_init(struct context *ctx, char *argv[])
   BEGIN();
   nua_event_data_t const *e;
   sip_contact_t const *m = NULL;
+  sip_from_t const *a = NULL;
 
   ctx->root = su_root_create(ctx); TEST_1(ctx->root);
 
@@ -660,30 +674,46 @@ int test_init(struct context *ctx, char *argv[])
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
 			  NUTAG_URL("sip:*:*"),
+			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 			  TAG_END());
   TEST_1(ctx->a.nua);
 
   nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
   run_a_until(ctx, nua_r_get_params, save_final_response);
   TEST_1(e = nua_event_data(ctx->a.saved_event));
-  TEST(tl_gets(e->e_tags, NTATAG_CONTACT_REF(m), TAG_END()), 1); TEST_1(m);
+  TEST(tl_gets(e->e_tags,
+	       NTATAG_CONTACT_REF(m),
+	       SIPTAG_FROM_REF(a),
+	       TAG_END()), 2); TEST_1(m);
   TEST_1(ctx->a.contact = sip_contact_dup(ctx->home, m));
+  TEST_1(ctx->a.address = sip_to_dup(ctx->home, a));
   nua_destroy_event(ctx->a.saved_event);
 	 
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
 			  SIPTAG_FROM_STR("sip:bob@example.org"),
 			  NUTAG_URL("sip:*:*"),
+			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
 			  TAG_END());
   TEST_1(ctx->b.nua);
 
   nua_get_params(ctx->b.nua, TAG_ANY(), TAG_END());
   run_b_until(ctx, nua_r_get_params, save_final_response);
   TEST_1(e = nua_event_data(ctx->b.saved_event));
-  TEST(tl_gets(e->e_tags, NTATAG_CONTACT_REF(m), TAG_END()), 1); TEST_1(m);
-  TEST_1(ctx->a.contact = sip_contact_dup(ctx->home, m));
-  nua_destroy_event(ctx->a.saved_event);
+  TEST(tl_gets(e->e_tags,
+	       NTATAG_CONTACT_REF(m),
+	       SIPTAG_FROM_REF(a),
+	       TAG_END()), 2); TEST_1(m);
+  TEST_1(ctx->b.contact = sip_contact_dup(ctx->home, m));
+  TEST_1(ctx->b.address = sip_to_dup(ctx->home, a));
+  nua_destroy_event(ctx->b.saved_event);
 
   END();
+}
+
+CONDITION_FUNCTION(save_events)
+{
+  save_event_in_list(ctx, ep);
+  return 0;
 }
 
 /* Basic call:
@@ -702,13 +732,25 @@ int test_init(struct context *ctx, char *argv[])
    |			|
 */
 
-CONDITION_FUNCTION(basic_call_at_b)
+CONDITION_FUNCTION(receive_basic_call)
 {
   int state = nua_callstate_init;
 
+  if (ep->nh && ep->nh != nh) {
+    fprintf(stderr, "%s.nua(%p): nua_respond() status %u %s\n",
+	    ep->name, nh, SIP_486_BUSY_HERE);
+    nua_respond(nh, SIP_486_BUSY_HERE, TAG_END());
+    nua_handle_destroy(nh);
+    return 0;
+  }
+
+  ep->nh = nh;
+
   save_event_in_list(ctx, ep);
 
-  if (event != nua_i_state) 
+  if (event == nua_i_ack)
+
+  if (event == nua_i_state) 
     return 0;
 
   tl_gets(tags, NUTAG_CALLSTATE_REF(state), TAG_END());
@@ -721,12 +763,22 @@ CONDITION_FUNCTION(basic_call_at_b)
   case nua_callstate_proceeding:
     return 0;
   case nua_callstate_received:
+    fprintf(stderr, "%s.nua(%p): nua_respond() status %u %s\n",
+	    ep->name, nh, SIP_180_RINGING);
     nua_respond(nh, SIP_180_RINGING, TAG_END());
-    nua_respond(nh, SIP_200_OK, TAG_END());
     return 0;
   case nua_callstate_early:
+    fprintf(stderr, "%s.nua(%p): nua_respond() status %u %s\n",
+	    ep->name, nh, SIP_200_OK);
+    nua_respond(nh, SIP_200_OK, 
+		SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8\n"
+				    "a=rtcp:5011"),
+		TAG_END());
+    return 0;
+  case nua_callstate_complete:
     return 0;
   case nua_callstate_ready:
+    fprintf(stderr, "%s.nua(%p): nua_bye()\n", ep->name, nh);
     nua_bye(nh, TAG_END());
     return 0;
   case nua_callstate_terminating:
@@ -738,13 +790,44 @@ CONDITION_FUNCTION(basic_call_at_b)
   }
 }
 
+int callstate(struct event const *e)
+{
+  tagi_t const *ti = tl_find(e->data->e_tags, nutag_callstate);
+  return ti ? ti->t_value : -1;
+}
 
 int test_basic_call(struct context *ctx)
 {
   BEGIN();
 
-  ctx->a.nh = nua_handle(ctx->a.nua, 0, SIPTAG_TO(ctx->b.address), TAG_END());
+  struct endpoint *ep = &ctx->a;
+  struct event *e;
 
+  TEST_1(ep->nh = nua_handle(ep->nua, 0, 
+			     SIPTAG_TO(ctx->b.address), TAG_END()));
+
+  fprintf(stderr, "%s.nua(%p): nua_invite()\n", ep->name, ep->nh);
+  nua_invite(ep->nh, NUTAG_URL(ctx->b.contact->m_url), 
+	     SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	     TAG_END());
+
+  run_until(ctx, -1, save_events, -1, receive_basic_call);
+
+  TEST_1(e = ctx->b.events->head); TEST(e->data->e_event, nua_i_invite); 
+
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
+  TEST(callstate(e), nua_callstate_received); /* RECEIVED */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
+  TEST(callstate(e), nua_callstate_early); /* EARLY */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
+  TEST(callstate(e), nua_callstate_complete); /* COMPLETE */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
+  TEST(callstate(e), nua_callstate_ready); /* READY */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_bye); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
+  TEST(callstate(e), nua_callstate_terminated); /* TERMINATED */
+  
   END();
 }
 
@@ -792,7 +875,9 @@ int main(int argc, char *argv[])
 
   struct context ctx[1] = {{{ SU_HOME_INIT(ctx) }}};
 
+  ctx->a.name[0] = 'a';
   ctx->a.events.tail = &ctx->a.events.head;
+  ctx->b.name[0] = 'b';
   ctx->b.events.tail = &ctx->b.events.head;
 
   for (i = 1; argv[i]; i++) {
