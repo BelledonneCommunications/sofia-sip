@@ -825,7 +825,361 @@ void app_r_shutdown(int           status,
 
 */
 
-/**@var nua_event_e 
+/** @page nua_call_model NUA Call Model
+
+The NUA call follows a relative simple state model presented below. The call
+model is used to present changes in call: when media starts to flow, when
+call is considered established, when call is terminated.
+
+In the figure below, a simplified state diagram for a SIP call is
+presented. The application will receive an #nua_i_state event indicating
+change in call state after it has occurred. The states in NUA call model are
+represented by @e enum #nua_callstate, and the current value of state is
+included in tag NUTAG_CALLSTATE() with the #nua_i_state event.
+
+The SDP Offer/Answer negotiation status is also included in the event. The
+#nua_i_state event is not sent, however, if the change is invoked by by
+application calling API functions like nua_bye(), and there is no change in
+SDP offer/answer status.
+
+The labels "input/output" along each transition indicates SIP messages
+received from and sent to network, for instance, state transition
+"INVITE/100" occurs when a SIP @b INVITE request is received, and it is
+immediately returned a 100 (<i>Trying</i>) response. Label "2XX" means any
+200-series response, e.g., <i>200 OK</i> or <i>202 Accepted</i>). Notation
+"[3456]XX" means any final error response in 300, 400, 500, or 600
+series. Label "18X" means any provisional response from 101 to 199, most
+typically 180 (<i>Ringing</i>) or 183 (<i>Session Progress</i>).
+
+@code
+                    +---------------+
+             +------|     INIT      |-----+
+    INVITE/- |      +---------------+     | INVITE/100
+             V                            |
+       +------------+               +------------+
+  +----|  CALLING   |           +---|  RECEIVED  |--+
+  |    +------------+           |   +------------+  |
+  |          |                  |         |         |
+  |          | 18X/-            |         | -/18X   |
+  |          V                  |         V         |
+  |    +------------+           |   +------------+  |
+  |<---| PROCEEDING |--+        |   |   EARLY    |->|
+  |    +------------+  |        |   +------------+  |  -/[3456]XX
+  |          :         |        |         |         |
+  |          |  2XX/-  |        |  -/2XX  |  -/2XX  |    or
+  |          V         |        |         V         |
+  |    + - - - - - -+  |        |   +------------+  |  CANCEL/200,487
+  |    : COMPLETING :  |        +-->|  COMPLETE  |  |
+  |    + - - - - - -+  |            +------------+  |
+  |          :         |                  |         |
+  |          | -/ACK   |  2XX/ACK   ACK/- |         |
+  |          :         |                  |         |
+  |          :         V                  |         |
+  |          :      +---------------+     |         |
+  |          + - - >|     READY     |<----+         |
+  |                 +---------------+               |
+  |                   |           |                 |
+  |          BYE/200  |           | -/BYE           |
+  |                   |           |                 |
+  |                   |           V                 |
+  |                   |   +--------------+          |
+  | [3456]XX/ACK      |   | TERMINATING  |          |
+  |                   |   +--------------+          |
+  |                   |           |                 |
+  |                   |           | [23456]XX/-     |
+  |                   V           V                 |
+  |                 +---------------+               |
+  +---------------->|  TERMINATED   |<--------------+
+                    +---------------+
+@endcode
+
+@par Detailed Client Call Model
+
+The detailed call model at client side is presented below. This model does
+not include the extensions like @b 100rel or @b UPDATE.
+
+@code
+                        +------------+
+                        |    INIT    |
+                        +------------+
+                              |
+                             (1) nua_invite/INVITE
+                              |
+                              V
+                        +------------+
+                        |            |- - +
+    +-------------------|  CALLING   |   (8) nua_cancel/CANCEL
+    |                   |            |<- -+
+    |                   +------------+
+    |                         |
+    |                        (2) 18X/-
+    |                         |
+    |                         V
+    |                   +------------+
+    |                   |            |- - +
+    |                   |            |   (8) nua_cancel/CANCEL
+    |<------------------| PROCEEDING |<- -+
+    |                   |            |
+    |                   |            |- - - - - -+
+    |                   +------------+           :
+    |                    :          |            :
+   (7) [3456]XX/ACK     (5) 2XX/-  (3) 2XX/ACK  (9) nua_bye/BYE
+    |                    :          |            :
+    |                    V          |            :
+    |              + - - - - - -+   |            :
+    |     + - - - -: COMPLETING :  (X) - +       :
+    |     :        + - - - - - -+   |    :       :
+    |     :              :          |    :       :
+    |     : nua_ack      : nua_ack  |    :       :
+    |    (9) /ACK+BYE   (6) /ACK    |    :       :
+    |     :              :          |    :       :
+    |     :             (X)- - - - -|- - +       :
+    |     :              :          |    :       :
+    |     :              V          V    :       :
+    |     :             +------------+   :       :
+    |     :             |            |   :       :
+    |     :             |   READY    |  (4)-/BYE :
+    |     :             |            |   :       :
+    |     :             +------------+   :       :
+    |     :          		         :       :
+    |     :          		         :       :
+    |     :          		         :       :
+    |     :          		         V       V
+    |     :          		      +-------------+
+    |     + - - - - - - - - - - - - ->| TERMINATING |
+    |                		      +-------------+
+    |                		             |
+    |                		             | [23456]XX/-
+    |                		             |
+    |                		             |
+    |                   +------------+       |
+    +------------------>| TERMINATED |<------+
+                        +------------+
+@endcode
+
+The detailed description of state transitions on the client side is as
+follows:
+
+-# Entering @b calling state: \n
+   Client application invokes nua_invite(). By default, stack runs
+   the initial offer/answer step and sends @b INVITE request with the SDP
+   offer.
+-# Entering @b proceeding state: \n
+   Stack receives a 18X response (a provisional response between 101
+   and 199). It establishes an early dialog with server.  If the provisional
+   response contains an SDP answer, a session with early media is
+   established. The caller can be listen to, for instance, ring tone or
+   announcements about call progress using the early media session.
+-# Entering @b ready state: \n
+   Client receives a 2XX response (usually <i>200 OK</i>) and sends an
+   ACK request. If the initial offer was sent with INVITE, the answer must
+   be included with 2XX response at latest. If the client has not received
+   the SDP answer, it sends immediately a BYE request after sending the ACK
+   request and enters the @b terminating state.
+-# Error entering @b ready state: \n
+   If there is an failure entering the @b ready state (because of SDP
+   negotiation or media failure), the stack will automatically terminate the
+   call by sending the BYE request towards the server.
+-# Entering @b completing state: \n
+   Client receives 2XX series response (usually <i>200 OK</i>) and forwards
+   it to the application. This state transition happens only when the
+   @ref NUTAG_AUTOACK() "auto-ack"
+   mode is explicitly turned off by application.
+-# Entering @b ready state: \n
+   Client completes offer/answer exchange and sends the ACK request to the
+   server.
+-# Entering @b terminated state: \n
+   Call is terminated when client receives a final error response (from 300
+   to 699) to its INVITE request. In this case, the underlying transaction
+   engine takes care of sending ACK even when application-driven-ack mode is
+   requested by application.
+-# Canceling call in @b calling or @b proceeding state: \n
+   Client can ask server to cancel the call attempt while in in @b calling
+   or @b proceeding state. There is no direct call state transition caused
+   by nua_cancel(). However, the server will return a <i>487 Request
+   Terminated</i> response when receiving CANCEL and call is terminated as in
+   previous item.
+-# Entering @b terminated state: \n
+   Call can be terminated by sending a @b BYE request after entering
+   proceeding state. If the stack is in @b completing state (it has already
+   received 2XX response), it will have to @b ACK the final response, too.
+
+@par Detailed Server-Side Call Model
+
+The detailed call model at server side is presented below. This model does
+not include the extensions like @b 100rel or @b UPDATE.
+
+@code
+
+                     +--------------------------------+
+                     |              INIT              |
+                     +--------------------------------+
+                       |              :             :
+                       |              :             :
+                      (1) INVITE/100  :             :
+                       |              :             :
+                       |              :             :
+                       V              :             :
+                    +------------+    :             :
+                    |            |    :             :
+     +--------------|  RECEIVED  |    :             :
+     |              |            |    :             :
+     |              +------------+    :             :
+     |                          |     :             :
+     |         nua_respond/18X (2)  (2b) INVITE/18X :
+     |                          |     :             :
+     |                          V     V             :
+     |                         +------------+       :
+     |<------------------------|            |       :
+     |                         |    EARLY   |       :
+     |              +----------|            |       :
+     |              |          +------------+       :
+     | nua_respond/ |                      |        :
+    (5) /[3456]XX   |     nua_respond/2XX (3)     (3b) INVITE/2XX
+     |              |                      |        :
+     |              |                      V        V
+     |              |                   +-------------+
+     |              |                   |             |
+     |              |             +-----|   COMPLETE  |- - +
+     |              |             |     |             |    :
+     |              |             |     +-------------+    :
+     |              |             |            |           :
+    (6) CANCEL/487 (7) BYE/487    |           (4) ACK/-    :
+     |              |             |            |           :
+     |              |             |            V           :
+     |              |             |     +-------------+    :
+     |              |             |     |             |    :
+     |              |             |     |    READY    |    :
+     |              |             |     |             |    :
+     |              |             |     +-------------+    :
+     |              |             |                        :
+     |              |            (8) BYE/200              (9) timeout/BYE
+     |              |             |                        :
+     |              |             |     +-------------+    :
+     |              |             |     | TERMINATING |<- -+
+     |              |             |     +-------------+
+     |              |             |            |
+     |              |             |            | [23456]XX/-
+     |              |             |            |
+     |              |             |            V
+     |              V             V     +-------------+
+     +--------------------------------->| TERMINATED  |
+                                        +-------------+
+@endcode
+
+The detailed description of state transitions on the server side is as
+follows:
+-# Entering @b received state: \n
+   When a @b INVITE request for a new call is received, the server creates a
+   fresh call handle for it, responds to the client with <i>100 Trying</i>
+   and enters in the @b received state by default. It saves the possible SDP
+   offer included in @b INVITE and passes it to the application. (Optionally,
+   the stack can return with 18X or 2XX response immediately and enter)
+-# Entering @b early state: \n
+   When server returns a preliminary response for the initial @b INVITE request,
+   a early dialog is created. The server can also send an SDP answer with
+   the preliminary answer and establish an early session, too. It can use
+   the early session to send early media, e.g., ringing tone and
+   announcements towards the client.
+-# Entering @b complete state: \n
+   When the server sends a 2XX response towards the client, it accepts the
+   call. The @b INVITE transaction is now considered complete but unconfirmed
+   at the server side. If the offer was sent in @b INVITE request, the answer
+   should be included in the 2XX response.
+-# Entering @b ready state: \n
+   The ready state is entered at server side after receiving ACK request
+   from client, indicating that the client have received server's 2XX
+   response. The call is ready, the @b INVITE transaction is confirmed.
+-# Entering @b terminating state: \n
+   The server rejects the call by sending a 3XX, 4XX, 5XX, or 6XX response
+   towards the client. The underlying transaction engine takes care of
+   retransmitting the response when needed. It consumes the ACK response
+   sent by the client, too.
+-# Entering @b terminating state after receiving @b CANCEL: \n
+   The client can cancel the call attempt before it is completed with a @b
+   CANCEL request. Server returns a <i>200 OK</i> response to @b CANCEL and
+   a <i>487 Request Terminated</i> response to the @b INVITE transaction and
+   the call is terminated.
+-# Entering @b terminated state after receiving @b BYE: \n
+   The client can terminate an early session with a @b BYE request, too. Like
+   in the @b CANCEL case above, the server will terminate call immediately,
+   return a <i>200 OK</i> response to @b BYE and a <i>487 Request
+   Terminated</i> response to the @b INVITE transaction.
+-# Entering @b terminated state by receiving @b BYE before @b ACK: \n
+   The client can terminate a completed dialog with a @b BYE request. Server
+   terminates call immediately, returns a <i>200 OK</i> response to @b BYE
+   and lets the underlying transaction engine to take care of consuming @b
+   ACK.
+-# Entering @b terminating state after a timeout: \n
+   If the server does not receive an @b ACK request in timely fashion, it will
+   terminate the call by sending a @b BYE request to client.
+
+@par Model for Modifying and Terminating Call
+
+After the SIP session has been established, it can be further modified by @b
+INVITE transactions, initiated by either the original client or the original
+server. These so-called re-INVITE transactions can be used to upgrade
+session (add new media to it), put the session on hold or resume a held
+call.
+
+A session can be terminated with a @b BYE request at any time.
+
+If any in-dialog request fail with certain response codes, the session can
+be considered terminated, too. These response codes are documented with
+sip_response_terminates_dialog(). In some cases, the session should be
+terminated gracefully by sending a @b BYE request.
+
+
+*/
+
+/*
+For reference:
+
+                    +---------------+
+             +-(1)--|     INIT      |-----+
+    INVITE/- |      +---------------+    (A) INVITE/100
+             V                            |
+       +------------+               +------------+
+  +----|  CALLING   |           +---|  RECEIVED  |--+
+  |    +------------+           |   +------------+  |
+  |          |                  |         |         |
+  |         (2) 18X/-           |        (B) -/18X  |
+  |          V                  |         V         |
+  |    +------------+           |   +------------+  |
+  |<---| PROCEEDING |--+        |   |   EARLY    |->|
+  |    +------------+  |        |   +------------+ (F) -/[3456]XX
+  |          :         |        |         |         |
+  |         (4) 2XX/-  |       (E) -/2XX (C) -/2XX  |    or
+  |          V         |        |         V         |
+  |    + - - - - - -+  |        |   +------------+ (G) CANCEL/200,487
+  |    : COMPLETING :  |        +-->|  COMPLETE  |  |
+  |    + - - - - - -+  |            +------------+  |
+  |          :         |                  |    :    |
+  |         (5)-/ACK  (3) 2XX/ACK   ACK/-(D)   :    |
+  |          :         |                  |    :    |
+  |          :         V                  |    :    |
+  |          :      +---------------+     |    :    |
+  |          + - - >|     READY     |<----+    :    |
+  |                 +---------------+          :    |
+  |                   |     |                  :    |
+  |          BYE/200 (i)  (ii) -/BYE  timeout/ :    |
+  |                   |     |             BYE (H)   |
+  |                   |     V                  :    |
+  |                   |   +--------------+     :    |
+ (6) [3456]XX/ACK     |   | TERMINATING  |<- - +    |
+  |                   |   +--------------+          |
+  |                   |           |                 |
+  |                   |         (iii) [23456]XX/-   |
+  |                   V           V                 |
+  |                 +---------------+               |
+  +---------------->|  TERMINATED   |<--------------+
+                    +---------------+
+                            |
+                            V
+                           INIT
+
+*/
+/**@var nua_event_e
  *
  * @brief Events
  *
