@@ -55,16 +55,6 @@
 
 typedef struct event_s event_t;
 
-struct event_s {
-  nua_handle_t *e_nh;
-  int           e_event;
-  short         e_always;
-  short         e_status;
-  char const   *e_phrase;
-  msg_t        *e_msg;
-  tagi_t        e_tags[1];
-};
-
 #define       NONE ((void *)-1)
 
 enum nh_kind {

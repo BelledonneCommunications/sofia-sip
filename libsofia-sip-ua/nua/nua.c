@@ -196,10 +196,11 @@ nua_t *nua_create(su_root_t *root,
   if (callback == NULL)
     return (void)(errno = EFAULT), NULL;
 
+  if (root == NULL)
+    return (void)(errno = EFAULT), NULL;
+
   if ((nua = su_home_new(sizeof(*nua)))) {
     ta_list ta;
-
-    assert(root); /* for now, later we can create an own root for API */
 
     su_home_threadsafe(nua->nua_home);
     nua->nua_api_root = root;
@@ -1516,36 +1517,10 @@ int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1])
   return 0;
 }
 
-/** Get information from saved event */
-int nua_info_event(nua_saved_event_t const saved[1],
-		    nua_event_t return_event[1],
-		    int return_status[1], 
-		    char const *return_phrase[1],
-		    nua_magic_t *return_magic[1],
-		    nua_handle_t *return_handle[1], 
-		    nua_hmagic_t *return_hmagic[1],
-		    sip_t const *return_sip[1],
-		    tagi_t const *return_tags[1])
+/** Get event data */
+nua_event_data_t const *nua_event_data(nua_saved_event_t const saved[1])
 {
-  if (su_msg_is_non_null(saved)) {
-    event_t *e = su_msg_data(saved);
-    nua_handle_t *nh = e->e_nh;
-
-    if (nh && nh == nh->nh_nua->nua_handles)
-      nh = NULL;
-
-    if (return_event)  *return_event = e->e_event;
-    if (return_status) *return_status = e->e_status;
-    if (return_phrase) *return_phrase = e->e_phrase;
-    if (return_magic)  *return_magic = nh ? nh->nh_magic : NULL;
-    if (return_handle) *return_handle = nh;
-    if (return_sip)    *return_sip = e->e_msg ? sip_object(e->e_msg) : NULL;
-    if (return_tags)   *return_tags = e->e_tags;
-
-    return 1;
-  }
-
-  return 0;
+  return saved ? su_msg_data(saved) : NULL;
 }
 
 /** Destroy saved event */

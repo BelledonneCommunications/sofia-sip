@@ -165,6 +165,16 @@ typedef enum nua_event_e {
 
 } nua_event_t;
 
+typedef struct event_s {
+  nua_handle_t *e_nh;
+  int           e_event;
+  short         e_always;
+  short         e_status;
+  char const   *e_phrase;
+  msg_t        *e_msg;
+  tagi_t        e_tags[1];
+} nua_event_data_t;
+
 /** NUA API version */
 #define NUA_VERSION "2.0"
 /** NUA module version */
@@ -320,19 +330,13 @@ void nua_respond(nua_handle_t *nh,
 #endif
 typedef NUA_SAVED_EVENT_T nua_saved_event_t;
 
+/** Save last nua event */
 int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1]);
 
-/*# Get information from saved event */
-int nua_info_event(nua_saved_event_t const saved[1],
-		   nua_event_t return_event[1],
-		   int return_status[1], 
-		   char const *return_phrase[1],
-		   nua_magic_t *return_magic[1],
-		   nua_handle_t *return_handle[1], 
-		   nua_hmagic_t *return_hmagic[1],
-		   sip_t const *return_sip[1],
-		   tagi_t const *return_tags[1]);
+/** Get information from saved event */
+nua_event_data_t const *nua_event_data(nua_saved_event_t const saved[1]);
 
+/** Destroy a save nua event */
 void nua_destroy_event(nua_saved_event_t *saved);
 
 /***************************************

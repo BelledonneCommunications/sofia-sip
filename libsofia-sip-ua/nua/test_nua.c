@@ -51,6 +51,7 @@ struct call;
 
 #include "nua.h"
 #include "nua_tag.h"
+#include "sip_status.h"
 
 #include <sdp.h>
 #include <sip_header.h>
@@ -99,10 +100,42 @@ struct context
     condition_function *next_condition;
     nua_event_t next_event, last_event;
     nua_t *nua;
+    sip_contact_t *contact;
+    sip_from_t *address;
     nua_handle_t *nh;
     nua_saved_event_t saved_event[1];
+    
+    struct {
+      struct event *head, **tail;
+    } events;
   } a, b;
 };
+
+struct event 
+{
+  struct event *next, **prev;
+  nua_saved_event_t saved_event[1];
+  nua_event_data_t const *e;
+};
+
+#define CONDITION_FUNCTION(name)		\
+  int name(nua_event_t event,			\
+	   int status, char const *phrase,	\
+	   nua_t *nua, struct context *ctx,	\
+	   struct endpoint *ep,			\
+	   nua_handle_t *nh, struct call *call, \
+	   sip_t const *sip,			\
+	   tagi_t tags[])
+
+CONDITION_FUNCTION(condition_final_response){ return status >= 200; }
+CONDITION_FUNCTION(never){ return 0; }
+CONDITION_FUNCTION(save_final_response)
+{
+  if (status < 200)
+    return 0;
+  nua_save_event(ep->nua, ep->saved_event);
+  return 1;
+}
 
 void a_callback(nua_event_t event,
 		int status, char const *phrase,
@@ -137,11 +170,11 @@ void b_callback(nua_event_t event,
   if ((ctx->b.next_event == -1 || ctx->b.next_event == event) &&
       (ctx->b.next_condition == NULL ||
        ctx->b.next_condition(event, status, phrase,
-			     nua, ctx, &ctx->a, nh, call, sip, tags)))
+			     nua, ctx, &ctx->b, nh, call, sip, tags)))
     ctx->running = 0;
 
 
-  ctx->a.last_event = -1;
+  ctx->b.last_event = -1;
   ctx->b.last_event = event;
 }
 
@@ -165,7 +198,7 @@ int run_a_until(struct context *ctx,
 		nua_event_t a_event,
 		condition_function *a_condition)
 {
-  run_until(ctx, a_event, a_condition, -1, NULL);
+  run_until(ctx, a_event, a_condition, -1, never);
   return ctx->a.last_event;
 }
 
@@ -173,26 +206,21 @@ int run_b_until(struct context *ctx,
 		nua_event_t b_event,
 		condition_function *b_condition)
 {
-  run_until(ctx, -1, NULL, b_event, b_condition);
+  run_until(ctx, -1, never, b_event, b_condition);
   return ctx->b.last_event;
 }
 
-#define CONDITION_FUNCTION(name)		\
-  int name(nua_event_t event,			\
-	   int status, char const *phrase,	\
-	   nua_t *nua, struct context *ctx,	\
-	   struct endpoint *ep,			\
-	   nua_handle_t *nh, struct call *call, \
-	   sip_t const *sip,			\
-	   tagi_t tags[])
-
-CONDITION_FUNCTION(condition_final_response){ return status >= 200; }
-CONDITION_FUNCTION(save_final_response)
+int save_event_in_list(struct context *ctx,
+		       struct endpoint *ep)
 {
-  if (status < 200)
-    return 0;
-  nua_save_event(ep->nua, ep->saved_event);
-  return 1;
+  struct event *e = su_zalloc(ctx->home, sizeof *e);
+
+  if (!e) { perror("su_zalloc"), abort(); }
+  
+  *(e->prev = ep->events.tail) = e;
+  ep->events.tail = &e->next;
+
+  return nua_save_event(ep->nua, e->saved_event);
 }
 
 void nolog(void *stream, char const *fmt, va_list ap) {}
@@ -254,8 +282,7 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(!nua_handle_home(NULL));
   TEST_1(!nua_save_event(NULL, NULL));
-  TEST_1(!nua_info_event(NULL, NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, NULL));
+  TEST_1(!nua_event_data(NULL));
   TEST_VOID(nua_destroy_event(NULL));
 
   {
@@ -264,34 +291,11 @@ int test_api_errors(struct context *ctx)
     memset(event, 0, sizeof event);
 
     TEST_1(!nua_save_event(NULL, event));
-    TEST_1(!nua_info_event(event, NULL, NULL, NULL, NULL,
-			   NULL, NULL, NULL, NULL));
+    TEST_1(!nua_event_data(event));
     TEST_VOID(nua_destroy_event(event));
   }
 
   su_log_set_level(nua_log, level);
-
-  END();
-}
-
-int test_init(struct context *ctx, char *argv[])
-{
-  BEGIN();
-
-  ctx->root = su_root_create(ctx); TEST_1(ctx->root);
-
-  /* Disable threading by command line switch? */
-  su_root_threading(ctx->root, 0);
-
-  ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
-			  NUTAG_URL("sip:*:*"),
-			  TAG_END());
-  TEST_1(ctx->a.nua);
-
-  ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
-			  NUTAG_URL("sip:*:*"),
-			  TAG_END());
-  TEST_1(ctx->b.nua);
 
   END();
 }
@@ -306,6 +310,14 @@ int test_params(struct context *ctx)
   nua_handle_t *nh;
 
   su_home_auto(tmphome, sizeof(tmphome));
+
+  ctx->root = su_root_create(ctx); TEST_1(ctx->root);
+
+  ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
+			  SIPTAG_FROM_STR("sip:alice@example.com"),
+			  NUTAG_URL("sip:*:*"),
+			  TAG_END());
+  TEST_1(ctx->a.nua);
 
   from = sip_from_make(tmphome, Alice);
 
@@ -384,7 +396,7 @@ int test_params(struct context *ctx)
     int path_enable = -1;
 
     sip_allow_t const *allow = NONE;
-    char const   *allow_str = "NONE";
+    char const *allow_str = "NONE";
     sip_supported_t const *supported = NONE;
     char const *supported_str = "NONE";
     sip_user_agent_t const *user_agent = NONE;
@@ -395,14 +407,13 @@ int test_params(struct context *ctx)
     url_string_t const *registrar = NONE;
 
     int n;
-    nua_event_t event = nua_i_error;
-    tagi_t const *tags = NULL;
+    nua_event_data_t const *e;
 
-    TEST(nua_info_event(ctx->a.saved_event, 
-			&event, NULL, NULL, NULL, NULL, NULL, NULL, &tags), 1);
-    TEST(event, nua_r_get_params);
+    TEST_1(e = nua_event_data(ctx->a.saved_event));
 
-    n = tl_gets(tags,
+    TEST(e->e_event, nua_r_get_params);
+
+    n = tl_gets(e->e_tags,
 	       	SIPTAG_FROM_REF(from),
 	       	SIPTAG_FROM_STR_REF(from_str),
 
@@ -484,7 +495,9 @@ int test_params(struct context *ctx)
 
     TEST_S(url_as_string(tmphome, registrar->us_url), 
 	   "sip:sip.wonderland.org");
+
   }
+
   nua_destroy_event(ctx->a.saved_event);
 
   {
@@ -527,17 +540,16 @@ int test_params(struct context *ctx)
     url_string_t const *registrar = NONE;
 
     int n;
-    nua_event_t event = nua_i_error;
-    tagi_t const *tags = NULL;
+    nua_event_data_t const *e;
 
     nua_get_hparams(nh, TAG_ANY(), TAG_END());
     run_a_until(ctx, nua_r_get_params, save_final_response);
 
-    TEST(nua_info_event(ctx->a.saved_event, 
-			&event, NULL, NULL, NULL, NULL, NULL, NULL, &tags), 1);
-    TEST(event, nua_r_get_params);
+    TEST_1(e = nua_event_data(ctx->a.saved_event));
 
-    n = tl_gets(tags,
+    TEST(e->e_event, nua_r_get_params);
+
+    n = tl_gets(e->e_tags,
 	       	SIPTAG_FROM_REF(from),
 	       	SIPTAG_FROM_STR_REF(from_str),
 
@@ -622,25 +634,131 @@ int test_params(struct context *ctx)
   }
 
   nua_handle_destroy(nh);
+  
+  nua_shutdown(ctx->a.nua);
+  run_a_until(ctx, nua_r_shutdown, condition_final_response);
+  nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
+
+  su_root_destroy(ctx->root), ctx->root = NULL;
+
+  su_home_deinit(tmphome);
 
   END();
 }
+
+int test_init(struct context *ctx, char *argv[])
+{
+  BEGIN();
+  nua_event_data_t const *e;
+  sip_contact_t const *m = NULL;
+
+  ctx->root = su_root_create(ctx); TEST_1(ctx->root);
+
+  /* Disable threading by command line switch? */
+  su_root_threading(ctx->root, 0);
+
+  ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
+			  SIPTAG_FROM_STR("sip:alice@example.com"),
+			  NUTAG_URL("sip:*:*"),
+			  TAG_END());
+  TEST_1(ctx->a.nua);
+
+  nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
+  run_a_until(ctx, nua_r_get_params, save_final_response);
+  TEST_1(e = nua_event_data(ctx->a.saved_event));
+  TEST(tl_gets(e->e_tags, NTATAG_CONTACT_REF(m), TAG_END()), 1); TEST_1(m);
+  TEST_1(ctx->a.contact = sip_contact_dup(ctx->home, m));
+  nua_destroy_event(ctx->a.saved_event);
+	 
+  ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
+			  SIPTAG_FROM_STR("sip:bob@example.org"),
+			  NUTAG_URL("sip:*:*"),
+			  TAG_END());
+  TEST_1(ctx->b.nua);
+
+  nua_get_params(ctx->b.nua, TAG_ANY(), TAG_END());
+  run_b_until(ctx, nua_r_get_params, save_final_response);
+  TEST_1(e = nua_event_data(ctx->b.saved_event));
+  TEST(tl_gets(e->e_tags, NTATAG_CONTACT_REF(m), TAG_END()), 1); TEST_1(m);
+  TEST_1(ctx->a.contact = sip_contact_dup(ctx->home, m));
+  nua_destroy_event(ctx->a.saved_event);
+
+  END();
+}
+
+/* Basic call:
+   
+   A			B
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |			|
+   |<----180 Ringing----|
+   |			|
+   |<------200 OK-------|
+   |--------ACK-------->|
+   |			|
+   |<-------BYE---------|
+   |-------200 OK-------|
+   |			|
+*/
+
+CONDITION_FUNCTION(basic_call_at_b)
+{
+  int state = nua_callstate_init;
+
+  save_event_in_list(ctx, ep);
+
+  if (event != nua_i_state) 
+    return 0;
+
+  tl_gets(tags, NUTAG_CALLSTATE_REF(state), TAG_END());
+
+  switch (state) {
+  case nua_callstate_init:
+    return 0;
+  case nua_callstate_calling:
+    return 0;
+  case nua_callstate_proceeding:
+    return 0;
+  case nua_callstate_received:
+    nua_respond(nh, SIP_180_RINGING, TAG_END());
+    nua_respond(nh, SIP_200_OK, TAG_END());
+    return 0;
+  case nua_callstate_early:
+    return 0;
+  case nua_callstate_ready:
+    nua_bye(nh, TAG_END());
+    return 0;
+  case nua_callstate_terminating:
+    return 0;
+  case nua_callstate_terminated:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
 
 int test_basic_call(struct context *ctx)
 {
   BEGIN();
+
+  ctx->a.nh = nua_handle(ctx->a.nua, 0, SIPTAG_TO(ctx->b.address), TAG_END());
+
   END();
 }
-
-
 
 int test_deinit(struct context *ctx)
 {
   BEGIN();
 
+  nua_handle_destroy(ctx->a.nh), ctx->a.nh = NULL;
+
   nua_shutdown(ctx->a.nua);
   run_a_until(ctx, nua_r_shutdown, condition_final_response);
   nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
+
+  nua_handle_destroy(ctx->b.nh), ctx->b.nh = NULL;
 
   nua_shutdown(ctx->b.nua);
   run_b_until(ctx, nua_r_shutdown, condition_final_response);
@@ -673,6 +791,9 @@ int main(int argc, char *argv[])
   int i, o_attach = 0, o_alarm = 1;
 
   struct context ctx[1] = {{{ SU_HOME_INIT(ctx) }}};
+
+  ctx->a.events.tail = &ctx->a.events.head;
+  ctx->b.events.tail = &ctx->b.events.head;
 
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
@@ -738,9 +859,10 @@ int main(int argc, char *argv[])
   } while(0)
 
   retval |= test_api_errors(ctx); SINGLE_FAILURE_CHECK();
+  retval |= test_params(ctx); SINGLE_FAILURE_CHECK();
+
   retval |= test_init(ctx, argv + i); SINGLE_FAILURE_CHECK();
   if (retval == 0) {
-    retval |= test_params(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();
