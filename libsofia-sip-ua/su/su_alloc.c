@@ -450,13 +450,11 @@ void *sub_alloc(su_home_t *home,
  *
  * Create a home object used to collect multiple memory allocations under
  * one handle. The memory allocations made using this home object is freed
- * either when this home is destroyed. An independent home object is created
- * if NULL is passed as @a parent argument.
+ * either when this home is destroyed.
  *
- * @param parent  a parent object (may be NULL)
  * @param size    size of home object
  *
- * The memory home object allocated with su_home_new() can be freed with
+ * The memory home object allocated with su_home_new() can be reclaimed with
  * su_home_unref().
  *
  * @return
