@@ -176,11 +176,13 @@ char const *nua_event_name(nua_event_t event)
   switch (event) {
   case nua_i_error: return "nua_i_error";
   case nua_i_invite: return "nua_i_invite";
+  case nua_i_cancel: return "nua_i_cancel";
+  case nua_i_ack: return "nua_i_ack";
+
   case nua_i_fork: return "nua_i_fork";
   case nua_i_active: return "nua_i_active";
   case nua_i_terminated: return "nua_i_terminated";
   case nua_i_state: return "nua_i_state";
-  case nua_i_cancel: return "nua_i_cancel";
 
   case nua_i_bye: return "nua_i_bye";
   case nua_i_options: return "nua_i_options";

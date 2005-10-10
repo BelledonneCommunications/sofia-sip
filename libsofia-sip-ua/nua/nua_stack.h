@@ -220,7 +220,6 @@ typedef struct nua_session_state
   unsigned        ss_100rel:1;	        /**< Use 100rel, send 183 */
   unsigned        ss_alerting:1;	/**< 180 is sent/received */
   
-  unsigned        ss_ack_needed:2;	/**< Send an ACK (do O/A, if >1) */
   unsigned        ss_update_needed:2;	/**< Send an UPDATE (do O/A if > 1) */
 
   unsigned        ss_precondition:1;	/**< Precondition required */
@@ -232,6 +231,10 @@ typedef struct nua_session_state
   unsigned        ss_session_timer;	/**< Value of Session-Expires (delta) */
   unsigned        ss_min_se;		/**< Minimum session expires */
   enum nua_session_refresher ss_refresher; /**< none, local or remote */
+
+  char const     *ss_ack_needed;	/**< Send an ACK
+					 * (do O/A, if "offer" or "answer")
+					 */
 
   nua_dialog_usage_t *ss_usage;
 

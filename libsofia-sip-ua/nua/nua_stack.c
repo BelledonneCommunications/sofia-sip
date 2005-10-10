@@ -3557,8 +3557,6 @@ static int process_response_to_invite(nua_handle_t *nh,
   }
   else if (status >= 200) {
 
-    ss->ss_state = nua_callstate_ready;
-    ss->ss_ack_needed = 1;
     du->du_ready = 1;
     if (!ss->ss_usage)
       ss->ss_usage = du;
@@ -3575,10 +3573,13 @@ static int process_response_to_invite(nua_handle_t *nh,
 
     /* signal_call_state_change */
     if (session_process_response(nh, cr, orq, sip, &received) >= 0) {
-      signal_call_state_change(nh, status, phrase, 
-			       nua_callstate_ready, received, 0);
+      ss->ss_ack_needed = received ? received : "";
+
       if (NH_PGET(nh, auto_ack))
 	ua_ack(nua, nh, NULL);
+      else
+	signal_call_state_change(nh, status, phrase, 
+				 nua_callstate_completing, received, 0);
       nh_referral_respond(nh, SIP_200_OK);
       return 0;
     }
@@ -3608,19 +3609,22 @@ static int process_response_to_invite(nua_handle_t *nh,
   nh_referral_respond(nh, status, phrase);
   process_response(nh, cr, orq, sip, TAG_END());
 
+  if (terminated)
+    signal_call_state_change(nh, status, phrase, 
+			     nua_callstate_terminated, 0, 0);
+
   if (terminated < 0) {
-    signal_call_state_change(nh, status, phrase, nua_callstate_terminated, 0, 0);
     dialog_terminated(nh, nh->nh_ds, status, phrase);
   }
   else if (terminated > 0) {
-    signal_call_state_change(nh, status, phrase, nua_callstate_terminated, 0, 0);
     dialog_usage_remove(nh, nh->nh_ds, du);
   }
   else if (gracefully) {
     char *reason = 
       su_sprintf(NULL, "SIP;cause=%u;text=\"%s\"", status, phrase);
 
-    signal_call_state_change(nh, status, phrase, nua_callstate_terminating, 0, 0);
+    signal_call_state_change(nh, status, phrase, 
+			     nua_callstate_terminating, 0, 0);
 
     stack_signal(nh, nua_r_bye, SIPTAG_REASON_STR(reason), TAG_END());
 
@@ -3639,11 +3643,15 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
   sip_t *sip;
   int status = 200;
   char const *phrase = "OK", *reason = NULL, *sent = NULL;
+  char const *received = ss->ss_ack_needed;
 
   if (!ss->ss_ack_needed)
     return UA_EVENT2(nua_i_error, 500, "No response to ACK");
 
   ss->ss_ack_needed = 0;
+
+  if (!received[0])
+    received = NULL;
 
   if (tags)
     ua_set_params(nua, nh, nua_r_ack, tags);
@@ -3699,7 +3707,8 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
   nta_outgoing_destroy(ack);	/* Timer keeps this around for T2 */
 
   if (status < 300) {
-    signal_call_state_change(nh, status, phrase, nua_callstate_ready, 0, sent);
+    signal_call_state_change(nh, status, phrase, nua_callstate_ready, 
+			     received, sent);
   }
   else {
     signal_call_state_change(nh, status, phrase, nua_callstate_terminating, 0, 0);
@@ -4412,10 +4421,10 @@ int process_ack(nua_handle_t *nh,
 {
   struct nua_session_state *ss = nh->nh_ss;
   nua_server_request_t *sr = ss->ss_srequest;
+  msg_t *msg = nta_incoming_getrequest(irq);
   char const *recv = NULL;
 
   if (nh->nh_soa && sr->sr_offer_sent && !sr->sr_answer_recv) {
-    msg_t *msg = nta_incoming_getrequest(irq);
     char const *sdp;
     int len;
 
@@ -4430,6 +4439,8 @@ int process_ack(nua_handle_t *nh,
       reason = soa_error_as_sip_reason(nh->nh_soa);
 
       ua_event(nh->nh_nua, nh, NULL, 
+	       nua_i_ack, status, phrase, TAG_END());
+      ua_event(nh->nh_nua, nh, NULL, 
 	       nua_i_media_error, status, phrase, TAG_END());
       
       msg_destroy(msg);
@@ -4440,11 +4451,13 @@ int process_ack(nua_handle_t *nh,
 
       return 0;
     }
-
-    msg_destroy(msg);
   }
 
   soa_clear_remote_sdp(nh->nh_soa);
+
+  ua_event(nh->nh_nua, nh, msg, nua_i_ack, SIP_200_OK, TAG_END());
+
+  msg_destroy(msg);
 
   signal_call_state_change(nh, 200, "OK", nua_callstate_ready, recv, 0);
 
