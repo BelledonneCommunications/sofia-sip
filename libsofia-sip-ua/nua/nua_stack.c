@@ -1128,7 +1128,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     return UA_EVENT2(e, 500, "Error storing parameters");
 
   if (nh != dnh)
-    return UA_EVENT2(e, 200, "OK");
+    return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
 
   if (registrar != NONE) {
     if (registrar &&
@@ -1153,7 +1153,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sm_set_params(nua->sm, smime_enable, smime_opt, 
 		smime_protection_mode, smime_path);
 #endif                  
-  return UA_EVENT2(e, 200, "OK");
+  return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
 }
 
 /** Get NUA parameters.
@@ -2841,9 +2841,9 @@ static void signal_call_state_change(nua_handle_t *nh,
     SU_DEBUG_5(("nua(%p): call state changed: %s -> %s%s%s%s%s\n", 
 		nh, nua_callstate_name(ss->ss_state),
 		nua_callstate_name(next_state),
-		oa_recv ? " received " : "", oa_recv ? oa_recv : "",
-		oa_sent && oa_recv ? " and sent " :
-		oa_sent ? " sent " : "", oa_sent ? oa_sent : ""));
+		oa_recv ? ", received " : "", oa_recv ? oa_recv : "",
+		oa_sent && oa_recv ? ", and sent " :
+		oa_sent ? ", sent " : "", oa_sent ? oa_sent : ""));
   else
     SU_DEBUG_5(("nua(%p): ready call updated: %s%s%s%s%s\n", 
 		nh, nua_callstate_name(next_state),
@@ -4255,9 +4255,11 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   assert(ss->ss_state != nua_callstate_calling);
   assert(ss->ss_state != nua_callstate_proceeding);
   signal_call_state_change(nh, status, phrase, 
-			   status >= 300 ? nua_callstate_init :
-			   status >= 200 ? nua_callstate_ready :
-			   nua_callstate_early,
+			   status >= 300 
+			   ? nua_callstate_init 
+			   : status >= 200 
+			   ? nua_callstate_complete
+			   : nua_callstate_early,
 			   autoanswer && sr->sr_offer_recv ? "offer" : 0,
 			   offer ? "offer" : answer ? "answer" : 0);
 
