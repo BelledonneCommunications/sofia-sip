@@ -1301,9 +1301,7 @@ void su_msg_destroy(su_msg_r rmsg)
   assert(rmsg);
 
   if (rmsg[0]) {
-    su_port_t *port = rmsg[0]->sum_to->sut_port;
-
-    assert(port);
+    /* su_port_t *port = rmsg[0]->sum_to->sut_port; */
 
     /* SU_PORT_INCREF(port, su_msg_destroy); */
     SU_TASK_ZAP(rmsg[0]->sum_to, su_msg_destroy);
