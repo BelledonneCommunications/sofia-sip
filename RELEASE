@@ -1,0 +1,20 @@
+==============================================
+Release notes for current version of Sofia-SIP
+==============================================
+
+Changes since last release
+--------------------------
+
+This is the initial release of the library.
+
+API/ABI changes and versioning
+------------------------------
+
+Refactored interfaces of the nua (high-level
+user-agent) and soa (SDP offer/answer) modules.
+
+Contributors to this release
+----------------------------
+
+As this is the initial release, see the AUTHORS
+file in the distribution package.
