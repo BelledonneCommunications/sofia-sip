@@ -60,7 +60,7 @@
  */
 
 const char su_md5_c_id[] = 
-"$Id: su_md5.c,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $";
+"$Id: su_md5.c,v 1.2 2005/10/11 09:02:37 ppessi Exp $";
 
 #include <string.h>	/* for memcpy() and memset() */
 

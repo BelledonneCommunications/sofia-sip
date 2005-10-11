@@ -40,12 +40,12 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/09/23 14:53:50 $
+ * $Date: 2005/10/11 09:02:36 $
  */
 
 #include "config.h"
 
-const char nta_c_id[] = "$Id: nta.c,v 1.6 2005/09/23 14:53:50 ppessi Exp $";
+const char nta_c_id[] = "$Id: nta.c,v 1.7 2005/10/11 09:02:36 ppessi Exp $";
 
 /* From AM_INIT/AC_INIT in our "config.h" */
 char const nta_version[] = VERSION;

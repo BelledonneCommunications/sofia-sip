@@ -69,7 +69,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Fri May  3 09:22:59 2002 ppessi
- * $Date: 2005/08/17 14:43:13 $
+ * $Date: 2005/10/11 09:02:37 $
  */
 
 #include "config.h"
@@ -88,7 +88,7 @@
 
 char const su_strlst_h[] = SU_STRLST_H;
 char const su_strlst_c_id[] =
-"$Id: su_strlst.c,v 1.2 2005/08/17 14:43:13 ppessi Exp $";
+"$Id: su_strlst.c,v 1.3 2005/10/11 09:02:37 ppessi Exp $";
 
 enum { N = 8 };
 

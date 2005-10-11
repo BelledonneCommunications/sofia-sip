@@ -30,13 +30,13 @@
  * 
  * @date Created: Tue Apr 26 13:23:17 2005 ppessi
  * 
- * $Date: 2005/09/29 18:35:22 $
+ * $Date: 2005/10/11 09:02:37 $
  */
 
 #include "config.h"
 
 const char nua_common_c_id[] = 
-  "$Id: nua_common.c,v 1.3 2005/09/29 18:35:22 ppessi Exp $";
+  "$Id: nua_common.c,v 1.4 2005/10/11 09:02:37 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

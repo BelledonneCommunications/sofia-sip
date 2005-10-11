@@ -31,13 +31,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu May  2 18:17:46 2002 ppessi
- * $Date: 2005/07/20 20:35:59 $
+ * $Date: 2005/10/11 09:02:37 $
  */
 
 #include "config.h"
 
 const char su_torture_c_id[] =
-"$Id: su_torture.c,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $";
+"$Id: su_torture.c,v 1.2 2005/10/11 09:02:37 ppessi Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
