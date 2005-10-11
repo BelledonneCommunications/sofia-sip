@@ -1,0 +1,62 @@
+===================================
+Sofia-SIP release management README
+===================================
+
+:Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
+:Version: 20051011-1
+:Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
+
+Introduction
+============
+
+This README contains instructions for making 
+new Sofia-SIP releases.
+
+Links to other resources
+========================
+
+sofia-sip/README.developers
+
+The release notes
+=================
+
+The release notes should contain the following
+sections:
+
+- about Sofia-SIP
+    - copied verbatim from sofia-sip/README
+- list of changes since last release
+    - maintained in sofia-sip/RELEASE
+- notes on API/ABI interface changes 
+    - maintained in sofia-sip/RELEASE
+- contributors to this release
+    - maintained in sofia-sip/RELEASE
+    - also sofia-sip/AUTHORS should be updated
+
+Making the release tarball 
+==========================
+
+- update the version number in sofia-sip/configure.ac
+- make sure everything that is supposed to be in the
+  release is in CVS
+- tag CVS-tree with release tag: 'REL_x_y_z', where
+  x_y_z is the version number (see README.developers)
+- run 'make distcheck' (requires automake-1.7 or newer)
+- calculate md5 and sha1 hashes using md5sum and sha1sum,
+  and copy the values to the release-notes
+- release file using 
+- upload the resulting tar.gz file to Sourceforge
+- sent the release annoucement to the 
+  sofia-sip-devel@lists.sourceforge.net mailing list (see
+  section below making the release notes)
+
+Creating the release notes
+==========================
+
+- combine the sofia-sip/RELEASE contents with
+  the template found from sfnet_www/templates/relnotes.txt
+- store the release notes to 
+  sfnet_www/relnotes/relnotes-sofia-sip-x.y.z.txt
+- commit the change to CVS, and run the 
+  sfnet_www/put_online.sh script at the sourceforge.net
+  shell server

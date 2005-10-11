@@ -3,28 +3,27 @@ Sofia-SIP build system README
 =============================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20050722-4
+:Author: Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
+:Version: 20051011-5
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
-------------
 Introduction
-------------
+============
 
 The Sofia-SIP build system practices are documented in this
 file. The instructions are aimed at developers.
 
------------
 Quick start
------------
+===========
 
 To build Sofia-IP::
-sh> ``./autogen.sh`` (if building from a fresh CVS checkout)
-sh> ``./configure``
-sh> ``make``
 
---------------
+  sh> ``./autogen.sh`` (if building from a fresh CVS checkout)
+  sh> ``./configure``
+  sh> ``make``
+
 Autotool notes
---------------
+==============
 
 Macros
 ------
@@ -52,9 +51,8 @@ Those developers who need to often modify configure.ac, Makefile.am
 and macro files, can enable maintainer mode with configure
 option '--enable-maintainer-mode'.
 
--------------
 Running tests
--------------
+=============
 
 Sofia-SIP has quite complete suite of test cases. It is prudent to
 run them while making changes and before committing them to revision
@@ -63,9 +61,8 @@ time. Therefore, they are run only if the environment variable
 EXPENSIVE_CHECKS has been set. EXPENSIVE_CHECKS is also set by the build
 system if configure option '--enable-expensive-checks' has been used.
 
-----------------
 Code-tree layout
-----------------
+================
 
 Most of the code resides in the libsofia-sip-ua directory.
 The main library, libsofia-sip-ua.so, is created by 
@@ -76,21 +73,13 @@ There are some portability issues with the way the
 shared library is currently built, and we are looking
 for ways to improve the situation.
 
----------------
 Making releases
----------------
+===============
 
-Checklist
----------
+See sofia-sip/docs/release_management.txt
 
-- check contents of configure.ac (especially the version number)
-- ``make distchek``
-- upload the resulting tar.gz file to Source forge and make an
-  announcement on the sofia-sip-devel@lists.sourceforge.net mailing list
- 
------------------------
 Developer documentation
------------------------
+=======================
 
 Generating reference documentation from source code 
 ---------------------------------------------------
