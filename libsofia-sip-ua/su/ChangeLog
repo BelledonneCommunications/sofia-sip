@@ -1,3 +1,9 @@
+2005-10-11  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed superfluous assertion failure here.
+
+    M ./libsofia-sip-ua/su/su_root.c -3 +1
+
 2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Using glib in the clone test, too.
