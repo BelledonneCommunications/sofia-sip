@@ -972,7 +972,7 @@ follows:
     <th>Offer/ Answer</th>
     <th align="left">Description</th>
 </tr>
-<tr><td>1</td>			<!-- transition -->
+<tr><td>C1</td>			<!-- transition -->
     <td>init</td>		<!-- previous state -->
     <td>nua_invite()</td>	<!-- input -->
     <td>INVITE</td>		<!-- output -->
@@ -983,7 +983,7 @@ follows:
    the initial offer/answer step and sends @b INVITE request with the SDP
    offer.
 </td></tr>
-<tr><td>2</td>
+<tr><td>C2</td>
     <td>calling</td><td>18X</td><td>-</td><td>proceeding</td>
     <td>(Save answer)</td>
   <td>
@@ -993,7 +993,7 @@ follows:
    established. The caller can be listen to, for instance, ring tone or
    announcements about call progress using the early media session.
 </td></tr>
-<tr><td>3a</td>
+<tr><td>C3a</td>
     <td>proceeding</td><td rowspan="2">2XX</td>
     <td rowspan="2">-</td><td rowspan="2">completing</td>
     <td rowspan="2">Save answer</td>
@@ -1006,9 +1006,9 @@ follows:
    by application the client does not stay in @b completing state, but
    proceeds immediately to next state transition.
 </td></tr>
-<tr><td>3b</td>
+<tr><td>C3b</td>
     <td>calling</td></tr>
-<tr><td>4</td>
+<tr><td>C4</td>
     <td>completing</td>
     <td>nua_ack() or<br>@ref NUTAG_AUTOACK() "auto-ack" </td>
     <td>ACK</td><td>ready</td>
@@ -1019,7 +1019,7 @@ follows:
    time, usually in the 2XX response. Client now completes the SDP
    offer-answer exchange and activates the media.
 </td></tr>
-<tr><td>5</td>
+<tr><td>C5</td>
     <td>completing</td>
     <td>nua_ack() or<br>@ref NUTAG_AUTOACK() "auto-ack" and<br> media error</td>
     <td>ACK<br>BYE</td>
@@ -1030,7 +1030,7 @@ follows:
    the stack will automatically terminate the call. The BYE follows
    immediatelhy after the ACK.
 </td></tr>
-<tr><td rowspan=2>6</td>
+<tr><td>C6a</td>
     <td>calling</td>
     <td rowspan=2>3XX 4XX <br> 5XX 6XX</td>
     <td rowspan=2>ACK*</td>
@@ -1042,8 +1042,10 @@ follows:
    engine takes care of sending ACK even when application-driven-ack mode is
    requested by application.
 </td></tr>
-<tr><td>proceeding</td></tr>
-<tr><td>7a</td>
+<tr><td>C6b</td>
+    <td>proceeding</td>
+</tr>
+<tr><td>C7a</td>
     <td>calling</td>
     <td rowspan=2>nua_cancel()</td>
     <td rowspan=2>CANCEL</td>
@@ -1056,10 +1058,10 @@ follows:
    Terminated</i> response when receiving CANCEL and call is terminated as in
    previous item.
 </td></tr>
-<tr><td>7b</td>
+<tr><td>C7b</td>
     <td>proceeding</td>
     <td>proceeding</td></tr>
-<tr><td>8</td>
+<tr><td>C8</td>
     <td>proceeding</td>
     <td>nua_bye()</td>
     <td>BYE</td>
@@ -1070,7 +1072,7 @@ follows:
    state with nua_bye(). Stack sends a @b BYE request, and enters
    terminating state. Unlike @b CANCEL, @b BYE affects only one fork.
 </td></tr>
-<tr><td>9</td>
+<tr><td>C9</td>
     <td>completing</td><td>nua_bye()</td><td>ACK<br>BYE</td><td>terminating</td>
     <td>-</td>
     <td>
@@ -1153,24 +1155,24 @@ follows:
     <th>Offer/ Answer</th>
     <th align="left">Description</th>
 </tr>
-<tr><td>1</td>			<!-- transition -->
-    <td>init</td>		<!-- previous state -->
-    <td>INVITE</td>		<!-- input -->
-    <td>100 Trying</td>		<!-- output -->
-    <td>received</td>		<!-- next state -->
-    <td>Save offer</td>		<!-- offer/answer -->
+<tr><td>S1</td>				<!-- transition -->
+    <td>init</td>			<!-- previous state -->
+    <td>INVITE</td>			<!-- input -->
+    <td>100 Trying</td>			<!-- output -->
+    <td>received</td>			<!-- next state -->
+    <td>Save offer</td>			<!-- offer/answer -->
     <td>
    When a @b INVITE request for a new call is received, the server creates a
    fresh call handle for it, responds to the client with <i>100 Trying</i>
    and enters in the @b received state by default. It saves the possible SDP
    offer included in @b INVITE and passes it to the application.
 </td></tr>
-<tr><td>2a</td>				<!-- transition -->
+<tr><td>S2a</td>			<!-- transition -->
     <td>received</td>			<!-- previous state -->
     <td>nua_respond()</td>		<!-- input -->
     <td>18X</td>			<!-- output -->
     <td rowspan=2>early</td>		<!-- next state -->
-    <td>(Generate early answer)</td>		<!-- offer/answer -->
+    <td>(Generate early answer)</td>	<!-- offer/answer -->
     <td>
    When server returns a preliminary response for the initial @b INVITE request,
    a early dialog is created. The server can also send an SDP answer with
@@ -1178,19 +1180,18 @@ follows:
    the early session to send early media, e.g., ringing tone and
    announcements towards the client.
 </td></tr>
-<tr><td>2b</td>			<!-- transition -->
-    <td>init</td>		<!-- previous state -->
-    <td>INVITE and 		<!-- input -->
+<tr><td>S2b</td>			<!-- transition -->
+    <td>init</td>			<!-- previous state -->
+    <td>INVITE and			<!-- input -->
         @ref NUTAG_AUTOALERT() "auto-alert"</td>
-    <td>180 Ringing</td>	<!-- output -->
-    <!-- <td>early</td>		    next state -->
+    <td>180 Ringing</td>		<!-- output -->
     <td>Save offer (and
         generate early answer)</td>	<!-- offer/answer -->
     <td>
-    When @ref NUTAG_AUTOALERT() "auto-alert" option is enabled, stack send
+    When @ref NUTAG_AUTOALERT() "auto-alert" option is enabled, stack sends
     180 Ringing immediately after receiving INVITE and enters @b early state.
 </td></tr>
-<tr><td>3a</td>				<!-- transition -->
+<tr><td>S3a</td>			<!-- transition -->
     <td>early</td>			<!-- previous state -->
     <td rowspan=2>nua_respond()</td>	<!-- input -->
     <td rowspan=2>2XX</td>		<!-- output -->
@@ -1202,33 +1203,33 @@ follows:
    at the server side. If the offer was sent in @b INVITE request, the answer
    should be included in the 2XX response.
 </td></tr>
-<tr><td>3b</td>				<!-- transition -->
+<tr><td>S3b</td>			<!-- transition -->
     <td>received</td>			<!-- previous state -->
 </td></tr>
-<tr><td>3c</td>			<!-- transition -->
-    <td>init</td>		<!-- previous state -->
+<tr><td>S3c</td>			<!-- transition -->
+    <td>init</td>			<!-- previous state -->
     <td>INVITE and @ref NUTAG_AUTOANSWER() "auto-answer"
-    </td>			<!-- input -->
-    <td>200 OK</td>		<!-- output -->
+    </td>				<!-- input -->
+    <td>200 OK</td>			<!-- output -->
     <td>Save offer and
-    <br>generate answer</td>    <!-- offer/answer -->
+    <br>generate answer</td>		<!-- offer/answer -->
     <td>
     When @ref NUTAG_AUTOANSWER() "auto-answer" option is enabled, stack send
     200 OK immediately after receiving INVITE and enters @b completed state.
 </td></tr>
 </td></tr>
-<tr><td>4</td>			<!-- transition -->
-    <td>completed</td>		<!-- previous state -->
-    <td>ACK</td>		<!-- input -->
-    <td>-</td>			<!-- output -->
-    <td>ready</td>		<!-- next state -->
-    <td>-</td>			<!-- offer/answer -->
+<tr><td>S4</td>				<!-- transition -->
+    <td>completed</td>			<!-- previous state -->
+    <td>ACK</td>			<!-- input -->
+    <td>-</td>				<!-- output -->
+    <td>ready</td>			<!-- next state -->
+    <td>-</td>				<!-- offer/answer -->
     <td>
    The ready state is entered at server side after receiving @b ACK request
    from client, indicating that the client have received server's 2XX
    response. The call is ready, the @b INVITE transaction is confirmed.
 </td></tr>
-<tr><td>5a</td>				<!-- transition -->
+<tr><td>S5a</td>			<!-- transition -->
     <td>received</td>			<!-- previous state -->
     <td rowspan=2>nua_respond()</td>	<!-- input -->
     <td rowspan=2>3XX 4XX<br>5XX 6XX</td><!-- output -->
@@ -1240,10 +1241,10 @@ follows:
    retransmitting the response when needed. It consumes the ACK response
    sent by the client, too.
 </td></tr>
-<tr><td>5b</td>				<!-- transition -->
+<tr><td>S5b</td>			<!-- transition -->
     <td>early</td>			<!-- previous state -->
 </td></tr>
-<tr><td>6a</td>				<!-- transition -->
+<tr><td>S6a</td>			<!-- transition -->
     <td>received</td>			<!-- previous state -->
     <td rowspan=2>CANCEL</td>		<!-- input -->
     <td rowspan=2>487 Request terminated</td><!-- output -->
@@ -1255,10 +1256,10 @@ follows:
    a <i>487 Request Terminated</i> response to the @b INVITE transaction and
    the call is terminated.
 </td></tr>
-<tr><td>6b</td>				<!-- transition -->
+<tr><td>S6b</td>			<!-- transition -->
     <td>early</td>			<!-- previous state -->
 </td></tr>
-<tr><td>7</td>				<!-- transition -->
+<tr><td>S7</td>				<!-- transition -->
     <td>early</td>			<!-- previous state -->
     <td>BYE</td>			<!-- input -->
     <td>487 to INVITE<br>
@@ -1271,7 +1272,7 @@ follows:
    return a <i>200 OK</i> response to @b BYE and a <i>487 Request
    Terminated</i> response to the @b INVITE transaction.
 </td></tr>
-<tr><td>8</td>				<!-- transition -->
+<tr><td>S8</td>				<!-- transition -->
     <td>completed</td>			<!-- previous state -->
     <td>BYE</td>			<!-- input -->
     <td>200 to BYE</td>			<!-- output -->
@@ -1283,7 +1284,7 @@ follows:
    and lets the underlying transaction engine to take care of consuming @b
    ACK.
 </td></tr>
-<tr><td>9</td>				<!-- transition -->
+<tr><td>S9</td>				<!-- transition -->
     <td>completed</td>			<!-- previous state -->
     <td>timeout</td>			<!-- input -->
     <td>BYE</td>			<!-- output -->
@@ -1300,7 +1301,7 @@ There is an alternative offer-answer model for third party call control
 INVITE to server A without SDP. The call setup looks perfectly ordinary to
 server B, however.
 
-<pre>
+@code
 	A		        C		        B
 	|			|			|
 	|<-------INVITE---------|			|
@@ -1315,7 +1316,7 @@ server B, however.
 	|			|     			|
 	|			|----------ACK--------->|
 	|			|			|
-</pre>
+@endcode
 
 The modifications to the call model affect mainly offer-answer model.
 The detailed description of state transitions for 3pcc on the server side is as
@@ -1330,26 +1331,26 @@ follows:
     <th>Offer/ Answer</th>
     <th align="left">Description</th>
 </tr>
-<tr><td>1</td>			<!-- transition -->
-    <td>init</td>		<!-- previous state -->
-    <td>INVITE</td>		<!-- input -->
-    <td>100 Trying</td>		<!-- output -->
-    <td>received</td>		<!-- next state -->
-    <td>-</td>			<!-- offer/answer -->
+<tr><td>S1'</td>			<!-- transition -->
+    <td>init</td>			<!-- previous state -->
+    <td>INVITE</td>			<!-- input -->
+    <td>100 Trying</td>			<!-- output -->
+    <td>received</td>			<!-- next state -->
+    <td>-</td>				<!-- offer/answer -->
     <td>
     There is no SDP to save.
 </td></tr>
-<tr><td>2b</td>			<!-- transition -->
-    <td>init</td>		<!-- previous state -->
-    <td>INVITE and 		<!-- input -->
+<tr><td>S2b'</td>			<!-- transition -->
+    <td>init</td>			<!-- previous state -->
+    <td>INVITE and			<!-- input -->
         @ref NUTAG_AUTOALERT() "auto-alert"</td>
-    <td>180 Ringing</td>	<!-- output -->
-    <td>early</td>		<!-- next state -->
-    <td>-</td>	<!-- offer/answer -->
+    <td>180 Ringing</td>		<!-- output -->
+    <td>early</td>			<!-- next state -->
+    <td>-</td>				<!-- offer/answer -->
     <td>
     There is no SDP to save.
 </td></tr>
-<tr><td>3a</td>				<!-- transition -->
+<tr><td>S3a</td>			<!-- transition -->
     <td>early</td>			<!-- previous state -->
     <td rowspan=2>nua_respond()</td>	<!-- input -->
     <td rowspan=2>2XX</td>		<!-- output -->
@@ -1358,25 +1359,25 @@ follows:
     <td rowspan=3>
     The offer is sent in 200 OK.
 </td></tr>
-<tr><td>3b</td>				<!-- transition -->
+<tr><td>S3b'</td>			<!-- transition -->
     <td>received</td>			<!-- previous state -->
 </td></tr>
-<tr><td>3c</td>			<!-- transition -->
-    <td>init</td>		<!-- previous state -->
-    <td>INVITE and 		<!-- input -->
+<tr><td>S3c'</td>			<!-- transition -->
+    <td>init</td>			<!-- previous state -->
+    <td>INVITE and			<!-- input -->
         @ref NUTAG_AUTOANSWER() "auto-answer"</td>
-    <td>200 OK</td>		<!-- output -->
+    <td>200 OK</td>			<!-- output -->
 </td></tr>
-<tr><td>4</td>			<!-- transition -->
-    <td>completed</td>		<!-- previous state -->
-    <td>ACK</td>		<!-- input -->
-    <td>-</td>			<!-- output -->
-    <td>ready</td>		<!-- next state -->
+<tr><td>S4'</td>			<!-- transition -->
+    <td>completed</td>			<!-- previous state -->
+    <td>ACK</td>			<!-- input -->
+    <td>-</td>				<!-- output -->
+    <td>ready</td>			<!-- next state -->
     <td>Save and process answer</td>	<!-- offer/answer -->
     <td>
     The answer is processed and media activated after receiving @b ACK.
 </td></tr>
-<tr><td>9b</td>				<!-- transition -->
+<tr><td>S9b'</td>			<!-- transition -->
     <td>completed</td>			<!-- previous state -->
     <td>ACK and O/A error</td>		<!-- input -->
     <td>BYE</td>			<!-- output -->
@@ -1405,6 +1406,92 @@ be considered terminated, too. These response codes are documented with
 sip_response_terminates_dialog(). In some cases, the session should be
 terminated gracefully by sending a @b BYE request.
 
+
+@code
+    +-------------------------------------------------------------+
+    |                            READY                            |
+    +-------------------------------------------------------------+
+      |           |                |		    |
+      |           |                |		    |
+     (1) BYE/200 (2) nua_bye/BYE  (4) graceful/BYE (5) final/BYE
+      |           |		   |     	    |
+      |           V		   V     	    |
+      |     +-----------------------------+         |
+      |     |         TERMINATING         |         |
+      |     +-----------------------------+	    |
+      |                    |			    |
+      |                   (3) [23456]XX/-	    |
+      |                    |			    |
+      V                    V			    V
+    +-------------------------------------------------------------+
+    |                         TERMINATED                          |
+    +-------------------------------------------------------------+
+@endcode
+
+The detailed description of state transitions while call is terminated is as
+follows:
+<table>
+<tr><th>#</th>
+    <th>Previous state</th>
+    <th>Input</th>
+    <th>Output</th>
+    <th>Next state</th>
+    <th align="left">Description</th>
+</tr>
+<tr><td>T1</td>				<!-- transition -->
+    <td>ready</td>			<!-- previous state -->
+    <td>BYE</td>			<!-- input -->
+    <td>200 OK</td>			<!-- output -->
+    <td>terminated</td>			<!-- next state -->
+    <td>
+    	When the @b BYE request is received, the recipient terminates the
+    	currently ongoing @b INVITE transaction, the session and its dialog
+    	usage (if there is another dialog usage active, e.g., a subscription
+    	creted by @b REFER.)
+</td></tr>
+<tr><td>T2</td>				<!-- transition -->
+    <td>ready</td>			<!-- previous state -->
+    <td>nua_bye</td>			<!-- input -->
+    <td>BYE</td>			<!-- output -->
+    <td>terminating</td>		<!-- next state -->
+    <td>
+        The application terminates the session by calling nua_bye(). All the
+    	call-related requests on the dialog are rejected while in
+    	terminating state (XXX - with what?).
+</td></tr>
+<tr><td>T3</td>				<!-- transition -->
+    <td>terminating</td>		<!-- previous state -->
+    <td>2XX 3XX 4XX 5XX 6XX</td>	<!-- input -->
+    <td>-</td>				<!-- output -->
+    <td>terminated</td>			<!-- next state -->
+    <td>
+        The session is finally terminated when a final response to @b BYE is
+    	received. Note that nua stack does retry @b BYE requests.
+</td></tr>
+<tr><td>T4</td>				<!-- transition -->
+    <td>ready</td>			<!-- previous state -->
+    <td>"graceful" response</td>	<!-- input -->
+    <td>BYE</td>			<!-- output -->
+    <td>terminating</td>		<!-- next state -->
+    <td>
+        A call-related request (@b re-INVITE, @b UPDATE, @b INFO, @b PRACK,
+    	@b REFER) fails with a response code indicating that the client
+    	should gracefully terminate the call.
+</td></tr>
+<tr><td>T5</td>				<!-- transition -->
+    <td>ready</td>			<!-- previous state -->
+    <td>"fatal" response</td>		<!-- input -->
+    <td>-</td>				<!-- output -->
+    <td>terminated</td>			<!-- next state -->
+    <td>
+        A call-related request (@b re-INVITE, @b UPDATE, @b INFO, @b PRACK,
+    	@b REFER) fails with a response code indicating that the call has
+    	been terminated.
+</td></tr>
+</table>
+
+@sa http://www.ietf.org/internet-drafts/draft-sparks-sipping-dialogusage-01.txt
+@sa sip_response_terminates_dialog()
 
 */
 
