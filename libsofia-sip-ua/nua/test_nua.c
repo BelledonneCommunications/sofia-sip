@@ -219,6 +219,7 @@ int run_b_until(struct context *ctx,
   return ctx->b.last_event;
 }
 
+/* Save nua event in endpoint list */
 int save_event_in_list(struct context *ctx,
 		       struct endpoint *ep)
 {
@@ -236,6 +237,42 @@ int save_event_in_list(struct context *ctx,
   
   return 0;
 }
+
+/* Return call state from event tag list */
+int callstate(struct event const *e)
+{
+  tagi_t const *ti = tl_find(e->data->e_tags, nutag_callstate);
+  return ti ? ti->t_value : -1;
+}
+
+/* Return true if offer is sent */
+int is_offer_sent(struct event const *e)
+{
+  tagi_t const *ti = tl_find(e->data->e_tags, nutag_offer_sent);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if answer is sent */
+int is_answer_sent(struct event const *e)
+{
+  tagi_t const *ti = tl_find(e->data->e_tags, nutag_answer_sent);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if offer is recv */
+int is_offer_recv(struct event const *e)
+{
+  tagi_t const *ti = tl_find(e->data->e_tags, nutag_offer_recv);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if answer is recv */
+int is_answer_recv(struct event const *e)
+{
+  tagi_t const *ti = tl_find(e->data->e_tags, nutag_answer_recv);
+  return ti ? ti->t_value : 0;
+}
+
 
 void nolog(void *stream, char const *fmt, va_list ap) {}
 
@@ -713,7 +750,8 @@ int test_init(struct context *ctx, char *argv[])
 
 CONDITION_FUNCTION(save_events)
 {
-  save_event_in_list(ctx, ep);
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
   return 0;
 }
 
@@ -731,6 +769,16 @@ CONDITION_FUNCTION(save_events)
    |<-------BYE---------|
    |-------200 OK-------|
    |			|
+
+   See @page nua_call_model in nua.docs for more information
+
+   Client transitions:
+   INIT -(C1)-> CALLING -(C2)-> PROCEEDING -(C3+C4)-> READY
+   READY -(T1)-> TERMINATED
+
+   Server transitions:
+   INIT -(S1)-> RECEIVED -(S2a)-> EARLY -(S3a)-> COMPLETED -(S4)-> READY
+   READY -(T2)-> TERMINATING -(T3)-> TERMINATED
 */
 
 CONDITION_FUNCTION(receive_basic_call)
@@ -792,12 +840,6 @@ CONDITION_FUNCTION(receive_basic_call)
   }
 }
 
-int callstate(struct event const *e)
-{
-  tagi_t const *ti = tl_find(e->data->e_tags, nutag_callstate);
-  return ti ? ti->t_value : -1;
-}
-
 int test_basic_call(struct context *ctx)
 {
   BEGIN();
@@ -815,21 +857,56 @@ int test_basic_call(struct context *ctx)
 
   run_until(ctx, -1, save_events, -1, receive_basic_call);
 
-  TEST_1(e = ctx->b.events.head); TEST(e->data->e_event, nua_i_invite); 
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
+     PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
+     READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
+  */
 
-  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
-  TEST(callstate(e), nua_callstate_received); /* RECEIVED */
-  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
-  TEST(callstate(e), nua_callstate_early); /* EARLY */
-  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
-  TEST(callstate(e), nua_callstate_completed); /* COMPLETE */
-  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack); 
-  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
+  TEST_1(e = ctx->a.events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e)); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e), nua_callstate_ready); /* READY */
-  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_bye); 
-  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state); 
+  TEST_1(is_answer_recv(e)); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_bye);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e), nua_callstate_terminated); /* TERMINATED */
-  
+  TEST_1(!e->next);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S2a)-> EARLY: nua_respond(), nua_i_state
+   EARLY -(S3a)-> COMPLETED: nua_respond(), nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+
+   READY --(T2)--> TERMINATING: nua_bye()
+   TERMINATING --(T3)--> TERMINATED: nua_r_bye, nua_i_state
+  */
+  TEST_1(e = ctx->b.events.head); TEST(e->data->e_event, nua_i_invite);
+
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e)); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e), nua_callstate_early); /* EARLY */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e)); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e), nua_callstate_ready); /* READY */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_bye);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
   END();
 }
 
