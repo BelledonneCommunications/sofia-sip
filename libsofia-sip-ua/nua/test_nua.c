@@ -105,14 +105,14 @@ struct context
     sip_from_t *address;
     nua_handle_t *nh;
     nua_saved_event_t saved_event[1];
-    
+
     struct {
       struct event *head, **tail;
     } events;
   } a, b;
 };
 
-struct event 
+struct event
 {
   struct event *next, **prev;
   nua_saved_event_t saved_event[1];
@@ -226,7 +226,7 @@ int save_event_in_list(struct context *ctx,
   struct event *e = su_zalloc(ctx->home, sizeof *e);
 
   if (!e) { perror("su_zalloc"), abort(); }
-  
+
   *(e->prev = ep->events.tail) = e;
   ep->events.tail = &e->next;
 
@@ -234,7 +234,7 @@ int save_event_in_list(struct context *ctx,
     return -1;
 
   e->data = nua_event_data(e->saved_event);
-  
+
   return 0;
 }
 
@@ -411,7 +411,7 @@ int test_params(struct context *ctx)
 
 		 NUTAG_MEDIA_ENABLE(0),
 		 NUTAG_REGISTRAR("sip:sip.wonderland.org"),
-		
+
 		 TAG_END());
 
   nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
@@ -424,23 +424,23 @@ int test_params(struct context *ctx)
 
     int retry_count = -1;
     int max_subscriptions = -1;
-    
+
     int invite_enable = -1;
     int auto_alert = -1;
     int early_media = -1;
     int auto_answer = -1;
     int auto_ack = -1;
     int invite_timeout = -1;
-    
+
     int session_timer = -1;
     int min_se = -1;
     int refresher = -1;
     int update_refresh = -1;
-    
+
     int message_enable = -1;
     int win_messenger_enable = -1;
     int message_auto_respond = -1;
-    
+
     int callee_caps = -1;
     int media_features = -1;
     int service_route_enable = -1;
@@ -540,11 +540,11 @@ int test_params(struct context *ctx)
     TEST_S(supported_str, "humppaa, kuole");
     TEST_S(sip_header_as_string(tmphome, (void *)user_agent), "test_nua");
     TEST_S(user_agent_str, "test_nua");
-    TEST_S(sip_header_as_string(tmphome, (void *)organization), 
+    TEST_S(sip_header_as_string(tmphome, (void *)organization),
 	   "Pussy Galore's Flying Circus");
     TEST_S(organization_str, "Pussy Galore's Flying Circus");
 
-    TEST_S(url_as_string(tmphome, registrar->us_url), 
+    TEST_S(url_as_string(tmphome, registrar->us_url),
 	   "sip:sip.wonderland.org");
 
   }
@@ -557,23 +557,23 @@ int test_params(struct context *ctx)
 
     int retry_count = -1;
     int max_subscriptions = -1;
-    
+
     int invite_enable = -1;
     int auto_alert = -1;
     int early_media = -1;
     int auto_answer = -1;
     int auto_ack = -1;
     int invite_timeout = -1;
-    
+
     int session_timer = -1;
     int min_se = -1;
     int refresher = -1;
     int update_refresh = -1;
-    
+
     int message_enable = -1;
     int win_messenger_enable = -1;
     int message_auto_respond = -1;
-    
+
     int callee_caps = -1;
     int media_features = -1;
     int service_route_enable = -1;
@@ -647,7 +647,7 @@ int test_params(struct context *ctx)
 
     TEST_1(from != NULL && from != NONE);
     TEST_1(strcmp(from_str, "NONE"));
-    
+
     /* Nothing else should be set */
     TEST(retry_count, -1);
     TEST(max_subscriptions, -1);
@@ -685,7 +685,7 @@ int test_params(struct context *ctx)
   }
 
   nua_handle_destroy(nh);
-  
+
   nua_shutdown(ctx->a.nua);
   run_a_until(ctx, nua_r_shutdown, condition_final_response);
   nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
@@ -726,7 +726,7 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(ctx->a.contact = sip_contact_dup(ctx->home, m));
   TEST_1(ctx->a.address = sip_to_dup(ctx->home, a));
   nua_destroy_event(ctx->a.saved_event);
-	 
+
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
 			  SIPTAG_FROM_STR("sip:bob@example.org"),
 			  NUTAG_URL("sip:*:*"),
@@ -756,7 +756,7 @@ CONDITION_FUNCTION(save_events)
 }
 
 /* Basic call:
-   
+
    A			B
    |-------INVITE------>|
    |<----100 Trying-----|
@@ -800,7 +800,7 @@ CONDITION_FUNCTION(receive_basic_call)
 
   save_event_in_list(ctx, ep);
 
-  if (event != nua_i_state) 
+  if (event != nua_i_state)
     return 0;
 
   tl_gets(tags, NUTAG_CALLSTATE_REF(state), TAG_END());
@@ -820,7 +820,7 @@ CONDITION_FUNCTION(receive_basic_call)
   case nua_callstate_early:
     fprintf(stderr, "%s.nua(%p): nua_respond() status %u %s\n",
 	    ep->name, nh, SIP_200_OK);
-    nua_respond(nh, SIP_200_OK, 
+    nua_respond(nh, SIP_200_OK,
 		SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8\n"
 				    "a=rtcp:5011"),
 		TAG_END());
@@ -847,11 +847,11 @@ int test_basic_call(struct context *ctx)
   struct endpoint *ep = &ctx->a;
   struct event *e;
 
-  TEST_1(ep->nh = nua_handle(ep->nua, 0, 
+  TEST_1(ep->nh = nua_handle(ep->nua, 0,
 			     SIPTAG_TO(ctx->b.address), TAG_END()));
 
   fprintf(stderr, "%s.nua(%p): nua_invite()\n", ep->name, ep->nh);
-  nua_invite(ep->nh, NUTAG_URL(ctx->b.contact->m_url), 
+  nua_invite(ep->nh, NUTAG_URL(ctx->b.contact->m_url),
 	     SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	     TAG_END());
 
