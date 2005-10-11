@@ -10,8 +10,9 @@ This is the initial release of the library.
 API/ABI changes and versioning
 ------------------------------
 
-Refactored interfaces of the nua (high-level
-user-agent) and soa (SDP offer/answer) modules.
+The libsofia-sip-ua library interface version (libtool)
+is set to zero. Library version will not be frozen
+until the release of 1.12.0 stable version.
 
 Contributors to this release
 ----------------------------

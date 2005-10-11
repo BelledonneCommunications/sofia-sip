@@ -3,7 +3,7 @@ README.developers - Sofia-SIP development practises
 ===============================================================
 
 Introduction
----------------------------------------------------------------
+============
 
 This file is a collection of practices and rules for Sofia-SIP
 development. If you have questions, or would like to make 
@@ -12,7 +12,7 @@ http://lists.sourceforge.net/lists/listinfo/sofia-sip-devel ).
 
 
 Important files for developers
----------------------------------------------------------------
+==============================
 
 AUTHORS
 	List of contributors. When contributing new code, add 
@@ -22,19 +22,19 @@ AUTHORS
 README.developers 
 	This file.
 
-TODO (XXX: to be added)
+TODO
 	Not in active use yet.
 
-*/ChangeLog files
+<dir>/ChangeLog files
 	All non-trivial changes to the source code should
 	be documented in the ChangeLog files.
 
 
 Version numbering 
----------------------------------------------------------------
+=================
 
 Package version
-~~~~~~~~~~~~~~~
+---------------
 
 For public releases, the package version is:
      vMAJOR.MINOR.REVISION, where MINOR is even
@@ -49,22 +49,37 @@ doing the release is responsible for updating the version number.
 
 
 Library interface versions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 TBD
 
 
+Version control tags
+====================
+
+Tags at sourceforge.net CVS
+---------------------------
+
+- server info: http://sourceforge.net/cvs/?group_id=143636
+- tags: rel-sofia-sip-x_y_z
+    - stable and development releases (matches release 
+      version sofia-sip--x.y.z)
+- tags: snapshot_rel_YEARMMDD
+    - snapshot releases at
+      http://sofia-sip.sourceforge.net/snapshots/
+
+
 Sending patches
----------------------------------------------------------------
+===============
 
 People without CVS-access
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 Send your patches to sofia-sip-devel. Someone from the 
 development team (see AUTHORS) will handle the patch.
 
 People with CVS-access
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 Trivial changes can be committed without review. For non-trivial 
 changes, you should first send a proposal to sofia-sip-devel and
@@ -72,7 +87,7 @@ wait for comments. There are no strict approval rules so use of
 common sense is recommended. ;)
 
 Tips for making patches
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 - test your patch on a clean CVS-checkout
 - remember to run cvs update before making commits

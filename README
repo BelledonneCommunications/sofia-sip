@@ -5,8 +5,13 @@ README / Sofia-SIP - a RFC3261 compliant SIP User-Agent library
 Introduction
 ------------
 
-This package is a work-in-progress version of the Sofia-SIP 
-User-Agent library.
+Sofia-SIP is an open-source SIP  User-Agent library, compliant 
+with the IETF RFC3261 specification. It can be used as 
+a building block for SIP client software for uses such as VoIP, 
+IM, and many other real-time and person-to-person communication 
+services. The primary target platform for Sofia-SIP is 
+GNU/Linux. Sofia-SIP is based on a SIP stack developed at 
+the Nokia Research Center. Sofia-SIP is licensed under the LGPL.
 
 
 Quick start
@@ -28,8 +33,8 @@ There are also multiple example clients under
 the "sofia-sip/utils" directory:
 
 - nua_cli, console mode test application for Sofia-SIP
-- options, query SIP OPTIONS
-- sip_date, SIP date printer/parser
+- sip-options, query SIP OPTIONS
+- sip-date, SIP date printer/parser
 
 
 References

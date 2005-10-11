@@ -39,7 +39,7 @@ Making the release tarball
 - update the version number in sofia-sip/configure.ac
 - make sure everything that is supposed to be in the
   release is in CVS
-- tag CVS-tree with release tag: 'REL_x_y_z', where
+- tag CVS-tree with release tag: 'rel-sofia-sip-x_y_z', where
   x_y_z is the version number (see README.developers)
 - run 'make distcheck' (requires automake-1.7 or newer)
 - calculate md5 and sha1 hashes using md5sum and sha1sum,
@@ -55,8 +55,16 @@ Creating the release notes
 
 - combine the sofia-sip/RELEASE contents with
   the template found from sfnet_www/templates/relnotes.txt
-- store the release notes to 
+- store the resulting release notes to 
   sfnet_www/relnotes/relnotes-sofia-sip-x.y.z.txt
 - commit the change to CVS, and run the 
   sfnet_www/put_online.sh script at the sourceforge.net
   shell server
+
+Announcing releases
+===================
+
+- send an announcement mail, containing the
+  release notes, to sofia-sip-devel@isource.nokia.com
+- post a news item to freshmeat.net 'sofia-sip'
+  project (current project owner: Kai Vehmanen)
