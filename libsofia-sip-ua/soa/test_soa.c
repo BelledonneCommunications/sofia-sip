@@ -145,15 +145,15 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(!soa_init_offer_answer(NULL));
 
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_audio_active(NULL));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(NULL));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_image_active(NULL));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_chat_active(NULL));
+  TEST(soa_is_audio_active(NULL), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_video_active(NULL), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_image_active(NULL), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_chat_active(NULL), SOA_ACTIVE_DISABLED);
 
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_audio_active(NULL));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(NULL));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(NULL));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(NULL));
+  TEST(soa_is_remote_audio_active(NULL), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_video_active(NULL), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_image_active(NULL), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_chat_active(NULL), SOA_ACTIVE_DISABLED);
 
   END();
 }
@@ -313,15 +313,15 @@ int test_static_offer_answer(struct context *ctx)
   TEST_1(soa_is_complete(a));
   TEST(soa_activate(a, NULL), 0);
 
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_image_active(a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_chat_active(a));
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_video_active(a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_image_active(a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_chat_active(a), SOA_ACTIVE_DISABLED);
 
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(a));
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_video_active(a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_image_active(a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_chat_active(a), SOA_ACTIVE_DISABLED);
 
   /* 'A' will put call on hold */
   TEST(soa_set_params(a, SOATAG_HOLD("*"), TAG_END()), 1);
@@ -341,8 +341,8 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_process_answer(a, test_completed), 0);
   TEST(soa_activate(a, NULL), 0);
 
-  TEST_1(SOA_ACTIVE_SENDONLY == soa_is_audio_active(a));
-  TEST_1(SOA_ACTIVE_SENDONLY == soa_is_remote_audio_active(a));
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDONLY);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDONLY);
 
   /* 'A' will release hold, propose adding video. */ 
   /* 'B' will reject. */ 
@@ -369,9 +369,9 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_process_answer(a, test_completed), 0);
   TEST(soa_activate(a, NULL), 0);
 
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(a));
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(a));
-  TEST_1(SOA_ACTIVE_REJECTED == soa_is_video_active(a));
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_video_active(a), SOA_ACTIVE_REJECTED);
 
   {
     /* Test tags */
@@ -415,14 +415,14 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_process_answer(b, test_completed), 0);
   TEST(soa_activate(b, NULL), 0);
 
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(a));
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(a));
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_video_active(a));
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_video_active(a), SOA_ACTIVE_SENDRECV);
   
   TEST_VOID(soa_terminate(a, NULL));
 
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_audio_active(a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_audio_active(a));
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_DISABLED);
 
   TEST_VOID(soa_terminate(b, NULL));
   
@@ -497,23 +497,23 @@ int test_asynch_offer_answer(struct context *ctx)
   TEST_1(soa_is_complete(ctx->asynch.a));
   TEST(soa_activate(ctx->asynch.a, NULL), 0);
 
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_audio_active(ctx->asynch.a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_video_active(ctx->asynch.a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_image_active(ctx->asynch.a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_chat_active(ctx->asynch.a));
+  TEST(soa_is_audio_active(ctx->asynch.a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_video_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_image_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_chat_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
 
-  TEST_1(SOA_ACTIVE_SENDRECV == soa_is_remote_audio_active(ctx->asynch.a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_video_active(ctx->asynch.a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_image_active(ctx->asynch.a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_chat_active(ctx->asynch.a));
+  TEST(soa_is_remote_audio_active(ctx->asynch.a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_video_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_image_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_chat_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
 
   TEST(soa_deactivate(ctx->asynch.a, NULL), 0);
   TEST(soa_deactivate(ctx->asynch.b, NULL), 0);
 
   TEST_VOID(soa_terminate(ctx->asynch.a, NULL));
 
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_audio_active(ctx->asynch.a));
-  TEST_1(SOA_ACTIVE_DISABLED == soa_is_remote_audio_active(ctx->asynch.a));
+  TEST(soa_is_audio_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
+  TEST(soa_is_remote_audio_active(ctx->asynch.a), SOA_ACTIVE_DISABLED);
 
   TEST_VOID(soa_terminate(ctx->asynch.b, NULL));
 
