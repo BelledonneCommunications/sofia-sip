@@ -4421,7 +4421,7 @@ int process_ack(nua_handle_t *nh,
 {
   struct nua_session_state *ss = nh->nh_ss;
   nua_server_request_t *sr = ss->ss_srequest;
-  msg_t *msg = nta_incoming_getrequest(irq);
+  msg_t *msg = nta_incoming_getrequest_ackcancel(irq);
   char const *recv = NULL;
 
   if (nh->nh_soa && sr->sr_offer_sent && !sr->sr_answer_recv) {
@@ -4438,12 +4438,10 @@ int process_ack(nua_handle_t *nh,
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
       reason = soa_error_as_sip_reason(nh->nh_soa);
 
-      ua_event(nh->nh_nua, nh, NULL, 
+      ua_event(nh->nh_nua, nh, msg, 
 	       nua_i_ack, status, phrase, TAG_END());
       ua_event(nh->nh_nua, nh, NULL, 
 	       nua_i_media_error, status, phrase, TAG_END());
-      
-      msg_destroy(msg);
       
       signal_call_state_change(nh, 488, "Offer-Answer Error", 
 			       nua_callstate_terminating, recv, 0);
@@ -4456,8 +4454,6 @@ int process_ack(nua_handle_t *nh,
   soa_clear_remote_sdp(nh->nh_soa);
 
   ua_event(nh->nh_nua, nh, msg, nua_i_ack, SIP_200_OK, TAG_END());
-
-  msg_destroy(msg);
 
   signal_call_state_change(nh, 200, "OK", nua_callstate_ready, recv, 0);
 
