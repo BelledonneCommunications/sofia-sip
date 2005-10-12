@@ -942,7 +942,7 @@ int soa_generate_offer(soa_session_t *ss,
 int soa_base_generate_offer(soa_session_t *ss,
 			    soa_callback_f *completed)
 {
-  sdp_session_t const *sdp = ss->ss_user->ssd_sdp;
+  sdp_session_t const *sdp = ss->ss_local->ssd_sdp;
 
   (void)completed;
 
@@ -983,7 +983,7 @@ int soa_generate_answer(soa_session_t *ss,
 int soa_base_generate_answer(soa_session_t *ss,
 			     soa_callback_f *completed)
 {
-  sdp_session_t const *l_sdp = ss->ss_user->ssd_sdp;
+  sdp_session_t const *l_sdp = ss->ss_local->ssd_sdp;
   sdp_session_t const *r_sdp = ss->ss_remote->ssd_sdp;
   sdp_session_t *rsession;
 
