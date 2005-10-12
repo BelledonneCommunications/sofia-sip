@@ -447,6 +447,9 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
   int hold_all;
   sdp_mode_t send_mode, recv_mode;
 
+  SU_DEBUG_7(("soa_sdp_mode_set_is_needed(%p, %p, \"%s\"): called\n",
+	      session, remote, hold ? hold : ""));
+
   if (!session )
     return 0;
 
@@ -485,6 +488,9 @@ int soa_sdp_mode_set(sdp_session_t *session,
   sdp_media_t const *rm, *rm_next;
   int hold_all;
   sdp_mode_t send_mode, recv_mode;
+
+  SU_DEBUG_7(("soa_sdp_mode_set(%p, %p, \"%s\"): called\n",
+	      session, remote, hold ? hold : ""));
 
   if (!session || !session->sdp_media)
     return 0;
@@ -547,6 +553,8 @@ static int offer_answer_step(soa_session_t *ss,
 
   su_home_auto(tmphome, sizeof tmphome);
 
+  SU_DEBUG_7(("soa_static_offer_answer_action(%p, %s): called\n", ss, by));
+
   if (user == NULL)
     return soa_set_status(ss, 500, "No session set by user");
 
@@ -559,7 +567,7 @@ static int offer_answer_step(soa_session_t *ss,
   case process_answer:
     if (sdp_media_count(remote, sdp_media_any, "*", 0, 0) < 
 	sdp_media_count(local, sdp_media_any, "*", 0, 0)) {
-      SU_DEBUG_5(("%s: remote %s is truncated\n",
+      SU_DEBUG_5(("%s: remote %s is truncated: expanding\n",
 		  by, action == generate_answer ? "offer" : "answer"));
       remote = soa_sdp_expand_media(tmphome, remote, local);
     }
@@ -571,6 +579,8 @@ static int offer_answer_step(soa_session_t *ss,
   if (local == NULL) switch (action) {
   case generate_offer:
   case generate_answer:
+    SU_DEBUG_7(("soa_static(%p, %s): generating local description\n", ss, by));
+
     local = local0;
     *local = *user, local->sdp_media = NULL;
 
@@ -586,6 +596,7 @@ static int offer_answer_step(soa_session_t *ss,
       phrase = "Cannot Get IP Address for Media";
       goto internal_error;
     }
+
     break;
 
   case process_answer:
@@ -601,6 +612,7 @@ static int offer_answer_step(soa_session_t *ss,
       break;
     if (local != local0)
       *local0 = *local, local = local0;
+    SU_DEBUG_7(("soa_static(%p, %s): upgrade with local description\n", ss, by));
     soa_sdp_upgrade(ss, tmphome, local, user, user);
     break;
   case generate_answer:
@@ -610,6 +622,7 @@ static int offer_answer_step(soa_session_t *ss,
     if (soa_sdp_upgrade_is_needed(local, remote)) {
       if (local != local0)
 	*local0 = *local, local = local0;
+      SU_DEBUG_7(("soa_static(%p, %s): upgrade with remote description\n", ss, by));
       soa_sdp_upgrade(ss, tmphome, local, user, remote);
     }
     break;
@@ -640,6 +653,7 @@ static int offer_answer_step(soa_session_t *ss,
 
 	DUP_LOCAL(local);
       }
+      SU_DEBUG_7(("soa_static(%p, %s): marking rejected media\n", ss, by));
       soa_sdp_reject(tmphome, local, remote);
     }
     break;
@@ -701,6 +715,8 @@ static int offer_answer_step(soa_session_t *ss,
       ss->ss_previous_user_version = ss->ss_local_user_version;
       ss->ss_previous_remote_version = ss->ss_local_remote_version;
     }
+
+    SU_DEBUG_7(("soa_static(%p, %s): storing local description\n", ss, by));
 
     /* Update the unparsed and pretty-printed descriptions  */
     if (soa_description_set(ss, ss->ss_local, local, NULL, 0) < 0) {
