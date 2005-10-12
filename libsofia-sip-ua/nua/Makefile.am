@@ -47,21 +47,21 @@ nua_objs_o_LDADD =
 COVERAGE_INPUT = 	$(nua_objs_o_SOURCES) $(include_HEADERS)
 
 LDADD = 		libnua.a \
-			-L../iptsec -liptsec \
-			-L../ipt -lipt \
-			-L../http -lhttp \
-			-L../nea -lnea \
-			-L../nta -lnta \
-			-L../sresolv -lsresolv \
-			-L../tport -ltport \
-			-L../stun -lstun \
-			-L../soa -lsoa \
-			-L../sdp -lsdp \
-			-L../sip -lsip \
-			-L../msg -lmsg \
-			-L../url -lurl \
-			-L../bnf -lbnf \
-			-L../su -lsu
+			../iptsec/libiptsec.a \
+			../ipt/libipt.a \
+			../http/libhttp.a \
+			../nea/libnea.a \
+			../nta/libnta.a \
+			../sresolv/libsresolv.a \
+			../tport/libtport.a \
+			../stun/libstun.a \
+			../soa/libsoa.a \
+			../sdp/libsdp.a \
+			../sip/libsip.a \
+			../msg/libmsg.a \
+			../url/liburl.a \
+			../bnf/libbnf.a \
+			../su/libsu.a
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
