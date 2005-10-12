@@ -73,6 +73,9 @@
 /** Define as suitable declarator static inline functions */
 #undef su_inline
 
+/** Define this as 1 if we can use tags directly from stack. */
+#undef SU_HAVE_TAGSTACK 
+
 /* These are valid only for GCC */
 
 #define SU_S64_C(i) (SU_S64_T)(i ## LL)

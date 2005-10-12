@@ -25,6 +25,12 @@ case "$target" in
 ;;
 esac
 
+case "$target" in 
+i?86-*-* )
+  SAC_SU_DEFINE(SU_HAVE_TAGSTACK, 1, [Define this as 1 if we can use tags directly from stack.])
+;;
+esac
+
 if false; then
   #
   # Define Win32 macros
