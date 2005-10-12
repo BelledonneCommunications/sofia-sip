@@ -150,9 +150,17 @@ int t_snprintf(tagi_t const *t, char b[], size_t size)
 
 /** Get next tag item from list.
  */
-tagi_t const *tl_next(tagi_t const *t)
+tagi_t *tl_next(tagi_t const *t)
 {
-  return t_next(t);
+  tag_type_t tt;
+
+  t = t_next(t);
+
+  for (tt = TAG_TYPE_OF(t); t && tt->tt_next; tt = TAG_TYPE_OF(t)) {
+    t = tt->tt_next(t);
+  }
+
+  return (tagi_t *)t;
 }
 
 /**Move a tag list.
@@ -680,8 +688,7 @@ tagi_t *tl_vlist2(tag_type_t tag, tag_value_t value, va_list ap)
   return rv;
 }
 
-
-/** Make a tag list */
+/** Make a tag list until TAG_NEXT() or TAG_END() */
 tagi_t *tl_list(tag_type_t tag, tag_value_t value, ...)
 {
   va_list ap;  
@@ -694,13 +701,96 @@ tagi_t *tl_list(tag_type_t tag, tag_value_t value, ...)
   return t;
 }
 
-/** Free a tag list allocated by tl_list() or tl_vlist(). */
+/** Calculate length of a linear tag list. */
+size_t tl_vllen(tag_type_t tag, tag_value_t value, va_list ap)
+{
+  size_t len = sizeof(tagi_t);
+  tagi_t const *next;
+  tagi_t tagi[3];
+
+  tagi[0].t_tag = tag;
+  tagi[0].t_value = value;
+  tagi[1].t_tag = tag_any;
+  tagi[1].t_value = 0;
+
+  for (;;) {
+    next = tl_next(tagi);
+    if (next != tagi + 1)
+      break;
+    
+    if (tagi->t_tag != tag_skip)
+      len += sizeof(tagi_t);
+    tagi->t_tag = va_arg(ap, tag_type_t);
+    tagi->t_value = va_arg(ap, tag_value_t);
+  }
+
+  for (; next; next = tl_next(next))
+    len += sizeof(tagi_t);
+
+  return len;
+}
+
+/** Make a linear tag list. */
+tagi_t *tl_vllist(tag_type_t tag, tag_value_t value, va_list ap)
+{
+  va_list aq;
+  tagi_t *t, *rv;
+  tagi_t const *next;
+  tagi_t tagi[2];
+
+  int size;
+
+  va_copy(aq, ap);
+  size = tl_vllen(tag, value, aq);
+  va_end(aq);
+
+  t = rv = malloc(size);
+
+  tagi[0].t_tag = tag;
+  tagi[0].t_value = value;
+  tagi[1].t_tag = tag_any;
+  tagi[1].t_value = 0;
+
+  for (;;) {
+    next = tl_next(tagi);
+    if (next != tagi + 1)
+      break;
+
+    if (tagi->t_tag != tag_skip)
+      *t++ = *tagi;
+
+    tagi->t_tag = va_arg(ap, tag_type_t);
+    tagi->t_value = va_arg(ap, tag_value_t);
+  }
+
+  for (; next; next = tl_next(next))
+    *t++ = *next;
+
+  t->t_tag = NULL; t->t_value = 0; t++;
+
+  assert((char *)rv + size == (char *)t);
+
+  return rv;
+}
+/** Make a linear tag list until TAG_END() */
+tagi_t *tl_llist(tag_type_t tag, tag_value_t value, ...)
+{
+  va_list ap;  
+  tagi_t *t;
+
+  va_start(ap, value);
+  t = tl_vllist(tag, value, ap);
+  va_end(ap);
+
+  return t;
+}
+
+/** Free a tag list allocated by tl_list(), tl_llist() or tl_vlist(). */
 void tl_vfree(tagi_t *t)
 {
   if (t)
     free(t);
 }
-
 
 /** Convert a string to the a value of a tag. */
 int t_scan(tag_type_t tt, su_home_t *home, char const *s, 
@@ -765,6 +855,11 @@ tag_class_t null_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+tagi_t const *t_skip_next(tagi_t const *t)
+{
+  return t + 1;
+}
+
 tagi_t *t_skip_move(tagi_t *dst, tagi_t const *src)
 {
   return dst;
@@ -783,7 +878,7 @@ tagi_t *t_skip_dup(tagi_t *dst, tagi_t const *src, void **bb)
 tag_class_t skip_tag_class[1] = 
   {{
     sizeof(skip_tag_class),
-    /* tc_next */     NULL,
+    /* tc_next */     t_skip_next,
     /* tc_len */      t_skip_len,
     /* tc_move */     t_skip_move,
     /* tc_xtra */     NULL,

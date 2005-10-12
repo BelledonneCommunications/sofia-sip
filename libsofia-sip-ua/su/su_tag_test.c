@@ -288,7 +288,7 @@ static int test_stackargs(int l, ...)
 static int test_stackargs(int l, ...) { return 0; }
 #endif
 
-/** Test tl_list and tl_dup */
+/** Test tl_list, tl_llist and tl_dup */
 static int test_dup(void)
 {
   tagi_t const rest[] = {{ TAG_A("Foo") }, { TAG_NULL() }};
@@ -318,6 +318,31 @@ static int test_dup(void)
   TEST(tl_xtra(dup, 0), strlen("Moro" "Vaan" "Foo") + 3);
 
   su_free(NULL, dup);
+
+  dup = tl_llist(TAG_B("Moi"), TAG_NEXT(lst));
+
+  TEST(dup[0].t_tag, tag_b);
+  TEST(dup[1].t_tag, tag_a);
+  TEST(dup[2].t_tag, tag_a);
+  TEST(dup[3].t_tag, tag_i);
+  TEST(dup[4].t_tag, tag_a);
+  TEST(dup[5].t_tag, NULL);
+
+  su_free(NULL, dup);
+
+  dup = tl_llist(TAG_NEXT(NULL));
+  TEST(dup[0].t_tag, 0);
+  su_free(NULL, dup);
+
+  dup = tl_llist(TAG_END());
+  TEST(dup[0].t_tag, 0);
+  su_free(NULL, dup);
+
+  dup = tl_llist(TAG_SKIP(1), TAG_NEXT(lst + 4));
+  TEST(dup[0].t_tag, tag_a);
+  TEST(dup[1].t_tag, 0);
+  su_free(NULL, dup);
+
   tl_vfree(lst);
 
   END();
@@ -419,10 +444,6 @@ static int test_tagargs2(tag_type_t tag, tag_value_t value, ...)
   t = ta_args(ta);
   TEST(t->t_tag, tag_a);
   TEST_S((char *)t->t_value, "a");
-
-  t = tl_next(t);
-  TEST(t->t_tag, tag_next); 
-  TEST_1(t->t_value != 0);
 
   t = tl_next(t);
   TEST(t->t_tag, tag_b);

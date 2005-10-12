@@ -126,7 +126,7 @@ int tl_tremove(tagi_t lst[], tag_type_t tag, tag_value_t value, ...);
 /* Low-level taglist manipulation functions */
 size_t tl_len(tagi_t const lst[]);
 size_t tl_xtra(tagi_t const lst[], size_t offset);
-tagi_t const *tl_next(tagi_t const *lst);
+tagi_t *tl_next(tagi_t const *lst);
 tagi_t *tl_move(tagi_t *dst, tagi_t const src[]);
 tagi_t *tl_dup(tagi_t dst[], tagi_t const lst[], void **bb);
 tagi_t *tl_adup(su_home_t *, tagi_t const lst[]);
@@ -142,6 +142,8 @@ size_t  tl_vlen(va_list ap);
 tagi_t *tl_list(tag_type_t tag, tag_value_t value, ...);
 tagi_t *tl_vlist2(tag_type_t tag, tag_value_t value, va_list ap);
 tagi_t *tl_vlist(va_list ap);
+tagi_t *tl_llist(tag_type_t tag, tag_value_t value, ...);
+tagi_t *tl_vllist(tag_type_t tag, tag_value_t value, va_list ap);
 void    tl_vfree(tagi_t *t);
 
 /** Align to pointer size */
