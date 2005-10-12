@@ -71,7 +71,7 @@ int msg_is_prepared(msg_t const *msg);
 unsigned msg_size(msg_t const *msg);
 unsigned msg_maxsize(msg_t *msg, unsigned maxsize);
 
-#define msg_home(h) (su_home_t*)(h)
+#define msg_home(h) ((su_home_t*)(h))
 
 enum msg_streaming_status {
   /** Disable streaming */
