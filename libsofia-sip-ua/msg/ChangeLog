@@ -1,3 +1,9 @@
+2005-10-12  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed msg_home() macro.
+
+    M ./libsofia-sip-ua/msg/msg.h -1 +1
+
 2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Dox fix to msg_header_replace().

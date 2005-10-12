@@ -1,3 +1,25 @@
+2005-10-12  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added more logging.
+
+    M ./libsofia-sip-ua/soa/soa_static.c -1 +17
+
+  * Using SDP O/A result to determine media activity.
+
+    M ./libsofia-sip-ua/soa/soa.c -2 +2
+
+  * Sanitized soa_sdp_upgrade_is_needed().
+
+    M ./libsofia-sip-ua/soa/soa_static.c -27 +11
+
+  * Fixed active tests.
+
+    M ./libsofia-sip-ua/soa/test_soa.c -36 +36
+
+  * Fixed soa_get_paramlist() for complex cases.
+
+    M ./libsofia-sip-ua/soa/soa.c -1 +1
+
 2005-09-29  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added SOATAG_ACTIVE_* stuff.

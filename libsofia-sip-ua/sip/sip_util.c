@@ -23,7 +23,7 @@
  */
 
 const char _sip_util_c_id[] =
-"$Id: sip_util.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
+"$Id: sip_util.c,v 1.4 2005/10/12 18:32:48 ppessi Exp $";
 /**@CFILE sip_util.c
  * 
  * SIP utility functions.
@@ -31,7 +31,7 @@ const char _sip_util_c_id[] =
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/09/09 10:56:31 $
+ * $Date: 2005/10/12 18:32:48 $
  */
 
 #include "config.h"

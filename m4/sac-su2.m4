@@ -9,7 +9,7 @@ dnl automake complains about missing su/su_configure.h.
 
 AC_DEFUN([SAC_SOFIA_SU], [
 # Beginning of SAC_SOFIA_SU
-# $Id: sac-su2.m4,v 1.4 2005/10/11 09:02:37 ppessi Exp $
+# $Id: sac-su2.m4,v 1.5 2005/10/12 18:32:48 ppessi Exp $
 
 AC_REQUIRE([SAC_WITH_RT])
 

@@ -1,3 +1,44 @@
+2005-10-12  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added test for call hold.
+
+    M ./libsofia-sip-ua/nua/test_nua.c +241
+
+  * Added better logging functions.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -77 +149
+
+  * LDADD now have dependencies.
+
+    M ./libsofia-sip-ua/nua/Makefile.am -15 +15
+
+  * Added call reject cases.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -62 +461
+
+  * When call is retried or terminated, always send nua_i_state after
+  nua_r_invite().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -53 +55
+
+  * Fixed reference counting bug in process_ack().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -6 +2
+
+2005-10-11  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Used picture-mode (cleaned up whitespace at eol).
+
+    M ./libsofia-sip-ua/nua/test_nua.c -23 +23
+
+  * Testing call flow on client side, too.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -17 +94
+
+  * Transitions terminating call. Added letter C, S, and T to transitions.
+
+    M ./libsofia-sip-ua/nua/nua.docs -72 +159
+
 2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed basic call test run. 

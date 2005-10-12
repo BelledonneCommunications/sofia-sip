@@ -23,7 +23,7 @@
  */
 
 #ifndef MSG_H /** Defined when msg.h has been included */
-#define MSG_H "$Id: msg.h,v 1.2 2005/08/03 17:17:54 ppessi Exp $"
+#define MSG_H "$Id: msg.h,v 1.3 2005/10/12 18:32:48 ppessi Exp $"
 /**@ingroup msg
  * @file msg.h
  *
@@ -33,7 +33,7 @@
  *
  * @date Created: Fri Feb 18 08:54:48 2000 ppessi
  *
- * $Date: 2005/08/03 17:17:54 $
+ * $Date: 2005/10/12 18:32:48 $
  *
  */
 

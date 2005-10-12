@@ -29,7 +29,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Aug 16 17:06:06 EEST 2005
- * $Date: 2005/09/28 20:05:24 $
+ * $Date: 2005/10/12 18:32:48 $
  *
  * @par Use-cases
  *  1. no existing session
@@ -49,7 +49,7 @@
 #include "config.h"
 
 const char soa_static_c_id[] =
-"$Id: soa_static.c,v 1.5 2005/09/28 20:05:24 ppessi Exp $";
+"$Id: soa_static.c,v 1.6 2005/10/12 18:32:48 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -23,7 +23,7 @@
  */
 
 const char _su_tag_test_c_id[] =
-"$Id: su_tag_test.c,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $";
+"$Id: su_tag_test.c,v 1.2 2005/10/12 18:32:48 ppessi Exp $";
 
 /**@SU_TAG
  * 
@@ -34,7 +34,7 @@ const char _su_tag_test_c_id[] =
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Mar  6 18:33:42 2001 ppessi
- * $Date: 2005/07/20 20:35:58 $
+ * $Date: 2005/10/12 18:32:48 $
  */
 
 #include "config.h"

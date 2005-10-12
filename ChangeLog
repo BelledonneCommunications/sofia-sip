@@ -1,3 +1,10 @@
+2005-10-12  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Defining SU_HAVE_TAGSTACK.
+
+    M ./libsofia-sip-ua/su/su_configure.h.in +3
+    M ./m4/sac-su2.m4 +6
+
 2005-10-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added --without-glib option, added SU_HAVE_GLIB in su_configure.h.
