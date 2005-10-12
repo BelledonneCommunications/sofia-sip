@@ -255,42 +255,26 @@ sdp_session_t *soa_sdp_expand_media(su_home_t *home,
   return expanded;
 }
 
-/** Check if @a session should be upgraded with @a upgrader */ 
+/** Check if @a session should be upgraded with @a remote */ 
 int soa_sdp_upgrade_is_needed(sdp_session_t const *session,
-			      sdp_session_t const *upgrader)
+			      sdp_session_t const *remote)
 {
-  sdp_media_t const *um, *m;
-  unsigned in_session, in_upgrader;
-  unsigned multi = 0;
+  sdp_media_t const *rm, *lm;
 
-  if (!upgrader)
+  if (!remote)
     return 0;
   if (!session)
     return 1;
 
-  if (!session->sdp_media && upgrader->sdp_media)
-    return 1;
-  
-  for (um = upgrader->sdp_media; um; um = um->m_next) {
-    if (multi) {
-      for (m = upgrader->sdp_media; m != um; m = m->m_next)
-	if (sdp_media_match_with(um, m))
-	  break;
-      if (m != um)
-	continue;		/* um already processed */
-    }
-
-    in_session = sdp_media_count_with(session, um);
-    in_upgrader = sdp_media_count_with(upgrader, um);
-    
-    if (in_upgrader > in_session)
-      return 1;
-    
-    if (in_upgrader > 1)
-      multi = 1;
+  for (rm = remote->sdp_media, lm = session->sdp_media; 
+       rm && lm ; rm = rm->m_next, lm = lm->m_next) {
+    if (rm->m_rejected)
+      continue;
+    if (lm->m_rejected)
+      break;
   }
 
-  return 0;
+  return rm != NULL;
 }
 
 
