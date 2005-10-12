@@ -45,8 +45,7 @@
 
 struct context;
 #define NUA_MAGIC_T struct context
-struct call;
-#define NUA_HMAGIC_T struct call
+#define NUA_HMAGIC_T void
 
 #include "nua.h"
 #include "nua_tag.h"
@@ -84,7 +83,7 @@ int condition_function(nua_event_t event,
 		       int status, char const *phrase,
 		       nua_t *nua, struct context *ctx,
 		       struct endpoint *ep,
-		       nua_handle_t *nh, struct call *call,
+		       nua_handle_t *nh, void *call,
 		       sip_t const *sip,
 		       tagi_t tags[]);
 
@@ -95,15 +94,16 @@ struct context
 
   int running;
 
-  nua_t *next_stack, *last_stack;
-
   struct endpoint {
     char name[4];
+    struct context *ctx;	/* Backpointer */
     condition_function *next_condition;
     nua_event_t next_event, last_event;
     nua_t *nua;
     sip_contact_t *contact;
     sip_from_t *address;
+
+    condition_function *printer;
 
     /* Per-call stuff */
     nua_handle_t *nh;
@@ -128,7 +128,7 @@ struct event
 	   int status, char const *phrase,	\
 	   nua_t *nua, struct context *ctx,	\
 	   struct endpoint *ep,			\
-	   nua_handle_t *nh, struct call *call, \
+	   nua_handle_t *nh, void *call, \
 	   sip_t const *sip,			\
 	   tagi_t tags[])
 
@@ -142,19 +142,94 @@ CONDITION_FUNCTION(save_final_response)
   return 1;
 }
 
+/* Return call state from event tag list */
+int callstate(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_callstate);
+  return ti ? ti->t_value : -1;
+}
+
+/* Return true if offer is sent */
+int is_offer_sent(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_offer_sent);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if answer is sent */
+int is_answer_sent(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_answer_sent);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if offer is recv */
+int is_offer_recv(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_offer_recv);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if answer is recv */
+int is_answer_recv(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_answer_recv);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return audio state from event tag list */
+int audio_activity(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, soatag_active_audio);
+  return ti ? ti->t_value : -1;
+}
+
+/* Return video state from event tag list */
+int video_activity(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, soatag_active_video);
+  return ti ? ti->t_value : -1;
+}
+
+
+CONDITION_FUNCTION(print_event)
+{
+  if (event == nua_i_state) {
+    fprintf(stderr, "%s.nua(%p): event %s %s\n",
+	    ep->name, nh, nua_event_name(event), 
+	    nua_callstate_name(callstate(tags)));
+  }
+  else if ((int)event >= 0) {
+    fprintf(stderr, "%s.nua(%p): event %s status %u %s\n",
+	    ep->name, nh, nua_event_name(event), status, phrase);
+  }
+  else if (status > 0) {
+    fprintf(stderr, "%s.nua(%p): call %s() with status %u %s\n",
+	    ep->name, nh, (char const *)call, status, phrase);
+  }
+  else {
+    fprintf(stderr, "%s.nua(%p): call %s()\n",
+	    ep->name, nh, (char const *)call);
+  }
+
+  if ((tstflags & tst_verbatim) && tags)
+    tl_print(stderr, "", tags);
+
+  return 0;
+}
+	       
+
 void a_callback(nua_event_t event,
 		int status, char const *phrase,
 		nua_t *nua, struct context *ctx,
-		nua_handle_t *nh, struct call *call,
+		nua_handle_t *nh, void *call,
 		sip_t const *sip,
 		tagi_t tags[])
 {
   struct endpoint *ep = &ctx->a;
 
-  fprintf(stderr, "%s.nua(%p): event %s status %u %s\n",
-	  ep->name, nh, nua_event_name(event), status, phrase);
-  if (tstflags & tst_verbatim)
-    tl_print(stderr, "", tags);
+  if (ep->printer)
+    ep->printer(event, status, phrase, nua, ctx, ep, nh, call, sip, tags);
 
   if ((ep->next_event == -1 || ep->next_event == event) &&
       (ep->next_condition == NULL ||
@@ -169,23 +244,20 @@ void a_callback(nua_event_t event,
 void b_callback(nua_event_t event,
 		int status, char const *phrase,
 		nua_t *nua, struct context *ctx,
-		nua_handle_t *nh, struct call *call,
+		nua_handle_t *nh, void *call,
 		sip_t const *sip,
 		tagi_t tags[])
 {
   struct endpoint *ep = &ctx->b;
 
-  fprintf(stderr, "%s.nua(%p): event %s status %u %s\n",
-	  ep->name, nh, nua_event_name(event), status, phrase);
-  if (tstflags & tst_verbatim)
-    tl_print(stderr, "", tags);
+  if (ep->printer)
+    ep->printer(event, status, phrase, nua, ctx, ep, nh, call, sip, tags);
 
   if ((ep->next_event == -1 || ep->next_event == event) &&
       (ep->next_condition == NULL ||
        ep->next_condition(event, status, phrase,
 			  nua, ctx, ep, nh, call, sip, tags)))
     ctx->running = 0;
-
 
   ep->last_event = -1;
   ep->last_event = event;
@@ -223,6 +295,40 @@ int run_b_until(struct context *ctx,
   return ctx->b.last_event;
 }
 
+/* Invite via endpoint and handle */
+int invite(struct endpoint *ep, nua_handle_t *nh,
+	   tag_type_t tag, tag_value_t value,
+	   ...)
+{
+  ta_list ta;
+
+  ta_start(ta, tag, value);
+  if (ep->printer)
+    ep->printer(-1, 0, "", ep->nua, ep->ctx, ep, 
+		nh, "nua_invite", NULL, ta_args(ta));
+  nua_invite(nh, ta_tags(ta));
+  ta_end(ta);
+
+  return 0;
+}
+
+/* bye via endpoint and handle */
+int bye(struct endpoint *ep, nua_handle_t *nh,
+	tag_type_t tag, tag_value_t value,
+	...)
+{
+  ta_list ta;
+
+  ta_start(ta, tag, value);
+  if (ep->printer)
+    ep->printer(-1, 0, "", ep->nua, ep->ctx, ep, 
+		nh, "nua_bye", NULL, ta_args(ta));
+  nua_bye(nh, ta_tags(ta));
+  ta_end(ta);
+
+  return 0;
+}
+
 /* Respond via endpoint and handle */
 int respond(struct endpoint *ep, nua_handle_t *nh,
 	    int status, char const *phrase,
@@ -231,15 +337,18 @@ int respond(struct endpoint *ep, nua_handle_t *nh,
 {
   ta_list ta;
 
-  fprintf(stderr, "%s.nua(%p): nua_respond() status %u %s\n",
-	  ep->name, nh, status, phrase);
-
   ta_start(ta, tag, value);
+
+  if (ep->printer)
+    ep->printer(-1, status, phrase, ep->nua, ep->ctx, ep, 
+		nh, "nua_respond", NULL, ta_args(ta));
+
   nua_respond(nh, status, phrase, ta_tags(ta));
   ta_end(ta);
 
   return 0;
 }
+
 
 
 /* Reject all but currently used handle */
@@ -288,41 +397,6 @@ void free_events_in_list(struct context *ctx, struct endpoint *ep)
     su_free(ctx->home, e);
   }
   ep->events.tail = &ep->events.head;
-}
-
-/* Return call state from event tag list */
-int callstate(tagi_t const *tags)
-{
-  tagi_t const *ti = tl_find(tags, nutag_callstate);
-  return ti ? ti->t_value : -1;
-}
-
-/* Return true if offer is sent */
-int is_offer_sent(tagi_t const *tags)
-{
-  tagi_t const *ti = tl_find(tags, nutag_offer_sent);
-  return ti ? ti->t_value : 0;
-}
-
-/* Return true if answer is sent */
-int is_answer_sent(tagi_t const *tags)
-{
-  tagi_t const *ti = tl_find(tags, nutag_answer_sent);
-  return ti ? ti->t_value : 0;
-}
-
-/* Return true if offer is recv */
-int is_offer_recv(tagi_t const *tags)
-{
-  tagi_t const *ti = tl_find(tags, nutag_offer_recv);
-  return ti ? ti->t_value : 0;
-}
-
-/* Return true if answer is recv */
-int is_answer_recv(tagi_t const *tags)
-{
-  tagi_t const *ti = tl_find(tags, nutag_answer_recv);
-  return ti ? ti->t_value : 0;
 }
 
 void nolog(void *stream, char const *fmt, va_list ap) {}
@@ -813,6 +887,8 @@ CONDITION_FUNCTION(save_events)
   return 0;
 }
 
+/* ======================================================================== */
+
 /* Basic call:
 
    A			B
@@ -873,8 +949,7 @@ CONDITION_FUNCTION(receive_basic_call)
   case nua_callstate_completed:
     return 0;
   case nua_callstate_ready:
-    fprintf(stderr, "%s.nua(%p): nua_bye()\n", ep->name, nh);
-    nua_bye(nh, TAG_END());
+    bye(ep, nh, TAG_END());
     return 0;
   case nua_callstate_terminating:
     return 0;
@@ -894,10 +969,9 @@ int test_basic_call(struct context *ctx)
 
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
 
-  fprintf(stderr, "%s.nua(%p): nua_invite()\n", a->name, a->nh);
-  nua_invite(a->nh, NUTAG_URL(b->contact->m_url),
-	     SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
-	     TAG_END());
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 TAG_END());
 
   run_until(ctx, -1, save_events, -1, receive_basic_call);
 
@@ -907,7 +981,6 @@ int test_basic_call(struct context *ctx)
      PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
      READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
   */
-
   TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags)); 
@@ -1134,11 +1207,10 @@ int test_call_rejects(struct context *ctx)
   */
 
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
-  fprintf(stderr, "%s.nua(%p): nua_invite(reject-1)\n", a->name, a->nh);
-  nua_invite(a->nh, NUTAG_URL(b->contact->m_url),
-	     SIPTAG_SUBJECT_STR("reject-1"),
-	     SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
-	     TAG_END());
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SIPTAG_SUBJECT_STR("reject-1"),
+	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 TAG_END());
   run_until(ctx, -1, until_terminated, -1, reject_1);
 
   /* 
@@ -1185,11 +1257,10 @@ int test_call_rejects(struct context *ctx)
 
   /* Make call reject-2 */
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
-  fprintf(stderr, "%s.nua(%p): nua_invite(reject-1)\n", a->name, a->nh);
-  nua_invite(a->nh, NUTAG_URL(b->contact->m_url),
-	     SIPTAG_SUBJECT_STR("reject-2"),
-	     SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
-	     TAG_END());
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SIPTAG_SUBJECT_STR("reject-2"),
+	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 TAG_END());
   run_until(ctx, -1, until_terminated, -1, reject_2);
 
   /*
@@ -1229,11 +1300,10 @@ int test_call_rejects(struct context *ctx)
 
   /* Make call reject-3 */
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
-  fprintf(stderr, "%s.nua(%p): nua_invite(reject-1)\n", a->name, a->nh);
-  nua_invite(a->nh, NUTAG_URL(b->contact->m_url),
-	     SIPTAG_SUBJECT_STR("reject-3"),
-	     SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
-	     TAG_END());
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SIPTAG_SUBJECT_STR("reject-3"),
+	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 TAG_END());
   run_until(ctx, -1, until_terminated, -1, reject_3);
 
   /*
@@ -1353,8 +1423,10 @@ int main(int argc, char *argv[])
   struct context ctx[1] = {{{ SU_HOME_INIT(ctx) }}};
 
   ctx->a.name[0] = 'a';
+  ctx->a.ctx = ctx;
   ctx->a.events.tail = &ctx->a.events.head;
   ctx->b.name[0] = 'b';
+  ctx->b.ctx = ctx;
   ctx->b.events.tail = &ctx->b.events.head;
 
   for (i = 1; argv[i]; i++) {
