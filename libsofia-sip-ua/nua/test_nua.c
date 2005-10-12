@@ -208,8 +208,16 @@ CONDITION_FUNCTION(print_event)
 	    ep->name, nh, (char const *)call, status, phrase);
   }
   else {
-    fprintf(stderr, "%s.nua(%p): call %s()\n",
-	    ep->name, nh, (char const *)call);
+    tagi_t const *t;
+    t = tl_find(tags, siptag_subject_str);
+    if (t && t->t_value) {
+      char const *subject = (char const *)t->t_value;
+      fprintf(stderr, "%s.nua(%p): call %s() \"%s\"\n",
+	      ep->name, nh, (char const *)call, subject);
+    }
+    else
+      fprintf(stderr, "%s.nua(%p): call %s()\n",
+	      ep->name, nh, (char const *)call);
   }
 
   if ((tstflags & tst_verbatim) && tags)
@@ -301,14 +309,15 @@ int invite(struct endpoint *ep, nua_handle_t *nh,
 	   ...)
 {
   ta_list ta;
-
   ta_start(ta, tag, value);
+
   if (ep->printer)
     ep->printer(-1, 0, "", ep->nua, ep->ctx, ep, 
 		nh, "nua_invite", NULL, ta_args(ta));
-  nua_invite(nh, ta_tags(ta));
-  ta_end(ta);
 
+  nua_invite(nh, ta_tags(ta));
+
+  ta_end(ta);
   return 0;
 }
 
@@ -1545,7 +1554,9 @@ int test_call_hold(struct context *ctx)
   */
 
   /* Put B on hold */
-  invite(a, a->nh, SOATAG_HOLD("audio"), TAG_END());
+  invite(a, a->nh, SOATAG_HOLD("audio"), 
+	 SIPTAG_SUBJECT_STR("hold b"),
+	 TAG_END());
   run_until(ctx, -1, until_terminated, -1, until_ready);
 
   /* Client transitions:
@@ -1581,6 +1592,158 @@ int test_call_hold(struct context *ctx)
   TEST_1(!e->next);
 
   free_events_in_list(ctx, b);
+
+  /*
+ :                    :
+ |<-INVITE(inactive)--|
+ |----200(inactive)-->|
+ |<--------ACK--------|
+ :                    :
+  */
+
+  /* Put A on hold, too. */
+  invite(b, b->nh, SOATAG_HOLD("audio"), 
+	 SIPTAG_SUBJECT_STR("hold a"),
+	 TAG_END());
+  run_until(ctx, -1, until_ready, -1, until_terminated);
+
+  /* Client transitions:
+     READY -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C3b+C4)-> READY: nua_r_invite, nua_i_state
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags)); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(is_answer_recv(e->data->e_tags)); 
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_INACTIVE);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b);
+
+  /*
+   Server transitions: 
+   READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = a->events.head); /* TEST(e->data->e_event, nua_i_invite);
+  XXX - nua_i_invite from re-INVITE missing?
+  TEST_1(e = e->next); */ TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags)); 
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_INACTIVE);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_INACTIVE);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+
+  /* ------------------------------------------------------------------------ */
+  /* Resume B from hold */
+  invite(a, a->nh, SOATAG_HOLD(NULL), 
+	 SIPTAG_SUBJECT_STR("resume b"),
+	 TAG_END());
+  run_until(ctx, -1, until_terminated, -1, until_ready);
+
+  /*
+ :                    :
+ |--INVITE(recvonly)->|
+ |<---200(sendonly)---|
+ |---------ACK------->|
+ :                    :
+  */
+
+  /* Client transitions:
+     READY -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C3b+C4)-> READY: nua_r_invite, nua_i_state
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags)); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(is_answer_recv(e->data->e_tags)); 
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_RECVONLY);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a);
+
+  /*
+   Server transitions: 
+   READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = b->events.head); /* TEST(e->data->e_event, nua_i_invite);
+  XXX - nua_i_invite from re-INVITE missing?
+  TEST_1(e = e->next); */ TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags)); 
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDONLY);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDONLY);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b);
+
+  /* ------------------------------------------------------------------------ */
+  /*
+ :                    :
+ |<-INVITE(sendrecv)--|
+ |----200(sendrecv)-->|
+ |<--------ACK--------|
+ :                    :
+  */
+
+  /* Resume A on hold, too. */
+  invite(b, b->nh, SOATAG_HOLD(""), 
+	 SIPTAG_SUBJECT_STR("resume a"),
+	 TAG_END());
+  run_until(ctx, -1, until_ready, -1, until_terminated);
+
+  /* Client transitions:
+     READY -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C3b+C4)-> READY: nua_r_invite, nua_i_state
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags)); 
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(is_answer_recv(e->data->e_tags)); 
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b);
+
+  /*
+   Server transitions: 
+   READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = a->events.head); /* TEST(e->data->e_event, nua_i_invite);
+  XXX - nua_i_invite from re-INVITE missing?
+  TEST_1(e = e->next); */ TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags)); 
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
 
   /*
  A                    B
