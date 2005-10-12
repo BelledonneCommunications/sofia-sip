@@ -49,6 +49,12 @@ int sip_params_cmp(sip_param_t const a[], sip_param_t const b[]);
 int sip_params_replace(su_home_t *, sip_param_t **pparams, sip_param_t param);
 unsigned long sip_hash_string(char const *id);
 
+sip_contact_t *
+sip_contact_create_from_via_with_transport(su_home_t *home, 
+					   sip_via_t const *v,
+					   char const *user,
+					   char const *transport);
+
 sip_contact_t *sip_contact_create_from_via(su_home_t *, sip_via_t const *,
 					   char const *user);
 

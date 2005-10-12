@@ -121,25 +121,41 @@ sip_contact_create_from_via(su_home_t *home,
 			    sip_via_t const *v,
 			    char const *user)
 {
-  const char *host, *port, *tp, *maddr, *comp;
-  char const *scheme = "sip";
+  const char *tp;
 
   if (!v) return NULL;
 
   tp = strrchr(v->v_protocol, '/');
-  if (tp)
-    tp++;
+  if (!tp++)
+    return NULL;
+
+  if (strcasecmp(tp, "udp") == 0)  /* Default is UDP */
+    tp = NULL;
+
+  return sip_contact_create_from_via_with_transport(home, v, user, tp);
+}
+
+/** Convert a Via header to Contact header */
+sip_contact_t *
+sip_contact_create_from_via_with_transport(su_home_t *home, 
+					   sip_via_t const *v,
+					   char const *user,
+					   char const *transport)
+{
+  const char *host, *port, *maddr, *comp;
+  char const *scheme = "sip";
+
+  if (!v) return NULL;
+
   host = v->v_host;
   port = v->v_port;
   maddr = v->v_maddr;
 
-  if (tp == NULL || host == NULL)
+  if (host == NULL)
     return NULL;
 
-  if (strcasecmp(tp, "udp") == 0) {  /* Default is UDP */
-    tp = NULL;
-  } else if (strcasecmp(tp, "tls") == 0) {
-    scheme = "sips", tp = NULL;
+  if (transport && strcasecmp(transport, "tls") == 0) {
+    scheme = "sips", transport = NULL;
     if (port && strcmp(port, "5061") == 0)
       port = NULL;
   }
@@ -151,10 +167,12 @@ sip_contact_create_from_via(su_home_t *home,
 			    scheme,
 			    user ? user : "", user ? "@" : "", 
 			    host, port ? ":" : "", port ? port : "",
-			    tp ? ";transport=" : "", tp ? tp : "",
+			    transport ? ";transport=" : "", 
+			    transport ? transport : "",
 			    maddr ? ";maddr=" : "", maddr ? maddr : "",
 			    comp ? ";comp=" : "", comp ? comp : "");
 }
+
 
 /**Perform sanity check on a SIP message
  * 

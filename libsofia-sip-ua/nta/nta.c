@@ -1585,13 +1585,23 @@ static
 int agent_init_contact(nta_agent_t *self)
 {
   sip_via_t const *v = agent_tport_via(tport_primaries(self->sa_tports));
+  char const *tp;
 
   if (self->sa_contact)
     return 0;
 
   if (!v) return -1;
+  tp = strrchr(v->v_protocol, '/');
+  if (!tp++)
+    return -1;
 
-  self->sa_contact = sip_contact_create_from_via(self->sa_home, v, NULL);
+  if (strcasecmp(tp, "udp") == 0 && v->v_next && 
+      str0casecmp(v->v_next->v_protocol, sip_transport_tcp))
+    /* Do not include transport if we have both UDP and TCP */
+    tp = NULL;
+
+  self->sa_contact = 
+    sip_contact_create_from_via_with_transport(self->sa_home, v, NULL, tp);
 
   if (!self->sa_contact)
     return -1;
@@ -3888,7 +3898,8 @@ static void incoming_retransmit_reply(nta_incoming_t *irq, tport_t *tport);
  * @param tag,value,... optional tagged parameters
  *
  * @TAGS
- * @TAG NTATAG_TPORT() specify 
+ * @TAG NTATAG_TPORT() specifies the transport used to receive the request 
+ *      and also default transport for sending the response.
  */
 nta_incoming_t *nta_incoming_create(nta_agent_t *agent,
 				    nta_leg_t *leg,
@@ -5163,6 +5174,7 @@ int incoming_reply(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
     if (status >= 200 || irq->irq_status < 200) {
       if (irq->irq_response)
 	msg_destroy(irq->irq_response);
+      assert(msg_home(msg) != irq->irq_home);
       irq->irq_response = msg;
     }
 
