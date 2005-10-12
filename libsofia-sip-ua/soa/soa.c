@@ -524,7 +524,7 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
   
   ta_start(ta, tag, value);
 
-  params = tl_list(
+  params = tl_llist(
 		   TAG_IF(ss->ss_caps->ssd_sdp,
 			  SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp)),
 		   TAG_IF(ss->ss_caps->ssd_str,
