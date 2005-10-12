@@ -384,6 +384,7 @@ void *sub_alloc(su_home_t *home,
       b2->sub_prsize = sub->sub_prsize;
       b2->sub_prused = sub->sub_prused;
       b2->sub_preauto = sub->sub_preauto;
+      /* auto_all is not copied! */
       b2->sub_stats = sub->sub_stats;
     }
 
@@ -397,7 +398,7 @@ void *sub_alloc(su_home_t *home,
   /* Use preloaded memory */
   if (size && sub && zero <= 1 &&
       sub->sub_preload && size <= sub->sub_prsize) {
-    int prused = sub->sub_prused + size + MEMCHECK_EXTRA; 
+    size_t prused = sub->sub_prused + size + MEMCHECK_EXTRA; 
     prused = ALIGN(prused);
     if (prused <= sub->sub_prsize) {
       preload = (char *)sub->sub_preload + sub->sub_prused;
@@ -421,6 +422,9 @@ void *sub_alloc(su_home_t *home,
     int term = -size;
     memcpy((char *)data + size, &term, sizeof (term));
 #endif
+
+    if (!preload)
+      sub->sub_auto_all = 0;
 
     if (zero > 1) {
       su_home_t *subhome = data;
@@ -956,10 +960,13 @@ su_home_t *su_home_auto(void *area, int size)
   su_block_t *sub;
   size_t homesize = ALIGN(sizeof *home);
   size_t subsize = ALIGN(sizeof *sub);
+  size_t prepsize;
 
   char *p = area;
 
-  if (area == NULL || size < homesize + subsize)
+  prepsize = homesize + subsize + (ALIGN((intptr_t)p) - (intptr_t)p);
+
+  if (area == NULL || size < prepsize)
     return NULL;
 
   home = memset(p, 0, homesize);
@@ -969,8 +976,8 @@ su_home_t *su_home_auto(void *area, int size)
   home->suh_blocks = sub;
 
   sub->sub_n = SUB_N;
-  sub->sub_preload = p + homesize + subsize;
-  sub->sub_prsize = size - (homesize + subsize);
+  sub->sub_preload = p + prepsize;
+  sub->sub_prsize = size - prepsize;
   sub->sub_preauto = 1;
   sub->sub_auto = 1;
   sub->sub_auto_all = 1;
