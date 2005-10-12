@@ -2928,15 +2928,27 @@ int can_redirect(sip_contact_t const *m, sip_method_t method)
   return 0;
 }
 
-static void
-crequest_invoke_restart(crequest_restart_f *f, 
-			nua_handle_t *nh,
+static int
+crequest_invoke_restart(nua_handle_t *nh,
+			struct nua_client_request *cr,
+			nta_outgoing_t *orq,
+			int status, char const *phrase,
+			crequest_restart_f *f, 
 			TAG_LIST)
 {
   ta_list ta;
-  ta_start(ta, tag, value);
-  f(nh, ta_args(ta));
-  ta_end(ta);
+
+  msg_t *msg = nta_outgoing_getresponse_ref(orq);
+  ua_event(nh->nh_nua, nh, msg, cr->cr_event, status, phrase, TAG_END());
+  nta_outgoing_destroy(orq); 
+
+  if (f) {
+    ta_start(ta, tag, value);
+    f(nh, ta_args(ta));
+    ta_end(ta);
+  }
+
+  return 1;
 }
 
 /** Check response, return true if we can restart the request. 
@@ -2950,10 +2962,8 @@ int crequest_check_restart(nua_handle_t *nh,
 			   crequest_restart_f *f)
 {
   int status = sip->sip_status->st_status;
-  char const *phrase = sip->sip_status->st_phrase;
   sip_method_t method = nta_outgoing_method(orq);
-  nua_t *nua = nh->nh_nua;
-  int restarted = 0, removed = 0;
+  int removed = 0;
 
   nua_dialog_usage_t *du = cr->cr_usage;
 
@@ -2970,9 +2980,10 @@ int crequest_check_restart(nua_handle_t *nh,
     ;
   else if (status == 302) {
     if (can_redirect(sip->sip_contact, method)) {
-      url_t *url = sip->sip_contact->m_url;
-      crequest_invoke_restart(f, nh, NUTAG_URL(url), TAG_END());
-      restarted = 1; status = 100, phrase = "Redirected";
+      return 
+	crequest_invoke_restart(nh, cr, orq, 100, "Redirected",
+				f, NUTAG_URL(sip->sip_contact->m_url), 
+				TAG_END());
     }
   }
   else if (status == 423) {
@@ -2988,10 +2999,10 @@ int crequest_check_restart(nua_handle_t *nh,
       sip_expires_init(ex);
       ex->ex_delta = sip->sip_min_expires->me_delta;
 
-      crequest_invoke_restart(f, nh, SIPTAG_EXPIRES(ex), TAG_END());
-
-      restarted = 1; 
-      status = 100, phrase = "Re-Negotiating Subscription Expiration";
+      return 
+	crequest_invoke_restart(nh, cr, orq, 
+				100, "Re-Negotiating Subscription Expiration",
+				f, SIPTAG_EXPIRES(ex), TAG_END());
     }
   }
   else if (method != sip_method_ack && method != sip_method_cancel &&
@@ -3004,19 +3015,18 @@ int crequest_check_restart(nua_handle_t *nh,
     rsip = sip_object(cr->cr_msg);
 
     /* XXX - check for instant restart */
-    if (0 < auc_authorization(&nh->nh_auth, cr->cr_msg, (msg_pub_t*)rsip,
-			      rsip->sip_request->rq_method_name,
-			      rsip->sip_request->rq_url,
-			      rsip->sip_payload)) {
-      f(nh, NULL);
-
-      status = 100, phrase = "Authorized request";
+    if (auc_authorization(&nh->nh_auth, cr->cr_msg, (msg_pub_t*)rsip,
+			  rsip->sip_request->rq_method_name,
+			  rsip->sip_request->rq_url,
+			  rsip->sip_payload) < 0) {
+      /* Do not really restart, but wait for nua_authenticate() */
+      cr->cr_restart = f; 
+      f = NULL;
     }
-    else {
-      cr->cr_restart = f;
-    }
-
-    restarted = 1;
+    return 
+      crequest_invoke_restart(nh, cr, orq, 
+			      100, "Request Authorized by Cache",
+			      f, TAG_END());
   }
 #if HAVE_SOFIA_SMIME
   else if (status == 493)     /* try detached signature */
@@ -3027,33 +3037,28 @@ int crequest_check_restart(nua_handle_t *nh,
       nh->nh_ss->ss_min_se = sip->sip_min_se->min_delta;
     if (nh->nh_ss->ss_min_se > nh->nh_ss->ss_session_timer)
       nh->nh_ss->ss_session_timer = nh->nh_ss->ss_min_se;
-    f(nh, NULL);
-    status = 100, phrase = "Re-Negotiating Session Timer";
-    restarted = 1;
+
+    return
+      crequest_invoke_restart(nh, cr, orq, 
+			      100, "Re-Negotiating Session Timer",
+			      f, TAG_END());
   }
   
-  if (restarted)   {
-    msg_t *msg = nta_outgoing_getresponse_ref(orq);
-    ua_event(nua, nh, msg, cr->cr_event, status, phrase, TAG_END());
-    nta_outgoing_destroy(orq); 
-  } 
-  else {
-    /** This was final response that cannot be restarted. */
-    if (removed)
-      cr->cr_orq = orq;
+  /* This was final response that cannot be restarted. */
+  if (removed)
+    cr->cr_orq = orq;
 
-    if (du) {
-      du->du_pending = NULL;
-      du->du_refresh = 0;
-    }
-
-    cr->cr_retry_count = 0;
-
-    if (cr->cr_msg)
-      msg_destroy(cr->cr_msg), cr->cr_msg = NULL;
+  if (du) {
+    du->du_pending = NULL;
+    du->du_refresh = 0;
   }
 
-  return restarted;
+  cr->cr_retry_count = 0;
+    
+  if (cr->cr_msg)
+    msg_destroy(cr->cr_msg), cr->cr_msg = NULL;
+
+  return 0;
 }
 
 static int 
@@ -3551,9 +3556,6 @@ static int process_response_to_invite(nua_handle_t *nh,
       if (nh->nh_ss->ss_state < nua_callstate_ready)
 	terminated = 1;
     }
-
-    if (terminated)
-      signal_call_state_change(nh, status, phrase, nua_callstate_terminated, 0, 0);
   }
   else if (status >= 200) {
 
