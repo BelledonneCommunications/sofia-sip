@@ -1112,7 +1112,7 @@ not include the extensions like @b 100rel or @b UPDATE.
      |    |               +----------|            |   |     :
      |    |               |          +------------+   |     :
      | nua_respond/       |                     |     |     :
-    (5) /[3456]XX         |    nua_respond/2XX (3a)  (3b)   :
+    (6) /[3456]XX         |    nua_respond/2XX (3a)  (3b)   :
      |    |               |                     |     |     :
      |    |               |                     V     V     V
      |    |               |                    +-------------+
@@ -1130,7 +1130,7 @@ not include the extensions like @b 100rel or @b UPDATE.
      |    |               |              |     |             |    :
      |    |               |              |     +-------------+    :
      |    |               |              |                        :
-     |   (6) CANCEL/487  (7) BYE/487    (8) BYE/200              (9) timeout/BYE
+     |   (7) CANCEL/487  (8) BYE/487    (9) BYE/200              (5) timeout/BYE
      |    |               |              |                        :
      |    |               |              |     +-------------+    :
      |    |               |              |     | TERMINATING |<- -+
@@ -1229,7 +1229,17 @@ follows:
    from client, indicating that the client have received server's 2XX
    response. The call is ready, the @b INVITE transaction is confirmed.
 </td></tr>
-<tr><td>S5a</td>			<!-- transition -->
+<tr><td>S5td>				<!-- transition -->
+    <td>completed</td>			<!-- previous state -->
+    <td>timeout</td>			<!-- input -->
+    <td>BYE</td>			<!-- output -->
+    <td>terminating</td>		<!-- next state -->
+    <td>-</td>				<!-- offer/answer -->
+    <td>
+   If the server does not receive an @b ACK request in timely fashion, it will
+   terminate the call by sending a @b BYE request to client.
+</td></tr>
+<tr><td>S6a</td>			<!-- transition -->
     <td>received</td>			<!-- previous state -->
     <td rowspan=2>nua_respond()</td>	<!-- input -->
     <td rowspan=2>3XX 4XX<br>5XX 6XX</td><!-- output -->
@@ -1241,10 +1251,10 @@ follows:
    retransmitting the response when needed. It consumes the ACK response
    sent by the client, too.
 </td></tr>
-<tr><td>S5b</td>			<!-- transition -->
+<tr><td>S6b</td>			<!-- transition -->
     <td>early</td>			<!-- previous state -->
 </td></tr>
-<tr><td>S6a</td>			<!-- transition -->
+<tr><td>S7a</td>			<!-- transition -->
     <td>received</td>			<!-- previous state -->
     <td rowspan=2>CANCEL</td>		<!-- input -->
     <td rowspan=2>487 Request terminated</td><!-- output -->
@@ -1256,10 +1266,10 @@ follows:
    a <i>487 Request Terminated</i> response to the @b INVITE transaction and
    the call is terminated.
 </td></tr>
-<tr><td>S6b</td>			<!-- transition -->
+<tr><td>S7b</td>			<!-- transition -->
     <td>early</td>			<!-- previous state -->
 </td></tr>
-<tr><td>S7</td>				<!-- transition -->
+<tr><td>S8</td>				<!-- transition -->
     <td>early</td>			<!-- previous state -->
     <td>BYE</td>			<!-- input -->
     <td>487 to INVITE<br>
@@ -1272,7 +1282,7 @@ follows:
    return a <i>200 OK</i> response to @b BYE and a <i>487 Request
    Terminated</i> response to the @b INVITE transaction.
 </td></tr>
-<tr><td>S8</td>				<!-- transition -->
+<tr><td>S9</td>				<!-- transition -->
     <td>completed</td>			<!-- previous state -->
     <td>BYE</td>			<!-- input -->
     <td>200 to BYE</td>			<!-- output -->
@@ -1283,16 +1293,6 @@ follows:
    terminates call immediately, returns a <i>200 OK</i> response to @b BYE
    and lets the underlying transaction engine to take care of consuming @b
    ACK.
-</td></tr>
-<tr><td>S9</td>				<!-- transition -->
-    <td>completed</td>			<!-- previous state -->
-    <td>timeout</td>			<!-- input -->
-    <td>BYE</td>			<!-- output -->
-    <td>terminating</td>		<!-- next state -->
-    <td>-</td>				<!-- offer/answer -->
-    <td>
-   If the server does not receive an @b ACK request in timely fashion, it will
-   terminate the call by sending a @b BYE request to client.
 </td></tr>
 </table>
 
