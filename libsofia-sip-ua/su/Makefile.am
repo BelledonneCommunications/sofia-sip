@@ -64,7 +64,6 @@ libsu_la_SOURCES = \
 	su_md5.c su_uniqueid.c su_memmem.c
 
 COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libsu.la $(GLIB_LIBS)
 

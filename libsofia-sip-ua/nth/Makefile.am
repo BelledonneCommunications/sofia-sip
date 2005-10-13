@@ -33,7 +33,6 @@ include_HEADERS =       nth.h nth_tag.h
 libnth_la_SOURCES = 	nth_client.c nth_server.c nth_tag.c nth_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnth_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libnth_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libnth.la \
 			../iptsec/libiptsec.la \

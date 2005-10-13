@@ -39,7 +39,6 @@ libmsg_la_SOURCES = $(INTERNAL_H) \
 	memspn.c
 
 COVERAGE_INPUT = 	$(libmsg_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libmsg_la_SOURCES) $(include_HEADERS)
 
 libmsg_test_a_SOURCES = msg_test_class.c msg_test_table.c msg_test_protos.h
 

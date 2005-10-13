@@ -39,7 +39,6 @@ libhttp_la_SOURCES = 	$(INTERNAL_H) \
 			$(BUILT_C)
 
 COVERAGE_INPUT = 	$(libhttp_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libhttp_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libhttp.la \
 			../bnf/libbnf.la \

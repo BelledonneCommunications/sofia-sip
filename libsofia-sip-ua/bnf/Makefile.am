@@ -22,7 +22,6 @@ include_HEADERS =	bnf.h
 libbnf_la_SOURCES = 	bnf.c
 
 COVERAGE_INPUT = 	$(libbnf_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libbnf_la_SOURCES) $(include_HEADERS)
 
 LDADD =			libbnf.la
 

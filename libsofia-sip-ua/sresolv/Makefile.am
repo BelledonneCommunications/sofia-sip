@@ -32,7 +32,6 @@ libsresolv_la_SOURCES =	sresolv.c
 test_sresolv_SOURCES = 	test_sresolv.c
 
 COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libsresolv.la \
 			../su/libsu.la

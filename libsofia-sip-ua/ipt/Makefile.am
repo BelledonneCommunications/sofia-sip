@@ -27,7 +27,6 @@ libipt_la_SOURCES = 	utf8internal.h \
 			sha1.c base64.c string0.c token64.c
 
 COVERAGE_INPUT = 	$(libipt_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libipt_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libipt.la \
 			../sresolv/libsresolv.la \

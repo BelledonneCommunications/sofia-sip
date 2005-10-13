@@ -29,7 +29,6 @@ libsdp_la_SOURCES = 	sdp.c sdp_parse.c sdp_print.c \
 			sdp_tag.c sdp_tag_ref.c
 
 COVERAGE_INPUT = 	$(libsdp_la_SOURCES) $(include_HEADERS)
-COVERAGE_INPUT = 	$(libsdp_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libsdp.la \
 			../su/libsu.la
