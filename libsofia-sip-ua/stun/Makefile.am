@@ -16,14 +16,14 @@ INCLUDES = 		-I$(srcdir)/../su
 # Build targets
 
 if HAVE_TLS
-stun_lib_targets = 	libstun.a
-stun_prog_targets =	stun_objs.o stunc torture_stun
+stun_lib_targets = 	libstun.la
+stun_prog_targets =     stunc torture_stun
 else
 stun_lib_targets = 
 stun_prog_targets =
 endif
 
-noinst_LIBRARIES = 	${stun_lib_targets}
+noinst_LTLIBRARIES = 	${stun_lib_targets}
 noinst_PROGRAMS = 	${stun_prog_targets}
 
 # ----------------------------------------------------------------------
@@ -31,21 +31,18 @@ noinst_PROGRAMS = 	${stun_prog_targets}
 
 include_HEADERS = 	stun.h stun_common.h
 
-libstun_a_SOURCES = 	stun.c stun_common.c
-
-stun_objs_o_SOURCES =	$(libstun_a_SOURCES)
-stun_objs_o_LDADD =	
+libstun_la_SOURCES = 	stun.c stun_common.c
 
 COVERAGE_INPUT = 	$(stun_objs_o_SOURCES) $(include_HEADERS)
 
 # common LDFLAGS to all utils
-LDADD =			libstun.a \
-			-L../su -lsu
+LDADD =			libstun.la \
+			../su/libsu.la
 
-stunc_DEPENDENCIES = 	$(LIBDEP) libstun.a
+stunc_DEPENDENCIES = 	$(LIBDEP) libstun.la
 stunc_SOURCES = 	stunc.c
 
-torture_stun_DEPENDENCIES = $(LIBDEP) libstun.a
+torture_stun_DEPENDENCIES = $(LIBDEP) libstun.la
 torture_stun_SOURCES = 	torture_stun.c
 
 # ----------------------------------------------------------------------

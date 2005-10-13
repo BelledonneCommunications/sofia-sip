@@ -12,8 +12,9 @@ INCLUDES = 	-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libmsg.a libmsg_test.a
-noinst_PROGRAMS = 	msg_name_hash msg_test msg_objs.o
+noinst_LTLIBRARIES = 	libmsg.la
+noinst_LIBRARIES = 	libmsg_test.a
+noinst_PROGRAMS = 	msg_name_hash msg_test
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -29,7 +30,7 @@ include_HEADERS = $(GENERATED_H) $(PUBLIC_H)
 
 BUILT_SOURCES = $(GENERATED_H) msg_test_table.c msg_test_protos.h
 
-libmsg_a_SOURCES = $(INTERNAL_H) \
+libmsg_la_SOURCES = $(INTERNAL_H) \
 	msg.c msg_tag.c \
 	msg_mime.c msg_mime_table.c \
 	msg_header_copy.c msg_header_make.c \
@@ -37,17 +38,14 @@ libmsg_a_SOURCES = $(INTERNAL_H) \
 	msg_basic.c msg_generic.c msg_date.c msg_auth.c \
 	memspn.c
 
-msg_objs_o_SOURCES =	$(libmsg_a_SOURCES)
-msg_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(msg_objs_o_SOURCES) $(include_HEADERS)
 
 libmsg_test_a_SOURCES = msg_test_class.c msg_test_table.c msg_test_protos.h
 
-LDADD = 		libmsg_test.a libmsg.a \
-			-L../bnf -lbnf \
-			-L../url -lurl \
-			-L../su -lsu 
+LDADD = 		libmsg_test.a libmsg.la \
+			../bnf/libbnf.la \
+			../url/liburl.la \
+			../su/libsu.la 
 
 msg_test_SOURCES = 	msg_test.c
 

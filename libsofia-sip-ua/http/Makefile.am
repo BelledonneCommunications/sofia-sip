@@ -13,9 +13,9 @@ INCLUDES = 	-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libhttp.a
+noinst_LTLIBRARIES = 	libhttp.la
 bin_PROGRAMS =          
-noinst_PROGRAMS = 	http_test http_objs.o
+noinst_PROGRAMS = 	http_test
 
 TESTS = 		http_test
 
@@ -32,22 +32,19 @@ BUILT_SOURCES = $(BUILT_H) $(BUILT_C)
 
 include_HEADERS = 	$(BUILT_H) $(PUBLIC_H) 
 
-libhttp_a_SOURCES = 	$(INTERNAL_H) \
+libhttp_la_SOURCES = 	$(INTERNAL_H) \
 			http_parser.c http_header.c \
 			http_basic.c http_extra.c \
 			http_status.c http_tag_class.c \
 			$(BUILT_C)
 
-http_objs_o_SOURCES =	$(libhttp_a_SOURCES)
-http_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(http_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libhttp.a \
-			-L../bnf -lbnf \
-			-L../msg -lmsg \
-			-L../url -lurl \
-			-L../su -lsu
+LDADD = 		libhttp.la \
+			../bnf/libbnf.la \
+			../msg/libmsg.la \
+			../url/liburl.la \
+			../su/libsu.la
 
 http_test_SOURCES = 	http_test.c 
 

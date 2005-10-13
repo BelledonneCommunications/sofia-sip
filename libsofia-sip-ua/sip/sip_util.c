@@ -29,7 +29,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
+ * @date Last modified: Thu Oct 13 14:37:28 2005 kaiv
  */
 
 #include "config.h"
@@ -245,7 +245,7 @@ int sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 }
 
 /** Encode a SIP header contents. */
-int sip_header_field_e(char b[], int bsiz, sip_header_t const *h, int flags)
+int sip_header_field_e(char *b, int bsiz, sip_header_t const *h, int flags)
 {
   assert(h); assert(h->sh_class); 
 

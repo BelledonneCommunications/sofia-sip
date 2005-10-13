@@ -10,9 +10,9 @@ INCLUDES = 		-I$(srcdir)/../su
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libsresolv.a
+noinst_LTLIBRARIES = 	libsresolv.la
 
-noinst_PROGRAMS = 	test_sresolv sresolv_objs.o
+noinst_PROGRAMS = 	test_sresolv
 
 TESTS = 		torture_sresolv
 
@@ -27,17 +27,14 @@ CLEANFILES =		resolv.conf error.conf named.conf.tmp \
 
 include_HEADERS =       sresolv.h
 
-libsresolv_a_SOURCES = 	sresolv.c
+libsresolv_la_SOURCES =	sresolv.c
 
 test_sresolv_SOURCES = 	test_sresolv.c
 
-sresolv_objs_o_SOURCES= $(libsresolv_a_SOURCES)
-sresolv_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(sresolv_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libsresolv.a \
-			-L../su -lsu
+LDADD = 		libsresolv.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Distribution

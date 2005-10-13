@@ -17,9 +17,9 @@ INCLUDES = 	-I$(srcdir)/../ipt \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libnth.a
+noinst_LTLIBRARIES = 	libnth.la
 
-noinst_PROGRAMS = 	nth_test http-client http-server nth_objs.o
+noinst_PROGRAMS = 	nth_test http-client http-server
 
 TESTS = 		nth_test
 
@@ -30,26 +30,21 @@ BUILT_SOURCES =		nth_tag_ref.c
 
 include_HEADERS =       nth.h nth_tag.h
 
-libnth_a_SOURCES = 	nth_client.c nth_server.c nth_tag.c nth_tag_ref.c
-
-nth_objs_o_SOURCES =	$(libnth_a_SOURCES)
-nth_objs_o_LDADD =	
-nth_objs_o_LDFLAGS =
+libnth_la_SOURCES = 	nth_client.c nth_server.c nth_tag.c nth_tag_ref.c
 
 COVERAGE_INPUT = 	$(nth_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libnth.a \
-			-L../iptsec -liptsec \
-			-L../ipt -lipt \
-			-L../http -lhttp \
-			-L../sresolv -lsresolv \
-			-L../tport -ltport \
-			-L../stun -lstun \
-			-L../url -lurl \
-			-L../msg -lmsg \
-			-L../bnf -lbnf \
-			-L../su -lsu 
-
+LDADD = 		libnth.la \
+			../iptsec/libiptsec.la \
+			../ipt/libipt.la \
+			../http/libhttp.la \
+			../sresolv/libsresolv.la \
+			../tport/libtport.la \
+			../stun/libstun.la \
+			../url/liburl.la \
+			../msg/libmsg.la \
+			../bnf/libbnf.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

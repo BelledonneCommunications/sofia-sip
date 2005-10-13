@@ -10,7 +10,7 @@ INCLUDES =		$(GLIB_CFLAGS)
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libsu.a
+noinst_LTLIBRARIES = 	libsu.la
 
 bin_PROGRAMS = 		addrinfo localinfo 
 
@@ -19,9 +19,7 @@ noinst_PROGRAMS = 	su_torture torture_su_port \
 			htable_test torture_rbtree \
 			test_memmem torture_su_memmem \
 			su_root_test su_timer_test \
-			su_test su_proxy poll_test \
-			su_objs.o
-
+			su_test su_proxy poll_test
 
 # ----------------------------------------------------------------------
 # Tests
@@ -54,7 +52,7 @@ include_HEADERS = su_types.h su.h su_localinfo.h \
 	su_config.h su_configure.h su_md5.h su_uniqueid.h \
 	tstdef.h rbtree.h su_memmem.h
 
-libsu_a_SOURCES = \
+libsu_la_SOURCES = \
 	su.c $(GSOURCES) \
 	su_alloc.c su_alloc_lock.c su_strdup.c su_sprintf.c \
 	su_strlst.c su_vector.c \
@@ -65,12 +63,9 @@ libsu_a_SOURCES = \
 	su_log.c su_global_log.c su_default_log.c \
 	su_md5.c su_uniqueid.c su_memmem.c
 
-su_objs_o_SOURCES =	$(libsu_a_SOURCES)
-su_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(su_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libsu.a $(GLIB_LIBS)
+LDADD = 		libsu.la $(GLIB_LIBS)
 
 if NDEBUG
 AM_CFLAGS = -DNDEBUG

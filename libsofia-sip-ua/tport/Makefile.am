@@ -15,11 +15,11 @@ INCLUDES = 		-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libtport.a
+noinst_LTLIBRARIES = 	libtport.la
 
 bin_PROGRAMS = 		
 
-noinst_PROGRAMS =	tport_test tport_objs.o
+noinst_PROGRAMS =	tport_test
 
 TESTS =			tport_test
 
@@ -32,25 +32,22 @@ if HAVE_TLS
 TLS_SRC =		tport_tls.c tport_tls.h
 endif
 
-libtport_a_SOURCES = 	tport.c tport_tag.c tport_tag_ref.c $(TLS_SRC)
+libtport_la_SOURCES = 	tport.c tport_tag.c tport_tag_ref.c $(TLS_SRC)
 
 # to make sure all files end up in the dist package
 EXTRA_DIST =	 	$(libtport_a_SOURCES) tport_tls.c tport_tls.h tport_test.c
 
 BUILT_SOURCES =		tport_tag_ref.c
 
-tport_objs_o_SOURCES =	$(libtport_a_SOURCES)
-tport_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(tport_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libtport.a \
-			-L../stun -lstun \
-			-L../ipt -lipt \
-			-L../msg -lmsg_test -lmsg \
-			-L../url -lurl \
-			-L../bnf -lbnf \
-			-L../su -lsu 
+LDADD = 		libtport.la \
+			../stun/libstun.la \
+			../ipt/libipt.la \
+			../msg/libmsg_test.a ../msg/libmsg.la \
+			../url/liburl.la \
+			../bnf/libbnf.la \
+			../su/libsu.la
 
 tport_test_SOURCES = 	tport_test.c
 

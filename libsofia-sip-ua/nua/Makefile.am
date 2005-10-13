@@ -23,11 +23,9 @@ INCLUDES = 		-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libnua.a
+noinst_LTLIBRARIES = 	libnua.la
 
-noinst_PROGRAMS =	nua_objs.o
-
-noinst_PROGRAMS +=	test_nua
+noinst_PROGRAMS =	test_nua
 
 TESTS = 		test_nua
 
@@ -38,7 +36,7 @@ BUILT_SOURCES =		nua_tag_ref.c
 
 include_HEADERS =       nua.h nua_stack.h nua_tag.h
 
-libnua_a_SOURCES = 	nua.c nua_common.c nua_stack.c \
+libnua_la_SOURCES = 	nua.c nua_common.c nua_stack.c \
 			nua_tag.c nua_tag_ref.c
 
 nua_objs_o_SOURCES =	$(libnua_a_SOURCES)
@@ -46,22 +44,22 @@ nua_objs_o_LDADD =
 
 COVERAGE_INPUT = 	$(nua_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libnua.a \
-			../iptsec/libiptsec.a \
-			../ipt/libipt.a \
-			../http/libhttp.a \
-			../nea/libnea.a \
-			../nta/libnta.a \
-			../sresolv/libsresolv.a \
-			../tport/libtport.a \
-			../stun/libstun.a \
-			../soa/libsoa.a \
-			../sdp/libsdp.a \
-			../sip/libsip.a \
-			../msg/libmsg.a \
-			../url/liburl.a \
-			../bnf/libbnf.a \
-			../su/libsu.a
+LDADD = 		libnua.la \
+			../iptsec/libiptsec.la \
+			../ipt/libipt.la \
+			../http/libhttp.la \
+			../nea/libnea.la \
+			../nta/libnta.la \
+			../sresolv/libsresolv.la \
+			../tport/libtport.la \
+			../stun/libstun.la \
+			../soa/libsoa.la \
+			../sdp/libsdp.la \
+			../sip/libsip.la \
+			../msg/libmsg.la \
+			../url/liburl.la \
+			../bnf/libbnf.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

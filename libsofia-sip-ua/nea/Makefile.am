@@ -17,9 +17,7 @@ INCLUDES = 	-I$(srcdir)/../ipt \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libnea.a
-
-noinst_PROGRAMS = 	nea_objs.o
+noinst_LTLIBRARIES = 	libnea.la
 
 TESTS = 
 
@@ -30,25 +28,22 @@ BUILT_SOURCES =		nea_tag_ref.c
 
 include_HEADERS =       nea.h nea_dll.h nea_debug.h
 
-libnea_a_SOURCES = 	nea.c nea_event.c \
+libnea_la_SOURCES = 	nea.c nea_event.c \
 			nea_server.c nea_debug.c nea_tag.c nea_tag_ref.c
-
-nea_objs_o_SOURCES =	$(libnea_a_SOURCES)
-nea_objs_o_LDADD =	
 
 COVERAGE_INPUT = 	$(nea_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libnea.a \
-			-L../nta -lnta \
-			-L../ipt -lipt \
-			-L../sip -lsip \
-			-L../sresolv -lsresolv \
-			-L../tport -ltport \
-			-L../stun -lstun \
-			-L../url -lurl \
-			-L../msg -lmsg \
-			-L../bnf -lbnf \
-			-L../su -lsu 
+LDADD = 		libnea.la \
+			../nta/libnta.la \
+			../ipt/libipt.la \
+			../sip/libsip.la \
+			../sresolv/libsresolv.la \
+			../tport/libtport.la \
+			../stun/libstun.la \
+			../url/liburl.la \
+			../msg/libmsg.la \
+			../bnf/libbnf.la \
+			../su/libsu.la 
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

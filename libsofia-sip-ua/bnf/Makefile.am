@@ -10,8 +10,7 @@ INCLUDES = 		-I$(srcdir)/../su
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libbnf.a
-noinst_PROGRAMS =	bnf_objs.o
+noinst_LTLIBRARIES = 	libbnf.la
 
 check_PROGRAMS = 	torture_bnf
 
@@ -20,13 +19,11 @@ check_PROGRAMS = 	torture_bnf
 
 include_HEADERS =	bnf.h
 
-libbnf_a_SOURCES = 	bnf.c
-bnf_objs_o_SOURCES =	$(libbnf_a_SOURCES)
-bnf_objs_o_LDADD =	
+libbnf_la_SOURCES = 	bnf.c
 
 COVERAGE_INPUT = 	$(bnf_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD =			libbnf.a
+LDADD =			libbnf.la
 
 torture_bnf_SOURCES = 	torture_bnf.c
 

@@ -12,26 +12,26 @@ EXTRA_DIST = sofia.am
 lib_LTLIBRARIES = libsofia-sip-ua.la
 
 if HAVE_TLS
-tls_objs=stun/stun_objs.o
+tls_objs=stun/libstun.la
 endif
 
 libsofia_sip_ua_la_SOURCES = 
-libsofia_sip_ua_la_LIBADD = 	bnf/bnf_objs.o \
-				ipt/ipt_objs.o \
-				iptsec/iptsec_objs.o \
-				msg/msg_objs.o \
-				nea/nea_objs.o \
-				nta/nta_objs.o \
-				nth/nth_objs.o \
-				nua/nua_objs.o \
-				http/http_objs.o \
-				sdp/sdp_objs.o \
-				sip/sip_objs.o \
-				soa/soa_objs.o \
-				sresolv/sresolv_objs.o \
-				su/su_objs.o \
-				tport/tport_objs.o \
-				url/url_objs.o \
+libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
+				ipt/libipt.la \
+				iptsec/libiptsec.la \
+				msg/libmsg.la \
+				nea/libnea.la \
+				nta/libnta.la \
+				nth/libnth.la \
+				nua/libnua.la \
+				http/libhttp.la \
+				sdp/libsdp.la \
+				sip/libsip.la \
+				soa/libsoa.la \
+				sresolv/libsresolv.la \
+				su/libsu.la \
+				tport/libtport.la \
+				url/liburl.la \
 				${tls_objs}
 
 if ENABLE_COVERAGE

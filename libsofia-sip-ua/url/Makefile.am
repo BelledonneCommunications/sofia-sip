@@ -11,9 +11,9 @@ INCLUDES = 	-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	liburl.a
+noinst_LTLIBRARIES = 	liburl.la
 
-noinst_PROGRAMS = 	torture_url test_urlmap url_objs.o
+noinst_PROGRAMS = 	torture_url test_urlmap
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -22,16 +22,13 @@ BUILT_SOURCES =		url_tag_ref.c
 
 include_HEADERS =       url.h url_dll.h url_tag.h url_tag_class.h
 
-liburl_a_SOURCES = 	url.c url_tag.c url_tag_ref.c
-
-url_objs_o_SOURCES =	$(liburl_a_SOURCES)
-url_objs_o_LDADD =	
+liburl_la_SOURCES = 	url.c url_tag.c url_tag_ref.c
 
 COVERAGE_INPUT = 	$(url_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		liburl.a \
-			-L../bnf -lbnf \
-			-L../su -lsu 
+LDADD = 		liburl.la \
+			../bnf/libbnf.la \
+			../su/libsu.la
 
 test_urlmap_SOURCES = 	urlmap.c urlmap.h
 test_urlmap_CFLAGS =	$(CFLAGS) -DTEST_URLMAP=1

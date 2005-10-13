@@ -10,9 +10,9 @@ INCLUDES = 		-I$(srcdir)/../su
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libsdp.a
+noinst_LTLIBRARIES = 	libsdp.la
 
-noinst_PROGRAMS = 	sdp_torture sdp_test sdp_objs.o
+noinst_PROGRAMS = 	sdp_torture sdp_test
 
 dist_noinst_SCRIPTS =	run-tests
 
@@ -25,16 +25,13 @@ BUILT_SOURCES =		sdp_tag_ref.c
 
 include_HEADERS =       sdp.h sdp_tag.h
 
-libsdp_a_SOURCES = 	sdp.c sdp_parse.c sdp_print.c \
+libsdp_la_SOURCES = 	sdp.c sdp_parse.c sdp_print.c \
 			sdp_tag.c sdp_tag_ref.c
-
-sdp_objs_o_SOURCES =	$(libsdp_a_SOURCES)
-sdp_objs_o_LDADD =	
 
 COVERAGE_INPUT = 	$(sdp_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libsdp.a \
-			-L../su -lsu
+LDADD = 		libsdp.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

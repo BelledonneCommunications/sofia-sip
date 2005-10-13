@@ -16,9 +16,9 @@ INCLUDES = 		-I$(srcdir)/../ipt \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libnta.a
+noinst_LTLIBRARIES = 	libnta.la
 
-noinst_PROGRAMS = 	nta_test portbind nta_objs.o
+noinst_PROGRAMS = 	nta_test portbind 
 dist_noinst_SCRIPTS =	run_nta_test
 
 TESTS =			run_nta_test
@@ -32,26 +32,23 @@ BUILT_SOURCES =		nta_tag_ref.c
 include_HEADERS =       nta.h nta_stateless.h nta_tport.h \
 			nta_tag.h nta_dll.h sl_utils.h 
 
-libnta_a_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
+libnta_la_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
 			nta_internal.h \
 			sl_utils.c sl_utils_print.c sl_utils_log.c \
 			sl_read_payload.c
 
-nta_objs_o_SOURCES =	$(libnta_a_SOURCES)
-nta_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(nta_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libnta.a \
-			-L../ipt -lipt \
-			-L../sip -lsip \
-			-L../sresolv -lsresolv \
-			-L../tport -ltport \
-			-L../stun -lstun \
-			-L../url -lurl \
-			-L../msg -lmsg \
-			-L../bnf -lbnf \
-			-L../su -lsu 
+LDADD = 		libnta.la \
+			../ipt/libipt.la \
+			../sip/libsip.la \
+			../sresolv/libsresolv.la \
+			../tport/libtport.la \
+			../stun/libstun.la \
+			../url/liburl.la \
+			../msg/libmsg.la \
+			../bnf/libbnf.la \
+			../su/libsu.la
 
 nta_test_SOURCES = 	nta_test.c
 

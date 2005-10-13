@@ -14,11 +14,10 @@ INCLUDES = 	-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libsip.a
+noinst_LTLIBRARIES = 	libsip.la
 
 noinst_PROGRAMS =       torture_sip \
-			sip_test_msg validator date_test \
-			sip_objs.o
+			sip_test_msg validator date_test
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -39,7 +38,7 @@ BUILT_SOURCES = 	$(GENERATED_H) $(GENERATED_C)
 
 include_HEADERS = 	$(GENERATED_H) $(PUBLIC_H) $(H_IN)
 
-libsip_a_SOURCES = 	$(INTERNAL_H) \
+libsip_la_SOURCES = 	$(INTERNAL_H) \
 			sip_parser.c sip_header.c sip_util.c sip_pref_util.c \
 			sip_basic.c sip_extra.c sip_feature.c sip_mime.c \
 			sip_security.c sip_event.c sip_prack.c \
@@ -49,16 +48,13 @@ libsip_a_SOURCES = 	$(INTERNAL_H) \
 			sip_tag_class.c \
 			$(GENERATED_C)
 
-sip_objs_o_SOURCES =	$(libsip_a_SOURCES)
-sip_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(sip_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libsip.a \
-			-L../msg -lmsg \
-			-L../bnf -lbnf \
-			-L../url -lurl \
-			-L../su -lsu 
+LDADD = 		libsip.la \
+			../msg/libmsg.la \
+			../bnf/libbnf.la \
+			../url/liburl.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

@@ -17,9 +17,9 @@ INCLUDES = 		-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libiptsec.a
+noinst_LTLIBRARIES = 	libiptsec.la
 
-noinst_PROGRAMS = 	auth_digest_test iptsec_objs.o
+noinst_PROGRAMS = 	auth_digest_test
 
 TESTS = 		auth_digest_test
 
@@ -31,7 +31,7 @@ BUILT_SOURCES = 	auth_tag_ref.c
 include_HEADERS =       auth_client.h auth_digest.h auth_dll.h \
 			auth_module.h auth_plugin.h
 
-libiptsec_a_SOURCES = 	iptsec_debug.h \
+libiptsec_la_SOURCES = 	iptsec_debug.h \
 			auth_client.c auth_digest.c \
 			auth_module.c auth_tag.c auth_tag_ref.c \
 			auth_plugin.c auth_plugin_delayed.c \
@@ -41,20 +41,17 @@ libiptsec_a_SOURCES = 	iptsec_debug.h \
 SIPSOURCES = 		auth_module_sip.c
 HTTPSOURCES = 		auth_module_http.c 
 
-iptsec_objs_o_SOURCES =	$(libiptsec_a_SOURCES)
-iptsec_objs_o_LDADD =	
-
 COVERAGE_INPUT = 	$(iptsec_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libiptsec.a \
-			-L../ipt -lipt \
-			-L../http -lhttp \
-			-L../msg -lmsg \
-			-L../nta -lnta \
-			-L../sip -lsip \
-			-L../url -lurl \
-			-L../bnf -lbnf \
-			-L../su -lsu
+LDADD = 		libiptsec.la \
+			../ipt/libipt.la \
+			../http/libhttp.la \
+			../msg/libmsg.la \
+			../nta/libnta.la \
+			../sip/libsip.la \
+			../url/liburl.la \
+			../bnf/libbnf.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

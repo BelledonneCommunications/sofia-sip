@@ -13,9 +13,9 @@ INCLUDES = 		-I$(srcdir)/../sdp \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LIBRARIES = 	libsoa.a
+noinst_LTLIBRARIES = 	libsoa.la
 
-noinst_PROGRAMS =	soa_objs.o test_soa
+noinst_PROGRAMS =	test_soa
 
 TESTS = 		test_soa
 
@@ -26,7 +26,7 @@ BUILT_SOURCES =		soa_tag_ref.c
 
 include_HEADERS =       soa.h soa_session.h soa_add.h soa_tag.h
 
-libsoa_a_SOURCES = 	soa.c soa_static.c \
+libsoa_la_SOURCES = 	soa.c soa_static.c \
 			soa_tag.c soa_tag_ref.c 
 
 soa_objs_o_SOURCES =	$(libsoa_a_SOURCES)
@@ -34,11 +34,11 @@ soa_objs_o_LDADD =
 
 COVERAGE_INPUT = 	$(soa_objs_o_SOURCES) $(include_HEADERS)
 
-LDADD = 		libsoa.a \
-			-L../sip -lsip \
-			-L../sdp -lsdp \
-			-L../ipt -lipt \
-			-L../su -lsu
+LDADD = 		libsoa.la \
+			../sip/libsip.la \
+			../sdp/libsdp.la \
+			../ipt/libipt.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
