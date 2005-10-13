@@ -1,19 +1,40 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
 /** Defined when su_configure_win32.h has been included. */
-#define SU_CONFIGURE_WIN32_H \
-"$Id: su_configure_win32.h,v 1.1 2005/09/23 14:43:46 ppessi Exp $"
-/** @SU @file su_configure_win32.h 
- * 
+#define SU_CONFIGURE_WIN32_H
+/**@file su_configure_win32.h
+ *
  * @b su library configuration for WIN32.
- * 
+ *
  * The file <su_configure_win32.h> contains configuration information needed
  * by WIN32 programs using @b su library.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * Copyright (c) 1999, 2002 Nokia Research Center. All rights reserved.
- *
- * Created: Thu Jan 18 15:30:55 2001 ppessi
- * $Date: 2005/09/23 14:43:46 $
+ * @date Created: Thu Jan 18 15:30:55 2001 ppessi
+ * @date Last modified: Fri Sep 23 14:43:46 2005 ppessi
  */
 
 #define WIN32_LEAN_AND_MEAN
@@ -30,7 +51,7 @@
 #define SU_HAVE_PTHREADS        (1)
 
 /* Define this as 1 if you have if_nameindex() */
-#define SU_HAVE_IF_NAMEINDEX   (0) 
+#define SU_HAVE_IF_NAMEINDEX   (0)
 
 /* Define this as 1 if you have getaddrinfo() */
 #define SU_HAVE_GETADDRINFO     1
@@ -73,3 +94,4 @@
 #define EALREADY        (20004)
 
 #define ssize_t SSIZE_T
+
