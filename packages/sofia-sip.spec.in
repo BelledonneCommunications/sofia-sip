@@ -86,7 +86,7 @@ Obsoletes:	sofia-utils
 %description	utils
 Command line utilities for Sofia SIP UA library.
 
-%files
+%files utils
 %defattr(-,root,root,-)
 %{_prefix}/bin/nua_cli
 %{_prefix}/bin/localinfo
