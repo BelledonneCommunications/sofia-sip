@@ -35,11 +35,10 @@ endif
 libtport_la_SOURCES = 	tport.c tport_tag.c tport_tag_ref.c $(TLS_SRC)
 
 # to make sure all files end up in the dist package
-EXTRA_DIST =	 	$(libtport_a_SOURCES) tport_tls.c tport_tls.h tport_test.c
+EXTRA_DIST =	 	$(libtport_la_SOURCES) tport_tls.c tport_tls.h tport_test.c
 
 BUILT_SOURCES =		tport_tag_ref.c
 
-COVERAGE_INPUT = 	$(libtport_la_SOURCES) $(include_HEADERS)
 COVERAGE_INPUT = 	$(libtport_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libtport.la \
