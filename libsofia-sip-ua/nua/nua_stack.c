@@ -1021,6 +1021,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   else if (refresher <= nua_no_refresher)
     refresher = nua_no_refresher;
 
+  /* Set int in handle pref structure */
 #define NHP_SET(nhp, pref, value)			   \
   (((nhp)->nhp_set.set_bits.nhp_##pref = (value) != (nhp)->nhp_##pref), \
    (nhp)->nhp_##pref = value)
@@ -1049,6 +1050,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   NHP_SET(nhp, service_route_enable, service_route_enable != 0);
   NHP_SET(nhp, path_enable, path_enable != 0);
 
+  /* Set string in handle pref structure */
 #define NHP_SET_STR(nhp, name, str)				 \
   if (str != NONE && str0cmp(str, nhp->nhp_##name)) {		 \
     char *new_str = su_strdup(tmphome, str);			 \
@@ -1060,6 +1062,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     }								 \
   }
 
+  /* Set header in handle pref structure */
 #define NHP_SET_HEADER(nhp, name, header, str)			 \
   if (header != NONE || str != NONE) {				 \
     sip_##name##_t *new_header;					 \
@@ -1093,6 +1096,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       nua_handle_preferences_t *ahp = su_alloc(nh->nh_home, sizeof *ahp);
       if (ahp && su_home_move(nh->nh_home, tmphome) >= 0) {
 	memcpy(ahp, nhp, sizeof *ahp);
+
 	/* Zap pointers which are not set */
 #define NHP_ZAP_UNSET_PTR(nhp, pref) \
 	(!(nhp)->nhp_set.set_bits.nhp_##pref ? (nhp)->nhp_##pref = NULL : NULL)
@@ -1114,8 +1118,18 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       nua_handle_preferences_t tbf[1];
       nhp->nhp_set.set_any |= ohp->nhp_set.set_any;
       *tbf = *ohp; *ohp = *nhp; 
-      su_free(nh->nh_home, tbf->nhp_supported);
-      su_free(nh->nh_home, tbf->nhp_allow);
+
+      /* Free changed items */
+#define NHP_ZAP_OVERRIDEN(tbf, nhp, pref)			\
+      ((tbf)->nhp_set.set_bits.nhp_##pref			\
+       && (tbf)->nhp_##pref != (nhp)->nhp_##pref		\
+       ? su_free(nh->nh_home, (void *)(tbf)->nhp_##pref) : (void)0)
+
+      NHP_ZAP_OVERRIDEN(tbf, nhp, supported);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, allow);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, user_agent);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, ua_name);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, organization);
     }
     else
       /* Fail miserably with ENOMEM */
@@ -1217,9 +1231,13 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
   media_params = soa_get_paramlist(nh->nh_soa, TAG_END());
 
+  /* Include tag in list returned to user
+   * if it has been earlier set (by user) */
 #define TIF(TAG, pref) \
   TAG_IF(nhp->nhp_set.set_bits.nhp_##pref, TAG(nhp->nhp_##pref))
 
+  /* Include string tag made out of SIP header
+   * if it has been earlier set (by user) */
 #define TIF_STR(TAG, pref)						\
   TAG_IF(nhp->nhp_set.set_bits.nhp_##pref,				\
 	 TAG(nhp->nhp_set.set_bits.nhp_##pref && nhp->nhp_##pref	\

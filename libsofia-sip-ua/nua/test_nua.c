@@ -505,19 +505,36 @@ int test_params(struct context *ctx)
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
 			  NUTAG_URL("sip:*:*;transport=udp"),
 			  TAG_END());
+
   TEST_1(ctx->a.nua);
 
-  from = sip_from_make(NULL, Alice);
+  from = sip_from_make(tmphome, Alice);
 
   nh = nua_handle(ctx->a.nua, NULL, TAG_END());
 
   nua_set_hparams(nh, NUTAG_INVITE_TIMER(90), TAG_END());
   run_a_until(ctx, nua_r_set_params, condition_final_response);
 
+  /* Modify all pointer values */
+  nua_set_params(ctx->a.nua,
+		 SIPTAG_FROM_STR(Alice),
+
+		 SIPTAG_SUPPORTED_STR("test"),
+		 SIPTAG_ALLOW_STR("DWIM, OPTIONS, INFO"),
+		 SIPTAG_USER_AGENT_STR("test_nua/1.0"),
+
+		 SIPTAG_ORGANIZATION_STR("Te-Ras y.r."),
+
+		 NUTAG_REGISTRAR("sip:openlaboratory.net"),
+
+		 TAG_END());
+
+  run_a_until(ctx, nua_r_set_params, condition_final_response);
+
   /* Modify everything from their default value */
   nua_set_params(ctx->a.nua,
 		 SIPTAG_FROM(from),
-		 NUTAG_RETRY_COUNT(5),
+		 NUTAG_RETRY_COUNT(9),
 		 NUTAG_MAX_SUBSCRIPTIONS(6),
 
 		 NUTAG_ENABLEINVITE(0),
@@ -541,20 +558,24 @@ int test_params(struct context *ctx)
 		 NUTAG_SERVICE_ROUTE_ENABLE(0),
 		 NUTAG_PATH_ENABLE(0),
 
-		 SIPTAG_SUPPORTED_STR("humppaa,kuole"),
-		 SIPTAG_ALLOW_STR("OPTIONS, INFO"),
-		 SIPTAG_USER_AGENT_STR("test_nua"),
+		 SIPTAG_SUPPORTED(sip_supported_make(tmphome, "humppaa,kuole")),
+		 SIPTAG_ALLOW(sip_allow_make(tmphome, "OPTIONS, INFO")),
+		 SIPTAG_USER_AGENT(sip_user_agent_make(tmphome, "test_nua")),
 
-		 SIPTAG_ORGANIZATION_STR("Pussy Galore's Flying Circus"),
+		 SIPTAG_ORGANIZATION(sip_organization_make(tmphome, "Pussy Galore's Flying Circus")),
 
 		 NUTAG_MEDIA_ENABLE(0),
-		 NUTAG_REGISTRAR("sip:sip.wonderland.org"),
+		 NUTAG_REGISTRAR(url_hdup(tmphome, (url_t *)"sip:sip.wonderland.org")),
 
 		 TAG_END());
 
   run_a_until(ctx, nua_r_set_params, condition_final_response);
 
-  su_home_auto(tmphome, sizeof(tmphome));
+  /* Modify something... */
+  nua_set_params(ctx->a.nua,
+		 NUTAG_RETRY_COUNT(5),
+		 TAG_END());
+  run_a_until(ctx, nua_r_set_params, condition_final_response);
 
   {
     sip_from_t const *from = NONE;
@@ -848,7 +869,7 @@ int test_init(struct context *ctx, char *argv[])
   ctx->root = su_root_create(ctx); TEST_1(ctx->root);
 
   /* Disable threading by command line switch? */
-  su_root_threading(ctx->root, 0);
+  su_root_threading(ctx->root, 1);
 
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
