@@ -29,10 +29,7 @@ include_HEADERS =       soa.h soa_session.h soa_add.h soa_tag.h
 libsoa_la_SOURCES = 	soa.c soa_static.c \
 			soa_tag.c soa_tag_ref.c 
 
-soa_objs_o_SOURCES =	$(libsoa_a_SOURCES)
-soa_objs_o_LDADD =
-
-COVERAGE_INPUT = 	$(soa_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsoa_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libsoa.la \
 			../sip/libsip.la \

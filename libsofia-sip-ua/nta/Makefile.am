@@ -37,7 +37,8 @@ libnta_la_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
 			sl_utils.c sl_utils_print.c sl_utils_log.c \
 			sl_read_payload.c
 
-COVERAGE_INPUT = 	$(nta_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libnta.la \
 			../ipt/libipt.la \

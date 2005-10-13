@@ -63,7 +63,8 @@ libsu_la_SOURCES = \
 	su_log.c su_global_log.c su_default_log.c \
 	su_md5.c su_uniqueid.c su_memmem.c
 
-COVERAGE_INPUT = 	$(su_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libsu.la $(GLIB_LIBS)
 

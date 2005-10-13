@@ -24,7 +24,8 @@ include_HEADERS =       url.h url_dll.h url_tag.h url_tag_class.h
 
 liburl_la_SOURCES = 	url.c url_tag.c url_tag_ref.c
 
-COVERAGE_INPUT = 	$(url_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(liburl_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(liburl_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		liburl.la \
 			../bnf/libbnf.la \

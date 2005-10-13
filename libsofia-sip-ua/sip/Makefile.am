@@ -48,7 +48,8 @@ libsip_la_SOURCES = 	$(INTERNAL_H) \
 			sip_tag_class.c \
 			$(GENERATED_C)
 
-COVERAGE_INPUT = 	$(sip_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsip_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsip_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libsip.la \
 			../msg/libmsg.la \

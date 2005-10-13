@@ -39,7 +39,8 @@ EXTRA_DIST =	 	$(libtport_a_SOURCES) tport_tls.c tport_tls.h tport_test.c
 
 BUILT_SOURCES =		tport_tag_ref.c
 
-COVERAGE_INPUT = 	$(tport_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libtport_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libtport_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libtport.la \
 			../stun/libstun.la \

@@ -39,10 +39,8 @@ include_HEADERS =       nua.h nua_stack.h nua_tag.h
 libnua_la_SOURCES = 	nua.c nua_common.c nua_stack.c \
 			nua_tag.c nua_tag_ref.c
 
-nua_objs_o_SOURCES =	$(libnua_a_SOURCES)
-nua_objs_o_LDADD =	
-
-COVERAGE_INPUT = 	$(nua_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libnua.la \
 			../iptsec/libiptsec.la \

@@ -33,7 +33,8 @@ include_HEADERS = 	stun.h stun_common.h
 
 libstun_la_SOURCES = 	stun.c stun_common.c
 
-COVERAGE_INPUT = 	$(stun_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libstun_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libstun_la_SOURCES) $(include_HEADERS)
 
 # common LDFLAGS to all utils
 LDADD =			libstun.la \

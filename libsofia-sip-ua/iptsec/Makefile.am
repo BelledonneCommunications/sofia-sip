@@ -41,7 +41,8 @@ libiptsec_la_SOURCES = 	iptsec_debug.h \
 SIPSOURCES = 		auth_module_sip.c
 HTTPSOURCES = 		auth_module_http.c 
 
-COVERAGE_INPUT = 	$(iptsec_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libiptsec_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libiptsec_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libiptsec.la \
 			../ipt/libipt.la \

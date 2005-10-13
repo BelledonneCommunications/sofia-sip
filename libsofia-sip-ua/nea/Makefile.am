@@ -31,7 +31,8 @@ include_HEADERS =       nea.h nea_dll.h nea_debug.h
 libnea_la_SOURCES = 	nea.c nea_event.c \
 			nea_server.c nea_debug.c nea_tag.c nea_tag_ref.c
 
-COVERAGE_INPUT = 	$(nea_objs_o_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnea_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnea_la_SOURCES) $(include_HEADERS)
 
 LDADD = 		libnea.la \
 			../nta/libnta.la \
