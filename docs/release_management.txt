@@ -42,13 +42,9 @@ Making the release tarball
 - tag CVS-tree with release tag: 'rel-sofia-sip-x_y_z', where
   x_y_z is the version number (see README.developers)
 - run 'make distcheck' (requires automake-1.7 or newer)
-- calculate md5 and sha1 hashes using md5sum and sha1sum,
-  and copy the values to the release-notes
-- release file using 
-- upload the resulting tar.gz file to Sourceforge
-- sent the release annoucement to the 
-  sofia-sip-devel@lists.sourceforge.net mailing list (see
-  section below making the release notes)
+- calculate md5 and sha1 hashes using md5sum and sha1sum utils,
+  and copy the values to the release-notes (see below)
+
 
 Creating the release notes
 ==========================
@@ -60,6 +56,16 @@ Creating the release notes
 - commit the change to CVS, and run the 
   sfnet_www/put_online.sh script at the sourceforge.net
   shell server
+
+Uploading the release to sourceforge.net
+========================================
+
+- use the the 'Admin' -> 'File releases' tool for
+  creating a new release
+- to upload the file, you can use for example ncftpput:
+  ncftpput -u anonymous -p USER@users.sourceforge.net upload.sourceforge.net /incoming/ sofia-sip-x.y.z.tar.gz
+- attach the release notes (relnotes-sofia-sip-x.y.z.txt)
+  to the file release
 
 Announcing releases
 ===================
