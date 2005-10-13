@@ -34,8 +34,6 @@
 #include <string.h>
 #include "base64.h"
 
-char const base64_h_id[] = BASE64_H;
-
 static unsigned char const code[] = 
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

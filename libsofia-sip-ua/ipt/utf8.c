@@ -29,16 +29,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Apr 21 15:32:02 1998 pessi
- * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
+ * @date Last modified: Thu Oct 13 18:04:41 2005 ppessi
  */
 
 #include "config.h"
 
 #include <utf8.h>
 #include "utf8internal.h"
-
-const char utf8_h_rcs_id[] = UTF8_H;
-const char utf8internal_h_rcs_id[] = UTF8INTERNAL_H;
 
 #ifndef _WIN32
 #include <assert.h>

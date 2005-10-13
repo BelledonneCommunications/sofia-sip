@@ -23,7 +23,7 @@
  */
 
 #ifndef SDP_TAG_H /** Defined when <sdp_tag.h> has been included. */
-#define SDP_TAG_H;
+#define SDP_TAG_H
 
 /**@file sdp_tag.h   
  * @brief SDP tags
