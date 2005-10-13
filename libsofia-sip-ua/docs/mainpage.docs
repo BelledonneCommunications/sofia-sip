@@ -647,14 +647,15 @@ environment variable #SOFIA_DEBUG.
 The environment variables controlling the logging and other debug output are
 as follows:
 - #SOFIA_DEBUG	Default debug level (0..9)
-- #NUA_DEBUG	NUA debug level (0..9)
-- #NEA_DEBUG	NEA debug level (0..9)
+- #NUA_DEBUG	User Agent engine (<a href="nua/index.html">nua</a>) debug level (0..9)
+- #SOA_DEBUG	SDP Offer/Answer engine (<a href="soa/index.html">soa</a>) debug level (0..9)
+- #NEA_DEBUG	Event engine (<a href="nea/index.html">nea</a>) debug level (0..9)
 - #IPTSEC_DEBUG	HTTP/SIP autentication module debug level (0..9)
 - #NTA_DEBUG	Transaction engine debug level (0..9)
 - #TPORT_DEBUG	Transport event debug level (0..9)
-- #TPORT_LOG	If set, print out all parsed SIP messages on transport layer
-- #TPORT_DUMP	Filename for dumping unparsed messages from transport
-- #SU_DEBUG	Su module debug level (0..9)
+  - #TPORT_LOG	If set, print out all parsed SIP messages on transport layer
+  - #TPORT_DUMP	Filename for dumping unparsed messages from transport
+- #SU_DEBUG	<a href="nea/index.html">su</a> module debug level (0..9)
 
 The defined debug output levels are:
 - 0 fatal errors, panic
