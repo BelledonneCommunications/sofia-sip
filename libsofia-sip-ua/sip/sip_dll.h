@@ -23,7 +23,7 @@
  */
 
 #ifndef SIP_DLL_H /** Defined when @b <sip_dll.h> has been included. */
-#define SIP_DLL_H "$Id: sip_dll.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
+#define SIP_DLL_H
 
 /**@file sip_dll.h
  *

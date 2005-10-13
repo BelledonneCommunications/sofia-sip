@@ -32,13 +32,10 @@
  *
  * @date Created: Tue Aug 21 15:18:26 2001 ppessi
  *
- * $Date: 2005/09/23 14:53:50 $
+ * @date Last modified: Fri Sep 23 14:53:50 2005 ppessi
  */
 
 #include "config.h"
-
-const char msg_test_c_id[] =
-"$Id: msg_test.c,v 1.3 2005/09/23 14:53:50 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

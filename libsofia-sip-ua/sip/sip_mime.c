@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/08/03 17:18:11 $
+ * @date Last modified: Wed Aug  3 17:18:11 2005 ppessi
  */
 
 #include "config.h"
-
-const char _sip_mime_id[] =
-"$Id: sip_mime.c,v 1.2 2005/08/03 17:18:11 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -30,7 +30,7 @@
  *  
  * @date Created: Fri Oct  3 13:40:41 2003 ppessi
  * 
- * $Date: 2005/07/20 20:35:55 $
+ * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  */
 
 #ifndef WIN32
@@ -42,9 +42,6 @@
 #undef LARGEST_ATTRIBUTE
 #define LARGEST_ATTRIBUTE TURN_LARGEST_ATTRIBUTE
 #endif
-
-const char stun_common_c_id[] =
-  "$Id: stun_common.c,v 1.1.1.1 2005/07/20 20:35:55 kaiv Exp $";
 
 #include <su_debug.h>
 #include "stun_common.h"

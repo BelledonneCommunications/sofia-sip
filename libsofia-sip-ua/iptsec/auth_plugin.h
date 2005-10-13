@@ -23,8 +23,8 @@
  */
 
 #ifndef AUTH_PLUGIN_H /** Defined when auth_plugin.h has been included. */
-#define AUTH_PLUGIN_H \
-"$Id: auth_plugin.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
+#define AUTH_PLUGIN_H 
+
 
 /**@file auth_plugin.h
  * @brief Plugin interface for authentication verification modules.
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Apr 27 15:22:07 2004 ppessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #ifndef AUTH_MODULE_H

@@ -23,7 +23,7 @@
  */
 
 #ifndef SIP_H /** Defined when <sip.h> has been included. */
-#define SIP_H "$Id: sip.h,v 1.2 2005/08/03 17:18:10 ppessi Exp $"
+#define SIP_H
 
 /**@file sip/sip.h 
  * 
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created      : Thu Jun  8 19:28:55 2000 ppessi
- * $Date: 2005/08/03 17:18:10 $
+ * @date Last modified: Wed Aug  3 17:18:10 2005 ppessi
  */
 
 #ifndef MSG_TYPES_H

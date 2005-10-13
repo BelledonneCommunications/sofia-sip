@@ -23,8 +23,8 @@
  */
 
 #ifndef AUTH_DIGEST_H /** Defined when <auth_digest.h> has been included. */
-#define AUTH_DIGEST_H \
-"$Id: auth_digest.h,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $"
+#define AUTH_DIGEST_H 
+
 
 /**@file auth_digest.h 
  * Datatypes and functions for Digest authentication.
@@ -43,7 +43,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Feb 22 12:25:55 2001 ppessi
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #ifndef SU_ALLOC_H

@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Jun  5 14:34:24 2002 ppessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
-
-const char msg_mclass_c_id[] =
-"$Id: msg_mclass.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -56,8 +53,6 @@ const char msg_mclass_c_id[] =
 #include "msg_parser.h"
 #include "msg_mclass.h"
 #include "msg_mclass_hash.h"
-
-const char msg_mclass_h_id[] = MSG_MCLASS_H;
 
 /** Clone a message class.
  *

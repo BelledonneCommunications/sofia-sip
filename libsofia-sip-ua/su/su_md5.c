@@ -59,9 +59,6 @@
  *
  */
 
-const char su_md5_c_id[] = 
-"$Id: su_md5.c,v 1.2 2005/10/11 09:02:37 ppessi Exp $";
-
 #include <string.h>	/* for memcpy() and memset() */
 
 #include "su_md5.h"

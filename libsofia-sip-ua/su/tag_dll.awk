@@ -30,7 +30,7 @@
 # Author: Pekka Pessi <Pekka.Pessi@nokia.com>
 #
 # Created: Tue Feb 26 14:11:25 2002 ppessi
-# $Id: tag_dll.awk,v 1.2 2005/08/26 21:35:48 ppessi Exp $
+# REMOVED_RCS_ID
 #
 
 BEGIN {

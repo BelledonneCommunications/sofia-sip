@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Apr 27 15:23:31 2004 ppessi
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include "config.h"
-
-const char auth_plugin_c_id[] = 
-  "$Id: auth_plugin.c,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -53,9 +53,6 @@
 
 #include "config.h"
 
-const char _rc4_c[] = 
-"$Id: rc4.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
-
 #include "rc4.h"
 
 void rc4_init(const void *vseed, int seed_len, rc4_t *state) {

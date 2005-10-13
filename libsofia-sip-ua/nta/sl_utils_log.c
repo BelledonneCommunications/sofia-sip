@@ -30,11 +30,8 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created:  Thu Oct  5 15:38:39 2000 ppessi
- * $Date: 2005/07/20 20:35:31 $
+ * @date Last modified: Wed Jul 20 20:35:31 2005 kaiv
  */
-
-const char rcsid_sl_utils_log_c[] =
-"$Id: sl_utils_log.c,v 1.1.1.1 2005/07/20 20:35:31 kaiv Exp $";
 
 #include "config.h"
 

@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
- * $Date: 2005/10/11 14:27:31 $
+ * @date Last modified: Tue Oct 11 14:27:31 2005 ppessi
  */
 
 #include "config.h"
-
-const char su_root_c_id[] =
-"$Id: su_root.c,v 1.6 2005/10/11 14:27:31 ppessi Exp $";
 
 #include <stdlib.h>
 #include <assert.h>

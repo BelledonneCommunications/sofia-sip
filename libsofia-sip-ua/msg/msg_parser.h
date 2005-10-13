@@ -23,8 +23,8 @@
  */
 
 #ifndef MSG_PARSER_H /** Defined when msg_parser.h has been included. */
-#define MSG_PARSER_H \
-"$Id: msg_parser.h,v 1.1.1.1 2005/07/20 20:35:25 kaiv Exp $"
+#define MSG_PARSER_H 
+
 /**@ingroup msg_parser
  * @file msg_parser.h
  *
@@ -34,7 +34,7 @@
  *
  * @date Created: Tue Aug 21 16:03:45 2001 ppessi
  *
- * $Date: 2005/07/20 20:35:25 $
+ * @date Last modified: Wed Jul 20 20:35:25 2005 kaiv
  */
 
 #ifndef SU_ALLOC_H

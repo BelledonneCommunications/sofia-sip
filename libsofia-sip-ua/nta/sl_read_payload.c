@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Thu Sep  5 00:44:34 2002 ppessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
-
-const char sl_read_payload_c_id[] = 
-  "$Id: sl_read_payload.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>

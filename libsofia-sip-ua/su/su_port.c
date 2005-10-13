@@ -34,13 +34,10 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  *
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
- * $Date: 2005/10/11 09:02:37 $
+ * @date Last modified: Tue Oct 11 09:02:37 2005 ppessi
  */
 
 #include "config.h"
-
-char const su_port_c[] =
-"$Id: su_port.c,v 1.3 2005/10/11 09:02:37 ppessi Exp $";
 
 /* Use Posix stuff */
 #define _XOPEN_SOURCE  (500)

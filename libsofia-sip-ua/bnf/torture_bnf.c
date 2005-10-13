@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Aug 21 15:18:26 2001 ppessi
- * $Date: 2005/07/20 20:34:54 $
+ * @date Last modified: Wed Jul 20 20:34:54 2005 kaiv
  */
 
 #include "config.h"
-
-const char torture_bnf_c_id[] =
-"$Id: torture_bnf.c,v 1.1.1.1 2005/07/20 20:34:54 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -22,8 +22,6 @@
  *
  */
 
-const char sip_header_c_id[] =
-"$Id: sip_header.c,v 1.1.1.1 2005/07/20 20:35:42 kaiv Exp $";
 /**@CFILE sip_header.c
  *
  * SIP header handling.
@@ -31,7 +29,7 @@ const char sip_header_c_id[] =
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/07/20 20:35:42 $
+ * @date Last modified: Wed Jul 20 20:35:42 2005 kaiv
  */
 
 #include "config.h"
@@ -51,8 +49,6 @@ const char sip_header_c_id[] =
 
 #include "sip_parser.h"
 #include <sip_status.h>
-
-const char sip_header_h_id[] = SIP_HEADER_H;
 
 /** Copy a SIP header. */
 sip_header_t *sip_header_copy(su_home_t *home, sip_header_t const *h)

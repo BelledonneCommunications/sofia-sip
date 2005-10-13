@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Aug  3 20:27:15 EEST 2005
- * $Date: 2005/10/12 18:32:48 $
+ * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  */
 
 #include "config.h"
-
-const char soa_c_id[] =
-"$Id: soa.c,v 1.8 2005/10/12 18:32:48 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -46,12 +43,9 @@ const char soa_c_id[] =
 #include <su_wait.h>
 
 #include "soa.h"
-const char soa_h_id[] = SOA_H;
 #include "sdp.h"
 #include "soa_session.h"
-const char soa_session_h_id[] = SOA_SESSION_H;
 #include "soa_add.h"
-const char soa_add_h_id[] = SOA_ADD_H;
 
 #include <su_tagarg.h>
 #include <su_localinfo.h>

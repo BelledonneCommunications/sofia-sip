@@ -23,7 +23,7 @@
  */
 
 #ifndef TOKEN64_H
-#define TOKEN64_H "$Id: token64.h,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $"
+#define TOKEN64_H
 
 /**@file token64.h
  *

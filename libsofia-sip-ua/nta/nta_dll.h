@@ -23,7 +23,7 @@
  */
 
 #ifndef NTA_DLL_H /** Defined when <nta_dll.h> has been included. */
-#define NTA_DLL_H "$Id: nta_dll.h,v 1.1.1.1 2005/07/20 20:35:30 kaiv Exp $"
+#define NTA_DLL_H
 
 /**@file nta_dll.h
  *
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Fri Feb 22 15:57:00 2002 ppessi
- * $Date: 2005/07/20 20:35:30 $
+ * @date Last modified: Wed Jul 20 20:35:30 2005 kaiv
  */
 #if !defined(WIN32)
 #define NTA_DLL

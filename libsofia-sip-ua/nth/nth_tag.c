@@ -31,13 +31,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jul 24 22:28:34 2001 ppessi
- * $Date: 2005/07/20 20:35:32 $
+ * @date Last modified: Wed Jul 20 20:35:32 2005 kaiv
  */
 
 #include "config.h"
-
-const char _nth_tag_c_id[] =
-"$Id: nth_tag.c,v 1.1.1.1 2005/07/20 20:35:32 kaiv Exp $";
 
 #include <string.h>
 #include <assert.h>
@@ -50,8 +47,6 @@ const char _nth_tag_c_id[] =
 #include <url_tag_class.h>
 
 #include <http_protos.h>
-
-const char _nth_tag_h_id[] = NTH_TAG_H;
 
 /* Common */
 tag_typedef_t nthtag_mclass = PTRTAG_TYPEDEF(mclass);

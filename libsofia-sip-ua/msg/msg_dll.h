@@ -23,7 +23,7 @@
  */
 
 #ifndef MSG_DLL_H /** Defined when msg_dll.h has been included. */
-#define MSG_DLL_H "$Id: msg_dll.h,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $"
+#define MSG_DLL_H
 /**@ingroup msg
  * @file msg_dll.h
  *

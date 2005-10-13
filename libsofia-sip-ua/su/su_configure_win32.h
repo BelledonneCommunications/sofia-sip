@@ -23,8 +23,8 @@
  */
 
 /** Defined when su_configure_win32.h has been included. */
-#define SU_CONFIGURE_WIN32_H \
-"$Id: su_configure_win32.h,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $"
+#define SU_CONFIGURE_WIN32_H 
+
 /**@file su_configure_win32.h 
  * 
  * @b su library configuration for WIN32.
@@ -37,7 +37,7 @@
  * Copyright (c) 1999, 2002 Nokia Research Center. All rights reserved.
  *
  * Created: Thu Jan 18 15:30:55 2001 ppessi
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #define WIN32_LEAN_AND_MEAN

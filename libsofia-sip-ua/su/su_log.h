@@ -29,7 +29,7 @@
  *
  * @date Created: Thu Feb 22 18:09:02 2001 ppessi
  *
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #ifdef __cplusplus
@@ -44,7 +44,7 @@ typedef struct su_log_s su_log_t;
 
 #ifndef SU_LOG_H_NEED_SU_LOG_T
 #ifndef SU_LOG_H  /** Defined when su_log.h has been included. */
-#define SU_LOG_H "$Id: su_log.h,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $"
+#define SU_LOG_H
 
 #ifndef _STDARG_H
 #include <stdarg.h>

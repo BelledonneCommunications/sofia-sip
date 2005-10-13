@@ -31,11 +31,8 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Wed Mar 21 19:12:13 2001 ppessi
- * $Date: 2005/07/20 20:35:37 $
+ * @date Last modified: Wed Jul 20 20:35:37 2005 kaiv
  */
-
-const char _date_test_c_id[] =
-"$Id: date_test.c,v 1.1.1.1 2005/07/20 20:35:37 kaiv Exp $";
 
 #include <stdio.h>
 #include <string0.h>

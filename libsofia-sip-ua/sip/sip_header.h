@@ -23,8 +23,8 @@
  */
 
 #ifndef SIP_HEADER_H /**Defined when @b <sip_header.h> has been included.*/
-#define SIP_HEADER_H \
-"$Id: sip_header.h,v 1.3 2005/09/23 14:53:50 ppessi Exp $"
+#define SIP_HEADER_H 
+
 
 /**@file sip_header.h 
  *
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date  Created: Tue Jun 13 02:58:26 2000 ppessi
- * $Date: 2005/09/23 14:53:50 $
+ * @date Last modified: Fri Sep 23 14:53:50 2005 ppessi
  */
 
 #ifndef SU_ALLOC_H

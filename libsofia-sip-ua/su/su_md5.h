@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_MD5_H /**  Defined when su_md5.h has been included. */
-#define SU_MD5_H "$Id: su_md5.h,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $"
+#define SU_MD5_H
 
 /**@defgroup su_md5 MD5 Digest
  *

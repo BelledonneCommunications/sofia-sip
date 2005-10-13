@@ -31,10 +31,6 @@
 
 #include "config.h"
 
-/** CVS ident */
-const char _http_tag_class_c_id[] =
-"$Id: http_tag_class.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
-
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>

@@ -23,8 +23,8 @@
  */
 
 #ifndef SIP_TRANSPORT_H
-#define SIP_TRANSPORT_H \
-"$Id: sip_transport.h,v 1.1.1.1 2005/07/20 20:35:43 kaiv Exp $";
+#define SIP_TRANSPORT_H 
+
 /** @internal @file sip_transport.h 
  *  SIP transport objects.
  *

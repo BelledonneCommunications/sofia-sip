@@ -29,13 +29,10 @@
  * 
  * @date Created: Sat Apr 12 19:32:33 2003 ppessi
  * 
- * $Date: 2005/07/20 20:35:56 $
+ * @date Last modified: Wed Jul 20 20:35:56 2005 kaiv
  */
 
 #include "config.h"
-
-const char memmem_c_id[] = 
-  "$Id: memmem.c,v 1.1.1.1 2005/07/20 20:35:56 kaiv Exp $";
 
 #include <string.h>
 

@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_ALLOC_H  /** Defined when su_alloc.h has been included. */
-#define SU_ALLOC_H "$Id: su_alloc.h,v 1.4 2005/10/11 09:02:37 ppessi Exp $"
+#define SU_ALLOC_H
 
 /**@ingroup su_alloc
  *
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Aug 19 01:12:25 1999 ppessi
- * $Date: 2005/10/11 09:02:37 $
+ * @date Last modified: Tue Oct 11 09:02:37 2005 ppessi
  */
 
 #ifndef SU_CONFIG_H

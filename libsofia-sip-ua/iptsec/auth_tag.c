@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Wed Apr 11 15:14:03 2001 ppessi
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include "config.h"
-
-const char _auth_tag_c_id[] =
-"$Id: auth_tag.c,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $";
 
 #define TAG_NAMESPACE "auth"
 

@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
  *
- * $Date: 2005/07/20 20:35:59 $
+ * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #include <stdlib.h>
@@ -41,13 +41,10 @@
 #include <stdio.h>
 
 #define SU_INTERNAL_P su_root_t *
+
 #include "su.h"
 #include "su_wait.h"
 #include "su_alloc.h"
-
-const char su_wait_h_id[] = SU_WAIT_H;
-const char su_wait_c_id[] = 
-"$Id: su_wait.c,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $";
 
 /**@defgroup su_wait Syncronization and Threading
  * @brief Syncronization and threading interface.

@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_CONFIG_H /** Defined when su_config.h has been included. */
-#define SU_CONFIG_H "$Id: su_config.h,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $"
+#define SU_CONFIG_H
 /**@file su_config.h 
  * 
  * @b su library configuration
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #if !defined(_WIN32)

@@ -30,13 +30,10 @@
  *
  * @date Created: Mon Apr 11 16:35:16 2005 ppessi
  * 
- * $Date: 2005/10/03 16:48:22 $
+ * @date Last modified: Mon Oct  3 16:48:22 2005 ppessi
  */
 
 #include "config.h"
-
-const char su_memmem_c_id[] = 
-  "$Id: su_memmem.c,v 1.2 2005/10/03 16:48:22 ppessi Exp $";
 
 #include <sys/types.h>
 #include <stddef.h>

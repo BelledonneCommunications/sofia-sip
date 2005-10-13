@@ -23,8 +23,8 @@
  */
 
 #ifndef SU_CONFIGURE_H /** Defined when <su_configure.h> has been included. */
-#define SU_CONFIGURE_H \
-"$Id: su_configure.h.in,v 1.3 2005/10/12 18:32:48 ppessi Exp $"
+#define SU_CONFIGURE_H 
+
 /**@file su_configure.h
  *
  * Autoconf configuration for SU library.

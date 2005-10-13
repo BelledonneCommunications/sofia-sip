@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Fri Feb 23 17:30:13 2001 ppessi
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #include "config.h"
-
-char const su_log_c_id[] = 
-"$Id: su_log.c,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $";
 
 #include <stdarg.h>
 #include <stdlib.h>

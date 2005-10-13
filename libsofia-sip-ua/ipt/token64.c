@@ -33,9 +33,6 @@
 
 #include "config.h"
 
-const char _token64_c_id[] =
-"$Id: token64.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
-
 #include <stddef.h>
 #include <assert.h>
 

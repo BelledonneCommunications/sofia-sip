@@ -23,8 +23,8 @@
  */
 
 #ifndef MSG_DATE_H /** Defined when msg_date.h has been included. */
-#define MSG_DATE_H \
-"$Id: msg_date.h,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $"
+#define MSG_DATE_H 
+
 
 /**@ingroup msg_parser
  * @file msg_date.h 
@@ -34,7 +34,7 @@
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
  * 
- * $Date: 2005/07/20 20:35:22 $
+ * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 #ifndef MSG_TIME_T_DEFINED

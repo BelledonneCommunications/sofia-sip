@@ -28,13 +28,10 @@
  * @author Pekka Pessi <pessi@research.nokia.com>
  *
  * @date Created: Tue Apr 21 15:32:38 1998 pessi
- * $Date: 2005/07/20 20:35:20 $
+ * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  */
 
 #include "config.h"
-
-char utf8test_c_rcs_id[] = 
-"$Id: utf8test.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
 
 #include <utf8.h>
 #include <stdio.h>

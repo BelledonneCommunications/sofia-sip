@@ -31,9 +31,6 @@
  * @date Created:  Thu Oct  5 15:38:39 2000 ppessi
  */
 
-const char rcsid_sl_utils_c[] =
-"$Id: sl_utils.c,v 1.1.1.1 2005/07/20 20:35:31 kaiv Exp $";
-
 #include "config.h"
 
 #include <stddef.h>
@@ -43,5 +40,3 @@ const char rcsid_sl_utils_c[] =
 #include <sip.h>
 
 #include "sl_utils.h"
-
-const char rcsid_sl_utils_h[] = SL_UTILS_H;

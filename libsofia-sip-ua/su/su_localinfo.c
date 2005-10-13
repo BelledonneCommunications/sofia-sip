@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed Oct  4 14:09:29 EET 2000 ppessi
- * $Date: 2005/08/03 17:24:52 $
+ * @date Last modified: Wed Aug  3 17:24:52 2005 ppessi
  */
 
 #include "config.h"
-
-char const su_localinfo_c_id[] = \
-"$Id: su_localinfo.c,v 1.2 2005/08/03 17:24:52 ppessi Exp $";
 
 #include <stdio.h>
 #include <string.h>

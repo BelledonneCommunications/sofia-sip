@@ -23,7 +23,7 @@
  */
 
 #ifndef NUA_TAG_H /** Defined when <nua_tag.h> has been included. */
-#define NUA_TAG_H "$Id: nua_tag.h,v 1.8 2005/10/11 09:02:37 ppessi Exp $"
+#define NUA_TAG_H
 
 /**@file nua_tag.h
  * @brief Tags for Nokia User Agent Library
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Mon Feb 19 18:54:26 EET 2001 ppessi
- * $Date: 2005/10/11 09:02:37 $
+ * @date Last modified: Tue Oct 11 09:02:37 2005 ppessi
  */
 
 #ifndef SU_TAG_H

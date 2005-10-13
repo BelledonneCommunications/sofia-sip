@@ -33,9 +33,6 @@
 
 #include "config.h"
 
-const char msg_c_id[] =
-"$Id: msg.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,9 +49,6 @@ const char msg_c_id[] =
 #include "msg_internal.h"
 #include "msg_parser.h"
 #include "msg_mclass.h"
-
-const char msg_h_id[] = MSG_H;
-const char msg_internal_h_id[] = MSG_INTERNAL_H;
 
 /**
  * Create a message.

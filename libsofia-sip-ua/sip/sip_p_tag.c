@@ -12,9 +12,6 @@
 
 #include "config.h"
 
-const char _sip_p_tag_c_id[] =
-"$Id: sip_p_tag.c,v 1.1.1.1 2005/07/20 20:35:42 kaiv Exp $";
-
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>

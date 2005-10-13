@@ -23,7 +23,7 @@
  */
 
 #ifndef MSG_BUFFER_H /** Defined when msg_buffer.h has been included. */
-#define MSG_BUFFER_H "$Id: msg_buffer.h,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $"
+#define MSG_BUFFER_H
 
 /**@ingroup msg
  * @file msg_buffer.h
@@ -33,7 +33,7 @@
  * 
  * @date Created: Fri Nov  8 12:23:00 2002 ppessi
  *
- * $Date: 2005/07/20 20:35:22 $
+ * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 void *msg_buf_alloc(msg_t *msg, unsigned size);

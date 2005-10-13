@@ -23,8 +23,8 @@
  */
 
 #ifndef URL_TAG_CLASS_H /**Defined when url_tag_class.h has been included. */
-#define URL_TAG_CLASS_H \
-  "$Id: url_tag_class.h,v 1.4 2005/09/09 10:56:41 ppessi Exp $"
+#define URL_TAG_CLASS_H 
+  
 
 /**@ingroup url
  * @file  url_tag_class.h
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- * $Date: 2005/09/09 10:56:41 $
+ * @date Last modified: Fri Sep  9 10:56:41 2005 ppessi
  */
 
 #ifndef SU_TAG_H

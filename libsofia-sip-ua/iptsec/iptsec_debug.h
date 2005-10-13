@@ -23,7 +23,7 @@
  */
 
 #ifndef IPTSEC_DEBUG_H /** Defined when <iptsec_debug.h> has been included. */
-#define IPTSEC_DEBUG_H "$Id: iptsec_debug.h,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $"
+#define IPTSEC_DEBUG_H
 
 /**@file iptsec_debug.h
  * @brief Debug log for IPTSEC module.
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Dec 19 15:56:35 2002 ppessi
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include <su_log.h>

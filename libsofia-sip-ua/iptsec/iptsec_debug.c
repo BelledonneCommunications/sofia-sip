@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Dec 19 15:55:30 2002 ppessi
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include "config.h"
-
-const char iptsec_debug_c_id[] = 
-  "$Id: iptsec_debug.c,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $";
 
 #include <stddef.h>
 

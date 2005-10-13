@@ -30,24 +30,18 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun 29 22:44:37 2000 ppessi
- * $Date: 2005/09/09 10:56:41 $
+ * @date Last modified: Fri Sep  9 10:56:41 2005 ppessi
  */
 
 #include "config.h"
-
-const char url_c_id[] =
-"$Id: url.c,v 1.3 2005/09/09 10:56:41 ppessi Exp $";
 
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 
-#include <su_alloc.h>		/* XXX */
-
+#include <su_alloc.h>
 #include <bnf.h>
 #include <url.h>
-
-const char url_h_id[] = URL_H;
 
 /**@def URL_PRINT_FORMAT
  * Format string used when printing url with printf().

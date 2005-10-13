@@ -30,9 +30,6 @@
 
 #include "config.h"
 
-char const string0_c_id[] = 
-  "$Id: string0.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
-
 #include <string.h>
 #include <su_config.h>
 

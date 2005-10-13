@@ -31,12 +31,8 @@
 
 #include "config.h"
 
-const char _http_status_c_id[] =
-"$Id: http_status.c,v 1.1.1.1 2005/07/20 20:35:18 kaiv Exp $";
-
 #include <stddef.h>
 #include <http_status.h>
-const char http_status_h_id[] = HTTP_STATUS_H;
 
 char const
   http_100_continue[]             = "Continue",

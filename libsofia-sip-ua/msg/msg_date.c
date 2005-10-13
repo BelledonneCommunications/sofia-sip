@@ -32,13 +32,10 @@
  *
  * @date Created: Wed Apr 11 18:57:06 2001 ppessi
  *
- * $Date: 2005/07/20 20:35:22 $
+ * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 #include "config.h"
-
-const char msg_date_c_id[] =
-"$Id: msg_date.c,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -50,8 +47,6 @@ const char msg_date_c_id[] =
 #include <bnf.h>
 
 #include <su_time.h>
-
-const char msg_date_h_id[] = MSG_DATE_H;
 
 /** Return current time as seconds since Mon, 01 Jan 1900 00:00:00 GMT. */
 msg_time_t msg_now(void)

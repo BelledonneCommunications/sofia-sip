@@ -40,12 +40,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/10/12 18:32:48 $
+ * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  */
 
 #include "config.h"
-
-const char nta_c_id[] = "$Id: nta.c,v 1.8 2005/10/12 18:32:48 ppessi Exp $";
 
 /* From AM_INIT/AC_INIT in our "config.h" */
 char const nta_version[] = VERSION;
@@ -84,9 +82,6 @@ char const nta_version[] = VERSION;
 #include "nta_internal.h"
 #undef nta_agent_create
 #include "url_tag.h"
-
-const char _nta_h_id[] = NTA_H;
-const char _nta_internal_h_id[] = NTA_INTERNAL_H;
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

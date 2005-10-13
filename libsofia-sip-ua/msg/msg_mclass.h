@@ -23,7 +23,7 @@
  */
 
 #ifndef MSG_MCLASS_H /** Defined when msg_mclass.h has been included. */
-#define MSG_MCLASS_H "$Id: msg_mclass.h,v 1.2 2005/08/03 17:17:56 ppessi Exp $"
+#define MSG_MCLASS_H
 /**@ingroup msg_parser
  * @file msg_mclass.h
  *
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Mon Aug 27 15:44:27 2001 ppessi
- * $Date: 2005/08/03 17:17:56 $
+ * @date Last modified: Wed Aug  3 17:17:56 2005 ppessi
  */
 
 #ifndef MSG_HEADER_H

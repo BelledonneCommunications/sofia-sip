@@ -23,14 +23,14 @@
  */
 
 #ifndef SU_STRLST_H  /** Defined when su_strlst.h has been included. */
-#define SU_STRLST_H "$Id: su_strlst.h,v 1.2 2005/08/17 14:43:13 ppessi Exp $"
+#define SU_STRLST_H
 /**@ingroup su_strlst
  * @file su_strlst.h String lists
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Fri May  3 09:13:22 2002 ppessi
- * $Date: 2005/08/17 14:43:13 $
+ * @date Last modified: Wed Aug 17 14:43:13 2005 ppessi
  */
 
 #ifndef SU_ALLOC_H

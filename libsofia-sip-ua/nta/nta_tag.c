@@ -31,13 +31,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jul 24 22:28:34 2001 ppessi
- * $Date: 2005/08/10 15:26:12 $
+ * @date Last modified: Wed Aug 10 15:26:12 2005 ppessi
  */
 
 #include "config.h"
-
-const char _nta_tag_c_id[] =
-"$Id: nta_tag.c,v 1.3 2005/08/10 15:26:12 ppessi Exp $";
 
 #include <string.h>
 #include <assert.h>
@@ -50,8 +47,6 @@ const char _nta_tag_c_id[] =
 #include <url_tag_class.h>
 
 #include <sip_protos.h>
-
-const char _nta_tag_h_id[] = NTA_TAG_H;
 
 tag_typedef_t ntatag_mclass = PTRTAG_TYPEDEF(mclass);
 tag_typedef_t ntatag_bad_req_mask = UINTTAG_TYPEDEF(bad_req_mask);

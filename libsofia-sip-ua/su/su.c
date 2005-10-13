@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h" 
-
-char const su_c_id[] =
-"$Id: su.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdio.h>
 #include <string.h>
@@ -43,8 +40,6 @@ char const su_c_id[] =
 #include "su.h"
 #include "su_log.h"
 #include "su_alloc.h"
-
-char const su_h_id[] = SU_H;
 
 #if !SU_HAVE_BSDSOCK && !SU_HAVE_WINSOCK
 #error Bad configuration

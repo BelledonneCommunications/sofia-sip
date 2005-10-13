@@ -23,8 +23,8 @@
  */
 
 #ifndef SIP_STATUS_H /** Defined when @b <sip_status.h> has been included. */
-#define SIP_STATUS_H \
-"$Id: sip_status.h,v 1.1.1.1 2005/07/20 20:35:43 kaiv Exp $"
+#define SIP_STATUS_H 
+
 
 /**@addtogroup sip_status_codes
  * @{ 

@@ -23,8 +23,8 @@
  */
 
 #ifndef SIP_TAG_CLASS_H /**Defined when <sip_tag_class.h> have been included */
-#define SIP_TAG_CLASS_H \
-"$Id: sip_tag_class.h,v 1.1.1.1 2005/07/20 20:35:43 kaiv Exp $"
+#define SIP_TAG_CLASS_H 
+
 
 /**@SIP_TAG @{ */
 /**@file sip_tag_class.h

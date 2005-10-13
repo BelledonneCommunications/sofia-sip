@@ -23,7 +23,7 @@
  */
 
 #ifndef URL_DLL_H /** Defined when url_dll.h has been included. */
-#define URL_DLL_H "$Id: url_dll.h,v 1.2 2005/08/12 10:42:44 ppessi Exp $"
+#define URL_DLL_H
 /**@file url_dll.h
  * Define declaration specification for exporting things from @b url.dll.
  * 
@@ -31,7 +31,7 @@
  *  
  * @date Created: Thu Jan 30 12:36:06 2003 ppessi
  * 
- * $Date: 2005/08/12 10:42:44 $
+ * @date Last modified: Fri Aug 12 10:42:44 2005 ppessi
  */
 
 #if !defined(WIN32)

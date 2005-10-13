@@ -23,7 +23,7 @@
  */
 
 #ifndef HTTP_H /** Defined when http.h has been included. */
-#define HTTP_H "$Id: http.h,v 1.1.1.1 2005/07/20 20:35:15 kaiv Exp $"
+#define HTTP_H
 
 /**@file http.h 
  * 
@@ -34,7 +34,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created      : Thu Jun  8 19:28:55 2000 ppessi
- * $Date: 2005/07/20 20:35:15 $
+ * @date Last modified: Wed Jul 20 20:35:15 2005 kaiv
  */
 
 #ifndef MSG_H

@@ -23,14 +23,14 @@
  */
 
 #ifndef SU_TYPES_H /** Defined when su_types.h has been included */
-#define SU_TYPES_H "$Id: su_types.h,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $"
+#define SU_TYPES_H
 /**@file su_types.h Basic integer types for @b su library.
  *
  * This include file provides <stdint.h> or <inttypes.h> types.
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * $Date: 2005/07/20 20:35:59 $
+ * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #ifndef SU_CONFIG_H

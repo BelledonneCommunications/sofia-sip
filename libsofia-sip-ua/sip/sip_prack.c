@@ -31,13 +31,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Thu Sep 13 21:24:15 EEST 2001 ppessi
- * $Date: 2005/07/20 20:35:42 $
+ * @date Last modified: Wed Jul 20 20:35:42 2005 kaiv
  */
 
 #include "config.h"
-
-const char _sip_prack_id[] =
-"$Id: sip_prack.c,v 1.1.1.1 2005/07/20 20:35:42 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

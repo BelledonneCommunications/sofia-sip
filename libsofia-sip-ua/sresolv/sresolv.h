@@ -23,7 +23,7 @@
  */
 
 #ifndef SRESOLV_H /** Defined when <sresolv.h> has been included. */
-#define SRESOLV_H "$Id: sresolv.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
+#define SRESOLV_H
 /**
  * @file sresolv.h Sofia Asynchronous DNS Resolver.
  *
@@ -31,7 +31,7 @@
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>,
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>.
  *
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include <su.h>

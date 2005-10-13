@@ -31,12 +31,12 @@
  * @author Pekka Pessi <pessi@research.nokia.com>
  *
  * @date Created: Tue Apr 15 06:31:41 1997 pessi
- * $Date: 2005/07/20 20:35:20 $
+ * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  */
 
 #ifndef UNIQUEID_H /** Defined when <uniqueid.h> has been included. */
-#define UNIQUEID_H \
-"$Id: uniqueid.h,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $"
+#define UNIQUEID_H 
+
 
 /* Compatibility functionality */
 #define guid_t su_guid_t 

@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Mar 25 12:12:25 2004 ppessi
- * $Date: 2005/08/10 10:28:30 $
+ * @date Last modified: Wed Aug 10 10:28:30 2005 ppessi
  */
 
 #include "config.h"
-
-char const portbind_c_id[] = 
-  "$Id: portbind.c,v 1.3 2005/08/10 10:28:30 ppessi Exp $";
 
 char const name[] = "portbind";
 

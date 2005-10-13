@@ -31,13 +31,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Mar  6 18:33:42 2001 ppessi
- * $Date: 2005/08/03 17:18:11 $
+ * @date Last modified: Wed Aug  3 17:18:11 2005 ppessi
  */
 
 #include "config.h"
-
-const char _torture_sip_c_id[] =
-"$Id: torture_sip.c,v 1.2 2005/08/03 17:18:11 ppessi Exp $";
 
 #include <stdio.h>
 #include <string.h>

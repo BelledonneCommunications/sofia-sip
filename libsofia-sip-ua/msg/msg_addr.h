@@ -23,8 +23,8 @@
  */
 
 #ifndef MSG_ADDR_H /** Defined when msg_addr.h has been included. */
-#define MSG_ADDR_H \
-"$Id: msg_addr.h,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $"
+#define MSG_ADDR_H 
+
 
 /**@ingroup msg 
  * @file msg_addr.h 
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
- * $Date: 2005/07/20 20:35:22 $
+ * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 #ifndef MSG_H

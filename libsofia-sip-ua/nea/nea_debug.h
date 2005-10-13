@@ -23,7 +23,7 @@
  */
 
 #ifndef NEA_DEBUG_H /** Defined when <nea_debug.h> has been included. */
-#define NEA_DEBUG_H "$Id: nea_debug.h,v 1.1.1.1 2005/07/20 20:35:27 kaiv Exp $"
+#define NEA_DEBUG_H
 
 /**@file nea_debug.h
  * @brief Debug log for @b nea module.

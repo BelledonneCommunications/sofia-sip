@@ -23,8 +23,8 @@
  */
 
 #ifndef RBTREE_H /** Defined when rbtree.h has been included. */
-#define RBTREE_H \
-"$Id: rbtree.h,v 1.1.1.1 2005/07/20 20:35:56 kaiv Exp $"
+#define RBTREE_H 
+
 
 /**@file rbtree.h
  *

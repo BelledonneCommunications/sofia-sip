@@ -23,7 +23,7 @@
  */
 
 #ifndef NTH_TAG_H /** Defined when <nth_tag.h> has been included. */
-#define NTH_TAG_H "$Id: nth_tag.h,v 1.1.1.1 2005/07/20 20:35:32 kaiv Exp $"
+#define NTH_TAG_H
 
 /**@file nth_tag.h
  * @brief Tags for @b nth, HTTP engine module.
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Sun Oct 13 22:23:48 2002 ppessi
- * $Date: 2005/07/20 20:35:32 $
+ * @date Last modified: Wed Jul 20 20:35:32 2005 kaiv
  */
 
 #ifndef SU_TAG_H

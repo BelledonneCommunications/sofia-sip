@@ -33,13 +33,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun  6 00:38:07 2002 ppessi
- * $Date: 2005/07/20 20:36:01 $
+ * @date Last modified: Wed Jul 20 20:36:01 2005 kaiv
  */
 
 #include "config.h"
-
-const char tport_tag_c_id[] =
-"$Id: tport_tag.c,v 1.1.1.1 2005/07/20 20:36:01 kaiv Exp $";
 
 #include <string.h>
 #include <assert.h>

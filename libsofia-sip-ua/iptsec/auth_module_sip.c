@@ -31,13 +31,10 @@
  *
  * @date Created: Thu Jan 15 17:23:21 2004 ppessi
  * 
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include "config.h"
-
-const char auth_module_sip_c_id[] = 
-  "$Id: auth_module_sip.c,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $";
 
 #include <stddef.h>
 #include <string.h>

@@ -27,14 +27,11 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Apr 21 15:32:02 1998 pessi
- * $Date: 2005/07/20 20:35:20 $
+ * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  *
  */
 
 #include "config.h"
-
-const char ucs2_c_rcs_id[] = 
-"$Id: ucs2.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
 
 #include <utf8.h>
 #include "utf8internal.h"

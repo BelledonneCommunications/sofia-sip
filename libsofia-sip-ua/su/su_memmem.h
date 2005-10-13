@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_MEMMEM_H /** Defined when su_memmem.h has been included. */
-#define SU_MEMMEM_H "$Id: su_memmem.h,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $"
+#define SU_MEMMEM_H
 
 /**
  * @file su_memmem.h

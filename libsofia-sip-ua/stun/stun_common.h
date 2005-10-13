@@ -23,7 +23,7 @@
  */
 
 #ifndef STUN_COMMON_H /** Defined when stun_common.h has been included. */
-#define STUN_COMMON_H "$Id: stun_common.h,v 1.1.1.1 2005/07/20 20:35:55 kaiv Exp $"
+#define STUN_COMMON_H
 
 /**
  * @file stun_common.h
@@ -33,7 +33,7 @@
  * 
  * @date Created: Fri Oct  3 13:39:55 2003 ppessi
  * 
- * $Date: 2005/07/20 20:35:55 $
+ * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  */
 
 #include <stdio.h>

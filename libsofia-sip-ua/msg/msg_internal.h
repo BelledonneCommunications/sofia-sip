@@ -23,8 +23,8 @@
  */
 
 #ifndef MSG_INTERNAL_H /** Defined when msg_internal.h has been included. */
-#define MSG_INTERNAL_H \
-"$Id: msg_internal.h,v 1.2 2005/08/03 17:17:54 ppessi Exp $"
+#define MSG_INTERNAL_H 
+
 
 /**@ingroup msg 
  * @IFILE msg_internal.h 
@@ -34,7 +34,7 @@
  *
  * @date Created: Thu Jun 29 15:58:06 2000 ppessi
  *
- * $Date: 2005/08/03 17:17:54 $
+ * @date Last modified: Wed Aug  3 17:17:54 2005 ppessi
  */
 
 #ifdef MSG_H

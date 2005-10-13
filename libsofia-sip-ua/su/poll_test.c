@@ -32,9 +32,6 @@
 
 #include "config.h"
 
-char const poll_test_c_id[] =
-"$Id: poll_test.c,v 1.1.1.1 2005/07/20 20:35:56 kaiv Exp $";
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>

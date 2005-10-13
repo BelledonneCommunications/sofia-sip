@@ -23,7 +23,7 @@
  */
 
 #ifndef BNF_H  /** Defined when bnf.h has been included. */
-#define BNF_H "$Id: bnf.h,v 1.1.1.1 2005/07/20 20:34:54 kaiv Exp $"
+#define BNF_H
 
 /**@file bnf.h
  * 
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Jun 06 10:59:34 2000 ppessi
- * $Date: 2005/07/20 20:34:54 $
+ * @date Last modified: Wed Jul 20 20:34:54 2005 kaiv
  *
  */
 

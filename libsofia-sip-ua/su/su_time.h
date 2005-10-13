@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_TIME_H /** Defined when su_time.h has been included. */
-#define SU_TIME_H "$Id: su_time.h,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $"
+#define SU_TIME_H
 /**@ingroup su_time
  * @file su_time.h 
  * @brief Time types and functions.
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
  *
- * $Date: 2005/07/20 20:35:59 $
+ * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #ifndef SU_TYPES_H

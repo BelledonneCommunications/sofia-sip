@@ -30,18 +30,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date  Created: Fri Aug 11 18:03:33 2000 ppessi
- * $Date: 2005/07/20 20:35:43 $
+ * @date Last modified: Wed Jul 20 20:35:43 2005 kaiv
  */
 
 #include "config.h"
 
-const char _sip_status_c_id[] =
-"$Id: sip_status.c,v 1.1.1.1 2005/07/20 20:35:43 kaiv Exp $";
-
 #include <stddef.h>
 #include <sip_status.h>
-
-const char sip_status_h_id[] = SIP_STATUS_H;
 
 char const 
   sip_100_Trying[] =                   "Trying",

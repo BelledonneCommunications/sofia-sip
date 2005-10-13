@@ -23,8 +23,8 @@
  */
 
 #ifndef HTTP_PARSER_H /**Defined when http_parser.h has been included.*/
-#define HTTP_PARSER_H \
-"$Id: http_parser.h,v 1.1.1.1 2005/07/20 20:35:16 kaiv Exp $"
+#define HTTP_PARSER_H 
+
 
 /**@file http_parser.h
  * @brief Typedefs and prototypes used by HTTP parser.

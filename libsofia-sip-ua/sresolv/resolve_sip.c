@@ -30,7 +30,7 @@
  *
  * @par Created: Tue Jul 16 18:50:14 2002 ppessi
  *
- * $Date: 2005/07/20 20:35:51 $
+ * @date Last modified: Wed Jul 20 20:35:51 2005
  *
  */
 

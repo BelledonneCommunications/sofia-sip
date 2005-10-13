@@ -29,7 +29,7 @@
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>,
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
- * $Date: 2005/09/19 11:12:10 $
+ * @date Last modified: Thu Sep 22 12:31:09 2005
  */
 
 #include "config.h"

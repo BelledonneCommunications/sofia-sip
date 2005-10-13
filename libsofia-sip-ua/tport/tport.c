@@ -36,9 +36,6 @@
 
 #include "config.h"
 
-const char tport_c_id[] =
-"$Id: tport.c,v 1.7 2005/10/11 09:02:37 ppessi Exp $";
-
 #include <string0.h>
 #include <stdlib.h>
 #include <time.h>
@@ -122,12 +119,8 @@ typedef struct _tls_t tls_t;	/* dummy */
 #endif
 
 #include "tport.h"
-
 #include "su_uniqueid.h"
-
 #include <rbtree.h>
-
-const char _tport_h_id[] = TPORT_H;
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

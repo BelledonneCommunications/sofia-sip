@@ -30,7 +30,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
- * $Date: 2005/08/12 10:42:44 $
+ * @date Last modified: Fri Aug 12 10:42:44 2005 ppessi
  */
 
 #ifndef URL_H_TYPES
@@ -106,7 +106,7 @@ typedef union {
 #endif
 
 #ifndef URL_H /** Defined when url.h has been included. */
-#define URL_H "$Id: url.h,v 1.2 2005/08/12 10:42:44 ppessi Exp $"
+#define URL_H
 
 #ifndef SU_ALLOC_H
 #include <su_alloc.h>

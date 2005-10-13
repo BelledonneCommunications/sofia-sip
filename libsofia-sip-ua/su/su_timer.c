@@ -28,13 +28,10 @@
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * Created: Fri Apr 28 15:45:41 2000 ppessi
- * $Date: 2005/08/03 17:24:28 $
+ * @date Last modified: Wed Aug  3 17:24:28 2005 ppessi
  */
 
 #include "config.h"
-
-const char su_timer_c_id[] = 
-"$Id: su_timer.c,v 1.2 2005/08/03 17:24:28 ppessi Exp $";
 
 #include <stdlib.h>
 #include <assert.h>

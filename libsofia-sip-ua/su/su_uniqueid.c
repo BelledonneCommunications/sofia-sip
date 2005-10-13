@@ -46,13 +46,10 @@
  * @author Pekka Pessi <pessi@research.nokia.com>
  * 
  * @date Created: Tue Apr 15 06:31:41 1997 pessi
- * $Date: 2005/07/20 20:35:59 $
+ * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #include "config.h"
-
-const char su_uniqueid_c_id[] = 
-"$Id: su_uniqueid.c,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $";
 
 #if defined(_WIN32)
 int _getpid(void);
@@ -72,8 +69,6 @@ int _getpid(void);
 #include "su.h"
 #include "su_time.h"
 #include "su_uniqueid.h"
-
-char su_uniqueid_h_id[] = SU_UNIQUEID_H;
 
 /* For random number generator */
 static int initialized = 0;

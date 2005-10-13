@@ -23,7 +23,7 @@
  */
 
 #ifndef BASE64_H
-#define BASE64_H "$Id: base64.h,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $"
+#define BASE64_H
 
 /**@file base64.h
  *

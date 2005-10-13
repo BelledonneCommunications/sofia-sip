@@ -31,15 +31,12 @@
  *
  * @date Created: Thu Oct  5 14:01:24 2000 ppessi
  *
- * $Date: 2005/10/11 09:02:36 $
+ * @date Last modified: Tue Oct 11 09:02:36 2005 ppessi
  */
 
 /*#define NDEBUG*/
 
 #include "config.h"
-
-const char msg_parser_c_id[] =
-"$Id: msg_parser.c,v 1.6 2005/10/11 09:02:36 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -62,8 +59,6 @@ const char msg_parser_c_id[] =
 #include "msg_mclass.h"
 #include "msg_mclass_hash.h"
 #include "msg_mime.h"
-
-const char msg_parser_h_id[] = MSG_PARSER_H;
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

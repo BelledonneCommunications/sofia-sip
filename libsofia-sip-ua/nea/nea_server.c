@@ -29,13 +29,10 @@
  * @author Martti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Wed Feb 14 18:37:04 EET 2001 ppessi
- * $Date: 2005/09/19 11:12:10 $
+ * @date Last modified: Mon Sep 19 11:12:10 2005 kaiv
  */
 
 #include "config.h"
-
-const char nea_server_c_id[] =
-"$Id: nea_server.c,v 1.3 2005/09/19 11:12:10 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -30,13 +30,10 @@
  *  
  * @date Created: Mon May 12 12:11:30 2003 ppessi
  * 
- * $Date: 2005/07/20 20:35:36 $
+ * @date Last modified: Wed Jul 20 20:35:36 2005 kaiv
  */
 
 #include "config.h"
-
-const char sdp_tag_c_id[] = 
-  "$Id: sdp_tag.c,v 1.1.1.1 2005/07/20 20:35:36 kaiv Exp $";
 
 #include <stddef.h>
 

@@ -23,8 +23,8 @@
  */
 
 #ifndef NTA_INTERNAL_H /** Defined when <nta_internal.h> has been included. */
-#define NTA_INTERNAL_H \
-"$Id: nta_internal.h,v 1.3 2005/08/10 15:26:12 ppessi Exp $"
+#define NTA_INTERNAL_H 
+
 
 /**@IFILE nta_internal.h
  * @brief Internals of NTA objects.
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jul 18 09:18:32 2000 ppessi
- * $Date: 2005/08/10 15:26:12 $
+ * @date Last modified: Wed Aug 10 15:26:12 2005 ppessi
  */
 
 #ifndef NTA_COMPAT_H

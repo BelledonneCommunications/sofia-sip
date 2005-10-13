@@ -31,11 +31,8 @@
  *
  * @date Created: Fri Feb 23 14:06:34 2001 ppessi
  *
- * $Date: 2005/07/20 20:35:23 $
+ * @date Last modified: Wed Jul 20 20:35:23 2005 kaiv
  */
-
-const char msg_header_make_c_id[] =
-"$Id: msg_header_make.c,v 1.1.1.1 2005/07/20 20:35:23 kaiv Exp $";
 
 #include "config.h"
 

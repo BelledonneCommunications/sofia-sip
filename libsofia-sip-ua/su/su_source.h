@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_SOURCE_H /** Defined when su_source.h has been included. */
-#define SU_SOURCE_H "$Id: su_source.h,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $"
+#define SU_SOURCE_H
 
 /**
  * @file su_source.h
@@ -33,7 +33,7 @@
  *  
  * @date Created: Thu Mar  4 19:58:50 2004 ppessi
  * 
- * $Date: 2005/07/20 20:35:58 $
+ * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #ifndef SU_WAIT_H

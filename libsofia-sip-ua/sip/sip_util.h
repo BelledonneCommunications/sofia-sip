@@ -23,8 +23,8 @@
  */
 
 #ifndef SIP_UTIL_H /** Defined when <sip_util.h> has been included. */
-#define SIP_UTIL_H \
-"$Id: sip_util.h,v 1.4 2005/10/12 18:32:48 ppessi Exp $"
+#define SIP_UTIL_H 
+
 
 /**@file sip_util.h 
  * @brief SIP utility functions
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
- * $Date: 2005/10/12 18:32:48 $
+ * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  */
 
 #ifndef SIP_H

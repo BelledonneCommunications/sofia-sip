@@ -23,8 +23,8 @@
  */
 
 #ifndef HTABLE2_H /** Defined when htable2.h has been included. */
-#define HTABLE2_H \
-"$Id: htable2.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
+#define HTABLE2_H 
+
 
 /**@file htable2.h
  *
@@ -57,7 +57,7 @@
  *
  * @date Created: Tue Sep 25 17:42:40 2001 ppessi
  *
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 typedef unsigned long hash_value_t;

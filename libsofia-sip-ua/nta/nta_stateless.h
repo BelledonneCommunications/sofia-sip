@@ -23,8 +23,8 @@
  */
 
 #ifndef NTA_STATELESS_H /** Defined when nta_stateless.h has been included. */
-#define NTA_STATELESS_H \
-"$Id: nta_stateless.h,v 1.1.1.1 2005/07/20 20:35:30 kaiv Exp $";
+#define NTA_STATELESS_H 
+
 
 /**@file nta_stateless.h   
  * @brief NTA functions for stateless SIP processing.
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Sep  4 15:54:57 2001 ppessi
- * $Date: 2005/07/20 20:35:30 $
+ * @date Last modified: Wed Jul 20 20:35:30 2005 kaiv
  */
 
 /**Callback for incoming messages.

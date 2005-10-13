@@ -41,9 +41,6 @@
 
 #include "config.h"
 
-const char _http_tag_c_in_id[] =
-"$Id: http_tag.c.in,v 1.1.1.1 2005/07/20 20:35:18 kaiv Exp $";
-
 #define TAG_NAMESPACE "http"
 
 #include <assert.h>

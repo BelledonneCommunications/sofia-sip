@@ -39,13 +39,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Fri Sep 27 14:43:29 2002 ppessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
-
-const char su_vector_c_id[] = 
-  "$Id: su_vector.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -56,10 +53,7 @@ const char su_vector_c_id[] =
 #include <assert.h>
 
 #include "su_config.h"
-
 #include "su_vector.h"
-
-char const su_vector_h[] = SU_VECTOR_H;
 
 enum { N = 8 };
 

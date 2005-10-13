@@ -32,13 +32,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #include "config.h"
-
-char const su_perf_c_id[] = 
-"$Id: su_perf.c,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $";
 
 #include <stdlib.h>
 #include <assert.h>

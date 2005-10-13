@@ -23,8 +23,7 @@
  */
 
 #ifndef HTTP_HEADER_H /** Defined when http_header.h has been included.*/
-#define HTTP_HEADER_H \
-"$Id: http_header.h,v 1.1.1.1 2005/07/20 20:35:16 kaiv Exp $"
+#define HTTP_HEADER_H
 
 /**@file http_header.h 
  *

@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Aug 17 12:12:12 EEST 2005 ppessi
- * $Date: 2005/10/12 18:32:48 $
+ * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  */
 
 #include "config.h"
-
-const char test_soa_c_id[] =
-"$Id: test_soa.c,v 1.6 2005/10/12 18:32:48 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

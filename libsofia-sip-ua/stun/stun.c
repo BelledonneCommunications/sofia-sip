@@ -32,17 +32,12 @@
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * 
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
- * $Date: 2005/08/08 19:10:15 $
+ * @date Last modified: Mon Aug  8 19:10:15 2005 ppessi
  */
 
 #include "config.h" 
 
-char const stun_c_id[] =
-"$Id: stun.c,v 1.2 2005/08/08 19:10:15 ppessi Exp $";
-
 #include "stun.h"
-
-char const stun_h_id[] = STUN_H;
 
 #include <su_alloc.h>
 #include <su_log.h>

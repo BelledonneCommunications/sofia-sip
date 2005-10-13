@@ -23,8 +23,7 @@
  */
 
 #ifndef HTTP_HCLASSES_H /** Defined when http_hclasses.h has been included. */
-#define HTTP_HCLASSES_H \
-"$Id: http_hclasses.h,v 1.1.1.1 2005/07/20 20:35:15 kaiv Exp $"
+#define HTTP_HCLASSES_H
 
 /**@file http_hclasses.h
  * @brief HTTP header classes.

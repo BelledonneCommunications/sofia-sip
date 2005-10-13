@@ -23,7 +23,7 @@
  */
 
 #ifndef NTA_COMPAT_H /** Defined when <nta_compat.h> has been included. */
-#define NTA_COMPAT_H "$Id: nta_compat.h,v 1.1.1.1 2005/07/20 20:35:30 kaiv Exp $";
+#define NTA_COMPAT_H;
 
 /**@file nta_compat.h   
  * @brief Deprecated NTA functions and types.
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Sep  4 15:54:57 2001 ppessi
- * $Date: 2005/07/20 20:35:30 $
+ * @date Last modified: Wed Jul 20 20:35:30 2005 kaiv
  */
 
 #ifndef NTA_H

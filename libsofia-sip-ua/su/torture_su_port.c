@@ -28,13 +28,10 @@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @date Created: Wed Mar 10 17:05:23 2004 ppessi
- * $Date: 2005/07/20 20:36:00 $
+ * @date Last modified: Wed Jul 20 20:36:00 2005 kaiv
  */
 
 #include "config.h"
-
-const char torture_su_port_c_id[] =
-  "$Id: torture_su_port.c,v 1.1.1.1 2005/07/20 20:36:00 kaiv Exp $";
 
 #include "su_port.c"
 

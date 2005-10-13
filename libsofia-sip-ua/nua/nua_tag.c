@@ -27,13 +27,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 10:13:29 2001 ppessi
- * $Date: 2005/10/11 09:02:37 $
+ * @date Last modified: Tue Oct 11 09:02:37 2005 ppessi
  */
 
 #include "config.h"
-
-const char _nua_tag_c_id[] =
-"$Id: nua_tag.c,v 1.7 2005/10/11 09:02:37 ppessi Exp $";
 
 #define TAG_NAMESPACE "nua"
 
@@ -45,8 +42,6 @@ const char _nua_tag_c_id[] =
 #include <url_tag_class.h>
 #include <sip_tag_class.h>
 #include <sip_hclasses.h>
-
-const char _nua_tag_h_id[] = NUA_TAG_H;
 
 tag_typedef_t nutag_url = URLTAG_TYPEDEF(url);
 tag_typedef_t nutag_address = STRTAG_TYPEDEF(address);

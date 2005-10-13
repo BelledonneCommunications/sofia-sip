@@ -24,8 +24,8 @@
 
 #ifndef MSG_TEST_CLASS_H
 /** Defined when msg_test_class.h has been included. */
-#define MSG_TEST_CLASS_H \
-"$Id: msg_test_class.h,v 1.2 2005/08/08 19:10:00 ppessi Exp $"
+#define MSG_TEST_CLASS_H 
+
 
 /**@ingroup msg_test
  * @file msg_test_class.h
@@ -35,7 +35,7 @@
  *
  * @date Created: Thu Jun 29 15:58:06 2000 ppessi
  *
- * $Date: 2005/08/08 19:10:00 $
+ * @date Last modified: Mon Aug  8 19:10:00 2005 ppessi
  */
 
 #define MSG_PUB_T struct msg_test_s

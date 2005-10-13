@@ -33,9 +33,6 @@
 
 #include "config.h"
 
-const char sip_pref_util_id[] =
-"$Id: sip_pref_util.c,v 1.2 2005/08/08 19:10:15 ppessi Exp $";
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

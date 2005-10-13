@@ -23,8 +23,8 @@
  */
 
 #ifndef SU_DEBUG_H /** Defined when su_debug.h has been included */
-#define SU_DEBUG_H \
-"$Id: su_debug.h,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $"
+#define SU_DEBUG_H 
+
 /**@ingroup su_log
  * @file su_debug.h
  * @brief SU debugging macros
@@ -44,7 +44,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Feb  8 10:06:33 2000 ppessi
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #ifndef SU_LOG_H

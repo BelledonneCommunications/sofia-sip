@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
- * $Date: 2005/07/20 20:34:54 $
+ * @date Last modified: Wed Jul 20 20:34:54 2005 kaiv
  */
 
 #include "config.h"
-
-const char bnf_c_id[] =
-"$Id: bnf.c,v 1.1.1.1 2005/07/20 20:34:54 kaiv Exp $";
 
 #include <string.h>
 
@@ -44,8 +41,6 @@ const char bnf_c_id[] =
 #endif
 
 #include "bnf.h"
-
-const char bnf_h_id[] = BNF_H;
 
 #define ws    bnf_ws
 #define crlf  bnf_crlf

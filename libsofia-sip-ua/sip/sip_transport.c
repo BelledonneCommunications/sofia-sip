@@ -22,8 +22,6 @@
  *
  */
 
-const char _sip_agent_stream_c_id[] =
-"$Id: sip_transport.c,v 1.1.1.1 2005/07/20 20:35:43 kaiv Exp $";
 /**@CFILE sip_transport.c
  *
  * SIP transport objects.
@@ -31,7 +29,7 @@ const char _sip_agent_stream_c_id[] =
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created      : Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/07/20 20:35:43 $
+ * @date Last modified: Wed Jul 20 20:35:43 2005 kaiv
  */
 
 #include "config.h"

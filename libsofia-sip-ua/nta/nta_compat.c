@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jul 24 22:28:34 2001 ppessi
- * $Date: 2005/07/20 20:35:30 $
+ * @date Last modified: Wed Jul 20 20:35:30 2005 kaiv
  */
 
 #include "config.h"
-
-const char _nta_compat_c_id[] =
-"$Id: nta_compat.c,v 1.1.1.1 2005/07/20 20:35:30 kaiv Exp $";
 
 #include <stdarg.h>
 #include <string.h>

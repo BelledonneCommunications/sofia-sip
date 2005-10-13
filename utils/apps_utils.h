@@ -1,5 +1,5 @@
 #ifndef APPS_UTILS_H /** Defined when apps_utils.h has been included. */
-#define APPS_UTILS_H "$Id: apps_utils.h,v 1.1.1.1 2005/07/20 20:36:03 kaiv Exp $"
+#define APPS_UTILS_H
 
 /**
  * @nofile apps_utils.h
@@ -30,7 +30,7 @@
  * 
  * @date Created: Thu Apr  8 15:55:15 2004 ppessi
  * 
- * $Date: 2005/07/20 20:36:03 $
+ * @date Last modified: Wed Jul 20 20:36:03 2005 kaiv
  */
 
 static inline

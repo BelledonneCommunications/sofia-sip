@@ -23,8 +23,8 @@
  */
 
 #ifndef HTTP_STATUS_H 
-#define HTTP_STATUS_H \
-"$Id: http_status.h,v 1.1.1.1 2005/07/20 20:35:18 kaiv Exp $"
+#define HTTP_STATUS_H 
+
 
 /**@file http_status.h 
  *

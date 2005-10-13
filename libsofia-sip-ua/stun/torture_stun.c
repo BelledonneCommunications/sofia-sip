@@ -30,13 +30,10 @@
  * @author Ismo H. Puustinen
  *
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
- * $Date: 2005/07/20 20:35:55 $
+ * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  */
 
 #include "config.h" 
-
-char const torture_stun_c_id[] =
-"$Id: torture_stun.c,v 1.1.1.1 2005/07/20 20:35:55 kaiv Exp $";
 
 #include <stdio.h>
 #include <string.h>

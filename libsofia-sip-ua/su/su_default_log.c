@@ -30,7 +30,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Fri Feb 23 17:30:46 2001 ppessi
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #include <stdio.h>
@@ -38,9 +38,6 @@
 
 #include <su_log.h>
 #include <su_debug.h>
-
-const char su_default_log_c_id[] =
-"$Id: su_default_log.c,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $";
 
 /** Log into FILE, by default stderr. */
 static void default_logger(void *stream, char const *fmt, va_list ap)

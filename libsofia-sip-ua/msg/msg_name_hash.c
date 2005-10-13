@@ -31,13 +31,10 @@
  *
  * @date Tue Aug 20 16:27:01 EEST 2002 ppessi
  *
- * $Date: 2005/07/20 20:35:24 $
+ * @date Last modified: Wed Jul 20 20:35:24 2005 kaiv
  */
 
 #include "config.h"
-
-const char msg_name_hash_c[] =
-"$Id: msg_name_hash.c,v 1.1.1.1 2005/07/20 20:35:24 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

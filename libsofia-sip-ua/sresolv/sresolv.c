@@ -29,15 +29,12 @@
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>
  *
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  * 
  * @todo The resolver should allow handling arbitrary records.
  */
 
 #include "config.h"
-
-char const sresolv_c_id[] = 
-  "$Id: sresolv.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdlib.h>
 #include <stdarg.h>

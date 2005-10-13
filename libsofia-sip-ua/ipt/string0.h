@@ -23,7 +23,7 @@
  */
 
 #ifndef STRING0_H /** Defined when <string0.h> is included. */
-#define STRING0_H "$Id: string0.h,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $"
+#define STRING0_H
 
 /**@file string0.h
  *

@@ -22,8 +22,6 @@
  *
  */
 
-const char http_header_c_id[] =
-"$Id: http_header.c,v 1.1.1.1 2005/07/20 20:35:16 kaiv Exp $";
 /**@CFILE http_header.c
  *
  * HTTP header handling.
@@ -52,8 +50,6 @@ const char http_header_c_id[] =
 
 #include <http_header.h>
 #include <http_status.h>
-
-const char http_header_h_id[] = HTTP_HEADER_H;
 
 /** Complete a HTTP request. */
 int http_request_complete(msg_t *msg)

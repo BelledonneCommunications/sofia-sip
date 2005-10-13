@@ -23,7 +23,7 @@
  */
 
 #ifndef AUTH_DLL_H /** Defined when @b <auth_dll.h> has been included. */
-#define AUTH_DLL_H "$Id: auth_dll.h,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $"
+#define AUTH_DLL_H
 
 /**Define declaration specifications for exporting things from @b iptsec.dll.
  */

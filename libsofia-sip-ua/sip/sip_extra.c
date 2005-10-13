@@ -32,11 +32,8 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  * 
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/07/20 20:35:42 $
+ * @date Last modified: Wed Jul 20 20:35:42 2005 kaiv
  */
-
-const char _sip_extra_id[] =
-"$Id: sip_extra.c,v 1.1.1.1 2005/07/20 20:35:42 kaiv Exp $";
 
 #include "config.h"
 

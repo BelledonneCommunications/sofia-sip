@@ -37,9 +37,6 @@
 
 #include "config.h"
 
-const char http_basic_id[] =
-"$Id: http_basic.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

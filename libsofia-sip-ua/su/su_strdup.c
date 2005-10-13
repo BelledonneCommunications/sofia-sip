@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed Jul 19 10:06:14 2000 ppessi
- * $Date: 2005/07/20 20:35:58 $
+ * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #include "config.h"
-
-const char su_strdup_c_id[] =
-"$Id: su_strdup.c,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $";
 
 #include <string.h>
 #include "su_alloc.h"

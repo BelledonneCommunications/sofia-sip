@@ -23,8 +23,8 @@
  */
 
 #ifndef AUTH_CLIENT_H /** Defined when <auth_client.h> has been included. */
-#define AUTH_CLIENT_H \
-"$Id: auth_client.h,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $"
+#define AUTH_CLIENT_H 
+
 
 /**@file auth_client.h
  * @brief Client-side authenticator library.
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #ifndef MSG_TYPES_H

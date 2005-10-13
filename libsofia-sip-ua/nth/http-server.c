@@ -29,13 +29,10 @@
  *
  * @date Created: Sat Oct 19 02:56:23 2002 ppessi
  *
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
-
-const char http_server_c_id[] =
-  "$Id: http-server.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

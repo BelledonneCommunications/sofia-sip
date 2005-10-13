@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_PORT_H /** Defined when su_port.h has been included. */
-#define SU_PORT_H "$Id: su_port.h,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $"
+#define SU_PORT_H
 
 /**@IFILE su_port.h 
  *
@@ -34,7 +34,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Fri May 12 14:13:34 2000 ppessi
- * $Date: 2005/07/20 20:35:58 $
+ * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #ifndef SU_WAIT_H

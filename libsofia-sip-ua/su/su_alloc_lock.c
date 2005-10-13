@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Fri Feb 23 17:38:11 2001 ppessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
-
-char const su_alloc_lock_c_id[] = 
-"$Id: su_alloc_lock.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <su_alloc.h>
 

@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Mar  5 11:57:20 2002 ppessi
- * $Date: 2005/08/08 19:09:59 $
+ * @date Last modified: Mon Aug  8 19:09:59 2005 ppessi
  */
 
 #include "config.h"
-
-char const msg_test_class_c_id[] = 
-"$Id: msg_test_class.c,v 1.2 2005/08/08 19:09:59 ppessi Exp $";
 
 #include <stddef.h>
 #include <string.h>

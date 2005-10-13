@@ -23,7 +23,7 @@
  */
 
 #ifndef URLMAP_H /** Defined when urlmap.h has been included. */
-#define URLMAP_H "$Id: urlmap.h,v 1.2 2005/08/12 10:42:44 ppessi Exp $"
+#define URLMAP_H
 
 /**
  * @file urlmap.h
@@ -33,7 +33,7 @@
  *  
  * @date Created: Wed Mar 10 17:06:20 2004 ppessi
  * 
- * $Date: 2005/08/12 10:42:44 $
+ * @date Last modified: Fri Aug 12 10:42:44 2005 ppessi
  */
 
 #ifndef URL_H

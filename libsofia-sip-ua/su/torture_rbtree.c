@@ -30,13 +30,10 @@
  *
  * @date Created: Wed Mar 10 17:05:23 2004 ppessi
  *
- * $Date: 2005/09/19 11:12:10 $
+ * @date Last modified: Mon Sep 19 11:12:10 2005 kaiv
  */
 
 #include "config.h"
-
-const char torture_rbtree_c_id[] =
-  "$Id: torture_rbtree.c,v 1.2 2005/09/19 11:12:10 kaiv Exp $";
 
 #include <stddef.h>
 #include <string.h>

@@ -29,11 +29,8 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 10:15:20 2001 ppessi
- * $Date: 2005/08/12 10:42:44 $
+ * @date Last modified: Fri Aug 12 10:42:44 2005 ppessi
  */
-
-const char _url_tag_c_id[] =
-"$Id: url_tag.c,v 1.2 2005/08/12 10:42:44 ppessi Exp $";
 
 #include "config.h"
 
@@ -46,8 +43,6 @@ const char _url_tag_c_id[] =
 #include <su_tag_class.h>
 
 #include <url.h>
-
-const char _url_tag_h_id[] = URL_TAG_H;
 
 tag_typedef_t urltag_url = URLTAG_TYPEDEF(url);
 

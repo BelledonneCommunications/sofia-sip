@@ -1,6 +1,6 @@
 /* -*- c -*- */
 
-/*$Id: sip_parser.docs,v 1.1.1.1 2005/07/20 20:35:42 kaiv Exp $*/
+/*REMOVED_RCS_ID*/
 
 /**@ingroup sip 
  * @defgroup sip_parser SIP Parser

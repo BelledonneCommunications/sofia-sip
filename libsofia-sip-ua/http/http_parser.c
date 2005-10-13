@@ -33,9 +33,6 @@
 
 #include "config.h"
 
-const char http_parser_c_id[] =
-"$Id: http_parser.c,v 1.2 2005/08/08 19:09:55 ppessi Exp $";
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,8 +50,6 @@ const char http_parser_c_id[] =
 #include <http_header.h>
 #include <http_status.h>
 #include <msg_mclass.h>
-
-const char http_parser_h_id[] = HTTP_PARSER_H;
 
 /** HTTP version 1.1. */
 char const http_version_1_1[] = "HTTP/1.1";

@@ -29,13 +29,10 @@
  *
  * @date Created: Fri Feb 23 12:46:42 2001 ppessi
  *
- * $Date: 2005/07/20 20:35:26 $
+ * @date Last modified: Wed Jul 20 20:35:26 2005 kaiv
  */
 
 #include "config.h"
-
-const char _msg_tag_c_id[] =
-"$Id: msg_tag.c,v 1.1.1.1 2005/07/20 20:35:26 kaiv Exp $";
 
 #include <assert.h>
 #include <stddef.h>

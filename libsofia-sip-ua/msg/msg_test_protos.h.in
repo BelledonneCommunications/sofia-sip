@@ -30,8 +30,8 @@
  */
 
 #ifndef MSG_TEST_PROTOS_H /** Defined when msg_test_protos.h has been included. */
-#define MSG_TEST_PROTOS_H \
-  "$Id: msg_test_protos.h.in,v 1.2 2005/08/08 19:10:00 ppessi Exp $"
+#define MSG_TEST_PROTOS_H 
+  
 /**@ingroup msg_test
  * @file msg_test_protos.h
  *

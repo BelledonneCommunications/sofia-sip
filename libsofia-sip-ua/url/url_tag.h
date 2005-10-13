@@ -23,7 +23,7 @@
  */
 
 #ifndef URL_TAG_H /** Defined when url_tag.h has been included. */
-#define URL_TAG_H "$Id: url_tag.h,v 1.2 2005/08/12 10:42:44 ppessi Exp $"
+#define URL_TAG_H
 /**@ingroup url
  * @file  url_tag.h
  * @brief Tags for URLs
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- * $Date: 2005/08/12 10:42:44 $
+ * @date Last modified: Fri Aug 12 10:42:44 2005 ppessi
  */
 
 #ifndef SU_TAG_H

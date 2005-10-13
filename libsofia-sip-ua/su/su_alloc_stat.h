@@ -23,8 +23,8 @@
  */
 
 #ifndef SU_ALLOC_STAT_H /** Defined when su_alloc_stat.h has been included. */
-#define SU_ALLOC_STAT_H \
-"$Id: su_alloc_stat.h,v 1.3 2005/10/11 09:02:37 ppessi Exp $"
+#define SU_ALLOC_STAT_H 
+
 /**@ingroup su_alloc
  *
  * @file su_alloc_stat.h Home-based memory management statistics
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Apr  9 10:24:05 2002 ppessi
- * $Date: 2005/10/11 09:02:37 $
+ * @date Last modified: Tue Oct 11 09:02:37 2005 ppessi
  */
 
 #ifndef SU_ALLOC_H

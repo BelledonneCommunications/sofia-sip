@@ -23,7 +23,7 @@
  */
 
 #ifndef NTA_TAG_H /** Defined when <nta_tag.h> has been included. */
-#define NTA_TAG_H "$Id: nta_tag.h,v 1.3 2005/08/10 15:26:12 ppessi Exp $";
+#define NTA_TAG_H;
 
 /**@file nta_tag.h   
  * @brief NTA tags
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Sep  4 15:54:57 2001 ppessi
- * $Date: 2005/08/10 15:26:12 $
+ * @date Last modified: Wed Aug 10 15:26:12 2005 ppessi
  */
 
 #ifndef SU_TAG_H

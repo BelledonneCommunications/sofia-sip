@@ -27,13 +27,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Fri Mar 30 12:05:21 2001 ppessi
- * $Date: 2005/07/20 20:35:31 $
+ * @date Last modified: Wed Jul 20 20:35:31 2005 kaiv
  */
 
 #include "config.h"
-
-const char http_client_c_id[] = 
- "$Id: http-client.c,v 1.1.1.1 2005/07/20 20:35:31 kaiv Exp $";
 
 /**@APPS
  * @page http_client Make HTTP request

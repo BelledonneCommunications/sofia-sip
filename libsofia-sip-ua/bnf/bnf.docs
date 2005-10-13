@@ -1,7 +1,5 @@
 /* -*- C -*- */
 
-/* $Id: bnf.docs,v 1.1.1.1 2005/07/20 20:34:54 kaiv Exp $ */
-
 /**@mainpage Sofia BNF Module
  *
  * @section bnf_meta Module Meta Information

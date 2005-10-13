@@ -33,9 +33,6 @@
 
 #include "config.h"
 
-const char sip_test_msg_c_id[] =
-"$Id: sip_test_msg.c,v 1.1.1.1 2005/07/20 20:35:43 kaiv Exp $";
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

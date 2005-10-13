@@ -23,7 +23,7 @@
  */
 
 #ifndef TPORT_TAG_H /** Defined when <tport_tag.h> has been included. */
-#define TPORT_TAG_H "$Id: tport_tag.h,v 1.1.1.1 2005/07/20 20:36:01 kaiv Exp $"
+#define TPORT_TAG_H
 
 /**@file tport_tag.h
  * @brief Tags for tport module.
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Sat Oct 12 18:39:48 2002 ppessi
- * $Date: 2005/07/20 20:36:01 $
+ * @date Last modified: Wed Jul 20 20:36:01 2005 kaiv
  */
 
 #if !defined(WIN32)

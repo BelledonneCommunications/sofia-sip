@@ -23,8 +23,8 @@
  */
 
 #ifndef SU_TAG_IO_H /** Defined when su_tag_io.h has been included */
-#define SU_TAG_IO_H \
-"$Id: su_tag_io.h,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $"
+#define SU_TAG_IO_H 
+
 
 /**@SU_TAG
  * @file su_tag_io.h
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed Feb 21 12:10:06 2001 ppessi
- * $Date: 2005/07/20 20:35:58 $
+ * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #ifndef SU_TAG_H

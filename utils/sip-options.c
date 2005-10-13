@@ -82,9 +82,6 @@
 
 #include "config.h"
 
-const char _options_c_id[] = 
- "$Id: sip-options.c,v 1.1 2005/10/06 20:00:54 ppessi Exp $";
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

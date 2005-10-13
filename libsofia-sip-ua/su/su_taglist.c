@@ -31,13 +31,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Feb 20 20:03:38 2001 ppessi
- * $Date: 2005/10/12 18:32:48 $
+ * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  */
 
 #include "config.h"
-
-const char su_taglist_c_id[] =
-"$Id: su_taglist.c,v 1.3 2005/10/12 18:32:48 ppessi Exp $";
 
 #include <stdlib.h>
 #include <string.h>

@@ -30,13 +30,10 @@
  * 
  * @date Created: Sat Apr 12 19:32:33 2003 ppessi
  * 
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include "config.h"
-
-const char memspn_c_id[] = 
-  "$Id: memspn.c,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $";
 
 #include <string.h>
 #include <limits.h>

@@ -23,8 +23,8 @@
  */
 
 #ifndef SU_UNIQUEID_H /** Defined when su_uniqueid.h has been included. */
-#define SU_UNIQUEID_H \
-"$Id: su_uniqueid.h,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $"
+#define SU_UNIQUEID_H 
+
 
 /**@ingroup su_uniqueid
  * @file su_uniqueid.h
@@ -34,7 +34,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Apr 15 06:31:41 1997 pessi
- * $Date: 2005/07/20 20:35:59 $
+ * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  *
  */
 

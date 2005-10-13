@@ -23,7 +23,7 @@
  */
 
 #ifndef NEA_DLL_H /** Defined when <nea_dll.h> has been included. */
-#define NEA_DLL_H "$Id: nea_dll.h,v 1.1.1.1 2005/07/20 20:35:27 kaiv Exp $"
+#define NEA_DLL_H
 
 /**@file nea_dll.h
  *
@@ -32,7 +32,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Fri Feb 22 15:57:00 2002 ppessi
- * $Date: 2005/07/20 20:35:27 $
+ * @date Last modified: Wed Jul 20 20:35:27 2005 kaiv
  */
 
 #if !defined(WIN32)

@@ -23,14 +23,14 @@
  */
 
 #ifndef STUN_H /** Defined when stun.h has been included. */
-#define STUN_H "$Id: stun.h,v 1.1.1.1 2005/07/20 20:35:55 kaiv Exp $"
+#define STUN_H
 /**@file stun.h STUN client interface
  *
  * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Jul 24 17:08:32 2003 pessi
- * $Date: 2005/07/20 20:35:55 $
+ * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  */
 
 #include <su_wait.h>

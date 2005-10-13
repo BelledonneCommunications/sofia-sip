@@ -23,15 +23,15 @@
  */
 
 #ifndef HTTP_TAG_CLASS_H /**Defined when http_tag_class.h have been included*/
-#define HTTP_TAG_CLASS_H \
-"$Id: http_tag_class.h,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $"
+#define HTTP_TAG_CLASS_H 
+
 /**@file http_tag_class.h
  * @brief Tag classes for HTTP headers.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- * $Date: 2005/07/20 20:35:20 $
+ * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  */
 
 

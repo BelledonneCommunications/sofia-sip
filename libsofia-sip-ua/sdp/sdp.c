@@ -28,13 +28,10 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  *
  * @date Created: Fri Feb 18 10:25:08 2000 ppessi
- * $Date: 2005/09/28 20:05:24 $
+ * @date Last modified: Wed Sep 28 20:05:24 2005 ppessi
  */
 
 #include "config.h"
-
-const char sdp_c_id_[] =
-"$Id: sdp.c,v 1.3 2005/09/28 20:05:24 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

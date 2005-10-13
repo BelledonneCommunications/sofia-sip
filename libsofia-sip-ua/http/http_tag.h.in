@@ -30,7 +30,7 @@
  */
 
 #ifndef HTTP_TAG_H /** Defined when http_tag.h has been included. */
-#define HTTP_TAG_H "$Id: http_tag.h.in,v 1.3 2005/09/09 10:56:31 ppessi Exp $"
+#define HTTP_TAG_H
 
 /**@file http_tag.h
  * @brief Tag class for HTTP headers

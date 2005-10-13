@@ -24,8 +24,8 @@
 
 #ifndef SIP_EXTENSIONS_H
 /** Defined when @b <sip_extensions.h> has been included. */
-#define SIP_EXTENSIONS_H \
-"$Id: sip_extensions.h,v 1.1.1.1 2005/07/20 20:35:41 kaiv Exp $"
+#define SIP_EXTENSIONS_H 
+
 
 /**@file sip_extensions.h
  * @brief Macros extending SIP objects

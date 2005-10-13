@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Sun Jul 14 09:17:21 2002 ppessi
- * $Date: 2005/07/20 20:35:55 $
+ * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  */
 
 #include "config.h"
-
-char const addrinfo_c_id[] = \
-"$Id: addrinfo.c,v 1.1.1.1 2005/07/20 20:35:55 kaiv Exp $";
 
 #include <stdio.h>
 #include <string.h>

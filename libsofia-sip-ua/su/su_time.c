@@ -31,13 +31,10 @@
  * @author Jari Selin <Jari.Selin@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
-
-const char su_time_c_id[] =
-"$Id: su_time.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>

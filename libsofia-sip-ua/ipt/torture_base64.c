@@ -30,13 +30,10 @@
  *
  * @date Created: Tue Feb  1 13:29:09 EET 2005 ppessi
  *
- * $Date: 2005/07/20 20:35:20 $
+ * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  */
 
 #include "config.h"
-
-const char torture_base64_c_id[] =
-  "$Id: torture_base64.c,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $";
 
 #include <stddef.h>
 #include <string.h>

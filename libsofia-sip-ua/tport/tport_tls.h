@@ -23,7 +23,7 @@
  */
 
 #ifndef TPORT_TLS_H /** Defined when <tport_tls.h> has been included. */
-#define TPORT_TLS_H $Id: tport_tls.h,v 1.2 2005/08/08 19:10:17 ppessi Exp $
+#define TPORT_TLS_H REMOVED_RCS_ID
 /**@IFILE tport_tls.h
  * @brief TLS interface
  * 
@@ -31,7 +31,7 @@
  *
  * Copyright 2001, 2002 Nokia Research Center.  All rights reserved.
  *
- * $Date: 2005/08/08 19:10:17 $
+ * @date Last modified: Mon Aug  8 19:10:17 2005 ppessi
  *
  */
 

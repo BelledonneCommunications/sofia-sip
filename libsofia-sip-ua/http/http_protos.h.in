@@ -29,8 +29,7 @@
  */
 
 #ifndef HTTP_PROTOS_H  /** Defined when http_protos.h has been included. */
-#define HTTP_PROTOS_H \
-  "$Id: http_protos.h.in,v 1.1.1.1 2005/07/20 20:35:18 kaiv Exp $"
+#define HTTP_PROTOS_H
 /**@file http_protos.h 
  *
  * Macros for each HTTP header.

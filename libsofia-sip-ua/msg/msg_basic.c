@@ -33,15 +33,11 @@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @date  Created: Fri Feb 23 19:51:55 2001 ppessi
- * 
- * $Id: msg_basic.c,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $
+ * @date Created: Fri Feb 23 19:51:55 2001 ppessi
+ * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 #include "config.h"
-
-const char msg_basic_id[] =
-"$Id: msg_basic.c,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

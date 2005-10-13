@@ -28,7 +28,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Wed Jun  5 19:25:18 2002 ppessi
- * $Date: 2005/07/20 20:35:31 $
+ * @date Last modified: Wed Jul 20 20:35:31 2005 kaiv
  */
 
 /* ----------------------------------------------------------------------
@@ -71,7 +71,7 @@ typedef NTH_SITE_MAGIC_T   nth_site_magic_t;
 #endif
 
 #ifndef NTH_H /** Defined when <nth.h> has been included. */
-#define NTH_H "$Id: nth.h,v 1.1.1.1 2005/07/20 20:35:31 kaiv Exp $"
+#define NTH_H
 
 /* ----------------------------------------------------------------------
  * 2) Constants 

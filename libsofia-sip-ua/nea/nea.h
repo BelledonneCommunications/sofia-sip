@@ -23,7 +23,7 @@
  */
 
 #ifndef NEA_H /** Defined when <nea.h> has been included. */
-#define NEA_H "$Id: nea.h,v 1.2 2005/08/08 19:10:00 ppessi Exp $"
+#define NEA_H
 /**@file nea.h
  * @brief Event API for SIP
  *
@@ -32,7 +32,7 @@
  *
  * @date Created: Fri Feb  7 13:23:44 EET 2003 ppessi
  *
- * $Date: 2005/08/08 19:10:00 $
+ * @date Last modified: Mon Aug  8 19:10:00 2005 ppessi
  * 
  */
 

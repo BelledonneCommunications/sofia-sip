@@ -31,14 +31,11 @@
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
  *
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  *
  */
 
 #include "config.h"
-
-const char _msg_mime_c_id[] =
-"$Id: msg_mime.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
 
 #define _GNU_SOURCE 1
 

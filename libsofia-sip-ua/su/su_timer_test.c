@@ -32,13 +32,10 @@
  * @internal
  * 
  * @date Created: Fri Oct 19 08:53:55 2001 pessi
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
-
-char const su_timer_test_c_id[] = 
-"$Id: su_timer_test.c,v 1.2 2005/09/09 10:56:31 ppessi Exp $";
 
 #include <stdlib.h>
 #include <string.h>

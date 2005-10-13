@@ -23,7 +23,7 @@
  */
 
 #ifndef NTA_TPORT_H /** Defined when nta_tport.h has been included. */
-#define NTA_TPORT_H "$Id: nta_tport.h,v 1.1.1.1 2005/07/20 20:35:31 kaiv Exp $"
+#define NTA_TPORT_H
 
 /**
  * @file nta_tport.h
@@ -33,7 +33,7 @@
  * 
  * @date Created: Thu Oct  7 20:04:39 2004 ppessi
  * 
- * $Date: 2005/07/20 20:35:31 $
+ * @date Last modified: Wed Jul 20 20:35:31 2005 kaiv
  */
 
 #ifndef NTA_H

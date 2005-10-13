@@ -23,15 +23,15 @@
  */
 
 #ifndef UTF8INTERNAL_H
-#define UTF8INTERNAL_H \
-"$Id: utf8internal.h,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $"
+#define UTF8INTERNAL_H 
+
 /**@IFILE utf8internal.h 
  * UTF-8 macros.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Apr 21 15:32:02 1998 pessi
- * $Date: 2005/07/20 20:35:20 $
+ * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  */
 
 #define UTF8_ANALYZE(s, ascii, latin1, ucs2, ucs4, errors) \

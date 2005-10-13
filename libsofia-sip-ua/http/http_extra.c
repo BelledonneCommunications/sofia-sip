@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/07/20 20:35:15 $
+ * @date Last modified: Wed Jul 20 20:35:15 2005 kaiv
  */
 
 #include "config.h"
-
-const char _http_extra_id[] =
-"$Id: http_extra.c,v 1.1.1.1 2005/07/20 20:35:15 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

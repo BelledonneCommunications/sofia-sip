@@ -29,11 +29,8 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/08/03 17:18:10 $
+ * @date Last modified: Wed Aug  3 17:18:10 2005 ppessi
  */
-
-const char _sip_feature_id[] =
-"$Id: sip_feature.c,v 1.2 2005/08/03 17:18:10 ppessi Exp $";
 
 #include "config.h"
 

@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_TAGARG_H /** Defined when su_tagarg.h has been included. */
-#define SU_TAGARG_H "$Id: su_tagarg.h,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $"
+#define SU_TAGARG_H
 
 /**@SU_TAG 
  * @file su_tagarg.h  Tagged argument lists
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Feb 20 19:48:18 2001 ppessi
- * $Date: 2005/07/20 20:35:58 $
+ * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #ifndef SU_TAG_H

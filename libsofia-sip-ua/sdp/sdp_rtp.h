@@ -23,14 +23,14 @@
  */
 
 #ifndef SDP_RTP_H
-#define SDP_RTP_H \
-"$Id: sdp_rtp.h,v 1.1.1.1 2005/07/20 20:35:36 kaiv Exp $"
+#define SDP_RTP_H 
+
 /**@file sdp_rtp.h Well-known RTP payload types
  *
  * @author Pekka Pessi <Pekka.Pessi@research.nokia.com>
  *
  * @date Created: Tue Mar  7 14:51:14 2000 ppessi
- * $Date: 2005/07/20 20:35:36 $
+ * @date Last modified: Wed Jul 20 20:35:36 2005 kaiv
  */
 
 enum {

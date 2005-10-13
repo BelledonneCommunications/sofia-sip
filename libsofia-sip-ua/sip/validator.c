@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Wed Mar 21 19:12:13 2001 ppessi
- * $Date: 2005/10/11 09:02:37 $
+ * @date Last modified: Tue Oct 11 09:02:37 2005 ppessi
  */
 
 #include "config.h"
-
-const char _validator_c_id[] =
-"$Id: validator.c,v 1.3 2005/10/11 09:02:37 ppessi Exp $";
 
 #include <stdio.h>
 #include <string.h>

@@ -23,8 +23,8 @@
  */
 
 #ifndef SIP_PARSER_H /** Defined when <sip_parser.h> has been included.*/
-#define SIP_PARSER_H \
-"$Id: sip_parser.h,v 1.2 2005/08/03 17:18:11 ppessi Exp $"
+#define SIP_PARSER_H 
+
 
 /**@ingroup sip_parser 
  * @file sip_parser.h 

@@ -29,8 +29,8 @@
  */
 
 #ifndef SIP_PROTOS_H /** Defined when sip_protos.h has been included. */
-#define SIP_PROTOS_H \
-  "$Id: sip_protos.h.in,v 1.1.1.1 2005/07/20 20:35:42 kaiv Exp $"
+#define SIP_PROTOS_H 
+  
 /**@file sip_protos.h
  * 
  * SIP prototypes and macros for each header.

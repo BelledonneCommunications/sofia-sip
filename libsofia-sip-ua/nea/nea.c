@@ -27,13 +27,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 18:32:58 2001 ppessi
- * $Date: 2005/07/20 20:35:27 $
+ * @date Last modified: Wed Jul 20 20:35:27 2005 kaiv
  */
 
 #include "config.h"
-
-const char _nea_c_id[] =
-"$Id: nea.c,v 1.1.1.1 2005/07/20 20:35:27 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

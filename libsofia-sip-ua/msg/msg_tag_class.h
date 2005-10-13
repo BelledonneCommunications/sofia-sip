@@ -24,8 +24,8 @@
 
 #ifndef MSG_TAG_CLASS_H
 /** Defined when <msg_tag_class.h> have been included */
-#define MSG_TAG_CLASS_H \
-"$Id: msg_tag_class.h,v 1.1.1.1 2005/07/20 20:35:26 kaiv Exp $"
+#define MSG_TAG_CLASS_H 
+
 
 /**@ingroup msg
  * @file msg_tag_class.h
@@ -35,7 +35,7 @@
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
  *
- * $Date: 2005/07/20 20:35:26 $
+ * @date Last modified: Wed Jul 20 20:35:26 2005 kaiv
  */
 
 int msghdrtag_snprintf(tagi_t const *t, char b[], size_t size);

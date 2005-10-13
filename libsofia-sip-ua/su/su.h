@@ -23,14 +23,14 @@
  */
 
 #ifndef SU_H /** Defined when su.h has been included. */
-#define SU_H "$Id: su.h,v 1.2 2005/08/08 19:10:16 ppessi Exp $"
+#define SU_H
 /**@ingroup su_socket 
  * @file su.h Socket and network address interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * $Date: 2005/08/08 19:10:16 $
+ * @date Last modified: Mon Aug  8 19:10:16 2005 ppessi
  */
 
 /* ---------------------------------------------------------------------- */

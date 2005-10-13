@@ -30,13 +30,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Thu Oct  5 14:01:24 2000 ppessi
- * $Date: 2005/08/08 19:10:14 $
+ * @date Last modified: Mon Aug  8 19:10:14 2005 ppessi
  */
 
 #include "config.h"
-
-const char sip_parser_c_id[] =
-"$Id: sip_parser.c,v 1.2 2005/08/08 19:10:14 ppessi Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -50,8 +47,6 @@ const char sip_parser_c_id[] =
 
 #include "sip_parser.h"
 #include <msg_mclass.h>
-
-const char sip_parser_h_id[] = SIP_PARSER_H;
 
 /** Version of the SIP module */
 char const sip_parser_version[] = VERSION;

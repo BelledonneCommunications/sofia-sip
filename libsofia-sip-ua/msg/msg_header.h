@@ -23,7 +23,7 @@
  */
 
 #ifndef MSG_HEADER_H /** Defined when msg_header.h has been included. */
-#define MSG_HEADER_H "$Id: msg_header.h,v 1.4 2005/09/23 14:53:50 ppessi Exp $"
+#define MSG_HEADER_H
 /**@ingroup msg_headers
  * @file msg_header.h
  *
@@ -33,7 +33,7 @@
  *
  * @date Created: Mon Aug 27 15:44:27 2001 ppessi
  * 
- * $Date: 2005/09/23 14:53:50 $
+ * @date Last modified: Fri Sep 23 14:53:50 2005 ppessi
  */
 
 #include <stdarg.h>

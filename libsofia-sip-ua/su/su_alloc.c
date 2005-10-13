@@ -28,13 +28,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  * 
  * @date Created: Thu Aug 19 01:12:25 1999 ppessi
- * $Date: 2005/10/12 18:32:48 $
+ * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  */
 
 #include "config.h"
-
-char const su_alloc_c_id[] =
-"$Id: su_alloc.c,v 1.6 2005/10/12 18:32:48 ppessi Exp $";
 
 /**@defgroup su_alloc Memory Management Tutorial
  *
@@ -150,12 +147,8 @@ char const su_alloc_c_id[] =
 #include <assert.h>
 
 #include <su_config.h>
-
 #include "su_alloc.h"
-char const su_alloc_h_id[] = SU_ALLOC_H;
-
 #include "su_alloc_stat.h"
-char const su_alloc_stat_h_id[] = SU_ALLOC_STAT_H;
 
 void (*su_home_locker)(void *mutex);
 void (*su_home_unlocker)(void *mutex);

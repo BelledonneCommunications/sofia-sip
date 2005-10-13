@@ -23,5 +23,5 @@
  */
 
 #ifndef MSG_AUTH_H
-#define MSG_AUTH_H "$Id: msg_auth.h,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $"
+#define MSG_AUTH_H
 #endif

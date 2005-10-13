@@ -37,9 +37,6 @@
 
 #include "config.h"
 
-const char _auth_plugin_delayed_c_id[] =
-"$Id: auth_plugin_delayed.c,v 1.3 2005/09/09 10:56:31 ppessi Exp $";
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

@@ -31,13 +31,10 @@
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
  *
- * $Date: 2005/07/20 20:35:22 $
+ * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 #include "config.h"
-
-const char msg_auth_c_id[] =
-"$Id: msg_auth.c,v 1.1.1.1 2005/07/20 20:35:22 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -50,8 +47,6 @@ const char msg_auth_c_id[] =
 #include <msg_header.h>
 #include <msg_auth.h>
 #include <bnf.h>
-
-const char msg_auth_h_id[] = MSG_AUTH_H;
 
 #if 0
 /**

@@ -30,13 +30,10 @@
  * 
  * @date Created: Thu Mar  4 15:15:15 2004 ppessi
  * 
- * $Date: 2005/07/20 20:35:58 $
+ * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #include "config.h"
-
-const char su_source_c_id[] = 
-  "$Id: su_source.c,v 1.1.1.1 2005/07/20 20:35:58 kaiv Exp $";
 
 /* Use Posix stuff */
 #define _XOPEN_SOURCE  (500)

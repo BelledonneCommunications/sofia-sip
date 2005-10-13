@@ -22,8 +22,6 @@
  *
  */
 
-const char _sip_util_c_id[] =
-"$Id: sip_util.c,v 1.4 2005/10/12 18:32:48 ppessi Exp $";
 /**@CFILE sip_util.c
  * 
  * SIP utility functions.
@@ -31,7 +29,7 @@ const char _sip_util_c_id[] =
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * $Date: 2005/10/12 18:32:48 $
+ * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  */
 
 #include "config.h"
@@ -51,8 +49,6 @@ const char _sip_util_c_id[] =
 #include <sip_status.h>
 
 #include "bnf.h"
-
-const char _sip_util_h_id[] = SIP_UTIL_H;
 
 #undef sip_params_find
 #undef sip_params_replace

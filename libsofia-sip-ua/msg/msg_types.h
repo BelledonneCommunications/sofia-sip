@@ -23,7 +23,7 @@
  */
 
 #ifndef MSG_TYPES_H /** Defined when <msg_types.h> has been included. */
-#define MSG_TYPES_H "$Id: msg_types.h,v 1.2 2005/09/09 10:56:31 ppessi Exp $"
+#define MSG_TYPES_H
 
 /**@file msg_types.h
  * @brief Types for messages and common headers
@@ -32,7 +32,7 @@
  * 
  * @date Created: Thu Jan 23 15:43:17 2003 ppessi
  *
- * $Date: 2005/09/09 10:56:31 $
+ * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 /** Message class. */

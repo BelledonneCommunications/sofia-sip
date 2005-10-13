@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_VECTOR_H /** Defined when su_vector.h has been included. */
-#define SU_VECTOR_H "$Id: su_vector.h,v 1.1.1.1 2005/07/20 20:35:59 kaiv Exp $"
+#define SU_VECTOR_H
 
 /**@file su_vector.h
  * @brief Vector interface
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Fri Sep 27 14:31:15 2002 ppessi
- * $Date: 2005/07/20 20:35:59 $
+ * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #ifndef SU_ALLOC_H

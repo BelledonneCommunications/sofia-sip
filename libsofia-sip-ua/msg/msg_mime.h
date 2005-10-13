@@ -23,8 +23,8 @@
  */
 
 #ifndef MSG_MIME_H /** Defined when <msg_mime.h> has been included. */
-#define MSG_MIME_H \
-"$Id: msg_mime.h,v 1.1.1.1 2005/07/20 20:35:23 kaiv Exp $"
+#define MSG_MIME_H 
+
 /**@ingroup msg_mime
  * @file msg_mime.h
  *
@@ -34,7 +34,7 @@
  *
  * @date Created: Fri Aug 16 19:18:26 EEST 2002 ppessi
  * 
- * $Date: 2005/07/20 20:35:23 $
+ * @date Last modified: Wed Jul 20 20:35:23 2005 kaiv
  */
 
 #ifndef URL_H

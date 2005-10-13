@@ -23,8 +23,8 @@
  */
 
 #ifndef SL_UTILS_H /** Defined when <sl_utils.h> has been included. */
-#define SL_UTILS_H \
-"$Id: sl_utils.h,v 1.1.1.1 2005/07/20 20:35:31 kaiv Exp $"
+#define SL_UTILS_H 
+
 
 /**@ingroup sl_utils 
  * 
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Oct  5 15:38:39 2000 ppessi
- * $Date: 2005/07/20 20:35:31 $
+ * @date Last modified: Wed Jul 20 20:35:31 2005 kaiv
  * @{
  */
 

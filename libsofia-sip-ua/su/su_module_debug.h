@@ -23,7 +23,7 @@
  */
 
 #ifndef SU_MODULE_DEBUG_H /** Defined when su_module_debug.h has been included. */
-#define SU_MODULE_DEBUG_H "$Id: su_module_debug.h,v 1.1.1.1 2005/07/20 20:35:57 kaiv Exp $"
+#define SU_MODULE_DEBUG_H
 
 /**@ingroup su_log
  * @file su_module_debug.h
@@ -36,7 +36,7 @@
  *  
  * @date Created: Wed Jan 29 18:18:49 2003 ppessi
  * 
- * $Date: 2005/07/20 20:35:57 $
+ * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #include <su_log.h>

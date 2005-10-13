@@ -24,8 +24,8 @@
 
 #ifndef AUTH_MODULE_H
 /** Defined when <auth_module.h> has been included. @HI */
-#define AUTH_MODULE_H \
-  "$Id: auth_module.h,v 1.1.1.1 2005/07/20 20:35:21 kaiv Exp $"
+#define AUTH_MODULE_H 
+  
 
 /**@file auth_module.h  
  * @brief Authentication verification interface for NTA network elements.
@@ -33,7 +33,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Mon Jul 23 19:21:24 2001 ppessi
- * $Date: 2005/07/20 20:35:21 $
+ * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #ifndef SU_TAG_H

@@ -23,7 +23,7 @@
  */
 
 #ifndef RC4_H /** Defined when rc4.h has been included. */
-#define RC4_H "$Id: rc4.h,v 1.1.1.1 2005/07/20 20:35:20 kaiv Exp $"
+#define RC4_H
 
 /**@file rc4.h
  * @brief 
@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Sun Jun  9 14:32:58 1996 ppessi
- * $Date: 2005/07/20 20:35:20 $
+ * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  */
 
 /** Byte. */

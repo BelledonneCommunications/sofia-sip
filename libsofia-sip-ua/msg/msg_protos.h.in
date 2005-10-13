@@ -29,8 +29,8 @@
  */
 
 #ifndef MSG_PROTOS_H /** Defined when msg_protos.h has been included. */
-#define MSG_PROTOS_H \
-"$Id: msg_protos.h.in,v 1.1.1.1 2005/07/20 20:35:25 kaiv Exp $"
+#define MSG_PROTOS_H 
+
 /**@ingroup msg_headers
  * @file msg_protos.h
  *

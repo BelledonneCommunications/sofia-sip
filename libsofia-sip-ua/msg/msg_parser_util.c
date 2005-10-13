@@ -31,13 +31,10 @@
  *
  * @date Created: Tue Aug 28 16:26:34 2001 ppessi
  *
- * $Date: 2005/07/20 20:35:25 $
+ * @date Last modified: Wed Jul 20 20:35:25 2005 kaiv
  */
 
 #include "config.h"
-
-const char msg_parser_util_c_id[] =
-"$Id: msg_parser_util.c,v 1.1.1.1 2005/07/20 20:35:25 kaiv Exp $";
 
 #include <stddef.h>
 #include <stdlib.h>

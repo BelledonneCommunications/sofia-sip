@@ -29,13 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Fri Feb 23 12:46:42 2001 ppessi
- * $Date: 2005/07/20 20:35:43 $
+ * @date Last modified: Wed Jul 20 20:35:43 2005 kaiv
  */
 
 #include "config.h"
-
-const char sip_tag_class_c_id[] =
-"$Id: sip_tag_class.c,v 1.1.1.1 2005/07/20 20:35:43 kaiv Exp $";
 
 #include <assert.h>
 #include <stddef.h>
