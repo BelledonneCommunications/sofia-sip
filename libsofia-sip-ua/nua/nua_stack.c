@@ -4869,9 +4869,6 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
   nh_init(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
 
-  if (nh->nh_soa && tags)
-    soa_set_params(nh->nh_soa, TAG_NEXT(tags));
-
   msg = crequest_message(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_UPDATE,
 			 NUTAG_USE_LEG(1),
