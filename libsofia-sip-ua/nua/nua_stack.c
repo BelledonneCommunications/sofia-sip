@@ -5175,6 +5175,10 @@ int process_bye(nua_t *nua,
 		nta_incoming_t *irq,
 		sip_t const *sip)
 {
+  struct nua_session_state *ss = nh->nh_ss;
+  nua_server_request_t *sr = ss->ss_srequest;
+  int early = 0;
+
   assert(nh);
 
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
@@ -5182,9 +5186,19 @@ int process_bye(nua_t *nua,
   nta_incoming_treply(irq, SIP_200_OK, TAG_END());
   nta_incoming_destroy(irq), irq = NULL;
 
+  if (sr->sr_irq) {
+    char const *phrase;
+    early = ss->ss_state < nua_callstate_ready;
+    phrase = early ? "Early Session Terminated" : "Session Terminated";
+    nta_incoming_treply(sr->sr_irq, 487, phrase, TAG_END());
+    nta_incoming_destroy(sr->sr_irq);
+    memset(sr, 0, sizeof *sr);
+  }
+
   nsession_destroy(nh);
 
-  signal_call_state_change(nh, 200, "Received BYE", 
+  signal_call_state_change(nh, 200,
+			   early ? "Received early BYE" : "Received BYE",
 			   nua_callstate_terminated, 0, 0);
 
   return 200;			/* Respond automatically with 200 Ok */
