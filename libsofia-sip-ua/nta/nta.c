@@ -5803,7 +5803,7 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
   }
 #endif
 
-  cancel_408 = 0;
+  cancel_408 = 0;		/* Don't really CANCEL, this is timeout. */
   cancel_2543 = orq->orq_agent->sa_cancel_2543;
 
   ta_start(ta, tag, value);
@@ -7583,6 +7583,10 @@ msg_t *outgoing_ackmsg(nta_outgoing_t *orq, sip_method_t m, char const *mname,
   sip_add_dup(msg, sip, (sip_header_t *)old->sip_from);
   sip_add_dup(msg, sip, (sip_header_t *)old->sip_call_id);
   sip_add_dup(msg, sip, (sip_header_t *)old->sip_route);
+  /* Bug #1326727. */
+  sip_add_dup(msg, sip, (sip_header_t *)old->sip_accept_contact);
+  sip_add_dup(msg, sip, (sip_header_t *)old->sip_reject_contact);
+  sip_add_dup(msg, sip, (sip_header_t *)old->sip_request_disposition);
 
   if (old->sip_via) {
     /* Add only the topmost Via header */
