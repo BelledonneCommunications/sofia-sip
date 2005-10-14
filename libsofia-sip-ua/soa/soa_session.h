@@ -29,7 +29,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Mon Aug 1 15:43:53 EEST 2005 ppessi
- * @date Last modified: Wed Sep 28 20:05:24 2005 ppessi
  */
 
 #ifndef SOA_H

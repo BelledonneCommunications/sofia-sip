@@ -29,7 +29,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Aug 16 17:06:06 EEST 2005
- * @date Last modified: Wed Sep 28 20:05:24 2005 ppessi
  */
 
 #include "config.h"

@@ -29,7 +29,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Aug 16 17:06:06 EEST 2005
- * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  *
  * @par Use-cases
  *  1. no existing session

@@ -30,7 +30,6 @@
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Fri Jul 15 15:43:53 EEST 2005 ppessi
- * @date Last modified: Wed Sep 28 20:05:24 2005 ppessi
  */
 
 #ifndef SU_WAIT_H
