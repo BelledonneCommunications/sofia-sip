@@ -3916,27 +3916,50 @@ restart_invite(nua_handle_t *nh, tagi_t *tags)
   ua_invite2(nh->nh_nua, nh, nua_r_invite, 1, tags);
 }
 
+static int process_response_to_cancel(nua_handle_t *nh,
+				      nta_outgoing_t *orq,
+				      sip_t const *sip);
+
 /* CANCEL */
 int
 ua_cancel(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
   nua_session_state_t *ss = nh->nh_ss;
-  nua_client_request_t *cr = ss->ss_crequest;
+  nua_client_request_t *cri = ss->ss_crequest;
+  nua_client_request_t *crc = nh->nh_cr;
   
-  if (nh && cr->cr_orq && cr->cr_usage && 
-      cr->cr_usage->du_pending == cancel_invite) {
-    nua_dialog_usage_t *du = cr->cr_usage;
+  if (nh && cri->cr_orq && cri->cr_usage &&
+      cri->cr_usage->du_pending == cancel_invite) {
+    nua_dialog_usage_t *du = cri->cr_usage;
+    nta_outgoing_t *orq;
 
     du->du_pending = NULL;
 
-    nh_referral_respond(nh, SIP_487_REQUEST_TERMINATED);
-     
-    nta_outgoing_tcancel(cr->cr_orq, NULL, NULL, TAG_NEXT(tags));
+    /* nh_referral_respond(nh, SIP_487_REQUEST_TERMINATED); */
 
-    return ua_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
+    if (e)
+      orq = nta_outgoing_tcancel(cri->cr_orq, process_response_to_cancel, nh,
+				 TAG_NEXT(tags));
+    else
+      orq = nta_outgoing_tcancel(cri->cr_orq, NULL, NULL, TAG_NEXT(tags));
+
+    if (orq == NULL)
+      return ua_event(nua, nh, NULL, e, 400, "Internal error", TAG_END());
+
+    if (e && crc->cr_orq == NULL)
+      crc->cr_orq = orq, crc->cr_event = e;
+
+    return 0;
   }
 
   return UA_EVENT2(e, 481, "No transaction to CANCEL");
+}
+
+static int process_response_to_cancel(nua_handle_t *nh,
+				      nta_outgoing_t *orq,
+				      sip_t const *sip)
+{
+  return process_response(nh, nh->nh_cr, orq, sip, TAG_END());
 }
 
 static void respond_to_invite(nua_t *nua, nua_handle_t *nh,
