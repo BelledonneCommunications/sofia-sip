@@ -267,7 +267,7 @@ struct sip_s {
 
   sip_expires_t             *sip_expires;	/**< Expires */
   sip_date_t                *sip_date;		/**< Date */
-  sip_retry_after_t         *sip_retry_after;	/**< Retry-after */
+  sip_retry_after_t         *sip_retry_after;	/**< Retry-After */
   sip_timestamp_t           *sip_timestamp;	/**< Timestamp */
   sip_min_expires_t         *sip_min_expires;   /**< Min-Expires */
 
