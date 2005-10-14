@@ -65,6 +65,8 @@ extern su_log_t tport_log[];
 extern su_log_t su_log_default[];
 
 char const name[] = "test_nua";
+
+int print_headings = 1;
 int tstflags = 0;
 #define TSTFLAGS tstflags
 
@@ -111,7 +113,6 @@ struct context
 
     /* Per-call stuff */
     nua_handle_t *nh;
-    char const *subject;
     nua_saved_event_t saved_event[1];
 
     struct {
@@ -329,6 +330,23 @@ int invite(struct endpoint *ep, nua_handle_t *nh,
   return 0;
 }
 
+/* cancel via endpoint and handle */
+int cancel(struct endpoint *ep, nua_handle_t *nh,
+	   tag_type_t tag, tag_value_t value,
+	   ...)
+{
+  ta_list ta;
+
+  ta_start(ta, tag, value);
+  if (ep->printer)
+    ep->printer(-1, 0, "", ep->nua, ep->ctx, ep,
+		nh, "nua_cancel", NULL, ta_args(ta));
+  nua_cancel(nh, ta_tags(ta));
+  ta_end(ta);
+
+  return 0;
+}
+
 /* bye via endpoint and handle */
 int bye(struct endpoint *ep, nua_handle_t *nh,
 	tag_type_t tag, tag_value_t value,
@@ -426,6 +444,9 @@ int test_api_errors(struct context *ctx)
 
   int level;
 
+  if (print_headings)
+    printf("TEST NUA-1.0: test API\n");
+
   su_log_init(nua_log);
 
   level = nua_log->log_level;
@@ -490,6 +511,9 @@ int test_api_errors(struct context *ctx)
 
   su_log_set_level(nua_log, level);
 
+  if (print_headings)
+    printf("TEST NUA-1.0: PASSED\n");
+
   END();
 }
 
@@ -503,6 +527,9 @@ int test_params(struct context *ctx)
   nua_handle_t *nh;
 
   su_home_auto(tmphome, sizeof(tmphome));
+
+  if (print_headings)
+    printf("TEST NUA-2.0: PARAMETERS\n");
 
   ctx->root = su_root_create(ctx); TEST_1(ctx->root);
 
@@ -864,6 +891,9 @@ int test_params(struct context *ctx)
 
   su_home_deinit(tmphome);
 
+  if (print_headings)
+    printf("TEST NUA-2.0: PASSED\n");
+
   END();
 }
 
@@ -878,6 +908,9 @@ int test_init(struct context *ctx, char *argv[])
 
   /* Disable threading by command line switch? */
   su_root_threading(ctx->root, 1);
+
+  if (print_headings)
+    printf("TEST NUA-3.0.1: init endpoint A\n");
 
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
@@ -897,6 +930,12 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(ctx->a.address = sip_to_dup(ctx->home, a));
   nua_destroy_event(ctx->a.saved_event);
 
+  if (print_headings)
+    printf("TEST NUA-3.0.1: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-3.0.2: init endpoint B\n");
+
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
 			  SIPTAG_FROM_STR("sip:bob@example.org"),
 			  NUTAG_URL("sip:*:*"),
@@ -914,6 +953,9 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(ctx->b.contact = sip_contact_dup(ctx->home, m));
   TEST_1(ctx->b.address = sip_to_dup(ctx->home, a));
   nua_destroy_event(ctx->b.saved_event);
+
+  if (print_headings)
+    printf("TEST NUA-3.0.2: PASSED\n");
 
   END();
 }
@@ -954,7 +996,7 @@ CONDITION_FUNCTION(until_terminated)
    |			|
 
    Client transitions:
-   INIT -(C1)-> CALLING -(C2)-> PROCEEDING -(C3+C4)-> READY
+   INIT -(C1)-> CALLING -(C2a)-> PROCEEDING -(C3+C4)-> READY
    READY -(T1)-> TERMINATED
 
    Server transitions:
@@ -1016,6 +1058,9 @@ int test_basic_call(struct context *ctx)
   struct endpoint *a = &ctx->a,  *b = &ctx->b;
   struct event *e;
 
+  if (print_headings)
+    printf("TEST NUA-3.1: Basic call\n");
+
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
 
   invite(a, a->nh, NUTAG_URL(b->contact->m_url),
@@ -1034,6 +1079,7 @@ int test_basic_call(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
   TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
   TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
@@ -1078,19 +1124,14 @@ int test_basic_call(struct context *ctx)
   free_events_in_list(ctx, b);
   nua_handle_destroy(b->nh), b->nh = NULL;
 
+  if (print_headings)
+    printf("TEST NUA-3.1: PASSED\n");
+
   END();
 }
 
 /* ======================================================================== */
 /* Call rejections */
-
-char const *call_subject(sip_t const *sip)
-{
-  if (sip && sip->sip_subject && sip->sip_subject->g_string)
-    return sip->sip_subject->g_string;
-  else
-    return "unknown";
-}
 
 /*
  A      reject-1      B
@@ -1231,6 +1272,9 @@ int test_call_rejects(struct context *ctx)
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct event *e;
 
+  if (print_headings)
+    printf("TEST NUA-3.2: reject before ringing\n");
+
   /*
    A      reject-1      B
    |			|
@@ -1278,6 +1322,10 @@ int test_call_rejects(struct context *ctx)
   free_events_in_list(ctx, b);
   nua_handle_destroy(b->nh), b->nh = NULL;
 
+  if (print_headings)
+    printf("TEST NUA-3.2: PASSED\n");
+
+  /* ------------------------------------------------------------------------ */
   /*
    A      reject-2      B
    |			|
@@ -1289,6 +1337,9 @@ int test_call_rejects(struct context *ctx)
    |<--------602--------|
    |---------ACK------->|
   */
+
+  if (print_headings)
+    printf("TEST NUA-3.3: reject after ringing\n");
 
   /* Make call reject-2 */
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
@@ -1333,7 +1384,15 @@ int test_call_rejects(struct context *ctx)
   free_events_in_list(ctx, b);
   nua_handle_destroy(b->nh), b->nh = NULL;
 
+  if (print_headings)
+    printf("TEST NUA-3.3: PASSED\n");
+
+  /* ------------------------------------------------------------------------ */
+
   /* Make call reject-3 */
+  if (print_headings)
+    printf("TEST NUA-3.4: redirect then reject\n");
+
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
   invite(a, a->nh, NUTAG_URL(b->contact->m_url),
 	 SIPTAG_SUBJECT_STR("reject-3"),
@@ -1410,6 +1469,350 @@ int test_call_rejects(struct context *ctx)
   free_events_in_list(ctx, b);
   nua_handle_destroy(b->nh), b->nh = NULL;
 
+  if (print_headings)
+    printf("TEST NUA-3.4: PASSED\n");
+
+  END();
+}
+
+/* ======================================================================== */
+
+/* Cancel cases:
+
+
+   A			B
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |			|
+   |------CANCEL------->|
+   |<------200 OK-------|
+   |			|
+   |<-------487---------|
+   |--------ACK-------->|
+   |			|
+   |			|
+
+   Client transitions:
+   INIT -(C1)-> CALLING -(C6a)-> TERMINATED
+
+   Server transitions:
+   INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED
+
+   A			B
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |			|
+   |<----180 Ringing----|
+   |			|
+   |------CANCEL------->|
+   |<------200 OK-------|
+   |			|
+   |<-------487---------|
+   |--------ACK-------->|
+   |			|
+   |			|
+
+   Client transitions:
+   INIT -(C1)-> CALLING -(C2)-> PROCEEDING -(C6b)-> TERMINATED
+
+   Server transitions:
+   INIT -(S1)-> RECEIVED -(S2a)-> EARLY -(S6b)-> TERMINATED
+
+*/
+
+CONDITION_FUNCTION(cancel_when_calling)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_calling:
+    cancel(ep, nh, TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+
+CONDITION_FUNCTION(cancel_when_ringing)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_proceeding:
+    cancel(ep, nh, TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+
+CONDITION_FUNCTION(alert_call)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, nh, SIP_180_RINGING, TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+
+int test_call_cancel(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a,  *b = &ctx->b;
+  struct event *e;
+
+  if (print_headings)
+    printf("TEST NUA-3.5.1: cancel call\n");
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 TAG_END());
+
+  run_until(ctx, -1, cancel_when_calling, -1, until_terminated);
+
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state, nua_cancel()
+     CALLING -(C6a)-> TERMINATED: nua_r_invite(487), nua_i_state
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 487);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S6a)--> TERMINATED: nua_i_cancel, nua_i_state
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_cancel);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+  nua_handle_destroy(a->nh), a->nh = NULL;
+
+  free_events_in_list(ctx, b);
+  nua_handle_destroy(b->nh), b->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-3.5.1: PASSED\n");
+
+  /* ------------------------------------------------------------------------ */
+
+  if (print_headings)
+    printf("TEST NUA-3.5.2: cancel call when ringing\n");
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8"),
+	 SIPTAG_REJECT_CONTACT_STR("*;audio=FALSE"),
+	 TAG_END());
+
+  run_until(ctx, -1, cancel_when_ringing, -1, alert_call);
+
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C2)-> PROCEEDING: nua_r_invite(180, nua_i_state, nua_cancel()
+     PROCEEDING -(C6b)-> TERMINATED: nua_r_invite(487), nua_i_state
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 487);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S2a)-> EARLY: nua_respond(180), nua_i_state
+   EARLY -(S6b)--> TERMINATED: nua_i_cancel, nua_i_state
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_cancel);
+  /* Check for bug #1326727 */
+  TEST_1(e->data->e_msg);
+  TEST_1(sip_object(e->data->e_msg)->sip_reject_contact);
+  TEST_1(sip_object(e->data->e_msg)->sip_reject_contact->cp_params &&
+	 sip_object(e->data->e_msg)->sip_reject_contact->cp_params[0]);
+  TEST_S(sip_object(e->data->e_msg)->sip_reject_contact->cp_params[0],
+	 "audio=FALSE");
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+  nua_handle_destroy(a->nh), a->nh = NULL;
+
+  free_events_in_list(ctx, b);
+  nua_handle_destroy(b->nh), b->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-3.5.2: PASSED\n");
+
+  END();
+}
+
+/* ======================================================================== */
+/* Early BYE
+
+   A			B
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |			|
+   |<----180 Ringing----|
+   |			|
+   |--------BYE-------->|
+   |<------200 OK-------|
+   |			|
+   |<-------487---------|
+   |--------ACK-------->|
+   |			|
+   |			|
+
+   Client transitions:
+   INIT -(C1)-> CALLING -(C2)-> PROCEEDING -(8)-> TERMINATING -> TERMINATED
+
+   Server transitions:
+   INIT -(S1)-> RECEIVED -(S2a)-> EARLY -(S8)-> TERMINATED
+
+*/
+
+CONDITION_FUNCTION(bye_when_ringing)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_proceeding:
+    bye(ep, nh, TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+int test_early_bye(struct context *ctx)
+{
+  BEGIN();
+  struct endpoint *a = &ctx->a,  *b = &ctx->b;
+  struct event *e;
+
+  if (print_headings)
+    printf("TEST NUA-3.6.1: BYE call when ringing\n");
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8"),
+	 TAG_END());
+
+  run_until(ctx, -1, bye_when_ringing, -1, alert_call);
+
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C2)-> PROCEEDING: nua_r_invite(180, nua_i_state, nua_cancel()
+     PROCEEDING -(C6b)-> TERMINATED: nua_r_invite(487), nua_i_state
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(e = e->next);
+  if (e->data->e_event == nua_r_bye) {
+    /* We might receive this before or after response to INVITE */
+    /* If afterwards, it will come after nua_i_state and we just ignore it */
+    TEST(e->data->e_event, nua_r_bye); TEST(e->data->e_status, 200);
+    TEST_1(e->data->e_msg);
+    /* Forking has not been enabled, so this should be actually a CANCEL */
+    TEST(sip_object(e->data->e_msg)->sip_cseq->cs_method, sip_method_cancel);
+    TEST_1(e = e->next);
+  }
+  TEST(e->data->e_event, nua_r_invite); TEST(e->data->e_status, 487);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S2a)-> EARLY: nua_respond(180), nua_i_state
+   EARLY -(S6b)--> TERMINATED: nua_i_cancel, nua_i_state
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
+  /* Forking has not been enabled, so this should be actually a CANCEL */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_cancel);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+  nua_handle_destroy(a->nh), a->nh = NULL;
+
+  free_events_in_list(ctx, b);
+  nua_handle_destroy(b->nh), b->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-3.6.1: PASSED\n");
+
   END();
 }
 
@@ -1483,7 +1886,8 @@ CONDITION_FUNCTION(until_ready)
   }
 }
 
-/*
+/* test_call_hold message sequence looks like this:
+
  A                    B
  |                    |
  |-------INVITE------>|
@@ -1521,6 +1925,9 @@ int test_call_hold(struct context *ctx)
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct event *e;
 
+  if (print_headings)
+    printf("TEST NUA-3.7: Test call hold\n");
+
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
   invite(a, a->nh, NUTAG_URL(b->contact->m_url),
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 0 8\n"
@@ -1528,10 +1935,11 @@ int test_call_hold(struct context *ctx)
 	 TAG_END());
   run_until(ctx, -1, until_ready, -1, accept_call);
 
-  /* Client transitions:
-     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
-     CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
-     PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
+  /*
+    Client transitions:
+    INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+    CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
+    PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
   */
   TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
@@ -1579,6 +1987,9 @@ int test_call_hold(struct context *ctx)
  :                    :
   */
 
+  if (print_headings)
+    printf("TEST NUA-3.7.1: put B on hold\n");
+
   /* Put B on hold */
   invite(a, a->nh, SOATAG_HOLD("audio"),
 	 SIPTAG_SUBJECT_STR("hold b"),
@@ -1619,6 +2030,10 @@ int test_call_hold(struct context *ctx)
 
   free_events_in_list(ctx, b);
 
+  if (print_headings)
+    printf("TEST NUA-3.7.1: PASSED\n");
+
+  /* ------------------------------------------------------------------------ */
   /*
  :                    :
  |<-INVITE(inactive)--|
@@ -1626,6 +2041,9 @@ int test_call_hold(struct context *ctx)
  |<--------ACK--------|
  :                    :
   */
+
+  if (print_headings)
+    printf("TEST NUA-3.7.2: put A on hold\n");
 
   /* Put A on hold, too. */
   invite(b, b->nh, SOATAG_HOLD("audio"),
@@ -1669,13 +2087,10 @@ int test_call_hold(struct context *ctx)
 
   free_events_in_list(ctx, a);
 
-  /* ------------------------------------------------------------------------ */
-  /* Resume B from hold */
-  invite(a, a->nh, SOATAG_HOLD(NULL),
-	 SIPTAG_SUBJECT_STR("resume b"),
-	 TAG_END());
-  run_until(ctx, -1, until_ready, -1, until_ready);
+  if (print_headings)
+    printf("TEST NUA-3.7.2: PASSED\n");
 
+  /* ------------------------------------------------------------------------ */
   /*
  :                    :
  |--INVITE(recvonly)->|
@@ -1683,6 +2098,15 @@ int test_call_hold(struct context *ctx)
  |---------ACK------->|
  :                    :
   */
+
+  if (print_headings)
+    printf("TEST NUA-3.7.3: resume B\n");
+
+  /* Resume B from hold */
+  invite(a, a->nh, SOATAG_HOLD(NULL),
+	 SIPTAG_SUBJECT_STR("resume b"),
+	 TAG_END());
+  run_until(ctx, -1, until_ready, -1, until_ready);
 
   /* Client transitions:
      READY -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -1720,6 +2144,9 @@ int test_call_hold(struct context *ctx)
 
   free_events_in_list(ctx, b);
 
+  if (print_headings)
+    printf("TEST NUA-3.7.3: PASSED\n");
+
   /* ------------------------------------------------------------------------ */
   /*
  :                    :
@@ -1729,9 +2156,12 @@ int test_call_hold(struct context *ctx)
  :                    :
   */
 
+  if (print_headings)
+    printf("TEST NUA-3.7.4: resume A\n");
+
   /* Resume A on hold, too. */
   invite(b, b->nh, SOATAG_HOLD(""),
-	 SIPTAG_SUBJECT_STR("resume a"),
+	 SIPTAG_SUBJECT_STR("TEST NUA-3.7.4: resume A"),
 	 TAG_END());
   run_until(ctx, -1, until_ready, -1, until_ready);
 
@@ -1771,11 +2201,19 @@ int test_call_hold(struct context *ctx)
 
   free_events_in_list(ctx, a);
 
+  if (print_headings)
+    printf("TEST NUA-3.7.4: PASSED\n");
+
+  /* ------------------------------------------------------------------------ */
   /*
  A                    B
  |---------BYE------->|
  |<--------200--------|
    */
+
+  if (print_headings)
+    printf("TEST NUA-3.7.5: terminate call\n");
+
   bye(a, a->nh, TAG_END());
   run_until(ctx, -1, until_terminated, -1, until_terminated);
 
@@ -1799,8 +2237,15 @@ int test_call_hold(struct context *ctx)
   TEST_1(!e->next);
   free_events_in_list(ctx, b);
 
+  if (print_headings)
+    printf("TEST NUA-3.7.5: PASSED\n");
+
   nua_handle_destroy(a->nh), a->nh = NULL;
   nua_handle_destroy(b->nh), b->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-3.7: PASSED\n");
+
 
   END();
 }
@@ -1845,7 +2290,7 @@ static char const options[] =
   "   --attach          print pid, wait for a debugger to be attached\n"
   "   --no-alarm        don't ask for guard ALARM\n"
   "   -p uri            specify uri of outbound proxy\n"
-  "   -1                exit after first error\n"
+  "   -k                do not exit after first error\n"
   ;
 
 void usage(int exitcode)
@@ -1857,7 +2302,7 @@ void usage(int exitcode)
 
 int main(int argc, char *argv[])
 {
-  int retval = 0, quit_on_single_failure = 0;
+  int retval = 0, quit_on_single_failure = 1;
   int i, o_quiet = 0, o_attach = 0, o_alarm = 1;
   int o_events_a = 0, o_events_b = 0;
   int level = 0;
@@ -1877,8 +2322,8 @@ int main(int argc, char *argv[])
       tstflags |= tst_verbatim;
     else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
       tstflags &= ~tst_verbatim, o_quiet = 1;
-    else if (strcmp(argv[i], "-1") == 0)
-      quit_on_single_failure = 1;
+    else if (strcmp(argv[i], "-k") == 0)
+      quit_on_single_failure = 0;
     else if (strncmp(argv[i], "-l", 2) == 0) {
       char *rest = NULL;
 
@@ -1953,6 +2398,9 @@ int main(int argc, char *argv[])
     su_log_soft_set_level(tport_log, level);
   }
 
+  if (!o_quiet || (TSTFLAGS & tst_verbatim) || o_events_a || o_events_b)
+    print_headings = 1;
+
 #define SINGLE_FAILURE_CHECK()						\
   do { fflush(stdout);							\
     if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
@@ -1970,6 +2418,8 @@ int main(int argc, char *argv[])
 
     retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_call_rejects(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();
