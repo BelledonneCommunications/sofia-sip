@@ -29,7 +29,6 @@
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
- * @date Last modified: Thu Oct 13 09:29:23 2005 kaiv
  */
 
 #ifndef NUA_STACK_H

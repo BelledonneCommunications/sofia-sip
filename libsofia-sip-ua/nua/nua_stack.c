@@ -31,7 +31,6 @@
  * @author Tat Chan <Tat.Chan@nokia.com>
  *
  * @date Created: Wed Feb 14 18:32:58 2001 ppessi
- * @date Last modified: Thu Oct 13 11:52:46 2005 ppessi
  */
 
 #include "config.h"
