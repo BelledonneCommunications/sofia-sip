@@ -115,6 +115,9 @@ extern char const SOA_DEBUG[];
  */
 su_log_t soa_log[] = { SU_LOG_INIT("soa", "SOA_DEBUG", SU_DEBUG) };
 
+/* Add " around string */
+#define NICE(s) s ? "\"" : "", s ? s : "(nil)", s ? "\"" : ""
+
 /* ======================================================================== */
 
 /* API Functions */
@@ -142,6 +145,8 @@ int soa_add(char const *name,
   struct soa_namenode const *n;
   struct soa_namenode *e;
 
+  SU_DEBUG_9(("soa_add(%s%s%s, %p) called\n", NICE(name), actions));
+
   if (name == NULL || actions == NULL)
     return (errno = EFAULT), -1;
 
@@ -167,6 +172,8 @@ int soa_add(char const *name,
 /** Search for a named backend */
 struct soa_session_actions const *soa_find(char const *name)
 {
+  SU_DEBUG_9(("soa_find(%s%s%s) called\n", NICE(name)));
+
   if (name) {
     struct soa_namenode const *n;
     size_t baselen = strcspn(name, ":/");
@@ -195,6 +202,9 @@ soa_session_t *soa_create(char const *name,
 
   soa_session_t *ss;
   size_t namelen;
+
+  SU_DEBUG_9(("soa_create(\"%s\", %p, %p) called\n",
+	      name ? name : "default", root, magic));
 
   if (name && name[0]) {
     struct soa_namenode const *n;
@@ -240,6 +250,10 @@ soa_session_t *soa_clone(soa_session_t *parent_ss,
   soa_session_t *ss;
   size_t namelen;
 
+  SU_DEBUG_9(("soa_clone(%s::%p, %p, %p) called\n",
+	      parent_ss ? parent_ss->ss_actions->soa_name : "",
+	      parent_ss, root, magic));
+
   if (parent_ss == NULL || root == NULL)
     return (void)(errno = EFAULT), NULL;
 
@@ -263,12 +277,16 @@ soa_session_t *soa_clone(soa_session_t *parent_ss,
 /** Increase reference count */
 soa_session_t *soa_session_ref(soa_session_t *ss)
 {
+  SU_DEBUG_9(("soa_session_ref(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
   return su_home_ref(ss->ss_home);
 }
 
 /** Decrease reference count */
 void soa_session_unref(soa_session_t *ss)
 {
+  SU_DEBUG_9(("soa_session_unref(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
   su_home_unref(ss->ss_home);
 }
 
@@ -307,6 +325,9 @@ int soa_base_init(char const *name,
 /** Destroy a session. */
 void soa_destroy(soa_session_t *ss)
 {
+  SU_DEBUG_9(("soa_destroy(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (ss) {
     ss->ss_active = 0;
     ss->ss_terminated++;
@@ -325,6 +346,9 @@ int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
   int n;
+
+  SU_DEBUG_9(("soa_set_params(%s::%p, ...) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (ss == NULL)
     return (errno = EFAULT), -1;
@@ -447,6 +471,9 @@ int soa_get_params(soa_session_t const *ss,
   ta_list ta;
   int n;
 
+  SU_DEBUG_9(("soa_get_params(%s::%p, ...) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (ss == NULL)
     return (errno = EFAULT), -1;
 
@@ -495,6 +522,9 @@ tagi_t *soa_get_paramlist(soa_session_t const *ss,
 {
   ta_list ta;
   tagi_t *params = NULL;
+
+  SU_DEBUG_9(("soa_get_paramlist(%s::%p, ...) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (ss) {
     ta_start(ta, tag, value);
@@ -559,6 +589,9 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
 int soa_error_as_sip_response(soa_session_t *ss,
 			      char const **return_phrase)
 {
+  SU_DEBUG_9(("soa_error_as_sip_response(%s::%p, ...) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (ss == NULL) {
     if (return_phrase)
       *return_phrase = sip_500_Internal_server_error;
@@ -573,6 +606,9 @@ int soa_error_as_sip_response(soa_session_t *ss,
 
 char const *soa_error_as_sip_reason(soa_session_t *ss)
 {
+  SU_DEBUG_9(("soa_error_as_sip_reason(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   return "SIP;cause=501;text=\"Unimplemented media\"";
 }
 
@@ -588,6 +624,9 @@ int soa_get_capability_sdp(soa_session_t const *ss,
 			   int *return_len)
 {
   char const *sdp;
+
+  SU_DEBUG_9(("soa_get_capability_sdp(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
@@ -609,6 +648,9 @@ int soa_set_capability_sdp(soa_session_t *ss,
 			   sdp_session_t const *sdp,
 			   char const *str, int len)
 {
+  SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %d) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, len));
+
   return soa_set_sdp(ss, soa_capability_sdp_kind, sdp, str, len);
 }
 
@@ -667,6 +709,9 @@ int soa_get_user_sdp(soa_session_t const *ss,
 {
   char const *sdp_str;
 
+  SU_DEBUG_9(("soa_get_user_sdp(%s::%p, ...) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
 
@@ -701,6 +746,8 @@ int soa_set_user_sdp(soa_session_t *ss,
 		     sdp_session_t const *sdp,
 		     char const *str, int len)
 {
+  SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %d) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, len));
   return soa_set_sdp(ss, soa_user_sdp_kind, sdp, str, len);
 }
 
@@ -723,6 +770,9 @@ int soa_get_remote_sdp(soa_session_t const *ss,
 		       int *return_len)
 {
   char const *sdp;
+
+  SU_DEBUG_9(("soa_get_remote_sdp(%s::%p, ...) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
@@ -754,6 +804,8 @@ int soa_set_remote_sdp(soa_session_t *ss,
 		       sdp_session_t const *sdp,
 		       char const *str, int len)
 {
+  SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %d) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, len));
   return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);
 }
 
@@ -777,6 +829,9 @@ int soa_base_set_remote_sdp(soa_session_t *ss,
 
 int soa_clear_remote_sdp(soa_session_t *ss)
 {
+  SU_DEBUG_9(("soa_clear_remote_sdp(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (!ss)
     return (void)(errno = EFAULT), -1;
 
@@ -790,6 +845,9 @@ int soa_get_local_sdp(soa_session_t const *ss,
 		      int *return_len)
 {
   char const *sdp;
+
+  SU_DEBUG_9(("soa_get_local_sdp(%s::%p, ...) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
@@ -811,6 +869,9 @@ int soa_init_offer_answer(soa_session_t *ss)
 {
   int complete;
 
+  SU_DEBUG_9(("soa_init_offer_answer(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (!ss)
     return 0;
 
@@ -829,6 +890,9 @@ int soa_init_offer_answer(soa_session_t *ss)
 
 char **soa_media_features(soa_session_t *ss, int live, su_home_t *home)
 {
+  SU_DEBUG_9(("soa_media_features(%s::%p, %u, %p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, live, home));
+
   if (ss)
     return ss->ss_actions->soa_media_features(ss, live, home);
   else
@@ -842,6 +906,9 @@ char **soa_base_media_features(soa_session_t *ss, int live, su_home_t *home)
 
 char const * const * soa_sip_require(soa_session_t const *ss)
 {
+  SU_DEBUG_9(("soa_sip_require(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (ss)
     return ss->ss_actions->soa_sip_require(ss);
   else
@@ -856,6 +923,9 @@ char const * const * soa_base_sip_require(soa_session_t const *ss)
 
 char const * const * soa_sip_supported(soa_session_t const *ss)
 {
+  SU_DEBUG_9(("soa_sip_supported(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   if (ss)
     return ss->ss_actions->soa_sip_supported(ss);
   else
@@ -869,18 +939,21 @@ char const * const * soa_base_sip_supported(soa_session_t const *ss)
 }
 
 int soa_remote_sip_features(soa_session_t *ss,
-			    char const * const * support,
-			    char const * const * required)
+			    char const * const * supported,
+			    char const * const * require)
 {
+  SU_DEBUG_9(("soa_remote_sip_features(%s::%p, %p, %p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, supported, require));
+
   if (ss)
-    return ss->ss_actions->soa_remote_sip_features(ss, support, required);
+    return ss->ss_actions->soa_remote_sip_features(ss, supported, require);
   else
     return (void)(errno = EFAULT), -1;
 }
 
 int soa_base_remote_sip_features(soa_session_t *ss,
-				    char const * const * support,
-				    char const * const * required)
+				    char const * const * supported,
+				    char const * const * require)
 {
   return 0;
 }
@@ -903,6 +976,9 @@ int soa_generate_offer(soa_session_t *ss,
 		       int always,
 		       soa_callback_f *completed)
 {
+  SU_DEBUG_9(("soa_generate_offer(%s::%p, %u, %p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, always, completed));
+
   /** @ERROR EFAULT Bad address. */
   if (ss == NULL)
     return (errno = EFAULT), -1;
@@ -955,6 +1031,9 @@ int soa_base_generate_offer(soa_session_t *ss,
 int soa_generate_answer(soa_session_t *ss,
 			soa_callback_f *completed)
 {
+  SU_DEBUG_9(("soa_generate_answer(%s::%p, %p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, completed));
+
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
     return (errno = EFAULT), -1;
@@ -1008,6 +1087,9 @@ int soa_base_generate_answer(soa_session_t *ss,
 int soa_process_answer(soa_session_t *ss,
 		       soa_callback_f *completed)
 {
+  SU_DEBUG_9(("soa_process_answer(%s::%p, %p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, completed));
+
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
     return (errno = EFAULT), -1;
@@ -1064,6 +1146,9 @@ int soa_base_process_answer(soa_session_t *ss,
 int soa_process_reject(soa_session_t *ss,
 		       soa_callback_f *completed)
 {
+  SU_DEBUG_9(("soa_process_reject(%s::%p, %p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, completed));
+
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
     return (errno = EFAULT), -1;
@@ -1103,6 +1188,9 @@ int soa_base_process_reject(soa_session_t *ss,
 /** Activate session */
 int soa_activate(soa_session_t *ss, char const *option)
 {
+  SU_DEBUG_9(("soa_activate(%s::%p, %s%s%s) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, NICE(option)));
+
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
     return -1;
@@ -1122,6 +1210,9 @@ int soa_base_activate(soa_session_t *ss, char const *option)
 /** Deactivate session */
 int soa_deactivate(soa_session_t *ss, char const *option)
 {
+  SU_DEBUG_9(("soa_deactivate(%s::%p, %s%s%s) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, NICE(option)));
+
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
     return -1;
@@ -1141,6 +1232,9 @@ int soa_base_deactivate(soa_session_t *ss, char const *option)
 /** Terminate session */
 void soa_terminate(soa_session_t *ss, char const *option)
 {
+  SU_DEBUG_9(("soa_terminate(%s::%p) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss));
+
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
     return;
