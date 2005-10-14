@@ -503,20 +503,20 @@ int test_init(agent_t *ag, char const *resolv_conf)
   if (getenv("sink")) {
     su.su_port = htons(atoi(getenv("sink")));
   }
-  TEST_1(bind(s, &su.su_sa, sulen) == 0);
+  TEST_1(bind(s, &su.su_sa, sulen) < 0 ? (perror("bind"), 0) : 1);
   TEST_1(getsockname(s, &su.su_sa, &sulen) == 0);
 
   ag->ag_sink_port = su_sprintf(ag->ag_home, "%u", ntohs(su.su_sin.sin_port));
   ag->ag_sink_socket = s;
 
   /* Down server */
-  s = socket(AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
+  s = socket(af, SOCK_STREAM, 0); TEST_1(s != -1);
   memset(&su, 0, sulen = sulen0);
   su.su_family = af;
   if (getenv("down")) {
     su.su_port = htons(atoi(getenv("down")));
   }
-  TEST_1(bind(s, &su.su_sa, sulen) == 0);
+  TEST_1(bind(s, &su.su_sa, sulen) < 0 ? (perror("bind"), 0) : 1);
   ag->ag_down_socket = s;
   
   /* Create agent */
