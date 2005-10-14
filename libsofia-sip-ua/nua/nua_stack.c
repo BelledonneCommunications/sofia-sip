@@ -1678,7 +1678,7 @@ msg_t *crequest_message(nua_t *nua, nua_handle_t *nh,
 	copy = 0;
       }
       else
-	nta_msg_discard(nua->nua_nta, cr->cr_msg), cr->cr_msg = NULL;
+	msg_destroy(cr->cr_msg), cr->cr_msg = NULL;
     }
     msg = nta_msg_create(nua->nua_nta, 0);
     tl_gets(nh->nh_tags, NUTAG_URL_REF(url), TAG_END());
@@ -1721,7 +1721,7 @@ msg_t *crequest_message(nua_t *nua, nua_handle_t *nh,
 
       if (sip_add_tl(msg, sip, ta_tags(ta)) < 0 ||
 	  nta_msg_request_complete(msg, ds->ds_leg, method, name, url) < 0)
-	nta_msg_discard(nua->nua_nta, msg), msg = NULL;
+	msg_destroy(msg), msg = NULL;
     }
     else {
       // tl_gets(ta_args(ta), TAG_END());
@@ -1736,7 +1736,7 @@ msg_t *crequest_message(nua_t *nua, nua_handle_t *nh,
 				      method, name, url) < 0 
 	  || (sip->sip_from == NULL &&
 	      sip_add_dup(msg, sip, (sip_header_t *)nua->nua_from) < 0))
-	nta_msg_discard(nua->nua_nta, msg), msg = NULL;
+	msg_destroy(msg), msg = NULL;
 
       if (use_leg && msg) {
 	sip_route_t *route = sip->sip_route;
