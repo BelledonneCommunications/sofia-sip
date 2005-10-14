@@ -806,6 +806,7 @@ void dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
   du->du_refresh = target;
 }
 
+
 /* ====================================================================== */
 
 /** Shut down stack. */
@@ -867,6 +868,7 @@ void ua_shutdown(nua_t *nua)
 /* ----------------------------------------------------------------------
  * Parameters
  */
+
 int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
 		  tagi_t const *tags)
 {
@@ -1806,7 +1808,8 @@ msg_t *crequest_message(nua_t *nua, nua_handle_t *nh,
 	    auc_authorize(&nh->nh_auth, msg, sip) < 0)
 	  msg_destroy(msg), msg = NULL;
       }
-    } else /* ACK */ {
+    }
+    else /* ACK */ {
       while (sip->sip_allow)
 	sip_header_remove(msg, sip, (sip_header_t*)sip->sip_allow);
       while (sip->sip_priority)
@@ -3465,6 +3468,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   assert(cr->cr_orq == NULL);
 
   if (du && sip && offer_sent >= 0) {
+
     if (use_session_timer(nua, nh, msg, sip)) {
       unsigned invite_timeout = NH_PGET(nh, invite_timeout);
       if (invite_timeout == 0) invite_timeout = SIP_TIME_MAX;
@@ -3677,8 +3681,9 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
   if (!received[0])
     received = NULL;
 
-  if (tags)
+  if (tags) {
     ua_set_params(nua, nh, nua_r_ack, tags);
+  }
 
   msg = crequest_message(nua, nh, cr, 0, 
 			 SIP_METHOD_ACK, 
@@ -6181,9 +6186,11 @@ ua_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
     restart(nh, NULL);	/* Restart operation */
 
-  } else if (status < 0) {
+  }
+  else if (status < 0) {
     ua_event(nua, nh, NULL, e, 500, "Cannot add credentials", TAG_END());
-  } else {
+  }
+  else {
     ua_event(nua, nh, NULL, e, 404, "No matching challenge", TAG_END());
   }
 }
