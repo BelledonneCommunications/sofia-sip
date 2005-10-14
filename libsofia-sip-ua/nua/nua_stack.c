@@ -930,10 +930,10 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   if (nh == dnh) 
     if (nta_agent_set_params(nua->nua_nta, TAG_NEXT(tags)) < 0)
-      return UA_EVENT2(e, 400, "Error setting NTA parameters");
+      return UA_EVENT2(e, 400, "Error setting NTA parameters"), -1;
 
   if (nh->nh_soa && soa_set_params(nh->nh_soa, TAG_NEXT(tags)) < 0)
-    return UA_EVENT2(e, 400, "Error setting SOA parameters");
+    return UA_EVENT2(e, 400, "Error setting SOA parameters"), -1;
 
   n =  tl_gets(tags,
 	       NUTAG_RETRY_COUNT_REF(retry_count),
@@ -989,10 +989,9 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 #endif
 	       TAG_NULL());
   if (n < 0)
-    return UA_EVENT2(e, 400, "Error obtaining NUA parameters");
+    return UA_EVENT2(e, 400, "Error obtaining NUA parameters"), -1;
   
-  memcpy(nhp, ohp, sizeof(*nhp));
-  NHP_UNSET_ALL(nhp);
+  *nhp = *ohp; NHP_UNSET_ALL(nhp);
 
 #if 0
   reinit_contact = 
@@ -1135,7 +1134,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   su_home_deinit(tmphome);
 
   if (n < 0)
-    return UA_EVENT2(e, 500, "Error storing parameters");
+    return UA_EVENT2(e, 500, "Error storing parameters"), -1;
 
   if (nh != dnh)
     return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
@@ -1454,14 +1453,19 @@ void crequest_deinit(struct nua_client_request *cr, nta_outgoing_t *orq)
 
 /* ======================================================================== */
 
-/** Initialize handle Allow and authentication info */
+/** Initialize handle Allow and authentication info.
+ *
+ * @retval -1 upon an error
+ * @retval 0 when successful
+ */
 static
-void nh_init(nua_t *nua, nua_handle_t *nh, 
-	     enum nh_kind kind,
-	     char const *default_allow,
-	     tag_type_t tag, tag_value_t value, ...)
+int nh_init(nua_t *nua, nua_handle_t *nh, 
+	    enum nh_kind kind,
+	    char const *default_allow,
+	    tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
+  int retval = 0;
 
   if (kind && !nh_is_special(nh) && !nh->nh_has_invite) {
     switch (kind) {
@@ -1480,22 +1484,25 @@ void nh_init(nua_t *nua, nua_handle_t *nh,
 
   ta_start(ta, tag, value);
 
-  ua_set_params(nua, nh, nua_i_error, ta_args(ta));
+  if (ua_set_params(nua, nh, nua_i_error, ta_args(ta)) < 0)
+    retval = -1;
 
-  if (!nh->nh_soa && nua->nua_dhandle->nh_soa) {
+  if (!retval && !nh->nh_soa && nua->nua_dhandle->nh_soa) {
     nh->nh_soa = soa_clone(nua->nua_dhandle->nh_soa, nua->nua_root, nh);
 
     if (nh->nh_soa && nh->nh_tags)
-      soa_set_params(nh->nh_soa, TAG_NEXT(nh->nh_tags));
+      if (soa_set_params(nh->nh_soa, TAG_NEXT(nh->nh_tags)))
+	retval = -1;
   }
   
-  if (nh->nh_soa)
-    soa_set_params(nh->nh_soa, ta_tags(ta));
+  if (!retval && nh->nh_soa)
+    if (soa_set_params(nh->nh_soa, ta_tags(ta)) < 0)
+      retval = -1;
 
   ta_end(ta);
 
-  if (nh->nh_init) /* Already initialized? */
-    return;
+  if (retval || nh->nh_init) /* Already initialized? */
+    return retval;
 
 #if HAVE_UICC_H
   if (nh->nh_has_register && nua->nua_uicc)
@@ -1510,6 +1517,8 @@ void nh_init(nua_t *nua, nua_handle_t *nh,
   nh->nh_ss->ss_refresher = NH_PGET(nh, refresher);
 
   nh->nh_init = 1;
+
+  return 0;
 }
 
 /** Create a handle for processing incoming request */
