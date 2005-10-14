@@ -104,8 +104,8 @@ int soa_get_local_sdp(soa_session_t const *ss,
 		      char const **return_sdp,
 		      int *return_len);
 
-char const * const * soa_sip_required(soa_session_t const *ss);
-char const * const * soa_sip_support(soa_session_t const *ss);
+char const * const * soa_sip_require(soa_session_t const *ss);
+char const * const * soa_sip_supported(soa_session_t const *ss);
 
 int soa_remote_sip_features(soa_session_t *ss,
 			    char const * const * support,

@@ -56,8 +56,8 @@ struct soa_session_actions
   tagi_t *(*soa_get_paramlist)(soa_session_t const *ss, 
 			       tag_type_t, tag_value_t, ...);
   char **(*soa_media_features)(soa_session_t *, int live, su_home_t *);
-  char const * const *(*soa_sip_required)(soa_session_t const *ss);
-  char const * const *(*soa_sip_support)(soa_session_t const *ss);
+  char const * const *(*soa_sip_require)(soa_session_t const *ss);
+  char const * const *(*soa_sip_supported)(soa_session_t const *ss);
   int (*soa_remote_sip_features)(soa_session_t *ss,
 				 char const * const * support,
 				 char const * const * required);
@@ -86,8 +86,8 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags);
 tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
 			       tag_type_t, tag_value_t, ...);
 char **soa_base_media_features(soa_session_t *, int live, su_home_t *);
-char const * const * soa_base_sip_required(soa_session_t const *ss);
-char const * const * soa_base_sip_support(soa_session_t const *ss);
+char const * const * soa_base_sip_require(soa_session_t const *ss);
+char const * const * soa_base_sip_supported(soa_session_t const *ss);
 
 int soa_base_remote_sip_features(soa_session_t *ss,
 				    char const * const * support,

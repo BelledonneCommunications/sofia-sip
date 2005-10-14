@@ -113,8 +113,8 @@ int test_api_errors(struct context *ctx)
 
   TEST_1(!soa_media_features(NULL, 0, NULL));
 
-  TEST_1(!soa_sip_required(NULL));
-  TEST_1(!soa_sip_support(NULL));
+  TEST_1(!soa_sip_require(NULL));
+  TEST_1(!soa_sip_supported(NULL));
 
   TEST_1(-1 == soa_remote_sip_features(NULL, &null, &null));
 

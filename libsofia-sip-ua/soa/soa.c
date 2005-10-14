@@ -840,29 +840,29 @@ char **soa_base_media_features(soa_session_t *ss, int live, su_home_t *home)
   return su_zalloc(home, 8 * sizeof (char **));
 }
 
-char const * const * soa_sip_required(soa_session_t const *ss)
+char const * const * soa_sip_require(soa_session_t const *ss)
 {
   if (ss)
-    return ss->ss_actions->soa_sip_required(ss);
+    return ss->ss_actions->soa_sip_require(ss);
   else
     return (void)(errno = EFAULT), NULL;
 }
 
-char const * const * soa_base_sip_required(soa_session_t const *ss)
+char const * const * soa_base_sip_require(soa_session_t const *ss)
 {
   static char const *null = NULL;
   return &null;
 }
 
-char const * const * soa_sip_support(soa_session_t const *ss)
+char const * const * soa_sip_supported(soa_session_t const *ss)
 {
   if (ss)
-    return ss->ss_actions->soa_sip_support(ss);
+    return ss->ss_actions->soa_sip_supported(ss);
   else
     return (void)(errno = EFAULT), NULL;
 }
 
-char const * const * soa_base_sip_support(soa_session_t const *ss)
+char const * const * soa_base_sip_supported(soa_session_t const *ss)
 {
   static char const *null = NULL;
   return &null;
