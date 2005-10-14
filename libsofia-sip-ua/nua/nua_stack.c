@@ -1954,7 +1954,7 @@ int session_include_description(nua_handle_t *nh,
   if (!nh->nh_soa)
     return 0;
 
-  if (soa_get_local_sdp(nh->nh_soa, &sdp, &len) < 0)
+  if (soa_get_local_sdp(nh->nh_soa, 0, &sdp, &len) < 0)
     return -1;
     
   pl = sip_payload_create(home, sdp, len);
@@ -1983,7 +1983,7 @@ int session_make_description(nua_handle_t *nh,
   if (!nh->nh_soa)
     return 0;
 
-  if (soa_get_local_sdp(nh->nh_soa, &sdp, &len) < 0)
+  if (soa_get_local_sdp(nh->nh_soa, 0, &sdp, &len) < 0)
     return -1;
     
   *return_pl = sip_payload_create(home, sdp, len);
