@@ -2860,7 +2860,7 @@ static void signal_call_state_change(nua_handle_t *nh,
   sdp_session_t const *local_sdp = NULL;
   char const *local_sdp_str = NULL;
 
-  int offer_recv, answer_recv, offer_sent, answer_sent;
+  int offer_recv = 0, answer_recv = 0, offer_sent = 0, answer_sent = 0;
 
   if (ss->ss_state != nua_callstate_ready || next_state > nua_callstate_ready)
     SU_DEBUG_5(("nua(%p): call state changed: %s -> %s%s%s%s%s\n", 
@@ -2876,23 +2876,17 @@ static void signal_call_state_change(nua_handle_t *nh,
 		oa_sent && oa_recv ? ", sent " :
 		oa_sent ? " sent " : "", oa_sent ? oa_sent : ""));
 
-  if (oa_recv || oa_sent) 
-    soa_get_params(nh->nh_soa,
-		   SOATAG_REMOTE_SDP_REF(remote_sdp),
-		   SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
-		   SOATAG_LOCAL_SDP_REF(local_sdp),
-		   SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
-		   TAG_END());
+  if (oa_recv) {
+    soa_get_remote_sdp(nh->nh_soa, &remote_sdp, &remote_sdp_str, 0);
+    offer_recv = strcasecmp(oa_recv, "offer") == 0;
+    answer_recv = strcasecmp(oa_recv, "answer") == 0;
+  }
 
-  offer_recv = oa_recv && strcasecmp(oa_recv, "offer") == 0;
-  answer_recv = oa_recv && strcasecmp(oa_recv, "answer") == 0;
-  offer_sent = oa_sent && strcasecmp(oa_sent, "offer") == 0;
-  answer_sent = oa_sent && strcasecmp(oa_sent, "answer") == 0;
-
-  /* XXX: 
-   * - add delivery of complete session and transaction state 
-   * - build tag list once and reuse it for all ua_event()s 
-   **/
+  if (oa_sent) {
+    soa_get_local_sdp(nh->nh_soa, &local_sdp, &local_sdp_str, 0);
+    offer_sent = strcasecmp(oa_sent, "offer") == 0;
+    answer_sent = strcasecmp(oa_sent, "answer") == 0;
+  }
 
   (void)sr;
 
