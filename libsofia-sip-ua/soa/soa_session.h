@@ -48,6 +48,7 @@ struct soa_session_actions
 {
   int sizeof_soa_session_actions;
   int sizeof_soa_session;
+  char const *soa_name;
   int (*soa_init)(char const *name, soa_session_t *ss, soa_session_t *parent);
   void (*soa_deinit)(soa_session_t *ss);
   int (*soa_set_params)(soa_session_t *ss, tagi_t const *tags);

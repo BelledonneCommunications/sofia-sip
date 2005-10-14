@@ -82,6 +82,7 @@ static int soa_set_sdp(soa_session_t *ss,
 #define SOA_VALID_ACTIONS(a)					\
   ((a)->sizeof_soa_session_actions >= sizeof (*actions) &&	\
    (a)->sizeof_soa_session >= sizeof(soa_session_t) &&		\
+   (a)->soa_name != NULL &&					\
    (a)->soa_init != NULL &&					\
    (a)->soa_set_params != NULL &&				\
    (a)->soa_get_params != NULL &&				\

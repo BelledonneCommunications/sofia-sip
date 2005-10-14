@@ -108,6 +108,7 @@ struct soa_session_actions const soa_default_actions =
   {
     (sizeof soa_default_actions),
     sizeof (struct soa_static_session),
+    "static",
     soa_static_init,
     soa_static_deinit,
     soa_static_set_params,
