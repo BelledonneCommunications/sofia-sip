@@ -1554,26 +1554,25 @@ nua_handle_t *nh_create_from_incoming(nua_t *nua,
 		 SIPTAG_FROM(from), /* Remote address */
 		 TAG_END());
 
-  if (nh) {
-    nh_init(nh->nh_nua, nh, kind, default_allow, TAG_END());
+  if (nh && nh_init(nh->nh_nua, nh, kind, default_allow, TAG_END()) < 0)
+    nh_destroy(nua, nh), nh = NULL;
 
-    if (create_dialog) {
-      struct nua_dialog_state *ds = nh->nh_ds;
+  if (nh && create_dialog) {
+    struct nua_dialog_state *ds = nh->nh_ds;
 
-      dialog_get_peer_info(nh, sip);
+    dialog_get_peer_info(nh, sip);
 
-      ds->ds_leg = nta_leg_tcreate(nua->nua_nta, process_request, nh,
-				   SIPTAG_CALL_ID(sip->sip_call_id),
-				   SIPTAG_FROM(sip->sip_to),
-				   SIPTAG_TO(sip->sip_from),
-				   NTATAG_REMOTE_CSEQ(sip->sip_cseq->cs_seq),
-				   TAG_END());
+    ds->ds_leg = nta_leg_tcreate(nua->nua_nta, process_request, nh,
+				 SIPTAG_CALL_ID(sip->sip_call_id),
+				 SIPTAG_FROM(sip->sip_to),
+				 SIPTAG_TO(sip->sip_from),
+				 NTATAG_REMOTE_CSEQ(sip->sip_cseq->cs_seq),
+				 TAG_END());
 
-      nta_leg_tag(ds->ds_leg, nta_incoming_tag_3261(irq, NULL));
+    nta_leg_tag(ds->ds_leg, nta_incoming_tag_3261(irq, NULL));
 
-      if (!ds->ds_leg)
-	nh_destroy(nua, nh), nh = NULL;
-    }
+    if (!ds->ds_leg)
+      nh_destroy(nua, nh), nh = NULL;
   }
 
   if (nh)
