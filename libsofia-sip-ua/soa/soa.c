@@ -632,25 +632,31 @@ char const *soa_error_as_sip_reason(soa_session_t *ss)
  * @retval -1 upon an error
  */
 int soa_get_capability_sdp(soa_session_t const *ss,
-			   char const **return_sdp,
+			   sdp_session_t const **return_sdp,
+			   char const **return_sdp_str,
 			   int *return_len)
 {
-  char const *sdp;
+  sdp_session_t const *sdp;
+  char const *sdp_str;
 
-  SU_DEBUG_9(("soa_get_capability_sdp(%s::%p) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss));
+  SU_DEBUG_9(("soa_get_capability_sdp(%s::%p, [%p], [%p], [%p]) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss,
+	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
 
-  sdp = ss->ss_caps->ssd_str;
+  sdp = ss->ss_caps->ssd_sdp;
+  sdp_str = ss->ss_caps->ssd_str;
 
   if (sdp == NULL)
     return 0;
   if (return_sdp)
     *return_sdp = sdp;
+  if (return_sdp_str)
+    *return_sdp_str = sdp_str;
   if (return_len)
-    *return_len = strlen(sdp);
+    *return_len = strlen(sdp_str);
 
   return 1;
 }
@@ -660,8 +666,9 @@ int soa_set_capability_sdp(soa_session_t *ss,
 			   sdp_session_t const *sdp,
 			   char const *str, int len)
 {
-  SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %d) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss, sdp, len));
+  SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %p, %d) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
+	      str && len == -1 ? strlen(str) : len));
 
   return soa_set_sdp(ss, soa_capability_sdp_kind, sdp, str, len);
 }
@@ -716,27 +723,29 @@ soa_base_set_capability_sdp(soa_session_t *ss,
  * @retval -1 upon an error
  */
 int soa_get_user_sdp(soa_session_t const *ss,
-		      char const **return_sdp,
-		      int *return_len)
+		     sdp_session_t const **return_sdp,
+		     char const **return_sdp_str,
+		     int *return_len)
 {
+  sdp_session_t const *sdp;
   char const *sdp_str;
 
-  SU_DEBUG_9(("soa_get_user_sdp(%s::%p, ...) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss));
+  SU_DEBUG_9(("soa_get_user_sdp(%s::%p, [%p], [%p], [%p]) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss,
+	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
 
-  /* return modified user SDP if available */
-  if (ss->ss_local->ssd_str)
-    sdp_str = ss->ss_local->ssd_str;
-  else
-    sdp_str = ss->ss_user->ssd_str;
+  sdp = ss->ss_user->ssd_sdp;
+  sdp_str = ss->ss_user->ssd_str;
 
-  if (sdp_str == NULL)
+  if (sdp == NULL)
     return 0;
   if (return_sdp)
-    *return_sdp = sdp_str;
+    *return_sdp = sdp;
+  if (return_sdp_str)
+    *return_sdp_str = sdp_str;
   if (return_len)
     *return_len = strlen(sdp_str);
 
@@ -758,8 +767,9 @@ int soa_set_user_sdp(soa_session_t *ss,
 		     sdp_session_t const *sdp,
 		     char const *str, int len)
 {
-  SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %d) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss, sdp, len));
+  SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %p, %d) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
+	      str && len == -1 ? strlen(str) : len));
   return soa_set_sdp(ss, soa_user_sdp_kind, sdp, str, len);
 }
 
@@ -778,25 +788,31 @@ int soa_base_set_user_sdp(soa_session_t *ss,
  * @retval -1 upon an error
  */
 int soa_get_remote_sdp(soa_session_t const *ss,
-		       char const **return_sdp,
+		       sdp_session_t const **return_sdp,
+		       char const **return_sdp_str,
 		       int *return_len)
 {
-  char const *sdp;
+  sdp_session_t const *sdp;
+  char const *sdp_str;
 
-  SU_DEBUG_9(("soa_get_remote_sdp(%s::%p, ...) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss));
+  SU_DEBUG_9(("soa_get_remote_sdp(%s::%p, [%p], [%p], [%p]) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss,
+	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
 
-  sdp = ss->ss_remote->ssd_str;
+  sdp = ss->ss_remote->ssd_sdp;
+  sdp_str = ss->ss_remote->ssd_str;
 
   if (sdp == NULL)
     return 0;
   if (return_sdp)
     *return_sdp = sdp;
+  if (return_sdp_str)
+    *return_sdp_str = sdp_str;
   if (return_len)
-    *return_len = strlen(sdp);
+    *return_len = strlen(sdp_str);
 
   return 1;
 }
@@ -816,8 +832,9 @@ int soa_set_remote_sdp(soa_session_t *ss,
 		       sdp_session_t const *sdp,
 		       char const *str, int len)
 {
-  SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %d) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss, sdp, len));
+  SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %p, %d) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
+	      str && len == -1 ? strlen(str) : len));
   return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);
 }
 
@@ -853,25 +870,31 @@ int soa_clear_remote_sdp(soa_session_t *ss)
 }
 
 int soa_get_local_sdp(soa_session_t const *ss,
-		      char const **return_sdp,
+		      sdp_session_t const **return_sdp,
+		      char const **return_sdp_str,
 		      int *return_len)
 {
-  char const *sdp;
+  sdp_session_t const *sdp;
+  char const *sdp_str;
 
-  SU_DEBUG_9(("soa_get_local_sdp(%s::%p, ...) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss));
+  SU_DEBUG_9(("soa_get_local_sdp(%s::%p, [%p], [%p], [%p]) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss,
+	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
     return (void)(errno = EFAULT), -1;
 
-  sdp = ss->ss_local->ssd_str;
+  sdp = ss->ss_local->ssd_sdp;
+  sdp_str = ss->ss_local->ssd_str;
 
   if (sdp == NULL)
     return 0;
   if (return_sdp)
     *return_sdp = sdp;
+  if (return_sdp_str)
+    *return_sdp_str = sdp_str;
   if (return_len)
-    *return_len = strlen(sdp);
+    *return_len = strlen(sdp_str);
 
   return 1;
 }

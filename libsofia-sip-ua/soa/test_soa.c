@@ -121,9 +121,10 @@ int test_api_errors(struct context *ctx)
   TEST_1(soa_set_remote_sdp(NULL, NULL, NULL, -1) < 0);
   TEST_1(soa_set_user_sdp(NULL, NULL, NULL, -1) < 0);
 
-  TEST_1(soa_get_capability_sdp(NULL, NULL, NULL) < 0);
-  TEST_1(soa_get_local_sdp(NULL, NULL, NULL) < 0);
-  TEST_1(soa_get_remote_sdp(NULL, NULL, NULL) < 0);
+  TEST_1(soa_get_capability_sdp(NULL, NULL, NULL, NULL) < 0);
+  TEST_1(soa_get_remote_sdp(NULL, NULL, NULL, NULL) < 0);
+  TEST_1(soa_get_user_sdp(NULL, NULL, NULL, NULL) < 0);
+  TEST_1(soa_get_local_sdp(NULL, NULL, NULL, NULL) < 0);
 
   TEST_1(-1 == soa_generate_offer(NULL, 0, test_api_completed)); 
 
@@ -266,29 +267,29 @@ int test_static_offer_answer(struct context *ctx)
        1);
   TEST(soa_set_capability_sdp(ctx->synch.a, 0, a_caps, strlen(a_caps)), 
        1);
-  TEST(soa_get_capability_sdp(ctx->synch.a, &caps, &capslen), 1);
+  TEST(soa_get_capability_sdp(ctx->synch.a, NULL, &caps, &capslen), 1);
 
   TEST_1(caps != NULL && caps != NONE);
   TEST_1(capslen > 0);
 
   TEST(soa_set_user_sdp(ctx->synch.b, 0, b_caps, strlen(b_caps)), 1);
-  TEST(soa_get_capability_sdp(ctx->synch.a, &caps, &capslen), 1);
+  TEST(soa_get_capability_sdp(ctx->synch.a, NULL, &caps, &capslen), 1);
 
   TEST_1(a = soa_clone(ctx->synch.a, ctx->root, ctx));
   TEST_1(b = soa_clone(ctx->synch.b, ctx->root, ctx));
 
-  n = soa_get_local_sdp(a, &offer, &offerlen); TEST(n, 0);
+  n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 0);
 
   n = soa_set_user_sdp(a, 0, "m=audio 5004 RTP/AVP 0 8", -1); TEST(n, 1);
 
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
 
-  n = soa_get_local_sdp(a, &offer, &offerlen); TEST(n, 1);
+  n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 1);
   TEST_1(offer != NULL && offer != NONE);
 
   n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
 
-  n = soa_get_local_sdp(b, &answer, &answerlen); TEST(n, 0);
+  n = soa_get_local_sdp(b, NULL, &answer, &answerlen); TEST(n, 0);
 
   n = soa_set_params(b,
 		     SOATAG_LOCAL_SDP_STR("m=audio 5004 RTP/AVP 8"),
@@ -299,7 +300,7 @@ int test_static_offer_answer(struct context *ctx)
   TEST_1(soa_is_complete(b));
   TEST(soa_activate(b, NULL), 0);
 
-  n = soa_get_local_sdp(b, &answer, &answerlen); TEST(n, 1);
+  n = soa_get_local_sdp(b, NULL, &answer, &answerlen); TEST(n, 1);
   TEST_1(answer != NULL && answer != NONE);
 
   n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
@@ -323,14 +324,14 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_set_params(a, SOATAG_HOLD("*"), TAG_END()), 1);
 
   TEST(soa_generate_offer(a, 1, test_completed), 0);
-  TEST(soa_get_local_sdp(a, &offer, &offerlen), 1);
+  TEST(soa_get_local_sdp(a, NULL, &offer, &offerlen), 1);
   TEST_1(offer != NULL && offer != NONE);
   TEST_1(strstr(offer, "a=sendonly"));
   TEST(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
   TEST(soa_generate_answer(b, test_completed), 0);
   TEST_1(soa_is_complete(b));
   TEST(soa_activate(b, NULL), 0);
-  TEST(soa_get_local_sdp(b, &answer, &answerlen), 1);
+  TEST(soa_get_local_sdp(b, NULL, &answer, &answerlen), 1);
   TEST_1(answer != NULL && answer != NONE);
   TEST_1(strstr(answer, "a=recvonly"));
   TEST(soa_set_remote_sdp(a, 0, answer, -1), 1);
@@ -349,7 +350,7 @@ int test_static_offer_answer(struct context *ctx)
 		      TAG_END()), 2);
 
   TEST(soa_generate_offer(a, 1, test_completed), 0);
-  TEST(soa_get_local_sdp(a, &offer, &offerlen), 1);
+  TEST(soa_get_local_sdp(a, NULL, &offer, &offerlen), 1);
   TEST_1(offer != NULL && offer != NONE);
   TEST_1(!strstr(offer, "a=sendonly"));
   TEST_1(strstr(offer, "m=video"));
@@ -357,7 +358,7 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_generate_answer(b, test_completed), 0);
   TEST_1(soa_is_complete(b));
   TEST(soa_activate(b, NULL), 0);
-  TEST(soa_get_local_sdp(b, &answer, &answerlen), 1);
+  TEST(soa_get_local_sdp(b, NULL, &answer, &answerlen), 1);
   TEST_1(answer != NULL && answer != NONE);
   TEST_1(!strstr(answer, "a=recvonly"));
   TEST_1(strstr(answer, "m=video"));
@@ -395,7 +396,7 @@ int test_static_offer_answer(struct context *ctx)
 		      TAG_END()), 1);
 
   TEST(soa_generate_offer(b, 1, test_completed), 0);
-  TEST(soa_get_local_sdp(b, &offer, &offerlen), 1);
+  TEST(soa_get_local_sdp(b, NULL, &offer, &offerlen), 1);
   TEST_1(offer != NULL && offer != NONE);
   TEST_1(!strstr(offer, "b=sendonly"));
   TEST_1(strstr(offer, "m=video"));
@@ -403,7 +404,7 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_generate_answer(a, test_completed), 0);
   TEST_1(soa_is_complete(a));
   TEST(soa_activate(a, NULL), 0);
-  TEST(soa_get_local_sdp(a, &answer, &answerlen), 1);
+  TEST(soa_get_local_sdp(a, NULL, &answer, &answerlen), 1);
   TEST_1(answer != NULL && answer != NONE);
   TEST_1(!strstr(answer, "b=recvonly"));
   TEST_1(strstr(answer, "m=video"));
@@ -469,7 +470,7 @@ int test_asynch_offer_answer(struct context *ctx)
   su_root_run(ctx->root); TEST(ctx->completed, ctx->asynch.a); 
   ctx->completed = NULL;
 
-  n = soa_get_local_sdp(ctx->asynch.a, &offer, &offerlen); TEST(n, 1);
+  n = soa_get_local_sdp(ctx->asynch.a, 0, &offer, &offerlen); TEST(n, 1);
 
   n = soa_set_remote_sdp(ctx->asynch.b, 0, offer, offerlen); TEST(n, 1);
 
@@ -481,7 +482,7 @@ int test_asynch_offer_answer(struct context *ctx)
   TEST_1(soa_is_complete(ctx->asynch.b));
   TEST(soa_activate(ctx->asynch.b, NULL), 0);
 
-  n = soa_get_local_sdp(ctx->asynch.b, &answer, &answerlen); TEST(n, 1);
+  n = soa_get_local_sdp(ctx->asynch.b, 0, &answer, &answerlen); TEST(n, 1);
 
   n = soa_set_remote_sdp(ctx->asynch.a, 0, answer, answerlen); TEST(n, 1);
 
