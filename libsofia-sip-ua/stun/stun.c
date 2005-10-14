@@ -37,6 +37,8 @@
 
 #include "config.h" 
 
+#include <assert.h>
+
 #include "stun.h"
 
 #include <su_alloc.h>
@@ -81,11 +83,14 @@ struct stun_socket_s
   int            ss_state;
 };
 
-/** Create a STUN engine */
+/** 
+ * Creates a STUN engine 
+ *
+ * @param stun server hostname or IPv4 address 
+ * @param msg_integrity true if msg integr. should be used
+ **/
 stun_engine_t *stun_engine_create(char const *server, 
-				  int msg_integrity
-/* stun_engine_t *stun_engine_create(struct sockaddr_in *server */
-				  /* other parameters?? */)
+				  int msg_integrity)
 {
   stun_engine_t *stun;
 
@@ -100,7 +105,7 @@ stun_engine_t *stun_engine_create(char const *server,
      */
     memset(&stun->stun_srvr4[0], 0, sizeof(stun->stun_srvr4[0]));
     if(server) {
-      stun_atoaddr(&stun->stun_srvr4[0].su_sin, server);
+      stun_atoaddr((struct sockaddr_in *)&(stun->stun_srvr4[0]), server);
       if(stun->stun_srvr4[0].su_sin.sin_port == 0) {
 	stun->stun_srvr4[0].su_sin.sin_port = htons(STUN_DEFAULT_PORT);
       }
@@ -221,6 +226,8 @@ int stun_bind(stun_socket_t *ss,
           break;
         }
       }
+
+
       if(!found) {
         SU_DEBUG_5(("stun: su_getlocalinfo: %s\n", su_gli_strerror(error)));
 	      return errno = EFAULT, -1;
@@ -230,6 +237,7 @@ int stun_bind(stun_socket_t *ss,
       SU_DEBUG_5(("stun: su_getlocalinfo: %s\n", su_gli_strerror(error)));
       return errno = EFAULT, -1;
     }
+    if (res) su_freelocalinfo(res);
   }
 
   /* run protocol here... */
@@ -556,8 +564,10 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
   if(stun_make_binding_req(ss, &bind_req, chg_ip, chg_port)<0) 
     return retval;
 
-  if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->password))<0)
+  if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->password))<0) {
+    stun_free_message(&bind_req);
     return retval;
+  }
 
   FD_ZERO(&rfds);
   FD_SET(sockfd, &rfds); /* Set sockfd for read monitoring */
@@ -578,6 +588,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
       z = recvfrom(sockfd, dgram, 512, 0,
 		   (struct sockaddr *)&recv_addr, &recv_addr_len);
       if(z<0) {
+	stun_free_message(&bind_req);
 	return retval;
       }
       bind_resp.enc_buf.data = (unsigned char *)malloc(z);
@@ -589,24 +600,30 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
     else {
       SU_DEBUG_3(("Time out no. %d, retransmitting.\n", ++num_retrx));
       if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->password))<0) {
+	stun_free_message(&bind_req);
 	return retval;
       }
     }
   }
 
   if(num_retrx == STUN_MAX_RETRX) {
+    stun_free_message(&bind_req);
     return errno = ETIMEDOUT, retval;
   }
 
   /* process response */
   if(stun_parse_message(&bind_resp) < 0) {
     SU_DEBUG_5(("Error parsing response.\n"));
+    stun_free_message(&bind_req);
+    stun_free_message(&bind_req);
     return retval;
   }
 
   switch(bind_resp.stun_hdr.msg_type) {
   case BINDING_RESPONSE:
     if(stun_validate_message_integrity(&bind_resp, &ss->ss_engine->password) <0) {
+      stun_free_message(&bind_req);
+      stun_free_message(&bind_resp);
       return retval;
     }
     memset(clnt_addr, 0, sizeof(*clnt_addr)); clnt_addr_len = sizeof(*clnt_addr);
@@ -635,6 +652,9 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
     break;
   }
   /* return result */
+
+  stun_free_message(&bind_resp);
+  stun_free_message(&bind_req);
 
   return retval;
 }
@@ -764,25 +784,43 @@ int stun_set_uname_pwd(stun_engine_t *se, const unsigned char *uname, int len_un
 /* convert character address format to sockaddr_in */
 int stun_atoaddr(struct sockaddr_in *addr, char const *in)
 {
-  char *p, tmp[64];
-  int port_len;
+  su_addrinfo_t *ai_res = NULL, *ai, hints[1] = {{ 0 }};
+  char const *host;
+  char *port, tmp[SU_ADDRSIZE];
+  int res;
 
-  addr->sin_family = AF_INET;
-  p = strstr(in, ":");
-  if(p==NULL) {
-    addr->sin_addr.s_addr = inet_addr(in);
-    addr->sin_port = 0;
+  hints->ai_family = AF_INET;
+
+  port = strstr(in, ":");
+  if (port == NULL) {
+    /* no port specified */
+    host = in;
   }
   else {
-    memcpy(tmp, in, p-in);
-    tmp[p-in] = '\0';
-    addr->sin_addr.s_addr = inet_addr(tmp);
-    port_len = strlen(in)-(p-in)-1;
-    memcpy(tmp, p+1, port_len);
-    tmp[port_len] = '\0';
-    addr->sin_port = htons(atoi(tmp));
+    assert(port - in < strlen(in) + 1);
+    memcpy(tmp, in, port - in);
+    tmp[port - in] = 0;
+    host = tmp;
+    ++port;
   }
-  return 0;
+    
+  res = su_getaddrinfo(host, NULL, hints, &ai_res);
+  for (ai = ai_res; 
+       ai;
+       ai = ai->ai_next) {
+    if (ai->ai_family == AF_INET) {
+      memcpy(addr, ai_res->ai_addr, sizeof(struct sockaddr));
+      break;
+    }
+  }
+
+  if (port) 
+    addr->sin_port = htons(atoi(port));
+
+  if (ai_res)
+    su_freeaddrinfo(ai_res);
+
+  return res;
 }
 
 char const *stun_nattype(stun_engine_t *se)

@@ -28,24 +28,20 @@
  *
  * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
- * 
- * @date Created: Thu Jul 24 17:08:32 2003 pessi
- * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
+ * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  */
 
 #include <su_wait.h>
 #include "stun_common.h"
 
-#define STUN_LIFETIME_EST 350 /* 6 min? */
-#define STUN_LIFETIME_MAX 1800 /* 30 min? */
-#define STUN_LIFETIME_CI  5 /* 5 sec confidence interval */
+#define STUN_LIFETIME_EST 350      /**< 6 min? */
+#define STUN_LIFETIME_MAX 1800     /**< 30 min? */
+#define STUN_LIFETIME_CI  5        /**< 5 sec confidence interval */
 
 typedef struct stun_engine_s stun_engine_t;
 typedef struct stun_socket_s stun_socket_t;
 
 stun_engine_t *stun_engine_create(char const *server, int use_msgint); 
-/* stun_engine_t *stun_engine_create(struct sockaddr_in *server); */
-
 
 void stun_engine_destroy(stun_engine_t *);
 
@@ -87,6 +83,5 @@ int stun_process_error_response(stun_msg_t *msg);
 int stun_atoaddr(struct sockaddr_in *addr, char const *in);
 char const *stun_nattype(stun_engine_t *se);
 int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr);
-
 
 #endif /* !defined(STUN_H) */

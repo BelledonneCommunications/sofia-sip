@@ -27,6 +27,7 @@
  * @brief 
  * 
  * @author Tat Chan <Tat.Chan@nokia.com>
+ * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  *  
  * @date Created: Fri Oct  3 13:40:41 2003 ppessi
  * 
@@ -111,6 +112,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   p+=2;
   attr->attr_type = ntohs(tmp16);
   if(attr->attr_type > LARGEST_ATTRIBUTE && attr->attr_type < OPTIONAL_ATTRIBUTE) {
+    free(attr);
     return -1;
   }
 
@@ -131,16 +133,13 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   case TURN_DESTINATION_ADDRESS:
   case TURN_SOURCE_ADDRESS:
 #endif
-    if(stun_parse_attr_address(attr, p, len) < 0)
-      return -1;
+    if(stun_parse_attr_address(attr, p, len) < 0) { free(attr); return -1; }
     break;
   case ERROR_CODE:
-    if(stun_parse_attr_error_code(attr, p, len) <0)
-      return -1;
+    if(stun_parse_attr_error_code(attr, p, len) <0) { free(attr); return -1; }
     break;
   case UNKNOWN_ATTRIBUTES:
-    if(stun_parse_attr_unknown_attributes(attr, p, len) <0)
-      return -1;
+    if(stun_parse_attr_unknown_attributes(attr, p, len) <0) { free(attr); return -1; }
     break;
   case CHANGE_REQUEST:
 #ifdef USE_TURN
@@ -148,8 +147,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   case TURN_MAGIC_COOKIE:
   case TURN_BANDWIDTH:
 #endif
-    if(stun_parse_attr_uint32(attr, p, len) <0)
-      return -1;
+    if(stun_parse_attr_uint32(attr, p, len) <0) { free(attr); return -1; }
     break;
   case USERNAME:
   case PASSWORD:
@@ -157,8 +155,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   case TURN_DATA:
   case TURN_NONCE:
 #endif
-    if(stun_parse_attr_buffer(attr, p, len) <0)
-      return -1;
+    if(stun_parse_attr_buffer(attr, p, len) <0) { free(attr); return -1; }
     break;
   default:
     /* just copy as is */
@@ -643,12 +640,15 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
     if(msg_int) {
       /* compute message integrity */
       if(stun_encode_message_integrity(msg_int, buf, len, pwd)!=24) {
+	free(buf);
 	return -1;
       }
       memcpy(buf+len, (unsigned char *)msg_int->enc_buf.data, msg_int->enc_buf.size);
     }
     
     /* save binary buffer for future reference */
+    if (msg->enc_buf.data)
+      free(msg->enc_buf.data);
     msg->enc_buf.data = buf; msg->enc_buf.size = buf_len;
   }
 

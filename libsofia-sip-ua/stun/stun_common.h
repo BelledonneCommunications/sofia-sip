@@ -85,8 +85,8 @@
 #define ERROR_CODE                    0x0009
 #define UNKNOWN_ATTRIBUTES            0x000a
 #define REFLECTED_FROM                0x000b
-#define LARGEST_ATTRIBUTE             0x000b /* largest attribute in
-						the current spec */
+#define LARGEST_ATTRIBUTE             0x000b /**< largest attribute in
+						  the current spec */
 #define OPTIONAL_ATTRIBUTE            0x7fff
 
 /* Stun response codes */
@@ -108,7 +108,7 @@
 #define STUN_EC_CLASS                   0x0070
 #define STUN_EC_NUM                     0x000F
 
-#define RAND_MAX_16                   65535
+#define RAND_MAX_16                     65535
 
 /* NAT TYPES */
 #define STUN_NAT_UNKNOWN                0
@@ -122,9 +122,9 @@
 
 /* other protocol specific parameters */
 #define STUN_MAX_RETRX                  8
-#define STUN_MAX_RETRX_INT              1600  /* max retrx interval in
-						 millisec */
-#define STUN_DEFAULT_PORT               3478
+#define STUN_MAX_RETRX_INT              1600  /**< max retrx interval in
+						   millisec */
+#define STUN_DEFAULT_PORT               3478  /**< from RFC3489 */
 
 /*
  * STUN header format
@@ -142,29 +142,29 @@
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   */
 struct stun_buffer_s {
-  unsigned char *data;   /**< Pointer to data */
-  unsigned size;    /**< Size of buffer */
+  unsigned char *data;      /**< Pointer to data */
+  unsigned size;            /**< Size of buffer */
 };
 
 typedef struct stun_buffer_s stun_buffer_t;
 
 typedef struct {
-  uint16_t msg_type; /* message type */
-  uint16_t msg_len;  /* message length */
-  uint16_t tran_id[8]; /* transaction id, 128 bits */
+  uint16_t msg_type;        /**< message type */
+  uint16_t msg_len;         /**< message length */
+  uint16_t tran_id[8];      /**< transaction id, 128 bits */
 } stun_hdr_t;
 
 typedef struct stun_attr_s {
-  uint16_t attr_type; /* attribute type */
-  void *pattr; /* pointer to corresponding attribute */
-  stun_buffer_t enc_buf; /* encoded attribue */
-  struct stun_attr_s *next; /* next attribute */
+  uint16_t attr_type;       /**< attribute type */
+  void *pattr;              /**< pointer to corresponding attribute */
+  stun_buffer_t enc_buf;    /**< encoded attribue */
+  struct stun_attr_s *next; /**< next attribute */
 } stun_attr_t;
 
 typedef struct {
   stun_hdr_t stun_hdr;
   stun_attr_t *stun_attr;
-  stun_buffer_t enc_buf; /* to store already encoded stun msg */
+  stun_buffer_t enc_buf;    /**< to store already encoded stun msg */
 } stun_msg_t;
 
 /* stun attribute definition */
