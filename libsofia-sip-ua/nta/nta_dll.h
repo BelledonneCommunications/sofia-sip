@@ -32,7 +32,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Fri Feb 22 15:57:00 2002 ppessi
- * @date Last modified: Wed Jul 20 20:35:30 2005 kaiv
  */
 #if !defined(WIN32)
 #define NTA_DLL

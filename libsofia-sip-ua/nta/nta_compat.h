@@ -31,7 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Sep  4 15:54:57 2001 ppessi
- * @date Last modified: Wed Jul 20 20:35:30 2005 kaiv
  */
 
 #ifndef NTA_H

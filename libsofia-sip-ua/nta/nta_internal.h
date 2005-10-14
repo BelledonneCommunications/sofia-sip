@@ -32,7 +32,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jul 18 09:18:32 2000 ppessi
- * @date Last modified: Wed Aug 10 15:26:12 2005 ppessi
  */
 
 #ifndef NTA_COMPAT_H

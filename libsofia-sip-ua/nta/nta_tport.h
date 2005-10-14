@@ -33,7 +33,6 @@
  * 
  * @date Created: Thu Oct  7 20:04:39 2004 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:31 2005 kaiv
  */
 
 #ifndef NTA_H
