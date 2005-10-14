@@ -120,7 +120,8 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
     if (!p_from && nua->nua_from) {
       *from = *nua->nua_from;
       from->a_params = NULL;
-    } else {
+    }
+    else {
       p_from = (void *)-1;
     }
 
@@ -141,7 +142,8 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
       
       if (tbf)
 	su_free(nh->nh_home, tbf);
-    } else {
+    }
+    else {
       p_to = (void *)-1;
     }
 
