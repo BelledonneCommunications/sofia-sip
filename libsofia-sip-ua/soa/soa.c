@@ -84,11 +84,23 @@ static int soa_set_sdp(soa_session_t *ss,
    (a)->sizeof_soa_session >= sizeof(soa_session_t) &&		\
    (a)->soa_name != NULL &&					\
    (a)->soa_init != NULL &&					\
+   (a)->soa_deinit != NULL &&					\
    (a)->soa_set_params != NULL &&				\
    (a)->soa_get_params != NULL &&				\
+   (a)->soa_get_paramlist != NULL &&				\
+   (a)->soa_media_features != NULL &&				\
+   (a)->soa_sip_require != NULL &&				\
+   (a)->soa_sip_supported != NULL &&				\
+   (a)->soa_remote_sip_features != NULL &&			\
+   (a)->soa_set_capability_sdp != NULL &&			\
+   (a)->soa_set_remote_sdp != NULL &&				\
+   (a)->soa_set_user_sdp != NULL &&				\
    (a)->soa_generate_offer != NULL &&				\
    (a)->soa_generate_answer != NULL &&				\
+   (a)->soa_process_answer != NULL &&				\
+   (a)->soa_process_reject != NULL &&				\
    (a)->soa_activate_session != NULL &&				\
+   (a)->soa_deactivate_session != NULL &&			\
    (a)->soa_terminate_session != NULL)
 
 /* ======================================================================== */
@@ -739,7 +751,7 @@ int soa_get_user_sdp(soa_session_t const *ss,
 int soa_get_user_version(soa_session_t const *ss)
 {
   assert(ss != NULL);
-  return ss->ss_user_version;
+  return ss ? ss->ss_user_version : -1;
 } 
 
 int soa_set_user_sdp(soa_session_t *ss, 
