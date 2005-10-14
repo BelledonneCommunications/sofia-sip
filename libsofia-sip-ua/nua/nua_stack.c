@@ -3409,14 +3409,11 @@ ua_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   else if (nh_referral_check(nua, nh, tags) < 0) {
     what = "Invalid referral";
   }
-  else {
-    nh_init(nua, nh, nh_has_invite, NULL, TAG_NEXT(tags)); 
-
-    if (tags && nh->nh_soa)
-      soa_set_params(nh->nh_soa, TAG_NEXT(tags));
-
-    return ua_invite2(nua, nh, e, 0, tags);
+  else if (nh_init(nua, nh, nh_has_invite, NULL, TAG_NEXT(tags)) < 0) {
+    what = "Handle initialization failed";
   }
+  else
+    return ua_invite2(nua, nh, e, 0, tags);
 
   UA_EVENT2(e, 500, what);
   signal_call_state_change(nh, 500, what, nua_callstate_init, 0, 0);
