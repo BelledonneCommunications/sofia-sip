@@ -6,7 +6,7 @@ AC_PREREQ(2.57)
 dnl information on the package
 dnl ---------------------------
 
-AC_INIT([sofia-sip], [1.11.0])
+AC_INIT([sofia-sip], [1.11.0.2005.10.13])
 AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sip.h])
 
 # dnl calls AC_CANONICAL_ macros that are required by AM_INIT_AUTOMAKE
@@ -59,8 +59,9 @@ AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define as 1 if we use S/MIME library])
 dnl compile STUN only if OPENSSL is available
 if test x${HAVE_OPENSSL} != x1 ; then
   AC_MSG_WARN([** STUN support disabled as OpenSSL headers and/or libraries were not found **])
+else
+  AC_DEFINE_UNQUOTED([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
 fi
-AC_DEFINE_UNQUOTED([HAVE_SOFIA_STUN], $HAVE_OPENSSL, [Define as 1 if we use STUN library])
 
 AC_DEFINE([HAVE_SRTP], 0, [Define as 1 if we use SRTP])
 AC_DEFINE([HAVE_UPNP], 0, [Define as 1 if we use UPnP])
