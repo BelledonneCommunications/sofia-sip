@@ -1129,6 +1129,15 @@ int str0cmp(char const *a, char const *b)
   return strcmp(a, b);
 }
 
+/* Compare two string pointers ignoring case. */
+static inline 
+int str0casecmp(char const *a, char const *b)
+{
+  if (a == NULL) a = "";
+  if (b == NULL) b = "";
+  return strcasecmp(a, b);
+}
+
 /** Compare two session descriptions 
  */
 int sdp_session_cmp(sdp_session_t const *a, sdp_session_t const *b)
@@ -1356,12 +1365,30 @@ int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b)
     return 0;
   if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
-  if ((rv = str0cmp(a->rm_encoding, b->rm_encoding)))
-    return rv;
   if ((rv = a->rm_pt - b->rm_pt))
     return rv;
-  if ((rv = str0cmp(a->rm_params, b->rm_params)))
+
+  /* Case insensitive encoding */
+  if ((rv = str0cmp(a->rm_encoding, b->rm_encoding)))
     return rv;
+  /* Rate */
+  if ((rv = (a->rm_rate - b->rm_rate)))
+    return rv;
+
+  {
+    char const *a_param = "1", *b_param = "1";
+
+    if (a->rm_params)
+      a_param = a->rm_params;
+    if (b->rm_params)
+      b_param = b->rm_params;
+    
+    rv = strcasecmp(a_param, b_param);
+
+    if (rv)
+      return rv;
+  }
+
   return str0cmp(a->rm_fmtp, b->rm_fmtp);
 }
 
