@@ -1231,12 +1231,12 @@ CONDITION_FUNCTION(reject_3)
       m->m_url->url_user = "302";
       respond(ep, nh, SIP_302_MOVED_TEMPORARILY,
 	      SIPTAG_CONTACT(m), TAG_END());
-      ep->next_condition = reject_4;
     }
     return 0;
   case nua_callstate_terminated:
     nua_handle_destroy(ep->nh), ep->nh = NULL;
-    return 1;
+    ep->next_condition = reject_4;
+    return 0;
   default:
     return 0;
   }
