@@ -1,3 +1,18 @@
+2005-10-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Using port 5060 by default.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -7 +13
+
+  * Fixed race condition in 302 test.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -2 +2
+
+  * Silenced some gcc4 warnings.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -10 +11
+    M ./libsofia-sip-ua/nua/test_nua.c -10 +10
+
 2005-10-15  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Relay real CANCEL response to application.
