@@ -884,18 +884,18 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   su_home_t tmphome[1] = { SU_HOME_INIT(tmphome) };
 
-  int retry_count = NHP_GET(ohp, dnhp, retry_count);
-  int max_subscriptions = NHP_GET(ohp, dnhp, max_subscriptions);
+  unsigned retry_count = NHP_GET(ohp, dnhp, retry_count);
+  unsigned max_subscriptions = NHP_GET(ohp, dnhp, max_subscriptions);
 
   int invite_enable = NHP_GET(ohp, dnhp, invite_enable);
   int auto_alert = NHP_GET(ohp, dnhp, auto_alert);
   int early_media = NHP_GET(ohp, dnhp, early_media);
   int auto_answer = NHP_GET(ohp, dnhp, auto_answer);
   int auto_ack = NHP_GET(ohp, dnhp, auto_ack);
-  int invite_timeout = NHP_GET(ohp, dnhp, invite_timeout);
+  unsigned invite_timeout = NHP_GET(ohp, dnhp, invite_timeout);
 
-  int session_timer = NHP_GET(ohp, dnhp, session_timer);
-  int min_se = NHP_GET(ohp, dnhp, min_se);
+  unsigned session_timer = NHP_GET(ohp, dnhp, session_timer);
+  unsigned min_se = NHP_GET(ohp, dnhp, min_se);
   int refresher = NHP_GET(ohp, dnhp, refresher);
   int update_refresh = NHP_GET(ohp, dnhp, update_refresh);
 
@@ -2028,7 +2028,7 @@ int session_process_response(nua_handle_t *nh,
   msg_t *msg = nta_outgoing_getresponse_ref(orq);
   int retval = 0;
   char const *sdp = NULL;
-  int len;
+  size_t len;
 
   if (nh->nh_soa == NULL)
     /* Xyzzy */;
@@ -4015,8 +4015,9 @@ int process_invite1(nua_t *nua,
   nua_handle_t *nh = *return_nh;
   nua_handle_t *dnh = nua->nua_dhandle, *nh0 = nh ? nh : dnh;
   nua_server_request_t *sr;
-  int have_sdp, len;
+  int have_sdp;
   char const *sdp;
+  size_t len;
   sip_user_agent_t const *user_agent = NH_PGET(nh0, user_agent);
 
 #if HAVE_SOFIA_SMIME 
@@ -4400,7 +4401,7 @@ int process_prack(nua_handle_t *nh,
   if (nh->nh_soa) {
     msg_t *msg = nta_incoming_getrequest(irq);
     char const *sdp;
-    int len;
+    size_t len;
 
     if (session_get_description(msg, sip, &sdp, &len)) {
       su_home_t home[1] = { SU_HOME_INIT(home) };
@@ -4475,7 +4476,7 @@ int process_ack(nua_handle_t *nh,
 
   if (nh->nh_soa && sr->sr_offer_sent && !sr->sr_answer_recv) {
     char const *sdp;
-    int len;
+    size_t len;
 
     if (!session_get_description(msg, sip, &sdp, &len) ||
 	!(recv = "answer") ||
@@ -5027,8 +5028,8 @@ int process_update(nua_t *nua,
   int response = 500;
   msg_t *msg = nta_incoming_getrequest(irq);
 
-  int len;
   char const *sdp;
+  size_t len;
 
   assert(nh);
 
