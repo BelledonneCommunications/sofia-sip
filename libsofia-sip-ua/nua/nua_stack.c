@@ -296,17 +296,23 @@ int ua_init(su_root_t *root, nua_t *nua)
   nua->nua_nta = nta_agent_create(root, NONE, NULL, NULL, 
 				  TPTAG_CERTIFICATE(certificate_dir),
 				  NTATAG_TAG_3261(0),
-				  TAG_END());
+				  TAG_NEXT(nua->nua_args));
   if (!nua->nua_nta)
     return -1;
 
-  if (!contact && !sips_contact)
-    contact = URL_STRING_MAKE("sip:*:*");
-
-  if ((!contact ||
-       nta_agent_add_tport(nua->nua_nta, contact, TAG_END()) < 0) &&
+  if (!contact && !sips_contact) {
+    if (nta_agent_add_tport(nua->nua_nta, NULL,
+			    TAG_NEXT(nua->nua_args)) < 0 &&
+	nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
+			    TAG_NEXT(nua->nua_args)) < 0)
+      return -1;
+  }
+  else if ((!contact ||
+       nta_agent_add_tport(nua->nua_nta, contact,
+			   TAG_NEXT(nua->nua_args)) < 0) &&
       (!sips_contact ||
-       nta_agent_add_tport(nua->nua_nta, sips_contact, TAG_END()) < 0)) {
+       nta_agent_add_tport(nua->nua_nta, sips_contact,
+			   TAG_NEXT(nua->nua_args)) < 0)) {
     return -1;
   }
     
