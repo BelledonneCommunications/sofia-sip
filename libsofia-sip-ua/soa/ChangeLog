@@ -1,3 +1,9 @@
+2005-10-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+   * Restore version numbers after our offer is rejected.
+
+    M ./libsofia-sip-ua/soa/soa_static.c +3
+
 2005-10-15  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Updated API of soa_get_local_sdp() and friends.
