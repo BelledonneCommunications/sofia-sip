@@ -502,13 +502,13 @@ int main(int argc, char *argv[])
   su_timer_destroy(t);
 
   if (pinger.rtt_n) {
-    printf("%s: %u pings, mean rtt=%g sec\n", name, 
-	   pinger.rtt_n, pinger.rtt_total / pinger.rtt_n);
+    printf("%s executed %u pings in %g, mean rtt=%g sec\n", name, 
+	   pinger.rtt_n, pinger.rtt_total, pinger.rtt_total / pinger.rtt_n);
   }
   su_root_destroy(root);
 
   if (opt_verbatim)
-    printf("%s: exiting\n", argv0); 
+    printf("%s exiting\n", argv0); 
 
 #ifndef HAVE_WIN32
    if (sleeppid)
