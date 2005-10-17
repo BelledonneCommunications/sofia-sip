@@ -1,3 +1,9 @@
+2005-10-14  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	  * Shell syntax exercise. 
+
+	    M ./autogen.sh -4 +4
+
 2005-10-13  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* <SUBDIRS>/Makefile.am: fixed COVERAGE_INPUT.
