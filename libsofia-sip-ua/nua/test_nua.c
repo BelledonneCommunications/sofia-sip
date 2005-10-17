@@ -616,18 +616,18 @@ int test_params(struct context *ctx)
     sip_from_t const *from = NONE;
     char const *from_str = "NONE";
 
-    int retry_count = -1;
-    int max_subscriptions = -1;
+    unsigned retry_count = -1;
+    unsigned max_subscriptions = -1;
 
     int invite_enable = -1;
     int auto_alert = -1;
     int early_media = -1;
     int auto_answer = -1;
     int auto_ack = -1;
-    int invite_timeout = -1;
+    unsigned invite_timeout = -1;
 
-    int session_timer = -1;
-    int min_se = -1;
+    unsigned session_timer = -1;
+    unsigned min_se = -1;
     int refresher = -1;
     int update_refresh = -1;
 
@@ -750,18 +750,18 @@ int test_params(struct context *ctx)
     sip_from_t const *from = NONE;
     char const *from_str = "NONE";
 
-    int retry_count = -1;
-    int max_subscriptions = -1;
+    unsigned retry_count = -1;
+    unsigned max_subscriptions = -1;
 
     int invite_enable = -1;
     int auto_alert = -1;
     int early_media = -1;
     int auto_answer = -1;
     int auto_ack = -1;
-    int invite_timeout = -1;
+    unsigned invite_timeout = -1;
 
-    int session_timer = -1;
-    int min_se = -1;
+    unsigned session_timer = -1;
+    unsigned min_se = -1;
     int refresher = -1;
     int update_refresh = -1;
 
