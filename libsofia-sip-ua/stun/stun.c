@@ -83,6 +83,28 @@ struct stun_socket_s
   int            ss_state;
 };
 
+/**
+ * Check if a STUN engine should be created.
+ *
+ * Return true either there is a tag STUNTAG_SERVER() in list or if
+ * STUN_SERVER environment variable is set.
+ *
+ * @param tag,value,... tag-value list
+ */
+int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
+{
+  ta_list ta;
+  tagi_t const *t;
+  char const *stun_server;
+
+  ta_start(ta, tag, value);
+  t = tl_find(ta_args(ta), stuntag_server);
+  stun_server = t && t->t_value ? (char *)t->t_value : getenv("STUN_SERVER");
+  ta_end(ta);
+
+  return stun_server != NULL;
+}
+
 /** 
  * Creates a STUN engine 
  *
