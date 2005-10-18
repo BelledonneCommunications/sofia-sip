@@ -2444,6 +2444,126 @@ int test_call_hold(struct context *ctx)
 }
 
 
+/* ======================================================================== */
+/* Session timer test */
+
+int test_session_timer(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a,  *b = &ctx->b;
+  struct event *e;
+  sip_t const *sip;
+
+  if (print_headings)
+    printf("TEST NUA-8.1: Session timers\n");
+
+/* Session timer test:
+
+   A			B
+   |-------INVITE------>|
+   |<-------422---------|
+   |--------ACK-------->|
+   |			|
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |			|
+   |<----180 Ringing----|
+   |			|
+   |<------200 OK-------|
+   |--------ACK-------->|
+   |			|
+   |<-------BYE---------|
+   |-------200 OK-------|
+   |			|
+
+*/
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+
+  invite(a, a->nh, NUTAG_URL(b->contact->m_url),
+	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 NUTAG_SESSION_TIMER(15),
+	 NUTAG_MIN_SE(5),
+	 TAG_END());
+
+  run_until(ctx, -1, until_terminated, -1, receive_basic_call);
+
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C6a)-> (TERMINATED/INIT): nua_r_invite
+     (INIT) -(C1)-> CALLING: nua_i_state
+     CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
+     PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
+     READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 100);
+  TEST(sip_object(e->data->e_msg)->sip_status->st_status, 422);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_session_expires);
+  TEST_S(sip->sip_session_expires->x_refresher, "uac");
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(is_answer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_bye);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S2a)-> EARLY: nua_respond(), nua_i_state
+   EARLY -(S3a)-> COMPLETED: nua_respond(), nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+
+   READY --(T2)--> TERMINATING: nua_bye()
+   TERMINATING --(T3)--> TERMINATED: nua_r_bye, nua_i_state
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_bye);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+  nua_handle_destroy(a->nh), a->nh = NULL;
+
+  free_events_in_list(ctx, b);
+  nua_handle_destroy(b->nh), b->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-7.1: PASSED\n");
+
+  END();
+}
+
+/* ====================================================================== */
+
 int test_deinit(struct context *ctx)
 {
   BEGIN();
@@ -2623,6 +2743,7 @@ int main(int argc, char *argv[])
     retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();
 
