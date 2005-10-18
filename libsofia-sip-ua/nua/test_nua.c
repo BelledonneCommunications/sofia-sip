@@ -969,7 +969,7 @@ CONDITION_FUNCTION(save_events)
 
 CONDITION_FUNCTION(until_terminated)
 {
-  if (!check_handle(ep, nh, 0, 0))
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
     return 0;
 
   if (event != nua_i_active && event != nua_i_terminated)
@@ -1131,7 +1131,7 @@ int test_basic_call(struct context *ctx)
 }
 
 /* ======================================================================== */
-/* Call rejections */
+/* Tests NUA-4: Call rejections */
 
 /*
  A      reject-1      B
@@ -1162,110 +1162,8 @@ CONDITION_FUNCTION(reject_1)
   }
 }
 
-/*
- A      reject-2      B
- |                    |
- |-------INVITE------>|
- |<----100 Trying-----|
- |                    |
- |<----180 Ringing----|
- |                    |
- |<--------602--------|
- |---------ACK------->|
-*/
-CONDITION_FUNCTION(reject_2)
-{
-  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
-    return 0;
 
-  if (event != nua_i_active && event != nua_i_terminated)
-    save_event_in_list(ctx, ep);
-
-  switch (callstate(tags)) {
-  case nua_callstate_received:
-    respond(ep, nh, SIP_180_RINGING, TAG_END());
-    return 0;
-  case nua_callstate_early:
-    respond(ep, nh, 602, "Rejected 2", TAG_END());
-    return 0;
-  case nua_callstate_terminated:
-    nua_handle_destroy(ep->nh), ep->nh = NULL;
-    return 1;
-  default:
-    return 0;
-  }
-}
-
-
-/*
- A      reject-3      B
- |                    |
- |-------INVITE------>|
- |<----100 Trying-----|
- |                    |
- |<-----302 Other-----|
- |--------ACK-------->|
- |                    |
- |-------INVITE------>|
- |<----100 Trying-----|
- |                    |
- |<----180 Ringing----|
- |                    |
- |<---604 Nowhere-----|
- |--------ACK-------->|
-*/
-CONDITION_FUNCTION(reject_4);
-CONDITION_FUNCTION(reject_3)
-{
-  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
-    return 0;
-
-  if (event != nua_i_active && event != nua_i_terminated)
-    save_event_in_list(ctx, ep);
-
-  switch (callstate(tags)) {
-  case nua_callstate_received:
-    {
-      sip_contact_t m[1];
-      *m = *ep->contact;
-      m->m_url->url_user = "302";
-      respond(ep, nh, SIP_302_MOVED_TEMPORARILY,
-	      SIPTAG_CONTACT(m), TAG_END());
-    }
-    return 0;
-  case nua_callstate_terminated:
-    nua_handle_destroy(ep->nh), ep->nh = NULL;
-    ep->next_condition = reject_4;
-    return 0;
-  default:
-    return 0;
-  }
-}
-
-CONDITION_FUNCTION(reject_4)
-{
-  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
-    return 0;
-
-  if (event != nua_i_active && event != nua_i_terminated)
-    save_event_in_list(ctx, ep);
-
-  switch (callstate(tags)) {
-  case nua_callstate_received:
-    respond(ep, nh, SIP_180_RINGING, TAG_END());
-    return 0;
-  case nua_callstate_early:
-    respond(ep, nh, SIP_604_DOES_NOT_EXIST_ANYWHERE, TAG_END());
-    return 0;
-  case nua_callstate_terminated:
-    nua_handle_destroy(ep->nh), ep->nh = NULL;
-    return 1;
-  default:
-    return 0;
-  }
-}
-
-int test_call_rejects(struct context *ctx)
+int test_reject_a(struct context *ctx)
 {
   BEGIN();
 
@@ -1273,7 +1171,7 @@ int test_call_rejects(struct context *ctx)
   struct event *e;
 
   if (print_headings)
-    printf("TEST NUA-3.2: reject before ringing\n");
+    printf("TEST NUA-4.1: reject before ringing\n");
 
   /*
    A      reject-1      B
@@ -1323,7 +1221,51 @@ int test_call_rejects(struct context *ctx)
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-3.2: PASSED\n");
+    printf("TEST NUA-4.1: PASSED\n");
+
+  END();
+}
+
+/*
+ A      reject-2      B
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |                    |
+ |<----180 Ringing----|
+ |                    |
+ |<--------602--------|
+ |---------ACK------->|
+*/
+CONDITION_FUNCTION(reject_2)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, nh, SIP_180_RINGING, TAG_END());
+    return 0;
+  case nua_callstate_early:
+    respond(ep, nh, 602, "Rejected 2", TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    nua_handle_destroy(ep->nh), ep->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+int test_reject_b(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a, *b = &ctx->b;
+  struct event *e;
 
   /* ------------------------------------------------------------------------ */
   /*
@@ -1339,7 +1281,7 @@ int test_call_rejects(struct context *ctx)
   */
 
   if (print_headings)
-    printf("TEST NUA-3.3: reject after ringing\n");
+    printf("TEST NUA-4.2: reject after ringing\n");
 
   /* Make call reject-2 */
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
@@ -1385,20 +1327,100 @@ int test_call_rejects(struct context *ctx)
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-3.3: PASSED\n");
+    printf("TEST NUA-4.2: PASSED\n");
 
-  /* ------------------------------------------------------------------------ */
+  END();
+}
+
+/* ------------------------------------------------------------------------ */
+
+CONDITION_FUNCTION(reject_302);
+CONDITION_FUNCTION(reject_604);
+
+/*
+ A     reject-302     B
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |                    |
+ |<-----302 Other-----|
+ |--------ACK-------->|
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |                    |
+ |<----180 Ringing----|
+ |                    |
+ |<---604 Nowhere-----|
+ |--------ACK-------->|
+*/
+CONDITION_FUNCTION(reject_302)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    {
+      sip_contact_t m[1];
+      *m = *ep->contact;
+      m->m_url->url_user = "302";
+      respond(ep, nh, SIP_302_MOVED_TEMPORARILY,
+	      SIPTAG_CONTACT(m), TAG_END());
+    }
+    return 0;
+  case nua_callstate_terminated:
+    nua_handle_destroy(ep->nh), ep->nh = NULL;
+    ep->next_condition = reject_604;
+    return 0;
+  default:
+    return 0;
+  }
+}
+
+CONDITION_FUNCTION(reject_604)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, nh, SIP_180_RINGING, TAG_END());
+    return 0;
+  case nua_callstate_early:
+    respond(ep, nh, SIP_604_DOES_NOT_EXIST_ANYWHERE, TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    nua_handle_destroy(ep->nh), ep->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+int test_reject_302(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a, *b = &ctx->b;
+  struct event *e;
 
   /* Make call reject-3 */
   if (print_headings)
-    printf("TEST NUA-3.4: redirect then reject\n");
+    printf("TEST NUA-4.3: redirect then reject\n");
 
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
   invite(a, a->nh, NUTAG_URL(b->contact->m_url),
 	 SIPTAG_SUBJECT_STR("reject-3"),
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
-  run_until(ctx, -1, until_terminated, -1, reject_3);
+  run_until(ctx, -1, until_terminated, -1, reject_302);
 
   /*
    A      reject-3      B
@@ -1445,8 +1467,8 @@ int test_call_rejects(struct context *ctx)
 
   /*
    Server transitions:
-   INIT -(S1)-> RECEIVED -(S2)-> TERMINATED/INIT
-   INIT -(S1)-> RECEIVED -(S2)-> EARLY -(S6a)-> TERMINATED
+   INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED/INIT
+   INIT -(S1)-> RECEIVED -(S2)-> EARLY -(S6b)-> TERMINATED
   */
   TEST_1(e = ctx->b.events.head); TEST(e->data->e_event, nua_i_invite);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
@@ -1470,7 +1492,7 @@ int test_call_rejects(struct context *ctx)
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-3.4: PASSED\n");
+    printf("TEST NUA-4.3: PASSED\n");
 
   END();
 }
@@ -1585,7 +1607,7 @@ int test_call_cancel(struct context *ctx)
   struct event *e;
 
   if (print_headings)
-    printf("TEST NUA-3.5.1: cancel call\n");
+    printf("TEST NUA-5.1: cancel call\n");
 
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
 
@@ -1629,12 +1651,12 @@ int test_call_cancel(struct context *ctx)
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-3.5.1: PASSED\n");
+    printf("TEST NUA-5.1: PASSED\n");
 
   /* ------------------------------------------------------------------------ */
 
   if (print_headings)
-    printf("TEST NUA-3.5.2: cancel call when ringing\n");
+    printf("TEST NUA-5.2: cancel call when ringing\n");
 
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
 
@@ -1694,7 +1716,7 @@ int test_call_cancel(struct context *ctx)
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-3.5.2: PASSED\n");
+    printf("TEST NUA-5.2: PASSED\n");
 
   END();
 }
@@ -1749,7 +1771,7 @@ int test_early_bye(struct context *ctx)
   struct event *e;
 
   if (print_headings)
-    printf("TEST NUA-3.6.1: BYE call when ringing\n");
+    printf("TEST NUA-6.1: BYE call when ringing\n");
 
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
 
@@ -1811,7 +1833,7 @@ int test_early_bye(struct context *ctx)
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-3.6.1: PASSED\n");
+    printf("TEST NUA-6.1: PASSED\n");
 
   END();
 }
@@ -1926,7 +1948,7 @@ int test_call_hold(struct context *ctx)
   struct event *e;
 
   if (print_headings)
-    printf("TEST NUA-3.7: Test call hold\n");
+    printf("TEST NUA-7: Test call hold\n");
 
   TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
   invite(a, a->nh, NUTAG_URL(b->contact->m_url),
@@ -1988,7 +2010,7 @@ int test_call_hold(struct context *ctx)
   */
 
   if (print_headings)
-    printf("TEST NUA-3.7.1: put B on hold\n");
+    printf("TEST NUA-7.1: put B on hold\n");
 
   /* Put B on hold */
   invite(a, a->nh, SOATAG_HOLD("audio"),
@@ -2031,7 +2053,7 @@ int test_call_hold(struct context *ctx)
   free_events_in_list(ctx, b);
 
   if (print_headings)
-    printf("TEST NUA-3.7.1: PASSED\n");
+    printf("TEST NUA-7.1: PASSED\n");
 
   /* ------------------------------------------------------------------------ */
   /*
@@ -2043,7 +2065,7 @@ int test_call_hold(struct context *ctx)
   */
 
   if (print_headings)
-    printf("TEST NUA-3.7.2: put A on hold\n");
+    printf("TEST NUA-7.2: put A on hold\n");
 
   /* Put A on hold, too. */
   invite(b, b->nh, SOATAG_HOLD("audio"),
@@ -2088,7 +2110,7 @@ int test_call_hold(struct context *ctx)
   free_events_in_list(ctx, a);
 
   if (print_headings)
-    printf("TEST NUA-3.7.2: PASSED\n");
+    printf("TEST NUA-7.2: PASSED\n");
 
   /* ------------------------------------------------------------------------ */
   /*
@@ -2100,7 +2122,7 @@ int test_call_hold(struct context *ctx)
   */
 
   if (print_headings)
-    printf("TEST NUA-3.7.3: resume B\n");
+    printf("TEST NUA-7.3: resume B\n");
 
   /* Resume B from hold */
   invite(a, a->nh, SOATAG_HOLD(NULL),
@@ -2145,7 +2167,7 @@ int test_call_hold(struct context *ctx)
   free_events_in_list(ctx, b);
 
   if (print_headings)
-    printf("TEST NUA-3.7.3: PASSED\n");
+    printf("TEST NUA-7.3: PASSED\n");
 
   /* ------------------------------------------------------------------------ */
   /*
@@ -2157,11 +2179,11 @@ int test_call_hold(struct context *ctx)
   */
 
   if (print_headings)
-    printf("TEST NUA-3.7.4: resume A\n");
+    printf("TEST NUA-7.4: resume A\n");
 
   /* Resume A on hold, too. */
   invite(b, b->nh, SOATAG_HOLD(""),
-	 SIPTAG_SUBJECT_STR("TEST NUA-3.7.4: resume A"),
+	 SIPTAG_SUBJECT_STR("TEST NUA-7.4: resume A"),
 	 TAG_END());
   run_until(ctx, -1, until_ready, -1, until_ready);
 
@@ -2202,7 +2224,7 @@ int test_call_hold(struct context *ctx)
   free_events_in_list(ctx, a);
 
   if (print_headings)
-    printf("TEST NUA-3.7.4: PASSED\n");
+    printf("TEST NUA-7.4: PASSED\n");
 
   /* ------------------------------------------------------------------------ */
   /*
@@ -2212,7 +2234,7 @@ int test_call_hold(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-3.7.5: terminate call\n");
+    printf("TEST NUA-7.5: terminate call\n");
 
   bye(a, a->nh, TAG_END());
   run_until(ctx, -1, until_terminated, -1, until_terminated);
@@ -2238,13 +2260,13 @@ int test_call_hold(struct context *ctx)
   free_events_in_list(ctx, b);
 
   if (print_headings)
-    printf("TEST NUA-3.7.5: PASSED\n");
+    printf("TEST NUA-7.5: PASSED\n");
 
   nua_handle_destroy(a->nh), a->nh = NULL;
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-3.7: PASSED\n");
+    printf("TEST NUA-7: PASSED\n");
 
 
   END();
@@ -2417,7 +2439,9 @@ int main(int argc, char *argv[])
       ctx->b.printer = print_event;
 
     retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
-    retval |= test_call_rejects(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_reject_302(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
