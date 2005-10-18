@@ -3409,7 +3409,8 @@ static int process_response_to_prack(nua_handle_t *nh,
 
 static void nsession_destroy(nua_handle_t *nh);
 
-static int  use_session_timer(nua_t *, nua_handle_t *, msg_t *msg, sip_t *);
+static int  use_session_timer(nua_t *, nua_handle_t *, 
+			      int uas, msg_t *msg, sip_t *);
 static int  init_session_timer(nua_t *nua, nua_handle_t *nh, sip_t const *);
 static void set_session_timer(nua_handle_t *nh);
 
@@ -3483,12 +3484,14 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   assert(cr->cr_orq == NULL);
 
   if (du && sip && offer_sent >= 0) {
+    unsigned invite_timeout = NH_PGET(nh, invite_timeout);
+    if (invite_timeout == 0)
+      invite_timeout = SIP_TIME_MAX;
+    /* Cancel if we don't get response */
+    dialog_usage_set_refresh(du, invite_timeout); 
 
-    if (use_session_timer(nua, nh, msg, sip)) {
-      unsigned invite_timeout = NH_PGET(nh, invite_timeout);
-      if (invite_timeout == 0) invite_timeout = SIP_TIME_MAX;
-      dialog_usage_set_refresh(du, invite_timeout);
-    }
+    /* Add session timer headers */
+    use_session_timer(nua, nh, 0, msg, sip);
 
     ss->ss_100rel = NH_PGET(nh, early_media);
     ss->ss_precondition = sip_has_feature(sip->sip_require, "precondition");
@@ -4288,7 +4291,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   }
 
   if (ss->ss_refresher && 200 <= status && status < 300)
-    use_session_timer(nua, nh, msg, sip);
+    use_session_timer(nua, nh, 1, msg, sip);
 
 #if HAVE_SOFIA_SMIME
   if (nua->sm->sm_enable && sdp) {
@@ -4590,7 +4593,7 @@ int process_timeout(nua_handle_t *nh,
 
 /** Add timer featuretag and Session-Expires/Min-SE headers */
 static int
-use_session_timer(nua_t *nua, nua_handle_t *nh, msg_t *msg, sip_t *sip)
+use_session_timer(nua_t *nua, nua_handle_t *nh, int uas, msg_t *msg, sip_t *sip)
 {
   struct nua_session_state *ss = nh->nh_ss;
 
@@ -4611,9 +4614,9 @@ use_session_timer(nua_t *nua, nua_handle_t *nh, msg_t *msg, sip_t *sip)
   sip_session_expires_init(session_expires)->x_delta = ss->ss_session_timer;
     
   if (ss->ss_refresher == nua_remote_refresher)
-    session_expires->x_params = x_params_uas;
+    session_expires->x_params = uas ? x_params_uac : x_params_uas;
   else if (ss->ss_refresher == nua_local_refresher)
-    session_expires->x_params = x_params_uac;
+    session_expires->x_params = uas ? x_params_uas : x_params_uac;
     
   sip_add_tl(msg, sip,  
 	     TAG_IF(ss->ss_session_timer,
