@@ -137,6 +137,7 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
   char const *server = NULL;
   int msg_integrity = 1;
   ta_list ta;
+  su_sockaddr_t su[1];
 
   SU_DEBUG_5(("%s(\"%s\"): called\n", 
 	      "stun_engine_tcreate", server));
@@ -153,7 +154,14 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
     server = getenv("STUN_SERVER");
     SU_DEBUG_5(("stun: using STUN_SERVER=%s\n", server));
   }
-  
+
+  memset(su, 0, (sizeof su));
+
+  if (server) {
+    if (stun_atoaddr(&su->su_sin, server) != 0)
+      return NULL;
+  }
+
   stun = su_home_clone(NULL, sizeof(*stun));
 
   if (stun) {
@@ -161,11 +169,11 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
      * I suppose this may block for the moment
      */
     memset(&stun->stun_srvr4[0], 0, sizeof(stun->stun_srvr4[0]));
-    if(server) {
-      stun_atoaddr((struct sockaddr_in *)&(stun->stun_srvr4[0]), server);
-      if(stun->stun_srvr4[0].su_sin.sin_port == 0) {
-	stun->stun_srvr4[0].su_sin.sin_port = htons(STUN_DEFAULT_PORT);
-      }
+
+    if (server) {
+      if (su->su_sin.sin_port == 0)
+	su->su_sin.sin_port = htons(STUN_DEFAULT_PORT);
+      stun->stun_srvr4[0] = su[0];
     }
 
     /* alternative address set to 0 */
