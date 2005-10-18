@@ -3034,24 +3034,42 @@ int crequest_check_restart(nua_handle_t *nh,
 	   (status == 401 || status == 407) && 
 	   (sip->sip_proxy_authenticate || sip->sip_www_authenticate)) {
     sip_t *rsip;
+    int done;
 
     nh_challenge(nh, sip);
 
     rsip = sip_object(cr->cr_msg);
 
     /* XXX - check for instant restart */
-    if (auc_authorization(&nh->nh_auth, cr->cr_msg, (msg_pub_t*)rsip,
-			  rsip->sip_request->rq_method_name,
-			  rsip->sip_request->rq_url,
-			  rsip->sip_payload) < 0) {
-      /* Do not really restart, but wait for nua_authenticate() */
-      cr->cr_restart = f; 
-      f = NULL;
+    done = auc_authorization(&nh->nh_auth, cr->cr_msg, (msg_pub_t*)rsip,
+			     rsip->sip_request->rq_method_name,
+			     rsip->sip_request->rq_url,
+			     rsip->sip_payload);
+
+    if (done > 0) {
+      return
+	crequest_invoke_restart(nh, cr, orq, 
+				100, "Request Authorized by Cache",
+				f, TAG_END());
     }
-    return 
-      crequest_invoke_restart(nh, cr, orq, 
-			      100, "Request Authorized by Cache",
-			      f, TAG_END());
+    else if (done == 0) {
+      msg_t *msg = nta_outgoing_getresponse_ref(orq);
+      ua_event(nh->nh_nua, nh, msg, cr->cr_event, 
+	       status, sip->sip_status->st_phrase, TAG_END());
+      nta_outgoing_destroy(orq); 
+
+      if (du) {
+	du->du_pending = NULL;
+	du->du_refresh = 0;
+      }
+      /* Wait for nua_authenticate() */
+
+      cr->cr_restart = f; 
+      return 1;
+    }
+    else {
+      SU_DEBUG_5(("nua(%p): auc_authorization failed\n", nh));
+    }
   }
 #if HAVE_SOFIA_SMIME
   else if (status == 493)     /* try detached signature */
