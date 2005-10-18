@@ -1168,6 +1168,36 @@ static int sigcomp_test(tp_test_t *tt)
   END();
 }
 
+#if HAVE_SOFIA_STUN
+
+#include <stun_tag.h>
+
+static int stun_test(tp_test_t *tt)
+{
+  BEGIN();
+
+
+  tport_t *mr;
+  tp_name_t tpn[1] = {{ "*", "*", "*", "*", NULL }};
+  char const * transports[] = { "udp", "tcp", "sctp", NULL };
+
+  TEST_1(mr = tport_tcreate(tt, tp_test_class, tt->tt_root, TAG_END()));
+  
+  TEST(tport_tbind(tt->tt_tports, tpn, transports, TPTAG_SERVER(1), 
+		   STUNTAG_SERVER("999.999.999.999"),
+		   TAG_END()), -1);
+
+  tport_destroy(mr);
+
+  END();
+}
+#else
+static int stun_test(tp_test_t *tt)
+{
+  return 0;
+}
+#endif
+
 static int deinit_test(tp_test_t *tt)
 {
   BEGIN();
@@ -1215,6 +1245,8 @@ int main(int argc, char *argv[])
     retval |= tcp_test(tt); fflush(stdout);
     retval |= reuse_test(tt); fflush(stdout);
     retval |= tls_test(tt); fflush(stdout);
+    if (0)			/* Not yet working... */
+      retval |= stun_test(tt); fflush(stdout);
     retval |= deinit_test(tt); fflush(stdout);
   }
 
