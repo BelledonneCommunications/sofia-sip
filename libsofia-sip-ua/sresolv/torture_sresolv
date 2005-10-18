@@ -124,8 +124,19 @@ type -p named >/dev/null || exit 77
 
 named -f -d 999 -c named.conf.tmp &
 
-sleep 5
-test -r named.pid || exit 1
+echo $0: started named pid $!
+for i in 1 2 3 4 5; do
+    test -r named.pid && break
+    sleep 1; 
+done
+
+test -r named.pid || { 
+    echo $0: cannot start named >&2 ; 
+    if fgrep -q -i -e SELINUX=enforcing /etc/selinux/config ; then
+	echo $0: perhaps you have to disable SELinux protection for named 
+    fi
+    exit 77
+}
 
 function kill_named
 {

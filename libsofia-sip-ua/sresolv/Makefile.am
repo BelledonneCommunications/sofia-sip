@@ -14,7 +14,7 @@ noinst_LTLIBRARIES = 	libsresolv.la
 
 noinst_PROGRAMS = 	test_sresolv
 
-TESTS = 		torture_sresolv
+TESTS = 		run_test_sresolv
 
 TESTS_ENVIRONMENT =	$(SHELL)
 
@@ -41,13 +41,8 @@ LDADD = 		libsresolv.la \
 
 EXTRA_DIST =		Doxyfile sresolv.docs
 
-dist_noinst_DATA = torture_sresolv \
+dist_noinst_DATA = run_test_sresolv \
 	127.zone 194.2.188 3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0 example.com
-
-SU_SRCS	= \
-	htable.h su_alloc.h su_strlst.h su_config.h \
-	su_alloc.c su_strdup.c su_strlst.c \
-	tstdef.h
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
