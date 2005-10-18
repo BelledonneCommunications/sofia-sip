@@ -71,6 +71,9 @@ enum {
  */
 typedef uint64_t su_ntp_t;
 
+/** Represent NTP consttant */
+#define SU_NTP_C(x) SU_U64_C(x)
+
 #define SU_TIME_CMP(t1, t2) \
  (long)((t1.tv_sec - t2.tv_sec != 0) ? \
    (t1.tv_sec - t2.tv_sec) : \
