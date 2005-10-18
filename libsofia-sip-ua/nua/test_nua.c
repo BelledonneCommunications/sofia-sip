@@ -1026,25 +1026,12 @@ CONDITION_FUNCTION(until_terminated)
 
 CONDITION_FUNCTION(receive_basic_call)
 {
-  int state = nua_callstate_init;
-
   if (!check_handle(ep, nh, SIP_486_BUSY_HERE))
     return 0;
   if (event != nua_i_active && event != nua_i_terminated)
     save_event_in_list(ctx, ep);
 
-  if (event != nua_i_state)
-    return 0;
-
-  tl_gets(tags, NUTAG_CALLSTATE_REF(state), TAG_END());
-
-  switch (state) {
-  case nua_callstate_init:
-    return 0;
-  case nua_callstate_calling:
-    return 0;
-  case nua_callstate_proceeding:
-    return 0;
+  switch (callstate(tags)) {
   case nua_callstate_received:
     respond(ep, nh, SIP_180_RINGING, TAG_END());
     return 0;
@@ -1054,12 +1041,8 @@ CONDITION_FUNCTION(receive_basic_call)
 				"a=rtcp:5011"),
 	    TAG_END());
     return 0;
-  case nua_callstate_completed:
-    return 0;
   case nua_callstate_ready:
     bye(ep, nh, TAG_END());
-    return 0;
-  case nua_callstate_terminating:
     return 0;
   case nua_callstate_terminated:
     return 1;
