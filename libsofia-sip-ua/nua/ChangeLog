@@ -1,3 +1,47 @@
+2005-10-18  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Test case numbering.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -1 +1
+
+  * Log level setting.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -1 +2
+
+  * Added a basic session timer test.
+
+    M ./libsofia-sip-ua/nua/test_nua.c +121
+
+  * Fixed session-timer role selection at uas end.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -10 +13
+
+  * Added -s option.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -2 +10
+
+  * Simplified test_basic_call().
+
+    M ./libsofia-sip-ua/nua/test_nua.c -18 +1
+
+  * Added test case for nua_authenticate.
+
+    M ./libsofia-sip-ua/nua/test_nua.c +187
+
+  * Fixed response to 401.
+  We are now not terminating call when application is expected to authenticate
+  request. Should we add 
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -10 +28
+
+  * Renumbered test cases. Split reject tests into separate functions.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -135 +159
+
+  * Added aliases for SOATAG_MSS_POINTER and SOATAG_MSS_SESSION.
+
+    M ./libsofia-sip-ua/nua/nua_tag.h -27 +9
+
 2005-10-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Using port 5060 by default.

@@ -1,3 +1,15 @@
+2005-10-18  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Feature #1326002.
+	
+  * Added stun_test(), but not running it.
+
+    M ./libsofia-sip-ua/tport/tport_test.c +32
+
+  * Passing tags to stun_engine_tcreate().
+
+    M ./libsofia-sip-ua/tport/tport.c -17 +14
+
 2005-09-08  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* tport_test.c: Fixed error when building without
