@@ -40,8 +40,10 @@
 #include <assert.h>
 
 #include "stun.h"
+#include "stun_tag.h"
 
 #include <su_alloc.h>
+#include <su_tagarg.h>
 #include <su_log.h>
 #include <su.h>
 #include <su_localinfo.h>
@@ -53,8 +55,6 @@ su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", STUN_DEBUG) };
 #define SU_LOG (stun_log)
 
 #include <su_debug.h>
-
-#include <su.h>
 
 char const stun_nat_unknown[] = "NAT type undetermined",
   stun_open_internet[] = "Open Internet",
@@ -88,14 +88,49 @@ struct stun_socket_s
  *
  * @param stun server hostname or IPv4 address 
  * @param msg_integrity true if msg integr. should be used
- **/
+ *
+ *
+ */
 stun_engine_t *stun_engine_create(char const *server, 
 				  int msg_integrity)
 {
+  return stun_engine_tcreate(STUNTAG_SERVER(server), 
+			     STUNTAG_INTEGRITY(msg_integrity), 
+			     TAG_END());
+}
+
+/** 
+ * Creates a STUN engine 
+ *
+ * @param tag,value,... tag-value list 
+ *
+ * @TAGS 
+ * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
+ * @TAG STUNTAG_INTEGRITY() true if msg integrity should be used
+ *
+ */
+stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
+{
   stun_engine_t *stun;
+  char const *server = NULL;
+  int msg_integrity = 1;
+  ta_list ta;
 
   SU_DEBUG_5(("%s(\"%s\"): called\n", 
-	      "stun_engine_create", server));
+	      "stun_engine_tcreate", server));
+
+  ta_start(ta, tag, value);
+
+  tl_gets(ta_args(ta),
+	  STUNTAG_SERVER_REF(server),
+	  STUNTAG_INTEGRITY_REF(msg_integrity),
+	  TAG_END());
+
+  /* Enviroment overrides */
+  if (getenv("STUN_SERVER")) {
+    server = getenv("STUN_SERVER");
+    SU_DEBUG_5(("stun: using STUN_SERVER=%s\n", server));
+  }
   
   stun = su_home_clone(NULL, sizeof(*stun));
 
@@ -276,7 +311,8 @@ int stun_bind(stun_socket_t *ss,
 int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
 {
   int nattype = STUN_NAT_UNKNOWN;
-  int retval, lifetime, sockfd, locallen, len;
+  int retval, lifetime, sockfd;
+  socklen_t locallen, len;
   struct sockaddr_in local, mapped_addr1, mapped_addr2;
   
   sockfd = ss->ss_sockfd;
@@ -547,7 +583,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
   unsigned char dgram[512];
   stun_attr_t *mapped_addr, *chg_addr;
   struct sockaddr_in recv_addr;
-  int recv_addr_len;
+  socklen_t recv_addr_len;
   /* for retransmission */
   int num_retrx=0;
   long retrx_int=100000;
@@ -840,7 +876,8 @@ char const *stun_nattype(stun_engine_t *se)
 
 int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen, int *lifetime)
 {
-  int retval = -1, sockfdx, sockfdy, x_len, y_len, recv_addr_len, mapped_len;
+  int retval = -1, sockfdx, sockfdy;
+  socklen_t x_len, y_len, recv_addr_len, mapped_len;
   struct sockaddr_in *clnt_addr=0, x_addr, y_addr, recv_addr, mapped_addr;
   int lt_cur=0, lt=STUN_LIFETIME_EST, lt_max = STUN_LIFETIME_MAX;
   stun_attr_t *mapped_addr_attr;

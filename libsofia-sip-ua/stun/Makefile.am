@@ -29,9 +29,12 @@ noinst_PROGRAMS = 	${stun_prog_targets}
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_HEADERS = 	stun.h stun_common.h
+include_HEADERS = 	stun.h stun_common.h stun_tag.h
 
-libstun_la_SOURCES = 	stun.c stun_common.c
+libstun_la_SOURCES = 	stun.c stun_common.c \
+			stun_tag.c stun_tag_ref.c 
+
+BUILT_SOURCES =		stun_tag_ref.c
 
 COVERAGE_INPUT = 	$(libstun_la_SOURCES) $(include_HEADERS)
 
@@ -55,12 +58,6 @@ torture_stun_SOURCES = 	torture_stun.c
 
 include ../sofia.am
 
-test: check
+TAG_DLL_FLAGS =		LIST=stun_tag_list
+
 built_sources: $(BUILT_SOURCES)
-libtarget: $(lib_LIBRARIES)
-
-%.libtarget:
-	$(MAKE) -C $(*) $(MFLAGS) libtarget SUBTARGETS=
-
-doc:
-	doxygen
