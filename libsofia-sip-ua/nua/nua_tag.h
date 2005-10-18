@@ -184,7 +184,7 @@ extern tag_typedef_t nutag_use_session_ref;
 /* Protocol engine parameters,
  * set by nua_set_params(), get by nua_get_params() */
 
-#if 1
+#if 0
 
 /**Pointer to a SDP Offer-Answer session object.
  *
@@ -207,6 +207,8 @@ extern tag_typedef_t nutag_soa_session;
  nutag_soa_session_ref, tag_ptr_vr(&(x),(x))
 extern tag_typedef_t nutag_soa_session_ref;
 
+#endif
+
 /**Name for SDP Offer-Answer session object.
  *
  * SDP Offer-Answer session object name.
@@ -227,32 +229,6 @@ extern tag_typedef_t nutag_soa_name;
 #define NUTAG_SOA_NAME_REF(x) \
  nutag_soa_name_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_soa_name_ref;
-
-#else
-
-/** Pointer to a media session.
- *
- * Pointer to MSS media session. Used with NUTAG_MEDIA_CLONE()
- * when multiple SIP calls share common media session.
- *
- * @par Used with
- *
- * @par Parameter type
- *    void * (actually ms_t*)
- *
- * @par Values
- *    Pointer to MSS media session.
- *
- * Corresponding tag taking reference parameter is NUTAG_MEDIA_SESSION_REF.
- */
-#define NUTAG_MEDIA_SESSION(x)  nutag_media_session, tag_ptr_v(x)
-extern tag_typedef_t nutag_media_session;
-
-#define NUTAG_MEDIA_SESSION_REF(x) \
- nutag_media_session_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t nutag_media_session_ref;
-
-#endif
 
 /** Establish early media session using 183 responses and PRACK requests.
  *
@@ -1326,6 +1302,12 @@ enum {
 #if HAVE_SOFIA_MSS
 
 #include <soa_mss.h>
+
+#define NUTAG_MEDIA_SUBSYSTEM(x) SOATAG_MSS_POINTER(x)
+#define NUTAG_MEDIA_SUBSYSTEM_REF(x) SOATAG_MSS_POINTER_REF(x)
+
+#define NUTAG_MEDIA_SESSION(x) SOATAG_MSS_SESSION(x)
+#define NUTAG_MEDIA_SESSION_REF(x) SOATAG_MSS_SESSION_REF(x)
 
 #define NUTAG_MEDIA_PATH(x)  SOATAG_MEDIA_PROFILE((x))
 #define NUTAG_MEDIA_PATH_REF(x)   SOATAG_MEDIA_PROFILE_REF((x))
