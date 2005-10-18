@@ -2557,7 +2557,7 @@ int test_session_timer(struct context *ctx)
   nua_handle_destroy(b->nh), b->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-7.1: PASSED\n");
+    printf("TEST NUA-8.1: PASSED\n");
 
   END();
 }
