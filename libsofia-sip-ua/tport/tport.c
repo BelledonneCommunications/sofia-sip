@@ -722,7 +722,8 @@ static
 struct tport_nat_s *
 tport_nat_initialize_nat_traversal(tport_master_t *mr, 
 				   tp_name_t const *tpn,
-				   char const * const **return_transports);
+				   char const * const **return_transports,
+				   tagi_t const *tags);
 
 static
 char *tport_nat_get_external_ip_address(struct tport_nat_s *nat);
@@ -1864,7 +1865,7 @@ int tport_bind_server(tport_master_t *mr,
 
   SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n", __func__, mr, TPN_ARGS(tpn)));
 
-  nat = tport_nat_initialize_nat_traversal(mr, tpn, &transports);
+  nat = tport_nat_initialize_nat_traversal(mr, tpn, &transports, tags);
   if (!nat) 
     SU_DEBUG_1(("%s: %s\n", __func__, strerror(errno)));
 
@@ -6712,39 +6713,35 @@ static
 struct tport_nat_s *
 tport_nat_initialize_nat_traversal(tport_master_t *mr, 
 				   tp_name_t const *tpn,
-				   char const * const ** return_transports)
+				   char const * const ** return_transports,
+				   tagi_t const *tags)
 {
   struct tport_nat_s *nat = mr->mr_nat;
-  char const *stun_server;
 
   if (nat->initialized)
     return nat;
 
-  stun_server = getenv("STUN_SERVER");
-  
 #if HAVE_SOFIA_STUN
-  nat->stun = NULL;
-  nat->external_ip_address = NULL;
-  nat->stun_socket = NULL;
-
-  /* We support only UDP in case STUN_SERVER env variable is defined */
-  if (stun_server && 
-      (strcmp(tpn->tpn_proto, "*") == 0 || 
-       strcasecmp(tpn->tpn_proto, "udp") == 0)) {
+  if (stun_is_requested(TAG_NEXT(tags))) {
     static char const * const stun_transports[] = { "udp", NULL };
     int i;
 
-    SU_DEBUG_5(("Using STUN_SERVER=%s\n", stun_server));
+    nat->stun = NULL;
+    nat->external_ip_address = NULL;
+    nat->stun_socket = NULL;
 
     for (i = 0; stun_transports[i]; i++) {
-      if (strcasecmp(stun_transports[i], "udp") == 0) {
+      if ((strcmp(tpn->tpn_proto, "*") == 0 || 
+	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
         SU_DEBUG_5(("%s(%p) starting STUN engine\n", __func__, mr));
-        nat->stun = stun_engine_create(stun_server, 1);
+
+        nat->stun = stun_engine_tcreate(TAG_NEXT(tags));
 
         if (!nat->stun) 
 	  return NULL;
 
 	nat->try_stun = 1;
+	/* We support only UDP if STUN is used */
 	*return_transports = stun_transports;
         break;
       }
