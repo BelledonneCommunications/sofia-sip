@@ -97,6 +97,8 @@ struct context
   su_home_t home[1];
   su_root_t *root;
 
+  int threading;
+
   struct endpoint {
     char name[4];
     struct context *ctx;	/* Backpointer */
@@ -551,7 +553,7 @@ int test_params(struct context *ctx)
   ctx->root = su_root_create(ctx); TEST_1(ctx->root);
 
   /* Disable threading by command line switch? */
-  su_root_threading(ctx->root, 1);
+  su_root_threading(ctx->root, ctx->threading);
 
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
@@ -924,7 +926,7 @@ int test_init(struct context *ctx, char *argv[])
   ctx->root = su_root_create(ctx); TEST_1(ctx->root);
 
   /* Disable threading by command line switch? */
-  su_root_threading(ctx->root, 1);
+  su_root_threading(ctx->root, ctx->threading);
 
   if (print_headings)
     printf("TEST NUA-3.0.1: init endpoint A\n");
@@ -2474,6 +2476,7 @@ static RETSIGTYPE sig_alarm(int s)
 static char const options[] =
   "   -v | --verbose    be verbose\n"
   "   -q | --quiet      be quiet\n"
+  "   -s                use only single thread\n"
   "   -l level          set logging level (0 by default)\n"
   "   -e | --events     print nua events\n"
   "   -A                print nua events for A\n"
@@ -2500,6 +2503,8 @@ int main(int argc, char *argv[])
   char const *o_proxy;
 
   struct context ctx[1] = {{{ SU_HOME_INIT(ctx) }}};
+
+  ctx->threading = 1;
 
   ctx->a.name[0] = 'a';
   ctx->a.ctx = ctx;
@@ -2541,6 +2546,9 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(argv[i], "-B") == 0) {
       o_events_b = 1;
+    }
+    else if (strcmp(argv[i], "-s") == 0) {
+      ctx->threading = 0;
     }
     else if (strncmp(argv[i], "-p", 2) == 0) {
       if (argv[i][2])
