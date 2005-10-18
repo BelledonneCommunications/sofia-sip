@@ -2710,7 +2710,8 @@ int main(int argc, char *argv[])
   su_init();
 
   if (!(TSTFLAGS & tst_verbatim)) {
-    int level = o_quiet ? 0 : 1;
+    if (level == 0 && !o_quiet)
+      level = 1;
     su_log_soft_set_level(nua_log, level);
     su_log_soft_set_level(soa_log, level);
     su_log_soft_set_level(nta_log, level);
