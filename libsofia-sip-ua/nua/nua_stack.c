@@ -3031,8 +3031,8 @@ int crequest_check_restart(nua_handle_t *nh,
     }
   }
   else if (method != sip_method_ack && method != sip_method_cancel &&
-	   (status == 401 || status == 407) && 
-	   (sip->sip_proxy_authenticate || sip->sip_www_authenticate)) {
+	   ((status == 401 && sip->sip_www_authenticate) ||
+	    (status == 407 && sip->sip_proxy_authenticate))) {
     sip_t *rsip;
     int done;
 
