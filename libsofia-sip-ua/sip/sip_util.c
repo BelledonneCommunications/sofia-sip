@@ -29,7 +29,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * @date Last modified: Thu Oct 13 14:37:28 2005 kaiv
  */
 
 #include "config.h"
@@ -40,6 +39,7 @@
 #include <assert.h>
 #include <float.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include <su_alloc.h>
 
@@ -140,6 +140,7 @@ sip_contact_create_from_via_with_transport(su_home_t *home,
 {
   const char *host, *port, *maddr, *comp;
   char const *scheme = "sip";
+  sip_contact_t *m;
 
   if (!v) return NULL;
 
@@ -158,15 +159,29 @@ sip_contact_create_from_via_with_transport(su_home_t *home,
 
   comp = sip_params_find(v->v_params, "comp=");
 
-  return sip_contact_format(home,
-			    "<%s:%s%s%s%s%s%s%s%s%s%s%s>",
-			    scheme,
-			    user ? user : "", user ? "@" : "", 
-			    host, port ? ":" : "", port ? port : "",
-			    transport ? ";transport=" : "", 
-			    transport ? transport : "",
-			    maddr ? ";maddr=" : "", maddr ? maddr : "",
-			    comp ? ";comp=" : "", comp ? comp : "");
+  m = sip_contact_format(home,
+			 "<%s:%s%s%s%s%s%s%s%s%s%s%s>",
+			 scheme,
+			 user ? user : "", user ? "@" : "", 
+			 host, port ? ":" : "", port ? port : "",
+			 transport ? ";transport=" : "", 
+			 transport ? transport : "",
+			 maddr ? ";maddr=" : "", maddr ? maddr : "",
+			 comp ? ";comp=" : "", comp ? comp : "");
+
+  /* Convert transport to lowercase */
+  if (m && m->m_url->url_params &&
+      strncmp(m->m_url->url_params, "transport=", strlen("transport=")) == 0) {
+    char *s = (char *)m->m_url->url_params + strlen("transport=");
+    
+    while (*s && *s != ';') {
+      if (isupper(*s))
+	*s = tolower(*s);
+      s++;
+    }
+  }
+
+  return m;
 }
 
 
