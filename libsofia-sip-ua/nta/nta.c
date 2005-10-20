@@ -1574,28 +1574,39 @@ int agent_init_via(nta_agent_t *self, int use_maddr)
 }
 
 
-/** Initialize contact header. */
+/** Initialize main contact header. */
 static
 int agent_init_contact(nta_agent_t *self)
 {
-  sip_via_t const *v = agent_tport_via(tport_primaries(self->sa_tports));
+  sip_via_t const *v1 = self->sa_vias, *v2;
   char const *tp;
 
   if (self->sa_contact)
     return 0;
 
-  if (!v) return -1;
-  tp = strrchr(v->v_protocol, '/');
+  if (!v1) return -1;
+  tp = strrchr(v1->v_protocol, '/');
   if (!tp++)
     return -1;
 
-  if (strcasecmp(tp, "udp") == 0 && v->v_next && 
-      str0casecmp(v->v_next->v_protocol, sip_transport_tcp))
-    /* Do not include transport if we have both UDP and TCP */
-    tp = NULL;
+  v2 = v1->v_next;
+
+  if (v2 && 
+      strcasecmp(v1->v_host, v2->v_host) == 0 &&
+      strcasecmp(v1->v_port, v2->v_port) == 0) {
+    char const *p1 = v1->v_protocol, *p2 = v2->v_protocol;
+
+    if (strcasecmp(p1, sip_transport_udp))
+      p1 = v2->v_protocol, p2 = v1->v_protocol;
+
+    if (strcasecmp(p1, sip_transport_udp) == 0 &&
+	strcasecmp(p2, sip_transport_tcp) == 0)
+      /* Do not include transport if we have both UDP and TCP */
+      tp = NULL;
+  }
 
   self->sa_contact = 
-    sip_contact_create_from_via_with_transport(self->sa_home, v, NULL, tp);
+    sip_contact_create_from_via_with_transport(self->sa_home, v1, NULL, tp);
 
   if (!self->sa_contact)
     return -1;

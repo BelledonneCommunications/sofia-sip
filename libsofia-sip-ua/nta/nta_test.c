@@ -80,6 +80,8 @@ int tstflags = 0;
 #define __func__ name
 #endif
 
+#define NONE ((void *)-1)
+
 struct sigcomp_compartment;
 
 char const name[] = "nta_test";
@@ -766,8 +768,59 @@ int test_tports(agent_t *ag)
 
   BEGIN();
 
+  nta_agent_t *agent;
+  sip_contact_t const *m;
+
   *url = *ag->ag_contact->m_url;
   url->url_port = "*";
+  url->url_params = "transport=tcp";
+
+  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
+  TEST_1(!nta_agent_via(agent));
+  TEST_1(!nta_agent_contact(agent));
+  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
+  TEST_1(v = nta_agent_via(agent));
+  TEST(strcasecmp(v->v_protocol, sip_transport_tcp), 0);
+  TEST_1(m = nta_agent_contact(agent));
+  TEST_S(m->m_url->url_params, "transport=tcp");
+  url->url_params = "transport=udp";
+  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
+  TEST_1(v = nta_agent_via(agent)); TEST_1(v = v->v_next);
+  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
+  TEST_VOID(nta_agent_destroy(agent));
+
+  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
+  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
+  TEST_1(v = nta_agent_via(agent)); TEST_1(!v->v_next);
+  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
+  TEST_1(m = nta_agent_contact(agent));
+  TEST_S(m->m_url->url_params, "transport=udp");
+  TEST_VOID(nta_agent_destroy(agent));
+
+  url->url_params = "transport=tcp,udp";
+
+  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
+  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
+  TEST_1(v = nta_agent_via(agent)); 
+  TEST(strcasecmp(v->v_protocol, sip_transport_tcp), 0);
+  TEST_1(v = v->v_next);  
+  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
+  TEST_1(m = nta_agent_contact(agent));
+  TEST_1(!m->m_url->url_params);
+  TEST_VOID(nta_agent_destroy(agent));
+
+  url->url_params = NULL;
+
+  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
+  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
+  TEST_1(v = nta_agent_via(agent)); 
+  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
+  TEST_1(v = v->v_next);
+  TEST(strcasecmp(v->v_protocol, sip_transport_tcp), 0);
+  TEST_1(m = nta_agent_contact(agent));
+  TEST_1(!m->m_url->url_params);
+  TEST_VOID(nta_agent_destroy(agent));
+
   url->url_params = "transport=udp";
 
   TEST_1(nta_agent_add_tport(ag->ag_agent, (url_string_t *)url, 
@@ -2347,6 +2400,7 @@ int test_call(agent_t *ag)
 			      SIPTAG_SUBJECT_STR("Call 1"),
 			      SIPTAG_CONTACT(ag->ag_m_alice),
 			      SIPTAG_CONTENT_TYPE(c),
+			      SIPTAG_ACCEPT_CONTACT_STR("*;audio"),
 			      SIPTAG_PAYLOAD(sdp),
 			      NTATAG_USE_TIMESTAMP(1),
 			      NTATAG_PASS_100(1),
