@@ -11,7 +11,7 @@
 Summary: Sofia SIP User-Agent library 
 Name: sofia-sip
 Version: @VERSION@
-Release: 3%{?dist}
+Release: 1%{?dist}
 License: Lesser GNU Public License 2.1
 Group: System Environment/Libraries
 URL: http://sf.net/projects/sofia-sip
@@ -50,8 +50,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_prefix}/lib/libsofia-sip-ua.so
-%{_prefix}/lib/libsofia-sip-ua.so.*
+%{_prefix}/%{_lib}/libsofia-sip-ua.so
+%{_prefix}/%{_lib}/libsofia-sip-ua.so.*
 %doc AUTHORS COPYING COPYRIGHTS README
 
 %package	devel
@@ -72,9 +72,9 @@ Development package for Sofia SIP UA library. This package includes
 %{_prefix}/include/sofia-sip/*.h.in
 %{_prefix}/libexec/sofia/tag_dll.awk
 %{_prefix}/libexec/sofia/msg_parser.awk
-%{_prefix}/lib/libsofia-sip-ua.la
-%{_prefix}/lib/libsofia-sip-ua.a
-%{_prefix}/lib/pkgconfig/%{name}-ua.pc
+%{_prefix}/%{_lib}/libsofia-sip-ua.la
+%{_prefix}/%{_lib}/libsofia-sip-ua.a
+%{_prefix}/%{_lib}/pkgconfig/%{name}-ua.pc
 %{?_with_doxygen:docs/*}
 %doc TODO README.developers
 
@@ -94,6 +94,9 @@ Command line utilities for Sofia SIP UA library.
 %{_prefix}/bin/sip-date
 
 %changelog
+* Thu Oct 20 2005 Pekka Pessi <Pekka.Pessi@nokia.com> - @VERSION@
+- Using %{_lib} instead of lib
+
 * Thu Oct  6 2005 Pekka Pessi <Pekka.Pessi@iki.fi> - @VERSION@
 - Added sub-package utils
 
