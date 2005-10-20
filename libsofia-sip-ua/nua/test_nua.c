@@ -1501,14 +1501,20 @@ int test_reject_302(struct context *ctx)
 
 /* ------------------------------------------------------------------------ */
 
-/* Reject call with 401 */
+/* Reject call with 407, then 401 */
 
+CONDITION_FUNCTION(reject_407);
 CONDITION_FUNCTION(reject_401);
 CONDITION_FUNCTION(authenticate_call);
 CONDITION_FUNCTION(reject_403);
 
 /*
  A     reject-401     B
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |<--------407--------|
+ |---------ACK------->|
  |                    |
  |-------INVITE------>|
  |<----100 Trying-----|
@@ -1523,6 +1529,31 @@ CONDITION_FUNCTION(reject_403);
  |<-------403---------|
  |--------ACK-------->|
 */
+
+CONDITION_FUNCTION(reject_407)
+{
+  if (!check_handle(ep, nh, SIP_500_INTERNAL_SERVER_ERROR))
+    return 0;
+
+  if (event != nua_i_active && event != nua_i_terminated)
+    save_event_in_list(ctx, ep);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, nh, SIP_407_PROXY_AUTH_REQUIRED,
+	    SIPTAG_PROXY_AUTHENTICATE_STR("Digest realm=\"test_nua\", "
+					  "nonce=\"nsdhfuds\", algorithm=MD5, "
+					  "qop=\"auth-int\""),
+	    TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    nua_handle_destroy(ep->nh), ep->nh = NULL;
+    ep->next_condition = reject_401;
+    return 0;
+  default:
+    return 0;
+  }
+}
 
 CONDITION_FUNCTION(reject_401)
 {
@@ -1561,7 +1592,14 @@ CONDITION_FUNCTION(authenticate_call)
     save_event_in_list(ctx, ep);
 
   if (event == nua_r_invite && status == 401) {
-    authenticate(ep, nh, NUTAG_AUTH("Digest:\"test_nua\":erkki:secret"), TAG_END());
+    authenticate(ep, nh, NUTAG_AUTH("Digest:\"test_nua\":jaska:secret"), 
+		 TAG_END());
+    return 0;
+  }
+
+  if (event == nua_r_invite && status == 407) {
+    authenticate(ep, nh, NUTAG_AUTH("Digest:\"test_nua\":erkki:secret"), 
+		 TAG_END());
     return 0;
   }
 
@@ -1609,7 +1647,7 @@ int test_reject_401(struct context *ctx)
 	 SIPTAG_SUBJECT_STR("reject-401"),
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
-  run_until(ctx, -1, authenticate_call, -1, reject_401);
+  run_until(ctx, -1, authenticate_call, -1, reject_407);
 
   /*
    Client transitions in reject-3:
@@ -1618,6 +1656,11 @@ int test_reject_401(struct context *ctx)
   */
 
   TEST_1(e = ctx->a.events.head); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
+  TEST(sip_object(e->data->e_msg)->sip_status->st_status, 407);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
   TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
@@ -1638,10 +1681,17 @@ int test_reject_401(struct context *ctx)
 
   /*
    Server transitions:
+   INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED/INIT
    INIT -(S1)-> RECEIVED -(S2)-> EARLY -(S6b)-> TERMINATED/INIT
    INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED
   */
   TEST_1(e = ctx->b.events.head); TEST(e->data->e_event, nua_i_invite);
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_i_invite);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
