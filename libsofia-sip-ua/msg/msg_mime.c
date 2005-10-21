@@ -88,7 +88,6 @@ union msg_mime_u
   msg_accept_language_t     sh_accept_language[1];
   msg_content_disposition_t sh_content_disposition[1];
   msg_content_encoding_t    sh_content_encoding[1];
-  msg_content_base_t        sh_content_base[1];
   msg_content_id_t          sh_content_id[1];
   msg_content_language_t    sh_content_language[1];
   msg_content_length_t      sh_content_length[1];
@@ -1910,16 +1909,39 @@ MSG_HEADER_CLASS_G(content_location, "Content-Location", "", single);
 
 /* ====================================================================== */
 
+/* ====================================================================== */
+#if 0
 /**@ingroup msg_mime
  * @defgroup msg_content_base Content-Base Header
  *
+ * RFC2617:
+ * Content-Base was deleted from the specification: it was not
+ * implemented widely, and there is no simple, safe way to introduce it
+ * without a robust extension mechanism. In addition, it is used in a
+ * similar, but not identical fashion in MHTML [45].
  *
+ */
+
+
+/**@ingroup msg_content_base
+ * @typedef msg_generic_t msg_content_base_t;
+ * Content-Base Header Structure.
+ * @code
+ * typedef struct
+ * {
+ *   msg_common_t        g_common[1];    // Common fragment info
+ *   msg_content_base_t *g_next;	 // Link to next header
+ *   char const         *g_string;       // Header value
+ * }
+ * @endcode
  */
 
 #define msg_content_base_d msg_generic_d
 #define msg_content_base_e msg_generic_e
 msg_hclass_t msg_content_base_class[] =
 MSG_HEADER_CLASS_G(content_base, "Content-Base", "", single);
+
+#endif
 
 /* ====================================================================== */
 
