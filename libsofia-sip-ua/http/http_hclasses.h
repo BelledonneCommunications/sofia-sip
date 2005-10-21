@@ -46,7 +46,6 @@
 #define http_content_length_class      msg_content_length_class
 #define http_content_md5_class         msg_content_md5_class
 #define http_content_type_class        msg_content_type_class
-#define http_content_base_class        msg_content_base_class
 #define http_content_id_class          msg_content_id_class
 #define http_content_location_class    msg_content_location_class
 #define http_content_language_class    msg_content_language_class
