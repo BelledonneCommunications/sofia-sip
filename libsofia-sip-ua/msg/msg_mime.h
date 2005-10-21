@@ -59,7 +59,6 @@ typedef msg_accept_any_t     	    msg_accept_language_t;
 typedef struct msg_content_disposition_s 
                                     msg_content_disposition_t;
 typedef msg_list_t	      	    msg_content_encoding_t;
-typedef msg_generic_t               msg_content_base_t;
 typedef msg_generic_t               msg_content_id_t;
 typedef struct msg_content_length_s msg_content_length_t;
 typedef msg_generic_t               msg_content_location_t;
@@ -171,7 +170,6 @@ struct msg_multipart_s
   msg_content_disposition_t *mp_content_disposition;
                                                 /**< Content-Disposition */
   msg_content_location_t *mp_content_location;	/**< Content-Location */
-  msg_content_base_t     *mp_content_base;      /**< Content-Base */
   msg_content_id_t       *mp_content_id;        /**< Content-ID */
   msg_content_language_t *mp_content_language;	/**< Content-Language */
   msg_content_encoding_t *mp_content_encoding;	/**< Content-Encoding */

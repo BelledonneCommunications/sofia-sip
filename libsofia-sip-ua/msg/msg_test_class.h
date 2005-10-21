@@ -135,7 +135,6 @@ union msg_test_u
   msg_accept_language_t     sh_accept_language[1];
   msg_content_disposition_t sh_content_disposition[1];
   msg_content_encoding_t    sh_content_encoding[1];
-  msg_content_base_t        sh_content_base[1];
   msg_content_id_t          sh_content_id[1];
   msg_content_md5_t         sh_content_md5[1];
   msg_content_language_t    sh_content_language[1];
