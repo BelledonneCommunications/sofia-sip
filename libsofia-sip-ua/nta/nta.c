@@ -985,7 +985,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   agent->sa_smime = smime;
   agent->sa_flags = flags & MSG_FLG_USERMASK;
   agent->sa_rport = rport != 0;
-  agent->sa_server_rport = rport != 0;
+  agent->sa_server_rport = server_rport != 0;
   agent->sa_preload = preload;
   agent->sa_tport_threadpool = threadpool;
 
@@ -2127,7 +2127,7 @@ int agent_check_request_via(nta_agent_t *agent,
   if (!agent->sa_server_rport) {
     /*Xyzzy*/;
   }
-  if ((rport = sip_params_find(v->v_params, "rport"))) {
+  else if ((rport = sip_params_find(v->v_params, "rport"))) {
     rport = su_sprintf(msg_home(msg), "rport=%u", ntohs(from->su_port));
     sip_via_add_param(msg_home(msg), v, rport);
   } 
