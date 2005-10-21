@@ -117,7 +117,7 @@ int auth_init_default(auth_mod_t *am,
 		      su_root_t *root,
 		      tag_type_t tag, tag_value_t value, ...)
 {
-  int retval = -1;
+  int retval = 0;
 
   ta_list ta;
 
@@ -187,7 +187,7 @@ int auth_init_default(auth_mod_t *am,
 
   /* Make sure that we have something 
      that can be used to identify credentials */
-  if (!am->am_opaque || strcmp(am->am_opaque, "*") == 0) {
+  if (am->am_opaque && strcmp(am->am_opaque, "*") == 0) {
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 255
 #endif
@@ -209,19 +209,24 @@ int auth_init_default(auth_mod_t *am,
     base64_e(hostname, sizeof hostname, hmac, sizeof hmac);
     
     am->am_opaque = su_strdup(am->am_home, hostname);
+
+    if (!am->am_opaque) {
+      retval = -1;
+      SU_DEBUG_1(("%s: cannot create unique identifier\n", __func__));
+    }
   }
 
-  if (!am->am_opaque) {
-    retval = -1;
-    SU_DEBUG_1(("%s: cannot create unique identifier\n", __func__));
-  } else if (db) {
+  if (retval < 0)
+    ;
+  else if (db) {
     retval = auth_readdb(am);
     if (retval == -1) {
       int err = errno;
       SU_DEBUG_1(("auth-module: %s: %s\n", am->am_db, strerror(err)));
       errno = err;
     }
-  } else {
+  }
+  else {
     retval = auth_htable_resize(am->am_home, am->am_users, 0);
   }
   
@@ -638,13 +643,13 @@ void auth_check_digest(auth_mod_t *am,
 
   phrase = "Bad authorization";
 
-#define PA "Authorization"
+#define PA "Authorization missing "
 
-  if ((!ar->ar_username && (phrase = PA "missing username")) || 
-      (!ar->ar_nonce && (phrase = PA "missing nonce")) || 
-      (!ar->ar_uri && (phrase = PA "missing URI")) || 
-      (!ar->ar_response && (phrase = PA "missing response")) || 
-      (!ar->ar_opaque && (phrase = PA "missing opaque")) ||
+  if ((!ar->ar_username && (phrase = PA "username")) || 
+      (!ar->ar_nonce && (phrase = PA "nonce")) || 
+      (!ar->ar_uri && (phrase = PA "URI")) || 
+      (!ar->ar_response && (phrase = PA "response")) || 
+      /* (!ar->ar_opaque && (phrase = PA "opaque")) || */
       /* Check for qop */
       (ar->ar_qop && 
        ((ar->ar_auth && 
@@ -1237,7 +1242,8 @@ msg_auth_t *auth_digest_credentials(msg_auth_t *auth,
 	  if (arealm[i] != realm[j])
 	    break;
 	}
-      } else {
+      } 
+      else {
 	cmp = strcmp(arealm, realm);
       }
 
