@@ -125,6 +125,7 @@ Makefile
 packages/Makefile
 packages/sofia-sip.spec
 packages/sofia-sip-ua.pc
+libsofia-sip-ua/nua/sofia_config.h
 libsofia-sip-ua/Makefile
 libsofia-sip-ua/bnf/Makefile
 libsofia-sip-ua/docs/Makefile
