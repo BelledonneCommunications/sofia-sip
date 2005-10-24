@@ -34,10 +34,11 @@ TESTS = 		test_nua
 
 BUILT_SOURCES =		nua_tag_ref.c
 
-include_HEADERS =       nua.h nua_stack.h nua_tag.h
+include_HEADERS =       nua.h nua_stack.h nua_tag.h sofia_config.h
 
 libnua_la_SOURCES = 	nua.c nua_common.c nua_stack.c \
-			nua_tag.c nua_tag_ref.c
+			nua_tag.c nua_tag_ref.c \
+			sofia_config.c
 
 COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_HEADERS)
 
@@ -61,7 +62,8 @@ LDADD = 		libnua.la \
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST =		Doxyfile nua.docs $(BUILT_SOURCES)
+EXTRA_DIST =		Doxyfile nua.docs $(BUILT_SOURCES) \
+			sofia_config.h.in
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
