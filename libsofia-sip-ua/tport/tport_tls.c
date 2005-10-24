@@ -26,10 +26,9 @@
  * @brief TLS interface
  * 
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>
+ * @author Pekka Pessi <ext-Pekka.Pessi@nokia.com>
  *
  * Copyright 2001, 2002 Nokia Research Center.  All rights reserved.
- *
- * @date Last modified: Fri Sep 23 14:53:50 2005
  *
  */
 
@@ -54,10 +53,13 @@
 #include <openssl/pem.h>
 #include <openssl/rand.h>
 #include <openssl/bio.h>
+#include <openssl/opensslv.h>
 
 #include <poll.h>
 
 #include "tport_tls.h"
+
+char const tls_version[] = OPENSSL_VERSION_TEXT;
 
 enum  { tls_master, tls_client, tls_slave };
 

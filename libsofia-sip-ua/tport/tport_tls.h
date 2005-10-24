@@ -30,14 +30,13 @@
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>
  *
  * Copyright 2001, 2002 Nokia Research Center.  All rights reserved.
- *
- * @date Last modified: Mon Aug  8 19:10:17 2005 ppessi
- *
  */
 
 #define TLS_MAX_HOSTS (16)
 
 typedef struct tls_s tls_t;
+
+extern char const tls_version[];
 
 typedef struct tls_issues_s {
   int  verify_depth;    /* if 0, then do nothing                      */
