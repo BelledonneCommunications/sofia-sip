@@ -152,7 +152,7 @@ fi
 
 AM_CONDITIONAL([ENABLE_COVERAGE], test X$enable_coverage != Xno)
 
-AC_SUBST([MOSTLYCLEANFILES], "*.bb *.bbg *.da *.[hc].gcov")
+AC_SUBST([MOSTLYCLEANFILES], "*.bb *.bbg *.da *.gcov *.gcda *.gcno")
 ])
 
 dnl ======================================================================
