@@ -9,7 +9,6 @@ TAG_AWK=$(top_srcdir)/libsofia-sip-ua/su/tag_dll.awk
 
 $(srcdir)/*_tag_ref.c: $(TAG_AWK)
 
-
 $(srcdir)/%_tag_ref.c: $(srcdir)/%_tag.c
 	$(AWK) -f $(TAG_AWK) NODLL=1 $(TAG_DLL_FLAGS) $<
 
@@ -17,3 +16,10 @@ if ENABLE_COVERAGE
 coverage:
 	@$(srcdir)/../../scripts/coverage $(COVERAGE_FLAGS) $(COVERAGE_INPUT)
 endif
+
+../bnf/libbnf.la ../http/libhttp.la ../ipt/libipt.la ../iptsec/libiptsec.la \
+ ../msg/libmsg.la ../nea/libnea.la ../nta/libnta.la ../nth/libnth.la \
+ ../nua/libnua.la ../sdp/libsdp.la ../sip/libsip.la ../soa/libsoa.la \
+ ../sresolv/libsresolv.la ../stun/libstun.la ../su/libsu.la \
+ ../tport/libtport.la ../url/liburl.la:
+	$(MAKE) -C $(@D) $(@F)
