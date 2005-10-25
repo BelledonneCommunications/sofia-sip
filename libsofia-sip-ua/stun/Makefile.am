@@ -38,15 +38,10 @@ BUILT_SOURCES =		stun_tag_ref.c
 
 COVERAGE_INPUT = 	$(libstun_la_SOURCES) $(include_HEADERS)
 
-# common LDFLAGS to all utils
 LDADD =			libstun.la \
 			../su/libsu.la
 
-stunc_DEPENDENCIES = 	$(LIBDEP) libstun.la
-stunc_SOURCES = 	stunc.c
-
-torture_stun_DEPENDENCIES = $(LIBDEP) libstun.la
-torture_stun_SOURCES = 	torture_stun.c
+torture_stun_LDFLAGS = 	-static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

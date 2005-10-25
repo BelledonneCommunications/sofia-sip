@@ -25,7 +25,7 @@ COVERAGE_INPUT = 	$(libbnf_la_SOURCES) $(include_HEADERS)
 
 LDADD =			libbnf.la
 
-torture_bnf_SOURCES = 	torture_bnf.c
+torture_bnf_LDFLAGS = 	-static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

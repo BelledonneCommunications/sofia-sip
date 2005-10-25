@@ -56,6 +56,10 @@ LDADD = 		libsip.la \
 			../url/liburl.la \
 			../su/libsu.la
 
+torture_sip_LDFLAGS = 	-static
+sip_test_msg_LDFLAGS = 	-static
+date_test_LDFLAGS = 	-static
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 

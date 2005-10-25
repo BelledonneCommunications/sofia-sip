@@ -46,6 +46,8 @@ LDADD = 		libnth.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
 
+nth_test_LDFLAGS = 	-static
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 

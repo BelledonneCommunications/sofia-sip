@@ -50,7 +50,7 @@ LDADD = 		libnta.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
 
-nta_test_SOURCES = 	nta_test.c
+nta_test_LDFLAGS = 	-static
 
 MOSTLYCLEANFILES +=	.test[0-9]*
 

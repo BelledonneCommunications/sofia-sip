@@ -53,6 +53,8 @@ LDADD = 		libiptsec.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
 
+auth_digest_test_LDFLAGS = -static
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 

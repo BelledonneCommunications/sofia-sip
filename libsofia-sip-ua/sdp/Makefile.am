@@ -33,6 +33,9 @@ COVERAGE_INPUT = 	$(libsdp_la_SOURCES) $(include_HEADERS)
 LDADD = 		libsdp.la \
 			../su/libsu.la
 
+sdp_test_LDFLAGS = 	-static
+sdp_torture_LDFLAGS = 	-static
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 

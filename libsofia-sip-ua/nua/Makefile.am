@@ -59,6 +59,8 @@ LDADD = 		libnua.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
 
+test_nua_LDFLAGS = 	-static
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 

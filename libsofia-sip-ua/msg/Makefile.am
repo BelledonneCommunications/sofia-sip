@@ -47,9 +47,9 @@ LDADD = 		libmsg_test.a libmsg.la \
 			../url/liburl.la \
 			../su/libsu.la 
 
-msg_test_SOURCES = 	msg_test.c
+msg_test_LDFLAGS = 	-static
 
-msg_name_hash_SOURCES = msg_name_hash.c
+msg_name_hash_LDFLAGS =	-static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

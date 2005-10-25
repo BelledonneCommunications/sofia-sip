@@ -32,7 +32,8 @@ LDADD = 		libipt.la \
 			../sresolv/libsresolv.la \
 			../su/libsu.la
 
-sha1test_SOURCES = 	sha1test.c
+sha1test_LDFLAGS = 	-static
+torture_base64_LDFLAGS = -static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

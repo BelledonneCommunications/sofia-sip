@@ -37,6 +37,8 @@ LDADD = 		libsoa.la \
 			../ipt/libipt.la \
 			../su/libsu.la
 
+test_soa_LDFLAGS = 	-static
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
