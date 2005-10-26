@@ -63,8 +63,7 @@ test_nua_LDFLAGS = 	-static
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST =		Doxyfile nua.docs $(BUILT_SOURCES) \
-			sofia_config.h.in
+EXTRA_DIST =		Doxyfile nua.docs $(BUILT_SOURCES)
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
