@@ -125,12 +125,13 @@ Makefile
 packages/Makefile
 packages/sofia-sip.spec
 packages/sofia-sip-ua.pc
-libsofia-sip-ua/nua/sofia_config.h
 libsofia-sip-ua/Makefile
 libsofia-sip-ua/bnf/Makefile
 libsofia-sip-ua/docs/Makefile
 libsofia-sip-ua/docs/Doxyfile.version
 libsofia-sip-ua/docs/sofia-footer.html
+libsofia-sip-ua/features/Makefile
+libsofia-sip-ua/features/sofia_sip_features.h
 libsofia-sip-ua/http/Makefile
 libsofia-sip-ua/ipt/Makefile
 libsofia-sip-ua/iptsec/Makefile
@@ -140,8 +141,8 @@ libsofia-sip-ua/nta/Makefile
 libsofia-sip-ua/nth/Makefile
 libsofia-sip-ua/nua/Makefile
 libsofia-sip-ua/sdp/Makefile
-libsofia-sip-ua/soa/Makefile
 libsofia-sip-ua/sip/Makefile
+libsofia-sip-ua/soa/Makefile
 libsofia-sip-ua/sresolv/Makefile 
 libsofia-sip-ua/stun/Makefile
 libsofia-sip-ua/su/Makefile

@@ -46,6 +46,8 @@
 typedef struct stun_engine_s stun_engine_t;
 typedef struct stun_socket_s stun_socket_t;
 
+extern char const stun_version[]; /**< Name and version of STUN software */
+
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...); 

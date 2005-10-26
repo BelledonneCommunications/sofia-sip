@@ -1,5 +1,5 @@
 #
-# Makefile.am for nua module
+# Makefile.am for sofia features module
 #
 
 # ----------------------------------------------------------------------
@@ -13,6 +13,7 @@ INCLUDES = 		-I$(srcdir)/../bnf \
 			-I$(srcdir)/../nea \
 			-I$(srcdir)/../nta \
 			-I$(srcdir)/../nth \
+			-I$(srcdir)/../nua \
 			-I$(srcdir)/../sdp \
 			-I$(srcdir)/../sip \
 			-I$(srcdir)/../soa \
@@ -23,52 +24,19 @@ INCLUDES = 		-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LTLIBRARIES = 	libnua.la
-
-noinst_PROGRAMS =	test_nua
-
-TESTS = 		test_nua
+noinst_LTLIBRARIES = 	libsofia.la
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-BUILT_SOURCES =		nua_tag_ref.c
+include_HEADERS =       sofia_sip_features.h
 
-include_HEADERS =       nua.h nua_tag.h
-
-libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
-			nua_tag.c nua_tag_ref.c
-
-COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_HEADERS)
-
-LDADD = 		libnua.la \
-			../iptsec/libiptsec.la \
-			../ipt/libipt.la \
-			../http/libhttp.la \
-			../nea/libnea.la \
-			../nta/libnta.la \
-			../sresolv/libsresolv.la \
-			../tport/libtport.la \
-			../stun/libstun.la \
-			../soa/libsoa.la \
-			../sdp/libsdp.la \
-			../sip/libsip.la \
-			../msg/libmsg.la \
-			../url/liburl.la \
-			../bnf/libbnf.la \
-			../su/libsu.la
-
-test_nua_LDFLAGS = 	-static
+libsofia_la_SOURCES = 	sofia_sip_features.c
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
-
-EXTRA_DIST =		Doxyfile nua.docs $(BUILT_SOURCES) \
-			sofia_config.h.in
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
 include $(srcdir)/../sofia.am
-
-TAG_DLL_FLAGS =		LIST=nua_tag_list

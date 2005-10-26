@@ -1,5 +1,4 @@
-/*
- * This file is part of the Sofia-SIP package
+/* This -*- C -*- file is part of the Sofia-SIP package
  *
  * Copyright (C) 2005 Nokia Corporation.
  *
@@ -22,28 +21,34 @@
  *
  */
 
-/**@file sofia_version.h  
- * @brief Nokia User Agent Library
+/**@file sofia_sip_features.h  
+ * @brief Nokia User Agent Library Features
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
  */
 
-#ifndef SOFIA_VERSION_H
-/** Defined when @b <sofia_version.h> has been included. */
-#define SOFIA_VERSION_H
+#ifndef SOFIA_SIP_FEATURES_H
+/** Defined when <sofia_sip_features.h> has been included. */
+#define SOFIA_SIP_FEATURES_H
 
 /** Define as current Sofia version */
-#define SOFIA_VERSION  @PACKAGE_VERSION@
+#define SOFIA_SIP_VERSION  "@PACKAGE_VERSION@"
 /** Define as current Sofia name and version */
-#define SOFIA_NAME_VERSION   @PACKAGE_STRING@
+#define SOFIA_SIP_NAME_VERSION   "@PACKAGE_NAME@-@PACKAGE_VERSION@"
 
-extern char const *sofia_name_version;
-extern char const *sofia_has_sigcomp;
-extern char const *sofia_has_tls;
-extern char const *sofia_has_stun;
-extern char const *sofia_has_ipv6;
-extern char const *sofia_has_smime;
+extern char const * const sofia_sip_name_version;
+extern char const * const sofia_has_smime;
+extern char const * const sofia_has_tls;
+extern char const * const sofia_has_dtls;
+extern char const * const sofia_has_tls_sctp;
+extern char const * const sofia_has_sigcomp;
+extern char const * const sofia_has_stun;
+extern char const * const sofia_has_turn;
+extern char const * const sofia_has_upnp;
+
+extern char const * const sofia_has_sctp;
+extern char const * const sofia_has_ipv6;
 
 #endif

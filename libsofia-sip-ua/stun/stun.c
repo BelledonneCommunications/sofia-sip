@@ -32,7 +32,7 @@
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * 
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
- * @date Last modified: Mon Aug  8 19:10:15 2005 ppessi
+ * @date Last modified: Wed Oct 26 14:15:27 2005 ppessi
  */
 
 #include "config.h" 
@@ -47,6 +47,8 @@
 #include <su_log.h>
 #include <su.h>
 #include <su_localinfo.h>
+
+#include <openssl/opensslv.h>
 
 #define STUN_DEBUG 5		/* default log level */
 
@@ -82,6 +84,9 @@ struct stun_socket_s
   /* State for STUN protocol ? */
   int            ss_state;
 };
+
+char const stun_version[] = 
+ "sofia-sip-stun-" PACKAGE_VERSION " with " OPENSSL_VERSION_TEXT;
 
 /**
  * Check if a STUN engine should be created.
