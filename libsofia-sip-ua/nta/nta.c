@@ -1298,7 +1298,7 @@ static char const * const tports_sips[] =
     "tls", NULL
   };
 
-static tp_agent_class_t nta_agent_class[1] =
+static tport_stack_class_t nta_agent_class[1] =
   {{
     sizeof(nta_agent_class),
     agent_recv_message,

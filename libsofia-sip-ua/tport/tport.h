@@ -97,11 +97,10 @@ typedef struct {
   /** Ask stack to accept/reject early SigComp message */
   int (*tpac_sigcomp_accept)(tp_stack_t *, tport_t *, msg_t *);
 
-} tp_stack_class_t;
+} tport_stack_class_t;
 
 /* Compatibility */
-typedef tp_stack_t tp_agent_t;
-typedef tp_stack_class_t const tp_agent_class_t;
+typedef tport_stack_class_t tp_stack_class_t;
 
 /** Callback to report error by pending requests. */
 typedef void tport_pending_error_f(tp_stack_t *, tp_client_t *, 
@@ -153,13 +152,13 @@ typedef struct {
 
 /** Create first primary transport. */
 tport_t *tport_tcreate(tp_stack_t *stack,
-		       tp_stack_class_t const *tpac,
+		       tport_stack_class_t const *tpac,
 		       su_root_t *root, 
 		       tag_type_t tag, tag_value_t value, ...);
 
 /** Create first primary transport. @deprecated Use tport_tcreate(). */
 tport_t *tport_create(tp_stack_t *stack,
-		      tp_stack_class_t const *stack_class,
+		      tport_stack_class_t const *stack_class,
 		      su_root_t *root);
 
 /** Bind transports to network */
