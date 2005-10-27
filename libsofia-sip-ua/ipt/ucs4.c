@@ -22,7 +22,7 @@
  *
  */
 
-/**@cifle ucs4.c UCS-4 routines
+/**@CFILE ucs4.c UCS-4 routines
  *
  * @author Pekka Pessi <pessi@research.nokia.com>
  *

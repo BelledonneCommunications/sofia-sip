@@ -23,7 +23,7 @@
  * <http_header.h> include file. For header @c X, there are types,
  * functions, macros and header class as follows:
  *
- *  - @c #http_X_t is the structure used to store parsed header,
+ *  - @c http_X_t is the structure used to store parsed header,
  *  - @c HTTP_X_INIT() initializes a static instance of http_X_t,
  *  - @c http_X_p() tests if header object is instance of header X,
  *  - @c http_X_make() is a macro that creates a header X object by 

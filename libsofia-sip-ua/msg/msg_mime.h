@@ -28,7 +28,7 @@
 /**@ingroup msg_mime
  * @file msg_mime.h
  *
- * MIME headers and multipart messages (RFC 2045).
+ * MIME headers and multipart messages (@RFC2045).
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *

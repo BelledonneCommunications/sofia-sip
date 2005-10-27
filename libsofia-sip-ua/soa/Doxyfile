@@ -1,7 +1,7 @@
 PROJECT_NAME         = "soa"
 OUTPUT_DIRECTORY     = ../docs/html/soa
 
-INPUT 		     = soa.docs soa.h soa.c
+INPUT 		     = soa.docs soa.h soa_add.h soa.c soa_tag.h soa_tag.c
 
 @INCLUDE             = ../docs/Doxyfile.conf
 

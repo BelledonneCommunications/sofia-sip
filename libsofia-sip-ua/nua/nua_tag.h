@@ -147,7 +147,7 @@ extern tag_typedef_t nutag_max_subscriptions;
 nutag_max_subscriptions_ref, tag_uint_vr(&(x))
 extern tag_typedef_t nutag_max_subscriptions_ref;
 
-/* Intentionally undocumented */
+/** Intentionally undocumented. */
 #define NUTAG_UICC(x)  nutag_uicc, tag_str_v(x)
 extern tag_typedef_t nutag_uicc;
 

@@ -163,7 +163,6 @@ static tagi_t const nua_filter[] =
  * @retval NULL upon an error
  *
  * @par Related tags:
- *     #NUTAG_MEDIA_DESCS      \n
  *     #NUTAG_MEDIA_ENABLE     \n
  *     #NUTAG_PROXY            \n
  *     #NUTAG_SIP_PARSER       \n
@@ -171,8 +170,6 @@ static tagi_t const nua_filter[] =
  *     #NUTAG_UICC             \n
  *     #NUTAG_CERTIFICATE_DIR  \n
  *     #NUTAG_URL              \n
- *     #NUTAG_MEDIA_ADDRESS    \n
- *     #NUTAG_MEDIA_PARAMS     \n
  *     all relevant NTATAG_* are passed to NTA 
  *
  * @par Events:
@@ -513,8 +510,8 @@ int nua_handle_has_active_call(nua_handle_t const *nh)
  *
  * Please note that this status is not affected by remote end putting 
  * this end on hold. Remote end can put each media separately on hold 
- * and status is reflected on #NUTAG_ACTIVE_AUDIO, #NUTAG_ACTIVE_VIDEO 
- * and #NUTAG_ACTIVE_CHAT tag values in nua_i_active event.
+ * and status is reflected on #SOATAG_ACTIVE_AUDIO, #SOATAG_ACTIVE_VIDEO 
+ * and #SOATAG_ACTIVE_CHAT tag values in nua_i_active event.
  *
  * @param nh          Pointer to operation handle
  *
@@ -832,10 +829,11 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  * Optionally 
  * - uses early media if #NUTAG_EARLY_MEDIA tag is used with non zero value
  * - media parameters can be set by NUTAG_MEDIA_* tags
- * - if #NUTAG_MEDIA_ENABLE tag is used with value zero then the MSS is 
+ * - if #NUTAG_MEDIA_ENABLE tag is used with value zero then the soa is 
  *   not used and application must create the SDP
  * - nua_invite() can be used to change call status: 
- *   - #NUTAG_HOLD tag with value 1 sets the call on hold
+ *   - #SOATAG_HOLD tag listing the media put on hold or with value "*" sets
+ *     the call on hold
  *   - if new media path is given either new media parameters are taken in 
  *     use or new media is added to session.
  *
@@ -996,7 +994,7 @@ void nua_message(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *
  * A chat channel can be established during call setup using "message" media. 
  * An active chat channel is indicated using nua_i_active event containing 
- * #NUTAG_ACTIVE_CHAT tag. Chat messages can be sent using this channel with 
+ * #SOATAG_ACTIVE_CHAT tag. Chat messages can be sent using this channel with 
  * nua_chat() function. Currently this is implemented using SIP MESSAGE 
  * requests but in future MSRP (message session protocol) will replace it.
 *
@@ -1296,8 +1294,7 @@ void nua_update(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    #NUTAG_AUTH
  *
  * @par Events:
- *    #nua_r_authenticate \n
- *    #nua_r_* (operation events)
+ *    (any operation events)
  */
 void nua_authenticate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {

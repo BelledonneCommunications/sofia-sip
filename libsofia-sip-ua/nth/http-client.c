@@ -32,8 +32,7 @@
 
 #include "config.h"
 
-/**@APPS
- * @page http_client Make HTTP request
+/**@page http_client Make HTTP request
  * 
  * @par Name    
  * http-client - HTTP request tool

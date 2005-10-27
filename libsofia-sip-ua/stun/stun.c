@@ -123,9 +123,8 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
 /** 
  * Creates a STUN engine 
  *
- * @param stun server hostname or IPv4 address 
+ * @param server hostname or IPv4 address 
  * @param msg_integrity true if msg integr. should be used
- *
  *
  */
 stun_engine_t *stun_engine_create(char const *server, 
@@ -137,11 +136,11 @@ stun_engine_t *stun_engine_create(char const *server,
 }
 
 /** 
- * Creates a STUN engine 
+ * Create a STUN engine 
  *
  * @param tag,value,... tag-value list 
  *
- * @TAGS 
+ * @TAGS
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  * @TAG STUNTAG_INTEGRITY() true if msg integrity should be used
  *
