@@ -5,43 +5,28 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-Now building all submodules as proper shared libraries (noinst_LTLIBRARIES).
-
-NUA/SOA API has been debugged and slightly changed.
-
-SPEC file for RedHat RPMs hasbeen fixed.
+Added "features" module. Fixed stun error handling. Fixed code generating
+contact for UAS socket in nta. NUA/SOA API has been tested some more.
 
 
 API/ABI changes and versioning
 ------------------------------
 
-The libsofia-sip-ua library interface version (libtool)
-is set to zero. Library version will not be frozen
-until the release of 1.12.0 stable version..
+The libsofia-sip-ua library interface version (libtool) is set to zero. 
+Library version will not be frozen until the release of 1.12.0 stable
+version.
 
-- add return-value parameter for parsed SDP structure in
-  soa_get_local_sdp(), soa_get_user_sdp(), soa_get_remote_sdp() and
-  soa_get_capability_sdp()
-- renamed soa_sip_required() as soa_sip_require()
-- renamed soa_sip_support() as soa_sip_supported()
-- added stun_is_requested() and stun_engine_tcreate() as well as
-  stuntag_server and stuntag_integrity
-- added sip_contact_create_from_via_with_transport()
-- added tl_llist() and tl_vllist() in su module
-
+- token64_e() prototype changed
+- sip_sofia_features.h added
 
 Contributors to this release
 ----------------------------
 
 See the AUTHORS file in the distribution package.
 
-Luiz Augusto von Dentz contributed patch for compiling sofia-sip without
-openssl.
-
-
 Bugs fixed in this release
 --------------------------
 
-- sf.net#1326727: Include callerprefs headers in ACK/CANCEL
-- sf.net#1325808: stun module does not understand FQDNs
-- sf.net#1264030: Build fails on platforms requiring -fPIC
+- stun error handling
+- transport-less contact for UAS socket in nta
+- rport on server side
