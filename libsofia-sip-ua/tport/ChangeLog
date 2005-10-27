@@ -1,3 +1,8 @@
+2005-10-24  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* tport.c (tport_bind_server): Avoid segfault
+	if init for a NAT traversal mechanism has failed.
+	
 2005-10-18  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Feature #1326002.

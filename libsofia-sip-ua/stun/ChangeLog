@@ -1,3 +1,9 @@
+2005-10-24  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* stun.c: Fixed stun_bind() behaviour when STUN 
+	discovery fails. Added enum for tracking client
+	state.
+
 2005-10-18  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Checking that we have got valid server address as parameter.

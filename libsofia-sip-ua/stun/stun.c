@@ -67,22 +67,32 @@ char const stun_nat_unknown[] = "NAT type undetermined",
   stun_nat_res_cone[] = "Restricted Cone NAT",
   stun_nat_port_res_cone[] = "Port Restricted Cone NAT";
 
+/**
+ * States of the STUN client->server query process.
+ */ 
+enum stun_client_state_e {
+  stun_cstate_init,             /**< Initial state */
+  stun_cstate_started,          /**< Discovery process started */
+  stun_cstate_received,         /**< Received server reply */
+  stun_cstate_processing,       /**< Processing server reply */
+  stun_cstate_done,             /**< Initial state */
+};
+
 struct stun_engine_s
 {
   su_home_t      stun_home[1];
-  su_sockaddr_t  stun_srvr4[2]; /* primary and secondary addresses */
-  int           use_msgint;     /* use message integrity? */
-  stun_buffer_t username;
-  stun_buffer_t password;
-  int nattype; 
+  su_sockaddr_t  stun_srvr4[2]; /**< primary and secondary addresses */
+  int            use_msgint;    /**< use message integrity? */
+  stun_buffer_t  username;
+  stun_buffer_t  password;
+  int            nattype;       /**< NAT-type, see stun_common.h */
 };
 
 struct stun_socket_s
 {
   stun_engine_t *ss_engine;
   int            ss_sockfd;
-  /* State for STUN protocol ? */
-  int            ss_state;
+  int            ss_state;      /**< State for STUN protocol ? */
 };
 
 char const stun_version[] = 
@@ -204,8 +214,6 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
 	SU_DEBUG_3(("Shared secret NOT obtained from server. Proceed without username/password.\n"));
       } 
     }
-
-  
   }
 
   return stun;
@@ -300,7 +308,7 @@ int stun_bind(stun_socket_t *ss,
 
       if(!found) {
         SU_DEBUG_5(("stun: su_getlocalinfo: %s\n", su_gli_strerror(error)));
-	      return errno = EFAULT, -1;
+	return errno = EFAULT, -1;
       }
     }
     else {
@@ -314,19 +322,29 @@ int stun_bind(stun_socket_t *ss,
   sockfd = ss->ss_sockfd;
 
   if(bind(sockfd, (struct sockaddr *)clnt_addr, *addrlen)<0) {
-    SU_DEBUG_3(("Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr), (unsigned)ntohs(clnt_addr->sin_port)));
+    SU_DEBUG_3(("stun: Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr), (unsigned)ntohs(clnt_addr->sin_port)));
     return -1;
   }
 
   bind_len = sizeof(bind_addr);
   getsockname(sockfd, (struct sockaddr *)&bind_addr, &bind_len);
   
-  SU_DEBUG_3(("Local socket bound to: %s:%u\n", inet_ntoa(bind_addr.sin_addr), 
+  SU_DEBUG_3(("stun: Local socket bound to: %s:%u\n", inet_ntoa(bind_addr.sin_addr), 
 	      (unsigned)ntohs(bind_addr.sin_port)));
-  
+
 
   retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[0], 
 			  clnt_addr, 0, 0);
+
+  if (ss->ss_state != stun_cstate_done) {
+    SU_DEBUG_3(("stun: Error in STUN discovery process.\n"));
+    /* make sure the returned clnt_addr matches the local socket */
+    if (*addrlen < bind_len)
+      return errno = EFAULT, -1;
+    else 
+      memcpy(my_addr, &bind_addr, bind_len);
+  }
+
   if (lifetime) {
     if (retval == 0)
       *lifetime = 3600;
@@ -625,6 +643,8 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
   fd_set rfds;
   struct timeval tv;
   
+  ss->ss_state = stun_cstate_init;
+
   if (ss == NULL || srvr_addr == NULL || clnt_addr == NULL) 
     return errno = EFAULT, retval;
 
@@ -634,6 +654,8 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
   /* compose binding request */
   if(stun_make_binding_req(ss, &bind_req, chg_ip, chg_port)<0) 
     return retval;
+
+  ss->ss_state = stun_cstate_started;
 
   if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->password))<0) {
     stun_free_message(&bind_req);
@@ -677,6 +699,8 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
     }
   }
 
+  ss->ss_state = stun_cstate_received;
+
   if(num_retrx == STUN_MAX_RETRX) {
     stun_free_message(&bind_req);
     return errno = ETIMEDOUT, retval;
@@ -689,6 +713,8 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
     stun_free_message(&bind_req);
     return retval;
   }
+
+  ss->ss_state = stun_cstate_processing;
 
   switch(bind_resp.stun_hdr.msg_type) {
   case BINDING_RESPONSE:
@@ -726,6 +752,8 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
 
   stun_free_message(&bind_resp);
   stun_free_message(&bind_req);
+
+  ss->ss_state = stun_cstate_done;
 
   return retval;
 }

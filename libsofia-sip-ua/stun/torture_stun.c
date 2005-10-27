@@ -31,6 +31,11 @@
  *
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
  * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
+ *
+ * Examples of use:
+ *
+ * sh> ./torture_stun -c local-IP -s sip-stun.openlaboratory.net -v
+ * sh> ./torture_stun -c local-IP -s sip-stun.openlaboratory.net -l
  */
 
 #include "config.h" 

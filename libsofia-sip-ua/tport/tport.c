@@ -1895,7 +1895,7 @@ int tport_bind_server(tport_master_t *mr,
   if (tpn->tpn_canon && strcmp(tpn->tpn_canon, tpn_any) &&
       (host || tpn->tpn_canon != tpn->tpn_host))
     canon = tpn->tpn_canon;
-  else {
+  else if (nat) {
     /* NULL if UPnP not present */
     canon = tport_nat_get_external_ip_address(nat);
   }
