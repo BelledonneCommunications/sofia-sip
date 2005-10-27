@@ -18,11 +18,14 @@ version.
 
 - token64_e() prototype changed
 - sip_sofia_features.h added
+- features module added
+
 
 Contributors to this release
 ----------------------------
 
 See the AUTHORS file in the distribution package.
+
 
 Bugs fixed in this release
 --------------------------
