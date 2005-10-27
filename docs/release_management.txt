@@ -3,7 +3,7 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20051011-1
+:Version: 20051019-2
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
@@ -31,7 +31,9 @@ sections:
     - maintained in sofia-sip/RELEASE
 - contributors to this release
     - maintained in sofia-sip/RELEASE
-    - also sofia-sip/AUTHORS should be updated
+    - also sofia-sip/AUTHORS should be updated (file
+      should list all persons/companies who have code/scripts/etc
+      copyrighted to them in the sofia-sip tree)
 
 Making the release tarball 
 ==========================
@@ -53,6 +55,9 @@ Creating the release notes
   the template found from sfnet_www/templates/relnotes.txt
 - store the resulting release notes to 
   sfnet_www/relnotes/relnotes-sofia-sip-x.y.z.txt
+- add explicit link to the release notes to 
+  sfnet_www/relnotes.html (three most recent releases,
+  see guidelines in the html comments)
 - commit the change to CVS, and run the 
   sfnet_www/put_online.sh script at the sourceforge.net
   shell server
