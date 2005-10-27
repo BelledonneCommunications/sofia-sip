@@ -30,7 +30,7 @@
  */
 
 #ifndef SIP_TAG_H  /** Defined when @b <sip_tag.h> has been included. */
-#define SIP_TAG_H "REMOVED_RCS_ID"
+#define SIP_TAG_H
 
 /**@file sip_tag.h
  * @brief Tag class for SIP headers

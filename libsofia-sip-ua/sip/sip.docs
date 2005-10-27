@@ -1,7 +1,5 @@
 /* -*- c -*- */
 
-/*REMOVED_RCS_ID*/
-
 /**@mainpage SIP Parser, Messages and Headers
  *
  * @section sip_meta Module Meta Information

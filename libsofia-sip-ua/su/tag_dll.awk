@@ -30,7 +30,6 @@
 # Author: Pekka Pessi <Pekka.Pessi@nokia.com>
 #
 # Created: Tue Feb 26 14:11:25 2002 ppessi
-# REMOVED_RCS_ID
 #
 
 BEGIN {
