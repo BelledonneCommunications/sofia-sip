@@ -78,6 +78,7 @@ typedef enum {
 #define SIP_METHOD_REFER      sip_method_refer, "REFER"
 #define SIP_METHOD_PUBLISH    sip_method_publish, "PUBLISH"
 
+/** Magic pointer value - never valid for SIP headers. @HI */
 #define SIP_NONE ((sip_header_t const *)-1L)
 #define sip_none SIP_NONE
 
@@ -538,7 +539,7 @@ struct sip_expires_s
   sip_error_t        *ex_next;	    /**< Link to next (dummy) */
   sip_time_t          ex_date;	    /**< Seconds since Jan 1, 1900 */
 # define ex_time ex_date
-  sip_time_t          ex_delta;	    /**< ...or delta seconds */
+  sip_time_t          ex_delta;	    /**< Delta seconds */
 };
 
 /**@ingroup sip_max_forwards

@@ -27,7 +27,7 @@
  * Security-related SIP header handling.
  *
  * This file contains implementation of headers related to HTTP authentication
- * (RFC 2617):
+ * (@RFC2617):
  * @ref sip_authorization "Authorization", 
  * @ref sip_authentication_info "Authentication-Info",
  * @ref sip_proxy_authenticate "Proxy-Authenticate",
@@ -36,12 +36,12 @@
  * @ref sip_www_authenticate "WWW-Authenticate".
  *
  * There is also implementation of headers related to security agreement
- * (RFC 3329):
+ * (@RFC3329):
  * @ref sip_security_client "Security-Client",
  * @ref sip_security_server "Security-Server", and
  * @ref sip_security_verify "Security-Verify" headers.
  *
- * The implementation of @ref sip_privacy "Privacy" header (RFC 3323) is
+ * The implementation of @ref sip_privacy "Privacy" header (@RFC3323) is
  * also here. 
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
@@ -237,7 +237,7 @@ int sip_www_authenticate_e(char b[], int bsiz, sip_header_t const *h, int f)
  * The @b Authentication-Info header contains either a next-nonce used by
  * next request and/or authentication from server used in mutual
  * authentication. The syntax of @b Authentication-Info header is defined in
- * RFC 2617 and [S20.6] as follows:
+ * @RFC2617 and [S20.6] as follows:
  *
  * @code
  *   Authentication-Info  = "Authentication-Info" HCOLON ainfo
@@ -278,7 +278,7 @@ int sip_authentication_info_e(char b[], int bsiz, sip_header_t const *h, int f)
  * The @b Proxy-Authentication-Info header contains either a next-nonce used
  * by next request and/or authentication from proxy used in mutual
  * authentication. The syntax of @b Proxy-Authentication-Info header is defined
- * in RFC 2617 as follows:
+ * in @RFC2617 as follows:
  *
  * @code
  *   Proxy-Authentication-Info  = "Proxy-Authentication-Info" HCOLON ainfo
@@ -291,8 +291,8 @@ int sip_authentication_info_e(char b[], int bsiz, sip_header_t const *h, int f)
  *   response-digest      =  LDQUOT *LHEX RDQUOT
  * @endcode
  *
- * @note @b Proxy-Authentication-Info is not specified RFC 3261 and it is
- * mentioned by RFC 2617 but in passage.
+ * @note @b Proxy-Authentication-Info is not specified @RFC3261 and it is
+ * mentioned by @RFC2617 but in passage.
  */
 
 #define sip_proxy_authentication_info_dup_xtra msg_list_dup_xtra
@@ -316,7 +316,7 @@ int sip_proxy_authentication_info_e(char b[], int bsiz,
 }
 /* ====================================================================== */
 
-/* Functions parsing RFC 3329 SIP Security Agreement headers */
+/* Functions parsing @RFC3329 SIP Security Agreement headers */
 
 typedef struct sip_security_agree_s sip_security_agree_t;
 #define sh_security_agree sh_security_client
@@ -422,7 +422,7 @@ static void sip_security_agree_update(sip_security_agree_t *sa)
 
 /**@SIP_HEADER sip_security_client Security-Client Header
  *
- * The Security-Client header is defined by RFC 3329, "Security Mechanism
+ * The Security-Client header is defined by @RFC3329, "Security Mechanism
  * Agreement for the Session Initiation Protocol (SIP)".
  *
  * @code
@@ -465,7 +465,7 @@ int sip_security_client_e(char b[], int bsiz, sip_header_t const *h, int f)
 
 /**@SIP_HEADER sip_security_server Security-Server Header
  *
- * The Security-Server header is defined by RFC 3329, "Security Mechanism
+ * The Security-Server header is defined by @RFC3329, "Security Mechanism
  * Agreement for the Session Initiation Protocol (SIP)".
  *
  * @sa sip_security_client, sip_security_verify
@@ -488,7 +488,7 @@ int sip_security_server_e(char b[], int bsiz, sip_header_t const *h, int f)
 
 /**@SIP_HEADER sip_security_verify Security-Verify Header
  *
- * The Security-Verify header is defined by RFC 3329, "Security Mechanism
+ * The Security-Verify header is defined by @RFC3329, "Security Mechanism
  * Agreement for the Session Initiation Protocol (SIP)".
  *
  * @sa sip_security_client, sip_security_server

@@ -49,7 +49,7 @@
  *
  * The Reason header is used to indicate why a SIP request was issued or why
  * a provisional response was sent. It can be used with HRPF scenarios. It
- * is defined in RFC 3326 as follows:
+ * is defined in @RFC3326 as follows:
  * 
  * @code
  *   Reason            =  "Reason" HCOLON reason-value *(COMMA reason-value)

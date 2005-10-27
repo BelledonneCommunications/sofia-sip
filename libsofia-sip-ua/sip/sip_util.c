@@ -761,11 +761,12 @@ sip_security_client_select(sip_security_client_t const *client,
  * @return 1 if the response terminates the dialog usage.
  * @return 0 if the response does not terminate dialog or dialog usage.
  * 
- * Sets @a *return_graceful_terminate_usage to 1, if application should
- * gracefully terminate its dialog usage. Sets it to 0, if no graceful
- * terminate is required. If it is up to application policy to decide
- * whether to gracefully terminate or not, leave
- * @a *return_graceful_terminate_usage unmodified.
+ * @return
+ * The @a *return_graceful_terminate_usage is set to 1, if application
+ * should gracefully terminate its dialog usage. It is set to 0, if no
+ * graceful terminate is required. If it is up to application policy to
+ * decide whether to gracefully terminate or not, the
+ * @a *return_graceful_terminate_usage is left unmodified.
  *
  * @sa 
  * http://www.ietf.org/internet-drafts/draft-sparks-sipping-dialogusage-01.txt
@@ -794,9 +795,9 @@ int sip_response_terminates_dialog(int response_code,
     return *return_graceful_terminate_usage = 0;
 
   if (response_code < 500) switch (response_code) {
-  case 400: /* 400 and unrecognized 4xx responses */
   default:
-    /*
+  case 400: /** @par 400 and unrecognized 4xx responses 
+
       These responses affect only the NOTIFY transaction, not the
       subscription, the dialog it resides in (beyond affecting the local
       CSeq), or any other usage of that dialog. In general, the response
@@ -807,25 +808,24 @@ int sip_response_terminates_dialog(int response_code,
     return 0;
 
   case 401: 
-  case 407:
-    /*
-      401 Unauthorized ,407 Proxy Authentication Required: This request,
-      not the subscription or dialog, is being challenged.  The usages
-      and dialog are not terminated.
+  case 407: /** @par 401 Unauthorized and 407 Proxy Authentication Required
+
+      This request, not the subscription or dialog, is being challenged. The
+      usages and dialog are not terminated.
     */ 
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 402: /* Payment Required */
-    /*
+  case 402: /** @par 402 Payment Required 
+
       This is a reserved response code. If encountered, it should be
       treated as an unrecognized 4xx.
     */
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 403: /* Forbidden */
-    /*
+  case 403: /** @par 403 Forbidden 
+
       This response terminates the subscription, but has no effect on
       any other usages of the dialog. In our example scenario, the
       invite usage continues to exist. Similarly, if the 403 came in
@@ -834,8 +834,8 @@ int sip_response_terminates_dialog(int response_code,
     */
     return terminate_usage;
     
-  case 404: /* Not Found */
-    /*
+  case 404: /** @par 404 Not Found 
+
       This response destroys the dialog and all usages sharing it. The
       Request-URI that is being 404ed is the remote target set by the
       Contact provided by the peer. Getting this response means
@@ -843,8 +843,8 @@ int sip_response_terminates_dialog(int response_code,
     */
     return terminate_dialog;
 
-  case 405: /* Method Not Allowed */
-    /*
+  case 405: /** @par 405 Method Not Allowed 
+
       In our example scenario, this response destroys the subscription,
       but not the invite usage or the dialog. It's an aberrant case for
       NOTIFYs to receive a 405 since they only come as a result to
@@ -854,8 +854,8 @@ int sip_response_terminates_dialog(int response_code,
     */
     return terminate_usage;
 
-  case 406: /*  Not Acceptable */
-    /*
+  case 406: /** @par 406 Not Acceptable 
+
       These responses concern details of the message in the transaction. 
       Subsequent requests in this same usage may succeed. Neither the
       usage nor dialog is terminated, other usages sharing this dialog
@@ -864,16 +864,16 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 408: /* Request Timeout */
-    /*
+  case 408: /** @par 408 Request Timeout 
+
       Receiving a 408 will have the same effect on
       usages and dialogs as a real transaction timeout as described in
       Section 3.2.
     */
     return terminate_usage;
 
-  case 410: /* Gone */
-    /*
+  case 410: /** @par 410 Gone 
+
       This response destroys the dialog and all usages sharing
       it.  The Request-URI that is being rejected is the remote target
       set by the Contact provided by the peer.  Similar to 404, getting
@@ -888,7 +888,8 @@ int sip_response_terminates_dialog(int response_code,
   case 413: /* Request Entity Too Large: */
   case 414: /* Request-URI Too Long: */
   case 415: /* Unsupported Media Type: */
-    /*
+    /** @par 412, 413, 414 and 415 
+
       These responses concern details of the message in the transaction. 
       Subsequent requests in this same usage may succeed. Neither the usage
       nor dialog is terminated, other usages sharing this dialog are
@@ -897,8 +898,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 416: /* 416 Unsupported URI Scheme */
-    /*
+  case 416: /** @par 416 Unsupported URI Scheme 
+
       Similar to 404 and 410, this response
       came to a request whose Request-URI was provided by the peer in a
       Contact header field.  Something has gone fundamentally wrong, and
@@ -907,8 +908,10 @@ int sip_response_terminates_dialog(int response_code,
     return terminate_dialog;
 
   case 420: /* Bad Extension */ 
-  case 421: /* Extension Required */ 
-    /*
+  case 421: /* Extension Required */
+
+    /** @par 420 Bad Extension and 421 Extension Required
+
       These responses are objecting to the request, not the usage. The
       usage is not affected. The dialog is only affected by a change in
       its local CSeq. No other usages of the dialog are affected.
@@ -916,8 +919,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 423: /*Interval Too Brief */
-    /*
+  case 423: /** @par 423 Interval Too Brief 
+
       This response won't happen in our example
       scenario, but if it came in response to a re-SUBSCRIBE, the
       subscribe usage is not destroyed (or otherwise affected).  No
@@ -926,8 +929,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return sip_method_subscribe == method ? terminate_usage : no_effect;
 
-  case 429: /* Provide Referrer Identity */
-    /*
+  case 429: /** @par 429 Provide Referrer Identity 
+
       This response won't be returned to a NOTIFY as in our example
       scenario, but when it is returned to a REFER, it is objecting to
       the REFER request itself, not any usage the REFER occurs within. 
@@ -939,9 +942,9 @@ int sip_response_terminates_dialog(int response_code,
     return 0;
 
 
-  case 480: /* Temporarily Unavailable */
-    /*
-      RFC 3261 is unclear on what this response means for mid-usage
+  case 480: /** @par 480 Temporarily Unavailable
+
+      @RFC3261 is unclear on what this response means for mid-usage
       requests. Clarifications will be made to show that this response
       affects only the usage in which the request occurs. No other usages
       are affected. If the response included a Retry-After header field,
@@ -951,8 +954,8 @@ int sip_response_terminates_dialog(int response_code,
     return terminate_usage;
 
 
-  case 481: /* Call/Transaction Does Not Exist */
-    /*
+  case 481: /** @par 481 Call/Transaction Does Not Exist 
+
       This response indicates that the peer has lost its copy of the dialog
       state. The dialog and any usages sharing it are destroyed.
 
@@ -966,8 +969,8 @@ int sip_response_terminates_dialog(int response_code,
     return terminate_dialog;
 
 
-  case 482: /* Loop Detected */
-    /*
+  case 482: /** @par 482 Loop Detected 
+
       This response is aberrant mid-dialog.  It will
       only occur if the Record-Route header field was improperly
       constructed by the proxies involved in setting up the dialog's
@@ -979,8 +982,8 @@ int sip_response_terminates_dialog(int response_code,
     return terminate_dialog;
 
 
-  case 483: /* Too Many Hops */
-    /*
+  case 483: /** @par 483 Too Many Hops 
+
       Similar to 482, receiving this mid-dialog is
       aberrant.  Unlike 482, recovery may be possible by increasing
       Max-Forwards (assuming that the requester did something strange
@@ -993,9 +996,10 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 1;
     return 0;
 
-  case 484: /* Address Incomplete*/
+  case 484: /* Address Incomplete */
   case 485: /* Ambiguous */
-    /*
+    /** @par 484 Address Incomplete and 485 Ambiguous
+
       Similar to 404 and 410, these
       responses came to a request whose Request-URI was provided by the
       peer in a Contact header field.  Something has gone fundamentally
@@ -1003,8 +1007,8 @@ int sip_response_terminates_dialog(int response_code,
     */
     return terminate_dialog;
 
-  case 486: /* Busy Here */
-    /*
+  case 486: /** @par 486 Busy Here 
+
       This response is non-sensical in our example scenario,
       or in any scenario where this response comes inside an established
       usage.  If it occurs in that context, it should be treated as an
@@ -1019,8 +1023,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 487: /* Request Terminated */
-    /*
+  case 487: /** @par 487 Request Terminated 
+
       This response speaks to the disposition of a
       particular request (transaction).  The usage in which that request
       occurs is not affected by this response (it may be affected by
@@ -1030,8 +1034,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 488: /* Not Acceptable Here */
-    /*
+  case 488: /** @par 488 Not Acceptable Here 
+
       This response is objecting to the request,
       not the usage.  The usage is not affected.  The dialog is only
       affected by a change in its local CSeq.  No other usages of the
@@ -1040,8 +1044,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 489: /* Bad Event */
-    /*
+  case 489: /** @par 489 Bad Event 
+
       In our example scenario, [3] declares that the
       subscription usage in which the NOTIFY is sent is terminated.  The
       invite usage is unaffected and the dialog continues to exist.
@@ -1053,8 +1057,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return method == sip_method_notify ? terminate_usage : no_effect;
 
-  case 491: /* Request Pending */
-    /*
+  case 491: /** @par 491 Request Pending 
+
       This response addresses in-dialog request glare.
       Its affect is scoped to the request.  The usage in which the
       request occurs is not affected.  The dialog is only affected by
@@ -1064,8 +1068,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 493: /* Undecipherable */
-    /*
+  case 493: /** @par 493 Undecipherable 
+
       This response objects to the request, not the
       usage.  The usage is not affected.  The dialog is only affected by
       a change in its local CSeq.  No other usages of the dialog are
@@ -1074,8 +1078,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 494: /* Security Agreement Required */
-    /*
+  case 494: /** @par 494 Security Agreement Required 
+
       This response is objecting to the
       request, not the usage.  The usage is not affected.  The dialog is
       only affected by a change in its local CSeq.  No other usages of
@@ -1088,7 +1092,8 @@ int sip_response_terminates_dialog(int response_code,
   if (response_code < 600) switch (response_code) {
   case 500: /* 500 and 5xx unrecognized responses */
   default:
-    /*
+    /** @par 500 and 5xx unrecognized responses
+
       These responses are complaints against the request (transaction),
       not the usage. If the response contains a Retry-After header field
       value, the server thinks the condition is temporary and the
@@ -1106,8 +1111,8 @@ int sip_response_terminates_dialog(int response_code,
     /* Do not change *return_graceful_terminate_usage */
     return 0;
 
-  case 501: /* Not Implemented */
-    /*
+  case 501: /** @par 501 Not Implemented 
+
       This would be a degenerate response in our
       example scenario since the NOTIFY is being sent as part of an
       established subscribe usage.  In this case, the UA knows the
@@ -1122,8 +1127,8 @@ int sip_response_terminates_dialog(int response_code,
     /* Do not change *return_graceful_terminate_usage */
     return 0;
 
-  case 502: /* Bad Gateway */
-    /*
+  case 502: /** @par 502 Bad Gateway 
+
       This response is aberrant mid-dialog. It will only occur if the
       Record-Route header field was improperly constructed by the
       proxies involved in setting up the dialog's initial usage. Future
@@ -1132,8 +1137,8 @@ int sip_response_terminates_dialog(int response_code,
     */
     return terminate_dialog;
 
-  case 503: /* Service Unavailable */
-    /*
+  case 503: /** @par 503 Service Unavailable 
+
       As per [2], the logic handling locating SIP servers for
       transactions may handle 503 requests (effectively sequentially
       forking at the endpoint based on DNS results). If this process
@@ -1149,8 +1154,8 @@ int sip_response_terminates_dialog(int response_code,
     /* Do not change *return_graceful_terminate_usage */
     return 0;
 
-  case 504: /* Server Time-out */
-    /*
+  case 504: /** @par 504 Server Time-out 
+
       It is not obvious under what circumstances this
       response would be returned to a request in an existing dialog.  If
       it occurs it should have the same affect on the dialog and its
@@ -1159,9 +1164,10 @@ int sip_response_terminates_dialog(int response_code,
     /* Do not change *return_graceful_terminate_usage */
     return 0;
 
-  case 505: /* Version Not Supported */ 
+  case 505: /* Version Not Supported */
   case 513: /* Message Too Large */
-    /*
+    /** @par 505 Version Not Supported and 513 Message Too Large
+
       These responses are objecting to the request, not the usage. The
       usage is not affected. The dialog is only affected by a change in
       its local CSeq. No other usages of the dialog are affected.
@@ -1169,8 +1175,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 580: /* Precondition Failure */
-    /*
+  case 580: /** @par 580 Precondition Failure 
+
       This response is objecting to the request,
       not the usage.  The usage is not affected.  The dialog is only
       affected by a change in its local CSeq.  No other usages of the
@@ -1183,7 +1189,8 @@ int sip_response_terminates_dialog(int response_code,
   if (response_code < 600) switch (response_code) {
   case 600: /* 600 and 6xx unrecognized responses */
   default:
-    /*
+    /** @par 600 and 6xx unrecognized responses
+
       Unlike 400 Bad Request, a 600 response code says something about
       the recipient user, not the request that was made. This end user
       is stating an unwillingness to communicate. 
@@ -1204,8 +1211,8 @@ int sip_response_terminates_dialog(int response_code,
     /* Do not change graceful_terminate */
     return 0;
 
-  case 603: /* Decline */
-    /*
+  case 603: /** @par 603 Decline 
+
       This response declines the action indicated by the
       associated request.  It can be used, for example, to decline a
       hold or transfer attempt.  Receiving this response does NOT
@@ -1215,8 +1222,8 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return 0;
 
-  case 604: /* Does Not Exist Anywhere */
-    /*
+  case 604: /** @par 604 Does Not Exist Anywhere 
+
       Like 404, this response destroys the
       dialog and all usages sharing it.  The Request-URI that is being
       604ed is the remote target set by the Contact provided by the
@@ -1225,8 +1232,8 @@ int sip_response_terminates_dialog(int response_code,
     */
     return terminate_dialog;
 
-  case 606: /* Not Acceptable */
-    /*
+  case 606: /** @par 606 Not Acceptable 
+
       This response is objecting to aspects of the
       associated request, not the usage the request appears in.  The
       usage is unaffected.  Any other usages sharing the dialog are

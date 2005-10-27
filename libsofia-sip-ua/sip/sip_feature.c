@@ -56,9 +56,21 @@
  *
  */
 
-/* H14.7, S6.10
-          
-*/
+/**@ingroup sip_allow
+ * @typedef struct msg_list_s sip_allow_t; 
+ *
+ * The structure sip_allow_t contains representation of an @b Allow header.
+ *
+ * The sip_allow_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } sip_allow_t;
+ * @endcode
+ */
 
 msg_hclass_t sip_allow_class[] = 
 SIP_HEADER_CLASS_LIST(allow, "Allow", "", list);
@@ -87,6 +99,23 @@ int sip_allow_e(char b[], int bsiz, sip_header_t const *h, int f)
  *    Proxy-Require  =  "Proxy-Require" HCOLON option-tag *(COMMA option-tag)
  * @endcode
  *
+ */
+
+/**@ingroup sip_proxy_require
+ * @typedef struct msg_list_s sip_proxy_require_t; 
+ *
+ * The structure sip_proxy_require_t contains representation of an @b
+ * Proxy-Require header.
+ *
+ * The sip_proxy_require_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } sip_proxy_require_t;
+ * @endcode
  */
 
 msg_hclass_t sip_proxy_require_class[] = 
@@ -119,6 +148,23 @@ int sip_proxy_require_e(char b[], int bsiz, sip_header_t const *h, int f)
  *
  */
 
+/**@ingroup sip_require
+ * @typedef struct msg_list_s sip_require_t; 
+ *
+ * The structure sip_require_t contains representation of an @b
+ * Require header.
+ *
+ * The sip_require_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } sip_require_t;
+ * @endcode
+ */
+
 msg_hclass_t sip_require_class[] = 
 SIP_HEADER_CLASS_LIST(require, "Require", "", list);
 
@@ -148,6 +194,24 @@ int sip_require_e(char b[], int bsiz, sip_header_t const *h, int f)
  *
  */
 
+/**@ingroup sip_supported
+ * @typedef struct msg_list_s sip_supported_t; 
+ *
+ * The structure sip_supported_t contains representation of an @b
+ * Supported header.
+ *
+ * The sip_supported_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } sip_supported_t;
+ * @endcode
+ */
+
+
 msg_hclass_t sip_supported_class[] = 
 SIP_HEADER_CLASS_LIST(supported, "Supported", "k", list);
 
@@ -168,12 +232,29 @@ int sip_supported_e(char b[], int bsiz, sip_header_t const *h, int f)
 /**@SIP_HEADER sip_unsupported Unsupported Header
  *
  * The Unsupported header lists the features not supported by the server.
- * Its syntax is defined in [S10.44] as follows:
+ * Its syntax is defined in [S20.40] as follows:
  * 
  * @code
- *    Unsupported  =  "UnSupported" HCOLON [option-tag *(COMMA option-tag)]
+ *    Unsupported  =  "Unsupported" HCOLON [option-tag *(COMMA option-tag)]
  * @endcode
  *
+ */
+
+/**@ingroup sip_unsupported
+ * @typedef struct msg_list_s sip_unsupported_t; 
+ *
+ * The structure sip_unsupported_t contains representation of an @b
+ * Unsupported header.
+ *
+ * The sip_unsupported_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } sip_unsupported_t;
+ * @endcode
  */
 
 msg_hclass_t sip_unsupported_class[] = 
@@ -191,9 +272,12 @@ int sip_unsupported_e(char b[], int bsiz, sip_header_t const *h, int f)
   return msg_list_e(b, bsiz, h, f);
 }
 
-/** Ensure required feature is supported.
+/** Check if required feature is supported.
+ *
+ * @retval NULL if all the required features are supported
+ * @retval pointer to a @b Unsupported header or
+ *         #SIP_NONE if @a home is NULL  
  */
-
 sip_unsupported_t *sip_has_unsupported(su_home_t *home,
 				       sip_supported_t const *support, 
 				       sip_require_t const *require)
@@ -203,11 +287,11 @@ sip_unsupported_t *sip_has_unsupported(su_home_t *home,
 }
 
 
-/** Ensure required feature is supported.
+/** Check if required feature is supported.
  *
  * @retval NULL if all the required features are supported
  * @retval pointer to a @b Unsupported header or
- *         #SIP_NONE if @a home is non-NULL  
+ *         #SIP_NONE if @a home is NULL
  */
 sip_unsupported_t *
 sip_has_unsupported2(su_home_t *home,
@@ -224,13 +308,16 @@ sip_has_unsupported2(su_home_t *home,
 
 /** Ensure that required features are supported.
  *
- * The supported features can be listed in @b Supported, @b Require or 
- * @b Proxy-Require headers (in @a supported
+ * The supported features can be listed in @b Supported, @b Require or @b
+ * Proxy-Require headers (in @a supported, @a by_require, or @a
+ * by_proxy_require parameters, respectively)
  *
  * @param home (optional) home pointer for allocating @b Unsupported header
- * @param supported @b Supported header (may be NULL) [IN]
- * @param by_require  @b Require header (may be NULL) [IN] 
- * @param by_proxy_require @b Proxy-Require header (may be NULL) [IN]
+ * @param supported @b Supported features (may be NULL) [IN]
+ * @param by_require  supported features listed by 
+ *                    @b Require (may be NULL) [IN] 
+ * @param by_proxy_require supported features listed 
+ *                         by @b Proxy-Require (may be NULL) [IN]
  *
  * @param require   list of required features (may be NULL) [IN]
  * @param require2  2nd list of required features (may be NULL) [IN]
@@ -342,7 +429,7 @@ int sip_has_supported(sip_supported_t const *supported, char const *feature)
 
 /**@SIP_HEADER sip_path Path Header
  *
- * The Path header field is a SIP extension header field (RFC 3327) with
+ * The Path header field is a SIP extension header field (@RFC3327) with
  * syntax very similar to the Record-Route header field. It is used in
  * conjunction with SIP REGISTER requests and with 200 class messages in
  * response to REGISTER (REGISTER responses).
@@ -392,7 +479,7 @@ int sip_path_e(char b[], int bsiz, sip_header_t const *h, int flags)
 
 /**@SIP_HEADER sip_service_route Service-Route Header
  *
- * The "Service-Route" is a SIP extension header field (RFC 3608), which can
+ * The "Service-Route" is a SIP extension header field (@RFC3608), which can
  * contain a route vector that will direct requests through a specific
  * sequence of proxies. A registrar may use a Service-Route header field to
  * inform a UA of a service route that, if used by the UA, will provide

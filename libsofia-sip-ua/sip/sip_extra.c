@@ -62,6 +62,25 @@
  * 
  */
 
+/**@ingroup sip_call_info
+ * @typedef struct sip_call_info_s sip_call_info_t;
+ *
+ * The structure sip_call_info_t contains representation of an @b
+ * Call-Info header.
+ *
+ * The sip_call_info_t is defined as follows:
+ * @code
+ * struct sip_call_info_s
+ * {
+ *   sip_common_t        ci_common[1]; // Common fragment info
+ *   sip_call_info_t    *ci_next;      // Link to next Call-Info
+ *   url_t               ci_url[1];    // URI to call info
+ *   sip_param_t const  *ci_params;    // List of parameters
+ *   sip_param_t         ci_purpose;   // Value of @b purpose parameter
+ * };
+ * @endcode
+ */
+
 static int sip_info_d(su_home_t *home, sip_header_t *h, char *s, int slen);
 
 static int sip_info_dup_xtra(sip_header_t const *h, int offset);
@@ -138,6 +157,24 @@ void sip_call_info_update(sip_header_t *h)
  *    error-uri   =  LAQUOT absoluteURI RAQUOT *( SEMI generic-param )
  * @endcode
  * 
+ */
+
+/**@ingroup sip_error_info
+ * @typedef struct sip_error_info_s sip_error_info_t;
+ *
+ * The structure sip_error_info_t contains representation of an @b
+ * Error-Info header.
+ *
+ * The sip_error_info_t is defined as follows:
+ * @code
+ * struct sip_error_info_s
+ * {
+ *   sip_common_t        ei_common[1]; // Common fragment info
+ *   sip_error_info_t   *ei_next;      // Link to next Error-Info
+ *   url_t               ei_url[1];    // URI to error info
+ *   sip_param_t const  *ei_params;    // List of parameters
+ * };
+ * @endcode
  */
 
 msg_hclass_t sip_error_info_class[] = 
@@ -435,7 +472,7 @@ int sip_user_agent_e(char b[], int bsiz, sip_header_t const *h, int f)
 /**@SIP_HEADER sip_etag SIP-ETag Header
  * 
  * The @b SIP-ETag header field identifies the published event state. Its
- * syntax is defined in RFC 3903 as follows:
+ * syntax is defined in @RFC3903 as follows:
  * 
  * @code
  *      SIP-ETag           = "SIP-ETag" HCOLON entity-tag
@@ -464,7 +501,7 @@ int sip_etag_e(char b[], int bsiz, sip_header_t const *h, int f)
  * 
  * The @b SIP-If-Match header field identifies the specific entity of event
  * state that the request is refreshing, modifying or removing. Its syntax
- * is defined in RFC 3903 as follows:
+ * is defined in @RFC3903 as follows:
  * 
  * @code
  *      SIP-If-Match       = "SIP-If-Match" HCOLON entity-tag

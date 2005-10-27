@@ -899,7 +899,7 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
 /**@SIP_HEADER sip_cseq CSeq Header 
  *
  * The CSeq header (command sequence) uniquely identifies transactions
- * within a dialog.  It is defined in RFC 3261 as follows:
+ * within a dialog.  It is defined in @RFC3261 as follows:
  * 
  * @code
  *    CSeq              =  "CSeq" HCOLON 1*DIGIT LWS Method
@@ -1066,7 +1066,7 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
  * @endcode
  *
  * @note
- * The RFC 2543 syntax allowed <comment>. We accept it, but don't encode it.
+ * The @RFC2543 syntax allowed <comment>. We accept it, but don't encode it.
  */
 
 /**@ingroup sip_contact
@@ -1090,7 +1090,7 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
  * } sip_contact_t;
  * @endcode
  * 
- * @note: The field sip_contact_s::m_expires is deprecated.
+ * @note: The field @ref sip_contact_s::m_comment m_comment is deprecated.
  */
 
 static msg_xtra_f sip_contact_dup_xtra;
@@ -1491,7 +1491,7 @@ sip_date_t *sip_date_create(su_home_t *home, sip_time_t date)
  *    Expires     =  "Expires" HCOLON delta-seconds
  * @endcode
  * 
- * Note that the first SIP revision (RFC 2543) also allowed absolute time in
+ * Note that the first SIP revision (@RFC2543) also allowed absolute time in
  * Expires.
  */
 
@@ -1790,6 +1790,29 @@ int sip_min_expires_e(char b[], int bsiz, sip_header_t const *h, int f)
  *      retry-param  =  ("duration" EQUAL delta-seconds)
  *                      / generic-param
  * @endcode
+ */
+
+/**@ingroup sip_retry_after
+ * @typedef struct sip_retry_after_s sip_retry_after_t; 
+ *
+ * The structure sip_retry_after_t contains representation of an @b
+ * Retry-After header.
+ *
+ * The sip_retry_after_t is defined as follows:
+ * @code
+ * typedef struct sip_retry_after_s {
+ *   sip_common_t        af_common[1]; // Common fragment info
+ *   sip_error_t        *af_next;      // Link to next (dummy)
+ *   sip_time_t          af_delta;     // Seconds to before retry
+ *   sip_param_t         af_comment;   // Comment string
+ *   sip_param_t const  *af_params;    // List of parameters
+ *   sip_param_t         af_duration;  // Duration parameter
+ * } sip_retry_after_t;
+ * @endcode
+ */
+
+/**@ingroup sip_retry_after
+ * @brief Structure for @b Retry-After header.
  */
 
 static msg_xtra_f sip_retry_after_dup_xtra;
@@ -2303,7 +2326,7 @@ int sip_to_add_param(su_home_t *home,
  * @endcode
  *
  * @note
- * The RFC 2543 syntax allowed <comment>. We accept it, but don't encode it.
+ * The @RFC2543 syntax allowed <comment>. We accept it, but don't encode it.
  */
 
 static void sip_via_update(sip_header_t *h);
@@ -2405,7 +2428,7 @@ int sip_via_e(char b[], int bsiz, sip_header_t const *h, int flags)
   }
   SIP_PARAMS_E(b, end, v->v_params, flags);
 #if 0
-  /* Comment is deprecated in RFC 3265 - accept it, but do not send */
+  /* Comment is deprecated in @RFC3265 - accept it, but do not send */
   if (v->v_comment) {
     if (!MSG_IS_COMPACT(flags)) 
       SIP_CHAR_E(b, end, ' ');

@@ -50,8 +50,8 @@
 /**@SIP_HEADER sip_event Event Header
  *
  * The Event header is used to indicate the which event or class of events
- * the message contains or subscribes.  Its syntax is defined in
- * [Events4.2.1] (draft-ietf-sip-events-00.txt) as follows:
+ * the message contains or subscribes. Its syntax is defined in @RFC3265 as
+ * follows:
  * 
  * @code
  *   Event             =  ( "Event" / "o" ) HCOLON event-type
@@ -63,7 +63,24 @@
  *                             / "_" / "+" / "`" / "'" / "~" )
  *   event-param      =  generic-param / ( "id" EQUAL token )
  * @endcode
+ */
+
+/**@ingroup sip_event
+ * @typedef struct sip_event_s sip_event_t; 
  *
+ * The structure sip_event_t contains representation of an @b Event header.
+ *
+ * The sip_event_t is defined as follows:
+ * @code
+ * typedef struct sip_event_s
+ * {
+ *   sip_common_t        o_common;	    // Common fragment info
+ *   sip_error_t        *o_next;	    // Link to next (dummy)
+ *   char const *        o_type;	    // Event type
+ *   sip_param_t const  *o_params;	    // List of parameters
+ *   sip_param_t         o_id;	    	    // Event ID
+ * } sip_event_t;
+ * @endcode
  */
 
 static msg_xtra_f sip_event_dup_xtra;
@@ -144,13 +161,30 @@ static inline void sip_event_update(sip_event_t *o)
 /**@SIP_HEADER sip_allow_events Allow-Event Header
  *
  * The Allow-Event header is used to indicate which events or classes of
- * events the notifier supports.  Its syntax is defined in [Events4.2.2]
- * (draft-ietf-sip-events-00.txt) as follows:
+ * events the notifier supports. Its syntax is defined in @RFC3265 as
+ * follows:
  * 
  * @code
  *    Allow-Events = ( "Allow-Events" | "u" ) ":" 1#event-type
  * @endcode
  *
+ */
+
+/**@ingroup sip_allow_events
+ * @typedef struct msg_list_s sip_allow_events_t; 
+ *
+ * The structure sip_allow_events_t contains representation of an @b
+ * Allow-Events header.
+ *
+ * The sip_allow_events_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } sip_allow_events_t;
+ * @endcode
  */
 
 msg_hclass_t sip_allow_events_class[] = 
@@ -184,7 +218,7 @@ int sip_allow_events_add(su_home_t *home,
  *
  * The Subscription-State header is used to indicate which State a
  * Application, associated with a certain dialogue, is in. Its syntax is
- * defined in [Events4.2.4] (draft-ietf-sip-events-03.txt) as follows:
+ * defined in [Events4.2.4] @RFC3265 as follows:
  * 
  * @code
  *    Subscription-State =  ( "Subscription-State" ) ":" substate-value
@@ -200,19 +234,25 @@ int sip_allow_events_add(su_home_t *home,
  *                         | "timeout" | "giveup" | reason-extension
  *    reason-extension   = token
  * @endcode
- * 
+ */
+
+/**@ingroup sip_subscription_state
+ * @typedef struct sip_subscription_state_s sip_subscription_state_t;
  *
- * The sip_subscription_state_t is defined as follows.
+ * The structure sip_subscription_state_t contains representation of an @b
+ * Subscription-State header.
+ *
+ * The sip_subscription_state_t is defined as follows:
  * @code
  * typedef struct sip_subscription_state_s
  * {
- *  sip_common_t        ss_common[1];
- *  sip_unknown_t      *ss_next;
- *  char const         *ss_substate;
- *  sip_param_t const  *ss_params; 
- *  sip_param_t         ss_reason; 
- *  sip_param_t         ss_expires;
- *  sip_param_t         ss_retry_after;
+ *   sip_common_t        ss_common[1];
+ *   sip_unknown_t      *ss_next;
+ *   char const         *ss_substate;        // State value
+ *   sip_param_t const  *ss_params;          // List of parameters
+ *   sip_param_t         ss_reason;          // Value of reason parameter
+ *   sip_param_t         ss_expires;         // Value of expires parameter
+ *   sip_param_t         ss_retry_after;     // Value of retry-after parameter
  * } sip_subscription_state_t;
  * @endcode
  */

@@ -50,7 +50,7 @@
 /**@SIP_HEADER sip_refer_to Refer-To Header
  *
  * The Refer-To header provides a URI to reference. Its syntax is defined in
- * RFC 3515 section 2.1 as follows:
+ * @RFC3515 section 2.1 as follows:
  *
  * @code
  *  Refer-To = ("Refer-To" / "r") HCOLON ( name-addr / addr-spec )

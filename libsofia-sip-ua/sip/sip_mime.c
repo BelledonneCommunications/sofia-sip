@@ -338,6 +338,27 @@ int sip_accept_language_e(char b[], int bsiz, sip_header_t const *h, int f)
  * @endcode
  */
 
+/**@ingroup sip_content_disposition
+ * @typedef struct msg_content_disposition_s sip_content_disposition_t; 
+ *
+ * The structure sip_content_disposition_t contains representation of an @b
+ * Content-Disposition header.
+ *
+ * The sip_content_disposition_t is defined as follows:
+ * @code
+ * typedef struct msg_content_disposition_s
+ * {
+ *   msg_common_t       cd_common[1];  // Common fragment info
+ *   msg_error_t       *cd_next;       // Link to next (dummy)
+ *   char const        *cd_type;       // Disposition type
+ *   msg_param_t const *cd_params;     // List of parameters
+ *   msg_param_t        cd_handling;   // Value of @b handling parameter
+ *   unsigned           cd_required:1; // True if handling=required
+ *   unsigned           cd_optional:1; // True if handling=optional
+ * } sip_content_disposition_t;
+ * @endcode
+ */
+
 static msg_xtra_f sip_content_disposition_dup_xtra;
 static msg_dup_f sip_content_disposition_dup_one;
 
@@ -449,6 +470,23 @@ static void sip_content_disposition_update(sip_content_disposition_t *cd)
  * @endcode
  */
 
+/**@ingroup sip_content_encoding
+ * @typedef struct msg_list_s sip_content_encoding_t; 
+ *
+ * The structure sip_content_encoding_t contains representation of an @b
+ * Content-Encoding header.
+ *
+ * The sip_content_encoding_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } sip_content_encoding_t;
+ * @endcode
+ */
+
 msg_hclass_t sip_content_encoding_class[] = 
 SIP_HEADER_CLASS_G(content_encoding, "Content-Encoding", "e", append);
 
@@ -469,7 +507,7 @@ int sip_content_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
  * The Content-Language header [H14.12] describes the natural language(s) of
  * the intended audience for the enclosed entity. Note that this might not
  * be equivalent to all the languages used within the entity-body. Its
- * syntax is defined in RFC 3261 as follows:
+ * syntax is defined in @RFC3261 as follows:
  * 
  * @code
  *    Content-Language  =  "Content-Language" HCOLON
@@ -477,6 +515,22 @@ int sip_content_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
  *    language-tag      =  primary-tag *( "-" subtag )
  *    primary-tag       =  1*8ALPHA
  *    subtag            =  1*8ALPHA
+ * @endcode
+ */
+
+/**@ingroup sip_content_language
+ * @typedef typedef struct msg_content_language_s sip_content_language_t;
+ *
+ * The structure sip_content_language_t contains representation of @b
+ * Content-Language header.
+ *
+ * The sip_content_language_t is defined as follows:
+ * @code
+ * typedef struct {
+ *   msg_common_t            k_common[1]; // Common fragment info
+ *   msg_content_language_t *k_next;      // (Content-Encoding header)
+ *   msg_param_t            *k_items;     // List of languages
+ * } sip_content_language_t;
  * @endcode
  */
 
@@ -622,6 +676,23 @@ char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
  * @endcode
  */
 
+/**@ingroup sip_mime_version
+ * @typedef struct msg_generic_s sip_mime_version_t; 
+ *
+ * The structure sip_mime_version_t contains representation of an @b
+ * MIME-Version header.
+ *
+ * The sip_mime_version_t is defined as follows:
+ * @code
+ * typedef struct msg_generic_s
+ * {
+ *   msg_common_t   g_common[1];    // Common fragment info
+ *   msg_generic_t *g_next;	    // Link to next header
+ *   char const    *g_string;	    // Header value
+ * } sip_mime_version_t;
+ * @endcode
+ */
+
 msg_hclass_t sip_mime_version_class[] = 
 SIP_HEADER_CLASS_G(mime_version, "MIME-Version", "", single);
 
@@ -652,6 +723,26 @@ int sip_mime_version_e(char b[], int bsiz, sip_header_t const *h, int f)
  *                      ;  the Warning header, for use in debugging
  *    warn-text      =  quoted-string
  *    pseudonym      =  token
+ * @endcode
+ */
+
+/**@ingroup sip_warning
+ * @typedef struct msg_warning_s sip_warning_t; 
+ *
+ * The structure sip_warning_t contains representation of an @b
+ * Warning header.
+ *
+ * The sip_warning_t is defined as follows:
+ * @code
+ * typedef struct msg_warning_s
+ * {
+ *   msg_common_t        w_common[1];  // Common fragment info
+ *   msg_warning_t      *w_next;       // Link to next Warning header
+ *   unsigned            w_code;       // Warning code
+ *   char const         *w_host;       // Hostname or pseudonym
+ *   char const         *w_port;       // Port number
+ *   char const         *w_text;       // Warning text
+ * } sip_warning_t;
  * @endcode
  */
 
