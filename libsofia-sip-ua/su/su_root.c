@@ -229,7 +229,7 @@ void su_task_move(su_task_r dst, su_task_r src)
 }
 
 /**
- * Compare two tasks with each other..
+ * Compare two tasks with each other.
  * 
  * @param a  First task
  * @param b  Second task
@@ -246,7 +246,7 @@ int  su_task_cmp(su_task_r const a, su_task_r const b)
 }
 
 /**
- * Tests if a task is running..
+ * Tests if a task is running.
  *
  * @param task  task handle
  *

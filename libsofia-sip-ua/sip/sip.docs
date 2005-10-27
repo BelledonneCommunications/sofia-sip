@@ -228,12 +228,15 @@
  * of the headers.  If there were an third Via header after CSeq in the
  * message, the fragment representing it would be after the CSeq header in
  * the fragment chain but after second Via in the header list.
+ *
+ * @}
  */
 
-/**@{*/
-/**@}*/
-
-/**@addtogroup sip_headers
+/**@ingroup sip
+ * @defgroup sip_headers SIP Headers
+ *
+ * SIP headers and other SIP message elements.
+ *
  * @{
  */
 
@@ -574,10 +577,7 @@ int sip_X_e(char buf[], int bsiz, sip_header_t const *h, int flags);
  * In the above fragment, the function sip_add_tl() will add @b Content-Type
  * and @b User-Agent headers along with message payload to the SIP message.
  * The @b Content-Type header is made with value "text/plain".
+ *
+ * @}
  */
 
-/**@ingroup sip
- * @defgroup sip_headers SIP Headers
- *
- * SIP headers and other SIP message elements.
- */

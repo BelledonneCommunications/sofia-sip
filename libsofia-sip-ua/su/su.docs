@@ -41,7 +41,7 @@
  *
  * @par SU Debug Log
  *
- * The debugging output from @b su module is controlled by #su_global_log
+ * The debugging output from @b su module is controlled by #su_log_global
  * log object. The environment variable #SU_DEBUG sets the default log
  * level.
  */

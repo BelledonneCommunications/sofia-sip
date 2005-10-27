@@ -1441,10 +1441,6 @@ sres_query_report_error(sres_resolver_t *res, sres_query_t *q,
  * The function sresolver_timer() should be called in regular intervals. We
  * recommend calling it in 500 ms intervals.
  *
- * Every time it is called it goes through all query structures, and
- * retransmits all the query messages, which have not been answered yet.
- * 
- * Every 30 seconds it goes through the cache and removes outdated entries.
  */
 void sres_resolver_timer(sres_resolver_t *res, int socket)
 {
@@ -1461,7 +1457,9 @@ void sres_resolver_timer(sres_resolver_t *res, int socket)
   now = time(&res->res_now);
 
   if (res->res_queries->qt_used) {
-    /** Resend unanswered queries */
+    /** Every time it is called it goes through all query structures, and
+     * retransmits all the query messages, which have not been answered yet.
+     */
     for (i = 0; i < res->res_queries->qt_size; i++) {
       q = res->res_queries->qt_table[i];
       
@@ -1480,6 +1478,7 @@ void sres_resolver_timer(sres_resolver_t *res, int socket)
     }
   }
 
+  /** Every 30 seconds it goes through the cache and removes outdated entries. */
   if (res->res_now > res->res_cache_cleaned + SRES_CACHE_TIMER_INTERVAL) {
     /* Clean cache from old entries */
     res->res_cache_cleaned = res->res_now;

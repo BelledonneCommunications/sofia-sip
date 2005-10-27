@@ -894,8 +894,9 @@ int url_len(url_t const * url)
   return rv;
 }
 
-/**@DEF URL_E(buf, end, url) 
+/**@def URL_E(buf, end, url)
  * Encode an URL: use @a buf up to @a end. 
+ * @hideinitializer
  */
 
 /** 

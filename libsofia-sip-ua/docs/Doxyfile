@@ -20,7 +20,9 @@ TAGFILES            += ../docs/sresolv/doxytags=../sresolv
 TAGFILES            += ../docs/stun/doxytags=../stun
 TAGFILES            += ../docs/tport/doxytags=../tport
 TAGFILES            += ../docs/nta/doxytags=../nta
+TAGFILES            += ../docs/iptsec/doxytags=../iptsec
 TAGFILES            += ../docs/sdp/doxytags=../sdp
-TAGFILES            += ../docs/nua/doxytags=../mss
-
-ALIASES            +=
+TAGFILES            += ../docs/soa/doxytags=../soa
+TAGFILES            += ../docs/nea/doxytags=../nea
+TAGFILES            += ../docs/nua/doxytags=../nua
+TAGFILES            += ../docs/features/doxytags=../features

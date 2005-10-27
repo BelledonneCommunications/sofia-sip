@@ -86,7 +86,7 @@ long su_time_cmp(su_time_t const t1, su_time_t const t2)
   return retval;
 }
 
-/**@DEF SU_TIME_CMP(t1, t2)
+/**@def SU_TIME_CMP(t1, t2) 
  *
  * Compare two timestamps.
  *
@@ -98,6 +98,8 @@ long su_time_cmp(su_time_t const t1, su_time_t const t2)
  * @retval negative, if t1 is before t2,
  * @retval zero,     if t1 is same as t2, or
  * @retval positive, if t1 is after t2.
+ *
+ * @hideinitializer
  */
 
 /** Difference between two timestamps.

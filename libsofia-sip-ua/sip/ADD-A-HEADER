@@ -1,16 +1,25 @@
-Description of Adding a Standard SIP Header
-=========================================== 
+Description of Adding a SIP Header to Sofia SIP
+===============================================
 
-by Pekka Pessi (2002-08-16, updated 2005-08-03)
+by Pekka Pessi (2002-08-16, updated 2005-10-05)
 
-In the text below, we use "Example" header as our example.
+In the text below, we use "Example" header as our example with following
+ABNF:
+
+   sip-example = "Example" COLON 1*DIGIT
+
+There are two ways to extend your parser.
+
 
 * Write parsing tests for your new headers in torture_sip.c...
+
   - Add all relevant parsing/processing cases you can think of
     at the end of function sip_header_test() or add a testing
     function of your own.
 
-* In <sip.h>, add:
+IF YOUR HEADER IS A STANDARD ONE:
+
+  * In <sip.h>, add:
 
   - Add typedefs to the header structures.
 
@@ -23,12 +32,87 @@ In the text below, we use "Example" header as our example.
     Note that the typedefs are documented together with the
     implementation in the .c file.
 
-  - Add field to the sip_t structure (struct sip_s)
-    - remember to add a comment after field for AWK script:
-      sip_example_t *sip_example; /**< Example */
-    - NOTE: the AWK script msg_parser.awk automatically creates the default
-      prototypes and tags for the newly created header, when the entry in
-      sip_t structure is formatted like to the example above
+    - Add field to the sip_t structure (struct sip_s)
+      - remember to add a comment after field for AWK script:
+        sip_example_t *sip_example; /**< Example */
+      - NOTE: the AWK script msg_parser.awk automatically creates the default
+        prototypes and tags for the newly created header, when the entry in
+        sip_t structure is formatted like to the example above
+
+IF YOUR HEADERS ARE NON-STANDARD:
+
+    - Create a header template for your header just like sip_rfc2543.h.in,
+      e.g, sip_example.h.in:
+
+---8<----8<----8<----8<----8<----8<----8<----8<----8<----8<----8<----8<---
+/**@file sip_example.h.in
+ *
+ * Template for <sip_example.h>.
+ */
+
+#ifndef SIP_EXAMPLE_H 
+/** Defined when <sip_example.h> has been included. */
+#define SIP_EXAMPLE_H 
+
+/**@file sip_example.h 
+*
+ * @brief Example header.
+ *
+ * #AUTO#
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
+ *
+ * @date Created: Fri May 27 18:40:38 EEST 2005 ppessi
+ */
+
+#ifndef SIP_H
+#include <sip.h>
+#endif
+
+/**@ingroup sip_also
+ * @brief Structure for @b Also header.
+ */
+struct sip_also_s
+{
+  sip_common_t   also_common[1];    /**< Common fragment info */
+  sip_also_t    *also_next;	    /**< Link to next Also header */
+  char const    *also_display;	    /**< Display name */
+  url_t          also_url[1];	    /**< URL */
+};
+
+typedef struct sip_also_s           sip_also_t;
+typedef sip_generic_t	     	    sip_hide_t;
+typedef sip_auth_t	     	    sip_encryption_t;
+typedef sip_auth_t	     	    sip_response_key_t;
+
+struct sip_example_dummy_structure {
+  /* === Headers start here */
+  sip_also_t *sip_also;                                  /**< Also */
+  sip_hide_t *sip_hide;                                  /**< Hide */
+  sip_encryption_t *sip_encryption;                /**< Encryption */
+  sip_response_key_t *sip_response_key;          /**< Response-Key */
+  /* === Headers end here */
+};
+
+
+#endif /** !defined(SIP_EXAMPLE_H) */
+--->8---->8---->8---->8---->8---->8---->8---->8---->8---->8---->8---->8---
+
+    - Add a makefile rule 
+
+$s/sip_example.h: $s/sip_example.h.in
+	${AWK} -f ${sofiaexecdir}/msg_parser.awk module=sip PR=$@ \
+		NO_FIRST=1 NO_LAST=1 \
+		TEMPLATE1=$i/sip_hclasses.h.in \
+		TEMPLATE2=$i/sip_protos.h.in \
+		TEMPLATE3=$i/sip_tag.h.in \
+		$s/sip_example.h.in
+
+$s/sip_example_tag.c: $s/sip_example_tag.c.in $s/sip_example.h.in
+	${AWK} -f ${sofiaexecdir}/msg_parser.awk module=sip PR=$@ \
+		NO_FIRST=1 NO_LAST=1 \
+		$s/sip_example.h.in
+
 
   - Add the actual header structure:
 
@@ -49,22 +133,6 @@ In the text below, we use "Example" header as our example.
          sip_error_t   *ex_next;	    /**< Link to next (dummy). */
          unsigned long  ex_value;	    /**< Value of example. */
        };
-
-  [HISTORIC STEP; adding new things to sip_header_t union deprecated]
-
-  - Add the header typedefs to the sip_header_t (also known as union
-    sip_header_u):
-
-	...
-      sip_warning_t              sh_warning[1];
-      sip_example_t              sh_example[1];    
-	...
-
-    The sip_header_t is pointer to any SIP header; it can be converted to
-    any specific header type by referencing the union, for example:
-
-      sip_header_t *h = ...;
-      sip_example_t *ex = h->sh_example;
 
 
 * Add implementation in a suitable ".c" file

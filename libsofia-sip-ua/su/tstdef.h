@@ -135,9 +135,9 @@ enum {
 #define BEGIN() BEGIN_(TSTFLAGS); { extern int tstdef_dummy
 /** End a test function. @HIDE */
 #define END() (void) tstdef_dummy; } END_(TSTFLAGS)
-/**Test that @a suite returns a nonzero value. @HIDE
+/**Test that @a suite returns a nonzero value.
  * @deprecated Use TEST_1() 
- */
+ * @HIDE */
 #define TEST0(suite) TEST_1_(TSTFLAGS, suite)
 /** Test that @a suite returns a nonzero value. @HIDE */
 #define TEST_1(suite) TEST_1_(TSTFLAGS, suite)

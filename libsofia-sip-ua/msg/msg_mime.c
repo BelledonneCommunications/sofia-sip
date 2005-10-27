@@ -1756,6 +1756,19 @@ MSG_HEADER_CLASS_G(content_md5, "Content-MD5", "", single);
  * @endcode
  */
 
+/**@ingroup msg_content_id
+ * @typedef msg_generic_t msg_content_id_t;
+ * Content-ID Header Structure.
+ * @code
+ * typedef struct
+ * {
+ *   msg_common_t      g_common[1];    // Common fragment info
+ *   msg_content_id_t *g_next;	       // Link to next header
+ *   char const       *g_string;       // Header value
+ * }
+ * @endcode
+ */
+
 #define msg_content_id_d msg_generic_d
 #define msg_content_id_e msg_generic_e
 msg_hclass_t msg_content_id_class[] =
@@ -1907,7 +1920,6 @@ int msg_mime_version_e(char b[], int bsiz, msg_header_t const *h, int f)
 msg_hclass_t msg_content_location_class[] =
 MSG_HEADER_CLASS_G(content_location, "Content-Location", "", single);
 
-/* ====================================================================== */
 
 /* ====================================================================== */
 #if 0

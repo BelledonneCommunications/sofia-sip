@@ -13,22 +13,22 @@ ALIASES = \
  "CONTACT=\par Contact:\n" \
  "STATUS=\par Status:\n" \
  "LICENSE=\par License:\n" \
- "DEF=\hideinitializer\n \def" \
+ "DEF=\def" \
  "TAGS=\par Related Tags:\n" \
  "TAG=\par \n" \
  "EVENTS=\par Events:\n" \
  "RESPONSES=\par Related Response Codes:\n" \
  "CFILE=\file" \
  "IFILE=\file" \
- "HI=\hideinitializer\n" \
- "HIDE=\hideinitializer\n" \
- "SHOW=\showinitializer\n" \
+ "HI=\hideinitializer " \
+ "HIDE=\hideinitializer " \
+ "SHOW=\showinitializer " \
  "LGPL2=\par Lesser GNU Public License Version 2:\n \ref lgpl2\n \if 0\n" \
  "ENDLGPL2=\endif \n" \
  "GPL2=\par GNU Public License Version 2:\n \ref gpl2\n \if 0\n" \
  "ENDGPL2=\endif \n" \
- "ERRORS=\par Errors:\n" \
- "ERROR=\par \n\b " \
+ "ERRORS=\par Errors: " \
+ "ERROR=\par \n \b " \
  "RFC2000=<a href="http://www.faqs.org/rfcs/rfc2000.html">RFC 2000</a>" \
  "RFC2001=<a href="http://www.faqs.org/rfcs/rfc2001.html">RFC 2001</a>" \
  "RFC2002=<a href="http://www.faqs.org/rfcs/rfc2002.html">RFC 2002</a>" \
@@ -2229,4 +2229,3 @@ ALIASES = \
  "RFC4197=<a href="http://www.faqs.org/rfcs/rfc4197.html">RFC 4197</a>" \
  "RFC4198=<a href="http://www.faqs.org/rfcs/rfc4198.html">RFC 4198</a>" \
  "RFC4199=<a href="http://www.faqs.org/rfcs/rfc4199.html">RFC 4199</a>" 
-

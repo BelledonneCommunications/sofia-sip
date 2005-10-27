@@ -211,7 +211,7 @@ tag_typedef_t soatag_user_sdp_str = STRTAG_TYPEDEF(user_sdp_str);
 tag_typedef_t soatag_af = INTTAG_TYPEDEF(af);
 
 
-/**@def SOATAG_AF_REF(x)
+/**@def SOATAG_ADDRESS(x)
  *
  * Pass media address.
  *

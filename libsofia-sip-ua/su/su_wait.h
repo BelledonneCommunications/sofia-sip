@@ -52,29 +52,28 @@
 /* ---------------------------------------------------------------------- */
 /* Constants */
 
-/** @DEF SU_WAIT_IN     Incoming data is available on socket. @HI */
-/** @DEF SU_WAIT_OUT    Data can be sent on socket. @HI */
-/** @DEF SU_WAIT_ERR    An error occurred on socket. @HI */
-/** @DEF SU_WAIT_HUP    The socket connection was closed. @HI */
-/** @DEF SU_WAIT_ACCEPT A listening socket accepted a new connection. @HI */
-
-/** @DEF SU_WAIT_FOREVER No timeout for su_wait(). */
-/** @DEF SU_WAIT_TIMEOUT The return value of su_wait() if timeout occurred. */
-/** @DEF SU_WAIT_INIT   Initializer for a wait object. */
-
-#if SU_HAVE_POLL
+#if SU_HAVE_POLL || DOCUMENTATION_ONLY
+/** Compare wait object */
 #define SU_WAIT_CMP(x, y) \
  (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
 
+/** Incoming data is available on socket. @HI */
 #define SU_WAIT_IN      (POLLIN)
+/** Data can be sent on socket. @HI */
 #define SU_WAIT_OUT     (POLLOUT)
+/** An error occurred on socket. @HI */
 #define SU_WAIT_ERR     (POLLERR)
+/** The socket connection was closed. @HI */
 #define SU_WAIT_HUP     (POLLHUP)
+/** A listening socket accepted a new connection. @HI */
 #define SU_WAIT_ACCEPT  (POLLIN)
 
+/** No timeout for su_wait(). */
 #define SU_WAIT_FOREVER (-1)
+/** The return value of su_wait() if timeout occurred. */
 #define SU_WAIT_TIMEOUT (-2)
 
+/** Initializer for a wait object. @HI */
 #define SU_WAIT_INIT    { INVALID_SOCKET, 0, 0 }
 
 #elif SU_HAVE_WINSOCK
