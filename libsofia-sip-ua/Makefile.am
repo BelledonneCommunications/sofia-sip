@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 # note: order does matter in the subdir list
 SUBDIRS = su bnf sresolv sdp url msg sip stun ipt soa \
-	  tport http nea nta iptsec nth nua features
+	  tport http nta nea iptsec nth nua features
 DIST_SUBDIRS = docs $(SUBDIRS)
 
 EXTRA_DIST = sofia.am
@@ -52,9 +52,9 @@ empty-doxytags:
 	for d in $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile || continue ; \
 	  test -d docs/$$d || mkdir docs/$$d ; \
-	  test -r $$d/docs/doxytags || \
+	  test -r docs/$$d/doxytags || \
 		echo '<?xml version="1.0"?>\
-<tagfile />' >>  docs/$$d/doxytags ; \
+<tagfile />' >  docs/$$d/doxytags ; \
 	done
 
 doxygen: built-sources empty-doxytags 
