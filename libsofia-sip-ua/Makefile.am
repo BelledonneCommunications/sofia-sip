@@ -13,6 +13,7 @@ lib_LTLIBRARIES = libsofia-sip-ua.la
 
 libsofia_sip_ua_la_SOURCES = 
 libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
+				features/libfeatures.la \
 				ipt/libipt.la \
 				iptsec/libiptsec.la \
 				msg/libmsg.la \

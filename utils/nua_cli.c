@@ -29,7 +29,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 18:37:04 EET 2001 ppessi
- * @date Last modified: Thu Sep 29 18:35:22 2005 ppessi
+ * @date Last modified: Thu Oct 27 10:22:52 2005 ppessi
  */
 
 #include "config.h"
@@ -304,8 +304,31 @@ void cli_print_payload(cli_t *cli, sip_payload_t const *pl);
 /** Print usage message */
 void usage(char const *a0)
 {
-  fprintf(stderr, "usage: %s url\n", a0);
+  fprintf(stderr, "usage: %s OPTIONS [url]\n", a0);
   exit(1);
+}
+
+#include <sofia_sip_features.h>
+
+void cli_version(char const *a0)
+{
+  printf("nua_cli %s with %s\n", PACKAGE_VERSION,
+	 sofia_sip_name_version);
+#define FEATURE(name, s) \
+  printf("\t%s is %s%s\n", name, s ? "enabled with " : "disabled", s ? s : "")
+  FEATURE("S/MIME", sofia_sip_has_smime);
+  FEATURE("tls", sofia_sip_has_tls);
+  FEATURE("dtls", sofia_sip_has_dtls);
+  FEATURE("sctp", sofia_sip_has_tls_sctp);
+  FEATURE("sigcomp", sofia_sip_has_sigcomp);
+  FEATURE("stun", sofia_sip_has_stun);
+  FEATURE("turn", sofia_sip_has_turn);
+  FEATURE("upnp", sofia_sip_has_upnp);
+
+  FEATURE("sctp", sofia_sip_has_sctp);
+  FEATURE("ipv6", sofia_sip_has_ipv6);
+
+  exit(0);
 }
 
 int main(int ac, char *av[])
@@ -313,6 +336,10 @@ int main(int ac, char *av[])
   cli_t cli[1] = {{{{sizeof(cli)}}}};
   
   su_init();
+
+  if (av[1] && 
+      (strcmp(av[1], "--version") == 0 || strcmp(av[1], "-v") == 0))
+    cli_version(av[0]);
 
   su_home_init(cli->cli_home);
 

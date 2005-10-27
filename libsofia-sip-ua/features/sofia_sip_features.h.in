@@ -39,16 +39,16 @@
 #define SOFIA_SIP_NAME_VERSION   "@PACKAGE_NAME@-@PACKAGE_VERSION@"
 
 extern char const * const sofia_sip_name_version;
-extern char const * const sofia_has_smime;
-extern char const * const sofia_has_tls;
-extern char const * const sofia_has_dtls;
-extern char const * const sofia_has_tls_sctp;
-extern char const * const sofia_has_sigcomp;
-extern char const * const sofia_has_stun;
-extern char const * const sofia_has_turn;
-extern char const * const sofia_has_upnp;
+extern char const * const sofia_sip_has_smime;
+extern char const * const sofia_sip_has_tls;
+extern char const * const sofia_sip_has_dtls;
+extern char const * const sofia_sip_has_tls_sctp;
+extern char const * const sofia_sip_has_sigcomp;
+extern char const * const sofia_sip_has_stun;
+extern char const * const sofia_sip_has_turn;
+extern char const * const sofia_sip_has_upnp;
 
-extern char const * const sofia_has_sctp;
-extern char const * const sofia_has_ipv6;
+extern char const * const sofia_sip_has_sctp;
+extern char const * const sofia_sip_has_ipv6;
 
 #endif

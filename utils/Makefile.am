@@ -5,7 +5,8 @@
 
 sofiasrc=$(top_srcdir)/libsofia-sip-ua
 
-INCLUDES = 	-I$(sofiasrc)/ipt \
+INCLUDES = 	-I$(sofiasrc)/features \
+		-I$(sofiasrc)/ipt \
 		-I$(sofiasrc)/iptsec \
 		-I$(sofiasrc)/msg \
 		-I$(sofiasrc)/nta \

@@ -24,14 +24,14 @@ INCLUDES = 		-I$(srcdir)/../bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LTLIBRARIES = 	libsofia.la
+noinst_LTLIBRARIES = 	libfeatures.la
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
 include_HEADERS =       sofia_sip_features.h
 
-libsofia_la_SOURCES = 	sofia_sip_features.c
+libfeatures_la_SOURCES = sofia_sip_features.c
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

@@ -27,15 +27,15 @@ While the binary API stays the same, the features are not necessarily there.
 These features are mainly related to encryption, compression and underlying
 transports.
 
-- #sofia_has_smime
-- #sofia_has_tls
-- #sofia_has_dtls
-- #sofia_has_tls_sctp
-- #sofia_has_sigcomp
-- #sofia_has_stun
-- #sofia_has_turn
-- #sofia_has_upnp
-- #sofia_has_sctp
-- #sofia_has_ipv6
+- #sofia_sip_has_smime
+- #sofia_sip_has_tls
+- #sofia_sip_has_dtls
+- #sofia_sip_has_tls_sctp
+- #sofia_sip_has_sigcomp
+- #sofia_sip_has_stun
+- #sofia_sip_has_turn
+- #sofia_sip_has_upnp
+- #sofia_sip_has_sctp
+- #sofia_sip_has_ipv6
 
 */

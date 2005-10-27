@@ -32,7 +32,7 @@
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * 
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
- * @date Last modified: Wed Oct 26 14:15:27 2005 ppessi
+ * @date Last modified: Thu Oct 27 10:24:48 2005 ppessi
  */
 
 #include "config.h" 
@@ -86,7 +86,7 @@ struct stun_socket_s
 };
 
 char const stun_version[] = 
- "sofia-sip-stun-" PACKAGE_VERSION " with " OPENSSL_VERSION_TEXT;
+ "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
 
 /**
  * Check if a STUN engine should be created.
