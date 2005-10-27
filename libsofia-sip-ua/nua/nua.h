@@ -107,6 +107,7 @@ typedef enum nua_event_e {
   nua_r_register,		/**< Answer to outgoing REGISTER */
   nua_r_unregister,		/**< Answer to outgoing un-REGISTER */
   nua_r_invite,		        /**< Answer to outgoing INVITE */
+  nua_r_cancel,			/**< Answer to outgoing CANCEL */
   nua_r_bye,			/**< Answer to outgoing BYE */
   nua_r_options,		/**< Answer to outgoing OPTIONS */
   nua_r_refer,			/**< Answer to outgoing REFER */
@@ -122,7 +123,6 @@ typedef enum nua_event_e {
   nua_r_method,			/**< Answer to unknown outgoing method */
 
   /* Internal events */
-  nua_r_cancel,
   nua_r_authenticate,
   nua_r_redirect,
   nua_r_destroy,
