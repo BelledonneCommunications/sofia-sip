@@ -11,10 +11,6 @@ EXTRA_DIST = sofia.am
 
 lib_LTLIBRARIES = libsofia-sip-ua.la
 
-if HAVE_TLS
-tls_objs=stun/libstun.la
-endif
-
 libsofia_sip_ua_la_SOURCES = 
 libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
 				ipt/libipt.la \
@@ -30,9 +26,10 @@ libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
 				soa/libsoa.la \
 				sresolv/libsresolv.la \
 				su/libsu.la \
+				stun/libstun.la \
 				tport/libtport.la \
-				url/liburl.la \
-				${tls_objs}
+				url/liburl.la
+
 
 if ENABLE_COVERAGE
 COVERAGE_RECURSIVE = coverage-recursive
