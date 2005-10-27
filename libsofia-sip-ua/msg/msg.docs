@@ -473,22 +473,21 @@ encountered.
  * @defgroup msg_mime MIME Headers
  *
  * This submodule contains the header classes, functions and types for
- * handling MIME headers (RFC 2045) and MIME multipart (RFC 2046) processing.
+ * handling MIME headers (@RFC2045) and MIME multipart (@RFC2046) processing.
  *
  * The MIME headers implemented are as follows:
- * - #msg_accept_t - @b Accept header
- * - #msg_accept_charset_t - @b Accept-Charser header
- * - #msg_accept_encoding_t - @b Accept-Encoding header
- * - #msg_accept_language_t - @b Accept-Language header
- * - #msg_content_disposition_t - @b Content-Disposition header
- * - #msg_content_encoding_t - @b Content-Encoding header
- * - #msg_content_base_t - @b Content-Base header
- * - #msg_content_id_t - @b Content-ID header
- * - #msg_content_location_t - @b Content-Location header
- * - #msg_content_language_t - @b Content-Language header
- * - #msg_content_md5_t - @b Content-MD5 header
- * - #msg_content_transfer_encoding_t - @b Content-Transfer-Encoding header
- * - #msg_mime_version_t - @b MIME-Version header
+ * - @ref msg_accept "@b Accept header"
+ * - @ref msg_accept_charset "@b Accept-Charser header"
+ * - @ref msg_accept_encoding "@b Accept-Encoding header"
+ * - @ref msg_accept_language "@b Accept-Language header"
+ * - @ref msg_content_disposition "@b Content-Disposition header"
+ * - @ref msg_content_encoding "@b Content-Encoding header"
+ * - @ref msg_content_id "@b Content-ID header"
+ * - @ref msg_content_location "@b Content-Location header"
+ * - @ref msg_content_language "@b Content-Language header"
+ * - @ref msg_content_md5 "@b Content-MD5 header"
+ * - @ref msg_content_transfer_encoding "@b Content-Transfer-Encoding header"
+ * - @ref msg_mime_version "@b MIME-Version header"
  */
 
 /**

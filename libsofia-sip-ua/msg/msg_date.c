@@ -26,7 +26,7 @@
  * @CFILE msg_date.c
  * @brief Parser for HTTP-Date and HTTP-Delta.
  *
- * Parsing functions for RFC 1123 (GMT) date.
+ * Parsing functions for @RFC1123 (GMT) date.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *

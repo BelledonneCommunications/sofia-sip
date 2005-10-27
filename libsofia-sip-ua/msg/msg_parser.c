@@ -1482,14 +1482,15 @@ static int msg_header_prepare(msg_mclass_t const *, int flags,
  * @relates msg_s
  *
  * The function msg_prepare() prepares a message for sending. It encodes all
- * serialized fragments in the message. The #h_data field will point to the
- * encoding result of size #h_len bytes.
+ * serialized fragments in the message. In each fragment, the
+ * msg_common_s::h_data field will point to the encoding result of size
+ * msg_common_s::h_len bytes.
  *
  * When multiple header fields are represented as a comma-separated list
  * within a single header line, the first fragment in the header will
  * contain all the text belonging to the header. The rest of the header
- * fields will have zero-length encoding with #h_data that points to the end
- * of the line.
+ * fields will have zero-length encoding with msg_common_s::h_data that
+ * points to the end of the line.
  *
  * @return Total size of the encoded message in bytes, or -1 upon an error.
  */

@@ -124,7 +124,7 @@ union msg_mime_u
  *
  * The #msg_multipart_t is an object for storing MIME multipart message
  * bodies. It includes message components used for framing and identifying
- * message parts. Its syntax is defined in RFC 2046 as follows:
+ * message parts. Its syntax is defined in  @RFC2046 as follows:
  *
  * @code
  *
@@ -156,7 +156,7 @@ union msg_mime_u
  *                        ; transport padding, but receivers MUST be able to
  *                        ; handle padding added by message transports.
  *
- *   body-part := <"message" as defined in RFC 822, with all header fields
+ *   body-part := <"message" as defined in @RFC822, with all header fields
  *                 optional, not starting with the specified dash-boundary,
  *                 and with the delimiter not occurring anywhere in the body
  *                 part. Note that the semantics of a part differ from the
@@ -389,7 +389,7 @@ msg_multipart_search_boundary(su_home_t *home, char const *p, size_t len)
 /** Parse a MIME multipart.
  *
  * The function msg_multipart_parse() parses a MIME multipart message. The
- * common syntax of multiparts is described in RFC 2046 (section 7).
+ * common syntax of multiparts is described in @RFC2046 (section 7).
  *
  * @param home home for allocating structures [IN/OUT]
  * @param c    content-type header for multipart [IN]
@@ -1350,7 +1350,7 @@ int msg_accept_charset_e(char b[], int bsiz, msg_header_t const *h, int f)
  *
  * The Accept-Encoding header is similar to Accept, but restricts the
  * content-codings that are acceptable in the response.  Its syntax is
- * defined in [H14.3, S10.7] (bis-04) as follows:
+ * defined in [H14.3, S20.2] as follows:
  *
  * @code
  *    Accept-Encoding  = "Accept-Encoding" ":"
@@ -1400,7 +1400,7 @@ int msg_accept_encoding_e(char b[], int bsiz, msg_header_t const *h, int f)
  * The Accept-Language header allows the client to indicate to the server in
  * which language it would prefer to receive reason phrases, session
  * descriptions or status responses carried as message bodies. Its syntax is
- * defined in [H14.4, S10.8] (bis-04) as follows:
+ * defined in [H14.4, S20.3] as follows:
  *
  * @code
  *    Accept-Language = "Accept-Language" ":"
@@ -1451,8 +1451,8 @@ int msg_accept_language_e(char b[], int bsiz, msg_header_t const *h, int f)
  *
  * The Content-Disposition header field describes how the message body or,
  * in the case of multipart messages, a message body part is to be
- * interpreted by the UAC or UAS.  Its syntax is defined in [S10.15]
- * (bis-04) as follows:
+ * interpreted by the UAC or UAS.  Its syntax is defined in [S20.11]
+ * as follows:
  *
  * @code
  *    Content-Disposition   =  "Content-Disposition" ":"
@@ -1472,14 +1472,34 @@ int msg_accept_language_e(char b[], int bsiz, msg_header_t const *h, int f)
  * @code
  *    Content-Disposition      =  "Content-Disposition" ":"
  *                                disposition-type *( ";" disposition-param )
- *    disposition-type         =  "script" | "sip-cgi" | token
- *    disposition-param        =  action-param
- *                             |  modification-date-param
- *                             |  generic-param
+ *    disposition-type        /=  "script" | "sip-cgi" | token
+ *    disposition-param       /=  action-param
+ *                             /  modification-date-param
  *    action-param             =  "action" "=" action-value
  *    action-value             =  "store" | "remove" | token
  *    modification-date-param  =  "modification-date" "=" quoted-date-time
  *    quoted-date-time         =  <"> SIP-date <">
+ * @endcode
+ */
+
+/**@ingroup msg_content_disposition
+ * @typedef struct msg_content_disposition_s msg_content_disposition_t; 
+ *
+ * The structure msg_content_disposition_t contains representation of an @b
+ * Content-Disposition header.
+ *
+ * The msg_content_disposition_t is defined as follows:
+ * @code
+ * typedef struct msg_content_disposition_s
+ * {
+ *   msg_common_t       cd_common[1];  // Common fragment info
+ *   msg_error_t       *cd_next;       // Link to next (dummy)
+ *   char const        *cd_type;       // Disposition type
+ *   msg_param_t const *cd_params;     // List of parameters
+ *   msg_param_t        cd_handling;   // Value of @b handling parameter
+ *   unsigned           cd_required:1; // True if handling=required
+ *   unsigned           cd_optional:1; // True if handling=optional
+ * } msg_content_disposition_t;
  * @endcode
  */
 
@@ -1573,12 +1593,29 @@ static void msg_content_disposition_update(msg_content_disposition_t *cd)
  * @defgroup msg_content_encoding Content-Encoding Header
  *
  * The Content-Encoding header indicates what additional content codings
- * have been applied to the entity-body.  Its syntax is defined in [S10.16]
- * (bis-04) as follows:
+ * have been applied to the entity-body. Its syntax is defined in [H14.11]
+ * and [S20.12] as follows:
  *
  * @code
- *    Content-Encoding = ( "Content-Encoding" | "e" ) ":" 1#content-coding
+ *    Content-Encoding = ( "Content-Encoding" / "e" ) ":" 1#content-coding
  *    content-coding   = token
+ * @endcode
+ */
+
+/**@ingroup msg_content_encoding
+ * @typedef struct msg_list_s msg_content_encoding_t; 
+ *
+ * The structure msg_content_encoding_t contains representation of an @b
+ * Content-Encoding header.
+ *
+ * The msg_content_encoding_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Link to next header
+ *   msg_param_t       *k_items;      // List of items
+ * } msg_content_encoding_t;
  * @endcode
  */
 
@@ -1724,11 +1761,28 @@ msg_content_length_t *msg_content_length_create(su_home_t *home, uint32_t n)
  *
  * The Content-MD5 header is an MD5 digest of the entity-body for the
  * purpose of providing an end-to-end message integrity check (MIC) of the
- * message-body. Its syntax is defined in [RFC1864, H14.15] as follows:
+ * message-body. Its syntax is defined in [@RFC1864, H14.15] as follows:
  *
  * @code
  *      Content-MD5   = "Content-MD5" ":" md5-digest
- *      md5-digest   = <base64 of 128 bit MD5 digest as per RFC 1864>
+ *      md5-digest   = <base64 of 128 bit MD5 digest as per @RFC1864>
+ * @endcode
+ */
+
+/**@ingroup msg_content_md5
+ * @typedef struct msg_generic_s msg_content_md5_t; 
+ *
+ * The structure msg_content_md5_t contains representation of an @b
+ * Content-MD5 header.
+ *
+ * The msg_content_md5_t is defined as follows:
+ * @code
+ * typedef struct msg_generic_s
+ * {
+ *   msg_common_t   g_common[1];    // Common fragment info
+ *   msg_generic_t *g_next;	    // Link to next header
+ *   char const    *g_string;	    // Header value
+ * } msg_content_md5_t;
  * @endcode
  */
 
@@ -1780,7 +1834,7 @@ MSG_HEADER_CLASS_G(content_id, "Content-ID", "", single);
  * @defgroup msg_content_type Content-Type Header
  *
  * The @b Content-Type header indicates the media type of the message-body
- * sent to the recipient. Its syntax is defined in [H3.7, S10.19] (bis-04)
+ * sent to the recipient. Its syntax is defined in [H3.7, S20.15]
  * as follows:
  *
  * @code
@@ -1885,11 +1939,28 @@ char *msg_content_type_dup_one(msg_header_t *dst, msg_header_t const *src,
  * @defgroup msg_mime_version MIME-Version Header
  *
  * MIME-Version header indicates what version of the protocol was used
- * to construct the message.  Its syntax is defined in [H19.4.1, S10.28]
- * (bis-04) as follows:
+ * to construct the message.  Its syntax is defined in [H19.4.1, S20.24]
+ * as follows:
  *
  * @code
  *    MIME-Version   = "MIME-Version" ":" 1*DIGIT "." 1*DIGIT
+ * @endcode
+ */
+
+/**@ingroup msg_mime_version
+ * @typedef struct msg_generic_s msg_mime_version_t; 
+ *
+ * The structure msg_mime_version_t contains representation of an @b
+ * MIME-Version header.
+ *
+ * The msg_mime_version_t is defined as follows:
+ * @code
+ * typedef struct msg_generic_s
+ * {
+ *   msg_common_t   g_common[1];    // Common fragment info
+ *   msg_generic_t *g_next;	    // Link to next header
+ *   char const    *g_string;	    // Header value
+ * } msg_mime_version_t;
  * @endcode
  */
 
@@ -1915,6 +1986,23 @@ int msg_mime_version_e(char b[], int bsiz, msg_header_t const *h, int f)
  *
  */
 
+/**@ingroup msg_content_location
+ * @typedef struct msg_generic_s msg_content_location_t; 
+ *
+ * The structure msg_content_location_t contains representation of an @b
+ * Content-Location header.
+ *
+ * The msg_content_location_t is defined as follows:
+ * @code
+ * typedef struct msg_generic_s
+ * {
+ *   msg_common_t   g_common[1];    // Common fragment info
+ *   msg_generic_t *g_next;	    // Link to next header
+ *   char const    *g_string;	    // Header value
+ * } msg_content_location_t;
+ * @endcode
+ */
+
 #define msg_content_location_d msg_generic_d
 #define msg_content_location_e msg_generic_e
 msg_hclass_t msg_content_location_class[] =
@@ -1926,7 +2014,7 @@ MSG_HEADER_CLASS_G(content_location, "Content-Location", "", single);
 /**@ingroup msg_mime
  * @defgroup msg_content_base Content-Base Header
  *
- * RFC2617:
+ * @RFC2617:
  * Content-Base was deleted from the specification: it was not
  * implemented widely, and there is no simple, safe way to introduce it
  * without a robust extension mechanism. In addition, it is used in a
@@ -1963,6 +2051,24 @@ MSG_HEADER_CLASS_G(content_base, "Content-Base", "", single);
  *
  */
 
+/**@ingroup msg_content_transfer_encoding
+ * @typedef struct msg_generic_s msg_content_transfer_encoding_t; 
+ *
+ * The structure msg_content_transfer_encoding_t contains representation of
+ * an @b Content-Transfer-Encoding header.
+ *
+ * The msg_content_transfer_encoding_t is defined as follows:
+ * @code
+ * typedef struct msg_generic_s
+ * {
+ *   msg_common_t   g_common[1];    // Common fragment info
+ *   msg_generic_t *g_next;	    // Link to next header
+ *   char const    *g_string;	    // Header value
+ * } msg_content_transfer_encoding_t;
+ * @endcode
+ */
+
+
 #define msg_content_transfer_encoding_d msg_generic_d
 #define msg_content_transfer_encoding_e msg_generic_e
 msg_hclass_t msg_content_transfer_encoding_class[] =
@@ -1975,7 +2081,7 @@ MSG_HEADER_CLASS_G(content_transfer_encoding, "Content-Transfer-Encoding",
  * @defgroup msg_warning Warning Header
  * 
  * The Warning response-header field is used to carry additional information
- * about the status of a response. Its syntax is defined in [RFC 3265 10.47]
+ * about the status of a response. Its syntax is defined in [S20.43]
  * as follows:
  * 
  * @code
@@ -1987,6 +2093,26 @@ MSG_HEADER_CLASS_G(content_transfer_encoding, "Content-Transfer-Encoding",
  *                      ;  the Warning header, for use in debugging
  *    warn-text      =  quoted-string
  *    pseudonym      =  token
+ * @endcode
+ */
+
+/**@ingroup msg_warning
+ * @typedef struct msg_warning_s msg_warning_t; 
+ *
+ * The structure msg_warning_t contains representation of an @b
+ * Warning header.
+ *
+ * The msg_warning_t is defined as follows:
+ * @code
+ * typedef struct msg_warning_s
+ * {
+ *   msg_common_t        w_common[1];  // Common fragment info
+ *   msg_warning_t      *w_next;       // Link to next Warning header
+ *   unsigned            w_code;       // Warning code
+ *   char const         *w_host;       // Hostname or pseudonym
+ *   char const         *w_port;       // Port number
+ *   char const         *w_text;       // Warning text
+ * } msg_warning_t;
  * @endcode
  */
 

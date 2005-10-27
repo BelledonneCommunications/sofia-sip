@@ -34,7 +34,7 @@
 /**@ingroup msg_mime
  * @file msg_mime_protos.h
  *
- * Prototypes for MIME headers (RFC 2045).
+ * Prototypes for MIME headers (@RFC2045).
  *
  * #AUTO#
  *

@@ -53,8 +53,11 @@ int msg_errno(msg_t const *msg);
 void msg_set_errno(msg_t *msg, int err);
 
 enum {
+  /** Minimum size of a message buffer */
   msg_min_size = 512,
+  /** Minimum size of external buffer */
   msg_min_block = 8192,
+  /** Number of external buffers */
   msg_n_fragments = 8
 };
 
