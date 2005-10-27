@@ -3,8 +3,8 @@
 trap "true" CHLD
 
 rc=0
-sleep 5 & sleep=$! ; 
-./su_test $sleep & test=$!
+sleep 5 & sleep=$!
+$VALGRIND ./su_test $sleep & test=$!
 
 if kill -0 $test && ! wait $sleep 2> /dev/null ; then
     echo PASS: multithread su_test
@@ -15,8 +15,8 @@ fi
 
 kill $test 2>/dev/null
 
-sleep 5 & sleep=$! ; 
-./su_test -g $sleep & test=$!
+sleep 5 & sleep=$!
+$VALGRIND ./su_test -g $sleep & test=$!
 
 if kill -0 $test && ! wait $sleep 2> /dev/null ; then
     echo PASS: multithread su_test with glib
@@ -27,10 +27,8 @@ fi
 
 kill $test 2>/dev/null
 
-sleep 5 &
-sleep=$!
-./su_test -s $sleep &
-test=$!
+sleep 5 & sleep=$!
+$VALGRIND ./su_test -s $sleep & test=$!
 
 if kill -0 $test && ! wait $sleep 2> /dev/null ; then
     echo PASS: singlethread su_test
@@ -41,8 +39,8 @@ fi
 
 kill $test 2>/dev/null
 
-sleep 5 & sleep=$! ; 
-./su_test -s -g $sleep & test=$!
+sleep 5 & sleep=$!
+$VALGRIND ./su_test -s -g $sleep & test=$!
 
 if kill -0 $test && ! wait $sleep 2> /dev/null ; then
     echo PASS: singlethread su_test with glib
