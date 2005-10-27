@@ -34,6 +34,4 @@ AC_CHECK_HEADERS(netinet/sctp.h, [
 AC_DEFINE(HAVE_SCTP, 1, [Define this a 1 if you have SCTP])
 ])
 fi
-
-AM_CONDITIONAL(HAVE_TLS, test x$HAVE_TLS = x1)
 ])
