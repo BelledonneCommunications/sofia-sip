@@ -174,7 +174,7 @@ extern tag_typedef_t _nutag_copy_ref;
 
 /** Methods allowed by default. */ 
 static char const nua_allow_str[] =
-"INVITE, ACK, BYE, CANCEL, OPTIONS, PRACK, INFO, "
+"INVITE, ACK, BYE, CANCEL, OPTIONS, PRACK, "
 "MESSAGE, SUBSCRIBE, NOTIFY, REFER, UPDATE";
 
 /** Default internal error */
@@ -5323,6 +5323,7 @@ int process_options(nua_t *nua,
   msg = nh_make_response(nua, nh, irq, SIP_200_OK,
 			 SIPTAG_ALLOW(NH_PGET(nh, allow)),
 			 SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
+			 SIPTAG_ACCEPT_STR(SDP_MIME_TYPE),
 			 TAG_IF(NH_PGET(nh, path_enable),
 				SIPTAG_SUPPORTED_STR("path")),
 			 TAG_END());
@@ -5475,7 +5476,7 @@ int process_publish(nua_t *nua,
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
 	   nua_i_publish, 0, NULL, TAG_END());
 
-  return 500;			/* Respond automatically with 500 */
+  return 501; /* Respond automatically with 501 Not Implemented */
 }
 
 
@@ -5572,7 +5573,9 @@ int process_message(nua_t *nua,
 {
   msg_t *msg;
 
-  if (!NH_PGET(nh, message_enable))
+  if (nh
+      ? !NH_PGET(nh, message_enable)
+      : !DNH_PGET(nua->nua_dhandle, message_enable))
     return 403;
 
   if (nh == NULL)

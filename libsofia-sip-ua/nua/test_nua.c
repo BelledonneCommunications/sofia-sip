@@ -115,7 +115,6 @@ struct context
 
     /* Per-call stuff */
     nua_handle_t *nh;
-    nua_saved_event_t saved_event[1];
 
     struct {
       struct event *head, **tail;
@@ -130,6 +129,9 @@ struct event
   nua_event_data_t const *data;
 };
 
+static int save_event_in_list(struct context *ctx, struct endpoint *ep);
+static void free_events_in_list(struct context *ctx, struct endpoint *ep);
+
 #define CONDITION_FUNCTION(name)		\
   int name(nua_event_t event,			\
 	   int status, char const *phrase,	\
@@ -139,12 +141,16 @@ struct event
 	   sip_t const *sip,			\
 	   tagi_t tags[])
 
-CONDITION_FUNCTION(condition_final_response){ return status >= 200; }
-CONDITION_FUNCTION(save_final_response)
+CONDITION_FUNCTION(until_final_response){ return status >= 200; }
+CONDITION_FUNCTION(save_until_final_response)
 {
-  if (status < 200)
-    return 0;
-  nua_save_event(ep->nua, ep->saved_event);
+  save_event_in_list(ctx, ep);
+  return status >= 200;
+}
+
+CONDITION_FUNCTION(save_until_received)
+{
+  save_event_in_list(ctx, ep);
   return 1;
 }
 
@@ -403,6 +409,60 @@ int respond(struct endpoint *ep, nua_handle_t *nh,
   return 0;
 }
 
+/* message via endpoint and handle */
+int message(struct endpoint *ep, nua_handle_t *nh,
+	   tag_type_t tag, tag_value_t value,
+	   ...)
+{
+  ta_list ta;
+  ta_start(ta, tag, value);
+
+  if (ep->printer)
+    ep->printer(-1, 0, "", ep->nua, ep->ctx, ep,
+		nh, "nua_message", NULL, ta_args(ta));
+
+  nua_message(nh, ta_tags(ta));
+
+  ta_end(ta);
+  return 0;
+}
+
+/* options via endpoint and handle */
+int options(struct endpoint *ep, nua_handle_t *nh,
+	   tag_type_t tag, tag_value_t value,
+	   ...)
+{
+  ta_list ta;
+  ta_start(ta, tag, value);
+
+  if (ep->printer)
+    ep->printer(-1, 0, "", ep->nua, ep->ctx, ep,
+		nh, "nua_options", NULL, ta_args(ta));
+
+  nua_options(nh, ta_tags(ta));
+
+  ta_end(ta);
+  return 0;
+}
+
+/* publish via endpoint and handle */
+int publish(struct endpoint *ep, nua_handle_t *nh,
+	   tag_type_t tag, tag_value_t value,
+	   ...)
+{
+  ta_list ta;
+  ta_start(ta, tag, value);
+
+  if (ep->printer)
+    ep->printer(-1, 0, "", ep->nua, ep->ctx, ep,
+		nh, "nua_publish", NULL, ta_args(ta));
+
+  nua_publish(nh, ta_tags(ta));
+
+  ta_end(ta);
+  return 0;
+}
+
 
 
 /* Reject all but currently used handle */
@@ -421,6 +481,7 @@ int check_handle(struct endpoint *ep, nua_handle_t *nh,
 }
 
 /* Save nua event in endpoint list */
+static
 int save_event_in_list(struct context *ctx,
 		       struct endpoint *ep)
 {
@@ -440,6 +501,7 @@ int save_event_in_list(struct context *ctx,
 }
 
 /* Save nua event in endpoint list */
+static
 void free_events_in_list(struct context *ctx, struct endpoint *ep)
 {
   struct event *e;
@@ -567,7 +629,7 @@ int test_params(struct context *ctx)
   nh = nua_handle(ctx->a.nua, NULL, TAG_END());
 
   nua_set_hparams(nh, NUTAG_INVITE_TIMER(90), TAG_END());
-  run_a_until(ctx, nua_r_set_params, condition_final_response);
+  run_a_until(ctx, nua_r_set_params, until_final_response);
 
   /* Modify all pointer values */
   nua_set_params(ctx->a.nua,
@@ -583,7 +645,7 @@ int test_params(struct context *ctx)
 
 		 TAG_END());
 
-  run_a_until(ctx, nua_r_set_params, condition_final_response);
+  run_a_until(ctx, nua_r_set_params, until_final_response);
 
   /* Modify everything from their default value */
   nua_set_params(ctx->a.nua,
@@ -623,13 +685,13 @@ int test_params(struct context *ctx)
 
 		 TAG_END());
 
-  run_a_until(ctx, nua_r_set_params, condition_final_response);
+  run_a_until(ctx, nua_r_set_params, until_final_response);
 
   /* Modify something... */
   nua_set_params(ctx->a.nua,
 		 NUTAG_RETRY_COUNT(5),
 		 TAG_END());
-  run_a_until(ctx, nua_r_set_params, condition_final_response);
+  run_a_until(ctx, nua_r_set_params, until_final_response);
 
   {
     sip_from_t const *from = NONE;
@@ -671,15 +733,15 @@ int test_params(struct context *ctx)
     url_string_t const *registrar = NONE;
 
     int n;
-    nua_event_data_t const *e;
+    struct event *e;
 
     nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
-    run_a_until(ctx, nua_r_get_params, save_final_response);
-    TEST_1(e = nua_event_data(ctx->a.saved_event));
+    run_a_until(ctx, nua_r_get_params, save_until_final_response);
 
-    TEST(e->e_event, nua_r_get_params);
+    TEST_1(e = ctx->a.events.head); 
+    TEST(e->data->e_event, nua_r_get_params);
 
-    n = tl_gets(e->e_tags,
+    n = tl_gets(e->data->e_tags,
 	       	SIPTAG_FROM_REF(from),
 	       	SIPTAG_FROM_STR_REF(from_str),
 
@@ -762,7 +824,7 @@ int test_params(struct context *ctx)
     TEST_S(url_as_string(tmphome, registrar->us_url),
 	   "sip:sip.wonderland.org");
 
-    nua_destroy_event(ctx->a.saved_event);
+    free_events_in_list(ctx, &ctx->a);
   }
 
   {
@@ -805,16 +867,15 @@ int test_params(struct context *ctx)
     url_string_t const *registrar = NONE;
 
     int n;
-    nua_event_data_t const *e;
+    struct event *e;
 
     nua_get_hparams(nh, TAG_ANY(), TAG_END());
-    run_a_until(ctx, nua_r_get_params, save_final_response);
+    run_a_until(ctx, nua_r_get_params, save_until_final_response);
 
-    TEST_1(e = nua_event_data(ctx->a.saved_event));
+    TEST_1(e = ctx->a.events.head); 
+    TEST(e->data->e_event, nua_r_get_params);
 
-    TEST(e->e_event, nua_r_get_params);
-
-    n = tl_gets(e->e_tags,
+    n = tl_gets(e->data->e_tags,
 	       	SIPTAG_FROM_REF(from),
 	       	SIPTAG_FROM_STR_REF(from_str),
 
@@ -897,13 +958,13 @@ int test_params(struct context *ctx)
 
     TEST(registrar->us_url, NONE);
 
-    nua_destroy_event(ctx->a.saved_event);
+    free_events_in_list(ctx, &ctx->a);
   }
 
   nua_handle_destroy(nh);
 
   nua_shutdown(ctx->a.nua);
-  run_a_until(ctx, nua_r_shutdown, condition_final_response);
+  run_a_until(ctx, nua_r_shutdown, until_final_response);
   nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
 
   su_root_destroy(ctx->root), ctx->root = NULL;
@@ -919,7 +980,7 @@ int test_params(struct context *ctx)
 int test_init(struct context *ctx, char *argv[])
 {
   BEGIN();
-  nua_event_data_t const *e;
+  struct event *e;
   sip_contact_t const *m = NULL;
   sip_from_t const *a = NULL;
 
@@ -939,15 +1000,16 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(ctx->a.nua);
 
   nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
-  run_a_until(ctx, nua_r_get_params, save_final_response);
-  TEST_1(e = nua_event_data(ctx->a.saved_event));
-  TEST(tl_gets(e->e_tags,
+  run_a_until(ctx, nua_r_get_params, save_until_final_response);
+  TEST_1(e = ctx->a.events.head); 
+  TEST(tl_gets(e->data->e_tags,
 	       NTATAG_CONTACT_REF(m),
 	       SIPTAG_FROM_REF(a),
 	       TAG_END()), 2); TEST_1(m);
   TEST_1(ctx->a.contact = sip_contact_dup(ctx->home, m));
   TEST_1(ctx->a.address = sip_to_dup(ctx->home, a));
-  nua_destroy_event(ctx->a.saved_event);
+
+  free_events_in_list(ctx, &ctx->a);
 
   if (print_headings)
     printf("TEST NUA-3.0.1: PASSED\n");
@@ -963,15 +1025,15 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(ctx->b.nua);
 
   nua_get_params(ctx->b.nua, TAG_ANY(), TAG_END());
-  run_b_until(ctx, nua_r_get_params, save_final_response);
-  TEST_1(e = nua_event_data(ctx->b.saved_event));
-  TEST(tl_gets(e->e_tags,
+  run_b_until(ctx, nua_r_get_params, save_until_final_response);
+  TEST_1(e = ctx->b.events.head); 
+  TEST(tl_gets(e->data->e_tags,
 	       NTATAG_CONTACT_REF(m),
 	       SIPTAG_FROM_REF(a),
 	       TAG_END()), 2); TEST_1(m);
   TEST_1(ctx->b.contact = sip_contact_dup(ctx->home, m));
   TEST_1(ctx->b.address = sip_to_dup(ctx->home, a));
-  nua_destroy_event(ctx->b.saved_event);
+  free_events_in_list(ctx, &ctx->b);
 
   if (print_headings)
     printf("TEST NUA-3.0.2: PASSED\n");
@@ -1845,6 +1907,8 @@ int test_call_cancel(struct context *ctx)
   TEST_1(e = a->events.head); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_cancel);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 487);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
@@ -1900,6 +1964,8 @@ int test_call_cancel(struct context *ctx)
   TEST(e->data->e_status, 180);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(e = e->next); TEST(e->data->e_event, nua_r_cancel);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 487);
   TEST_1(e = e->next); TEST(e->data->e_event, nua_i_state);
@@ -2612,6 +2678,194 @@ int test_session_timer(struct context *ctx)
   END();
 }
 
+/* NUA-9 tests: REFER */
+
+/* NUA-10 tests: early session, PRACK, UPDATE */
+
+/* ======================================================================== */
+/* Test simple methods: OPTIONS, MESSAGE, PUBLISH */
+
+int test_methods(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a,  *b = &ctx->b;
+  struct event *e;
+  sip_t const *sip;
+
+/* Message test
+
+   A			B
+   |-------MESSAGE----->|
+   |<-------200---------|
+   |			|
+
+*/
+  if (print_headings)
+    printf("TEST NUA-11.1: MESSAGE\n");
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+
+  message(a, a->nh, NUTAG_URL(b->contact->m_url),
+	  SIPTAG_SUBJECT_STR("Hello"),
+	  SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	  SIPTAG_PAYLOAD_STR("Hello hellO!\n"),
+	  TAG_END());
+
+  run_until(ctx, -1, save_until_final_response, -1, save_until_received);
+
+  /* Client events:
+     nua_message(), nua_r_message
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_r_message);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+
+  /*
+   Server events:
+   nua_i_message
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_message);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_subject && sip->sip_subject->g_string);
+  TEST_S(sip->sip_subject->g_string, "Hello");
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+  nua_handle_destroy(a->nh), a->nh = NULL;
+
+  free_events_in_list(ctx, b);
+  nua_handle_destroy(b->nh), b->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-11.1: PASSED\n");
+
+/* OPTIONS test
+
+   A			B
+   |-------OPTIONS----->|
+   |<-------200---------|
+   |			|
+
+*/
+  if (print_headings)
+    printf("TEST NUA-11.2: OPTIONS\n");
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+
+  options(a, a->nh, NUTAG_URL(b->contact->m_url),
+	  TAG_END());
+
+  run_until(ctx, -1, save_until_final_response, -1, save_until_received);
+
+  /* Client events:
+     nua_options(), nua_r_options
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_r_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_allow);
+  TEST_1(sip->sip_accept);
+  TEST_1(sip->sip_supported);
+  /* TEST_1(sip->sip_content_type); */
+  /* TEST_1(sip->sip_payload); */
+  TEST_1(!e->next);
+
+  /*
+   Server events:
+   nua_i_options
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_options);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+  nua_handle_destroy(a->nh), a->nh = NULL;
+
+  free_events_in_list(ctx, b);
+  nua_handle_destroy(b->nh), b->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-11.2: PASSED\n");
+
+/* PUBLISH test
+
+   A			B
+   |-------PUBLISH----->|
+   |<-------405---------| (not allowed by default)
+   |			|
+   |-------PUBLISH----->|
+   |<-------500---------| (XXX - not implemented)
+
+*/
+  if (print_headings)
+    printf("TEST NUA-11.3: PUBLISH\n");
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+
+  publish(a, a->nh, NUTAG_URL(b->contact->m_url),
+	  SIPTAG_EVENT_STR("presence"),
+	  SIPTAG_CONTENT_TYPE_STR("text/urllist"),
+	  SIPTAG_PAYLOAD_STR("sip:example.com\n"),
+	  TAG_END());
+
+  run_until(ctx, -1, save_until_final_response, -1, NULL);
+
+  /* Client events:
+     nua_publish(), nua_r_publish
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_r_publish);
+  TEST(e->data->e_status, 405);
+  TEST_1(!e->next);
+
+  /*
+   Server events:
+   nua_i_publish
+  */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a);
+  nua_handle_destroy(a->nh), a->nh = NULL;
+
+  free_events_in_list(ctx, b);
+  nua_handle_destroy(b->nh), b->nh = NULL;
+
+  nua_set_params(b->nua, 
+		 SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, "
+				  "PRACK, INFO, PUBLISH, "
+				  "MESSAGE, SUBSCRIBE, NOTIFY, REFER, UPDATE"),
+		 TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+  TEST_1(a->nh = nua_handle(a->nua, 0, SIPTAG_TO(b->address), TAG_END()));
+  
+  publish(a, a->nh, NUTAG_URL(b->contact->m_url),
+	  SIPTAG_EVENT_STR("presence"),
+	  SIPTAG_CONTENT_TYPE_STR("text/urllist"),
+	  SIPTAG_PAYLOAD_STR("sip:example.com\n"),
+	  TAG_END());
+
+  run_until(ctx, -1, save_until_final_response, -1, save_until_received);
+
+  /* Client events:
+     nua_publish(), nua_r_publish
+  */
+  TEST_1(e = a->events.head); TEST(e->data->e_event, nua_r_publish);
+  TEST(e->data->e_status, 501);
+  TEST_1(!e->next);
+
+  /*
+   Server events:
+   nua_i_publish
+  */
+  TEST_1(e = b->events.head); TEST(e->data->e_event, nua_i_publish);
+  TEST_1(!e->next);
+
+  if (print_headings)
+    printf("TEST NUA-11.3: PASSED\n");
+
+  END();
+}
+
 /* ====================================================================== */
 
 int test_deinit(struct context *ctx)
@@ -2621,13 +2875,13 @@ int test_deinit(struct context *ctx)
   nua_handle_destroy(ctx->a.nh), ctx->a.nh = NULL;
 
   nua_shutdown(ctx->a.nua);
-  run_a_until(ctx, nua_r_shutdown, condition_final_response);
+  run_a_until(ctx, nua_r_shutdown, until_final_response);
   nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
 
   nua_handle_destroy(ctx->b.nh), ctx->b.nh = NULL;
 
   nua_shutdown(ctx->b.nua);
-  run_b_until(ctx, nua_r_shutdown, condition_final_response);
+  run_b_until(ctx, nua_r_shutdown, until_final_response);
   nua_destroy(ctx->b.nua), ctx->b.nua = NULL;
 
   su_root_destroy(ctx->root);
@@ -2643,7 +2897,7 @@ static RETSIGTYPE sig_alarm(int s)
 }
 #endif
 
-static char const options[] =
+static char const options_usage[] =
   "   -v | --verbose    be verbose\n"
   "   -q | --quiet      be quiet\n"
   "   -s                use only single thread\n"
@@ -2660,7 +2914,7 @@ static char const options[] =
 void usage(int exitcode)
 {
   fprintf(stderr, "usage: %s OPTIONS\n   where OPTIONS are\n%s",
-	    name, options);
+	    name, options_usage);
   exit(exitcode);
 }
 
@@ -2795,6 +3049,8 @@ int main(int argc, char *argv[])
     retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();
+
+    retval |= test_methods(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();
 
