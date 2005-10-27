@@ -1,3 +1,10 @@
+2005-10-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added tls_version[] to tport/tport_tls.[hc].
+
+    M ./libsofia-sip-ua/tport/tport_tls.c -2 +4
+    M ./libsofia-sip-ua/tport/tport_tls.h -3 +2
+
 2005-10-24  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* tport.c (tport_bind_server): Avoid segfault

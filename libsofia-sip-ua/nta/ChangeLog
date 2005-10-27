@@ -1,3 +1,16 @@
+2005-10-21  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed server-rport feature in nta.c.
+
+    M ./libsofia-sip-ua/nta/nta.c -2 +2
+
+  * Fixed agent_init_contact() in nta/nta.c.
+  The logic for selecting transport parameter for primary contact was flawed.
+  Added some tests, too.
+
+    M ./libsofia-sip-ua/nta/nta.c -9 +20
+    M ./libsofia-sip-ua/nta/nta_test.c +54
+
 2005-10-15  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fix callerpref bug #1326727.

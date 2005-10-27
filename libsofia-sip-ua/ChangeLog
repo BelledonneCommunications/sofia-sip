@@ -1,3 +1,29 @@
+2005-10-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Always including stun library.
+
+    M ./libsofia-sip-ua/Makefile.am -6 +3
+
+  * Added rule to make missing module libraries in libsofia-sip-ua/sofia.am
+
+    M ./libsofia-sip-ua/sofia.am -1 +6
+
+  * Added LDFLAG -static to all test programs in their Makefile.am
+
+    M ./libsofia-sip-ua/bnf/Makefile.am -1 +1
+    M ./libsofia-sip-ua/http/Makefile.am -2 +2
+    M ./libsofia-sip-ua/ipt/Makefile.am -1 +2
+    M ./libsofia-sip-ua/iptsec/Makefile.am +2
+    M ./libsofia-sip-ua/msg/Makefile.am -2 +2
+    M ./libsofia-sip-ua/nta/Makefile.am -1 +1
+    M ./libsofia-sip-ua/nth/Makefile.am +2
+    M ./libsofia-sip-ua/nua/Makefile.am +2
+    M ./libsofia-sip-ua/sdp/Makefile.am +3
+    M ./libsofia-sip-ua/sip/Makefile.am +4
+    M ./libsofia-sip-ua/soa/Makefile.am +2
+    M ./libsofia-sip-ua/sresolv/Makefile.am -2 +2
+    M ./libsofia-sip-ua/stun/Makefile.am -6 +1
+
 2005-10-14  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	  * Shell syntax exercise. 

@@ -1,3 +1,9 @@
+2005-10-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Always building stun tags.
+
+    M ./libsofia-sip-ua/stun/Makefile.am -3 +3
+
 2005-10-24  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* stun.c: Fixed stun_bind() behaviour when STUN 

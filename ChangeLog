@@ -1,3 +1,9 @@
+2005-10-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added coverage files used by gcc 3.4.3 to MOSTLYCLEANFILES.
+
+    M ./m4/sac-general.m4 -1 +1
+
 2005-10-21  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed lib64 problem.

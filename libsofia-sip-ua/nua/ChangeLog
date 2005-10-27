@@ -1,3 +1,15 @@
+2005-10-21  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed challenge header checking in nua/nua_stack.c when receiving 401/407.
+  Now checking for Proxy-Authenticate header when receiving 407 and
+  WWW-Authenticate header when receiving 401.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +2
+
+  * Added test case for 407 followed by 401.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -3 +53
+
 2005-10-18  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Test case numbering.
