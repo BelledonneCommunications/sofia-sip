@@ -2705,8 +2705,429 @@ int test_session_timer(struct context *ctx)
   END();
 }
 
+/* ======================================================================== */
 /* NUA-9 tests: REFER */
 
+/* Referred call:
+
+   A			B
+   |			|
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |			|
+   |<----180 Ringing----|
+   |			|
+   |<------200 OK-------|
+   |--------ACK-------->|
+   |			|
+   |<------REFER--------|
+   |-------200 OK------>|			C
+   |-------NOTIFY------>|			|
+   |<------200 OK-------|			|
+   |			|			|
+   |-----------------INVITE-------------------->|
+   |			|			|
+   |<------------------180----------------------|
+   |-------NOTIFY------>|			|
+   |<------200 OK-------|			|
+   |			|			|
+   |<------------------200----------------------|
+   |-------NOTIFY------>|			|
+   |<------200 OK-------|			|
+   |-------------------ACK--------------------->|
+   |			|			|
+   |--------BYE-------->|			|
+   |<------200 OK-------|			|
+   |			X			|
+   |			 			|
+   |-------------------BYE--------------------->|
+   |<------------------200----------------------|
+   |						|
+
+*/
+
+/*
+      accept_call     ep
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |                    |
+ |<--------200--------|
+ |---------ACK------->|
+*/
+CONDITION_FUNCTION(accept_call_immediately)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, call, nh, SIP_200_OK,
+	    SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8\n"
+				"a=rtcp:5011\n"
+				"m=video 6010 RTP/AVP 30\n"
+				"a=rtcp:6011\n"
+				),
+	    TAG_END());
+    return 0;
+  case nua_callstate_ready:
+    return 1;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+int test_refer(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a,  *b = &ctx->b, *c = &ctx->c;
+  struct call *a_call = a->call, *b_call = b->call, *c_call = c->call;
+  struct call *a_c2;
+  struct event *e;
+  sip_t const *sip;
+  sip_event_t const *r_event;
+  sip_refer_to_t const *refer_to;
+  sip_referred_by_t const *referred_by;
+
+  sip_refer_to_t r0[1];
+  sip_to_t to[1];
+
+  su_home_t tmphome[SU_HOME_AUTO_SIZE(16384)];
+
+  su_home_auto(tmphome, sizeof(tmphome));
+
+  if (print_headings)
+    printf("TEST NUA-9.1.1: REFER: make a call between A and B\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
+	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 TAG_END());
+
+  run_ab_until(ctx, -1, until_ready, -1, accept_call);
+
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
+     PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(is_answer_recv(e->data->e_tags));
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S2a)-> EARLY: nua_respond(), nua_i_state
+   EARLY -(S3a)-> COMPLETED: nua_respond(), nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+
+  if (print_headings)
+    printf("TEST NUA-9.1.1: PASSED\n");
+
+  /* ---------------------------------------------------------------------- */
+  /*
+   A                    B
+   |<------REFER--------|
+   |-------200 OK------>|
+   |-------NOTIFY------>|			|
+   |<------200 OK-------|			|
+   */
+
+  if (print_headings)
+    printf("TEST NUA-9.1.2: refer A to C\n");
+
+  /* XXX: check header parameters! */
+  *sip_refer_to_init(r0)->r_url = *c->contact->m_url;
+  r0->r_display = "C";
+
+  refer(b, b_call, b_call->nh, SIPTAG_REFER_TO(r0), TAG_END());
+  run_ab_until(ctx, -1, save_until_final_response,
+	       -1, save_until_final_response);
+
+  /*
+    Events in A:
+    nua_i_refer
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_refer);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_refer_to);
+  TEST_1(refer_to = sip_refer_to_dup(tmphome, sip->sip_refer_to));
+  TEST_1(sip->sip_referred_by);
+  TEST_1(referred_by = sip_referred_by_dup(tmphome, sip->sip_referred_by));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_notify);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  /*
+     Events in B after nua_refer():
+     nua_r_refer
+  */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_r_refer);
+  TEST(e->data->e_status, 100);
+  TEST(tl_gets(e->data->e_tags,
+	       NUTAG_REFER_EVENT_REF(r_event),
+	       TAG_END()), 1);
+  TEST_1(r_event); TEST_1(r_event->o_id);
+  TEST_1(r_event = sip_event_dup(tmphome, r_event));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_refer);
+  TEST(e->data->e_status, 202);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(strtoul(r_event->o_id, NULL, 10), sip->sip_cseq->cs_seq);
+  if (!e->next)
+    run_b_until(ctx, -1, save_until_received);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_notify);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_event);
+  TEST_S(sip->sip_event->o_id, r_event->o_id);
+  TEST_1(sip->sip_subscription_state);
+  TEST_S(sip->sip_subscription_state->ss_substate, "pending");
+  TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
+  TEST_S(sip->sip_payload->pl_data, "SIP/2.0 100 Trying\r\n");
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+
+  if (print_headings)
+    printf("TEST NUA-9.1.2: PASSED\n");
+
+  /* ---------------------------------------------------------------------- */
+  /*
+   A                    B                       C
+   |			|			|
+   |-----------------INVITE-------------------->|
+   |			|			|
+  XXX			|			|
+   | 			|			|
+   |<------------------180----------------------|
+   |-------NOTIFY------>|			|
+   |<------200 OK-------|			|
+   | 			|			|
+  XXX			|			|
+   |			|			|
+   |<------------------200----------------------|
+   |-------NOTIFY------>|			|
+   |<------200 OK-------|			|
+   |-------------------ACK--------------------->|
+   */
+
+  if (print_headings)
+    printf("TEST NUA-9.1.3: A invites C\n");
+
+  *sip_to_init(to)->a_url = *refer_to->r_url;
+  to->a_display = refer_to->r_display;
+
+  TEST_1(a->call->next = a_c2 = calloc(1, sizeof *a_c2));
+  call_init(a_c2);
+
+  TEST_1(a_c2->nh = nua_handle(a->nua, a_c2, SIPTAG_TO(to), TAG_END()));
+
+  invite(a, a_c2, a_c2->nh, NUTAG_URL(refer_to->r_url),
+	 NUTAG_REFER_EVENT(r_event),
+	 NUTAG_NOTIFY_REFER(a_call->nh),
+	 SOATAG_USER_SDP_STR("m=audio 5020 RTP/AVP 8"),
+	 SIPTAG_REFERRED_BY(referred_by),
+	 TAG_END());
+
+  run_abc_until(ctx,
+		-1, until_ready,
+		-1, save_until_received,
+		-1, accept_call_immediately);
+  /* XXX - we should use accept_call instead of accept_call_immediately but
+     nua has a problem with automatically generated NOTIFYs:
+     3rd NOTIFY is not sent because 2nd is still in progress
+  */
+
+  /* Client A transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C2a+C4)-> READY: nua_r_invite, nua_i_state
+     nua_i_notify
+
+     XXX should be:
+     CALLING -(C2+C4)-> PROCEEDING: nua_r_invite, nua_i_state
+     optional: nua_i_notify
+     PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
+     nua_i_notify
+     optional: nua_i_notify
+  */
+  TEST_1(e = a_c2->events.head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(is_answer_recv(e->data->e_tags));
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_c2);
+
+  if (a_call->events.head == NULL)
+    run_a_until(ctx, -1, save_until_received);
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_r_notify);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  /*
+     Events in B after nua_refer():
+     nua_i_notify
+  */
+  if (b_call->events.head == NULL)
+    run_b_until(ctx, -1, save_until_received);
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_notify);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_subscription_state);
+  TEST_S(sip->sip_subscription_state->ss_substate, "terminated");
+  TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
+  TEST_S(sip->sip_payload->pl_data, "SIP/2.0 200 OK\r\n");
+  TEST_1(sip->sip_event);
+  TEST_S(sip->sip_event->o_id, r_event->o_id);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+
+  /*
+   C transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S3b)-> COMPLETED: nua_respond(), nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = c_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, c_call);
+
+  if (print_headings)
+    printf("TEST NUA-9.1.3: PASSED\n");
+
+  /* ---------------------------------------------------------------------- */
+  /*
+ A                    B
+ |---------BYE------->|
+ |<--------200--------|
+   */
+
+  if (print_headings)
+    printf("TEST NUA-9.1.4: terminate call between A and B\n");
+
+  bye(a, a_call, a_call->nh, TAG_END());
+  run_ab_until(ctx, -1, until_terminated, -1, until_terminated);
+
+  /*
+   Transitions of A:
+   READY --(T2)--> TERMINATING: nua_bye()
+   TERMINATING --(T3)--> TERMINATED: nua_r_bye, nua_i_state
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_r_bye);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  /* Transitions of B:
+     READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
+  */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_bye);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+
+  if (print_headings)
+    printf("TEST NUA-9.1.4: PASSED\n");
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+
+  /* ---------------------------------------------------------------------- */
+  /*
+   A                                            C
+   |-------------------BYE--------------------->|
+   |<------------------200----------------------|
+   */
+
+  if (print_headings)
+    printf("TEST NUA-9.1.5: terminate call between A and C\n");
+
+  bye(a, a_c2, a_c2->nh, TAG_END());
+  run_abc_until(ctx, -1, until_terminated, -1, NULL, -1, until_terminated);
+
+  /*
+   Transitions of A:
+   READY --(T2)--> TERMINATING: nua_bye()
+   TERMINATING --(T3)--> TERMINATED: nua_r_bye, nua_i_state
+  */
+  TEST_1(e = a_c2->events.head); TEST_E(e->data->e_event, nua_r_bye);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_c2);
+
+  /* Transitions of B:
+     READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
+  */
+  TEST_1(e = c_call->events.head); TEST_E(e->data->e_event, nua_i_bye);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, c_call);
+
+  if (print_headings)
+    printf("TEST NUA-9.1.5: PASSED\n");
+
+  nua_handle_destroy(a_c2->nh), a_c2->nh = NULL;
+  a->call->next = NULL; free(a_c2);
+
+  nua_handle_destroy(c_call->nh), c_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-9: PASSED\n");
+
+  su_home_deinit(tmphome);
+
+  END();
+}
+
+/* ======================================================================== */
 /* NUA-10 tests: early session, PRACK, UPDATE */
 
 /* ======================================================================== */
@@ -3099,6 +3520,7 @@ int main(int argc, char *argv[])
     retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_refer(ctx); SINGLE_FAILURE_CHECK();
 
     retval |= test_methods(ctx); SINGLE_FAILURE_CHECK();
   }
