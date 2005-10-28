@@ -4694,6 +4694,14 @@ set_session_timer(nua_handle_t *nh)
   }
 }
 
+static int
+is_session_timer_set(nua_session_state_t *ss)
+{
+  return ss->ss_usage && 
+    (ss->ss_usage->du_pending == refresh_invite ||
+     ss->ss_usage->du_pending == session_timeout);
+}
+
 /* ---------------------------------------------------------------------- */
 /* Automatic notifications from a referral */
 
@@ -4911,7 +4919,7 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   struct nua_server_request *sri = ss->ss_srequest;
   msg_t *msg;
   sip_t *sip;
-  int offer_sent = 0;
+  char const *offer_sent = 0;
 
   if (!nh_has_session(nh))
     return UA_EVENT2(e, 500, "Invalid handle for UPDATE");
@@ -4944,8 +4952,12 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 	return UA_EVENT2(e, 500, "Local media failed");
       }
 
-      offer_sent = 1;
+      offer_sent = "offer";
     }
+
+    if (is_session_timer_set(ss))
+      /* Add session timer headers */
+      use_session_timer(nua, nh, 0, msg, sip);
 
     if (nh->nh_auth) {
       if (auc_authorize(&nh->nh_auth, msg, sip) < 0)
@@ -4959,6 +4971,8 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
       if (offer_sent)
 	cr->cr_offer_sent = 1;
       ss->ss_update_needed = 0;
+      signal_call_state_change(nh, 0, "UPDATE sent", 
+			       ss->ss_state, 0, offer_sent);
       return cr->cr_event = e;
     }
   }
@@ -5000,8 +5014,13 @@ static int process_response_to_update(nua_handle_t *nh,
   }
   else if (status >= 200) {
     /* XXX - check remote tag, handle forks */
-    dialog_uac_route(nh, sip, 1); /* Set route, contact, remote tag */
+    dialog_uac_route(nh, sip, 1); /* Set (route), contact, (remote tag) */
     dialog_get_peer_info(nh, sip);
+
+    if (is_session_timer_set(ss)) {
+      init_session_timer(nua, nh, sip);
+      set_session_timer(nh);
+    }
 
     if (session_process_response(nh, cr, orq, sip, &recv) < 0) {
       ua_event(nua, nh, NULL, nua_i_error, 
@@ -5046,85 +5065,110 @@ int process_update(nua_t *nua,
 {
   struct nua_session_state *ss = nh->nh_ss;
   nua_dialog_usage_t *du = ss->ss_usage;
-  int response = 500;
   msg_t *msg = nta_incoming_getrequest(irq);
 
   char const *sdp;
   size_t len;
 
-  assert(nh);
+  int original_status = 200, status = 200;
+  char const *phrase = sip_200_OK;
 
-  if (du && (du->du_pending == refresh_invite || 
-	     du->du_pending == session_timeout))
-    set_session_timer(nh);
+  char const *offer_recv = NULL, *answer_sent = NULL;
+  int do_timer = 0;
+
+  msg_t *rmsg;
+  sip_t *rsip;
+  
+  assert(nh);
 
   if (!du) {
     nua_dialog_state_t *ds = nh->nh_ds;
 
-    /* No session */
-    nta_incoming_treply(irq, response = SIP_405_METHOD_NOT_ALLOWED, 
+    /* No session for this dialog */
+    nta_incoming_treply(irq, 
+			status = 405, phrase = sip_405_Method_not_allowed,
 			TAG_IF(ds->ds_has_subscription,
 			       SIPTAG_ALLOW_STR("NOTIFY")),
 			TAG_IF(ds->ds_has_notifier,
 			       SIPTAG_ALLOW_STR("SUBSCRIBE, REFER")),
 			TAG_END());
   }
-  else if (nh->nh_soa && session_get_description(msg, sip, &sdp, &len)) {
-    su_home_t home[1] = { SU_HOME_INIT(home) };
-    
-    sip_content_disposition_t *cd = NULL;
-    sip_content_type_t *ct = NULL;
-    sip_payload_t *pl = NULL;
 
-    int status; char const *phrase;
+  /* Do session timer negotiation if there is no ongoing INVITE transaction */
+  if (status < 300 && 
+      sip->sip_session_expires &&
+      is_session_timer_set(ss))
+    do_timer = 1, init_session_timer(nua, nh, sip);
+
+  if (status < 300 && nh->nh_soa && 
+      session_get_description(msg, sip, &sdp, &len)) {
+
+    offer_recv = "offer";
 
     if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
       SU_DEBUG_5(("nua(%p): error parsing SDP in UPDATE\n", nh));
       msg_destroy(msg);
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
-      nta_incoming_treply(irq, status, phrase, TAG_END());
-      return status;
+      offer_recv = NULL;
     }
-
     /* Respond to UPDATE */
-    if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
+    else if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
       SU_DEBUG_5(("nua(%p): error processing SDP in UPDATE\n", nh));
       msg_destroy(msg);
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
-      nta_incoming_treply(irq, status, phrase, TAG_END());
-      return status;
     }
-
-    if (soa_activate(nh->nh_soa, NULL) < 0) {
+    else if (soa_activate(nh->nh_soa, NULL) < 0) {
       /* XXX */
+      status = 500, phrase = sip_500_Internal_server_error;
     }
-
-    session_make_description(nh, home, &cd, &ct, &pl);
-
-    nta_incoming_treply(irq, SIP_200_OK,
-			SIPTAG_CONTENT_DISPOSITION(cd),
-			SIPTAG_CONTENT_TYPE(ct),
-			SIPTAG_PAYLOAD(pl),
-			TAG_END());
-
-    /* signal that O/A answer sent (answer to update) */
-    signal_call_state_change(nh, 200, "OK", ss->ss_state, "offer", "answer");
-    
-    su_home_deinit(home);
+    else {
+      answer_sent = "answer";
+    }
   }
-  else 
-    nta_incoming_treply(irq, response = SIP_200_OK, TAG_END());
-    
+
+  rmsg = nh_make_response(nua, nh, irq, 
+			  status, phrase, 
+			  TAG_IF(status < 300, NUTAG_ADD_CONTACT(1)),
+			  SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
+			  TAG_NEXT(NULL));
+  rsip = sip_object(rmsg);
+  assert(sip);			/* XXX */
+
+  if (answer_sent && session_include_description(nh, rmsg, rsip) < 0) {
+    status = 500, phrase = sip_500_Internal_server_error;
+    answer_sent = NULL;
+  }
+
+  if (do_timer && 200 <= status && status < 300) {
+    use_session_timer(nua, nh, 1, rmsg, rsip);
+    set_session_timer(nh);
+  }
+
+  if (status == original_status) {
+    if (nta_incoming_mreply(irq, rmsg) < 0)
+      status = 500, phrase = sip_500_Internal_server_error;
+  }
+
+  if (status != original_status) {
+    ua_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
+    nta_incoming_treply(irq, status, phrase, TAG_END());
+    msg_destroy(rmsg), rmsg = NULL;
+  }
+
+  ua_event(nh->nh_nua, nh, msg, nua_i_update, status, phrase, TAG_END());
+
+  if (offer_recv || answer_sent)
+    /* signal offer received, answer sent */
+    signal_call_state_change(nh, 200, "OK", ss->ss_state,
+			     offer_recv, answer_sent);
+
   if (NH_PGET(nh, auto_alert) 
       && ss->ss_state < nua_callstate_ready
       && !ss->ss_alerting 
       && ss->ss_precondition)
     respond_to_invite(nh->nh_nua, nh, SIP_180_RINGING, NULL);
 
-  ua_event(nh->nh_nua, nh, msg,
-	   nua_i_update, 0, NULL, TAG_END());
-
-  return response;
+  return status;
 }
 
 
