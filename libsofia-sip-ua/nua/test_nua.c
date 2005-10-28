@@ -119,7 +119,7 @@ struct context
     struct {
       struct event *head, **tail;
     } events;
-  } a, b;
+  } a, b, c;
 };
 
 struct event
@@ -238,16 +238,14 @@ CONDITION_FUNCTION(print_event)
   return 0;
 }
 
-
-void a_callback(nua_event_t event,
-		int status, char const *phrase,
-		nua_t *nua, struct context *ctx,
-		nua_handle_t *nh, void *call,
-		sip_t const *sip,
-		tagi_t tags[])
+void ep_callback(nua_event_t event,
+		 int status, char const *phrase,
+		 nua_t *nua, struct context *ctx,
+		 struct endpoint *ep,
+		 nua_handle_t *nh, void *call,
+		 sip_t const *sip,
+		 tagi_t tags[])
 {
-  struct endpoint *ep = &ctx->a;
-
   if (ep->printer)
     ep->printer(event, status, phrase, nua, ctx, ep, nh, call, sip, tags);
 
@@ -258,7 +256,16 @@ void a_callback(nua_event_t event,
     ep->running = 0;
 
   ep->last_event = event;
-  ctx->b.last_event = -1;
+}
+
+void a_callback(nua_event_t event,
+		int status, char const *phrase,
+		nua_t *nua, struct context *ctx,
+		nua_handle_t *nh, void *call,
+		sip_t const *sip,
+		tagi_t tags[])
+{
+  ep_callback(event, status, phrase, nua, ctx, &ctx->a, nh, call, sip, tags);
 }
 
 void b_callback(nua_event_t event,
@@ -268,26 +275,25 @@ void b_callback(nua_event_t event,
 		sip_t const *sip,
 		tagi_t tags[])
 {
-  struct endpoint *ep = &ctx->b;
-
-  if (ep->printer)
-    ep->printer(event, status, phrase, nua, ctx, ep, nh, call, sip, tags);
-
-  if ((ep->next_event == -1 || ep->next_event == event) &&
-      (ep->next_condition == NULL ||
-       ep->next_condition(event, status, phrase,
-			  nua, ctx, ep, nh, call, sip, tags)))
-    ep->running = 0;
-
-  ep->last_event = -1;
-  ep->last_event = event;
+  ep_callback(event, status, phrase, nua, ctx, &ctx->b, nh, call, sip, tags);
 }
 
-void run_until(struct context *ctx,
-	       nua_event_t a_event, condition_function *a_condition,
-	       nua_event_t b_event, condition_function *b_condition)
+void c_callback(nua_event_t event,
+		int status, char const *phrase,
+		nua_t *nua, struct context *ctx,
+		nua_handle_t *nh, void *call,
+		sip_t const *sip,
+		tagi_t tags[])
 {
-  struct endpoint *a = &ctx->a, *b = &ctx->b;
+  ep_callback(event, status, phrase, nua, ctx, &ctx->c, nh, call, sip, tags);
+}
+
+void run_abc_until(struct context *ctx,
+		   nua_event_t a_event, condition_function *a_condition,
+		   nua_event_t b_event, condition_function *b_condition,
+		   nua_event_t c_event, condition_function *c_condition)
+{
+  struct endpoint *a = &ctx->a, *b = &ctx->b, *c = &ctx->c;
 
   a->next_event = a_event;
   a->next_condition = a_condition;
@@ -299,16 +305,28 @@ void run_until(struct context *ctx,
   b->last_event = -1;
   b->running = b_condition != NULL || b_event != -1;
 
-  for (; a->running || b->running;) {
+  c->next_event = c_event;
+  c->next_condition = c_condition;
+  c->last_event = -1;
+  c->running = c_condition != NULL || c_event != -1;
+
+  for (; a->running || b->running || c->running;) {
     su_root_step(ctx->root, 1000);
   }
+}
+
+void run_ab_until(struct context *ctx,
+		  nua_event_t a_event, condition_function *a_condition,
+		  nua_event_t b_event, condition_function *b_condition)
+{
+  run_abc_until(ctx, a_event, a_condition, b_event, b_condition, -1, NULL);
 }
 
 int run_a_until(struct context *ctx,
 		nua_event_t a_event,
 		condition_function *a_condition)
 {
-  run_until(ctx, a_event, a_condition, -1, NULL);
+  run_abc_until(ctx, a_event, a_condition, -1, NULL, -1, NULL);
   return ctx->a.last_event;
 }
 
@@ -316,7 +334,7 @@ int run_b_until(struct context *ctx,
 		nua_event_t b_event,
 		condition_function *b_condition)
 {
-  run_until(ctx, -1, NULL, b_event, b_condition);
+  run_abc_until(ctx, -1, NULL, b_event, b_condition, -1, NULL);
   return ctx->b.last_event;
 }
 
@@ -1131,7 +1149,7 @@ int test_basic_call(struct context *ctx)
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
 
-  run_until(ctx, -1, until_terminated, -1, receive_basic_call);
+  run_ab_until(ctx, -1, until_terminated, -1, receive_basic_call);
 
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -1252,7 +1270,7 @@ int test_reject_a(struct context *ctx)
 	 SIPTAG_SUBJECT_STR("reject-1"),
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
-  run_until(ctx, -1, until_terminated, -1, reject_1);
+  run_ab_until(ctx, -1, until_terminated, -1, reject_1);
 
   /*
    Client transitions in reject-1:
@@ -1353,7 +1371,7 @@ int test_reject_b(struct context *ctx)
 	 SIPTAG_SUBJECT_STR("reject-2"),
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
-  run_until(ctx, -1, until_terminated, -1, reject_2);
+  run_ab_until(ctx, -1, until_terminated, -1, reject_2);
 
   /*
    Client transitions in reject-2:
@@ -1484,7 +1502,7 @@ int test_reject_302(struct context *ctx)
 	 SIPTAG_SUBJECT_STR("reject-3"),
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
-  run_until(ctx, -1, until_terminated, -1, reject_302);
+  run_ab_until(ctx, -1, until_terminated, -1, reject_302);
 
   /*
    A      reject-3      B
@@ -1709,7 +1727,7 @@ int test_reject_401(struct context *ctx)
 	 SIPTAG_SUBJECT_STR("reject-401"),
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
-  run_until(ctx, -1, authenticate_call, -1, reject_407);
+  run_ab_until(ctx, -1, authenticate_call, -1, reject_407);
 
   /*
    Client transitions in reject-3:
@@ -1898,7 +1916,7 @@ int test_call_cancel(struct context *ctx)
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
 	 TAG_END());
 
-  run_until(ctx, -1, cancel_when_calling, -1, until_terminated);
+  run_ab_until(ctx, -1, cancel_when_calling, -1, until_terminated);
 
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state, nua_cancel()
@@ -1950,7 +1968,7 @@ int test_call_cancel(struct context *ctx)
 	 SIPTAG_REJECT_CONTACT_STR("*;audio=FALSE"),
 	 TAG_END());
 
-  run_until(ctx, -1, cancel_when_ringing, -1, alert_call);
+  run_ab_until(ctx, -1, cancel_when_ringing, -1, alert_call);
 
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -2066,7 +2084,7 @@ int test_early_bye(struct context *ctx)
 	 SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8"),
 	 TAG_END());
 
-  run_until(ctx, -1, bye_when_ringing, -1, alert_call);
+  run_ab_until(ctx, -1, bye_when_ringing, -1, alert_call);
 
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -2242,7 +2260,7 @@ int test_call_hold(struct context *ctx)
 	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 0 8\n"
 			     "m=video 6008 RTP/AVP 30\n"),
 	 TAG_END());
-  run_until(ctx, -1, until_ready, -1, accept_call);
+  run_ab_until(ctx, -1, until_ready, -1, accept_call);
 
   /*
     Client transitions:
@@ -2303,7 +2321,7 @@ int test_call_hold(struct context *ctx)
   invite(a, a->nh, SOATAG_HOLD("audio"),
 	 SIPTAG_SUBJECT_STR("hold b"),
 	 TAG_END());
-  run_until(ctx, -1, until_ready, -1, until_ready);
+  run_ab_until(ctx, -1, until_ready, -1, until_ready);
 
   /* Client transitions:
      READY -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -2358,7 +2376,7 @@ int test_call_hold(struct context *ctx)
   invite(b, b->nh, SOATAG_HOLD("audio"),
 	 SIPTAG_SUBJECT_STR("hold a"),
 	 TAG_END());
-  run_until(ctx, -1, until_ready, -1, until_ready);
+  run_ab_until(ctx, -1, until_ready, -1, until_ready);
 
   /* Client transitions:
      READY -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -2415,7 +2433,7 @@ int test_call_hold(struct context *ctx)
   invite(a, a->nh, SOATAG_HOLD(NULL),
 	 SIPTAG_SUBJECT_STR("resume b"),
 	 TAG_END());
-  run_until(ctx, -1, until_ready, -1, until_ready);
+  run_ab_until(ctx, -1, until_ready, -1, until_ready);
 
   /* Client transitions:
      READY -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -2472,7 +2490,7 @@ int test_call_hold(struct context *ctx)
   invite(b, b->nh, SOATAG_HOLD(""),
 	 SIPTAG_SUBJECT_STR("TEST NUA-7.4: resume A"),
 	 TAG_END());
-  run_until(ctx, -1, until_ready, -1, until_ready);
+  run_ab_until(ctx, -1, until_ready, -1, until_ready);
 
   /* Client transitions:
      READY -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -2524,7 +2542,7 @@ int test_call_hold(struct context *ctx)
     printf("TEST NUA-7.5: terminate call\n");
 
   bye(a, a->nh, TAG_END());
-  run_until(ctx, -1, until_terminated, -1, until_terminated);
+  run_ab_until(ctx, -1, until_terminated, -1, until_terminated);
 
   /*
    Transitions of A:
@@ -2603,7 +2621,7 @@ int test_session_timer(struct context *ctx)
 	 NUTAG_MIN_SE(5),
 	 TAG_END());
 
-  run_until(ctx, -1, until_terminated, -1, receive_basic_call);
+  run_ab_until(ctx, -1, until_terminated, -1, receive_basic_call);
 
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -2712,7 +2730,7 @@ int test_methods(struct context *ctx)
 	  SIPTAG_PAYLOAD_STR("Hello hellO!\n"),
 	  TAG_END());
 
-  run_until(ctx, -1, save_until_final_response, -1, save_until_received);
+  run_ab_until(ctx, -1, save_until_final_response, -1, save_until_received);
 
   /* Client events:
      nua_message(), nua_r_message
@@ -2756,7 +2774,7 @@ int test_methods(struct context *ctx)
   options(a, a->nh, NUTAG_URL(b->contact->m_url),
 	  TAG_END());
 
-  run_until(ctx, -1, save_until_final_response, -1, save_until_received);
+  run_ab_until(ctx, -1, save_until_final_response, -1, save_until_received);
 
   /* Client events:
      nua_options(), nua_r_options
@@ -2808,7 +2826,7 @@ int test_methods(struct context *ctx)
 	  SIPTAG_PAYLOAD_STR("sip:example.com\n"),
 	  TAG_END());
 
-  run_until(ctx, -1, save_until_final_response, -1, NULL);
+  run_ab_until(ctx, -1, save_until_final_response, -1, NULL);
 
   /* Client events:
      nua_publish(), nua_r_publish
@@ -2844,13 +2862,13 @@ int test_methods(struct context *ctx)
 	  SIPTAG_PAYLOAD_STR("sip:example.com\n"),
 	  TAG_END());
 
-  run_until(ctx, -1, save_until_final_response, -1, save_until_received);
+  run_ab_until(ctx, -1, save_until_final_response, -1, save_until_received);
 
   /* Client events:
      nua_publish(), nua_r_publish
   */
   TEST_1(e = a->events.head); TEST(e->data->e_event, nua_r_publish);
-  TEST(e->data->e_status, 501);
+  TEST(e->data->e_status, 501);	/* Not implemented */
   TEST_1(!e->next);
 
   /*
@@ -2922,7 +2940,7 @@ int main(int argc, char *argv[])
 {
   int retval = 0, quit_on_single_failure = 1;
   int i, o_quiet = 0, o_attach = 0, o_alarm = 1;
-  int o_events_a = 0, o_events_b = 0;
+  int o_events_a = 0, o_events_b = 0, o_events_c = 0;
   int level = 0;
   char const *o_proxy;
 
@@ -2963,13 +2981,16 @@ int main(int argc, char *argv[])
       su_log_soft_set_level(tport_log, level);
     }
     else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--events") == 0) {
-      o_events_a = o_events_b = 1;
+      o_events_a = o_events_b = o_events_c = 1;
     }
     else if (strcmp(argv[i], "-A") == 0) {
       o_events_a = 1;
     }
     else if (strcmp(argv[i], "-B") == 0) {
       o_events_b = 1;
+    }
+    else if (strcmp(argv[i], "-C") == 0) {
+      o_events_c = 1;
     }
     else if (strcmp(argv[i], "-s") == 0) {
       ctx->threading = 0;
@@ -3022,7 +3043,8 @@ int main(int argc, char *argv[])
     su_log_soft_set_level(tport_log, level);
   }
 
-  if (!o_quiet || (TSTFLAGS & tst_verbatim) || o_events_a || o_events_b)
+  if (!o_quiet || (TSTFLAGS & tst_verbatim) 
+      || o_events_a || o_events_b || o_events_c)
     print_headings = 1;
 
 #define SINGLE_FAILURE_CHECK()						\
@@ -3039,6 +3061,8 @@ int main(int argc, char *argv[])
       ctx->a.printer = print_event;
     if (o_events_b)
       ctx->b.printer = print_event;
+    if (o_events_c)
+      ctx->c.printer = print_event;
 
     retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
