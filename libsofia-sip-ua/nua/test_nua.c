@@ -134,6 +134,7 @@ struct context
       struct {
 	struct event *head, **tail;
       } events;
+      char const *sdp;
     } call[1];
   } a, b, c;
 };
@@ -1076,6 +1077,104 @@ CONDITION_FUNCTION(until_terminated)
   return event == nua_i_state && callstate(tags) == nua_callstate_terminated;
 }
 
+/*
+ X     accept_call    ep
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |                    |
+ |<----180 Ringing----|
+ |                    |
+ |<--------200--------|
+ |---------ACK------->|
+*/
+CONDITION_FUNCTION(accept_call)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, call, nh, SIP_180_RINGING, TAG_END());
+    return 0;
+  case nua_callstate_early:
+    respond(ep, call, nh, SIP_200_OK,
+	    TAG_IF(call->sdp, SOATAG_USER_SDP_STR(call->sdp)),
+	    TAG_END());
+    return 0;
+  case nua_callstate_ready:
+    return 1;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+/*
+ accept_call_immediately
+                      X
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |                    |
+ |<--------200--------|
+ |---------ACK------->|
+*/
+CONDITION_FUNCTION(accept_call_immediately)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, call, nh, SIP_200_OK,
+	    TAG_IF(call->sdp, SOATAG_USER_SDP_STR(call->sdp)),
+	    TAG_END());
+    return 0;
+  case nua_callstate_ready:
+    return 1;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+/*
+ ep      INVITE       X
+ |                    |
+ |-------INVITE------>| (autoanswer)
+ |<--------200--------|
+ |---------ACK------->|
+*/
+CONDITION_FUNCTION(until_ready)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_ready:
+    return 1;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
 /* ======================================================================== */
 
 /* Basic call:
@@ -1118,8 +1217,7 @@ CONDITION_FUNCTION(receive_basic_call)
     return 0;
   case nua_callstate_early:
     respond(ep, call, nh, SIP_200_OK,
-	    SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8\n"
-				"a=rtcp:5011"),
+	    TAG_IF(call->sdp, SOATAG_USER_SDP_STR(call->sdp)),
 	    TAG_END());
     return 0;
   case nua_callstate_ready:
@@ -1143,10 +1241,13 @@ int test_basic_call(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-3.1: Basic call\n");
 
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
   run_ab_until(ctx, -1, until_terminated, -1, receive_basic_call);
@@ -1266,10 +1367,13 @@ int test_reject_a(struct context *ctx)
    |---------ACK------->|
   */
 
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
 	 SIPTAG_SUBJECT_STR("reject-1"),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, reject_1);
 
@@ -1367,11 +1471,14 @@ int test_reject_b(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-4.2: reject after ringing\n");
 
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
   /* Make call reject-2 */
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
 	 SIPTAG_SUBJECT_STR("reject-2"),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, reject_2);
 
@@ -1500,10 +1607,13 @@ int test_reject_302(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-4.3: redirect then reject\n");
 
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
 	 SIPTAG_SUBJECT_STR("reject-3"),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, reject_302);
 
@@ -1726,10 +1836,13 @@ int test_reject_401(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-4.4: challenge then reject\n");
 
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
 	 SIPTAG_SUBJECT_STR("reject-401"),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
   run_ab_until(ctx, -1, authenticate_call, -1, reject_407);
 
@@ -1912,13 +2025,16 @@ int test_call_cancel(struct context *ctx)
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
 
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
   if (print_headings)
     printf("TEST NUA-5.1: cancel call\n");
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
   run_ab_until(ctx, -1, cancel_when_calling, -1, until_terminated);
@@ -1969,7 +2085,7 @@ int test_call_cancel(struct context *ctx)
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
-	 SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 SIPTAG_REJECT_CONTACT_STR("*;audio=FALSE"),
 	 TAG_END());
 
@@ -2087,7 +2203,7 @@ int test_early_bye(struct context *ctx)
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
-	 SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
   run_ab_until(ctx, -1, bye_when_ringing, -1, alert_call);
@@ -2152,73 +2268,6 @@ int test_early_bye(struct context *ctx)
 /* ======================================================================== */
 /* Call hold */
 
-/*
- A     accept_call    B
- |                    |
- |-------INVITE------>|
- |<----100 Trying-----|
- |                    |
- |<----180 Ringing----|
- |                    |
- |<--------200--------|
- |---------ACK------->|
-*/
-CONDITION_FUNCTION(accept_call)
-{
-  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
-    return 0;
-
-  save_event_in_list(ctx, event, ep, call);
-
-  switch (callstate(tags)) {
-  case nua_callstate_received:
-    respond(ep, call, nh, SIP_180_RINGING, TAG_END());
-    return 0;
-  case nua_callstate_early:
-    respond(ep, call, nh, SIP_200_OK,
-	    SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8\n"
-				"a=rtcp:5011\n"
-				"m=video 6010 RTP/AVP 30\n"
-				"a=rtcp:6011\n"
-				),
-	    TAG_END());
-    return 0;
-  case nua_callstate_ready:
-    return 1;
-  case nua_callstate_terminated:
-    if (call)
-      nua_handle_destroy(call->nh), call->nh = NULL;
-    return 1;
-  default:
-    return 0;
-  }
-}
-
-/*
- ep      INVITE       X
- |                    |
- |-------INVITE------>| (autoanswer)
- |<--------200--------|
- |---------ACK------->|
-*/
-CONDITION_FUNCTION(until_ready)
-{
-  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
-    return 0;
-
-  save_event_in_list(ctx, event, ep, call);
-
-  switch (callstate(tags)) {
-  case nua_callstate_ready:
-    return 1;
-  case nua_callstate_terminated:
-    if (call)
-      nua_handle_destroy(call->nh), call->nh = NULL;
-    return 1;
-  default:
-    return 0;
-  }
-}
 
 /* test_call_hold message sequence looks like this:
 
@@ -2263,11 +2312,20 @@ int test_call_hold(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-7: Test call hold\n");
 
+  a_call->sdp =
+    "m=audio 5008 RTP/AVP 0 8\n"
+    "m=video 6008 RTP/AVP 30\n";
+  b_call->sdp =
+    "m=audio 5010 RTP/AVP 8\n"
+    "a=rtcp:5011\n"
+    "m=video 6010 RTP/AVP 30\n"
+    "a=rtcp:6011\n";
+
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 0 8\n"
-			     "m=video 6008 RTP/AVP 30\n"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
+
   run_ab_until(ctx, -1, until_ready, -1, accept_call);
 
   /*
@@ -2621,11 +2679,14 @@ int test_session_timer(struct context *ctx)
    |			|
 
 */
+  
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 NUTAG_SESSION_TIMER(15),
 	 NUTAG_MIN_SE(5),
 	 TAG_END());
@@ -2746,42 +2807,6 @@ int test_session_timer(struct context *ctx)
 
 */
 
-/*
-      accept_call     ep
- |                    |
- |-------INVITE------>|
- |<----100 Trying-----|
- |                    |
- |<--------200--------|
- |---------ACK------->|
-*/
-CONDITION_FUNCTION(accept_call_immediately)
-{
-  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
-    return 0;
-
-  save_event_in_list(ctx, event, ep, call);
-
-  switch (callstate(tags)) {
-  case nua_callstate_received:
-    respond(ep, call, nh, SIP_200_OK,
-	    SOATAG_USER_SDP_STR("m=audio 5010 RTP/AVP 8\n"
-				"a=rtcp:5011\n"
-				"m=video 6010 RTP/AVP 30\n"
-				"a=rtcp:6011\n"
-				),
-	    TAG_END());
-    return 0;
-  case nua_callstate_ready:
-    return 1;
-  case nua_callstate_terminated:
-    if (call)
-      nua_handle_destroy(call->nh), call->nh = NULL;
-    return 1;
-  default:
-    return 0;
-  }
-}
 
 int test_refer(struct context *ctx)
 {
@@ -2806,10 +2831,18 @@ int test_refer(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-9.1.1: REFER: make a call between A and B\n");
 
+  TEST_1(a_c2 = calloc(1, sizeof *a_c2));
+  call_init(a_c2);
+
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+  a_c2->sdp   = "m=audio 5012 RTP/AVP 8";
+  c_call->sdp = "m=audio 5014 RTP/AVP 0 8";
+
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   invite(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
-	 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
   run_ab_until(ctx, -1, until_ready, -1, accept_call);
@@ -2949,15 +2982,14 @@ int test_refer(struct context *ctx)
   *sip_to_init(to)->a_url = *refer_to->r_url;
   to->a_display = refer_to->r_display;
 
-  TEST_1(a->call->next = a_c2 = calloc(1, sizeof *a_c2));
-  call_init(a_c2);
+  a->call->next = a_c2;
 
   TEST_1(a_c2->nh = nua_handle(a->nua, a_c2, SIPTAG_TO(to), TAG_END()));
 
   invite(a, a_c2, a_c2->nh, NUTAG_URL(refer_to->r_url),
 	 NUTAG_REFER_EVENT(r_event),
 	 NUTAG_NOTIFY_REFER(a_call->nh),
-	 SOATAG_USER_SDP_STR("m=audio 5020 RTP/AVP 8"),
+	 SOATAG_USER_SDP_STR(a_c2->sdp),
 	 SIPTAG_REFERRED_BY(referred_by),
 	 TAG_END());
 
@@ -3521,7 +3553,7 @@ int main(int argc, char *argv[])
     retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_refer(ctx); SINGLE_FAILURE_CHECK();
-
+    /* retval |= test_100rel(ctx); SINGLE_FAILURE_CHECK(); */
     retval |= test_methods(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();
