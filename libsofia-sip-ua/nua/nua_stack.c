@@ -4029,7 +4029,7 @@ static void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
 static int 
   process_invite1(nua_t *, nua_handle_t**, nta_incoming_t *, msg_t *, sip_t *),
-  process_invite2(nua_t *, nua_handle_t *, nta_incoming_t *, msg_t *, sip_t *),
+  process_invite2(nua_t *, nua_handle_t *, nta_incoming_t *, sip_t *),
   process_ack_or_cancel(nua_handle_t *, nta_incoming_t *, sip_t const *),
   process_ack(nua_handle_t *, nta_incoming_t *, sip_t const *),
   process_prack(nua_handle_t *nh, nta_reliable_t *rel, 
@@ -4056,7 +4056,7 @@ int process_invite(nua_t *nua,
     return status;
   }
 
-  return process_invite2(nua, nh, irq, msg, (sip_t *)sip);
+  return process_invite2(nua, nh, irq, (sip_t *)sip);
 }
 
 /** Preprocess incoming invite - sure we have a valid request. */
@@ -4174,6 +4174,7 @@ int process_invite1(nua_t *nua,
     return 500;
   }
 
+  sr->sr_msg = msg;
   sr->sr_irq = irq;
   
   return 0;
@@ -4184,7 +4185,6 @@ static
 int process_invite2(nua_t *nua,
 		    nua_handle_t *nh,
 		    nta_incoming_t *irq,
-		    msg_t *msg,
 		    sip_t *sip)
 {
   nua_session_state_t *ss = nh->nh_ss;
@@ -4201,23 +4201,20 @@ int process_invite2(nua_t *nua,
   dialog_uas_route(nh, sip, 1);	/* Set route and tags */
 
   nta_incoming_bind(irq, process_ack_or_cancel, nh);
-	  
-  if (ss->ss_state < nua_callstate_ready) {
-    assert(ss->ss_state == nua_callstate_init);
 
-    ss->ss_srequest->sr_respond = respond_to_invite;
-
-    ua_event(nh->nh_nua, nh, msg, 
-	     nua_i_invite, 0, NULL,
-	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-	     TAG_END());
-  }
+  assert(ss->ss_state >= nua_callstate_ready ||
+	 ss->ss_state == nua_callstate_init);
 
 #define AUTOANSWER ((void*)-1)
 
-  if (ss->ss_state == nua_callstate_ready || NH_PGET(nh, auto_answer))
+  if (ss->ss_state == nua_callstate_ready || NH_PGET(nh, auto_answer)) {
     respond_to_invite(nua, nh, SIP_200_OK, AUTOANSWER);
-  else if (NH_PGET(nh, auto_alert)) {
+    return 0;
+  }
+
+  ss->ss_srequest->sr_respond = respond_to_invite;
+
+  if (NH_PGET(nh, auto_alert)) {
     if (ss->ss_100rel && 
 	(sip_has_feature(nh->nh_ds->ds_remote_ua->nr_supported, "100rel") ||
 	 sip_has_feature(nh->nh_ds->ds_remote_ua->nr_require, "100rel"))) {
@@ -4228,10 +4225,17 @@ int process_invite2(nua_t *nua,
     }
   }
   else {
+    nta_incoming_treply(irq, SIP_100_TRYING, TAG_END());
+
+    ua_event(nh->nh_nua, nh, sr->sr_msg,
+	     nua_i_invite, SIP_100_TRYING,
+	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+	     TAG_END());
+    sr->sr_msg = NULL;
+
     signal_call_state_change(nh, SIP_100_TRYING, 
 			     nua_callstate_received, 
 			     sr->sr_offer_recv ? "offer" : 0, 0);
-    nta_incoming_treply(irq, SIP_100_TRYING, TAG_END());
   }
 
   return 0;
@@ -4259,15 +4263,15 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   enter; 
 
-  if (tags == AUTOANSWER)
-    autoanswer = 1, tags = NULL;
-
   if (ss->ss_srequest->sr_irq == NULL ||
       nta_incoming_status(ss->ss_srequest->sr_irq) >= 200) {
     ua_event(nh->nh_nua, nh, NULL,
 	     nua_i_error, 500, "No INVITE request to response", TAG_END());
     return;
   }
+
+  if (tags == AUTOANSWER)
+    autoanswer = 1, tags = NULL;
 
   assert(ss->ss_usage);
 
@@ -4357,9 +4361,6 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   if (reliable && status < 200)
     /* we are done */;
   else if (status != original_status) {    /* Error responding */
-    if (status != original_status)
-      ua_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
-
     nta_incoming_treply(ss->ss_srequest->sr_irq, 
 			status, phrase,
 			TAG_END());
@@ -4368,6 +4369,16 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   else {
     nta_incoming_mreply(ss->ss_srequest->sr_irq, msg);
   }
+
+  if (autoanswer) {
+    ua_event(nh->nh_nua, nh, sr->sr_msg,
+	     nua_i_invite, status, phrase,
+	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+	     TAG_END());
+    sr->sr_msg = NULL;
+  }
+  else if (status != original_status)
+    ua_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
 
   if (status >= 300)
     offer = 0, answer = 0;
@@ -4454,10 +4465,15 @@ int process_prack(nua_handle_t *nh,
   if (!sr->sr_irq) /* XXX  */
     return 481;
 
-  if (sip == NULL) {
-    /* Timeout */ 
-    respond_to_invite(nh->nh_nua, nh, 504, "Reliable Response Timeout", NULL);
-    return 504;
+  if (sip == NULL) {    /* Timeout */
+    SET_STATUS(504, "Reliable Response Timeout");
+
+    respond_to_invite(nh->nh_nua, nh, status, phrase, NULL);
+
+    ua_event(nh->nh_nua, nh, NULL,
+	     nua_i_error, status, phrase, TAG_END());
+
+    return status;
   }
 
   if (nh->nh_soa) {
@@ -4475,13 +4491,14 @@ int process_prack(nua_handle_t *nh,
       if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
 	SU_DEBUG_5(("nua(%p): error parsing SDP in INVITE\n", nh));
 	msg_destroy(msg);
-	nta_incoming_treply(irq, 400, "Bad Session Description", TAG_END());
-	return 400;
+	status = 400, phrase = "Bad Session Description";
       }
 
       /* Respond to PRACK */
 
-      if (sr->sr_offer_sent) {
+      if (status >= 300)
+	;
+      else if (sr->sr_offer_sent) {
 	recv = "answer";
 	sr->sr_answer_recv = 1;
 	if (soa_process_answer(nh->nh_soa, NULL) < 0)
@@ -4498,18 +4515,13 @@ int process_prack(nua_handle_t *nh,
 	}
       }
 
-      if (status < 300) {
-	soa_activate(nh->nh_soa, NULL);
-	signal_call_state_change(nh, status, phrase, 
-				 nua_callstate_early, recv, sent);
-      }
-
       if (nta_incoming_treply(irq, status, phrase,
 			      SIPTAG_CONTENT_DISPOSITION(cd),
 			      SIPTAG_CONTENT_TYPE(ct),
 			      SIPTAG_PAYLOAD(pl),
 			      TAG_END()) < 0)
-	status = 500; /* Respond with 500 if nta_incoming_treply() failed */ 
+	/* Respond with 500 if nta_incoming_treply() failed */ 
+	status = 500, phrase = sip_500_Internal_server_error;
 
       su_home_deinit(home);
     }
@@ -4518,9 +4530,16 @@ int process_prack(nua_handle_t *nh,
   }
 
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-	   nua_i_prack, 0, NULL, TAG_END());
+	   nua_i_prack, status, phrase, TAG_END());
 
-  if (NH_PGET(nh, auto_alert) && !ss->ss_alerting && !ss->ss_precondition)
+  if (status < 300 && (recv || sent)) {
+    soa_activate(nh->nh_soa, NULL);
+    signal_call_state_change(nh, status, phrase, 
+			     nua_callstate_early, recv, sent);
+  }
+
+  if (status < 300 &&
+      NH_PGET(nh, auto_alert) && !ss->ss_alerting && !ss->ss_precondition)
     respond_to_invite(nh->nh_nua, nh, SIP_180_RINGING, NULL);
 
   return status;
@@ -4583,9 +4602,7 @@ int process_cancel(nua_handle_t *nh,
   struct nua_session_state *ss = nh->nh_ss;
   msg_t *msg = nta_incoming_getrequest_ackcancel(irq);
 
-  ua_event(nh->nh_nua, nh, msg, nua_i_cancel,
-	   SIP_487_REQUEST_TERMINATED, 
-	   TAG_END());
+  ua_event(nh->nh_nua, nh, msg, nua_i_cancel, SIP_200_OK, TAG_END());
 
   signal_call_state_change(nh, 0, "Received CANCEL", nua_callstate_init, 0, 0);
 
@@ -4938,7 +4955,7 @@ int process_info(nua_t *nua,
 		 sip_t const *sip)
 {
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-	   nua_i_info, 0, NULL, TAG_END());
+	   nua_i_info, SIP_200_OK, TAG_END());
 
   return 200;		/* Respond automatically with 200 Ok */
 }
@@ -5318,7 +5335,7 @@ int process_bye(nua_t *nua,
   assert(nh);
 
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-	   nua_i_bye, 0, NULL, TAG_END());
+	   nua_i_bye, SIP_200_OK, TAG_END());
   nta_incoming_treply(irq, SIP_200_OK, TAG_END());
   nta_incoming_destroy(irq), irq = NULL;
 
@@ -5398,14 +5415,12 @@ int process_options(nua_t *nua,
 {
   msg_t *msg;
 
+  int status = 200; char const *phrase = sip_200_OK;
+
   if (nh == NULL)
     nh = nua->nua_dhandle;
 
-  msg = nta_incoming_getrequest(irq);
-
-  ua_event(nh->nh_nua, nh, msg, nua_i_options, 0, NULL, TAG_END());
-
-  msg = nh_make_response(nua, nh, irq, SIP_200_OK,
+  msg = nh_make_response(nua, nh, irq, status, phrase,
 			 SIPTAG_ALLOW(NH_PGET(nh, allow)),
 			 SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
 			 SIPTAG_ACCEPT_STR(SDP_MIME_TYPE),
@@ -5425,12 +5440,17 @@ int process_options(nua_t *nua,
 #endif
 
     nta_incoming_mreply(irq, msg);
-    nta_incoming_destroy(irq);
 
     su_home_deinit(home);
   }
+  else
+    SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
 
-  return 0;
+  msg = nta_incoming_getrequest(irq);
+
+  ua_event(nh->nh_nua, nh, msg, nua_i_options, status, phrase, TAG_END());
+
+  return status;
 }
 
 
@@ -5559,7 +5579,7 @@ int process_publish(nua_t *nua,
       return 500;
 
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-	   nua_i_publish, 0, NULL, TAG_END());
+	   nua_i_publish, SIP_501_NOT_IMPLEMENTED, TAG_END());
 
   return 501; /* Respond automatically with 501 Not Implemented */
 }
@@ -5688,7 +5708,7 @@ int process_message(nua_t *nua,
   }
 #endif
 
-  ua_event(nh->nh_nua, nh, msg, nua_i_message, 0, NULL, TAG_END());
+  ua_event(nh->nh_nua, nh, msg, nua_i_message, SIP_200_OK, TAG_END());
 
 #if 0 /* XXX */
   if (nh->nh_nua->nua_messageRespond) {	
@@ -5957,7 +5977,7 @@ pending_unsubscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 	      id ? "; id=" : "", id ? id : ""));
 
   ua_event(nh->nh_nua, nh,  NULL,
-	   nua_i_notify, 0, "no real NOTIFY received", 
+	   nua_i_notify, 408, "Early Subscription Timeouts without NOTIFY", 
 	   NUTAG_SUBSTATE(nua_substate_terminated),
 	   SIPTAG_EVENT(o),
 	   TAG_END());
@@ -6099,11 +6119,6 @@ static int process_notify(nua_t *nua,
     /* XXX - any extended state is considered as active */
     du->du_subscriber->de_substate = nua_substate_active;
 
-  ua_event(nh->nh_nua, nh,  nta_incoming_getrequest(irq),
-	   nua_i_notify, 0, NULL, 
-	   NUTAG_SUBSTATE(du->du_subscriber->de_substate),
-	   TAG_END());
-
   if (nta_incoming_url(irq)->url_type == url_sips && nua->nua_sips_contact)
     *m0 = *nua->nua_sips_contact, m = m0;
   else if (nua->nua_contact)
@@ -6111,6 +6126,12 @@ static int process_notify(nua_t *nua,
   m0->m_params = NULL;
     
   nta_incoming_treply(irq, SIP_200_OK, SIPTAG_CONTACT(m), NULL);
+
+  ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
+	   nua_i_notify, SIP_200_OK, 
+	   NUTAG_SUBSTATE(du->du_subscriber->de_substate),
+	   TAG_END());
+
   nta_incoming_destroy(irq), irq = NULL;
 
   if (du->du_subscriber->de_substate == nua_substate_terminated) {
@@ -6306,7 +6327,7 @@ int process_refer(nua_t *nua,
 	       TAG_END());
   
   ua_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-	   nua_i_refer, 0, NULL, 
+	   nua_i_refer, SIP_202_ACCEPTED, 
 	   NUTAG_REFER_EVENT(event),
 	   TAG_IF(by, SIPTAG_REFERRED_BY(by)),
 	   TAG_END());

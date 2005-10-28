@@ -249,6 +249,7 @@ typedef struct nua_session_state
 		       int status, char const *phrase, 
 		       tagi_t const *tags);
     nta_incoming_t *sr_irq;
+    msg_t *sr_msg;		/**< Request message */
 
     unsigned sr_offer_recv:1;	/**< We have received an offer */
     unsigned sr_answer_sent:2;	/**< We have answered (reliably, if >1) */

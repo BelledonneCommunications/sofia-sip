@@ -413,15 +413,20 @@ int x(struct endpoint *ep, \
 } extern int dummy
 
 OPERATION(invite);
+OPERATION(ack);
 OPERATION(bye);
 OPERATION(cancel);
 OPERATION(authenticate);
 OPERATION(update);
+OPERATION(info);
 OPERATION(refer);
 OPERATION(message);
 OPERATION(options);
 OPERATION(publish);
 OPERATION(subscribe);
+OPERATION(notify);
+OPERATION(notifier);
+OPERATION(terminate);
 
 /* Respond via endpoint and handle */
 int respond(struct endpoint *ep,
@@ -1255,6 +1260,7 @@ int test_basic_call(struct context *ctx)
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -1286,6 +1292,7 @@ int test_basic_call(struct context *ctx)
      READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
   */
   TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_bye);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -1382,6 +1389,7 @@ int test_reject_a(struct context *ctx)
    INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -1490,6 +1498,7 @@ int test_reject_b(struct context *ctx)
    INIT -(S1)-> RECEIVED -(S2)-> EARLY -(S6a)-> TERMINATED
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -1653,12 +1662,14 @@ int test_reject_302(struct context *ctx)
    INIT -(S1)-> RECEIVED -(S2)-> EARLY -(S6b)-> TERMINATED
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -1870,12 +1881,14 @@ int test_reject_401(struct context *ctx)
    INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -1884,6 +1897,7 @@ int test_reject_401(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -2047,10 +2061,12 @@ int test_call_cancel(struct context *ctx)
    RECEIVED -(S6a)--> TERMINATED: nua_i_cancel, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_cancel);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -2105,12 +2121,14 @@ int test_call_cancel(struct context *ctx)
    EARLY -(S6b)--> TERMINATED: nua_i_cancel, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_cancel);
+  TEST(e->data->e_status, 200);
   /* Check for bug #1326727 */
   TEST_1(e->data->e_msg);
   TEST_1(sip_object(e->data->e_msg)->sip_reject_contact);
@@ -2229,6 +2247,7 @@ int test_early_bye(struct context *ctx)
    EARLY -(S6b)--> TERMINATED: nua_i_cancel, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -2236,6 +2255,7 @@ int test_early_bye(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
   /* Forking has not been enabled, so this should be actually a CANCEL */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_cancel);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -2343,6 +2363,7 @@ int test_call_hold(struct context *ctx)
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -2396,9 +2417,9 @@ int test_call_hold(struct context *ctx)
    READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
-  TEST_1(e = b_call->events.head); /* TEST_E(e->data->e_event, nua_i_invite);
-  XXX - nua_i_invite from re-INVITE missing?
-  TEST_1(e = e->next); */ TEST_E(e->data->e_event, nua_i_state);
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
   TEST_1(is_answer_sent(e->data->e_tags));
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_RECVONLY);
@@ -2452,9 +2473,9 @@ int test_call_hold(struct context *ctx)
    READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
-  TEST_1(e = a_call->events.head); /* TEST_E(e->data->e_event, nua_i_invite);
-  XXX - nua_i_invite from re-INVITE missing?
-  TEST_1(e = e->next); */ TEST_E(e->data->e_event, nua_i_state);
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
   TEST_1(is_answer_sent(e->data->e_tags));
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_INACTIVE);
@@ -2509,9 +2530,9 @@ int test_call_hold(struct context *ctx)
    READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
-  TEST_1(e = b_call->events.head); /* TEST_E(e->data->e_event, nua_i_invite);
-  XXX - nua_i_invite from re-INVITE missing?
-  TEST_1(e = e->next); */ TEST_E(e->data->e_event, nua_i_state);
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
   TEST_1(is_answer_sent(e->data->e_tags));
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDONLY);
@@ -2566,9 +2587,9 @@ int test_call_hold(struct context *ctx)
    READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
-  TEST_1(e = a_call->events.head); /* TEST_E(e->data->e_event, nua_i_invite);
-  XXX - nua_i_invite from re-INVITE missing?
-  TEST_1(e = e->next); */ TEST_E(e->data->e_event, nua_i_state);
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
   TEST_1(is_answer_sent(e->data->e_tags));
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
@@ -2612,6 +2633,7 @@ int test_call_hold(struct context *ctx)
      READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_bye);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -2719,6 +2741,7 @@ int test_session_timer(struct context *ctx)
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -2759,6 +2782,7 @@ int test_session_timer(struct context *ctx)
 
   /* Events from A (who received UPDATE) */
   TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_update);
+  TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_session_expires);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
@@ -2783,6 +2807,7 @@ int test_session_timer(struct context *ctx)
 
   /* A: READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state */
   TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_bye);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -2905,6 +2930,7 @@ int test_refer(struct context *ctx)
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -2947,6 +2973,7 @@ int test_refer(struct context *ctx)
     nua_i_refer
   */
   TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_refer);
+  TEST(e->data->e_status, 202);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_refer_to);
   TEST_1(refer_to = sip_refer_to_dup(tmphome, sip->sip_refer_to));
@@ -2974,6 +3001,7 @@ int test_refer(struct context *ctx)
   if (!e->next)
     run_b_until(ctx, -1, save_until_received);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_notify);
+  TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_event);
   TEST_S(sip->sip_event->o_id, r_event->o_id);
@@ -3069,6 +3097,7 @@ int test_refer(struct context *ctx)
   if (b_call->events.head == NULL)
     run_b_until(ctx, -1, save_until_received);
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_notify);
+  TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_subscription_state);
   TEST_S(sip->sip_subscription_state->ss_substate, "terminated");
@@ -3086,6 +3115,7 @@ int test_refer(struct context *ctx)
    COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
   */
   TEST_1(e = c_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -3129,6 +3159,7 @@ int test_refer(struct context *ctx)
      READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_bye);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -3169,6 +3200,7 @@ int test_refer(struct context *ctx)
      READY -(T1)-> TERMINATED: nua_i_bye, nua_i_state
   */
   TEST_1(e = c_call->events.head); TEST_E(e->data->e_event, nua_i_bye);
+  TEST(e->data->e_status, 200);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -3238,6 +3270,7 @@ int test_methods(struct context *ctx)
    nua_i_message
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_message);
+  TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_subject && sip->sip_subject->g_string);
   TEST_S(sip->sip_subject->g_string, "Hello");
@@ -3288,6 +3321,7 @@ int test_methods(struct context *ctx)
    nua_i_options
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_options);
+  TEST(e->data->e_status, 200);
   TEST_1(!e->next);
 
   free_events_in_list(ctx, a_call);
@@ -3333,6 +3367,8 @@ int test_methods(struct context *ctx)
    Server events:
    nua_i_publish
   */
+  /* TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_publish);
+     TEST(e->data->e_status, 405); */
   TEST_1(!e->next);
 
   free_events_in_list(ctx, a_call);
@@ -3341,11 +3377,8 @@ int test_methods(struct context *ctx)
   free_events_in_list(ctx, b_call);
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
-  nua_set_params(b->nua,
-		 SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, "
-				  "PRACK, INFO, PUBLISH, "
-				  "MESSAGE, SUBSCRIBE, NOTIFY, REFER, UPDATE"),
-		 TAG_END());
+  nua_set_params(b->nua, NUTAG_ALLOW("PUBLISH"), TAG_END());
+
   run_b_until(ctx, nua_r_set_params, until_final_response);
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
@@ -3370,6 +3403,7 @@ int test_methods(struct context *ctx)
    nua_i_publish
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_publish);
+  TEST(e->data->e_status, 501);
   TEST_1(!e->next);
 
   if (print_headings)
