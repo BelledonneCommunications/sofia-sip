@@ -6,7 +6,7 @@ Changes since last release
 --------------------------
 
 Added "features" module. Fixed stun error handling. Fixed code generating
-contact for UAS socket in nta. NUA/SOA API has been tested some more.
+contact for UAS socket in nta. More features of NUA/SOA API has been tested.
 
 
 API/ABI changes and versioning
@@ -33,3 +33,4 @@ Bugs fixed in this release
 - stun error handling
 - transport-less contact for UAS socket in nta
 - rport on server side
+- receiving MESSAGE in nua
