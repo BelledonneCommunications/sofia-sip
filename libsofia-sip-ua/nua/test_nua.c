@@ -1193,6 +1193,39 @@ CONDITION_FUNCTION(until_ready)
   }
 }
 
+
+/*
+ INVITE without auto-ack
+ X 
+ |                    |
+ |-------INVITE------>|
+ |<--------200--------|
+ |                    |
+ |---------ACK------->|
+*/
+CONDITION_FUNCTION(ack_when_completing)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_completing:
+    ack(ep, call, nh, TAG_END());
+    return 0;
+  case nua_callstate_ready:
+    return 1;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+
 /* ======================================================================== */
 
 /* Basic call:
@@ -2316,6 +2349,9 @@ int test_early_bye(struct context *ctx)
  |----200(sendrecv)-->|
  |<--------ACK--------|
  :                    :
+ |--------INFO------->|
+ |<--------200--------|
+ :                    :
  |---------BYE------->|
  |<--------200--------|
 */
@@ -2617,7 +2653,119 @@ int test_call_hold(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-7.4: PASSED\n");
 
+  /* ---------------------------------------------------------------------- */
+  /*
+ A                    B
+ |--------INFO------->|
+ |<--------200--------|
+   */
+  if (print_headings)
+    printf("TEST NUA-7.5: send INFO\n");
+
+  info(a, a_call, a_call->nh, TAG_END());
+  run_a_until(ctx, -1, save_until_final_response);
+  /* XXX - B should get a  nua_i_info event with 405 */
+
+  /* A sent INFO, receives 405 */
+  TEST_1(e = a_call->events.head);  TEST_E(e->data->e_event, nua_r_info);
+  TEST(e->data->e_status, 405);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+#if 0				/* XXX */
+  /* B received INFO */
+  TEST_1(e = b_call->events.head);  TEST_E(e->data->e_event, nua_i_info);
+  TEST(e->data->e_status, 405);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+#endif
+
+  /* Add INFO to allowed methods */
+  nua_set_hparams(b_call->nh, NUTAG_ALLOW("INFO, PUBLISH"), TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+  info(a, a_call, a_call->nh, TAG_END());
+  run_ab_until(ctx, -1, save_until_final_response, -1, save_until_received);
+
+  /* A sent INFO, receives 200 */
+  TEST_1(e = a_call->events.head);  TEST_E(e->data->e_event, nua_r_info);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  /* B received INFO */
+  TEST_1(e = b_call->events.head);  TEST_E(e->data->e_event, nua_i_info);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+
+  if (print_headings)
+    printf("TEST NUA-7.5: PASSED\n");
+
   /* ------------------------------------------------------------------------ */
+  /*
+ :                    :
+ |<------INVITE-------|
+ |--------200-------->|
+ |<--------ACK--------|
+ :                    :
+  */
+
+  if (print_headings)
+    printf("TEST NUA-7.6: re-INVITE without auto-ack\n");
+
+  /* Turn off auto-ack */
+  nua_set_hparams(b_call->nh, NUTAG_AUTOACK(0), TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+  invite(b, b_call, b_call->nh, SOATAG_HOLD(""),
+	 SIPTAG_SUBJECT_STR("TEST NUA-7.6: re-INVITE without auto-ack"),
+	 TAG_END());
+  run_ab_until(ctx, -1, until_ready, -1, ack_when_completing);
+
+  /* Client transitions:
+     READY -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C3b)-> COMPLETING: nua_r_invite, nua_i_state
+     COMPLETING -(C4)-> READY: nua_ack(), nua_i_state
+  */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completing); /* COMPLETING */
+  TEST_1(is_answer_recv(e->data->e_tags));
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+
+  /*
+   Server transitions:
+   READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags));
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  if (print_headings)
+    printf("TEST NUA-7.6: PASSED\n");
+  
+
+  /* ---------------------------------------------------------------------- */
   /*
  A                    B
  |---------BYE------->|
@@ -2625,7 +2773,7 @@ int test_call_hold(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-7.5: terminate call\n");
+    printf("TEST NUA-7.6: terminate call\n");
 
   bye(a, a_call, a_call->nh, TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, until_terminated);
@@ -2652,7 +2800,7 @@ int test_call_hold(struct context *ctx)
   free_events_in_list(ctx, b_call);
 
   if (print_headings)
-    printf("TEST NUA-7.5: PASSED\n");
+    printf("TEST NUA-7.6: PASSED\n");
 
   nua_handle_destroy(a_call->nh), a_call->nh = NULL;
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
