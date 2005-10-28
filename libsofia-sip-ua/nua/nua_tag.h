@@ -154,32 +154,25 @@ extern tag_typedef_t nutag_uicc;
 #define NUTAG_UICC_REF(x) nutag_uicc_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_uicc_ref;
 
-/** Ask NUA to create leg for this handle
+/** Ask NUA to create dialog for this handle
  *
- * @par Used with
- *    calls that send a SIP request
+ * @par Used with nua calls that send a SIP request
  *
  * @par Parameter type
  *   int
  *
  * @par Values
- *    @c 0   False \n
- *    @c !=0 True
+ *    @c False (zero) \n
+ *    @c True (nonzero)
  *
- * Corresponding tag taking reference parameter is NUTAG_USE_LEG_REF()
+ * Corresponding tag taking reference parameter is NUTAG_USE_DIALOG_REF()
  */
-#define NUTAG_USE_LEG(x)        nutag_use_leg, tag_bool_v(x)
-extern tag_typedef_t nutag_use_leg;
+#define NUTAG_USE_DIALOG(x)        nutag_use_dialog, tag_bool_v(x)
+extern tag_typedef_t nutag_use_dialog;
 
-#define NUTAG_USE_LEG_REF(x)    nutag_use_leg_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_use_leg_ref;
+#define NUTAG_USE_DIALOG_REF(x)    nutag_use_dialog_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_use_dialog_ref;
 
-/** Create a session for this handle */
-#define NUTAG_USE_SESSION(x)        nutag_use_session, tag_bool_v(x)
-extern tag_typedef_t nutag_use_session;
-
-#define NUTAG_USE_SESSION_REF(x)    nutag_use_session_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_use_session_ref;
 
 /* Protocol engine parameters,
  * set by nua_set_params(), get by nua_get_params() */
@@ -1253,6 +1246,9 @@ su_inline tag_value_t nutag_handle_vr(nua_handle_t **vp) {return(tag_value_t)vp;
 #endif
 
 /* Tags for compatibility */
+
+#define NUTAG_USE_LEG(x) NUTAG_USE_DIALOG(x)
+#define NUTAG_USE_LEG_REF(x) NUTAG_USE_DIALOG_REF(x)
 
 #define NUTAG_AF(x) SOATAG_AF((x))
 #define NUTAG_AF_REF(x) SOATAG_AF_REF((x))

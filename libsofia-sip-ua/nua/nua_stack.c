@@ -1695,7 +1695,7 @@ msg_t *crequest_message(nua_t *nua, nua_handle_t *nh,
 
   if (msg) {
     ta_list ta;
-    int use_leg = 0, add_contact = 0;
+    int use_dialog = 0, add_contact = 0;
 
     sip = sip_object(msg);
 
@@ -1703,7 +1703,7 @@ msg_t *crequest_message(nua_t *nua, nua_handle_t *nh,
 
     tl_gets(ta_args(ta),
 	    NUTAG_URL_REF(url),
-	    NUTAG_USE_LEG_REF(use_leg),
+	    NUTAG_USE_DIALOG_REF(use_dialog),
 	    /* NUTAG_COPY_REF(copy), */
 	    NUTAG_ADD_CONTACT_REF(add_contact),
 	    TAG_END());
@@ -1746,7 +1746,7 @@ msg_t *crequest_message(nua_t *nua, nua_handle_t *nh,
 	      sip_add_dup(msg, sip, (sip_header_t *)nua->nua_from) < 0))
 	msg_destroy(msg), msg = NULL;
 
-      if (use_leg && msg) {
+      if (use_dialog && msg) {
 	sip_route_t *route = sip->sip_route;
 
 	if (method == sip_method_invite ||
@@ -3170,7 +3170,7 @@ ua_register(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     msg = crequest_message(nua, nh, cr, cr->cr_msg != NULL,
 			   SIP_METHOD_REGISTER,
 			   NUTAG_ADD_CONTACT(1),
-			   TAG_IF(!registering, NUTAG_USE_LEG(1)),
+			   TAG_IF(!registering, NUTAG_USE_DIALOG(1)),
 			   TAG_NEXT(tags));
   }
   sip = sip_object(msg);
@@ -3357,7 +3357,7 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 
   msg = crequest_message(nua, nh, cr, 1,
 			 SIP_METHOD_REGISTER,
-			 NUTAG_USE_LEG(1), 
+			 NUTAG_USE_DIALOG(1),
 			 TAG_END());
   sip = sip_object(msg);
 
@@ -3465,7 +3465,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 
   msg = du ? crequest_message(nua, nh, cr, restarted,
 			      SIP_METHOD_INVITE,
-			      NUTAG_USE_LEG(1),
+			      NUTAG_USE_DIALOG(1),
 			      NUTAG_ADD_CONTACT(1),
 			      TAG_NEXT(tags)) : NULL;
   sip = sip_object(msg);
@@ -4922,7 +4922,7 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
   msg = crequest_message(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_UPDATE,
-			 NUTAG_USE_LEG(1),
+			 NUTAG_USE_DIALOG(1),
 			 NUTAG_ADD_CONTACT(1),
 			 TAG_NEXT(tags));
   sip = sip_object(msg);
@@ -5648,7 +5648,7 @@ ua_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
   msg = crequest_message(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_SUBSCRIBE,
-			 NUTAG_USE_LEG(1), 
+			 NUTAG_USE_DIALOG(1),
 			 /* Note:  this is overriden by application */
 			 /* SIPTAG_EVENT_STR("presence"), */
 			 NUTAG_ADD_CONTACT(1),
@@ -5825,7 +5825,7 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 
   msg = crequest_message(nua, nh, cr, 1,
 			 SIP_METHOD_SUBSCRIBE,
-			 NUTAG_USE_LEG(1), 
+			 NUTAG_USE_DIALOG(1),
 			 NUTAG_ADD_CONTACT(1),
 			 //SIPTAG_EVENT(du->du_event),
 			 //SIPTAG_SUPPORTED(nh->nh_supported),
@@ -6088,7 +6088,7 @@ ua_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   /* Now we create a REFER request message */
   msg = crequest_message(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_REFER,
-			 NUTAG_USE_LEG(1),
+			 NUTAG_USE_DIALOG(1),
 			 SIPTAG_EVENT(SIP_NONE->sh_event), /* remove event */
 			 SIPTAG_REFERRED_BY(by), /* Overriden by user tags */
 			 NUTAG_ADD_CONTACT(1),

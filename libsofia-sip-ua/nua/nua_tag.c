@@ -99,8 +99,7 @@ tag_typedef_t nutag_certificate_phrase = STRTAG_TYPEDEF(certificate_phrase);
 tag_typedef_t nutag_registrar = URLTAG_TYPEDEF(registrar);
 tag_typedef_t nutag_sip_parser = PTRTAG_TYPEDEF(sip_parser);
 
-tag_typedef_t nutag_use_leg = BOOLTAG_TYPEDEF(use_leg);
-tag_typedef_t nutag_use_session = BOOLTAG_TYPEDEF(use_session);
+tag_typedef_t nutag_use_dialog = BOOLTAG_TYPEDEF(use_dialog);
 
 tag_typedef_t nutag_auth = STRTAG_TYPEDEF(auth);
 tag_typedef_t nutag_authtime = INTTAG_TYPEDEF(authtime);
