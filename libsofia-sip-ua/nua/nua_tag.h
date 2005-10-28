@@ -777,7 +777,7 @@ extern tag_typedef_t nutag_sip_parser;
           nutag_sip_parser_ref, tag_ptr_vr(&(x), (x))
 extern tag_typedef_t nutag_sip_parser_ref;
 
-/** Authentication data ("realm" "user" "password")
+/** Authentication data ("scheme" "realm" "user" "password")
  *
  * @par Used with
  *    nua_authenticate()
@@ -786,9 +786,10 @@ extern tag_typedef_t nutag_sip_parser_ref;
  *    char const *
  *
  * @par Values
- *    NULL terminated string of format: basic digest scheme:"realm":user:password  \n
- *    for example: \n
- *	@code Digest:"nokia proxy":xyz:secret \endcode
+ *    NULL terminated string of format: \n
+ *    basic digest scheme:"realm":user:password  \n
+ *    For example: \n
+ *	\code Digest:"nokia proxy":xyz:secret \endcode
  *
  * Corresponding tag taking reference parameter is NUTAG_AUTH_REF()
  */

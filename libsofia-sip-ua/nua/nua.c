@@ -1170,7 +1170,7 @@ void nua_terminate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    #nua_r_refer \n
  *    #nua_i_notify
  *
- * @sa RFC 3515
+ * @sa @RFC3515
  */
 void nua_refer(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
