@@ -338,6 +338,14 @@ int run_b_until(struct context *ctx,
   return ctx->b.last_event;
 }
 
+int run_c_until(struct context *ctx,
+		nua_event_t event,
+		condition_function *condition)
+{
+  run_abc_until(ctx, -1, NULL, -1, NULL, event, condition);
+  return ctx->c.last_event;
+}
+
 /* Invite via endpoint and handle */
 int invite(struct endpoint *ep, nua_handle_t *nh,
 	   tag_type_t tag, tag_value_t value,
@@ -1000,7 +1008,7 @@ int test_init(struct context *ctx, char *argv[])
   BEGIN();
   struct event *e;
   sip_contact_t const *m = NULL;
-  sip_from_t const *a = NULL;
+  sip_from_t const *sipaddress = NULL;
 
   ctx->root = su_root_create(ctx); TEST_1(ctx->root);
 
@@ -1022,10 +1030,10 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(e = ctx->a.events.head); 
   TEST(tl_gets(e->data->e_tags,
 	       NTATAG_CONTACT_REF(m),
-	       SIPTAG_FROM_REF(a),
+	       SIPTAG_FROM_REF(sipaddress),
 	       TAG_END()), 2); TEST_1(m);
   TEST_1(ctx->a.contact = sip_contact_dup(ctx->home, m));
-  TEST_1(ctx->a.address = sip_to_dup(ctx->home, a));
+  TEST_1(ctx->a.address = sip_to_dup(ctx->home, sipaddress));
 
   free_events_in_list(ctx, &ctx->a);
 
@@ -1036,7 +1044,7 @@ int test_init(struct context *ctx, char *argv[])
     printf("TEST NUA-3.0.2: init endpoint B\n");
 
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
-			  SIPTAG_FROM_STR("sip:bob@example.org"),
+			  SIPTAG_FROM_STR("sip:bob@example.orf"),
 			  NUTAG_URL("sip:*:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
 			  TAG_END());
@@ -1047,14 +1055,38 @@ int test_init(struct context *ctx, char *argv[])
   TEST_1(e = ctx->b.events.head); 
   TEST(tl_gets(e->data->e_tags,
 	       NTATAG_CONTACT_REF(m),
-	       SIPTAG_FROM_REF(a),
+	       SIPTAG_FROM_REF(sipaddress),
 	       TAG_END()), 2); TEST_1(m);
   TEST_1(ctx->b.contact = sip_contact_dup(ctx->home, m));
-  TEST_1(ctx->b.address = sip_to_dup(ctx->home, a));
+  TEST_1(ctx->b.address = sip_to_dup(ctx->home, sipaddress));
   free_events_in_list(ctx, &ctx->b);
 
   if (print_headings)
     printf("TEST NUA-3.0.2: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-3.0.3: init endpoint C\n");
+
+  ctx->c.nua = nua_create(ctx->root, c_callback, ctx,
+			  SIPTAG_FROM_STR("sip:charlie@example.net"),
+			  NUTAG_URL("sip:*:*"),
+			  SOATAG_USER_SDP_STR("m=audio 5400 RTP/AVP 8 0"),
+			  TAG_END());
+  TEST_1(ctx->c.nua);
+
+  nua_get_params(ctx->c.nua, TAG_ANY(), TAG_END());
+  run_c_until(ctx, nua_r_get_params, save_until_final_response);
+  TEST_1(e = ctx->c.events.head); 
+  TEST(tl_gets(e->data->e_tags,
+	       NTATAG_CONTACT_REF(m),
+	       SIPTAG_FROM_REF(sipaddress),
+	       TAG_END()), 2); TEST_1(m);
+  TEST_1(ctx->c.contact = sip_contact_dup(ctx->home, m));
+  TEST_1(ctx->c.address = sip_to_dup(ctx->home, sipaddress));
+  free_events_in_list(ctx, &ctx->c);
+
+  if (print_headings)
+    printf("TEST NUA-3.0.3: PASSED\n");
 
   END();
 }
@@ -2902,6 +2934,12 @@ int test_deinit(struct context *ctx)
   run_b_until(ctx, nua_r_shutdown, until_final_response);
   nua_destroy(ctx->b.nua), ctx->b.nua = NULL;
 
+  nua_handle_destroy(ctx->c.nh), ctx->c.nh = NULL;
+
+  nua_shutdown(ctx->c.nua);
+  run_c_until(ctx, nua_r_shutdown, until_final_response);
+  nua_destroy(ctx->c.nua), ctx->c.nua = NULL;
+
   su_root_destroy(ctx->root);
 
   END();
@@ -2951,9 +2989,14 @@ int main(int argc, char *argv[])
   ctx->a.name[0] = 'a';
   ctx->a.ctx = ctx;
   ctx->a.events.tail = &ctx->a.events.head;
+
   ctx->b.name[0] = 'b';
   ctx->b.ctx = ctx;
   ctx->b.events.tail = &ctx->b.events.head;
+
+  ctx->c.name[0] = 'c';
+  ctx->c.ctx = ctx;
+  ctx->c.events.tail = &ctx->c.events.head;
 
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0)
