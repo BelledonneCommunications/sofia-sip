@@ -116,6 +116,7 @@ tag_typedef_t nutag_notify_refer = PTRTAG_TYPEDEF(notify_refer);
 tag_typedef_t nutag_refer_event = SIPHDRTAG_NAMED_TYPEDEF(refer_event, event);
 tag_typedef_t nutag_refer_pause = BOOLTAG_TYPEDEF(refer_pause);
 tag_typedef_t nutag_user_agent = STRTAG_TYPEDEF(user_agent);
+tag_typedef_t nutag_allow = STRTAG_TYPEDEF(allow);
 tag_typedef_t nutag_path_enable = BOOLTAG_TYPEDEF(path_enable);
 tag_typedef_t nutag_service_route_enable = 
   BOOLTAG_TYPEDEF(service_route_enable);

@@ -1016,6 +1016,27 @@ extern tag_typedef_t nutag_user_agent;
 #define NUTAG_USER_AGENT_REF(x) nutag_user_agent_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_user_agent_ref;
 
+/** Allow a method (or methods).
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_set_hparams() \n
+ *    any handle-specific nua call
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    Valid method name, or comma-separated list of them.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_ALLOW_REF()
+ */
+#define NUTAG_ALLOW(x)     nutag_allow, tag_str_v(x)
+extern tag_typedef_t nutag_allow;
+
+#define NUTAG_ALLOW_REF(x) nutag_allow_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_allow_ref;
+
 /** Call state
  *
  * @par Used with

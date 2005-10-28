@@ -108,6 +108,15 @@ typedef struct sdp_session_s sdp_session_t;
 
 typedef unsigned longlong ull;
 
+#define SET_STATUS(_status, _phrase) status = _status, phrase = _phrase
+
+/* This is interesting macro: 
+ * x expands to "num, str", num is assigned to status, str to phrase.
+ * Macro expands to two comma-separated expressions 
+ * usable as function arguments
+ */
+#define SET_STATUS1(x) ((status = x), status), (phrase = ((void)x))
+
 /* ========================================================================
  *
  *                       Protocol stack side
@@ -875,6 +884,8 @@ void ua_shutdown(nua_t *nua)
  * Parameters
  */
 
+#include <msg_parser.h>
+
 int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
 		  tagi_t const *tags)
 {
@@ -910,6 +921,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   sip_allow_t const *allow = NONE;
   char const   *allow_str = NONE;
+  char const   *allowing = NULL;
   sip_supported_t const *supported = NONE;
   char const *supported_str = NONE;
   sip_user_agent_t const *user_agent = NONE;
@@ -970,8 +982,11 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
 	       SIPTAG_SUPPORTED_REF(supported),
 	       SIPTAG_SUPPORTED_STR_REF(supported_str),
+
 	       SIPTAG_ALLOW_REF(allow),
 	       SIPTAG_ALLOW_STR_REF(allow_str),
+	       NUTAG_ALLOW_REF(allowing),
+
 	       SIPTAG_USER_AGENT_REF(user_agent),
 	       SIPTAG_USER_AGENT_STR_REF(user_agent_str),
 	       NUTAG_USER_AGENT_REF(ua_name),
@@ -1081,8 +1096,26 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     }								 \
   }
 
+  /* Add contents of NUTAG_ALLOW() to list of currently allowed methods */
+  if (allow == NONE && allow_str == NONE && allowing != NULL) {
+    sip_allow_t *methods = sip_allow_make(tmphome, allowing);
+
+    if (methods)
+      allow = sip_allow_dup(tmphome, NHP_GET(ohp, dnhp, allow));
+
+    if (allow == NULL)
+      allow = NONE;
+
+    if (allow != NONE)
+      if (msg_params_join(tmphome, 
+			  (msg_param_t **)&allow->k_items, methods->k_items,
+			  1 /* prune */, 0 /* don't dup */) < 0)
+	allow = NONE;
+  }
+
   NHP_SET_HEADER(nhp, supported, supported, supported_str);
   NHP_SET_HEADER(nhp, allow, allow, allow_str);
+  /* Add contents of NUTAG_USER_AGENT() to our distribution name */
   if (ua_name != NONE && user_agent_str == NONE && user_agent == NONE)
     user_agent_str = ua_name 
       ? su_sprintf(tmphome, "%s %s", ua_name, PACKAGE_NAME "/" PACKAGE_VERSION)

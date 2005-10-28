@@ -444,8 +444,6 @@ extern char const nua_500_error[];
 
 #define NUA_500_ERROR 500, nua_500_error
 
-#define SET_STATUS(_status, _phrase) status = _status, phrase = _phrase
-
 struct nua_s {
   su_home_t            nua_home[1];
 
