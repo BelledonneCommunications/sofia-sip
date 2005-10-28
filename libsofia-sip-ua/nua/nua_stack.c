@@ -6115,6 +6115,10 @@ ua_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     return UA_EVENT1(e, NUA_500_ERROR);
   }
 
+  /*
+   * We send a 100 trying event so that application gets a event 
+   * it can use to match NOTIFYs with its REFER
+   */
   ua_event(nua, nh, NULL, e, SIP_100_TRYING, 
 	   NUTAG_REFER_EVENT(event),
 	   TAG_END());

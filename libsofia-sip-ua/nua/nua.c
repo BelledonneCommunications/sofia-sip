@@ -1150,9 +1150,11 @@ void nua_terminate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 /** Transfer a call. 
  * 
  * Send a REFER request asking the recipient to transfer the call. The REFER
- * request also establishes a subscription to the "refer" event. The event
- * id parameter can be determined by the CSeq number from the SIP response
- * returned with the nua_r_refer event.
+ * request also establishes a subscription to the "refer" event. The "refer"
+ * event will have an "id" parameter, which has the value of CSeq number in
+ * the REFER request. After initiating the REFER request, the nua engine
+ * sends application a nua_r_refer event with status 100 and tag
+ * SIPTAG_EVENT() containing a matching event header.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
