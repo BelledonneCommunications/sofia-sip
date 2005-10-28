@@ -520,6 +520,11 @@ void free_events_in_list(struct context *ctx,
 
 void nolog(void *stream, char const *fmt, va_list ap) {}
 
+int check_set_status(int status, char const *phrase)
+{
+  return status == 200 && strcmp(phrase, sip_200_OK) == 0;
+}
+
 int test_api_errors(struct context *ctx)
 {
   BEGIN();
@@ -528,8 +533,15 @@ int test_api_errors(struct context *ctx)
 
   int level;
 
+  int status; char const *phrase;
+
   if (print_headings)
     printf("TEST NUA-1.0: test API\n");
+
+  /* This is a nasty macro. Test it. */
+#define SET_STATUS1(x) ((status = x), status), (phrase = ((void)x))
+  TEST_1(check_set_status(SET_STATUS1(SIP_200_OK)));
+  TEST(status, 200); TEST_S(phrase, sip_200_OK);
 
   su_log_init(nua_log);
 
