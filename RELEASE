@@ -19,6 +19,7 @@ version.
 - token64_e() prototype changed
 - sip_sofia_features.h added
 - features module added
+- removed Content-Base (http_content_base) header from HTTP parser
 
 
 Contributors to this release
