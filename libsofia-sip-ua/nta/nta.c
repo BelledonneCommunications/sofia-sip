@@ -4978,7 +4978,7 @@ int nta_incoming_treply(nta_incoming_t *irq,
 {
   int retval = -1;
 
-  if (irq->irq_status < 200 || status < 200 ||
+  if (irq && irq->irq_status < 200 || status < 200 ||
       (irq->irq_method == sip_method_invite && status < 300)) {
     ta_list ta;
     msg_t *msg = nta_msg_create(irq->irq_agent, 0);
@@ -5015,6 +5015,11 @@ int nta_incoming_mreply(nta_incoming_t *irq, msg_t *msg)
   sip_t *sip = sip_object(msg);
 
   int status;
+
+  if (irq == NULL) {
+    msg_destroy(msg);
+    return -1;
+  }
 
   if (msg == irq->irq_response)
     return 0;
@@ -8706,6 +8711,9 @@ int reliable_check(nta_incoming_t *irq)
   return 1;
 }
 
+/** Respond reliably.
+ *
+ */
 nta_reliable_t *nta_reliable_treply(nta_incoming_t *irq,
 				    nta_prack_f *callback,
 				    nta_reliable_magic_t *rmagic,
@@ -8743,6 +8751,12 @@ nta_reliable_t *nta_reliable_treply(nta_incoming_t *irq,
   return retval;
 }
 
+/** Respond reliably with @a msg.
+ *
+ * @note 
+ * The stack takes over the ownership of @a msg. (It is destroyed even if
+ * sending the response fails.)
+ */
 nta_reliable_t *nta_reliable_mreply(nta_incoming_t *irq,
 				    nta_prack_f *callback,
 				    nta_reliable_magic_t *rmagic,
