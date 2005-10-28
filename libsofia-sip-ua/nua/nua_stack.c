@@ -3530,8 +3530,9 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
       cr->cr_offer_sent = offer_sent;
       cr->cr_usage = du;
       du->du_pending = cancel_invite;
-      signal_call_state_change(nh, 100, sip_100_Trying, 
-			       nua_callstate_calling, 0, offer_sent ? "offer" : 0);
+      signal_call_state_change(nh, 0, "INVITE sent",
+			       nua_callstate_calling, 0,
+			       offer_sent ? "offer" : 0);
       return cr->cr_event = e;
     }
   }
@@ -3591,7 +3592,7 @@ static int process_response_to_invite(nua_handle_t *nh,
       gracefully = 0;
 
     terminated = sip_response_terminates_dialog(status, sip_method_invite, 
-					       &gracefully);
+						&gracefully);
 
     if (!terminated) {
       if (crequest_check_restart(nh, cr, orq, sip, restart_invite))
@@ -4316,10 +4317,20 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   if (reliable && status < 200) {
     nta_reliable_t *rel;
     rel = nta_reliable_mreply(ss->ss_srequest->sr_irq, process_prack, nh, msg);
-    if (!rel) {
+    if (!rel)
       status = 500, phrase = sip_500_Internal_server_error;
-      nta_incoming_treply(ss->ss_srequest->sr_irq, status, phrase, TAG_END());
-    }
+  }
+
+  if (reliable && status < 200)
+    /* we are done */;
+  else if (status != original_status) {    /* Error responding */
+    if (status != original_status)
+      ua_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
+
+    nta_incoming_treply(ss->ss_srequest->sr_irq, 
+			status, phrase,
+			TAG_END());
+    msg_destroy(msg), msg = NULL;
   }
   else {
     nta_incoming_mreply(ss->ss_srequest->sr_irq, msg);
@@ -4344,9 +4355,6 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 			   : nua_callstate_early,
 			   autoanswer && sr->sr_offer_recv ? "offer" : 0,
 			   offer ? "offer" : answer ? "answer" : 0);
-
-  if (status != original_status)
-    ua_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
 
   if (status == 180)
     ss->ss_alerting = 1;
