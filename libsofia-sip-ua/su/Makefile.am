@@ -76,7 +76,7 @@ endif
 
 EXTRA_DIST = 		Doxyfile su.docs \
 			run_addrinfo run_localinfo run_su_test \
-			memmem.c \
+			memmem.c strtoull.c strcasestr.c inet_ntop.c \
 			su_tag_ref.c
 
 dist_sofialibexec_SCRIPTS = tag_dll.awk
