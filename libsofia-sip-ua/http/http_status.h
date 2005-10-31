@@ -25,7 +25,6 @@
 #ifndef HTTP_STATUS_H 
 #define HTTP_STATUS_H 
 
-
 /**@file http_status.h 
  *
  * HTTP status codes.

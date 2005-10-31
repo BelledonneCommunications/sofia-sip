@@ -31,16 +31,16 @@
  *
  */
 
-#if !defined(WIN32)
+#ifndef MSG_DLL
+#ifndef WIN32
 /** Attribute for symbols exported from msg library */
 #define MSG_DLL
-#define MSG_TEST_DLL
-#elif defined(MSG_EXPORTS)
-#define MSG_DLL __declspec(dllexport)
-#define MSG_TEST_DLL __declspec(dllexport)
 #else
 #define MSG_DLL __declspec(dllimport)
-#define MSG_TEST_DLL __declspec(dllimport)
 #endif
+#endif
+
+/** Attribute for msg test symbols */
+#define MSG_TEST_DLL
 
 #endif /** !defined(MSG_DLL_H) */

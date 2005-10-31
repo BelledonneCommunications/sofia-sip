@@ -34,13 +34,12 @@
  * @date Last modified: Fri Aug 12 10:42:44 2005 ppessi
  */
 
-#if !defined(WIN32)
-/** Attribute for symbols exported from url library */
+#ifndef URL_DLL
+#ifndef WIN32
 #define URL_DLL
-#elif defined(URL_EXPORTS)
-#define URL_DLL __declspec(dllexport)
 #else
 #define URL_DLL __declspec(dllimport)
+#endif
 #endif
 
 #endif /* !defined URL_DLL_H */

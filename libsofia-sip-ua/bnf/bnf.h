@@ -147,13 +147,14 @@ enum {
   bnf_param = bnf_token | bnf_param0 /**< SIP/HTTP parameter */
 };
 
-#if defined(WIN32)
-#if defined(BNF_EXPORTS)
-__declspec(dllexport)
+#ifndef BNF_DLL
+#ifndef WIN32
+#define BNF_DLL
 #else
-__declspec(dllimport)
+#define BNF_DLL __declspec(dllimport)
 #endif
 #endif
+BNF_DLL
 /** Table for determining class of a character */
 extern unsigned char const _bnf_table[256];
 

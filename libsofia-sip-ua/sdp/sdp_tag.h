@@ -42,13 +42,12 @@
 #include <su_tag_class.h>
 #endif
 
-#if defined(SDP_DLL)
-#elif !defined(WIN32)
+#ifndef SDP_DLL
+#ifndef WIN32
 #define SDP_DLL
-#elif defined(SDP_EXPORTS)
-#define SDP_DLL __declspec(dllexport)
 #else
 #define SDP_DLL __declspec(dllimport)
+#endif
 #endif
 
 struct sdp_session_s;

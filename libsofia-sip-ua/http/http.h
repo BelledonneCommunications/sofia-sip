@@ -474,14 +474,6 @@ union http_header_u {
 
 };
 
-/* Define declaration specification for exporting things from a shared lib */
-
-#if !defined(WIN32)
-#define HTTP_DLL
-#elif defined(HTTP_EXPORTS)
-#define HTTP_DLL __declspec(dllexport)
-#else
-#define HTTP_DLL __declspec(dllimport)
-#endif
+#include <http_dll.h>
 
 #endif /* !defined(HTTP_H) */

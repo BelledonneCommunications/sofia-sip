@@ -27,12 +27,12 @@
 
 /**Define declaration specifications for exporting things from @b iptsec.dll.
  */
-#if !defined(WIN32)
+#ifndef AUTH_DLL
+#ifndef WIN32
 #define AUTH_DLL
-#elif defined(IPTSEC_EXPORTS)
-#define AUTH_DLL  __declspec(dllexport)
 #else
 #define AUTH_DLL __declspec(dllimport)
+#endif
 #endif
 
 #endif 

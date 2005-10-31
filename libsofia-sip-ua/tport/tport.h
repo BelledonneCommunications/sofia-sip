@@ -141,15 +141,6 @@ typedef struct {
 
 #include <tport_tag.h>
 
-#if !defined(WIN32)
-#define TPORT_DLL /** Attribute for symbols exported from tport library */
-#elif defined(TPORT_EXPORTS)
-#define TPORT_DLL      __declspec(dllexport)
-#else
-#define TPORT_DLL     __declspec(dllimport)
-#endif
-
-
 /** Create first primary transport. */
 tport_t *tport_tcreate(tp_stack_t *stack,
 		       tport_stack_class_t const *tpac,

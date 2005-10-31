@@ -36,19 +36,15 @@
  * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
-#if !defined(_WIN32)
+#ifndef _WIN32
 #  include <su_configure.h>
-#  define SU_DLL
 #else
 #  include <su_configure_win32.h>
-#  if !defined(_DLL)
-#    define SU_DLL  
-#  elif defined(SU_EXPORTS)
-#    define SU_DLL __declspec(dllexport)
-#  else
+#  ifndef SU_DLL
 #    define SU_DLL __declspec(dllimport)
 #  endif
 #endif
+
 
 #if defined(__GNUC__)
 #if __GNUC__ < 3 && (!defined(__GNUC_MINOR__) || __GNUC_MINOR__ < 96)

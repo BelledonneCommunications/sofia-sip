@@ -34,12 +34,12 @@
  * @date Last modified: Wed Jul 20 20:36:01 2005 kaiv
  */
 
-#if !defined(WIN32)
+#ifndef TPORT_DLL
+#ifndef WIN32
 #define TPORT_DLL
-#elif defined(TPORT_EXPORTS)
-#define TPORT_DLL __declspec(dllexport)
 #else
 #define TPORT_DLL __declspec(dllimport)
+#endif
 #endif
 
 #ifndef SU_TAG_H

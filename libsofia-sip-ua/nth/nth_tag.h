@@ -46,12 +46,12 @@
 #include <http_tag.h>
 #endif
 
-#if !defined(WIN32)
+#ifndef NTH_DLL
+#ifndef WIN32
 #define NTH_DLL
-#elif defined(NTH_EXPORTS)
-#define NTH_DLL __declspec(dllexport)
 #else
 #define NTH_DLL __declspec(dllimport)
+#endif
 #endif
 
 NTH_DLL extern tagi_t nth_client_tags[];

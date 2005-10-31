@@ -36,14 +36,6 @@
  * 
  */
 
-#if !defined(WIN32)
-#define NEA_DLL
-#elif defined(NEA_EXPORTS)
-#define NEA_DLL __declspec(dllexport)
-#else
-#define NEA_DLL __declspec(dllimport)
-#endif
-
 #ifndef SU_ALLOC_H
 #include <su_alloc.h>
 #endif
@@ -59,6 +51,14 @@
 #define NEA_VERSION_STR "3.0"
 
 #define NEA_DEFAULT_EXPIRES 3600
+
+#ifndef NEA_DLL
+#ifndef WIN32
+#define NEA_DLL
+#else
+#define NEA_DLL __declspec(dllimport)
+#endif
+#endif
 
 /** Event notifier object. */
 typedef struct nea_server_s     nea_server_t;

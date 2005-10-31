@@ -33,12 +33,13 @@
  *
  * @date Created: Fri Feb 22 15:57:00 2002 ppessi
  */
-#if !defined(WIN32)
+
+#ifndef NTA_DLL
+#ifndef WIN32
 #define NTA_DLL
-#elif defined(NTA_EXPORTS)
-#define NTA_DLL __declspec(dllexport)
 #else
 #define NTA_DLL __declspec(dllimport)
+#endif
 #endif
 
 #endif  /* !defined(NTA_DLL_H) */

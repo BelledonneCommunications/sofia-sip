@@ -40,14 +40,6 @@
 #include <su_types.h>
 #endif
 
-#if !defined(WIN32)
-#define SDP_DLL
-#elif defined(SDP_EXPORTS)
-#define SDP_DLL __declspec(dllexport)
-#else
-#define SDP_DLL __declspec(dllimport)
-#endif
-
 /** SDP session description */
 typedef struct sdp_session_s     sdp_session_t;
 /** SDP version "v=" line */

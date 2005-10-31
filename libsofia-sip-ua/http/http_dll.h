@@ -24,10 +24,10 @@
 
 /* Define declaration specification for exporting things from a shared lib */
 
-#if !defined(WIN32)
+#ifndef HTTP_DLL
+#ifndef WIN32
 #define HTTP_DLL
-#elif defined(HTTP_EXPORTS)
-#define HTTP_DLL __declspec(dllexport)
 #else
 #define HTTP_DLL __declspec(dllimport)
+#endif
 #endif

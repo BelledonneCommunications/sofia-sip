@@ -32,13 +32,12 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  */
 
-#if !defined(WIN32)
-/** Attribute for symbols exported from sip() library */
+#ifndef SIP_DLL
+#ifndef WIN32
 #define SIP_DLL
-#elif defined(SIP_EXPORTS)
-#define SIP_DLL      __declspec(dllexport)
 #else
-#define SIP_DLL     __declspec(dllimport)
+#define SIP_DLL __declspec(dllimport)
+#endif
 #endif
 
 #endif 
