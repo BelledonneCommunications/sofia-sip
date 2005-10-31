@@ -35,6 +35,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <assert.h>
 
@@ -160,10 +161,10 @@ int soa_add(char const *name,
   SU_DEBUG_9(("soa_add(%s%s%s, %p) called\n", NICE(name), actions));
 
   if (name == NULL || actions == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT);
 
   if (!SOA_VALID_ACTIONS(actions))
-    return (errno = EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   for (n = soa_namelist; n; n = n->next) {
     if (strcasecmp(name, n->basename) == 0)
@@ -196,7 +197,7 @@ struct soa_session_actions const *soa_find(char const *name)
     }
 
     if (n == NULL)
-      return (void)(errno = ENOENT), NULL;
+      return (void)su_seterrno(ENOENT), NULL;
 
     return n->actions;
   }
@@ -227,7 +228,7 @@ soa_session_t *soa_create(char const *name,
 	break;
     }
     if (n == NULL)
-      return (void)(errno = ENOENT), NULL;
+      return (void)su_seterrno(ENOENT), NULL;
 
     actions = n->actions; assert(actions);
   }
@@ -237,7 +238,7 @@ soa_session_t *soa_create(char const *name,
   assert(SOA_VALID_ACTIONS(actions));
 
   if (root == NULL)
-    return (void)(errno = EFAULT), NULL;
+    return (void)su_seterrno(EFAULT), NULL;
 
   namelen = strlen(name) + 1;
   
@@ -267,7 +268,7 @@ soa_session_t *soa_clone(soa_session_t *parent_ss,
 	      parent_ss, root, magic));
 
   if (parent_ss == NULL || root == NULL)
-    return (void)(errno = EFAULT), NULL;
+    return (void)su_seterrno(EFAULT), NULL;
 
   namelen = strlen(parent_ss->ss_name) + 1;
 
@@ -363,7 +364,7 @@ int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
 	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (ss == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   ta_start(ta, tag, value);
 
@@ -487,7 +488,7 @@ int soa_get_params(soa_session_t const *ss,
 	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (ss == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   ta_start(ta, tag, value);
 
@@ -644,7 +645,7 @@ int soa_get_capability_sdp(soa_session_t const *ss,
 	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
-    return (void)(errno = EFAULT), -1;
+    return (void)su_seterrno(EFAULT), -1;
 
   sdp = ss->ss_caps->ssd_sdp;
   sdp_str = ss->ss_caps->ssd_str;
@@ -735,7 +736,7 @@ int soa_get_user_sdp(soa_session_t const *ss,
 	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
-    return (void)(errno = EFAULT), -1;
+    return (void)su_seterrno(EFAULT), -1;
 
   sdp = ss->ss_user->ssd_sdp;
   sdp_str = ss->ss_user->ssd_str;
@@ -800,7 +801,7 @@ int soa_get_remote_sdp(soa_session_t const *ss,
 	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
-    return (void)(errno = EFAULT), -1;
+    return (void)su_seterrno(EFAULT), -1;
 
   sdp = ss->ss_remote->ssd_sdp;
   sdp_str = ss->ss_remote->ssd_str;
@@ -862,7 +863,7 @@ int soa_clear_remote_sdp(soa_session_t *ss)
 	      ss ? ss->ss_actions->soa_name : "", ss));
 
   if (!ss)
-    return (void)(errno = EFAULT), -1;
+    return (void)su_seterrno(EFAULT), -1;
 
   ss->ss_unprocessed_remote = 0;
 
@@ -882,7 +883,7 @@ int soa_get_local_sdp(soa_session_t const *ss,
 	      return_sdp, return_sdp_str, return_len));
 
   if (ss == NULL)
-    return (void)(errno = EFAULT), -1;
+    return (void)su_seterrno(EFAULT), -1;
 
   sdp = ss->ss_local->ssd_sdp;
   sdp_str = ss->ss_local->ssd_str;
@@ -931,7 +932,7 @@ char **soa_media_features(soa_session_t *ss, int live, su_home_t *home)
   if (ss)
     return ss->ss_actions->soa_media_features(ss, live, home);
   else
-    return (void)(errno = EFAULT), NULL;
+    return (void)su_seterrno(EFAULT), NULL;
 }
 
 char **soa_base_media_features(soa_session_t *ss, int live, su_home_t *home)
@@ -947,7 +948,7 @@ char const * const * soa_sip_require(soa_session_t const *ss)
   if (ss)
     return ss->ss_actions->soa_sip_require(ss);
   else
-    return (void)(errno = EFAULT), NULL;
+    return (void)su_seterrno(EFAULT), NULL;
 }
 
 char const * const * soa_base_sip_require(soa_session_t const *ss)
@@ -964,7 +965,7 @@ char const * const * soa_sip_supported(soa_session_t const *ss)
   if (ss)
     return ss->ss_actions->soa_sip_supported(ss);
   else
-    return (void)(errno = EFAULT), NULL;
+    return (void)su_seterrno(EFAULT), NULL;
 }
 
 char const * const * soa_base_sip_supported(soa_session_t const *ss)
@@ -983,7 +984,7 @@ int soa_remote_sip_features(soa_session_t *ss,
   if (ss)
     return ss->ss_actions->soa_remote_sip_features(ss, supported, require);
   else
-    return (void)(errno = EFAULT), -1;
+    return (void)su_seterrno(EFAULT), -1;
 }
 
 int soa_base_remote_sip_features(soa_session_t *ss,
@@ -1016,27 +1017,27 @@ int soa_generate_offer(soa_session_t *ss,
 
   /** @ERROR EFAULT Bad address. */
   if (ss == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   /** @ERROR An operation is already in progress */
   if (ss->ss_in_progress)
-    return (errno = EALREADY), -1;
+    return su_seterrno(EALREADY), -1;
 
   /** @ERROR EPROTO We have received offer, now we should send answer */
   if (ss->ss_offer_recv && !ss->ss_answer_sent)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   /** @ERROR EPROTO We have received SDP, but it has not been processed */
   if (soa_has_received_sdp(ss))
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   /** @ERROR EPROTO We have sent an offer, but have received no answer */
   if (ss->ss_offer_sent && !ss->ss_answer_recv)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   /** @ERROR EPROTO We have received offer. */
   if (ss->ss_unprocessed_remote)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   /* We should avoid actual operation unless always is true */
   (void)always;  /* We always regenerate offer */
@@ -1071,19 +1072,19 @@ int soa_generate_answer(soa_session_t *ss,
 
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   /** @ERROR An operation is already in progress. */
   if (ss->ss_in_progress)
-    return (errno = EALREADY), -1;
+    return su_seterrno(EALREADY), -1;
 
   /** @ERROR EPROTO We have sent an offer, but have received no answer. */
   if (ss->ss_offer_sent && !ss->ss_answer_recv)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   /** @ERROR EPROTO We have not received offer. */
   if (!ss->ss_unprocessed_remote)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   return ss->ss_actions->soa_generate_answer(ss, completed);
 }
@@ -1127,20 +1128,20 @@ int soa_process_answer(soa_session_t *ss,
 
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   /** @ERROR An operation is already in progress. */
   if (ss->ss_in_progress)
-    return (errno = EALREADY), -1;
+    return su_seterrno(EALREADY), -1;
 
   /** @ERROR EPROTO We have not sent an offer 
       or already have received answer. */
   if (!ss->ss_offer_sent || ss->ss_answer_recv)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   /** @ERROR EPROTO We have not received answer. */
   if (!ss->ss_unprocessed_remote)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   return ss->ss_actions->soa_process_answer(ss, completed);
 }
@@ -1186,16 +1187,16 @@ int soa_process_reject(soa_session_t *ss,
 
   /** @ERROR EFAULT Bad address as @a ss. */
   if (ss == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   /** @ERROR An operation is already in progress. */
   if (ss->ss_in_progress)
-    return (errno = EALREADY), -1;
+    return su_seterrno(EALREADY), -1;
 
   /** @ERROR EPROTO We have not sent an offer 
       or already have received answer. */
   if (!ss->ss_offer_sent || ss->ss_answer_recv)
-    return (errno = EPROTO), -1;
+    return su_seterrno(EPROTO), -1;
 
   return ss->ss_actions->soa_process_reject(ss, completed);
 }
@@ -1459,7 +1460,7 @@ int soa_set_sdp(soa_session_t *ss,
   else if (sdp_str)
     new_version = str0cmp(sdp_str, ssd->ssd_unparsed) != 0;
   else
-    return (void)(errno = EINVAL), -1;
+    return (void)su_seterrno(EINVAL), -1;
 
   if (sdp_str && str_len == -1)
     str_len = strlen(sdp_str);
@@ -1598,7 +1599,7 @@ soa_init_sdp_origin(soa_session_t *ss, sdp_origin_t *o, char buffer[64])
   sdp_connection_t *c;
 
   if (ss == NULL || o == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   assert(o->o_address);
 
@@ -1672,7 +1673,7 @@ soa_init_sdp_connection(soa_session_t *ss,
   int ip4, ip6, error;
 
   if (ss == NULL || c == NULL)
-    return (errno = EFAULT), -1;
+    return su_seterrno(EFAULT), -1;
 
   /* XXX - using LI_SCOPE_LINK requires some tweaking */
   hints->li_scope = LI_SCOPE_GLOBAL | LI_SCOPE_SITE /* | LI_SCOPE_LINK */;

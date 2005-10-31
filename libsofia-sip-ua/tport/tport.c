@@ -1580,7 +1580,7 @@ int tport_get_params(tport_t const *self,
   tport_params_t const *tpp;
 
   if (self == NULL)
-    return (errno = EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   tpp = self->tp_params;
   ta_start(ta, tag, value);
@@ -1620,7 +1620,7 @@ int tport_set_params(tport_t *self,
   struct sigcomp_compartment *cc = NONE;
 
   if (self == NULL)
-    return (errno = EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   memcpy(tpp, tpp0 = self->tp_params, sizeof *tpp);
 
@@ -3191,11 +3191,12 @@ static int tport_recv_iovec(tport_t const *self,
    */
   veclen = msg_recv_iovec(msg, iovec, msg_n_fragments, N, exact);
   if (veclen < 0) {
-    if (fresh && errno == ENOBUFS && msg_get_flags(msg, MSG_FLG_TOOLARGE))
+    int err = su_errno();
+    if (fresh && err == ENOBUFS && msg_get_flags(msg, MSG_FLG_TOOLARGE))
       veclen = msg_recv_iovec(msg, iovec, msg_n_fragments, 4096, 1);
   }
   if (veclen < 0) {
-    int err = errno;
+    int err = su_errno();
     SU_DEBUG_7(("%s(%p): cannot get msg %p buffer for %u bytes "
 		"from (%s/%s:%s): %s\n", 
 		__func__, self, msg, N, 
@@ -3406,10 +3407,9 @@ static int tport_recv_sigcomp(tport_t *self)
       self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
 
       if (!self->tp_sigcomp->sc_udvm) {
-	int save = errno;
+	int save = su_errno();
 	recv(self->tp_socket, &sample, 1, 0); /* remove msg from socket */
-	errno = save;
-	return -1;
+	return su_seterrno(save);
       }
     }
   }
@@ -3466,7 +3466,7 @@ static int tport_recv_sigcomp_r(tport_t *self,
 
     input = sigcomp_udvm_input_buffer(udvm, N); assert(input);
     if (input == NULL)
-      return (errno = EIO), -1;
+      return su_seterrno(EIO);
 
     data = input->b_data + input->b_avail;
     dlen = input->b_size - input->b_avail;
@@ -3773,7 +3773,7 @@ int tport_recv_tls(tport_t *self)
   if (N == 0) /* End-of-stream */
     return 0;
   else if (N == -1) {
-    if (errno == EAGAIN) {
+    if (su_errno() == EAGAIN) {
       tport_events(self);
       return 1;
     }
@@ -4157,7 +4157,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 		    self, tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port,
 		    comp ? ";comp=" : "", comp ? comp : ""));
 
-	errno = EIO;
+	su_seterrno(EIO);
       }
 
       return -1;
