@@ -37,7 +37,6 @@
 
 BEGIN {
   "date '+%a %b %e %H:%M:%S %Y'" | getline date;
-  "whoami" | getline whoami;
 
   ascii =			       \
      "                               " \
