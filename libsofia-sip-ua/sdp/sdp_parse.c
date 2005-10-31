@@ -1692,6 +1692,10 @@ static int parse_ul(sdp_parser_t *p, char **r,
   return -1;
 }
 
+#if !HAVE_STRTOULL
+unsigned longlong strtoull(char const *string, char **return_end, int base);
+#endif
+
 /*
  * parse_ull: parse an unsigned long long
  */

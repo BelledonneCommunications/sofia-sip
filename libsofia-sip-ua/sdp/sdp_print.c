@@ -52,7 +52,7 @@
 
 #define CRLF "\015\012"
 
-typedef unsigned long long ull;
+typedef unsigned longlong ull;
 
 struct sdp_printer_s {
   int        pr_size;

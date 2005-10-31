@@ -165,7 +165,7 @@ enum {
 #define END(flags) (void) tstdef_dummy;  } END_(flags) 
 #endif
 
-typedef unsigned long long ull;
+typedef unsigned longlong ull;
 
 /** @HIDE */
 #define TEST_1_(flags, suite) do { \

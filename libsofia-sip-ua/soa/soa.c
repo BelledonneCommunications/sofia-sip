@@ -1608,11 +1608,11 @@ soa_init_sdp_origin(soa_session_t *ss, sdp_origin_t *o, char buffer[64])
 
   if (o->o_id == 0)
     su_randmem(&o->o_id, sizeof o->o_id);
-  o->o_id &= 0x7fffffffffffffffULL;
+  o->o_id &= ((unsigned longlong)1 << 63) - 1;
 
   if (o->o_version == 0)
     su_randmem(&o->o_version, sizeof o->o_version);
-  o->o_version &= 0x7fffffffffffffffULL;
+  o->o_version &= ((unsigned longlong)1 << 63) - 1;
 
   c = o->o_address;
 
