@@ -33,11 +33,11 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #ifndef _WIN32
 #  include <su_configure.h>
+#  define SU_DLL
 #else
 #  include <su_configure_win32.h>
 #  ifndef SU_DLL
