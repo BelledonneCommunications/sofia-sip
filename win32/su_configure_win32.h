@@ -87,11 +87,12 @@
 #define srandom(x)    srand((x))
 #define random()      rand()
 
-#define EBADMSG EINVAL
 #define ENOBUFS         (20001)
 #define EMSGSIZE        (20002)
 #define EPROTONOSUPPORT (20003)
 #define EALREADY        (20004)
+#define EBADMSG	        (20005)
+#define EPROTO          (20006)
 
 #define ssize_t SSIZE_T
 
