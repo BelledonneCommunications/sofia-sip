@@ -617,7 +617,7 @@ static inline int tport_is_connected(tport_t const *self)
  *
  * (Note that this is part of external API).
  */
-inline int tport_is_reliable(tport_t const *self)
+int tport_is_reliable(tport_t const *self)
 {
   return self != NULL && 
     (self->tp_pri->pri_socktype == SOCK_STREAM || 
@@ -626,7 +626,7 @@ inline int tport_is_reliable(tport_t const *self)
 
 
 /** Return true if transport supports IPv4 */
-inline int tport_has_ip4(tport_t const *self)
+int tport_has_ip4(tport_t const *self)
 {
   return self && 
     (self->tp_pri->pri_family == 0 || 
@@ -635,14 +635,14 @@ inline int tport_has_ip4(tport_t const *self)
 }
 
 /** Return true if transport supports IPv6 */
-inline int tport_has_ip6(tport_t const *self)
+int tport_has_ip6(tport_t const *self)
 {
   return self && 
     (self->tp_pri->pri_family == 0 || self->tp_pri->pri_family == AF_INET6);
 }
 
 /** Return true if transport supports TLS. */
-inline int tport_has_tls(tport_t const *self)
+int tport_has_tls(tport_t const *self)
 {
 #if HAVE_TLS
   return self && self->tp_tls != NULL;
