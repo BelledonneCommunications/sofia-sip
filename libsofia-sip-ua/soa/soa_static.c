@@ -71,6 +71,9 @@ struct soa_static_complete;
 #define XXX assert(!"implemented")
 
 #define str0cmp(a, b) strcmp(a ? a : "", b ? b : "")
+#if !HAVE_STRCASESTR
+char *strcasestr(const char *haystack, const char *needle);
+#endif
 
 typedef struct soa_static_session
 {
