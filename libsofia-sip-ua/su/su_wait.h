@@ -403,11 +403,11 @@ int su_msg_reply(su_msg_r reply, su_msg_r const msg,
 		  su_msg_f wakeup, int size);
 void su_msg_destroy(su_msg_r msg);
 void su_msg_save(su_msg_r msg, su_msg_r msg0);
-void su_msg_remove_refs(su_msg_r const msg);
+void su_msg_remove_refs(su_msg_cr msg);
 su_msg_arg_t *su_msg_data(su_msg_cr msg);
 int su_msg_size(su_msg_cr msg);
-_su_task_r su_msg_from(su_msg_cr const msg);
-_su_task_r su_msg_to(su_msg_cr const msg);
+_su_task_r su_msg_from(su_msg_cr msg);
+_su_task_r su_msg_to(su_msg_cr msg);
 int su_msg_send(su_msg_r msg);
 
 /** Does reference contain a message? */
