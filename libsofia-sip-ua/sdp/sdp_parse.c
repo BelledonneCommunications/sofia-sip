@@ -1191,11 +1191,13 @@ static void parse_session_attr(sdp_parser_t *p, char *r, sdp_attribute_t **resul
   else if (strcasecmp(name, "sendrecv") == 0)
     p->pr_session_mode = sdp_sendrecv;
 
-  PARSE_ALLOC(p, sdp_attribute_t, a);
-  *result = a;
+  {
+    PARSE_ALLOC(p, sdp_attribute_t, a);
+    *result = a;
 
-  a->a_name  = name;
-  a->a_value = value;
+    a->a_name  = name;
+    a->a_value = value;
+  }
 }
 
 /* -------------------------------------------------------------------------
