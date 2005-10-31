@@ -515,9 +515,11 @@ struct nua_s {
 #elif HAVE_FUNCTION
 #define enter (void)SU_DEBUG_9(("nua: %s: entering\n", __FUNCTION__))
 #define nh_enter (void)SU_DEBUG_9(("nua %s(%p): entering\n", __FUNCTION__, nh))
+#define __func__ __FUNCTION__
 #else
 #define enter ((void)0)
 #define nh_enter ((void)0)
+#define __func__ "nua"
 #endif
 
 /*# Increase reference count by one.

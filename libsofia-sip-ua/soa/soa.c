@@ -58,6 +58,13 @@
 
 typedef unsigned longlong ull;
 
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+static char const __func__[] = "soa";
+#endif
+
 /* ======================================================================== */
 
 /* Internal prototypes */
