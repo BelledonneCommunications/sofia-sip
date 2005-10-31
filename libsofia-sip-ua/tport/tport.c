@@ -1235,13 +1235,15 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
 	      TAG_END());
 
       if (rmem != 0 && 
-	  setsockopt(s, SOL_SOCKET, SO_RCVBUF, &rmem, sizeof rmem) < 0) {
+	  setsockopt(s, SOL_SOCKET,
+		     SO_RCVBUF, (void *)&rmem, sizeof rmem) < 0) {
 	SU_DEBUG_3(("setsockopt(SO_RCVBUF): %s\n", 
 		    su_strerror(su_errno())));
       }
 
       if (wmem != 0 && 
-	  setsockopt(s, SOL_SOCKET, SO_SNDBUF, &wmem, sizeof wmem) < 0) {
+	  setsockopt(s, SOL_SOCKET,
+		     SO_SNDBUF, (void *)&wmem, sizeof wmem) < 0) {
 	SU_DEBUG_3(("setsockopt(SO_SNDBUF): %s\n", 
 		    su_strerror(su_errno())));
       }
