@@ -31,8 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Aug 21 15:18:26 2001 ppessi
- *
- * @date Last modified: Wed Jul 20 20:36:00 2005 kaiv
  */
 
 #include "config.h"
@@ -68,6 +66,8 @@ void usage(void)
 static int test_notfound(void);
 static int test_pattern(void);
 
+char const *null = NULL;
+
 static int test_notfound(void)
 {
   char const haystack[12] = "abcabcabcabc";
@@ -78,9 +78,9 @@ static int test_notfound(void)
   TEST(memmem(haystack, sizeof haystack, needle, sizeof needle), haystack + 2);
   TEST(memmem(needle, sizeof needle, haystack, sizeof haystack), NULL);
   TEST(memmem(haystack, sizeof haystack, "", 0), haystack);
-  TEST(memmem(haystack, sizeof haystack, NULL, 0), haystack);
+  TEST(memmem(haystack, sizeof haystack, null, 0), haystack);
   TEST(memmem(haystack, 0, "", 0), haystack);
-  TEST(memmem(haystack, 0, NULL, 0), haystack);
+  TEST(memmem(haystack, 0, null, 0), haystack);
 
   TEST(memmem(haystack + 2, 3, needle, 3), haystack + 2);
   TEST(memmem(a = "a\0bc", 4, "a\0bc", 4), a);
@@ -129,8 +129,8 @@ int test_strcasestr(void)
 
     /* Special cases */
     TEST_1(strcasestr(hs, "") == hs);
-    TEST_1(strcasestr(NULL, "ong") == NULL);
-    TEST_1(strcasestr(NULL, "OnG") == NULL);
+    TEST_1(strcasestr("", "ong") == NULL);
+    TEST_1(strcasestr("", "OnG") == NULL);
     TEST_1(strcasestr("ong", hs) == NULL);
     TEST_1(strcasestr("OnG", hs) == NULL);
     TEST_1(strcasestr(hs, "Z") == NULL);
