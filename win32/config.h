@@ -103,14 +103,14 @@
 #define HAVE_INLINE 1
 
 /* Define this as 1 if you have WIN32 INTERFACE_INFO_EX type. */
-#define HAVE_INTERFACE_INFO_EX 0
+#undef HAVE_INTERFACE_INFO_EX
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
 /* Define as 1 you have WIN32 <iphlpapi.h> */
 // XXX: vehmanek-win32-fix:
-#define HAVE_IPHLPAPI_H 0
+#undef HAVE_IPHLPAPI_H
 
 /* Define this as 1 if you have IPV6_RECVERR in <netinet/in6.h> */
 #undef HAVE_IPV6_RECVERR
@@ -185,9 +185,12 @@
 /* Define to 1 if you have the <sigcomp.h> header file. */
 #undef HAVE_SIGCOMP_H
 
+/* Define to 1 if you have SIGPIPE. */
+#undef HAVE_SIGPIPE
+
 /* Define this as 1 if you have IPv6 structures and constants */
 /* PPe: not yet */
-#define HAVE_SIN6 0
+#undef HAVE_SIN6
 
 /* Define this as 1 if you have WIN32 WSAIoctl SIO_ADDRESS_LIST_QUERY. */
 #define HAVE_SIO_ADDRESS_LIST_QUERY 1
