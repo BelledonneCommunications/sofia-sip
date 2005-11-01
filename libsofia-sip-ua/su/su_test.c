@@ -50,7 +50,7 @@ struct pinger;
 
 #include "su.h"
 #include "su_wait.h"
-#if HAVE_GLIB
+#if SU_HAVE_GLIB
 #include "su_source.h"
 #endif
 
@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
 
   time_test();
 
-#if HAVE_GLIB2
+#if SU_HAVE_GLIB
   if (opt_glib) {
     root = su_root_source_create(NULL); 
 
