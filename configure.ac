@@ -69,6 +69,12 @@ AC_DEFINE([HAVE_UPNP], 0, [Define as 1 if we use UPnP])
 ### checks for header files
 ### -----------------------
 
+### checks for declarations
+### -----------------------
+AC_CHECK_DECL([SIGPIPE], [
+AC_DEFINE([HAVE_SIGPIPE], 1, [Define as 1 if you have SIGPIPE])
+])
+
 ### checks for types
 ### ----------------
 
