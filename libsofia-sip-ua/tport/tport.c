@@ -1856,7 +1856,7 @@ int tport_bind_server(tport_master_t *mr,
 	     bind(s4, &su4->su_sa, su4len) == 0)
       mr->mr_bindv6only = 1;
 
-    close(s6), close(s4);
+    su_close(s6), su_close(s4);
 
     mr->mr_boundserver = 1;
   }

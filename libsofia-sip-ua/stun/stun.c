@@ -532,7 +532,7 @@ int stun_get_sharedsecret(stun_engine_t *se)
 
   /* closed TLS connection */
   SSL_shutdown(ssl);
-  close(sockfd);
+  su_close(sockfd);
 
   SSL_free(ssl);
   SSL_CTX_free(ctx);

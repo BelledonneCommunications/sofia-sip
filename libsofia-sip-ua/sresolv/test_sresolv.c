@@ -201,7 +201,7 @@ int test_socket(sres_context_t *ctx)
     TEST(recvfrom(s2, buf, sizeof buf, 0, sa, &alen), -1);
     TEST(recvfrom(s1, buf, sizeof buf, 0, sa, &alen), 3);
 
-    close(s1), close(s2), close(s3), close(s4);
+    su_close(s1), su_close(s2), su_close(s3), su_close(s4);
 
     break;
   }
@@ -1356,7 +1356,7 @@ int sink_deinit(sres_context_t *ctx)
   if (ctx->sinkidx)
     su_root_deregister(ctx->root, ctx->sinkidx);
   ctx->sinkidx = 0;
-  close(ctx->sink), ctx->sink = -1;
+  su_close(ctx->sink), ctx->sink = -1;
 
   END();
 }
@@ -1784,7 +1784,7 @@ int test_deinit(sres_context_t *ctx)
   {
     int i;
     for (i = 0; i < ctx->n_sockets; i++)
-      close(ctx->sockets[i]);
+      su_close(ctx->sockets[i]);
     sres_resolver_unref(ctx->resolver), ctx->resolver = 0;
     free(ctx->sockets);
     free(ctx->pollfds);
