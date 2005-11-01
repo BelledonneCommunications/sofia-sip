@@ -43,6 +43,9 @@ export PATH
 port=$((($$ % $((65536 - 1024))) + 1024))
 
 ipv6='sysctl net.ipv6.conf.default.mtu >& /dev/null'
+# Bind not working with IPv6 on RHEL 4:
+# client.c:1325: unexpected error: failed to get request's destination: failure
+ipv6=false
 
 # Try to find a free port
 if netstat --ip >/dev/null 2>&1 ; then
@@ -55,13 +58,21 @@ if netstat --ip >/dev/null 2>&1 ; then
     done
 fi
 
-listen4="listen-on port $port { 127.0.0.1; };"
-ns="127.0.0.1"
 
-if eval $ipv6 ; then
+if eval $ipv6 && 
+   ns=$(ip addr ls | awk '
+   /^[0-9]:/ { up = ($3 ~ /UP/) && ($3 !~ /LOOPBACK/); }
+   up && $1 ~ /inet6/ { sub(/\/.*$/, "", $2); print $2; exit 0; }')
+then
     listen6="listen-on-v6 port $port { any; };"
-    ns="::1"
+else
+    ns="127.0.0.1"
+    listen4="listen-on port $port { 127.0.0.1; };"
 fi
+
+#
+# We set up a DNS server at $ns
+#
 
 cat > resolv.conf <<EOF
 # Zeroconf subnet, reserved range - no-one should answer this
