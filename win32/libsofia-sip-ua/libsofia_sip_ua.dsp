@@ -804,15 +804,7 @@ SOURCE=..\su_configure_win32.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\tpipv6.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\unistd.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\wspiapi.h
 # End Source File
 # End Group
 # Begin Group "ipt headers"
