@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\pthread" /I "." /I "..\ntv6\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\pthread" /I "." /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
 # ADD BASE RSC /l 0x40b /d "NDEBUG"
 # ADD RSC /l 0x40b /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\pthread" /I "." /I "..\ntv6\include" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\pthread" /I "." /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x40b /d "_DEBUG"
 # ADD RSC /l 0x40b /d "_DEBUG"
 BSC32=bscmake.exe
@@ -86,6 +86,14 @@ LIB32=link.exe -lib
 # Begin Group "su"
 
 # PROP Default_Filter "su*.c"
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\su\inet_ntop.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\su\inet_pton.c"
+# End Source File
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\su.c"
@@ -663,10 +671,6 @@ SOURCE="..\..\libsofia-sip-ua\soa\soa_tag.c"
 SOURCE="..\..\libsofia-sip-ua\soa\soa_tag_ref.c"
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=".\sofia-sip-ua.def"
-# End Source File
 # End Group
 # Begin Group "Header Files"
 
