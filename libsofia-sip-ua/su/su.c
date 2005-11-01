@@ -504,7 +504,7 @@ int su_match_sockaddr(su_sockaddr_t const *a, su_sockaddr_t const *b)
 /** Convert mapped/compat address to IPv4 address */
 void su_canonize_sockaddr(su_sockaddr_t *su)
 {
-#if HAVE_SIN6
+#if SU_HAVE_IN6
   if (su->su_family != AF_INET6)
     return;
 

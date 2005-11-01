@@ -83,13 +83,13 @@ uint32_t su_ntohl(uint32_t l)
 #define ntohl su_ntohl
 #define htonl su_ntohl
 
-#  ifndef IPPROTO_IPV6
-#    if SU_HAVE_NT /* ipv6 header files changed from NT to W2K */
-#      include <ws2ip6.h>
-#    else
-#      include <tpipv6.h>  // For IPv6 Tech Preview.
-#    endif
+#  if SU_HAVE_IN6 && !defined(IPPROTO_IPV6)
+#    include <tpipv6.h>
+#  else
+   /* We need socklen_t, getaddrinfo() and friends */
+#error Insufficient winsock environment: socklen_t, getaddrinfo() missing
 #  endif
+
 #endif
 
 /* ---------------------------------------------------------------------- */

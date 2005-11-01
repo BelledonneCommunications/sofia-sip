@@ -46,7 +46,7 @@
 #define SU_HAVE_BSDSOCK         0
 #define SU_HAVE_STDINT          (0)
 #define SU_HAVE_NT              0
-#define SU_HAVE_IN6             (0)
+#define SU_HAVE_IN6             1
 
 #define SU_HAVE_PTHREADS        (1)
 
@@ -95,4 +95,3 @@
 #define EPROTO          (20006)
 
 #define ssize_t SSIZE_T
-

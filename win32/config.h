@@ -25,7 +25,7 @@
 /**@file win32/config.h
  * @brief <config.h> used by Windows.
  *
- * Copy this as config.h if you are running WIN32 (or run autoconf-all.cmd). 
+ * Use this on WIN32. 
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -189,8 +189,7 @@
 #undef HAVE_SIGPIPE
 
 /* Define this as 1 if you have IPv6 structures and constants */
-/* PPe: not yet */
-#undef HAVE_SIN6
+#define HAVE_SIN6 1
 
 /* Define this as 1 if you have WIN32 WSAIoctl SIO_ADDRESS_LIST_QUERY. */
 #define HAVE_SIO_ADDRESS_LIST_QUERY 1
@@ -376,6 +375,7 @@
 #define HAVE_INTERFACE_INFO 	   (1) 
 
 #ifdef LIBSOFIA_SIP_UA_EXPORTS
+/* We are compiling a DLL */
 #define BNF_DLL  __declspec(dllexport)
 #define HTTP_DLL __declspec(dllexport)
 #define IPT_DLL  __declspec(dllexport)
