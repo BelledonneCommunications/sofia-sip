@@ -191,7 +191,11 @@ int main(int argc, char *argv[])
       usage();
   }
 
+  su_init();
+
   retval |= test_register(); fflush(stdout);
+
+  su_deinit();
 
   return retval;
 }
