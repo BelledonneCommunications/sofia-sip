@@ -272,17 +272,8 @@ char *su_gai_strerror(int errcode);
 #endif
 
 #if SU_HAVE_WINSOCK
-#if !SU_HAVE_NT
-int WSAAPI inet_pton(
-    int AddressFamily,        // Address family to which the address belongs.
-    const char *InputString,  // Address (numeric string) to convert.
-    void *Address);            // Where to return the binary address.
-const char * WSAAPI inet_ntop(
-    int AddressFamily,     // Address family to which the address belongs.
-    const void *Address,   // Address (binary) to convert.
-    char *OutputString,    // Where to return the output string.
-    int OutputBufferSize);  // Size of above buffer.
-#endif /* !SU_HAVE_NT */
+int inet_pton(int af, char const *src, void *dst);
+const char *inet_ntop(int af, void const *src, char *dst, size_t size);
 #endif
 
 /* ---------------------------------------------------------------------- */
