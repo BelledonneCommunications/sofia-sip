@@ -1407,8 +1407,6 @@ sres_query_report_error(sres_resolver_t *res, sres_query_t *q,
 {
   int i;
 
-  assert(answers == NULL);
-
   if (q->q_callback) {
     for (i = 0; i <= SRES_MAX_SEARCH; i++) {
       if (q->q_subqueries[i])	/* a pending query... */
@@ -1464,7 +1462,8 @@ void sres_resolver_timer(sres_resolver_t *res, int socket)
       if (!q || q->q_socket != socket)
 	continue;
       
-      retry_time = q->q_timestamp + (1 << (q->q_retry_count + 1));
+      /* Exponential backoff */
+      retry_time = q->q_timestamp + (1 << q->q_retry_count);
       
       if (now < retry_time)
 	continue;
@@ -1598,8 +1597,13 @@ void
 sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
 {
 #if HAVE_SIN6
+  struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)from;
+
+  size_t sin6_addrsize =
+    offsetof(struct sockaddr_in6, sin6_addr) +
+    (sizeof sin6->sin6_addr);
+
   if (from->ss_family == AF_INET6) {
-    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)from;
     struct in6_addr const *ip6 = &sin6->sin6_addr;
   
     if (IN6_IS_ADDR_V4MAPPED(ip6) || IN6_IS_ADDR_V4COMPAT(ip6)) {
@@ -1611,12 +1615,14 @@ sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
 #if SA_LEN
       sin->sin_len = sizeof (*sin);
 #endif
-    } else {
-      sin6->sin6_flowinfo = 0;
-      sin6->sin6_scope_id = 0;
+    }
+    else if (sin6_addrsize < *fromlen) {
+      /* Zero extra sin6 members like sin6_flowinfo or sin6_scope_id */
+      memset((char *)from + sin6_addrsize, 0, *fromlen - sin6_addrsize);
     }
   }
 #endif
+
   if (from->ss_family == AF_INET) {
     struct sockaddr_in *sin = (struct sockaddr_in *)from;
     memset(sin->sin_zero, 0, sizeof (sin->sin_zero));
@@ -1831,7 +1837,7 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
       errcode = ee->ee_errno;
 
       if (from->ss_family != AF_UNSPEC) {
-	socklen_t fromlen;
+	socklen_t fromlen = ((char *)c + c->cmsg_len) - (char *)from;
 
 	sres_canonize_sockaddr(from, &fromlen);
 
@@ -2017,7 +2023,7 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
     sres_send_dns_query(res, query);
     query->q_retry_count++;
   } 
-  else if (reply) {
+  else if (!error && reply) {
     /* Remove the query from the pending list and notify the listener */
     sres_remove_query(res, query, 1);
     UNLOCK(res);
@@ -2027,7 +2033,7 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
     sres_free_query(res, query);
   }
   else {
-    sres_query_report_error(res, query, NULL);
+    sres_query_report_error(res, query, reply);
   }
 
   UNLOCK(res);
@@ -2065,6 +2071,9 @@ void sres_log_response(sres_resolver_t const *res,
   }
 }
 
+/** Decode DNS message.
+ *
+ */
 static
 int
 sres_decode_msg(sres_resolver_t *res, 
@@ -2180,7 +2189,7 @@ sres_decode_msg(sres_resolver_t *res,
     } 
   }
 
-  return 0;
+  return err;
 }  
 
 static
