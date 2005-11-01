@@ -33,7 +33,6 @@
  * Copyright (c) 2002 Nokia Research Center.  All rights reserved.
  *
  * @date Created: Wed Jun 12 15:18:11 2002 ppessi
- * @date Last modified: Tue Oct 11 15:00:40 2005
  */
 
 #include "config.h"

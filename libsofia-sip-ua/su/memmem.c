@@ -29,7 +29,6 @@
  * 
  * @date Created: Sat Apr 12 19:32:33 2003 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:56 2005 kaiv
  */
 
 #include "config.h"

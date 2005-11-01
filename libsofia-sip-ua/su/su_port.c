@@ -34,7 +34,6 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  *
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
- * @date Last modified: Tue Oct 11 09:02:37 2005 ppessi
  */
 
 #include "config.h"

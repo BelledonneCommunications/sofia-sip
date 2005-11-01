@@ -34,7 +34,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jan 18 15:30:55 2001 ppessi
- * @date Last modified: Fri Sep 23 14:43:46 2005 ppessi
  */
 
 #define WIN32_LEAN_AND_MEAN

@@ -33,7 +33,6 @@
  *  
  * @date Created: Thu Mar  4 19:58:50 2004 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #ifndef SU_WAIT_H

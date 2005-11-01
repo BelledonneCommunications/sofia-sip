@@ -33,7 +33,6 @@
  * @author Jari Selin <Jari.Selin@nokia.com>
  * 
  * @date Created: Fri May 10 18:13:19 2002 ppessi
- * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #include "config.h"

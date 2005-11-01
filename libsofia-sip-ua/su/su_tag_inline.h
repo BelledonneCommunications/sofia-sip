@@ -32,7 +32,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Feb 20 19:48:18 2001 ppessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #define tt_next     tt_class->tc_next

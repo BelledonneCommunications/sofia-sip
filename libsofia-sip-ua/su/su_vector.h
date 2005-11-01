@@ -31,7 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Fri Sep 27 14:31:15 2002 ppessi
- * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #ifndef SU_ALLOC_H

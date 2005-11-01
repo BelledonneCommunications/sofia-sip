@@ -32,7 +32,6 @@
  * @internal
  * 
  * @date Created: Fri Oct 19 08:53:55 2001 pessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"

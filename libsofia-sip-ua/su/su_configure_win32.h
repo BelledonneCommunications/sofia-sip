@@ -37,7 +37,6 @@
  * Copyright (c) 1999, 2002 Nokia Research Center. All rights reserved.
  *
  * Created: Thu Jan 18 15:30:55 2001 ppessi
- * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #define WIN32_LEAN_AND_MEAN

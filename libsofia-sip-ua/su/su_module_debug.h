@@ -36,7 +36,6 @@
  *  
  * @date Created: Wed Jan 29 18:18:49 2003 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #include <su_log.h>

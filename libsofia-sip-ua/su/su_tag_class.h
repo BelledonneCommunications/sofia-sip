@@ -33,7 +33,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed Feb 21 00:49:41 2001 ppessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #ifndef SU_TAG_H

@@ -44,7 +44,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Feb  8 10:06:33 2000 ppessi
- * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #ifndef SU_LOG_H

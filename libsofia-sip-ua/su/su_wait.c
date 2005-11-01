@@ -33,7 +33,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
  *
- * @date Last modified: Wed Jul 20 20:35:59 2005 kaiv
  */
 
 #include <stdlib.h>

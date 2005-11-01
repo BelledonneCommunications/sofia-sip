@@ -29,7 +29,6 @@
  *
  * @date Created: Thu Feb 22 18:09:02 2001 ppessi
  *
- * @date Last modified: Wed Jul 20 20:35:57 2005 kaiv
  */
 
 #ifdef __cplusplus

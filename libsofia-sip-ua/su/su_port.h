@@ -34,7 +34,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Fri May 12 14:13:34 2000 ppessi
- * @date Last modified: Wed Jul 20 20:35:58 2005 kaiv
  */
 
 #ifndef SU_WAIT_H

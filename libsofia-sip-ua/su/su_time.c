@@ -31,7 +31,6 @@
  * @author Jari Selin <Jari.Selin@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"

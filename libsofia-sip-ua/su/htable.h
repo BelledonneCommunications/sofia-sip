@@ -53,7 +53,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Sep 25 17:42:40 2001 ppessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 typedef unsigned long hash_value_t;
