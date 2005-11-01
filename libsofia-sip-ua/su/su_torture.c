@@ -141,6 +141,7 @@ int test_sockaddr(void)
   TEST_1(su_match_sockaddr(a, b));
   a->su_sin.sin_addr.s_addr = 0;
   TEST_1(su_match_sockaddr(a, b));
+#if HAVE_SIN6
   a->su_family = AF_INET6;
   TEST_1(!su_match_sockaddr(a, b));
   b->su_family = AF_INET6;
@@ -153,7 +154,7 @@ int test_sockaddr(void)
   a->su_family = 0;
   TEST_1(su_match_sockaddr(a, b));
   TEST_1(!su_match_sockaddr(b, a));
-
+#endif
   END();
 }
 
