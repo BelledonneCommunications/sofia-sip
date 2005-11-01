@@ -51,7 +51,9 @@ struct pinger;
 
 #include "su.h"
 #include "su_wait.h"
+#if HAVE_GLIB
 #include "su_source.h"
+#endif
 
 struct pinger {
   enum { PINGER = 1, PONGER = 2 } const sort;
@@ -464,6 +466,7 @@ int main(int argc, char *argv[])
 
   time_test();
 
+#if HAVE_GLIB2
   if (opt_glib) {
     root = su_root_source_create(NULL); 
 
@@ -471,8 +474,9 @@ int main(int argc, char *argv[])
 
     if (!g_source_attach(su_root_gsource(root), NULL)) 
       perror("g_source_attach"), exit(1);
-  }
-  else {
+  } else
+#endif
+  {
     root = su_root_create(NULL);
     if (!root) perror("su_root_create"), exit(1);
   }
