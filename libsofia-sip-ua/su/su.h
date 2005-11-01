@@ -308,17 +308,19 @@ const char *inet_ntop(int af, void const *src, char *dst, size_t size);
 
 /**@HI Test if su_sockaddr_t is INADDR_ANY or IN6ADDR_ANY. */
 #if SU_HAVE_IN6
-#define SU_SOCKADDR_INADDR_ANY(su) \
+#define SU_HAS_INADDR_ANY(su) \
   ((su)->su_family == AF_INET \
    ? ((su)->su_sin.sin_addr.s_addr == INADDR_ANY) \
    : ((su)->su_family == AF_INET6 \
       ? (memcmp(&(su)->su_sin6.sin6_addr, su_in6addr_any(), \
 		sizeof(*su_in6addr_any())) == 0) : 0))
 #else
-#define SU_SOCKADDR_INADDR_ANY(su) \
+#define SU_HAS_INADDR_ANY(su) \
   ((su)->su_family == AF_INET \
   ? ((su)->su_sin.sin_addr.s_addr == INADDR_ANY) : 0)
 #endif
+
+#define SU_SOCKADDR_INADDR_ANY(su) SU_HAS_INADDR_ANY(su)
 
 /**@HI Calculate correct size of su_sockaddr_t structure. */ 
 #if SU_HAVE_IN6
