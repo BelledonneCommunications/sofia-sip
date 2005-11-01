@@ -165,9 +165,11 @@ int main(int argc, char *argv[])
 		test_break, 0);
 
   signal(SIGINT, intr_handler);
+#if HAVE_SIGPIPE
   signal(SIGPIPE, intr_handler);
   signal(SIGQUIT, intr_handler);
   signal(SIGHUP, intr_handler);
+#endif
 
   t = su_timer_create(su_root_task(root), interval);
   t1 = su_timer_create(su_root_task(root), 1);
