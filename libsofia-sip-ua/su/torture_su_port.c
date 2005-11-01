@@ -28,12 +28,18 @@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @date Created: Wed Mar 10 17:05:23 2004 ppessi
- * @date Last modified: Wed Jul 20 20:36:00 2005 kaiv
  */
 
 #include "config.h"
 
 #include "su_port.c"
+
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+static char const __func__[] = "torture_su_port";
+#endif
 
 int tstflags;
 
