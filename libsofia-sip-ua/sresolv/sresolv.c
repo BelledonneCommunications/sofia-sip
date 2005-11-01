@@ -29,8 +29,6 @@
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>
  *
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
- * 
  * @todo The resolver should allow handling arbitrary records.
  */
 
