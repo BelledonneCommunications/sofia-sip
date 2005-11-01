@@ -60,7 +60,7 @@ dnl compile STUN only if OPENSSL is available
 if test x${HAVE_OPENSSL} != x1 ; then
   AC_MSG_WARN([** STUN support disabled as OpenSSL headers and/or libraries were not found **])
 else
-  AC_DEFINE_UNQUOTED([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
+  AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
 fi
 
 AC_DEFINE([HAVE_SRTP], 0, [Define as 1 if we use SRTP])
