@@ -955,8 +955,8 @@ int localinfo0(su_localinfo_t const hints[1], su_localinfo_t **rresult)
 	/* Map IPv4 address to IPv6 address */
 	memset(su2, 0, sizeof(*su2));
 	su2->su_family = AF_INET6;
-	((sint32_t*)&su2->su_sin6.sin6_addr)[2] = htonl(0xffff);
-	((sint32_t*)&su2->su_sin6.sin6_addr)[3] = su->su_sin.sin_addr.s_addr;
+	((int32_t*)&su2->su_sin6.sin6_addr)[2] = htonl(0xffff);
+	((int32_t*)&su2->su_sin6.sin6_addr)[3] = su->su_sin.sin_addr.s_addr;
 	su = su2;
       }
 
@@ -1078,8 +1078,8 @@ int localinfo0(su_localinfo_t const *hints, su_localinfo_t **rresult)
       /* Map IPv4 address to IPv6 address */
       memset(su2, 0, sizeof(*su2));
       su2->su_family = AF_INET6;
-      ((sint32_t*)&su2->su_sin6.sin6_addr)[2] = htonl(0xffff);
-      ((sint32_t*)&su2->su_sin6.sin6_addr)[3] = su->su_sin.sin_addr.s_addr;
+      ((int32_t*)&su2->su_sin6.sin6_addr)[2] = htonl(0xffff);
+      ((int32_t*)&su2->su_sin6.sin6_addr)[3] = su->su_sin.sin_addr.s_addr;
       su = su2;
     }
 #endif

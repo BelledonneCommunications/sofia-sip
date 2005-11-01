@@ -30,7 +30,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
- * @date Last modified: Mon Aug  8 19:10:16 2005 ppessi
  */
 
 /* ---------------------------------------------------------------------- */
