@@ -28,9 +28,9 @@
  * sizeof(int) < 4.  sizeof(int) > 4 is fine; all the world's not a VAX.
  */
 
-static int	inet_pton4(const char *src, u_char *dst);
+static int	inet_pton4(const char *src, unsigned char *dst);
 #if HAVE_SIN6
-static int	inet_pton6(const char *src, u_char *dst);
+static int	inet_pton6(const char *src, unsigned char *dst);
 #endif
 
 /* int
@@ -77,11 +77,11 @@ inet_pton(af, src, dst)
 static int
 inet_pton4(src, dst)
 	const char *src;
-	u_char *dst;
+	unsigned char *dst;
 {
 	static const char digits[] = "0123456789";
 	int saw_digit, octets, ch;
-	u_char tmp[4], *tp;
+	unsigned char tmp[4], *tp;
 
 	saw_digit = 0;
 	octets = 0;
@@ -134,17 +134,17 @@ inet_pton4(src, dst)
 static int
 inet_pton6(src, dst)
 	const char *src;
-	u_char *dst;
+	unsigned char *dst;
 {
 	static const char xdigits_l[] = "0123456789abcdef",
 			  xdigits_u[] = "0123456789ABCDEF";
-	u_char tmp[NS_IN6ADDRSZ], *tp, *endp, *colonp;
+	uint8_t tmp[16], *tp, *endp, *colonp;
 	const char *xdigits, *curtok;
 	int ch, saw_xdigit;
-	u_int val;
+	unsigned val;
 
-	memset((tp = tmp), '\0', NS_IN6ADDRSZ);
-	endp = tp + NS_IN6ADDRSZ;
+	memset((tp = tmp), '\0', sizeof tmp);
+	endp = tp + sizeof tmp;
 	colonp = NULL;
 	/* Leading :: requires some special handling. */
 	if (*src == ':')
@@ -176,27 +176,27 @@ inet_pton6(src, dst)
 			} else if (*src == '\0') {
 				return (0);
 			}
-			if (tp + NS_INT16SZ > endp)
+			if (tp + 2 > endp)
 				return (0);
-			*tp++ = (u_char) (val >> 8) & 0xff;
-			*tp++ = (u_char) val & 0xff;
+			*tp++ = (unsigned char) (val >> 8) & 0xff;
+			*tp++ = (unsigned char) val & 0xff;
 			saw_xdigit = 0;
 			val = 0;
 			continue;
 		}
-		if (ch == '.' && ((tp + NS_INADDRSZ) <= endp) &&
+		if (ch == '.' && ((tp + 4) <= endp) &&
 		    inet_pton4(curtok, tp) > 0) {
-			tp += NS_INADDRSZ;
+			tp += 4;
 			saw_xdigit = 0;
 			break;	/* '\0' was seen by inet_pton4(). */
 		}
 		return (0);
 	}
 	if (saw_xdigit) {
-		if (tp + NS_INT16SZ > endp)
+		if (tp + 2 > endp)
 			return (0);
-		*tp++ = (u_char) (val >> 8) & 0xff;
-		*tp++ = (u_char) val & 0xff;
+		*tp++ = (unsigned char) (val >> 8) & 0xff;
+		*tp++ = (unsigned char) val & 0xff;
 	}
 	if (colonp != NULL) {
 		/*
@@ -215,9 +215,9 @@ inet_pton6(src, dst)
 		tp = endp;
 	}
 	if (tp != endp)
-		return (0);
-	memcpy(dst, tmp, NS_IN6ADDRSZ);
-	return (1);
+		return 0;
+	memcpy(dst, tmp, sizeof tmp);
+	return 1;
 }
 
 #endif
