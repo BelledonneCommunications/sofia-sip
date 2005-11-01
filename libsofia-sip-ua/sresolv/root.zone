@@ -6,4 +6,9 @@
 	    36000000   ; EXPIRE
 	    60         ; MINIMUM
 	    )
+		NS	ns.example.com
+ns.example.com	A	127.0.0.2
+		AAAA	::2
+		A6	0 ::2
 
+	
