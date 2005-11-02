@@ -35,7 +35,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include "config.h"
@@ -283,7 +282,7 @@ nth_engine_t *nth_engine_create(su_root_t *root,
   nth_engine_t *he;
   ta_list ta;
 
-  if ((he = su_salloc(NULL, sizeof(*he)))) {
+  if ((he = su_home_new(sizeof(*he)))) {
     he->he_root = root;
     he->he_mflags = MSG_DO_CANONIC;
     he->he_mclass = http_default_mclass();
@@ -315,7 +314,7 @@ void nth_engine_destroy(nth_engine_t * he)
 
     su_timer_destroy(he->he_timer), he->he_timer = NULL;
 
-    su_home_zap(he->he_home);
+    su_home_unref(he->he_home);
   }
 }
 
