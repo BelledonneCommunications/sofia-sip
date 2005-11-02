@@ -2393,7 +2393,12 @@ int nta_is_internal_msg(msg_t const *msg)
 
 #include <nta_stateless.h>
 
-/** Send a message. */
+/**Forward a request or response message. 
+ *
+ * @note
+ * The ownership of @a msg is taken over by the function even if the
+ * function fails.
+ */
 int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
 		  tag_type_t tag, tag_value_t value, ...)
 {
@@ -2486,34 +2491,21 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
   return retval;
 }
 
-/** Send the message (stdarg version of nta_msg_send()). */
-int nta_msg_vsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
-		  void *extra, va_list headers)
-{
-  sip_t *sip = sip_object(msg);
-
-  if (extra && sip_add_headers(msg, sip, extra, headers) < 0) {
-    msg_destroy(msg);
-    return -1;
-  }
-
-  return nta_msg_tsend(agent, msg, u, TAG_END());
-}
-
-/** Send the message. */
-int nta_msg_send(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
-		 void *extra, ...)
-{
-  int retval;
-  va_list headers;
-  va_start(headers, extra);
-  retval = nta_msg_vsend(agent, msg, u, extra, headers);
-  va_end(headers);
-
-  return retval;
-}
-
-/** Reply to the request message. */
+/** Reply to a request message.
+ *
+ * @param agent    nta agent object
+ * @param req_msg  request message
+ * @param status   status code
+ * @param phrase   status phrase (may be NULL if status code is well-known)
+ * @param tag, value, ... optional additional headers terminated by TAG_END()
+ *
+ * @retval 0 when succesful
+ * @retval -1 upon an error
+ *
+ * @note
+ * The ownership of @a msg is taken over by the function even if the
+ * function fails.
+ */
 int nta_msg_treply(nta_agent_t *agent,
 		   msg_t *req_msg,
 		   int status, char const *phrase,
@@ -2531,17 +2523,12 @@ int nta_msg_treply(nta_agent_t *agent,
   return retval;
 }
 
-/** Reply to the request message. */
-int nta_msg_mreply(nta_agent_t *agent,
-		   msg_t *reply, sip_t *sip,
-		   int status, char const *phrase,
-		   msg_t *req_msg)
-{
-  return 
-    nta_msg_tmreply(agent, reply, sip, status, phrase, req_msg, TAG_END());
-}
-
-/** Reply to the request message. */
+/**Reply to the request message.
+ *
+ * @note
+ * The ownership of @a msg is taken over by the function even if the
+ * function fails.
+ */
 int nta_msg_tmreply(nta_agent_t *agent,
 		    msg_t *reply, sip_t *sip,
 		    int status, char const *phrase,
@@ -2636,14 +2623,22 @@ int nta_msg_tmreply(nta_agent_t *agent,
     }
   }
 
-  nta_msg_discard(agent, reply);
-  nta_msg_discard(agent, req_msg);
+  msg_destroy(reply);
+  msg_destroy(req_msg);
 
   return retval;
 }
 
 
-/** ACK and BYE an unknown 200 OK */
+/** ACK and BYE an unknown 200 OK response to INVITE.
+ *
+ * A UAS may still return a 2XX series response to an INVITE request after
+ * the client transaction has been terminated. In that case, the UAC can not
+ * really accept the call, but it may send a ACK request to UAS followed
+ * immediately by BYE using nta_msg_ackbye(). The function does not create a
+ * transaction objects, but just sends the ACK and BYE request messages
+ * according to the @b Record-Route and @b Contact headers in the @a msg.
+ */
 int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
@@ -3901,6 +3896,10 @@ static void incoming_retransmit_reply(nta_incoming_t *irq, tport_t *tport);
  * @param msg  pointer to message object
  * @param sip  pointer to SIP structure (may be NULL)
  * @param tag,value,... optional tagged parameters
+ *
+ * @note
+ * The ownership of @a msg is taken over by the function even if the
+ * function fails.
  *
  * @TAGS
  * @TAG NTATAG_TPORT() specifies the transport used to receive the request 

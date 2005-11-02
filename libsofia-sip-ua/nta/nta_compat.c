@@ -25,6 +25,8 @@
 /**@CFILE nta_compat.c 
  * @brief Compatibility functions for Nokia SIP Transaction API 
  *
+ * These functions are deprecated and should not be used anymore.
+ *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jul 24 22:28:34 2001 ppessi
@@ -139,7 +141,35 @@ int nta_msg_vreply(nta_agent_t *agent,
   if (sip_add_headers(reply, sip, extra, headers) < 0)
     sip = NULL;
 
-  return nta_msg_mreply(agent, reply, sip, status, phrase, req_msg);
+  return nta_msg_tmreply(agent, reply, sip,
+			 status, phrase, req_msg, TAG_END());
+}
+
+/** Send the message (stdarg version of nta_msg_send()). */
+int nta_msg_vsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
+		  void *extra, va_list headers)
+{
+  sip_t *sip = sip_object(msg);
+
+  if (extra && sip_add_headers(msg, sip, extra, headers) < 0) {
+    msg_destroy(msg);
+    return -1;
+  }
+
+  return nta_msg_tsend(agent, msg, u, TAG_END());
+}
+
+/** Send the message. */
+int nta_msg_send(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
+		 void *extra, ...)
+{
+  int retval;
+  va_list headers;
+  va_start(headers, extra);
+  retval = nta_msg_vsend(agent, msg, u, extra, headers);
+  va_end(headers);
+
+  return retval;
 }
 
 /**
