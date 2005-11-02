@@ -763,6 +763,8 @@ int localinfo6(su_localinfo_t const *hints, su_localinfo_t **rresult)
       
       canonname = NULL;
     }
+
+    fclose(f);
   }
 
   if (canonname) 
