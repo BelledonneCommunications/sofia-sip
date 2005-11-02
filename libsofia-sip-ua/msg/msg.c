@@ -60,12 +60,12 @@
  */
 msg_t *msg_create(msg_mclass_t const *mc, int flags)
 {
-  msg_t *msg = su_home_clone(NULL, sizeof(*msg) + mc->mc_msize);
+  msg_t *msg = su_home_new(sizeof(*msg) + mc->mc_msize);
 
   if (msg) {
     if ((flags & MSG_FLG_THRDSAFE) &&
 	su_home_threadsafe(msg->m_home) < 0) {
-      su_home_zap(msg->m_home);
+      su_home_unref(msg->m_home);
       return NULL;
     }
 
