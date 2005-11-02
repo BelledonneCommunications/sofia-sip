@@ -1943,7 +1943,7 @@ void agent_recv_request(nta_agent_t *agent,
 			TAG_END());
       }
     } else {
-      nta_msg_discard(agent, msg);
+      msg_destroy(msg);
       if (stream)		/* Send FIN */
 	tport_shutdown(tport, 1);
     }
@@ -3914,6 +3914,10 @@ nta_incoming_t *nta_incoming_create(nta_agent_t *agent,
   char const *to_tag = NULL;
   tport_t *tport = NULL;
   ta_list ta;
+  nta_incoming_t *irq;
+
+  if (msg == NULL)
+    return NULL;
 
   if (agent == NULL && leg != NULL)
     agent = leg->leg_agent;
@@ -3921,11 +3925,8 @@ nta_incoming_t *nta_incoming_create(nta_agent_t *agent,
   if (sip == NULL)
     sip = sip_object(msg);
 
-  if (agent == NULL || msg == NULL || sip == NULL)
-    return NULL;
-
-  if (!sip->sip_request || !sip->sip_cseq)
-    return NULL;
+  if (agent == NULL || sip == NULL || !sip->sip_request || !sip->sip_cseq)
+    return msg_destroy(msg), NULL;
 
   ta_start(ta, tag, value);
   
@@ -3940,7 +3941,12 @@ nta_incoming_t *nta_incoming_create(nta_agent_t *agent,
   if (tport == NULL)
     tport = tport_delivered_by(agent->sa_tports, msg);
 
-  return incoming_create(agent, msg, sip, tport, to_tag);
+  irq = incoming_create(agent, msg, sip, tport, to_tag);
+
+  if (!irq)
+    msg_destroy(msg);
+
+  return irq;
 }
 
 /** @internal Create a new incoming transaction object. */
@@ -3960,8 +3966,8 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
     incoming_queue_t *queue;
     sip_method_t method = sip->sip_request->rq_method;
 
-    irq->irq_request = msg = msg_ref_create(msg); 
-    irq->irq_home = home = msg_home(msg);
+    irq->irq_request = msg; 
+    irq->irq_home = home = msg_home(msg_ref_create(msg));
     irq->irq_agent = agent;
 
     irq->irq_received = agent_now(agent);
@@ -4324,6 +4330,7 @@ static inline
 void incoming_reclaim(nta_incoming_t *irq)
 {
   su_home_t *home = irq->irq_home;
+  nta_reliable_t *rel, *rel_next;
 
   if (irq->irq_request)
     msg_destroy(irq->irq_request), irq->irq_request = NULL;
@@ -4331,6 +4338,13 @@ void incoming_reclaim(nta_incoming_t *irq)
     msg_destroy(irq->irq_request2), irq->irq_request2 = NULL;
   if (irq->irq_response)
     msg_destroy(irq->irq_response), irq->irq_response = NULL;
+
+  for (rel = irq->irq_reliable; rel; rel = rel_next) {
+    rel_next = rel->rel_next;
+    if (rel->rel_unsent)
+      msg_destroy(rel->rel_unsent);
+    su_free(irq->irq_agent->sa_home, rel);
+  }
 
   irq->irq_home = NULL;
 
@@ -4773,10 +4787,11 @@ int incoming_cancel(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 		 NTATAG_TPORT(tport),
 		 TAG_END());
 
-  if (irq->irq_completed || irq->irq_method != sip_method_invite)
+  if (irq->irq_completed || irq->irq_method != sip_method_invite) {
+    msg_destroy(msg);
     return 0;
+  }
 
-  /* CANCEL */
   if (!irq->irq_canceled) {
     irq->irq_canceled = 1;
     agent->sa_stats->as_canceled_tr++;
@@ -4977,8 +4992,9 @@ int nta_incoming_treply(nta_incoming_t *irq,
 {
   int retval = -1;
 
-  if (irq && irq->irq_status < 200 || status < 200 ||
-      (irq->irq_method == sip_method_invite && status < 300)) {
+  if (irq &&
+      (irq->irq_status < 200 || status < 200 ||
+       (irq->irq_method == sip_method_invite && status < 300))) {
     ta_list ta;
     msg_t *msg = nta_msg_create(irq->irq_agent, 0);
     sip_t *sip = sip_object(msg);
@@ -5008,6 +5024,9 @@ int nta_incoming_treply(nta_incoming_t *irq,
 /**
  * Return a response message to client.
  *
+ * @note
+ * The ownership of @a msg is taken over by the function even if the
+ * function fails.
  */
 int nta_incoming_mreply(nta_incoming_t *irq, msg_t *msg) 
 {
@@ -5055,7 +5074,11 @@ int nta_incoming_mreply(nta_incoming_t *irq, msg_t *msg)
 }
 
 
-/** Sends the response message. */
+
+/** Send the response message.
+ *
+ * @note The ownership of msg is handled to incoming_reply().
+ */
 int incoming_reply(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
 {
   nta_agent_t *agent = irq->irq_agent;
@@ -5185,6 +5208,9 @@ int incoming_reply(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
 	msg_destroy(irq->irq_response);
       assert(msg_home(msg) != irq->irq_home);
       irq->irq_response = msg;
+    }
+    else {
+      msg_destroy(msg);
     }
 
     if (sip->sip_cseq->cs_method == irq->irq_method &&
@@ -6977,6 +7003,7 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
   int pending = sa->sa_out.trying->q_length + sa->sa_out.inv_calling->q_length;
   int completed = sa->sa_out.completed->q_length + 
     sa->sa_out.inv_completed->q_length;
+
   outgoing_queue_init(sa->sa_out.free = rq, 0);
 
   while ((orq = sa->sa_out.re_list)) {
@@ -7169,10 +7196,12 @@ int outgoing_terminate(nta_outgoing_t *orq)
   if (!orq->orq_destroyed) {
     outgoing_queue(orq->orq_agent->sa_out.terminated, orq);
     return 0;
-  } else if (orq->orq_agent->sa_out.free) {
+  }
+  else if (orq->orq_agent->sa_out.free) {
     outgoing_free_queue(orq->orq_agent->sa_out.free, orq);
     return 1;
-  } else {
+  }
+  else {
     outgoing_free(orq);
     return 1;
   }
@@ -7625,7 +7654,8 @@ msg_t *outgoing_ackmsg(nta_outgoing_t *orq, sip_method_t m, char const *mname,
       sip->sip_cseq)
     return msg;
 
-  nta_msg_discard(orq->orq_agent, msg);
+  msg_destroy(msg);
+
   return NULL;
 }
 
@@ -8813,14 +8843,11 @@ nta_reliable_t *reliable_mreply(nta_incoming_t *irq,
     if (irq->irq_reliable &&
 	(irq->irq_reliable->rel_next == NULL ||
 	 irq->irq_reliable->rel_rseq == 0)) {
-      rel->rel_response = msg_ref_create(msg);
       return irq->irq_reliable = rel;
     }
 
-    rel->rel_response = msg_ref_create(msg);
-
-    if (reliable_send(irq, rel, msg, sip) < 0) {
-      msg_destroy(rel->rel_response), rel->rel_response = NULL;
+    if (reliable_send(irq, rel, msg_ref_create(msg), sip) < 0) {
+      msg_destroy(msg);
       su_free(agent->sa_home, rel);
       return NULL;
     }
@@ -8853,12 +8880,10 @@ int reliable_send(nta_incoming_t *irq,
   rel->rel_rseq = rseq->rs_response = irq->irq_rseq;
   sip_add_dup(msg, sip, (sip_header_t *)rseq);
 
-  if (!sip->sip_rseq) {
+  if (!sip->sip_rseq || incoming_reply(irq, msg, sip) < 0) {
     msg_destroy(msg);
     return -1;
   }
-  if (incoming_reply(irq, msg, sip) < 0)
-    return -1;
 
   irq->irq_rseq++;
 
@@ -8872,7 +8897,7 @@ int reliable_send(nta_incoming_t *irq,
   return 0;
 }
 
-/** Process final response */
+/** Queue final response when there are unsent precious preliminary responses */
 static
 int reliable_final(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
 {
@@ -8940,7 +8965,7 @@ int reliable_recv(nta_incoming_t *irq, msg_t *msg, sip_t *sip, tport_t *tp)
     return -1;			/* Process normally */
 
   rel->rel_pracked = 1;
-  rel->rel_unsent = NULL;
+  msg_ref_destroy(rel->rel_unsent), rel->rel_unsent = NULL;
 
   pr_irq = incoming_create(irq->irq_agent, msg, sip, tp, irq->irq_tag);
   if (!pr_irq) {
@@ -8950,8 +8975,6 @@ int reliable_recv(nta_incoming_t *irq, msg_t *msg, sip_t *sip, tport_t *tp)
 		   TAG_END());
     return 0;
   }
-
-  msg_ref_destroy(rel->rel_response), rel->rel_response = NULL;
 
   if (irq->irq_status < 200) {
     incoming_queue(irq->irq_agent->sa_in.proceeding, irq); /* Reset P1 */
@@ -8987,18 +9010,17 @@ int reliable_recv(nta_incoming_t *irq, msg_t *msg, sip_t *sip, tport_t *tp)
 
     if (sip->sip_status->st_status < 200) {
       if (reliable_send(irq, rel, msg_ref_create(msg), sip) < 0) {
-	msg_ref_destroy(msg);
 	assert(!"send reliable response");
       }
-    } else {
+    } 
+    else {
       /*
        * XXX
        * Final response should be delayed until a reliable provisional
        * response has been pracked
        */
-      rel->rel_rseq = (uint32_t)-1;
-      if (incoming_reply(irq, msg_ref_create(msg), sip) < 0) {
-	msg_ref_destroy(msg);
+      rel->rel_unsent = NULL, rel->rel_rseq = (uint32_t)-1;
+      if (incoming_reply(irq, msg, sip) < 0) {
 	assert(!"send delayed final response");
       }
     }
@@ -9019,8 +9041,7 @@ void reliable_flush(nta_incoming_t *irq)
 
     if (rel) {
       rel->rel_pracked = 1;
-      rel->rel_unsent = NULL;
-      msg_ref_destroy(rel->rel_response), rel->rel_response = NULL;
+      msg_ref_destroy(rel->rel_unsent), rel->rel_unsent = NULL;
       rel->rel_callback(rel->rel_magic, rel, NULL, NULL);
     }
   } while (rel);
@@ -9081,7 +9102,8 @@ int nta_reliable_leg_prack(nta_reliable_magic_t *magic,
 		method_name, sip->sip_cseq->cs_seq, 
 		"PRACK processed by default callback, too"));
     retval = leg->leg_callback(leg->leg_magic, leg, irq, sip);
-  } else {
+  }
+  else {
     retval = 500;
   }
 
@@ -9098,7 +9120,7 @@ int nta_reliable_leg_prack(nta_reliable_magic_t *magic,
  */
 void nta_reliable_destroy(nta_reliable_t *rel)
 {
-  if (!rel)
+  if (rel == NULL || rel == NONE)
     return;
 
   if (rel->rel_callback == nta_reliable_destroyed)
@@ -9134,6 +9156,9 @@ int nta_reliable_destroyed(nta_reliable_magic_t *rmagic,
   }
 
   *prev = rel->rel_next;
+
+  if (rel->rel_unsent)
+    msg_destroy(rel->rel_unsent), rel->rel_unsent = NULL;
 
   su_free(rel->rel_irq->irq_agent->sa_home, rel);
 
