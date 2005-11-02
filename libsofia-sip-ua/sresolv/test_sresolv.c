@@ -46,7 +46,6 @@ struct sres_context_s;
 #define _XOPEN_SOURCE (500)
 
 #include <stdint.h>
-#include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
@@ -63,6 +62,8 @@ struct sres_context_s;
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <unistd.h>
+
 #include <su_alloc.h>
 
 #if HAVE_ALARM
@@ -1853,7 +1854,7 @@ int main(int argc, char **argv)
 {
   int i;
   int error = 0;
-  int o_alarm = 1;
+  int o_attach = 0, o_alarm = 1;
   sres_context_t ctx[1] = {{{SU_HOME_INIT(ctx)}}};
 
   for (i = 1; argv[i]; i++) {
@@ -1866,6 +1867,9 @@ int main(int argc, char **argv)
       tstflags |= tst_verbatim;
     else if (strcmp(argv[i], "--no-alarm") == 0) {
       o_alarm = 0;
+    }
+    else if (strcmp(argv[i], "--attach") == 0) {
+      o_attach = 1;
     }
     else if (strncmp(argv[i], "-l", 2) == 0) {
       int level = 3;
@@ -1888,8 +1892,16 @@ int main(int argc, char **argv)
 
   su_init();
 
+  if (o_attach) {
+    char buf[8];
+
+    fprintf(stderr, "test_sresolv: started with pid %u"
+	    " (press enter to continue)\n", getpid());
+
+    fgets(buf, sizeof buf, stdin);
+  }
 #if HAVE_ALARM
-  if (o_alarm) {
+  else if (o_alarm) {
     alarm(60);
     signal(SIGALRM, sig_alarm); 
   }

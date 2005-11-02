@@ -30,7 +30,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Jun  5 14:34:24 2002 ppessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
+ * @date Last modified: Wed Nov  2 12:03:56 2005 ppessi
  */
 
 #include "config.h"
@@ -72,6 +72,7 @@
  * @return 
  * The function msg_mclass_clone() returns a pointer to a newly
  * copied message class object, or NULL upon an error.
+ * The returned message class object can be freed with free().
  *
  * @ERRORS
  * @ERROR ENOMEM
@@ -89,7 +90,7 @@
  */
 msg_mclass_t *msg_mclass_clone(msg_mclass_t const *old, int newsize, int empty)
 {
-  size_t size; 
+  size_t size, shortsize;
   msg_mclass_t *mc; 
   int identical;
   unsigned short i;
@@ -103,7 +104,11 @@ msg_mclass_t *msg_mclass_clone(msg_mclass_t const *old, int newsize, int empty)
   }
 
   size = offsetof(msg_mclass_t, mc_hash[newsize]);
-  mc = malloc(size);
+  if (old->mc_short)
+    shortsize = MC_SHORT_SIZE * (sizeof old->mc_short[0]);
+  else
+    shortsize = 0;
+  mc = malloc(size + shortsize);
   identical = newsize == old->mc_hash_size && !empty;
 
   if (mc) {
@@ -122,16 +127,11 @@ msg_mclass_t *msg_mclass_clone(msg_mclass_t const *old, int newsize, int empty)
       mc->mc_short = NULL;
     }
     
-    if (old->mc_short) {
-      msg_href_t *shorts = calloc(MC_SHORT_SIZE, sizeof shorts[0]);
-
-      if (shorts) {
-	mc->mc_short = shorts;
-	if (!empty)
-	  memcpy(shorts, old->mc_short, MC_SHORT_SIZE * sizeof shorts[0]);
-      }
+    if (shortsize) {
+      if (empty)
+	mc->mc_short = memset((char *)mc + size, 0, shortsize);
       else
-	free(mc), mc = NULL;
+	mc->mc_short = memcpy((char *)mc + size, old->mc_short, shortsize);
     }
   }
 
