@@ -72,24 +72,24 @@ typedef int nta_message_f(nta_agent_magic_t *context,
 #include <nta.h>
 #endif
 
-/** Forward a message. */
+/** Forward a request or response message. */
 int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
 		  tag_type_t tag, tag_value_t value, ...);
 
-/** Reply to a message. */
+/** Reply to a request message. */
 int nta_msg_tmreply(nta_agent_t *agent,
 		    msg_t *reply, sip_t *sip,
 		    int status, char const *phrase,
 		    msg_t *req_msg,
 		    tag_type_t tag, tag_value_t value, ...);
 
-/** Reply to a message. */
+/** Reply to a request message. */
 int nta_msg_treply(nta_agent_t *self, 
 		   msg_t *msg,
 		   int status, char const *phrase,
 		   tag_type_t tag, tag_value_t value, ...);
 
-/** ACK a 200 Ok response, then BYE the call immediately */
+/** ACK and BYE an unknown 200 OK response to INVITE. */
 int nta_msg_ackbye(nta_agent_t *a, msg_t *msg);
 
 /** Process message statefully using @a leg. */
