@@ -603,7 +603,7 @@ void *su_alloc(su_home_t *home, int size)
   void *data;
 
   if (home) {
-    data = sub_alloc(home, MEMLOCK(home), size, 1);
+    data = sub_alloc(home, MEMLOCK(home), size, 0);
     UNLOCK(home);
   }
   else
@@ -1011,17 +1011,19 @@ void *su_realloc(su_home_t *home, void *data, int size)
     return NULL;
   }
 
-  if (!data)
-    return su_alloc(home, size);
-
   sub = MEMLOCK(home);
+  if (!data) {
+    data = sub_alloc(home, sub, size, 0);
+    UNLOCK(home);
+    return data;
+  }
+
   sua = su_block_find(sub, data);
 
   if (!su_alloc_check(sub, sua))
     return UNLOCK(home);
   
   assert(!sua->sua_home);
-  
   if (sua->sua_home)
     return UNLOCK(home);
   
