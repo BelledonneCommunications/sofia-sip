@@ -436,11 +436,31 @@ OPERATION(refer);
 OPERATION(message);
 OPERATION(options);
 OPERATION(publish);
+OPERATION(unpublish);
+OPERATION(unregister);
 OPERATION(subscribe);
 OPERATION(unsubscribe);
 OPERATION(notify);
 OPERATION(notifier);
 OPERATION(terminate);
+
+int do_register(struct endpoint *ep,
+		struct call *call, nua_handle_t *nh,
+		tag_type_t tag, tag_value_t value,
+		...)
+{
+  ta_list ta;
+  ta_start(ta, tag, value);
+
+  if (ep->printer)
+    ep->printer(-1, "nua_" "register", 0, "", ep->nua, ep->ctx, ep,
+		nh, call, NULL, ta_args(ta));
+
+  nua_register(nh, ta_tags(ta));
+
+  ta_end(ta);
+  return 0;
+}
 
 /* Respond via endpoint and handle */
 int respond(struct endpoint *ep,
@@ -1048,7 +1068,7 @@ int test_init(struct context *ctx, char *argv[])
     printf("TEST NUA-3.0.2: init endpoint B\n");
 
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
-			  SIPTAG_FROM_STR("sip:bob@example.orf"),
+			  SIPTAG_FROM_STR("sip:bob@example.org"),
 			  NUTAG_URL("sip:*:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
 			  TAG_END());
@@ -1183,7 +1203,7 @@ CONDITION_FUNCTION(accept_call_immediately)
 }
 
 /*
- X      INVITE        
+ X      INVITE
  |                    |
  |-------INVITE------>|
  |<--------200--------|
@@ -1211,7 +1231,7 @@ CONDITION_FUNCTION(until_ready)
 
 /*
  INVITE without auto-ack
- X 
+ X
  |                    |
  |-------INVITE------>|
  |<--------200--------|
@@ -1338,7 +1358,7 @@ int test_basic_call(struct context *ctx)
   bye(b, b_call, b_call->nh, TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, until_terminated);
 
-  /* B transitions: 
+  /* B transitions:
    READY --(T2)--> TERMINATING: nua_bye()
    TERMINATING --(T3)--> TERMINATED: nua_r_bye, nua_i_state
   */
@@ -2779,7 +2799,7 @@ int test_call_hold(struct context *ctx)
 
   if (print_headings)
     printf("TEST NUA-7.6: PASSED\n");
-  
+
 
   /* ---------------------------------------------------------------------- */
   /*
@@ -2864,7 +2884,7 @@ int test_session_timer(struct context *ctx)
    |			|
 
 */
-  
+
   a_call->sdp = "m=audio 5008 RTP/AVP 8";
   b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
 
@@ -3464,12 +3484,12 @@ int test_methods(struct context *ctx)
 
 /* Message test
 
-   A		
+   A
    |-------MESSAGE--\
    |<---------------/
    |--------200-----\
    |<---------------/
-   |			
+   |
 
 */
   if (print_headings)
