@@ -3445,6 +3445,49 @@ int test_methods(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-11.1: PASSED\n");
 
+
+/* Message test
+
+   A		
+   |-------MESSAGE--\
+   |<---------------/
+   |--------200-----\
+   |<---------------/
+   |			
+
+*/
+  if (print_headings)
+    printf("TEST NUA-11.1b: MESSAGE\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(a->to), TAG_END()));
+
+  message(a, a_call, a_call->nh, NUTAG_URL(a->contact->m_url),
+	  SIPTAG_SUBJECT_STR("Hello"),
+	  SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	  SIPTAG_PAYLOAD_STR("Hello hellO!\n"),
+	  TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  /* Events:
+     nua_message(), nua_i_message, nua_r_message
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_message);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_subject && sip->sip_subject->g_string);
+  TEST_S(sip->sip_subject->g_string, "Hello");
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_message);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-11.1b: PASSED\n");
+
+
 /* OPTIONS test
 
    A			B
@@ -3565,6 +3608,11 @@ int test_methods(struct context *ctx)
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_publish);
   TEST(e->data->e_status, 501);
   TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  free_events_in_list(ctx, b_call);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
   if (print_headings)
     printf("TEST NUA-11.3: PASSED\n");
@@ -3780,6 +3828,7 @@ int main(int argc, char *argv[])
     retval |= test_refer(ctx); SINGLE_FAILURE_CHECK();
     /* retval |= test_100rel(ctx); SINGLE_FAILURE_CHECK(); */
     retval |= test_methods(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_events(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();
 
