@@ -2377,7 +2377,7 @@ dialog_usage_add(nua_handle_t *nh,
     if (du) {		/* Already exists */
       SU_DEBUG_5(("nua(%p): adding already existing %s usage%s%s\n",
 		  nh, dialog_usage_name(du), 
-		  event ? " with event " : "", event ? event->o_type : ""));
+		  event ? "  with event " : "", event ? event->o_type : ""));
       
       if (prev_du != &ds->ds_usage) {
 	/* Move as a first usage in the list */

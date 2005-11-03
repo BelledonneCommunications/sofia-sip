@@ -116,7 +116,7 @@ typedef enum nua_event_e {
   nua_r_info,		        /**< Answer to outgoing INFO */
   nua_r_update,		        /**< Answer to outgoing UPDATE */
   nua_r_message,		/**< Answer to outgoing MESSAGE */
-  nua_r_chat,			/**< Answer to outgoing chat MESSAGE */
+  nua_r_chat,			/**< Answer to outgoing chat message */
   nua_r_subscribe,		/**< Answer to outgoing SUBSCRIBE */
   nua_r_unsubscribe,		/**< Answer to outgoing un-SUBSCRIBE */
   nua_r_notify,			/**< Answer to outgoing NOTIFY */
@@ -272,6 +272,9 @@ void nua_options(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 
 /** Send PUBLISH request to publication server. */
 void nua_publish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+/** Send un-PUBLISH request to publication server. */
+void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 
 /** Send an instant message. */
 void nua_message(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
