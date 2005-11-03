@@ -18,10 +18,10 @@ INCLUDES = 		-I$(srcdir)/../ipt \
 
 noinst_LTLIBRARIES = 	libnta.la
 
-noinst_PROGRAMS = 	nta_test portbind 
-dist_noinst_SCRIPTS =	run_nta_test
+noinst_PROGRAMS = 	test_nta portbind 
+dist_noinst_SCRIPTS =	run_test_nta
 
-TESTS =			run_nta_test
+TESTS =			run_test_nta
 TESTS_ENVIRONMENT =	$(SHELL) 
 
 # ----------------------------------------------------------------------
@@ -50,7 +50,7 @@ LDADD = 		libnta.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
 
-nta_test_LDFLAGS = 	-static
+test_nta_LDFLAGS = 	-static
 
 MOSTLYCLEANFILES +=	.test[0-9]*
 

@@ -194,7 +194,7 @@ if test -r $pidfile ; then
     sink=$sink down=$down \
     ipv6=$ipv6 \
     SIPCONTACT="sip:*:$contact;comp=sigcomp" \
-    $VALGRIND ./nta_test "$@" - $resolvfile
+    $VALGRIND ./test_nta "$@" - $resolvfile
     exit=$?
     kill $(cat $pidfile)
     rm $pidfile $zonefile $resolvfile $namedfile 2>/dev/null
@@ -204,7 +204,7 @@ exit $?
 
 else # not having BIND and portbind
 
-ipv6=$ipv6 $VALGRIND ./nta_test "$@"
+ipv6=$ipv6 $VALGRIND ./test_nta "$@"
 exit $?
 fi
 
