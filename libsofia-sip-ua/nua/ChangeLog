@@ -1,3 +1,24 @@
+2005-11-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Indicate the response status with the nua_i_<method>.
+
+	Now returning the status of the returned response in
+	nua_i_<method> events. The application can determine from status
+	code if it has to respond.
+
+	* Added NUTAG_ALLOW() and NUTAG_ALLOW_REF() to nua.
+
+	* Try to catch more errors when responding to invite in nua.
+
+	* Fixed call state events with UPDATE in nua.
+
+	Fixed the order the nua_i_update and nua_i_state events are sent. 
+	Now we are using session-timer headers in responses, too.
+
+	* Added NUTAG_ALLOW() and NUTAG_ALLOW_REF() to nua.
+
+	* Renamed NUTAG_USE_LEG() as NUTAG_USE_DIALOG() in nua.
+
 2005-10-21  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed challenge header checking in nua/nua_stack.c when receiving 401/407.
