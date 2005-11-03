@@ -491,12 +491,13 @@ int save_event_in_list(struct context *ctx,
 
   if (!e) { perror("su_zalloc"), abort(); }
 
+  if (!nua_save_event(ep->nua, e->saved_event)) {
+    su_free(ctx->home, e);
+    return -1;
+  }
+
   *(e->prev = call->events.tail) = e;
   call->events.tail = &e->next;
-
-  if (!nua_save_event(ep->nua, e->saved_event))
-    return -1;
-
   e->data = nua_event_data(e->saved_event);
 
   return 1;
@@ -1874,7 +1875,7 @@ int test_reject_401(struct context *ctx)
 
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
-  struct event *e;
+  struct event const *e;
 
   if (print_headings)
     printf("TEST NUA-4.4: challenge then reject\n");
@@ -1951,8 +1952,9 @@ int test_reject_401(struct context *ctx)
   TEST_1(!e->next);
 
   free_events_in_list(ctx, a_call);
-  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
   free_events_in_list(ctx, b_call);
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
   if (print_headings)
