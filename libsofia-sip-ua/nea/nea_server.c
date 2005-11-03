@@ -29,7 +29,6 @@
  * @author Martti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Wed Feb 14 18:37:04 EET 2001 ppessi
- * @date Last modified: Mon Sep 19 11:12:10 2005 kaiv
  */
 
 #include "config.h"
@@ -66,9 +65,7 @@
 #include <nea.h>
 #include <htable.h>
 
-/** Interval for nes timer in seconds */
-#define NES_INTERVAL (5)
-
+/** Number of primary views (with different MIME type or content) */
 #define NEA_VIEW_MAX (8)
 
 /** Server object, created for every notifier.
@@ -2227,6 +2224,8 @@ nea_subnode_t const **nea_server_get_subscribers(nea_server_t *nes,
       }
     }
 
+    nes->nes_in_list++;
+
     sn_list[i] = NULL;
   }
 
@@ -2237,8 +2236,11 @@ nea_subnode_t const **nea_server_get_subscribers(nea_server_t *nes,
 void nea_server_free_subscribers(nea_server_t *nes, 
 				 nea_subnode_t const **sn_list)
 {
-  if (sn_list)
+  if (sn_list) {
     su_free(nes->nes_home, (void *)sn_list);
+    if (--nes->nes_in_list == 0 && nes->nes_pending_flush)
+      nea_server_pending_flush(nes);
+  }
 }
 
 /* ----------------------------------------------------------------- */
