@@ -31,7 +31,6 @@
  *
  * @date Created: Tue Jun 13 02:57:51 2000 ppessi
  *
- * @date Last modified: Mon Aug  8 19:09:57 2005 ppessi
  */
 
 #include "config.h"

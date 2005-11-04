@@ -35,7 +35,6 @@
  *
  * @date Created: Thu Jun 29 15:58:06 2000 ppessi
  *
- * @date Last modified: Mon Aug  8 19:10:00 2005 ppessi
  */
 
 #define MSG_PUB_T struct msg_test_s

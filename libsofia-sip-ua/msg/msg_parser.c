@@ -31,7 +31,6 @@
  *
  * @date Created: Thu Oct  5 14:01:24 2000 ppessi
  *
- * @date Last modified: Tue Oct 11 09:02:36 2005 ppessi
  */
 
 /*#define NDEBUG*/

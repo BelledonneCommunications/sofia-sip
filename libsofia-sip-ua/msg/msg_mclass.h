@@ -32,7 +32,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Mon Aug 27 15:44:27 2001 ppessi
- * @date Last modified: Wed Aug  3 17:17:56 2005 ppessi
  */
 
 #ifndef MSG_HEADER_H

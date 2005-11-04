@@ -34,7 +34,6 @@
  *
  * @date Created: Fri Aug 16 19:18:26 EEST 2002 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:23 2005 kaiv
  */
 
 #ifndef URL_H

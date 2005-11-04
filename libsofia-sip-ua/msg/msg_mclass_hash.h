@@ -35,7 +35,6 @@
  *
  * @date Created: Tue Aug 21 16:03:45 2001 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:23 2005 kaiv
  */
 
 #ifndef BNF_H

@@ -30,7 +30,6 @@
  *
  * @date Created: Thu Jan 23 20:08:00 2003 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 #include "config.h"

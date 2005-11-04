@@ -33,7 +33,6 @@
  * 
  * @date Created: Fri Nov  8 12:23:00 2002 ppessi
  *
- * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 void *msg_buf_alloc(msg_t *msg, unsigned size);

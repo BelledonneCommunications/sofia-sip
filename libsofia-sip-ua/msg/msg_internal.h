@@ -34,7 +34,6 @@
  *
  * @date Created: Thu Jun 29 15:58:06 2000 ppessi
  *
- * @date Last modified: Wed Aug  3 17:17:54 2005 ppessi
  */
 
 #ifdef MSG_H

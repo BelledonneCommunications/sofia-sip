@@ -35,7 +35,6 @@
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
  *
- * @date Last modified: Wed Jul 20 20:35:26 2005 kaiv
  */
 
 int msghdrtag_snprintf(tagi_t const *t, char b[], size_t size);

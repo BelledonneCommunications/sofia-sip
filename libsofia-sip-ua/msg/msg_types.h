@@ -32,7 +32,6 @@
  * 
  * @date Created: Thu Jan 23 15:43:17 2003 ppessi
  *
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 /** Message class. */

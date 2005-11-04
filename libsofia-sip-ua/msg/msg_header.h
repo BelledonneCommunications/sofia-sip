@@ -33,7 +33,6 @@
  *
  * @date Created: Mon Aug 27 15:44:27 2001 ppessi
  * 
- * @date Last modified: Fri Sep 23 14:53:50 2005 ppessi
  */
 
 #include <stdarg.h>

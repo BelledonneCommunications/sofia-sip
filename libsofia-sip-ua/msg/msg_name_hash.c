@@ -31,7 +31,6 @@
  *
  * @date Tue Aug 20 16:27:01 EEST 2002 ppessi
  *
- * @date Last modified: Wed Jul 20 20:35:24 2005 kaiv
  */
 
 #include "config.h"

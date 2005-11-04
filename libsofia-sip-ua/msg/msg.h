@@ -33,7 +33,6 @@
  *
  * @date Created: Fri Feb 18 08:54:48 2000 ppessi
  *
- * @date Last modified: Wed Oct 12 18:32:48 2005 ppessi
  *
  */
 

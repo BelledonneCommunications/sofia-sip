@@ -34,7 +34,6 @@
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:22 2005 kaiv
  */
 
 #ifndef MSG_TIME_T_DEFINED
