@@ -157,7 +157,7 @@ int sip_request_dup_xtra(sip_header_t const *h, int offset)
 
   rv += url_xtra(rq->rq_url);
   if (!rq->rq_method)
-    rv += SIP_STRING_SIZE(rq->rq_method_name);
+    rv += MSG_STRING_SIZE(rq->rq_method_name);
   rv += sip_version_xtra(rq->rq_version);
 
   return rv;
@@ -174,7 +174,7 @@ char *sip_request_dup_one(sip_header_t *dst, sip_header_t const *src,
   URL_DUP(b, end, rq->rq_url, o->rq_url);
 
   if (!(rq->rq_method = o->rq_method))
-    SIP_STRING_DUP(b, rq->rq_method_name, o->rq_method_name);
+    MSG_STRING_DUP(b, rq->rq_method_name, o->rq_method_name);
   else
     rq->rq_method_name = o->rq_method_name;
   sip_version_dup(&b, &rq->rq_version, o->rq_version);
@@ -237,7 +237,7 @@ sip_request_t *sip_request_create(su_home_t *home,
     rq->rq_method      = method;
     rq->rq_method_name = name;
     if (!method) 
-      SIP_STRING_DUP(b, rq->rq_method_name, name);
+      MSG_STRING_DUP(b, rq->rq_method_name, name);
 
     URL_DUP(b, end, rq->rq_url, uri->us_url);
 
@@ -338,7 +338,7 @@ int sip_status_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_status_t const *st = h->sh_status;
   rv += sip_version_xtra(st->st_version);
-  rv += SIP_STRING_SIZE(st->st_phrase);
+  rv += MSG_STRING_SIZE(st->st_phrase);
   return rv;
 }
 
@@ -352,7 +352,7 @@ char *sip_status_dup_one(sip_header_t *dst, sip_header_t const *src,
 
   sip_version_dup(&b, &st->st_version, o->st_version);
   st->st_status = o->st_status;
-  SIP_STRING_DUP(b, st->st_phrase, o->st_phrase);
+  MSG_STRING_DUP(b, st->st_phrase, o->st_phrase);
 
   assert(b <= end);
 
@@ -365,7 +365,7 @@ char *sip_status_dup_one(sip_header_t *dst, sip_header_t const *src,
  *
  * @param home    memory home used to allocate sip_status_t object
  * @param status  status code (in range 100 - 699)
- * @param phrase  staus phrase
+ * @param phrase  status phrase (may be NULL)
  * @param version version string (defaults to "SIP/2.0" if NULL)
  *
  * @note 
@@ -383,8 +383,11 @@ sip_status_t *sip_status_create(su_home_t *home,
 {
   sip_status_t *st;
 
-  if (phrase == NULL && (phrase = sip_status_phrase(status)) == NULL)
+  if (status < 100 || status > 699)
     return NULL;
+
+  if (phrase == NULL && (phrase = sip_status_phrase(status)) == NULL)
+    phrase = "";
 
   if ((st = sip_header_alloc(home, sip_status_class, 0)->sh_status)) {
     st->st_status = status;
@@ -586,6 +589,187 @@ int sip_error_e(char b[], int bsiz, msg_header_t const *h, int flags)
  * display-name   = *token | quoted-string
  */
 
+/**Parse @e name-addr.
+ *
+ * Parses <i>( name-addr | addr-spec )</i> construct on @b Contact, @b From,
+ * @b To, and other compatible headers. It splits the argument string in
+ * four parts:
+ *
+ * @par
+ * @e [display-name] @e addr-spec @e [parameters] @e [comment] @e [ss]
+ *
+ * @param home           pointer to memory home
+ * @param inout_s        pointer to pointer to string to be parsed
+ * @param return_display value-result parameter for @e display-name
+ * @param return_url     value-result parameter for @e addr-spec
+ * @param return_params  value-result paramater for @e parameters 
+ * @param return_comment value-result parameter for @e comment
+ *
+ * @note After succesful call to the function @c sip_name_addr_d(), *ss
+ * contains pointer to the first character not beloging to @e name-addr,
+ * most probably comma. If that character is a separator, the last parameter
+ * may not be NUL (zero) terminated. So, after examining value of @a **ss,
+ * tohe calling function @b MUST set it to NUL.
+ *
+ * @note
+ * Other header like @b Route or @b Route-Record may require some tweaking.
+ *
+ * @return 
+ * The function @c sip_name_addr_d() returns 0 if successful, and -1 upon an
+ * error.
+ */
+int sip_name_addr_d(su_home_t *home,
+		    char **inout_s,
+		    char const **return_display,
+		    url_t *return_url,
+		    msg_param_t const **return_params,
+		    char const **return_comment)
+{
+  char c, *s = *inout_s;
+  char *display = NULL, *addr_spec = NULL;
+  int n;
+
+  if (return_display && *s == '"') {
+    /* Quoted string */
+    if (msg_quoted_d(&s, &display) == -1)
+      return -1;
+
+    /* Now, we should have a '<' in s[0] */
+    if (s[0] != '<')
+      return -1;
+    s++[0] = '\0';		/* NUL terminate quoted string... */
+    n = strcspn(s, ">");
+    addr_spec = s; s += n; 
+    if (*s) *s++ = '\0'; else return -1;
+  } 
+  else {
+    if (return_display) 
+      n = span_token_lws(s);
+    else
+      n = 0;
+
+    if (s[n] == '<') {
+      /* OK, we got a display name */
+      display = s; s += n + 1; 
+      /* NUL terminate display name */
+      while (n > 0 && IS_LWS(display[n - 1]))
+	n--;
+      if (n > 0)
+	display[n] = '\0';
+      else 
+	display = "";
+
+      n = strcspn(s, ">");
+      addr_spec = s; s += n; if (*s) *s++ = '\0'; else return -1;
+    }
+    else {
+      /* addr-spec only */
+      addr_spec = s;
+      /**@sa
+       * Discussion about comma, semicolon and question mark in 
+       * @RFC3261 section 20.10.
+       */
+      if (return_params)
+	n = strcspn(s, " ,;?");	/* DO NOT accept ,;? in URL */
+      else
+	/* P-Asserted-Identity and friends */
+	n = strcspn(s, " ,"); /* DO NOT accept , in URL */
+      s += n;
+      if (IS_LWS(*s))
+	*s++ = '\0';
+    }
+  }
+
+  skip_lws(&s);
+
+  if (return_display)
+    *return_display = display;
+  
+  /* Now, url may still not be NUL terminated, e.g., if 
+   * it is like "Contact: url:foo,sip:bar,sip:zunk"
+   */
+  c = *s; *s = '\0';		/* terminate temporarily */
+  if (url_d(return_url, addr_spec) == -1)
+    return -1;
+  *s = c;			/* return terminator */
+
+
+  *inout_s = s;
+
+  if (c == ';' && return_params)
+    if (msg_params_d(home, inout_s, return_params) == -1)
+      return -1;
+
+  if (**inout_s == '(' && return_comment)
+    if (msg_comment_d(inout_s, return_comment) == -1)
+      return -1;
+
+  return 0;
+}
+
+/**Encode @e name-addr and parameter list.
+ *
+ * Encodes @e name-addr headers, like From, To, Call-Info, Error-Info,
+ * Route, and Record-Route.
+ *
+ * @param b        buffer to store the encoding result
+ * @param bsiz     size of the buffer @a b
+ * @param flags    encoding flags
+ * @param display  display name encoded before the @a url (may be NULL)
+ * @param brackets if true, use always brackets around @a url
+ * @param url      pointer to URL structure
+ * @param params   pointer to parameter list (may be NULL)
+ * @param comment  comment string encoded after others (may be NULL)
+ *
+ * @return 
+ * Returns number of characters in encoding, excluding the
+ * final NUL.
+ *
+ * @note
+ * The encoding result may be incomplete if the buffer size is not large
+ * enough to store the whole encoding result.
+ */
+int sip_name_addr_e(char b[], int bsiz, 
+		    int flags, 
+		    char const *display, 
+		    int brackets, url_t const url[],
+		    msg_param_t const params[], 
+		    char const *comment)
+{
+  int const compact = MSG_IS_COMPACT(flags);
+  char const *u;
+  char *b0 = b, *end = b + bsiz;
+
+  brackets = brackets || display || 
+    (url && (url->url_params || 
+	     url->url_headers ||
+	     ((u = url->url_user) && u[strcspn(u, ";,?")]) ||
+	     ((u = url->url_password) && u[strcspn(u, ",")])));
+
+  if (display && display[0]) {
+    MSG_STRING_E(b, end, display);
+    if (!compact) MSG_CHAR_E(b, end, ' ');
+  }
+  if (url) {
+    if (brackets) MSG_CHAR_E(b, end, '<');
+    URL_E(b, end, url);
+    if (brackets) MSG_CHAR_E(b, end, '>');
+  }
+
+  MSG_PARAMS_E(b, end, params, flags);
+
+  if (comment) {
+    if (!compact) MSG_CHAR_E(b, end, ' ');
+    MSG_CHAR_E(b, end, '(');
+    MSG_STRING_E(b, end, comment);
+    MSG_CHAR_E(b, end, ')');
+  }
+
+  MSG_TERM_E(b, end);
+    
+  return b - b0;
+}
+
 /** Parse To or From headers */
 int sip_addr_d(su_home_t *home,
 	       sip_header_t *h,
@@ -594,7 +778,7 @@ int sip_addr_d(su_home_t *home,
 {
   sip_addr_t *a = h->sh_addr;
   char const *comment = NULL;
-  if (msg_name_addr_d(home, 
+  if (sip_name_addr_d(home, 
 		      &s, 
 		      &a->a_display, 
 		      a->a_url, 
@@ -603,7 +787,7 @@ int sip_addr_d(su_home_t *home,
       || *s /* XXX - something extra? */)
     return -1;
 
-  a->a_tag = sip_params_find(a->a_params, "tag=");
+  a->a_tag = msg_params_find(a->a_params, "tag=");
   
   return 0;
 }
@@ -612,7 +796,7 @@ static int sip_addr_e(char b[], int bsiz, sip_header_t const *h, int flags)
 {
   sip_addr_t const *a = h->sh_addr;
 
-  return msg_name_addr_e(b, bsiz,
+  return sip_name_addr_e(b, bsiz,
 			 flags,
 			 a->a_display, 
 			 MSG_IS_CANONIC(flags), a->a_url,
@@ -637,8 +821,8 @@ int sip_addr_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_addr_t const *a = h->sh_addr;
 
-  SIP_PARAMS_SIZE(rv, a->a_params);
-  rv += SIP_STRING_SIZE(a->a_display);
+  MSG_PARAMS_SIZE(rv, a->a_params);
+  rv += MSG_STRING_SIZE(a->a_display);
   rv += url_xtra(a->a_url);
     
   return rv;
@@ -654,11 +838,11 @@ static char *sip_addr_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_addr_t const *o = src->sh_addr;
   char *end = b + xtra;
 
-  b = sip_params_dup(&a->a_params, o->a_params, b, xtra);
-  SIP_STRING_DUP(b, a->a_display, o->a_display);
+  b = msg_params_dup(&a->a_params, o->a_params, b, xtra);
+  MSG_STRING_DUP(b, a->a_display, o->a_display);
   URL_DUP(b, end, a->a_url, o->a_url);
 
-  a->a_tag = sip_params_find(a->a_params, "tag=");
+  a->a_tag = msg_params_find(a->a_params, "tag=");
 
   assert(b <= end);
 
@@ -707,10 +891,10 @@ int sip_addr_add_param(su_home_t *home,
 {
   sip_fragment_clear(a->a_common);
 
-  if (sip_params_replace(home, (sip_param_t **)&a->a_params, param) < 0)
+  if (msg_params_replace(home, (msg_param_t **)&a->a_params, param) < 0)
     return -1;
 
-  a->a_tag  = sip_params_find(a->a_params, "tag=");
+  a->a_tag  = msg_params_find(a->a_params, "tag=");
   return 0;
 }
 
@@ -721,7 +905,7 @@ int sip_addr_add_param(su_home_t *home,
 int sip_addr_tag(su_home_t *home, sip_addr_t *a, char const *tag)
 {
   if (a && tag) {
-    sip_param_t value = strchr(tag, '=');
+    msg_param_t value = strchr(tag, '=');
 
     if (value)
       value = strchr(value, '=') + 1;
@@ -816,7 +1000,7 @@ int sip_call_id_e(char b[], int bsiz, sip_header_t const *h, int flags)
 int sip_call_id_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_call_id_t const *i = h->sh_call_id;
-  return offset + SIP_STRING_SIZE(i->i_id);
+  return offset + MSG_STRING_SIZE(i->i_id);
 }
 
 /**
@@ -840,9 +1024,9 @@ char *sip_call_id_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_call_id_t const *o = src->sh_call_id;
   char *end = b + xtra;
 
-  SIP_STRING_DUP(b, i->i_id, o->i_id);
+  MSG_STRING_DUP(b, i->i_id, o->i_id);
   if (!(i->i_hash = o->i_hash))
-    i->i_hash = sip_hash_string(i->i_id);
+    i->i_hash = msg_hash_string(i->i_id);
   assert(b <= end);
 
   return b;
@@ -886,7 +1070,7 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
       strcpy(b + 8 + 5 + 5 + 5 + 1, domain);
     }
 
-    i->i_hash = sip_hash_string(i->i_id);
+    i->i_hash = msg_hash_string(i->i_id);
   }
 
   return i;
@@ -966,7 +1150,7 @@ int sip_cseq_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_cseq_t const *cs = h->sh_cseq;
   if (!cs->cs_method)
-    return offset + SIP_STRING_SIZE(cs->cs_method_name);
+    return offset + MSG_STRING_SIZE(cs->cs_method_name);
   else
     return offset;
 }
@@ -979,7 +1163,7 @@ char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
 
   if (!(cs->cs_method = o->cs_method))
-    SIP_STRING_DUP(b, cs->cs_method_name, o->cs_method_name);
+    MSG_STRING_DUP(b, cs->cs_method_name, o->cs_method_name);
   else
     cs->cs_method_name = o->cs_method_name;
   cs->cs_seq = o->cs_seq;
@@ -1081,11 +1265,11 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
  *   sip_contact_t      *m_next;        // Link to next
  *   char const         *m_display;     // Display name
  *   url_t               m_url[1];      // SIP URL
- *   sip_param_t const  *m_params;      // List of contact-params
+ *   msg_param_t const  *m_params;      // List of contact-params
  *   char const         *m_comment;     // Comment
  *
- *   sip_param_t         m_q;           // Priority
- *   sip_param_t         m_expires;     // Expiration time 
+ *   msg_param_t         m_q;           // Priority
+ *   msg_param_t         m_expires;     // Expiration time 
  * } sip_contact_t;
  * @endcode
  * 
@@ -1094,7 +1278,7 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
 
 static msg_xtra_f sip_contact_dup_xtra;
 static msg_dup_f sip_contact_dup_one;
-inline static void sip_contact_param_update(sip_contact_t *m, sip_param_t p);
+inline static void sip_contact_param_update(sip_contact_t *m, msg_param_t p);
 inline static void sip_contact_update(sip_header_t *h);
 
 msg_hclass_t sip_contact_class[] = 
@@ -1124,7 +1308,7 @@ int sip_contact_d(su_home_t *home,
       m = m->m_next = h->sh_contact;
     }
 
-    if (msg_name_addr_d(home, &s, &m->m_display, m->m_url,
+    if (sip_name_addr_d(home, &s, &m->m_display, m->m_url,
 			&m->m_params, &m->m_comment) == -1)
       return -1;
     if (*s != '\0' && *s != ',')
@@ -1149,7 +1333,7 @@ int sip_contact_e(char b[], int bsiz, sip_header_t const *h, int flags)
   int always_lt_gt = MSG_IS_CANONIC(flags) && m->m_url->url_type != url_any;
   assert(sip_is_contact(h));
 
-  return msg_name_addr_e(b, bsiz, flags,
+  return sip_name_addr_e(b, bsiz, flags,
 			 m->m_display, always_lt_gt, m->m_url, 
 			 m->m_params,
 			 NULL /* m->m_comment */);
@@ -1161,10 +1345,10 @@ int sip_contact_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_contact_t const *m = h->sh_contact;
 
-  SIP_PARAMS_SIZE(rv, m->m_params);
-  rv += SIP_STRING_SIZE(m->m_display);
+  MSG_PARAMS_SIZE(rv, m->m_params);
+  rv += MSG_STRING_SIZE(m->m_display);
   rv += url_xtra(m->m_url);
-  rv += SIP_STRING_SIZE(m->m_comment);
+  rv += MSG_STRING_SIZE(m->m_comment);
 
   return rv;
 }
@@ -1176,11 +1360,11 @@ char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_contact_t *m = dst->sh_contact;
   sip_contact_t const *o = src->sh_contact;
 
-  b = sip_params_dup(&m->m_params, o->m_params, b, xtra);
+  b = msg_params_dup(&m->m_params, o->m_params, b, xtra);
   if (m->m_params) sip_contact_update(dst);
-  SIP_STRING_DUP(b, m->m_display, o->m_display);
+  MSG_STRING_DUP(b, m->m_display, o->m_display);
   URL_DUP(b, end, m->m_url, o->m_url);
-  SIP_STRING_DUP(b, m->m_comment, o->m_comment);
+  MSG_STRING_DUP(b, m->m_comment, o->m_comment);
 
   assert(b <= end);
 
@@ -1204,7 +1388,7 @@ char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
  * 
  */
 sip_contact_t * sip_contact_create(su_home_t *home, url_string_t const *url, 
-				   sip_param_t p, ...)
+				   msg_param_t p, ...)
 {
   int n;
   sip_header_t *h;
@@ -1220,7 +1404,7 @@ sip_contact_t * sip_contact_create(su_home_t *home, url_string_t const *url,
     if (url_dup(s, n, m->m_url, url->us_url) == n) {
       va_list ap;
       
-      for (va_start(ap, p); p; p = va_arg(ap, sip_param_t)) {
+      for (va_start(ap, p); p; p = va_arg(ap, msg_param_t)) {
 	p = su_strdup(home, p);
 	sip_contact_add_param(home, m, p);
       }
@@ -1256,7 +1440,7 @@ int sip_contact_add_param(su_home_t *home,
   if (!m)
     return -1;
   sip_fragment_clear(m->m_common);
-  if (sip_params_replace(home, (char const ***)&m->m_params, param) < 0)
+  if (msg_params_replace(home, (char const ***)&m->m_params, param) < 0)
     return -1;
   sip_contact_param_update(m, param);
   return 0;
@@ -1273,17 +1457,17 @@ int sip_contact_add_param(su_home_t *home,
  * @param p  parameter string like "a=b" or "a"
  */
 inline static 
-void sip_contact_param_update(sip_contact_t *m, sip_param_t p)
+void sip_contact_param_update(sip_contact_t *m, msg_param_t p)
 {
   switch (p[0]) {
   case 'a':
-    SIP_PARAM_MATCH(m->m_action, p, "action");
+    MSG_PARAM_MATCH(m->m_action, p, "action");
     break;
   case 'e':
-    SIP_PARAM_MATCH(m->m_expires, p, "expires");
+    MSG_PARAM_MATCH(m->m_expires, p, "expires");
     break;
   case 'q':
-    SIP_PARAM_MATCH(m->m_q, p, "q");
+    MSG_PARAM_MATCH(m->m_q, p, "q");
     break;
   default:
     break;
@@ -1588,7 +1772,7 @@ sip_expires_t *sip_expires_create(su_home_t *home, sip_time_t delta)
  *   sip_unknown_t     *a_next;         // Link to next
  *   char const        *a_display;      // Display name
  *   url_t              a_url[1];       // URL
- *   sip_param_t const *a_params;       // List of from-param
+ *   msg_param_t const *a_params;       // List of from-param
  *   char const        *a_comment;      // Comment
  *   char const        *a_tag;          // Tag parameter 
  * } sip_from_t;
@@ -1803,9 +1987,9 @@ int sip_min_expires_e(char b[], int bsiz, sip_header_t const *h, int f)
  *   sip_common_t        af_common[1]; // Common fragment info
  *   sip_error_t        *af_next;      // Link to next (dummy)
  *   sip_time_t          af_delta;     // Seconds to before retry
- *   sip_param_t         af_comment;   // Comment string
- *   sip_param_t const  *af_params;    // List of parameters
- *   sip_param_t         af_duration;  // Duration parameter
+ *   msg_param_t         af_comment;   // Comment string
+ *   msg_param_t const  *af_params;    // List of parameters
+ *   msg_param_t         af_duration;  // Duration parameter
  * } sip_retry_after_t;
  * @endcode
  */
@@ -1851,16 +2035,16 @@ int sip_retry_after_e(char b[], int bsiz, sip_header_t const *h, int f)
 
   if (af->af_comment) {
     if (!compact) 
-      SIP_CHAR_E(b, end, ' ');
-    SIP_CHAR_E(b, end, '(');
-    SIP_STRING_E(b, end, af->af_comment);
-    SIP_CHAR_E(b, end, ')');
+      MSG_CHAR_E(b, end, ' ');
+    MSG_CHAR_E(b, end, '(');
+    MSG_STRING_E(b, end, af->af_comment);
+    MSG_CHAR_E(b, end, ')');
     if (!compact && af->af_params)
-      SIP_CHAR_E(b, end, ' ');
+      MSG_CHAR_E(b, end, ' ');
   }
 
   if (af->af_params)
-    SIP_PARAMS_E(b, end, af->af_params, f);
+    MSG_PARAMS_E(b, end, af->af_params, f);
     
   MSG_TERM_E(b, end);
     
@@ -1871,7 +2055,7 @@ inline static void sip_retry_after_update(sip_header_t *h)
 {
   sip_retry_after_t *af = h->sh_retry_after;
 
-  af->af_duration = sip_params_find(af->af_params, "duration=");
+  af->af_duration = msg_params_find(af->af_params, "duration=");
 }
 
 int sip_retry_after_dup_xtra(sip_header_t const *h, int offset)
@@ -1879,8 +2063,8 @@ int sip_retry_after_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_retry_after_t const *af = h->sh_retry_after;
 
-  SIP_PARAMS_SIZE(rv, af->af_params);
-  rv += SIP_STRING_SIZE(af->af_comment);
+  MSG_PARAMS_SIZE(rv, af->af_params);
+  rv += MSG_STRING_SIZE(af->af_comment);
 
   return rv;
 }
@@ -1894,8 +2078,8 @@ char *sip_retry_after_dup_one(sip_header_t *dst,
   sip_retry_after_t const *o = src->sh_retry_after;
   char *end = b + xtra;
 
-  b = sip_params_dup(&af->af_params, o->af_params, b, xtra);
-  SIP_STRING_DUP(b, af->af_comment, o->af_comment);
+  b = msg_params_dup(&af->af_params, o->af_params, b, xtra);
+  MSG_STRING_DUP(b, af->af_comment, o->af_comment);
   af->af_delta = o->af_delta;
 
   assert(b <= end);
@@ -1916,9 +2100,9 @@ char *sip_retry_after_dup_one(sip_header_t *dst,
  * @retval -1 upon an error.
  */
 int sip_any_route_d(su_home_t *home,
-		 sip_header_t *h,
-		 char *s,
-		 int slen)
+		    sip_header_t *h,
+		    char *s,
+		    int slen)
 {
   sip_header_t **hh = &h->sh_succ, *h0 = h;
   sip_route_t *r = h->sh_route;
@@ -1940,7 +2124,7 @@ int sip_any_route_d(su_home_t *home,
 
     r = h->sh_route;
 
-    if (msg_name_addr_d(home, &s, &r->r_display, 
+    if (sip_name_addr_d(home, &s, &r->r_display, 
 			r->r_url, &r->r_params, NULL) < 0)
       return -1;
     if (*s != '\0' && *s != ',')
@@ -1959,7 +2143,7 @@ int sip_any_route_e(char b[], int bsiz, sip_header_t const *h, int flags)
 {
   sip_route_t const *r = h->sh_route;
 
-  return msg_name_addr_e(b, bsiz, flags, 
+  return sip_name_addr_e(b, bsiz, flags, 
 			 r->r_display, 1, r->r_url, r->r_params, NULL);
 }
 
@@ -1968,8 +2152,8 @@ int sip_any_route_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_route_t const *r = h->sh_route;
 
-  SIP_PARAMS_SIZE(rv, r->r_params);
-  rv += SIP_STRING_SIZE(r->r_display);
+  MSG_PARAMS_SIZE(rv, r->r_params);
+  rv += MSG_STRING_SIZE(r->r_display);
   rv += url_xtra(r->r_url);
 
   return rv;
@@ -1983,8 +2167,8 @@ char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_route_t const *o = src->sh_route;
   char *end = b + xtra;
 
-  b = sip_params_dup(&r->r_params, o->r_params, b, xtra);
-  SIP_STRING_DUP(b, r->r_display, o->r_display);
+  b = msg_params_dup(&r->r_params, o->r_params, b, xtra);
+  MSG_STRING_DUP(b, r->r_display, o->r_display);
   URL_DUP(b, end, r->r_url, o->r_url);
     
   assert(b <= end);
@@ -2082,7 +2266,7 @@ sip_route_t *sip_any_route_create(su_home_t *home,
  *   sip_route_t        *r_next;        // Link to next Route
  *   char const         *r_display;     // Display name
  *   url_t               r_url[1];      // Route URL
- *   sip_param_t const  *r_params;      // List of route parameters
+ *   msg_param_t const  *r_params;      // List of route parameters
  * } sip_route_t;
  * @endcode
  */
@@ -2154,7 +2338,7 @@ sip_route_t *sip_route_create(su_home_t *home,
  *   sip_route_t        *r_next;        // Link to next Record-Route
  *   char const         *r_display;     // Display name
  *   url_t               r_url[1];      // Route URL
- *   sip_param_t const  *r_params;      // List of route parameters
+ *   msg_param_t const  *r_params;      // List of route parameters
  * } sip_record_route_t;
  * @endcode
  */
@@ -2228,7 +2412,7 @@ sip_record_route_t *sip_record_route_create(su_home_t *home,
  *   sip_unknown_t     *a_next;         // Link to next (dummy)
  *   char const        *a_display;      // Display name
  *   url_t              a_url[1];       // URL
- *   sip_param_t const *a_params;       // List of to-params
+ *   msg_param_t const *a_params;       // List of to-params
  *   char const        *a_comment;      // Comment
  *   char const        *a_tag;          // Tag parameter 
  * } sip_to_t;
@@ -2343,14 +2527,14 @@ static void sip_via_update(sip_header_t *h);
  *   char const         *v_protocol;    // Application and transport protocol
  *   char const         *v_host;        // Hostname
  *   char const         *v_port;        // Port number
- *   sip_param_t const  *v_params;      // List of via-params
+ *   msg_param_t const  *v_params;      // List of via-params
  *   char const         *v_comment;     // Comment
  * 
  *   unsigned            v_hidden;      // "hidden" parameter
- *   sip_param_t         v_ttl;         // "ttl" parameter
- *   sip_param_t         v_maddr;       // "maddr" parameter
- *   sip_param_t         v_received;    // "received" parameter
- *   sip_param_t         v_branch;      // "branch" parameter
+ *   msg_param_t         v_ttl;         // "ttl" parameter
+ *   msg_param_t         v_maddr;       // "maddr" parameter
+ *   msg_param_t         v_received;    // "received" parameter
+ *   msg_param_t         v_branch;      // "branch" parameter
  * } sip_via_t;
  * @endcode
  */
@@ -2418,22 +2602,22 @@ int sip_via_e(char b[], int bsiz, sip_header_t const *h, int flags)
 
   assert(sip_is_via(h));
 
-  SIP_STRING_E(b, end, v->v_protocol);
-  SIP_CHAR_E(b, end, ' ');
-  SIP_STRING_E(b, end, v->v_host);
+  MSG_STRING_E(b, end, v->v_protocol);
+  MSG_CHAR_E(b, end, ' ');
+  MSG_STRING_E(b, end, v->v_host);
   if (v->v_port) {
-    SIP_CHAR_E(b, end, ':');	
-    SIP_STRING_E(b, end, v->v_port);
+    MSG_CHAR_E(b, end, ':');	
+    MSG_STRING_E(b, end, v->v_port);
   }
-  SIP_PARAMS_E(b, end, v->v_params, flags);
+  MSG_PARAMS_E(b, end, v->v_params, flags);
 #if 0
   /* Comment is deprecated in @RFC3265 - accept it, but do not send */
   if (v->v_comment) {
     if (!MSG_IS_COMPACT(flags)) 
-      SIP_CHAR_E(b, end, ' ');
-    SIP_CHAR_E(b, end, '(');
-    SIP_STRING_E(b, end, v->v_comment);
-    SIP_CHAR_E(b, end, ')');
+      MSG_CHAR_E(b, end, ' ');
+    MSG_CHAR_E(b, end, '(');
+    MSG_STRING_E(b, end, v->v_comment);
+    MSG_CHAR_E(b, end, ')');
   }
 #endif
   MSG_TERM_E(b, end);
@@ -2446,11 +2630,11 @@ int sip_via_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_via_t const *v = h->sh_via;
 
-  SIP_PARAMS_SIZE(rv, v->v_params);
+  MSG_PARAMS_SIZE(rv, v->v_params);
   rv += sip_transport_xtra(v->v_protocol);
-  rv += SIP_STRING_SIZE(v->v_host);
-  rv += SIP_STRING_SIZE(v->v_port);
-  rv += SIP_STRING_SIZE(v->v_comment);
+  rv += MSG_STRING_SIZE(v->v_host);
+  rv += MSG_STRING_SIZE(v->v_port);
+  rv += MSG_STRING_SIZE(v->v_comment);
 
   return rv;
 }
@@ -2463,11 +2647,11 @@ char *sip_via_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_via_t const *o = src->sh_via;
   char *end = b + xtra;
 
-  b = sip_params_dup(&v->v_params, o->v_params, b, xtra);
+  b = msg_params_dup(&v->v_params, o->v_params, b, xtra);
   sip_transport_dup(&b, &v->v_protocol, o->v_protocol);
-  SIP_STRING_DUP(b, v->v_host, o->v_host);
-  SIP_STRING_DUP(b, v->v_port, o->v_port);
-  SIP_STRING_DUP(b, v->v_comment, o->v_comment);
+  MSG_STRING_DUP(b, v->v_host, o->v_host);
+  MSG_STRING_DUP(b, v->v_port, o->v_port);
+  MSG_STRING_DUP(b, v->v_comment, o->v_comment);
 
   if (v->v_params) sip_via_update(dst);
 
@@ -2490,19 +2674,19 @@ void sip_via_param_update(sip_via_t *v, char const *p)
 {
   switch (p[0]) {
   case 'b':
-    SIP_PARAM_MATCH(v->v_branch, p, "branch");
+    MSG_PARAM_MATCH(v->v_branch, p, "branch");
     break;
   case 'h':
-    SIP_PARAM_MATCH_P(v->v_hidden, p, "hidden");
+    MSG_PARAM_MATCH_P(v->v_hidden, p, "hidden");
     break;
   case 'm':
-    SIP_PARAM_MATCH(v->v_maddr, p, "maddr");
+    MSG_PARAM_MATCH(v->v_maddr, p, "maddr");
     break;
   case 'r':
-    SIP_PARAM_MATCH(v->v_received, p, "received");
+    MSG_PARAM_MATCH(v->v_received, p, "received");
     break;
   case 't': 
-    SIP_PARAM_MATCH(v->v_ttl, p, "ttl");
+    MSG_PARAM_MATCH(v->v_ttl, p, "ttl");
     break;
   }
 }
@@ -2557,7 +2741,7 @@ int sip_via_add_param(su_home_t *home,
 
   sip_fragment_clear(v->v_common);
 
-  if (sip_params_replace(home, (char const ***)&v->v_params, param) < 0)
+  if (msg_params_replace(home, (char const ***)&v->v_params, param) < 0)
     return -1;
 
   sip_via_param_update(v, param);
@@ -2614,7 +2798,7 @@ sip_via_t *sip_via_create(su_home_t *home,
          param; 
          param = va_arg(params, char const *)) {
       if ((param = su_strdup(home, param))) {
-	if (sip_params_replace(home, (char const ***)&v->v_params, param) < 0)
+	if (msg_params_replace(home, (char const ***)&v->v_params, param) < 0)
 	  break;
 	sip_via_param_update(v, param);
       }

@@ -76,8 +76,8 @@
  *   sip_common_t        o_common;	    // Common fragment info
  *   sip_error_t        *o_next;	    // Link to next (dummy)
  *   char const *        o_type;	    // Event type
- *   sip_param_t const  *o_params;	    // List of parameters
- *   sip_param_t         o_id;	    	    // Event ID
+ *   msg_param_t const  *o_params;	    // List of parameters
+ *   msg_param_t         o_id;	    	    // Event ID
  * } sip_event_t;
  * @endcode
  */
@@ -111,8 +111,8 @@ int sip_event_e(char b[], int bsiz, sip_header_t const *h, int f)
   sip_event_t const *o = h->sh_event;
 
   assert(sip_is_event(h));
-  SIP_STRING_E(b, end, o->o_type);
-  SIP_PARAMS_E(b, end, o->o_params, flags);
+  MSG_STRING_E(b, end, o->o_type);
+  MSG_PARAMS_E(b, end, o->o_params, flags);
 
   return b - b0;
 }
@@ -121,8 +121,8 @@ int sip_event_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_event_t const *o = h->sh_event;
 
-  SIP_PARAMS_SIZE(offset, o->o_params);
-  offset += SIP_STRING_SIZE(o->o_type);
+  MSG_PARAMS_SIZE(offset, o->o_params);
+  offset += MSG_STRING_SIZE(o->o_type);
 
   return offset;
 }
@@ -135,8 +135,8 @@ char *sip_event_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_event_t const *o_src = src->sh_event;
 
   char *end = b + xtra;
-  b = sip_params_dup(&o_dst->o_params, o_src->o_params, b, xtra);
-  SIP_STRING_DUP(b, o_dst->o_type, o_src->o_type);
+  b = msg_params_dup(&o_dst->o_params, o_src->o_params, b, xtra);
+  MSG_STRING_DUP(b, o_dst->o_type, o_src->o_type);
   if (o_dst->o_params)
     sip_event_update(o_dst);
   assert(b <= end);
@@ -208,7 +208,7 @@ int sip_allow_events_add(su_home_t *home,
   e = su_strdup(home, e);
   if (!e)
     return -1;
-  return msg_params_replace(home, (sip_param_t **)&ae->k_items, e);
+  return msg_params_replace(home, (msg_param_t **)&ae->k_items, e);
 }
 
 /* ====================================================================== */
@@ -248,10 +248,10 @@ int sip_allow_events_add(su_home_t *home,
  *   sip_common_t        ss_common[1];
  *   sip_unknown_t      *ss_next;
  *   char const         *ss_substate;        // State value
- *   sip_param_t const  *ss_params;          // List of parameters
- *   sip_param_t         ss_reason;          // Value of reason parameter
- *   sip_param_t         ss_expires;         // Value of expires parameter
- *   sip_param_t         ss_retry_after;     // Value of retry-after parameter
+ *   msg_param_t const  *ss_params;          // List of parameters
+ *   msg_param_t         ss_reason;          // Value of reason parameter
+ *   msg_param_t         ss_expires;         // Value of expires parameter
+ *   msg_param_t         ss_retry_after;     // Value of retry-after parameter
  * } sip_subscription_state_t;
  * @endcode
  */
@@ -296,8 +296,8 @@ int sip_subscription_state_e(char b[], int bsiz, sip_header_t const *h, int flag
    
   assert(sip_is_subscription_state(h));
    
-  SIP_STRING_E(b, end, ss->ss_substate);
-  SIP_PARAMS_E(b, end, ss->ss_params, flags);   
+  MSG_STRING_E(b, end, ss->ss_substate);
+  MSG_PARAMS_E(b, end, ss->ss_params, flags);   
 
   return b - b0;   
 }
@@ -307,8 +307,8 @@ int sip_subscription_state_dup_xtra(sip_header_t const *h, int offset)
    sip_subscription_state_t const *ss = h->sh_subscription_state;
    
    /* Calculates memory size occupied */
-   SIP_PARAMS_SIZE(offset, ss->ss_params);
-   offset += SIP_STRING_SIZE(ss->ss_substate);
+   MSG_PARAMS_SIZE(offset, ss->ss_params);
+   offset += MSG_STRING_SIZE(ss->ss_substate);
    
    return offset;   
 }
@@ -321,8 +321,8 @@ char *sip_subscription_state_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_subscription_state_t const *ss_src = src->sh_subscription_state;
   char *end = b + xtra;
    
-  b = sip_params_dup(&ss_dst->ss_params, ss_src->ss_params, b, xtra);
-  SIP_STRING_DUP(b, ss_dst->ss_substate, ss_src->ss_substate);
+  b = msg_params_dup(&ss_dst->ss_params, ss_src->ss_params, b, xtra);
+  MSG_STRING_DUP(b, ss_dst->ss_substate, ss_src->ss_substate);
    
    if (ss_dst->ss_params)
      sip_subscription_state_update(dst);
@@ -341,12 +341,12 @@ sip_subscription_state_param_update(sip_subscription_state_t *ss,
    switch(p[0]) {
     case 'r':
       if (strncasecmp(p, "reason", 6) == 0)
-	SIP_PARAM_MATCH(ss->ss_reason, p, "reason");
+	MSG_PARAM_MATCH(ss->ss_reason, p, "reason");
       else if (strncasecmp(p, "retry-after", 11) == 0)   
-	SIP_PARAM_MATCH(ss->ss_retry_after, p, "retry-after");	
+	MSG_PARAM_MATCH(ss->ss_retry_after, p, "retry-after");	
       break;
     case 'e':
-      SIP_PARAM_MATCH(ss->ss_expires, p, "expires");
+      MSG_PARAM_MATCH(ss->ss_expires, p, "expires");
       break;
    }
    
@@ -395,9 +395,9 @@ struct sip_publication_s
   sip_common_t        pub_common;	    /**< Common fragment info */
   sip_error_t        *pub_next;	            /**< Link to next (dummy) */
   char const *        pub_package;          /**< Publication packaage */
-  sip_param_t const  *pub_params;	    /**< List of parameters */
-  sip_param_t         pub_type; 	    /**< Publication type */
-  sip_param_t         pub_stream;	    /**< Publication stream */
+  msg_param_t const  *pub_params;	    /**< List of parameters */
+  msg_param_t         pub_type; 	    /**< Publication type */
+  msg_param_t         pub_stream;	    /**< Publication stream */
 };
 
 static msg_xtra_f sip_publication_dup_xtra;
@@ -431,8 +431,8 @@ int sip_publication_e(char b[], int bsiz, sip_header_t const *h, int f)
   sip_publication_t const *pub = h->sh_publication;
 
   assert(sip_is_publication(h));
-  SIP_STRING_E(b, end, pub->pub_package);
-  SIP_PARAMS_E(b, end, pub->pub_params, flags);
+  MSG_STRING_E(b, end, pub->pub_package);
+  MSG_PARAMS_E(b, end, pub->pub_params, flags);
 
   return b - b0;
 }
@@ -441,8 +441,8 @@ int sip_publication_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_publication_t const *pub = h->sh_publication;
 
-  SIP_PARAMS_SIZE(offset, pub->pub_params);
-  offset += SIP_STRING_SIZE(pub->pub_package);
+  MSG_PARAMS_SIZE(offset, pub->pub_params);
+  offset += MSG_STRING_SIZE(pub->pub_package);
 
   return offset;
 }
@@ -455,8 +455,8 @@ char *sip_publication_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_publication_t const *pub_src = src->sh_publication;
 
   char *end = b + xtra;
-  b = sip_params_dup(&pub_dst->pub_params, pub_src->pub_params, b, xtra);
-  SIP_STRING_DUP(b, pub_dst->pub_package, pub_src->pub_package);
+  b = msg_params_dup(&pub_dst->pub_params, pub_src->pub_params, b, xtra);
+  MSG_STRING_DUP(b, pub_dst->pub_package, pub_src->pub_package);
   if (pub_dst->pub_params)
     sip_publication_update(pub_dst);
   assert(b <= end);
@@ -514,7 +514,7 @@ int sip_allow_publications_add(su_home_t *home,
   e = su_strdup(home, e);
   if (!e)
     return -1;
-  return msg_params_replace(home, (sip_param_t **)&ae->k_items, e);
+  return msg_params_replace(home, (msg_param_t **)&ae->k_items, e);
 }
 
 #endif

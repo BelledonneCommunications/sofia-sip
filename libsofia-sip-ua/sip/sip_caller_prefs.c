@@ -82,7 +82,7 @@
  * {
  *   sip_common_t        rd_common[1];   // Common fragment info
  *   sip_unknown_t      *rd_next;	 // Link to next (dummy)
- *   sip_param_t        *rd_items;
+ *   msg_param_t        *rd_items;
  * } sip_request_disposition_t;
  * @endcode
  */
@@ -118,7 +118,7 @@ int sip_request_disposition_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_request_disposition_t const *o = h->sh_request_disposition;
 
-  SIP_PARAMS_SIZE(offset, o->rd_items);
+  MSG_PARAMS_SIZE(offset, o->rd_items);
 
   return offset;
 }
@@ -146,13 +146,13 @@ void sip_caller_prefs_update_one(sip_caller_prefs_t *cp, char const *p)
 {
   switch (p[0]) {
   case 'e':
-    SIP_PARAM_MATCH_P(cp->cp_explicit, p, "explicit");
+    MSG_PARAM_MATCH_P(cp->cp_explicit, p, "explicit");
     break;
   case 'q':
-    SIP_PARAM_MATCH(cp->cp_q, p, "q");
+    MSG_PARAM_MATCH(cp->cp_q, p, "q");
     break;
   case 'r':
-    SIP_PARAM_MATCH_P(cp->cp_require, p, "require");
+    MSG_PARAM_MATCH_P(cp->cp_require, p, "require");
     break;
   }
 }
@@ -197,7 +197,7 @@ int sip_caller_prefs_add_param(su_home_t *home,
 {
   sip_fragment_clear(cp->cp_common);
 
-  if (sip_params_replace(home, (char const ***)&cp->cp_params, param) < 0)
+  if (msg_params_replace(home, (char const ***)&cp->cp_params, param) < 0)
     return -1;
 
   sip_caller_prefs_update_one(cp, param);
@@ -262,7 +262,7 @@ int sip_caller_prefs_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 	return -1;
     }
     /* Parse params (and ignore display name and url) */
-    else if (msg_name_addr_d(home, &s, &ignore, url, &cp->cp_params, NULL) 
+    else if (sip_name_addr_d(home, &s, &ignore, url, &cp->cp_params, NULL) 
 	     == -1)
       return -1;
     /* Be liberal... */
@@ -302,7 +302,7 @@ int sip_caller_prefs_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_caller_prefs_t const *cp = h->sh_caller_prefs;
 
-  SIP_PARAMS_SIZE(rv, cp->cp_params);
+  MSG_PARAMS_SIZE(rv, cp->cp_params);
 
   return rv;
 }
@@ -315,7 +315,7 @@ char *sip_caller_prefs_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_caller_prefs_t *cp = dst->sh_caller_prefs;
   sip_caller_prefs_t const *o = src->sh_caller_prefs;
 
-  b = sip_params_dup(&cp->cp_params, o->cp_params, b, xtra);
+  b = msg_params_dup(&cp->cp_params, o->cp_params, b, xtra);
 
   assert(b <= end);
 
@@ -375,8 +375,8 @@ char *sip_caller_prefs_dup_one(sip_header_t *dst, sip_header_t const *src,
  * {
  *   sip_common_t        cp_common[1];   // Common fragment info
  *   sip_caller_prefs_t *cp_next;	 // Link to next
- *   sip_param_t const  *cp_params;      
- *   sip_param_t         cp_q;           // Priority
+ *   msg_param_t const  *cp_params;      
+ *   msg_param_t         cp_q;           // Priority
  *   unsigned            cp_require;
  *   unsigned            cp_explicit;
  * } sip_accept_contact_t, sip_reject_contact_t;
@@ -409,8 +409,8 @@ int sip_accept_contact_e(char b[], int bsiz, sip_header_t const *h, int flags)
  * {
  *   sip_common_t        cp_common[1];   // Common fragment info
  *   sip_caller_prefs_t *cp_next;	 // Link to next
- *   sip_param_t const  *cp_params;      
- *   sip_param_t         cp_q;           // Priority
+ *   msg_param_t const  *cp_params;      
+ *   msg_param_t         cp_q;           // Priority
  *   unsigned            cp_require;
  *   unsigned            cp_explicit;
  * } sip_reject_contact_t;

@@ -232,8 +232,7 @@
  * @}
  */
 
-/**@ingroup sip
- * @defgroup sip_headers SIP Headers
+/**@defgroup sip_headers SIP Headers
  *
  * SIP headers and other SIP message elements.
  *
@@ -540,15 +539,13 @@ int sip_X_e(char buf[], int bsiz, sip_header_t const *h, int flags);
  * SIP headers and messages.
  */
 
-/**@ingroup sip
- * @defgroup sip_status_codes SIP Status Codes and Reason Phrases
+/**@defgroup sip_status_codes SIP Status Codes and Reason Phrases
  *
  * This submodule contains macros and variables for the standard SIP status
  * codes and reason phrases.
  */
 
-/**@ingroup sip
- * @defgroup sip_tag SIP Tags
+/**@defgroup sip_tag SIP Tags
  *
  * SIP headers in tag item lists and tagged argument lists. 
  *

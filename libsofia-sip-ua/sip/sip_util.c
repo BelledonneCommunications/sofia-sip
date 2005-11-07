@@ -50,46 +50,9 @@
 
 #include "bnf.h"
 
-#undef sip_params_find
-#undef sip_params_replace
-#undef sip_params_add
-#undef sip_params_cmp
-
-/** Find a parameter from a list. 
- *
- * @deprecated Use msg_params_find() instead.
- */
-sip_param_t sip_params_find(sip_param_t const params[], sip_param_t token)
-{
-  return msg_params_find(params, token);
-}
-
-/** Replace, add or remove a parameter from the list. 
- *
- * @deprecated Use msg_params_replace() instead.
- */
-int sip_params_replace(su_home_t *h, sip_param_t **pparams, sip_param_t param)
-{
-  return msg_params_replace(h, pparams, param);
-}
-
-/** Add a parameter to a list. 
- *
- * @deprecated Use msg_params_add() instead.
- */
-int sip_params_add(su_home_t *home, sip_param_t **pparams, sip_param_t param)
-{
-  return msg_params_add(home, pparams, param);
-}
-
-/**Compare parameter lists. 
- *
- * @deprecated Use msg_params_cmp() instead.
- */
-int sip_params_cmp(sip_param_t const a[], sip_param_t const b[])
-{
-  return msg_params_cmp(a, b);
-}
+#ifndef STRING0_H
+#include <string0.h>
+#endif
 
 /** 
  * Compare two SIP addresses (@b From or @b To headers).
@@ -157,7 +120,7 @@ sip_contact_create_from_via_with_transport(su_home_t *home,
       port = NULL;
   }
 
-  comp = sip_params_find(v->v_params, "comp=");
+  comp = msg_params_find(v->v_params, "comp=");
 
   m = sip_contact_format(home,
 			 "<%s:%s%s%s%s%s%s%s%s%s%s%s>",
@@ -376,7 +339,7 @@ sip_route_t *sip_route_remove(msg_t *msg, sip_t *sip)
   sip_route_t *r;
 
   if ((r = sip->sip_route))
-    msg_header_remove(msg, sip, (sip_header_t *)r);
+    msg_header_remove(msg, (msg_pub_t *)sip, (msg_header_t *)r);
 
   return r;
 }
@@ -392,7 +355,7 @@ sip_route_t *sip_route_pop(msg_t *msg, sip_t *sip)
 
   for (r = sip->sip_route; r; r = r->r_next) 
     if (r->r_next == NULL) {
-      msg_header_remove(msg, sip, (sip_header_t *)r);
+      msg_header_remove(msg, (msg_pub_t *)sip, (msg_header_t *)r);
       return r;
     }
 
@@ -416,13 +379,19 @@ sip_route_t *sip_route_follow(msg_t *msg, sip_t *sip)
 			    (url_string_t const *)r->r_url, rq->rq_version);
     url_strip_transport(rq->rq_url);
 
-    sip_header_insert(msg, sip, (sip_header_t *)rq);
+    msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)rq);
 
     return r;
   }
   return NULL;
 }
 
+/**@ingroup sip_route
+ * 
+ * Check if route header has lr param.
+ *
+ * "lr" param can be either URL or header parameter.
+ */
 int 
 sip_route_is_loose(sip_route_t const *r)
 {
@@ -585,6 +554,9 @@ sip_route_t *sip_route_fix(sip_route_t *route)
 sip_via_t *sip_via_remove(msg_t *msg, sip_t *sip)
 {
   sip_via_t *v;
+
+  if (sip == NULL)
+    return NULL;
   
   for (v = sip->sip_via; v; v = v->v_next) {
     sip_fragment_clear(v->v_common);
@@ -594,7 +566,7 @@ sip_via_t *sip_via_remove(msg_t *msg, sip_t *sip)
   }
 
   if ((v = sip->sip_via))
-    msg_header_remove(msg, sip, (sip_header_t *)v);
+    msg_header_remove(msg, (msg_pub_t *)sip, (msg_header_t *)v);
 
   return v;
 }
@@ -680,10 +652,10 @@ int sip_aor_strip(url_t *url)
 /** Compare Security-Verify header with Security-Server header. */
 int sip_security_verify_compare(sip_security_server_t const *s,
 				sip_security_verify_t const *v,
-				sip_param_t *return_d_ver)
+				msg_param_t *return_d_ver)
 {
   int i, j, retval, digest;
-  sip_param_t const *s_params, *v_params, empty[] = { NULL };
+  msg_param_t const *s_params, *v_params, empty[] = { NULL };
 
   if (return_d_ver)
     *return_d_ver = NULL;

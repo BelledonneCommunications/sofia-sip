@@ -646,7 +646,7 @@ struct sip_caller_prefs_s
   unsigned            cp_explicit : 1;
 };
 
-/**@ingroup sip-reason
+/**@ingroup sip_reason
  * @brief Structure for @b Reason header.
  */
 struct sip_reason_s

@@ -372,8 +372,8 @@ int sip_security_agree_e(char b[], int bsiz, sip_header_t const *h, int f)
   char *end = b + bsiz, *b0 = b;
   sip_security_agree_t const *sa = h->sh_security_agree;
 
-  SIP_STRING_E(b, end, sa->sa_mec);
-  SIP_PARAMS_E(b, end, sa->sa_params, flags);
+  MSG_STRING_E(b, end, sa->sa_mec);
+  MSG_PARAMS_E(b, end, sa->sa_params, flags);
 
   return b - b0;
 }
@@ -383,8 +383,8 @@ int sip_security_agree_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_security_agree_t const *sa = h->sh_security_agree;
 
-  SIP_PARAMS_SIZE(offset, sa->sa_params);
-  offset += SIP_STRING_SIZE(sa->sa_mec);
+  MSG_PARAMS_SIZE(offset, sa->sa_params);
+  offset += MSG_STRING_SIZE(sa->sa_mec);
 
   return offset;
 }
@@ -398,8 +398,8 @@ char *sip_security_agree_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_security_agree_t const *sa_src = src->sh_security_agree;
 
   char *end = b + xtra;
-  b = sip_params_dup(&sa_dst->sa_params, sa_src->sa_params, b, xtra);
-  SIP_STRING_DUP(b, sa_dst->sa_mec, sa_src->sa_mec);
+  b = msg_params_dup(&sa_dst->sa_params, sa_src->sa_params, b, xtra);
+  MSG_STRING_DUP(b, sa_dst->sa_mec, sa_src->sa_mec);
   if (sa_dst->sa_params)
     sip_security_agree_update(sa_dst);
   assert(b <= end);
@@ -578,8 +578,8 @@ int sip_privacy_e(char b[], int bsiz, sip_header_t const *h, int f)
 
   if (priv->priv_values) {
     for (i = 0; priv->priv_values[i]; i++) {
-      if (i > 0) SIP_CHAR_E(b, end, ';');
-      SIP_STRING_E(b, end, priv->priv_values[i]);
+      if (i > 0) MSG_CHAR_E(b, end, ';');
+      MSG_STRING_E(b, end, priv->priv_values[i]);
     }
   }
 
@@ -592,7 +592,7 @@ int sip_privacy_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_privacy_t const *priv = h->sh_privacy;
 
-  SIP_PARAMS_SIZE(offset, priv->priv_values);
+  MSG_PARAMS_SIZE(offset, priv->priv_values);
 
   return offset;
 }
@@ -606,7 +606,7 @@ char *sip_privacy_dup_one(sip_header_t *dst,
   sip_privacy_t const *o = src->sh_privacy;
   char *end = b + xtra;
 
-  b = sip_params_dup(&priv->priv_values, o->priv_values, b, xtra);
+  b = msg_params_dup(&priv->priv_values, o->priv_values, b, xtra);
 
   assert(b <= end);
 

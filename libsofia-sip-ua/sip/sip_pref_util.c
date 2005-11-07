@@ -391,7 +391,7 @@ sip_contact_t *sip_contact_immunize(su_home_t *home, sip_contact_t const *m)
 {
   unsigned i, j;
   sip_contact_t m0[1], *m1;
-  sip_param_t *params;
+  msg_param_t *params;
 
   if (!m)
     return NULL;
@@ -403,7 +403,7 @@ sip_contact_t *sip_contact_immunize(su_home_t *home, sip_contact_t const *m)
   if (m1 == NULL || !m1->m_params)
     return m1;
 
-  params = (sip_param_t *)m1->m_params;
+  params = (msg_param_t *)m1->m_params;
 
   for (i = 0, j = 0; params[i]; i++) {
     if (!sip_is_callerpref(params[i]))

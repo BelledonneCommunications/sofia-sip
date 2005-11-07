@@ -127,7 +127,7 @@ int sip_also_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_also_t const *also = h->sh_also;
 
-  rv += SIP_STRING_SIZE(also->also_display);
+  rv += MSG_STRING_SIZE(also->also_display);
   rv += url_xtra(also->also_url);
 
   return rv;
@@ -143,7 +143,7 @@ char *sip_also_dup_one(msg_header_t *dst, msg_header_t const *src,
   sip_also_t const *o = src->sh_also;
   char *end = b + xtra;
 
-  SIP_STRING_DUP(b, also->also_display, o->also_display);
+  MSG_STRING_DUP(b, also->also_display, o->also_display);
   URL_DUP(b, end, also->also_url, o->also_url);
 
   assert(b <= end);

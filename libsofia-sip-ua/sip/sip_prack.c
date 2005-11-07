@@ -102,7 +102,7 @@ int sip_rack_dup_xtra(sip_header_t const *h, int offset)
   sip_rack_t const *ra = h->sh_rack;
 
   if (ra->ra_method == sip_method_unknown)
-    return offset + SIP_STRING_SIZE(ra->ra_method_name);
+    return offset + MSG_STRING_SIZE(ra->ra_method_name);
   else
     return offset;
 }
@@ -121,7 +121,7 @@ char *sip_rack_dup_one(sip_header_t *dst, sip_header_t const *src,
   ra_dst->ra_method   = ra_src->ra_method;
 
   if (ra_src->ra_method == sip_method_unknown)
-    SIP_STRING_DUP(b, ra_dst->ra_method_name, ra_src->ra_method_name);
+    MSG_STRING_DUP(b, ra_dst->ra_method_name, ra_src->ra_method_name);
   else
     ra_dst->ra_method_name = ra_src->ra_method_name;
 

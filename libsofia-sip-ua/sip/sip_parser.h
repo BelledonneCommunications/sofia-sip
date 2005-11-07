@@ -120,6 +120,20 @@ int sip_any_route_dup_xtra(sip_header_t const *h, int offset);
 char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
 			    char *b, int xtra);
 
+int sip_name_addr_d(su_home_t *home,
+		    char **inout_s,
+		    char const **return_display,
+		    url_t *out_url,
+		    msg_param_t const **return_params,
+		    char const **return_comment);
+
+int sip_name_addr_e(char b[], int bsiz, 
+		    int flags, 
+		    char const *display, 
+		    int always_ltgt, url_t const url[],
+		    msg_param_t const params[], 
+		    char const *comment);
+
 
 /* ---------------------------------------------------------------------------
  * 3) Compatibility macros
@@ -149,9 +163,6 @@ char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
 #define SIP_ALIGN               MSG_ALIGN
 #define SIP_STRUCT_SIZE_ALIGN   MSG_STRUCT_SIZE_ALIGN
 #define SIP_STRUCT_ALIGN        MSG_STRUCT_ALIGN
-
-#define sip_name_addr_d         msg_name_addr_d
-#define sip_name_addr_e         msg_name_addr_e
 
 #define sip_comment_d		msg_comment_d
 #define sip_quoted_d(ss, qq)	msg_quoted_d(ss, qq)

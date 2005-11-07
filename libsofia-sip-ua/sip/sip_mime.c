@@ -81,8 +81,8 @@
  *   sip_accept_t       *ac_next;      // Pointer to next Accept header
  *   char const         *ac_type;      // Pointer to type/subtype
  *   char const         *ac_subtype;   // Points after first slash in type
- *   sip_param_t const  *ac_params;    // List of parameters
- *   sip_param_t         ac_q;         // Value of q parameter
+ *   msg_param_t const  *ac_params;    // List of parameters
+ *   msg_param_t         ac_q;         // Value of q parameter
  * } sip_accept_t;
  * @endcode
  */
@@ -168,8 +168,8 @@ int sip_accept_disposition_e(char b[], int bsiz, sip_header_t const *h, int flag
   char *b0 = b, *end = b + bsiz;
   sip_accept_disposition_t const *ad = h->sh_accept_disposition;
 
-  SIP_STRING_E(b, end, ad->ad_type);
-  SIP_PARAMS_E(b, end, ad->ad_params, flags);
+  MSG_STRING_E(b, end, ad->ad_type);
+  MSG_PARAMS_E(b, end, ad->ad_params, flags);
   MSG_TERM_E(b, end);
     
   return b - b0;
@@ -386,8 +386,8 @@ int sip_content_disposition_e(char b[], int bsiz, sip_header_t const *h, int f)
   char *b0 = b, *end = b + bsiz;
   sip_content_disposition_t const *cd = h->sh_content_disposition;
 
-  SIP_STRING_E(b, end, cd->cd_type);
-  SIP_PARAMS_E(b, end, cd->cd_params, f);
+  MSG_STRING_E(b, end, cd->cd_type);
+  MSG_PARAMS_E(b, end, cd->cd_params, f);
 
   MSG_TERM_E(b, end);
     
@@ -400,8 +400,8 @@ int sip_content_disposition_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_content_disposition_t const *cd = h->sh_content_disposition;
 
-  SIP_PARAMS_SIZE(rv, cd->cd_params);
-  rv += SIP_STRING_SIZE(cd->cd_type);
+  MSG_PARAMS_SIZE(rv, cd->cd_params);
+  rv += MSG_STRING_SIZE(cd->cd_type);
 
   return rv;
 }
@@ -416,8 +416,8 @@ char *sip_content_disposition_dup_one(sip_header_t *dst,
   sip_content_disposition_t const *o = src->sh_content_disposition;
   char *end = b + xtra;
 
-  b = sip_params_dup(&cd->cd_params, o->cd_params, b, xtra);
-  SIP_STRING_DUP(b, cd->cd_type, o->cd_type);
+  b = msg_params_dup(&cd->cd_params, o->cd_params, b, xtra);
+  MSG_STRING_DUP(b, cd->cd_type, o->cd_type);
 
   if (cd->cd_params) 
     sip_content_disposition_update(dst->sh_content_disposition);
@@ -430,7 +430,7 @@ char *sip_content_disposition_dup_one(sip_header_t *dst,
 static void sip_content_disposition_update(sip_content_disposition_t *cd)
 {
   int i; 
-  sip_param_t h;
+  msg_param_t h;
 
   /* cd->cd_action = NULL, cd->cd_store = 0, cd->cd_remove = 0; */
   cd->cd_handling = NULL, cd->cd_required = 0, cd->cd_optional = 0;
@@ -585,7 +585,7 @@ int sip_content_language_e(char b[], int bsiz, sip_header_t const *h, int f)
  *   sip_unknown_t      *c_next;       // Dummy link to next
  *   char const         *c_type;       // Pointer to type/subtype
  *   char const         *c_subtype;    // Points after first slash in type
- *   sip_param_t const  *c_params;     // List of parameters
+ *   msg_param_t const  *c_params;     // List of parameters
  * } sip_content_type_t;
  * @endcode
  *
@@ -624,8 +624,8 @@ int sip_content_type_e(char b[], int bsiz, sip_header_t const *h, int flags)
   char *b0 = b, *end = b + bsiz;
   sip_content_type_t const *c = h->sh_content_type;
 
-  SIP_STRING_E(b, end, c->c_type);
-  SIP_PARAMS_E(b, end, c->c_params, flags);
+  MSG_STRING_E(b, end, c->c_type);
+  MSG_PARAMS_E(b, end, c->c_params, flags);
   MSG_TERM_E(b, end);
 
   return b - b0;
@@ -637,8 +637,8 @@ int sip_content_type_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_content_type_t const *c = h->sh_content_type;
 
-  SIP_PARAMS_SIZE(rv, c->c_params);
-  rv += SIP_STRING_SIZE(c->c_type);
+  MSG_PARAMS_SIZE(rv, c->c_params);
+  rv += MSG_STRING_SIZE(c->c_type);
 
   return rv;
 }
@@ -652,8 +652,8 @@ char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_content_type_t const *o = src->sh_content_type;
   char *end = b + xtra;
 
-  b = sip_params_dup(&c->c_params, o->c_params, b, xtra);
-  SIP_STRING_DUP(b, c->c_type, o->c_type);
+  b = msg_params_dup(&c->c_params, o->c_params, b, xtra);
+  MSG_STRING_DUP(b, c->c_type, o->c_type);
   c->c_subtype = strchr(c->c_type, '/');
   c->c_subtype++;
 

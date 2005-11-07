@@ -80,7 +80,7 @@ int sip_extract_body(msg_t *msg, sip_t *sip, char b[], int bsiz, int eos)
   
   if (!(sip->sip_flags & MSG_FLG_BODY)) {
     /* We are looking at a potential empty line */
-    m = msg_extract_separator(msg, sip, b, bsiz, eos);
+    m = msg_extract_separator(msg, (msg_pub_t *)sip, b, bsiz, eos);
     if (m <= 0)
       return m;
     sip->sip_flags |= MSG_FLG_BODY;
@@ -112,7 +112,8 @@ int sip_extract_body(msg_t *msg, sip_t *sip, char b[], int bsiz, int eos)
     return bsiz;
   }
 
-  if ((m = msg_extract_payload(msg, sip, NULL, body_len, b, bsiz, eos)) == -1)
+  if ((m = msg_extract_payload(msg, (msg_pub_t *)sip, 
+			       NULL, body_len, b, bsiz, eos)) == -1)
     return -1;
   
   sip->sip_flags |= MSG_FLG_FRAGS;
@@ -190,7 +191,7 @@ int sip_version_xtra(char const *version)
 {
   if (version == SIP_VERSION_CURRENT)
     return 0;
-  return SIP_STRING_SIZE(version);
+  return MSG_STRING_SIZE(version);
 }
 
 /** Duplicate a transport string */
@@ -199,7 +200,7 @@ void sip_version_dup(char **pp, char const **dd, char const *s)
   if (s == SIP_VERSION_CURRENT)
     *dd = s;
   else
-    SIP_STRING_DUP(*pp, *dd, s);
+    MSG_STRING_DUP(*pp, *dd, s);
 }
 
 char const sip_method_name_invite[] =  	 "INVITE";
@@ -439,7 +440,7 @@ int sip_transport_xtra(char const *transport)
       strcasecmp(transport, sip_transport_tls) == 0)
     return 0;
 
-  return SIP_STRING_SIZE(transport);
+  return MSG_STRING_SIZE(transport);
 }
 
 /** Duplicate a transport string */
@@ -462,10 +463,10 @@ void sip_transport_dup(char **pp, char const **dd, char const *s)
   else if (strcasecmp(s, sip_transport_tls) == 0)
     *dd = sip_transport_tls;
   else
-    SIP_STRING_DUP(*pp, *dd, s);
+    MSG_STRING_DUP(*pp, *dd, s);
 }
 
-/** Parse SIP word "@" word construct. */
+/** Parse SIP <word "@" word> construct. */
 char *sip_word_at_word_d(char **ss)
 {
   char *rv = *ss, *s0 = *ss;
@@ -489,10 +490,9 @@ char *sip_word_at_word_d(char **ss)
 
 /**Add message separator, then test if message is complete. 
  *
- * The function adds sip_content_length and sip_separator components, if
- * they are missing. It then tests that all necessary message components (@b
- * From, @b To, @b CSeq, @b Call-ID, @b Content-Length and message separator
- * are present.
+ * Add sip_content_length and sip_separator if they are missing. 
+ * It then tests that all necessary message components (@b From, @b To, @b
+ * CSeq, @b Call-ID, @b Content-Length and message separator are present.
  *
  * @retval 0 when successful
  * @retval -1 upon an error
@@ -534,7 +534,7 @@ int sip_complete_message(msg_t *msg)
     len += sip->sip_payload->pl_len;
 
   if (!sip->sip_content_length) {
-    msg_header_insert(msg, sip, (msg_header_t*)
+    msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t*)
 		      sip_content_length_create(home, len));
   }
   else {

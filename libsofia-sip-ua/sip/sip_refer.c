@@ -73,7 +73,7 @@
  *   sip_error_t        *r_next;	// Link to next (dummy)
  *   char const          r_display;     // Display name
  *   url_t               r_url[1];	// URI to reference
- *   sip_param_t const  *r_params;      // List of genric parameters
+ *   msg_param_t const  *r_params;      // List of genric parameters
  * } sip_refer_to_t;
  * @endcode
  */
@@ -88,7 +88,7 @@ int sip_refer_to_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 {
   sip_refer_to_t *r = h->sh_refer_to;
 
-  return msg_name_addr_d(home, &s,
+  return sip_name_addr_d(home, &s,
 			 &r->r_display,
 			 r->r_url,
 			 &r->r_params,
@@ -101,7 +101,7 @@ int sip_refer_to_e(char b[], int bsiz, sip_header_t const *h, int flags)
 
   assert(sip_is_refer_to(h));
 
-  return msg_name_addr_e(b, bsiz, flags,
+  return sip_name_addr_e(b, bsiz, flags,
 			 r->r_display, MSG_IS_CANONIC(flags),
 			 r->r_url,
 			 r->r_params,
@@ -113,8 +113,8 @@ int sip_refer_to_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_refer_to_t const *r = h->sh_refer_to;
 
-  SIP_PARAMS_SIZE(rv, r->r_params);
-  rv += SIP_STRING_SIZE(r->r_display);
+  MSG_PARAMS_SIZE(rv, r->r_params);
+  rv += MSG_STRING_SIZE(r->r_display);
   rv += url_xtra(r->r_url);
 
   return rv;
@@ -129,8 +129,8 @@ char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
 
   char *end = b + xtra;
 
-  b = sip_params_dup(&r_dst->r_params, r_src->r_params, b, xtra);
-  SIP_STRING_DUP(b, r_dst->r_display, r_src->r_display);
+  b = msg_params_dup(&r_dst->r_params, r_src->r_params, b, xtra);
+  MSG_STRING_DUP(b, r_dst->r_display, r_src->r_display);
   URL_DUP(b, end, r_dst->r_url, r_src->r_url);
 
   assert(b <= end);
@@ -179,8 +179,8 @@ char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
  *   sip_error_t        *b_next;	// Link to next (dummy)
  *   char const          b_display,
  *   url_t               b_url[1];	// Referrer-URI
- *   sip_param_t const  *b_params;      // List of parameters
- *   sip_param_t         b_cid;
+ *   msg_param_t const  *b_params;      // List of parameters
+ *   msg_param_t         b_cid;
  * } sip_referred_by_t;
  * @endcode
  */
@@ -196,7 +196,7 @@ int sip_referred_by_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 {
   sip_referred_by_t *b = h->sh_referred_by;
 
-  if (msg_name_addr_d(home, &s,
+  if (sip_name_addr_d(home, &s,
 		      &b->b_display,
 		      b->b_url,
 		      &b->b_params,
@@ -212,7 +212,7 @@ int sip_referred_by_e(char b[], int bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_referred_by(h));
 
-  return msg_name_addr_e(b, bsiz, flags,
+  return sip_name_addr_e(b, bsiz, flags,
 			 h->sh_referred_by->b_display,
 			 MSG_IS_CANONIC(flags), h->sh_referred_by->b_url,
 			 h->sh_referred_by->b_params,
@@ -224,8 +224,8 @@ int sip_referred_by_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_referred_by_t const *b = h->sh_referred_by;
 
-  SIP_PARAMS_SIZE(rv, b->b_params);
-  rv += SIP_STRING_SIZE(b->b_display);
+  MSG_PARAMS_SIZE(rv, b->b_params);
+  rv += MSG_STRING_SIZE(b->b_display);
   rv += url_xtra(b->b_url);
 
   return rv;
@@ -239,8 +239,8 @@ char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_referred_by_t const *o = src->sh_referred_by;
   char *end = b + xtra;
 
-  b = sip_params_dup(&nb->b_params, o->b_params, b, xtra);
-  SIP_STRING_DUP(b, nb->b_display, o->b_display);
+  b = msg_params_dup(&nb->b_params, o->b_params, b, xtra);
+  MSG_STRING_DUP(b, nb->b_display, o->b_display);
   URL_DUP(b, end, nb->b_url, o->b_url);
 
   nb->b_cid = msg_params_find(nb->b_params, "cid=");
@@ -283,9 +283,9 @@ char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
  *   sip_common_t        rp_common[1];   // Common fragment info
  *   sip_error_t        *rp_next;	 // Link to next (dummy)
  *   char const         *rp_call_id;     // Call-ID
- *   sip_param_t const  *rp_params;      // List of parameters
- *   sip_param_t         rp_to_tag;      // to-tag parameter
- *   sip_param_t         rp_from_tag;    // from-tag parameter
+ *   msg_param_t const  *rp_params;      // List of parameters
+ *   msg_param_t         rp_to_tag;      // to-tag parameter
+ *   msg_param_t         rp_from_tag;    // from-tag parameter
  *   int                 rp_early_only;  // early-only parameter
  * } sip_replaces_t;
  * @endcode
@@ -350,8 +350,8 @@ char *sip_replaces_dup_one(sip_header_t *dst, sip_header_t const *src,
 
   char *end = b + xtra;
 
-  b = sip_params_dup(&rp_dst->rp_params, rp_src->rp_params, b, xtra);
-  SIP_STRING_DUP(b, rp_dst->rp_call_id, rp_src->rp_call_id);
+  b = msg_params_dup(&rp_dst->rp_params, rp_src->rp_params, b, xtra);
+  MSG_STRING_DUP(b, rp_dst->rp_call_id, rp_src->rp_call_id);
 
   assert(b <= end);
 
@@ -379,16 +379,16 @@ void sip_replaces_param_update(sip_replaces_t *rp)
     return;
 
   for (i = 0; rp->rp_params[i]; i++) {
-    sip_param_t p = rp->rp_params[i];
+    msg_param_t p = rp->rp_params[i];
     switch (p[0]) {
     case 'e':
-      SIP_PARAM_MATCH_P(rp->rp_early_only, p, "early-only");
+      MSG_PARAM_MATCH_P(rp->rp_early_only, p, "early-only");
       break;
     case 'f':
-      SIP_PARAM_MATCH(rp->rp_from_tag, p, "from-tag");
+      MSG_PARAM_MATCH(rp->rp_from_tag, p, "from-tag");
       break;
     case 't':
-      SIP_PARAM_MATCH(rp->rp_to_tag, p, "to-tag");
+      MSG_PARAM_MATCH(rp->rp_to_tag, p, "to-tag");
       break;
     }
   }

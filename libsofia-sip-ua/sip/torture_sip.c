@@ -247,10 +247,20 @@ int test_basic(void)
     TEST_1(st = sip_status_make(home, "SIP/2.0 200 OK"));
     su_free(home, st);
 
+    TEST_1(st = sip_status_make(home, "SIP/2.0 200"));
+    su_free(home, st);
+
     TEST_1(!sip_status_make(home, "SIP2.0 200 OK"));
     TEST_1(!sip_status_create(home, 99, NULL, "SIP/2.1"));
     TEST_1(!sip_status_create(home, 700, NULL, "SIP/2.1"));
     TEST_1(st = sip_status_create(home, 200, "Ok", "SIP/2.2"));
+    su_free(home, st);
+
+    TEST_1(st = sip_status_create(home, 200, NULL, "SIP/2.0"));
+    su_free(home, st);
+    TEST_1(st = sip_status_create(home, 200, NULL, NULL));
+    su_free(home, st);
+    TEST_1(st = sip_status_create(home, 699, NULL, NULL));
     su_free(home, st);
   }
 
@@ -272,6 +282,44 @@ int test_basic(void)
     su_free(home, sep);
   }
 
+
+  /* Test name-addr things */
+  {
+    su_home_t home[1] = { SU_HOME_INIT(home) };
+    char const *display;
+    url_t url[1];
+    char const * const *params;
+    char const *comment;
+    char const na[] = "Raaka Arska <tel:+358501970>;param=1;humppa (test) ";
+    char const na2[] = "tel:+358501970;param=1;humppa (test) ";
+    char *s, buf[sizeof(na)], ebuf[sizeof(na) + 32];
+
+    s = strcpy(buf, na);
+
+    TEST_1(sip_name_addr_d(home, &s, &display, url, &params, &comment) >= 0);
+    TEST(s, buf + strlen(na));
+    TEST_1(display);
+    TEST(url->url_type, url_tel);
+    TEST_1(params);
+    TEST_1(comment);
+
+    TEST(sip_name_addr_e(ebuf, sizeof(ebuf), 0, display, 0, url, 
+			 params, comment), 
+	 strlen(na) - 1);
+    TEST_1(strncmp(na, ebuf, strlen(na) - 1) == 0);
+
+    s = strcpy(buf, na2);
+
+    TEST_1(sip_name_addr_d(home, &s, &display, url, &params, &comment) >= 0);
+    TEST_S(s, "");
+    TEST(s, buf + strlen(na2));
+    TEST_1(!display);
+    TEST(url->url_type, url_tel);
+    TEST_1(params);
+    TEST_1(comment);
+
+    su_home_deinit(home);
+  }
 
   {
     sip_from_t *f; sip_to_t *t;
@@ -561,7 +609,7 @@ msg_t *read_message(int flags, char const buffer[])
 
 static int test_encoding(void)
 {
-  sip_header_t *h, *h1;
+  msg_header_t *h, *h1;
   msg_common_t *c;
   msg_t *msg;
   sip_t *sip;
@@ -627,15 +675,15 @@ static int test_encoding(void)
 
   TEST_1(msg); TEST_1(sip); TEST_1(!sip->sip_error);
 
-  for (h = (sip_header_t *)sip->sip_request; h; h = h->sh_succ) {
+  for (h = (msg_header_t *)sip->sip_request; h; h = h->sh_succ) {
     char b[80];
     int n;
 
-    if (h == (sip_header_t*)sip->sip_payload)
+    if (h == (msg_header_t*)sip->sip_payload)
       break;
 
-    TEST_1(h1 = sip_header_dup(home, h));
-    n = sip_header_e(b, sizeof b, h1, 0);
+    TEST_1(h1 = msg_header_dup(home, h));
+    n = msg_header_e(b, sizeof b, h1, 0);
     TEST(n, h->sh_len);
     TEST_M(b, h->sh_data, n);
     su_free(home, h1);
@@ -687,7 +735,7 @@ static int test_encoding(void)
 
   TEST_1(msg); TEST_1(sip); TEST_1(!sip->sip_error);
 
-  for (h = (sip_header_t *)sip->sip_status; h; h = h->sh_succ) {
+  for (h = (msg_header_t *)sip->sip_status; h; h = h->sh_succ) {
     char b[80];
     int n;
 
@@ -1486,7 +1534,7 @@ static int sip_header_test(void)
   TEST(sip_to_tag(home, sip->sip_to, "tag=deadbeef"), 0);
   TEST(sip_to_tag(home, sip->sip_to, "foofaa"), -1);
 
-  msg_header_remove(msg, sip, (msg_header_t *)sip->sip_payload);
+  msg_header_remove(msg, (msg_pub_t *)sip, (msg_header_t *)sip->sip_payload);
 
   TEST(sip_add_tl(msg, sip, 
 		  SIPTAG_FROM(SIP_NONE),
@@ -2651,7 +2699,7 @@ static int test_utils(void)
   su_home_t *home;
   sip_security_server_t *secs;
   sip_security_verify_t *secv;
-  sip_param_t d_ver = NULL;
+  msg_param_t d_ver = NULL;
 
   BEGIN();
 

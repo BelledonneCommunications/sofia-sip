@@ -112,13 +112,16 @@ tagi_t *siptag_filter(tagi_t *dst,
 
   if (sctt && sctt->tt_class == sipmsgtag_class) {
     sip_t const *sip = (sip_t const *)src->t_value;
-    sip_header_t const **hh = (sip_header_t const **)
-      msg_hclass_offset((msg_mclass_t *)sip->sip_common->h_class, 
-			(sip_t *)sip, hc);
-    sip_header_t const *h;
+    sip_header_t const **hh, *h;
 
-    if (sip == NULL || 
-	hh >= (sip_header_t const **)((char *)sip + sip->sip_size) ||
+    if (sip == NULL)
+      return dst;
+
+    hh = (sip_header_t const **)
+      msg_hclass_offset((msg_mclass_t *)sip->sip_common->h_class, 
+			(msg_pub_t *)sip, hc);
+
+    if (hh >= (sip_header_t const **)((char *)sip + sip->sip_size) ||
 	hh < (sip_header_t const **)&sip->sip_request)
       return dst;
 
@@ -161,29 +164,29 @@ int sip_add_tl(msg_t *msg, sip_t *sip,
 
     if (SIPTAG_P(tag)) {
       msg_hclass_t *hc = (msg_hclass_t *)tag->tt_magic;
-      sip_header_t *h = (sip_header_t *)value, **hh;
+      msg_header_t *h = (msg_header_t *)value, **hh;
 
       if (h == SIP_NONE) {	/* Remove header */
-	hh = msg_hclass_offset(msg_mclass(msg), sip, hc);
+	hh = msg_hclass_offset(msg_mclass(msg), (msg_pub_t *)sip, hc);
 	while (*hh)
-	  msg_header_remove(msg, sip, *hh);
+	  msg_header_remove(msg, (msg_pub_t *)sip, *hh);
 	continue;
       } 
 
       if (tag == siptag_header)
 	hc = h->sh_class;
 
-      if (sip_add_dup_as(msg, sip, hc, h) < 0)
+      if (msg_header_add_dup_as(msg, (msg_pub_t *)sip, hc, h) < 0)
 	break;
     }
     else if (SIPTAG_STR_P(tag)) {
       msg_hclass_t *hc = (msg_hclass_t *)tag->tt_magic;
       char const *s = (char const *)value;
-      if (s && msg_header_add_make(msg, sip, hc, s) < 0)
+      if (s && msg_header_add_make(msg, (msg_pub_t *)sip, hc, s) < 0)
 	break;
     }
     else if (tag == siptag_header_str) {
-      if (msg_header_add_str(msg, sip, (char const *)value) < 0)
+      if (msg_header_add_str(msg, (msg_pub_t *)sip, (char const *)value) < 0)
 	break;
     }
   }

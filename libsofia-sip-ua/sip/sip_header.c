@@ -75,12 +75,7 @@ sip_header_t *sip_header_d(su_home_t *home, msg_t const *msg, char const *b)
 /** Encode a SIP header. */
 int sip_header_e(char b[], int bsiz, sip_header_t const *h, int flags)
 {
-  return msg_header_e(b, bsiz, h, flags);
-}
-
-int sip_e(sip_t const *sip, int flags, char b[], int size)
-{
-  return msg_object_e(b, size, sip, flags);
+  return msg_header_e(b, bsiz, (msg_header_t const *)h, flags);
 }
 
 sip_header_t *sip_header_format(su_home_t *home, 
@@ -100,24 +95,12 @@ sip_header_t *sip_header_format(su_home_t *home,
   return h;
 }
 
-/** Serialize headers into the fragment chain. */
-int sip_serialize(msg_t *msg, sip_t *sip)
-{
-  return msg_serialize(msg, sip);
-}
-
-/** Copy a complete message, keeping the header chain structure. */
-int sip_copy_all(msg_t *msg, sip_t *dst, sip_t const *src)
-{
-  return msg_copy_all(msg, dst, src);
-}
-
 /** Add a duplicate of header object to a SIP message. */
 int sip_add_dup(msg_t *msg,
 		sip_t *sip,
 		sip_header_t const *o)
 {
-  return msg_header_add_dup(msg, sip, o);
+  return msg_header_add_dup(msg, (msg_pub_t *)sip, o);
 }
 
 int sip_add_dup_as(msg_t *msg,
@@ -125,7 +108,7 @@ int sip_add_dup_as(msg_t *msg,
 		   msg_hclass_t *hc,
 		   sip_header_t const *o)
 {
-  return msg_header_add_dup_as(msg, sip, hc, o);
+  return msg_header_add_dup_as(msg, (msg_pub_t *)sip, hc, o);
 }
 
 int sip_add_make(msg_t *msg,
@@ -134,20 +117,4 @@ int sip_add_make(msg_t *msg,
 		 char const *s)
 {
   return msg_header_add_make(msg, sip, hc, s);
-}
-
-/** Add duplicates of headers to the SIP message. */
-int sip_add_headers(msg_t *msg, sip_t *sip,
-		    void const *extra, va_list headers)
-{
-  for (;
-       extra;
-       extra = va_arg(headers, void *)) {
-    if (extra != SIP_NONE)
-      if (sip_add_dup(msg, sip, extra) < 0) {
-	return -1;
-      }
-  }
-
-  return 0;
 }

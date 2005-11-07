@@ -83,7 +83,7 @@ sip_time_t sip_contact_expires(sip_contact_t const *m,
     return 0;
 
   if (m && m->m_expires) {
-    sip_param_t expires = m->m_expires;
+    msg_param_t expires = m->m_expires;
     if (msg_date_delta_d(&expires, &time, &delta) < 0)
       return def;
   }

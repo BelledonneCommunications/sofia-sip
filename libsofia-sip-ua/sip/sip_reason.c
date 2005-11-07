@@ -119,8 +119,8 @@ int sip_reason_e(char b[], int bsiz, sip_header_t const *h, int f)
   sip_reason_t const *re = h->sh_reason;
 
   assert(sip_is_reason(h));
-  SIP_STRING_E(b, end, re->re_protocol);
-  SIP_PARAMS_E(b, end, re->re_params, flags);
+  MSG_STRING_E(b, end, re->re_protocol);
+  MSG_PARAMS_E(b, end, re->re_params, flags);
 
   return b - b0;
 }
@@ -129,8 +129,8 @@ int sip_reason_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_reason_t const *re = h->sh_reason;
 
-  SIP_PARAMS_SIZE(offset, re->re_params);
-  offset += SIP_STRING_SIZE(re->re_protocol);
+  MSG_PARAMS_SIZE(offset, re->re_params);
+  offset += MSG_STRING_SIZE(re->re_protocol);
 
   return offset;
 }
@@ -143,8 +143,8 @@ char *sip_reason_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_reason_t const *re_src = src->sh_reason;
 
   char *end = b + xtra;
-  b = sip_params_dup(&re_dst->re_params, re_src->re_params, b, xtra);
-  SIP_STRING_DUP(b, re_dst->re_protocol, re_src->re_protocol);
+  b = msg_params_dup(&re_dst->re_params, re_src->re_params, b, xtra);
+  MSG_STRING_DUP(b, re_dst->re_protocol, re_src->re_protocol);
   if (re_dst->re_params)
     sip_reason_update(re_dst);
   assert(b <= end);

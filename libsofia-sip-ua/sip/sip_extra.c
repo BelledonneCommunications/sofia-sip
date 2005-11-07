@@ -74,8 +74,8 @@
  *   sip_common_t        ci_common[1]; // Common fragment info
  *   sip_call_info_t    *ci_next;      // Link to next Call-Info
  *   url_t               ci_url[1];    // URI to call info
- *   sip_param_t const  *ci_params;    // List of parameters
- *   sip_param_t         ci_purpose;   // Value of @b purpose parameter
+ *   msg_param_t const  *ci_params;    // List of parameters
+ *   msg_param_t         ci_purpose;   // Value of @b purpose parameter
  * };
  * @endcode
  */
@@ -141,7 +141,7 @@ void sip_call_info_update(sip_header_t *h)
 {
   if (h->sh_call_info->ci_params)
     h->sh_call_info->ci_purpose =
-      sip_params_find(h->sh_call_info->ci_params, "purpose=");
+      msg_params_find(h->sh_call_info->ci_params, "purpose=");
 }
 
 /* ====================================================================== */
@@ -171,7 +171,7 @@ void sip_call_info_update(sip_header_t *h)
  *   sip_common_t        ei_common[1]; // Common fragment info
  *   sip_error_info_t   *ei_next;      // Link to next Error-Info
  *   url_t               ei_url[1];    // URI to error info
- *   sip_param_t const  *ei_params;    // List of parameters
+ *   msg_param_t const  *ei_params;    // List of parameters
  * };
  * @endcode
  */
@@ -396,10 +396,10 @@ int sip_timestamp_e(char b[], int bsiz, sip_header_t const *h, int f)
 
   assert(sip_timestamp_p(h));
 
-  SIP_STRING_E(b, end, ts->ts_stamp);
+  MSG_STRING_E(b, end, ts->ts_stamp);
   if (ts->ts_delay) {
-    SIP_CHAR_E(b, end, ' ');
-    SIP_STRING_E(b, end, ts->ts_delay);
+    MSG_CHAR_E(b, end, ' ');
+    MSG_STRING_E(b, end, ts->ts_delay);
   }
 
   MSG_TERM_E(b, end);
@@ -412,8 +412,8 @@ int sip_timestamp_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_timestamp_t const *ts = h->sh_timestamp;
 
-  rv += SIP_STRING_SIZE(ts->ts_stamp);
-  rv += SIP_STRING_SIZE(ts->ts_delay);
+  rv += MSG_STRING_SIZE(ts->ts_stamp);
+  rv += MSG_STRING_SIZE(ts->ts_delay);
 
   return rv;
 }
@@ -427,8 +427,8 @@ char *sip_timestamp_dup_one(sip_header_t *dst,
   sip_timestamp_t const *o = src->sh_timestamp;
   char *end = b + xtra;
 
-  SIP_STRING_DUP(b, ts->ts_stamp, o->ts_stamp);
-  SIP_STRING_DUP(b, ts->ts_delay, o->ts_delay);
+  MSG_STRING_DUP(b, ts->ts_stamp, o->ts_stamp);
+  MSG_STRING_DUP(b, ts->ts_delay, o->ts_delay);
 
   assert(b <= end);
 
@@ -560,7 +560,7 @@ int sip_info_dup_xtra(sip_header_t const *h, int offset)
   int rv = offset;
   sip_call_info_t const *ci = h->sh_call_info;
 
-  SIP_PARAMS_SIZE(rv, ci->ci_params);
+  MSG_PARAMS_SIZE(rv, ci->ci_params);
   rv += url_xtra(ci->ci_url);
 
   return rv;
@@ -575,7 +575,7 @@ char *sip_info_dup_one(sip_header_t *dst,
   sip_call_info_t const *o = src->sh_call_info;
   char *end = b + xtra;
 
-  b = sip_params_dup(&ci->ci_params, o->ci_params, b, xtra);
+  b = msg_params_dup(&ci->ci_params, o->ci_params, b, xtra);
   URL_DUP(b, end, ci->ci_url, o->ci_url);
 
   assert(b <= end);

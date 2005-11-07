@@ -68,7 +68,7 @@
  *  sip_common_t    x_common[1];
  *  sip_unknown_t  *x_next;
  *  unsigned long   x_delta; //Delta Seconds
- *  sip_param_t    *x_params; 
+ *  msg_param_t    *x_params; 
  *  char const     *x_refresher; //Who will send the refresh UAS or UAC
  * } sip_session_expires_t;
  * @endcode
@@ -90,7 +90,7 @@ int sip_session_expires_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   if (*s == ';') {
     if (msg_params_d(home, &s, &x->x_params) < 0 || *s)
       return -1;
-     x->x_refresher = sip_params_find(x->x_params, "refresher");
+     x->x_refresher = msg_params_find(x->x_params, "refresher");
   }
   return 0;
 }
@@ -104,7 +104,7 @@ int sip_session_expires_e(char b[], int bsiz, sip_header_t const *h, int flags)
   assert(sip_is_session_expires(h));
   n = snprintf(b, bsiz, "%lu", o->x_delta);
   b += n; 
-  SIP_PARAMS_E(b, end, o->x_params, flags);
+  MSG_PARAMS_E(b, end, o->x_params, flags);
 
   return b - b0;
 }
@@ -113,7 +113,7 @@ int sip_session_expires_dup_xtra(sip_header_t const *h, int offset)
 {
   sip_session_expires_t const *o = h->sh_session_expires;
 
-  SIP_PARAMS_SIZE(offset, o->x_params);
+  MSG_PARAMS_SIZE(offset, o->x_params);
    
   return offset;
 }
@@ -126,8 +126,8 @@ char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_session_expires_t const *o_src = src->sh_session_expires;
 
   char *end = b + xtra;
-  b = sip_params_dup(&o_dst->x_params, o_src->x_params, b, xtra);
-  o_dst->x_refresher = sip_params_find(o_dst->x_params, "refresher");
+  b = msg_params_dup(&o_dst->x_params, o_src->x_params, b, xtra);
+  o_dst->x_refresher = msg_params_find(o_dst->x_params, "refresher");
   o_dst->x_delta = o_src->x_delta;
   assert(b <= end);
 

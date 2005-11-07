@@ -337,10 +337,10 @@ sip_has_unsupported_any(su_home_t *home,
 {
   int i, j;
   sip_unsupported_t *unsupported = NULL;
-  sip_param_t const empty[1] = { NULL };
-  sip_param_t const *slist = empty;
-  sip_param_t const *rlist = empty;
-  sip_param_t const *prlist = empty;
+  msg_param_t const empty[1] = { NULL };
+  msg_param_t const *slist = empty;
+  msg_param_t const *rlist = empty;
+  msg_param_t const *prlist = empty;
 
   if (require2 == NULL)
     require2 = require3, require3 = NULL;
@@ -356,7 +356,7 @@ sip_has_unsupported_any(su_home_t *home,
       prlist = by_proxy_require->k_items;
 
     for (i = 0; require->k_items && require->k_items[i];) {
-      sip_param_t feature = require->k_items[i++];
+      msg_param_t feature = require->k_items[i++];
 
       for (j = 0; slist[j]; j++)
 	if (strcasecmp(feature, slist[j]) == 0) {
@@ -383,7 +383,7 @@ sip_has_unsupported_any(su_home_t *home,
 	  if (unsupported == NULL) 
 	    unsupported = sip_unsupported_make(home, feature);
 	  else
-	    sip_params_add(home, 
+	    msg_params_add(home, 
 			   (msg_param_t **)&unsupported->k_items, 
 			   feature);
 	}
@@ -452,7 +452,7 @@ int sip_has_supported(sip_supported_t const *supported, char const *feature)
  *   sip_path_t         *r_next;        // Link to next Path
  *   char const         *r_display;     // Display name
  *   url_t               r_url[1];      // Path URL
- *   sip_param_t const  *r_params;      // List of parameters
+ *   msg_param_t const  *r_params;      // List of parameters
  * } sip_path_t;
  * @endcode
  */
@@ -507,7 +507,7 @@ int sip_path_e(char b[], int bsiz, sip_header_t const *h, int flags)
  *   sip_service_route_t*r_next;        // Link to next Service-Route
  *   char const         *r_display;     // Display name
  *   url_t               r_url[1];      // Service-Route URL
- *   sip_param_t const  *r_params;      // List of parameters
+ *   msg_param_t const  *r_params;      // List of parameters
  * } sip_service_route_t;
  * @endcode
  */
