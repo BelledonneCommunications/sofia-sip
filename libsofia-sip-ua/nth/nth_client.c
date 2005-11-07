@@ -629,13 +629,15 @@ nth_client_t *nth_client_tcreate(nth_engine_t * engine,
 	    NTHTAG_AUTHENTICATION_REF(auc),
 	    NTHTAG_MESSAGE_REF(msg), HTTPTAG_VERSION_REF(version), TAG_END());
 
-    if (msg == none)
-      msg = msg_create(engine->he_mclass, engine->he_mflags);
+    if (msg == none) {
+      if (template && template->hc_request)
+	msg = msg_copy(template->hc_request);
+      else
+	msg = msg_create(engine->he_mclass, engine->he_mflags);
+    }
     http = http_object(msg);
 
     if (template) {
-      http_t const *t;
-
       if (callback == NULL)
 	callback = template->hc_callback;
       if (magic == NULL)
@@ -644,13 +646,6 @@ nth_client_t *nth_client_tcreate(nth_engine_t * engine,
 	method = template->hc_method, name = template->hc_method_name;
       if (uri == NULL)
 	uri = (url_string_t *) template->hc_url;
-
-      t = http_object(template->hc_request);
-
-      if (t) {
-	msg_set_parent(msg, template->hc_request);
-	msg_copy_all(msg, http, t);
-      }
 
       if (auc == none)
 	auc = template->hc_auc;
