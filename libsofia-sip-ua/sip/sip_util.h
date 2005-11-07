@@ -76,13 +76,6 @@ url_t *sip_url_dup(su_home_t *sh, url_t const *o);
 
 int sip_addr_match(sip_addr_t const *a, sip_addr_t const *b);
 
-/** Complete a SIP response with status line and headers from @a request. */
-int sip_complete_response(msg_t *msg, 
-			  int status, char const *phrase, 
-			  sip_t const *request);
-
-#define sip_message_complete sip_complete_message
-
 /* ----------------------------------------------------------------------
  * Header-specific functions below
  */
