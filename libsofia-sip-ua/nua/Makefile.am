@@ -60,6 +60,8 @@ LDADD = 		libnua.la \
 
 test_nua_LDFLAGS = 	-static
 
+test_nua_SOURCES = 	test_nua.c test_proxy.h test_proxy.c
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
