@@ -47,9 +47,14 @@ typedef struct msg_href_s         msg_href_t;
 typedef struct msg_s              msg_t;
 
 #ifndef MSG_TIME_T_DEFINED
-#define MSG_TIME_T_DEFINED unsigned long
+#define MSG_TIME_T_DEFINED
 /** Time in seconds since epoch (1900-Jan-01 00:00:00). */
 typedef unsigned long msg_time_t;
+#endif
+
+#ifndef MSG_TIME_MAX
+/** Latest time that can be expressed with msg_time_t. @HIDE */
+#define MSG_TIME_MAX ((msg_time_t)ULONG_MAX)
 #endif
 
 #ifndef MSG_PUB_T

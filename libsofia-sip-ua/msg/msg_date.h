@@ -37,15 +37,18 @@
  */
 
 #ifndef MSG_TIME_T_DEFINED
-#define MSG_TIME_T_DEFINED unsigned long
+#define MSG_TIME_T_DEFINED
 /** Time in seconds since epoch (1900-Jan-01 00:00:00). */
 typedef unsigned long msg_time_t;
 #endif
 
+#ifndef MSG_TIME_MAX
+/** Latest time that can be expressed with msg_time_t. @HIDE */
+#define MSG_TIME_MAX ((msg_time_t)ULONG_MAX)
+#endif
+
 /* Current time. */
 msg_time_t msg_now(void);
-
-#define MSG_TIME_MAX (ULONG_MAX)
 
 int msg_date_delta_d(char const **ss, msg_time_t *date, msg_time_t *delta);
 
