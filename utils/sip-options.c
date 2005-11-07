@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
     context->c_agent = 
       nta_agent_create(context->c_root, URL_STRING_MAKE(o_bind), 
 		       NULL, NULL, /* Ignore incoming messages */
-		       NULL);
+		       TAG_END());
 
     if (context->c_agent) {
       sip_addr_t *from, *to;
