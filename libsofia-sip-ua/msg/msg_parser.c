@@ -160,52 +160,6 @@ static inline int msg_is_status(msg_header_t const *h)
 /* ====================================================================== */
 /* Message buffer management */
 
-/**Clone a message.
- *
- * @relates msg_s
- *
- * The cloned message inherits the message buffer from its parent. The
- * parent message is not destroyed until all the clones have been destroyed.
- *
- * @param clone   clone message
- * @param parent  parent message
- */
-void msg_clone(msg_t *clone, msg_t *parent)
-{
-  if (clone && parent) {
-    clone->m_parent = msg_ref_create(parent);
-
-    if (!parent->m_set_buffer && parent->m_buffer->mb_size) {
-      *clone->m_buffer = *parent->m_buffer;
-      memset(parent->m_buffer, 0, sizeof(parent->m_buffer));
-    }
-  }
-}
-
-
-/**Set a message parent.
- *
- * @relates msg_s
- *
- * Set a parent for a message. parent message is not destroyed until all the
- * kids have been destroyed.
- *
- * @param kid  child message
- * @param dad  parent message
- */
-void msg_set_parent(msg_t *kid, msg_t *dad)
-{
-  if (kid) {
-    msg_t *step_dad = kid->m_parent;
-
-    if (dad && step_dad && step_dad != dad)
-      msg_ref_destroy(step_dad);
-
-    kid->m_parent = msg_ref_create(dad);
-  }
-}
-
-
 /** Allocate a buffer of @a size octets, with slack of #msg_min_size. */
 void *msg_buf_alloc(msg_t *msg, unsigned size)
 {

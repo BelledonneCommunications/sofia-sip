@@ -111,6 +111,29 @@ msg_t *msg_ref_create(msg_t *msg)
   return msg;
 }
 
+/**Set a message parent.
+ *
+ * @relates msg_s
+ *
+ * Set a parent for a message. The parent message is not destroyed until all
+ * its kids have been destroyed - each kid keeps a reference to its parent
+ * message.
+ *
+ * @param kid  child message
+ * @param dad  parent message
+ */
+void msg_set_parent(msg_t *kid, msg_t *dad)
+{
+  if (kid) {
+    msg_t *step_dad = kid->m_parent;
+
+    if (dad && step_dad && step_dad != dad)
+      msg_ref_destroy(step_dad);
+
+    kid->m_parent = msg_ref_create(dad);
+  }
+}
+
 /** Destroy a reference to a message.
  *
  * @relates msg_s

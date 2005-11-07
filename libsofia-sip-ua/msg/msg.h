@@ -42,8 +42,6 @@
 msg_t *msg_create(msg_mclass_t const *mc, int flags);
 void msg_destroy(msg_t *);
 
-void msg_clone(msg_t *clone, msg_t *parent);
-
 msg_t *msg_copy(msg_t *);
 msg_t *msg_dup(msg_t *);
 
