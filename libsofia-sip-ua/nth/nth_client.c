@@ -648,7 +648,7 @@ nth_client_t *nth_client_tcreate(nth_engine_t * engine,
       t = http_object(template->hc_request);
 
       if (t) {
-	msg_clone(msg, template->hc_request);
+	msg_set_parent(msg, template->hc_request);
 	msg_copy_all(msg, http, t);
       }
 
