@@ -25,7 +25,6 @@
 #ifndef NTA_STATELESS_H /** Defined when nta_stateless.h has been included. */
 #define NTA_STATELESS_H 
 
-
 /**@file nta_stateless.h   
  * @brief NTA functions for stateless SIP processing.
  *
@@ -77,11 +76,11 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
 		  tag_type_t tag, tag_value_t value, ...);
 
 /** Reply to a request message. */
-int nta_msg_tmreply(nta_agent_t *agent,
-		    msg_t *reply, sip_t *sip,
-		    int status, char const *phrase,
-		    msg_t *req_msg,
-		    tag_type_t tag, tag_value_t value, ...);
+int nta_msg_mreply(nta_agent_t *agent,
+		   msg_t *reply, sip_t *sip,
+		   int status, char const *phrase,
+		   msg_t *req_msg,
+		   tag_type_t tag, tag_value_t value, ...);
 
 /** Reply to a request message. */
 int nta_msg_treply(nta_agent_t *self, 
@@ -91,8 +90,5 @@ int nta_msg_treply(nta_agent_t *self,
 
 /** ACK and BYE an unknown 200 OK response to INVITE. */
 int nta_msg_ackbye(nta_agent_t *a, msg_t *msg);
-
-/** Process message statefully using @a leg. */
-int nta_leg_stateful(nta_leg_t *leg, msg_t *msg);
 
 #endif /* !defined(NTA_STATELESS_H) */

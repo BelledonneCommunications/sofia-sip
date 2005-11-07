@@ -136,7 +136,7 @@ struct agent_t {
 				  *   tags it with the tag from remote.
 				  */
   int             ag_tag_status; /**< Which response established dialog */
-  sip_param_t     ag_call_tag;	 /**< Tag used to establish dialog */
+  msg_param_t     ag_call_tag;	 /**< Tag used to establish dialog */
 
   nta_reliable_t *ag_reliable;
 
@@ -613,7 +613,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
 
   {
     /* Initialize our headers */
-    // sip_param_t from_params[2] = { "tag=fdeadbeef", NULL };
+    // msg_param_t from_params[2] = { "tag=fdeadbeef", NULL };
     sip_from_t from[1];
     sip_to_t to[1];
     sip_contact_t m[1];
@@ -890,8 +890,8 @@ int test_tports(agent_t *ag)
 			       SIPTAG_HEADER_STR(p_acid),
 			       TAG_END()));
 
-    TEST(nta_outgoing_getresponse_ref(ag->ag_orq), NULL);
-    TEST_1(msg = nta_outgoing_getrequest_ref(ag->ag_orq));
+    TEST(nta_outgoing_getresponse(ag->ag_orq), NULL);
+    TEST_1(msg = nta_outgoing_getrequest(ag->ag_orq));
     TEST_S(nta_outgoing_method_name(ag->ag_orq), "MESSAGE");
     msg_destroy(msg);
 
@@ -2376,7 +2376,7 @@ int outgoing_invite_callback(agent_t *ag,
   {
     msg_t *msg;
 
-    TEST_1(msg = nta_outgoing_getresponse_ref(orq));
+    TEST_1(msg = nta_outgoing_getresponse(orq));
     TEST_1(msg->m_refs == 2);
     TEST_1(sip_object(msg) == sip);
     if (ag->ag_probe_msg == NULL)
@@ -2693,7 +2693,7 @@ int invite_prack_callback(agent_t *ag,
     msg_t *msg;
     sip_t *osip;
 
-    TEST_1(msg = nta_outgoing_getrequest_ref(orq));
+    TEST_1(msg = nta_outgoing_getrequest(orq));
     TEST_1(osip = sip_object(msg));
 
     TEST(nta_leg_rtag(ag->ag_call_leg, sip->sip_to->a_tag), 0);
@@ -3379,12 +3379,11 @@ static int test_api_errors(void)
   TEST(nta_leg_by_dialog(NULL,  NULL, NULL, NULL, NULL, NULL, NULL), NULL);
   TEST(nta_leg_by_dialog(nta, NULL, NULL, NULL, NULL, NULL, NULL), NULL);
 
-  TEST(nta_outgoing_tmcreate(NULL, NULL, NULL, NULL, NULL, TAG_END()), NULL);
+  TEST(nta_outgoing_mcreate(NULL, NULL, NULL, NULL, NULL, TAG_END()), NULL);
   TEST(nta_outgoing_tcancel(NULL, NULL, NULL, TAG_END()), NULL);
   TEST(nta_outgoing_method_name(NULL), NULL);
-  TEST(nta_outgoing_getresponse_ref(NULL), NULL);
+  TEST(nta_outgoing_getresponse(NULL), NULL);
   TEST(nta_outgoing_getrequest(NULL), NULL);
-  TEST(nta_outgoing_getrequest_ref(NULL), NULL);
 
 #if 0
 void nta_incoming_bind(nta_incoming_t *irq, 
@@ -3403,10 +3402,7 @@ int nta_incoming_tag(nta_incoming_t *irq, char const *tag);
 int nta_incoming_status(nta_incoming_t const *irq);
 sip_method_t nta_incoming_method(nta_incoming_t const *irq);
 url_t const *nta_incoming_url(nta_incoming_t const *irq);
-sip_u32_t nta_incoming_cseq(nta_incoming_t const *irq);
-
-msg_t *nta_incoming_getrequest(nta_incoming_t *irq);
-msg_t *nta_incoming_getresponse(nta_incoming_t *irq);
+uint32_t nta_incoming_cseq(nta_incoming_t const *irq);
 
 int nta_incoming_treply(nta_incoming_t *ireq, 
 			int status, char const *phrase, 
@@ -3432,22 +3428,16 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
 				     url_string_t const *request_uri,
 				     tag_type_t tag, tag_value_t value, ...);
 
-nta_outgoing_t *nta_outgoing_tmcreate(nta_agent_t *agent,
-				      nta_response_f *callback,
-				      nta_outgoing_magic_t *magic,
-				      url_string_t const *route_url,
-				      msg_t *msg,
-				      tag_type_t tag, tag_value_t value, ...);
-
 nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
 				     nta_response_f *callback,
 				     nta_outgoing_magic_t *magic,
-				     url_string_t const *route_url, 
-				     msg_t *msg);
+				     url_string_t const *route_url,
+				     msg_t *msg,
+				     tag_type_t tag, tag_value_t value, ...);
 
 int nta_outgoing_status(nta_outgoing_t const *orq);
 sip_method_t nta_outgoing_method(nta_outgoing_t const *orq);
-sip_u32_t nta_outgoing_cseq(nta_outgoing_t const *orq);
+uint32_t nta_outgoing_cseq(nta_outgoing_t const *orq);
 
 unsigned nta_outgoing_delay(nta_outgoing_t const *orq);
 
@@ -3460,7 +3450,7 @@ msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq);
 nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq, 
 				    nta_response_f *callback,
 				    nta_outgoing_magic_t *magic,
-				    sip_param_t to_tag,
+				    msg_param_t to_tag,
 				    sip_rseq_t const *rseq);
 
 int nta_outgoing_cancel(nta_outgoing_t *);

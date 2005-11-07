@@ -127,6 +127,9 @@ nta_outgoing_t *nta_outgoing_tbye(nta_outgoing_t *orq,
 				  url_string_t const *route_url,
 				  tag_type_t tag, tag_value_t value, ...);
 
+/** Process message statefully using @a leg. */
+int nta_leg_stateful(nta_leg_t *leg, msg_t *msg);
+
 typedef nta_ack_cancel_f nta_incoming_f;
 
 #define nta_incoming_request  nta_incoming_getrequest

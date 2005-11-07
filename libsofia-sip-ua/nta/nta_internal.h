@@ -111,7 +111,7 @@ struct nta_agent_s
   uint64_t           sa_branch; /**< Counter for generating branch parameter */
   uint64_t           sa_tags;   /**< Counter for generating tag parameters */
 
-  sip_param_t        sa_2543_tag; /**< Fixed tag added to To when responding */
+  msg_param_t        sa_2543_tag; /**< Fixed tag added to To when responding */
 
 #if HAVE_SOFIA_SRESOLV
   sres_resolver_t   *sa_resolver; /**< DNS resolver */
@@ -466,7 +466,7 @@ struct nta_outgoing_s
   sip_cseq_t const     *orq_cseq;
   sip_call_id_t const  *orq_call_id;
 
-  sip_param_t           orq_tag;        /**< Tag from final response. */
+  msg_param_t           orq_tag;        /**< Tag from final response. */
 
   su_time_t             orq_sent;       /**< When request was sent? */
   unsigned              orq_delay;      /**< RTT estimate */
@@ -518,8 +518,8 @@ struct nta_outgoing_s
   tagi_t               *orq_tags;       /**< Tport tag items */
   int                   orq_pending;    /**< Request is pending in tport */
 
-  sip_param_t           orq_branch;	/**< Transaction branch */
-  sip_param_t           orq_via_branch;	/**< Via branch */
+  msg_param_t           orq_branch;	/**< Transaction branch */
+  msg_param_t           orq_via_branch;	/**< Via branch */
   url_t const          *orq_url;        /**< Original RequestURI  */
 
   msg_t		       *orq_request;
@@ -527,13 +527,6 @@ struct nta_outgoing_s
 
   nta_outgoing_t       *orq_cancel;     /**< CANCEL transaction */
 };
-
-/* ====================================================================== */
-
-int nta_msg_mreply(nta_agent_t *agent,
-		   msg_t *reply, sip_t *sip,
-		   int status, char const *phrase,
-		   msg_t *req_msg);
 
 /* ====================================================================== */
 /* Debug log settings */

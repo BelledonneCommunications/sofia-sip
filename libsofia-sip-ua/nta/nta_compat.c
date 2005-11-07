@@ -72,10 +72,10 @@ int nta_agent_set_uas(nta_agent_t *agent, int value)
  *
  * @deprecated Use nta_agent_set_params() and NTATAG_BRANCH_KEY() instead.
  */
-sip_param_t nta_agent_set_branch(nta_agent_t *agent, 
-				 sip_param_t branch)
+msg_param_t nta_agent_set_branch(nta_agent_t *agent, 
+				 msg_param_t branch)
 {
-  sip_param_t retval = "";
+  msg_param_t retval = "";
 
   nta_agent_set_params(agent, NTATAG_BRANCH_KEY(branch), TAG_END());
   nta_agent_get_params(agent, NTATAG_BRANCH_KEY_REF(retval), TAG_END());
@@ -107,7 +107,7 @@ int nta_agent_set_proxy(nta_agent_t *agent, url_string_t const *u)
  *
  * @sa NTATAG_TAG_3261().
  */
-sip_param_t nta_agent_tag(nta_agent_t const *agent)
+msg_param_t nta_agent_tag(nta_agent_t const *agent)
 {
   return 
     (agent && agent->sa_2543_tag)
@@ -141,8 +141,8 @@ int nta_msg_vreply(nta_agent_t *agent,
   if (sip_add_headers(reply, sip, extra, headers) < 0)
     sip = NULL;
 
-  return nta_msg_tmreply(agent, reply, sip,
-			 status, phrase, req_msg, TAG_END());
+  return nta_msg_mreply(agent, reply, sip,
+			status, phrase, req_msg, TAG_END());
 }
 
 /** Send the message (stdarg version of nta_msg_send()). */
@@ -222,6 +222,49 @@ nta_leg_t *nta_msg_leg(nta_agent_t *agent,
   SU_DEBUG_9(("\tnta_msg_leg(): returns %p\n", leg));
 
   return leg;
+}
+
+static void sm_leg_recv(su_root_magic_t *rm,
+			su_msg_r msg,
+			union sm_arg_u *u);
+
+/** Process msg statefully using the leg. */
+int nta_leg_stateful(nta_leg_t *leg, msg_t *msg)
+{
+  su_msg_r su_msg = SU_MSG_RINITIALIZER;
+  nta_agent_t *agent = leg->leg_agent;
+  su_root_t *root = agent->sa_root;
+  struct leg_recv_s *a;
+
+  /* Create a su message that is passed to NTA network thread */
+  if (su_msg_create(su_msg,
+		    su_root_task(root),
+		    su_root_task(root),
+		    sm_leg_recv, /* Function to call */
+		    sizeof(struct leg_recv_s)) == SU_FAILURE)
+    return -1;
+
+  agent->sa_stats->as_trless_to_tr++;
+
+  a = su_msg_data(su_msg)->a_leg_recv;
+
+  a->leg = leg;
+  a->msg = msg;
+
+  a->tport = tport_incref(tport_delivered_by(agent->sa_tports, msg));
+
+  return su_msg_send(su_msg);
+}
+
+/** @internal Delayed leg_recv(). */
+static
+void sm_leg_recv(su_root_magic_t *rm,
+		 su_msg_r msg,
+		 union sm_arg_u *u)
+{
+  struct leg_recv_s *a = u->a_leg_recv;
+  leg_recv(a->leg, a->msg, sip_object(a->msg), a->tport);
+  tport_decref(&a->tport);
 }
 
 /**Create a new leg object
@@ -346,6 +389,89 @@ int nta_leg_route(nta_leg_t *leg,
   return nta_leg_client_route(leg, route, contact);
 }
 
+#if 0
+/**Get response message.
+ *
+ * The function nta_incoming_getresponse() retrieves a copy of the latest
+ * outgoing response message.  The response message is copied; the original
+ * copy is kept by the transaction.
+ *
+ * @param irq incoming (server) transaction handle
+ *
+ * @retval
+ * A pointer to the copy of the response message is returned, or NULL if an
+ * error occurred.
+ */
+msg_t *nta_incoming_getresponse(nta_incoming_t *irq)
+{
+  if (irq && irq->irq_response) {
+    msg_t *msg = nta_msg_create(irq->irq_agent, 0);
+    sip_t *sip = sip_object(msg);
+
+    msg_clone(msg, irq->irq_response);
+
+    /* Copy the SIP headers from the old message */
+    if (msg_copy_all(msg, sip, sip_object(irq->irq_response)) >= 0)
+      return msg;
+
+    msg_destroy(msg);
+  }
+
+  return NULL;
+}
+
+/**Get request message.
+ *
+ * The function nta_outgoing_getrequest() retrieves the request message sent
+ * to the network. The request message is copied; the original copy is kept
+ * by the transaction.
+ *
+ * @param orq outgoing transaction handle
+ *
+ * @retval
+ * A pointer to the copy of the request message is returned, or NULL if an
+ * error occurred.
+ */
+msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq)
+{
+  if (orq && orq->orq_request) {
+    msg_t *msg = nta_msg_create(orq->orq_agent, 0);
+    sip_t *sip = sip_object(msg);
+
+    msg_clone(msg, orq->orq_request);
+
+    /* Copy the SIP headers from the old message */
+    if (sip_copy_all(msg, sip, sip_object(orq->orq_request)) >= 0)
+      return msg;
+
+    msg_destroy(msg);
+  }
+
+  return NULL;
+}
+
+/**Get latest response message.
+ *
+ * The function nta_outgoing_getresponse() retrieves the latest incoming
+ * response message to the outgoing transaction.  Note that the message is
+ * not copied, but removed from the transaction.
+ *
+ * @param orq outgoing transaction handle
+ *
+ * @retval
+ * A pointer to response message is returned, or NULL if no response message
+ * has been received or the response message has already been retrieved.
+ */
+msg_t *nta_outgoing_getresponse(nta_outgoing_t *orq)
+{
+  msg_t *msg = NULL;
+
+  if (orq && orq->orq_response)
+    msg = orq->orq_response, orq->orq_response = NULL;
+
+  return msg;
+}
+#endif
 
 /** Create an outgoing request belonging to the leg.
  *

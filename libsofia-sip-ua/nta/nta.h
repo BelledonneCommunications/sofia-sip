@@ -120,7 +120,8 @@ nta_agent_t *nta_agent_create(su_root_t *root,
 			      url_string_t const *name,
 			      nta_message_f *callback,
 			      nta_agent_magic_t *magic,
-			      tag_type_t tag, /* tag_value_t value, */ ...);
+			      tag_type_t tag, tag_value_t value, ...);
+
 void nta_agent_destroy(nta_agent_t *agent);
 sip_contact_t *nta_agent_contact(nta_agent_t const *a);
 sip_via_t *nta_agent_via(nta_agent_t const *a);
@@ -131,7 +132,7 @@ int nta_agent_add_tport(nta_agent_t *agent,
 			url_string_t const *url,
 			tag_type_t tag, tag_value_t value, ...);
 
-sip_param_t nta_agent_newtag(su_home_t *, char const *fmt, nta_agent_t *);
+msg_param_t nta_agent_newtag(su_home_t *, char const *fmt, nta_agent_t *);
 
 int nta_agent_set_params(nta_agent_t *agent, 
 			 tag_type_t tag, tag_value_t value, ...);
@@ -160,9 +161,6 @@ int nta_msg_request_complete(msg_t *msg,
 			     sip_method_t method, 
 			     char const *method_name,
 			     url_string_t const *req_url);
-
-int nta_msg_default_headers(nta_agent_t *agent, 
-			    tag_type_t tag, tag_value_t value, ...);
 
 int nta_is_internal_msg(msg_t const *msg);
 
@@ -259,15 +257,14 @@ char const *nta_incoming_tag_3261(nta_incoming_t *irq, char const *tag);
 int nta_incoming_status(nta_incoming_t const *irq);
 sip_method_t nta_incoming_method(nta_incoming_t const *irq);
 url_t const *nta_incoming_url(nta_incoming_t const *irq);
-sip_u32_t nta_incoming_cseq(nta_incoming_t const *irq);
+uint32_t nta_incoming_cseq(nta_incoming_t const *irq);
 
 int nta_incoming_set_params(nta_incoming_t *irq,
 			    tag_type_t tag, tag_value_t value, ...);
 
 msg_t *nta_incoming_getrequest(nta_incoming_t *irq);
-msg_t *nta_incoming_getresponse(nta_incoming_t *irq);
-
 msg_t *nta_incoming_getrequest_ackcancel(nta_incoming_t *irq);
+msg_t *nta_incoming_getresponse(nta_incoming_t *irq);
 
 int nta_incoming_treply(nta_incoming_t *ireq, 
 			int status, char const *phrase, 
@@ -293,23 +290,17 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
 				     url_string_t const *request_uri,
 				     tag_type_t tag, tag_value_t value, ...);
 
-nta_outgoing_t *nta_outgoing_tmcreate(nta_agent_t *agent,
-				      nta_response_f *callback,
-				      nta_outgoing_magic_t *magic,
-				      url_string_t const *route_url,
-				      msg_t *msg,
-				      tag_type_t tag, tag_value_t value, ...);
-
 nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
 				     nta_response_f *callback,
 				     nta_outgoing_magic_t *magic,
 				     url_string_t const *route_url, 
-				     msg_t *msg);
+				     msg_t *msg,
+				     tag_type_t tag, tag_value_t value, ...);
 
 int nta_outgoing_status(nta_outgoing_t const *orq);
 sip_method_t nta_outgoing_method(nta_outgoing_t const *orq);
 char const *nta_outgoing_method_name(nta_outgoing_t const *orq);
-sip_u32_t nta_outgoing_cseq(nta_outgoing_t const *orq);
+uint32_t nta_outgoing_cseq(nta_outgoing_t const *orq);
 
 unsigned nta_outgoing_delay(nta_outgoing_t const *orq);
 
@@ -319,13 +310,10 @@ url_t const *nta_outgoing_route_uri(nta_outgoing_t const *orq);
 msg_t *nta_outgoing_getresponse(nta_outgoing_t *orq);
 msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq);
 
-msg_t *nta_outgoing_getresponse_ref(nta_outgoing_t *orq);
-msg_t *nta_outgoing_getrequest_ref(nta_outgoing_t *orq);
-
 nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq, 
 				    nta_response_f *callback,
 				    nta_outgoing_magic_t *magic,
-				    sip_param_t to_tag,
+				    msg_param_t to_tag,
 				    sip_rseq_t const *rseq);
 
 int nta_outgoing_cancel(nta_outgoing_t *);
@@ -390,5 +378,10 @@ nta_reliable_t *nta_reliable_mreply(nta_incoming_t *irq,
 
 void nta_reliable_destroy(nta_reliable_t *);
 
+/* ----------------------------------------------------------------------
+ * Backward-compatibility stuff
+ */
+
+#define nta_outgoing_tmcreate nta_outgoing_mcreate
 
 #endif

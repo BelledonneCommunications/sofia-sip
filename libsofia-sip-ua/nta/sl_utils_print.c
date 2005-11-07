@@ -189,7 +189,7 @@ int sl_contact_print(FILE *stream, char const *fmt, sip_contact_t const *m)
 int sl_allow_print(FILE *stream, char const *fmt, sip_allow_t const *allow)
 {
   char *s, b[1024], *end = b + sizeof(b) - 1;
-  sip_param_t const *p;
+  msg_param_t const *p;
   sip_allow_t const *k = allow;
 
   s = b; *end = '\0';

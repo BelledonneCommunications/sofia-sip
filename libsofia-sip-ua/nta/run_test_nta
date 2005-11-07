@@ -48,7 +48,7 @@ export PATH
 me6="::1"
 
 if ../su/localinfo -6 -n -g -s >& /dev/null ; then
-    ipv6=true aaaa=aaaa
+    ipv6=true aaaa=aaaa v6flag=-6
     me6=$(../su/localinfo -6 -n -s -g | awk '{print $1; exit(0); }')
 else
     if ! ../su/localinfo '--help' >& /dev/null ; then
@@ -62,10 +62,10 @@ fi
 if type named >& /dev/null && ./portbind --help >& /dev/null
 then
 
-port=$(./portbind) sink=$port
-port=$(./portbind $((port + 1))) down=$port
-port=$(./portbind $((port + 1))) bind=$port
-port=$(./portbind $((port + 1))) contact=$port
+port=$(./portbind $v6flag) sink=$port
+port=$(./portbind $v6flag $((port + 1))) down=$port
+port=$(./portbind $v6flag $((port + 1))) bind=$port
+port=$(./portbind $v6flag $((port + 1))) contact=$port
 
 if eval $ipv6 ; then
     listen="listen-on-v6 port $bind { any; };"
