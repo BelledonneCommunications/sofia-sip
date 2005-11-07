@@ -31,7 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Thu Dec 19 15:56:35 2002 ppessi
- * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include <su_log.h>

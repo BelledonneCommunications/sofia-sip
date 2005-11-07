@@ -30,8 +30,6 @@
  * @author Jari Urpalainen <Jari.Urpalainen@nokia.com>
  *
  * @date Created: Thu Jan 15 17:23:21 2004 ppessi
- * 
- * @date Last modified: Wed Jul 20 20:35:21 2005 kaiv
  */
 
 #include "config.h"

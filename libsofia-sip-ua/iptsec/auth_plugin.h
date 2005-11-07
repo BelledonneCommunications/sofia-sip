@@ -32,7 +32,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Apr 27 15:22:07 2004 ppessi
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #ifndef AUTH_MODULE_H
