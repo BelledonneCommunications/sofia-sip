@@ -299,7 +299,7 @@ msg_#xxxxxx#_t *msg_#xxxxxx#_copy(su_home_t *home,
 #if SU_HAVE_INLINE
 su_inline msg_#xxxxxx#_t *msg_#xxxxxx#_make(su_home_t *home, char const *s)
 {
-  return msg_header_make(home, msg_#xxxxxx#_class, s)->sh_#xxxxxx#;
+  return (msg_#xxxxxx#_t *)msg_header_make(home, msg_#xxxxxx#_class, s);
 }
 #else
 msg_#xxxxxx#_t *msg_#xxxxxx#_make(su_home_t *home, char const *s);
@@ -343,7 +343,7 @@ su_inline msg_#xxxxxx#_t *msg_#xxxxxx#_format(su_home_t *home, char const *fmt, 
   h = msg_header_vformat(home, msg_#xxxxxx#_class, fmt, ap);
   va_end(ap);
  
-  return h->sh_#xxxxxx#;
+  return (msg_#xxxxxx#_t *)h;
 }
 #endif
 

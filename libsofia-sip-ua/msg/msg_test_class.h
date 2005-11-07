@@ -151,13 +151,12 @@ union msg_test_u
   msg_unknown_t   sh_unknown[1];
 };
 
-int msg_test_extract_body(msg_t *msg, msg_test_t *tst, 
-				  char b[], int bsiz, int eos);
+int msg_test_extract_body(msg_t *, msg_pub_t *, char b[], int bsiz, int eos);
 
 static inline
 msg_test_t *msg_test_public(msg_t *msg)
 {
-  return msg_public(msg, MSG_TEST_PROTOCOL_TAG);
+  return (msg_test_t *)msg_public(msg, MSG_TEST_PROTOCOL_TAG);
 }
 
 #endif

@@ -45,6 +45,7 @@
 
 #include <su.h>
 
+#include "msg_internal.h"
 #include "msg.h"
 #include "msg_parser.h"
 #include "msg_header.h"
@@ -344,4 +345,162 @@ char *msg_default_dup_one(msg_header_t *h,
 	 h->sh_class->hc_size - offsetof(msg_header_t, sh_header_next[1]));
 
   return b;
+}
+
+/* ====================================================================== */
+/* Copying or duplicating all headers in a message */
+
+static int msg_copy_chain(msg_t *msg, msg_t const *copied);
+static int msg_dup_or_copy_all(msg_t *msg, 
+			       msg_t const *original,
+			       msg_header_t *(*copy_one)(su_home_t *h, 
+							 msg_header_t const *));
+
+
+/**Copy a message shallowly.
+ *
+ * @relates msg_s
+ *
+ * The copied message will share all the strings with the original message. 
+ * The original message is not destroyed until all the copies have been
+ * destroyed.
+ *
+ * @param original message to be copied
+ */
+msg_t *msg_copy(msg_t *original)
+{
+  if (original) {
+    msg_t *copy = msg_create(original->m_class, original->m_object->msg_flags);
+
+    if (copy) {
+      if (original->m_chain 
+	  ? msg_copy_chain(copy, original) < 0 
+	  : msg_dup_or_copy_all(copy, original, msg_header_copy_one) < 0) {
+	msg_destroy(copy), copy = NULL;
+      }
+
+      if (copy)
+	msg_set_parent(copy, original);
+
+      return copy;
+    }
+  }
+
+  return NULL;
+}
+
+static
+int msg_copy_chain(msg_t *msg, msg_t const *original)
+{
+  su_home_t *home = msg_home(msg);
+  msg_pub_t *dst = msg->m_object;
+  msg_header_t **tail;
+  msg_header_t *dh;
+  msg_header_t const *sh;
+  msg_header_t **hh;
+  
+  tail = msg->m_tail;
+  
+  for (sh = original->m_chain; sh; sh = (msg_header_t const *)sh->sh_succ) {
+    hh = msg_hclass_offset(msg->m_class, dst, sh->sh_class);
+    if (!hh)
+      break;
+    while (*hh)
+      hh = &(*hh)->sh_next;
+      
+    dh = msg_header_copy_one(home, sh);
+    if (!dh) 
+      break;
+
+    dh->sh_prev = tail, *tail = dh, tail = &dh->sh_succ;
+
+    *hh = dh;
+  }
+
+  msg->m_tail = tail;
+
+  if (sh)
+    return -1;
+
+  return 0;
+
+}
+
+/**Deep copy a message.
+ *
+ * @relates msg_s
+ *
+ * The duplicated message does not share any (non-const) data with original.
+ *
+ * @param original message to be duplicated
+ */
+msg_t *msg_dup(msg_t const *original)
+{
+  if (original) {
+    msg_t *dup = msg_create(original->m_class, original->m_object->msg_flags);
+
+    if (dup && msg_dup_or_copy_all(dup, original, msg_header_dup_one) < 0) {
+      msg_destroy(dup), dup = NULL;
+    }
+
+    return dup;
+  }
+
+  return NULL;
+}
+
+/** Copy a complete message, not keeping the header chain structure. */
+static
+int msg_dup_or_copy_all(msg_t *msg, 
+			msg_t const *original,
+			msg_header_t *(*copy_one)(su_home_t *h, 
+						  msg_header_t const *))
+{
+  su_home_t *home = msg_home(msg);
+  msg_pub_t *dst = msg->m_object;
+
+  msg_pub_t const *src = original->m_object;
+  msg_header_t * const *ssh;
+  msg_header_t * const *end;
+  msg_header_t const *sh;
+  msg_header_t **hh;
+
+  msg_header_t *h;
+
+  assert(copy_one);
+
+  end = (msg_header_t**)((char *)src + src->msg_size);
+  
+  for (ssh = &src->msg_request; ssh < end; ssh++) {
+    sh = *ssh;
+    if (!sh)
+      continue;
+
+    hh = msg_hclass_offset(msg->m_class, dst, sh->sh_class);
+    if (hh == NULL)
+	return -1;
+
+    for (; sh; sh = sh->sh_next) {
+      h = copy_one(home, sh);
+      if (h == NULL)
+	return -1;
+
+      if (*hh) {
+	/* If there is multiple instances of single headers,
+	   put the extra headers into the list of erroneous headers */
+	if (msg_is_single(h))
+	  hh = (msg_header_t**)&dst->msg_error;
+
+	while (*hh)
+	  hh = &(*hh)->sh_next;
+      }
+      *hh = h;
+
+      if (msg_is_list(sh))
+	/* Copy only first list entry */
+	break;
+    }
+  }
+
+  return 0;
 }

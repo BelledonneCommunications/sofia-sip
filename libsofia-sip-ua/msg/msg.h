@@ -43,7 +43,7 @@ msg_t *msg_create(msg_mclass_t const *mc, int flags);
 void msg_destroy(msg_t *);
 
 msg_t *msg_copy(msg_t *);
-msg_t *msg_dup(msg_t *);
+msg_t *msg_dup(msg_t const *);
 
 void msg_set_parent(msg_t *kid, msg_t *dad);
 
@@ -58,7 +58,7 @@ int msg_extract(msg_t *msg);
 unsigned msg_extract_errors(msg_t const *msg);
 int msg_is_complete(msg_t const *msg);
 int msg_has_error(msg_t const *msg);
-msg_header_t **msg_chain_head(msg_t *msg);
+msg_header_t **msg_chain_head(msg_t const *msg);
 
 int msg_serialize(msg_t *msg, msg_pub_t *mo);
 int msg_prepare(msg_t *msg);

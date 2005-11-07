@@ -69,7 +69,7 @@ MSG_HEADER_CLASS(msg_, request, NULL, "", rq_common,
 /** Decode a request line */
 int msg_request_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
-  msg_request_t *rq = h->sh_request;
+  msg_request_t *rq = (msg_request_t *)h;
   char *uri, *version;
 
   if (msg_firstline_d(s, &uri, &version) < 0 || !uri ||
@@ -85,7 +85,7 @@ int msg_request_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 /**Encode a request line. */
 int msg_request_e(char b[], int bsiz, msg_header_t const *h, int flags)
 {
-  msg_request_t const *rq = h->sh_request;
+  msg_request_t const *rq = (msg_request_t const *)h;
 
   return snprintf(b, bsiz, "%s " URL_FORMAT_STRING " %s" CRLF,
 		  rq->rq_method_name,
@@ -96,7 +96,7 @@ int msg_request_e(char b[], int bsiz, msg_header_t const *h, int flags)
 int msg_request_dup_xtra(msg_header_t const *h, int offset)
 {
   int rv = offset;
-  msg_request_t const *rq = h->sh_request;
+  msg_request_t const *rq = (msg_request_t const *)h;
 
   rv += url_xtra(rq->rq_url);
   rv += MSG_STRING_SIZE(rq->rq_method_name);
@@ -109,8 +109,8 @@ int msg_request_dup_xtra(msg_header_t const *h, int offset)
 char *msg_request_dup_one(msg_header_t *dst, msg_header_t const *src,
 			  char *b, int xtra)
 {
-  msg_request_t *rq = dst->sh_request;
-  msg_request_t const *o = src->sh_request;
+  msg_request_t *rq = (msg_request_t *)dst;
+  msg_request_t const *o = (msg_request_t const *)src;
   char *end = b + xtra;
 
   URL_DUP(b, end, rq->rq_url, o->rq_url);
@@ -137,7 +137,7 @@ MSG_HEADER_CLASS(msg_, status, NULL, "", st_common,
 /** Parse status line */
 int msg_status_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
-  msg_status_t *st = h->sh_status;
+  msg_status_t *st = (msg_status_t *)h;
   char *status, *phrase;
   unsigned long code;
 
@@ -154,26 +154,21 @@ int msg_status_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 
 int msg_status_e(char b[], int bsiz, msg_header_t const *h, int flags)
 {
-  int status;
-
-  // assert(msg_status_p(h));
-
-  status = h->sh_status->st_status;
+  msg_status_t const *st = (msg_status_t const *)h;
+  int status = st->st_status;
 
   if (status > 999 || status < 100)
     status = 0;
 
-  return snprintf(b, bsiz, "%s %03u %s" CRLF,
-		  h->sh_status->st_version,
-		  status,
-		  h->sh_status->st_phrase);
+  return snprintf(b, bsiz, "%s %03u %s" CRLF, 
+		  st->st_version, status, st->st_phrase);
 }
 
 /** Extra size of a msg_status_t object. */
 int msg_status_dup_xtra(msg_header_t const *h, int offset)
 {
   int rv = offset;
-  msg_status_t const *st = h->sh_status;
+  msg_status_t const *st = (msg_status_t const *)h;
   rv += MSG_STRING_SIZE(st->st_version);
   rv += MSG_STRING_SIZE(st->st_phrase);
   return rv;
@@ -183,8 +178,8 @@ int msg_status_dup_xtra(msg_header_t const *h, int offset)
 char *msg_status_dup_one(msg_header_t *dst, msg_header_t const *src,
 			 char *b, int xtra)
 {
-  msg_status_t *st = dst->sh_status;
-  msg_status_t const *o = src->sh_status;
+  msg_status_t *st = (msg_status_t *)dst;
+  msg_status_t const *o = (msg_status_t const *)src;
   char *end = b + xtra;
 
   MSG_STRING_DUP(b, st->st_version, o->st_version);
@@ -208,15 +203,16 @@ char *msg_status_dup_one(msg_header_t *dst, msg_header_t const *src,
  * @retval 0       cannot proceed
  * @retval other   number of bytes extracted
  */
-int msg_test_extract_body(msg_t *msg, msg_test_t *tst, 
+int msg_test_extract_body(msg_t *msg, msg_pub_t *pub, 
 			  char b[], int bsiz, int eos)
 {
+  msg_test_t *tst = (msg_test_t *)pub;
   int m = 0;
   unsigned body_len;
 
   if (!(tst->msg_flags & MSG_FLG_BODY)) {
     /* We are looking at a potential empty line */
-    m = msg_extract_separator(msg, tst, b, bsiz, eos);
+    m = msg_extract_separator(msg, (msg_pub_t *)tst, b, bsiz, eos);
     if (m == 0 || m == -1)
       return m;
     tst->msg_flags |= MSG_FLG_BODY;
@@ -241,7 +237,7 @@ int msg_test_extract_body(msg_t *msg, msg_test_t *tst,
   if (m)
     return m;
 
-  if ((m = msg_extract_payload(msg, tst, NULL, body_len, b, bsiz, eos) ) == -1)
+  if ((m = msg_extract_payload(msg, (msg_pub_t *)tst, NULL, body_len, b, bsiz, eos) ) == -1)
     return -1;
   
   tst->msg_flags |= MSG_FLG_FRAGS;
@@ -253,7 +249,7 @@ int msg_test_extract_body(msg_t *msg, msg_test_t *tst,
 msg_href_t const msg_content_length_href[1] = 
   {{
     msg_content_length_class,
-    offsetof(msg_pub_t, msg_content_length)
+    offsetof(msg_test_t, msg_content_length)
   }};
 
 #include <su_tag_class.h>
@@ -337,7 +333,7 @@ tagi_t *tsttag_filter(tagi_t *dst,
     msg_test_t const *tst = (msg_test_t const *)src->t_value;
     msg_mclass_t *mc = (msg_mclass_t *)tst->msg_ident;
     msg_header_t const **hh = (msg_header_t const **)
-      msg_hclass_offset(mc, (msg_test_t *)tst, hc);
+      msg_hclass_offset(mc, (msg_pub_t *)tst, hc);
     msg_header_t const *h;
 
     if (tst == NULL || 
@@ -389,20 +385,20 @@ int tst_add_tl(msg_t *msg, msg_test_t *tst,
       if (h == NULL)
 	;
       else if (h == MSG_HEADER_NONE) {	/* Remove header */
-	hh = msg_hclass_offset(msg_mclass(msg), tst, hc);
+	hh = msg_hclass_offset(msg_mclass(msg), (msg_pub_t *)tst, hc);
 	while (hh && *hh)
-	  msg_header_remove(msg, tst, *hh);
-      } else if (msg_header_add_dup_as(msg, tst, hc, h) < 0)
+	  msg_header_remove(msg, (msg_pub_t *)tst, *hh);
+      } else if (msg_header_add_dup_as(msg, (msg_pub_t *)tst, hc, h) < 0)
 	break;
     }
     else if (TSTTAG_STR_P(tag)) {
       msg_hclass_t *hc = (msg_hclass_t *)tag->tt_magic;
       char const *s = (char const *)value;
-      if (s && msg_header_add_make(msg, tst, hc, s) < 0)
+      if (s && msg_header_add_make(msg, (msg_pub_t *)tst, hc, s) < 0)
 	break;
     }
     else if (tag == tsttag_header_str) {
-      if (msg_header_add_str(msg, tst, (char const *)value) < 0)
+      if (msg_header_add_str(msg, (msg_pub_t *)tst, (char const *)value) < 0)
 	break;
     }
   }

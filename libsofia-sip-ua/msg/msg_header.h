@@ -52,9 +52,9 @@ msg_header_t *msg_header_alloc(su_home_t *, msg_hclass_t *hc, int extra)
      __attribute__((__malloc__));
 int msg_header_size(msg_header_t const *h);
 
-msg_header_t **msg_header_offset(msg_t *, msg_pub_t *, msg_header_t const *);
+msg_header_t **msg_header_offset(msg_t const *, msg_pub_t const *, msg_header_t const *);
 msg_header_t **msg_hclass_offset(msg_mclass_t const *, 
-				 msg_pub_t *, msg_hclass_t *);
+				 msg_pub_t const *, msg_hclass_t *);
 msg_header_t *msg_header_access(msg_pub_t const *pub, msg_hclass_t *hc);
 
 msg_header_t *msg_header_copy_as(su_home_t *home, 
@@ -80,7 +80,7 @@ int msg_object_e(char b[], int size, msg_pub_t const *mo, int flags);
 int msg_header_field_e(char b[], int bsiz, msg_header_t const *h, int flags);
 
 int msg_copy_all(msg_t *msg, msg_pub_t *dst, msg_pub_t const *src);
-int msg_dup_all(msg_t *msg, msg_pub_t *dst, msg_pub_t const *src);
+
 int msg_header_remove(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
 int msg_header_remove_all(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
 
@@ -129,6 +129,11 @@ msg_header_t *msg_header_vformat(su_home_t *home,
 				 char const *fmt,
 				 va_list ap)
      __attribute__((__malloc__));
+
+
+void msg_header_free(su_home_t *home, msg_header_t *h);
+
+void msg_header_free_all(su_home_t *home, msg_header_t *h);
 
 msg_payload_t *msg_payload_create(su_home_t *home, void const *data, int len)
      __attribute__((__malloc__));

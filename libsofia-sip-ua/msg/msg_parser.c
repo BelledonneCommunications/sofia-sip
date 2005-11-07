@@ -117,35 +117,10 @@ void msg_set_streaming(msg_t *msg, enum msg_streaming_status what)
     msg->m_streaming = what != 0;
 }
 
+/* ---------------------------------------------------------------------- */
+
 /** Test if header is not in the chain */
 #define msg_header_is_removed(h) ((h)->sh_prev == NULL)
-
-static inline int msg_is_single(msg_header_t const *h)
-{
-  return h->sh_class->hc_kind == msg_kind_single;
-}
-
-static inline int msg_is_prepend(msg_header_t const *h)
-{
-  return h->sh_class->hc_kind == msg_kind_prepend;
-}
-
-static inline int msg_is_append(msg_header_t const *h)
-{
-  return 
-    h->sh_class->hc_kind == msg_kind_append ||
-    h->sh_class->hc_kind == msg_kind_apndlist;
-}
-
-static inline int msg_is_list(msg_header_t const *h)
-{
-  return h->sh_class->hc_kind == msg_kind_list;
-}
-
-static inline int msg_is_special(msg_header_t const *h)
-{
-  return h->sh_class->hc_hash < 0;
-}
 
 static inline int msg_is_request(msg_header_t const *h)
 {
@@ -457,6 +432,7 @@ int msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], int veclen,
   }
 #endif
 }
+
 
 /** Obtain a buffer for receiving data */
 int msg_recv_buffer(msg_t *msg, void **return_buffer)
@@ -1216,7 +1192,7 @@ int msg_extract_separator(msg_t *msg, msg_pub_t *mo,
   return l;
 }
 
-static inline msg_header_t **msg_chain_tail(msg_t *msg);
+static inline msg_header_t **msg_chain_tail(msg_t const *msg);
 
 /** Extract a message body of @a body_len bytes.
   */
@@ -1678,18 +1654,18 @@ static msg_header_t **serialize_one(msg_t *msg, msg_header_t *h,
 				    msg_header_t **prev);
 
 /** Return head of the fragment chain */
-msg_header_t **msg_chain_head(msg_t *msg)
+msg_header_t **msg_chain_head(msg_t const *msg)
 {
-  return msg ? &msg->m_chain : NULL;
+  return msg ? (msg_header_t **)&msg->m_chain : NULL;
 }
 
-static inline msg_header_t **_msg_chain_head(msg_t *msg)
+static inline msg_header_t **_msg_chain_head(msg_t const *msg)
 {
-  return msg ? &msg->m_chain : NULL;
+  return msg ? (msg_header_t **)&msg->m_chain : NULL;
 }
 
 /** Return tail of the fragment chain */
-static inline msg_header_t **msg_chain_tail(msg_t *msg)
+static inline msg_header_t **msg_chain_tail(msg_t const *msg)
 {
   return msg ? msg->m_tail : NULL;
 }
@@ -2258,7 +2234,7 @@ int msg_header_prepend(msg_t *msg,
 
 /** Find place to insert header of the class @a hc. */
 msg_header_t **
-msg_hclass_offset(msg_mclass_t const *mc, msg_pub_t *mo, msg_hclass_t *hc)
+msg_hclass_offset(msg_mclass_t const *mc, msg_pub_t const *mo, msg_hclass_t *hc)
 {
   int i;
 
@@ -2749,7 +2725,7 @@ int msg_header_replace(msg_t *msg,
   replaced->sh_succ = NULL;
 
   if (replaced->sh_data) {
-    /* Remove cached encoding if it is shared with two header fragments */
+    /* Remove cached encoding if it is shared with more than one header fragments */
     int cleared = 0;
     void const *data = (char *)replaced->sh_data + replaced->sh_len;
 
@@ -2766,175 +2742,22 @@ int msg_header_replace(msg_t *msg,
   return 0;
 }
 
-
-
-
-/* ====================================================================== */
-/* Copying or duplicating all headers in a message */
-
-static inline int append_copied(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
-static
-int msg_dup_or_copy_all(msg_t *msg, msg_pub_t *dst, msg_pub_t const *src,
-			msg_header_t *(*copy_one)(su_home_t *h, 
-						  msg_header_t const *));
-
-/**Shallow copy a message.
- *
- * @relates msg_s
- *
- * The copied message will share all the strings with its parent message. 
- * The parent message is not destroyed until all the clones and copies have
- * been destroyed.
- *
- * @param parent  parent message
- */
-msg_t *msg_copy(msg_t *parent)
+/** Free a header structure */
+void msg_header_free(su_home_t *home, msg_header_t *h)
 {
-  if (parent) {
-    msg_t *copy = msg_create(parent->m_class, parent->m_object->msg_flags);
-
-    if (copy && msg_copy_all(copy, copy->m_object, parent->m_object) != -1) {
-      msg_clone(copy, parent);
-      return copy;
-    }
-
-    msg_destroy(copy);
-  }
-
-  return NULL;
+  su_free(home, h);
 }
 
-/** Copy a complete message shallowly, keeping the header chain structure. */
-int msg_copy_all(msg_t *msg, msg_pub_t *dst, msg_pub_t const *src)
+/** Free a (list of) header structures */
+void msg_header_free_all(su_home_t *home, msg_header_t *h)
 {
-  su_home_t *home = msg_home(msg);
-  msg_header_t *dh;
-  msg_header_t const *sh;
+  msg_header_t *h_next;
 
-  if (src->msg_request)
-    sh = (msg_header_t const *)src->msg_request;
-  else
-    sh = (msg_header_t const *)src->msg_status;
-
-  if (sh && sh->sh_prev) {
-    for (; sh; sh = (msg_header_t const *)sh->sh_succ) {
-      dh = msg_header_copy_one(home, sh);
-      if (dh) {
-	msg_header_t **hh = msg_hclass_offset(msg->m_class, dst, dh->sh_class);
-	
-	if (!hh)
-	  return -1;
-
-	append_parsed(msg, dst, hh, dh, 1);
-      }
-      else
-	return -1;
-    }
-    return 0;
-  }
-  else {
-    return msg_dup_or_copy_all(msg, dst, src, msg_header_copy_one);
+  while (h) {
+    h_next = h->sh_next;
+    su_free(home, h);
+    h = h_next;
   }
 }
 
-/**Deep copy a message.
- *
- * @relates msg_s
- *
- * The duplicated message does not share any (non-const) data with parent.
- *
- * @param parent  parent message
- */
-msg_t *msg_dup(msg_t *parent)
-{
-  if (parent) {
-    msg_t *dup = msg_create(parent->m_class, parent->m_object->msg_flags);
 
-    if (dup && msg_dup_all(dup, dup->m_object, parent->m_object) != -1)
-      return dup;
-
-    msg_destroy(dup);
-  }
-
-  return NULL;
-}
-
-/** Duplicate a complete message, not keeping the header chain structure. */
-int msg_dup_all(msg_t *msg, msg_pub_t *dst, msg_pub_t const *src)
-{
-  return msg_dup_or_copy_all(msg, dst, src, msg_header_dup_one);
-}
-
-/** Append a header to the msg_pub_t */
-static
-int append_copied(msg_t *msg, msg_pub_t *mo, msg_header_t *h)
-{
-  msg_header_t **hh = msg_hclass_offset(msg->m_class, mo, h->sh_class);
-
-  if (hh == NULL)
-    return -1;
-
-  if (*hh) {
-    /* If there is multiple instances of single headers,
-       put the extra headers into the list of unknown and extra headers */
-    if (msg_is_single(h))
-      hh = (msg_header_t**)&mo->msg_error;
-    while (*hh)
-      hh = &(*hh)->sh_next;
-  }
-
-  *hh = h;
-
-  return 0;
-}
-
-/** Copy a complete message, not keeping the header chain structure. */
-static
-int msg_dup_or_copy_all(msg_t *msg, msg_pub_t *dst, msg_pub_t const *src,
-			msg_header_t *(*copy_one)(su_home_t *h, 
-						  msg_header_t const *))
-{
-  su_home_t *home = msg_home(msg);
-  msg_header_t const *sh;
-  msg_header_t * const *ssh;
-  msg_header_t * const *end;
-  msg_header_t * const *separator;
-  msg_header_t * const *payload;
-  msg_mclass_t const *mc = msg->m_class;
-
-  assert(copy_one);
-
-  if (src->msg_request)
-    if (append_copied(msg, dst, copy_one(home, src->msg_request)) < 0)
-      return -1;
-  if (src->msg_status)
-    if (append_copied(msg, dst, copy_one(home, src->msg_status)) < 0)
-      return -1;
-    
-  ssh = src->msg_headers;
-  separator = (msg_header_t **)((char *)src + mc->mc_separator->hr_offset);
-  payload = (msg_header_t **)((char *)src + mc->mc_payload->hr_offset);
-  end = (msg_header_t**)((char *)src + src->msg_size);
-  
-  for (; ssh < end; ssh++) {
-    if (ssh == separator || ssh == payload)
-      continue;
-    for (sh = *ssh; sh; sh = sh->sh_next) {
-      if (append_copied(msg, dst, copy_one(home, sh)) < 0)
-	return -1;
-      if (msg_is_list(sh))
-	/* Copy only first list entry */
-	break;
-    }
-  }
-  
-  /* Separator and payload(s) are copied last */
-  if ((sh = *separator))
-    if (append_copied(msg, dst, copy_one(home, sh)) < 0)
-      return -1;
-  for (sh = *payload; sh; sh = sh->sh_next)
-    if (append_copied(msg, dst, copy_one(home, sh)) < 0)
-      return -1;
-
-  return 0;
-}

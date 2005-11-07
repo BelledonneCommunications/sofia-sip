@@ -762,174 +762,6 @@ int msg_hostport_d(char **ss,
   return 0;
 }
 
-/**Parse @e name-addr.
- *
- * The function @c msg_name_addr_d() is used to parse @e name-addr
- * construction on @b From, @b To, @b Contact, @b Route, and @b Route-Record
- * headers.  It splits the argument string in four parts:
- *
- * @par
- * @e [display-name] @e addr-spec @e [parameters] @e [comment] @e [ss]
- *
- * @param home           pointer to memory home
- * @param ss             pointer to pointer to string to be parsed
- * @param return_display value-result parameter for @e display-name
- * @param return_url     value-result parameter for @e addr-spec
- * @param return_params  value-result paramater for @e parameters 
- * @param return_comment value-result parameter for @e comment
- *
- * @note After succesful call to the function @c msg_name_addr_d(), *ss
- * contains pointer to the first character not beloging to @e name-addr.  If
- * that character is a separator, the last parameter may not be NUL
- * terminated.  So, after examining value of @a **ss, the calling function
- * @b MUST set it to NUL.
- *
- * @return 
- * The function @c msg_name_addr_d() returns 0 if successful, and -1 upon an
- * error.
- */
-int msg_name_addr_d(su_home_t *home,
-		    char **ss,
-		    char const **return_display,
-		    url_t *return_url,
-		    msg_param_t const **return_params,
-		    char const **return_comment)
-{
-  char c, *s = *ss;
-  char *display = NULL, *addr_spec = NULL;
-  int n;
-
-  if (return_display && *s == '"') {
-    /* Quoted string */
-    if (msg_quoted_d(&s, &display) == -1)
-      return -1;
-
-    /* Now, we should have a '<' in s[0] */
-    if (s[0] != '<')
-      return -1;
-    s++[0] = '\0';		/* NUL terminate quoted string... */
-    n = strcspn(s, ">");
-    addr_spec = s; s += n; 
-    if (*s) *s++ = '\0'; else return -1;
-  } 
-  else {
-    if (return_display) 
-      n = span_token_lws(s);
-    else
-      n = 0;
-
-    if (s[n] == '<') {
-      /* OK, we got a display name */
-      display = s; s += n + 1; 
-      /* NUL terminate display name */
-      while (n > 0 && IS_LWS(display[n - 1]))
-	n--;
-      if (n > 0)
-	display[n] = '\0';
-      else 
-	display = "";
-
-      n = strcspn(s, ">");
-      addr_spec = s; s += n; if (*s) *s++ = '\0'; else return -1;
-    }
-    else {
-      /* No display name */
-      addr_spec = s;
-      n = strcspn(s, " ,;?");	/* we DO NOT accept ? in URL */
-      s += n;
-      if (IS_LWS(*s))
-	*s++ = '\0';
-    }
-  }
-
-  skip_lws(&s);
-
-  *ss = s;
-  if (return_display)
-    *return_display = display;
-  
-  /* Now, url may still not be NUL terminated, e.g., if 
-   * it is like "Route: url:foo,sip:bar,sip:zunk"
-   */
-  c = *s; *s = '\0';
-  if (url_d(return_url, addr_spec) == -1)
-    return -1;
-  *s = c;
-
-  if (**ss == ';' && return_params)
-    if (msg_params_d(home, ss, return_params) == -1)
-      return -1;
-
-  if (**ss == '(' && return_comment)
-    if (msg_comment_d(ss, return_comment) == -1)
-      return -1;
-
-  return 0;
-}
-
-/**Encode @e name-addr and parameter list.
- *
- * Encodes @e name-addr headers, like From, To, Call-Info, Error-Info,
- * Route, and Record-Route.
- *
- * @param b        buffer to store the encoding result
- * @param bsiz     size of the buffer @a b
- * @param flags    encoding flags
- * @param display  display name encoded before the @a url (may be NULL)
- * @param brackets if true, use always brackets around @a url
- * @param url      pointer to URL structure
- * @param params   pointer to parameter list (may be NULL)
- * @param comment  comment string encoded after others (may be NULL)
- *
- * @return 
- * Returns number of characters in encoding result, excluding the
- * final NUL.
- *
- * @note
- * The encoding result may be incomplete if the buffer size is not large
- * enough to store the whole encoding result.
- */
-int msg_name_addr_e(char b[], int bsiz, 
-		    int flags, 
-		    char const *display, 
-		    int brackets, url_t const url[],
-		    msg_param_t const params[], 
-		    char const *comment)
-{
-  int const compact = MSG_IS_COMPACT(flags);
-  char const *u;
-  char *b0 = b, *end = b + bsiz;
-
-  brackets = brackets || display || 
-    (url && (url->url_params || 
-	     url->url_headers ||
-	     ((u = url->url_user) && u[strcspn(u, ";,?")]) ||
-	     ((u = url->url_password) && u[strcspn(u, ",")])));
-
-  if (display && display[0]) {
-    MSG_STRING_E(b, end, display);
-    if (!compact) MSG_CHAR_E(b, end, ' ');
-  }
-  if (url) {
-    if (brackets) MSG_CHAR_E(b, end, '<');
-    URL_E(b, end, url);
-    if (brackets) MSG_CHAR_E(b, end, '>');
-  }
-
-  MSG_PARAMS_E(b, end, params, flags);
-
-  if (comment) {
-    if (!compact) MSG_CHAR_E(b, end, ' ');
-    MSG_CHAR_E(b, end, '(');
-    MSG_STRING_E(b, end, comment);
-    MSG_CHAR_E(b, end, ')');
-  }
-
-  MSG_TERM_E(b, end);
-    
-  return b - b0;
-}
-
 /** Find a parameter from a parameter list.
  *
  * Searches for given parameter @a token from the parameter list. If
@@ -1414,7 +1246,7 @@ int msg_unquoted_e(char *b, int bsiz, char const *s)
 }
 
 
-/** Calculate a simple hash over a string */
+/** Calculate a simple hash over a string. */
 unsigned long msg_hash_string(char const *id)
 {
   unsigned long hash = 0;
@@ -1443,7 +1275,18 @@ int msg_header_size(msg_header_t const *h)
     return h->sh_class->hc_dxtra(h, h->sh_class->hc_size);
 }
 
-/** Encode a message to the buffer. */
+
+/** Encode a message to the buffer. 
+ *
+ * The function msg_encode_e encodes a message to a given buffer.
+ * It returns the length of the message to be encoded, even if the
+ * buffer is too small (just like snprintf() is supposed to do).
+ *
+ * @param b        buffer (may be NULL)
+ * @param size     size of buffer 
+ * @param mo       public message structure (#sip_t, #http_t)
+ * @param flags    see #
+ */
 int msg_object_e(char b[], int size, msg_pub_t const *mo, int flags)
 {
   int rv = 0, n;
@@ -1476,7 +1319,7 @@ int msg_header_field_e(char b[], int bsiz, msg_header_t const *h, int flags)
 
 /** Get offset of header @a h from structure @a mo. */
 msg_header_t **
-msg_header_offset(msg_t *msg, msg_pub_t *mo, msg_header_t const *h)
+msg_header_offset(msg_t const *msg, msg_pub_t const *mo, msg_header_t const *h)
 {
   if (h == NULL || h->sh_class == NULL) 
     return NULL;
