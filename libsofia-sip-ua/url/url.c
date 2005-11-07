@@ -22,15 +22,13 @@
  *
  */
 
-/**@ingroup url 
- * @CFILE url.c
+/**@CFILE url.c
  *
  * Implementation of basic URL parsing and handling.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun 29 22:44:37 2000 ppessi
- * @date Last modified: Fri Sep  9 10:56:41 2005 ppessi
  */
 
 #include "config.h"
@@ -1354,6 +1352,10 @@ int url_have_transport(url_t const *url)
  *
  * @note
  * The @a a and @a b must be pointers to URL structures.
+ *
+ * @note Currently, the url parameters are not compared. This is because the
+ * url_cmp() is used to sort URLs: taking parameters into account makes that
+ * impossible.
  */
 int url_cmp(url_t const *a, url_t const *b)
 {

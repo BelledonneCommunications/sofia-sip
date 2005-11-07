@@ -22,15 +22,13 @@
  *
  */
 
-/**@ingroup url
- * @file url.h
+/**@file url.h
  *
  * URL struct and helper functions.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
- * @date Last modified: Fri Aug 12 10:42:44 2005 ppessi
  */
 
 #ifndef URL_H_TYPES

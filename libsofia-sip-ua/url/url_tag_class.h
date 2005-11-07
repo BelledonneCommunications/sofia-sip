@@ -26,14 +26,13 @@
 #define URL_TAG_CLASS_H 
   
 
-/**@ingroup url
- * @file  url_tag_class.h
+/**@file  url_tag_class.h
  * @brief Tag classes for URLs
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- * @date Last modified: Fri Sep  9 10:56:41 2005 ppessi
+ * @date Last modified: Mon Nov  7 22:25:53 2005 ppessi
  */
 
 #ifndef SU_TAG_H
