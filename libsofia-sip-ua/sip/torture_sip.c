@@ -1489,8 +1489,8 @@ static int sip_header_test(void)
   msg_header_remove(msg, sip, (msg_header_t *)sip->sip_payload);
 
   TEST(sip_add_tl(msg, sip, 
-		  SIPTAG_FROM(SIP_NONE->sh_from),
-		  SIPTAG_VIA(SIP_NONE->sh_via),
+		  SIPTAG_FROM(SIP_NONE),
+		  SIPTAG_VIA(SIP_NONE),
 		  SIPTAG_VIA_STR("SIP/2.0/SCTP foo.bar.com:5060;branch=foo"),
 		  SIPTAG_TO_STR("<sip:foo@bar>"),
 		  SIPTAG_HEADER_STR("Authorization: Basic foobar\n"
