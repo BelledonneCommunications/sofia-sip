@@ -777,7 +777,7 @@ int sip_addr_tag(su_home_t *home, sip_addr_t *a, char const *tag)
  *   sip_common_t   i_common[1];        // Common fragment info
  *   sip_call_id_t *i_next;             // Link to next (dummy)
  *   char const    *i_id;               // ID value
- *   sip_u32_t      i_hash;             // Hash value (always nonzero)
+ *   uint32_t       i_hash;             // Hash value (always nonzero)
  * } sip_call_id_t;
  * @endcode
  */
@@ -920,7 +920,7 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
  * typedef struct sip_cseq_s {
  *   sip_common_t   cs_common[1];       // Common fragment info
  *   sip_unknown_t *cs_next;            // Link to next (dummy)
- *   sip_u32_t      cs_seq;             // Sequence number
+ *   uint32_t       cs_seq;             // Sequence number
  *   sip_method_t   cs_method;          // Method enum
  *   char const    *cs_method_name;     // Method name
  * } sip_cseq_t;
@@ -1015,7 +1015,7 @@ char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
  * header object when successful or NULL upon an error.
  */
 sip_cseq_t *sip_cseq_create(su_home_t *home,
-			    sip_u32_t seq,
+			    uint32_t seq,
 			    unsigned method,
 			    char const *method_name)
 {
@@ -1381,7 +1381,7 @@ int sip_content_length_e(char b[], int bsiz, sip_header_t const *h, int flags)
  * created @b Content-Length header object when successful or NULL upon
  * an error.
  */
-sip_content_length_t *sip_content_length_create(su_home_t *home, sip_u32_t n)
+sip_content_length_t *sip_content_length_create(su_home_t *home, uint32_t n)
 {
   sip_content_length_t *l = 
     sip_header_alloc(home, sip_content_length_class, 0)->sh_content_length;

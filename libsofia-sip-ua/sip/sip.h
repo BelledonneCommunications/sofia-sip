@@ -78,29 +78,25 @@ typedef enum {
 #define SIP_METHOD_PUBLISH    sip_method_publish, "PUBLISH"
 
 /** Magic pointer value - never valid for SIP headers. @HI */
-#define SIP_NONE ((sip_header_t const *)-1L)
-#define sip_none SIP_NONE
-
-enum {
- SIP_DEFAULT_PORT = 5060,
-};
+#define SIP_NONE ((void const *)-1L)
 
 /** SIP protocol identifier @HIDE */
 #define SIP_PROTOCOL_TAG   ((void *)0x53495020)	/* 'SIP'20 */
 
+enum {
+  /** Default port for SIP as integer */
+ SIP_DEFAULT_PORT = 5060,
+#define SIP_DEFAULT_PORT SIP_DEFAULT_PORT
+};
+
+/** Default port for SIP as string */
 #define SIP_DEFAULT_SERV "5060"
 
-/** 32-bit unsigned int. */
-typedef uint32_t sip_u32_t;
-
-/** 16-bit unsigned int. */
-typedef uint16_t sip_u16_t;
-
 /** Time in seconds */
-typedef unsigned long sip_time_t;
+typedef msg_time_t sip_time_t;
 
 /** Latest time that can be expressed with sip_time_t. @HIDE */
-#define SIP_TIME_MAX ((sip_time_t)-1)
+#define SIP_TIME_MAX ((sip_time_t)MSG_TIME_MAX)
 
 /** SIP message object. */
 typedef struct sip_s                sip_t;
@@ -427,7 +423,7 @@ struct sip_call_id_s {
   sip_common_t   i_common[1];	    /**< Common fragment info */
   sip_call_id_t *i_next;	    /**< Link to next (In-Reply-To) */
   char const    *i_id;		    /**< ID value */
-  sip_u32_t      i_hash;	    /**< Hash value (always nonzero) */
+  uint32_t       i_hash;	    /**< Hash value (always nonzero) */
 };
 
 /**@ingroup sip_call_info
@@ -449,7 +445,7 @@ struct sip_cseq_s
 {
   sip_common_t   cs_common[1];	    /**< Common fragment info */
   sip_error_t   *cs_next;	    /**< Link to next (dummy) */
-  sip_u32_t      cs_seq;	    /**< Sequence number */
+  uint32_t       cs_seq;	    /**< Sequence number */
   sip_method_t   cs_method;	    /**< Method enum */
   char const    *cs_method_name;    /**< Method name */
 };

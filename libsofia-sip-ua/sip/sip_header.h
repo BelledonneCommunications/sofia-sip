@@ -238,7 +238,7 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain);
 
 /** Create a @b CSeq header object.  */
 sip_cseq_t *sip_cseq_create(su_home_t *, 
-			    sip_u32_t seq, unsigned method, char const *name);
+			    uint32_t seq, unsigned method, char const *name);
 
 /** Create a @b Contact header object. */
 sip_contact_t * sip_contact_create(su_home_t *home, url_string_t const *url, 
@@ -254,7 +254,7 @@ sip_time_t sip_contact_expires(sip_contact_t const *m,
 			       sip_time_t now);
 
 /** Create a @b Content-Length header object. */
-sip_content_length_t *sip_content_length_create(su_home_t *home, sip_u32_t n);
+sip_content_length_t *sip_content_length_create(su_home_t *home, uint32_t n);
 
 /** Create an @b Date header object. */
 sip_date_t *sip_date_create(su_home_t *home, sip_time_t t);

@@ -65,7 +65,7 @@ int sip_response_terminates_dialog(int response_code,
 
 int sip_sanity_check(sip_t const *sip);
 
-sip_u32_t sip_q_value(sip_param_t q);
+unsigned sip_q_value(sip_param_t q);
 
 url_t *sip_url_dup(su_home_t *sh, url_t const *o);
 

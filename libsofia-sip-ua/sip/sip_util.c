@@ -330,9 +330,9 @@ url_t *sip_url_dup(su_home_t *home, url_t const *o)
  * @return
  * The function sip_q_value() returns an integer in range 0 .. 1000.
  */
-sip_u32_t sip_q_value(sip_param_t q)
+unsigned sip_q_value(sip_param_t q)
 {
-  sip_u32_t value = 0;
+  unsigned value = 0;
 
   if (!q)
     return 1000;
