@@ -143,7 +143,7 @@ int sip_add_headers(msg_t *msg, sip_t *sip,
   for (;
        extra;
        extra = va_arg(headers, void *)) {
-    if (extra != sip_none)
+    if (extra != SIP_NONE)
       if (sip_add_dup(msg, sip, extra) < 0) {
 	return -1;
       }
