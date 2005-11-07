@@ -26,15 +26,12 @@
 /** Defined when <msg_tag_class.h> have been included */
 #define MSG_TAG_CLASS_H 
 
-
-/**@ingroup msg
- * @file msg_tag_class.h
+/**@file msg_tag_class.h
  * @brief Functions for constructing per-protocol tag classes.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- *
  */
 
 int msghdrtag_snprintf(tagi_t const *t, char b[], size_t size);

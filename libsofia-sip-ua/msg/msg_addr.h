@@ -26,8 +26,7 @@
 #define MSG_ADDR_H 
 
 
-/**@ingroup msg 
- * @file msg_addr.h 
+/**@file msg_addr.h 
  * @brief Addressing and I/O interface for messages.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

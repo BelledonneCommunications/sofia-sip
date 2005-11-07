@@ -24,11 +24,9 @@
 
 #ifndef MSG_DLL_H /** Defined when msg_dll.h has been included. */
 #define MSG_DLL_H
-/**@ingroup msg
- * @file msg_dll.h
+/**@file msg_dll.h
  *
  * Define declaration specification for exporting things from @b msg.dll.
- *
  */
 
 #ifndef MSG_DLL

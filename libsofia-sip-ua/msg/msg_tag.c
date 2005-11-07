@@ -22,8 +22,7 @@
  *
  */
 
-/**@ingroup msg
- * @CFILE msg_tag.c  Message tag classes
+/**@CFILE msg_tag.c  Message tag classes
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *

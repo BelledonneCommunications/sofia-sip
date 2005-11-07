@@ -24,16 +24,13 @@
 
 #ifndef MSG_H /** Defined when msg.h has been included */
 #define MSG_H
-/**@ingroup msg
- * @file msg.h
+/**@file msg.h
  *
  * Base message interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Fri Feb 18 08:54:48 2000 ppessi
- *
- *
  */
 
 #include <msg_dll.h>

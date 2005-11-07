@@ -22,13 +22,11 @@
  *
  */
 
-/**@ingroup msg
- * @CFILE msg.c Message object implementation.
+/**@CFILE msg.c Message object implementation.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
- *
  */
 
 #include "config.h"

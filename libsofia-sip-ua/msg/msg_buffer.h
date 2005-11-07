@@ -25,8 +25,7 @@
 #ifndef MSG_BUFFER_H /** Defined when msg_buffer.h has been included. */
 #define MSG_BUFFER_H
 
-/**@ingroup msg
- * @file msg_buffer.h
+/**@file msg_buffer.h
  * @brief Internal buffer management functions. 
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
