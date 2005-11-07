@@ -54,7 +54,7 @@
 #if SU_HAVE_INLINE
 /** Get SIP structure from msg. */
 su_inline
-sip_t *sip_object(msg_t *msg)
+sip_t *sip_object(msg_t const *msg)
 {
   return (sip_t *)msg_public(msg, SIP_PROTOCOL_TAG);
 }
