@@ -1344,6 +1344,7 @@ int nes_watcher_callback(nea_server_t *nes,
 
 /* ----------------------------------------------------------------- */
 
+#if 0
 /** Process incoming SUBSCRIBE message.
  *
  * The function nea_server_add() is called when the notifier receives a
@@ -1378,23 +1379,16 @@ int nea_server_add(nea_server_t *nes,
 
   *target = *local_target->m_url;
 
-#if 1
   s->s_leg = nta_leg_tcreate(nes->nes_agent, nea_sub_process_incoming, s,
 			     SIPTAG_CALL_ID(sip->sip_call_id),
 			     SIPTAG_FROM(sip->sip_to), /* local address */
 			     SIPTAG_TO(sip->sip_from), /* remote address */
 			     URLTAG_URL(target),
 			     TAG_END());
-#else
-  s->s_leg = nta_leg_stateful(nes->nes_agent, msg, 
-			      nea_sub_process_incoming, s, 
-			      URLTAG_URL(target),
-			      TAG_NULL());
-#endif
 
   if (s->s_local && s->s_leg) {
     nta_leg_tag(s->s_leg, NULL);
-    nta_leg_stateful(s->s_leg, msg);
+    irq = 
     return 0;
   }
   else {
@@ -1402,6 +1396,7 @@ int nea_server_add(nea_server_t *nes,
     return -1;
   }
 }
+#endif
 
 static
 int nea_server_callback(nea_sub_t *nes_as_sub,

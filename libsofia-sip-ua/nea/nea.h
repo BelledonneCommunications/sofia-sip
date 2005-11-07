@@ -31,9 +31,6 @@
  * @author Martti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Fri Feb  7 13:23:44 EET 2003 ppessi
- *
- * @date Last modified: Mon Aug  8 19:10:00 2005 ppessi
- * 
  */
 
 #ifndef SU_ALLOC_H
@@ -118,10 +115,10 @@ typedef struct nea_subnode_t {
   unsigned             sn_expires;     	/**< When subscription expires */
   unsigned             sn_latest;      	/**< Latest notification version */
   unsigned             sn_throttle;    	/**< Throttle value */
-  unsigned             sn_version;      /**< Version # by application */
+  unsigned             sn_version;      /**< Latest notified version # by application */
   sip_time_t           sn_notified;     /**< When latest notify was sent */
   sip_time_t           sn_subscribed;   /**< When first SUBSCRIBE was recv */
-  nea_event_view_t    *sn_view;		/**< Primary event view */
+  nea_event_view_t    *sn_view;		/**< Event view for this subscriber */
 } nea_subnode_t;
 
 /** Multiple content types per event. */
@@ -224,13 +221,7 @@ int nea_server_update(nea_server_t *nes,
 		      tag_value_t value,
 		      ...);
 
-/** Add a new subscriber to existing notifier */
-int nea_server_add(nea_server_t *nes, 
-		   sip_contact_t const *local_target,
-		   msg_t *msg, 
-		   sip_t *sip);
-
-/** Add a new subscriber to existing notifier. */
+/** Add a new subscriber from subscribe transaction to an existing notifier. */
 int nea_server_add_irq(nea_server_t *nes,
 		       nta_leg_t *leg,
 		       sip_contact_t const *local_target,
