@@ -15,9 +15,9 @@ INCLUDES = 	-I$(srcdir)/../bnf \
 
 noinst_LTLIBRARIES = 	libhttp.la
 
-noinst_PROGRAMS = 	http_test
+noinst_PROGRAMS = 	test_http
 
-TESTS = 		http_test
+TESTS = 		test_http
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -46,7 +46,7 @@ LDADD = 		libhttp.la \
 			../url/liburl.la \
 			../su/libsu.la
 
-http_test_LDFLAGS = 	-static
+test_http_LDFLAGS = 	-static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

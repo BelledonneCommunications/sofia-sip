@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE http_test.c
+/**@CFILE test_http.c
  *
  * Testing functions for HTTP parser.
  *
@@ -58,7 +58,7 @@
 
 #include <tstdef.h>
 
-char const *name = "http_test.c";
+char const *name = "test_http";
 
 static int tag_test(void);
 static int tag_test2(void);
@@ -142,7 +142,7 @@ msg_t *read_message(char const buffer[])
 
     m = msg_extract(msg);
     if (m < 0) {
-      fprintf(stderr, "http_test: parsing error\n");
+      fprintf(stderr, "test_http: parsing error\n");
       return NULL;
     }
     if (m > 0)
@@ -150,7 +150,7 @@ msg_t *read_message(char const buffer[])
   }
 
   if (i != n) {
-    fprintf(stderr, "http_test: parser error (len=%u, read=%u)\n", n, i);
+    fprintf(stderr, "test_http: parser error (len=%u, read=%u)\n", n, i);
     msg_destroy(msg), msg = NULL;
   }
 
@@ -185,7 +185,7 @@ msg_t *read_message_byte_by_byte(char const buffer[])
 
     m = msg_extract(msg);
     if (m < 0) {
-      fprintf(stderr, "http_test: parsing error\n");
+      fprintf(stderr, "test_http: parsing error\n");
       return NULL;
     }
     if (m > 0)
@@ -193,7 +193,7 @@ msg_t *read_message_byte_by_byte(char const buffer[])
   }
 
   if (i != n) {
-    fprintf(stderr, "http_test: parser error (len=%u, read=%u)\n", n, i);
+    fprintf(stderr, "test_http: parser error (len=%u, read=%u)\n", n, i);
     msg_destroy(msg), msg = NULL;
   }
 
