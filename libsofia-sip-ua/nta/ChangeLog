@@ -1,3 +1,7 @@
+2005-11-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Renamed nta_test.c as test_nta.c.
+
 2005-10-21  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed server-rport feature in nta.c.
