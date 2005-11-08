@@ -19,23 +19,25 @@ noinst_LTLIBRARIES = 	libtport.la
 
 bin_PROGRAMS = 		
 
-noinst_PROGRAMS =	tport_test
+noinst_PROGRAMS =	test_tport
 
-TESTS =			tport_test
+TESTS =			test_tport
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
 include_HEADERS =	tport.h tport_tag.h
 
-if HAVE_TLS
 TLS_SRC =		tport_tls.c tport_tls.h
+
+if HAVE_TLS
+USE_TLS_SRC = 		$(TLS_SRC)
 endif
 
-libtport_la_SOURCES = 	tport.c tport_tag.c tport_tag_ref.c $(TLS_SRC)
+libtport_la_SOURCES = 	tport.c tport_tag.c tport_tag_ref.c $(USE_TLS_SRC)
 
 # to make sure all files end up in the dist package
-EXTRA_DIST =	 	$(libtport_la_SOURCES) tport_tls.c tport_tls.h tport_test.c
+EXTRA_DIST =	 	$(TLS_SRC)
 
 BUILT_SOURCES =		tport_tag_ref.c
 
@@ -49,7 +51,7 @@ LDADD = 		libtport.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
 
-tport_test_SOURCES = 	tport_test.c
+test_tport_LDFLAGS = 	-static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
@@ -60,4 +62,4 @@ EXTRA_DIST +=		Doxyfile tport.docs \
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
-include $(srcdir)/../sofia.am
+include ../sofia.am

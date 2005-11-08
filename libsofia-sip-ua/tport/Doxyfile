@@ -11,6 +11,6 @@ TAGFILES            += \
 
 GENERATE_TAGFILE    = ../docs/tport/doxytags
 
-EXCLUDE_PATTERNS   += tport_test*.[hc] torture_*.[hc]
+EXCLUDE_PATTERNS   += test_*.[hc] torture_*.[hc]
 
 ALIASES +=

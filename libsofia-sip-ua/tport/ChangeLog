@@ -1,3 +1,7 @@
+2005-11-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Renamed tport_test.c as test_tport.c.
+
 2005-10-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added tls_version[] to tport/tport_tls.[hc].
