@@ -1917,7 +1917,7 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
     msg_destroy(msg);      
   else if (sip_add_tl(msg, sip, ta_tags(ta)) < 0)
     msg_destroy(msg);
-  else if (sip_message_complete(msg) < 0)
+  else if (sip_complete_message(msg) < 0)
     msg_destroy(msg);      
   else if (add_contact && !sip->sip_contact && sip_add_dup(msg, sip, m) < 0)
     msg_destroy(msg);
