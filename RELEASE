@@ -5,9 +5,9 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-Added "features" module. Fixed stun error handling. Fixed code generating
-contact for UAS socket in nta. More features of NUA/SOA API has been tested.
-
+Fixed win32 build tree. Even more features of NUA/SOA API has been tested. 
+Plugged memory leaks. Purged some ancient stuff away from APIs and public
+header files.
 
 API/ABI changes and versioning
 ------------------------------
@@ -16,11 +16,15 @@ The libsofia-sip-ua library interface version (libtool) is set to zero.
 Library version will not be frozen until the release of 1.12.0 stable
 version.
 
-- token64_e() prototype changed
-- sip_sofia_features.h added
-- features module added
-- removed Content-Base (http_content_base) header from HTTP parser
-
+- added msg_header_free() and msg_header_free_all()
+- renamed msg_name_addr_d/msg_name_addr_e as sip_name_addr_d/sip_name_addr_e
+  (because the function is sip-specific)
+- removed msg_copy_all() and msg_dup_all()
+- updated nta_agent_create() prototype
+- updated nta functions nta_*get(request|response) in order to always use
+  reference counting for SIP messages
+- removed pre-rfc3261 nta functions not used anymore
+- removed pre-rfc3261 nea functions not used anymore
 
 Contributors to this release
 ----------------------------
@@ -31,7 +35,4 @@ See the AUTHORS file in the distribution package.
 Bugs fixed in this release
 --------------------------
 
-- stun error handling
-- transport-less contact for UAS socket in nta
-- rport on server side
-- receiving MESSAGE in nua
+See ChangeLogs.
