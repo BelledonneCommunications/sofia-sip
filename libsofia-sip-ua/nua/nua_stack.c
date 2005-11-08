@@ -3255,8 +3255,8 @@ register_expires_contacts(msg_t *msg, sip_t *sip)
       sip_add_tl(msg, sip, SIPTAG_EXPIRES_STR("0"), TAG_END());
       break;
     }
-    sip_params_replace(NULL, (sip_param_t **)&m->m_params, "expires=0");
-    sip_fragment_clear(m->m_common);
+    msg_params_replace(NULL, (msg_param_t **)&m->m_params, "expires=0");
+    msg_fragment_clear(m->m_common);
   }
 
   /* Remove payload */
