@@ -19,9 +19,9 @@ INCLUDES = 		-I$(srcdir)/../bnf \
 
 noinst_LTLIBRARIES = 	libiptsec.la
 
-noinst_PROGRAMS = 	auth_digest_test
+noinst_PROGRAMS = 	test_auth_digest
 
-TESTS = 		auth_digest_test
+TESTS = 		test_auth_digest
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -53,7 +53,7 @@ LDADD = 		libiptsec.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
 
-auth_digest_test_LDFLAGS = -static
+test_auth_digest_LDFLAGS = -static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

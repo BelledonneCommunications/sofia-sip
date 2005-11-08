@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE auth_digest_test.c
+/**@CFILE test_auth_digest.c
  *
  * @brief Test authentication functions for "Digest" scheme.
  *
@@ -85,7 +85,7 @@ char *argv0;
 
 #include <tstdef.h>
 
-char const name[] = "auth_digest_test";
+char const name[] = "test_auth_digest";
 
 /* Fake su_time() implementation */
 #include <time.h>
@@ -433,7 +433,7 @@ msg_t *read_message(int flags, char const buffer[])
 
   m = msg_extract(msg);
   if (m < 0) {
-    fprintf(stderr, "auth_digest_test: parsing error\n");
+    fprintf(stderr, "test_auth_digest: parsing error\n");
     return NULL;
   }
 
@@ -930,7 +930,7 @@ int test_digest_client()
 
 #include <auth_plugin.h>
 
-char tmppasswd[] = "/tmp/auth_digest_test.XXXXXX";
+char tmppasswd[] = "/tmp/test_auth_digest.XXXXXX";
 
 static void rmtmp(void)
 {

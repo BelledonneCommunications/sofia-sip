@@ -1,3 +1,7 @@
+2005-11-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Renamed auth_digest_test.c as test_auth_digest.c.
+
 2005-10-21  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Generate opaque only if opaque parameter has value "*".
