@@ -22,7 +22,7 @@
  *
  */
 
-/**@ingroup msg_test
+/**@ingroup test_msg
  * @CFILE msg_name_hash.c
  * 
  * Calculate hash for given header name. 

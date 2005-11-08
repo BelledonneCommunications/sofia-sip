@@ -1,7 +1,7 @@
-/**@ingroup msg_test
- * @IFILE msg_test_table.c.in
+/**@ingroup test_msg
+ * @IFILE test_table.c.in
  *
- * Template for <msg_test_table.c>.
+ * Template for <test_table.c>.
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
  */
@@ -30,9 +30,9 @@
  *
  */
 
-/**@ingroup msg_test
+/**@ingroup test_msg
  * 
- * @CFILE msg_test_table.c 
+ * @CFILE test_table.c 
  * @brief Parser table used for testing.
  *
  * #AUTO#
@@ -47,8 +47,8 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <msg_test_class.h>
-#include <msg_test_protos.h>
+#include <test_class.h>
+#include <test_protos.h>
 #include <msg_mime_protos.h>
 
 #include <msg_mclass.h>

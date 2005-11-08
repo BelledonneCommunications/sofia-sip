@@ -491,7 +491,7 @@ encountered.
  */
 
 /**
- * @defgroup msg_test Testing Parser
+ * @defgroup test_msg Testing Parser
  *
  * This submodule contains the functions and types for building a
  * parser objects for testing purposes.

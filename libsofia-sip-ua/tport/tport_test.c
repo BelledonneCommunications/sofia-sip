@@ -50,8 +50,8 @@ typedef struct tp_test_s tp_test_t;
 #include <su_wait.h>
 #include <su_md5.h>
 
-#include "msg_test_class.h"
-#include "msg_test_protos.h"
+#include "test_class.h"
+#include "test_protos.h"
 #include "msg.h"
 #include "msg_mclass.h"
 #include "msg_addr.h"

@@ -24,16 +24,16 @@
 
 /**-*- c -*- 
  * @ingroup msg
- * @internal @file msg_test_protos.h.in
+ * @internal @file test_protos.h.in
  *
- * Template for "msg_test_protos.h".
+ * Template for "test_protos.h".
  */
 
-#ifndef MSG_TEST_PROTOS_H /** Defined when msg_test_protos.h has been included. */
-#define MSG_TEST_PROTOS_H 
+#ifndef TEST_PROTOS_H /** Defined when test_protos.h has been included. */
+#define TEST_PROTOS_H 
   
-/**@ingroup msg_test
- * @file msg_test_protos.h
+/**@ingroup test_msg
+ * @file test_protos.h
  *
  * Prototypes and macros for dummy testing protocol headers.
  * 
@@ -351,4 +351,4 @@ su_inline msg_#xxxxxx#_t *msg_#xxxxxx#_format(su_home_t *home, char const *fmt, 
 
 
 
-#endif /* !defined(MSG_TEST_PROTOS_H) */
+#endif /* !defined(TEST_PROTOS_H) */

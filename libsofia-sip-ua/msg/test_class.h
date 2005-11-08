@@ -23,12 +23,12 @@
  */
 
 #ifndef MSG_TEST_CLASS_H
-/** Defined when msg_test_class.h has been included. */
+/** Defined when test_class.h has been included. */
 #define MSG_TEST_CLASS_H 
 
 
-/**@ingroup msg_test
- * @file msg_test_class.h
+/**@ingroup test_msg
+ * @file test_class.h
  * @brief Message and header classes for testing.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

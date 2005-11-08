@@ -22,8 +22,8 @@
  *
  */
 
-/**@ingroup msg_test
- * @file msg_test_class.c
+/**@ingroup test_msg
+ * @file test_class.c
  * 
  * Message class for testing parser and transports.
  *
@@ -42,10 +42,10 @@
 
 #define TAG_NAMESPACE "tst"
 
-#include <msg_test_class.h>
+#include <test_class.h>
 #include <msg_parser.h>
 #include <msg_mclass.h>
-#include <msg_test_protos.h>
+#include <test_protos.h>
 #include <msg_addr.h>
 
 extern msg_mclass_t const msg_test_mclass[1];
@@ -55,8 +55,8 @@ extern msg_mclass_t const *msg_test_default(void)
   return msg_test_mclass;
 }
 
-/**@ingroup msg_test
- * @defgroup test_msg_request Request Line for Testing
+/**@ingroup test_msg
+ * @defgroup msg_test_request Request Line for Testing
  */
 
 static msg_xtra_f msg_request_dup_xtra;
@@ -123,8 +123,8 @@ char *msg_request_dup_one(msg_header_t *dst, msg_header_t const *src,
   return b;
 }
 
-/**@ingroup msg_test
- * @defgroup test_msg_status Status Line for Testing
+/**@ingroup test_msg
+ * @defgroup msg_test_status Status Line for Testing
  */
 
 static msg_xtra_f msg_status_dup_xtra;

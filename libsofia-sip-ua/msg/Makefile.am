@@ -13,8 +13,8 @@ INCLUDES = 	-I$(srcdir)/../bnf \
 # Build targets
 
 noinst_LTLIBRARIES = 	libmsg.la
-noinst_LIBRARIES = 	libmsg_test.a
-noinst_PROGRAMS = 	msg_name_hash msg_test
+noinst_LIBRARIES = 	libtest_msg.a
+noinst_PROGRAMS = 	msg_name_hash test_msg
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -24,11 +24,11 @@ PUBLIC_H = msg.h msg_header.h msg_types.h \
 	msg_mclass.h	msg_mclass_hash.h msg_parser.h msg_bnf.h \
 	msg_auth.h msg_addr.h msg_date.h msg_buffer.h \
 	msg_tag_class.h msg_dll.h msg_mime.h
-INTERNAL_H = msg_internal.h msg_test_class.h
+INTERNAL_H = msg_internal.h test_class.h
 
 include_HEADERS = $(GENERATED_H) $(PUBLIC_H) 
 
-BUILT_SOURCES = $(GENERATED_H) msg_test_table.c msg_test_protos.h
+BUILT_SOURCES = $(GENERATED_H) test_table.c test_protos.h
 
 libmsg_la_SOURCES = $(INTERNAL_H) \
 	msg.c msg_tag.c \
@@ -40,14 +40,14 @@ libmsg_la_SOURCES = $(INTERNAL_H) \
 
 COVERAGE_INPUT = 	$(libmsg_la_SOURCES) $(include_HEADERS)
 
-libmsg_test_a_SOURCES = msg_test_class.c msg_test_table.c msg_test_protos.h
+libtest_msg_a_SOURCES = test_class.c test_table.c test_protos.h
 
-LDADD = 		libmsg_test.a libmsg.la \
+LDADD = 		libtest_msg.a libmsg.la \
 			../bnf/libbnf.la \
 			../url/liburl.la \
 			../su/libsu.la 
 
-msg_test_LDFLAGS = 	-static
+test_msg_LDFLAGS = 	-static
 
 msg_name_hash_LDFLAGS =	-static
 
@@ -62,39 +62,47 @@ EXTRA_DIST =		Doxyfile msg.docs \
 			msg_mime_protos.h.in \
 			msg_mime_table.c.in \
 			msg_protos.h.in \
-			msg_test_protos.h.in \
-			msg_test_table.c.in
+			test_protos.h.in \
+			test_table.c.in
 
 # ----------------------------------------------------------------------
 # Tests
 
-TESTS = 		msg_test
+TESTS = 		test_msg
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
 include ../sofia.am
 
-s=$(srcdir)
+MSG_PARSER_AWK = $(srcdir)/msg_parser.awk
 
-$s/msg_test_%.h: $s/msg_parser.awk $s/msg_test_%.h.in $s/msg_test_class.h
-	$(AWK) -f $s/msg_parser.awk module=msg_test PR=$@ NO_MIDDLE=1 NO_LAST=1 $s/msg_test_class.h
+AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK)
 
-$s/msg_test_table.c: $s/msg_test_class.h $s/msg_test_table.c.in \
-	$s/msg_parser.awk 
-	$(AWK) -f $s/msg_parser.awk module=msg_test prefix=msg PT=$@ \
-		MC_HASH_SIZE=127 multipart=msg_multipart \
-		$s/msg_test_class.h
+test_protos.h test_table.c: $(MSG_PARSER_AWK)
 
-$s/msg_mime_table.c: $s/msg_mime.h $s/msg_mime_table.c.in $s/msg_parser.awk 
-	$(AWK) -f $s/msg_parser.awk \
-		module=msg_multipart tprefix=msg prefix=mp PT=$@ \
-		MC_HASH_SIZE=127 $s/msg_mime.h
+test_protos.h: test_protos.h.in
+test_table.c: test_table.c.in
 
-$s/msg_protos.h: $s/msg_parser.awk $s/msg_protos.h.in $s/msg_mime.h
-	$(AWK) -f $s/msg_parser.awk PR=$@ module=msg NO_FIRST=1 NO_MIDDLE=1 \
-		$s/msg_mime.h
+test_protos.h: test_class.h
+	$(AWK_MSG_AWK) module=msg_test PR=$@ NO_MIDDLE=1 NO_LAST=1 $<
 
-$s/msg_mime_protos.h: $s/msg_parser.awk $s/msg_mime_protos.h.in $s/msg_mime.h
-	$(AWK) -f $s/msg_parser.awk PR=$@ module=msg NO_FIRST=1 NO_LAST=1 \
-		$s/msg_mime.h
+test_table.c: test_class.h 
+	$(AWK_MSG_AWK) module=msg_test prefix=msg PT=$@ \
+		MC_HASH_SIZE=127 multipart=msg_multipart $<
+
+msg_protos.h msg_mime_protos.h msg_mime_table.c: $(MSG_PARSER_AWK)
+
+msg_protos.h: msg_protos.h.in
+msg_mime_protos.h: msg_mime_protos.h.in 
+msg_mime_table.c: msg_mime_table.c.in
+
+msg_protos.h: msg_mime.h
+	$(AWK_MSG_AWK) PR=$@ module=msg NO_FIRST=1 NO_MIDDLE=1 $<
+
+msg_mime_protos.h: msg_mime.h
+	$(AWK_MSG_AWK) PR=$@ module=msg NO_FIRST=1 NO_LAST=1 $<
+
+msg_mime_table.c: msg_mime.h
+	$(AWK_MSG_AWK) module=msg_multipart tprefix=msg prefix=mp PT=$@ \
+		MC_HASH_SIZE=127 $<

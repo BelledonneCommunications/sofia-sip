@@ -22,9 +22,9 @@
  *
  */
 
-/**@ingroup msg_test
+/**@ingroup test_msg
  *
- * @CFILE msg_test.c
+ * @CFILE test_msg.c
  *
  * Torture tests for message parser.
  *
@@ -42,8 +42,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "msg_test_class.h"
-#include "msg_test_protos.h"
+#include "test_class.h"
+#include "test_protos.h"
 #include "msg.h"
 #include "msg_addr.h"
 #include "msg_date.h"
@@ -58,7 +58,7 @@ static int test_flags = 0;
 
 #include <tstdef.h>
 
-char const name[] = "msg_test";
+char const name[] = "test_msg";
 
 void usage(void)
 {

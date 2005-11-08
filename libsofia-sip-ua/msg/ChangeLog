@@ -1,3 +1,11 @@
+2005-11-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Renamed msg_test.c as test_msg.c.
+
+	* Renamed msg_test_class.[hc] as test_class.[hc], 
+	  msg_test_protos.h(.in) as test_protos.h(.in),
+	  msg_test_table.c(.in) as test_table.c(.in).
+
 2005-10-12  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed msg_home() macro.
