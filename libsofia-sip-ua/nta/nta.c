@@ -1313,7 +1313,52 @@ static tport_stack_class_t nta_agent_class[1] =
  *
  * The function nta_agent_add_tport() creates a new transport and binds it
  * to the port specified by the @a uri. The @a uri must have sip: or sips:
- * scheme or be a wildcard uri ("*").
+ * scheme or be a wildcard uri ("*"). The @a uri syntax allowed is as
+ * follows:
+ *
+ * <code> url <scheme>:<host>[:<port>]<url-params> </endcode>
+ * where <url-params> may be
+ * <code>
+ * ;transport=<xxx>
+ * ;maddr=<actual addr>
+ * ;comp=sigcomp
+ * </endcode>
+ *
+ * The scheme part determines which transports are used. "sip" implies UDP
+ * and TCP, "sips" TLS over TCP. In the future, more transports can be
+ * supported, for instance, "sip" can use SCTP or DCCP, "sips" DTLS or TLS
+ * over SCTP.
+ *
+ * The "host" part determines what address/domain name is used in Contact.
+ * An "*" in "host" part is shorthand for any local IP address. 0.0.0.0
+ * means that the only the IPv4 addresses are used. [::] means that only
+ * the IPv6 addresses are used. If a domain name or a specific IP address
+ * is given as "host" part, an additional "maddr" parameter can be used to
+ * control which addresses are used by the stack when binding listen
+ * sockets for incoming requests.
+ *
+ * The "port" determines what port is used in contact, and to which port the
+ * stack binds in order to listen for incoming requests. Empty or missing
+ * port means that default port should be used (5060 for sip, 5061 for
+ * sips). An "*" in "port" part means any port, i.e., the stack binds to an
+ * ephemeral port.
+ *
+ * The "transport" parameter determines the transport protocol that is used.
+ * If no protocol is specified, both UDP and TCP are used for SIP URL and TLS
+ * for SIPS URL.
+ *
+ * The "maddr" parameter determines to which address the stack binds in
+ * order to listen for incoming requests. An "*" in "maddr" parameter is
+ * shorthand for any local IP address. 0.0.0.0 means that only IPv4
+ * sockets are created. [::] means that only IPv6 sockets are created.
+ *
+ * The "comp" parameter determines the supported compression protocol.
+ * Currently only sigcomp is supported (with suitable library.
+ *
+ * @par Examples:
+ * <code>sip:172.21.40.24;maddr=*</endcode> \n
+ * <code>sip:172.21.40.24:50600;transport=UDP;comp=sigcomp</endcode> \n
+ * <code>sips:172.21.40.24</endcode>
  *
  * @return
  * On success, zero is returned. On error, -1 is returned, and @a errno is
