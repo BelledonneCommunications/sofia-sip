@@ -84,7 +84,7 @@ LINK32=link.exe
 # Name "nta_test - Win32 Debug"
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nta\nta_test.c"
+SOURCE="..\..\libsofia-sip-ua\nta\test_nta.c"
 # End Source File
 # Begin Source File
 

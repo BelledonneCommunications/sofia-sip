@@ -19,6 +19,7 @@ version.
 - added msg_header_free() and msg_header_free_all()
 - renamed msg_name_addr_d/msg_name_addr_e as sip_name_addr_d/sip_name_addr_e
   (because the function is sip-specific)
+- removed sip_params_* functions (use identical msg_params_* functions instead)
 - removed msg_copy_all() and msg_dup_all()
 - updated nta_agent_create() prototype
 - updated nta functions nta_*get(request|response) in order to always use
