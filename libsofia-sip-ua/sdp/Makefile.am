@@ -54,4 +54,4 @@ EXTRA_DIST =		Doxyfile sdp.docs $(BUILT_SOURCES) \
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
-include $(srcdir)/../sofia.am
+include ../sofia.am

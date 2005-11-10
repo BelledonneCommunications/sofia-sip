@@ -39,4 +39,4 @@ libfeatures_la_SOURCES = sofia_sip_features.c
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
-include $(srcdir)/../sofia.am
+include ../sofia.am
