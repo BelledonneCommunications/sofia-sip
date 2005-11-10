@@ -82,10 +82,10 @@ true ${ip:=`$ifconfig eth0 | awk '/inet addr:/ { sub(/addr:/, "", $2); print $2;
 #
 
 # Dump all signaling messages to specified file 
-true ${MSG_DUMP:=}
+true ${TPORT_DUMP:=}
 
 # If non-empty, nua_cli prints all signaling messages
-true ${MSG_STREAM_LOG:=}
+true ${TPORT_LOG:=}
 
 # This address is used in From (and To of REGISTER)
 true ${SIPADDRESS:="$name<sip:$user@$dn>"}
@@ -106,7 +106,7 @@ true ${sip_proxy:="sip:$ip"}
 # Our product name
 true ${USERAGENT:=NUA 0.2/NTA 1.1}
 
-xport MSG_DUMP MSG_STREAM_LOG SIPADDRESS SIPCALLINFO sip_proxy 
+export TPORT_DUMP TPORT_LOG SIPADDRESS SIPCALLINFO sip_proxy
 
 #
 # Media parameters
