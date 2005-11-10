@@ -156,18 +156,27 @@ SIP_DLL extern tag_typedef_t siptag_header_str_ref;
 
 /**@ingroup sip_#xxxxxx#
  *
- * Tag list item for pointer to a #xxxxxxx_xxxxxxx# object.
+ * Tag list item for pointer to a #xxxxxxx_xxxxxxx# structure.
  *
  * The SIPTAG_#XXXXXX#() macro is used to include a tag item with a
  * pointer to a #sip_#xxxxxx#_t object in a tag list.
  *
  * @param x pointer to a #sip_#xxxxxx#_t header structure, or NULL.
  *
+ * The corresponding tag taking reference parameter is 
+ * SIPTAG_#XXXXXX#_REF().
+ *
  * @HIDE
  */
 #define SIPTAG_#XXXXXX#(x) siptag_#xxxxxx#, siptag_#xxxxxx#_v(x)
 
 SIP_DLL extern tag_typedef_t siptag_#xxxxxx#;
+
+/**@ingroup sip_#xxxxxx#
+ * Tag list item for reference to a a #xxxxxxx_xxxxxxx# pointer.
+ */
+#define SIPTAG_#XXXXXX#_REF(x) siptag_#xxxxxx#_ref, siptag_#xxxxxx#_vr(&(x))
+SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_ref;
 
 /**@ingroup sip_#xxxxxx#
  *
@@ -178,9 +187,12 @@ SIP_DLL extern tag_typedef_t siptag_#xxxxxx#;
  *
  * @param s pointer to a string containing sip_#xxxxxx#_t value, or NULL.
  *
- * The SIPTAG_#XXXXXX#_STR string can be converted to a
+ * The string in SIPTAG_#XXXXXX#_STR() can be converted to a
  * sip_#xxxxxx#_t header structure by giving the string @a s has
  * second argument to function sip_#xxxxxx#_make().
+ *
+ * The corresponding tag taking reference parameter is 
+ * SIPTAG_#XXXXXX#_STR_REF().
  *
  * @HIDE
  */
@@ -188,9 +200,9 @@ SIP_DLL extern tag_typedef_t siptag_#xxxxxx#;
 
 SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_str;
 
-#define SIPTAG_#XXXXXX#_REF(x) siptag_#xxxxxx#_ref, siptag_#xxxxxx#_vr(&(x))
-SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_ref;
-
+/**@ingroup sip_#xxxxxx#
+ * Tag list item for reference to a a #xxxxxxx_xxxxxxx# string. 
+ */
 #define SIPTAG_#XXXXXX#_STR_REF(x) siptag_#xxxxxx#_str_ref, tag_str_vr(&(x))
 SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_str_ref;
 
