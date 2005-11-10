@@ -119,8 +119,7 @@ static int agent_get_params(nta_agent_t *agent, tagi_t *tags);
 
 /* Transport interface */
 static sip_via_t const *agent_tport_via(tport_t *tport);
-static int agent_insert_via(nta_agent_t *, msg_t *, sip_via_t const *,
-			    char const *branch, int user_via);
+static int outgoing_insert_via(nta_outgoing_t *orq, sip_via_t const *);
 static int nta_tpn_by_via(tp_name_t *tpn, sip_via_t const *v, int *using_rport);
 
 static msg_t *nta_msg_create_for_transport(nta_agent_t *agent, int flags,
@@ -1669,15 +1668,15 @@ sip_via_t const *agent_tport_via(tport_t *tport)
 
 /** Insert Via to a request message */
 static
-int agent_insert_via(nta_agent_t *self,
-		     msg_t *msg,
-		     sip_via_t const *via,
-		     char const *branch,
-		     int user_via)
+int outgoing_insert_via(nta_outgoing_t *orq, 
+			sip_via_t const *via)
 {
+  nta_agent_t *self = orq->orq_agent;
+  msg_t *msg = orq->orq_request;
   sip_t *sip = sip_object(msg);
+  char const *branch = orq->orq_via_branch;
+  int user_via = orq->orq_user_via;
   sip_via_t *v;
-  sip_method_t method;
   int clear = 0;
 
   assert(sip); assert(via);
@@ -1693,13 +1692,16 @@ int agent_insert_via(nta_agent_t *self,
   else
     return -1;
 
-  method = sip->sip_request ? sip->sip_request->rq_method : sip_method_options;
-
-  if (method != sip_method_ack) {
+  if (orq->orq_method != sip_method_ack) {
     if (self->sa_rport && !sip_params_find(v->v_params, "rport=")) 
       clear = 1, sip_via_add_param(msg_home(msg), v, "rport");
   } else {
     /* msg_params_remove((msg_param_t *)&v->v_params, "comp="); */
+  }
+
+  if (!orq->orq_tpn->tpn_comp) {
+    if (msg_params_remove((msg_param_t *)&v->v_params, "comp="))
+      clear = 1;
   }
 
   if (branch && branch != v->v_branch)
@@ -6273,7 +6275,6 @@ outgoing_prepare_send(nta_outgoing_t *orq)
   nta_agent_t *sa = orq->orq_agent;
   tport_t *tp;
   tp_name_t *tpn = orq->orq_tpn;
-  msg_t *msg = orq->orq_request;
   int sips = strcasecmp(orq->orq_scheme, "sips") == 0;
 
   /* Select transport by scheme */
@@ -6305,10 +6306,7 @@ outgoing_prepare_send(nta_outgoing_t *orq)
     return;
   }
 
-  if (agent_insert_via(sa, msg,
-		       agent_tport_via(tp),
-		       orq->orq_via_branch,
-		       orq->orq_user_via) < 0) {
+  if (outgoing_insert_via(orq, agent_tport_via(tp)) < 0) {
     SU_DEBUG_3(("nta outgoing create: cannot insert Via line\n"));
     outgoing_reply(orq, 503, "Cannot insert Via", 1);
     return;
@@ -7665,10 +7663,7 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
   /** Insert a dummy Via header */
   if (!orq->orq_prepared) {
     tport_t *tp = tport_primaries(orq->orq_agent->sa_tports);
-    agent_insert_via(orq->orq_agent, orq->orq_request,
-		     agent_tport_via(tp),
-		     orq->orq_branch,
-		     orq->orq_user_via);
+    outgoing_insert_via(orq, agent_tport_via(tp));
   }
 
   /* Create response message, if needed */
