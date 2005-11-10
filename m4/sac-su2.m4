@@ -134,10 +134,9 @@ esac
 
 case $ac_cv_sin6 in 
 yes) SAC_SU_DEFINE(SU_HAVE_IN6, 1, [
-	Define this as 1 if you have struct sockaddr_in6])
-;; 
-no) ;;
-*) AC_MSG_ERROR([Inconsistent struct sockaddr_sin6 test]) ;;
+	Define this as 1 if you have struct sockaddr_in6]) ;;
+ no) ;;
+  *) AC_MSG_ERROR([Inconsistent struct sockaddr_sin6 test]) ;;
 esac
 
 dnl SIOGCIFCONF & struct ifconf
@@ -170,10 +169,14 @@ yes | "" ) with_glib=2.0 ;;
 esac
 ], [with_glib=2.0])
 
+if test X$with_glib != Xno ; then 
+
 PKG_CHECK_MODULES(GLIB, glib-$with_glib, [dnl
 SAC_SU_DEFINE([SU_HAVE_GLIB], 1, [Define as 1 if you have >= glib-2.0])
 HAVE_GLIB=yes
 ])
+
+fi
 
 AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" != x])
 AC_SUBST(GLIB_LIBS)
