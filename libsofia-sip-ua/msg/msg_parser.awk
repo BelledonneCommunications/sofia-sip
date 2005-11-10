@@ -264,6 +264,8 @@ function read_header_flags (flagfile,    line, tokens, name, value)
       sub(/.*[\/]/, "", TEMPLATE);
       gsub(/#AUTO#/, auto, header);
       gsub(/#DATE#/, "@date Generated: " date, header);
+      if (PACKAGE_NAME) gsub(/#PACKAGE_NAME#/, PACKAGE_NAME, header);
+      if (PACKAGE_VERSION) gsub(/#PACKAGE_VERSION#/, PACKAGE_VERSION, header);
       print header > PR NEW;
 
       RS=RS0;
