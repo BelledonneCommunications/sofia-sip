@@ -157,6 +157,94 @@ int test_sockaddr(void)
   END();
 }
 
+#include <su_wait.h>
+
+int test_sendrecv(void)
+{
+  int s, l, a;
+  int n;
+  su_sockaddr_t su, csu;
+  socklen_t sulen = sizeof su.su_sin, csulen = sizeof csu.su_sin;
+  char b1[8], b2[8], b3[8];
+  su_iovec_t sv[3], rv[3];
+
+  sv[0].siv_base = "one!one!", sv[0].siv_len = 8;
+  sv[1].siv_base = "two!two!", sv[1].siv_len = 8;
+  sv[2].siv_base = "third!", sv[2].siv_len = 6;
+
+  rv[0].siv_base = b1, rv[0].siv_len = 8;
+  rv[1].siv_base = b2, rv[1].siv_len = 8;
+  rv[2].siv_base = b3, rv[2].siv_len = 8;
+
+  BEGIN();
+
+  s = su_socket(AF_INET, SOCK_DGRAM, 0); TEST_1(s != -1);
+
+  memset(&su, 0, sulen);
+  su.su_len = sulen;
+  su.su_family = AF_INET;
+  TEST(inet_pton(AF_INET, "127.0.0.1", &su.su_sin.sin_addr), 1);
+
+  TEST(bind(s, &su.su_sa, sulen), 0);
+  TEST(getsockname(s, &su.su_sa, &sulen), 0);
+
+  n = su_vsend(s, sv, 3, 0, &su, sulen); TEST(n, 8 + 8 + 6);
+  n = su_vrecv(s, rv, 3, 0, &su, &sulen); TEST(n, 8 + 8 + 6);
+
+  TEST_M(rv[0].siv_base, sv[0].siv_base, sv[0].siv_len);
+  TEST_M(rv[1].siv_base, sv[1].siv_base, sv[1].siv_len);
+  TEST_M(rv[2].siv_base, sv[2].siv_base, sv[2].siv_len);
+
+  su_close(s);
+
+  l = su_socket(AF_INET, SOCK_STREAM, 0); TEST_1(l != -1);
+  s = su_socket(AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
+
+  memset(&su, 0, sulen);
+  su.su_len = sulen;
+  su.su_family = AF_INET;
+  TEST(inet_pton(AF_INET, "172.21.39.96", &su.su_sin.sin_addr), 1);
+
+  TEST(bind(l, &su.su_sa, sulen), 0);
+  TEST(bind(s, &su.su_sa, sulen), 0);
+
+  TEST(getsockname(l, &su.su_sa, &sulen), 0);
+  TEST(listen(l, 5), 0);
+  
+  TEST(connect(s, &su.su_sa, sulen), 0);
+  a = accept(l, &csu.su_sa, &csulen); TEST_1(a != -1);
+
+  n = su_vsend(s, sv, 3, 0, NULL, 0); TEST(n, 8 + 8 + 6);
+  n = su_vrecv(a, rv, 3, 0, NULL, NULL); TEST(n, 8 + 8 + 6);
+
+  TEST_M(rv[0].siv_base, sv[0].siv_base, sv[0].siv_len);
+  TEST_M(rv[1].siv_base, sv[1].siv_base, sv[1].siv_len);
+  TEST_M(rv[2].siv_base, sv[2].siv_base, sv[2].siv_len);
+
+  n = send(a, "", 0, 0); TEST(n, 0);
+  n = su_vsend(a, sv, 3, 0, NULL, 0); TEST(n, 8 + 8 + 6);
+  shutdown(a, 2);
+  su_close(a);
+
+  {
+    su_wait_t w[1] = { SU_WAIT_INIT };
+
+    TEST(su_wait_create(w, s, SU_WAIT_IN | SU_WAIT_HUP), 0);
+
+    TEST(su_wait(w, 0, 500), -1);
+
+    TEST(su_wait(w, 1, 500), 0);
+  }
+  
+  TEST(su_getmsgsize(s), 8 + 8 + 6);
+  n = su_vrecv(s, rv, 3, 0, NULL, NULL); TEST(n, 8 + 8 + 6);
+
+  su_close(l);
+  su_close(s); 
+
+  END();
+}
+
 #include <su_md5.h>
 
 int test_md5(void)
@@ -291,6 +379,7 @@ int main(int argc, char *argv[])
   }
   
   retval |= test_sockaddr();
+  retval |= test_sendrecv();
   retval |= test_md5(); fflush(stdout);
 
   su_deinit();
