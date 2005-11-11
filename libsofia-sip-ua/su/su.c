@@ -290,14 +290,14 @@ struct in_addr6 const *su_in6addr_loopback(void)
 int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags, 
              su_sockaddr_t const *su, socklen_t sulen)
 {
-  DWORD bytes_sent = 0;
-  DWORD ret;
-
+  int ret;
+  DWORD bytes_sent = -1;
+  
   ret =  WSASendTo(s,
-		   (void *)iov,
+		   (LPWSABUF)iov,
 		   iovlen,
 		   &bytes_sent,
-		   0,
+		   flags,
 		   &su->su_sa,
 		   sulen,
 		   NULL,
@@ -313,14 +313,15 @@ int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags,
 int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags, 
              su_sockaddr_t *su, socklen_t *sulen)
 {
-  DWORD bytes_recv = 0;
-  DWORD ret;
+  int ret;
+  DWORD bytes_recv = -1;
+  DWORD dflags = flags;
 
   ret =  WSARecvFrom(s,
-		     (void *)iov,
+		     (LPWSABUF)iov,
 		     iovlen,
 		     &bytes_recv,
-		     0,
+		     &dflags,
 		     &su->su_sa,
 		     sulen,
 		     NULL,

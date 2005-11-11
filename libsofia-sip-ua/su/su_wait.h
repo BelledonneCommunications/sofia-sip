@@ -60,6 +60,8 @@
 #define SU_WAIT_IN      (POLLIN)
 /** Data can be sent on socket. @HI */
 #define SU_WAIT_OUT     (POLLOUT)
+/** Socket is connected. @HI */
+#define SU_WAIT_CONNECT (POLLOUT)
 /** An error occurred on socket. @HI */
 #define SU_WAIT_ERR     (POLLERR)
 /** The socket connection was closed. @HI */
@@ -81,6 +83,7 @@
 
 #define SU_WAIT_IN      (FD_READ)
 #define SU_WAIT_OUT     (FD_WRITE)
+#define SU_WAIT_CONNECT (FD_CONNECT)
 #define SU_WAIT_ERR     (0)	/* fuck this shit */
 #define SU_WAIT_HUP     (FD_CLOSE)
 #define SU_WAIT_ACCEPT  (FD_ACCEPT)
