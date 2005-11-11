@@ -5,27 +5,12 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-Fixed win32 build tree. Even more features of NUA/SOA API has been tested. 
-Plugged memory leaks. Purged some ancient stuff away from APIs and public
-header files.
-
 API/ABI changes and versioning
 ------------------------------
 
 The libsofia-sip-ua library interface version (libtool) is set to zero. 
 Library version will not be frozen until the release of 1.12.0 stable
 version.
-
-- added msg_header_free() and msg_header_free_all()
-- renamed msg_name_addr_d/msg_name_addr_e as sip_name_addr_d/sip_name_addr_e
-  (because the function is sip-specific)
-- removed sip_params_* functions (use identical msg_params_* functions instead)
-- removed msg_copy_all() and msg_dup_all()
-- updated nta_agent_create() prototype
-- updated nta functions nta_*get(request|response) in order to always use
-  reference counting for SIP messages
-- removed pre-rfc3261 nta functions not used anymore
-- removed pre-rfc3261 nea functions not used anymore
 
 Contributors to this release
 ----------------------------
@@ -36,4 +21,4 @@ See the AUTHORS file in the distribution package.
 Bugs fixed in this release
 --------------------------
 
-See ChangeLogs.
+
