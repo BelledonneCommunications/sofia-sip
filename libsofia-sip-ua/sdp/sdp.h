@@ -30,7 +30,6 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  *
  * @date Created: Fri Feb 18 08:54:48 2000 ppessi
- * @date Last modified: Wed Sep 28 20:05:24 2005 ppessi
  */
 
 #ifndef SU_ALLOC_H

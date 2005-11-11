@@ -30,7 +30,6 @@
  * @author Pekka Pessi <Pekka.Pessi@research.nokia.com>
  *
  * @date Created: Tue Mar  7 14:51:14 2000 ppessi
- * @date Last modified: Wed Jul 20 20:35:36 2005 kaiv
  */
 
 enum {
