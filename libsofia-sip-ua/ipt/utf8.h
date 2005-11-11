@@ -31,7 +31,6 @@
  * @author Pekka Pessi <pekka.pessi@nokia.com>
  *
  * @date Created: Tue Apr 21 15:32:38 1998 pessi
- * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
 
  * @sa <a href="ftp://ftp.ietf.org/rfc/rfc2279.txt">RFC 2279</a>, 
  * <i>"UTF-8, a transformation format of ISO 10646"</i>,

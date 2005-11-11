@@ -31,7 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Apr 21 15:32:02 1998 pessi
- * @date Last modified: Wed Jul 20 20:35:20 2005 kaiv
  */
 
 #define UTF8_ANALYZE(s, ascii, latin1, ucs2, ucs4, errors) \
