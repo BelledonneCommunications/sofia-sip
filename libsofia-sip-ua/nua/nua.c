@@ -172,6 +172,10 @@ static tagi_t const nua_filter[] =
  *     #NUTAG_URL              \n
  *     all relevant NTATAG_* are passed to NTA 
  *
+ * @note
+ * Both the NUTAG_URL and NUTAG_SIPS_URL() are used to pass arguments to
+ * nta_agent_add_tport(). 
+ *
  * @par Events:
  *     none
  */

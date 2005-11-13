@@ -296,8 +296,9 @@ typedef struct nua_handle_preferences
   unsigned         :0;
 
   /** INVITE timeout. 
-   * If no response is received in nhp_invite_timeout INVITE client
-   * transaction times out
+   *
+   * If no response is received in nhp_invite_timeout seconds,
+   * INVITE client transaction times out
    */
   unsigned         nhp_invite_timeout;
 

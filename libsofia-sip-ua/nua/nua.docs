@@ -44,8 +44,8 @@ appropriate handle to a #su_root_t object.
 
 The Sofia software suite is based on certain basic ideas and concepts that
 are used in all levels of Sofia software. Many of those are implemented in
-Sofia system utility library (<a href="../su/index.html"><b>su</b></a>)
-providing unified interface to certain OS services and utilities.
+Sofia utility library (<a href="../su/index.html"><b>su</b></a>) providing
+unified interface to the most important OS services and utilities .
 
 The following sections contain descriptions of the concepts that a user of
 NUA library must understand to create a working application. The other
@@ -56,7 +56,7 @@ software suite in a way that causes NUA library to work incorrectly.
 See [<a href="../su/index.html"><b>su</b></a>] for more detailed
 description of the SU services.
 
-@subsection nua_root Root object
+@subsection nua_root Event loop - root object
 
 The NUA uses the reactor pattern (also known as dispatcher pattern and
 notifier pattern) for event driven systems (see [Using Design Patterns
@@ -87,10 +87,10 @@ See section #nua_event_e for more information of the callback function.
 
 @subsection nua_magic Magic
 
-The magic is a term used for the context information that can be connected
-to various entities in Sofia stack (for example root object and operation
-handle) by the application code. This context information is passed back
-to the application code when the registered callback function is called by
+The magic is a term used for the context pointer that can be bound
+to various objects in Sofia stack (for example root object and operation
+handle) by the application code. This context pointer is passed back
+to the application code when a registered callback function is called by
 the main event loop. The Sofia stack retains the context information between
 calls to the callback function. An application can use the context information
 to store any information it needs for processing the events.
@@ -159,7 +159,7 @@ as parameter.
 The following is an example of call to NUA function containing tagged values:
 @code
 nua_unregister(op->op_handle,
-               TAG_IF(registrar, NUTAG_REGISTRAR(registrar)),
+               TAG_IF(use_registrar, NUTAG_REGISTRAR(registrar)),
                SIPTAG_CONTACT_STR("*"),
                SIPTAG_EXPIRES_STR("0"),
                TAG_NULL());
@@ -256,6 +256,8 @@ three versions of each SIP tag:
 - SIPTAG_<tagname>_STR() takes an unparsed string as parameter.
 - SIPTAG_<tagname>_REF() takes a reference as parameter, is used
         with tl_gets() function to retrieve tag values from tag list.
+- SIPTAG_<tagname>__STR_REF() takes a reference as parameter, is used
+        with tl_gets() function to retrieve string tag values from tag list.
 
 For example a header named "Example" would have tags names SIPTAG_EXAMPLE(),
 SIPTAG_EXAMPLE_STR(), and SIPTAG_EXAMPLE_REF().
@@ -269,7 +271,7 @@ headers from the message.
 
 For example:
 
-sending a SUBSCRIBE with Event: header and two Accept: headers:
+- sending a SUBSCRIBE with @b Event: header and two @b Accept: headers:
 
 @code
 	nua_subscribe(nh,
@@ -279,7 +281,7 @@ sending a SUBSCRIBE with Event: header and two Accept: headers:
                       TAG_END());
 @endcode
 
-fetching tag values when processing nua_r_subscribe event:
+- fetching tag values when processing nua_r_subscribe event:
 
 @code
            sip_accept_t *ac = NULL;
