@@ -5,12 +5,20 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
+The SDP offer/answer negotiation in soa module was extended to handle
+selecting codecs as well.
+
 API/ABI changes and versioning
 ------------------------------
 
 The libsofia-sip-ua library interface version (libtool) is set to zero. 
 Library version will not be frozen until the release of 1.12.0 stable
 version.
+
+- Added SOATAG_RTP_SELECT(), SOATAG_RTP_SORT() and SOATAG_RTP_MISMATCH().
+
+- Added sdp_media_uses_rtp(), sdp_rtpmap_match(), sdp_rtpmap_find_matching()
+  and sdp_rtpmap_well_known[]
 
 Contributors to this release
 ----------------------------
@@ -21,4 +29,4 @@ See the AUTHORS file in the distribution package.
 Bugs fixed in this release
 --------------------------
 
-
+- RTP timestamp rate for G722 was 16000 but it should be 8000
