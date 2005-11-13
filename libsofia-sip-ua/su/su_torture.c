@@ -203,7 +203,7 @@ int test_sendrecv(void)
   memset(&su, 0, sulen);
   su.su_len = sulen;
   su.su_family = AF_INET;
-  TEST(inet_pton(AF_INET, "172.21.39.96", &su.su_sin.sin_addr), 1);
+  TEST(inet_pton(AF_INET, "127.0.0.1", &su.su_sin.sin_addr), 1);
 
   TEST(bind(l, &su.su_sa, sulen), 0);
   TEST(bind(s, &su.su_sa, sulen), 0);
@@ -231,7 +231,7 @@ int test_sendrecv(void)
 
     TEST(su_wait_create(w, s, SU_WAIT_IN | SU_WAIT_HUP), 0);
 
-    TEST(su_wait(w, 0, 500), -1);
+    TEST(su_wait(w, 0, 500), SU_WAIT_TIMEOUT);
 
     TEST(su_wait(w, 1, 500), 0);
   }
