@@ -1361,6 +1361,85 @@ int sdp_media_has_rtp(sdp_media_t const *m)
   return m && (m->m_proto == sdp_proto_rtp || m->m_proto == sdp_proto_srtp);
 }
 
+#define RTPMAP(pt, type, rate, params) \
+  { sizeof(sdp_rtpmap_t), NULL, 1, pt, 0, type, rate, (char *)params}
+
+/* rtpmaps for well-known codecs */
+static sdp_rtpmap_t const
+  sdp_rtpmap_pcmu = RTPMAP(0, "PCMU", 8000, 0),
+  sdp_rtpmap_1016 = RTPMAP(1, "1016", 8000, 0),
+  sdp_rtpmap_g721 = RTPMAP(2, "G721", 8000, 0),
+  sdp_rtpmap_gsm =  RTPMAP(3, "GSM",  8000, 0),
+  sdp_rtpmap_g723 = RTPMAP(4, "G723", 8000, 0),
+  sdp_rtpmap_dvi4_8000 = RTPMAP(5, "DVI4", 8000, 0),
+  sdp_rtpmap_dvi4_16000 = RTPMAP(6, "DVI4", 16000, 0),
+  sdp_rtpmap_lpc = RTPMAP(7, "LPC",  8000, 0),
+  sdp_rtpmap_pcma = RTPMAP(8, "PCMA", 8000, 0),
+  sdp_rtpmap_g722 = RTPMAP(9, "G722", 8000, 0),
+  sdp_rtpmap_l16_2 = RTPMAP(10, "L16", 44100, "2"),
+  sdp_rtpmap_l16 = RTPMAP(11, "L16", 44100, 0),
+  sdp_rtpmap_qcelp = RTPMAP(12, "QCELP", 8000, 0),
+  sdp_rtpmap_cn = RTPMAP(13, "CN", 8000, 0),
+  sdp_rtpmap_mpa = RTPMAP(14, "MPA", 90000, 0),
+  sdp_rtpmap_g728 = RTPMAP(15, "G728", 8000, 0),
+  sdp_rtpmap_dvi4_11025 = RTPMAP(16, "DVI4", 11025, 0),
+  sdp_rtpmap_dvi4_22050 = RTPMAP(17, "DVI4", 22050, 0),
+  sdp_rtpmap_g729 = RTPMAP(18, "G729", 8000, 0),
+  sdp_rtpmap_reserved_cn = RTPMAP(19, "CN", 8000, 0),
+  /* video codecs */
+  sdp_rtpmap_celb = RTPMAP(25, "CelB", 90000, 0),
+  sdp_rtpmap_jpeg = RTPMAP(26, "JPEG", 90000, 0),
+  sdp_rtpmap_nv = RTPMAP(28, "nv",   90000, 0),
+  sdp_rtpmap_h261 = RTPMAP(31, "H261", 90000, 0),
+  sdp_rtpmap_mpv = RTPMAP(32, "MPV",  90000, 0),
+  sdp_rtpmap_mp2t = RTPMAP(33, "MP2T", 90000, 0),
+  sdp_rtpmap_h263 = RTPMAP(34, "H263", 90000, 0);
+
+/** Table of rtpmap structures by payload type numbers.
+ *
+ * The table of reserved payload numbers is constructed from @RFC3551
+ * and @RFC1891. Note the clock rate of G722.
+ */
+sdp_rtpmap_t const * const sdp_rtpmap_well_known[128] =
+{
+  &sdp_rtpmap_pcmu,		/* 0 */
+  &sdp_rtpmap_1016,		/* 1 */
+  &sdp_rtpmap_g721,		/* 2 */
+  &sdp_rtpmap_gsm,		/* 3 */
+  &sdp_rtpmap_g723,		/* 4 */
+  &sdp_rtpmap_dvi4_8000,	/* 5 */
+  &sdp_rtpmap_dvi4_16000,	/* 6 */
+  &sdp_rtpmap_lpc,		/* 7 */
+  &sdp_rtpmap_pcma,		/* 8 */
+  &sdp_rtpmap_g722,		/* 9 */
+  &sdp_rtpmap_l16_2,		/* 10 */
+  &sdp_rtpmap_l16,		/* 11 */
+  &sdp_rtpmap_qcelp,		/* 12 */
+  &sdp_rtpmap_cn,		/* 13 */
+  &sdp_rtpmap_mpa,		/* 14 */
+  &sdp_rtpmap_g728,		/* 15 */
+  &sdp_rtpmap_dvi4_11025,	/* 16 */
+  &sdp_rtpmap_dvi4_22050,	/* 17 */
+  &sdp_rtpmap_g729,		/* 18 */
+  &sdp_rtpmap_reserved_cn,	/* 19 */
+  NULL,				/* 20 */
+  NULL,				/* 21 */
+  NULL,				/* 22 */
+  NULL,				/* 23 */
+  NULL,				/* 24 */
+  &sdp_rtpmap_celb,		/* 25 */
+  &sdp_rtpmap_jpeg,		/* 26 */
+  NULL,				/* 27 */
+  &sdp_rtpmap_nv,		/* 28 */
+  NULL,				/* 29 */
+  NULL,				/* 30 */
+  &sdp_rtpmap_h261,		/* 31 */
+  &sdp_rtpmap_mpv,		/* 32 */
+  &sdp_rtpmap_mp2t,		/* 33 */
+  &sdp_rtpmap_h263,		/* 34 */
+  NULL,
+};
+
 /**
  * The function parse_payload() parses an RTP payload type list, and
  * creates an rtpmap structure for each payload type.
@@ -1371,49 +1450,24 @@ int sdp_media_has_rtp(sdp_media_t const *m)
  */
 static void parse_payload(sdp_parser_t *p, char *r, sdp_rtpmap_t **result)
 {
-#define SETMAP(rm, type, rate) (rm->rm_encoding = type, rm->rm_rate = rate)
-
   while (*r) {
     unsigned long value;
 
     if (parse_ul(p, &r, &value, 128) == 0) {
       PARSE_ALLOC(p, sdp_rtpmap_t, rm);
 
+      assert(0 <= value && value < 128);
+
       *result = rm; result = &rm->rm_next;
 
-      rm->rm_predef = 1;
-      rm->rm_pt = value;
-
-      switch (value) {
-	/* Payload type numbers as per RFC3551 */
-      case 0:  SETMAP(rm, "PCMU", 8000); break;
-      case 3:  SETMAP(rm, "GSM",  8000); break;
-      case 4:  SETMAP(rm, "G723", 8000); break;
-      case 5:  SETMAP(rm, "DVI4", 8000); break;
-      case 6:  SETMAP(rm, "DVI4", 16000); break;
-      case 7:  SETMAP(rm, "LPC",  8000); break;
-      case 8:  SETMAP(rm, "PCMA", 8000); break;
-      case 9:  SETMAP(rm, "G722", 16000); break;
-      /* in stereo, where available! */
-      case 10:  SETMAP(rm, "L16", 44100); rm->rm_params = "2"; break;
-      case 11:  SETMAP(rm, "L16", 44100); break;
-      case 12:  SETMAP(rm, "QCELP", 8000); break;
-      case 13:  SETMAP(rm, "CN", 8000); break;
-      case 14:  SETMAP(rm, "MPA", 90000); break;
-      case 15:  SETMAP(rm, "G728", 8000); break;
-      case 16:  SETMAP(rm, "DVI4", 11025); break;
-      case 17:  SETMAP(rm, "DVI4", 22050); break;
-      case 18:  SETMAP(rm, "G729", 8000); break;
-
-      case 25:  SETMAP(rm, "CelB", 90000); break;
-      case 26:  SETMAP(rm, "JPEG", 90000); break;
-      case 28:  SETMAP(rm, "nv",   90000); break;
-      case 31:  SETMAP(rm, "H261", 90000); break;
-      case 32:  SETMAP(rm, "MPV",  90000); break;
-      case 33:  SETMAP(rm, "MP2T", 90000); break;
-      case 34:  SETMAP(rm, "H263", 90000); break;
-
-      default:  SETMAP(rm, "", 0); break;
+      if (sdp_rtpmap_well_known[value]) {
+	*rm = *sdp_rtpmap_well_known[value];
+      }
+      else {
+	rm->rm_predef = 1;
+	rm->rm_pt = value;
+	rm->rm_encoding = "";
+	rm->rm_rate = 0;
       }
     }
     else if (p->pr_config && r[0] == '*' && (r[1] == ' ' || r[1] == '\0')) {
@@ -1423,12 +1477,15 @@ static void parse_payload(sdp_parser_t *p, char *r, sdp_rtpmap_t **result)
 
       rm->rm_predef = 1;
       rm->rm_any = 1;
+      rm->rm_encoding = "*";
+      rm->rm_rate = 0;
 
-      SETMAP(rm, "*", 0); break;
+      return;
     }
     else {
       parsing_error(p, "m= invalid format for RTP/AVT");
-      break;
+
+      return;
     }
   }
 }

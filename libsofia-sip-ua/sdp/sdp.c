@@ -1388,7 +1388,7 @@ int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b)
       return rv;
   }
 
-  return str0cmp(a->rm_fmtp, b->rm_fmtp);
+  return str0casecmp(a->rm_fmtp, b->rm_fmtp);
 }
 
 /** Compare two lists. */
@@ -1685,4 +1685,79 @@ unsigned sdp_media_count_with(sdp_session_t const *sdp,
       count += sdp_media_match_with(m, m0);
 
   return count;
+}
+
+/** Return true if media uses RTP */
+int sdp_media_uses_rtp(sdp_media_t const *m)
+{
+  return m &&
+    (m->m_proto == sdp_proto_rtp ||
+     m->m_proto == sdp_proto_srtp ||
+     (m->m_proto == sdp_proto_x && m->m_proto_name &&
+      strncasecmp(m->m_proto_name, "RTP/", 4) == 0));
+}
+
+/** Check if payload type, rtp rate and parameters match in rtpmaps*/
+int sdp_rtpmap_match(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b)
+{
+  char const *aparam, *bparam;
+
+  if (a == b)
+    return 1;
+
+  if (a == 0 || b == 0)
+    return 0;
+
+  if (a->rm_rate != b->rm_rate)
+    return 0;
+
+  if (strcasecmp(a->rm_encoding, b->rm_encoding))
+    return 0;
+
+  aparam = a->rm_params; bparam = b->rm_params;
+
+  if (aparam == bparam)
+    return 1;
+
+  if (!aparam) aparam = "1"; if (!bparam) bparam = "1";
+  
+  if (strcasecmp(aparam, bparam))
+    return 0;
+
+  return 1;
+}
+
+/** Search for matching rtpmap from list.
+ *
+ * @note
+ * The a=fmtp: for the codecs are not compared.
+ */
+sdp_rtpmap_t *sdp_rtpmap_find_matching(sdp_rtpmap_t const *list,
+				       sdp_rtpmap_t const *rm)
+{
+  char const *lparam, *rparam;
+
+  if (rm == NULL)
+    return NULL;
+
+  for (; list; list = list->rm_next) {
+    if (rm->rm_rate != list->rm_rate)
+      continue;
+
+    if (strcasecmp(rm->rm_encoding, list->rm_encoding))
+      continue;
+
+    lparam = rm->rm_params; rparam = list->rm_params;
+
+    if (lparam == rparam)
+      break;
+
+    if (!lparam) lparam = "1"; if (!rparam) rparam = "1";
+    if (strcasecmp(lparam, rparam))
+      continue;
+
+    break;
+  }
+
+  return (sdp_rtpmap_t *)list;
 }

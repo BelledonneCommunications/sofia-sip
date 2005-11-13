@@ -319,6 +319,8 @@ struct sdp_rtpmap_s {
   sdp_text_t    *rm_fmtp;	        /**< Contents of fmtp */
 };
 
+extern sdp_rtpmap_t const * const sdp_rtpmap_well_known[128];
+
 /** Duplicate an SDP session description structure. */
 sdp_session_t    *sdp_session_dup(su_home_t *home, sdp_session_t const *sdp);
 
@@ -444,6 +446,16 @@ unsigned sdp_media_count(sdp_session_t const *sdp,
 
 unsigned sdp_media_count_with(sdp_session_t const *sdp,
 			      sdp_media_t const *m0);
+
+/** Return true if media uses RTP */
+int sdp_media_uses_rtp(sdp_media_t const *m);
+
+/** Check if payload type, rtp rate and parameters match in rtpmaps*/
+int sdp_rtpmap_match(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b);
+
+/** Search for matching rtpmap from list */
+sdp_rtpmap_t *sdp_rtpmap_find_matching(sdp_rtpmap_t const *list,
+				       sdp_rtpmap_t const *rm);
 
 /* ======================================================================== */
 

@@ -229,9 +229,9 @@ static char const s1_msg[] =
   "c=IN IP4 172.21.137.44\r\n"
   "t=0 0\r\n"
   "a=sendonly\r\n"
-  "m=video 49154 RTP/AVP 96\r\n"
+  "m=video 49154 RTP/AVP 96 24 25 26 28 31 32 33 34\r\n"
   "a=rtpmap:96 H263-1998/90000\r\n"
-  "m=audio 49152 RTP/AVP 97\r\n"
+  "m=audio 49152 RTP/AVP 97 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19\r\n"
   "a=rtpmap 97 AMR/8000\r\n"
   "a=fmtp:97 mode-set=\"0,1,2,3,4\"\r\n"
   "a=ptime:400\r\n";
@@ -260,6 +260,7 @@ static int test_session2(int flags)
   sdp_session_t const *sdp = NULL;
   sdp_parser_t *parser;
   sdp_media_t *m;
+  sdp_rtpmap_t *rm;
 
   BEGIN();
 
@@ -271,20 +272,148 @@ static int test_session2(int flags)
   TEST(m->m_mode, sdp_sendonly);
   TEST_1(m->m_session);
   TEST(m->m_session, sdp);
-  TEST_1(m->m_rtpmaps);
-  TEST(m->m_rtpmaps->rm_pt, 96);
-  TEST_S(m->m_rtpmaps->rm_encoding, "H263-1998");
-  TEST(m->m_rtpmaps->rm_rate, 90000);
+  TEST_1(rm = m->m_rtpmaps);
+  TEST(rm->rm_pt, 96);
+  TEST_S(rm->rm_encoding, "H263-1998");
+  TEST(rm->rm_rate, 90000);
+
+  {
+#define RTPMAP(pt, type, rate, params) \
+  { sizeof(sdp_rtpmap_t), NULL, 1, pt, 0, type, rate, (char *)params}
+
+    /* rtpmaps for well-known video codecs */
+    static sdp_rtpmap_t const
+      sdp_rtpmap_celb = RTPMAP(25, "CelB", 90000, 0),
+      sdp_rtpmap_jpeg = RTPMAP(26, "JPEG", 90000, 0),
+      sdp_rtpmap_nv = RTPMAP(28, "nv", 90000, 0),
+      sdp_rtpmap_h261 = RTPMAP(31, "H261", 90000, 0),
+      sdp_rtpmap_mpv = RTPMAP(32, "MPV", 90000, 0),
+      sdp_rtpmap_mp2t = RTPMAP(33, "MP2T", 90000, 0),
+      sdp_rtpmap_h263 = RTPMAP(34, "H263", 90000, 0);
+
+
+    TEST_1(rm = rm->rm_next);
+    TEST_S(rm->rm_encoding, ""); TEST(rm->rm_rate, 0);
+    TEST_1(rm = rm->rm_next);
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_celb, rm), &sdp_rtpmap_celb);
+    TEST_1(rm = rm->rm_next);
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_jpeg, rm), &sdp_rtpmap_jpeg);
+    TEST_1(rm = rm->rm_next);
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_nv, rm), &sdp_rtpmap_nv);
+    TEST_1(rm = rm->rm_next);
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_h261, rm), &sdp_rtpmap_h261);
+    TEST_1(rm = rm->rm_next);
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_mpv, rm), &sdp_rtpmap_mpv);
+    TEST_1(rm = rm->rm_next);
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_mp2t, rm), &sdp_rtpmap_mp2t);
+    TEST_1(rm = rm->rm_next);
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_h263, rm), &sdp_rtpmap_h263);
+    TEST_1(!rm->rm_next);
+  }
+
   TEST_1(m = m->m_next);
   TEST(m->m_mode, sdp_sendonly);
   TEST_1(m->m_session);
   TEST(m->m_session, sdp);
-  TEST_1(m->m_rtpmaps);
-  TEST(m->m_rtpmaps->rm_pt, 97);
-  TEST_S(m->m_rtpmaps->rm_encoding, "AMR");
-  TEST(m->m_rtpmaps->rm_rate, 8000);
-  TEST_S(m->m_rtpmaps->rm_fmtp, "mode-set=\"0,1,2,3,4\"");
+  TEST_1(rm = m->m_rtpmaps);
+  TEST(rm->rm_pt, 97);
+  TEST_S(rm->rm_encoding, "AMR");
+  TEST(rm->rm_rate, 8000);
+  TEST_S(rm->rm_fmtp, "mode-set=\"0,1,2,3,4\"");
 
+  {
+    /* rtpmaps for well-known audio codecs */
+    static sdp_rtpmap_t const
+      sdp_rtpmap_pcmu = RTPMAP(0, "PCMU", 8000, "1"),
+      sdp_rtpmap_1016 = RTPMAP(1, "1016", 8000, "1"),
+      sdp_rtpmap_g721 = RTPMAP(2, "G721", 8000, "1"),
+      sdp_rtpmap_gsm = RTPMAP(3, "GSM", 8000, "1"),
+      sdp_rtpmap_g723 = RTPMAP(4, "G723", 8000, "1"),
+      sdp_rtpmap_dvi4_8000 = RTPMAP(5, "DVI4", 8000, "1"),
+      sdp_rtpmap_dvi4_16000 = RTPMAP(6, "DVI4", 16000, "1"),
+      sdp_rtpmap_lpc = RTPMAP(7, "LPC", 8000, "1"),
+      sdp_rtpmap_pcma = RTPMAP(8, "PCMA", 8000, "1"),
+      sdp_rtpmap_g722 = RTPMAP(9, "G722", 8000, "1"),
+      sdp_rtpmap_l16 = RTPMAP(10, "L16", 44100, "2"),
+      sdp_rtpmap_l16_stereo = RTPMAP(11, "L16", 44100, "1"),
+      sdp_rtpmap_qcelp = RTPMAP(12, "QCELP", 8000, "1"),
+      sdp_rtpmap_cn = RTPMAP(13, "CN", 8000, "1"),
+      sdp_rtpmap_mpa = RTPMAP(14, "MPA", 90000, 0),
+      sdp_rtpmap_g728 = RTPMAP(15, "G728", 8000, "1"),
+      sdp_rtpmap_dvi4_11025 = RTPMAP(16, "DVI4", 11025, "1"),
+      sdp_rtpmap_dvi4_22050 = RTPMAP(17, "DVI4", 22050, "1"),
+      sdp_rtpmap_g729 = RTPMAP(18, "G729", 8000, "1"),
+      sdp_rtpmap_cn_reserved = RTPMAP(19, "CN", 8000, "1");
+
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_pcmu, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_pcmu, rm), &sdp_rtpmap_pcmu);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_1016, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_1016, rm), &sdp_rtpmap_1016);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g721, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g721, rm), &sdp_rtpmap_g721);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_gsm, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_gsm, rm), &sdp_rtpmap_gsm);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g723, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g723, rm), &sdp_rtpmap_g723);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_8000, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_8000, rm),
+	 &sdp_rtpmap_dvi4_8000);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_16000, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_16000, rm),
+	 &sdp_rtpmap_dvi4_16000);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_lpc, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_lpc, rm), &sdp_rtpmap_lpc);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_pcma, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_pcma, rm), &sdp_rtpmap_pcma);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g722, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g722, rm), &sdp_rtpmap_g722);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_l16, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_l16, rm), &sdp_rtpmap_l16);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_l16_stereo, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_l16_stereo, rm),
+	 &sdp_rtpmap_l16_stereo);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_qcelp, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_qcelp, rm), &sdp_rtpmap_qcelp);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_cn, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_cn, rm), &sdp_rtpmap_cn);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_mpa, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_mpa, rm), &sdp_rtpmap_mpa);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g728, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g728, rm), &sdp_rtpmap_g728);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_11025, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_11025, rm),
+	 &sdp_rtpmap_dvi4_11025);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_22050, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_22050, rm),
+	 &sdp_rtpmap_dvi4_22050);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g729, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g729, rm), &sdp_rtpmap_g729);
+    TEST_1(rm = rm->rm_next);
+    TEST_1(sdp_rtpmap_match(&sdp_rtpmap_cn_reserved, rm));
+    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_cn_reserved, rm),
+	 &sdp_rtpmap_cn_reserved);
+    TEST_1(!rm->rm_next);
+  }
+  
   TEST_1((parser = sdp_parse(home, s2_msg, sizeof (s2_msg), 0)));
   TEST_1((sdp = sdp_session(parser)));
   TEST_1(m = sdp->sdp_media);
