@@ -386,18 +386,23 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 {
   int n, change_session = 0;
 
-  int af;
-
   sdp_session_t const *caps_sdp, *user_sdp;
   char const *caps_sdp_str, *user_sdp_str;
 
+  int af;
   char const *media_address, *hold;
+  unsigned rtp_select, rtp_sort;
+  int rtp_mismatch;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
 
   af = ss->ss_af;
 
   hold = ss->ss_hold;
   media_address = ss->ss_address;
+
+  rtp_select = ss->ss_rtp_select;
+  rtp_sort = ss->ss_rtp_sort;
+  rtp_mismatch = ss->ss_rtp_mismatch;
 
   srtp_enable = ss->ss_srtp_enable;
   srtp_confidentiality = ss->ss_srtp_confidentiality;
@@ -417,6 +422,10 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 	      SOATAG_AF_REF(af),
 	      SOATAG_ADDRESS_REF(media_address),
 	      SOATAG_HOLD_REF(hold),
+
+	      SOATAG_RTP_SELECT_REF(rtp_select),
+	      SOATAG_RTP_SORT_REF(rtp_sort),
+	      SOATAG_RTP_MISMATCH_REF(rtp_mismatch),
 
 	      SOATAG_SRTP_ENABLE_REF(srtp_enable),
 	      SOATAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
@@ -457,11 +466,38 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     }
   }
 
-  if (af != ss->ss_af &&
-      af >= SOA_AF_ANY && af <= SOA_AF_IP6_IP4) {
-    ss->ss_af = af;
-    change_session = 1;
-  }
+  if (af < SOA_AF_ANY || af > SOA_AF_IP6_IP4) 
+    af = ss->ss_af;
+
+  if (rtp_select < SOA_RTP_SELECT_SINGLE || rtp_select > SOA_RTP_SELECT_ALL)
+    rtp_select = ss->ss_rtp_select;
+  if (rtp_sort < SOA_RTP_SORT_DEFAULT || rtp_sort > SOA_RTP_SORT_REMOTE)
+    rtp_select = ss->ss_rtp_select;
+  rtp_mismatch = rtp_mismatch != 0;
+
+  srtp_enable = srtp_enable != 0;
+  srtp_confidentiality = srtp_confidentiality != 0;
+  srtp_integrity = srtp_integrity != 0;
+
+  change_session |= af != ss->ss_af;
+
+  change_session |= rtp_select != ss->ss_rtp_select;
+  change_session |= rtp_sort != ss->ss_rtp_sort;
+  change_session |= rtp_mismatch != ss->ss_rtp_mismatch;
+
+  change_session |= srtp_enable != ss->ss_srtp_enable;
+  change_session |= srtp_confidentiality != ss->ss_srtp_confidentiality;
+  change_session |= srtp_integrity != ss->ss_srtp_integrity;
+
+  ss->ss_af = af;
+
+  ss->ss_rtp_select = rtp_select;
+  ss->ss_rtp_sort = rtp_sort;
+  ss->ss_rtp_mismatch = rtp_mismatch;
+
+  ss->ss_srtp_enable = srtp_enable;
+  ss->ss_srtp_confidentiality = srtp_confidentiality;
+  ss->ss_srtp_integrity = srtp_integrity;
 
   if (str0casecmp(media_address, ss->ss_address)) {
     su_free(ss->ss_home, (void *)ss->ss_address);
@@ -526,6 +562,10 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 	       SOATAG_AF(ss->ss_af),
 	       SOATAG_ADDRESS(ss->ss_address),
 	       SOATAG_HOLD(ss->ss_hold),
+
+	       SOATAG_RTP_SELECT(ss->ss_rtp_select),
+	       SOATAG_RTP_SORT(ss->ss_rtp_sort),
+	       SOATAG_RTP_MISMATCH(ss->ss_rtp_mismatch),
 
 	       SOATAG_SRTP_ENABLE(ss->ss_srtp_enable),
 	       SOATAG_SRTP_CONFIDENTIALITY(ss->ss_srtp_confidentiality),
@@ -836,6 +876,7 @@ int soa_get_remote_version(soa_session_t const *ss)
   return ss->ss_remote_version;
 } 
 
+/** Set remote SDP (offer or answer) */
 int soa_set_remote_sdp(soa_session_t *ss, 
 		       sdp_session_t const *sdp,
 		       char const *str, int len)
@@ -877,6 +918,10 @@ int soa_clear_remote_sdp(soa_session_t *ss)
   return 0;
 }
 
+/** Get local SDP.
+ *
+ * The local SDP is usually result of SDP negotiation.
+ */
 int soa_get_local_sdp(soa_session_t const *ss,
 		      sdp_session_t const **return_sdp,
 		      char const **return_sdp_str,

@@ -232,6 +232,95 @@ tag_typedef_t soatag_af = INTTAG_TYPEDEF(af);
 */
 tag_typedef_t soatag_address = STRTAG_TYPEDEF(address);
 
+
+/**@def SOATAG_RTP_SELECT(x)
+ *
+ * When generating answer or second offer, soa can include all the supported
+ * codec, only one codec, or only the codecs supported by both ends in the
+ * list of payload types on the m= line.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_invite() \n
+ *    nua_update() \n
+ *    nua_respond() \n
+ *
+ * @par Parameter type
+ *    integer in range 0..2
+ *
+ * @par Values
+ *    0 - select the best common codec        \n
+ *    1 - select all common codecs            \n
+ *    2 - select all local codecs             \n
+ *
+ * The default value is 0, only one RTP codec is selected. Note, however,
+ * that if there is no common codec (no local codec is supported by remote
+ * end), all the codecs are included in the list. In that case the media
+ * line is rejected, too, unless SOATAG_RTP_MISMATCH(1) has been used.
+ *
+ * Corresponding tag taking a reference parameter is SOATAG_RTP_SELECT_REF()
+*/
+tag_typedef_t soatag_rtp_select = UINTTAG_TYPEDEF(rtp_select);
+
+
+/**@def SOATAG_RTP_SORT(x)
+ *
+ * When selecting the common codecs, soa can either select first local codec
+ * supported by remote end, or first remote codec supported by local codecs. 
+ * The preference is indicated with ordering: the preferred codec is
+ * first and so on.
+
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_invite() \n
+ *    nua_update() \n
+ *    nua_respond() \n
+ *
+ * @par Parameter type
+ *    Boolean (int)
+ *
+ * @par Values
+ *    0 - select by local preference if media is recvonly, 
+ *        remote preference othewise \n
+ *    1 - always select by local preference \n
+ *    2 - always select by remote preference \n
+ *
+ * The default value is 0.
+ *
+ * Corresponding tag taking reference parameter is SOATAG_RTP_SORT_REF()
+*/
+tag_typedef_t soatag_rtp_sort = UINTTAG_TYPEDEF(rtp_sort);
+
+
+/**@def SOATAG_RTP_MISMATCH(x)
+ *
+ * Accept media line even if the SDP negotation code determines that there
+ * are no common codecs between local and remote media. Normally, if the soa
+ * determines there are no common codecs, the media line is rejected.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_invite() \n
+ *    nua_update() \n
+ *    nua_respond() \n
+ *
+ * @par Parameter type
+ *    Boolean (int)
+ *
+ * @par Values
+ *    0 - reject media if there are no common codecs \n
+ *    1 (!= 0) - accept media even if there are no common codecs \n
+ *
+ * Default value is 0.
+ *
+ * Corresponding tag taking reference parameter is SOATAG_RTP_MISMATCH_REF()
+*/
+tag_typedef_t soatag_rtp_mismatch = BOOLTAG_TYPEDEF(rtp_mismatch);
+
+
 /**@def SOATAG_ACTIVE_AUDIO(x)
  * 
  * Audio session status

@@ -79,7 +79,10 @@ struct context
   struct {
     soa_session_t *a;
     soa_session_t *b;
-  } synch, asynch;
+  } asynch;
+
+  soa_session_t *a;
+  soa_session_t *b;
 
   soa_session_t *completed;
 };
@@ -183,8 +186,8 @@ int test_init(struct context *ctx, char *argv[])
 
   /* Create asynchronous endpoints */
 
-  ctx->synch.a = soa_create("static", ctx->root, ctx); 
-  TEST_1(!ctx->synch.a);
+  ctx->a = soa_create("static", ctx->root, ctx); 
+  TEST_1(!ctx->a);
 
   TEST_1(!soa_find("static"));
   TEST_1(soa_find("default"));
@@ -193,11 +196,11 @@ int test_init(struct context *ctx, char *argv[])
 
   TEST_1(soa_find("static"));
 
-  ctx->synch.a = soa_create("static", ctx->root, ctx);
-  TEST_1(ctx->synch.a);
+  ctx->a = soa_create("static", ctx->root, ctx);
+  TEST_1(ctx->a);
 
-  ctx->synch.b = soa_create("static", ctx->root, ctx);
-  TEST_1(ctx->synch.b);
+  ctx->b = soa_create("static", ctx->root, ctx);
+  TEST_1(ctx->b);
 
   END();
 }
@@ -208,30 +211,101 @@ int test_params(struct context *ctx)
   int n;
   unsigned af;
   char const *address;
-  soa_session_t *a = ctx->synch.a, *b = ctx->synch.b;
+  char const *hold;
+  unsigned rtp_select, rtp_sort;
+  int rtp_mismatch;
+  int srtp_enable, srtp_confidentiality, srtp_integrity;
+  soa_session_t *a = ctx->a, *b = ctx->b;
 
   n = soa_set_params(a, TAG_END()); TEST(n, 0);
   n = soa_set_params(b, TAG_END()); TEST(n, 0);
 
   af = -42;
   address = NONE;
+  hold = NONE;
+
+  rtp_select = -1, rtp_sort = -1, rtp_mismatch = -1;
+  srtp_enable = -1, srtp_confidentiality = -1, srtp_integrity = -1;
+
   TEST(soa_get_params(a,
 		      SOATAG_AF_REF(af),
 		      SOATAG_ADDRESS_REF(address),
+		      SOATAG_HOLD_REF(hold),
+
+		      SOATAG_RTP_SELECT_REF(rtp_select),
+		      SOATAG_RTP_SORT_REF(rtp_sort),
+		      SOATAG_RTP_MISMATCH_REF(rtp_mismatch),
+
+		      SOATAG_SRTP_ENABLE_REF(srtp_enable),
+		      SOATAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
+		      SOATAG_SRTP_INTEGRITY_REF(srtp_integrity),
 		      TAG_END()),
-       2);
+       9);
   TEST(af, SOA_AF_ANY);
   TEST(address, 0);
+  TEST(hold, 0);
+  TEST(rtp_select, SOA_RTP_SELECT_SINGLE);
+  TEST(rtp_sort, SOA_RTP_SORT_DEFAULT);
+  TEST(rtp_mismatch, 0);
+  TEST(srtp_enable, 0);
+  TEST(srtp_confidentiality, 0);
+  TEST(srtp_integrity, 0);
 
   TEST(soa_set_params(a,
 		      SOATAG_AF(SOA_AF_IP4_IP6),
+		      SOATAG_ADDRESS("127.0.0.1"),
+		      SOATAG_HOLD("audio"),
+
+		      SOATAG_RTP_SELECT(SOA_RTP_SELECT_ALL),
+		      SOATAG_RTP_SORT(SOA_RTP_SORT_LOCAL),
+		      SOATAG_RTP_MISMATCH(1),
+
+		      SOATAG_SRTP_ENABLE(1),
+		      SOATAG_SRTP_CONFIDENTIALITY(1),
+		      SOATAG_SRTP_INTEGRITY(1),
+
 		      TAG_END()),
-       1);
+       9);
   TEST(soa_get_params(a,
 		      SOATAG_AF_REF(af),
+		      SOATAG_ADDRESS_REF(address),
+		      SOATAG_HOLD_REF(hold),
+
+		      SOATAG_RTP_SELECT_REF(rtp_select),
+		      SOATAG_RTP_SORT_REF(rtp_sort),
+		      SOATAG_RTP_MISMATCH_REF(rtp_mismatch),
+
+		      SOATAG_SRTP_ENABLE_REF(srtp_enable),
+		      SOATAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
+		      SOATAG_SRTP_INTEGRITY_REF(srtp_integrity),
 		      TAG_END()),
-       1);
+       9);
   TEST(af, SOA_AF_IP4_IP6);
+  TEST_S(address, "127.0.0.1");
+  TEST_S(hold, "audio");
+  TEST(rtp_select, SOA_RTP_SELECT_ALL);
+  TEST(rtp_sort, SOA_RTP_SORT_LOCAL);
+  TEST(rtp_mismatch, 1);
+  TEST(srtp_enable, 1);
+  TEST(srtp_confidentiality, 1);
+  TEST(srtp_integrity, 1);
+
+  /* Restore defaults */
+  TEST(soa_set_params(a,
+		      SOATAG_AF(SOA_AF_IP4_IP6),
+		      SOATAG_ADDRESS(NULL),
+		      SOATAG_HOLD(NULL),
+
+		      SOATAG_RTP_SELECT(SOA_RTP_SELECT_SINGLE),
+		      SOATAG_RTP_SORT(SOA_RTP_SORT_DEFAULT),
+		      SOATAG_RTP_MISMATCH(0),
+
+		      SOATAG_SRTP_ENABLE(0),
+		      SOATAG_SRTP_CONFIDENTIALITY(0),
+		      SOATAG_SRTP_INTEGRITY(0),
+
+		      TAG_END()),
+       9);
 
   END();
 }
@@ -260,23 +334,23 @@ int test_static_offer_answer(struct context *ctx)
     "m=audio 0 RTP/AVP 0 8\r\n";
 
   char const b_caps[] = 
-    "m=audio 5004 RTP/AVP 96\n"
+    "m=audio 5004 RTP/AVP 96 8\n"
     "m=rtpmap:96 GSM/8000\n";
 
-  TEST(soa_set_capability_sdp(ctx->synch.a, 0, "m=audio 0 RTP/AVP 0 8", -1), 
+  TEST(soa_set_capability_sdp(ctx->a, 0, "m=audio 0 RTP/AVP 0 8", -1), 
        1);
-  TEST(soa_set_capability_sdp(ctx->synch.a, 0, a_caps, strlen(a_caps)), 
+  TEST(soa_set_capability_sdp(ctx->a, 0, a_caps, strlen(a_caps)), 
        1);
-  TEST(soa_get_capability_sdp(ctx->synch.a, NULL, &caps, &capslen), 1);
+  TEST(soa_get_capability_sdp(ctx->a, NULL, &caps, &capslen), 1);
 
   TEST_1(caps != NULL && caps != NONE);
   TEST_1(capslen > 0);
 
-  TEST(soa_set_user_sdp(ctx->synch.b, 0, b_caps, strlen(b_caps)), 1);
-  TEST(soa_get_capability_sdp(ctx->synch.a, NULL, &caps, &capslen), 1);
+  TEST(soa_set_user_sdp(ctx->b, 0, b_caps, strlen(b_caps)), 1);
+  TEST(soa_get_capability_sdp(ctx->a, NULL, &caps, &capslen), 1);
 
-  TEST_1(a = soa_clone(ctx->synch.a, ctx->root, ctx));
-  TEST_1(b = soa_clone(ctx->synch.b, ctx->root, ctx));
+  TEST_1(a = soa_clone(ctx->a, ctx->root, ctx));
+  TEST_1(b = soa_clone(ctx->b, ctx->root, ctx));
 
   n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 0);
 
@@ -421,6 +495,293 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_is_audio_active(a), SOA_ACTIVE_DISABLED);
   TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_DISABLED);
 
+  TEST_VOID(soa_terminate(b, NULL));
+  
+  TEST_VOID(soa_destroy(a));
+  TEST_VOID(soa_destroy(b));
+
+  END();
+}
+
+int test_codec_selection(struct context *ctx)
+{
+  BEGIN();
+  int n;
+  
+  soa_session_t *a, *b;
+
+  char const *offer = NONE, *answer = NONE;
+  int offerlen = -1, answerlen = -1;
+
+  sdp_session_t const *a_sdp, *b_sdp;
+  sdp_media_t const *m;
+  sdp_rtpmap_t const *rm;
+
+  char const a_caps[] = 
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/AVP 0 8 97\r\n"
+    "a=rtpmap:97 GSM/8000\n"
+    ;
+
+  char const b_caps[] = 
+    "m=audio 5004 RTP/AVP 96 97\n"
+    "a=rtpmap:96 G7231/8000\n"
+    "a=rtpmap:97 G729/8000\n";
+
+  TEST_1(a = soa_create("static", ctx->root, ctx));
+  TEST_1(b = soa_create("static", ctx->root, ctx));
+
+  TEST(soa_set_user_sdp(a, 0, a_caps, strlen(a_caps)), 1);
+  TEST(soa_set_user_sdp(b, 0, b_caps, strlen(b_caps)), 1);
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_get_local_sdp(b, NULL, &answer, &answerlen); TEST(n, 0);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_REJECTED);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_REJECTED);
+
+  TEST_1(m = b_sdp->sdp_media); TEST_1(m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 96);
+  TEST_S(rm->rm_encoding, "G7231");
+  /* Not using payload type 97 from offer */
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 98);
+  TEST_S(rm->rm_encoding, "G729");
+  TEST_1(!rm->rm_next);
+
+  /* ---------------------------------------------------------------------- */
+
+  /* Re-O/A: A generates new SDP */
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 0);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  /* Re-O/A: no-one regenerates new SDP */
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 0);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 0);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  /* ---------------------------------------------------------------------- */
+
+  /* Re-O/A: accept media without common codecs */
+
+  /* Accept media without common codecs */
+  TEST_1(soa_set_params(a, SOATAG_RTP_MISMATCH(1), TAG_END()));
+  TEST_1(soa_set_params(b, SOATAG_RTP_MISMATCH(1), TAG_END()));
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+
+  TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 96);
+  TEST_S(rm->rm_encoding, "G7231");
+  /* Not using payload type 97 from offer */
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 98);
+  TEST_S(rm->rm_encoding, "G729");
+  TEST_1(!rm->rm_next);
+
+  /* ---------------------------------------------------------------------- */
+
+  /* Re-O/A: add a common codec */
+
+  /* Accept media without common codecs */
+  TEST_1(soa_set_params(a, SOATAG_RTP_MISMATCH(0), 
+			SOATAG_USER_SDP_STR(
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/AVP 0 8 96 3\r\n"
+    "a=rtpmap:96 G729/8000\n"
+    ),			
+			SOATAG_RTP_SORT(SOA_RTP_SORT_REMOTE),
+			SOATAG_RTP_SELECT(SOA_RTP_SELECT_ALL),
+			TAG_END()));
+  TEST_1(soa_set_params(b, SOATAG_RTP_MISMATCH(0), 
+			SOATAG_USER_SDP_STR(
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5004 RTP/AVP 96 3 97\r\n"
+    "a=rtpmap:96 G7231/8000\n"
+    "a=rtpmap:97 G729/8000\n"
+    ),			
+			SOATAG_RTP_SORT(SOA_RTP_SORT_LOCAL),
+			SOATAG_RTP_SELECT(SOA_RTP_SELECT_COMMON),
+			TAG_END()));
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, NULL, NULL); TEST(n, 1);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+
+  TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 3);
+  TEST_S(rm->rm_encoding, "GSM");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 96);
+  TEST_S(rm->rm_encoding, "G729");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 0);
+  TEST_S(rm->rm_encoding, "PCMU");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 8);
+  TEST_S(rm->rm_encoding, "PCMA");
+  TEST_1(!rm->rm_next);
+
+  TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 3);
+  TEST_S(rm->rm_encoding, "GSM");
+  /* Using payload type 96 from offer */
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 96);
+  TEST_S(rm->rm_encoding, "G729");
+  TEST_1(!rm->rm_next);
+
+  /* ---------------------------------------------------------------------- */
+  /* Re-O/A: prune down to single codec. */
+
+  TEST_1(soa_set_params(a, 
+			SOATAG_USER_SDP_STR(
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/AVP 0 8 97 96\r\n"
+    "a=rtpmap:96 G729/8000\n"
+    "a=rtpmap:97 GSM/8000\n"
+    ),			
+			SOATAG_RTP_MISMATCH(0),
+			SOATAG_RTP_SELECT(SOA_RTP_SELECT_COMMON),
+			TAG_END()));
+  TEST_1(soa_set_params(b,
+			SOATAG_RTP_MISMATCH(0),
+			SOATAG_RTP_SORT(SOA_RTP_SORT_LOCAL),
+			SOATAG_RTP_SELECT(SOA_RTP_SELECT_SINGLE),
+			TAG_END()));
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+
+  TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
+  TEST_S(rm->rm_encoding, "GSM");
+  TEST_1(!rm->rm_next);
+
+  /* Answering end matches payload types 
+     then sorts by local preference, 
+     then select best codec => GSM with pt 9 */
+  TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
+  TEST_S(rm->rm_encoding, "GSM");
+  TEST_1(!rm->rm_next);
+
+  /* ---------------------------------------------------------------------- */
+  /* Re-O/A: A generates new SDP offer with single codec only */
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
+  TEST_S(rm->rm_encoding, "GSM");
+  TEST_1(!rm->rm_next);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  /* Answer from B is identical to previous one */
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 0);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+
+  TEST_VOID(soa_terminate(a, NULL));
   TEST_VOID(soa_terminate(b, NULL));
   
   TEST_VOID(soa_destroy(a));
@@ -616,6 +977,8 @@ int main(int argc, char *argv[])
   if (retval == 0) {
     retval |= test_params(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_static_offer_answer(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_codec_selection(ctx); SINGLE_FAILURE_CHECK();
+
     retval |= test_asynch_offer_answer(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx); SINGLE_FAILURE_CHECK();

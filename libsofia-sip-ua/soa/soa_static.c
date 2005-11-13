@@ -203,7 +203,8 @@ static int soa_static_set_user_sdp(soa_session_t *ss,
 /** Generate a rejected m= line */
 sdp_media_t *soa_sdp_make_rejected_media(su_home_t *home, 
 					 sdp_media_t const *m,
-					 sdp_session_t *sdp)
+					 sdp_session_t *sdp,
+					 int include_all_codecs)
 {
   sdp_media_t rejected[1] = {{ sizeof (rejected) }};
   sdp_list_t  format[1] = {{ sizeof (format), NULL, "x" }};
@@ -214,7 +215,12 @@ sdp_media_t *soa_sdp_make_rejected_media(su_home_t *home,
   rejected->m_port = 0;
   rejected->m_proto = m->m_proto;
   rejected->m_proto_name = m->m_proto_name;
-  if (m->m_proto == sdp_proto_rtp) {
+
+  if (include_all_codecs) {
+    rejected->m_rtpmaps = m->m_rtpmaps;
+    rejected->m_format = format;
+  }
+  else if (m->m_proto == sdp_proto_rtp) {
     rtpmap->rm_predef = 1; rtpmap->rm_pt = 9;
     rtpmap->rm_encoding = "*"; rtpmap->rm_rate = 8000;
     rejected->m_rtpmaps = rtpmap;
@@ -222,6 +228,7 @@ sdp_media_t *soa_sdp_make_rejected_media(su_home_t *home,
   else {
     rejected->m_format = format;
   }
+
   rejected->m_rejected = 1;
 
   return sdp_media_dup(home, rejected, sdp);
@@ -244,7 +251,7 @@ sdp_session_t *soa_sdp_expand_media(su_home_t *home,
 	 *m1;
 	 m1 = &(*m1)->m_next) {
       if (!*m0) {
-	*m0 = soa_sdp_make_rejected_media(home, *m1, expanded);
+	*m0 = soa_sdp_make_rejected_media(home, *m1, expanded, 0);
 	if (!*m0)
 	  return NULL;
       }
@@ -279,20 +286,258 @@ int soa_sdp_upgrade_is_needed(sdp_session_t const *session,
 
 
 /** Find first matching media in table. */
-sdp_media_t *soa_sdp_matching(sdp_media_t *mm[], sdp_media_t const *with)
+sdp_media_t *soa_sdp_matching(soa_session_t *ss, 
+			      sdp_media_t *mm[],
+			      sdp_media_t const *with,
+			      int *return_common_codecs)
 {
-  int i;
+  int i, j = -1;
   sdp_media_t *m;
+  sdp_rtpmap_t const *rm;
 
   for (i = 0; mm[i]; i++) {
-    if (sdp_media_match_with(mm[i], with)) {
-      for (m = mm[i]; mm[i]; i++)
-	mm[i] = mm[i + 1];
-      return m;
+    if (!sdp_media_match_with(mm[i], with))
+      continue;
+    
+    if (!sdp_media_uses_rtp(with))
+      break;
+
+    if (!return_common_codecs)
+      break;
+
+    /* Check also rtpmaps  */
+    for (rm = mm[i]->m_rtpmaps; rm; rm = rm->rm_next) {
+      if (sdp_rtpmap_find_matching(with->m_rtpmaps, rm))
+	break;
+    }
+    if (rm)
+      break;
+    if (j == -1)
+      j = i;
+  }
+
+  if (return_common_codecs)
+    *return_common_codecs = mm[i] != NULL;
+
+  if (mm[i] == NULL && j != -1)
+    i = j;			/* return m= line without common codecs */
+
+  m = mm[i];
+
+  for (; mm[i]; i++)
+    mm[i] = mm[i + 1];
+
+  return m;
+}
+
+/** Set payload types in @a l_m according to the values in @a r_m.
+ * 
+ * @retval number of common codecs
+ */
+int soa_sdp_set_rtpmap_pt(sdp_media_t *l_m, 
+			  sdp_media_t const *r_m)
+{
+  sdp_rtpmap_t *lrm, **next_lrm;
+  sdp_rtpmap_t const *rrm;
+
+  int local_codecs = 0, common_codecs = 0;
+
+  unsigned char dynamic_pt[128];
+  unsigned pt;
+
+  for (next_lrm = &l_m->m_rtpmaps; (lrm = *next_lrm); ) {
+    if (lrm->rm_any) {
+      /* Remove codecs known only by pt number */
+      *next_lrm = lrm->rm_next;
+      continue;
+    }
+    else {
+      next_lrm = &lrm->rm_next;
+    }
+
+    local_codecs++;
+
+    rrm = sdp_rtpmap_find_matching(r_m->m_rtpmaps, lrm);
+
+    /* XXX - do fmtp comparison */
+
+    if (rrm) {
+      /* Use same payload type as remote */
+      if (lrm->rm_pt != rrm->rm_pt) {
+	lrm->rm_predef = 0;
+	lrm->rm_pt = rrm->rm_pt;
+      }
+      common_codecs++;
+    }
+    else {
+      /* Determine payload type later */
+      lrm->rm_any = 1;
     }
   }
-  return NULL;
+  
+  if (local_codecs == common_codecs)
+    return common_codecs;
+
+  /* Select unique dynamic payload type for each payload */
+
+  memset(dynamic_pt, 0, sizeof dynamic_pt);
+
+  for (lrm = l_m->m_rtpmaps; lrm; lrm = lrm->rm_next) {
+    if (!lrm->rm_any)
+      dynamic_pt[lrm->rm_pt] = 1;
+  }
+
+  for (rrm = r_m->m_rtpmaps; rrm; rrm = rrm->rm_next) {
+    dynamic_pt[rrm->rm_pt] = 1;
+  }
+
+  for (next_lrm = &l_m->m_rtpmaps; (lrm = *next_lrm); ) {
+    if (!lrm->rm_any) {
+      next_lrm = &lrm->rm_next;
+      continue;
+    }
+    
+    lrm->rm_any = 0;
+
+    pt = lrm->rm_pt;
+
+    if (dynamic_pt[pt]) {
+      for (pt = 96; pt < 128; pt++)
+        if (!dynamic_pt[pt])
+          break;
+      
+      if (pt == 128) {
+        for (pt = 0; pt < 128; pt++)
+          if (!sdp_rtpmap_well_known[pt] && !dynamic_pt[pt])
+            break;
+      }
+
+      if (pt == 128)  {
+        for (pt = 0; pt < 128; pt++)
+          if (!dynamic_pt[pt])
+            break;
+      }
+
+      if (pt == 128) {
+        /* Too many payload types */
+        *next_lrm = lrm->rm_next;
+        continue;
+      }
+
+      lrm->rm_pt = pt;
+      lrm->rm_predef = 0;
+    }
+
+    dynamic_pt[pt] = 1;
+  
+    next_lrm = &lrm->rm_next;
+  }
+
+  return common_codecs;
 }
+
+
+/** Sort rtpmaps in @a l_m according to the values in @a r_m.
+ *
+ * @return Number of common codecs
+ */
+int soa_sdp_sort_rtpmap(sdp_rtpmap_t **inout_list, 
+			sdp_rtpmap_t const *rrm)
+{
+  sdp_rtpmap_t *sorted = NULL, **next = &sorted, **left;
+
+  int common_codecs = 0;
+
+  assert(inout_list);
+  if (!inout_list)
+    return 0;
+
+  /* Insertion sort from *inout_list to sorted */
+  for (; rrm && *inout_list; rrm = rrm->rm_next) {
+    for (left = inout_list; *left; left = &(*left)->rm_next) {
+      if (sdp_rtpmap_match(rrm, (*left)))
+	break;
+    }
+    if (!*left)
+      continue;
+    common_codecs++;
+    *next = *left; next = &(*next)->rm_next;
+    *left = (*left)->rm_next;
+  }
+
+  /* Append leftover codecs */
+  *next = *inout_list;
+
+  *inout_list = sorted;
+
+  return common_codecs;
+}
+
+
+/** Select rtpmaps in @a l_m according to the values in @a r_m.
+ *
+ * @return Number of common codecs
+ */
+int soa_sdp_select_rtpmap(sdp_rtpmap_t **inout_list, 
+			  sdp_rtpmap_t const *rrm)
+{
+  sdp_rtpmap_t **left;
+
+  int common_codecs = 0;
+
+  assert(inout_list);
+  if (!inout_list)
+    return 0;
+
+  for (left = inout_list; *left; ) {
+    if (sdp_rtpmap_find_matching(rrm, (*left)))
+      /* Select */
+      left = &(*left)->rm_next, common_codecs++;
+    else
+      /* Remove */
+      *left = (*left)->rm_next;
+  }
+
+  return common_codecs;
+}
+
+/** Sort and select rtpmaps within session */ 
+int soa_sdp_upgrade_rtpmaps(soa_session_t *ss,
+			    sdp_session_t *session,
+			    sdp_session_t const *remote)
+{
+  sdp_media_t *sm;
+  sdp_media_t const *rm;
+
+  for (sm = session->sdp_media, rm = remote->sdp_media; 
+       sm && rm; 
+       sm = sm->m_next, rm = rm->m_next) {
+    if (sm->m_rejected)
+      continue;
+    if (sdp_media_uses_rtp(sm)) {
+      int common_codecs = soa_sdp_set_rtpmap_pt(sm, rm);
+
+      if (ss->ss_rtp_sort == SOA_RTP_SORT_REMOTE || 
+	  (ss->ss_rtp_sort == SOA_RTP_SORT_DEFAULT &&
+	   rm->m_mode == sdp_recvonly)) {
+	soa_sdp_sort_rtpmap(&sm->m_rtpmaps, rm->m_rtpmaps);
+      }
+
+      if (common_codecs == 0)
+	;
+      else if (ss->ss_rtp_select == SOA_RTP_SELECT_SINGLE) {
+	if (sm->m_rtpmaps)
+	  sm->m_rtpmaps->rm_next = NULL;
+      }
+      else if (ss->ss_rtp_select == SOA_RTP_SELECT_COMMON) {
+	soa_sdp_select_rtpmap(&sm->m_rtpmaps, rm->m_rtpmaps);
+      }
+    }
+  }
+
+  return 0;
+}
+
 
 /** Upgrade m= lines within session */ 
 int soa_sdp_upgrade(soa_session_t *ss,
@@ -340,18 +585,45 @@ int soa_sdp_upgrade(soa_session_t *ss,
   if (caps != upgrader) {
     /* Update session according to remote */
     for (i = 0; i < Nu; i++) {
-      m = soa_sdp_matching(c_media, u_media[i]);
-      if (!m || u_media[i]->m_rejected)
-	m = soa_sdp_make_rejected_media(home, u_media[i], session);
+      int common_codecs = 0;
+
+      m = soa_sdp_matching(ss, c_media, u_media[i], &common_codecs);
+
+      if (!m || u_media[i]->m_rejected) {
+	m = soa_sdp_make_rejected_media(home, u_media[i], session, 0);
+      }
+      else if (sdp_media_uses_rtp(m)) {
+	/* Process rtpmaps */
+	if (!common_codecs && !ss->ss_rtp_mismatch)
+	  m = soa_sdp_make_rejected_media(home, m, session, 1);
+	soa_sdp_set_rtpmap_pt(m, u_media[i]);
+
+	if (ss->ss_rtp_sort == SOA_RTP_SORT_REMOTE || 
+	    (ss->ss_rtp_sort == SOA_RTP_SORT_DEFAULT &&
+	     u_media[i]->m_mode == sdp_recvonly)) {
+	  soa_sdp_sort_rtpmap(&m->m_rtpmaps, u_media[i]->m_rtpmaps);
+	}
+
+	if (common_codecs &&
+	    (ss->ss_rtp_select == SOA_RTP_SELECT_SINGLE ||
+	     ss->ss_rtp_select == SOA_RTP_SELECT_COMMON)) {
+	  soa_sdp_select_rtpmap(&m->m_rtpmaps, u_media[i]->m_rtpmaps);
+	  if (ss->ss_rtp_select == SOA_RTP_SELECT_SINGLE) {
+	    if (m->m_rtpmaps)
+	      m->m_rtpmaps->rm_next = NULL;
+	  }
+	}
+      }
+
       s_media[i] = m;
     }
   }
   else {
     /* Update session according to local */
     for (i = 0; i < Ns; i++) {
-      m = soa_sdp_matching(c_media, o_media[i]);
+      m = soa_sdp_matching(ss, c_media, o_media[i], NULL);
       if (!m)
-	m = soa_sdp_make_rejected_media(home, o_media[i], session);
+	m = soa_sdp_make_rejected_media(home, o_media[i], session, 0);
       s_media[i] = m;
     }
     /* Here we just append new media at the end */
@@ -575,7 +847,7 @@ static int offer_answer_step(soa_session_t *ss,
     break;
   }
   
-  /* Step A: Create local SDP (based on user-supplied SDP) */
+  /* Step A: Create local SDP session (based on user-supplied SDP) */
   if (local == NULL) switch (action) {
   case generate_offer:
   case generate_answer:
@@ -612,23 +884,29 @@ static int offer_answer_step(soa_session_t *ss,
       break;
     if (local != local0)
       *local0 = *local, local = local0;
-    SU_DEBUG_7(("soa_static(%p, %s): upgrade with local description\n", ss, by));
+    SU_DEBUG_7(("soa_static(%p, %s): %s\n", ss, by, 
+		"upgrade with local description"));
     soa_sdp_upgrade(ss, tmphome, local, user, user);
     break;
   case generate_answer:
     /* Upgrade local SDP based on remote SDP */
-    if (ss->ss_local_remote_version == remote_version)
+    if (ss->ss_local_user_version == user_version &&
+	ss->ss_local_remote_version == remote_version)
       break;
-    if (soa_sdp_upgrade_is_needed(local, remote)) {
+    if (ss->ss_local_user_version != user_version ||
+	soa_sdp_upgrade_is_needed(local, remote)) {
       if (local != local0)
 	*local0 = *local, local = local0;
-      SU_DEBUG_7(("soa_static(%p, %s): upgrade with remote description\n", ss, by));
+      SU_DEBUG_7(("soa_static(%p, %s): %s\n", ss, by,
+		  "upgrade with remote description"));
       soa_sdp_upgrade(ss, tmphome, local, user, remote);
     }
     break;
+  case process_answer:
   default:
     break;
   }
+
 
   /* Step C: reject media */
   switch (action) {
@@ -650,7 +928,6 @@ static int offer_answer_step(soa_session_t *ss,
 	  if (!local->sdp_media)				 \
 	    goto internal_error;				 \
 	} while (0)
-
 	DUP_LOCAL(local);
       }
       SU_DEBUG_7(("soa_static(%p, %s): marking rejected media\n", ss, by));
@@ -675,6 +952,28 @@ static int offer_answer_step(soa_session_t *ss,
       soa_sdp_mode_set(local, remote, ss->ss_hold);
     }
     break;
+  default:
+    break;
+  }
+
+  /* Step E: Upgrade codecs */
+  switch (action) {
+  case process_answer:
+    /* Upgrade local SDP based on remote SDP */
+    if (ss->ss_local_remote_version == remote_version)
+      break;
+    if (1 /* We don't have good test for codecs */) {
+      SU_DEBUG_7(("soa_static(%p, %s): %s\n", ss, by,
+		  "upgrade codecs with remote description"));
+      if (local != local0) {
+	*local0 = *local, local = local0; 
+	DUP_LOCAL(local);
+      }
+      soa_sdp_upgrade_rtpmaps(ss, local, remote);
+    }
+    break;
+  case generate_offer:
+  case generate_answer:
   default:
     break;
   }

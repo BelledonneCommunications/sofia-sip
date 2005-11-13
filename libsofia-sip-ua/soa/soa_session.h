@@ -200,6 +200,11 @@ struct soa_session
 
   char const     *ss_cname;
 
+  /* Codec handling during negotiation */
+  unsigned  ss_rtp_select:2;
+  unsigned  ss_rtp_sort:2;
+  unsigned  ss_rtp_mismatch:1;
+
   unsigned ss_srtp_enable:1,
     ss_srtp_confidentiality:1,
     ss_srtp_integrity:1;

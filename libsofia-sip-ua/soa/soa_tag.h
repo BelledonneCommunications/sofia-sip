@@ -147,6 +147,25 @@ extern tag_typedef_t soatag_address;
 #define SOATAG_ADDRESS_REF(x) soatag_address_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_address_ref;
 
+#define SOATAG_RTP_SELECT(x)  soatag_rtp_select, tag_uint_v(x)
+extern tag_typedef_t soatag_rtp_select;
+#define SOATAG_RTP_SELECT_REF(x)  soatag_rtp_select_ref, tag_uint_vr(&(x))
+extern tag_typedef_t soatag_rtp_select_ref;
+
+enum { SOA_RTP_SELECT_SINGLE, SOA_RTP_SELECT_COMMON, SOA_RTP_SELECT_ALL };
+
+#define SOATAG_RTP_SORT(x)  soatag_rtp_sort, tag_uint_v(x)
+extern tag_typedef_t soatag_rtp_sort;
+#define SOATAG_RTP_SORT_REF(x) soatag_rtp_sort_ref, tag_uint_vr(&(x))
+extern tag_typedef_t soatag_rtp_sort_ref;
+
+enum { SOA_RTP_SORT_DEFAULT, SOA_RTP_SORT_LOCAL, SOA_RTP_SORT_REMOTE };
+
+#define SOATAG_RTP_MISMATCH(x) soatag_rtp_mismatch, tag_bool_v(x)
+extern tag_typedef_t soatag_rtp_mismatch;
+#define SOATAG_RTP_MISMATCH_REF(x) soatag_rtp_mismatch_ref, tag_bool_vr(&(x))
+extern tag_typedef_t soatag_rtp_mismatch_ref;
+
 #define SOATAG_ACTIVE_AUDIO(x) soatag_active_audio, tag_int_v(x)
 extern tag_typedef_t soatag_active_audio;
 
