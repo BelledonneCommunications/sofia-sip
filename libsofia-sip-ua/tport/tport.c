@@ -2772,7 +2772,6 @@ static int tport_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
 {
   int events = su_wait_events(w, self->tp_socket);
   tport_master_t *mr = self->tp_master;
-  tport_primary_t *pri = self->tp_pri;
   su_wait_t wait[1] =  { SU_WAIT_INIT };
 
   int error;
@@ -4129,7 +4128,7 @@ tport_t *tport_tsend(tport_t *self,
    * If there is already an queued message, 
    * put this message straight in the queue
    */
-  if (self->tp_queue && self->tp_queue[self->tp_qhead] ||
+  if ((self->tp_queue && self->tp_queue[self->tp_qhead]) ||
       /* ...or we are connecting */
       (self->tp_events & (SU_WAIT_CONNECT | SU_WAIT_OUT))) {
     if (tport_queue(self, msg) < 0) {
