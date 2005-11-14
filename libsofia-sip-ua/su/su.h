@@ -82,11 +82,12 @@ uint32_t su_ntohl(uint32_t l)
 #define ntohl su_ntohl
 #define htonl su_ntohl
 
-#  if SU_HAVE_IN6 && !defined(IPPROTO_IPV6)
-#    include <tpipv6.h>
+#  if defined(IPPROTO_IPV6)
+/* IPv6 defined in ws2tcpip.h */
+#  elif SU_HAVE_IN6 
+#    include <tpipv6.h>		/* From "IPv6 Tech Preview"  */
 #  else
-   /* We need socklen_t, getaddrinfo() and friends */
-#error Insufficient winsock environment: socklen_t, getaddrinfo() missing
+#    error Winsock with IPv6 support required
 #  endif
 
 #endif

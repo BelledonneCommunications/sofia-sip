@@ -20,7 +20,8 @@ EXTRA_DIST = SofiaSIP.dsw \
 	su/torture_rbtree/torture_rbtree.dsp \
 	su/torture_su_memmem/torture_su_memmem.dsp \
 	su/torture_su_port/torture_su_port.dsp \
-	$(PTHREAD_DIST)
+	$(PTHREAD_DIST) \
+	README.txt
 
 PTHREAD_DIST = \
 	pthread/ChangeLog \
