@@ -29,4 +29,6 @@ See the AUTHORS file in the distribution package.
 Bugs fixed in this release
 --------------------------
 
-- RTP timestamp rate for G722 was 16000 but it should be 8000
+- The SDP rtpmap timestamp rate for (old) G722 was changed to 8000
+- Fixed socket shutdown() problem in tport 
+- Fixed problems win32 su_vsend()/su_vrecv()
