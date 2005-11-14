@@ -1,6 +1,178 @@
+2005-11-14  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+   tagged rel-sofia-sip-1_11_4
+
+  * Fixed Win32 includes for XP. Added win32/README.txt.
+
+    M ./libsofia-sip-ua/su/su.h -4 +5
+    M ./win32/Makefile.am -1 +2
+    A ./win32/README.txt
+
+  * Added a blurb about win32 bugs into RELEASE.
+
+    M ./RELEASE -1 +3
+
+2005-11-11  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Updated RELEASE.
+
+    M ./RELEASE -1 +9
+
+  * Updated dua documentation.
+
+    M ./libsofia-sip-ua/nua/nua.c +4
+    M ./libsofia-sip-ua/nua/nua.docs -10 +12
+    M ./libsofia-sip-ua/nua/nua_stack.h -2 +3
+
+  * Fixed warnings in libsofia-sip-ua/tport/tport.c.
+
+    M ./libsofia-sip-ua/tport/tport.c -2 +1
+
+  * Fixed WIN32 test cases in libsofia-sip-ua/su/su_torture.c.
+  Using SU_WAIT_TIMEOUT and correct IP address.
+
+    M ./libsofia-sip-ua/su/su_torture.c -2 +2
+
+  * Added codec-level negotiation and codec selection for RTP media.
+  Added SOATAG_RTP_SELECT(), SOATAG_RTP_SORT() and SOATAG_RTP_MISMATCH() for
+  indicating sdp negotiation preferences. Select the RTP codec according to the
+  preferences when sending or processing the answer.
+
+    M ./libsofia-sip-ua/soa/soa.c -7 +52
+    M ./libsofia-sip-ua/soa/soa_session.h +5
+    M ./libsofia-sip-ua/soa/soa_static.c -21 +320
+    M ./libsofia-sip-ua/soa/soa_tag.c +89
+    M ./libsofia-sip-ua/soa/soa_tag.h +19
+    M ./libsofia-sip-ua/soa/test_soa.c -19 +382
+
+  * Added funtions for rtp payload type management.
+  
+  Added sdp_media_uses_rtp(), sdp_rtpmap_match(), sdp_rtpmap_find_matching()
+  and sdp_rtpmap_well_known[]. Fixed RTP timestamp rate for G722: it was 16000
+  but it should be 8000.
+
+    M ./libsofia-sip-ua/sdp/sdp.c -1 +76
+    M ./libsofia-sip-ua/sdp/sdp.h +12
+    M ./libsofia-sip-ua/sdp/sdp_parse.c -37 +94
+    M ./libsofia-sip-ua/sdp/sdp_torture.c -11 +140
+
+  * Generating browsing info for win32 projects.
+
+    M ./win32/libsofia-sip-ua/libsofia_sip_ua.dsp -2 +2
+    M ./win32/nta_test/nta_test.dsp -1 +1
+    M ./win32/su/su_alloc_test/su_alloc_test.dsp -2 +2
+    M ./win32/su/su_root_test/su_root_test.dsp -2 +2
+    M ./win32/su/su_tag_test/su_tag_test.dsp -2 +2
+    M ./win32/su/su_test/su_test.dsp -2 +2
+    M ./win32/su/su_time_test/su_time_test.dsp -2 +2
+    M ./win32/su/su_timer_test/su_timer_test.dsp -2 +2
+    M ./win32/su/su_torture/su_torture.dsp -2 +2
+    M ./win32/su/test_memmem/test_memmem.dsp -2 +2
+    M ./win32/su/torture_htable/torture_htable.dsp -2 +2
+    M ./win32/su/torture_rbtree/torture_rbtree.dsp -2 +2
+    M ./win32/su/torture_su_memmem/torture_su_memmem.dsp -2 +2
+    M ./win32/su/torture_su_port/torture_su_port.dsp -2 +2
+
+  * Added tests for su_vsend() and su_vrecv() in su_torture.c.
+
+    M ./libsofia-sip-ua/su/su_torture.c +89
+
+  * Added #include <limits.h> to nua_stack.c (because MSG_TIME_MAX).
+
+    M ./libsofia-sip-ua/nua/nua_stack.c +1
+
+  * Added SU_WAIT_CONNECT. Fixed su_vrecv() and su_vsend() on Win32.
+
+    M ./libsofia-sip-ua/su/su.c -9 +10
+    M ./libsofia-sip-ua/su/su_wait.h +3
+
+  * Fixed tport.c on Win32 port.
+  Added a separate "connecting" phase. 
+  Checking EWOULDBLOCK in addition to EAGAIN. 
+  Fixed TP_AI_CLOSE and TP_AI_SHUTDOWN flags.
+  Improved logging.
+
+    M ./libsofia-sip-ua/tport/tport.c -35 +98
+
+  * Removed 1.11.3 stuff from RELEASE.
+
+    M ./RELEASE -16 +2
+
+  *  Removed Last modified from ipt module.
+
+    M ./libsofia-sip-ua/ipt/rc4.h -1
+    M ./libsofia-sip-ua/ipt/torture_base64.c -1
+    M ./libsofia-sip-ua/ipt/ucs2.c -1
+    M ./libsofia-sip-ua/ipt/ucs4.c -1
+    M ./libsofia-sip-ua/ipt/uniqueid.h -1
+    M ./libsofia-sip-ua/ipt/utf8.c -1
+    M ./libsofia-sip-ua/ipt/utf8.h -1
+    M ./libsofia-sip-ua/ipt/utf8internal.h -1
+    M ./libsofia-sip-ua/ipt/utf8test.c -1
+
+  * Removed Last modified from sdp module.
+
+    M ./libsofia-sip-ua/sdp/sdp.c -1
+    M ./libsofia-sip-ua/sdp/sdp.h -1
+    M ./libsofia-sip-ua/sdp/sdp_parse.c -1
+    M ./libsofia-sip-ua/sdp/sdp_rtp.h -1
+    M ./libsofia-sip-ua/sdp/sdp_tag.c -1
+    M ./libsofia-sip-ua/sdp/sdp_tag.h -1
+    M ./libsofia-sip-ua/sdp/sdp_test.c -1
+    M ./libsofia-sip-ua/sdp/sdp_torture.c -1
+
+2005-11-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Avoid comp=sigcomp in Via in nta/nta.c
+  Not inserting comp=sigcomp in topmost Via of request if there is no
+  comp=sigcomp in request-URI or route-URI.
+
+    M ./libsofia-sip-ua/nta/nta.c -20 +15
+
+  * Added Doxygen entries for SIPTAG_*_REF.
+
+    M ./libsofia-sip-ua/sip/sip_tag.h.in -5 +17
+
+  * Fixed AC_DEFINE([HAVE_SOFIA_SIGCOMP])
+
+    M ./m4/sac-tport.m4 -1 +1
+
+  * Not using $(srcdir)/../ for Makefile.am inclusion.
+
+    M ./libsofia-sip-ua/features/Makefile.am -1 +1
+    M ./libsofia-sip-ua/nua/Makefile.am -1 +1
+    M ./libsofia-sip-ua/sdp/Makefile.am -1 +1
+    M ./libsofia-sip-ua/soa/Makefile.am -1 +1
+
+  * Added PACKAGE_NAME and PACKAGE_VERSION to msg_parser.awk.
+
+    M ./libsofia-sip-ua/msg/msg_parser.awk +2
+
+  * Not using ancient MSG_DUMP and MSG_STREAM_LOG env variables.
+  Use TPORT_DUMP and TPORT_LOG instead.
+
+    M ./utils/nua_env -3 +3
+
+  * Fixed --without-glib case in m4/sac-su2.m4.
+
+    M ./m4/sac-su2.m4 -4 +7
+
+  * Removed m4/sac-glib.m4
+
+    R ./m4/sac-glib.m4
+
+2005-11-09  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Updated documentation of nta_agent_add_tport().
+  The uri parameter to nta_agent_add_tport() is used to control which sockets
+  the tport binds the server sockets as well as which transport, encryption
+  and compression protocols are used.
+
+    M ./libsofia-sip-ua/nta/nta.c -1 +46
+
 2005-11-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
-   tagged rel-sofia-sip_1_11_3
+   tagged rel-sofia-sip-1_11_3
 
   * Not using sip_params_replace().
 
