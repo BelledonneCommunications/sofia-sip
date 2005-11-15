@@ -96,6 +96,7 @@ struct nth_engine_s {
   url_t *he_default_proxy;
 
   unsigned he_now;
+  unsigned he_expires;
 
   /* Attributes */
   unsigned he_streaming:1;		/**< Enable streaming */
@@ -125,7 +126,8 @@ struct nth_client_s {
   char const *hc_method_name;
   url_t const *hc_url;			/**< Original RequestURI  */
 
-  su_duration_t hc_timeout;		/**< Timer */
+  unsigned hc_timeout;		        /**< Client timeout */
+  unsigned hc_expires;		        /**< Client expires */
 
   /* Request state */
   unsigned short hc_status;
@@ -286,6 +288,7 @@ nth_engine_t *nth_engine_create(su_root_t *root,
     he->he_root = root;
     he->he_mflags = MSG_DO_CANONIC;
     he->he_mclass = http_default_mclass();
+    he->he_expires = 32000;
 
     ta_start(ta, tag, value);
 
@@ -323,6 +326,7 @@ int nth_engine_set_params(nth_engine_t * he,
 {
   int n;
   ta_list ta;
+  unsigned expires;
   int error_msg;
   msg_mclass_t const *mclass;
   int mflags;
@@ -334,6 +338,7 @@ int nth_engine_set_params(nth_engine_t * he,
 
   ta_start(ta, tag, value);
 
+  expires = he->he_expires;
   error_msg = he->he_error_msg;
   mclass = he->he_mclass;
   mflags = he->he_mflags;
@@ -341,6 +346,7 @@ int nth_engine_set_params(nth_engine_t * he,
   proxy = (void *) he->he_default_proxy;
 
   n = tl_gets(ta_args(ta),
+	      NTHTAG_EXPIRES_REF(expires),
 	      NTHTAG_ERROR_MSG_REF(error_msg),
 	      NTHTAG_MCLASS_REF(mclass),
 	      NTHTAG_MFLAGS_REF(mflags),
@@ -361,6 +367,7 @@ int nth_engine_set_params(nth_engine_t * he,
   }
 
   if (n > 0) {
+    he->he_expires = expires;
     he->he_error_msg = error_msg != 0;
     if (mclass)
       he->he_mclass = mclass;
@@ -396,6 +403,7 @@ int nth_engine_get_params(nth_engine_t const *he,
 	       NTHTAG_ERROR_MSG(he->he_error_msg),
 	       NTHTAG_MCLASS(mclass),
 	       NTHTAG_MFLAGS(he->he_mflags),
+	       NTHTAG_EXPIRES(he->he_expires),
 	       NTHTAG_STREAMING(he->he_streaming),
 	       NTHTAG_PROXY((url_string_t *) he->he_default_proxy),
 	       TAG_END());
@@ -620,6 +628,7 @@ nth_client_t *nth_client_tcreate(nth_engine_t * engine,
     char const *version = http_version_1_1;
     nth_client_t const *template = NULL;
     auth_client_t **auc = none;
+    unsigned expires = engine->he_expires;
     int ok = 0;
 
     ta_start(ta, tag, value);
@@ -627,7 +636,10 @@ nth_client_t *nth_client_tcreate(nth_engine_t * engine,
     tl_gets(ta_args(ta),
 	    NTHTAG_TEMPLATE_REF(template),
 	    NTHTAG_AUTHENTICATION_REF(auc),
-	    NTHTAG_MESSAGE_REF(msg), HTTPTAG_VERSION_REF(version), TAG_END());
+	    NTHTAG_MESSAGE_REF(msg),
+	    NTHTAG_EXPIRES_REF(expires),
+	    HTTPTAG_VERSION_REF(version), 
+	    TAG_END());
 
     if (msg == none) {
       if (template && template->hc_request)
@@ -654,6 +666,9 @@ nth_client_t *nth_client_tcreate(nth_engine_t * engine,
     }
 
     hc = hc_create(engine, callback, magic, msg, ta_tags(ta));
+
+    if (hc)
+      hc->hc_expires = expires;
 
     if (hc == NULL);
     else if (http_add_tl(msg, http,
@@ -1027,7 +1042,11 @@ static nth_client_t *hc_send(nth_client_t * hc)
   if (hc->hc_pending < 0)
     hc->hc_pending = 0;
 
-  hc->hc_timeout = he_now(he) + 32000;	/* XXX */
+  if (hc->hc_expires) {
+    hc->hc_timeout = he_now(he) + hc->hc_expires;	/* XXX */
+    if (hc->hc_timeout == 0)
+      hc->hc_timeout++;
+  }
 
   return hc;
 }
@@ -1232,8 +1251,11 @@ int hc_default_cb(nth_client_magic_t * magic,
 static
 void hc_timer(nth_engine_t * he, nth_client_t * hc, uint32_t now)
 {
-  /* Not implemented.
-   *
-   * How to define meaningful timeout policy?
-   */
+  if (hc->hc_timeout == 0)
+    return;
+
+  if ((int)hc->hc_timeout - (int)now > 0)
+    return;
+
+  hc_reply(hc, HTTP_408_TIMEOUT);
 }

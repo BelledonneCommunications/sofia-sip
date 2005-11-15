@@ -28,7 +28,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Oct 22 20:52:37 2002 ppessi
- * @date Last modified: Wed Aug 10 11:25:38 2005 ppessi
  */
 
 #include "config.h"
@@ -36,19 +35,25 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <stdio.h>
+
 #include <assert.h>
+
+#if HAVE_ALARM
+#include <unistd.h>
+#include <signal.h>
+#endif
 
 typedef struct tester tester_t;
 typedef struct site site_t;
+typedef struct client client_t;
 
 #define SU_ROOT_MAGIC_T tester_t
 
 #include <su_tagarg.h>
 #include <su_wait.h>
 
-#define NTH_CLIENT_MAGIC_T tester_t
+#define NTH_CLIENT_MAGIC_T client_t
 #define NTH_SITE_MAGIC_T site_t
 
 #include "nth.h"
@@ -91,6 +96,11 @@ struct site
   tagi_t       *s_tags;
 };
 
+struct client
+{
+  unsigned      c_status;
+};
+
 struct tester
 {
   su_home_t     t_home[1];
@@ -103,6 +113,11 @@ struct tester
 
   su_sockaddr_t t_addr[1];
   socklen_t     t_addrlen;
+
+  su_socket_t   t_sink;
+  url_string_t *t_sinkuri;
+  su_sockaddr_t t_sinkaddr[1];
+  socklen_t     t_sinkaddrlen;
 
   site_t       *t_sites;
   site_t       *t_master;
@@ -229,6 +244,7 @@ static int test_nth_client_api(tester_t *t)
     int error_msg = -1;
     msg_mclass_t const *mclass = (void *)-1;
     int mflags = -1;
+    unsigned expires = -1;
     int streaming = -1;
     url_string_t const *proxy = (void *)-1;
 
@@ -238,14 +254,16 @@ static int test_nth_client_api(tester_t *t)
 			       NTHTAG_ERROR_MSG_REF(error_msg),
 			       NTHTAG_MCLASS_REF(mclass),
 			       NTHTAG_MFLAGS_REF(mflags),
+			       NTHTAG_EXPIRES_REF(expires),
 			       NTHTAG_STREAMING_REF(streaming),
 			       NTHTAG_PROXY_REF(proxy),
 			       TAG_END()), 
-	 5);
+	 6);
 
     TEST(error_msg, 1);
     TEST(mclass, t->t_mclass);
     TEST(mflags, MSG_DO_CANONIC|MSG_DO_COMPACT);
+    TEST(expires, 32000);
     TEST(streaming, 0);
     TEST_1(proxy != NULL);
     TEST_1(proxy_str = url_as_string(t->t_home, proxy->us_url));
@@ -257,14 +275,16 @@ static int test_nth_client_api(tester_t *t)
 			       NTHTAG_ERROR_MSG(0),
 			       NTHTAG_MCLASS(http_default_mclass()),
 			       NTHTAG_MFLAGS(0),
+			       NTHTAG_EXPIRES(10000),
 			       NTHTAG_STREAMING(2),
 			       NTHTAG_PROXY(proxy),
 			       TAG_END()), 
-	 5);
+	 6);
 
     error_msg = -1;
     mclass = (void *)-1;
     mflags = -1;
+    expires = (unsigned)-1;
     streaming = -1;
     proxy = (void *)-1;
 
@@ -272,14 +292,16 @@ static int test_nth_client_api(tester_t *t)
 			       NTHTAG_ERROR_MSG_REF(error_msg),
 			       NTHTAG_MCLASS_REF(mclass),
 			       NTHTAG_MFLAGS_REF(mflags),
+			       NTHTAG_EXPIRES_REF(expires),
 			       NTHTAG_STREAMING_REF(streaming),
 			       NTHTAG_PROXY_REF(proxy),
 			       TAG_END()), 
-	 5);
+	 6);
 
     TEST(error_msg, 0);
     TEST(mclass, NULL);
     TEST(mflags, 0);
+    TEST(expires, 10000);
     TEST(streaming, 1);
     TEST_1(proxy != NULL); 
     TEST_1(proxy_str = url_as_string(t->t_home, proxy->us_url));
@@ -428,8 +450,6 @@ static int send_request(tester_t *t, char const *req, size_t reqlen,
   int m, r;
 
   BEGIN();
-
-  alarm(5);
 
   if (c == -1) {
     c = socket(t->t_addr->su_family, SOCK_STREAM, 0); TEST_1(c != -1);
@@ -587,14 +607,85 @@ static int test_requests(tester_t *t)
 static int init_engine(tester_t *t)
 {
   BEGIN();
+  int s;
 
   t->t_engine = nth_engine_create(t->t_root, 
 				  NTHTAG_STREAMING(0),
 				  TAG_END());
   TEST_1(t->t_engine);
 
+  t->t_sink = s = su_socket(AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
+  TEST(bind(s, &t->t_sinkaddr->su_sa, 
+	    t->t_sinkaddrlen = (sizeof t->t_sinkaddr->su_sin)),
+       0);
+  TEST_1(getsockname(s, &t->t_sinkaddr->su_sa, &t->t_sinkaddrlen) != -1);
+  TEST(listen(t->t_sink, 5), 0);
+  
+  TEST_1(t->t_sinkuri = (url_string_t *)
+	 su_sprintf(t->t_home, "HTTP://127.0.0.1:%u", 
+		    htons(t->t_sinkaddr->su_port)));
+
   END();
 }
+
+
+static int response_to_client(client_t *c,
+			      nth_client_t *hc,
+			      http_t const *http)
+{
+  if (http) {
+    c->c_status = http->http_status->st_status;
+  }
+  else {
+    c->c_status = nth_client_status(hc);
+  }
+
+  return 0;
+}
+
+
+static int test_client(tester_t *t)
+{
+  BEGIN();
+
+  nth_client_t *hc;
+  char *uri;
+  client_t client[1];
+
+  memset(client, 0, sizeof client);
+
+  TEST_1(uri = su_strcat(NULL, t->t_master->s_url->us_str, "/"));
+  TEST_1(hc = nth_client_tcreate(t->t_engine,
+				 response_to_client, client,
+				 HTTP_METHOD_GET,
+				 URL_STRING_MAKE(uri),
+				 TAG_END()));
+  while (client->c_status == 0) su_root_step(t->t_root, 1);
+  TEST(client->c_status, 200);
+  nth_client_destroy(hc);
+  su_free(NULL, uri);
+
+  memset(client, 0, sizeof client);
+
+  TEST_1(hc = nth_client_tcreate(t->t_engine,
+				 response_to_client, client,
+				 HTTP_METHOD_GET,
+				 URL_STRING_MAKE(t->t_sinkuri),
+				 NTHTAG_EXPIRES(1000),
+				 TAG_END()));
+  while (client->c_status == 0) su_root_step(t->t_root, 1);
+  TEST(client->c_status, 408);
+  nth_client_destroy(hc);
+	 
+  END();
+}
+#if HAVE_ALARM
+static RETSIGTYPE sig_alarm(int s)
+{
+  fprintf(stderr, "%s: FAIL! test timeout!\n", name);
+  exit(1);
+}
+#endif
 
 void usage(void)
 {
@@ -606,6 +697,7 @@ int main(int argc, char **argv)
 {
   int i;
   int retval = 0;
+  int o_alarm = 1;
 
   tester_t t[1] = {{{ SU_HOME_INIT(t) }}};
 
@@ -623,6 +715,9 @@ int main(int argc, char **argv)
       t->t_proxy = (url_string_t *)argv[++i];
     else if (strcmp(argv[i], "-s") == 0 && argv[i + 1])
       srcdir = argv[++i];
+    else if (strcmp(argv[i], "--no-alarm") == 0) {
+      o_alarm = 0;
+    }
     else if (strcmp(argv[i], "-") == 0) {
       i++; break;
     }
@@ -635,6 +730,13 @@ int main(int argc, char **argv)
 
   t->t_srcdir = srcdir;
 
+#if HAVE_ALARM
+  if (o_alarm) {
+    alarm(60);
+    signal(SIGALRM, sig_alarm);
+  }
+#endif
+
   su_init();
 
   retval |= init_test(t);
@@ -643,10 +745,10 @@ int main(int argc, char **argv)
   retval |= init_server(t);
   retval |= test_requests(t);
   retval |= init_engine(t);
+  retval |= test_client(t);
   retval |= deinit_test(t);
  
   su_deinit();
 
   return retval;
 }
-

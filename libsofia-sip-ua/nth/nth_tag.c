@@ -31,7 +31,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Tue Jul 24 22:28:34 2001 ppessi
- * @date Last modified: Wed Jul 20 20:35:32 2005 kaiv
+ * @date Last modified: Tue Nov 15 17:01:14 2005 ppessi
  */
 
 #include "config.h"
@@ -56,6 +56,7 @@ tag_typedef_t nthtag_streaming = BOOLTAG_TYPEDEF(streaming);
 
 /* Client */
 tag_typedef_t nthtag_proxy = URLTAG_TYPEDEF(proxy);
+tag_typedef_t nthtag_expires = UINTTAG_TYPEDEF(expires);
 tag_typedef_t nthtag_error_msg = BOOLTAG_TYPEDEF(error_msg);
 tag_typedef_t nthtag_template = PTRTAG_TYPEDEF(template);
 tag_typedef_t nthtag_authentication = PTRTAG_TYPEDEF(authentication);

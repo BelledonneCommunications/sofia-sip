@@ -31,7 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Sun Oct 13 22:23:48 2002 ppessi
- * @date Last modified: Wed Jul 20 20:35:32 2005 kaiv
  */
 
 #ifndef SU_TAG_H
@@ -87,6 +86,13 @@ NTH_DLL extern tag_typedef_t nthtag_proxy;
 
 NTH_DLL extern tag_typedef_t nthtag_proxy_ref;
 #define NTHTAG_PROXY_REF(x) nthtag_proxy_ref, urltag_url_vr(&(x))
+
+NTH_DLL extern tag_typedef_t nthtag_expires;
+/** Expires in milliseconds for client transactions. @HI */
+#define NTHTAG_EXPIRES(x) nthtag_expires, tag_uint_v((x))
+
+NTH_DLL extern tag_typedef_t nthtag_expires_ref;
+#define NTHTAG_EXPIRES_REF(x) nthtag_expires_ref, tag_uint_vr(&(x))
 
 NTH_DLL extern tag_typedef_t nthtag_error_msg;
 /** If true, nth engine generates complete error messages. @HI */
