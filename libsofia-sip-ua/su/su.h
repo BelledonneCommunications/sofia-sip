@@ -47,12 +47,11 @@
 #if SU_HAVE_BSDSOCK		/* Unix-compatible includes */
 #include <errno.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/param.h>
 #include <sys/ioctl.h>
 
 #include <netinet/in.h>
@@ -89,6 +88,8 @@ uint32_t su_ntohl(uint32_t l)
 #  else
 #    error Winsock with IPv6 support required
 #  endif
+
+#include <limits.h>
 
 #endif
 
