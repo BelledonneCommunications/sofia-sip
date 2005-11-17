@@ -29,14 +29,13 @@ noinst_PROGRAMS = 	${stun_prog_targets}
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_HEADERS = 	stun.h stun_common.h stun_tag.h
-
+include_sofia_HEADERS = stun.h stun_common.h stun_tag.h
 libstun_la_SOURCES = 	$(stun_lib_sources) \
 			stun_tag.c stun_tag_ref.c 
 
 BUILT_SOURCES =		stun_tag_ref.c
 
-COVERAGE_INPUT = 	$(libstun_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libstun_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD =			libstun.la \
 			../su/libsu.la

@@ -25,11 +25,11 @@ CLEANFILES =		resolv.conf error.conf named.conf.tmp \
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_HEADERS =       sresolv.h
+include_sofia_HEADERS =       sresolv.h
 
 libsresolv_la_SOURCES =	sresolv.c
 
-COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libsresolv.la \
 			../su/libsu.la

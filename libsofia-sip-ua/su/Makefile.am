@@ -41,7 +41,7 @@ endif
 
 BUILT_SOURCES = su_tag_ref.c
 
-include_HEADERS = su_types.h su.h su_localinfo.h \
+include_sofia_HEADERS = su_types.h su.h su_localinfo.h \
 	su_wait.h $(GHEADERS) \
 	su_alloc.h su_alloc_stat.h su_strlst.h su_vector.h \
 	su_time.h \
@@ -63,7 +63,7 @@ libsu_la_SOURCES = \
 	su_log.c su_global_log.c su_default_log.c \
 	su_md5.c su_uniqueid.c su_memmem.c
 
-COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libsu.la $(GLIB_LIBS)
 

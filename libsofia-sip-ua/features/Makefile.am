@@ -29,7 +29,7 @@ noinst_LTLIBRARIES = 	libfeatures.la
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_HEADERS =       sofia_sip_features.h
+include_sofia_HEADERS = sofia_sip_features.h
 
 libfeatures_la_SOURCES = sofia_sip_features.c
 

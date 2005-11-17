@@ -1,3 +1,9 @@
+2005-11-15  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* <SUBDIRS>/Makefile.am: Changed to use the 'include_sofia_HEADERS' 
+	variable for listing public library headers. The variable
+	is defined in the top-level configure.ac.
+	
 2005-10-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Always including stun library.

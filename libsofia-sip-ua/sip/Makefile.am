@@ -36,7 +36,7 @@ GENERATED_C = sip_tag.c sip_tag_ref.c sip_parser_table.c
 
 BUILT_SOURCES = 	$(GENERATED_H) $(GENERATED_C)
 
-include_HEADERS = 	$(GENERATED_H) $(PUBLIC_H) $(H_IN)
+include_sofia_HEADERS = 	$(GENERATED_H) $(PUBLIC_H) $(H_IN)
 
 libsip_la_SOURCES = 	$(INTERNAL_H) \
 			sip_parser.c sip_header.c sip_util.c sip_pref_util.c \
@@ -48,7 +48,7 @@ libsip_la_SOURCES = 	$(INTERNAL_H) \
 			sip_tag_class.c \
 			$(GENERATED_C)
 
-COVERAGE_INPUT = 	$(libsip_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsip_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libsip.la \
 			../msg/libmsg.la \

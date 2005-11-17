@@ -259,7 +259,6 @@ typedef struct nua_session_state
   } ss_srequest[1];
 } nua_session_state_t;
 
-
 #define \
   NH_ACTIVE_MEDIA_TAGS(include, soa)					\
   TAG_IF((include) && (soa) && soa_is_audio_active(soa) >= 0,		\

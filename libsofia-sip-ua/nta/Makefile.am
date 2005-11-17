@@ -29,7 +29,7 @@ TESTS_ENVIRONMENT =	$(SHELL)
 
 BUILT_SOURCES =		nta_tag_ref.c
 
-include_HEADERS =       nta.h nta_stateless.h nta_tport.h \
+include_sofia_HEADERS =       nta.h nta_stateless.h nta_tport.h \
 			nta_tag.h nta_dll.h sl_utils.h 
 
 libnta_la_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
@@ -37,7 +37,7 @@ libnta_la_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
 			sl_utils_print.c sl_utils_log.c \
 			sl_read_payload.c
 
-COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libnta.la \
 			../ipt/libipt.la \

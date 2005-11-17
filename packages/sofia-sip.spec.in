@@ -34,7 +34,7 @@ network elements.
 %setup -q -n sofia-sip-%{version}
 
 %build
-%configure --with-pic --enable-shared --disable-dependency-tracking --includedir=%{_prefix}/include/sofia-sip --with-aclocal=aclocal
+%configure --with-pic --enable-shared --disable-dependency-tracking --with-aclocal=aclocal
 #make %{_smp_mflags}
 make 
 %{?_with_check:make check}
@@ -68,8 +68,8 @@ Development package for Sofia SIP UA library. This package includes
 /usr/share/aclocal/sac-general.m4
 /usr/share/aclocal/sac-su.m4
 /usr/share/aclocal/sac-su2.m4
-%{_prefix}/include/sofia-sip/*.h
-%{_prefix}/include/sofia-sip/*.h.in
+%{_prefix}/include/sofia-sip*/*.h
+%{_prefix}/include/sofia-sip*/*.h.in
 %{_prefix}/libexec/sofia/tag_dll.awk
 %{_prefix}/libexec/sofia/msg_parser.awk
 %{_prefix}/%{_lib}/libsofia-sip-ua.la
@@ -94,6 +94,10 @@ Command line utilities for Sofia SIP UA library.
 %{_prefix}/bin/sip-date
 
 %changelog
+* Tue Nov 15 2005 Kai Vehmanen <kai.vehmanen@nokia.com>
+- Removed the --includedir parameter. The public headers are
+  now installed under includedir/sofia-sip-MAJOR.MINOR/
+
 * Thu Oct 20 2005 Pekka Pessi <Pekka.Pessi@nokia.com> - @VERSION@
 - Using %{_lib} instead of lib
 

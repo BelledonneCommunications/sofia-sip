@@ -24,12 +24,12 @@ TESTS = 		test_soa
 
 BUILT_SOURCES =		soa_tag_ref.c
 
-include_HEADERS =       soa.h soa_session.h soa_add.h soa_tag.h
+include_sofia_HEADERS =       soa.h soa_session.h soa_add.h soa_tag.h
 
 libsoa_la_SOURCES = 	soa.c soa_static.c \
 			soa_tag.c soa_tag_ref.c 
 
-COVERAGE_INPUT = 	$(libsoa_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsoa_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libsoa.la \
 			../sip/libsip.la \

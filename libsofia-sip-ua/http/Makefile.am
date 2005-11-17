@@ -30,7 +30,7 @@ BUILT_C = http_tag.c http_tag_ref.c http_parser_table.c
 
 BUILT_SOURCES = $(BUILT_H) $(BUILT_C)
 
-include_HEADERS = 	$(BUILT_H) $(PUBLIC_H) 
+include_sofia_HEADERS = 	$(BUILT_H) $(PUBLIC_H) 
 
 libhttp_la_SOURCES = 	$(INTERNAL_H) \
 			http_parser.c http_header.c \
@@ -38,7 +38,7 @@ libhttp_la_SOURCES = 	$(INTERNAL_H) \
 			http_status.c http_tag_class.c \
 			$(BUILT_C)
 
-COVERAGE_INPUT = 	$(libhttp_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libhttp_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libhttp.la \
 			../bnf/libbnf.la \

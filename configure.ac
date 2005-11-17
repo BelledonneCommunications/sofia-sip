@@ -6,9 +6,15 @@ AC_PREREQ(2.57)
 dnl information on the package
 dnl ---------------------------
 
+dnl update both the version for AC_INIT and the LIBSOFIA_SIP_UA_MAJOR_MINOR
 AC_INIT([sofia-sip], [1.11.4])
 AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sip.h])
-
+AC_SUBST(VER_LIBSOFIA_SIP_UA_MAJOR_MINOR, [1.11])
+dnl Includedir specific to this sofia version
+AC_SUBST(include_sofiadir, '${includedir}/sofia-sip-1.11')
+AC_SUBST(VER_LIBSOFIA_SIP_UA_INTERFACE_CURRENT, [0])
+AC_SUBST(VER_LIBSOFIA_SIP_UA_INTERFACE_AGE, [0])
+					    
 # dnl calls AC_CANONICAL_ macros that are required by AM_INIT_AUTOMAKE
 SAC_CANONICAL_SYSTEM_CACHE_CHECK
 

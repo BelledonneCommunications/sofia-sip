@@ -26,7 +26,7 @@ PUBLIC_H = msg.h msg_header.h msg_types.h \
 	msg_tag_class.h msg_dll.h msg_mime.h
 INTERNAL_H = msg_internal.h test_class.h
 
-include_HEADERS = $(GENERATED_H) $(PUBLIC_H) 
+include_sofia_HEADERS = $(GENERATED_H) $(PUBLIC_H) 
 
 BUILT_SOURCES = $(GENERATED_H) test_table.c test_protos.h
 
@@ -38,7 +38,7 @@ libmsg_la_SOURCES = $(INTERNAL_H) \
 	msg_basic.c msg_generic.c msg_date.c msg_auth.c \
 	memspn.c
 
-COVERAGE_INPUT = 	$(libmsg_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libmsg_la_SOURCES) $(include_sofia_HEADERS)
 
 libtest_msg_a_SOURCES = test_class.c test_table.c test_protos.h
 

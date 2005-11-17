@@ -23,12 +23,12 @@ BUILT_SOURCES =		sdp_tag_ref.c
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_HEADERS =       sdp.h sdp_tag.h
+include_sofia_HEADERS =       sdp.h sdp_tag.h
 
 libsdp_la_SOURCES = 	sdp.c sdp_parse.c sdp_print.c \
 			sdp_tag.c sdp_tag_ref.c
 
-COVERAGE_INPUT = 	$(libsdp_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libsdp_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libsdp.la \
 			../su/libsu.la

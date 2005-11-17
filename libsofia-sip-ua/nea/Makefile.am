@@ -26,12 +26,12 @@ TESTS =
 
 BUILT_SOURCES =		nea_tag_ref.c
 
-include_HEADERS =       nea.h nea_debug.h
+include_sofia_HEADERS =       nea.h nea_debug.h
 
 libnea_la_SOURCES = 	nea.c nea_event.c \
 			nea_server.c nea_debug.c nea_tag.c nea_tag_ref.c
 
-COVERAGE_INPUT = 	$(libnea_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libnea_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libnea.la \
 			../nta/libnta.la \

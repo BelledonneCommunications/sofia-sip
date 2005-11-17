@@ -26,7 +26,7 @@ TESTS =			test_tport
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_HEADERS =	tport.h tport_tag.h
+include_sofia_HEADERS =	tport.h tport_tag.h
 
 TLS_SRC =		tport_tls.c tport_tls.h
 
@@ -41,7 +41,7 @@ EXTRA_DIST =	 	$(TLS_SRC)
 
 BUILT_SOURCES =		tport_tag_ref.c
 
-COVERAGE_INPUT = 	$(libtport_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libtport_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libtport.la \
 			../stun/libstun.la \

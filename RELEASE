@@ -5,8 +5,7 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-The SDP offer/answer negotiation in soa module was extended to handle
-selecting codecs as well.
+TBD
 
 API/ABI changes and versioning
 ------------------------------
@@ -15,20 +14,18 @@ The libsofia-sip-ua library interface version (libtool) is set to zero.
 Library version will not be frozen until the release of 1.12.0 stable
 version.
 
-- Added SOATAG_RTP_SELECT(), SOATAG_RTP_SORT() and SOATAG_RTP_MISMATCH().
+- Deprecated NUTAG_MEDIA* tags were removed from libsofia-sip/nua/nua_tag.h.
 
-- Added sdp_media_uses_rtp(), sdp_rtpmap_match(), sdp_rtpmap_find_matching()
-  and sdp_rtpmap_well_known[]
+- Default install directory for public header file has been changed
+  from '${prefix}/include/' to '${prefix}/include/sofia-sip-MAJOR.MINOR'.
+  The pkgconfig .pc file has been updated accordingly.
 
 Contributors to this release
 ----------------------------
 
 See the AUTHORS file in the distribution package.
 
-
 Bugs fixed in this release
 --------------------------
 
-- The SDP rtpmap timestamp rate for (old) G722 was changed to 8000
-- Fixed socket shutdown() problem in tport 
-- Fixed problems win32 su_vsend()/su_vrecv()
+- TBD

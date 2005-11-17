@@ -852,19 +852,10 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    #NUTAG_HOLD \n
  *    #NUTAG_INVITE_TIMER \n
  *    #NUTAG_MEDIA_ADDRESS \n
- *    #NUTAG_MEDIA_CLONE \n
- *    #NUTAG_MEDIA_EVENT_DATA \n
- *    #NUTAG_MEDIA_EVENT_DLEN \n
- *    #NUTAG_MEDIA_EVENT_PATH \n
- *    #NUTAG_MEDIA_FEATURES \n
- *    #NUTAG_MEDIA_PATH \n
- *    #NUTAG_MEDIA_PARAMS \n
- *    #NUTAG_REFER_PAUSE \n
- *    #NUTAG_VIDEO_LOCAL \n
- *    #NUTAG_VIDEO_REMOTE \n
  *    #NUTAG_MEDIA_ENABLE \n
+ *    #NUTAG_MEDIA_FEATURES \n
+ *    #NUTAG_REFER_PAUSE \n
  *    #NUTAG_URL \n
- *    #NUTAG_MEDIA_SESSION \n
  *    tags in <sip_tag.h>
  *
  * @par Events:
@@ -1328,12 +1319,7 @@ void nua_redirect(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_MEDIA_PATH \n
- *    #NUTAG_MEDIA_PARAMS \n
  *    #NUTAG_MEDIA_ADDRESS \n
- *    #NUTAG_MEDIA_CLONE \n
- *    #NUTAG_MEDIA_SESSION \n
- *    #NUTAG_MEDIA_EVENT_PATH \n
  *    #NUTAG_AF \n
  *    #NUTAG_HOLD \n
  *    #NUTAG_VIDEO_LOCAL \n

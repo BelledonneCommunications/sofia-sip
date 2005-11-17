@@ -28,7 +28,7 @@ TESTS = 		test_auth_digest
 
 BUILT_SOURCES = 	auth_tag_ref.c
 
-include_HEADERS =       auth_client.h auth_digest.h auth_dll.h \
+include_sofia_HEADERS =       auth_client.h auth_digest.h auth_dll.h \
 			auth_module.h auth_plugin.h
 
 libiptsec_la_SOURCES = 	iptsec_debug.h \
@@ -41,7 +41,7 @@ libiptsec_la_SOURCES = 	iptsec_debug.h \
 SIPSOURCES = 		auth_module_sip.c
 HTTPSOURCES = 		auth_module_http.c 
 
-COVERAGE_INPUT = 	$(libiptsec_la_SOURCES) $(include_HEADERS)
+COVERAGE_INPUT = 	$(libiptsec_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libiptsec.la \
 			../ipt/libipt.la \

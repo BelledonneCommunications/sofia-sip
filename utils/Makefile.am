@@ -24,7 +24,7 @@ INCLUDES = 	-I$(sofiasrc)/features \
 # ----------------------------------------------------------------------
 # Build targets
 
-include_HEADERS = 	apps_utils.h
+noinst_HEADERS = 	apps_utils.h
 
 bin_PROGRAMS =		nua_cli sip-options sip-date
 
