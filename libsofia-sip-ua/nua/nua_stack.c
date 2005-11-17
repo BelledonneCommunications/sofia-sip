@@ -1623,9 +1623,7 @@ nua_handle_t *nh_create_from_incoming(nua_t *nua,
 				 NTATAG_REMOTE_CSEQ(sip->sip_cseq->cs_seq),
 				 TAG_END());
 
-    nta_leg_tag(ds->ds_leg, nta_incoming_tag_3261(irq, NULL));
-
-    if (!ds->ds_leg)
+    if (!ds->ds_leg || !nta_leg_tag(ds->ds_leg, nta_incoming_tag(irq, NULL)))
       nh_destroy(nua, nh), nh = NULL;
   }
 
@@ -6693,7 +6691,7 @@ int process_request(nua_handle_t *nh,
   sip_allow_t const *allow = NH_PGET(nh, allow);
   enter;
 
-  nta_incoming_tag_3261(irq, NULL);
+  nta_incoming_tag(irq, NULL);
 
   if (uas_check_method(irq, sip, allow, 
 		       SIPTAG_SUPPORTED(supported), 
