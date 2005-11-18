@@ -32,17 +32,6 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <assert.h>
-
-#if HAVE_ALARM
-#include <unistd.h>
-#include <signal.h>
-#endif
-
 struct context;
 #define NUA_MAGIC_T struct context
 
@@ -50,7 +39,6 @@ struct call;
 #define NUA_HMAGIC_T struct call
 
 #include "nua.h"
-#include "nua_tag.h"
 #include "sip_status.h"
 
 #include <sdp.h>
@@ -61,6 +49,17 @@ struct call;
 #include <su_tag_io.h>
 
 #include <test_proxy.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <assert.h>
+
+#if HAVE_ALARM
+#include <unistd.h>
+#include <signal.h>
+#endif
 
 extern su_log_t nua_log[];
 extern su_log_t soa_log[];
