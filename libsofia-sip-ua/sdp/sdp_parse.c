@@ -1361,8 +1361,8 @@ int sdp_media_has_rtp(sdp_media_t const *m)
   return m && (m->m_proto == sdp_proto_rtp || m->m_proto == sdp_proto_srtp);
 }
 
-#define RTPMAP(pt, type, rate, params) \
-  { sizeof(sdp_rtpmap_t), NULL, 1, pt, 0, type, rate, (char *)params}
+#define RTPMAP(pt, encoding, rate, params) \
+  { sizeof(sdp_rtpmap_t), NULL, encoding, rate, (char *)params, NULL, 1, pt, 0 }
 
 /* rtpmaps for well-known codecs */
 static sdp_rtpmap_t const

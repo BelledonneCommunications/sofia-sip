@@ -1744,7 +1744,9 @@ sdp_rtpmap_t *sdp_rtpmap_find_matching(sdp_rtpmap_t const *list,
     if (rm->rm_rate != list->rm_rate)
       continue;
 
-    if (strcasecmp(rm->rm_encoding, list->rm_encoding))
+    if (rm->rm_encoding != list->rm_encoding &&
+	!rm->rm_encoding != !list->rm_encoding &&
+	strcasecmp(rm->rm_encoding, list->rm_encoding) != 0)
       continue;
 
     lparam = rm->rm_params; rparam = list->rm_params;

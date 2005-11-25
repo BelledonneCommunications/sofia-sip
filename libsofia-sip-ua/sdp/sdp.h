@@ -67,7 +67,7 @@ typedef struct sdp_list_s        sdp_list_t;
 typedef struct sdp_rtpmap_s      sdp_rtpmap_t;
 
 /** Message text */
-typedef const char               sdp_text_t;    
+typedef char const               sdp_text_t;    
 
 #define SDP_MIME_TYPE "application/sdp"
 
@@ -309,14 +309,14 @@ struct sdp_list_s
 struct sdp_rtpmap_s {
   int            rm_size;		/**< sizeof sdp_rtpmap_t  */
   sdp_rtpmap_t  *rm_next;		/**< Next RTP map entry  */
-  unsigned       rm_predef : 1;	        /**< is this entry well-known? */
-  unsigned       rm_pt : 7;		/**< Payload type */
-  unsigned       rm_any : 1;	        /**< Wildcard entry */
-  unsigned       :0;
   sdp_text_t    *rm_encoding;		/**< Codec name */
   unsigned long  rm_rate;		/**< Sampling rate */
   sdp_text_t    *rm_params;		/**< Format-specific parameters  */
   sdp_text_t    *rm_fmtp;	        /**< Contents of fmtp */
+  unsigned       rm_predef : 1;	        /**< is this entry well-known? */
+  unsigned       rm_pt : 7;		/**< Payload type */
+  unsigned       rm_any : 1;	        /**< Wildcard entry */
+  int       :0;
 };
 
 extern sdp_rtpmap_t const * const sdp_rtpmap_well_known[128];

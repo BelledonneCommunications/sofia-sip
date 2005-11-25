@@ -279,7 +279,7 @@ static int test_session2(int flags)
 
   {
 #define RTPMAP(pt, type, rate, params) \
-  { sizeof(sdp_rtpmap_t), NULL, 1, pt, 0, type, rate, (char *)params}
+    { sizeof(sdp_rtpmap_t), NULL, type, rate, (char *)params, NULL, 1, pt, 0 }
 
     /* rtpmaps for well-known video codecs */
     static sdp_rtpmap_t const
@@ -506,14 +506,17 @@ int test_list(int flags)
 static
 sdp_rtpmap_t const rm0[1] = 
   {{ 
-      sizeof(rm0), NULL, 0, 96, 0, "AMR", 8000, "1",
-      "mode-set=4,5,6 interleaving crc use-redundancy=1"
+      sizeof(rm0), NULL, "AMR", 8000, "1",
+      "mode-set=4,5,6 interleaving crc use-redundancy=1",
+      0, 96, 0
   }};
 
 static
 sdp_rtpmap_t const rm1[1] = 
   {{ 
-      sizeof(rm1), (sdp_rtpmap_t *)rm0, 1, 8, 0, "PCMA", 8000, "1", NULL
+      sizeof(rm1), (sdp_rtpmap_t *)rm0, "PCMA", 8000, "1",
+      NULL,
+      1, 8, 0,
   }};
 
 /** Test rtpmap-related things */
@@ -532,6 +535,7 @@ int test_rtpmap(int flags)
   TEST(rm->rm_next, NULL);
   TEST_S(rm->rm_encoding, "AMR");
   TEST_S(rm->rm_params, "1");
+  TEST(rm->rm_pt, 96);
   TEST_S(rm->rm_fmtp, "mode-set=4,5,6 interleaving crc use-redundancy=1");
 
   TEST_1((rm = sdp_rtpmap_dup(home, rm1)));
@@ -539,6 +543,7 @@ int test_rtpmap(int flags)
   TEST_1(rm->rm_next->rm_next == NULL);
   TEST_S(rm->rm_encoding, "PCMA");
   TEST_S(rm->rm_params, "1");
+  TEST(rm->rm_pt, 8);
 
   su_home_check(home);
 
