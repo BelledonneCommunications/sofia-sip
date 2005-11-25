@@ -35,13 +35,6 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <stdio.h>
-#include <assert.h>
-
 #include "test_class.h"
 #include "test_protos.h"
 #include "msg.h"
@@ -52,6 +45,13 @@
 #include "bnf.h"
 #include "msg_mclass.h"
 #include "msg_mclass_hash.h"
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <stdio.h>
+#include <assert.h>
 
 static int test_flags = 0;
 #define TSTFLAGS test_flags

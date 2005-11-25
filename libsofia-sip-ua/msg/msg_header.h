@@ -36,6 +36,7 @@
  */
 
 #include <stdarg.h>
+#include <string.h>
 
 #ifndef MSG_H
 #include <msg.h>
