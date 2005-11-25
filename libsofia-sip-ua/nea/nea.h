@@ -405,6 +405,13 @@ NEA_DLL extern tag_typedef_t neatag_evmagic;
 #define NEATAG_EVMAGIC_REF(x) neatag_evmagic_ref, tag_ptr_vr((&x), (x))
 NEA_DLL extern tag_typedef_t neatag_evmagic_ref;
 
+
+/** tag for nea_sub_t */
+#define NEATAG_SUB(x)     neatag_sub, tag_ptr_v((x))
+NEA_DLL extern tag_typedef_t neatag_sub;
+
+#define NEATAG_SUB_REF(x) neatag_sub_ref, tag_ptr_vr((&x), (x))
+NEA_DLL extern tag_typedef_t neatag_sub_ref;
 /* ====================================================================== */
 /* Watcher side */
 
