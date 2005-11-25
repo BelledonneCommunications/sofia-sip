@@ -141,10 +141,6 @@ static void delayed_auth_method_recv(su_root_magic_t *rm,
 				     su_msg_r msg,
 				     auth_splugin_t *u);
 
-static void delayed_auth_method_recv(su_root_magic_t *rm,
-				     su_msg_r msg,
-				     auth_splugin_t *u);
-
 static void delayed_auth_method(auth_mod_t *am,
 				auth_status_t *as,
 				msg_auth_t *auth,
