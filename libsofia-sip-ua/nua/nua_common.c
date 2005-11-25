@@ -195,6 +195,8 @@ char const *nua_event_name(nua_event_t event)
   case nua_i_notify: return "nua_i_notify";
   case nua_i_method: return "nua_i_method";
 
+  case nua_i_subscription: return "nua_i_subscription";
+
   case nua_i_media_error: return "nua_i_media_error";
 
   /* Responses */

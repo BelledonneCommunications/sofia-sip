@@ -6524,6 +6524,14 @@ void authenticate_watcher(nea_server_t *nes,
 			  nea_subnode_t *sn,
 			  sip_t const *sip)
 {
+  nua_t *nua = nh->nh_nua;
+  msg_t *msg = NULL;
+  nta_incoming_t *irq = NULL;
+
+  irq = nea_subnode_get_incoming(sn);
+  msg = nta_incoming_getrequest(irq);  
+  ua_event(nua, nh, msg, nua_i_subscription, SIP_200_OK, TAG_END());
+
   if (sn->sn_state == nea_embryonic) {
     SU_DEBUG_7(("nea: authenticate_watcher: new watcher\n")); 
     nea_server_auth(sn->sn_subscriber, nea_active, TAG_END());

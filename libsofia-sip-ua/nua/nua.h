@@ -93,6 +93,8 @@ typedef enum nua_event_e {
   nua_i_notify,			/**< Incoming event */
   nua_i_method,			/**< Incoming, unknown method */
 
+  nua_i_subscription,		/**< Incoming subscription to be authorized */
+
   nua_i_media_error,		/**< Offer-answer error indication */
 
   /* Responses */

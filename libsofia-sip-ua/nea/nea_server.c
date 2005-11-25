@@ -1073,6 +1073,16 @@ nea_sub_t *nea_sub_create(nea_server_t *nes)
   return s;
 }
 
+/* ----------------------------------------------------------------- */
+nta_incoming_t *nea_subnode_get_incoming(nea_subnode_t *sn)
+{
+  assert(sn);
+
+  if (sn->sn_subscriber) {
+    return sn->sn_subscriber->s_irq;
+  }
+  return NULL;
+}
 
 /* ----------------------------------------------------------------- */
 void nea_sub_remove(nea_sub_t *s)

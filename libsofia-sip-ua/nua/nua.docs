@@ -1842,6 +1842,19 @@ For reference:
  * @param tags
  */
 
+/** @var nua_event_e::nua_i_subscription
+ *
+ * Incoming subscription to be authorized.
+ *
+ * This event is launched by nua_notifier to inform application of the
+ * current state of the subscriber and to authorize the subscriber.
+ *
+ * @param nh     operation handle associated with the nua_notifier
+ * @param hmagic operation magic
+ * @param sip    incoming SUBSRIBE request
+ * @param tags   empty
+ */
+
 /** @var nua_event_e::nua_i_terminated
  *
  * A call has been terminated.

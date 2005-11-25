@@ -295,6 +295,9 @@ int nea_server_notify_one(nea_server_t *nes,
 int nea_sub_auth(nea_sub_t *, nea_state_t state,
 		 tag_type_t, tag_value_t, ...);
 
+
+/** Get nta_incoming_t from sn->sn_subscriber */
+nta_incoming_t *nea_subnode_get_incoming(nea_subnode_t *sn);
 /** Set subscriber version sequence */
 int nea_sub_version(nea_sub_t *, unsigned);
 
