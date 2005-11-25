@@ -1404,7 +1404,6 @@ int nea_server_add(nea_server_t *nes,
 
   if (s->s_local && s->s_leg) {
     nta_leg_tag(s->s_leg, NULL);
-    irq = 
     return 0;
   }
   else {
@@ -1831,7 +1830,8 @@ int nea_sub_process_subscribe(nea_sub_t *s,
     s->s_subscribed = now;
   s->s_expires = now + delta;
   // s->s_accept = sip_accept_dup(home, accept);
-  s->s_id = sip_event_dup(home, sip->sip_event); 
+  if (s->s_id == NULL)
+    s->s_id = sip_event_dup(home, sip->sip_event);
   s->s_event = ev;
   s->s_eventlist = supported_eventlist;
   nea_sub_assign_view(s, evv);
