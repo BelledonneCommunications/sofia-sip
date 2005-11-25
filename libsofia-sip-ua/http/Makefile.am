@@ -62,18 +62,17 @@ EXTRA_DIST =		Doxyfile http.docs \
 
 include ../sofia.am
 
-TAG_DLL_FLAGS =		DLLREF=1
+TAG_DLL_FLAGS = DLLREF=1
 
-s = $(srcdir)
-m = $(top_srcdir)/libsofia-sip-ua/msg
+MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
 
-$s/http_parser_table.c: $m/msg_parser.awk $s/http.h $s/http_parser_table.c.in
-	$(AWK) -f $m/msg_parser.awk module=http PT=$@ \
-		MC_HASH_SIZE=127 $s/http.h
+AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=http
 
-$s/http_%.h: $m/msg_parser.awk $s/http_%.h.in $s/http.h
-	$(AWK) -f $m/msg_parser.awk module=http PR=$@ $s/http.h
+http_%.h: http_%.h.in $(MSG_PARSER_AWK)
+http_%.c: http_%.c.in $(MSG_PARSER_AWK)
 
-$s/http_%.c: $m/msg_parser.awk $s/http_%.c.in $s/http.h
-	$(AWK) -f $m/msg_parser.awk module=http PR=$@ $s/http.h
+http_tag.c http_tag_ref.c http_protos.h http_tag.h: http.h
+	$(AWK_MSG_AWK) PR=$@ $<
 
+http_parser_table.c: http.h
+	$(AWK_MSG_AWK) PT=$@ MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<

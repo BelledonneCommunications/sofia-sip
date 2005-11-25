@@ -35,8 +35,7 @@ libmsg_la_SOURCES = $(INTERNAL_H) \
 	msg_mime.c msg_mime_table.c \
 	msg_header_copy.c msg_header_make.c \
 	msg_parser.c msg_mclass.c msg_parser_util.c \
-	msg_basic.c msg_generic.c msg_date.c msg_auth.c \
-	memspn.c
+	msg_basic.c msg_generic.c msg_date.c msg_auth.c
 
 COVERAGE_INPUT = 	$(libmsg_la_SOURCES) $(include_sofia_HEADERS)
 
@@ -79,30 +78,23 @@ MSG_PARSER_AWK = $(srcdir)/msg_parser.awk
 
 AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK)
 
-test_protos.h test_table.c: $(MSG_PARSER_AWK)
-
-test_protos.h: test_protos.h.in
-test_table.c: test_table.c.in
+%.h: %.h.in $(MSG_PARSER_AWK)
+%.c: %.c.in $(MSG_PARSER_AWK)
 
 test_protos.h: test_class.h
-	$(AWK_MSG_AWK) module=msg_test PR=$@ NO_MIDDLE=1 NO_LAST=1 $<
+	$(AWK_MSG_AWK) module=msg_test NO_MIDDLE=1 NO_LAST=1 \
+		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 test_table.c: test_class.h 
-	$(AWK_MSG_AWK) module=msg_test prefix=msg PT=$@ \
-		MC_HASH_SIZE=127 multipart=msg_multipart $<
+	$(AWK_MSG_AWK) module=msg_test prefix=msg \
+		MC_HASH_SIZE=127 multipart=msg_multipart \
+		PT=$@ $<
 
-msg_protos.h msg_mime_protos.h msg_mime_table.c: $(MSG_PARSER_AWK)
-
-msg_protos.h: msg_protos.h.in
-msg_mime_protos.h: msg_mime_protos.h.in 
-msg_mime_table.c: msg_mime_table.c.in
-
-msg_protos.h: msg_mime.h
-	$(AWK_MSG_AWK) PR=$@ module=msg NO_FIRST=1 NO_MIDDLE=1 $<
-
-msg_mime_protos.h: msg_mime.h
-	$(AWK_MSG_AWK) PR=$@ module=msg NO_FIRST=1 NO_LAST=1 $<
+msg_mime_protos.h msg_protos.h: msg_mime.h
+	$(AWK_MSG_AWK) module=msg NO_FIRST=1 NO_MIDDLE=1 \
+		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 msg_mime_table.c: msg_mime.h
-	$(AWK_MSG_AWK) module=msg_multipart tprefix=msg prefix=mp PT=$@ \
-		MC_HASH_SIZE=127 $<
+	$(AWK_MSG_AWK) module=msg_multipart \
+		tprefix=msg prefix=mp MC_HASH_SIZE=127 \
+		PT=$@ $<

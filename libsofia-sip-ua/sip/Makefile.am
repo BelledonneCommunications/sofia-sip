@@ -102,23 +102,22 @@ dist_noinst_SCRIPTS = 	run_sip_test_msg run_date_test
 
 include ../sofia.am
 
-s = $(srcdir)
-m = $(s)/../msg
+MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
 
-SIP_H = $s/sip.h 
+AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=sip
 
 #
 # Note: sip_bad_mask is used by nta to weed out bad messages
 #
-$s/sip_parser_table.c: \
-		$m/msg_parser.awk $s/sip_parser_table.c.in \
-		${SIP_H} $s/sip_bad_mask
-	$(AWK) -f $m/msg_parser.awk module=sip PT=$@ \
-		FLAGFILE=$s/sip_bad_mask \
-		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 ${SIP_H}
+sip_parser_table.c: sip_bad_mask
 
-$s/sip_%.h: $m/msg_parser.awk $s/sip_%.h.in ${SIP_H}
-	$(AWK) -f $m/msg_parser.awk module=sip PR=$@ ${SIP_H}
+sip_%.h: sip_%.h.in $(MSG_PARSER_AWK)
+sip_%.c: sip_%.c.in $(MSG_PARSER_AWK)
 
-$s/sip_%.c: $m/msg_parser.awk $s/sip_%.c.in ${SIP_H}
-	$(AWK) -f $m/msg_parser.awk module=sip PR=$@ ${SIP_H}
+sip_tag.c sip_tag_ref.c sip_hclasses.h sip_protos.h sip_tag.h: sip.h
+	$(AWK_MSG_AWK) PR=$@ $<
+
+sip_parser_table.c: sip.h
+	$(AWK_MSG_AWK) PT=$@ FLAGFILE=$(srcdir)/sip_bad_mask \
+		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
+
