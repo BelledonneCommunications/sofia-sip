@@ -187,13 +187,13 @@ void nta_leg_bind(nta_leg_t *leg,
 		  nta_leg_magic_t *);
 
 /** Add local tag. */
-int nta_leg_tag(nta_leg_t *leg, char const *tag);
+char const *nta_leg_tag(nta_leg_t *leg, char const *tag);
 
 /** Get local tag. */
 char const *nta_leg_get_tag(nta_leg_t const *leg);
 
 /** Add remote tag. */
-int nta_leg_rtag(nta_leg_t *leg, char const *tag);
+char const *nta_leg_rtag(nta_leg_t *leg, char const *tag);
 
 /** Get remote tag. */
 char const *nta_leg_get_rtag(nta_leg_t const *leg);
@@ -251,8 +251,7 @@ nta_incoming_t *nta_incoming_find(nta_agent_t const *agent,
 				  sip_t const *sip,
 				  sip_via_t const *v);
 
-int nta_incoming_tag(nta_incoming_t *irq, char const *tag);
-char const *nta_incoming_tag_3261(nta_incoming_t *irq, char const *tag);
+char const *nta_incoming_tag(nta_incoming_t *irq, char const *tag);
 
 int nta_incoming_status(nta_incoming_t const *irq);
 sip_method_t nta_incoming_method(nta_incoming_t const *irq);

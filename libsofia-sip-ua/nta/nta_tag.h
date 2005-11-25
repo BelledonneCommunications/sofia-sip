@@ -104,7 +104,7 @@ NTA_DLL extern tag_typedef_t ntatag_contact_ref;
 ntatag_contact_ref, siptag_contact_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_target;
-/** Contact used by NTA. @HI */
+/** Dialog target (contact) used by NTA. @HI */
 #define NTATAG_TARGET(x) \
 ntatag_target, siptag_contact_v((x))
 
@@ -113,7 +113,7 @@ NTA_DLL extern tag_typedef_t ntatag_target_ref;
 ntatag_target_ref, siptag_contact_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_aliases;
-/** Aliases used by NTA. @HI */
+/** Aliases used by NTA. @HI @deprecated */
 #define NTATAG_ALIASES(x) \
 ntatag_aliases, siptag_contact_v((x))
 

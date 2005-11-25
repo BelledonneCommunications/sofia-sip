@@ -322,9 +322,9 @@ int new_leg_callback_200(agent_t *ag,
 				   SIPTAG_TO(sip->sip_from),
 				   TAG_END());
   TEST_1(ag->ag_bob_leg);
-  TEST(nta_leg_tag(ag->ag_bob_leg, NULL), 0);
+  TEST_1(nta_leg_tag(ag->ag_bob_leg, NULL));
   TEST_1(nta_leg_get_tag(ag->ag_bob_leg));
-  TEST(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)), 0);
+  TEST_1(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)));
 
   return 200;
 
@@ -363,7 +363,8 @@ int outgoing_callback(agent_t *ag,
     ag->ag_out_via = sip_via_dup(ag->ag_home, sip->sip_via);
 
   if (ag->ag_tag_remote) {
-    TEST(nta_leg_rtag(ag->ag_tag_remote, sip->sip_to->a_tag), 0);
+    TEST_S(nta_leg_rtag(ag->ag_tag_remote, sip->sip_to->a_tag), 
+	   sip->sip_to->a_tag);
     ag->ag_tag_remote = NULL;
   }
 
@@ -405,7 +406,7 @@ int outgoing_callback_with_api_test(agent_t *ag,
     ag->ag_out_via = sip_via_dup(ag->ag_home, sip->sip_via);
 
   if (ag->ag_tag_remote) {
-    TEST(nta_leg_rtag(ag->ag_tag_remote, sip->sip_to->a_tag), 0);
+    TEST_1(nta_leg_rtag(ag->ag_tag_remote, sip->sip_to->a_tag));
     ag->ag_tag_remote = NULL;
   }
 
@@ -2092,7 +2093,7 @@ int test_dialog(agent_t *ag)
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
 					   TAG_END()));
-  TEST(nta_leg_tag(ag->ag_alice_leg, NULL), 0);
+  TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
   nta_leg_bind(ag->ag_server_leg, new_leg_callback_200, ag);
 
   /* Send message from Alice to Bob establishing the dialog */
@@ -2323,9 +2324,9 @@ int bob_leg_callback(agent_t *ag,
 				     SIPTAG_TO(sip->sip_from),
 				     TAG_END());
     TEST_1(ag->ag_bob_leg);
-    TEST(nta_leg_tag(ag->ag_bob_leg, NULL), 0);
+    TEST_1(nta_leg_tag(ag->ag_bob_leg, NULL));
     TEST_1(nta_leg_get_tag(ag->ag_bob_leg));
-    TEST(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)), 0);
+    TEST_1(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)));
     TEST(nta_leg_server_route(ag->ag_bob_leg, 
 			      sip->sip_record_route, 
 			      sip->sip_contact), 0);
@@ -2400,7 +2401,7 @@ int outgoing_invite_callback(agent_t *ag,
   if (status < 300) {
     nta_outgoing_t *ack;
 
-    TEST(nta_leg_rtag(ag->ag_call_leg, sip->sip_to->a_tag), 0);
+    TEST_1(nta_leg_rtag(ag->ag_call_leg, sip->sip_to->a_tag));
     
     TEST(nta_leg_client_route(ag->ag_call_leg, 
 			      sip->sip_record_route,
@@ -2449,7 +2450,7 @@ int test_call(agent_t *ag)
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
 					   TAG_END()));
-  TEST(nta_leg_tag(ag->ag_alice_leg, NULL), 0);
+  TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
   nta_leg_bind(ag->ag_server_leg, bob_leg_callback, ag);
   
   /* Send INVITE */
@@ -2601,9 +2602,9 @@ int bob_leg_callback2(agent_t *ag,
 				     SIPTAG_TO(sip->sip_from),
 				     TAG_END());
     TEST_1(ag->ag_bob_leg);
-    TEST(nta_leg_tag(ag->ag_bob_leg, NULL), 0);
+    TEST_1(nta_leg_tag(ag->ag_bob_leg, NULL));
     TEST_1(nta_leg_get_tag(ag->ag_bob_leg));
-    TEST(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)), 0);
+    TEST_1(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)));
     TEST(nta_leg_server_route(ag->ag_bob_leg, 
 			      sip->sip_record_route, 
 			      sip->sip_contact), 0);
@@ -2658,7 +2659,7 @@ int invite_prack_callback(agent_t *ag,
     ag->ag_tag_status = status;
     ag->ag_call_tag = su_strdup(ag->ag_home, sip->sip_to->a_tag);
     TEST_S(ag->ag_call_tag, sip->sip_to->a_tag);
-    TEST(nta_leg_rtag(ag->ag_call_leg, ag->ag_call_tag), 0);
+    TEST_S(nta_leg_rtag(ag->ag_call_leg, ag->ag_call_tag), ag->ag_call_tag);
     TEST(nta_leg_client_route(ag->ag_call_leg, 
 			      sip->sip_record_route,
 			      sip->sip_contact), 0);
@@ -2696,7 +2697,7 @@ int invite_prack_callback(agent_t *ag,
     TEST_1(msg = nta_outgoing_getrequest(orq));
     TEST_1(osip = sip_object(msg));
 
-    TEST(nta_leg_rtag(ag->ag_call_leg, sip->sip_to->a_tag), 0);
+    TEST_1(nta_leg_rtag(ag->ag_call_leg, sip->sip_to->a_tag));
     
     TEST(nta_leg_client_route(ag->ag_call_leg, 
 			      sip->sip_record_route,
@@ -2776,7 +2777,7 @@ int test_prack(agent_t *ag)
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
 					   TAG_END()));
-  TEST(nta_leg_tag(ag->ag_alice_leg, NULL), 0);
+  TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
 
   /* Send INVITE */
   nta_leg_bind(ag->ag_server_leg, bob_leg_callback2, ag);
@@ -2841,7 +2842,7 @@ int test_prack(agent_t *ag)
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
 					   TAG_END()));
-  TEST(nta_leg_tag(ag->ag_alice_leg, NULL), 0);
+  TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
 
   /* Send INVITE, 
    * send precious provisional response
@@ -2976,7 +2977,7 @@ int test_fix_467(agent_t *ag)
 					    SIPTAG_FROM(ag->ag_alice),
 					    SIPTAG_TO(ag->ag_bob),
 					    TAG_END()));
-  TEST(nta_leg_tag(ag->ag_alice_leg, NULL), 0);
+  TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
   ag->ag_bob_leg = NULL;
   ag->ag_call_tag = NULL;
 
@@ -3371,7 +3372,8 @@ static int test_api_errors(void)
   TEST_VOID(nta_leg_destroy(NULL));
   TEST(nta_leg_magic(NULL, NULL), NULL);
   TEST_VOID(nta_leg_bind(NULL, NULL, NULL));
-  TEST(nta_leg_tag(NULL, "fidsafsa"), -1);
+  TEST(nta_leg_tag(NULL, "fidsafsa"), NULL);
+  TEST(nta_leg_rtag(NULL, "fidsafsa"), NULL);
   TEST(nta_leg_get_tag(NULL), NULL);
   TEST(nta_leg_client_route(NULL, NULL, NULL), -1);
   TEST(nta_leg_server_route(NULL, NULL, NULL), -1);
@@ -3397,7 +3399,7 @@ nta_incoming_t *nta_incoming_find(nta_agent_t const *agent,
 				  sip_t const *sip,
 				  sip_via_t const *v);
 
-int nta_incoming_tag(nta_incoming_t *irq, char const *tag);
+char const *nta_incoming_tag(nta_incoming_t *irq, char const *tag);
 
 int nta_incoming_status(nta_incoming_t const *irq);
 sip_method_t nta_incoming_method(nta_incoming_t const *irq);
