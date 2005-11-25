@@ -534,6 +534,17 @@ void nta_agent_destroy(nta_agent_t *agent)
 
     tport_destroy(agent->sa_tports), agent->sa_tports = NULL;
 
+#if HAVE_SIGCOMP
+    if (agent->sa_compartment) {
+      sigcomp_compartment_unref(agent->sa_compartment);
+      agent->sa_compartment = NULL;
+    }
+
+    if (agent->sa_state_handler) {
+      sigcomp_state_handler_free(agent->sa_state_handler);
+    }
+#endif
+
     agent_kill_terminator(agent);
 
     su_home_unref(agent->sa_home);

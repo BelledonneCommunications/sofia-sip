@@ -3992,6 +3992,8 @@ tport_t *tport_tsend(tport_t *self,
       cc = (struct sigcomp_compartment *)t->t_value;
   }    
 
+  ta_end(ta);
+
   ai = msg_addrinfo(msg);
 
   ai->ai_flags = 0;
