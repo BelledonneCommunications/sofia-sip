@@ -52,7 +52,6 @@ char const *name = "torture_stun";
 
 static int test_init(char *addr);
 static int test_sync_stun(char *addr);
-static int test_async_stun(void);
 static int test_get_nattype(char *addr);
 static int test_get_lifetime(char *addr);
 
@@ -140,7 +139,8 @@ int test_init(char *server)
 int test_sync_stun(char *localaddr)
 {
   int result;
-  int s, addrlen, locallen, lifetime;
+  int s, lifetime;
+  socklen_t addrlen, locallen;
   su_sockaddr_t addr;
   stun_socket_t *ss;
   struct sockaddr_in *my_addr, local;
@@ -160,7 +160,7 @@ int test_sync_stun(char *localaddr)
       char username[256], password[256];
       if(fscanf(pwd, "\"%[^\"]\",\"%[^\"]\"", username, password)) {
 	printf("Read username, password from pwd.txt: \"%s\", \"%s\"\n", username, password);
-	stun_set_uname_pwd(se, username, strlen(username), password, strlen(password));
+	stun_set_uname_pwd(se, username, (int)strlen(username), password, (int)strlen(password));
       }
       fclose(pwd);
     }
@@ -287,6 +287,8 @@ int test_get_nattype(char *localaddr)
 
 #include <poll.h>
 
+/* XXX: Not used in the test set yet. */
+#if 0
 /*
  * Run test asynchronously (with non-blocking socket).
  * stun_bind() is called repeteadly until it returns 0 (or -1 with errno 
@@ -296,7 +298,8 @@ int test_get_nattype(char *localaddr)
 int test_async_stun(void)
 {
   int result;
-  int s, addrlen, locallen, lifetime;
+  int s, lifetime;
+  socklen_t addrlen, locallen;
   su_sockaddr_t addr, local;
   stun_socket_t *ss;
 
@@ -341,6 +344,7 @@ int test_async_stun(void)
 
   END();
 }
+#endif
 
 static int test_deinit(void)
 {

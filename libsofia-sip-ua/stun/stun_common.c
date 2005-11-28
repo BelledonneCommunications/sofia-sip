@@ -44,7 +44,13 @@
 #define LARGEST_ATTRIBUTE TURN_LARGEST_ATTRIBUTE
 #endif
 
+
+#ifndef SU_DEBUG
+#define SU_DEBUG 3
+#endif
+#define SU_LOG (stun_log)
 #include <su_debug.h>
+
 #include "stun_common.h"
 
 const char stun_400_Bad_request[] = "Bad Request",
@@ -77,11 +83,13 @@ int stun_parse_message(stun_msg_t *msg) {
   msg->stun_hdr.msg_type = ntohs(tmp16);
   memcpy(&tmp16, p, 2); p+=2;
   msg->stun_hdr.msg_len = ntohs(tmp16);
+
   for(i=0; i<8; i++) {
     memcpy(&tmp16, p, 2); p+=2;
     msg->stun_hdr.tran_id[i] = ntohs(tmp16);
   }
-  fprintf(stderr, "Parse STUN message: Length = %d\n", msg->stun_hdr.msg_len);
+
+  SU_DEBUG_5(("stun: Parse STUN message: Length = %d\n", msg->stun_hdr.msg_len));
 
   /* parse attributes */
   len = msg->stun_hdr.msg_len;
@@ -90,7 +98,7 @@ int stun_parse_message(stun_msg_t *msg) {
   while(len > 0) {
     i = stun_parse_attribute(msg, p);
     if(i <= 0) {
-      fprintf(stderr, "Error parsing attribute.\n");
+      SU_DEBUG_0(("stun: Error parsing attribute.\n"));
       return -1;
     }
     p += i;
@@ -120,8 +128,8 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   p+=2;
   len = ntohs(tmp16);
 
-  fprintf(stderr, "Parsing attribute: Type %02X, Length %d - %s\n",
-	  attr->attr_type, len, stun_attr_phrase(attr->attr_type));
+  SU_DEBUG_3(("stun: received attribute: Type %02X, Length %d - %s\n",
+	      attr->attr_type, len, stun_attr_phrase(attr->attr_type)));
   switch(attr->attr_type) {
   case MAPPED_ADDRESS:
   case RESPONSE_ADDRESS:
@@ -202,7 +210,7 @@ int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned 
   memcpy(&addr->sin_port, p+2, 2);
   memcpy(&addr->sin_addr.s_addr, p+4, 4);
 
-  fprintf(stderr, "parsing address attribute: %s:%d\n", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
+  SU_DEBUG_3(("stun: address attribute: %s:%d\n", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
 
   attr->pattr = addr;
   stun_init_buffer(&attr->enc_buf);
@@ -223,7 +231,7 @@ int stun_parse_attr_error_code(stun_attr_t *attr, const unsigned char *p, unsign
 
   error->phrase = (char *) malloc(len-4);
 
-  strncpy(error->phrase, p+4, len-4);
+  strncpy(error->phrase, (char*)p+4, len-4);
 
   attr->pattr = error;
   stun_init_buffer(&attr->enc_buf);
@@ -397,7 +405,8 @@ int stun_encode_buffer(stun_attr_t *attr) {
 }
 
 int stun_encode_message_integrity(stun_attr_t *attr, unsigned char *buf, int len, stun_buffer_t *pwd) {
-  int dig_len, padded_len;
+  int padded_len;
+  size_t dig_len;
   unsigned char *padded_text;
 
   if(stun_encode_type_len(attr, 20)<0) {
@@ -434,7 +443,8 @@ int stun_encode_type_len(stun_attr_t *attr, uint16_t len) {
  */
 int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
 
-  int dig_len, padded_len, len;
+  int padded_len, len;
+  size_t dig_len;
   unsigned char dig[20]; /* received sha1 digest */
   unsigned char *padded_text;
 
@@ -464,7 +474,7 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
     }
   }
   else {
-    fprintf(stderr, "Message integrity validated.\n");
+    SU_DEBUG_5(("Message integrity validated.\n"));
   }
 
   free(padded_text);
@@ -538,8 +548,8 @@ int stun_send_message(int sockfd, struct sockaddr_in *to_addr, stun_msg_t *msg, 
 
   z = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
 	     0, (struct sockaddr *)to_addr, sizeof(*to_addr));
-  fprintf(stderr, "STUN message sent to %s:%u\n", 
-	 inet_ntoa(to_addr->sin_addr), ntohs(to_addr->sin_port));
+  SU_DEBUG_5(("stun: message sent to %s:%u\n", 
+	      inet_ntoa(to_addr->sin_addr), ntohs(to_addr->sin_port)));
   debug_print(&msg->enc_buf);
   
   return z;
@@ -614,17 +624,17 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
 
     msg->stun_hdr.msg_len = len;
     buf_len = 20+msg->stun_hdr.msg_len;
-    buf = (char *)malloc(buf_len);
+    buf = (unsigned char *)malloc(buf_len);
     
     /* convert to binary format for transmission */
     len = 0;
     tmp16 = htons(msg->stun_hdr.msg_type);
-    memcpy(buf, (char *)&tmp16, 2); len+=2;
+    memcpy(buf, (unsigned char *)&tmp16, 2); len+=2;
     tmp16 = htons(msg->stun_hdr.msg_len);
-    memcpy(buf+len, (char *)&tmp16, 2); len+=2;
+    memcpy(buf+len, (unsigned char *)&tmp16, 2); len+=2;
     for(i=0; i<8; i++) {
       tmp16 = htons(msg->stun_hdr.tran_id[i]);
-      memcpy(buf+len, (char *)&tmp16, 2); len+=2;
+      memcpy(buf+len, (unsigned char *)&tmp16, 2); len+=2;
     }
 
     /* attaching encoded attributes */

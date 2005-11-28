@@ -50,7 +50,8 @@ void usage(int exitcode)
 int main(int argc, char *argv[])
 {
   int result;
-  int s, addrlen, lifetime;
+  int s, lifetime;
+  socklen_t addrlen;
   su_sockaddr_t addr;
 
   stun_engine_t *se;

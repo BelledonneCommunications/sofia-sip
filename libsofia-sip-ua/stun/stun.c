@@ -47,15 +47,18 @@
 #include <su.h>
 #include <su_localinfo.h>
 
+#ifndef SU_DEBUG
+#define SU_DEBUG 3
+#endif
+#define SU_LOG (stun_log)
+#include <su_debug.h>
+
 #include <openssl/opensslv.h>
 
-#define STUN_DEBUG 5		/* default log level */
+extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 
 /** STUN log. */
-su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", STUN_DEBUG) }; 
-#define SU_LOG (stun_log)
-
-#include <su_debug.h>
+su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", SU_DEBUG) }; 
 
 char const stun_nat_unknown[] = "NAT type undetermined",
   stun_open_internet[] = "Open Internet",
@@ -152,9 +155,6 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
   ta_list ta;
   su_sockaddr_t su[1];
 
-  SU_DEBUG_5(("%s(\"%s\"): called\n", 
-	      "stun_engine_tcreate", server));
-
   ta_start(ta, tag, value);
 
   tl_gets(ta_args(ta),
@@ -167,6 +167,9 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
     server = getenv("STUN_SERVER");
     SU_DEBUG_5(("stun: using STUN_SERVER=%s\n", server));
   }
+
+  SU_DEBUG_5(("%s(\"%s\"): called\n", 
+	      "stun_engine_tcreate", server));
 
   memset(su, 0, (sizeof su));
 
@@ -335,7 +338,7 @@ int stun_bind(stun_socket_t *ss,
 			  clnt_addr, 0, 0);
 
   if (ss->ss_state != stun_cstate_done) {
-    SU_DEBUG_3(("stun: Error in STUN discovery process.\n"));
+    SU_DEBUG_3(("stun: Error in STUN discovery process (error state: %d).\n", (int)ss->ss_state));
     /* make sure the returned clnt_addr matches the local socket */
     if (*addrlen < bind_len)
       return errno = EFAULT, -1;
@@ -629,7 +632,7 @@ int stun_make_sharedsecret_req(stun_msg_t *msg)
 int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sockaddr_in *clnt_addr, 
 		   int chg_ip, int chg_port) 
 {
-  int retval = -1, sockfd, z, clnt_addr_len;
+  int retval = -1, sockfd, z = 0, clnt_addr_len;
   stun_msg_t bind_req, bind_resp;
   unsigned char dgram[512];
   stun_attr_t *mapped_addr, *chg_addr;
@@ -649,6 +652,10 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
   /* run protocol here... */
   sockfd = ss->ss_sockfd;
 
+  SU_DEBUG_3(("stun: sending to %s:%u (req-flags: msgint=%d, ch-addr=%d, chh-port=%d)\n", 
+	      inet_ntoa(srvr_addr->sin_addr), ntohs(srvr_addr->sin_port),
+	      ss->ss_engine->use_msgint, chg_ip, chg_port));
+
   /* compose binding request */
   if(stun_make_binding_req(ss, &bind_req, chg_ip, chg_port)<0) 
     return retval;
@@ -660,10 +667,10 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
     return retval;
   }
 
-  FD_ZERO(&rfds);
-  FD_SET(sockfd, &rfds); /* Set sockfd for read monitoring */
-  z = 0;
   while(num_retrx < STUN_MAX_RETRX && z <= 0) {
+    FD_ZERO(&rfds);
+    FD_SET(sockfd, &rfds); /* Set sockfd for read monitoring */
+
     if(retrx_int < 1000000) {
       tv.tv_sec = 0;
       tv.tv_usec = retrx_int;
@@ -673,6 +680,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
       tv.tv_sec = 1;
       tv.tv_usec = retrx_int - 1000000;
     }
+
     if(select(sockfd+1, &rfds, NULL, NULL, &tv)) {
       /* response received */
       recv_addr_len = sizeof(recv_addr);
@@ -685,15 +693,16 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
       bind_resp.enc_buf.data = (unsigned char *)malloc(z);
       bind_resp.enc_buf.size = z;
       memcpy(bind_resp.enc_buf.data, dgram, z);
-      SU_DEBUG_5(("response from server %s:%u\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
+      SU_DEBUG_3(("stun: response from server %s:%u\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
       debug_print(&bind_resp.enc_buf);      
     }
     else {
-      SU_DEBUG_3(("Time out no. %d, retransmitting.\n", ++num_retrx));
+      SU_DEBUG_3(("stun: Time out no. %d, retransmitting.\n", ++num_retrx));
       if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->password))<0) {
 	stun_free_message(&bind_req);
 	return retval;
       }
+      z = 0;
     }
   }
 
@@ -706,7 +715,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
 
   /* process response */
   if(stun_parse_message(&bind_resp) < 0) {
-    SU_DEBUG_5(("Error parsing response.\n"));
+    SU_DEBUG_5(("stun: Error parsing response.\n"));
     stun_free_message(&bind_req);
     stun_free_message(&bind_req);
     return retval;
@@ -740,7 +749,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
     break;
   case BINDING_ERROR_RESPONSE:
     if(stun_process_error_response(&bind_resp)<0) {
-      SU_DEBUG_3(("Error in Binding Error Response.\n"));
+      SU_DEBUG_3(("stun: Error in Binding Error Response.\n"));
     }
     break;
   default:
@@ -757,7 +766,8 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
 }
 
 /** Compose a STUN message of the format defined by stun_msg_t */
-int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int chg_port) {
+int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int chg_port)
+{
 
   int i;
   stun_attr_t *tmp, **p; 
@@ -813,11 +823,12 @@ int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int ch
   return 0;
 }
 
-int stun_process_response(stun_msg_t *msg) {
+int stun_process_response(stun_msg_t *msg)
+{
 
   /* parse msg first */
   if(stun_parse_message(msg)<0) {
-    SU_DEBUG_3(("Error parsing response.\n"));
+    SU_DEBUG_3(("stun: Error parsing response.\n"));
     return -1;
   }
 
@@ -848,7 +859,8 @@ int stun_process_binding_response(stun_msg_t *msg) {
 /** process binding error response
  *  Report error and return
  */
-int stun_process_error_response(stun_msg_t *msg) {
+int stun_process_error_response(stun_msg_t *msg)
+{
   stun_attr_t *attr;
   stun_attr_errorcode_t *ec;
 
@@ -857,14 +869,14 @@ int stun_process_error_response(stun_msg_t *msg) {
 
   ec = (stun_attr_errorcode_t *)attr->pattr;
   
-  SU_DEBUG_5(("Received Binding Error Response:\n"));
-  SU_DEBUG_5(("Error: %d %s\n", ec->code, ec->phrase));
+  SU_DEBUG_5(("stun: Received Binding Error Response:\n"));
+  SU_DEBUG_5(("stun: Error: %d %s\n", ec->code, ec->phrase));
 
   return 0;
 }
 
-int stun_set_uname_pwd(stun_engine_t *se, const unsigned char *uname, int len_uname, 
-		       const unsigned char *pwd, int len_pwd) {
+int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname, const char *pwd, int len_pwd)
+{
   se->username.data = (unsigned char *) malloc(len_uname);
   memcpy(se->username.data, uname, len_uname);
   se->username.size = len_uname;
@@ -989,28 +1001,28 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
   clnt_addr->sin_port = 0;
   /* initialize socket x */
   if(bind(sockfdx, (struct sockaddr *)clnt_addr, *addrlen)<0) {
-    SU_DEBUG_3(("Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr), (unsigned)ntohs(clnt_addr->sin_port)));
+    SU_DEBUG_3(("stun: Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr), (unsigned)ntohs(clnt_addr->sin_port)));
     return retval;
   }
   x_len = sizeof(x_addr);
   getsockname(sockfdx, (struct sockaddr *)&x_addr, &x_len);  
-  SU_DEBUG_3(("Local socket x bound to: %s:%u\n", inet_ntoa(x_addr.sin_addr),
+  SU_DEBUG_3(("stun: Local socket x bound to: %s:%u\n", inet_ntoa(x_addr.sin_addr),
 	      (unsigned)ntohs(x_addr.sin_port)));
 
   /* initialize socket y */
   sockfdy = socket(AF_INET, SOCK_DGRAM, 0);
   if(bind(sockfdy, (struct sockaddr *)clnt_addr, *addrlen)<0) {
-    SU_DEBUG_3(("Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr), (unsigned)ntohs(clnt_addr->sin_port)));
+    SU_DEBUG_3(("stun: Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr), (unsigned)ntohs(clnt_addr->sin_port)));
     return retval;
   }
   y_len = sizeof(y_addr);
   getsockname(sockfdy, (struct sockaddr *)&y_addr, &y_len);  
-  SU_DEBUG_3(("Local socket y bound to: %s:%u\n", inet_ntoa(y_addr.sin_addr), 
+  SU_DEBUG_3(("stun: Local socket y bound to: %s:%u\n", inet_ntoa(y_addr.sin_addr), 
 	      (unsigned)ntohs(y_addr.sin_port)));
    
   i=1;
   while(abs(lt_cur-lt) > STUN_LIFETIME_CI) {
-    SU_DEBUG_3(("STUN Lifetime determination round %d, testing lifetime of %d sec.\n", i++, lt));
+    SU_DEBUG_3(("stun: Lifetime determination round %d, testing lifetime of %d sec.\n", i++, lt));
     /* send request from X */
     if(stun_make_binding_req(ss, &bind_req, 0, 0) <0)
       return retval;
@@ -1033,16 +1045,16 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
       bind_resp.enc_buf.data = (unsigned char *)malloc(z);
       bind_resp.enc_buf.size = z;
       memcpy(bind_resp.enc_buf.data, dgram, z);
-      SU_DEBUG_3(("response from server %s:%u\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
+      SU_DEBUG_3(("stun: response from server %s:%u\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
       debug_print(&bind_resp.enc_buf);      
     }
     else {
-      SU_DEBUG_3(("No response from server. Check configuration.\n"));
+      SU_DEBUG_3(("stun: No response from server. Check configuration.\n"));
       return retval;
     }
     /* process response */
     if(stun_parse_message(&bind_resp) < 0) {
-      SU_DEBUG_5(("Error parsing response.\n"));
+      SU_DEBUG_5(("stun: Error parsing response.\n"));
       return retval;
     }
     if(bind_resp.stun_hdr.msg_type==BINDING_RESPONSE) {
@@ -1081,14 +1093,14 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
       /* mapping with X still valid */
       lt_cur = lt;
       lt = (int) (lt+lt_max)/2;
-      SU_DEBUG_3(("Response received from socket X, lifetime at least %d sec, next trial: %d sec\n\n", 
+      SU_DEBUG_3(("stun: Response received from socket X, lifetime at least %d sec, next trial: %d sec\n\n", 
 		  lt_cur, lt));
     }
     else {
       /* no response */
       lt_max = lt;
       lt = (int) (lt+lt_cur)/2;
-      SU_DEBUG_3(("No response received from socket X, lifetime at most %d sec, next trial: %d sec\n\n", 
+      SU_DEBUG_3(("stun: No response received from socket X, lifetime at most %d sec, next trial: %d sec\n\n", 
 		  lt_max, lt));
     }
   }

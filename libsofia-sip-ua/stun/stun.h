@@ -74,8 +74,8 @@ int stun_get_lifetime(stun_socket_t *ss,
 		      int *lifetime);
 
 /** other functions */
-int stun_set_uname_pwd(stun_engine_t *se, const unsigned char *uname, int len_uname, 
-		       const unsigned char *pwd, int len_pwd);
+int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname, 
+		       const char *pwd, int len_pwd);
 
 
 /* internal functions declaration */

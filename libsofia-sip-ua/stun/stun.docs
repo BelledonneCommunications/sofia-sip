@@ -13,6 +13,17 @@ client library.
 
 @section stun_usage Using Sofia STUN Library
 
-<i>To be written.</i>
+To be written.
+
+@section todo Todo
+
+- merge NAT-type check and stun_bind_tests (no 
+  use in using STUN if the NAT type is symmetric) (added 20051118)
+- output a summary of results at the end of 
+  stund_bind_test() (added 20051118)
+- stun_bind_test does not detect, if the server does
+  _not_ honor the change-{address,port} requests (i.e. that
+  response should be send from a different port/address), 
+  which leads to incorrect analysis of NAT behaviour (added 20051119)
 
 */
