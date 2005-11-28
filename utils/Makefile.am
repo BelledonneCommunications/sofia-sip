@@ -10,6 +10,7 @@ INCLUDES = 	-I$(sofiasrc)/features \
 		-I$(sofiasrc)/iptsec \
 		-I$(sofiasrc)/msg \
 		-I$(sofiasrc)/nta \
+		-I$(sofiasrc)/nea \
 		-I$(sofiasrc)/nua \
 		-I$(sofiasrc)/soa \
 		-I$(sofiasrc)/sdp \
