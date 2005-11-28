@@ -713,16 +713,23 @@ int localinfo6(su_localinfo_t const *hints, su_localinfo_t **rresult)
       /* Fix global scope (it is 0) */
       if (!scope) scope = LI_SCOPE_GLOBAL;
 
+      in6.s6_addr32[0] = htonl(in6.s6_addr32[0]);
+      in6.s6_addr32[1] = htonl(in6.s6_addr32[1]);
+      in6.s6_addr32[2] = htonl(in6.s6_addr32[2]);
+      in6.s6_addr32[3] = htonl(in6.s6_addr32[3]);
+
+      if (IN6_IS_ADDR_V4MAPPED(&in6) || IN6_IS_ADDR_V4COMPAT(&in6)) {
+	uint32_t ip4 = *(uint32_t *)(in6.s6_addr + 12);
+	scope = li_scope4(ip4);
+      }
+
       if ((hints->li_scope && (hints->li_scope & scope) == 0) ||
 	  (hints->li_index && hints->li_index != if_index) ||
 	  (hints->li_ifname && strcmp(hints->li_ifname, ifname) != 0))
 	continue;
       
       su->su_family = AF_INET6;
-      su->su_sin6.sin6_addr.s6_addr32[0] = htonl(in6.s6_addr32[0]); 
-      su->su_sin6.sin6_addr.s6_addr32[1] = htonl(in6.s6_addr32[1]); 
-      su->su_sin6.sin6_addr.s6_addr32[2] = htonl(in6.s6_addr32[2]);
-      su->su_sin6.sin6_addr.s6_addr32[3] = htonl(in6.s6_addr32[3]);
+      su->su_sin6.sin6_addr = in6; 
       
       addrlen = su_sockaddr_size(su);
 
@@ -1168,12 +1175,20 @@ void li_sort(su_localinfo_t *i, su_localinfo_t **rresult)
 {
   su_localinfo_t *li, **lli;
 
-  /* Sort addresses according scope */
+#define LI_MAPPED(li) \
+  ((li)->li_family == AF_INET6 &&					\
+   (IN6_IS_ADDR_V4MAPPED(&(li)->li_addr->su_sin6.sin6_addr) ||		\
+    IN6_IS_ADDR_V4COMPAT(&(li)->li_addr->su_sin6.sin6_addr)))
+
+  /* Sort addresses according to scope (and mappedness) */
   for (li = i; li; li = i) {
     i = li->li_next;
-    for (lli = rresult; *lli; lli = &(*lli)->li_next)
+    for (lli = rresult; *lli; lli = &(*lli)->li_next) {
       if ((*lli)->li_scope < li->li_scope)
 	break;
+      if (LI_MAPPED(*lli) > LI_MAPPED(li))
+	break;
+    }
     li->li_next = *lli;
     *lli = li;
   }
