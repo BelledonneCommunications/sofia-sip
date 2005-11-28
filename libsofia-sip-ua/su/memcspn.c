@@ -22,13 +22,12 @@
  *
  */
 
-/**@file memspn.c
- * The memspn() replacement function.
+/**@file memcspn.c
+ * @brief The memcspn() replacement function.
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
- * @date Created: Sat Apr 12 19:32:33 2003 ppessi
- * 
+ * @date Created: Thu Nov 17 17:45:51 EET 2005 ppessi
  */
 
 #include "config.h"
@@ -36,40 +35,47 @@
 #include <string.h>
 #include <limits.h>
 
-/**Scan memory for a set of bytes.
+/**Search memory for bytes not in a given set.
  *
- * The memspn() function calculates the length of the memory area @a mem
- * which consists entirely of bytes in @a accept.
+ * The memcspn() function calculates the length of the memory area @a mem
+ * which consists entirely of bytes not in @a reject.
  *
  * @param mem        pointer to memory area
- * @param memlen     size of @a mem in bytes
- * @param accept     pointer to table containing bytes to accept
- * @param acceptlen  size of @a accept table
+ * @param memlen     size of @a mem in bytes
+ * @param reject     pointer to table containing bytes to reject
+ * @param rejectlen  size of @a reject table
  *
  * @return
- * The memspn() function returns the number of bbytes in the memory area @a
- * which consists entirely of bytes in @a accept.
+ * The memspn() function returns the number of bytes in the memory area @a
+ * which consists entirely of bytes not in @a reject.
+ * @par 
+ * If @a rejectlen is 0, or @a reject is NULL, it returns @a memlen, size of
+ * the memory area.
  */
-size_t memspn(const void *mem, size_t memlen,
-	      const void *accept, size_t acceptlen)
+size_t memcspn(const void *mem, size_t memlen,
+	       const void *reject, size_t rejectlen)
 {
   size_t i;
 
-  unsigned char const *m = mem, *a = accept;
+  unsigned char const *m = mem, *r = reject;
 
-  char accepted[UCHAR_MAX + 1];
+  char rejected[UCHAR_MAX + 1];
 
-  if (mem == NULL || memlen == 0 || acceptlen == 0 || accept == NULL)
+  if (rejectlen == 0 || reject == 0)
+    return memlen;
+
+  if (mem == NULL || memlen == 0)
     return 0;
 
-  memset(accepted, 0, sizeof accepted);
+  memset(rejected, 0, sizeof rejected);
 
-  for (i = 0; i < acceptlen; i++)
-    accepted[a[i]] = 1;
+  for (i = 0; i < rejectlen; i++)
+    rejected[r[i]] = 1;
 
   for (i = 0; i < memlen; i++)
-    if (!accepted[m[i]])
+    if (rejected[m[i]])
       break;
 
   return i;
 }
+

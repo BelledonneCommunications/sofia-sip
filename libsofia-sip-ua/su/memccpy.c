@@ -22,13 +22,12 @@
  *
  */
 
-/**@file memspn.c
- * The memspn() replacement function.
+/**@file memccpy.c
+ * @brief The memccpy() replacement function.
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
- * @date Created: Sat Apr 12 19:32:33 2003 ppessi
- * 
+ * @date Created: Thu Nov 17 17:45:51 EET 2005 ppessi
  */
 
 #include "config.h"
@@ -36,40 +35,33 @@
 #include <string.h>
 #include <limits.h>
 
-/**Scan memory for a set of bytes.
+/**Copy memory until @a c is found.
  *
- * The memspn() function calculates the length of the memory area @a mem
- * which consists entirely of bytes in @a accept.
+ * Copies no more than @a n bytes from memory area @a src to memory area @a
+ * dest, stopping after the character @a c is copied and found.
  *
- * @param mem        pointer to memory area
- * @param memlen     size of @a mem in bytes
- * @param accept     pointer to table containing bytes to accept
- * @param acceptlen  size of @a accept table
+ * @param dest       pointer to destination area
+ * @param src        pointer to source area
+ * @param c          terminating byte
+ * @param n          size of destination area
  *
  * @return
- * The memspn() function returns the number of bbytes in the memory area @a
- * which consists entirely of bytes in @a accept.
+ * Returns a pointer to the next character in @a dest after @a c, 
+ * or NULL if @a c was not found in the first @a n characters of @a src.
  */
-size_t memspn(const void *mem, size_t memlen,
-	      const void *accept, size_t acceptlen)
+void *memccpy(void *dest, const void *src, int c, size_t n)
 {
-  size_t i;
+  char *d;
+  char const *s;
 
-  unsigned char const *m = mem, *a = accept;
+  if (!src || !dest)
+    return dest;
 
-  char accepted[UCHAR_MAX + 1];
+  for (d = dest, s = src; n-- > 0;) {
+    if (c == (*d++ = *s++))
+      return d;
+  }
 
-  if (mem == NULL || memlen == 0 || acceptlen == 0 || accept == NULL)
-    return 0;
-
-  memset(accepted, 0, sizeof accepted);
-
-  for (i = 0; i < acceptlen; i++)
-    accepted[a[i]] = 1;
-
-  for (i = 0; i < memlen; i++)
-    if (!accepted[m[i]])
-      break;
-
-  return i;
+  return NULL;
 }
+

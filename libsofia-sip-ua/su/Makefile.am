@@ -49,8 +49,10 @@ include_sofia_HEADERS = su_types.h su.h su_localinfo.h \
 	su_tag_io.h su_tag_inline.h \
 	htable.h htable2.h \
 	su_debug.h su_module_debug.h su_log.h \
-	su_config.h su_configure.h su_md5.h su_uniqueid.h \
+	su_config.h su_md5.h su_uniqueid.h \
 	tstdef.h rbtree.h su_memmem.h
+
+nodist_include_sofia_HEADERS = su_configure.h
 
 libsu_la_SOURCES = \
 	su.c $(GSOURCES) \
@@ -62,6 +64,15 @@ libsu_la_SOURCES = \
 	su_taglist.c su_tag.c su_tag_io.c \
 	su_log.c su_global_log.c su_default_log.c \
 	su_md5.c su_uniqueid.c su_memmem.c
+
+EXTRA_libsu_la_SOURCES = \
+			memmem.c strtoull.c strcasestr.c \
+			memspn.c memcspn.c memccpy.c \
+			inet_ntop.c inet_pton.c \
+			su_tag_ref.c
+
+libsu_la_LIBADD = 	$(REPLACE_LIBADD)
+libsu_la_DEPENDENCIES = $(REPLACE_LIBADD)
 
 COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_sofia_HEADERS)
 
@@ -75,10 +86,7 @@ endif
 # Install and distribution rules
 
 EXTRA_DIST = 		Doxyfile su.docs \
-			run_addrinfo run_localinfo run_su_test \
-			memmem.c strtoull.c strcasestr.c \
-			inet_ntop.c inet_pton.c \
-			su_tag_ref.c
+			run_addrinfo run_localinfo run_su_test
 
 dist_sofialibexec_SCRIPTS = tag_dll.awk
 

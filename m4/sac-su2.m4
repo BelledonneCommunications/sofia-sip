@@ -204,8 +204,7 @@ if test "${with_rt}" != no; then
     AC_CHECK_FUNCS(clock_gettime clock_getcpuclockid)
 fi
 
-AC_CHECK_FUNCS(memccpy memcspn memspn strcasestr)
-AC_REPLACE_FUNCS(memmem)
+SAC_REPLACE_FUNCS(memmem memccpy memspn memcspn strcasestr strtoull)
 
 AC_CHECK_FUNC([poll], 
 	SAC_SU_DEFINE([SU_HAVE_POLL], 1, [
@@ -255,4 +254,16 @@ m4_define([SAC_SU_DEFINE_UNQUOTED],[
 cat >>confdefs.h <<_ACEOF
 [@%:@define] $1 m4_if($#, 2, [$2], $#, 3, [$2], 1)
 _ACEOF
+])
+
+AC_DEFUN([SAC_REPLACE_FUNCS],[dnl
+AC_CHECK_FUNCS($1,,[dnl
+case "$REPLACE_LIBADD" in
+    "$ac_func.lo"   | \
+  *" $ac_func.lo"   | \
+    "$ac_func.lo "* | \
+  *" $ac_func.lo "* ) ;;
+  *) REPLACE_LIBADD="$REPLACE_LIBADD $ac_func.lo" ;;
+esac])
+AC_SUBST([REPLACE_LIBADD])
 ])

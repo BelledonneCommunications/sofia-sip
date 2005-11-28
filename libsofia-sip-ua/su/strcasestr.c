@@ -37,7 +37,7 @@
 char *strcasestr(const char *haystack,
 		 const char *needle)
 {
-  char lcn, ucn;
+  unsigned char lcn, ucn;
   unsigned i;
 
   if (haystack == NULL || needle == NULL)
