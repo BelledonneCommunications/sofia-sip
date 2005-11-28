@@ -162,6 +162,7 @@ libsofia-sip-ua/tport/Makefile
 libsofia-sip-ua/url/Makefile
 utils/Makefile
 win32/Makefile
+win32/config.h
 ])
 
 AC_OUTPUT
