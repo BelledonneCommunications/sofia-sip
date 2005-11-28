@@ -112,7 +112,8 @@ bm_memmem(char const *haystack, size_t hlen,
     unsigned char h = haystack[i];
     if (h == needle[j]) {
       TORTURELOG(("match \"%s\" at %u\nwith  %*s\"%.*s*%s\": %s\n", 
-		  haystack, i, i - j, "", j, needle, needle + j + 1, 
+		  haystack, (unsigned)i, 
+		  (int)(i - j), "", (int)j, needle, needle + j + 1, 
 		  j == 0 ? "match!" : "back by 1"));
       if (j == 0)
 	return haystack + i;
@@ -121,14 +122,18 @@ bm_memmem(char const *haystack, size_t hlen,
     else {
       if (fwd->table[h] > nlen - j) {
 	TORTURELOG(("match \"%s\" at %u\n"
-		    "last  %*s\"%.*s*%s\": (by %u)\n", haystack, i,
-		    i - j, "", j, needle, needle + j + 1, fwd->table[h]));
+		    "last  %*s\"%.*s*%s\": (by %u)\n", 
+		    haystack, (unsigned)i,
+		    (int)(i - j), "", 
+		    (int)j, needle, needle + j + 1, fwd->table[h]));
       	i += fwd->table[h];
       }
       else {
 	TORTURELOG(("match \"%s\" at %u\n"
-		    "2nd   %*s\"%.*s*%s\": (by %u)\n", haystack, i,
-		    i - j, "", j, needle, needle + j + 1, nlen - j));
+		    "2nd   %*s\"%.*s*%s\": (by %u)\n", 
+		    haystack, (unsigned)i,
+		    (int)(i - j), "", 
+		    (int)j, needle, needle + j + 1, (unsigned)(nlen - j)));
 	i += nlen - j;
       }
       j = nlen - 1;
@@ -208,8 +213,9 @@ bm_memcasemem(char const *haystack, size_t hlen,
 
     if (h == n) {
       TORTURELOG(("match \"%s\" at %u\n"
-		  "with  %*s\"%.*s*%s\": %s\n", haystack, i,
-		  i - j, "", j, needle, needle + j + 1, 
+		  "with  %*s\"%.*s*%s\": %s\n",
+		  haystack, (unsigned)i,
+		  (int)(i - j), "", (int)j, needle, needle + j + 1, 
 		  j == 0 ? "match!" : "back by 1"));
       if (j == 0)
 	return haystack + i;
@@ -218,14 +224,18 @@ bm_memcasemem(char const *haystack, size_t hlen,
     else {
       if (fwd->table[h] > nlen - j) {
 	TORTURELOG(("match \"%s\" at %u\n"
-		    "last  %*s\"%.*s*%s\": (by %u)\n", haystack, i,
-		    i - j, "", j, needle, needle + j + 1, fwd->table[h]));
+		    "last  %*s\"%.*s*%s\": (by %u)\n",
+		    haystack, (unsigned)i,
+		    (int)(i - j), "", (int)j, needle, needle + j + 1, 
+		    fwd->table[h]));
       	i += fwd->table[h];
       }
       else {
 	TORTURELOG(("match \"%s\" at %u\n"
-		    "2nd   %*s\"%.*s*%s\": (by %u)\n", haystack, i,
-		    i - j, "", j, needle, needle + j + 1, nlen - j));
+		    "2nd   %*s\"%.*s*%s\": (by %u)\n", 
+		    haystack, (unsigned)i,
+		    (int)(i - j), "", (int)j, needle, needle + j + 1, 
+		    (unsigned)(nlen - j)));
 	i += nlen - j;
       }
       j = nlen - 1;
