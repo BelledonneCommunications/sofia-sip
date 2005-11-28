@@ -1,3 +1,15 @@
+2005-11-19  Kai Vehmanen  <kaiv@.devtag.AUTHORS>
+
+	* stun.h (stun_set_uname_pwd): Changed from unsigned to signed 
+	char pointers for passing username and password.
+
+2005-11-18  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* stun.c: Print the error state code if discovery
+	process fails.
+	* stunc.c (stun_bind_test): The fd_set was not
+	properly reseted between calls to select().
+
 2005-10-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Always building stun tags.

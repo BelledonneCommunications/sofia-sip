@@ -28,4 +28,5 @@ See the AUTHORS file in the distribution package.
 Bugs fixed in this release
 --------------------------
 
-- TBD
+- Bugs in stun client code leading to failures in the 
+  discovery process.
