@@ -57,6 +57,7 @@ tag_typedef_t neatag_exstate = STRTAG_TYPEDEF(exstate);
 tag_typedef_t neatag_version = INTTAG_TYPEDEF(version);
 tag_typedef_t neatag_view = PTRTAG_TYPEDEF(view);
 tag_typedef_t neatag_evmagic = PTRTAG_TYPEDEF(evmagic);
+tag_typedef_t neatag_sub = PTRTAG_TYPEDEF(sub);
 tag_typedef_t neatag_reliable = BOOLTAG_TYPEDEF(reliable);
 tag_typedef_t neatag_sub = PTRTAG_TYPEDEF(sub);
 

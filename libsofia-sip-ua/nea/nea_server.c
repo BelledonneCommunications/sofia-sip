@@ -1300,7 +1300,13 @@ nea_event_t *nea_event_get(nea_server_t const *nes, char const *e)
   return ev;
 }
 
+/* ----------------------------------------------------------------- */
+nta_incoming_t *nea_sub_get_request(nea_sub_t *sub)
+{
+  assert(sub);
 
+  return sub->s_irq;
+}
 
 /** Invoke the event callback.
  *

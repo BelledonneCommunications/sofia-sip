@@ -38,7 +38,6 @@
 #endif
 
 #include <su_tag.h>
-#include <su_tag.h>
 
 #ifndef NTA_H
 #include <nta.h>
@@ -48,6 +47,10 @@
 #define NEA_VERSION_STR "3.0"
 
 #define NEA_DEFAULT_EXPIRES 3600
+
+#ifndef NEA_TAG_H
+#include <nea_tag.h>
+#endif
 
 #ifndef NEA_DLL
 #ifndef WIN32
@@ -86,15 +89,6 @@ typedef NEA_EMAGIC_T nea_emagic_t;
 #endif
 /** Event view context */
 typedef NEA_EVMAGIC_T nea_evmagic_t;
-
-/** Event states */
-typedef enum {
-  nea_extended = -1,
-  nea_embryonic = 0,		/** Before first notify */
-  nea_pending,
-  nea_active,
-  nea_terminated
-} nea_state_t;
 
 /** Description of subscription */
 typedef struct nea_subnode_t {
@@ -205,6 +199,13 @@ NEA_DLL extern tag_typedef_t neatag_dialog;
 #define NEATAG_DIALOG_REF(x) neatag_dialog_ref, tag_ptr_vr((&x), (x))
 NEA_DLL extern tag_typedef_t neatag_dialog_ref;
 
+#define NEATAG_SUB(x)        neatag_sub, tag_ptr_v((x))
+NEA_DLL extern tag_typedef_t neatag_sub;
+
+#define NEATAG_SUB_REF(x)    neatag_sub_ref, tag_ptr_vr((&x), (x))
+NEA_DLL extern tag_typedef_t neatag_sub_ref;
+
+
 /** Shutdown an event server */
 int nea_server_shutdown(nea_server_t *nes, int retry_after);
 
@@ -291,10 +292,12 @@ int nea_server_notify_one(nea_server_t *nes,
 
 #define nea_server_auth nea_sub_auth
 
+/** Get nta_incoming_t from nea_sub_t */
+nta_incoming_t *nea_sub_get_request(nea_sub_t *sub);
+
 /** Authorize a subscription */
 int nea_sub_auth(nea_sub_t *, nea_state_t state,
 		 tag_type_t, tag_value_t, ...);
-
 
 /** Get nta_incoming_t from sn->sn_subscriber */
 nta_incoming_t *nea_subnode_get_incoming(nea_subnode_t *sn);
