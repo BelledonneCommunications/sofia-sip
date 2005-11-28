@@ -34,6 +34,8 @@ ALIASES = \
  "RFC1035=<a href=\"http://www.faqs.org/rfcs/rfc1035.html\">RFC 1035</a>" \
  "RFC1123=<a href=\"http://www.faqs.org/rfcs/rfc1123.html\">RFC 1123</a>" \
  "RFC1864=<a href=\"http://www.faqs.org/rfcs/rfc1864.html\">RFC 1864</a>" \
+ "RFC1890=<a href=\"http://www.faqs.org/rfcs/rfc1890.html\">RFC 1890</a>" \
+ "RFC1891=<a href=\"http://www.faqs.org/rfcs/rfc1891.html\">RFC 1891</a>" \
  "RFC2000=<a href=\"http://www.faqs.org/rfcs/rfc2000.html\">RFC 2000</a>" \
  "RFC2001=<a href=\"http://www.faqs.org/rfcs/rfc2001.html\">RFC 2001</a>" \
  "RFC2002=<a href=\"http://www.faqs.org/rfcs/rfc2002.html\">RFC 2002</a>" \
