@@ -1398,7 +1398,7 @@ static sdp_rtpmap_t const
 /** Table of rtpmap structures by payload type numbers.
  *
  * The table of reserved payload numbers is constructed from @RFC3551
- * and @RFC1891. Note the clock rate of G722.
+ * and @RFC1890. Note the clock rate of G722.
  */
 sdp_rtpmap_t const * const sdp_rtpmap_well_known[128] =
 {
