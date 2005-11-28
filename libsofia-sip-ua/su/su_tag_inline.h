@@ -51,7 +51,7 @@ static inline int t_end(tagi_t const *t)
 {
   tag_type_t tt = TAG_TYPE_OF(t);
 
-  /** XXX - virtualize this */
+  /* XXX - virtualize this */
 
   return tt == tag_null || tt == tag_next;
 }

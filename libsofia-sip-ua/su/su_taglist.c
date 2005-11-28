@@ -454,54 +454,6 @@ tagi_t *t_filter(tagi_t *dst, tagi_t const filter[], tagi_t const *src, void **b
   return dst;
 }
 
-tagi_t *t_null_filter(tagi_t *dst, 
-		      tagi_t const filter[], 
-		      tagi_t const *src, 
-		      void **bb)
-{
-  if (TAG_TYPE_OF(src) == tag_null) {
-    if (dst) {
-      dst->t_tag = NULL;
-      dst->t_value = 0;
-    }
-    return dst + 1;
-  }
-  return dst;
-}
-
-tagi_t *t_skip_filter(tagi_t *dst, 
-		    tagi_t const filter[], 
-		    tagi_t const *src, 
-		    void **bb)
-{
-  return dst;
-}
-
-tagi_t *t_next_filter(tagi_t *dst, 
-		    tagi_t const filter[], 
-		    tagi_t const *src, 
-		    void **bb)
-{
-  return dst;
-}
-
-tagi_t *t_any_filter(tagi_t *dst,
-		     tagi_t const filter[], 
-		     tagi_t const *src, 
-		     void **bb)
-{
-  if (!src)
-    return dst;
-  else if (dst) {
-    return t_dup(dst, src, bb); 
-  }
-  else {
-    dst = (tagi_t *)((char *)dst + t_len(src));
-    *bb = (char *)*bb + t_xtra(src, (size_t)*bb);
-    return dst;
-  }
-}
-		   
 tagi_t *tl_filter(tagi_t dst[], 
 		 tagi_t const filter[], 
 		 tagi_t const src[], 
@@ -835,6 +787,21 @@ tagi_t const * t_null_find(tag_type_t tt, tagi_t const lst[])
   return NULL;
 }
 
+tagi_t *t_null_filter(tagi_t *dst, 
+		      tagi_t const filter[], 
+		      tagi_t const *src, 
+		      void **bb)
+{
+  if (TAG_TYPE_OF(src) == tag_null) {
+    if (dst) {
+      dst->t_tag = NULL;
+      dst->t_value = 0;
+    }
+    return dst + 1;
+  }
+  return dst;
+}
+
 tag_class_t null_tag_class[1] = 
   {{ 
     sizeof(null_tag_class), 
@@ -850,6 +817,36 @@ tag_class_t null_tag_class[1] =
     /* tc_ref_set */  NULL,
     /* tc_scan */     NULL,
   }};
+
+/* ====================================================================== */
+/* end tag */
+
+tagi_t *t_end_filter(tagi_t *dst,
+		     tagi_t const filter[],
+		     tagi_t const *src,
+		     void **bb)
+{
+  return dst;
+}
+
+tag_class_t end_tag_class[1] =
+  {{
+    sizeof(end_tag_class),
+    /* tc_next */     NULL,
+    /* tc_len */      NULL,
+    /* tc_move */     NULL,
+    /* tc_xtra */     NULL,
+    /* tc_dup */      NULL,
+    /* tc_free */     NULL,
+    /* tc_find */     NULL,
+    /* tc_snprintf */ NULL,
+    /* tc_filter */   t_end_filter,
+    /* tc_ref_set */  NULL,
+    /* tc_scan */     NULL,
+  }};
+
+/* ====================================================================== */
+/* skip tag - placeholder in tag list */
 
 tagi_t const *t_skip_next(tagi_t const *t)
 {
@@ -871,6 +868,14 @@ tagi_t *t_skip_dup(tagi_t *dst, tagi_t const *src, void **bb)
   return dst;
 }
 
+tagi_t *t_skip_filter(tagi_t *dst, 
+		    tagi_t const filter[], 
+		    tagi_t const *src, 
+		    void **bb)
+{
+  return dst;
+}
+
 tag_class_t skip_tag_class[1] = 
   {{
     sizeof(skip_tag_class),
@@ -886,6 +891,9 @@ tag_class_t skip_tag_class[1] =
     /* tc_ref_set */  NULL,
     /* tc_scan */     NULL,
   }};
+
+/* ====================================================================== */
+/* next tag - jump to next tag list */
 
 tagi_t const *t_next_next(tagi_t const *t)
 {
@@ -913,6 +921,14 @@ tagi_t *t_next_dup(tagi_t *dst, tagi_t const *src, void **bb)
   return dst;
 }
 
+tagi_t *t_next_filter(tagi_t *dst, 
+		    tagi_t const filter[], 
+		    tagi_t const *src, 
+		    void **bb)
+{
+  return dst;
+}
+
 tag_class_t next_tag_class[1] = 
   {{
     sizeof(next_tag_class),
@@ -929,6 +945,26 @@ tag_class_t next_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+/* ====================================================================== */
+/* any tag - match to any tag when filtering */
+
+tagi_t *t_any_filter(tagi_t *dst,
+		     tagi_t const filter[], 
+		     tagi_t const *src, 
+		     void **bb)
+{
+  if (!src)
+    return dst;
+  else if (dst) {
+    return t_dup(dst, src, bb); 
+  }
+  else {
+    dst = (tagi_t *)((char *)dst + t_len(src));
+    *bb = (char *)*bb + t_xtra(src, (size_t)*bb);
+    return dst;
+  }
+}
+		   
 tag_class_t any_tag_class[1] = 
   {{
     sizeof(any_tag_class),

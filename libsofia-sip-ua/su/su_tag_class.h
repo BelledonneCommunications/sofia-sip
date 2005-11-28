@@ -25,7 +25,6 @@
 #ifndef SU_TAG_CLASS_H /** Defined when su_tag_class.h has been included. */
 #define SU_TAG_CLASS_H 
 
-
 /**@SU_TAG
  * @file  su_tag_class.h
  * @brief Tag class interface for object-oriented tags 
@@ -73,18 +72,7 @@ struct tag_class_s {
 			   tag_value_t *return_value);
 };
 
-SU_DLL extern tag_class_t int_tag_class[];
-SU_DLL extern tag_class_t uint_tag_class[];
-SU_DLL extern tag_class_t bool_tag_class[];
-SU_DLL extern tag_class_t ptr_tag_class[];
-SU_DLL extern tag_class_t cstr_tag_class[];
-SU_DLL extern tag_class_t str_tag_class[];
-
-#define REFTAG_TYPEDEF(tag) \
-  {{ TAG_NAMESPACE, #tag "_ref", ref_tag_class, (tag_value_t)tag }}
-
-SU_DLL extern tag_class_t ref_tag_class[];
-
+SU_DLL extern tag_class_t end_tag_class[];
 SU_DLL extern tag_class_t int_tag_class[];
 SU_DLL extern tag_class_t uint_tag_class[];
 SU_DLL extern tag_class_t bool_tag_class[];
