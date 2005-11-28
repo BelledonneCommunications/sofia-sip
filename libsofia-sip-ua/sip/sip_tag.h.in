@@ -76,6 +76,10 @@ SIP_DLL extern tag_class_t sipmsgtag_class[1];
 
 SIP_DLL extern tag_type_t sip_tag_list[], sip_tag_str_list[];
 
+/** End of SIP headers */
+#define SIPTAG_END()        siptag_end, (tag_value_t)0
+SIP_DLL extern tag_typedef_t siptag_end;
+
 /**Tag list item for #sip_t object.
  *
  * The SIPTAG_SIP() macro is used to include a tag item for a #sip_t struct

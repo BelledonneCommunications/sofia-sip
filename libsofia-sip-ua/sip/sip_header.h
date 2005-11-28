@@ -121,6 +121,9 @@ int sip_add_headers(msg_t *msg, sip_t *sip,
 int sip_add_tl(msg_t *msg, sip_t *sip,
 	       tag_type_t tag, tag_value_t value, ...);
 
+/** Add duplicates of headers from taglist to the SIP message. */
+int sip_add_tagis(msg_t *msg, sip_t *sip, tagi_t const **inout_list);
+
 /** Add a header to the SIP message. */
 int sip_add_make(msg_t *msg, sip_t *sip,
 		 msg_hclass_t *hc, char const *s);

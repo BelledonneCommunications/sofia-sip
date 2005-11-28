@@ -57,12 +57,13 @@
 
 #include <su_tagarg.h>
 
-
 tag_typedef_t siptag_sip = SIPMSGTAG_TYPEDEF(sip);
 
 tag_typedef_t siptag_header = {{ "sip", "header", siphdrtag_class, 0 }};
 
 tag_typedef_t siptag_header_str = STRTAG_TYPEDEF(header_str);
+
+tag_typedef_t siptag_end = TAG_TYPEDEF(tag_end, end);
 
 
 /**@ingroup sip_#xxxxxx#

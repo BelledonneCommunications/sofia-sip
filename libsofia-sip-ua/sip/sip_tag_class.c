@@ -150,16 +150,42 @@ tagi_t *siptag_filter(tagi_t *dst,
 }
 
 /** Add duplicates of headers from taglist to the SIP message. */
-int sip_add_tl(msg_t *msg, sip_t *sip,
-	       tag_type_t tag, tag_value_t value, ...)
-{
-  tagi_t const *t;
-  ta_list ta;
+ int sip_add_tl(msg_t *msg, sip_t *sip,
+		tag_type_t tag, tag_value_t value, ...)
+ {
+   tagi_t const *t;
+   ta_list ta;
+   int retval;
 
-  ta_start(ta, tag, value);
+   ta_start(ta, tag, value);
 
-  for (t = ta_args(ta); t; t = tl_next(t)) {
-    if (!(tag = t->t_tag) || !(value = t->t_value))
+   t = ta_args(ta);
+
+   retval = sip_add_tagis(msg, sip, &t);
+
+   ta_end(ta);
+   return retval;
+ }
+
+ /** Add duplicates of headers from taglist to the SIP message. */
+ int sip_add_tagis(msg_t *msg, sip_t *sip, tagi_t const **inout_list)
+ {
+   tagi_t const *t;
+   tag_type_t tag;
+   tag_value_t value;
+
+   if (!msg || !inout_list)
+     return -1;
+
+   for (t = *inout_list; t; t = tl_next(t)) {
+     tag = t->t_tag, value = t->t_value;
+
+     if (tag == NULL || tag == siptag_end) {
+      t = tl_next(t);
+      break;
+    }
+
+    if (!value)
       continue;
 
     if (SIPTAG_P(tag)) {
@@ -183,15 +209,15 @@ int sip_add_tl(msg_t *msg, sip_t *sip,
       msg_hclass_t *hc = (msg_hclass_t *)tag->tt_magic;
       char const *s = (char const *)value;
       if (s && msg_header_add_make(msg, (msg_pub_t *)sip, hc, s) < 0)
-	break;
+	return -1;
     }
     else if (tag == siptag_header_str) {
       if (msg_header_add_str(msg, (msg_pub_t *)sip, (char const *)value) < 0)
-	break;
+	return -1;
     }
   }
 
-  ta_end(ta);
+  *inout_list = t;
 
-  return t ? -1 : 0;
+  return 0;
 }

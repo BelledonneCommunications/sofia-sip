@@ -1428,6 +1428,7 @@ static int sip_header_test(void)
   su_home_t *home;
   void const *x;
   sip_via_t *v, *v0;
+  tagi_t const *tl, *tl0;
 
   BEGIN();
 
@@ -1547,6 +1548,8 @@ static int sip_header_test(void)
 				    "\n"
 				    "test payload\n"),
 		  SIPTAG_TIMESTAMP(sip->sip_timestamp),
+		  SIPTAG_END(),
+		  SIPTAG_REFER_TO_STR("<sip:foo@bar>"),
 		  TAG_END()), 0);
   TEST_1(sip->sip_from == NULL);
   TEST_1(sip->sip_via); TEST_1(sip->sip_via->v_next == NULL);
@@ -1558,6 +1561,15 @@ static int sip_header_test(void)
   TEST_1(sip->sip_timestamp);
   TEST_S(sip->sip_timestamp->ts_stamp, "10.010");
   TEST_S(sip->sip_timestamp->ts_delay, "0.000100");
+  TEST_1(!sip->sip_refer_to);
+
+  TEST_1(tl = tl0 = tl_list(SIPTAG_TO_STR("<sip:foo@bar>"),
+			    SIPTAG_END(),
+			    SIPTAG_REFER_TO_STR("<sip:foo@bar>"),
+			    TAG_END()));
+  /* sip_add_tagis should stop after SIPTAG_END() */
+  TEST(sip_add_tagis(msg, sip, &tl), 0);
+  TEST(tl, tl0 + 2);
 
   TEST(sip_timestamp_make(home, "+1"), NULL);
   TEST(sip_timestamp_make(home, "1.0e6 13.0"), NULL);
