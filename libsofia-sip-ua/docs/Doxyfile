@@ -1,7 +1,7 @@
 PROJECT_NAME         = "libsofia-sip-ua"
 OUTPUT_DIRECTORY     = ../docs/html
 
-INPUT 		     = mainpage.docs docguide.docs
+INPUT 		     = mainpage.docs docguide.docs conformance.docs
 
 #			release.docs
 
