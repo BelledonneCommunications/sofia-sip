@@ -1,3 +1,9 @@
+2005-11-28  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* <SUBDIRS>/Doxyfile: Fixed the use of doxytags. Now
+	a separate 'doxytags_MODNAME' file is created for each
+	module.
+	
 2005-11-15  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* <SUBDIRS>/Makefile.am: Changed to use the 'include_sofia_HEADERS' 

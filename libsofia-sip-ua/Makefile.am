@@ -8,6 +8,7 @@ SUBDIRS = su bnf sresolv sdp url msg sip stun ipt soa \
 DIST_SUBDIRS = docs $(SUBDIRS)
 
 EXTRA_DIST = sofia.am
+DOXYGEN = doxygen
 
 lib_LTLIBRARIES = libsofia-sip-ua.la
 
@@ -62,8 +63,8 @@ doxygen: built-sources empty-doxytags
 	for d in $(DIST_SUBDIRS); do \
 	  test -r ${srcdir}/$$d/Doxyfile \
 	  && pushd $$d > /dev/null \
-	  && echo running doxygen in $$d \
-          && doxygen \
+	  && echo running ${DOXYGEN} in $$d \
+          && ${DOXYGEN} \
           && popd > /dev/null ; \
 	done ; \
 	cd ${srcdir}/docs/html && ../hide_emails.sh

@@ -5,9 +5,9 @@ INPUT 		     = bnf.docs .
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES            += ../docs/su/doxytags=../su
+TAGFILES            += ../docs/doxytags_su=../su
 
-GENERATE_TAGFILE     = ../docs/bnf/doxytags
+GENERATE_TAGFILE     = ../docs/doxytags_bnf
 
 PREDEFINED += "static="
 

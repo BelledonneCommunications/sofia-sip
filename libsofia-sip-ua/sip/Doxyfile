@@ -17,14 +17,14 @@ INPUT 		    += sip_util.h sip_hclasses.h
 @INCLUDE = ../docs/Doxyfile.conf
 
 TAGFILES            += \
-	../docs/su/doxytags=../su \
-	../docs/ipt/doxytags=../ipt \
-	../docs/bnf/doxytags=../bnf \
-	../docs/url/doxytags=../url \
-	../docs/msg/doxytags=../msg \
-	../docs/sdp/doxytags=../sdp
+	../docs/doxytags_su=../su \
+	../docs/doxytags_ipt=../ipt \
+	../docs/doxytags_bnf=../bnf \
+	../docs/doxytags_url=../url \
+	../docs/doxytags_msg=../msg \
+	../docs/doxytags_sdp=../sdp
 
-GENERATE_TAGFILE    = ../docs/sip/doxytags
+GENERATE_TAGFILE    = ../docs/doxytags_sip
 
 ALIASES += \
 	"SIP_TAG=@ingroup sip_tag\n" \

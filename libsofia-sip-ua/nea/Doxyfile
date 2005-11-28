@@ -8,13 +8,13 @@ INPUT 		     = nea.docs .
 EXCLUDE_PATTERNS     = test*.c torture*.c
 
 TAGFILES            += \
-	"../docs/su/doxytags=../su" \
-	"../docs/ipt/doxytags=../ipt" \
-	"../docs/bnf/doxytags=../bnf" \
-	"../docs/url/doxytags=../url" \
-	"../docs/msg/doxytags=../msg" \
-	"../docs/sip/doxytags=../sip" \
-	"../docs/nta/doxytags=../nta"
+	"../docs/doxytags_su=../su" \
+	"../docs/doxytags_ipt=../ipt" \
+	"../docs/doxytags_bnf=../bnf" \
+	"../docs/doxytags_url=../url" \
+	"../docs/doxytags_msg=../msg" \
+	"../docs/doxytags_sip=../sip" \
+	"../docs/doxytags_nta=../nta"
 
 GENERATE_TAGFILE    = ../docs/nea/doxytags
 

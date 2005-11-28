@@ -5,7 +5,7 @@ INPUT 		     = su.docs .
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-GENERATE_TAGFILE     = ../docs/su/doxytags
+GENERATE_TAGFILE     = ../docs/doxytags_su
 
 ALIASES +=  "SU_TAG=@ingroup su_tag\n"
 

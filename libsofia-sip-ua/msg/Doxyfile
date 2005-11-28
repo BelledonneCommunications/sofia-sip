@@ -5,12 +5,12 @@ INPUT 		     = msg.docs .
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES             += ../docs/ipt/doxytags=../ipt \
-			../docs/su/doxytags=../su \
-			../docs/sip/doxytags=../sip \ 
-			../docs/http/doxytags=../http 
+TAGFILES             += ../docs/doxytags_ipt=../ipt \
+			../docs/doxytags_su=../su \
+			../docs/doxytags_sip=../sip \ 
+			../docs/doxytags_http=../http 
 
-GENERATE_TAGFILE     = ../docs/msg/doxytags
+GENERATE_TAGFILE     = ../docs/doxytags_msg
 
 PREDEFINED += "MSG_HDR_T=union msg_header_u"
 

@@ -5,6 +5,6 @@ INPUT 		     = stun.docs .
 
 @INCLUDE 	     = ../docs/Doxyfile.conf
 
-TAGFILES            += ../docs/su/doxytags=../su
+TAGFILES            += ../docs/doxytags_su=../su
 
-GENERATE_TAGFILE     = ../docs/stun/doxytags
+GENERATE_TAGFILE     = ../docs/doxytags_stun

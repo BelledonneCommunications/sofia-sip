@@ -6,10 +6,10 @@ INPUT 		     = tport.docs .
 @INCLUDE = ../docs/Doxyfile.conf
 
 TAGFILES            += \
-	../docs/su/doxytags=../su \
-	../docs/msg/doxytags=../msg
+	../docs/doxytags_su=../su \
+	../docs/doxytags_msg=../msg
 
-GENERATE_TAGFILE    = ../docs/tport/doxytags
+GENERATE_TAGFILE    = ../docs/doxytags_tport
 
 EXCLUDE_PATTERNS   += test_*.[hc] torture_*.[hc]
 

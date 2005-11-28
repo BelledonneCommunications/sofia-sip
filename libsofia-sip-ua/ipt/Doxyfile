@@ -5,8 +5,8 @@ INPUT 		     = ipt.docs .
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES            += ../docs/su/doxytags=../su
-GENERATE_TAGFILE     = ../docs/ipt/doxytags
+TAGFILES            += ../docs/doxytags_su=../su
+GENERATE_TAGFILE     = ../docs/doxytags_ipt
 
 ALIASES +=
 
