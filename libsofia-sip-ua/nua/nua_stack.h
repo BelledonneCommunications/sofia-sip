@@ -326,6 +326,9 @@ typedef struct nua_handle_preferences
 
   unsigned:0;
 
+  /* Subscriber state, i.e. nua_substate_pending */
+  unsigned         nhp_substate;
+
   sip_allow_t        *nhp_allow;
   sip_supported_t    *nhp_supported;
   sip_user_agent_t   *nhp_user_agent;
@@ -355,6 +358,7 @@ typedef struct nua_handle_preferences
       unsigned nhp_media_features:1;
       unsigned nhp_service_route_enable:1;
       unsigned nhp_path_enable:1;
+      unsigned nhp_substate:1;
       unsigned nhp_allow:1;
       unsigned nhp_supported:1;
       unsigned nhp_user_agent:1;

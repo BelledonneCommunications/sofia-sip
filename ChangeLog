@@ -1,3 +1,33 @@
+2005-11-28  Martti Mela  <martti.mela@nokia.com>
+
+	* Added nua_authorize(), enhanced nua_i_subscription. Added
+	nua_notifier test cases for test_nua. With great help from Pekka.
+
+	M ./libsofia-sip-ua/nea/Makefile.am
+	M ./libsofia-sip-ua/nea/nea.h
+	M ./libsofia-sip-ua/nea/nea_tag.c
+	M ./libsofia-sip-ua/nta/test_nta.c
+	M ./libsofia-sip-ua/nua/nua.c
+	M ./libsofia-sip-ua/nua/nua.docs
+	M ./libsofia-sip-ua/nua/nua.h
+	M ./libsofia-sip-ua/nua/nua_common.c
+	M ./libsofia-sip-ua/nua/nua_stack.c
+	M ./libsofia-sip-ua/nua/nua_stack.h
+	M ./libsofia-sip-ua/nua/test_nua.c
+	M ./libsofia-sip-ua/nua/test_proxy.c
+	M ./utils/Makefile.am
+
+2005-11-28  Martti Mela  <martti.mela@nokia.com>
+
+	* nua.h: added event nua_i_subscription
+	
+	* nua_commmon.c: added event nua_i_subscription
+	
+	* nua_stack.c: ua_event for nua_i_subscription (nea subscribers)
+
+	* nea.h, nea_tag.c, nea_tag_ref.c, nea_server.c: support for a new
+	tag, NEATAG_SUB(). Added nea_sub_get_request().
+
 2005-11-15  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* configure.ac: Added VER_LIBSOFIA_SIP_UA variables. 

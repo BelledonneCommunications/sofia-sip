@@ -192,6 +192,7 @@ char const *nua_event_name(nua_event_t event)
   case nua_i_message: return "nua_i_message";
   case nua_i_chat: return "nua_i_chat";
   case nua_i_subscribe: return "nua_i_subscribe";
+  case nua_i_subscription: return "nua_i_subscription";
   case nua_i_notify: return "nua_i_notify";
   case nua_i_method: return "nua_i_method";
 
@@ -224,6 +225,7 @@ char const *nua_event_name(nua_event_t event)
 
   case nua_r_cancel: return "nua_r_cancel";
   case nua_r_authenticate: return "nua_r_authenticate";
+  case nua_r_authorize: return "nua_r_authorize";
   case nua_r_redirect: return "nua_r_redirect";
   case nua_r_destroy: return "nua_r_destroy";
   case nua_r_respond: return "nua_r_respond";

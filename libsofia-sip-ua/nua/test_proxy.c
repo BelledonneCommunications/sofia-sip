@@ -129,7 +129,7 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
   proxy->root = root;
 
   proxy->agent = nta_agent_create(root,
-				  URL_STRING_MAKE("sip:*:*"),
+				  URL_STRING_MAKE("sip:0.0.0.0:*"),
 				  NULL, NULL,
 				  NTATAG_UA(0),
 				  TAG_END());

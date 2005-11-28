@@ -450,6 +450,7 @@ OPERATION(unsubscribe);
 OPERATION(notify);
 OPERATION(notifier);
 OPERATION(terminate);
+OPERATION(authorize);
 
 int do_register(struct endpoint *ep,
 		struct call *call, nua_handle_t *nh,
@@ -676,7 +677,7 @@ int test_params(struct context *ctx)
 
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
-			  NUTAG_URL("sip:*:*;transport=udp"),
+			  NUTAG_URL("sip:0.0.0.0:*;transport=udp"),
 			  TAG_END());
 
   TEST_1(ctx->a.nua);
@@ -730,6 +731,7 @@ int test_params(struct context *ctx)
 		 NUTAG_MEDIA_FEATURES(1),
 		 NUTAG_SERVICE_ROUTE_ENABLE(0),
 		 NUTAG_PATH_ENABLE(0),
+		 NUTAG_SUBSTATE(nua_substate_pending),
 
 		 SIPTAG_SUPPORTED(sip_supported_make(tmphome, "humppaa,kuole")),
 		 SIPTAG_ALLOW(sip_allow_make(tmphome, "OPTIONS, INFO")),
@@ -777,6 +779,7 @@ int test_params(struct context *ctx)
     int media_features = -1;
     int service_route_enable = -1;
     int path_enable = -1;
+    int substate = -1;
 
     sip_allow_t const *allow = NONE;
     char const *allow_str = "NONE";
@@ -825,6 +828,7 @@ int test_params(struct context *ctx)
 	       	NUTAG_MEDIA_FEATURES_REF(media_features),
 	       	NUTAG_SERVICE_ROUTE_ENABLE_REF(service_route_enable),
 	       	NUTAG_PATH_ENABLE_REF(path_enable),
+	       	NUTAG_SUBSTATE_REF(substate),
 
 	       	SIPTAG_SUPPORTED_REF(supported),
 	       	SIPTAG_SUPPORTED_STR_REF(supported_str),
@@ -839,7 +843,7 @@ int test_params(struct context *ctx)
 	       	NUTAG_REGISTRAR_REF(registrar),
 
 		TAG_END());
-    TEST(n, 29);
+    TEST(n, 30);
 
     TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
     TEST_S(from_str, Alice);
@@ -867,6 +871,7 @@ int test_params(struct context *ctx)
     TEST(media_features, 1);
     TEST(service_route_enable, 0);
     TEST(path_enable, 0);
+    TEST(substate, nua_substate_pending);
 
     TEST_S(sip_header_as_string(tmphome, (void *)allow), "OPTIONS, INFO");
     TEST_S(allow_str, "OPTIONS, INFO");
@@ -883,6 +888,8 @@ int test_params(struct context *ctx)
 
     free_events_in_list(ctx, ctx->a.call);
   }
+
+  /* Test that only those tags that have been set per handle are returned by nua_get_hparams() */
 
   {
     sip_from_t const *from = NONE;
@@ -911,6 +918,7 @@ int test_params(struct context *ctx)
     int media_features = -1;
     int service_route_enable = -1;
     int path_enable = -1;
+    int substate = -1;
 
     sip_allow_t const *allow = NONE;
     char const   *allow_str = "NONE";
@@ -959,6 +967,7 @@ int test_params(struct context *ctx)
 	       	NUTAG_MEDIA_FEATURES_REF(media_features),
 	       	NUTAG_SERVICE_ROUTE_ENABLE_REF(service_route_enable),
 	       	NUTAG_PATH_ENABLE_REF(path_enable),
+	       	NUTAG_SUBSTATE_REF(substate),
 
 	       	SIPTAG_SUPPORTED_REF(supported),
 	       	SIPTAG_SUPPORTED_STR_REF(supported_str),
@@ -1003,6 +1012,7 @@ int test_params(struct context *ctx)
     TEST(media_features, -1);
     TEST(service_route_enable, -1);
     TEST(path_enable, -1);
+    TEST(substate, -1);
 
     TEST(allow, NONE);
     TEST_S(allow_str, "NONE");
@@ -1062,7 +1072,7 @@ int test_init(struct context *ctx, char *argv[])
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  NUTAG_PROXY(ctx->p->uri),
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
-			  NUTAG_URL("sip:*:*"),
+			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 			  TAG_END());
   TEST_1(ctx->a.nua);
@@ -1088,7 +1098,7 @@ int test_init(struct context *ctx, char *argv[])
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
 			  NUTAG_PROXY(ctx->p->uri),
 			  SIPTAG_FROM_STR("sip:bob@example.org"),
-			  NUTAG_URL("sip:*:*"),
+			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
 			  TAG_END());
   TEST_1(ctx->b.nua);
@@ -1113,7 +1123,7 @@ int test_init(struct context *ctx, char *argv[])
   ctx->c.nua = nua_create(ctx->root, c_callback, ctx,
 			  NUTAG_PROXY(ctx->p->uri),
 			  SIPTAG_FROM_STR("sip:charlie@example.net"),
-			  NUTAG_URL("sip:*:*"),
+			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5400 RTP/AVP 8 0"),
 			  TAG_END());
   TEST_1(ctx->c.nua);
@@ -3816,6 +3826,14 @@ CONDITION_FUNCTION(save_until_notified_and_responded)
   return ep->flags.b.bit0 && ep->flags.b.bit1;
 }
 
+
+CONDITION_FUNCTION(save_until_subscription)
+{
+  save_event_in_list(ctx, event, ep, call);
+  return event == nua_i_subscription;
+}
+
+
 int test_events(struct context *ctx)
 {
   BEGIN();
@@ -3826,6 +3844,7 @@ int test_events(struct context *ctx)
   sip_t const *sip;
   tagi_t const *n_tags, *r_tags;
   url_t b_url[1];
+  nea_sub_t *sub;
 
   char const open[] =
     "<?xml version='1.0' encoding='UTF-8'?>\n"
@@ -4083,10 +4102,21 @@ int test_events(struct context *ctx)
     printf("TEST NUA-12.4: establishing 2nd subscription\n");
 
    notifier(b, b_call, b_call->nh,
+	    SIPTAG_EVENT_STR("presence"),
+	    SIPTAG_CONTENT_TYPE_STR("application/xpidf+xml"),
+	    SIPTAG_PAYLOAD_STR(open),
+	    NEATAG_THROTTLE(1),
+	    NUTAG_SUBSTATE(nua_substate_pending),
+	    TAG_END());
+  run_b_until(ctx, nua_r_notifier, until_final_response);
+
+  notifier(b, b_call, b_call->nh,
 	   SIPTAG_EVENT_STR("presence"),
 	   SIPTAG_CONTENT_TYPE_STR("application/xpidf+xml"),
 	   SIPTAG_PAYLOAD_STR(open),
 	   NEATAG_THROTTLE(1),
+	   NEATAG_FAKE(1),
+	   NUTAG_SUBSTATE(nua_substate_pending),
 	   TAG_END());
   run_b_until(ctx, nua_r_notifier, until_final_response);
 
@@ -4096,7 +4126,7 @@ int test_events(struct context *ctx)
 	    TAG_END());
 
   run_ab_until(ctx, -1, save_until_notified_and_responded,
-	       -1, NULL /* XXX save_until_received */);
+	       -1, save_until_subscription);
 
   /* Client events:
      nua_subscribe(), nua_i_notify/nua_r_subscribe
@@ -4109,7 +4139,7 @@ int test_events(struct context *ctx)
     TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_subscribe);
     TEST_1(tl_find(e->data->e_tags, nutag_substate));
     TEST(tl_find(e->data->e_tags, nutag_substate)->t_value,
-	 nua_substate_active);
+	 nua_substate_pending);
   }
   else {
     TEST_E(e->data->e_event, nua_r_subscribe);
@@ -4126,13 +4156,61 @@ int test_events(struct context *ctx)
   TEST_1(sip->sip_content_type);
   TEST_S(sip->sip_content_type->c_type, "application/xpidf+xml");
   TEST_1(sip->sip_subscription_state);
+  TEST_S(sip->sip_subscription_state->ss_substate, "pending");
+  TEST_1(sip->sip_subscription_state->ss_expires);
+  TEST_1(tl_find(n_tags, nutag_substate));
+  TEST(tl_find(n_tags, nutag_substate)->t_value,
+       nua_substate_pending);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  /*
+   Server events:
+   nua_i_subscription
+  */
+  TEST_1(e = b_call->events.head); 
+  TEST_E(e->data->e_event, nua_i_subscription);
+  TEST(tl_gets(e->data->e_tags, NEATAG_SUB_REF(sub), TAG_END()), 1);
+  TEST_1(sub);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b_call);
+
+  /* Authorize user A */
+  authorize(b, b_call, b_call->nh,
+	    NUTAG_SUBSTATE(nua_substate_active),
+	    NEATAG_SUB(sub), 
+	    NEATAG_FAKE(0),
+	    TAG_END());
+
+  run_ab_until(ctx, -1, save_until_notified,
+	       -1, save_until_final_response);
+
+  /* subscriber events:
+     nua_i_notify
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_notify);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_event); TEST_S(sip->sip_event->o_type, "presence");
+  TEST_1(sip->sip_content_type);
+  TEST_S(sip->sip_content_type->c_type, "application/xpidf+xml");
+  TEST_1(sip->sip_subscription_state);
   TEST_S(sip->sip_subscription_state->ss_substate, "active");
   TEST_1(sip->sip_subscription_state->ss_expires);
+  n_tags = e->data->e_tags;
   TEST_1(tl_find(n_tags, nutag_substate));
   TEST(tl_find(n_tags, nutag_substate)->t_value,
        nua_substate_active);
   TEST_1(!e->next);
   free_events_in_list(ctx, a_call);
+
+  /*
+   Server events:
+   nua_r_authorize
+  */
+  TEST_1(e = b_call->events.head); 
+  TEST_E(e->data->e_event, nua_r_authorize);
+  TEST_1(!e->next);
 
   if (print_headings)
     printf("TEST NUA-12.4: PASSED\n");

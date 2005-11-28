@@ -90,6 +90,7 @@ typedef enum nua_event_e {
   nua_i_message,		/**< Incoming MESSAGE */
   nua_i_chat,			/**< Incoming chat MESSAGE  */
   nua_i_subscribe,		/**< Incoming subscription */
+  nua_i_subscription,		/**< Incoming subscription to be authorized */
   nua_i_notify,			/**< Incoming event */
   nua_i_method,			/**< Incoming, unknown method */
 
@@ -104,6 +105,7 @@ typedef enum nua_event_e {
   nua_r_shutdown,		/**< Answer to nua_shutdown() */
   nua_r_notifier,		/**< Answer to nua_notifier() */
   nua_r_terminate,		/**< Answer to nua_terminate() */
+  nua_r_authorize,		/**< Answer to nua_authorize()  */
 
   /* SIP responses */
   nua_r_register,		/**< Answer to outgoing REGISTER */
@@ -124,7 +126,7 @@ typedef enum nua_event_e {
   nua_r_notify,			/**< Answer to outgoing NOTIFY */
   nua_r_method,			/**< Answer to unknown outgoing method */
 
-  /* Internal events */
+  /* Internal events: nua hides them from application */
   nua_r_authenticate,
   nua_r_redirect,
   nua_r_destroy,
@@ -316,6 +318,9 @@ void nua_cancel(nua_handle_t *, tag_type_t, tag_value_t, ...);
  
 /** Authenticate an operation. */
 void nua_authenticate(nua_handle_t *, tag_type_t, tag_value_t, ...);
+
+/** Authorize a subscriber. */
+void nua_authorize(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
 /** Redirect an operation. */
 void nua_redirect(nua_handle_t *, tag_type_t, tag_value_t, ...);

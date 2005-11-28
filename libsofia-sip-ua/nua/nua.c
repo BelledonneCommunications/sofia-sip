@@ -1298,6 +1298,33 @@ void nua_authenticate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_authenticate, tag, value);
 }
 
+/** Authorize a subscriber.
+ *
+ * After creating a local presence server by nua_notifier(), an
+ * incoming subscriber launches nua_i_subscription event. Subscriber
+ * can be authorized in this application callback.
+ *
+ * #NUTAG_SUB tag
+ * #NUTAG_SUBSTATE tag
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    #NUTAG_SUB
+ *    #NUTAG_SUBSTATE
+ *
+ * @par Events:
+ *    (any operation events)
+ */
+void nua_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  NUA_SIGNAL(nh, nua_r_authorize, tag, value);
+}
+
 /*# Redirect an operation. */
 void nua_redirect(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {

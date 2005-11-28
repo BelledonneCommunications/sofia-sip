@@ -784,6 +784,73 @@ void app_i_message(int           status,
 } /* app_i_message */
 @endcode
 
+@subsection nua_notifier Creating Presence Server
+
+@code
+
+...
+  application_t *app;
+  operation_t   *oper;
+
+...
+
+  oper->app = app;
+
+
+  app->nua = nua_create(ssip->s_root,
+                        app_callback,
+                        app,
+                        TAG_NULL());
+...
+
+  oper->handle = nua_handle(app->nua, app, 
+                            NUTAG_URL(to->a_url), 
+                            SIPTAG_TO(to),
+                            ta_tags(ta));
+...
+
+    nua_notifier(oper->handle,
+		 SIPTAG_EXPIRES_STR("3600"),
+		 SIPTAG_EVENT_STR("presence"),
+		 SIPTAG_CONTENT_TYPE_STR("application/pidf-partial+xml"),
+		 NUTAG_SUBSTATE(nua_substate_pending),
+		 TAG_END());
+@endcode
+
+After the nua_notifier object -- the presence server -- is created, an
+event nua_r_notifier is launched. Status and phrase values of the
+app_callback function indicate the success of the creation.
+
+Authorization of an incoming subscription (to the local presence
+server) can be handled in the callback function.
+
+@code
+void app_callback(nua_event_t event,
+                  int status, char const *phrase,
+                  nua_t *nua, application_t *app,
+                  nua_handle_t *nh, oper_t *op,
+                  sip_t const *sip, tagi_t tags[])
+{
+  nea_sub_t *subscriber = NULL;
+
+  switch (event) {
+  case nua_i_subscription:
+    tl_gets(tags, 
+	    NEATAG_SUB_REF(subscriber),
+	    TAG_END());
+  
+    
+    nua_authorize(nua_substate_active);
+    
+
+  default:
+    break;
+}
+
+
+@endcode
+
+
 @subsection nua_shutting_down Shutdown
 
 The following functions show an example of how application terminates
@@ -1603,6 +1670,7 @@ For reference:
  * #nua_i_publish          \n
  * #nua_i_refer            \n
  * #nua_i_subscribe        \n
+ * #nua_i_subscription     \n
  * #nua_i_state            \n
  * #nua_i_terminated       \n
  * #nua_i_update

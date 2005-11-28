@@ -48,6 +48,9 @@
 #ifndef NTA_TAG_H
 #include <nta_tag.h>
 #endif
+#ifndef NEA_TAG_H
+#include <nea_tag.h>
+#endif
 #ifndef SOA_TAG_H
 #include <soa_tag.h>
 #endif
@@ -1106,10 +1109,11 @@ extern tag_typedef_t nutag_substate;
 extern tag_typedef_t nutag_substate_ref;
 
 enum nua_substate {
-  nua_substate_embryonic = 0,
-  nua_substate_pending,
-  nua_substate_active,
-  nua_substate_terminated
+  nua_substate_extended = nea_extended,
+  nua_substate_embryonic = nea_embryonic,
+  nua_substate_pending = nea_pending,
+  nua_substate_active = nea_active,
+  nua_substate_terminated = nea_terminated
 };
 
 /** Add media tags from our offer to Accept-Contact headers.

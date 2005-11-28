@@ -279,6 +279,8 @@ int ua_init(su_root_t *root, nua_t *nua)
   DNHP_SET(dnhp, service_route_enable, 1);
   DNHP_SET(dnhp, path_enable, 1);
 
+  DNHP_SET(dnhp, substate, nua_substate_active);
+
   DNHP_SET(dnhp, allow, sip_allow_make(dnh->nh_home, nua_allow_str));
   DNHP_SET(dnhp, supported, sip_supported_make(dnh->nh_home, "timer, 100rel"));
   DNHP_SET(dnhp, user_agent, 
@@ -521,6 +523,7 @@ static int
 
 static void
   ua_authenticate(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
+  ua_authorize(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_notifier(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_terminate(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
   ua_respond(nua_t *, nua_handle_t *, int , char const *, tagi_t const *),
@@ -709,6 +712,9 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
     break;
   case nua_r_authenticate:
     ua_authenticate(nua, nh, e->e_event, tags);
+    break;
+  case nua_r_authorize:
+    ua_authorize(nua, nh, e->e_event, tags);
     break;
   case nua_r_ack:
     ua_ack(nua, nh, tags);
@@ -920,6 +926,8 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   int service_route_enable = NHP_GET(ohp, dnhp, service_route_enable);
   int path_enable = NHP_GET(ohp, dnhp, path_enable);
 
+  int substate = NHP_GET(ohp, dnhp, substate);
+
   sip_allow_t const *allow = NONE;
   char const   *allow_str = NONE;
   char const   *allowing = NULL;
@@ -980,6 +988,7 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	       NUTAG_MEDIA_FEATURES_REF(media_features),
 	       NUTAG_SERVICE_ROUTE_ENABLE_REF(service_route_enable),
 	       NUTAG_PATH_ENABLE_REF(path_enable),
+	       NUTAG_SUBSTATE_REF(substate),
 
 	       SIPTAG_SUPPORTED_REF(supported),
 	       SIPTAG_SUPPORTED_STR_REF(supported_str),
@@ -1068,6 +1077,8 @@ int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   NHP_SET(nhp, callee_caps, callee_caps != 0);
   NHP_SET(nhp, service_route_enable, service_route_enable != 0);
   NHP_SET(nhp, path_enable, path_enable != 0);
+
+  NHP_SET(nhp, substate, substate);
 
   /* Set string in handle pref structure */
 #define NHP_SET_STR(nhp, name, str)				 \
@@ -1311,6 +1322,7 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
      TIF(NUTAG_MEDIA_FEATURES, media_features),
      TIF(NUTAG_SERVICE_ROUTE_ENABLE, service_route_enable),
      TIF(NUTAG_PATH_ENABLE, path_enable),
+     TIF(NUTAG_SUBSTATE, substate),
 
      TIF(SIPTAG_SUPPORTED, supported),
      TIF_STR(SIPTAG_SUPPORTED_STR, supported),
@@ -6385,6 +6397,32 @@ ua_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
 
 /* ======================================================================== */
+/* Authorization */
+
+void
+ua_authorize(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
+	     tagi_t const *tags)
+{
+  nea_sub_t *sub = NULL;
+  nea_state_t state = nea_extended;
+
+  tl_gets(tags,
+	  NEATAG_SUB_REF(sub),
+	  NUTAG_SUBSTATE_REF(state),
+	  TAG_END());
+
+  if (sub && state > 0) {
+    nea_sub_auth(sub, state, TAG_NEXT(tags));
+    ua_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
+  }
+  else {
+    ua_event(nua, nh, NULL, e, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
+  }
+  return;
+}
+
+
+/* ======================================================================== */
 /* Event server */
 
 static
@@ -6419,7 +6457,6 @@ ua_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 	  NUTAG_URL_REF(url), 
 	  SIPTAG_EVENT_REF(event),
 	  SIPTAG_EVENT_STR_REF(event_s),
-	  SIPTAG_CONTENT_TYPE_REF(ct),
 	  SIPTAG_CONTENT_TYPE_STR_REF(ct_s),
 	  SIPTAG_PAYLOAD_REF(pl),
 	  SIPTAG_PAYLOAD_STR_REF(pl_s),
@@ -6446,12 +6483,7 @@ ua_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   else if (!(ev = nh_notifier_event(nh, home, event, tags)))
     status = 500, phrase = "Could not create an event view";
 
-  else if (nea_server_update(nh->nh_notifier, ev, 
-			      SIPTAG_CONTENT_TYPE(ct),
-			      SIPTAG_CONTENT_TYPE_STR(ct_s),
-			      SIPTAG_PAYLOAD(pl),
-			      SIPTAG_PAYLOAD_STR(pl_s),
-			      TAG_END()) < 0) 
+  else if (nea_server_update(nh->nh_notifier, ev,  TAG_NEXT(tags)) < 0)
     status = 500, phrase = "No content for event";
 
   else if (nea_server_notify(nh->nh_notifier, ev) < 0)
@@ -6528,15 +6560,29 @@ void authenticate_watcher(nea_server_t *nes,
   msg_t *msg = NULL;
   nta_incoming_t *irq = NULL;
 
-  irq = nea_subnode_get_incoming(sn);
-  msg = nta_incoming_getrequest(irq);  
+  nua_handle_t *dnh = nh;
+  nua_handle_preferences_t *ohp = nh->nh_prefs;
+  nua_handle_preferences_t const *dnhp = dnh->nh_prefs;
+
+  /* OK. In nhp (nua_handle_preferences_t) structure we have the
+     current default action (or state) for incoming
+     subscriptions. This can now be modified in the application
+     callback. */
+
+  int substate = NHP_GET(ohp, dnhp, substate);
+
+  irq = nea_sub_get_request(sn->sn_subscriber);
+  msg = nta_incoming_getrequest(irq);
   ua_event(nua, nh, msg, nua_i_subscription, SIP_200_OK,
-	   NEATAG_SUB(sn),
-	   TAG_END());
+           NEATAG_SUB(sn->sn_subscriber),
+           TAG_END());
 
   if (sn->sn_state == nea_embryonic) {
     SU_DEBUG_7(("nea: authenticate_watcher: new watcher\n")); 
-    nea_server_auth(sn->sn_subscriber, nea_active, TAG_END());
+    nea_sub_auth(sn->sn_subscriber, substate,
+		 TAG_IF(substate != nua_substate_active,
+			NEATAG_FAKE(1)),
+		 TAG_END());
   }
   else if (sn->sn_state == nea_terminated || sn->sn_expires == 0) {
     nea_server_flush(nes, NULL);
