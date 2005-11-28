@@ -433,12 +433,10 @@ AM_CONDITIONAL(EXPENSIVE_CHECKS, test x$enable_expensive_checks != no)
 ])
 
 dnl ======================================================================
-dnl SAC_GNU_SOURCE 
+dnl Find long long (at least 64 bits)
 dnl ======================================================================
-AC_DEFUN([SAC_GNU_SOURCE],[
-AH_VERBATIM([_GNU_SOURCE],
-[/* Enable GNU extensions on systems that have them.  */
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE 1
-#endif])])
 
+AC_DEFUN([AC_TYPE_LONGLONG],[dnl
+AC_CHECK_TYPE([long long],[dnl
+AC_DEFINE([longlong], [long long], [Define as at least 64-bit int type])dnl
+ifelse([$1], ,:, [$1])],[ifelse([$2], ,:, [$2])])])

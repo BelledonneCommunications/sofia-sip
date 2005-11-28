@@ -86,12 +86,11 @@ AC_DEFINE([HAVE_SIGPIPE], 1, [Define as 1 if you have SIGPIPE])],,[
 ### ----------------
 
 AC_TYPE_SIGNAL
-AC_CHECK_TYPE([long long],[
-AC_DEFINE([longlong], [long long], [Define as at least 64-bit int type])dnl
+AC_TYPE_LONGLONG([
 AC_DEFINE([LLU], ["%llu"], [Define as format (%llu) for unsigned long long])dnl
 AC_DEFINE([LLI], ["%lli"], [Define as format (%lli) for long long])dnl
 AC_DEFINE([LLX], ["%llx"], [Define as format (%llx) for long long hex])dnl
-])dnl
+])
 
 ### checks for structures
 ### ---------------------
