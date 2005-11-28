@@ -45,12 +45,6 @@
 #include <sip.h>
 #endif
 
-/** NUA agent. */
-typedef struct nua_s nua_t;
-
-/** NUA transaction handle. */
-typedef struct nua_handle_s nua_handle_t;
-
 #ifndef NUA_MAGIC_T 
 #define NUA_MAGIC_T void
 #endif

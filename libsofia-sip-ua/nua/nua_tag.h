@@ -54,9 +54,12 @@
 #ifndef SOA_TAG_H
 #include <soa_tag.h>
 #endif
-#ifndef NUA_H
-#include <nua.h>
-#endif
+
+/** NUA agent. */
+typedef struct nua_s nua_t;
+
+/** NUA transaction handle. */
+typedef struct nua_handle_s nua_handle_t;
 
 /** List of all NUA tags. */
 extern tag_type_t nua_tag_list[];
