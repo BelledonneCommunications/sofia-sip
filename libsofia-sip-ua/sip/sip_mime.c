@@ -459,7 +459,7 @@ static void sip_content_disposition_update(sip_content_disposition_t *cd)
 /**@SIP_HEADER sip_content_encoding Content-Encoding Header
  *
  * The Content-Encoding header indicates what additional content codings
- * have been applied to the entity-body.  Its syntax is defined in [S10.16]
+ * have been applied to the entity-body.  Its syntax is defined in [S20.12]
  * as follows:
  * 
  * @code
@@ -487,16 +487,16 @@ static void sip_content_disposition_update(sip_content_disposition_t *cd)
  */
 
 msg_hclass_t sip_content_encoding_class[] = 
-SIP_HEADER_CLASS_G(content_encoding, "Content-Encoding", "e", append);
+SIP_HEADER_CLASS_LIST(content_encoding, "Content-Encoding", "e", list);
 
 int sip_content_encoding_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 {
-  return sip_generic_d(home, h, s, slen);
+  return msg_list_d(home, h, s, slen);
 }
 
 int sip_content_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
 {
-  return sip_generic_e(b, bsiz, h, f);
+  return msg_list_e(b, bsiz, h, f);
 }
 
 /* ====================================================================== */

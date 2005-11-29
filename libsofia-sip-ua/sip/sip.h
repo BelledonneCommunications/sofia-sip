@@ -149,7 +149,7 @@ typedef struct sip_cseq_s    	    sip_cseq_t;
 typedef sip_generic_t	      	    sip_etag_t;
 typedef sip_generic_t	      	    sip_if_match_t;
 typedef msg_content_disposition_t   sip_content_disposition_t;
-typedef sip_generic_t	      	    sip_content_encoding_t;
+typedef msg_list_t	      	    sip_content_encoding_t;
 typedef msg_list_t	      	    sip_content_language_t;
 typedef struct sip_content_length_s sip_content_length_t;
 typedef struct msg_content_type_s   sip_content_type_t;

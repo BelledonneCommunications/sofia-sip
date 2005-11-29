@@ -662,7 +662,7 @@ static int test_encoding(void)
     "Security-Verify: tls;q=0.2\r\n"
     "Privacy: none\r\n"
     "Content-Length: 7\r\n"
-    "Content-Encoding: identity\r\n"
+    "Content-Encoding: gzip, deflate, identity\r\n"
     "Content-Disposition: filter\r\n"
     "Content-Language: fi\r\n"
     "MIME-Version: 1.0\r\n"
@@ -1350,7 +1350,7 @@ static int parser_test(void)
        offsetof(sip_accept_language_t, aa_params));
    
   TEST(sip_session_expires_class->hc_params, offsetof(sip_session_expires_t, x_params));
-  //TEST(sip_min_se_class->hc_params, offsetof(sip_min_se_t, x_params));   
+  TEST(sip_min_se_class->hc_params, offsetof(sip_min_se_t, min_params));
 
   TEST(sip_allow_class->hc_params, offsetof(sip_allow_t, k_items));
   TEST(sip_require_class->hc_params, offsetof(sip_require_t, k_items));
@@ -1385,7 +1385,8 @@ static int parser_test(void)
   TEST(sip_mime_version_class->hc_params, 0);
   TEST(sip_content_type_class->hc_params, 
        offsetof(sip_content_type_t, c_params));
-  TEST(sip_content_encoding_class->hc_params, 0);
+  TEST(sip_content_encoding_class->hc_params, 
+       offsetof(sip_content_encoding_t, k_items));
   TEST(sip_content_disposition_class->hc_params, 
        offsetof(sip_content_disposition_t, cd_params));
   TEST(sip_content_length_class->hc_params, 0);
