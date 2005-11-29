@@ -60,6 +60,8 @@
 
 #include <su_strlst.h>
 
+#define NUA_SAVED_EVENT_T su_msg_t *
+
 #include "nua.h"
 #include "nua_tag.h"
 
@@ -504,23 +506,16 @@ void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
 
 static void ua_shutdown(nua_t *);
 
-static int
-  ua_set_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_get_params(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_register(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_invite(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_ack(nua_t *, nua_handle_t *, tagi_t const *),
-  ua_cancel(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_bye(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_options(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_publish(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_info(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_update(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_message(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_subscribe(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_notify(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_refer(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
-  ua_method(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *);
+typedef int nua_stack_signal_handler(nua_t *, 
+				     nua_handle_t *, 
+				     nua_event_t, 
+				     tagi_t const *);
+
+nua_stack_signal_handler 
+  ua_set_params, ua_get_params,
+  ua_register, ua_invite, ua_ack, ua_cancel, ua_bye, ua_options, ua_publish,
+  ua_info, ua_update, ua_message, ua_subscribe, ua_notify, ua_refer,
+  ua_method;
 
 static void
   ua_authenticate(nua_t *, nua_handle_t *, nua_event_t, tagi_t const *),
@@ -626,7 +621,7 @@ void stack_signal(nua_handle_t *nh, nua_event_t event,
 /* ----------------------------------------------------------------------
  * Receiving events from client
  */
-void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
+void ua_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
 {
   nua_handle_t *nh = e->e_nh;
   tagi_t *tags = e->e_tags;
@@ -648,6 +643,8 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
       SU_DEBUG_5(("nua(%p): signal %s %u %s\n", 
 		  nh, name + 4, e->e_status, e->e_phrase ? e->e_phrase : ""));
   }
+
+  su_msg_save(nua->nua_signal, msg);
 
   if (nua->nua_shutdown && !e->e_always) {
     /* Shutting down */
@@ -718,7 +715,7 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
     ua_authorize(nua, nh, e->e_event, tags);
     break;
   case nua_r_ack:
-    ua_ack(nua, nh, tags);
+    ua_ack(nua, nh, e->e_event, tags);
     break;
   case nua_r_respond:
     ua_respond(nua, nh, e->e_status, e->e_phrase, tags);
@@ -729,6 +726,9 @@ void ua_signal(nua_t *nua, su_msg_r msg, event_t *e)
   default:
     break;
   }
+
+  if (su_msg_is_non_null(nua->nua_signal))
+    su_msg_destroy(nua->nua_signal);
 
   if (nh != nua->nua_dhandle)
     nh_decref(nh);
@@ -1323,6 +1323,7 @@ ua_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
      TIF(NUTAG_MEDIA_FEATURES, media_features),
      TIF(NUTAG_SERVICE_ROUTE_ENABLE, service_route_enable),
      TIF(NUTAG_PATH_ENABLE, path_enable),
+
      TIF(NUTAG_SUBSTATE, substate),
 
      TIF(SIPTAG_SUPPORTED, supported),
@@ -3449,7 +3450,6 @@ static int ua_invite2(nua_t *, nua_handle_t *, nua_event_t e,
 static int process_response_to_invite(nua_handle_t *nh,
 				      nta_outgoing_t *orq,
 				      sip_t const *sip);
-static int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags);
 static int process_100rel(nua_handle_t *nh, 
 			  nta_outgoing_t *orq,
 			  sip_t const *sip);
@@ -3683,7 +3683,7 @@ static int process_response_to_invite(nua_handle_t *nh,
 	  /* Auto-ACK response to re-INVITE unless auto_ack is set to 0 */
 	  (ss->ss_state == nua_callstate_ready && 
 	   !NH_PISSET(nh, auto_ack)))
-	ua_ack(nua, nh, NULL);
+	ua_ack(nua, nh, nua_r_ack, NULL);
       else
 	signal_call_state_change(nh, status, phrase, 
 				 nua_callstate_completing, received, 0);
@@ -3693,7 +3693,7 @@ static int process_response_to_invite(nua_handle_t *nh,
 
     status = 500, phrase = "Malformed Session in Response";
 
-    ua_ack(nua, nh, NULL);
+    ua_ack(nua, nh, nua_r_ack, NULL);
     gracefully = 1;
   }
   else if (sip->sip_rseq) {
@@ -3741,7 +3741,7 @@ static int process_response_to_invite(nua_handle_t *nh,
   return 0;
 }
 
-int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
+int ua_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
   nua_session_state_t *ss = nh->nh_ss;
   struct nua_client_request *cr = ss->ss_crequest;

@@ -467,6 +467,7 @@ struct nua_s {
   nua_magic_t         *nua_magic;
 
   nua_saved_event_t    nua_current[1];
+  nua_saved_event_t    nua_signal[1];
 
   /* Engine state flags */
   unsigned             nua_shutdown_started:1; /**< Shutdown initiated */
