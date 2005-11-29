@@ -2436,7 +2436,7 @@ dialog_usage_add(nua_handle_t *nh,
 
       SU_DEBUG_5(("nua(%p): adding %s usage%s%s\n",
 		  nh, dialog_usage_name(du), 
-		  event ? "with event " : "", event ? event->o_type :""));
+		  event ? " with event " : "", event ? event->o_type :""));
 
       nh_incref(nh);
 
@@ -2489,7 +2489,7 @@ dialog_usage_remove_at(nua_handle_t *nh,
 
     SU_DEBUG_5(("nua(%p): removing %s usage%s%s\n",
 		nh, dialog_usage_name(du), 
-		o ? "with event " : "", o ? o->o_type :""));
+		o ? " with event " : "", o ? o->o_type :""));
 
     switch (kind) {
     case nua_session_usage:  
@@ -4222,7 +4222,8 @@ int process_invite2(nua_t *nua,
   assert(ss->ss_state >= nua_callstate_ready ||
 	 ss->ss_state == nua_callstate_init);
 
-#define AUTOANSWER ((void*)-1)
+  /* Magical value indicating autoanswer within respond_to_invite() */
+#define AUTOANSWER ((void*)-1)	
 
   if (NH_PGET(nh, auto_answer) ||
       /* Auto-answert to re-INVITE unless auto_answer is set to 0 */
@@ -6084,6 +6085,8 @@ static int process_notify(nua_t *nua,
   sip_subscription_state_t *subs = sip ? sip->sip_subscription_state : NULL;
   sip_contact_t *m = NULL, m0[1];
   int retry = -1;
+  char const *what = NULL, *why = NULL;
+  sip_warning_t w[1];
 
   enter;
 
@@ -6091,14 +6094,25 @@ static int process_notify(nua_t *nua,
       /* XXX - support forking of subscriptions?... */
       (ds->ds_remote_tag && sip->sip_from->a_tag &&
        strcmp(ds->ds_remote_tag, sip->sip_from->a_tag))) {
+    sip_warning_init(w);
+    w->w_code = 399;
+    w->w_host = nua->nua_contact->m_url->url_host;
+    w->w_port = nua->nua_contact->m_url->url_host;
+    w->w_text = "Forking SUBSCRIBEs are not supported";
+
+    nta_incoming_treply(irq, 481, "Subscription Does Not Exist", 
+			TAG_IF(nh, SIPTAG_WARNING(w)),
+			TAG_END());
     return 481;
   }
   assert(nh);
 
   du = dialog_usage_get(nh->nh_ds, nua_subscriber_usage, sip->sip_event);
 
-  if (du == NULL)
+  if (du == NULL) {
+    nta_incoming_treply(irq, 481, "Subscription Does Not Exist", TAG_END());
     return 481;
+  }
 
   if (subs == NULL) {
     /* Do some compatibility stuff here */
@@ -6125,27 +6139,32 @@ static int process_notify(nua_t *nua,
   dialog_get_peer_info(nh, sip);
   dialog_uas_route(nh, sip, 1);
 
-  if (strcasecmp(subs->ss_substate, "terminated") == 0) {
+  if (strcasecmp(subs->ss_substate, what = "terminated") == 0) {
     du->du_subscriber->de_substate = nua_substate_terminated;
 
-    if (str0casecmp(subs->ss_reason, "deactivated") == 0) {
+    if (str0casecmp(subs->ss_reason, why = "deactivated") == 0) {
       du->du_subscriber->de_substate = nua_substate_embryonic;
       retry = 0;
     } 
-    else if (str0casecmp(subs->ss_reason, "probation") == 0) {
+    else if (str0casecmp(subs->ss_reason, why = "probation") == 0) {
       char const *retry_after;
       du->du_subscriber->de_substate = nua_substate_embryonic;
       retry = 30;
       retry_after = msg_params_find(subs->ss_params, "retry-after=");
       if (retry_after)
 	retry = strtoul(retry_after, NULL, 10);
-    } 
+    }
+    else
+      why = subs->ss_reason;
   }
-  else if (strcasecmp(subs->ss_substate, "pending") == 0)
+  else if (strcasecmp(subs->ss_substate, what = "pending") == 0)
     du->du_subscriber->de_substate = nua_substate_pending;
-  else /* if (strcasecmp(subs->ss_substate, "active") == 0) */
+  else /* if (strcasecmp(subs->ss_substate, "active") == 0) */ {
+    what = subs->ss_substate ? subs->ss_substate : "active";
     /* XXX - any extended state is considered as active */
     du->du_subscriber->de_substate = nua_substate_active;
+  }
+  
 
   if (nta_incoming_url(irq)->url_type == url_sips && nua->nua_sips_contact)
     *m0 = *nua->nua_sips_contact, m = m0;
@@ -6161,6 +6180,8 @@ static int process_notify(nua_t *nua,
 	   TAG_END());
 
   nta_incoming_destroy(irq), irq = NULL;
+
+  SU_DEBUG_5(("nua(%p): process_notify: %s (%s)\n", nh, what, why ? why : ""));
 
   if (du->du_subscriber->de_substate == nua_substate_terminated) {
     du->du_refresh = 0, du->du_pending = NULL;
@@ -6505,6 +6526,8 @@ ua_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   su_home_deinit(home);
 }
 
+
+/* Create a event view for notifier */
 static
 nea_event_t *nh_notifier_event(nua_handle_t *nh, 
 			       su_home_t *home, 
@@ -6520,7 +6543,6 @@ nea_event_t *nh_notifier_event(nua_handle_t *nh,
   if (ev == NULL) {
     char *o_type = su_strdup(home, event->o_type);
     char *o_subtype = strchr(o_type, '.');
-
 
     if (o_subtype)
       *o_subtype++ = '\0';
@@ -6553,7 +6575,7 @@ nea_event_t *nh_notifier_event(nua_handle_t *nh,
   return ev;
 }
 
-
+/* Callback from nea_server asking nua to authorize subscription */
 static
 void authenticate_watcher(nea_server_t *nes,
 			  nua_handle_t *nh,
@@ -6565,16 +6587,12 @@ void authenticate_watcher(nea_server_t *nes,
   msg_t *msg = NULL;
   nta_incoming_t *irq = NULL;
 
-  nua_handle_t *dnh = nh;
-  nua_handle_preferences_t *ohp = nh->nh_prefs;
-  nua_handle_preferences_t const *dnhp = dnh->nh_prefs;
-
   /* OK. In nhp (nua_handle_preferences_t) structure we have the
      current default action (or state) for incoming
-     subscriptions. This can now be modified in the application
-     callback. */
-
-  int substate = NHP_GET(ohp, dnhp, substate);
+     subscriptions. 
+     Action can now be modified by the application with NUTAG_SUBSTATE(). 
+  */
+  int substate = NH_PGET(nh, substate);
 
   irq = nea_sub_get_request(sn->sn_subscriber);
   msg = nta_incoming_getrequest(irq);
@@ -6596,6 +6614,7 @@ void authenticate_watcher(nea_server_t *nes,
 }
 
 
+/** Shutdown notifier object */
 int
 nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
 		     tag_type_t t, tag_value_t v, ...)
@@ -6616,7 +6635,7 @@ nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
     ta_start(ta, t, v);
     
     for (i = 0; subs[i]; i++)
-      nea_server_auth(subs[i]->sn_subscriber, nea_terminated, ta_tags(ta));
+      nea_sub_auth(subs[i]->sn_subscriber, nea_terminated, ta_tags(ta));
     
     ta_end(ta);
 
@@ -6632,6 +6651,7 @@ nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
 
   return busy;
 }
+
 
 /** Terminate notifier. */
 void
