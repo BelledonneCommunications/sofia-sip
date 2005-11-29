@@ -6458,11 +6458,11 @@ nea_event_t *nh_notifier_event(nua_handle_t *nh,
 			       tagi_t const *tags);
 
 static
-void authenticate_watcher(nea_server_t *nes,
-			  nua_handle_t *nh,
-			  nea_event_t *ev,
-			  nea_subnode_t *sn,
-			  sip_t const *sip);
+void authorize_watcher(nea_server_t *nes,
+		       nua_handle_t *nh,
+		       nea_event_t *ev,
+		       nea_subnode_t *sn,
+		       sip_t const *sip);
 
 void
 ua_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
@@ -6566,7 +6566,7 @@ nea_event_t *nh_notifier_event(nua_handle_t *nh,
       accept_s = ct_s;
 
     ev = nea_event_create(nh->nh_notifier, 
-			  authenticate_watcher, nh,
+			  authorize_watcher, nh,
 			  o_type, o_subtype,
 			  ct ? ct->c_type : ct_s,
 			  accept_s);
@@ -6577,11 +6577,11 @@ nea_event_t *nh_notifier_event(nua_handle_t *nh,
 
 /* Callback from nea_server asking nua to authorize subscription */
 static
-void authenticate_watcher(nea_server_t *nes,
-			  nua_handle_t *nh,
-			  nea_event_t *ev,
-			  nea_subnode_t *sn,
-			  sip_t const *sip)
+void authorize_watcher(nea_server_t *nes,
+		       nua_handle_t *nh,
+		       nea_event_t *ev,
+		       nea_subnode_t *sn,
+		       sip_t const *sip)
 {
   nua_t *nua = nh->nh_nua;
   msg_t *msg = NULL;
@@ -6601,7 +6601,7 @@ void authenticate_watcher(nea_server_t *nes,
            TAG_END());
 
   if (sn->sn_state == nea_embryonic) {
-    SU_DEBUG_7(("nea: authenticate_watcher: new watcher\n")); 
+    SU_DEBUG_7(("nua(%p): authorize_watcher: new watcher\n", nh)); 
     nea_sub_auth(sn->sn_subscriber, substate,
 		 TAG_IF(substate != nua_substate_active,
 			NEATAG_FAKE(1)),
@@ -6609,7 +6609,7 @@ void authenticate_watcher(nea_server_t *nes,
   }
   else if (sn->sn_state == nea_terminated || sn->sn_expires == 0) {
     nea_server_flush(nes, NULL);
-    SU_DEBUG_7(("nea: authenticate_watcher: watcher is removed\n")); 
+    SU_DEBUG_7(("nua(%p): authorize_watcher: watcher is removed\n", nh)); 
   }
 }
 
