@@ -1,15 +1,13 @@
 /*  -*- html -*- */
 /**
 
-@page sofia_sip_conformance Sofia-SIP Internet Standard Compliance
-
-@section SIP and SDP Protocol Features
+@page sofia_sip_conformance SIP and SDP Protocol Features in Sofia-SIP
 
 <table border=1 cellpadding=4 cellspacing=0>
 <tr>
    <th>Feature</th>
    <th>Supported</td>
-   <th>Missing</td>
+   <th>Notes</td>
 </tr>
 
 <tr valign=top>
@@ -18,7 +16,7 @@
     </th>
     <td>
 	The SIP registration and dialog level implementation enables the
-	terminal to operate as a SIP UA, SIP proxy or a redirect server
+	application to operate as a SIP UA, SIP proxy or a redirect server
 	according to the @RFC3261.
 
 	The @RFC3261 functionality is divided into five layers: 
@@ -26,23 +24,22 @@
 	-# transport 
 	-# transaction
 	-# transaction user (UAS and UAC cores, proxy core)
-	-# SIP elements: user agents clients and servers, proxies,
+	-# SIP elements: user agent client and server, proxies,
 	   registrars
     </td>
     <td>
-        -
+        &nbsp;
     </td>
 </tr>
 
 <tr valign=top>
     <th align="left">
-	@RFC3261<br>
-	Sectionh 19 and 20:<br>
+	@RFC3261 Sections&nbsp;19&nbsp;and&nbsp;20:<br>
 	Syntax and encoding
     </td>
     <td>
 	The supported @RFC3261 methods are: @b REGISTER, @b OPTIONS, @b
-	INVITE, @b ACK, @b CANCEL, @b BYE, as well as extension methods @b
+	INVITE, @b ACK, @b CANCEL, @b BYE, as well as methods @b
 	INFO, @b PRACK, @b SUBSCRIBE, @b NOTIFY, @b UPDATE, @b MESSAGE, and
 	@b PUBLISH.
 
@@ -74,7 +71,7 @@
 	@ref sip_organization "Organization",
 	@ref sip_priority "Priority",
 	@ref sip_proxy_authenticate "Proxy-Authenticate", 
-	@ref sip_proxy_authorization "Proxy-Authorization", and
+	@ref sip_proxy_authorization "Proxy-Authorization", 
 	@ref sip_proxy_require "Proxy-Require",
 	@ref sip_record_route "Record-Route",
 	@ref sip_require "Require",
@@ -91,26 +88,25 @@
 	@ref sip_warning "Warning", and
 	@ref sip_www_authenticate "WWW-Authenticate".
 
-	An @RFC2617 header not listed in @RFC3261 but nevertheless supported
-	is:
+	Unknown headers (extension headers) are supported and can be passed
+	to/received from application as name-value pairs.
 
-	@ref sip_proxy_authentication_info "Proxy-Authentication-Info",
-
-	Unknown headers (extension headers) are supported and passed
-	to/received from SIP clients as name-value pairs.
+	It is possible to extend SIP parser in run-time with header-specific
+        parsers.
     </td>
     <td>
     	- Unsupported headers:
 	  Alert-Info, 
 	  @ref sip_content_encoding "Content-Encoding (e)",
 	  Reply-To
-	- Automatic escaping of reserved characters
+	- Automatic escaping of reserved characters has not been implemented.
    </td>
 </tr>
 
 <tr valign=top>
     <th align="left">
-	@RFC3261 Section 18: UDP and TCP transports
+	@RFC3261 Section 18:<br>
+	UDP and TCP transports
     </th>
     <td>
         UDP and TCP on both IP4 and IP6 are supported. 
@@ -127,21 +123,19 @@
 	receive request.
 
 	Only one SIP message is accepted per UDP message, as per @RFC3261.
-
-	There is exprerimental support for SCTP, too.
     </td>
     <td>
-    -
+	- There is experimental support for SCTP, too.
     </td>
 </tr>
 
 <tr valign=top>
     <th align="left">
-	@RFC3261 Section 17: Transactions
+	@RFC3261 Section 17:<br> Transactions
     </th>
     <td>
         Transaction state engines function as specified in @RFC3261 section
-	17. There is special handling od methods @b INVITE, @b ACK, @b
+	17. There is special handling of methods @b INVITE, @b ACK, @b
 	CANCEL. There are two modes for transaction state engines,
 	User-Agent and Proxy modes.
 
@@ -152,27 +146,10 @@
     </td>
 </tr>
 
-<tr valign=top>
-    <th align="left">
-	@RFC3261 Section 17: Transactions
-    </th>
-    <td>
-        Transaction state engines function as specified in @RFC3261 section
-	17. There is special handling od methods @b INVITE, @b ACK, @b
-	CANCEL. There are two modes for transaction state engines,
-	User-Agent and Proxy modes.
-
-	Default values for SIP timers are those specified by @RFC3261. The
-	defaults for T1, T1x64, T2 and T4 can be changed via configuration tags.
-    </td>
-    <td>
-    <br>
-    </td>
-</tr>
 
 <tr valign=top>
     <th align="left">
-	@RFC3261 Section 26: Security 
+	@RFC3261 Section 26:<br> Security 
     </th>
     <td>
         TLS and SIPS URIs has been implemented. Currently, TLS does not
@@ -180,6 +157,7 @@
 	provided.
     </td>
     <td>
+	Missing:
 	- TLS certificate checking
 	- S/MIME
     </td>
@@ -187,25 +165,21 @@
 
 <tr valign=top>
     <th align="left">
-	@RFC2617
-	(@RFC2069)
+	@RFC2617: HTTP Digest Authentication
     </th>
     <td>
 	Sofia-SIP an authentication client and server modules implementing
         HTTP Digest authentication. 
 
-	SIP interface to the modules is implemented as defined in RFC3261
-	(sections 8.1.3.5, 22.2, 22.3, 22.4).
-
 	HTTP Digest is a simple challenge-response authentication
-	scheme defined in RFC3261 based on the UA sending a checksum
+	scheme defined in @RFC2617 based on the UA sending a checksum
 	calculated over specific values in response to a challenge sent by
 	the server (proxy or UA).
-		
-	Checksum calculation supports MD5 (@RFC1321), with RFC2069, MD5 and
-	MD5sess algorithms. The quality-of-protection (qop) parameters "auth",
-	"auth-int" and none (missing) are supported. The "opaque" parameter
-	is supported.
+
+        Checksum calculation supports MD5 (@RFC1321), with
+        @RFC2069-compatible, MD5 and MD5sess algorithms. The
+        quality-of-protection (qop) parameters "auth", "auth-int" and none
+        (missing) are supported. The "opaque" parameter is supported.
 
 	The SIP authentication headers supported (generating, parsing and
 	syntax checking) are: 
@@ -215,8 +189,16 @@
 	@ref sip_proxy_authentication_info "Proxy-Authentication-Info",
 	@ref sip_proxy_authorization "Proxy-Authorization", and
 	@ref sip_www_authenticate "WWW-Authenticate".
+
+	SIP interface to the modules is implemented as defined in @RFC3261
+	(sections 8.1.3.5, 22.2, 22.3, 22.4).
+
+	An @RFC2617 header @ref sip_proxy_authentication_info
+        "Proxy-Authentication-Info" is not listed in @RFC3261 but
+        it is nevertheless supported by Sofia-SIP.
     </td>
     <td>
+	Missing:
 	- Mutual authentication
     </td>
 </tr>
@@ -243,6 +225,7 @@
 	Handling of any URI type.
     </td>
     <td>
+	Missing:
 	- Using the tel: URIs with SIP.
     </td>
 </tr>
@@ -255,12 +238,12 @@
 	User-agent engine can add "path" option tag to Supported header of
 	REGISTER requests.
 
-	The SIP header explicitely supported (generating, parsing and
+	The SIP header explicitly supported (generating, parsing and
 	syntax checking) is: 
 	- @ref sip_path "Path".
     </td>
     <td>
-	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -274,7 +257,7 @@
 	client is able to insert Security-Client and Security-Verify header
 	with fake @e d-ver value.
 
-	The SIP headers explicitely supported (generating, parsing
+	The SIP headers explicitly supported (generating, parsing
 	and syntax checking) are: 
 	@ref sip_security_client "Security-Client",
 	@ref sip_security_server "Security-Server", and
@@ -283,6 +266,7 @@
 	Security-mechanism supported is "digest".
     </td>
     <td>
+	Missing:
 	- Calculating correct @e d-ver value
     </td>
 </tr>
@@ -297,7 +281,7 @@
 	compression.
     </td>
     <td>
-	Note that SigComp itself is not supported.
+	- SigComp itself is not supported.
     </td>
 </tr>
 
@@ -310,11 +294,11 @@
 	mechanism by which a registrar may inform a registering UA of a
 	service route. User-Agent can use the route provided in Service-Route.
 
-	The SIP header explicitely supported (generating, parsing and
+	The SIP header explicitly supported (generating, parsing and
 	syntax checking) is @ref sip_service_route "Service-Route".
     </td>
     <td>
-	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -324,7 +308,7 @@
     </th>
     <td>
 	Feature parameters can be added to SIP profiles and sent within
-	Contact header of REGISTER request as extension parameters.
+	Contact header of REGISTER request as header parameters.
 
 	UAC can optionally generate media tags fro Contact header using
 	local media profile.
@@ -333,18 +317,18 @@
 	extension parameters of Contact header.
     </td>
     <td>
-	- Constructing the extension parameters according to BNF syntax for
-	  feature-param
+	Missing:
         - Processing the feature parameters received in the Contact header
     </td>
 </tr>
+
 
 <tr valign=top>
     <th align="left">
 	@RFC3841: Caller Preferences
     </th>
     <td>
-	Built-in support for user-agent behaviour. 
+	Built-in support for user-agent behavior. 
 
 	UAC can optionally generate Accept-Contact header using local media profile.
 
@@ -356,33 +340,36 @@
 
 	There are functions for calculating score for contacts.
 
-	The SIP headers explicitely supported (generating,
+	The SIP headers explicitly supported (generating,
 	parsing and syntax checking) are: 
 	@ref sip_request_disposition "Request-Disposition (d)",
 	@ref sip_accept_contact "Accept-Contact (a)",
 	@ref sip_reject_contact "Reject-Contact (j)",
     </td>
     <td>
+	Missing:
         - UAS processing incoming Accept-Contact or Reject-Contact headers
     </td>
 </tr>
+
 
 <tr valign=top>
     <th align="left">
 	@RFC2976: INFO
     </th>
     <td>
-	INFO method is supported as an extension method within a dialog.
+	INFO method is supported within a dialog.
     </td>
     <td>
-	- Generating or processing INFO requests
+	Not implemented:
+	- Generating or processing contents of INFO requests 
     </td>
 </tr>
 
 <tr valign=top>
-    <td>
+    <th align="left">
 	@RFC3262: PRACK and 100rel
-    </td>
+    </th>
     <td>
 	PRACK method is supported within dialog as defined in RFC3262.
         Semantics of reliable provisional responses are supported: 
@@ -396,27 +383,26 @@
 	are @ref sip_rseq "RSeq" and @ref sip_rack "RAck".
     </td>
     <td>
-	- 
+	&nbsp; 
     </td>
 </tr>
 
 <tr valign=top>
     <th align="left">
-	@RFC3264: (Offer/Answer)
+	@RFC3264: SDP Offer/Answer
     </th>
     <td>
 	Generating and processing offers or answers.
     </td>
     <td>
-	- Processing "a=fmtp" parameters
+	- Taking "a=fmtp" parameters into account when generating or
+	  processing answer
     </td>
 </tr>
 
 <tr valign=top>
     <th align="left" align="left">
-	@RFC2327
-	<small>and</small>
-        draft-ietf-mmusic-sdp-new-15
+	@RFC2327: SDP (Session Description Protocol)
     </th>
     <td>
 	Generic support (generating, parsing and syntax checking) for SDP.
@@ -435,11 +421,13 @@
 	are separated.
 
 	The attributes "a=sendrecv", "a=sendonly", "a=recvonly",
-	"a=inactive", "a=rtpmap", and "a=fmtp" are parsed.
+	"a=inactive", @ref sdp_rtpmap_s "a=rtpmap", and "a=fmtp" are parsed.
 
+	The implementation tries to follow draft-ietf-mmusic-sdp-new-25,
+	draft Internet Standard for SDP in progress.
     </td>
     <td>
-	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -448,10 +436,10 @@
 	@RFC3266: IP6 in SDP
     </th>
     <td>
-	Representation of IPv6 addresses within SDP message.
+	Representation of IP6 addresses within SDP message.
     </td>
     <td>
-    	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -466,16 +454,17 @@
 	Includes dialog level support for sending and refreshing SUBSCRIBE
 	and receiving NOTIFY messages.
 			
-	The SIP headers explicitely supported (generating, parsing and
+	The SIP headers explicitly supported (generating, parsing and
 	syntax checking) are
         @ref sip_event "Event", 
 	@ref sip_allow_events "Allow-Events", and
         @ref sip_subscription_state "Subscription-State"
 			
-	Note: currently there is no support for forked SUBSCRIBEs.
+	Note: currently there is no support for forked SUBSCRIBE requests.
     </td>
     <td>
 	- Subscribing, generating or processing specific event types
+          and interpreting the content of event data is up to application
     </td>
 </tr>
 
@@ -484,12 +473,15 @@
 	@RFC3903: PUBLISH
     </th>
     <td>
-	PUBLISH method supported as an extension method. The SIP headers
-	explicitely supported (generating, parsing and syntax checking) are
+	PUBLISH method is supported natively. The SIP headers
+	explicitly supported (generating, parsing and syntax checking) are
 	@ref sip_etag "SIP-ETag" and @ref sip_if_match "SIP-If-Match".
+
+	The nua_publish() will keep published data refreshed until
+	nua_unpublish() is called.
     </td>
     <td>
-	- Generating and processing PUBLISH requests.
+	&nbsp;
     </td>
 </tr>
 
@@ -500,10 +492,12 @@
     <td>
 	UPDATE method as defined in RFC3311. UPDATE allows a client to
 	update parameters of a session (such as the set of media streams and
-	their codecs) within early dialogs.
+	their codecs) even within early dialogs.
+
+	Offer-Answer negotiation with UPDATE is implemented in nua.
     </td>
     <td>
-	- Generating or processing UPDATE requests.
+        - Currently, nua stack does not automatically generate UPDATE requests
     </td>
 </tr>
 
@@ -522,19 +516,17 @@
 
 <tr valign=top>
     <th align="left">
-	draft-ietf-sip-session-timer-12
+	@RFC3313: Media Authentication
     </th>
     <td>
-	The SIP session-timer ("timer") extension is supported.
-
-        The SIP headers explicitely supported (generating, parsing and
-	syntax checking) are @ref sip_session_expires "Session-Expires (x)" and
-	@ref sip_min_se "Min-SE".
+	P-Media-Authorization header is supported as an 
+	 @ref sip_unknown "extension header".
     </td>
     <td>
+        Application 
+	- Passing the authorization token to QoS reservation request
     </td>
 </tr>
-
 
 <tr valign=top>
     <th align="left">
@@ -542,21 +534,22 @@
     </th>
     <td>
 	Call-Id header is generated from cryptographically random id without
-	hostname or IP address. By default, @ref sip_contact "Contact" and
+	host name or IP address. By default, @ref sip_contact "Contact" and
 	@ref sip_via "Via" headers contain only IP address that can be
 	dynamically allocated.
 			
 	Application can enter any SIP URI and display name to From header,
 	e.g., <tt>Anonymous &lt;sip:anonymous@example.org&gt;</tt>.
 			
-	@ref Privacy header is supported.
+	@ref sip_privacy "Privacy" header is supported (generating, parsing
+        and syntax checking).
     </td>
     <td>
-	- Population of the URIs and display names within SIP headers<BR>
-	- Not to include any optional headers that could reveal identity<BR>
-	- Generating of Privacy header with appropriate values<BR>
-	- Generating of Proxy-Require: privacy<BR>
-	- Usage of &ldquo;anonymous callback&rdquo; URIs etc.
+	- Population of the URIs and display names within SIP headers
+	- Not to include any optional headers that could reveal identity
+	- Generating of Privacy header with appropriate values
+	- Generating of Proxy-Require: privacy
+	- Usage of anonymous callback URIs etc.
     </td>
 </tr>
 
@@ -581,36 +574,39 @@
 	syntax
     </td>
     <td>
-	- Defining sqn, cdsc, cpar etc. strings needed in a= line<BR>
-	- Generating or processing the attribute lines<BR>
+	- Defining sqn, cdsc, cpar etc. strings needed in a= line
+	- Generating or processing the attribute lines
 	- Capability negotiation itself
     </td>
 </tr>
 
 <tr valign=top>
     <th align="left">
-	@RFC3420 (sipfrag)
+	@RFC3420: message/sipfrag
     </th>
     <td>
 	Passing the received SIP message headers to application that can
-	create the sipfrag. <B>Note</B>: implementation does not pass all
-	the SIP headers to application. Especially those headers that the
-	stack automatically takes care of are not visible in the SIP API.
+	create the sipfrag.
+	
+	When nua_invite() is given a nua handle in NUTAG_NOTIFY_REFER()
+	minimal notifications using message/sipfrag format are automatically
+	generated.
     </td>
     <td>
-	- Generating or processing the SIP message fragments
+        Application must take care of:
+	- processing the SIP message fragments
     </td>
 </tr>
 
 <tr valign=top>
     <th align="left">
-	@RFC3428: MESSGAE
+	@RFC3428: MESSAGE
     </th>
     <td>
-	MESSAGE method supported as an extension method.
+	MESSAGE method is supported.
     </td>
     <td>
-	-
+	&nbsp;
     </td>
 </tr>
 
@@ -620,14 +616,16 @@
     </th>
     <td>
 	REFER method is processed and NOTIFY generated automatically by
-	protocol actions. 
+	protocol actions when nua_invite() is given referrer's nua
+	handle in NUTAG_NOTIFY_REFER().
 			
-	The SIP headers explicitely supported (generating, parsing and
+	The SIP headers explicitly supported (generating, parsing and
 	syntax checking) are @ref sip_refer_to "Refer-To (r)",
 	@ref sip_referred_by "Referred-By (b)", and 
 	@ref sip_replaces "Replaces".
     </td>
     <td>
+        Application must take care of:
 	- Generating Replaces header from a dialog or matching a dialog with
 	Replaces.
     </td>
@@ -635,23 +633,72 @@
 
 <tr valign=top>
     <th align="left">
+	@RFC3857: "winfo"
+    </th>
+    <td>
+	Sofia-SIP supports generic SIP dialog level support for subscribing
+	SIP event packages and receiving notifications for them. 
+	Subscriptions are refreshed before expiration when needed and
+	subscriptions are terminated on request.
+    </td>
+    <td>
+        Application must take care of:
+	- Generating subscriptions for winfo event
+	- Processing notifications for winfo event:
+	  - Handling of notified presence information
+	  - Handling of notified subscription states
+    </td>
+</tr>
+
+<tr valign=top>
+    <th align="left">
+	@RFC3858: winfo format
+    </th>
+    <td>
+	Generic support for sending and receiving text-based bodies within
+	SIP requests
+    </td>
+    <td>
+        Application must take care of:
+	- Processing of watcher info XML documents
+    </td>
+</tr>
+
+
+<tr valign=top>
+    <th align="left">
 	@RFC3892: Referred-By
     </th>
     <td>
-	Referred-by header is supported as an extension header.
+	@ref sip_referred_by "Referred-By" header is explicitly supported
+	(generating, parsing and syntax checking).
 			
 	Referred-by token can be sent and received in
 	text-based SIP message body.
     </td>
     <td>
-	- Generating or processing Referred-by headers
+        Application must take care of:
+	- Generating or processing @ref sip_referred_by "Referred-By" headers
 	- Generating (and encrypting) or verifying (and decrypting) of
 	  Referred-by tokens
     </td>
 </tr>
 
+<tr valign=top>
+    <th align="left">
+	@RFC4028: session timers
+    </th>
+    <td>
+	The SIP session-timer ("timer") extension is supported.
 
-
+        The SIP headers explicitly supported (generating, parsing and
+	syntax checking) are @ref sip_session_expires "Session-Expires (x)" and
+	@ref sip_min_se "Min-SE".
+    </td>
+    <td>
+	&nbsp;
+    </td>
+</tr>
 
 </table>
 
@@ -681,17 +728,6 @@
 	@ref sip_subscription_state "Subscription-State",
 
 
-<tr valign=top>
-    <th align="left">
-	@RFC3313: Media Authentication
-    </th>
-    <td>
-	P-Media-Authorization header is supported as an extension header.
-    </td>
-    <td>
-	- Passing the authorization token to QoS reservation request
-    </td>
-</tr>
 
 
 <tr valign=top>
@@ -702,7 +738,7 @@
 	DHCPv6 option for locating SIP servers
     </td>
     <td>
-    <BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -714,7 +750,7 @@
 	DHCPv4 option for locating SIP servers
     </td>
     <td>
-	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -730,7 +766,7 @@
 	Decompression using UDVM
     </td>
     <td>
-	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -742,7 +778,7 @@
 	Support for SigComp extended operations.
     </td>
     <td>
-	- Explicit Acknowledgement Scheme
+	- Explicit Acknowledgment Scheme
 	- Shared Compression
 	- Checkpoint State
 	- Implicit Deletion for Dictionary Update
@@ -759,7 +795,7 @@
     </td>
     <td>
 	- Recognizing trust domains and enforcing handling of headers
-	based on those
+	  based on those
     </td>
 </tr>
 
@@ -784,10 +820,10 @@
     </th>
     <td>
 	Support for SigComp static compression using SIP/SDP
-	dictionary
+	dictionary.
     </td>
     <td>
-	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -799,11 +835,11 @@
     <td>
 	3GPP IMS profiles defined for UA will SUBSCRIBE registration state
 	event package after sending initial REGISTER to IMS network. Profile
-	will maintain registration state machine according to NOTIFYs
+	will maintain registration state machine according to NOTIFY payloads
 	received from IMS network
     </td>
     <td>
-	- Implicitely registered user identities
+	- Implicitly registered user identities
     </td>
 </tr>
 
@@ -828,7 +864,7 @@
 	Sofia-SIP has generic support for bandwidth modifiers that conform SDP syntax.
     </td>
     <td>
-	- Generating or processing RS and RR bandwidth modifiers<BR>
+	- Generating or processing RS and RR bandwidth modifiers
 	- Semantics of bandwidth allocation
     </td>
 </tr>
@@ -862,7 +898,7 @@
 	hop.
     </td>
     <td>
-	<BR>
+	&nbsp;
     </td>
 </tr>
 
@@ -878,9 +914,10 @@
     </td>
     <td>
 	- Generating subscriptions for "message-summary" event
-	- Processing NOTIFYs for "message-summary" event
+	- Processing notifications for "message-summary" event
     </td>
 </tr>
+
 <tr valign=top>
     <th align="left">
 	@RFC3856: Presence
@@ -896,45 +933,13 @@
 	Resolving of pres: URIs by DNS is not supported.
     </td>
     <td>
-	- Generating subscriptions for "presence" event<BR>
-	- Processing NOTIFYs for "presence" event
+	- Generating subscriptions for "presence" event
+	- Processing notifications for "presence" event
 			
 	Handling of notified presence information
 	Handling of notified subscription states
     </td>
 </tr>
-
-<tr valign=top>
-    <th align="left">
-	@RFC3857: "winfo"
-    </th>
-    <td>
-	Generic SIP dialog level support for subscribing SIP event packages
-	and receiving notifications for them. Support for refreshing the
-	subscriptions before expiration when needed and terminating
-	subscriptions on request.
-    </td>
-    <td>
-	- Generating subscriptions for &ldquo;winfo&rdquo; event<BR>
-	- Processing NOTIFYs for &ldquo;winfo&rdquo; event:
-	  - Handling of notified presence information
-	  - Handling of notified subscription states
-    </td>
-</tr>
-
-<tr valign=top>
-    <th align="left">
-	@RFC3858: winfo format
-    </th>
-    <td>
-	Generic support for sending and receiving text-based bodies within
-	SIP requests
-    </td>
-    <td>
-	- Processing of watcher info XML documents
-    </td>
-</tr>
-
 
 <tr valign=top>
     <th align="left">
@@ -945,7 +950,7 @@
 	conform SDP syntax
     </td>
     <td>
-	- Generating or processing TIAS bandwidth modifiers<BR>
+	- Generating or processing TIAS bandwidth modifiers
 	- Generating or processing the maxprate attribute lines
     </td>
 </tr>
