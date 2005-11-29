@@ -17,6 +17,6 @@ TAGFILES            += ../docs/tport/doxytags=../tport
 TAGFILES            += ../docs/nta/doxytags=../nta
 TAGFILES            += ../docs/sdp/doxytags=../sdp
 
-GENERATE_TAGFILE     = ../docs/features/doxytags
+GENERATE_TAGFILE     = ../docs/doxytags_features
 
 ALIASES             +=

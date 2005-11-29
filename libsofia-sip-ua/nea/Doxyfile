@@ -16,6 +16,6 @@ TAGFILES            += \
 	"../docs/doxytags_sip=../sip" \
 	"../docs/doxytags_nta=../nta"
 
-GENERATE_TAGFILE    = ../docs/nea/doxytags
+GENERATE_TAGFILE    = ../docs/doxytags_nea
 
 ALIASES            +=

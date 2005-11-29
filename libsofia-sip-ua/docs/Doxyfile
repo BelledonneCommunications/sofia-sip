@@ -24,5 +24,5 @@ TAGFILES            += ../docs/doxytags_iptsec=../iptsec
 TAGFILES            += ../docs/doxytags_sdp=../sdp
 TAGFILES            += ../docs/doxytags_soa=../soa
 TAGFILES            += ../docs/doxytags_nea=../nea
-TAGFILES            += ../docs/doxytags_nea=../nua
+TAGFILES            += ../docs/doxytags_nua=../nua
 TAGFILES            += ../docs/doxytags_features=../features
