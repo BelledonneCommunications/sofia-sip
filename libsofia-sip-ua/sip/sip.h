@@ -701,6 +701,7 @@ struct sip_min_se_s
   sip_common_t        min_common[1];
   sip_error_t        *min_next;
   unsigned long       min_delta; /**< Delta-seconds */
+  sip_param_t const  *min_params; /**< List of extension parameters */
 };
 
 /**@ingroup sip_subscription_state 

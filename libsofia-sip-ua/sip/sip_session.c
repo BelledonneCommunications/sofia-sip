@@ -52,13 +52,13 @@
 /**@SIP_HEADER sip_session_expires Session-Expires Header
  *
  * The Session-Expires header is used to convey the lifetime of the session. 
- * Its syntax is defined in [SES 4] (draft-ietf-sip-session-timer-08.txt) as
- * follows:
+ * Its syntax is defined in @RFC4028 as follows:
  * 
  * @code
- *      Session-Expires  =  ("Session-Expires" | "x") ":" delta-seconds
- *                           [refresher]
- *      refresher        =  ";" "refresher" "=" "uas"|"uac"
+ *      Session-Expires  =  ("Session-Expires" | "x") HCOLON delta-seconds
+ *                           *(SEMI se-params)
+ *      se-params        = refresher-param / generic-param
+ *      refresher-param  = "refresher" EQUAL  ("uas" / "uac")
  * @endcode
  * 
  * The sip_session_expires_t is defined as follows:
@@ -101,7 +101,6 @@ int sip_session_expires_e(char b[], int bsiz, sip_header_t const *h, int flags)
   int n = 0;
   sip_session_expires_t const *o = h->sh_session_expires;
 
-  assert(sip_is_session_expires(h));
   n = snprintf(b, bsiz, "%lu", o->x_delta);
   b += n; 
   MSG_PARAMS_E(b, end, o->x_params, flags);
@@ -138,20 +137,20 @@ char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
 /**@SIP_HEADER sip_min_se Min-SE Header
  *
  * The Min-SE header is used to indicate the minimum value for the session
- * interval. Its syntax is defined in [session-timer-08]
- * (draft-ietf-sip-session-timer-08.txt) as follows:
+ * interval. Its syntax is defined in @RFC4028 as follows:
  * 
  * @code
- *      Min-SE  =  "Min-SE" ":" delta-seconds
+ *      MMin-SE  =  "Min-SE" HCOLON delta-seconds *(SEMI generic-param)
  * @endcode
  * 
  * The sip_min_se_t is defined as follows:
  * @code
  * typedef struct sip_min_se_s
  * {
- *  sip_common_t    min_common[1];
- *  sip_unknown_t  *min_next;
- *  unsigned long   min_delta; //Delta Seconds
+ *   sip_common_t    min_common[1];
+ *   sip_unknown_t  *min_next;
+ *   unsigned long   min_delta;   // Delta seconds
+ *   sip_params_t   *min_params;  // List of extension parameters
  * } sip_min_se_t;
  * @endcode
  */
@@ -160,7 +159,7 @@ static msg_xtra_f sip_min_se_dup_xtra;
 static msg_dup_f sip_min_se_dup_one;
 
 msg_hclass_t sip_min_se_class[] =
-SIP_HEADER_CLASS(min_se, "Min-SE", "", min_common, single, min_se);
+SIP_HEADER_CLASS(min_se, "Min-SE", "", min_params, single, min_se);
 
 int sip_min_se_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 {
@@ -168,21 +167,33 @@ int sip_min_se_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 
   if (msg_delta_d((char const **) &s, &min->min_delta) < 0)
     return -1;
+  if (*s == ';') {
+    if (msg_params_d(home, &s, &min->min_params) < 0 || *s)
+      return -1;
+  }
 
   return 0;
 }
 
 int sip_min_se_e(char b[], int bsiz, sip_header_t const *h, int flags)
 {
-  sip_min_se_t const *o = h->sh_min_se;
+  char *end = b + bsiz, *b0 = b;
+  int n = 0;
+  sip_min_se_t const *o = (sip_min_se_t *)h;
 
-  assert(sip_is_min_se(h));
+  n = snprintf(b, bsiz, "%lu", o->min_delta);
+  b += n; 
+  MSG_PARAMS_E(b, end, o->min_params, flags);
 
-  return snprintf(b, bsiz, "%lu", o->min_delta);
+  return b - b0;
 }
 
 int sip_min_se_dup_xtra(sip_header_t const *h, int offset)
 {
+  sip_min_se_t const *o = (sip_min_se_t *)h;
+
+  MSG_PARAMS_SIZE(offset, o->min_params);
+   
   return offset;
 }
 
@@ -190,10 +201,11 @@ int sip_min_se_dup_xtra(sip_header_t const *h, int offset)
 char *sip_min_se_dup_one(sip_header_t *dst, sip_header_t const *src,
 			char *b, int xtra)
 {
-  sip_min_se_t *o_dst = dst->sh_min_se;
-  sip_min_se_t const *o_src = src->sh_min_se;
+  sip_min_se_t *o_dst = (sip_min_se_t *)dst;
+  sip_min_se_t const *o_src = (sip_min_se_t *)src;
 
   char *end = b + xtra;
+  b = msg_params_dup(&o_dst->min_params, o_src->min_params, b, xtra);
   o_dst->min_delta = o_src->min_delta;
   assert(b <= end);
 

@@ -1869,6 +1869,16 @@ int test_min_se(void)
   TEST_1(min = sip_min_se_copy(home, min0));
   TEST(min->min_delta, 1800);
 
+  TEST_1(min = sip_min_se_make(home, "1999 ; foo = bar"));
+  TEST(min->min_delta, 1999);
+  TEST_1(min->min_params);
+  TEST_S(min->min_params[0], "foo=bar");
+
+  TEST_1(min0 = sip_min_se_dup(home, min));
+  TEST(min0->min_delta, 1999);
+  TEST_1(min0->min_params);
+  TEST_S(min0->min_params[0], "foo=bar");
+
   su_home_destroy(home), su_free(NULL, home);
 
   END();
