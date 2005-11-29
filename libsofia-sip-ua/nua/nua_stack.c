@@ -2938,6 +2938,16 @@ static void signal_call_state_change(nua_handle_t *nh,
     answer_sent = strcasecmp(oa_sent, "answer") == 0;
   }
 
+  if (answer_recv || answer_sent) {
+    /* Update ss->ss_hold_remote */
+
+    char const *held;
+
+    soa_get_params(nh->nh_soa, SOATAG_HOLD_REF(held), TAG_END());
+
+    ss->ss_hold_remote = held && strlen(held) > 0;
+  }
+  
   (void)sr;
 
   if (next_state > ss_state)

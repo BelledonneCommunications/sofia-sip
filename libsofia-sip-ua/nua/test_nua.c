@@ -2580,6 +2580,9 @@ int test_call_hold(struct context *ctx)
   TEST_1(!e->next);
   free_events_in_list(ctx, a_call);
 
+  TEST_1(nua_handle_has_active_call(a_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
+
   /*
    Server transitions:
    INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
@@ -2602,6 +2605,9 @@ int test_call_hold(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
   TEST_1(!e->next);
+
+  TEST_1(nua_handle_has_active_call(b_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(b_call->nh));
 
   free_events_in_list(ctx, b_call);
 
@@ -2635,6 +2641,10 @@ int test_call_hold(struct context *ctx)
   TEST_1(is_answer_recv(e->data->e_tags));
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDONLY);
   TEST_1(!e->next);
+
+  TEST_1(nua_handle_has_active_call(a_call->nh));
+  TEST_1(nua_handle_has_call_on_hold(a_call->nh));
+
   free_events_in_list(ctx, a_call);
 
   /*
@@ -2653,6 +2663,9 @@ int test_call_hold(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_RECVONLY);
   TEST_1(!e->next);
+
+  TEST_1(nua_handle_has_active_call(b_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(b_call->nh));
 
   free_events_in_list(ctx, b_call);
 
@@ -2691,6 +2704,10 @@ int test_call_hold(struct context *ctx)
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_INACTIVE);
   TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
   TEST_1(!e->next);
+
+  TEST_1(nua_handle_has_active_call(b_call->nh));
+  TEST_1(nua_handle_has_call_on_hold(b_call->nh));
+
   free_events_in_list(ctx, b_call);
 
   /*
@@ -2710,6 +2727,9 @@ int test_call_hold(struct context *ctx)
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_INACTIVE);
   TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
   TEST_1(!e->next);
+
+  TEST_1(nua_handle_has_active_call(a_call->nh));
+  TEST_1(nua_handle_has_call_on_hold(a_call->nh));
 
   free_events_in_list(ctx, a_call);
 
@@ -2750,6 +2770,9 @@ int test_call_hold(struct context *ctx)
   TEST_1(!e->next);
   free_events_in_list(ctx, a_call);
 
+  TEST_1(nua_handle_has_active_call(a_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
+
   /*
    Server transitions:
    READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
@@ -2767,6 +2790,9 @@ int test_call_hold(struct context *ctx)
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDONLY);
   TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
   TEST_1(!e->next);
+
+  TEST_1(nua_handle_has_active_call(b_call->nh));
+  TEST_1(nua_handle_has_call_on_hold(b_call->nh));
 
   free_events_in_list(ctx, b_call);
 
@@ -2807,6 +2833,9 @@ int test_call_hold(struct context *ctx)
   TEST_1(!e->next);
   free_events_in_list(ctx, b_call);
 
+  TEST_1(nua_handle_has_active_call(a_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
+
   /*
    Server transitions:
    READY -(S3b)-> COMPLETED: nua_i_invite, <auto-answer>, nua_i_state
@@ -2824,6 +2853,9 @@ int test_call_hold(struct context *ctx)
   TEST(audio_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
   TEST(video_activity(e->data->e_tags), SOA_ACTIVE_SENDRECV);
   TEST_1(!e->next);
+
+  TEST_1(nua_handle_has_active_call(b_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(b_call->nh));
 
   free_events_in_list(ctx, a_call);
 
