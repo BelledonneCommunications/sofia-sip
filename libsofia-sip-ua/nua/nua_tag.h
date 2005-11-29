@@ -770,7 +770,7 @@ extern tag_typedef_t nutag_registrar_ref;
  *    nua_create()
  *
  * @par Parameter type
- *    void * (actually msg_mclass)
+ *    msg_mclass_t *
  *
  * @par Values
  *
@@ -904,27 +904,6 @@ extern tag_typedef_t nutag_handle;
 #define NUTAG_HANDLE_REF(x)     nutag_handle_ref, nutag_handle_vr(&(x))
 extern tag_typedef_t nutag_handle_ref;
 
-/** Hold & unhold
- *
- * @par Used with
- *    nua_invite() \n
- *    nua_update()
- *
- * @par Parameter type
- *    int (boolean)
- *
- * @par Values
- *    @c 1 hold call \n
- *    @c 0 unhold call
- *
- * Corresponding tag taking reference parameter is NUTAG_HOLD_REF()
- */
-#define NUTAG_HOLD(x)           nutag_hold, tag_bool_v(x)
-extern tag_typedef_t nutag_hold;
-
-#define NUTAG_HOLD_REF(x)       nutag_hold_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_hold_ref;
-
 /** Refer reply handle (used with refer)
  *
  * When making a call in response to a REFER request [RFC3515] with
@@ -1053,6 +1032,7 @@ extern tag_typedef_t nutag_allow_ref;
  *
  * @par Values
  * - @c nua_callstate_init - Initial state
+ * - @c nua_callstate_authenticating - 401/407 received
  * - @c nua_callstate_calling - INVITE sent
  * - @c nua_callstate_proceeding - 18X received
  * - @c nua_callstate_received - INVITE received
@@ -1071,6 +1051,7 @@ extern tag_typedef_t nutag_callstate_ref;
 
 enum nua_callstate {
   nua_callstate_init,		/**< Initial state */
+  nua_callstate_authenticating, /**< 401/407 received */
   nua_callstate_calling,	/**< INVITE sent */
   nua_callstate_proceeding,	/**< 18X received */
   nua_callstate_completing,	/**< 2XX received */
@@ -1298,6 +1279,8 @@ enum nua_af {
 
 #define NUTAG_MEDIA_ADDRESS(x)  SOATAG_ADDRESS((x))
 #define NUTAG_MEDIA_ADDRESS_REF(x)   SOATAG_ADDRESS_REF((x))
+
+#define NUTAG_HOLD(x) SOATAG_HOLD((x) ? "*" : NULL)
 
 #define NUTAG_ACTIVE_AUDIO(x) SOATAG_ACTIVE_AUDIO((x))
 #define NUTAG_ACTIVE_AUDIO_REF(x) SOATAG_ACTIVE_AUDIO_REF((x))

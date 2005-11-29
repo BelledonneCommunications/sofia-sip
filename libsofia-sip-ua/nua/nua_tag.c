@@ -33,9 +33,8 @@
 
 #define TAG_NAMESPACE "nua"
 
-#include <string.h>
-#include <su.h>
-#include <nua_tag.h>
+#include "nua_tag.h"
+
 #include <msg_header.h>
 #include <su_tag_class.h>
 #include <url_tag_class.h>
