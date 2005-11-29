@@ -6433,32 +6433,6 @@ ua_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
 
 /* ======================================================================== */
-/* Authorization */
-
-void
-ua_authorize(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
-	     tagi_t const *tags)
-{
-  nea_sub_t *sub = NULL;
-  nea_state_t state = nea_extended;
-
-  tl_gets(tags,
-	  NEATAG_SUB_REF(sub),
-	  NUTAG_SUBSTATE_REF(state),
-	  TAG_END());
-
-  if (sub && state > 0) {
-    nea_sub_auth(sub, state, TAG_NEXT(tags));
-    ua_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
-  }
-  else {
-    ua_event(nua, nh, NULL, e, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
-  }
-  return;
-}
-
-
-/* ======================================================================== */
 /* Event server */
 
 static
@@ -6596,32 +6570,84 @@ void authorize_watcher(nea_server_t *nes,
   nua_t *nua = nh->nh_nua;
   msg_t *msg = NULL;
   nta_incoming_t *irq = NULL;
+  int substate = sn->sn_state;
+  int status; char const *phrase;
+
+  SET_STATUS1(SIP_200_OK);
 
   /* OK. In nhp (nua_handle_preferences_t) structure we have the
      current default action (or state) for incoming
      subscriptions. 
      Action can now be modified by the application with NUTAG_SUBSTATE(). 
   */
-  int substate = NH_PGET(nh, substate);
-
   irq = nea_sub_get_request(sn->sn_subscriber);
   msg = nta_incoming_getrequest(irq);
-  ua_event(nua, nh, msg, nua_i_subscription, SIP_200_OK,
-           NEATAG_SUB(sn->sn_subscriber),
-           TAG_END());
 
   if (sn->sn_state == nea_embryonic) {
-    SU_DEBUG_7(("nua(%p): authorize_watcher: new watcher\n", nh)); 
+    char const *what;
+
+    substate = NH_PGET(nh, substate);
+
+    if (substate == nua_substate_embryonic)
+      substate = nua_substate_pending;
+
+    if (substate == nua_substate_terminated) {
+      what = "rejected"; SET_STATUS1(SIP_403_FORBIDDEN);
+    }
+    else if (substate == nua_substate_pending) {
+      what = "pending"; SET_STATUS1(SIP_202_ACCEPTED);
+    }
+    else {
+      what = "active";
+    }
+
+    SU_DEBUG_7(("nua(%p): authorize_watcher: %s\n", nh, what)); 
     nea_sub_auth(sn->sn_subscriber, substate,
-		 TAG_IF(substate != nua_substate_active,
+		 TAG_IF(substate == nua_substate_pending,
 			NEATAG_FAKE(1)),
+		 TAG_IF(substate == nua_substate_terminated,
+			NEATAG_REASON("rejected")),
 		 TAG_END());
   }
   else if (sn->sn_state == nea_terminated || sn->sn_expires == 0) {
+    substate = nua_substate_terminated;
     nea_server_flush(nes, NULL);
-    SU_DEBUG_7(("nua(%p): authorize_watcher: watcher is removed\n", nh)); 
+    SU_DEBUG_7(("nua(%p): authorize_watcher: %s\n", 
+		nh, "watcher is removed")); 
   }
+
+  ua_event(nua, nh, msg, nua_i_subscription, status, phrase,
+	   NUTAG_SUBSTATE(substate),
+	   NEATAG_SUB(sn->sn_subscriber),
+	   TAG_END());
 }
+
+/* ---------------------------------------------------------------------- */
+/* Authorization by application */
+
+void
+ua_authorize(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
+	     tagi_t const *tags)
+{
+  nea_sub_t *sub = NULL;
+  nea_state_t state = nea_extended;
+
+  tl_gets(tags,
+	  NEATAG_SUB_REF(sub),
+	  NUTAG_SUBSTATE_REF(state),
+	  TAG_END());
+
+  if (sub && state > 0) {
+    nea_sub_auth(sub, state, TAG_NEXT(tags));
+    ua_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
+  }
+  else {
+    ua_event(nua, nh, NULL, e, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
+  }
+  return;
+}
+
+
 
 
 /** Shutdown notifier object */
@@ -6667,13 +6693,11 @@ nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
 void
 ua_terminate(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
-  su_home_t home[1] = { SU_HOME_INIT(home) };
   sip_event_t const *event = NULL;
   sip_content_type_t const *ct = NULL;
   sip_payload_t const *pl = NULL;
   char const *event_s = NULL, *ct_s = NULL, *pl_s = NULL;
   nea_event_t *nev = NULL;
-  char const *reason = "noresource";
 
   if (nh->nh_notifier == NULL) {
     UA_EVENT2(e, 500, "No event server to terminate");
@@ -6687,28 +6711,20 @@ ua_terminate(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 	  SIPTAG_CONTENT_TYPE_STR_REF(ct_s),
 	  SIPTAG_PAYLOAD_REF(pl),
 	  SIPTAG_PAYLOAD_STR_REF(pl_s),
-	  NEATAG_REASON_REF(reason),
 	  TAG_END());
 
   nev = nea_event_get(nh->nh_notifier, 
 		      event ? event->o_type : event_s);
 
-  if (nev) {
-    if ((pl || pl_s) && (ct || ct_s))
-      nea_server_update(nh->nh_notifier, nev, 
-			SIPTAG_CONTENT_TYPE(ct),
-			SIPTAG_CONTENT_TYPE_STR(ct_s),
-			SIPTAG_PAYLOAD(pl),
-			SIPTAG_PAYLOAD_STR(pl_s),
-			TAG_END());
+  if (nev && (pl || pl_s) && (ct || ct_s)) {
+    nea_server_update(nh->nh_notifier, nev, TAG_NEXT(tags));
   }
 
-  if (!event || nev)
-    nh_notifier_shutdown(nh, nev, NEATAG_REASON(reason), TAG_END());
+  nh_notifier_shutdown(nh, NULL, 
+		       NEATAG_REASON("noresource"), 
+		       TAG_NEXT(tags));
 
   ua_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
-
-  su_home_deinit(home);
 }
 
 /* ======================================================================== */
