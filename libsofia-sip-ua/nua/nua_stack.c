@@ -111,10 +111,11 @@ typedef unsigned longlong ull;
 
 #define SET_STATUS(_status, _phrase) status = _status, phrase = _phrase
 
-/* This is interesting macro: 
- * x expands to "num, str", num is assigned to status, str to phrase.
- * Macro expands to two comma-separated expressions 
- * usable as function arguments
+/* This is an "interesting" macro:
+ * x is a define expanding to <i>num, str</i>.
+ * @a num is assigned to variable status, @a str to variable phrase.
+ * Macro SET_STATUS1 expands to two comma-separated expressions that are
+ * also usable as function arguments.
  */
 #define SET_STATUS1(x) ((status = x), status), (phrase = ((void)x))
 

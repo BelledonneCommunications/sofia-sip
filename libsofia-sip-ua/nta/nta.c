@@ -91,7 +91,7 @@ static char const __func__[] = "nta";
 
 /* Internal tags */
 
-/** Delay sending of request */
+/* Delay sending of request */
 #define NTATAG_DELAY_SENDING(x) ntatag_delay_sending, tag_bool_v((x))
 #define NTATAG_DELAY_SENDING_REF(x) \
 ntatag_delay_sending_ref, tag_bool_vr(&(x))
@@ -99,7 +99,7 @@ ntatag_delay_sending_ref, tag_bool_vr(&(x))
 extern tag_typedef_t ntatag_delay_sending;
 extern tag_typedef_t ntatag_delay_sending_ref;
 
-/** Allow sending incomplete responses */
+/* Allow sending incomplete responses */
 #define NTATAG_INCOMPLETE(x) ntatag_incomplete, tag_bool_v((x))
 #define NTATAG_INCOMPLETE_REF(x) \
 ntatag_incomplete_ref, tag_bool_vr(&(x))
@@ -698,6 +698,7 @@ su_duration_t set_timeout(nta_agent_t const *agent, su_duration_t offset)
 
 
 /** Return current timeval. */
+static
 su_time_t agent_now(nta_agent_t const *agent)
 {
   return agent->sa_millisec ? agent->sa_now : su_now();
@@ -1314,13 +1315,13 @@ static tport_stack_class_t nta_agent_class[1] =
  * scheme or be a wildcard uri ("*"). The @a uri syntax allowed is as
  * follows:
  *
- * <code> url <scheme>:<host>[:<port>]<url-params> </endcode>
+ * @code url <scheme>:<host>[:<port>]<url-params> @endcode
  * where <url-params> may be
- * <code>
+ * @code
  * ;transport=<xxx>
  * ;maddr=<actual addr>
  * ;comp=sigcomp
- * </endcode>
+ * @endcode
  *
  * The scheme part determines which transports are used. "sip" implies UDP
  * and TCP, "sips" TLS over TCP. In the future, more transports can be
@@ -1341,22 +1342,25 @@ static tport_stack_class_t nta_agent_class[1] =
  * sips). An "*" in "port" part means any port, i.e., the stack binds to an
  * ephemeral port.
  *
- * The "transport" parameter determines the transport protocol that is used.
- * If no protocol is specified, both UDP and TCP are used for SIP URL and TLS
- * for SIPS URL.
+ * The "transport" parameter determines the transport protocol that is used
+ * and how they are preferred. If no protocol is specified, both UDP and TCP
+ * are used for SIP URL and TLS for SIPS URL. The preference can be
+ * indicated with a comma-separated list of transports, for instance,
+ * parameter @code transport=tcp,udp @endocde indicates that TCP is
+ * preferred to UDP.
  *
  * The "maddr" parameter determines to which address the stack binds in
  * order to listen for incoming requests. An "*" in "maddr" parameter is
- * shorthand for any local IP address. 0.0.0.0 means that only IPv4
- * sockets are created. [::] means that only IPv6 sockets are created.
+ * shorthand for any local IP address. 0.0.0.0 means that only IPv4 sockets
+ * are created. [::] means that only IPv6 sockets are created.
  *
  * The "comp" parameter determines the supported compression protocol.
  * Currently only sigcomp is supported (with suitable library.
  *
  * @par Examples:
- * <code>sip:172.21.40.24;maddr=*</endcode> \n
- * <code>sip:172.21.40.24:50600;transport=UDP;comp=sigcomp</endcode> \n
- * <code>sips:172.21.40.24</endcode>
+ * @code sip:172.21.40.24;maddr=* @endcode \n
+ * @code sip:172.21.40.24:50600;transport=TCP,UDP;comp=sigcomp @endcode \n
+ * @code sips:* @endcode
  *
  * @return
  * On success, zero is returned. On error, -1 is returned, and @a errno is
@@ -2954,7 +2958,7 @@ int nta_msg_request_complete(msg_t *msg,
  * @param status  status code (in range 100 - 699)
  * @param phrase  status phrase (may be NULL)
  *
- * Generate status structure based on @a status and @phrase.
+ * Generate status structure based on @a status and @a phrase.
  * Add essential headers to the response message: 
  * @b From, @b To, @b Call-ID, @b CSeq, @b Via, and optionally 
  * @b Record-Route.
@@ -3622,7 +3626,7 @@ int addr_cmp(url_t const *a, url_t const *b)
  * The function nta_leg_by_dialog() searches for a dialog leg from agent's
  * hash table. The matching rules based on parameters  are as follows:
  *
- * @param agennt       pointer to agent object
+ * @param agent        pointer to agent object
  * @param request_uri  if non-NULL, and there is destination URI
  *                     associated with the dialog, these URIs must match
  * @param call_id      if non-NULL, must match with Call-ID header contents
@@ -5723,6 +5727,7 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
  * @param magic       application context pointer
  * @param route_url   optional URL used to route transaction requests
  * @param msg         request message
+ * @param tag, value, ... tagged parameter list
  *
  * @return
  * The function nta_outgoing_mcreate() returns a pointer to newly created
@@ -8667,9 +8672,9 @@ int reliable_check(nta_incoming_t *irq)
  * @param irq
  * @param callback
  * @param rmagic
+ * @param status
  * @param phrase
- * @param tag
- * @param value
+ * @param tag, value, ..
  */
 nta_reliable_t *nta_reliable_treply(nta_incoming_t *irq,
 				    nta_prack_f *callback,

@@ -326,8 +326,7 @@ struct tport_master {
   tp_stack_t  	     *mr_stack;        /**< Transport consumer */
   tp_stack_class_t 
                const *mr_tpac;		/**< Methods provided by stack */
-  int                 mr_log;	/**< Log message contents? */
-#define mr_msg_flags  mr_log	/**< Flags used by msg_t creation */
+  int                 mr_log;	        /**< Do logging of parsed messages */
   su_root_t    	     *mr_root;		/**< SU root pointer */
 
   /**< Timer reclaiming unused connections and compartment */
@@ -2751,8 +2750,8 @@ msg_t *tport_msg_alloc(tport_t const *self, unsigned size)
 {
   if (self) {
     tport_master_t *mr = self->tp_master;
-    msg_t *msg = mr->mr_tpac->tpac_alloc(mr->mr_stack, mr->mr_msg_flags,
-				  NULL, size, self, NULL);
+    msg_t *msg = mr->mr_tpac->tpac_alloc(mr->mr_stack, mr->mr_log,
+					 NULL, size, self, NULL);
     if (msg) {
       msg_addrinfo(msg)->ai_family =   self->tp_pri->pri_family;
       msg_addrinfo(msg)->ai_protocol = self->tp_pri->pri_protocol;

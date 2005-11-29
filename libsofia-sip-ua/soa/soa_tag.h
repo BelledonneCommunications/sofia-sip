@@ -42,12 +42,13 @@
  * Media states 
  */
 enum {
-  SOA_ACTIVE_DISABLED = -4, /**< Media not negotiated */
   SOA_ACTIVE_REJECTED = -8, /**< Media rejected in negotiation */
-  SOA_ACTIVE_INACTIVE = 0,  /**< SDP O-A state for media */
-  SOA_ACTIVE_SENDONLY = 1,  /**< SDP O-A state for media */
-  SOA_ACTIVE_RECVONLY = 2,  /**< SDP O-A state for media */
+  SOA_ACTIVE_DISABLED = -4, /**< Media not negotiated */
+  SOA_ACTIVE_INACTIVE = 0,  /**< Media is inactive: no RTP */
+  SOA_ACTIVE_SENDONLY = 1,  /**< Media is sent only */
+  SOA_ACTIVE_RECVONLY = 2,  /**< Media is received only */
   SOA_ACTIVE_SENDRECV = SOA_ACTIVE_SENDONLY | SOA_ACTIVE_RECVONLY
+			    /**< Media is bidirectional */
 };
 
 #define SOA_ACTIVE_DISABLED SOA_ACTIVE_DISABLED

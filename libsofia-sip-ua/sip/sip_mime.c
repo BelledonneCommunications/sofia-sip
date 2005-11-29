@@ -710,7 +710,7 @@ int sip_mime_version_e(char b[], int bsiz, sip_header_t const *h, int f)
 /**@SIP_HEADER sip_warning Warning Header
  * 
  * The Warning response-header field is used to carry additional information
- * about the status of a response. Its syntax is defined in [S10.47] as
+ * about the status of a response. Its syntax is defined in [S20.43] as
  * follows:
  * 
  * @code

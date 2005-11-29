@@ -387,7 +387,8 @@ void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *hmagic)
 
 /** Check if operation handle is used for INVITE
  *
- * Check if operation handle has been used with either outgoing or incoming INVITE request.
+ * Check if operation handle has been used with either outgoing or incoming
+ * INVITE request.
  *
  * @param nh          Pointer to operation handle
  *
@@ -602,8 +603,7 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh)
  *     #NUTAG_URL \n
  *     #NUTAG_USER_AGENT \n
  *     #NUTAG_UPDATE_REFRESH \n
- *     #NUTAG_SIP_PARSER \n
- *     #NUTAG_CERTIFICATE_DIR \n
+ *     #NUTAG_SUBSTATE \n
  *     #NUTAG_SMIME_ENABLE \n
  *     #NUTAG_SMIME_OPT \n
  *     #NUTAG_SMIME_PROTECTION_MODE \n
@@ -624,8 +624,7 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh)
  *     #NTATAG_DEBUG_DROP_PROB \n
  *     #NTATAG_SIPFLAGS
  *
- * nua_set_params() also accepts any soa tags from <soa_tag.h> (or
- * <mss_soa.h>).
+ * nua_set_params() also accepts any soa tags, defined in <soa_tag.h>.
  * 
  * @par Events:
  *     none
@@ -708,8 +707,6 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
  *     #NUTAG_SESSION_TIMER \n
  *     #NUTAG_USER_AGENT \n
  *     #NUTAG_UPDATE_REFRESH \n
- *     #NUTAG_SIP_PARSER (XXX) \n
- *     #NUTAG_CERTIFICATE_DIR (XXX) \n
  *     #NUTAG_SMIME_ENABLE \n
  *     #NUTAG_SMIME_OPT \n
  *     #NUTAG_SMIME_PROTECTION_MODE \n
@@ -826,10 +823,11 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *
  * By default creates a media session, includes its description as 
  * SDP and send the request to the recipient. Upon receiving the 
- * response it will active the media session and establish the call. \n
- * \n
- * Incomple call can be hung-up with nua_cancel() \n
- * \n
+ * response it will active the media session and establish the call. 
+ * 
+ * Incomplete call can be hung-up with nua_cancel(). Completed call can be
+ * hung-up with nua_bye().
+ *
  * Optionally 
  * - uses early media if #NUTAG_EARLY_MEDIA tag is used with non zero value
  * - media parameters can be set by NUTAG_MEDIA_* tags
@@ -848,22 +846,25 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_AF \n
- *    #NUTAG_HOLD \n
- *    #NUTAG_INVITE_TIMER \n
- *    #NUTAG_MEDIA_ADDRESS \n
- *    #NUTAG_MEDIA_ENABLE \n
- *    #NUTAG_MEDIA_FEATURES \n
- *    #NUTAG_REFER_PAUSE \n
- *    #NUTAG_URL \n
+ *    NUTAG_URL() \n
+ *    NUTAG_HOLD() \n
+ *    NUTAG_NOTIFY_REFER() \n
+ *    NUTAG_REFER_PAUSE() \n
+ *    NUTAG_INVITE_TIMER() \n
+ *    NUTAG_MEDIA_FEATURES() \n
+ *    NUTAG_MEDIA_ENABLE() \n
+ *    SOATAG_HOLD() \n
+ *    SOATAG_AF() \n
+ *    SOATAG_ADDRESS() \n
+ *    SOATAG_USER_SDP() or SOATAG_USER_SDP_STR() \n
  *    tags in <sip_tag.h>
  *
  * @par Events:
  *    #nua_r_invite \n
+ *    #nua_i_state \n
+ *    #nua_i_active \n
  *    #nua_i_media_error \n
  *    #nua_i_fork \n
- *    #nua_i_active \n
- *    #nua_i_media_update
  *
  * \sa nua_handle_has_active_call() \n
  *     nua_handle_has_call_on_hold()\n
@@ -1104,10 +1105,10 @@ void nua_notify(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *
  * @par Related Tags:
  *    #NUTAG_URL \n
- *    #SIPTAG_EVENT \n
- *    #SIPTAG_CONTENT_TYPE \n
- *    #SIPTAG_PAYLOAD \n
- *    #SIPTAG_ACCEPT
+ *    #SIPTAG_EVENT or #SIPTAG_EVENT_STR \n
+ *    #SIPTAG_CONTENT_TYPE or SIPTAG_CONTENT_TYPE_STR \n
+ *    #SIPTAG_PAYLOAD or #SIPTAG_PAYLOAD_STR \n
+ *    #SIPTAG_ACCEPT or #SIPTAG_ACCEPT_STR \n
  *
  * @par Events:
  *    #nua_r_notify
@@ -1119,9 +1120,8 @@ void nua_notifier(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 
 /** Terminate an event server. 
  *
- * Terminate an event server with matching event and content type. 
- * The event server was created earlier with nua_notifier() 
- * function containing the same content and event type tags.
+ * Terminate an event server with matching event and content type. The event
+ * server was created earlier with nua_notifier() function.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -1132,6 +1132,7 @@ void nua_notifier(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  * @par Related Tags:
  *    #SIPTAG_EVENT \n
  *    #SIPTAG_CONTENT_TYPE \n
+ *    #SIPTAG_PAYLOAD \n
  *    #NEATAG_REASON
  *
  * @par Events:
@@ -1346,11 +1347,9 @@ void nua_redirect(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_MEDIA_ADDRESS \n
- *    #NUTAG_AF \n
- *    #NUTAG_HOLD \n
- *    #NUTAG_VIDEO_LOCAL \n
- *    #NUTAG_VIDEO_REMOTE \n
+ *    #SOATAG_ADDRESS \n
+ *    #SOATAG_AF \n
+ *    #SOATAG_HOLD \n
  *    Tags in <sip_tag.h>.
  *
  * @par Events:

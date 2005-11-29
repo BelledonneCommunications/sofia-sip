@@ -343,6 +343,12 @@ void nea_subnode_init(nea_subnode_t *sn, nea_sub_t *s, sip_time_t now)
  * 
  * <dt>NEATAG_THROTTLE()
  * <dd>Default value for event throttle (by default, 5 seconds).
+ * Throttle determines the minimum interval betweeen notifications. Note
+ * that the notification indicating that the subscription has terminated
+ * will be sent regardless of throttle.
+ * 
+ * The default throttle value is used if the subscriber does not include
+ * a throttle parameter in @ref sip_event "Event" header of SUBSCRIBE request.
  * 
  * <dt>NEATAG_MINTHROTTLE()
  * <dd>Minimum allowed throttle value (by default, 5 seconds).
@@ -601,7 +607,59 @@ void nea_server_destroy(nea_server_t *nes)
 
 /* ----------------------------------------------------------------- */
 
-/** Update server payload.
+/**Update server payload.
+ *
+ * A nea event server has typed content that is delivered to the
+ * subscribers. Different content types are each assigned a separate primary
+ * view. There can be also primary views with "fake" content, content
+ * delivered to politely blocked subscribers. 
+ *
+ * In addition to primary views, there can be secondary views, views
+ * assigned to a single subscriber only. 
+ *
+ * @TAGS
+ * The following tagged arguments are accepted:
+ * <dl>
+ *
+ * <dt>SIPTAG_PAYLOAD() or SIPTAG_PAYLOAD_STR()
+ * <dd>Updated event content.
+ *
+ * <dt>SIPTAG_CONTENT_TYPE() or SIPTAG_CONTENT_TYPE_STR().
+ * <dd>MIME type of the content.
+ *
+ * <dt>NEATAG_FAKE(fak)
+ * <dd>If @a fake is true, 'fake' view is updated.
+ *
+ * <dt>NEATAG_VIEW(view) 
+ * <dd>If included in tagged arguments, @a view is * updated. Used when
+ * updating secondary view.
+ *
+ * <dt>NEATAG_VERSION(version)
+ * <dd>The application-provided @a version for
+ * event content. After updated content has been sent to subscriber, @a
+ * version is copied to subscriber information structure.
+ *
+ * <dt>NEATAG_EVMAGIC(context)
+ * <dd>Application-provided @a context pointer.
+ * The @a context pointer is returned by nea_view_magic() function.
+ *
+ * <dt>NEATAG_RELIABLE(reliable) 
+ * <dd>The @a reliable flag determines how overlapping updates are handled. 
+ * If @a reliable is true, all updates are delivered to the subscribers.
+ *
+ * <dt>NEATAG_THROTTLE(throttl)
+ * <dd>Default value for event throttle for updated event view. Throttle
+ * determines the minimum interval in seconds betweeen notifications. Note
+ * that the notification indicating that the subscription has terminated
+ * will be sent regardless of throttle.
+ * 
+ * The default throttle value is used if the subscriber does not include
+ * a throttle parameter in @ref sip_event "Event" header of SUBSCRIBE request.
+ * 
+ * <dt>NEATAG_MINTHROTTLE()
+ * <dd>Minimum allowed throttle value for updated event view.
+ *
+ * </dl>
  *
  * @retval -1 upon an error.
  * @retval 0  if event document was not updated.
@@ -678,6 +736,9 @@ int nea_view_update(nea_server_t *nes,
 	  TAG_NULL());
   
   ta_end(ta);
+
+  if (min_throttle < throttle)
+    min_throttle = throttle;
 
   if (ct == NULL && cts == NULL)
     return -1;
@@ -2155,7 +2216,31 @@ int nea_sub_version(nea_sub_t *s, unsigned version)
   return 0;
 }
 
-/** Authorize a subscription */
+/** Authorize a subscription.
+ *
+ * Application can modify the subscription state and authorize the user.
+ * The subscription state has following simple state diagram:
+ *
+ * @code
+ *               +---------------+ +------------------+
+ *               |	         | |       	      |
+ * +-----------+ |  +---------+  V |  +------------+  V  +------------+
+ * | embryonic |-+->| pending |--+-+->| authorized |--+->| terminated |
+ * +-----------+    +---------+       +------------+     +------------+
+ *
+ * @endcode
+ *
+ * @TAGS
+ * IF NEATAG_VIEW(view) is included in tagged arguments, @a view is assigned
+ * to the subscriber and the content from the view is delivered to the
+ * subscriber.
+ *
+ * If NEATAG_FAKE(1) is included in tags, content marked as 'fake' is
+ * delivered to the subscriber.
+ *
+ * @retval 0 if successful
+ * @retval -1 upon an error
+ */
 int nea_sub_auth(nea_sub_t *s, 
 		 nea_state_t state,
 		 tag_type_t tag, tag_value_t value, ...)
@@ -2170,6 +2255,8 @@ int nea_sub_auth(nea_sub_t *s,
   if (s == NULL)
     return -1;
   if (state == nea_embryonic)
+    return -1;
+  if (state < s->s_state)
     return -1;
 
   ta_start(ta, tag, value);

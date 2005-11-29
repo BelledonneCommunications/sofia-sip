@@ -16,6 +16,6 @@ TAGFILES           += ../docs/doxytags_tport=../tport
 
 GENERATE_TAGFILE    = ../docs/doxytags_nta
 
-EXCLUDE_PATTERNS   += sl_*.h sl_*.c
+EXCLUDE_PATTERNS   += sl_*.h sl_*.c nta_compat.*
 
 ALIASES            +=

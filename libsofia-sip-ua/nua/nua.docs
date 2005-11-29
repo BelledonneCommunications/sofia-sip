@@ -344,15 +344,15 @@ application nua_cli.c that can be studied for more complete example.
 @subsection nua_datastructures Data Structures & Defines
 
 An application using services of NUA normally defines data areas that are
-used to store context information (i.e., "Magic"). The types of pointers
-to these context information areas are passed to NUA by defines.
+used to store context information (i.e., "magic"). The types of pointers to
+these context information areas are passed to NUA by defines.
 
 @code
-/* application context information type */
-typedef struct app_ctx_s app_ctx_t;
-#define NUA_MAGIC_T   app_ctx_t
+/* type for application context data */
+typedef struct application application;
+#define NUA_MAGIC_T   application
 
-/* operation handle context information type */
+/* type for operation context data */
 typedef union oper_ctx_u oper_ctx_t;
 #define NUA_HMAGIC_T  oper_ctx_t
 @endcode
@@ -362,17 +362,17 @@ C structures or unions:
 
 @code
 /* example of application context information structure */
-struct app_ctx_s
+typedef struct application
 {
   su_home_t       home[1];  /* memory home */
   su_root_t      *root;     /* root object */
   nua_t          *nua;      /* NUA stack object */
 
   /* other data as needed ... */
-};
+} application;
 
 /* Example of operation handle context information structure */
-union oper_ctx_u
+typedef union operation
 {
   nua_handle_t    *handle;  /* operation handle /
 
@@ -382,8 +382,15 @@ union oper_ctx_u
     ...                     /* call-related information */
   } call;
 
+  struct 
+  {
+    nua_handle_t  *handle;  /* operation handle /
+    ...                     /* subscription-related information */
+  } subscription;
+
   /* other data as needed ... */
-};
+
+} operation;
 @endcode
 
 NUA stack object and handle are opaque to the application programmer.
@@ -407,46 +414,46 @@ having a socket connection to the application for sending commands to the
 application (see documentation of su_wait_create() and su_root_register()).
 
 @code
-/* initialize application context area */
-app_ctx_t app_ctx[1] = {{{{sizeof(app_ctx_t)}}}};
+/* Application context structure */
+application appl[1] = {{{{(sizeof appl)}}}};
 
 /* initialize system utilities */
 su_init();
 
 /* initialize memory handling */
-su_home_init(app_ctx->home);
+su_home_init(appl->home);
 
 /* initialize root object */
-app_ctx->root = su_root_create(app_ctx);
+appl->root = su_root_create(appl);
 
-if (app_ctx->root != NULL) {
+if (appl->root != NULL) {
   /* create NUA stack */
-  app_ctx->nua = nua_create(app_ctx->root,
+  appl->nua = nua_create(appl->root,
                              app_callback,
-                             app_ctx,
+                             appl,
                              /* tags as necessary ...*/
                              TAG_NULL());
 
-  if (app_ctx->nua != NULL) {
+  if (appl->nua != NULL) {
     /* set necessary parameters */
-    nua_set_params(app_ctx->nua,
+    nua_set_params(appl->nua,
                     /* tags as necessary ... */
                     TAG_NULL());
 
     /* enter main loop for processing of messages */
-    su_root_run(app_ctx->nua);
+    su_root_run(appl->nua);
 
     /* destroy NUA stack */
-    nua_destroy(app_ctx->nua);
+    nua_destroy(appl->nua);
   }
 
   /* deinit root object */
-  su_root_destroy(app_ctx->root);
-  app_ctx->root = NULL;
+  su_root_destroy(appl->root);
+  appl->root = NULL;
 }
 
 /* deinitialize memory handling */
-su_home_deinit(app_ctx->home);
+su_home_deinit(appl->home);
 
 /* deinitialize system utilities */
 su_deinit();
@@ -508,31 +515,32 @@ The place_a_call() function creates an operation handle and invokes the
 SIP INVITE method.
 
 @code
-void place_a_call(void)
+operation *place_a_call(char const *name, url_t const *url)
 {
-  oper_ctx_t *oper_ctx;
+  operation *op;
+  sip_to_t *to;
 
   /* create operation context information */
-  oper_ctx = su_zalloc(app_ctx->home, sizeof(oper_ctx_t));
-  if (oper_ctx = NULL) {
-    printf("cannot create operation context information\n");
-    return;
-  }
+  op = su_zalloc(appl->home, (sizeof *op));
+  if (!op)
+     return NULL;
 
-  /* how we create destination_address? */
+  /* Destination address */
+  to = sip_to_create(NULL, url);
+  if (!to)
+     return NULL;
+
+  to->a_display = name;
 
   /* create operation handle */
-  oper_ctx->handle = nua_handle(app_ctx->nua,
-                                oper_ctx,
-                                NUTAG_URL(destination_address),
-                                TAG_END());
+  op->handle = nua_handle(appl->nua, op, SIPTAG_TO(to), TAG_END());
 
-  if (oper_ctx->handle == NULL) {
+  if (op->handle == NULL) {
     printf("cannot create operation handle\n");
-    return;
+    return NULL;
   }
 
-  nua_invite(oper_ctx->handle,
+  nua_invite(op->handle,
               /* other tags as needed ... */
               TAG_END());
 
@@ -562,7 +570,7 @@ void app_r_invite(int           status,
 } /* app_r_invite */
 @endcode
 
-The app_i_active() function is called by callback function when call has
+The app_i_state() function is called by callback function when call has
 been successfully set up and the media has been activated.
 
 @code
@@ -631,7 +639,7 @@ The terminate_call() function sends the SIP BYE message.
 @code
 void terminate_call(void)
 {
-  nua_bye(oper_ctx->handle, TAG_END());
+  nua_bye(op->handle, TAG_END());
 
 } /* terminate call */
 @endcode
@@ -657,10 +665,10 @@ void app_r_bye(int           status,
 
   /* release operation handle */
   nua_handle_destroy(hmagic->handle);
-  oper_ctx->handle = NULL;
+  op->handle = NULL;
 
   /* release operation context information */
-  su_free(app_ctx->home, hmagic);
+  su_free(appl->home, hmagic);
 
 } /* app_r_bye */
 @endcode
@@ -683,10 +691,10 @@ void app_i_bye(int           status,
 
   /* release operation handle */
   nua_handle_destroy(hmagic->handle);
-  oper_ctx->handle = NULL;
+  op->handle = NULL;
 
   /* release operation context information */
-  su_free(app_ctx->home, hmagic);
+  su_free(appl->home, hmagic);
 
 } /* app_i_bye */
 @endcode
@@ -700,11 +708,11 @@ The send_message() function sends the SIP MESSAGE.
 @code
 void send_message(void)
 {
-  oper_ctx_t *oper_ctx;
+  op_t *op;
 
   /* create operation context information */
-  oper_ctx = su_zalloc(app_ctx->home, sizeof(oper_ctx_t));
-  if (oper_ctx = NULL) {
+  op = su_zalloc(appl->home, sizeof(op_t));
+  if (op = NULL) {
     printf("cannot create operation context information\n");
     return;
   }
@@ -712,18 +720,18 @@ void send_message(void)
   /* how we create destination_address? */
 
   /* create operation handle */
-  oper_ctx->handle = nua_handle(app_ctx->nua,
-                                oper_ctx,
+  op->handle = nua_handle(appl->nua,
+                                op,
                                 NUTAG_URL(destination_address),
                                 TAG_END());
 
-  if (oper_ctx->handle == NULL) {
+  if (op->handle == NULL) {
     printf("cannot create operation handle\n");
     return;
   }
 
   /* send MESSAGE */
-  nua_message(oper_ctx->handle,
+  nua_message(op->handle,
                SIPTAG_CONTENT_TYPE_STR("text/plain"),
                SIPTAG_PAYLOAD_STR("Hello, world!"),
                /* other tags as needed ... */
@@ -861,7 +869,7 @@ The shutdown() function starts the termination.
 @code
 void shutdown(void)
 {
-  nua_shutdown(app_ctx->nua);
+  nua_shutdown(appl->nua);
 
 } /* shutdown */
 @endcode
@@ -1611,6 +1619,298 @@ For reference:
                            INIT
 
 */
+
+/**@page nua_event_diagrams NUA Event Diagrams
+
+The example diagrams below try to present how to use NUA API with different
+SIP use cases.
+
+@section nua_event_diagram_call Basic Call
+
+The SIP following event diagram shows a pretty simple, succesful call case. 
+The nua events and nua function calls are show in the diagram below as well
+as the SIP messages.
+
+The call setup above assumes parameters NUTAG_AUTOALERT(0),
+NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
+
+@code
+
+                   Alice           Proxy            Bob
+ 0                  |                |                |
+ 1  nua_handle()    |                |                |
+ 2  nua_invite() -> |-----INVITE---->|                |
+ 3   nua_i_state <- |                |                |
+ 4                  |                |-----INVITE---->| -> nua_i_invite
+ 5                  |<--100 Trying---|                | -> nua_i_state
+ 6                  |                |                |
+ 7                  |                |                |
+ 8                  |                |                | 
+ 9                  |                |<--180 Ringing--| <- nua_respond(180)
+10  nua_i_invite <- |<--180 Ringing--|                | -> nua_i_state
+11   nua_i_state <- |                |                | 
+12                  |                |<--200 OK-------| <- nua_respond(200)
+13  nua_i_invite <- |<---200 OK------|                | -> nua_i_state
+14   nua_i_state <- |                |                |
+15     nua_ack() -> |-----ACK------->|                |
+16   nua_i_state <- |                |-----ACK------->| -> nua_i_ack
+17                  |                |                | -> nua_i_state
+18                  |                |                |
+19               <<====== SIP Session Established =======>>
+20                  |                |                |
+21                  |                |                |
+22     nua_bye() -> |-----BYE------->|                |
+23                  |                |-----BYE------->| -> nua_i_bye
+24                  |                |<----200 OK-----| -> nua_i_state
+25     nua_r_bye <- |<---200 OK------|                |
+26   nua_i_state <- |                |                |
+                    |                |                |
+@endcode
+
+@section nua_event_diagram_call_hold Holding Call
+
+The media (audio, video) can be put on hold. In SIP system this means that
+application can indicate to the remote end that it is engaged in other
+activity (another call, for instance) and does not wish to receive media
+from the remove end.
+
+The call hold is usully implemented using re-INVITE. Re-INVITE is an INVITE
+request sent on existing SIP session. Both original caller and callee can
+send re-INVITEs. The main use of re-INVITE is modifying sessions: adding
+media lines to the session, changing codecs on existing media, and, as you
+might expect, putting existing media on hold as well as resuming media from
+hold. 
+
+A re-INVITE is sent by calling nua_invite() on handle with existing call. 
+When putting call on hold, the application can include SOATAG_HOLD("audio")
+or SOATAG_HOLD("video") or SOATAG_HOLD("audio, video") or SOATAG_HOLD("*")
+as parameters to re-INVITE nua_invite(). (Note that last SOATAG_HOLD() in
+the tag list will override the SOATAG_HOLD() tags before it.)
+
+Another feature where nua tries to be helpful is autoanswer and auto-ACK on
+existing sessions: the re-INVITE is automatically responded with <i>200 OK</i> 
+and ACK is automatically sent. (If the application wants to respond and ACK
+by itself, it should explicitly set NUTAG_AUTOANSWER(0) and/or
+NUTAG_AUTOACK(0) in the handle; either include them in nua_invite() or
+nua_respond() parameters or call nua_set_hparams() explicitly.
+
+@code
+                   Alice           Proxy            Bob
+ 0     nua_handle() |                |                |
+ 1                  |                |                |
+ 2  nua_invite() -> |-----INVITE---->|                |
+ 3   nua_i_state <- |                |                |
+ 4                  |                |-----INVITE---->| -> nua_i_invite
+ 5                  |<--100 Trying---|                | -> nua_i_state
+ 6                  |                |                |
+ 7                  |                |                |
+ 8                  |                |                | 
+ 9                  |                |<--180 Ringing--| <- nua_respond(180)
+10  nua_i_invite <- |<--180 Ringing--|                | -> nua_i_state
+11   nua_i_state <- |                |                | 
+12                  |                |<--200 OK-------| <- nua_respond(200)
+13  nua_i_invite <- |<---200 OK------|                | -> nua_i_state
+14   nua_i_state <- |                |                |
+15     nua_ack() -> |-----ACK------->|                |
+16   nua_i_state <- |                |-----ACK------->| -> nua_i_ack
+17                  |                |                | -> nua_i_state
+18                  |                |                |
+19               <<== Bi-Directional RTP Established ==>>
+20                  |                |                |
+21                  |                |                | 
+22                  |                |<--INVITE(hold)-| <- nua_invite(..
+21                  |                |                |       NUTAG_HOLD("*")..)
+23  nua_i_invite <- |<-INVITE(hold)--|                | -> nua_i_state
+25   nua_i_state <- |----200 OK----->|    	      |
+26                  |                |----200 OK----->| -> nua_i_invite
+28                  |                |<-----ACK-------| -> nua_i_state
+29     nua_i_ack <- |<----ACK--------|                | 
+24                  |                |                |
+30               <<== Uni-Directional RTP Established ==>>
+24                  |                |                |
+31                  |                |                | 
+32                  |                |<--INVITE-------| <- nua_invite(..
+21                  |                |                |      NUTAG_HOLD(NULL)..)
+33  nua_i_invite <- |<--INVITE-------|                | -> nua_i_state
+35   nua_i_state <- |---200 OK------>|                |
+36                  |                |---200 OK------>| -> nua_i_invite
+38                  |                |<----ACK--------| -> nua_i_state
+39     nua_i_ack <- |<----ACK--------|                |
+40   nua_i_state <- |                |                |
+19               <<== Bi-Directional RTP Established ==>>
+42                  |                |                |
+43     nua_bye() -> |-----BYE------->|                |
+44   nua_i_state <- |                |-----BYE------->| -> nua_i_bye
+46                  |                |<----200 OK-----| -> nua_i_state
+47                  |<---200 OK------|                |
+                    |                |                |
+@endcode
+
+
+
+@section nua_event_diagram_call_transfer  Call Transfer
+
+This is the unattended call transfer case. 
+
+1st MSC showing Alice's end:
+
+@code
+           Alice                      Bob                 Carol
+ 0                     |                    |                    |
+ 1     nua_i_invite <- |<-----INVITE--------|                    |
+ 2      nua_i_state <- |                    |                    |
+ 2                     |                    |                    |
+ 3 nua_respond(180) -> |----180 Ringing---->|                    |
+ 2      nua_i_state <- |                    |                    |
+ 4                     |                    |                    |
+ 5 nua_respond(200) -> |------200 OK------->|                    |
+ 6      nua_i_state <- |                    |                    |
+ 8                     |                    |                    |
+ 7        nua_i_ack <- |<-------ACK---------|                    |
+ 8      nua_i_state <- |                    |                    |
+ 9                     |<========RTP=======>|                    |
+10                     |                    |                    |
+11             << Alice performs unattended transfer >>          |
+12                     |                    |                    |
+13                     |                    |                    |
+14      nua_refer() -> |---REFER("r: C")--->|                    |
+15                     |                    |                    |
+16      nua_r_refer <- |<---202 Accepted----|                    |
+17                     |                    |                    |
+18     nua_i_notify <- |<-----NOTIFY--------|                    |
+19                     |                    |                    |
+20                     |------200 OK------->|                    |
+21                     |                    |---INVITE("b: A")-->|
+23                     |                    |                    |
+22        nua_bye() -> |-------BYE--------->|                    |
+23                     |                    |                    |
+24        nua_r_bye <- |<----200 OK---------|                    |
+25      nua_i_state <- |   No RTP Session   |                    |
+28                     |                    |<----180 Ringing----|
+26     nua_i_notify <- |<- - -NOTIFY - - - -|                    |               
+27                     |                    |                    |
+20                     |- - - 200 OK- - - ->|                    |
+29                     |                    |                    |
+30                     |                    |<------200 OK-------|
+31                     |                    |                    |
+32                     |                    |---------ACK------->|
+33                     |                    |        RTP         |
+34                     |                    |<==================>|
+35                     |                    |                    |
+36                     |<-----NOTIFY--------|                    |
+37                     |                    |                    |
+38                     |------200 OK------->|                    |
+                       |                    |                    |
+@endcode
+
+2nd MSC showing Bobs's end:
+
+@code
+   Alice               Bob (nh1)            Bob (nh2)             Carol
+ 0   |      	          |                    |                    |
+ 1   |<-----INVITE--------|                    |                    |
+ 2   |   	          |                    |                    |
+ 3   |---180 Ringing----->|                    |                    |
+ 4   |      	          |                    |                    |
+ 5   |------200 OK------->|                    |                    |
+ 6   |        	          |                    |                    |
+ 7   |<-------ACK---------|                    |                    |
+ 8   |        RTP         |                    |                    |
+ 9   |<==================>|                    |                    |
+10   |                    |                    |                    |
+11<< Alice performs unattended transfer >>     |                    |
+12   |                    |                    |                    |
+13   | 	     Refer-To:C F5|                    |                    |
+14   |-REFER------------->| -> nua_i_refer     |                    |
+15   |  	          |                    |                    |
+16   |<-202 Accepted------|                    |                    |
+17   |      	          |                    |                    |
+18   |<-----NOTIFY--------|                    |                    |
+19   |      	          |                    |                    |
+20   |------200 OK------->| -> nua_r_notify    |                    |
+21   |       	          |                    |                    |
+22   |-------BYE--------->| -> nua_i_bye       |                    |
+23   |     	          | -> nua_i_state     |                    |
+24   |<----200 OK---------|    nua_handle() -> |                    |
+25   |   No RTP Session   |    nua_invite() -> |                    |       
+26   |                    |                    |--INVITE("b: A")--->|
+27   |                    |                    |   	            |
+28   |                    |    nua_i_invite <- |<--180 Ringing------|
+29   |                    |     nua_i_state <- |     	            |
+30   |                    |    nua_i_invite <- |<----200 OK---------|
+31   |                    |     nua_i_state <- |       	            |
+32   |                    |         nua_ack -> |-------ACK--------->|
+33   |                    |                    |                    |
+34   |                    |                    |<=======RTP========>|
+35   |      	          |                    |                    |
+36   |<-----NOTIFY--------|                    |                    |
+37   |      	          |                  
+38   |------200 OK------->| -> nua_r_notify  
+39   |                    | <- nua_handle_destroy
+     |                    |                  
+@endcode
+
+Bob includes nh1 in nua_invite()/25 as NUTAG_NOTIFY_REFER() parameter.
+
+Open Issue 1:
+
+- how Bob know when to destroy nh1?
+
+
+@section nua_event_diagram_3gpp_call 3GPP Call Model
+
+The 3GPP call model is defined in 3GPP TS 24.229. In order to select only a
+single codec and ensure that the QoS reservationa are made before the call
+is alerting, the 3GPP call model employs multiple offer/answer exchanges. It
+uses 100rel and PRACK (@RFC3262), UPDATE (@RFC3311) and preconditions
+(@RFC3312) extensions specified by IETF.
+
+The call setup below assumes parameters NUTAG_AUTOALERT(0),
+NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
+
+@code
+                      A                       B
+ 0    nua_handle()    |                       |
+ 1    nua_invite() -> |                       |
+ 2     nua_i_state <- |----INVITE (offer)---->|
+ 3                    |                       | -> nua_i_invite
+ 4                    |                       | -> nua_i_state
+ 5                    |                       |
+ 6                    |                       | <- nua_respond(183)
+ 7    nua_i_invite <- |<----183 (answer)------| -> nua_i_state
+ 8     nua_i_state <- |                       |
+ 9                << single codec is selected now >>
+10                    |-----PRACK(offer2)---->| -> nua_i_prack
+11                    |                       | -> nua_i_state
+12    nua_r_prack  <- |<--200/PRACK(answer2)--|
+13                    |                       |
+14                    |                       |
+15            << resource reservations are done now >>
+16                    |                       |
+17    nua_update() -> |----UPDATE (offer3)--->|
+18    nua_i_state  <- |                       |
+19    nua_i_state  <- |<-200/UPDATE (answer3)-| -> nua_i_update
+20                    |                       | -> nua_i_state
+21                    |                       |
+22                    |                       |    << B rings >>
+23                    |                       |
+24                    |                       | <- nua_respond(180)
+25    nua_i_invite <- |<---------180----------|
+26    nua_i_state  <- |                       |
+27                    |--------PRACK--------->| -> nua_i_prack
+28    nua_r_prack  <- |<-----200/PRACK------->| -> nua_i_state
+29                    |                       |
+30                    |                       | <- nua_respond(200)
+31    nua_i_invite <- |<---------200----------| -> nua_i_state
+32    nua_i_state  <- |                       |
+33    nua_ack()    -> |                       |
+34    nua_i_state  <- |----------ACK--------->| -> nua_i_ack
+35                    |                       | -> nua_i_state
+                      |                       |
+@endcode
+
+*/
+
 /**@var nua_event_e
  *
  * @brief Events
