@@ -114,10 +114,9 @@ sip_parser_table.c: sip_bad_mask
 sip_%.h: sip_%.h.in $(MSG_PARSER_AWK)
 sip_%.c: sip_%.c.in $(MSG_PARSER_AWK)
 
-sip_tag.c sip_tag_ref.c sip_hclasses.h sip_protos.h sip_tag.h: sip.h
+sip_tag.c sip_hclasses.h sip_protos.h sip_tag.h: sip.h
 	$(AWK_MSG_AWK) PR=$@ $<
 
 sip_parser_table.c: sip.h
 	$(AWK_MSG_AWK) PT=$@ FLAGFILE=$(srcdir)/sip_bad_mask \
 		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
-
