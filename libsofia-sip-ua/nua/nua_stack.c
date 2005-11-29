@@ -3166,7 +3166,7 @@ crequest_restart(nua_handle_t *nh,
 			 TAG_NEXT(tags));
 
   cr->cr_orq = nta_outgoing_mcreate(nh->nh_nua->nua_nta, cb, nh, NULL, msg,
-       			     TAG_END());
+				    SIPTAG_END(), TAG_NEXT(tags));
 
   if (!cr->cr_orq) {
     msg_destroy(msg);
@@ -3233,11 +3233,12 @@ ua_register(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   if (du && msg)
     cr->cr_orq = 
       nta_outgoing_mcreate(nua->nua_nta,
-			    process_response_to_register, nh, NULL,
-			    msg,
-			    TAG_IF(!registering, NTATAG_SIGCOMP_CLOSE(1)),
-			    TAG_IF(registering, NTATAG_COMP("sigcomp")),
-			    TAG_END());
+			   process_response_to_register, nh, NULL,
+			   msg,
+			   SIPTAG_END(), 
+			   TAG_IF(!registering, NTATAG_SIGCOMP_CLOSE(1)),
+			   TAG_IF(registering, NTATAG_COMP("sigcomp")),
+			   TAG_NEXT(tags));
 
   if (!cr->cr_orq) {
     msg_destroy(msg);
@@ -3411,8 +3412,8 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
     
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				      process_response_to_register, nh, NULL,
-       			       msg,
-       			       TAG_END());
+				      msg,
+				      SIPTAG_END(), TAG_NEXT(NULL));
   }
 
   if (!cr->cr_orq) {
@@ -3566,10 +3567,10 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 
     if (sip)
       cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
-					 process_response_to_invite, nh, NULL,
-					 msg,
-					 NTATAG_REL100(ss->ss_100rel),
-					 TAG_END());
+					process_response_to_invite, nh, NULL,
+					msg,
+					NTATAG_REL100(ss->ss_100rel),
+					SIPTAG_END(), TAG_NEXT(tags));
 
     if (cr->cr_orq) {
       cr->cr_offer_sent = offer_sent;
@@ -3790,7 +3791,7 @@ int ua_ack(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 
   if (sip)
     ack = nta_outgoing_mcreate(nua->nua_nta, NULL, NULL, NULL, msg, 
-       			TAG_END());
+			       SIPTAG_END(), TAG_NEXT(tags));
 
   if (!ack) {
     if (!reason) {
@@ -4946,7 +4947,7 @@ ua_info(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				    process_response_to_info, nh, NULL,
 				    msg,
-				    TAG_END());
+				    SIPTAG_END(), TAG_NEXT(tags));
   if (!cr->cr_orq) {
     msg_destroy(msg);
     return UA_EVENT1(e, NUA_500_ERROR);
@@ -5045,7 +5046,7 @@ ua_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				      process_response_to_update, nh, NULL,
 				      msg,
-				      TAG_END());
+				      SIPTAG_END(), TAG_NEXT(tags));
     if (cr->cr_orq) {
       if (offer_sent)
 	cr->cr_offer_sent = 1;
@@ -5292,8 +5293,8 @@ ua_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   orq = nta_outgoing_mcreate(nua->nua_nta,
 			     process_response_to_bye, nh, NULL,
 			     msg,
-			     TAG_END());
-
+			     SIPTAG_END(), TAG_NEXT(tags));
+  
   ss->ss_state = nua_callstate_terminating;
   if (nh->nh_soa)
     soa_terminate(nh->nh_soa, 0);
@@ -5408,7 +5409,7 @@ ua_options(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				    process_response_to_options, nh, NULL,
 				    msg,
-				    TAG_END());
+				    SIPTAG_END(), TAG_NEXT(tags));
   if (!cr->cr_orq) {
     msg_destroy(msg);
     return UA_EVENT1(e, NUA_500_ERROR);
@@ -5520,11 +5521,11 @@ ua_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     (sip && sip->sip_expires && sip->sip_expires->ex_delta == 0);
 
   cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
-				     process_response_to_publish, nh, NULL,
-				     msg,
-				     TAG_IF(e != nua_r_publish,
-					    SIPTAG_EXPIRES_STR("0")),
-				     TAG_END());
+				    process_response_to_publish, nh, NULL,
+				    msg,
+				    TAG_IF(e != nua_r_publish,
+					   SIPTAG_EXPIRES_STR("0")),
+				    SIPTAG_END(), TAG_NEXT(tags));
 
   if (!cr->cr_orq) {
     msg_destroy(msg);
@@ -5672,7 +5673,7 @@ ua_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				      process_response_to_message, nh, NULL,
 				      msg,
-				      TAG_END());
+				      SIPTAG_END(), TAG_NEXT(tags));
   if (!cr->cr_orq) {
     msg_destroy(msg);
     return UA_EVENT1(e, NUA_500_ERROR);
@@ -5808,7 +5809,7 @@ ua_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				      process_response_to_subscribe, nh, NULL,
 				      msg,
-				      TAG_END());
+				      SIPTAG_END(), TAG_NEXT(tags));
 
   if (!cr->cr_orq) {
     int substate = nua_substate_terminated;
@@ -5968,7 +5969,7 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				    process_response_to_subscribe, nh, NULL,
 				    msg,
-				    TAG_END());
+				    SIPTAG_END(), TAG_NEXT(NULL));
 
   if (!cr->cr_orq) {
     int substate = du->du_subscriber->de_substate;
@@ -6047,7 +6048,7 @@ ua_notify(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				      process_response_to_notify, nh, NULL,
 				      msg,
-				      TAG_END());
+				      SIPTAG_END(), TAG_NEXT(tags));
   if (!cr->cr_orq) {
     msg_destroy(msg);
     return UA_EVENT1(e, NUA_500_ERROR);
@@ -6239,7 +6240,7 @@ ua_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				      process_response_to_refer, nh, NULL,
 				      msg,
-				      TAG_END());
+				      SIPTAG_END(), TAG_NEXT(tags));
   
   if (!cr->cr_orq) {
     if (du)
