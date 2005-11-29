@@ -14,11 +14,22 @@ The libsofia-sip-ua library interface version (libtool) is set to zero.
 Library version will not be frozen until the release of 1.12.0 stable
 version.
 
-- Deprecated NUTAG_MEDIA* tags were removed from libsofia-sip/nua/nua_tag.h.
+- Added nua_authorize, nua_i_subscription, and NEATAG_SUB().
 
 - Default install directory for public header file has been changed
   from '${prefix}/include/' to '${prefix}/include/sofia-sip-MAJOR.MINOR'.
   The pkgconfig .pc file has been updated accordingly.
+
+- Deprecated adding RFC2543-style tag in To header. Now tags are generated
+  by a random number generator. Updated prototypes of nta_leg_tag(),
+  nta_leg_rtag(), nta_incoming_tag().
+
+- Deprecated NUTAG_MEDIA* tags were removed from libsofia-sip/nua/nua_tag.h.
+
+- Deprecated NUTAG_HOLD():
+  #define NUTAG_HOLD(x) SOATAG_HOLD((x) ? "*" : NULL)
+
+- Updated sdp_rtpmap_t. 
 
 Contributors to this release
 ----------------------------
@@ -28,5 +39,7 @@ See the AUTHORS file in the distribution package.
 Bugs fixed in this release
 --------------------------
 
-- Bugs in stun client code leading to failures in the 
-  discovery process.
+- Bugs in stun client code leading to failures in the discovery process.
+- su_getlocalinfo() fixes the scope of IP4-mapped or IP4-compatible IP6
+  addresses. Linux kernel erroneously assigns ::127.0.0.1 to global scope,
+  for instance.
