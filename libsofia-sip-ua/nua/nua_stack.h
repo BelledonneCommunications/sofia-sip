@@ -369,17 +369,24 @@ typedef struct nua_handle_preferences
   } nhp_set;
 } nua_handle_preferences_t;
 
+/* Get preference from default handle */
 #define DNH_PGET(dnh, pref)						\
   DNHP_GET((dnh)->nh_prefs, pref)
 #define DNHP_GET(dnhp, pref) ((dnhp)->nhp_##pref)
 #define DNHP_SET(dnhp, pref, value) \
   ((dnhp)->nhp_##pref = (value), (dnhp)->nhp_set.set_bits.nhp_##pref = 1)
 
+/* Get preference from handle, if set, otherwise from default handle */
 #define NH_PGET(nh, pref)						\
   NHP_GET((nh)->nh_prefs, (nh)->nh_nua->nua_dhandle->nh_prefs, pref)
 #define NHP_GET(nhp, dnhp, pref)					\
   ((nhp)->nhp_set.set_bits.nhp_##pref					\
    ? (nhp)->nhp_##pref : (dnhp)->nhp_##pref)
+
+/* Check if preference is set in the handle */
+#define NH_PISSET(nh, pref)						\
+  ((nh)->nh_prefs->nhp_set.set_bits.nhp_##pref &&			\
+   (nh)->nh_nua->nua_dhandle->nh_prefs != (nh)->nh_prefs)
 
 #define NHP_UNSET_ALL(nhp) ((nhp)->nhp_set.set_any = 0)
 #define NHP_SET_ALL(nhp) ((nhp)->nhp_set.set_any = 0xffffffffU)

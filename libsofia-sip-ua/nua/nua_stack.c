@@ -3667,7 +3667,10 @@ static int process_response_to_invite(nua_handle_t *nh,
     if (session_process_response(nh, cr, orq, sip, &received) >= 0) {
       ss->ss_ack_needed = received ? received : "";
 
-      if (NH_PGET(nh, auto_ack))
+      if (NH_PGET(nh, auto_ack) || 
+	  /* Auto-ACK response to re-INVITE unless auto_ack is set to 0 */
+	  (ss->ss_state == nua_callstate_ready && 
+	   !NH_PISSET(nh, auto_ack)))
 	ua_ack(nua, nh, NULL);
       else
 	signal_call_state_change(nh, status, phrase, 
@@ -4220,7 +4223,10 @@ int process_invite2(nua_t *nua,
 
 #define AUTOANSWER ((void*)-1)
 
-  if (ss->ss_state == nua_callstate_ready || NH_PGET(nh, auto_answer)) {
+  if (NH_PGET(nh, auto_answer) ||
+      /* Auto-answert to re-INVITE unless auto_answer is set to 0 */
+      (ss->ss_state == nua_callstate_ready && 
+       !NH_PISSET(nh, auto_answer))) {
     respond_to_invite(nua, nh, SIP_200_OK, AUTOANSWER);
     return 0;
   }
