@@ -25,6 +25,8 @@ AM_CONFIG_HEADER(config.h)
 SAC_ENABLE_NDEBUG
 SAC_ENABLE_EXPENSIVE_CHECKS
 
+AC_GNU_SOURCE
+
 dnl checks for programs
 dnl -------------------
 AX_TOOL_CC
@@ -34,7 +36,6 @@ AC_CHECK_PROG(ETAGS, etags, etags, echo)
 AC_CHECK_TOOL(AR, ar, ar)
 AC_CHECK_TOOL(LD, ld, ld)
 AC_PROG_LIBTOOL
-
 
 AC_ARG_WITH([aclocal],
 [  --with-aclocal          Install m4 files in aclocal --print-ac-dir],
@@ -50,7 +51,6 @@ AC_SUBST([m4dir])
 ### --------------------
 AC_CHECK_LIB(pthread, pthread_create)
 
-SAC_GNU_SOURCE
 SAC_SOFIA_SU
 SAC_OPENSSL
 SAC_TPORT
