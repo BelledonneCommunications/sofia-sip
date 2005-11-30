@@ -326,6 +326,9 @@ typedef struct nua_handle_preferences
 
   unsigned:0;
 
+  /* Default lifetime for implicit subscriptions created by REFER */
+  unsigned         nhp_refer_expires;
+
   /* Subscriber state, i.e. nua_substate_pending */
   unsigned         nhp_substate;
 
@@ -358,6 +361,7 @@ typedef struct nua_handle_preferences
       unsigned nhp_media_features:1;
       unsigned nhp_service_route_enable:1;
       unsigned nhp_path_enable:1;
+      unsigned nhp_refer_expires:1;
       unsigned nhp_substate:1;
       unsigned nhp_allow:1;
       unsigned nhp_supported:1;

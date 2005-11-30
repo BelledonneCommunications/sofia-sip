@@ -69,12 +69,14 @@ tag_typedef_t nutag_session_timer = INTTAG_TYPEDEF(session_timer);
 tag_typedef_t nutag_min_se = INTTAG_TYPEDEF(min_se);
 tag_typedef_t nutag_session_refresher = INTTAG_TYPEDEF(session_refresher);
 tag_typedef_t nutag_update_refresh = BOOLTAG_TYPEDEF(update_refresh);
+tag_typedef_t nutag_refer_expires = UINTTAG_TYPEDEF(refer_expires);
 tag_typedef_t nutag_autoAlert = BOOLTAG_TYPEDEF(autoAlert);
 tag_typedef_t nutag_autoAnswer = BOOLTAG_TYPEDEF(autoAnswer);
 tag_typedef_t nutag_autoACK = BOOLTAG_TYPEDEF(autoACK);
 tag_typedef_t nutag_enableInvite = BOOLTAG_TYPEDEF(enableInvite);
 tag_typedef_t nutag_enableMessage = BOOLTAG_TYPEDEF(enableMessage);
 tag_typedef_t nutag_enableMessenger = BOOLTAG_TYPEDEF(enableMessenger);
+
 
 /* Start NRC Boston */
 tag_typedef_t nutag_smime_enable = BOOLTAG_TYPEDEF(smime_enable);

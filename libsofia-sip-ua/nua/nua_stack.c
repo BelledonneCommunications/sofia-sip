@@ -282,6 +282,8 @@ int ua_init(su_root_t *root, nua_t *nua)
   DNHP_SET(dnhp, service_route_enable, 1);
   DNHP_SET(dnhp, path_enable, 1);
 
+  DNHP_SET(dnhp, refer_expires, 300);
+
   DNHP_SET(dnhp, substate, nua_substate_active);
 
   DNHP_SET(dnhp, allow, sip_allow_make(dnh->nh_home, nua_allow_str));
@@ -6077,12 +6079,81 @@ ua_notify(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 			 SIP_METHOD_NOTIFY,
 			 NUTAG_ADD_CONTACT(1),
 			 TAG_NEXT(tags));
+
   sip = sip_object(msg);
   if (sip) {
     du = dialog_usage_get(nh->nh_ds, nua_notifier_usage, sip->sip_event);
     if (du && du->du_event && !sip->sip_event)
       sip_add_dup(msg, sip, (sip_header_t *)du->du_event);
+
+    if (!du)
+      ;
+    else if (sip->sip_subscription_state) {
+      char const *ss_substate = sip->sip_subscription_state->ss_substate;
+      if (strcasecmp(ss_substate, "terminated") == 0)
+	du->du_notifier->de_substate = nua_substate_terminated;
+      else if (strcasecmp(ss_substate, "pending") == 0)
+	du->du_subscriber->de_substate = nua_substate_pending;
+      else /* if (strcasecmp(subs->ss_substate, "active") == 0) */ 
+	du->du_subscriber->de_substate = nua_substate_active;
+
+      if (sip->sip_subscription_state->ss_expires) {
+	unsigned long expires;
+	expires = strtoul(sip->sip_subscription_state->ss_expires, NULL, 10);
+	if (expires > 3600)
+	  expires = 3600;
+	du->du_common->cu_refresh = sip_now() + expires;
+      }
+    }
+    else {
+      sip_subscription_state_t *ss;
+      char const *substate;
+      sip_time_t now = sip_now();
+      unsigned long expires = 3600;
+
+      if (du->du_notifier->de_substate == nua_substate_embryonic)
+	du->du_notifier->de_substate = nua_substate_pending;
+
+      switch (du->du_notifier->de_substate) {
+      case nua_substate_embryonic:
+	du->du_notifier->de_substate = nua_substate_pending;
+	/*FALLTHROUGH*/
+      case nua_substate_pending:
+	substate = "pending";
+	break;
+      case nua_substate_active:
+      default:
+	substate = "active";
+	break;
+      case nua_substate_terminated:
+	substate = "terminated";
+	break;
+      }
+
+      if (du->du_common->cu_refresh <= now)
+	du->du_notifier->de_substate = nua_substate_terminated;
+
+      if (du->du_notifier->de_substate != nua_substate_terminated) {
+	if (du->du_common->cu_refresh)
+	  expires = du->du_common->cu_refresh - now;
+	else
+	  du->du_common->cu_refresh = now + expires;
+	ss = sip_subscription_state_format(msg_home(msg), "%s;expires=%lu",
+					   substate, expires);
+      }
+      else {
+	du->du_common->cu_refresh = now;
+	ss = sip_subscription_state_make(msg_home(msg), "terminated; "
+					 "reason=noresource");
+      }
+
+      msg_header_insert(msg, (void *)sip, (void *)ss);
+    }
+
+    if (du && du->du_notifier->de_substate == nua_substate_terminated)
+      du->du_terminating = 1;
   }
+
 
   if (du)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
@@ -6355,6 +6426,7 @@ static int process_response_to_refer(nua_handle_t *nh,
 }
 
 /*--------------------------------------------------*/
+
 int process_refer(nua_t *nua,
 		  nua_handle_t *nh,
 		  nta_incoming_t *irq,
@@ -6386,6 +6458,7 @@ int process_refer(nua_t *nua,
   }
 
   du->du_ready = 1;
+
   dialog_uas_route(nh, sip, 1);	/* Set route and tags */
 
   if (!sip->sip_referred_by) {
@@ -6406,11 +6479,12 @@ int process_refer(nua_t *nua,
 
   nta_incoming_mreply(irq, response);
 
+  du->du_common->cu_refresh = sip_now() + NH_PGET(nh, refer_expires);
+
   /* Immediate notify */
   stack_signal(nh,
 	       nua_r_notify,
 	       SIPTAG_EVENT(event),
-	       SIPTAG_SUBSCRIPTION_STATE_STR("pending"),
 	       SIPTAG_CONTENT_TYPE_STR("message/sipfrag"),
 	       SIPTAG_PAYLOAD_STR("SIP/2.0 100 Trying\r\n"),
 	       TAG_END());

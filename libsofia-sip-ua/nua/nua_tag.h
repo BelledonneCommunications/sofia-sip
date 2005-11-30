@@ -1100,6 +1100,32 @@ enum nua_substate {
   nua_substate_terminated = nea_terminated
 };
 
+/**Default lifetime for implicit subscriptions created by REFER.
+ *
+ * Default expiration time in seconds for implicit subscriptions created by
+ * REFER.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_set_hparams() \n
+ *    nua_get_hparams() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    @c 0  disable \n
+ *    @c >0 interval in seconds
+ *
+ * Corresponding tag taking reference parameter is NUTAG_REFER_EXPIRES()
+ */
+#define NUTAG_REFER_EXPIRES(x)  nutag_refer_expires, tag_uint_v((x))
+extern tag_typedef_t nutag_refer_expires;
+
+#define NUTAG_REFER_EXPIRES_REF(x) nutag_refer_expires_ref, tag_uint_vr((&(x)))
+extern tag_typedef_t nutag_refer_expires_ref;
+
 /** Add media tags from our offer to Accept-Contact headers.
  *
  * Automatically generate Accept-Contact headers for caller
