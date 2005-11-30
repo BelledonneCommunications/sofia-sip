@@ -2410,8 +2410,7 @@ dialog_usage_add(nua_handle_t *nh,
 
     if (du) {
       du->du_kind = kind;
-      if (o)
-	du->du_event = o;
+      du->du_event = o;
 
       switch (kind) {
       case nua_session_usage:  

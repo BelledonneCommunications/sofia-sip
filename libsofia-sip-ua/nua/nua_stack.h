@@ -123,14 +123,14 @@ struct nua_event_usage {
 
 struct nua_register_usage {
   struct nua_common_usage ru_common[1];
-  struct sigcomp_compartment *ru_compartment;
   msg_t *ru_msg;
+  struct sigcomp_compartment *ru_compartment;
 };
 
 struct nua_publish_usage {
   struct nua_common_usage pu_common[1];
-  sip_etag_t *pu_etag;	/**< ETag */
   msg_t *pu_msg;
+  sip_etag_t *pu_etag;	/**< ETag */
 };
 
 
@@ -156,7 +156,7 @@ union nua_dialog_usage
 struct nua_dialog_state
 {
   /** Dialog usages. */
- nua_dialog_usage_t     *ds_usage;
+  nua_dialog_usage_t     *ds_usage;
 
   /* Dialog and subscription state */
   unsigned ds_route:1;		/**< We have route */
