@@ -29,8 +29,9 @@
  * @brief Tags for Nokia User Agent Library
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti Mela@nokia.com>
  *
- * @date Created: Mon Feb 19 18:54:26 EET 2001 ppessi
+ * @date Created: Mon Nov 28 18:54:26 EET 2005 mela
  */
 
 #ifndef SU_TAG_H

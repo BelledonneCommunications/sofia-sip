@@ -26,6 +26,7 @@
  * @brief Tags for Nokia SIP Transaction API
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti Mela@nokia.com>
  *
  * @date Created: Tue Jul 24 22:28:34 2001 ppessi
  */

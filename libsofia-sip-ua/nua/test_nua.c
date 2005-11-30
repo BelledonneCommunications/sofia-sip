@@ -26,6 +26,7 @@
  * @brief High-level tester for Sofia SIP User Agent Engine
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti Mela@nokia.com>
  *
  * @date Created: Wed Aug 17 12:12:12 EEST 2005 ppessi
  */

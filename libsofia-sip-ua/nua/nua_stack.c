@@ -27,6 +27,7 @@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
+ * @author Martti Mela <Martti Mela@nokia.com>
  * @author Remeres Jacobs <Remeres.Jacobs@nokia.com>
  * @author Tat Chan <Tat.Chan@nokia.com>
  *

@@ -25,5 +25,10 @@ To be written.
   _not_ honor the change-{address,port} requests (i.e. that
   response should be send from a different port/address), 
   which leads to incorrect analysis of NAT behaviour (added 20051119)
+- do not bind to local loopback (added 20051129)
+- the API should allow to specify INADDR_ANY as the local 
+  address/interface (pick the default interface) (added 20051129)
+- the API should use INADDR_ANY if no specific local 
+  interface was requested by the client (added 20051129)
 
 */
