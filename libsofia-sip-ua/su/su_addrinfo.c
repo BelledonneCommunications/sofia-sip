@@ -15,14 +15,14 @@
  *    without specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE PROJECT AND CONTRIBUTORS ``AS IS'' AND
- * GAI_ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED.  IN NO EVENT SHALL THE PROJECT OR CONTRIBUTORS BE LIABLE
- * FOR GAI_ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON GAI_ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN GAI_ANY WAY
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
@@ -150,7 +150,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 	}\
 }
 
-#ifdef HAVE_SOCKADDR_SA_LEN
+#if SU_HAVE_SOCKADDR_SA_LEN
 #define GET_AI(ai, gai_afd, addr, port) {\
 	char *p;\
 	if (((ai) = (struct addrinfo *)malloc(sizeof(struct addrinfo) +\
@@ -297,6 +297,11 @@ getaddrinfo(hostname, servname, hints, res)
 			case IPPROTO_TCP:
 				pai->ai_socktype = SOCK_STREAM;
 				break;
+#if HAVE_SCTP
+			case IPPROTO_SCTP:
+				pai->ai_socktype = SOCK_STREAM;
+				break;
+#endif
 			default:
 				pai->ai_socktype = SOCK_RAW;
 				break;
@@ -306,16 +311,34 @@ getaddrinfo(hostname, servname, hints, res)
 			break;
 		case SOCK_DGRAM:
 			if (pai->ai_protocol != IPPROTO_UDP &&
+#if HAVE_SCTP
+			    pai->ai_protocol != IPPROTO_SCTP &&
+#endif
 			    pai->ai_protocol != GAI_ANY)
 				ERR(EAI_BADHINTS);	/*xxx*/
-			pai->ai_protocol = IPPROTO_UDP;
+			if (pai->ai_protocol == GAI_ANY)
+				pai->ai_protocol = IPPROTO_UDP;
 			break;
 		case SOCK_STREAM:
 			if (pai->ai_protocol != IPPROTO_TCP &&
+#if HAVE_SCTP
+			    pai->ai_protocol != IPPROTO_SCTP &&
+#endif
 			    pai->ai_protocol != GAI_ANY)
 				ERR(EAI_BADHINTS);	/*xxx*/
-			pai->ai_protocol = IPPROTO_TCP;
+			if (pai->ai_protocol == GAI_ANY)
+				pai->ai_protocol = IPPROTO_TCP;
 			break;
+#if HAVE_SCTP
+		case SOCK_SEQPACKET:
+			if (pai->ai_protocol != IPPROTO_SCTP &&
+			    pai->ai_protocol != GAI_ANY)
+				ERR(EAI_BADHINTS);	/*xxx*/
+
+			if (pai->ai_protocol == GAI_ANY)
+				pai->ai_protocol = IPPROTO_SCTP;
+			break;
+#endif
 		default:
 			ERR(EAI_SOCKTYPE);
 			break;
@@ -362,6 +385,11 @@ getaddrinfo(hostname, servname, hints, res)
 				} else if (strcmp(sp->s_proto, "tcp") == 0) {
 					pai->ai_socktype = SOCK_STREAM;
 					pai->ai_protocol = IPPROTO_TCP;
+#if HAVE_SCTP
+				} else if (strcmp(sp->s_proto, "sctp") == 0) {
+					pai->ai_socktype = SOCK_STREAM;
+					pai->ai_protocol = IPPROTO_SCTP;
+#endif
 				} else
 					ERR(EAI_PROTOCOL);	/*xxx*/
 			}
@@ -691,7 +719,7 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	if (sa == NULL)
 		return ENI_NOSOCKET;
 
-#ifdef HAVE_SOCKADDR_SA_LEN
+#if SU_HAVE_SOCKADDR_SA_LEN
 	len = sa->sa_len;
 	if (len != salen) return ENI_SALEN;
 #else
@@ -792,7 +820,7 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	return SUCCESS;
 }
 
-#endif	/* SU_WITH_GETADDRINFO */
+#endif	/* !SU_HAVE_GETADDRINFO */
 
 /** Translate address and service.
  *
@@ -802,7 +830,7 @@ int su_getaddrinfo(char const *node, char const *service,
 		   su_addrinfo_t const *hints,
 		   su_addrinfo_t **res)
 {
-#if HAVE_SCTP
+#if HAVE_SCTP && SU_HAVE_GETADDRINFO
   if (res && hints && hints->ai_protocol == IPPROTO_SCTP) {
     su_addrinfo_t *ai, system_hints[1];
     int retval, socktype;
