@@ -1,3 +1,341 @@
+2005-11-30  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  Syncing darcs with CVS.
+	
+  * Silenced warning in su_addrinfo.c.
+
+    M ./libsofia-sip-ua/su/su_addrinfo.c -1 +2
+
+  * Added su_getaddrinfo() and su_getnameinfo() replacement functions.
+
+    M ./libsofia-sip-ua/su/Makefile.am -2 +3
+    M ./libsofia-sip-ua/su/su.c -58
+    M ./libsofia-sip-ua/su/su.h -15 +1
+    A ./libsofia-sip-ua/su/su_addrinfo.c
+    A ./libsofia-sip-ua/su/su_addrinfo.h
+    M ./libsofia-sip-ua/su/su_configure.h.in +3
+    M ./libsofia-sip-ua/su/su_localinfo.c -3 +3
+    M ./libsofia-sip-ua/su/su_wait.h -2 +2
+    M ./m4/sac-su2.m4 -2 +8
+
+  * Not using Unix network includes, use Sofia includes.
+
+    M ./libsofia-sip-ua/sresolv/sresolv.c -1 +1
+
+  * Using AC_GNU_SOURCE.
+
+    M ./configure.ac -2 +2
+
+  * Using sip-options consistently in utils/sip-options.c.
+
+    M ./utils/sip-options.c -8 +9
+
+  * Updated RELEASE and TODO.
+
+    M ./RELEASE +4
+    M ./TODO -2 +2
+
+  * Using nua_i_state event in nua_cli.c.
+
+    M ./utils/nua_cli.c -76 +88
+
+  * Updated ABNF grammar for Subscription-State in sip_event.c.
+  Added more tests for Subscription-State.
+
+    M ./libsofia-sip-ua/sip/sip_event.c -12 +17
+    M ./libsofia-sip-ua/sip/torture_sip.c -13 +16
+
+  * Fixed test_class.c documentation.
+
+    M ./libsofia-sip-ua/msg/test_class.c -2 +2
+
+  * Proofread conformance specification.
+
+    M ./libsofia-sip-ua/docs/conformance.docs -375 +547
+
+  * Fixed doxytags for main doxygen pages.
+
+    M ./libsofia-sip-ua/docs/Doxyfile -16 +16
+
+  * Fixed types of NUATAGs
+  Changed type of NUTAG_INVITE_TIMER, NUTAG_SESSION_TIMER, and NUTAG_MIN_SE
+  value to unsigned.
+
+    M ./libsofia-sip-ua/nua/nua_tag.c -3 +3
+
+  * Added test for handlin refer subscriptions.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -1 +58
+
+  * Added test_mime_negotiation() to test_nua.c
+
+    M ./libsofia-sip-ua/nua/test_nua.c +166
+
+  * Cosmetic changes in nua_dialog_usage_t in nua_stack.h.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +1
+    M ./libsofia-sip-ua/nua/nua_stack.h -3 +3
+
+  * Added NHP_ISSET() to nua_stack.h.
+
+    M ./libsofia-sip-ua/nua/nua_stack.h -1 +5
+
+  * Added process_subsribe() for refer subscriptions in nua_stack.c.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c +88
+
+  * Removed duplicate nua_i_subscription.
+
+    M ./libsofia-sip-ua/nua/nua_common.c -2
+
+  * Renumbered test cases, state transitions in nua.docs and test_nua.c.
+
+    M ./libsofia-sip-ua/nua/nua.docs -79 +79
+    M ./libsofia-sip-ua/nua/nua_stack.c +3
+    M ./libsofia-sip-ua/nua/test_nua.c -78 +131
+
+  * Added NUTAG_REFER_EXPIRES() with default value of 300.
+  Handling expiration of implicit subscriptions created by REFER.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -1 +75
+    M ./libsofia-sip-ua/nua/nua_stack.h +4
+    M ./libsofia-sip-ua/nua/nua_tag.c +2
+    M ./libsofia-sip-ua/nua/nua_tag.h +26
+
+  * Refactored register_expires_contacts()
+  Fixed memory leak, bug in '*'handling.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -10 +18
+
+  * Rewrote uas_check_session_content(). 
+  Returning empty Accept-Encoding header in 415/406 responses.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -21 +41
+
+  * Do not throttle at termination. [FIX]
+  
+  nea_server now sends NOTIFYs that terminate subscription even if the 
+  previous NOTIFY transaction has not completed yet.
+  
+  This fixes the race condition in nua_terminate() (where terminating NOTIFY
+  was is never sent).
+
+    M ./libsofia-sip-ua/nea/nea_server.c -1 +4
+
+  * Fixed rule to build sip_tag_ref.c.
+
+    M ./libsofia-sip-ua/sip/Makefile.am -2 +1
+
+  * Explicitly saving and destroying messages in ua_signal().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -23 +23
+    M ./libsofia-sip-ua/nua/nua_stack.h +1
+
+  * Updated Content-Encoding (e) header parsing.
+
+    M ./libsofia-sip-ua/sip/sip.h -1 +1
+    M ./libsofia-sip-ua/sip/sip_mime.c -4 +4
+    M ./libsofia-sip-ua/sip/torture_sip.c -3 +4
+
+  * Updated Session-Expires and Min-SE header to RFC 4028.
+  A parameter list was added to Min-SE header.
+
+    M ./libsofia-sip-ua/sip/sip.h +1
+    M ./libsofia-sip-ua/sip/sip_session.c -18 +30
+    M ./libsofia-sip-ua/sip/torture_sip.c +10
+
+  * Update RELEASE.
+  Added text about API changes related nua_authorize(), nua_i_subscription and
+  NEATAG_SUB(), NUTAG_HOLD(), sdp_rtpmap_t.
+  Mentioning su_getlocalinfo() bug.
+
+    M ./RELEASE -3 +16
+
+  * Fixed installing and distributing m4 files.
+  Not installing m4/sac-su2.m4. 
+  Including m4/sac-tport.m4 and m4/sac-openssl.m4 in distribution.
+
+    M ./Makefile.am -1 +2
+
+  * Deprecated NUTAG_HOLD().
+
+  * Updated documentation in nea, nua, nta, sip and tport modules.
+
+  * Updated documentation.
+
+    M ./libsofia-sip-ua/docs/Doxyfile.aliases +1
+    M ./libsofia-sip-ua/docs/conformance.docs -172 +177
+    M ./libsofia-sip-ua/docs/mainpage.docs -5 +7
+
+  * Updated subscriptuion authorization and nua_terminate() semantics.
+  Subscription authorization now rejects SUBSCRIBE if 
+  NUTAG_SUBSTATE(nua_substate_terminated) parameter is set.
+  Correct status code is relayed to application, too.
+  nua_terminate() now always terminates whole notifier.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -49 +65
+
+  * Fixed nua_handle_has_active_call() in nua_stack.c.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c +10
+    M ./libsofia-sip-ua/nua/test_nua.c +32
+
+  * Renamed authenticate_watcher() as authorize_watcher().
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -13 +13
+
+  * Cleanup of subscription logging and comments in nua_stack.c.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -21 +41
+
+  * Using SIPTAG_END() in nua_stack.c.
+  We now pass NTATAG and TPTAG to lower layers. Beware.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -28 +29
+
+  * Added NH_PISSET() macro to <nua_stack.h>.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +8
+    M ./libsofia-sip-ua/nua/nua_stack.h +7
+
+  * Fixed doxytag file names for modules nea and features.
+
+    M ./libsofia-sip-ua/docs/Doxyfile -1 +1
+    M ./libsofia-sip-ua/features/Doxyfile -1 +1
+	
+	M ./libsofia-sip-ua/nea/Doxyfile -1 +1
+
+  * Moved typedefs nua_t and nua_handle_t into <nua_tag.h>
+
+    M ./libsofia-sip-ua/nua/nua.h -6
+    M ./libsofia-sip-ua/nua/nua_tag.h -3 +6
+
+  * Added sip_add_tagis() and SIPTAG_END().
+  SIPTAG_END() allows grouping tags into blocks.
+
+    M ./libsofia-sip-ua/sip/sip_header.h +3
+    M ./libsofia-sip-ua/sip/sip_tag.c.in -1 +2
+    M ./libsofia-sip-ua/sip/sip_tag.h.in +4
+    M ./libsofia-sip-ua/sip/sip_tag_class.c -12 +38
+    M ./libsofia-sip-ua/sip/torture_sip.c +12
+
+  * Fixed scope for V4MAPPED and V4COMPAT IP6 addresses in su_localinfo.c.
+
+    M ./libsofia-sip-ua/su/su_localinfo.c -6 +21
+
+  * Cleaned up debug printing in su_memmem.c.
+
+    M ./libsofia-sip-ua/su/su_memmem.c -11 +21
+
+  * Added end_tag_class[].
+
+    M ./libsofia-sip-ua/su/su_tag_class.h -13 +1
+    M ./libsofia-sip-ua/su/su_tag_inline.h -1 +1
+    M ./libsofia-sip-ua/su/su_taglist.c -48 +84
+
+  * Added replacement functions memccpy().
+  Also moved memcspn() to a file of its own.
+
+    M ./libsofia-sip-ua/su/Makefile.am -5 +13
+    A ./libsofia-sip-ua/su/memccpy.c
+    A ./libsofia-sip-ua/su/memcspn.c
+    M ./libsofia-sip-ua/su/memspn.c -50 +1
+    M ./libsofia-sip-ua/su/strcasestr.c -1 +1
+    M ./m4/sac-su2.m4 -2 +13
+
+  * Added win32/config.h.in
+
+    M ./configure.ac +1
+    A ./win32/config.h.in
+
+  * Added AC_TYPE_LONGLONG.
+
+    M ./configure.ac -3 +2
+    M ./m4/sac-general.m4 -7 +5
+
+  * Tried to fix automatic generation of source files.
+
+    M ./libsofia-sip-ua/http/Makefile.am -10 +9
+    M ./libsofia-sip-ua/msg/Makefile.am -22 +14
+    M ./libsofia-sip-ua/sip/Makefile.am -13 +12
+
+  * Moved bitfields last in sdp_rtpmap_t aka struct sdp_rtpmap_s.
+
+    M ./libsofia-sip-ua/sdp/sdp.c -1 +3
+    M ./libsofia-sip-ua/sdp/sdp.h -5 +5
+    M ./libsofia-sip-ua/sdp/sdp_parse.c -2 +2
+    M ./libsofia-sip-ua/sdp/sdp_torture.c -4 +9
+
+  * Removed RFC2543-compatible tag code.
+
+    M ./libsofia-sip-ua/nta/nta.c -95 +46
+    M ./libsofia-sip-ua/nta/nta.h -4 +3
+    M ./libsofia-sip-ua/nta/nta_tag.h -2 +2
+    M ./libsofia-sip-ua/nta/test_nta.c -18 +20
+
+  * Fixed memory leaks in tport.c and nta.c.
+
+    M ./libsofia-sip-ua/nta/nta.c +11
+    M ./libsofia-sip-ua/tport/tport.c +2
+
+  * Fixed a memory leak when processing re-SUBSCRIBE in nea_server.c.
+
+    M ./libsofia-sip-ua/nea/nea_server.c -2 +2
+
+  * Cleaned #including standard headers in msg module.
+
+    M ./libsofia-sip-ua/msg/msg_header.h +1
+    M ./libsofia-sip-ua/msg/test_msg.c -7 +7
+
+  * Removed extra prototype.
+
+    M ./libsofia-sip-ua/iptsec/auth_plugin_delayed.c -4
+
+  * Casting getpid() return type to something accepted by printf().
+
+    M ./libsofia-sip-ua/nua/test_nua.c -1 +1
+
+  * Doing system #include after sofia #include.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -12 +11
+
+  * Not using nta_incoming_tag_3261() anymore.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -4 +2
+
+  * Added #include <limits.h> to libsofia-sip-ua/su/su.h.
+
+    M ./libsofia-sip-ua/su/su.h -2 +3
+
+  * Added client timeout and NTHTAG_EXPIRES() to nth http client library.
+
+    M ./libsofia-sip-ua/nth/nth_client.c -7 +29
+    M ./libsofia-sip-ua/nth/nth_tag.c -1 +2
+    M ./libsofia-sip-ua/nth/nth_tag.h -1 +7
+    M ./libsofia-sip-ua/nth/nth_test.c -9 +111
+
+  * Fixed RFC 1890/RFC 1891.
+
+    M ./libsofia-sip-ua/docs/Doxyfile.aliases +2
+
+  * Added conformance.docs
+
+    M ./libsofia-sip-ua/docs/Doxyfile -1 +1
+    A ./libsofia-sip-ua/docs/conformance.docs
+
+  * Moved memspn from msg module to su
+
+     ./libsofia-sip-ua/msg/memspn.c -> ./libsofia-sip-ua/su/memspn.c
+
+  * Using package-specific install directory for public header files.
+  Default install directory for public header file has been changed
+  from '${prefix}/include/' to '${prefix}/include/sofia-sip-MAJOR.MINOR'.
+  The pkgconfig .pc file has been updated accordingly.
+
+  * Removed <win32/config.h>
+
+    R ./win32/config.h
+
 2005-11-28  Martti Mela  <martti.mela@nokia.com>
 
 	* Added nua_authorize(), enhanced nua_i_subscription. Added
