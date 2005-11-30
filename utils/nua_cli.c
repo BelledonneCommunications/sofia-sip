@@ -29,7 +29,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 18:37:04 EET 2001 ppessi
- * @date Last modified: Thu Oct 27 10:22:52 2005 ppessi
  */
 
 #include "config.h"
@@ -201,6 +200,10 @@ void cli_r_invite(int status, char const *phrase,
 		  nua_t *nua, cli_t *cli,
 		  nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
 		  tagi_t tags[]);
+void cli_i_state(nua_t *nua, cli_t *cli,
+		 nua_handle_t *nh, cli_oper_t *op, 
+		 tagi_t tags[]);
+
 void cli_i_fork(int status, char const *phrase,
 		nua_t *nua, cli_t *cli,
 		nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
@@ -211,14 +214,6 @@ void cli_i_invite(nua_t *nua, cli_t *cli,
 		  tagi_t tags[]);
 
 void cli_answer(cli_t *cli, int status, char const *phrase);
-
-void cli_i_active(nua_t *nua, cli_t *cli,
-		    nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
-		    tagi_t tags[]);
-void cli_i_terminated(int status, char const *phrase, 
-		      nua_t *nua, cli_t *cli,
-		      nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
-		      tagi_t tags[]);
 
 void cli_i_prack(nua_t *nua, cli_t *cli,
 		 nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
@@ -366,7 +361,6 @@ int main(int ac, char *av[])
 		       NUTAG_REGISTRAR(getenv("SIPHOME")),
 		       NUTAG_ENABLEMESSAGE(1),
 		       NUTAG_ENABLEINVITE(1),
-		       NUTAG_AUTOALERT(1),
 		       NUTAG_SESSION_TIMER(s_e),
 		       NUTAG_MIN_SE(min_se),
 		       SIPTAG_FROM_STR(getenv("SIPADDRESS")),
@@ -431,6 +425,10 @@ void cli_callback(nua_event_t event,
     cli_r_invite(status, phrase, nua, cli, nh, op, sip, tags);
     return;
 
+  case nua_i_state:
+    cli_i_state(nua, cli, nh, op, tags);
+    return;
+
   case nua_i_fork:
     cli_i_fork(status, phrase, nua, cli, nh, op, sip, tags);
     return;
@@ -444,11 +442,9 @@ void cli_callback(nua_event_t event,
     return;
 
   case nua_i_active:
-    cli_i_active(nua, cli, nh, op, sip, tags);
     return;
-    
+
   case nua_i_terminated:
-    cli_i_terminated(status, phrase, nua, cli, nh, op, sip, tags);
     return;
     
   case nua_r_bye:
@@ -952,13 +948,73 @@ void cli_r_invite(int status, char const *phrase,
 		    tagi_t tags[])
 {
   printf("%s: INVITE: %03d %s\n", cli->cli_name, status, phrase);
+  if (status == 401 || status == 407)
+    oper_set_auth(cli, op, sip, tags);
+}
 
-  if (status >= 300) {
-    op->op_callstate &= ~opc_sent;
-    if (status == 401 || status == 407)
-      oper_set_auth(cli, op, sip, tags);
-    cli_prompt(cli);
+/** Textify for media mode */
+char const *cli_media_mode(int mode)
+{
+  switch (mode) {
+  case SOA_ACTIVE_DISABLED: return "disabled";
+  case SOA_ACTIVE_REJECTED: return "rejected";
+  case SOA_ACTIVE_INACTIVE: return "inactive";
+  case SOA_ACTIVE_SENDONLY: return "sendonly";
+  case SOA_ACTIVE_RECVONLY: return "recvonly";
+  case SOA_ACTIVE_SENDRECV: return "sendrecv";
+  default:                  return "none";
   }
+}
+
+void cli_i_state(nua_t *nua, cli_t *cli,
+		 nua_handle_t *nh, cli_oper_t *op, 
+		 tagi_t tags[])
+{
+  int 
+    audio = nua_active_inactive,
+    video = nua_active_inactive,
+    chat = nua_active_inactive;
+  int state = nua_callstate_init;
+
+  tl_gets(tags, NUTAG_CALLSTATE_REF(state), TAG_END());
+
+  switch ((enum nua_callstate)state) {
+
+  case nua_callstate_received:
+    nua_respond(nh, SIP_180_RINGING, TAG_END());
+    break;
+
+  case nua_callstate_completing:
+    nua_ack(nh, TAG_END());	/* In auto-ack, we get nua_callstate_ready */
+    break;
+
+  case nua_callstate_ready:
+    assert(op);
+    tl_gets(tags, 
+	    NUTAG_ACTIVE_AUDIO_REF(audio), 
+	    NUTAG_ACTIVE_VIDEO_REF(video), 
+	    NUTAG_ACTIVE_CHAT_REF(chat), 
+	    TAG_END());
+
+    op->op_callstate = opc_active;
+    printf("%s: call to %s is active:\n\taudio %s, video %s, chat %s\n", 
+	   cli->cli_name, op->op_ident, 
+	   cli_media_mode(audio), cli_media_mode(video), cli_media_mode(chat));
+    cli_prompt(cli);
+    break;
+
+  case nua_callstate_terminated:
+    if (op) {
+      printf("%s: call to %s is terminated\n", cli->cli_name, op->op_ident);
+      op->op_callstate = 0;
+      cli_oper_destroy(cli, op);
+    }
+    cli_prompt(cli);
+    break;
+
+  default:
+    break;
+  }    
 }
 
 void cli_i_fork(int status, char const *phrase,
@@ -1045,19 +1101,6 @@ void cli_answer(cli_t *cli, int status, char const *phrase)
   cli_prompt(cli);
 }
 
-/** query text-string for call mode */
-char const *cli_active(int mode)
-{
-  switch (mode) {
-  case nua_active_inactive: return "inactive";
-  case nua_active_sendonly: return "sendonly";
-  case nua_active_recvonly: return "recvonly";
-  case nua_active_sendrecv: return "sendrecv";
-  default:                  return "none";
-  }
-}
-
-
 void cli_i_prack(nua_t *nua, cli_t *cli,
 		 nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
 		 tagi_t tags[])
@@ -1075,45 +1118,6 @@ void cli_i_prack(nua_t *nua, cli_t *cli,
     nua_handle_destroy(nh);
 }
 
-
-void cli_i_active(nua_t *nua, cli_t *cli,
-		  nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
-		  tagi_t tags[])
-{
-  int audio = nua_active_inactive, video = nua_active_inactive, chat = nua_active_inactive;
-  
-  assert(op);
-
-  tl_gets(tags, 
-	  NUTAG_ACTIVE_AUDIO_REF(audio), 
-	  NUTAG_ACTIVE_VIDEO_REF(video), 
-	  NUTAG_ACTIVE_CHAT_REF(chat), 
-	  TAG_END());
-
-  op->op_callstate = opc_active;
-  printf("%s: call to %s is active:\n\taudio %s, video %s, chat %s\n", 
-	 cli->cli_name, op->op_ident, 
-	 cli_active(audio), cli_active(video), cli_active(chat));
-  cli_prompt(cli);
-}
-
-void cli_i_terminated(int status, char const *phrase, 
-		      nua_t *nua, cli_t *cli,
-		      nua_handle_t *nh, cli_oper_t *op, sip_t const *sip,
-		      tagi_t tags[])
-{
-  if (op) {
-    printf("%s: call to %s terminated\n", cli->cli_name, op->op_ident);
-    if (status)
-      printf("%s: %u %s\n", cli->cli_name, status, phrase);
-    else
-      printf("%s: %s\n", cli->cli_name, phrase);
-    op->op_callstate = 0;
-    cli_oper_destroy(cli, op);
-  }
-
-  cli_prompt(cli);
-}
 
 void cli_bye(cli_t *cli)
 {
@@ -1428,7 +1432,7 @@ void cli_i_refer(nua_t *nua, cli_t *cli,
    
   printf("Please follow(i) or reject(c) the refer\n");
    
-   if(refer_to->r_url->url_type == url_sip) {
+  if (refer_to->r_url->url_type == url_sip) {
       refer_to_str = sip_header_as_string(cli->cli_home, (sip_header_t*)refer_to);
       op2 = cli_oper_create(cli, SIP_METHOD_INVITE, refer_to_str,
 			    NUTAG_NOTIFY_REFER(nh), TAG_END());
@@ -1444,8 +1448,9 @@ void cli_i_refer(nua_t *nua, cli_t *cli,
 /*---------------------------------------*/
 void cli_follow_refer(cli_t *cli)
 {
-
+  /* Not implemented */
 }
+
 /*---------------------------------------*/
 void cli_hold(cli_t *cli, char *destination, int hold)
 {
@@ -1950,14 +1955,21 @@ int handle_input(cli_t *cli, su_timer_t *t, void *arg)
 
     switch (ch) {
 
-    case 'a': case 'A': cli_answer(cli, SIP_200_OK); break;
+    case 'a': case 'A':
+      cli_answer(cli, SIP_200_OK); break;
 
-    case 'b': case 'B': cli_bye(cli); break;
+    case 'b': case 'B':
+      cli_bye(cli); break;
 
-    case 'c': case 'C': cli_cancel(cli); break;
+    case 'c': case 'C': 
+      cli_cancel(cli); break;
        
     case 'd': cli_answer(cli, SIP_480_TEMPORARILY_UNAVAILABLE); break;
     case 'D': cli_answer(cli, SIP_603_DECLINE); break;
+
+    case 'f': case 'F'
+      cli_follow_refer(cli); 
+      break;
 
     case 'i': case 'I':
       printf("To: ");
@@ -2077,7 +2089,7 @@ int handle_input(cli_t *cli, su_wait_t *w, void *p)
     return 0;
   }
   else if (match("f") || match("follow")) {
-    cli_follow_refer(cli); //do we need to do something for this???
+    cli_follow_refer(cli);
   }
   else if (match("h") || match("help")) {
     cli_help(cli);
