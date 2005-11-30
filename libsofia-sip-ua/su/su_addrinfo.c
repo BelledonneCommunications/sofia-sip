@@ -355,7 +355,7 @@ getaddrinfo(hostname, servname, hints, res)
 			if ((sp = getservbyname(servname, proto)) == NULL)
 				ERR(EAI_SERVICE);
 			port = sp->s_port;
-			if (pai->ai_socktype == GAI_ANY)
+			if (pai->ai_socktype == GAI_ANY) {
 				if (strcmp(sp->s_proto, "udp") == 0) {
 					pai->ai_socktype = SOCK_DGRAM;
 					pai->ai_protocol = IPPROTO_UDP;
@@ -364,6 +364,7 @@ getaddrinfo(hostname, servname, hints, res)
 					pai->ai_protocol = IPPROTO_TCP;
 				} else
 					ERR(EAI_PROTOCOL);	/*xxx*/
+			}
 		}
 	}
 	
