@@ -389,8 +389,12 @@ typedef struct nua_handle_preferences
 
 /* Check if preference is set in the handle */
 #define NH_PISSET(nh, pref)						\
-  ((nh)->nh_prefs->nhp_set.set_bits.nhp_##pref &&			\
+  (NHP_ISSET((nh)->nh_prefs, pref) &&					\
    (nh)->nh_nua->nua_dhandle->nh_prefs != (nh)->nh_prefs)
+
+/* Check if preference is set */
+#define NHP_ISSET(nhp, pref)						\
+  ((nhp)->nhp_set.set_bits.nhp_##pref)
 
 #define NHP_UNSET_ALL(nhp) ((nhp)->nhp_set.set_any = 0)
 #define NHP_SET_ALL(nhp) ((nhp)->nhp_set.set_any = 0xffffffffU)
