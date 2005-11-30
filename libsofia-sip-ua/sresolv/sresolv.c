@@ -49,7 +49,7 @@
 
 #include <assert.h>
 
-#if !HAVE_SOFIA_SU
+#if 0 && !HAVE_SOFIA_SU
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
