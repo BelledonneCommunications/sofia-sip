@@ -2710,42 +2710,59 @@ int uas_check_method(nta_incoming_t *irq,
   return 405;
 }
 
-/* Check that we understand content. */
+/* Check that we understand (session) content. */
 static inline
-int uas_check_content(nta_incoming_t *irq,
-		      sip_t const *sip,
-		      tag_type_t tag, tag_value_t value, ...)
+int uas_check_session_content(nta_incoming_t *irq, sip_t const *sip,
+			      sip_accept_t const *session_accepts,
+			      tag_type_t tag, tag_value_t value, ...)
 {
   sip_content_type_t const *c = sip->sip_content_type;
   sip_content_disposition_t const *cd = sip->sip_content_disposition;
-  char const *accept = NULL, *accept_encoding = NULL;
+  int acceptable_type = 0, acceptable_encoding = 0;
   ta_list ta;
 
   if (sip->sip_payload == NULL)
     return 0;
 
-  if (cd) {
-    if (strcasecmp(cd->cd_type, "session") == 0) {
-      if (c && strcasecmp(c->c_type, application_sdp))
-	accept = application_sdp;
-    }
-  }
+  if (cd == NULL || strcasecmp(cd->cd_type, "session") == 0) {
+    sip_accept_t const *ab = session_accepts;
+    char const *c_type;
 
-  if (sip->sip_content_encoding) { 
-    /* Missing Content-Encoding implies identity */
-    if (str0casecmp(sip->sip_content_encoding->g_value, "identity")) {
-      accept_encoding = "identity";
+    if (c)
+      c_type = c->c_type;
+    else if (sip->sip_payload->pl_len > 3 &&
+	     strncasecmp(sip->sip_payload->pl_data, "v=0", 3) == 0)
+      /* Missing Content-Type, but it looks like SDP  */
+      c_type = application_sdp;
+    else
+      /* No chance */
+      ab = NULL;
+
+    for (; ab; ab = ab->ac_next) {
+      if (strcasecmp(c_type, ab->ac_type) == 0)
+	break;
     }
+
+    if (ab)
+      acceptable_type = 1;
   }
+  else if (cd->cd_optional) 
+    acceptable_type = 1;
+
+  /* Empty or missing Content-Encoding */
+  if (!sip->sip_content_encoding ||
+      !sip->sip_content_encoding->k_items || 
+      !sip->sip_content_encoding->k_items[0] ||
+      !sip->sip_content_encoding->k_items[0][0])
+    acceptable_encoding = 1;
     
-  if (!accept && !accept_encoding)
+  if (acceptable_type && acceptable_encoding)
     return 0;
 
   ta_start(ta, tag, value);
   nta_incoming_treply(irq,
 		      SIP_415_UNSUPPORTED_MEDIA,
-		      SIPTAG_ACCEPT_STR(accept),
-		      SIPTAG_ACCEPT_ENCODING_STR(accept_encoding),
+		      SIPTAG_ACCEPT(session_accepts),
 		      ta_tags(ta));
   ta_end(ta);
 
@@ -4122,15 +4139,18 @@ int process_invite1(nua_t *nua,
 
   if (nh0->nh_soa) {
     /* Make sure caller uses application/sdp without compression */
-    if (uas_check_content(irq, sip, 
-			  SIPTAG_USER_AGENT(user_agent),
-			  TAG_END()))
+    if (uas_check_session_content(irq, sip,
+				  nua->nua_invite_accept,
+				  SIPTAG_USER_AGENT(user_agent),
+				  SIPTAG_ACCEPT_ENCODING_STR(""),
+				  TAG_END()))
       return 415;
 
     /* Make sure caller accepts application/sdp */
     if (uas_check_accept(irq, sip, 
 			 nua->nua_invite_accept,
 			 SIPTAG_USER_AGENT(user_agent),
+			 SIPTAG_ACCEPT_ENCODING_STR(""),
 			 TAG_END()))
       return 406;
   }
