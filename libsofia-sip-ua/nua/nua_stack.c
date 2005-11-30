@@ -6057,6 +6057,91 @@ pending_unsubscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   dialog_usage_remove(nh, nh->nh_ds, du);
 }
 
+static int process_subsribe(nua_t *nua,
+			    nua_handle_t *nh,
+			    nta_incoming_t *irq,
+			    sip_t const *sip)
+{
+  nua_dialog_state_t *ds;
+  nua_dialog_usage_t *du = NULL;
+  sip_contact_t *m = NULL, m0[1];
+  int status; char const *phrase;
+  unsigned long expires, refer_expires;
+  enter;
+
+  if (nh)
+    du = dialog_usage_get(ds = nh->nh_ds, nua_notifier_usage, sip->sip_event);
+
+  if (nh == NULL || du == NULL) {
+    /* Hard-coded support only for refer subscriptions */
+    if (sip->sip_event && str0cmp(sip->sip_event->o_type, "refer") == 0)
+      nta_incoming_treply(irq, 
+			  SET_STATUS(481, "Subscription Does Not Exist"), 
+			  TAG_END());
+    else
+      nta_incoming_treply(irq,
+			  SET_STATUS1(SIP_489_BAD_EVENT), 
+			  SIPTAG_ALLOW_EVENTS_STR("refer"),
+			  SIPTAG_ACCEPT_STR("message/sipfrag"),
+			  TAG_END());
+
+    ua_event(nua, nh, nta_incoming_getrequest(irq),
+	     nua_i_subscribe, status, phrase, 
+	     NUTAG_SUBSTATE(nua_substate_terminated),
+	     TAG_END());
+
+    return status;
+  }
+
+  /* Refresh existing subscription */
+  assert(nh && du);
+
+  dialog_get_peer_info(nh, sip);
+  dialog_uas_route(nh, sip, 1);
+
+  refer_expires = NH_PGET(nh, refer_expires);
+  expires = refer_expires;
+
+  if (sip->sip_expires) {
+    expires = sip->sip_expires->ex_delta;
+    if (expires > refer_expires)
+      expires = refer_expires;
+  }
+
+  if (expires == 0) {
+    du->du_notifier->de_substate = nua_substate_terminated;
+    du->du_refresh = sip_now();
+  }
+  else {
+    du->du_refresh = sip_now() + expires;
+  }
+
+  if (du->du_notifier->de_substate == nua_substate_pending)
+    SET_STATUS1(SIP_202_ACCEPTED);
+  else
+    SET_STATUS1(SIP_200_OK);
+
+  if (nta_incoming_url(irq)->url_type == url_sips && nua->nua_sips_contact)
+    *m0 = *nua->nua_sips_contact, m = m0;
+  else if (nua->nua_contact)
+    *m0 = *nua->nua_contact, m = m0;
+  m0->m_params = NULL;
+    
+  nta_incoming_treply(irq, status, phrase, SIPTAG_CONTACT(m), NULL);
+
+  ua_event(nua, nh, nta_incoming_getrequest(irq),
+	   nua_i_subscribe, status, phrase, 
+	   NUTAG_SUBSTATE(du->du_subscriber->de_substate),
+	   TAG_END());
+
+  nta_incoming_destroy(irq), irq = NULL;
+
+  /* Immediate notify */
+  stack_signal(nh, nua_r_notify, SIPTAG_EVENT(du->du_event), TAG_END());
+
+  return 0;
+}
+
 /* ======================================================================== */
 /* NOTIFY */
 
@@ -6923,6 +7008,9 @@ int process_request(nua_handle_t *nh,
 
   case sip_method_notify:
     return process_notify(nua, nh, irq, sip);
+
+  case sip_method_subscribe:
+    return process_subsribe(nua, nh, irq, sip);
 
   case sip_method_options:
     return process_options(nua, nh, irq, sip);
