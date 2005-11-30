@@ -2083,6 +2083,22 @@ static int test_events(void)
   TEST_S(ss->ss_substate, "terminated");
   TEST_S(ss->ss_reason, "timeout");
 
+  TEST_1((ss = 
+	 sip_subscription_state_make(home, "active;expires=2")));
+  TEST_S(ss->ss_substate, "active");
+  TEST_S(ss->ss_expires, "2");
+
+  TEST_1((ss = 
+	  sip_subscription_state_make(home, "terminated;retry-after=3600")));
+  TEST_S(ss->ss_substate, "terminated");
+  TEST(ss->ss_expires, NULL);
+  TEST_S(ss->ss_retry_after, "3600");
+
+  TEST_1((ss = sip_subscription_state_dup(home, ss)));
+  TEST_S(ss->ss_substate, "terminated");
+  TEST(ss->ss_expires, NULL);
+  TEST_S(ss->ss_retry_after, "3600");
+
   msg = read_message(MSG_DO_EXTRACT_COPY, 
     "SIP/2.0 202 Accepted\r\n"
     "To: <sip:foo@bar>;tag=deadbeef\r\n"
@@ -2092,8 +2108,6 @@ static int test_events(void)
     "Via: SIP/2.0/UDP 135.180.130.133\r\n"
     "Event: foo;id=1\r\n"
     "Allow-Events: bar, foo, zap\r\n"
-    "Publication: foo ; stream = fjdsoifgsd.jougsdugsh ; extra =1;type=mobile\r\n"
-    "Allow-Publications: veijo, esson, baari\r\n"
     "Subscription-State: terminated;reason=probation;retry-after=100000\r\n"
     "Content-Length: 0\r\n"
     "\r\n");
@@ -2109,17 +2123,6 @@ static int test_events(void)
   TEST_1(sip->sip_event->o_id);
   TEST_S(sip->sip_event->o_id, "1");
   TEST_1(sip->sip_allow_events);
-
-#if 0
-  TEST_1(sip->sip_publication);
-  TEST_1(sip->sip_allow_publications);
-  TEST_1(sip->sip_publication->pub_package);
-  TEST_S(sip->sip_publication->pub_package, "foo");
-  TEST_1(sip->sip_publication->pub_stream);
-  TEST_S(sip->sip_publication->pub_stream, "fjdsoifgsd.jougsdugsh");
-  TEST_1(sip->sip_publication->pub_type);
-  TEST_S(sip->sip_publication->pub_type, "mobile");
-#endif
 
   su_home_destroy(home), su_free(NULL, home);
   msg_destroy(msg), msg = NULL;

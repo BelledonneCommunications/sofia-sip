@@ -220,18 +220,23 @@ int sip_allow_events_add(su_home_t *home,
  * defined in [Events4.2.4] @RFC3265 as follows:
  * 
  * @code
- *    Subscription-State =  ( "Subscription-State" ) ":" substate-value
- *                         *( ";" subexp-params )
- *    substate-value     = "active" | "pending" | "terminated" 
- *                         | extension-substate
- *    extension-substate = token
- * 
- *    subexp-params      = ("reason" "=" reason-value) 
- *                         | ("expires" "=" delta-seconds)
- *                         | ("retry-after" "=" delta-seconds) | generic-param
- *    reason-value       = "deactivated" | "probation" | "rejected"
- *                         | "timeout" | "giveup" | reason-extension
- *    reason-extension   = token
+ *    Subscription-State   = "Subscription-State" HCOLON substate-value
+ *                           *( SEMI subexp-params )
+ *    substate-value       = "active" / "pending" / "terminated"
+ *                           / extension-substate
+ *    extension-substate   = token
+ *    subexp-params        =   ("reason" EQUAL event-reason-value)
+ *                           / ("expires" EQUAL delta-seconds)
+ *                           / ("retry-after" EQUAL delta-seconds)
+ *                           / generic-param
+ *    event-reason-value   =   "deactivated"
+ *                           / "probation"
+ *                           / "rejected"
+ *                           / "timeout"
+ *                           / "giveup"
+ *                           / "noresource"
+ *                           / event-reason-extension
+ *    event-reason-extension = token
  * @endcode
  */
 
