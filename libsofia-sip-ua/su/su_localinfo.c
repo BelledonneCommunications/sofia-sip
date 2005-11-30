@@ -443,7 +443,8 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
 #endif
 
 #else
-#error su_localinfo() cannot map interface name to number
+#warning su_localinfo() cannot map interface name to number
+    if_index = 0;
 #endif
 
     SU_DEBUG_9(("su_localinfo: if %s with index %d\n", if_name, if_index));
@@ -1186,8 +1187,10 @@ void li_sort(su_localinfo_t *i, su_localinfo_t **rresult)
     for (lli = rresult; *lli; lli = &(*lli)->li_next) {
       if ((*lli)->li_scope < li->li_scope)
 	break;
+#if SU_HAVE_IN6
       if (LI_MAPPED(*lli) > LI_MAPPED(li))
 	break;
+#endif
     }
     li->li_next = *lli;
     *lli = li;

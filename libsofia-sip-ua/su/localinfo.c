@@ -124,7 +124,11 @@ void usage(int returncode)
 
 int main(int argc, char *argv[])
 {
+#if SU_HAVE_IN6
   char buffer[INET6_ADDRSTRLEN];
+#else
+  char buffer[20];
+#endif
   su_localinfo_t hints[1] = {{ LI_CANONNAME }};
   su_localinfo_t *li, *res = NULL;
   int error;
@@ -140,7 +144,9 @@ int main(int argc, char *argv[])
     case 'i': hints->li_flags |= LI_IFNAME; ifindex = 1; break;
     case 'm': hints->li_flags |= LI_V4MAPPED; break;
     case '4': hints->li_family = AF_INET; break;
+#if SU_HAVE_IN6
     case '6': hints->li_family = AF_INET6; break;
+#endif
     case 'd': hints->li_flags |= LI_NAMEREQD; break;
     case 'n': hints->li_flags |= LI_NUMERIC; break;
     case 'g': hints->li_scope |= LI_SCOPE_GLOBAL; break;

@@ -434,14 +434,16 @@ int main(int argc, char *argv[])
   char *argv0 = argv[0];
 
   while (argv[1]) {
-    if (strcmp(argv[1], "-6") == 0) {
-      opt_family = AF_INET6;
-      argv++;
-    }
-    else if (strcmp(argv[1], "-v") == 0) {
+    if (strcmp(argv[1], "-v") == 0) {
       opt_verbatim = 1;
       argv++;
     }
+#if SU_HAVE_IN6
+    else if (strcmp(argv[1], "-6") == 0) {
+      opt_family = AF_INET6;
+      argv++;
+    }
+#endif
     else if (strcmp(argv[1], "-s") == 0) {
       opt_singlethread = 1;
       argv++;

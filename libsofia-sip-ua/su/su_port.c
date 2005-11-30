@@ -184,7 +184,12 @@ struct su_port_s {
 #if SU_HAVE_PTHREADS
   pthread_t        sup_tid;
   pthread_mutex_t  sup_mutex[1];
+#if __CYGWIN__
+  pthread_mutex_t  sup_reflock[1];
+  int              sup_ref;
+#else
   pthread_rwlock_t sup_ref[1];
+#endif
 #else
   int              sup_ref;
 #endif
@@ -235,7 +240,33 @@ struct su_port_s {
 #if SU_HAVE_PTHREADS
 #define SU_PORT_OWN_THREAD(p)   (pthread_equal((p)->sup_tid, pthread_self()))
 
-#if 1
+#if __CYGWIN__
+
+/* Debugging versions */
+#define SU_PORT_INITREF(p)      (pthread_mutex_init((p)->sup_reflock, NULL), printf("initref(%p)\n", (p)))
+#define SU_PORT_INCREF(p, f)    (pthread_mutex_lock(p->sup_reflock), p->sup_ref++, pthread_mutex_unlock(p->sup_reflock), printf("incref(%p) by %s\n", (p), f))
+#define SU_PORT_DECREF(p, f)    do {					\
+    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
+    if ((p->sup_ref) == 0) {			\
+      printf("decref(%p) to 0 by %s\n", (p), f); su_port_destroy(p); }	\
+    else { printf("decref(%p) to %u by %s\n", (p), p->sup_ref, f); }  } while(0)
+
+#define SU_PORT_ZAPREF(p, f)    do { printf("zapref(%p) by %s\n", (p), f), \
+    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
+  if ((p->sup_ref) != 0) { \
+    assert(!"SU_PORT_ZAPREF"); } \
+  su_port_destroy(p); } while(0)
+
+#define SU_PORT_INITLOCK(p) \
+   (pthread_mutex_init((p)->sup_mutex, NULL), printf("init_lock(%p)\n", p))
+
+#define SU_PORT_LOCK(p, f)    \
+   (printf("%ld at %s locking(%p)...", pthread_self(), f, p), pthread_mutex_lock((p)->sup_mutex), printf(" ...%ld at %s locked(%p)...", pthread_self(), f, p))
+
+#define SU_PORT_UNLOCK(p, f)  \
+  (pthread_mutex_unlock((p)->sup_mutex), printf(" ...%ld at %s unlocked(%p)\n", pthread_self(), f, p))
+
+#elif 1
 #define SU_PORT_INITREF(p)      (pthread_rwlock_init(p->sup_ref, NULL))
 #define SU_PORT_INCREF(p, f)    (pthread_rwlock_rdlock(p->sup_ref))
 #define SU_PORT_DECREF(p, f)    do { pthread_rwlock_unlock(p->sup_ref); \
@@ -432,6 +463,7 @@ void su_port_destroy(su_port_t *self)
 #if HAVE_SOCKETPAIR
     su_close(self->sup_mbox[1]); self->sup_mbox[1] = INVALID_SOCKET;
 #endif
+    SU_DEBUG_9(("su_port_destroy() close mailbox\n"));
   }
 #endif
   if (self->sup_waits) 
@@ -447,7 +479,12 @@ void su_port_destroy(su_port_t *self)
   if (self->sup_indices)
     free(self->sup_indices), self->sup_indices = NULL;
 
+  SU_DEBUG_9(("su_port_destroy() freed registrations\n"));
+
   su_home_zap(self->sup_home);
+
+  SU_DEBUG_9(("su_port_destroy() returns\n"));
+
 }
 
 static void su_port_lock(su_port_t *self, char const *who)

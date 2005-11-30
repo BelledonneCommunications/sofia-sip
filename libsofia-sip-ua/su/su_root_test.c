@@ -112,7 +112,7 @@ int init_test(root_test_t *rt)
     if (SU_HAS_INADDR_ANY(ep->addr)) {
       inet_pton(su->su_family, 
 	        su->su_family == AF_INET ? "127.0.0.1" : "::1",
-		SU_ADDR(su));
+		SU_ADDR(ep->addr));
     }
   }
 
@@ -334,8 +334,10 @@ int main(int argc, char *argv[])
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
       rt->rt_flags |= tst_verbatim;
+#if SU_HAVE_IN6
     else if (strcmp(argv[i], "-6") == 0)
       rt->rt_family = AF_INET6;
+#endif
     else
       usage();
   }

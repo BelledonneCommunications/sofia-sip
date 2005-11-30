@@ -178,9 +178,11 @@ int pr_config(proxy_t *pr, int argc, char *argv[])
     else if (strcmp(option, "-4") == 0) {
       hints->ai_family = AF_INET;
     }
+#if SU_HAVE_IN6
     else if (strcmp(option, "-6") == 0) {
       hints->ai_family = AF_INET6;
     }
+#endif
   }
 
   if (argc < 3)

@@ -97,7 +97,11 @@ void usage(void)
 
 int main(int argc, char *argv[])
 {
+#if SU_HAVE_IN6
   char buffer[INET6_ADDRSTRLEN];
+#else
+  char buffer[20];
+#endif
   su_addrinfo_t hints[1] = {{ 0 }};
   su_addrinfo_t *ai, *res = NULL;
   char const *host, *service;
@@ -106,7 +110,9 @@ int main(int argc, char *argv[])
   for (;;) {
     switch(getopt(argc, argv, "ndp4c")) {
     case '4': hints->ai_family = AF_INET; break;
+#if SU_HAVE_IN6
     case '6': hints->ai_family = AF_INET6; break;
+#endif
     case 'p': hints->ai_flags |= AI_PASSIVE; break;
     case 'n': hints->ai_flags |= AI_NUMERICHOST; break;
     case 'c': hints->ai_flags |= AI_CANONNAME; break;
@@ -133,8 +139,13 @@ int main(int argc, char *argv[])
       su_sockaddr_t const *su = (su_sockaddr_t const *)ai->ai_addr;
       unsigned port;
 
+#if SU_HAVE_IN6
       if (su->su_family != AF_INET6 && su->su_family != AF_INET)
 	continue;
+#else
+      if (su->su_family != AF_INET)
+	continue;
+#endif
 
       port = ntohs(su->su_port);
       inet_ntop(ai->ai_family, SU_ADDR(su), buffer, sizeof(buffer));
