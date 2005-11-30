@@ -382,7 +382,7 @@ typedef union operation
     ...                     /* call-related information */
   } call;
 
-  struct 
+  struct
   {
     nua_handle_t  *handle;  /* operation handle /
     ...                     /* subscription-related information */
@@ -811,8 +811,8 @@ void app_i_message(int           status,
                         TAG_NULL());
 ...
 
-  oper->handle = nua_handle(app->nua, app, 
-                            NUTAG_URL(to->a_url), 
+  oper->handle = nua_handle(app->nua, app,
+                            NUTAG_URL(to->a_url),
                             SIPTAG_TO(to),
                             ta_tags(ta));
 ...
@@ -843,13 +843,13 @@ void app_callback(nua_event_t event,
 
   switch (event) {
   case nua_i_subscription:
-    tl_gets(tags, 
+    tl_gets(tags,
 	    NEATAG_SUB_REF(subscriber),
 	    TAG_END());
-  
-    
+
+
     nua_authorize(nua_substate_active);
-    
+
 
   default:
     break;
@@ -984,56 +984,56 @@ not include the extensions like @b 100rel or @b UPDATE.
                   |
                   V
             +------------+
-            |            |---------------------------------------+
-            |            |----+                                  |
-     +------|  CALLING   |  (7a) nua_cancel/CANCEL               |
-     |      |            |<---+                                  |
-     |      |            |                                       |
-     |      +------------+                                       |
-     |            |                                              |
-     |           (2) 18X/-                                       |
-     |            |                                              |
-     |            V                                              |
-     |      +------------+                                       |
-     |      |            |-------------------------------------->|
-     |      |            |----+                                  |
-     |      | PROCEEDING |  (7b) nua_cancel/CANCEL               |
-     |      |            |<---+                                  |
-     |      |            |----------------------+                |
-     |      +------------+                      |                |
-     |            |                             |                |
-   (3b) 2XX/-   (3a) 2XX/-                      |               (6) [3456]XX/ACK
-     |            |                             |                |
-     |            V                             |                |
-     |      + - - - - - -+                      |                |
-     +----->:            :                      |                |
-            : COMPLETING :-------+              |                |
-     + - - -:            :       |              |                |
-     :      + - - - - - -+       |              |                |
-     :     	  |         	 |              |                |
-     :<auto_ack>  |         	 |              |                |
-     :or nua_ack  | <auto_ack>   |              |                |
-     :and media   | or nua_ack   | nua_bye      |                |
-    (5) error 	 (4) /ACK   	(9) /ACK+BYE   (8) nua_bye/BYE   |
-     : /ACK+BYE	  |         	 |              |                |
-     :     	  V         	 |              |                |
-     :      +------------+       |              |                |
-     :      |            |       |              |                |
-     :      |   READY    |       |              |                |
-     :      |            |       |              |                |
-     :      +------------+       |              |                |
-     :                           |              |                |
-     |                           |              |                |
-     :                           |              |                |
-     :      +-------------+      |              |                |
-     + - - >| TERMINATING |<-----+<-------------+                |
-            +-------------+                                      |
-                  |                                              |
-                  | [23456]XX/-                                  |
-                  |                                              |
-                  V                                              |
-            +------------+                                       |
-            | TERMINATED |<--------------------------------------+
+            |            |-----------------------------(6a)-----+
+            |            |----+                                 |
+     +------|  CALLING   |  (7a) nua_cancel/CANCEL              |
+     |      |            |<---+                                 |
+     |      |            |                                      |
+     |      +------------+                                      |
+     |            |                                             |
+     |           (2) 18X/-                                      |
+     |            |                                             |
+     |            V                                             |
+     |      +------------+                                      |
+     |      |            |-----------------------------(6b)---->|
+     |      |            |----+                                 |
+     |      | PROCEEDING |  (7b) nua_cancel/CANCEL              |
+     |      |            |<---+                                 |
+     |      |            |----------------------+               |
+     |      +------------+                      |               |
+     |            |                             |               |
+   (3a) 2XX/-   (3b) 2XX/-                      |              (6) [3456]XX/ACK
+     |            |                             |               |
+     |            V                             |               |
+     |      + - - - - - -+                      |               |
+     +----->:            :                      |               |
+            : COMPLETING :-------+              |               |
+     + - - -:            :       |              |               |
+     :      + - - - - - -+       |              |               |
+     :     	  |         	 |              |               |
+     :<auto_ack>  |         	 |              |               |
+     :or nua_ack  | <auto_ack>   |              |               |
+     :and media   | or nua_ack   | nua_bye      |               |
+    (5) error 	 (4) /ACK   	(9) /ACK+BYE   (8) nua_bye/BYE  |
+     : /ACK+BYE	  |         	 |              |               |
+     :     	  V         	 |              |               |
+     :      +------------+       |              |               |
+     :      |            |       |              |               |
+     :      |   READY    |       |              |               |
+     :      |            |       |              |               |
+     :      +------------+       |              |               |
+     :                           |              |               |
+     |                           |              |               |
+     :                           |              |               |
+     :      +-------------+      |              |               |
+     + - - >| TERMINATING |<-----+<-------------+               |
+            +-------------+                                     |
+                  |                                             |
+                  | [23456]XX/-                                 |
+                  |                                             |
+                  V                                             |
+            +------------+                                      |
+            | TERMINATED |<-------------------------------------+
             +------------+
 @endcode
 
@@ -1071,7 +1071,7 @@ follows:
    announcements about call progress using the early media session.
 </td></tr>
 <tr><td>C3a</td>
-    <td>proceeding</td><td rowspan="2">2XX</td>
+    <td>calling</td><td rowspan="2">2XX</td>
     <td rowspan="2">-</td><td rowspan="2">completing</td>
     <td rowspan="2">Save answer</td>
   <td rowspan="2">
@@ -1084,7 +1084,7 @@ follows:
    proceeds immediately to next state transition.
 </td></tr>
 <tr><td>C3b</td>
-    <td>calling</td></tr>
+    <td>proceeding</td></tr>
 <tr><td>C4</td>
     <td>completing</td>
     <td>nua_ack() or<br>@ref NUTAG_AUTOACK() "auto-ack" </td>
@@ -1189,7 +1189,7 @@ not include the extensions like @b 100rel or @b UPDATE.
      |    |               +----------|            |   |     :
      |    |               |          +------------+   |     :
      | nua_respond/       |                     |     |     :
-    (6) /[3456]XX         |    nua_respond/2XX (3a)  (3b)   :
+    (6) /[3456]XX         |    nua_respond/2XX (3b)  (3a)   :
      |    |               |                     |     |     :
      |    |               |                     V     V     V
      |    |               |                    +-------------+
@@ -1269,7 +1269,7 @@ follows:
     180 Ringing immediately after receiving INVITE and enters @b early state.
 </td></tr>
 <tr><td>S3a</td>			<!-- transition -->
-    <td>early</td>			<!-- previous state -->
+    <td>received</td>			<!-- previous state -->
     <td rowspan=2>nua_respond()</td>	<!-- input -->
     <td rowspan=2>2XX</td>		<!-- output -->
     <td rowspan=3>completed</td>	<!-- next state -->
@@ -1281,7 +1281,7 @@ follows:
    should be included in the 2XX response.
 </td></tr>
 <tr><td>S3b</td>			<!-- transition -->
-    <td>received</td>			<!-- previous state -->
+    <td>early</td>			<!-- previous state -->
 </td></tr>
 <tr><td>S3c</td>			<!-- transition -->
     <td>init</td>			<!-- previous state -->
@@ -1627,7 +1627,7 @@ SIP use cases.
 
 @section nua_event_diagram_call Basic Call
 
-The SIP following event diagram shows a pretty simple, succesful call case. 
+The SIP following event diagram shows a pretty simple, succesful call case.
 The nua events and nua function calls are show in the diagram below as well
 as the SIP messages.
 
@@ -1645,10 +1645,10 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  5                  |<--100 Trying---|                | -> nua_i_state
  6                  |                |                |
  7                  |                |                |
- 8                  |                |                | 
+ 8                  |                |                |
  9                  |                |<--180 Ringing--| <- nua_respond(180)
 10  nua_i_invite <- |<--180 Ringing--|                | -> nua_i_state
-11   nua_i_state <- |                |                | 
+11   nua_i_state <- |                |                |
 12                  |                |<--200 OK-------| <- nua_respond(200)
 13  nua_i_invite <- |<---200 OK------|                | -> nua_i_state
 14   nua_i_state <- |                |                |
@@ -1679,16 +1679,16 @@ request sent on existing SIP session. Both original caller and callee can
 send re-INVITEs. The main use of re-INVITE is modifying sessions: adding
 media lines to the session, changing codecs on existing media, and, as you
 might expect, putting existing media on hold as well as resuming media from
-hold. 
+hold.
 
-A re-INVITE is sent by calling nua_invite() on handle with existing call. 
+A re-INVITE is sent by calling nua_invite() on handle with existing call.
 When putting call on hold, the application can include SOATAG_HOLD("audio")
 or SOATAG_HOLD("video") or SOATAG_HOLD("audio, video") or SOATAG_HOLD("*")
 as parameters to re-INVITE nua_invite(). (Note that last SOATAG_HOLD() in
 the tag list will override the SOATAG_HOLD() tags before it.)
 
 Another feature where nua tries to be helpful is autoanswer and auto-ACK on
-existing sessions: the re-INVITE is automatically responded with <i>200 OK</i> 
+existing sessions: the re-INVITE is automatically responded with <i>200 OK</i>
 and ACK is automatically sent. (If the application wants to respond and ACK
 by itself, it should explicitly set NUTAG_AUTOANSWER(0) and/or
 NUTAG_AUTOACK(0) in the handle; either include them in nua_invite() or
@@ -1704,10 +1704,10 @@ nua_respond() parameters or call nua_set_hparams() explicitly.
  5                  |<--100 Trying---|                | -> nua_i_state
  6                  |                |                |
  7                  |                |                |
- 8                  |                |                | 
+ 8                  |                |                |
  9                  |                |<--180 Ringing--| <- nua_respond(180)
 10  nua_i_invite <- |<--180 Ringing--|                | -> nua_i_state
-11   nua_i_state <- |                |                | 
+11   nua_i_state <- |                |                |
 12                  |                |<--200 OK-------| <- nua_respond(200)
 13  nua_i_invite <- |<---200 OK------|                | -> nua_i_state
 14   nua_i_state <- |                |                |
@@ -1717,18 +1717,18 @@ nua_respond() parameters or call nua_set_hparams() explicitly.
 18                  |                |                |
 19               <<== Bi-Directional RTP Established ==>>
 20                  |                |                |
-21                  |                |                | 
+21                  |                |                |
 22                  |                |<--INVITE(hold)-| <- nua_invite(..
 21                  |                |                |       NUTAG_HOLD("*")..)
 23  nua_i_invite <- |<-INVITE(hold)--|                | -> nua_i_state
 25   nua_i_state <- |----200 OK----->|    	      |
 26                  |                |----200 OK----->| -> nua_i_invite
 28                  |                |<-----ACK-------| -> nua_i_state
-29     nua_i_ack <- |<----ACK--------|                | 
+29     nua_i_ack <- |<----ACK--------|                |
 24                  |                |                |
 30               <<== Uni-Directional RTP Established ==>>
 24                  |                |                |
-31                  |                |                | 
+31                  |                |                |
 32                  |                |<--INVITE-------| <- nua_invite(..
 21                  |                |                |      NUTAG_HOLD(NULL)..)
 33  nua_i_invite <- |<--INVITE-------|                | -> nua_i_state
@@ -1750,7 +1750,7 @@ nua_respond() parameters or call nua_set_hparams() explicitly.
 
 @section nua_event_diagram_call_transfer  Call Transfer
 
-This is the unattended call transfer case. 
+This is the unattended call transfer case.
 
 1st MSC showing Alice's end:
 
@@ -1787,7 +1787,7 @@ This is the unattended call transfer case.
 24        nua_r_bye <- |<----200 OK---------|                    |
 25      nua_i_state <- |   No RTP Session   |                    |
 28                     |                    |<----180 Ringing----|
-26     nua_i_notify <- |<- - -NOTIFY - - - -|                    |               
+26     nua_i_notify <- |<- - -NOTIFY - - - -|                    |
 27                     |                    |                    |
 20                     |- - - 200 OK- - - ->|                    |
 29                     |                    |                    |
@@ -1832,7 +1832,7 @@ This is the unattended call transfer case.
 22   |-------BYE--------->| -> nua_i_bye       |                    |
 23   |     	          | -> nua_i_state     |                    |
 24   |<----200 OK---------|    nua_handle() -> |                    |
-25   |   No RTP Session   |    nua_invite() -> |                    |       
+25   |   No RTP Session   |    nua_invite() -> |                    |
 26   |                    |                    |--INVITE("b: A")--->|
 27   |                    |                    |   	            |
 28   |                    |    nua_i_invite <- |<--180 Ringing------|
@@ -1844,10 +1844,10 @@ This is the unattended call transfer case.
 34   |                    |                    |<=======RTP========>|
 35   |      	          |                    |                    |
 36   |<-----NOTIFY--------|                    |                    |
-37   |      	          |                  
-38   |------200 OK------->| -> nua_r_notify  
+37   |      	          |
+38   |------200 OK------->| -> nua_r_notify
 39   |                    | <- nua_handle_destroy
-     |                    |                  
+     |                    |
 @endcode
 
 Bob includes nh1 in nua_invite()/25 as NUTAG_NOTIFY_REFER() parameter.

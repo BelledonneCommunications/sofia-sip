@@ -3544,6 +3544,9 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 
   char const *what;
 
+  if (ss->ss_state == nua_callstate_terminated)
+    ss->ss_state = nua_callstate_init;
+
   du = dialog_usage_add(nh, nh->nh_ds, nua_session_usage, NULL);
   what = nua_500_error;		/* Internal error */
 
