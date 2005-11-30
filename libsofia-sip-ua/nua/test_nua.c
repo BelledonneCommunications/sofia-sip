@@ -2165,6 +2165,171 @@ int test_reject_401(struct context *ctx)
   END();
 }
 
+int test_mime_negotiation(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a, *b = &ctx->b;
+  struct call *a_call = a->call, *b_call = b->call;
+  struct event *e;
+  sip_t const *sip;
+
+  /* Make call reject-3 */
+  if (print_headings)
+    printf("TEST NUA-4.5: check for rejections of invalid requests\n");
+
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  if (print_headings)
+    printf("TEST NUA-4.5.1: invalid Content-Type\n");
+
+  invite(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->p, NUTAG_URL(b->contact->m_url)),
+	 SIPTAG_SUBJECT_STR("reject-3"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 SIPTAG_CONTENT_TYPE_STR("application/xyzzy+xml"),
+	 SIPTAG_CONTENT_DISPOSITION_STR("session;required"),
+	 SIPTAG_PAYLOAD_STR("m=audio 5008 RTP/AVP 8\n"),
+	 TAG_END());
+  run_ab_until(ctx, -1, until_terminated, -1, NULL);
+
+  /*
+   A    reject-5.1      B
+   |			|
+   |-------INVITE------>|
+   |<-------415---------|
+   |--------ACK-------->|
+  */
+
+  /*
+   Client transitions in reject-3:
+   INIT -(C1)-> CALLING -(C6a)-> TERMINATED
+  */
+
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 415);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(sip->sip_status->st_status, 415);
+  TEST_1(sip->sip_accept);
+  TEST_S(sip->sip_accept->ac_type, "application/sdp");
+  TEST_1(sip->sip_accept_encoding);
+  /* No content-encoding is supported */
+  TEST_S(sip->sip_accept_encoding->aa_value, "");
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* CALLING */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+
+  if (print_headings)
+    printf("TEST NUA-4.5.1: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-4.5.2: invalid Content-Encoding\n");
+
+  /*
+   A    reject-5.2      B
+   |			|
+   |-------INVITE------>|
+   |<-------415---------|
+   |--------ACK-------->|
+  */
+
+  invite(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->p, NUTAG_URL(b->contact->m_url)),
+	 SIPTAG_SUBJECT_STR("reject-5"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 SIPTAG_CONTENT_ENCODING_STR("zyxxy"),
+	 TAG_END());
+  run_ab_until(ctx, -1, until_terminated, -1, NULL);
+
+  /*
+   Client transitions in reject-3:
+   INIT -(C1)-> CALLING -(C6a)-> TERMINATED
+  */
+
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 415);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(sip->sip_status->st_status, 415);
+  TEST_1(sip->sip_accept);
+  TEST_S(sip->sip_accept->ac_type, "application/sdp");
+  TEST_1(sip->sip_accept_encoding);
+  /* No content-encoding is supported */
+  TEST_S(sip->sip_accept_encoding->aa_value, "");
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+
+  if (print_headings)
+    printf("TEST NUA-4.5.2: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-4.5.3: invalid Accept\n");
+
+  invite(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->p, NUTAG_URL(b->contact->m_url)),
+	 SIPTAG_SUBJECT_STR("reject-3"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 SIPTAG_ACCEPT_STR("application/xyzzy+xml"),
+	 TAG_END());
+  run_ab_until(ctx, -1, until_terminated, -1, NULL);
+
+
+  /*
+   A    reject-5.3      B
+   |			|
+   |-------INVITE------>|
+   |<-------406---------|
+   |--------ACK-------->|
+  */
+
+  /*
+   Client transitions in reject-3:
+   INIT -(C1)-> PROCEEDING -(C6a)-> TERMINATED
+  */
+
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 406);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(sip->sip_status->st_status, 406);
+  TEST_1(sip->sip_accept);
+  TEST_S(sip->sip_accept->ac_type, "application/sdp");
+  TEST_1(sip->sip_accept_encoding);
+  /* No content-encoding is supported */
+  TEST_S(sip->sip_accept_encoding->aa_value, "");
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* CALLING */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+
+  if (print_headings)
+    printf("TEST NUA-4.5.3: PASSED\n");
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  free_events_in_list(ctx, b_call);
+
+  if (print_headings)
+    printf("TEST NUA-4.5: PASSED\n");
+
+  END();
+}
+
 /* ======================================================================== */
 
 /* Cancel cases:
@@ -4551,6 +4716,7 @@ int main(int argc, char *argv[])
       retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_302(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_401(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_mime_negotiation(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
