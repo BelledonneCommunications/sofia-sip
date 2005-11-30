@@ -1983,11 +1983,14 @@ int nea_sub_notify(nea_server_t *nes, nea_sub_t *s,
   nea_event_t *ev = s->s_event;
   nea_state_t substate = s->s_state;
 
-  if (s->s_pending_flush || s->s_oreq) {
+  if (s->s_pending_flush || (s->s_oreq && substate != nea_terminated)) {
     if (ev && ev->ev_throttling > s->s_updated)
       ev->ev_throttling = s->s_updated;
     return 0;
   }
+
+  if (s->s_oreq)
+    nta_outgoing_destroy(s->s_oreq), s->s_oreq = NULL;
 
   assert(s->s_view); assert(ev);
 
