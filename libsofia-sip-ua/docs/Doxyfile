@@ -10,19 +10,19 @@ INPUT 		     = mainpage.docs docguide.docs conformance.docs
 GENERATE_TAGFILE    = ../docs/doxytags_docs
 
 TAGFILES             = 
-TAGFILES            += ../docs/doxytags_su=../su
-TAGFILES            += ../docs/doxytags_ipt=../ipt
-TAGFILES            += ../docs/doxytags_bnf=../bnf
-TAGFILES            += ../docs/doxytags_url=../url
-TAGFILES            += ../docs/doxytags_msg=../msg
-TAGFILES            += ../docs/doxytags_sip=../sip
-TAGFILES            += ../docs/doxytags_sresolv=../sresolv
-TAGFILES            += ../docs/doxytags_stun=../stun
-TAGFILES            += ../docs/doxytags_tport=../tport
-TAGFILES            += ../docs/doxytags_nta=../nta
-TAGFILES            += ../docs/doxytags_iptsec=../iptsec
-TAGFILES            += ../docs/doxytags_sdp=../sdp
-TAGFILES            += ../docs/doxytags_soa=../soa
-TAGFILES            += ../docs/doxytags_nea=../nea
-TAGFILES            += ../docs/doxytags_nua=../nua
-TAGFILES            += ../docs/doxytags_features=../features
+TAGFILES            += ../docs/doxytags_su=su
+TAGFILES            += ../docs/doxytags_ipt=ipt
+TAGFILES            += ../docs/doxytags_bnf=bnf
+TAGFILES            += ../docs/doxytags_url=url
+TAGFILES            += ../docs/doxytags_msg=msg
+TAGFILES            += ../docs/doxytags_sip=sip
+TAGFILES            += ../docs/doxytags_sresolv=sresolv
+TAGFILES            += ../docs/doxytags_stun=stun
+TAGFILES            += ../docs/doxytags_tport=tport
+TAGFILES            += ../docs/doxytags_nta=nta
+TAGFILES            += ../docs/doxytags_iptsec=iptsec
+TAGFILES            += ../docs/doxytags_sdp=sdp
+TAGFILES            += ../docs/doxytags_soa=soa
+TAGFILES            += ../docs/doxytags_nea=nea
+TAGFILES            += ../docs/doxytags_nua=nua
+TAGFILES            += ../docs/doxytags_features=features
