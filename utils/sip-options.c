@@ -1,13 +1,14 @@
-/**@page options options - Query SIP OPTIONS
+/**@page sip-options sip-options - Query SIP OPTIONS
  * 
  * @par Name    
- * options - Query SIP OPTIONS
+ * sip-options - Query SIP OPTIONS
  *
  * @par Synopsis
- * <tt>options [--bind=url] [--from=url] [-a|--all] to </tt>
+ * <tt>sip-options [--bind=url] [--from=url] [-a|--all] to </tt>
  *
  * @par Description
- * The @em options utility sends an OPTIONS request to a SIP server.
+ * The @em sip-options utility sends a SIP OPTIONS request (or any other SIP
+ * request) to a SIP server.
  *
  * @par 
  * The @em options tool will print out status line and interesting headers
@@ -56,9 +57,9 @@
  * @endcode
  *
  * @par Environment
- * @c SIPADDRESS, @c NTA_DEBUG, @c TPORT_DEBUG, @c TPORT_LOG.
+ * @c SIPADDRESS, @c sip_proxy, @c NTA_DEBUG, @c TPORT_DEBUG, @c TPORT_LOG.
  * 
- * Copyright (C) 2005 Nokia Research Center.
+ * Copyright (C) 2005 Nokia Corporation.
  *
  * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
  *
@@ -116,7 +117,7 @@ struct context_s {
   int             c_retval;
 };
 
-char const name[] = "options";
+char const name[] = "sip-options";
 
 static
 void usage(int rc)
@@ -278,7 +279,7 @@ int main(int argc, char *argv[])
 
       context->c_leg = 
 	nta_leg_tcreate(context->c_agent,
-			NULL, NULL,      /* ignore incoming messages */
+			NULL, NULL,      /* ignore incoming requests */
 			SIPTAG_FROM(from), /* who is sending OPTIONS? */
 			SIPTAG_TO(to), /* whom we are sending OPTIONS? */
 			TAG_END());
