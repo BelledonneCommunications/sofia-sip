@@ -3283,21 +3283,29 @@ ua_register(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 static void 
 register_expires_contacts(msg_t *msg, sip_t *sip)
 {
+  su_home_t *h = msg_home(msg);
   sip_contact_t *m;
 
-  for (m = sip ? sip->sip_contact : NULL; m; m = m->m_next) {
-    if (m->m_url->url_type == url_any) {
-      if (m != sip->sip_contact || m->m_next) {
-	/* Remove all contacts */
-        msg_header_remove_all(msg, (msg_pub_t *)sip, (msg_header_t *)sip->sip_contact);
-	/* Keep only the "any" contact */
-	sip_header_insert(msg, sip, (sip_header_t *)m);	
+  if (sip->sip_contact) {
+    for (m = sip->sip_contact; m; m = m->m_next) {
+      if (m->m_url->url_type == url_any) {
+	int others = m != sip->sip_contact || m->m_next;
+	sip_add_tl(msg, sip, 
+		   /* Remove existing contacts */
+		   TAG_IF(others, SIPTAG_CONTACT(NONE)),
+		   /* Add '*' contact and Expires: 0 */
+		   TAG_IF(others, SIPTAG_CONTACT_STR("*")),
+		   SIPTAG_EXPIRES_STR("0"), 
+		   TAG_END());
       }
-      sip_add_tl(msg, sip, SIPTAG_EXPIRES_STR("0"), TAG_END());
       break;
     }
-    msg_params_replace(NULL, (msg_param_t **)&m->m_params, "expires=0");
-    msg_fragment_clear(m->m_common);
+
+    if (m == NULL)		/* No '*' was found */
+      for (m = sip->sip_contact; m; m = m->m_next) {
+	msg_params_replace(h, (msg_param_t **)&m->m_params, "expires=0");
+	msg_fragment_clear(m->m_common);
+      }
   }
 
   /* Remove payload */
