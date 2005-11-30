@@ -139,6 +139,13 @@ yes) SAC_SU_DEFINE(SU_HAVE_IN6, 1, [
   *) AC_MSG_ERROR([Inconsistent struct sockaddr_sin6 test]) ;;
 esac
 
+AC_MSG_CHECKING([for struct sockaddr_storage])
+AC_EGREP_HEADER([struct.+sockaddr_storage], [sys/socket.h], [dnl
+  AC_MSG_RESULT(yes)
+  SAC_SU_DEFINE(SU_HAVE_SOCKADDR_STORAGE)],[dnl
+  AC_MSG_RESULT(no)
+])
+
 dnl SIOGCIFCONF & struct ifconf
 AC_MSG_CHECKING(for struct ifconf)
 AC_EGREP_HEADER(struct.+ifconf, net/if.h, 

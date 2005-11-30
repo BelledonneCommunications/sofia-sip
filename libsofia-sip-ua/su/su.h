@@ -146,6 +146,29 @@ typedef int su_socket_t;
 typedef SOCKET su_socket_t;
 #endif
 
+#if !SU_HAVE_SOCKADDR_STORAGE
+/*
+ * RFC 2553: protocol-independent placeholder for socket addresses
+ */
+#define _SS_MAXSIZE	128
+#define _SS_ALIGNSIZE	(sizeof(int64_t))
+#define _SS_PAD1SIZE	(_SS_ALIGNSIZE - sizeof(u_char) * 2)
+#define _SS_PAD2SIZE	(_SS_MAXSIZE - sizeof(u_char) * 2 - \
+				_SS_PAD1SIZE - _SS_ALIGNSIZE)
+
+struct sockaddr_storage {
+#if SU_HAVE_SOCKADDR_SA_LEN
+	unsigned char ss_len;		/* address length */
+	unsigned char ss_family;	/* address family */
+#else
+	unsigned short ss_family;	/* address family */
+#endif
+	char	__ss_pad1[_SS_PAD1SIZE];
+	int64_t __ss_align;	/* force desired structure storage alignment */
+	char	__ss_pad2[_SS_PAD2SIZE];
+};
+#endif
+
 /** Common socket address structure. */
 union su_sockaddr_u {
 #ifdef DOCUMENTATION_ONLY

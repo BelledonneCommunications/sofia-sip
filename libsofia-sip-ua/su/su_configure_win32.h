@@ -50,6 +50,12 @@
 #define SU_HAVE_NT              0
 #define SU_HAVE_IN6             (0)
 
+/** Define as 1 if you have struct sockaddr_storage */
+#define SU_HAVE_SOCKADDR_STORAGE 1
+
+/** Define as 1 if you have getaddrinfo() function. */
+#define SU_HAVE_GETADDRINFO     1
+
 /* Define this as 1 if you have if_nameindex() */
 #define SU_HAVE_IF_NAMEINDEX   (0) 
 
