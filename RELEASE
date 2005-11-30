@@ -16,6 +16,8 @@ version.
 
 - Added nua_authorize, nua_i_subscription, and NEATAG_SUB().
 
+- Improved handling of refer subscriptions.
+
 - Default install directory for public header file has been changed
   from '${prefix}/include/' to '${prefix}/include/sofia-sip-MAJOR.MINOR'.
   The pkgconfig .pc file has been updated accordingly.
@@ -30,6 +32,8 @@ version.
   #define NUTAG_HOLD(x) SOATAG_HOLD((x) ? "*" : NULL)
 
 - Updated sdp_rtpmap_t. 
+
+- Updated sip_min_se_t, sip_content_encoding_t.
 
 Contributors to this release
 ----------------------------

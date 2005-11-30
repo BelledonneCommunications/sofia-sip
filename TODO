@@ -10,10 +10,10 @@ Release roadmap
 1.11/1.12 series
     - first version of the new nua+soa API 
  	- nua_respond_nit() (non-INVITEs)
-	- nua_set_handle_params()
+	- nua_set_hparams()/nua_get_hparams() (DONE)
 	- session object ownership changes (DONE)
     - doxygen documentation updates
-    - rpm and dpkg packaging
+    - rpm and dpkg packaging (DONE)
 
 1.13/1.14 series 
     - NAT work: STUN fixes (DNS support)
