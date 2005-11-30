@@ -194,13 +194,13 @@ char *msg_status_dup_one(msg_header_t *dst, msg_header_t const *src,
 /** Extract the message body, including separator line. 
  *
  * @param msg  message object [IN]
- * @param tst  public message structure [IN/OUT]
+ * @param pub  public message structure [IN/OUT]
  * @param b    buffer containing unparsed data [IN]
  * @param bsiz buffer size [IN]
  * @param eos  true if buffer contains whole message [IN]
  *
  * @retval -1      error
- * @retval 0       cannot proceed
+ * @retval 0       message is incomplete
  * @retval other   number of bytes extracted
  */
 int msg_test_extract_body(msg_t *msg, msg_pub_t *pub, 
