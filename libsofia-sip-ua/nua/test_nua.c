@@ -3408,6 +3408,11 @@ int test_session_timer(struct context *ctx)
    |-------NOTIFY------>|			|
    |<------200 OK-------|			|
    |			|			|
+   |			|			|
+   |<-----SUBSCRIBE-----|                       |
+   |-------200 OK------>|			|
+   |			|			|
+   |			|			|
    |-----------------INVITE-------------------->|
    |			|			|
    |<------------------180----------------------|
@@ -3576,6 +3581,58 @@ int test_refer(struct context *ctx)
   TEST_S(sip->sip_subscription_state->ss_substate, "pending");
   TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
   TEST_S(sip->sip_payload->pl_data, "SIP/2.0 100 Trying\r\n");
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b_call);
+
+  if (print_headings)
+    printf("TEST NUA-9.1.2: PASSED\n");
+
+  /* ---------------------------------------------------------------------- */
+  /*
+   A                    B
+   |<-----SUBSCRIBE-----|
+   |-------200 OK------>|
+   |-------NOTIFY------>|			|
+   |<------200 OK-------|			|
+   */
+
+  if (print_headings)
+    printf("TEST NUA-9.1.2: extend expiration time for implied subscription\n");
+
+  subscribe(b, b_call, b_call->nh, 
+	    SIPTAG_EVENT(r_event), 
+	    SIPTAG_EXPIRES_STR("3600"),
+	    TAG_END());
+  run_ab_until(ctx, -1, save_until_final_response,
+	       -1, save_until_final_response);
+
+  /*
+    Events in A:
+    nua_i_subscribe, nua_r_notify
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_subscribe);
+  TEST(e->data->e_status, 202);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_event);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_notify);
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a_call);
+
+  /*
+     Events in B after nua_subscribe():
+     nua_r_subscribe, nua_i_notify
+  */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_r_subscribe);
+  TEST(e->data->e_status, 202);
+  if (!e->next)
+    run_b_until(ctx, -1, save_until_received);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_notify);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_event);
+  TEST_S(sip->sip_event->o_id, r_event->o_id);
+  TEST_1(sip->sip_subscription_state);
+  TEST_S(sip->sip_subscription_state->ss_substate, "pending");
   TEST_1(!e->next);
   free_events_in_list(ctx, b_call);
 
@@ -4124,7 +4181,7 @@ int test_events(struct context *ctx)
      nua_subscribe(), nua_r_subscribe
   */
   TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_r_subscribe);
-  TEST(e->data->e_status, 501 /* Should be 489?*/);
+  TEST(e->data->e_status, 489);
   TEST_1(!e->next);
 
 #if 0				/* XXX */
