@@ -1148,9 +1148,9 @@ int li_name(su_localinfo_t const *hints,
     if (flags & LI_NUMERIC)
       gni_flags |= NI_NUMERICHOST;
 
-    error = getnameinfo(&su->su_sa, su_sockaddr_size(su), 
-			name, sizeof(name), NULL, 0,
-			gni_flags);
+    error = su_getnameinfo(su, su_sockaddr_size(su), 
+			   name, sizeof(name), NULL, 0,
+			   gni_flags);
     if (error) {
       if ((flags & LI_NAMEREQD) == LI_NAMEREQD)
 	return 1;

@@ -41,7 +41,8 @@ endif
 
 BUILT_SOURCES = su_tag_ref.c
 
-include_sofia_HEADERS = su_types.h su.h su_localinfo.h \
+include_sofia_HEADERS = \
+	su_types.h su.h su_addrinfo.h su_localinfo.h \
 	su_wait.h $(GHEADERS) \
 	su_alloc.h su_alloc_stat.h su_strlst.h su_vector.h \
 	su_time.h \
@@ -55,7 +56,7 @@ include_sofia_HEADERS = su_types.h su.h su_localinfo.h \
 nodist_include_sofia_HEADERS = su_configure.h
 
 libsu_la_SOURCES = \
-	su.c $(GSOURCES) \
+	su.c su_addrinfo.c $(GSOURCES) \
 	su_alloc.c su_alloc_lock.c su_strdup.c su_sprintf.c \
 	su_strlst.c su_vector.c \
 	su_time.c su_time0.c \

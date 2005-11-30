@@ -44,8 +44,8 @@
 #include "su_time.h"
 #endif
 #if SU_HAVE_POLL
-#include <stropts.h>		/* stream operations */
-#include <poll.h>		/* poll is part of streams  */
+//#include <stropts.h>		/* stream operations */
+#include <sys/poll.h>		/* poll is part of streams  */
 #endif
 
 /* ---------------------------------------------------------------------- */

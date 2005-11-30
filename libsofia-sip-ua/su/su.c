@@ -370,64 +370,6 @@ int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags,
 
 #endif
 
-/** Translate address and service.
- *
- * This is a getaddrinfo() supporting SCTP and other exotic protocols.
- */
-int su_getaddrinfo(char const *node, char const *service,
-		   su_addrinfo_t const *hints,
-		   su_addrinfo_t **res)
-{
-#if HAVE_SCTP
-  if (res && hints && hints->ai_protocol == IPPROTO_SCTP) {
-    su_addrinfo_t *ai, system_hints[1];
-    int retval, socktype;
-
-    socktype = hints->ai_socktype;
-    
-    if (!(socktype == 0 ||
-	  socktype == SOCK_SEQPACKET ||
-	  socktype == SOCK_STREAM ||
-	  socktype == SOCK_DGRAM))
-      return EAI_SOCKTYPE;
-
-    *system_hints = *hints;
-    system_hints->ai_protocol = IPPROTO_TCP;
-    system_hints->ai_socktype = SOCK_STREAM;
-
-    retval = getaddrinfo(node, service, system_hints, res);
-    if (retval)
-      return retval;
-
-    if (socktype == 0)
-      socktype = SOCK_STREAM;
-
-    for (ai = *res; ai; ai = ai->ai_next) {
-      ai->ai_protocol = IPPROTO_SCTP;
-      ai->ai_socktype = socktype;
-    }
-
-    return 0;
-  }
-#endif
-
-  return getaddrinfo(node, service, hints, res);
-}
-
-#if SU_HAVE_WINSOCK
-/** Free su_addrinfo_t structure allocated by su_getaddrinfo(). */
-void su_freeaddrinfo(su_addrinfo_t *res)
-{
-  freeaddrinfo(res);
-}
-/** Return string describing address translation error. */
-char *su_gai_strerror(int errcode)
-{
-  return gai_strerror(errcode);
-}
-
-#endif
-
 /** Compare two socket addresses */
 int su_cmp_sockaddr(su_sockaddr_t const *a, su_sockaddr_t const *b)
 {

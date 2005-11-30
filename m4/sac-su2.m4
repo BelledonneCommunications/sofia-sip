@@ -188,7 +188,7 @@ AC_SUBST(GLIB_VERSION)
 # ===========================================================================
 
 AC_CHECK_FUNCS(gettimeofday strerror random initstate tcsetattr flock alarm)
-AC_CHECK_FUNCS(socketpair gethostname getipnodebyname getaddrinfo poll)
+AC_CHECK_FUNCS(socketpair gethostname getipnodebyname poll)
 
 if false; then
 	# not yet
@@ -205,6 +205,11 @@ if test "${with_rt}" != no; then
 fi
 
 SAC_REPLACE_FUNCS(memmem memccpy memspn memcspn strcasestr strtoull)
+
+AC_CHECK_FUNC([getaddrinfo],[
+	SAC_SU_DEFINE([SU_HAVE_GETADDRINFO], 1, [
+	Define this as 1 if you have getaddrinfo() function.
+	])])
 
 AC_CHECK_FUNC([poll], 
 	SAC_SU_DEFINE([SU_HAVE_POLL], 1, [
@@ -257,7 +262,7 @@ _ACEOF
 ])
 
 AC_DEFUN([SAC_REPLACE_FUNCS],[dnl
-AC_CHECK_FUNCS($1,,[dnl
+AC_CHECK_FUNCS($1,ifelse([$2], , :, [$2]),[dnl
 case "$REPLACE_LIBADD" in
     "$ac_func.lo"   | \
   *" $ac_func.lo"   | \
@@ -266,4 +271,5 @@ case "$REPLACE_LIBADD" in
   *) REPLACE_LIBADD="$REPLACE_LIBADD $ac_func.lo" ;;
 esac])
 AC_SUBST([REPLACE_LIBADD])
+ifelse([$3], , :, [$3])
 ])

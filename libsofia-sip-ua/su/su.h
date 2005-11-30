@@ -146,9 +146,6 @@ typedef int su_socket_t;
 typedef SOCKET su_socket_t;
 #endif
 
-/** RFC 1576 address info structure. */
-typedef struct addrinfo su_addrinfo_t;
-
 /** Common socket address structure. */
 union su_sockaddr_u {
 #ifdef DOCUMENTATION_ONLY
@@ -248,15 +245,7 @@ int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags,
 /** Return local IP address */
 int su_getlocalip(su_sockaddr_t *sin);
 
-/** Translate address and service. */
-int su_getaddrinfo(char const *node, char const *service,
-		   su_addrinfo_t const *hints,
-		   su_addrinfo_t **res);
-/** Free su_addrinfo_t structure allocated by su_getaddrinfo(). */
-void su_freeaddrinfo(su_addrinfo_t *res);
-/** Return string describing address translation error. */
-char *su_gai_strerror(int errcode);
-
+#include <su_addrinfo.h>
 
 #if SU_HAVE_BSDSOCK
 #define su_socket socket
@@ -267,9 +256,6 @@ char *su_gai_strerror(int errcode);
 #define su_seterrno(n) ((errno = (n)), -1)
 #define su_perror  perror
 #define su_strerror(e) strerror(e)
-
-#define su_freeaddrinfo freeaddrinfo
-#define su_gai_strerror gai_strerror
 #endif
 
 #if SU_HAVE_WINSOCK

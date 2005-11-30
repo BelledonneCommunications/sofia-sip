@@ -61,6 +61,9 @@
 /** Define as 1 if you have sa_len field in struct sockaddr */
 #undef SU_HAVE_SOCKADDR_SA_LEN
 
+/** Define as 1 if you have getaddrinfo() function. */
+#undef SU_HAVE_GETADDRINFO
+
 /** Define as 1 if you have Winsock interface */
 #undef SU_HAVE_WINSOCK
 /** Define as 1 if you have Winsock2 interface */
