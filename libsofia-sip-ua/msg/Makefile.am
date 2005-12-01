@@ -90,8 +90,12 @@ test_table.c: test_class.h
 		MC_HASH_SIZE=127 multipart=msg_multipart \
 		PT=$@ $<
 
-msg_mime_protos.h msg_protos.h: msg_mime.h
+msg_protos.h: msg_mime.h
 	$(AWK_MSG_AWK) module=msg NO_FIRST=1 NO_MIDDLE=1 \
+		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
+
+msg_mime_protos.h: msg_mime.h
+	$(AWK_MSG_AWK) module=msg NO_FIRST=1 NO_LAST=1 \
 		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 msg_mime_table.c: msg_mime.h
