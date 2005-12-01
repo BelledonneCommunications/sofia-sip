@@ -831,42 +831,6 @@ msg_param_t *msg_params_find_slot(msg_param_t params[], msg_param_t token)
   return NULL;
 }
 
-/** Find a matching parameter from a parameter list.
- *
- * Searches for a matching parameter @a token from the parameter list. If a
- * matching parameter is found, it returns a non-NULL pointer to the
- * parameter value. If there is no value for the parameter (the parameter is
- * of form "name"), the returned pointer points to a NUL character.
- *
- * @param params list (or vector) of parameters 
- * @param param  parameter to be matched
- *
- * @return
- * A pointer to parameter value, or NULL if no matching parameter was not
- * found.
- */
-msg_param_t msg_params_matching(msg_param_t const params[], 
-				msg_param_t param)
-{
-  if (params && param) {
-    int i, n = strcspn(param, "=");
-
-    assert(n > 0);
-
-    for (i = 0; params[i]; i++) {
-      msg_param_t match = params[i];
-      if (strncasecmp(match, param, n) == 0) {
-	if (match[n] == '=' && match[n + 1] != '\0')
-	  return match + n + 1;
-        else if (match[n] == 0)
-	  return match + n;
-      }
-    }
-  }
-
-  return NULL;
-}
-
 /** Replace or add a parameter from a list. 
  *
  */

@@ -184,8 +184,6 @@ int msg_random_token(char token[], int tlen, void const *data, int dlen);
 
 msg_param_t msg_params_find(msg_param_t const pp[], msg_param_t);
 msg_param_t *msg_params_find_slot(msg_param_t params[], msg_param_t token);
-msg_param_t msg_params_matching(msg_param_t const params[], 
-				msg_param_t param);
 int msg_params_add(su_home_t *sh, msg_param_t **pp, msg_param_t);
 int msg_params_cmp(msg_param_t const a[], msg_param_t const b[]);
 int msg_params_replace(su_home_t *, msg_param_t **pp, msg_param_t);

@@ -353,7 +353,7 @@ int sip_contact_accept(sip_contact_t const *m,
 
     N++;
 
-    cap = msg_params_matching(m->m_params, acc);
+    cap = msg_params_find(m->m_params, acc);
 
     if (cap) {
       eq = strcspn(acc, "=");
