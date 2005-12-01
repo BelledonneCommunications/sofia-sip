@@ -21,6 +21,8 @@ dnl SAC_CHECK_SU_LIBS - check for libraries used by su
 dnl ======================================================================
 AC_DEFUN([SAC_CHECK_SU_LIBS], [
 AC_REQUIRE([SAC_WITH_RT])
+AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(socket, socketpair,,,-lnsl)
 if test "${with_rt}" != no; then
 	AC_SEARCH_LIBS(clock_gettime, rt)
 fi

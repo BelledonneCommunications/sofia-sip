@@ -49,7 +49,6 @@ AC_SUBST([m4dir])
 
 ### checks for libraries
 ### --------------------
-AC_CHECK_LIB(pthread, pthread_create)
 
 SAC_SOFIA_SU
 SAC_OPENSSL
