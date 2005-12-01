@@ -73,6 +73,7 @@ if $ax_inttypes; then : ; else
 fi
 
 AC_CHECK_HEADER(pthread.h, 
+        HAVE_PTHREADS=1;
 	SAC_SU_DEFINE([SU_HAVE_PTHREADS], 1, [Sofia SU uses pthreads]))
 
 AC_CHECK_HEADERS([unistd.h sys/time.h sys/socket.h sys/filio.h])
@@ -213,6 +214,7 @@ fi
 
 SAC_REPLACE_FUNCS(memmem memccpy memspn memcspn strcasestr strtoull)
 
+# Test for getaddrinfo(), getnameinfo(), freeaddrinfo() and gai_strerror()
 AC_CHECK_FUNC([getaddrinfo],[
 	SAC_SU_DEFINE([SU_HAVE_GETADDRINFO], 1, [
 	Define this as 1 if you have getaddrinfo() function.
@@ -227,6 +229,45 @@ AC_CHECK_FUNC([if_nameindex],
 	SAC_SU_DEFINE([SU_HAVE_IF_NAMEINDEX], 1, [
 	Define this as 1 if you have if_nameindex() function.
 	]))
+
+# ===========================================================================
+# Check pthread_rwlock_unlock()
+# ===========================================================================
+
+AC_DEFUN([AC_DEFINE_HAVE_PTHREAD_RWLOCK],[dnl
+AC_DEFINE([HAVE_PTHREAD_RWLOCK], 1,[
+Define this as 1 if you have working pthread_rwlock_t implementation.
+
+   A  thread  may hold multiple concurrent read locks on rwlock - that is,
+   successfully call the pthread_rwlock_rdlock() function  n  times.  If
+   so,  the  application  shall  ensure that the thread performs matching
+   unlocks - that is, it  calls  the  pthread_rwlock_unlock()  function  n
+   times.
+])])
+
+if test x$HAVE_PTHREADS = x1 ; then
+
+AC_RUN_IFELSE([
+#define _XOPEN_SOURCE (500)
+
+#include <pthread.h>
+
+pthread_rwlock_t rw;
+
+int main()
+{
+  pthread_rwlock_init(&rw);
+  pthread_rwlock_rdlock(&rw);
+  pthread_rwlock_rdlock(&rw);
+  pthread_rwlock_unlock(&rw);
+  /* pthread_rwlock_trywrlock() should fail with -1 */
+  return pthread_rwlock_trywrlock(&rw) == -1 ? 0 : 1;
+}
+],[AC_DEFINE_HAVE_PTHREAD_RWLOCK],[
+AC_MSG_WARN([Recursive pthread_rwlock_rdlock() does not work!!! ])
+],[AC_DEFINE_HAVE_PTHREAD_RWLOCK])
+
+fi
 
 # ===========================================================================
 # Check IPv6 addresss configuration
