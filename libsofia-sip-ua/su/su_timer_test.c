@@ -30,7 +30,7 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @internal
- * 
+ *
  * @date Created: Fri Oct 19 08:53:55 2001 pessi
  */
 
@@ -63,6 +63,8 @@ struct tester
 {
   su_root_t *root;
   su_timer_t *t, *t1;
+  unsigned times;
+  void *sentinel;
 };
 
 void
@@ -110,6 +112,15 @@ end_test(struct tester *tester, su_timer_t *t, struct timing *ti)
 }
 
 void
+increment(struct tester *tester, su_timer_t *t, struct timing *ti)
+{
+  tester->times++;
+
+  if ((void *)ti == (void*)tester->sentinel)
+    su_root_break(tester->root);
+}
+
+void
 usage(char const *name)
 {
   fprintf(stderr, "usage: %s [-1r] [interval]\n", name);
@@ -125,21 +136,25 @@ int main(int argc, char *argv[])
 {
   su_root_t *root;
   su_timer_t *t, *t1, *t_end;
+  su_timer_t **timers;
   su_duration_t interval = 60;
   char *argv0 = argv[0];
   char *s;
   int use_t1 = 0;
+  su_time_t now, started;
+  int i, N;
+
   struct timing timing[1] = {{ 0 }};
   struct tester tester[1] = {{ 0 }};
 
   while (argv[1] && argv[1][0] == '-') {
     char *o = argv[1] + 1;
-    while (*o) 
+    while (*o)
       if (*o == '1')
 	o++, use_t1 = 1;
       else if (*o == 'r')
 	o++, timing->t_run = 1;
-      else 
+      else
 	break;
 
     if (o == argv[1] + 1)
@@ -150,7 +165,7 @@ int main(int argc, char *argv[])
   if (argv[1]) {
     interval = strtoul(argv[1], &s, 10);
 
-    if (interval == 0 || s == argv[1]) 
+    if (interval == 0 || s == argv[1])
       usage(argv0);
   }
 
@@ -158,9 +173,9 @@ int main(int argc, char *argv[])
 
   tester->root = root = su_root_create(tester);
 
-  su_msg_create(intr_msg, 
-		su_root_task(root), 
-		su_root_task(root), 
+  su_msg_create(intr_msg,
+		su_root_task(root),
+		su_root_task(root),
 		test_break, 0);
 
   signal(SIGINT, intr_handler);
@@ -184,7 +199,7 @@ int main(int argc, char *argv[])
   if (timing->t_run)
     su_timer_run(t, print_stamp, timing);
   else
-    su_timer_set(t, print_stamp, timing);  
+    su_timer_set(t, print_stamp, timing);
 
   if (use_t1)
     su_timer_set(t1, print_X, NULL);
@@ -198,15 +213,41 @@ int main(int argc, char *argv[])
   su_timer_destroy(t);
   su_timer_destroy(t1);
 
-  su_root_destroy(root);
-
-  su_deinit();
-
   if (timing->t_times != 10) {
-    fprintf(stderr, "%s: t expired %d times (expecting 10)\n", 
+    fprintf(stderr, "%s: t expired %d times (expecting 10)\n",
 	    argv0, timing->t_times);
     return 1;
   }
+
+
+  /* Insert 500 000 timers in order */
+  timers = calloc(N = 5000000, sizeof *timers);
+  if (!timers) { perror("calloc"); exit(1); }
+
+  now = started = su_now();
+
+  for (i = 0; i < N; i++) {
+    t = su_timer_create(su_root_task(root), 1000);
+    if (!t) { perror("su_timer_create"); exit(1); }
+    if (++now.tv_usec == 0) ++now.tv_sec;
+    su_timer_set_at(t, increment, (void *)i, now);
+    timers[i] = t;
+  }
+
+  tester->sentinel = (void*)(i - 1);
+
+  su_root_run(root);
+
+  printf("Processing %u timers took %f millisec (%f expected)\n",
+	 i, su_time_diff(su_now(), started) * 1000, (double)i / 1000);
+
+  for (i = 0; i < N; i++) {
+    su_timer_destroy(timers[i]);
+  }
+
+  su_root_destroy(root);
+
+  su_deinit();
 
   return 0;
 }
