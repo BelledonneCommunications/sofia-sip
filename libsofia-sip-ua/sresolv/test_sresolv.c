@@ -597,6 +597,7 @@ int test_a(sres_context_t *ctx)
   END();
 }
 
+#if HAVE_SIN6
 int test_a6(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
@@ -729,6 +730,7 @@ int test_aaaa(sres_context_t *ctx)
 
   END();
 }
+#endif /* HAVE_SIN6 */
 
 int test_srv(sres_context_t *ctx)
 {
@@ -918,6 +920,7 @@ int test_ptr_ipv4_sockaddr(sres_context_t *ctx)
   END();
 }
 
+#if HAVE_SIN6
 int test_ptr_ipv6(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
@@ -981,6 +984,7 @@ int test_ptr_ipv6_sockaddr(sres_context_t *ctx)
 
   END();
 }
+#endif /* HAVE_SIN6 */
 
 /* Test sres_cached_answers(), sres_sort_answers(), sres_free_answers() */
 int test_cache(sres_context_t *ctx)
@@ -996,7 +1000,9 @@ int test_cache(sres_context_t *ctx)
   const sres_aaaa_record_t *rr_aaaa;
   const sres_cname_record_t *rr_cname;
   const sres_ptr_record_t *rr_ptr;
+#if HAVE_SIN6
   struct sockaddr_in6 sin6 = {0};
+#endif
   char const *domain;
   char buf[50] = {0};
   int i, j;
@@ -1015,6 +1021,7 @@ int test_cache(sres_context_t *ctx)
   sres_query_make(res, test_answer_multi, ctx, s,
 		  sres_qtype_any, "subnet.example.com");
 
+#if HAVE_SIN6
   sres_query_make(res, test_answer_multi, ctx, s,
 		  sres_type_aaaa, "mgw02.example.com");
 
@@ -1028,6 +1035,7 @@ int test_cache(sres_context_t *ctx)
 				   sres_qtype_any, (struct sockaddr *)&sin6);
 
   TEST_1(query != NULL);
+#endif
 
   TEST_RUN(ctx);
 
@@ -1211,6 +1219,7 @@ int test_cache(sres_context_t *ctx)
 
   sres_free_answers(res, result);
 
+#if HAVE_SIN6
   domain = "subnet.example.com";
   result = sres_cached_answers(res, 
 			       sres_qtype_any,
@@ -1255,10 +1264,12 @@ int test_cache(sres_context_t *ctx)
   TEST_S(rr_ptr->ptr_domain, "sip01.example.com.");    
 
   sres_free_answers(res, result);
+#endif /* HAVE_SIN6 */
 
   END();
 }
 
+#if HAVE_SIN6
 int test_query_one_type(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
@@ -1286,6 +1297,7 @@ int test_query_one_type(sres_context_t *ctx)
 
   END();
 }
+#endif /* HAVE_SIN6*/
 
 int sink_make(sres_context_t *ctx)
 {
@@ -1931,17 +1943,23 @@ int main(int argc, char **argv)
       error |= test_a(ctx);
       error |= test_soa(ctx);
       error |= test_naptr(ctx);
+#if HAVE_SIN6
       error |= test_a6(ctx);
       error |= test_a6_prefix(ctx);
       error |= test_aaaa(ctx);
+#endif
       error |= test_srv(ctx);
       error |= test_cname(ctx);
       error |= test_ptr_ipv4(ctx);
       error |= test_ptr_ipv4_sockaddr(ctx);
+#if HAVE_SIN6
       error |= test_ptr_ipv6(ctx);
       error |= test_ptr_ipv6_sockaddr(ctx);
+#endif
       error |= test_cache(ctx);
+#if HAVE_SIN6
       error |= test_query_one_type(ctx);
+#endif
       error |= test_expiration(ctx);
     }
     error |= test_deinit(ctx) | initerror;

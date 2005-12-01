@@ -121,6 +121,7 @@ struct sres_a_record
   struct in_addr    a_addr;
 };
 
+#if SU_HAVE_IN6
 /** Address record for IPv6 (RFC 2874, deprecated). */
 struct sres_a6_record
 {
@@ -137,6 +138,7 @@ struct sres_aaaa_record
   sres_common_t     aaaa_record[1];
   struct in6_addr   aaaa_addr;
 };
+#endif /* if SU_HAVE_IN6 */
 
 /** Canonic name record (RFC 1035). */
 struct sres_cname_record
@@ -184,8 +186,10 @@ union sres_record
   sres_a_record_t     sr_a[1];    
   sres_cname_record_t sr_cname[1];   
   sres_ptr_record_t   sr_ptr[1];
+#if SU_HAVE_IN6
   sres_a6_record_t    sr_a6[1];   
   sres_aaaa_record_t  sr_aaaa[1]; 
+#endif
   sres_srv_record_t   sr_srv[1]; 
   sres_naptr_record_t sr_naptr[1];   
 };

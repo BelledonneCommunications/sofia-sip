@@ -363,10 +363,13 @@ static void sres_init_rr_soa(sres_resolver_t *res, sres_soa_record_t *rr,
 			     sres_message_t *m);
 static void sres_init_rr_a(sres_resolver_t *res, sres_a_record_t *rr,
 			   sres_message_t *m);
+
+#if SU_HAVE_IN6
 static void sres_init_rr_a6(sres_resolver_t *res, sres_a6_record_t *rr,
 			    sres_message_t *m);
 static void sres_init_rr_aaaa(sres_resolver_t *res, sres_aaaa_record_t *rr,
 			      sres_message_t *m);
+#endif
 static void sres_init_rr_cname(sres_resolver_t *res, sres_cname_record_t *rr,
 			       sres_message_t *m);
 static void sres_init_rr_ptr(sres_resolver_t *res, sres_ptr_record_t *rr,
@@ -1024,6 +1027,7 @@ sres_record_compare(sres_record_t const *aa, sres_record_t const *bb)
       sres_a_record_t const *A = aa->sr_a, *B = bb->sr_a;
       return memcmp(&A->a_addr, &B->a_addr, sizeof A->a_addr);
     }
+#if SU_HAVE_IN6
   case sres_type_a6:
     {
       sres_a6_record_t const *A = aa->sr_a6, *B = bb->sr_a6;
@@ -1036,6 +1040,7 @@ sres_record_compare(sres_record_t const *aa, sres_record_t const *bb)
       sres_aaaa_record_t const *A = aa->sr_aaaa, *B = bb->sr_aaaa;
       return memcmp(&A->aaaa_addr, &B->aaaa_addr, sizeof A->aaaa_addr);      
     }
+#endif
   case sres_type_cname:
     {
       sres_cname_record_t const *A = aa->sr_cname, *B = bb->sr_cname;
@@ -2058,10 +2063,12 @@ void sres_log_response(sres_resolver_t const *res,
       struct sockaddr_in const *sin = (void *)from;
       inet_ntop(AF_INET, &sin->sin_addr, host, sizeof host);
     } 
+#if HAVE_SIN6
     else if (from->ss_family == AF_INET6) {
       struct sockaddr_in6 const *sin6 = (void *)from;
       inet_ntop(AF_INET6, &sin6->sin6_addr, host, sizeof host);
     }
+#endif
     else
       strcpy(host, "*");
 
@@ -2202,8 +2209,10 @@ sres_alloc_record(sres_resolver_t *res, uint16_t qtype, uint16_t rdlen)
   switch (qtype) {
   case sres_type_soa:     size = sizeof(sres_soa_record_t); break;
   case sres_type_a:       size = sizeof(sres_a_record_t); break;
+#if SU_HAVE_IN6
   case sres_type_a6:      size = sizeof(sres_a6_record_t); break;
   case sres_type_aaaa:    size = sizeof(sres_aaaa_record_t); break;
+#endif
   case sres_type_cname:   size = sizeof(sres_cname_record_t); break;
   case sres_type_ptr:     size = sizeof(sres_ptr_record_t); break;
   case sres_type_srv:     size = sizeof(sres_srv_record_t); break;
@@ -2253,12 +2262,14 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m)
   case sres_type_a:
     sres_init_rr_a(res, rr->sr_a, m);
     break;
+#if SU_HAVE_IN6
   case sres_type_a6:
     sres_init_rr_a6(res, rr->sr_a6, m);
     break;
   case sres_type_aaaa:
     sres_init_rr_aaaa(res, rr->sr_aaaa, m);
     break;
+#endif
   case sres_type_cname:
     sres_init_rr_cname(res, rr->sr_cname, m);
     break;
@@ -2328,6 +2339,7 @@ sres_init_rr_a(sres_resolver_t *res,
   rr->a_addr.s_addr = htonl(m_get_uint32(m));
 }
 
+#if SU_HAVE_IN6
 static void
 sres_init_rr_a6(sres_resolver_t *res,
 		sres_a6_record_t *rr,
@@ -2372,6 +2384,7 @@ sres_init_rr_aaaa(sres_resolver_t *res,
 
   m->m_offset += sizeof(rr->aaaa_addr.s6_addr);
 }
+#endif /* SU_HAVE_IN6 */
 
 static void
 sres_init_rr_cname(sres_resolver_t *res,
