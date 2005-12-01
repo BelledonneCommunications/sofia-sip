@@ -23,7 +23,7 @@ noinst_PROGRAMS =       torture_sip \
 # Rules for building the targets
 
 GENERATED_H = sip_hclasses.h sip_protos.h sip_tag.h sip_rfc2543.h
-H_IN = sip_hclasses.h.in sip_protos.h.in sip_tag.h.in
+H_IN = sip_hclasses.h.in sip_protos.h.in sip_tag.h.in sip_rfc2543.h.in
 
 PUBLIC_H = sip.h sip_extensions.h sip_util.h \
            sip_header.h sip_parser.h \
@@ -114,7 +114,7 @@ sip_parser_table.c: sip_bad_mask
 sip_%.h: sip_%.h.in $(MSG_PARSER_AWK)
 sip_%.c: sip_%.c.in $(MSG_PARSER_AWK)
 
-sip_tag.c sip_hclasses.h sip_protos.h sip_tag.h: sip.h
+sip_tag.c sip_hclasses.h sip_protos.h sip_tag.h sip_rfc2543.h: sip.h
 	$(AWK_MSG_AWK) PR=$@ $<
 
 sip_parser_table.c: sip.h

@@ -33,7 +33,6 @@
 #include "config.h"
 
 char const name[] = "portbind";
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -44,6 +43,8 @@ char const name[] = "portbind";
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+
+#include "su.h"
 
 #if !defined(IPPROTO_SCTP)
 #define IPPROTO_SCTP (132)

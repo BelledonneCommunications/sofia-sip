@@ -636,12 +636,15 @@ int tport_has_ip4(tport_t const *self)
      /* || self->tp_pri->pri_family2 == AF_INET */);
 }
 
+
+#if SU_HAVE_IN6
 /** Return true if transport supports IPv6 */
 int tport_has_ip6(tport_t const *self)
 {
   return self && 
     (self->tp_pri->pri_family == 0 || self->tp_pri->pri_family == AF_INET6);
 }
+#endif
 
 /** Return true if transport supports TLS. */
 int tport_has_tls(tport_t const *self)
@@ -1150,11 +1153,13 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
 
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 
+#if SU_HAVE_IN6
   if (s == SOCKET_ERROR) {
     if (ai->ai_family == AF_INET6 && su_errno() == EAFNOSUPPORT)
       errlevel = 7;
     return TPORT_LISTEN_ERROR(su_errno(), socket);
   }
+#endif
 
   /* Passive open, do bind() (and listen() if connection-oriented). */
 
@@ -1405,11 +1410,13 @@ tport_t *tport_connect(tport_primary_t *pri,
 
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 
+#if SU_HAVE_IN6
   if (s == SOCKET_ERROR) {
     if (ai->ai_family == AF_INET6 && su_errno() == EAFNOSUPPORT)
       errlevel = 7;
     TPORT_CONNECT_ERROR(su_errno(), socket);
   }
+#endif
 
   if (pri->pri_primary->tp_socket != SOCKET_ERROR) {
     su_sockaddr_t susa;
@@ -1827,7 +1834,7 @@ int tport_bind_server(tport_master_t *mr,
 		      tagi_t *tags)
 {
   char hostname[256];
-  char const *proto, *canon, *host, *port;
+  char const *proto, *canon = NULL, *host, *port;
   char port0[16];
   int ephemeral_port;
   int i, error = 0, not_supported, family = 0;
@@ -1898,8 +1905,10 @@ int tport_bind_server(tport_master_t *mr,
 
   if (host && (strcmp(host, "0.0.0.0") == 0 || strcmp(host, "0") == 0))
     host = NULL, family = AF_INET;
+#if SU_HAVE_IN6
   else if (host && strcmp(host, "::") == 0)
     host = NULL, family = AF_INET6;
+#endif
 
   if (tpn->tpn_canon && strcmp(tpn->tpn_canon, tpn_any) &&
       (host || tpn->tpn_canon != tpn->tpn_host))
@@ -1918,11 +1927,18 @@ int tport_bind_server(tport_master_t *mr,
 
     error = su_getlocalinfo(hints, &li);
     if (error) {
+#if SU_HAVE_IN6
       SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
 		  __func__, mr, 
 		  family == AF_INET6 ? "ip6" 
 		  : family == AF_INET ? "ip4" : "ip",
 		  su_gli_strerror(error)));
+#else
+      SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
+		  __func__, mr, 
+		  family == AF_INET ? "ip4" : "ip",
+		  su_gli_strerror(error)));
+#endif
       su_seterrno(ENOENT);
       return -1;
     }
@@ -1979,8 +1995,13 @@ int tport_bind_server(tport_master_t *mr,
 
       for (ai = res; ai; ai = ai->ai_next) {
         /* Skip non-internet (AF_LOCAL) addresses */
+#if SU_HAVE_IN6
         if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
           continue;
+#else
+        if (ai->ai_family != AF_INET)
+          continue;
+#endif
 
         SU_DEBUG_9(("%s(%p): calling tport_socket\n", __func__, mr));
 
@@ -2449,9 +2470,11 @@ int tport_convert_addr(su_home_t *home,
   else if (canonlen && su->su_family == AF_INET && 
 	   strspn(canon, "0123456789.") == canonlen)
     host = canon;
+#if SU_HAVE_IN6
   else if (canonlen && su->su_family == AF_INET6 && 
 	   strspn(canon, "0123456789abcdefABCDEF:.") == canonlen)
     host = canon;
+#endif
   else
     host = localipname(su->su_family, buf, sizeof(buf));
 
@@ -2545,12 +2568,15 @@ char *localipname(int pf, char *buf, int bufsiz)
 
   hints->li_family = pf;
 
+#if SU_HAVE_IN6
   if (pf == AF_INET6) {
     /* Link-local addresses are not usable on IPv6 */
     hints->li_scope = LI_SCOPE_GLOBAL | LI_SCOPE_SITE /* | LI_SCOPE_HOST */;
   }
+#endif
 
   if ((error = su_getlocalinfo(hints, &li))) {
+#if SU_HAVE_IN6
     if (error == ELI_NOADDRESS && pf == AF_INET6) {
       hints->li_family = AF_INET;
       error = su_getlocalinfo(hints, &li);
@@ -2563,6 +2589,7 @@ char *localipname(int pf, char *buf, int bufsiz)
 	error = su_getlocalinfo(hints, &li);
       }
     }
+#endif
     if (error) {
       SU_DEBUG_1(("tport: su_getlocalinfo: %s\n", su_gli_strerror(error)));
       return NULL;
@@ -3063,6 +3090,7 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
     char ipaddr[SU_ADDRSIZE + 2];
     su_sockaddr_t *su = msg_addr(msg);
 
+#if SU_HAVE_IN6
     if (su->su_family == AF_INET6) {
       ipaddr[0] = '[';
       inet_ntop(su->su_family, SU_ADDR(su), ipaddr + 1, sizeof(ipaddr) - 1);
@@ -3071,6 +3099,9 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
     else {
       inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr));
     }
+#else
+    inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr));
+#endif
 
     d->d_from->tpn_canon = ipaddr;
     d->d_from->tpn_host = ipaddr;    
@@ -4369,6 +4400,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
 		self, su_strerror(error), self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp));
   }
+#if SU_HAVE_IN6
   else if (self->tp_pri->pri_family == AF_INET6) {
     su_sockaddr_t const *su = msg_addr(msg);
     SU_DEBUG_3(("tport_vsend(%p): %s with "
@@ -4377,6 +4409,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp,
 		su->su_scope_id, *msg_addrlen(msg)));
   }
+#endif
   else {
     su_sockaddr_t const *su = msg_addr(msg);
     SU_DEBUG_3(("\ttport_vsend(%p): %s with "
@@ -5036,11 +5069,19 @@ tport_resolve(tport_t *self, msg_t *msg, tp_name_t const *tpn)
 
   su = (su_sockaddr_t *) msg_addrinfo(msg)->ai_addr;
 
+#if SU_HAVE_IN6
   SU_DEBUG_9(("tport_resolve addrinfo = %s%s%s:%d\n", 
 	      su->su_family == AF_INET6 ? "[" : "",
               inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr)),
 	      su->su_family == AF_INET6 ? "]" : "",
               htons(su->su_port)));
+#else
+  SU_DEBUG_9(("tport_resolve addrinfo = %s%s%s:%d\n", 
+	      "",
+              inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr)),
+	      "",
+              htons(su->su_port)));
+#endif
 
   su_freeaddrinfo(res);
 
@@ -5055,8 +5096,14 @@ msg_select_addrinfo(msg_t *msg, su_addrinfo_t *res)
   socklen_t *sulen = msg_addrlen(msg);
 
   for (ai = res; ai; ai = ai->ai_next) {
+#if SU_HAVE_IN6
     if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
       continue;
+#else
+    if (ai->ai_family != AF_INET)
+      continue;
+#endif
+
     if (ai->ai_addrlen > sizeof(su_sockaddr_t))
       continue;
     mai->ai_family = ai->ai_family;
@@ -5672,8 +5719,10 @@ tport_t *tport_primary_by_name(tport_t const *tp, tp_name_t const *tpn)
 
   if (tpn->tpn_host == NULL)
     family = 0;
+#if SU_HAVE_IN6
   else if (strchr(tpn->tpn_host, ':'))
     family = AF_INET6;
+#endif
   else if (strcmp(tpn->tpn_host, tpn_any))
     family = AF_INET;
 
@@ -5694,8 +5743,10 @@ tport_t *tport_primary_by_name(tport_t const *tp, tp_name_t const *tpn)
     if (family) {
       if (family == AF_INET && !tport_has_ip4(tp))
 	continue;
+#if SU_HAVE_IN6
       if (family == AF_INET6 && !tport_has_ip6(tp))
 	continue;
+#endif
     }
     if (proto && strcasecmp(proto, tp->tp_protoname))
       continue;
@@ -6059,14 +6110,19 @@ char *tport_hostport(char buf[], int bufsize,
   char *b = buf;
   int n;
 
+#if SU_HAVE_IN6
   if (with_port_and_brackets > 1 || su->su_family == AF_INET6) {
     *b++ = '['; bufsize--; 
   }
+#endif
+
   if (inet_ntop(su->su_family, SU_ADDR(su), b, bufsize) == NULL)
     return NULL;
   n = strlen(b); bufsize -= n; b += n;
   if (bufsize < 2)
     return NULL;
+
+#if SU_HAVE_IN6
   if (with_port_and_brackets > 1 || su->su_family == AF_INET6) {
     *b++ = ']'; bufsize--; 
   }
@@ -6083,6 +6139,7 @@ char *tport_hostport(char buf[], int bufsize,
         bufsize = 0;
     }
   }
+#endif
 
   if (bufsize)
     *b++ = 0;

@@ -490,6 +490,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
 
   TEST_1(ag->ag_mclass = msg_mclass_clone(sip_default_mclass(), 0, 0));
 
+#if SU_HAVE_IN6
   if (str0cmp(getenv("ipv6"), "true") == 0) {
     contact = "sip:[::]:*;comp=sigcomp";
     af = AF_INET6, sulen0 = sizeof (struct sockaddr_in6);
@@ -498,6 +499,10 @@ int test_init(agent_t *ag, char const *resolv_conf)
     af = AF_INET, sulen0 = sizeof (struct sockaddr_in);
     contact = "sip:0.0.0.0:*;comp=sigcomp";
   }
+#else
+  af = AF_INET, sulen0 = sizeof (struct sockaddr_in);
+  contact = "sip:0.0.0.0:*;comp=sigcomp";
+#endif
 
   if (ag->ag_m)
     contact = ag->ag_m;

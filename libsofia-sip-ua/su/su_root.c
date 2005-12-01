@@ -927,10 +927,20 @@ static void *su_clone_main(void *varg)
 
   su_root_run(self);   /* Do the work */
 
+  printf("Ready to zap root from %p\n", pthread_self());
+  fflush(stdout);
+
   su_root_destroy(self);   /* Cleanup root */   
+
+  printf("Ready to zap port from %p\n", pthread_self());
+  fflush(stdout);
 
   SU_PORT_ZAPREF(port, su_clone_main);
 
+  printf("Ready to exit from %p\n", pthread_self());
+  fflush(stdout);
+
+  pthread_exit(NULL);
   return NULL;
 }
 #endif
@@ -1163,10 +1173,14 @@ void su_clone_wait(su_root_t *root, su_clone_r rclone)
     su_root_step(root, 0);
     su_root_step(root, 0);
 
+    printf("Ready to wait()\n");
+
     while (one)
       su_root_step(root, 10);
 
 #if SU_HAVE_PTHREADS
+    printf("Ready to join(%p)\n", clone_tid);
+
     if (!pthread_equal(clone_tid, pthread_self()))
       pthread_join(clone_tid, NULL);
 #endif

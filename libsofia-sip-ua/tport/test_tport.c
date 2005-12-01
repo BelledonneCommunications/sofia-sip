@@ -138,8 +138,8 @@ static int name_test(tp_test_t *tt)
 
   TEST(tport_convert_addr(home, tpn, "tcp", "localhost", su), 0);
 
-  su->su_family = AF_INET6;
 #if SU_HAVE_IN6
+  su->su_family = AF_INET6;
   TEST(tport_convert_addr(home, tpn, "tcp", "localhost", su), 0);
 #endif
 

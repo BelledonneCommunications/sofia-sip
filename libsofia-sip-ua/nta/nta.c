@@ -1573,7 +1573,10 @@ int agent_init_via(nta_agent_t *self, int use_maddr)
 #endif
 
     if (tport_has_ip4(tp)) self->sa_tport_ip4 = 1;
+
+#if SU_HAVE_IN6
     if (tport_has_ip6(tp)) self->sa_tport_ip6 = 1;
+#endif
 
     if (strcasecmp(tpn->tpn_proto, "udp") == 0)
       self->sa_tport_udp = 1;
@@ -7788,9 +7791,11 @@ static int outgoing_query_srv(nta_outgoing_t *orq, struct sipdns_query *);
 static void outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
 				sres_record_t *answers[]);
 
+#if SU_HAVE_IN6
 static int outgoing_query_aaaa(nta_outgoing_t *orq, struct sipdns_query *);
 static void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
 				 sres_record_t *answers[]);
+#endif
 
 static int outgoing_query_a(nta_outgoing_t *orq, struct sipdns_query *);
 static void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
@@ -8134,8 +8139,10 @@ void outgoing_query_all(nta_outgoing_t *orq)
 
   if (sq->sq_type == sres_type_srv)
     outgoing_query_srv(orq, sq);
+#if SU_HAVE_IN6
   else if (sq->sq_type == sres_type_aaaa)
     outgoing_query_aaaa(orq, sq);
+#endif
   else if (sq->sq_type == sres_type_a)
     outgoing_query_a(orq, sq);
   else
@@ -8424,6 +8431,7 @@ outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
   outgoing_resolve_next(orq);
 }
 
+#if SU_HAVE_IN6
 /* Query AAAA records */
 static
 int outgoing_query_aaaa(nta_outgoing_t *orq, struct sipdns_query *sq)
@@ -8505,6 +8513,7 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
 
   outgoing_query_results(orq, sq, results, found);
 }
+#endif /* SU_HAVE_IN6 */
 
 /* Query A records */
 static

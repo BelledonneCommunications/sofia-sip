@@ -364,7 +364,13 @@ int su_cmp_sockaddr(su_sockaddr_t const *a, su_sockaddr_t const *b);
 int su_match_sockaddr(su_sockaddr_t const *a, su_sockaddr_t const *b);
 void su_canonize_sockaddr(su_sockaddr_t *su);
 
+#if SU_HAVE_IN6
 #define SU_CANONIZE_SOCKADDR(su) \
   ((su)->su_family == AF_INET6 ? su_canonize_sockaddr(su) : (void)0)
+#else
+#define SU_CANONIZE_SOCKADDR(su) \
+  ((void)0)
+#endif
+
 
 #endif /* !defined(SU_H) */

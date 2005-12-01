@@ -1734,6 +1734,8 @@ soa_init_sdp_connection(soa_session_t *ss,
   case SOA_AF_IP4_ONLY:
     hints->li_family = AF_INET, ip4 = 1, ip6 = 0;
     break;
+
+#if HAVE_SIN6
   case SOA_AF_IP6_ONLY:
     hints->li_family = AF_INET6, ip6 = 1, ip4 = 0;
     break;
@@ -1743,6 +1745,7 @@ soa_init_sdp_connection(soa_session_t *ss,
   case SOA_AF_IP6_IP4:
     ip4 = 1, ip6 = 2;
     break;
+#endif
   default:
     ip4 = ip6 = 1;
   }
@@ -1781,12 +1784,14 @@ soa_init_sdp_connection(soa_session_t *ss,
 
     if (!li)
       break;
+#if HAVE_SIN6
     else if (li->li_family == AF_INET6) {
       if (ip6 >= ip4)
 	break;
       else if (!li6)
 	li6 = li;		/* Best IP6 address */
     }
+#endif
     else if (li->li_family == AF_INET) {
       if (ip4 > ip6)
 	break;
@@ -1807,8 +1812,10 @@ soa_init_sdp_connection(soa_session_t *ss,
     ;
   else if (li->li_family == AF_INET)
     c->c_nettype = sdp_net_in,  c->c_addrtype = sdp_addr_ip4;
+#if HAVE_SIN6
   else if (li->li_family == AF_INET6)
     c->c_nettype = sdp_net_in,  c->c_addrtype = sdp_addr_ip6;
+#endif
 
   if (li) {
     assert(strlen(li->li_canonname) < 64);
