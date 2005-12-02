@@ -2933,9 +2933,9 @@ static void signal_call_state_change(nua_handle_t *nh,
 
   int offer_recv = 0, answer_recv = 0, offer_sent = 0, answer_sent = 0;
 
-  if (ss->ss_state != nua_callstate_ready || next_state > nua_callstate_ready)
+  if (ss_state != nua_callstate_ready || next_state > nua_callstate_ready)
     SU_DEBUG_5(("nua(%p): call state changed: %s -> %s%s%s%s%s\n", 
-		nh, nua_callstate_name(ss->ss_state),
+		nh, nua_callstate_name(ss_state),
 		nua_callstate_name(next_state),
 		oa_recv ? ", received " : "", oa_recv ? oa_recv : "",
 		oa_sent && oa_recv ? ", and sent " :
@@ -2971,11 +2971,18 @@ static void signal_call_state_change(nua_handle_t *nh,
   
   (void)sr;
 
+  /* Update state variables */
   if (next_state > ss_state)
-    ss_state = next_state;
+    ss->ss_state = next_state;
   else if (next_state == nua_callstate_init && ss_state < nua_callstate_ready)
-    ss_state = nua_callstate_init, next_state = nua_callstate_terminated;
+    ss->ss_state = nua_callstate_init, next_state = nua_callstate_terminated;
 
+  if (next_state == nua_callstate_ready)
+    ss->ss_active = 1;
+  else if (next_state == nua_callstate_terminated)
+    ss->ss_active = 0;
+
+  /* Send events */
   if (phrase == NULL)
     phrase = "Call state";
 
@@ -2994,22 +3001,16 @@ static void signal_call_state_change(nua_handle_t *nh,
 	   TAG_IF(oa_sent, SOATAG_LOCAL_SDP_STR(local_sdp_str)),
 	   TAG_END());
 
-  if (next_state == nua_callstate_ready &&
-      ss->ss_state <= nua_callstate_ready) {
+  if (next_state == nua_callstate_ready && ss_state <= nua_callstate_ready) {
     ua_event(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active", 
 	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 	     /* NUTAG_SOA_SESSION(nh->nh_soa), */
 	     TAG_END());
-    ss->ss_active = 1;
   }
-  else if (next_state == nua_callstate_terminated || 
-	   ss_state == nua_callstate_init) {
+  else if (next_state == nua_callstate_terminated) {
     ua_event(nh->nh_nua, nh, NULL, nua_i_terminated, status, phrase, 
 	     TAG_END());
-    ss->ss_active = 0;
   }
-
-  ss->ss_state = ss_state;
 }
 
 static inline
