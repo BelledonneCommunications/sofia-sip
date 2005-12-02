@@ -66,13 +66,13 @@ TAG_DLL_FLAGS = DLLREF=1
 
 MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
 
-AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=http
+AWK_HTTP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=http
 
 http_%.h: http_%.h.in $(MSG_PARSER_AWK)
 http_%.c: http_%.c.in $(MSG_PARSER_AWK)
 
-http_tag.c http_tag_ref.c http_protos.h http_tag.h: http.h
-	$(AWK_MSG_AWK) PR=$@ $<
+http_tag.c http_protos.h http_tag.h: http.h
+	$(AWK_HTTP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 http_parser_table.c: http.h
-	$(AWK_MSG_AWK) PT=$@ MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
+	$(AWK_HTTP_AWK) PT=$@ MC_HASH_SIZE=127 $<
