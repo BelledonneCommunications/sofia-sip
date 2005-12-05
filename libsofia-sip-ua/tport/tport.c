@@ -6836,7 +6836,7 @@ void thrp_udp_send_report(su_root_magic_t *magic,
 }
 
 
-int tport_stun_cb(tport_t *tport, stun_engine_t *en)
+int tport_stun_cb(tport_master_t *tport, stun_engine_t *se)
 {
 
   /* xxx - mela: here events that can be sent to nua_events */
