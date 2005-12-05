@@ -39,20 +39,32 @@
 #endif
 #include "stun_common.h"
 
-#define STUN_LIFETIME_EST 350      /**< 6 min? */
-#define STUN_LIFETIME_MAX 1800     /**< 30 min? */
-#define STUN_LIFETIME_CI  5        /**< 5 sec confidence interval */
-
 typedef struct stun_engine_s stun_engine_t;
 typedef struct stun_socket_s stun_socket_t;
+
+#ifndef STUN_MAGIC_T 
+#define STUN_MAGIC_T            struct stun_magic_t
+#endif
+/** STUN server context */
+typedef STUN_MAGIC_T stun_magic_t;
+
 
 extern char const stun_version[]; /**< Name and version of STUN software */
 
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
-stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...); 
+typedef int (stun_event_f) (stun_magic_t *magic, stun_engine_t *se);
 
-stun_engine_t *stun_engine_create(char const *server, int use_msgint); 
+stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
+				   su_root_t *root,
+				   stun_event_f *cb,
+				   tag_type_t tag, tag_value_t value, ...); 
+
+stun_engine_t *stun_engine_create(stun_magic_t *context,
+				  su_root_t *root,
+				  stun_event_f *cb,
+				  char const *server,
+				  int use_msgint); 
 
 void stun_engine_destroy(stun_engine_t *);
 
@@ -68,7 +80,6 @@ int stun_bind(stun_socket_t *ss,
 int stun_get_nattype(stun_socket_t *ss,
 		     struct sockaddr *my_addr, int *addrlen);
 
-int stun_poll(stun_socket_t *ss);
 int stun_get_lifetime(stun_socket_t *ss, 
 		      struct sockaddr *my_addr, int *addrlen,
 		      int *lifetime);
@@ -77,22 +88,6 @@ int stun_get_lifetime(stun_socket_t *ss,
 int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname, 
 		       const char *pwd, int len_pwd);
 
-
-/* internal functions declaration */
-int stun_get_sharedsecret(stun_engine_t *se);
-int stun_make_sharedsecret_req(stun_msg_t *msg);
-
-int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr, struct sockaddr_in *cli, 
-		   int chg_ip, int chg_port);
-int stun_send_message2(stun_socket_t *ss, struct sockaddr_in *srvr, stun_msg_t *msg); /* client version */
-int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int chg_port);
-int stun_process_response(stun_msg_t *msg);
-
-int stun_process_binding_response(stun_msg_t *msg);
-int stun_process_error_response(stun_msg_t *msg);
-
-int stun_atoaddr(struct sockaddr_in *addr, char const *in);
 char const *stun_nattype(stun_engine_t *se);
-int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr);
 
 #endif /* !defined(STUN_H) */

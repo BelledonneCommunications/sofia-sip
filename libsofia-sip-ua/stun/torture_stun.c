@@ -43,14 +43,23 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef struct torture_s torture_t;
+#define SU_ROOT_MAGIC_T  torture_t
+#define STUN_MAGIC_T     torture_t
+
 #include "stun.h"
 
 #define TSTFLAGS tstflags
 #include <tstdef.h>
 
+
+struct torture_s {
+  int kakka;
+};
+
 char const *name = "torture_stun";
 
-static int test_init(char *addr);
+static int test_init(su_root_t *root, char *addr);
 static int test_sync_stun(char *addr);
 static int test_get_nattype(char *addr);
 static int test_get_lifetime(char *addr);
@@ -77,6 +86,9 @@ int bypass_msg_int=0;
 
 int main(int argc, char *argv[])
 {
+
+  torture_t torture[1];
+  su_root_t *root = su_root_create(torture);
   int retval = 0;
   int i;
   char *clntaddr = "127.0.0.1", *srvraddr = "127.0.0.1";
@@ -106,7 +118,7 @@ int main(int argc, char *argv[])
 
   if(!test_bind && !test_nat && !test_lifetime) {usage(); return -1;}
 
-  if (!(retval |= test_init(srvraddr))) {
+  if (!(retval |= test_init(root, srvraddr))) {
     if(test_bind) {
       retval |= test_sync_stun(clntaddr);
     }
@@ -125,13 +137,26 @@ int main(int argc, char *argv[])
 
 stun_engine_t *se;
 
-int test_init(char *server)
+int torture_callback(torture_t *torturer, stun_engine_t *en);
+
+
+int torture_callback(torture_t *torturer, stun_engine_t *en)
 {
 
+  return 0;
+}
+
+int test_init(su_root_t *root, char *server)
+{
+
+  torture_t torturer[1];
   BEGIN();
 
   /* Running this test requires a local STUN server on default port */
-  se = stun_engine_create(server, !bypass_msg_int); TEST_1(se);
+  se = stun_engine_create(torturer,
+			  root,
+			  torture_callback,
+			  server, !bypass_msg_int); TEST_1(se);
 
   END();
 }

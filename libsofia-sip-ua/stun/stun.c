@@ -30,6 +30,7 @@
  * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  * 
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
  */
@@ -38,7 +39,11 @@
 
 #include <assert.h>
 
+#define SU_ROOT_MAGIC_T struct stun_engine_s
+#define SU_WAKEUP_ARG_T struct stun_engine_s
+
 #include "stun.h"
+#include "stun_internal.h"
 #include "stun_tag.h"
 
 #include <su_alloc.h>
@@ -82,12 +87,20 @@ enum stun_client_state_e {
 
 struct stun_engine_s
 {
-  su_home_t      stun_home[1];
-  su_sockaddr_t  stun_srvr4[2]; /**< primary and secondary addresses */
-  int            use_msgint;    /**< use message integrity? */
-  stun_buffer_t  username;
-  stun_buffer_t  password;
-  int            nattype;       /**< NAT-type, see stun_common.h */
+  su_home_t       st_home[1];
+  su_root_t      *st_root;
+  su_wait_t       st_waiter[1];   /**< for async socket operations */
+  su_sockaddr_t   st_srvr4[2];    /**< primary and secondary addresses */
+  su_socket_t     st_socket;
+
+  stun_event_f   *st_callback;    /**< callback for calling application */ 
+  stun_magic_t   *st_context;
+
+  stun_buffer_t   st_username;
+  stun_buffer_t   st_passwd;
+
+  int             st_use_msgint;  /**< use message integrity? */
+  int             st_nattype;     /**< NAT-type, see stun_common.h */
 };
 
 struct stun_socket_s
@@ -129,10 +142,16 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
  * @param msg_integrity true if msg integr. should be used
  *
  */
-stun_engine_t *stun_engine_create(char const *server, 
+stun_engine_t *stun_engine_create(stun_magic_t *context,
+				  su_root_t *root,
+				  stun_event_f *cb,
+				  char const *server, 
 				  int msg_integrity)
 {
-  return stun_engine_tcreate(STUNTAG_SERVER(server), 
+  return stun_engine_tcreate(context,
+			     root,
+			     cb,
+			     STUNTAG_SERVER(server), 
 			     STUNTAG_INTEGRITY(msg_integrity), 
 			     TAG_END());
 }
@@ -147,7 +166,10 @@ stun_engine_t *stun_engine_create(char const *server,
  * @TAG STUNTAG_INTEGRITY() true if msg integrity should be used
  *
  */
-stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
+stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
+				   su_root_t *root,
+				   stun_event_f *cb,
+				   tag_type_t tag, tag_value_t value, ...)
 {
   stun_engine_t *stun;
   char const *server = NULL;
@@ -184,32 +206,35 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
     /* Store server address in *stun, run discovery process?? 
      * I suppose this may block for the moment
      */
-    memset(&stun->stun_srvr4[0], 0, sizeof(stun->stun_srvr4[0]));
+    memset(&stun->st_srvr4[0], 0, sizeof(stun->st_srvr4[0]));
+
+    stun->st_context  = context;
+    stun->st_callback = cb;
 
     if (server) {
       if (su->su_sin.sin_port == 0)
 	su->su_sin.sin_port = htons(STUN_DEFAULT_PORT);
-      stun->stun_srvr4[0] = su[0];
+      stun->st_srvr4[0] = su[0];
     }
 
     /* alternative address set to 0 */
-    memset(&stun->stun_srvr4[1], 0, sizeof(stun->stun_srvr4[1])); 
+    memset(&stun->st_srvr4[1], 0, sizeof(stun->st_srvr4[1])); 
     /* initialize username and password */
-    stun_init_buffer(&stun->username);
-    stun_init_buffer(&stun->password);
+    stun_init_buffer(&stun->st_username);
+    stun_init_buffer(&stun->st_passwd);
 
-    stun->nattype = STUN_NAT_UNKNOWN;
+    stun->st_nattype = STUN_NAT_UNKNOWN;
 
     /* initialize random number generator */
     srand(time(NULL));
 
-    stun->use_msgint = 0;
+    stun->st_use_msgint = 0;
     if(msg_integrity) {
       /* get shared secret */ 
       SU_DEBUG_3(("Contacting Server to obtain shared secret. Please wait.\n"));
       if(stun_get_sharedsecret(stun)==0) {
 	SU_DEBUG_3(("Shared secret obtained from server.\n"));
-	stun->use_msgint = 1;
+	stun->st_use_msgint = 1;
       }
       else {
 	SU_DEBUG_3(("Shared secret NOT obtained from server. Proceed without username/password.\n"));
@@ -223,7 +248,7 @@ stun_engine_t *stun_engine_tcreate(tag_type_t tag, tag_value_t value, ...)
 /** Destroy a STUN client */ 
 void stun_engine_destroy(stun_engine_t *stun)
 { 
-  su_home_zap(stun->stun_home);
+  su_home_zap(stun->st_home);
 }
 
 stun_socket_t *stun_socket_create(stun_engine_t *se, int sockfd)
@@ -232,7 +257,7 @@ stun_socket_t *stun_socket_create(stun_engine_t *se, int sockfd)
 
   if (se == NULL) return errno = EINVAL, NULL;
 
-  ss = su_zalloc(se->stun_home, sizeof *ss);
+  ss = su_zalloc(se->st_home, sizeof *ss);
 
   if (ss) {
     ss->ss_engine = se;
@@ -245,7 +270,7 @@ stun_socket_t *stun_socket_create(stun_engine_t *se, int sockfd)
 void stun_socket_destroy(stun_socket_t *ss)
 {
   if (ss)
-    su_free(ss->ss_engine->stun_home, ss);
+    su_free(ss->ss_engine->st_home, ss);
 }
 
 /** Bind a socket using STUN client. 
@@ -334,7 +359,7 @@ int stun_bind(stun_socket_t *ss,
 	      (unsigned)ntohs(bind_addr.sin_port)));
 
 
-  retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[0], 
+  retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0], 
 			  clnt_addr, 0, 0);
 
   if (ss->ss_state != stun_cstate_done) {
@@ -360,7 +385,7 @@ int stun_bind(stun_socket_t *ss,
 
 /** Return type of NAT
  *  This function may take a long time to finish.
- *  NAT type is set in ss->se_engine.nattype
+ *  NAT type is set in ss->se_engine.st_nattype
  */
 int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
 {
@@ -388,7 +413,7 @@ int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
     if(memcmp(&local, &mapped_addr1, 8)==0) { /* Same IP and port*/
       /* conduct TEST II */      
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[0],
+      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0],
 			      &mapped_addr2, 1, 1);
       if(retval==-1) {
 	if(errno==ETIMEDOUT) {
@@ -404,18 +429,18 @@ int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
     }
     else { /* Different IP */
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[0],
+      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0],
 			      &mapped_addr2, 1, 1);
       if(retval==-1) {
 	if(errno==ETIMEDOUT) {
 	  /* No Response */
-	  retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[1], 
+	  retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[1], 
 				  &mapped_addr2, 0, 0);
 	  if(retval==0) { /* response comes back, has to be the case */
 	    if(memcmp(&mapped_addr1, &mapped_addr2, 8)==0) {
 	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
 		 same */
-	      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[0],
+	      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0],
 				      &mapped_addr2, 0, 1);
 	      if(retval==0) {
 		/* Response: Type 6 - Restricted */
@@ -441,7 +466,7 @@ int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
     }
   }
   
-  ss->ss_engine->nattype = nattype;
+  ss->ss_engine->st_nattype = nattype;
   return retval;
 }
 
@@ -457,11 +482,11 @@ int stun_poll(stun_socket_t *ss)
  * Internal functions
  *******************************************************************/
 
-/** Shared secret request/response processing */
-int stun_get_sharedsecret(stun_engine_t *se)
+static 
+int stun_connected(su_root_magic_t *m, su_wait_t *w, stun_engine_t *se)
 {
   stun_msg_t req, resp;
-  int sockfd, z;
+  int z;
   SSL_CTX* ctx;
   SSL *ssl;
   X509* server_cert;
@@ -486,23 +511,14 @@ int stun_get_sharedsecret(stun_engine_t *se)
     perror("openssl"); stun_free_buffer(&req.enc_buf); return -1;
   }
 
-  /* open tcp connection to server */
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if(sockfd == -1) {
-    perror("socket"); stun_free_buffer(&req.enc_buf); return -1;
-  }
-
-  if(connect(sockfd, (struct sockaddr *)&se->stun_srvr4[0].su_sin, 
-	     sizeof(struct sockaddr))==-1) {
-    perror("connect"); stun_free_buffer(&req.enc_buf); return -1;
-  }
-
   /* Start TLS negotiation */
   ssl = SSL_new(ctx);
-  SSL_set_fd(ssl, sockfd);
+  SSL_set_fd(ssl, se->st_socket);
   if(SSL_connect(ssl)==-1) {
     perror("SSL_connect"); stun_free_buffer(&req.enc_buf); return -1;
   }
+
+  se->st_callback(se->st_context, se);
   
   SU_DEBUG_3(("TLS connection using %s\n", SSL_get_cipher(ssl)));
   
@@ -535,7 +551,7 @@ int stun_get_sharedsecret(stun_engine_t *se)
 
   /* closed TLS connection */
   SSL_shutdown(ssl);
-  su_close(sockfd);
+  su_close(se->st_socket);
 
   SSL_free(ssl);
   SSL_CTX_free(ctx);
@@ -553,8 +569,8 @@ int stun_get_sharedsecret(stun_engine_t *se)
     password = stun_get_attr(resp.stun_attr, PASSWORD);
     if(username!=NULL && password!=NULL) {
       /* move result to se */
-      stun_copy_buffer(&se->username, username->pattr);
-      stun_copy_buffer(&se->password, password->pattr);
+      stun_copy_buffer(&se->st_username, username->pattr);
+      stun_copy_buffer(&se->st_passwd, password->pattr);
     }
     break;
   case SHARED_SECRET_ERROR_RESPONSE:
@@ -568,6 +584,46 @@ int stun_get_sharedsecret(stun_engine_t *se)
   default:
     break;
   }
+
+  return 0;
+}
+
+
+/** Shared secret request/response processing */
+int stun_get_sharedsecret(stun_engine_t *se)
+{
+  stun_msg_t req;
+  int one;
+
+  /* open tcp connection to server */
+  se->st_socket = socket(AF_INET, SOCK_STREAM, 0);
+  if(se->st_socket == -1) {
+    perror("socket"); stun_free_buffer(&req.enc_buf); return -1;
+  }
+
+  /* asynchronous connect() */
+  if (su_setblocking(se->st_socket, 0) < 0);
+  /* TPORT_CONNECT_ERROR(su_errno(), su_setblocking); */
+
+  if (setsockopt(se->st_socket, SOL_TCP, TCP_NODELAY,
+		 (void *)&one, sizeof one) == -1);
+    /* TPORT_CONNECT_ERROR(su_errno(), setsockopt(TCP_NODELAY)); */
+
+  su_wait_create(se->st_waiter, se->st_socket, SU_WAIT_CONNECT);
+  if (su_root_register(se->st_root, 
+		       se->st_waiter,
+		       stun_connected, 
+		       NULL, 
+		       0) == SOCKET_ERROR) {
+    su_perror("su_root_register");
+    return -1;
+  }
+
+  if(connect(se->st_socket, (struct sockaddr *)&se->st_srvr4[0].su_sin, 
+	     sizeof(struct sockaddr))==-1) {
+    perror("connect"); stun_free_buffer(&req.enc_buf); return -1;
+  }
+
   return 0;
 }
 
@@ -654,7 +710,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
 
   SU_DEBUG_3(("stun: sending to %s:%u (req-flags: msgint=%d, ch-addr=%d, chh-port=%d)\n", 
 	      inet_ntoa(srvr_addr->sin_addr), ntohs(srvr_addr->sin_port),
-	      ss->ss_engine->use_msgint, chg_ip, chg_port));
+	      ss->ss_engine->st_use_msgint, chg_ip, chg_port));
 
   /* compose binding request */
   if(stun_make_binding_req(ss, &bind_req, chg_ip, chg_port)<0) 
@@ -662,7 +718,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
 
   ss->ss_state = stun_cstate_started;
 
-  if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->password))<0) {
+  if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->st_passwd))<0) {
     stun_free_message(&bind_req);
     return retval;
   }
@@ -698,7 +754,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
     }
     else {
       SU_DEBUG_3(("stun: Time out no. %d, retransmitting.\n", ++num_retrx));
-      if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->password))<0) {
+      if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->st_passwd))<0) {
 	stun_free_message(&bind_req);
 	return retval;
       }
@@ -725,7 +781,7 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
 
   switch(bind_resp.stun_hdr.msg_type) {
   case BINDING_RESPONSE:
-    if(stun_validate_message_integrity(&bind_resp, &ss->ss_engine->password) <0) {
+    if(stun_validate_message_integrity(&bind_resp, &ss->ss_engine->st_passwd) <0) {
       stun_free_message(&bind_req);
       stun_free_message(&bind_resp);
       return retval;
@@ -739,11 +795,11 @@ int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr_addr, struct sock
       retval = 0;
     }
     /* update alternative server address */
-    if(ss->ss_engine->stun_srvr4[1].su_sin.sin_family==0) {
+    if(ss->ss_engine->st_srvr4[1].su_sin.sin_family==0) {
       /* alternative server address not present */
       chg_addr = stun_get_attr(bind_resp.stun_attr, CHANGED_ADDRESS);
       if(chg_addr!=NULL) {
-	memcpy(&ss->ss_engine->stun_srvr4[1].su_sin, chg_addr->pattr, sizeof(struct sockaddr_in));
+	memcpy(&ss->ss_engine->st_srvr4[1].su_sin, chg_addr->pattr, sizeof(struct sockaddr_in));
       }
     }
     break;
@@ -800,12 +856,12 @@ int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int ch
   }
 
   /* USERNAME */
-  if(ss->ss_engine->use_msgint &&
-     ss->ss_engine->username.data && 
-     ss->ss_engine->password.data) {
+  if(ss->ss_engine->st_use_msgint &&
+     ss->ss_engine->st_username.data && 
+     ss->ss_engine->st_passwd.data) {
     tmp = (stun_attr_t *) malloc(sizeof(stun_attr_t));
     tmp->attr_type = USERNAME;
-    tmp->pattr = &ss->ss_engine->username;
+    tmp->pattr = &ss->ss_engine->st_username;
     tmp->next = NULL;
     *p = tmp; p = &(tmp->next);
 
@@ -877,15 +933,15 @@ int stun_process_error_response(stun_msg_t *msg)
 
 int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname, const char *pwd, int len_pwd)
 {
-  se->username.data = (unsigned char *) malloc(len_uname);
-  memcpy(se->username.data, uname, len_uname);
-  se->username.size = len_uname;
+  se->st_username.data = (unsigned char *) malloc(len_uname);
+  memcpy(se->st_username.data, uname, len_uname);
+  se->st_username.size = len_uname;
   
-  se->password.data = (unsigned char *) malloc(len_pwd);
-  memcpy(se->password.data, pwd, len_pwd);
-  se->password.size = len_pwd;
+  se->st_passwd.data = (unsigned char *) malloc(len_pwd);
+  memcpy(se->st_passwd.data, pwd, len_pwd);
+  se->st_passwd.size = len_pwd;
 
-  se->use_msgint = 1; /* turn on message integrity ussage */
+  se->st_use_msgint = 1; /* turn on message integrity ussage */
   
   return 0;
 }
@@ -934,7 +990,7 @@ int stun_atoaddr(struct sockaddr_in *addr, char const *in)
 
 char const *stun_nattype(stun_engine_t *se)
 {
-  switch(se->nattype) {
+  switch(se->st_nattype) {
   case STUN_NAT_UNKNOWN: return stun_nat_unknown;
   case STUN_OPEN_INTERNET: return stun_open_internet;
   case STUN_UDP_BLOCKED: return stun_udp_blocked;
@@ -1026,7 +1082,7 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
     /* send request from X */
     if(stun_make_binding_req(ss, &bind_req, 0, 0) <0)
       return retval;
-    if(stun_send_message(sockfdx, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[0], &bind_req, &(ss->ss_engine->password))<0)
+    if(stun_send_message(sockfdx, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0], &bind_req, &(ss->ss_engine->st_passwd))<0)
       return retval;
 
     FD_ZERO(&rfds);
@@ -1074,7 +1130,7 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
     if(stun_make_binding_req(ss, &bind_req, 0, 0) <0)
       return retval;
     stun_add_response_address(&bind_req, &mapped_addr);
-    if(stun_send_message(sockfdy, (struct sockaddr_in *)&ss->ss_engine->stun_srvr4[0], &bind_req, &(ss->ss_engine->password))<0)
+    if(stun_send_message(sockfdy, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0], &bind_req, &(ss->ss_engine->st_passwd))<0)
       return retval;
 
     FD_ZERO(&rfds);

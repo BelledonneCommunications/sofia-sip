@@ -37,6 +37,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+typedef struct stunc_s stunc_t;
+#define SU_ROOT_MAGIC  stunc_t
+#define STUN_MAGIC_T   stunc_t
+
 #include "stun.h"
 
 char const *name = "stunc";
@@ -47,21 +51,41 @@ void usage(int exitcode)
   exit(exitcode);
 }
 
+struct stunc_s {
+  int kakka; 
+};
+
+
+int stunc_callback(stunc_t *stunc, stun_engine_t *en);
+
+
+int stunc_callback(stunc_t *stunc, stun_engine_t *en)
+{
+
+  return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
   int result;
   int s, lifetime;
   socklen_t addrlen;
   su_sockaddr_t addr;
-
+  stunc_t stunc[1]; 
+  su_root_t *root = su_root_create(stunc);
   stun_engine_t *se;
   stun_socket_t *ss;
+  
 
   if (argc != 3)
     usage(1);
 
   /* Running this test requires a local STUN server on default port */
-  se = stun_engine_create(argv[1], argv[2] != NULL); 
+  se = stun_engine_create(stunc,
+			  root,
+			  stunc_callback,
+			  argv[1], argv[2] != NULL); 
 
   if (se == NULL) { perror("stun_engine_create"); exit(1); }
 

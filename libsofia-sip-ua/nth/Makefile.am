@@ -19,9 +19,10 @@ INCLUDES = 	-I$(srcdir)/../ipt \
 
 noinst_LTLIBRARIES = 	libnth.la
 
-noinst_PROGRAMS = 	nth_test http-client http-server
+# noinst_PROGRAMS = 	nth_test http-client http-server
 
-TESTS = 		nth_test
+# TESTS = 		nth_test
+TESTS = 
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

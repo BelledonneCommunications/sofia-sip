@@ -69,9 +69,11 @@ typedef struct tport_master tport_master_t;
 typedef struct tport_nat_s tport_nat_t;
 
 #define SU_WAKEUP_ARG_T struct tport_s
-#define SU_TIMER_ARG_T struct tport_master
+#define SU_TIMER_ARG_T  struct tport_master
 #define SU_ROOT_MAGIC_T struct tport_threadpool
-#define SU_MSG_ARG_T union tport_su_msg_arg
+#define SU_MSG_ARG_T    union tport_su_msg_arg
+#define STUN_MAGIC_T    tport_master_t
+
 
 #include <su_wait.h>
 
@@ -6833,6 +6835,15 @@ void thrp_udp_send_report(su_root_magic_t *magic,
   msg_ref_destroy(tpd->tpd_msg);
 }
 
+
+int tport_stun_cb(tport_t *tport, stun_engine_t *en)
+{
+
+  /* xxx - mela: here events that can be sent to nua_events */
+  return 0;
+}
+
+
 static
 struct tport_nat_s *
 tport_nat_initialize_nat_traversal(tport_master_t *mr, 
@@ -6859,7 +6870,10 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
 	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
         SU_DEBUG_5(("%s(%p) starting STUN engine\n", __func__, mr));
 
-        nat->stun = stun_engine_tcreate(TAG_NEXT(tags));
+        nat->stun = stun_engine_tcreate(mr,
+					mr->mr_root,
+					tport_stun_cb,
+					TAG_NEXT(tags));
 
         if (!nat->stun) 
 	  return NULL;
