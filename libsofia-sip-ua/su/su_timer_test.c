@@ -220,8 +220,8 @@ int main(int argc, char *argv[])
   }
 
 
-  /* Insert 500 000 timers in order */
-  timers = calloc(N = 5000000, sizeof *timers);
+  /* Insert 500 timers in order */
+  timers = calloc(N = 500, sizeof *timers);
   if (!timers) { perror("calloc"); exit(1); }
 
   now = started = su_now();
