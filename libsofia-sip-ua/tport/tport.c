@@ -1184,7 +1184,7 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
     if (getsockname(s, &su->su_sa, &sulen) == SOCKET_ERROR)
       return TPORT_LISTEN_ERROR(su_errno(), getsockname);
 
-#if __linux__
+#if __linux__ && SU_HAVE_IN6
     if (ai->ai_family == AF_INET6) {
       if (SU_SOCKADDR_INADDR_ANY(su))
 	/* pri->pri_family2 = AF_INET */ ;

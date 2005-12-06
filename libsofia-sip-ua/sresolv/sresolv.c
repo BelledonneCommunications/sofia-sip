@@ -273,7 +273,7 @@ HTABLE_PROTOS(sres_qtable, qt, sres_query_t);
 #define SS_ADDR(ss) \
   ((ss)->ss_family == AF_INET ? \
    (void *)&((struct sockaddr_in *)ss)->sin_addr : \
-   (void *)&((struct sockaddr *)ss)->sa_data))
+   (void *)&((struct sockaddr *)ss)->sa_data)
 #endif
 
 /** Generate new 16-bit identifier for DNS query. */
