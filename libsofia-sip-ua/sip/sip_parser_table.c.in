@@ -1,3 +1,10 @@
+/**@IFILE sip_parser_table.c.in
+ *
+ * Template for <sip_parser_table.c>.
+ *
+ * @date Created: Wed Feb 21 11:01:45 2001 ppessi
+ */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,13 +29,6 @@
  *
  */
 
-/**@IFILE sip_parser_table.c.in
- *
- * Template for <sip_parser_table.c>.
- *
- * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- */
-
 /**@CFILE sip_parser_table.c 
  * @brief SIP parser table
  *

@@ -1,3 +1,10 @@
+/**@IFILE sip_tag.c.in
+ *
+ * Template for <sip_tag.c>.
+ *
+ * @date Created: Wed Feb 21 11:01:45 2001 ppessi
+ */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,13 +29,6 @@
  *
  */
 
-/**@IFILE sip_tag.c.in
- *
- * Template for <sip_tag.c>.
- *
- * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- */
-
 /**@CFILE sip_tag.c  SIP Tags.
  *
  * #AUTO#

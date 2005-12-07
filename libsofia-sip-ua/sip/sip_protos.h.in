@@ -1,3 +1,8 @@
+/**@file sip_protos.h.in
+ *
+ * Template for <sip_protos.h>.
+ */
+
 /* -*- C -*-
  *
  * This file is part of the Sofia-SIP package
@@ -23,11 +28,6 @@
  *
  */
 
-/**@file sip_protos.h.in
- *
- * Template for <sip_protos.h>.
- */
-
 #ifndef SIP_PROTOS_H /** Defined when sip_protos.h has been included. */
 #define SIP_PROTOS_H 
   

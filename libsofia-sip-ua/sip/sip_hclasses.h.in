@@ -1,5 +1,11 @@
-/*  -*- C -*-
+/** -*- C -*- 
  *
+ * @file sip_hclasses.h.in
+ *
+ * Template for <sip_hclasses.h>.
+ */
+
+/* 
  * This file is part of the Sofia-SIP package
  *
  * Copyright (C) 2005 Nokia Corporation.
@@ -23,11 +29,6 @@
  *
  */
 
-/**@file sip_hclasses.h.in
- *
- * Template for <sip_hclasses.h>.
- */
-
 #ifndef SIP_HCLASSES_H /** Defined when sip_hclasses.h has been included. */
 #define SIP_HCLASSES_H
 

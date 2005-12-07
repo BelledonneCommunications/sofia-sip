@@ -1,3 +1,9 @@
+/** -*- C -*-
+ * @file http_protos.h.in
+ *
+ * Template for <http_protos.h>.
+ */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,12 +28,6 @@
  *
  */
 
-/** -*- C -*-
- * @file http_protos.h.in
- *
- * Template for <http_protos.h>.
- */
-
 #ifndef HTTP_PROTOS_H  /** Defined when http_protos.h has been included. */
 #define HTTP_PROTOS_H
 /**@file http_protos.h 

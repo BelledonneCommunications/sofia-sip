@@ -1,3 +1,10 @@
+/**-*- c -*- 
+ * @ingroup msg
+ * @internal @file test_protos.h.in
+ *
+ * Template for "test_protos.h".
+ */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,13 +29,6 @@
  *
  */
 
-/**-*- c -*- 
- * @ingroup msg
- * @internal @file test_protos.h.in
- *
- * Template for "test_protos.h".
- */
-
 #ifndef TEST_PROTOS_H /** Defined when test_protos.h has been included. */
 #define TEST_PROTOS_H 
   

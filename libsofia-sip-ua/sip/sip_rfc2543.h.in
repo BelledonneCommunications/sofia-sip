@@ -1,3 +1,8 @@
+/**@file sip_rfc2543.h.in
+ *
+ * Template for <sip_rfc2543.h>.
+ */
+
 /*  -*- C -*-
  *
  * This file is part of the Sofia-SIP package
@@ -23,15 +28,9 @@
  *
  */
 
-/**@file sip_rfc2543.h.in
- *
- * Template for <sip_rfc2543.h>.
- */
-
 #ifndef SIP_RFC2543_H 
 /** Defined when <sip_rfc2543.h> has been included. */
 #define SIP_RFC2543_H 
-
 
 /**@file sip_rfc2543.h 
 *

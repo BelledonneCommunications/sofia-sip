@@ -1,3 +1,10 @@
+/**@file http_tag.h.in
+ *
+ * Template for <http_tag.h>.
+ *
+ * @date Created: Wed Feb 21 11:01:45 2001 ppessi
+ */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,13 +29,6 @@
  *
  */
 
-/**@file http_tag.h.in
- *
- * Template for <http_tag.h>.
- *
- * @date Created: Wed Feb 21 11:01:45 2001 ppessi
- */
-
 #ifndef HTTP_TAG_H /** Defined when http_tag.h has been included. */
 #define HTTP_TAG_H
 

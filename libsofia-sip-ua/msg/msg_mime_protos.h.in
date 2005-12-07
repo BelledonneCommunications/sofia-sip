@@ -1,3 +1,9 @@
+/**@ingroup msg  -*- c -*-
+ * @file msg_mime_protos.h.in
+ *
+ * Template for <msg_mime_protos.h>.
+ */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,12 +28,6 @@
  *
  */
 
-/**@ingroup msg  -*- c -*-
- * @file msg_mime_protos.h.in
- *
- * Template for <msg_mime_protos.h>.
- */
-
 #ifndef MSG_MIME_PROTOS_H /** Defined when msg_mime_protos.h has been included. */
 #define MSG_MIME_PROTOS_H 
 

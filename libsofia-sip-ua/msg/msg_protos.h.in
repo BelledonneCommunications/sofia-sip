@@ -1,3 +1,9 @@
+/**@ingroup msg_headers  -*- C -*-
+ * @file msg_protos.h.in
+ *
+ * Template for <msg_protos.h>.
+ */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,12 +28,6 @@
  *
  */
 
-/**@ingroup msg_headers  -*- C -*-
- * @file msg_protos.h.in
- *
- * Template for <msg_protos.h>.
- */
-
 #ifndef MSG_PROTOS_H /** Defined when msg_protos.h has been included. */
 #define MSG_PROTOS_H 
 
