@@ -2050,7 +2050,8 @@ int tport_bind_server(tport_master_t *mr,
 	  tport_zap_primary(*tbf);
 
         if (ephemeral_port != 0 && ephemeral_port != -1) {
-          if (++p >= 65536) p = 1024;
+	  p += 4025;		/* relative prime to 65536 - 1024 */
+          if (p >= 65536) p -= (65536 - 1024);
           if (p == ephemeral_port)
             ephemeral_port = 0;
           SU_DEBUG_3(("%s(%p): cannot bind all transports to port %s, "
