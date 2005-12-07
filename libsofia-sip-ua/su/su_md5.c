@@ -1,3 +1,7 @@
+#define compile \
+{ gcc -o su_md5 -O2 -g -Wall -DTEST -I. su_md5.c } ; exit 0
+/* -*- c-style: java -*- */
+
 /*
  * This file is part of the Sofia-SIP package
  *
@@ -22,21 +26,20 @@
  *
  */
 
-#define compile \
-{ gcc -o su_md5 -O2 -g -Wall -DTEST -I. su_md5.c } ; exit 0
-/* -*- c-style: java -*- */
-/** @ingroup su_md5
- * 
- * @CFILE su_md5.c MD5 Implementation
- *
- * This code implements the MD5 message-digest algorithm.  The algorithm is
- * due to Ron Rivest.  This code was written by Colin Plumb in 1993, no
- * copyright is claimed.  This code is in the public domain; do with it what
- * you wish.
+/*
+ * This code implements the MD5 message-digest algorithm. The algorithm is
+ * due to Ron Rivest. This code was initially written by Colin Plumb in
+ * 1993, no copyright is claimed. This code is in the public domain; do with
+ * it what you wish.
  *
  * Equivalent code is available from RSA Data Security, Inc.  This code has
  * been tested against that, and is equivalent, except that you don't need
  * to include two pages of legalese with every copy.
+ */
+
+/** @ingroup su_md5
+ * 
+ * @CFILE su_md5.c MD5 Implementation
  *
  * To compute the message digest of a chunk of bytes, declare an su_md5_t
  * context structure, pass it to su_md5_init(), call su_md5_update() as
