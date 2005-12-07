@@ -22,8 +22,8 @@ noinst_PROGRAMS =       torture_sip \
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-GENERATED_H = sip_hclasses.h sip_protos.h sip_tag.h sip_rfc2543.h
-H_IN = sip_hclasses.h.in sip_protos.h.in sip_tag.h.in sip_rfc2543.h.in
+GENERATED_H = sip_hclasses.h sip_protos.h sip_tag.h
+H_IN = sip_hclasses.h.in sip_protos.h.in sip_tag.h.in
 
 PUBLIC_H = sip.h sip_extensions.h sip_util.h \
            sip_header.h sip_parser.h \
@@ -69,7 +69,6 @@ date_test_LDFLAGS = 	-static
 EXTRA_DIST =		Doxyfile sip.docs sip_parser.docs \
 			ADD-A-HEADER GRAMMAR sip_bad_mask \
 			sip_parser_table.c.in sip_tag.c.in \
-			sip_rfc2543.h.in sip_rfc2543.c \
 			sip_bad_mask \
 	images/sip-parser.eps images/sip-parser.gif \
 	images/sip-parser2.eps images/sip-parser2.gif \
