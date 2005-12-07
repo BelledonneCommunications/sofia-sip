@@ -30,6 +30,7 @@
  * @author Ismo Puustinen <Ismo.H.Puustinen@nokia.com>
  * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Thu Jul 20 12:54:32 2000 ppessi
  */
@@ -108,7 +109,8 @@ typedef struct _tls_t tls_t;	/* dummy */
 #define IPPROTO_SCTP (132)
 #endif
 
-#ifndef MSG_NOSIGNAL
+#if !defined(MSG_NOSIGNAL) || defined(__CYGWIN__)
+#undef MSG_NOSIGNAL
 #define MSG_NOSIGNAL (0)
 #endif
 
@@ -1184,7 +1186,7 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
     if (getsockname(s, &su->su_sa, &sulen) == SOCKET_ERROR)
       return TPORT_LISTEN_ERROR(su_errno(), getsockname);
 
-#if __linux__ && SU_HAVE_IN6
+#if defined (__linux__) && defined (SU_HAVE_IN6)
     if (ai->ai_family == AF_INET6) {
       if (SU_SOCKADDR_INADDR_ANY(su))
 	/* pri->pri_family2 = AF_INET */ ;
@@ -1204,7 +1206,7 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
     /* XXX - we should take this from the current tags */
     if (listen(s, mr->mr_params->tpp_qsize) == SOCKET_ERROR)
       return TPORT_LISTEN_ERROR(su_errno(), listen);
-#ifndef __linux__
+#if !defined(__linux__)
     /* Allow reusing TCP sockets
      *
      * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
@@ -1891,11 +1893,13 @@ int tport_bind_server(tport_master_t *mr,
     /* Use a local IP address */
     host = NULL;
   }
+#ifdef SU_HAVE_IN6
   else if (tpn->tpn_host && tpn->tpn_host[0] == '[') {
     /* Remove [] around IPv6 addresses. */
     host = strcpy(hostname, tpn->tpn_host + 1);
     hostname[strlen(hostname) - 1] = '\0';
   }
+#endif
   else
     host = tpn->tpn_host; 
 
