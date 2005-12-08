@@ -51,18 +51,30 @@ typedef STUN_MAGIC_T stun_magic_t;
 
 extern char const stun_version[]; /**< Name and version of STUN software */
 
+typedef enum stun_event_e {
+  stun_connect_error,
+  stun_connect_success,
+  stun_no_shared_secret_obtained,
+  stun_ready,
+} stun_event_t;
+
+
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
-typedef int (stun_event_f) (stun_magic_t *magic, stun_engine_t *se);
+typedef void (*stun_event_f)(stun_magic_t *magic,
+			     stun_engine_t *se,
+			     stun_event_t event);
+
+su_root_t *stun_root(stun_engine_t *self);
 
 stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
 				   su_root_t *root,
-				   stun_event_f *cb,
+				   stun_event_f cb,
 				   tag_type_t tag, tag_value_t value, ...); 
 
 stun_engine_t *stun_engine_create(stun_magic_t *context,
 				  su_root_t *root,
-				  stun_event_f *cb,
+				  stun_event_f cb,
 				  char const *server,
 				  int use_msgint); 
 

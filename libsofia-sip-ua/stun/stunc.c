@@ -56,13 +56,15 @@ struct stunc_s {
 };
 
 
-int stunc_callback(stunc_t *stunc, stun_engine_t *en);
+void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_event_t event);
 
 
-int stunc_callback(stunc_t *stunc, stun_engine_t *en)
+void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_event_t event)
 {
 
-  return 0;
+  printf("event: %d\n", event); fflush(stdout);
+  su_root_break(stun_root(root));
+  return;
 }
 
 
@@ -86,6 +88,8 @@ int main(int argc, char *argv[])
 			  root,
 			  stunc_callback,
 			  argv[1], argv[2] != NULL); 
+
+  su_root_run(root);
 
   if (se == NULL) { perror("stun_engine_create"); exit(1); }
 

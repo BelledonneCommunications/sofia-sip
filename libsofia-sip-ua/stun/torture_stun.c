@@ -141,16 +141,16 @@ int main(int argc, char *argv[])
 
 stun_engine_t *se;
 
-int torture_callback(torture_t *torturer, stun_engine_t *en);
+void torture_callback(torture_t *torturer, stun_engine_t *en, stun_event_t ev);
 
 
-int torture_callback(torture_t *torturer, stun_engine_t *en)
+void torture_callback(torture_t *torturer, stun_engine_t *en, stun_event_t ev)
 {
   SU_DEBUG_3(("%s: called\n", __func__));
 
-  //su_root_break(en->st_root);
+  su_root_break(stun_root(en));
 
-  return 0;
+  return;
 }
 
 int test_init(su_root_t *root, char *server)
