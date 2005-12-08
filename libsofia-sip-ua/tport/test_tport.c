@@ -458,7 +458,11 @@ tp_stack_class_t const tp_test_class[1] =
 static int init_test(tp_test_t *tt)
 {
   tp_name_t myname[1] = {{ "*", "*", "*", "*", "sigcomp" }};
+#if HAVE_NETINET_SCTP_H
   char const * transports[] = { "udp", "tcp", "sctp", NULL };
+#else
+  char const * transports[] = { "udp", "tcp", NULL };
+#endif
   tp_name_t const *tpn;
   tport_t *tp;
 
@@ -1176,10 +1180,13 @@ static int stun_test(tp_test_t *tt)
 {
   BEGIN();
 
-
   tport_t *mr;
   tp_name_t tpn[1] = {{ "*", "*", "*", "*", NULL }};
+#if HAVE_NETINET_SCTP_H
   char const * transports[] = { "udp", "tcp", "sctp", NULL };
+#else
+  char const * transports[] = { "udp", "tcp", NULL };
+#endif
 
   TEST_1(mr = tport_tcreate(tt, tp_test_class, tt->tt_root, TAG_END()));
   

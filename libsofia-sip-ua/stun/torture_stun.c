@@ -49,6 +49,9 @@ typedef struct torture_s torture_t;
 
 #include "stun.h"
 
+#include <su.h>
+#include <su_debug.h>
+
 #define TSTFLAGS tstflags
 #include <tstdef.h>
 
@@ -119,6 +122,7 @@ int main(int argc, char *argv[])
   if(!test_bind && !test_nat && !test_lifetime) {usage(); return -1;}
 
   if (!(retval |= test_init(root, srvraddr))) {
+    su_root_run(root);
     if(test_bind) {
       retval |= test_sync_stun(clntaddr);
     }
@@ -142,6 +146,9 @@ int torture_callback(torture_t *torturer, stun_engine_t *en);
 
 int torture_callback(torture_t *torturer, stun_engine_t *en)
 {
+  SU_DEBUG_3(("%s: called\n", __func__));
+
+  //su_root_break(en->st_root);
 
   return 0;
 }

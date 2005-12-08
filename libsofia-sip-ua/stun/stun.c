@@ -65,6 +65,11 @@ extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 /** STUN log. */
 su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", SU_DEBUG) }; 
 
+#define STUN_ERROR(errno, what) \
+        { int err = errno; \
+        SU_DEBUG_5(("%s: %s: %s\n", __func__, #what, su_strerror(err))); \
+        }
+
 char const stun_nat_unknown[] = "NAT type undetermined",
   stun_open_internet[] = "Open Internet",
   stun_udp_blocked[] = "UDP traffic is blocked, or Server unreachable",
@@ -208,6 +213,7 @@ stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
      */
     memset(&stun->st_srvr4[0], 0, sizeof(stun->st_srvr4[0]));
 
+    stun->st_root     = root;
     stun->st_context  = context;
     stun->st_callback = cb;
 
@@ -229,15 +235,17 @@ stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
     srand(time(NULL));
 
     stun->st_use_msgint = 0;
-    if(msg_integrity) {
+    if (msg_integrity) {
       /* get shared secret */ 
-      SU_DEBUG_3(("Contacting Server to obtain shared secret. Please wait.\n"));
-      if(stun_get_sharedsecret(stun)==0) {
+      SU_DEBUG_3(("Contacting Server to obtain shared secret. " \
+		  "Please wait.\n"));
+      if (stun_get_sharedsecret(stun) == 0) {
 	SU_DEBUG_3(("Shared secret obtained from server.\n"));
 	stun->st_use_msgint = 1;
       }
       else {
-	SU_DEBUG_3(("Shared secret NOT obtained from server. Proceed without username/password.\n"));
+	SU_DEBUG_3(("Shared secret NOT obtained from server. " \
+		    "Proceed without username/password.\n"));
       } 
     }
   }
@@ -494,8 +502,10 @@ int stun_connected(su_root_magic_t *m, su_wait_t *w, stun_engine_t *se)
   stun_attr_t *password, *username;
 
   /* compose shared secret request */
-  if(stun_make_sharedsecret_req(&req)!=0) {
-    perror("shared secret request"); stun_free_buffer(&req.enc_buf); return -1;
+  if (stun_make_sharedsecret_req(&req) != 0) {
+    STUN_ERROR(errno, stun_make_sharedsecret_req);
+    stun_free_buffer(&req.enc_buf);
+    return -1;
   }
 
   /* openssl initiation */
@@ -503,22 +513,30 @@ int stun_connected(su_root_magic_t *m, su_wait_t *w, stun_engine_t *se)
   SSL_load_error_strings();
   ctx = SSL_CTX_new(TLSv1_client_method());
 
-  if(ctx==NULL) {
-    perror("openssl"); stun_free_buffer(&req.enc_buf); return -1;
+  if (ctx == NULL) {
+    STUN_ERROR(errno, SSL_CTX_new);
+    stun_free_buffer(&req.enc_buf);
+    return -1;
   }
 
-  if(SSL_CTX_set_cipher_list(ctx, "AES128-SHA")==0) {
-    perror("openssl"); stun_free_buffer(&req.enc_buf); return -1;
+  if (SSL_CTX_set_cipher_list(ctx, "AES128-SHA") == 0) {
+    STUN_ERROR(errno, SSL_CTX_set_cipher_list);
+    stun_free_buffer(&req.enc_buf);
+    return -1;
   }
 
   /* Start TLS negotiation */
   ssl = SSL_new(ctx);
   SSL_set_fd(ssl, se->st_socket);
-  if(SSL_connect(ssl)==-1) {
-    perror("SSL_connect"); stun_free_buffer(&req.enc_buf); return -1;
+  printf("%s: SSL_set_fd done\n", __func__); fflush(stdout);
+  if (SSL_connect(ssl) == -1) {
+    STUN_ERROR(errno, SSL_connect);
+    stun_free_buffer(&req.enc_buf);
+    return -1;
   }
 
-  se->st_callback(se->st_context, se);
+  if (se->st_callback)
+    se->st_callback(se->st_context, se);
   
   SU_DEBUG_3(("TLS connection using %s\n", SSL_get_cipher(ssl)));
   
@@ -588,26 +606,29 @@ int stun_connected(su_root_magic_t *m, su_wait_t *w, stun_engine_t *se)
   return 0;
 }
 
-
 /** Shared secret request/response processing */
 int stun_get_sharedsecret(stun_engine_t *se)
 {
-  stun_msg_t req;
-  int one;
+  int one, err;
 
   /* open tcp connection to server */
   se->st_socket = socket(AF_INET, SOCK_STREAM, 0);
-  if(se->st_socket == -1) {
-    perror("socket"); stun_free_buffer(&req.enc_buf); return -1;
+  if (se->st_socket == -1) {
+    STUN_ERROR(errno, socket);
+    return -1;
   }
 
   /* asynchronous connect() */
-  if (su_setblocking(se->st_socket, 0) < 0);
-  /* TPORT_CONNECT_ERROR(su_errno(), su_setblocking); */
-
+  if (su_setblocking(se->st_socket, 0) < 0) {
+    STUN_ERROR(errno, su_setblocking);
+    return -1;
+  }
   if (setsockopt(se->st_socket, SOL_TCP, TCP_NODELAY,
-		 (void *)&one, sizeof one) == -1);
-    /* TPORT_CONNECT_ERROR(su_errno(), setsockopt(TCP_NODELAY)); */
+		 (void *)&one, sizeof one) == -1) {
+    STUN_ERROR(errno, setsockopt);
+    return -1;
+  }
+  /* TPORT_CONNECT_ERROR(su_errno(), setsockopt(TCP_NODELAY)); */
 
   su_wait_create(se->st_waiter, se->st_socket, SU_WAIT_CONNECT);
   if (su_root_register(se->st_root, 
@@ -615,13 +636,18 @@ int stun_get_sharedsecret(stun_engine_t *se)
 		       stun_connected, 
 		       NULL, 
 		       0) == SOCKET_ERROR) {
-    su_perror("su_root_register");
+    STUN_ERROR(errno, su_root_register);
     return -1;
   }
 
-  if(connect(se->st_socket, (struct sockaddr *)&se->st_srvr4[0].su_sin, 
-	     sizeof(struct sockaddr))==-1) {
-    perror("connect"); stun_free_buffer(&req.enc_buf); return -1;
+  /* Do an asynchronous connect(). Three error codes are ok,
+   * others cause return -1. */
+  connect(se->st_socket, (struct sockaddr *)&se->st_srvr4[0].su_sin, 
+	  sizeof(struct sockaddr));
+  err = su_errno();
+  if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK) {
+    STUN_ERROR(errno, connect);
+    return -1;
   }
 
   return 0;
