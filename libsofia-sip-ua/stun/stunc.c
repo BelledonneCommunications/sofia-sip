@@ -72,8 +72,9 @@ int main(int argc, char *argv[])
 {
   int result;
   int s, lifetime;
-  socklen_t addrlen;
-  su_sockaddr_t addr;
+  //socklen_t addrlen;
+  //su_sockaddr_t addr;
+  su_addrinfo_t addr[1];
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_engine_t *se;
@@ -101,12 +102,16 @@ int main(int argc, char *argv[])
 
   if (ss == NULL) { perror("stun_socket_create"); exit(1); }
   
-  memset(&addr, 0, sizeof(addr)); addrlen = sizeof(addr);
+  memset(&addr, 0, sizeof(addr));
+  addr->su_len = sizeof(addr);
 
   lifetime = 0;
 
+#if 0
   result = stun_bind(ss, &addr.su_sa, &addrlen, &lifetime); 
-
+#else
+  result = stun_bind(ss, &addr, &lifetime); 
+#endif
   if (result == -1) { perror("stun_bind"); exit(1); }
   /*
   if (stun_is_natted(ss)) {

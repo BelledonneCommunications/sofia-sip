@@ -85,8 +85,12 @@ void stun_socket_destroy(stun_socket_t *ss);
 
 /** Bind a socket using STUN.  */
 int stun_bind(stun_socket_t *ss, 
+#if 1
+	      su_sockaddr_t *my_addr,
+#else
 	      struct sockaddr *addr, 
 	      socklen_t *return_addrlen,
+#endif
 	      int *return_lifetime);
 
 int stun_get_nattype(stun_socket_t *ss,
