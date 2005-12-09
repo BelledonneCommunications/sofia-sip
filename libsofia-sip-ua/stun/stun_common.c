@@ -51,7 +51,9 @@
 #define SU_LOG (stun_log)
 #include <su_debug.h>
 
+#include "stun_internal.h"
 #include "stun_common.h"
+
 
 const char stun_400_Bad_request[] = "Bad Request",
   stun_401_Unauthorized[] = "Unauthorized",
@@ -542,22 +544,25 @@ int stun_free_message(stun_msg_t *msg) {
 
 int stun_send_message(int sockfd, su_localinfo_t *to_addr, stun_msg_t *msg, stun_buffer_t *pwd) 
 {
-  int z;
+  int err = -1;
   char ipaddr[SU_ADDRSIZE + 2];
 
   stun_encode_message(msg, pwd);
 
-  z = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
+  err = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
 	     0, (struct sockaddr *) &to_addr->li_addr, sizeof(*to_addr));
+  if (err != 0)
+    STUN_ERROR(err, sendto);
 
-  inet_ntop(to_addr->li_family, SU_ADDR(to_addr->li_addr), ipaddr, sizeof(ipaddr));
+
+  inet_ntop(to_addr->li_family, to_addr->li_addr, ipaddr, sizeof(ipaddr));
 #if 0 /* xxx mela */
   SU_DEBUG_5(("stun: message sent to %s:%u\n", 
 	      ipaddr, ntohs(to_addr->su_port)));
 #endif
   debug_print(&msg->enc_buf);
   
-  return z;
+  return err;
 }  
 
 /** send a STUN message.

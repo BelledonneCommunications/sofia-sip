@@ -52,23 +52,11 @@
 #include <su.h>
 #include <su_localinfo.h>
 
-#ifndef SU_DEBUG
-#define SU_DEBUG 3
-#endif
-#define SU_LOG (stun_log)
-#include <su_debug.h>
 
 #include <openssl/opensslv.h>
 
-extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
-
 /** STUN log. */
 su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", SU_DEBUG) }; 
-
-#define STUN_ERROR(errno, what) \
-        { int err = errno; \
-        SU_DEBUG_5(("%s: %s: %s\n", __func__, #what, su_strerror(err))); \
-        }
 
 char const stun_nat_unknown[] = "NAT type undetermined",
   stun_open_internet[] = "Open Internet",
@@ -394,7 +382,7 @@ int stun_bind(stun_socket_t *ss,
         if (li->li_family == AF_INET) {
 	  char ipaddr[SU_ADDRSIZE + 2];
 
-          memcpy(clnt_addr, li, sizeof(clnt_addr));
+          clnt_addr = li;
 	  inet_ntop(clnt_addr->li_family, SU_ADDR(clnt_addr->li_addr), ipaddr, sizeof(ipaddr));
           SU_DEBUG_3(("stun: local address found to be %s:%u\n", 
 		      ipaddr,
@@ -422,16 +410,22 @@ int stun_bind(stun_socket_t *ss,
   sockfd = ss->ss_sockfd;
 
   inet_ntop(clnt_addr->li_family, SU_ADDR(clnt_addr->li_addr), ipaddr, sizeof(ipaddr));
-  if (bind(sockfd, (struct sockaddr *)clnt_addr, my_addr->li_addrlen) < 0) {
+  if (bind(sockfd, (struct sockaddr *) clnt_addr->li_addr, my_addr->li_addrlen) < 0) {
     SU_DEBUG_3(("stun: Error binding to %s:%u\n", ipaddr,
 		(unsigned) ntohs(clnt_addr->li_addr->su_port)));
     return -1;
   }
 
-  bind_len = sizeof(bind_addr);
-  getsockname(sockfd, (struct sockaddr *) &bind_addr.li_addr, &bind_len);
+  bind_len = sizeof(bind_addr.li_addr);
+  memcpy(&bind_addr, clnt_addr, sizeof(bind_addr));
+  if (getsockname(sockfd, (struct sockaddr *) &bind_addr.li_addr, &bind_len) != 0) {
+    STUN_ERROR(errno, getsockname);
+    return -1;
+  }
   
-  inet_ntop(clnt_addr->li_family, SU_ADDR(bind_addr.li_addr), ipaddr, sizeof(ipaddr));
+  
+
+  inet_ntop(clnt_addr->li_family, (struct sockaddr *) &bind_addr.li_addr, ipaddr, sizeof(ipaddr));
 #if 0 /* xxx mela */
   SU_DEBUG_3(("stun: Local socket bound to: %s:%u\n", ipaddr, 
 	      (unsigned) ntohs(bind_addr.li_addr.su_port)));
@@ -1002,13 +996,13 @@ int stun_bind_test(stun_socket_t *ss,
 
   ss->ss_state = stun_cstate_init;
 
-  if (ss == NULL || srvr_addr == NULL || clnt_addr == NULL) 
+  if (ss == NULL || srvr_addr->li_addr == NULL || clnt_addr == NULL) 
     return errno = EFAULT, retval;
 
   /* run protocol here... */
   s = ss->ss_sockfd;
 
-  inet_ntop(srvr_addr->li_family, SU_ADDR(srvr_addr->li_addr), ipaddr, sizeof(ipaddr));
+  inet_ntop(srvr_addr->li_family, srvr_addr->li_addr, ipaddr, sizeof(ipaddr));
 #if 0 /* xxx mela */
   SU_DEBUG_3(("stun: sending to %s:%u (req-flags: msgint=%d, ch-addr=%d, chh-port=%d)\n", 
 	      ipaddr, ntohs(srvr_addr->li_addr.su_port),
