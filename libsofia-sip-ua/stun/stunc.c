@@ -42,6 +42,13 @@ typedef struct stunc_s stunc_t;
 #define STUN_MAGIC_T   stunc_t
 
 #include "stun.h"
+#include <su.h>
+
+#ifndef SU_DEBUG
+#define SU_DEBUG 3
+#endif
+#define SU_LOG (stun_log)
+#include <su_debug.h>
 
 char const *name = "stunc";
 
@@ -63,7 +70,7 @@ void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_event_t event)
 {
 
   printf("event: %d\n", event); fflush(stdout);
-  su_root_break(stun_root(root));
+  su_root_break(stun_engine_root(en));
   return;
 }
 
@@ -73,8 +80,7 @@ int main(int argc, char *argv[])
   int result;
   int s, lifetime;
   //socklen_t addrlen;
-  //su_sockaddr_t addr;
-  su_addrinfo_t addr[1];
+  su_localinfo_t addr[1];
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_engine_t *se;
@@ -85,10 +91,12 @@ int main(int argc, char *argv[])
     usage(1);
 
   /* Running this test requires a local STUN server on default port */
-  se = stun_engine_create(stunc,
-			  root,
-			  stunc_callback,
-			  argv[1], argv[2] != NULL); 
+  se = stun_engine_create(stunc, root, stunc_callback, argv[1], atoi(argv[2]));
+
+  if (!se) {
+    SU_DEBUG_3(("%s: %s", __func__, "stun_engine_create"));
+    return -1;
+  }
 
   su_root_run(root);
 
@@ -103,15 +111,11 @@ int main(int argc, char *argv[])
   if (ss == NULL) { perror("stun_socket_create"); exit(1); }
   
   memset(&addr, 0, sizeof(addr));
-  addr->su_len = sizeof(addr);
+  addr->li_addrlen = sizeof(addr);
 
   lifetime = 0;
 
-#if 0
-  result = stun_bind(ss, &addr.su_sa, &addrlen, &lifetime); 
-#else
-  result = stun_bind(ss, &addr, &lifetime); 
-#endif
+  result = stun_bind(ss, (su_localinfo_t *) &addr, &lifetime); 
   if (result == -1) { perror("stun_bind"); exit(1); }
   /*
   if (stun_is_natted(ss)) {

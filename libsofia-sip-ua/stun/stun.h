@@ -39,6 +39,8 @@
 #endif
 #include "stun_common.h"
 
+#include <su_localinfo.h>
+
 typedef struct stun_engine_s stun_engine_t;
 typedef struct stun_socket_s stun_socket_t;
 
@@ -65,7 +67,7 @@ typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_engine_t *se,
 			     stun_event_t event);
 
-su_root_t *stun_root(stun_engine_t *self);
+su_root_t *stun_engine_root(stun_engine_t *self);
 
 stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
 				   su_root_t *root,
@@ -85,19 +87,15 @@ void stun_socket_destroy(stun_socket_t *ss);
 
 /** Bind a socket using STUN.  */
 int stun_bind(stun_socket_t *ss, 
-#if 1
-	      su_sockaddr_t *my_addr,
-#else
-	      struct sockaddr *addr, 
-	      socklen_t *return_addrlen,
-#endif
+	      su_localinfo_t *my_addr,
 	      int *return_lifetime);
 
 int stun_get_nattype(stun_socket_t *ss,
-		     struct sockaddr *my_addr, int *addrlen);
+		     su_localinfo_t *my_addr,
+		     int *addrlen);
 
 int stun_get_lifetime(stun_socket_t *ss, 
-		      struct sockaddr *my_addr, int *addrlen,
+		      su_localinfo_t *my_addr, int *addrlen,
 		      int *lifetime);
 
 /** other functions */

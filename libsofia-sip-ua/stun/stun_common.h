@@ -55,6 +55,9 @@
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 
+#include <su.h>
+#include <su_localinfo.h>
+
 #ifdef WIN32
 #ifndef uint16_t
 #define uint16_t unsigned short
@@ -234,7 +237,7 @@ int stun_free_buffer(stun_buffer_t *p);
 int stun_free_message(stun_msg_t *msg);
 
 int stun_init_message(stun_msg_t *msg);
-int stun_send_message(int sockfd, struct sockaddr_in *to_addr, stun_msg_t *msg, stun_buffer_t *pwd);
+int stun_send_message(int sockfd, su_localinfo_t *to_addr, stun_msg_t *msg, stun_buffer_t *pwd);
 int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd);
 
 char const *stun_response_phrase(int status);

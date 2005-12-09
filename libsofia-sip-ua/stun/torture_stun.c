@@ -148,7 +148,7 @@ void torture_callback(torture_t *torturer, stun_engine_t *en, stun_event_t ev)
 {
   SU_DEBUG_3(("%s: called\n", __func__));
 
-  su_root_break(stun_root(en));
+  su_root_break(stun_engine_root(en));
 
   return;
 }
@@ -173,7 +173,7 @@ int test_sync_stun(char *localaddr)
   int result;
   int s, lifetime;
   socklen_t addrlen, locallen;
-  su_sockaddr_t addr;
+  su_localinfo_t addr;
   stun_socket_t *ss;
   struct sockaddr_in *my_addr, local;
 
@@ -198,30 +198,33 @@ int test_sync_stun(char *localaddr)
     }
   }
   
-  memset(&addr, 0, sizeof(addr)); /* addrlen = sizeof(addr); */
+  memset(&addr, 0, sizeof(addr));
+  /* addrlen = sizeof(addr); */
   lifetime = 0;
 
-  my_addr = (struct sockaddr_in *)&addr.su_sa;
+  my_addr = (struct sockaddr_in *) &addr.li_addr;
 
   atonetaddr(my_addr, localaddr);
   /*
   my_addr->sin_addr.s_addr = inet_addr(localaddr);
   my_addr->sin_family = AF_INET;
-  my_addr->sin_port = 0;*/ /* wildcard */
+  my_addr->sin_port = 0;
+  */
+  
   addrlen = sizeof(*my_addr);
-  result = stun_bind(ss, &addr.su_sa, &addrlen, &lifetime); TEST(result, 0);
+  result = stun_bind(ss, &addr, &lifetime); TEST(result, 0);
 
   /* Just a check that getsockname() returns same address as stun_bind */
   memset(&local, 0, sizeof(local)); locallen = sizeof(local);
   
   TEST(getsockname(s, (struct sockaddr *)&local, &locallen), 0);
   TEST(locallen, addrlen);
-  my_addr = (struct sockaddr_in *) &addr.su_sa;
+  my_addr = (struct sockaddr_in *) &addr.li_addr;
 
   printf("*** stun_bind returns %s:%u\n", inet_ntoa(my_addr->sin_addr), (unsigned)ntohs(my_addr->sin_port));
   printf("*** getsockname returns %s:%u\n", inet_ntoa(local.sin_addr), (unsigned)ntohs(local.sin_port));
 
-  TEST(memcmp(&local, (struct sockaddr_in *)&addr.su_sa, 8), 0); 
+  TEST(memcmp(&local, (struct sockaddr_in *)&addr.li_addr, 8), 0); 
 
   su_close(s);
 
@@ -232,9 +235,9 @@ int test_get_lifetime(char *localaddr)
 {
   int result, lifetime;
   int s, addrlen;
-  su_sockaddr_t addr;
+  su_localinfo_t addr;
   stun_socket_t *ss;
-  struct sockaddr_in *my_addr;
+  su_localinfo_t *my_addr;
 
   BEGIN();
 
@@ -259,11 +262,11 @@ int test_get_lifetime(char *localaddr)
   
   memset(&addr, 0, sizeof(addr)); /* addrlen = sizeof(addr); */
 
-  my_addr = (struct sockaddr_in *)&addr.su_sa;
+  my_addr = &addr.li_addr;
 
   atonetaddr(my_addr, localaddr);
   addrlen = sizeof(*my_addr);
-  result = stun_get_lifetime(ss, &addr.su_sa, &addrlen, &lifetime); TEST(result, 0);
+  result = stun_get_lifetime(ss, &addr.li_addr, &addrlen, &lifetime); TEST(result, 0);
   printf("Binding Lifetime determined to be: %d seconds\n", lifetime);
 
   su_close(s);

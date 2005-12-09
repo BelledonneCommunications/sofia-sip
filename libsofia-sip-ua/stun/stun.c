@@ -95,7 +95,7 @@ struct stun_engine_s
   su_home_t       st_home[1];
   su_root_t      *st_root;
   su_wait_t       st_waiter[1];   /**< for async socket operations */
-  su_sockaddr_t   st_srvr4[2];    /**< primary and secondary addresses */
+  su_localinfo_t  st_srvr4[2];    /**< primary and secondary addresses */
   su_socket_t     st_socket;
   
   stun_socket_t  *st_stun_socket;
@@ -126,7 +126,7 @@ char const stun_version[] =
  * @param self stun_engine_t object
  * @return su_root_t object, NULL if self not given.
  */
-su_root_t *stun_root(stun_engine_t *self)
+su_root_t *stun_engine_root(stun_engine_t *self)
 {
   return self ? self->st_root : NULL;
 }
@@ -365,17 +365,13 @@ void stun_socket_destroy(stun_socket_t *ss)
  * 
  */
 int stun_bind(stun_socket_t *ss,
-#if 1
-	      su_sockaddr_t *my_addr,
-#else
-	      struct sockaddr *my_addr, 
-	      socklen_t *addrlen,
-#endif
+	      su_localinfo_t *my_addr,
 	      int *lifetime)
 {
   int retval = -1, sockfd;
-  struct sockaddr_in *clnt_addr = 0, bind_addr;
+  su_localinfo_t *clnt_addr = 0, bind_addr;
   socklen_t bind_len;
+  char ipaddr[SU_ADDRSIZE + 2];
 
   /* testing su_getlocalinfo() */
   su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
@@ -384,23 +380,25 @@ int stun_bind(stun_socket_t *ss,
   if (ss == NULL) 
     return errno = EFAULT, -1;
 
-  clnt_addr = (void *) my_addr;
+  /* clnt_addr = (void *) my_addr; */
 
-  if (clnt_addr == NULL || clnt_addr->sin_addr.s_addr == 0) {
+  if (clnt_addr == NULL || clnt_addr->li_addr == 0) {
+
+    hints->li_family = AF_INET;
+    hints->li_flags = AI_PASSIVE;
     
     if((error = su_getlocalinfo(hints, &res)) == 0) {
 
       /* try to bind to the first available address */
       for (i = 0, li = res; li; li = li->li_next) {
         if (li->li_family == AF_INET) {
-	  /* xxx - mela: is these needed */
-	  hints->li_family = AF_INET;
-	  hints->li_flags = AI_PASSIVE;
+	  char ipaddr[SU_ADDRSIZE + 2];
 
-          memcpy(clnt_addr, &li->li_addr->su_sin, sizeof(li->li_addr->su_sin));
+          memcpy(clnt_addr, li, sizeof(clnt_addr));
+	  inet_ntop(clnt_addr->li_family, SU_ADDR(clnt_addr->li_addr), ipaddr, sizeof(ipaddr));
           SU_DEBUG_3(("stun: local address found to be %s:%u\n", 
-		      inet_ntoa(clnt_addr->sin_addr),
-		      (unsigned) ntohs(clnt_addr->sin_port)));
+		      ipaddr,
+		      (unsigned) ntohs(clnt_addr->li_addr->su_port)));
           found = 1;
           break;
         }
@@ -423,25 +421,29 @@ int stun_bind(stun_socket_t *ss,
   /* run protocol here... */
   sockfd = ss->ss_sockfd;
 
-  if (bind(sockfd, (struct sockaddr *)clnt_addr, my_addr->su_len)<0) {
-    SU_DEBUG_3(("stun: Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr), (unsigned)ntohs(clnt_addr->sin_port)));
+  inet_ntop(clnt_addr->li_family, SU_ADDR(clnt_addr->li_addr), ipaddr, sizeof(ipaddr));
+  if (bind(sockfd, (struct sockaddr *)clnt_addr, my_addr->li_addrlen) < 0) {
+    SU_DEBUG_3(("stun: Error binding to %s:%u\n", ipaddr,
+		(unsigned) ntohs(clnt_addr->li_addr->su_port)));
     return -1;
   }
 
   bind_len = sizeof(bind_addr);
-  getsockname(sockfd, (struct sockaddr *) &bind_addr, &bind_len);
+  getsockname(sockfd, (struct sockaddr *) &bind_addr.li_addr, &bind_len);
   
-  SU_DEBUG_3(("stun: Local socket bound to: %s:%u\n", inet_ntoa(bind_addr.sin_addr), 
-	      (unsigned) ntohs(bind_addr.sin_port)));
+  inet_ntop(clnt_addr->li_family, SU_ADDR(bind_addr.li_addr), ipaddr, sizeof(ipaddr));
+#if 0 /* xxx mela */
+  SU_DEBUG_3(("stun: Local socket bound to: %s:%u\n", ipaddr, 
+	      (unsigned) ntohs(bind_addr.li_addr.su_port)));
+#endif
 
-
-  retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0], 
-			  clnt_addr, 0, 0);
+  retval = stun_bind_test(ss, (su_localinfo_t *) &ss->ss_engine->st_srvr4[0], 
+			  (su_localinfo_t *) &clnt_addr, 0, 0);
 
   if (ss->ss_state != stun_cstate_done) {
     SU_DEBUG_3(("stun: Error in STUN discovery process (error state: %d).\n", (int)ss->ss_state));
     /* make sure the returned clnt_addr matches the local socket */
-    if (my_addr->su_len < bind_len)
+    if (my_addr->li_addrlen < bind_len)
       return errno = EFAULT, -1;
     else 
       memcpy(my_addr, &bind_addr, bind_len);
@@ -464,21 +466,26 @@ int stun_bind(stun_socket_t *ss,
  *  XXX - mela: not for long!!!
  *  NAT type is set in ss->se_engine.st_nattype
  */
-int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
+int stun_get_nattype(stun_socket_t *ss, su_localinfo_t *my_addr, int *addrlen)
 {
   int nattype = STUN_NAT_UNKNOWN;
   int retval, lifetime, sockfd;
   socklen_t locallen, len;
-  struct sockaddr_in local, mapped_addr1, mapped_addr2;
+  struct sockaddr_in local, /* mapped_addr1, */ mapped_addr2;
+  su_localinfo_t mapped_addr1;
   
   sockfd = ss->ss_sockfd;
+
+  assert(my_addr && my_addr->li_addrlen != 0);
   
   len = sizeof(mapped_addr1);
   memcpy(&mapped_addr1, my_addr, len); 
-  mapped_addr1.sin_port = 0; /* wild card for get_nattype */
-  retval = stun_bind(ss, (struct sockaddr *)&mapped_addr1, &len, &lifetime);
-  if(retval==-1) {
-    if(errno==ETIMEDOUT) {
+#if 0 /* xxx mela */
+  mapped_addr1.li_addr.su_port = 0; /* wild card for get_nattype */
+#endif
+  retval = stun_bind(ss, &mapped_addr1, &lifetime);
+  if (retval == -1) {
+    if (errno == ETIMEDOUT) {
       /* No Response: Type 2 - UDP Blocked */
       retval = 0; /* time out is a legitimate response */
       nattype = STUN_UDP_BLOCKED;
@@ -487,13 +494,13 @@ int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
   else { /* Response comes back */
     memset(&local, 0, sizeof(local)); locallen = sizeof(local);
     getsockname(sockfd, (struct sockaddr *)&local, &locallen);
-    if(memcmp(&local, &mapped_addr1, 8)==0) { /* Same IP and port*/
+    if (memcmp(&local, &mapped_addr1, 8) == 0) { /* Same IP and port*/
       /* conduct TEST II */      
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0],
-			      &mapped_addr2, 1, 1);
-      if(retval==-1) {
-	if(errno==ETIMEDOUT) {
+      retval = stun_bind_test(ss, (su_localinfo_t *) &ss->ss_engine->st_srvr4[0],
+			      (su_localinfo_t *) &mapped_addr2, 1, 1);
+      if (retval == -1) {
+	if (errno == ETIMEDOUT) {
 	  /* No Response: Type 3 - Sym UDP FW */
 	  retval = 0;
 	  nattype = STUN_SYM_UDP_FW;	  
@@ -506,19 +513,20 @@ int stun_get_nattype(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen)
     }
     else { /* Different IP */
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0],
-			      &mapped_addr2, 1, 1);
-      if(retval==-1) {
-	if(errno==ETIMEDOUT) {
+      retval = stun_bind_test(ss, (su_localinfo_t *) &ss->ss_engine->st_srvr4[0],
+			      (su_localinfo_t *) &mapped_addr2, 1, 1);
+      if (retval == -1) {
+	if (errno == ETIMEDOUT) {
 	  /* No Response */
-	  retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[1], 
-				  &mapped_addr2, 0, 0);
-	  if(retval==0) { /* response comes back, has to be the case */
-	    if(memcmp(&mapped_addr1, &mapped_addr2, 8)==0) {
+	  retval = stun_bind_test(ss, (su_localinfo_t *) &ss->ss_engine->st_srvr4[1], 
+				  (su_localinfo_t *) &mapped_addr2, 0, 0);
+	  /* response comes back, has to be the case */
+	  if (retval == 0) {
+	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
 	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
 		 same */
-	      retval = stun_bind_test(ss, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0],
-				      &mapped_addr2, 0, 1);
+	      retval = stun_bind_test(ss, (su_localinfo_t *) &ss->ss_engine->st_srvr4[0],
+				      (su_localinfo_t *) &mapped_addr2, 0, 1);
 	      if(retval==0) {
 		/* Response: Type 6 - Restricted */
 		nattype = STUN_NAT_RES_CONE;
@@ -704,7 +712,7 @@ int stun_connected(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
 int stun_connect_start(stun_engine_t *se, su_addrinfo_t *ai)
 {
   int events = SU_WAIT_IN | SU_WAIT_ERR;
-  int one, err;
+  int one, err = -1;
   su_wait_t wait[1] = { SU_WAIT_INIT };
   su_socket_t s = SOCKET_ERROR;
   int family;
@@ -845,6 +853,7 @@ int stun_send_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
 
   ss->ss_state = stun_cstate_init;
 
+#if 0
 
   while(num_retrx < STUN_MAX_RETRX && z <= 0) {
     FD_ZERO(&rfds);
@@ -877,7 +886,7 @@ int stun_send_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
     }
     else {
       SU_DEBUG_3(("stun: Time out no. %d, retransmitting.\n", ++num_retrx));
-      if(stun_send_message(sockfd, srvr_addr, &bind_req, &(ss->ss_engine->st_passwd))<0) {
+      if (stun_send_message(sockfd, srvr_addr, &bind_req, &(se->st_passwd)) < 0) {
 	stun_free_message(&bind_req);
 	return retval;
       }
@@ -941,6 +950,8 @@ int stun_send_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
 
   ss->ss_state = stun_cstate_done;
 
+#endif /* if 0 */
+
   return retval;
 
 }
@@ -975,13 +986,8 @@ static stun_engine_t *stun_socket_get_engine(stun_socket_t *ss)
  * 
  */   
 int stun_bind_test(stun_socket_t *ss,
-#if 1
-		   struct sockaddr_storage *srvr_addr,
-		   struct sockaddr_storage *clnt_addr,
-#else
-		   struct sockaddr_in *srvr_addr,
-		   struct sockaddr_in *clnt_addr,
-#endif
+		   su_localinfo_t  *srvr_addr,
+		   su_localinfo_t *clnt_addr,
 		   int chg_ip,
 		   int chg_port)
 {
@@ -992,6 +998,7 @@ int stun_bind_test(stun_socket_t *ss,
   su_wait_t wait[1] = { SU_WAIT_INIT };
   unsigned rmem = 0, wmem = 0;
   stun_engine_t *se = stun_socket_get_engine(ss);
+  char ipaddr[SU_ADDRSIZE + 2];
 
   ss->ss_state = stun_cstate_init;
 
@@ -1001,9 +1008,12 @@ int stun_bind_test(stun_socket_t *ss,
   /* run protocol here... */
   s = ss->ss_sockfd;
 
+  inet_ntop(srvr_addr->li_family, SU_ADDR(srvr_addr->li_addr), ipaddr, sizeof(ipaddr));
+#if 0 /* xxx mela */
   SU_DEBUG_3(("stun: sending to %s:%u (req-flags: msgint=%d, ch-addr=%d, chh-port=%d)\n", 
-	      inet_ntoa(srvr_addr->sin_addr), ntohs(srvr_addr->sin_port),
-	      ss->ss_engine->st_use_msgint, chg_ip, chg_port));
+	      ipaddr, ntohs(srvr_addr->li_addr.su_port),
+	      se->st_use_msgint, chg_ip, chg_port));
+#endif
 
   /* compose binding request */
   if(stun_make_binding_req(ss, &bind_req, chg_ip, chg_port)<0) 
@@ -1013,11 +1023,12 @@ int stun_bind_test(stun_socket_t *ss,
 
   events = SU_WAIT_IN;
 
+#if 0 /* xxx --- mela: are these needed? socket is already async when created earlier */
 #if HAVE_IP_RECVERR
-  if (ai->ai_family == AF_INET || ai->ai_family == AF_INET6) {
+  if (srvr_addr->su_family == AF_INET) {
     int const one = 1;
     if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
-      if (ai->ai_family == AF_INET)
+      if (srvr_addr->su_family == AF_INET)
 	return TPORT_LISTEN_ERROR(su_errno(), IP_RECVERR);
     }
     events |= SU_WAIT_ERR;
@@ -1025,8 +1036,8 @@ int stun_bind_test(stun_socket_t *ss,
 #endif
     
   if (rmem != 0 && 
-      setsockopt(s, SOL_SOCKET,
-		 SO_RCVBUF, (void *)&rmem, sizeof rmem) < 0) {
+      setsockopt(s, SOL_SOCKET, SO_RCVBUF,
+		 (void *)&rmem, sizeof rmem) < 0) {
     SU_DEBUG_3(("setsockopt(SO_RCVBUF): %s\n", 
 		su_strerror(su_errno())));
   }
@@ -1037,14 +1048,17 @@ int stun_bind_test(stun_socket_t *ss,
     SU_DEBUG_3(("setsockopt(SO_SNDBUF): %s\n", 
 		su_strerror(su_errno())));
   }
+#endif /* if 0 */
 
-  if(stun_send_message(s, srvr_addr, &bind_req, &(ss->ss_engine->st_passwd))<0) {
+  if (stun_send_message(s, srvr_addr, &bind_req, &(se->st_passwd)) < 0) {
     stun_free_message(&bind_req);
     return retval;
   }
 
-  if (su_wait_create(wait, s, events) == -1)
-    return TPORT_LISTEN_ERROR(su_errno(), su_wait_create);
+  if (su_wait_create(wait, s, events) == -1) {
+    STUN_ERROR(su_errno(), su_wait_create);
+    return -1;
+  }
 
   /* Register receiving or accepting function with events specified above */
   su_root_register(se->st_root, wait, stun_send_wait, se, 0);
@@ -1234,11 +1248,11 @@ char const *stun_nattype(stun_engine_t *se)
   }
 }
 
-int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen, int *lifetime)
+int stun_get_lifetime(stun_socket_t *ss, su_localinfo_t *my_addr, int *addrlen, int *lifetime)
 {
   int retval = -1, sockfdx, sockfdy;
   socklen_t x_len, y_len, recv_addr_len, mapped_len;
-  struct sockaddr_in *clnt_addr=0, x_addr, y_addr, recv_addr, mapped_addr;
+  struct sockaddr_in *clnt_addr = 0, x_addr, y_addr, recv_addr, mapped_addr;
   int lt_cur=0, lt=STUN_LIFETIME_EST, lt_max = STUN_LIFETIME_MAX;
   stun_attr_t *mapped_addr_attr;
   /* testing su_getlocalinfo() */
@@ -1248,7 +1262,9 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
   struct timeval tv;
   stun_msg_t bind_req, bind_resp;
   unsigned char dgram[512];
+  stun_engine_t *se = stun_socket_get_engine(ss);
 
+  assert(se);
 
   if (ss == NULL) 
     return errno = EFAULT, -1;
@@ -1256,7 +1272,7 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
   SU_DEBUG_3(("stun: determining binding life time, this may take a while.\n"));
 
   /* get local ip address */
-  clnt_addr = (struct sockaddr_in *)my_addr;
+  clnt_addr = (struct sockaddr_in *) my_addr;
 
   if(clnt_addr==NULL || clnt_addr->sin_addr.s_addr == 0) {
     if((error = su_getlocalinfo(hints, &res)) == 0) {
@@ -1313,7 +1329,7 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
     /* send request from X */
     if(stun_make_binding_req(ss, &bind_req, 0, 0) <0)
       return retval;
-    if(stun_send_message(sockfdx, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0], &bind_req, &(ss->ss_engine->st_passwd))<0)
+    if (stun_send_message(sockfdx, &se->st_srvr4[0], &bind_req, &(se->st_passwd)) < 0)
       return retval;
 
     FD_ZERO(&rfds);
@@ -1361,7 +1377,7 @@ int stun_get_lifetime(stun_socket_t *ss, struct sockaddr *my_addr, int *addrlen,
     if(stun_make_binding_req(ss, &bind_req, 0, 0) <0)
       return retval;
     stun_add_response_address(&bind_req, &mapped_addr);
-    if(stun_send_message(sockfdy, (struct sockaddr_in *)&ss->ss_engine->st_srvr4[0], &bind_req, &(ss->ss_engine->st_passwd))<0)
+    if (stun_send_message(sockfdy, &se->st_srvr4[0], &bind_req, &(se->st_passwd)) < 0)
       return retval;
 
     FD_ZERO(&rfds);

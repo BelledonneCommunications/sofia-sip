@@ -51,7 +51,7 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 int stun_poll(stun_socket_t *ss);
 int stun_get_lifetime(stun_socket_t *ss, 
-		      struct sockaddr *my_addr, int *addrlen,
+		      su_localinfo_t *my_addr, int *addrlen,
 		      int *lifetime);
 
 /** other functions */
@@ -62,8 +62,11 @@ int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname,
 int stun_connect_start(stun_engine_t *se, su_addrinfo_t *ai);
 int stun_make_sharedsecret_req(stun_msg_t *msg);
 
-int stun_bind_test(stun_socket_t *ss, struct sockaddr_in *srvr, struct sockaddr_in *cli, 
-		   int chg_ip, int chg_port);
+int stun_bind_test(stun_socket_t *ss,
+		   su_localinfo_t *srvr_addr,
+		   su_localinfo_t *clnt_addr,
+		   int chg_ip,
+		   int chg_port);
 int stun_send_message2(stun_socket_t *ss, struct sockaddr_in *srvr, stun_msg_t *msg); /* client version */
 int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int chg_port);
 int stun_process_response(stun_msg_t *msg);
