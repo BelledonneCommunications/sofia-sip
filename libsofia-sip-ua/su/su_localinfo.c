@@ -479,6 +479,10 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
 #endif
 
     su = (su_sockaddr_t *)&ifr->ifr_addr;
+
+    if (SU_HAS_INADDR_ANY(su))
+      continue;
+
     scope = li_scope4(su->su_sin.sin_addr.s_addr);
 
     if ((hints->li_scope && (hints->li_scope & scope) == 0) ||

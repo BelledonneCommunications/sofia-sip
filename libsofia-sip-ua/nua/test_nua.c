@@ -69,6 +69,9 @@ extern su_log_t nta_log[];
 extern su_log_t tport_log[];
 extern su_log_t su_log_default[];
 
+extern void *memmem(const void *haystack, size_t haystacklen,
+		    const void *needle, size_t needlelen);
+
 char const name[] = "test_nua";
 
 int print_headings = 1;
