@@ -2859,6 +2859,7 @@ int nta_msg_request_complete(msg_t *msg,
   sip_t *sip = sip_object(msg);
   sip_cseq_t *cseq;
   uint32_t seq;
+  url_t reg_url[1];
 
   if (!leg || !msg)
     return -1;
@@ -2921,7 +2922,6 @@ int nta_msg_request_complete(msg_t *msg,
       request_uri = (url_string_t *)sip->sip_to->a_url;
     else {
       /* Remove user part from REGISTER requests */
-      url_t reg_url[1];
       *reg_url = *sip->sip_to->a_url;
       reg_url->url_user = reg_url->url_password = NULL;
       request_uri = (url_string_t *)reg_url;
@@ -9312,13 +9312,10 @@ nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
     return NULL;
 
   if (!leg->leg_route) {
-    sip_route_t r0[1];
-
-    sip_route_init(r0);
-
-    /* Insert contact */
+    /* Insert contact into route */
     if (resp->sip_contact) {
-      *r0->r_url = *resp->sip_contact->m_url;
+      sip_route_t r0[1];
+      sip_route_init(r0)->r_url[0] = resp->sip_contact->m_url[0];
       route = sip_route_dup(home, r0);
     }
 

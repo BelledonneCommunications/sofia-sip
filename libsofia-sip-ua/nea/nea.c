@@ -27,7 +27,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 14 18:32:58 2001 ppessi
- * @date Last modified: Wed Jul 20 20:35:27 2005 kaiv
  */
 
 #include "config.h"
@@ -470,6 +469,8 @@ int handle_notify(nea_t *nea,
 		  sip_t const *sip)
 {
   sip_subscription_state_t *ss = sip->sip_subscription_state;
+  sip_subscription_state_t ss0[1];
+  char expires[32];
 
   if (nea->nea_strict_3265) {
     char const *phrase = NULL;
@@ -491,9 +492,7 @@ int handle_notify(nea_t *nea,
 
   if (ss == NULL) {
     /* Do some compatibility stuff here */
-    sip_subscription_state_t ss0[1];
     unsigned long delta = 3600;
-    char expires[32];
 
     sip_subscription_state_init(ss = ss0);
 

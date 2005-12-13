@@ -1614,6 +1614,7 @@ int nea_sub_process_subscribe(nea_sub_t *s,
   sip_event_t const *o;
   sip_accept_t const *ac = NULL, *accept = NULL;
   sip_accept_t *a0 = NULL, *a, *a_next, **aa;
+  sip_accept_t accept_default[1];
   unsigned proposed_throttle;
   char const *type, *throttle;
   int once, what, supported_eventlist, require_eventlist;
@@ -1752,11 +1753,9 @@ int nea_sub_process_subscribe(nea_sub_t *s,
     accept = sip->sip_accept;
   else if (evv && evv->evv_content_type) {
     /* Generate accept header from event view specified by application */
-    sip_accept_t a0[1];
-
-    sip_accept_init(a0);
-    a0->ac_type = evv->evv_content_type->c_type;
-    a0->ac_subtype = evv->evv_content_type->c_subtype;
+    sip_accept_init(accept_default);
+    accept_default->ac_type = evv->evv_content_type->c_type;
+    accept_default->ac_subtype = evv->evv_content_type->c_subtype;
 
     accept = a0;
   }

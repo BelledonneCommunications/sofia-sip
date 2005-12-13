@@ -6286,6 +6286,8 @@ static int process_notify(nua_t *nua,
   nua_dialog_state_t *ds = nh->nh_ds;
   nua_dialog_usage_t *du;
   sip_subscription_state_t *subs = sip ? sip->sip_subscription_state : NULL;
+  sip_subscription_state_t ss0[1];
+  char expires[32];
   sip_contact_t *m = NULL, m0[1];
   int retry = -1;
   char const *what = NULL, *why = NULL;
@@ -6319,9 +6321,7 @@ static int process_notify(nua_t *nua,
 
   if (subs == NULL) {
     /* Do some compatibility stuff here */
-    sip_subscription_state_t ss0[1];
     unsigned long delta = 3600;
-    char expires[32];
 
     sip_subscription_state_init(subs = ss0);
 
@@ -6527,7 +6527,7 @@ int process_refer(nua_t *nua,
 {
   nua_dialog_usage_t *du = NULL;
   sip_event_t *event;
-  sip_referred_by_t *by = NULL;
+  sip_referred_by_t *by = NULL, default_by[1];
   msg_t *response;
   int created = 0;
 
@@ -6555,14 +6555,12 @@ int process_refer(nua_t *nua,
   dialog_uas_route(nh, sip, 1);	/* Set route and tags */
 
   if (!sip->sip_referred_by) {
-    sip_referred_by_t b[1];
     sip_from_t *a = sip->sip_from;
 
-    sip_referred_by_init(b);
+    sip_referred_by_init(by = default_by);
 
-    *b->b_url = *a->a_url;
-    b->b_display = a->a_display;
-    by = b;
+    *by->b_url = *a->a_url;
+    by->b_display = a->a_display;
   }
 
   response = nh_make_response(nua, nh, irq, 

@@ -905,6 +905,7 @@ int localinfo0(su_localinfo_t const hints[1], su_localinfo_t **rresult)
   
   for (iaa = iaa0; iaa; iaa = iaa->Next) {
     IP_ADAPTER_UNICAST_ADDRESS *ua;
+    IP_ADAPTER_UNICAST_ADDRESS lua[1];
     int if_index = iaa->IfIndex;
     int ifnamelen = 0;
     char ifname[16];
@@ -915,10 +916,9 @@ int localinfo0(su_localinfo_t const hints[1], su_localinfo_t **rresult)
       su_sockaddr_t su2[1];
       int scope, flags = 0, gni_flags = 0;
 
-      /* Fix bug: IP4 interface is not included... */
       if (ua == NULL) {
+	/* There is no loopback interface in windows */
 	if (!loopback_seen && iaa->Next == NULL) {
-          IP_ADAPTER_UNICAST_ADDRESS lua[1];
 	  struct sockaddr_in loopback_sin = { AF_INET, 0, {{ 127, 0, 0, 1 }}};
 
 	  lua->Address.lpSockaddr = (struct sockaddr *)&loopback_sin;

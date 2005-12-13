@@ -4357,6 +4357,9 @@ int tport_vsend_iovec(tport_t const *self, msg_t *msg,
 {
   su_sockaddr_t *su;
   int sulen;
+#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
+  su_sockaddr_t su0[1];
+#endif
 
   if (tport_is_connection_oriented(self)) {
 #if __sun__			/* XXX - there must be better way... */
@@ -4371,8 +4374,6 @@ int tport_vsend_iovec(tport_t const *self, msg_t *msg,
 
 #if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
   if (su->su_family == AF_INET && self->tp_pri->pri_family == AF_INET6) {
-    su_sockaddr_t su0[1];
-
     memset(su0, 0, sizeof su0);
 
     su0->su_family = self->tp_pri->pri_family;
