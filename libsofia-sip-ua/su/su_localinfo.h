@@ -78,12 +78,13 @@ enum {
 
 /** Localinfo error codes */
 enum {
-  ELI_NOERROR    = 0,		/**< No error. */
   ELI_NOADDRESS  = -1,		/**< No matching address. */
   ELI_MEMORY     = -2,		/**< Memory allocation error. */
   ELI_FAMILY     = -3,		/**< Unknown address family. */
   ELI_RESOLVER   = -4,		/**< Error when resolving address. */
-  ELI_SYSTEM     = -5		/**< System error. */
+  ELI_SYSTEM     = -5,		/**< System error. */
+  ELI_BADHINTS   = -6,		/**< Invalid value for hints. */
+  ELI_NOERROR    = 0		/**< No error. */
 };
 
 /** Request local address information */

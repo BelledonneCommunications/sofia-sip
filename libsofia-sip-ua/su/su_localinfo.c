@@ -160,6 +160,8 @@ int su_getlocalinfo(su_localinfo_t const *hints,
     *hh = *hints;
     if (hh->li_canonname)
       hh->li_flags |= LI_CANONNAME;
+    if ((hh->li_flags & LI_IFNAME) && hh->li_ifname == NULL)
+      return ELI_BADHINTS;
   }
 
   switch (hh->li_family) {
@@ -247,6 +249,7 @@ char const *su_gli_strerror(int error)
   case ELI_FAMILY:    return "Unknown address family";
   case ELI_RESOLVER:  return "Error when resolving address";
   case ELI_SYSTEM:    return "System error";
+  case ELI_BADHINTS:  return "Invalid value for hints";
   default:            return "Unknown error";
   }
 }
