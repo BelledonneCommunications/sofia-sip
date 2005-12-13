@@ -115,6 +115,14 @@ static struct gai_afd {
 #  define s6_addr8 s6_addr
 #endif
 
+#if !SU_HAVE_IN6
+extern
+#if defined(_WIN32) || defined(__CYGWIN__)
+__declspec(dllimport)
+#endif
+int h_errno;
+#endif
+
 static int get_name(const char *, struct gai_afd *,
 		    struct addrinfo **, char *, struct addrinfo *,
 		    int);
@@ -557,9 +565,6 @@ get_addr(hostname, af, res, pai, port0)
 	struct gai_afd *gai_afd;
 	int i, error = 0, h_error;
 	char *ap;
-#ifndef INET6
-	extern int h_errno;
-#endif
 
 	top = NULL;
 	sentinel.ai_next = NULL;
