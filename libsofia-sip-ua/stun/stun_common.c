@@ -542,28 +542,46 @@ int stun_free_message(stun_msg_t *msg) {
   return 0;
 }
 
-int stun_send_message(int sockfd, su_localinfo_t *to_addr, stun_msg_t *msg, stun_buffer_t *pwd) 
+#if 1
+int stun_send_message(int sockfd, struct sockaddr_in *to_addr, stun_msg_t *msg, stun_buffer_t *pwd) 
 {
-  int err = -1;
-  char ipaddr[SU_ADDRSIZE + 2];
+  int z;
 
   stun_encode_message(msg, pwd);
 
+  z = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
+	     0, (struct sockaddr *)to_addr, sizeof(*to_addr));
+  SU_DEBUG_5(("stun: message sent to %s:%u\n", 
+	      inet_ntoa(to_addr->sin_addr), ntohs(to_addr->sin_port)));
+  debug_print(&msg->enc_buf);
+  
+  return z;
+}  
+#else
+int stun_send_message(int sockfd, su_sockaddr_t *to_addr, stun_msg_t *msg, stun_buffer_t *pwd) 
+{
+  int err = -1;
+  char ipaddr[SU_ADDRSIZE + 2];
+  int namelen = sizeof(su_addrinfo_t);
+
+  stun_encode_message(msg, pwd);
+
+  inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));
   err = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
-	     0, (struct sockaddr *) &to_addr->li_addr, sizeof(*to_addr));
+	       0, (struct sockaddr *) &to_addr->su_sin, namelen);
   if (err != 0)
     STUN_ERROR(err, sendto);
 
 
-  inet_ntop(to_addr->li_family, to_addr->li_addr, ipaddr, sizeof(ipaddr));
-#if 0 /* xxx mela */
+  inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));
   SU_DEBUG_5(("stun: message sent to %s:%u\n", 
 	      ipaddr, ntohs(to_addr->su_port)));
-#endif
   debug_print(&msg->enc_buf);
   
   return err;
 }  
+#endif
+
 
 /** send a STUN message.
  *  This will convert the stun_msg_t to the binary format based on the

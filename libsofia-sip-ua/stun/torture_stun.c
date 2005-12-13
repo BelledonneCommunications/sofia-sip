@@ -141,10 +141,10 @@ int main(int argc, char *argv[])
 
 stun_engine_t *se;
 
-void torture_callback(torture_t *torturer, stun_engine_t *en, stun_event_t ev);
+void torture_callback(torture_t *torturer, stun_engine_t *en, stun_states_t ev);
 
 
-void torture_callback(torture_t *torturer, stun_engine_t *en, stun_event_t ev)
+void torture_callback(torture_t *torturer, stun_engine_t *en, stun_states_t ev)
 {
   SU_DEBUG_3(("%s: called\n", __func__));
 

@@ -74,22 +74,23 @@ int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname,
 		       const char *pwd, int len_pwd);
 
 /* internal functions declaration */
-int stun_connect_start(stun_engine_t *se, su_addrinfo_t *ai);
+int stun_connect_start(stun_engine_t *se);
 int stun_make_sharedsecret_req(stun_msg_t *msg);
 
 int stun_bind_test(stun_socket_t *ss,
-		   su_localinfo_t *srvr_addr,
+		   su_addrinfo_t *srvr_info,
+		   su_sockaddr_t *srvr_addr,
 		   su_localinfo_t *clnt_addr,
 		   int chg_ip,
 		   int chg_port);
-int stun_send_message2(stun_socket_t *ss, struct sockaddr_in *srvr, stun_msg_t *msg); /* client version */
+int stun_send_message(su_socket_t ss, struct sockaddr_in *srvr, stun_msg_t *msg, stun_buffer_t *pwd); /* client version */
 int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int chg_port);
 int stun_process_response(stun_msg_t *msg);
 
 int stun_process_binding_response(stun_msg_t *msg);
 int stun_process_error_response(stun_msg_t *msg);
 
-int stun_atoaddr(struct sockaddr_in *addr, char const *in);
+int stun_atoaddr(int ai_family, su_addrinfo_t *info, su_sockaddr_t *addr, char const *in);
 int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr);
 
 #endif /* !defined(STUN_INTERNAL_H) */

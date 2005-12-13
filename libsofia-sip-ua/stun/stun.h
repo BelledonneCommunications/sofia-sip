@@ -53,19 +53,41 @@ typedef STUN_MAGIC_T stun_magic_t;
 
 extern char const stun_version[]; /**< Name and version of STUN software */
 
-typedef enum stun_event_e {
-  stun_connect_error,
-  stun_connect_success,
-  stun_no_shared_secret_obtained,
-  stun_ready,
-} stun_event_t;
+/**
+ * States of the STUN client->server query process.
+ */ 
+typedef enum stun_states_e {
 
+  /* stun engine errors */
+  stun_connect_error = -10,
+  stun_no_shared_secret_obtained = -9,
+
+  /* stun client errors */
+  stun_client_error = -5,            /**< Sending query to server */
+  stun_client_timeout = -1,
+
+  /* stun_engine related */
+  stun_shared_secret_obtained = 0,
+  stun_connect_success,
+
+
+  /* client: stun socket */
+  stun_client_init,             /**< Initial state */
+  stun_client_started,          /**< Discovery process started */
+  stun_client_sending,          /**< Sending query to server */
+  stun_client_sent,             /**< Query sent */
+  stun_client_receiving,        /**< Waiting for server to answer */
+  stun_client_received,         /**< Server answered */
+  stun_client_processing,       /**< Processing server reply */
+  stun_client_done,             /**< Initial state */
+
+} stun_states_t;
 
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_engine_t *se,
-			     stun_event_t event);
+			     stun_states_t event);
 
 su_root_t *stun_engine_root(stun_engine_t *self);
 

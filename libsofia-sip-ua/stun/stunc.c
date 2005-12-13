@@ -63,14 +63,16 @@ struct stunc_s {
 };
 
 
-void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_event_t event);
+void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_states_t event);
 
 
-void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_event_t event)
+void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_states_t event)
 {
 
   printf("event: %d\n", event); fflush(stdout);
-  su_root_break(stun_engine_root(en));
+  
+  if (event < 0)
+    su_root_break(stun_engine_root(en));
   return;
 }
 
@@ -81,6 +83,7 @@ int main(int argc, char *argv[])
   int s, lifetime;
   //socklen_t addrlen;
   su_localinfo_t addr[1];
+  su_sockaddr_t sockaddr[1] = {{ 0 }};
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_engine_t *se;
@@ -111,11 +114,15 @@ int main(int argc, char *argv[])
   if (ss == NULL) { perror("stun_socket_create"); exit(1); }
   
   memset(&addr, 0, sizeof(addr));
+  addr->li_addr = sockaddr;
   addr->li_addrlen = sizeof(addr);
 
   lifetime = 0;
 
   result = stun_bind(ss, (su_localinfo_t *) &addr, &lifetime); 
+
+  su_root_run(root);
+
   if (result == -1) { perror("stun_bind"); exit(1); }
   /*
   if (stun_is_natted(ss)) {
