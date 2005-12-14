@@ -450,33 +450,33 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
   unsigned char dig[20]; /* received sha1 digest */
   unsigned char *padded_text;
 
-  if(pwd->data == NULL) {
-    return 0; /* no need to check */
-  }
+  if (pwd->data == NULL)
+    return 0;
+
   /* message integrity not received */
-  if(stun_get_attr(msg->stun_attr, MESSAGE_INTEGRITY)==NULL) {
-    fprintf(stderr, "Message integrity missing.\n");
+  if (stun_get_attr(msg->stun_attr, MESSAGE_INTEGRITY) == NULL) {
+    SU_DEBUG_5(("%s: error: message integrity missing.\n", __func__));
     return -1;
   }
 
   /* zero padding */
   len = msg->enc_buf.size-24;
-  padded_len = len + (len%64==0? 0:64 - (len%64));
-  padded_text = (unsigned char *)malloc(padded_len);
+  padded_len = len + (len % 64 == 0 ? 0 : 64 - (len % 64));
+  padded_text = (unsigned char *) malloc(padded_len);
   memset(padded_text, 0, padded_len);
   memcpy(padded_text, msg->enc_buf.data, len);
 
   memcpy(dig, HMAC(EVP_sha1(), pwd->data, pwd->size, padded_text, padded_len, NULL, &dig_len), 20);
 
-  if(memcmp(dig, msg->enc_buf.data+msg->enc_buf.size-20, 20)!=0) {
+  if (memcmp(dig, msg->enc_buf.data+msg->enc_buf.size-20, 20) != 0) {
     /* does not match, but try the test server's password */
-    if(memcmp(msg->enc_buf.data+msg->enc_buf.size-20, "hmac-not-implemented", 20)!=0) {
-      fprintf(stderr, "Error: message digest problem\n");
+    if (memcmp(msg->enc_buf.data+msg->enc_buf.size-20, "hmac-not-implemented", 20) != 0) {
+      SU_DEBUG_5(("%s: error: message digest problem.\n", __func__));
       return -1;
     }
   }
   else {
-    SU_DEBUG_5(("Message integrity validated.\n"));
+    SU_DEBUG_5(("%s: message integrity validated.\n", __func__));
   }
 
   free(padded_text);
@@ -486,10 +486,14 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
 
 void debug_print(stun_buffer_t *buf) {
   int i;
-  for(i=0; i<buf->size/4; i++) {
+  for(i = 0; i < buf->size/4; i++) {
     SU_DEBUG_9(("%02x %02x %02x %02x\n",
-		*(buf->data+i*4), *(buf->data+i*4+1), *(buf->data+i*4+2), *(buf->data+i*4+3)));
-    if(i==4) SU_DEBUG_9(("---------------------\n"));
+		*(buf->data + i*4),
+		*(buf->data + i*4 +1),
+		*(buf->data + i*4 +2),
+		*(buf->data + i*4 +3)));
+    if (i == 4)
+      SU_DEBUG_9(("---------------------\n"));
   }
   SU_DEBUG_9(("\n"));
 }

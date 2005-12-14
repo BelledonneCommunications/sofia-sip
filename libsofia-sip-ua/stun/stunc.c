@@ -68,11 +68,23 @@ void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_states_t event);
 
 void stunc_callback(stunc_t *stunc, stun_engine_t *en, stun_states_t event)
 {
+  su_localinfo_t *li = NULL;
 
-  printf("event: %d\n", event); fflush(stdout);
-  
   if (event < 0)
     su_root_break(stun_engine_root(en));
+
+  if (event == stun_client_done) {
+    char ipaddr[48];
+    li = stun_get_local_addr(en);
+    inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
+    SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
+		ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
+    su_root_break(stun_engine_root(en));
+  }
+  else if (event == stun_client_error) {
+    SU_DEBUG_3(("%s: no nat detected\n", __func__));
+    su_root_break(stun_engine_root(en));
+  }
   return;
 }
 
@@ -82,8 +94,6 @@ int main(int argc, char *argv[])
   int result;
   int s, lifetime;
   //socklen_t addrlen;
-  su_localinfo_t addr[1];
-  su_sockaddr_t sockaddr[1] = {{ 0 }};
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_engine_t *se;
@@ -113,28 +123,12 @@ int main(int argc, char *argv[])
 
   if (ss == NULL) { perror("stun_socket_create"); exit(1); }
   
-  memset(&addr, 0, sizeof(addr));
-  addr->li_addr = sockaddr;
-  addr->li_addrlen = sizeof(addr);
-
   lifetime = 0;
 
-  result = stun_bind(ss, (su_localinfo_t *) &addr, &lifetime); 
+  result = stun_bind(ss, &lifetime); 
 
   su_root_run(root);
 
-  if (result == -1) { perror("stun_bind"); exit(1); }
-  /*
-  if (stun_is_natted(ss)) {
-    char ipaddr[48];
-    printf("natted as %s:%u\n", 
-	   inet_ntop(addr.su_family, SU_ADDR(&addr), ipaddr, sizeof(ipaddr)),
-	   ntohs(addr.su_port));
-  }
-  else {
-    printf("no nat detected\n");
-  }
-  */	 
   stun_socket_destroy(ss);
   stun_engine_destroy(se);
 

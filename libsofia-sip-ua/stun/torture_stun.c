@@ -212,7 +212,7 @@ int test_sync_stun(char *localaddr)
   */
   
   addrlen = sizeof(*my_addr);
-  result = stun_bind(ss, &addr, &lifetime); TEST(result, 0);
+  result = stun_bind(ss, &lifetime); TEST(result, 0);
 
   /* Just a check that getsockname() returns same address as stun_bind */
   memset(&local, 0, sizeof(local)); locallen = sizeof(local);

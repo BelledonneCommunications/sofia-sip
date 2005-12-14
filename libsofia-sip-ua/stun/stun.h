@@ -109,8 +109,10 @@ void stun_socket_destroy(stun_socket_t *ss);
 
 /** Bind a socket using STUN.  */
 int stun_bind(stun_socket_t *ss, 
-	      su_localinfo_t *my_addr,
+	      /* su_localinfo_t *my_addr, */
 	      int *return_lifetime);
+
+su_localinfo_t *stun_get_local_addr(stun_engine_t *en);
 
 int stun_get_nattype(stun_socket_t *ss,
 		     su_localinfo_t *my_addr,
