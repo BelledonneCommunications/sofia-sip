@@ -1056,6 +1056,7 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
   struct event *e;
   sip_contact_t const *m = NULL;
   sip_from_t const *sipaddress = NULL;
+  url_t const *p_uri;		/* Proxy URI */
 
   ctx->root = su_root_create(NULL); TEST_1(ctx->root);
 
@@ -1075,8 +1076,10 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
   if (print_headings)
     printf("TEST NUA-2.0.1: init endpoint A\n");
 
+  p_uri = test_proxy_uri(ctx->p);
+
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
-			  NUTAG_PROXY(ctx->p ? ctx->p->uri : o_proxy),
+			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
@@ -1102,7 +1105,7 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
     printf("TEST NUA-2.0.2: init endpoint B\n");
 
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
-			  NUTAG_PROXY(ctx->p ? ctx->p->uri : o_proxy),
+			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:bob@example.org"),
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
@@ -1127,7 +1130,7 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
     printf("TEST NUA-2.0.3: init endpoint C\n");
 
   ctx->c.nua = nua_create(ctx->root, c_callback, ctx,
-			  NUTAG_PROXY(ctx->p ? ctx->p->uri : o_proxy),
+			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:charlie@example.net"),
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5400 RTP/AVP 8 0"),

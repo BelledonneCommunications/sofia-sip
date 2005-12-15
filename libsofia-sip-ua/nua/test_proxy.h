@@ -29,23 +29,10 @@
 #include <nta.h>
 
 struct proxy;
-struct proxy_transaction;
-struct registration_entry;
-
-struct proxy {
-  su_home_t    home[1];
-  su_clone_r   clone;
-  su_root_t   *root;
-  nta_agent_t *agent;
-  url_t const *uri;
-  
-  nta_leg_t *defleg;
-
-  struct proxy_transaction *transactions;
-  struct registration_entry *entries;
-};
 
 struct proxy *test_proxy_create(su_root_t *);
 void test_proxy_destroy(struct proxy *);
+
+url_t const *test_proxy_uri(struct proxy const *);
 
 #endif

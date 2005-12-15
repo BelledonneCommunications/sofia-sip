@@ -75,6 +75,20 @@ extern int LIST_DUMMY_VARIABLE
 
 #include <test_proxy.h>
 
+struct proxy {
+  su_home_t    home[1];
+  su_clone_r   clone;
+  su_root_t   *root;
+  nta_agent_t *agent;
+  url_t const *uri;
+  
+  nta_leg_t *defleg;
+
+  struct proxy_transaction *stateless;
+  struct proxy_transaction *transactions;
+  struct registration_entry *entries;
+};
+
 LIST_PROTOS(static, registration_entry, struct registration_entry);
 static struct registration_entry *
 registration_entry_new(struct proxy *, url_t const *);
@@ -126,6 +140,8 @@ registration_entry_find(struct proxy const *proxy, url_t const *uri);
 static int 
 test_proxy_init(su_root_t *root, struct proxy *proxy)
 {
+  struct proxy_transaction *t;
+
   proxy->root = root;
 
   proxy->agent = nta_agent_create(root,
@@ -143,6 +159,19 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
   if (!proxy->defleg)
     return -1;
 
+  t = su_zalloc(proxy->home, sizeof *t);
+
+  if (!t)
+    return -1;
+
+  proxy->stateless = t;
+  t->proxy = proxy;
+  t->server = nta_incoming_default(proxy->agent);
+  t->client = nta_outgoing_default(proxy->agent, proxy_response, t);
+
+  if (!t->client || !t->server)
+    return -1;
+
   proxy->uri = nta_agent_contact(proxy->agent)->m_url;
 				  
   return 0;
@@ -151,6 +180,13 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
 static void
 test_proxy_deinit(su_root_t *root, struct proxy *proxy)
 {
+  struct proxy_transaction *t;
+
+  if ((t = proxy->stateless)) {
+    nta_incoming_destroy(t->server), t->server = NULL;
+    nta_outgoing_destroy(t->client), t->client = NULL;
+  }
+
   nta_agent_destroy(proxy->agent);
 }
 
@@ -170,12 +206,20 @@ struct proxy *test_proxy_create(su_root_t *root)
 
   return p;
 }
+
+/* Destroy the proxy object */
 void test_proxy_destroy(struct proxy *p)
 {
   if (p) {
     su_clone_stop(p->clone);
     su_home_unref(p->home);
   }
+}
+
+/* Return the proxy URI */
+url_t const *test_proxy_uri(struct proxy const *p)
+{
+  return p ? p->uri : NULL;
 }
 
 /** Forward request */
@@ -309,6 +353,8 @@ proxy_transaction_new(struct proxy *proxy)
 static
 void proxy_transaction_destroy(struct proxy_transaction *t)
 {
+  if (t == t->proxy->stateless)
+    return;
   proxy_transaction_remove(t);
   nta_incoming_destroy(t->server);
   nta_outgoing_destroy(t->client);
