@@ -11,6 +11,7 @@ INCLUDES = 		-I$(srcdir)/../ipt \
 			-I$(srcdir)/../sresolv \
 			-I$(srcdir)/../tport \
 			-I$(srcdir)/../url \
+			-I$(srcdir)/../features \
 			-I$(srcdir)/../su
 
 # ----------------------------------------------------------------------
@@ -18,10 +19,10 @@ INCLUDES = 		-I$(srcdir)/../ipt \
 
 noinst_LTLIBRARIES = 	libnta.la
 
-noinst_PROGRAMS = 	test_nta portbind 
-dist_noinst_SCRIPTS =	run_test_nta
+noinst_PROGRAMS = 	test_nta_api test_nta portbind
+dist_noinst_SCRIPTS =	run_test_nta_api run_test_nta
 
-TESTS =			run_test_nta
+TESTS =			run_test_nta_api run_test_nta
 TESTS_ENVIRONMENT =	$(SHELL) 
 
 # ----------------------------------------------------------------------
@@ -42,6 +43,7 @@ COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_sofia_HEADERS)
 LDADD = 		libnta.la \
 			../ipt/libipt.la \
 			../sip/libsip.la \
+			../features/libfeatures.la \
 			../sresolv/libsresolv.la \
 			../tport/libtport.la \
 			../stun/libstun.la \

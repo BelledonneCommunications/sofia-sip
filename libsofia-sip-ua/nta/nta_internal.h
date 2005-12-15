@@ -283,8 +283,10 @@ struct nta_agent_s
   leg_htable_t       sa_defaults[1];
   /** Hash table for outgoing transactions */
   outgoing_htable_t  sa_outgoing[1];
+  nta_outgoing_t    *sa_default_outgoing;
   /** Hash table for incoming transactions */
   incoming_htable_t  sa_incoming[1]; 
+  nta_incoming_t    *sa_default_incoming;
 
   /* Queues (states) for outgoing client transactions */
   struct {
@@ -404,6 +406,7 @@ struct nta_incoming_s
   short               	irq_status;
 
   unsigned              irq_retries : 8;
+  unsigned              irq_default : 1;    /**< Default transaction */
   unsigned              irq_canceled : 1;   /**< Transaction is canceled */
   unsigned              irq_completed : 1;  /**< Transaction is completed */
   unsigned              irq_confirmed : 1;  /**< Response has been acked */
@@ -412,7 +415,7 @@ struct nta_incoming_s
   unsigned              irq_destroyed :1;   /**< Transaction is destroyed */
   unsigned              irq_in_callback:1;  /**< Callback is being invoked */
   unsigned              irq_reliable_tp:1;  /**< Transport is reliable */
-  unsigned              irq_sigcomp_zap:1;/**< Reset SigComp */
+  unsigned              irq_sigcomp_zap:1;  /**< Reset SigComp */
   unsigned              irq_must_100rel:1;  /**< 100rel is required */
   unsigned              irq_tag_set:1;      /**< Tag is not from request */
   unsigned              :0;
@@ -478,6 +481,7 @@ struct nta_outgoing_s
 
   unsigned short      	orq_status;
   unsigned char         orq_retries;    /**< Number of tries this far */
+  unsigned orq_default : 1;	        /**< This is default transaction */
   unsigned orq_inserted : 1;
   unsigned orq_resolved : 1;
   unsigned orq_prepared : 1; /**< outgoing_prepare() called */
