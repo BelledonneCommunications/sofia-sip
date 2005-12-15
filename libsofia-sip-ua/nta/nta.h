@@ -152,10 +152,6 @@ void nta_msg_discard(nta_agent_t *agent, msg_t *msg);
 
 int nta_msg_complete(msg_t *msg);
 
-int nta_msg_response_complete(msg_t *msg,
-			      nta_incoming_t *irq,
-			      int status, char const *phrase);
-
 int nta_msg_request_complete(msg_t *msg, 
 			     nta_leg_t *leg, 
 			     sip_method_t method, 
@@ -264,6 +260,12 @@ int nta_incoming_set_params(nta_incoming_t *irq,
 msg_t *nta_incoming_getrequest(nta_incoming_t *irq);
 msg_t *nta_incoming_getrequest_ackcancel(nta_incoming_t *irq);
 msg_t *nta_incoming_getresponse(nta_incoming_t *irq);
+
+int nta_incoming_complete_response(nta_incoming_t *irq,
+				   msg_t *msg,
+				   int status, 
+				   char const *phrase,
+				   tag_type_t tag, tag_value_t value, ...);
 
 int nta_incoming_treply(nta_incoming_t *ireq, 
 			int status, char const *phrase, 
@@ -378,9 +380,11 @@ nta_reliable_t *nta_reliable_mreply(nta_incoming_t *irq,
 void nta_reliable_destroy(nta_reliable_t *);
 
 /* ----------------------------------------------------------------------
- * Backward-compatibility stuff
+ * Backward-compatibility stuff - going away soon
  */
 
 #define nta_outgoing_tmcreate nta_outgoing_mcreate
+#define nta_msg_response_complete(msg, irq, status, phrase) \
+  nta_incoming_complete_response((irq), (msg), (status), (phrase), TAG_END())
 
 #endif

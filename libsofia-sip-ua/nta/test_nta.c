@@ -23,7 +23,7 @@
  */
 
 /**@internal
- * @CFILE nta_test.c
+ * @CFILE test_nta.c
  *
  * Test functions for NTA.
  *
@@ -33,13 +33,6 @@
  */
 
 #include "config.h"
-
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <stdio.h>
-#include <assert.h>
 
 typedef struct agent_t agent_t;
 
@@ -64,8 +57,16 @@ typedef struct agent_t agent_t;
 #include <htable.h>
 #include <sresolv.h>
 #include <su_log.h>
+#include <sofia_sip_features.h>
 
 #include "string0.h"
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <stdio.h>
+#include <assert.h>
 
 extern su_log_t nta_log[];
 extern su_log_t tport_log[];
@@ -86,7 +87,7 @@ int tstflags = 0;
 
 struct sigcomp_compartment;
 
-char const name[] = "nta_test";
+char const name[] = "test_nta";
 
 struct agent_t {
   su_home_t       ag_home[1];
@@ -163,9 +164,13 @@ static int test_dialog(agent_t *ag);
 static int test_call(agent_t *ag);
 static int test_prack(agent_t *ag);
 static int test_fix_467(agent_t *ag);
-static int test_nta(agent_t *ag);
-static int test_api_errors(void);
-static int test_dialog_matching(void);
+
+static int test_for_ack(agent_t *ag,
+			nta_incoming_t *irq, 
+			sip_t const *sip);
+static int test_for_ack_or_timeout(agent_t *ag,
+				   nta_incoming_t *irq, 
+				   sip_t const *sip);
 
 int agent_callback(agent_t *ag,
 		   nta_agent_t *nta,
@@ -230,6 +235,7 @@ void leg_zap(agent_t *ag, nta_leg_t *leg)
 
   nta_leg_destroy(leg);
 }
+
 
 int leg_callback_200(agent_t *ag,
 		     nta_leg_t *leg,
@@ -455,23 +461,14 @@ int magic_callback(agent_t *ag,
   return outgoing_callback(ag, orq, sip);
 }
 
-#include <time.h>
-
 void 
 nta_test_run(agent_t *ag)
 {
-  time_t now = time(NULL);
-
   for (ag->ag_status = 0; ag->ag_status < 200;) {
     if (tstflags & tst_verbatim) {
       fputs(".", stdout); fflush(stdout);
     }
     su_root_step(ag->ag_root, 500L);
-
-    if (!getenv("NTA_TEST_DEBUG") && time(NULL) > now + 5) {
-      fprintf(stderr, "nta_test_run: timeout\n");
-      return;
-    }
   }
 }
 
@@ -550,72 +547,6 @@ int test_init(agent_t *ag, char const *resolv_conf)
 					     ag,
 					     NTATAG_NO_DIALOG(1),
 					     TAG_END()));
-
-  {
-    /* Get and check parameters */
-    sip_contact_t const *aliases = (void *)-1;
-    msg_mclass_t *mclass = (void *)-1;
-    unsigned retry_timer_ini = -1;
-    unsigned retry_timer_max = -1;
-    unsigned linger_timer    = -1;
-    unsigned debug_drop_prob = -1;
-    int ua              = -1;
-    int user_via        = -1;
-    int extra_100       = -1;
-    int pass_100        = -1;
-    int timeout_408     = -1;
-    int pass_408        = -1;
-    int merge_482       = -1;
-    int cancel_2543     = -1;
-    int cancel_487      = -1;
-    int rel100          = -1;
-    int use_timestamp   = -1;
-    int use_naptr       = -1;
-    int use_srv         = -1;
-
-    TEST(nta_agent_get_params(ag->ag_agent,
-			      NTATAG_MCLASS_REF(mclass),
-			      NTATAG_ALIASES_REF(aliases),
-			      NTATAG_SIP_T1_REF(retry_timer_ini),
-			      NTATAG_SIP_T2_REF(retry_timer_max),
-			      NTATAG_SIP_T4_REF(linger_timer),
-			      NTATAG_DEBUG_DROP_PROB_REF(debug_drop_prob),
-			      NTATAG_UA_REF(ua),
-			      NTATAG_USER_VIA_REF(user_via),
-			      NTATAG_EXTRA_100_REF(extra_100),
-			      NTATAG_PASS_100_REF(pass_100),
-			      NTATAG_TIMEOUT_408_REF(timeout_408),
-			      NTATAG_PASS_408_REF(pass_408),
-			      NTATAG_MERGE_482_REF(merge_482),
-			      NTATAG_CANCEL_2543_REF(cancel_2543),
-			      NTATAG_CANCEL_487_REF(cancel_487),
-			      NTATAG_REL100_REF(rel100),
-			      NTATAG_USE_TIMESTAMP_REF(use_timestamp),
-			      NTATAG_USE_NAPTR_REF(use_naptr),
-			      NTATAG_USE_SRV_REF(use_srv),
-			      TAG_END()), 
-	 /* Number of parameters */ 19);
-
-    TEST(mclass, ag->ag_mclass);
-    TEST(aliases,         NULL);
-    TEST(retry_timer_ini, NTA_SIP_T1);
-    TEST(retry_timer_max, NTA_SIP_T2);
-    TEST(linger_timer,    NTA_SIP_T4);
-    TEST(debug_drop_prob, 0);
-    TEST(ua,              0);
-    TEST(user_via,        0);
-    TEST(extra_100,       0);
-    TEST(pass_100,        0);
-    TEST(timeout_408,     1);
-    TEST(pass_408,        0);
-    TEST(merge_482,       0);
-    TEST(cancel_2543,     0);
-    TEST(cancel_487,      1);
-    TEST(rel100,          0);
-    TEST(use_timestamp,   1);
-    TEST(use_naptr,       0);
-    TEST(use_srv,         0);
-  }
 
   {
     /* Initialize our headers */
@@ -788,58 +719,9 @@ int test_tports(agent_t *ag)
 
   BEGIN();
 
-  nta_agent_t *agent;
-  sip_contact_t const *m;
-
   *url = *ag->ag_contact->m_url;
   url->url_port = "*";
   url->url_params = "transport=tcp";
-
-  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
-  TEST_1(!nta_agent_via(agent));
-  TEST_1(!nta_agent_contact(agent));
-  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
-  TEST_1(v = nta_agent_via(agent));
-  TEST(strcasecmp(v->v_protocol, sip_transport_tcp), 0);
-  TEST_1(m = nta_agent_contact(agent));
-  TEST_S(m->m_url->url_params, "transport=tcp");
-  url->url_params = "transport=udp";
-  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
-  TEST_1(v = nta_agent_via(agent)); TEST_1(v = v->v_next);
-  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
-  TEST_VOID(nta_agent_destroy(agent));
-
-  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
-  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
-  TEST_1(v = nta_agent_via(agent)); TEST_1(!v->v_next);
-  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
-  TEST_1(m = nta_agent_contact(agent));
-  TEST_S(m->m_url->url_params, "transport=udp");
-  TEST_VOID(nta_agent_destroy(agent));
-
-  url->url_params = "transport=tcp,udp";
-
-  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
-  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
-  TEST_1(v = nta_agent_via(agent)); 
-  TEST(strcasecmp(v->v_protocol, sip_transport_tcp), 0);
-  TEST_1(v = v->v_next);  
-  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
-  TEST_1(m = nta_agent_contact(agent));
-  TEST_1(!m->m_url->url_params);
-  TEST_VOID(nta_agent_destroy(agent));
-
-  url->url_params = NULL;
-
-  TEST_1(agent = nta_agent_create(ag->ag_root, NONE, NULL, NULL, TAG_END()));
-  TEST_1(nta_agent_add_tport(agent, (url_string_t *)url, TAG_END()) == 0);
-  TEST_1(v = nta_agent_via(agent)); 
-  TEST(strcasecmp(v->v_protocol, sip_transport_udp), 0);
-  TEST_1(v = v->v_next);
-  TEST(strcasecmp(v->v_protocol, sip_transport_tcp), 0);
-  TEST_1(m = nta_agent_contact(agent));
-  TEST_1(!m->m_url->url_params);
-  TEST_VOID(nta_agent_destroy(agent));
 
   url->url_params = "transport=udp";
 
@@ -880,12 +762,12 @@ int test_tports(agent_t *ag)
      * Send a message from default leg to default leg 
      */
     char const p_acid[] = "P-Access-Network-Info: IEEE-802.11g\n";
-    msg_t *msg;
 
     ag->ag_expect_leg = ag->ag_default_leg;
+
     TEST_1(ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, 
-			       outgoing_callback_with_api_test, ag,
+			       outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
 			       (url_string_t *)ag->ag_contact->m_url,
@@ -896,20 +778,15 @@ int test_tports(agent_t *ag)
 			       SIPTAG_HEADER_STR(p_acid),
 			       TAG_END()));
 
-    TEST(nta_outgoing_getresponse(ag->ag_orq), NULL);
-    TEST_1(msg = nta_outgoing_getrequest(ag->ag_orq));
-    TEST_S(nta_outgoing_method_name(ag->ag_orq), "MESSAGE");
-    msg_destroy(msg);
-
-    TEST(nta_outgoing_delay(ag->ag_orq), UINT_MAX);
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST(ag->ag_orq, NULL);
     TEST(ag->ag_latest_leg, ag->ag_default_leg);
     TEST_1(ag->ag_request);
+
+    nta_leg_bind(ag->ag_default_leg, leg_callback_200, ag);
   }
 
-#if HAVE_SIGCOMP
   /* Test 0.1.1
    * Send a message from Bob to Alice using SIGCOMP and TCP
    */
@@ -949,7 +826,6 @@ int test_tports(agent_t *ag)
     TEST(ag->ag_orq, NULL);
     TEST(ag->ag_latest_leg, ag->ag_server_leg);
   }
-#endif
 
   /* Test 0.2
    * Send a message from Bob to Alice
@@ -3037,493 +2913,50 @@ int test_fix_467(agent_t *ag)
   ag->ag_call_leg = NULL;
 }
 
-int test_nta(agent_t *ag)
+#if HAVE_ALARM
+#include <unistd.h>
+#include <signal.h>
+
+static RETSIGTYPE sig_alarm(int s)
 {
-  BEGIN();
-  END();
+  fprintf(stderr, "%s: FAIL! test timeout!\n", name);
+  exit(1);
 }
-
-static int test_dialog_matching(void)
-{
-  nta_agent_t *nta;
-  su_root_t *root;
-  su_home_t home[1];
-  nta_leg_t *leg, *dialog1, *dialog2, *dst, *defdst;
-  sip_from_t *a1, *a2;
-  sip_call_id_t *i;
-
-  BEGIN();
-
-  memset(home, 0, sizeof home);
-  home->suh_size = sizeof home;
-  su_home_init(home);
-
-  TEST_1(root = su_root_create(NULL));
-
-  TEST_1(nta = nta_agent_create(root,
-				(url_string_t *)"sip:*:*",
-				NULL,
-				NULL,
-				TAG_END()));
-
-  TEST_1(dst = nta_leg_tcreate(nta, NULL, NULL, 
-				NTATAG_NO_DIALOG(1),
-				URLTAG_URL("sip:joe@localhost"),
-				TAG_END()));
-
-  TEST_1(defdst = nta_leg_tcreate(nta, NULL, NULL, 
-				  NTATAG_NO_DIALOG(1),
-				  TAG_END()));
-
-  TEST_1(dialog1 = 
-	 nta_leg_tcreate(nta, NULL, NULL, 
-			 URLTAG_URL("sip:pc.al.us"),
-			 SIPTAG_CALL_ID_STR("foobarbaz"),
-			 /* local */
-			 SIPTAG_FROM_STR("<sip:me.myself.i@foo.com>;tag=foo"),
-			 /* remote */
-			 SIPTAG_TO_STR("<sip:joe.boy@al.us>"),
-			 TAG_END()));
-
-  TEST_1(a1 = sip_from_make(home, "<sip:me.myself.i@foo.com>;tag=foo"));
-  TEST_1(a2 = sip_from_make(home, "<sip:joe.boy@al.us>;tag=al"));
-  TEST_1(i = sip_call_id_make(home, "foobarbaz"));
-
-  TEST_1(dialog2 = 
-	 nta_leg_tcreate(nta, NULL, NULL, 
-			 SIPTAG_CALL_ID(i),
-			 /* local */
-			 SIPTAG_FROM(a2),
-			 /* remote */
-			 SIPTAG_TO(a1),
-			 TAG_END()));
-
-  TEST_1(!nta_leg_by_dialog(nta, NULL, NULL, 
-			    a1->a_tag, a1->a_url, a2->a_tag, a2->a_url));
-  TEST_1(!nta_leg_by_dialog(NULL, NULL, i, 
-			    a1->a_tag, a1->a_url, a2->a_tag, a2->a_url));
-  TEST_1(!nta_leg_by_dialog(nta, (void *)"sip:no.such.url", i, 
-			    a2->a_tag, a2->a_url, a1->a_tag, a1->a_url));
-  TEST_1(!nta_leg_by_dialog(nta, a2->a_url, i, 
-			    a2->a_tag, a2->a_url, a1->a_tag, a1->a_url));
-
-  TEST(leg = nta_leg_by_dialog(nta, NULL, i, 
-			       /* local */ a1->a_tag, a1->a_url, 
-			       /* remote */ a2->a_tag, a2->a_url),
-       dialog2);
-  TEST(leg = nta_leg_by_dialog(nta, (void *)"sip:no.such.url", i, 
-			       /* local */ a1->a_tag, a1->a_url, 
-			       /* remote */ a2->a_tag, a2->a_url),
-       dialog2);
-  TEST(leg = nta_leg_by_dialog(nta, a2->a_url, i, 
-			       a1->a_tag, a1->a_url, a2->a_tag, a2->a_url),
-       dialog2);
-
-  TEST(leg = nta_leg_by_dialog(nta, NULL, i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  /* local tag is required because there is tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, "xyzzy", a1->a_url),
-       NULL);
-  /* local URI is ignored because we have tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a2->a_url),
-       dialog1);
-
-  /* remote tag is ignored because there is no tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       "xyzzy", a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  /* remote url is required */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a1->a_url, a1->a_tag, a1->a_url),
-       NULL);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, NULL, a1->a_tag, a1->a_url),
-       dialog1);
-
-  /* local url is used if there is no local tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, NULL, NULL),
-       NULL);
-
-  nta_leg_tag(dialog1, "al");
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, "xyzzy", a1->a_url),
-       NULL);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, NULL, a1->a_url),
-       NULL);
-		
-  nta_leg_destroy(defdst);
-  nta_leg_destroy(dst);
-  nta_leg_destroy(dialog1);
-  nta_leg_destroy(dialog2);
-	    
-  TEST_VOID(nta_agent_destroy(nta)); 
-  TEST_VOID(su_root_destroy(root));
-  TEST_VOID(su_home_deinit(home));
-
-  END();
-
-}
-
-/** Test API for errors */
-static int test_api_errors(void)
-{
-  nta_agent_t *nta;
-  su_root_t *root;
-  su_home_t home[1];
-
-  BEGIN();
-
-  memset(home, 0, sizeof home);
-  home->suh_size = sizeof home;
-  su_home_init(home);
-
-  TEST(nta_agent_create(NULL,
-			(url_string_t *)"sip:*:*",
-			NULL,
-			NULL,
-			TAG_END()), NULL);
-
-  TEST_1(root = su_root_create(NULL));
-
-  TEST(nta_agent_create(root,
-			(url_string_t *)"http://localhost:*/invalid/bind/url",
-			NULL,
-			NULL,
-			TAG_END()), NULL);
-
-  TEST(nta_agent_create(root,
-			(url_string_t *)"sip:*:*;transport=XXX",
-			NULL,
-			NULL,
-			TAG_END()), NULL);
-
-  TEST_1(nta = nta_agent_create(root,
-				(url_string_t *)"sip:*:*",
-				NULL,
-				NULL,
-				TAG_END()));
-
-  TEST_VOID(nta_agent_destroy(NULL));
-  TEST_VOID(nta_agent_destroy(nta));
-
-  TEST_1(nta = nta_agent_create(root,
-				(url_string_t *)"sip:*:*",
-				NULL,
-				(void *)test_api_errors,
-				TAG_END()));
-
-  TEST(nta_agent_contact(NULL), NULL);
-  TEST(nta_agent_via(NULL), NULL);
-  TEST_S(nta_agent_version(nta), nta_agent_version(NULL));
-  TEST(nta_agent_magic(NULL), NULL);
-  TEST(nta_agent_magic(nta), (void *)test_api_errors);
-  TEST(nta_agent_add_tport(NULL, NULL, TAG_END()), -1);
-  TEST(nta_agent_newtag(home, "tag=%s", NULL), NULL);
-  TEST_1(nta_agent_newtag(home, "tag=%s", nta));
-  {
-    unsigned preload = 0;
-    char const *s = NULL;
-#if HAVE_SIGCOMP
-    int have_sigcomp = 1;
-#else
-    int have_sigcomp = 0;
 #endif
 
-    TEST(nta_agent_set_params(NULL, 
-			      NTATAG_PRELOAD(2048),
-			      TAG_END()), -1);
-    TEST(nta_agent_set_params(nta, 
-			      NTATAG_PRELOAD(2048),
-			      TAG_END()), 1);
-
-    TEST(nta_agent_set_params(nta, 
-			      NTATAG_SIGCOMP_OPTIONS("sip"),
-			      TAG_END()), have_sigcomp);
-    TEST(nta_agent_set_params(nta, 
-			      NTATAG_SIGCOMP_OPTIONS(","),
-			      TAG_END()), -have_sigcomp);
-
-    TEST(nta_agent_get_params(NULL, 
-			      NTATAG_PRELOAD_REF(preload),
-			      TAG_END()), -1);
-    TEST(nta_agent_get_params(nta, 
-			      NTATAG_PRELOAD_REF(preload),
-			      TAG_END()), 1);
-    TEST(preload, 2048);
-    TEST(nta_agent_set_params(nta, 
-			      NTATAG_SIGCOMP_OPTIONS("sip;dms=16384"),
-			      TAG_END()), have_sigcomp);
-    TEST(nta_agent_get_params(nta, 
-			      NTATAG_SIGCOMP_OPTIONS_REF(s),
-			      TAG_END()), have_sigcomp);
-    if (have_sigcomp)
-      TEST_S(s, "sip;dms=16384");
-  }
-
-  {
-    uint32_t irq_hash = -1, orq_hash = -1, leg_hash = -1;
-    uint32_t recv_msg = -1, sent_msg = -1;
-    uint32_t recv_request = -1, recv_response = -1;
-    uint32_t bad_message = -1, bad_request = -1, bad_response = -1;
-    uint32_t drop_request = -1, drop_response = -1;
-    uint32_t client_tr = -1, server_tr = -1, dialog_tr = -1;
-    uint32_t acked_tr = -1, canceled_tr = -1;
-    uint32_t trless_request = -1, trless_to_tr = -1, trless_response = -1;
-    uint32_t trless_200 = -1, merged_request = -1;
-    uint32_t sent_request = -1, sent_response = -1;
-    uint32_t retry_request = -1, retry_response = -1, recv_retry = -1;
-    uint32_t tout_request = -1, tout_response = -1;
-
-    TEST(nta_agent_get_stats(NULL,
-			     NTATAG_S_TOUT_REQUEST_REF(tout_request),
-			     NTATAG_S_TOUT_RESPONSE_REF(tout_response),
-			     TAG_END()), -1);
-
-    TEST(nta_agent_get_stats(nta,
-			     NTATAG_S_IRQ_HASH_REF(irq_hash),
-			     NTATAG_S_ORQ_HASH_REF(orq_hash),
-			     NTATAG_S_LEG_HASH_REF(leg_hash),
-			     NTATAG_S_RECV_MSG_REF(recv_msg),
-			     NTATAG_S_SENT_MSG_REF(sent_msg),
-			     NTATAG_S_RECV_REQUEST_REF(recv_request),
-			     NTATAG_S_RECV_RESPONSE_REF(recv_response),
-			     NTATAG_S_BAD_MESSAGE_REF(bad_message),
-			     NTATAG_S_BAD_REQUEST_REF(bad_request),
-			     NTATAG_S_BAD_RESPONSE_REF(bad_response),
-			     NTATAG_S_DROP_REQUEST_REF(drop_request),
-			     NTATAG_S_DROP_RESPONSE_REF(drop_response),
-			     NTATAG_S_CLIENT_TR_REF(client_tr),
-			     NTATAG_S_SERVER_TR_REF(server_tr),
-			     NTATAG_S_DIALOG_TR_REF(dialog_tr),
-			     NTATAG_S_ACKED_TR_REF(acked_tr),
-			     NTATAG_S_CANCELED_TR_REF(canceled_tr),
-			     NTATAG_S_TRLESS_REQUEST_REF(trless_request),
-			     NTATAG_S_TRLESS_TO_TR_REF(trless_to_tr),
-			     NTATAG_S_TRLESS_RESPONSE_REF(trless_response),
-			     NTATAG_S_TRLESS_200_REF(trless_200),
-			     NTATAG_S_MERGED_REQUEST_REF(merged_request),
-			     NTATAG_S_SENT_REQUEST_REF(sent_request),
-			     NTATAG_S_SENT_RESPONSE_REF(sent_response),
-			     NTATAG_S_RETRY_REQUEST_REF(retry_request),
-			     NTATAG_S_RETRY_RESPONSE_REF(retry_response),
-			     NTATAG_S_RECV_RETRY_REF(recv_retry),
-			     NTATAG_S_TOUT_REQUEST_REF(tout_request),
-			     NTATAG_S_TOUT_RESPONSE_REF(tout_response),
-			     TAG_END()), 29);
-    TEST_1(irq_hash == HTABLE_MIN_SIZE);
-    TEST_1(orq_hash == HTABLE_MIN_SIZE);
-    TEST_1(leg_hash == HTABLE_MIN_SIZE);
-    TEST_1(recv_msg == 0);
-    TEST_1(sent_msg == 0);
-    TEST_1(recv_request == 0);
-    TEST_1(recv_response == 0);
-    TEST_1(bad_message == 0);
-    TEST_1(bad_request == 0);
-    TEST_1(bad_response == 0);
-    TEST_1(drop_request == 0);
-    TEST_1(drop_response == 0);
-    TEST_1(client_tr == 0);
-    TEST_1(server_tr == 0);
-    TEST_1(dialog_tr == 0);
-    TEST_1(acked_tr == 0);
-    TEST_1(canceled_tr == 0);
-    TEST_1(trless_request == 0);
-    TEST_1(trless_to_tr == 0);
-    TEST_1(trless_response == 0);
-    TEST_1(trless_200 == 0);
-    TEST_1(merged_request == 0);
-    TEST_1(sent_request == 0);
-    TEST_1(sent_response == 0);
-    TEST_1(retry_request == 0);
-    TEST_1(retry_response == 0);
-    TEST_1(recv_retry == 0);
-    TEST_1(tout_request == 0);
-    TEST_1(tout_response == 0);
-  }			     
-
-  {
-    msg_t *msg;
-    TEST_1(nta_msg_create(NULL, 0) == NULL);
-    TEST(nta_msg_complete(NULL), -1);
-
-    TEST(nta_msg_response_complete(NULL, NULL, 800, "foo"), -1);
-    TEST(nta_msg_request_complete(NULL, NULL, sip_method_unknown, "FOO", NULL), -1);
-    TEST_1(msg = nta_msg_create(nta, 0));
-    TEST(nta_msg_complete(msg), -1);
-    TEST(nta_msg_response_complete(msg, NULL, 800, "foo"), -1);
-    TEST(nta_msg_request_complete(msg, NULL, sip_method_unknown, "FOO", NULL), -1);
-    TEST(nta_is_internal_msg(NULL), 0);
-    TEST(nta_is_internal_msg(msg), 0);
-    TEST_1(msg_set_flags(msg, NTA_INTERNAL_MSG));
-    TEST(nta_is_internal_msg(msg), 1);
-    TEST_VOID(msg_destroy(msg));
-  }
-
-  TEST(nta_leg_tcreate(NULL, NULL, NULL, TAG_END()), NULL);
-  TEST_VOID(nta_leg_destroy(NULL));
-  TEST(nta_leg_magic(NULL, NULL), NULL);
-  TEST_VOID(nta_leg_bind(NULL, NULL, NULL));
-  TEST(nta_leg_tag(NULL, "fidsafsa"), NULL);
-  TEST(nta_leg_rtag(NULL, "fidsafsa"), NULL);
-  TEST(nta_leg_get_tag(NULL), NULL);
-  TEST(nta_leg_client_route(NULL, NULL, NULL), -1);
-  TEST(nta_leg_server_route(NULL, NULL, NULL), -1);
-  TEST(nta_leg_by_uri(NULL, NULL), NULL);
-  TEST(nta_leg_by_dialog(NULL,  NULL, NULL, NULL, NULL, NULL, NULL), NULL);
-  TEST(nta_leg_by_dialog(nta, NULL, NULL, NULL, NULL, NULL, NULL), NULL);
-
-  TEST(nta_outgoing_mcreate(NULL, NULL, NULL, NULL, NULL, TAG_END()), NULL);
-  TEST(nta_outgoing_tcancel(NULL, NULL, NULL, TAG_END()), NULL);
-  TEST(nta_outgoing_method_name(NULL), NULL);
-  TEST(nta_outgoing_getresponse(NULL), NULL);
-  TEST(nta_outgoing_getrequest(NULL), NULL);
-
-#if 0
-void nta_incoming_bind(nta_incoming_t *irq, 
-		       nta_ack_cancel_f *callback,
-		       nta_incoming_magic_t *imagic);
-
-nta_incoming_magic_t *nta_incoming_magic(nta_incoming_t *irq, 
-					 nta_ack_cancel_f *callback);
-
-nta_incoming_t *nta_incoming_find(nta_agent_t const *agent, 
-				  sip_t const *sip,
-				  sip_via_t const *v);
-
-char const *nta_incoming_tag(nta_incoming_t *irq, char const *tag);
-
-int nta_incoming_status(nta_incoming_t const *irq);
-sip_method_t nta_incoming_method(nta_incoming_t const *irq);
-url_t const *nta_incoming_url(nta_incoming_t const *irq);
-uint32_t nta_incoming_cseq(nta_incoming_t const *irq);
-
-int nta_incoming_treply(nta_incoming_t *ireq, 
-			int status, char const *phrase, 
-			tag_type_t tag, tag_value_t value, ...);
-
-int nta_incoming_mreply(nta_incoming_t *irq, msg_t *msg);
-
-void nta_incoming_destroy(nta_incoming_t *irq);
-
-/* ----------------------------------------------------------------------
- * 7) Prototypes for outgoing transactions
- */
-typedef int nta_response_f(nta_outgoing_magic_t *magic,
-			   nta_outgoing_t *request,
-			   sip_t const *sip);
-
-nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
-				     nta_response_f *callback,
-				     nta_outgoing_magic_t *magic,
-				     url_string_t const *route_url,
-				     sip_method_t method,
-				     char const *method_name,
-				     url_string_t const *request_uri,
-				     tag_type_t tag, tag_value_t value, ...);
-
-nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
-				     nta_response_f *callback,
-				     nta_outgoing_magic_t *magic,
-				     url_string_t const *route_url,
-				     msg_t *msg,
-				     tag_type_t tag, tag_value_t value, ...);
-
-int nta_outgoing_status(nta_outgoing_t const *orq);
-sip_method_t nta_outgoing_method(nta_outgoing_t const *orq);
-uint32_t nta_outgoing_cseq(nta_outgoing_t const *orq);
-
-unsigned nta_outgoing_delay(nta_outgoing_t const *orq);
-
-url_t const *nta_outgoing_request_uri(nta_outgoing_t const *orq);
-url_t const *nta_outgoing_route_uri(nta_outgoing_t const *orq);
-
-msg_t *nta_outgoing_getresponse(nta_outgoing_t *orq);
-msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq);
-
-nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq, 
-				    nta_response_f *callback,
-				    nta_outgoing_magic_t *magic,
-				    msg_param_t to_tag,
-				    sip_rseq_t const *rseq);
-
-int nta_outgoing_cancel(nta_outgoing_t *);
-
-nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq, 
-				     nta_response_f *callback,
-				     nta_outgoing_magic_t *magic,
-				     tag_type_t, tag_value_t, ...);
-
-void nta_outgoing_destroy(nta_outgoing_t *);
-
-nta_outgoing_t *nta_outgoing_find(nta_agent_t const *sa,
-				  msg_t const *msg,
-				  sip_t const *sip, 
-				  sip_via_t const *v);
-
-nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
-				   nta_outgoing_t *oorq,
-				   nta_response_f *callback,
-				   nta_outgoing_magic_t *magic,
-				   url_string_t const *route_url,
-				   sip_t const *response_to_prack,
-				   tag_type_t, tag_value_t, ...);
-
-nta_reliable_t *nta_reliable_treply(nta_incoming_t *ireq,
-				    nta_prack_f *callback,
-				    nta_reliable_magic_t *rmagic,
-				    int status, char const *phrase, 
-				    tag_type_t tag, 
-				    tag_value_t value, ...);
-
-nta_reliable_t *nta_reliable_mreply(nta_incoming_t *irq, 
-				    nta_prack_f *callback,
-				    nta_reliable_magic_t *rmagic,
-				    msg_t *msg);
-
-void nta_reliable_destroy(nta_reliable_t *);
-
-#endif  
-
-  TEST_VOID(nta_agent_destroy(nta)); 
-  TEST_VOID(su_root_destroy(root));
-  TEST_VOID(su_home_deinit(home));
-
-  END();
-}
+static
+char const nta_test_usage[] = 
+  "usage: %s OPTIONS\n"
+  "where OPTIONS are\n"
+  "   -v | --verbose    be verbose\n"
+  "   -q | --quiet      be quiet\n"
+  "   -1                quit on first error\n"
+  "   -l level          set logging level (0 by default)\n"
+  "   -p uri            specify uri of outbound proxy\n"
+  "   -m uri            bind to local uri\n"
+  "   --attach          print pid, wait for a debugger to be attached\n"
+#if HAVE_ALARM
+  "   --no-alarm        don't ask for guard ALARM\n"
+#endif
+  ;
 
 void usage(void)
 {
-  fprintf(stderr, 
-	  "usage: %s [-v|-q] [-l level] [-p outbound-proxy-uri]\n", 
-	  name);
+  fprintf(stderr, nta_test_usage, name);
   exit(1);
 }
 
 int main(int argc, char *argv[])
 {
   int retval = 0, quit_on_single_failure = 0;
-  int i, o_attach = 0;
+  int i, o_attach = 0, o_alarm = 1;
 
   agent_t ag[1] = {{ { SU_HOME_INIT(ag) }, 0, NULL }};
 
   for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
+    if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0)
       tstflags |= tst_verbatim;
-    else if (strcmp(argv[i], "-q") == 0)
+    else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
       tstflags &= ~tst_verbatim;
     else if (strcmp(argv[i], "-1") == 0)
       quit_on_single_failure = 1;
@@ -3563,6 +2996,9 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[i], "--attach") == 0) {
       o_attach = 1;
     }
+    else if (strcmp(argv[i], "--no-alarm") == 0) {
+      o_alarm = 0;
+    }
     else if (strcmp(argv[i], "-") == 0) {
       i++; break;
     }
@@ -3579,6 +3015,12 @@ int main(int argc, char *argv[])
     printf("<Press RETURN to continue>\n");
     fgets(line, sizeof line, stdin);
   }
+#if HAVE_ALARM
+  else if (o_alarm) {
+    alarm(60);
+    signal(SIGALRM, sig_alarm);
+  }
+#endif
 
   su_init();
 
@@ -3588,24 +3030,21 @@ int main(int argc, char *argv[])
   }
 
 #define SINGLE_FAILURE_CHECK()						\
-  do { if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
+  do { fflush(stdout);							\
+    if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
   } while(0)
 
-  retval |= test_api_errors(); SINGLE_FAILURE_CHECK();
-  retval |= test_dialog_matching(); SINGLE_FAILURE_CHECK();
-
-  retval |= test_init(ag, argv[i]); fflush(stdout); SINGLE_FAILURE_CHECK();
+  retval |= test_init(ag, argv[i]); SINGLE_FAILURE_CHECK();
   if (retval == 0) {
-    retval |= test_tports(ag); fflush(stdout); SINGLE_FAILURE_CHECK();
-    retval |= test_resolv(ag, argv[i]); fflush(stdout); SINGLE_FAILURE_CHECK();
-    retval |= test_routing(ag); fflush(stdout); SINGLE_FAILURE_CHECK();
-    retval |= test_dialog(ag); fflush(stdout); SINGLE_FAILURE_CHECK();
-    retval |= test_call(ag); fflush(stdout); SINGLE_FAILURE_CHECK();
-    retval |= test_prack(ag); fflush(stdout); SINGLE_FAILURE_CHECK();
-    retval |= test_fix_467(ag); fflush(stdout); SINGLE_FAILURE_CHECK();
-    retval |= test_nta(ag); fflush(stdout); SINGLE_FAILURE_CHECK();
+    retval |= test_tports(ag); SINGLE_FAILURE_CHECK();
+    retval |= test_resolv(ag, argv[i]); SINGLE_FAILURE_CHECK();
+    retval |= test_routing(ag); SINGLE_FAILURE_CHECK();
+    retval |= test_dialog(ag); SINGLE_FAILURE_CHECK();
+    retval |= test_call(ag); SINGLE_FAILURE_CHECK();
+    retval |= test_prack(ag); SINGLE_FAILURE_CHECK();
+    retval |= test_fix_467(ag); SINGLE_FAILURE_CHECK();
   }
-  retval |= test_deinit(ag); fflush(stdout); 
+  retval |= test_deinit(ag); fflush(stdout);
 
   su_home_deinit(ag->ag_home);
 
