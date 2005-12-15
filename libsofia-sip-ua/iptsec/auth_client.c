@@ -172,8 +172,8 @@ int auc_challenge(auth_client_t **auc_list,
   int retval = 0;
 
   for (; ch; ch = ch->au_next) {
-    msg_param_t scheme = ch->au_scheme;
-    msg_param_t realm = msg_params_find(ch->au_params, "realm=");
+    char const *scheme = ch->au_scheme;
+    char const *realm = msg_header_find_param(ch->au_common, "realm=");
     int updated = 0, updated0;
 
     if (!scheme || !realm)
@@ -251,10 +251,11 @@ int ca_challenge(auth_client_t *ca,
   ca->ca_challenge = msg_header_dup(home, (msg_header_t *)ch)->sh_auth;
   ca->ca_challenge_class = ca->ca_challenge->au_common->h_class;
   ca->ca_scheme = ca->ca_challenge->au_scheme;
-  ca->ca_realm = msg_params_find(ca->ca_challenge->au_params, "realm=");
+  ca->ca_realm = msg_header_find_param(ca->ca_challenge->au_common, "realm=");
 #else
   ca->ca_scheme = su_strdup(home, ch->au_scheme);
-  ca->ca_realm = su_strdup(home, msg_params_find(ch->au_params, "realm="));
+  ca->ca_realm = su_strdup(home, 
+			   msg_header_find_param(ch->au_common, "realm"));
 #endif
 
   if (auth_digest_challenge_get(home, ac, ch->au_params) < 0)

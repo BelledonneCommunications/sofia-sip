@@ -1182,7 +1182,7 @@ msg_auth_t *auth_mod_credentials(msg_auth_t *auth,
     if (!realm)
       return auth;
 
-    arealm = msg_params_find(auth->au_params, "realm=");
+    arealm = msg_header_find_param(auth->au_common, "realm=");
 
     if (!arealm)
       continue;
@@ -1223,7 +1223,7 @@ msg_auth_t *auth_digest_credentials(msg_auth_t *auth,
     if (realm) {
       int cmp = 1;
 
-      arealm = msg_params_find(auth->au_params, "realm=");
+      arealm = msg_header_find_param(auth->au_common, "realm=");
       if (!arealm)
 	continue;
 
@@ -1254,7 +1254,7 @@ msg_auth_t *auth_digest_credentials(msg_auth_t *auth,
     if (opaque) {
       int cmp = 1;
 
-      aopaque = msg_params_find(auth->au_params, "opaque=");
+      aopaque = msg_header_find_param(auth->au_common, "opaque=");
       if (!aopaque)
 	continue;
 

@@ -465,6 +465,30 @@ int test_header_parsing(void)
     su_home_deinit(home);
   }
 
+  {
+    /* Test parameter handling */
+    su_home_t home[1] = { SU_HOME_INIT(home) };
+    msg_content_encoding_t *ce;
+
+    ce = msg_content_encoding_make(home, "zip, zap, zup, lz, zl, zz, ll");
+    TEST_1(ce);
+    TEST_S(msg_header_find_param(ce->k_common, "zz"), "");
+    TEST(msg_header_find_param(ce->k_common, "k"), NULL);
+    TEST(msg_header_add_param(home, ce->k_common, "zip"), 0);
+    TEST(msg_header_remove_param(ce->k_common, "zip"), 1);
+    TEST_S(msg_header_find_param(ce->k_common, "zip"), "");
+    TEST(msg_header_remove_param(ce->k_common, "zip"), 1);
+    TEST(msg_header_find_param(ce->k_common, "zip"), NULL);
+    TEST(msg_header_remove_param(ce->k_common, "zip"), 0);
+    TEST(msg_header_replace_param(home, ce->k_common, "zip=zap"), 0);
+    TEST_S(msg_header_find_param(ce->k_common, "zip=1"), "zap");
+    TEST(msg_header_replace_param(home, ce->k_common, "zip=zup"), 0);
+    TEST_S(msg_header_find_param(ce->k_common, "zip"), "zup");
+
+    su_home_deinit(home);
+  }
+
+
   END();
 }
 

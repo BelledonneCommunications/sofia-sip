@@ -1354,7 +1354,7 @@ HTTP_HEADER_CLASS_G(server, "Server", single);
 static inline
 void http_te_update(http_te_t *te)
 {
-  te->te_q = msg_params_find(te->te_params, "q=");
+  te->te_q = msg_header_find_param(te->te_common, "q");
 }
 
 int http_te_d(su_home_t *home, msg_header_t *h, char *s, int slen)

@@ -2343,8 +2343,8 @@ int msg_header_add_dup(msg_t *msg,
       msg_header_t *h = *hh;
       msg_param_t **d, **s;
     
-      d = msg_header_params(h); assert(d);
-      s = msg_header_params((msg_header_t *)src);
+      d = msg_header_params(h->sh_common); assert(d);
+      s = msg_header_params(src->sh_common);
 
       if (!s || !*s)
 	return 0;
@@ -2416,8 +2416,8 @@ int _msg_header_add_dup_as(msg_t *msg,
     msg_header_t *h = *hh;
     msg_param_t **d, **s;
     
-    d = msg_header_params(h); assert(d);
-    s = msg_header_params((msg_header_t *)src);
+    d = msg_header_params(h->sh_common); assert(d);
+    s = msg_header_params(src->sh_common);
 
     if (!s || !*s)
       return 0;
@@ -2464,7 +2464,7 @@ int msg_header_add_make(msg_t *msg,
 
     skip_lws(&s);
 
-    d = msg_header_params(h); assert(d);
+    d = msg_header_params(h->sh_common); assert(d);
 
     msg_fragment_clear(h->sh_common);
 

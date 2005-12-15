@@ -417,7 +417,7 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
   msg->m_tail = &msg->m_chain;
 
   /* Get boundary from Content-Type */
-  if (c && (param = msg_params_find(c->c_params, "boundary=")))
+  if (c && (param = msg_header_find_param(c->c_common, "boundary=")))
     boundary = msg_multipart_boundary(msg_home(msg), param);
   else
     boundary = msg_multipart_search_boundary(msg_home(msg), p, len);
@@ -605,7 +605,7 @@ int msg_multipart_complete(su_home_t *home,
   if (c == NULL || mp == NULL)
     return (errno = EINVAL), -1;
 
-  if (!(b = msg_params_find(c->c_params, "boundary="))) {
+  if (!(b = msg_header_find_param(c->c_common, "boundary="))) {
     /* Generate boundary */
     enum { tlen = 16 * 4 / 3 };
     char token[sizeof("boundary=") + tlen + 1];
@@ -1189,7 +1189,7 @@ char *msg_accept_dup_one(msg_header_t *dst, msg_header_t const *src,
 static inline
 void msg_accept_update(msg_accept_t *ac)
 {
-  ac->ac_q = msg_params_find(ac->ac_params, "q=");
+  ac->ac_q = msg_header_find_param(ac->ac_common, "q=");
 }
 
 /* ====================================================================== */

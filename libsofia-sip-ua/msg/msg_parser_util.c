@@ -762,6 +762,65 @@ int msg_hostport_d(char **ss,
   return 0;
 }
 
+/** Find a header parameter.
+ *
+ * Searches for given parameter @a name from the header. If parameter is
+ * found, it returns a non-NULL pointer to the parameter value. If there is
+ * no value for the name (in form "name" or "name=value"), the returned pointer
+ * points to a NUL character.
+ *
+ * @param params list (or vector) of parameters 
+ * @param name  parameter name (with or without "=" sign)
+ *
+ * @return
+ * A pointer to parameter value, or NULL if parameter was not found.
+ */
+char const *msg_header_find_param(msg_common_t const *h, char const *name)
+{
+  if (h && h->h_class->hc_params) {
+    msg_param_t const **params = (msg_param_t const **)
+      ((char *)h + h->h_class->hc_params);
+    return msg_params_find(*params, name);
+  }
+
+  return NULL;
+}
+
+int msg_header_add_param(su_home_t *home, msg_common_t *h, char const *param)
+{
+  if (h && h->h_class->hc_params) {
+    msg_param_t **params = (msg_param_t **)
+      ((char *)h + h->h_class->hc_params);
+    return msg_params_add(home, params, param);
+  }
+
+  return -1;
+}
+
+int msg_header_replace_param(su_home_t *home, 
+			     msg_common_t *h, 
+			     char const *param)
+{
+  if (h && h->h_class->hc_params) {
+    msg_param_t **params = (msg_param_t **)
+      ((char *)h + h->h_class->hc_params);
+    return msg_params_replace(home, params, param);
+  }
+
+  return -1;
+}
+
+int msg_header_remove_param(msg_common_t *h, char const *name)
+{
+  if (h && h->h_class->hc_params) {
+    msg_param_t **params = (msg_param_t **)
+      ((char *)h + h->h_class->hc_params);
+    return msg_params_remove(*params, name);
+  }
+
+  return -1;
+}
+
 /** Find a parameter from a parameter list.
  *
  * Searches for given parameter @a token from the parameter list. If
@@ -870,6 +929,9 @@ int msg_params_replace(su_home_t *home,
 
 /** Remove a parameter from a list. 
  *
+ * @retval 1 if parameter was removed
+ * @retval 0 if parameter was not found
+ * @retval -1 upon an error
  */
 int msg_params_remove(msg_param_t *params, msg_param_t param)
 {

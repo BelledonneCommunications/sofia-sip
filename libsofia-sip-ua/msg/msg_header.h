@@ -165,10 +165,8 @@ static inline void msg_fragment_clear(msg_common_t *h)
 }
 /** Pointer to header parameters. */
 static inline 
-msg_param_t **msg_header_params(msg_header_t *h0)
+msg_param_t **msg_header_params(msg_common_t const *h)
 {
-  msg_common_t *h = (msg_common_t *)h0;
-
   if (h && h->h_class->hc_params) {
     return (msg_param_t **)((char *)h + h->h_class->hc_params);
   }
@@ -176,9 +174,15 @@ msg_param_t **msg_header_params(msg_header_t *h0)
 }
 #else
 #define msg_fragment_clear(h) ((h)->h_data = NULL, (h)->h_len = 0)
-#define msg_header_params(h) (((h) && (h)->sh_class->hc_params) ? \
- (msg_param_t **)((char *)(h) + (h)->sh_class->hc_params) : NULL)
+#define msg_header_params(h) \
+ (((h) && ((msg_common_t *)h)->h_class->hc_params) ? \
+  (msg_param_t **)((char *)(h) + ((msg_common_t *)h)->h_class->hc_params) : NULL)
 #endif
+
+char const *msg_header_find_param(msg_common_t const *h, char const *name);
+int msg_header_add_param(su_home_t *, msg_common_t *h, char const *param);
+int msg_header_replace_param(su_home_t *, msg_common_t *h, char const *param);
+int msg_header_remove_param(msg_common_t *h, char const *name);
 
 int msg_random_token(char token[], int tlen, void const *data, int dlen);
 
