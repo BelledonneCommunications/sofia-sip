@@ -60,8 +60,10 @@
 su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", SU_DEBUG) }; 
 
 enum {
-  STUN_TIMEOUT = 1000,
+  STUN_SENDTO_TIMEOUT = 1000,
+  STUN_CONNECT_TIMEOUT = 8000,
 };
+
 
 char const stun_nat_unknown[] = "NAT type undetermined",
   stun_open_internet[] = "Open Internet",
@@ -115,10 +117,24 @@ struct stun_socket_s
 {
   stun_engine_t *ss_engine;
   int            ss_sockfd;
+  int            ss_root_index;   /**< object index of su_root_register() */
 };
 
 char const stun_version[] = 
  "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
+
+
+
+static void stun_sendto_timer_cb(su_root_magic_t *magic, 
+				su_timer_t *t,
+				stun_engine_t *se);
+
+static void stun_connect_timer_cb(su_root_magic_t *magic, 
+				  su_timer_t *t,
+				  stun_engine_t *se);
+
+
+
 
 /**
  * Return su_root_t assigned to stun_engine_t.
@@ -245,7 +261,7 @@ stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
   stun->st_retry_count = 0;
 
   /* default timeout for next sendto() */
-  stun->st_timeout = STUN_TIMEOUT;
+  stun->st_timeout = STUN_SENDTO_TIMEOUT;
 
   /* alternative address set to 0 */
   
@@ -591,14 +607,13 @@ int stun_connect_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
 
     SU_DEBUG_3(("Shared secret NOT obtained from server. "	\
 		"Proceed without username/password.\n"));
-    self->st_state = stun_no_shared_secret_obtained;
+    self->st_state = stun_client_connection_failed;
     self->st_callback(self->st_context, self, self->st_state);
     return 0;
   }
 
-  self->st_state = stun_shared_secret_obtained;
+  self->st_state = stun_client_connected;
   self->st_callback(self->st_context, self, self->st_state);
-
 
   /* compose shared secret request */
   if (stun_make_sharedsecret_req(&req) != 0) {
@@ -644,7 +659,7 @@ int stun_connect_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
   }
 
   /* Inform application about the progress  */
-  self->st_state = stun_connect_success;
+  self->st_state = stun_client_connected;
   self->st_callback(self->st_context, self, self->st_state);
   
   SU_DEBUG_3(("TLS connection using %s\n", SSL_get_cipher(ssl)));
@@ -718,6 +733,28 @@ int stun_connect_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
   return 0;
 }
 
+
+static void stun_connect_timer_cb(su_root_magic_t *magic, 
+				  su_timer_t *t,
+				  stun_engine_t *se)
+{
+
+  SU_DEBUG_3(("%s: connect() timeout.\n", __func__));
+
+  if (se->st_state != stun_client_connecting) {
+    su_destroy_timer(t);
+    return;
+  }
+
+  su_root_deregister(se->st_root, se->st_root_index);
+  
+  se->st_state = stun_client_connection_timeout;
+  se->st_callback(se->st_context, se, se->st_state);
+
+  return;
+}
+
+
 /** Shared secret request/response processing */
 int stun_connect_start(stun_engine_t *se)
 {
@@ -728,6 +765,7 @@ int stun_connect_start(stun_engine_t *se)
   int family;
   su_addrinfo_t *ai = NULL;
   su_addrinfo_t *name;
+  su_timer_t *connect_timer = NULL;
 
   assert(se);
   ai = &se->st_pri_info;
@@ -775,14 +813,18 @@ int stun_connect_start(stun_engine_t *se)
   SU_DEBUG_3(("%s: %s: %s\n", __func__, "connect",
 	      su_strerror(err)));
 
-  if (su_root_register(se->st_root, 
-		       wait,
-		       stun_connect_wait, 
-		       se, 
-		       0) == -1) {
+  if ((se->st_root_index =
+       su_root_register(se->st_root, wait, stun_connect_wait, se, 0)) == -1) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
+
+  se->st_state = stun_client_connecting;
+
+  /* Create and start timer for connect() timeout */
+  SU_DEBUG_3(("%s: creating timeout timer for connect()\n", __func__));
+  connect_timer = su_timer_create(su_root_task(se->st_root), STUN_CONNECT_TIMEOUT);
+  su_timer_set(connect_timer, stun_connect_timer_cb, se);
 
   return 0;
 }
@@ -869,7 +911,7 @@ int stun_send_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
 
     /* Allow incoming events (recvfrom) */
     events = SU_WAIT_IN | SU_WAIT_ERR; /* | SU_WAIT_OUT */
-    su_root_eventmask(self->st_root, self->st_root_index, s, events);
+    su_root_eventmask(self->st_root, ss->ss_root_index, s, events);
   }
  
   /* receive response */
@@ -966,12 +1008,7 @@ int stun_send_wait(su_root_magic_t *m, su_wait_t *w, stun_engine_t *self)
 }
 
 
-static void stun_timer_callback(su_root_magic_t *magic, 
-				su_timer_t *t,
-				stun_engine_t *se);
-
-
-static void stun_timer_callback(su_root_magic_t *magic, 
+static void stun_sendto_timer_cb(su_root_magic_t *magic, 
 				su_timer_t *t,
 				stun_engine_t *se)
 {
@@ -992,7 +1029,7 @@ static void stun_timer_callback(su_root_magic_t *magic,
   /* check if max retry count has been exceeded */
   if (se->st_retry_count >= se->st_max_retries) {
     errno = ETIMEDOUT;
-    STUN_ERROR(errno, stun_timer_callback);
+    STUN_ERROR(errno, stun_sendto_timer_cb);
 
     stun_free_message(se->st_binding_request);
     free(se->st_binding_request), se->st_binding_request = NULL;
@@ -1000,7 +1037,7 @@ static void stun_timer_callback(su_root_magic_t *magic,
 
     /* set timeout to default value */
     se->st_retry_count = 0;
-    se->st_timeout = STUN_TIMEOUT;
+    se->st_timeout = STUN_SENDTO_TIMEOUT;
     su_timer_destroy(t);
 
     se->st_state = stun_client_timeout;
@@ -1016,7 +1053,7 @@ static void stun_timer_callback(su_root_magic_t *magic,
     return;
   }
 
-  su_timer_set_at(t, stun_timer_callback, se, su_time_add(su_now(), se->st_timeout *= 2));
+  su_timer_set_at(t, stun_sendto_timer_cb, se, su_time_add(su_now(), se->st_timeout *= 2));
   
   return;
 }
@@ -1063,7 +1100,7 @@ int stun_bind_test(stun_socket_t *ss,
   unsigned rmem = 0, wmem = 0;
 
   su_wait_t wait[1] = { SU_WAIT_INIT };
-  su_timer_t *send_timer = NULL;
+  su_timer_t *sendto_timer = NULL;
   char ipaddr[SU_ADDRSIZE + 2];
   struct sockaddr_in recv_addr;
 
@@ -1099,7 +1136,7 @@ int stun_bind_test(stun_socket_t *ss,
   }
 
   /* Register receiving function with events specified above */
-  if ((se->st_root_index = su_root_register(se->st_root,
+  if ((ss->ss_root_index = su_root_register(se->st_root,
 					    wait, stun_send_wait,
 					    se, 0)) < 0) {
     STUN_ERROR(errno, su_root_register);
@@ -1107,8 +1144,8 @@ int stun_bind_test(stun_socket_t *ss,
   }
 
   /* Create and start timer */
-  send_timer = su_timer_create(su_root_task(se->st_root), STUN_TIMEOUT);
-  su_timer_set(send_timer, stun_timer_callback, se);
+  sendto_timer = su_timer_create(su_root_task(se->st_root), STUN_SENDTO_TIMEOUT);
+  su_timer_set(sendto_timer, stun_sendto_timer_cb, se);
 
   se->st_state = stun_client_sending;
   /* se->st_callback(se->st_context, se, se->st_state); */

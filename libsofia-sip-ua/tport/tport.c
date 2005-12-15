@@ -6842,11 +6842,13 @@ void thrp_udp_send_report(su_root_magic_t *magic,
 
 
 #if HAVE_SOFIA_STUN
-int tport_stun_cb(tport_master_t *tport, stun_engine_t *se)
+void tport_stun_cb(tport_master_t *tport,
+		   stun_engine_t *se,
+		   stun_states_t event)
 {
 
   /* xxx - mela: here events that can be sent to nua_events */
-  return 0;
+  return;
 }
 #endif
 
@@ -6939,7 +6941,7 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
 {
   int nat_bound = 0, lifetime = 0, bind_res = 0;
   nat->stun_socket = stun_socket_create(nat->stun, s);
-  bind_res = stun_bind(nat->stun_socket, &su->su_sa, sulen, &lifetime);
+  bind_res = stun_bind(nat->stun_socket, /* &su->su_sa, sulen, */ &lifetime);
   if (bind_res >= 0) {
     SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
     nat->stun_enabled = 1;

@@ -59,16 +59,18 @@ extern char const stun_version[]; /**< Name and version of STUN software */
 typedef enum stun_states_e {
 
   /* stun engine errors */
-  stun_connect_error = -10,
-  stun_no_shared_secret_obtained = -9,
+  stun_client_connection_timeout = -10,
+  stun_client_connection_failed  =  -9,
+  stun_no_shared_secret_obtained =  -8,
 
   /* stun client errors */
-  stun_client_error = -5,            /**< Sending query to server */
+  stun_client_error    = -5,
   stun_client_timeout = -1,
 
   /* stun_engine related */
   stun_shared_secret_obtained = 0,
-  stun_connect_success,
+  stun_client_connecting,
+  stun_client_connected,
 
 
   /* client: stun socket */

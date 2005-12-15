@@ -1,3 +1,14 @@
+2005-12-15  Martti Mela  <martti.mela@nokia.com>
+
+	* STUN updated to work asynchronously.
+
+	* stun.c: added timeout timer for connect() (defaults to 8 seconds).
+
+	* stun_internal.h: added.
+
+	* stun.h: Does not contain functions that are interal. Cleaned the API. Specified
+	more states for stun_states_t.
+
 2005-11-19  Kai Vehmanen  <kaiv@.devtag.AUTHORS>
 
 	* stun.h (stun_set_uname_pwd): Changed from unsigned to signed 
