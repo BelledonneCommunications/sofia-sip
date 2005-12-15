@@ -90,6 +90,7 @@ static int test_route(void);
 static int test_request_disposition(void);
 static int test_caller_prefs(void);
 static int test_callerpref_scoring(void);
+static int test_sec_ext(void);
 static int test_utils(void);
 
 
@@ -155,6 +156,8 @@ int main(int argc, char *argv[])
   retval |= test_caller_prefs(); fflush(stdout);
   retval |= test_callerpref_scoring(); fflush(stdout);
   retval |= test_warning(); fflush(stdout);
+
+  retval |= test_sec_ext(); fflush(stdout);
 
   retval |= test_utils(); fflush(stdout);
 
@@ -2718,6 +2721,65 @@ static int test_warning(void)
   END();
 }
 
+
+static int test_sec_ext(void)
+{
+  su_home_t *home;
+
+  sip_security_client_t *sac;
+  sip_security_server_t *sas;
+  sip_security_verify_t *sav;
+  sip_privacy_t *priv;
+
+  msg_t *msg;
+  sip_t *sip;
+
+  BEGIN();
+
+  msg = read_message(MSG_DO_EXTRACT_COPY, 
+    "BYE sip:foo@bar SIP/2.0\r\n"
+    "To: <sip:foo@bar>;tag=deadbeef\r\n"
+    "From: <sip:bar@foo>;\r\n"
+    "Call-ID: 0ha0isndaksdj@10.1.2.3\r\n"
+    "CSeq: 8 SUBSCRIBE\r\n"
+    "Via: SIP/2.0/UDP 135.180.130.133\r\n"
+    "Content-Length: 0\r\n"
+    "\r\n");
+
+  sip = sip_object(msg);
+
+  TEST_1(home = msg_home(msg));
+  
+  TEST_1(sac = sip_security_client_make(home, "digest;q=0.5,ipsec-3gpp"));
+  TEST_S(sac->sa_mec, "digest");
+  TEST_S(sac->sa_q, "0.5");
+  TEST_1(sac = sac->sa_next);
+  TEST_S(sac->sa_mec, "ipsec-3gpp");
+
+  TEST_1((sas = sip_security_server_make(home, "digest;q=0.5")));
+  TEST_S(sas->sa_mec, "digest");
+  TEST_S(sas->sa_q, "0.5");
+
+  TEST_1((sav = sip_security_verify_make(home, "digest;q=0.5")));
+  TEST_S(sav->sa_mec, "digest");
+  TEST_S(sav->sa_q, "0.5");
+
+  /* Test for accepting liberally.. */
+  TEST_1(priv = sip_privacy_make(home, "header,media"));
+  TEST_1(priv = sip_privacy_make(home, ";header;media"));
+
+  TEST_1(!(priv = sip_privacy_make(home, "none explicit")));
+
+  TEST_1((priv = sip_privacy_make(home, "header;media")));
+  TEST_1(priv->priv_values);
+  TEST_S(priv->priv_values[0], "header");
+  TEST_S(priv->priv_values[1], "media");
+
+  msg_destroy(msg);
+
+  END();
+}
+ 
 
 static int test_utils(void)
 {
