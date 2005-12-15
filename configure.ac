@@ -61,15 +61,8 @@ AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define as 1 always])
 AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define as 1 if we use DNS library])
 AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define as 1 if we use S/MIME library])
 
-dnl Disable stun by default while it is broken
-AC_ARG_ENABLE(stun,
-[  --enable-stun               enable stun module (disabled)],
- , enable_stun=no)
-
-if test x$enable_stun = xno ; then
-  AC_MSG_WARN([** STUN support disabled **])
-elif test x${HAVE_OPENSSL} != x1 ; then
-  dnl compile STUN only if OPENSSL is available
+dnl compile STUN only if OPENSSL is available
+if test x${HAVE_OPENSSL} != x1 ; then
   AC_MSG_WARN([** STUN support disabled as OpenSSL headers and/or libraries were not found **])
 else
   AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
