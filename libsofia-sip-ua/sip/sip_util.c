@@ -1158,7 +1158,7 @@ int sip_response_terminates_dialog(int response_code,
     return 0;
   }
 
-  if (response_code < 600) switch (response_code) {
+  if (response_code < 700) switch (response_code) {
   case 600: /* 600 and 6xx unrecognized responses */
   default:
     /** @par 600 and 6xx unrecognized responses
