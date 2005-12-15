@@ -1062,6 +1062,12 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
     i->i_id = b = (char *)(i + 1);
 
     su_guid_generate(guid);
+    /*
+     * Guid looks like "NNNNNNNN-NNNN-NNNN-NNNN-XX:XX:XX:XX:XX:XX"
+     * where NNNNNNNN-NNNN-NNNN-NNNN is timestamp and XX is MAC address
+     * (but we use random ID for MAC because we do not have
+     *  guid generator available for all processes within node)
+     */
     su_guid_sprintf(b, su_guid_strlen + 1, guid);
 
     /* If we have a domain name don't include MAC address at the end of guid */
