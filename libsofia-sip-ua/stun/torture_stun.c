@@ -28,6 +28,7 @@
  * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Ismo H. Puustinen
+ * @author eMartti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
  * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
@@ -48,6 +49,7 @@ typedef struct torture_s torture_t;
 #define STUN_MAGIC_T     torture_t
 
 #include "stun.h"
+#include "stun_tag.h"
 
 #include <su.h>
 #include <su_debug.h>
@@ -62,10 +64,15 @@ struct torture_s {
 
 char const *name = "torture_stun";
 
-static int test_init(su_root_t *root, char *addr);
-static int test_sync_stun(char *addr);
-static int test_get_nattype(char *addr);
-static int test_get_lifetime(char *addr);
+static int torture_test_init(su_root_t *root, char *addr);
+static int torture_test_stun_bind(char *addr);
+static int torture_test_get_nattype(char *addr);
+static int torture_test_get_lifetime(char *addr);
+static void torture_callback(torture_t *torturer,
+			     stun_handle_t *en,
+			     stun_socket_t *ss,
+			     stun_states_t event);
+
 
 static int test_deinit(void);
 int atonetaddr(struct sockaddr_in *addr, char *in);
@@ -84,15 +91,19 @@ int tstflags = 0;
 int test_bind = 0;
 int test_nat = 0;
 int test_lifetime = 0;
-int fake_msg_int=0; /* use fake username password */
-int bypass_msg_int=0; 
+int fake_msg_int = 0; /* use fake username password */
+int bypass_msg_int = 0; 
+
+int retval = 0;
+stun_handle_t *se;
+
+
 
 int main(int argc, char *argv[])
 {
 
   torture_t torture[1];
   su_root_t *root = su_root_create(torture);
-  int retval = 0;
   int i;
   char *clntaddr = "127.0.0.1", *srvraddr = "127.0.0.1";
 
@@ -119,63 +130,110 @@ int main(int argc, char *argv[])
     }
   }
 
-  if(!test_bind && !test_nat && !test_lifetime) {usage(); return -1;}
-
-  if (!(retval |= test_init(root, srvraddr))) {
-    su_root_run(root);
-    if(test_bind) {
-      retval |= test_sync_stun(clntaddr);
-    }
-    if(test_nat) {
-      retval |= test_get_nattype(clntaddr);
-    }
-    if(test_lifetime) {
-      retval |= test_get_lifetime(clntaddr);
-    }
+  if (!test_bind && !test_nat && !test_lifetime) {
+    usage();
+    return -1;
   }
+
+  if ((retval |= torture_test_init(root, srvraddr))) {
+    test_deinit();
+    return retval;
+  }
+
+  if (se && !bypass_msg_int) {
+    stun_connect_start(se);
+    su_root_run(root);
+  }
+
+  /* event loop is started always before a test. After the test
+   * su_root_break() is called in the callback. */
+
+  if(test_bind) {
+    retval |= torture_test_stun_bind(clntaddr);
+    su_root_run(root);
+  }
+
+#if 0
+  if(test_nat) {
+    retval |= torture_test_get_nattype(clntaddr);
+    su_root_run(root);
+  }
+
+  if(test_lifetime) {
+    retval |= torture_test_get_lifetime(clntaddr);
+    su_root_run(root);
+  }
+#endif
 
   test_deinit();
 
   return retval;
 }
 
-stun_engine_t *se;
 
-void torture_callback(torture_t *torturer, stun_engine_t *en, stun_states_t ev);
-
-
-void torture_callback(torture_t *torturer, stun_engine_t *en, stun_states_t ev)
+void torture_callback(torture_t *torturer, stun_handle_t *en, stun_socket_t *ss, stun_states_t ev)
 {
-  SU_DEBUG_3(("%s: called\n", __func__));
+  char ipaddr[48];
+  int s = -1;
+  su_localinfo_t *li;
 
-  su_root_break(stun_engine_root(en));
+  SU_DEBUG_3(("%s: called by event \"%s\"\n", __func__, stun_str_state(ev)));
+
+  if (ev == stun_client_done) {
+    li = stun_get_local_addr(en);
+    s = stun_socket_get_socket(ss);
+
+    inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
+    SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
+		ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
+    su_root_break(stun_handle_root(en));
+  }
+  else if (ev == stun_client_error || ev == stun_client_connection_timeout || ev == stun_client_connection_failed) {
+    SU_DEBUG_3(("%s: no nat detected\n", __func__));
+    su_root_break(stun_handle_root(en));
+  }
+
+#if 0
+  TEST(getsockname(s, (struct sockaddr *)&local, &locallen), 0);
+  TEST(locallen, addrlen);
+  my_addr = (struct sockaddr_in *) &addr.li_addr;
+
+  printf("*** stun_bind returns %s:%u\n", inet_ntoa(my_addr->sin_addr), (unsigned)ntohs(my_addr->sin_port));
+  printf("*** getsockname returns %s:%u\n", inet_ntoa(local.sin_addr), (unsigned)ntohs(local.sin_port));
+
+  TEST(memcmp(&local, (struct sockaddr_in *)&addr.li_addr, 8), 0); 
+
+  su_close(s);
+#endif
+
 
   return;
 }
 
-int test_init(su_root_t *root, char *server)
+int torture_test_init(su_root_t *root, char *server)
 {
 
   torture_t torturer[1];
   BEGIN();
 
-  /* Running this test requires a local STUN server on default port */
-  se = stun_engine_create(torturer,
-			  root,
-			  torture_callback,
-			  server, !bypass_msg_int); TEST_1(se);
+  /* Running this test requires a local STUN server on default port
+   * XXX -- mela: does not */
+  se = stun_handle_tcreate(torturer,
+			   root,
+			   torture_callback,
+			   STUNTAG_SERVER(server), 
+			   STUNTAG_INTEGRITY(!bypass_msg_int),
+			   TAG_NULL());
+  TEST_1(se);
 
   END();
 }
 
-int test_sync_stun(char *localaddr)
+int torture_test_stun_bind(char *localaddr)
 {
   int result;
   int s, lifetime;
-  socklen_t addrlen, locallen;
-  su_localinfo_t addr;
   stun_socket_t *ss;
-  struct sockaddr_in *my_addr, local;
 
   BEGIN();
 
@@ -198,40 +256,14 @@ int test_sync_stun(char *localaddr)
     }
   }
   
-  memset(&addr, 0, sizeof(addr));
-  /* addrlen = sizeof(addr); */
   lifetime = 0;
 
-  my_addr = (struct sockaddr_in *) &addr.li_addr;
-
-  atonetaddr(my_addr, localaddr);
-  /*
-  my_addr->sin_addr.s_addr = inet_addr(localaddr);
-  my_addr->sin_family = AF_INET;
-  my_addr->sin_port = 0;
-  */
-  
-  addrlen = sizeof(*my_addr);
   result = stun_bind(ss, &lifetime); TEST(result, 0);
-
-  /* Just a check that getsockname() returns same address as stun_bind */
-  memset(&local, 0, sizeof(local)); locallen = sizeof(local);
-  
-  TEST(getsockname(s, (struct sockaddr *)&local, &locallen), 0);
-  TEST(locallen, addrlen);
-  my_addr = (struct sockaddr_in *) &addr.li_addr;
-
-  printf("*** stun_bind returns %s:%u\n", inet_ntoa(my_addr->sin_addr), (unsigned)ntohs(my_addr->sin_port));
-  printf("*** getsockname returns %s:%u\n", inet_ntoa(local.sin_addr), (unsigned)ntohs(local.sin_port));
-
-  TEST(memcmp(&local, (struct sockaddr_in *)&addr.li_addr, 8), 0); 
-
-  su_close(s);
 
   END();
 }
 
-int test_get_lifetime(char *localaddr)
+int torture_test_get_lifetime(char *localaddr)
 {
   int result, lifetime;
   int s, addrlen;
@@ -276,7 +308,7 @@ int test_get_lifetime(char *localaddr)
 
 
 
-int test_get_nattype(char *localaddr)
+int torture_test_get_nattype(char *localaddr)
 {
   int result;
   int s, addrlen;
@@ -385,7 +417,7 @@ static int test_deinit(void)
 {
   BEGIN();
 
-  stun_engine_destroy(se);
+  stun_handle_destroy(se);
 
   END();
 }
@@ -394,7 +426,7 @@ static int test_deinit(void)
 /* this function is just for testing convenience within the scope of
  * torture_stun. It is only used by converting client address
  * input. Server address of the form "a.b.c.d:port" is passed directly to
- * stun_engine_create(). */
+ * stun_handle_create(). */
 int atonetaddr(struct sockaddr_in *addr, char *in)
 {
   char *p, tmp[64];

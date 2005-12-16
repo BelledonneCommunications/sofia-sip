@@ -70,11 +70,10 @@ int stun_get_lifetime(stun_socket_t *ss,
 		      int *lifetime);
 
 /** other functions */
-int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname, 
+int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname, 
 		       const char *pwd, int len_pwd);
 
 /* internal functions declaration */
-int stun_connect_start(stun_engine_t *se);
 int stun_make_sharedsecret_req(stun_msg_t *msg);
 
 int stun_bind_test(stun_socket_t *ss,

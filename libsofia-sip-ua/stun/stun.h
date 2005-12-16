@@ -41,7 +41,7 @@
 
 #include <su_localinfo.h>
 
-typedef struct stun_engine_s stun_engine_t;
+typedef struct stun_handle_s stun_handle_t;
 typedef struct stun_socket_s stun_socket_t;
 
 #ifndef STUN_MAGIC_T 
@@ -58,7 +58,7 @@ extern char const stun_version[]; /**< Name and version of STUN software */
  */ 
 typedef enum stun_states_e {
 
-  /* stun engine errors */
+  /* stun handle errors */
   stun_client_connection_timeout = -10,
   stun_client_connection_failed  =  -9,
   stun_no_shared_secret_obtained =  -8,
@@ -67,7 +67,7 @@ typedef enum stun_states_e {
   stun_client_error    = -5,
   stun_client_timeout = -1,
 
-  /* stun_engine related */
+  /* stun_handle related */
   stun_shared_secret_obtained = 0,
   stun_client_connecting,
   stun_client_connected,
@@ -85,28 +85,39 @@ typedef enum stun_states_e {
 
 } stun_states_t;
 
+
+/* Return the socket associated with the stun_socket_t structure */
+int stun_socket_get_socket(stun_socket_t *ss);
+
+
+char const *stun_str_state(stun_states_t state);
+
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 typedef void (*stun_event_f)(stun_magic_t *magic,
-			     stun_engine_t *se,
+			     stun_handle_t *se,
+			     stun_socket_t *ss,
 			     stun_states_t event);
 
-su_root_t *stun_engine_root(stun_engine_t *self);
+su_root_t *stun_handle_root(stun_handle_t *self);
 
-stun_engine_t *stun_engine_tcreate(stun_magic_t *context,
+stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
 				   su_root_t *root,
 				   stun_event_f cb,
 				   tag_type_t tag, tag_value_t value, ...); 
 
-stun_engine_t *stun_engine_create(stun_magic_t *context,
+stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
 				  char const *server,
 				  int use_msgint); 
 
-void stun_engine_destroy(stun_engine_t *);
+int stun_connect_start(stun_handle_t *se);
 
-stun_socket_t *stun_socket_create(stun_engine_t *se, int sockfd);
+
+void stun_handle_destroy(stun_handle_t *);
+
+stun_socket_t *stun_socket_create(stun_handle_t *se, int sockfd);
 void stun_socket_destroy(stun_socket_t *ss);
 
 /** Bind a socket using STUN.  */
@@ -114,7 +125,7 @@ int stun_bind(stun_socket_t *ss,
 	      /* su_localinfo_t *my_addr, */
 	      int *return_lifetime);
 
-su_localinfo_t *stun_get_local_addr(stun_engine_t *en);
+su_localinfo_t *stun_get_local_addr(stun_handle_t *en);
 
 int stun_get_nattype(stun_socket_t *ss,
 		     su_localinfo_t *my_addr,
@@ -125,9 +136,9 @@ int stun_get_lifetime(stun_socket_t *ss,
 		      int *lifetime);
 
 /** other functions */
-int stun_set_uname_pwd(stun_engine_t *se, const char *uname, int len_uname, 
+int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname, 
 		       const char *pwd, int len_pwd);
 
-char const *stun_nattype(stun_engine_t *se);
+char const *stun_nattype(stun_handle_t *se);
 
 #endif /* !defined(STUN_H) */
