@@ -1645,10 +1645,13 @@ sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
 int sres_resolver_sockets(sres_resolver_t const *res,
 			  int *sockets, int n)
 {
-  int s = -1, i, family, retval;
+  int s = -1, i = 0, family = 0, retval;
   int one = 1, zero = 0;
   int error = su_errno();
   char const *what = "socket";
+  struct sockaddr_storage name;
+  socklen_t namelen;
+  unsigned short port;
 
   if (res == NULL)
     return (errno = EINVAL), -1;
@@ -1658,22 +1661,61 @@ int sres_resolver_sockets(sres_resolver_t const *res,
 
   retval = 1 + res->res_n_servers;
 
-  for (i = 0; i < retval && i < n; ) {
-    struct sockaddr_storage name;
-    socklen_t namelen;
-    int error = su_errno();
-
 #if HAVE_SIN6
-    s = socket(family = AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-    if (s == -1)
+  s = socket(family = AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+  namelen = sizeof(struct sockaddr_in6);
 #endif
-      s = socket(family = AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (s == -1) {
+    s = socket(family = AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    namelen = sizeof(struct sockaddr_in);
+  }
+  if (s == -1)
+    return -1;
+  sockets[i++] = s;
 
+  memset(&name, 0, namelen);
+#if HAVE_SA_LEN
+  name.ss_len = namelen;
+#endif
+  name.ss_family = family;
+
+#if HAVE_IP_RECVERR
+  if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0)
+    SU_DEBUG_3(("sres: IP_RECVERR: %s\n", su_strerror(su_errno())));
+#endif
+#if HAVE_IPV6_RECVERR
+  if (family == AF_INET6 && 
+      setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
+    SU_DEBUG_3(("sres: IPV6_RECVERR: %s\n", su_strerror(su_errno())));
+#endif
+
+  /*
+   * First socket is not connected:
+   * bind it to a port and obtain the port number
+   * so that the connected sockets will have same source port.
+   */
+  if (bind(s, (struct sockaddr *)&name, namelen) < 0) {
+    what = "bind"; retval = -1; 
+  }
+  else if (n == 1)
+    ;
+  else if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one))
+	   < 0) {
+    what = "SO_REUSEADDR"; retval = -1; 
+  }
+  else if (getsockname(s, (struct sockaddr *)&name, &namelen) < 0) {
+    what = "getsockname"; retval = -1;
+  }
+  else for (i = 1; i < retval && i < n;) {
+    sres_server_t *dns = res->res_servers + i - 1;
+
+    family = dns->dns_addr->ss_family;
+
+    s = socket(family, SOCK_DGRAM, IPPROTO_UDP);
     if (s == -1) {
       retval = -1;
       break;
     }
-    su_seterrno(error);
 
     sockets[i++] = s;
 
@@ -1681,66 +1723,47 @@ int sres_resolver_sockets(sres_resolver_t const *res,
     if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0)
       SU_DEBUG_3(("sres: IP_RECVERR: %s\n", su_strerror(su_errno())));
 #endif
-
 #if HAVE_IPV6_RECVERR
     if (family == AF_INET6 && 
 	setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
       SU_DEBUG_3(("sres: IPV6_RECVERR: %s\n", su_strerror(su_errno())));
 #endif
 
-    if (i == 1) {
-      namelen = 
 #if HAVE_SIN6
-	family == AF_INET6 ? sizeof(struct sockaddr_in6) :
+    if (family == AF_INET6)
+      namelen = sizeof(struct sockaddr_in6);
+    else
+      namelen = sizeof(struct sockaddr_in);
+    port = ((struct sockaddr_in *)&name)->sin_port;
+    memset(&name, 0, namelen);
+#if HAVE_SA_LEN
+    name.ss_len = namelen;
 #endif
-	sizeof(struct sockaddr_in);
+    name.ss_family = family;
+    ((struct sockaddr_in *)&name)->sin_port = port;
+#endif
 
-      memset(&name, 0, namelen);
-      name.ss_family = family;
-
-      if (bind(s, (struct sockaddr *)&name, namelen) < 0) {
-	what = "bind"; retval = -1; break;
-      }
-
-      if (n == 1)
-	continue;
-
-      if (getsockname(s, (struct sockaddr *)&name, &namelen) < 0) {
-	what = "getsockname"; retval = -1; break;
-      }
-      
-      if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, 
-		     (void *)&one, sizeof(one)) < 0) {
-	what = "SO_REUSEADDR"; retval = -1; break;
-      }
-    } else {
-      sres_server_t *dns = res->res_servers + i - 2;
-
-      if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, 
-		     (void *)&one, sizeof(one)) < 0) {
-	SU_DEBUG_3(("%s: %s: %s\n", "sres_resolver_sockets", "SO_REUSEADDR",
-		    strerror(errno)));
-      }
-
-      if (bind(s, (struct sockaddr *)&name, namelen) < 0) {
-	SU_DEBUG_3(("%s: %s: %s\n", "sres_resolver_sockets", "bind2",
-		    strerror(errno)));
-      }
-
-      if (connect(s, (struct sockaddr *)dns->dns_addr, dns->dns_addrlen) < 0) {
-	SU_DEBUG_3(("%s: connect: %s\n", "sres_resolver_sockets",
-		    strerror(errno)));
-      }
-    }
-  }
-
-  if (retval > 0) {
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, 
-		   (void *)&zero, sizeof(zero)) < 0) {
+		   (void *)&one, sizeof(one)) < 0) {
       SU_DEBUG_3(("%s: %s: %s\n", "sres_resolver_sockets", "SO_REUSEADDR",
 		  strerror(errno)));
     }
-  } else {
+    else if (bind(s, (struct sockaddr *)&name, namelen) < 0) {
+      SU_DEBUG_3(("%s: %s: %s\n", "sres_resolver_sockets", "bind2",
+		  strerror(errno)));
+    }
+    else if (connect(s, (struct sockaddr *)dns->dns_addr, dns->dns_addrlen)
+	     < 0) {
+      SU_DEBUG_3(("%s: connect: %s\n", "sres_resolver_sockets",
+		  strerror(errno)));
+    }
+  }
+
+  if (retval > 1) {
+    setsockopt(sockets[0], SOL_SOCKET, SO_REUSEADDR, 
+	       (void *)&zero, sizeof(zero));
+  }
+  else if (retval < 0) {
     error = su_errno();
     SU_DEBUG_3(("%s: %s: %s\n", "sres_resolver_sockets", what, 
 		strerror(error)));
