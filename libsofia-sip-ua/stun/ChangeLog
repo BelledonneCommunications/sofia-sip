@@ -1,3 +1,13 @@
+2005-12-16  Martti Mela  <mela@dev-113.nrln.net>
+
+	* stun.h: changed stun_engine_t to stun_handle_t.
+
+	* stun.c: STUN handle is now created independently of
+	stun_connect_start(). Callback events have now string
+	representation, too.
+
+	* stunc.c, torture_stun.c: behave now in conformance to stun.h
+	
 2005-12-15  Martti Mela  <martti.mela@nokia.com>
 
 	* STUN updated to work asynchronously.
