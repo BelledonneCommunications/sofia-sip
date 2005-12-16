@@ -371,7 +371,7 @@ struct tport_master {
 #if HAVE_SOFIA_STUN
     char *stun_server;
     stun_socket_t *stun_socket;
-    stun_engine_t *stun;
+    stun_handle_t *stun;
 #endif
   }                   mr_nat[1];
 };
@@ -6843,7 +6843,8 @@ void thrp_udp_send_report(su_root_magic_t *magic,
 
 #if HAVE_SOFIA_STUN
 void tport_stun_cb(tport_master_t *tport,
-		   stun_engine_t *se,
+		   stun_handle_t *se,
+		   stun_socket_t *ss,
 		   stun_states_t event)
 {
 
@@ -6878,13 +6879,18 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
 	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
         SU_DEBUG_5(("%s(%p) starting STUN engine\n", __func__, mr));
 
-        nat->stun = stun_engine_tcreate(mr,
+        nat->stun = stun_handle_tcreate(mr,
 					mr->mr_root,
 					tport_stun_cb,
 					TAG_NEXT(tags));
 
         if (!nat->stun) 
 	  return NULL;
+
+	if (stun_connect_start(nat->stun) < 0 && errno != EFAULT) {
+	  stun_handle_destroy(nat->stun), nat->stun = NULL;
+	  break;
+	}
 
 	nat->try_stun = 1;
 	/* We support only UDP if STUN is used */

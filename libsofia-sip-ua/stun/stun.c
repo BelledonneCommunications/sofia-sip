@@ -798,7 +798,7 @@ int stun_connect_start(stun_handle_t *se)
   }
   else {
     SU_DEBUG_3(("No message integrity enabled.\n"));
-    return -1;
+    return errno = EFAULT, -1;
   }
 
   /* open tcp connection to server */
