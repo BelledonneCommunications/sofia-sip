@@ -17,6 +17,12 @@ To be written.
 
 @section todo Todo
 
+
+- finish the asynchronous STUN behavior. Currently most of the STUN
+  client functionality is already async, but the API should still be
+  revised. This should be ready before week 52 2005. (added 20051216)
+
+
 - merge NAT-type check and stun_bind_tests (no 
   use in using STUN if the NAT type is symmetric) (added 20051118)
 - output a summary of results at the end of 
