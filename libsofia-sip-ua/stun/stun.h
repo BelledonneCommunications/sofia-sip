@@ -58,36 +58,40 @@ extern char const stun_version[]; /**< Name and version of STUN software */
  */ 
 typedef enum stun_states_e {
 
-  /* stun handle errors */
-  stun_client_connection_timeout = -10,
-  stun_client_connection_failed  =  -9,
-  stun_no_shared_secret_obtained =  -8,
+  /* TLS events */
+  stun_tls_connecting,
+  stun_tls_ssl_connecting,
+  stun_tls_writing,
+  stun_tls_closing,
+  stun_tls_reading,
+  stun_tls_done,
+
+  /* STUN bind events */
+  stun_bind_init,             /**< Initial state */
+  stun_bind_started,          /**< Discovery process started */
+  stun_bind_sending,          /**< Sending query to server */
+  stun_bind_sent,             /**< Query sent */
+  stun_bind_receiving,        /**< Waiting for server to answer */
+  stun_bind_processing,       /**< Processing server reply */
+  stun_bind_done,             /**< Initial state */
+
+  /* STUN errors */
+  /* Do not change the order! */
+
+  stun_error,
+  stun_tls_connection_timeout,
+  stun_tls_connection_failed,
+  stun_tls_ssl_connect_failed,
 
   /* stun client errors */
-  stun_client_error    = -5,
-  stun_client_timeout = -1,
-
-  /* stun_handle related */
-  stun_shared_secret_obtained = 0,
-  stun_client_connecting,
-  stun_client_connected,
-
-
-  /* client: stun socket */
-  stun_client_init,             /**< Initial state */
-  stun_client_started,          /**< Discovery process started */
-  stun_client_sending,          /**< Sending query to server */
-  stun_client_sent,             /**< Query sent */
-  stun_client_receiving,        /**< Waiting for server to answer */
-  stun_client_received,         /**< Server answered */
-  stun_client_processing,       /**< Processing server reply */
-  stun_client_done,             /**< Initial state */
+  stun_bind_error,
+  stun_bind_timeout,
 
 } stun_states_t;
 
 
 /* Return the socket associated with the stun_socket_t structure */
-int stun_socket_get_socket(stun_socket_t *ss);
+int stun_handle_get_bind_socket(stun_handle_t *se);
 
 
 char const *stun_str_state(stun_states_t state);
@@ -96,7 +100,6 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_handle_t *se,
-			     stun_socket_t *ss,
 			     stun_states_t event);
 
 su_root_t *stun_handle_root(stun_handle_t *self);
@@ -112,32 +115,35 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  char const *server,
 				  int use_msgint); 
 
-int stun_connect_start(stun_handle_t *se);
+int stun_handle_request_shared_secret(stun_handle_t *se);
 
 
 void stun_handle_destroy(stun_handle_t *);
 
-stun_socket_t *stun_socket_create(stun_handle_t *se, int sockfd);
-void stun_socket_destroy(stun_socket_t *ss);
+int stun_handle_set_bind_socket(stun_handle_t *se, int sockfd);
 
 /** Bind a socket using STUN.  */
-int stun_bind(stun_socket_t *ss, 
-	      /* su_localinfo_t *my_addr, */
-	      int *return_lifetime);
+int stun_handle_bind(stun_handle_t *se, 
+		     /* su_localinfo_t *my_addr, */
+		     int *return_lifetime);
 
-su_localinfo_t *stun_get_local_addr(stun_handle_t *en);
+su_localinfo_t *stun_handle_get_local_addr(stun_handle_t *en);
 
-int stun_get_nattype(stun_socket_t *ss,
-		     su_localinfo_t *my_addr,
-		     int *addrlen);
+int stun_handle_get_nattype(stun_handle_t *se,
+			    su_localinfo_t *my_addr,
+			    int *addrlen);
 
-int stun_get_lifetime(stun_socket_t *ss, 
-		      su_localinfo_t *my_addr, int *addrlen,
-		      int *lifetime);
+int stun_handle_get_lifetime(stun_handle_t *se, 
+			     su_localinfo_t *my_addr,
+			     int *addrlen,
+			     int *lifetime);
 
 /** other functions */
-int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname, 
-		       const char *pwd, int len_pwd);
+int stun_handle_set_uname_pwd(stun_handle_t *se,
+			      const char *uname,
+			      int len_uname, 
+			      const char *pwd,
+			      int len_pwd);
 
 char const *stun_nattype(stun_handle_t *se);
 

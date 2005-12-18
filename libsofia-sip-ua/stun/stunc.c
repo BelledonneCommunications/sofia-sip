@@ -64,32 +64,39 @@ struct stunc_s {
 };
 
 
-void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_socket_t *ss, stun_states_t event)
+void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_states_t event)
 {
   su_localinfo_t *li = NULL;
+  char ipaddr[48];
 
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
-  if (event == stun_client_done) {
-    char ipaddr[48];
-    li = stun_get_local_addr(en);
-    inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
-    SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
-		ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
+  switch (event) {
+  case stun_tls_done:
+    SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
     su_root_break(stun_handle_root(en));
-  }
-  else if (event == stun_client_error) {
+    break;
+
+  case stun_bind_done:
+    li = stun_handle_get_local_addr(en);
+    inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
+      SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
+		  ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
+    su_root_break(stun_handle_root(en));
+    break;
+
+  case stun_bind_error:
     SU_DEBUG_3(("%s: no nat detected\n", __func__));
     su_root_break(stun_handle_root(en));
-  }
+    break;
 
-  if (event == stun_client_done || event == stun_client_error ||
-      event == stun_client_connection_timeout || event ||
-      stun_client_connection_failed) {
+  case stun_error:
+    SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
     su_root_break(stun_handle_root(en));
+
+  default:
+    break;
   }
-
-
 
   return;
 }
@@ -103,7 +110,6 @@ int main(int argc, char *argv[])
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_handle_t *se;
-  stun_socket_t *ss;
   
 
   if (argc != 3)
@@ -124,7 +130,7 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  if (msg_integrity == 1 && stun_connect_start(se) < 0) {
+  if (msg_integrity == 1 && stun_handle_request_shared_secret(se) < 0) {
     SU_DEBUG_3(("%s: %s failed\n", __func__, "stun_connect_start()"));
     return -1;
   }
@@ -138,23 +144,22 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  ss = stun_socket_create(se, s);
   
-  if (ss == NULL) {
-    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_socket_create()"));
+  
+  if (stun_handle_set_bind_socket(se, s) < 0) {
+    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_set_bind_socket()"));
     return -1;
   }
   
   lifetime = 0;
 
-  if (stun_bind(ss, &lifetime) < 0) {
+  if (stun_handle_bind(se, &lifetime) < 0) {
     SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_bind()"));
     return -1;
   }
 
   su_root_run(root);
 
-  stun_socket_destroy(ss);
   stun_handle_destroy(se);
 
   return 0;

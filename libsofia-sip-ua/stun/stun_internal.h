@@ -65,7 +65,7 @@ extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 int stun_poll(stun_socket_t *ss);
-int stun_get_lifetime(stun_socket_t *ss, 
+int stun_get_lifetime(stun_handle_t *se, 
 		      su_localinfo_t *my_addr, int *addrlen,
 		      int *lifetime);
 
@@ -76,14 +76,14 @@ int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname,
 /* internal functions declaration */
 int stun_make_sharedsecret_req(stun_msg_t *msg);
 
-int stun_bind_test(stun_socket_t *ss,
+int stun_bind_test(stun_handle_t *se,
 		   su_addrinfo_t *srvr_info,
 		   su_sockaddr_t *srvr_addr,
 		   su_localinfo_t *clnt_addr,
 		   int chg_ip,
 		   int chg_port);
 int stun_send_message(su_socket_t ss, struct sockaddr_in *srvr, stun_msg_t *msg, stun_buffer_t *pwd); /* client version */
-int stun_make_binding_req(stun_socket_t *ss, stun_msg_t *msg, int chg_ip, int chg_port);
+int stun_make_binding_req(stun_handle_t *se, stun_msg_t *msg, int chg_ip, int chg_port);
 int stun_process_response(stun_msg_t *msg);
 
 int stun_process_binding_response(stun_msg_t *msg);

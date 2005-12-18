@@ -70,7 +70,6 @@ static int torture_test_get_nattype(char *addr);
 static int torture_test_get_lifetime(char *addr);
 static void torture_callback(torture_t *torturer,
 			     stun_handle_t *en,
-			     stun_socket_t *ss,
 			     stun_states_t event);
 
 
@@ -141,7 +140,7 @@ int main(int argc, char *argv[])
   }
 
   if (se && !bypass_msg_int) {
-    stun_connect_start(se);
+    stun_handle_request_shared_secret(se);
     su_root_run(root);
   }
 
@@ -171,7 +170,7 @@ int main(int argc, char *argv[])
 }
 
 
-void torture_callback(torture_t *torturer, stun_handle_t *en, stun_socket_t *ss, stun_states_t ev)
+void torture_callback(torture_t *torturer, stun_handle_t *en, stun_states_t ev)
 {
   char ipaddr[48];
   int s = -1;
@@ -179,16 +178,16 @@ void torture_callback(torture_t *torturer, stun_handle_t *en, stun_socket_t *ss,
 
   SU_DEBUG_3(("%s: called by event \"%s\"\n", __func__, stun_str_state(ev)));
 
-  if (ev == stun_client_done) {
-    li = stun_get_local_addr(en);
-    s = stun_socket_get_socket(ss);
+  if (ev == stun_bind_done) {
+    li = stun_handle_get_local_addr(en);
+    s = stun_handle_get_bind_socket(en);
 
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
     SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
 		ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
     su_root_break(stun_handle_root(en));
   }
-  else if (ev == stun_client_error || ev == stun_client_connection_timeout || ev == stun_client_connection_failed) {
+  else if (ev >= stun_error) {
     SU_DEBUG_3(("%s: no nat detected\n", __func__));
     su_root_break(stun_handle_root(en));
   }
@@ -233,13 +232,13 @@ int torture_test_stun_bind(char *localaddr)
 {
   int result;
   int s, lifetime;
-  stun_socket_t *ss;
 
   BEGIN();
 
   s = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(s != -1);
 
-  ss = stun_socket_create(se, s); TEST_1(ss != NULL);
+  result = stun_handle_set_bind_socket(se, s);
+  TEST_1(result != -1);
 
   /* test message integrity? */
   if(fake_msg_int) {
@@ -250,7 +249,7 @@ int torture_test_stun_bind(char *localaddr)
       char username[256], password[256];
       if(fscanf(pwd, "\"%[^\"]\",\"%[^\"]\"", username, password)) {
 	printf("Read username, password from pwd.txt: \"%s\", \"%s\"\n", username, password);
-	stun_set_uname_pwd(se, username, (int)strlen(username), password, (int)strlen(password));
+	stun_handle_set_uname_pwd(se, username, (int)strlen(username), password, (int)strlen(password));
       }
       fclose(pwd);
     }
@@ -258,7 +257,7 @@ int torture_test_stun_bind(char *localaddr)
   
   lifetime = 0;
 
-  result = stun_bind(ss, &lifetime); TEST(result, 0);
+  result = stun_handle_bind(se, &lifetime); TEST(result, 0);
 
   END();
 }
@@ -268,14 +267,14 @@ int torture_test_get_lifetime(char *localaddr)
   int result, lifetime;
   int s, addrlen;
   su_localinfo_t addr;
-  stun_socket_t *ss;
   su_localinfo_t *my_addr;
 
   BEGIN();
 
   s = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(s != -1);
 
-  ss = stun_socket_create(se, s); TEST_1(ss != NULL);
+  result = stun_handle_set_bind_socket(se, s);
+  TEST_1(result != -1);
 
   /* test message integrity? */
   if(fake_msg_int) {
@@ -286,7 +285,7 @@ int torture_test_get_lifetime(char *localaddr)
       char username[256], password[256];
       if(fscanf(pwd, "\"%[^\"]\",\"%[^\"]\"", username, password)) {
 	printf("Read username, password from pwd.txt: \"%s\", \"%s\"\n", username, password);
-	stun_set_uname_pwd(se, username, strlen(username), password, strlen(password));
+	stun_handle_set_uname_pwd(se, username, strlen(username), password, strlen(password));
       }
       fclose(pwd);
     }
@@ -298,7 +297,7 @@ int torture_test_get_lifetime(char *localaddr)
 
   atonetaddr(my_addr, localaddr);
   addrlen = sizeof(*my_addr);
-  result = stun_get_lifetime(ss, &addr.li_addr, &addrlen, &lifetime); TEST(result, 0);
+  result = stun_handle_get_lifetime(se, &addr.li_addr, &addrlen, &lifetime); TEST(result, 0);
   printf("Binding Lifetime determined to be: %d seconds\n", lifetime);
 
   su_close(s);
@@ -313,14 +312,14 @@ int torture_test_get_nattype(char *localaddr)
   int result;
   int s, addrlen;
   su_sockaddr_t addr;
-  stun_socket_t *ss;
   struct sockaddr_in *my_addr;
 
   BEGIN();
 
   s = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(s != -1);
 
-  ss = stun_socket_create(se, s); TEST_1(ss != NULL);
+  result = stun_handle_set_bind_socket(se, s);
+  TEST_1(result != -1);
 
   /* test message integrity? */
   /* test message integrity? */
@@ -332,7 +331,7 @@ int torture_test_get_nattype(char *localaddr)
       char username[256], password[256];
       if(fscanf(pwd, "\"%[^\"]\",\"%[^\"]\"", username, password)) {
 	printf("Read username, password from pwd.txt: \"%s\", \"%s\"\n", username, password);
-	stun_set_uname_pwd(se, username, strlen(username), password, strlen(password));
+	stun_handle_set_uname_pwd(se, username, strlen(username), password, strlen(password));
       }
       fclose(pwd);
     }
@@ -344,7 +343,7 @@ int torture_test_get_nattype(char *localaddr)
 
   atonetaddr(my_addr, localaddr);
   addrlen = sizeof(*my_addr);
-  result = stun_get_nattype(ss, &addr.su_sa, &addrlen); TEST(result, 0);
+  result = stun_handle_get_nattype(se, &addr.su_sa, &addrlen); TEST(result, 0);
   printf("NAT type is: %s\n", stun_nattype(se));
 
   su_close(s);
