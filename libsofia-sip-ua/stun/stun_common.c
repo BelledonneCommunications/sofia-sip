@@ -91,7 +91,7 @@ int stun_parse_message(stun_msg_t *msg) {
     msg->stun_hdr.tran_id[i] = ntohs(tmp16);
   }
 
-  SU_DEBUG_5(("stun: Parse STUN message: Length = %d\n", msg->stun_hdr.msg_len));
+  SU_DEBUG_5(("%s: Parse STUN message: Length = %d\n", __func__, msg->stun_hdr.msg_len));
 
   /* parse attributes */
   len = msg->stun_hdr.msg_len;
@@ -130,8 +130,9 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   p+=2;
   len = ntohs(tmp16);
 
-  SU_DEBUG_3(("stun: received attribute: Type %02X, Length %d - %s\n",
+  SU_DEBUG_3(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
 	      attr->attr_type, len, stun_attr_phrase(attr->attr_type)));
+
   switch(attr->attr_type) {
   case MAPPED_ADDRESS:
   case RESPONSE_ADDRESS:
@@ -212,7 +213,7 @@ int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned 
   memcpy(&addr->sin_port, p+2, 2);
   memcpy(&addr->sin_addr.s_addr, p+4, 4);
 
-  SU_DEBUG_3(("stun: address attribute: %s:%d\n", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
+  SU_DEBUG_3(("%s: address attribute: %s:%d\n", __func__, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
 
   attr->pattr = addr;
   stun_init_buffer(&attr->enc_buf);
@@ -257,9 +258,9 @@ int stun_parse_attr_uint32(stun_attr_t *attr, const unsigned char *p, unsigned l
 int stun_parse_attr_buffer(stun_attr_t *attr, const unsigned char *p, unsigned len)
 {
   stun_buffer_t *buf;
-  buf = (stun_buffer_t *)malloc(sizeof(stun_buffer_t));
+  buf = (stun_buffer_t *) malloc(sizeof(stun_buffer_t));
   buf->size = len;
-  buf->data = (unsigned char *)malloc(len);
+  buf->data = (unsigned char *) malloc(len);
   memcpy(buf->data, p, len);
   attr->pattr = buf;
   stun_init_buffer(&attr->enc_buf);
@@ -267,7 +268,9 @@ int stun_parse_attr_buffer(stun_attr_t *attr, const unsigned char *p, unsigned l
   return 0;
 }
 
-int stun_parse_attr_unknown_attributes(stun_attr_t *attr, const unsigned char *p, unsigned len)
+int stun_parse_attr_unknown_attributes(stun_attr_t *attr,
+				       const unsigned char *p,
+				       unsigned len)
 {
   return 0;
 }
@@ -276,8 +279,8 @@ int stun_parse_attr_unknown_attributes(stun_attr_t *attr, const unsigned char *p
 stun_attr_t *stun_get_attr(stun_attr_t *attr, uint16_t attr_type) {
   stun_attr_t *p;
   p = attr;
-  while(p!= NULL) {
-    if(p->attr_type==attr_type)
+  while (p != NULL) {
+    if (p->attr_type == attr_type)
       return p;
     else
       p = p->next;
@@ -291,7 +294,7 @@ void stun_init_buffer(stun_buffer_t *p) {
 }
 
 int stun_free_buffer(stun_buffer_t *p) {
-  if(p->data)
+  if (p->data)
     free(p->data);
   p->size = 0;
   return 0;
@@ -306,9 +309,10 @@ int stun_copy_buffer(stun_buffer_t *p, stun_buffer_t *p2) {
 }
 
 const char *stun_response_phrase(int status) {
-  if(status <100 || status >600)
+  if (status <100 || status >600)
     return NULL;
-  switch(status) {
+
+  switch (status) {
   case STUN_400_BAD_REQUEST: return stun_400_Bad_request;
   case STUN_401_UNAUTHORIZED: return stun_401_Unauthorized;
   case STUN_420_UNKNOWN_ATTRIBUTE: return stun_420_Unknown_attribute;
@@ -343,7 +347,7 @@ int stun_encode_address(stun_attr_t *attr) {
 
   a = (stun_attr_sockaddr_t *)attr->pattr;
 
-  if(stun_encode_type_len(attr, 2*sizeof(uint32_t))<0) {
+  if (stun_encode_type_len(attr, 2*sizeof(uint32_t)) < 0) {
     return -1;
   }
 
@@ -361,7 +365,7 @@ int stun_encode_uint32(stun_attr_t *attr) {
     return -1;
   }
 
-  tmp = htonl(((stun_attr_changerequest_t *)attr->pattr)->value);
+  tmp = htonl(((stun_attr_changerequest_t *) attr->pattr)->value);
   memcpy(attr->enc_buf.data+4, &tmp, sizeof(tmp));
   return attr->enc_buf.size;
 }
@@ -372,23 +376,23 @@ int stun_encode_error_code(stun_attr_t *attr) {
   int len;
   stun_attr_errorcode_t *error;
 
-  error = (stun_attr_errorcode_t *)attr->pattr;
-  class = error->code /100;
-  num = error->code %100;
+  error = (stun_attr_errorcode_t *) attr->pattr;
+  class = error->code / 100;
+  num = error->code % 100;
   len = strlen(error->phrase);
-  attr->enc_buf.size = len + (len%4==0? 0 : 4 - (len%4));
+  attr->enc_buf.size = len + (len % 4 == 0? 0 : 4 - (len % 4));
   reason = malloc(attr->enc_buf.size);
   memset(reason, 0, attr->enc_buf.size);
   memcpy(reason, error->phrase, len);
 
   attr->enc_buf.size +=4;
-  if(stun_encode_type_len(attr, attr->enc_buf.size)<0) {
+  if (stun_encode_type_len(attr, attr->enc_buf.size) < 0) {
     return -1;
   }
   memset(attr->enc_buf.data+4, 0, 2);
   memcpy(attr->enc_buf.data+6, &class, 1);
   memcpy(attr->enc_buf.data+7, &num, 1);
-  memcpy(attr->enc_buf.data+8, reason, attr->enc_buf.size-4);
+  memcpy(attr->enc_buf.data+8, reason, attr->enc_buf.size - 4);
 
   return attr->enc_buf.size;
 }
@@ -398,7 +402,7 @@ int stun_encode_buffer(stun_attr_t *attr) {
 
   a = (stun_buffer_t *)attr->pattr;
 
-  if(stun_encode_type_len(attr, a->size)<0) {
+  if (stun_encode_type_len(attr, a->size) < 0) {
     return -1;
   }
 
@@ -406,18 +410,21 @@ int stun_encode_buffer(stun_attr_t *attr) {
   return attr->enc_buf.size;
 }
 
-int stun_encode_message_integrity(stun_attr_t *attr, unsigned char *buf, int len, stun_buffer_t *pwd) {
+int stun_encode_message_integrity(stun_attr_t *attr,
+				  unsigned char *buf,
+				  int len,
+				  stun_buffer_t *pwd) {
   int padded_len;
   size_t dig_len;
   unsigned char *padded_text;
 
-  if(stun_encode_type_len(attr, 20)<0) {
+  if (stun_encode_type_len(attr, 20) < 0) {
     return -1;
   }
 
   /* zero padding */
-  padded_len = len + (len%64==0? 0:64 - (len%64));
-  padded_text = (unsigned char *)malloc(padded_len);
+  padded_len = len + (len % 64 == 0 ? 0 : 64 - (len % 64));
+  padded_text = (unsigned char *) malloc(padded_len);
   memset(padded_text, 0, padded_len);
   memcpy(padded_text, buf, len);
 
@@ -430,13 +437,13 @@ int stun_encode_message_integrity(stun_attr_t *attr, unsigned char *buf, int len
 /** this function allocates the enc_buf, fills in type, length */
 int stun_encode_type_len(stun_attr_t *attr, uint16_t len) {
   uint16_t tmp;
-  attr->enc_buf.data = (unsigned char *)malloc(len+4);
-  memset(attr->enc_buf.data, 0, len+4);
+  attr->enc_buf.data = (unsigned char *) malloc(len + 4);
+  memset(attr->enc_buf.data, 0, len + 4);
   tmp = htons(attr->attr_type);
   memcpy(attr->enc_buf.data, &tmp, 2);
   tmp = htons(len);
-  memcpy(attr->enc_buf.data+2, &tmp, 2);
-  attr->enc_buf.size = len+4;
+  memcpy(attr->enc_buf.data + 2, &tmp, 2);
+  attr->enc_buf.size = len + 4;
   return 0;
 }
 
@@ -460,7 +467,7 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
   }
 
   /* zero padding */
-  len = msg->enc_buf.size-24;
+  len = msg->enc_buf.size - 24;
   padded_len = len + (len % 64 == 0 ? 0 : 64 - (len % 64));
   padded_text = (unsigned char *) malloc(padded_len);
   memset(padded_text, 0, padded_len);
@@ -468,7 +475,7 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
 
   memcpy(dig, HMAC(EVP_sha1(), pwd->data, pwd->size, padded_text, padded_len, NULL, &dig_len), 20);
 
-  if (memcmp(dig, msg->enc_buf.data+msg->enc_buf.size-20, 20) != 0) {
+  if (memcmp(dig, msg->enc_buf.data + msg->enc_buf.size - 20, 20) != 0) {
     /* does not match, but try the test server's password */
     if (memcmp(msg->enc_buf.data+msg->enc_buf.size-20, "hmac-not-implemented", 20) != 0) {
       SU_DEBUG_5(("%s: error: message digest problem.\n", __func__));

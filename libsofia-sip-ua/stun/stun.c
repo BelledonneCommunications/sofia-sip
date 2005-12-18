@@ -266,7 +266,7 @@ stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
   /* Enviroment overrides */
   if (getenv("STUN_SERVER")) {
     server = getenv("STUN_SERVER");
-    SU_DEBUG_5(("stun: using STUN_SERVER=%s\n", server));
+    SU_DEBUG_5(("%s: using STUN_SERVER=%s\n", __func__, server));
   }
 
   SU_DEBUG_5(("%s(\"%s\"): called\n", 
@@ -416,7 +416,7 @@ int stun_handle_bind(stun_handle_t *se,
       memcpy(clnt_addr->li_addr, li->li_addr, sizeof(su_addrinfo_t));
       
       inet_ntop(clnt_addr->li_family, SU_ADDR(clnt_addr->li_addr), ipaddr, sizeof(ipaddr));
-      SU_DEBUG_3(("stun: local address found to be %s:%u\n", 
+      SU_DEBUG_3(("%s: local address found to be %s:%u\n", __func__, 
 		  ipaddr,
 		  (unsigned) ntohs(clnt_addr->li_addr->su_port)));
       found = 1;
@@ -441,12 +441,12 @@ int stun_handle_bind(stun_handle_t *se,
 
   inet_ntop(clnt_addr->li_family, SU_ADDR(clnt_addr->li_addr), ipaddr, sizeof(ipaddr));
   if (bind(sockfd, (struct sockaddr *) &clnt_addr->li_addr, clnt_addr->li_addrlen) < 0) {
-    SU_DEBUG_3(("stun: Error binding to %s:%u\n", ipaddr,
+    SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, ipaddr,
 		(unsigned) ntohs(clnt_addr->li_addr->su_port)));
     return -1;
   }
 
-  SU_DEBUG_3(("stun: %s: socket bound to %s:%u\n", __func__, ipaddr,
+  SU_DEBUG_3(("%s: socket bound to %s:%u\n", __func__, ipaddr,
 	      (unsigned) ntohs(clnt_addr->li_addr->su_port)));
 
   bind_len = clnt_addr->li_addrlen;
@@ -456,7 +456,7 @@ int stun_handle_bind(stun_handle_t *se,
   }
   
   inet_ntop(clnt_addr->li_family, SU_ADDR(&bind_addr), ipaddr, sizeof(ipaddr));
-  SU_DEBUG_3(("stun: Local socket bound to: %s:%u\n", ipaddr, 
+  SU_DEBUG_3(("%s: Local socket bound to: %s:%u\n", __func__, ipaddr, 
 	      (unsigned) ntohs(bind_addr.su_port)));
 
   retval = stun_bind_test(se, &se->st_pri_info, se->st_pri_addr,
@@ -677,7 +677,9 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
      * (ssl_connecting) for it */
 
   case stun_tls_ssl_connecting:
-    SU_DEBUG_3(("%s: VOI KAKKA\n", __func__));
+    events = SU_WAIT_ERR | SU_WAIT_IN;
+    su_root_eventmask(self->st_root, self->st_root_index,
+		      self->st_socket, events);
 
     z = SSL_connect(ssl);
     err = SSL_get_error(ssl, z);
@@ -692,18 +694,22 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
       return -1;
     }
     
-    SU_DEBUG_3(("%s: VOI KAKKA taas\n", __func__));
-
-    events = SU_WAIT_ERR | SU_WAIT_OUT | SU_WAIT_IN;
-    su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_socket, events);
-
     /* Inform application about the progress  */
     self->st_state = stun_tls_writing;
     /* self->st_callback(self->st_context, self, self->st_state); */
+
+    events = SU_WAIT_ERR | SU_WAIT_OUT;
+    su_root_eventmask(self->st_root, self->st_root_index,
+		      self->st_socket, events);
+
     break;
 
   case stun_tls_writing:
+
+    events = SU_WAIT_ERR | SU_WAIT_IN;
+    su_root_eventmask(self->st_root, self->st_root_index,
+		      self->st_socket, events);
+
     SU_DEBUG_3(("TLS connection using %s\n", SSL_get_cipher(ssl)));
     
     server_cert = SSL_get_peer_certificate(ssl); 
@@ -730,6 +736,10 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     break;
 
   case stun_tls_reading:
+    events = SU_WAIT_ERR | SU_WAIT_OUT;
+    su_root_eventmask(self->st_root, self->st_root_index,
+		      self->st_socket, events);
+
     SU_DEBUG_5(("Shared Secret Request sent to server:\n"));
     debug_print(&req->enc_buf);
 
@@ -783,6 +793,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 	stun_copy_buffer(&self->st_passwd, password->pattr);
       }
       break;
+
     case SHARED_SECRET_ERROR_RESPONSE:
       if (stun_process_error_response(resp) < 0) {
 	SU_DEBUG_5(("Error in Shared Secret Error Response.\n")); 
@@ -799,10 +810,11 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     su_wait_destroy(w);
     su_root_deregister(self->st_root, self->st_root_index);
 
+    self->st_use_msgint = 1;
     self->st_state = stun_tls_done;
     self->st_callback(self->st_context, self, self->st_state);
     
-    self->st_use_msgint = 1;
+    break;
 
   default:
     return -1;
@@ -1026,7 +1038,7 @@ int stun_bind_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   binding_response.enc_buf.size = len;
   memcpy(binding_response.enc_buf.data, dgram, len);
 
-  SU_DEBUG_3(("stun: response from server %s:%u\n",
+  SU_DEBUG_3(("%s: response from server %s:%u\n", __func__,
 	      inet_ntoa(recv_addr.sin_addr),
 	      ntohs(recv_addr.sin_port)));
 
@@ -1038,7 +1050,7 @@ int stun_bind_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   if (stun_parse_message(&binding_response) < 0) {
     su_wait_destroy(w);
     su_root_deregister(self->st_root, self->ss_root_index);
-    SU_DEBUG_5(("stun: Error parsing response.\n"));
+    SU_DEBUG_5(("%s: Error parsing response.\n", __func__));
     stun_free_message(binding_request);
     stun_free_message(&binding_response);
     return retval;
@@ -1078,7 +1090,7 @@ int stun_bind_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     
   case BINDING_ERROR_RESPONSE:
     if (stun_process_error_response(&binding_response) < 0) {
-      SU_DEBUG_3(("stun: Error in Binding Error Response.\n"));
+      SU_DEBUG_3(("%s: Error in Binding Error Response.\n", __func__));
     }
     break;
     
@@ -1139,7 +1151,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     return;
   }
 
-  SU_DEBUG_3(("stun: %s: Time out no. %d, retransmitting.\n", __func__, se->st_retry_count));
+  SU_DEBUG_3(("%s: Time out no. %d, retransmitting.\n", __func__, se->st_retry_count));
 
   if (stun_send_message(s, &se->st_pri_addr->su_sin, se->st_binding_request, &(se->st_passwd)) < 0) {
     stun_free_message(se->st_binding_request);
@@ -1197,7 +1209,9 @@ int stun_bind_test(stun_handle_t *se,
   s = se->ss_sockfd;
 
   inet_ntop(srvr_info->ai_family, SU_ADDR(srvr_addr), ipaddr, sizeof(ipaddr));
-  SU_DEBUG_3(("stun: sending to %s:%u (req-flags: msgint=%d, ch-addr=%d, chh-port=%d)\n", 
+  SU_DEBUG_3(("%s: sending to %s:%u (req-flags: msgint=%d, "
+	      "ch-addr=%d, chh-port=%d)\n",
+	      __func__,
 	      ipaddr, ntohs(srvr_addr->su_port),
 	      se->st_use_msgint, chg_ip, chg_port));
 
@@ -1303,7 +1317,7 @@ int stun_process_response(stun_msg_t *msg)
 
   /* parse msg first */
   if (stun_parse_message(msg) < 0) {
-    SU_DEBUG_3(("stun: Error parsing response.\n"));
+    SU_DEBUG_3(("%s: Error parsing response.\n", __func__));
     return -1;
   }
 
@@ -1348,8 +1362,8 @@ int stun_process_error_response(stun_msg_t *msg)
 
   ec = (stun_attr_errorcode_t *)attr->pattr;
   
-  SU_DEBUG_5(("stun: Received Binding Error Response:\n"));
-  SU_DEBUG_5(("stun: Error: %d %s\n", ec->code, ec->phrase));
+  SU_DEBUG_5(("%s: Received Binding Error Response:\n", __func__));
+  SU_DEBUG_5(("%s: Error: %d %s\n", __func__, ec->code, ec->phrase));
 
   return 0;
 }
@@ -1470,7 +1484,7 @@ int stun_handle_get_lifetime(stun_handle_t *se,
 
   assert(se);
 
-  SU_DEBUG_3(("stun: determining binding life time, this may take a while.\n"));
+  SU_DEBUG_3(("%s: determining binding life time, this may take a while.\n", __func__));
 
   /* get local ip address */
   clnt_addr = (struct sockaddr_in *) my_addr;
@@ -1481,7 +1495,7 @@ int stun_handle_get_lifetime(stun_handle_t *se,
       for (i = 0, li = res; li; li = li->li_next) {
 	if (li->li_family == AF_INET) {
 	  memcpy(clnt_addr, &li->li_addr->su_sin, sizeof(li->li_addr->su_sin));
-	  SU_DEBUG_3(("stun: local address found to be %s:%u\n", 
+	  SU_DEBUG_3(("%s: local address found to be %s:%u\n", __func__, 
 		      inet_ntoa(clnt_addr->sin_addr), 
 		      (unsigned)ntohs(clnt_addr->sin_port)));
 	  found = 1;
@@ -1489,12 +1503,12 @@ int stun_handle_get_lifetime(stun_handle_t *se,
 	}
       }
       if (!found) {
-	SU_DEBUG_5(("stun: su_getlocalinfo: %s\n", su_gli_strerror(error)));
+	SU_DEBUG_5(("%s: su_getlocalinfo: %s\n", __func__, su_gli_strerror(error)));
 	return errno = EFAULT, -1;
       }
     }
     else {
-      SU_DEBUG_5(("stun: su_getlocalinfo: %s\n", su_gli_strerror(error)));
+      SU_DEBUG_5(("%s: su_getlocalinfo: %s\n", __func__, su_gli_strerror(error)));
       return errno = EFAULT, -1;
     }
   }
@@ -1505,30 +1519,30 @@ int stun_handle_get_lifetime(stun_handle_t *se,
   clnt_addr->sin_port = 0;
   /* initialize socket x */
   if (bind(sockfdx, (struct sockaddr *) clnt_addr, *addrlen) < 0) {
-    SU_DEBUG_3(("stun: Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr),
+    SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, inet_ntoa(clnt_addr->sin_addr),
 		(unsigned)ntohs(clnt_addr->sin_port)));
     return retval;
   }
   x_len = sizeof(x_addr);
   getsockname(sockfdx, (struct sockaddr *) &x_addr, &x_len);  
-  SU_DEBUG_3(("stun: Local socket x bound to: %s:%u\n", inet_ntoa(x_addr.sin_addr),
+  SU_DEBUG_3(("%s: Local socket x bound to: %s:%u\n", __func__, inet_ntoa(x_addr.sin_addr),
 	      (unsigned)ntohs(x_addr.sin_port)));
 
   /* initialize socket y */
   sockfdy = socket(AF_INET, SOCK_DGRAM, 0);
   if (bind(sockfdy, (struct sockaddr *)clnt_addr, *addrlen) < 0) {
-    SU_DEBUG_3(("stun: Error binding to %s:%u\n", inet_ntoa(clnt_addr->sin_addr),
+    SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, inet_ntoa(clnt_addr->sin_addr),
 		(unsigned)ntohs(clnt_addr->sin_port)));
     return retval;
   }
   y_len = sizeof(y_addr);
   getsockname(sockfdy, (struct sockaddr *) &y_addr, &y_len);  
-  SU_DEBUG_3(("stun: Local socket y bound to: %s:%u\n", inet_ntoa(y_addr.sin_addr), 
+  SU_DEBUG_3(("%s: Local socket y bound to: %s:%u\n", __func__, inet_ntoa(y_addr.sin_addr), 
 	      (unsigned)ntohs(y_addr.sin_port)));
    
   i = 1;
   while (abs(lt_cur-lt) > STUN_LIFETIME_CI) {
-    SU_DEBUG_3(("stun: Lifetime determination round %d, testing lifetime of %d sec.\n", i++, lt));
+    SU_DEBUG_3(("%s: Lifetime determination round %d, testing lifetime of %d sec.\n", __func__, i++, lt));
     /* send request from X */
     if (stun_make_binding_req(se, &binding_request, 0, 0) < 0)
       return retval;
@@ -1552,16 +1566,16 @@ int stun_handle_get_lifetime(stun_handle_t *se,
       binding_response.enc_buf.data = (unsigned char *)malloc(z);
       binding_response.enc_buf.size = z;
       memcpy(binding_response.enc_buf.data, dgram, z);
-      SU_DEBUG_3(("stun: response from server %s:%u\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
+      SU_DEBUG_3(("%s: response from server %s:%u\n", __func__, inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
       debug_print(&binding_response.enc_buf);      
     }
     else {
-      SU_DEBUG_3(("stun: No response from server. Check configuration.\n"));
+      SU_DEBUG_3(("%s: No response from server. Check configuration.\n", __func__));
       return retval;
     }
     /* process response */
     if (stun_parse_message(&binding_response) < 0) {
-      SU_DEBUG_5(("stun: Error parsing response.\n"));
+      SU_DEBUG_5(("%s: Error parsing response.\n", __func__));
       return retval;
     }
     if (binding_response.stun_hdr.msg_type == BINDING_RESPONSE) {
@@ -1600,14 +1614,14 @@ int stun_handle_get_lifetime(stun_handle_t *se,
       /* mapping with X still valid */
       lt_cur = lt;
       lt = (int) (lt+lt_max)/2;
-      SU_DEBUG_3(("stun: Response received from socket X, lifetime at least %d sec, next trial: %d sec\n\n", 
+      SU_DEBUG_3(("%s: Response received from socket X, lifetime at least %d sec, next trial: %d sec\n\n", __func__, 
 		  lt_cur, lt));
     }
     else {
       /* no response */
       lt_max = lt;
       lt = (int) (lt+lt_cur)/2;
-      SU_DEBUG_3(("stun: No response received from socket X, lifetime at most %d sec, next trial: %d sec\n\n", 
+      SU_DEBUG_3(("%s: No response received from socket X, lifetime at most %d sec, next trial: %d sec\n\n", __func__, 
 		  lt_max, lt));
     }
   }
