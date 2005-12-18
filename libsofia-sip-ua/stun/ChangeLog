@@ -1,3 +1,12 @@
+2005-12-19  Martti Mela  <mela@dev-113.nrln.net>
+
+	* stun.c: TLS connection works now.
+
+	* stun.h: removed stun_socket_t references, replaced by
+	stun_handle functionality.
+
+	* stunc.c, torture_stun.c: modified in accordance to stun.h.
+	
 2005-12-16  Martti Mela  <mela@dev-113.nrln.net>
 
 	* stun.h: changed stun_engine_t to stun_handle_t.
