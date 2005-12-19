@@ -73,7 +73,6 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_states_t event)
 
   switch (event) {
   case stun_tls_done:
-    /* SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event))); */
     su_root_break(stun_handle_root(en));
     break;
 
@@ -90,8 +89,9 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_states_t event)
     su_root_break(stun_handle_root(en));
     break;
 
+  case stun_bind_timeout:
+  case stun_tls_connection_failed:
   case stun_error:
-    SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
     su_root_break(stun_handle_root(en));
 
   default:

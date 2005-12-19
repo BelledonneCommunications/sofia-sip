@@ -100,7 +100,7 @@ int stun_parse_message(stun_msg_t *msg) {
   while(len > 0) {
     i = stun_parse_attribute(msg, p);
     if(i <= 0) {
-      SU_DEBUG_0(("stun: Error parsing attribute.\n"));
+      SU_DEBUG_3(("%s: Error parsing attribute.\n", __func__));
       return -1;
     }
     p += i;
@@ -130,7 +130,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   p+=2;
   len = ntohs(tmp16);
 
-  SU_DEBUG_3(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
+  SU_DEBUG_1(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
 	      attr->attr_type, len, stun_attr_phrase(attr->attr_type)));
 
   switch(attr->attr_type) {
@@ -213,7 +213,7 @@ int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned 
   memcpy(&addr->sin_port, p+2, 2);
   memcpy(&addr->sin_addr.s_addr, p+4, 4);
 
-  SU_DEBUG_3(("%s: address attribute: %s:%d\n", __func__, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
+  SU_DEBUG_1(("%s: address attribute: %s:%d\n", __func__, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
 
   attr->pattr = addr;
   stun_init_buffer(&attr->enc_buf);
@@ -553,7 +553,7 @@ int stun_free_message(stun_msg_t *msg) {
   return 0;
 }
 
-#if 1
+
 int stun_send_message(int sockfd, struct sockaddr_in *to_addr, stun_msg_t *msg, stun_buffer_t *pwd) 
 {
   int z;
@@ -562,36 +562,12 @@ int stun_send_message(int sockfd, struct sockaddr_in *to_addr, stun_msg_t *msg, 
 
   z = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
 	     0, (struct sockaddr *)to_addr, sizeof(*to_addr));
-  SU_DEBUG_5(("stun: message sent to %s:%u\n", 
+  SU_DEBUG_3(("%s: message sent to %s:%u\n", __func__,
 	      inet_ntoa(to_addr->sin_addr), ntohs(to_addr->sin_port)));
   debug_print(&msg->enc_buf);
   
   return z;
 }  
-#else
-int stun_send_message(int sockfd, su_sockaddr_t *to_addr, stun_msg_t *msg, stun_buffer_t *pwd) 
-{
-  int err = -1;
-  char ipaddr[SU_ADDRSIZE + 2];
-  int namelen = sizeof(su_addrinfo_t);
-
-  stun_encode_message(msg, pwd);
-
-  inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));
-  err = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
-	       0, (struct sockaddr *) &to_addr->su_sin, namelen);
-  if (err != 0)
-    STUN_ERROR(err, sendto);
-
-
-  inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));
-  SU_DEBUG_5(("stun: message sent to %s:%u\n", 
-	      ipaddr, ntohs(to_addr->su_port)));
-  debug_print(&msg->enc_buf);
-  
-  return err;
-}  
-#endif
 
 
 /** send a STUN message.
@@ -720,7 +696,7 @@ char *stun_determine_ip_address(int family)
   hints->li_family = family;
   hints->li_canonname = getenv("HOSTADDRESS");
   if ((error = su_getlocalinfo(hints, &li)) < 0) {
-    SU_DEBUG_0(("stun: stun_determine_ip_address, su_getlocalinfo: %s\n", su_gli_strerror(error)));
+    SU_DEBUG_3(("%s: stun_determine_ip_address, su_getlocalinfo: %s\n", __func__, su_gli_strerror(error)));
     return NULL;
   }
 

@@ -1,4 +1,10 @@
-2005-12-19  Martti Mela  <mela@dev-113.nrln.net>
+2005-12-19  Martti Mela  <martti.mela@nokia.com>
+
+	* stun.c: fixed TLS and bind timers.
+
+	* stun_common.c: changed every SU_DEBUG to contain __func__.
+
+2005-12-19  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.c: TLS connection works now.
 
@@ -7,7 +13,7 @@
 
 	* stunc.c, torture_stun.c: modified in accordance to stun.h.
 	
-2005-12-16  Martti Mela  <mela@dev-113.nrln.net>
+2005-12-16  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.h: changed stun_engine_t to stun_handle_t.
 

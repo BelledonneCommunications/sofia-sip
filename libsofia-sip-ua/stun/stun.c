@@ -77,18 +77,19 @@ char const stun_nat_unknown[] = "NAT type undetermined",
 struct stun_handle_s
 {
   su_home_t       st_home[1];
-  su_root_t      *st_root;         /**< event loop */
-  int             st_root_index;   /**< object index of su_root_register() */
+  su_root_t      *st_root;          /**< event loop */
+  int             st_root_index;    /**< object index of su_root_register() */
+  su_timer_t     *st_connect_timer; /**< timer for TLS connection */
 
-  int             st_max_retries;  /**< max resend for sendto() */
-  int             st_retry_count;  /**< current retry number */
-  long            st_timeout;      /**< timeout for next sendto() */
+  int             st_max_retries;   /**< max resend for sendto() */
+  int             st_retry_count;   /**< current retry number */
+  long            st_timeout;       /**< timeout for next sendto() */
 
-  su_addrinfo_t   st_pri_info;     /**< server primary info */
-  su_sockaddr_t   st_pri_addr[1];  /**< server primary address */
+  su_addrinfo_t   st_pri_info;      /**< server primary info */
+  su_sockaddr_t   st_pri_addr[1];   /**< server primary address */
 
-  su_addrinfo_t   st_sec_info;     /**< server secondary info */
-  su_sockaddr_t   st_sec_addr[1];  /**< server secondary address */
+  su_addrinfo_t   st_sec_info;      /**< server secondary info */
+  su_sockaddr_t   st_sec_addr[1];   /**< server secondary address */
 
   su_localinfo_t  st_client_addr[1];  /**< local address returned by server */
 
@@ -615,14 +616,15 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 	      events & SU_WAIT_IN      ? " IN"        : "",
 	      events & SU_WAIT_OUT     ? " OUT"       : ""));
 
-  if (!(events & SU_WAIT_CONNECT ||
-	events & SU_WAIT_IN ||
-	events & SU_WAIT_OUT)) {
+  if (events & SU_WAIT_ERR) {
     su_wait_destroy(w);
     su_root_deregister(self->st_root, self->st_root_index);
 
-    SU_DEBUG_3(("Shared secret NOT obtained from server. "	\
-		"Proceed without username/password.\n"));
+    /* Destroy the timeout timer */
+    su_timer_destroy(self->st_connect_timer);
+
+    SU_DEBUG_3(("%s: shared secret not obtained from server. "	\
+		"Proceed without username/password.\n", __func__));
     self->st_state = stun_tls_connection_failed;
     self->st_callback(self->st_context, self, self->st_state);
     return 0;
@@ -889,7 +891,7 @@ int stun_handle_request_shared_secret(stun_handle_t *se)
     STUN_ERROR(errno, setsockopt);
     return -1;
   }
-  SU_DEBUG_3(("%s: %s: %s\n", __func__, "setsockopt",
+  SU_DEBUG_7(("%s: %s: %s\n", __func__, "setsockopt",
 	      su_strerror(errno)));
 
   /* Do an asynchronous connect(). Three error codes are ok,
@@ -927,6 +929,7 @@ int stun_handle_request_shared_secret(stun_handle_t *se)
 
   connect_timer = su_timer_create(su_root_task(se->st_root),
 				  STUN_TLS_CONNECT_TIMEOUT);
+  se->st_connect_timer = connect_timer;
   su_timer_set(connect_timer, stun_tls_connect_timer_cb, se);
 
   return 0;
@@ -1120,11 +1123,9 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 {
   int s = se->ss_sockfd;
 
-  if (se->st_state == stun_bind_sending) {
-    return;
-  }
+  SU_DEBUG_9(("%s: entering.\n", __func__));
 
-  if (se->st_state != stun_bind_receiving) {
+  if ((se->st_state != stun_bind_sending) && (se->st_state != stun_bind_receiving)) {
     su_timer_destroy(t);
     return;
   }
@@ -1151,7 +1152,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     return;
   }
 
-  SU_DEBUG_3(("%s: Time out no. %d, retransmitting.\n", __func__, se->st_retry_count));
+  SU_DEBUG_3(("%s: Timeout no. %d, retransmitting.\n", __func__, se->st_retry_count));
 
   if (stun_send_message(s, &se->st_pri_addr->su_sin, se->st_binding_request, &(se->st_passwd)) < 0) {
     stun_free_message(se->st_binding_request);

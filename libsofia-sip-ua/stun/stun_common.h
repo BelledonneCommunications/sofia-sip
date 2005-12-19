@@ -125,7 +125,7 @@
 #define STUN_NAT_PORT_RES_CONE          7
 
 /* other protocol specific parameters */
-#define STUN_MAX_RETRX                  8
+#define STUN_MAX_RETRX                  5 /* should be 8? */
 #define STUN_MAX_RETRX_INT              1600  /**< max retrx interval in
 						   millisec */
 #define STUN_DEFAULT_PORT               3478  /**< from RFC3489 */
