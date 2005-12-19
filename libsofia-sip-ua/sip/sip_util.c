@@ -120,21 +120,20 @@ sip_contact_create_from_via_with_transport(su_home_t *home,
       port = NULL;
   }
 
-  comp = msg_params_find(v->v_params, "comp=");
+  comp = v->v_comp;
 
   m = sip_contact_format(home,
 			 "<%s:%s%s%s%s%s%s%s%s%s%s%s>",
 			 scheme,
 			 user ? user : "", user ? "@" : "", 
-			 host, port ? ":" : "", port ? port : "",
-			 transport ? ";transport=" : "", 
-			 transport ? transport : "",
-			 maddr ? ";maddr=" : "", maddr ? maddr : "",
-			 comp ? ";comp=" : "", comp ? comp : "");
+			 host, 
+			 SIP_STRLOG(":", port),
+			 SIP_STRLOG(";transport=", transport),
+			 SIP_STRLOG(";maddr=", maddr),
+			 SIP_STRLOG(";comp=", comp));
 
   /* Convert transport to lowercase */
-  if (m && m->m_url->url_params &&
-      strncmp(m->m_url->url_params, "transport=", strlen("transport=")) == 0) {
+  if (transport && m && m->m_url->url_params) {
     char *s = (char *)m->m_url->url_params + strlen("transport=");
     
     while (*s && *s != ';') {
@@ -293,7 +292,7 @@ url_t *sip_url_dup(su_home_t *home, url_t const *o)
  * @return
  * The function sip_q_value() returns an integer in range 0 .. 1000.
  */
-unsigned sip_q_value(sip_param_t q)
+unsigned sip_q_value(char const *q)
 {
   unsigned value = 0;
 

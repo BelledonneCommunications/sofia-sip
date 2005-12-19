@@ -245,7 +245,7 @@ sip_cseq_t *sip_cseq_create(su_home_t *,
 
 /** Create a @b Contact header object. */
 sip_contact_t * sip_contact_create(su_home_t *home, url_string_t const *url, 
-				   sip_param_t p, ...);
+				   char const *, ...);
 /** Add a parameter to a @b Contact header object. */
 int sip_contact_add_param(su_home_t *, sip_contact_t *, char const *param);
 

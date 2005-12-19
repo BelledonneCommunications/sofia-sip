@@ -1466,9 +1466,6 @@ inline static
 void sip_contact_param_update(sip_contact_t *m, msg_param_t p)
 {
   switch (p[0]) {
-  case 'a':
-    MSG_PARAM_MATCH(m->m_action, p, "action");
-    break;
   case 'e':
     MSG_PARAM_MATCH(m->m_expires, p, "expires");
     break;
@@ -1497,7 +1494,6 @@ void sip_contact_update(sip_header_t *h)
   char const *const *pp;
 
   /* Clear existing parameters */
-  m->m_action = NULL;
   m->m_expires = NULL;
   m->m_q = NULL;
 
@@ -2490,7 +2486,7 @@ int sip_to_add_param(su_home_t *home,
  *
  * The Via header indicates the path taken by the request so far.  Via
  * headers can be used to prevent request looping and ensure replies take
- * the same path as the requests.  The Via syntax is defined in [S10.46.6]
+ * the same path as the requests.  The Via syntax is defined in @RFC3261
  * as follows:
  * 
  * @code
@@ -2516,6 +2512,19 @@ int sip_to_add_param(su_home_t *home,
  *
  * @note
  * The @RFC2543 syntax allowed <comment>. We accept it, but don't encode it.
+ *
+ * In addition to the parameters defined in @RFC3261, @RFC3486 defines a
+ * parameter "comp":
+ * @code
+ *     via-compression  =  "comp" EQUAL ("sigcomp" / other-compression)
+ *    via-params      /=  via-compression
+ * @endcode
+ *
+ * @RFC3581 defines a parameter "rport":
+ * @code
+ *    response-port  =  "rport" [EQUAL 1*DIGIT]
+ *    via-params    /=  response-port
+ * @endcode
  */
 
 static void sip_via_update(sip_header_t *h);
@@ -2536,11 +2545,12 @@ static void sip_via_update(sip_header_t *h);
  *   msg_param_t const  *v_params;      // List of via-params
  *   char const         *v_comment;     // Comment
  * 
- *   unsigned            v_hidden;      // "hidden" parameter
- *   msg_param_t         v_ttl;         // "ttl" parameter
- *   msg_param_t         v_maddr;       // "maddr" parameter
- *   msg_param_t         v_received;    // "received" parameter
- *   msg_param_t         v_branch;      // "branch" parameter
+ *   char const         *v_ttl;         // "ttl" parameter
+ *   char const         *v_maddr;       // "maddr" parameter
+ *   char const         *v_received;    // "received" parameter
+ *   char const         *v_branch;      // "branch" parameter
+ *   char const         *v_comp;        // "comp" parameter
+ *   char const         *v_rport;       // "rport" parameter
  * } sip_via_t;
  * @endcode
  */
@@ -2682,14 +2692,15 @@ void sip_via_param_update(sip_via_t *v, char const *p)
   case 'b':
     MSG_PARAM_MATCH(v->v_branch, p, "branch");
     break;
-  case 'h':
-    MSG_PARAM_MATCH_P(v->v_hidden, p, "hidden");
+  case 'c':
+    MSG_PARAM_MATCH(v->v_comp, p, "comp");
     break;
   case 'm':
     MSG_PARAM_MATCH(v->v_maddr, p, "maddr");
     break;
   case 'r':
     MSG_PARAM_MATCH(v->v_received, p, "received");
+    MSG_PARAM_MATCH(v->v_rport, p, "rport");
     break;
   case 't': 
     MSG_PARAM_MATCH(v->v_ttl, p, "ttl");

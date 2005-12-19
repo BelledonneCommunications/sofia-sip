@@ -503,11 +503,22 @@ int test_basic(void)
     TEST_1(v = sip_via_create(home, "bar.com", 
 			      "50600", 
 			      "SIP/2.0/UDP",
+			      "hidden",
 			      "rport=50601",
+			      "comp=sigcomp",
 			      "branch=1",
 			      "q=0.2",
 			      NULL));
     TEST_S(v->v_branch, "1");
+    TEST_S(v->v_rport, "50601");
+    TEST_S(v->v_comp, "sigcomp");
+
+    TEST_1(v = sip_via_make(home, "SIP/2.0/UDP bar.com:50600"
+			    " ;hidden;rport=50601;comp=sigcomp;branch=1;q=0.2"
+			    " (This is a comment) "));
+    TEST_S(v->v_branch, "1");
+    TEST_S(v->v_rport, "50601");
+    TEST_S(v->v_comp, "sigcomp");
 
     TEST_1(v0 = sip_via_dup(home, v));
 

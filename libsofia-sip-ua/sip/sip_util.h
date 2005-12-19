@@ -42,11 +42,10 @@
 #include <string0.h>
 #endif
 
-sip_param_t sip_params_find(sip_param_t const pp[], sip_param_t token);
-int sip_params_add(su_home_t *sh, sip_param_t **pparams, sip_param_t param);
+char const *sip_params_find(sip_param_t const pp[], char const *token);
+int sip_params_add(su_home_t *sh, sip_param_t **pparams, char const *param);
 int sip_params_cmp(sip_param_t const a[], sip_param_t const b[]);
-int sip_params_replace(su_home_t *, sip_param_t **pparams, sip_param_t param);
-unsigned long sip_hash_string(char const *id);
+int sip_params_replace(su_home_t *, sip_param_t **pparams, char const *param);
 
 sip_contact_t *
 sip_contact_create_from_via_with_transport(su_home_t *home, 
@@ -61,11 +60,9 @@ int sip_response_terminates_dialog(int response_code,
 				   sip_method_t method,
 				   int *return_graceful_terminate);
 
-#define sip_hash_string     msg_hash_string
-
 int sip_sanity_check(sip_t const *sip);
 
-unsigned sip_q_value(sip_param_t q);
+unsigned sip_q_value(char const * q);
 
 url_t *sip_url_dup(su_home_t *sh, url_t const *o);
 
@@ -164,7 +161,7 @@ int sip_aor_strip(url_t *url);
 
 int sip_security_verify_compare(sip_security_server_t const *s,
 				sip_security_verify_t const *v,
-				sip_param_t *return_d_ver);
+				char const **return_d_ver);
 
 sip_security_client_t const *
 sip_security_client_select(sip_security_client_t const *client,

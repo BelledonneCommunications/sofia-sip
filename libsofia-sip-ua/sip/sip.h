@@ -384,7 +384,7 @@ struct sip_addr_s
   sip_error_t       *a_next;
   char const        *a_display;	    /**< Display name */
   url_t              a_url[1];	    /**< URL */
-  sip_param_t const *a_params;	    /**< Parameter table  */
+  msg_param_t const *a_params;	    /**< Parameter table  */
   char const        *a_comment;	    /**< Comment */
  
   char const        *a_tag;	    /**< Tag parameter */
@@ -402,8 +402,8 @@ struct sip_accept_s
   sip_accept_t       *ac_next;	    /**< Pointer to next Accept header */
   char const         *ac_type;	    /**< Pointer to type/subtype */
   char const         *ac_subtype;   /**< Points after first slash in type */
-  sip_param_t const  *ac_params;    /**< List of parameters */
-  sip_param_t         ac_q;	    /**< Value of q parameter */
+  msg_param_t const  *ac_params;    /**< List of parameters */
+  char const         *ac_q;	    /**< Value of q parameter */
 };
 
 /**@ingroup sip_authentication_info
@@ -413,7 +413,7 @@ struct sip_authentication_info_s
 {
   sip_common_t        ai_common[1]; /**< Common fragment info */
   sip_error_t        *ai_next;	    /**< Dummy link to next */
-  sip_param_t const  *ai_params;    /**< List authentication info */
+  msg_param_t const  *ai_params;    /**< List authentication info */
 };
 
 /**@ingroup sip_call_id 
@@ -434,8 +434,8 @@ struct sip_call_info_s
   sip_common_t        ci_common[1]; /**< Common fragment info */
   sip_call_info_t    *ci_next;	    /**< Link to next Call-Info */
   url_t               ci_url[1];    /**< URI to call info  */
-  sip_param_t const  *ci_params;    /**< List of parameters */
-  sip_param_t         ci_purpose;   /**< Value of @b purpose parameter */
+  msg_param_t const  *ci_params;    /**< List of parameters */
+  char const         *ci_purpose;   /**< Value of @b purpose parameter */
 };
 
 /**@ingroup sip_cseq
@@ -459,12 +459,11 @@ struct sip_contact_s
   sip_contact_t      *m_next;	    /**< Link to next Contact header */
   char const         *m_display;    /**< Display name */
   url_t               m_url[1];	    /**< SIP URL */
-  sip_param_t const  *m_params;	    /**< List of contact-params */
+  msg_param_t const  *m_params;	    /**< List of contact-params */
   char const         *m_comment;    /**< Comment */
 
-  sip_param_t         m_q;	    /**< Priority */
-  sip_param_t         m_expires;    /**< Expiration time */
-  sip_param_t         m_action;	    /**< Desired action (redirect or proxy) */
+  char const         *m_q;	    /**< Priority */
+  char const         *m_expires;    /**< Expiration time */
 };
 
 /**@ingroup sip_content_length
@@ -488,7 +487,7 @@ struct sip_content_type_s
   sip_error_t        *c_next;	    /**< Dummy link to next */
   char const         *c_type;	    /**< Pointer to type/subtype */
   char const         *c_subtype;    /**< Points after first slash in type */
-  sip_param_t const  *c_params;	    /**< List of parameters */
+  msg_param_t const  *c_params;	    /**< List of parameters */
 };
 #endif
 
@@ -510,7 +509,7 @@ struct sip_error_info_s
   sip_common_t        ei_common[1]; /**< Common fragment info */
   sip_call_info_t    *ei_next;	    /**< Link to next Error-Info */
   url_t               ei_url[1];    /**< URI to error description */
-  sip_param_t const  *ei_params;    /**< List of parameters */
+  msg_param_t const  *ei_params;    /**< List of parameters */
 };
 
 /**@ingroup sip_event
@@ -521,8 +520,8 @@ struct sip_event_s
   sip_common_t        o_common;	    /**< Common fragment info */
   sip_error_t        *o_next;	    /**< Link to next (dummy) */
   char const *        o_type;	    /**< Event type */
-  sip_param_t const  *o_params;	    /**< List of parameters */
-  sip_param_t         o_id;	    /**< Event ID */
+  msg_param_t const  *o_params;	    /**< List of parameters */
+  char const         *o_id;	    /**< Event ID */
 };
 
 /**@ingroup sip_expires
@@ -579,7 +578,7 @@ struct sip_refer_to_s
   sip_error_t        *r_next;	    /**< Link to next (dummy) */
   char const         *r_display;
   url_t               r_url[1];	    /**< URI to reference */
-  sip_param_t const  *r_params;	    /**< List of parameters */
+  msg_param_t const  *r_params;	    /**< List of parameters */
 };
 
 /**@ingroup sip_referred_by
@@ -591,8 +590,8 @@ struct sip_referred_by_s
   sip_error_t        *b_next;	    /**< Link to next (dummy) */
   char const         *b_display;
   url_t               b_url[1];	    /**< Referrer-URI */
-  sip_param_t const  *b_params;	    /**< List of parameters */
-  sip_param_t         b_cid;	    /**< The cid parameter */
+  msg_param_t const  *b_params;	    /**< List of parameters */
+  char const         *b_cid;	    /**< The cid parameter */
 };
 
 
@@ -604,9 +603,9 @@ struct sip_replaces_s
   sip_common_t        rp_common[1];   /**< Common fragment info */
   sip_error_t        *rp_next;	      /**< Link to next (dummy) */
   char const         *rp_call_id;     /**< Call-ID */
-  sip_param_t const  *rp_params;      /**< List of parameters */
-  sip_param_t         rp_to_tag;      /**< to-tag parameter */
-  sip_param_t         rp_from_tag;    /**< from-tag parameter */
+  msg_param_t const  *rp_params;      /**< List of parameters */
+  char const         *rp_to_tag;      /**< to-tag parameter */
+  char const         *rp_from_tag;    /**< from-tag parameter */
   unsigned            rp_early_only;  /**< early-only parameter */
 };
 
@@ -618,9 +617,9 @@ struct sip_retry_after_s {
   sip_common_t        af_common[1]; /**< Common fragment info */
   sip_error_t        *af_next;	    /**< Link to next (dummy) */
   sip_time_t          af_delta;	    /**< Seconds to before retry */
-  sip_param_t         af_comment;   /**< Comment string */
-  sip_param_t const  *af_params;    /**< List of parameters */
-  sip_param_t         af_duration;  /**< Duration parameter */
+  char const         *af_comment;   /**< Comment string */
+  msg_param_t const  *af_params;    /**< List of parameters */
+  char const         *af_duration;  /**< Duration parameter */
 };
 
 /**@ingroup sip_request_disposition
@@ -630,7 +629,7 @@ struct sip_request_disposition_s
 {
   sip_common_t        rd_common[1]; /**< Common fragment info */
   sip_unknown_t      *rd_next;	    /**< Link to next (dummy) */
-  sip_param_t        *rd_items;     /**< List of directives */
+  char const        **rd_items;     /**< List of directives */
 };
 
 /**@ingroup sip_caller_preferences
@@ -640,8 +639,8 @@ struct sip_caller_prefs_s
 {
   sip_common_t        cp_common[1];   /**< Common fragment info */
   sip_caller_prefs_t *cp_next;	      /**< Link to next (dummy) */
-  sip_param_t const  *cp_params;      
-  sip_param_t         cp_q;           /**< Priority */
+  msg_param_t const  *cp_params;      
+  char const         *cp_q;           /**< Priority */
   unsigned            cp_require : 1;
   unsigned            cp_explicit : 1;
 };
@@ -654,7 +653,7 @@ struct sip_reason_s
   sip_common_t        re_common[1]; /**< Common fragment info */
   sip_reason_t       *re_next;	    /**< Link to next */
   char const         *re_protocol;  /**< Protocol */
-  sip_param_t const  *re_params;    /**< List of reason parameters */
+  msg_param_t const  *re_params;    /**< List of reason parameters */
   char const         *re_cause;	    /**< Shortcut to cause parameter */
   char const         *re_text;	    /**< Shortcut to text parameter */
 };
@@ -668,7 +667,7 @@ struct sip_route_s
   sip_route_t        *r_next;	    /**< Link to next */
   char const         *r_display;    /**< Display name */
   url_t               r_url[1];	    /**< Route URL */
-  sip_param_t const  *r_params;	    /**< List of route parameters */
+  msg_param_t const  *r_params;	    /**< List of route parameters */
 };
 
 /**@ingroup sip_rseq 
@@ -689,7 +688,7 @@ struct sip_session_expires_s
   sip_common_t        x_common[1];
   sip_error_t        *x_next;
   unsigned long       x_delta; /**< Delta-seconds */
-  sip_param_t const  *x_params;
+  msg_param_t const  *x_params;
   char const         *x_refresher; /**< UAS or UAC */
 };
 
@@ -701,7 +700,7 @@ struct sip_min_se_s
   sip_common_t        min_common[1];
   sip_error_t        *min_next;
   unsigned long       min_delta; /**< Delta-seconds */
-  sip_param_t const  *min_params; /**< List of extension parameters */
+  msg_param_t const  *min_params; /**< List of extension parameters */
 };
 
 /**@ingroup sip_subscription_state 
@@ -711,11 +710,12 @@ struct sip_subscription_state_s
 {
   sip_common_t        ss_common[1]; /**< Common fragment info */
   sip_error_t        *ss_next;
-  char const         *ss_substate;
-  sip_param_t const  *ss_params; /**< List of parameters */
-  sip_param_t         ss_reason; 
-  sip_param_t         ss_expires;
-  sip_param_t         ss_retry_after;
+  /**< Subscription state: "pending", "active" or "terminated" */
+  char const         *ss_substate; 
+  msg_param_t const  *ss_params;   /**< List of parameters */
+  char const         *ss_reason;   /**< Reason for termination  */
+  char const         *ss_expires;  /**< Subscription lifetime */
+  char const         *ss_retry_after; /**< Value of retry-after parameter */
 };
 
 /**@ingroup sip_timestamp
@@ -739,14 +739,16 @@ struct sip_via_s
   char const         *v_protocol;   /**< Application and transport protocol */
   char const         *v_host;	    /**< Hostname */
   char const         *v_port;	    /**< Port number */
-  sip_param_t const  *v_params;	    /**< List of via-params */
+  msg_param_t const  *v_params;	    /**< List of via-params */
   char const         *v_comment;    /**< Comment */
 
   unsigned            v_hidden;	    /**< Value of "hidden" parameter */
-  sip_param_t         v_ttl;	    /**< Value of "ttl" parameter */
-  sip_param_t         v_maddr;	    /**< Value of "maddr" parameter */
-  sip_param_t         v_received;   /**< Value of "received" parameter*/
-  sip_param_t         v_branch;	    /**< Value of "branch" parameter */
+  char const         *v_ttl;	    /**< Value of "ttl" parameter */
+  char const         *v_maddr;	    /**< Value of "maddr" parameter */
+  char const         *v_received;   /**< Value of "received" parameter*/
+  char const         *v_branch;	    /**< Value of "branch" parameter */
+  char const         *v_rport;	    /**< Value of "rport" parameter */
+  char const         *v_comp;	    /**< Value of "comp" parameter */
 };
 
 /**@ingroup sip_security_client
@@ -759,7 +761,7 @@ struct sip_security_agree_s
   struct sip_security_agree_s 
                      *sa_next;	    /**< Link to next mechanism */
   char const         *sa_mec;	    /**< Security mechanism */
-  sip_param_t const  *sa_params;    /**< List of mechanism parameters */
+  msg_param_t const  *sa_params;    /**< List of mechanism parameters */
   char const         *sa_q;	    /**< Shortcut to q (preference) parameter */
 };
 
@@ -770,7 +772,7 @@ struct sip_privacy_s
 {
   sip_common_t       priv_common[1];/**< Common fragment info */
   sip_error_t       *priv_next;	    /**< Dummy link */
-  sip_param_t const *priv_values;   /**< Privacy values */
+  msg_param_t const *priv_values;   /**< Privacy values */
 };
 
 /* union representing any SIP header
