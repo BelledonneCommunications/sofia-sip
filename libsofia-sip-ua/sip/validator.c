@@ -554,11 +554,11 @@ void report_histogram(char const *title, histogram_t const *h)
 {
   int i, min_i, max_i;
 
-  for (i = 0; h->buckets[i] == 0.0 && i < h->N; i++)
+  for (i = 0; i < h->N && h->buckets[i] == 0.0; i++)
     ;
   min_i = i;
 
-  for (i = h->N - 1; h->buckets[i] == 0.0 && i >= 0; i--)
+  for (i = h->N - 1; i >= 0 && h->buckets[i] == 0.0; i--)
     ;
   max_i = i;
   
