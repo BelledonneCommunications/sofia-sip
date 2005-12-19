@@ -148,7 +148,11 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
     }
 
 #if HAVE_PTHREAD_H
+#if __CYGWIN__
+    SU_PORT_INITREF(nh);
+#else
     pthread_rwlock_init(nh->nh_refcount, NULL);
+#endif
 #endif
 
     nh->nh_valid = nua_handle;

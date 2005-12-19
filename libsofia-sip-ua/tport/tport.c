@@ -1961,6 +1961,8 @@ int tport_bind_server(tport_master_t *mr,
     for (i = 0; transports[i]; i++) {
       su_addrinfo_t *ai, *res, hints[1];
 
+      int tried = 0;
+
       proto = transports[i];
       error = EPROTONOSUPPORT;
 
@@ -2014,6 +2016,8 @@ int tport_bind_server(tport_master_t *mr,
 	ai->ai_socktype = hints->ai_socktype;
 	ai->ai_protocol = hints->ai_protocol;
 
+	tried = 1;
+
         pri = tport_listen(mr, ai, canon, proto, p, tags);
 
         if (pri) {
@@ -2052,6 +2056,9 @@ int tport_bind_server(tport_master_t *mr,
       if (!pri) {
         while (*tbf)
 	  tport_zap_primary(*tbf);
+
+	if (!tried)
+	  not_supported = 1;
 
         if (ephemeral_port != 0 && ephemeral_port != -1) {
 	  p += 4025;		/* relative prime to 65536 - 1024 */

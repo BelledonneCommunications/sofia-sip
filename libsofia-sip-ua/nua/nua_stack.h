@@ -49,6 +49,36 @@
 
 #include "soa.h"
 
+#if __CYGWIN__
+
+/* Debugging versions */
+#define SU_PORT_INITREF(p)      (pthread_mutex_init((p)->sup_reflock, NULL), printf("initref(%p)\n", (p)))
+#define SU_PORT_INCREF(p, f)    (pthread_mutex_lock(p->sup_reflock), p->sup_ref++, pthread_mutex_unlock(p->sup_reflock), printf("incref(%p) by %s\n", (p), f))
+#define SU_PORT_DECREF(p, f)    do {					\
+    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
+    if ((p->sup_ref) == 0) {			\
+      SU_DEBUG_9(("nua(%p): zapped\n", nh)); \
+      su_home_zap(p->nh_home); } \
+    else { printf("decref(%p) to %u by %s\n", (p), p->sup_ref, f); }  } while(0)
+
+#define SU_PORT_ZAPREF(p, f)    do { printf("zapref(%p) by %s\n", (p), f), \
+    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
+  if ((p->sup_ref) != 0) { \
+    assert(!"SU_PORT_ZAPREF"); } \
+  su_port_destroy(p); } while(0)
+
+#define SU_PORT_INITLOCK(p) \
+   (pthread_mutex_init((p)->sup_mutex, NULL), printf("init_lock(%p)\n", p))
+
+#define SU_PORT_LOCK(p, f)    \
+   (printf("%ld at %s locking(%p)...", pthread_self(), f, p), pthread_mutex_lock((p)->sup_mutex), printf(" ...%ld at %s locked(%p)...", pthread_self(), f, p))
+
+#define SU_PORT_UNLOCK(p, f)  \
+  (pthread_mutex_unlock((p)->sup_mutex), printf(" ...%ld at %s unlocked(%p)\n", pthread_self(), f, p))
+
+#endif /* __CYGWIN__ */ 
+
+
 typedef struct event_s event_t;
 
 #define       NONE ((void *)-1)
@@ -416,7 +446,12 @@ struct nua_handle_s
   tagi_t         *nh_tags;	/**< Default tags */
 
 #if HAVE_PTHREAD_H
+#if __CYGWIN__
+  pthread_mutex_t  sup_reflock[1];
+  int              sup_ref;
+#else
   pthread_rwlock_t nh_refcount[1];  
+#endif
 #else
   unsigned        nh_refcount;
 #endif
@@ -564,7 +599,11 @@ nua_handle_t *nh_incref(nua_handle_t *nh)
 
   if (nh) {
 #if HAVE_PTHREAD_H
+#if __CYGWIN__
+    SU_PORT_INCREF(nh, (char *) NULL);
+#else
     pthread_rwlock_rdlock(nh->nh_refcount);
+#endif
 #else 
     nh->nh_refcount++;		/* XXX */
 #endif
@@ -582,12 +621,16 @@ int nh_decref(nua_handle_t *nh)
     return 1;
 
 #if HAVE_PTHREAD_H
+#if __CYGWIN__
+  SU_PORT_DECREF(nh, (char *) NULL);
+#else
   pthread_rwlock_unlock(nh->nh_refcount);
   if (pthread_rwlock_trywrlock(nh->nh_refcount) == 0) {
     SU_DEBUG_9(("nua(%p): zapped\n", nh));
     su_home_zap(nh->nh_home);
     return 0;
   }
+#endif
   return 1;
 #else 
   if (--nh->nh_refcount == 0) {

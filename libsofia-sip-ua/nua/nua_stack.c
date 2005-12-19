@@ -245,7 +245,11 @@ int ua_init(su_root_t *root, nua_t *nua)
   nh_append(nua, dnh);  
   
 #if SU_HAVE_PTHREADS
+#if __CYGWIN__
+  SU_PORT_INITREF(dnh);
+#else
   pthread_rwlock_init(dnh->nh_refcount, NULL);
+#endif
 #endif
   dnh->nh_valid = nua_handle;
   dnh->nh_nua = nua;
