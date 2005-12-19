@@ -215,9 +215,9 @@ int sip_allow_events_add(su_home_t *home,
 
 /**@SIP_HEADER sip_subscription_state Subscription-State Header
  *
- * The Subscription-State header is used to indicate which State a
- * Application, associated with a certain dialogue, is in. Its syntax is
- * defined in [Events4.2.4] @RFC3265 as follows:
+ * The Subscription-State header is used to indicate in which state a
+ * subscription is. Its syntax is defined in @RFC3265 section 4.2.4 as
+ * follows:
  * 
  * @code
  *    Subscription-State   = "Subscription-State" HCOLON substate-value
@@ -250,13 +250,14 @@ int sip_allow_events_add(su_home_t *home,
  * @code
  * typedef struct sip_subscription_state_s
  * {
- *   sip_common_t        ss_common[1];
- *   sip_unknown_t      *ss_next;
- *   char const         *ss_substate;        // State value
- *   msg_param_t const  *ss_params;          // List of parameters
- *   msg_param_t         ss_reason;          // Value of reason parameter
- *   msg_param_t         ss_expires;         // Value of expires parameter
- *   msg_param_t         ss_retry_after;     // Value of retry-after parameter
+ *   sip_common_t       ss_common[1];
+ *   sip_unknown_t     *ss_next;
+ *   // Subscription state: "pending", "active" or "terminated"
+ *   char const        *ss_substate;        
+ *   msg_param_t const *ss_params;      // List of parameters
+ *   msg_param_t        ss_reason;      // Reason of terminating 
+ *   msg_param_t        ss_expires;     // Subscription lifetime in seconds
+ *   msg_param_t        ss_retry_after; // Value of retry-after parameter
  * } sip_subscription_state_t;
  * @endcode
  */

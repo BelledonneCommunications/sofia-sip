@@ -25,9 +25,9 @@
 /**@CFILE sip_extra.c
  * @brief Non-critical SIP headers
  * 
- * This file contains implementation of @b Also, @b Call-Info, @b
- * Error-Info, @b Hide, @b Organization, @b Priority, @b Retry-After, @b
- * Server, @b Subject, @b Timestamp, and @b User-Agent headers.
+ * This file contains implementation of @b Call-Info, @b Error-Info,
+ * @b Organization, @b Priority, @b Retry-After, @b Server, @b Subject,
+ * @b Timestamp, and @b User-Agent headers.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  * 
@@ -200,8 +200,9 @@ int sip_error_info_e(char b[], int bsiz, sip_header_t const *h, int f)
 
 /**@SIP_HEADER sip_in_reply_to In-Reply-To Header
  * 
- * The @b In-Reply-To request header field enumerates the call-IDs that this
- * call references or returns. Its syntax is defined in [S10.26] as follows:
+ * The @b In-Reply-To request header field enumerates the @b Call-IDs that
+ * this call references or returns. Its syntax is defined in [S10.26] as
+ * follows:
  * 
  * @code
  *    In-Reply-To  =  "In-Reply-To" HCOLON callid *(COMMA callid)
