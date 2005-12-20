@@ -81,8 +81,11 @@ SU_DLL void su_home_preload(su_home_t *h, int n, int size);
 
 SU_DLL su_home_t *su_home_auto(void *area, int size);
 
-#define SU_HOME_AUTO_SIZE(n) \
-  (((n) + sizeof(su_home_t) + 74 * sizeof(void *) - 1)/sizeof(su_home_t))
+#define SU_HOME_AUTO_SIZE(n)				\
+  (((n) + ((sizeof(su_home_t) + 7) & ~8) +		\
+    ((3 * sizeof (void *) + 4 * sizeof(unsigned) +	\
+      7 * (sizeof (long) + sizeof(void *)) + 7) & ~8)) 	\
+    / sizeof(su_home_t))
 
 SU_DLL int su_home_move(su_home_t *dst, su_home_t *src);
 

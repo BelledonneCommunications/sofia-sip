@@ -539,7 +539,19 @@ static int test_auto(void)
 
   TEST(hs->hs_allocs.hsa_preload + hs->hs_allocs.hsa_number, 8191 + 8191 / 32);
   TEST(hs->hs_frees.hsf_preload + hs->hs_frees.hsf_number, 8191 + 8191 / 32 - 1);
+  /*
+    This test depends on macro SU_HOME_AUTO_SIZE() calculating
+    offsetof(su_block_t, sub_nodes[7]) correctly with
+
+    ((3 * sizeof (void *) + 4 * sizeof(unsigned) +  
+      7 * (sizeof (long) + sizeof(void *)) + 7)
+  */
   TEST_1(hs->hs_frees.hsf_preload == hs->hs_allocs.hsa_preload);
+
+  su_free(tmphome, b);
+
+  for (i = 1; i < 8192; i++)
+    TEST_1(b = su_alloc(tmphome, 1));
 
   TEST_VOID(su_home_deinit(tmphome));
   

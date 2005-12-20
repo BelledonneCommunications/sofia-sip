@@ -172,6 +172,7 @@ void (*su_home_mutex_unlocker)(void *mutex);
 
 enum { 
   SUB_N = 31,			/**< Initial size */
+  SUB_N_AUTO = 7,		/**< Initial size for autohome */
   SUB_P = 29			/**< Secondary probe.
 				 * Secondary probe must be relative prime 
 				 * with all sub_n values */
@@ -189,18 +190,20 @@ typedef struct {
 
 struct su_block_s {
   su_home_t  *sub_parent;	/**< Parent home */
+  char       *sub_preload;	/**< Preload area */
+  su_home_stat_t *sub_stats;	/**< Statistics.. */
+
   unsigned    sub_ref;		/**< Reference count */
   unsigned    sub_used;		/**< Number of blocks allocated */
   unsigned    sub_n;		/**< Size of hash table  */
-  su_home_stat_t *sub_stats;	/**< Statistics.. */
 
-  char       *sub_preload;
   unsigned    sub_prsize:16;	/**< Preload size */
   unsigned    sub_prused:16;	/**< Used from preload */
-  unsigned    sub_auto:1;	/**< This struct is from stack! */
+  unsigned    sub_auto:1;	/**< struct su_block_s is from stack! */
   unsigned    sub_preauto:1;	/**< Preload is from stack! */
   unsigned    sub_auto_all:1;	/**< Everything is from stack! */
   unsigned :0;
+
   su_alloc_t  sub_nodes[SUB_N];	/**< Pointers to data/lower blocks */
 };
 
@@ -951,7 +954,7 @@ su_home_t *su_home_auto(void *area, int size)
   su_home_t *home;
   su_block_t *sub;
   size_t homesize = ALIGN(sizeof *home);
-  size_t subsize = ALIGN(sizeof *sub);
+  size_t subsize = ALIGN(offsetof(su_block_t, sub_nodes[SUB_N_AUTO]));
   size_t prepsize;
 
   char *p = area;
@@ -967,7 +970,7 @@ su_home_t *su_home_auto(void *area, int size)
   sub = memset(p + homesize, 0, subsize);
   home->suh_blocks = sub;
 
-  sub->sub_n = SUB_N;
+  sub->sub_n = SUB_N_AUTO;
   sub->sub_preload = p + prepsize;
   sub->sub_prsize = size - prepsize;
   sub->sub_preauto = 1;
