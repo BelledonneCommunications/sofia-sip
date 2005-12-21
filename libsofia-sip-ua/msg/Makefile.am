@@ -78,8 +78,12 @@ MSG_PARSER_AWK = $(srcdir)/msg_parser.awk
 
 AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK)
 
-%.h: %.h.in $(MSG_PARSER_AWK)
-%.c: %.c.in $(MSG_PARSER_AWK)
+test_protos.h: test_protos.h.in $(MSG_PARSER_AWK)
+test_table.c: test_table.c.in $(MSG_PARSER_AWK)
+
+msg_mime_protos.h: msg_mime_protos.h.in $(MSG_PARSER_AWK)
+msg_mime_table.c: msg_mime_table.c.in $(MSG_PARSER_AWK)
+msg_protos.h: msg_protos.h.in $(MSG_PARSER_AWK)
 
 test_protos.h: test_class.h
 	$(AWK_MSG_AWK) module=msg_test NO_MIDDLE=1 NO_LAST=1 \
