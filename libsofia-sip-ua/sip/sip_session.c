@@ -76,6 +76,7 @@
 
 static msg_xtra_f sip_session_expires_dup_xtra;
 static msg_dup_f sip_session_expires_dup_one;
+static msg_update_f sip_session_expires_update;
 
 msg_hclass_t sip_session_expires_class[] =
 SIP_HEADER_CLASS(session_expires, "Session-Expires", "x", x_params, single, 
@@ -119,19 +120,37 @@ int sip_session_expires_dup_xtra(sip_header_t const *h, int offset)
 
 /** Duplicate one sip_session_expires_t object */ 
 char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
-			char *b, int xtra)
+				  char *b, int xtra)
 {
   sip_session_expires_t *o_dst = dst->sh_session_expires;
   sip_session_expires_t const *o_src = src->sh_session_expires;
 
   char *end = b + xtra;
   b = msg_params_dup(&o_dst->x_params, o_src->x_params, b, xtra);
-  o_dst->x_refresher = msg_params_find(o_dst->x_params, "refresher");
   o_dst->x_delta = o_src->x_delta;
   assert(b <= end);
 
   return b;
 }
+
+/** Update parameters in Session-Expires header. */
+static int sip_session_expires_update(msg_common_t *h, 
+				      char const *name, int namelen,
+				      char const *value)
+{
+  sip_session_expires_t *x = (sip_session_expires_t *)h;
+
+  if (name == NULL) {
+    x->x_refresher = NULL;
+  }
+  else if (namelen == strlen("refresher") && 
+	   !strncasecmp(name, "refresher", namelen)) {
+    x->x_refresher = value;
+  }
+
+  return 0;
+}
+
 
 
 /**@SIP_HEADER sip_min_se Min-SE Header
@@ -157,6 +176,7 @@ char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 static msg_xtra_f sip_min_se_dup_xtra;
 static msg_dup_f sip_min_se_dup_one;
+#define sip_min_se_update NULL
 
 msg_hclass_t sip_min_se_class[] =
 SIP_HEADER_CLASS(min_se, "Min-SE", "", min_params, single, min_se);

@@ -128,7 +128,10 @@ tagi_t *msghdrtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
 
     h->sh_class = hc;
     b = hc->hc_dup_one(h, o, b, 65535); /* XXX */
-  
+
+    if (hc->hc_update)
+      msg_header_update_params(h->sh_common, 0);
+
     *hh = h; hh = &h->sh_next;
 
     assert(b != NULL);
@@ -254,6 +257,8 @@ tagi_t *msgobjtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
     memset(h, 0, o->sh_class->hc_size);
     h->sh_class = o->sh_class;
     b = o->sh_class->hc_dup_one(h, o, b, 65535); /* XXX */
+    if (o->sh_class->hc_update)
+      msg_header_update_params(h->sh_common, 0);
     assert(b != NULL);
   }
 
@@ -338,6 +343,8 @@ tagi_t *msgtag_multipart_dup(tagi_t *dst, tagi_t const *src, void **bb)
     memset(h, 0, o->sh_class->hc_size);
     h->sh_class = o->sh_class;
     b = o->sh_class->hc_dup_one(h, o, b, 65535); /* XXX */
+    if (o->sh_class->hc_update)
+      msg_header_update_params(h->sh_common, 0);
     assert(b != NULL);
   }
 

@@ -52,6 +52,8 @@
 #include <msg_parser.h>
 #include <msg_header.h>
 
+#define msg_generic_update NULL
+
 /* ====================================================================== */
 
 /**@ingroup msg_headers
@@ -75,7 +77,8 @@ char *msg_error_dup_one(msg_header_t *dst, msg_header_t const *src,
 			  char *b, int xtra);
 
 msg_hclass_t msg_error_class[] =
-MSG_HEADER_CLASS(msg_, error, "", "", er_common, append, msg_error);
+MSG_HEADER_CLASS(msg_, error, "", "", er_common, append,
+                 msg_error, msg_generic);
 
 int msg_error_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -121,7 +124,8 @@ char *msg_error_dup_one(msg_header_t *dst, msg_header_t const *src,
  */
 
 msg_hclass_t msg_unknown_class[] =
-MSG_HEADER_CLASS(msg_, unknown, "", "", un_common, append, msg_unknown);
+MSG_HEADER_CLASS(msg_, unknown, "", "", un_common, append,
+                 msg_unknown, msg_generic);
 
 int msg_unknown_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -200,7 +204,8 @@ char *msg_unknown_dup_one(msg_header_t *dst, msg_header_t const *src,
  */
 
 msg_hclass_t msg_payload_class[1] =
-MSG_HEADER_CLASS(msg_, payload, NULL, "", pl_common, append, msg_payload);
+MSG_HEADER_CLASS(msg_, payload, NULL, "", pl_common, append,
+		 msg_payload, msg_generic);
 
 /** Create a MIME payload */
 msg_payload_t *msg_payload_create(su_home_t *home, void const *data, int len)
@@ -304,7 +309,8 @@ int msg_payload_length(msg_payload_t const *pl)
  */
 
 msg_hclass_t msg_separator_class[] =
-MSG_HEADER_CLASS(msg_, separator, NULL, "", sep_common, single, msg_default);
+MSG_HEADER_CLASS(msg_, separator, NULL, "", sep_common, single,
+		 msg_default, msg_generic);
 
 /** Calculate length of line ending (0, 1 or 2) */
 #define CRLF_TEST(s) ((s[0]) == '\r' ? ((s[1]) == '\n') + 1 : (s[0])=='\n')

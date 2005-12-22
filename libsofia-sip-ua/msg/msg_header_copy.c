@@ -236,6 +236,9 @@ msg_header_t *msg_header_dup_one(su_home_t *home,
     return NULL;
   }
 
+  if (hc->hc_update)
+    msg_header_update_params(h->sh_common, 1);
+
   assert(end == (char *)h + size + xtra);
 
   return h;
@@ -279,6 +282,9 @@ msg_header_t *msg_header_dup_as(su_home_t *home, msg_hclass_t *hc,
 
     if (!(end = hc->hc_dup_one(h, src, (char *)h + size, xtra)))
       break;			/* error */
+
+    if (hc->hc_update)
+      msg_header_update_params(h->sh_common, 1);
 
     assert(end == (char *)h + size + xtra);
 

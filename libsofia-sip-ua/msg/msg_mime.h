@@ -81,7 +81,7 @@ struct msg_accept_s
   char const         *ac_type;	    /**< Pointer to type/subtype */
   char const         *ac_subtype;   /**< Points after first slash in type */
   msg_param_t const  *ac_params;    /**< List of parameters */
-  msg_param_t         ac_q;	    /**< Value of q parameter */
+  char const         *ac_q;	    /**< Value of q parameter */
 };
 
 /**@ingroup msg_accept_encoding
@@ -106,7 +106,7 @@ struct msg_content_disposition_s
   msg_error_t       *cd_next;	    /**< Link to next (dummy) */
   char const        *cd_type;	    /**< Disposition type */
   msg_param_t const *cd_params;	    /**< List of parameters */
-  msg_param_t        cd_handling;   /**< Value of @b handling parameter */
+  char const        *cd_handling;   /**< Value of @b handling parameter */
   unsigned           cd_required:1; /**< True if handling=required */
   unsigned           cd_optional:1; /**< True if handling=optional */
   unsigned           :0;	    /* pad */

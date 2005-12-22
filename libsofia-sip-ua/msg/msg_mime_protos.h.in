@@ -310,4 +310,9 @@ su_inline msg_#xxxxxx#_t *msg_#xxxxxx#_format(su_home_t *home, char const *fmt, 
 /** @} */
 
 
+/* Internal prototypes */
+MSG_DLL msg_update_f msg_accept_update;
+MSG_DLL msg_update_f msg_accept_any_update;
+MSG_DLL msg_update_f msg_content_disposition_update;
+
 #endif /** !defined(MSG_MIME_PROTOS_H) */

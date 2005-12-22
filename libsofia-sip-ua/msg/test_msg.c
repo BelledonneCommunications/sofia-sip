@@ -482,7 +482,7 @@ int test_header_parsing(void)
     TEST(msg_header_remove_param(ce->k_common, "zip"), 0);
     TEST(msg_header_replace_param(home, ce->k_common, "zip=zap"), 0);
     TEST_S(msg_header_find_param(ce->k_common, "zip=1"), "zap");
-    TEST(msg_header_replace_param(home, ce->k_common, "zip=zup"), 0);
+    TEST(msg_header_replace_param(home, ce->k_common, "zip=zup"), 1);
     TEST_S(msg_header_find_param(ce->k_common, "zip"), "zup");
 
     su_home_deinit(home);

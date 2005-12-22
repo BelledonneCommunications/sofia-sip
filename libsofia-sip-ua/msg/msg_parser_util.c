@@ -786,40 +786,160 @@ char const *msg_header_find_param(msg_common_t const *h, char const *name)
   return NULL;
 }
 
+/** Add a parameter to a header.
+ * 
+ * A header parameter @a param is a string of format name "=" value or just
+ * name. The caller of msg_header_add_param() should have allocated it from
+ * memory home associated with header @a h.
+ *
+ * @retval 0 if parameter was added
+ * @retval -1 upon an error
+ */
 int msg_header_add_param(su_home_t *home, msg_common_t *h, char const *param)
 {
   if (h && h->h_class->hc_params) {
+    int retval;
     msg_param_t **params = (msg_param_t **)
       ((char *)h + h->h_class->hc_params);
-    return msg_params_add(home, params, param);
+
+    msg_fragment_clear(h);
+
+    retval = msg_params_add(home, params, param);
+    if (retval < 0)
+      return -1;
+
+    if (h->h_class->hc_update) {
+      size_t namelen;
+      char const *name, *value;
+
+      name = param;
+      namelen = strcspn(name, "=");
+      value = param + namelen + (name[namelen] == '=');
+      h->h_class->hc_update(h, name, namelen, value);
+    }
+
+    return retval;
   }
 
   return -1;
 }
 
+
+/** Replace or add a parameter to a header. 
+ *
+ * The shortcuts to parameter values are updated accordingly.
+ *
+ * @note This function does not duplicate @p param.
+ *
+ * @param home      memory home
+ * @param h         pointer to a header
+ * @param param     parameter to be replaced or added
+ *
+ * @retval 0 if parameter was added
+ * @retval 1 if parameter was replaced
+ * @retval -1 upon an error
+ */
 int msg_header_replace_param(su_home_t *home, 
 			     msg_common_t *h, 
 			     char const *param)
 {
   if (h && h->h_class->hc_params) {
+    int retval;
     msg_param_t **params = (msg_param_t **)
       ((char *)h + h->h_class->hc_params);
-    return msg_params_replace(home, params, param);
+
+    msg_fragment_clear(h);
+
+    retval = msg_params_replace(home, params, param);
+    if (retval < 0)
+      return -1;
+
+    if (h->h_class->hc_update) {
+      size_t namelen;
+      char const *name, *value;
+
+      name = param;
+      namelen = strcspn(name, "=");
+      value = param + namelen + (name[namelen] == '=');
+      h->h_class->hc_update(h, name, namelen, value);
+    }
+
+    return retval;
   }
 
   return -1;
 }
 
+/** Remove a parameter from header.
+ *
+ * The parameter name is given as token optionally followed by "=" sign and
+ * value. The "=" and value are ignored.
+ *
+ * @param h         pointer to a header
+ * @param param     parameter to be removed
+ *
+ * @retval 1 if a parameter was removed
+ * @retval 0 if no parameter was not removed
+ * @retval -1 upon an error
+ */
 int msg_header_remove_param(msg_common_t *h, char const *name)
 {
   if (h && h->h_class->hc_params) {
+    int retval;
     msg_param_t **params = (msg_param_t **)
       ((char *)h + h->h_class->hc_params);
-    return msg_params_remove(*params, name);
+      
+    retval = msg_params_remove(*params, name);
+
+    if (retval != 0)
+      msg_fragment_clear(h);
+
+    if (h->h_class->hc_update) {
+      size_t namelen;
+      namelen = strcspn(name, "=");
+      h->h_class->hc_update(h, name, namelen, NULL);
+    }
+
+    return retval;
   }
 
   return -1;
 }
+
+/** Update all parameters */
+int msg_header_update_params(msg_common_t *h, int clear)
+{
+  int retval;
+  msg_param_t const *params;
+  size_t n;
+  char const *p, *v;
+
+  if (h == NULL)
+    return errno = EFAULT, -1;
+
+  if (h->h_class->hc_params == 0 ||
+      h->h_class->hc_update == NULL)
+    return 0;
+
+  if (clear)
+    h->h_class->hc_update(h, NULL, 0, NULL);
+
+  params = *(msg_param_t **)((char *)h + h->h_class->hc_params);
+  if (params == NULL)
+    return 0;
+
+  retval = 0;
+
+  for (p = *params; p; p = *++params) {
+    n = strcspn(p, "=");
+    v = p + n + (p[n] == '=');
+    if (h->h_class->hc_update(h, p, n, v) < 0)
+      retval = -1;
+  }
+
+  return retval;
+}
+
 
 /** Find a parameter from a parameter list.
  *
@@ -892,20 +1012,32 @@ msg_param_t *msg_params_find_slot(msg_param_t params[], msg_param_t token)
 
 /** Replace or add a parameter from a list. 
  *
+ * The parameter list must have been created by @c msg_params_d() or by @c
+ * msg_params_dup() (or it may contain only @c NULL).
+ *
+ * @note This function does not duplicate @p param.
+ *
+ * @param home      memory home
+ * @param inout_params   pointer to pointer to parameter list
+ * @param param     parameter to be replaced or added
+ *
+ * @retval 0 if parameter was added
+ * @retval 1 if parameter was replaced
+ * @retval -1 upon an error
  */
 int msg_params_replace(su_home_t *home,
-		       msg_param_t **pparams, 
+		       msg_param_t **inout_params, 
 		       msg_param_t param)
 {
   msg_param_t *params;
   int i, n;
 
-  assert(pparams);
+  assert(inout_params);
 
   if (param == NULL || param[0] == '=' || param[0] == '\0')
     return -1;
 
-  params = *pparams;
+  params = *inout_params;
 
   n = strcspn(param, "=");
   assert(n > 0);
@@ -918,13 +1050,14 @@ int msg_params_replace(su_home_t *home,
       if (strncasecmp(maybe, param, n) == 0) {
 	if (maybe[n] == '=' || maybe[n] == 0) {
 	  params[i] = param;	
-	  return 0;
+	  return 1;
 	}
       }
     }
   }
 
-  return msg_params_add(home, pparams, param);
+  /* Not found on list */
+  return msg_params_add(home, inout_params, param);
 }
 
 /** Remove a parameter from a list. 
@@ -940,7 +1073,7 @@ int msg_params_remove(msg_param_t *params, msg_param_t param)
   if (!params || !param || !param[0])
     return -1;
 
-  n = strlen(param);
+  n = strcspn(param, "=");
   assert(n > 0);
 
   for (i = 0; params[i]; i++) {
@@ -978,26 +1111,25 @@ size_t msg_params_length(msg_param_t const params[])
 /**
  * Add a parameter to a list.
  *
- * The function @c msg_params_add() is used add a parameter to the list; the
- * list must have been created by @c msg_params_d() or by @c
- * msg_params_dup() (or it may contain only @c NULL).
+ * Add a parameter to the list; the list must have been created by @c
+ * msg_params_d() or by @c msg_params_dup() (or it may contain only @c
+ * NULL).
  *
  * @note This function does not duplicate @p param.
  *
  * @param home      memory home
- * @param pparams   pointer to pointer to parameter list
+ * @param inout_params   pointer to pointer to parameter list
  * @param param     parameter to be added
  *
- * @return
- * The function @c msg_params_add() returns 0 if successful, or a negative
- * value upon an error.
+ * @retval 0 if parameter was added 
+ * @retval -1 upon an error
  */
 int msg_params_add(su_home_t *home,
-		   msg_param_t **pparams,
+		   msg_param_t **inout_params,
 		   msg_param_t param)
 {
   int n, m_before, m_after;
-  msg_param_t *p = *pparams;  
+  msg_param_t *p = *inout_params;  
 
   if (param == NULL)
     return -1;
@@ -1013,8 +1145,8 @@ int msg_params_add(su_home_t *home,
     p = su_alloc(home, m_after * sizeof(*p)); 
     assert(p); if (!p) return -1;
     if (n)
-      memcpy(p, *pparams, n * sizeof(*p));
-    *pparams = p;
+      memcpy(p, *inout_params, n * sizeof(*p));
+    *inout_params = p;
   }
 
   p[n] = param;

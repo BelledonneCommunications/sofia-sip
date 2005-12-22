@@ -70,25 +70,27 @@
 #define SIP_HDR_TEST(x)    ((x)->sh_class)
 
 /** Define a header class for a SIP header. @HIDE */
-#define SIP_HEADER_CLASS(c, l, s, params, kind, dup) \
- MSG_HEADER_CLASS(sip_, c, l, s, params, kind, sip_ ## dup)
+#define SIP_HEADER_CLASS(c, l, s, params, kind, dup)		\
+  MSG_HEADER_CLASS(sip_, c, l, s, params, kind, sip_ ## dup, sip_ ## dup)
 
 /** Define a header class for a critical SIP header. @HIDE */
-#define SIP_HEADER_CLASS_C(c, l, s, params, kind, dup) \
- MSG_HEADER_CLASS_C(sip_, c, l, s, params, kind, sip_ ## dup)
+#define SIP_HEADER_CLASS_C(c, l, s, params, kind, dup)	\
+  MSG_HEADER_CLASS_C(sip_, c, l, s, params, kind, sip_ ## dup, sip_ ## dup)
 
 /** Define a header class for headers without any extra data to copy. @HIDE  */
 #define SIP_HEADER_CLASS_G(c, l, s, kind) \
-  MSG_HEADER_CLASS(sip_, c, l, s, g_common, kind, msg_generic)
+  MSG_HEADER_CLASS(sip_, c, l, s, g_common, kind, msg_generic, sip_null)
 
 /** Define a header class for a msg_list_t kind of header. @HIDE */
 #define SIP_HEADER_CLASS_LIST(c, l, s, kind) \
-  MSG_HEADER_CLASS(sip_, c, l, s, k_items, kind, msg_list)
+  MSG_HEADER_CLASS(sip_, c, l, s, k_items, kind, msg_list, sip_null)
 
 /** Define a authorization header class. @HIDE */
 #define SIP_HEADER_CLASS_AUTH(c, l, kind) \
-  MSG_HEADER_CLASS(sip_, c, l, "", au_params, kind, msg_auth)
+  MSG_HEADER_CLASS(sip_, c, l, "", au_params, kind, msg_auth, sip_null)
 
+#define sip_null_update NULL
+#define sip_any_update NULL
 
 /* ---------------------------------------------------------------------------
  * 2) Prototypes for internal decoding/encoding functions
@@ -119,6 +121,7 @@ int sip_any_route_e(char b[], int bsiz, sip_header_t const *h, int flags);
 int sip_any_route_dup_xtra(sip_header_t const *h, int offset);
 char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
 			    char *b, int xtra);
+#define sip_any_route_update NULL
 
 int sip_name_addr_d(su_home_t *home,
 		    char **inout_s,

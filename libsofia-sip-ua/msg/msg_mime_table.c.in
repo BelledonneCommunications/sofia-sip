@@ -60,8 +60,11 @@
 #define msg_status_class NULL
 #define mp_status  mp_common
 
-#define MSG_MULTIPART_HCLASS \
-MSG_HEADER_CLASS(msg_, multipart, NULL, "", mp_common, append, msg_multipart)
+#define msg_multipart_update NULL
+
+#define MSG_MULTIPART_HCLASS                                   \
+MSG_HEADER_CLASS(msg_, multipart, NULL, "", mp_common, append, \
+	         msg_multipart, msg_multipart)
 
 
 

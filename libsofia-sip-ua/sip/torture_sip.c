@@ -325,7 +325,7 @@ int test_basic(void)
   }
 
   {
-    sip_from_t *f; sip_to_t *t;
+    sip_from_t *f; sip_to_t *t, *t2;
 
     TEST_1(f = sip_from_create(home, (void *)"sip:joe@bar"));
     TEST_1(sip_from_add_param(home, f, NULL) == -1);
@@ -349,7 +349,18 @@ int test_basic(void)
 
     TEST_1(t = sip_to_create(home, (void *)"<sip:joe@bar;tag=bar> (joe)"));
     TEST_1(sip_to_tag(home, t, "tag=jxahudsf") == 0);
-    TEST_1(sip_to_add_param(home, t, "test=1") == 0);
+    TEST_S(t->a_tag, "jxahudsf");
+    TEST(msg_header_replace_param(home, t->a_common, "tag=bar"), 1);
+    TEST_S(t->a_tag, "bar");
+
+    TEST_1(t2 = sip_to_dup(home, t));
+    TEST_S(t2->a_tag, "bar");
+
+    TEST(msg_header_remove_param(t->a_common, "tag"), 1);
+    TEST(t->a_tag, NULL);
+    TEST_1(sip_to_add_param(home, t, "tst=1") == 0);
+    TEST(t->a_tag, NULL);
+
     su_free(home, t);
   }
 
@@ -410,12 +421,16 @@ int test_basic(void)
 
     TEST_1(m0 = sip_contact_dup(home, m));
 
-    TEST_1(sip_contact_add_param(home, m, "video=FALSE") == 0);
+    TEST_1(sip_contact_add_param(home, m, "q=0.5") >= 0);
+    TEST_1(sip_contact_add_param(home, m, "video=FALSE") >= 0);
     TEST_1(sip_contact_add_param(home, m, NULL) == -1);
     TEST_1(sip_contact_add_param(home, NULL, "video=FALSE") == -1);
     TEST_1(sip_contact_add_param(home, m, "audio=FALSE") == 0);
     TEST_1(sip_contact_add_param(home, m, "expires=0") == 0);
 
+    TEST_S(m->m_q, "0.5");
+    TEST_S(m->m_expires, "0");
+    
     TEST_1(!sip_contact_create(home, (void *)"sip:joe@[baa",
 			       "audio", "video", NULL));
 
@@ -442,8 +457,21 @@ int test_basic(void)
 
   {
     sip_retry_after_t *ra;
+    char const *s;
 
     TEST_1(!(ra = sip_retry_after_make(home, "50 (foo")));
+    TEST_1(ra = sip_retry_after_make(home, "50 (foo) ; duration = 13"));
+    TEST_S(ra->af_duration, "13");
+    TEST_S(ra->af_comment, "foo");
+    TEST(msg_header_remove_param(ra->af_common, "duration"), 1);
+    TEST(ra->af_duration, NULL);
+
+    s = sip_header_as_string(home, (void*)ra);
+    TEST_S(s, "50 (foo)");
+
+    TEST(msg_header_add_param(home, ra->af_common, "x=z"), 0);
+    s = sip_header_as_string(home, (void*)ra);
+    TEST_S(s, "50 (foo) ;x=z");
 
     su_free(home, ra);
   }
@@ -514,13 +542,29 @@ int test_basic(void)
     TEST_S(v->v_comp, "sigcomp");
 
     TEST_1(v = sip_via_make(home, "SIP/2.0/UDP bar.com:50600"
-			    " ;hidden;rport=50601;comp=sigcomp;branch=1;q=0.2"
+			    " ;hidden;rport=50601;comp=sigcomp;branch=1;ttl=15"
+			    " ; maddr=[::227.0.0.1]"
 			    " (This is a comment) "));
+    TEST_S(v->v_ttl, "15");
+    TEST_S(v->v_maddr, "[::227.0.0.1]");
     TEST_S(v->v_branch, "1");
     TEST_S(v->v_rport, "50601");
     TEST_S(v->v_comp, "sigcomp");
-
+    
     TEST_1(v0 = sip_via_dup(home, v));
+
+    TEST(msg_header_add_param(home, v->v_common, "rport"), 0);
+    TEST_S(v->v_rport, "");
+    TEST(msg_header_remove_param(v->v_common, "comp"), 1);
+    TEST(v->v_comp, NULL);
+    TEST(msg_header_remove_param(v->v_common, "ttl"), 1);
+    TEST(v->v_ttl, NULL);
+    TEST(msg_header_remove_param(v->v_common, "maddr"), 1);
+    TEST(v->v_maddr, NULL);
+    TEST(msg_header_remove_param(v->v_common, "rport"), 1);
+    TEST(v->v_rport, NULL);
+    TEST(msg_header_remove_param(v->v_common, "branch"), 1);
+    TEST(v->v_branch, NULL);
 
     TEST_1(sip_via_add_param(home, v, "video=FALSE") == 0);
     TEST_1(sip_via_add_param(home, v, NULL) == -1);
@@ -541,6 +585,23 @@ int test_basic(void)
     TEST_S(v->v_protocol, "SIP/2.0/UDP");
     su_free(home, v);
 
+  }
+
+  {
+    sip_call_info_t *ci, *ci0;
+
+    TEST_1(ci = sip_call_info_make(home, 
+				   "<http://www.nokia.com>;purpose=info"));
+    TEST_S(ci->ci_purpose, "info");
+    TEST_1(ci0 = sip_call_info_dup(home, ci));
+    TEST_S(ci0->ci_purpose, "info");
+    TEST_1(ci->ci_purpose != ci0->ci_purpose);
+
+    TEST(msg_header_remove_param(ci->ci_common, "purpose"), 1);
+    TEST(ci->ci_purpose, NULL);
+
+    su_free(home, ci);
+    su_free(home, ci0);
   }
 
   su_home_check(home);
@@ -666,6 +727,7 @@ static int test_encoding(void)
     "User-Agent: Unknown Subscriber (1.0) Tonto (2.0)\r\n"
     "Accept: application/pidf+xml;version=1.0\r\n"
     "Accept-Encoding: gzip\r\n"
+     /* Test loop below cannot encode multiple Accept-Language on one line */
     "Accept-Language: "/* "fi, "*/"en;q=0.2\r\n"
     "RAck: 421413 214214 INVITE\r\n"
     "Referred-By: <sips:bob@biloxi.example.com>\r\n"
@@ -1516,8 +1578,6 @@ static int sip_header_test(void)
   //TEST_1(m = sip_contact_create_from_via(home, v0, "joe"));
   //TEST_S(m->m_url->url_user, "joe");
 
-  v0->v_hidden = 1;
-
   TEST_1(v = sip_via_copy(home, v0));
   TEST(len(v->v_common), len(v0->v_common));
   for (; v && v0; v = v->v_next, v0 = v0->v_next) {
@@ -1529,10 +1589,8 @@ static int sip_header_test(void)
   TEST_1(v == NULL && v0 == NULL);
   
   v0 = sip->sip_via;
-  v0->v_hidden = 1;
   
   TEST_1(v = sip_via_dup(home, v0));
-  TEST_1(v->v_hidden != v0->v_hidden); /* dup updates parameter */
   TEST(len(v->v_common), len(v0->v_common));
   for (; v && v0; v = v->v_next, v0 = v0->v_next) {
     if (v->v_params)
@@ -1969,6 +2027,11 @@ int test_refer(void)
   TEST_1(b->b_cid);
   TEST_S(b->b_params[0] + 4, b->b_cid);
   TEST_S(b->b_cid, b0->b_cid);
+
+  TEST(msg_header_replace_param(home, b->b_common, "cid=cid:8u432658725"), 1);
+  TEST_S(b->b_cid, "cid:8u432658725");
+  TEST(msg_header_remove_param(b->b_common, "cid"), 1);
+  TEST(b->b_cid, NULL);
   
   /* XXX */
 #define WORD ALPHA DIGIT "-.!%*_+`'~()<>:\\\"/[]?{}"
@@ -1988,6 +2051,13 @@ int test_refer(void)
   TEST_S(rp->rp_to_tag, "foo");
   TEST_S(rp->rp_from_tag, "bar");
   TEST(rp->rp_early_only, 1);
+
+  TEST(msg_header_replace_param(home, rp->rp_common, "early-only"), 1);
+  TEST(rp->rp_early_only, 1);
+  TEST(msg_header_remove_param(rp->rp_common, "from-tag"), 1);
+  TEST(rp->rp_from_tag, NULL);
+  TEST(msg_header_remove_param(rp->rp_common, "to-tag"), 1);
+  TEST(rp->rp_to_tag, NULL);
 
   su_home_destroy(home), su_free(NULL, home);
 
@@ -2073,6 +2143,13 @@ static int test_events(void)
   TEST_S(o->o_type, "presence");
   TEST_S(o->o_id, "1");
 
+  TEST(msg_header_remove_param(o->o_common, "ix=0"), 0);
+  TEST_S(o->o_id, "1");
+  TEST(msg_header_remove_param(o->o_common, "id"), 1);
+  TEST(o->o_id, NULL);
+  TEST(msg_header_replace_param(home, o->o_common, "id=32"), 0);
+  TEST_S(o->o_id, "32");
+
   TEST_1((ae = sip_allow_events_make(home, "presence, presence.winfo, foo")));
   TEST_1(ae->k_items);
   TEST_S(ae->k_items[0], "presence");
@@ -2096,6 +2173,17 @@ static int test_events(void)
 	 sip_subscription_state_make(home, "terminated ; reason=timeout")));
   TEST_S(ss->ss_substate, "terminated");
   TEST_S(ss->ss_reason, "timeout");
+
+  TEST(msg_header_replace_param(home, ss->ss_common, "reason=TimeOut"), 1);
+  TEST_S(ss->ss_reason, "TimeOut");
+  TEST(msg_header_remove_param(ss->ss_common, "reasom"), 0);
+  TEST_S(ss->ss_reason, "TimeOut");
+  TEST(msg_header_remove_param(ss->ss_common, "reason"), 1);
+  TEST(ss->ss_reason, NULL);
+  TEST(msg_header_replace_param(home, ss->ss_common, "expires=200"), 0);
+  TEST(msg_header_replace_param(home, ss->ss_common, "retry-after=10"), 0);
+  TEST_S(ss->ss_expires, "200");
+  TEST_S(ss->ss_retry_after, "10");
 
   TEST_1((ss = 
 	 sip_subscription_state_make(home, "active;expires=2")));
@@ -2505,8 +2593,7 @@ int test_caller_prefs(void)
   TEST_S(ac->cp_params[1], "audio");
   TEST_S(ac->cp_params[2], "explicit");
   TEST(ac->cp_params[3], NULL);
-
-
+  
   TEST_1(cp = sip_accept_contact_make(home, 
 				     "*;audio;video;require;explicit;q=1.0,"
 				     "*;audio;require;q=0.8"
@@ -2575,7 +2662,23 @@ int test_caller_prefs(void)
   TEST(m->m_params[2], NULL);
 
   TEST_S(m1->m_params[0], "+audio"); TEST(m1->m_params[1], NULL);
-  
+
+  TEST_1(ac = sip_accept_contact_make(home, "*;q=0.9;require;explicit"));
+  TEST_S(ac->cp_q, "0.9");
+  TEST_1(ac->cp_require);
+  TEST_1(ac->cp_explicit);
+
+  TEST(msg_header_remove_param(ac->cp_common, "Q"), 1);
+  TEST(ac->cp_q, NULL);
+  TEST(msg_header_remove_param(ac->cp_common, "require="), 1);
+  TEST(ac->cp_require, 0);
+  TEST(msg_header_remove_param(ac->cp_common, "require="), 0);
+  TEST(ac->cp_require, 0);
+  TEST(msg_header_remove_param(ac->cp_common, "explicit=true"), 1);
+  TEST(ac->cp_explicit, 0);
+  TEST(msg_header_replace_param(home, ac->cp_common, "explicit=true"), 0);
+  TEST(ac->cp_explicit, 1);
+
   su_home_zap(home);
 
   END();
@@ -2660,7 +2763,7 @@ static int test_reason(void)
 
   sip = sip_object(msg);
 
-  TEST_1(msg);
+  TEST_1(msg); 
   TEST_1(sip);
   TEST_1(re = sip->sip_reason);
   TEST_S(re->re_protocol, "SIP");
@@ -2679,6 +2782,18 @@ static int test_reason(void)
   TEST_S(re->re_cause, "580");
   TEST_S(re->re_text, "\"Precondition Failure\"");
   TEST_1(!(re = re->re_next));
+
+  TEST_1(re = sip->sip_reason);
+  TEST(msg_header_replace_param(home, re->re_common, "cause=202"), 1);
+  TEST_S(re->re_cause, "202");
+  TEST(msg_header_replace_param(home, re->re_common, "text=\"foo\""), 1);
+  TEST_S(re->re_text, "\"foo\"");
+  TEST(msg_header_remove_param(re->re_common, "cause=444"), 1);
+  TEST(re->re_cause, NULL);
+  TEST(msg_header_remove_param(re->re_common, "text=\"bar\""), 1);
+  TEST(re->re_text, NULL);
+  TEST(msg_header_remove_param(re->re_common, "cause=444"), 0);
+  TEST(msg_header_remove_param(re->re_common, "text=\"bar\""), 0);
 
   /* Not a token */
   TEST_1(!sip_reason_make(home, "\"nSIP\";cause=200;text=\"Ok\""));
@@ -2774,6 +2889,15 @@ static int test_sec_ext(void)
   TEST_1((sav = sip_security_verify_make(home, "digest;q=0.5")));
   TEST_S(sav->sa_mec, "digest");
   TEST_S(sav->sa_q, "0.5");
+
+  TEST_1((sav = sip_security_verify_make
+	  (home, "digest;q=0.1;d-alg=SHA1;d-qop=auth;"
+	   "d-ver=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"")));
+  TEST_S(sav->sa_mec, "digest");
+  TEST_S(sav->sa_q, "0.1");
+  TEST_S(sav->sa_d_alg, "SHA1");
+  TEST_S(sav->sa_d_qop, "auth");
+  TEST_S(sav->sa_d_ver, "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"");
 
   /* Test for accepting liberally.. */
   TEST_1(priv = sip_privacy_make(home, "header,media"));

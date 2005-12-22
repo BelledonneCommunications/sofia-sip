@@ -517,7 +517,7 @@ struct sip_error_info_s
  */
 struct sip_event_s 
 {
-  sip_common_t        o_common;	    /**< Common fragment info */
+  sip_common_t        o_common[1];  /**< Common fragment info */
   sip_error_t        *o_next;	    /**< Link to next (dummy) */
   char const *        o_type;	    /**< Event type */
   msg_param_t const  *o_params;	    /**< List of parameters */
@@ -741,8 +741,6 @@ struct sip_via_s
   char const         *v_port;	    /**< Port number */
   msg_param_t const  *v_params;	    /**< List of via-params */
   char const         *v_comment;    /**< Comment */
-
-  unsigned            v_hidden;	    /**< Value of "hidden" parameter */
   char const         *v_ttl;	    /**< Value of "ttl" parameter */
   char const         *v_maddr;	    /**< Value of "maddr" parameter */
   char const         *v_received;   /**< Value of "received" parameter*/
@@ -762,7 +760,10 @@ struct sip_security_agree_s
                      *sa_next;	    /**< Link to next mechanism */
   char const         *sa_mec;	    /**< Security mechanism */
   msg_param_t const  *sa_params;    /**< List of mechanism parameters */
-  char const         *sa_q;	    /**< Shortcut to q (preference) parameter */
+  char const         *sa_q;	    /**< Value of q (preference) parameter */
+  char const         *sa_d_alg;	    /**< Value of d-alg parameter */
+  char const         *sa_d_qop;	    /**< Value of d-qop parameter */
+  char const         *sa_d_ver;	    /**< Value of d-ver parameter */
 };
 
 /**@ingroup sip_privacy

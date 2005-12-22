@@ -252,6 +252,7 @@ int sip_www_authenticate_e(char b[], int bsiz, sip_header_t const *h, int f)
 
 #define sip_authentication_info_dup_xtra msg_list_dup_xtra
 #define sip_authentication_info_dup_one msg_list_dup_one
+#define sip_authentication_info_update NULL
 
 msg_hclass_t sip_authentication_info_class[] =
   SIP_HEADER_CLASS(authentication_info, "Authentication-Info", "",
@@ -296,6 +297,7 @@ int sip_authentication_info_e(char b[], int bsiz, sip_header_t const *h, int f)
 
 #define sip_proxy_authentication_info_dup_xtra msg_list_dup_xtra
 #define sip_proxy_authentication_info_dup_one msg_list_dup_one
+#define sip_proxy_authentication_info_update NULL
 
 msg_hclass_t sip_proxy_authentication_info_class[] =
   SIP_HEADER_CLASS(proxy_authentication_info, "Proxy-Authentication-Info", "",
@@ -319,8 +321,6 @@ int sip_proxy_authentication_info_e(char b[], int bsiz,
 
 typedef struct sip_security_agree_s sip_security_agree_t;
 #define sh_security_agree sh_security_client
-
-static void sip_security_agree_update(sip_security_agree_t *sa);
 
 static 
 int sip_security_agree_d(su_home_t *home, sip_header_t *h, char *s, int slen)
@@ -355,7 +355,7 @@ int sip_security_agree_d(su_home_t *home, sip_header_t *h, char *s, int slen)
       return -1;
 
     if (sa->sa_params)
-      sip_security_agree_update(sa);
+      msg_header_update_params(sa->sa_common, 0);
 
     h = NULL;
   }
@@ -400,24 +400,43 @@ char *sip_security_agree_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&sa_dst->sa_params, sa_src->sa_params, b, xtra);
   MSG_STRING_DUP(b, sa_dst->sa_mec, sa_src->sa_mec);
-  if (sa_dst->sa_params)
-    sip_security_agree_update(sa_dst);
   assert(b <= end);
 
   return b;
 }
 
-/* Update shortcuts */
-static void sip_security_agree_update(sip_security_agree_t *sa)
+static int sip_security_agree_update(msg_common_t *h, 
+				     char const *name, int namelen,
+				     char const *value)
 {
-  int i;
+  sip_security_agree_t *sa = (sip_security_agree_t *)h;
 
-  if (sa->sa_params)
-    for (i = 0; sa->sa_params[i]; i++) {
-      if (strncasecmp(sa->sa_params[i], "q=", strlen("q=")) == 0)
-	sa->sa_q = sa->sa_params[i] + strlen("q=");
-    }
+  if (name == NULL) {
+    sa->sa_q = NULL;
+    sa->sa_d_alg = NULL;
+    sa->sa_d_qop = NULL;
+    sa->sa_d_ver = NULL;
+  }
+#define MATCH(s) (namelen == strlen(#s) && !strncasecmp(name, #s, strlen(#s)))
+
+  else if (MATCH(q)) {
+    sa->sa_q = value;
+  }
+  else if (MATCH(d-alg)) {
+    sa->sa_d_alg = value;
+  }
+  else if (MATCH(d-qop)) {
+    sa->sa_d_qop = value;
+  }
+  else if (MATCH(d-ver)) {
+    sa->sa_d_ver = value;
+  }
+
+#undef MATCH
+
+  return 0;
 }
+
 
 /**@SIP_HEADER sip_security_client Security-Client Header
  *
@@ -461,6 +480,7 @@ int sip_security_client_e(char b[], int bsiz, sip_header_t const *h, int f)
 {
   return sip_security_agree_e(b, bsiz, h, f);
 }
+
 
 /**@SIP_HEADER sip_security_server Security-Server Header
  *
@@ -524,6 +544,8 @@ int sip_security_verify_e(char b[], int bsiz, sip_header_t const *h, int f)
 
 msg_xtra_f sip_privacy_dup_xtra;
 msg_dup_f sip_privacy_dup_one;
+
+#define sip_privacy_update NULL
 
 msg_hclass_t sip_privacy_class[] = 
 SIP_HEADER_CLASS(privacy, "Privacy", "", priv_values, single, privacy);

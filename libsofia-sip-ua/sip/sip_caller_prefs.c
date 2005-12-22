@@ -89,8 +89,11 @@
 
 static msg_xtra_f sip_request_disposition_dup_xtra;
 static msg_dup_f sip_request_disposition_dup_one;
+#define sip_request_disposition_update NULL
+
 msg_hclass_t sip_request_disposition_class[] = 
-SIP_HEADER_CLASS(request_disposition, "Request-Disposition", "d", rd_items, list, request_disposition);
+SIP_HEADER_CLASS(request_disposition, "Request-Disposition", "d", rd_items,
+		 list, request_disposition);
 
 int sip_request_disposition_d(su_home_t *home, sip_header_t *h, 
 			      char *s, int slen)
@@ -125,8 +128,9 @@ int sip_request_disposition_dup_xtra(sip_header_t const *h, int offset)
 
 
 /** Duplicate one sip_request_disposition_t object */ 
-char *sip_request_disposition_dup_one(sip_header_t *dst, sip_header_t const *src,
-			   char *b, int xtra)
+char *sip_request_disposition_dup_one(sip_header_t *dst,
+				      sip_header_t const *src,
+				      char *b, int xtra)
 {
   char *end = b + xtra;
   sip_request_disposition_t *o_dst = dst->sh_request_disposition;
@@ -141,46 +145,10 @@ char *sip_request_disposition_dup_one(sip_header_t *dst, sip_header_t const *src
 }
 
 /* ====================================================================== */
-static
-void sip_caller_prefs_update_one(sip_caller_prefs_t *cp, char const *p)
-{
-  switch (p[0]) {
-  case 'e':
-    MSG_PARAM_MATCH_P(cp->cp_explicit, p, "explicit");
-    break;
-  case 'q':
-    MSG_PARAM_MATCH(cp->cp_q, p, "q");
-    break;
-  case 'r':
-    MSG_PARAM_MATCH_P(cp->cp_require, p, "require");
-    break;
-  }
-}
-
-static
-void sip_caller_prefs_update(sip_header_t *h)
-{
-  sip_caller_prefs_t *cp = h->sh_caller_prefs;
-  char const *p;
-  char const *const *pp;
-
-  /* Clear existing parameters */
-  cp->cp_q = NULL;
-  cp->cp_require = 0;
-  cp->cp_explicit = 0;
-
-  if ((pp = cp->cp_params))
-    while ((p = pp++[0])) 
-      sip_caller_prefs_update_one(cp, p);
-}
-
 
 /**@ingroup sip_caller_prefs 
  *
- * Add a parameter to a @b Contact header object
- *
- * The function sip_caller_prefs_add_param() adds a parameter to a contact
- * object. It does not copy the contents of the string @c param. 
+ * Add a parameter to a @b Accept-Contact or @b Reject-Contact header object.
  *
  * @note This function does not duplicate @p param.
  *
@@ -188,21 +156,14 @@ void sip_caller_prefs_update(sip_header_t *h)
  * @param cp     sip_caller_prefs_t object
  * @param param  parameter string
  *
- * @return The function sip_caller_prefs_add_param() returns 0 when successful,
- * and -1 upon an error.  
+ * @retval 0 when successful
+ * @retval -1 upon an error
  */
 int sip_caller_prefs_add_param(su_home_t *home,
 			       sip_caller_prefs_t *cp,
 			       char const *param)
 {
-  sip_fragment_clear(cp->cp_common);
-
-  if (msg_params_replace(home, (char const ***)&cp->cp_params, param) < 0)
-    return -1;
-
-  sip_caller_prefs_update_one(cp, param);
-
-  return 0;
+  return msg_header_replace_param(home, cp->cp_common, param);
 }
 
 static
@@ -272,7 +233,7 @@ int sip_caller_prefs_d(su_home_t *home, sip_header_t *h, char *s, int slen)
       return -1;
 
     if (cp->cp_params) 
-      sip_caller_prefs_update(h);
+      msg_header_update_params(cp->cp_common, 0);
 
     h = NULL;
   }
@@ -319,10 +280,35 @@ char *sip_caller_prefs_dup_one(sip_header_t *dst, sip_header_t const *src,
 
   assert(b <= end);
 
-  if (cp->cp_params) 
-    sip_caller_prefs_update(dst);
-
   return b;
+}
+
+static int sip_caller_prefs_update(msg_common_t *h, 
+				   char const *name, int namelen,
+				   char const *value)
+{
+  sip_caller_prefs_t *cp = (sip_caller_prefs_t *)h;
+
+  if (name == NULL) {
+    cp->cp_q = NULL;
+    cp->cp_require = 0;
+    cp->cp_explicit = 0;
+  }
+#define MATCH(s) (namelen == strlen(#s) && !strncasecmp(name, #s, strlen(#s)))
+
+  else if (MATCH(q)) {
+    cp->cp_q = value;
+  }
+  else if (MATCH(require)) {
+    cp->cp_require = value != NULL;
+  }
+  else if (MATCH(explicit)) {
+    cp->cp_explicit = value != NULL;
+  }
+
+#undef MATCH
+
+  return 0;
 }
 
 

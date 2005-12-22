@@ -62,6 +62,7 @@
 
 static msg_xtra_f sip_rack_dup_xtra;
 static msg_dup_f sip_rack_dup_one;
+#define sip_rack_update NULL
 
 msg_hclass_t sip_rack_class[] = 
 SIP_HEADER_CLASS(rack, "RAck", "", ra_common, single, rack);

@@ -66,11 +66,10 @@
 
 static msg_xtra_f sip_reason_dup_xtra;
 static msg_dup_f sip_reason_dup_one;
+static msg_update_f sip_reason_update;
 
 msg_hclass_t sip_reason_class[] = 
 SIP_HEADER_CLASS(reason, "Reason", "", re_params, append, reason);
-
-static inline void sip_reason_update(sip_reason_t *re);
 
 int sip_reason_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 {
@@ -102,7 +101,7 @@ int sip_reason_d(su_home_t *home, sip_header_t *h, char *s, int slen)
       return -1;
 
     if (re->re_params)
-      sip_reason_update(re);
+      msg_header_update_params(re->re_common, 0);
 
     h = NULL;
   }
@@ -145,23 +144,32 @@ char *sip_reason_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&re_dst->re_params, re_src->re_params, b, xtra);
   MSG_STRING_DUP(b, re_dst->re_protocol, re_src->re_protocol);
-  if (re_dst->re_params)
-    sip_reason_update(re_dst);
   assert(b <= end);
 
   return b;
 }
 
-/* Update shortcuts */
-static inline void sip_reason_update(sip_reason_t *re)
+/** Update parameter values for @b Reason header */
+static int sip_reason_update(msg_common_t *h, 
+			     char const *name, int namelen,
+			     char const *value)
 {
-  int i;
+  sip_reason_t *re = (sip_reason_t *)h;
 
-  if (re->re_params)
-    for (i = 0; re->re_params[i]; i++) {
-      if (strncasecmp(re->re_params[i], "cause=", strlen("cause=")) == 0)
-	re->re_cause = re->re_params[i] + strlen("cause=");
-      else if (strncasecmp(re->re_params[i], "text=", strlen("text=")) == 0)
-	re->re_text = re->re_params[i] + strlen("text=");
-    }
+  if (name == NULL) {
+    re->re_cause = NULL;
+    re->re_text = NULL;
+  }
+#define MATCH(s) (namelen == strlen(#s) && !strncasecmp(name, #s, strlen(#s)))
+
+  else if (MATCH(cause)) {
+    re->re_cause = value;
+  }
+  else if (MATCH(text)) {
+    re->re_text = value;
+  }
+
+#undef MATCH
+
+  return 0;
 }

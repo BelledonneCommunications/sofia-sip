@@ -2332,6 +2332,9 @@ int msg_header_add_dup(msg_t *msg,
       if (!(end = hc->hc_dup_one(h, src, (char *)h + size, xtra)))
 	return -1;			/* error */
 
+      if (hc->hc_update)
+	msg_header_update_params(h->sh_common, 0);
+
       assert(end == (char *)h + size + xtra);
 
       if (msg_header_add(msg, pub, hh, h) < 0)

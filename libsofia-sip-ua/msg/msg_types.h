@@ -263,6 +263,9 @@ typedef char *msg_dup_f(msg_header_t *dst, msg_header_t const *src,
 			char *buf, int bufsiz);
 typedef int msg_xtra_f(msg_header_t const *h, int offset);
 
+typedef int msg_update_f(msg_common_t *, char const *name, int namelen,
+			 char const *value);
+
 /** Factory object for a header. 
  * 
  * The #msg_hclass_t object, "header class", defines how a header is
@@ -277,6 +280,7 @@ struct msg_hclass_s
   msg_print_f      *hc_print;	/**< Print header. */
   msg_xtra_f       *hc_dxtra;	/**< Calculate extra size for dup */
   msg_dup_f        *hc_dup_one;	/**< Duplicate one header. */
+  msg_update_f     *hc_update;	/**< Update parameter(s) */
   char const 	   *hc_name;	/**< Full name. */
   short             hc_len;	/**< Length of hc_name. */
   char              hc_short[2];/**< Short name, if any. */

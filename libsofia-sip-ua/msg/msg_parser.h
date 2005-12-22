@@ -62,28 +62,30 @@
 
 #if HAVE_STRUCT_KEYWORDS
 /** Define a header class */
-#define MSG_HEADER_CLASS(pr, c, l, s, params, kind, dup) \
-  {{ \
-     hc_hash:    pr##c##_hash, \
-     hc_parse:   pr##c##_d, \
-     hc_print:   pr##c##_e, \
-     hc_dxtra:   dup##_dup_xtra, \
-     hc_dup_one: dup##_dup_one, \
-     hc_name:    l, \
-     hc_len:     sizeof(l) - 1, \
-     hc_short:   s, \
-     hc_size:    MSG_ALIGN(sizeof(pr##c##_t), sizeof(void*)), \
-     hc_params:  offsetof(pr##c##_t, params), \
-     hc_kind:    msg_kind_##kind, \
+#define MSG_HEADER_CLASS(pr, c, l, s, params, kind, dup, upd)	\
+  {{								\
+    hc_hash:	pr##c##_hash,					\
+    hc_parse:	pr##c##_d,					\
+    hc_print:	pr##c##_e,					\
+    hc_dxtra:	dup##_dup_xtra,					\
+    hc_dup_one: dup##_dup_one,					\
+    hc_update:	upd##_update,					\
+    hc_name:	l,						\
+    hc_len:	sizeof(l) - 1,					\
+    hc_short:	s,						\
+    hc_size:	MSG_ALIGN(sizeof(pr##c##_t), sizeof(void*)),	\
+    hc_params:	offsetof(pr##c##_t, params),			\
+    hc_kind:	msg_kind_##kind,				\
   }}
 #else
-#define MSG_HEADER_CLASS(pr, c, l, s, params, kind, dup) \
+#define MSG_HEADER_CLASS(pr, c, l, s, params, kind, dup, upd)	\
   {{ \
      pr##c##_hash, \
      pr##c##_d, \
      pr##c##_e, \
      dup##_dup_xtra, \
      dup##_dup_one, \
+     upd##_update, \
      l, \
      sizeof(l) - 1, \
      s, \
@@ -230,6 +232,8 @@ int msg_any_list_d(su_home_t *home, char **ss,
 } while(0)
 
 /* Parameter lists */
+
+int msg_header_update_params(msg_common_t *h, int clear);
 
 /** Match a parameter with any value. @HI */
 #define MSG_PARAM_MATCH(v, s, name) \

@@ -101,12 +101,15 @@ union msg_mime_u
 
 /** Define a header class for headers without any extra data to copy */
 #define MSG_HEADER_CLASS_G(c, l, s, kind) \
-  MSG_HEADER_CLASS(msg_, c, l, s, g_common, kind, msg_generic)
+  MSG_HEADER_CLASS(msg_, c, l, s, g_common, kind, msg_generic, msg_generic)
+
+#define msg_generic_update NULL
 
 /** Define a header class for a msg_list_t kind of header */
 #define MSG_HEADER_CLASS_LIST(c, l, s, kind) \
-  MSG_HEADER_CLASS(msg_, c, l, s, k_items, kind, msg_list)
+  MSG_HEADER_CLASS(msg_, c, l, s, k_items, kind, msg_list, msg_list)
 
+#define msg_list_update NULL
 
 /* ====================================================================== */
 
@@ -479,8 +482,8 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
       assert(mp);
       if (!mp)
 	break;			/* error */
-      mp->mp_close_delim =
-	msg_header_alloc(msg_home(msg), msg_payload_class, 0)->sh_payload;
+      mp->mp_close_delim = (msg_payload_t *)
+	msg_header_alloc(msg_home(msg), msg_payload_class, 0);
       if (!mp->mp_close_delim)
 	break;			/* error */
       /* Include also transport-padding and epilogue in the close-delimiter */
@@ -934,6 +937,8 @@ char *msg_multipart_dup_one(msg_header_t *dst, msg_header_t const *src,
       memset(dst, 0, sizeof dst->sh_common);
       dst->sh_class = h->sh_class;
       b = h->sh_class->hc_dup_one(dst, h, b + h->sh_class->hc_size, end - b);
+      if (h->sh_class->hc_update)
+	msg_header_update_params(h->sh_common, 0);
       assert(b <= end);
     }
   }
@@ -1083,11 +1088,9 @@ int msg_mediatype_d(char **ss, char const **type)
  * @endcode
  */
 
-static inline
-void msg_accept_update(msg_accept_t *ac);
-
 msg_hclass_t msg_accept_class[] =
-MSG_HEADER_CLASS(msg_, accept, "Accept", "", ac_params, apndlist, msg_accept);
+MSG_HEADER_CLASS(msg_, accept, "Accept", "", ac_params, apndlist, 
+		 msg_accept, msg_accept);
 
 int msg_accept_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -1121,7 +1124,7 @@ int msg_accept_d(su_home_t *home, msg_header_t *h, char *s, int slen)
       return -1;
 
     if (ac->ac_params)
-      msg_accept_update(ac);
+      msg_header_update_params(ac->ac_common, 0);
 
     h = NULL;
   }
@@ -1177,8 +1180,6 @@ char *msg_accept_dup_one(msg_header_t *dst, msg_header_t const *src,
     MSG_STRING_DUP(b, ac->ac_type, o->ac_type);
     if ((ac->ac_subtype = strchr(ac->ac_type, '/')))
       ac->ac_subtype++;
-
-    if (ac->ac_params) msg_accept_update((msg_accept_t *)dst);
   }
 
   assert(b <= end);
@@ -1186,10 +1187,22 @@ char *msg_accept_dup_one(msg_header_t *dst, msg_header_t const *src,
   return b;
 }
 
-static inline
-void msg_accept_update(msg_accept_t *ac)
+/** Update parameter(s) for Accept header. */ 
+int msg_accept_update(msg_common_t *h, 
+		      char const *name, int namelen,
+		      char const *value)
 {
-  ac->ac_q = msg_header_find_param(ac->ac_common, "q=");
+  msg_accept_t *ac = (msg_accept_t *)h;
+
+  if (name == NULL) {
+    ac->ac_q = NULL;
+  }
+  else if (namelen == 1 && strncasecmp(name, "q", 1) == 0) {
+    /* XXX - check for invalid value? */
+    ac->ac_q = value;
+  }
+
+  return 0;
 }
 
 /* ====================================================================== */
@@ -1217,25 +1230,18 @@ int msg_accept_any_d(su_home_t *home,
       aa = aa->aa_next = (msg_accept_any_t *)h;
     }
 
-    /* "Accept-*:" 1#(token [; "q" = qvalue ]) */
+    /* "Accept-*:" 1#(token *(SEMI accept-param)) */
     if (msg_token_d(&s, &aa->aa_value) == -1)
       return -1;
 
-    if (*s == ';') {
-      *s++ = '\0';
-      skip_lws(&s);
-      if (*s++ != 'q')
-	return -1;
-      skip_lws(&s);
-      if (*s++ != '=')
-	return -1;
-      skip_lws(&s);
-      if (msg_token_d(&s, &aa->aa_q) == -1)
-	return -1;
-    }
+    if (*s == ';' && msg_params_d(home, &s, &aa->aa_params) == -1)
+      return -1;
 
     if (*s != '\0' && *s != ',')
       return -1;
+
+    if (aa->aa_params)
+      msg_header_update_params(aa->aa_common, 0);
 
     h = NULL;
   }
@@ -1254,10 +1260,7 @@ int msg_accept_any_e(char b[], int bsiz, msg_header_t const *h, int f)
   msg_accept_any_t const *aa = (msg_accept_any_t *)h;
 
   MSG_STRING_E(b, end, aa->aa_value);
-  if (aa->aa_q) {
-    MSG_STRING_E(b, end, ";q=");
-    MSG_STRING_E(b, end, aa->aa_q);
-  }
+  MSG_PARAMS_E(b, end, aa->aa_params, flags);
   MSG_TERM_E(b, end);
 
   return b - b0;
@@ -1270,8 +1273,8 @@ int msg_accept_any_dup_xtra(msg_header_t const *h, int offset)
   int rv = offset;
   msg_accept_any_t const *aa = (msg_accept_any_t *)h;
 
+  MSG_PARAMS_SIZE(rv, aa->aa_params);
   rv += MSG_STRING_SIZE(aa->aa_value);
-  rv += MSG_STRING_SIZE(aa->aa_q);
 
   return rv;
 }
@@ -1285,12 +1288,29 @@ char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
   msg_accept_any_t const *o = (msg_accept_any_t *)src;
   char *end = b + xtra;
 
+  b = msg_params_dup(&aa->aa_params, o->aa_params, b, xtra);
   MSG_STRING_DUP(b, aa->aa_value, o->aa_value);
-  MSG_STRING_DUP(b, aa->aa_q, o->aa_q);
 
   assert(b <= end);
 
   return b;
+}
+
+/** Update parameter(s) for Accept-* header. */ 
+int msg_accept_any_update(msg_common_t *h, 
+			  char const *name, int namelen,
+			  char const *value)
+{
+  msg_accept_any_t *aa = (msg_accept_any_t *)h;
+
+  if (name == NULL) {
+    aa->aa_q = NULL;
+  }
+  else if (namelen == 1 && strncasecmp(name, "q", 1) == 0) {
+    aa->aa_q = value;
+  }
+
+  return 0;
 }
 
 /* ====================================================================== */
@@ -1321,6 +1341,7 @@ char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
  *   msg_common_t        aa_common[1]; // Common fragment info
  *   msg_accept_any_t   *aa_next;      // Pointer to next Accept-Charset
  *   char const         *aa_value;     // Charset
+ *   msg_param_t const  *aa_params;    // Parameter list
  *   char const         *aa_q;	       // Q-value
  * } msg_accept_charset_t;
  * @endcode
@@ -1328,7 +1349,7 @@ char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
 
 msg_hclass_t msg_accept_charset_class[1] =
  MSG_HEADER_CLASS(msg_, accept_charset, "Accept-Charset", "",
-   aa_params, apndlist, msg_accept_any);
+		  aa_params, apndlist, msg_accept_any, msg_accept_any);
 
 int msg_accept_charset_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -1371,6 +1392,7 @@ int msg_accept_charset_e(char b[], int bsiz, msg_header_t const *h, int f)
  *   msg_common_t        aa_common[1]; // Common fragment info
  *   msg_accept_any_t   *aa_next;      // Pointer to next Accept-Encoding
  *   char const         *aa_value;     // Content-coding
+ *   msg_param_t const  *aa_params;    // Parameter list
  *   char const         *aa_q;	       // Q-value
  * } msg_accept_encoding_t;
  * @endcode
@@ -1378,7 +1400,7 @@ int msg_accept_charset_e(char b[], int bsiz, msg_header_t const *h, int f)
 
 msg_hclass_t msg_accept_encoding_class[1] =
  MSG_HEADER_CLASS(msg_, accept_encoding, "Accept-Encoding", "",
-   aa_params, apndlist, msg_accept_any);
+		  aa_params, apndlist, msg_accept_any, msg_accept_any);
 
 int msg_accept_encoding_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -1421,6 +1443,7 @@ int msg_accept_encoding_e(char b[], int bsiz, msg_header_t const *h, int f)
  *   msg_common_t        aa_common[1]; // Common fragment info
  *   msg_accept_any_t   *aa_next;      // Pointer to next Accept-Encoding
  *   char const         *aa_value;     // Language-range
+ *   msg_param_t const  *aa_params;    // Parameter list
  *   char const         *aa_q;	       // Q-value
  * } msg_accept_language_t;
  * @endcode
@@ -1428,7 +1451,7 @@ int msg_accept_encoding_e(char b[], int bsiz, msg_header_t const *h, int f)
 
 msg_hclass_t msg_accept_language_class[1] =
  MSG_HEADER_CLASS(msg_, accept_language, "Accept-Language", "",
-   aa_params, apndlist, msg_accept_any);
+		  aa_params, apndlist, msg_accept_any, msg_accept_any);
 
 int msg_accept_language_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -1503,9 +1526,8 @@ int msg_accept_language_e(char b[], int bsiz, msg_header_t const *h, int f)
 
 msg_hclass_t msg_content_disposition_class[] =
 MSG_HEADER_CLASS(msg_, content_disposition, "Content-Disposition", "",
-		 cd_params, single, msg_content_disposition);
-
-static void msg_content_disposition_update(msg_content_disposition_t *cd);
+		 cd_params, single, msg_content_disposition,
+		 msg_content_disposition);
 
 int msg_content_disposition_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -1516,7 +1538,7 @@ int msg_content_disposition_d(su_home_t *home, msg_header_t *h, char *s, int sle
       return -1;
 
   if (cd->cd_params)
-    msg_content_disposition_update(cd);
+    msg_header_update_params(cd->cd_common, 0);
 
   return 0;
 }
@@ -1559,30 +1581,29 @@ char *msg_content_disposition_dup_one(msg_header_t *dst,
   b = msg_params_dup(&cd->cd_params, o->cd_params, b, xtra);
   MSG_STRING_DUP(b, cd->cd_type, o->cd_type);
 
-  if (cd->cd_params)
-    msg_content_disposition_update((msg_content_disposition_t *)dst);
-
   assert(b <= end);
 
   return b;
 }
 
-static void msg_content_disposition_update(msg_content_disposition_t *cd)
+/** Update Content-Disposition parameters */
+int msg_content_disposition_update(msg_common_t *h,
+				   char const *name, int namelen,
+				   char const *value)
 {
-  int i;
-  msg_param_t h;
+  msg_content_disposition_t *cd = (msg_content_disposition_t *)h;
 
-  cd->cd_handling = NULL, cd->cd_required = 0, cd->cd_optional = 0;
+  if (name == NULL) {
+    cd->cd_handling = NULL, cd->cd_required = 0, cd->cd_optional = 0;
+  }
+  else if (namelen == strlen("handling") &&
+	   strncasecmp(name, "handling", namelen) == 0) {
+    cd->cd_handling = value;
+    cd->cd_required = strcasecmp(value, "required") == 0;
+    cd->cd_optional = strcasecmp(value, "optional") == 0;
+  }
 
-  if (cd->cd_params)
-    for (i = 0; (h = cd->cd_params[i]); i++) {
-      if (strncasecmp(h, "handling=", strlen("handling=")) == 0) {
-	h += strlen("handling=");
-	cd->cd_handling = h;
-	cd->cd_required = strcasecmp(h, "required") == 0;
-	cd->cd_optional = strcasecmp(h, "optional") == 0;
-      }
-    }
+  return 0;
 }
 
 /* ====================================================================== */
@@ -1618,7 +1639,7 @@ static void msg_content_disposition_update(msg_content_disposition_t *cd)
  */
 
 msg_hclass_t msg_content_encoding_class[] =
-MSG_HEADER_CLASS_LIST(content_encoding, "Content-Encoding", "e", list);
+  MSG_HEADER_CLASS_LIST(content_encoding, "Content-Encoding", "e", list);
 
 int msg_content_encoding_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -1723,7 +1744,7 @@ int msg_content_language_e(char b[], int bsiz, msg_header_t const *h, int f)
 
 msg_hclass_t msg_content_length_class[] =
 MSG_HEADER_CLASS(msg_, content_length, "Content-Length", "l",
-		 l_common, single_critical, msg_default);
+		 l_common, single_critical, msg_default, msg_generic);
 
 /**@ingroup msg_content_length
  * Create a @b Content-Length header object.
@@ -1864,9 +1885,11 @@ MSG_HEADER_CLASS_G(content_id, "Content-ID", "", single);
  * whitespace around the slash.
  */
 
+#define msg_content_type_update NULL
+
 msg_hclass_t msg_content_type_class[] =
 MSG_HEADER_CLASS(msg_, content_type, "Content-Type", "c", c_params,
-		 single, msg_content_type);
+		 single, msg_content_type, msg_content_type);
 
 int msg_content_type_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 {
@@ -2210,5 +2233,8 @@ char *msg_warning_dup_one(msg_header_t *dst,
   return b;
 }
 
+#define msg_warning_update NULL
+
 msg_hclass_t msg_warning_class[] = 
-  MSG_HEADER_CLASS(msg_, warning, "Warning", "", w_common, append, msg_warning);
+  MSG_HEADER_CLASS(msg_, warning, "Warning", "", w_common, append, 
+		   msg_warning, msg_warning);

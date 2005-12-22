@@ -55,6 +55,8 @@ extern msg_mclass_t const *msg_test_default(void)
   return msg_test_mclass;
 }
 
+#define msg_generic_update NULL
+
 /**@ingroup test_msg
  * @defgroup msg_test_request Request Line for Testing
  */
@@ -64,7 +66,7 @@ static msg_dup_f msg_request_dup_one;
 
 msg_hclass_t msg_request_class[] =
 MSG_HEADER_CLASS(msg_, request, NULL, "", rq_common, 
-		 single_critical, msg_request);
+		 single_critical, msg_request, msg_generic);
 
 /** Decode a request line */
 int msg_request_d(su_home_t *home, msg_header_t *h, char *s, int slen)
@@ -132,7 +134,7 @@ static msg_dup_f msg_status_dup_one;
 
 msg_hclass_t msg_status_class[1] =
 MSG_HEADER_CLASS(msg_, status, NULL, "", st_common, 
-		 single_critical, msg_status);
+		 single_critical, msg_status, msg_generic);
 
 /** Parse status line */
 int msg_status_d(su_home_t *home, msg_header_t *h, char *s, int slen)

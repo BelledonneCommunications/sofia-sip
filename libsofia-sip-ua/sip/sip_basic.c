@@ -111,6 +111,7 @@
 
 static msg_xtra_f sip_request_dup_xtra;
 static msg_dup_f sip_request_dup_one;
+#define sip_request_update NULL
 
 msg_hclass_t sip_request_class[] = 
 SIP_HEADER_CLASS(request, NULL, "", rq_common, single_critical, request);
@@ -293,6 +294,7 @@ static msg_xtra_f sip_status_dup_xtra;
 static msg_dup_f sip_status_dup_one;
 
 #define sip_status_insert msg_status_insert
+#define sip_status_update NULL
 
 msg_hclass_t sip_status_class[] = 
 SIP_HEADER_CLASS(status, NULL, "", st_common, single_critical, status);
@@ -428,6 +430,7 @@ sip_status_t *sip_status_create(su_home_t *home,
 #define sip_payload_e 	     msg_payload_e
 #define sip_payload_dup_xtra msg_payload_dup_xtra 
 #define sip_payload_dup_one  msg_payload_dup_one
+#define sip_payload_update   NULL
 
 msg_hclass_t sip_payload_class[] = 
 SIP_HEADER_CLASS(payload, NULL, "", pl_common, single, payload);
@@ -535,6 +538,7 @@ sip_separator_t *sip_separator_create(su_home_t *home)
 
 #define sip_unknown_dup_xtra msg_unknown_dup_xtra 
 #define sip_unknown_dup_one  msg_unknown_dup_one
+#define sip_unknown_update NULL
 
 msg_hclass_t sip_unknown_class[] = 
 SIP_HEADER_CLASS(unknown, "", "", un_common, append, unknown);
@@ -849,6 +853,23 @@ static char *sip_addr_dup_one(sip_header_t *dst, sip_header_t const *src,
   return b;
 }
 
+/** Update parameters in sip_addr_t object */
+static int sip_addr_update(msg_common_t *h,
+			   char const *name, int namelen,
+			   char const *value)
+{
+  sip_addr_t *a = (sip_addr_t *)h;
+
+  if (name == NULL) {
+    a->a_tag = NULL;
+  }
+  else if (namelen == strlen("tag") && !strncasecmp(name, "tag", namelen)) {
+    a->a_tag = value;
+  }
+
+  return 0;
+}
+
 /** Create an address header object from URL */
 static sip_addr_t *
 sip_addr_make_url(su_home_t *home, msg_hclass_t *hc, url_string_t const *us)
@@ -968,6 +989,7 @@ int sip_addr_tag(su_home_t *home, sip_addr_t *a, char const *tag)
 
 static msg_xtra_f sip_call_id_dup_xtra;
 static msg_dup_f sip_call_id_dup_one;
+#define sip_call_id_update NULL
 
 msg_hclass_t sip_call_id_class[] = 
 SIP_HEADER_CLASS(call_id, "Call-ID", "i", i_common, single, call_id);
@@ -1119,6 +1141,7 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
 
 static msg_xtra_f sip_cseq_dup_xtra;
 static msg_dup_f sip_cseq_dup_one;
+#define sip_cseq_update NULL
 
 msg_hclass_t sip_cseq_class[] = 
 SIP_HEADER_CLASS(cseq, "CSeq", "", cs_common, single, cseq);
@@ -1284,12 +1307,10 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
 
 static msg_xtra_f sip_contact_dup_xtra;
 static msg_dup_f sip_contact_dup_one;
-inline static void sip_contact_param_update(sip_contact_t *m, msg_param_t p);
-inline static void sip_contact_update(sip_header_t *h);
+static msg_update_f sip_contact_update;
 
 msg_hclass_t sip_contact_class[] = 
-SIP_HEADER_CLASS(contact, "Contact", "m", m_params, 
-		 append, contact);
+SIP_HEADER_CLASS(contact, "Contact", "m", m_params, append, contact);
 
 int sip_contact_d(su_home_t *home,
 		  sip_header_t *h,
@@ -1321,7 +1342,7 @@ int sip_contact_d(su_home_t *home,
       return -1;
 
     if (m->m_params) 
-      sip_contact_update(h);
+      msg_header_update_params(m->m_common, 0);
 
     h = NULL;
   }
@@ -1367,7 +1388,6 @@ char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
   sip_contact_t const *o = src->sh_contact;
 
   b = msg_params_dup(&m->m_params, o->m_params, b, xtra);
-  if (m->m_params) sip_contact_update(dst);
   MSG_STRING_DUP(b, m->m_display, o->m_display);
   URL_DUP(b, end, m->m_url, o->m_url);
   MSG_STRING_DUP(b, m->m_comment, o->m_comment);
@@ -1375,6 +1395,29 @@ char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
   assert(b <= end);
 
   return b;
+}
+
+/** Update parameter in sip_contact_t */
+static int sip_contact_update(msg_common_t *h, 
+			      char const *name, int namelen,
+			      char const *value)
+{
+  sip_contact_t *m = (sip_contact_t *)h;
+
+  if (name == NULL) {
+    m->m_q = NULL;
+    m->m_expires = NULL;
+  }
+  else if (namelen == 1 && strncasecmp(name, "q", 1) == 0) {
+    /* XXX - check for invalid value? */
+    m->m_q = value;
+  }
+  else if (namelen == strlen("expires") && 
+	   !strncasecmp(name, "expires", namelen)) {
+    m->m_expires = value;
+  }
+
+  return 0;
 }
 
 /**@ingroup sip_contact 
@@ -1412,7 +1455,7 @@ sip_contact_t * sip_contact_create(su_home_t *home, url_string_t const *url,
       
       for (va_start(ap, p); p; p = va_arg(ap, msg_param_t)) {
 	p = su_strdup(home, p);
-	sip_contact_add_param(home, m, p);
+	msg_header_add_param(home, m->m_common, p);
       }
 
       va_end(ap);
@@ -1431,76 +1474,21 @@ sip_contact_t * sip_contact_create(su_home_t *home, url_string_t const *url,
  * The function sip_contact_add_param() adds a parameter to a contact
  * object. It does not copy the contents of the string @c param. 
  *
- * @note This function does not duplicate @p param.
+ * @note This function @b does @b not @b duplicate @p param.
  *
  * @param home   memory home
  * @param m      sip_contact_t object
  * @param param  parameter string
  *
- * @return The function sip_contact_add_param() returns 0 when successful,
- * and -1 upon an error.  */
+ * @return 0 when successful, and -1 upon an error.
+ *
+ * @deprecated Use msg_header_replace_param() directly.
+ */
 int sip_contact_add_param(su_home_t *home,
 			  sip_contact_t *m,
 			  char const *param)
 {
-  if (!m)
-    return -1;
-  sip_fragment_clear(m->m_common);
-  if (msg_params_replace(home, (char const ***)&m->m_params, param) < 0)
-    return -1;
-  sip_contact_param_update(m, param);
-  return 0;
-}
-
-/**@ingroup sip_contact
- *
- * Update a contact parameter
- *
- * This function updates a Contact parameter. Note that the parameter
- * string may not contain space around =.
- *
- * @param m  sip_contact_t object
- * @param p  parameter string like "a=b" or "a"
- */
-inline static 
-void sip_contact_param_update(sip_contact_t *m, msg_param_t p)
-{
-  switch (p[0]) {
-  case 'e':
-    MSG_PARAM_MATCH(m->m_expires, p, "expires");
-    break;
-  case 'q':
-    MSG_PARAM_MATCH(m->m_q, p, "q");
-    break;
-  default:
-    break;
-  }
-}
-
-/**@ingroup sip_contact
- *
- * Update Contact parameter list.
- *
- * The function sip_contact_update() updates parameters in a
- * contact object.
- *
- * @param m  sip_contact_t object
- */
-inline static 
-void sip_contact_update(sip_header_t *h)
-{
-  sip_contact_t *m = h->sh_contact;
-  char const *p;
-  char const *const *pp;
-
-  /* Clear existing parameters */
-  m->m_expires = NULL;
-  m->m_q = NULL;
-
-  if ((pp = m->m_params)) {
-    while ((p = pp++[0]))
-      sip_contact_param_update(m, p);
-  }
+  return msg_header_replace_param(home, m->m_common, param);
 }
 
 /* ====================================================================== */
@@ -2002,7 +1990,7 @@ int sip_min_expires_e(char b[], int bsiz, sip_header_t const *h, int f)
 
 static msg_xtra_f sip_retry_after_dup_xtra;
 static msg_dup_f sip_retry_after_dup_one;
-inline static void sip_retry_after_update(sip_header_t *h);
+static msg_update_f sip_retry_after_update;
 
 msg_hclass_t sip_retry_after_class[] = 
 SIP_HEADER_CLASS(retry_after, "Retry-After", "", af_params, single,
@@ -2022,7 +2010,7 @@ int sip_retry_after_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   }
 
   if (af->af_params)
-    sip_retry_after_update(h);
+    msg_header_update_params(h->sh_common, 0);
 
   return 0;
 }
@@ -2041,7 +2029,7 @@ int sip_retry_after_e(char b[], int bsiz, sip_header_t const *h, int f)
     MSG_CHAR_E(b, end, '(');
     MSG_STRING_E(b, end, af->af_comment);
     MSG_CHAR_E(b, end, ')');
-    if (!compact && af->af_params)
+    if (!compact && af->af_params && af->af_params[0])
       MSG_CHAR_E(b, end, ' ');
   }
 
@@ -2051,13 +2039,6 @@ int sip_retry_after_e(char b[], int bsiz, sip_header_t const *h, int f)
   MSG_TERM_E(b, end);
     
   return b - b0;
-}
-
-inline static void sip_retry_after_update(sip_header_t *h)
-{
-  sip_retry_after_t *af = h->sh_retry_after;
-
-  af->af_duration = msg_params_find(af->af_params, "duration=");
 }
 
 int sip_retry_after_dup_xtra(sip_header_t const *h, int offset)
@@ -2086,10 +2067,26 @@ char *sip_retry_after_dup_one(sip_header_t *dst,
 
   assert(b <= end);
 
-  sip_retry_after_update(dst);
-
   return b;
 }
+
+static int sip_retry_after_update(msg_common_t *h,
+				  char const *name, int namelen,
+				  char const *value)
+{
+  sip_retry_after_t *af = (sip_retry_after_t *)h;
+
+  if (name == NULL) {
+    af->af_duration = NULL;
+  }
+  else if (namelen == strlen("duration") &&
+	   !strncasecmp(name, "duration", namelen)) {
+    af->af_duration = value;
+  }
+
+  return 0;
+}
+
 
 /* ====================================================================== */
 
@@ -2162,8 +2159,8 @@ int sip_any_route_dup_xtra(sip_header_t const *h, int offset)
 }
 
 char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
-			 char *b,
-			 int xtra)
+			    char *b,
+			    int xtra)
 {
   sip_route_t *r = dst->sh_route;
   sip_route_t const *o = src->sh_route;
@@ -2177,6 +2174,9 @@ char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
 
   return b;
 }
+
+#define sip_any_route_update NULL
+
 
 /** Create a route. 
  *
@@ -2527,8 +2527,6 @@ int sip_to_add_param(su_home_t *home,
  * @endcode
  */
 
-static void sip_via_update(sip_header_t *h);
-
 /**@ingroup sip_via
  * @typedef typedef struct sip_via_s sip_via_t;
  *
@@ -2557,6 +2555,7 @@ static void sip_via_update(sip_header_t *h);
 
 static msg_xtra_f sip_via_dup_xtra;
 static msg_dup_f sip_via_dup_one;
+static msg_update_f sip_via_update;
 
 msg_hclass_t sip_via_class[] = 
 SIP_HEADER_CLASS(via, "Via", "v", v_params, prepend, via);
@@ -2600,7 +2599,7 @@ int sip_via_d(su_home_t *home,
       return -1;
 
     if (v->v_params)
-      sip_via_update(h);
+      msg_header_update_params(v->v_common, 0);
 
     h = NULL;
   }
@@ -2669,101 +2668,69 @@ char *sip_via_dup_one(sip_header_t *dst, sip_header_t const *src,
   MSG_STRING_DUP(b, v->v_port, o->v_port);
   MSG_STRING_DUP(b, v->v_comment, o->v_comment);
 
-  if (v->v_params) sip_via_update(dst);
-
   assert(b <= end);
 
   return b;
 }
 
-/**
- * Function  - update a via parameter
- *
- * The function sip_via_param_update() updates a @b Via parameter. Note that
- * the parameter string may not contain space around @c =.
- *
- * @param v pointer to a @c sip_via_t object
- * @param p pointer to a parameter string like @c "a=b" 
- */
-inline static 
-void sip_via_param_update(sip_via_t *v, char const *p)
+static int sip_via_update(msg_common_t *h, 
+			  char const *name, int namelen,
+			  char const *value)
 {
-  switch (p[0]) {
-  case 'b':
-    MSG_PARAM_MATCH(v->v_branch, p, "branch");
-    break;
-  case 'c':
-    MSG_PARAM_MATCH(v->v_comp, p, "comp");
-    break;
-  case 'm':
-    MSG_PARAM_MATCH(v->v_maddr, p, "maddr");
-    break;
-  case 'r':
-    MSG_PARAM_MATCH(v->v_received, p, "received");
-    MSG_PARAM_MATCH(v->v_rport, p, "rport");
-    break;
-  case 't': 
-    MSG_PARAM_MATCH(v->v_ttl, p, "ttl");
-    break;
+  sip_via_t *v = (sip_via_t *)h;
+
+  if (name == NULL) {
+    v->v_ttl = NULL;
+    v->v_maddr = NULL;
+    v->v_received = NULL;
+    v->v_branch = NULL;
+    v->v_rport = NULL;
+    v->v_comp = NULL;
   }
-}
+#define MATCH(s) (namelen == strlen(#s) && !strncasecmp(name, #s, strlen(#s)))
 
-/** @internal
- * Update parameter list in a via object.
- *
- * The function sip_via_update() updates parameters in a @c sip_via_t
- * object.
- *
- * @param h pointer to a @b Via header object
- */
-static void sip_via_update(sip_header_t *h)
- {
-  sip_via_t *v = h->sh_via;
-  char const *p;
-  char const *const *pp;
-  
-  /* Clear existing parameters */
-  v->v_hidden = 0;
-  v->v_branch = NULL;
-  v->v_maddr = NULL;
-  v->v_received = NULL;
-  v->v_ttl = NULL;
+   else if (MATCH(ttl)) {
+     v->v_ttl = value;
+   }
+   else if (MATCH(maddr)) {
+     v->v_maddr = value;
+   }
+   else if (MATCH(received)) {
+     v->v_received = value;
+   }
+   else if (MATCH(branch)) {
+     v->v_branch = value;
+   }
+   else if (MATCH(rport)) {
+     v->v_rport = value;
+   }
+   else if (MATCH(comp)) {
+     v->v_comp = value;
+   }
 
-  if ((pp = v->v_params))
-    while ((p = pp++[0]))
-      sip_via_param_update(v, p);
-}
+ #undef MATCH
+
+   return 0;
+ }
 
 /**@ingroup sip_via
  *
  * Add a parameter to a via object.
  *
- * The function sip_via_add_param() adds a parameter to a via object.
- *
- * @note This function does not duplicate @a param.
+ * @note This function @b does @b not @b duplicate @p param.
  *
  * @param home   memory home
  * @param v      sip_via_t object
  * @param param  parameter string
  *
- * @return The function sip_via_add_param() returns 0 when successful,
- * and -1 upon an error.
+ * @retval 0 when successful
+ * @retval -1 upon an error.
  */
 int sip_via_add_param(su_home_t *home,
 		      sip_via_t *v,
 		      char const *param)
 {
-  if (!v)
-    return -1;
-
-  sip_fragment_clear(v->v_common);
-
-  if (msg_params_replace(home, (char const ***)&v->v_params, param) < 0)
-    return -1;
-
-  sip_via_param_update(v, param);
-
-  return 0;
+  return msg_header_replace_param(home, v->v_common, param);
 }
 
 /**@ingroup sip_via
@@ -2815,9 +2782,8 @@ sip_via_t *sip_via_create(su_home_t *home,
          param; 
          param = va_arg(params, char const *)) {
       if ((param = su_strdup(home, param))) {
-	if (msg_params_replace(home, (char const ***)&v->v_params, param) < 0)
+	if (msg_header_replace_param(home, v->v_common, param) < 0)
 	  break;
-	sip_via_param_update(v, param);
       }
     }
 

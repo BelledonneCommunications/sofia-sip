@@ -84,10 +84,10 @@
 
 static msg_xtra_f sip_event_dup_xtra;
 static msg_dup_f sip_event_dup_one;
+static msg_update_f sip_event_update;
+
 msg_hclass_t sip_event_class[] = 
 SIP_HEADER_CLASS(event, "Event", "o", o_params, single, event);
-
-static inline void sip_event_update(sip_event_t *o);
 
 int sip_event_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 {
@@ -100,7 +100,7 @@ int sip_event_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   if (*s == ';') {
     if (msg_params_d(home, &s, &o->o_params) < 0 || *s)
       return -1;
-    sip_event_update(o);
+    msg_header_update_params(o->o_common, 0);
   }
   return 0;
 }
@@ -137,22 +137,26 @@ char *sip_event_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&o_dst->o_params, o_src->o_params, b, xtra);
   MSG_STRING_DUP(b, o_dst->o_type, o_src->o_type);
-  if (o_dst->o_params)
-    sip_event_update(o_dst);
   assert(b <= end);
 
   return b;
 }
 
-static inline void sip_event_update(sip_event_t *o)
+/** Update parameters in Event header. */
+static int sip_event_update(msg_common_t *h, 
+			   char const *name, int namelen,
+			   char const *value)
 {
-  int i;
+  sip_event_t *o = (sip_event_t *)h;
 
-  if (o->o_params)
-    for (i = 0; o->o_params[i]; i++) {
-      if (strncasecmp(o->o_params[i], "id=", 3) == 0)
-	o->o_id = o->o_params[i] + 3;
-    }
+  if (name == NULL) {
+    o->o_id = NULL;
+  }
+  else if (namelen == strlen("id") && !strncasecmp(name, "id", namelen)) {
+    o->o_id = value;
+  }
+
+  return 0;
 }
 
 /* ====================================================================== */
@@ -264,13 +268,12 @@ int sip_allow_events_add(su_home_t *home,
 
 static msg_xtra_f sip_subscription_state_dup_xtra;
 static msg_dup_f sip_subscription_state_dup_one;
+static msg_update_f sip_subscription_state_update;
 
 msg_hclass_t sip_subscription_state_class[] = 
 SIP_HEADER_CLASS(subscription_state, "Subscription-State", "", 
 		 ss_params, single, 
 		 subscription_state);
-
-static void sip_subscription_state_update(sip_header_t *h);
 
 int sip_subscription_state_d(su_home_t *home, sip_header_t *h, 
 			     char *s, int slen)
@@ -286,11 +289,12 @@ int sip_subscription_state_d(su_home_t *home, sip_header_t *h,
    skip_lws(&s); /* Skip any extra white space (advance pointer) */
    
    /* check if parameters are present and if so parse them */
-   if (*s  == ';' && msg_params_d(home, &s, &ss->ss_params) < 0)
-     return -1;
-   
-   if (ss->ss_params)
-     sip_subscription_state_update(h);
+   if (*s  == ';') {
+     if ( msg_params_d(home, &s, &ss->ss_params) < 0)
+       return -1;
+     if (msg_header_update_params(ss->ss_common, 0) < 0)
+       return -1;
+   }
 
    return 0;
 }
@@ -329,45 +333,37 @@ char *sip_subscription_state_dup_one(sip_header_t *dst, sip_header_t const *src,
    
   b = msg_params_dup(&ss_dst->ss_params, ss_src->ss_params, b, xtra);
   MSG_STRING_DUP(b, ss_dst->ss_substate, ss_src->ss_substate);
-   
-   if (ss_dst->ss_params)
-     sip_subscription_state_update(dst);
-   
-   assert(b <= end);
+  assert(b <= end);
 
-   return b;   
+  return b;
 }
 
-inline
-static void 
-sip_subscription_state_param_update(sip_subscription_state_t *ss, 
-				    char const *p)
+static int sip_subscription_state_update(msg_common_t *h, 
+					 char const *name, int namelen,
+					 char const *value)
 {
-   
-   switch(p[0]) {
-    case 'r':
-      if (strncasecmp(p, "reason", 6) == 0)
-	MSG_PARAM_MATCH(ss->ss_reason, p, "reason");
-      else if (strncasecmp(p, "retry-after", 11) == 0)   
-	MSG_PARAM_MATCH(ss->ss_retry_after, p, "retry-after");	
-      break;
-    case 'e':
-      MSG_PARAM_MATCH(ss->ss_expires, p, "expires");
-      break;
-   }
-   
-}
+  sip_subscription_state_t *ss = (sip_subscription_state_t *)h;
 
-static void sip_subscription_state_update(sip_header_t *h)
-{
-   sip_subscription_state_t *ss = h->sh_subscription_state;
-   char const *p;
-   char const *const *pp;
-   
-   if ((pp = ss->ss_params)) {
-     while ((p = pp++[0]))
-	sip_subscription_state_param_update(ss, p);
-   }
+  if (name == NULL) {
+    ss->ss_reason = NULL;
+    ss->ss_retry_after = NULL;
+    ss->ss_expires = NULL;
+  }
+#define MATCH(s) (namelen == strlen(#s) && !strncasecmp(name, #s, strlen(#s)))
+
+  else if (MATCH(reason)) {
+    ss->ss_reason = value;
+  }
+  else if (MATCH(retry-after)) {
+    ss->ss_retry_after = value;
+  }
+  else if (MATCH(expires)) {
+    ss->ss_expires = value;
+  }
+
+#undef MATCH
+
+  return 0;
 }
 
 #if 0				/* More dead headers */

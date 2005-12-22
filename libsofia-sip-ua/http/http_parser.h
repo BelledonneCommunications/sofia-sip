@@ -66,21 +66,23 @@
 #define HTTP_HCLASS_TEST(x) ((x) && (x)->hc_tag == HTTP_PROTOCOL_TAG)
 #define HTTP_HDR_TEST(x)    ((x)->sh_class && HTTP_HCLASS_TEST((x)->sh_class))
 
+#define http_no_update NULL
+
 /** Define a header class for a HTTP header. */
 #define HTTP_HEADER_CLASS(c, l, params, kind, dup) \
-  MSG_HEADER_CLASS(http_, c, l, "", params, kind, http_ ## dup)
+  MSG_HEADER_CLASS(http_, c, l, "", params, kind, http_ ## dup, http_no)
 
 /** This is used by headers with no extra data in copy */
 #define HTTP_HEADER_CLASS_G(c, l, kind) \
-  MSG_HEADER_CLASS(http_, c, l, "", g_common, kind, msg_generic)
+  MSG_HEADER_CLASS(http_, c, l, "", g_common, kind, msg_generic, http_no)
 
 /** Define a header class for a msg_list_t kind of header */
 #define HTTP_HEADER_CLASS_LIST(c, l, kind) \
-  MSG_HEADER_CLASS(http_, c, l, "", k_items, kind, msg_list)
+  MSG_HEADER_CLASS(http_, c, l, "", k_items, kind, msg_list, http_no)
 
 /** Define a authorization header class */
 #define HTTP_HEADER_CLASS_AUTH(c, l, kind) \
-  MSG_HEADER_CLASS(http_, c, l, "", au_params, kind, msg_auth)
+  MSG_HEADER_CLASS(http_, c, l, "", au_params, kind, msg_auth, http_no)
 
 
 /* ---------------------------------------------------------------------------

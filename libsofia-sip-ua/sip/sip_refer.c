@@ -73,13 +73,14 @@
  *   sip_error_t        *r_next;	// Link to next (dummy)
  *   char const          r_display;     // Display name
  *   url_t               r_url[1];	// URI to reference
- *   msg_param_t const  *r_params;      // List of genric parameters
+ *   msg_param_t const  *r_params;      // List of generic parameters
  * } sip_refer_to_t;
  * @endcode
  */
 
 static msg_xtra_f sip_refer_to_dup_xtra;
 static msg_dup_f sip_refer_to_dup_one;
+#define sip_refer_to_update NULL
 
 msg_hclass_t sip_refer_to_class[] =
 SIP_HEADER_CLASS(refer_to, "Refer-To", "r", r_params, single, refer_to);
@@ -187,6 +188,7 @@ char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 static msg_xtra_f sip_referred_by_dup_xtra;
 static msg_dup_f sip_referred_by_dup_one;
+static msg_update_f sip_referred_by_update;
 
 msg_hclass_t sip_referred_by_class[] =
 SIP_HEADER_CLASS(referred_by, "Referred-By", "b", b_params, single,
@@ -203,7 +205,8 @@ int sip_referred_by_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 		      NULL) < 0)
     return -1;
 
-  b->b_cid = msg_params_find(b->b_params, "cid=");
+  if (b->b_params)
+    msg_header_update_params(b->b_common, 0);
 
   return 0;
 }
@@ -250,6 +253,23 @@ char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
   return b;
 }
 
+static int sip_referred_by_update(msg_common_t *h, 
+			   char const *name, int namelen,
+			   char const *value)
+{
+  sip_referred_by_t *b = (sip_referred_by_t *)h;
+
+  if (name == NULL) {
+    b->b_cid = NULL;
+  }
+  else if (namelen == strlen("cid") && !strncasecmp(name, "cid", namelen)) {
+    b->b_cid = value;
+  }
+
+  return 0;
+}
+
+
 /* ====================================================================== */
 
 /**@SIP_HEADER sip_replaces Replaces Header
@@ -257,7 +277,7 @@ char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
  * The Replaces header indicates that a single dialog identified by the
  * header field is to be shut down and logically replaced by the incoming
  * INVITE in which it is contained. Its syntax is defined in
- * draft-ietf-sip-replaces-04 section 6.1 as follows:
+ * @RFC3891 section 6.1 as follows:
  *
  * @code
  *    Replaces        = "Replaces" HCOLON callid *(SEMI replaces-param)
@@ -267,6 +287,11 @@ char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
  *    early-flag      = "early-only"
  * @endcode
  *
+ * A Replaces header field MUST contain exactly one to-tag and exactly
+ * one from-tag, as they are required for unique dialog matching.  For
+ * compatibility with dialogs initiated by @RFC2543 compliant UAs, a
+ * tag of zero matches both tags of zero and null.  A Replaces header
+ * field MAY contain the early-flag.
  */
 
 /**@ingroup sip_replaces
@@ -293,7 +318,7 @@ char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 static msg_xtra_f sip_replaces_dup_xtra;
 static msg_dup_f sip_replaces_dup_one;
-inline static void sip_replaces_param_update(sip_replaces_t *rp);
+static msg_update_f sip_replaces_update;
 
 msg_hclass_t sip_replaces_class[] =
 SIP_HEADER_CLASS(replaces, "Replaces", "", rp_params, single, replaces);
@@ -309,7 +334,7 @@ int sip_replaces_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   if (*s) {
     if (msg_params_d(home, &s, &rp->rp_params) == -1)
       return -1;
-    sip_replaces_param_update(rp);
+    msg_header_update_params(rp->rp_common, 0);
   }
 
   return s - rp->rp_call_id;
@@ -355,42 +380,34 @@ char *sip_replaces_dup_one(sip_header_t *dst, sip_header_t const *src,
 
   assert(b <= end);
 
-  sip_replaces_param_update(rp_dst);
-
   return b;
 }
 
-
-/**Update replaces parameters.
- *
- * The function sip_replaces_param_update() updates a @b Replaces parameter. 
- * Note that the parameter string may not contain space around @c =.
- *
- * @param rp pointer to a @c sip_replaces_t object
- */
-inline static 
-void sip_replaces_param_update(sip_replaces_t *rp)
+/** Update parameters in Replaces header. */
+static int sip_replaces_update(msg_common_t *h, 
+			       char const *name, int namelen,
+			       char const *value)
 {
-  int i;
+  sip_replaces_t *rp = (sip_replaces_t *)h;
 
-  rp->rp_from_tag = NULL, rp->rp_to_tag = NULL, rp->rp_early_only = 0;
-
-  if (!rp->rp_params)
-    return;
-
-  for (i = 0; rp->rp_params[i]; i++) {
-    msg_param_t p = rp->rp_params[i];
-    switch (p[0]) {
-    case 'e':
-      MSG_PARAM_MATCH_P(rp->rp_early_only, p, "early-only");
-      break;
-    case 'f':
-      MSG_PARAM_MATCH(rp->rp_from_tag, p, "from-tag");
-      break;
-    case 't':
-      MSG_PARAM_MATCH(rp->rp_to_tag, p, "to-tag");
-      break;
-    }
+  if (name == NULL) {
+    rp->rp_to_tag = NULL;
+    rp->rp_from_tag = NULL;
+    rp->rp_early_only = 0;
   }
-}
+#define MATCH(s) (namelen == strlen(#s) && !strncasecmp(name, #s, strlen(#s)))
 
+  else if (MATCH(to-tag)) {
+    rp->rp_to_tag = value;
+  }
+  else if (MATCH(from-tag)) {
+    rp->rp_from_tag = value;
+  }
+  else if (MATCH(early-only)) {
+    rp->rp_early_only = value != NULL;
+  }
+
+#undef MATCH
+
+  return 0;
+}

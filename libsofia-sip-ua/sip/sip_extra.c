@@ -47,6 +47,18 @@
 
 /* ====================================================================== */
 
+static int sip_info_d(su_home_t *home, sip_header_t *h, char *s, int slen);
+
+static int sip_info_dup_xtra(sip_header_t const *h, int offset);
+static char *sip_info_dup_one(sip_header_t *dst,
+			      sip_header_t const *src,
+			      char *b,
+			      int xtra);
+
+#define sip_info_update NULL
+
+/* ====================================================================== */
+
 /**@SIP_HEADER sip_call_info Call-Info Header
  * 
  * The Call-Info header provides additional information about the caller or
@@ -80,18 +92,9 @@
  * @endcode
  */
 
-static int sip_info_d(su_home_t *home, sip_header_t *h, char *s, int slen);
-
-static int sip_info_dup_xtra(sip_header_t const *h, int offset);
-static char *sip_info_dup_one(sip_header_t *dst,
-			      sip_header_t const *src,
-			      char *b,
-			      int xtra);
-
 #define sip_call_info_dup_xtra  sip_info_dup_xtra
-
-static msg_dup_f sip_call_info_dup_one;
-static void sip_call_info_update(sip_header_t *h);
+#define sip_call_info_dup_one   sip_info_dup_one
+static msg_update_f sip_call_info_update;
 
 msg_hclass_t sip_call_info_class[] =
 SIP_HEADER_CLASS(call_info, "Call-Info", "",
@@ -102,46 +105,41 @@ int sip_call_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   int retval = sip_info_d(home, h, s, slen);
 
   if (retval == 0)
-    for (;h; h = h->sh_next) {
-      sip_call_info_update(h);
-    }
+    for (;h; h = h->sh_next)
+      msg_header_update_params(h->sh_common, 0);
 
   return retval;
 }
 
 int sip_call_info_e(char b[], int bsiz, sip_header_t const *h, int f)
 {
+  sip_call_info_t *ci = (sip_call_info_t *)h;
+
   assert(sip_call_info_p(h));
 
-  return sip_name_addr_e(b, bsiz, f,
-			 NULL,
-			 1, h->sh_call_info->ci_url,
-			 h->sh_call_info->ci_params,
-			 NULL);
-}
-
-char *sip_call_info_dup_one(msg_header_t *dst, msg_header_t const *src,
-			    char *b,
-			    int xtra)
-{
-  b = sip_info_dup_one(dst, src, b, xtra);
-  sip_call_info_update(dst);
-  return b;
+  return sip_name_addr_e(b, bsiz, f, NULL, 1, ci->ci_url, ci->ci_params, NULL);
 }
 
 /** @internal
- * Update parameter list in a Call-Info object.
+ * Update parameter in a Call-Info object.
  * 
- * The function @c sip_call_info_update() updates parameters in a
- * @c sip_call_info_t object.
- * 
- * @param ci pointer to a @c sip_call_info_t object
  */
-void sip_call_info_update(sip_header_t *h)
+static
+int sip_call_info_update(msg_common_t *h, 
+			  char const *name, int namelen,
+			  char const *value)
 {
-  if (h->sh_call_info->ci_params)
-    h->sh_call_info->ci_purpose =
-      msg_params_find(h->sh_call_info->ci_params, "purpose=");
+  sip_call_info_t *ci = (sip_call_info_t *)h;
+
+  if (name == NULL) {
+    ci->ci_purpose = NULL;
+  }
+  else if (namelen == strlen("purpose") && 
+	   !strncasecmp(name, "purpose", namelen)) {
+    ci->ci_purpose = value;
+  }
+
+  return 0;
 }
 
 /* ====================================================================== */
@@ -360,6 +358,7 @@ static char *sip_timestamp_dup_one(sip_header_t *dst,
 			      sip_header_t const *src,
 			      char *b,
 			      int xtra);
+#define sip_timestamp_update NULL
 
 msg_hclass_t sip_timestamp_class[] = 
 SIP_HEADER_CLASS(timestamp, "Timestamp", "", ts_common, single,
