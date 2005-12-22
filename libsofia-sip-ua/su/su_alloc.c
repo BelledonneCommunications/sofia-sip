@@ -228,7 +228,7 @@ unsigned su_block_find_collision, su_block_find_collision_used,
 
 static inline su_alloc_t *su_block_find(su_block_t *b, void *p)
 {
-  int h, h0;
+  unsigned h, h0, probe;
 
 #if SU_ALLOC_STATS  
   unsigned collision = 0;
@@ -246,10 +246,12 @@ static inline su_alloc_t *su_block_find(su_block_t *b, void *p)
 
   h = h0 = ((unsigned long)p) % b->sub_n;
 
+  probe = (b->sub_n > SUB_P) ? SUB_P : 1;
+
   do {
     if (b->sub_nodes[h].sua_data == p)
       return &b->sub_nodes[h];
-    h += SUB_P;
+    h += probe;
     if (h >= b->sub_n)
       h -= b->sub_n;
 #if SU_ALLOC_STATS
@@ -266,14 +268,16 @@ static inline su_alloc_t *su_block_find(su_block_t *b, void *p)
 
 static inline su_alloc_t *su_block_add(su_block_t *b, void *p)
 {
-  unsigned h;
+  unsigned h, probe;
 
   assert(p != NULL);
 
   h = ((unsigned long)p) % b->sub_n;
 
+  probe = (b->sub_n > SUB_P) ? SUB_P : 1;
+
   while (b->sub_nodes[h].sua_data) {
-    h += SUB_P;
+    h += probe;
     if (h >= b->sub_n)
       h -= b->sub_n;
   }
