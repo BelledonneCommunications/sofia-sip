@@ -531,9 +531,8 @@ int handle_notify(nea_t *nea,
       char const *retry_after;
       sip_time_t retry = sip_now() + NEA_TIMER_DELTA;
 
-      retry_after = msg_params_find(ss->ss_params, "retry-after=");
-      if (retry_after)
-	retry += strtoul(retry_after, NULL, 10);
+      if (ss->ss_retry_after)
+	retry += strtoul(ss->ss_retry_after, NULL, 10);
       else
 	retry += NEA_TIMER_DELTA;
 

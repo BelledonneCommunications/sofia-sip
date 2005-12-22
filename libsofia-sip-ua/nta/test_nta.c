@@ -736,12 +736,12 @@ int test_tports(agent_t *ag)
 	v_udp_only = v;
       udp = 1;
       if (udp_comp == NULL)
-	udp_comp = msg_params_find(v->v_params, "comp=");
+	udp_comp = v->v_comp;
     }
     else if (strcasecmp(v->v_protocol, sip_transport_tcp) == 0) {
       tcp = 1;
       if (tcp_comp == NULL)
-	tcp_comp = msg_params_find(v->v_params, "comp=");
+	tcp_comp = v->v_comp;
     }
     else if (strcasecmp(v->v_protocol, sip_transport_sctp) == 0) {
       sctp = 1;

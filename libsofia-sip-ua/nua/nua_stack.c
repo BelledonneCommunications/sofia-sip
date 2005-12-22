@@ -2217,7 +2217,7 @@ int dialog_is_established(struct nua_dialog_state const *ds)
 
 /** Refer usage */
 static sip_event_t const first_refer_usage[1] = 
-  {{{ 0, 0, sip_event_class, 0, 0 }, 0, "refer" }};
+  {{{{ 0, 0, sip_event_class, 0, 0 }}, 0, "refer" }};
 
 /** UAS tag and route */
 static
@@ -6183,6 +6183,8 @@ ua_notify(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
       ;
     else if (sip->sip_subscription_state) {
       char const *ss_substate = sip->sip_subscription_state->ss_substate;
+      sip_time_t now = sip_now();
+
       if (strcasecmp(ss_substate, "terminated") == 0)
 	du->du_notifier->de_substate = nua_substate_terminated;
       else if (strcasecmp(ss_substate, "pending") == 0)
@@ -6195,7 +6197,19 @@ ua_notify(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 	expires = strtoul(sip->sip_subscription_state->ss_expires, NULL, 10);
 	if (expires > 3600)
 	  expires = 3600;
-	du->du_common->cu_refresh = sip_now() + expires;
+	du->du_common->cu_refresh = now + expires;
+      }
+      else if (du->du_subscriber->de_substate != nua_substate_terminated) {
+	sip_subscription_state_t *ss = sip->sip_subscription_state;
+	char *param;
+
+	if (now < du->du_common->cu_refresh)
+	  param = su_sprintf(msg_home(msg), "expires=%lu", 
+			     du->du_common->cu_refresh - now);
+	else
+	  param = "expires=0";
+
+	msg_header_add_param(msg_home(msg), ss->ss_common, param);
       }
     }
     else {
@@ -6350,12 +6364,10 @@ static int process_notify(nua_t *nua,
       retry = 0;
     } 
     else if (str0casecmp(subs->ss_reason, why = "probation") == 0) {
-      char const *retry_after;
       du->du_subscriber->de_substate = nua_substate_embryonic;
       retry = 30;
-      retry_after = msg_params_find(subs->ss_params, "retry-after=");
-      if (retry_after)
-	retry = strtoul(retry_after, NULL, 10);
+      if (subs->ss_retry_after)
+	retry = strtoul(subs->ss_retry_after, NULL, 10);
     }
     else
       why = subs->ss_reason;

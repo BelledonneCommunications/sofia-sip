@@ -1758,9 +1758,9 @@ int nta_tpn_by_via(tp_name_t *tpn, sip_via_t const *v, int *using_rport)
   if (v->v_maddr || !using_rport)
     rport = NULL;
   else if (strcasecmp(v->v_protocol, "SIP/2.0/UDP") == 0)
-    rport = msg_params_find(v->v_params, "rport="), *using_rport = 0;
+    rport = v->v_rport, *using_rport = 0;
   else if (*using_rport)
-    rport = msg_params_find(v->v_params, "rport=");
+    rport = v->v_rport;
   else
     rport = NULL;
 
@@ -1923,9 +1923,9 @@ void agent_recv_request(nta_agent_t *agent,
   if (stream && 
       tport_can_send_sigcomp(tport) &&
       tport_name(tport)->tpn_comp == NULL && 
-      msg_params_find(sip->sip_via->v_params, "comp=sigcomp") &&
-      tport_has_compression(tport_parent(tport), "sigcomp")) {
-    tport_set_compression(tport, "sigcomp");
+      sip->sip_via->v_comp &&
+      tport_has_compression(tport_parent(tport), sip->sip_via->v_comp)) {
+    tport_set_compression(tport, sip->sip_via->v_comp);
   }
 #endif
 
