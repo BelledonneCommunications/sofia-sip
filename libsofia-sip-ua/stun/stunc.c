@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
   lifetime = 0;
 
   if (stun_handle_bind(se, &lifetime) < 0) {
-    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_bind()"));
+    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
     return -1;
   }
 

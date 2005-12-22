@@ -90,17 +90,16 @@ typedef enum stun_states_e {
 } stun_states_t;
 
 
+typedef void (*stun_event_f)(stun_magic_t *magic,
+			     stun_handle_t *se,
+			     stun_states_t event);
+
 /* Return the socket associated with the stun_socket_t structure */
 int stun_handle_get_bind_socket(stun_handle_t *se);
-
 
 char const *stun_str_state(stun_states_t state);
 
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
-
-typedef void (*stun_event_f)(stun_magic_t *magic,
-			     stun_handle_t *se,
-			     stun_states_t event);
 
 su_root_t *stun_handle_root(stun_handle_t *self);
 
@@ -130,7 +129,7 @@ int stun_handle_bind(stun_handle_t *se,
 su_localinfo_t *stun_handle_get_local_addr(stun_handle_t *en);
 
 int stun_handle_get_nattype(stun_handle_t *se,
-			    su_localinfo_t *my_addr,
+			    /* su_localinfo_t *my_addr, */
 			    int *addrlen);
 
 int stun_handle_get_lifetime(stun_handle_t *se, 

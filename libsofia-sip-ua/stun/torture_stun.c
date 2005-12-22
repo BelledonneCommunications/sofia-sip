@@ -343,7 +343,7 @@ int torture_test_get_nattype(char *localaddr)
 
   atonetaddr(my_addr, localaddr);
   addrlen = sizeof(*my_addr);
-  result = stun_handle_get_nattype(se, &addr.su_sa, &addrlen); TEST(result, 0);
+  result = stun_handle_get_nattype(se, /* &addr.su_sa, */ &addrlen); TEST(result, 0);
   printf("NAT type is: %s\n", stun_nattype(se));
 
   su_close(s);

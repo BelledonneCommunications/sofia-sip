@@ -93,7 +93,7 @@ struct stun_handle_s
 
   su_localinfo_t  st_client_addr[1];  /**< local address returned by server */
 
-  su_socket_t     st_socket;       /**< outbound socket */
+  su_socket_t     st_tls_socket;       /**< outbound socket */
   
   stun_msg_t     *st_binding_request;     /**< binding request for server */
 
@@ -116,7 +116,7 @@ struct stun_handle_s
   int             st_state;      /**< Progress states */
 
 
-  int            ss_sockfd;
+  int            st_bind_socket;
   int            ss_root_index;   /**< object index of su_root_register() */
 };
 
@@ -143,7 +143,7 @@ static void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 int stun_handle_get_bind_socket(stun_handle_t *se)
 {
   assert(se);
-  return se->ss_sockfd;
+  return se->st_bind_socket;
 }
 
 
@@ -318,11 +318,11 @@ stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
 /** Destroy a STUN client */ 
 void stun_handle_destroy(stun_handle_t *self)
 { 
-  if (self->ss_sockfd > 0)
-    su_close(self->ss_sockfd);
+  if (self->st_bind_socket > 0)
+    su_close(self->st_bind_socket);
 
-  if (self->st_socket > 0)
-    su_close(self->st_socket);
+  if (self->st_tls_socket > 0)
+    su_close(self->st_tls_socket);
 
   su_home_zap(self->st_home);
 }
@@ -334,16 +334,16 @@ int stun_handle_set_bind_socket(stun_handle_t *se, int sockfd)
   assert(se);
 
   /* Close the previous associated socket */
-  if (se->ss_sockfd > 0)
-    su_close(se->ss_sockfd);
+  if (se->st_bind_socket > 0)
+    su_close(se->st_bind_socket);
 
-  se->ss_sockfd = sockfd;
+  se->st_bind_socket = sockfd;
 
   /* set socket asynchronous */
-  if (su_setblocking(se->ss_sockfd, 0) < 0) {
+  if (su_setblocking(se->st_bind_socket, 0) < 0) {
     STUN_ERROR(errno, su_setblocking);
 
-    su_close(se->ss_sockfd);
+    su_close(se->st_bind_socket);
     return -1;
   }
 
@@ -399,8 +399,9 @@ int stun_handle_bind(stun_handle_t *se,
   clnt_addr->li_addr = calloc(sizeof(su_sockaddr_t), 1);
   clnt_addr->li_addrlen = sizeof(su_sockaddr_t);
 
-  hints->li_family = INADDR_ANY;
-  hints->li_flags = AI_PASSIVE;
+  se->st_nattype = STUN_NAT_UNKNOWN;
+
+  hints->li_family = AF_INET;
   
   if((error = su_getlocalinfo(hints, &res)) == 0) {
     
@@ -438,7 +439,7 @@ int stun_handle_bind(stun_handle_t *se,
     su_freelocalinfo(res);
 
   /* run protocol here... */
-  sockfd = se->ss_sockfd;
+  sockfd = se->st_bind_socket;
 
   inet_ntop(clnt_addr->li_family, SU_ADDR(clnt_addr->li_addr), ipaddr, sizeof(ipaddr));
   if (bind(sockfd, (struct sockaddr *) &clnt_addr->li_addr, clnt_addr->li_addrlen) < 0) {
@@ -460,8 +461,8 @@ int stun_handle_bind(stun_handle_t *se,
   SU_DEBUG_3(("%s: Local socket bound to: %s:%u\n", __func__, ipaddr, 
 	      (unsigned) ntohs(bind_addr.su_port)));
 
-  retval = stun_bind_test(se, &se->st_pri_info, se->st_pri_addr,
-			  clnt_addr, 0, 0);
+  retval = stun_send_binding_request(se, se->st_pri_addr,
+				     clnt_addr, 0, 0);
 
   if (lifetime) {
     if (retval == 0)
@@ -493,6 +494,110 @@ su_localinfo_t *stun_handle_get_local_addr(stun_handle_t *se)
  *  NAT type is set in ss->se_handle.st_nattype
  */
 int stun_handle_get_nattype(stun_handle_t *se,
+			    int *addrlen)
+{
+  int retval, lifetime, sockfd;
+  socklen_t locallen, len;
+  su_sockaddr_t local, /* mapped_addr1, */ mapped_addr2;
+  su_localinfo_t *mapped_addr1;
+
+  sockfd = se->st_bind_socket;
+
+  assert(se);
+
+  if ((se->st_state != stun_bind_done) &&
+      (se->st_state != stun_bind_timeout) &&
+      (se->st_state != stun_bind_error))
+    return -1;
+
+  
+  mapped_addr1 = stun_handle_get_local_addr(se);
+
+#if 0  
+  len = sizeof(mapped_addr1);
+  memcpy(&mapped_addr1, my_addr, len); 
+  /* mapped_addr1.li_addr.su_port = 0; */ /* wild card for get_nattype */
+  /* retval = stun_bind(ss, &mapped_addr1, &lifetime); */
+#endif
+
+  if (se->st_state == stun_bind_timeout) {
+    se->st_nattype = STUN_UDP_BLOCKED;
+    /* otherwise unknown nat type */
+    return 0;
+  }
+  else if (se->st_state == stun_bind_error) {
+    se->st_nattype = STUN_NAT_UNKNOWN;
+    return 0;
+  }
+  else {
+    memset(&local, 0, sizeof(local));
+    locallen = sizeof(local);
+    getsockname(sockfd, (struct sockaddr *) &local, &locallen);
+
+    /* Same IP and port*/
+    if (memcmp(&local, &mapped_addr1->li_addr, 8) == 0) {
+      /* conduct TEST II */      
+      memset(&mapped_addr2, 0, sizeof(mapped_addr2));
+      retval = stun_send_binding_request(se, se->st_pri_addr,
+					 (su_localinfo_t *) &mapped_addr2, 1, 1);
+      if (retval == -1) {
+	if (errno == ETIMEDOUT) {
+	  /* No Response: Type 3 - Sym UDP FW */
+	  retval = 0;
+	  se->st_nattype = STUN_SYM_UDP_FW;	  
+	} /* otherwise unknown nat type */
+      } 
+      else {
+	/* Response: Type 1 - Open Internet */
+	se->st_nattype = STUN_OPEN_INTERNET;
+      }
+    }
+    /* Different IP */
+    else {
+      memset(&mapped_addr2, 0, sizeof(mapped_addr2));
+      retval = stun_send_binding_request(se, se->st_pri_addr,
+			      (su_localinfo_t *) &mapped_addr2, 1, 1);
+      if (retval == -1) {
+	if (errno == ETIMEDOUT) {
+	  /* No Response */
+	  retval = stun_send_binding_request(se, se->st_sec_addr,
+				  (su_localinfo_t *) &mapped_addr2, 0, 0);
+	  /* response comes back, has to be the case */
+	  if (retval == 0) {
+	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
+	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
+		 same */
+	      retval = stun_send_binding_request(se, se->st_pri_addr,
+				      (su_localinfo_t *) &mapped_addr2, 0, 1);
+	      if(retval==0) {
+		/* Response: Type 6 - Restricted */
+		se->st_nattype = STUN_NAT_RES_CONE;
+	      }
+	      else if(errno==ETIMEDOUT) {
+		/* No response: Type 7 - Port Restricted */
+		retval = 0;
+		se->st_nattype = STUN_NAT_PORT_RES_CONE;
+	      }
+	    }
+	    else {
+	      /* Different Public IP: Type 5 - Sym NAT */
+	      se->st_nattype = STUN_NAT_SYM;
+	    }
+	  } /* otherwise there is a sudden network problem */	  
+	} /* otherwise unknown nat type */
+      }
+      else {
+	/* Response: Type 4 - Full Cone */
+	se->st_nattype = STUN_NAT_FULL_CONE;
+      }
+    }
+  }
+  
+  return retval;
+}
+
+#if 0
+int stun_handle_get_nattype(stun_handle_t *se,
 			    su_localinfo_t *my_addr,
 			    int *addrlen)
 {
@@ -502,7 +607,7 @@ int stun_handle_get_nattype(stun_handle_t *se,
   struct sockaddr_in local, /* mapped_addr1, */ mapped_addr2;
   su_localinfo_t mapped_addr1;
   
-  sockfd = se->ss_sockfd;
+  sockfd = se->st_bind_socket;
 
   assert(my_addr && my_addr->li_addrlen != 0);
   
@@ -510,7 +615,6 @@ int stun_handle_get_nattype(stun_handle_t *se,
   memcpy(&mapped_addr1, my_addr, len); 
   /* mapped_addr1.li_addr.su_port = 0; */ /* wild card for get_nattype */
 
-  /* xxx -- mela: mapped addr? */
   /* retval = stun_bind(ss, &mapped_addr1, &lifetime); */
   retval = stun_handle_bind(se, &lifetime);
   if (retval == -1) {
@@ -526,8 +630,8 @@ int stun_handle_get_nattype(stun_handle_t *se,
     if (memcmp(&local, &mapped_addr1, 8) == 0) { /* Same IP and port*/
       /* conduct TEST II */      
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_bind_test(se, &se->st_pri_info, se->st_pri_addr,
-			      (su_localinfo_t *) &mapped_addr2, 1, 1);
+      retval = stun_send_binding_request(se, se->st_pri_addr,
+					 (su_localinfo_t *) &mapped_addr2, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response: Type 3 - Sym UDP FW */
@@ -542,19 +646,19 @@ int stun_handle_get_nattype(stun_handle_t *se,
     }
     else { /* Different IP */
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_bind_test(se, &se->st_pri_info, se->st_pri_addr,
+      retval = stun_send_binding_request(se, se->st_pri_addr,
 			      (su_localinfo_t *) &mapped_addr2, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response */
-	  retval = stun_bind_test(se, &se->st_sec_info, se->st_sec_addr,
+	  retval = stun_send_binding_request(se, se->st_sec_addr,
 				  (su_localinfo_t *) &mapped_addr2, 0, 0);
 	  /* response comes back, has to be the case */
 	  if (retval == 0) {
 	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
 	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
 		 same */
-	      retval = stun_bind_test(se, &se->st_pri_info, se->st_pri_addr,
+	      retval = stun_send_binding_request(se, se->st_pri_addr,
 				      (su_localinfo_t *) &mapped_addr2, 0, 1);
 	      if(retval==0) {
 		/* Response: Type 6 - Restricted */
@@ -583,6 +687,7 @@ int stun_handle_get_nattype(stun_handle_t *se,
   se->st_nattype = nattype;
   return retval;
 }
+#endif /* if 0 */
 
 /** Application should call this at regular intervals 
  *  while binding is active.
@@ -602,7 +707,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 {
   stun_msg_t *req, *resp;
   int z, err;
-  int events = su_wait_events(w, self->st_socket);
+  int events = su_wait_events(w, self->st_tls_socket);
   SSL_CTX* ctx;
   SSL *ssl;
   X509* server_cert;
@@ -668,7 +773,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     ssl = SSL_new(ctx);
     self->st_ssl = ssl;
 
-    if (SSL_set_fd(ssl, self->st_socket) == 0) {
+    if (SSL_set_fd(ssl, self->st_tls_socket) == 0) {
       STUN_ERROR(err, connect);
       stun_free_buffer(&req->enc_buf);
       return -1;
@@ -681,7 +786,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   case stun_tls_ssl_connecting:
     events = SU_WAIT_ERR | SU_WAIT_IN;
     su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_socket, events);
+		      self->st_tls_socket, events);
 
     z = SSL_connect(ssl);
     err = SSL_get_error(ssl, z);
@@ -702,7 +807,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
     events = SU_WAIT_ERR | SU_WAIT_OUT;
     su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_socket, events);
+		      self->st_tls_socket, events);
 
     break;
 
@@ -710,7 +815,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
     events = SU_WAIT_ERR | SU_WAIT_IN;
     su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_socket, events);
+		      self->st_tls_socket, events);
 
     SU_DEBUG_3(("TLS connection using %s\n", SSL_get_cipher(ssl)));
     
@@ -740,7 +845,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   case stun_tls_reading:
     events = SU_WAIT_ERR | SU_WAIT_OUT;
     su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_socket, events);
+		      self->st_tls_socket, events);
 
     SU_DEBUG_5(("Shared Secret Request sent to server:\n"));
     debug_print(&req->enc_buf);
@@ -771,7 +876,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     break;
 
   case stun_tls_closing:
-    su_close(self->st_socket);
+    su_close(self->st_tls_socket);
 
     SSL_free(self->st_ssl), ssl = NULL;
     SSL_CTX_free(self->st_ctx), ctx = NULL;
@@ -908,7 +1013,7 @@ int stun_handle_request_shared_secret(stun_handle_t *se)
   SU_DEBUG_9(("%s: %s: %s\n", __func__, "connect",
 	      su_strerror(err)));
   
-  se->st_socket = s;
+  se->st_tls_socket = s;
 
   if (su_wait_create(wait, s, events) == -1)
     STUN_ERROR(errno, su_wait_create);
@@ -986,7 +1091,7 @@ int stun_bind_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   stun_attr_t *mapped_addr, *chg_addr;
   struct sockaddr_in recv_addr;
   socklen_t recv_addr_len;
-  int events = su_wait_events(w, self->st_socket);
+  int events = su_wait_events(w, self->st_tls_socket);
   su_localinfo_t *clnt_addr = self->st_client_addr;
 
   SU_DEBUG_7(("%s(%p): events%s%s%s\n", __func__, self,
@@ -1003,7 +1108,7 @@ int stun_bind_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   }
 
   binding_request = self->st_binding_request;
-  s = self->ss_sockfd;
+  s = self->st_bind_socket;
 
   if (self->st_state == stun_bind_sending) {
     self->st_state = stun_bind_receiving;
@@ -1121,7 +1226,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 				su_timer_t *t,
 				stun_handle_t *se)
 {
-  int s = se->ss_sockfd;
+  int s = se->st_bind_socket;
 
   SU_DEBUG_9(("%s: entering.\n", __func__));
 
@@ -1147,6 +1252,9 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     su_timer_destroy(t);
 
     se->st_state = stun_bind_timeout;
+
+    /* Either the server was dead, address wrong or STUN_UDP_BLOCKED */
+    se->st_nattype = STUN_UDP_BLOCKED;
     se->st_callback(se->st_context, se, se->st_state);
 
     return;
@@ -1154,7 +1262,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
   SU_DEBUG_3(("%s: Timeout no. %d, retransmitting.\n", __func__, se->st_retry_count));
 
-  if (stun_send_message(s, &se->st_pri_addr->su_sin, se->st_binding_request, &(se->st_passwd)) < 0) {
+  if (stun_send_message(s, se->st_pri_addr, se->st_binding_request, &(se->st_passwd)) < 0) {
     stun_free_message(se->st_binding_request);
     return;
   }
@@ -1188,12 +1296,11 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
  * @ERROR ETIMEDOUT       Request timed out.
  * 
  */   
-int stun_bind_test(stun_handle_t *se,
-		   su_addrinfo_t  *srvr_info,
-		   su_sockaddr_t  *srvr_addr,
-		   su_localinfo_t *clnt_addr,
-		   int chg_ip,
-		   int chg_port)
+int stun_send_binding_request(stun_handle_t *se,
+			      su_sockaddr_t  *srvr_addr,
+			      su_localinfo_t *clnt_addr,
+			      int chg_ip,
+			      int chg_port)
 {
   int s;
   int events = 0;  
@@ -1204,12 +1311,12 @@ int stun_bind_test(stun_handle_t *se,
 
   stun_msg_t *binding_request = calloc(sizeof(*binding_request), 1);
 
-  assert (se && srvr_addr && clnt_addr->li_addr);
+  assert (se && srvr_addr);
 
   /* se->st_state = stun_init; */
-  s = se->ss_sockfd;
+  s = se->st_bind_socket;
 
-  inet_ntop(srvr_info->ai_family, SU_ADDR(srvr_addr), ipaddr, sizeof(ipaddr));
+  inet_ntop(srvr_addr->su_family, SU_ADDR(srvr_addr), ipaddr, sizeof(ipaddr));
   SU_DEBUG_3(("%s: sending to %s:%u (req-flags: msgint=%d, "
 	      "ch-addr=%d, chh-port=%d)\n",
 	      __func__,
@@ -1222,7 +1329,7 @@ int stun_bind_test(stun_handle_t *se,
 
   events = SU_WAIT_IN | SU_WAIT_ERR;
 
-  if (stun_send_message(s, &srvr_addr->su_sin, binding_request, &(se->st_passwd)) < 0) {
+  if (stun_send_message(s, srvr_addr, binding_request, &(se->st_passwd)) < 0) {
     stun_free_message(binding_request);
     return -1;
   }
@@ -1515,7 +1622,7 @@ int stun_handle_get_lifetime(stun_handle_t *se,
   }
 
   /* run protocol here... */
-  sockfdx = se->ss_sockfd;
+  sockfdx = se->st_bind_socket;
 
   clnt_addr->sin_port = 0;
   /* initialize socket x */
@@ -1548,7 +1655,7 @@ int stun_handle_get_lifetime(stun_handle_t *se,
     if (stun_make_binding_req(se, &binding_request, 0, 0) < 0)
       return retval;
 
-    if (stun_send_message(sockfdx, &se->st_pri_addr->su_sin, &binding_request, &(se->st_passwd)) < 0)
+    if (stun_send_message(sockfdx, se->st_pri_addr, &binding_request, &(se->st_passwd)) < 0)
       return retval;
 
     FD_ZERO(&rfds);
@@ -1596,7 +1703,7 @@ int stun_handle_get_lifetime(stun_handle_t *se,
     if(stun_make_binding_req(se, &binding_request, 0, 0) <0)
       return retval;
     stun_add_response_address(&binding_request, &mapped_addr);
-    if (stun_send_message(sockfdy, &se->st_pri_addr->su_sin, &binding_request, &(se->st_passwd)) < 0)
+    if (stun_send_message(sockfdy, se->st_pri_addr, &binding_request, &(se->st_passwd)) < 0)
       return retval;
 
     FD_ZERO(&rfds);

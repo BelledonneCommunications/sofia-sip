@@ -114,11 +114,6 @@ char const help[] =
 "\t-h Host-internal addresses\n";
 
 int getopt(int argc, char * const argv[], char const *opstring);
-
-#if __CYGWIN__
-int c_optind;
-#define optind c_optind
-#endif
 extern int optind;
 
 void usage(int returncode)
