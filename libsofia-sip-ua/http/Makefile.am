@@ -68,8 +68,10 @@ MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
 
 AWK_HTTP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=http
 
-http_%.h: http_%.h.in $(MSG_PARSER_AWK)
-http_%.c: http_%.c.in $(MSG_PARSER_AWK)
+http_tag.h: http_tag.h.in $(MSG_PARSER_AWK)
+http_protos.h: http_protos.h.in $(MSG_PARSER_AWK)
+http_tag.c: http_tag.c.in $(MSG_PARSER_AWK)
+http_parser_table.c: http_parser_table.c.in $(MSG_PARSER_AWK)
 
 http_tag.c http_protos.h http_tag.h: http.h
 	$(AWK_HTTP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<

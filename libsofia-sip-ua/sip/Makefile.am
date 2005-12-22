@@ -110,8 +110,11 @@ AWK_SIP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=sip
 #
 sip_parser_table.c: sip_bad_mask
 
-sip_%.h: sip_%.h.in $(MSG_PARSER_AWK)
-sip_%.c: sip_%.c.in $(MSG_PARSER_AWK)
+sip_hclasses.h: sip_hclasses.h.in $(MSG_PARSER_AWK)
+sip_protos.h: sip_protos.h.in $(MSG_PARSER_AWK)
+sip_tag.h: sip_tag.h.in $(MSG_PARSER_AWK)
+sip_parser_table.c: sip_parser_table.c.in $(MSG_PARSER_AWK)
+sip_tag.c: sip_tag.c.in $(MSG_PARSER_AWK)
 
 sip_tag.c sip_hclasses.h sip_protos.h sip_tag.h: sip.h
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
