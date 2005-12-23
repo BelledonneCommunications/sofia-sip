@@ -1087,6 +1087,8 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_USE_SRV(agent->sa_use_srv),
 #if HAVE_SOFIA_SMIME
 	     NTATAG_SMIME(agent->sa_smime),
+#else
+	     NTATAG_SMIME(NULL),
 #endif
 	     NTATAG_SIPFLAGS(agent->sa_flags),
 	     NTATAG_RPORT(agent->sa_rport),
@@ -1095,6 +1097,8 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_SIGCOMP_OPTIONS(agent->sa_sigcomp_options ?
 				    agent->sa_sigcomp_options :
 				    "sip"),
+#else
+	     NTATAG_SIGCOMP_OPTIONS(NULL),
 #endif
 	     TAG_END());
 }

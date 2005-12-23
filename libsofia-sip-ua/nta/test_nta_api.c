@@ -535,17 +535,18 @@ int api_test_params(agent_t *ag)
   TEST(preload, 2048);
 
   TEST(nta_agent_set_params(nta, 
-      		      NTATAG_SIGCOMP_OPTIONS("sip"),
-      		      TAG_END()), have_sigcomp);
+			    NTATAG_SIGCOMP_OPTIONS("sip"),
+			    TAG_END()), have_sigcomp);
   TEST(nta_agent_set_params(nta, 
-      		      NTATAG_SIGCOMP_OPTIONS(","),
-      		      TAG_END()), -have_sigcomp);
+			    NTATAG_SIGCOMP_OPTIONS(","),
+			    TAG_END()), -have_sigcomp);
   TEST(nta_agent_set_params(nta, 
-      		      NTATAG_SIGCOMP_OPTIONS("sip;dms=16384"),
-      		      TAG_END()), have_sigcomp);
+			    NTATAG_SIGCOMP_OPTIONS("sip;dms=16384"),
+			    TAG_END()), have_sigcomp);
+  s = NONE;
   TEST(nta_agent_get_params(nta, 
-      		      NTATAG_SIGCOMP_OPTIONS_REF(s),
-      		      TAG_END()), have_sigcomp);
+			    NTATAG_SIGCOMP_OPTIONS_REF(s),
+			    TAG_END()), 1);
   if (have_sigcomp)
     TEST_S(s, "sip;dms=16384");
   else
