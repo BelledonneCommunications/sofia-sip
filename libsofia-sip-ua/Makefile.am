@@ -3,8 +3,8 @@
 AUTOMAKE_OPTIONS = foreign
 
 # note: order does matter in the subdir list
-SUBDIRS = su bnf sresolv sdp url msg sip stun ipt soa \
-	  tport http nta nea iptsec nth nua features
+SUBDIRS = su features bnf sresolv sdp url msg sip stun ipt soa \
+	  tport http nta nea iptsec nth nua
 DIST_SUBDIRS = docs $(SUBDIRS)
 
 EXTRA_DIST = sofia.am
