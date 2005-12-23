@@ -461,8 +461,7 @@ int stun_handle_bind(stun_handle_t *se,
   SU_DEBUG_3(("%s: Local socket bound to: %s:%u\n", __func__, ipaddr, 
 	      (unsigned) ntohs(bind_addr.su_port)));
 
-  retval = stun_send_binding_request(se, se->st_pri_addr,
-				     clnt_addr, 0, 0);
+  retval = stun_send_binding_request(se, se->st_pri_addr, 0, 0);
 
   if (lifetime) {
     if (retval == 0)
@@ -538,8 +537,7 @@ int stun_handle_get_nattype(stun_handle_t *se,
     if (memcmp(&local, &mapped_addr1->li_addr, 8) == 0) {
       /* conduct TEST II */      
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr,
-					 (su_localinfo_t *) &mapped_addr2, 1, 1);
+      retval = stun_send_binding_request(se, se->st_pri_addr, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response: Type 3 - Sym UDP FW */
@@ -555,20 +553,17 @@ int stun_handle_get_nattype(stun_handle_t *se,
     /* Different IP */
     else {
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr,
-			      (su_localinfo_t *) &mapped_addr2, 1, 1);
+      retval = stun_send_binding_request(se, se->st_pri_addr, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response */
-	  retval = stun_send_binding_request(se, se->st_sec_addr,
-				  (su_localinfo_t *) &mapped_addr2, 0, 0);
+	  retval = stun_send_binding_request(se, se->st_sec_addr, 0, 0);
 	  /* response comes back, has to be the case */
 	  if (retval == 0) {
 	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
 	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
 		 same */
-	      retval = stun_send_binding_request(se, se->st_pri_addr,
-				      (su_localinfo_t *) &mapped_addr2, 0, 1);
+	      retval = stun_send_binding_request(se, se->st_pri_addr, 0, 1);
 	      if(retval==0) {
 		/* Response: Type 6 - Restricted */
 		se->st_nattype = STUN_NAT_RES_CONE;
@@ -630,8 +625,7 @@ int stun_handle_get_nattype(stun_handle_t *se,
     if (memcmp(&local, &mapped_addr1, 8) == 0) { /* Same IP and port*/
       /* conduct TEST II */      
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr,
-					 (su_localinfo_t *) &mapped_addr2, 1, 1);
+      retval = stun_send_binding_request(se, se->st_pri_addr, &mapped_addr2, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response: Type 3 - Sym UDP FW */
@@ -646,20 +640,17 @@ int stun_handle_get_nattype(stun_handle_t *se,
     }
     else { /* Different IP */
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr,
-			      (su_localinfo_t *) &mapped_addr2, 1, 1);
+      retval = stun_send_binding_request(se, se->st_pri_addr, &mapped_addr2, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response */
-	  retval = stun_send_binding_request(se, se->st_sec_addr,
-				  (su_localinfo_t *) &mapped_addr2, 0, 0);
+	  retval = stun_send_binding_request(se, se->st_sec_addr, &mapped_addr2, 0, 0);
 	  /* response comes back, has to be the case */
 	  if (retval == 0) {
 	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
 	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
 		 same */
-	      retval = stun_send_binding_request(se, se->st_pri_addr,
-				      (su_localinfo_t *) &mapped_addr2, 0, 1);
+	      retval = stun_send_binding_request(se, se->st_pri_addr, &mapped_addr2, 0, 1);
 	      if(retval==0) {
 		/* Response: Type 6 - Restricted */
 		nattype = STUN_NAT_RES_CONE;
@@ -1298,7 +1289,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
  */   
 int stun_send_binding_request(stun_handle_t *se,
 			      su_sockaddr_t  *srvr_addr,
-			      su_localinfo_t *clnt_addr,
+			      /* su_localinfo_t *clnt_addr, */
 			      int chg_ip,
 			      int chg_port)
 {

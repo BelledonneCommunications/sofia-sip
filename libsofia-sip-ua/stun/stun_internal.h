@@ -78,7 +78,7 @@ int stun_make_sharedsecret_req(stun_msg_t *msg);
 
 int stun_send_binding_request(stun_handle_t *se,
 			      su_sockaddr_t *srvr_addr,
-			      su_localinfo_t *clnt_addr,
+			      /* su_localinfo_t *clnt_addr, */
 			      int chg_ip,
 			      int chg_port);
 int stun_send_message(su_socket_t ss, su_sockaddr_t *srvr, stun_msg_t *msg, stun_buffer_t *pwd); /* client version */
