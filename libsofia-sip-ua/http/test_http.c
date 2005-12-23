@@ -1196,7 +1196,7 @@ static int test_http_encoding(void)
 
   BEGIN();
 
-  TEST_1(home = su_home_clone(NULL, sizeof *home));
+  TEST_1(home = su_home_new(sizeof *home));
 
   msg = read_message(
     "GET http://bar.com/foo/ HTTP/1.1\r\n"

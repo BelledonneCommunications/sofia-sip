@@ -524,7 +524,7 @@ int test_digest_client()
 	 sip_authentication_info_class
 	}};
 
-    TEST_1(home = su_home_clone(NULL, sizeof(*home)));
+    TEST_1(home = su_home_new(sizeof(*home)));
 
     TEST_1(m1 = read_message(MSG_DO_EXTRACT_COPY, challenge));
     TEST_1(sip = sip_object(m1));
@@ -917,7 +917,7 @@ int test_digest_client()
 
     su_root_destroy(root);
 
-    su_home_zap(home);
+    su_home_unref(home);
   }
 
   END();

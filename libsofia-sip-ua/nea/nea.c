@@ -136,7 +136,7 @@ nea_t *nea_create(nta_agent_t *agent,
     tl_find(ta_args(ta), siptag_contact) || 
     tl_find(ta_args(ta), siptag_contact_str);    
 
-  if (have_to && (nea = su_home_clone(NULL, sizeof(nea_t)))) {
+  if (have_to && (nea = su_home_new(sizeof(nea_t)))) {
     su_home_t      *home = nea->nea_home;
     sip_contact_t  *m = nta_agent_contact(agent);
     sip_from_t     *from;

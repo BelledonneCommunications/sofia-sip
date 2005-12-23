@@ -193,7 +193,7 @@ int test_methods(void)
 /* Test <sip_basic.c> functions. */
 int test_basic(void)
 {
-  su_home_t *home = su_home_clone(NULL, sizeof *home);
+  su_home_t *home = su_home_new(sizeof *home);
 
   BEGIN();
 
@@ -692,7 +692,7 @@ static int test_encoding(void)
 
   BEGIN();
 
-  TEST_1(home = su_home_clone(NULL, sizeof *home));
+  TEST_1(home = su_home_new(sizeof *home));
 
   msg = read_message(MSG_DO_EXTRACT_COPY, 
     "SUBSCRIBE sip:foo@bar SIP/2.0\r\n"
@@ -834,7 +834,7 @@ static int test_encoding(void)
   su_home_check(home);
   su_home_zap(home);
 
-  home = su_home_clone(NULL, sizeof *home); TEST_1(home);
+  home = su_home_new(sizeof *home); TEST_1(home);
 
   msg = read_message(0, 
 		     "SIP/2.0 200 Ok\r\n"
@@ -895,7 +895,7 @@ static int test_encoding(void)
 /** Test header filtering and duplicating */
 int tag_test(void)
 {
-  su_home_t *home = su_home_clone(NULL, sizeof(*home));
+  su_home_t *home = su_home_new(sizeof(*home));
   sip_request_t *request = 
     sip_request_make(home, "INVITE sip:joe@example.com SIP/2.0");
   sip_to_t *to = sip_to_make(home, 
@@ -2326,7 +2326,7 @@ int test_caller_prefs(void)
 
   BEGIN();
 
-  TEST_1(home = su_home_clone(NULL, sizeof *home));
+  TEST_1(home = su_home_new(sizeof *home));
 
   TEST_1(!sip_is_callerpref("attendant"));
   TEST_1(sip_is_callerpref("audio"));
@@ -2712,7 +2712,7 @@ static int test_callerpref_scoring(void)
 
   BEGIN();
 
-  TEST_1(home = su_home_clone(NULL, sizeof *home));
+  TEST_1(home = su_home_new(sizeof *home));
 
   TEST_1(m = sip_contact_make(home, contact));
   m1 = m, m2 = m->m_next, m3 = m->m_next->m_next, m4 = m->m_next->m_next->m_next,
@@ -2926,7 +2926,7 @@ static int test_utils(void)
 
   BEGIN();
 
-  TEST_1(home = su_home_clone(NULL, sizeof *home));
+  TEST_1(home = su_home_new(sizeof *home));
   TEST_1(f = sip_from_make(home, "<sip:u:p@h.com:5555"
 			   ";ttl=1;user=IP;maddr=::1;lr=TRUE;transport=TCP"
 			   ";test=1?accept-contact=*;audio;video;explicit>"));

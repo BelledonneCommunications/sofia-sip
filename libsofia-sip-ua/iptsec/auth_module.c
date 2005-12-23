@@ -90,7 +90,7 @@ auth_mod_t *auth_mod_alloc(auth_scheme_t *scheme,
 {
   auth_mod_t *am = NULL;
 
-  if ((am = su_home_clone(NULL, scheme->asch_size))) {
+  if ((am = su_home_new(scheme->asch_size))) {
     am->am_scheme = scheme;
     am->am_refcount = 1;
   }

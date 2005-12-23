@@ -430,7 +430,7 @@ nea_server_t *nea_server_create(nta_agent_t *agent,
     return NULL;
   }
   
-  nes = su_home_clone(NULL, sizeof(nea_server_t));
+  nes = su_home_new(sizeof(nea_server_t));
 
   if (nes) {
     su_home_t *home = nes->nes_home;
