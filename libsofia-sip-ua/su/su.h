@@ -41,6 +41,9 @@
 #ifndef SU_TYPES_H
 #include "su_types.h"
 #endif
+#ifndef SU_ERRNO_H
+#include <su_errno.h>
+#endif
 
 #include <stdio.h>
 
@@ -248,17 +251,6 @@ int su_soerror(su_socket_t s);
 /** Get size of message available in socket. */
 int su_getmsgsize(su_socket_t s);
 
-/** Print the latest socket error message to stderr */
-void su_perror(char const *s);
-/** Print the socket error message to stderr. */
-void su_perror2(char const *s, int errcode);
-/** Return string describing socket error code. */
-char const *su_strerror(int e);
-/** The latest socket error. */
-int su_errno(void);
-/** Set the socket error. */
-int su_seterrno(int);
-
 /** Scatter-gather send. */
 int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags, 
              su_sockaddr_t const *su, socklen_t sulen);
@@ -275,10 +267,6 @@ int su_getlocalip(su_sockaddr_t *sin);
 #define su_close  close
 #define su_ioctl  ioctl
 #define su_isblocking() (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
-#define su_errno() errno
-#define su_seterrno(n) ((errno = (n)), -1)
-#define su_perror  perror
-#define su_strerror(e) strerror(e)
 #endif
 
 #if SU_HAVE_WINSOCK

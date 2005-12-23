@@ -34,11 +34,12 @@
 
 #include "config.h"
 
+#include <su_log.h>
+#include <su_errno.h>
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <assert.h>
-
-#include <su_log.h>
 
 #if SU_HAVE_PTHREADS
 #include <pthread.h>
@@ -52,6 +53,16 @@
 #define SU_LOG_LOCK(log) 
 #define SU_LOG_UNLOCK(log)
 #endif
+
+void su_perror2(const char *s, int errcode)
+{
+  su_log("%s: %s\n", s, su_strerror(errcode));
+}
+
+void su_perror(const char *s)
+{
+  su_perror2(s, su_errno());
+}
 
 /** Log a message to default log. 
  *

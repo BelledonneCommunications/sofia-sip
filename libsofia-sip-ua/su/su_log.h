@@ -45,9 +45,7 @@ typedef struct su_log_s su_log_t;
 #ifndef SU_LOG_H  /** Defined when su_log.h has been included. */
 #define SU_LOG_H
 
-#ifndef _STDARG_H
 #include <stdarg.h>
-#endif
 
 /* Use __attribute__ to allow argument checking for su_log */
 #if !defined(__GNUC__) && !defined(__attribute__)
@@ -90,6 +88,12 @@ void su_log_init(su_log_t *log);
 
 extern su_log_t su_log_default[];
 extern su_log_t su_log_global[];
+
+/** Log the latest su error message */
+void su_perror(char const *s);
+
+/** Log the su error message. */
+void su_perror2(char const *s, int errcode);
 
 #endif
 
