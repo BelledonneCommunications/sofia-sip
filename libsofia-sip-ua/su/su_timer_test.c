@@ -51,6 +51,7 @@ struct tester;
 
 #include "su.h"
 #include "su_wait.h"
+#include "su_log.h"
 
 struct timing
 {

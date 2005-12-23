@@ -50,6 +50,8 @@ struct pinger;
 
 #include "su.h"
 #include "su_wait.h"
+#include "su_log.h"
+
 #if SU_HAVE_GLIB
 #include "su_source.h"
 #endif
