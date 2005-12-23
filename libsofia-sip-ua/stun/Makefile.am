@@ -31,7 +31,7 @@ noinst_PROGRAMS = 	${stun_prog_targets}
 
 include_sofia_HEADERS = stun.h stun_common.h stun_tag.h
 libstun_la_SOURCES = 	$(stun_lib_sources) \
-			stun_tag.c stun_tag_ref.c 
+			stun_tag.c stun_tag_ref.c stun_internal.h
 
 BUILT_SOURCES =		stun_tag_ref.c
 
