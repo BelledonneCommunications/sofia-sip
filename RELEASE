@@ -10,7 +10,7 @@ TBD
 API/ABI changes and versioning
 ------------------------------
 
-The libsofia-sip-ua library interface version (libtool) is set to zero. 
+The libsofia-sip-ua library interface version (libtool) is set to zero.
 Library version will not be frozen until the release of 1.12.0 stable
 version.
 
@@ -31,14 +31,52 @@ version.
 - Deprecated NUTAG_HOLD():
   #define NUTAG_HOLD(x) SOATAG_HOLD((x) ? "*" : NULL)
 
-- Updated sdp_rtpmap_t. 
+- Updated sdp_rtpmap_t.
 
 - Updated sip_min_se_t, sip_content_encoding_t.
+
+- Implementation of deprecated RFC 2543 headers have been removed from dist
+  (they will be available in a separate package)
+
+- Added nta_outgoing_default(), nta_incoming_default(),
+  nta_incoming_method_name(), nta_incoming_gettag(),
+  nta_incoming_getresponse(), nta_incoming_complete_response(), and
+  deprecated nta_msg_response_complete()
+
+- Updated header parameter handling:
+
+  1) Added manipulation functions for header parameters:
+     msg_header_find_param(), msg_header_add_param(),
+     msg_header_replace_param(), and msg_header_remove_param().
+
+  2) Added hc_update member to msg_hclass_t:
+     The hc_update is used to update shortcuts to well-known parameters.
+     Parameter handling functions listed above call hc_update().
+     Added updating functions for SIP headers.
+
+  3) Deprecated RFC 2543 parameters ("hidden" in Via and "action" in Contact
+     header) have been removed from header structures. They can be accessed
+     with msg_header_find_param(), however.
+
+     Added rport and comp parameters to Via. Added d-alg, d-qop and d-ver
+     parameters to Security-Client, Security-Server and Security-Verify
+     headers.
+
+  4) Updated Accept-Language, Accept-Encoding and Accept-Charset headers to
+     accept any parameter (as per RFC 3261)
+
+- Added <su_errno.h>
+
+- Added su_home_destructor() setter.
+
+- STUN API is being rewritten.
+
 
 Contributors to this release
 ----------------------------
 
 See the AUTHORS file in the distribution package.
+
 
 Bugs fixed in this release
 --------------------------
@@ -47,3 +85,4 @@ Bugs fixed in this release
 - su_getlocalinfo() fixes the scope of IP4-mapped or IP4-compatible IP6
   addresses. Linux kernel erroneously assigns ::127.0.0.1 to global scope,
   for instance.
+- su_getlocalinfo() does not return 0.0.0.0 in Windows anymore

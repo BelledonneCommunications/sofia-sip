@@ -2,7 +2,7 @@
 TODO / Sofia-SIP
 ===============================================================
 
-version: 20050923-1
+version: 20051213-1
 
 Release roadmap
 ---------------
@@ -12,15 +12,18 @@ Release roadmap
  	- nua_respond_nit() (non-INVITEs)
 	- nua_set_hparams()/nua_get_hparams() (DONE)
 	- session object ownership changes (DONE)
+        - allow multiple registrations (lines) and selecting 
+          service route, outbound proxy, and transport independently
+          for each handle
     - doxygen documentation updates
     - rpm and dpkg packaging (DONE)
 
 1.13/1.14 series 
     - NAT work: STUN fixes (DNS support)
     - expand the call-state-change mechanism
+    - update http headers TE, Cookie, Set-Cookie
 
 1.15/1.16 series
     - TBD
-
 
 See README.developers for information about versioning.
