@@ -101,7 +101,7 @@ su_log_t sresolv_log[] = { SU_LOG_INIT("sresolv", "SRESOLV_DEBUG", 3) };
 #define su_close(s) close(s)
 #define su_strerror(s) strerror(s)
 #define su_errno() errno
-#define su_seterrno(x) (errno = (x))
+#define su_seterrno(x) ((errno = (x)), -1)
 
 #define SU_DEBUG_0(x) printf x
 #define SU_DEBUG_1(x) printf x
@@ -422,7 +422,7 @@ sres_resolver_new(char const *conf_file_path)
 {
   sres_resolver_t *res;
 
-  res = su_home_clone(NULL, sizeof(*res));
+  res = su_home_new(sizeof(*res));
 
   if (res == NULL)
     return NULL;
@@ -477,7 +477,7 @@ sres_resolver_new(char const *conf_file_path)
  * @retval -1 upon an error
  * 
  * @ERRORS
- * @ERROR EINVAL Invalid arguments passed.
+ * @ERROR EFAULT @a res, @a lock or @a unlock point outside the address space
  */
 int sres_resolver_add_mutex(sres_resolver_t *res,
 			    void *mutex,
@@ -491,14 +491,13 @@ int sres_resolver_add_mutex(sres_resolver_t *res,
     return 0;
   }
   else {
-    errno = EINVAL;
-    return -1;
+    return su_seterrno(EFAULT);
   }
 }
 
 /** Obtain lock */
 #define LOCK(res) \
-  ((res ? 1 : (errno = EINVAL, 0)) && \
+  ((res ? 1 : (errno = EFAULT, 0)) && \
    ((res)->res_lock ? (res)->res_lock((res)->res_mutex) : 0) == 0)
 
 #define UNLOCK(res) \
@@ -531,13 +530,20 @@ sres_resolver_unref(sres_resolver_t *res)
       res->res_refcount--;
     if (res->res_refcount == 0) {
       *res0 = *res;
-      su_home_zap(res->res_home);
+      su_home_unref(res->res_home);
       res = res0;
     }
     UNLOCK(res);
   }
 }
 
+/** Set userdata pointer.
+ *
+ * @return Previously used userdata pointer.
+ * 
+ * @ERRORS
+ * @ERROR EFAULT @a res points outside the address space
+ */
 void *
 sres_resolver_set_userdata(sres_resolver_t *res, void *userdata)
 {
@@ -551,10 +557,20 @@ sres_resolver_set_userdata(sres_resolver_t *res, void *userdata)
   return NULL;
 }
 
+/** Set userdata pointer.
+ *
+ * @return Userdata pointer.
+ * 
+ * @ERRORS
+ * @ERROR EFAULT @a res points outside the address space
+ */
 void *
 sres_resolver_get_userdata(sres_resolver_t const *res)
 {
-  return res ? res->res_userdata : NULL;
+  if (res == NULL)
+    return su_seterrno(EFAULT), NULL;
+  else
+    return res->res_userdata;
 }
 
 /** Make a DNS query.
@@ -578,10 +594,8 @@ sres_query_make(sres_resolver_t *res,
 
   SU_DEBUG_9(("sres_query_make() called\n"));
 
-  if (domain == NULL) {
-    su_seterrno(EINVAL);
-    return NULL;
-  }
+  if (domain == NULL)
+    return su_seterrno(EFAULT), NULL;
 
   dlen = strlen(domain);
   if (dlen > SRES_MAXDNAME ||
@@ -592,10 +606,8 @@ sres_query_make(sres_resolver_t *res,
 
   enough_dots = strchr(domain, '.') != NULL;
 
-  if (!LOCK(res)) {
-    su_seterrno(EINVAL);
+  if (!LOCK(res))
     return NULL;
-  }
 
   time(&res->res_now);
 
@@ -694,6 +706,12 @@ void sres_query_bind(sres_query_t *q,
  * @retval 
  * pointer to an array of pointers to cached records, or
  * NULL if no entry was found.
+ *
+ * @ERRORS
+ * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
+ * @ERROR ENOENT no cached records were found
+ * @ERROR EFAULT @a res or @a domain point outside the address space
+ * @ERROR ENOMEM memory exhausted
  */
 sres_record_t **
 sres_cached_answers(sres_resolver_t *res,
@@ -744,7 +762,7 @@ sres_cached_answers(sres_resolver_t *res,
   if (result == NULL) {
     UNLOCK(res);
     if (rr_count == 0)
-      errno = ENOENT;
+      su_seterrno(ENOENT);
     return NULL;
   }
 
@@ -784,6 +802,12 @@ sres_cached_answers(sres_resolver_t *res,
  * @retval 
  * pointer to an array of pointers to cached records, or
  * NULL if no entry was found.
+ *
+ * @ERRORS
+ * @ERROR EAFNOSUPPORT address family specified in @a addr is not supported
+ * @ERROR ENOENT no cached records were found
+ * @ERROR EFAULT @a res or @a addr point outside the address space
+ * @ERROR ENOMEM memory exhausted
  */
 sres_record_t **
 sres_cached_answers_sockaddr(sres_resolver_t *res,
@@ -802,15 +826,22 @@ sres_cached_answers_sockaddr(sres_resolver_t *res,
 }
 
 /** Sort answers. */
-void
+int
 sres_sort_answers(sres_resolver_t *res, sres_record_t **answers)
 {
   int i, j;
 
-  if (answers == NULL || answers[0] == NULL || answers[1] == NULL)
-    return;
+  if (res == NULL || answers == NULL)
+    return su_seterrno(EFAULT);
+
+  if (answers[0] == NULL || answers[1] == NULL)
+    return 0;
 
   /* Simple insertion sorting */
+  /*
+   * We do not use qsort because we want later extend this to sort 
+   * local A records first etc.
+   */
   for (i = 1; answers[i]; i++) {
     for (j = 0; j < i; j++) {
       if (sres_record_compare(answers[i], answers[j]) < 0)
@@ -824,6 +855,8 @@ sres_sort_answers(sres_resolver_t *res, sres_record_t **answers)
       answers[j] = r;
     }
   }
+
+  return 0;
 }
 
 /** Sort and filter query results */
@@ -1118,9 +1151,9 @@ sres_sockaddr2string(char name[],
   }
 #endif
   else {
-    errno = EPROTONOSUPPORT;
+    su_seterrno(EAFNOSUPPORT);
     SU_DEBUG_3(("%s: %s\n", "sres_sockaddr2string", 
-                su_strerror(EPROTONOSUPPORT)));
+                su_strerror(EAFNOSUPPORT)));
     return 0;
   }
 }
@@ -1339,8 +1372,7 @@ sres_send_dns_query(sres_resolver_t *res,
       if (i == i0) {
 	/* All servers have reported errors */
 	SU_DEBUG_5(("sres_query_create(): sendto: %s\n", su_strerror(error)));
-	su_seterrno(error);
-	return -1;
+	return su_seterrno(error);
       }
     }
 
@@ -1558,12 +1590,12 @@ sres_toplevel(char buf[SRES_MAXDNAME], char const *domain)
   int already;
 
   if (!domain)
-    return NULL;
+    return su_seterrno(EFAULT), NULL;
 
   len = strlen(domain);
 
   if (len >= SRES_MAXDNAME)
-    return NULL;
+    return su_seterrno(ENAMETOOLONG), NULL;
 
   already = len > 0 && domain[len - 1] == '.';
 
@@ -1571,7 +1603,7 @@ sres_toplevel(char buf[SRES_MAXDNAME], char const *domain)
     return domain;
 
   if (len + 1 >= SRES_MAXDNAME)
-    return NULL;
+    return su_seterrno(ENAMETOOLONG), NULL;
 
   strcpy(buf, domain);
   buf[len] = '.'; buf[len + 1] = '\0';
@@ -1654,7 +1686,7 @@ int sres_resolver_sockets(sres_resolver_t const *res,
   unsigned short port;
 
   if (res == NULL)
-    return (errno = EINVAL), -1;
+    return su_seterrno(EFAULT);
 
   if (!sockets || n == 0)
     return 1 + res->res_n_servers;
@@ -1808,14 +1840,12 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 
   if ((msg->msg_flags & MSG_ERRQUEUE) != MSG_ERRQUEUE) {
     SU_DEBUG_1(("%s: recvmsg: no errqueue\n", __func__));
-    su_seterrno(EIO);
-    return -1;
+    return su_seterrno(EIO);
   }
 
   if (msg->msg_flags & MSG_CTRUNC) {
     SU_DEBUG_1(("%s: extended error was truncated\n", __func__));
-    su_seterrno(EIO);
-    return -1;
+    return su_seterrno(EIO);
   }
 
   if (msg->msg_flags & MSG_TRUNC) {
@@ -2921,10 +2951,8 @@ sres_resolver_create(su_root_t *root,
   sres_sofia_t *srs;
   ta_list ta;
 
-  if (root == NULL) {
-    errno = EINVAL;
-    return NULL;
-  }
+  if (root == NULL)
+    return su_seterrno(EFAULT), NULL;
 
   ta_start(ta, tag, value);
   tl_gets(ta_args(ta),
@@ -2979,35 +3007,52 @@ sres_resolver_create(su_root_t *root,
 }
 
 /** Destroy a resolver object. */
-void 
+int 
 sres_resolver_destroy(sres_resolver_t *res)
 {
-  sres_sofia_t *srs = sres_resolver_get_userdata(res);
-  
-  if (srs) {
-    assert(srs->srs_resolver->res_refcount == 1);
+  sres_sofia_t *srs;
 
-    if (srs->srs_index != -1)
-      su_root_deregister(srs->srs_root, srs->srs_index);
+  if (res == NULL)
+    return su_seterrno(EFAULT);
 
-    if (srs->srs_socket != -1)
-      su_close(srs->srs_socket), srs->srs_socket = -1;
+  srs = sres_resolver_get_userdata(res);
+  if (srs == NULL)
+    return su_seterrno(EINVAL);
+    
+  assert(srs->srs_resolver->res_refcount == 1);
 
-    su_timer_destroy(srs->srs_timer), srs->srs_timer = NULL;
+  if (srs->srs_index != -1)
+    su_root_deregister(srs->srs_root, srs->srs_index);
 
-    sres_resolver_unref(srs->srs_resolver); 
-  }
+  if (srs->srs_socket != -1)
+    su_close(srs->srs_socket), srs->srs_socket = -1;
+
+  su_timer_destroy(srs->srs_timer), srs->srs_timer = NULL;
+ 
+  sres_resolver_unref(srs->srs_resolver); 
+
+  return 0;
 }
 
+/** Return socket registered to su_root_t object.
+ *
+ * @retval sockfd if succesful
+ * @retval -1 upon an error
+ *
+ * @ERRORS
+ * @ERROR EFAULT Invalid argument passed.
+ * @ERROR EINVAL Resolver is not using su_root_t.
+ */
 int sres_resolver_root_socket(sres_resolver_t *res)
 {
-  sres_sofia_t *srs = sres_resolver_get_userdata(res);
+  sres_sofia_t *srs;
 
-  if (srs) 
-    return srs->srs_socket;
+  if (res == NULL)
+    return su_seterrno(EFAULT);
 
-  errno = EINVAL;
-  return -1;
+  srs = sres_resolver_get_userdata(res);
+  
+  return srs ? srs->srs_socket : su_seterrno(EINVAL);
 }
 
 
@@ -3019,7 +3064,7 @@ sres_sofia_timer(su_root_magic_t *magic, su_timer_t *t, sres_sofia_t *srs)
   sres_resolver_timer(srs->srs_resolver, srs->srs_socket);
 }
 
-/** Sofia poll/select wrapper */
+/** Sofia poll/select wrapper, called by su_root_t object */
 static 
 int 
 sres_sofia_poll(su_root_magic_t *magic, 
@@ -3044,16 +3089,19 @@ sres_query(sres_resolver_t *res,
 	   uint16_t type,
 	   char const *domain)
 {
-  sres_sofia_t *srs = sres_resolver_get_userdata(res);
+  sres_sofia_t *srs;
+
+  if (res == NULL)
+    return su_seterrno(EFAULT), NULL;
   
-  if (srs) {
+  srs = sres_resolver_get_userdata(res);
+
+  if (srs)
     return sres_query_make(res, callback, context, 
 			   srs->srs_socket,
 			   type, domain);
-  }
-     
-  errno = EINVAL;
-  return NULL;
+  else
+    return su_seterrno(EINVAL), NULL;
 }
 
 /** Make a reverse DNS query.
@@ -3071,16 +3119,19 @@ sres_query_sockaddr(sres_resolver_t *res,
 		    uint16_t type,
 		    struct sockaddr const *addr)
 {
-  sres_sofia_t *srs = sres_resolver_get_userdata(res);
-  
-  if (srs) {
-    return sres_query_make_sockaddr(res, callback, context, 
-				    srs->srs_socket,
-				    type, addr);
-  }
+  sres_sofia_t *srs;
 
-  errno = EINVAL;
-  return NULL;
+  if (res == NULL)
+    return su_seterrno(EFAULT), NULL;
+  
+  srs = sres_resolver_get_userdata(res);
+
+  if (srs == NULL)
+    return su_seterrno(EINVAL), NULL;
+
+  return sres_query_make_sockaddr(res, callback, context, 
+				  srs->srs_socket,
+				  type, addr);
 }
 
 #endif /* Glue functions for Sofia root (reactor) */

@@ -1668,14 +1668,14 @@ int test_api_errors(sres_context_t *noctx)
   s = sockets[0];
   
   TEST(sres_resolver_ref(NULL), NULL);
-  TEST(errno, EINVAL);
+  TEST(errno, EFAULT);
   sres_resolver_unref(NULL);
 
   TEST(sres_resolver_add_mutex(NULL, NULL, NULL, NULL), -1);
-  TEST(errno, EINVAL);
+  TEST(errno, EFAULT);
 
   TEST(sres_resolver_set_userdata(NULL, NULL), NULL);
-  TEST(errno, EINVAL);
+  TEST(errno, EFAULT);
 
   TEST(sres_resolver_get_userdata(NULL), NULL);
 
@@ -1688,31 +1688,44 @@ int test_api_errors(sres_context_t *noctx)
 
 #if HAVE_SU_WAIT_H
   errno = 0;
-  TEST(sres_resolver_root_socket(res), -1); TEST(errno, EINVAL); errno = 0;
+  TEST(sres_resolver_create(NULL, NULL, TAG_END()), NULL);
+  TEST(errno, EFAULT); errno = 0;
+  TEST(sres_resolver_root_socket(NULL), -1);
+  TEST(errno, EFAULT); errno = 0;
+  TEST(sres_query(NULL, test_answer, ctx, sres_type_a, "example.com"), NULL);
+  TEST(errno, EFAULT); errno = 0;
+  TEST(sres_query_sockaddr(NULL, test_answer, ctx, sres_qtype_any, sa), NULL);
+  TEST(errno, EFAULT); errno = 0;
+  TEST(sres_resolver_destroy(NULL), -1);
+  TEST(errno, EFAULT); errno = 0;
+
+  TEST(sres_resolver_root_socket(res), -1);
+  TEST(errno, EINVAL); errno = 0;
   TEST(sres_query(res, test_answer, ctx, sres_type_a, "example.com"), NULL);
   TEST(errno, EINVAL); errno = 0;
   TEST(sres_query_sockaddr(res, test_answer, ctx, sres_qtype_any, sa), NULL);
   TEST(errno, EINVAL); errno = 0;
-  sres_resolver_destroy(res);
-
-  TEST(sres_resolver_create(NULL, NULL, TAG_END()), NULL);
-  sres_resolver_destroy(NULL);
+  TEST(sres_resolver_destroy(res), -1);	/* res should be alive after this! */
+  TEST(errno, EINVAL); errno = 0;
 #endif  
 
   errno = 0;
   TEST(sres_query_make(NULL, test_answer, ctx, s, sres_type_a, "com"), NULL);
-  TEST(errno, EINVAL);
+  TEST(errno, EFAULT); errno = 0;
   TEST(sres_query_make(res, test_answer, ctx, s, sres_type_a, NULL), NULL);
-  TEST(errno, EINVAL);
-
+  TEST(errno, EFAULT); errno = 0;
   TEST(sres_query_make_sockaddr(res, test_answer, ctx, s,
-				sres_qtype_any, sa),
-       NULL);
+				sres_qtype_any, sa), NULL);
+  TEST(errno, EAFNOSUPPORT); errno = 0;
 
   TEST(sres_cached_answers(NULL, sres_qtype_any, "example.com"), NULL);
+  TEST(errno, EFAULT); errno = 0;
   TEST(sres_cached_answers(res, sres_qtype_any, NULL), NULL);
+  TEST(errno, EFAULT); errno = 0;
   TEST(sres_cached_answers(res, sres_qtype_any, name2048), NULL);
+  TEST(errno, ENAMETOOLONG); errno = 0;
   TEST(sres_cached_answers_sockaddr(res, sres_qtype_any, sa), NULL);
+  TEST(errno, EAFNOSUPPORT); errno = 0;
 
   sres_free_answer(res, NULL);
   sres_free_answers(res, NULL);

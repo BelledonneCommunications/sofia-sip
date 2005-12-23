@@ -31,7 +31,6 @@
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>,
  * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>.
  *
- * @date Last modified: Fri Sep  9 10:56:31 2005 ppessi
  */
 
 #include <su.h>
@@ -129,7 +128,7 @@ struct sres_a6_record
   uint8_t           a6_prelen;
   uint8_t           a6_pad[3];
   struct in6_addr   a6_suffix;
-  char              *a6_prename;
+  char             *a6_prename;
 };
 
 /** Address record for IPv6 (RFC 1886). */
@@ -312,7 +311,7 @@ sres_record_t **sres_cached_answers_sockaddr(sres_resolver_t *res,
 					     struct sockaddr const *addr);
 
 /** Sort the list of records */
-void sres_sort_answers(sres_resolver_t *res, sres_record_t **answers);
+int sres_sort_answers(sres_resolver_t *res, sres_record_t **answers);
 
 /** Sort and filter the list of records */
 int sres_filter_answers(sres_resolver_t *sres, sres_record_t **answers, 
@@ -341,7 +340,7 @@ sres_resolver_t *sres_resolver_create(su_root_t *root,
 				      char const *resolv_conf,
 				      tag_type_t, tag_value_t, ...);
 /** Destroy a resolver object. */
-void sres_resolver_destroy(sres_resolver_t *res);
+int sres_resolver_destroy(sres_resolver_t *res);
 
 /* Return socket used by root */
 int sres_resolver_root_socket(sres_resolver_t *res);
