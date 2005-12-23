@@ -55,43 +55,63 @@ static int test_strlst(void);
 static int test_vectors(void);
 static int test_auto(void);
 
-/** Test tl_list and tl_dup */
+/* Type derived from home */
+typedef struct { su_home_t home[1]; int *p; } exhome_t;
+
+void exdestructor(void *arg)
+{
+  exhome_t *ex = arg;
+  (*ex->p)++;
+}
+
+/** Test basic memory home operations  */
 int test_alloc(void)
 {
-  su_home_t *h0, *h1, *h2, *h3;
+  exhome_t *h0, *h1, *h2, *h3;
   su_home_t home[1] = { SU_HOME_INIT(home) };
   enum { N = 40 };
   void *m0[N], *m1[N], *m;
   char *c, *c0, *p0, *p1;
   int i;
+  int d0, d1, d2, d3;
 
   BEGIN();
 
   TEST_1(h0 = su_home_new(sizeof(*h0)));
-  TEST_1(h1 = su_home_clone(h0, sizeof(*h1)));
-  TEST_1(h2 = su_home_ref(h0));
-  su_home_unref(h0);
-  su_home_unref(h2);
+  TEST_1(h1 = su_home_clone(h0->home, sizeof(*h1)));
+
+  d0 = d1 = d2 = d3 = 0;
+  h0->p = &d0; h1->p = &d1;
+  TEST(su_home_desctructor(h0->home, exdestructor), 0);
+  TEST(su_home_desctructor(h1->home, exdestructor), 0);
+
+  TEST_1(h2 = su_home_ref(h0->home));
+  su_home_unref(h0->home);
+  TEST(d0, 0);
+  su_home_unref(h2->home); /* Should call destructor of cloned home, too */
+
+  TEST(d0, 1);
+  TEST(d1, 1);
 
   TEST_1(h0 = su_home_new(sizeof(*h0)));
-  TEST_1(h1 = su_home_clone(h0, sizeof(*h1)));
-  TEST_1(h2 = su_home_clone(h1, sizeof(*h2)));
-  TEST_1(h3 = su_home_clone(h2, sizeof(*h3)));
+  TEST_1(h1 = su_home_clone(h0->home, sizeof(*h1)));
+  TEST_1(h2 = su_home_clone(h1->home, sizeof(*h2)));
+  TEST_1(h3 = su_home_clone(h2->home, sizeof(*h3)));
 
-  TEST(su_home_threadsafe(h0), 0);
+  TEST(su_home_threadsafe(h0->home), 0);
 
   for (i = 0; i < N; i++) {
-    TEST_1(m0[i] = su_zalloc(h3, 20));
-    TEST_1(m1[i] = su_zalloc(h2, 20));
+    TEST_1(m0[i] = su_zalloc(h3->home, 20));
+    TEST_1(m1[i] = su_zalloc(h2->home, 20));
   }
 
-  TEST_1(m = su_zalloc(h2, 20));
+  TEST_1(m = su_zalloc(h2->home, 20));
 
   TEST(su_home_move(home, NULL), 0);
   TEST(su_home_move(NULL, home), 0);
-  TEST(su_home_move(home, h3), 0);
-  TEST(su_home_move(h2, h3), 0);
-  TEST(su_home_move(h1, h2), 0);
+  TEST(su_home_move(home, h3->home), 0);
+  TEST(su_home_move(h2->home, h3->home), 0);
+  TEST(su_home_move(h1->home, h2->home), 0);
 
   su_home_preload(home, 1, 1024 + 2 * 8);
 
@@ -113,10 +133,10 @@ int test_alloc(void)
   su_home_check(home);
   su_home_deinit(home);
 
-  su_home_check(h0);
-  su_home_zap(h2);
-  su_home_check(h0);
-  su_home_zap(h0);
+  su_home_check(h2->home);
+  su_home_zap(h2->home);
+  su_home_check(h0->home);
+  su_home_zap(h0->home);
 
   END();
 }

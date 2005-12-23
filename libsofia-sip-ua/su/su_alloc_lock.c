@@ -34,6 +34,7 @@
 #include "config.h"
 
 #include <su_alloc.h>
+#include <su.h>
 
 #if SU_HAVE_PTHREADS
 #include <pthread.h>
@@ -57,28 +58,34 @@ static void mutex_unlocker(void *_mutex)
   pthread_mutex_t *mutex = _mutex;
   pthread_mutex_unlock(mutex + 1);
 }
+#endif
+
 
 /** Convert su_home_t object to a thread-safe one.
  *
- * The function su_home_threadsafe() converts a memory home object
- * as thread-safe.
- *
+ * Convert a memory home object as thread-safe by allocating mutexes and
+ * modifying function pointers in su_alloc.c module.
+
  * @param home memory home object to be converted thread-safe.
  *
- * @return The function su_home_threadsafe() return 0 when successful,
- * or -1 upon an error.
+ * @retval 0 when successful,
+ * @retval -1 upon an error.
  */
 int su_home_threadsafe(su_home_t *home)
 {
   pthread_mutex_t *mutex;
 
-  if (home == NULL || home->suh_lock)
+  if (home == NULL)
+    return su_seterrno(EFAULT);
+
+  if (home->suh_lock)		/* Already? */
     return 0;
 
   assert(!su_home_has_parent(home));
   if (su_home_has_parent(home))
-    return -1;
+    return su_seterrno(EINVAL);
 
+#if SU_HAVE_PTHREADS
   if (!su_home_unlocker) {
     /* Avoid linking pthread library just for memory management */
     su_home_mutex_locker = mutex_locker;
@@ -88,6 +95,7 @@ int su_home_threadsafe(su_home_t *home)
   }
 
   mutex = su_alloc(home, 2 * sizeof (pthread_mutex_t));
+  assert(mutex);
   if (mutex) {
     /* Mutex for memory operations */
     pthread_mutex_init(mutex, NULL);
@@ -96,14 +104,9 @@ int su_home_threadsafe(su_home_t *home)
     home->suh_lock = (void *)mutex;
     return 0;
   }
-
-  assert(mutex);
-  return -1;
-}
-
 #else
-int su_home_threadsafe(su_home_t *h)
-{
+  su_seterrno(ENOSYS);
+#endif
+
   return -1;
 }
-#endif

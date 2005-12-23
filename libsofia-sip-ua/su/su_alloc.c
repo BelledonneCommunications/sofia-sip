@@ -41,7 +41,8 @@
  * home is then freed, it will free all blocks to which it has reference.
  *
  * Typically, there is a @e home @e object which contains a su_home_t
- * structure in the beginning of it (sort of inheritance from su_home_t):
+ * structure in the beginning of the object (sort of inheritance from
+ * su_home_t):
  * @code
  * struct context {
  *   su_home_t ctx_home[1];
@@ -103,6 +104,15 @@
  * function su_home_create() creates a home object with infinite reference
  * count. Likewise, su_home_init() does the same.
  *
+ * @section su_home_desctructor_usage Destructors
+ *
+ * It is possible to give a destructor function to a home object. The
+ * destructor releases other resources associated with the home object
+ * besides memory. The destructor function will be called when the reference
+ * count of home reaches zero (upon calling su_home_unref()) or the home
+ * object is otherwise deinitialized (calling su_home_deinit() on
+ * stack-derived objects).
+ *
  * @section su_home_move_example Combining Allocations
  *
  * In some cases, an operation that makes multiple memory allocations may
@@ -136,7 +146,15 @@
  * @c threadsafe by calling su_home_threadsafe() with the home pointer as
  * argument. A cloned home cannot be marked as threadsafe. The
  * threadsafeness is not inherited by clones.
+ *
+ * The threadsafe home objects can be locked and unlocked with
+ * su_home_mutex_lock() and su_home_mutex_unlock().
  */
+
+#include <su_config.h>
+#include "su_alloc.h"
+#include "su_alloc_stat.h"
+#include "su_errno.h"
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -144,10 +162,6 @@
 #include <limits.h>
 
 #include <assert.h>
-
-#include <su_config.h>
-#include "su_alloc.h"
-#include "su_alloc_stat.h"
 
 void (*su_home_locker)(void *mutex);
 void (*su_home_unlocker)(void *mutex);
@@ -192,7 +206,7 @@ struct su_block_s {
   su_home_t  *sub_parent;	/**< Parent home */
   char       *sub_preload;	/**< Preload area */
   su_home_stat_t *sub_stats;	/**< Statistics.. */
-
+  void      (*sub_destructor)(void *); /**< Destructor function */
   unsigned    sub_ref;		/**< Reference count */
   unsigned    sub_used;		/**< Number of blocks allocated */
   unsigned    sub_n;		/**< Size of hash table  */
@@ -502,9 +516,31 @@ void *su_home_ref(su_home_t *home)
       sub->sub_ref++;
     UNLOCK(home);
   }
+  else
+    su_seterrno(EFAULT);
 
   return home;
 }
+
+/** Set destructor function */
+SU_DLL int su_home_desctructor(su_home_t *home, void (*destructor)(void *))
+{
+  int retval = -1;
+
+  if (home) {
+    su_block_t *sub = MEMLOCK(home);
+    if (sub && sub->sub_destructor == NULL) {
+      sub->sub_destructor = destructor;
+      retval = 0;
+    }
+    UNLOCK(home);
+  }
+  else
+    su_seterrno(EFAULT);
+
+  return retval;
+}
+
 
 /**Unreference a su_home_t object.
  *
@@ -775,6 +811,12 @@ void _su_home_deinit(su_home_t *home)
   if (home->suh_blocks) {
     unsigned i;
     su_block_t *b;
+
+    if (home->suh_blocks->sub_destructor) {
+      void (*destructor)(void *) = home->suh_blocks->sub_destructor;
+      home->suh_blocks->sub_destructor = NULL;
+      destructor(home);
+    }
 
     b = home->suh_blocks;
 
@@ -1212,7 +1254,7 @@ void *su_salloc(su_home_t *home, int size)
 int su_home_mutex_lock(su_home_t *home)
 {
   if (home == NULL)
-    return -1;
+    return su_seterrno(EFAULT);
 
   if (home->suh_lock) {
     su_home_ref(home);
@@ -1230,7 +1272,7 @@ int su_home_mutex_lock(su_home_t *home)
 int su_home_mutex_unlock(su_home_t *home)
 {
   if (home == NULL)
-    return -1;
+    return su_seterrno(EFAULT);
 
   if (home->suh_lock) {
     su_home_mutex_unlocker(home->suh_lock);
@@ -1246,8 +1288,13 @@ int su_home_mutex_unlock(su_home_t *home)
 /** Initialize statistics structure */
 void su_home_init_stats(su_home_t *home)
 {
-  su_block_t *sub = home->suh_blocks;
+  su_block_t *sub;
   int size;
+
+  if (home == NULL)
+    return;
+
+  sub = home->suh_blocks;
 
   if (!sub)
     sub = home->suh_blocks = su_hash_alloc(SUB_N);
