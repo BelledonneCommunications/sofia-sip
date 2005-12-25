@@ -45,4 +45,9 @@ extern tag_typedef_t stuntag_integrity;
 #define STUNTAG_INTEGRITY_REF(x) stuntag_integrity_ref, tag_int_vr(&(x))
 extern tag_typedef_t stuntag_integrity_ref;
 
+#define STUNTAG_SOCKET(x) stuntag_socket, tag_int_v(x)
+extern tag_typedef_t stuntag_socket;
+#define STUNTAG_SOCKET_REF(x) stuntag_socket_ref, tag_int_vr(&(x))
+extern tag_typedef_t stuntag_socket_ref;
+
 #endif /* STUN_TAG_H */

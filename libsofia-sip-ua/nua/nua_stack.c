@@ -244,7 +244,7 @@ int ua_init(su_root_t *root, nua_t *nua)
   nua->nua_handles_tail = &nua->nua_handles;
   nh_append(nua, dnh);  
   
-#if SU_HAVE_PTHREADS
+#if defined(HAVE_PTHREAD_H) && defined(SU_HAVE_PTHREADS)
 #if __CYGWIN__
   SU_PORT_INITREF(dnh);
 #else

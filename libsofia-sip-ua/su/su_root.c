@@ -411,7 +411,11 @@ su_root_t *su_root_create_with_port(su_root_magic_t *magic,
 
   if (self) {
     self->sur_magic = magic;
+#if SU_HAVE_PTHREADS
     self->sur_threading = SU_HAVE_PTHREADS;
+#else
+    self->sur_threading = 0;
+#endif
     su_task_new(self->sur_task, self, port);
   } else {
     su_port_decref(port, "su_root_create");

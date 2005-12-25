@@ -50,7 +50,7 @@
 #include "soa.h"
 
 #if __CYGWIN__
-
+#if defined(SU_HAVE_PTHREADS) && defined(HAVE_PTHREAD_H)
 /* Debugging versions */
 #define SU_PORT_INITREF(p)      (pthread_mutex_init((p)->sup_reflock, NULL), printf("initref(%p)\n", (p)))
 #define SU_PORT_INCREF(p, f)    (pthread_mutex_lock(p->sup_reflock), p->sup_ref++, pthread_mutex_unlock(p->sup_reflock), printf("incref(%p) by %s\n", (p), f))
@@ -76,6 +76,7 @@
 #define SU_PORT_UNLOCK(p, f)  \
   (pthread_mutex_unlock((p)->sup_mutex), printf(" ...%ld at %s unlocked(%p)\n", pthread_self(), f, p))
 
+#endif /* defined(SU_HAVE_PTHREAD) && defined(HAVE_PTHREAD_H) */
 #endif /* __CYGWIN__ */ 
 
 

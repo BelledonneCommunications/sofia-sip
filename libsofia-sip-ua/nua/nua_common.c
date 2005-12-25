@@ -147,7 +147,7 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
       p_to = (void *)-1;
     }
 
-#if HAVE_PTHREAD_H
+#if defined(HAVE_PTHREAD_H) && defined(SU_HAVE_PTHREADS)
 #if __CYGWIN__
     SU_PORT_INITREF(nh);
 #else

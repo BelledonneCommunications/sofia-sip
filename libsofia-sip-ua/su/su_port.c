@@ -315,6 +315,7 @@ struct su_port_s {
 #define SU_PORT_INITLOCK(p)    (void)(p)
 #define SU_PORT_LOCK(p, f)      (void)(p)
 #define SU_PORT_UNLOCK(p, f)    (void)(p)
+#define SU_PORT_ZAPREF(p, f)    ((p)->sup_ref--)
 
 #define SU_PORT_INITREF(p)      ((p)->sup_ref = 1)
 #define SU_PORT_INCREF(p, f)    ((p)->sup_ref++)

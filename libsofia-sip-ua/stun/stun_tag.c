@@ -73,3 +73,20 @@ tag_typedef_t stuntag_server = STRTAG_TYPEDEF(server);
  * Corresponding tag taking reference parameter is STUNTAG_INTEGRITY_REF()
  */
 tag_typedef_t stuntag_integrity = BOOLTAG_TYPEDEF(srtp_integrity);
+
+/**@def STUNTAG_SOCKET(x)
+ *  
+ * Bind socket for STUN.
+ *
+ * @par Used with
+ *    stun_handle_bind() \n
+ *
+ * @par Parameter type
+ *    int (su_socket_t)
+ *
+ * @par Values
+ *    IPv4 (AF_INET) socket
+ *
+ * Corresponding tag taking reference parameter is STUNTAG_SOCKET_REF()
+ */
+tag_typedef_t stuntag_socket = INTTAG_TYPEDEF(socket);
