@@ -237,7 +237,7 @@ int torture_test_stun_bind(char *localaddr)
 
   s = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(s != -1);
 
-  result = stun_handle_set_bind_socket(se, s);
+  /* result = stun_handle_set_bind_socket(se, s); */
   TEST_1(result != -1);
 
   /* test message integrity? */
@@ -257,7 +257,7 @@ int torture_test_stun_bind(char *localaddr)
   
   lifetime = 0;
 
-  result = stun_handle_bind(se, &lifetime); TEST(result, 0);
+  result = stun_handle_bind(se, &lifetime, STUNTAG_SOCKET(s), TAG_NULL()); TEST(result, 0);
 
   END();
 }
@@ -273,7 +273,6 @@ int torture_test_get_lifetime(char *localaddr)
 
   s = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(s != -1);
 
-  result = stun_handle_set_bind_socket(se, s);
   TEST_1(result != -1);
 
   /* test message integrity? */
@@ -318,7 +317,7 @@ int torture_test_get_nattype(char *localaddr)
 
   s = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(s != -1);
 
-  result = stun_handle_set_bind_socket(se, s);
+  /* result = stun_handle_set_bind_socket(se, s); */
   TEST_1(result != -1);
 
   /* test message integrity? */
@@ -343,8 +342,10 @@ int torture_test_get_nattype(char *localaddr)
 
   atonetaddr(my_addr, localaddr);
   addrlen = sizeof(*my_addr);
+#if 0
   result = stun_handle_get_nattype(se, /* &addr.su_sa, */ &addrlen); TEST(result, 0);
   printf("NAT type is: %s\n", stun_nattype(se));
+#endif
 
   su_close(s);
 

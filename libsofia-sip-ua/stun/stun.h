@@ -27,6 +27,7 @@
 /**@file stun.h STUN client interface
  *
  * @author Tat Chan <Tat.Chan@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  */
@@ -41,8 +42,9 @@
 
 #include <su_localinfo.h>
 
-typedef struct stun_handle_s stun_handle_t;
-typedef struct stun_socket_s stun_socket_t;
+typedef struct stun_handle_s  stun_handle_t;
+typedef struct stun_socket_s  stun_socket_t;
+typedef struct stun_request_s stun_request_t;
 
 #ifndef STUN_MAGIC_T 
 #define STUN_MAGIC_T            struct stun_magic_t
@@ -92,6 +94,7 @@ typedef enum stun_states_e {
 
 typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_handle_t *se,
+			     stun_request_t *req,
 			     stun_states_t event);
 
 /* Return the socket associated with the stun_socket_t structure */
@@ -124,7 +127,9 @@ int stun_handle_set_bind_socket(stun_handle_t *se, int sockfd);
 /** Bind a socket using STUN.  */
 int stun_handle_bind(stun_handle_t *se, 
 		     /* su_localinfo_t *my_addr, */
-		     int *return_lifetime);
+		     int *return_lifetime,
+		     tag_type_t tag, tag_value_t value,
+		     ...);
 
 su_localinfo_t *stun_handle_get_local_addr(stun_handle_t *en);
 

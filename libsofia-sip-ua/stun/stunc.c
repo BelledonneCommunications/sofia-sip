@@ -64,7 +64,7 @@ struct stunc_s {
 };
 
 
-void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_states_t event)
+void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_request_t *req, stun_states_t event)
 {
   su_localinfo_t *li = NULL;
   char ipaddr[48];
@@ -145,15 +145,15 @@ int main(int argc, char *argv[])
   }
 
   
-  
+#if 0  
   if (stun_handle_set_bind_socket(se, s) < 0) {
     SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_set_bind_socket()"));
     return -1;
   }
-  
+#endif  
   lifetime = 0;
 
-  if (stun_handle_bind(se, &lifetime) < 0) {
+  if (stun_handle_bind(se, &lifetime, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
     SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
     return -1;
   }
