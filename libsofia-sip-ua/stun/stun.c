@@ -1271,12 +1271,11 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
     break;
     
   case BINDING_ERROR_RESPONSE:
+  default:
     if (stun_process_error_response(&binding_response) < 0) {
       SU_DEBUG_3(("%s: Error in Binding Error Response.\n", __func__));
     }
-    break;
     
-  default:
     break;
   }
 
