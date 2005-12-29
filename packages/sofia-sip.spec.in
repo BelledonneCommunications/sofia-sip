@@ -67,7 +67,6 @@ Development package for Sofia SIP UA library. This package includes
 %defattr(-,root,root,-)
 /usr/share/aclocal/sac-general.m4
 /usr/share/aclocal/sac-su.m4
-/usr/share/aclocal/sac-su2.m4
 %{_prefix}/include/sofia-sip*/*.h
 %{_prefix}/include/sofia-sip*/*.h.in
 %{_prefix}/libexec/sofia/tag_dll.awk
