@@ -39,6 +39,8 @@
 #include <su_tag.h>
 #endif
 
+#include <stdio.h>
+
 void tl_print(FILE *f, char const *title, tagi_t const lst[]);
 
 #endif
