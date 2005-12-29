@@ -143,19 +143,34 @@ siptag_header_vr(sip_header_t const **vp)
 
 /**Tag list item for header string.
  *
- * The SIPTAG_HEADER_STR() macro is used to include a tag item containing a
- * header string in the tag list.
+ * Macro is used to include a tag item containing an unknown extension
+ * header in the tag list, e.g.,
+ * @code
+ * SIPTAG_HEADER_STR("Remote-Party-ID: +358718008000")
+ * @endcode
  *
- * @param x pointer to a string, or NULL.
+ * It is also possible to include multiple headers at once
+ * @code
+ * SIPTAG_HEADER_STR("P-Access-Network-Info: IEEE-802.11g;"
+ *                   "    access-point-id=00:11:5C:34:E5:C0\r\n"
+ "                   "P-Visited-Network-ID: other.net\r\n")
+ * @endcode
+ *
+ * (See @RFC3455 for more information about these headers.)
+ *
+ * @param s pointer to a string, or NULL.
+ *
+ * The corresponding tag item taking reference parameter is
+ * SIPTAG_HEADER_STR_REF().
  *
  * @HIDE
  */
-#define SIPTAG_HEADER_STR(x)       siptag_header_str, tag_str_v((x))
+#define SIPTAG_HEADER_STR(s)       siptag_header_str, tag_str_v((s))
 
 /** Tag for header string */
 SIP_DLL extern tag_typedef_t siptag_header_str;
 
-#define SIPTAG_HEADER_STR_REF(x)   siptag_header_str_ref, tag_str_vr(&(x))
+#define SIPTAG_HEADER_STR_REF(s)   siptag_header_str_ref, tag_str_vr(&(s))
 SIP_DLL extern tag_typedef_t siptag_header_str_ref;
 
 /**@ingroup sip_#xxxxxx#
