@@ -392,18 +392,6 @@ struct tport_master {
 
 #define TP_SCTP_MSG_MAX (32768)
 
-/* These should not overlap with existing AI flags. */
-#define TP_AI_COMPRESSED 0x0100
-/* Halfclose (shutdown(c, 1)) connection after sending message */
-#define TP_AI_SHUTDOWN   0x0200
-/* Close connection (shutdown(c, 2)) after sending message */
-#define TP_AI_CLOSE      0x0400
-
-/* Address was inaddr_any */
-#define TP_AI_ANY        0x0800
-
-#define TP_AI_ALL        0x0f00
-
 typedef long unsigned LU; 	/* for printf() and friends */
 
 char const tport_sigcomp_name[] = "sigcomp";

@@ -110,6 +110,20 @@ enum {
   TPORT_QUEUESIZE = 64
 };
 
+/* AI extension flags - these must not overlap with existing AI flags. */
+
+/** Message is to be sent/received compressed */
+#define TP_AI_COMPRESSED 0x1000
+/** Halfclose (shutdown(c, 1)) connection after sending message */
+#define TP_AI_SHUTDOWN   0x2000
+/** Close connection (shutdown(c, 2)) after sending message */
+#define TP_AI_CLOSE      0x4000
+
+/** Address was inaddr_any */
+#define TP_AI_ANY        0x8000
+
+#define TP_AI_MASK       0xf000
+
 /** Maximum size of a @e host:port string, including final NUL. */
 #define TPORT_HOSTPORTSIZE (55)
 

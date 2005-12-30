@@ -467,6 +467,24 @@ static int init_test(tp_test_t *tt)
 
   BEGIN();
 
+  int mask = AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
+
+#ifdef AI_ALL
+  mask |= AI_ALL;
+#endif
+#ifdef AI_V4MAPPED_CFG
+  mask |= AI_V4MAPPED_CFG;
+#endif
+#ifdef AI_ADDRCONFIG
+  mask |= AI_ADDRCONFIG;
+#endif
+#ifdef AI_V4MAPPED
+  mask |= AI_V4MAPPED;
+#endif
+
+  /* Test that we have no common flags with underlying getaddrinfo() */
+  TEST(mask & TP_AI_MASK, 0);
+
   TEST_1(tt->tt_root = su_root_create(NULL));
 
   myname->tpn_host = "127.0.0.1";
@@ -1185,6 +1203,60 @@ static int sigcomp_test(tp_test_t *tt)
     TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-sigcomp-3"));
     test_check_md5(tt, tt->tt_rmsg);
     msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
+    {
+      tp_name_t tpn[1];
+      tport_t *ctp, *rtp;
+
+      *tpn = *tt->tt_tcp_comp; tpn->tpn_comp = NULL;
+
+      TEST_1(!new_test_msg(tt, &msg, "tcp-sigcomp-4", 1, 1000));
+      test_create_md5(tt, msg);
+      TEST_1(tp = tport_tsend(tt->tt_tports, 
+			      msg, 
+			      tpn, 
+			      TPTAG_COMPARTMENT(cc),
+			      TPTAG_FRESH(1),
+			      TAG_END()));
+      TEST_1(ctp = tport_incref(tp));
+      msg_destroy(msg);
+
+      TEST(tport_test_run(tt, 5), 1);
+      
+      TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-sigcomp-4"));
+      test_check_md5(tt, tt->tt_rmsg);
+      TEST_1((msg_addrinfo(tt->tt_rmsg)->ai_flags & TP_AI_COMPRESSED) == 0);
+      msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+      TEST_1(rtp = tport_incref(tt->tt_rtport));
+
+      TEST_1(!new_test_msg(tt, &msg, "tcp-sigcomp-5", 1, 1000));
+      test_create_md5(tt, msg);
+      {
+	/* Mess with internal data structures in order to 
+	   force tport to use SigComp on this connection */
+	tp_name_t *tpn = (tp_name_t *)tport_name(rtp);
+	tpn->tpn_comp = "sigcomp";
+      }
+      TEST_1(tp = tport_tsend(rtp, 
+			      msg, 
+			      tt->tt_tcp_comp, 
+			      TPTAG_COMPARTMENT(cc),
+			      TAG_END()));
+      TEST_1(tport_incref(tp));
+      msg_destroy(msg);
+
+      TEST(tp, rtp);
+
+      TEST(tport_test_run(tt, 5), 1);
+
+      tport_decref(&tp);
+      TEST_1(!check_msg(tt, tt->tt_rmsg, "tcp-sigcomp-5"));
+      test_check_md5(tt, tt->tt_rmsg);
+      TEST_1((msg_addrinfo(tt->tt_rmsg)->ai_flags & TP_AI_COMPRESSED) != 0);
+      msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+      TEST(ctp, tt->tt_rtport);
+      tport_decref(&ctp);
+    }
   }
 #endif
 
