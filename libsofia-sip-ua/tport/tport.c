@@ -3985,7 +3985,7 @@ tport_t *tport_tsend(tport_t *self,
 {
   ta_list ta; 
   tagi_t const *t;
-  int reuse, sdwn_after, close_after, resolved = 0;
+  int reuse, sdwn_after, close_after, resolved = 0, fresh;
   unsigned mtu;
   su_addrinfo_t *ai;
   tport_primary_t *primary;
@@ -4017,6 +4017,7 @@ tport_t *tport_tsend(tport_t *self,
   ta_start(ta, tag, value);
 
   reuse = primary->pri_primary->tp_reusable && self->tp_reusable;
+  fresh = 0;
   sdwn_after = 0;
   close_after = 0;
   mtu = 0;
@@ -4034,11 +4035,15 @@ tport_t *tport_tsend(tport_t *self,
       sdwn_after = t->t_value != 0;
     else if (tptag_close_after == tt)
       close_after = t->t_value != 0;
+    else if (tptag_fresh == tt)
+      fresh = t->t_value != 0;
     else if (tptag_compartment == tt)
       cc = (struct sigcomp_compartment *)t->t_value;
   }    
 
   ta_end(ta);
+
+  fresh = fresh || !reuse;
 
   ai = msg_addrinfo(msg);
 
@@ -4059,7 +4064,11 @@ tport_t *tport_tsend(tport_t *self,
   if (close_after)
     ai->ai_flags |= TP_AI_CLOSE;
 
-  if (reuse) {
+  if (fresh) {
+    /* Select a primary protocol, make a fresh connection */
+    self = primary->pri_primary;
+  }
+  else {
     if (tport_is_secondary(self) && 
 	tport_is_registered(self) && 
 	self->tp_reusable &&
@@ -4083,9 +4092,6 @@ tport_t *tport_tsend(tport_t *self,
       if (!self)
 	self = primary->pri_primary;
     }
-  }
-  else {
-    self = primary->pri_primary;    /* Use a primary protocol */
   }
 
   if (tport_is_primary(self)) {

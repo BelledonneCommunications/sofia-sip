@@ -31,7 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Sat Oct 12 18:39:48 2002 ppessi
- * @date Last modified: Wed Jul 20 20:36:01 2005 kaiv
  */
 
 #ifndef TPORT_DLL
@@ -57,11 +56,18 @@ TPORT_DLL extern tag_typedef_t tptag_ident_ref;
 #define TPTAG_IDENT_REF(x) tptag_ident_ref, tag_str_vr(&(x))
 
 TPORT_DLL extern tag_typedef_t tptag_reuse;
-/** Reuse transport connection (true by default). */
+/** Allow reusing transport connection (true by default). */
 #define TPTAG_REUSE(x) tptag_reuse, tag_bool_v((x))
 
 TPORT_DLL extern tag_typedef_t tptag_reuse_ref;
 #define TPTAG_REUSE_REF(x) tptag_reuse_ref, tag_bool_vr(&(x))
+
+TPORT_DLL extern tag_typedef_t tptag_fresh;
+/** Create new connection (but allow reusing new one). */
+#define TPTAG_FRESH(x) tptag_fresh, tag_bool_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_fresh_ref;
+#define TPTAG_FRESH_REF(x) tptag_fresh_ref, tag_bool_vr(&(x))
 
 TPORT_DLL extern tag_typedef_t tptag_server;
 /** Bind server sockets (true by default, disable with TPTAG_SERVER(0)). */

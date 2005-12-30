@@ -31,7 +31,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Apr  3 11:25:13 2002 ppessi
- * @date Last modified: Tue Nov  8 12:14:17 2005 ppessi
  */
 
 #include "config.h"
@@ -898,9 +897,29 @@ static int reuse_test(tp_test_t *tt)
   TEST(tport_test_run(tt, 5), 1);
   msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
 
+  TEST_1(tp = tport_by_name(tt->tt_tports, tpn));
+  TEST_1(tport_is_primary(tp));
+  TEST(tport_set_params(tp, TPTAG_REUSE(1), TAG_END()), 1);
+
+  /* Send a single message with different connection */
+  TEST_1(!new_test_msg(tt, &msg, "fresh-1", 1, 1024));
+  TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, 
+			  TPTAG_FRESH(1),
+			  TPTAG_REUSE(1),
+			  TAG_END()));
+  TEST_S(tport_name(tp)->tpn_ident, "client");
+  TEST_1(tport_incref(tp) != tp1);  tport_decref(&tp);
+  msg_destroy(msg);
+
+  TEST(tport_test_run(tt, 5), 1);
+
+  TEST_1(!check_msg(tt, tt->tt_rmsg, "fresh-1"));
+  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+
   TEST_1(tport_shutdown(tp0, 2) >= 0);
   TEST_1(tport_shutdown(tp1, 2) >= 0);
   TEST_1(tport_shutdown(tp0, 1) >= 0);
+
   TEST(tport_shutdown(NULL, 0), -1);
 
   tport_decref(&tp0);
