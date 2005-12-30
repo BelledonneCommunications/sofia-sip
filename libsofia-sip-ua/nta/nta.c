@@ -159,8 +159,8 @@ int agent_sigcomp_accept(nta_agent_t *sa, tport_t *tp, msg_t *msg);
 #define agent_sigcomp_accept NULL
 #endif
 
-static msg_param_t stateful_branch(su_home_t *home, nta_agent_t *);
-static msg_param_t stateless_branch(nta_agent_t *, msg_t *, sip_t const *,
+static char const * stateful_branch(su_home_t *home, nta_agent_t *);
+static char const * stateless_branch(nta_agent_t *, msg_t *, sip_t const *,
 				    tp_name_t const *tp);
 
 #define NTA_BRANCH_PRIME SU_U64_C(0xB9591D1C361C6521)
@@ -1169,7 +1169,7 @@ int nta_agent_get_stats(nta_agent_t *agent,
  * agent was initialized.
  *
  */
-msg_param_t nta_agent_newtag(su_home_t *home, char const *fmt, nta_agent_t *sa)
+char const *nta_agent_newtag(su_home_t *home, char const *fmt, nta_agent_t *sa)
 {
   char tag[(8 * 8 + 4)/ 5 + 1];
 
@@ -1190,7 +1190,7 @@ msg_param_t nta_agent_newtag(su_home_t *home, char const *fmt, nta_agent_t *sa)
 /**
  * Calculate branch value.
  */
-static msg_param_t stateful_branch(su_home_t *home, nta_agent_t *sa)
+static char const *stateful_branch(su_home_t *home, nta_agent_t *sa)
 {
   char branch[(8 * 8 + 4)/ 5 + 1];
 
@@ -1211,7 +1211,7 @@ static msg_param_t stateful_branch(su_home_t *home, nta_agent_t *sa)
  * XXX - should include HMAC of previous Via line.
  */
 static
-msg_param_t stateless_branch(nta_agent_t *sa, 
+char const *stateless_branch(nta_agent_t *sa, 
 			     msg_t *msg,
 			     sip_t const *sip, 
 			     tp_name_t const *tpn)
@@ -1704,19 +1704,18 @@ int outgoing_insert_via(nta_outgoing_t *orq,
     return -1;
 
   if (orq->orq_method != sip_method_ack) {
-    if (self->sa_rport && !sip_params_find(v->v_params, "rport=")) 
-      clear = 1, sip_via_add_param(msg_home(msg), v, "rport");
-  } else {
-    /* msg_params_remove((msg_param_t *)&v->v_params, "comp="); */
+    if (self->sa_rport && !v->v_rport) 
+      msg_header_add_param(msg_home(msg), v->v_common, "rport");
+  }
+  else {
+    /* msg_header_remove_param(v->v_common, "comp"); */
   }
 
-  if (!orq->orq_tpn->tpn_comp) {
-    if (msg_params_remove((msg_param_t *)&v->v_params, "comp="))
-      clear = 1;
-  }
+  if (!orq->orq_tpn->tpn_comp)
+    msg_header_remove_param(v->v_common, "comp");
 
   if (branch && branch != v->v_branch)
-    clear = 1, sip_via_add_param(msg_home(msg), v, branch);
+    msg_header_add_param(msg_home(msg), v->v_common, branch);
 
   if (via->v_protocol != v->v_protocol &&
       strcasecmp(via->v_protocol, v->v_protocol))
@@ -1773,7 +1772,7 @@ int nta_tpn_by_via(tp_name_t *tpn, sip_via_t const *v, int *using_rport)
   else
     tpn->tpn_port = SIP_PORT(v->v_port), using_rport ? *using_rport = 0 : 0;
 
-  tpn->tpn_comp = sip_params_find(v->v_params, "comp=");
+  tpn->tpn_comp = v->v_comp;
 
   tpn->tpn_ident = NULL;
 
@@ -2161,8 +2160,7 @@ int agent_check_request_via(nta_agent_t *agent,
     tport_hostport(hostport, TPORT_HOSTPORTSIZE, from, 1);
     SU_DEBUG_1(("nta: Via check: extra received=%s from %s\n",
 		v->v_received, hostport));
-    msg_params_remove((msg_param_t *)v->v_params, "received");
-    sip_fragment_clear(v->v_common);
+    msg_header_remove_param(v->v_common, "received");
   }
 
   if (!tport_hostport(hostport, TPORT_HOSTPORTSIZE, from, 0))
@@ -2179,20 +2177,21 @@ int agent_check_request_via(nta_agent_t *agent,
       hostport[rlen] = '\0';
     }
 
-    sip_via_add_param(msg_home(msg), v, su_strdup(msg_home(msg), received));
+    msg_header_replace_param(msg_home(msg), v->v_common, 
+			     su_strdup(msg_home(msg), received));
     SU_DEBUG_5(("nta: Via check: %s\n", received));
   }
 
   if (!agent->sa_server_rport) {
     /*Xyzzy*/;
   }
-  else if ((rport = sip_params_find(v->v_params, "rport"))) {
+  else if (v->v_rport) {
     rport = su_sprintf(msg_home(msg), "rport=%u", ntohs(from->su_port));
-    sip_via_add_param(msg_home(msg), v, rport);
+    msg_header_replace_param(msg_home(msg), v->v_common, rport);
   } 
   else if (tport_is_tcp(tport)) {
     rport = su_sprintf(msg_home(msg), "rport=%u", ntohs(from->su_port));
-    sip_via_add_param(msg_home(msg), v, rport);
+    msg_header_replace_param(msg_home(msg), v->v_common, rport);
   }
 
   return 0;
@@ -7886,7 +7885,7 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
   if (!orq->orq_stateless &&
       !(orq->orq_callback == outgoing_default_cb) &&
       !(status == 408 && !orq->orq_agent->sa_timeout_408)) {
-    msg_param_t to_tag;
+    char const *to_tag;
 
     msg = nta_msg_create(agent, NTA_INTERNAL_MSG);
 
@@ -9063,7 +9062,7 @@ int reliable_send(nta_incoming_t *irq,
   sip_rseq_init(rseq);
 
   if (sip->sip_require)
-    msg_params_replace(home, (msg_param_t **)&sip->sip_require, "100rel");
+    msg_header_replace_param(home, sip->sip_require->k_common, "100rel");
   else
     sip_add_make(msg, sip, sip_require_class, "100rel");
 
@@ -9408,7 +9407,7 @@ int outgoing_recv_reliable(nta_outgoing_t *orq,
 nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
 				    nta_response_f *callback,
 				    nta_outgoing_magic_t *magic,
-				    msg_param_t to_tag,
+				    char const *to_tag,
 				    sip_rseq_t const *rseq)
 {
   nta_agent_t *agent;

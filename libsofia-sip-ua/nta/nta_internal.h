@@ -111,7 +111,7 @@ struct nta_agent_s
   uint64_t           sa_branch; /**< Counter for generating branch parameter */
   uint64_t           sa_tags;   /**< Counter for generating tag parameters */
 
-  msg_param_t        sa_2543_tag; /**< Fixed tag added to To when responding */
+  char const        *sa_2543_tag; /**< Fixed tag added to To when responding */
 
 #if HAVE_SOFIA_SRESOLV
   sres_resolver_t   *sa_resolver; /**< DNS resolver */
@@ -469,7 +469,7 @@ struct nta_outgoing_s
   sip_cseq_t const     *orq_cseq;
   sip_call_id_t const  *orq_call_id;
 
-  msg_param_t           orq_tag;        /**< Tag from final response. */
+  char const           *orq_tag;        /**< Tag from final response. */
 
   su_time_t             orq_sent;       /**< When request was sent? */
   unsigned              orq_delay;      /**< RTT estimate */
@@ -515,16 +515,15 @@ struct nta_outgoing_s
   url_t                *orq_route;      /**< Route URL */
   tp_name_t             orq_tpn[1];     /**< Where to send request */
   char const           *orq_scheme;     /**< Transport URL type */
-  char const           *orq_compress;   /**< What compression to use */
 
   tport_t              *orq_tport;
   struct sigcomp_compartment *orq_cc;
   tagi_t               *orq_tags;       /**< Tport tag items */
   int                   orq_pending;    /**< Request is pending in tport */
 
-  msg_param_t           orq_branch;	/**< Transaction branch */
-  msg_param_t           orq_via_branch;	/**< Via branch */
-  url_t const          *orq_url;        /**< Original RequestURI  */
+  char const           *orq_branch;	/**< Transaction branch */
+  char const           *orq_via_branch;	/**< Via branch */
+  url_t const          *orq_url;        /**< Original RequestURI */
 
   msg_t		       *orq_request;
   msg_t                *orq_response;

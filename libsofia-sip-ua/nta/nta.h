@@ -132,7 +132,7 @@ int nta_agent_add_tport(nta_agent_t *agent,
 			url_string_t const *url,
 			tag_type_t tag, tag_value_t value, ...);
 
-msg_param_t nta_agent_newtag(su_home_t *, char const *fmt, nta_agent_t *);
+char const *nta_agent_newtag(su_home_t *, char const *fmt, nta_agent_t *);
 
 int nta_agent_set_params(nta_agent_t *agent, 
 			 tag_type_t tag, tag_value_t value, ...);
@@ -322,7 +322,7 @@ msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq);
 nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq, 
 				    nta_response_f *callback,
 				    nta_outgoing_magic_t *magic,
-				    msg_param_t to_tag,
+				    char const *to_tag,
 				    sip_rseq_t const *rseq);
 
 int nta_outgoing_cancel(nta_outgoing_t *);

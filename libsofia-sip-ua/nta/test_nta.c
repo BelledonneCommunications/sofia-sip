@@ -383,62 +383,6 @@ int outgoing_callback(agent_t *ag,
   END();
 }
 
-
-/* */
-int outgoing_callback_with_api_test(agent_t *ag,
-				    nta_outgoing_t *orq,
-				    sip_t const *sip)
-{
-  msg_t *msg;
-  int status;
-
-  BEGIN();
-
-  status = sip->sip_status->st_status;
-
-  if (tstflags & tst_verbatim) {
-    printf("%s: %s: %s %03d %s\n", name, __func__, 
-	   sip->sip_status->st_version, 
-	   sip->sip_status->st_status, 
-	   sip->sip_status->st_phrase);
-  }
-
-  ag->ag_status = status;
-
-  if (status < 200)
-    return 0;
-
-  if (ag->ag_out_via == NULL)
-    ag->ag_out_via = sip_via_dup(ag->ag_home, sip->sip_via);
-
-  if (ag->ag_tag_remote) {
-    TEST_1(nta_leg_rtag(ag->ag_tag_remote, sip->sip_to->a_tag));
-    ag->ag_tag_remote = NULL;
-  }
-
-  TEST_1(sip->sip_to && sip->sip_to->a_tag);
-
-  /* Test API functions */
-  TEST(nta_outgoing_status(orq), status);
-  TEST_1(nta_outgoing_request_uri(orq));
-  TEST(nta_outgoing_route_uri(orq) != NULL, ag->ag_obp != NULL);
-  TEST(nta_outgoing_method(orq), sip->sip_cseq->cs_method);
-  TEST(nta_outgoing_cseq(orq), sip->sip_cseq->cs_seq);
-  TEST_1(nta_outgoing_delay(orq) < UINT_MAX);
-  
-  TEST_1(msg = nta_outgoing_getresponse(orq));
-  msg_destroy(msg);
-  
-  TEST_1(msg = nta_outgoing_getrequest(orq));
-  msg_destroy(msg);
-  nta_outgoing_destroy(orq);
-  nta_outgoing_destroy(orq);
-
-  ag->ag_orq = NULL;
-
-  END();
-}
-
 static
 int test_magic_branch(agent_t *ag, sip_t const *sip) 
 {
@@ -762,15 +706,19 @@ int test_tports(agent_t *ag)
      * Send a message from default leg to default leg 
      */
     char const p_acid[] = "P-Access-Network-Info: IEEE-802.11g\n";
+    url_t url[1];
 
+    *url = *ag->ag_contact->m_url;
+    url->url_params = NULL;
     ag->ag_expect_leg = ag->ag_default_leg;
+    su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
 
     TEST_1(ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, 
 			       outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
-			       (url_string_t *)ag->ag_contact->m_url,
+			       (url_string_t *)url,
 			       SIPTAG_SUBJECT_STR("Test 0.1"),
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
@@ -783,6 +731,8 @@ int test_tports(agent_t *ag)
     TEST(ag->ag_orq, NULL);
     TEST(ag->ag_latest_leg, ag->ag_default_leg);
     TEST_1(ag->ag_request);
+
+    TEST_1(ag->ag_out_via->v_comp == NULL);
 
     nta_leg_bind(ag->ag_default_leg, leg_callback_200, ag);
   }
@@ -805,6 +755,8 @@ int test_tports(agent_t *ag)
     TEST_1(pl = test_payload(ag->ag_home, size));
 
     ag->ag_expect_leg = ag->ag_server_leg;
+    su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
+
     TEST_1(ag->ag_orq = 
 	   nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 				ag->ag_obp,
@@ -825,6 +777,7 @@ int test_tports(agent_t *ag)
     nta_compartment_decref(&ag->ag_client_compartment);
     TEST(ag->ag_orq, NULL);
     TEST(ag->ag_latest_leg, ag->ag_server_leg);
+    TEST_S(ag->ag_out_via->v_comp, "sigcomp");
   }
 
   /* Test 0.2
@@ -839,12 +792,7 @@ int test_tports(agent_t *ag)
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
-#if 0
-    if (url->url_params)
-      url->url_params = su_sprintf(NULL, "%s;transport=tcp", url->url_params);
-    else
-#endif
-      url->url_params = "transport=tcp";
+    url->url_params = "transport=tcp";
 
     TEST_1(pl = test_payload(ag->ag_home, size));
 
