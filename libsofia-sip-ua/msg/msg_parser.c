@@ -2269,10 +2269,13 @@ append_parsed(msg_t *msg, msg_pub_t *mo, msg_header_t **hh, msg_header_t *h,
   if (msg->m_chain || always_into_chain)
     msg_insert_here_in_chain(msg, msg_chain_tail(msg), h);
 
-  if (*hh && msg_is_single(h))
+  if (*hh && msg_is_single(h)) {
     /* If there is multiple instances of single headers,
        put the extra headers into the list of erroneous headers */
     hh = (msg_header_t**)&mo->msg_error;
+    /* Flag this as fatal error */
+    mo->msg_flags |= MSG_FLG_ERROR;
+  }
 
   while (*hh) 
     hh = &(*hh)->sh_next;
