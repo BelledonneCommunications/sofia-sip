@@ -748,7 +748,8 @@ void agent_kill_terminator(nta_agent_t *agent)
  * NTATAG_CANCEL_2543(), NTATAG_CANCEL_487(), NTATAG_DEBUG_DROP_PROB(),
  * NTATAG_DEFAULT_PROXY(), NTATAG_EXTRA_100(), NTATAG_MAXSIZE(),
  * NTATAG_UDP_MTU(), NTATAG_MERGE_482(), NTATAG_PASS_100(),
- * NTATAG_PRELOAD(), NTATAG_REL100(), NTATAG_RPORT(), NTATAG_SERVER_RPORT(), 
+ * NTATAG_PRELOAD(), NTATAG_REL100(), NTATAG_RPORT(), NTATAG_SERVER_RPORT(),
+ * NTATAG_TCP_RPORT(),
  * NTATAG_SIPFLAGS(), NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(),
  * NTATAG_SIP_T4(), NTATAG_SMIME(), NTATAG_STATELESS(), NTATAG_TAG_3261(),
  * NTATAG_TIMEOUT_408(), NTATAG_PASS_408(), NTATAG_UA(), NTATAG_USER_VIA(),
@@ -806,6 +807,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   uint32_t flags      = agent->sa_flags;
   int rport           = agent->sa_rport;
   int server_rport    = agent->sa_server_rport;
+  int tcp_rport       = agent->sa_tcp_rport;
   unsigned preload         = agent->sa_preload;
   unsigned threadpool      = agent->sa_tport_threadpool;
 #if HAVE_SIGCOMP
@@ -854,6 +856,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      NTATAG_SIPFLAGS_REF(flags),
 	      NTATAG_RPORT_REF(rport),
 	      NTATAG_SERVER_RPORT_REF(server_rport),
+	      NTATAG_TCP_RPORT_REF(tcp_rport),
 	      NTATAG_PRELOAD_REF(preload),
 #ifdef TPTAG_THRPSIZE
 	      /* If threadpool is enabled, start a separate "reaper thread" */
@@ -992,6 +995,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   agent->sa_flags = flags & MSG_FLG_USERMASK;
   agent->sa_rport = rport != 0;
   agent->sa_server_rport = server_rport != 0;
+  agent->sa_tcp_rport = tcp_rport != 0;
   agent->sa_preload = preload;
   agent->sa_tport_threadpool = threadpool;
 
@@ -1704,7 +1708,9 @@ int outgoing_insert_via(nta_outgoing_t *orq,
     return -1;
 
   if (orq->orq_method != sip_method_ack) {
-    if (self->sa_rport && !v->v_rport) 
+    if (!v->v_rport && 
+	((self->sa_rport && v->v_protocol == sip_transport_udp) ||
+	 (self->sa_tcp_rport && v->v_protocol == sip_transport_tcp)))
       msg_header_add_param(msg_home(msg), v->v_common, "rport");
   }
   else {

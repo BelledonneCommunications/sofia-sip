@@ -98,6 +98,7 @@ tag_typedef_t ntatag_use_timestamp = BOOLTAG_TYPEDEF(use_timestamp);
 tag_typedef_t ntatag_sipflags = UINTTAG_TYPEDEF(sipflags);
 tag_typedef_t ntatag_rport = BOOLTAG_TYPEDEF(rport);
 tag_typedef_t ntatag_server_rport = BOOLTAG_TYPEDEF(server_rport);
+tag_typedef_t ntatag_tcp_rport = BOOLTAG_TYPEDEF(tcp_rport);
 tag_typedef_t ntatag_preload = UINTTAG_TYPEDEF(preload);
 tag_typedef_t ntatag_use_naptr = BOOLTAG_TYPEDEF(naptr);
 tag_typedef_t ntatag_use_srv = BOOLTAG_TYPEDEF(srv);
