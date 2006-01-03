@@ -30,7 +30,6 @@
  *
  * @par Created: Tue Jul 16 18:50:14 2002 ppessi
  *
- * @date Last modified: Wed Jul 20 20:35:51 2005
  *
  */
 

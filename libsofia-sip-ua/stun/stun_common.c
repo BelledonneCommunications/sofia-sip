@@ -31,7 +31,6 @@
  *  
  * @date Created: Fri Oct  3 13:40:41 2003 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  */
 
 #ifndef WIN32

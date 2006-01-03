@@ -33,7 +33,6 @@
  * 
  * @date Created: Fri Oct  3 13:39:55 2003 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  */
 
 #include <stdio.h>

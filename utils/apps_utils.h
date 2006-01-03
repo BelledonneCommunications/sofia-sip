@@ -30,7 +30,6 @@
  * 
  * @date Created: Thu Apr  8 15:55:15 2004 ppessi
  * 
- * @date Last modified: Wed Jul 20 20:36:03 2005 kaiv
  */
 
 static inline

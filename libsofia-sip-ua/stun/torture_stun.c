@@ -31,7 +31,6 @@
  * @author eMartti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
- * @date Last modified: Wed Jul 20 20:35:55 2005 kaiv
  *
  * Examples of use:
  *
