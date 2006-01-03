@@ -52,7 +52,7 @@
   ((http_header_t *)msg_header_make((h), (c), (s)))
 #define http_header_vformat(h, c, f, a) \
   ((http_header_t *)msg_header_vformat((h), (c), (f), (a)))
-
+SOFIA_BEGIN_DECLS
 
 /* Declare internal prototypes for #xxxxxxx_xxxxxxx# */
 
@@ -304,5 +304,5 @@ http_#xxxxxx#_t *http_#xxxxxx#_make(su_home_t *home, char const *s)
 /** @} */
 
 
-
+SOFIA_END_DECLS
 #endif /* !defined(HTTP_PROTOS_H) */

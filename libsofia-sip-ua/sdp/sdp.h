@@ -39,6 +39,8 @@
 #include <su_types.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** SDP session description */
 typedef struct sdp_session_s     sdp_session_t;
 /** SDP version "v=" line */
@@ -513,5 +515,7 @@ void sdp_printer_free(sdp_printer_t *p);
 
 #define sdp_free_parser  sdp_parser_free
 #define sdp_free_printer sdp_printer_free
+
+SOFIA_END_DECLS
 
 #endif /* SDP_H */

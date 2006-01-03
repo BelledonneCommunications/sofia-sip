@@ -34,6 +34,12 @@
  *
  */
 
+#ifndef MSG_TYPES_H
+#include <msg_types.h>
+#endif
+
+SOFIA_BEGIN_DECLS
+
 void *msg_buf_alloc(msg_t *msg, unsigned size);
 void *msg_buf_exact(msg_t *msg, unsigned size);
 unsigned msg_buf_commit(msg_t *msg, unsigned size, int eos);
@@ -44,5 +50,7 @@ unsigned msg_buf_size(msg_t const *msg);
 void *msg_buf_move(msg_t *dst, msg_t const *src);
 
 void msg_buf_set(msg_t *msg, void *b, unsigned size);
+
+SOFIA_END_DECLS
 
 #endif /* !defined MSG_BUFFER_H */

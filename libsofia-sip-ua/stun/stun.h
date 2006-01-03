@@ -42,6 +42,8 @@
 
 #include <su_localinfo.h>
 
+SOFIA_BEGIN_DECLS
+
 typedef struct stun_handle_s  stun_handle_t;
 typedef struct stun_socket_s  stun_socket_t;
 typedef struct stun_request_s stun_request_t;
@@ -150,5 +152,7 @@ int stun_handle_set_uname_pwd(stun_handle_t *se,
 			      int len_pwd);
 
 char const *stun_nattype(stun_handle_t *se);
+
+SOFIA_END_DECLS
 
 #endif /* !defined(STUN_H) */

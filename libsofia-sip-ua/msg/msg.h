@@ -36,6 +36,8 @@
 #include <msg_dll.h>
 #include <msg_types.h>
 
+SOFIA_BEGIN_DECLS
+
 msg_t *msg_create(msg_mclass_t const *mc, int flags);
 void msg_destroy(msg_t *);
 
@@ -156,5 +158,7 @@ enum  msg_flg_parser {
 #define MSG_HAS_ERROR(f)       MSG_FLAGS((f), MSG_FLG_ERROR)
 
 #define MSG_IS_COMPLETE(mo) (((mo)->msg_flags & MSG_FLG_COMPLETE) != 0)
+
+SOFIA_END_DECLS
 
 #endif /* MSG_H */

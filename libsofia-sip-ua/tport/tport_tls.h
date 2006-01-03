@@ -32,6 +32,12 @@
  * Copyright 2001, 2002 Nokia Research Center.  All rights reserved.
  */
 
+#ifndef SU_CONFIG_H
+#include <su_config.h>
+#endif
+
+SOFIA_BEGIN_DECLS
+
 #define TLS_MAX_HOSTS (16)
 
 typedef struct tls_s tls_t;
@@ -69,5 +75,7 @@ int tls_want_write(tls_t *tls, int events);
 int tls_check_hosts(tls_t *tls, char const *hosts[TLS_MAX_HOSTS]);
 
 int tls_events(tls_t const *tls, int flags);
+
+SOFIA_END_DECLS
 
 #endif

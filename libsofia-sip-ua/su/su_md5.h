@@ -46,6 +46,8 @@
 #include "su_types.h"
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** MD5 context. */
 typedef struct su_md5_t {
   uint32_t buf[4];
@@ -78,5 +80,7 @@ void su_md5_hexdigest(su_md5_t const *ctx,
   ((s) ? su_md5_iupdate(ctx, (s), strlen(s)) : (void)0)
 #define SU_MD5_STRI0UPDATE(ctx, s) \
   su_md5_iupdate(ctx, (s) ? (s) : "", (s) ? strlen(s) : 1)
+
+SOFIA_END_DECLS
 
 #endif /* !defined(MD5_H) */

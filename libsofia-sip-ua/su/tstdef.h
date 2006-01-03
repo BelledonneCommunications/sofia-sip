@@ -115,6 +115,12 @@
  * @endcode
  */
 
+#ifndef SU_TYPES_H
+#include <su_types.h>
+#endif
+
+SOFIA_BEGIN_DECLS
+
 #if HAVE_FUNC
 #define TSTNAME name, __func__, "() "
 #elif HAVE_FUNCTION
@@ -128,8 +134,11 @@ enum {
   tst_verbatim = 1
 };
 
-/* Define different versions of tests if TSTFLAGS is defined */
-#ifdef TSTFLAGS 
+#ifndef TSTFLAGS
+#error <TSTFLAGS is not defined>
+#endif
+
+#ifdef TSTFLAGS
 /** Begin a test function. @HIDE */
 #define BEGIN() BEGIN_(TSTFLAGS); { extern int tstdef_dummy
 /** End a test function. @HIDE */
@@ -276,3 +285,5 @@ typedef unsigned longlong ull;
   if (flags & tst_verbatim) \
     printf("%s: %s%sfinished fully successful\n", TSTNAME); \
   return 0
+
+SOFIA_END_DECLS

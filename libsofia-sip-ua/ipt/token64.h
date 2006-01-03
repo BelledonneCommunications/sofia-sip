@@ -35,9 +35,15 @@
  *
  */
 
+#include <su_config.h>
+
+SOFIA_BEGIN_DECLS
+
 int token64_e(char b[], int bsiz, void const *data, int dlen);
 
 /** Calculate size of n bytes encoded in token-64 */
 #define TOKEN64_SIZE(n) (((n + 2) / 3) * 4)
+
+SOFIA_END_DECLS
 
 #endif /* !TOKEN64_H */

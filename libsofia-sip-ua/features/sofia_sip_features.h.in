@@ -38,6 +38,10 @@
 /** Define as current Sofia name and version */
 #define SOFIA_SIP_NAME_VERSION   "@PACKAGE_NAME@-@PACKAGE_VERSION@"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern char const * const sofia_sip_name_version;
 extern char const * const sofia_sip_has_smime;
 extern char const * const sofia_sip_has_tls;
@@ -50,5 +54,9 @@ extern char const * const sofia_sip_has_upnp;
 
 extern char const * const sofia_sip_has_sctp;
 extern char const * const sofia_sip_has_ipv6;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

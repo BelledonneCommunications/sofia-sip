@@ -28,11 +28,15 @@
 #include <su_wait.h>
 #include <nta.h>
 
+SOFIA_BEGIN_DECLS
+
 struct proxy;
 
 struct proxy *test_proxy_create(su_root_t *);
 void test_proxy_destroy(struct proxy *);
 
 url_t const *test_proxy_uri(struct proxy const *);
+
+SOFIA_END_DECLS
 
 #endif

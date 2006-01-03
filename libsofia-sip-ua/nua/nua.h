@@ -45,6 +45,12 @@
 #include <sip.h>
 #endif
 
+#ifndef NUA_TAG_H
+#include <nua_tag.h>
+#endif
+
+SOFIA_BEGIN_DECLS
+
 #ifndef NUA_MAGIC_T 
 #define NUA_MAGIC_T void
 #endif
@@ -56,10 +62,6 @@ typedef NUA_MAGIC_T nua_magic_t;
 #endif
 /** Application context for NUA handle. */
 typedef NUA_HMAGIC_T nua_hmagic_t;
-
-#ifndef NUA_TAG_H
-#include <nua_tag.h>
-#endif
 
 /** Events */
 typedef enum nua_event_e {
@@ -392,5 +394,7 @@ void nua_pause(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 
 /*# XXX/obsolete: Teardown. */ 
 void nua_teardown(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
+SOFIA_END_DECLS
 
 #endif

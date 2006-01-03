@@ -55,6 +55,8 @@
 #include <soa_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** NUA agent. */
 typedef struct nua_s nua_t;
 
@@ -1332,5 +1334,7 @@ enum {
 #define NUTAG_SRTP_CONFIDENTIALITY_REF(x) SOATAG_SRTP_CONFIDENTIALITY_REF((x))
 #define NUTAG_SRTP_INTEGRITY_PROTECTION(x)  SOATAG_SRTP_INTEGRITY((x))
 #define NUTAG_SRTP_INTEGRITY_PROTECTION_REF(x) SOATAG_SRTP_INTEGRITY_REF((x))
+
+SOFIA_END_DECLS
 
 #endif

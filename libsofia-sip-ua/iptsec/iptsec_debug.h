@@ -35,8 +35,12 @@
 
 #include <su_log.h>
 
+SOFIA_BEGIN_DECLS
+
 /** Common log for application and srvlib components. */
 extern su_log_t iptsec_log[];
+
+SOFIA_END_DECLS
 
 #define SU_LOG (iptsec_log)
 

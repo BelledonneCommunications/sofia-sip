@@ -51,6 +51,8 @@
 #include <sip_hclasses.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 #if SU_HAVE_INLINE
 /** Get SIP structure from msg. */
 su_inline
@@ -352,4 +354,5 @@ su_inline sip_#xxxxxx#_t *sip_#xxxxxx#_format(su_home_t *home, char const *fmt, 
 
 /** @} */
 
+SOFIA_END_DECLS
 #endif /* !defined(SIP_PROTOS_H) */

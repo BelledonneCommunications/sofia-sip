@@ -38,11 +38,13 @@
 #include <su_config.h>
 #endif
 
+#include <stdarg.h>
+
+SOFIA_BEGIN_DECLS
+
 #ifndef SU_HOME_T
 #define SU_HOME_T struct su_home_s
 #endif
-
-#include <stdarg.h>
 
 /** Memory home type. */
 typedef SU_HOME_T su_home_t;
@@ -128,5 +130,7 @@ SU_DLL su_home_t *su_home_create(void)
 SU_DLL void su_home_destroy(su_home_t *h);
 
 #define su_home_zap(h) su_home_unref((h))
+
+SOFIA_END_DECLS
 
 #endif /* ! defined(SU_ALLOC_H) */

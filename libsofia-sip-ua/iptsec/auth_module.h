@@ -22,10 +22,8 @@
  *
  */
 
-#ifndef AUTH_MODULE_H
-/** Defined when <auth_module.h> has been included. @HI */
+#ifndef AUTH_MODULE_H /** Defined when auth_module.h has been included. */
 #define AUTH_MODULE_H 
-  
 
 /**@file auth_module.h  
  * @brief Authentication verification interface for NTA network elements.
@@ -54,6 +52,8 @@
 #include <url_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 typedef struct auth_mod_t auth_mod_t;
 /** Authentication operation. */
 typedef struct auth_status_t auth_status_t;
@@ -65,7 +65,7 @@ typedef void auth_magic_t;
 #endif
 
 /** Virtual table for authentication plugin. */
-typedef struct auth_scheme_t const auth_scheme_t;
+typedef struct auth_scheme const auth_scheme_t;
 
 /** Opaque data used by authentication plugin module. */
 typedef struct auth_plugin_t  auth_plugin_t;
@@ -353,5 +353,7 @@ AUTH_DLL extern tag_typedef_t authtag_cache_errors;
 
 #define AUTHTAG_CACHE_ERRORS_REF(x) authtag_cache_errors_ref, tag_uint_vr((&x))
 AUTH_DLL extern tag_typedef_t authtag_cache_errors_ref;
+
+SOFIA_END_DECLS
 
 #endif

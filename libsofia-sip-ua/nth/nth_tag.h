@@ -45,6 +45,8 @@
 #include <http_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 #ifndef NTH_DLL
 #ifndef WIN32
 #define NTH_DLL
@@ -177,5 +179,7 @@ NTH_DLL extern tag_typedef_t nthtag_strict_host;
 
 NTH_DLL extern tag_typedef_t nthtag_strict_host_ref;
 #define NTHTAG_STRICT_HOST_REF(x) nthtag_strict_host_ref, tag_bool_vr(&(x))
+
+SOFIA_END_DECLS
 
 #endif /* !defined NTH_TAG_H */

@@ -45,6 +45,8 @@
 #include <su_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** List of tport tags (to be used with, e.g., tl_filter()). */
 TPORT_DLL extern tagi_t tport_tags[];
 
@@ -219,5 +221,7 @@ TPORT_DLL extern tag_typedef_t tptag_thrprqsize;
 
 TPORT_DLL extern tag_typedef_t tptag_thrprqsize_ref;
 #define TPTAG_THRPRQSIZE_REF(x) tptag_thrprqsize_ref, tag_uint_vr(&(x))
+
+SOFIA_END_DECLS
 
 #endif /* !defined TPORT_TAG_H */

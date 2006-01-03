@@ -110,6 +110,8 @@ typedef union {
 #include <su_alloc.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** Initializer for an #url_t structure. @HI 
  * 
  * The macro URL_INIT_AS() is used to initialize a #url_t structure with a
@@ -290,5 +292,7 @@ void url_update(struct su_md5_t *md5, url_t const *url);
 URL_DLL
 void url_digest(void *hash, int hsize, url_t const *url, char const *key);
 
+
+SOFIA_END_DECLS
 #endif
 

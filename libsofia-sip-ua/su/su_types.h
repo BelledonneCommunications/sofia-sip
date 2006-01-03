@@ -46,6 +46,8 @@
 #include <sys/types.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 #if SU_HAVE_STDINT || SU_HAVE_INTTYPES
 #define SU_S64_T int64_t
 #define SU_U64_T uint64_t
@@ -55,8 +57,13 @@
 #define SU_U16_T uint16_t
 #define SU_S8_T  int8_t
 #define SU_U8_T  uint8_t
+#define SU_LEAST64_T int_least64_t
+#define SU_LEAST32_T int_least32_t
+#define SU_LEAST16_T int_least16_t
+#define SU_LEAST8_T int_least8_t
 #elif SU_HAVE_WIN32 || DOCUMENTATION_ONLY
 /* Use macros defined in <su_configure_win32.h> */
+
 /** Integer large enough for pointers */
 typedef SU_INTPTR_T intptr_t;
 /** 64-bit unsigned integer */ 
@@ -75,8 +82,19 @@ typedef SU_S16_T int16_t;
 typedef SU_U8_T  uint8_t;
 /** 8-bit signed integer */    
 typedef SU_S8_T  int8_t;
+
+/** At least 64-bit integer */
+typedef SU_LEAST64_T int_least64_t;
+/** At least 32-bit integer */
+typedef SU_LEAST32_T int_least32_t;
+/** At least 16-bit integer */
+typedef SU_LEAST16_T int_least16_t;
+/** At least 8-bit integer */
+typedef SU_LEAST8_T int_least8_t;
 #else
 #error "no integer types available."
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* SU_TYPES_H */

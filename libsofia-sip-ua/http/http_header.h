@@ -50,6 +50,8 @@
 #include <msg_header.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* ----------------------------------------------------------------------
  * 1) Macros
  */
@@ -251,5 +253,7 @@ int http_query_parse(char *query,
 #ifndef HTTP_PROTOS_H
 #include <http_protos.h>
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* !defined(HTTP_HEADER_H) */

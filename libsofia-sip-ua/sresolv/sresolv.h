@@ -35,6 +35,8 @@
 
 #include <su.h>
 
+SOFIA_BEGIN_DECLS
+
 typedef union  sres_record          sres_record_t;
 typedef struct sres_common          sres_common_t;
 typedef struct sres_generic         sres_generic_t;
@@ -360,5 +362,7 @@ sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
 				  struct sockaddr const *addr);
 
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* SRESOLV_H */

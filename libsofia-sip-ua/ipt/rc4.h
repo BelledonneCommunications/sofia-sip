@@ -26,12 +26,16 @@
 #define RC4_H
 
 /**@file rc4.h
- * @brief 
+ * @brief Arcfour random number generator.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Sun Jun  9 14:32:58 1996 ppessi
  */
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 /** Byte. */
 typedef unsigned char rc4_u8;
@@ -52,5 +56,9 @@ void rc4_init(const void *seed, int seed_len, rc4_t *state);
 
 /** Generate RC4 stream. */ 
 void rc4(void *buffer, int len, rc4_t *state);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* !defined RC4_H */

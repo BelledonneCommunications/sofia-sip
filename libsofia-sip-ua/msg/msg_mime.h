@@ -47,6 +47,8 @@
 #include <su_types.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 typedef struct msg_accept_any_s     msg_accept_any_t;
 
 typedef struct msg_accept_s  	    msg_accept_t;
@@ -228,5 +230,7 @@ extern char const msg_mime_version_1_0[];
 
 /** MIME multipart parser table identifier. @HIDE */
 #define MSG_MULTIPART_PROTOCOL_TAG   ((void *)0x4d494d45)	/* 'MIME' */
+
+SOFIA_END_DECLS
 
 #endif /** MSG_MIME_H */

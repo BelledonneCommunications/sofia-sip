@@ -54,4 +54,13 @@
 #  define __attribute__(x) 
 #endif
 
+/* C++ linkage needs to know that types and declarations are C, not C++.  */
+#if defined(__cplusplus)
+# define SOFIA_BEGIN_DECLS	extern "C" {
+# define SOFIA_END_DECLS	}
+#else
+# define SOFIA_BEGIN_DECLS
+# define SOFIA_END_DECLS
+#endif
+
 #endif /* SU_CONFIG_H */

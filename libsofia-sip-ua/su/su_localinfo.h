@@ -38,6 +38,8 @@
 #include <su.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 typedef struct su_localinfo_s su_localinfo_t;
 
 /** Local address info structure. */
@@ -95,5 +97,7 @@ void su_freelocalinfo(su_localinfo_t *);
 char const *su_gli_strerror(int error);
 /** Copy a localinfo structure */
 su_localinfo_t *su_copylocalinfo(su_localinfo_t const *li0);
+
+SOFIA_END_DECLS
 
 #endif /* !defined(SU_LOCALINFO_H) */

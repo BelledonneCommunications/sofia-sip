@@ -48,6 +48,8 @@
 #include <sys/poll.h>		/* poll is part of streams  */
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* ---------------------------------------------------------------------- */
 /* Constants */
 
@@ -456,5 +458,7 @@ typedef int (*su_root_unreg_f)(su_root_t*, su_wait_t *,
 #define SU_MSG_RINITIALIZER SU_MSG_R_INIT
 #define SU_TASK_INIT  SU_TASK_R_INIT
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* SU_WAIT_H */

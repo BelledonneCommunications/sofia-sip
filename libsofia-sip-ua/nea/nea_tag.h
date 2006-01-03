@@ -55,6 +55,8 @@
 #endif
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** Event states */
 typedef enum {
   nea_extended = -1,
@@ -169,5 +171,7 @@ NEA_DLL extern tag_typedef_t neatag_version_ref;
 
 /** List of all NEA tags. */
 /* extern tag_type_t nea_tag_list[]; */
+
+SOFIA_END_DECLS
 
 #endif

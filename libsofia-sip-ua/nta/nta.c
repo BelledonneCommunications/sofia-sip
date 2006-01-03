@@ -78,6 +78,7 @@ char const nta_version[] = VERSION;
 #include <msg_addr.h>
 
 #include "nta_internal.h"
+#include "nta_stateless.h"
 #include "url_tag.h"
 
 #if HAVE_FUNC
@@ -2458,8 +2459,6 @@ int  nta_is_internal_msg(msg_t const *msg)
 
 /* ====================================================================== */
 /* 5) Stateless operation */
-
-#include <nta_stateless.h>
 
 /**Forward a request or response message. 
  *

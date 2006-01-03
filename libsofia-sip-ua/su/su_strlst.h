@@ -36,6 +36,8 @@
 #include <su_alloc.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 typedef struct su_strlst_s su_strlst_t;
 
 /** Create a string list. */
@@ -99,5 +101,7 @@ SU_DLL char const **su_strlst_get_array(su_strlst_t *self)
 
 /** Free a string array */
 SU_DLL void su_strlst_free_array(su_strlst_t *self, char const * array[]);
+
+SOFIA_END_DECLS
 
 #endif /* ! defined(SU_STRLST_H) */

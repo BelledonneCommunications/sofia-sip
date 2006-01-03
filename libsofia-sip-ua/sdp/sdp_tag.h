@@ -49,6 +49,8 @@
 #endif
 #endif
 
+SOFIA_BEGIN_DECLS
+
 struct sdp_session_s;
 
 /* Tags for parameters */
@@ -84,5 +86,7 @@ extern tag_class_t sdptag_session_class[];
 
 #define SDPTAG_TYPEDEF(name) \
   {{ TAG_NAMESPACE, #name, sdptag_session_class }}
+
+SOFIA_END_DECLS
 
 #endif /* !defined(SDP_TAG_H) */

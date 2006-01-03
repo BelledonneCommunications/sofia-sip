@@ -165,7 +165,7 @@ static int check_msg(tp_test_t *tt, msg_t *msg, char const *ident)
 
   BEGIN();
   
-  TEST_1(tst = msg_object(msg));
+  TEST_1(tst = msg_test_public(msg));
   TEST_1(pl = tst->msg_payload);
 
   if (ident) {
@@ -194,7 +194,7 @@ static int test_create_md5(tp_test_t *tt, msg_t *msg)
   
   BEGIN();
 
-  TEST_1(tst = msg_object(msg));
+  TEST_1(tst = msg_test_public(msg));
   TEST_1(pl = tst->msg_payload);
 
   su_md5_init(md5);
@@ -213,7 +213,7 @@ static int test_check_md5(tp_test_t *tt, msg_t *msg)
 
   BEGIN();
 
-  TEST_1(tst = msg_object(msg));
+  TEST_1(tst = msg_test_public(msg));
   TEST_1(pl = tst->msg_payload);
 
   su_md5_init(md5);
@@ -233,7 +233,7 @@ static int test_msg_md5(tp_test_t *tt, msg_t *msg)
 
   BEGIN();
 
-  TEST_1(tst = msg_object(msg));
+  TEST_1(tst = msg_test_public(msg));
 
   if (tst->msg_content_md5) {
     su_md5_t md5sum[1];
@@ -284,22 +284,22 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
   BEGIN();
 
   TEST_1(msg = msg_create(tt->tt_mclass, 0));
-  TEST_1(tst = msg_object(msg));
+  TEST_1(tst = msg_test_public(msg));
   TEST_1(home = msg_home(msg));
 
   TEST(msg_maxsize(msg, 1024 + N * len), 0);
 
   TEST_1(rq = msg_request_make(home, "DO im:foo@faa MSG/1.0"));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)rq), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)rq), 0);
 
   TEST_1(u = msg_unknown_make(home, "Foo: faa"));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)u), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)u), 0);
 
   TEST_1(u = msg_unknown_make(home, "Foo: faa"));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)u), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)u), 0);
 
   TEST_1(cl = msg_content_location_make(home, ident));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)cl), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)cl), 0);
 
   msg_payload_init(payload);
 
@@ -315,24 +315,24 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
   for (i = 0; i < N; i++) {
     h = msg_header_dup(home, (msg_header_t*)payload);
     TEST_1(h);
-    TEST(msg_header_insert(msg, tst, h), 0);
+    TEST(msg_header_insert(msg, (void *)tst, h), 0);
     su_md5_update(md5sum, payload->pl_data, payload->pl_len);
   }
 
   TEST_1(l = msg_content_length_format(home, "%u", N * payload->pl_len));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)l), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)l), 0);
 
   su_md5_digest(md5sum, digest);
 
   base64_e(b64, sizeof(b64), digest, sizeof(digest));
 
   TEST_1(md5 = msg_content_md5_make(home, b64));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)md5), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)md5), 0);
   
   TEST_1(sep = msg_separator_create(home));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)sep), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)sep), 0);
 
-  TEST(msg_serialize(msg, tst), 0);
+  TEST(msg_serialize(msg, (void *)tst), 0);
 
   *retval = msg;
 
@@ -712,28 +712,28 @@ static int udp_test(tp_test_t *tt)
   BEGIN();
 
   TEST_1(msg = msg_create(tt->tt_mclass, 0));
-  TEST_1(tst = msg_object(msg));
+  TEST_1(tst = msg_test_public(msg));
   TEST_1(home = msg_home(msg));
 
   TEST_1(rq = msg_request_make(home, "DO im:foo@faa MSG/1.0"));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)rq), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)rq), 0);
 
   TEST_1(u = msg_unknown_make(home, "Foo: faa"));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)u), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)u), 0);
 
   TEST_1(pl = msg_payload_make(home, payload));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)pl), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)pl), 0);
 
   TEST_1(l = msg_content_length_format(home, "%u", pl->pl_len));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)l), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)l), 0);
 
   TEST_1(md5 = msg_content_md5_make(home, "R6nitdrtJFpxYzrPaSXfrA=="));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)md5), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)md5), 0);
   
   TEST_1(sep = msg_separator_create(home));
-  TEST(msg_header_insert(msg, tst, (msg_header_t *)sep), 0);
+  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)sep), 0);
 
-  TEST(msg_serialize(msg, tst), 0);
+  TEST(msg_serialize(msg, (void *)tst), 0);
 
   TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_udp_name, TAG_END()));
 

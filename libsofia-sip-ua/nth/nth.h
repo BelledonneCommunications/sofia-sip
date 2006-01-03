@@ -99,6 +99,8 @@ typedef NTH_SITE_MAGIC_T   nth_site_magic_t;
  * 3) Engine prototypes
  */
 
+SOFIA_BEGIN_DECLS
+
 NTH_DLL char const *nth_engine_version(void);
 
 NTH_DLL nth_engine_t *nth_engine_create(su_root_t *root,
@@ -188,5 +190,7 @@ NTH_DLL int nth_request_treply(nth_request_t *ireq,
 			       tag_type_t tag, tag_value_t value, ...);
 
 NTH_DLL void nth_request_destroy(nth_request_t *req);
+
+SOFIA_END_DECLS
 
 #endif

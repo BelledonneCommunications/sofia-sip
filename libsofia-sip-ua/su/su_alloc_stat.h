@@ -42,6 +42,8 @@
 #include <su_types.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 typedef struct su_home_stat_t su_home_stat_t;
 
 SU_DLL void su_home_init_stats(su_home_t *h);
@@ -84,5 +86,7 @@ struct su_home_stat_t
     uint64_t hsb_rbytes;
   } hs_blocks;
 };
+
+SOFIA_END_DECLS
 
 #endif /* ! defined(SU_ALLOC_H) */

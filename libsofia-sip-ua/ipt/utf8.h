@@ -41,16 +41,11 @@
 #ifndef UTF8_H /** Defined when <utf8.h> has been included */
 #define	UTF8_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-#if 0
-}
+#ifndef SU_TYPES_H
+#include <su_types.h>
 #endif
 
-#ifndef _SIZE_T
-#include <stddef.h>
-#endif
+SOFIA_BEGIN_DECLS
 
 typedef unsigned char  utf8;
 typedef unsigned short utf16;
@@ -184,8 +179,6 @@ int ucs4ncmp(ucs4 const *s1, ucs4 const *s2, size_t n);
 		      (s)[4]=((c>>6)&63)|128,\
 		      (s)[5]=((c)&63)|128)
      
-#ifdef	__cplusplus
-}
-#endif
+SOFIA_END_DECLS
 
 #endif /* UTF8_H */

@@ -37,6 +37,8 @@
 #include <su_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /**@page tagarg Tagarg Functions
  *
  * A @em tagarg function may be called with a varying number of tagged
@@ -150,5 +152,7 @@ typedef struct {
     (tl_vfree((tagi_t *)((ta).tl[1].t_value))) : (void)0), \
    (ta).tl[1].t_value = 0, va_end((ta).ap), 0)
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* !defined(SU_TAGARG_H) */

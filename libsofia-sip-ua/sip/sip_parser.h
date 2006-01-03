@@ -63,6 +63,8 @@
 #include <sip_header.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* ---------------------------------------------------------------------------
  * 1) Macros for defining boilerplate functions and structures for each header
  */
@@ -195,5 +197,7 @@ int sip_name_addr_e(char b[], int bsiz,
 #define sip_params_add      	msg_params_add
 #define sip_params_cmp      	msg_params_cmp
 #define sip_params_replace  	msg_params_replace
+
+SOFIA_END_DECLS
 
 #endif

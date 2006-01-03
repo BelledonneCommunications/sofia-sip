@@ -45,6 +45,8 @@
 #include <url.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 typedef struct tport_s tport_t;
 
 #ifndef TP_STACK_T
@@ -374,5 +376,7 @@ int tport_sigcomp_lifetime(tport_t *self,
 			   unsigned lifetime_in_ms,
 			   int only_expand);
 
+
+SOFIA_END_DECLS
 
 #endif /* TPORT_H */

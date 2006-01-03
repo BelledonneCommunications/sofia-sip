@@ -25,7 +25,6 @@
 #ifndef NTA_INTERNAL_H /** Defined when <nta_internal.h> has been included. */
 #define NTA_INTERNAL_H 
 
-
 /**@IFILE nta_internal.h
  * @brief Internals of NTA objects.
  *
@@ -33,10 +32,6 @@
  *
  * @date Created: Tue Jul 18 09:18:32 2000 ppessi
  */
-
-#ifndef NTA_COMPAT_H
-#define NTA_COMPAT_H
-#endif
 
 /* Resolver context type */
 #define SRES_CONTEXT_T    nta_outgoing_t
@@ -59,6 +54,8 @@
 #if HAVE_SMIME
 #include "smimec.h"
 #endif
+
+SOFIA_BEGIN_DECLS
 
 /** A sip_flag telling that this message is internally generated. */
 #define NTA_INTERNAL_MSG (1<<15)
@@ -543,5 +540,7 @@ struct nta_outgoing_s
 #endif
 #include <su_debug.h>
 extern su_log_t nta_log[];
+
+SOFIA_END_DECLS
 
 #endif /* NTA_INTERNAL_H */

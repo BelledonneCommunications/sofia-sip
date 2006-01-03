@@ -31,6 +31,10 @@
  * @date Created: Mon Aug 1 15:43:53 EEST 2005 ppessi
  */
 
+#include <su_config.h>
+
+SOFIA_BEGIN_DECLS
+
 struct soa_session_actions;
 
 extern struct soa_session_actions const soa_default_actions;
@@ -38,5 +42,7 @@ extern struct soa_session_actions const soa_default_actions;
 int soa_add(char const *name, struct soa_session_actions const *handler);
 
 struct soa_session_actions const *soa_find(char const *name);
+
+SOFIA_END_DECLS
 
 #endif /* SOA_ADD_H */

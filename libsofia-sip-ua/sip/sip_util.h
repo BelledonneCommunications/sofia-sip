@@ -25,7 +25,6 @@
 #ifndef SIP_UTIL_H /** Defined when <sip_util.h> has been included. */
 #define SIP_UTIL_H 
 
-
 /**@file sip_util.h 
  * @brief SIP utility functions
  *
@@ -41,6 +40,8 @@
 #ifndef STRING0_H
 #include <string0.h>
 #endif
+
+SOFIA_BEGIN_DECLS
 
 char const *sip_params_find(sip_param_t const pp[], char const *token);
 int sip_params_add(su_home_t *sh, sip_param_t **pparams, char const *param);
@@ -166,5 +167,7 @@ int sip_security_verify_compare(sip_security_server_t const *s,
 sip_security_client_t const *
 sip_security_client_select(sip_security_client_t const *client,
 			   sip_security_server_t const *server);
+
+SOFIA_END_DECLS
 
 #endif /** !defined(SIP_UTIL_H) */

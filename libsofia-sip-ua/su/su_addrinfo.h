@@ -34,8 +34,9 @@
 #include <su_types.h>
 #endif
 
-#if !SU_HAVE_GETADDRINFO
+SOFIA_BEGIN_DECLS
 
+#if !SU_HAVE_GETADDRINFO
 /*
  * Error return codes from getaddrinfo()
  */
@@ -131,5 +132,7 @@ su_getnameinfo(const union su_sockaddr_u *su, size_t sulen,
 	       char *host, size_t hostlen,
 	       char *serv, size_t servlen,
 	       int flags);
+
+SOFIA_END_DECLS
 
 #endif	/* !defined(SU_ADDRINFO_H) */

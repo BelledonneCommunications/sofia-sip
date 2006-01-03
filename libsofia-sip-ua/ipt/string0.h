@@ -34,9 +34,13 @@
  *
  */
 
+#ifndef SU_CONFIG_H
 #include <su_config.h>
+#endif
 
 #include <string.h>
+
+SOFIA_BEGIN_DECLS
 
 #if SU_HAVE_INLINE
 su_inline
@@ -147,5 +151,7 @@ size_t strncspn(char const *s, size_t ssize, char const *reject)
 }
 
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* !STRING0_H */

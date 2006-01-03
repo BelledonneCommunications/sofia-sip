@@ -44,6 +44,8 @@
 #include <su_strlst.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 struct soa_session_actions
 {
   int sizeof_soa_session_actions;
@@ -247,5 +249,7 @@ int soa_init_sdp_connection(soa_session_t *, sdp_connection_t *, char buf[64]);
 #endif
 #include <su_debug.h>
 extern su_log_t soa_log[];
+
+SOFIA_END_DECLS
 
 #endif

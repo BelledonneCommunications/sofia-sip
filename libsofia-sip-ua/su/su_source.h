@@ -42,7 +42,11 @@
 #include <glib.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 su_root_t *su_root_source_create(su_root_magic_t *);
 GSource *su_root_source(su_root_t *);
+
+SOFIA_END_DECLS
 
 #endif /* !defined SU_SOURCE_H */

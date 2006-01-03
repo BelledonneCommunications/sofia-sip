@@ -57,6 +57,8 @@
 
 #include <sip_dll.h>
 
+SOFIA_BEGIN_DECLS
+
 /** @internal SIP parser description. */
 msg_mclass_t *sip_default_mclass(void);
 
@@ -384,5 +386,7 @@ enum {
   sip_mask_pref = 512,
   sip_mask_publish = 1024
 };
+
+SOFIA_END_DECLS
 
 #endif 

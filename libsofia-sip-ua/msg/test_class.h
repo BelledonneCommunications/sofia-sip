@@ -26,7 +26,6 @@
 /** Defined when test_class.h has been included. */
 #define MSG_TEST_CLASS_H 
 
-
 /**@ingroup test_msg
  * @file test_class.h
  * @brief Message and header classes for testing.
@@ -34,24 +33,25 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jun 29 15:58:06 2000 ppessi
- *
  */
 
-#define MSG_PUB_T struct msg_test_s
-#define MSG_HDR_T union msg_test_u
-
+#ifndef URL_H
 #include <url.h>
-
+#endif
 #ifndef MSG_H
 #include <msg.h>
 #endif
-
 #ifndef MSG_HEADER_H
 #include <msg_header.h>
 #endif
-
+#ifndef MSG_MIME_H
 #include <msg_mime.h>
+#endif
+#ifndef MSG_MCLASS_H
 #include <msg_mclass.h>
+#endif
+
+SOFIA_BEGIN_DECLS
 
 #define MSG_TEST_PROTOCOL_TAG ((void *)0xdeadbeef)
 
@@ -158,5 +158,7 @@ msg_test_t *msg_test_public(msg_t *msg)
 {
   return (msg_test_t *)msg_public(msg, MSG_TEST_PROTOCOL_TAG);
 }
+
+SOFIA_END_DECLS
 
 #endif

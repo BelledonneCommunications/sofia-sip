@@ -24,8 +24,6 @@
 
 #ifndef HTTP_PARSER_H /**Defined when http_parser.h has been included.*/
 #define HTTP_PARSER_H 
-
-
 /**@file http_parser.h
  * @brief Typedefs and prototypes used by HTTP parser.
  *
@@ -58,6 +56,8 @@
 #include <http_header.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* ---------------------------------------------------------------------------
  * 1) Macros for defining boilerplate functions and structures for each header
  */
@@ -65,8 +65,6 @@
 #define HTTP_HCLASS_TAG     HTTP_PROTOCOL_TAG
 #define HTTP_HCLASS_TEST(x) ((x) && (x)->hc_tag == HTTP_PROTOCOL_TAG)
 #define HTTP_HDR_TEST(x)    ((x)->sh_class && HTTP_HCLASS_TEST((x)->sh_class))
-
-#define http_no_update NULL
 
 /** Define a header class for a HTTP header. */
 #define HTTP_HEADER_CLASS(c, l, params, kind, dup) \
@@ -111,5 +109,8 @@ int http_extract_body(msg_t *msg, http_t *http, char b[], int bsiz, int eos);
 #define http_default_dup_xtra msg_default_dup_xtra
 #define http_default_dup_one  msg_default_dup_one
 
-#endif /* !defined(HTTP_PARSER_H) */
+#define http_no_update NULL
 
+SOFIA_END_DECLS
+
+#endif /* !defined(HTTP_PARSER_H) */

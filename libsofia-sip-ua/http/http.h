@@ -46,6 +46,8 @@
 #include <msg_mime.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* ----------------------------------------------------------------------
  * 1) Constants 
  */
@@ -474,5 +476,7 @@ union http_header_u {
 };
 
 #include <http_dll.h>
+
+SOFIA_END_DECLS
 
 #endif /* !defined(HTTP_H) */

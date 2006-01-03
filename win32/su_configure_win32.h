@@ -26,7 +26,7 @@
 #define SU_CONFIGURE_WIN32_H
 /**@file su_configure_win32.h
  *
- * @b su library configuration for WIN32.
+ * @b su library configuration for WIN32 (VC6/VC98)
  *
  * The file <su_configure_win32.h> contains configuration information needed
  * by WIN32 programs using @b su library.
@@ -68,6 +68,11 @@
 #define SU_U16_T unsigned __int16
 #define SU_S8_T  __int8
 #define SU_U8_T  unsigned __int8
+
+#define SU_LEAST64_T __int64
+#define SU_LEAST32_T __int32
+#define SU_LEAST16_T __int16
+#define SU_LEAST8_T  __int8
 
 #define SU_S64_C(i) (SU_S64_T)(i ## L)
 #define SU_U64_C(i) (SU_U64_T)(i ## UL)

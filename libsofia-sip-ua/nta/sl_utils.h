@@ -36,6 +36,8 @@
  * @{
  */
 
+#include <stdio.h>
+
 #ifndef SU_LOG_H
 #define SU_LOG_H_NEED_SU_LOG_T 1
 #include <su_log.h>
@@ -45,6 +47,12 @@
 #ifndef STRING0_H
 #include <string0.h>
 #endif
+
+#ifndef SIP_H
+#include <sip.h>
+#endif
+
+SOFIA_BEGIN_DECLS
 
 /* Read from file */
 sip_payload_t *sl_read_payload(su_home_t *home, char const *fname);
@@ -71,5 +79,7 @@ void sl_via_log(su_log_t *, int, char const *, sip_via_t const *v);
 void sl_payload_log(su_log_t *, int, char const *, sip_payload_t const *pl);
 
 /** @} */
+
+SOFIA_END_DECLS
 
 #endif

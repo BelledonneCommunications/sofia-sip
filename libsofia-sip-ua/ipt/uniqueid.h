@@ -22,6 +22,9 @@
  *
  */
 
+#ifndef UNIQUEID_H /** Defined when <uniqueid.h> has been included. */
+#define UNIQUEID_H 
+
 /**@file uniqueid.h
  *
  * Compatibility functions to handle GloballyUniqueID.
@@ -32,10 +35,6 @@
  *
  * @date Created: Tue Apr 15 06:31:41 1997 pessi
  */
-
-#ifndef UNIQUEID_H /** Defined when <uniqueid.h> has been included. */
-#define UNIQUEID_H 
-
 
 /* Compatibility functionality */
 #define guid_t su_guid_t 

@@ -38,6 +38,8 @@
 #include <msg_header.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 enum { 
   /** Default size of hash table */
   MC_HASH_SIZE = 127, 
@@ -130,5 +132,7 @@ int msg_mclass_insert_with_mask(msg_mclass_t *mc,
 msg_href_t const *msg_find_hclass(msg_mclass_t const *, char const *, int *);
 
 msg_mclass_t const *msg_mclass(msg_t const *);
+
+SOFIA_END_DECLS
 
 #endif /* !defined(MSG_MCLASS_H) */

@@ -41,6 +41,8 @@
 #include <su_types.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** Globally unique identifier type. */
 typedef union GloballyUniqueIdentifier { 
   unsigned char id[16]; 
@@ -109,5 +111,7 @@ int su_randint(int lb, int ub);
  * @param siz [in] size fo the memory area in bytes
  */
 void *su_randmem(void *mem, size_t siz);
+
+SOFIA_END_DECLS
 
 #endif

@@ -34,6 +34,12 @@
  *
  */
 
+#ifndef SU_CONFIG_H
+#include <su_config.h>
+#endif
+
+SOFIA_BEGIN_DECLS
+
 /** Message class. */
 typedef struct msg_mclass_s       msg_mclass_t;
 
@@ -301,5 +307,7 @@ typedef struct msg_s msg_ref_t;
 typedef msg_pub_t msg_obj_t;	
 /** Alternative name for msg_header_t. @deprecated Use msg_header_t. */
 typedef MSG_HDR_T msg_hdr_t;
+
+SOFIA_END_DECLS
 
 #endif /* !defined MSG_TYPES_H */

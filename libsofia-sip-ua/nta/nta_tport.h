@@ -39,6 +39,8 @@
 #include <nta.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 struct tport_s;
 struct sigcomp_compartment;
 struct sigcomp_udvm;
@@ -56,5 +58,7 @@ nta_outgoing_compartment(nta_outgoing_t *orq);
 
 void
 nta_compartment_decref(struct sigcomp_compartment **);
+
+SOFIA_END_DECLS
 
 #endif /* !defined NTA_TPORT_H */

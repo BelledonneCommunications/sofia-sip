@@ -25,7 +25,6 @@
 #ifndef MSG_INTERNAL_H /** Defined when msg_internal.h has been included. */
 #define MSG_INTERNAL_H 
 
-
 /**@IFILE msg_internal.h 
  * @brief Abstract messages - internal interface 
  *
@@ -46,6 +45,8 @@
 #ifndef SU_ALLOC_H
 #include <su_alloc.h>
 #endif
+
+SOFIA_BEGIN_DECLS
 
 struct msg_s {
   su_home_t           m_home[1]; /**< Memory home */
@@ -120,5 +121,7 @@ static inline int msg_is_special(msg_header_t const *h)
 {
   return h->sh_class->hc_hash < 0;
 }
+
+SOFIA_END_DECLS
 
 #endif /* MSG_INTERNAL_H */

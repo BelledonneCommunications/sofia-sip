@@ -41,6 +41,8 @@
 #include <msg_mime.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** IDs for well-known SIP methods. */
 typedef enum {
   sip_method_invalid = -1,	/**< Invalid method name */
@@ -896,5 +898,7 @@ union sip_header_u
   sip_separator_t            sh_separator[1];
   sip_payload_t              sh_payload[1];
 };
+
+SOFIA_END_DECLS
 
 #endif /* !defined(SIP_H) */

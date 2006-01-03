@@ -40,13 +40,14 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Jan 23 19:26:31 2003 ppessi
- *
  */
 
 #ifndef MSG_TYPES_H
 #include <msg_types.h>
 #endif
+#include <sip_dll.h>
 
+SOFIA_BEGIN_DECLS
 
 
 enum { 
@@ -69,4 +70,5 @@ enum {
 SIP_DLL extern msg_hclass_t sip_#xxxxxx#_class[];
 
 
+SOFIA_END_DECLS
 #endif /* !defined SIP_HCLASSES_H */

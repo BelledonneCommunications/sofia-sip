@@ -24,8 +24,6 @@
 
 #ifndef SIP_STATUS_H /** Defined when @b <sip_status.h> has been included. */
 #define SIP_STATUS_H 
-
-
 /**@addtogroup sip_status_codes
  * @{ 
  */
@@ -39,6 +37,9 @@
  */
 
 #include <sip_dll.h>
+#include <su_config.h>
+
+SOFIA_BEGIN_DECLS
 
 char const *sip_status_phrase(int status);
 
@@ -237,5 +238,7 @@ SIP_DLL extern char const sip_603_Decline[];
 SIP_DLL extern char const sip_604_Does_not_exist_anywhere[];
 SIP_DLL extern char const sip_606_Not_acceptable[];
 SIP_DLL extern char const sip_687_Dialog_terminated[];
+
+SOFIA_END_DECLS
 
 #endif /** @} !defined(SIP_STATUS_H) */

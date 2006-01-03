@@ -32,12 +32,13 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *  
  * @date Created: Wed Mar 10 17:06:20 2004 ppessi
- * 
  */
 
 #ifndef URL_H
 #include <url.h>
 #endif
+
+SOFIA_BEGIN_DECLS
 
 /** Mapping of URLs */
 typedef struct _UrlMap UrlMap;
@@ -57,5 +58,7 @@ void url_map_remove(UrlMap **tree, UrlMap *ume);
 
 UrlMap *url_map_find(UrlMap *tree, url_string_t const *u, int relative);
 
+
+SOFIA_END_DECLS
 #endif /* !defined URLMAP_H */
 

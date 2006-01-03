@@ -37,6 +37,8 @@
 #include <su_alloc.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 typedef struct su_vector_s su_vector_t;
 typedef void (* su_free_func_t) (void *data);
 
@@ -80,5 +82,7 @@ SU_DLL void **su_vector_get_array(su_vector_t *)
 
 /** Free the array */
 SU_DLL void su_vector_free_array(su_vector_t *, void *array[]);
+
+SOFIA_END_DECLS
 
 #endif /* !defined SU_VECTOR_H */

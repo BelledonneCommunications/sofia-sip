@@ -22,8 +22,7 @@
  *
  */
 
-#ifndef MSG_TAG_CLASS_H
-/** Defined when <msg_tag_class.h> have been included */
+#ifndef MSG_TAG_CLASS_H /** Defined when msg_tag_class.h has been included */
 #define MSG_TAG_CLASS_H 
 
 /**@file msg_tag_class.h
@@ -33,6 +32,12 @@
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
  */
+
+#ifndef SU_TAG_H
+#include <su_tag.h>
+#endif
+
+SOFIA_BEGIN_DECLS
 
 int msghdrtag_snprintf(tagi_t const *t, char b[], size_t size);
 size_t msghdrtag_xtra(tagi_t const *t, size_t offset);
@@ -49,5 +54,7 @@ tagi_t *msgstrtag_filter(tagi_t *dst, tagi_t const f[], tagi_t const *src,
 int msgobjtag_snprintf(tagi_t const *t, char b[], size_t size);
 size_t msgobjtag_xtra(tagi_t const *t, size_t offset);
 tagi_t *msgobjtag_dup(tagi_t *dst, tagi_t const *src, void **bb);
+
+SOFIA_END_DECLS
 
 #endif /** !defined(MSG_TAG_CLASS_H) */

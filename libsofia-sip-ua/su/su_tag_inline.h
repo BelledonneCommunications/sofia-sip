@@ -24,8 +24,6 @@
 
 #ifndef SU_TAG_INLINE_H /** Defined when su_tag_inline.h has been included */
 #define SU_TAG_INLINE_H 
-
-
 /**@SU_TAG
  * @file su_tag_inline.h  Inline functions for object tags and tag lists.
  *
@@ -33,6 +31,15 @@
  * 
  * @date Created: Tue Feb 20 19:48:18 2001 ppessi
  */
+
+#ifndef SU_TAG_H
+#include <su_tag.h>
+#endif
+#ifndef SU_TAG_CLASS_H
+#include <su_tag_class.h>
+#endif
+
+SOFIA_BEGIN_DECLS
 
 #define tt_next     tt_class->tc_next
 #define tt_len      tt_class->tc_len
@@ -135,5 +142,7 @@ static inline size_t t_len(tagi_t const *t)
 
   return sizeof(*t);
 }
+
+SOFIA_END_DECLS
 
 #endif /* !defined(SU_TAG_INLINE_H) */

@@ -53,6 +53,8 @@
 #endif
 #include <sip_dll.h>
 
+SOFIA_BEGIN_DECLS
+
 /** Test if tag type marks a sip_t structure. @HIDE */
 #define SIPTAG_P(tt)     ((tt)->tt_class == siphdrtag_class)
 /** Test if tag type marks a SIP header string. @HIDE */
@@ -237,4 +239,5 @@ siptag_#xxxxxx#_vr(sip_#xxxxxx#_t const **vp)
 #define siptag_#xxxxxx#_vr(vp) (tag_value_t)(vp)
 #endif
 
+SOFIA_END_DECLS
 #endif

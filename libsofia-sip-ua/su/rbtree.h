@@ -25,7 +25,6 @@
 #ifndef RBTREE_H /** Defined when rbtree.h has been included. */
 #define RBTREE_H 
 
-
 /**@file rbtree.h
  *
  * Red-black tree.

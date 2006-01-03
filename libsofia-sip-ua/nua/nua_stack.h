@@ -22,6 +22,8 @@
  *
  */
 
+#ifndef NUA_STACK_H /** Defined when <nua_stack.h> has been included. */
+#define NUA_STACK_H
 /**@file nua_stack.h 
  * @brief  Nokia User Agent Library - internal stack interface
  *
@@ -31,10 +33,6 @@
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
  */
 
-#ifndef NUA_STACK_H
-/** Defined when <nua_stack.h> has been included. */
-#define NUA_STACK_H
-
 #if HAVE_UICC_H
 #include <uicc.h>
 #endif
@@ -43,11 +41,24 @@
 #include <pthread.h>
 #endif
 
-#if HAVE_SIGCOMP
-#include <sigcomp.h>
+#ifndef SOA_H
+#include "soa.h"
+#endif
+#ifndef NTA_H
+#include <nta.h>
+#endif
+#ifndef AUTH_CLIENT_H
+#include <auth_client.h>
+#endif
+#ifndef NEA_H
+#include <nea.h>
+#endif
+#ifndef NUA_H
+#include <nua.h>
 #endif
 
-#include "soa.h"
+#define SU_LOG (nua_log)
+#include <su_debug.h>
 
 #if __CYGWIN__
 #if defined(SU_HAVE_PTHREADS) && defined(HAVE_PTHREAD_H)
@@ -79,6 +90,11 @@
 #endif /* defined(SU_HAVE_PTHREAD) && defined(HAVE_PTHREAD_H) */
 #endif /* __CYGWIN__ */ 
 
+SOFIA_BEGIN_DECLS
+
+#if HAVE_SIGCOMP
+#include <sigcomp.h>
+#endif
 
 typedef struct event_s event_t;
 
@@ -665,5 +681,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e);
 #define SIP_METHOD_UNKNOWN sip_method_unknown, NULL
 
 #define UA_INTERVAL 5
+
+SOFIA_END_DECLS
 
 #endif /* NUA_STACK_H */

@@ -55,6 +55,8 @@
 #include <http.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 #define HTTPTAG(c, x)         httptag_##c, httptag_##c##_v(x)
 #define HTTPTAG_REF(c, x)     httptag_##c##_ref, httptag_##c##_vr(&(x))
 #define HTTPTAG_STR(c, s)     httptag_##c##_str, tag_str_v(s)
@@ -225,5 +227,5 @@ httptag_#xxxxxx#_vr(http_#xxxxxx#_t const **vp)
 #define httptag_#xxxxxx#_vr(vp) (tag_value_t)(vp)
 #endif
 
-
+SOFIA_END_DECLS
 #endif /* !defined(HTTP_TAG_H) */

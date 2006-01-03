@@ -42,6 +42,8 @@
 #undef URL_H
 #endif
 
+SOFIA_BEGIN_DECLS
+
 URL_DLL extern tag_typedef_t urltag_url;
 
 /** Tag list item for an URL. */
@@ -61,5 +63,7 @@ tag_value_t urltag_url_vr(url_string_t const **vp) { return(tag_value_t)vp; }
 #define urltag_url_vr(vr) (tag_value_t)(vr)
 #endif
 
+
+SOFIA_END_DECLS
 #endif
 

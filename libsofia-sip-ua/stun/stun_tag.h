@@ -35,6 +35,8 @@
 #include <su_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 #define STUNTAG_SERVER(x)  stuntag_server, tag_str_v(x)
 extern tag_typedef_t stuntag_server;
 #define STUNTAG_SERVER_REF(x) stuntag_server_ref, tag_str_vr(&(x))
@@ -49,5 +51,7 @@ extern tag_typedef_t stuntag_integrity_ref;
 extern tag_typedef_t stuntag_socket;
 #define STUNTAG_SOCKET_REF(x) stuntag_socket_ref, tag_int_vr(&(x))
 extern tag_typedef_t stuntag_socket_ref;
+
+SOFIA_END_DECLS
 
 #endif /* STUN_TAG_H */

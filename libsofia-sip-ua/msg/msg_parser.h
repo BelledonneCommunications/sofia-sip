@@ -39,22 +39,17 @@
 #ifndef SU_ALLOC_H
 #include <su_alloc.h>
 #endif
-
-#ifndef MSG_H
-#include <msg.h>
-#endif
-
 #ifndef MSG_HEADER_H
 #include <msg_header.h>
 #endif
-
 #ifndef BNF_H
 #include <bnf.h>
 #endif
-
 #ifndef URL_H
 #include <url.h>
 #endif
+
+SOFIA_BEGIN_DECLS
 
 /* ---------------------------------------------------------------------------
  * 1) Header class definitions.
@@ -94,6 +89,10 @@
      msg_kind_##kind, \
   }}
 #endif
+
+/* Mark headers critical for understanding the message */
+#define msg_kind_single_critical msg_kind_single, 1
+#define msg_kind_list_critical   msg_kind_list, 1
 
 int msg_extract_header(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos);
 int msg_extract_separator(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos);
@@ -310,5 +309,7 @@ static inline void *msg_header_data(msg_frg_t *h)
   else
     return NULL;
 }
+
+SOFIA_END_DECLS
 
 #endif /** MSG_PARSER_H */

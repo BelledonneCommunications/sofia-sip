@@ -49,6 +49,8 @@
 #define SU_LOG (stun_log)
 #include <su_debug.h>
 
+SOFIA_BEGIN_DECLS
+
 extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 
 
@@ -86,5 +88,7 @@ int stun_process_error_response(stun_msg_t *msg);
 
 int stun_atoaddr(int ai_family, su_addrinfo_t *info, su_sockaddr_t *addr, char const *in);
 int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr);
+
+SOFIA_END_DECLS
 
 #endif /* !defined(STUN_INTERNAL_H) */

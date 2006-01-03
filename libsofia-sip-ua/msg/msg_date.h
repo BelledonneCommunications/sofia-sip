@@ -25,7 +25,6 @@
 #ifndef MSG_DATE_H /** Defined when msg_date.h has been included. */
 #define MSG_DATE_H 
 
-
 /**@ingroup msg_parser
  * @file msg_date.h 
  * @brief Types and functions for handling dates and times.
@@ -35,6 +34,12 @@
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
  * 
  */
+
+#ifndef SU_CONFIG_H
+#include <su_config.h>
+#endif
+
+SOFIA_BEGIN_DECLS
 
 #ifndef MSG_TIME_T_DEFINED
 #define MSG_TIME_T_DEFINED
@@ -62,5 +67,7 @@ int msg_date_d(char const **ss, msg_time_t *date);
 int msg_date_e(char b[], int bsiz, msg_time_t date);
 
 enum { msg_date_string_size = 29 };
+
+SOFIA_END_DECLS
 
 #endif /* !defined(MSG_DATE_H) */

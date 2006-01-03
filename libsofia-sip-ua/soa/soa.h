@@ -22,7 +22,7 @@
  *
  */
 
-#ifndef SOA_H
+#ifndef SOA_H /** Defined when soa.h has been included. */
 #define SOA_H
 /**@file soa.h  SDP Offer/Answer (RFC 3264) Interface.
  *
@@ -38,6 +38,8 @@
 #ifndef SU_TAG_H
 #include <su_tag.h>
 #endif
+
+SOFIA_BEGIN_DECLS
 
 typedef struct soa_session soa_session_t;
 
@@ -143,5 +145,7 @@ int soa_is_remote_audio_active(soa_session_t const *ss);
 int soa_is_remote_video_active(soa_session_t const *ss);
 int soa_is_remote_image_active(soa_session_t const *ss);
 int soa_is_remote_chat_active(soa_session_t const *ss);
+
+SOFIA_END_DECLS
 
 #endif

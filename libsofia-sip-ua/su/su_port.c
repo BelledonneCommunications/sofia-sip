@@ -59,7 +59,6 @@
 #include <errno.h>
 
 #define SU_PORT_IMPLEMENTATION 1
-#define SU_MSG_ARG_T union { char anoymous[4]; }
 
 #include "su.h"
 #include "su_port.h"

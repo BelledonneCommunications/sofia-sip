@@ -43,6 +43,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  */
 
+#include <su_config.h>
+
+SOFIA_BEGIN_DECLS
+
 /** Decode a BASE64-encoded string. */
 int base64_d(char buf[], int bsiz, char const *b64s);
 /** Encode data with BASE64. */
@@ -50,5 +54,7 @@ int base64_e(char buf[], int bsiz, void *data, int dsiz);
 
 /** Calculate size of n bytes encoded in base64 */
 #define BASE64_SIZE(n) ((((n) + 2) / 3) * 4)
+
+SOFIA_END_DECLS
 
 #endif /* !BASE_64 */

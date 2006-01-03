@@ -34,7 +34,10 @@
  * @date Created: Tue Sep 18 18:55:09 2001 ppessi
  */
 
+#include <su_config.h>
 #include <http_dll.h>
+
+SOFIA_BEGIN_DECLS
 
 char const *http_status_phrase(int status);
 
@@ -121,5 +124,7 @@ HTTP_DLL extern char const http_502_bad_gateway[];
 HTTP_DLL extern char const http_503_no_service[];
 HTTP_DLL extern char const http_504_gateway_timeout[];
 HTTP_DLL extern char const http_505_http_version[];
+
+SOFIA_END_DECLS
 
 #endif /* HTTP_STATUS_H */

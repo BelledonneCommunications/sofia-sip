@@ -41,6 +41,8 @@
 
 #include <errno.h>
 
+SOFIA_BEGIN_DECLS
+
 /** Return string describing su error code. */
 char const *su_strerror(int e);
 
@@ -54,5 +56,7 @@ int su_seterrno(int);
 #define su_errno() (errno)
 #define su_seterrno(n) ((errno = (n)), -1)
 #endif
+
+SOFIA_END_DECLS
 
 #endif

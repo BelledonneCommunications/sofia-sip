@@ -36,6 +36,10 @@
  * @date Created: Fri May 12 14:13:34 2000 ppessi
  */
 
+#ifndef SU_MSG_ARG_T
+#define SU_MSG_ARG_T union { char anoymous[4]; }
+#endif
+
 #ifndef SU_WAIT_H
 #include "su_wait.h"
 #endif
@@ -47,6 +51,10 @@
 #ifndef SU_ALLOC_H
 #include <su_alloc.h>
 #endif
+
+#include <assert.h>
+
+SOFIA_BEGIN_DECLS
 
 /* Minimum array size (size of su_waits, sur_wait_cbs, sur_wait_args) */
 #define SU_MIN_WAITS    (16)
@@ -351,5 +359,7 @@ int su_port_threadsafe(su_port_t *self)
 
 
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* SU_PORT_H */

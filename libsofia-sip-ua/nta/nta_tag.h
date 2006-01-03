@@ -49,6 +49,8 @@
 #include <nta_dll.h>
 #endif
 
+
+SOFIA_BEGIN_DECLS
 NTA_DLL extern tag_type_t nta_tag_list[];
 
 /* Tags for parameters */
@@ -656,5 +658,7 @@ NTA_DLL extern tag_typedef_t ntatag_s_tout_response;
 NTA_DLL extern tag_typedef_t ntatag_s_tout_response_ref;
 #define NTATAG_S_TOUT_RESPONSE_REF(x)\
  ntatag_s_tout_response_ref, tag_uint_vr(&(x))
+
+SOFIA_END_DECLS
 
 #endif /* !defined(nta_tag_h) */

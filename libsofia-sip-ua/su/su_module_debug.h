@@ -40,9 +40,13 @@
 
 #include <su_log.h>
 
+SOFIA_BEGIN_DECLS
+
 /** Debugging log for @b su module. */
 extern su_log_t su_log_global[];
 #define SU_LOG (su_log_global)
 #include <su_debug.h>
+
+SOFIA_END_DECLS
 
 #endif /* !defined SU_MODULE_DEBUG_H */

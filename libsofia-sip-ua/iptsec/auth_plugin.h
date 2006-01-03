@@ -52,11 +52,13 @@
 
 #include <htable.h>
 
+SOFIA_BEGIN_DECLS
+
 /* ====================================================================== */
 /* Plugin interface for authentication */
 
 /** Authentication scheme */
-struct auth_scheme_t
+struct auth_scheme
 {
   /** Name */
   char const *asch_method;
@@ -243,5 +245,7 @@ int auth_get_params(su_home_t *home,
 void auth_md5_hmac_init(auth_mod_t *am, su_md5_t *md5);
 void auth_md5_hmac_digest(auth_mod_t *am, su_md5_t *md5, 
 			  void *hmac, size_t size);
+
+SOFIA_END_DECLS
 
 #endif /* !defined AUTH_PLUGIN_H */

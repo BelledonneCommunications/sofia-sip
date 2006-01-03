@@ -37,6 +37,8 @@
 #include "su_types.h"
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** Time in seconds and microsecondcs. 
  *
  * The structure su_time_t contains time in seconds and microseconds since
@@ -128,5 +130,7 @@ uint64_t su_counter(void);
 uint64_t su_nanocounter(void);
 
 uint32_t su_random();
+
+SOFIA_END_DECLS
 
 #endif /* !defined(SU_TIME_H) */

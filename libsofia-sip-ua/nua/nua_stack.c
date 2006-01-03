@@ -51,9 +51,6 @@
 
 #include <su_tag_io.h>
 
-#define SU_LOG (nua_log)
-#include <su_debug.h>
-
 #define SU_ROOT_MAGIC_T   struct nua_s
 #define SU_MSG_ARG_T      struct event_s
 

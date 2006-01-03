@@ -26,11 +26,11 @@
  * 02110-1301 USA
  * @ENDLGPL@
  * 
- * @par Contributor(s):
- * 
  * @date Created: Thu Apr  8 15:55:15 2004 ppessi
- * 
+ *
  */
+
+SOFIA_BEGIN_DECLS
 
 static inline
 int proxy_authenticate(context_t *c,
@@ -123,5 +123,7 @@ int tag_from_header(nta_agent_t *nta,
 
   return retval;
 }
+
+SOFIA_END_DECLS
 
 #endif /* !defined APPS_UTILS_H */

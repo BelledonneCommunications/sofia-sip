@@ -36,6 +36,8 @@
 #include <msg_types.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* Use directly these header classes */
 
 #define http_accept_class              msg_accept_class
@@ -61,5 +63,7 @@
 #include <http_protos.h>
 #undef HTTP_HCLASSES_ONLY
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* !defined HTTP_HCLASSES_H */

@@ -50,6 +50,8 @@
 #include <su_log.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 #ifndef SU_DEBUG_MAX
 /** The maximum debugging level. */
 #define SU_DEBUG_MAX 9
@@ -163,5 +165,7 @@ SU_DEBUG_DEF(9)
 #else
 #define SU_DEBUG_9(x) (void)9
 #endif
+
+SOFIA_END_DECLS
 
 #endif /* SU_DEBUG_H */

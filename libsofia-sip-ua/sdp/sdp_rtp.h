@@ -22,7 +22,7 @@
  *
  */
 
-#ifndef SDP_RTP_H
+#ifndef SDP_RTP_H /** Defined when sdp_rtp.h has been included1 */
 #define SDP_RTP_H 
 
 /**@file sdp_rtp.h Well-known RTP payload types
@@ -31,6 +31,10 @@
  *
  * @date Created: Tue Mar  7 14:51:14 2000 ppessi
  */
+
+#ifdef __cplusplus
+extern "C"
+#endif
 
 enum {
   pt_g711u   = 0,

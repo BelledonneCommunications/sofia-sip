@@ -43,12 +43,11 @@
  * @date Created: Fri Aug 16 19:18:26 EEST 2002 ppessi
  */
 
-#ifndef MSG_DLL_H
-#include <msg_dll.h>
+#ifndef MSG_HEADER_H
+#include <msg_header.h>
 #endif
-#ifndef MSG_TYPES_H
-#include <msg_types.h>
-#endif
+
+SOFIA_BEGIN_DECLS
 
 enum {
   msg_request_hash = -1,
@@ -305,5 +304,7 @@ su_inline msg_#xxxxxx#_t *msg_#xxxxxx#_format(su_home_t *home, char const *fmt, 
 
 /** @} */
 
+
+SOFIA_END_DECLS
 
 #endif /** !defined(MSG_PROTOS_H) */

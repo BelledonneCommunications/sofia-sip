@@ -38,16 +38,17 @@
 #include <stdarg.h>
 #include <string.h>
 
-#ifndef MSG_H
-#include <msg.h>
-#endif
 #ifndef SU_TYPES_H
 #include <su_types.h>
 #endif
+#ifndef SU_ALLOC_H
+#include <su_alloc.h>
+#endif
+#ifndef MSG_H
+#include <msg.h>
+#endif
 
-/* These headers are critical for understanding the message */
-#define msg_kind_single_critical msg_kind_single, 1
-#define msg_kind_list_critical   msg_kind_list, 1
+SOFIA_BEGIN_DECLS
 
 msg_header_t *msg_header_alloc(su_home_t *, msg_hclass_t *hc, int extra)
      __attribute__((__malloc__));
@@ -231,5 +232,7 @@ enum {
 #ifndef MSG_PROTOS_H
 #include <msg_protos.h>
 #endif
+
+SOFIA_END_DECLS
 
 #endif /** !defined(MSG_HEADER_H) */

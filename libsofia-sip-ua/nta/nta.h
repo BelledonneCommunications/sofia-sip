@@ -44,6 +44,8 @@
 #include <nta_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* ----------------------------------------------------------------------
  * 1) Types 
  */
@@ -114,7 +116,10 @@ enum {
  * 3) Agent-level prototypes
  */
 
-#include <nta_stateless.h>
+typedef int nta_message_f(nta_agent_magic_t *context,
+			  nta_agent_t *agent,
+			  msg_t *msg,
+			  sip_t *sip);
 
 nta_agent_t *nta_agent_create(su_root_t *root,
 			      url_string_t const *name,
@@ -394,5 +399,7 @@ void nta_reliable_destroy(nta_reliable_t *);
 #define nta_outgoing_tmcreate nta_outgoing_mcreate
 #define nta_msg_response_complete(msg, irq, status, phrase) \
   nta_incoming_complete_response((irq), (msg), (status), (phrase), TAG_END())
+
+SOFIA_END_DECLS
 
 #endif

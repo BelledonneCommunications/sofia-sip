@@ -60,16 +60,8 @@
 #ifndef _SHA1_H_
 #define _SHA1_H_
 
-#if HAVE_STDINT_H
-#include <stdint.h>
-#elif HAVE_INTTYPES_H
-#include <inttypes.h>
-#else
-/* Define HAVE_STDINT_H as 1 if you have <stdint.h>, 
-   or HAVE_INTTYPES_H if you have <inttypes.h> */
-typedef unsigned int uint32_t;
-typedef short int int_least16_t;
-typedef unsigned char uint8_t;
+#ifndef SU_TYPES_H
+#include <su_types.h>
 #endif
 
 /*

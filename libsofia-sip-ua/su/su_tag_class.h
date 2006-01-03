@@ -38,6 +38,8 @@
 #include <su_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /* Macros for defining tag classes */
 
 #ifndef TAG_NAMESPACE
@@ -105,5 +107,7 @@ SU_DLL tagi_t *t_str_dup(tagi_t *dst, tagi_t const *src, void **b);
 SU_DLL size_t t_str_xtra(tagi_t const *t, size_t offset);
 SU_DLL int t_str_snprintf(tagi_t const *t, char b[], size_t size);
 SU_DLL int t_str_scan(tag_type_t, su_home_t *, char const *, tag_value_t *);
+
+SOFIA_END_DECLS
 
 #endif /* !defined(SU_TAG_CLASS_H) */

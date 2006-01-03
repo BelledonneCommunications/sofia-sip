@@ -57,16 +57,7 @@
 #include <su.h>
 #include <su_localinfo.h>
 
-#ifdef WIN32
-#ifndef uint16_t
-#define uint16_t unsigned short
-#endif
-#ifndef uint32_t
-#define uint32_t unsigned long
-#endif
-#else /* !WIN32 */
-#include <stdint.h>
-#endif
+SOFIA_BEGIN_DECLS
 
 /* Define Message Types */
 #define BINDING_REQUEST               0x0001
@@ -251,5 +242,7 @@ char const *stun_attr_phrase(uint16_t type);
  * @return local ip address
  */
 char *stun_determine_ip_address(int family);
+
+SOFIA_END_DECLS
 
 #endif /* !defined STUN_COMMON_H */

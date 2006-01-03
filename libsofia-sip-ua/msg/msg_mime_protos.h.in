@@ -54,6 +54,8 @@
 #include <msg_mclass.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 MSG_DLL extern msg_mclass_t const msg_multipart_mclass[1];
 
 #define msg_multipart_class ((msg_hclass_t *)msg_multipart_mclass)
@@ -314,5 +316,7 @@ su_inline msg_#xxxxxx#_t *msg_#xxxxxx#_format(su_home_t *home, char const *fmt, 
 MSG_DLL msg_update_f msg_accept_update;
 MSG_DLL msg_update_f msg_accept_any_update;
 MSG_DLL msg_update_f msg_content_disposition_update;
+
+SOFIA_END_DECLS
 
 #endif /** !defined(MSG_MIME_PROTOS_H) */

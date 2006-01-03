@@ -43,6 +43,8 @@
 #include <nta.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 #define NEA_VERSION      3.0
 #define NEA_VERSION_STR "3.0"
 
@@ -354,5 +356,7 @@ void nea_end(nea_t *agent);
 void nea_destroy(nea_t *agent);
 
 char const *nea_default_content_type(char const *event);
+
+SOFIA_END_DECLS
 
 #endif /* !defined(NEA_H) */

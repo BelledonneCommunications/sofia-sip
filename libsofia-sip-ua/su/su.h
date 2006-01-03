@@ -47,6 +47,8 @@
 
 #include <stdio.h>
 
+SOFIA_BEGIN_DECLS
+
 #if SU_HAVE_BSDSOCK		/* Unix-compatible includes */
 #include <errno.h>
 #include <unistd.h>
@@ -360,5 +362,6 @@ void su_canonize_sockaddr(su_sockaddr_t *su);
   ((void)0)
 #endif
 
+SOFIA_END_DECLS
 
 #endif /* !defined(SU_H) */

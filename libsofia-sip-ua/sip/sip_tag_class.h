@@ -44,6 +44,8 @@
 #include <msg_tag_class.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** Define a named tag type for SIP header @a t. */
 #define SIPHDRTAG_NAMED_TYPEDEF(n, t) \
 {{ TAG_NAMESPACE, #n, siphdrtag_class, \
@@ -65,5 +67,7 @@
 /**@internal Filter SIP header tag items. */ 
 tagi_t *siptag_filter(tagi_t *dst, tagi_t const f[], tagi_t const *src, 
 		      void **bb);
+
+SOFIA_END_DECLS
 
 #endif

@@ -35,6 +35,8 @@
  *
  */
 
+#include <string.h>
+
 /* Parsing tokens */
 /** Control characters. */
 #define CTL   "\001\002\003\004\005\006\007" \
@@ -153,9 +155,13 @@ enum {
 #define BNF_DLL __declspec(dllimport)
 #endif
 #endif
-BNF_DLL
+
+BNF_DLL extern 
+#ifdef __cplusplus
+"C"
+#endif
 /** Table for determining class of a character */
-extern unsigned char const _bnf_table[256];
+unsigned char const _bnf_table[256];
 
 /** Get number of characters before CRLF */
 #define span_non_crlf(s) strcspn(s, CR LF)

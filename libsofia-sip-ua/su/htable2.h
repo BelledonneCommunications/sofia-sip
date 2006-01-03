@@ -25,7 +25,6 @@
 #ifndef HTABLE2_H /** Defined when htable2.h has been included. */
 #define HTABLE2_H 
 
-
 /**@file htable2.h
  *
  * Hash tables templates, take 2.

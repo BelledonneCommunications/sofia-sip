@@ -38,6 +38,8 @@
 #include <sdp_tag.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /**
  * Media states 
  */
@@ -215,5 +217,7 @@ extern tag_typedef_t soatag_srtp_integrity_ref;
 extern tag_typedef_t soatag_hold;
 #define SOATAG_HOLD_REF(x)       soatag_hold_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_hold_ref;
+
+SOFIA_END_DECLS
 
 #endif /* SOA_TAG_H */

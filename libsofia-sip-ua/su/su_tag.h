@@ -48,6 +48,8 @@
 #include <stdarg.h>
 #include <stddef.h> /* ANSI C: size_t */
 
+SOFIA_BEGIN_DECLS
+
 /** Tag item type */
 typedef struct tag_type_s const *tag_type_t;
 /** Tag item value */
@@ -190,5 +192,7 @@ extern "C++" {
 #define tag_str_v(v)   (tag_value_t)(v)
 #define tag_str_vr(v)  (tag_value_t)(v)
 #endif
+
+SOFIA_END_DECLS
 
 #endif /** !defined(SU_TAG_H) */

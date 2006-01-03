@@ -44,6 +44,8 @@
 #include <url.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** Authenticator object. */
 typedef struct auth_client_s auth_client_t;
 
@@ -78,5 +80,7 @@ struct sip_s;
 
 int auc_with_uicc(auth_client_t **auc, su_home_t *home, struct uicc_s *uicc);
 int auc_authorize(auth_client_t **auc, msg_t *msg, struct sip_s *sip);
+
+SOFIA_END_DECLS
 
 #endif 

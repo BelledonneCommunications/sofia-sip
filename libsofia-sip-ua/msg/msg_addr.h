@@ -41,6 +41,8 @@
 #include <su.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 void msg_addr_zero(msg_t *msg);
 su_addrinfo_t *msg_addrinfo(msg_t *msg);
 su_sockaddr_t *msg_addr(msg_t *msg);
@@ -81,5 +83,7 @@ int msg_buf_external(msg_t *msg,
 		     unsigned N, 
 		     unsigned blocksize);
 
+
+SOFIA_END_DECLS
 
 #endif /* !defined(MSG_ADDR_H) */

@@ -42,6 +42,8 @@
 #include <msg_tag_class.h>
 #endif
 
+SOFIA_BEGIN_DECLS
+
 /** Define a named tag type for HTTP header @a t. */
 #define HTTPHDRTAG_NAMED_TYPEDEF(n, t) \
 {{ TAG_NAMESPACE, #n, httphdrtag_class, \
@@ -65,5 +67,7 @@ tagi_t *httptag_filter(tagi_t *dst, tagi_t const f[], tagi_t const *src,
 		      void **bb);
 
 #endif /* !defined(HTTP_TAG_CLASS_H) */
+
+SOFIA_END_DECLS
 
 

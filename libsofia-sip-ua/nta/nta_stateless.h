@@ -33,7 +33,18 @@
  * @date Created: Tue Sep  4 15:54:57 2001 ppessi
  */
 
-/**Callback for incoming messages.
+#ifndef NTA_H
+#include <nta.h>
+#endif
+
+SOFIA_BEGIN_DECLS
+
+/**@typedef int nta_message_f(nta_agent_magic_t *context,
+ *                            nta_agent_t *agent,
+ *			      msg_t *msg,
+ *			      sip_t *sip);
+ *
+ * Callback for incoming messages.
  * 
  * The typedef nta_message_f() defines prototype for the callback functions
  * invoked by NTA when it has received an incoming message that will be
@@ -62,14 +73,6 @@
  * @return
  * This callback function should always return 0.
  */
-typedef int nta_message_f(nta_agent_magic_t *context,
-			  nta_agent_t *agent,
-			  msg_t *msg,
-			  sip_t *sip);
-
-#ifndef NTA_H
-#include <nta.h>
-#endif
 
 /** Forward a request or response message. */
 int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
@@ -90,5 +93,7 @@ int nta_msg_treply(nta_agent_t *self,
 
 /** ACK and BYE an unknown 200 OK response to INVITE. */
 int nta_msg_ackbye(nta_agent_t *a, msg_t *msg);
+
+SOFIA_END_DECLS
 
 #endif /* !defined(NTA_STATELESS_H) */

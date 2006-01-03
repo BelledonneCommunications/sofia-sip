@@ -37,9 +37,13 @@
  * 
  */
 
+#include <su_config.h>
+
 #ifndef BNF_H
 #include <bnf.h>
 #endif
+
+SOFIA_BEGIN_DECLS
 
 /** Hash the header name */
 #define MC_HASH(s, n)     (msg_header_name_hash(s, NULL) % (unsigned)(n))
@@ -67,5 +71,7 @@ unsigned short msg_header_name_hash(char const *s, int *llen)
 
   return hash;
 }
+
+SOFIA_END_DECLS
 
 #endif /** MSG_MCLASS_HASH_H */

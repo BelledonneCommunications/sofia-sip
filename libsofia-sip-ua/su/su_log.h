@@ -31,10 +31,6 @@
  *
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef SU_LOG_T  /** Defined when su_log_t has been defined. */
 #define SU_LOG_T
 /**Log object. */
@@ -46,6 +42,12 @@ typedef struct su_log_s su_log_t;
 #define SU_LOG_H
 
 #include <stdarg.h>
+
+#ifndef SU_CONFIG_H
+#include <su_config.h>
+#endif
+
+SOFIA_BEGIN_DECLS
 
 /* Use __attribute__ to allow argument checking for su_log */
 #if !defined(__GNUC__) && !defined(__attribute__)
@@ -95,10 +97,8 @@ void su_perror(char const *s);
 /** Log the su error message. */
 void su_perror2(char const *s, int errcode);
 
+SOFIA_END_DECLS
+
 #endif
 
 #endif /* !defined(SU_LOG_H_NEED_SU_LOG_T) */
-
-#ifdef __cplusplus
-}
-#endif

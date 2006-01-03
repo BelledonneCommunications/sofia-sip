@@ -25,7 +25,6 @@
 #ifndef AUTH_DIGEST_H /** Defined when <auth_digest.h> has been included. */
 #define AUTH_DIGEST_H 
 
-
 /**@file auth_digest.h 
  * Datatypes and functions for Digest authentication.
  *
@@ -48,6 +47,8 @@
 #ifndef SU_ALLOC_H
 #include <su_alloc.h>
 #endif
+
+SOFIA_BEGIN_DECLS
 
 /** Parameters for digest-challenge.
  *
@@ -152,5 +153,7 @@ int auth_digest_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
 int auth_digest_response(auth_response_t *, auth_hexmd5_t response,
 			 auth_hexmd5_t const ha1, 
 			 char const *method_name, void const *data, int dlen);
+
+SOFIA_END_DECLS
 
 #endif
