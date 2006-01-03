@@ -1,3 +1,53 @@
+2006-01-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  Syncinc darcs and CVS.
+	
+  * Added more tests for call hold.
+
+  * Using msg_header_replace_param() in nua_stack.c.
+
+  * Using ss_retry_after in nea.c.
+
+  * Marking two single headers in a message as fatal error.
+
+  * Made headers C++-safe (bug #1376379).
+
+  * Removed dead #include files
+
+  * Removed Last modified things.
+
+  * Removed msg_bnf.h
+
+  * Added NTATAG_TCP_RPORT(). 
+  Do not use rport with TCP by default.
+
+  * Added test for comp=sigcomp.
+  The comp=sigcomp should not be included if destination does not support
+  compression.
+  Modernized parameter handling, too.
+
+  * Documented TP_AI_ flags.
+  Test our TP_AI_ assumptions.
+  Added a test for asymmetric SigComp on TCP. 
+  We use TP_AI_COMPRESSED flag in this test.
+
+  * Added TPTAG_FRESH() and a test for it.
+
+  * Augmented documentation for SIPTAG_HEADER_STR().
+
+  * Use #include <stdio.h> for FILE.
+
+  * Fixed include_sofiadir handling in pkg-config and rpm files. 
+
+2005-12-27  Martti Mela <martti.mela@nokia.com
+
+  * stun minor update
+
+  * first working version of STUN transaction engine
+
+  * stun transaction engine, first impressions
+
+
 2005-12-23  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
    Syncing darcs and CVS.
