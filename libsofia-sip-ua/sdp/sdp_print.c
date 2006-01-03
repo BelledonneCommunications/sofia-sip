@@ -33,16 +33,16 @@
 
 #include "config.h"
 
+#include <su_alloc.h>
+
+#include "sdp.h"
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
-
-#include <su_alloc.h>
-
-#include "sdp.h"
 
 /* ========================================================================= */
 /* Printing API */
@@ -95,17 +95,19 @@ static void print_session(sdp_printer_t *p, sdp_session_t const *session);
  *
  * The @a flags specify encoding options as follows:
  *
- * @li @c sdp_f_strict - Printer should only emit messages conforming strictly
+ * @li #sdp_f_strict - Printer should only emit messages conforming strictly
  * to the * specification.
  *
- * @li @c sdp_f_realloc - If this flag is specified, and @a msgbuf is too
+ * @li #sdp_f_realloc - If this flag is specified, and @a msgbuf is too
  * small for the resulting SDP message, @c sdp_print() may allocate a new
  * buffer for it from the heap.
  *
- * @li @c sdp_f_prefix - The buffer provided by caller already contains valid 
+ * @li #sdp_f_prefix - The buffer provided by caller already contains valid 
  * data. The function sdp_print() will concatenate its result to the buffer.
  *
- * @li @c sdp_f_mode - Add mode attributes.
+ * @li #sdp_f_mode_always - Always add mode attributes to media
+ *
+ * @li #sdp_f_mode_manual - Do not generate mode attributes
  *
  * @return 
  * The function sdp_print() always returns a handle to an sdp_printer_t

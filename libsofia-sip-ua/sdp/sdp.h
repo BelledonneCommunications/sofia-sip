@@ -483,7 +483,7 @@ enum sdp_parse_flags_e {
   sdp_f_config = 256,
   /** Do not generate or parse SDP mode */
   sdp_f_mode_manual = 512,
-  /** Include sendrecv mode, too. */
+  /** Always generate media-level mode attributes */
   sdp_f_mode_always = 1024
 };
 
