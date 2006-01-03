@@ -528,7 +528,6 @@ int handle_notify(nea_t *nea,
       nea->nea_state = nea_embryonic;
       nea->nea_deadline = sip_now();
     } else if (str0casecmp(ss->ss_reason, "probation") == 0) {
-      char const *retry_after;
       sip_time_t retry = sip_now() + NEA_TIMER_DELTA;
 
       if (ss->ss_retry_after)
