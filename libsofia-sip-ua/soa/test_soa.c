@@ -327,6 +327,8 @@ int test_static_offer_answer(struct context *ctx)
   char const *caps = NONE, *offer = NONE, *answer = NONE;
   int capslen = -1, offerlen = -1, answerlen = -1;
 
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+
   char const a_caps[] = 
     "v=0\r\n"
     "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
@@ -395,6 +397,7 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_is_remote_chat_active(a), SOA_ACTIVE_DISABLED);
 
   /* 'A' will put call on hold */
+  offer = NONE;
   TEST(soa_set_params(a, SOATAG_HOLD("*"), TAG_END()), 1);
 
   TEST(soa_generate_offer(a, 1, test_completed), 0);
@@ -415,10 +418,74 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDONLY);
   TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDONLY);
 
-  /* 'A' will release hold, propose adding video. */ 
+  /* 'A' will release hold. */ 
+  TEST(soa_set_params(a, SOATAG_HOLD(NULL), TAG_END()), 1);
+
+  TEST(soa_generate_offer(a, 1, test_completed), 0);
+  TEST(soa_get_local_sdp(a, NULL, &offer, &offerlen), 1);
+  TEST_1(offer != NULL && offer != NONE);
+  TEST_1(!strstr(offer, "a=sendonly"));
+  TEST(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
+  TEST(soa_generate_answer(b, test_completed), 0);
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+  TEST(soa_get_local_sdp(b, NULL, &answer, &answerlen), 1);
+  TEST_1(answer != NULL && answer != NONE);
+  TEST_1(!strstr(answer, "a=recvonly"));
+  TEST(soa_set_remote_sdp(a, 0, answer, -1), 1);
+  TEST(soa_process_answer(a, test_completed), 0);
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+
+  /* 'A' will put B on hold but this time with c=IN IP4 0.0.0.0 */
+  TEST(soa_set_params(a, SOATAG_HOLD("*"), TAG_END()), 1);
+  TEST(soa_generate_offer(a, 1, test_completed), 0);
+
+  {
+    sdp_session_t const *o_sdp;
+    sdp_session_t *sdp;
+    sdp_printer_t *p;
+    sdp_connection_t *c;
+
+    TEST(soa_get_local_sdp(a, &o_sdp, NULL, NULL), 1);
+    TEST_1(o_sdp != NULL && o_sdp != NONE);
+    TEST_1(sdp = sdp_session_dup(home, o_sdp));
+
+    /* Remove mode, change c=, encode offer */
+    if (sdp->sdp_media->m_connections)
+      c = sdp->sdp_media->m_connections;
+    else
+      c = sdp->sdp_connection;
+    TEST_1(c);
+    c->c_address = "0.0.0.0";
+    
+    TEST_1(p = sdp_print(home, sdp, NULL, 0, sdp_f_realloc));
+    TEST_1(sdp_message(p));
+    offer = sdp_message(p); offerlen = strlen(offer);
+  }
+
+  TEST(soa_set_remote_sdp(b, 0, offer, -1), 1);
+  TEST(soa_generate_answer(b, test_completed), 0);
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+  TEST(soa_get_local_sdp(b, NULL, &answer, &answerlen), 1);
+  TEST_1(answer != NULL && answer != NONE);
+  TEST_1(strstr(answer, "a=recvonly"));
+  TEST(soa_set_remote_sdp(a, 0, answer, -1), 1);
+  TEST(soa_process_answer(a, test_completed), 0);
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDONLY);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDONLY);
+  TEST(soa_is_audio_active(b), SOA_ACTIVE_RECVONLY);
+  TEST(soa_is_remote_audio_active(b), SOA_ACTIVE_RECVONLY);
+
+  /* 'A' will propose adding video. */ 
   /* 'B' will reject. */ 
-  TEST(soa_set_params(a, 
-		      SOATAG_HOLD(NULL), 
+  TEST(soa_set_params(a,
+		      SOATAG_HOLD(NULL),  /* 'A' will release hold. */ 
 		      SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8\r\n"
 					  "m=video 5006 RTP/AVP 34\r\n"),
 		      TAG_END()), 2);
@@ -499,6 +566,8 @@ int test_static_offer_answer(struct context *ctx)
   
   TEST_VOID(soa_destroy(a));
   TEST_VOID(soa_destroy(b));
+
+  su_home_deinit(home);
 
   END();
 }
