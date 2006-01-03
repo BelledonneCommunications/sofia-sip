@@ -462,7 +462,6 @@ void ua_init_contact(nua_t *nua)
 static 
 void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
 {
-  char const ***m_params = (msg_param_t **)&m->m_params;
   su_strlst_t *l = su_strlst_create(home);
   nua_handle_t *dnh = nua->nua_dhandle;
   int i;
@@ -477,14 +476,14 @@ void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
 	  su_strlst_append(l, allow->k_items[i]);
       methods = su_strlst_join(l, home, ",");
       methods = su_sprintf(home, "methods=\"%s\"", methods);
-      msg_params_replace(home, m_params, methods);
+      msg_header_replace_param(home, m->m_common, methods);
     }
 
     if (dnh->nh_soa) {
       char **media = soa_media_features(dnh->nh_soa, 0, home);
 
       while (*media) {
-	msg_params_replace(home, m_params, *media);
+	msg_header_replace_param(home, m->m_common, *media);
 	media++;
       }
     }
@@ -3307,8 +3306,7 @@ register_expires_contacts(msg_t *msg, sip_t *sip)
 
     if (m == NULL)		/* No '*' was found */
       for (m = sip->sip_contact; m; m = m->m_next) {
-	msg_params_replace(h, (msg_param_t **)&m->m_params, "expires=0");
-	msg_fragment_clear(m->m_common);
+	msg_header_replace_param(h, m->m_common, "expires=0");
       }
   }
 
@@ -3602,8 +3600,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 	soa_media_features(nh->nh_soa, 1, msg_home(msg));
       
       if (ac->cp_params) {
-	msg_params_replace(msg_home(msg), (msg_param_t **)&ac->cp_params, 
-			   "explicit");
+	msg_header_replace_param(msg_home(msg), ac->cp_common, "explicit");
 	sip_add_dup(msg, sip, (sip_header_t *)ac);
       }
     }
