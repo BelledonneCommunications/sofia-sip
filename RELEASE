@@ -71,6 +71,8 @@ version.
 
 - STUN API is being rewritten.
 
+- Removed include files msg/msg_bnf.h msg/msg_auth.h sip/sip_extensions.h
+  sip/sip_internal.h and su/su_configure_win32.h
 
 Contributors to this release
 ----------------------------
