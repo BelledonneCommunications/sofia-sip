@@ -21,8 +21,8 @@ noinst_PROGRAMS = 	msg_name_hash test_msg
 
 GENERATED_H = msg_protos.h msg_mime_protos.h
 PUBLIC_H = msg.h msg_header.h msg_types.h \
-	msg_mclass.h	msg_mclass_hash.h msg_parser.h \
-	msg_auth.h msg_addr.h msg_date.h msg_buffer.h \
+	msg_mclass.h msg_mclass_hash.h msg_parser.h \
+	msg_addr.h msg_date.h msg_buffer.h \
 	msg_tag_class.h msg_dll.h msg_mime.h
 INTERNAL_H = msg_internal.h test_class.h
 

@@ -25,10 +25,9 @@ noinst_PROGRAMS =       torture_sip \
 GENERATED_H = sip_hclasses.h sip_protos.h sip_tag.h
 H_IN = sip_hclasses.h.in sip_protos.h.in sip_tag.h.in
 
-PUBLIC_H = sip.h sip_extensions.h sip_util.h \
+PUBLIC_H = sip.h sip_util.h \
            sip_header.h sip_parser.h \
 	   sip_tag_class.h sip_dll.h sip_status.h
-INTERNAL_H = sip_internal.h 
 
 GENERATED_C = sip_tag.c sip_tag_ref.c sip_parser_table.c
 
