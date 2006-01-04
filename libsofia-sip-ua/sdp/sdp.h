@@ -287,7 +287,7 @@ struct sdp_media_s
   /** Rejected media */
   unsigned          m_rejected : 1;     
   /** Inactive, recvonly, sendonly, sendrecv */
-  sdp_mode_t        m_mode : 2;	        
+  /* sdp_mode_t */ unsigned m_mode : 2;
   unsigned          : 0;
 };
 
