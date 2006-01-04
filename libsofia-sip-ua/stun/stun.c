@@ -41,7 +41,6 @@
 
 #define SU_ROOT_MAGIC_T struct stun_magic_t
 #define SU_WAKEUP_ARG_T struct stun_handle_s
-/* #define SU_TIMER_ARG_T  union stun_object_u */
 
 #include "stun.h"
 #include "stun_internal.h"
@@ -124,6 +123,26 @@ struct stun_request_s {
 };
 
 
+#define x_insert(l, n, x) \
+ ((l) ? (l)->x##_prev = &(n)->x##_next : 0, \
+  (n)->x##_next = (l), (n)->x##_prev = &(l), (l) = (n))
+
+#define x_remove(n, x) \
+  ((*(n)->x##_prev = (n)->x##_next) ? \
+   (n)->x##_next->x##_prev = (n)->x##_prev : 0)
+
+#define x_is_inserted(n, x) ((n)->x##_prev != NULL)
+
+struct stun_request_s {
+  stun_request_t *sr_next, **sr_prev;
+  stun_msg_t     *sr_msg; 
+  stun_handle_t  *sr_handle;
+  int             sr_root_index;
+  int             sr_state;      /**< Progress states */
+  int             sr_retry_count;   /**< current retry number */
+  long            sr_timeout;       /**< timeout for next sendto() */
+};
+
 struct stun_handle_s
 {
   su_home_t       sh_home[1];
@@ -146,17 +165,11 @@ struct stun_handle_s
 
   su_socket_t     sh_tls_socket;       /**< outbound socket */
 
-#if 0  
-  stun_msg_t     *sh_binding_request;     /**< binding request for server */
-#endif
-
   SSL_CTX        *sh_ctx;          /**< SSL context for TLS */
   SSL            *sh_ssl;          /**< SSL handle for TLS */
   stun_msg_t      sh_tls_request;
   stun_msg_t      sh_tls_response;
   int             sh_nattype;     /**< NAT-type, see stun_common.h */
-
-
 
   stun_event_f    sh_callback;     /**< callback for calling application */ 
   stun_magic_t   *sh_context;      /**< application context */
@@ -262,9 +275,7 @@ static
 void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
 			       su_timer_t *t,
 			       su_timer_arg_t *arg);
-
-
-
+				      stun_handle_t *se);
 
 /**
  *  Return the socket associated with the stun_socket_t structure
@@ -398,7 +409,6 @@ stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
   stun->sh_context  = context;
   stun->sh_callback = cb;
   stun->sh_use_msgint = msg_integrity;
-
 
   stun->sh_max_retries = STUN_MAX_RETRX;
 
@@ -796,10 +806,6 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 #endif /* if 0 */
 
 int stun_handle_get_nattype(stun_handle_t *sh,
-#if 0
-  su_localinfo_t *my_addr,
-  int *addrlen,
-#endif
 			    tag_type_t tag, tag_value_t value,
 			    ...)
 {
@@ -1732,13 +1738,6 @@ int stun_send_binding_request(stun_request_t *req,
   s = sh->sh_bind_socket;
 
   inet_ntop(srvr_addr->su_family, SU_ADDR(srvr_addr), ipaddr, sizeof(ipaddr));
-#if 0
-  SU_DEBUG_3(("%s: sending to %s:%u (req-flags: msgint=%d, "
-	      "ch-addr=%d, chh-port=%d)\n",
-	      __func__,
-	      ipaddr, ntohs(srvr_addr->su_port),
-	      sh->sh_use_msgint, chg_ip, chg_port));
-#endif
   if (stun_send_message(s, srvr_addr, msg, &(sh->sh_passwd)) < 0) {
     return -1;
   }

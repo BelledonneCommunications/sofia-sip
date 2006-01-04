@@ -1,3 +1,21 @@
+2006-01-04  Martti Mela  <martti.mela@nokia.com>
+
+	* stun.c: Functionality changed to support transactions; initial
+	support for NAT type discovery
+
+	* stun.h: API changed to support transactions
+
+	* stun_internal.h: API changed to support transactions
+
+	* stun_tag.[ch]: added tag STUNTAG_ACTION for different actions
+	(lifetime, NAT type, bind, keepalive)
+
+	* stunc.c: enabled get_nattype
+
+	* torture_stun.c: changed to support new API
+
+	*stun_common.h: removed NAT type strings to stun.c.
+
 2005-12-19  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.c: fixed TLS and bind timers.
