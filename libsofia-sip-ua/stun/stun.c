@@ -112,9 +112,6 @@ struct stun_request_s {
   su_localinfo_t  sr_localinfo;     /**< local addrinfo */
   su_sockaddr_t   sr_local_addr[1]; /**< local address */
 
-#if 0
-  int             sr_root_index;      /**< Index from su_root_register */
-#endif
   int             sr_state;           /**< Progress states */
   int             sr_retry_count;     /**< current retry number */
   long            sr_timeout;         /**< timeout for next sendto() */
@@ -122,26 +119,6 @@ struct stun_request_s {
   int             sr_request_mask;    /**< Mask consisting of chg_ip and chg_port */
 };
 
-
-#define x_insert(l, n, x) \
- ((l) ? (l)->x##_prev = &(n)->x##_next : 0, \
-  (n)->x##_next = (l), (n)->x##_prev = &(l), (l) = (n))
-
-#define x_remove(n, x) \
-  ((*(n)->x##_prev = (n)->x##_next) ? \
-   (n)->x##_next->x##_prev = (n)->x##_prev : 0)
-
-#define x_is_inserted(n, x) ((n)->x##_prev != NULL)
-
-struct stun_request_s {
-  stun_request_t *sr_next, **sr_prev;
-  stun_msg_t     *sr_msg; 
-  stun_handle_t  *sr_handle;
-  int             sr_root_index;
-  int             sr_state;      /**< Progress states */
-  int             sr_retry_count;   /**< current retry number */
-  long            sr_timeout;       /**< timeout for next sendto() */
-};
 
 struct stun_handle_s
 {
@@ -230,20 +207,19 @@ typedef enum stun_nattype_t {
 } stun_nattype_e;
 
 
-char const *stun_nattype_str[] = {
-  "NAT type undetermined",
-  "Open Internet",
-  "UDP traffic is blocked or server unreachable",
-  "Symmetric UDP Firewall",
-  "Full-Cone NAT",
-  "Symmetric NAT",
-  "Restricted Cone NAT",
-  "Port Restricted Cone NAT",
-};
-
-
 char const *stun_nattype(stun_handle_t *sh)
 {
+  char const *stun_nattype_str[] = {
+    "NAT type undetermined",
+    "Open Internet",
+    "UDP traffic is blocked or server unreachable",
+    "Symmetric UDP Firewall",
+    "Full-Cone NAT",
+    "Symmetric NAT",
+    "Restricted Cone NAT",
+    "Port Restricted Cone NAT",
+  };
+
   return stun_nattype_str[sh->sh_nattype];
 }
 
@@ -275,7 +251,6 @@ static
 void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
 			       su_timer_t *t,
 			       su_timer_arg_t *arg);
-				      stun_handle_t *se);
 
 /**
  *  Return the socket associated with the stun_socket_t structure
