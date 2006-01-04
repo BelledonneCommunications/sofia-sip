@@ -52,6 +52,11 @@ extern tag_typedef_t stuntag_socket;
 #define STUNTAG_SOCKET_REF(x) stuntag_socket_ref, tag_int_vr(&(x))
 extern tag_typedef_t stuntag_socket_ref;
 
+#define STUNTAG_ACTION(x) stuntag_action, tag_int_v(x)
+extern tag_typedef_t stuntag_action;
+#define STUNTAG_ACTION_REF(x) stuntag_action_ref, tag_int_vr(&(x))
+extern tag_typedef_t stuntag_action_ref;
+
 SOFIA_END_DECLS
 
 #endif /* STUN_TAG_H */

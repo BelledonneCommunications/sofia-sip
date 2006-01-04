@@ -61,6 +61,8 @@ extern char const stun_version[]; /**< Name and version of STUN software */
  * States of the STUN client->server query process.
  */ 
 typedef enum stun_states_e {
+  
+  stun_no_assigned_event,
 
   /* TLS events */
   stun_tls_connecting,
@@ -78,6 +80,8 @@ typedef enum stun_states_e {
   stun_bind_receiving,        /**< Waiting for server to answer */
   stun_bind_processing,       /**< Processing server reply */
   stun_bind_done,             /**< Initial state */
+
+  stun_request_not_found,     /**< Response without matching request */
 
   /* STUN errors */
   /* Do not change the order! */
@@ -133,11 +137,11 @@ int stun_handle_bind(stun_handle_t *se,
 		     tag_type_t tag, tag_value_t value,
 		     ...);
 
-su_localinfo_t *stun_handle_get_local_addr(stun_handle_t *en);
+su_localinfo_t *stun_request_get_localinfo(stun_request_t *req);
 
 int stun_handle_get_nattype(stun_handle_t *se,
-			    /* su_localinfo_t *my_addr, */
-			    int *addrlen);
+			    tag_type_t tag, tag_value_t value,
+			    ...);
 
 int stun_handle_get_lifetime(stun_handle_t *se, 
 			     su_localinfo_t *my_addr,

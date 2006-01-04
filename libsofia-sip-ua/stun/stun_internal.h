@@ -78,9 +78,11 @@ int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname,
 /* internal functions declaration */
 int stun_make_sharedsecret_req(stun_msg_t *msg);
 
-int stun_send_message(su_socket_t ss, su_sockaddr_t *srvr, stun_msg_t *msg, stun_buffer_t *pwd);
+int stun_send_message(su_socket_t ss, su_sockaddr_t *srvr,
+		      stun_msg_t *msg, stun_buffer_t *pwd);
 
-int stun_make_binding_req(stun_handle_t *se, stun_msg_t *msg, int chg_ip, int chg_port);
+int stun_make_binding_req(stun_handle_t *se, stun_request_t *req,
+			  stun_msg_t *msg, int chg_ip, int chg_port);
 int stun_process_response(stun_msg_t *msg);
 
 int stun_process_binding_response(stun_msg_t *msg);

@@ -90,3 +90,20 @@ tag_typedef_t stuntag_integrity = BOOLTAG_TYPEDEF(srtp_integrity);
  * Corresponding tag taking reference parameter is STUNTAG_SOCKET_REF()
  */
 tag_typedef_t stuntag_socket = INTTAG_TYPEDEF(socket);
+
+/**@def STUNTAG_ACTION(x)
+ *  
+ * Command action for STUN request.
+ *
+ * @par Used with
+ *    stun_handle_bind() \n
+ *
+ * @par Parameter type
+ *    int (stun_action_t)
+ *
+ * @par Values
+ *    See types for stun_action_t in stun.h
+ *
+ * Corresponding tag taking reference parameter is STUNTAG_ACTION_REF()
+ */
+tag_typedef_t stuntag_action = INTTAG_TYPEDEF(action);

@@ -104,16 +104,6 @@ SOFIA_BEGIN_DECLS
 
 #define RAND_MAX_16                     65535
 
-/* NAT TYPES */
-#define STUN_NAT_UNKNOWN                0
-#define STUN_OPEN_INTERNET              1
-#define STUN_UDP_BLOCKED                2
-#define STUN_SYM_UDP_FW                 3
-#define STUN_NAT_FULL_CONE              4
-#define STUN_NAT_SYM                    5
-#define STUN_NAT_RES_CONE               6
-#define STUN_NAT_PORT_RES_CONE          7
-
 /* other protocol specific parameters */
 #define STUN_MAX_RETRX                  5 /* should be 8? */
 #define STUN_MAX_RETRX_INT              1600  /**< max retrx interval in

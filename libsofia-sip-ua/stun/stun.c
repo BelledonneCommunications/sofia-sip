@@ -39,9 +39,9 @@
 
 #include <assert.h>
 
-#define SU_ROOT_MAGIC_T struct stun_handle_s
+#define SU_ROOT_MAGIC_T struct stun_magic_t
 #define SU_WAKEUP_ARG_T struct stun_handle_s
-#define SU_TIMER_ARG_T  struct stun_request_s
+/* #define SU_TIMER_ARG_T  union stun_object_u */
 
 #include "stun.h"
 #include "stun_internal.h"
@@ -65,14 +65,35 @@ enum {
 };
 
 
-char const stun_nat_unknown[] = "NAT type undetermined",
-  stun_open_internet[] = "Open Internet",
-  stun_udp_blocked[] = "UDP traffic is blocked, or Server unreachable",
-  stun_sym_udp_fw[] = "Symmetric UDP Firewall",
-  stun_nat_full_cone[] = "Full-Cone NAT",
-  stun_nat_sym[] = "Symmetric NAT",
-  stun_nat_res_cone[] = "Restricted Cone NAT",
-  stun_nat_port_res_cone[] = "Port Restricted Cone NAT";
+typedef enum stun_action_s {
+  stun_action_no_action,
+  stun_action_binding_request,
+  stun_action_keepalive,
+  stun_action_get_nattype,
+  stun_action_get_lifetime,
+} stun_action_t;
+
+#define CHG_IP		0x001
+#define CHG_PORT	0x004
+
+#if 0
+
+char const *stun_nattype(stun_handle_t *sh)
+{
+  switch(sh->sh_nattype) {
+  case STUN_NAT_UNKNOWN: return stun_nat_unknown;
+  case STUN_OPEN_INTERNET: return stun_open_internet;
+  case STUN_UDP_BLOCKED: return stun_udp_blocked;
+  case STUN_SYM_UDP_FW: return stun_sym_udp_fw;
+  case STUN_NAT_FULL_CONE: return stun_nat_full_cone;
+  case STUN_NAT_SYM: return stun_nat_sym;
+  case STUN_NAT_RES_CONE: return stun_nat_res_cone;
+  case STUN_NAT_PORT_RES_CONE: return stun_nat_port_res_cone;
+  default: return "INVALID NAT TYPE";
+  }
+}
+
+#endif
 
 #define x_insert(l, n, x) \
  ((l) ? (l)->x##_prev = &(n)->x##_next : 0, \
@@ -85,69 +106,148 @@ char const stun_nat_unknown[] = "NAT type undetermined",
 #define x_is_inserted(n, x) ((n)->x##_prev != NULL)
 
 struct stun_request_s {
-  stun_request_t *sr_next, **sr_prev;
-  stun_msg_t     *sr_msg; 
-  stun_handle_t  *sr_handle;
-  int             sr_root_index;
-  int             sr_state;      /**< Progress states */
-  int             sr_retry_count;   /**< current retry number */
-  long            sr_timeout;       /**< timeout for next sendto() */
+  stun_request_t *sr_next, **sr_prev; /**< Linked list */
+  stun_msg_t     *sr_msg;             /**< STUN message pointer */
+  stun_handle_t  *sr_handle;          /**< backpointer, STUN object */
+
+  su_localinfo_t  sr_localinfo;     /**< local addrinfo */
+  su_sockaddr_t   sr_local_addr[1]; /**< local address */
+
+#if 0
+  int             sr_root_index;      /**< Index from su_root_register */
+#endif
+  int             sr_state;           /**< Progress states */
+  int             sr_retry_count;     /**< current retry number */
+  long            sr_timeout;         /**< timeout for next sendto() */
+  stun_action_t   sr_action;          /**< Request type for protocol engine */
+  int             sr_request_mask;    /**< Mask consisting of chg_ip and chg_port */
 };
+
 
 struct stun_handle_s
 {
-  su_home_t       st_home[1];
-  su_root_t      *st_root;          /**< event loop */
-  int             st_root_index;    /**< object index of su_root_register() */
-  su_timer_t     *st_connect_timer; /**< timer for TLS connection */
+  su_home_t       sh_home[1];
+  su_root_t      *sh_root;          /**< event loop */
+  int             sh_root_index;    /**< object index of su_root_register() */
+  su_timer_t     *sh_connect_timer; /**< timer for TLS connection */
 
-  stun_request_t *st_requests; /**< outgoing requests list */
+  stun_request_t *sh_requests; /**< outgoing requests list */
 
-  int             st_max_retries;   /**< max resend for sendto() */
+  int             sh_max_retries;   /**< max resend for sendto() */
 
-  su_addrinfo_t   st_pri_info;      /**< server primary info */
-  su_sockaddr_t   st_pri_addr[1];   /**< server primary address */
+  su_addrinfo_t   sh_pri_info;      /**< server primary info */
+  su_sockaddr_t   sh_pri_addr[1];   /**< server primary address */
 
-  su_addrinfo_t   st_sec_info;      /**< server secondary info */
-  su_sockaddr_t   st_sec_addr[1];   /**< server secondary address */
+  su_addrinfo_t   sh_sec_info;      /**< server secondary info */
+  su_sockaddr_t   sh_sec_addr[1];   /**< server secondary address */
 
-  su_localinfo_t  st_localinfo;     /**< local address returned by server */
-  su_sockaddr_t   st_local_addr[1]; /**< server secondary address */
+  su_localinfo_t  sh_localinfo;     /**< local addrinfo */
+  su_sockaddr_t   sh_local_addr[1]; /**< local address */
 
-  su_socket_t     st_tls_socket;       /**< outbound socket */
+  su_socket_t     sh_tls_socket;       /**< outbound socket */
 
 #if 0  
-  stun_msg_t     *st_binding_request;     /**< binding request for server */
+  stun_msg_t     *sh_binding_request;     /**< binding request for server */
 #endif
 
-  SSL_CTX        *st_ctx;          /**< SSL context for TLS */
-  SSL            *st_ssl;          /**< SSL handle for TLS */
-  stun_msg_t      st_tls_request;
-  stun_msg_t      st_tls_response;
-  int             st_nattype;     /**< NAT-type, see stun_common.h */
+  SSL_CTX        *sh_ctx;          /**< SSL context for TLS */
+  SSL            *sh_ssl;          /**< SSL handle for TLS */
+  stun_msg_t      sh_tls_request;
+  stun_msg_t      sh_tls_response;
+  int             sh_nattype;     /**< NAT-type, see stun_common.h */
 
 
 
-  stun_event_f    st_callback;     /**< callback for calling application */ 
-  stun_magic_t   *st_context;      /**< application context */
+  stun_event_f    sh_callback;     /**< callback for calling application */ 
+  stun_magic_t   *sh_context;      /**< application context */
 
-  stun_buffer_t   st_username;
-  stun_buffer_t   st_passwd;
+  stun_buffer_t   sh_username;
+  stun_buffer_t   sh_passwd;
 
-  int             st_use_msgint;  /**< use message integrity? */
+  int             sh_use_msgint;  /**< use message integrity? */
 
-  int             st_state;      /**< Progress states */
+  int             sh_state;      /**< Progress states */
 
 
-  int            st_bind_socket;
+  int            sh_bind_socket;
   int            ss_root_index;   /**< object index of su_root_register() */
 };
+
+
+#define STUN_STATE_STR(x) case x: return #x
+
+char const *stun_str_state(stun_states_t state)
+{
+  switch (state) {
+  STUN_STATE_STR(stun_no_assigned_event);
+  STUN_STATE_STR(stun_tls_connecting);
+  STUN_STATE_STR(stun_tls_writing);
+  STUN_STATE_STR(stun_tls_closing);
+  STUN_STATE_STR(stun_tls_reading);
+  STUN_STATE_STR(stun_tls_done);
+  STUN_STATE_STR(stun_bind_init);
+  STUN_STATE_STR(stun_bind_started);
+  STUN_STATE_STR(stun_bind_sending);
+  STUN_STATE_STR(stun_bind_sent);
+  STUN_STATE_STR(stun_bind_receiving);
+  STUN_STATE_STR(stun_bind_processing);
+  STUN_STATE_STR(stun_bind_done);
+  STUN_STATE_STR(stun_tls_connection_timeout);
+  STUN_STATE_STR(stun_tls_connection_failed);
+  STUN_STATE_STR(stun_tls_ssl_connect_failed);
+  STUN_STATE_STR(stun_request_not_found);
+  STUN_STATE_STR(stun_bind_error);
+  STUN_STATE_STR(stun_bind_timeout);
+  
+  case stun_error:
+  default: return "stun_error";
+  }
+}
+
+/* NAT TYPES */
+typedef enum stun_nattype_t {
+  stun_nat_unknown,
+  stun_open_internet,
+  stun_udp_blocked,
+  stun_sym_udp_fw,
+  stun_nat_full_cone,
+  stun_nat_sym,
+  stun_nat_res_cone,
+  stun_nat_port_res_cone,
+} stun_nattype_e;
+
+
+char const *stun_nattype_str[] = {
+  "NAT type undetermined",
+  "Open Internet",
+  "UDP traffic is blocked or server unreachable",
+  "Symmetric UDP Firewall",
+  "Full-Cone NAT",
+  "Symmetric NAT",
+  "Restricted Cone NAT",
+  "Port Restricted Cone NAT",
+};
+
+
+char const *stun_nattype(stun_handle_t *sh)
+{
+  return stun_nattype_str[sh->sh_nattype];
+}
 
 
 char const stun_version[] = 
  "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
 
 
+static
+int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
+static
+int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response);
+static
+int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
+
+static
+stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action);
 static
 int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
@@ -156,12 +256,12 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self);
 static
 void stun_sendto_timer_cb(su_root_magic_t *magic, 
 			  su_timer_t *t,
-			  stun_request_t *req);
+			  su_timer_arg_t *arg);
 
 static
 void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
-				      su_timer_t *t,
-				      stun_handle_t *se);
+			       su_timer_t *t,
+			       su_timer_arg_t *arg);
 
 
 
@@ -169,37 +269,10 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 /**
  *  Return the socket associated with the stun_socket_t structure
  */
-int stun_handle_get_bind_socket(stun_handle_t *se)
+int stun_handle_get_bind_socket(stun_handle_t *sh)
 {
-  assert(se);
-  return se->st_bind_socket;
-}
-
-
-char const *stun_str_state(stun_states_t state)
-{
-  switch (state) {
-  case stun_tls_connecting: return "stun_tls_connecting";
-  case stun_tls_writing: return "stun_tls_writing";
-  case stun_tls_closing: return "stun_tls_closing";
-  case stun_tls_reading: return "stun_tls_reading";
-  case stun_tls_done: return "stun_tls_done";
-  case stun_bind_init: return "stun_bind_init";
-  case stun_bind_started: return "stun_bind_started";
-  case stun_bind_sending: return "stun_bind_sending";
-  case stun_bind_sent: return "stun_bind_sent";
-  case stun_bind_receiving: return "stun_bind_receiving";
-  case stun_bind_processing: return "stun_bind_processing";
-  case stun_bind_done: return "stun_bind_done";
-  case stun_tls_connection_timeout: return "stun_tls_connection_timeout";
-  case stun_tls_connection_failed: return "stun_tls_connection_failed";
-  case stun_tls_ssl_connect_failed: return "stun_tls_ssl_connect_failed";
-  case stun_bind_error: return "stun_bind_error";
-  case stun_bind_timeout: return "stun_bind_timeout";
-
-  case stun_error:
-  default: return "stun_error";
-  }
+  assert(sh);
+  return sh->sh_bind_socket;
 }
 
 
@@ -211,7 +284,7 @@ char const *stun_str_state(stun_states_t state)
  */
 su_root_t *stun_handle_root(stun_handle_t *self)
 {
-  return self ? self->st_root : NULL;
+  return self ? self->sh_root : NULL;
 }
 
 
@@ -305,36 +378,35 @@ stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
   if (!server)
     return NULL;
   
-  err = stun_atoaddr(AF_INET, &stun->st_pri_info, stun->st_pri_addr, server);
+  err = stun_atoaddr(AF_INET, &stun->sh_pri_info, stun->sh_pri_addr, server);
 
   if (err < 0)
     return NULL;
 
-  stun->st_pri_info.ai_addrlen = 16;
-  stun->st_pri_info.ai_addr = &stun->st_pri_addr->su_sa;
+  stun->sh_pri_info.ai_addrlen = 16;
+  stun->sh_pri_info.ai_addr = &stun->sh_pri_addr->su_sa;
 
-  stun->st_sec_info.ai_addrlen = 16;
-  stun->st_sec_info.ai_addr = &stun->st_sec_addr->su_sa;
+  stun->sh_sec_info.ai_addrlen = 16;
+  stun->sh_sec_info.ai_addr = &stun->sh_sec_addr->su_sa;
 
-  /* STUN bind related */
-  stun->st_localinfo.li_addrlen = sizeof(su_sockaddr_t);
-  stun->st_localinfo.li_addr = stun->st_local_addr;
+  stun->sh_localinfo.li_addrlen = 16;
+  stun->sh_localinfo.li_addr = stun->sh_local_addr;
 
-  stun->st_nattype = STUN_NAT_UNKNOWN;
+  stun->sh_nattype = stun_nat_unknown;
 
-  stun->st_root     = root;
-  stun->st_context  = context;
-  stun->st_callback = cb;
-  stun->st_use_msgint = msg_integrity;
+  stun->sh_root     = root;
+  stun->sh_context  = context;
+  stun->sh_callback = cb;
+  stun->sh_use_msgint = msg_integrity;
 
 
-  stun->st_max_retries = STUN_MAX_RETRX;
+  stun->sh_max_retries = STUN_MAX_RETRX;
 
   /* initialize username and password */
-  stun_init_buffer(&stun->st_username);
-  stun_init_buffer(&stun->st_passwd);
+  stun_init_buffer(&stun->sh_username);
+  stun_init_buffer(&stun->sh_passwd);
   
-  stun->st_nattype = STUN_NAT_UNKNOWN;
+  stun->sh_nattype = stun_nat_unknown;
   
   /* initialize random number generator */
   srand(time(NULL));
@@ -345,7 +417,28 @@ stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
 }
 
 
-stun_request_t *stun_create_request(stun_handle_t *sh)
+stun_request_t *stun_action_create_binding_req(stun_handle_t *sh)
+{
+  return stun_create_request(sh, stun_action_binding_request);
+}
+
+stun_request_t *stun_action_create_nattype_discovery(stun_handle_t *sh)
+{
+  return stun_create_request(sh, stun_action_get_nattype);
+}
+
+stun_request_t *stun_action_create_timeout_discovery(stun_handle_t *sh)
+{
+  return stun_create_request(sh, stun_action_get_lifetime);
+}
+
+stun_request_t *stun_action_create_keepalive(stun_handle_t *sh)
+{
+  return stun_create_request(sh, stun_action_keepalive);
+}
+
+
+stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action)
 {
   stun_request_t *req = NULL;
 
@@ -353,9 +446,15 @@ stun_request_t *stun_create_request(stun_handle_t *sh)
   if (req) {
     req->sr_handle = sh;
 
+    /* STUN bind related */
+    req->sr_localinfo.li_addrlen = sizeof(su_sockaddr_t);
+    req->sr_localinfo.li_addr = req->sr_local_addr;
+
     /* default timeout for next sendto() */
     req->sr_timeout = STUN_SENDTO_TIMEOUT;
     req->sr_retry_count = 0;
+    req->sr_action = action;
+    req->sr_request_mask = 0;
 
     req->sr_msg = calloc(sizeof(stun_msg_t), 1);
   }
@@ -363,17 +462,29 @@ stun_request_t *stun_create_request(stun_handle_t *sh)
   return req;
 }
 
+void stun_destroy_request(stun_request_t *req)
+{
+  assert(req);
+
+  req->sr_handle = NULL;
+
+  free(req->sr_msg);
+  free(req);
+
+  return;
+}
+
 
 /** Destroy a STUN client */ 
 void stun_handle_destroy(stun_handle_t *self)
 { 
-  if (self->st_bind_socket > 0)
-    su_close(self->st_bind_socket);
+  if (self->sh_bind_socket > 0)
+    su_close(self->sh_bind_socket);
 
-  if (self->st_tls_socket > 0)
-    su_close(self->st_tls_socket);
+  if (self->sh_tls_socket > 0)
+    su_close(self->sh_tls_socket);
 
-  su_home_zap(self->st_home);
+  su_home_zap(self->sh_home);
 }
 
 
@@ -404,7 +515,7 @@ void stun_handle_destroy(stun_handle_t *self)
  *                        the socket.
  * 
  */
-int stun_handle_bind(stun_handle_t *se,
+int stun_handle_bind(stun_handle_t *sh,
 		     int *lifetime,
 		     tag_type_t tag, tag_value_t value,
 		     ...)
@@ -415,7 +526,7 @@ int stun_handle_bind(stun_handle_t *se,
   su_sockaddr_t bind_addr;
   socklen_t bind_len;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
-  stun_request_t *request = NULL;
+  stun_request_t *req = NULL;
   int index;
   int events = -1;
   su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
@@ -423,13 +534,15 @@ int stun_handle_bind(stun_handle_t *se,
   unsigned int port;
   ta_list ta;
   su_wait_t wait[1] = { SU_WAIT_INIT };
+  int action = stun_action_no_action;
   
-  assert(se);
+  assert(sh);
 
   ta_start(ta, tag, value);
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
+	  STUNTAG_ACTION_REF(action),
 	  TAG_END());
 
   if (s < 0) {
@@ -437,11 +550,27 @@ int stun_handle_bind(stun_handle_t *se,
     return -1;
   }
 
-  clientinfo = &se->st_localinfo;
-  
+  if (action != stun_action_no_action)
+    req = stun_create_request(sh, action);
+  else
+    req = stun_action_create_binding_req(sh);
+
+  /* Insert this request to the request queue */
+  if (sh->sh_requests)
+    x_insert(sh->sh_requests, req, sr);
+  else
+    sh->sh_requests = req;
+
+  clientinfo = &req->sr_localinfo;
+
+  if (action != stun_action_no_action)
+    goto skip_init;
+
+#if 0  
   /* Close the previous associated socket */
-  if (se->st_bind_socket > 0)
-    su_close(se->st_bind_socket);
+  if (sh->sh_bind_socket > 0)
+    su_close(sh->sh_bind_socket);
+#endif
 
   /* set socket asynchronous */
   if (su_setblocking(s, 0) < 0) {
@@ -450,7 +579,7 @@ int stun_handle_bind(stun_handle_t *se,
     su_close(s);
     return -1;
   }
-  se->st_bind_socket = s;
+  sh->sh_bind_socket = s;
 
   hints->li_family = AF_INET;
   if((error = su_getlocalinfo(hints, &res)) == 0) {
@@ -485,7 +614,7 @@ int stun_handle_bind(stun_handle_t *se,
   if (res)
     su_freelocalinfo(res);
 
-  s = se->st_bind_socket;
+  s = sh->sh_bind_socket;
 
   events = SU_WAIT_IN | SU_WAIT_ERR;
 
@@ -495,9 +624,9 @@ int stun_handle_bind(stun_handle_t *se,
   }
 
   /* Register receiving function with events specified above */
-  if ((index = su_root_register(se->st_root,
+  if ((index = su_root_register(sh->sh_root,
 				wait, stun_bind_callback,
-				se, 0)) < 0) {
+				sh, 0)) < 0) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
@@ -522,24 +651,16 @@ int stun_handle_bind(stun_handle_t *se,
   SU_DEBUG_3(("%s: Local socket bound to: %s:%u\n", __func__, ipaddr, 
 	      (unsigned) ntohs(bind_addr.su_port)));
 
-
-  request = stun_create_request(se);
-  request->sr_root_index = index;
+ skip_init:
 
   /* Create default message (last two params zeros) */
-  if (stun_make_binding_req(se, request->sr_msg, 0, 0) < 0) 
+  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
     return -1;
 
-  /* Insert this request to the request queue */
-  if (se->st_requests)
-    x_insert(se->st_requests, request, sr);
-  else
-    se->st_requests = request;
-
-  retval = stun_send_binding_request(request, se->st_pri_addr);
+  retval = stun_send_binding_request(req, sh->sh_pri_addr);
 
   if (retval < 0) {
-    stun_free_message(request->sr_msg);
+    stun_free_message(req->sr_msg);
   }
   if (lifetime) {
     if (retval == 0)
@@ -561,9 +682,9 @@ int stun_handle_bind(stun_handle_t *se,
  * This function returns the local address seen from outside.
  * Note that the address is not valid until the event stun_clien_done is launched.
  */
-su_localinfo_t *stun_handle_get_local_addr(stun_handle_t *se)
+su_localinfo_t *stun_request_get_localinfo(stun_request_t *req)
 {
-  return &se->st_localinfo;
+  return &req->sr_localinfo;
 }
 
 
@@ -572,9 +693,9 @@ su_localinfo_t *stun_handle_get_local_addr(stun_handle_t *se)
 /** Return type of NAT
  *  This function may take a long time to finish.
  *  XXX - mela: not for long!!!
- *  NAT type is set in ss->se_handle.st_nattype
+ *  nat type is set in ss->se_handle.sh_nattype
  */
-int stun_handle_get_nattype(stun_handle_t *se,
+int stun_handle_get_nattype(stun_handle_t *sh,
 			    int *addrlen)
 {
   int retval, lifetime, sockfd;
@@ -582,17 +703,17 @@ int stun_handle_get_nattype(stun_handle_t *se,
   su_sockaddr_t local, /* mapped_addr1, */ mapped_addr2;
   su_localinfo_t *mapped_addr1;
 
-  sockfd = se->st_bind_socket;
+  sockfd = sh->sh_bind_socket;
 
-  assert(se);
+  assert(sh);
 
-  if ((se->st_state != stun_bind_done) &&
-      (se->st_state != stun_bind_timeout) &&
-      (se->st_state != stun_bind_error))
+  if ((sh->sh_state != stun_bind_done) &&
+      (sh->sh_state != stun_bind_timeout) &&
+      (sh->sh_state != stun_bind_error))
     return -1;
 
   
-  mapped_addr1 = stun_handle_get_local_addr(se);
+  mapped_addr1 = stun_handle_get_local_addr(sh);
 
 #if 0  
   len = sizeof(mapped_addr1);
@@ -601,13 +722,13 @@ int stun_handle_get_nattype(stun_handle_t *se,
   /* retval = stun_bind(ss, &mapped_addr1, &lifetime); */
 #endif
 
-  if (se->st_state == stun_bind_timeout) {
-    se->st_nattype = STUN_UDP_BLOCKED;
+  if (sh->sh_state == stun_bind_timeout) {
+    sh->sh_nattype = stun_udp_blocked;
     /* otherwise unknown nat type */
     return 0;
   }
-  else if (se->st_state == stun_bind_error) {
-    se->st_nattype = STUN_NAT_UNKNOWN;
+  else if (sh->sh_state == stun_bind_error) {
+    sh->sh_nattype = stun_nat_unknown;
     return 0;
   }
   else {
@@ -619,94 +740,118 @@ int stun_handle_get_nattype(stun_handle_t *se,
     if (memcmp(&local, &mapped_addr1->li_addr, 8) == 0) {
       /* conduct TEST II */      
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr, 1, 1);
+      retval = stun_send_binding_request(sh, sh->sh_pri_addr, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response: Type 3 - Sym UDP FW */
 	  retval = 0;
-	  se->st_nattype = STUN_SYM_UDP_FW;	  
+	  sh->sh_nattype = stun_sym_udp_fw;	  
 	} /* otherwise unknown nat type */
       } 
       else {
 	/* Response: Type 1 - Open Internet */
-	se->st_nattype = STUN_OPEN_INTERNET;
+	sh->sh_nattype = stun_open_internet;
       }
     }
     /* Different IP */
     else {
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr, 1, 1);
+      retval = stun_send_binding_request(sh, sh->sh_pri_addr, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response */
-	  retval = stun_send_binding_request(se, se->st_sec_addr, 0, 0);
+	  retval = stun_send_binding_request(sh, sh->sh_sec_addr, 0, 0);
 	  /* response comes back, has to be the case */
 	  if (retval == 0) {
 	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
 	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
 		 same */
-	      retval = stun_send_binding_request(se, se->st_pri_addr, 0, 1);
+	      retval = stun_send_binding_request(sh, sh->sh_pri_addr, 0, 1);
 	      if(retval==0) {
 		/* Response: Type 6 - Restricted */
-		se->st_nattype = STUN_NAT_RES_CONE;
+		sh->sh_nattype = stun_nat_res_cone;
 	      }
 	      else if(errno==ETIMEDOUT) {
 		/* No response: Type 7 - Port Restricted */
 		retval = 0;
-		se->st_nattype = STUN_NAT_PORT_RES_CONE;
+		sh->sh_nattype = stun_nat_port_res_cone;
 	      }
 	    }
 	    else {
 	      /* Different Public IP: Type 5 - Sym NAT */
-	      se->st_nattype = STUN_NAT_SYM;
+	      sh->sh_nattype = stun_nat_sym;
 	    }
 	  } /* otherwise there is a sudden network problem */	  
 	} /* otherwise unknown nat type */
       }
       else {
 	/* Response: Type 4 - Full Cone */
-	se->st_nattype = STUN_NAT_FULL_CONE;
+	sh->sh_nattype = stun_nat_full_cone;
       }
     }
   }
   
   return retval;
 }
+#endif /* if 0 */
 
-int stun_handle_get_nattype(stun_handle_t *se,
-			    su_localinfo_t *my_addr,
-			    int *addrlen)
+int stun_handle_get_nattype(stun_handle_t *sh,
+#if 0
+  su_localinfo_t *my_addr,
+  int *addrlen,
+#endif
+			    tag_type_t tag, tag_value_t value,
+			    ...)
 {
-  int nattype = STUN_NAT_UNKNOWN;
+  int nattype = stun_nat_unknown;
   int retval, lifetime, sockfd;
-  socklen_t locallen, len;
+  /* socklen_t locallen, len; */
+#if 0
   struct sockaddr_in local, /* mapped_addr1, */ mapped_addr2;
   su_localinfo_t mapped_addr1;
+#endif
+  ta_list ta;
   
-  sockfd = se->st_bind_socket;
+  ta_start(ta, tag, value);
 
+
+  sockfd = sh->sh_bind_socket;
+
+#if 0
   assert(my_addr && my_addr->li_addrlen != 0);
-  
   len = sizeof(mapped_addr1);
   memcpy(&mapped_addr1, my_addr, len); 
   /* mapped_addr1.li_addr.su_port = 0; */ /* wild card for get_nattype */
+#endif
 
   /* retval = stun_bind(ss, &mapped_addr1, &lifetime); */
-  retval = stun_handle_bind(se, &lifetime);
+
+  /* This launches the binding process, but with a different state
+   * machine than the default one: get_nattype is the specified action
+   * here */
+  retval = stun_handle_bind(sh, &lifetime,
+			    STUNTAG_ACTION(stun_action_get_nattype),
+			    TAG_NEXT(ta_args(ta)));
   if (retval == -1) {
     if (errno == ETIMEDOUT) {
       /* No Response: Type 2 - UDP Blocked */
       retval = 0; /* time out is a legitimate response */
-      nattype = STUN_UDP_BLOCKED;
+      nattype = stun_udp_blocked;
     } /* otherwise unknown nat type */
   }
+  
+  ta_end(ta);
+  return 0;
+}
+
+#if 0
   else { /* Response comes back */
     memset(&local, 0, sizeof(local)); locallen = sizeof(local);
     getsockname(sockfd, (struct sockaddr *)&local, &locallen);
     if (memcmp(&local, &mapped_addr1, 8) == 0) { /* Same IP and port*/
       /* conduct TEST II */      
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr, &mapped_addr2, 1, 1);
+      retval = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response: Type 3 - Sym UDP FW */
@@ -721,17 +866,17 @@ int stun_handle_get_nattype(stun_handle_t *se,
     }
     else { /* Different IP */
       memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(se, se->st_pri_addr, &mapped_addr2, 1, 1);
+      retval = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 1, 1);
       if (retval == -1) {
 	if (errno == ETIMEDOUT) {
 	  /* No Response */
-	  retval = stun_send_binding_request(se, se->st_sec_addr, &mapped_addr2, 0, 0);
+	  retval = stun_send_binding_request(sh, sh->sh_sec_addr, &mapped_addr2, 0, 0);
 	  /* response comes back, has to be the case */
 	  if (retval == 0) {
 	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
 	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
 		 same */
-	      retval = stun_send_binding_request(se, se->st_pri_addr, &mapped_addr2, 0, 1);
+	      retval = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 0, 1);
 	      if(retval==0) {
 		/* Response: Type 6 - Restricted */
 		nattype = STUN_NAT_RES_CONE;
@@ -756,7 +901,7 @@ int stun_handle_get_nattype(stun_handle_t *se,
     }
   }
   
-  se->st_nattype = nattype;
+  sh->sh_nattype = nattype;
   return retval;
 }
 #endif /* if 0 */
@@ -779,7 +924,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 {
   stun_msg_t *req, *resp;
   int z, err;
-  int events = su_wait_events(w, self->st_tls_socket);
+  int events = su_wait_events(w, self->sh_tls_socket);
   SSL_CTX* ctx;
   SSL *ssl;
   X509* server_cert;
@@ -795,24 +940,24 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
   if (events & SU_WAIT_ERR) {
     su_wait_destroy(w);
-    su_root_deregister(self->st_root, self->st_root_index);
+    su_root_deregister(self->sh_root, self->sh_root_index);
 
     /* Destroy the timeout timer */
-    su_timer_destroy(self->st_connect_timer);
+    su_timer_destroy(self->sh_connect_timer);
 
     SU_DEBUG_3(("%s: shared secret not obtained from server. "	\
 		"Proceed without username/password.\n", __func__));
-    self->st_state = stun_tls_connection_failed;
-    self->st_callback(self->st_context, self, NULL, self->st_state);
+    self->sh_state = stun_tls_connection_failed;
+    self->sh_callback(self->sh_context, self, NULL, self->sh_state);
     return 0;
   }
 
   /* Can be NULL, too */
-  ssl  = self->st_ssl;
-  req  = &self->st_tls_request;
-  resp = &self->st_tls_response;
+  ssl  = self->sh_ssl;
+  req  = &self->sh_tls_request;
+  resp = &self->sh_tls_response;
 
-  state = self->st_state;
+  state = self->sh_state;
   switch (state) {
   case stun_tls_connecting:
 
@@ -827,7 +972,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     SSLeay_add_ssl_algorithms();
     SSL_load_error_strings();
     ctx = SSL_CTX_new(TLSv1_client_method());
-    self->st_ctx = ctx;
+    self->sh_ctx = ctx;
 
     if (ctx == NULL) {
       STUN_ERROR(errno, SSL_CTX_new);
@@ -843,9 +988,9 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     
     /* Start TLS negotiation */
     ssl = SSL_new(ctx);
-    self->st_ssl = ssl;
+    self->sh_ssl = ssl;
 
-    if (SSL_set_fd(ssl, self->st_tls_socket) == 0) {
+    if (SSL_set_fd(ssl, self->sh_tls_socket) == 0) {
       STUN_ERROR(err, connect);
       stun_free_buffer(&req->enc_buf);
       return -1;
@@ -857,37 +1002,37 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
   case stun_tls_ssl_connecting:
     events = SU_WAIT_ERR | SU_WAIT_IN;
-    su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_tls_socket, events);
+    su_root_eventmask(self->sh_root, self->sh_root_index,
+		      self->sh_tls_socket, events);
 
     z = SSL_connect(ssl);
     err = SSL_get_error(ssl, z);
     if (z < 1 && (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)) {
-      self->st_state = stun_tls_ssl_connecting;
+      self->sh_state = stun_tls_ssl_connecting;
       return 0;
     }
     else if (z < 1) {
       stun_free_buffer(&req->enc_buf);
-      self->st_state = stun_tls_ssl_connect_failed;
-      self->st_callback(self->st_context, self, NULL, self->st_state);
+      self->sh_state = stun_tls_ssl_connect_failed;
+      self->sh_callback(self->sh_context, self, NULL, self->sh_state);
       return -1;
     }
     
     /* Inform application about the progress  */
-    self->st_state = stun_tls_writing;
-    /* self->st_callback(self->st_context, self, self->st_state); */
+    self->sh_state = stun_tls_writing;
+    /* self->sh_callback(self->sh_context, self, self->sh_state); */
 
     events = SU_WAIT_ERR | SU_WAIT_OUT;
-    su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_tls_socket, events);
+    su_root_eventmask(self->sh_root, self->sh_root_index,
+		      self->sh_tls_socket, events);
 
     break;
 
   case stun_tls_writing:
 
     events = SU_WAIT_ERR | SU_WAIT_IN;
-    su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_tls_socket, events);
+    su_root_eventmask(self->sh_root, self->sh_root_index,
+		      self->sh_tls_socket, events);
 
     SU_DEBUG_3(("TLS connection using %s\n", SSL_get_cipher(ssl)));
     
@@ -910,14 +1055,14 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 	return -1;
       }
     }
-    self->st_state = stun_tls_reading;
+    self->sh_state = stun_tls_reading;
 
     break;
 
   case stun_tls_reading:
     events = SU_WAIT_ERR | SU_WAIT_OUT;
-    su_root_eventmask(self->st_root, self->st_root_index,
-		      self->st_tls_socket, events);
+    su_root_eventmask(self->sh_root, self->sh_root_index,
+		      self->sh_tls_socket, events);
 
     SU_DEBUG_5(("Shared Secret Request sent to server:\n"));
     debug_print(&req->enc_buf);
@@ -943,15 +1088,15 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
     /* closed TLS connection */
     SSL_shutdown(ssl);
-    self->st_state = stun_tls_closing;
+    self->sh_state = stun_tls_closing;
 
     break;
 
   case stun_tls_closing:
-    su_close(self->st_tls_socket);
+    su_close(self->sh_tls_socket);
 
-    SSL_free(self->st_ssl), ssl = NULL;
-    SSL_CTX_free(self->st_ctx), ctx = NULL;
+    SSL_free(self->sh_ssl), ssl = NULL;
+    SSL_CTX_free(self->sh_ctx), ctx = NULL;
 
     stun_free_buffer(&req->enc_buf);
   
@@ -968,8 +1113,8 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
       password = stun_get_attr(resp->stun_attr, PASSWORD);
       if (username != NULL && password != NULL) {
 	/* move result to se */
-	stun_copy_buffer(&self->st_username, username->pattr);
-	stun_copy_buffer(&self->st_passwd, password->pattr);
+	stun_copy_buffer(&self->sh_username, username->pattr);
+	stun_copy_buffer(&self->sh_passwd, password->pattr);
       }
       break;
 
@@ -987,11 +1132,11 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     }
     
     su_wait_destroy(w);
-    su_root_deregister(self->st_root, self->st_root_index);
+    su_root_deregister(self->sh_root, self->sh_root_index);
 
-    self->st_use_msgint = 1;
-    self->st_state = stun_tls_done;
-    self->st_callback(self->st_context, self, NULL, self->st_state);
+    self->sh_use_msgint = 1;
+    self->sh_state = stun_tls_done;
+    self->sh_callback(self->sh_context, self, NULL, self->sh_state);
     
     break;
 
@@ -1005,12 +1150,13 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
 static void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
 				      su_timer_t *t,
-				      stun_handle_t *se)
+				      su_timer_arg_t *arg)
 {
+  stun_handle_t *sh = arg;
 
   SU_DEBUG_7(("%s: entering.\n", __func__));
 
-  if (se->st_state != stun_tls_connecting) {
+  if (sh->sh_state != stun_tls_connecting) {
     su_destroy_timer(t);
     SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
     return;
@@ -1018,17 +1164,17 @@ static void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 
   SU_DEBUG_7(("%s: connect() timeout.\n", __func__));
 
-  su_root_deregister(se->st_root, se->st_root_index);
+  su_root_deregister(sh->sh_root, sh->sh_root_index);
   
-  se->st_state = stun_tls_connection_timeout;
-  se->st_callback(se->st_context, se, NULL, se->st_state);
+  sh->sh_state = stun_tls_connection_timeout;
+  sh->sh_callback(sh->sh_context, sh, NULL, sh->sh_state);
 
   return;
 }
 
 
 /** Shared secret request/response processing */
-int stun_handle_request_shared_secret(stun_handle_t *se)
+int stun_handle_request_shared_secret(stun_handle_t *sh)
 {
   int events = -1;
   int one, err = -1;
@@ -1038,10 +1184,10 @@ int stun_handle_request_shared_secret(stun_handle_t *se)
   su_addrinfo_t *ai = NULL;
   su_timer_t *connect_timer = NULL;
 
-  assert(se);
-  ai = &se->st_pri_info;
+  assert(sh);
+  ai = &sh->sh_pri_info;
 
-  if (se->st_use_msgint == 1) {
+  if (sh->sh_use_msgint == 1) {
     SU_DEBUG_3(("Contacting Server to obtain shared secret. " \
 		"Please wait.\n"));
   }
@@ -1073,7 +1219,7 @@ int stun_handle_request_shared_secret(stun_handle_t *se)
 
   /* Do an asynchronous connect(). Three error codes are ok,
    * others cause return -1. */
-  if (connect(s, (struct sockaddr *) &se->st_pri_addr, 
+  if (connect(s, (struct sockaddr *) &sh->sh_pri_addr, 
 	      ai->ai_addrlen) == SOCKET_ERROR) {
     err = su_errno();
     if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK) {
@@ -1085,29 +1231,29 @@ int stun_handle_request_shared_secret(stun_handle_t *se)
   SU_DEBUG_9(("%s: %s: %s\n", __func__, "connect",
 	      su_strerror(err)));
   
-  se->st_tls_socket = s;
+  sh->sh_tls_socket = s;
 
   if (su_wait_create(wait, s, events) == -1)
     STUN_ERROR(errno, su_wait_create);
 
   events = SU_WAIT_CONNECT | SU_WAIT_ERR;
-  su_root_eventmask(se->st_root, se->ss_root_index, s, events);
+  su_root_eventmask(sh->sh_root, sh->ss_root_index, s, events);
 
-  if ((se->st_root_index =
-       su_root_register(se->st_root, wait, stun_tls_callback, se, 0)) == -1) {
+  if ((sh->sh_root_index =
+       su_root_register(sh->sh_root, wait, stun_tls_callback, sh, 0)) == -1) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
 
-  se->st_state = stun_tls_connecting;
+  sh->sh_state = stun_tls_connecting;
 
   /* Create and start timer for connect() timeout */
   SU_DEBUG_3(("%s: creating timeout timer for connect()\n", __func__));
 
-  connect_timer = su_timer_create(su_root_task(se->st_root),
+  connect_timer = su_timer_create(su_root_task(sh->sh_root),
 				  STUN_TLS_CONNECT_TIMEOUT);
-  se->st_connect_timer = connect_timer;
-  su_timer_set(connect_timer, stun_tls_connect_timer_cb, se);
+  sh->sh_connect_timer = connect_timer;
+  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sh);
 
   return 0;
 }
@@ -1155,18 +1301,45 @@ int stun_make_sharedsecret_req(stun_msg_t *msg)
 }
 
 
+/* Return action of the request. If no request, return default value */
+static inline
+stun_action_t get_action(stun_request_t *req)
+{
+  return req ? req->sr_action : stun_action_no_action;
+}
+
+
+/* Find request from the request queue, based on TID */
+static inline
+stun_request_t *find_request(stun_handle_t *self, uint16_t *id)
+{
+  uint16_t *match;
+  stun_request_t *req = NULL;
+  int len = sizeof(uint16_t)*8;
+
+  for (req = self->sh_requests; req; req = req->sr_next) {
+    match = req->sr_msg->stun_hdr.tran_id;
+    if (memcmp(match, id, len) == 0) {
+      break;
+    }
+  }
+  return req;
+}
+
+
 int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 {
-  int retval = -1, s, err = -1, dgram_len, clnt_addr_len;
+  int retval = -1, s, err = -1, dgram_len;
   char ipaddr[SU_ADDRSIZE + 2];
-  stun_msg_t *binding_request = NULL, binding_response;
+  stun_msg_t binding_response;
   stun_request_t *req;
   unsigned char dgram[512] = { 0 };
-  stun_attr_t *mapped_addr, *chg_addr;
   su_sockaddr_t recv;
+  su_localinfo_t *li = NULL;
   socklen_t recv_len;
-  int events = su_wait_events(w, self->st_tls_socket);
-  su_localinfo_t *clnt_addr = stun_handle_get_local_addr(self);
+  int events = su_wait_events(w, self->sh_tls_socket);
+  stun_action_t action = stun_action_no_action;
+  uint16_t *id;
 
   SU_DEBUG_7(("%s(%p): events%s%s%s\n", __func__, self,
 	      events & SU_WAIT_IN ? " IN" : "",
@@ -1175,13 +1348,13 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
   if (!(events & SU_WAIT_IN || events & SU_WAIT_OUT)) {
     su_wait_destroy(w);
-    su_root_deregister(self->st_root, self->ss_root_index);
-    /* self->st_state = stun_bind_error; */
-    self->st_callback(self->st_context, self, NULL, stun_bind_error);
+    su_root_deregister(self->sh_root, self->ss_root_index);
+    /* self->sh_state = stun_bind_error; */
+    self->sh_callback(self->sh_context, self, NULL, stun_bind_error);
     return 0;
   }
 
-  s = self->st_bind_socket;
+  s = self->sh_bind_socket;
 
   /* receive response */
   recv_len = sizeof(recv);
@@ -1189,8 +1362,8 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 		 &recv_len);
   err = errno;
   if ((dgram_len < 0) && (err != EAGAIN)) {
-    su_wait_destroy(w);
-    /* su_root_deregister(self->st_root, self->ss_root_index); */
+    /* su_wait_destroy(w); */
+    /* su_root_deregister(self->sh_root, self->ss_root_index); */
     STUN_ERROR(err, recvfrom);
     /* stun_free_message(binding_request); */
     return err;
@@ -1215,10 +1388,10 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
   /* Parse here the incoming message. */
   if (stun_parse_message(&binding_response) < 0) {
-    su_wait_destroy(w);
-    su_root_deregister(self->st_root, self->ss_root_index);
+    /* su_wait_destroy(w); */
+    su_root_deregister(self->sh_root, self->ss_root_index);
     SU_DEBUG_5(("%s: Error parsing response.\n", __func__));
-    stun_free_message(binding_request);
+    /* stun_free_message(binding_request); */
     stun_free_message(&binding_response);
     return retval;
   }
@@ -1226,34 +1399,79 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   /* Based on the decoded payload, find the corresponding request
    * (based on TID). */
 
-  for (req = self->st_requests; req; req = req->sr_next) {
-    if (memcmp(&req->sr_msg->stun_hdr.tran_id,
-	       &binding_response.stun_hdr.tran_id,
-	       sizeof(uint16_t)*8) == 0)
-      break;
-  }
+  id = binding_response.stun_hdr.tran_id;
 
-  if (!req) {
+  req = find_request(self, id);
+  action = get_action(req);
+
+  /* Based on the action, use different state machines */
+  switch (action) {
+  case stun_action_binding_request:
+    process_binding_request(req, &binding_response);
+    li = stun_request_get_localinfo(req);
+    memcpy(&self->sh_localinfo, li, sizeof(su_localinfo_t));
+    memcpy(self->sh_localinfo.li_addr, li->li_addr, sizeof(su_sockaddr_t));
+
+    if (x_is_inserted(req, sr))
+      x_remove(req, sr);
+    /* su_wait_destroy(w); */
+#if 0
+    /* XXX - free req */
+    stun_free_message(&binding_response);
+    stun_free_message(req->sr_msg);
+#endif
+
+    break;
+
+  case stun_action_get_nattype:
+    process_get_nattype(req, &binding_response);
+    break;
+
+  case stun_action_get_lifetime:
+    process_get_lifetime(req, &binding_response);
+    break;
+
+  case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
-    /* callback here */
-    return -1;
+    req->sr_state = stun_request_not_found;
+    break;
+
+  default:
+    SU_DEBUG_3(("%s: requested action not implemented.\n", __func__));
+    req->sr_state = stun_error;
+    break;
   }
+  
+  self->sh_callback(self->sh_context, self, req, req->sr_state);
+
+  return 0;
+}
+
+
+static
+int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
+{
+  int retval = -1, clnt_addr_len;
+  stun_attr_t *mapped_addr, *chg_addr;
+  stun_handle_t *self = req->sr_handle;
+  su_localinfo_t *clnt_addr = stun_request_get_localinfo(req);
+  stun_msg_t *binding_request;
+
   binding_request = req->sr_msg;
   req->sr_state = stun_bind_processing;
     
-  switch (binding_response.stun_hdr.msg_type) {
+  switch (binding_response->stun_hdr.msg_type) {
   case BINDING_RESPONSE:
-    if (stun_validate_message_integrity(&binding_response, &self->st_passwd) < 0) {
-      su_wait_destroy(w);
-      /* su_root_deregister(self->st_root, self->ss_root_index); */
+    if (stun_validate_message_integrity(binding_response, &self->sh_passwd) < 0) {
+      /* su_root_deregister(self->sh_root, self->ss_root_index); */
       stun_free_message(binding_request);
-      stun_free_message(&binding_response);
+      stun_free_message(binding_response);
       return retval;
     }
 
     memset(&clnt_addr->li_addr->su_sin, 0, sizeof(struct sockaddr_in));
     clnt_addr_len = sizeof(struct sockaddr);
-    mapped_addr = stun_get_attr(binding_response.stun_attr, MAPPED_ADDRESS);
+    mapped_addr = stun_get_attr(binding_response->stun_attr, MAPPED_ADDRESS);
 
     if (mapped_addr != NULL) {
       memcpy(&clnt_addr->li_addr->su_sin, mapped_addr->pattr, clnt_addr_len);
@@ -1261,43 +1479,167 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
     }
 
     /* update alternative server address */
-    if (self->st_sec_addr->su_family == 0) {
+    if (self->sh_sec_addr->su_family == 0) {
       /* alternative server address not present */
-      chg_addr = stun_get_attr(binding_response.stun_attr, CHANGED_ADDRESS);
+      chg_addr = stun_get_attr(binding_response->stun_attr, CHANGED_ADDRESS);
 
       if (chg_addr != NULL)
-	memcpy(&self->st_sec_addr->su_sin, chg_addr->pattr, sizeof(struct sockaddr_in));
+	memcpy(&self->sh_sec_addr->su_sin, chg_addr->pattr, sizeof(struct sockaddr_in));
     }
+    req->sr_state = stun_bind_done;
+
     break;
     
   case BINDING_ERROR_RESPONSE:
   default:
-    if (stun_process_error_response(&binding_response) < 0) {
+    if (stun_process_error_response(binding_response) < 0) {
       SU_DEBUG_3(("%s: Error in Binding Error Response.\n", __func__));
     }
-    
+    req->sr_state = stun_bind_error;
+      
     break;
   }
-
-  su_wait_destroy(w);
-
-  req->sr_state = stun_bind_done;
-  self->st_callback(self->st_context, self, req, req->sr_state);
-
-  stun_free_message(&binding_response);
-  stun_free_message(binding_request);
 
   return retval;
 
 }
 
+int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
+{
+
+  return 0;
+}
+
+
+int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
+{
+  su_sockaddr_t local;
+  socklen_t locallen;
+  stun_handle_t *sh = req->sr_handle;
+  su_socket_t s = sh->sh_bind_socket;
+  su_localinfo_t *li = NULL;
+  int err;
+
+  /* parse first the default message */
+  if (binding_response)
+    process_binding_request(req, binding_response);
+
+  li = stun_request_get_localinfo(req);
+
+  /* call callback indicating we are done, no change to get out with
+   * STUN */
+  if ((req->sr_state == stun_bind_timeout)) {
+    if (req->sr_request_mask == 0) {
+      sh->sh_nattype = stun_udp_blocked;
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      stun_destroy_request(req);
+      return 0;
+    }
+    else if (req->sr_request_mask & (CHG_IP | CHG_PORT)) {
+      sh->sh_nattype = stun_sym_udp_fw;
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      stun_destroy_request(req);
+      return 0;
+    }
+  }
+  else /* if (req->sr_state == stun_bind_done) */ {
+    if (req->sr_request_mask & (CHG_IP | CHG_PORT)) {
+      sh->sh_nattype = stun_open_internet;
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      stun_destroy_request(req);
+      return 0;
+    }
+    if (req->sr_request_mask == 0) {
+      if (memcmp(li->li_addr, sh->sh_localinfo.li_addr, 8) == 0) {
+	if (x_is_inserted(req, sr))
+	  x_remove(req, sr);
+	
+	stun_destroy_request(req);
+	req = NULL;
+	
+	req = stun_action_create_nattype_discovery(sh);
+	/* Insert this request to the request queue */
+	if (sh->sh_requests)
+	  x_insert(sh->sh_requests, req, sr);
+	else
+	  sh->sh_requests = req;
+
+	/* Same Public IP and port, Test III, server ip 0 or 1 should be
+	   same */
+	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 1) < 0) 
+	  return -1;
+
+	err = stun_send_binding_request(req, sh->sh_pri_addr);
+	if (err < 0) {
+	  stun_free_message(req->sr_msg);
+	  return -1;
+	}
+	return 0;
+      }
+      else {
+	sh->sh_nattype = stun_nat_sym;
+	sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+	stun_destroy_request(req);
+	return 0;
+      }
+    }
+  }
+
+  memset(&local, 0, sizeof(local));
+  locallen = sizeof(local);
+  getsockname(s, (struct sockaddr *) &local, &locallen);
+
+  if (x_is_inserted(req, sr))
+    x_remove(req, sr);
+
+  stun_destroy_request(req);
+  req = NULL;
+    
+  req = stun_action_create_nattype_discovery(sh);
+  /* Insert this request to the request queue */
+  if (sh->sh_requests)
+    x_insert(sh->sh_requests, req, sr);
+  else
+    sh->sh_requests = req;
+
+  /* Same IP and port */
+  if (memcmp(&local, li->li_addr, 8) == 0) {
+    /* conduct TEST II */
+    /* Create message */
+    if (stun_make_binding_req(sh, req, req->sr_msg, 1, 1) < 0) 
+      return -1;
+
+    err = stun_send_binding_request(req, sh->sh_pri_addr);
+    if (err < 0) {
+      stun_free_message(req->sr_msg);
+    }
+    /* err = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 1, 1); */
+  }
+  else {
+    /* Create message */
+    if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
+      return -1;
+
+    /* Send message to changed address (sec_addr) */
+    err = stun_send_binding_request(req, sh->sh_sec_addr);
+    if (err < 0) {
+      stun_free_message(req->sr_msg);
+    }
+
+  }
+
+  return 0;
+}
+
 
 static void stun_sendto_timer_cb(su_root_magic_t *magic, 
-				su_timer_t *t,
-				stun_request_t *req)
+				 su_timer_t *t,
+				 su_timer_arg_t *arg)
 {
+  stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
-  int s = sh->st_bind_socket;
+  int s = sh->sh_bind_socket;
+  stun_action_t action;
 
   SU_DEBUG_9(("%s: entering.\n", __func__));
 
@@ -1309,7 +1651,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
   ++req->sr_retry_count;
 
   /* check if max retry count has been exceeded */
-  if (req->sr_retry_count >= sh->st_max_retries) {
+  if (req->sr_retry_count >= sh->sh_max_retries) {
     errno = ETIMEDOUT;
     STUN_ERROR(errno, stun_sendto_timer_cb);
 
@@ -1325,21 +1667,28 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     req->sr_state = stun_bind_timeout;
 
     /* Either the server was dead, address wrong or STUN_UDP_BLOCKED */
-    sh->st_nattype = STUN_UDP_BLOCKED;
-    sh->st_callback(sh->st_context, sh, req, req->sr_state);
+    /* sh->sh_nattype = stun_udp_blocked; */
+    
+    action = get_action(req);
+
+    if (action == stun_action_binding_request)
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+    else if (action == stun_action_get_nattype)
+      process_get_nattype(req, NULL);
 
     return;
   }
 
   SU_DEBUG_3(("%s: Timeout no. %d, retransmitting.\n", __func__, req->sr_retry_count));
 
-  if (stun_send_message(s, sh->st_pri_addr, req->sr_msg, &(sh->st_passwd)) < 0) {
+  if (stun_send_message(s, sh->sh_pri_addr, req->sr_msg, &(sh->sh_passwd)) < 0) {
     stun_free_message(req->sr_msg);
     free(req->sr_msg), req->sr_msg = NULL;
     return;
   }
 
-  su_timer_set_at(t, stun_sendto_timer_cb, req, su_time_add(su_now(), req->sr_timeout *= 2));
+  su_timer_set_at(t, stun_sendto_timer_cb, (su_wakeup_arg_t *) req,
+		  su_time_add(su_now(), req->sr_timeout *= 2));
   
   return;
 }
@@ -1368,19 +1717,19 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
  * @ERROR ETIMEDOUT       Request timed out.
  * 
  */   
-int stun_send_binding_request(stun_request_t *request,
+int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t  *srvr_addr)
 {
   su_timer_t *sendto_timer = NULL;
   char ipaddr[SU_ADDRSIZE + 2];
   int s;
-  stun_handle_t *se = request->sr_handle;
-  stun_msg_t *msg =  request->sr_msg;
+  stun_handle_t *sh = req->sr_handle;
+  stun_msg_t *msg =  req->sr_msg;
 
-  assert (se && srvr_addr);
+  assert (sh && srvr_addr);
 
-  /* se->st_state = stun_init; */
-  s = se->st_bind_socket;
+  /* sh->sh_state = stun_init; */
+  s = sh->sh_bind_socket;
 
   inet_ntop(srvr_addr->su_family, SU_ADDR(srvr_addr), ipaddr, sizeof(ipaddr));
 #if 0
@@ -1388,30 +1737,40 @@ int stun_send_binding_request(stun_request_t *request,
 	      "ch-addr=%d, chh-port=%d)\n",
 	      __func__,
 	      ipaddr, ntohs(srvr_addr->su_port),
-	      se->st_use_msgint, chg_ip, chg_port));
+	      sh->sh_use_msgint, chg_ip, chg_port));
 #endif
-  if (stun_send_message(s, srvr_addr, msg, &(se->st_passwd)) < 0) {
+  if (stun_send_message(s, srvr_addr, msg, &(sh->sh_passwd)) < 0) {
     return -1;
   }
 
   /* Create and start timer */
-  sendto_timer = su_timer_create(su_root_task(se->st_root), STUN_SENDTO_TIMEOUT);
-  su_timer_set(sendto_timer, stun_sendto_timer_cb, request);
+  sendto_timer = su_timer_create(su_root_task(sh->sh_root), STUN_SENDTO_TIMEOUT);
+  su_timer_set(sendto_timer, stun_sendto_timer_cb, (su_wakeup_arg_t *) req);
 
-  request->sr_state = stun_bind_sending;
-  /* se->st_callback(se->st_context, se, se->st_state); */
+  req->sr_state = stun_bind_sending;
+  /* sh->sh_callback(sh->sh_context, sh, sh->sh_state); */
 
   return 0;
 }
 
 
 /** Compose a STUN message of the format defined by stun_msg_t */
-int stun_make_binding_req(stun_handle_t *se, stun_msg_t *msg, int chg_ip, int chg_port)
+int stun_make_binding_req(stun_handle_t *sh, stun_request_t *req,
+			  stun_msg_t *msg, int chg_ip, int chg_port)
 {
 
   int i;
   stun_attr_t *tmp, **p; 
+  int bits = 0;
+  
+  if (chg_ip)
+    bits |= CHG_IP;
+  if (chg_port)
+    bits |= CHG_PORT;
 
+  if (req)
+    req->sr_request_mask = bits;
+  
   /* compose header */
   msg->stun_hdr.msg_type = BINDING_REQUEST;
   msg->stun_hdr.msg_len = 0; /* actual len computed by
@@ -1442,12 +1801,12 @@ int stun_make_binding_req(stun_handle_t *se, stun_msg_t *msg, int chg_ip, int ch
   }
 
   /* USERNAME */
-  if (se->st_use_msgint &&
-      se->st_username.data && 
-      se->st_passwd.data) {
+  if (sh->sh_use_msgint &&
+      sh->sh_username.data && 
+      sh->sh_passwd.data) {
     tmp = (stun_attr_t *) malloc(sizeof(stun_attr_t));
     tmp->attr_type = USERNAME;
-    tmp->pattr = &se->st_username;
+    tmp->pattr = &sh->sh_username;
     tmp->next = NULL;
     *p = tmp; p = &(tmp->next);
 
@@ -1522,21 +1881,21 @@ int stun_process_error_response(stun_msg_t *msg)
 }
 
 
-int stun_handle_set_uname_pwd(stun_handle_t *se,
+int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
 			      int len_uname,
 			      const char *pwd,
 			      int len_pwd)
 {
-  se->st_username.data = (unsigned char *) malloc(len_uname);
-  memcpy(se->st_username.data, uname, len_uname);
-  se->st_username.size = len_uname;
+  sh->sh_username.data = (unsigned char *) malloc(len_uname);
+  memcpy(sh->sh_username.data, uname, len_uname);
+  sh->sh_username.size = len_uname;
   
-  se->st_passwd.data = (unsigned char *) malloc(len_pwd);
-  memcpy(se->st_passwd.data, pwd, len_pwd);
-  se->st_passwd.size = len_pwd;
+  sh->sh_passwd.data = (unsigned char *) malloc(len_pwd);
+  memcpy(sh->sh_passwd.data, pwd, len_pwd);
+  sh->sh_passwd.size = len_pwd;
 
-  se->st_use_msgint = 1; /* turn on message integrity ussage */
+  sh->sh_use_msgint = 1; /* turn on message integrity ussage */
   
   return 0;
 }
@@ -1601,23 +1960,7 @@ int stun_atoaddr(int ai_family,
 }
 
 
-char const *stun_nattype(stun_handle_t *se)
-{
-  switch(se->st_nattype) {
-  case STUN_NAT_UNKNOWN: return stun_nat_unknown;
-  case STUN_OPEN_INTERNET: return stun_open_internet;
-  case STUN_UDP_BLOCKED: return stun_udp_blocked;
-  case STUN_SYM_UDP_FW: return stun_sym_udp_fw;
-  case STUN_NAT_FULL_CONE: return stun_nat_full_cone;
-  case STUN_NAT_SYM: return stun_nat_sym;
-  case STUN_NAT_RES_CONE: return stun_nat_res_cone;
-  case STUN_NAT_PORT_RES_CONE: return stun_nat_port_res_cone;
-  default: return "INVALID NAT TYPE";
-  }
-}
-
-
-int stun_handle_get_lifetime(stun_handle_t *se,
+int stun_handle_get_lifetime(stun_handle_t *sh,
 			     su_localinfo_t *my_addr,
 			     int *addrlen,
 			     int *lifetime)
@@ -1635,7 +1978,7 @@ int stun_handle_get_lifetime(stun_handle_t *se,
   stun_msg_t binding_request, binding_response;
   unsigned char dgram[512];
 
-  assert(se);
+  assert(sh);
 
   SU_DEBUG_3(("%s: determining binding life time, this may take a while.\n", __func__));
 
@@ -1667,7 +2010,7 @@ int stun_handle_get_lifetime(stun_handle_t *se,
   }
 
   /* run protocol here... */
-  sockfdx = se->st_bind_socket;
+  sockfdx = sh->sh_bind_socket;
 
   clnt_addr->sin_port = 0;
   /* initialize socket x */
@@ -1697,10 +2040,10 @@ int stun_handle_get_lifetime(stun_handle_t *se,
   while (abs(lt_cur-lt) > STUN_LIFETIME_CI) {
     SU_DEBUG_3(("%s: Lifetime determination round %d, testing lifetime of %d sec.\n", __func__, i++, lt));
     /* send request from X */
-    if (stun_make_binding_req(se, &binding_request, 0, 0) < 0)
+    if (stun_make_binding_req(sh, NULL, &binding_request, 0, 0) < 0)
       return retval;
 
-    if (stun_send_message(sockfdx, se->st_pri_addr, &binding_request, &(se->st_passwd)) < 0)
+    if (stun_send_message(sockfdx, sh->sh_pri_addr, &binding_request, &(sh->sh_passwd)) < 0)
       return retval;
 
     FD_ZERO(&rfds);
@@ -1745,10 +2088,10 @@ int stun_handle_get_lifetime(stun_handle_t *se,
     stun_free_message(&binding_response);
     sleep(lt);
     /* send from sockfdy */
-    if (stun_make_binding_req(se, &binding_request, 0, 0) <0)
+    if (stun_make_binding_req(sh, NULL, &binding_request, 0, 0) <0)
       return retval;
     stun_add_response_address(&binding_request, &mapped_addr);
-    if (stun_send_message(sockfdy, se->st_pri_addr, &binding_request, &(se->st_passwd)) < 0)
+    if (stun_send_message(sockfdy, sh->sh_pri_addr, &binding_request, &(sh->sh_passwd)) < 0)
       return retval;
 
     FD_ZERO(&rfds);

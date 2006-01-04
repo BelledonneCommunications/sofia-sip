@@ -76,7 +76,7 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_request_t *req, stun
     break;
 
   case stun_bind_done:
-    li = stun_handle_get_local_addr(en);
+    li = stun_request_get_localinfo(req);
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
       SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
 		  ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
@@ -154,6 +154,13 @@ int main(int argc, char *argv[])
 
   if (stun_handle_bind(se, &lifetime, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
     SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
+    return -1;
+  }
+
+  su_root_run(root);
+
+  if (stun_handle_get_nattype(se, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
     return -1;
   }
 
