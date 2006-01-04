@@ -2037,12 +2037,14 @@ CONDITION_FUNCTION(authenticate_call)
 
   if (event == nua_r_invite && status == 401) {
     authenticate(ep, call, nh, NUTAG_AUTH("Digest:\"test_nua\":jaska:secret"),
+		 SIPTAG_SUBJECT_STR("Got 401"),
 		 TAG_END());
     return 0;
   }
 
   if (event == nua_r_invite && status == 407) {
     authenticate(ep, call, nh, NUTAG_AUTH("Digest:\"test_nua\":erkki:secret"),
+		 SIPTAG_SUBJECT_STR("Got 407"),
 		 TAG_END());
     return 0;
   }
@@ -2084,6 +2086,7 @@ int test_reject_401(struct context *ctx)
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
   struct event const *e;
+  sip_t const *sip;
 
   if (print_headings)
     printf("TEST NUA-4.4: challenge then reject\n");
@@ -2136,6 +2139,9 @@ int test_reject_401(struct context *ctx)
    INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED
   */
   TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_subject);
+  TEST_S(sip->sip_subject->g_value, "reject-401"); 
   TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
@@ -2143,6 +2149,9 @@ int test_reject_401(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_subject);
+  TEST_S(sip->sip_subject->g_value, "Got 407"); 
   TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
@@ -2152,6 +2161,9 @@ int test_reject_401(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_subject);
+  TEST_S(sip->sip_subject->g_value, "Got 401"); 
   TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */

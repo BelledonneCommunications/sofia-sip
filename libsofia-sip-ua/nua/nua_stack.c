@@ -6620,8 +6620,7 @@ ua_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       nh->nh_ss->ss_crequest->cr_restart = NULL;
     }
 
-    restart(nh, NULL);	/* Restart operation */
-
+    restart(nh, (tagi_t *)tags);	/* Restart operation */
   }
   else if (status < 0) {
     ua_event(nua, nh, NULL, e, 500, "Cannot add credentials", TAG_END());
