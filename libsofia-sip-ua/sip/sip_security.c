@@ -58,7 +58,6 @@
 #include <assert.h>
 
 #include "sip_parser.h"
-#include <msg_auth.h>
 
 /* ====================================================================== */
 
