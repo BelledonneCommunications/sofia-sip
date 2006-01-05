@@ -41,7 +41,6 @@
 #include "msg_addr.h"
 #include "msg_date.h"
 #include "msg_parser.h"
-#include "msg_auth.h"
 #include "bnf.h"
 #include "msg_mclass.h"
 #include "msg_mclass_hash.h"

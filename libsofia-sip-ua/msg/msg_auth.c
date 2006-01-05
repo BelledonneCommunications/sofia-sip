@@ -44,7 +44,6 @@
 #include <msg.h>
 #include <msg_parser.h>
 #include <msg_header.h>
-#include <msg_auth.h>
 #include <bnf.h>
 
 #if 0
