@@ -3300,8 +3300,8 @@ register_expires_contacts(msg_t *msg, sip_t *sip)
 		   TAG_IF(others, SIPTAG_CONTACT_STR("*")),
 		   SIPTAG_EXPIRES_STR("0"), 
 		   TAG_END());
+	break;
       }
-      break;
     }
 
     if (m == NULL)		/* No '*' was found */

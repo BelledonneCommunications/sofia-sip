@@ -1222,6 +1222,8 @@ int test_unregister(struct context *ctx)
   BEGIN();
 
   struct endpoint *a = &ctx->a,  *b = &ctx->b, *c = &ctx->c;
+  struct event *e;
+  sip_t const *sip;
 
 /* un-REGISTER test
 
@@ -1236,7 +1238,14 @@ int test_unregister(struct context *ctx)
 
   if (a->reg->nh) {
     unregister(a, NULL, a->reg->nh, TAG_END());
-    run_a_until(ctx, -1, until_final_response);
+    run_a_until(ctx, -1, save_until_final_response);
+    TEST_1(e = a->call->events.head); 
+    TEST_E(e->data->e_event, nua_r_unregister);
+    TEST(e->data->e_status, 200);
+    TEST_1(sip = sip_object(e->data->e_msg));
+    TEST_1(!sip->sip_contact); 
+    TEST_1(!e->next);
+    free_events_in_list(ctx, a->call);
     nua_handle_destroy(a->reg->nh), a->reg->nh = NULL;
   }
 
@@ -1248,7 +1257,14 @@ int test_unregister(struct context *ctx)
 
   if (b->reg->nh) {
     unregister(b, NULL, b->reg->nh, TAG_END());
-    run_b_until(ctx, -1, until_final_response);
+    run_b_until(ctx, -1, save_until_final_response);
+    TEST_1(e = b->call->events.head); 
+    TEST_E(e->data->e_event, nua_r_unregister);
+    TEST(e->data->e_status, 200);
+    TEST_1(sip = sip_object(e->data->e_msg));
+    TEST_1(!sip->sip_contact); 
+    TEST_1(!e->next);
+    free_events_in_list(ctx, b->call);
     nua_handle_destroy(b->reg->nh), b->reg->nh = NULL;
   }
   if (print_headings)
@@ -1259,7 +1275,14 @@ int test_unregister(struct context *ctx)
 
   if (c->reg->nh) {
     unregister(c, NULL, c->reg->nh, TAG_END());
-    run_c_until(ctx, -1, until_final_response);
+    run_c_until(ctx, -1, save_until_final_response);
+    TEST_1(e = c->call->events.head); 
+    TEST_E(e->data->e_event, nua_r_unregister);
+    TEST(e->data->e_status, 200);
+    TEST_1(sip = sip_object(e->data->e_msg));
+    TEST_1(!sip->sip_contact); 
+    TEST_1(!e->next);
+    free_events_in_list(ctx, c->call);
     nua_handle_destroy(c->reg->nh), c->reg->nh = NULL;
   }
 
