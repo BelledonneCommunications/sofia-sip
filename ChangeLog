@@ -1,3 +1,37 @@
+2006-01-05  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  Synching darcs and CVS.
+
+  * Not using msg_auth.h anymore.
+
+    M ./libsofia-sip-ua/msg/msg_auth.c -1
+    M ./libsofia-sip-ua/msg/test_msg.c -1
+
+  * Really adding expires=0 to all contacts when un-registering.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -1 +1
+    M ./libsofia-sip-ua/nua/test_nua.c -3 +26
+
+  * Removed sip_rfc2543 files.
+
+    R ./libsofia-sip-ua/sip/sip_rfc2543.c
+    R ./libsofia-sip-ua/sip/sip_rfc2543.h.in
+
+  * Adding nua_authenticate() tags to request.
+
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +1
+    M ./libsofia-sip-ua/nua/test_nua.c +12
+
+  * Using unsigned in sdp_media_t::m_mode bitfield.
+  enum is signed in VC6.
+
+    M ./libsofia-sip-ua/sdp/sdp.h -1 +1
+
+  * Documented sdp_f_mode_manual and sdp_f_mode_always better.
+
+    M ./libsofia-sip-ua/sdp/sdp.h -1 +1
+    M ./libsofia-sip-ua/sdp/sdp_print.c -8 +10
+
 2006-01-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   Syncinc darcs and CVS.
