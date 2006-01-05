@@ -69,7 +69,7 @@ static int torture_test_get_nattype(char *addr);
 static int torture_test_get_lifetime(char *addr);
 static void torture_callback(torture_t *torturer,
 			     stun_handle_t *en,
-			     stun_states_t event);
+			     stun_state_t event);
 
 
 static int test_deinit(void);
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 }
 
 
-void torture_callback(torture_t *torturer, stun_handle_t *en, stun_states_t ev)
+void torture_callback(torture_t *torturer, stun_handle_t *en, stun_state_t ev)
 {
   char ipaddr[48];
   int s = -1;

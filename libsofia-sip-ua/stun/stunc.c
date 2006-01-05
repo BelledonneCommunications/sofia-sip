@@ -63,10 +63,13 @@ struct stunc_s {
 };
 
 
-void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_request_t *req, stun_states_t event)
+void stunc_callback(stunc_t *stunc, stun_handle_t *en,
+		    stun_request_t *req,
+		    stun_state_t event)
 {
   su_localinfo_t *li = NULL;
   char ipaddr[48];
+  char const *nattype;
 
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
@@ -75,6 +78,12 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *en, stun_request_t *req, stun
     su_root_break(stun_handle_root(en));
     break;
 
+  case stun_discovery_done:
+    nattype = stun_nattype(req);
+    SU_DEBUG_3(("%s: NAT type: %s\n", __func__, nattype));
+    su_root_break(stun_handle_root(en));
+    break;
+    
   case stun_bind_done:
     li = stun_request_get_localinfo(req);
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),

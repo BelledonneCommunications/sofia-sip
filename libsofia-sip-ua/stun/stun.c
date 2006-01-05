@@ -115,7 +115,7 @@ struct stun_request_s {
   su_localinfo_t    sr_localinfo;     /**< local addrinfo */
   su_sockaddr_t     sr_local_addr[1]; /**< local address */
 
-  int               sr_state;           /**< Progress states */
+  stun_state_t      sr_state;           /**< Progress states */
   int               sr_retry_count;     /**< current retry number */
   long              sr_timeout;         /**< timeout for next sendto() */
   stun_action_t     sr_action;          /**< Request type for protocol engine */
@@ -143,41 +143,43 @@ struct stun_handle_s
   su_localinfo_t  sh_localinfo;     /**< local addrinfo */
   su_sockaddr_t   sh_local_addr[1]; /**< local address */
 
-  su_socket_t     sh_tls_socket;       /**< outbound socket */
+  su_socket_t     sh_tls_socket;    /**< outbound socket */
 
-  SSL_CTX        *sh_ctx;          /**< SSL context for TLS */
-  SSL            *sh_ssl;          /**< SSL handle for TLS */
+  SSL_CTX        *sh_ctx;           /**< SSL context for TLS */
+  SSL            *sh_ssl;           /**< SSL handle for TLS */
   stun_msg_t      sh_tls_request;
   stun_msg_t      sh_tls_response;
-  int             sh_nattype;     /**< NAT-type, see stun_common.h */
+  int             sh_nattype;       /**< NAT-type, see stun_common.h */
 
-  stun_event_f    sh_callback;     /**< callback for calling application */ 
-  stun_magic_t   *sh_context;      /**< application context */
+  stun_event_f    sh_callback;      /**< callback for calling application */ 
+  stun_magic_t   *sh_context;       /**< application context */
 
   stun_buffer_t   sh_username;
   stun_buffer_t   sh_passwd;
 
-  int             sh_use_msgint;  /**< use message integrity? */
+  int             sh_use_msgint;    /**< use message integrity? */
+  int             sh_state;         /**< Progress states */
 
-  int             sh_state;      /**< Progress states */
-
-
-  int            sh_bind_socket;
-  int            ss_root_index;   /**< object index of su_root_register() */
+  int             sh_bind_socket;
+  int             ss_root_index;    /**< object index of su_root_register() */
 };
 
 
 #define STUN_STATE_STR(x) case x: return #x
 
-char const *stun_str_state(stun_states_t state)
+char const *stun_str_state(stun_state_t state)
 {
   switch (state) {
   STUN_STATE_STR(stun_no_assigned_event);
+  STUN_STATE_STR(stun_dispose_me);
   STUN_STATE_STR(stun_tls_connecting);
   STUN_STATE_STR(stun_tls_writing);
   STUN_STATE_STR(stun_tls_closing);
   STUN_STATE_STR(stun_tls_reading);
   STUN_STATE_STR(stun_tls_done);
+  STUN_STATE_STR(stun_discovery_init);
+  STUN_STATE_STR(stun_discovery_processing);
+  STUN_STATE_STR(stun_discovery_done);
   STUN_STATE_STR(stun_bind_init);
   STUN_STATE_STR(stun_bind_started);
   STUN_STATE_STR(stun_bind_sending);
@@ -191,14 +193,18 @@ char const *stun_str_state(stun_states_t state)
   STUN_STATE_STR(stun_request_not_found);
   STUN_STATE_STR(stun_bind_error);
   STUN_STATE_STR(stun_bind_timeout);
+  STUN_STATE_STR(stun_discovery_timeout);
   
   case stun_error:
   default: return "stun_error";
   }
 }
 
-char const *stun_nattype(stun_handle_t *sh)
+/* char const *stun_nattype(stun_handle_t *sh) */
+char const *stun_nattype(stun_request_t *req)
 {
+  stun_discovery_t *sd = req->sr_discovery;
+
   char const *stun_nattype_str[] = {
     "NAT type undetermined",
     "Open Internet",
@@ -210,7 +216,7 @@ char const *stun_nattype(stun_handle_t *sh)
     "Port Restricted Cone NAT",
   };
 
-  return stun_nattype_str[sh->sh_nattype];
+  return stun_nattype_str[sd->sd_nattype];
 }
 
 
@@ -418,20 +424,26 @@ stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action)
   stun_request_t *req = NULL;
 
   req = calloc(sizeof(stun_request_t), 1);
-  if (req) {
-    req->sr_handle = sh;
+  if (!req)
+    return NULL;
 
-    req->sr_localinfo.li_addrlen = sizeof(su_sockaddr_t);
-    req->sr_localinfo.li_addr = req->sr_local_addr;
+  req->sr_handle = sh;
+  
+  req->sr_localinfo.li_addrlen = sizeof(su_sockaddr_t);
+  req->sr_localinfo.li_addr = req->sr_local_addr;
+  
+  /* default timeout for next sendto() */
+  req->sr_timeout = STUN_SENDTO_TIMEOUT;
+  req->sr_retry_count = 0;
+  req->sr_action = action;
+  req->sr_request_mask = 0;
+  
+  req->sr_msg = calloc(sizeof(stun_msg_t), 1);
 
-    /* default timeout for next sendto() */
-    req->sr_timeout = STUN_SENDTO_TIMEOUT;
-    req->sr_retry_count = 0;
-    req->sr_action = action;
-    req->sr_request_mask = 0;
-
-    req->sr_msg = calloc(sizeof(stun_msg_t), 1);
-  }
+  if (action == stun_action_get_nattype)
+    req->sr_state = stun_discovery_init;
+  else
+    req->sr_state = stun_bind_init;
 
   /* Insert this request to the request queue */
   if (sh->sh_requests)
@@ -450,11 +462,15 @@ void stun_destroy_request(stun_request_t *req)
     x_remove(req, sr);
 
   req->sr_handle = NULL;
+  req->sr_discovery = NULL;
 
   if (req->sr_msg)
     stun_free_message(req->sr_msg);
 
   free(req);
+
+  SU_DEBUG_9(("%s: request destroyed.\n", __func__));
+
   return;
 }
 
@@ -668,8 +684,9 @@ su_localinfo_t *stun_request_get_localinfo(stun_request_t *req)
 stun_discovery_t *stun_discovery_create(void)
 {
   stun_discovery_t *sd = NULL;
+  sd = calloc(1, sizeof(stun_discovery_t));
 
-  return sd = calloc(1, sizeof(stun_discovery_t));
+  return sd;
 }
 
 int stun_destroy_discovery(stun_discovery_t *sd)
@@ -1277,7 +1294,6 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   }
   
   self->sh_callback(self->sh_context, self, req, req->sr_state);
-  stun_destroy_request(req);
 
   return 0;
 }
@@ -1293,7 +1309,9 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
   stun_msg_t *binding_request;
 
   binding_request = req->sr_msg;
-  req->sr_state = stun_bind_processing;
+
+  if (req->sr_action != stun_action_get_nattype)
+    req->sr_state = stun_bind_processing;
     
   switch (binding_response->stun_hdr.msg_type) {
   case BINDING_RESPONSE:
@@ -1320,7 +1338,11 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
       if (chg_addr != NULL)
 	memcpy(&self->sh_sec_addr->su_sin, chg_addr->pattr, sizeof(struct sockaddr_in));
     }
-    req->sr_state = stun_bind_done;
+    if (req->sr_action == stun_action_get_nattype)
+      /* req->sr_state = stun_discovery_done; */
+      ;
+    else
+      req->sr_state = stun_bind_done;
 
     break;
     
@@ -1357,7 +1379,8 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
 
   /* If the NAT type is already detected, ignore this request */
   if (!sd || (sd->sd_nattype != stun_nat_unknown)) {
-    stun_destroy_request(req);
+    req->sr_state = stun_dispose_me;
+    /* stun_destroy_request(req); */
     return 0;
   }
 
@@ -1378,33 +1401,44 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
   locallen = sizeof(local);
   getsockname(s, (struct sockaddr *) &local, &locallen);
 
-  if ((req->sr_state == stun_bind_timeout)) {
+  if ((req->sr_state == stun_discovery_timeout)) {
     if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
 	  sd->sd_nattype = stun_nat_port_res_cone;
+	  req->sr_state = stun_discovery_done;
 	  sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-	  stun_destroy_request(req);
+	  req->sr_state = stun_dispose_me;
+	  /* stun_destroy_request(req); */
 	  stun_destroy_discovery(sd);
 	  return 0;
     }
     else if (sd->sd_first && sd->sd_second && sd->sd_fourth) {
       /* Sudden network problem */
       sd->sd_nattype = stun_nat_unknown;
+      req->sr_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-      stun_destroy_request(req);
+      req->sr_state = stun_dispose_me;
+      /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
       return 0;
     }
     else if (sd->sd_first && sd->sd_second) {
-      if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0) {
+      /* XXX -- is this correct, should we compare to zero addess? */
+      /* if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0); */
+
+      if (memcmp(li->li_addr, sh->sh_localinfo.li_addr, 8) == 0) {
 	sd->sd_nattype = stun_sym_udp_fw;
+	req->sr_state = stun_discovery_done;
 	sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-	stun_destroy_request(req);
+	req->sr_state = stun_dispose_me;
+	/* stun_destroy_request(req); */
 	stun_destroy_discovery(sd);
 	return 0;
       }
       else {
 	sd->sd_fourth = 1;
-	stun_destroy_request(req);
+	req->sr_state = stun_dispose_me;
+	/* stun_destroy_request(req); */
+	req = NULL;
 	req = stun_action_create_nattype_discovery(sh);
 	stun_discovery_assign(req, sd);
 	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
@@ -1420,8 +1454,10 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
     }
     else if (sd->sd_first) {
       sd->sd_nattype = stun_udp_blocked;
+      req->sr_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-      stun_destroy_request(req);
+      req->sr_state = stun_dispose_me;
+      /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
       return 0;
     }
@@ -1436,27 +1472,38 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
 	sd->sd_nattype = stun_nat_sym;
       }
 
+      req->sr_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-      stun_destroy_request(req);
+      req->sr_state = stun_dispose_me;
+      /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
       return 0;
     }
     if (sd->sd_first && sd->sd_second) {
-      if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0)
-	sh->sh_nattype = stun_open_internet;
+      /* XXX -- is this correct, should we compare to zero addess? */
+      /* if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0); */
+      if (memcmp(li->li_addr, sh->sh_localinfo.li_addr, 8) == 0)
+	sd->sd_nattype = stun_open_internet;
       else
-	sh->sh_nattype = stun_nat_full_cone;
+	sd->sd_nattype = stun_nat_full_cone;
 
+      req->sr_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-      stun_destroy_request(req);
+      req->sr_state = stun_dispose_me;
+      /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
       return 0;
     }
+#if 0
     else if (sd->sd_first) {
       if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0)
 	return 0;
     }
+#endif
+
   }
+  /* The discovery process is still ongoing, but I can be killed */
+  req->sr_state = stun_dispose_me;
   return 0;
 }
 
@@ -1467,15 +1514,26 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 {
   stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
-  int s = sh->sh_bind_socket;
+  int s;
   stun_action_t action;
 
   SU_DEBUG_9(("%s: entering.\n", __func__));
 
-  if ((req->sr_state != stun_bind_sending) && (req->sr_state != stun_bind_receiving)) {
+  if ((req->sr_state !=  stun_discovery_processing) &&
+      (req->sr_state != stun_bind_sending) &&
+      (req->sr_state != stun_bind_receiving)) {
     su_timer_destroy(t);
+    SU_DEBUG_9(("%s: timer destroyed.\n", __func__));
+
+    if ((req->sr_state == stun_discovery_done) ||
+	(req->sr_state == stun_dispose_me)) {
+      stun_destroy_request(req);
+    }
+
     return;
   }
+
+  s = sh->sh_bind_socket;
 
   ++req->sr_retry_count;
 
@@ -1493,10 +1551,13 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     req->sr_timeout = STUN_SENDTO_TIMEOUT;
     su_timer_destroy(t);
 
-    req->sr_state = stun_bind_timeout;
+    if (action == stun_action_get_nattype)
+      req->sr_state = stun_discovery_timeout;
+    else
+      req->sr_state = stun_bind_timeout;
 
     /* Either the server was dead, address wrong or STUN_UDP_BLOCKED */
-    /* sh->sh_nattype = stun_udp_blocked; */
+    /* sd->sd_nattype = stun_udp_blocked; */
     
     action = get_action(req);
 
@@ -1569,8 +1630,11 @@ int stun_send_binding_request(stun_request_t *req,
   sendto_timer = su_timer_create(su_root_task(sh->sh_root), STUN_SENDTO_TIMEOUT);
   su_timer_set(sendto_timer, stun_sendto_timer_cb, (su_wakeup_arg_t *) req);
 
-  req->sr_state = stun_bind_sending;
-  /* sh->sh_callback(sh->sh_context, sh, sh->sh_state); */
+  if (req->sr_action == stun_action_get_nattype)
+    req->sr_state = stun_discovery_processing;
+  else
+    req->sr_state = stun_bind_sending;
+
 
   return 0;
 }

@@ -60,9 +60,10 @@ extern char const stun_version[]; /**< Name and version of STUN software */
 /**
  * States of the STUN client->server query process.
  */ 
-typedef enum stun_states_e {
+typedef enum stun_state_e {
   
   stun_no_assigned_event,
+  stun_dispose_me,
 
   /* TLS events */
   stun_tls_connecting,
@@ -71,6 +72,11 @@ typedef enum stun_states_e {
   stun_tls_closing,
   stun_tls_reading,
   stun_tls_done,
+
+  /* STUN discovery events */
+  stun_discovery_init,
+  stun_discovery_processing,
+  stun_discovery_done,
 
   /* STUN bind events */
   stun_bind_init,             /**< Initial state */
@@ -84,7 +90,7 @@ typedef enum stun_states_e {
   stun_request_not_found,     /**< Response without matching request */
 
   /* STUN errors */
-  /* Do not change the order! */
+  /* Do not change the order! Errors need to be after stun_error */
 
   stun_error,
   stun_tls_connection_timeout,
@@ -95,18 +101,20 @@ typedef enum stun_states_e {
   stun_bind_error,
   stun_bind_timeout,
 
-} stun_states_t;
+  stun_discovery_timeout,
+
+} stun_state_t;
 
 
 typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_handle_t *se,
 			     stun_request_t *req,
-			     stun_states_t event);
+			     stun_state_t event);
 
 /* Return the socket associated with the stun_socket_t structure */
 int stun_handle_get_bind_socket(stun_handle_t *se);
 
-char const *stun_str_state(stun_states_t state);
+char const *stun_str_state(stun_state_t state);
 
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
@@ -155,7 +163,7 @@ int stun_handle_set_uname_pwd(stun_handle_t *se,
 			      const char *pwd,
 			      int len_pwd);
 
-char const *stun_nattype(stun_handle_t *se);
+char const *stun_nattype(stun_request_t *req);
 
 SOFIA_END_DECLS
 
