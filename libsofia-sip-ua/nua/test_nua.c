@@ -4552,6 +4552,8 @@ int test_events(struct context *ctx)
   TEST_E(e->data->e_event, nua_r_authorize);
   TEST_1(!e->next);
 
+  free_events_in_list(ctx, b_call);
+
   if (print_headings)
     printf("TEST NUA-12.4: PASSED\n");
 
