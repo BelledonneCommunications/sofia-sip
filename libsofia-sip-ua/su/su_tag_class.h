@@ -43,7 +43,8 @@ SOFIA_BEGIN_DECLS
 /* Macros for defining tag classes */
 
 #ifndef TAG_NAMESPACE
-#define TAG_NAMESPACE "su"
+/** Default namespace for tags */
+#define TAG_NAMESPACE ""
 #endif
 
 #define TAG_TYPEDEF(t, type) \
@@ -55,6 +56,7 @@ SOFIA_BEGIN_DECLS
 #define PTRTAG_TYPEDEF(t)      TAG_TYPEDEF(t, ptr)
 #define CSTRTAG_TYPEDEF(t)     TAG_TYPEDEF(t, cstr)
 #define STRTAG_TYPEDEF(t)      TAG_TYPEDEF(t, str)
+#define NSTAG_TYPEDEF(t)       TAG_TYPEDEF(t, ns)
 
 struct tag_class_s {
   int             tc_size;
@@ -81,6 +83,7 @@ SU_DLL extern tag_class_t bool_tag_class[];
 SU_DLL extern tag_class_t ptr_tag_class[];
 SU_DLL extern tag_class_t cstr_tag_class[];
 SU_DLL extern tag_class_t str_tag_class[];
+SU_DLL extern tag_class_t ns_tag_class[];
 
 #define REFTAG_TYPEDEF(tag) \
   {{ TAG_NAMESPACE, #tag "_ref", ref_tag_class, (tag_value_t)tag }}

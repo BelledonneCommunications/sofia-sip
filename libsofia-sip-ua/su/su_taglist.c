@@ -423,7 +423,10 @@ int tl_tgets(tagi_t lst[], tag_type_t tag, tag_value_t value, ...)
 
 
 /** Filter an element in tag list */
-tagi_t *t_filter(tagi_t *dst, tagi_t const filter[], tagi_t const *src, void **bb)
+tagi_t *t_filter(tagi_t *dst, 
+		 tagi_t const filter[], 
+		 tagi_t const *src, 
+		 void **bb)
 {
   tag_type_t tt = TAG_TYPE_OF(src);
   tagi_t const *f;
@@ -818,6 +821,8 @@ tag_class_t null_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+tag_typedef_t tag_null = TAG_TYPEDEF(tag_null, null);
+
 /* ====================================================================== */
 /* end tag */
 
@@ -892,6 +897,8 @@ tag_class_t skip_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+tag_typedef_t tag_skip = TAG_TYPEDEF(tag_skip, skip);
+
 /* ====================================================================== */
 /* next tag - jump to next tag list */
 
@@ -945,6 +952,8 @@ tag_class_t next_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+tag_typedef_t tag_next = TAG_TYPEDEF(tag_next, next);
+
 /* ====================================================================== */
 /* any tag - match to any tag when filtering */
 
@@ -981,6 +990,67 @@ tag_class_t any_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+tag_typedef_t tag_any = TAG_TYPEDEF(tag_any, any);
+
+/* ====================================================================== */
+/* ns tag - match to any tag with same namespace when filtering */
+
+static
+tagi_t *t_ns_filter(tagi_t *dst,
+		    tagi_t const filter[], 
+		    tagi_t const *src, 
+		    void **bb)
+{
+  char const *match, *ns;
+
+  if (!src)
+    return dst;
+
+  assert(filter);
+
+  match = TAG_TYPE_OF(filter)->tt_ns;
+  ns = TAG_TYPE_OF(src)->tt_ns;
+
+  if (match == NULL)
+    /* everything matches with this */;
+  else if (match == ns)
+    /* namespaces matche */;
+  else if (ns == NULL)
+    /* no match */
+    return dst;
+  else if (strcmp(match, ns))
+    /* no match */
+    return dst;
+
+  if (dst) {
+    return t_dup(dst, src, bb); 
+  }
+  else {
+    dst = (tagi_t *)((char *)dst + t_len(src));
+    *bb = (char *)*bb + t_xtra(src, (size_t)*bb);
+    return dst;
+  }
+}
+		   
+tag_class_t ns_tag_class[1] = 
+  {{
+    sizeof(any_tag_class),
+    /* tc_next */     NULL,
+    /* tc_len */      NULL,
+    /* tc_move */     NULL,
+    /* tc_xtra */     NULL,
+    /* tc_dup */      NULL,
+    /* tc_free */     NULL,
+    /* tc_find */     NULL,
+    /* tc_snprintf */ NULL,
+    /* tc_filter */   t_ns_filter,
+    /* tc_ref_set */  NULL,
+    /* tc_scan */     NULL,
+  }};
+
+/* ====================================================================== */
+/* int tag - pass integer value */
+
 int t_int_snprintf(tagi_t const *t, char b[], size_t size)
 {
   return snprintf(b, size, "%i", (int)t->t_value);
@@ -992,7 +1062,6 @@ int t_int_ref_set(tag_type_t tt, void *ref, tagi_t const value[])
 
   return 1;
 }
-
 
 int t_int_scan(tag_type_t tt, su_home_t *home, 
 	       char const *s, 
@@ -1013,7 +1082,6 @@ int t_int_scan(tag_type_t tt, su_home_t *home,
   }
 }
 
-
 tag_class_t int_tag_class[1] = 
   {{
     sizeof(int_tag_class),
@@ -1030,6 +1098,8 @@ tag_class_t int_tag_class[1] =
     /* tc_scan */     t_int_scan,
   }};
 
+/* ====================================================================== */
+/* uint tag - pass unsigned integer value */
 
 int t_uint_snprintf(tagi_t const *t, char b[], size_t size)
 {
@@ -1078,6 +1148,9 @@ tag_class_t uint_tag_class[1] =
     /* tc_scan */     t_uint_scan,
   }};
 
+
+/* ====================================================================== */
+/* bool tag - pass boolean value */
 
 int t_bool_snprintf(tagi_t const *t, char b[], size_t size)
 {
@@ -1133,6 +1206,9 @@ tag_class_t bool_tag_class[1] =
     /* tc_scan */     t_bool_scan,
   }};
 
+/* ====================================================================== */
+/* ptr tag - pass pointer value */
+
 int t_ptr_snprintf(tagi_t const *t, char b[], size_t size)
 {
   return snprintf(b, size, "%p", (void *)t->t_value);
@@ -1179,6 +1255,9 @@ tag_class_t ptr_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+/* ====================================================================== */
+/* str tag - pass string value */
+
 int t_str_snprintf(tagi_t const *t, char b[], size_t size)
 {
   if (t->t_value) 
@@ -1202,23 +1281,6 @@ int t_str_scan(tag_type_t tt, su_home_t *home,
   
   return retval;
 }
-
-/** Tag class for constant strings */
-tag_class_t cstr_tag_class[1] = 
-  {{
-    sizeof(cstr_tag_class),
-    /* tc_next */     NULL,
-    /* tc_len */      NULL,
-    /* tc_move */     NULL,
-    /* tc_xtra */     NULL,
-    /* tc_dup */      NULL,
-    /* tc_free */     NULL,
-    /* tc_find */     NULL,
-    /* tc_snprintf */ t_str_snprintf,
-    /* tc_filter */   NULL,
-    /* tc_ref_set */  t_ptr_ref_set,
-    /* tc_scan */     t_str_scan,
-  }};
 
 tagi_t *t_str_dup(tagi_t *dst, tagi_t const *src, void **bb)
 {
@@ -1256,6 +1318,29 @@ tag_class_t str_tag_class[1] =
     /* tc_scan */     t_str_scan,
   }};
 
+/* ====================================================================== */
+/* cstr tag - pass constant string value (no need to dup) */
+
+/** Tag class for constant strings */
+tag_class_t cstr_tag_class[1] = 
+  {{
+    sizeof(cstr_tag_class),
+    /* tc_next */     NULL,
+    /* tc_len */      NULL,
+    /* tc_move */     NULL,
+    /* tc_xtra */     NULL,
+    /* tc_dup */      NULL,
+    /* tc_free */     NULL,
+    /* tc_find */     NULL,
+    /* tc_snprintf */ t_str_snprintf,
+    /* tc_filter */   NULL,
+    /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     t_str_scan,
+  }};
+
+/* ====================================================================== */
+/* ref tag - pass reference */
+
 tag_class_t ref_tag_class[1] = 
   {{
     sizeof(ref_tag_class),
@@ -1271,3 +1356,5 @@ tag_class_t ref_tag_class[1] =
     /* tc_ref_set */  t_ptr_ref_set,
     /* tc_scan */     NULL,
   }};
+
+

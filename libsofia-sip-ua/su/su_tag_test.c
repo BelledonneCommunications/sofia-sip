@@ -68,6 +68,8 @@ int tstflags = 0;
 #define TAG_K(i)      tag_k, tag_int_v((i))
 #define TAG_K_REF(i)  tag_k_ref, tag_int_vr(&(i))
 
+#define TAG_ANY_PQ()  tag_any_pq, (tag_value_t)0
+
 #define TAG_P(i)      tag_p, tag_bool_v((i))
 #define TAG_P_REF(i)  tag_p_ref, tag_bool_vr(&(i))
 #define TAG_Q(i)      tag_q, tag_bool_v((i))
@@ -97,6 +99,7 @@ typedef struct tag_type_s tag_typedef_win_t[1];
 tag_typedef_win_t tag_a, tag_a_ref, tag_b, tag_b_ref;
 tag_typedef_win_t tag_i, tag_i_ref, tag_j, tag_j_ref;
 tag_typedef_win_t tag_k, tag_k_ref, tag_n, tag_n_ref;
+tag_typedef_win_t tag_any_pq;
 tag_typedef_win_t tag_p, tag_p_ref, tag_q, tag_q_ref;
 
 #else
@@ -117,6 +120,11 @@ tag_typedef_t tag_k_ref = REFTAG_TYPEDEF(tag_k);
 
 tag_typedef_t tag_n = INTTAG_TYPEDEF(n);
 tag_typedef_t tag_n_ref = REFTAG_TYPEDEF(tag_n);
+
+#undef TAG_NAMESPACE
+#define TAG_NAMESPACE "pq"
+
+tag_typedef_t tag_any_pq = NSTAG_TYPEDEF(*);
 
 tag_typedef_t tag_p = BOOLTAG_TYPEDEF(p);
 tag_typedef_t tag_p_ref = REFTAG_TYPEDEF(tag_p);
@@ -149,7 +157,12 @@ int main(int argc, char *argv[])
   
   tag_typedef_t _tag_n = INTTAG_TYPEDEF(n);
   tag_typedef_t _tag_n_ref = REFTAG_TYPEDEF(tag_n);
+
+#undef TAG_NAMESPACE
+#define TAG_NAMESPACE "pq"
   
+  tag_typedef_t _tag_any_pq = NSTAG_TYPEDEF(*);
+
   tag_typedef_t _tag_p = BOOLTAG_TYPEDEF(p);
   tag_typedef_t _tag_p_ref = REFTAG_TYPEDEF(tag_p);
   
@@ -168,6 +181,7 @@ int main(int argc, char *argv[])
   *(struct tag_type_s *)tag_k_ref = *_tag_k_ref;
   *(struct tag_type_s *)tag_n = *_tag_n;
   *(struct tag_type_s *)tag_n_ref = *_tag_n_ref;
+  *(struct tag_type_s *)tag_any_pq = *_tag_any_pq;
   *(struct tag_type_s *)tag_p = *_tag_p;
   *(struct tag_type_s *)tag_p_ref = *_tag_p_ref;
   *(struct tag_type_s *)tag_q = *_tag_q;
@@ -349,13 +363,17 @@ static int test_filters(void)
 {
   tagi_t *lst, *filter1, *filter2, *filter3, *filter4, *b1, *b2, *b3, *b4;
 
+  tagi_t *nsfilter, *b5;
+
   BEGIN();
 
   lst = tl_list(TAG_A("Moro"), 
-		TAG_I(2), 
+		TAG_I(2),
+		TAG_Q(3),
 		TAG_SKIP(2), 
 		TAG_A("Vaan"), 
 		TAG_I(1), 
+		TAG_P(2),
 		TAG_NULL());
 
   filter1 = tl_list(TAG_A(""), TAG_NULL());
@@ -382,11 +400,20 @@ static int test_filters(void)
 
   b4 = tl_afilter(NULL, filter4, lst);
 
-  TEST(tl_len(b4), 5 * sizeof(tagi_t));
+  TEST(tl_len(b4), 7 * sizeof(tagi_t));
   TEST(tl_xtra(b4, 0), strlen("Moro" "Vaan") + 2);
 
   su_free(NULL, b1); su_free(NULL, b2); su_free(NULL, b3); su_free(NULL, b4);
+
+  nsfilter = tl_list(TAG_ANY_PQ(), TAG_END());
   
+  b5 = tl_afilter(NULL, nsfilter, lst);
+  TEST(tl_len(b5), 3 * sizeof(tagi_t));
+  TEST(tl_xtra(b5, 0), 0);
+
+  TEST(b5[0].t_tag, tag_q);
+  TEST(b5[1].t_tag, tag_p);
+
   tl_vfree(filter1); tl_vfree(filter2); tl_vfree(filter3); tl_vfree(filter4);
   tl_vfree(lst);
 

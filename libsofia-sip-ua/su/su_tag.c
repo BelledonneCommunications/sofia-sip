@@ -45,7 +45,3 @@ extern tag_class_t skip_tag_class[1];
 extern tag_class_t next_tag_class[1];
 extern tag_class_t any_tag_class[1];
 
-tag_typedef_t tag_null = TAG_TYPEDEF(tag_null, null);
-tag_typedef_t tag_skip = TAG_TYPEDEF(tag_skip, skip);
-tag_typedef_t tag_next = TAG_TYPEDEF(tag_next, next);
-tag_typedef_t tag_any = TAG_TYPEDEF(tag_any, any);
