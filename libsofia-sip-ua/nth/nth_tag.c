@@ -47,6 +47,8 @@
 
 #include <http_protos.h>
 
+tag_typedef_t nthtag_any = NSTAG_TYPEDEF(*);
+
 /* Common */
 tag_typedef_t nthtag_mclass = PTRTAG_TYPEDEF(mclass);
 tag_typedef_t nthtag_message = PTRTAG_TYPEDEF(message);

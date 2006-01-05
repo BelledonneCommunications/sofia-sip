@@ -660,6 +660,44 @@ int test_api_errors(struct context *ctx)
   END();
 }
 
+#include <su_tag_class.h>
+
+int test_tag_filter(void)
+{
+  BEGIN();
+
+#undef TAG_NAMESPACE
+#define TAG_NAMESPACE "test"
+  tag_typedef_t tag_a = STRTAG_TYPEDEF(a);
+#define TAG_A(s)      tag_a, tag_str_v((s))
+  tag_typedef_t tag_b = STRTAG_TYPEDEF(b);
+#define TAG_B(s)      tag_b, tag_str_v((s))
+
+  tagi_t filter[2] = {{ NUTAG_ANY() }, { TAG_END() }};
+
+  tagi_t *lst, *result;
+
+  lst = tl_list(TAG_A("X"),
+		TAG_SKIP(2), 
+		NUTAG_URL((void *)"urn:foo"),
+		TAG_B("Y"),
+		NUTAG_URL((void *)"urn:bar"),
+		TAG_NULL());
+
+  TEST_1(lst);
+
+  result = tl_afilter(NULL, filter, lst);
+
+  TEST_1(result);
+  TEST(result[0].t_tag, nutag_url);
+  TEST(result[1].t_tag, nutag_url);
+
+  tl_vfree(lst);
+  free(result);
+
+  END();
+}
+
 int test_params(struct context *ctx)
 {
   BEGIN();
@@ -4797,6 +4835,7 @@ int main(int argc, char *argv[])
   } while(0)
 
   retval |= test_api_errors(ctx); SINGLE_FAILURE_CHECK();
+  retval |= test_tag_filter(); SINGLE_FAILURE_CHECK();
   retval |= test_params(ctx); SINGLE_FAILURE_CHECK();
 
   retval |= test_init(ctx, o_iproxy, 

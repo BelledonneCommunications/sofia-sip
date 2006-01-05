@@ -51,7 +51,10 @@
 
 
 SOFIA_BEGIN_DECLS
-NTA_DLL extern tag_type_t nta_tag_list[];
+
+/** Filter tag matching any nta tag. */
+#define NTATAG_ANY()         ntatag_any, ((tag_value_t)0)
+NTA_DLL extern tag_typedef_t ntatag_any;
 
 /* Tags for parameters */
 

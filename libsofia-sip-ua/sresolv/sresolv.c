@@ -2919,6 +2919,7 @@ m_get_domain(char *d,
 #include <su_tag_class.h>
 #include <su_tagarg.h>
 
+tag_typedef_t srestag_any = NSTAG_TYPEDEF(*);
 tag_typedef_t srestag_resolv_conf = STRTAG_TYPEDEF(resolv_conf);
 tag_typedef_t srestag_resolv_conf_ref = REFTAG_TYPEDEF(srestag_resolv_conf);
 

@@ -41,6 +41,8 @@
 #include <sip_tag_class.h>
 #include <sip_hclasses.h>
 
+tag_typedef_t nutag_any = NSTAG_TYPEDEF(*);
+
 tag_typedef_t nutag_url = URLTAG_TYPEDEF(url);
 tag_typedef_t nutag_address = STRTAG_TYPEDEF(address);
 tag_typedef_t nutag_uicc = STRTAG_TYPEDEF(uicc);

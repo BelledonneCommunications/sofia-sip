@@ -80,6 +80,10 @@ HTTP_DLL extern tag_class_t httphdrtag_class[1];
 HTTP_DLL extern tag_class_t httpstrtag_class[1];
 HTTP_DLL extern tag_class_t httpmsgtag_class[1];
 
+/** Filter tag matching any http tag. */
+#define HTTPTAG_ANY()         httptag_any, ((tag_value_t)0)
+HTTP_DLL extern tag_typedef_t httptag_any;
+
 /**Tag list item for @c http_t object.
  *
  * The HTTPTAG_HTTP() macro is used to include a tag item for a http_t object

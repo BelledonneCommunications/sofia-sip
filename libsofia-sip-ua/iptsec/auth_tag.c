@@ -39,6 +39,12 @@
 #include <su_tag_class.h>
 #include <url_tag_class.h>
 
+/**@def AUTHTAG_ANY()
+ * 
+ * Filter tag matching any AUTHTAG_*().
+ */
+tag_typedef_t authtag_any = NSTAG_TYPEDEF(*);
+
 /**@def AUTHTAG_MODULE()
  * 
  * Pointer to an authentication server module (auth_mod_t). 

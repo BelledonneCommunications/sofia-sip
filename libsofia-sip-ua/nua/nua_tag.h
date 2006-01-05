@@ -63,8 +63,9 @@ typedef struct nua_s nua_t;
 /** NUA transaction handle. */
 typedef struct nua_handle_s nua_handle_t;
 
-/** List of all NUA tags. */
-extern tag_type_t nua_tag_list[];
+/** Filter tag matching any nua tag. */
+#define NUTAG_ANY()          nutag_any, ((tag_value_t)0)
+extern tag_typedef_t nutag_any;
 
 /** URL address from application to NUA
  *

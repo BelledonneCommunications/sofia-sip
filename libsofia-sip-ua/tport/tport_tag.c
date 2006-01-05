@@ -47,32 +47,10 @@
 
 /* ==== Globals ========================================================== */
 
-/** List of tags used by tport_tsend(). */
-tagi_t tport_tags[] =
-  {
-    { tptag_ident, 0 },
-    { tptag_reuse, 0 },
-    { tptag_server, 0 },
-    { tptag_mtu, 0 },
-    { tptag_connect, 0 },
-    { tptag_queuesize, 0 },
-    { tptag_sdwn_error, 0 },
-    { tptag_sdwn_after, 0 },
-    { tptag_idle, 0 },
-    { tptag_certificate, 0 },
+/** Filter for tport tags. */
+tagi_t tport_tags[] = { { tptag_any, 0 }, { TAG_END() } };
 
-#if 0
-    /* These tags can only be used with tport_tbind() or tport_tcreate() */
-    { tptag_tls_version, 0 },
-    { tptag_queuesize, 0 },
-    { tptag_udp_rmem, 0 },
-    { tptag_udp_wmem, 0 },
-    { tptag_thrpsize, 0 },
-    { tptag_thrprqsize, 0 },
-#endif
-    { TAG_END() }
-  };
-
+tag_typedef_t tptag_any = NSTAG_TYPEDEF(*);
 
 tag_typedef_t tptag_ident = CSTRTAG_TYPEDEF(ident);
 tag_typedef_t tptag_reuse = BOOLTAG_TYPEDEF(reuse);
@@ -87,7 +65,7 @@ tag_typedef_t tptag_idle = UINTTAG_TYPEDEF(idle);
 tag_typedef_t tptag_timeout = UINTTAG_TYPEDEF(timeout);
 tag_typedef_t tptag_sigcomp_lifetime = UINTTAG_TYPEDEF(sigcomp_lifetime);
 tag_typedef_t tptag_certificate = STRTAG_TYPEDEF(certificate);
-tag_typedef_t tptag_compartment = PTRTAG_TYPEDEF(certificate);
+tag_typedef_t tptag_compartment = PTRTAG_TYPEDEF(compartment);
 
 tag_typedef_t tptag_tls_version = UINTTAG_TYPEDEF(tls_version);
 tag_typedef_t tptag_queuesize = UINTTAG_TYPEDEF(queuesize);

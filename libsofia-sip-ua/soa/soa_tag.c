@@ -39,6 +39,12 @@
 #include <su_tag_class.h>
 #include <sdp_tag.h>
 
+/**@def SOATAG_ANY()
+ * 
+ * Filter tag matching any SOATAG_*() item.
+ */
+tag_typedef_t soatag_any = NSTAG_TYPEDEF(*);
+
 /**@def SOATAG_CAPS_SDP(x)
  *  Pass parsed capability description to soa session object.
  *

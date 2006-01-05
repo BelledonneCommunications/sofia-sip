@@ -43,6 +43,7 @@
 #include <sip_tag_class.h>
 #include <url_tag_class.h>
 
+tag_typedef_t neatag_any = NSTAG_TYPEDEF(*);
 tag_typedef_t neatag_min_expires = UINTTAG_TYPEDEF(min_expires);
 tag_typedef_t neatag_expires = UINTTAG_TYPEDEF(expires);
 tag_typedef_t neatag_max_expires = UINTTAG_TYPEDEF(max_expires);

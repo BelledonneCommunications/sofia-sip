@@ -47,8 +47,12 @@
 
 SOFIA_BEGIN_DECLS
 
-/** List of tport tags (to be used with, e.g., tl_filter()). */
+/** Filter matcing any tport tag. */
 TPORT_DLL extern tagi_t tport_tags[];
+
+/** Filter tag matching any tport tag. */
+#define TPTAG_ANY()         tptag_any, ((tag_value_t)0)
+TPORT_DLL extern tag_typedef_t tptag_any;
 
 TPORT_DLL extern tag_typedef_t tptag_ident;
 /** Ident transport connection (true by default). */

@@ -53,6 +53,10 @@ SOFIA_BEGIN_DECLS
 
 struct sdp_session_s;
 
+/** Filter tag matching any sdp tag. */
+#define SDPTAG_ANY()         sdptag_any, ((tag_value_t)0)
+SDP_DLL extern tag_typedef_t sdptag_any;
+
 /* Tags for parameters */
 
 SDP_DLL extern tag_typedef_t sdptag_session;

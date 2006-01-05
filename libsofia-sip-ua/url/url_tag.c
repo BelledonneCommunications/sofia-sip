@@ -41,6 +41,8 @@
 
 #include <url.h>
 
+tag_typedef_t urltag_any = NSTAG_TYPEDEF(*);
+
 tag_typedef_t urltag_url = URLTAG_TYPEDEF(url);
 
 int urltag_snprintf(tagi_t const *t, char b[], size_t size)

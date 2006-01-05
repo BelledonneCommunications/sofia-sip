@@ -206,6 +206,9 @@ const char *auth_mod_check_http(auth_mod_t *am,
 		                auth_kind_t proxy);
 #endif
 
+#define AUTHTAG_ANY()         authtag_any, ((tag_value_t)0)
+AUTH_DLL extern tag_typedef_t authtag_any;
+
 /** Pointer to an authentication server (auth_mod_t). */
 #define AUTHTAG_MODULE(x)	authtag_module, authtag_module_v((x))
 AUTH_DLL extern tag_typedef_t authtag_module;

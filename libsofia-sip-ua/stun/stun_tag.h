@@ -37,6 +37,9 @@
 
 SOFIA_BEGIN_DECLS
 
+#define STUNTAG_ANY()         stuntag_any, ((tag_value_t)0)
+extern tag_typedef_t stuntag_any;
+
 #define STUNTAG_SERVER(x)  stuntag_server, tag_str_v(x)
 extern tag_typedef_t stuntag_server;
 #define STUNTAG_SERVER_REF(x) stuntag_server_ref, tag_str_vr(&(x))

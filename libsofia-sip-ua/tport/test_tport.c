@@ -103,7 +103,8 @@ struct tp_test_s {
   uint8_t    tt_digest[SU_MD5_DIGEST_SIZE];
 };
 
-#define TSTFLAGS tt->tt_flags
+int tstflags;
+#define TSTFLAGS tstflags
 
 #include <tstdef.h>
 
@@ -1313,6 +1314,36 @@ static int deinit_test(tp_test_t *tt)
   END();
 }
 
+/* Test tport_tags filter */
+static int filter_test(tp_test_t *tt)
+{
+  tagi_t *lst, *result;
+
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+
+  BEGIN();
+
+  lst = tl_list(TSTTAG_HEADER_STR("X: Y"),
+		TAG_SKIP(2), 
+		TPTAG_IDENT("foo"),
+		TSTTAG_HEADER_STR("X: Y"),
+		TPTAG_IDENT("bar"),
+		TAG_NULL());
+
+  TEST_1(lst);
+
+  result = tl_afilter(home, tport_tags, lst);
+
+  TEST_1(result);
+  TEST(result[0].t_tag, tptag_ident);
+  TEST(result[1].t_tag, tptag_ident);
+
+  free(lst);
+  su_home_deinit(home);
+
+  END();
+}
+
 int main(int argc, char *argv[])
 {
   int flags = 0;	/* XXX */
@@ -1322,7 +1353,7 @@ int main(int argc, char *argv[])
 
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
-      tt->tt_flags |= tst_verbatim;
+      tstflags |= tst_verbatim;
     else
       usage();
   }
@@ -1334,6 +1365,7 @@ int main(int argc, char *argv[])
     tport_log->log_default = 1;
 
   retval |= name_test(tt); fflush(stdout);
+  retval |= filter_test(tt); fflush(stdout);
 
   retval |= init_test(tt); fflush(stdout);
   if (retval == 0) {

@@ -40,6 +40,10 @@
 
 SOFIA_BEGIN_DECLS
 
+/** Filter tag matching any soa tag. */
+#define SOATAG_ANY()         soatag_any, ((tag_value_t)0)
+extern tag_typedef_t soatag_any;
+
 /**
  * Media states 
  */

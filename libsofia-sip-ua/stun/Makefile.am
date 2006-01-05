@@ -51,7 +51,3 @@ torture_stun_LDFLAGS = 	-static
 #TESTS = 		torture_stun
 
 include ../sofia.am
-
-TAG_DLL_FLAGS =		LIST=stun_tag_list
-
-built_sources: $(BUILT_SOURCES)

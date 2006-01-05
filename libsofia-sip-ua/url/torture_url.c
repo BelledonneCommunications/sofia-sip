@@ -41,6 +41,8 @@
 #include "url.h"
 #include "url_tag.h"
 
+static int tstflags = 0;
+
 #define TSTFLAGS tstflags
 
 #include <tstdef.h>
@@ -52,52 +54,7 @@ void usage(void)
   fprintf(stderr, "usage: %s [-v]\n", name);
 }
 
-static int test_quote(void);
-static int test_any(void);
-static int test_sip(void);
-static int test_wv(void);
-static int test_tel(void);
-static int test_fax(void);
-static int test_modem(void);
-static int test_file(void);
-static int test_rtsp(void);
-static int test_http(void);
-static int test_sanitizing(void);
-static int test_tags(void);
-static int test_print(void);
-
 unsigned char hash1[16], hash2[16];
-
-static int tstflags = 0;
-
-int main(int argc, char *argv[])
-{
-  int retval = 0;
-  int i;
-
-  for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
-      tstflags |= tst_verbatim;
-    else
-      usage();
-  }
-
-  retval |= test_quote(); fflush(stdout);
-  retval |= test_any(); fflush(stdout);
-  retval |= test_sip(); fflush(stdout);
-  retval |= test_wv(); fflush(stdout);
-  retval |= test_tel(); fflush(stdout);
-  retval |= test_fax(); fflush(stdout);
-  retval |= test_modem(); fflush(stdout);
-  retval |= test_file(); fflush(stdout);
-  retval |= test_rtsp(); fflush(stdout);
-  retval |= test_http(); fflush(stdout);
-  retval |= test_sanitizing(); fflush(stdout);
-  retval |= test_tags(); fflush(stdout);
-  retval |= test_print(); fflush(stdout);
-
-  return retval;
-}
 
 /* test unquoting and canonizing */
 int test_quote(void)
@@ -112,9 +69,6 @@ int test_quote(void)
 #define DELIMS          "<>#%\""
 #define UNWISE		"{}|\\^[]`"
 #define EXCLUDED	RESERVED DELIMS UNWISE
-
-
-
 
   char escaped[1 + 3 * 23 + 1];
 
@@ -847,6 +801,44 @@ int test_tags(void)
   END();
 }
 
+#include <su_tag_class.h>
+
+int test_tag_filter(void)
+{
+  BEGIN();
+
+#undef TAG_NAMESPACE
+#define TAG_NAMESPACE "test"
+  tag_typedef_t tag_a = STRTAG_TYPEDEF(a);
+#define TAG_A(s)      tag_a, tag_str_v((s))
+  tag_typedef_t tag_b = STRTAG_TYPEDEF(b);
+#define TAG_B(s)      tag_b, tag_str_v((s))
+
+  tagi_t filter[2] = {{ URLTAG_ANY() }, { TAG_END() }};
+
+  tagi_t *lst, *result;
+
+  lst = tl_list(TAG_A("X"),
+		TAG_SKIP(2), 
+		URLTAG_URL((void *)"urn:foo"),
+		TAG_B("Y"),
+		URLTAG_URL((void *)"urn:bar"),
+		TAG_NULL());
+
+  TEST_1(lst);
+
+  result = tl_afilter(NULL, filter, lst);
+
+  TEST_1(result);
+  TEST(result[0].t_tag, urltag_url);
+  TEST(result[1].t_tag, urltag_url);
+
+  tl_vfree(lst);
+  free(result);
+
+  END();
+}
+
 #if 0 
 /* This is just a spike. How we can get 
  *   register_printf_function('U', printf_url, printf_url_info)
@@ -909,5 +901,37 @@ int test_print(void)
 #endif
 
   END();
+}
+
+
+
+int main(int argc, char *argv[])
+{
+  int retval = 0;
+  int i;
+
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      tstflags |= tst_verbatim;
+    else
+      usage();
+  }
+
+  retval |= test_quote(); fflush(stdout);
+  retval |= test_any(); fflush(stdout);
+  retval |= test_sip(); fflush(stdout);
+  retval |= test_wv(); fflush(stdout);
+  retval |= test_tel(); fflush(stdout);
+  retval |= test_fax(); fflush(stdout);
+  retval |= test_modem(); fflush(stdout);
+  retval |= test_file(); fflush(stdout);
+  retval |= test_rtsp(); fflush(stdout);
+  retval |= test_http(); fflush(stdout);
+  retval |= test_sanitizing(); fflush(stdout);
+  retval |= test_tags(); fflush(stdout);
+  retval |= test_print(); fflush(stdout);
+  retval |= test_tag_filter(); fflush(stdout);
+
+  return retval;
 }
 

@@ -330,6 +330,10 @@ void sres_free_answer(sres_resolver_t *res, sres_record_t *answer);
 #include <su_wait.h>
 #include <su_tag.h>
 
+/** Filter tag matching any sresolv tag. */
+#define SRESOLVTAG_ANY()         srestag_any, ((tag_value_t)0)
+extern tag_typedef_t srestag_any;
+
 extern tag_typedef_t srestag_resolv_conf;
 #define SRESTAG_RESOLV_CONF(x) srestag_resolv_conf, tag_str_v((x))
 extern tag_typedef_t srestag_resolv_conf_ref;

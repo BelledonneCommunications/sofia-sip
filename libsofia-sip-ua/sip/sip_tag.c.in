@@ -57,6 +57,8 @@
 
 #include <su_tagarg.h>
 
+tag_typedef_t siptag_any = NSTAG_TYPEDEF(*);
+
 tag_typedef_t siptag_sip = SIPMSGTAG_TYPEDEF(sip);
 
 tag_typedef_t siptag_header = {{ "sip", "header", siphdrtag_class, 0 }};
@@ -75,16 +77,3 @@ tag_typedef_t siptag_#xxxxxx# = SIPHDRTAG_TYPEDEF(#xxxxxx#);
  */
 tag_typedef_t siptag_#xxxxxx#_str = SIPSTRTAG_TYPEDEF(#xxxxxx#);
 
-/** List of all tags for SIP headers */
-tag_type_t sip_tag_list[] =
-{
-  siptag_#xxxxxx#,
-  NULL
-};
-
-/** List of all string tags for SIP headers  */
-tag_type_t sip_tag_str_list[] = 
-{
-  siptag_#xxxxxx#_str,
-  NULL
-};

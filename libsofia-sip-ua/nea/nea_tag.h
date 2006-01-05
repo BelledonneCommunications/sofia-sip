@@ -66,6 +66,10 @@ typedef enum {
   nea_terminated
 } nea_state_t;
 
+/** Filter tag matching any nea tag. */
+#define NEATAG_ANY()         neatag_any, ((tag_value_t)0)
+NEA_DLL extern tag_typedef_t neatag_any;
+
 /** Specify the minimum duration of a subscription (by default, 15 minutes) */
 #define NEATAG_MIN_EXPIRES(x) neatag_min_expires, tag_uint_v((x))
 NEA_DLL extern tag_typedef_t neatag_min_expires;

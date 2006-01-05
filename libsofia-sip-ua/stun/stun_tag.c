@@ -35,6 +35,12 @@
 
 #include <su_tag_class.h>
 
+/**@def STUNTAG_ANY()
+ * 
+ * Filter tag matching any STUNTAG_*().
+ */
+tag_typedef_t stuntag_any = NSTAG_TYPEDEF(*);
+
 /**@def STUNTAG_SERVER(x)
  *
  * Pass media address.

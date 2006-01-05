@@ -54,6 +54,8 @@
 #include <http_tag.h>
 #include <http_tag_class.h>
 
+tag_typedef_t httptag_any = NSTAG_TYPEDEF(*);
+
 tag_typedef_t httptag_http = HTTPMSGTAG_TYPEDEF(http);
 tag_typedef_t httptag_version = STRTAG_TYPEDEF(version);
 tag_typedef_t httptag_header = 

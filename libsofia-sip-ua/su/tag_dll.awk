@@ -104,10 +104,10 @@ HEADER {
 /^#define TAG_NAMESPACE/ { 
   print "#undef TAG_NAMESPACE" > REF; 
   print $0 > REF; 
-  print > REF;
+  print "" > REF;
   print "#undef TAG_NAMESPACE" > DLL; 
   print $0 > DLL; 
-  print > DLL;
+  print "" > DLL;
 }
 
 !DEFS && /^tag_typedef_t/ { DEFS = 1; }
@@ -115,18 +115,17 @@ HEADER {
 DEFS && /tag_typedef_t/ {
   tag = $2;
   typedefs[tag] = $0;
+
+  if ($0 !~ /NSTAG_TYPEDEF/) {
+    print "EXPORT tag_typedef_t "tag"_ref;" > DLL;
+    print "extern tag_typedef_t "tag";" > REF;
+    print "EXPORT tag_typedef_t "tag"_ref = \n  REFTAG_TYPEDEF("tag");" > REF;
+  }
+
   gsub(/ = .*$/, ";");
-  if (DLLREF) {
-    print "EXPORT tag_typedef_t "tag"_ref;" > DLL;
-  }
-  else {
-    print "EXPORT tag_typedef_t "tag"_ref;" > DLL;
-  }
-  print "extern tag_typedef_t "tag";" > REF;
-  print "EXPORT tag_typedef_t "tag"_ref = \n  REFTAG_TYPEDEF("tag");" > REF;
 }
 
-!DLLREF { print > DLL; }
+!DLLREF { print $0 > DLL; }
 
 END {
   if (LIST) {

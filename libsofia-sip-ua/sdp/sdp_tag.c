@@ -40,6 +40,8 @@
 
 #include <sdp_tag.h>
 
+tag_typedef_t sdptag_any = NSTAG_TYPEDEF(*);
+
 tag_typedef_t sdptag_session = {{
   TAG_NAMESPACE, "session", sdptag_session_class 
 }};
