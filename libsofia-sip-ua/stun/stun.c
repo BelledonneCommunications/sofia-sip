@@ -72,27 +72,20 @@ typedef enum stun_action_s {
   stun_action_get_lifetime,
 } stun_action_t;
 
+/* NAT TYPES */
+typedef enum stun_nattype_e {
+  stun_nat_unknown,
+  stun_open_internet,
+  stun_udp_blocked,
+  stun_sym_udp_fw,
+  stun_nat_full_cone,
+  stun_nat_sym,
+  stun_nat_res_cone,
+  stun_nat_port_res_cone,
+} stun_nattype_t;
+
 #define CHG_IP		0x001
 #define CHG_PORT	0x004
-
-#if 0
-
-char const *stun_nattype(stun_handle_t *sh)
-{
-  switch(sh->sh_nattype) {
-  case STUN_NAT_UNKNOWN: return stun_nat_unknown;
-  case STUN_OPEN_INTERNET: return stun_open_internet;
-  case STUN_UDP_BLOCKED: return stun_udp_blocked;
-  case STUN_SYM_UDP_FW: return stun_sym_udp_fw;
-  case STUN_NAT_FULL_CONE: return stun_nat_full_cone;
-  case STUN_NAT_SYM: return stun_nat_sym;
-  case STUN_NAT_RES_CONE: return stun_nat_res_cone;
-  case STUN_NAT_PORT_RES_CONE: return stun_nat_port_res_cone;
-  default: return "INVALID NAT TYPE";
-  }
-}
-
-#endif
 
 #define x_insert(l, n, x) \
  ((l) ? (l)->x##_prev = &(n)->x##_next : 0, \
@@ -104,21 +97,31 @@ char const *stun_nattype(stun_handle_t *sh)
 
 #define x_is_inserted(n, x) ((n)->x##_prev != NULL)
 
-struct stun_request_s {
-  stun_request_t *sr_next, **sr_prev; /**< Linked list */
-  stun_msg_t     *sr_msg;             /**< STUN message pointer */
-  stun_handle_t  *sr_handle;          /**< backpointer, STUN object */
+typedef struct stun_discovery_s stun_discovery_t;
 
-  su_localinfo_t  sr_localinfo;     /**< local addrinfo */
-  su_sockaddr_t   sr_local_addr[1]; /**< local address */
-
-  int             sr_state;           /**< Progress states */
-  int             sr_retry_count;     /**< current retry number */
-  long            sr_timeout;         /**< timeout for next sendto() */
-  stun_action_t   sr_action;          /**< Request type for protocol engine */
-  int             sr_request_mask;    /**< Mask consisting of chg_ip and chg_port */
+struct stun_discovery_s {
+  int              sd_first;
+  int              sd_second;
+  int              sd_third;
+  int              sd_fourth;
+  stun_nattype_t   sd_nattype;
 };
 
+struct stun_request_s {
+  stun_request_t   *sr_next, **sr_prev; /**< Linked list */
+  stun_msg_t       *sr_msg;             /**< STUN message pointer */
+  stun_handle_t    *sr_handle;          /**< backpointer, STUN object */
+
+  su_localinfo_t    sr_localinfo;     /**< local addrinfo */
+  su_sockaddr_t     sr_local_addr[1]; /**< local address */
+
+  int               sr_state;           /**< Progress states */
+  int               sr_retry_count;     /**< current retry number */
+  long              sr_timeout;         /**< timeout for next sendto() */
+  stun_action_t     sr_action;          /**< Request type for protocol engine */
+  int               sr_request_mask;    /**< Mask consisting of chg_ip and chg_port */
+  stun_discovery_t *sr_discovery;
+};
 
 struct stun_handle_s
 {
@@ -193,19 +196,6 @@ char const *stun_str_state(stun_states_t state)
   default: return "stun_error";
   }
 }
-
-/* NAT TYPES */
-typedef enum stun_nattype_t {
-  stun_nat_unknown,
-  stun_open_internet,
-  stun_udp_blocked,
-  stun_sym_udp_fw,
-  stun_nat_full_cone,
-  stun_nat_sym,
-  stun_nat_res_cone,
-  stun_nat_port_res_cone,
-} stun_nattype_e;
-
 
 char const *stun_nattype(stun_handle_t *sh)
 {
@@ -431,7 +421,6 @@ stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action)
   if (req) {
     req->sr_handle = sh;
 
-    /* STUN bind related */
     req->sr_localinfo.li_addrlen = sizeof(su_sockaddr_t);
     req->sr_localinfo.li_addr = req->sr_local_addr;
 
@@ -444,6 +433,12 @@ stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action)
     req->sr_msg = calloc(sizeof(stun_msg_t), 1);
   }
 
+  /* Insert this request to the request queue */
+  if (sh->sh_requests)
+    x_insert(sh->sh_requests, req, sr);
+  else
+    sh->sh_requests = req;
+
   return req;
 }
 
@@ -451,11 +446,15 @@ void stun_destroy_request(stun_request_t *req)
 {
   assert(req);
 
+  if (x_is_inserted(req, sr))
+    x_remove(req, sr);
+
   req->sr_handle = NULL;
 
-  free(req->sr_msg);
-  free(req);
+  if (req->sr_msg)
+    stun_free_message(req->sr_msg);
 
+  free(req);
   return;
 }
 
@@ -539,12 +538,6 @@ int stun_handle_bind(stun_handle_t *sh,
     req = stun_create_request(sh, action);
   else
     req = stun_action_create_binding_req(sh);
-
-  /* Insert this request to the request queue */
-  if (sh->sh_requests)
-    x_insert(sh->sh_requests, req, sr);
-  else
-    sh->sh_requests = req;
 
   clientinfo = &req->sr_localinfo;
 
@@ -672,220 +665,83 @@ su_localinfo_t *stun_request_get_localinfo(stun_request_t *req)
   return &req->sr_localinfo;
 }
 
-
-
-#if 0
-/** Return type of NAT
- *  This function may take a long time to finish.
- *  XXX - mela: not for long!!!
- *  nat type is set in ss->se_handle.sh_nattype
- */
-int stun_handle_get_nattype(stun_handle_t *sh,
-			    int *addrlen)
+stun_discovery_t *stun_discovery_create(void)
 {
-  int retval, lifetime, sockfd;
-  socklen_t locallen, len;
-  su_sockaddr_t local, /* mapped_addr1, */ mapped_addr2;
-  su_localinfo_t *mapped_addr1;
+  stun_discovery_t *sd = NULL;
 
-  sockfd = sh->sh_bind_socket;
-
-  assert(sh);
-
-  if ((sh->sh_state != stun_bind_done) &&
-      (sh->sh_state != stun_bind_timeout) &&
-      (sh->sh_state != stun_bind_error))
-    return -1;
-
-  
-  mapped_addr1 = stun_handle_get_local_addr(sh);
-
-#if 0  
-  len = sizeof(mapped_addr1);
-  memcpy(&mapped_addr1, my_addr, len); 
-  /* mapped_addr1.li_addr.su_port = 0; */ /* wild card for get_nattype */
-  /* retval = stun_bind(ss, &mapped_addr1, &lifetime); */
-#endif
-
-  if (sh->sh_state == stun_bind_timeout) {
-    sh->sh_nattype = stun_udp_blocked;
-    /* otherwise unknown nat type */
-    return 0;
-  }
-  else if (sh->sh_state == stun_bind_error) {
-    sh->sh_nattype = stun_nat_unknown;
-    return 0;
-  }
-  else {
-    memset(&local, 0, sizeof(local));
-    locallen = sizeof(local);
-    getsockname(sockfd, (struct sockaddr *) &local, &locallen);
-
-    /* Same IP and port*/
-    if (memcmp(&local, &mapped_addr1->li_addr, 8) == 0) {
-      /* conduct TEST II */      
-      memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(sh, sh->sh_pri_addr, 1, 1);
-      if (retval == -1) {
-	if (errno == ETIMEDOUT) {
-	  /* No Response: Type 3 - Sym UDP FW */
-	  retval = 0;
-	  sh->sh_nattype = stun_sym_udp_fw;	  
-	} /* otherwise unknown nat type */
-      } 
-      else {
-	/* Response: Type 1 - Open Internet */
-	sh->sh_nattype = stun_open_internet;
-      }
-    }
-    /* Different IP */
-    else {
-      memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(sh, sh->sh_pri_addr, 1, 1);
-      if (retval == -1) {
-	if (errno == ETIMEDOUT) {
-	  /* No Response */
-	  retval = stun_send_binding_request(sh, sh->sh_sec_addr, 0, 0);
-	  /* response comes back, has to be the case */
-	  if (retval == 0) {
-	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
-	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
-		 same */
-	      retval = stun_send_binding_request(sh, sh->sh_pri_addr, 0, 1);
-	      if(retval==0) {
-		/* Response: Type 6 - Restricted */
-		sh->sh_nattype = stun_nat_res_cone;
-	      }
-	      else if(errno==ETIMEDOUT) {
-		/* No response: Type 7 - Port Restricted */
-		retval = 0;
-		sh->sh_nattype = stun_nat_port_res_cone;
-	      }
-	    }
-	    else {
-	      /* Different Public IP: Type 5 - Sym NAT */
-	      sh->sh_nattype = stun_nat_sym;
-	    }
-	  } /* otherwise there is a sudden network problem */	  
-	} /* otherwise unknown nat type */
-      }
-      else {
-	/* Response: Type 4 - Full Cone */
-	sh->sh_nattype = stun_nat_full_cone;
-      }
-    }
-  }
-  
-  return retval;
+  return sd = calloc(1, sizeof(stun_discovery_t));
 }
-#endif /* if 0 */
+
+int stun_destroy_discovery(stun_discovery_t *sd)
+{
+  free(sd);
+  return 0;
+}
+
+int stun_discovery_assign(stun_request_t *req, stun_discovery_t *sd)
+{
+  req->sr_discovery = sd;
+  return 0;
+}
+
 
 int stun_handle_get_nattype(stun_handle_t *sh,
 			    tag_type_t tag, tag_value_t value,
 			    ...)
 {
-  int nattype = stun_nat_unknown;
-  int retval, lifetime, sockfd;
-  /* socklen_t locallen, len; */
-#if 0
-  struct sockaddr_in local, /* mapped_addr1, */ mapped_addr2;
-  su_localinfo_t mapped_addr1;
-#endif
+  int err;
   ta_list ta;
+  stun_request_t *req = NULL;
+  stun_discovery_t *sd = NULL;
   
   ta_start(ta, tag, value);
 
+  sd = stun_discovery_create();
 
-  sockfd = sh->sh_bind_socket;
+  req = stun_action_create_nattype_discovery(sh);
+  stun_discovery_assign(req, sd);
+  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
+    return -1;
 
-#if 0
-  assert(my_addr && my_addr->li_addrlen != 0);
-  len = sizeof(mapped_addr1);
-  memcpy(&mapped_addr1, my_addr, len); 
-  /* mapped_addr1.li_addr.su_port = 0; */ /* wild card for get_nattype */
-#endif
-
-  /* retval = stun_bind(ss, &mapped_addr1, &lifetime); */
-
-  /* This launches the binding process, but with a different state
-   * machine than the default one: get_nattype is the specified action
-   * here */
-  retval = stun_handle_bind(sh, &lifetime,
-			    STUNTAG_ACTION(stun_action_get_nattype),
-			    TAG_NEXT(ta_args(ta)));
-  if (retval == -1) {
-    if (errno == ETIMEDOUT) {
-      /* No Response: Type 2 - UDP Blocked */
-      retval = 0; /* time out is a legitimate response */
-      nattype = stun_udp_blocked;
-    } /* otherwise unknown nat type */
+  err = stun_send_binding_request(req, sh->sh_pri_addr);
+  if (err < 0) {
+    stun_free_message(req->sr_msg);
+    return -1;
   }
+
+  /* Same Public IP and port, Test III, server ip 0 or 1 should be
+     the same */
+  req = stun_action_create_nattype_discovery(sh);
+  stun_discovery_assign(req, sd);
+  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 1) < 0) 
+    return -1;
+
+  err = stun_send_binding_request(req, sh->sh_pri_addr);
+  if (err < 0) {
+    stun_free_message(req->sr_msg);
+    return -1;
+  }
+
+  req = stun_action_create_nattype_discovery(sh);
+  stun_discovery_assign(req, sd);
+  if (stun_make_binding_req(sh, req, req->sr_msg, 1, 1) < 0) 
+    return -1;
   
+  err = stun_send_binding_request(req, sh->sh_pri_addr);
+  if (err < 0) {
+    stun_free_message(req->sr_msg);
+  }
+
   ta_end(ta);
+
+  if (err == -1)
+    return -1;
+
+  
+  
   return 0;
 }
 
-#if 0
-  else { /* Response comes back */
-    memset(&local, 0, sizeof(local)); locallen = sizeof(local);
-    getsockname(sockfd, (struct sockaddr *)&local, &locallen);
-    if (memcmp(&local, &mapped_addr1, 8) == 0) { /* Same IP and port*/
-      /* conduct TEST II */      
-      memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 1, 1);
-      if (retval == -1) {
-	if (errno == ETIMEDOUT) {
-	  /* No Response: Type 3 - Sym UDP FW */
-	  retval = 0;
-	  nattype = STUN_SYM_UDP_FW;	  
-	} /* otherwise unknown nat type */
-      } 
-      else {
-	/* Response: Type 1 - Open Internet */
-	nattype = STUN_OPEN_INTERNET;
-      }
-    }
-    else { /* Different IP */
-      memset(&mapped_addr2, 0, sizeof(mapped_addr2));
-      retval = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 1, 1);
-      if (retval == -1) {
-	if (errno == ETIMEDOUT) {
-	  /* No Response */
-	  retval = stun_send_binding_request(sh, sh->sh_sec_addr, &mapped_addr2, 0, 0);
-	  /* response comes back, has to be the case */
-	  if (retval == 0) {
-	    if (memcmp(&mapped_addr1, &mapped_addr2, 8) == 0) {
-	      /* Same Public IP and port, Test III, server ip 0 or 1 should be
-		 same */
-	      retval = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 0, 1);
-	      if(retval==0) {
-		/* Response: Type 6 - Restricted */
-		nattype = STUN_NAT_RES_CONE;
-	      }
-	      else if(errno==ETIMEDOUT) {
-		/* No response: Type 7 - Port Restricted */
-		retval = 0;
-		nattype = STUN_NAT_PORT_RES_CONE;
-	      }
-	    }
-	    else {
-	      /* Different Public IP: Type 5 - Sym NAT */
-	      nattype = STUN_NAT_SYM;
-	    }
-	  } /* otherwise there is a sudden network problem */	  
-	} /* otherwise unknown nat type */
-      }
-      else {
-	/* Response: Type 4 - Full Cone */
-	nattype = STUN_NAT_FULL_CONE;
-      }
-    }
-  }
-  
-  sh->sh_nattype = nattype;
-  return retval;
-}
-#endif /* if 0 */
 
 /** Application should call this at regular intervals 
  *  while binding is active.
@@ -1393,9 +1249,6 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
     memcpy(&self->sh_localinfo, li, sizeof(su_localinfo_t));
     memcpy(self->sh_localinfo.li_addr, li->li_addr, sizeof(su_sockaddr_t));
 
-    if (x_is_inserted(req, sr))
-      x_remove(req, sr);
-    /* su_wait_destroy(w); */
 #if 0
     /* XXX - free req */
     stun_free_message(&binding_response);
@@ -1424,6 +1277,7 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   }
   
   self->sh_callback(self->sh_context, self, req, req->sr_state);
+  stun_destroy_request(req);
 
   return 0;
 }
@@ -1444,7 +1298,6 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
   switch (binding_response->stun_hdr.msg_type) {
   case BINDING_RESPONSE:
     if (stun_validate_message_integrity(binding_response, &self->sh_passwd) < 0) {
-      /* su_root_deregister(self->sh_root, self->ss_root_index); */
       stun_free_message(binding_request);
       stun_free_message(binding_response);
       return retval;
@@ -1499,116 +1352,111 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
   stun_handle_t *sh = req->sr_handle;
   su_socket_t s = sh->sh_bind_socket;
   su_localinfo_t *li = NULL;
+  stun_discovery_t *sd = req->sr_discovery;
   int err;
 
-  /* parse first the default message */
+  /* If the NAT type is already detected, ignore this request */
+  if (!sd || (sd->sd_nattype != stun_nat_unknown)) {
+    stun_destroy_request(req);
+    return 0;
+  }
+
+  /* parse first the payload */
   if (binding_response)
     process_binding_request(req, binding_response);
 
   li = stun_request_get_localinfo(req);
 
-  /* call callback indicating we are done, no change to get out with
-   * STUN */
-  if ((req->sr_state == stun_bind_timeout)) {
-    if (req->sr_request_mask == 0) {
-      sh->sh_nattype = stun_udp_blocked;
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-      stun_destroy_request(req);
-      return 0;
-    }
-    else if (req->sr_request_mask & (CHG_IP | CHG_PORT)) {
-      sh->sh_nattype = stun_sym_udp_fw;
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-      stun_destroy_request(req);
-      return 0;
-    }
-  }
-  else /* if (req->sr_state == stun_bind_done) */ {
-    if (req->sr_request_mask & (CHG_IP | CHG_PORT)) {
-      sh->sh_nattype = stun_open_internet;
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-      stun_destroy_request(req);
-      return 0;
-    }
-    if (req->sr_request_mask == 0) {
-      if (memcmp(li->li_addr, sh->sh_localinfo.li_addr, 8) == 0) {
-	if (x_is_inserted(req, sr))
-	  x_remove(req, sr);
-	
-	stun_destroy_request(req);
-	req = NULL;
-	
-	req = stun_action_create_nattype_discovery(sh);
-	/* Insert this request to the request queue */
-	if (sh->sh_requests)
-	  x_insert(sh->sh_requests, req, sr);
-	else
-	  sh->sh_requests = req;
+  if (req->sr_request_mask == 0)
+    sd->sd_first = 1;
+  else if (req->sr_request_mask & (CHG_IP | CHG_PORT))
+    sd->sd_second = 1;
+  else if (req->sr_request_mask &  CHG_PORT)
+    sd->sd_third = 1;
 
-	/* Same Public IP and port, Test III, server ip 0 or 1 should be
-	   same */
-	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 1) < 0) 
+  memset(&local, 0, sizeof(local));
+  locallen = sizeof(local);
+  getsockname(s, (struct sockaddr *) &local, &locallen);
+
+  if ((req->sr_state == stun_bind_timeout)) {
+    if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
+	  sd->sd_nattype = stun_nat_port_res_cone;
+	  sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+	  stun_destroy_request(req);
+	  stun_destroy_discovery(sd);
+	  return 0;
+    }
+    else if (sd->sd_first && sd->sd_second && sd->sd_fourth) {
+      /* Sudden network problem */
+      sd->sd_nattype = stun_nat_unknown;
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      stun_destroy_request(req);
+      stun_destroy_discovery(sd);
+      return 0;
+    }
+    else if (sd->sd_first && sd->sd_second) {
+      if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0) {
+	sd->sd_nattype = stun_sym_udp_fw;
+	sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+	stun_destroy_request(req);
+	stun_destroy_discovery(sd);
+	return 0;
+      }
+      else {
+	sd->sd_fourth = 1;
+	stun_destroy_request(req);
+	req = stun_action_create_nattype_discovery(sh);
+	stun_discovery_assign(req, sd);
+	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
 	  return -1;
 
-	err = stun_send_binding_request(req, sh->sh_pri_addr);
+	err = stun_send_binding_request(req, sh->sh_sec_addr);
 	if (err < 0) {
 	  stun_free_message(req->sr_msg);
 	  return -1;
 	}
 	return 0;
       }
-      else {
-	sh->sh_nattype = stun_nat_sym;
-	sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
-	stun_destroy_request(req);
-	return 0;
-      }
     }
-  }
-
-  memset(&local, 0, sizeof(local));
-  locallen = sizeof(local);
-  getsockname(s, (struct sockaddr *) &local, &locallen);
-
-  if (x_is_inserted(req, sr))
-    x_remove(req, sr);
-
-  stun_destroy_request(req);
-  req = NULL;
-    
-  req = stun_action_create_nattype_discovery(sh);
-  /* Insert this request to the request queue */
-  if (sh->sh_requests)
-    x_insert(sh->sh_requests, req, sr);
-  else
-    sh->sh_requests = req;
-
-  /* Same IP and port */
-  if (memcmp(&local, li->li_addr, 8) == 0) {
-    /* conduct TEST II */
-    /* Create message */
-    if (stun_make_binding_req(sh, req, req->sr_msg, 1, 1) < 0) 
-      return -1;
-
-    err = stun_send_binding_request(req, sh->sh_pri_addr);
-    if (err < 0) {
-      stun_free_message(req->sr_msg);
+    else if (sd->sd_first) {
+      sd->sd_nattype = stun_udp_blocked;
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      stun_destroy_request(req);
+      stun_destroy_discovery(sd);
+      return 0;
     }
-    /* err = stun_send_binding_request(sh, sh->sh_pri_addr, &mapped_addr2, 1, 1); */
   }
   else {
-    /* Create message */
-    if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
-      return -1;
+    if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
+      if (memcmp(li->li_addr, sh->sh_localinfo.li_addr, 8) == 0) {
+	/* Response: Type 6 - Restricted */
+	sd->sd_nattype = stun_nat_res_cone;
+      }
+      else {
+	sd->sd_nattype = stun_nat_sym;
+      }
 
-    /* Send message to changed address (sec_addr) */
-    err = stun_send_binding_request(req, sh->sh_sec_addr);
-    if (err < 0) {
-      stun_free_message(req->sr_msg);
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      stun_destroy_request(req);
+      stun_destroy_discovery(sd);
+      return 0;
     }
+    if (sd->sd_first && sd->sd_second) {
+      if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0)
+	sh->sh_nattype = stun_open_internet;
+      else
+	sh->sh_nattype = stun_nat_full_cone;
 
+      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      stun_destroy_request(req);
+      stun_destroy_discovery(sd);
+      return 0;
+    }
+    else if (sd->sd_first) {
+      if (memcmp(&local, sh->sh_localinfo.li_addr, 8) == 0)
+	return 0;
+    }
   }
-
   return 0;
 }
 
