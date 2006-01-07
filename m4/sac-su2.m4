@@ -256,12 +256,12 @@ pthread_rwlock_t rw;
 
 int main()
 {
-  pthread_rwlock_init(&rw);
+  pthread_rwlock_init(&rw, NULL);
   pthread_rwlock_rdlock(&rw);
   pthread_rwlock_rdlock(&rw);
   pthread_rwlock_unlock(&rw);
-  /* pthread_rwlock_trywrlock() should fail with -1 */
-  return pthread_rwlock_trywrlock(&rw) == -1 ? 0 : 1;
+  /* pthread_rwlock_trywrlock() should fail (not return 0) */
+  return pthread_rwlock_trywrlock(&rw) != 0 ? 0  : 1;
 }
 ],[AC_DEFINE_HAVE_PTHREAD_RWLOCK],[
 AC_MSG_WARN([Recursive pthread_rwlock_rdlock() does not work!!! ])
