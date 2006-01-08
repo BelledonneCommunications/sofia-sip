@@ -277,14 +277,13 @@ int stun_parse_attr_unknown_attributes(stun_attr_t *attr,
 /** scan thru attribute list and return the requested attr */
 stun_attr_t *stun_get_attr(stun_attr_t *attr, uint16_t attr_type) {
   stun_attr_t *p;
-  p = attr;
-  while (p != NULL) {
+
+  for (p = attr; p != NULL; p = p->next) {
     if (p->attr_type == attr_type)
-      return p;
-    else
-      p = p->next;
+      break;
   }
-  return NULL;
+
+  return p;
 }
 
 void stun_init_buffer(stun_buffer_t *p) {

@@ -100,11 +100,20 @@ typedef enum stun_nattype_e {
 typedef struct stun_discovery_s stun_discovery_t;
 
 struct stun_discovery_s {
+#if 0 /* take into use if needed / looks cool. */
+  stun_action_t   *sd_next, **sd_prev; /**< Linked list */
+#endif
+
+  stun_handle_t   *sd_handle;
+  stun_action_t    sd_action;     /**< My action */
+  stun_state_t     sd_state;      /**< Progress states */
+
+  /* NAT type related */
+  stun_nattype_t   sd_nattype;
   int              sd_first;
   int              sd_second;
   int              sd_third;
   int              sd_fourth;
-  stun_nattype_t   sd_nattype;
 };
 
 struct stun_request_s {
@@ -118,7 +127,9 @@ struct stun_request_s {
   stun_state_t      sr_state;           /**< Progress states */
   int               sr_retry_count;     /**< current retry number */
   long              sr_timeout;         /**< timeout for next sendto() */
+#if 0
   stun_action_t     sr_action;          /**< Request type for protocol engine */
+#endif
   int               sr_request_mask;    /**< Mask consisting of chg_ip and chg_port */
   stun_discovery_t *sr_discovery;
 };
@@ -223,16 +234,22 @@ char const *stun_nattype(stun_request_t *req)
 char const stun_version[] = 
  "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
 
-
 static
 int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
+
+static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
+					       stun_action_t action);
+static int stun_destroy_discovery(stun_discovery_t *sd);
+
 static
-int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response);
+int action_bind(stun_request_t *req, stun_msg_t *binding_response);
+static
+int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response);
 static
 int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
 
 static
-stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action);
+stun_request_t *stun_create_request(stun_discovery_t *sd);
 static
 int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
@@ -397,30 +414,9 @@ stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
   return stun;
 }
 
-
-stun_request_t *stun_action_create_binding_req(stun_handle_t *sh)
+stun_request_t *stun_create_request(stun_discovery_t *sd)
 {
-  return stun_create_request(sh, stun_action_binding_request);
-}
-
-stun_request_t *stun_action_create_nattype_discovery(stun_handle_t *sh)
-{
-  return stun_create_request(sh, stun_action_get_nattype);
-}
-
-stun_request_t *stun_action_create_timeout_discovery(stun_handle_t *sh)
-{
-  return stun_create_request(sh, stun_action_get_lifetime);
-}
-
-stun_request_t *stun_action_create_keepalive(stun_handle_t *sh)
-{
-  return stun_create_request(sh, stun_action_keepalive);
-}
-
-
-stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action)
-{
+  stun_handle_t *sh = sd->sd_handle;
   stun_request_t *req = NULL;
 
   req = calloc(sizeof(stun_request_t), 1);
@@ -428,6 +424,7 @@ stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action)
     return NULL;
 
   req->sr_handle = sh;
+  req->sr_discovery = sd;
   
   req->sr_localinfo.li_addrlen = sizeof(su_sockaddr_t);
   req->sr_localinfo.li_addr = req->sr_local_addr;
@@ -435,15 +432,19 @@ stun_request_t *stun_create_request(stun_handle_t *sh, stun_action_t action)
   /* default timeout for next sendto() */
   req->sr_timeout = STUN_SENDTO_TIMEOUT;
   req->sr_retry_count = 0;
-  req->sr_action = action;
+  /* req->sr_action = action; */
   req->sr_request_mask = 0;
   
   req->sr_msg = calloc(sizeof(stun_msg_t), 1);
 
+#if 0
   if (action == stun_action_get_nattype)
+#endif
     req->sr_state = stun_discovery_init;
-  else
+#if 0
+  else if (action == stun_action_binding_request)
     req->sr_state = stun_bind_init;
+#endif
 
   /* Insert this request to the request queue */
   if (sh->sh_requests)
@@ -488,6 +489,49 @@ void stun_handle_destroy(stun_handle_t *self)
 }
 
 
+int assign_socket(stun_handle_t *sh, su_socket_t s) 
+{
+  int events;
+  int index;
+  su_wait_t wait[1] = { SU_WAIT_INIT };
+
+  if (sh->sh_bind_socket > 0) {
+    SU_DEBUG_3(("%s: BIND socket already assigned.\n", __func__));
+    return -1;
+  }
+
+  if (s == sh->sh_bind_socket) {
+    SU_DEBUG_3(("%s: socket is same as previously assigned.\n", __func__));
+    return 0;
+  }
+
+  /* set socket asynchronous */
+  if (su_setblocking(s, 0) < 0) {
+    STUN_ERROR(errno, su_setblocking);
+
+    su_close(s);
+    return -1;
+  }
+  sh->sh_bind_socket = s;
+
+  events = SU_WAIT_IN | SU_WAIT_ERR;
+
+  if (su_wait_create(wait, s, events) == -1) {
+    STUN_ERROR(su_errno(), su_wait_create);
+    return -1;
+  }
+
+  /* Register receiving function with events specified above */
+  if ((index = su_root_register(sh->sh_root,
+				wait, stun_bind_callback,
+				sh, 0)) < 0) {
+    STUN_ERROR(errno, su_root_register);
+    return -1;
+  }
+
+  return 0;
+}
+
 /** Bind a socket using STUN client. 
  *
  * The function stun_bind() obtains a global address for a UDP socket using
@@ -527,13 +571,11 @@ int stun_handle_bind(stun_handle_t *sh,
   socklen_t bind_len;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   stun_request_t *req = NULL;
-  int index;
-  int events = -1;
+  stun_discovery_t *sd = NULL;
   su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
   int i, error, found = 0;
   unsigned int port;
   ta_list ta;
-  su_wait_t wait[1] = { SU_WAIT_INIT };
   int action = stun_action_no_action;
   
   assert(sh);
@@ -550,30 +592,13 @@ int stun_handle_bind(stun_handle_t *sh,
     return -1;
   }
 
-  if (action != stun_action_no_action)
-    req = stun_create_request(sh, action);
-  else
-    req = stun_action_create_binding_req(sh);
+  if (assign_socket(sh, s) < 0)
+    return -1;
+
+  sd = stun_discovery_create(sh, stun_action_binding_request);
+  req = stun_create_request(sd);
 
   clientinfo = &req->sr_localinfo;
-
-  if (action != stun_action_no_action)
-    goto skip_init;
-
-#if 0  
-  /* Close the previous associated socket */
-  if (sh->sh_bind_socket > 0)
-    su_close(sh->sh_bind_socket);
-#endif
-
-  /* set socket asynchronous */
-  if (su_setblocking(s, 0) < 0) {
-    STUN_ERROR(errno, su_setblocking);
-
-    su_close(s);
-    return -1;
-  }
-  sh->sh_bind_socket = s;
 
   hints->li_family = AF_INET;
   if((error = su_getlocalinfo(hints, &res)) == 0) {
@@ -608,23 +633,6 @@ int stun_handle_bind(stun_handle_t *sh,
   if (res)
     su_freelocalinfo(res);
 
-  s = sh->sh_bind_socket;
-
-  events = SU_WAIT_IN | SU_WAIT_ERR;
-
-  if (su_wait_create(wait, s, events) == -1) {
-    STUN_ERROR(su_errno(), su_wait_create);
-    return -1;
-  }
-
-  /* Register receiving function with events specified above */
-  if ((index = su_root_register(sh->sh_root,
-				wait, stun_bind_callback,
-				sh, 0)) < 0) {
-    STUN_ERROR(errno, su_root_register);
-    return -1;
-  }
-
   inet_ntop(clientinfo->li_family, SU_ADDR(clientinfo->li_addr), ipaddr, sizeof(ipaddr));
   if (bind(s, (struct sockaddr *) &clientinfo->li_addr, clientinfo->li_addrlen) < 0) {
     SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, ipaddr,
@@ -644,8 +652,6 @@ int stun_handle_bind(stun_handle_t *sh,
   inet_ntop(clientinfo->li_family, SU_ADDR(&bind_addr), ipaddr, sizeof(ipaddr));
   SU_DEBUG_3(("%s: Local socket bound to: %s:%u\n", __func__, ipaddr, 
 	      (unsigned) ntohs(bind_addr.su_port)));
-
- skip_init:
 
   /* Create default message (last two params zeros) */
   if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
@@ -681,10 +687,14 @@ su_localinfo_t *stun_request_get_localinfo(stun_request_t *req)
   return &req->sr_localinfo;
 }
 
-stun_discovery_t *stun_discovery_create(void)
+stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
+					stun_action_t action)
 {
   stun_discovery_t *sd = NULL;
   sd = calloc(1, sizeof(stun_discovery_t));
+
+  sd->sd_action = action;
+  sd->sd_handle = sh;
 
   return sd;
 }
@@ -695,28 +705,28 @@ int stun_destroy_discovery(stun_discovery_t *sd)
   return 0;
 }
 
-int stun_discovery_assign(stun_request_t *req, stun_discovery_t *sd)
-{
-  req->sr_discovery = sd;
-  return 0;
-}
-
 
 int stun_handle_get_nattype(stun_handle_t *sh,
 			    tag_type_t tag, tag_value_t value,
 			    ...)
 {
-  int err;
+  int err, s = -1;
   ta_list ta;
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   
   ta_start(ta, tag, value);
 
-  sd = stun_discovery_create();
+  tl_gets(ta_args(ta),
+	  STUNTAG_SOCKET_REF(s),
+	  TAG_END());
 
-  req = stun_action_create_nattype_discovery(sh);
-  stun_discovery_assign(req, sd);
+  /* Check if a UDP socket has already been assigned to stun_handle */
+  if (s > 0 && assign_socket(sh, s) < 0)
+    return -1;
+
+  sd = stun_discovery_create(sh, stun_action_get_nattype);
+  req = stun_create_request(sd);
   if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
     return -1;
 
@@ -728,8 +738,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 
   /* Same Public IP and port, Test III, server ip 0 or 1 should be
      the same */
-  req = stun_action_create_nattype_discovery(sh);
-  stun_discovery_assign(req, sd);
+  req = stun_create_request(sd);
   if (stun_make_binding_req(sh, req, req->sr_msg, 0, 1) < 0) 
     return -1;
 
@@ -739,8 +748,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
     return -1;
   }
 
-  req = stun_action_create_nattype_discovery(sh);
-  stun_discovery_assign(req, sd);
+  req = stun_create_request(sd);
   if (stun_make_binding_req(sh, req, req->sr_msg, 1, 1) < 0) 
     return -1;
   
@@ -1159,7 +1167,12 @@ int stun_make_sharedsecret_req(stun_msg_t *msg)
 static inline
 stun_action_t get_action(stun_request_t *req)
 {
-  return req ? req->sr_action : stun_action_no_action;
+  stun_discovery_t *sd = NULL;
+  if (!req || !req->sr_discovery)
+    return stun_action_no_action;
+
+  sd = req->sr_discovery;
+  return sd->sd_action;
 }
 
 
@@ -1189,7 +1202,6 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   stun_request_t *req;
   unsigned char dgram[512] = { 0 };
   su_sockaddr_t recv;
-  su_localinfo_t *li = NULL;
   socklen_t recv_len;
   int events = su_wait_events(w, self->sh_tls_socket);
   stun_action_t action = stun_action_no_action;
@@ -1242,11 +1254,8 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
   /* Parse here the incoming message. */
   if (stun_parse_message(&binding_response) < 0) {
-    /* su_wait_destroy(w); */
-    su_root_deregister(self->sh_root, self->ss_root_index);
-    SU_DEBUG_5(("%s: Error parsing response.\n", __func__));
-    /* stun_free_message(binding_request); */
     stun_free_message(&binding_response);
+    SU_DEBUG_5(("%s: Error parsing response.\n", __func__));
     return retval;
   }
 
@@ -1261,39 +1270,35 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   /* Based on the action, use different state machines */
   switch (action) {
   case stun_action_binding_request:
-    process_binding_request(req, &binding_response);
-    li = stun_request_get_localinfo(req);
-    memcpy(&self->sh_localinfo, li, sizeof(su_localinfo_t));
-    memcpy(self->sh_localinfo.li_addr, li->li_addr, sizeof(su_sockaddr_t));
-
-#if 0
-    /* XXX - free req */
-    stun_free_message(&binding_response);
-    stun_free_message(req->sr_msg);
-#endif
-
+    action_bind(req, &binding_response);
     break;
 
   case stun_action_get_nattype:
-    process_get_nattype(req, &binding_response);
+    action_determine_nattype(req, &binding_response);
     break;
 
   case stun_action_get_lifetime:
     process_get_lifetime(req, &binding_response);
+    self->sh_callback(self->sh_context, self, req, req->sr_state);
     break;
 
   case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
     req->sr_state = stun_request_not_found;
+    self->sh_callback(self->sh_context, self, req, req->sr_state);
+    req->sr_state = stun_dispose_me;
     break;
 
   default:
     SU_DEBUG_3(("%s: requested action not implemented.\n", __func__));
     req->sr_state = stun_error;
+    self->sh_callback(self->sh_context, self, req, req->sr_state);
+    req->sr_state = stun_dispose_me;
     break;
   }
   
-  self->sh_callback(self->sh_context, self, req, req->sr_state);
+  /* At this point all the requests can be destroyed */
+  /* req->sr_state = stun_dispose_me; */
 
   return 0;
 }
@@ -1310,8 +1315,12 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
 
   binding_request = req->sr_msg;
 
+  /* remark for next line: the idea is that this is not knowing about
+     the current action */
+#if 0 /* xxx -- mela: handle outside this function, on upper level */
   if (req->sr_action != stun_action_get_nattype)
     req->sr_state = stun_bind_processing;
+#endif
     
   switch (binding_response->stun_hdr.msg_type) {
   case BINDING_RESPONSE:
@@ -1338,11 +1347,14 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
       if (chg_addr != NULL)
 	memcpy(&self->sh_sec_addr->su_sin, chg_addr->pattr, sizeof(struct sockaddr_in));
     }
+
+#if 0
     if (req->sr_action == stun_action_get_nattype)
       /* req->sr_state = stun_discovery_done; */
       ;
     else
       req->sr_state = stun_bind_done;
+#endif
 
     break;
     
@@ -1366,8 +1378,26 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   return 0;
 }
 
+int action_bind(stun_request_t *req, stun_msg_t *binding_response)
+{
+  su_localinfo_t *li = NULL;
+  stun_discovery_t *sd = req->sr_discovery;
+  stun_handle_t *sh = req->sr_handle;
 
-int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
+  process_binding_request(req, binding_response);
+  li = stun_request_get_localinfo(req);
+
+  memcpy(&sh->sh_localinfo, li, sizeof(su_localinfo_t));
+  memcpy(sh->sh_localinfo.li_addr, li->li_addr, sizeof(su_sockaddr_t));
+
+  sd->sd_state = stun_bind_done;
+  sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
+  req->sr_state = stun_dispose_me;
+
+  return 0;
+}
+
+int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 {
   su_sockaddr_t local;
   socklen_t locallen;
@@ -1404,8 +1434,8 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
   if ((req->sr_state == stun_discovery_timeout)) {
     if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
 	  sd->sd_nattype = stun_nat_port_res_cone;
-	  req->sr_state = stun_discovery_done;
-	  sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+	  sd->sd_state = stun_discovery_done;
+	  sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
 	  req->sr_state = stun_dispose_me;
 	  /* stun_destroy_request(req); */
 	  stun_destroy_discovery(sd);
@@ -1414,8 +1444,8 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
     else if (sd->sd_first && sd->sd_second && sd->sd_fourth) {
       /* Sudden network problem */
       sd->sd_nattype = stun_nat_unknown;
-      req->sr_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      sd->sd_state = stun_discovery_done;
+      sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
       req->sr_state = stun_dispose_me;
       /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
@@ -1427,8 +1457,8 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
 
       if (memcmp(li->li_addr, sh->sh_localinfo.li_addr, 8) == 0) {
 	sd->sd_nattype = stun_sym_udp_fw;
-	req->sr_state = stun_discovery_done;
-	sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+	sd->sd_state = stun_discovery_done;
+	sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
 	req->sr_state = stun_dispose_me;
 	/* stun_destroy_request(req); */
 	stun_destroy_discovery(sd);
@@ -1436,11 +1466,12 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
       }
       else {
 	sd->sd_fourth = 1;
+
+	/* The request will be destroyed by the timer */
 	req->sr_state = stun_dispose_me;
-	/* stun_destroy_request(req); */
 	req = NULL;
-	req = stun_action_create_nattype_discovery(sh);
-	stun_discovery_assign(req, sd);
+
+	req = stun_create_request(sd);
 	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
 	  return -1;
 
@@ -1454,8 +1485,8 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
     }
     else if (sd->sd_first) {
       sd->sd_nattype = stun_udp_blocked;
-      req->sr_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      sd->sd_state = stun_discovery_done;
+      sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
       req->sr_state = stun_dispose_me;
       /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
@@ -1472,8 +1503,8 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
 	sd->sd_nattype = stun_nat_sym;
       }
 
-      req->sr_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      sd->sd_state = stun_discovery_done;
+      sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
       req->sr_state = stun_dispose_me;
       /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
@@ -1487,8 +1518,8 @@ int process_get_nattype(stun_request_t *req, stun_msg_t *binding_response)
       else
 	sd->sd_nattype = stun_nat_full_cone;
 
-      req->sr_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      sd->sd_state = stun_discovery_done;
+      sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
       req->sr_state = stun_dispose_me;
       /* stun_destroy_request(req); */
       stun_destroy_discovery(sd);
@@ -1515,7 +1546,9 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
   stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
   int s;
-  stun_action_t action;
+  stun_discovery_t *sd = req->sr_discovery;
+  stun_action_t action = sd->sd_action;
+  long timeout = 0;
 
   SU_DEBUG_9(("%s: entering.\n", __func__));
 
@@ -1551,34 +1584,39 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     req->sr_timeout = STUN_SENDTO_TIMEOUT;
     su_timer_destroy(t);
 
-    if (action == stun_action_get_nattype)
-      req->sr_state = stun_discovery_timeout;
-    else
-      req->sr_state = stun_bind_timeout;
+    sd->sd_state = stun_discovery_timeout;
 
     /* Either the server was dead, address wrong or STUN_UDP_BLOCKED */
     /* sd->sd_nattype = stun_udp_blocked; */
     
     action = get_action(req);
 
+    /* If the action is binding request, we are done. If action was
+       NAT type determination, process with the state machine. */
     if (action == stun_action_binding_request)
-      sh->sh_callback(sh->sh_context, sh, req, req->sr_state);
+      sh->sh_callback(sh->sh_context, sh, req, sd->sd_state);
     else if (action == stun_action_get_nattype)
-      process_get_nattype(req, NULL);
+      action_determine_nattype(req, NULL);
 
-    return;
+    /* Destroy me immediately */
+    req->sr_state = stun_dispose_me;
+    timeout = 0;
+
   }
-
-  SU_DEBUG_3(("%s: Timeout no. %d, retransmitting.\n", __func__, req->sr_retry_count));
-
-  if (stun_send_message(s, sh->sh_pri_addr, req->sr_msg, &(sh->sh_passwd)) < 0) {
-    stun_free_message(req->sr_msg);
-    free(req->sr_msg), req->sr_msg = NULL;
-    return;
+  else {
+    SU_DEBUG_3(("%s: Timeout no. %d, retransmitting.\n",
+		__func__, req->sr_retry_count));
+    
+    if (stun_send_message(s, sh->sh_pri_addr, req->sr_msg, &(sh->sh_passwd)) < 0) {
+      stun_free_message(req->sr_msg);
+      free(req->sr_msg), req->sr_msg = NULL;
+      return;
+    }
+    timeout = req->sr_timeout *= 2;
   }
-
+  
   su_timer_set_at(t, stun_sendto_timer_cb, (su_wakeup_arg_t *) req,
-		  su_time_add(su_now(), req->sr_timeout *= 2));
+		  su_time_add(su_now(), timeout));
   
   return;
 }
@@ -1630,11 +1668,14 @@ int stun_send_binding_request(stun_request_t *req,
   sendto_timer = su_timer_create(su_root_task(sh->sh_root), STUN_SENDTO_TIMEOUT);
   su_timer_set(sendto_timer, stun_sendto_timer_cb, (su_wakeup_arg_t *) req);
 
+#if 0
   if (req->sr_action == stun_action_get_nattype)
+#endif
     req->sr_state = stun_discovery_processing;
+#if 0
   else
     req->sr_state = stun_bind_sending;
-
+#endif
 
   return 0;
 }

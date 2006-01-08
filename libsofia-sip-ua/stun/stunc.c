@@ -59,7 +59,7 @@ void usage(int exitcode)
 }
 
 struct stunc_s {
-  int kakka; 
+  int nothing; 
 };
 
 
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 
   su_root_run(root);
 
-  if (stun_handle_get_nattype(se, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+  if (stun_handle_get_nattype(se, /* STUNTAG_SOCKET(s), */ TAG_NULL()) < 0) {
     SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
     return -1;
   }
