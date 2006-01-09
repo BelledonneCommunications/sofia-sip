@@ -44,9 +44,10 @@
 
 SOFIA_BEGIN_DECLS
 
-typedef struct stun_handle_s  stun_handle_t;
-typedef struct stun_socket_s  stun_socket_t;
-typedef struct stun_request_s stun_request_t;
+typedef struct stun_handle_s    stun_handle_t;
+typedef struct stun_socket_s    stun_socket_t;
+typedef struct stun_request_s   stun_request_t;
+typedef struct stun_discovery_s stun_discovery_t;
 
 #ifndef STUN_MAGIC_T 
 #define STUN_MAGIC_T            struct stun_magic_t
@@ -56,6 +57,18 @@ typedef STUN_MAGIC_T stun_magic_t;
 
 
 extern char const stun_version[]; /**< Name and version of STUN software */
+
+/**
+ * STUN Action types. These define the current discovery process.
+ */
+typedef enum stun_action_s {
+  stun_action_no_action,
+  stun_action_binding_request,
+  stun_action_keepalive,
+  stun_action_get_nattype,
+  stun_action_get_lifetime,
+} stun_action_t;
+
 
 /**
  * States of the STUN client->server query process.
@@ -109,6 +122,8 @@ typedef enum stun_state_e {
 typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_handle_t *se,
 			     stun_request_t *req,
+			     stun_discovery_t *sd,
+			     stun_action_t action,
 			     stun_state_t event);
 
 /* Return the socket associated with the stun_socket_t structure */
@@ -151,10 +166,9 @@ int stun_handle_get_nattype(stun_handle_t *se,
 			    tag_type_t tag, tag_value_t value,
 			    ...);
 
-int stun_handle_get_lifetime(stun_handle_t *se, 
-			     su_localinfo_t *my_addr,
-			     int *addrlen,
-			     int *lifetime);
+int stun_handle_get_lifetime(stun_handle_t *sh,
+			     tag_type_t tag, tag_value_t value,
+			     ...);
 
 /** other functions */
 int stun_handle_set_uname_pwd(stun_handle_t *se,
@@ -163,7 +177,8 @@ int stun_handle_set_uname_pwd(stun_handle_t *se,
 			      const char *pwd,
 			      int len_pwd);
 
-char const *stun_nattype(stun_request_t *req);
+char const *stun_nattype(stun_discovery_t *sd);
+int stun_lifetime(stun_discovery_t *sd);
 
 SOFIA_END_DECLS
 

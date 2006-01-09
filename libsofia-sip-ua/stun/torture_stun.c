@@ -63,13 +63,14 @@ struct torture_s {
 
 char const *name = "torture_stun";
 
-static int torture_test_init(su_root_t *root, char *addr);
-static int torture_test_stun_bind(char *addr);
-static int torture_test_get_nattype(char *addr);
-static int torture_test_get_lifetime(char *addr);
-static void torture_callback(torture_t *torturer,
-			     stun_handle_t *en,
-			     stun_state_t event);
+int torture_test_init(su_root_t *root, char *addr);
+int torture_test_stun_bind(char *addr);
+int torture_test_get_nattype(char *addr);
+int torture_test_get_lifetime(char *addr);
+void torture_callback(torture_t *t, stun_handle_t *en,
+		      stun_request_t *req,
+		      stun_discovery_t *sd,
+		      stun_state_t event);
 
 
 static int test_deinit(void);
@@ -169,26 +170,30 @@ int main(int argc, char *argv[])
 }
 
 
-void torture_callback(torture_t *torturer, stun_handle_t *en, stun_state_t ev)
+void torture_callback(torture_t *t,
+		      stun_handle_t *sh,
+		      stun_request_t *req,
+		      stun_discovery_t *sd,
+		      stun_state_t event)
 {
   char ipaddr[48];
   int s = -1;
   su_localinfo_t *li;
 
-  SU_DEBUG_3(("%s: called by event \"%s\"\n", __func__, stun_str_state(ev)));
+  SU_DEBUG_3(("%s: called by event \"%s\"\n", __func__, stun_str_state(event)));
 
-  if (ev == stun_bind_done) {
-    li = stun_request_get_localinfo(en);
-    s = stun_handle_get_bind_socket(en);
+  if (event == stun_bind_done) {
+    li = stun_request_get_localinfo(req);
+    s = stun_handle_get_bind_socket(sh);
 
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
     SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
 		ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
-    su_root_break(stun_handle_root(en));
+    su_root_break(stun_handle_root(sh));
   }
-  else if (ev >= stun_error) {
+  else if (event >= stun_error) {
     SU_DEBUG_3(("%s: no nat detected\n", __func__));
-    su_root_break(stun_handle_root(en));
+    su_root_break(stun_handle_root(sh));
   }
 
 #if 0

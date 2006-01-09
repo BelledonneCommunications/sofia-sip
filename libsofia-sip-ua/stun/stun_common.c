@@ -552,14 +552,15 @@ int stun_free_message(stun_msg_t *msg) {
 }
 
 
-int stun_send_message(int sockfd, su_sockaddr_t *to_addr, stun_msg_t *msg, stun_buffer_t *pwd) 
+int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
+		      stun_msg_t *msg, stun_buffer_t *pwd) 
 {
   int err;
   char ipaddr[SU_ADDRSIZE + 2];
 
   stun_encode_message(msg, pwd);
 
-  err = sendto(sockfd, msg->enc_buf.data, msg->enc_buf.size, 
+  err = sendto(s, msg->enc_buf.data, msg->enc_buf.size, 
 	     0, (struct sockaddr *)to_addr, sizeof(struct sockaddr_in));
 
   if (err > 0) {
@@ -567,7 +568,7 @@ int stun_send_message(int sockfd, su_sockaddr_t *to_addr, stun_msg_t *msg, stun_
     SU_DEBUG_3(("%s: message sent to %s:%u\n", __func__,
 		ipaddr, ntohs(to_addr->su_port)));
 
-  debug_print(&msg->enc_buf);
+    debug_print(&msg->enc_buf);
   }
   else
     STUN_ERROR(errno, sendto);

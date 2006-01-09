@@ -63,25 +63,35 @@ struct stunc_s {
 };
 
 
-void stunc_callback(stunc_t *stunc, stun_handle_t *en,
+void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 		    stun_request_t *req,
+		    stun_discovery_t *sd,
+		    stun_action_t action,
 		    stun_state_t event)
 {
   su_localinfo_t *li = NULL;
   char ipaddr[48];
   char const *nattype;
+  int lifetime;
 
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
   switch (event) {
   case stun_tls_done:
-    su_root_break(stun_handle_root(en));
+    su_root_break(stun_handle_root(sh));
     break;
 
   case stun_discovery_done:
-    nattype = stun_nattype(req);
-    SU_DEBUG_3(("%s: NAT type: %s\n", __func__, nattype));
-    su_root_break(stun_handle_root(en));
+    if (action == stun_action_get_nattype) {
+      nattype = stun_nattype(sd);
+      SU_DEBUG_3(("%s: NAT type: %s\n", __func__, nattype));
+    }
+    else if (action == stun_action_get_lifetime) {
+      lifetime = stun_lifetime(sd);
+      SU_DEBUG_3(("%s: Life time is %d s.\n", __func__, lifetime));
+    }
+    
+    su_root_break(stun_handle_root(sh));
     break;
     
   case stun_bind_done:
@@ -89,18 +99,18 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *en,
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
       SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
 		  ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
-    su_root_break(stun_handle_root(en));
+    su_root_break(stun_handle_root(sh));
     break;
 
   case stun_bind_error:
     SU_DEBUG_3(("%s: no nat detected\n", __func__));
-    su_root_break(stun_handle_root(en));
+    su_root_break(stun_handle_root(sh));
     break;
 
   case stun_bind_timeout:
   case stun_tls_connection_failed:
   case stun_error:
-    su_root_break(stun_handle_root(en));
+    su_root_break(stun_handle_root(sh));
 
   default:
     break;
@@ -114,7 +124,6 @@ int main(int argc, char *argv[])
 {
   int s, lifetime;
   int msg_integrity;
-  //socklen_t addrlen;
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_handle_t *se;
@@ -170,6 +179,13 @@ int main(int argc, char *argv[])
 
   if (stun_handle_get_nattype(se, /* STUNTAG_SOCKET(s), */ TAG_NULL()) < 0) {
     SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
+    return -1;
+  }
+
+  su_root_run(root);
+
+  if (stun_handle_get_lifetime(se, /* STUNTAG_SOCKET(s), */ TAG_NULL()) < 0) {
+    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_get_lifetime()"));
     return -1;
   }
 

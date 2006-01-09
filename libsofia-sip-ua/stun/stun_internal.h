@@ -53,10 +53,16 @@ SOFIA_BEGIN_DECLS
 
 extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 
-
+/* XXX -- mela: note that this are 100 times too small */
+#if 1
+#define STUN_LIFETIME_EST 3500      /**< 6 min? */
+#define STUN_LIFETIME_MAX 18000     /**< 30 min? */
+#define STUN_LIFETIME_CI  50        /**< 5 sec confidence interval */
+#else
 #define STUN_LIFETIME_EST 350      /**< 6 min? */
 #define STUN_LIFETIME_MAX 1800     /**< 30 min? */
 #define STUN_LIFETIME_CI  5        /**< 5 sec confidence interval */
+#endif
 
 #define STUN_ERROR(errno, what) \
         { int err = errno; \
@@ -67,9 +73,6 @@ extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 int stun_poll(stun_socket_t *ss);
-int stun_get_lifetime(stun_handle_t *se, 
-		      su_localinfo_t *my_addr, int *addrlen,
-		      int *lifetime);
 
 /** other functions */
 int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname, 
@@ -78,7 +81,7 @@ int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname,
 /* internal functions declaration */
 int stun_make_sharedsecret_req(stun_msg_t *msg);
 
-int stun_send_message(su_socket_t ss, su_sockaddr_t *srvr,
+int stun_send_message(su_socket_t s, su_sockaddr_t *srvr,
 		      stun_msg_t *msg, stun_buffer_t *pwd);
 
 int stun_make_binding_req(stun_handle_t *se, stun_request_t *req,
