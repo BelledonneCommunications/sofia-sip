@@ -45,7 +45,7 @@ typedef struct stunc_s stunc_t;
 #include <su.h>
 
 #ifndef SU_DEBUG
-#define SU_DEBUG 3
+#define SU_DEBUG 0
 #endif
 #define SU_LOG (stun_log)
 #include <su_debug.h>
@@ -84,11 +84,11 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
   case stun_discovery_done:
     if (action == stun_action_get_nattype) {
       nattype = stun_nattype(sd);
-      SU_DEBUG_3(("%s: NAT type: %s\n", __func__, nattype));
+      SU_DEBUG_0(("%s: NAT type: %s\n", __func__, nattype));
     }
     else if (action == stun_action_get_lifetime) {
       lifetime = stun_lifetime(sd);
-      SU_DEBUG_3(("%s: Life time is %d s.\n", __func__, lifetime));
+      SU_DEBUG_0(("%s: Life time is %d s.\n", __func__, lifetime));
     }
     
     su_root_break(stun_handle_root(sh));
@@ -97,13 +97,13 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
   case stun_bind_done:
     li = stun_request_get_localinfo(req);
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
-      SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
+      SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
 		  ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
     su_root_break(stun_handle_root(sh));
     break;
 
   case stun_bind_error:
-    SU_DEBUG_3(("%s: no nat detected\n", __func__));
+    SU_DEBUG_0(("%s: no nat detected\n", __func__));
     su_root_break(stun_handle_root(sh));
     break;
 
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 			   TAG_NULL()); 
 
   if (!se) {
-    SU_DEBUG_3(("%s: %s failed\n", __func__, "stun_handle_tcreate()"));
+    SU_DEBUG_0(("%s: %s failed\n", __func__, "stun_handle_tcreate()"));
     return -1;
   }
 
@@ -157,35 +157,27 @@ int main(int argc, char *argv[])
   s = su_socket(AF_INET, SOCK_DGRAM, 0); 
   
   if (s == -1) {
-    SU_DEBUG_3(("%s: %s  failed: %s\n", __func__, "stun_socket_create()", su_gli_strerror(errno)));
+    SU_DEBUG_0(("%s: %s  failed: %s\n", __func__, "stun_socket_create()", su_gli_strerror(errno)));
     return -1;
   }
 
   
-#if 0  
-  if (stun_handle_set_bind_socket(se, s) < 0) {
-    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_set_bind_socket()"));
-    return -1;
-  }
-#endif  
-  lifetime = 0;
-
   if (stun_handle_bind(se, &lifetime, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
-    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
+    SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
     return -1;
   }
 
   su_root_run(root);
 
   if (stun_handle_get_nattype(se, /* STUNTAG_SOCKET(s), */ TAG_NULL()) < 0) {
-    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
+    SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
     return -1;
   }
 
   su_root_run(root);
 
   if (stun_handle_get_lifetime(se, /* STUNTAG_SOCKET(s), */ TAG_NULL()) < 0) {
-    SU_DEBUG_3(("%s: %s  failed\n", __func__, "stun_handle_get_lifetime()"));
+    SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_lifetime()"));
     return -1;
   }
 

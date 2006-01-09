@@ -45,7 +45,7 @@
 
 
 #ifndef SU_DEBUG
-#define SU_DEBUG 3
+#define SU_DEBUG 0
 #endif
 #define SU_LOG (stun_log)
 #include <su_debug.h>
@@ -129,7 +129,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   p+=2;
   len = ntohs(tmp16);
 
-  SU_DEBUG_1(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
+  SU_DEBUG_3(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
 	      attr->attr_type, len, stun_attr_phrase(attr->attr_type)));
 
   switch(attr->attr_type) {
@@ -212,7 +212,7 @@ int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned 
   memcpy(&addr->sin_port, p+2, 2);
   memcpy(&addr->sin_addr.s_addr, p+4, 4);
 
-  SU_DEBUG_1(("%s: address attribute: %s:%d\n", __func__, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
+  SU_DEBUG_3(("%s: address attribute: %s:%d\n", __func__, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
 
   attr->pattr = addr;
   stun_init_buffer(&attr->enc_buf);

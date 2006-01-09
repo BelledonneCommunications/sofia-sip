@@ -24,6 +24,7 @@ stun_prog_targets =
 endif
 
 noinst_LTLIBRARIES = 	libstun.la
+
 noinst_PROGRAMS = 	${stun_prog_targets}
 
 # ----------------------------------------------------------------------
@@ -43,11 +44,16 @@ LDADD =			libstun.la \
 torture_stun_LDFLAGS = 	-static
 
 # ----------------------------------------------------------------------
+# tests
+# XXX: torture_stun cannot be used as a automake test as is
+#TESTS = 		torture_stun
+
+# ----------------------------------------------------------------------
 # Install and distribution rules
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
-# XXX: torture_stun cannot be used as a automake test as is
-#TESTS = 		torture_stun
 
 include ../sofia.am
+
+TAG_DLL_FLAGS =		LIST=stun_tag_list

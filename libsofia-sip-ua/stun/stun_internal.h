@@ -31,6 +31,10 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  */
 
+#ifndef SU_DEBUG
+#define SU_DEBUG 0
+#endif
+
 #ifndef SU_WAIT_H
 #include <su_wait.h>
 #endif
@@ -43,9 +47,6 @@
 #include "stun.h"
 #endif
 
-#ifndef SU_DEBUG
-#define SU_DEBUG 3
-#endif
 #define SU_LOG (stun_log)
 #include <su_debug.h>
 

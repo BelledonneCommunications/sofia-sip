@@ -1456,14 +1456,14 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
       sd->sd_lt_cur = sd->sd_lt;
       sd->sd_lt = (int) (sd->sd_lt + sd->sd_lt_max) / 2;
 
-      SU_DEBUG_3(("%s: Response received from socket X, " \
+      SU_DEBUG_1(("%s: Response received from socket X, " \
 		  "lifetime at least %d sec, next trial: %d sec\n",
 		  __func__, sd->sd_lt_cur, sd->sd_lt));
     }
     else {
       sd->sd_lt_max = sd->sd_lt;
       sd->sd_lt = (int) (sd->sd_lt + sd->sd_lt_cur) / 2;
-      SU_DEBUG_3(("%s: No response received from socket X, " \
+      SU_DEBUG_1(("%s: No response received from socket X, " \
 		  "lifetime at most %d sec, next trial: %d sec\n",
 		  __func__, sd->sd_lt_max, sd->sd_lt));
     }
@@ -2066,7 +2066,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
   sd->sd_socket = sockfdy;
   sd->sd_from_y = -1;
 
-  SU_DEBUG_3(("%s: determining binding life time, this may take a while.\n", __func__));
+  SU_DEBUG_1(("%s: determining binding life time, this may take a while.\n", __func__));
 
   if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
     return -1;
@@ -2081,131 +2081,6 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
   return 0;
 }
-
-
-#if 0
-int stun_handle_get_lifetime(stun_handle_t *sh,
-			     su_localinfo_t *my_addr,
-			     int *addrlen,
-			     int *lifetime)
-{
-  int retval = -1, sockfdx, sockfdy;
-  socklen_t x_len, y_len, recv_addr_len, mapped_len;
-  struct sockaddr_in *clnt_addr = 0, x_addr, y_addr, recv_addr, mapped_addr;
-  int lt_cur=0, lt=STUN_LIFETIME_EST, lt_max = STUN_LIFETIME_MAX;
-  stun_attr_t *mapped_addr_attr;
-  /* testing su_getlocalinfo() */
-  su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
-  int i, error, found=0, z;
-  fd_set rfds;
-  struct timeval tv;
-  stun_msg_t binding_request, binding_response;
-  unsigned char dgram[512];
-
-  assert(sh);
-
-  SU_DEBUG_3(("%s: determining binding life time, this may take a while.\n", __func__));
-
-  /* get local ip address */
-  clnt_addr = (struct sockaddr_in *) my_addr;
-
-
-  /* run protocol here... */
-  sockfdx = sh->sh_bind_socket;
-
-
-  i = 1;
-  while (abs(lt_cur-lt) > STUN_LIFETIME_CI) {
-    SU_DEBUG_3(("%s: Lifetime determination round %d, testing lifetime of %d sec.\n", __func__, i++, lt));
-    /* send request from X */
-    if (stun_make_binding_req(sh, NULL, &binding_request, 0, 0) < 0)
-      return retval;
-
-    if (stun_send_message(sockfdx, sh->sh_pri_addr, &binding_request, &(sh->sh_passwd)) < 0)
-      return retval;
-
-    FD_ZERO(&rfds);
-    FD_SET(sockfdx, &rfds); /* Set sockfdx for read monitoring */
-    z = 0;
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
-    if(select(sockfdx+1, &rfds, NULL, NULL, &tv)) {
-      /* response received */
-      recv_addr_len = sizeof(recv_addr);
-      z = recvfrom(sockfdx, dgram, 512, 0,
-		   (struct sockaddr *)&recv_addr, &recv_addr_len);
-      if(z<0) {
-	return retval;
-      }
-      binding_response.enc_buf.data = (unsigned char *)malloc(z);
-      binding_response.enc_buf.size = z;
-      memcpy(binding_response.enc_buf.data, dgram, z);
-      SU_DEBUG_3(("%s: response from server %s:%u\n", __func__, inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
-      debug_print(&binding_response.enc_buf);      
-    }
-    else {
-      SU_DEBUG_3(("%s: No response from server. Check configuration.\n", __func__));
-      return retval;
-    }
-    /* process response */
-    if (stun_parse_message(&binding_response) < 0) {
-      SU_DEBUG_5(("%s: Error parsing response.\n", __func__));
-      return retval;
-    }
-    if (binding_response.stun_hdr.msg_type == BINDING_RESPONSE) {
-      memset(&mapped_addr, 0, sizeof(mapped_addr)); mapped_len = sizeof(mapped_addr);
-      mapped_addr_attr = stun_get_attr(binding_response.stun_attr, MAPPED_ADDRESS);
-      if (mapped_addr_attr != NULL) {
-	memcpy(&mapped_addr, mapped_addr_attr->pattr, mapped_len);
-      }
-      else {
-	return retval;
-      }
-    }
-    stun_free_message(&binding_request);
-    stun_free_message(&binding_response);
-    sleep(lt);
-    /* send from sockfdy */
-    if (stun_make_binding_req(sh, NULL, &binding_request, 0, 0) <0)
-      return retval;
-    stun_add_response_address(&binding_request, &mapped_addr);
-    if (stun_send_message(sockfdy, sh->sh_pri_addr, &binding_request, &(sh->sh_passwd)) < 0)
-      return retval;
-
-    FD_ZERO(&rfds);
-    FD_SET(sockfdx, &rfds); /* Set sockfdx for read monitoring */
-    z = 0;
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
-    if(select(sockfdx+1, &rfds, NULL, NULL, &tv)) {
-      /* response received */
-      recv_addr_len = sizeof(recv_addr);
-      z = recvfrom(sockfdx, dgram, 512, 0,
-		   (struct sockaddr *)&recv_addr, &recv_addr_len);
-      if(z<0) {
-	return retval;
-      }
-      /* mapping with X still valid */
-      lt_cur = lt;
-      lt = (int) (lt+lt_max)/2;
-      SU_DEBUG_3(("%s: Response received from socket X, lifetime at least %d sec, next trial: %d sec\n\n", __func__, 
-		  lt_cur, lt));
-    }
-    else {
-      /* no response */
-      lt_max = lt;
-      lt = (int) (lt+lt_cur)/2;
-      SU_DEBUG_3(("%s: No response received from socket X, lifetime at most %d sec, next trial: %d sec\n\n", __func__, 
-		  lt_max, lt));
-    }
-  }
-
-  *lifetime = lt_cur;
-  return 0;
-}
-#endif
-
-
 
 int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr)
 {
