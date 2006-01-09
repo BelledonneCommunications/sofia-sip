@@ -1,3 +1,25 @@
+2006-01-09  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Restorered tag lists for modules.
+
+    M ./libsofia-sip-ua/nta/Makefile.am +2
+    M ./libsofia-sip-ua/nta/nta_tag.h +3
+    M ./libsofia-sip-ua/nth/nth_tag.h +3
+    M ./libsofia-sip-ua/nua/Makefile.am +2
+    M ./libsofia-sip-ua/nua/nua_tag.h +3
+    M ./libsofia-sip-ua/sip/sip_tag.c.in +13
+    M ./libsofia-sip-ua/sip/sip_tag.h.in +3
+    M ./libsofia-sip-ua/soa/Makefile.am +1
+    M ./libsofia-sip-ua/soa/soa_tag.h +3
+    M ./libsofia-sip-ua/stun/Makefile.am -2 +8
+    M ./libsofia-sip-ua/su/tag_dll.awk -3 +5
+    M ./libsofia-sip-ua/tport/tport_tag.h -1 +4
+    M ./utils/Makefile.am +4
+
+  * Fixed test code for pthread_rwlock_trywrlock().
+
+    M ./m4/sac-su2.m4 -3 +3
+
 2006-01-05  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   2nd sync today for darcs and CVS.
