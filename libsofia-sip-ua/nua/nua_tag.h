@@ -797,6 +797,7 @@ extern tag_typedef_t nutag_sip_parser_ref;
  * @par Values
  *    NULL terminated string of format: \n
  *    basic digest scheme:"realm":user:password  \n
+ *    @b NOTE the double quotes around realm!
  *    For example: \n
  *	\code Digest:"nokia proxy":xyz:secret \endcode
  *

@@ -48,6 +48,12 @@ struct registration_entry;
 #include <sip_header.h>
 #include <sip_status.h>
 #include <sip_util.h>
+#include <auth_module.h>
+#include <su_tagarg.h>
+#include <msg_addr.h>
+
+#include <stdlib.h>
+#include <assert.h>
 
 #define LIST_PROTOS(STORAGE, PREFIX, T)			 \
 STORAGE void PREFIX ##_insert(T **list, T *node),	 \
@@ -78,7 +84,11 @@ extern int LIST_DUMMY_VARIABLE
 struct proxy {
   su_home_t    home[1];
   su_clone_r   clone;
+  tagi_t      *tags;
+
   su_root_t   *root;
+  auth_mod_t  *auth;
+ 
   nta_agent_t *agent;
   url_t const *uri;
   
@@ -144,12 +154,14 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
 
   proxy->root = root;
 
+  proxy->auth = auth_mod_create(root, TAG_NEXT(proxy->tags));
+
   proxy->agent = nta_agent_create(root,
 				  URL_STRING_MAKE("sip:0.0.0.0:*"),
 				  NULL, NULL,
 				  NTATAG_UA(0),
 				  TAG_END());
-  
+
   proxy->defleg = nta_leg_tcreate(proxy->agent, 
 				  proxy_request,
 				  proxy,
@@ -159,7 +171,7 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
   if (!proxy->defleg)
     return -1;
 
-  t = su_zalloc(proxy->home, sizeof *t);
+  t = su_zalloc(proxy->home, sizeof *t); 
 
   if (!t)
     return -1;
@@ -188,14 +200,23 @@ test_proxy_deinit(su_root_t *root, struct proxy *proxy)
   }
 
   nta_agent_destroy(proxy->agent);
+
+  free(proxy->tags);
 }
 
 /* Create tst proxy object */
-struct proxy *test_proxy_create(su_root_t *root)
+struct proxy *test_proxy_create(su_root_t *root, 
+				tag_type_t tag, tag_value_t value, ...)
 {
   struct proxy *p = su_home_new(sizeof *p);
 
   if (p) {
+    ta_list ta;
+
+    ta_start(ta, tag, value);
+    p->tags = tl_llist(ta_tags(ta));
+    ta_end(ta);
+    
     if (su_clone_start(root,
 		       p->clone,
 		       p, 
@@ -368,14 +389,51 @@ LIST_BODIES(static, proxy_transaction, struct proxy_transaction, next, prev);
 
 static int check_unregister(sip_t const *sip);
 
+auth_challenger_t const registrar_challenger[1] = 
+  {{ 
+      SIP_401_UNAUTHORIZED, 
+      sip_www_authenticate_class,
+      sip_authentication_info_class
+    }};
+
 int process_register(struct proxy *proxy, 
 		     nta_incoming_t *irq, 
 		     sip_t const *sip)
 {
+  auth_status_t *as;
+  msg_t *msg;
   struct registration_entry *e;
   sip_contact_t *old_binding, *new_binding;
   int unregister;
-  
+
+  msg = nta_incoming_getrequest(irq);
+
+  as = su_home_clone(proxy->home, (sizeof *as));
+  as->as_status = 500, as->as_phrase = sip_500_Internal_server_error;
+
+  as->as_method = sip->sip_request->rq_method_name;
+  as->as_source = msg_addrinfo(msg);
+
+  as->as_user_uri = sip->sip_from->a_url;
+  as->as_display = sip->sip_from->a_display;
+
+  if (sip->sip_payload)
+    as->as_body = sip->sip_payload->pl_data, 
+      as->as_bodylen = sip->sip_payload->pl_len;
+
+  auth_mod_check_client(proxy->auth, as, sip->sip_authorization, 
+			registrar_challenger);
+
+  if (as->as_status != 0) {
+    assert(as->as_status >= 300);
+    nta_incoming_treply(irq, 
+			as->as_status, as->as_phrase,
+			SIPTAG_HEADER((void *)as->as_info),
+			SIPTAG_HEADER((void *)as->as_response),
+			TAG_END());
+    return as->as_status;
+  }
+
   unregister = check_unregister(sip);
 
   e = registration_entry_find(proxy, sip->sip_to->a_url);

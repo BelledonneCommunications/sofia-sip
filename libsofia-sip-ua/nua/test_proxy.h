@@ -32,7 +32,8 @@ SOFIA_BEGIN_DECLS
 
 struct proxy;
 
-struct proxy *test_proxy_create(su_root_t *);
+struct proxy *test_proxy_create(su_root_t *, tag_type_t, tag_value_t, ...);
+
 void test_proxy_destroy(struct proxy *);
 
 url_t const *test_proxy_uri(struct proxy const *);

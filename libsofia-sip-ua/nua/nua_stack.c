@@ -1668,19 +1668,28 @@ int nh_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   return retval;
 }
 
-/** Collect challenges from response */
+/** Collect challenges from response.
+ *
+ * @return Number of updated challenges, 0 if no updates found.
+ * @retval -1 upon error.
+ */
 static
 int nh_challenge(nua_handle_t *nh, sip_t const *sip)
 {
+  int server = 0, proxy = 0;
+
   if (sip->sip_www_authenticate)
-    auc_challenge(&nh->nh_auth, nh->nh_home, sip->sip_www_authenticate,
-		  sip_authorization_class);
+    server = auc_challenge(&nh->nh_auth, nh->nh_home, sip->sip_www_authenticate,
+			   sip_authorization_class);
 
   if (sip->sip_proxy_authenticate)
-    auc_challenge(&nh->nh_auth, nh->nh_home, sip->sip_proxy_authenticate,
-		      sip_proxy_authorization_class);
+    proxy = auc_challenge(&nh->nh_auth, nh->nh_home, sip->sip_proxy_authenticate,
+			  sip_proxy_authorization_class);
 
-  return 0;
+  if (server < 0 || proxy < 0)
+    return -1;
+
+  return server + proxy;
 }
 
 /** Create request message.
@@ -3108,11 +3117,10 @@ int crequest_check_restart(nua_handle_t *nh,
   }
   else if (method != sip_method_ack && method != sip_method_cancel &&
 	   ((status == 401 && sip->sip_www_authenticate) ||
-	    (status == 407 && sip->sip_proxy_authenticate))) {
+	    (status == 407 && sip->sip_proxy_authenticate)) &&
+	   nh_challenge(nh, sip) > 0) {
     sip_t *rsip;
     int done;
-
-    nh_challenge(nh, sip);
 
     rsip = sip_object(cr->cr_msg);
 
@@ -3320,7 +3328,27 @@ register_expires_contacts(msg_t *msg, sip_t *sip)
 static void
 restart_register(nua_handle_t *nh, tagi_t *tags)
 {
-  crequest_restart(nh, nh->nh_cr, process_response_to_register, tags);
+  struct nua_client_request *cr = nh->nh_cr;
+  msg_t *msg;
+
+  cr->cr_restart = NULL;
+
+  if (!cr->cr_msg)
+    return;
+
+  msg = crequest_message(nh->nh_nua, nh, cr, 1,
+			 SIP_METHOD_UNKNOWN, 
+			 TAG_NEXT(tags));
+
+  if (msg && cr->cr_usage && cr->cr_usage->du_terminating)
+    register_expires_contacts(msg, sip_object(msg));
+
+  cr->cr_orq = nta_outgoing_mcreate(nh->nh_nua->nua_nta, 
+				    process_response_to_register, nh, NULL, msg,
+				    SIPTAG_END(), TAG_NEXT(tags));
+
+  if (!cr->cr_orq)
+    msg_destroy(msg);
 }
 
 static

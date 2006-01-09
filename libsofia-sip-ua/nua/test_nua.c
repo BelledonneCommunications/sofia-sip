@@ -50,6 +50,7 @@ struct call;
 #include <su_tag_io.h>
 
 #include <test_proxy.h>
+#include <auth_module.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -1088,6 +1089,19 @@ int test_params(struct context *ctx)
 
 /* ======================================================================== */
 
+static char passwd_name[] = "tmp_sippasswd.XXXXXX";
+
+static void rmtmp(void)
+{
+  if (passwd_name[0])
+    unlink(passwd_name);
+}
+
+static char const passwd[] =
+  "alice:secret:\n"
+  "bob:secret:\n"
+  "charlie:secret:\n";
+
 int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
 {
   BEGIN();
@@ -1102,10 +1116,26 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
   su_root_threading(ctx->root, ctx->threading);
 
   if (start_proxy && !o_proxy) {
+    int temp;
+
     if (print_headings)
       printf("TEST NUA-2.0.0: init proxy P\n");
 
-    ctx->p = test_proxy_create(ctx->root);
+    temp = mkstemp(passwd_name); TEST_1(temp != -1);
+    atexit(rmtmp);		/* Make sure temp file is unlinked */
+    
+    TEST(write(temp, passwd, strlen(passwd)), strlen(passwd));
+
+    TEST_1(close(temp) == 0);
+
+    ctx->p = test_proxy_create(ctx->root, 
+			       AUTHTAG_METHOD("Digest"),
+			       AUTHTAG_REALM("test-proxy"),
+			       AUTHTAG_OPAQUE("kuik"),
+			       AUTHTAG_DB(passwd_name),
+			       AUTHTAG_QOP("auth-int"),
+			       AUTHTAG_ALGORITHM("md5-sess"),
+			       TAG_END());
 
     if (print_headings)
       printf("TEST NUA-2.0.0: PASSED\n");
@@ -1204,6 +1234,8 @@ int test_register(struct context *ctx)
 
   struct endpoint *a = &ctx->a,  *b = &ctx->b, *c = &ctx->c;
   struct call *a_call = a->reg, *b_call = b->reg, *c_call = c->reg;
+  struct event *e;
+  sip_t const *sip;
 
 /* REGISTER test
 
@@ -1219,8 +1251,28 @@ int test_register(struct context *ctx)
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, TAG_END()));
 
   do_register(a, a_call, a_call->nh, SIPTAG_TO(a->to), TAG_END());
+  run_a_until(ctx, -1, save_until_final_response);
 
-  run_a_until(ctx, -1, until_final_response);
+  TEST_1(e = a->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(e->data->e_status, 401);
+  TEST(sip->sip_status->st_status, 401); 
+  TEST_1(!sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a->call);
+
+  authenticate(a, a_call, a_call->nh, 
+	       NUTAG_AUTH("Digest:\"test-proxy\":alice:secret"), TAG_END());
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a->call);
 
   if (print_headings)
     printf("TEST NUA-2.1: PASSED\n");
@@ -1231,8 +1283,28 @@ int test_register(struct context *ctx)
   TEST_1(b_call->nh = nua_handle(b->nua, b_call, TAG_END()));
 
   do_register(b, b_call, b_call->nh, SIPTAG_TO(b->to), TAG_END());
+  run_b_until(ctx, -1, save_until_final_response);
 
-  run_b_until(ctx, -1, until_final_response);
+  TEST_1(e = b->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(e->data->e_status, 401);
+  TEST(sip->sip_status->st_status, 401); 
+  TEST_1(!sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b->call);
+
+  authenticate(b, b_call, b_call->nh, 
+	       NUTAG_AUTH("Digest:\"test-proxy\":bob:secret"), TAG_END());
+  run_b_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = b->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b->call);
 
   if (print_headings)
     printf("TEST NUA-2.2: PASSED\n");
@@ -1243,8 +1315,28 @@ int test_register(struct context *ctx)
   TEST_1(c_call->nh = nua_handle(c->nua, c_call, TAG_END()));
 
   do_register(c, c_call, c_call->nh, SIPTAG_TO(c->to), TAG_END());
+  run_c_until(ctx, -1, save_until_final_response);
 
-  run_c_until(ctx, -1, until_final_response);
+  TEST_1(e = c->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(e->data->e_status, 401);
+  TEST(sip->sip_status->st_status, 401); 
+  TEST_1(!sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, c->call);
+
+  authenticate(c, c_call, c_call->nh, 
+	       NUTAG_AUTH("Digest:\"test-proxy\":charlie:secret"), TAG_END());
+  run_c_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = c->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, c->call);
 
   if (print_headings)
     printf("TEST NUA-2.3: PASSED\n");
@@ -1310,6 +1402,32 @@ int test_unregister(struct context *ctx)
 
   if (print_headings)
     printf("TEST NUA-13.3: un-REGISTER c\n");
+
+  /* Unregister using another handle */
+  TEST_1(c->call->nh = nua_handle(c->nua, c->call, TAG_END()));
+  unregister(c, c->call, c->call->nh, SIPTAG_TO(c->to), TAG_END());
+  run_c_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = c->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_unregister);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(e->data->e_status, 401);
+  TEST(sip->sip_status->st_status, 401); 
+  TEST_1(!sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, c->call);
+
+  authenticate(c, c->call, c->call->nh, 
+	       NUTAG_AUTH("Digest:\"test-proxy\":charlie:secret"), TAG_END());
+  run_c_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = c->call->events.head); 
+  TEST_E(e->data->e_event, nua_r_unregister);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(!sip->sip_contact); 
+  TEST_1(!e->next);
+  free_events_in_list(ctx, c->call);
 
   if (c->reg->nh) {
     unregister(c, NULL, c->reg->nh, TAG_END());
@@ -2244,6 +2362,111 @@ int test_reject_401(struct context *ctx)
 
   END();
 }
+
+/* ------------------------------------------------------------------------ */
+
+/* Reject call with 401 and bad challenge */
+
+/*
+ A   reject-401-aka   B
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |<--------401--------|
+ |---------ACK------->|
+*/
+
+CONDITION_FUNCTION(reject_401_aka)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, call, nh, SIP_401_UNAUTHORIZED,
+	    /* Send a challenge that we do not grok */
+	    SIPTAG_WWW_AUTHENTICATE_STR("Digest realm=\"test_nua\", "
+					"nonce=\"nsdhfuds\", algorithm=SHA0-AKAv6, "
+					"qop=\"auth\""),
+	    TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+int test_reject_401_aka(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a, *b = &ctx->b;
+  struct call *a_call = a->call, *b_call = b->call;
+  struct event const *e;
+  sip_t const *sip;
+
+  if (print_headings)
+    printf("TEST NUA-4.6: invalid challenge \n");
+
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+  b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+  invite(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->p, NUTAG_URL(b->contact->m_url)),
+	 SIPTAG_SUBJECT_STR("reject-401-aka"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 TAG_END());
+
+  run_ab_until(ctx, -1, save_until_final_response, -1, reject_401_aka);
+
+  /*
+   Client transitions
+   INIT -(C1)-> CALLING -(C6a)-> TERMINATED/INIT
+  */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(sip_object(e->data->e_msg)->sip_status->st_status, 401);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED
+  */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b_call);
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-4.6: PASSED\n");
+
+  END();
+}
+
+
+/* ---------------------------------------------------------------------- */
 
 int test_mime_negotiation(struct context *ctx)
 {
@@ -4857,6 +5080,7 @@ int main(int argc, char *argv[])
       retval |= test_reject_302(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_401(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_mime_negotiation(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_reject_401_aka(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
