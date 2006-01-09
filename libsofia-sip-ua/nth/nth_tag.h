@@ -55,6 +55,9 @@ SOFIA_BEGIN_DECLS
 #endif
 #endif
 
+/** List of all nth tags */
+NTH_DLL extern tagi_t nth_client_tags[];
+
 /** Filter tag matching any nth tag. */
 #define NTHTAG_ANY()         nthtag_any, ((tag_value_t)0)
 NTH_DLL extern tag_typedef_t nthtag_any;

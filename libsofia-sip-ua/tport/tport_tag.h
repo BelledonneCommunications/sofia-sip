@@ -47,7 +47,10 @@
 
 SOFIA_BEGIN_DECLS
 
-/** Filter matcing any tport tag. */
+/** List of all tport tags. */
+TPORT_DLL extern tagi_t tport_tag_list[];
+
+/** Filter list matching any tport tag. */
 TPORT_DLL extern tagi_t tport_tags[];
 
 /** Filter tag matching any tport tag. */

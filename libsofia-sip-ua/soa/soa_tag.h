@@ -40,6 +40,9 @@
 
 SOFIA_BEGIN_DECLS
 
+/** List of base SOA tags (defined in base SOA module). */
+extern tagi_t soa_tag_list[];
+
 /** Filter tag matching any soa tag. */
 #define SOATAG_ANY()         soatag_any, ((tag_value_t)0)
 extern tag_typedef_t soatag_any;

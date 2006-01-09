@@ -76,6 +76,9 @@ SIP_DLL extern tag_class_t sipstrtag_class[1];
 /** Tag class for SIP message */
 SIP_DLL extern tag_class_t sipmsgtag_class[1];
 
+/** Lists of SIP tags. */
+SIP_DLL extern tag_type_t sip_tag_list[], sip_tag_str_list[];
+
 /** Filter tag matching any sip tag. */
 #define SIPTAG_ANY()         siptag_any, ((tag_value_t)0)
 SIP_DLL extern tag_typedef_t siptag_any;

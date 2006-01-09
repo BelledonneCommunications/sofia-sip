@@ -71,3 +71,5 @@ EXTRA_DIST =		Doxyfile nua.docs $(BUILT_SOURCES)
 # Sofia specific rules
 
 include ../sofia.am
+
+TAG_DLL_FLAGS =		LIST=nua_tag_list

@@ -117,8 +117,8 @@ DEFS && /tag_typedef_t/ {
   typedefs[tag] = $0;
 
   if ($0 !~ /NSTAG_TYPEDEF/) {
-    print "EXPORT tag_typedef_t "tag"_ref;" > DLL;
     print "extern tag_typedef_t "tag";" > REF;
+    print "EXPORT tag_typedef_t "tag"_ref;" > DLL;
     print "EXPORT tag_typedef_t "tag"_ref = \n  REFTAG_TYPEDEF("tag");" > REF;
   }
 
@@ -132,8 +132,10 @@ END {
     print "\nEXPORT tag_type_t " LIST "[] =\n{" > REF;
     print "\nEXPORT tag_type_t " LIST "[] =\n{" > DLL; 
     for (tag in typedefs) {
-      print "  " tag "," > REF;
-      print "  " tag "," > DLL;
+      if (typedefs[tag] !~ /NSTAG_TYPEDEF/) {
+        print "  " tag "," > REF;
+        print "  " tag "," > DLL;
+      }
     }
     print "  NULL\n};" > REF;
     print "  NULL\n};" > DLL;
