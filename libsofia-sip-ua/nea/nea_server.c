@@ -602,7 +602,7 @@ void nea_server_destroy(nea_server_t *nes)
   
   su_timer_destroy(nes->nes_timer), nes->nes_timer = NULL;
   
-  su_free(NULL, nes);
+  su_home_unref(nes->nes_home);
 }
 
 /* ----------------------------------------------------------------- */
@@ -1008,9 +1008,8 @@ int nea_view_dequeue(nea_server_t *nes,
   return 0;
 }
 
-
-
 /* ----------------------------------------------------------------- */
+
 /** Notify watchers.
  *
  * @return 
