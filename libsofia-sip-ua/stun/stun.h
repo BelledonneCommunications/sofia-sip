@@ -120,6 +120,14 @@ typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_action_t action,
 			     stun_state_t event);
 
+/** Callback invoked by stun handle when it has a message to send. */
+typedef int (*stun_send_callback)(stun_magic_t *magic,
+				  stun_handle_t *se,
+				  int socket,
+				  void *data,
+				  unsigned len,
+				  int only_a_keepalive);
+
 /* Return the associated socket */
 int stun_handle_get_bind_socket(stun_handle_t *se);
 
@@ -142,7 +150,6 @@ int stun_handle_request_shared_secret(stun_handle_t *se);
 /** Bind a socket using STUN.  */
 int stun_handle_bind(stun_handle_t *se, 
 		     /* su_localinfo_t *my_addr, */
-		     int *return_lifetime,
 		     tag_type_t tag, tag_value_t value,
 		     ...);
 
@@ -167,6 +174,11 @@ int stun_handle_set_uname_pwd(stun_handle_t *se,
 
 su_localinfo_t *stun_request_get_localinfo(stun_request_t *req);
 
+/** Determine length of STUN message (0 if not stun). */
+int stun_message_length(void *data, int len, int end_of_message);
+
+/** Process incoming message */
+int stun_handle_process_message(stun_handle_t *se, void *data, int len);
 
 SOFIA_END_DECLS
 

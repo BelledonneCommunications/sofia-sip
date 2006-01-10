@@ -122,7 +122,7 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 
 int main(int argc, char *argv[])
 {
-  int s, lifetime;
+  int s;
   int msg_integrity;
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
   }
 
   
-  if (stun_handle_bind(se, &lifetime, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+  if (stun_handle_bind(se, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
     SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
     return -1;
   }

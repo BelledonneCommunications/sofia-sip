@@ -60,6 +60,16 @@ extern tag_typedef_t stuntag_action;
 #define STUNTAG_ACTION_REF(x) stuntag_action_ref, tag_int_vr(&(x))
 extern tag_typedef_t stuntag_action_ref;
 
+#define STUNTAG_CHANGE_IP(x) stuntag_change_ip, tag_bool_v(x)
+extern tag_typedef_t stuntag_change_ip;
+#define STUNTAG_CHANGE_IP_REF(x) stuntag_change_ip_ref, tag_bool_vr(&(x))
+extern tag_typedef_t stuntag_change_ip_ref;
+
+#define STUNTAG_CHANGE_PORT(x) stuntag_change_port, tag_bool_v(x)
+extern tag_typedef_t stuntag_change_port;
+#define STUNTAG_CHANGE_PORT_REF(x) stuntag_change_port_ref, tag_bool_vr(&(x))
+extern tag_typedef_t stuntag_change_port_ref;
+
 SOFIA_END_DECLS
 
 #endif /* STUN_TAG_H */

@@ -244,7 +244,7 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
 
 static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
 					       stun_action_t action);
-static int stun_destroy_discovery(stun_discovery_t *sd);
+static int stun_discovery_destroy(stun_discovery_t *sd);
 
 static
 int action_bind(stun_request_t *req, stun_msg_t *binding_response);
@@ -254,7 +254,7 @@ static
 int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
 
 static
-stun_request_t *stun_create_request(stun_discovery_t *sd);
+stun_request_t *stun_request_create(stun_discovery_t *sd);
 static
 int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
@@ -398,7 +398,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   return stun;
 }
 
-stun_request_t *stun_create_request(stun_discovery_t *sd)
+stun_request_t *stun_request_create(stun_discovery_t *sd)
 {
   stun_handle_t *sh = sd->sd_handle;
   stun_request_t *req = NULL;
@@ -442,7 +442,7 @@ stun_request_t *stun_create_request(stun_discovery_t *sd)
   return req;
 }
 
-void stun_destroy_request(stun_request_t *req)
+void stun_request_destroy(stun_request_t *req)
 {
   assert(req);
 
@@ -517,7 +517,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
 
   hints->li_family = AF_INET;
-  if((error = su_getlocalinfo(hints, &res)) == 0) {
+  if ((error = su_getlocalinfo(hints, &res)) == 0) {
     
     /* try to bind to the first available address */
     for (i = 0, li = res; li; li = li->li_next) {
@@ -581,13 +581,11 @@ static int get_localinfo(su_localinfo_t *clientinfo)
  * 
  */
 int stun_handle_bind(stun_handle_t *sh,
-		     int *lifetime,
 		     tag_type_t tag, tag_value_t value,
 		     ...)
 {
-  int retval = -1;
   su_socket_t s = -1;
-  su_localinfo_t *clientinfo = NULL;
+  su_localinfo_t clientinfo[1];
   su_sockaddr_t bind_addr;
   socklen_t bind_len;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
@@ -605,6 +603,8 @@ int stun_handle_bind(stun_handle_t *sh,
 	  STUNTAG_SOCKET_REF(s),
 	  TAG_END());
 
+  ta_end(ta);
+
   if (s == -1) {
     SU_DEBUG_3(("%s: invalid socket.\n", __func__));
     return errno = EINVAL, -1;
@@ -615,46 +615,63 @@ int stun_handle_bind(stun_handle_t *sh,
 
   sh->sh_bind_socket = s;
 
-  sd = stun_discovery_create(sh, action);
-  req = stun_create_request(sd);
+  bind_len = sizeof bind_addr;
 
-  clientinfo = &req->sr_localinfo;
-
-  get_localinfo(clientinfo);
-
-  inet_ntop(clientinfo->li_family, SU_ADDR(clientinfo->li_addr), ipaddr, sizeof(ipaddr));
-  if (bind(s, (struct sockaddr *) &clientinfo->li_addr, clientinfo->li_addrlen) < 0) {
-    SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, ipaddr,
-		(unsigned) ntohs(clientinfo->li_addr->su_port)));
-    return -1;
-  }
-
-  SU_DEBUG_3(("%s: socket bound to %s:%u\n", __func__, ipaddr,
-	      (unsigned) ntohs(clientinfo->li_addr->su_port)));
-
-  bind_len = clientinfo->li_addrlen;
   if (getsockname(s, (struct sockaddr *) &bind_addr, &bind_len) != 0) {
     STUN_ERROR(errno, getsockname);
     return -1;
   }
+
+  memset(clientinfo, 0, sizeof clientinfo);
+  clientinfo->li_addr = &bind_addr;
+  clientinfo->li_addrlen = bind_len;
+
+  if (!SU_HAS_INADDR_ANY(&bind_addr)) {
+    /* already bound */
+    clientinfo->li_family = bind_addr.su_family;
+    /* clientinfo->li_socktype = su_getsocktype(s); */
+  }
+  else {
+    /* Not bound - bind it */
+    get_localinfo(clientinfo);
+
+    if (bind(s, (struct sockaddr *) &clientinfo->li_addr, clientinfo->li_addrlen) < 0) {
+      SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
+		  inet_ntop(clientinfo->li_family, SU_ADDR(clientinfo->li_addr), 
+			    ipaddr, sizeof(ipaddr)),
+		  (unsigned) ntohs(clientinfo->li_addr->su_port)));
+      return -1;
+    }
+
+    bind_len = clientinfo->li_addrlen;
+    if (getsockname(s, (struct sockaddr *) &bind_addr, &bind_len) != 0) {
+      STUN_ERROR(errno, getsockname);
+      return -1;
+    }
+    clientinfo->li_addrlen = bind_len;
+  }
+   
+  SU_DEBUG_3(("%s: local socket is bound to %s:%u\n", __func__,
+	      inet_ntop(bind_addr.su_family, SU_ADDR(&bind_addr), 
+			ipaddr, sizeof(ipaddr)),
+	      (unsigned) ntohs(clientinfo->li_addr->su_port)));
+
+  sd = stun_discovery_create(sh, action);
+  req = stun_request_create(sd);
   
-  inet_ntop(clientinfo->li_family, SU_ADDR(&bind_addr), ipaddr, sizeof(ipaddr));
-  SU_DEBUG_3(("%s: Local socket bound to: %s:%u\n", __func__, ipaddr, 
-	      (unsigned) ntohs(bind_addr.su_port)));
+  clientinfo->li_addr = 
+    memcpy(req->sr_localinfo.li_addr, clientinfo->li_addr,
+	   clientinfo->li_addrlen);
+  memcpy(&req->sr_localinfo, clientinfo, sizeof clientinfo);
 
-  /* Create default message (last two params zeros) */
-  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
-    return -1;
-
-  retval = stun_send_binding_request(req, sh->sh_pri_addr);
-
-  if (retval < 0) {
+  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0 ||
+      stun_send_binding_request(req, sh->sh_pri_addr) < 0) {
+    stun_discovery_destroy(sd);
     stun_free_message(req->sr_msg);
+    return -1;
   }
 
   /* note: we always report success if bind() succeeds */
-
-  ta_end(ta);
 
   return 0;
 
@@ -686,7 +703,7 @@ stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
   return sd;
 }
 
-int stun_destroy_discovery(stun_discovery_t *sd)
+int stun_discovery_destroy(stun_discovery_t *sd)
 {
   free(sd);
   return 0;
@@ -727,8 +744,11 @@ int stun_handle_get_nattype(stun_handle_t *sh,
     return -1;
 
   sd = stun_discovery_create(sh, stun_action_get_nattype);
-  req = stun_create_request(sd);
-  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
+  req = stun_request_create(sd);
+  if (stun_make_binding_req(sh, req, req->sr_msg, 
+			    STUNTAG_CHANGE_IP(0), 
+			    STUNTAG_CHANGE_PORT(0),
+			    TAG_END()) < 0) 
     return -1;
 
   err = stun_send_binding_request(req, sh->sh_pri_addr);
@@ -739,8 +759,11 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 
   /* Same Public IP and port, Test III, server ip 0 or 1 should be
      the same */
-  req = stun_create_request(sd);
-  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 1) < 0) 
+  req = stun_request_create(sd);
+  if (stun_make_binding_req(sh, req, req->sr_msg, 
+			    STUNTAG_CHANGE_IP(0), 
+			    STUNTAG_CHANGE_PORT(1),
+			    TAG_END()) < 0) 
     return -1;
 
   err = stun_send_binding_request(req, sh->sh_pri_addr);
@@ -749,8 +772,11 @@ int stun_handle_get_nattype(stun_handle_t *sh,
     return -1;
   }
 
-  req = stun_create_request(sd);
-  if (stun_make_binding_req(sh, req, req->sr_msg, 1, 1) < 0) 
+  req = stun_request_create(sd);
+  if (stun_make_binding_req(sh, req, req->sr_msg, 
+			    STUNTAG_CHANGE_IP(1), 
+			    STUNTAG_CHANGE_PORT(1),
+			    TAG_END()) < 0) 
     return -1;
   
   err = stun_send_binding_request(req, sh->sh_pri_addr);
@@ -1406,7 +1432,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
     sd->sd_from_y = 0;
     req->sr_state = stun_dispose_me, req = NULL;
 
-    new = stun_create_request(sd);
+    new = stun_request_create(sd);
     if (stun_make_binding_req(sh, new, new->sr_msg, 0, 0) < 0) 
       return -1;
 
@@ -1445,7 +1471,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   /* Destroy me with the bad mofo timer */
   req->sr_state = stun_dispose_me, req = NULL;
   
-  new = stun_create_request(sd);
+  new = stun_request_create(sd);
   /* Use sockfdy */
   new->sr_socket = sockfdy;
   sd->sd_from_y = 1;
@@ -1497,7 +1523,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
   /* If the NAT type is already detected, ignore this request */
   if (!sd || (sd->sd_nattype != stun_nat_unknown)) {
     req->sr_state = stun_dispose_me;
-    /* stun_destroy_request(req); */
+    /* stun_request_destroy(req); */
     return 0;
   }
 
@@ -1511,7 +1537,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
     sd->sd_first = 1;
   else if (req->sr_request_mask & (CHG_IP | CHG_PORT))
     sd->sd_second = 1;
-  else if (req->sr_request_mask &  CHG_PORT)
+  else if (req->sr_request_mask & CHG_PORT)
     sd->sd_third = 1;
 
   memset(&local, 0, sizeof(local));
@@ -1524,8 +1550,8 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 	  sd->sd_state = stun_discovery_done;
 	  sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
 	  req->sr_state = stun_dispose_me;
-	  /* stun_destroy_request(req); */
-	  stun_destroy_discovery(sd);
+	  /* stun_request_destroy(req); */
+	  stun_discovery_destroy(sd);
 	  return 0;
     }
     else if (sd->sd_first && sd->sd_second && sd->sd_fourth) {
@@ -1534,8 +1560,8 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       sd->sd_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
       req->sr_state = stun_dispose_me;
-      /* stun_destroy_request(req); */
-      stun_destroy_discovery(sd);
+      /* stun_request_destroy(req); */
+      stun_discovery_destroy(sd);
       return 0;
     }
     else if (sd->sd_first && sd->sd_second) {
@@ -1547,8 +1573,8 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 	sd->sd_state = stun_discovery_done;
 	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
 	req->sr_state = stun_dispose_me;
-	/* stun_destroy_request(req); */
-	stun_destroy_discovery(sd);
+	/* stun_request_destroy(req); */
+	stun_discovery_destroy(sd);
 	return 0;
       }
       else {
@@ -1558,7 +1584,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 	req->sr_state = stun_dispose_me;
 	req = NULL;
 
-	req = stun_create_request(sd);
+	req = stun_request_create(sd);
 	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
 	  return -1;
 
@@ -1575,8 +1601,8 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       sd->sd_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
       req->sr_state = stun_dispose_me;
-      /* stun_destroy_request(req); */
-      stun_destroy_discovery(sd);
+      /* stun_request_destroy(req); */
+      stun_discovery_destroy(sd);
       return 0;
     }
   }
@@ -1593,8 +1619,8 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       sd->sd_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
       req->sr_state = stun_dispose_me;
-      /* stun_destroy_request(req); */
-      stun_destroy_discovery(sd);
+      /* stun_request_destroy(req); */
+      stun_discovery_destroy(sd);
       return 0;
     }
     if (sd->sd_first && sd->sd_second) {
@@ -1608,8 +1634,8 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       sd->sd_state = stun_discovery_done;
       sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
       req->sr_state = stun_dispose_me;
-      /* stun_destroy_request(req); */
-      stun_destroy_discovery(sd);
+      /* stun_request_destroy(req); */
+      stun_discovery_destroy(sd);
       return 0;
     }
 #if 0
@@ -1640,7 +1666,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
   if (req->sr_state == stun_dispose_me) {
     su_timer_destroy(t);
-    stun_destroy_request(req);
+    stun_request_destroy(req);
     SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
     return;
   }
@@ -1751,14 +1777,24 @@ int stun_send_binding_request(stun_request_t *req,
 /** Compose a STUN message of the format defined by stun_msg_t */
 int stun_make_binding_req(stun_handle_t *sh,
 			  stun_request_t *req,
-			  stun_msg_t *msg, 
-			  int chg_ip, 
-			  int chg_port)
+			  stun_msg_t *msg,
+			  tag_type_t tag, tag_value_t value, ...)
 {
-
   int i;
   stun_attr_t *tmp, **p; 
   int bits = 0;
+  int chg_ip = 0, chg_port = 0; 
+
+  ta_list ta;
+
+  ta_start(ta, tag, value);
+
+  tl_gets(ta_args(ta),
+	  STUNTAG_CHANGE_IP_REF(chg_ip),
+	  STUNTAG_CHANGE_PORT_REF(chg_port),
+	  TAG_END());
+
+  ta_end(ta);
   
   if (chg_ip)
     bits |= CHG_IP;
@@ -1819,6 +1855,7 @@ int stun_make_binding_req(stun_handle_t *sh,
   /* no buffer assigned yet */
   msg->enc_buf.data = NULL;
   msg->enc_buf.size = 0;
+
   return 0;
 }
 
@@ -1982,7 +2019,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 	  TAG_END());
 
   sd = stun_discovery_create(sh, action);
-  req = stun_create_request(sd);
+  req = stun_request_create(sd);
 
   clientinfo = &req->sr_localinfo;
 

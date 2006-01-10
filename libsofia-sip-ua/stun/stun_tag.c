@@ -113,3 +113,33 @@ tag_typedef_t stuntag_socket = INTTAG_TYPEDEF(socket);
  * Corresponding tag taking reference parameter is STUNTAG_ACTION_REF()
  */
 tag_typedef_t stuntag_action = INTTAG_TYPEDEF(action);
+
+/* ---------------------------------------------------------------------- */
+
+/**@def STUNTAG_CHANGE_IP(x)
+ *  
+ * Add CHANGE-REQUEST attribute with "change IP" flag to the request.
+ *
+ * @par Used with
+ *    stun_make_binding_req() \n
+ *
+ * @par Parameter type
+ *    bool
+ *
+ * Corresponding tag taking reference parameter is STUNTAG_CHANGE_IP_REF()
+ */
+tag_typedef_t stuntag_change_ip = BOOLTAG_TYPEDEF(change_ip);
+
+/**@def STUNTAG_CHANGE_PORT(x)
+ *  
+ * Add CHANGE-REQUEST attribute with "change port" flag to the request.
+ *
+ * @par Used with
+ *    stun_make_binding_req() \n
+ *
+ * @par Parameter type
+ *    bool
+ *
+ * Corresponding tag taking reference parameter is STUNTAG_CHANGE_PORT_REF()
+ */
+tag_typedef_t stuntag_change_port = BOOLTAG_TYPEDEF(change_port);
