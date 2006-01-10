@@ -1,3 +1,12 @@
+2006-01-10  Martti Mela  <martti.mela@nokia.com>
+
+	* stun.c: First working version of get_lifetime functionality. All
+	stun_requests are now destroyed automatically by their timers if
+	the request's state is marked as "stun_dispose_me".
+
+	* stun.h: Updated stun_lifetime() API, moved discovery type enums
+	here from stun.c.
+
 2006-01-05  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.c: Finished get_nattype functionality. Might

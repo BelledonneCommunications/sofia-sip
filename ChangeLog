@@ -1,3 +1,18 @@
+2006-01-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed doxygen input files (kv).
+
+  * Using su_home_t reference counting in nua.
+
+  * Modified cloned su_home_t semantics.
+
+  Now we allow reference counting for clones as well as threadsafeness for them.
+  Added su_home_is_threadsafe(), modified prototype of su_home_unref().
+
+  * Fixed memory leaks in nea test code.
+
+  * Fixed memory leak in nea_server.c
+
 2006-01-09  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Restorered tag lists for modules.
