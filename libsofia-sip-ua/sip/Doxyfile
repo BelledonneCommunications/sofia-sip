@@ -8,8 +8,8 @@ INPUT 		    += sip_basic.c sip_event.c sip_extra.c  sip_prack.c
 INPUT 		    += sip_refer.c sip_security.c sip_session.c 
 INPUT 		    += sip_tag.c sip_tag_class.c sip_time.c sip_util.c 
 INPUT 		    += sip_reason.c sip_caller_prefs.c 
-INPUT 		    += sip_dll.h sip_extensions.h sip_header.h 
-INPUT 		    += sip_internal.h sip_parser.h sip_protos.h 
+INPUT 		    += sip_dll.h sip_header.h 
+INPUT 		    += sip_parser.h sip_protos.h 
 INPUT 		    += sip_status.h sip_tag.h sip_tag_class.h
 INPUT 		    += sip_util.h sip_hclasses.h
 

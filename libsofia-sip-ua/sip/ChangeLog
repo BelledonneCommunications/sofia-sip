@@ -1,3 +1,8 @@
+2006-01-10  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Doxyfile: References to removed files sip_internal.h
+	and sip_extensions.h caused fatal doxygen error.
+
 2005-10-21  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * sip_contact_create_from_via_with_transport() now converts tport name to lcase.
