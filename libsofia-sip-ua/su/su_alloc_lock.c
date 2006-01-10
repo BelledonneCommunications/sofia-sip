@@ -81,9 +81,11 @@ int su_home_threadsafe(su_home_t *home)
   if (home->suh_lock)		/* Already? */
     return 0;
 
+#if 0				/* Allow threadsafe subhomes */
   assert(!su_home_has_parent(home));
   if (su_home_has_parent(home))
     return su_seterrno(EINVAL);
+#endif
 
 #if SU_HAVE_PTHREADS
   if (!su_home_unlocker) {

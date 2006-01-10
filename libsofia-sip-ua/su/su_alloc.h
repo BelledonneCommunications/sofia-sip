@@ -65,7 +65,7 @@ struct su_home_s {
 SU_DLL void *su_home_new(int size)
      __attribute__((__malloc__));
 SU_DLL void *su_home_ref(su_home_t *);
-SU_DLL void su_home_unref(su_home_t *);
+SU_DLL int su_home_unref(su_home_t *);
 
 SU_DLL int su_home_desctructor(su_home_t *, void (*)(void *));
 
@@ -73,6 +73,7 @@ SU_DLL void *su_home_clone(su_home_t *parent, int size)
      __attribute__((__malloc__));
 
 SU_DLL int  su_home_init(su_home_t *h);
+
 SU_DLL void su_home_deinit(su_home_t *h);
 
 SU_DLL void su_home_preload(su_home_t *h, int n, int size);
@@ -121,6 +122,9 @@ SU_DLL char *su_vsprintf(su_home_t *home, char const *fmt, va_list ap)
 
 /* free an independent block */
 SU_DLL void su_free(su_home_t *h, void *);		
+
+/** Check if a memory home is threadsafe */
+SU_DLL int su_home_is_threadsafe(su_home_t const *home);
 
 /* ---------------------------------------------------------------------- */
 /* Deprecated */

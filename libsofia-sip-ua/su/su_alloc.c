@@ -63,8 +63,8 @@
  * struct context *ctx = su_home_clone(tophome, sizeof (struct context));
  * @endcode
  *
- * Note that in this case, the tophome has a reference to @a ctx
- * structure; whenever tophome is freed, the @a ctx is also freed. 
+ * Note that the tophome has a reference to @a ctx structure; whenever
+ * tophome is freed, the @a ctx is also freed.
  * 
  * You can also create an independent home object by passing NULL as @a
  * tophome argument.
@@ -89,9 +89,10 @@
  * count, su_home_unref() decreases. A newly allocated home object has
  * reference count of 1.
  *
- * @note Please note that it is not possible to create new references to
- * secondary home objects which have a parent home. Reference counting is
- * possible only with objects returned from su_home_new().
+ * @note Please note that while it is possible to create new references to
+ * secondary home objects which have a parent home, the secondary home
+ * objects will always be destroyed when the parent home is destroyed even
+ * if there are other references left to them.
  *
  * The memory blocks in a cloned home object are freed when the object with
  * home itself is freed:
@@ -144,8 +145,7 @@
  *
  * If multiple threads need to access same home object, it must be marked as
  * @c threadsafe by calling su_home_threadsafe() with the home pointer as
- * argument. A cloned home cannot be marked as threadsafe. The
- * threadsafeness is not inherited by clones.
+ * argument. The threadsafeness is not inherited by clones.
  *
  * The threadsafe home objects can be locked and unlocked with
  * su_home_mutex_lock() and su_home_mutex_unlock().
@@ -349,6 +349,8 @@ static inline su_block_t *su_hash_alloc(int n)
   return b;
 }
 
+enum sub_zero { do_malloc, do_calloc, do_clone };
+
 /** Allocate a memory block.
  *
  * Precondition: locked home
@@ -364,7 +366,7 @@ static
 void *sub_alloc(su_home_t *home, 
 		su_block_t *sub,
 		long size, 
-		int zero)
+		enum sub_zero zero)
 {
   void *data, *preload = NULL;
   
@@ -409,7 +411,7 @@ void *sub_alloc(su_home_t *home,
   }
 
   /* Use preloaded memory */
-  if (size && sub && zero <= 1 &&
+  if (size && sub && zero < do_clone &&
       sub->sub_preload && size <= sub->sub_prsize) {
     size_t prused = sub->sub_prused + size + MEMCHECK_EXTRA; 
     prused = ALIGN(prused);
@@ -439,7 +441,7 @@ void *sub_alloc(su_home_t *home,
     if (!preload)
       sub->sub_auto_all = 0;
 
-    if (zero > 1) {
+    if (zero == do_clone) {
       su_home_t *subhome = data;
 
       assert(preload == 0);
@@ -450,6 +452,7 @@ void *sub_alloc(su_home_t *home,
 
       subhome->suh_size = size;
       subhome->suh_blocks->sub_parent = home;
+      subhome->suh_blocks->sub_ref = 1;
     }
 
     sua = su_block_add(sub, data); assert(sua);
@@ -547,35 +550,45 @@ SU_DLL int su_home_desctructor(su_home_t *home, void (*destructor)(void *))
  * The function su_home_unref() decrements the reference count on a home
  * object and destroys and frees it and the memory allocations using it.
  *
- * @param home memory pool object to be destroyed
+ * @param home memory pool object to be unreferences
+ *
+ * The function return values is 
+ *
+ * @retval 1 if object was freed
+ * @retval 0 if object is still alive
  */
-void su_home_unref(su_home_t *home)
+int su_home_unref(su_home_t *home)
 {
   su_block_t *sub;
 
   if (home == NULL)
-    return;
+    return 0;
 
   sub = MEMLOCK(home);
 
   if (sub == NULL) {
     /* Xyzzy */
-  }
-  else if (sub->sub_parent) {
-    assert(sub->sub_ref == 0);
-    assert(home->suh_lock == NULL);
-    su_free(sub->sub_parent, home);
+    return 0;
   }
   else if (sub->sub_ref == UINT_MAX) {
     UNLOCK(home);
+    return 0;
   }
   else if (--sub->sub_ref > 0) {
     UNLOCK(home);
+    return 0;
+  }
+  else if (sub->sub_parent) {
+    su_home_t *parent = sub->sub_parent;
+    UNLOCK(home);
+    su_free(parent, home);
+    return 1;
   }
   else {
     _su_home_deinit(home);
     free(home);
     /* UNLOCK(home); */
+    return 1;
   }
 }
 
@@ -584,8 +597,7 @@ void su_home_unref(su_home_t *home)
  *
  * Clone a secondary home object used to collect multiple memoryf
  * allocations under one handle. The memory is freed either when the cloned
- * home is destroyed or when the parent home is destroyed. A cloned home
- * cannot be reference counted, or made threadsafe.
+ * home is destroyed or when the parent home is destroyed.
  *
  * An independent
  * home object is created if NULL is passed as @a parent argument.
@@ -593,7 +605,7 @@ void su_home_unref(su_home_t *home)
  * @param parent  a parent object (may be NULL)
  * @param size    size of home object
  *
- * The memory home object allocated with su_home_new() can be freed with
+ * The memory home object allocated with su_home_clone() can be freed with
  * su_home_unref().
  *
  * @return
@@ -684,8 +696,17 @@ void su_free(su_home_t *home, void *data)
       if (sub->sub_stats)
 	su_home_stats_free(sub, data, preloaded, allocation->sua_size);
 
-      if (allocation->sua_home)
-	su_home_deinit(data);
+      if (allocation->sua_home) {
+	su_home_t *subhome = data;
+	su_block_t *sub = MEMLOCK(subhome);
+
+	assert(sub->sub_ref != UINT_MAX);
+	/* assert(sub->sub_ref > 0); */
+
+	sub->sub_ref = 0;	/* Zap all references */
+
+	_su_home_deinit(subhome);
+      }
 
 #if MEMCHECK != 0
       memset(data, 0xaa, allocation->sua_size);
@@ -812,7 +833,7 @@ void _su_home_deinit(su_home_t *home)
     unsigned i;
     su_block_t *b;
 
-    if (home->suh_blocks->sub_destructor) {
+     if (home->suh_blocks->sub_destructor) {
       void (*destructor)(void *) = home->suh_blocks->sub_destructor;
       home->suh_blocks->sub_destructor = NULL;
       destructor(home);
@@ -826,7 +847,16 @@ void _su_home_deinit(su_home_t *home)
       if (b->sub_nodes[i].sua_data) {
 	if (b->sub_nodes[i].sua_home) {
 	  su_home_t *subhome = b->sub_nodes[i].sua_data;
-	  su_home_deinit((su_home_t *)subhome);
+	  su_block_t *subb = MEMLOCK(subhome);
+
+	  assert(subb); assert(subb->sub_ref >= 1);
+#if 0
+	  if (subb->sub_ref > 0)
+	    SU_DEBUG_7(("su_home_unref: subhome %p with destructor %p has still %u refs\n",
+			subhome, subb->sub_destructor, subb->sub_ref));
+#endif
+	  subb->sub_ref = 0;	/* zap them all */
+	  _su_home_deinit(subhome);
 	}
 	else if (su_is_preloaded(b, b->sub_nodes[i].sua_data))
 	  continue;
@@ -1248,6 +1278,12 @@ void *su_salloc(su_home_t *home, int size)
     retval->size = size;
 
   return retval;
+}
+
+/** Check if a memory home is threadsafe */
+int su_home_is_threadsafe(su_home_t const *home)
+{
+  return home && home->suh_lock;
 }
 
 /** Obtain exclusive lock on home (if home is threadsafe). */
