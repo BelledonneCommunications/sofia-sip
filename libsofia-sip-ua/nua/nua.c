@@ -1404,7 +1404,6 @@ void nua_handle_destroy(nua_handle_t *nh)
 }
 
 
-
 /*# Send a request to the protocol thread */
 void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
 		nua_event_t event,
@@ -1440,12 +1439,12 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
 
     e->e_always = always;
     e->e_event = event;
-    e->e_nh = nh_incref(nh);
+    e->e_nh = nua_handle_ref(nh);
     e->e_status = status;
     e->e_phrase = phrase;
 
     if (su_msg_send(sumsg) != 0)
-      nh_decref(nh);
+      nua_handle_unref(nh);
   } 
   else {
     assert(0);
@@ -1462,15 +1461,16 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
 
   enter;
 
-  if (nh && nh != nh->nh_nua->nua_handles) {
+  
+  if (nh && !NH_IS_DEFAULT(nh)) {
     if (!nh->nh_ref_by_user && nh->nh_valid) {
       nh->nh_ref_by_user = 1;
-      nh_incref(nh);
+      nua_handle_ref(nh);
     }
   }
 
   if (!nh || !nh->nh_valid) {	/* Handle has been destroyed */
-    if (nh && nh != nh->nh_nua->nua_handles && nh_decref(nh)) {
+    if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
       SU_DEBUG_9(("nua(%p): freed by application\n", nh));
     }
     if (e->e_msg)
@@ -1505,7 +1505,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   if (e->e_msg)
     msg_destroy(e->e_msg);
 
-  if (nh && nh != nh->nh_nua->nua_handles && nh_decref(nh)) {
+  if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
     SU_DEBUG_9(("nua(%p): freed by application\n", nh));
   }
 
@@ -1542,7 +1542,7 @@ void nua_destroy_event(nua_saved_event_t saved[1])
     if (e->e_msg)
       msg_destroy(e->e_msg);
 
-    if (nh && nh != nh->nh_nua->nua_handles && nh_decref(nh)) {
+    if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
       SU_DEBUG_9(("nua(%p): freed by application\n", nh));
     }
 

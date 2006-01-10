@@ -725,6 +725,12 @@ int test_params(struct context *ctx)
 
   TEST_1(ctx->a.nua);
 
+  nh = nua_handle(ctx->a.nua, NULL, TAG_END()); TEST_1(nh);
+  nua_handle_unref(nh);
+
+  nh = nua_handle(ctx->a.nua, NULL, TAG_END()); TEST_1(nh);
+  nua_handle_destroy(nh);
+
   from = sip_from_make(tmphome, Alice);
 
   nh = nua_handle(ctx->a.nua, NULL, TAG_END());

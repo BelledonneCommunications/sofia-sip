@@ -60,36 +60,6 @@
 #define SU_LOG (nua_log)
 #include <su_debug.h>
 
-#if __CYGWIN__
-#if defined(SU_HAVE_PTHREADS) && defined(HAVE_PTHREAD_H)
-/* Debugging versions */
-#define SU_PORT_INITREF(p)      (pthread_mutex_init((p)->sup_reflock, NULL), printf("initref(%p)\n", (p)))
-#define SU_PORT_INCREF(p, f)    (pthread_mutex_lock(p->sup_reflock), p->sup_ref++, pthread_mutex_unlock(p->sup_reflock), printf("incref(%p) by %s\n", (p), f))
-#define SU_PORT_DECREF(p, f)    do {					\
-    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
-    if ((p->sup_ref) == 0) {			\
-      SU_DEBUG_9(("nua(%p): zapped\n", nh)); \
-      su_home_zap(p->nh_home); } \
-    else { printf("decref(%p) to %u by %s\n", (p), p->sup_ref, f); }  } while(0)
-
-#define SU_PORT_ZAPREF(p, f)    do { printf("zapref(%p) by %s\n", (p), f), \
-    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
-  if ((p->sup_ref) != 0) { \
-    assert(!"SU_PORT_ZAPREF"); } \
-  su_port_destroy(p); } while(0)
-
-#define SU_PORT_INITLOCK(p) \
-   (pthread_mutex_init((p)->sup_mutex, NULL), printf("init_lock(%p)\n", p))
-
-#define SU_PORT_LOCK(p, f)    \
-   (printf("%ld at %s locking(%p)...", pthread_self(), f, p), pthread_mutex_lock((p)->sup_mutex), printf(" ...%ld at %s locked(%p)...", pthread_self(), f, p))
-
-#define SU_PORT_UNLOCK(p, f)  \
-  (pthread_mutex_unlock((p)->sup_mutex), printf(" ...%ld at %s unlocked(%p)\n", pthread_self(), f, p))
-
-#endif /* defined(SU_HAVE_PTHREAD) && defined(HAVE_PTHREAD_H) */
-#endif /* __CYGWIN__ */ 
-
 SOFIA_BEGIN_DECLS
 
 #if HAVE_SIGCOMP
@@ -512,6 +482,8 @@ struct nua_handle_s
   (nh)->nh_phrase, \
   SIPTAG_WARNING_STR(nh->nh_warning)
 
+#define NH_IS_DEFAULT(nh) ((nh) == (nh)->nh_nua->nua_handles)
+
 extern char const nua_500_error[];
 
 #define NUA_500_ERROR 500, nua_500_error
@@ -593,71 +565,6 @@ struct nua_s {
 #define nh_enter ((void)0)
 #define __func__ "nua"
 #endif
-
-/*# Increase reference count by one.
- *
- * Reference conting works pretty simple. Currently, application can have a
- * single reference to a handle, stack can keep multiple references. When
- * application creates a handle, it gets a reference to it. When such a
- * handle is sent to stack, stack checks the nh_ref_by_stack and makes sure
- * that it has a reference. Likewise, when stack creates a handle, and it is
- * sent to application, the application side of nua checks nh_ref_by_appl
- * and increases the reference count if needed.
- *
- * When application calls nua_handle_destroy(), it marks the handle as
- * invalid, sends a nua_r_destroy signal to stack and decreases its
- * reference count.
- * 
- */
-static inline
-nua_handle_t *nh_incref(nua_handle_t *nh)
-{
-  nh_enter;
-
-  if (nh) {
-#if HAVE_PTHREAD_H
-#if __CYGWIN__
-    SU_PORT_INCREF(nh, (char *) NULL);
-#else
-    pthread_rwlock_rdlock(nh->nh_refcount);
-#endif
-#else 
-    nh->nh_refcount++;		/* XXX */
-#endif
-  }
-  return nh;
-}
-
-/*# Decrease reference count by one, return false if no more references  */
-static inline
-int nh_decref(nua_handle_t *nh)
-{
-  nh_enter;
-
-  if (nh == NULL) 
-    return 1;
-
-#if HAVE_PTHREAD_H
-#if __CYGWIN__
-  SU_PORT_DECREF(nh, (char *) NULL);
-#else
-  pthread_rwlock_unlock(nh->nh_refcount);
-  if (pthread_rwlock_trywrlock(nh->nh_refcount) == 0) {
-    SU_DEBUG_9(("nua(%p): zapped\n", nh));
-    su_home_zap(nh->nh_home);
-    return 0;
-  }
-#endif
-  return 1;
-#else 
-  if (--nh->nh_refcount == 0) {
-    SU_DEBUG_9(("nua(%p): zapped\n", nh));
-    su_home_zap(nh->nh_home);
-  }
-  return 1;
-#endif  
-}
-
 
 /* Internal prototypes */
 int  ua_init(su_root_t *root, nua_t *nua);

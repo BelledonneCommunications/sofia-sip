@@ -147,14 +147,6 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
       p_to = (void *)-1;
     }
 
-#if defined(HAVE_PTHREAD_H) && defined(SU_HAVE_PTHREADS)
-#if __CYGWIN__
-    SU_PORT_INITREF(nh);
-#else
-    pthread_rwlock_init(nh->nh_refcount, NULL);
-#endif
-#endif
-
     nh->nh_valid = nua_handle;
     nh->nh_nua = nua;
     nh->nh_magic = hmagic;
@@ -167,10 +159,48 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 	    SIPTAG_FROM_REF(nh->nh_ds->ds_local),
 	    SIPTAG_TO_REF(nh->nh_ds->ds_remote),
 	    TAG_END());
+
+    /* This far, we have nothing to destruct */
+    /* su_home_desctructor(nh, nh_destructor); */
+
+    if (su_home_is_threadsafe(nua->nua_home)) {
+      if (su_home_threadsafe(nh->nh_home) < 0) {
+	su_home_unref(nh->nh_home);
+	nh = NULL;
+      }
+    }
   }
 
-  return nh_incref(nh);
+  return nh;
 }
+
+#if 0
+/* nua handle destructor. It does nothing. */
+static void nh_destructor(void *arg)
+{
+  nua_handle_t *nh = arg;
+
+  /* Xyzzy */
+  (void)nh;
+}
+#endif
+
+/** Make a new reference to handle.
+ *
+ * @note All handle references are destroyed when the nua object is destroyed.
+ */
+nua_handle_t *nua_handle_ref(nua_handle_t *nh)
+{
+  return (nua_handle_t *)su_home_ref(nh->nh_home);
+}
+
+
+/** Destroy reference to handle. */
+int nua_handle_unref(nua_handle_t *nh)
+{
+  return su_home_unref(nh->nh_home);
+}
+
 
 /** Get name for a NUA event. */
 char const *nua_event_name(nua_event_t event)
@@ -243,6 +273,7 @@ char const *nua_callstate_name(enum nua_callstate state)
 {
   switch (state) {
   case nua_callstate_init: return "init";
+  case nua_callstate_authenticating: return "authenticating";
   case nua_callstate_calling: return "calling";
   case nua_callstate_proceeding: return "proceeding";
   case nua_callstate_completing: return "completing";
@@ -255,4 +286,3 @@ char const *nua_callstate_name(enum nua_callstate state)
   default: return "UNKNOWN";
   }
 }
-

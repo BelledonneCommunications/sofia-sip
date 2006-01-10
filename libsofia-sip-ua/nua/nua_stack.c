@@ -236,25 +236,18 @@ int ua_init(su_root_t *root, nua_t *nua)
   dnh = su_home_clone(home, sizeof (*dnh) + sizeof(*dnhp));
   if (!dnh)
     return -1;
+  nua_handle_ref(dnh);
 
   nua->nua_root = root;
   nua->nua_handles_tail = &nua->nua_handles;
   nh_append(nua, dnh);  
-  
-#if defined(HAVE_PTHREAD_H) && defined(SU_HAVE_PTHREADS)
-#if __CYGWIN__
-  SU_PORT_INITREF(dnh);
-#else
-  pthread_rwlock_init(dnh->nh_refcount, NULL);
-#endif
-#endif
+
   dnh->nh_valid = nua_handle;
   dnh->nh_nua = nua;
   dnh->nh_ds->ds_local = sip_from_init(nua->nua_from);
   dnh->nh_ds->ds_remote = nua->nua_from;
 
-  nh_incref(dnh); dnh->nh_ref_by_stack = 1;
-  nh_incref(dnh); dnh->nh_ref_by_user = 1;
+  dnh->nh_ref_by_stack = 1; dnh->nh_ref_by_user = 1;
 
   dnh->nh_prefs = dnhp = (void *)(dnh + 1);
 
@@ -593,13 +586,13 @@ int ua_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
     assert(t == t_end); assert(b == end);
 
     e->e_event = event;
-    e->e_nh = nh ? nh_incref(nh) : nua->nua_dhandle;
+    e->e_nh = nh ? nua_handle_ref(nh) : nua->nua_dhandle;
     e->e_status = status;
     e->e_phrase = strcpy(end, phrase ? phrase : "");
     e->e_msg = msg;
 
     if (su_msg_send(sumsg) != 0)
-      nh_decref(nh);
+      nua_handle_unref(nh);
   }
 
   ta_end(ta);
@@ -634,7 +627,7 @@ void ua_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
       nh_append(nua, nh);
     if (!nh->nh_ref_by_stack) {
       nh->nh_ref_by_stack = 1;
-      nh_incref(nh);
+      nua_handle_ref(nh);
     }      
   }
 
@@ -734,7 +727,7 @@ void ua_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
     su_msg_destroy(nua->nua_signal);
 
   if (nh != nua->nua_dhandle)
-    nh_decref(nh);
+    nua_handle_unref(nh);
 }
 
 /* ====================================================================== */
@@ -743,7 +736,7 @@ static int nh_call_pending(nua_handle_t *nh, sip_time_t time);
 
 /** Timer routine.
  *
- * Go through all handles and execute pending tasks
+ * Go through all active handles and execute pending tasks
  */
 void ua_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a)
 {
@@ -780,7 +773,7 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
   if (du == NULL)
     return 0;
 
-  nh_incref(nh);
+  nua_handle_ref(nh);
 
   while (du) {
     nh_pending_f *pending = du->du_pending;
@@ -805,7 +798,7 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
     }
   }
 
-  nh_decref(nh);
+  nua_handle_unref(nh);
 
   return 1;
 }
@@ -1439,6 +1432,24 @@ nua_handle_t *nh_validate(nua_t *nua, nua_handle_t *maybe)
   return NULL;
 }
 
+static void 
+ua_destroy(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
+{
+  nh_call_pending(nh, 0);	/* Call pending operations with 0 */
+
+  if (nh->nh_notifier)
+    ua_terminate(nua, nh, 0, NULL);
+
+#if 0
+  if (nh->nh_ref_by_user) {
+    nh->nh_ref_by_user = 0;
+    nua_handle_unref(nh);
+  }
+#endif
+
+  nh_destroy(nua, nh);
+}
+
 #define nh_is_inserted(nh) ((nh)->nh_prev != NULL)
 
 /** Remove a handle from list of handles */
@@ -1457,6 +1468,7 @@ void nh_remove(nua_t *nua, nua_handle_t *nh)
   nh->nh_prev = NULL;
   nh->nh_next = NULL;
 }
+
 
 static
 void nh_destroy(nua_t *nua, nua_handle_t *nh)
@@ -1487,7 +1499,7 @@ void nh_destroy(nua_t *nua, nua_handle_t *nh)
   if (nh_is_inserted(nh))
     nh_remove(nua, nh);
 
-  nh_decref(nh);
+  nua_handle_unref(nh);		/* Remove stack reference */
 }
 
 static
@@ -2451,7 +2463,7 @@ dialog_usage_add(nua_handle_t *nh,
 		  nh, dialog_usage_name(du), 
 		  event ? " with event " : "", event ? event->o_type :""));
 
-      nh_incref(nh);
+      nua_handle_ref(nh);
 
       return ds->ds_usage = du;
     }
@@ -2543,7 +2555,7 @@ dialog_usage_remove_at(nua_handle_t *nh,
       break;
     }
 
-    nh_decref(nh);
+    nua_handle_unref(nh);
 
     su_free(nh->nh_home, du);
   }
@@ -4901,8 +4913,8 @@ nh_referral_check(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 
   if (ref_handle != ref->ref_handle) {
     if (ref->ref_handle)
-      nh_decref(ref->ref_handle);
-    ref->ref_handle = nh_incref(ref_handle);
+      nua_handle_unref(ref->ref_handle);
+    ref->ref_handle = nua_handle_ref(ref_handle);
   }
 
 #if 0
@@ -4960,7 +4972,7 @@ nh_referral_respond(nua_handle_t *nh, unsigned status, char const *phrase)
 
   su_free(nh->nh_home, ref->ref_event), ref->ref_event = NULL;
 
-  nh_decref(ref->ref_handle), ref->ref_handle = NULL;
+  nua_handle_unref(ref->ref_handle), ref->ref_handle = NULL;
 }
 
 
@@ -7110,23 +7122,4 @@ ua_respond(nua_t *nua, nua_handle_t *nh,
     ua_event(nua, nh, NULL, nua_i_error,
 	     500, "Responding to a Non-Existing Request", TAG_END());
   }
-}
-
-/* ======================================================================== */
-/* Destroy a handle */
- 
-static void 
-ua_destroy(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
-{
-  nh_call_pending(nh, 0);
-
-  if (nh->nh_notifier)
-    ua_terminate(nua, nh, 0, NULL);
-
-  if (nh->nh_ref_by_user) {
-    nh->nh_ref_by_user = 0;
-    nh_decref(nh);
-  }
-
-  nh_destroy(nua, nh);
 }
