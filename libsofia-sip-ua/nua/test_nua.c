@@ -2207,6 +2207,27 @@ CONDITION_FUNCTION(reject_401)
   }
 }
 
+CONDITION_FUNCTION(reject_403)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    respond(ep, call, nh, SIP_403_FORBIDDEN, TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    ep->next_condition = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
 CONDITION_FUNCTION(authenticate_call)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
@@ -2229,26 +2250,6 @@ CONDITION_FUNCTION(authenticate_call)
   }
 
   switch (callstate(tags)) {
-  case nua_callstate_terminated:
-    if (call)
-      nua_handle_destroy(call->nh), call->nh = NULL;
-    return 1;
-  default:
-    return 0;
-  }
-}
-
-CONDITION_FUNCTION(reject_403)
-{
-  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
-    return 0;
-
-  save_event_in_list(ctx, event, ep, call);
-
-  switch (callstate(tags)) {
-  case nua_callstate_received:
-    respond(ep, call, nh, SIP_403_FORBIDDEN, TAG_END());
-    return 0;
   case nua_callstate_terminated:
     if (call)
       nua_handle_destroy(call->nh), call->nh = NULL;
@@ -2286,7 +2287,6 @@ int test_reject_401(struct context *ctx)
    INIT -(C1)-> CALLING -(C2)-> PROCEEDING -(C6b)-> TERMINATED/INIT
    INIT -(C1)-> CALLING -(C6a)-> TERMINATED
   */
-
   TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
@@ -2310,6 +2310,8 @@ int test_reject_401(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
 
   /*
    Server transitions:
@@ -2351,7 +2353,6 @@ int test_reject_401(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
 
-  free_events_in_list(ctx, a_call);
   free_events_in_list(ctx, b_call);
 
   nua_handle_destroy(a_call->nh), a_call->nh = NULL;
@@ -5094,6 +5095,8 @@ int main(int argc, char *argv[])
     retval |= test_unregister(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx);
+
+  su_home_deinit(ctx->home);
 
   su_deinit();
 

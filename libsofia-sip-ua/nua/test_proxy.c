@@ -83,6 +83,7 @@ extern int LIST_DUMMY_VARIABLE
 
 struct proxy {
   su_home_t    home[1];
+  su_root_t   *parent;
   su_clone_r   clone;
   tagi_t      *tags;
 
@@ -193,6 +194,8 @@ static void
 test_proxy_deinit(su_root_t *root, struct proxy *proxy)
 {
   struct proxy_transaction *t;
+  
+  auth_mod_destroy(proxy->auth);
 
   if ((t = proxy->stateless)) {
     nta_incoming_destroy(t->server), t->server = NULL;
@@ -213,6 +216,8 @@ struct proxy *test_proxy_create(su_root_t *root,
   if (p) {
     ta_list ta;
 
+    p->parent = root;
+
     ta_start(ta, tag, value);
     p->tags = tl_llist(ta_tags(ta));
     ta_end(ta);
@@ -232,7 +237,7 @@ struct proxy *test_proxy_create(su_root_t *root,
 void test_proxy_destroy(struct proxy *p)
 {
   if (p) {
-    su_clone_stop(p->clone);
+    su_clone_wait(p->parent, p->clone);
     su_home_unref(p->home);
   }
 }
@@ -401,18 +406,21 @@ int process_register(struct proxy *proxy,
 		     sip_t const *sip)
 {
   auth_status_t *as;
-  msg_t *msg;
   struct registration_entry *e;
   sip_contact_t *old_binding, *new_binding;
   int unregister;
 
-  msg = nta_incoming_getrequest(irq);
 
   as = su_home_clone(proxy->home, (sizeof *as));
   as->as_status = 500, as->as_phrase = sip_500_Internal_server_error;
 
   as->as_method = sip->sip_request->rq_method_name;
-  as->as_source = msg_addrinfo(msg);
+  {
+    msg_t *msg;
+    msg = nta_incoming_getrequest(irq);
+    as->as_source = msg_addrinfo(msg);
+    msg_destroy(msg);
+  }
 
   as->as_user_uri = sip->sip_from->a_url;
   as->as_display = sip->sip_from->a_display;
