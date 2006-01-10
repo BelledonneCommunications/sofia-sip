@@ -561,7 +561,7 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
   stun_encode_message(msg, pwd);
 
   err = sendto(s, msg->enc_buf.data, msg->enc_buf.size, 
-	     0, (struct sockaddr *)to_addr, sizeof(struct sockaddr_in));
+	       0, (struct sockaddr *)to_addr, sizeof(struct sockaddr_in));
 
   if (err > 0) {
     inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));

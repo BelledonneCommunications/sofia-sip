@@ -221,12 +221,12 @@ int torture_test_init(su_root_t *root, char *server)
 
   /* Running this test requires a local STUN server on default port
    * XXX -- mela: does not */
-  se = stun_handle_tcreate(torturer,
-			   root,
-			   torture_callback,
-			   STUNTAG_SERVER(server), 
-			   STUNTAG_INTEGRITY(!bypass_msg_int),
-			   TAG_NULL());
+  se = stun_handle_create(torturer,
+			  root,
+			  torture_callback,
+			  STUNTAG_SERVER(server), 
+			  STUNTAG_INTEGRITY(!bypass_msg_int),
+			  TAG_NULL());
   TEST_1(se);
 
   END();

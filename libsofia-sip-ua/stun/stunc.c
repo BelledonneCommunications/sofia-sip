@@ -135,11 +135,11 @@ int main(int argc, char *argv[])
   msg_integrity = atoi(argv[2]);
 
   /* Running this test requires a local STUN server on default port */
-  se = stun_handle_tcreate(stunc,
-			   root,
-			   stunc_callback,
-			   STUNTAG_SERVER(argv[1]), 
-			   STUNTAG_INTEGRITY(msg_integrity),
+  se = stun_handle_create(stunc,
+			  root,
+			  stunc_callback,
+			  STUNTAG_SERVER(argv[1]), 
+			  STUNTAG_INTEGRITY(msg_integrity),
 			   TAG_NULL()); 
 
   if (!se) {

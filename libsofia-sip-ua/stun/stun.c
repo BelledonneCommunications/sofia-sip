@@ -194,10 +194,6 @@ char const *stun_str_state(stun_state_t state)
   STUN_STATE_STR(stun_discovery_processing);
   STUN_STATE_STR(stun_discovery_done);
   STUN_STATE_STR(stun_bind_init);
-  STUN_STATE_STR(stun_bind_started);
-  STUN_STATE_STR(stun_bind_sending);
-  STUN_STATE_STR(stun_bind_sent);
-  STUN_STATE_STR(stun_bind_receiving);
   STUN_STATE_STR(stun_bind_processing);
   STUN_STATE_STR(stun_bind_done);
   STUN_STATE_STR(stun_tls_connection_timeout);
@@ -227,13 +223,16 @@ char const *stun_nattype(stun_discovery_t *sd)
     "Port Restricted Cone NAT",
   };
 
-  return stun_nattype_str[sd->sd_nattype];
+  if (sd)
+    return stun_nattype_str[sd->sd_nattype];
+  else
+    return stun_nattype_str[stun_nat_unknown];
 }
 
 
 int stun_lifetime(stun_discovery_t *sd)
 {
-  return sd->sd_lt_cur;
+  return sd ? sd->sd_lt_cur : -1;
 }
 
 
@@ -316,27 +315,6 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
 }
 
 /** 
- * Creates a STUN handle 
- *
- * @param server hostname or IPv4 address 
- * @param msg_integrity true if msg integr. should be used
- *
- */
-stun_handle_t *stun_handle_create(stun_magic_t *context,
-				  su_root_t *root,
-				  stun_event_f cb,
-				  char const *server, 
-				  int msg_integrity)
-{
-  return stun_handle_tcreate(context,
-			     root,
-			     cb,
-			     STUNTAG_SERVER(server), 
-			     STUNTAG_INTEGRITY(msg_integrity), 
-			     TAG_END());
-}
-
-/** 
  * Create a STUN handle 
  *
  * @param tag,value,... tag-value list 
@@ -346,10 +324,10 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
  * @TAG STUNTAG_INTEGRITY() true if msg integrity should be used
  *
  */
-stun_handle_t *stun_handle_tcreate(stun_magic_t *context,
-				   su_root_t *root,
-				   stun_event_f cb,
-				   tag_type_t tag, tag_value_t value, ...)
+stun_handle_t *stun_handle_create(stun_magic_t *context,
+				  su_root_t *root,
+				  stun_event_f cb,
+				  tag_type_t tag, tag_value_t value, ...)
 {
   stun_handle_t *stun = NULL;
   char const *server = NULL;
@@ -498,6 +476,7 @@ void stun_handle_destroy(stun_handle_t *self)
 }
 
 
+/** Create wait object and register it to the handle callback */
 int assign_socket(stun_handle_t *sh, su_socket_t s) 
 {
   int events;
@@ -616,8 +595,9 @@ int stun_handle_bind(stun_handle_t *sh,
   stun_discovery_t *sd = NULL;
   ta_list ta;
   stun_action_t action = stun_action_binding_request;
-  
-  assert(sh);
+
+  if (sh == NULL)
+    return errno = EFAULT, -1;
 
   ta_start(ta, tag, value);
 
@@ -625,9 +605,9 @@ int stun_handle_bind(stun_handle_t *sh,
 	  STUNTAG_SOCKET_REF(s),
 	  TAG_END());
 
-  if (s < 0) {
+  if (s == -1) {
     SU_DEBUG_3(("%s: invalid socket.\n", __func__));
-    return -1;
+    return errno = EINVAL, -1;
   }
 
   if (assign_socket(sh, s) < 0)
@@ -670,12 +650,6 @@ int stun_handle_bind(stun_handle_t *sh,
 
   if (retval < 0) {
     stun_free_message(req->sr_msg);
-  }
-  if (lifetime) {
-    if (retval == 0)
-      *lifetime = 3600;
-    else
-      *lifetime = -1;
   }
 
   /* note: we always report success if bind() succeeds */
@@ -789,15 +763,6 @@ int stun_handle_get_nattype(stun_handle_t *sh,
   if (err == -1)
     return -1;
 
-  return 0;
-}
-
-
-/** Application should call this at regular intervals 
- *  while binding is active.
- */
-int stun_poll(stun_socket_t *ss)
-{
   return 0;
 }
 
@@ -1140,6 +1105,7 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
 
   connect_timer = su_timer_create(su_root_task(sh->sh_root),
 				  STUN_TLS_CONNECT_TIMEOUT);
+
   sh->sh_connect_timer = connect_timer;
   su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sh);
 
@@ -1219,7 +1185,7 @@ stun_request_t *find_request(stun_handle_t *self, uint16_t *id)
   return req;
 }
 
-
+/** Process socket event */
 int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 {
   int retval = -1, s, err = -1, dgram_len;
@@ -1242,7 +1208,8 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
     su_wait_destroy(w);
     su_root_deregister(self->sh_root, self->ss_root_index);
     /* self->sh_state = stun_bind_error; */
-    self->sh_callback(self->sh_context, self, NULL, NULL, stun_action_no_action, stun_bind_error);
+    self->sh_callback(self->sh_context, self, NULL, NULL, 
+		      stun_action_no_action, stun_bind_error);
     return 0;
   }
 
@@ -1709,7 +1676,6 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     /* Destroy me immediately */
     req->sr_state = stun_dispose_me;
     timeout = 0;
-
   }
   else {
     SU_DEBUG_3(("%s: Timeout no. %d, retransmitting.\n",
@@ -1759,7 +1725,6 @@ int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t  *srvr_addr)
 {
   su_timer_t *sendto_timer = NULL;
-  char ipaddr[SU_ADDRSIZE + 2];
   int s;
   stun_handle_t *sh = req->sr_handle;
   stun_msg_t *msg =  req->sr_msg;
@@ -1769,7 +1734,6 @@ int stun_send_binding_request(stun_request_t *req,
   s = req->sr_socket;
   req->sr_destination = srvr_addr;
 
-  inet_ntop(srvr_addr->su_family, SU_ADDR(srvr_addr), ipaddr, sizeof(ipaddr));
   if (stun_send_message(s, srvr_addr, msg, &(sh->sh_passwd)) < 0) {
     return -1;
   }
@@ -1778,22 +1742,18 @@ int stun_send_binding_request(stun_request_t *req,
   sendto_timer = su_timer_create(su_root_task(sh->sh_root), STUN_SENDTO_TIMEOUT);
   su_timer_set(sendto_timer, stun_sendto_timer_cb, (su_wakeup_arg_t *) req);
 
-#if 0
-  if (req->sr_action == stun_action_get_nattype)
-#endif
-    req->sr_state = stun_discovery_processing;
-#if 0
-  else
-    req->sr_state = stun_bind_sending;
-#endif
+  req->sr_state = stun_discovery_processing;
 
   return 0;
 }
 
 
 /** Compose a STUN message of the format defined by stun_msg_t */
-int stun_make_binding_req(stun_handle_t *sh, stun_request_t *req,
-			  stun_msg_t *msg, int chg_ip, int chg_port)
+int stun_make_binding_req(stun_handle_t *sh,
+			  stun_request_t *req,
+			  stun_msg_t *msg, 
+			  int chg_ip, 
+			  int chg_port)
 {
 
   int i;
@@ -1824,6 +1784,7 @@ int stun_make_binding_req(stun_handle_t *sh, stun_request_t *req,
   msg->stun_attr = NULL;
   /* CHANGE_REQUEST */
   p = &(msg->stun_attr);
+
   if (chg_ip || chg_port) {
     stun_attr_changerequest_t *attr_cr;
     tmp = (stun_attr_t *) malloc(sizeof(stun_attr_t));
