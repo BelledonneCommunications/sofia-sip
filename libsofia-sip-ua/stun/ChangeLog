@@ -1,3 +1,11 @@
+2006-01-11  Martti Mela  <martti.mela@nokia.com>
+
+	* stun.c: Fixed bug in timing problem in get_lifetime. Added
+	stun_message_length() and stun_handle_process_message() for
+	glueing into TPORT.
+
+	* stunc.c: Removed unnecessary su_root_break()s.
+	
 2006-01-10  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.c: First working version of get_lifetime functionality. All

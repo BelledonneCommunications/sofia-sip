@@ -52,6 +52,9 @@ typedef struct stunc_s stunc_t;
 
 char const *name = "stunc";
 
+/* Our UDP socket */
+su_socket_t s;
+
 void usage(int exitcode)
 {
   fprintf(stderr, "usage: %s server use_msgint\n", name);
@@ -78,7 +81,12 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 
   switch (event) {
   case stun_tls_done:
-    su_root_break(stun_handle_root(sh));
+  case stun_tls_connection_failed:
+    SU_DEBUG_0(("%s: TLS query done, start binding process.\n", __func__));
+    if (stun_handle_bind(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
+      su_root_break(stun_handle_root(sh));
+    }
     break;
 
   case stun_discovery_done:
@@ -114,7 +122,6 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
   break;
 
   case stun_bind_error:
-  case stun_tls_connection_failed:
   case stun_error:
     su_root_break(stun_handle_root(sh));
 
@@ -129,11 +136,10 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 
 int main(int argc, char *argv[])
 {
-  int s;
   int msg_integrity;
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
-  stun_handle_t *se;
+  stun_handle_t *sh;
   
 
   if (argc != 3)
@@ -142,41 +148,42 @@ int main(int argc, char *argv[])
   msg_integrity = atoi(argv[2]);
 
   /* Running this test requires a local STUN server on default port */
-  se = stun_handle_create(stunc,
+  sh = stun_handle_create(stunc,
 			  root,
 			  stunc_callback,
 			  STUNTAG_SERVER(argv[1]), 
 			  STUNTAG_INTEGRITY(msg_integrity),
 			   TAG_NULL()); 
 
-  if (!se) {
+  if (!sh) {
     SU_DEBUG_0(("%s: %s failed\n", __func__, "stun_handle_tcreate()"));
     return -1;
   }
 
-  if (msg_integrity == 1 && stun_handle_request_shared_secret(se) < 0) {
-    SU_DEBUG_3(("%s: %s failed\n", __func__, "stun_connect_start()"));
-    return -1;
-  }
- else if (msg_integrity == 1)
-   su_root_run(root);
-
   s = su_socket(AF_INET, SOCK_DGRAM, 0); 
-  
   if (s == -1) {
     SU_DEBUG_0(("%s: %s  failed: %s\n", __func__, "stun_socket_create()", su_gli_strerror(errno)));
     return -1;
   }
 
-  
-  if (stun_handle_bind(se, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+  if (msg_integrity == 1) {
+    if (stun_handle_request_shared_secret(sh) < 0) {
+      SU_DEBUG_3(("%s: %s failed\n", __func__, "stun_handle_request_shared_secret()"));
+      return -1;
+    }
+    su_root_run(root);
+    stun_handle_destroy(sh);
+    return 0;
+  }
+
+  /* If no TSL query, start bind here */
+  if (stun_handle_bind(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
     SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
     return -1;
   }
-
   su_root_run(root);
 
-  stun_handle_destroy(se);
+  stun_handle_destroy(sh);
 
   return 0;
 }
