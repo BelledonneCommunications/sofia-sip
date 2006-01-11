@@ -114,7 +114,7 @@ typedef enum stun_state_e {
 
 
 typedef void (*stun_event_f)(stun_magic_t *magic,
-			     stun_handle_t *se,
+			     stun_handle_t *sh,
 			     stun_request_t *req,
 			     stun_discovery_t *sd,
 			     stun_action_t action,
@@ -122,14 +122,14 @@ typedef void (*stun_event_f)(stun_magic_t *magic,
 
 /** Callback invoked by stun handle when it has a message to send. */
 typedef int (*stun_send_callback)(stun_magic_t *magic,
-				  stun_handle_t *se,
+				  stun_handle_t *sh,
 				  int socket,
 				  void *data,
 				  unsigned len,
 				  int only_a_keepalive);
 
 /* Return the associated socket */
-int stun_handle_get_bind_socket(stun_handle_t *se);
+int stun_handle_get_bind_socket(stun_handle_t *sh);
 
 char const *stun_str_state(stun_state_t state);
 
@@ -141,19 +141,19 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  stun_event_f cb,
 				  tag_type_t tag, tag_value_t value, ...); 
 
-void stun_handle_destroy(stun_handle_t *);
+void stun_handle_destroy(stun_handle_t *sh);
 
-su_root_t *stun_handle_root(stun_handle_t *self);
+su_root_t *stun_handle_root(stun_handle_t *sh);
 
-int stun_handle_request_shared_secret(stun_handle_t *se);
+int stun_handle_request_shared_secret(stun_handle_t *sh);
 
 /** Bind a socket using STUN.  */
-int stun_handle_bind(stun_handle_t *se, 
+int stun_handle_bind(stun_handle_t *sh, 
 		     /* su_localinfo_t *my_addr, */
 		     tag_type_t tag, tag_value_t value,
 		     ...);
 
-int stun_handle_get_nattype(stun_handle_t *se,
+int stun_handle_get_nattype(stun_handle_t *sh,
 			    tag_type_t tag, tag_value_t value,
 			    ...);
 
@@ -166,7 +166,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 int stun_lifetime(stun_discovery_t *sd);
 
 /* other functions */
-int stun_handle_set_uname_pwd(stun_handle_t *se,
+int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
 			      int len_uname, 
 			      const char *pwd,
@@ -178,7 +178,7 @@ su_localinfo_t *stun_request_get_localinfo(stun_request_t *req);
 int stun_message_length(void *data, int len, int end_of_message);
 
 /** Process incoming message */
-int stun_handle_process_message(stun_handle_t *se, void *data, int len);
+int stun_handle_process_message(stun_handle_t *sh, void *data, int len);
 
 SOFIA_END_DECLS
 

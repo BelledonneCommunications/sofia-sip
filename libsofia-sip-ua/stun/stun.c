@@ -109,8 +109,6 @@ struct stun_discovery_s {
 
   /* Life time related */
 
-  int              sd_from_y;
-
   int              sd_lt_cur;
   int              sd_lt;
   int              sd_lt_max;
@@ -132,6 +130,9 @@ struct stun_request_s {
 #if 0
   stun_action_t     sr_action;          /**< Request type for protocol engine */
 #endif
+
+
+  int               sr_from_y;
   int               sr_request_mask;    /**< Mask consisting of chg_ip and chg_port */
   stun_discovery_t *sr_discovery;
 };
@@ -239,33 +240,23 @@ int stun_lifetime(stun_discovery_t *sd)
 char const stun_version[] = 
  "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
 
-static
+int do_action(stun_handle_t *sh, stun_msg_t *binding_response);
 int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
-
-static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
-					       stun_action_t action);
-static int stun_discovery_destroy(stun_discovery_t *sd);
-
-static
+stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
+					stun_action_t action);
+int stun_discovery_destroy(stun_discovery_t *sd);
 int action_bind(stun_request_t *req, stun_msg_t *binding_response);
-static
 int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response);
-static
 int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
 
-static
 stun_request_t *stun_request_create(stun_discovery_t *sd);
-static
 int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
-static
 int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self);
-static
 void stun_sendto_timer_cb(su_root_magic_t *magic, 
 			  su_timer_t *t,
 			  su_timer_arg_t *arg);
 
-static
 void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
 			       su_timer_t *t,
 			       su_timer_arg_t *arg);
@@ -1027,9 +1018,9 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 }
 
 
-static void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
-				      su_timer_t *t,
-				      su_timer_arg_t *arg)
+void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
+			       su_timer_t *t,
+			       su_timer_arg_t *arg)
 {
   stun_handle_t *sh = arg;
 
@@ -1217,13 +1208,10 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   int retval = -1, s, err = -1, dgram_len;
   char ipaddr[SU_ADDRSIZE + 2];
   stun_msg_t binding_response;
-  stun_request_t *req;
   unsigned char dgram[512] = { 0 };
   su_sockaddr_t recv;
   socklen_t recv_len;
   int events = su_wait_events(w, self->sh_tls_socket);
-  stun_action_t action = stun_action_no_action;
-  uint16_t *id;
 
   SU_DEBUG_7(("%s(%p): events%s%s%s\n", __func__, self,
 	      events & SU_WAIT_IN ? " IN" : "",
@@ -1264,9 +1252,9 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   binding_response.enc_buf.size = dgram_len;
   memcpy(binding_response.enc_buf.data, dgram, dgram_len);
 
-  inet_ntop(recv.su_family, SU_ADDR(&recv), ipaddr, sizeof(ipaddr));
+  
   SU_DEBUG_3(("%s: response from server %s:%u\n", __func__,
-	      ipaddr,
+	      inet_ntop(recv.su_family, SU_ADDR(&recv), ipaddr, sizeof(ipaddr)),
 	      ntohs(recv.su_port)));
 
   debug_print(&binding_response.enc_buf);      
@@ -1281,36 +1269,53 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   /* Based on the decoded payload, find the corresponding request
    * (based on TID). */
 
-  id = binding_response.stun_hdr.tran_id;
+  do_action(self, &binding_response);
 
-  req = find_request(self, id);
+  return 0;
+}
+
+/** Choose the right state machine */
+int do_action(stun_handle_t *sh, stun_msg_t *binding_response)
+{
+  stun_request_t *req = NULL;
+  stun_action_t action = stun_action_no_action;
+  uint16_t *id;
+
+
+  if (!sh)
+    return errno = EFAULT, -1;
+
+  id = binding_response->stun_hdr.tran_id;
+  req = find_request(sh, id);
   action = get_action(req);
 
   /* Based on the action, use different state machines */
   switch (action) {
   case stun_action_binding_request:
-    action_bind(req, &binding_response);
+    action_bind(req, binding_response);
     break;
 
   case stun_action_get_nattype:
-    action_determine_nattype(req, &binding_response);
+    action_determine_nattype(req, binding_response);
     break;
 
   case stun_action_get_lifetime:
-    process_get_lifetime(req, &binding_response);
+    process_get_lifetime(req, binding_response);
     break;
 
   case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
     req->sr_state = stun_request_not_found;
-    self->sh_callback(self->sh_context, self, req, NULL, stun_action_no_action, req->sr_state);
+    sh->sh_callback(sh->sh_context, sh, req, NULL,
+		    stun_action_no_action, req->sr_state);
     req->sr_state = stun_dispose_me;
     break;
 
   default:
     SU_DEBUG_3(("%s: requested action not implemented.\n", __func__));
     req->sr_state = stun_error;
-    self->sh_callback(self->sh_context, self, req, NULL, stun_action_no_action, req->sr_state);
+    sh->sh_callback(sh->sh_context, sh, req, NULL,
+		    stun_action_no_action, req->sr_state);
     req->sr_state = stun_dispose_me;
     break;
   }
@@ -1319,7 +1324,6 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 }
 
 
-static
 int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
 {
   int retval = -1, clnt_addr_len;
@@ -1428,11 +1432,11 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   }
 
   /* We come here as a response to a request send from the sockfdy */
-  if (sd->sd_from_y == 1) {
-    sd->sd_from_y = 0;
+  if (req->sr_from_y == 1) {
     req->sr_state = stun_dispose_me, req = NULL;
 
     new = stun_request_create(sd);
+    new->sr_from_y = 0;
     if (stun_make_binding_req(sh, new, new->sr_msg, 0, 0) < 0) 
       return -1;
 
@@ -1443,7 +1447,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
     }
     return 0;
   }
-  else if (sd->sd_from_y == 0) {
+  else if (req->sr_from_y == 0) {
     if (req->sr_state != stun_discovery_timeout) {
       /* mapping with X still valid */
       sd->sd_lt_cur = sd->sd_lt;
@@ -1474,7 +1478,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   new = stun_request_create(sd);
   /* Use sockfdy */
   new->sr_socket = sockfdy;
-  sd->sd_from_y = 1;
+  new->sr_from_y = 1;
 
   if (stun_make_binding_req(sh, new, new->sr_msg, 0, 0) < 0) 
     return -1;
@@ -1652,9 +1656,9 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 }
 
 
-static void stun_sendto_timer_cb(su_root_magic_t *magic, 
-				 su_timer_t *t,
-				 su_timer_arg_t *arg)
+void stun_sendto_timer_cb(su_root_magic_t *magic, 
+			  su_timer_t *t,
+			  su_timer_arg_t *arg)
 {
   stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
@@ -2062,7 +2066,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 	      (unsigned) ntohs(y_addr.su_port)));
 
   sd->sd_socket = sockfdy;
-  sd->sd_from_y = -1;
+  req->sr_from_y = -1;
 
   SU_DEBUG_1(("%s: determining binding life time, this may take a while.\n", __func__));
 
@@ -2098,6 +2102,57 @@ int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr)
     tmp->next = req->stun_attr;
   }
   req->stun_attr = tmp;
+
+  return 0;
+}
+
+
+/** Determine length of STUN message (0 if not stun). */
+int stun_message_length(void *data, int len, int end_of_message)
+{
+  unsigned char *p;
+  uint16_t tmp16, msg_type;
+  /* parse header first */
+  p = data;
+  memcpy(&tmp16, p, 2);
+  msg_type = ntohs(tmp16);
+
+  if (msg_type == BINDING_RESPONSE ||
+      msg_type == BINDING_ERROR_RESPONSE) {
+    p+=2;
+    memcpy(&tmp16, p, 2);
+
+    /* return message length */
+    return ntohs(tmp16);
+  }
+  else
+    return 0;
+}
+
+/** Process incoming message */
+int stun_handle_process_message(stun_handle_t *sh, void *data, int len)
+{
+  stun_msg_t binding_response;
+
+  SU_DEBUG_5(("%s: entering\n", __func__));
+
+  /* Message received. */
+  binding_response.enc_buf.data = (unsigned char *) malloc(len);
+  binding_response.enc_buf.size = len;
+  memcpy(binding_response.enc_buf.data, data, len);
+
+  debug_print(&binding_response.enc_buf);      
+
+  /* Parse here the incoming message. */
+  if (stun_parse_message(&binding_response) < 0) {
+    stun_free_message(&binding_response);
+    SU_DEBUG_5(("%s: Error parsing response.\n", __func__));
+    return errno = EFAULT, -1;
+  }
+
+  /* Based on the decoded payload, find the corresponding request
+   * (based on TID). */
+  do_action(sh, &binding_response);
 
   return 0;
 }
