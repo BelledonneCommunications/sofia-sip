@@ -1227,7 +1227,7 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   su_root_deregister(sh->sh_root, sd->sd_index);
   
   sd->sd_state = stun_tls_connection_timeout;
-  sh->sh_callback(sh->sh_context, sh, req, sd, sd->sd_action, sh->sh_state);
+  sh->sh_callback(sh->sh_context, sh, req, sd, sd->sd_action, sd->sd_state);
   req->sr_state = stun_dispose_me;
 
   return;
