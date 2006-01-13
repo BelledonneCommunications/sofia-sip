@@ -82,6 +82,7 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
   switch (event) {
   case stun_tls_done:
   case stun_tls_connection_failed:
+  case stun_tls_connection_timeout:
     SU_DEBUG_0(("%s: TLS query done, start binding process.\n", __func__));
     if (stun_handle_bind(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));

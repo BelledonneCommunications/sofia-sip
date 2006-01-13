@@ -175,11 +175,6 @@ struct stun_handle_s
 
   int             sh_use_msgint;    /**< use message integrity? */
   int             sh_state;         /**< Progress states */
-
-#if 0
-  int             sh_bind_socket;
-  int             ss_root_index;    /**< object index of su_root_register() */
-#endif
 };
 
 
@@ -246,6 +241,7 @@ char const stun_version[] =
  "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
 
 int do_action(stun_handle_t *sh, stun_msg_t *binding_response);
+int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self);
 int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
 stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
 					stun_action_t action);
@@ -395,6 +391,99 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 
   return stun;
 }
+
+
+/** Shared secret request/response processing */
+int stun_handle_request_shared_secret(stun_handle_t *sh)
+{
+  int events = -1;
+  int one, err = -1;
+  su_wait_t wait[1] = { SU_WAIT_INIT };
+  su_socket_t s = SOCKET_ERROR;
+  int family;
+  su_addrinfo_t *ai = NULL;
+  su_timer_t *connect_timer = NULL;
+
+  assert(sh);
+  ai = &sh->sh_pri_info;
+
+  if (sh->sh_use_msgint == 1) {
+    SU_DEBUG_3(("Contacting Server to obtain shared secret. " \
+		"Please wait.\n"));
+  }
+  else {
+    SU_DEBUG_3(("No message integrity enabled.\n"));
+    return errno = EFAULT, -1;
+  }
+
+  /* open tcp connection to server */
+  s = su_socket(family = AF_INET, SOCK_STREAM, 0);
+
+  if (s == -1) {
+    STUN_ERROR(errno, socket);
+    return -1;
+  }
+
+  /* asynchronous connect() */
+  if (su_setblocking(s, 0) < 0) {
+    STUN_ERROR(errno, su_setblocking);
+    return -1;
+  }
+  if (setsockopt(s, SOL_TCP, TCP_NODELAY,
+		 (void *)&one, sizeof one) == -1) {
+    STUN_ERROR(errno, setsockopt);
+    return -1;
+  }
+  SU_DEBUG_7(("%s: %s: %s\n", __func__, "setsockopt",
+	      su_strerror(errno)));
+
+  /* Do an asynchronous connect(). Three error codes are ok,
+   * others cause return -1. */
+  if (connect(s, (struct sockaddr *) &sh->sh_pri_addr, 
+	      ai->ai_addrlen) == SOCKET_ERROR) {
+    err = su_errno();
+    if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK) {
+      STUN_ERROR(err, connect);
+      return -1;
+    }
+  }
+
+  SU_DEBUG_9(("%s: %s: %s\n", __func__, "connect",
+	      su_strerror(err)));
+  
+
+  sd = stun_discovery_create(sh, stun_action_tls_query);
+  sd->sd_socket = s;
+  req = stun_request_create(sd);
+
+  sh->sh_tls_socket = s;
+
+  if (su_wait_create(wait, s, events) == -1)
+    STUN_ERROR(errno, su_wait_create);
+
+  events = SU_WAIT_CONNECT | SU_WAIT_ERR;
+  su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events);
+
+  if ((sh->sh_root_index =
+       su_root_register(sh->sh_root, wait, stun_tls_callback, sh, 0)) == -1) {
+    STUN_ERROR(errno, su_root_register);
+    return -1;
+  }
+
+  sh->sh_state = stun_tls_connecting;
+
+  /* Create and start timer for connect() timeout */
+  SU_DEBUG_3(("%s: creating timeout timer for connect()\n", __func__));
+
+  connect_timer = su_timer_create(su_root_task(sh->sh_root),
+				  STUN_TLS_CONNECT_TIMEOUT);
+
+  sh->sh_connect_timer = connect_timer;
+  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sh);
+
+  return 0;
+}
+
 
 stun_request_t *stun_request_create(stun_discovery_t *sd)
 {
@@ -850,8 +939,6 @@ int stun_handle_get_nattype(stun_handle_t *sh,
  * Internal functions
  *******************************************************************/
 
-static 
-
 int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 {
   stun_msg_t *req, *resp;
@@ -1105,92 +1192,6 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   return;
 }
 
-
-/** Shared secret request/response processing */
-int stun_handle_request_shared_secret(stun_handle_t *sh)
-{
-  int events = -1;
-  int one, err = -1;
-  su_wait_t wait[1] = { SU_WAIT_INIT };
-  su_socket_t s = SOCKET_ERROR;
-  int family;
-  su_addrinfo_t *ai = NULL;
-  su_timer_t *connect_timer = NULL;
-
-  assert(sh);
-  ai = &sh->sh_pri_info;
-
-  if (sh->sh_use_msgint == 1) {
-    SU_DEBUG_3(("Contacting Server to obtain shared secret. " \
-		"Please wait.\n"));
-  }
-  else {
-    SU_DEBUG_3(("No message integrity enabled.\n"));
-    return errno = EFAULT, -1;
-  }
-
-  /* open tcp connection to server */
-  s = su_socket(family = AF_INET, SOCK_STREAM, 0);
-
-  if (s == -1) {
-    STUN_ERROR(errno, socket);
-    return -1;
-  }
-
-  /* asynchronous connect() */
-  if (su_setblocking(s, 0) < 0) {
-    STUN_ERROR(errno, su_setblocking);
-    return -1;
-  }
-  if (setsockopt(s, SOL_TCP, TCP_NODELAY,
-		 (void *)&one, sizeof one) == -1) {
-    STUN_ERROR(errno, setsockopt);
-    return -1;
-  }
-  SU_DEBUG_7(("%s: %s: %s\n", __func__, "setsockopt",
-	      su_strerror(errno)));
-
-  /* Do an asynchronous connect(). Three error codes are ok,
-   * others cause return -1. */
-  if (connect(s, (struct sockaddr *) &sh->sh_pri_addr, 
-	      ai->ai_addrlen) == SOCKET_ERROR) {
-    err = su_errno();
-    if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK) {
-      STUN_ERROR(err, connect);
-      return -1;
-    }
-  }
-
-  SU_DEBUG_9(("%s: %s: %s\n", __func__, "connect",
-	      su_strerror(err)));
-  
-  sh->sh_tls_socket = s;
-
-  if (su_wait_create(wait, s, events) == -1)
-    STUN_ERROR(errno, su_wait_create);
-
-  events = SU_WAIT_CONNECT | SU_WAIT_ERR;
-  su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events);
-
-  if ((sh->sh_root_index =
-       su_root_register(sh->sh_root, wait, stun_tls_callback, sh, 0)) == -1) {
-    STUN_ERROR(errno, su_root_register);
-    return -1;
-  }
-
-  sh->sh_state = stun_tls_connecting;
-
-  /* Create and start timer for connect() timeout */
-  SU_DEBUG_3(("%s: creating timeout timer for connect()\n", __func__));
-
-  connect_timer = su_timer_create(su_root_task(sh->sh_root),
-				  STUN_TLS_CONNECT_TIMEOUT);
-
-  sh->sh_connect_timer = connect_timer;
-  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sh);
-
-  return 0;
-}
 
 /** Compose a STUN message of the format defined by stun_msg_t
  *  result encoded in enc_buf ready for sending as well.
