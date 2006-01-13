@@ -108,6 +108,7 @@ typedef enum stun_state_e {
   stun_bind_error,
   stun_bind_timeout,
 
+  stun_request_timeout,
   stun_discovery_timeout,
 
 } stun_state_t;
@@ -140,6 +141,10 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
 				  tag_type_t tag, tag_value_t value, ...); 
+
+/** Unregister socket from STUN handle event loop */
+int stun_handle_release(stun_handle_t *sh, su_socket_t s);
+
 
 void stun_handle_destroy(stun_handle_t *sh);
 

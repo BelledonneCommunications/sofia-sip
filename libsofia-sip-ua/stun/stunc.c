@@ -109,12 +109,12 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 		  ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
     /* su_root_break(stun_handle_root(sh)); */
 
-    if (stun_handle_get_nattype(sh, /* STUNTAG_SOCKET(s), */ TAG_NULL()) < 0) {
+    if (stun_handle_get_nattype(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
       su_root_break(stun_handle_root(sh));
     }
 
-    if (stun_handle_get_lifetime(sh, /* STUNTAG_SOCKET(s), */ TAG_NULL()) < 0) {
+    if (stun_handle_get_lifetime(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_lifetime()"));
       su_root_break(stun_handle_root(sh));
     }
@@ -123,7 +123,7 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 
   case stun_bind_error:
   case stun_error:
-    su_root_break(stun_handle_root(sh));
+/*     su_root_break(stun_handle_root(sh)); */
 
   case stun_bind_timeout:
   default:
