@@ -176,8 +176,10 @@ struct stun_handle_s
   int             sh_use_msgint;    /**< use message integrity? */
   int             sh_state;         /**< Progress states */
 
+#if 0
   int             sh_bind_socket;
   int             ss_root_index;    /**< object index of su_root_register() */
+#endif
 };
 
 
@@ -264,6 +266,8 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 			       su_timer_t *t,
 			       su_timer_arg_t *arg);
 
+#if 0
+/* not needed.(?) User is responsible for the sockets */
 /**
  *  Return the socket associated with the stun_socket_t structure
  */
@@ -272,7 +276,7 @@ su_socket_t stun_handle_get_bind_socket(stun_handle_t *sh)
   assert(sh);
   return sh->sh_bind_socket;
 }
-
+#endif
 
 /**
  * Return su_root_t assigned to stun_handle_t.
@@ -458,15 +462,22 @@ void stun_request_destroy(stun_request_t *req)
 
 
 /** Destroy a STUN client */ 
-void stun_handle_destroy(stun_handle_t *self)
+void stun_handle_destroy(stun_handle_t *sh)
 { 
-  if (self->sh_bind_socket > 0)
-    su_close(self->sh_bind_socket);
+  stun_discovery_t *sd;
 
-  if (self->sh_tls_socket > 0)
-    su_close(self->sh_tls_socket);
+  if (sh->sh_tls_socket > 0)
+    su_close(sh->sh_tls_socket);
 
-  su_home_zap(self->sh_home);
+  /* There can be several discoveries using the same socket. It is
+     still enough to deregister the socket in first of them */
+  for (sd = sh->sh_discoveries; sd; sd = sd->sd_next) {
+    /* Index has same value as sockfd, right? */
+    su_root_deregister(sh->sh_root, sd->sd_socket);
+    stun_discovery_destroy(sd);
+  }
+
+  su_home_zap(sh->sh_home);
 }
 
 
@@ -608,8 +619,6 @@ int stun_handle_bind(stun_handle_t *sh,
   if (assign_socket(sh, s) < 0)
     return -1;
 
-  sh->sh_bind_socket = s;
-
   bind_len = sizeof bind_addr;
 
   if (getsockname(s, (struct sockaddr *) &bind_addr, &bind_len) != 0) {
@@ -711,6 +720,20 @@ stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
 
 int stun_discovery_destroy(stun_discovery_t *sd)
 {
+  stun_handle_t *sh;
+
+  if (!sd)
+    return errno = EFAULT, -1;
+
+  sh = sd->sd_handle;
+
+  /* if we are in the queue*/
+  if (x_is_inserted(sd, sd))
+    x_remove(sd, sd);
+  /* if we were the only one */
+  else if (!sd->sd_next)
+    sh->sh_discoveries = NULL;
+
   free(sd);
   return 0;
 }
@@ -1147,7 +1170,7 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
     STUN_ERROR(errno, su_wait_create);
 
   events = SU_WAIT_CONNECT | SU_WAIT_ERR;
-  su_root_eventmask(sh->sh_root, sh->ss_root_index, s, events);
+  su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events);
 
   if ((sh->sh_root_index =
        su_root_register(sh->sh_root, wait, stun_tls_callback, sh, 0)) == -1) {
@@ -1260,8 +1283,8 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
 	      events & SU_WAIT_ERR ? " ERR" : ""));
 
   if (!(events & SU_WAIT_IN || events & SU_WAIT_OUT)) {
-    su_wait_destroy(w);
-    su_root_deregister(self->sh_root, self->ss_root_index);
+    /* su_wait_destroy(w); */
+    /* su_root_deregister(self->sh_root, self->ss_root_index); */
     /* self->sh_state = stun_bind_error; */
     self->sh_callback(self->sh_context, self, NULL, NULL, 
 		      stun_action_no_action, stun_bind_error);
@@ -1563,9 +1586,9 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
   su_sockaddr_t local;
   socklen_t locallen;
   stun_handle_t *sh = req->sr_handle;
-  su_socket_t s = sh->sh_bind_socket;
   su_localinfo_t *li = NULL;
   stun_discovery_t *sd = req->sr_discovery;
+  su_socket_t s = sd->sd_socket;
   stun_action_t action = get_action(req);
   int err;
 
@@ -2246,17 +2269,25 @@ int stun_handle_process_message(stun_handle_t *sh, void *data, int len)
 /** Unregister socket from STUN handle event loop */
 int stun_handle_release(stun_handle_t *sh, su_socket_t s)
 {
+  stun_discovery_t *sd;
+
   assert (sh);
 
   if (s < 0)
+    return errno = EFAULT, -1;
+
+  /* There can be several discoveries using the same socket. It is
+     still enough to deregister the socket in first of them */
+  for (sd = sh->sh_discoveries; sd; sd = sd->sd_next) {
+    if (sd->sd_socket != s)
+      continue;
+
+    /* Index has same value as sockfd, right? */
+    su_root_deregister(sh->sh_root, sd->sd_socket);
     return 0;
-  
-  if (sh->sh_bind_socket == s)
-    su_root_deregister(sh->sh_root, sh->sh_root_index);
-  else {
-    SU_DEBUG_3(("%s: socket given is not associated with STUN \n", __func__));
-    return -1;
   }
 
-  return 0;
+  /* Oops, user passed wrong socket */
+  SU_DEBUG_3(("%s: socket given is not associated with STUN \n", __func__));
+  return -1;
 }

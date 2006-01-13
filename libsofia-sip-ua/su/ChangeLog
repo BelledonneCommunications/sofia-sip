@@ -1,3 +1,7 @@
+2006-01-13  Martti Mela  <martti.mela@nokia.com>
+
+  * su_wait.h: Added su_wait_socket(). (it returns associated fd)
+
 2005-10-12  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added tl_llist(), tl_vllist(). Better semantics for tl_next().

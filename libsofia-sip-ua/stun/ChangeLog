@@ -1,3 +1,11 @@
+2006-01-13  Martti Mela  <martti.mela@nokia.com>
+
+	* stun.c: actions are now very separate from each other. Bug fixes.
+
+	* stun.h: added some new error states
+
+	* stunc.c: passing STUN_SOCKET() for each of the actions.
+
 2006-01-11  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.c: Fixed bug in timing problem in get_lifetime. Added

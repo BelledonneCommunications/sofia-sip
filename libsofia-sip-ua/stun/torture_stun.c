@@ -58,8 +58,10 @@ typedef struct torture_s torture_t;
 
 
 struct torture_s {
-  int kakka;
+  int torttu;
 };
+
+int s = -1;
 
 char const *name = "torture_stun";
 
@@ -177,14 +179,13 @@ void torture_callback(torture_t *t,
 		      stun_state_t event)
 {
   char ipaddr[48];
-  int s = -1;
   su_localinfo_t *li;
 
   SU_DEBUG_3(("%s: called by event \"%s\"\n", __func__, stun_str_state(event)));
 
   if (event == stun_bind_done) {
     li = stun_request_get_localinfo(req);
-    s = stun_handle_get_bind_socket(sh);
+    /* s = stun_handle_get_bind_socket(sh); */
 
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
     SU_DEBUG_3(("%s: local address NATed as %s:%u\n", __func__,
@@ -235,7 +236,7 @@ int torture_test_init(su_root_t *root, char *server)
 int torture_test_stun_bind(char *localaddr)
 {
   int result;
-  int s, lifetime;
+  int lifetime;
 
   BEGIN();
 
@@ -269,7 +270,7 @@ int torture_test_stun_bind(char *localaddr)
 int torture_test_get_lifetime(char *localaddr)
 {
   int result, lifetime;
-  int s, addrlen;
+  int addrlen;
   su_localinfo_t addr;
   su_localinfo_t *my_addr;
 
@@ -313,7 +314,7 @@ int torture_test_get_lifetime(char *localaddr)
 int torture_test_get_nattype(char *localaddr)
 {
   int result;
-  int s, addrlen;
+  int addrlen;
   su_sockaddr_t addr;
   struct sockaddr_in *my_addr;
 
@@ -369,7 +370,7 @@ int torture_test_get_nattype(char *localaddr)
 int test_async_stun(void)
 {
   int result;
-  int s, lifetime;
+  int lifetime;
   socklen_t addrlen, locallen;
   su_sockaddr_t addr, local;
   stun_socket_t *ss;
