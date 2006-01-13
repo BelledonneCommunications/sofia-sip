@@ -39,6 +39,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+
 #ifdef WIN32
 #include <winsock.h>
 #else
@@ -47,6 +48,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
+
 /* avoid krb5-related build failures */
 #define OPENSSL_NO_KRB5
 #include <openssl/sha.h>

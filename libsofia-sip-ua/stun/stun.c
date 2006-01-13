@@ -106,6 +106,8 @@ struct stun_discovery_s {
   su_socket_t      sd_socket;        /**< target socket */
   su_socket_t      sd_socket2;       /**< Alternative socket */
 
+  int              sd_index;         /**< root_register index */
+
   /* NAT type related */
   stun_nattype_t   sd_nattype;       /**< Determined NAT type */
   int              sd_first;         /**< These are the requests  */
@@ -143,7 +145,10 @@ struct stun_handle_s
   su_home_t       sh_home[1];
   su_root_t      *sh_root;          /**< event loop */
   int             sh_root_index;    /**< object index of su_root_register() */
+
+#if 0
   su_timer_t     *sh_connect_timer; /**< timer for TLS connection */
+#endif
 
   stun_request_t *sh_requests; /**< outgoing requests list */
   stun_discovery_t *sh_discoveries; /**< Actions list */
@@ -403,6 +408,8 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   int family;
   su_addrinfo_t *ai = NULL;
   su_timer_t *connect_timer = NULL;
+  stun_discovery_t *sd;
+  stun_request_t *req;
 
   assert(sh);
   ai = &sh->sh_pri_info;
@@ -451,26 +458,33 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   SU_DEBUG_9(("%s: %s: %s\n", __func__, "connect",
 	      su_strerror(err)));
   
-
   sd = stun_discovery_create(sh, stun_action_tls_query);
   sd->sd_socket = s;
   req = stun_request_create(sd);
 
   sh->sh_tls_socket = s;
 
+#if 1
   if (su_wait_create(wait, s, events) == -1)
     STUN_ERROR(errno, su_wait_create);
 
   events = SU_WAIT_CONNECT | SU_WAIT_ERR;
   su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events);
+#else
 
-  if ((sh->sh_root_index =
+  events = SU_WAIT_CONNECT | SU_WAIT_ERR;
+  if (su_wait_create(wait, s, events) == -1)
+    STUN_ERROR(errno, su_wait_create);
+
+#endif
+
+  if ((sd->sd_index =
        su_root_register(sh->sh_root, wait, stun_tls_callback, sh, 0)) == -1) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
 
-  sh->sh_state = stun_tls_connecting;
+  sd->sd_state = stun_tls_connecting;
 
   /* Create and start timer for connect() timeout */
   SU_DEBUG_3(("%s: creating timeout timer for connect()\n", __func__));
@@ -478,8 +492,8 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   connect_timer = su_timer_create(su_root_task(sh->sh_root),
 				  STUN_TLS_CONNECT_TIMEOUT);
 
-  sh->sh_connect_timer = connect_timer;
-  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sh);
+  /* sd->sd_connect_timer = connect_timer; */
+  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) req);
 
   return 0;
 }
@@ -553,17 +567,23 @@ void stun_request_destroy(stun_request_t *req)
 /** Destroy a STUN client */ 
 void stun_handle_destroy(stun_handle_t *sh)
 { 
-  stun_discovery_t *sd;
+  stun_discovery_t *sd, *kill;
 
+#if 0
   if (sh->sh_tls_socket > 0)
     su_close(sh->sh_tls_socket);
+#endif
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
   for (sd = sh->sh_discoveries; sd; sd = sd->sd_next) {
     /* Index has same value as sockfd, right? */
     su_root_deregister(sh->sh_root, sd->sd_socket);
-    stun_discovery_destroy(sd);
+
+    if (sd->sd_action == stun_action_tls_query)
+      su_close(sd->sd_socket);
+
+    stun_discovery_destroy(kill);
   }
 
   su_home_zap(sh->sh_home);
@@ -823,6 +843,9 @@ int stun_discovery_destroy(stun_discovery_t *sd)
   else if (!sd->sd_next)
     sh->sh_discoveries = NULL;
 
+  sd->sd_prev = NULL;
+  sd->sd_next = NULL;
+
   free(sd);
   return 0;
 }
@@ -941,15 +964,30 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 
 int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 {
-  stun_msg_t *req, *resp;
+  stun_msg_t *msg_req, *resp;
   int z, err;
-  int events = su_wait_events(w, self->sh_tls_socket);
   SSL_CTX* ctx;
   SSL *ssl;
   X509* server_cert;
   unsigned char buf[512];
   stun_attr_t *password, *username;
   int state;
+  su_socket_t s = su_wait_socket(w);
+  int events;
+  stun_discovery_t *sd;
+  stun_request_t *req;
+
+  for (sd = self->sh_discoveries; sd; sd = sd->sd_next) {
+    if (sd->sd_socket == s)
+      break;
+  }
+
+  if (!sd) {
+    /* is not possible (?) */
+    return 0;
+  }
+
+  events = su_wait_events(w, sd->sd_index);
 
   SU_DEBUG_7(("%s(%p): events%s%s%s%s\n", __func__, self,
 	      events & SU_WAIT_CONNECT ? " CONNECTED" : "",
@@ -959,32 +997,32 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
   if (events & SU_WAIT_ERR) {
     su_wait_destroy(w);
-    su_root_deregister(self->sh_root, self->sh_root_index);
+    su_root_deregister(self->sh_root, sd->sd_index);
 
     /* Destroy the timeout timer */
-    su_timer_destroy(self->sh_connect_timer);
+    /* su_timer_destroy(sd->sd_connect_timer); */
 
     SU_DEBUG_3(("%s: shared secret not obtained from server. "	\
 		"Proceed without username/password.\n", __func__));
-    self->sh_state = stun_tls_connection_failed;
-    self->sh_callback(self->sh_context, self, NULL, NULL,
-		      stun_action_no_action, self->sh_state);
+    sd->sd_state = stun_tls_connection_failed;
+    self->sh_callback(self->sh_context, self, NULL, sd,
+		      sd->sd_action, sd->sd_state);
     return 0;
   }
 
   /* Can be NULL, too */
   ssl  = self->sh_ssl;
-  req  = &self->sh_tls_request;
+  msg_req  = &self->sh_tls_request;
   resp = &self->sh_tls_response;
 
-  state = self->sh_state;
+  state = sd->sd_state;
   switch (state) {
   case stun_tls_connecting:
 
     /* compose shared secret request */
-    if (stun_make_sharedsecret_req(req) != 0) {
+    if (stun_make_sharedsecret_req(msg_req) != 0) {
       STUN_ERROR(errno, stun_make_sharedsecret_req);
-      stun_free_buffer(&req->enc_buf);
+      stun_free_buffer(&msg_req->enc_buf);
       return -1;
     }
     
@@ -996,13 +1034,13 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
     if (ctx == NULL) {
       STUN_ERROR(errno, SSL_CTX_new);
-      stun_free_buffer(&req->enc_buf);
+      stun_free_buffer(&msg_req->enc_buf);
       return -1;
     }
     
     if (SSL_CTX_set_cipher_list(ctx, "AES128-SHA") == 0) {
       STUN_ERROR(errno, SSL_CTX_set_cipher_list);
-      stun_free_buffer(&req->enc_buf);
+      stun_free_buffer(&msg_req->enc_buf);
       return -1;
     }
     
@@ -1012,7 +1050,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
     if (SSL_set_fd(ssl, self->sh_tls_socket) == 0) {
       STUN_ERROR(err, connect);
-      stun_free_buffer(&req->enc_buf);
+      stun_free_buffer(&msg_req->enc_buf);
       return -1;
     }
 
@@ -1032,7 +1070,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
       return 0;
     }
     else if (z < 1) {
-      stun_free_buffer(&req->enc_buf);
+      stun_free_buffer(&msg_req->enc_buf);
       self->sh_state = stun_tls_ssl_connect_failed;
       self->sh_callback(self->sh_context, self, NULL, NULL, stun_action_no_action, self->sh_state);
       return -1;
@@ -1063,7 +1101,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     }
     X509_free(server_cert);
     
-    z = SSL_write(ssl, req->enc_buf.data, req->enc_buf.size);
+    z = SSL_write(ssl, msg_req->enc_buf.data, msg_req->enc_buf.size);
     
     if (z < 0) {
       err = SSL_get_error(ssl, z);
@@ -1071,7 +1109,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 	return 0;
       else {
 	STUN_ERROR(errno, SSL_write);
-	stun_free_buffer(&req->enc_buf);
+	stun_free_buffer(&msg_req->enc_buf);
 	return -1;
       }
     }
@@ -1085,7 +1123,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 		      self->sh_tls_socket, events);
 
     SU_DEBUG_5(("Shared Secret Request sent to server:\n"));
-    debug_print(&req->enc_buf);
+    debug_print(&msg_req->enc_buf);
 
     z = SSL_read(ssl, buf, sizeof(buf));
     if (z <= 0) {
@@ -1093,7 +1131,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
       if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
 	return 0;
       else {
-	stun_free_buffer(&req->enc_buf);
+	stun_free_buffer(&msg_req->enc_buf);
 	return -1;
       }
     }
@@ -1118,7 +1156,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     SSL_free(self->sh_ssl), ssl = NULL;
     SSL_CTX_free(self->sh_ctx), ctx = NULL;
 
-    stun_free_buffer(&req->enc_buf);
+    stun_free_buffer(&msg_req->enc_buf);
   
     /* process response */
     if (stun_parse_message(resp) < 0) {
@@ -1172,22 +1210,25 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 			       su_timer_t *t,
 			       su_timer_arg_t *arg)
 {
-  stun_handle_t *sh = arg;
+  stun_request_t *req = arg;
+  stun_handle_t *sh = req->sr_handle;
+  stun_discovery_t *sd = req->sr_discovery;
 
   SU_DEBUG_7(("%s: entering.\n", __func__));
 
-  if (sh->sh_state != stun_tls_connecting) {
-    su_destroy_timer(t);
-    SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
+  su_destroy_timer(t);
+  SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
+
+  if (sd->sd_state != stun_tls_connecting)
     return;
-  }
 
   SU_DEBUG_7(("%s: connect() timeout.\n", __func__));
 
-  su_root_deregister(sh->sh_root, sh->sh_root_index);
+  su_root_deregister(sh->sh_root, sd->sd_index);
   
-  sh->sh_state = stun_tls_connection_timeout;
-  sh->sh_callback(sh->sh_context, sh, NULL, NULL, stun_action_no_action, sh->sh_state);
+  sd->sd_state = stun_tls_connection_timeout;
+  sh->sh_callback(sh->sh_context, sh, req, sd, sd->sd_action, sh->sh_state);
+  req->sr_state = stun_dispose_me;
 
   return;
 }
@@ -1275,8 +1316,12 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   unsigned char dgram[512] = { 0 };
   su_sockaddr_t recv;
   socklen_t recv_len;
-  int events = su_wait_events(w, self->sh_tls_socket);
   su_socket_t s = su_wait_socket(w);
+#if 0
+  int events = su_wait_events(w, self->sh_tls_socket);
+#else
+  int events = su_wait_events(w, s);
+#endif
 
   SU_DEBUG_7(("%s(%p): events%s%s%s\n", __func__, self,
 	      events & SU_WAIT_IN ? " IN" : "",
@@ -1318,7 +1363,7 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   memcpy(binding_response.enc_buf.data, dgram, dgram_len);
 
   
-  SU_DEBUG_3(("%s: response from server %s:%u\n", __func__,
+  SU_DEBUG_5(("%s: response from server %s:%u\n", __func__,
 	      inet_ntop(recv.su_family, SU_ADDR(&recv), ipaddr, sizeof(ipaddr)),
 	      ntohs(recv.su_port)));
 

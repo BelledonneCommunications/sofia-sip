@@ -43,16 +43,7 @@
 #define LARGEST_ATTRIBUTE TURN_LARGEST_ATTRIBUTE
 #endif
 
-
-#ifndef SU_DEBUG
-#define SU_DEBUG 0
-#endif
-#define SU_LOG (stun_log)
-#include <su_debug.h>
-
 #include "stun_internal.h"
-#include "stun_common.h"
-
 
 const char stun_400_Bad_request[] = "Bad Request",
   stun_401_Unauthorized[] = "Unauthorized",
@@ -85,20 +76,21 @@ int stun_parse_message(stun_msg_t *msg) {
   memcpy(&tmp16, p, 2); p+=2;
   msg->stun_hdr.msg_len = ntohs(tmp16);
 
-  for(i=0; i<8; i++) {
+  for (i = 0; i < 8; i++) {
     memcpy(&tmp16, p, 2); p+=2;
     msg->stun_hdr.tran_id[i] = ntohs(tmp16);
   }
 
-  SU_DEBUG_5(("%s: Parse STUN message: Length = %d\n", __func__, msg->stun_hdr.msg_len));
+  SU_DEBUG_5(("%s: Parse STUN message: Length = %d\n", __func__,
+	      msg->stun_hdr.msg_len));
 
   /* parse attributes */
   len = msg->stun_hdr.msg_len;
   p = msg->enc_buf.data + 20;
   msg->stun_attr = NULL;
-  while(len > 0) {
+  while (len > 0) {
     i = stun_parse_attribute(msg, p);
-    if(i <= 0) {
+    if (i <= 0) {
       SU_DEBUG_3(("%s: Error parsing attribute.\n", __func__));
       return -1;
     }
@@ -120,7 +112,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   memcpy(&tmp16, p, 2);
   p+=2;
   attr->attr_type = ntohs(tmp16);
-  if(attr->attr_type > LARGEST_ATTRIBUTE && attr->attr_type < OPTIONAL_ATTRIBUTE) {
+  if (attr->attr_type > LARGEST_ATTRIBUTE && attr->attr_type < OPTIONAL_ATTRIBUTE) {
     free(attr);
     return -1;
   }
@@ -129,10 +121,10 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   p+=2;
   len = ntohs(tmp16);
 
-  SU_DEBUG_3(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
+  SU_DEBUG_5(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
 	      attr->attr_type, len, stun_attr_phrase(attr->attr_type)));
 
-  switch(attr->attr_type) {
+  switch (attr->attr_type) {
   case MAPPED_ADDRESS:
   case RESPONSE_ADDRESS:
   case SOURCE_ADDRESS:
@@ -190,29 +182,30 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   return len+4;
 }
 
-int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned len) {
-  
+int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned len)
+{
   stun_attr_sockaddr_t *addr;
   int addrlen;
 
-  if(len!=8) {
+  if (len != 8) {
     return -1;
   }
 
   addrlen = sizeof(stun_attr_sockaddr_t);
   addr = (stun_attr_sockaddr_t *)malloc(addrlen);
 
-  if(*(p+1)==1) { /* expected value for IPv4 */
+  if (*(p+1) == 1) { /* expected value for IPv4 */
     addr->sin_family = AF_INET;
   }
   else {
     free(addr);
     return -1;
   }
-  memcpy(&addr->sin_port, p+2, 2);
-  memcpy(&addr->sin_addr.s_addr, p+4, 4);
+  memcpy(&addr->sin_port, p + 2, 2);
+  memcpy(&addr->sin_addr.s_addr, p + 4, 4);
 
-  SU_DEBUG_3(("%s: address attribute: %s:%d\n", __func__, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
+  SU_DEBUG_5(("%s: address attribute: %s:%d\n", __func__,
+	      inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
 
   attr->pattr = addr;
   stun_init_buffer(&attr->enc_buf);
@@ -565,7 +558,7 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
 
   if (err > 0) {
     inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));
-    SU_DEBUG_3(("%s: message sent to %s:%u\n", __func__,
+    SU_DEBUG_5(("%s: message sent to %s:%u\n", __func__,
 		ipaddr, ntohs(to_addr->su_port)));
 
     debug_print(&msg->enc_buf);
@@ -703,7 +696,8 @@ char *stun_determine_ip_address(int family)
   hints->li_family = family;
   hints->li_canonname = getenv("HOSTADDRESS");
   if ((error = su_getlocalinfo(hints, &li)) < 0) {
-    SU_DEBUG_3(("%s: stun_determine_ip_address, su_getlocalinfo: %s\n", __func__, su_gli_strerror(error)));
+    SU_DEBUG_5(("%s: stun_determine_ip_address, su_getlocalinfo: %s\n",
+		__func__, su_gli_strerror(error)));
     return NULL;
   }
 
@@ -716,8 +710,6 @@ char *stun_determine_ip_address(int family)
   strcpy(local_ip_address, (char *) inet_ntoa(sa->sin_addr)); /* otherwise? */
     
   su_freelocalinfo(li);
-
-  /* SU_DEBUG_5(("stun: Local IP address: %s\n", local_ip_address)); */
 
   return local_ip_address;
 

@@ -61,6 +61,7 @@ extern char const stun_version[]; /**< Name and version of STUN software */
  */
 typedef enum stun_action_s {
   stun_action_no_action,
+  stun_action_tls_query,
   stun_action_binding_request,
   stun_action_keepalive,
   stun_action_get_nattype,
