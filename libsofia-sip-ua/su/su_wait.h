@@ -338,6 +338,12 @@ int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout);
 int su_wait_events(su_wait_t *wait, su_socket_t s);
 int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
 
+static inline
+su_socket_t su_wait_socket(su_wait_t *wait)
+{
+  return wait->fd;
+}
+
 /* Root */
 su_root_t *su_root_create(su_root_magic_t *magic)
      __attribute__((__malloc__));
