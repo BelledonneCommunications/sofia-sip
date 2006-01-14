@@ -655,7 +655,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
   int i, error, found = 0;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
 
-  /* hints->li_family = AF_INET; */
+  hints->li_family = AF_INET;
   if ((error = su_getlocalinfo(hints, &res)) == 0) {
     
     /* try to bind to the first available address */
@@ -667,7 +667,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
       clientinfo->li_addrlen = li->li_addrlen;
       
       sa = clientinfo->li_addr;
-      memcpy(sa, li->li_addr, sizeof(su_addrinfo_t));
+      memcpy(sa, li->li_addr, sizeof(su_sockaddr_t));
       SU_DEBUG_3(("%s: local address found to be %s.\n",
 		  __func__, 
 		  inet_ntop(clientinfo->li_family, SU_ADDR(sa),
@@ -732,8 +732,8 @@ int stun_handle_bind(stun_handle_t *sh,
   stun_discovery_t *sd = NULL;
   ta_list ta;
   stun_action_t action = stun_action_binding_request;
-  struct sockaddr *sa;
-  int err;
+  su_sockaddr_t *sa;
+  int err, index;
 
   SU_DEBUG_7(("%s: entering.\n", __func__));
 
@@ -753,7 +753,7 @@ int stun_handle_bind(stun_handle_t *sh,
     return errno = EINVAL, -1;
   }
 
-  if (assign_socket(sh, s) < 0)
+  if ((index = assign_socket(sh, s)) < 0)
     return -1;
 
   bind_len = sizeof bind_addr;
@@ -762,7 +762,7 @@ int stun_handle_bind(stun_handle_t *sh,
   bind_len = sizeof bind_addr;
   memset(sa, 0, sizeof(bind_addr));
   /* if bound check the error */
-  err = getsockname(s, sa, &bind_len);
+  err = getsockname(s, (struct sockaddr *) sa, &bind_len);
   if (err < 0 && errno == SOCKET_ERROR) {
     STUN_ERROR(errno, getsockname);
     return -1;
@@ -779,9 +779,10 @@ int stun_handle_bind(stun_handle_t *sh,
   }
   else {
     /* Not bound - bind it */
-    get_localinfo(clientinfo);
+    //get_localinfo(clientinfo);
 
-    if (err = bind(s, (struct sockaddr *) &clientinfo->li_addr, bind_len) < 0) {
+    clientinfo->li_family = AF_INET6;
+    if ((err = bind(s, (struct sockaddr *) sa, bind_len)) < 0) {
       STUN_ERROR(errno, bind);
       SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
 		  inet_ntop(clientinfo->li_family, SU_ADDR(clientinfo->li_addr), 
@@ -805,6 +806,7 @@ int stun_handle_bind(stun_handle_t *sh,
 
   sd = stun_discovery_create(sh, action);
   sd->sd_socket = s;
+  sd->sd_index = index;
 
   req = stun_request_create(sd);
   
@@ -939,6 +941,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 
   sd = stun_discovery_create(sh, stun_action_get_nattype);
   sd->sd_socket = s;
+  sd->sd_index = index;
 
   /* If no server given, use default address from stun_handle_create() */
   if (!server) {
@@ -2243,6 +2246,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
   sd = stun_discovery_create(sh, stun_action_get_lifetime);
   sd->sd_socket = s;
+  sd->sd_index = index;
 
   /* If no server given, use default address from stun_handle_create() */
   if (!server) {
@@ -2404,7 +2408,9 @@ int stun_handle_release(stun_handle_t *sh, su_socket_t s)
       continue;
 
     /* Index has same value as sockfd, right? */
-    su_root_deregister(sh->sh_root, sd->sd_socket);
+    su_root_deregister(sh->sh_root, sd->sd_index);
+    SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
+
     return 0;
   }
 

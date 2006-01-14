@@ -6870,7 +6870,7 @@ void tport_stun_cb(tport_master_t *mr, stun_handle_t *sh,
     break;
 
   case stun_action_binding_request:
-    if (event != stun_bind_done || event != stun_bind_timeout)
+    if (event != stun_bind_done && event != stun_bind_timeout)
       break;
 
     sa = stun_discovery_get_address(sd);
@@ -7006,6 +7006,7 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
     su_root_step(mr->mr_root, 1000);
   }
 
+  stun_handle_release(nat->stun, s);
   SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
 
   memcpy(su, &nat->sockaddr, sizeof(su));
