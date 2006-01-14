@@ -27,8 +27,8 @@
  *
  * See RFC 3489 for further information.
  *
- * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Martti Mela <Martti.Mela@nokia.com>
+ * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * 
@@ -596,11 +596,12 @@ void stun_handle_destroy(stun_handle_t *sh)
   for (sd = sh->sh_discoveries; sd; ) {
     kill = sd;
     sd = sd->sd_next;
-    /* Index has same value as sockfd, right? */
-    su_root_deregister(sh->sh_root, sd->sd_socket);
 
-    if (sd->sd_action == stun_action_tls_query)
-      su_close(sd->sd_socket);
+    /* Index has same value as sockfd, right? */
+    su_root_deregister(sh->sh_root, kill->sd_socket);
+
+    if (kill->sd_action == stun_action_tls_query)
+      su_close(kill->sd_socket);
 
     stun_discovery_destroy(kill);
   }
@@ -663,7 +664,6 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 	continue;
       
       clientinfo->li_family = li->li_family;
-      clientinfo->li_addrlen = li->li_addrlen;
       
       sa = clientinfo->li_addr;
       memcpy(sa, li->li_addr, sizeof(su_addrinfo_t));
@@ -771,7 +771,7 @@ int stun_handle_bind(stun_handle_t *sh,
   clientinfo->li_addr = &bind_addr;
   clientinfo->li_addrlen = bind_len;
 
-  if (!SU_HAS_INADDR_ANY(&bind_addr)) {
+  if (bind_addr.su_port != 0) {
     /* already bound */
     clientinfo->li_family = bind_addr.su_family;
     /* clientinfo->li_socktype = su_getsocktype(s); */
@@ -780,7 +780,15 @@ int stun_handle_bind(stun_handle_t *sh,
     /* Not bound - bind it */
     get_localinfo(clientinfo);
 
-    if (bind(s, (struct sockaddr *) &clientinfo->li_addr, clientinfo->li_addrlen) < 0) {
+    if (bind_addr.su_family == AF_INET)
+      clientinfo->li_addrlen = 16;
+    else
+      clientinfo->li_addrlen = 32;
+
+    clientinfo->li_addrlen = bind_len;
+
+    if (err = bind(s, (struct sockaddr *) &clientinfo->li_addr, clientinfo->li_addrlen) < 0) {
+      STUN_ERROR(errno, bind);
       SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
 		  inet_ntop(clientinfo->li_family, SU_ADDR(clientinfo->li_addr), 
 			    ipaddr, sizeof(ipaddr)),

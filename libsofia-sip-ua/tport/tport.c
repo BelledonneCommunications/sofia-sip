@@ -116,6 +116,7 @@ typedef struct _tls_t tls_t;	/* dummy */
 
 #if HAVE_SOFIA_STUN
 #include "stun.h"
+#include "stun_tag.h"
 #endif
 
 #if HAVE_UPNP
@@ -256,6 +257,7 @@ struct tport_s {
 #if 0
   stun_socket_t      *tp_stun_socket;
 #endif
+  su_socket_t         tp_stun_socket;
 #endif
 
   /* ==== Receive queue ================================================== */
@@ -373,10 +375,12 @@ struct tport_master {
 #if HAVE_UPNP
 #endif
 #if HAVE_SOFIA_STUN
+    tport_master_t *tport;
     char *stun_server;
     /* stun_socket_t *stun_socket; */
     stun_handle_t *stun;
     su_socket_t stun_socket;
+    su_sockaddr_t sockaddr;
 #endif
   }                   mr_nat[1];
 };
@@ -6855,22 +6859,27 @@ void tport_stun_cb(tport_master_t *mr, stun_handle_t *sh,
 		    stun_action_t action,
 		    stun_state_t event)
 {
+  su_sockaddr_t *sa = NULL;
+  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
   switch (action) {
   case stun_action_tls_query:
-    mr->mr_stun_step_ready = 0;
+    mr->mr_stun_step_ready = 1;
     break;
 
   case stun_action_binding_request:
     if (event != stun_bind_done || event != stun_bind_timeout)
       break;
 
+    sa = stun_discovery_get_address(sd);
+    memcpy(&mr->mr_nat->sockaddr, sa, sizeof(su_sockaddr_t));
     SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
 		inet_ntop(sa->su_family, SU_ADDR(sa),
 			  ipaddr, sizeof(ipaddr)),
 		(unsigned) ntohs(sa->su_port)));
-    mr->mr_stun_step_ready = 0;
+    mr->mr_stun_step_ready = 1;
     break;
     
   default:
@@ -6902,15 +6911,17 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
     nat->external_ip_address = NULL;
     /* nat->stun_socket = NULL; */
 
+    nat->tport = mr;
+
     for (i = 0; stun_transports[i]; i++) {
       if ((strcmp(tpn->tpn_proto, "*") == 0 || 
 	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
         SU_DEBUG_5(("%s(%p) starting STUN engine\n", __func__, mr));
 
-        nat->stun = stun_handle_tcreate(mr,
-					mr->mr_root,
-					tport_stun_cb,
-					TAG_NEXT(tags));
+        nat->stun = stun_handle_create(mr,
+				       mr->mr_root,
+				       tport_stun_cb,
+				       TAG_NEXT(tags));
 
         if (!nat->stun) 
 	  return NULL;
@@ -6923,7 +6934,7 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
 	/* Change me in tport_stun_cb() */
 	mr->mr_stun_step_ready = 0;
 	while (mr->mr_stun_step_ready != 1) {
-	  su_root_step(mr->mr_root);
+	  su_root_step(mr->mr_root, 1000);
 	}
 
 	nat->try_stun = 1;
@@ -6979,11 +6990,12 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
 			socklen_t *sulen,
 			su_socket_t s)
 {
-  int nat_bound = 0, lifetime = 0, bind_res = 0;
+  int nat_bound = 0;
   /* nat->stun_socket = stun_socket_create(nat->stun, s); */
 
+  tport_master_t *mr = nat->tport;
   nat->stun_socket = s;
-  if (stun_handle_bind(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+  if (stun_handle_bind(nat->stun, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
     SU_DEBUG_9(("%s: %s  failed.\n", __func__, "stun_handle_bind()"));
     return nat_bound;
   }
@@ -6991,12 +7003,12 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
   /* Change me in tport_stun_cb() */
   mr->mr_stun_step_ready = 0;
   while (mr->mr_stun_step_ready != 1) {
-    su_root_step(mr->mr_root);
+    su_root_step(mr->mr_root, 1000);
   }
 
   SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
 
-  memcpy(su, stun_discovery_get_address(sd), sizeof(su));
+  memcpy(su, &nat->sockaddr, sizeof(su));
   
   nat->stun_enabled = 1;
   nat_bound = 1;
