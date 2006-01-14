@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  s = su_socket(AF_INET6, SOCK_DGRAM, 0); 
+  s = su_socket(AF_INET, SOCK_DGRAM, 0); 
   if (s == -1) {
     SU_DEBUG_0(("%s: %s  failed: %s\n", __func__, "stun_socket_create()", su_gli_strerror(errno)));
     return -1;

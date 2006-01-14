@@ -655,6 +655,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
   int i, error, found = 0;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
 
+
   hints->li_family = AF_INET;
   if ((error = su_getlocalinfo(hints, &res)) == 0) {
     
@@ -779,9 +780,11 @@ int stun_handle_bind(stun_handle_t *sh,
   }
   else {
     /* Not bound - bind it */
-    //get_localinfo(clientinfo);
+#if defined (__CYGWIN__)
+    get_localinfo(clientinfo);
+#endif
 
-    clientinfo->li_family = AF_INET6;
+    /* clientinfo->li_family = AF_INET6; */
     if ((err = bind(s, (struct sockaddr *) sa, bind_len)) < 0) {
       STUN_ERROR(errno, bind);
       SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
