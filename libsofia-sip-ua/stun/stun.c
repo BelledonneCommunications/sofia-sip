@@ -655,7 +655,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
   int i, error, found = 0;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
 
-  hints->li_family = AF_INET;
+  /* hints->li_family = AF_INET; */
   if ((error = su_getlocalinfo(hints, &res)) == 0) {
     
     /* try to bind to the first available address */
@@ -664,6 +664,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 	continue;
       
       clientinfo->li_family = li->li_family;
+      clientinfo->li_addrlen = li->li_addrlen;
       
       sa = clientinfo->li_addr;
       memcpy(sa, li->li_addr, sizeof(su_addrinfo_t));
@@ -780,14 +781,7 @@ int stun_handle_bind(stun_handle_t *sh,
     /* Not bound - bind it */
     get_localinfo(clientinfo);
 
-    if (bind_addr.su_family == AF_INET)
-      clientinfo->li_addrlen = 16;
-    else
-      clientinfo->li_addrlen = 32;
-
-    clientinfo->li_addrlen = bind_len;
-
-    if (err = bind(s, (struct sockaddr *) &clientinfo->li_addr, clientinfo->li_addrlen) < 0) {
+    if (err = bind(s, (struct sockaddr *) &clientinfo->li_addr, bind_len) < 0) {
       STUN_ERROR(errno, bind);
       SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
 		  inet_ntop(clientinfo->li_family, SU_ADDR(clientinfo->li_addr), 
