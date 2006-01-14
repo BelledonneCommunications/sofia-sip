@@ -73,7 +73,7 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 		    stun_action_t action,
 		    stun_state_t event)
 {
-  su_localinfo_t *li = NULL;
+  su_sockaddr_t *sa = NULL;
   char ipaddr[48];
   char const *nattype;
   int lifetime;
@@ -105,10 +105,11 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
     break;
     
   case stun_bind_done:
-    li = stun_request_get_localinfo(req);
-    inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),
-      SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
-		  ipaddr, (unsigned) ntohs(li->li_addr->su_port)));
+    sa = stun_discovery_get_address(sd);
+    SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
+		inet_ntop(sa->su_family, SU_ADDR(sa),
+			  ipaddr, sizeof(ipaddr)),
+		(unsigned) ntohs(sa->su_port)));
     /* su_root_break(stun_handle_root(sh)); */
 
     if (stun_handle_get_nattype(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {

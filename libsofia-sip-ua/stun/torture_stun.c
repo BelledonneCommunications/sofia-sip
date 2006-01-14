@@ -184,7 +184,7 @@ void torture_callback(torture_t *t,
   SU_DEBUG_3(("%s: called by event \"%s\"\n", __func__, stun_str_state(event)));
 
   if (event == stun_bind_done) {
-    li = stun_request_get_localinfo(req);
+    li = stun_discovery_get_address(sd);
     /* s = stun_handle_get_bind_socket(sh); */
 
     inet_ntop(li->li_family, SU_ADDR(li->li_addr), ipaddr, sizeof(ipaddr)),

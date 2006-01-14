@@ -135,7 +135,10 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   case TURN_DESTINATION_ADDRESS:
   case TURN_SOURCE_ADDRESS:
 #endif
-    if(stun_parse_attr_address(attr, p, len) < 0) { free(attr); return -1; }
+    if (stun_parse_attr_address(attr, p, len) < 0) {
+      free(attr);
+      return -1;
+    }
     break;
   case ERROR_CODE:
     if(stun_parse_attr_error_code(attr, p, len) <0) { free(attr); return -1; }

@@ -62,9 +62,9 @@ extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 
 /* XXX -- mela: note that this are 100 times too small */
 #if 1
-#define STUN_LIFETIME_EST 350      /**< 6 min? */
-#define STUN_LIFETIME_MAX 1800     /**< 30 min? */
-#define STUN_LIFETIME_CI  5        /**< 5 sec confidence interval */
+#define STUN_LIFETIME_EST 3500      /**< 6 min? */
+#define STUN_LIFETIME_MAX 18000     /**< 30 min? */
+#define STUN_LIFETIME_CI  50        /**< 5 sec confidence interval */
 #else
 #define STUN_LIFETIME_EST 350      /**< 6 min? */
 #define STUN_LIFETIME_MAX 1800     /**< 30 min? */

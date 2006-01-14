@@ -178,7 +178,7 @@ int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *pwd,
 			      int len_pwd);
 
-su_localinfo_t *stun_request_get_localinfo(stun_request_t *req);
+su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
 
 /** Determine length of STUN message (0 if not stun). */
 int stun_message_length(void *data, int len, int end_of_message);

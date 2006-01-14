@@ -35,16 +35,13 @@
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
  */
 
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(__CYGWIN)
 #  include <su_configure.h>
-#  define SU_DLL
 #else
 #  include <su_configure_win32.h>
-#  ifndef SU_DLL
-#    define SU_DLL __declspec(dllimport)
-#  endif
 #endif
 
+#define SU_DLL
 
 #if defined(__GNUC__)
 #if __GNUC__ < 3 && (!defined(__GNUC_MINOR__) || __GNUC_MINOR__ < 96)
