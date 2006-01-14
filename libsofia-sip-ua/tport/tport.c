@@ -253,7 +253,9 @@ struct tport_s {
 #endif  
 
 #if HAVE_SOFIA_STUN
+#if 0
   stun_socket_t      *tp_stun_socket;
+#endif
 #endif
 
   /* ==== Receive queue ================================================== */
@@ -327,7 +329,9 @@ struct tport_master {
 #define mr_home mr_master->tp_home
 #endif
 
-  tp_stack_t  	     *mr_stack;        /**< Transport consumer */
+  int                 mr_stun_step_ready; /**< for stun's callback */
+
+  tp_stack_t  	     *mr_stack;         /**< Transport consumer */
   tp_stack_class_t 
                const *mr_tpac;		/**< Methods provided by stack */
   int                 mr_log;	        /**< Do logging of parsed messages */
@@ -370,8 +374,9 @@ struct tport_master {
 #endif
 #if HAVE_SOFIA_STUN
     char *stun_server;
-    stun_socket_t *stun_socket;
+    /* stun_socket_t *stun_socket; */
     stun_handle_t *stun;
+    su_socket_t stun_socket;
 #endif
   }                   mr_nat[1];
 };
@@ -6844,13 +6849,34 @@ void thrp_udp_send_report(su_root_magic_t *magic,
 
 
 #if HAVE_SOFIA_STUN
-void tport_stun_cb(tport_master_t *tport,
-		   stun_handle_t *se,
-		   stun_socket_t *ss,
-		   stun_states_t event)
+void tport_stun_cb(tport_master_t *mr, stun_handle_t *sh,
+		    stun_request_t *req,
+		    stun_discovery_t *sd,
+		    stun_action_t action,
+		    stun_state_t event)
 {
+  SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
-  /* xxx - mela: here events that can be sent to nua_events */
+  switch (action) {
+  case stun_action_tls_query:
+    mr->mr_stun_step_ready = 0;
+    break;
+
+  case stun_action_binding_request:
+    if (event != stun_bind_done || event != stun_bind_timeout)
+      break;
+
+    SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
+		inet_ntop(sa->su_family, SU_ADDR(sa),
+			  ipaddr, sizeof(ipaddr)),
+		(unsigned) ntohs(sa->su_port)));
+    mr->mr_stun_step_ready = 0;
+    break;
+    
+  default:
+    break;
+  }
+
   return;
 }
 #endif
@@ -6874,7 +6900,7 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
 
     nat->stun = NULL;
     nat->external_ip_address = NULL;
-    nat->stun_socket = NULL;
+    /* nat->stun_socket = NULL; */
 
     for (i = 0; stun_transports[i]; i++) {
       if ((strcmp(tpn->tpn_proto, "*") == 0 || 
@@ -6889,9 +6915,15 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
         if (!nat->stun) 
 	  return NULL;
 
-	if (stun_connect_start(nat->stun) < 0 && errno != EFAULT) {
-	  stun_handle_destroy(nat->stun), nat->stun = NULL;
-	  break;
+	if (stun_handle_request_shared_secret(nat->stun) < 0) {
+	  SU_DEBUG_3(("%s: %s failed\n", __func__,
+		      "stun_handle_request_shared_secret()"));
+	}
+
+	/* Change me in tport_stun_cb() */
+	mr->mr_stun_step_ready = 0;
+	while (mr->mr_stun_step_ready != 1) {
+	  su_root_step(mr->mr_root);
 	}
 
 	nat->try_stun = 1;
@@ -6948,7 +6980,28 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
 			su_socket_t s)
 {
   int nat_bound = 0, lifetime = 0, bind_res = 0;
-  nat->stun_socket = stun_socket_create(nat->stun, s);
+  /* nat->stun_socket = stun_socket_create(nat->stun, s); */
+
+  nat->stun_socket = s;
+  if (stun_handle_bind(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+    SU_DEBUG_9(("%s: %s  failed.\n", __func__, "stun_handle_bind()"));
+    return nat_bound;
+  }
+
+  /* Change me in tport_stun_cb() */
+  mr->mr_stun_step_ready = 0;
+  while (mr->mr_stun_step_ready != 1) {
+    su_root_step(mr->mr_root);
+  }
+
+  SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
+
+  memcpy(su, stun_discovery_get_address(sd), sizeof(su));
+  
+  nat->stun_enabled = 1;
+  nat_bound = 1;
+
+#if 0
   bind_res = stun_bind(nat->stun_socket, /* &su->su_sa, sulen, */ &lifetime);
   if (bind_res >= 0) {
     SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
@@ -6959,6 +7012,7 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
     /* TP_SOCKET_ERROR(errno, stun_bind); */
     SU_DEBUG_3(("%s: STUN bind failed.\n", __func__));
   }
+#endif
   return nat_bound;
 }
 #endif /* HAVE_SOFIA_STUN */

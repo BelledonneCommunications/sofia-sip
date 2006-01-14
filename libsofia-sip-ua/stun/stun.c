@@ -582,7 +582,7 @@ void stun_request_destroy(stun_request_t *req)
 /** Destroy a STUN client */ 
 void stun_handle_destroy(stun_handle_t *sh)
 { 
-  stun_discovery_t *sd, *kill;
+  stun_discovery_t *sd = NULL, *kill = NULL;
 
   SU_DEBUG_7(("%s: entering.\n", __func__));
 
@@ -593,7 +593,9 @@ void stun_handle_destroy(stun_handle_t *sh)
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
-  for (sd = sh->sh_discoveries; sd; sd = sd->sd_next) {
+  for (sd = sh->sh_discoveries; sd; ) {
+    kill = sd;
+    sd = sd->sd_next;
     /* Index has same value as sockfd, right? */
     su_root_deregister(sh->sh_root, sd->sd_socket);
 
