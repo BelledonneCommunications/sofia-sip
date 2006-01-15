@@ -6876,9 +6876,10 @@ void tport_stun_cb(tport_master_t *mr, stun_handle_t *sh,
     sa = stun_discovery_get_address(sd);
     memcpy(&mr->mr_nat->sockaddr, sa, sizeof(su_sockaddr_t));
     SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
-		inet_ntop(sa->su_family, SU_ADDR(sa),
+		inet_ntop(mr->mr_nat->sockaddr.su_family,
+			  SU_ADDR(&mr->mr_nat->sockaddr),
 			  ipaddr, sizeof(ipaddr)),
-		(unsigned) ntohs(sa->su_port)));
+		(unsigned) ntohs(mr->mr_nat->sockaddr.su_port)));
     mr->mr_stun_step_ready = 1;
     break;
     
@@ -6991,6 +6992,7 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
 			su_socket_t s)
 {
   int nat_bound = 0;
+  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   /* nat->stun_socket = stun_socket_create(nat->stun, s); */
 
   tport_master_t *mr = nat->tport;
@@ -7009,7 +7011,12 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
   stun_handle_release(nat->stun, s);
   SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
 
-  memcpy(su, &nat->sockaddr, sizeof(su));
+  memcpy(su, &nat->sockaddr, sizeof(su_sockaddr_t));
+  *sulen = sizeof(struct sockaddr_in);
+  SU_DEBUG_0(("%s: local address copied as %s:%u\n", __func__,
+	      inet_ntop(su->su_family, SU_ADDR(su),
+			ipaddr, sizeof(ipaddr)),
+	      (unsigned) ntohs(su->su_port)));
   
   nat->stun_enabled = 1;
   nat_bound = 1;
