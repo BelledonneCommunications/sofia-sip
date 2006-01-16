@@ -364,6 +364,38 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
     return ELI_SYSTEM;
   }
 
+#if defined(__APPLE_CC__)
+  {
+    su_sockaddr_t *sa;
+    int salen = sizeof(sa.su_sin);
+    int scope;
+
+    li = calloc(1, sizeof(su_localinfo_t));
+    sa = calloc(1, sizeof(su_sockaddr_t));
+    error = bind(s, sa, salen);
+
+    if (error < 0)
+      goto err;
+
+    su_close(s);
+
+    scope = li_scope4(sa->su_sin.sin_addr.s_addr);
+
+    li->li_family = sa->su_family;
+    li->li_flags = LI_NUMERIC;
+    li->li_scope = scope;
+    li->li_index = 0;
+    li->li_addrlen = su_sockaddr_size(sa);
+    li->li_addr = sa;
+    li->li_canonname = NULL;
+
+
+    *rresult = li;
+    return 0;
+  }
+#endif
+
+
 # if HAVE_IFNUM
   /* Get the list of known IP address from the kernel */
   if (ioctl(s, SIOCGIFNUM, (char *) &numifs) < 0) {
