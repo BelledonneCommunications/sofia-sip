@@ -50,8 +50,6 @@
 
 #include <netinet/in.h>
 
-#include <net/if_types.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -59,6 +57,7 @@
 #include <net/if.h>
 
 #if HAVE_NET_IF_H
+#include <net/if_types.h>
 #endif
 
 
