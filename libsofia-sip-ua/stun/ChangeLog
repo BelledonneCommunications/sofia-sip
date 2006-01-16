@@ -1,3 +1,19 @@
+2006-01-15  Martti Mela  <martti.mela@nokia.com>
+
+	* stun.c: bug fixes in get NAT type.
+
+	* stun.h: changed request_get_localinfo() to
+	discovery_get_address()
+
+	* stunc.c: debugging info cleanup
+
+	* stun_common.c, stun_common.h: cleanup + SU_DEBUG is now
+	determined from stun_internal.h
+
+	* stun_internal.h: included stun_common.h
+
+	* torture_stun.c: updated get_localinfo() to get_address()
+	
 2006-01-13  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.c: actions are now very separate from each other. Bug fixes.

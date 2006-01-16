@@ -1,3 +1,7 @@
+2006-01-15  Martti Mela  <martti.mela@nokia.com>
+
+	* tport.c: integrated initial new STUN support.
+
 2005-11-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Renamed tport_test.c as test_tport.c.

@@ -309,7 +309,7 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
   tagi_t const *t;
   char const *stun_server;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   ta_start(ta, tag, value);
   t = tl_find(ta_args(ta), stuntag_server);
@@ -340,7 +340,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   int err;
   ta_list ta;
   
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   ta_start(ta, tag, value);
 
@@ -421,7 +421,7 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
 
   assert(sh);
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   ai = &sh->sh_pri_info;
 
@@ -515,7 +515,7 @@ stun_request_t *stun_request_create(stun_discovery_t *sd)
   stun_handle_t *sh = sd->sd_handle;
   stun_request_t *req = NULL;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   req = calloc(sizeof(stun_request_t), 1);
   if (!req)
@@ -554,7 +554,7 @@ void stun_request_destroy(stun_request_t *req)
   stun_handle_t *sh;
   assert(req);
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   sh = req->sr_handle;
 
@@ -584,7 +584,7 @@ void stun_handle_destroy(stun_handle_t *sh)
 { 
   stun_discovery_t *sd = NULL, *kill = NULL;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
 #if 0
   if (sh->sh_tls_socket > 0)
@@ -615,10 +615,16 @@ int assign_socket(stun_handle_t *sh, su_socket_t s)
 {
   int events;
   int index;
+  stun_discovery_t *tmp;
   
   su_wait_t wait[1] = { SU_WAIT_INIT };
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
+
+  for (tmp = sh->sh_discoveries; tmp; tmp = tmp->sd_next) {
+    if (tmp->sd_socket == s)
+      return tmp->sd_index;
+  }
 
   /* set socket asynchronous */
   if (su_setblocking(s, 0) < 0) {
@@ -736,7 +742,7 @@ int stun_handle_bind(stun_handle_t *sh,
   su_sockaddr_t *sa;
   int err, index;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   if (sh == NULL)
     return errno = EFAULT, -1;
@@ -839,7 +845,7 @@ int stun_handle_bind(stun_handle_t *sh,
 su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd)
 {
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   return sd->sd_local_addr;
 }
@@ -849,7 +855,7 @@ stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
 {
   stun_discovery_t *sd = NULL;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   sd = calloc(1, sizeof(stun_discovery_t));
 
@@ -876,7 +882,7 @@ int stun_discovery_destroy(stun_discovery_t *sd)
 {
   stun_handle_t *sh;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   if (!sd)
     return errno = EFAULT, -1;
@@ -902,7 +908,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 			    tag_type_t tag, tag_value_t value,
 			    ...)
 {
-  int err, index;
+  int err, index = 0;
   ta_list ta;
   char const *server = NULL;
   stun_request_t *req = NULL;
@@ -914,7 +920,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 
   ta_start(ta, tag, value);
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
@@ -931,14 +937,15 @@ int stun_handle_get_nattype(stun_handle_t *sh,
     return -1;
   }
   
+  if ((index = assign_socket(sh, s)) < 0)
+    return errno = EFAULT, -1;
+
   if (bind_addr.su_port != 0) {
     /* already bound */
     /* XXX -- check if socket is already part of the event loop */
   }
   else {
     /* Not bound - bind it */
-    if ((index = assign_socket(sh, s)) < 0)
-      return errno = EFAULT, -1;
     /* get_localinfo(clientinfo); */
   }
 
@@ -1026,7 +1033,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   int events;
   stun_discovery_t *sd;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   for (sd = self->sh_discoveries; sd; sd = sd->sd_next) {
     if (sd->sd_socket == s)
@@ -1265,7 +1272,7 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   stun_handle_t *sh = req->sr_handle;
   stun_discovery_t *sd = req->sr_discovery;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   su_destroy_timer(t);
   SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
@@ -1375,7 +1382,7 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   int events = su_wait_events(w, s);
 #endif
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   SU_DEBUG_7(("%s(%p): events%s%s%s\n", __func__, self,
 	      events & SU_WAIT_IN ? " IN" : "",
@@ -1445,7 +1452,7 @@ int do_action(stun_handle_t *sh, stun_msg_t *binding_response)
   stun_action_t action = stun_action_no_action;
   uint16_t *id;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   if (!sh)
     return errno = EFAULT, -1;
@@ -1501,7 +1508,7 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
   stun_msg_t *binding_request;
   stun_discovery_t *sd = req->sr_discovery;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   binding_request = req->sr_msg;
 
@@ -1557,7 +1564,7 @@ static void stun_get_lifetime_timer_cb(su_root_magic_t *magic,
 
   int err;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   su_timer_destroy(t);
 
@@ -1671,7 +1678,7 @@ int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   stun_handle_t *sh = req->sr_handle;
   stun_action_t action;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
   action = get_action(req);
 
   process_binding_request(req, binding_response);
@@ -1697,7 +1704,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
   stun_action_t action;
   int err;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   action = get_action(req);
 
@@ -1842,7 +1849,7 @@ void stun_sendto_timer_cb(su_root_magic_t *magic,
   stun_action_t action = get_action(req);
   long timeout = 0;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   if (req->sr_state == stun_dispose_me) {
     su_timer_destroy(t);
@@ -1946,7 +1953,7 @@ int stun_send_binding_request(stun_request_t *req,
 
   assert (sh && srvr_addr);
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   s = req->sr_socket;
   req->sr_destination = srvr_addr;
@@ -1978,7 +1985,7 @@ int stun_make_binding_req(stun_handle_t *sh,
 
   ta_list ta;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   ta_start(ta, tag, value);
 
@@ -2055,7 +2062,7 @@ int stun_make_binding_req(stun_handle_t *sh,
 int stun_process_response(stun_msg_t *msg)
 {
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   /* parse msg first */
   if (stun_parse_message(msg) < 0) {
@@ -2096,7 +2103,7 @@ int stun_process_error_response(stun_msg_t *msg)
   stun_attr_t *attr;
   stun_attr_errorcode_t *ec;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   attr = stun_get_attr(msg->stun_attr, ERROR_CODE);
   if (attr == NULL) {
@@ -2120,7 +2127,7 @@ int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      int len_pwd)
 {
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   sh->sh_username.data = (unsigned char *) malloc(len_uname);
   memcpy(sh->sh_username.data, uname, len_uname);
@@ -2149,7 +2156,7 @@ int stun_atoaddr(int ai_family,
 
   assert(info && in);
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   addr = (su_sockaddr_t *) info->ai_addr;
 
@@ -2206,7 +2213,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
-  int s = -1, err, index;
+  int s = -1, err, index = 0;
   unsigned int bind_len;
   su_localinfo_t *ci = NULL;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
@@ -2219,7 +2226,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
   assert(sh);
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   ta_start(ta, tag, value);
 
@@ -2240,12 +2247,8 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
   }
   STUN_ERROR(errno, getsockname);
   
-  /* Not bound - bind it */
-  if (err < 0) {
-    if ((index = assign_socket(sh, s)) < 0)
+  if ((index = assign_socket(sh, s)) < 0)
       return errno = EFAULT, -1;
-    /* get_localinfo(clientinfo); */
-  }
 
   sd = stun_discovery_create(sh, stun_action_get_lifetime);
   sd->sd_socket = s;
@@ -2266,13 +2269,18 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
   ci = &req->sr_localinfo;
 
   /* get local ip address */
+#if !defined (__APPLE_CC__)
   get_localinfo(ci);
+#else
+  memset(ci->li_addr, 0, sizeof(su_sockaddr_t));
+#endif
 
   x_len = sizeof(x_addr);
   getsockname(s, (struct sockaddr *) &x_addr, &x_len);  
 
   SU_DEBUG_3(("%s: socket x bound to %s:%u\n", __func__,
-	      inet_ntop(ci->li_family, SU_ADDR(&x_addr), ipaddr, sizeof(ipaddr)),
+	      inet_ntop(x_addr.su_family, SU_ADDR(&x_addr),
+			ipaddr, sizeof(ipaddr)),
 	      (unsigned) ntohs(x_addr.su_port)));
 
   /* initialize socket y */
@@ -2321,7 +2329,7 @@ int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr)
   stun_attr_sockaddr_t *addr;
   stun_attr_t *tmp;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   tmp = (stun_attr_t *) malloc(sizeof(stun_attr_t));
   tmp->attr_type = RESPONSE_ADDRESS;
@@ -2368,7 +2376,7 @@ int stun_handle_process_message(stun_handle_t *sh, void *data, int len)
 {
   stun_msg_t binding_response;
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   /* Message received. */
   binding_response.enc_buf.data = (unsigned char *) malloc(len);
@@ -2399,7 +2407,7 @@ int stun_handle_release(stun_handle_t *sh, su_socket_t s)
 
   assert (sh);
 
-  SU_DEBUG_7(("%s: entering.\n", __func__));
+  enter;
 
   if (s < 0)
     return errno = EFAULT, -1;
@@ -2410,7 +2418,6 @@ int stun_handle_release(stun_handle_t *sh, su_socket_t s)
     if (sd->sd_socket != s)
       continue;
 
-    /* Index has same value as sockfd, right? */
     su_root_deregister(sh->sh_root, sd->sd_index);
     SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
 

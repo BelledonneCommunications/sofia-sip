@@ -56,6 +56,8 @@
 #define SU_LOG (stun_log)
 #include <su_debug.h>
 
+#define enter (void)SU_DEBUG_9(("%s: entering.\n", __func__))
+
 SOFIA_BEGIN_DECLS
 
 extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
