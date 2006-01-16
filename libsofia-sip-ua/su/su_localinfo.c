@@ -35,9 +35,9 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stdlib.h>
 #include <stddef.h>
 
 #include "su.h"
@@ -48,9 +48,19 @@
 #include <sys/sockio.h>
 #endif
 
+#include <netinet/in.h>
+
+#include <net/if_types.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <sys/ioctl.h>
+#include <net/if.h>
+
 #if HAVE_NET_IF_H
-#include "net/if.h"
 #endif
+
 
 #if HAVE_IPHLPAPI_H
 #include <iphlpapi.h>
@@ -367,28 +377,53 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
 #if defined(__APPLE_CC__)
   {
     su_sockaddr_t *sa;
-    int salen = sizeof(sa.su_sin);
-    int scope;
+    int salen = sizeof(*sa);
+    int scope = 0, gni_flags = 0;
 
     li = calloc(1, sizeof(su_localinfo_t));
     sa = calloc(1, sizeof(su_sockaddr_t));
-    error = bind(s, sa, salen);
 
-    if (error < 0)
+    error = getsockname(s, (struct sockaddr *) sa, &salen);
+    if (error < 0 && errno == SOCKET_ERROR) {
+      SU_DEBUG_1(("%s: getsockname() failed: %s\n", __func__,
+		  su_strerror(su_errno())));
+    }
+
+    error = bind(s, (struct sockaddr *) sa, salen);
+
+    if (error < 0) {
+      SU_DEBUG_1(("%s: bind() failed: %s\n", __func__,
+		  su_strerror(su_errno())));
       goto err;
+    }
 
     su_close(s);
 
     scope = li_scope4(sa->su_sin.sin_addr.s_addr);
 
+    if (scope == LI_SCOPE_HOST || scope == LI_SCOPE_LINK)
+      gni_flags = NI_NUMERICHOST;
+    
     li->li_family = sa->su_family;
-    li->li_flags = LI_NUMERIC;
     li->li_scope = scope;
     li->li_index = 0;
     li->li_addrlen = su_sockaddr_size(sa);
     li->li_addr = sa;
-    li->li_canonname = NULL;
 
+    if ((error = li_name(hints, gni_flags, sa, &canonname)) < 0)
+      goto err;
+
+    if (canonname) {
+      if (strchr(canonname, ':') ||
+	  strspn(canonname, "0123456789.") == strlen(canonname))
+	    li->li_flags |= LI_NUMERIC;
+    }
+    else
+      li->li_flags = 0;
+
+    li->li_canonname = canonname;
+
+    canonname = NULL;
 
     *rresult = li;
     return 0;
@@ -838,6 +873,60 @@ int localinfo6(su_localinfo_t const *hints, su_localinfo_t **rresult)
   int const su_sockaddr_size = sizeof(*su);
   
   error = ELI_NOADDRESS;
+
+#if defined(__APPLE_CC__)
+  {
+    su_sockaddr_t *sa;
+    int salen = sizeof(*sa);
+    int s;
+
+    if (hints->li_scope == 0 || (hints->li_scope & LI_SCOPE_GLOBAL)) {
+      if ((addr = getenv("HOSTADDR6"))) {
+
+	li = calloc(1, sizeof(su_localinfo_t));
+	sa = calloc(1, sizeof(su_sockaddr_t));
+
+	s = su_socket(AF_INET6, SOCK_DGRAM, 0);
+	if (s == -1) {
+	  SU_DEBUG_1(("su_localinfo: su_socket failed: %s\n", 
+		      su_strerror(su_errno())));
+	  return ELI_SYSTEM;
+	}
+	
+	error = getsockname(s, (struct sockaddr *) sa, &salen);
+	if (error < 0 && errno == SOCKET_ERROR) {
+	  SU_DEBUG_1(("%s: getsockname() failed: %s\n", __func__,
+		      su_strerror(su_errno())));
+	}
+	
+	error = bind(s, (struct sockaddr *) sa, salen);
+	
+	if (error < 0) {
+	  SU_DEBUG_1(("%s: bind() failed: %s\n", __func__,
+		      su_strerror(su_errno())));
+	  goto err;
+	}
+	
+	su_close(s);
+	
+	li->li_family = sa->su_family;
+	li->li_scope = LI_SCOPE_GLOBAL;
+	li->li_index = 0;
+	li->li_addrlen = su_sockaddr_size(sa);
+	li->li_addr = sa;
+	
+	if ((error = li_name(hints, NI_NUMERICHOST, sa, &li->li_canonname)) < 0)
+	  goto err;
+	
+	li->li_flags = NI_NUMERICHOST;
+      }
+    }
+
+    *rresult = li;
+    return 0;
+  }
+#endif
+
 
   if (hints->li_scope == 0 || (hints->li_scope & LI_SCOPE_GLOBAL)) {
     if ((addr = getenv("HOSTADDR6"))) {

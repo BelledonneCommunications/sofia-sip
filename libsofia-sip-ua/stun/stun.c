@@ -52,6 +52,11 @@
 #include <su.h>
 #include <su_localinfo.h>
 
+#if defined(__APPLE_CC__)
+#ifndef SOL_TCP
+#define SOL_TCP IPPROTO_TCP
+#endif
+#endif
 
 #include <openssl/opensslv.h>
 
@@ -2269,11 +2274,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
   ci = &req->sr_localinfo;
 
   /* get local ip address */
-#if !defined (__APPLE_CC__)
   get_localinfo(ci);
-#else
-  memset(ci->li_addr, 0, sizeof(su_sockaddr_t));
-#endif
 
   x_len = sizeof(x_addr);
   getsockname(s, (struct sockaddr *) &x_addr, &x_len);  
