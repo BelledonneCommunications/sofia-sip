@@ -173,8 +173,6 @@ struct stun_handle_s
   su_localinfo_t  sh_localinfo;     /**< local addrinfo */
   su_sockaddr_t   sh_local_addr[1]; /**< local address */
 
-  su_socket_t     sh_tls_socket;    /**< outbound socket */
-
   SSL_CTX        *sh_ctx;           /**< SSL context for TLS */
   SSL            *sh_ssl;           /**< SSL handle for TLS */
   stun_msg_t      sh_tls_request;
@@ -188,7 +186,7 @@ struct stun_handle_s
   stun_buffer_t   sh_passwd;
 
   int             sh_use_msgint;    /**< use message integrity? */
-  int             sh_state;         /**< Progress states */
+  /* int             sh_state; */         /**< Progress states */
 };
 
 
@@ -478,21 +476,11 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   sd->sd_socket = s;
   req = stun_request_create(sd);
 
-  sh->sh_tls_socket = s;
-
-#if 1
   if (su_wait_create(wait, s, events) == -1)
     STUN_ERROR(errno, su_wait_create);
 
   events = SU_WAIT_CONNECT | SU_WAIT_ERR;
   su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events);
-#else
-
-  events = SU_WAIT_CONNECT | SU_WAIT_ERR;
-  if (su_wait_create(wait, s, events) == -1)
-    STUN_ERROR(errno, su_wait_create);
-
-#endif
 
   if ((sd->sd_index =
        su_root_register(sh->sh_root, wait, stun_tls_callback, sh, 0)) == -1) {
@@ -590,11 +578,6 @@ void stun_handle_destroy(stun_handle_t *sh)
   stun_discovery_t *sd = NULL, *kill = NULL;
 
   enter;
-
-#if 0
-  if (sh->sh_tls_socket > 0)
-    su_close(sh->sh_tls_socket);
-#endif
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
@@ -1111,7 +1094,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     ssl = SSL_new(ctx);
     self->sh_ssl = ssl;
 
-    if (SSL_set_fd(ssl, self->sh_tls_socket) == 0) {
+    if (SSL_set_fd(ssl, sd->sd_socket) == 0) {
       STUN_ERROR(err, connect);
       stun_free_buffer(&msg_req->enc_buf);
       return -1;
@@ -1123,37 +1106,38 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
   case stun_tls_ssl_connecting:
     events = SU_WAIT_ERR | SU_WAIT_IN;
-    su_root_eventmask(self->sh_root, self->sh_root_index,
-		      self->sh_tls_socket, events);
+    su_root_eventmask(self->sh_root, sd->sd_index,
+		      sd->sd_socket, events);
 
     z = SSL_connect(ssl);
     err = SSL_get_error(ssl, z);
     if (z < 1 && (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)) {
-      self->sh_state = stun_tls_ssl_connecting;
+      sd->sd_state = stun_tls_ssl_connecting;
       return 0;
     }
     else if (z < 1) {
       stun_free_buffer(&msg_req->enc_buf);
-      self->sh_state = stun_tls_ssl_connect_failed;
-      self->sh_callback(self->sh_context, self, NULL, NULL, stun_action_no_action, self->sh_state);
+      sd->sd_state = stun_tls_ssl_connect_failed;
+      self->sh_callback(self->sh_context, self, NULL, sd,
+			sd->sd_action, sd->sd_state);
       return -1;
     }
     
     /* Inform application about the progress  */
-    self->sh_state = stun_tls_writing;
+    sd->sd_state = stun_tls_writing;
     /* self->sh_callback(self->sh_context, self, self->sh_state); */
 
     events = SU_WAIT_ERR | SU_WAIT_OUT;
-    su_root_eventmask(self->sh_root, self->sh_root_index,
-		      self->sh_tls_socket, events);
+    su_root_eventmask(self->sh_root, sd->sd_index,
+		      sd->sd_socket, events);
 
     break;
 
   case stun_tls_writing:
 
     events = SU_WAIT_ERR | SU_WAIT_IN;
-    su_root_eventmask(self->sh_root, self->sh_root_index,
-		      self->sh_tls_socket, events);
+    su_root_eventmask(self->sh_root, sd->sd_index,
+		      sd->sd_socket, events);
 
     SU_DEBUG_3(("TLS connection using %s\n", SSL_get_cipher(ssl)));
     
@@ -1176,14 +1160,14 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 	return -1;
       }
     }
-    self->sh_state = stun_tls_reading;
+    sd->sd_state = stun_tls_reading;
 
     break;
 
   case stun_tls_reading:
     events = SU_WAIT_ERR | SU_WAIT_OUT;
-    su_root_eventmask(self->sh_root, self->sh_root_index,
-		      self->sh_tls_socket, events);
+    su_root_eventmask(self->sh_root, sd->sd_index,
+		      sd->sd_socket, events);
 
     SU_DEBUG_5(("Shared Secret Request sent to server:\n"));
     debug_print(&msg_req->enc_buf);
@@ -1209,12 +1193,12 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
 
     /* closed TLS connection */
     SSL_shutdown(ssl);
-    self->sh_state = stun_tls_closing;
+    sd->sd_state = stun_tls_closing;
 
     break;
 
   case stun_tls_closing:
-    su_close(self->sh_tls_socket);
+    su_close(sd->sd_socket);
 
     SSL_free(self->sh_ssl), ssl = NULL;
     SSL_CTX_free(self->sh_ctx), ctx = NULL;
@@ -1253,11 +1237,12 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
     }
     
     su_wait_destroy(w);
-    su_root_deregister(self->sh_root, self->sh_root_index);
+    su_root_deregister(self->sh_root, sd->sd_index);
 
     self->sh_use_msgint = 1;
-    self->sh_state = stun_tls_done;
-    self->sh_callback(self->sh_context, self, NULL, NULL, stun_action_no_action, self->sh_state);
+    sd->sd_state = stun_tls_done;
+    self->sh_callback(self->sh_context, self, NULL, sd,
+		      sd->sd_action, sd->sd_state);
     
     break;
 
@@ -1381,11 +1366,7 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
   su_sockaddr_t recv;
   socklen_t recv_len;
   su_socket_t s = su_wait_socket(w);
-#if 0
-  int events = su_wait_events(w, self->sh_tls_socket);
-#else
   int events = su_wait_events(w, s);
-#endif
 
   enter;
 
