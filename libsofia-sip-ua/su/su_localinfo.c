@@ -405,10 +405,10 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
     
     if (su_xtra) {
       /* Map IPv4 address to IPv6 address */
-      memset(su, 0, sizeof(*su));
-      su->su_family = AF_INET6;
-      ((int32_t*)&su->su_sin6.sin6_addr)[3] = su->su_sin.sin_addr.s_addr;
-      ((int32_t*)&su->su_sin6.sin6_addr)[2] = htonl(0xffff);
+      memset(sa, 0, sizeof(*sa));
+      sa->su_family = AF_INET6;
+      ((int32_t*)&sa->su_sin6.sin6_addr)[3] = sa->su_sin.sin_addr.s_addr;
+      ((int32_t*)&sa->su_sin6.sin6_addr)[2] = htonl(0xffff);
     }
 
     li->li_family = sa->su_family;
