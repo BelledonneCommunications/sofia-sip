@@ -35,11 +35,7 @@
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
  */
 
-#if !defined(_WIN32) || defined(__CYGWIN)
-#  include <su_configure.h>
-#else
-#  include <su_configure_win32.h>
-#endif
+#include <su_configure.h>
 
 #define SU_DLL
 
