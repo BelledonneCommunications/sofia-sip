@@ -376,7 +376,7 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
 #if defined(__APPLE_CC__)
   {
     su_sockaddr_t *sa;
-    int salen = sizeof(*sa);
+    unsigned int salen = sizeof(*sa);
     int scope = 0, gni_flags = 0;
 
     li = calloc(1, sizeof(su_localinfo_t));
@@ -403,6 +403,14 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
     if (scope == LI_SCOPE_HOST || scope == LI_SCOPE_LINK)
       gni_flags = NI_NUMERICHOST;
     
+    if (su_xtra) {
+      /* Map IPv4 address to IPv6 address */
+      memset(su, 0, sizeof(*su));
+      su->su_family = AF_INET6;
+      ((int32_t*)&su->su_sin6.sin6_addr)[3] = su->su_sin.sin_addr.s_addr;
+      ((int32_t*)&su->su_sin6.sin6_addr)[2] = htonl(0xffff);
+    }
+
     li->li_family = sa->su_family;
     li->li_scope = scope;
     li->li_index = 0;

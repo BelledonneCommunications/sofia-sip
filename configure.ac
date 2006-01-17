@@ -63,8 +63,8 @@ AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define as 1 if we use S/MIME library])
 
 dnl Disable stun by default while it is broken
 AC_ARG_ENABLE(stun,
-[  --enable-stun               enable stun module (disabled)],
- , enable_stun=no)
+[  --enable-stun               enable stun module (enabled)],
+ , enable_stun=yes)
 
 if test x$enable_stun = xno ; then
   AC_MSG_WARN([** STUN support disabled **])
