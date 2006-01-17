@@ -40,7 +40,7 @@
 #include <assert.h>
 
 #define SU_ROOT_MAGIC_T struct stun_magic_t
-#define SU_WAKEUP_ARG_T struct stun_handle_s
+/* #define SU_WAKEUP_ARG_T struct stun_handle_s */
 
 #include "stun.h"
 #include "stun_internal.h"
@@ -253,7 +253,7 @@ char const stun_version[] =
  "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
 
 int do_action(stun_handle_t *sh, stun_msg_t *binding_response);
-int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self);
+int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
 int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
 stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
 					stun_action_t action);
@@ -265,7 +265,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
 stun_request_t *stun_request_create(stun_discovery_t *sd);
 int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
-int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self);
+int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
 void stun_sendto_timer_cb(su_root_magic_t *magic, 
 			  su_timer_t *t,
 			  su_timer_arg_t *arg);
@@ -420,7 +420,7 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   su_addrinfo_t *ai = NULL;
   su_timer_t *connect_timer = NULL;
   stun_discovery_t *sd;
-  stun_request_t *req;
+  /* stun_request_t *req; */
 
   assert(sh);
 
@@ -455,8 +455,6 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
     STUN_ERROR(errno, setsockopt);
     return -1;
   }
-  SU_DEBUG_7(("%s: %s: %s\n", __func__, "setsockopt",
-	      su_strerror(errno)));
 
   /* Do an asynchronous connect(). Three error codes are ok,
    * others cause return -1. */
@@ -474,16 +472,16 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   
   sd = stun_discovery_create(sh, stun_action_tls_query);
   sd->sd_socket = s;
-  req = stun_request_create(sd);
+  /* req = stun_request_create(sd); */
 
+  events = SU_WAIT_CONNECT | SU_WAIT_ERR;
   if (su_wait_create(wait, s, events) == -1)
     STUN_ERROR(errno, su_wait_create);
 
-  events = SU_WAIT_CONNECT | SU_WAIT_ERR;
   su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events);
 
   if ((sd->sd_index =
-       su_root_register(sh->sh_root, wait, stun_tls_callback, sh, 0)) == -1) {
+       su_root_register(sh->sh_root, wait, stun_tls_callback, (su_wakeup_arg_t *) sd, 0)) == -1) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
@@ -497,7 +495,7 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
 				  STUN_TLS_CONNECT_TIMEOUT);
 
   /* sd->sd_connect_timer = connect_timer; */
-  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) req);
+  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sd);
 
   return 0;
 }
@@ -632,7 +630,7 @@ int assign_socket(stun_handle_t *sh, su_socket_t s)
   /* Register receiving function with events specified above */
   if ((index = su_root_register(sh->sh_root,
 				wait, stun_bind_callback,
-				sh, 0)) < 0) {
+				(su_wakeup_arg_t *) sh, 0)) < 0) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
@@ -1007,8 +1005,10 @@ int stun_handle_get_nattype(stun_handle_t *sh,
  * Internal functions
  *******************************************************************/
 
-int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
+int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 {
+  stun_discovery_t *sd = arg;
+  stun_handle_t *self = sd->sd_handle;
   stun_msg_t *msg_req, *resp;
   int z, err;
   SSL_CTX* ctx;
@@ -1017,23 +1017,9 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, stun_handle_t *self)
   unsigned char buf[512];
   stun_attr_t *password, *username;
   int state;
-  su_socket_t s = su_wait_socket(w);
-  int events;
-  stun_discovery_t *sd;
+  int events = su_wait_events(w, sd->sd_socket);
 
   enter;
-
-  for (sd = self->sh_discoveries; sd; sd = sd->sd_next) {
-    if (sd->sd_socket == s)
-      break;
-  }
-
-  if (!sd) {
-    /* is not possible (?) */
-    return 0;
-  }
-
-  events = su_wait_events(w, sd->sd_index);
 
   SU_DEBUG_7(("%s(%p): events%s%s%s%s\n", __func__, self,
 	      events & SU_WAIT_CONNECT ? " CONNECTED" : "",
@@ -1258,9 +1244,13 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 			       su_timer_t *t,
 			       su_timer_arg_t *arg)
 {
+#if 0
   stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
   stun_discovery_t *sd = req->sr_discovery;
+#endif
+  stun_discovery_t *sd = arg;
+  stun_handle_t *sh = sd->sd_handle;
 
   enter;
 
@@ -1275,8 +1265,7 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   su_root_deregister(sh->sh_root, sd->sd_index);
   
   sd->sd_state = stun_tls_connection_timeout;
-  sh->sh_callback(sh->sh_context, sh, req, sd, sd->sd_action, sd->sd_state);
-  req->sr_state = stun_dispose_me;
+  sh->sh_callback(sh->sh_context, sh, NULL, sd, sd->sd_action, sd->sd_state);
 
   return;
 }
@@ -1357,8 +1346,10 @@ stun_request_t *find_request(stun_handle_t *self, uint16_t *id)
 }
 
 /** Process socket event */
-int stun_bind_callback(stun_magic_t *m, su_wait_t *w, stun_handle_t *self)
+int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 {
+  stun_handle_t *self = arg;
+
   int retval = -1, err = -1, dgram_len;
   char ipaddr[SU_ADDRSIZE + 2];
   stun_msg_t binding_response;
