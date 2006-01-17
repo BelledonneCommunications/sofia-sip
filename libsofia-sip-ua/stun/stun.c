@@ -451,16 +451,6 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
     return -1;
   }
 
-#if defined(__APPLE_CC__)
-  /* OS X 10.3 does not recognize failure in connect() and would kick
-   * ass with SIGPIPE. Not nice. */
-  if (setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE,
-		 (void *)&one, sizeof one) == -1) {
-    STUN_ERROR(errno, setsockopt);
-    return -1;
-  }
-#endif
-
   if (setsockopt(s, SOL_TCP, TCP_NODELAY,
 		 (void *)&one, sizeof one) == -1) {
     STUN_ERROR(errno, setsockopt);
@@ -1028,7 +1018,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
   unsigned char buf[512];
   stun_attr_t *password, *username;
   int state;
-  int events = su_wait_events(w, sd->sd_socket);
+  int events = su_wait_events(w, sd->sd_socket), one = 0, onelen;
 
   enter;
 
@@ -1038,7 +1028,14 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 	      events & SU_WAIT_IN      ? " IN"        : "",
 	      events & SU_WAIT_OUT     ? " OUT"       : ""));
 
-  if (events & SU_WAIT_ERR) {
+
+  getsockopt(sd->sd_socket, SOL_SOCKET, SO_ERROR,
+	     (void *)&one, &onelen);
+  if (one != 0) {
+    STUN_ERROR(one, getsockopt);
+  }
+
+  if (one || events & SU_WAIT_ERR) {
     su_wait_destroy(w);
     su_root_deregister(self->sh_root, sd->sd_index);
 
