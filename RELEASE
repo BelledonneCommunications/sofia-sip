@@ -5,7 +5,11 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-TBD
+- STUN re-written. Supports aynchronous, multiple ongoing transactions
+
+- Ported to Windows (compilation in Cygwin/MinGW evironment)
+
+- Ported to Mac OS X
 
 API/ABI changes and versioning
 ------------------------------
