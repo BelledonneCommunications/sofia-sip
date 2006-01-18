@@ -5,11 +5,11 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-- STUN re-written. Supports aynchronous, multiple ongoing transactions
+- STUN re-written. Supports asynchronous, multiple ongoing transactions
 
 - Ported to Windows (compilation in Cygwin/MinGW evironment)
 
-- Ported to Mac OS X
+- Ported to Mac OS X (10.3 Panther, 10.4 Tiger)
 
 API/ABI changes and versioning
 ------------------------------
@@ -17,6 +17,10 @@ API/ABI changes and versioning
 The libsofia-sip-ua library interface version (libtool) is set to zero.
 Library version will not be frozen until the release of 1.12.0 stable
 version.
+
+- Transformed synchronous STUN API to asynchronous
+
+- Added more alternative ways to resolve local address
 
 - Added nua_authorize, nua_i_subscription, and NEATAG_SUB().
 
@@ -72,8 +76,6 @@ version.
 - Added <su_errno.h>
 
 - Added su_home_destructor() setter.
-
-- STUN API is being rewritten.
 
 - Removed include files msg/msg_bnf.h msg/msg_auth.h sip/sip_extensions.h
   sip/sip_internal.h and su/su_configure_win32.h

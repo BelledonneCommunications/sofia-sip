@@ -17,24 +17,12 @@ To be written.
 
 @section todo Todo
 
-
-- finish the asynchronous STUN behavior. Currently most of the STUN
-  client functionalities are already async, but the API should still be
-  revised. This should be ready before week 52 2005. (added 20051216)
-
-
-- merge NAT-type check and stun_bind_tests (no 
-  use in using STUN if the NAT type is symmetric) (added 20051118)
+- rename some functions to be more attractive (added 20060118)
 - output a summary of results at the end of 
   stund_bind_test() (added 20051118)
 - stun_bind_test does not detect, if the server does
   _not_ honor the change-{address,port} requests (i.e. that
   response should be send from a different port/address), 
   which leads to incorrect analysis of NAT behaviour (added 20051119)
-- do not bind to local loopback (added 20051129)
-- the API should allow to specify INADDR_ANY as the local 
-  address/interface (pick the default interface) (added 20051129)
-- the API should use INADDR_ANY if no specific local 
-  interface was requested by the client (added 20051129)
 
 */
