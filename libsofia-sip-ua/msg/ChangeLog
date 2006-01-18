@@ -1,3 +1,7 @@
+2006-01-17  Martti Mela  <martti.mela@nokia.com>
+
+	* msg_mime.c: defines for Mac OS X (which are lacking EBADMSG).
+
 2005-11-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Renamed msg_test.c as test_msg.c.

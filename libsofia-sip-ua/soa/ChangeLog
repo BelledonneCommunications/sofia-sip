@@ -1,3 +1,9 @@
+2006-01-17  Martti Mela  <martti.mela@nokia.com>
+
+   * if no EPROTO is found in OS X, redefine to EPROTOTYPE
+
+    M ./libsofia-sip-ua/soa/soa.c +8
+
 2005-10-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
    * Restore version numbers after our offer is rejected.

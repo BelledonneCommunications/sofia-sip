@@ -1,3 +1,14 @@
+2006-01-17  Martti Mela  <martti.mela@nokia.com>
+
+  * su_localinfo.c: su_getlocalinfo() works now on OS X
+
+  * su_memmem.c: malloc fetched from different header file in OS X
+
+  * su_config.h: reference to su_configure_win32.h removed.
+
+    M ./libsofia-sip-ua/su/su_localinfo.c -8 +97
+
+
 2006-01-13  Martti Mela  <martti.mela@nokia.com>
 
   * su_wait.h: Added su_wait_socket(). (it returns associated fd)
