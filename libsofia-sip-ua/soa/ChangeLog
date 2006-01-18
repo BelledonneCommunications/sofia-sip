@@ -1,3 +1,7 @@
+2006-01-18  Martti Mela  <martti.mela@nokia.com>
+
+   * soa.c: removed #include <netat/sysglue.h> (with __APPLE_CC__)
+
 2006-01-17  Martti Mela  <martti.mela@nokia.com>
 
    * if no EPROTO is found in OS X, redefine to EPROTOTYPE

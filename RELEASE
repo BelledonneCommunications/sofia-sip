@@ -5,92 +5,35 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-- STUN re-written. Supports asynchronous, multiple ongoing transactions
+<changes since last written in freshmeat.net "Changes:" style;
+ and in less than 10 lines />
 
-- Ported to Windows (compilation in Cygwin/MinGW evironment)
-
-- Ported to Mac OS X (10.3 Panther, 10.4 Tiger)
 
 API/ABI changes and versioning
 ------------------------------
 
-The libsofia-sip-ua library interface version (libtool) is set to zero.
-Library version will not be frozen until the release of 1.12.0 stable
-version.
+<see previous release notes at
+ http://sofia-sip.sourceforge.net/relnotes/ for examples ;
+ - should include all changes to public headers, and 
+   other important information to developers; 
+ - and should be updated _continuously_! />
 
-- Transformed synchronous STUN API to asynchronous
-
-- Added more alternative ways to resolve local address
-
-- Added nua_authorize, nua_i_subscription, and NEATAG_SUB().
-
-- Improved handling of refer subscriptions.
-
-- Default install directory for public header file has been changed
-  from '${prefix}/include/' to '${prefix}/include/sofia-sip-MAJOR.MINOR'.
-  The pkgconfig .pc file has been updated accordingly.
-
-- Deprecated adding RFC2543-style tag in To header. Now tags are generated
-  by a random number generator. Updated prototypes of nta_leg_tag(),
-  nta_leg_rtag(), nta_incoming_tag().
-
-- Deprecated NUTAG_MEDIA* tags were removed from libsofia-sip/nua/nua_tag.h.
-
-- Deprecated NUTAG_HOLD():
-  #define NUTAG_HOLD(x) SOATAG_HOLD((x) ? "*" : NULL)
-
-- Updated sdp_rtpmap_t.
-
-- Updated sip_min_se_t, sip_content_encoding_t.
-
-- Implementation of deprecated RFC 2543 headers have been removed from dist
-  (they will be available in a separate package)
-
-- Added nta_outgoing_default(), nta_incoming_default(),
-  nta_incoming_method_name(), nta_incoming_gettag(),
-  nta_incoming_getresponse(), nta_incoming_complete_response(), and
-  deprecated nta_msg_response_complete()
-
-- Updated header parameter handling:
-
-  1) Added manipulation functions for header parameters:
-     msg_header_find_param(), msg_header_add_param(),
-     msg_header_replace_param(), and msg_header_remove_param().
-
-  2) Added hc_update member to msg_hclass_t:
-     The hc_update is used to update shortcuts to well-known parameters.
-     Parameter handling functions listed above call hc_update().
-     Added updating functions for SIP headers.
-
-  3) Deprecated RFC 2543 parameters ("hidden" in Via and "action" in Contact
-     header) have been removed from header structures. They can be accessed
-     with msg_header_find_param(), however.
-
-     Added rport and comp parameters to Via. Added d-alg, d-qop and d-ver
-     parameters to Security-Client, Security-Server and Security-Verify
-     headers.
-
-  4) Updated Accept-Language, Accept-Encoding and Accept-Charset headers to
-     accept any parameter (as per RFC 3261)
-
-- Added <su_errno.h>
-
-- Added su_home_destructor() setter.
-
-- Removed include files msg/msg_bnf.h msg/msg_auth.h sip/sip_extensions.h
-  sip/sip_internal.h and su/su_configure_win32.h
 
 Contributors to this release
 ----------------------------
 
-See the AUTHORS file in the distribution package.
+<list of people who contributed to _this_ release
+ - update as people's patches are added, or when
+   you commit stuff
+ - name of the contributor should be enough
+/> 
 
 
 Bugs fixed in this release
 --------------------------
 
-- Bugs in stun client code leading to failures in the discovery process.
-- su_getlocalinfo() fixes the scope of IP4-mapped or IP4-compatible IP6
-  addresses. Linux kernel erroneously assigns ::127.0.0.1 to global scope,
-  for instance.
-- su_getlocalinfo() does not return 0.0.0.0 in Windows anymore
+< notable bugs fixed in this release
+ - check the sf.net bug tracker; see closed bugs,
+   sorted by closing date
+ - other bugs as fixed in CVS/darcs
+/>

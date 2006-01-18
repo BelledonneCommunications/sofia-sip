@@ -3,7 +3,7 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20051019-2
+:Version: 20060118-3
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
@@ -27,8 +27,13 @@ sections:
     - copied verbatim from sofia-sip/README
 - list of changes since last release
     - maintained in sofia-sip/RELEASE
+    - see diff between cvs/darcs between previous and
+      this version
+    - written in freshmeat.net "Changes:" style 
 - notes on API/ABI interface changes 
     - maintained in sofia-sip/RELEASE
+    - all changes in public interfaces, plus other
+      notes that developers should be aware of
 - contributors to this release
     - maintained in sofia-sip/RELEASE
     - also sofia-sip/AUTHORS should be updated (file
@@ -48,16 +53,18 @@ Making the release tarball
   and copy the values to the release-notes (see below)
 
 
-Creating the release notes
-==========================
+Creating the release notes and updating the website
+===================================================
 
 - combine the sofia-sip/RELEASE contents with
   the template found from sfnet_www/templates/relnotes.txt
 - store the resulting release notes to 
   sfnet_www/relnotes/relnotes-sofia-sip-x.y.z.txt
 - add explicit link to the release notes to 
-  sfnet_www/relnotes.html (three most recent releases,
+  sfnet_www/download.html (three most recent releases,
   see guidelines in the html comments)
+- update sfnet_www/index.html to mention the latest
+  release
 - commit the change to CVS, and run the 
   sfnet_www/put_online.sh script at the sourceforge.net
   shell server
@@ -79,3 +86,15 @@ Announcing releases
   release notes, to sofia-sip-devel@isource.nokia.com
 - post a news item to freshmeat.net 'sofia-sip'
   project (current project owner: Kai Vehmanen)
+
+After release
+=============
+
+- replace the RELEASE file with RELEASE.template, and
+  commit it to CVS/darcs.
+- change version in configure.ac from "X.Y.Z" to 
+  "X.Y.Zcvs" (as it is in many cases unknown what the 
+  next version will be)
+- make a "tree open for development" commit
+
+
