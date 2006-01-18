@@ -39,7 +39,6 @@
 
 #if defined(__APPLE_CC__)
 /* for EPROTO */
-#include <netat/sysglue.h>
 #ifndef EPROTO
 #define EPROTO EPROTOTYPE
 #endif
