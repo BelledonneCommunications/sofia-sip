@@ -1,3 +1,15 @@
+2006-01-23  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Removed *_dll.h files - defining *_DLL macros in <su_config.h>.
+
+  * Using random probe when finding port that is available with all transports.
+
+  * Updated auth_mod API.
+
+    Added auth_status_ref().
+    Removed antique functions auth_mod_check_ireq(), auth_mod_check_ireq2() and
+    auth_mod_check_msg().
+
 2006-01-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Fixed doxygen input files (kv).
