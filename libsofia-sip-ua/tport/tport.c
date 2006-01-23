@@ -1847,6 +1847,7 @@ int tport_bind_server(tport_master_t *mr,
   tport_primary_t *pri = NULL, **tbf;
   su_localinfo_t *li = NULL;
   unsigned p;
+  unsigned short step = 0;
 
   struct tport_nat_s *nat;
 
@@ -2063,7 +2064,16 @@ int tport_bind_server(tport_master_t *mr,
 	  not_supported = 1;
 
         if (ephemeral_port != 0 && ephemeral_port != -1) {
-	  p += 4025;		/* relative prime to 65536 - 1024 */
+	  while (step == 0) {
+	    /* step should be relative prime to 65536 - 1024 */
+	    /* 65536 - 1024 = 7 * 3 * 3 * 1024 */
+	    step = (random() | 1) % (65535 - 1024);
+	    if (step % 3 == 0)
+	      step = (step + 2) % (65536 - 1024);
+	    if (step % 7 == 0)
+	      step = (step + 2) % (65536 - 1024);
+	  }
+	  p += step;
           if (p >= 65536) p -= (65536 - 1024);
           if (p == ephemeral_port)
             ephemeral_port = 0;
