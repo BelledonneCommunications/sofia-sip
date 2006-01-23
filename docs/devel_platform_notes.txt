@@ -1,0 +1,32 @@
+=====================================================
+Notes on compiling Sofia-SIP in different enviroments
+=====================================================
+
+Generic POSIX (GNU/Linux, BSD, ...) 
+-----------------------------------
+
+Sofia-SIP should compile out-of-the-box on generic POSIX
+machines. Use the standard GNU autotool 'configure+make'
+procedure to build the software. See top-level INSTALL
+for more information.
+
+Mac OS X 
+--------
+
+TBD
+
+Win32 / Mingw 
+-------------
+
+TBD 
+
+Win32 / Cygwin 
+--------------
+
+TBD
+
+Visual-C on win32
+-----------------
+
+See sofia-sip/win32/README.txt
+

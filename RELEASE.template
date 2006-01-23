@@ -1,0 +1,39 @@
+==============================================
+Release notes for current version of Sofia-SIP
+==============================================
+
+Changes since last release
+--------------------------
+
+<changes since last written in freshmeat.net "Changes:" style;
+ and in less than 10 lines />
+
+
+API/ABI changes and versioning
+------------------------------
+
+<see previous release notes at
+ http://sofia-sip.sourceforge.net/relnotes/ for examples ;
+ - should include all changes to public headers, and 
+   other important information to developers; 
+ - and should be updated _continuously_! />
+
+
+Contributors to this release
+----------------------------
+
+<list of people who contributed to _this_ release
+ - update as people's patches are added, or when
+   you commit stuff
+ - name of the contributor should be enough
+/> 
+
+
+Bugs fixed in this release
+--------------------------
+
+< notable bugs fixed in this release
+ - check the sf.net bug tracker; see closed bugs,
+   sorted by closing date
+ - other bugs as fixed in CVS/darcs
+/>
