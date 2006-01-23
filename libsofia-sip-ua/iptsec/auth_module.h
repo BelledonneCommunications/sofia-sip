@@ -26,7 +26,7 @@
 #define AUTH_MODULE_H 
 
 /**@file auth_module.h  
- * @brief Authentication verification interface for NTA network elements.
+ * @brief Authentication verification interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
@@ -35,9 +35,6 @@
 
 #ifndef SU_TAG_H
 #include <su_tag.h>
-#endif
-#ifndef AUTH_DLL_H
-#include <auth_dll.h>
 #endif
 #ifndef SU_WAIT_H
 #include <su_wait.h>
@@ -77,6 +74,23 @@ typedef struct auth_uplugin_t auth_uplugin_t;
 /** Callback from completeted asynchronous authentication operation. */
 typedef void auth_callback_t(auth_magic_t *, auth_status_t *);
 
+/**Authentication operation result.
+ *
+ * The auth_status_t structure is used to store the status of the
+ * authentication operation and all the related data. The application
+ * verifying the authentication fills the auth_status_t structure, then
+ * calls auth_mod_method() (or auth_mod_challenge()). The operation result
+ * is stored in the structure. 
+ *
+ * If the operation is asynchronous, only a preliminary result is stored in
+ * the auth_status_t structure when the call to auth_mod_method() returns. 
+ * In that case, the application @b must assign a callback function to the
+ * structure. The callback function is invoked when the authentication
+ * operation is completed.
+ *
+ * It is recommended that the auth_status_t structure is allocated with
+ * auth_status_new() or initialized with auth_status_init() function.
+ */
 struct auth_status_t
 {
   su_home_t       as_home[1];	/**< Memory home for authentication */
@@ -84,31 +98,37 @@ struct auth_status_t
   int          	  as_status;	/**< Return authorization status [out] */
   char const   	 *as_phrase;	/**< Return response phrase [out] */
   char const   	 *as_user;	/**< Authenticated user name [in/out] */
-  char const   	 *as_display;	/**< Return user's real name [out] */
+  char const   	 *as_display;	/**< Return user's real name [in/out] */
   url_t const    *as_user_uri;	/**< Return user's identity [in/out] */
 
-  msg_time_t      as_nonce_issued; /**< Nonce issue time [out] */
-  unsigned        as_anonymous:1;/**< Return true if user is anonymous [out] */
-  unsigned        as_stale:1;	/**< Credentials were stale [out] */
-  unsigned        as_allow:1;	/**< Method cannot be challenged [out] */
-  unsigned        as_nextnonce:1; /**< Client used nextnonce [out] */
-  unsigned :0;
+  su_addrinfo_t  *as_source;	/**< Source address [in] */
+
   char const   	 *as_realm;	/**< Authentication realm [in] */
   char const  	 *as_domain;	/**< Hostname [in] */
   char const  	 *as_uri;	/**< Request-URI [in] */
   char const     *as_pdomain;	/**< Domain parameter [in] (ignored). */
   char const   	 *as_method;	/**< Method name to authenticate [in] */
+
   void const   	 *as_body;	/**< Message body to protect [in] */
   int          	  as_bodylen;	/**< Length of message body [in] */
-  su_addrinfo_t  *as_source;	/**< Source address [in] */
+
+  msg_time_t      as_nonce_issued; /**< Nonce issue time [out] */
+  unsigned   	  as_blacklist; /**< Blacklist time [out] */
+  unsigned        as_anonymous:1;/**< Return true if user is anonymous [out] */
+  unsigned        as_stale:1;	/**< Credentials were stale [out] */
+  unsigned        as_allow:1;	/**< Method cannot be challenged [out] */
+  unsigned        as_nextnonce:1; /**< Client used nextnonce [out] */
+  unsigned :0;
 
   msg_header_t 	 *as_response;	/**< Authentication challenge [out] */
   msg_header_t   *as_info;	/**< Authentication-Info [out] */
   msg_header_t 	 *as_match;	/**< Used authentication header [out] */
-  unsigned     	  as_blacklist; /**< Blacklist time [out] */
 
+  /** @defgroup Callback information for asynchronous operation.  */
+  /** @{ */
   auth_magic_t   *as_magic;	/**< Application data [in] */
   auth_callback_t*as_callback;	/**< Completion callback [in] */
+  /** @} */
 
   /** Pointer to extended state, used exclusively by plugin modules. */
   auth_splugin_t *as_plugin;	
@@ -152,6 +172,8 @@ auth_status_t *auth_status_init(void *, int size);
 
 auth_status_t *auth_status_new(su_home_t *);
 
+auth_status_t *auth_status_ref(auth_status_t *as);
+
 void auth_status_unref(auth_status_t *as);
 
 void auth_mod_method(auth_mod_t *am,
@@ -189,14 +211,6 @@ void auth_mod_check(auth_mod_t *am,
 		    auth_status_t *as,
 		    sip_t const *sip,
 		    auth_kind_t proxy);
-
-int auth_mod_check_ireq(auth_mod_t *, nta_leg_t *,
-			nta_incoming_t *, sip_t const *, auth_kind_t);
-int auth_mod_check_ireq2(auth_mod_t *, nta_incoming_t *,
-			 msg_t *, sip_t *, auth_kind_t);
-int auth_mod_check_msg(auth_mod_t *, nta_agent_t *, msg_t *, 
-		       sip_t *, auth_kind_t);
-
 #endif
 
 #ifdef HTTP_H

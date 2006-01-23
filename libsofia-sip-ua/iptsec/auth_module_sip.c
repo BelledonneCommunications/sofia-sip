@@ -82,17 +82,6 @@ void auth_mod_check(auth_mod_t *am,
   credentials = proxy ? sip->sip_proxy_authorization : sip->sip_authorization;
   challenger = proxy ? sip_proxy_challenger : sip_server_challenger;
 
-#if 0
-  /* Mother of all kludges. Allow local client */
-  if (proxy != auth_server &&
-      sip->sip_via && 
-      strcmp(sip->sip_via->v_host, "62.254.248.33") == 0 &&
-      strcmp(sip->sip_via->v_port, "5050") == 0) {
-    as->as_status = 0;	/* Successful authentication! */
-    return;		
-  }
-#endif
-
   if (sip->sip_request)
     as->as_method = sip->sip_request->rq_method_name;
 
@@ -101,91 +90,4 @@ void auth_mod_check(auth_mod_t *am,
       as->as_bodylen = sip->sip_payload->pl_len;
 
   auth_mod_method(am, as, credentials, challenger);
-}
-
-/** Authenticate an incoming SIP transaction. 
- *
- */
-int auth_mod_check_ireq(auth_mod_t *am,
-			nta_leg_t *leg,
-			nta_incoming_t *ireq,
-			sip_t const *sip,
-			auth_kind_t proxy)
-{
-  auth_status_t as[1] = { AUTH_STATUS_INIT };
-  
-  auth_mod_check(am, as, sip, proxy);
-
-  if (as->as_status) {
-    nta_incoming_treply(ireq, as->as_status, as->as_phrase, 
-			SIPTAG_HEADER((sip_header_t *)as->as_response), 
-			TAG_END());
-  }
-  AUTH_RESPONSE_DEINIT(as);
-
-  return as->as_status;
-}
-
-int auth_mod_check_ireq2(auth_mod_t *am,
-			 nta_incoming_t *ireq,
-			 msg_t *msg,
-			 sip_t *sip,
-			 auth_kind_t proxy)
-{
-  auth_status_t as[1] = { AUTH_STATUS_INIT };
-
-  auth_mod_check(am, as, sip, proxy);
-
-  if (proxy == auth_consume) {
-    if (as->as_match) 
-      sip_header_remove(msg, sip, (sip_header_t *)as->as_match);
-    return 0;
-  }
-
-  if (as->as_status) {
-    nta_incoming_treply(ireq, as->as_status, as->as_phrase, 
-			SIPTAG_HEADER((sip_header_t *)as->as_response), 
-			TAG_END());
-  }
-  else {
-    if (proxy == auth_proxy_consume && as->as_match) 
-      sip_header_remove(msg, sip, (sip_header_t *)as->as_match);
-  }
-
-  AUTH_RESPONSE_DEINIT(as);
-
-  return as->as_status;
-}
-
-/** Authenticate an incoming SIP message. 
- */
-int auth_mod_check_msg(auth_mod_t *am,
-		       nta_agent_t *nta,
-		       msg_t *msg,
-		       sip_t *sip,
-		       auth_kind_t proxy)
-{
-  auth_status_t as[1] = { AUTH_STATUS_INIT };
-
-  auth_mod_check(am, as, sip, proxy);
-
-  if (proxy == auth_consume) {
-    if (as->as_match) 
-      sip_header_remove(msg, sip, (sip_header_t *)as->as_match);
-    return 0;
-  } 
-
- if (as->as_status) {
-    nta_msg_treply(nta, msg, as->as_status, as->as_phrase,
-		   SIPTAG_HEADER((sip_header_t *)as->as_response), 
-		   TAG_END());
-  }
-  else {
-    if (proxy == auth_proxy_consume && as->as_match) 
-      sip_header_remove(msg, sip, (sip_header_t *)as->as_match);
-  }
-
-  AUTH_RESPONSE_DEINIT(as);
-
-  return as->as_status;
 }

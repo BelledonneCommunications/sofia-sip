@@ -270,24 +270,6 @@ void auth_mod_unref(auth_mod_t *am)
   auth_mod_destroy(am);
 }
 
-/** @class auth_status_t 
- * @brief Authentication operation.
- *
- * The auth_status_t structure is used to store the status of the
- * authentication operation and all the related data. The application
- * verifying the authentication fills the auth_status_t structure, then
- * calls auth_mod_method() (or auth_mod_challenge()). The operation result
- * is stored in the structure. 
- *
- * If the operation is asynchronous, only a preliminary result is stored in
- * the auth_status_t structure when the call to auth_mod_method() returns. 
- * In that case, the application can assign a callback function to the
- * structure. The callback function is invoked when the authentication
- * operation is completed.
- *
- * It is recommended that the auth_status_t structure is initialized with
- * auth_status_init() function.
- */
 
 /** Initialize a auth_status_t stucture.
  *
@@ -323,11 +305,19 @@ auth_status_t *auth_status_new(su_home_t *home)
   return as;
 }
 
+/** Create a new reference to an auth_status_t structure.
+ * @relates auth_status_t
+ */
+auth_status_t *auth_status_ref(auth_status_t *as)
+{
+  return (auth_status_t *)su_home_ref(as->as_home);
+}
+
 /** Destroy (a reference to) an auth_status_t structure. @relates auth_status_t
  */
 void auth_status_unref(auth_status_t *as)
 {
-  su_home_zap(as->as_home);
+  su_home_unref(as->as_home);
 }
 
 /** Authenticate user.
