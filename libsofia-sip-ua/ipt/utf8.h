@@ -53,14 +53,6 @@ typedef unsigned char  ucs1;
 typedef unsigned short ucs2;
 typedef unsigned int   ucs4;
 
-#ifndef IPT_DLL
-#ifndef WIN32
-#define IPT_DLL
-#else
-#define IPT_DLL __declspec(dllimport)
-#endif
-#endif
-
 size_t utf8_width(const utf8 *);
 
 /* Latin-1 encoding/decoding */

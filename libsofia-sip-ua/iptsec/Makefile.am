@@ -28,7 +28,7 @@ TESTS = 		test_auth_digest
 
 BUILT_SOURCES = 	auth_tag_ref.c
 
-include_sofia_HEADERS =       auth_client.h auth_digest.h auth_dll.h \
+include_sofia_HEADERS =       auth_client.h auth_digest.h \
 			auth_module.h auth_plugin.h
 
 libiptsec_la_SOURCES = 	iptsec_debug.h \

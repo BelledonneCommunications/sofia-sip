@@ -99,10 +99,6 @@ typedef union {
 
 #endif
 
-#ifndef URL_DLL
-#include <url_dll.h>
-#endif
-
 #ifndef URL_H /** Defined when url.h has been included. */
 #define URL_H
 

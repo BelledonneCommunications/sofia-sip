@@ -23,7 +23,7 @@ TESTS = 		test_http
 # Rules for building the targets
 
 PUBLIC_H = http.h http_header.h http_parser.h \
-	   http_tag_class.h http_dll.h http_status.h http_hclasses.h
+	   http_tag_class.h http_status.h http_hclasses.h
 
 BUILT_H = http_protos.h http_tag.h 
 BUILT_C = http_tag.c http_tag_ref.c http_parser_table.c

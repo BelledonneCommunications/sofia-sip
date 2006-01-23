@@ -20,7 +20,7 @@ noinst_PROGRAMS = 	torture_url test_urlmap
 
 BUILT_SOURCES =		url_tag_ref.c
 
-include_sofia_HEADERS =       url.h url_dll.h url_tag.h url_tag_class.h
+include_sofia_HEADERS =       url.h url_tag.h url_tag_class.h
 
 liburl_la_SOURCES = 	url.c url_tag.c url_tag_ref.c
 

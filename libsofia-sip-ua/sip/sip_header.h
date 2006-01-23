@@ -55,8 +55,6 @@
 #include <string.h>
 #endif
 
-#include <sip_dll.h>
-
 SOFIA_BEGIN_DECLS
 
 /** @internal SIP parser description. */

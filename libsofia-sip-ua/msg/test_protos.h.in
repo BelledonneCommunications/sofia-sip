@@ -46,10 +46,6 @@
 #include <su_tag.h>
 #include <su_tag_class.h>
 
-#ifndef MSG_DLL_H
-#include <msg_dll.h>
-#endif
-
 #ifndef MSG_HEADER_H
 #include <msg_header.h>
 #endif

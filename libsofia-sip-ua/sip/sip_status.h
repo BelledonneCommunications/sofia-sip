@@ -36,7 +36,6 @@
  * @date Created: Tue Jun  6 17:43:46 2000 ppessi
  */
 
-#include <sip_dll.h>
 #include <su_config.h>
 
 SOFIA_BEGIN_DECLS

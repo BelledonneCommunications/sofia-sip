@@ -45,7 +45,6 @@
 #ifndef MSG_TYPES_H
 #include <msg_types.h>
 #endif
-#include <sip_dll.h>
 
 SOFIA_BEGIN_DECLS
 

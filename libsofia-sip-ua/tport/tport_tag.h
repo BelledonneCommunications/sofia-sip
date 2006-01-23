@@ -33,14 +33,6 @@
  * @date Created: Sat Oct 12 18:39:48 2002 ppessi
  */
 
-#ifndef TPORT_DLL
-#ifndef WIN32
-#define TPORT_DLL
-#else
-#define TPORT_DLL __declspec(dllimport)
-#endif
-#endif
-
 #ifndef SU_TAG_H
 #include <su_tag.h>
 #endif

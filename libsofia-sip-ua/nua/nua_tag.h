@@ -911,6 +911,30 @@ extern tag_typedef_t nutag_handle;
 #define NUTAG_HANDLE_REF(x)     nutag_handle_ref, nutag_handle_vr(&(x))
 extern tag_typedef_t nutag_handle_ref;
 
+/** Registration handle (used with requests and nua_respond())
+ *
+ * When a new request is made or new call is responded, a new identity can
+ * be selected with NUTAG_IDENTITY(). The identity comprises of @b From
+ * header, initial route set, local contact header and media tags associated
+ * with it, soa handle and so on. User can make multiple registrations using
+ * multiple identities.
+ *
+ * @par Used with
+ *    nua_invite()
+ *
+ * @par Parameter type
+ *    nua_handle_t *
+ *
+ * @par Values
+ *
+ * Corresponding tag taking reference parameter is NUTAG_IDENTITY_REF()
+*/
+#define NUTAG_IDENTITY(x)   nutag_identity, nutag_handle_v(x)
+extern tag_typedef_t nutag_identity;
+
+#define NUTAG_IDENTITY_REF(x) nutag_identity_ref, nutag_handle_vr(&(x))
+extern tag_typedef_t nutag_identity_ref;
+
 /** Refer reply handle (used with refer)
  *
  * When making a call in response to a REFER request [RFC3515] with

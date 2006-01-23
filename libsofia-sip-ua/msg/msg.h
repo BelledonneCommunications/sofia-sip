@@ -33,7 +33,6 @@
  * @date Created: Fri Feb 18 08:54:48 2000 ppessi
  */
 
-#include <msg_dll.h>
 #include <msg_types.h>
 
 SOFIA_BEGIN_DECLS

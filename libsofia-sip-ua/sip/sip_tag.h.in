@@ -51,7 +51,6 @@
 #ifndef SIP_H
 #include <sip.h>
 #endif
-#include <sip_dll.h>
 
 SOFIA_BEGIN_DECLS
 

@@ -37,9 +37,8 @@
 
 #include <su_configure.h>
 
-#define SU_DLL
-
 #if defined(__GNUC__)
+/* Special attributes for GNU C */
 #if __GNUC__ < 3 && (!defined(__GNUC_MINOR__) || __GNUC_MINOR__ < 96)
 #define __malloc__		/* avoid spurious warnigns */
 #endif
@@ -49,11 +48,65 @@
 
 /* C++ linkage needs to know that types and declarations are C, not C++.  */
 #if defined(__cplusplus)
+/** Begin declarations in Sofia header files */
 # define SOFIA_BEGIN_DECLS	extern "C" {
+/** End declarations in Sofia header files */
 # define SOFIA_END_DECLS	}
 #else
 # define SOFIA_BEGIN_DECLS
 # define SOFIA_END_DECLS
 #endif
+
+/* ---------------------------------------------------------------------- */
+/* Macros required by Win32 linkage */
+
+/** SOFIAPUBFUN declares an exported function */
+#define SOFIAPUBFUN
+/** SOFIAPUBVAR declares an exported variable */
+#define SOFIAPUBVAR extern
+/** SOFIACALL declares the calling convention for exported functions */
+#define SOFIACALL
+
+/* Win32 linkage */
+
+/* Windows platform with MS/Borland/Cygwin/MinGW32 compiler */
+#if defined(_WIN32) && \
+  (defined(_MSC_VER) || defined(__BORLANDC__) ||  \
+   defined(__CYGWIN__) || defined(__MINGW32__))
+  #undef SOFIAPUBFUN
+  #undef SOFIAPUBVAR
+  #undef SOFIACALL
+  #if defined(IN_LIBSOFIA_SIP_UA) && !defined(LIBSOFIA_SIP_UA_STATIC)
+    #define SOFIAPUBFUN __declspec(dllexport)
+    #define SOFIAPUBVAR __declspec(dllexport)
+  #else
+    #if !defined(LIBSOFIA_SIP_UA_STATIC)
+      #define SOFIAPUBFUN __declspec(dllimport)
+      #define SOFIAPUBVAR __declspec(dllimport) extern
+    #else
+      #define SOFIAPUBFUN
+      #define SOFIAPUBVAR extern
+    #endif
+  #endif
+  #define SOFIACALL __cdecl
+  #if !defined _REENTRANT
+    #define _REENTRANT
+  #endif
+#endif
+
+#define BNF_DLL   SOFIAPUBFUN
+#define HTTP_DLL  SOFIAPUBFUN
+#define IPT_DLL   SOFIAPUBFUN
+#define AUTH_DLL  SOFIAPUBFUN
+#define MSG_DLL   SOFIAPUBFUN
+#define NEA_DLL   SOFIAPUBFUN
+#define NTA_DLL   SOFIAPUBFUN
+#define NTH_DLL   SOFIAPUBFUN
+#define SDP_DLL   SOFIAPUBFUN
+#define SIP_DLL   SOFIAPUBFUN
+#define SU_DLL    SOFIAPUBFUN
+#define TPORT_DLL SOFIAPUBFUN
+#define URL_DLL   SOFIAPUBFUN
+#define MSG_TEST_DLL SOFIAPUBFUN
 
 #endif /* SU_CONFIG_H */

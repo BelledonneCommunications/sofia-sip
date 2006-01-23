@@ -47,14 +47,6 @@
 
 SOFIA_BEGIN_DECLS
 
-#ifndef NTH_DLL
-#ifndef WIN32
-#define NTH_DLL
-#else
-#define NTH_DLL __declspec(dllimport)
-#endif
-#endif
-
 /** List of all nth tags */
 NTH_DLL extern tagi_t nth_client_tags[];
 

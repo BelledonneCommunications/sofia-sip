@@ -47,14 +47,6 @@
 #include <nta_tag.h>
 #endif
 
-#ifndef NEA_DLL
-#ifndef WIN32
-#define NEA_DLL
-#else
-#define NEA_DLL __declspec(dllimport)
-#endif
-#endif
-
 SOFIA_BEGIN_DECLS
 
 /** Event states */

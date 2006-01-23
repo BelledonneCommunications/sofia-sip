@@ -31,7 +31,7 @@ TESTS_ENVIRONMENT =	$(SHELL)
 BUILT_SOURCES =		nta_tag_ref.c
 
 include_sofia_HEADERS =       nta.h nta_stateless.h nta_tport.h \
-			nta_tag.h nta_dll.h sl_utils.h 
+			nta_tag.h sl_utils.h 
 
 libnta_la_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
 			nta_internal.h \

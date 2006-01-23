@@ -42,8 +42,6 @@
 #include <su_tag_class.h>
 #endif
 
-#include <url_dll.h>
-
 SOFIA_BEGIN_DECLS
 
 URL_DLL extern tag_class_t url_tag_class[1];

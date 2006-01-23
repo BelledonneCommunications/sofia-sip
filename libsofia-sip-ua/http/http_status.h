@@ -35,7 +35,6 @@
  */
 
 #include <su_config.h>
-#include <http_dll.h>
 
 SOFIA_BEGIN_DECLS
 

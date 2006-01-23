@@ -35,7 +35,11 @@
  *
  */
 
+#include <su_config.h>
+
 #include <string.h>
+
+SOFIA_BEGIN_DECLS
 
 /* Parsing tokens */
 /** Control characters. */
@@ -148,18 +152,9 @@ enum {
   bnf_param = bnf_token | bnf_param0 /**< SIP/HTTP parameter */
 };
 
-#ifndef BNF_DLL
-#ifndef WIN32
-#define BNF_DLL
-#else
-#define BNF_DLL __declspec(dllimport)
-#endif
-#endif
+
 
 BNF_DLL extern 
-#ifdef __cplusplus
-"C"
-#endif
 /** Table for determining class of a character */
 unsigned char const _bnf_table[256];
 
@@ -302,5 +297,7 @@ static inline int span_quoted(char const *s)
 
 /** Get number of characters belonging to url scheme */
 #define span_url_scheme(s) strspn(s, URL_SCHEME)
+
+SOFIA_END_DECLS
 
 #endif /* !defined BNF_H */

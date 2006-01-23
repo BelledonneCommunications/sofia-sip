@@ -32,13 +32,6 @@
 
 #include "config.h"
 
-#include <string.h>
-
-/* include bodies of inline functions */
-#if !HAVE_INLINE
-#define BNF_INLINE
-#endif
-
 #include "bnf.h"
 
 #define ws    bnf_ws
@@ -52,7 +45,6 @@
 #define mtok  bnf_mark|bnf_token0
 #define smtok bnf_mark|bnf_token0|bnf_safe
 #define safe  bnf_safe
-
 
 unsigned char const _bnf_table[256] = {
   0,     0,     0,     0,     0,     0,     0,     0,

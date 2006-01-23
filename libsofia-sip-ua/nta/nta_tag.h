@@ -45,11 +45,6 @@
 #include <url_tag.h>
 #endif
 
-#ifndef NTA_DLL_H
-#include <nta_dll.h>
-#endif
-
-
 SOFIA_BEGIN_DECLS
 
 /** List of all nta tags. */

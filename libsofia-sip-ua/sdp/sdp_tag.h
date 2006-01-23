@@ -41,14 +41,6 @@
 #include <su_tag_class.h>
 #endif
 
-#ifndef SDP_DLL
-#ifndef WIN32
-#define SDP_DLL
-#else
-#define SDP_DLL __declspec(dllimport)
-#endif
-#endif
-
 SOFIA_BEGIN_DECLS
 
 struct sdp_session_s;

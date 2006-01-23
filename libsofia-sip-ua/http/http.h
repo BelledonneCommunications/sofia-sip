@@ -475,8 +475,6 @@ union http_header_u {
 
 };
 
-#include <http_dll.h>
-
 SOFIA_END_DECLS
 
 #endif /* !defined(HTTP_H) */
