@@ -123,6 +123,10 @@ SOFIA_BEGIN_DECLS
 /*#define IS_NON_LWS(c)    (c && !(_bnf_table[(unsigned char)c] & bnf_lws))*/
 /** Test if @c is a digit. */
 #define IS_DIGIT(c)   	 ((c) >= '0' && (c) <= '9')
+/** Test if @c is alphabetic. */
+#define IS_ALPHA(c)      (c && ((_bnf_table[(unsigned char)c] & bnf_alpha)))
+/** Test if @c is alphanumeric. */
+#define IS_ALPHANUM(c)   (c && (IS_DIGIT(c) || IS_ALPHA(c)))
 /** Test if @c is URL-unreserved. */
 #define IS_UNRESERVED(c) ((_bnf_table[(unsigned char)c] & bnf_unreserved))
 /** Test if @c is URL-reserved. */
@@ -151,8 +155,6 @@ enum {
   bnf_param0 = 128,				/**< SIP parameter, not token */
   bnf_param = bnf_token | bnf_param0 /**< SIP/HTTP parameter */
 };
-
-
 
 BNF_DLL extern 
 /** Table for determining class of a character */
@@ -297,6 +299,20 @@ static inline int span_quoted(char const *s)
 
 /** Get number of characters belonging to url scheme */
 #define span_url_scheme(s) strspn(s, URL_SCHEME)
+
+BNF_DLL int span_ip4_address(char const *host);
+BNF_DLL int span_ip6_address(char const *host);
+BNF_DLL int span_ip6_reference(char const *host);
+BNF_DLL int span_ip_address(char const *host);
+BNF_DLL int span_domain(char const *host);
+BNF_DLL int span_host(char const *host);
+
+BNF_DLL int scan_ip4_address(char **inout_host);
+BNF_DLL int scan_ip6_address(char **inout_host);
+BNF_DLL int scan_ip6_reference(char **inout_host);
+BNF_DLL int scan_ip_address(char **inout_host);
+BNF_DLL int scan_domain(char **inout_host);
+BNF_DLL int scan_host(char **inout_host);
 
 SOFIA_END_DECLS
 

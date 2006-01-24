@@ -49,30 +49,6 @@ static int test_flags = 0;
 
 char const name[] = "torture_bnf";
 
-void usage(void)
-{
-  fprintf(stderr, "usage: %s [-v]\n", name);
-}
-
-static int bnf_test(void);
-
-int main(int argc, char *argv[])
-{
-  int retval = 0;
-  int i;
-
-  for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
-      test_flags |= tst_verbatim;
-    else
-      usage();
-  }
-
-  retval |= bnf_test(); fflush(stdout);
-
-  return retval;
-}
-
 int count_bnf(int bnf_flags)
 {
   int i, n;
@@ -98,7 +74,7 @@ int bnf_test(void)
   TEST(span_param(SIP_PARAM), strlen(SIP_PARAM));
   TEST(count_bnf(bnf_param), strlen(SIP_PARAM "$"));
 
-  TEST(span_unreserved(URL_UNRESERVED URL_ESCAPED), 
+  TEST(span_unreserved(URL_UNRESERVED URL_ESCAPED),
        strlen(URL_UNRESERVED URL_ESCAPED));
 
   TEST(count_bnf(bnf_unreserved),
@@ -111,3 +87,222 @@ int bnf_test(void)
 
   END();
 }
+
+int ip_test(void)
+{
+  BEGIN();
+  char *s;
+
+  TEST(span_ip4_address("127.255.249.000,"), 15);
+  TEST(span_ip4_address("0.00.000.000:,"), 12);
+
+  /* Test error detection */
+  TEST(span_ip4_address("256.00.000.000:,"), 0);
+  TEST(span_ip4_address("255.00.000.0000,"), 0);
+  TEST(span_ip4_address("255.00.000.199."), 0);
+
+  {
+    char ip0[] = "010.250.020.000,";
+    char ip1[] = "0.00.000.000:,";
+    char ip2[] = "256.00.000.000:,";
+    char ip3[] = "255.00.000.0000,";
+    char ip4[] = "255.00.000.199.";
+
+    s = ip0;
+    TEST(scan_ip4_address(&s), 15); TEST_S(s, ","); TEST_S(ip0, "10.250.20.0");
+
+    s = ip1;
+    TEST(scan_ip4_address(&s), 12); TEST_S(s, ":,"); TEST_S(ip1, "0.0.0.0");
+
+    /* Test error detection */
+    s = ip2; TEST(scan_ip4_address(&s), -1);
+    s = ip3; TEST(scan_ip4_address(&s), -1);
+    s = ip4; TEST(scan_ip4_address(&s), -1);
+  }
+
+  TEST(span_ip6_address("dead:beef:feed:ded:0:1:2:3"), 26);
+  TEST(span_ip6_address("::beef:feed:ded:0:1:2:3"), 23);
+  TEST(span_ip6_address("::255.0.0.0,"), 11);
+  TEST(span_ip6_address("::,"), 2);
+
+  TEST(span_ip_address("[dead:beef:feed:ded:0:1:2:3]"), 28);
+  TEST(span_ip_address("::255.0.0.0,"), 11);
+  TEST(span_ip_address("[::255.0.0.0]:"), 13);
+
+  TEST(span_ip6_address("dead:beef:feed::0ded:0:1:2:3"), 28);
+  TEST(span_ip6_address("dead:beef:feed::0ded:0000:0001:0002:0003"), 40);
+
+  TEST(span_ip6_address("dead:beef:feed::0ded::0000:0001:0002:0003"), 0);
+  TEST(span_ip6_address("::dead:beef:feed::0ded:0000:0001:0002:0003"), 0);
+  TEST(span_ip6_address("dead:beef:feed:ded:0:1:2:3:4"), 0);
+  TEST(span_ip6_address("dead:beef:feed:00ded:0:1:2:3"), 0);
+  TEST(span_ip6_address("dead:beef:feed:ded:0:1:2:127.0.0.1"), 0);
+  TEST(span_ip6_address(":255.0.0.0,"), 0);
+  TEST(span_ip6_address("255.0.0.0,"), 0);
+
+  /* Accept colon after IP4-quad */
+  TEST(span_ip_address("::255.0.0.0:5060"), 11);
+
+  /* This is a reference */
+  TEST(span_ip6_address("[dead:beef:feed:ded:0:1:2:3]"), 0);
+  TEST(span_ip6_reference("[dead:beef:feed:ded:0:1:2:3]:1"), 28);
+  TEST(span_ip_address("[dead:beef:feed:ded:0:1:2:3]:1"), 28);
+  TEST(span_ip_address("[127.0.0.1]:1"), 0);
+
+  {
+    char ip0[] = "dead:beef:feed:ded:0:1:2:3,";
+    char ip1[] = "::beef:feed:ded:0:1:2:3;";
+    char ip1b[] = "::beef:feed:ded:0:0:2:3;";
+    char ip2[] = "::255.00.0.0,";
+    char ip3[] = "::,";
+    char ip4[] = "0:0:0:0:0:0:0:0,";
+    char ip4b[] = "0:0:0:0:0:0:0.0.0.0,";
+    char ip4c[] = "0:0:0:0:0:0:0.0.0.1,";
+    char ip5[] = "dead:beef:feed::0ded:0:1:2:3";
+    char ip6[] = "dead:beef:feed::0ded:0000:0001:0002:0003+";
+    char ip7[] = "1:0:0:2:0:0:0:3,";
+    char ip8[] = "1:0:0:2:0:0:3:4,";
+    char ip9[] = "1::2:0:0:0:3,";
+
+    s = ip0; TEST(scan_ip6_address(&s), 26); TEST_S(s, ",");
+    TEST_S(ip0, "dead:beef:feed:ded::1:2:3");
+    s = ip1; TEST(scan_ip6_address(&s), 23); TEST_S(s, ";");
+    TEST_S(ip1, "::beef:feed:ded:0:1:2:3;");
+    s = ip1b; TEST(scan_ip6_address(&s), 23); TEST_S(s, ";");
+    TEST_S(ip1b, "0:beef:feed:ded::2:3");
+    s = ip2; TEST(scan_ip6_address(&s), 12); TEST_S(s, ",");
+    TEST_S(ip2, "::255.0.0.0");
+    s = ip3; TEST(scan_ip6_address(&s), 2); TEST_S(s, ",");
+    TEST_S(ip3, "::,");
+    s = ip4; TEST(scan_ip6_address(&s), 15); TEST_S(s, ",");
+    TEST_S(ip4, "::");
+    s = ip4b; TEST(scan_ip6_address(&s), 19); TEST_S(s, ",");
+    TEST_S(ip4b, "::");
+    s = ip4c; TEST(scan_ip6_address(&s), 19); TEST_S(s, ",");
+    TEST_S(ip4c, "::1");
+    s = ip5; TEST(scan_ip6_address(&s), 28); TEST_S(s, "");
+    TEST_S(ip5, "dead:beef:feed:ded::1:2:3");
+    s = ip6; TEST(scan_ip6_address(&s), 40); TEST_S(s, "+");
+    TEST_S(ip6, "dead:beef:feed:ded::1:2:3");
+    s = ip7; TEST(scan_ip6_address(&s), 15); TEST_S(s, ",");
+    TEST_S(ip7, "1:0:0:2::3");
+    s = ip8; TEST(scan_ip6_address(&s), 15); TEST_S(s, ",");
+    TEST_S(ip8, "1::2:0:0:3:4");
+    s = ip9; TEST(scan_ip6_address(&s), 12); TEST_S(s, ",");
+    TEST_S(ip9, "1:0:0:2::3");
+  }
+
+  {
+    char err0[] = "dead:beef:feed::0ded::0000:0001:0002:0003";
+    char err1[] = "::dead:beef:feed::0ded:0000:0001:0002:0003";
+    char err2[] = "dead:beef:feed:ded:0:1:2:3:4";
+    char err3[] = "dead:beef:feed:00ded:0:1:2:3";
+    char err4[] = "dead:beef:feed:ded:0:1:2:127.0.0.1";
+    char err5[] = ":255.0.0.0,";
+    char err6[] = "255.0.0.0,";
+    char err7[] = "dead:beef:feed:ded:0:1:2:3:4:5,";
+
+    TEST(scan_ip6_address((s = err0, &s)), -1);
+    TEST(scan_ip6_address((s = err1, &s)), -1);
+    TEST(scan_ip6_address((s = err2, &s)), -1);
+    TEST(scan_ip6_address((s = err3, &s)), -1);
+    TEST(scan_ip6_address((s = err4, &s)), -1);
+    TEST(scan_ip6_address((s = err5, &s)), -1);
+    TEST(scan_ip6_address((s = err6, &s)), -1);
+    TEST(scan_ip6_address((s = err7, &s)), -1);
+  }
+
+  {
+    char err0[] = "[dead:beef:feed::0ded::0000:0001:0002:0003]:";
+    char err1[] = "[::dead:beef:feed::0ded:0000:0001:0002:0003]+";
+    char err2[] = "[dead:beef:feed:ded:0:1:2:3:4]+";
+    char err3[] = "[dead:beef:feed:00ded:0:1:2:3]+";
+    char err4[] = "[dead:beef:feed:ded:0:1:2:127.0.0.1]";
+    char err5[] = "[:255.0.0.0],";
+    char err6[] = "[255.0.0.0],";
+    char err7[] = "[dead:beef:feed:ded:0:1:2:]";
+
+    TEST(scan_ip6_reference((s = err0, &s)), -1);
+    TEST(scan_ip6_reference((s = err1, &s)), -1);
+    TEST(scan_ip6_reference((s = err2, &s)), -1);
+    TEST(scan_ip6_reference((s = err3, &s)), -1);
+    TEST(scan_ip6_reference((s = err4, &s)), -1);
+    TEST(scan_ip6_reference((s = err5, &s)), -1);
+    TEST(scan_ip6_reference((s = err6, &s)), -1);
+    TEST(scan_ip6_reference((s = err7, &s)), -1);
+  }
+
+  END();
+}
+
+#define TEST_SCAN(scanner, input, canonic, output)			\
+  do { char s0[] = input; char *s = s0;					\
+    int n = sizeof(input) - sizeof(output);				\
+    TEST(scanner(&s), n); TEST_S(s, output); TEST_S(s0, canonic); } while(0)
+
+int host_test(void)
+{
+  BEGIN();
+
+  TEST(span_host("rama"), 4);
+  TEST(span_host("ra-ma.1-2.3-4.a4-9."), 19);
+  TEST(span_host("a.1.b"), 5);
+  TEST(span_host("127.255.249.000.a,"), 17);
+  TEST(span_host("127.255.249.000,"), 15);
+  TEST(span_host("0.00.000.000:,"), 12);
+  TEST(span_host("127.255.249.000,"), 15);
+  TEST(span_host("[dead:beef:feed:ded:0:1:2:3]:1"), 28);
+  TEST(span_host("[dead:beef:feed:ded::1:2:3]:1"), 27);
+  TEST(span_host("[::127.0.0.1]:1"), 13);
+
+  TEST_SCAN(scan_host, "rama", "rama", "");
+  TEST_SCAN(scan_host, "rama.", "rama.", "");
+  TEST_SCAN(scan_ip4_address, "127.255.249.000,", "127.255.249.0", ",");
+  TEST_SCAN(scan_host, "127.255.249.000,", "127.255.249.0", ",");
+  TEST_SCAN(scan_host, "a.1.b.", "a.1.b", "");
+  TEST_SCAN(scan_host, "ra-ma.1-2.3-4.a4-9.", "ra-ma.1-2.3-4.a4-9", "");
+  TEST_SCAN(scan_host, "127.255.249.000.a,", "127.255.249.000.a,", ",");
+  TEST_SCAN(scan_host, "0.00.000.000:,", "0.0.0.0", ":,");
+  TEST_SCAN(scan_host, "127.255.249.000,", "127.255.249.0", ",");
+  TEST_SCAN(scan_host, "[dead:beef:feed:ded:0:1:2:3]:1", 
+                       "[dead:beef:feed:ded::1:2:3]", ":1");
+  TEST_SCAN(scan_host, "[::127.0.0.1]:1", "[::127.0.0.1]:1", ":1");
+
+  /* Test error detection */
+  TEST(span_host("256.00.000.000:,"), 0);
+  TEST(span_host("255.00.000.0000,"), 0);
+  TEST(span_host("255.00.000.199."), 0);
+  TEST(span_host("[127.0.0.1]:1"), 0);
+  TEST(span_domain("rama.1"), 0);
+  TEST(span_domain("-ma.1-2.3-4.a4-9."), 0);
+  TEST(span_domain("a..b"), 0);
+  TEST(span_domain("a.b.-"), 0);
+  TEST(span_domain("a.b-"), 0);
+
+  END();
+}
+
+void usage(void)
+{
+  fprintf(stderr, "usage: %s [-v]\n", name);
+}
+
+int main(int argc, char *argv[])
+{
+  int retval = 0;
+  int i;
+
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      test_flags |= tst_verbatim;
+    else
+      usage();
+  }
+
+  retval |= bnf_test(); fflush(stdout);
+  retval |= ip_test(); fflush(stdout);
+  retval |= host_test(); fflush(stdout);
+
+  return retval;
+}
+
