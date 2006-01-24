@@ -109,12 +109,14 @@ struct stun_discovery_s {
   stun_state_t     sd_state;         /**< Progress states */
 
   su_socket_t      sd_socket;        /**< target socket */
+  su_sockaddr_t    sd_bind_addr[1]; /**< local address */
+
   su_socket_t      sd_socket2;       /**< Alternative socket */
 
   int              sd_index;         /**< root_register index */
   
   /* Binding discovery */
-  su_sockaddr_t    sd_local_addr[1];   /**< local address */
+  su_sockaddr_t    sd_addr_seen_outside[1];   /**< local address */
 
 
   /* NAT type related */
@@ -154,10 +156,6 @@ struct stun_handle_s
   su_home_t       sh_home[1];
   su_root_t      *sh_root;          /**< event loop */
   int             sh_root_index;    /**< object index of su_root_register() */
-
-#if 0
-  su_timer_t     *sh_connect_timer; /**< timer for TLS connection */
-#endif
 
   stun_request_t *sh_requests; /**< outgoing requests list */
   stun_discovery_t *sh_discoveries; /**< Actions list */
@@ -274,17 +272,6 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 			       su_timer_t *t,
 			       su_timer_arg_t *arg);
 
-#if 0
-/* not needed.(?) User is responsible for the sockets */
-/**
- *  Return the socket associated with the stun_socket_t structure
- */
-su_socket_t stun_handle_get_bind_socket(stun_handle_t *sh)
-{
-  assert(sh);
-  return sh->sh_bind_socket;
-}
-#endif
 
 /**
  * Return su_root_t assigned to stun_handle_t.
@@ -531,6 +518,7 @@ stun_request_t *stun_request_create(stun_discovery_t *sd)
   req->sr_msg = calloc(sizeof(stun_msg_t), 1);
 
   req->sr_state = stun_discovery_init;
+  memcpy(req->sr_local_addr, sd->sd_bind_addr, sizeof(su_sockaddr_t));
 
   /* Insert this request to the request queue */
   if (sh->sh_requests)
@@ -598,20 +586,36 @@ void stun_handle_destroy(stun_handle_t *sh)
 
 
 /** Create wait object and register it to the handle callback */
-int assign_socket(stun_handle_t *sh, su_socket_t s) 
+int assign_socket(stun_discovery_t *sd, su_socket_t s) 
 {
+  stun_handle_t *sh = sd->sd_handle;
   int events;
-  int index;
   stun_discovery_t *tmp;
+  /* su_localinfo_t clientinfo[1]; */
+  su_sockaddr_t bind_addr;
+  socklen_t bind_len;
+  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  su_sockaddr_t *sa;
+  int err;
   
   su_wait_t wait[1] = { SU_WAIT_INIT };
 
   enter;
 
-  for (tmp = sh->sh_discoveries; tmp; tmp = tmp->sd_next) {
-    if (tmp->sd_socket == s)
-      return tmp->sd_index;
+  if (s == -1) {
+    SU_DEBUG_3(("%s: invalid socket.\n", __func__));
+    return errno = EINVAL, -1;
   }
+
+  for (tmp = sh->sh_discoveries; tmp; tmp = tmp->sd_next) {
+    if (tmp->sd_socket == s) {
+      sd->sd_socket = s;
+      sd->sd_index = tmp->sd_index;
+      memcpy(sd->sd_bind_addr, tmp->sd_bind_addr, sizeof(su_sockaddr_t));
+      return 0;
+    }
+  }
+  sd->sd_socket = s;
 
   /* set socket asynchronous */
   if (su_setblocking(s, 0) < 0) {
@@ -621,6 +625,7 @@ int assign_socket(stun_handle_t *sh, su_socket_t s)
     return -1;
   }
 
+  /* xxx -- check if socket is already assigned to this root */
   events = SU_WAIT_IN | SU_WAIT_ERR;
 
   if (su_wait_create(wait, s, events) == -1) {
@@ -629,17 +634,64 @@ int assign_socket(stun_handle_t *sh, su_socket_t s)
   }
 
   /* Register receiving function with events specified above */
-  if ((index = su_root_register(sh->sh_root,
-				wait, stun_bind_callback,
-				(su_wakeup_arg_t *) sh, 0)) < 0) {
+  if ((sd->sd_index = su_root_register(sh->sh_root,
+				       wait, stun_bind_callback,
+				       (su_wakeup_arg_t *) sh, 0)) < 0) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
 
   SU_DEBUG_7(("%s: socket registered.\n", __func__));
 
-  return index;
+  bind_len = sizeof bind_addr;
+
+  sa = (void *) &bind_addr;
+  bind_len = sizeof bind_addr;
+  memset(sa, 0, sizeof(bind_addr));
+  /* if bound check the error */
+  err = getsockname(s, (struct sockaddr *) sa, &bind_len);
+  if (err < 0 && errno == SOCKET_ERROR) {
+    STUN_ERROR(errno, getsockname);
+    return -1;
+  }
+
+  /* Not bound - bind it */
+  if (sa->su_port == 0) {
+#if defined (__CYGWIN__)
+    get_localinfo(clientinfo);
+#endif
+
+    /* clientinfo->li_family = AF_INET6; */
+    if ((err = bind(s, (struct sockaddr *) sa, bind_len)) < 0) {
+      STUN_ERROR(errno, bind);
+      SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
+		  inet_ntop(sa->su_family, SU_ADDR(sa), 
+			    ipaddr, sizeof(ipaddr)),
+		  (unsigned) ntohs(sa->su_port)));
+      return -1;
+    }
+
+    /* bind_len = clientinfo->li_addrlen; */
+    /* clientinfo->li_addrlen = bind_len; */
+    sa->su_len = bind_len; /* ? */
+  }
+
+  memcpy(&sd->sd_bind_addr, &bind_addr, sizeof bind_addr);
+
+  if (getsockname(s, (struct sockaddr *) &bind_addr, &bind_len) != 0) {
+    STUN_ERROR(errno, getsockname);
+    return -1;
+  }
+
+  SU_DEBUG_3(("%s: local socket is bound to %s:%u\n", __func__,
+	      inet_ntop(bind_addr.su_family, SU_ADDR(&bind_addr), 
+			ipaddr, sizeof(ipaddr)),
+	      (unsigned) ntohs(bind_addr.su_port)));
+
+
+  return 0;
 }
+
 
 static int get_localinfo(su_localinfo_t *clientinfo)
 {
@@ -742,74 +794,11 @@ int stun_handle_bind(stun_handle_t *sh,
 
   ta_end(ta);
 
-  if (s == -1) {
-    SU_DEBUG_3(("%s: invalid socket.\n", __func__));
-    return errno = EINVAL, -1;
-  }
-
-  if ((index = assign_socket(sh, s)) < 0)
-    return -1;
-
-  bind_len = sizeof bind_addr;
-
-  sa = (void *) &bind_addr;
-  bind_len = sizeof bind_addr;
-  memset(sa, 0, sizeof(bind_addr));
-  /* if bound check the error */
-  err = getsockname(s, (struct sockaddr *) sa, &bind_len);
-  if (err < 0 && errno == SOCKET_ERROR) {
-    STUN_ERROR(errno, getsockname);
-    return -1;
-  }
-
-  memset(clientinfo, 0, sizeof clientinfo);
-  clientinfo->li_addr = &bind_addr;
-  clientinfo->li_addrlen = bind_len;
-
-  if (bind_addr.su_port != 0) {
-    /* already bound */
-    clientinfo->li_family = bind_addr.su_family;
-    /* clientinfo->li_socktype = su_getsocktype(s); */
-  }
-  else {
-    /* Not bound - bind it */
-#if defined (__CYGWIN__)
-    get_localinfo(clientinfo);
-#endif
-
-    /* clientinfo->li_family = AF_INET6; */
-    if ((err = bind(s, (struct sockaddr *) sa, bind_len)) < 0) {
-      STUN_ERROR(errno, bind);
-      SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
-		  inet_ntop(clientinfo->li_family, SU_ADDR(clientinfo->li_addr), 
-			    ipaddr, sizeof(ipaddr)),
-		  (unsigned) ntohs(clientinfo->li_addr->su_port)));
-      return -1;
-    }
-
-    bind_len = clientinfo->li_addrlen;
-    if (getsockname(s, (struct sockaddr *) &bind_addr, &bind_len) != 0) {
-      STUN_ERROR(errno, getsockname);
-      return -1;
-    }
-    clientinfo->li_addrlen = bind_len;
-  }
-   
-  SU_DEBUG_3(("%s: local socket is bound to %s:%u\n", __func__,
-	      inet_ntop(bind_addr.su_family, SU_ADDR(&bind_addr), 
-			ipaddr, sizeof(ipaddr)),
-	      (unsigned) ntohs(clientinfo->li_addr->su_port)));
-
   sd = stun_discovery_create(sh, action);
-  sd->sd_socket = s;
-  sd->sd_index = index;
+  if ((index = assign_socket(sd, s)) < 0)
+    return -1;
 
   req = stun_request_create(sd);
-  
-  clientinfo->li_addr = 
-    memcpy(req->sr_localinfo.li_addr, clientinfo->li_addr,
-	   clientinfo->li_addrlen);
-  memcpy(&req->sr_localinfo, clientinfo, sizeof clientinfo);
 
   if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0 ||
       stun_send_binding_request(req, sh->sh_pri_addr) < 0) {
@@ -834,7 +823,7 @@ su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd)
 
   enter;
 
-  return sd->sd_local_addr;
+  return sd->sd_addr_seen_outside;
 }
 
 stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
@@ -895,7 +884,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 			    tag_type_t tag, tag_value_t value,
 			    ...)
 {
-  int err, index = 0;
+  int err = 0, index = 0;
   ta_list ta;
   char const *server = NULL;
   stun_request_t *req = NULL;
@@ -914,31 +903,16 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 	  STUNTAG_SERVER_REF(server),
 	  TAG_END());
 
+  ta_end(ta);
+
   bind_len = sizeof bind_addr;
 
   if (s < 0)
     return errno = EFAULT, -1;
 
-  if (getsockname(s, (struct sockaddr *) &bind_addr, &bind_len) != 0) {
-    STUN_ERROR(errno, getsockname);
-    return -1;
-  }
-  
-  if ((index = assign_socket(sh, s)) < 0)
-    return errno = EFAULT, -1;
-
-  if (bind_addr.su_port != 0) {
-    /* already bound */
-    /* XXX -- check if socket is already part of the event loop */
-  }
-  else {
-    /* Not bound - bind it */
-    /* get_localinfo(clientinfo); */
-  }
-
   sd = stun_discovery_create(sh, stun_action_get_nattype);
-  sd->sd_socket = s;
-  sd->sd_index = index;
+  if ((index = assign_socket(sd, s)) < 0)
+    return errno = EFAULT, -1;
 
   /* If no server given, use default address from stun_handle_create() */
   if (!server) {
@@ -981,6 +955,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
     stun_free_message(req->sr_msg);
     return -1;
   }
+  req = NULL;
 
   req = stun_request_create(sd);
   if (stun_make_binding_req(sh, req, req->sr_msg, 
@@ -994,12 +969,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
     stun_free_message(req->sr_msg);
   }
 
-  ta_end(ta);
-
-  if (err == -1)
-    return -1;
-
-  return 0;
+  return err;
 }
 
 /********************************************************************
@@ -1256,11 +1226,6 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 			       su_timer_t *t,
 			       su_timer_arg_t *arg)
 {
-#if 0
-  stun_request_t *req = arg;
-  stun_handle_t *sh = req->sr_handle;
-  stun_discovery_t *sd = req->sr_discovery;
-#endif
   stun_discovery_t *sd = arg;
   stun_handle_t *sh = sd->sd_handle;
 
@@ -1673,7 +1638,7 @@ int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   process_binding_request(req, binding_response);
 
   li = &req->sr_localinfo;
-  memcpy(sd->sd_local_addr, li->li_addr, sizeof(su_sockaddr_t));
+  memcpy(sd->sd_addr_seen_outside, li->li_addr, sizeof(su_sockaddr_t));
 
   sd->sd_state = stun_bind_done;
   sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
@@ -1713,7 +1678,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 
   if (req->sr_request_mask == 0) {
     sd->sd_first = 1;
-    memcpy(sd->sd_local_addr, li->li_addr, sizeof(su_sockaddr_t));
+    memcpy(sd->sd_addr_seen_outside, li->li_addr, sizeof(su_sockaddr_t));
   }
   else if (req->sr_request_mask & (CHG_IP | CHG_PORT))
     sd->sd_second = 1;
@@ -1787,7 +1752,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
   }
   else {
     if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
-      if (memcmp(li->li_addr, sd->sd_local_addr, 8) == 0) {
+      if (memcmp(li->li_addr, sd->sd_addr_seen_outside, 8) == 0) {
 	/* Response: Type 6 - Restricted */
 	sd->sd_nattype = stun_nat_res_cone;
       }
@@ -1803,7 +1768,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       return 0;
     }
     if (sd->sd_first && sd->sd_second) {
-      if (memcmp(li->li_addr, sd->sd_local_addr, 8) == 0)
+      if (memcmp(li->li_addr, sd->sd_addr_seen_outside, 8) == 0)
 	sd->sd_nattype = stun_open_internet;
       else
 	sd->sd_nattype = stun_nat_full_cone;
@@ -2224,24 +2189,9 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 	  STUNTAG_SERVER_REF(server),
 	  TAG_END());
 
-  if (s < 0)
-    return errno = EFAULT, -1;
-  
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_len = sizeof(bind_addr);
-  err = getsockname(s, (struct sockaddr *) &bind_addr, &bind_len);
-  if (err < 0 && errno == SOCKET_ERROR) {
-    STUN_ERROR(errno, getsockname);
-    return -1;
-  }
-  STUN_ERROR(errno, getsockname);
-  
-  if ((index = assign_socket(sh, s)) < 0)
-      return errno = EFAULT, -1;
-
   sd = stun_discovery_create(sh, stun_action_get_lifetime);
-  sd->sd_socket = s;
-  sd->sd_index = index;
+  if ((index = assign_socket(sd, s)) < 0)
+      return errno = EFAULT, -1;
 
   /* If no server given, use default address from stun_handle_create() */
   if (!server) {
@@ -2255,18 +2205,10 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
   req = stun_request_create(sd);
 
-  ci = &req->sr_localinfo;
+  /* ci = &req->sr_localinfo; */
 
   /* get local ip address */
-  get_localinfo(ci);
-
-  x_len = sizeof(x_addr);
-  getsockname(s, (struct sockaddr *) &x_addr, &x_len);  
-
-  SU_DEBUG_3(("%s: socket x bound to %s:%u\n", __func__,
-	      inet_ntop(x_addr.su_family, SU_ADDR(&x_addr),
-			ipaddr, sizeof(ipaddr)),
-	      (unsigned) ntohs(x_addr.su_port)));
+  /* get_localinfo(ci); */
 
   /* initialize socket y */
   sockfdy = socket(AF_INET, SOCK_DGRAM, 0);
@@ -2281,15 +2223,19 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
   sd->sd_socket2 = sockfdy;
 
-  if (bind(sockfdy, (struct sockaddr *) ci->li_addr, ci->li_addrlen) < 0) {
+  memset(&y_addr, 0, sizeof(y_addr));
+  memcpy(&y_addr, sd->sd_bind_addr, sizeof(y_addr));
+  y_addr.su_port = 0;
+
+  y_len = sizeof(y_addr);
+  if (bind(sockfdy, (struct sockaddr *) &y_addr, y_len) < 0) {
     return -1;
   }
 
-  y_len = sizeof(y_addr);
   getsockname(sockfdy, (struct sockaddr *) &y_addr, &y_len);  
-    SU_DEBUG_3(("%s: socket y bound to %s:%u\n", __func__,
-		inet_ntop(y_addr.su_family, SU_ADDR(&y_addr), ipaddr, sizeof(ipaddr)),
-		(unsigned) ntohs(y_addr.su_port)));
+  SU_DEBUG_3(("%s: socket y bound to %s:%u\n", __func__,
+	      inet_ntop(y_addr.su_family, SU_ADDR(&y_addr), ipaddr, sizeof(ipaddr)),
+	      (unsigned) ntohs(y_addr.su_port)));
 
   req->sr_from_y = -1;
 
