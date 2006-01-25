@@ -892,6 +892,10 @@ static void *su_clone_main(void *varg)
 
   pthread_cleanup_push(su_clone_signal_parent, varg);
 
+#if SU_HAVE_WINSOCK
+  su_init();
+#endif
+
   port = su_port_create();
   if (!port)
     pthread_exit(NULL);
@@ -934,6 +938,10 @@ static void *su_clone_main(void *varg)
   su_root_destroy(self);   /* Cleanup root */   
 
   SU_PORT_ZAPREF(port, su_clone_main);
+
+#if SU_HAVE_WINSOCK
+  su_deinit();
+#endif
 
   return NULL;
 }

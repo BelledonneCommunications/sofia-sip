@@ -247,7 +247,7 @@ static nta_outgoing_t *outgoing_find(nta_agent_t const *sa,
 				     sip_t const *sip,
 				     sip_via_t const *v);
 static int outgoing_recv(nta_outgoing_t *orq, int status, msg_t *, sip_t *);
-static int outgoing_default_recv(nta_outgoing_t *, int, msg_t *, sip_t *);
+static void outgoing_default_recv(nta_outgoing_t *, int, msg_t *, sip_t *);
 static inline int outgoing_timer(nta_agent_t *, su_duration_t);
 static int outgoing_recv_reliable(nta_outgoing_t *orq, msg_t *msg, sip_t *sip);
 
@@ -7637,7 +7637,7 @@ int outgoing_recv(nta_outgoing_t *orq,
   return 0;
 }
 
-static int outgoing_default_recv(nta_outgoing_t *orq,
+static void outgoing_default_recv(nta_outgoing_t *orq,
 				 int status,
 				 msg_t *msg,
 				 sip_t *sip)

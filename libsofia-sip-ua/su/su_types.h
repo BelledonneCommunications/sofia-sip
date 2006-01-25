@@ -46,6 +46,8 @@
 #include <sys/types.h>
 #endif
 
+#include <stddef.h>
+
 SOFIA_BEGIN_DECLS
 
 #if SU_HAVE_STDINT || SU_HAVE_INTTYPES

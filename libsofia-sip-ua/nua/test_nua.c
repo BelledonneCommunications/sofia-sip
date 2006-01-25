@@ -57,9 +57,9 @@ struct call;
 #include <string.h>
 
 #include <assert.h>
+#include <unistd.h>
 
 #if HAVE_ALARM
-#include <unistd.h>
 #include <signal.h>
 #endif
 
@@ -1097,7 +1097,7 @@ int test_params(struct context *ctx)
 
 static char passwd_name[] = "tmp_sippasswd.XXXXXX";
 
-static void rmtmp(void)
+static void remove_tmp(void)
 {
   if (passwd_name[0])
     unlink(passwd_name);
@@ -1128,7 +1128,7 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
       printf("TEST NUA-2.0.0: init proxy P\n");
 
     temp = mkstemp(passwd_name); TEST_1(temp != -1);
-    atexit(rmtmp);		/* Make sure temp file is unlinked */
+    atexit(remove_tmp);		/* Make sure temp file is unlinked */
     
     TEST(write(temp, passwd, strlen(passwd)), strlen(passwd));
 
@@ -2430,7 +2430,7 @@ int test_reject_401_aka(struct context *ctx)
 	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
-  run_ab_until(ctx, -1, save_until_final_response, -1, reject_401_aka);
+  run_ab_until(ctx, -1, until_terminated, -1, reject_401_aka);
 
   /*
    Client transitions
@@ -4445,7 +4445,7 @@ int test_events(struct context *ctx)
   sip_t const *sip;
   tagi_t const *n_tags, *r_tags;
   url_t b_url[1];
-  nea_sub_t *sub;
+  nea_sub_t *sub = NULL;
 
   char const open[] =
     "<?xml version='1.0' encoding='UTF-8'?>\n"

@@ -147,11 +147,22 @@ static int process_register(struct proxy *proxy,
 static struct registration_entry *
 registration_entry_find(struct proxy const *proxy, url_t const *uri);
 
+static
+auth_challenger_t registrar_challenger[1];
+
 /* Proxy entry point */
 static int 
 test_proxy_init(su_root_t *root, struct proxy *proxy)
 {
   struct proxy_transaction *t;
+
+  auth_challenger_t _registrar_challenger[1] = 
+  {{ 
+      SIP_401_UNAUTHORIZED, 
+      sip_www_authenticate_class,
+      sip_authentication_info_class
+    }};
+  *registrar_challenger = *_registrar_challenger;
 
   proxy->root = root;
 
@@ -393,13 +404,6 @@ LIST_BODIES(static, proxy_transaction, struct proxy_transaction, next, prev);
 /* ---------------------------------------------------------------------- */
 
 static int check_unregister(sip_t const *sip);
-
-auth_challenger_t const registrar_challenger[1] = 
-  {{ 
-      SIP_401_UNAUTHORIZED, 
-      sip_www_authenticate_class,
-      sip_authentication_info_class
-    }};
 
 int process_register(struct proxy *proxy, 
 		     nta_incoming_t *irq, 
