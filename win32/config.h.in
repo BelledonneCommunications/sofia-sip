@@ -297,7 +297,7 @@
 #define PACKAGE_STRING "@PACKAGE_STRING@"
 
 /* Define to the one symbol short name of this package. */
-#undef PACKAGE_TARNAME "@PACKAGE_TARNAME@"
+#define PACKAGE_TARNAME "@PACKAGE_TARNAME@"
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "@PACKAGE_VERSION@"
@@ -312,7 +312,7 @@
 #undef TIME_WITH_SYS_TIME
 
 /* Version number of package */
-#define VERSION @PACKAGE_VERSION@
+#define VERSION "@PACKAGE_VERSION@"
 
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
@@ -374,38 +374,9 @@
 /* Define this as 1 if you have INTERFACE_INFO ioctl */
 #define HAVE_INTERFACE_INFO 	   (1) 
 
-#ifdef LIBSOFIA_SIP_UA_EXPORTS
-/* We are compiling a DLL */
-#define BNF_DLL  __declspec(dllexport)
-#define HTTP_DLL __declspec(dllexport)
-#define IPT_DLL  __declspec(dllexport)
-#define AUTH_DLL __declspec(dllexport)
-#define MSG_DLL  __declspec(dllexport)
-#define NEA_DLL  __declspec(dllexport)
-#define NTA_DLL  __declspec(dllexport)
-#define NTH_DLL  __declspec(dllexport)
-#define SDP_DLL  __declspec(dllexport)
-#define SIP_DLL  __declspec(dllexport)
-#define SU_DLL   __declspec(dllexport)
-#define TPORT_DLL __declspec(dllexport)
-#define URL_DLL  __declspec(dllexport)
-#else /* elif defined(_LIB) */
-#define BNF_DLL
-#define HTTP_DLL
-#define IPT_DLL
-#define AUTH_DLL
-#define MSG_DLL
-#define NEA_DLL
-#define NTA_DLL
-#define NTH_DLL
-#define SDP_DLL
-#define SIP_DLL
-#define SU_DLL
-#define TPORT_DLL
-#define URL_DLL
-#endif
-
 /* Ignore certain warnings */
 #ifdef _MSC_VER
 #pragma warning( disable : 4090 4204 4244 4018 4514 4706 4761)
 #endif
+
+

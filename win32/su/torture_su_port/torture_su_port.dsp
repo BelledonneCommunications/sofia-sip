@@ -88,7 +88,7 @@ SOURCE="..\..\..\libsofia-sip-ua\su\torture_su_port.c"
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\pthread\pthread.lib
+SOURCE=..\..\pthread\pthreadVC2.lib
 # End Source File
 # End Target
 # End Project

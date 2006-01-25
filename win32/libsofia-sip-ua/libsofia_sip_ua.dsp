@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\pthread" /I "." /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /FR /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\..\libsofia-sip-ua\features" /I "..\pthread" /I "." /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "LIBSOFIA_SIP_UA_STATIC" /D "IN_LIBSOFIA_SIP_UA" /FR /YX /FD /c
 # ADD BASE RSC /l 0x40b /d "NDEBUG"
 # ADD RSC /l 0x40b /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\pthread" /I "." /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\..\libsofia-sip-ua\features" /I "..\pthread" /I "." /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /D "LIBSOFIA_SIP_UA_STATIC" /D "IN_LIBSOFIA_SIP_UA" /FR /YX /FD /GZ /c
 # ADD BASE RSC /l 0x40b /d "_DEBUG"
 # ADD RSC /l 0x40b /d "_DEBUG"
 BSC32=bscmake.exe
@@ -100,6 +100,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\su_addrinfo.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\su_alloc.c"
 # End Source File
 # Begin Source File
@@ -109,6 +113,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_alloc_lock.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\su_default_log.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\su\su_errno.c"
 # End Source File
 # Begin Source File
 
@@ -157,10 +165,6 @@ SOURCE="..\..\libsofia-sip-ua\su\su_tag.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\su_tag_io.c"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\su\su_tag_ref.c"
 # End Source File
 # Begin Source File
 
@@ -229,6 +233,14 @@ SOURCE="..\..\libsofia-sip-ua\url\url_tag.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\url\url_tag_ref.c"
+# End Source File
+# End Group
+# Begin Group "features"
+
+# PROP Default_Filter "features*.c"
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\features\sofia_sip_features.c"
 # End Source File
 # End Group
 # Begin Group "bnf"
@@ -300,11 +312,15 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_tag.c"
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\memcspn.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\memmem.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\memspn.c"
+SOURCE="..\..\libsofia-sip-ua\su\memspn.c"
 # End Source File
 # Begin Source File
 
@@ -696,6 +712,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su.h"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\su_addrinfo.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\su_alloc.h"
 # End Source File
 # Begin Source File
@@ -840,15 +860,19 @@ SOURCE="..\..\libsofia-sip-ua\url\url.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\url\url_dll.h"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\url\url_tag.h"
 # End Source File
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\url\url_tag_class.h"
+# End Source File
+# End Group
+# Begin Group "features headers"
+
+# PROP Default_Filter "features*.h"
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\features\sofia_sip_features.h"
 # End Source File
 # End Group
 # Begin Group "bnf headers"
@@ -872,10 +896,6 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_addr.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_auth.h"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\msg\msg_bnf.h"
 # End Source File
 # Begin Source File
@@ -885,10 +905,6 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_buffer.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\msg\msg_date.h"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\msg\msg_dll.h"
 # End Source File
 # Begin Source File
 
@@ -940,10 +956,6 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_dll.h"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\sip\sip_extensions.h"
 # End Source File
 # Begin Source File
@@ -989,10 +1001,6 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip_util.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\http\http.h"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\http\http_dll.h"
 # End Source File
 # Begin Source File
 
@@ -1068,10 +1076,6 @@ SOURCE="..\..\libsofia-sip-ua\iptsec\auth_digest.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\iptsec\auth_dll.h"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\iptsec\auth_module.h"
 # End Source File
 # Begin Source File
@@ -1117,10 +1121,6 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_tag.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\nta\nta.h"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\nta\nta_dll.h"
 # End Source File
 # Begin Source File
 

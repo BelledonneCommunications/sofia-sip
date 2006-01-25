@@ -88,7 +88,7 @@ SOURCE="..\..\..\libsofia-sip-ua\su\su_alloc_test.c"
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\pthread\pthread.lib
+SOURCE=..\..\pthread\pthreadVC2.lib
 # End Source File
 # End Target
 # End Project

@@ -30,6 +30,21 @@ Package=<4>
 
 ###############################################################################
 
+Project: "test_nua"=".\tests\test_nua\test_nua.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libsofia_sip_ua
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "su_alloc_test"=".\su\su_alloc_test\su_alloc_test.dsp" - Package Owner=<4>
 
 Package=<5>

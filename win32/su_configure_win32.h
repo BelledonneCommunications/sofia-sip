@@ -49,8 +49,14 @@
 
 #define SU_HAVE_PTHREADS        (1)
 
+/** Define as 1 if you have sa_len field in struct sockaddr */
+#undef SU_HAVE_SOCKADDR_SA_LEN
+
+/** Define as 1 if you have struct sockaddr_storage */
+#define SU_HAVE_SOCKADDR_STORAGE 1
+
 /* Define this as 1 if you have if_nameindex() */
-#define SU_HAVE_IF_NAMEINDEX   (0)
+#undef SU_HAVE_IF_NAMEINDEX
 
 /* Define this as 1 if you have getaddrinfo() */
 #define SU_HAVE_GETADDRINFO     1
