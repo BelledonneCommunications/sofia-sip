@@ -1923,7 +1923,7 @@ int nea_sub_process_subscribe(nea_sub_t *s,
   if (s->s_state == nea_embryonic)
     nea_sub_auth(s, nea_pending, NEATAG_FAKE(1), TAG_END());
 
-  if (s->s_updated != evv->evv_updated)
+  if (s->s_updated != evv->evv_updated && !(irq && s->s_rejected))
     nea_sub_notify(nes, s, now, TAG_END());
 
   if (irq) {
