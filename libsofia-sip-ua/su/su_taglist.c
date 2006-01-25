@@ -112,8 +112,8 @@
  *
  */
 
-#if HAVE_LONG_LONG
-typedef long long unsigned llu;
+#ifdef longlong
+typedef longlong unsigned llu;
 #else
 typedef long unsigned llu;
 #endif

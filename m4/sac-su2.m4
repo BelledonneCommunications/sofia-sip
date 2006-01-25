@@ -30,27 +30,13 @@ i?86-*-* )
 ;;
 esac
 
-if false; then
-  #
-  # Define Win32 macros
-  #
+if false; then # Define Win32 macros
   AC_DEFINE([HAVE_WIN32], 1, [Define as 1 you have WIN32])
-
   SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define as 1 you have WinSock])
-
   SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define as 1 you have WinSock2])
-
-  AC_DEFINE([HAVE_IPHLPAPI_H], 1, [Define as 1 you have WIN32 <iphlpapi.h>])
-
   AC_DEFINE([HAVE_FILETIME], 1, [
      Define this as 1 if you have WIN32 FILETIME type and 
      GetSystemTimeAsFileTime().])
-
-  AC_DEFINE([HAVE_INTERFACE_INFO_EX], 1, [
-     Define this as 1 if you have WIN32 INTERFACE_INFO_EX type.])
-
-  AC_DEFINE([HAVE_SIO_ADDRESS_LIST_QUERY], 1, [
-     Define this as 1 if you have WIN32 WSAIoctl SIO_ADDRESS_LIST_QUERY.])
 fi
 
 # Check includes used by su includes
@@ -76,50 +62,17 @@ AC_CHECK_HEADER(pthread.h,
         HAVE_PTHREADS=1;
 	SAC_SU_DEFINE([SU_HAVE_PTHREADS], 1, [Sofia SU uses pthreads]))
 
-AC_CHECK_HEADERS([unistd.h sys/time.h])
-AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
-AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h net/if.h net/if_types.h])
-
-if test "1${ac_cv_arpa_inet_h}2${ac_cv_netdb_h}3${ac_cv_sys_socket_h}4${ac_cv_net_if_h}" = 1yes2yes3yes4yes; then
-
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <net/if.h>], [
-struct ifreq ifreq; int index; index = ifreq.ifr_index;
-], AC_DEFINE(HAVE_IFR_INDEX, 1, [Define this as 1 if you have ifr_index in <net/if.h>]))dnl
-
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <net/if.h>], [
-struct ifreq ifreq; int index; index = ifreq.ifr_ifindex;
-], AC_DEFINE(HAVE_IFR_IFINDEX, 1, [Define this as 1 if you have ifr_ifindex in <net/if.h>]))dnl
-
-fi
-
 dnl ===========================================================================
-dnl Checks for typedefs, structures, and compiler characteristics.
+dnl Checks for typedefs, headers, structures, and compiler characteristics.
 dnl ===========================================================================
 
 AC_REQUIRE([AC_C_CONST])
-AC_REQUIRE([AC_C_INLINE])
 AC_REQUIRE([AC_HEADER_TIME])
 AC_REQUIRE([AC_TYPE_SIZE_T])
 AC_REQUIRE([AC_C_VAR_FUNC])
 AC_REQUIRE([AC_C_MACRO_FUNCTION])
-AC_REQUIRE([AC_STRUCT_SIN6])
-AC_REQUIRE([AC_SYS_SA_LEN])
 
-if test "$ac_cv_sa_len" = yes ;then
-  SAC_SU_DEFINE([SU_HAVE_SOCKADDR_SA_LEN], 1, 
-	        [Define this as 1 if you have sa_len in struct sockaddr])
-fi
-
-AC_COMPILE_IFELSE([long long ll;],dnl
-AC_DEFINE(HAVE_LONG_LONG, 1, [Define this as 1 if you have long long]))dnl
+AC_REQUIRE([AC_C_INLINE])
 
 case "$ac_cv_c_inline" in
   yes) SAC_SU_DEFINE(su_inline, static inline, [
@@ -142,6 +95,13 @@ case "$ac_cv_c_inline" in
   ;;
 esac
 
+AC_REQUIRE([AC_SYS_SA_LEN])
+if test "$ac_cv_sa_len" = yes ;then
+  SAC_SU_DEFINE([SU_HAVE_SOCKADDR_SA_LEN], 1, 
+	        [Define this as 1 if you have sa_len in struct sockaddr])
+fi
+
+AC_REQUIRE([AC_STRUCT_SIN6])
 case $ac_cv_sin6 in 
 yes) SAC_SU_DEFINE(SU_HAVE_IN6, 1, [
 	Define this as 1 if you have struct sockaddr_in6]) ;;
@@ -149,29 +109,108 @@ yes) SAC_SU_DEFINE(SU_HAVE_IN6, 1, [
   *) AC_MSG_ERROR([Inconsistent struct sockaddr_sin6 test]) ;;
 esac
 
-AC_MSG_CHECKING([for struct sockaddr_storage])
-AC_EGREP_HEADER([struct.+sockaddr_storage], [sys/socket.h], [dnl
-  AC_MSG_RESULT(yes)
-  SAC_SU_DEFINE(SU_HAVE_SOCKADDR_STORAGE)],[dnl
-  AC_MSG_RESULT(no)
+AC_CHECK_HEADERS([unistd.h sys/time.h])
+AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
+AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h net/if.h net/if_types.h])
+
+AC_CACHE_CHECK([for struct sockaddr_storage],
+[ac_cv_struct_sockaddr_storage],[
+ac_cv_struct_sockaddr_storage=no
+if test "$ac_cv_header_sys_socket_h" = yes; then
+  AC_EGREP_HEADER([struct.+sockaddr_storage], [sys/socket.h], [
+  ac_cv_struct_sockaddr_storage=yes])
+else
+  ac_cv_struct_sockaddr_storage='sys/socket.h missing'
+fi])
+if test "$ac_cv_struct_sockaddr_storage" = yes; then
+  SAC_SU_DEFINE(SU_HAVE_SOCKADDR_STORAGE, 1, 
+    [Define this as 1 if you have struct sockaddr_storage])
+fi
+
+AC_CACHE_CHECK([for field ifr_index in struct ifreq],
+[ac_cv_struct_ifreq_ifr_index],[
+ac_cv_struct_ifreq_ifr_index=no
+if test "1${ac_cv_header_arpa_inet_h}2${ac_cv_header_netdb_h}3${ac_cv_header_sys_socket_h}4${ac_cv_header_net_if_h}" = 1yes2yes3yes4yes; then
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <net/if.h>], [
+struct ifreq ifreq; int index; index = ifreq.ifr_index;
+], [ac_cv_struct_ifreq_ifr_index=yes])
+else
+  ac_cv_struct_ifreq_ifr_index='net/if.h missing'
+fi # arpa/inet.h && netdb.h && sys/socket.h && net/if.h
 ])
+if test "$ac_cv_struct_ifreq_ifr_index" = yes ; then
+  :
+  AC_DEFINE(HAVE_IFR_INDEX, 1, [Define this as 1 if you have ifr_index in <net/if.h>])
+else
+AC_CACHE_CHECK([for field ifr_ifindex in struct ifreq],
+[ac_cv_struct_ifreq_ifr_ifindex],[
+ac_cv_struct_ifreq_ifr_ifindex=no
+if test "1${ac_cv_header_arpa_inet_h}2${ac_cv_header_netdb_h}3${ac_cv_header_sys_socket_h}4${ac_cv_header_net_if_h}" = 1yes2yes3yes4yes; then
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <net/if.h>], [
+struct ifreq ifreq; int index; index = ifreq.ifr_ifindex;
+], ac_cv_struct_ifreq_ifr_ifindex=yes)
+else
+  ac_cv_struct_ifreq_ifr_ifindex='net/if.h missing'
+fi # arpa/inet.h && netdb.h && sys/socket.h && net/if.h
+])
+if test "$ac_cv_struct_ifreq_ifr_ifindex" = yes; then
+  :
+  AC_DEFINE(HAVE_IFR_IFINDEX, 1, [Define this as 1 if you have ifr_ifindex in <net/if.h>])
+fi
+
+fi # ifr_index in struct ifreq
 
 dnl SIOGCIFCONF & struct ifconf
-AC_MSG_CHECKING(for struct ifconf)
-AC_EGREP_HEADER(struct.+ifconf, net/if.h, 
- [AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_IFCONF, 1, [Define this as 1 if you have SIOCGIFCONF])], 
-  [AC_MSG_RESULT(no)])
+AC_CACHE_CHECK([for struct ifconf],
+[ac_cv_struct_ifconf],[
+ac_cv_struct_ifconf=no
+if test "$ac_cv_header_net_if_h" = yes; then
+  AC_EGREP_HEADER(struct.+ifconf, net/if.h, ac_cv_struct_ifconf=yes)
+else
+  ac_cv_struct_ifconf='net/if.h missing'
+fi])
+if test "$ac_cv_struct_ifconf" = yes; then
+  AC_DEFINE(HAVE_IFCONF, 1, [Define this as 1 if you have SIOCGIFCONF])
+fi
 
-AC_MSG_CHECKING(for SIOCGIFNUM)
+AC_CACHE_CHECK([for ioctl SIOCGIFNUM],
+[ac_cv_ioctl_siocgifnum],[
+ac_cv_ioctl_siocgifnum=no
+if test "$ac_cv_header_sys_sockio_h" = yes; then
 AC_EGREP_CPP(yes, [
 #include <sys/sockio.h>
 #ifdef SIOCGIFNUM
   yes
 #endif
-], [HAVE_IFNUM=1; AC_MSG_RESULT(yes); 
-    AC_DEFINE(HAVE_IFNUM, 1, [Define this as 1 if you have SIOCGIFNUM ioctl])], 
-   [HAVE_IFNUM=0; AC_MSG_RESULT(no)])
+], [ac_cv_ioctl_siocgifnum=yes])
+else
+  ac_cv_ioctl_siocgifnum='sys/sockio.h missing'
+fi])
+if test "$ac_cv_ioctl_siocgifnum" = yes; then
+  HAVE_IFNUM=1
+  AC_DEFINE(HAVE_IFNUM, 1, [Define this as 1 if you have SIOCGIFNUM ioctl])
+else
+  HAVE_IFNUM=0
+fi
+
+if false; then
+  # Define Win32 macros
+  AC_DEFINE([HAVE_IPHLPAPI_H], 1, [Define as 1 you have WIN32 <iphlpapi.h>])
+
+  AC_DEFINE([HAVE_INTERFACE_INFO_EX], 1, [
+     Define this as 1 if you have WIN32 INTERFACE_INFO_EX type.])
+
+  AC_DEFINE([HAVE_SIO_ADDRESS_LIST_QUERY], 1, [
+     Define this as 1 if you have WIN32 WSAIoctl SIO_ADDRESS_LIST_QUERY.])
+fi
 
 # ===========================================================================
 # Checks for libraries
