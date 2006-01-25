@@ -1,18 +1,7 @@
 PROJECT_NAME         = "sip"
 OUTPUT_DIRECTORY     = ../docs/html/sip
 
-INPUT 		     = sip.docs sip_parser.docs 
-INPUT 		    += sip.h sip_parser.c sip_parser_table.c sip_status.c 
-INPUT 		    += sip_feature.c sip_header.c sip_mime.c 
-INPUT 		    += sip_basic.c sip_event.c sip_extra.c  sip_prack.c 
-INPUT 		    += sip_refer.c sip_security.c sip_session.c 
-INPUT 		    += sip_tag.c sip_tag_class.c sip_time.c sip_util.c 
-INPUT 		    += sip_reason.c sip_caller_prefs.c 
-INPUT 		    += sip_dll.h sip_header.h 
-INPUT 		    += sip_parser.h sip_protos.h 
-INPUT 		    += sip_status.h sip_tag.h sip_tag_class.h
-INPUT 		    += sip_util.h sip_hclasses.h
-
+INPUT 		     = sip.docs .
 
 @INCLUDE = ../docs/Doxyfile.conf
 

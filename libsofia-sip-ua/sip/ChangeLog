@@ -1,3 +1,9 @@
+2006-01-25  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Doxyfile (INPUT): Missing sip_dll.c broke refdoc 
+	build. Now changed so that individual are not listed 
+	anymore in INPUT.
+
 2006-01-10  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Doxyfile: References to removed files sip_internal.h
