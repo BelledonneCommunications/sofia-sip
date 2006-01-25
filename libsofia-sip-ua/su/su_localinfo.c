@@ -34,12 +34,6 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stddef.h>
-
 #include "su.h"
 #include "su_localinfo.h"
 #include "su_module_debug.h"
@@ -48,18 +42,28 @@
 #include <sys/sockio.h>
 #endif
 
-#include <netinet/in.h>
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <stddef.h>
 #include <sys/types.h>
+
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
-#include <net/if.h>
-
+#endif
 #if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#if HAVE_NET_IF_TYPES_H
 #include <net/if_types.h>
 #endif
-
 
 #if HAVE_IPHLPAPI_H
 #include <iphlpapi.h>

@@ -76,8 +76,11 @@ AC_CHECK_HEADER(pthread.h,
         HAVE_PTHREADS=1;
 	SAC_SU_DEFINE([SU_HAVE_PTHREADS], 1, [Sofia SU uses pthreads]))
 
-AC_CHECK_HEADERS([unistd.h sys/time.h sys/socket.h sys/filio.h])
-AC_CHECK_HEADERS([arpa/inet.h netdb.h sys/sockio.h])
+AC_CHECK_HEADERS([unistd.h sys/time.h])
+AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
+AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h net/if.h net/if_types.h])
+
+if test "1${ac_cv_arpa_inet_h}2${ac_cv_netdb_h}3${ac_cv_sys_socket_h}4${ac_cv_net_if_h}" = 1yes2yes3yes4yes; then
 
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <arpa/inet.h>
@@ -94,6 +97,8 @@ AC_TRY_COMPILE([#include <sys/types.h>
 #include <net/if.h>], [
 struct ifreq ifreq; int index; index = ifreq.ifr_ifindex;
 ], AC_DEFINE(HAVE_IFR_IFINDEX, 1, [Define this as 1 if you have ifr_ifindex in <net/if.h>]))dnl
+
+fi
 
 dnl ===========================================================================
 dnl Checks for typedefs, structures, and compiler characteristics.
