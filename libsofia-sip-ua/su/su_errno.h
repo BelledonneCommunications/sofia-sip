@@ -57,6 +57,18 @@ int su_seterrno(int);
 #define su_seterrno(n) ((errno = (n)), -1)
 #endif
 
+#if defined(__APPLE_CC__)
+#ifndef EBADMSG
+#define EBADMSG EFAULT
+#endif
+#ifndef EPROTO
+#define EPROTO EPROTOTYPE
+#endif
+#ifndef EBADMSG
+#define EBADMSG EFAULT
+#endif
+#endif
+
 SOFIA_END_DECLS
 
 #endif

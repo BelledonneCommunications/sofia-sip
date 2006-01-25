@@ -37,13 +37,6 @@
 #include <string.h>
 #include <errno.h>
 
-#if defined(__APPLE_CC__)
-/* for EPROTO */
-#ifndef EPROTO
-#define EPROTO EPROTOTYPE
-#endif
-#endif
-
 #include <assert.h>
 
 #include <su_tag_class.h>

@@ -101,13 +101,8 @@ typedef struct _tls_t tls_t;	/* dummy */
 #include <sigcomp.h>
 #endif
 
-#if defined(__APPLE_CC__)
-#ifndef EBADMSG
-#define EBADMSG EFAULT
-#endif
 #ifndef SOL_TCP
 #define SOL_TCP IPPROTO_TCP
-#endif
 #endif
 
 #ifndef IPPROTO_SCTP

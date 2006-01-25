@@ -34,18 +34,13 @@
 
 #include "config.h"
 
+#include <su_memmem.h>
+
 #include <sys/types.h>
 #include <stddef.h>
 #include <limits.h>
 #include <ctype.h>
-
-#if defined (__APPLE_CC__)
 #include <stdlib.h>
-#else
-#include <malloc.h>
-#endif
-
-#include <su_memmem.h>
 
 #ifndef TORTURELOG
 #define TORTURELOG(x) (void)0

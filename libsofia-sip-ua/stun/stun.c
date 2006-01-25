@@ -52,12 +52,6 @@
 #include <su.h>
 #include <su_localinfo.h>
 
-#if defined(__APPLE_CC__)
-#ifndef SOL_TCP
-#define SOL_TCP IPPROTO_TCP
-#endif
-#endif
-
 #include <openssl/opensslv.h>
 
 /** STUN log. */

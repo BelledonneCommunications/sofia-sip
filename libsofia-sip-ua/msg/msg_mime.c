@@ -99,13 +99,6 @@ union msg_mime_u
 #include <msg_parser.h>
 #include <msg_mime_protos.h>
 
-#if defined(__APPLE_CC__)
-/* Oops, no EBADMSG found */
-#ifndef EBADMSG
-#define EBADMSG EFAULT
-#endif
-#endif
-
 /** Define a header class for headers without any extra data to copy */
 #define MSG_HEADER_CLASS_G(c, l, s, kind) \
   MSG_HEADER_CLASS(msg_, c, l, s, g_common, kind, msg_generic, msg_generic)
