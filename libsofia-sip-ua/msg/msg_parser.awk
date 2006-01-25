@@ -54,6 +54,11 @@ BEGIN {
   split("", NAMES);
   split("", Comments);
   split("", COMMENTS);
+
+  template="";
+  template1="";
+  template2="";
+  template3=="";
 }
 
 function name_hash (name)
@@ -234,7 +239,7 @@ function read_header_flags (flagfile,    line, tokens, name, value)
 
     if (PR) {
       if (TEMPLATE == "") { TEMPLATE = PR ".in"; }
-      RS0=RS; RS="\n";
+      RS0=RS; RS="\f\n";
       getline theader < TEMPLATE;
       getline header < TEMPLATE;
       getline template < TEMPLATE;
