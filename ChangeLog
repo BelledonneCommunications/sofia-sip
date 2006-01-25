@@ -1,3 +1,67 @@
+2006-01-25  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Updated autoconf macros.
+  Using cache for various checks.
+  Deprecated HAVE_LONG_LONG (use #ifdef longlong instead).
+  Collected information used by su_localinfo.c to one place.
+
+    M ./libsofia-sip-ua/su/su_taglist.c -2 +2
+    M ./m4/sac-su2.m4 -64 +103
+
+  * Updated Win32 port.
+  Added autogen.cmd, build_sources.cmd, version_files.cmd and version.awk.
+  Fixed problems with configuration.
+  Updated pthread-w32 to version 2.7.0.
+
+  * Fixed VC/Win32 problems in libsofia-sip-ua.
+  Signedness problems, includes, linkage, winsock initialization.
+
+    M ./libsofia-sip-ua/msg/msg_types.h -1 +2
+    M ./libsofia-sip-ua/nta/nta.c -2 +2
+    M ./libsofia-sip-ua/nua/test_nua.c -5 +5
+    M ./libsofia-sip-ua/nua/test_proxy.c -7 +11
+    M ./libsofia-sip-ua/su/su_root.c +8
+    M ./libsofia-sip-ua/su/su_types.h +2
+    M ./libsofia-sip-ua/su/su_wait.h +2
+
+  * Fixed gawk internal error in msg_parser.awk.
+  It looks like some gawk versions had problems when a function argument
+  was an unitialized variable.
+
+    M ./libsofia-sip-ua/msg/msg_parser.awk -1 +6
+
+  * Defining missing error codes in <su_errno.h>.
+
+    M ./libsofia-sip-ua/msg/msg_mime.c -7
+    M ./libsofia-sip-ua/soa/soa.c -7
+    M ./libsofia-sip-ua/stun/stun.c -6
+    M ./libsofia-sip-ua/su/su_errno.h +12
+    M ./libsofia-sip-ua/su/su_memmem.c -7 +2
+    M ./libsofia-sip-ua/tport/tport.c -5
+
+  * Added checks for different net includes.
+  Checks for sys/ioctl.h, netinet/in.h, net/if.h net/if_types.h and sys/ioctl.h.
+
+    M ./libsofia-sip-ua/su/su_localinfo.c -12 +16
+    M ./m4/sac-su2.m4 -2 +7
+
+  * Fixed rejection of subscriptions in nea server.
+  Event server does not send extra NOTIFY before 403 response anymore.
+
+    M ./libsofia-sip-ua/nea/nea_server.c -1 +1
+
+  * Added functions for scanning domain names and IP addresses.
+  Added span_ip4_address()/scan_ip4_address(), 
+        span_ip6_address()/scan_ip6_address(), 
+        span_ip6_reference()/scan_ip6_reference(),
+        span_ip_address()/scan_ip_address(), 
+        span_domain()/scan_domain(), and
+        span_host()/scan_host(). 
+
+    M ./libsofia-sip-ua/bnf/bnf.c -2 +588
+    M ./libsofia-sip-ua/bnf/bnf.h -2 +18
+    M ./libsofia-sip-ua/bnf/torture_bnf.c -25 +220
+
 2006-01-23  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Removed *_dll.h files - defining *_DLL macros in <su_config.h>.
@@ -2277,4 +2341,3 @@ Tue Dec 20 19:51:57 EET 2005  Pekka.Pessi@nokia.com
 2005-07-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Makefile.am: Added doxygen target.
-
