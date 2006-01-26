@@ -258,13 +258,17 @@ stun_request_t *stun_request_create(stun_discovery_t *sd);
 int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
 int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
+
+/* timers */
 void stun_sendto_timer_cb(su_root_magic_t *magic, 
 			  su_timer_t *t,
 			  su_timer_arg_t *arg);
-
 void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
 			       su_timer_t *t,
 			       su_timer_arg_t *arg);
+void stun_keepalive_timer_cb(su_root_magic_t *magic, 
+			     su_timer_t *t,
+			     su_timer_arg_t *arg);
 
 
 /**
@@ -655,7 +659,6 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s)
     get_localinfo(clientinfo);
 #endif
 
-    /* clientinfo->li_family = AF_INET6; */
     if ((err = bind(s, (struct sockaddr *) sa, bind_len)) < 0) {
       STUN_ERROR(errno, bind);
       SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
@@ -764,16 +767,11 @@ int stun_handle_bind(stun_handle_t *sh,
 		     ...)
 {
   su_socket_t s = -1;
-  su_localinfo_t clientinfo[1];
-  su_sockaddr_t bind_addr;
-  socklen_t bind_len;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
   stun_action_t action = stun_action_binding_request;
-  su_sockaddr_t *sa;
-  int err, index;
+  int index;
 
   enter;
 
@@ -916,11 +914,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
   else {
     err = stun_atoaddr(AF_INET, &sd->sd_pri_info, server);
   }
-  destination = (su_sockaddr_t *) &sd->sd_pri_info.ai_addr;
-
-  /* Check if the server address matches to bind action (if exists)
-   * and if we can use the secondary address of the server */
-  /* XXX -- mela: implement it */
+  destination = (su_sockaddr_t *) sd->sd_pri_addr;
 
   req = stun_request_create(sd);
   if (stun_make_binding_req(sh, req, req->sr_msg, 
@@ -1426,6 +1420,11 @@ int do_action(stun_handle_t *sh, stun_msg_t *binding_response)
     process_get_lifetime(req, binding_response);
     break;
 
+  case stun_action_keepalive:
+    SU_DEBUG_3(("%s: Response to keepalive received.\n", __func__));
+    req->sr_state = stun_dispose_me;
+    break;
+
   case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
     req->sr_state = stun_request_not_found;
@@ -1452,7 +1451,8 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
   int retval = -1, clnt_addr_len;
   stun_attr_t *mapped_addr, *chg_addr;
   stun_handle_t *self = req->sr_handle;
-  su_localinfo_t *clnt_addr = &req->sr_localinfo;
+  su_localinfo_t *clnt_info = &req->sr_localinfo;
+  su_sockaddr_t *clnt_addr = clnt_info->li_addr;
   stun_msg_t *binding_request;
   stun_discovery_t *sd = req->sr_discovery;
 
@@ -1468,12 +1468,12 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
       return retval;
     }
 
-    memset(clnt_addr->li_addr, 0, sizeof(struct sockaddr_in));
-    clnt_addr_len = sizeof(struct sockaddr);
+    memset(clnt_addr, 0, sizeof(struct sockaddr_in));
+    clnt_addr_len = sizeof(su_sockaddr_t);
     mapped_addr = stun_get_attr(binding_response->stun_attr, MAPPED_ADDRESS);
 
     if (mapped_addr != NULL) {
-      memcpy(clnt_addr->li_addr, mapped_addr->pattr, clnt_addr_len);
+      memcpy(clnt_addr, mapped_addr->pattr, clnt_addr_len);
       retval = 0;
     }
 
@@ -1516,7 +1516,7 @@ static void stun_get_lifetime_timer_cb(su_root_magic_t *magic,
 
   su_timer_destroy(t);
 
-  destination = (su_sockaddr_t *) &sd->sd_pri_info.ai_addr;
+  destination = (su_sockaddr_t *) sd->sd_pri_addr;
   err = stun_send_binding_request(req, destination);
   if (err < 0) {
     stun_free_message(req->sr_msg);
@@ -1534,6 +1534,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   stun_request_t *new;
   stun_handle_t *sh = req->sr_handle;
   su_localinfo_t *li;
+  su_sockaddr_t *sa;
   su_timer_t *sockfdy_timer = NULL;
   su_socket_t sockfdy = sd->sd_socket2;
   int err;
@@ -1565,7 +1566,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
     if (stun_make_binding_req(sh, new, new->sr_msg, 0, 0) < 0) 
       return -1;
 
-    destination = (su_sockaddr_t *) &sd->sd_pri_info.ai_addr;
+    destination = (su_sockaddr_t *) sd->sd_pri_addr;
     err = stun_send_binding_request(new, destination);
     if (err < 0) {
       stun_free_message(new->sr_msg);
@@ -1596,6 +1597,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   process_binding_request(req, binding_response);
 
   li = &req->sr_localinfo;
+  sa = req->sr_local_addr;
   stun_free_message(binding_response);
   
   /* Destroy me with the bad mofo timer */
@@ -1609,7 +1611,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   if (stun_make_binding_req(sh, new, new->sr_msg, 0, 0) < 0) 
     return -1;
 
-  stun_add_response_address(new->sr_msg, (struct sockaddr_in *) li->li_addr);
+  stun_add_response_address(new->sr_msg, (struct sockaddr_in *) sa);
 
   /* Create and start timer */
   sockfdy_timer = su_timer_create(su_root_task(sh->sh_root), sd->sd_lt);
@@ -1622,6 +1624,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
 int action_bind(stun_request_t *req, stun_msg_t *binding_response)
 {
   su_localinfo_t *li = NULL;
+  su_sockaddr_t *sa = NULL;
   stun_discovery_t *sd = req->sr_discovery;
   stun_handle_t *sh = req->sr_handle;
   stun_action_t action;
@@ -1632,7 +1635,9 @@ int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   process_binding_request(req, binding_response);
 
   li = &req->sr_localinfo;
-  memcpy(sd->sd_addr_seen_outside, li->li_addr, sizeof(su_sockaddr_t));
+  sa = req->sr_local_addr;
+
+  memcpy(sd->sd_addr_seen_outside, sa, sizeof(su_sockaddr_t));
 
   sd->sd_state = stun_bind_done;
   sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
@@ -1726,7 +1731,7 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
 	  return -1;
 
-	err = stun_send_binding_request(req, sh->sh_sec_addr);
+	err = stun_send_binding_request(req, sd->sd_sec_addr);
 	if (err < 0) {
 	  stun_free_message(req->sr_msg);
 	  return -1;
@@ -2162,14 +2167,11 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
   stun_discovery_t *sd = NULL;
   ta_list ta;
   int s = -1, err, index = 0;
-  unsigned int bind_len;
-  su_localinfo_t *ci = NULL;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   char const *server = NULL;
   su_socket_t sockfdy;
-  socklen_t x_len, y_len;
-  su_sockaddr_t x_addr, y_addr;
-  su_sockaddr_t bind_addr;
+  socklen_t y_len;
+  su_sockaddr_t y_addr;
   su_sockaddr_t *destination;
 
   assert(sh);
@@ -2195,7 +2197,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
   else {
     err = stun_atoaddr(AF_INET, &sd->sd_pri_info, server);
   }
-  destination = (su_sockaddr_t *) &sd->sd_pri_info.ai_addr;
+  destination = (su_sockaddr_t *) sd->sd_pri_addr;
 
   req = stun_request_create(sd);
 
@@ -2352,4 +2354,123 @@ int stun_handle_release(stun_handle_t *sh, su_socket_t s)
   /* Oops, user passed wrong socket */
   SU_DEBUG_3(("%s: socket given is not associated with STUN \n", __func__));
   return -1;
+}
+
+
+/** stun_keepalive won't do su_root_register() */
+int stun_keepalive(stun_handle_t *sh,
+		   tag_type_t tag, tag_value_t value,
+		   ...)
+{
+  int s = -1, err;
+  unsigned int timeout = 0, sa_len;
+  su_timer_t *keepalive_timer = NULL;
+  ta_list ta;
+  stun_discovery_t *sd;
+  stun_request_t *req;
+  stun_action_t action = stun_action_keepalive;
+  su_sockaddr_t *sa, *destination;
+  char const *server = NULL;
+
+  enter;
+
+  ta_start(ta, tag, value);
+
+  tl_gets(ta_args(ta),
+	  STUNTAG_SOCKET_REF(s),
+	  STUNTAG_TIMEOUT_REF(timeout),
+	  STUNTAG_SERVER_REF(server),
+	  TAG_END());
+
+  if (s < 0 || !server || timeout == 0)
+    return errno = EFAULT, -1;
+
+  sd = stun_discovery_create(sh, action);
+  sd->sd_socket = s;
+  /* memcpy(sd->sd_pri_addr, destination, sizeof(*destination)); */
+
+  sa = sd->sd_bind_addr;
+  sa_len = sizeof(*sa);
+  
+  err = getsockname(s, (struct sockaddr *) sa, &sa_len);
+  if (err < 0 && errno == SOCKET_ERROR) {
+    STUN_ERROR(errno, getsockname);
+    stun_discovery_destroy(sd);
+    return errno = EFAULT, -1;
+  }
+
+  req = stun_request_create(sd);
+  
+  /* xxx -- kohkoh */
+  destination = (su_sockaddr_t *) server;
+
+  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0 ||
+      stun_send_binding_request(req, destination) < 0) {
+    stun_request_destroy(req);
+    stun_discovery_destroy(sd);
+    return -1;
+  }
+  
+  keepalive_timer = su_timer_create(su_root_task(sh->sh_root), timeout);
+  su_timer_set(keepalive_timer, stun_keepalive_timer_cb, (su_wakeup_arg_t *) req);
+
+  ta_end(ta);
+
+  return 0;
+}
+
+/** Send SIP keepalives */
+void stun_keepalive_timer_cb(su_root_magic_t *magic, 
+			     su_timer_t *t,
+			     su_timer_arg_t *arg)
+{
+  stun_request_t *req = arg;
+  stun_handle_t *sh = req->sr_handle;
+  int s = -1, timeout = -1, err;
+  int sa_len;
+  su_sockaddr_t *destination;
+  su_timer_t *keepalive_timer = NULL;
+  stun_discovery_t *sd = req->sr_discovery;
+
+  enter;
+
+  destination = sd->sd_pri_addr;
+
+  if (stun_send_binding_request(req, destination) < 0) {
+    stun_request_destroy(req);
+    stun_discovery_destroy(sd);
+    return;
+  }
+  
+  keepalive_timer = su_timer_create(su_root_task(sh->sh_root), timeout);
+  su_timer_set(keepalive_timer, stun_keepalive_timer_cb, (su_wakeup_arg_t *) req);
+
+  return;
+}
+
+
+int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
+{
+  stun_discovery_t *sd, *tmp;
+  stun_request_t *req;
+  stun_action_t action = stun_action_keepalive;
+  int i;
+
+
+  for (req = sh->sh_requests; req; req = req->sr_next) {
+    sd = req->sr_discovery;
+    if (sd->sd_socket == s && sd->sd_action == action)
+      break;
+  }
+
+  /* No keepalive socket found */
+  if (!req)
+    return errno = EFAULT, -1;
+
+  /* Mark me as destroyable */
+  req->sr_state = stun_dispose_me;
+
+  stun_discovery_destroy(sd);
+
+  return 0;
 }

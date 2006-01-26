@@ -124,6 +124,12 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 
   break;
 
+  case stun_discovery_timeout:
+    if (action == stun_action_binding_request) {
+      su_root_break(stun_handle_root(sh));
+    }
+    break;
+
   case stun_bind_error:
   case stun_error:
 /*     su_root_break(stun_handle_root(sh)); */

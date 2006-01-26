@@ -186,6 +186,15 @@ int stun_message_length(void *data, int len, int end_of_message);
 /** Process incoming message */
 int stun_handle_process_message(stun_handle_t *sh, void *data, int len);
 
+/* Create a keepalive dispatcher for bound SIP sockets */
+int stun_keepalive(stun_handle_t *sh,
+		   tag_type_t tag, tag_value_t value,
+		   ...);
+
+/* Destroy the keepalive dispatcher without touching the socket */
+int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
+
+
 SOFIA_END_DECLS
 
 #endif /* !defined(STUN_H) */

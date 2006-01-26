@@ -143,3 +143,19 @@ tag_typedef_t stuntag_change_ip = BOOLTAG_TYPEDEF(change_ip);
  * Corresponding tag taking reference parameter is STUNTAG_CHANGE_PORT_REF()
  */
 tag_typedef_t stuntag_change_port = BOOLTAG_TYPEDEF(change_port);
+
+/* ---------------------------------------------------------------------- */
+
+/**@def STUNTAG_TIMEOUT(x)
+ *  
+ * Timeout controls the launching of the STUN keepalive timer.
+ *
+ * @par Used with
+ *    stun_keepalive() \n
+ *
+ * @par Parameter type
+ *    int
+ *
+ * Corresponding tag taking reference parameter is STUNTAG_TIMEOUT_REF()
+ */
+tag_typedef_t stuntag_timeout = INTTAG_TYPEDEF(timeout);

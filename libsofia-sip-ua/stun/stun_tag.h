@@ -70,6 +70,12 @@ extern tag_typedef_t stuntag_change_port;
 #define STUNTAG_CHANGE_PORT_REF(x) stuntag_change_port_ref, tag_bool_vr(&(x))
 extern tag_typedef_t stuntag_change_port_ref;
 
+#define STUNTAG_TIMEOUT(x) stuntag_timeout, tag_uint_v((x))
+extern tag_typedef_t stuntag_timeout;
+#define STUNTAG_TIMEOUT_REF(x) stuntag_timeout_ref, tag_uint_vr(&(x))
+extern tag_typedef_t stuntag_timeout_ref;
+
+
 SOFIA_END_DECLS
 
 #endif /* STUN_TAG_H */
