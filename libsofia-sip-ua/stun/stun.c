@@ -917,11 +917,12 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 
   /* If no server given, use default address from stun_handle_create() */
   if (!server) {
-    memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t));
-    memcpy(&sd->sd_pri_info.ai_addr, sh->sh_pri_info.ai_addr, sizeof(su_sockaddr_t));
+    /* memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t)); */
+    memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {
     err = stun_atoaddr(AF_INET, &sd->sd_pri_info, server);
+    memcpy(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
   }
   destination = (su_sockaddr_t *) sd->sd_pri_addr;
 
@@ -2204,11 +2205,12 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
   /* If no server given, use default address from stun_handle_create() */
   if (!server) {
-    memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t));
-    memcpy(&sd->sd_pri_info.ai_addr, sh->sh_pri_info.ai_addr, sizeof(su_sockaddr_t));
+    //memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t));
+    memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {
     err = stun_atoaddr(AF_INET, &sd->sd_pri_info, server);
+    memcpy(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
   }
   destination = (su_sockaddr_t *) sd->sd_pri_addr;
 
@@ -2241,7 +2243,11 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
     return -1;
   }
 
-  getsockname(sockfdy, (struct sockaddr *) &y_addr, &y_len);  
+  if (getsockname(sockfdy, (struct sockaddr *) &y_addr, &y_len) < 0) {
+    STUN_ERROR(errno, getsockname);
+    return -1;
+  }
+
   SU_DEBUG_3(("%s: socket y bound to %s:%u\n", __func__,
 	      inet_ntop(y_addr.su_family, SU_ADDR(&y_addr), ipaddr, sizeof(ipaddr)),
 	      (unsigned) ntohs(y_addr.su_port)));
@@ -2440,7 +2446,8 @@ void stun_keepalive_timer_cb(su_root_magic_t *magic,
 {
   stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
-  int timeout = -1;
+  int s = -1, timeout = -1, err;
+  int sa_len;
   su_sockaddr_t *destination;
   su_timer_t *keepalive_timer = NULL;
   stun_discovery_t *sd = req->sr_discovery;
@@ -2464,9 +2471,11 @@ void stun_keepalive_timer_cb(su_root_magic_t *magic,
 
 int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
 {
-  stun_discovery_t *sd;
+  stun_discovery_t *sd, *tmp;
   stun_request_t *req;
   stun_action_t action = stun_action_keepalive;
+  int i;
+
 
   for (req = sh->sh_requests; req; req = req->sr_next) {
     sd = req->sr_discovery;
