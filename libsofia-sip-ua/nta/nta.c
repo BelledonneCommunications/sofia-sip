@@ -5066,43 +5066,46 @@ int nta_incoming_complete_response(nta_incoming_t *irq,
   retval = sip_add_tl(msg, sip, ta_tags(ta));
   ta_end(ta);
 
-  if (retval >= 0 && !irq->irq_default) {
-    if (!sip->sip_from)
-      clone = 1, sip->sip_from = sip_from_copy(home, irq->irq_from);
-    if (status > 100 && !irq->irq_tag) {
-      if (sip->sip_to)
-	nta_incoming_tag(irq, sip->sip_to->a_tag);
-      else
-	nta_incoming_tag(irq, NULL);
-    }
-    if (!sip->sip_to)
-      clone = 1, sip->sip_to = sip_to_copy(home, irq->irq_to);
-    if (sip->sip_status && sip->sip_status->st_status > 100 &&
-	irq->irq_tag && sip->sip_to && !sip->sip_to->a_tag)
-      sip_to_tag(home, sip->sip_to, irq->irq_tag);
-    if (!sip->sip_call_id)
-      clone = 1, sip->sip_call_id = sip_call_id_copy(home, irq->irq_call_id);
-    if (!sip->sip_cseq)
-      clone = 1, sip->sip_cseq = sip_cseq_copy(home, irq->irq_cseq);
-    if (!sip->sip_via)
-      clone = 1, sip->sip_via = sip_via_copy(home, irq->irq_via);
-    if (status < 300 && 
-	!sip->sip_record_route && irq->irq_record_route &&
-	sip->sip_cseq && sip->sip_cseq->cs_method != sip_method_register)
-      sip_add_dup(msg, sip, (sip_header_t *)irq->irq_record_route);
+  if (retval < 0)
+    return -1;
+
+  if (irq->irq_default)
+    return sip_complete_message(msg);
+
+  if (!sip->sip_from)
+    clone = 1, sip->sip_from = sip_from_copy(home, irq->irq_from);
+  if (status > 100 && !irq->irq_tag) {
+    if (sip->sip_to)
+      nta_incoming_tag(irq, sip->sip_to->a_tag);
+    else
+      nta_incoming_tag(irq, NULL);
   }
+  if (!sip->sip_to)
+    clone = 1, sip->sip_to = sip_to_copy(home, irq->irq_to);
+  if (sip->sip_status && sip->sip_status->st_status > 100 &&
+      irq->irq_tag && sip->sip_to && !sip->sip_to->a_tag)
+    sip_to_tag(home, sip->sip_to, irq->irq_tag);
+  if (!sip->sip_call_id)
+    clone = 1, sip->sip_call_id = sip_call_id_copy(home, irq->irq_call_id);
+  if (!sip->sip_cseq)
+    clone = 1, sip->sip_cseq = sip_cseq_copy(home, irq->irq_cseq);
+  if (!sip->sip_via)
+    clone = 1, sip->sip_via = sip_via_copy(home, irq->irq_via);
+  if (status < 300 && 
+      !sip->sip_record_route && irq->irq_record_route &&
+      sip->sip_cseq && sip->sip_cseq->cs_method != sip_method_register)
+    sip_add_dup(msg, sip, (sip_header_t *)irq->irq_record_route);
 
   if (clone)
     msg_set_parent(msg, (msg_t *)irq->irq_home);
 
-  if (retval < 0 || !sip->sip_from || !sip->sip_to || !sip->sip_call_id || !sip->sip_cseq 
-      || !sip->sip_via || (irq->irq_record_route && !sip->sip_record_route))
+  if (retval < 0 || !sip->sip_from || !sip->sip_to || !sip->sip_call_id
+      || !sip->sip_cseq || !sip->sip_via
+      || (status < 300 && irq->irq_record_route && !sip->sip_record_route &&
+	  sip->sip_cseq && sip->sip_cseq->cs_method != sip_method_register))
     return -1;
 
-  if (retval >= 0)
-    retval = sip_complete_message(msg);
-
-  return retval;
+  return sip_complete_message(msg);
 }
 
 
