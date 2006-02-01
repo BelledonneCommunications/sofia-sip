@@ -560,7 +560,7 @@ static sdp_attribute_t const a1[1] =
 static int test_attribute(int flags)
 {
   su_home_t *home = su_home_create();
-  sdp_attribute_t *a;
+  sdp_attribute_t *a, *a_new, *list, *replaced;
 
   BEGIN();
 
@@ -586,6 +586,27 @@ static int test_attribute(int flags)
   TEST_S(a->a_value, "1");
   TEST_S(a->a_next->a_name, "foo");
   TEST_S(a->a_next->a_value, "2");
+
+  list = a;
+
+  TEST(sdp_attribute_remove(&list, NULL), NULL);
+  TEST(sdp_attribute_remove(&list, "kuik"), NULL);
+  TEST(sdp_attribute_remove(&list, "barf"), NULL);
+  TEST(sdp_attribute_remove(&list, "bar"), a);
+  TEST_1(a_new = sdp_attribute_dup(home, a));
+  replaced = (void *)-1;
+  TEST(sdp_attribute_replace(&list, NULL, &replaced), -1);
+  TEST(replaced, NULL);
+  TEST(sdp_attribute_replace(&list, a, &replaced), 0); 
+  TEST(replaced, NULL);
+  TEST(sdp_attribute_replace(&list, a_new, &replaced), 1); 
+  TEST(replaced, a);
+
+  TEST_VOID(sdp_attribute_append(&list, a)); 
+
+  TEST(sdp_attribute_remove(&list, "bAr"), a_new);
+  TEST(sdp_attribute_remove(&list, "BAR"), a);
+  TEST(sdp_attribute_remove(&list, "bar"), NULL);
 
   su_home_check(home);
 

@@ -69,7 +69,7 @@ typedef struct sdp_list_s        sdp_list_t;
 typedef struct sdp_rtpmap_s      sdp_rtpmap_t;
 
 /** Message text */
-typedef char const               sdp_text_t;    
+typedef char const               sdp_text_t;
 
 #define SDP_MIME_TYPE "application/sdp"
 
@@ -396,7 +396,7 @@ int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b);
 int sdp_list_cmp(sdp_list_t const *a, sdp_list_t const *b);
 
 /** Get connections of a media description */
-sdp_connection_t *sdp_media_connections(sdp_media_t *m);
+sdp_connection_t *sdp_media_connections(sdp_media_t const *m);
 
 /** Check if media uses RTP as its transport protocol  */
 int sdp_media_has_rtp(sdp_media_t const *m);
@@ -408,11 +408,11 @@ void sdp_media_type(sdp_media_t *m, char const *s);
 void sdp_media_transport(sdp_media_t *m, char const *s);
 
 /** Find named attribute from given list. */
-sdp_attribute_t  *sdp_attribute_find(sdp_attribute_t *a, char const *name);
+sdp_attribute_t  *sdp_attribute_find(sdp_attribute_t const *a, char const *name);
 
 /** Find named attribute from given lists. */
-sdp_attribute_t  *sdp_attribute_find2(sdp_attribute_t *a, 
-				      sdp_attribute_t *a2, 
+sdp_attribute_t  *sdp_attribute_find2(sdp_attribute_t const *a, 
+				      sdp_attribute_t const *a2, 
 				      char const *name);
 
 /** Get session mode from attribute list. */
@@ -421,13 +421,25 @@ sdp_mode_t sdp_attribute_mode(sdp_attribute_t const *a, sdp_mode_t defmode);
 /** Get session mode from attribute list. */
 sdp_attribute_t *sdp_attribute_by_mode(su_home_t *, sdp_mode_t mode);
 
-/** Find a mapped attribute of form 'a=attribute:pt value' 
-  * result will point to value if it is found. */
-sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t *a, 
+/** Find a mapped attribute. */
+sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t const *a, 
 					   char const *name, 
-					   int pt, char **result);
+					   int pt, char **return_result);
 
 #define sdp_mapped_attribute_find sdp_attribute_mapped_find
+
+/** Append a attribute to a list of attributes. */
+void sdp_attribute_append(sdp_attribute_t **list, 
+			  sdp_attribute_t const *a);
+
+/** Replace a attribute within a list of attributes. */
+int sdp_attribute_replace(sdp_attribute_t **list, 
+			  sdp_attribute_t *a,
+			  sdp_attribute_t **return_replaced);
+
+/** Remove a named attribute from a list of attributes. */
+sdp_attribute_t *sdp_attribute_remove(sdp_attribute_t **list, 
+				     char const *name);
 
 /* Return 1 if m= line struct matches with given type and name */
 unsigned sdp_media_match(sdp_media_t const *m,

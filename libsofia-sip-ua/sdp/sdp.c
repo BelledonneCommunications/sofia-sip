@@ -1480,7 +1480,7 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
 
 /* ---------------------------------------------------------------------- */
 
-sdp_connection_t *sdp_media_connections(sdp_media_t *m)
+sdp_connection_t *sdp_media_connections(sdp_media_t const *m)
 {
   if (m) {
     if (m->m_connections)
@@ -1494,19 +1494,19 @@ sdp_connection_t *sdp_media_connections(sdp_media_t *m)
 /* ---------------------------------------------------------------------- */
 
 /** Find named attribute from given list. */
-sdp_attribute_t *sdp_attribute_find(sdp_attribute_t *a, char const *name)
+sdp_attribute_t *sdp_attribute_find(sdp_attribute_t const *a, char const *name)
 {
   for (; a; a = a->a_next) {
     if (strcasecmp(a->a_name, name) == 0)
       break;
   }
 
-  return a;
+  return (sdp_attribute_t *)a;
 }
 
 /** Find named attribute from given lists (a or a2). */
-sdp_attribute_t *sdp_attribute_find2(sdp_attribute_t *a, 
-				     sdp_attribute_t *a2, 
+sdp_attribute_t *sdp_attribute_find2(sdp_attribute_t const *a, 
+				     sdp_attribute_t const *a2, 
 				     char const *name)
 {
   for (; a; a = a->a_next) {
@@ -1520,7 +1520,7 @@ sdp_attribute_t *sdp_attribute_find2(sdp_attribute_t *a,
 	break;
     }
 
-  return a;
+  return (sdp_attribute_t *)a;
 }
 
 /** Get session mode from attribute list. */
@@ -1566,34 +1566,131 @@ sdp_attribute_t *sdp_attribute_by_mode(su_home_t *home, sdp_mode_t mode)
 
 /** Find a mapped attribute. 
  *
- * A mapped attribute has form 'a=attribute:pt value'.
+ * A mapped attribute has form 'a=<name>:<pt> <value>' where pt is a RTP payload type, 
+ * integer in range 0..127.
  *
- *
- * result will point to value if it is found
+ * @return Pointer to a matching attribute structure, or NULL. If a matching
+ * attribute is found, @a return_result will point to part of the attribute
+ * after the payload type and whitespace.
  */
-sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t *a,
+sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t const *a,
 					   char const *name,
-					   int pt, char **result)
+					   int pt, char **return_result)
 {
-  *result = NULL;
+  char pt_value[4];
+  size_t pt_len;
+
+  if (return_result)
+    *return_result = NULL;
+
+  if (0 > pt || pt > 127)
+    return NULL;
+
+  snprintf(pt_value, sizeof(pt_value), "%u", (unsigned)pt);
+  pt_len = strlen(pt_value);
 
   for (; (a = sdp_attribute_find(a, name)); a = a->a_next) {
-    char *value;
+    char const *value = a->a_value;
+    size_t wlen;
 
-    if (pt != (int)strtoul(a->a_value, &value, 10) || value == a->a_value)
+    if (strncmp(value, pt_value, pt_len))
       continue;
 
-    value += strspn(value, " \t");
+    wlen = strspn(value + pt_len, " \t");
 
-    if (!value[0])
+    if (wlen == 0 || value[pt_len + wlen] == '\0')
       continue;
 
-    *result = value;
+    if (return_result)
+      *return_result = (char *)value + pt_len + wlen;
 
-    return a;
+    return (sdp_attribute_t *)a;
   }
 
   return NULL;
+}
+
+/** Append a (list of) attribute(s) to a list of attributes. */
+void sdp_attribute_append(sdp_attribute_t **list, 
+			  sdp_attribute_t const *a)
+{
+  assert(list);
+
+  if (list == NULL || a == NULL)
+    return;
+
+  for (;*list; list = &(*list)->a_next)
+    ;
+
+  *list = (sdp_attribute_t *)a;
+}
+
+/**Replace or append a attribute within a list of attributes. 
+ *
+ * @retval 1 if replaced existing attribute
+ * @retval 0 if attribute was appended
+ * @retval -1 upon an error
+ */
+int sdp_attribute_replace(sdp_attribute_t **list, 
+			  sdp_attribute_t *a,
+			  sdp_attribute_t **return_replaced)
+{
+  sdp_attribute_t *replaced;
+
+  assert(list);
+
+  if (return_replaced)
+    *return_replaced = NULL;
+
+  if (list == NULL || a == NULL)
+    return -1;
+
+  assert(a->a_name != NULL); assert(a->a_next == NULL);
+
+  for (; *list; list = &(*list)->a_next) {
+    if (strcasecmp((*list)->a_name, a->a_name) == 0)
+      break;
+  }
+
+  replaced = *list, *list = a;
+  
+  if (replaced) {
+    a->a_next = replaced->a_next;
+    replaced->a_next = NULL;
+
+    if (return_replaced)
+      *return_replaced = replaced;
+
+    return 1;
+  }
+
+  return 0;
+}
+
+/** Remove a named attribute from a list of attributes. */
+sdp_attribute_t *sdp_attribute_remove(sdp_attribute_t **list, 
+				      char const *name)
+{
+  sdp_attribute_t *a;
+
+  assert(list);
+
+  if (list == NULL)
+    return NULL;
+  if (name == NULL)
+    return NULL;
+
+  for (a = *list; a; list = &a->a_next, a = *list) {
+    if (strcasecmp(name, a->a_name) == 0)
+      break;
+  }
+
+  if (a) {
+    *list = a->a_next;
+    a->a_next = NULL;
+  }
+
+  return a;
 }
 
 /* Return 1 if m= line struct matches with given type and name */
