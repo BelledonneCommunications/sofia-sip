@@ -61,8 +61,8 @@ struct sdp_printer_s {
   int        pr_bsiz;
   int        pr_used;
   /* various flags */
-  int        pr_ok : 1;
-  int        pr_strict : 1;
+  unsigned   pr_ok : 1;
+  unsigned   pr_strict : 1;
   unsigned   pr_owns_buffer:1;
   unsigned   pr_may_realloc:1;
   unsigned   pr_all_rtpmaps:1;
