@@ -317,15 +317,15 @@ int soa_base_init(char const *name,
 {
   if (parent) {
 #define DUP(d, dup, s) if ((s) && !((d) = dup(ss->ss_home, (s)))) return -1
-    su_home_t *h = ss->ss_home;
+    su_home_t *home = ss->ss_home;
 
-    if (soa_description_dup(h, ss->ss_caps, parent->ss_caps) < 0)
+    if (soa_description_dup(home, ss->ss_caps, parent->ss_caps) < 0)
       return -1;
-    if (soa_description_dup(h, ss->ss_user, parent->ss_user) < 0)
+    if (soa_description_dup(home, ss->ss_user, parent->ss_user) < 0)
       return -1;
-    if (soa_description_dup(h, ss->ss_local, parent->ss_local) < 0)
+    if (soa_description_dup(home, ss->ss_local, parent->ss_local) < 0)
       return -1;
-    if (soa_description_dup(h, ss->ss_remote, parent->ss_remote) < 0)
+    if (soa_description_dup(home, ss->ss_remote, parent->ss_remote) < 0)
       return -1;
 
     DUP(ss->ss_address, su_strdup, parent->ss_address);
@@ -1486,7 +1486,7 @@ int soa_set_sdp(soa_session_t *ss,
 		char const *sdp_str, int str_len)
 {
   struct soa_description *ssd;
-  int flags, new_version;
+  int flags, new_version, retval;
   sdp_parser_t *parser = NULL;
   sdp_session_t sdp[1];
 
@@ -1545,14 +1545,23 @@ int soa_set_sdp(soa_session_t *ss,
  
   switch (what) {
   case soa_capability_sdp_kind:
-    return ss->ss_actions->soa_set_capability_sdp(ss, sdp, sdp_str, str_len);
+    retval = ss->ss_actions->soa_set_capability_sdp(ss, sdp, sdp_str, str_len);
+    break;
   case soa_user_sdp_kind:
-    return ss->ss_actions->soa_set_user_sdp(ss, sdp, sdp_str, str_len);
+    retval =  ss->ss_actions->soa_set_user_sdp(ss, sdp, sdp_str, str_len);
+    break;
   case soa_remote_sdp_kind:
-    return ss->ss_actions->soa_set_remote_sdp(ss, 1, sdp, sdp_str, str_len);
+    retval = ss->ss_actions->soa_set_remote_sdp(ss, 1, sdp, sdp_str, str_len);
+    break;
   default:
-    return -1;
+    retval = soa_set_status(ss, 500, "Internal Error");
+    break;
   }
+
+  if (parser)
+    sdp_parser_free(parser);
+
+  return retval;
 }
 
 
@@ -1612,10 +1621,8 @@ int soa_description_dup(su_home_t *home,
 			struct soa_description const *ssd0)
 {
   if (ssd0->ssd_sdp) {
-    int len = ssd0->ssd_str ? strlen(ssd0->ssd_str) + 1 : 0;
-
     ssd->ssd_sdp = sdp_session_dup(home, ssd0->ssd_sdp);
-    ssd->ssd_printer = sdp_print(home, ssd->ssd_sdp, NULL, len, 0);
+    ssd->ssd_printer = sdp_print(home, ssd->ssd_sdp, NULL, 0, 0);
     ssd->ssd_str = (char *)sdp_message(ssd->ssd_printer);
     if (ssd0->ssd_str != ssd0->ssd_unparsed)
       ssd->ssd_unparsed = su_strdup(home, ssd0->ssd_unparsed);

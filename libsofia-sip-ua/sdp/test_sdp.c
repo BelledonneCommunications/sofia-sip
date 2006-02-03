@@ -24,7 +24,7 @@
 
 /**@internal
  *
- * @CFILE sdp_test.c
+ * @CFILE test_sdp.c
  *
  * Simple SDP tester
  *
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 	int line, pos;
 
 	if (diff(buffer, sdp_message(printer), &line, &pos)) {
-	  fprintf(stdout, "sdp_test:%d: messages differ:\n", line);
+	  fprintf(stdout, "test_sdp:%d: messages differ:\n", line);
 	  fputs(buffer, stdout);
 	  fprintf(stdout, ">>>new message:\n");
 	  fputs(sdp_message(printer), stdout);
@@ -107,14 +107,14 @@ int main(int argc, char *argv[])
 	}
       }
       else {
-	fprintf(stderr, "sdp_test: %s\n", sdp_printing_error(printer));
+	fprintf(stderr, "test_sdp: %s\n", sdp_printing_error(printer));
       }
       sdp_printer_free(printer);
 
       su_home_check(home);
     }
     else {
-      fprintf(stderr, "sdp_test: %s\n", sdp_parsing_error(p));
+      fprintf(stderr, "test_sdp: %s\n", sdp_parsing_error(p));
       sdp_parser_free(p);
       exit(1);
     }
@@ -123,10 +123,10 @@ int main(int argc, char *argv[])
   }
   else {
     if (ferror(f)) {
-      perror("sdp_test");
+      perror("test_sdp");
     }
     else {
-      fprintf(stderr, "sdp_test: maximum length of sdp messages is %u bytes\n", 
+      fprintf(stderr, "test_sdp: maximum length of sdp messages is %u bytes\n", 
 	      (unsigned)sizeof(buffer));
     }
     exit(1);

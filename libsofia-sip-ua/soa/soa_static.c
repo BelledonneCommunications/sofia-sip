@@ -207,8 +207,6 @@ sdp_media_t *soa_sdp_make_rejected_media(su_home_t *home,
 					 int include_all_codecs)
 {
   sdp_media_t rejected[1] = {{ sizeof (rejected) }};
-  sdp_list_t  format[1] = {{ sizeof (format), NULL, "x" }};
-  sdp_rtpmap_t rtpmap[1] = {{ sizeof (rtpmap) }};
 
   rejected->m_type = m->m_type;
   rejected->m_type_name = m->m_type_name;
@@ -218,15 +216,6 @@ sdp_media_t *soa_sdp_make_rejected_media(su_home_t *home,
 
   if (include_all_codecs) {
     rejected->m_rtpmaps = m->m_rtpmaps;
-    rejected->m_format = format;
-  }
-  else if (m->m_proto == sdp_proto_rtp) {
-    rtpmap->rm_predef = 1; rtpmap->rm_pt = 9;
-    rtpmap->rm_encoding = "*"; rtpmap->rm_rate = 8000;
-    rejected->m_rtpmaps = rtpmap;
-  }
-  else {
-    rejected->m_format = format;
   }
 
   rejected->m_rejected = 1;

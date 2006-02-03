@@ -583,6 +583,7 @@ static void print_media(sdp_printer_t *p,
     else
       sdp_printf(p, "m=%s %u/%u %s", 
 		 media, m->m_port, m->m_number_of_ports, proto);
+
     if (m->m_rtpmaps) {
       for (rm = m->m_rtpmaps; rm; rm = rm->rm_next) {
 	if (rm->rm_any)
@@ -597,8 +598,11 @@ static void print_media(sdp_printer_t *p,
 	sdp_printf(p, " %s", l->l_text);
     }
     else {
-      sdp_printf(p, " 13");
+      sdp_printf(p, " 9");      /* SDP syntax requires at least one format.
+				   9 is used by nobody, right?. */
     }
+
+
     sdp_printf(p, CRLF);
 
     if (m->m_information)

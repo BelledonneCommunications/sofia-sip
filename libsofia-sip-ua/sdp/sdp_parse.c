@@ -52,7 +52,6 @@ struct sdp_parser_s {
     sdp_session_t pru_session[1];
   } pr_output;
   char      *pr_message;
-  su_home_t *pr_orig_home;
 
   sdp_mode_t pr_session_mode;
 
@@ -113,23 +112,27 @@ static void parsing_error(sdp_parser_t *p, char const *fmt, ...);
 sdp_parser_t *
 sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
 {
-  sdp_parser_t *p = su_home_clone(home, sizeof(*p));
+  sdp_parser_t *p;
   char *b;
 
   if (msgsize == -1 && msg)
     msgsize = strlen(msg);
 
   if (msgsize < 0 || msg == NULL) {
-    parsing_error(p, "invalid input message");
+    p = su_home_clone(home, sizeof(*p));
+    if (p) 
+      parsing_error(p, "invalid input message");
+    else
+      p = (sdp_parser_t*)&no_mem_error;
     return p;
   }
 
-  b = su_alloc(p->pr_home, msgsize + 1);
+  p = su_home_clone(home, sizeof(*p) + msgsize + 1);
 
-  if (p && b) {
-    p->pr_orig_home = home;
-    strncpy(b, msg, msgsize);
+  if (p) {
+    b = strncpy((void *)(p + 1), msg, msgsize);
     b[msgsize] = 0;
+
     p->pr_message = b;
     p->pr_strict = (flags & sdp_f_strict) != 0;
     p->pr_anynet = (flags & sdp_f_anynet) != 0;
@@ -205,7 +208,7 @@ char const *sdp_parsing_error(sdp_parser_t *p)
 void sdp_parser_free(sdp_parser_t *p)
 {
   if (p && p != &no_mem_error)
-    su_free(p->pr_orig_home, p);
+    su_home_unref(p->pr_home);
 }
 
 /* ========================================================================= */

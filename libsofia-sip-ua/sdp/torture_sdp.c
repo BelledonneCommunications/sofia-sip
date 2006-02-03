@@ -26,7 +26,7 @@
  *
  * @CFILE sdp_torture.c  
  *
- * Testing sdp module.
+ * Torture testing sdp module.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
@@ -48,11 +48,13 @@
 #include <su_tag_io.h>
 #include <sdp_tag.h>
 
-#define TSTFLAGS flags
+#define TSTFLAGS tstflags
 
 #include <tstdef.h>
 
-char const *name = "sdp_torture.c";
+int tstflags;
+
+char const *name = "torture_sdp.c";
 
 FILE *null;
 
@@ -73,7 +75,7 @@ static char const e1_msg[] =
     "a=rtpmap:0 PCMU/8000\n"
     "m=video 0 *";
 
-static int test_error(int flags)
+static int test_error(void)
 {
   su_home_t *home = su_home_create();
   sdp_parser_t *parser;
@@ -115,7 +117,7 @@ static char const s0_msg[] =
     "m=* 0 RTP/AVP *\n"
   ;
 
-static int test_session(int flags)
+static int test_session(void)
 {
   su_home_t *home = su_home_create(), *home2 = su_home_create();
   sdp_session_t *sdp_src, *sdp_target;
@@ -183,7 +185,7 @@ static int test_session(int flags)
   if (printer != NULL) {
     char const *msg = sdp_message(printer);
 
-    if (flags & tst_verbatim) {
+    if (tstflags & tst_verbatim) {
       printf("sdp_torture.c: parsed SDP message:\"%s\".\n", msg);
     }
       
@@ -194,7 +196,7 @@ static int test_session(int flags)
 
   TEST_1(dup = tl_adup(home2, lst));
 
-  if (flags & tst_verbatim)
+  if (tstflags & tst_verbatim)
     tl_print(stdout, "dup:\n", dup);
   else
     tl_print(null, "dup:\n", dup);
@@ -205,7 +207,7 @@ static int test_session(int flags)
   printer = sdp_print(home2, sdp, buffer, sizeof(buffer), 0);
   if (printer != NULL) {
     char const *msg = sdp_message(printer);
-    if (flags & tst_verbatim) {
+    if (tstflags & tst_verbatim) {
       printf("sdp_torture.c: "
 	     "SDP message passed through tag list:\n\"%s\".\n", msg);
     }
@@ -254,7 +256,7 @@ static char const s2_msg[] =
   "a=fmtp:97 mode-set=\"0\"\r\n"
   "a=maxptime:500\r\n";
 
-static int test_session2(int flags)
+static int test_session2(void)
 {
   su_home_t *home = su_home_create();
   sdp_session_t const *sdp = NULL;
@@ -453,7 +455,7 @@ static char const s3_msg[] =
   ;
 
 
-static int test_sanity(int flags)
+static int test_sanity(void)
 {
   su_home_t *home = su_home_create();
   sdp_parser_t *parser;
@@ -475,7 +477,7 @@ static sdp_list_t const l0[1] = {{ sizeof(l0), NULL, "foo" }};
 static sdp_list_t const l1[1] = {{ sizeof(l1), (sdp_list_t *)l0, "bar" }};
 
 /** Test list things */
-int test_list(int flags)
+int test_list(void)
 {
   su_home_t *home = su_home_create();
   sdp_list_t *l;
@@ -520,7 +522,7 @@ sdp_rtpmap_t const rm1[1] =
   }};
 
 /** Test rtpmap-related things */
-int test_rtpmap(int flags)
+int test_rtpmap(void)
 {
   su_home_t *home = su_home_create();
   sdp_rtpmap_t *rm;
@@ -557,7 +559,7 @@ static sdp_attribute_t const a0[1] =
 static sdp_attribute_t const a1[1] = 
   {{ sizeof(a1), (sdp_attribute_t *)a0, "bar", "1" }};
 
-static int test_attribute(int flags)
+static int test_attribute(void)
 {
   su_home_t *home = su_home_create();
   sdp_attribute_t *a, *a_new, *list, *replaced;
@@ -615,7 +617,7 @@ static int test_attribute(int flags)
   END();
 }
 
-static int test_connection(int flags)
+static int test_connection(void)
 {
   BEGIN();
   END();
@@ -649,7 +651,7 @@ static sdp_media_t const m0[1] =
      "udp",
   }};
 
-static int test_media(int flags)
+static int test_media(void)
 {
   su_home_t *home = su_home_create();
   sdp_media_t *media;
@@ -689,13 +691,13 @@ static int test_media(int flags)
   END();
 }
 
-static int test_origin(int flags)
+static int test_origin(void)
 {
   BEGIN();
   END();
 }
 
-static int test_bandwidth(int flags)
+static int test_bandwidth(void)
 {
   BEGIN();
   END();
@@ -716,7 +718,7 @@ static char const t_msg[] =
 "z=2882844526 -1h 2898848070 0\n"
   ;
 
-static int test_time(int flags)
+static int test_time(void)
 {
   sdp_parser_t *parser;
   sdp_session_t *sdp;
@@ -749,7 +751,7 @@ static int test_time(int flags)
   END();
 }
 
-static int test_key(int flags)
+static int test_key(void)
 {
   BEGIN();
   END();
@@ -758,7 +760,7 @@ static int test_key(int flags)
 #include <time.h>
 #include <stdlib.h>
 
-static int test_build(int flags)
+static int test_build(void)
 {
   sdp_session_t *sdp, *dup;
   sdp_origin_t *o;
@@ -842,7 +844,7 @@ static int test_build(int flags)
   TEST_1(printer = sdp_print(home, dup, NULL, 0, 0));
   TEST_1(data = sdp_message(printer));
 
-  if (flags & tst_verbatim)
+  if (tstflags & tst_verbatim)
     printf("sdp_torture.c: built SDP message:\"%s\".\n", data);
 
   sdp_printer_free(printer);
@@ -855,45 +857,34 @@ void usage(void)
   fprintf(stderr, "usage: %s [-v]\n", name);
 }
 
-char *lastpart(char *path)
-{
-  if (strchr(path, '/')) 
-    return strrchr(path, '/') + 1;
-  else
-    return path;
-}
-
 int main(int argc, char *argv[])
 {
-  int flags = 0;
   int retval = 0;
   int i;
 
-  name = lastpart(argv[0]);  /* Set our name */
-
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
-      flags |= tst_verbatim;
+      tstflags |= tst_verbatim;
     else
       usage();
   }
 
   null = fopen("/dev/null", "ab");
 
-  retval |= test_error(flags); fflush(stdout);
-  retval |= test_session(flags); fflush(stdout);
-  retval |= test_session2(flags); fflush(stdout);
-  retval |= test_sanity(flags); fflush(stdout);
-  retval |= test_list(flags); fflush(stdout);
-  retval |= test_rtpmap(flags); fflush(stdout);
-  retval |= test_origin(flags); fflush(stdout);
-  retval |= test_connection(flags); fflush(stdout);
-  retval |= test_bandwidth(flags); fflush(stdout);
-  retval |= test_time(flags); fflush(stdout);
-  retval |= test_key(flags); fflush(stdout);
-  retval |= test_attribute(flags); fflush(stdout);
-  retval |= test_media(flags); fflush(stdout);
-  retval |= test_build(flags); fflush(stdout);
+  retval |= test_error(); fflush(stdout);
+  retval |= test_session(); fflush(stdout);
+  retval |= test_session2(); fflush(stdout);
+  retval |= test_sanity(); fflush(stdout);
+  retval |= test_list(); fflush(stdout);
+  retval |= test_rtpmap(); fflush(stdout);
+  retval |= test_origin(); fflush(stdout);
+  retval |= test_connection(); fflush(stdout);
+  retval |= test_bandwidth(); fflush(stdout);
+  retval |= test_time(); fflush(stdout);
+  retval |= test_key(); fflush(stdout);
+  retval |= test_attribute(); fflush(stdout);
+  retval |= test_media(); fflush(stdout);
+  retval |= test_build(); fflush(stdout);
 
   return retval;
 }
