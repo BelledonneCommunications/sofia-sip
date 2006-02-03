@@ -1,3 +1,40 @@
+2006-02-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Code cleanup and memory leak fix in soa/sdp.
+  Fixed memory leak related to parsing sdp in soa.
+  Cleaned up handling of rejected media (related to bug report #1419078).
+
+     ./libsofia-sip-ua/sdp/run-tests -> ./libsofia-sip-ua/sdp/run_test_sdp
+     ./libsofia-sip-ua/sdp/sdp_test.c -> ./libsofia-sip-ua/sdp/test_sdp.c
+     ./libsofia-sip-ua/sdp/sdp_torture.c -> ./libsofia-sip-ua/sdp/torture_sdp.c
+    M ./libsofia-sip-ua/sdp/Makefile.am -4 +4
+    M ./libsofia-sip-ua/sdp/run_test_sdp -4 +4
+    M ./libsofia-sip-ua/sdp/sdp_parse.c -8 +11
+    M ./libsofia-sip-ua/sdp/sdp_print.c -1 +5
+    M ./libsofia-sip-ua/sdp/test_sdp.c -6 +6
+    M ./libsofia-sip-ua/sdp/torture_sdp.c -47 +38
+    M ./libsofia-sip-ua/soa/soa.c -13 +20
+    M ./libsofia-sip-ua/soa/soa_static.c -11
+
+2006-02-02  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Add helper functions to update or modify sdp attributes.
+  Feature request #1420698:
+  Added sdp_attribute_append(), sdp_attribute_replace(), and
+  sdp_attribute_remove().
+
+    M ./libsofia-sip-ua/sdp/sdp.c -18 +115
+    M ./libsofia-sip-ua/sdp/sdp.h -9 +21
+    M ./libsofia-sip-ua/sdp/sdp_torture.c -1 +22
+
+  * Using unsigned in bit fields.
+
+    M ./libsofia-sip-ua/sdp/sdp_print.c -2 +2
+
+  * Fixed bug in sending error response to a request containing Record-Route.
+
+    M ./libsofia-sip-ua/nta/nta.c -30 +33
+
 2006-01-25  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Updated autoconf macros.
