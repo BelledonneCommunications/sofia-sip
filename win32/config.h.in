@@ -22,7 +22,7 @@
  *
  */
 
-/**@file win32/config.h
+/**@file win32/config.h.in
  * @brief <config.h> used by Windows.
  *
  * Use this on WIN32. 
@@ -54,14 +54,20 @@
 /* Define to 1 if you have the `flock' function. */
 #undef HAVE_FLOCK
 
+/* Define to 1 if you have the `freeaddrinfo' function. */
+#define HAVE_FREEADDRINFO 1
+
 /* Define as 1 if the C compiler supports __func__ */
 #undef HAVE_FUNC
 
 /* Define as 1 if the C compiler supports __FUNCTION__ */
 #undef HAVE_FUNCTION
 
+/* Define to 1 if you have the `gai_strerror' function. */
+#undef HAVE_GAI_STRERROR
+
 /* Define to 1 if you have the `getaddrinfo' function. */
-#undef HAVE_GETADDRINFO
+#define HAVE_GETADDRINFO 1
 
 /* Define to 1 if you have the `getdelim' function. */
 #undef HAVE_GETDELIM
@@ -74,6 +80,9 @@
 
 /* Define to 1 if you have the `getline' function. */
 #undef HAVE_GETLINE
+
+/* Define to 1 if you have the `getnameinfo' function. */
+#define HAVE_GETNAMEINFO 1
 
 /* Define to 1 if you have the `getpass' function. */
 #undef HAVE_GETPASS

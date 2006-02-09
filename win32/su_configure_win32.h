@@ -22,8 +22,6 @@
  *
  */
 
-/** Defined when su_configure_win32.h has been included. */
-#define SU_CONFIGURE_WIN32_H
 /**@file su_configure_win32.h
  *
  * @b su library configuration for WIN32 (VC6/VC98)
@@ -58,8 +56,8 @@
 /* Define this as 1 if you have if_nameindex() */
 #undef SU_HAVE_IF_NAMEINDEX
 
-/* Define this as 1 if you have getaddrinfo() */
-#define SU_HAVE_GETADDRINFO     1
+/* Define as 1 if you have struct getaddrinfo. */
+#define SU_HAVE_ADDRINFO     1
 
 #define SU_INLINE                  __inline
 #define su_inline                  static __inline

@@ -113,6 +113,21 @@ AC_CHECK_HEADERS([unistd.h sys/time.h])
 AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
 AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h net/if.h net/if_types.h])
 
+AC_CACHE_CHECK([for struct addrinfo],
+[ac_cv_struct_addrinfo],[
+ac_cv_struct_addrinfo=no
+if test "$ac_cv_header_sys_socket_h" = yes; then
+  AC_EGREP_HEADER([struct.+addrinfo], [netdb.h], [
+  ac_cv_struct_addrinfo=yes])
+else
+  ac_cv_struct_addrinfo='sys/socket.h missing'
+fi])
+
+if test "$ac_cv_struct_addrinfo" = yes; then
+  SAC_SU_DEFINE(SU_HAVE_ADDRINFO, 1, 
+    [Define as 1 if you have struct addrinfo.])
+fi
+
 AC_CACHE_CHECK([for struct sockaddr_storage],
 [ac_cv_struct_sockaddr_storage],[
 ac_cv_struct_sockaddr_storage=no
@@ -245,6 +260,7 @@ AC_SUBST(GLIB_VERSION)
 
 AC_CHECK_FUNCS(gettimeofday strerror random initstate tcsetattr flock alarm)
 AC_CHECK_FUNCS(socketpair gethostname getipnodebyname poll)
+AC_CHECK_FUNCS(getaddrinfo getnameinfo freeaddrinfo gai_strerror)
 
 if false; then
 	# not yet
@@ -261,12 +277,6 @@ if test "${with_rt}" != no; then
 fi
 
 SAC_REPLACE_FUNCS(memmem memccpy memspn memcspn strcasestr strtoull)
-
-# Test for getaddrinfo(), getnameinfo(), freeaddrinfo() and gai_strerror()
-AC_CHECK_FUNC([getaddrinfo],[
-	SAC_SU_DEFINE([SU_HAVE_GETADDRINFO], 1, [
-	Define this as 1 if you have getaddrinfo() function.
-	])])
 
 AC_CHECK_FUNC([poll], 
 	SAC_SU_DEFINE([SU_HAVE_POLL], 1, [

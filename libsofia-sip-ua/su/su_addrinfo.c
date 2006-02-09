@@ -27,10 +27,12 @@
  * SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <su_addrinfo.h>
 #include <su.h>
 
-#if !SU_HAVE_GETADDRINFO
+#if !HAVE_GETADDRINFO
 
 #include <string.h>
 #include <stddef.h>
@@ -130,24 +132,6 @@ static int get_addr(const char *, int, struct addrinfo **,
 		    struct addrinfo *, int);
 static int str_isnumber(const char *);
 	
-static char *ai_errlist[] = {
-	"success.",
-	"address family for hostname not supported.",	/* EAI_ADDRFAMILY */
-	"temporary failure in name resolution.",	/* EAI_AGAIN      */
-	"invalid value for ai_flags.",		       	/* EAI_BADFLAGS   */
-	"non-recoverable failure in name resolution.", 	/* EAI_FAIL       */
-	"ai_family not supported.",			/* EAI_FAMILY     */
-	"memory allocation failure.", 			/* EAI_MEMORY     */
-	"no address associated with hostname.", 	/* EAI_NODATA     */
-	"hostname nor servname provided, or not known.",/* EAI_NONAME     */
-	"servname not supported for ai_socktype.",	/* EAI_SERVICE    */
-	"ai_socktype not supported.", 			/* EAI_SOCKTYPE   */
-	"system error returned in errno.", 		/* EAI_SYSTEM     */
-	"invalid value for hints.",			/* EAI_BADHINTS	  */
-	"resolved protocol is unknown.",		/* EAI_PROTOCOL   */
-	"unknown error.", 				/* EAI_MAX        */
-};
-
 #define GET_CANONNAME(ai, str) \
 if (pai->ai_flags & AI_CANONNAME) {\
 	if (((ai)->ai_canonname = (char *)malloc(strlen(str) + 1)) != NULL) {\
@@ -191,32 +175,6 @@ if (pai->ai_flags & AI_CANONNAME) {\
 #endif
 
 #define ERR(err) { error = (err); goto bad; }
-
-static 
-char *
-gai_strerror(ecode)
-	int ecode;
-{
-	if (ecode < 0 || ecode > EAI_MAX)
-		ecode = EAI_MAX;
-	return ai_errlist[ecode];
-}
-
-static 
-void
-freeaddrinfo(ai)
-	struct addrinfo *ai;
-{
-	struct addrinfo *next;
-
-	do {
-		next = ai->ai_next;
-		if (ai->ai_canonname)
-			free(ai->ai_canonname);
-		/* no need to free(ai->ai_addr) */
-		free(ai);
-	} while ((ai = next) != NULL);
-}
 
 static int
 str_isnumber(p)
@@ -659,6 +617,10 @@ get_addr(hostname, af, res, pai, port0)
 	return error;
 }
 
+#endif /* !HAVE_GETADDRINFO */
+
+#if !HAVE_GETNAMEINFO
+
 /*
  * Issues to be discussed:
  * - Thread safe-ness must be checked
@@ -691,13 +653,13 @@ struct gni_sockinet {
 	u_short	si_port;
 };
 
-#define ENI_NOSOCKET 	0
-#define ENI_NOSERVNAME	1
-#define ENI_NOHOSTNAME	2
-#define ENI_MEMORY	3
-#define ENI_SYSTEM	4
-#define ENI_FAMILY	5
-#define ENI_SALEN	6
+#define ENI_NOSOCKET 	EAI_FAIL
+#define ENI_NOSERVNAME	EAI_NONAME
+#define ENI_NOHOSTNAME	EAI_NONAME
+#define ENI_MEMORY	EAI_MEMORY
+#define ENI_SYSTEM	EAI_SYSTEM
+#define ENI_FAMILY	EAI_FAMILY
+#define ENI_SALEN	EAI_MEMORY
 
 static
 int
@@ -826,7 +788,92 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	return SUCCESS;
 }
 
-#endif	/* !SU_HAVE_GETADDRINFO */
+#endif	/* !HAVE_GETNAMEINFO */
+
+#if !HAVE_FREEADDRINFO
+static 
+void
+freeaddrinfo(ai)
+	struct addrinfo *ai;
+{
+	struct addrinfo *next;
+
+	do {
+		next = ai->ai_next;
+		if (ai->ai_canonname)
+			free(ai->ai_canonname);
+		/* no need to free(ai->ai_addr) */
+		free(ai);
+	} while ((ai = next) != NULL);
+}
+#endif
+
+#if !HAVE_GAI_STRERROR
+static 
+char *
+gai_strerror(ecode)
+	int ecode;
+{
+  switch (ecode) {
+  case 0: 
+    return "success.";
+#if defined(EAI_ADDRFAMILY)
+  case EAI_ADDRFAMILY:
+    return "address family for hostname not supported.";
+#endif
+#if defined(EAI_AGAIN)
+  case EAI_AGAIN:
+    return "temporary failure in name resolution.";
+#endif
+#if defined(EAI_BADFLAGS)
+  case EAI_BADFLAGS:
+    return "invalid value for ai_flags.";
+#endif
+#if defined(EAI_FAIL)
+  case EAI_FAIL:
+    return "non-recoverable failure in name resolution.";
+#endif
+#if defined(EAI_FAMILY)
+  case EAI_FAMILY:
+    return "ai_family not supported.";
+#endif
+#if defined(EAI_MEMORY)
+  case EAI_MEMORY:
+    return "memory allocation failure.";
+#endif
+#if defined(EAI_NODATA)
+  case EAI_NODATA:
+    return "no address associated with hostname.";
+#endif
+#if defined(EAI_NONAME)
+  case EAI_NONAME:
+    return "hostname nor servname provided, or not known.";
+#endif
+#if defined(EAI_SERVICE)
+  case EAI_SERVICE:
+    return "servname not supported for ai_socktype.";
+#endif
+#if defined(EAI_SOCKTYPE)
+  case EAI_SOCKTYPE:
+    return "ai_socktype not supported.";
+#endif
+#if defined(EAI_SYSTEM)
+  case EAI_SYSTEM:
+    return "system error returned in errno.";
+#endif
+#if defined(EAI_BADHINTS)
+  case EAI_BADHINTS:
+    return "invalid value for hints.";
+#endif
+#if defined(EAI_PROTOCOL)
+  case EAI_PROTOCOL:
+    return "resolved protocol is unknown.";
+#endif
+  default:
+    return "unknown error.";
+}
+#endif
+
 
 /** Translate address and service.
  *
@@ -836,7 +883,7 @@ int su_getaddrinfo(char const *node, char const *service,
 		   su_addrinfo_t const *hints,
 		   su_addrinfo_t **res)
 {
-#if HAVE_SCTP && SU_HAVE_GETADDRINFO
+#if HAVE_SCTP
   if (res && hints && hints->ai_protocol == IPPROTO_SCTP) {
     su_addrinfo_t *ai, system_hints[1];
     int retval, socktype;

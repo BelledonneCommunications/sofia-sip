@@ -36,7 +36,7 @@
 
 SOFIA_BEGIN_DECLS
 
-#if !SU_HAVE_GETADDRINFO
+#if !SU_HAVE_ADDRINFO
 /*
  * Error return codes from getaddrinfo()
  */
@@ -104,16 +104,10 @@ struct addrinfo {
 	struct sockaddr *ai_addr;	/* binary address */
 	struct addrinfo *ai_next;	/* next structure in linked list */
 };
-
-/** RFC 1576 address info structure. */
-typedef struct addrinfo su_addrinfo_t;
-
-#else
-
-/** RFC 1576 address info structure. */
-typedef struct addrinfo su_addrinfo_t;
-
 #endif	/* SU_WITH_GETADDRINFO */
+
+/** RFC 1576 address info structure. */
+typedef struct addrinfo su_addrinfo_t;
 
 /** Translate address and service. */
 int su_getaddrinfo(char const *node, char const *service,

@@ -64,11 +64,12 @@
 /** Define as 1 if you have struct sockaddr_storage */
 #undef SU_HAVE_SOCKADDR_STORAGE
 
-/** Define as 1 if you have getaddrinfo() function. */
-#undef SU_HAVE_GETADDRINFO
+/** Define as 1 if you have struct addrinfo. */
+#undef SU_HAVE_ADDRINFO
 
 /** Define as 1 if you have Winsock interface */
 #undef SU_HAVE_WINSOCK
+
 /** Define as 1 if you have Winsock2 interface */
 #undef SU_HAVE_WINSOCK2     	
 
