@@ -25,7 +25,7 @@
 :: 02110-1301 USA
 ::
 
-copy /Y su_configure_win32.h ..\libsofia-sip-ua\su\su_configure.h
+copy /Y su_configure_win32.h ..\libsofia-sip-ua\su\sofia-sip\su_configure.h
 
 call version_files.cmd
 

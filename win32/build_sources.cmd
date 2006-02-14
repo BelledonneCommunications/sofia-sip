@@ -18,7 +18,7 @@ set PT=../libsofia-sip-ua/msg/test_table.c
 set IN=../libsofia-sip-ua/msg/sofia-sip/msg_mime.h
 set PR=../libsofia-sip-ua/msg/sofia-sip/msg_protos.h
 set PR2=../libsofia-sip-ua/msg/sofia-sip/msg_mime_protos.h
-set PT=../libsofia-sip-ua/msg/sofia-sip/msg_mime_table.c
+set PT=../libsofia-sip-ua/msg/msg_mime_table.c
 
 %MSG_AWK% module=msg NO_FIRST=1 NO_MIDDLE=1 PR=%PR% %IN% < NUL
 %MSG_AWK% module=msg NO_FIRST=1 NO_LAST=1 PR=%PR2% %IN% < NUL
@@ -26,11 +26,11 @@ set PT=../libsofia-sip-ua/msg/sofia-sip/msg_mime_table.c
   PT=%PT% %IN% < NUL
 
 set IN=../libsofia-sip-ua/sip/sofia-sip/sip.h
-set PR=../libsofia-sip-ua/sip/sofia-sip/sip_tag.c
+set PR=../libsofia-sip-ua/sip/sip_tag.c
 set PR2=../libsofia-sip-ua/sip/sofia-sip/sip_hclasses.h
 set PR3=../libsofia-sip-ua/sip/sofia-sip/sip_protos.h
 set PR4=../libsofia-sip-ua/sip/sofia-sip/sip_tag.h
-set PT=../libsofia-sip-ua/sip/sofia-sip/sip_parser_table.c
+set PT=../libsofia-sip-ua/sip/sip_parser_table.c
 
 %MSG_AWK% module=sip PR=%PR% %IN%  < NUL
 %MSG_AWK% module=sip PR=%PR2% %IN% < NUL

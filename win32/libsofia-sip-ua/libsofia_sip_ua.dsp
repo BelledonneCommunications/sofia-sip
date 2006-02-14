@@ -112,6 +112,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_alloc_lock.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\su_bm.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\su_default_log.c"
 # End Source File
 # Begin Source File
@@ -133,10 +137,6 @@ SOURCE="..\..\libsofia-sip-ua\su\su_log.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\su_md5.c"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\su\su_bm.c"
 # End Source File
 # Begin Source File
 
@@ -276,11 +276,11 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_generic.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg.header_copy.c"
+SOURCE="..\..\libsofia-sip-ua\msg\msg_header_copy.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg.header_make.c"
+SOURCE="..\..\libsofia-sip-ua\msg\msg_header_make.c"
 # End Source File
 # Begin Source File
 
@@ -356,7 +356,7 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip_feature.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip.header.c"
+SOURCE="..\..\libsofia-sip-ua\sip\sip_header.c"
 # End Source File
 # Begin Source File
 
@@ -432,7 +432,7 @@ SOURCE="..\..\libsofia-sip-ua\http\http_extra.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.header.c"
+SOURCE="..\..\libsofia-sip-ua\http\http_header.c"
 # End Source File
 # Begin Source File
 
@@ -532,7 +532,7 @@ SOURCE="..\..\libsofia-sip-ua\iptsec\auth_module.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_module.http.c"
+SOURCE="..\..\libsofia-sip-ua\iptsec\auth_module_http.c"
 # End Source File
 # Begin Source File
 
@@ -724,6 +724,10 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_alloc_stat.h"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_bm.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_config.h"
 # End Source File
 # Begin Source File
@@ -736,6 +740,10 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_debug.h"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_errno.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_localinfo.h"
 # End Source File
 # Begin Source File
@@ -745,10 +753,6 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_log.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_md5.h"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_bm.h"
 # End Source File
 # Begin Source File
 
@@ -817,10 +821,6 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\tstdef.h"
 # Begin Source File
 
 SOURCE=..\config.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\su_configure_win32.h
 # End Source File
 # Begin Source File
 
@@ -908,7 +908,7 @@ SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_date.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg.header.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_header.h"
 # End Source File
 # Begin Source File
 
@@ -920,7 +920,7 @@ SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_mclass.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_mclass.hash.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_mclass_hash.h"
 # End Source File
 # Begin Source File
 
@@ -960,11 +960,11 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip_extensions.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip.hclasses.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_hclasses.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip.header.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_header.h"
 # End Source File
 # Begin Source File
 
@@ -1004,11 +1004,11 @@ SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.hclasses.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http_hclasses.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.header.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http_header.h"
 # End Source File
 # Begin Source File
 
@@ -1061,6 +1061,10 @@ SOURCE="..\..\libsofia-sip-ua\nea\sofia-sip\nea.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\nea\nea_debug.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nea\sofia-sip\nea_tag.h"
 # End Source File
 # End Group
 # Begin Group "iptsec headers"
@@ -1153,6 +1157,10 @@ SOURCE="..\..\libsofia-sip-ua\tport\sofia-sip\tport.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\tport\sofia-sip\tport_tag.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_tls.h"
 # End Source File
 # End Group
 # Begin Group "sdp headers"
