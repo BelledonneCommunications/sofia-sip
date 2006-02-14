@@ -5,21 +5,7 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 		-I$(srcdir)/../bnf \
-	 		-I$(srcdir)/../ipt \
-	 		-I$(srcdir)/../iptsec \
-	 		-I$(srcdir)/../http \
-			-I$(srcdir)/../msg \
-			-I$(srcdir)/../nea \
-			-I$(srcdir)/../nta \
-			-I$(srcdir)/../nth \
-			-I$(srcdir)/../nua \
-			-I$(srcdir)/../sdp \
-			-I$(srcdir)/../sip \
-			-I$(srcdir)/../soa \
-			-I$(srcdir)/../tport \
-			-I$(srcdir)/../url \
-			-I$(srcdir)/../su
+INCLUDES =		$(INTERNAL_INCLUDES)
 
 # ----------------------------------------------------------------------
 # Build targets

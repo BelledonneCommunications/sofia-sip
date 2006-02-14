@@ -26,3 +26,24 @@ endif
  ../sresolv/libsresolv.la ../stun/libstun.la ../su/libsu.la \
  ../tport/libtport.la ../url/liburl.la:
 	$(MAKE) -C $(@D) $(@F)
+
+INTERNAL_INCLUDES = \
+	-I$(srcdir)/../features -I../features \
+	-I$(srcdir)/../ipt -I../ipt \
+	-I$(srcdir)/../iptsec -I../iptsec \
+	-I$(srcdir)/../bnf -I../bnf \
+	-I$(srcdir)/../http -I../http \
+	-I$(srcdir)/../msg -I../msg \
+	-I$(srcdir)/../nth -I../nth \
+	-I$(srcdir)/../nta -I../nta \
+	-I$(srcdir)/../nea -I../nea \
+	-I$(srcdir)/../nua -I../nua \
+	-I$(srcdir)/../soa -I../soa \
+	-I$(srcdir)/../sdp -I../sdp \
+	-I$(srcdir)/../sip -I../sip \
+	-I$(srcdir)/../soa -I../soa \
+	-I$(srcdir)/../sresolv -I../sresolv \
+	-I$(srcdir)/../tport -I../tport \
+	-I$(srcdir)/../stun -I../stun \
+	-I$(srcdir)/../url -I../url \
+	-I$(srcdir)/../su -I../su

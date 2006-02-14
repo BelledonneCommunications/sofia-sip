@@ -5,14 +5,14 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 	-I$(srcdir)/../ipt \
-		-I$(srcdir)/../iptsec \
-		-I$(srcdir)/../msg \
-		-I$(srcdir)/../http \
-		-I$(srcdir)/../sresolv \
-		-I$(srcdir)/../tport \
-		-I$(srcdir)/../url \
-		-I$(srcdir)/../su
+INCLUDES = 	-I$(srcdir)/../ipt -I../ipt \
+		-I$(srcdir)/../iptsec -I../iptsec \
+		-I$(srcdir)/../msg -I../msg \
+		-I$(srcdir)/../http -I../http \
+		-I$(srcdir)/../sresolv -I../sresolv \
+		-I$(srcdir)/../tport -I../tport \
+		-I$(srcdir)/../url -I../url \
+		-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
 # Build targets

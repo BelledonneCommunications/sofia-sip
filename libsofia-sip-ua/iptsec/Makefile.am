@@ -5,14 +5,14 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 		-I$(srcdir)/../bnf \
-	 		-I$(srcdir)/../ipt \
-	 		-I$(srcdir)/../http \
-			-I$(srcdir)/../msg \
-			-I$(srcdir)/../nta \
-			-I$(srcdir)/../sip \
-			-I$(srcdir)/../url \
-			-I$(srcdir)/../su
+INCLUDES = 		-I$(srcdir)/../bnf -I../bnf \
+	 		-I$(srcdir)/../ipt -I../ipt \
+	 		-I$(srcdir)/../http -I../http \
+			-I$(srcdir)/../msg -I../msg \
+			-I$(srcdir)/../nta -I../nta \
+			-I$(srcdir)/../sip -I../sip \
+			-I$(srcdir)/../url -I../url \
+			-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
 # Build targets

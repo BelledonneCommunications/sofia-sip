@@ -5,10 +5,10 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 		-I$(srcdir)/../sdp \
-			-I$(srcdir)/../sip \
-			-I$(srcdir)/../ipt \
-			-I$(srcdir)/../su
+INCLUDES = 		-I$(srcdir)/../sdp -I../sdp \
+			-I$(srcdir)/../sip -I../sip \
+			-I$(srcdir)/../ipt -I../ipt \
+			-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
 # Build targets
