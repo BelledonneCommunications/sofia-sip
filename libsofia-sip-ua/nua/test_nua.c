@@ -175,17 +175,17 @@ static int save_event_in_list(struct context *,
 static void free_events_in_list(struct context *,
 				struct call *);
 
-#define CONDITION_FUNCTION(name)		\
-  int name(nua_event_t event,			\
-	   int status, char const *phrase,	\
-	   nua_t *nua, struct context *ctx,	\
-	   struct endpoint *ep,			\
-	   nua_handle_t *nh, struct call *call, \
-	   sip_t const *sip,			\
-	   tagi_t tags[])
+#define CONDITION_PARAMS			\
+  nua_event_t event,				\
+  int status, char const *phrase,		\
+  nua_t *nua, struct context *ctx,		\
+  struct endpoint *ep,				\
+  nua_handle_t *nh, struct call *call,		\
+  sip_t const *sip,				\
+  tagi_t tags[]
 
-CONDITION_FUNCTION(until_final_response){ return status >= 200; }
-CONDITION_FUNCTION(save_until_final_response)
+int until_final_response(CONDITION_PARAMS){ return status >= 200; }
+int save_until_final_response(CONDITION_PARAMS)
 {
   save_event_in_list(ctx, event, ep, ep->call);
   return event >= nua_r_set_params && status >= 200;
@@ -194,7 +194,7 @@ CONDITION_FUNCTION(save_until_final_response)
 /** Save events (except nua_i_active or terminated).
  * Terminate when a event is saved.
  */
-CONDITION_FUNCTION(save_until_received)
+int save_until_received(CONDITION_PARAMS)
 {
   save_event_in_list(ctx, event, ep, ep->call);
   return 1;
@@ -1457,12 +1457,12 @@ int test_unregister(struct context *ctx)
 
 /* ======================================================================== */
 
-CONDITION_FUNCTION(save_events)
+int save_events(CONDITION_PARAMS)
 {
   return save_event_in_list(ctx, event, ep, ep->call) > 0;
 }
 
-CONDITION_FUNCTION(until_terminated)
+int until_terminated(CONDITION_PARAMS)
 {
   if (!check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR))
     return 0;
@@ -1483,7 +1483,7 @@ CONDITION_FUNCTION(until_terminated)
  |<--------200--------|
  |---------ACK------->|
 */
-CONDITION_FUNCTION(accept_call)
+int accept_call(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -1520,7 +1520,7 @@ CONDITION_FUNCTION(accept_call)
  |<--------200--------|
  |---------ACK------->|
 */
-CONDITION_FUNCTION(accept_call_immediately)
+int accept_call_immediately(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -1551,7 +1551,7 @@ CONDITION_FUNCTION(accept_call_immediately)
  |<--------200--------|
  |---------ACK------->|
 */
-CONDITION_FUNCTION(until_ready)
+int until_ready(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -1580,7 +1580,7 @@ CONDITION_FUNCTION(until_ready)
  |                    |
  |---------ACK------->|
 */
-CONDITION_FUNCTION(ack_when_completing)
+int ack_when_completing(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -1755,7 +1755,7 @@ int test_basic_call(struct context *ctx)
  |<--------486--------|
  |---------ACK------->|
 */
-CONDITION_FUNCTION(reject_1)
+int reject_1(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -1856,7 +1856,7 @@ int test_reject_a(struct context *ctx)
  |<--------602--------|
  |---------ACK------->|
 */
-CONDITION_FUNCTION(reject_2)
+int reject_2(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -1959,8 +1959,8 @@ int test_reject_b(struct context *ctx)
 
 /* ------------------------------------------------------------------------ */
 
-CONDITION_FUNCTION(reject_302);
-CONDITION_FUNCTION(reject_604);
+int reject_302(CONDITION_PARAMS);
+int reject_604(CONDITION_PARAMS);
 
 /*
  A     reject-302     B
@@ -1979,7 +1979,7 @@ CONDITION_FUNCTION(reject_604);
  |<---604 Nowhere-----|
  |--------ACK-------->|
 */
-CONDITION_FUNCTION(reject_302)
+int reject_302(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2006,7 +2006,7 @@ CONDITION_FUNCTION(reject_302)
   }
 }
 
-CONDITION_FUNCTION(reject_604)
+int reject_604(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2133,10 +2133,10 @@ int test_reject_302(struct context *ctx)
 
 /* Reject call with 407, then 401 */
 
-CONDITION_FUNCTION(reject_407);
-CONDITION_FUNCTION(reject_401);
-CONDITION_FUNCTION(authenticate_call);
-CONDITION_FUNCTION(reject_403);
+int reject_407(CONDITION_PARAMS);
+int reject_401(CONDITION_PARAMS);
+int authenticate_call(CONDITION_PARAMS);
+int reject_403(CONDITION_PARAMS);
 
 /*
  A     reject-401     B
@@ -2160,7 +2160,7 @@ CONDITION_FUNCTION(reject_403);
  |--------ACK-------->|
 */
 
-CONDITION_FUNCTION(reject_407)
+int reject_407(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2185,7 +2185,7 @@ CONDITION_FUNCTION(reject_407)
   }
 }
 
-CONDITION_FUNCTION(reject_401)
+int reject_401(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2213,7 +2213,7 @@ CONDITION_FUNCTION(reject_401)
   }
 }
 
-CONDITION_FUNCTION(reject_403)
+int reject_403(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2234,7 +2234,7 @@ CONDITION_FUNCTION(reject_403)
   }
 }
 
-CONDITION_FUNCTION(authenticate_call)
+int authenticate_call(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2383,7 +2383,7 @@ int test_reject_401(struct context *ctx)
  |---------ACK------->|
 */
 
-CONDITION_FUNCTION(reject_401_aka)
+int reject_401_aka(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2685,7 +2685,7 @@ int test_mime_negotiation(struct context *ctx)
 
 */
 
-CONDITION_FUNCTION(cancel_when_calling)
+int cancel_when_calling(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2704,7 +2704,7 @@ CONDITION_FUNCTION(cancel_when_calling)
 }
 
 
-CONDITION_FUNCTION(cancel_when_ringing)
+int cancel_when_ringing(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2723,7 +2723,7 @@ CONDITION_FUNCTION(cancel_when_ringing)
 }
 
 
-CONDITION_FUNCTION(alert_call)
+int alert_call(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -2903,7 +2903,7 @@ int test_call_cancel(struct context *ctx)
 
 */
 
-CONDITION_FUNCTION(bye_when_ringing)
+int bye_when_ringing(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -4407,13 +4407,13 @@ int test_methods(struct context *ctx)
 /**Terminate until received notify.
  * Save events (except nua_i_active or terminated).
  */
-CONDITION_FUNCTION(save_until_notified)
+int save_until_notified(CONDITION_PARAMS)
 {
   save_event_in_list(ctx, event, ep, call);
   return event == nua_i_notify;
 }
 
-CONDITION_FUNCTION(save_until_notified_and_responded)
+int save_until_notified_and_responded(CONDITION_PARAMS)
 {
   save_event_in_list(ctx, event, ep, call);
   if (event == nua_i_notify) ep->flags.b.bit0 = 1;
@@ -4428,7 +4428,7 @@ CONDITION_FUNCTION(save_until_notified_and_responded)
 }
 
 
-CONDITION_FUNCTION(save_until_subscription)
+int save_until_subscription(CONDITION_PARAMS)
 {
   save_event_in_list(ctx, event, ep, call);
   return event == nua_i_subscription;
