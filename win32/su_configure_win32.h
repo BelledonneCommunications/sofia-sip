@@ -35,6 +35,8 @@
  */
 
 #define WIN32_LEAN_AND_MEAN
+/* Remove this when building DLL */
+#define LIBSOFIA_SIP_UA_STATIC
 
 #define SU_HAVE_WIN32		1
 #define SU_HAVE_WINSOCK         1

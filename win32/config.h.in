@@ -64,7 +64,7 @@
 #undef HAVE_FUNCTION
 
 /* Define to 1 if you have the `gai_strerror' function. */
-#undef HAVE_GAI_STRERROR
+#define HAVE_GAI_STRERROR 1
 
 /* Define to 1 if you have the `getaddrinfo' function. */
 #define HAVE_GETADDRINFO 1
