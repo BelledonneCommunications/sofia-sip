@@ -5,10 +5,10 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 	-I$(srcdir)/../bnf \
-		-I$(srcdir)/../msg \
-		-I$(srcdir)/../url \
-		-I$(srcdir)/../su 
+INCLUDES = 	-I$(srcdir)/../bnf -I../bnf \
+		-I$(srcdir)/../msg -I../msg \
+		-I$(srcdir)/../url -I../url \
+		-I$(srcdir)/../su -I../su -I../su
 
 # ----------------------------------------------------------------------
 # Build targets
@@ -53,9 +53,9 @@ test_http_LDFLAGS = 	-static
 # Install and distribution rules
 
 EXTRA_DIST =		Doxyfile http.docs \
-			sofia-sip/http_parser_table.c.in \
 			sofia-sip/http_protos.h.in \
 			sofia-sip/http_tag.h.in \
+			http_parser_table.c.in \
 			http_tag.c.in
 
 # ----------------------------------------------------------------------
@@ -69,14 +69,14 @@ MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
 
 AWK_HTTP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=http
 
-sofia-sip/http_tag.h: sofia-sip/http_tag.h.in $(MSG_PARSER_AWK)
-sofia-sip/http_protos.h: sofia-sip/http_protos.h.in $(MSG_PARSER_AWK)
+sofia-sip/http_tag.h: $(srcdir)/sofia-sip/http_tag.h.in $(MSG_PARSER_AWK)
+sofia-sip/http_protos.h: $(srcdir)/sofia-sip/http_protos.h.in $(MSG_PARSER_AWK)
 http_tag.c: http_tag.c.in $(MSG_PARSER_AWK)
 http_parser_table.c: http_parser_table.c.in $(MSG_PARSER_AWK)
 
-sofia-sip/http_tag.c sofia-sip/http_protos.h sofia-sip/http_tag.h: \
-	sofia-sip/http.h
+http_tag.c $(BUILT_H): $(srcdir)/sofia-sip/http.h
+	@-mkdir sofia-sip 2>/dev/null
 	$(AWK_HTTP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
-http_parser_table.c: sofia-sip/http.h
-	$(AWK_HTTP_AWK) PT=$@ MC_HASH_SIZE=127 $<
+http_parser_table.c: $(srcdir)/sofia-sip/http.h
+	$(AWK_HTTP_AWK) PT=$@ TEMPLATE=$(srcdir)/$@.in MC_HASH_SIZE=127 $<

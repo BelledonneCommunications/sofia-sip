@@ -5,11 +5,11 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 	-I$(srcdir)/../bnf \
-		-I$(srcdir)/../ipt \
-		-I$(srcdir)/../msg \
-		-I$(srcdir)/../url \
-		-I$(srcdir)/../su
+INCLUDES = 	-I$(srcdir)/../bnf -I../bnf \
+		-I$(srcdir)/../ipt -I../ipt \
+		-I$(srcdir)/../msg -I../msg \
+		-I$(srcdir)/../url -I../url \
+		-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
 # Build targets
@@ -109,16 +109,21 @@ AWK_SIP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=sip
 #
 sip_parser_table.c: sip_bad_mask
 
-sofia-sip/sip_hclasses.h: sofia-sip/sip_hclasses.h.in $(MSG_PARSER_AWK)
-sofia-sip/sip_protos.h: sofia-sip/sip_protos.h.in $(MSG_PARSER_AWK)
-sofia-sip/sip_tag.h: sofia-sip/sip_tag.h.in $(MSG_PARSER_AWK)
+sofia-sip/sip_hclasses.h: $(srcdir)/sofia-sip/sip_hclasses.h.in 
+sofia-sip/sip_protos.h: $(srcdir)/sofia-sip/sip_protos.h.in
+sofia-sip/sip_tag.h: $(srcdir)/sofia-sip/sip_tag.h.in 
+
+$(GENERATED_H): $(MSG_PARSER_AWK)
+
 sip_parser_table.c: sip_parser_table.c.in $(MSG_PARSER_AWK)
 sip_tag.c: sip_tag.c.in $(MSG_PARSER_AWK)
 
-sip_tag.c sofia-sip/sip_hclasses.h sofia-sip/sip_protos.h sofia-sip/sip_tag.h:\
-	sofia-sip/sip.h
+sip_tag.c $(GENERATED_H): $(srcdir)/sofia-sip/sip.h
+	@-mkdir sofia-sip 2>/dev/null
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
-sip_parser_table.c: sofia-sip/sip.h
-	$(AWK_SIP_AWK) PT=$@ FLAGFILE=$(srcdir)/sip_bad_mask \
+sip_parser_table.c: $(srcdir)/sofia-sip/sip.h
+	@-mkdir sofia-sip 2>/dev/null
+	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/$@.in \
+		FLAGFILE=$(srcdir)/sip_bad_mask \
 		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
