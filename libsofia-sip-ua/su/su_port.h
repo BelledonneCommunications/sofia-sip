@@ -45,7 +45,7 @@
 #endif
 
 #ifndef SU_MODULE_DEBUG_H
-#include <sofia-sip/su_module_debug.h>
+#include "su_module_debug.h"
 #endif
 
 #ifndef SU_ALLOC_H
