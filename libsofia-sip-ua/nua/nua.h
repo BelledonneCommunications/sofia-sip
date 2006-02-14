@@ -112,6 +112,7 @@ typedef enum nua_event_e {
   nua_r_publish,		/**< Answer to outgoing PUBLISH */
   nua_r_unpublish,		/**< Answer to outgoing un-PUBLISH */
   nua_r_info,		        /**< Answer to outgoing INFO */
+  nua_r_prack,			/**< Answer to outgoing PRACK */
   nua_r_update,		        /**< Answer to outgoing UPDATE */
   nua_r_message,		/**< Answer to outgoing MESSAGE */
   nua_r_chat,			/**< Answer to outgoing chat message */

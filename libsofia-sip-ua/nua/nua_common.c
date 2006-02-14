@@ -247,6 +247,7 @@ char const *nua_event_name(nua_event_t event)
   case nua_r_publish: return "nua_r_publish";
   case nua_r_unpublish: return "nua_r_unpublish";
   case nua_r_info: return "nua_r_info";
+  case nua_r_prack: return "nua_r_prack";
   case nua_r_update: return "nua_r_update";
   case nua_r_message: return "nua_r_message";
   case nua_r_chat: return "nua_r_chat";

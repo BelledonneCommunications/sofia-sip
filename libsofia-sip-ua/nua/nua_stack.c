@@ -3964,6 +3964,7 @@ process_100rel(nua_handle_t *nh,
 			     TAG_END());
 
   if (prack) {
+    cr_prack->cr_event = nua_r_prack;
     cr_prack->cr_orq = prack;
     if (answer_sent_in_prack)
       cr_invite->cr_answer_sent = 1;
@@ -4001,7 +4002,7 @@ process_response_to_prack(nua_handle_t *nh,
   else
     status = 408, phrase = sip_408_Request_timeout;
 
-  SU_DEBUG_1(("nua: process_response_to_prack:\n"));
+  SU_DEBUG_5(("nua: process_response_to_prack: %u %s\n", status, phrase));
 
 #if 0
   if (crequest_check_restart(nh, cr, orq, sip, restart_prack))
@@ -4011,12 +4012,14 @@ process_response_to_prack(nua_handle_t *nh,
   if (status < 200)
     return 0;
   
-  crequest_deinit(cr, orq);
-
-  if (status < 300 && session_process_response(nh, cr, orq, sip, &recv) < 0) {
-    status = 500, phrase = "Malformed Session in Response";
-    reason = "SIP;status=400;phrase=\"Malformed Session in Response\"";
+  if (status < 300) {
+    if (session_process_response(nh, cr, orq, sip, &recv) < 0) {
+      status = 500, phrase = "Malformed Session in Response";
+      reason = "SIP;status=400;phrase=\"Malformed Session in Response\"";
+    }
   }
+  else
+    process_response(nh, cr, orq, sip, TAG_END());
 
   signal_call_state_change(nh, status, phrase, 
 			   nua_callstate_proceeding, recv, NULL);
@@ -4389,8 +4392,14 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 	sip_has_feature(ds->ds_remote_ua->nr_supported, "100rel"))
     || (status > 100 &&
 	ds->ds_remote_ua->nr_require &&
-	(sip_has_feature(ds->ds_remote_ua->nr_require, "100rel") ||
-	 sip_has_feature(ds->ds_remote_ua->nr_require, "precondition")));
+	sip_has_feature(ds->ds_remote_ua->nr_require, "100rel"))
+    || (status == 183 &&
+	ds->ds_remote_ua->nr_require &&
+	sip_has_feature(ds->ds_remote_ua->nr_require, "precondition"))
+    || (status > 100 &&
+	ds->ds_remote_ua->nr_require &&
+	sip_has_feature(ds->ds_remote_ua->nr_require, "precondition") &&
+	sr->sr_offer_recv && !sr->sr_answer_sent);
 
   msg = nh_make_response(nua, nh, ss->ss_srequest->sr_irq, 
 			 status, phrase, 
@@ -4465,12 +4474,16 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   if (reliable && status < 200)
     /* we are done */;
   else if (status != original_status) {    /* Error responding */
+    assert(status >= 200);
+    ss->ss_srequest->sr_respond = NULL;
     nta_incoming_treply(ss->ss_srequest->sr_irq, 
 			status, phrase,
 			TAG_END());
     msg_destroy(msg), msg = NULL;
   }
   else {
+    if (status >= 200)
+      ss->ss_srequest->sr_respond = NULL;
     nta_incoming_mreply(ss->ss_srequest->sr_irq, msg);
   }
 
@@ -4495,6 +4508,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   /* Update session state */
   assert(ss->ss_state != nua_callstate_calling);
   assert(ss->ss_state != nua_callstate_proceeding);
+
   signal_call_state_change(nh, status, phrase, 
 			   status >= 300 
 			   ? nua_callstate_init 
@@ -4511,7 +4525,6 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   if (status >= 200) {
     ss->ss_usage->du_ready = 1;
-    ss->ss_srequest->sr_respond = NULL;
   }
 
   if (status >= 300) {
@@ -4519,6 +4532,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
       soa_init_offer_answer(nh->nh_soa);
     nta_incoming_destroy(ss->ss_srequest->sr_irq);
     ss->ss_srequest->sr_irq = NULL;
+    ss->ss_srequest->sr_respond = NULL;
   }
 
   su_home_deinit(home);
@@ -4569,7 +4583,13 @@ int process_prack(nua_handle_t *nh,
   if (!sr->sr_irq) /* XXX  */
     return 481;
 
-  if (sip == NULL) {    /* Timeout */
+  if (sip)
+    /* received PRACK */;
+  else if (sr->sr_respond == NULL) { /* Final response interrupted 100rel */
+    /* Ignore */
+    return 200;
+  }
+  else if (sip == NULL) {    
     SET_STATUS(504, "Reliable Response Timeout");
 
     respond_to_invite(nh->nh_nua, nh, status, phrase, NULL);
