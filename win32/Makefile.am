@@ -26,11 +26,9 @@ EXTRA_DIST = SofiaSIP.dsw \
 
 PTHREAD_DIST = \
 	pthread/ChangeLog \
-	pthread/pthread.dll \
-	pthread/pthread.def \
-	pthread/pthread.lib \
+	pthread/md5.sum.txt \
+	pthread/pthreadVC2.dll \
+	pthread/pthreadVC2.lib \
 	pthread/semaphore.h \
 	pthread/sched.h \
-	pthread/md5.sum.txt \
 	pthread/pthread.h
-
