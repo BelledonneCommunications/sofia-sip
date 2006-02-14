@@ -1,3 +1,43 @@
+2006-02-14  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Moved public include files to sofia-sip subdirectories.
+
+  All public include files installed in ${sofiadir} are now in sofia-sip
+  subdirectories. They are installed to ${sofiadir}/sofia-sip, too.
+
+  ${sofiadir} is defined by configure script relative to your ${prefix}, by
+  default ${sofidir} is ${prefix}/include/sofia-sip-1.11. The default prefix
+  is /usr/local and ${sofiadir} is /usr/local/include/sofia-sip-1.11. When
+  using package manager, the ${prefix} is usually /usr and ${sofiadir} is
+  /usr/include/sofia-sip-1.11.
+
+  The public include files should be referenced using sofia-sip path, e.g.,
+  <sofia-sip/su.h>.
+
+  You can either fix your applications to use the new include file names
+  with the fix-include-sofia-sip sed script found in scripts/ directory, or 
+  add both ${sofiadir} and ${sofiadir}/sofia-sip into your include path, 
+  e.g.,
+
+  INCLUDES = -I/usr/include/sofia-1.11 -I/usr/include/sofia-1.11/sofia-sip 
+
+  At the same time, I took the liberty to rename two include files
+
+  sofia_sip_features.h => sofia-sip/features.h
+  su_memmem.h => sofia-sip/su_bm.h	
+
+  The fix-include-sofia-sip sed script takes care of both of them.
+	
+  * Improved 100rel handling in nua.
+  Added test_100rel to test_nua.c.
+
+  * Using CONDITION_PARAMS macro instead of CONDITION_FUNCTION in test_nua.c
+
+  * Improving getaddrinfo replacements.
+  Testing functions getaddrinfo()/freeaddrinfo(), getnameinfo() and
+  gai_strerror() separately. 
+  There is no gai_strerror() in windows, I think.
+
 2006-02-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Code cleanup and memory leak fix in soa/sdp.

@@ -37,14 +37,14 @@
 
 #include "config.h"
 
-#include <string0.h>
+#include <sofia-sip/string0.h>
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
 #if HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
@@ -56,11 +56,11 @@
 
 #define SU_LOG   tport_log
 
-#include <su_debug.h>
-#include <su_alloc.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_debug.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include <su_localinfo.h>
+#include <sofia-sip/su_localinfo.h>
 
 #ifndef NONE
 #define NONE ((void *)-1)
@@ -76,10 +76,10 @@ typedef struct tport_nat_s tport_nat_t;
 #define STUN_MAGIC_T    tport_master_t
 
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
-#include <msg.h>
-#include <msg_addr.h>
+#include <sofia-sip/msg.h>
+#include <sofia-sip/msg_addr.h>
 
 #if HAVE_IP_RECVERR || HAVE_IPV6_RECVERR
 #include <linux/types.h>
@@ -115,17 +115,17 @@ typedef struct _tls_t tls_t;	/* dummy */
 #endif
 
 #if HAVE_SOFIA_STUN
-#include "stun.h"
-#include "stun_tag.h"
+#include "sofia-sip/stun.h"
+#include "sofia-sip/stun_tag.h"
 #endif
 
 #if HAVE_UPNP
 #include "upnp_wrapper.h"
 #endif
 
-#include "tport.h"
-#include "su_uniqueid.h"
-#include <rbtree.h>
+#include "sofia-sip/tport.h"
+#include "sofia-sip/su_uniqueid.h"
+#include <sofia-sip/rbtree.h>
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

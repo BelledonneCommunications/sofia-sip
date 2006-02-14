@@ -46,7 +46,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <auth_digest.h>
+#include <sofia-sip/auth_digest.h>
 #include "iptsec_debug.h"
 
 #if HAVE_FUNC
@@ -56,20 +56,20 @@
 static char const __func__[] = "auth_mod";
 #endif
 
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
-#include <su_wait.h>
-#include <su_alloc.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include <base64.h>
-#include <su_md5.h>
+#include <sofia-sip/base64.h>
+#include <sofia-sip/su_md5.h>
 
-#include <msg_parser.h>
-#include <msg_date.h>
+#include <sofia-sip/msg_parser.h>
+#include <sofia-sip/msg_date.h>
 
-#include "auth_module.h"
-#include "auth_plugin.h"
+#include "sofia-sip/auth_module.h"
+#include "sofia-sip/auth_plugin.h"
 
 #define APW_HASH(apw) ((apw)->apw_index)
 

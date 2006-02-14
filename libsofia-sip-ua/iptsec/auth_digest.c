@@ -37,8 +37,8 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include <su_md5.h>
-#include "auth_digest.h"
+#include <sofia-sip/su_md5.h>
+#include "sofia-sip/auth_digest.h"
 
 #include "iptsec_debug.h"
 

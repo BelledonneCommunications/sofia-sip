@@ -39,7 +39,7 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "sip_parser.h"
+#include "sofia-sip/sip_parser.h"
 
 /* ====================================================================== */
 

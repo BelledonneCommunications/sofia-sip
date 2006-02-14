@@ -30,8 +30,10 @@ TESTS_ENVIRONMENT =	$(SHELL)
 
 BUILT_SOURCES =		nta_tag_ref.c
 
-include_sofia_HEADERS =       nta.h nta_stateless.h nta_tport.h \
-			nta_tag.h sl_utils.h 
+nobase_include_sofia_HEADERS = \
+			sofia-sip/nta.h sofia-sip/nta_stateless.h \
+			sofia-sip/nta_tport.h sofia-sip/nta_tag.h \
+			sofia-sip/sl_utils.h 
 
 libnta_la_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
 			nta_internal.h \

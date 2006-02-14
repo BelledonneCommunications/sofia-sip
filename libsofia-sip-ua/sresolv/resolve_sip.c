@@ -40,7 +40,7 @@
 /* Typesafe */
 #define SRES_CONTEXT_T struct context
 
-#include "sresolv.h"
+#include "sofia-sip/sresolv.h"
 
 char const name[] = "sip_resolve";
 

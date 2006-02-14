@@ -35,15 +35,15 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
-#include <http_parser.h>
+#include <sofia-sip/http_parser.h>
 
-#include <http_tag.h>
-#include <su_tag_class.h>
-#include <su_tag_inline.h>
-#include <http_tag_class.h>
-#include <su_tagarg.h>
+#include <sofia-sip/http_tag.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_inline.h>
+#include <sofia-sip/http_tag_class.h>
+#include <sofia-sip/su_tagarg.h>
 
 tag_class_t httphdrtag_class[1] = 
   {{

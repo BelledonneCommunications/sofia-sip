@@ -64,7 +64,7 @@
 
 #include <string.h>	/* for memcpy() and memset() */
 
-#include "su_md5.h"
+#include "sofia-sip/su_md5.h"
 
 static void su_md5_transform(uint32_t buf[4], const unsigned char inraw[64]);
 

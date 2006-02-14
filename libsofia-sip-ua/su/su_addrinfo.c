@@ -29,8 +29,8 @@
 
 #include "config.h"
 
-#include <su_addrinfo.h>
-#include <su.h>
+#include <sofia-sip/su_addrinfo.h>
+#include <sofia-sip/su.h>
 
 #if !HAVE_GETADDRINFO
 

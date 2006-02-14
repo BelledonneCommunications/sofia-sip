@@ -51,9 +51,9 @@ typedef struct buffer_s buffer_t;
 #define SU_MSG_ARG_T    su_socket_t
 #define SU_WAKEUP_ARG_T forwarder_t
 
-#include "su.h"
-#include "su_wait.h"
-#include "su_alloc.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_wait.h"
+#include "sofia-sip/su_alloc.h"
 #include "su_module_debug.h"
 
 #if HAVE_FUNC

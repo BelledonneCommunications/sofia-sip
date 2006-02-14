@@ -39,27 +39,27 @@
 #include <string.h>
 #include <stddef.h>
 
-#include <su_types.h>
+#include <sofia-sip/su_types.h>
 
-#include <su_tag.h>
-#include <su_tag_class.h>
-#include <su_tag_io.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_io.h>
 
-#include "sip_parser.h"
-#include <sip_util.h>
-#include <sip_status.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/sip_status.h>
 
-#include <sip_tag.h>
-#include <url_tag.h>
-#include <msg_addr.h>
-#include <msg_mclass.h>
-#include <msg_mclass_hash.h>
+#include <sofia-sip/sip_tag.h>
+#include <sofia-sip/url_tag.h>
+#include <sofia-sip/msg_addr.h>
+#include <sofia-sip/msg_mclass.h>
+#include <sofia-sip/msg_mclass_hash.h>
 
 int tstflags;
 
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const *name = "torture_sip.c";
 

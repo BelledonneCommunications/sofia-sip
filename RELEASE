@@ -18,11 +18,15 @@ API/ABI changes and versioning
    other important information to developers;
  - and should be updated _continuously_! />
 
+- Moved all header files that are installed to sofia-sip subdirectories
+  There is a sed script (scripts/fix-include-sofia-sip) that can be used
+  to modify include directives to use "sofia-sip/foo.h" instead of "foo.h"
 - Removed include files msg/msg_bnf.h msg/msg_auth.h sip/sip_extensions.h
   sip/sip_internal.h and su/su_configure_win32.h
 - The clone su_home_t semantics were extended.
   Added su_home_is_threadsafe(), modified prototype of su_home_unref().
 - Removed *_dll.h files - defining *_DLL macros in <su_config.h>.
+
 
 Contributors to this release
 ----------------------------
@@ -36,6 +40,9 @@ Contributors to this release
 
 Bugs fixed in this release
 --------------------------
+
+- Handling responses to PRACK
+- Double free in SDP parser (#1423415)
 
 < notable bugs fixed in this release
  - check the sf.net bug tracker; see closed bugs,

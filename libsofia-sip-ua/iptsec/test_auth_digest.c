@@ -41,14 +41,14 @@
 #if HAVE_SOFIA_SIP && 0
 #define PROTOCOL "SIP/2.0"
 #define GOT_HEADERS 1
-#include <sip.h>
-#include <sip_header.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
 #include <sip_hclass.h>
 #elif HAVE_SOFIA_HTTP
 #define PROTOCOL "HTTP/1.1"
 #define GOT_HEADERS 1
-#include <http.h>
-#include <http_header.h>
+#include <sofia-sip/http.h>
+#include <sofia-sip/http_header.h>
 #define sip_authentication_info_class   http_authentication_info_class
 #define sip_authorization               http_authorization
 #define sip_authorization_class	        http_authorization_class
@@ -73,17 +73,17 @@
 #undef GOT_HEADERS
 #endif
 
-#include <auth_digest.h>
-#include <auth_client.h>
-#include <msg_header.h>
-#include <su_wait.h>
+#include <sofia-sip/auth_digest.h>
+#include <sofia-sip/auth_client.h>
+#include <sofia-sip/msg_header.h>
+#include <sofia-sip/su_wait.h>
 
 int tstflags;
 char *argv0;
 
 #define TSTFLAGS tstflags 
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const name[] = "test_auth_digest";
 
@@ -412,7 +412,7 @@ Authorization: Digest       username="Mufasa",
   END();
 }
 
-#include <msg_addr.h>
+#include <sofia-sip/msg_addr.h>
 
 msg_t *read_message(int flags, char const buffer[])
 {
@@ -442,7 +442,7 @@ msg_t *read_message(int flags, char const buffer[])
 
 #define AUTH_MAGIC_T su_root_t
 
-#include <auth_module.h>
+#include <sofia-sip/auth_module.h>
 
 static
 void test_callback(su_root_t *root, auth_status_t *as)
@@ -928,7 +928,7 @@ int test_digest_client()
 #include <sys/file.h>
 #endif
 
-#include <auth_plugin.h>
+#include <sofia-sip/auth_plugin.h>
 
 char tmppasswd[] = "/tmp/test_auth_digest.XXXXXX";
 
@@ -1048,7 +1048,7 @@ int test_module_io()
   END();
 }
 
-#include <su_log.h>
+#include <sofia-sip/su_log.h>
 
 extern su_log_t iptsec_log[];
 

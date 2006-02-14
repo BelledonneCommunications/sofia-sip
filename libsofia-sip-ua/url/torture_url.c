@@ -38,14 +38,14 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "url.h"
-#include "url_tag.h"
+#include "sofia-sip/url.h"
+#include "sofia-sip/url_tag.h"
 
 static int tstflags = 0;
 
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const name[] = "torture_url";
 
@@ -801,7 +801,7 @@ int test_tags(void)
   END();
 }
 
-#include <su_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
 
 int test_tag_filter(void)
 {

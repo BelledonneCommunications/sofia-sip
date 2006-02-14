@@ -44,18 +44,18 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
 #define TAG_NAMESPACE "sip"
 
-#include "sip_parser.h"
-#include <sip_tag.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_tag.h>
 
-#include <su_tag_class.h>
-#include <su_tag_inline.h>
-#include <sip_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_inline.h>
+#include <sofia-sip/sip_tag_class.h>
 
-#include <su_tagarg.h>
+#include <sofia-sip/su_tagarg.h>
 
 tag_typedef_t siptag_any = NSTAG_TYPEDEF(*);
 

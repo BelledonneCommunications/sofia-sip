@@ -41,12 +41,12 @@
 
 #include <assert.h>
 
-#include <su_alloc.h>		/* XXX */
-#include <su.h>
+#include <sofia-sip/su_alloc.h>		/* XXX */
+#include <sofia-sip/su.h>
 
 #include "msg_internal.h"
-#include "msg_parser.h"
-#include "msg_mclass.h"
+#include "sofia-sip/msg_parser.h"
+#include "sofia-sip/msg_mclass.h"
 
 /**
  * Create a message.

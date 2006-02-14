@@ -39,7 +39,7 @@
 #include <assert.h>
 #include <errno.h>
 
-#include "rbtree.h"
+#include "sofia-sip/rbtree.h"
 
 typedef struct node Node;
 
@@ -55,7 +55,7 @@ int tstflags;
 #define TSTFLAGS tstflags
 
 #include <stdio.h>
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const *name = "torture_rbtree";
 
@@ -110,7 +110,7 @@ RBTREE_BODIES(static inline, redblack, Node, LEFT, RIGHT, PARENT,
 	      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR,
 	      CMP, INSERT, REMOVE);
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
 static
 Node *node_new(su_home_t *home, int value)

@@ -46,24 +46,24 @@ typedef struct tp_test_s tp_test_t;
 
 #define TP_STACK_T tp_test_t
  
-#include <su_wait.h>
-#include <su_md5.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/su_md5.h>
 
 #include "test_class.h"
 #include "test_protos.h"
-#include "msg.h"
-#include "msg_mclass.h"
-#include "msg_addr.h"
+#include "sofia-sip/msg.h"
+#include "sofia-sip/msg_mclass.h"
+#include "sofia-sip/msg_addr.h"
 
 #if HAVE_SIGCOMP
 #include <sigcomp.h>
 #endif
 
-#include <base64.h>
+#include <sofia-sip/base64.h>
 
-#include <su_log.h>
+#include <sofia-sip/su_log.h>
 
-#include "tport.h"
+#include "sofia-sip/tport.h"
 
 struct tp_test_s {
   su_home_t  tt_home[1];
@@ -106,7 +106,7 @@ struct tp_test_s {
 int tstflags;
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const name[] = "tport_test";
 
@@ -1266,7 +1266,7 @@ static int sigcomp_test(tp_test_t *tt)
 
 #if HAVE_SOFIA_STUN
 
-#include <stun_tag.h>
+#include <sofia-sip/stun_tag.h>
 
 static int stun_test(tp_test_t *tt)
 {

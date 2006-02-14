@@ -81,8 +81,8 @@
 
 #include <assert.h>
 
-#include "su_config.h"
-#include "su_strlst.h"
+#include "sofia-sip/su_config.h"
+#include "sofia-sip/su_strlst.h"
 
 enum { N = 8 };
 

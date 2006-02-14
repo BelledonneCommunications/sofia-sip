@@ -39,7 +39,7 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "http_parser.h"
+#include "sofia-sip/http_parser.h"
 
 /* ========================================================================== */
 
@@ -336,7 +336,7 @@ void http_set_cookie_update(http_set_cookie_t *sc)
 
 }
 
-#include <msg_date.h>
+#include <sofia-sip/msg_date.h>
 
 /* Scan a cookie parameter */
 static int set_cookie_scanner(char *s)

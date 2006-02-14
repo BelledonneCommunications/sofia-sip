@@ -46,8 +46,8 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <http_parser.h>
-#include <msg_mclass.h>
+#include <sofia-sip/http_parser.h>
+#include <sofia-sip/msg_mclass.h>
 
 #define HTTP_PARSER_FLAGS (MSG_FLG_CHUNKING)
 

@@ -136,7 +136,7 @@ SOURCE="..\..\libsofia-sip-ua\su\su_md5.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_memmem.c"
+SOURCE="..\..\libsofia-sip-ua\su\su_bm.c"
 # End Source File
 # Begin Source File
 
@@ -240,7 +240,7 @@ SOURCE="..\..\libsofia-sip-ua\url\url_tag_ref.c"
 # PROP Default_Filter "features*.c"
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\features\sofia_sip_features.c"
+SOURCE="..\..\libsofia-sip-ua\features\features.c"
 # End Source File
 # End Group
 # Begin Group "bnf"
@@ -276,11 +276,11 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_generic.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_header_copy.c"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg.header_copy.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_header_make.c"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg.header_make.c"
 # End Source File
 # Begin Source File
 
@@ -356,7 +356,7 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip_feature.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_header.c"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip.header.c"
 # End Source File
 # Begin Source File
 
@@ -432,7 +432,7 @@ SOURCE="..\..\libsofia-sip-ua\http\http_extra.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_header.c"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.header.c"
 # End Source File
 # Begin Source File
 
@@ -532,7 +532,7 @@ SOURCE="..\..\libsofia-sip-ua\iptsec\auth_module.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\iptsec\auth_module_http.c"
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_module.http.c"
 # End Source File
 # Begin Source File
 
@@ -672,7 +672,7 @@ SOURCE="..\..\libsofia-sip-ua\soa\soa.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\soa\soa_session.h"
+SOURCE="..\..\libsofia-sip-ua\soa\sofia-sip\soa_session.h"
 # End Source File
 # Begin Source File
 
@@ -696,59 +696,59 @@ SOURCE="..\..\libsofia-sip-ua\soa\soa_tag_ref.c"
 # PROP Default_Filter "su*.h"
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\htable.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\htable.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\htable2.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\htable2.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\rbtree.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\rbtree.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_addrinfo.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_addrinfo.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_alloc.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_alloc.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_alloc_stat.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_alloc_stat.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_config.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_config.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_configure.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_configure.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_debug.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_debug.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_localinfo.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_localinfo.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_log.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_log.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_md5.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_md5.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_memmem.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_bm.h"
 # End Source File
 # Begin Source File
 
@@ -760,55 +760,55 @@ SOURCE="..\..\libsofia-sip-ua\su\su_port.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_source.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_source.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_strlst.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_strlst.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_tag.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_tag.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_tag_class.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_tag_class.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_tag_inline.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_tag_inline.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_tag_io.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_tag_io.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_tagarg.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_tagarg.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_time.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_time.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_types.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_types.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_uniqueid.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_uniqueid.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_vector.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_vector.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\su_wait.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_wait.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\tstdef.h"
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\tstdef.h"
 # End Source File
 # End Group
 # Begin Group "win32 headers"
@@ -832,23 +832,23 @@ SOURCE=..\unistd.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\ipt\base64.h"
+SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\base64.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\ipt\rc4.h"
+SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\rc4.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\ipt\sha1.h"
+SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\sha1.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\ipt\string0.h"
+SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\string0.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\ipt\token64.h"
+SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\token64.h"
 # End Source File
 # End Group
 # Begin Group "url headers"
@@ -856,15 +856,15 @@ SOURCE="..\..\libsofia-sip-ua\ipt\token64.h"
 # PROP Default_Filter "url*.h"
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\url\url.h"
+SOURCE="..\..\libsofia-sip-ua\url\sofia-sip\url.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\url\url_tag.h"
+SOURCE="..\..\libsofia-sip-ua\url\sofia-sip\url_tag.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\url\url_tag_class.h"
+SOURCE="..\..\libsofia-sip-ua\url\sofia-sip\url_tag_class.h"
 # End Source File
 # End Group
 # Begin Group "features headers"
@@ -872,7 +872,7 @@ SOURCE="..\..\libsofia-sip-ua\url\url_tag_class.h"
 # PROP Default_Filter "features*.h"
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\features\sofia_sip_features.h"
+SOURCE="..\..\libsofia-sip-ua\features\sofia-sip\features.h"
 # End Source File
 # End Group
 # Begin Group "bnf headers"
@@ -880,7 +880,7 @@ SOURCE="..\..\libsofia-sip-ua\features\sofia_sip_features.h"
 # PROP Default_Filter "bnf*.h"
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\bnf\bnf.h"
+SOURCE="..\..\libsofia-sip-ua\bnf\sofia-sip\bnf.h"
 # End Source File
 # End Group
 # Begin Group "msg headers"
@@ -888,11 +888,11 @@ SOURCE="..\..\libsofia-sip-ua\bnf\bnf.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_addr.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_addr.h"
 # End Source File
 # Begin Source File
 
@@ -900,15 +900,15 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_bnf.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_buffer.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_buffer.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_date.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_date.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_header.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg.header.h"
 # End Source File
 # Begin Source File
 
@@ -916,35 +916,35 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_internal.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_mclass.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_mclass.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_mclass_hash.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_mclass.hash.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_mime.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_mime.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_mime_protos.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_mime_protos.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_parser.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_parser.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_protos.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_protos.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_tag_class.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_tag_class.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\msg\msg_types.h"
+SOURCE="..\..\libsofia-sip-ua\msg\sofia-sip\msg_types.h"
 # End Source File
 # End Group
 # Begin Group "sip headers"
@@ -952,7 +952,7 @@ SOURCE="..\..\libsofia-sip-ua\msg\msg_types.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip.h"
 # End Source File
 # Begin Source File
 
@@ -960,11 +960,11 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip_extensions.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_hclasses.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip.hclasses.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_header.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip.header.h"
 # End Source File
 # Begin Source File
 
@@ -972,27 +972,27 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip_internal.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_parser.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_parser.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_protos.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_protos.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_status.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_status.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_tag.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_tag.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_tag_class.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_tag_class.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sip\sip_util.h"
+SOURCE="..\..\libsofia-sip-ua\sip\sofia-sip\sip_util.h"
 # End Source File
 # End Group
 # Begin Group "http headers"
@@ -1000,35 +1000,35 @@ SOURCE="..\..\libsofia-sip-ua\sip\sip_util.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_hclasses.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.hclasses.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_header.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http.header.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_parser.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http_parser.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_protos.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http_protos.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_status.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http_status.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_tag.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http_tag.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\http\http_tag_class.h"
+SOURCE="..\..\libsofia-sip-ua\http\sofia-sip\http_tag_class.h"
 # End Source File
 # End Group
 # Begin Group "nth headers"
@@ -1036,11 +1036,11 @@ SOURCE="..\..\libsofia-sip-ua\http\http_tag_class.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nth\nth.h"
+SOURCE="..\..\libsofia-sip-ua\nth\sofia-sip\nth.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nth\nth_tag.h"
+SOURCE="..\..\libsofia-sip-ua\nth\sofia-sip\nth_tag.h"
 # End Source File
 # End Group
 # Begin Group "sresolv headers"
@@ -1048,7 +1048,7 @@ SOURCE="..\..\libsofia-sip-ua\nth\nth_tag.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sresolv\sresolv.h"
+SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-sip\sresolv.h"
 # End Source File
 # End Group
 # Begin Group "nea headers"
@@ -1056,7 +1056,7 @@ SOURCE="..\..\libsofia-sip-ua\sresolv\sresolv.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nea\nea.h"
+SOURCE="..\..\libsofia-sip-ua\nea\sofia-sip\nea.h"
 # End Source File
 # Begin Source File
 
@@ -1068,19 +1068,19 @@ SOURCE="..\..\libsofia-sip-ua\nea\nea_debug.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\iptsec\auth_client.h"
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_client.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\iptsec\auth_digest.h"
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_digest.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\iptsec\auth_module.h"
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_module.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\iptsec\auth_plugin.h"
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_plugin.h"
 # End Source File
 # Begin Source File
 
@@ -1092,11 +1092,11 @@ SOURCE="..\..\libsofia-sip-ua\iptsec\iptsec_debug.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\stun\stun_common.h"
+SOURCE="..\..\libsofia-sip-ua\stun\sofia-sip\stun_common.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\stun\stun_tag.h"
+SOURCE="..\..\libsofia-sip-ua\stun\sofia-sip\stun_tag.h"
 # End Source File
 # End Group
 # Begin Group "nua headers"
@@ -1104,7 +1104,7 @@ SOURCE="..\..\libsofia-sip-ua\stun\stun_tag.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nua\nua.h"
+SOURCE="..\..\libsofia-sip-ua\nua\sofia-sip\nua.h"
 # End Source File
 # Begin Source File
 
@@ -1112,7 +1112,7 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_stack.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nua\nua_tag.h"
+SOURCE="..\..\libsofia-sip-ua\nua\sofia-sip\nua_tag.h"
 # End Source File
 # End Group
 # Begin Group "nta headers"
@@ -1120,7 +1120,7 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_tag.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nta\nta.h"
+SOURCE="..\..\libsofia-sip-ua\nta\sofia-sip\nta.h"
 # End Source File
 # Begin Source File
 
@@ -1128,19 +1128,19 @@ SOURCE="..\..\libsofia-sip-ua\nta\nta_internal.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nta\nta_stateless.h"
+SOURCE="..\..\libsofia-sip-ua\nta\sofia-sip\nta_stateless.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nta\nta_tag.h"
+SOURCE="..\..\libsofia-sip-ua\nta\sofia-sip\nta_tag.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nta\nta_tport.h"
+SOURCE="..\..\libsofia-sip-ua\nta\sofia-sip\nta_tport.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\nta\sl_utils.h"
+SOURCE="..\..\libsofia-sip-ua\nta\sofia-sip\sl_utils.h"
 # End Source File
 # End Group
 # Begin Group "tport headers"
@@ -1148,11 +1148,11 @@ SOURCE="..\..\libsofia-sip-ua\nta\sl_utils.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\tport\tport.h"
+SOURCE="..\..\libsofia-sip-ua\tport\sofia-sip\tport.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\tport\tport_tag.h"
+SOURCE="..\..\libsofia-sip-ua\tport\sofia-sip\tport_tag.h"
 # End Source File
 # End Group
 # Begin Group "sdp headers"
@@ -1160,11 +1160,11 @@ SOURCE="..\..\libsofia-sip-ua\tport\tport_tag.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sdp\sdp.h"
+SOURCE="..\..\libsofia-sip-ua\sdp\sofia-sip\sdp.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\sdp\sdp_tag.h"
+SOURCE="..\..\libsofia-sip-ua\sdp\sofia-sip\sdp_tag.h"
 # End Source File
 # End Group
 # Begin Group "soa headers"
@@ -1172,15 +1172,15 @@ SOURCE="..\..\libsofia-sip-ua\sdp\sdp_tag.h"
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\soa\soa.h"
+SOURCE="..\..\libsofia-sip-ua\soa\sofia-sip\soa.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\soa\soa_add.h"
+SOURCE="..\..\libsofia-sip-ua\soa\sofia-sip\soa_add.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\soa\soa_tag.h"
+SOURCE="..\..\libsofia-sip-ua\soa\sofia-sip\soa_tag.h"
 # End Source File
 # End Group
 # End Group

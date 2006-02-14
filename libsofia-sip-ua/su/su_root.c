@@ -40,7 +40,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "su.h"
+#include "sofia-sip/su.h"
 
 #if SU_HAVE_PTHREADS
 #include <pthread.h>
@@ -63,7 +63,7 @@ typedef struct su_cloned_s {
 #define SU_MSG_ARG_T    struct su_cloned_s
 
 #include "su_port.h"
-#include "su_alloc.h"
+#include "sofia-sip/su_alloc.h"
 
 /**@ingroup su_wait
  * 

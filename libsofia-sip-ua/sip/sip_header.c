@@ -42,12 +42,12 @@
 
 #include <assert.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
 #define SIP_STATIC_INLINE
 
-#include "sip_parser.h"
-#include <sip_status.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_status.h>
 
 /** Copy a SIP header. */
 sip_header_t *sip_header_copy(su_home_t *home, sip_header_t const *h)

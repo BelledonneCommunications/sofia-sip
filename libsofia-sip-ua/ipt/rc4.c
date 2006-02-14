@@ -29,7 +29,7 @@
 
 #include "config.h"
 
-#include "rc4.h"
+#include "sofia-sip/rc4.h"
 
 void rc4_init(const void *vseed, int seed_len, rc4_t *state) {
   short i; rc4_u8 j; rc4_u8 k;

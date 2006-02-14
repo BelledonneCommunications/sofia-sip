@@ -40,8 +40,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "su_types.h"
-#include "su_time.h"
+#include "sofia-sip/su_types.h"
+#include "sofia-sip/su_time.h"
 #include "su_module_debug.h"
 
 #if HAVE_SYS_TIME_H

@@ -38,8 +38,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "su.h"
-#include "su_module_debug.h"
+#include "sofia-sip/su.h"
 
 /**@ingroup su_programs
  * <hr>

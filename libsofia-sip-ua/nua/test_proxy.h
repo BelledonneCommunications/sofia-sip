@@ -25,8 +25,8 @@
 #ifndef TEST_PROXY_H
 #define TEST_PROXY_H
 
-#include <su_wait.h>
-#include <nta.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/nta.h>
 
 SOFIA_BEGIN_DECLS
 

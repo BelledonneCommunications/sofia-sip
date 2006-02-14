@@ -50,12 +50,12 @@
 
 #include <assert.h>
 
-#include <su_config.h>
+#include <sofia-sip/su_config.h>
 
-#include <su_tag.h>
-#include <su_tag_class.h>
-#include <su_tag_inline.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_inline.h>
+#include <sofia-sip/su_tagarg.h>
 
 /**@defgroup su_tag Tag Item Lists
  *

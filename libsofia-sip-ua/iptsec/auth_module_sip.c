@@ -37,13 +37,13 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <sip.h>
-#include <sip_header.h>
-#include <sip_status.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_status.h>
 
-#include <nta.h>
+#include <sofia-sip/nta.h>
 
-#include <auth_module.h>
+#include <sofia-sip/auth_module.h>
 
 static auth_challenger_t sip_server_challenger[] = 
   {{ SIP_401_UNAUTHORIZED, sip_www_authenticate_class,

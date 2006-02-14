@@ -39,21 +39,21 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <string0.h>
+#include <sofia-sip/string0.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <limits.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "sip_parser.h"
-#include <sip_util.h>
-#include <sip_status.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/sip_status.h>
 
-#include <msg_date.h>
+#include <sofia-sip/msg_date.h>
 
-#include <su_uniqueid.h>
+#include <sofia-sip/su_uniqueid.h>
 
 /* ====================================================================== */
 

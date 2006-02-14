@@ -30,7 +30,9 @@ noinst_PROGRAMS = 	${stun_prog_targets}
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_sofia_HEADERS = stun.h stun_common.h stun_tag.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/stun.h sofia-sip/stun_common.h \
+			sofia-sip/stun_tag.h
 libstun_la_SOURCES = 	$(stun_lib_sources) \
 			stun_tag.c stun_tag_ref.c stun_internal.h
 

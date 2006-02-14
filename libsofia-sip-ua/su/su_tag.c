@@ -37,8 +37,8 @@
 
 #include <assert.h>
 
-#include <su_config.h>
-#include <su_tag_class.h>
+#include <sofia-sip/su_config.h>
+#include <sofia-sip/su_tag_class.h>
 
 extern tag_class_t null_tag_class[1];
 extern tag_class_t skip_tag_class[1];

@@ -34,8 +34,8 @@
 
 #include "config.h"
 
-#include <su_log.h>
-#include <su_errno.h>
+#include <sofia-sip/su_log.h>
+#include <sofia-sip/su_errno.h>
 
 #include <stdarg.h>
 #include <stdlib.h>

@@ -33,13 +33,13 @@
 
 #define TAG_NAMESPACE "nua"
 
-#include "nua_tag.h"
+#include "sofia-sip/nua_tag.h"
 
-#include <msg_header.h>
-#include <su_tag_class.h>
-#include <url_tag_class.h>
-#include <sip_tag_class.h>
-#include <sip_hclasses.h>
+#include <sofia-sip/msg_header.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/url_tag_class.h>
+#include <sofia-sip/sip_tag_class.h>
+#include <sofia-sip/sip_hclasses.h>
 
 tag_typedef_t nutag_any = NSTAG_TYPEDEF(*);
 

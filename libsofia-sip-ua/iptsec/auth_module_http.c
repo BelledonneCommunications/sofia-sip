@@ -37,11 +37,11 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <http.h>
-#include <http_header.h>
-#include <http_status.h>
+#include <sofia-sip/http.h>
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/http_status.h>
 
-#include <auth_module.h>
+#include <sofia-sip/auth_module.h>
 
 static auth_challenger_t http_server_challenger[] = 
   {{ HTTP_401_UNAUTHORIZED, http_www_authenticate_class }};

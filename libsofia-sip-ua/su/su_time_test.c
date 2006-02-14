@@ -39,11 +39,11 @@
 #include <string.h>
 #include <stddef.h>
 
-#include <su_time.h>
+#include <sofia-sip/su_time.h>
 
 #define TSTFLAGS flags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const *name = "su_time_test.c";
 
@@ -135,8 +135,8 @@ int test1(int flags)
   END();
 }
 
-#include <su_uniqueid.h>
-#include <su.h>			/* htonl() and guys */
+#include <sofia-sip/su_uniqueid.h>
+#include <sofia-sip/su.h>			/* htonl() and guys */
 
 int test2(int flags)
 {

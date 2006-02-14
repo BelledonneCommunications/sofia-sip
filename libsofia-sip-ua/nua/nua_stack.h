@@ -42,23 +42,23 @@
 #endif
 
 #ifndef SOA_H
-#include "soa.h"
+#include "sofia-sip/soa.h"
 #endif
 #ifndef NTA_H
-#include <nta.h>
+#include <sofia-sip/nta.h>
 #endif
 #ifndef AUTH_CLIENT_H
-#include <auth_client.h>
+#include <sofia-sip/auth_client.h>
 #endif
 #ifndef NEA_H
-#include <nea.h>
+#include <sofia-sip/nea.h>
 #endif
 #ifndef NUA_H
-#include <nua.h>
+#include <sofia-sip/nua.h>
 #endif
 
 #define SU_LOG (nua_log)
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 SOFIA_BEGIN_DECLS
 

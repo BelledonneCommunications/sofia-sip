@@ -35,7 +35,7 @@
 #include "config.h"
 
 #include <stddef.h>
-#include <sip_status.h>
+#include <sofia-sip/sip_status.h>
 
 char const 
   sip_100_Trying[] =                   "Trying",

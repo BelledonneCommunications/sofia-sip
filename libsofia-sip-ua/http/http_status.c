@@ -32,7 +32,7 @@
 #include "config.h"
 
 #include <stddef.h>
-#include <http_status.h>
+#include <sofia-sip/http_status.h>
 
 char const
   http_100_continue[]             = "Continue",

@@ -21,7 +21,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "su.h"
+#include "sofia-sip/su.h"
 
 /*
  * WARNING: Don't even consider trying to compile this on a system where

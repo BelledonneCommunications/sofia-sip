@@ -39,10 +39,10 @@
 #include <assert.h>
 #include <float.h>
 
-#include "sip_parser.h"
-#include <sip_header.h>
-#include <sip_util.h>
-#include <sip_status.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/sip_status.h>
 
 /** Parse a single preference */
 int sip_prefs_parse(union sip_pref *sp, 

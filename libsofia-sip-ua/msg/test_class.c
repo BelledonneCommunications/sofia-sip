@@ -43,10 +43,10 @@
 #define TAG_NAMESPACE "tst"
 
 #include <test_class.h>
-#include <msg_parser.h>
-#include <msg_mclass.h>
+#include <sofia-sip/msg_parser.h>
+#include <sofia-sip/msg_mclass.h>
 #include <test_protos.h>
-#include <msg_addr.h>
+#include <sofia-sip/msg_addr.h>
 
 extern msg_mclass_t const msg_test_mclass[1];
 
@@ -254,10 +254,10 @@ msg_href_t const msg_content_length_href[1] =
     offsetof(msg_test_t, msg_content_length)
   }};
 
-#include <su_tag_class.h>
-#include <su_tag_inline.h>
-#include <su_tagarg.h>
-#include <msg_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_inline.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/msg_tag_class.h>
 
 tagi_t *tsttag_filter(tagi_t *dst,
 		      tagi_t const f[],

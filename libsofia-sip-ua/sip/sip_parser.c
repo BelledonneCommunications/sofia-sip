@@ -42,10 +42,10 @@
 #include <limits.h>
 
 #include <stdarg.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include "sip_parser.h"
-#include <msg_mclass.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/msg_mclass.h>
 
 /** Version of the SIP module */
 char const sip_parser_version[] = VERSION;

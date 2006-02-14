@@ -42,10 +42,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "sip_parser.h"
-#include <msg_date.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/msg_date.h>
 
 /* ====================================================================== */
 

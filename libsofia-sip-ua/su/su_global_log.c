@@ -35,8 +35,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <su_log.h>
-#include <su_debug.h>
+#include <sofia-sip/su_log.h>
+#include <sofia-sip/su_debug.h>
 
 /**@var SU_DEBUG
  *

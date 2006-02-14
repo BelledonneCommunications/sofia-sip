@@ -41,10 +41,10 @@
 #include <limits.h>
 #include <assert.h>
 
-#include <msg.h>
-#include <msg_parser.h>
-#include <msg_header.h>
-#include <bnf.h>
+#include <sofia-sip/msg.h>
+#include <sofia-sip/msg_parser.h>
+#include <sofia-sip/msg_header.h>
+#include <sofia-sip/bnf.h>
 
 #if 0
 /**

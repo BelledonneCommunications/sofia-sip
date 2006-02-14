@@ -44,9 +44,9 @@ typedef struct context_s context_t;
 #define NTH_SITE_MAGIC_T context_t
 #define SU_ROOT_MAGIC_T context_t
 
-#include <nth.h>
-#include <tport_tag.h>
-#include <http_header.h>
+#include <sofia-sip/nth.h>
+#include <sofia-sip/tport_tag.h>
+#include <sofia-sip/http_header.h>
 
 struct context_s {
   su_home_t   	  c_home[1];

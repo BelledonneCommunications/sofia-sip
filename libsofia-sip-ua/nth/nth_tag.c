@@ -40,12 +40,12 @@
 
 #define TAG_NAMESPACE "nth"
 
-#include "nth_tag.h"
-#include <su_tag_class.h>
-#include <http_tag_class.h>
-#include <url_tag_class.h>
+#include "sofia-sip/nth_tag.h"
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/http_tag_class.h>
+#include <sofia-sip/url_tag_class.h>
 
-#include <http_protos.h>
+#include <sofia-sip/http_protos.h>
 
 tag_typedef_t nthtag_any = NSTAG_TYPEDEF(*);
 

@@ -53,9 +53,9 @@
 
 #define su_port_s su_source_s
 
-#include "su.h"
+#include "sofia-sip/su.h"
 #include "su_port.h"
-#include "su_alloc.h"
+#include "sofia-sip/su_alloc.h"
 
 static gboolean su_source_prepare(GSource *gs, gint *return_tout);
 static gboolean su_source_check(GSource *gs);

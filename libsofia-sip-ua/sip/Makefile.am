@@ -22,20 +22,20 @@ noinst_PROGRAMS =       torture_sip \
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-GENERATED_H = sip_hclasses.h sip_protos.h sip_tag.h
-H_IN = sip_hclasses.h.in sip_protos.h.in sip_tag.h.in
+GENERATED_H = 		sofia-sip/sip_hclasses.h \
+			sofia-sip/sip_protos.h sofia-sip/sip_tag.h
+H_IN = 			sofia-sip/sip_hclasses.h.in \
+			sofia-sip/sip_protos.h.in sofia-sip/sip_tag.h.in
 
-PUBLIC_H = sip.h sip_util.h \
-           sip_header.h sip_parser.h \
-	   sip_tag_class.h sip_status.h
+PUBLIC_H = sofia-sip/sip.h sofia-sip/sip_util.h \
+           sofia-sip/sip_header.h sofia-sip/sip_parser.h \
+	   sofia-sip/sip_tag_class.h sofia-sip/sip_status.h
 
 GENERATED_C = sip_tag.c sip_tag_ref.c sip_parser_table.c
 
-# EXTRA_DIST = $(GENERATED_C:%.in=%)
-
 BUILT_SOURCES = 	$(GENERATED_H) $(GENERATED_C)
 
-include_sofia_HEADERS = 	$(GENERATED_H) $(PUBLIC_H) $(H_IN)
+nobase_include_sofia_HEADERS = $(GENERATED_H) $(PUBLIC_H) $(H_IN)
 
 libsip_la_SOURCES = 	$(INTERNAL_H) \
 			sip_parser.c sip_header.c sip_util.c sip_pref_util.c \
@@ -109,15 +109,16 @@ AWK_SIP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=sip
 #
 sip_parser_table.c: sip_bad_mask
 
-sip_hclasses.h: sip_hclasses.h.in $(MSG_PARSER_AWK)
-sip_protos.h: sip_protos.h.in $(MSG_PARSER_AWK)
-sip_tag.h: sip_tag.h.in $(MSG_PARSER_AWK)
+sofia-sip/sip_hclasses.h: sofia-sip/sip_hclasses.h.in $(MSG_PARSER_AWK)
+sofia-sip/sip_protos.h: sofia-sip/sip_protos.h.in $(MSG_PARSER_AWK)
+sofia-sip/sip_tag.h: sofia-sip/sip_tag.h.in $(MSG_PARSER_AWK)
 sip_parser_table.c: sip_parser_table.c.in $(MSG_PARSER_AWK)
 sip_tag.c: sip_tag.c.in $(MSG_PARSER_AWK)
 
-sip_tag.c sip_hclasses.h sip_protos.h sip_tag.h: sip.h
+sip_tag.c sofia-sip/sip_hclasses.h sofia-sip/sip_protos.h sofia-sip/sip_tag.h:\
+	sofia-sip/sip.h
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
-sip_parser_table.c: sip.h
+sip_parser_table.c: sofia-sip/sip.h
 	$(AWK_SIP_AWK) PT=$@ FLAGFILE=$(srcdir)/sip_bad_mask \
 		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<

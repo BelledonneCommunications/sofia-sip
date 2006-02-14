@@ -51,8 +51,8 @@
 
 #include <assert.h>
 
-#include "su_config.h"
-#include "su_vector.h"
+#include "sofia-sip/su_config.h"
+#include "sofia-sip/su_vector.h"
 
 enum { N = 8 };
 

@@ -52,14 +52,14 @@
 static char const __func__[] = "auth_plugin_delayed";
 #endif
 
-#include <su_debug.h>
-#include <su_wait.h>
+#include <sofia-sip/su_debug.h>
+#include <sofia-sip/su_wait.h>
 
-#include <su_alloc.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include "auth_module.h"
-#include "auth_plugin.h"
+#include "sofia-sip/auth_module.h"
+#include "sofia-sip/auth_plugin.h"
 
 struct auth_plugin_t 
 {

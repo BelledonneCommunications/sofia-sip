@@ -46,18 +46,18 @@
 #include <errno.h>
 
 #include <stdarg.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include <su.h>
-#include <su_alloc.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_alloc.h>
 
 #include "msg_internal.h"
-#include "msg_header.h"
-#include "bnf.h"
-#include "msg_parser.h"
-#include "msg_mclass.h"
-#include "msg_mclass_hash.h"
-#include "msg_mime.h"
+#include "sofia-sip/msg_header.h"
+#include "sofia-sip/bnf.h"
+#include "sofia-sip/msg_parser.h"
+#include "sofia-sip/msg_mclass.h"
+#include "sofia-sip/msg_mclass_hash.h"
+#include "sofia-sip/msg_mime.h"
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

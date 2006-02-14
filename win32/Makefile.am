@@ -21,7 +21,8 @@ EXTRA_DIST = SofiaSIP.dsw \
 	su/torture_su_memmem/torture_su_memmem.dsp \
 	su/torture_su_port/torture_su_port.dsp \
 	$(PTHREAD_DIST) \
-	README.txt
+	README.txt \
+	autogen.cmd build_sources.cmd version_files.cmd
 
 PTHREAD_DIST = \
 	pthread/ChangeLog \

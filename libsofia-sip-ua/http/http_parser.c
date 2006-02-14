@@ -41,15 +41,15 @@
 #include <limits.h>
 
 #include <stdarg.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "http_parser.h"
-#include <msg_parser.h>
-#include <http_header.h>
-#include <http_status.h>
-#include <msg_mclass.h>
+#include "sofia-sip/http_parser.h"
+#include <sofia-sip/msg_parser.h>
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/http_status.h>
+#include <sofia-sip/msg_mclass.h>
 
 /** HTTP version 1.1. */
 char const http_version_1_1[] = "HTTP/1.1";

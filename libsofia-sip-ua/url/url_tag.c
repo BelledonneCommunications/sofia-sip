@@ -33,13 +33,13 @@
 
 #define TAG_NAMESPACE "url"
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
-#include <url_tag.h>
-#include <url_tag_class.h>
-#include <su_tag_class.h>
+#include <sofia-sip/url_tag.h>
+#include <sofia-sip/url_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
 
-#include <url.h>
+#include <sofia-sip/url.h>
 
 tag_typedef_t urltag_any = NSTAG_TYPEDEF(*);
 

@@ -39,18 +39,18 @@ struct context;
 struct call;
 #define NUA_HMAGIC_T struct call
 
-#include "nua.h"
-#include "sip_status.h"
+#include "sofia-sip/nua.h"
+#include "sofia-sip/sip_status.h"
 
-#include <sdp.h>
-#include <sip_header.h>
+#include <sofia-sip/sdp.h>
+#include <sofia-sip/sip_header.h>
 
-#include <su_log.h>
-#include <su_tagarg.h>
-#include <su_tag_io.h>
+#include <sofia-sip/su_log.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_tag_io.h>
 
 #include <test_proxy.h>
-#include <auth_module.h>
+#include <sofia-sip/auth_module.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -79,7 +79,7 @@ int print_headings = 1;
 int tstflags = 0;
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -661,7 +661,7 @@ int test_api_errors(struct context *ctx)
   END();
 }
 
-#include <su_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
 
 int test_tag_filter(void)
 {
@@ -4680,7 +4680,7 @@ int test_methods(struct context *ctx)
 /* ======================================================================== */
 /* Test events methods: SUBSCRIBE/NOTIFY */
 
-#include <nea.h>
+#include <sofia-sip/nea.h>
 
 /**Terminate until received notify.
  * Save events (except nua_i_active or terminated).

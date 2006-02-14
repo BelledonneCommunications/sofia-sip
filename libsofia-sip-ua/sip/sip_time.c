@@ -40,10 +40,10 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "sip_parser.h"
-#include <sip_util.h>
-#include <msg_date.h>
-#include <su_time.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/msg_date.h>
+#include <sofia-sip/su_time.h>
 
 /** Return current time as seconds since Epoch. */
 sip_time_t sip_now(void)

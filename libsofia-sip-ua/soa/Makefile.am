@@ -24,7 +24,9 @@ TESTS = 		test_soa
 
 BUILT_SOURCES =		soa_tag_ref.c
 
-include_sofia_HEADERS =       soa.h soa_session.h soa_add.h soa_tag.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/soa.h sofia-sip/soa_session.h \
+			sofia-sip/soa_add.h sofia-sip/soa_tag.h
 
 libsoa_la_SOURCES = 	soa.c soa_static.c \
 			soa_tag.c soa_tag_ref.c 

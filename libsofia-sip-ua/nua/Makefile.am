@@ -34,7 +34,8 @@ TESTS = 		test_nua
 
 BUILT_SOURCES =		nua_tag_ref.c
 
-include_sofia_HEADERS =       nua.h nua_tag.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/nua.h sofia-sip/nua_tag.h
 
 libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
 			nua_tag.c nua_tag_ref.c

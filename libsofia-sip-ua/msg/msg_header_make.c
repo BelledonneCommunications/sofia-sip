@@ -51,12 +51,12 @@
 
 #include <assert.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "msg.h"
-#include "bnf.h"
-#include "msg_parser.h"
-#include "msg_header.h"
+#include "sofia-sip/msg.h"
+#include "sofia-sip/bnf.h"
+#include "sofia-sip/msg_parser.h"
+#include "sofia-sip/msg_header.h"
 
 /** Make a header from a value string. */
 msg_header_t *msg_header_make(su_home_t *home, 

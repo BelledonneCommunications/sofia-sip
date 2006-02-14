@@ -42,14 +42,14 @@
 
 #include <assert.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
 #define HTTP_STATIC_INLINE
 
-#include "http_parser.h"
+#include "sofia-sip/http_parser.h"
 
-#include <http_header.h>
-#include <http_status.h>
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/http_status.h>
 
 /** Complete a HTTP request. */
 int http_request_complete(msg_t *msg)

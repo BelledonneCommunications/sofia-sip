@@ -40,16 +40,16 @@ typedef struct stunc_s stunc_t;
 #define SU_ROOT_MAGIC  stunc_t
 #define STUN_MAGIC_T   stunc_t
 
-#include "stun.h"
-#include "stun_tag.h"
-#include <su.h>
+#include "sofia-sip/stun.h"
+#include "sofia-sip/stun_tag.h"
+#include <sofia-sip/su.h>
 
 
 #ifndef SU_DEBUG
 #define SU_DEBUG 0
 #endif
 #define SU_LOG (stun_log)
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 char const *name = "stunc";
 

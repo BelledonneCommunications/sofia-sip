@@ -37,13 +37,13 @@
 
 #include "test_class.h"
 #include "test_protos.h"
-#include "msg.h"
-#include "msg_addr.h"
-#include "msg_date.h"
-#include "msg_parser.h"
-#include "bnf.h"
-#include "msg_mclass.h"
-#include "msg_mclass_hash.h"
+#include "sofia-sip/msg.h"
+#include "sofia-sip/msg_addr.h"
+#include "sofia-sip/msg_date.h"
+#include "sofia-sip/msg_parser.h"
+#include "sofia-sip/bnf.h"
+#include "sofia-sip/msg_mclass.h"
+#include "sofia-sip/msg_mclass_hash.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -55,7 +55,7 @@
 static int test_flags = 0;
 #define TSTFLAGS test_flags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const name[] = "test_msg";
 

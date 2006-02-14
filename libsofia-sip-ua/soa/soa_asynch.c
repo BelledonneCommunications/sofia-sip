@@ -43,15 +43,15 @@ struct soa_asynch_complete;
 
 #define SU_MSG_ARG_T struct soa_asynch_completed
 
-#include <su_wait.h>
-#include <su_tag_class.h>
-#include <su_tag_class.h>
-#include <su_tagarg.h>
-#include <su_strlst.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_strlst.h>
 
-#include "soa.h"
-#include <sdp.h>
-#include "soa_session.h"
+#include "sofia-sip/soa.h"
+#include <sofia-sip/sdp.h>
+#include "sofia-sip/soa_session.h"
 
 #define NONE ((void *)-1)
 #define XXX assert(!"implemented")

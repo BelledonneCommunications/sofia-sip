@@ -42,10 +42,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include <msg_date.h>
-#include <bnf.h>
+#include <sofia-sip/msg_date.h>
+#include <sofia-sip/bnf.h>
 
-#include <su_time.h>
+#include <sofia-sip/su_time.h>
 
 /** Return current time as seconds since Mon, 01 Jan 1900 00:00:00 GMT. */
 msg_time_t msg_now(void)

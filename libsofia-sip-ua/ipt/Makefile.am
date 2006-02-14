@@ -19,8 +19,11 @@ TESTS = 		sha1test torture_base64
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_sofia_HEADERS =       rc4.h utf8.h sha1.h base64.h \
-			string0.h token64.h uniqueid.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/rc4.h sofia-sip/utf8.h \
+			sofia-sip/sha1.h sofia-sip/base64.h \
+			sofia-sip/string0.h sofia-sip/token64.h \
+			sofia-sip/uniqueid.h
 
 libipt_la_SOURCES = 	utf8internal.h \
 			utf8.c ucs2.c ucs4.c rc4.c \

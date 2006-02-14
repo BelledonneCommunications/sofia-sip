@@ -19,14 +19,18 @@ noinst_PROGRAMS = 	msg_name_hash test_msg
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-GENERATED_H = msg_protos.h msg_mime_protos.h
-PUBLIC_H = msg.h msg_header.h msg_types.h \
-	msg_mclass.h msg_mclass_hash.h msg_parser.h \
-	msg_addr.h msg_date.h msg_buffer.h \
-	msg_tag_class.h msg_mime.h
+GENERATED_H = 		sofia-sip/msg_protos.h sofia-sip/msg_mime_protos.h
+PUBLIC_H = 		sofia-sip/msg.h sofia-sip/msg_header.h \
+			sofia-sip/msg_types.h sofia-sip/msg_mclass.h \
+			sofia-sip/msg_mclass_hash.h sofia-sip/msg_parser.h \
+			sofia-sip/msg_addr.h sofia-sip/msg_date.h \
+			sofia-sip/msg_buffer.h sofia-sip/msg_tag_class.h 
+			sofia-sip/msg_mime.h
+
 INTERNAL_H = msg_internal.h test_class.h
 
-include_sofia_HEADERS = $(GENERATED_H) $(PUBLIC_H) 
+nobase_include_sofia_HEADERS = \
+			$(GENERATED_H) $(PUBLIC_H) 
 
 BUILT_SOURCES = $(GENERATED_H) test_table.c test_protos.h
 
@@ -81,9 +85,9 @@ AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK)
 test_protos.h: test_protos.h.in $(MSG_PARSER_AWK)
 test_table.c: test_table.c.in $(MSG_PARSER_AWK)
 
-msg_mime_protos.h: msg_mime_protos.h.in $(MSG_PARSER_AWK)
+sofia-sip/msg_mime_protos.h: sofia-sip/msg_mime_protos.h.in $(MSG_PARSER_AWK)
 msg_mime_table.c: msg_mime_table.c.in $(MSG_PARSER_AWK)
-msg_protos.h: msg_protos.h.in $(MSG_PARSER_AWK)
+sofia-sip/msg_protos.h: sofia-sip/msg_protos.h.in $(MSG_PARSER_AWK)
 
 test_protos.h: test_class.h
 	$(AWK_MSG_AWK) module=msg_test NO_MIDDLE=1 NO_LAST=1 \
@@ -94,15 +98,15 @@ test_table.c: test_class.h
 		MC_HASH_SIZE=127 multipart=msg_multipart \
 		PT=$@ $<
 
-msg_protos.h: msg_mime.h
+sofia-sip/msg_protos.h: sofia-sip/msg_mime.h
 	$(AWK_MSG_AWK) module=msg NO_FIRST=1 NO_MIDDLE=1 \
 		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
-msg_mime_protos.h: msg_mime.h
+sofia-sip/msg_mime_protos.h: sofia-sip/msg_mime.h
 	$(AWK_MSG_AWK) module=msg NO_FIRST=1 NO_LAST=1 \
 		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
-msg_mime_table.c: msg_mime.h
+msg_mime_table.c: sofia-sip/msg_mime.h
 	$(AWK_MSG_AWK) module=msg_multipart \
 		tprefix=msg prefix=mp MC_HASH_SIZE=127 \
 		PT=$@ $<

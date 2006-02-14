@@ -43,7 +43,7 @@ char const *name = "su_root_test";
 #include <string.h>
 
 #define TSTFLAGS rt->rt_flags
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 typedef struct root_test_s root_test_t;
 typedef struct test_ep_s   test_ep_t;
@@ -51,11 +51,11 @@ typedef struct test_ep_s   test_ep_t;
 #define SU_ROOT_MAGIC_T  root_test_t
 #define SU_WAKEUP_ARG_T  test_ep_t
 
-#include <su_wait.h>
-#include <su_alloc.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/su_alloc.h>
 
 #if SU_HAVE_GLIB
-#include <su_source.h>
+#include <sofia-sip/su_source.h>
 #endif
 
 typedef struct test_ep_s {

@@ -36,9 +36,9 @@
 #include <string.h>
 #include <signal.h>
 
-#include "su.h"
-#include "su_log.h"
-#include "su_alloc.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_log.h"
+#include "sofia-sip/su_alloc.h"
 
 #if !SU_HAVE_BSDSOCK && !SU_HAVE_WINSOCK
 #error Bad configuration

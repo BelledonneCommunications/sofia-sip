@@ -44,11 +44,11 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "su_alloc.h"
-#include "htable.h"
+#include "sofia-sip/su_alloc.h"
+#include "sofia-sip/htable.h"
 
 #define TSTFLAGS flags
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const name[] = "htable_test";
 

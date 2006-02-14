@@ -45,13 +45,13 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
 #include "msg_internal.h"
-#include "msg.h"
-#include "msg_mime.h"
+#include "sofia-sip/msg.h"
+#include "sofia-sip/msg_mime.h"
 
-#include <su_uniqueid.h>
+#include <sofia-sip/su_uniqueid.h>
 
 #if !HAVE_MEMMEM
 void *memmem(const void *haystack, size_t haystacklen,
@@ -96,8 +96,8 @@ union msg_mime_u
   msg_payload_t             sh_payload[1];
 };
 
-#include <msg_parser.h>
-#include <msg_mime_protos.h>
+#include <sofia-sip/msg_parser.h>
+#include <sofia-sip/msg_mime_protos.h>
 
 /** Define a header class for headers without any extra data to copy */
 #define MSG_HEADER_CLASS_G(c, l, s, kind) \

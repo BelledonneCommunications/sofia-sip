@@ -42,15 +42,15 @@
 #define SU_ROOT_MAGIC_T struct stun_magic_t
 /* #define SU_WAKEUP_ARG_T struct stun_handle_s */
 
-#include "stun.h"
+#include "sofia-sip/stun.h"
 #include "stun_internal.h"
-#include "stun_tag.h"
+#include "sofia-sip/stun_tag.h"
 
-#include <su_alloc.h>
-#include <su_tagarg.h>
-#include <su_log.h>
-#include <su.h>
-#include <su_localinfo.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_log.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_localinfo.h>
 
 #include <openssl/opensslv.h>
 

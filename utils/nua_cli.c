@@ -48,19 +48,19 @@ typedef struct cli_oper_s cli_oper_t;
 #define NUA_IMAGIC_T    cli_oper_t
 #define NUA_HMAGIC_T    cli_oper_t
 
-#include <sip.h>
-#include <sip_header.h>
-#include <sip_status.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_status.h>
 
-#include "nua.h"
-#include "nua_tag.h"
-#include <su_tag_io.h>
-#include <su_tagarg.h>
-#include <sl_utils.h>
+#include "sofia-sip/nua.h"
+#include "sofia-sip/nua_tag.h"
+#include <sofia-sip/su_tag_io.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/sl_utils.h>
 
-#include <soa.h>
+#include <sofia-sip/soa.h>
 
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 #ifdef WIN32
 #include <conio.h>
@@ -303,7 +303,7 @@ void usage(char const *a0)
   exit(1);
 }
 
-#include <sofia_sip_features.h>
+#include <sofia-sip/features.h>
 
 void cli_version(char const *a0)
 {

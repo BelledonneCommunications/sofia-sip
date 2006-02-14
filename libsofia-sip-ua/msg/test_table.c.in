@@ -49,9 +49,9 @@
 
 #include <test_class.h>
 #include <test_protos.h>
-#include <msg_mime_protos.h>
+#include <sofia-sip/msg_mime_protos.h>
 
-#include <msg_mclass.h>
+#include <sofia-sip/msg_mclass.h>
 
 
 

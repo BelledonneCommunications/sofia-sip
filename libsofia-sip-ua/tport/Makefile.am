@@ -26,7 +26,8 @@ TESTS =			test_tport
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_sofia_HEADERS =	tport.h tport_tag.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/tport.h sofia-sip/tport_tag.h
 
 TLS_SRC =		tport_tls.c tport_tls.h
 

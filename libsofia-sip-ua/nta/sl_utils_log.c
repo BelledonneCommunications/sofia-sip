@@ -39,10 +39,10 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <su_log.h>
+#include <sofia-sip/su_log.h>
 
-#include <sip_header.h>
-#include "sl_utils.h"
+#include <sofia-sip/sip_header.h>
+#include "sofia-sip/sl_utils.h"
 
 /**Log a SIP message. 
  *

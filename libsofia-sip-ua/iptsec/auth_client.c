@@ -37,18 +37,18 @@
 
 #include <assert.h>
 
-#include <su.h>
-#include <su_md5.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_md5.h>
 
-#include "auth_client.h"
+#include "sofia-sip/auth_client.h"
 
-#include <msg_header.h>
+#include <sofia-sip/msg_header.h>
 
-#include <auth_digest.h>
-#include <base64.h>
-#include <su_uniqueid.h>
+#include <sofia-sip/auth_digest.h>
+#include <sofia-sip/base64.h>
+#include <sofia-sip/su_uniqueid.h>
 
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 #if HAVE_SC_CRED_H
 #include <sc_creds.h>
@@ -704,7 +704,7 @@ msg_header_t *auc_digest_authorization(auth_client_t *ca,
 }
 
 #if HAVE_SOFIA_SIP
-#include <sip.h>
+#include <sofia-sip/sip.h>
 
 /**Authorize a SIP request.
  *

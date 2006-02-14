@@ -33,6 +33,6 @@
  */
 
 #define SU_LOG (nea_log)
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 #endif /* !defined(NEA_DEBUG_H) */

@@ -35,7 +35,7 @@
  */
 
 #ifndef URL_H
-#include <url.h>
+#include <sofia-sip/url.h>
 #endif
 
 SOFIA_BEGIN_DECLS

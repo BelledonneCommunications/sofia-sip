@@ -39,10 +39,10 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <su_alloc.h>
-#include <su_types.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_types.h>
 
-#include "sdp.h"
+#include "sofia-sip/sdp.h"
 
 struct align { void  *_a; char _b; };
 
@@ -1042,7 +1042,7 @@ sdp_session_t *sdp_session_dup_without_media(su_home_t *h,
 /* ---------------------------------------------------------------------- */
 /* SDP Tag classes */
 
-#include <su_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
 
 size_t sdptag_session_xtra(tagi_t const *t, size_t offset)
 {

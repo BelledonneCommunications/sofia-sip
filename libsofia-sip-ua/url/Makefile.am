@@ -20,7 +20,9 @@ noinst_PROGRAMS = 	torture_url test_urlmap
 
 BUILT_SOURCES =		url_tag_ref.c
 
-include_sofia_HEADERS =       url.h url_tag.h url_tag_class.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/url.h sofia-sip/url_tag.h \
+			sofia-sip/url_tag_class.h
 
 liburl_la_SOURCES = 	url.c url_tag.c url_tag_ref.c
 

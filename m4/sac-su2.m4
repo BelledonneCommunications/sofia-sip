@@ -5,7 +5,8 @@ dnl ======================================================================
 dnl This is in a separate file because otherwise AM_CONFIG_HEADER in
 dnl SAC_SOFIA_SU confuses autoheader. If SAC_SOFIA_SU is included to a
 dnl aclocal.m4 of another package, autoheader returns a spurious error and
-dnl automake complains about missing su/su_configure.h.
+dnl automake complains about missing
+dnl libsofia-sip-ua/su/sofia-sip/su_configure.h.
 
 AC_DEFUN([SAC_SOFIA_SU], [
 # Beginning of SAC_SOFIA_SU
@@ -339,12 +340,12 @@ esac
 # Check for partial su distibutions
 # ===========================================================================
 
-if test -r ${srcdir}/libsofia-sip-ua/su/su_wait.h ; then
+if test -r ${srcdir}/libsofia-sip-ua/su/sofia-sip/su_wait.h ; then
   AC_DEFINE(HAVE_SU_WAIT_H, 1, 
-            [Define to 1 if you have the <su_wait.h> header file.])
+            [Define to 1 if you have the <sofia-sip/su_wait.h> header file.])
 fi
 
-AM_CONFIG_HEADER([libsofia-sip-ua/su/su_configure.h])
+AM_CONFIG_HEADER([libsofia-sip-ua/su/sofia-sip/su_configure.h])
 ])
 
 # SAC_SU_DEFINE(VARIABLE, [VALUE], [DESCRIPTION])

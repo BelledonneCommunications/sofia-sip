@@ -32,7 +32,7 @@
 
 #include "config.h"
 
-#include "bnf.h"
+#include "sofia-sip/bnf.h"
 
 #include <assert.h>
 

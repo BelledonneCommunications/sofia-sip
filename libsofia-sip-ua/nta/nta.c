@@ -55,31 +55,31 @@ char const nta_version[] = VERSION;
 #include <limits.h>
 #include <errno.h>
 
-#include <string0.h>
+#include <sofia-sip/string0.h>
 
 /** @internal SU message argument structure type */
 #define SU_MSG_ARG_T   union sm_arg_u
 /** @internal SU timer argument pointer type */
 #define SU_TIMER_ARG_T struct nta_agent_s
 
-#include <su_alloc.h>
-#include <su.h>
-#include <su_time.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_time.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include <base64.h>
-#include <su_uniqueid.h>
+#include <sofia-sip/base64.h>
+#include <sofia-sip/su_uniqueid.h>
 
-#include <sip.h>
-#include <sip_header.h>
-#include <sip_util.h>
-#include <sip_status.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/sip_status.h>
 
-#include <msg_addr.h>
+#include <sofia-sip/msg_addr.h>
 
 #include "nta_internal.h"
-#include "nta_stateless.h"
-#include "url_tag.h"
+#include "sofia-sip/nta_stateless.h"
+#include "sofia-sip/url_tag.h"
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -1208,7 +1208,7 @@ static char const *stateful_branch(su_home_t *home, nta_agent_t *sa)
   return su_sprintf(home, "branch=z9hG4bK%s", branch);
 }
 
-#include <su_md5.h>
+#include <sofia-sip/su_md5.h>
 
 /**
  * Calculate branch value for stateless operation.
@@ -9614,7 +9614,7 @@ nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
 /* ------------------------------------------------------------------------ */
 /* 9) Transport handling */
 
-#include <nta_tport.h>
+#include <sofia-sip/nta_tport.h>
 
 static inline tport_t *
 nta_transport_(nta_agent_t *agent,

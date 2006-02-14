@@ -8,7 +8,7 @@ dnl ---------------------------
 
 dnl update both the version for AC_INIT and the LIBSOFIA_SIP_UA_MAJOR_MINOR
 AC_INIT([sofia-sip], [1.11.5cvs])
-AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sip.h])
+AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sofia-sip/sip.h])
 AC_SUBST(VER_LIBSOFIA_SIP_UA_MAJOR_MINOR, [1.11])
 dnl Includedir specific to this sofia version
 AC_SUBST(include_sofiadir, '${includedir}/sofia-sip-1.11')
@@ -149,7 +149,6 @@ libsofia-sip-ua/docs/Makefile
 libsofia-sip-ua/docs/Doxyfile.version
 libsofia-sip-ua/docs/sofia-footer.html
 libsofia-sip-ua/features/Makefile
-libsofia-sip-ua/features/sofia_sip_features.h
 libsofia-sip-ua/http/Makefile
 libsofia-sip-ua/ipt/Makefile
 libsofia-sip-ua/iptsec/Makefile
@@ -166,6 +165,7 @@ libsofia-sip-ua/stun/Makefile
 libsofia-sip-ua/su/Makefile
 libsofia-sip-ua/tport/Makefile
 libsofia-sip-ua/url/Makefile
+libsofia-sip-ua/features/sofia-sip/features.h
 utils/Makefile
 win32/Makefile
 win32/config.h

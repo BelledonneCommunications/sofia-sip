@@ -44,8 +44,8 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <sip_parser.h>
-#include <msg_mclass.h>
+#include <sofia-sip/sip_parser.h>
+#include <sofia-sip/msg_mclass.h>
 
 
 

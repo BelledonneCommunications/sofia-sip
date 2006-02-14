@@ -43,16 +43,16 @@
 #include <limits.h>
 
 #include <stdarg.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include <su.h>
-#include <su_alloc.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_alloc.h>
 
 #include "msg_internal.h"
-#include "msg_parser.h"
-#include "bnf.h"
+#include "sofia-sip/msg_parser.h"
+#include "sofia-sip/bnf.h"
 
-#include "url.h"
+#include "sofia-sip/url.h"
 
 static int msg_comma_scanner(char *start);
 
@@ -1508,7 +1508,7 @@ msg_header_access(msg_pub_t const *pub, msg_hclass_t *hc)
     return NULL;
 }
 
-#include <su_uniqueid.h>
+#include <sofia-sip/su_uniqueid.h>
 
 /** Generates a random token.
  *

@@ -32,7 +32,7 @@
  */
 
 #include "config.h"
-#include "sha1.h"
+#include "sofia-sip/sha1.h"
 
 char const SHA1Copyright[] = 
 "Partly copyright (C) The Internet Society (2001).  All Rights Reserved.\n"

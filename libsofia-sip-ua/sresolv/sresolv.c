@@ -58,24 +58,24 @@
 #include <netdb.h>
 #endif
 
-#include <su_alloc.h>
-#include <su_strlst.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_strlst.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
 #if HAVE_SU_WAIT_H
 
 #define SU_TIMER_ARG_T  struct sres_sofia_s
 #define SU_WAKEUP_ARG_T struct sres_sofia_s
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
-#include <su_types.h>
-#include <su_time.h>
+#include <sofia-sip/su_types.h>
+#include <sofia-sip/su_time.h>
 
 #define SU_LOG sresolv_log
 
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 /**@var SRESOLV_DEBUG
  *
@@ -114,11 +114,11 @@ su_log_t sresolv_log[] = { SU_LOG_INIT("sresolv", "SRESOLV_DEBUG", 3) };
 
 #define sres_resolver_create public_sres_resolver_create
 
-#include "sresolv.h"
+#include "sofia-sip/sresolv.h"
 
 #undef sres_resolver_create
 
-#include "htable.h"
+#include "sofia-sip/htable.h"
 
 /** Cache cleanup interval in seconds. */
 #define SRES_CACHE_TIMER_INTERVAL (30)
@@ -2916,8 +2916,8 @@ m_get_domain(char *d,
 
 #define TAG_NAMESPACE "sres"
 
-#include <su_tag_class.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tagarg.h>
 
 tag_typedef_t srestag_any = NSTAG_TYPEDEF(*);
 tag_typedef_t srestag_resolv_conf = STRTAG_TYPEDEF(resolv_conf);

@@ -47,12 +47,12 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
-#include <http.h>
-#include <http_protos.h>
-#include <http_tag.h>
-#include <http_tag_class.h>
+#include <sofia-sip/http.h>
+#include <sofia-sip/http_protos.h>
+#include <sofia-sip/http_tag.h>
+#include <sofia-sip/http_tag_class.h>
 
 tag_typedef_t httptag_any = NSTAG_TYPEDEF(*);
 

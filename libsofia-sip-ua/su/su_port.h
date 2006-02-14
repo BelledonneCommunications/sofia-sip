@@ -41,15 +41,15 @@
 #endif
 
 #ifndef SU_WAIT_H
-#include "su_wait.h"
+#include "sofia-sip/su_wait.h"
 #endif
 
 #ifndef SU_MODULE_DEBUG_H
-#include <su_module_debug.h>
+#include <sofia-sip/su_module_debug.h>
 #endif
 
 #ifndef SU_ALLOC_H
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 #endif
 
 #include <assert.h>

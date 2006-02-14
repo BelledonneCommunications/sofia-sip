@@ -33,9 +33,9 @@
 
 #include "config.h"
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "sdp.h"
+#include "sofia-sip/sdp.h"
 
 #include <stddef.h>
 #include <stdlib.h>

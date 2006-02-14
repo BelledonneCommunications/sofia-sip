@@ -39,12 +39,12 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "sip_parser.h"
-#include "msg_mclass.h"
-#include "msg_mclass_hash.h"
-#include <sip_header.h>
-#include <sip_util.h>
-#include <msg_addr.h>
+#include "sofia-sip/sip_parser.h"
+#include "sofia-sip/msg_mclass.h"
+#include "sofia-sip/msg_mclass_hash.h"
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/msg_addr.h>
 
 int diff(const char *olds, const char *news, int *linep, int *pos)
 {

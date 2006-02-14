@@ -29,12 +29,14 @@ noinst_LTLIBRARIES = 	libfeatures.la
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_sofia_HEADERS = sofia_sip_features.h
+nobase_include_sofia_HEADERS = sofia-sip/features.h
 
-libfeatures_la_SOURCES = sofia_sip_features.c
+libfeatures_la_SOURCES = features.c
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
+
+EXTRA_DIST =		Doxyfile features.docs
 
 # ----------------------------------------------------------------------
 # Sofia specific rules

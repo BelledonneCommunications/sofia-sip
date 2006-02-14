@@ -34,8 +34,8 @@
 
 #include "config.h"
 
-#include "su.h"
-#include "su_localinfo.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_localinfo.h"
 #include "su_module_debug.h"
 
 #if HAVE_SYS_SOCKIO_H

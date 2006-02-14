@@ -26,10 +26,12 @@ TESTS =
 
 BUILT_SOURCES =		nea_tag_ref.c
 
-include_sofia_HEADERS =       nea.h nea_debug.h nea_tag.h
+nobase_include_sofia_HEADERS =\
+			sofia-sip/nea.h sofia-sip/nea_tag.h
 
 libnea_la_SOURCES = 	nea.c nea_event.c \
-			nea_server.c nea_debug.c nea_tag.c nea_tag_ref.c
+			nea_server.c nea_debug.h nea_debug.c \
+			nea_tag.c nea_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnea_la_SOURCES) $(include_sofia_HEADERS)
 

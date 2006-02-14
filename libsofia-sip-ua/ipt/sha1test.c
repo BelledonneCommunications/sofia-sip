@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "sha1.h"
+#include "sofia-sip/sha1.h"
 
 /*
  *  Define patterns for testing

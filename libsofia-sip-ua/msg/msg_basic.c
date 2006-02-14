@@ -45,12 +45,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include <msg.h>
-#include <bnf.h>
-#include <msg_parser.h>
-#include <msg_header.h>
+#include <sofia-sip/msg.h>
+#include <sofia-sip/bnf.h>
+#include <sofia-sip/msg_parser.h>
+#include <sofia-sip/msg_header.h>
 
 #define msg_generic_update NULL
 

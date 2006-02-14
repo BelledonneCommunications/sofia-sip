@@ -38,14 +38,14 @@
 #include <string.h>
 #include <assert.h>
 
-#include <su_tagarg.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include "nta.h"
+#include "sofia-sip/nta.h"
 #include "nta_compat.h"
 #include "nta_internal.h"
 
-#include <sip_header.h>
-#include <sip_util.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
 
 /** Set UAS flag value. 
  * 

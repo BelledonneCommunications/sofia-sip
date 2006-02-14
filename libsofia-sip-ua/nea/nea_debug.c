@@ -56,7 +56,8 @@
  */
 
 #include <stddef.h>
-#include <nea_debug.h>
+
+#include "nea_debug.h"
 
 /**@var NEA_DEBUG
  *

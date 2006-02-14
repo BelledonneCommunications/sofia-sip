@@ -38,12 +38,12 @@
 #error "msg_internal.h" should be included before "msg.h"
 #endif
 
-#include "msg.h"
-#include "msg_addr.h"
-#include "msg_buffer.h"
+#include "sofia-sip/msg.h"
+#include "sofia-sip/msg_addr.h"
+#include "sofia-sip/msg_buffer.h"
 
 #ifndef SU_ALLOC_H
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 #endif
 
 SOFIA_BEGIN_DECLS

@@ -47,7 +47,7 @@
 #define va_copy(dst, src) (memcpy(&(dst), &(src), sizeof (va_list)))
 #endif
 
-#include "su_alloc.h"
+#include "sofia-sip/su_alloc.h"
 
 /**Copy a formatted string. 
  *

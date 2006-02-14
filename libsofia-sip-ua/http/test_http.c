@@ -38,25 +38,25 @@
 #include <stddef.h>
 #include <assert.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
-#include <su_types.h>
+#include <sofia-sip/su_types.h>
 
-#include <su_tag.h>
-#include <su_tag_class.h>
-#include <su_tag_io.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_io.h>
 
-#include <http_parser.h>
+#include <sofia-sip/http_parser.h>
 
-#include <http_tag.h>
-#include <url_tag.h>
+#include <sofia-sip/http_tag.h>
+#include <sofia-sip/url_tag.h>
 
-#include <http_header.h>
-#include <msg_addr.h>
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/msg_addr.h>
 
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const *name = "test_http";
 

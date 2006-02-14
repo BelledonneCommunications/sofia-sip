@@ -151,10 +151,10 @@
  * su_home_mutex_lock() and su_home_mutex_unlock().
  */
 
-#include <su_config.h>
-#include "su_alloc.h"
-#include "su_alloc_stat.h"
-#include "su_errno.h"
+#include <sofia-sip/su_config.h>
+#include "sofia-sip/su_alloc.h"
+#include "sofia-sip/su_alloc_stat.h"
+#include "sofia-sip/su_errno.h"
 
 #include <stdlib.h>
 #include <stddef.h>

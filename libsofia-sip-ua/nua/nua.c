@@ -41,28 +41,28 @@ char const nua_version[] = VERSION;
 
 #include <assert.h>
 
-#include <su_tag.h>
-#include <su_tag_class.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tagarg.h>
 
 #include <stdio.h>
 
-#include <su_tag_io.h>
+#include <sofia-sip/su_tag_io.h>
 
 #define SU_LOG (nua_log)
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 #define SU_ROOT_MAGIC_T   struct nua_s
 #define SU_MSG_ARG_T      struct event_s
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
-#include <su_strlst.h>
+#include <sofia-sip/su_strlst.h>
 
 #define NUA_SAVED_EVENT_T su_msg_t *
 
-#include "nua.h"
-#include "nua_tag.h"
+#include "sofia-sip/nua.h"
+#include "sofia-sip/nua_tag.h"
 
 #define NTA_AGENT_MAGIC_T    struct nua_s
 #define NTA_LEG_MAGIC_T      struct nua_handle_s
@@ -77,27 +77,27 @@ char const nua_version[] = VERSION;
 #define NEA_SMAGIC_T         nua_handle_t
 #define NEA_EMAGIC_T         nua_handle_t
 
-#include <sip.h>
-#include <sip_header.h>
-#include <sip_status.h>
-#include <sip_util.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_status.h>
+#include <sofia-sip/sip_util.h>
 
-#include <nta.h>
-#include <nea.h>
+#include <sofia-sip/nta.h>
+#include <sofia-sip/nea.h>
 
-#include <tport_tag.h>
+#include <sofia-sip/tport_tag.h>
 #if HAVE_UICC_H
 #include <uicc.h>
 #endif
-#include <auth_client.h>
+#include <sofia-sip/auth_client.h>
 
 #if HAVE_SMIME 		/* Start NRC Boston */
 #include "smimec.h"
 #endif                  /* End NRC Boston */
 
-#include <sdp.h>
+#include <sofia-sip/sdp.h>
 
-#include <sl_utils.h>
+#include <sofia-sip/sl_utils.h>
 
 #include "nua_stack.h"
 

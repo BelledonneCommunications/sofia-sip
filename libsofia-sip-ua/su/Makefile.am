@@ -17,7 +17,7 @@ bin_PROGRAMS = 		addrinfo localinfo
 noinst_PROGRAMS = 	su_torture torture_su_port \
 			su_alloc_test su_time_test su_tag_test \
 			htable_test torture_rbtree \
-			test_memmem torture_su_memmem \
+			test_memmem torture_su_bm \
 			su_root_test su_timer_test \
 			su_test su_proxy poll_test
 
@@ -27,7 +27,7 @@ noinst_PROGRAMS = 	su_torture torture_su_port \
 TESTS = 		su_torture torture_su_port \
 			su_alloc_test su_time_test su_tag_test \
 			htable_test torture_rbtree \
-			test_memmem torture_su_memmem \
+			test_memmem torture_su_bm \
 			su_root_test su_timer_test \
 			run_addrinfo run_localinfo run_su_test
 
@@ -35,25 +35,29 @@ TESTS = 		su_torture torture_su_port \
 # Rules for building the targets
 
 if HAVE_GLIB
-GHEADERS = su_source.h
+GHEADERS = sofia-sip/su_source.h
 GSOURCES = su_source.c
 endif
 
 BUILT_SOURCES = su_tag_ref.c
 
-include_sofia_HEADERS = \
-	su_types.h su.h su_errno.h su_addrinfo.h su_localinfo.h \
-	su_wait.h $(GHEADERS) \
-	su_alloc.h su_alloc_stat.h su_strlst.h su_vector.h \
-	su_time.h \
-	su_tag.h su_tag_class.h su_tagarg.h \
-	su_tag_io.h su_tag_inline.h \
-	htable.h htable2.h \
-	su_debug.h su_module_debug.h su_log.h \
-	su_config.h su_md5.h su_uniqueid.h \
-	tstdef.h rbtree.h su_memmem.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/su_types.h sofia-sip/su.h \
+			sofia-sip/su_errno.h sofia-sip/su_addrinfo.h \
+			sofia-sip/su_localinfo.h sofia-sip/su_wait.h \
+			sofia-sip/su_alloc.h sofia-sip/su_alloc_stat.h \
+			sofia-sip/su_strlst.h sofia-sip/su_vector.h \
+			sofia-sip/su_time.h sofia-sip/su_tag.h \
+			sofia-sip/su_tag_class.h sofia-sip/su_tagarg.h \
+			sofia-sip/su_tag_io.h sofia-sip/su_tag_inline.h \
+			sofia-sip/htable.h sofia-sip/htable2.h \
+			sofia-sip/rbtree.h sofia-sip/su_debug.h \
+			sofia-sip/su_log.h \
+			sofia-sip/su_config.h sofia-sip/su_md5.h \
+			sofia-sip/su_uniqueid.h sofia-sip/su_bm.h \
+			sofia-sip/tstdef.h $(GHEADERS)
 
-nodist_include_sofia_HEADERS = su_configure.h
+nobase_nodist_include_sofia_HEADERS = sofia-sip/su_configure.h
 
 libsu_la_SOURCES = \
 	su.c su_errno.c su_addrinfo.c $(GSOURCES) \
@@ -63,8 +67,8 @@ libsu_la_SOURCES = \
 	su_wait.c su_root.c su_timer.c su_port.c su_port.h \
 	su_localinfo.c \
 	su_taglist.c su_tag.c su_tag_io.c \
-	su_log.c su_global_log.c su_default_log.c \
-	su_md5.c su_uniqueid.c su_memmem.c
+	su_log.c su_global_log.c su_default_log.c su_module_debug.h \
+	su_md5.c su_uniqueid.c su_bm.c
 
 EXTRA_libsu_la_SOURCES = \
 			memmem.c strtoull.c strcasestr.c \
@@ -93,7 +97,7 @@ dist_sofialibexec_SCRIPTS = tag_dll.awk
 
 sofialibexecdir = $(libexecdir)/sofia
 
-su_configure.h: su_configure.h.in
+sofia-sip/su_configure.h: sofia-sip/su_configure.h.in
 
 # ----------------------------------------------------------------------
 # Automake options

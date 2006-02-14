@@ -43,14 +43,14 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include <http_parser.h>
-#include <http_header.h>
-#include <http_status.h>
+#include <sofia-sip/http_parser.h>
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/http_status.h>
 
-#include <msg_mime_protos.h>
-#include <msg_date.h>
+#include <sofia-sip/msg_mime_protos.h>
+#include <sofia-sip/msg_date.h>
 
 /* ====================================================================== */
 

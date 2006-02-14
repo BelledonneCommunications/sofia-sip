@@ -33,8 +33,8 @@
 
 #include "config.h"
 
-#include <su_alloc.h>
-#include <su.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su.h>
 
 #if SU_HAVE_PTHREADS
 #include <pthread.h>

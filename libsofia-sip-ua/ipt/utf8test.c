@@ -32,7 +32,7 @@
 
 #include "config.h"
 
-#include <utf8.h>
+#include <sofia-sip/utf8.h>
 #include <stdio.h>
 #include <string.h>
 

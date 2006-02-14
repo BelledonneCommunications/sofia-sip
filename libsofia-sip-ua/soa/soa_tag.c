@@ -31,13 +31,13 @@
 
 #include "config.h"
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
 #define TAG_NAMESPACE "soa"
 
-#include <soa.h>
-#include <su_tag_class.h>
-#include <sdp_tag.h>
+#include <sofia-sip/soa.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/sdp_tag.h>
 
 /**@def SOATAG_ANY()
  * 

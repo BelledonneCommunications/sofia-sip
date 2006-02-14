@@ -39,10 +39,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <su_tag.h>
-#include <su_tag_io.h>
-#include <su_tag_class.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_io.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tagarg.h>
 
 #ifndef WIN32
 #define DEVNULL "/dev/null"
@@ -54,7 +54,7 @@ int tstflags = 0;
 
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 #define TAG_A(s)      tag_a, tag_str_v((s))
 #define TAG_A_REF(s)  tag_a_ref, tag_str_vr(&(s))

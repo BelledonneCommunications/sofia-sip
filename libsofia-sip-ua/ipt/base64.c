@@ -32,7 +32,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "base64.h"
+#include "sofia-sip/base64.h"
 
 static unsigned char const code[] = 
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

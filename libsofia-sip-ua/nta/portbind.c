@@ -44,7 +44,7 @@ char const name[] = "portbind";
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include "su.h"
+#include "sofia-sip/su.h"
 
 #if !defined(IPPROTO_SCTP)
 #define IPPROTO_SCTP (132)

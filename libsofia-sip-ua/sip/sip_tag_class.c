@@ -37,15 +37,15 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
-#include "sip_parser.h"
+#include "sofia-sip/sip_parser.h"
 
-#include <su_tag_class.h>
-#include <su_tag_inline.h>
-#include <sip_tag_class.h>
-#include <sip_tag.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_inline.h>
+#include <sofia-sip/sip_tag_class.h>
+#include <sofia-sip/sip_tag.h>
+#include <sofia-sip/su_tagarg.h>
 
 /** Tag class for SIP header tags. @HIDE */
 tag_class_t siphdrtag_class[1] = 

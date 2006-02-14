@@ -28,5 +28,5 @@
 set VERSION=gawk -v BINMODE="rw" -f version.awk
 set AC=..\configure.ac
 
-for %%f in (config.h ..\libsofia-sip-ua\features\sofia_sip_features.h) ^
+for %%f in (config.h ..\libsofia-sip-ua\features\sofia-sip\features.h) ^
 do %VERSION% %AC% OUT=1 %%f.in > %%f

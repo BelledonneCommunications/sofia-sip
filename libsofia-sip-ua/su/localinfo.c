@@ -38,8 +38,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "su.h"
-#include "su_localinfo.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_localinfo.h"
 #include "su_module_debug.h"
 
 /**@ingroup su_programs

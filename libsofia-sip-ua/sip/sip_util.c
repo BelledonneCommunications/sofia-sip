@@ -41,17 +41,17 @@
 #include <limits.h>
 #include <ctype.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "sip_parser.h"
-#include <sip_header.h>
-#include <sip_util.h>
-#include <sip_status.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/sip_status.h>
 
-#include "bnf.h"
+#include "sofia-sip/bnf.h"
 
 #ifndef STRING0_H
-#include <string0.h>
+#include <sofia-sip/string0.h>
 #endif
 
 /** 

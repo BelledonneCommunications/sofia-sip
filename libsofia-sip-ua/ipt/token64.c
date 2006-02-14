@@ -36,7 +36,7 @@
 #include <stddef.h>
 #include <assert.h>
 
-#include "token64.h"
+#include "sofia-sip/token64.h"
 
 static const char code[64] = 
 "0123456789-abcdefghijklmnopqrstuvwxyz+ABCDEFGHIJKLMNOPQRSTUVWXYZ";

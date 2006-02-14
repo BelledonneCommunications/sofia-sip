@@ -33,7 +33,7 @@
  * @date Created: Thu Dec 19 15:56:35 2002 ppessi
  */
 
-#include <su_log.h>
+#include <sofia-sip/su_log.h>
 
 SOFIA_BEGIN_DECLS
 
@@ -44,6 +44,6 @@ SOFIA_END_DECLS
 
 #define SU_LOG (iptsec_log)
 
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 #endif /* !defined IPTSEC_DEBUG_H */

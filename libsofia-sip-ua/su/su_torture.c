@@ -39,13 +39,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <su.h>
-#include <su_localinfo.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_localinfo.h>
 
 int tstflags;
 
 #define TSTFLAGS tstflags
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const *name = "su_torture";
 
@@ -157,7 +157,7 @@ int test_sockaddr(void)
   END();
 }
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
 int test_sendrecv(void)
 {
@@ -245,7 +245,7 @@ int test_sendrecv(void)
   END();
 }
 
-#include <su_md5.h>
+#include <sofia-sip/su_md5.h>
 
 int test_md5(void)
 {

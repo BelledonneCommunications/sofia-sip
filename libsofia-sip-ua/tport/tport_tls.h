@@ -33,7 +33,7 @@
  */
 
 #ifndef SU_CONFIG_H
-#include <su_config.h>
+#include <sofia-sip/su_config.h>
 #endif
 
 SOFIA_BEGIN_DECLS

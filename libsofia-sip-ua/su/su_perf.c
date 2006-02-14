@@ -45,8 +45,8 @@ struct perf;
 #define SU_ROOT_MAGIC_T struct perf
 #define SU_MSG_ARG_T    struct message
 
-#include "su.h"
-#include "su_wait.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_wait.h"
 
 struct perf {
   enum { PINGER = 1, PONGER = 2 } const sort;

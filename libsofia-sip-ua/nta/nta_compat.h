@@ -34,7 +34,7 @@
  */
 
 #ifndef NTA_H
-#include <nta.h>
+#include <sofia-sip/nta.h>
 #endif
 
 typedef msg_t nta_msg_t;

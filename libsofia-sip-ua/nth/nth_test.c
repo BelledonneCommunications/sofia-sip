@@ -50,22 +50,22 @@ typedef struct client client_t;
 
 #define SU_ROOT_MAGIC_T tester_t
 
-#include <su_tagarg.h>
-#include <su_wait.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_wait.h>
 
 #define NTH_CLIENT_MAGIC_T client_t
 #define NTH_SITE_MAGIC_T site_t
 
-#include "nth.h"
-#include <http_header.h>
-#include <msg_mclass.h>
-#include <tport_tag.h>
+#include "sofia-sip/nth.h"
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/msg_mclass.h>
+#include <sofia-sip/tport_tag.h>
 
 int tstflags = 0;
 
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

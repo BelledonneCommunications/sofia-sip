@@ -23,7 +23,8 @@ BUILT_SOURCES =		sdp_tag_ref.c
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_sofia_HEADERS =	sdp.h sdp_tag.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/sdp.h sofia-sip/sdp_tag.h
 
 libsdp_la_SOURCES = 	sdp.c sdp_parse.c sdp_print.c \
 			sdp_tag.c sdp_tag_ref.c
@@ -33,8 +34,8 @@ COVERAGE_INPUT = 	$(libsdp_la_SOURCES) $(include_sofia_HEADERS)
 LDADD = 		libsdp.la \
 			../su/libsu.la
 
-sdp_test_LDFLAGS = 	-static
-sdp_torture_LDFLAGS = 	-static
+test_sdp_LDFLAGS = 	-static
+torture_sdp_LDFLAGS = 	-static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

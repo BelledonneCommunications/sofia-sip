@@ -41,9 +41,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "sdp.h"
+#include "sofia-sip/sdp.h"
 
 struct sdp_parser_s {
   su_home_t       pr_home[1];

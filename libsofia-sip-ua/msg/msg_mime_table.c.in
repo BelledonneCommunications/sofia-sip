@@ -47,10 +47,10 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <msg_mime.h>
-#include <msg_mime_protos.h>
+#include <sofia-sip/msg_mime.h>
+#include <sofia-sip/msg_mime_protos.h>
 
-#include <msg_mclass.h>
+#include <sofia-sip/msg_mclass.h>
 
 #define msg_multipart_extract_body NULL
 

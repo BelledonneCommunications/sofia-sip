@@ -37,9 +37,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <su_alloc.h>
-#include <bnf.h>
-#include <url.h>
+#include <sofia-sip/su_alloc.h>
+#include <sofia-sip/bnf.h>
+#include <sofia-sip/url.h>
 
 /**@def URL_PRINT_FORMAT
  * Format string used when printing url with printf().
@@ -1551,7 +1551,7 @@ int url_sanitize(url_t *url)
   return 0;
 }
 
-#include <su_md5.h>
+#include <sofia-sip/su_md5.h>
 
 static
 void canon_update(su_md5_t *md5, char const *s, int n, char const *allow)

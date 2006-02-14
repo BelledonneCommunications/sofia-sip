@@ -38,7 +38,7 @@
 
 #define TAG_NAMESPACE "sdp"
 
-#include <sdp_tag.h>
+#include <sofia-sip/sdp_tag.h>
 
 tag_typedef_t sdptag_any = NSTAG_TYPEDEF(*);
 

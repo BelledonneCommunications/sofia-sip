@@ -39,10 +39,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include <su_tag.h>
-#include <su_tag_class.h>
-#include <su_tag_io.h>
-#include <su_tag_inline.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_io.h>
+#include <sofia-sip/su_tag_inline.h>
 
 /** Print tags */
 void tl_print(FILE *f, char const *title, tagi_t const lst[])

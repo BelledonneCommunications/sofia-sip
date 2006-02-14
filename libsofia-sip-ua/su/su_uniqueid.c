@@ -65,9 +65,9 @@ int _getpid(void);
 #include <unistd.h>
 #endif
 
-#include "su.h"
-#include "su_time.h"
-#include "su_uniqueid.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_time.h"
+#include "sofia-sip/su_uniqueid.h"
 
 /* For random number generator */
 static int initialized = 0;

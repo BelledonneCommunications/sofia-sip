@@ -49,9 +49,9 @@ struct tester;
 #define SU_INTERNAL_P   su_root_t *
 #define SU_TIMER_ARG_T  struct timing
 
-#include "su.h"
-#include "su_wait.h"
-#include "su_log.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_wait.h"
+#include "sofia-sip/su_log.h"
 
 struct timing
 {

@@ -42,16 +42,16 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  */
 
-#include <su_config.h>
-#include <su_tag.h>
-#include <su_tag_class.h>
+#include <sofia-sip/su_config.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_class.h>
 
 #ifndef MSG_HEADER_H
-#include <msg_header.h>
+#include <sofia-sip/msg_header.h>
 #endif
 
 #ifndef MSG_MIME_PROTOS_H
-#include <msg_mime_protos.h>
+#include <sofia-sip/msg_mime_protos.h>
 #endif
 
 #ifndef TEST_CLASS_H

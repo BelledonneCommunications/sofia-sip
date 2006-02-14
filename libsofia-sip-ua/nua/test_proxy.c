@@ -43,14 +43,14 @@ struct registration_entry;
 #define NTA_OUTGOING_MAGIC_T struct proxy_transaction
 #define NTA_INCOMING_MAGIC_T struct proxy_transaction
 
-#include <su_wait.h>
-#include <nta.h>
-#include <sip_header.h>
-#include <sip_status.h>
-#include <sip_util.h>
-#include <auth_module.h>
-#include <su_tagarg.h>
-#include <msg_addr.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/nta.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_status.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/auth_module.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/msg_addr.h>
 
 #include <stdlib.h>
 #include <assert.h>

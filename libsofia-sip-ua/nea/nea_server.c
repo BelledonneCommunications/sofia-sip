@@ -33,24 +33,14 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <assert.h>
-#include <limits.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/sip_status.h>
+#include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/sl_utils.h>
 
-#include <sip.h>
-#include <sip_header.h>
-#include <sip_util.h>
-#include <sip_status.h>
-
-#include <su_tagarg.h>
-
-#include <sl_utils.h>
-
-#include <nea_debug.h>
+#include "nea_debug.h"
 
 #define NONE ((void *)- 1)
 
@@ -62,8 +52,16 @@
 #define NTA_INCOMING_MAGIC_T struct nea_sub_s
 #define NTA_OUTGOING_MAGIC_T struct nea_sub_s
 
-#include <nea.h>
-#include <htable.h>
+#include <sofia-sip/nea.h>
+#include <sofia-sip/htable.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <assert.h>
+#include <limits.h>
 
 /** Number of primary views (with different MIME type or content) */
 #define NEA_VIEW_MAX (8)

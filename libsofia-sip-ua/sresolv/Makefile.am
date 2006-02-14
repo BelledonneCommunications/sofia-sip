@@ -25,7 +25,7 @@ CLEANFILES =		resolv.conf error.conf named.conf.tmp \
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_sofia_HEADERS =       sresolv.h
+nobase_include_sofia_HEADERS = sofia-sip/sresolv.h
 
 libsresolv_la_SOURCES =	sresolv.c
 

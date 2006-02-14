@@ -34,7 +34,7 @@
 #include "config.h"
 
 #include <string.h>
-#include "su_alloc.h"
+#include "sofia-sip/su_alloc.h"
 
 /** Duplicate a string, allocate memory from @a home.
  *

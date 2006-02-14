@@ -47,14 +47,14 @@ typedef struct torture_s torture_t;
 #define SU_ROOT_MAGIC_T  torture_t
 #define STUN_MAGIC_T     torture_t
 
-#include "stun.h"
-#include "stun_tag.h"
+#include "sofia-sip/stun.h"
+#include "sofia-sip/stun_tag.h"
 
-#include <su.h>
-#include <su_debug.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_debug.h>
 
 #define TSTFLAGS tstflags
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 
 struct torture_s {

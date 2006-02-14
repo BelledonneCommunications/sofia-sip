@@ -54,7 +54,7 @@ char *strcasestr(const char *haystack, const char *needle);
 static int test_flags = 0;
 #define TSTFLAGS test_flags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const name[] = "test_memmem";
 

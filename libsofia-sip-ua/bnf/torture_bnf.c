@@ -40,12 +40,12 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "bnf.h"
+#include "sofia-sip/bnf.h"
 
 static int test_flags = 0;
 #define TSTFLAGS test_flags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const name[] = "torture_bnf";
 

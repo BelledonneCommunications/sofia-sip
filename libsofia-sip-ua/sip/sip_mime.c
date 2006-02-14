@@ -39,9 +39,9 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "sip_parser.h"
+#include "sofia-sip/sip_parser.h"
 
-#include "msg_mime_protos.h"
+#include "sofia-sip/msg_mime_protos.h"
 
 /* ====================================================================== */
 

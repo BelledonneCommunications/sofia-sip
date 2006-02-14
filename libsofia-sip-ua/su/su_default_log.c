@@ -35,8 +35,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <su_log.h>
-#include <su_debug.h>
+#include <sofia-sip/su_log.h>
+#include <sofia-sip/su_debug.h>
 
 /** Log into FILE, by default stderr. */
 static void default_logger(void *stream, char const *fmt, va_list ap)

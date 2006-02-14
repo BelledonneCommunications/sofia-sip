@@ -39,9 +39,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include <sip_header.h>
+#include <sofia-sip/sip_header.h>
 
-#include <sl_utils.h>
+#include <sofia-sip/sl_utils.h>
 
 /** Read payload from named file.
  *

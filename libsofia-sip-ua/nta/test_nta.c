@@ -38,7 +38,7 @@ typedef struct agent_t agent_t;
 
 #define SU_ROOT_MAGIC_T      agent_t
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
 #include <msg_internal.h>
 
@@ -48,18 +48,18 @@ typedef struct agent_t agent_t;
 #define NTA_INCOMING_MAGIC_T agent_t
 #define NTA_RELIABLE_MAGIC_T agent_t
 
-#include "nta.h"
+#include "sofia-sip/nta.h"
 #include "nta_internal.h"
-#include <sip_header.h>
-#include <sip_tag.h>
-#include <sip_status.h>
-#include <tport.h>
-#include <htable.h>
-#include <sresolv.h>
-#include <su_log.h>
-#include <sofia_sip_features.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_tag.h>
+#include <sofia-sip/sip_status.h>
+#include <sofia-sip/tport.h>
+#include <sofia-sip/htable.h>
+#include <sofia-sip/sresolv.h>
+#include <sofia-sip/su_log.h>
+#include <sofia-sip/features.h>
 
-#include "string0.h"
+#include "sofia-sip/string0.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -74,7 +74,7 @@ extern su_log_t tport_log[];
 int tstflags = 0;
 #define TSTFLAGS tstflags
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -416,7 +416,7 @@ nta_test_run(agent_t *ag)
   }
 }
 
-#include <msg_mclass.h>
+#include <sofia-sip/msg_mclass.h>
 
 int test_init(agent_t *ag, char const *resolv_conf)
 {
@@ -629,7 +629,7 @@ int test_deinit(agent_t *ag)
 static unsigned char const code[] = 
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-#include <su_uniqueid.h>
+#include <sofia-sip/su_uniqueid.h>
 
 sip_payload_t *test_payload(su_home_t *home, int size)
 {

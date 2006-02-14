@@ -60,9 +60,9 @@
 
 #define SU_PORT_IMPLEMENTATION 1
 
-#include "su.h"
+#include "sofia-sip/su.h"
 #include "su_port.h"
-#include "su_alloc.h"
+#include "sofia-sip/su_alloc.h"
 
 #if SU_HAVE_PTHREADS
 /* Pthread implementation */

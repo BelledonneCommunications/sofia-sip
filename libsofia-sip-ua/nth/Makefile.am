@@ -28,7 +28,8 @@ TESTS = 		nth_test
 
 BUILT_SOURCES =		nth_tag_ref.c
 
-include_sofia_HEADERS =       nth.h nth_tag.h
+nobase_include_sofia_HEADERS = \
+			sofia-sip/nth.h sofia-sip/nth_tag.h
 
 libnth_la_SOURCES = 	nth_client.c nth_server.c nth_tag.c nth_tag_ref.c
 

@@ -46,22 +46,22 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <su_types.h>
-#include <su_alloc_stat.h>
+#include <sofia-sip/su_types.h>
+#include <sofia-sip/su_alloc_stat.h>
 
-#include <su_time.h>
+#include <sofia-sip/su_time.h>
 
-#include <su_tag.h>
-#include <su_tag_class.h>
-#include <su_tag_io.h>
+#include <sofia-sip/su_tag.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_io.h>
 
-#include <sip_tag.h>
-#include <url_tag.h>
+#include <sofia-sip/sip_tag.h>
+#include <sofia-sip/url_tag.h>
 
-#include <sip.h>
-#include <sip_header.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
 
-#include <msg_buffer.h>
+#include <sofia-sip/msg_buffer.h>
 
 char const *name = "validator";
 

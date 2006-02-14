@@ -31,7 +31,7 @@
 #include "config.h"
 
 #include <string.h>
-#include <su_config.h>
+#include <sofia-sip/su_config.h>
 
 #undef SU_HAVE_INLINE
 #undef su_inline
@@ -39,4 +39,4 @@
 #define SU_HAVE_INLINE 1
 #define su_inline
 
-#include "string0.h"
+#include "sofia-sip/string0.h"

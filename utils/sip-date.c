@@ -41,9 +41,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include <sip.h>
-#include <sip_header.h>
-#include <msg_date.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/msg_date.h>
 
 /**@ingroup sip_programs
  *

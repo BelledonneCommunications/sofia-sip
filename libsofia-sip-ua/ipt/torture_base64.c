@@ -40,14 +40,14 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "base64.h"
+#include "sofia-sip/base64.h"
 
 int tstflags = 0;
 #define TSTFLAGS tstflags
 
 char const *name = "torture_base64";
 
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
 char const constant[] = "not changed";
 

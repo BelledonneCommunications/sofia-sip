@@ -37,18 +37,18 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
 #define TAG_NAMESPACE "msg"
 
 #include "msg_internal.h"
-#include "msg_header.h"
-#include "msg_parser.h"
+#include "sofia-sip/msg_header.h"
+#include "sofia-sip/msg_parser.h"
 
-#include <su_tag_class.h>
-#include <su_tag_inline.h>
-#include <su_tagarg.h>
-#include "msg_tag_class.h"
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_inline.h>
+#include <sofia-sip/su_tagarg.h>
+#include "sofia-sip/msg_tag_class.h"
 
 #define NONE ((void*)-1)
 

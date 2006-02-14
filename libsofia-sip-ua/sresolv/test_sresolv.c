@@ -38,9 +38,9 @@
 struct sres_context_s;
 #define SU_WAKEUP_ARG_T struct sres_context_s
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
-#include <su_time.h>
+#include <sofia-sip/su_time.h>
 #else
 
 #define _XOPEN_SOURCE (500)
@@ -53,9 +53,9 @@ struct sres_context_s;
 #endif
 
 #define TSTFLAGS tstflags
-#include <tstdef.h>
+#include <sofia-sip/tstdef.h>
 
-#include "sresolv.h"
+#include "sofia-sip/sresolv.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -64,7 +64,7 @@ struct sres_context_s;
 #include <pthread.h>
 #include <unistd.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
 #if HAVE_ALARM
 #include <unistd.h>
@@ -1871,7 +1871,7 @@ void usage(void)
 	  name);
 }
 
-#include <su_log.h>
+#include <sofia-sip/su_log.h>
 
 extern su_log_t sresolv_log[];
 

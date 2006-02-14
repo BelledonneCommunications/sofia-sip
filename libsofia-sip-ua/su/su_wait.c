@@ -41,9 +41,9 @@
 
 #define SU_INTERNAL_P su_root_t *
 
-#include "su.h"
-#include "su_wait.h"
-#include "su_alloc.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_wait.h"
+#include "sofia-sip/su_alloc.h"
 
 /**@defgroup su_wait Syncronization and Threading
  * @brief Syncronization and threading interface.

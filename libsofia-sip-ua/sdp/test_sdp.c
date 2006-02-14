@@ -40,7 +40,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "sdp.h"
+#include "sofia-sip/sdp.h"
 
 int diff(const char *olds, const char *news, int *linep, int *pos)
 {

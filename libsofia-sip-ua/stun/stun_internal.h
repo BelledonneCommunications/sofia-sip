@@ -36,25 +36,25 @@
 #endif
 
 #ifndef SU_WAIT_H
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 #endif
 
 #ifndef SU_TAG_H
-#include <su_tag.h>
+#include <sofia-sip/su_tag.h>
 #endif
 
 #ifndef STUN_H
-#include "stun.h"
+#include "sofia-sip/stun.h"
 #endif
 
 #ifndef STUN_COMMON_H
-#include "stun_common.h"
+#include "sofia-sip/stun_common.h"
 #endif
 
 
 
 #define SU_LOG (stun_log)
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 #define enter (void)SU_DEBUG_9(("%s: entering.\n", __func__))
 

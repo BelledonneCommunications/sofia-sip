@@ -39,31 +39,31 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <string0.h>
+#include <sofia-sip/string0.h>
 
 typedef struct server_s server_t;
 
 /** @internal SU timer argument pointer type */
 #define SU_TIMER_ARG_T server_t
 
-#include <http_header.h>
-#include <http_status.h>
-#include <http_tag.h>
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/http_status.h>
+#include <sofia-sip/http_tag.h>
 
-#include "nth.h"
+#include "sofia-sip/nth.h"
 
-#include <msg_date.h>
-#include <msg_addr.h>
-#include <su_tagarg.h>
+#include <sofia-sip/msg_date.h>
+#include <sofia-sip/msg_addr.h>
+#include <sofia-sip/su_tagarg.h>
 
 /* We are customer of tport_t */
 #define TP_STACK_T   server_t
 #define TP_MAGIC_T   void
                                      
 #ifndef TPORT_H                 
-#include <tport.h>
+#include <sofia-sip/tport.h>
 #endif
-#include <htable.h>
+#include <sofia-sip/htable.h>
 
 enum { SERVER_TICK = 1000 };
 
@@ -147,7 +147,7 @@ struct nth_request_s
 #ifdef SU_DEBUG_H
 #error <su_debug.h> included directly.
 #endif
-#include <su_debug.h>
+#include <sofia-sip/su_debug.h>
 
 /**@var NTH_DEBUG
  *

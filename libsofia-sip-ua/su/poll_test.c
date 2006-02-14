@@ -38,10 +38,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "su.h"
-#include "su_wait.h"
-#include "su_types.h"
-#include "su_log.h"
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_wait.h"
+#include "sofia-sip/su_types.h"
+#include "sofia-sip/su_log.h"
 
 void usage(char const *name)
 {

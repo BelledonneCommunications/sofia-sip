@@ -44,7 +44,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "sip_parser.h"
+#include "sofia-sip/sip_parser.h"
 
 /* ====================================================================== */
 

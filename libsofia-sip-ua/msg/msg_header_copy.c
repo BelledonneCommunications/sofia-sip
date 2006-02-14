@@ -41,14 +41,14 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include <su_alloc.h>
+#include <sofia-sip/su_alloc.h>
 
-#include <su.h>
+#include <sofia-sip/su.h>
 
 #include "msg_internal.h"
-#include "msg.h"
-#include "msg_parser.h"
-#include "msg_header.h"
+#include "sofia-sip/msg.h"
+#include "sofia-sip/msg_parser.h"
+#include "sofia-sip/msg_header.h"
 
 /** Calculate size of a parameter vector */
 static inline

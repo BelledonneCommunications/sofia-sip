@@ -43,25 +43,25 @@
 
 #include <assert.h>
 
-#include <su_tag_class.h>
-#include <su_tag_class.h>
-#include <su_tagarg.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tag_class.h>
+#include <sofia-sip/su_tagarg.h>
 
 #include <stdio.h>
 
-#include <su_tag_io.h>
+#include <sofia-sip/su_tag_io.h>
 
 #define SU_ROOT_MAGIC_T   struct nua_s
 #define SU_MSG_ARG_T      struct event_s
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
-#include <su_strlst.h>
+#include <sofia-sip/su_strlst.h>
 
 #define NUA_SAVED_EVENT_T su_msg_t *
 
-#include "nua.h"
-#include "nua_tag.h"
+#include "sofia-sip/nua.h"
+#include "sofia-sip/nua_tag.h"
 
 #define NTA_AGENT_MAGIC_T    struct nua_s
 #define NTA_LEG_MAGIC_T      struct nua_handle_s
@@ -72,29 +72,29 @@
 #define NEA_SMAGIC_T         nua_handle_t
 #define NEA_EMAGIC_T         nua_handle_t
 
-#include <sip.h>
-#include <sip_header.h>
-#include <sip_status.h>
-#include <sip_util.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_status.h>
+#include <sofia-sip/sip_util.h>
 
-#include <nta.h>
-#include <nea.h>
+#include <sofia-sip/nta.h>
+#include <sofia-sip/nea.h>
 
-#include <tport_tag.h>
-#include <auth_client.h>
+#include <sofia-sip/tport_tag.h>
+#include <sofia-sip/auth_client.h>
 
 #if HAVE_SOFIA_SMIME 
 #include "smimec.h"
 #endif                  
 
-#include <sl_utils.h>
+#include <sofia-sip/sl_utils.h>
 
 #if HAVE_SIGCOMP
 #include <sigcomp.h>
-#include <nta_tport.h>
+#include <sofia-sip/nta_tport.h>
 #endif
 
-#include "soa.h"
+#include "sofia-sip/soa.h"
 
 #include "nua_stack.h"
 
@@ -888,7 +888,7 @@ void ua_shutdown(nua_t *nua)
  * Parameters
  */
 
-#include <msg_parser.h>
+#include <sofia-sip/msg_parser.h>
 
 int ua_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
 		  tagi_t const *tags)

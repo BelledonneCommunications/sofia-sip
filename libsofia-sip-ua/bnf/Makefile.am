@@ -17,7 +17,7 @@ check_PROGRAMS = 	torture_bnf
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-include_sofia_HEADERS =	bnf.h
+nobase_include_sofia_HEADERS = sofia-sip/bnf.h
 
 libbnf_la_SOURCES = 	bnf.c
 

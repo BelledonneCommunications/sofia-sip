@@ -33,7 +33,7 @@
 
 #include "config.h"
 
-#include <utf8.h>
+#include <sofia-sip/utf8.h>
 #include "utf8internal.h"
 
 #ifndef _WIN32

@@ -38,14 +38,14 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include <su_tagarg.h>
+#include <sofia-sip/su_tagarg.h>
 
-#include <sip.h>
-#include <sip_header.h>
-#include <sip_util.h>
-#include <sip_status.h>
+#include <sofia-sip/sip.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/sip_status.h>
 
-#include <sl_utils.h>
+#include <sofia-sip/sl_utils.h>
 
 #define SU_TIMER_ARG_T       struct nea_s
 #define NTA_LEG_MAGIC_T      struct nea_s
@@ -54,9 +54,9 @@
 #define NEA_TIMER_DELTA 2 /* time to resubscribe without expiration */
 #define EXPIRES_DEFAULT       3600
 
-#include <su_wait.h>
+#include <sofia-sip/su_wait.h>
 
-#include "nea.h"
+#include "sofia-sip/nea.h"
 
 struct nea_s {
   su_home_t         nea_home[1];
