@@ -104,6 +104,7 @@ tag_typedef_t ntatag_tcp_rport = BOOLTAG_TYPEDEF(tcp_rport);
 tag_typedef_t ntatag_preload = UINTTAG_TYPEDEF(preload);
 tag_typedef_t ntatag_use_naptr = BOOLTAG_TYPEDEF(naptr);
 tag_typedef_t ntatag_use_srv = BOOLTAG_TYPEDEF(srv);
+tag_typedef_t ntatag_rseq = UINTTAG_TYPEDEF(rseq);
 
 /* Status */
 

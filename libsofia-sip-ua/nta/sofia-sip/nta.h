@@ -358,6 +358,9 @@ nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
 				   sip_t const *response_to_prack,
 				   tag_type_t, tag_value_t, ...);
 
+uint32_t nta_outgoing_rseq(nta_outgoing_t const *orq);
+int nta_outgoing_setrseq(nta_outgoing_t *orq, uint32_t rseq);
+
 /* UAS side */
 
 /** NTA reliable response */

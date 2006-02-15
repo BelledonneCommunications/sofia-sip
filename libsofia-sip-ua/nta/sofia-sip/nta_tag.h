@@ -438,6 +438,13 @@ NTA_DLL extern tag_typedef_t ntatag_use_srv;
 NTA_DLL extern tag_typedef_t ntatag_use_srv_ref;
 #define NTATAG_USE_SRV_REF(x) ntatag_use_srv_ref, tag_bool_vr(&(x))
 
+NTA_DLL extern tag_typedef_t ntatag_rseq;
+/** RSeq value for nta_outgoing_prack(), @HI */
+#define NTATAG_RSEQ(x)    ntatag_rseq, tag_uint_v((x))
+
+NTA_DLL extern tag_typedef_t ntatag_rseq_ref;
+#define NTATAG_RSEQ_REF(x) ntatag_rseq_ref, tag_uint_vr(&(x))
+
 /* ====================================================================== */
 /* Tags for statistics. */
 

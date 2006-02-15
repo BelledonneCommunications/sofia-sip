@@ -9486,7 +9486,7 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
  * @param callback    callback function (may be @c NULL)
  * @param magic       application context pointer
  * @param route_url   optional URL used to route transaction requests
- * @param resp        response message to be acknowledged
+ * @param resp        (optional) response message to be acknowledged
  * @param tag,value,... optional
  *
  * @return
@@ -9509,50 +9509,68 @@ nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
   msg_t *msg;
   su_home_t *home;
   sip_t *sip;
-  sip_route_t *route = NULL;
+  sip_to_t const *to = NULL;
+  sip_route_t *route = NULL, r0[1];
   nta_outgoing_t *orq = NULL;
-  sip_rack_t rack[1];
+  sip_rack_t *rack = NULL, rack0[1];
 
-  if (!leg || !oorq || !resp || !resp->sip_status) {
+  if (!leg || !oorq) {
     SU_DEBUG_1(("%s: invalid arguments\n", __func__));
     return NULL;
   }
 
-  if (resp->sip_status->st_status <= 100 ||
-      resp->sip_status->st_status >= 200) {
-    SU_DEBUG_1(("%s: %u response cannot be PRACKed\n",
-		__func__, resp->sip_status->st_status));
-    return NULL;
-  }
+  sip_rack_init(rack0);
 
-  if (!resp->sip_rseq) {
-    SU_DEBUG_1(("%s: %u response missing RSeq\n",
-		__func__, resp->sip_status->st_status));
-    return NULL;
-  }
+  if (resp) {
+    if (!resp->sip_status) {
+      SU_DEBUG_1(("%s: invalid arguments\n", __func__));
+      return NULL;
+    }
 
-  if (resp->sip_rseq->rs_response <= oorq->orq_rseq) {
-    SU_DEBUG_1(("%s: %u response RSeq does not match received RSeq\n",
+    if (resp->sip_status->st_status <= 100 ||
+	resp->sip_status->st_status >= 200) {
+      SU_DEBUG_1(("%s: %u response cannot be PRACKed\n",
+		  __func__, resp->sip_status->st_status));
+      return NULL;
+    }
+    
+    if (!resp->sip_rseq) {
+      SU_DEBUG_1(("%s: %u response missing RSeq\n",
 		__func__, resp->sip_status->st_status));
-    return NULL;
-  }
-  if (!oorq->orq_must_100rel &&
-      !sip_has_feature(resp->sip_require, "100rel")) {
-    SU_DEBUG_1(("%s: %u response does not require 100rel\n",
-		__func__, resp->sip_status->st_status));
-    return NULL;
-  }
+      return NULL;
+    }
 
-  if (!resp->sip_to->a_tag) {
-    SU_DEBUG_1(("%s: %u response has no To tag\n",
-		__func__, resp->sip_status->st_status));
-    return NULL;
-  }
-  if (str0casecmp(resp->sip_to->a_tag, leg->leg_remote->a_tag) ||
-      str0casecmp(resp->sip_to->a_tag, oorq->orq_to->a_tag)) {
-    SU_DEBUG_1(("%s: %u response To tag does not agree with dialog tag\n",
-		__func__, resp->sip_status->st_status));
-    return NULL;
+    if (resp->sip_rseq->rs_response <= oorq->orq_rseq) {
+      SU_DEBUG_1(("%s: %u response RSeq does not match received RSeq\n",
+		  __func__, resp->sip_status->st_status));
+      return NULL;
+    }
+    if (!oorq->orq_must_100rel &&
+	!sip_has_feature(resp->sip_require, "100rel")) {
+      SU_DEBUG_1(("%s: %u response does not require 100rel\n",
+		  __func__, resp->sip_status->st_status));
+      return NULL;
+    }
+
+    if (!resp->sip_to->a_tag) {
+      SU_DEBUG_1(("%s: %u response has no To tag\n",
+		  __func__, resp->sip_status->st_status));
+      return NULL;
+    }
+    if (str0casecmp(resp->sip_to->a_tag, leg->leg_remote->a_tag) ||
+	str0casecmp(resp->sip_to->a_tag, oorq->orq_to->a_tag)) {
+      SU_DEBUG_1(("%s: %u response To tag does not agree with dialog tag\n",
+		  __func__, resp->sip_status->st_status));
+      return NULL;
+    }
+
+    to = resp->sip_to;
+    rack = rack0;
+
+    rack->ra_response    = resp->sip_rseq->rs_response;
+    rack->ra_cseq        = resp->sip_cseq->cs_seq;
+    rack->ra_method      = resp->sip_cseq->cs_method;
+    rack->ra_method_name = resp->sip_cseq->cs_method_name;
   }
 
   msg = nta_msg_create(leg->leg_agent, 0);
@@ -9561,14 +9579,13 @@ nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
   if (!sip)
     return NULL;
 
-  if (!leg->leg_route) {
+  if (!leg->leg_route && resp) {
     /* Insert contact into route */
     if (resp->sip_contact) {
-      sip_route_t r0[1];
       sip_route_init(r0)->r_url[0] = resp->sip_contact->m_url[0];
       route = sip_route_dup(home, r0);
     }
-
+    
     /* Reverse record route */
     if (resp->sip_record_route) {
       sip_route_t *r, *r_next;
@@ -9578,21 +9595,32 @@ nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
     }
   }
 
-  sip_rack_init(rack);
-  rack->ra_response    = resp->sip_rseq->rs_response;
-  rack->ra_cseq        = resp->sip_cseq->cs_seq;
-  rack->ra_method      = resp->sip_cseq->cs_method;
-  rack->ra_method_name = resp->sip_cseq->cs_method_name;
-
   ta_start(ta, tag, value);
 
+  if (!resp) {
+    tagi_t const *t;
+
+    if ((t = tl_find(ta_args(ta), ntatag_rseq)) && t->t_value) {
+      rack = rack0;
+      rack->ra_response = (uint32_t)t->t_value;
+    }
+
+    if (rack) {
+      rack->ra_cseq = orq->orq_cseq->cs_seq;
+      rack->ra_method = orq->orq_cseq->cs_method;
+      rack->ra_method_name = orq->orq_cseq->cs_method_name;
+    }
+  }
+
   if (sip_add_tl(msg, sip,
-		 SIPTAG_RACK(rack),
-		 SIPTAG_TO(resp->sip_to),
+		 TAG_IF(rack, SIPTAG_RACK(rack)),
+		 TAG_IF(to, SIPTAG_TO(to)),
 		 ta_tags(ta)) < 0)
     ;
   else if (route && sip_add_dup(msg, sip, (sip_header_t *)route) < 0)
     ;
+  else if (!sip->sip_rack) 
+    SU_DEBUG_1(("%s: RAck header missing\n", __func__));
   else if (nta_msg_request_complete(msg, leg,
 				    SIP_METHOD_PRACK,
 				    (url_string_t *)oorq->orq_url) < 0)
@@ -9605,10 +9633,33 @@ nta_outgoing_t *nta_outgoing_prack(nta_leg_t *leg,
 
   if (!orq)
     msg_destroy(msg);
-  else
+  else if (rack)
     oorq->orq_rseq = rack->ra_response;
+  else if (sip->sip_rack)
+    oorq->orq_rseq = sip->sip_rack->ra_response;
 
   return orq;
+}
+
+/** Get RSeq value stored with client transaction. */
+uint32_t nta_outgoing_rseq(nta_outgoing_t const *orq)
+{
+  return orq ? orq->orq_rseq : 0;
+}
+
+/** Set RSeq value stored with client transaction. 
+ *
+ * @return 0 if rseq was set successfully
+ * @return -1 if rseq is invalid or orq is NULL.
+ */
+int nta_outgoing_setrseq(nta_outgoing_t *orq, uint32_t rseq)
+{
+  if (orq && orq->orq_rseq <= rseq) {
+    orq->orq_rseq = rseq;      
+    return 0;
+  }
+
+  return -1;
 }
 
 /* ------------------------------------------------------------------------ */
