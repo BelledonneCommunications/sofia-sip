@@ -242,7 +242,12 @@ int test_sendrecv(void)
     shutdown(a, 2);
 
     TEST(su_wait(w, 1, 100), 0);
+#if SU_HAVE_WINSOCK
     TEST_1(su_wait_events(w, s) & SU_WAIT_HUP);
+#else
+    TEST_1(su_wait_events(w, s));
+    n = su_vrecv(s, rv, 3, 0, NULL, NULL); TEST(n, 0);
+#endif
 
     su_wait_destroy(w);
   }
