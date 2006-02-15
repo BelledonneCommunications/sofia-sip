@@ -1,4 +1,41 @@
+2006-02-15  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Release 1.11.6.
+	
+  * Fixed problems in doxygen documentation and dist.
+
+  * Updated PRACK and nta_outgoing_prack().
+
+  nta_outgoing_prack() accepts now RSeq sequence numbers in NTATAG_RSEQ().
+  When PRACK is sent using nta_outgoing_tmcreate(), there is functions
+  nta_outgoing_setrseq() and nta_outgoing_rseq() for updating the rseq number
+  within transaction.
+
+  * Corrected su_torture.c, Shutdown semantics differ on WINSOCK/BSDSOCK.
+
+  * Fixed su_wait() with 0 wait objects in windows.
+
+  * Fixed win32-compatibility problems in test programs.
+
+  * Not using NULL restart pointer in ua_authenticate().
+
 2006-02-14  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Fixed problems with sofia-sip/ header prefix in win32.
+
+  * Fixed win32/VC configuration problems.
+
+  * Fixed win32 pthread dist.
+
+  * Fixed include paths.
+
+  * Use #include <sofia-sip/su_tag_class.h>.
+
+  * Be explicit with input when generating source files.
+
+  * Added make target clean-built-sources.
+
+  * Fixed #include su_module_debug.h.
 
   * Moved public include files to sofia-sip subdirectories.
 
