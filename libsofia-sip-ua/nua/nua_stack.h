@@ -508,7 +508,6 @@ struct nua_s {
   
   /**< Used by stop-and-wait args calls */
   tagi_t const        *nua_args;
-  tagi_t              *nua_filter;
 
   /**< Local SIP address. Contents are kept around for ever. */
   sip_from_t          nua_from[1];

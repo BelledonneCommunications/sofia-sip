@@ -125,30 +125,6 @@ extern char const NUA_DEBUG[];
  */
 su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
 
-#if 0
-/** Handle filter.
- *
- * This is used to convert string tags to header tags.
- */
-static tagi_t const nua_filter[] =
-  {{ SIPTAG_REQUEST(0) },
-   { SIPTAG_STATUS(0) },
-   { SIPTAG_FROM(0) },
-   { SIPTAG_TO(0) },
-   { SIPTAG_CSEQ(0) },
-   { SIPTAG_CONTACT(0) },
-   { SIPTAG_CALL_INFO(0) },
-   { SIPTAG_ALLOW(0), },
-   { SIPTAG_SUBJECT(0) },
-   { SIPTAG_REQUIRE(0) },
-   { SIPTAG_SUPPORTED(0) },
-   { SIPTAG_WWW_AUTHENTICATE(0) },
-   { SIPTAG_PROXY_AUTHENTICATE(0) },
-   { SIPTAG_CONTENT_TYPE(0) },
-   { SIPTAG_PAYLOAD(0) },
-   { TAG_NULL() }};
-#endif
-
 /**Create a NUA agent.
  *
  * This function creates a Nokia User Agent stack object and 
