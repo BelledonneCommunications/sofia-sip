@@ -549,7 +549,7 @@ static int test_auto(void)
 
   for (i = 1; i < 8192; i++) {
     TEST_1(b = su_realloc(tmphome, b, i));
-    b[i - 1] = 0xaa;
+    b[i - 1] = (char)0xaa;
  
     if ((i % 32) == 0)
       TEST_1(b = su_realloc(tmphome, b, 1));

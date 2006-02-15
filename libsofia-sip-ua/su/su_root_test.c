@@ -136,8 +136,17 @@ int wakeup(root_test_t *rt,
 	   test_ep_t *ep)
 {
   char buffer[64];
+  int n, error;
+ 
+  su_wait_events(w, ep->s);
 
-  TEST_1(recv(ep->s, buffer, sizeof(buffer), 0) > 0);
+  n = recv(ep->s, buffer, sizeof(buffer), 0);
+  error = su_errno();
+ 
+  if (n < 0)
+    fprintf(stderr, "%s: %s\n", "recv", su_strerror(error));
+
+  TEST_1(n > 0);
 
   rt->rt_received = ep->i;
 	   
@@ -238,10 +247,12 @@ static int register_test(root_test_t *rt)
   }
 
   for (i = 0; i < 5; i++) {
-    rt->rt_ep[i]->registered = 
-      su_root_register(rt->rt_root, rt->rt_ep[i]->wait, 
-		       wakeups[i], rt->rt_ep[i], 1);
-    TEST_1(rt->rt_ep[i]->registered > 0);
+    test_ep_t *ep = rt->rt_ep[i];
+    TEST_1(su_wait_create(ep->wait, ep->s, SU_WAIT_IN|SU_WAIT_ERR) != -1);
+    ep->registered = 
+      su_root_register(rt->rt_root, ep->wait, 
+		       wakeups[i], ep, 1);
+    TEST_1(ep->registered > 0);
   }
 
   for (i = 0; i < 5; i++) {

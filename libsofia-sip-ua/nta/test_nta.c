@@ -67,6 +67,7 @@ typedef struct agent_t agent_t;
 #include <limits.h>
 #include <stdio.h>
 #include <assert.h>
+#include <unistd.h>
 
 extern su_log_t nta_log[];
 extern su_log_t tport_log[];
