@@ -15,7 +15,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "nta_test"=".\nta_test\nta_test.dsp" - Package Owner=<4>
+Project: "test_nta"=".\tests\test_nta\test_nta.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -45,7 +45,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "su_alloc_test"=".\su\su_alloc_test\su_alloc_test.dsp" - Package Owner=<4>
+Project: "su_alloc_test"=".\tests\su_alloc_test\su_alloc_test.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -60,7 +60,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "su_root_test"=".\su\su_root_test\su_root_test.dsp" - Package Owner=<4>
+Project: "su_root_test"=".\tests\su_root_test\su_root_test.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -75,7 +75,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "su_tag_test"=".\su\su_tag_test\su_tag_test.dsp" - Package Owner=<4>
+Project: "su_tag_test"=".\tests\su_tag_test\su_tag_test.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -90,7 +90,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "su_test"=".\su\su_test\su_test.dsp" - Package Owner=<4>
+Project: "su_test"=".\tests\su_test\su_test.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -105,7 +105,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "su_time_test"=".\su\su_time_test\su_time_test.dsp" - Package Owner=<4>
+Project: "su_time_test"=".\tests\su_time_test\su_time_test.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -120,7 +120,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "su_timer_test"=".\su\su_timer_test\su_timer_test.dsp" - Package Owner=<4>
+Project: "su_timer_test"=".\tests\su_timer_test\su_timer_test.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -135,7 +135,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "su_torture"=".\su\su_torture\su_torture.dsp" - Package Owner=<4>
+Project: "su_torture"=".\tests\su_torture\su_torture.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -150,7 +150,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "test_memmem"=".\su\test_memmem\test_memmem.dsp" - Package Owner=<4>
+Project: "test_memmem"=".\tests\test_memmem\test_memmem.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -165,7 +165,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "torture_htable"=".\su\torture_htable\torture_htable.dsp" - Package Owner=<4>
+Project: "torture_htable"=".\tests\torture_htable\torture_htable.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -180,7 +180,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "torture_rbtree"=".\su\torture_rbtree\torture_rbtree.dsp" - Package Owner=<4>
+Project: "torture_rbtree"=".\tests\torture_rbtree\torture_rbtree.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -195,7 +195,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "torture_su_memmem"=".\su\torture_su_memmem\torture_su_memmem.dsp" - Package Owner=<4>
+Project: "torture_su_bm"=".\tests\torture_su_bm\torture_su_bm.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -210,7 +210,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "torture_su_port"=".\su\torture_su_port\torture_su_port.dsp" - Package Owner=<4>
+Project: "torture_su_port"=".\tests\torture_su_port\torture_su_port.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -236,4 +236,3 @@ Package=<3>
 }}}
 
 ###############################################################################
-

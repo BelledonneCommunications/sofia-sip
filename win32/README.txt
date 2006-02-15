@@ -14,7 +14,9 @@ Source code and documentation for the pthread library can also be
 downloaded from http://sources.redhat.com/pthreads-win32/.
 
 The script autogen.cmd should be used to prepare source tree before
-compiling Sofia SIP.
+compiling Sofia SIP. Note that it uses the gawk utility - see
+http://unxutils.sourceforge.net.
 
 Currently, the SofiaSIP.dsw workspace creates a shared library for
-sofia-sip-ua and a few test programs.
+sofia-sip-ua and a few test programs. The tests programs can be run 
+with the script check.cmd.
