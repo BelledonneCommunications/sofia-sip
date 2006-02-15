@@ -3,7 +3,7 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20060118-3
+:Version: 20060210-5
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
@@ -51,8 +51,8 @@ Making the release tarball
   'rel-sofia-sip-x_y_z', where x_y_z is the version number (see
   README.developers):
 
-  cvs tag rel-sofia-sip_x_y_z
-  darcs tag rel-sofia-sip_x_y_z
+  cvs tag rel-sofia-sip-x_y_z
+  darcs tag -m"rel-sofia-sip-x_y_z"
 
 - calculate md5 and sha1 hashes using md5sum and sha1sum utils,
   and copy the values to the release-notes (see below)
