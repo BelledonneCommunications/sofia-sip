@@ -5,7 +5,7 @@
  * @nofile apps_utils.h
  * @brief 
  * 
- * Copyright (C) 2005 Nokia Research Center.
+ * Copyright (C) 2005 Nokia Corporation.
  *
  * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
  *

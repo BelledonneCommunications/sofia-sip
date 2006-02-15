@@ -35,15 +35,21 @@ and specifically the libsofia-sip-ua library component.
 There are also multiple example clients under
 the "sofia-sip/utils" directory:
 
-- nua_cli, console mode test application for Sofia-SIP
-- sip-options, query SIP OPTIONS
+- sip-options, query using SIP OPTIONS method
 - sip-date, SIP date printer/parser
+
+The Sofia-SIP su submodule also provides some small utils:
+
+- addrinfo (libsofia-sip-ua/su), resolve host names 
+- localinfo (libsofia-sip-ua/su), prints information about
+  local network interfaces 
 
 
 References
 ----------
 
 Project website:
+http://sofia-sip.sourceforge.net
 http://www.sourceforge.net/projects/sofia-sip
 
 Mailing list:
