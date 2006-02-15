@@ -37,14 +37,14 @@
  *@code
 /**@file sip_example.h.in
  *
- * Template for <sip_example.h>.
+ * Template for <sofia-sip/sip_example.h>.
  */
 
 #ifndef SIP_EXAMPLE_H 
-/** Defined when <sip_example.h> has been included. */
+/** Defined when <sofia-sip/sip_example.h> has been included. */
 #define SIP_EXAMPLE_H 
 
-/**@file sip_example.h 
+/**@file sofia-sip/sip_example.h 
 *
  * @brief Example header.
  *

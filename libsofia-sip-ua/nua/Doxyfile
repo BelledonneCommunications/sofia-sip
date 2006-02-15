@@ -1,7 +1,7 @@
 PROJECT_NAME         = "nua"
 OUTPUT_DIRECTORY     = ../docs/html/nua
 
-INPUT 		     = nua.docs .
+INPUT 		     = nua.docs . sofia-sip
 
 @INCLUDE             = ../docs/Doxyfile.conf
 

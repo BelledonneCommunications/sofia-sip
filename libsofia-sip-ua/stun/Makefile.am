@@ -58,6 +58,8 @@ torture_stun_LDFLAGS = 	-static
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
+EXTRA_DIST =		Doxyfile stun.docs cert.pem key.pem rfc3489.txt
+
 # ----------------------------------------------------------------------
 # Sofia specific rules
 

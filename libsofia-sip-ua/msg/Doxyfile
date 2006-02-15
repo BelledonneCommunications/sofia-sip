@@ -1,7 +1,7 @@
 PROJECT_NAME         = "msg"
 OUTPUT_DIRECTORY     = ../docs/html/msg
 
-INPUT 		     = msg.docs .
+INPUT 		     = msg.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

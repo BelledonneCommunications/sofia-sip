@@ -38,7 +38,7 @@ endif
 libtport_la_SOURCES = 	tport.c tport_tag.c tport_tag_ref.c $(USE_TLS_SRC)
 
 # to make sure all files end up in the dist package
-EXTRA_DIST =	 	$(TLS_SRC)
+EXTRA_libtport_la_SOURCES = $(TLS_SRC)
 
 BUILT_SOURCES =		tport_tag_ref.c
 
@@ -57,7 +57,7 @@ test_tport_LDFLAGS = 	-static
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST +=		Doxyfile tport.docs \
+EXTRA_DIST =		Doxyfile tport.docs \
 			certificates.html agent.pem cafile.pem
 
 # ----------------------------------------------------------------------

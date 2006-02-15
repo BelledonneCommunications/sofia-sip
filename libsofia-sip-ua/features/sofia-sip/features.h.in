@@ -21,7 +21,7 @@
  *
  */
 
-/**@file sofia_sip_features.h  
+/**@file sofia-sip/features.h
  * @brief Nokia User Agent Library Features
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -30,7 +30,7 @@
  */
 
 #ifndef SOFIA_SIP_FEATURES_H
-/** Defined when <sofia_sip_features.h> has been included. */
+/** Defined when <sofia-sip/features.h> has been included. */
 #define SOFIA_SIP_FEATURES_H
 
 /** Define as current Sofia version */

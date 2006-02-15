@@ -1,7 +1,7 @@
 PROJECT_NAME         = "bnf"
 OUTPUT_DIRECTORY     = ../docs/html/bnf
 
-INPUT 		     = bnf.docs . 
+INPUT 		     = bnf.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

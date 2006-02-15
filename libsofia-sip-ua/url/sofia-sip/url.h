@@ -54,8 +54,8 @@ enum url_type_e {
   url_im,			/**< @c "im:" (simple instant messaging) */
   url_pres,			/**< @c "pres:" (simple presence) */
   url_cid,			/**< @c "cid:" (Content-ID) */
-  url_msrp,			/**< @< "msrp:" (message session relay)  */
-  url_wv,			/**< @< "wv:" (Wireless village) */
+  url_msrp,			/**< @c "msrp:" (message session relay)  */
+  url_wv,			/**< @c "wv:" (Wireless village) */
   _url_none
 };
 

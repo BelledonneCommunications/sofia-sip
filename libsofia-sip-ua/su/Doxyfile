@@ -1,7 +1,7 @@
 PROJECT_NAME         = "su"
 OUTPUT_DIRECTORY     = ../docs/html/su
 
-INPUT 		     = su.docs . 
+INPUT 		     = su.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

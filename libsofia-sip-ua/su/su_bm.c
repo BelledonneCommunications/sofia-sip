@@ -23,7 +23,7 @@
  */
 
 /**
- * @file su_memmem.c
+ * @file su_bm.c
  * @brief Search with Boyer-Moore algorithm
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

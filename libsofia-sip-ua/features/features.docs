@@ -5,7 +5,7 @@
 @section features_meta Module Meta Information
 
 The @b features module provides application information about the various
-features possibly available through the sofia-sip-ua binary API.
+features possibly available through the @ref subdirs "sofia-sip-ua" binary API.
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 

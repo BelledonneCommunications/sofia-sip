@@ -769,7 +769,7 @@ int msg_hostport_d(char **ss,
  * no value for the name (in form "name" or "name=value"), the returned pointer
  * points to a NUL character.
  *
- * @param params list (or vector) of parameters 
+ * @param h     pointer to header structure
  * @param name  parameter name (with or without "=" sign)
  *
  * @return
@@ -876,7 +876,7 @@ int msg_header_replace_param(su_home_t *home,
  * value. The "=" and value are ignored.
  *
  * @param h         pointer to a header
- * @param param     parameter to be removed
+ * @param name      name of parameter to be removed
  *
  * @retval 1 if a parameter was removed
  * @retval 0 if no parameter was not removed

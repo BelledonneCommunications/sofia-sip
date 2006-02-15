@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 # note: order does matter in the subdir list
 SUBDIRS = su features bnf sresolv sdp url msg sip stun ipt soa \
 	  tport http nta nea iptsec nth nua
-DIST_SUBDIRS = docs $(SUBDIRS)
+DIST_SUBDIRS = $(SUBDIRS) docs
 
 EXTRA_DIST = sofia.am
 DOXYGEN = doxygen
@@ -50,25 +50,26 @@ built-sources-recursive clean-built-sources-recursive $(COVERAGE_RECURSIVE):
 	done;
 
 empty-doxytags:
-	@echo Generating empty doxytags ; \
+	@echo Generating empty doxytags
 	cd ${srcdir}; \
+	mkdir -p docs/html ; \
 	for d in $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile || continue ; \
-	  test -d docs/$$d || mkdir docs/$$d ; \
-	  test -r docs/$$d/doxytags || \
-		echo '<?xml version="1.0"?>\
-<tagfile />' >  docs/$$d/doxytags ; \
+	  if ! test -r docs/doxytags_$$d ; then \
+		echo '<?xml version="1.0"?>' > docs/doxytags_$$d ; \
+		echo '<tagfile />' >>  docs/doxytags_$$d ; \
+          fi ; \
 	done
 
 doxygen: built-sources empty-doxytags 
 	@cd ${srcdir} ;\
-	for d in $(DIST_SUBDIRS); do \
-	  test -r ${srcdir}/$$d/Doxyfile \
+	for d in $(DIST_SUBDIRS) $(DIST_SUBDIRS); do \
+	  test -r $$d/Doxyfile \
 	  && pushd $$d > /dev/null \
 	  && echo running ${DOXYGEN} in $$d \
           && ${DOXYGEN} \
           && popd > /dev/null ; \
-	done ; \
+	done
 	cd ${srcdir}/docs/html && ../hide_emails.sh
 
 .PHONY: built-sources built-sources-am empty-doxytags doxygen 

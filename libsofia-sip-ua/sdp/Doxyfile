@@ -1,7 +1,7 @@
 PROJECT_NAME         = "sdp"
 OUTPUT_DIRECTORY     = ../docs/html/sdp
 
-INPUT 		     = sdp.docs . 
+INPUT 		     = sdp.docs .  sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

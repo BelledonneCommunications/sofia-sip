@@ -1,7 +1,7 @@
 PROJECT_NAME         = "tport"
 OUTPUT_DIRECTORY     = ../docs/html/tport
 
-INPUT 		     = tport.docs .
+INPUT 		     = tport.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

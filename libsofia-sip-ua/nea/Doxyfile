@@ -1,7 +1,7 @@
 PROJECT_NAME         = "nea"
 OUTPUT_DIRECTORY     = ../docs/html/nea
 
-INPUT 		     = nea.docs .
+INPUT 		     = nea.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

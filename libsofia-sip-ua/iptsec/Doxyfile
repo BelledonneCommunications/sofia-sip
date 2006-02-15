@@ -1,7 +1,7 @@
 PROJECT_NAME         = "iptsec"
 OUTPUT_DIRECTORY     = ../docs/html/iptsec
 
-INPUT 		     = iptsec.docs .
+INPUT 		     = iptsec.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

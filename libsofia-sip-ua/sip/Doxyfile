@@ -1,7 +1,7 @@
 PROJECT_NAME         = "sip"
 OUTPUT_DIRECTORY     = ../docs/html/sip
 
-INPUT 		     = sip.docs .
+INPUT 		     = sip.docs sip_parser.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 
@@ -17,6 +17,7 @@ GENERATE_TAGFILE    = ../docs/doxytags_sip
 
 ALIASES += \
 	"SIP_TAG=@ingroup sip_tag\n" \
-	"SIP_HEADER=@ingroup sip_headers\n@defgroup" 
+	"SIP_HEADER=@ingroup sip_headers\n@defgroup" \
+        "SIP_PARSER=\n" 
 
 IMAGE_PATH           += images

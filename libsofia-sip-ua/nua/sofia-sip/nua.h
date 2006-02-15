@@ -22,7 +22,7 @@
  *
  */
 
-/**@file nua.h  @brief  Nokia User Agent Library
+/**@file sofia-sip/nua.h  @brief  Nokia User Agent Library
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -30,7 +30,7 @@
  */
 
 #ifndef NUA_H
-/** Defined when @b <nua.h> has been included. */
+/** Defined when @b <sofia-sip/nua.h> has been included. */
 #define NUA_H
 
 #ifndef SU_WAIT_H

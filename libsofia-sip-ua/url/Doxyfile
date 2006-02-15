@@ -1,7 +1,7 @@
 PROJECT_NAME         = "url"
 OUTPUT_DIRECTORY     = ../docs/html/url
 
-INPUT 		     = url.docs .
+INPUT 		     = url.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

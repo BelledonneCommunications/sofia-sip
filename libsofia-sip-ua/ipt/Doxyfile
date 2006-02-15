@@ -1,7 +1,7 @@
 PROJECT_NAME         = "ipt"
 OUTPUT_DIRECTORY     = ../docs/html/ips
 
-INPUT 		     = ipt.docs . 
+INPUT 		     = ipt.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

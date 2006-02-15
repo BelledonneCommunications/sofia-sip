@@ -7,7 +7,25 @@ for Sofia-SIP components. Some introductory material and
 pointers to the example code are also included.
 
 For a list of module specific pages, see @ref subdirs 
-"source tree structure". 
+"source tree structure" or direct links to submodules:<br>
+<a href="nua/index.html">nua</a> 
+<a href="su/index.html">su</a> 
+<a href="features/index.html">features</a> 
+<a href="soa/index.html">soa</a> 
+<a href="sdp/index.html">sdp</a> 
+<a href="nta/index.html">nta</a> 
+<a href="tport/index.html">tport</a> 
+<a href="sresolv/index.html">sresolv</a> 
+<a href="sip/index.html">sip</a> 
+<a href="msg/index.html">msg</a> 
+<a href="url/index.html">url</a> 
+<a href="stun/index.html">stun</a> 
+<a href="iptsec/index.html">iptsec</a> 
+<a href="nea/index.html">nea</a> 
+<a href="nth/index.html">nth</a> 
+<a href="http/index.html">http</a> 
+<a href="bnf/index.html">bnf</a> 
+<a href="ipt/index.html">ipt</a> 
 
 @section who Contact Information
 
@@ -34,21 +52,23 @@ Or post to the Sofia-SIP mailing list:
 In libsofia-sip-ua, there are subdirectories
 
 Terminal and high-level libraries utilizing for both signaling and media:
+
+Common runtime library:
+ - <a href="su/index.html">"su" - sockets, memory management, threads</a>
+ - <a href="sresolv/index.html">"sresolv" - Asynchronous DNS resolver</a>
+ - <a href="ipt/index.html">"ipt" - IPT utility library</a>
+
+SIP Signaling:
  - <a href="nua/index.html">"nua" - SIP User Agent library</a>
  - <a href="nea/index.html">"nea" - SIP Event API</a>
  - <a href="iptsec/index.html">"iptsec" - 
     Digest authentication for HTTP and SIP</a>
-
-Common runtime library:
- - <a href="su/index.html">"su" - sockets, memory management, threads</a>
-
-SIP Signaling:
  - <a href="nta/index.html">"nta" - SIP transaction engine</a>
- - <a href="sresolv/index.html">"sresolv" - Asynchronous DNS resolver</a>
  - <a href="tport/index.html">"tport" - Message transport</a>
  - <a href="sip/index.html">"sip" - SIP messages and headers</a>
  - <a href="msg/index.html">"msg" - Message handling </a>
- - <a href="ipt/index.html">"ipt" - IPT utility library</a>
+ - <a href="url/index.html">"url" - URL handling</a>
+ - <a href="bnf/index.html">"url" - low level parsing</a>
 
 HTTP subsystem:
  - <a href="nth/index.html">"nth" - HTTP protocol engine</a>
@@ -57,6 +77,12 @@ HTTP subsystem:
 SDP processing:
  - <a href="soa/index.html">"soa" - SDP Offer/Answer engine for SIP</a>
  - <a href="sdp/index.html">"sdp" - SDP parser</a>
+
+Other:
+ - <a href="stun/index.html">"stun" - STUN library</a>
+
+Features provided by Sofia-SIP library:
+ - <a href="features/index.html">"features" - Features provided by Sofia SIP</a>
 
 Documentation:
  - "docs" - Doxygen reference documentation

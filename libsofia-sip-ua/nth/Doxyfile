@@ -1,7 +1,7 @@
 PROJECT_NAME         = "nth"
 OUTPUT_DIRECTORY     = ../docs/html/nth
 
-INPUT 		     = nth.docs .
+INPUT 		     = nth.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 

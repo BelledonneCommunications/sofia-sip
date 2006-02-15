@@ -1,7 +1,7 @@
 PROJECT_NAME         = "sresolv"
 OUTPUT_DIRECTORY     = ../docs/html/sresolv
 
-INPUT 		     = sresolv.docs . 
+INPUT 		     = sresolv.docs . sofia-sip
 
 @INCLUDE 	     = ../docs/Doxyfile.conf
 

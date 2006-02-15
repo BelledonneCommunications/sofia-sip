@@ -1,7 +1,7 @@
 PROJECT_NAME         = "nta"
 OUTPUT_DIRECTORY     = ../docs/html/nta
 
-INPUT 		     = nta.docs .
+INPUT 		     = nta.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 
