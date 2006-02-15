@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 			  root,
 			  stunc_callback,
 			  STUNTAG_SERVER(argv[1]), 
-			  STUNTAG_INTEGRITY(msg_integrity),
+			  STUNTAG_REQUIRE_INTEGRITY(msg_integrity),
 			   TAG_NULL()); 
 
   if (!sh) {

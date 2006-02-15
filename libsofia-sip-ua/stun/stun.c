@@ -177,8 +177,8 @@ struct stun_handle_s
   stun_buffer_t   sh_username;
   stun_buffer_t   sh_passwd;
 
-  int             sh_use_msgint;    /**< use message integrity? */
-  /* int             sh_state; */         /**< Progress states */
+  int             sh_use_msgint;    /**< try message integrity (TLS) */
+  int             sh_req_msgint;    /**< require use of msg-int (TLS) */
 };
 
 
@@ -314,7 +314,8 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
  *
  * @TAGS
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
- * @TAG STUNTAG_INTEGRITY() true if msg integrity should be used
+ * @TAG STUNTAG_REQUIRE_INTEGRITY() true if msg integrity should be
+ * used enforced
  *
  */
 stun_handle_t *stun_handle_create(stun_magic_t *context,
@@ -324,7 +325,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 {
   stun_handle_t *stun = NULL;
   char const *server = NULL;
-  int msg_integrity = 1;
+  int req_msg_integrity = 1;
   int err;
   ta_list ta;
   
@@ -334,7 +335,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SERVER_REF(server),
-	  STUNTAG_INTEGRITY_REF(msg_integrity),
+	  STUNTAG_REQUIRE_INTEGRITY_REF(req_msg_integrity),
 	  TAG_END());
 
   stun = su_home_clone(NULL, sizeof(*stun));
@@ -375,7 +376,10 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   stun->sh_root     = root;
   stun->sh_context  = context;
   stun->sh_callback = cb;
-  stun->sh_use_msgint = msg_integrity;
+  /* always try TLS: */
+  stun->sh_use_msgint = 1; 
+  /* whether use of shared-secret msgint is required */
+  stun->sh_req_msgint = req_msg_integrity;
 
   stun->sh_max_retries = STUN_MAX_RETRX;
 
@@ -570,8 +574,9 @@ void stun_handle_destroy(stun_handle_t *sh)
     kill = sd;
     sd = sd->sd_next;
 
-    /* Index has same value as sockfd, right? */
-    su_root_deregister(sh->sh_root, kill->sd_socket);
+    /* Index has same value as sockfd, right? ... or not? */
+    if (kill->sd_index != -1)
+      su_root_deregister(sh->sh_root, kill->sd_index);
 
     if (kill->sd_action == stun_action_tls_query)
       su_close(kill->sd_socket);
@@ -690,6 +695,10 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s)
 }
 
 
+/**
+ * Helper function needed by Cygwin builds.
+ */
+#if defined (__CYGWIN__)
 static int get_localinfo(su_localinfo_t *clientinfo)
 {
   su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
@@ -733,7 +742,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 
   return 0;
 }
-
+#endif
 
 /** Bind a socket using STUN client. 
  *
@@ -997,6 +1006,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
   if (one || events & SU_WAIT_ERR) {
     su_wait_destroy(w);
     su_root_deregister(self->sh_root, sd->sd_index);
+    sd->sd_index = -1; /* mark index as deregistered */
 
     /* Destroy the timeout timer */
     /* su_timer_destroy(sd->sd_connect_timer); */
@@ -1071,6 +1081,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
     else if (z < 1) {
       su_wait_destroy(w);
       su_root_deregister(self->sh_root, sd->sd_index);
+      sd->sd_index = -1; /* mark index as deregistered */
 
       stun_free_buffer(&msg_req->enc_buf);
       sd->sd_state = stun_tls_connection_failed;
@@ -1194,6 +1205,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
     
     su_wait_destroy(w);
     su_root_deregister(self->sh_root, sd->sd_index);
+    sd->sd_index = -1; /* mark index as deregistered */
 
     self->sh_use_msgint = 1;
     sd->sd_state = stun_tls_done;
@@ -1228,6 +1240,7 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   SU_DEBUG_7(("%s: connect() timeout.\n", __func__));
 
   su_root_deregister(sh->sh_root, sd->sd_index);
+  sd->sd_index = -1; /* mark index as deregistered */
   
   sd->sd_state = stun_tls_connection_timeout;
   sh->sh_callback(sh->sh_context, sh, NULL, sd, sd->sd_action, sd->sd_state);
@@ -2346,6 +2359,7 @@ int stun_handle_release(stun_handle_t *sh, su_socket_t s)
       continue;
 
     su_root_deregister(sh->sh_root, sd->sd_index);
+    sd->sd_index = -1; /* mark index as deregistered */
     SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
 
     return 0;
@@ -2426,8 +2440,7 @@ void stun_keepalive_timer_cb(su_root_magic_t *magic,
 {
   stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
-  int s = -1, timeout = -1, err;
-  int sa_len;
+  int timeout = -1;
   su_sockaddr_t *destination;
   su_timer_t *keepalive_timer = NULL;
   stun_discovery_t *sd = req->sr_discovery;
@@ -2451,11 +2464,9 @@ void stun_keepalive_timer_cb(su_root_magic_t *magic,
 
 int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
 {
-  stun_discovery_t *sd, *tmp;
+  stun_discovery_t *sd;
   stun_request_t *req;
   stun_action_t action = stun_action_keepalive;
-  int i;
-
 
   for (req = sh->sh_requests; req; req = req->sr_next) {
     sd = req->sr_discovery;

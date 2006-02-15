@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005-2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -25,6 +25,8 @@
 /**@CFILE stun_tag.c  Tags and tag lists for Offer/Answer Engine
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
+ * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Wed Aug  3 20:28:17 EEST 2005
  */
@@ -41,9 +43,29 @@
  */
 tag_typedef_t stuntag_any = NSTAG_TYPEDEF(*);
 
+/**@def STUNTAG_DOMAIN(x)
+ * 
+ * The domain to use in DNS-SRV based STUN server discovery.
+ * Note: this is commonly the domain part of a public SIP
+ * address (AOR). See sect 9.1 of RFC3489.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_invite() \n
+ *    nua_respond()
+ *
+ * @par Parameter type
+ *    char const *
+
+ */
+tag_typedef_t stuntag_domain = STRTAG_TYPEDEF(domain);
+
 /**@def STUNTAG_SERVER(x)
  *
- * Pass media address.
+ * Fully qualified host name, or dotted IP address of the STUN server 
+ * address. If defined, the DNS-SRV based discovery (@see STUNTAG_DOMAIN())
+ * will be skipped. 
  *
  * @par Used with
  *    nua_set_params() \n
@@ -62,9 +84,11 @@ tag_typedef_t stuntag_any = NSTAG_TYPEDEF(*);
 */
 tag_typedef_t stuntag_server = STRTAG_TYPEDEF(server);
 
-/**@def STUNTAG_INTEGRITY(x)
+/**@def STUNTAG_REQUIRE_INTEGRITY(x)
  *  
- * Enable integrity protection.
+ * Whether to require support for shared-secret based packet
+ * authentication and integrity checks (see sect 9.2 of RFC3489). 
+ * If false, integrity checks are performed only when server supports it.
  *
  * @par Used with
  *    nua_create() \n
@@ -78,7 +102,14 @@ tag_typedef_t stuntag_server = STRTAG_TYPEDEF(server);
  *
  * Corresponding tag taking reference parameter is STUNTAG_INTEGRITY_REF()
  */
-tag_typedef_t stuntag_integrity = BOOLTAG_TYPEDEF(srtp_integrity);
+tag_typedef_t stuntag_require_integrity = BOOLTAG_TYPEDEF(require_integrity);
+
+/**@def STUNTAG_INTEGRITY(x)
+ *
+ * Note: use of this tag is deprecated, use
+ * STUNTAG_REQURIE_INTEGRITY() instead.
+ */
+tag_typedef_t stuntag_integrity = BOOLTAG_TYPEDEF(integrity);
 
 /**@def STUNTAG_SOCKET(x)
  *  

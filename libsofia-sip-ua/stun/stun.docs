@@ -13,11 +13,15 @@ client library.
 
 @section stun_usage Using Sofia STUN Library
 
-To be written.
+To be written. See torture_stun.c and tport/tport.c.
 
 @section todo Todo
 
-- rename some functions to be more attractive (added 20060118)
+- implement full support for STUN_REQUIRE_INTEGRITY() - IOW,
+  always try TLS, but only in strict mode fail the discovery if
+  TLS is not available (added 20060209)
+- add support for STUN_DOMAIN() tag (added 20060209); see
+  sffeat:1326013
 - output a summary of results at the end of 
   stund_bind_test() (added 20051118)
 - stun_bind_test does not detect, if the server does

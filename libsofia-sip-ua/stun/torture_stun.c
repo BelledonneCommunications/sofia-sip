@@ -226,7 +226,7 @@ int torture_test_init(su_root_t *root, char *server)
 			  root,
 			  torture_callback,
 			  STUNTAG_SERVER(server), 
-			  STUNTAG_INTEGRITY(!bypass_msg_int),
+			  STUNTAG_REQUIRE_INTEGRITY(!bypass_msg_int),
 			  TAG_NULL());
   TEST_1(se);
 
