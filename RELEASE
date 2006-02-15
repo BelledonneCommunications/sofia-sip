@@ -1,51 +1,39 @@
-==================================
-Release notes for Sofia-SIP 1.11.6
-==================================
+==============================================
+Release notes for current version of Sofia-SIP
+==============================================
 
 Changes since last release
 --------------------------
 
-The include files have sofia-sip prefix in front of them. While application
-should be compatible with new style with proper include paths, a sed script
-for converting source files to use new kind of headers is provided. There
-has been further improvements with STUN. 100rel handling in nua has been
-improved.
+<changes since last written in freshmeat.net "Changes:" style;
+ and in less than 10 lines />
+
 
 API/ABI changes and versioning
 ------------------------------
 
-- Moved all header files that are installed to sofia-sip subdirectories
-  There is a sed script (scripts/fix-include-sofia-sip) that can be used
-  to modify include directives to use "sofia-sip/foo.h" instead of "foo.h"
-- Renamed su_memmem.h as su_bm.h, sofia_sip_features.h as sofia-sip/features.h
-  (these renames are handled with scripts/fix-include-sofia-sip, too)
-- Added helper scripts for WIN32/VC port
-- Removed include files msg/msg_bnf.h msg/msg_auth.h sip/sip_extensions.h
-  sip/sip_internal.h and su/su_configure_win32.h
-- The clone su_home_t semantics were extended.
-  Added su_home_is_threadsafe(), modified prototype of su_home_unref().
-- Removed *_dll.h files - defining *_DLL macros in <su_config.h>.
-- Changes in the STUN tags: STUN_REQUIRE_INTEGRITY() has been added,
-  and replaced the now deprecated STUN_INTEGRITY() tag. A new tag
-  STUN_DOMAIN() has been added.
+<see previous release notes at
+ http://sofia-sip.sourceforge.net/relnotes/ for examples ;
+ - should include all changes to public headers, and 
+   other important information to developers; 
+ - and should be updated _continuously_! />
 
-Other notable changes
----------------------
-
-- The nua_cli.c example application removed from the distribution
-  package.
 
 Contributors to this release
 ----------------------------
 
-See the AUTHORS file in the distribution package.
+<list of people who contributed to _this_ release
+ - update as people's patches are added, or when
+   you commit stuff
+ - name of the contributor should be enough
+/> 
 
 
 Bugs fixed in this release
 --------------------------
 
-- Handling responses to PRACK (on devel list)
-- nua_authenticate() calling NULL pointer (on devel list)
-- #1430759 header conficts
-- #1423415 Double free in SDP parser (#1423415)
-- #1410896 link to win32 pthread implementation added
+< notable bugs fixed in this release
+ - check the sf.net bug tracker; see closed bugs,
+   sorted by closing date
+ - other bugs as fixed in CVS/darcs
+/>
