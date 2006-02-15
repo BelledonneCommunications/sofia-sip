@@ -223,8 +223,6 @@ int test_sendrecv(void)
 
   n = send(a, "", 0, 0); TEST(n, 0);
   n = su_vsend(a, sv, 3, 0, NULL, 0); TEST(n, 8 + 8 + 6);
-  shutdown(a, 2);
-  su_close(a);
 
   {
     su_wait_t w[1] = { SU_WAIT_INIT };
@@ -234,10 +232,22 @@ int test_sendrecv(void)
     TEST(su_wait(w, 0, 500), SU_WAIT_TIMEOUT);
 
     TEST(su_wait(w, 1, 500), 0);
+    TEST(su_wait_events(w, s), SU_WAIT_IN);
+
+    TEST(su_getmsgsize(s), 8 + 8 + 6);
+    n = su_vrecv(s, rv, 3, 0, NULL, NULL); TEST(n, 8 + 8 + 6);
+
+    TEST(su_wait(w, 1, 100), SU_WAIT_TIMEOUT);
+
+    shutdown(a, 2);
+
+    TEST(su_wait(w, 1, 100), 0);
+    TEST_1(su_wait_events(w, s) & SU_WAIT_HUP);
+
+    su_wait_destroy(w);
   }
-  
-  TEST(su_getmsgsize(s), 8 + 8 + 6);
-  n = su_vrecv(s, rv, 3, 0, NULL, NULL); TEST(n, 8 + 8 + 6);
+
+  su_close(a);
 
   su_close(l);
   su_close(s); 

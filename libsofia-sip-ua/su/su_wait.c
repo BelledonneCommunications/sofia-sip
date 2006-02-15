@@ -200,7 +200,12 @@ int su_wait_destroy(su_wait_t *waitobj)
 int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout)
 {
 #if SU_HAVE_WINSOCK
-  DWORD i = WSAWaitForMultipleEvents(n, waits, FALSE, timeout, FALSE);
+  DWORD i;
+
+  if (n > 0)
+    i = WSAWaitForMultipleEvents(n, waits, FALSE, timeout, FALSE);
+  else
+    return Sleep(timeout), SU_WAIT_TIMEOUT;
 
   if (i == WSA_WAIT_TIMEOUT)
     return SU_WAIT_TIMEOUT;
