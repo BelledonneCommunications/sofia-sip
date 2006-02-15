@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005-2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -27,6 +27,8 @@
 /**@file stun_tag.h  Tags for STUN.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
+ * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Tue Oct 18 20:13:50 EEST 2005 ppessi
  */
@@ -37,13 +39,27 @@
 
 SOFIA_BEGIN_DECLS
 
+/*****************************************
+ * Note: see documentation in stun_tag.c *
+ *****************************************/
+
 #define STUNTAG_ANY()         stuntag_any, ((tag_value_t)0)
 extern tag_typedef_t stuntag_any;
+
+#define STUNTAG_DOMAIN(x)  stuntag_domain, tag_str_v(x)
+extern tag_typedef_t stuntag_domain;
+#define STUNTAG_DOMAIN_REF(x) stuntag_domain_ref, tag_str_vr(&(x))
+extern tag_typedef_t stuntag_domain_ref;
 
 #define STUNTAG_SERVER(x)  stuntag_server, tag_str_v(x)
 extern tag_typedef_t stuntag_server;
 #define STUNTAG_SERVER_REF(x) stuntag_server_ref, tag_str_vr(&(x))
 extern tag_typedef_t stuntag_server_ref;
+
+#define STUNTAG_REQUIRE_INTEGRITY(x) stuntag_require_integrity, tag_int_v(x)
+extern tag_typedef_t stuntag_require_integrity;
+#define STUNTAG_REQUIRE_INTEGRITY_REF(x) stuntag_require_integrity_ref, tag_int_vr(&(x))
+extern tag_typedef_t stuntag_require_integrity_ref;
 
 #define STUNTAG_INTEGRITY(x) stuntag_integrity, tag_int_v(x)
 extern tag_typedef_t stuntag_integrity;
