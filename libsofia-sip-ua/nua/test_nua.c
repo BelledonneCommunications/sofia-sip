@@ -1039,8 +1039,8 @@ int test_params(struct context *ctx)
     TEST_1(strcmp(from_str, "NONE"));
 
     /* Nothing else should be set */
-    TEST(retry_count, -1);
-    TEST(max_subscriptions, -1);
+    TEST(retry_count, (unsigned)-1);
+    TEST(max_subscriptions, (unsigned)-1);
 
     TEST(invite_enable, -1);
     TEST(auto_alert, -1);
@@ -1048,8 +1048,8 @@ int test_params(struct context *ctx)
     TEST(auto_answer, -1);
     TEST(auto_ack, -1);
 
-    TEST(session_timer, -1);
-    TEST(min_se, -1);
+    TEST(session_timer, (unsigned)-1);
+    TEST(min_se, (unsigned)-1);
     TEST(refresher, -1);
     TEST(update_refresh, -1);
 
