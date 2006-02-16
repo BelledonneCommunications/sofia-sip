@@ -25,10 +25,9 @@
 :: 02110-1301 USA
 ::
 
-copy /Y su_configure_win32.h ..\libsofia-sip-ua\su\sofia-sip\su_configure.h
+@call version_files.cmd
 
-call version_files.cmd
+@call build_sources.cmd
 
-call build_sources.cmd
-
+@echo
 @echo Remember to install pthreadVC2.dll to your path, too!
