@@ -59,7 +59,7 @@ typedef struct agent_t agent_t;
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/features.h>
 
-#include "sofia-sip/string0.h"
+#include <sofia-sip/string0.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -67,6 +67,7 @@ typedef struct agent_t agent_t;
 #include <limits.h>
 #include <stdio.h>
 #include <assert.h>
+#include <unistd.h>
 
 extern su_log_t nta_log[];
 extern su_log_t tport_log[];
