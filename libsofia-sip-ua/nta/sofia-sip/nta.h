@@ -227,6 +227,8 @@ nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
 			     url_t const *to_url);
 
 
+int nta_tport_keepalive(nta_outgoing_t *orq);
+
 /* ----------------------------------------------------------------------
  * 6) Prototypes for incoming transactions 
  */

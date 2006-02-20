@@ -3446,6 +3446,10 @@ int process_response_to_register(nua_handle_t *nh,
       nua->nua_service_route = NULL;
       /* process_response() takes care of removing the dialog usage */
     }
+    else {
+      nta_tport_keepalive(orq);
+      
+    }
   }
   else if (status >= 300) {
     if (crequest_check_restart(nh, cr, orq, sip, restart_register))

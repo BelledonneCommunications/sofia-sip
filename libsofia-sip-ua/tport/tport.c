@@ -258,6 +258,7 @@ struct tport_s {
   stun_socket_t      *tp_stun_socket;
 #endif
   su_socket_t         tp_stun_socket;
+  int                 tp_has_keepalive;
 #endif
 
   /* ==== Receive queue ================================================== */
@@ -3012,6 +3013,8 @@ static void tport_recv_event(tport_t *self, int event)
 		    su_strerror(EAGAIN), EAGAIN));
       }
     }
+    else if (again == 1) /* STUN keepalive */
+      return;
 
     self->tp_time = su_time_ms(now);
 
@@ -3215,6 +3218,7 @@ tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
 static int tport_recv_stream(tport_t *self);
 static int tport_recv_dgram(tport_t *self);
 static int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
+static int tport_recv_try_stun_dgram(tport_t const *self);
 
 #if HAVE_TLS
 static int tport_recv_tls(tport_t *self);
@@ -3388,6 +3392,14 @@ int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
 
   assert(*mmsg == NULL);
 
+#if HAVE_SOFIA_STUN
+  {
+    /* Check always if incoming data is STUN keepalive */
+    if (tport_recv_try_stun_dgram(self) >= 0)
+      return 1;
+  }
+#endif
+
   veclen = tport_recv_iovec(self, mmsg, iovec, N, 1);
   if (veclen < 0)
     return -1;
@@ -3413,6 +3425,83 @@ int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
 
   return 0;
 }
+
+
+#if HAVE_SOFIA_STUN
+/** Initialize STUN keepalives.
+ *
+ *@retval 0
+ */
+int tport_keepalive(tport_t *tp, tp_name_t *tpn)
+{
+  int err;
+  tport_master_t *mr = tp->tp_master;
+  stun_handle_t *sh = mr->mr_nat->stun;
+  su_sockaddr_t sa[1] = {{ 0 }};
+
+  if (tp->tp_has_keepalive == 1)
+    return 0;
+
+  inet_pton(AF_INET, tpn->tpn_host, (void *) &sa->su_sin.sin_addr.s_addr);
+  sa->su_port = htons(atoi(tpn->tpn_port));
+  sa->su_family = AF_INET;
+
+  /*XXX -- remove me after it's working */
+  memcpy(sa, tp->tp_addr, sizeof(*sa));
+
+  err = stun_keepalive(sh, sa,
+		       STUNTAG_SOCKET(tp->tp_socket),
+		       STUNTAG_TIMEOUT(10000),
+		       TAG_NULL());
+  
+  if (err < 0)
+    return -1;
+
+  tp->tp_has_keepalive = 1;
+
+  return 0;
+}
+
+
+/** Receive STUN datagram.
+ *
+ * @retval -1 error
+ * @retval 0  end-of-stream  
+ */
+static 
+int tport_recv_try_stun_dgram(tport_t const *self)
+{
+  int n, len;
+  su_sockaddr_t from[1];
+  socklen_t fromlen = sizeof(su_sockaddr_t);
+  /* char *buf = NULL; */
+  char dgram[50] = { 0 }; /* XXX - max size of STUN msg, please. */
+  stun_msg_t msg;
+  char sample[2];
+
+  recv(self->tp_socket, &sample, sizeof(sample), MSG_PEEK);
+  len = stun_message_length(sample, sizeof(sample), 0);
+  
+  /* message is not a STUN message */
+  if (len < 0)
+    return len;
+
+  memset(from, 0, sizeof(su_sockaddr_t));
+  n = recvfrom(self->tp_socket, &dgram, sizeof(dgram), 0, &from->su_sa,
+	       &fromlen);
+  if (n == SOCKET_ERROR) {
+    int error = su_errno();
+    su_seterrno(error);
+    return -1;
+  }
+
+  stun_handle_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
+			      from, fromlen, dgram, n);
+
+  return 0;
+}
+#endif /* HAVE_SOFIA_STUN */
+
 
 /** Receive from stream.
  *
@@ -6930,7 +7019,7 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
     for (i = 0; stun_transports[i]; i++) {
       if ((strcmp(tpn->tpn_proto, "*") == 0 || 
 	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
-        SU_DEBUG_5(("%s(%p) starting STUN engine\n", __func__, mr));
+        SU_DEBUG_5(("%s(%p) creating STUN handle\n", __func__, mr));
 
         nat->stun = stun_handle_create(mr,
 				       mr->mr_root,

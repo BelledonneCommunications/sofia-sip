@@ -180,14 +180,24 @@ int stun_handle_set_uname_pwd(stun_handle_t *sh,
 
 su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
 
+/** Determine if the message is STUN message (-1 if not stun). */
+int stun_msg_is_keepalive(uint16_t data);
+
 /** Determine length of STUN message (0 if not stun). */
 int stun_message_length(void *data, int len, int end_of_message);
 
 /** Process incoming message */
-int stun_handle_process_message(stun_handle_t *sh, void *data, int len);
+int stun_handle_process_message(stun_handle_t *sh, su_socket_t s,
+				su_sockaddr_t *sa, socklen_t salen,
+				void *data, int len);
+
+int stun_process_request(su_socket_t s, stun_msg_t *req,
+			 int sid, su_sockaddr_t *from_addr,
+			 int from_len);
 
 /* Create a keepalive dispatcher for bound SIP sockets */
 int stun_keepalive(stun_handle_t *sh,
+		   su_sockaddr_t *sa,
 		   tag_type_t tag, tag_value_t value,
 		   ...);
 

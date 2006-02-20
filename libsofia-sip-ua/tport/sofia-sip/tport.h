@@ -323,6 +323,9 @@ int tport_convert_addr(su_home_t *home,
 char *tport_hostport(char buf[], int bufsize, 
 		     su_sockaddr_t const *su, int with_port);
 
+/** Initialize STUN keepalives. */
+int tport_keepalive(tport_t *tp, tp_name_t *tpn);
+
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */
 
