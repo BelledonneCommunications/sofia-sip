@@ -15,6 +15,4 @@ PREDEFINED += \
  su_root_s=su_root_t \
  _su_task_r=su_task_r
 
-# Exclude Windows IPv6 files
-EXCLUDE_PATTERNS      += tpipv6.h wspiapi.h aton.c ntoa.c
-
+EXCLUDE_PATTERNS      += localinfo.c addrinfo.c

@@ -37,6 +37,9 @@ AC_CHECK_TOOL(AR, ar, ar)
 AC_CHECK_TOOL(LD, ld, ld)
 AC_PROG_LIBTOOL
 
+AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [echo])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test $DOXYGEN = doxygen])
+
 AC_ARG_WITH([aclocal],
 [  --with-aclocal          Install m4 files in aclocal --print-ac-dir],
 [if test "$with_aclocal" = "yes" ;  then

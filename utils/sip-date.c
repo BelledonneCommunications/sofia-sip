@@ -22,16 +22,53 @@
  *
  */
 
-/**@ingroup sip_programs
+/**@page sip-date Print or parse SIP date
  * 
- * @cfile sipdate.c  
+ * @section synopsis Synopsis
  *
- * SIP date printer/parser
+ * <tt>sip-date [-n] [SIP-date | [YYYYy] [DDd] [HHh] [MMm] [SS[s]]]</tt>
  *
- * @par Contributor(s):
- * - Pekka Pessi <Pekka.Pessi@nokia.com>.
+ * @section description Description
+ * 
+ * @em sip-date is an utility for printing a SIP date (in the format
+ * specified by RFC 1123, but the timezone must always be GMT) or parsing a
+ * given SIP date. The date can be given as a SIP date or by giving year,
+ * day, hour, minutes and seconds separately.
+ * 
+ * @section options Options
  *
- * @date Thu Sep  6 13:15:25 EEST 2001 ppessi
+ * The @em sip-date utility takes options as follows:
+ * <dl>
+ * <dt>-n</dt>
+ * <dd>The @em sip-date utility prints the date as seconds elapsed since
+ * epoch (01 Jan 1900 00:00:00).
+ * </dd>
+ * </dl>
+ *
+ * @section examples Examples
+ *
+ * You want to convert current time to SIP date:
+ * @code
+ * $ sip-date
+ * @endcode
+ * You want to find out how many seconds there was in 1900's:
+ * @code
+ * $ siptime -n 2000y
+ * 3155673600
+ * @endcode
+ *
+ * @section bugs Reporting Bugs
+ * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
+ *
+ * @section author Author
+ * Pekka Pessi <Pekka -dot- Pessi -at- nokia -dot- com>
+ *
+ * @section copyright Copyright
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * This program is free software; see the source for copying conditions.
+ * There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.
  */
 
 #include "config.h"
@@ -44,58 +81,11 @@
 #include <sofia-sip/sip.h>
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/msg_date.h>
-
-/**@ingroup sip_programs
- *
- * @page sipdate sipdate - print or parse SIP date
- * 
- * @par Name    
- * sipdate - print or parse SIP date
- *
- * @par Synopsis
- *
- * <tt>sipdate [-n] [SIP-date | [YYYYy] [DDd] [HHh] [MMm] [SS[s]]]
- *
- * @par Description
- * 
- * @em sipdate is an utility for printing a SIP date (in the format
- * specified by RFC 1123, but the timezone must always be GMT) or parsing a
- * given SIP date. The date can be given as a SIP date or by giving year,
- * day, hour, minutes and seconds separately.
- * 
- * @par Options
- *
- * The @em sipdate utility takes options as follows:
- * <dl>
- * <dt>-n</dt>
- * <dd>The @em sipdate utility prints the date as seconds elapsed since
- * epoch (01 Jan 1900 00:00:00).
- * </dd>
- * </dl>
- *
- * @par Examples
- *
- * You want to convert current time to SIP date:
- * @code
- * $ sipdate
- * @endcode
- *
- * @par
- * You want to find out how many seconds there was in 1900's:
- * @code
- * $ siptime -n 2000y
- * 3155673600
- * $ 
- * @endcode
- *
- * @author Pekka Pessi <Pekka.Pessi@nokia.com>
- *
- */
-
+b
 void usage(void)
 {
   fprintf(stderr, 
-	  "usage: sipdate [-n] "
+	  "usage: sip-date [-n] "
           "[SIP-date | [YYYYy] [DDd] [HHh] [MMm] [SS[s]]]\n");
   exit(1);
 }
@@ -136,7 +126,7 @@ int main(int ac, char *av[])
       
     if (s[0] < '0' || s[0] > '9') {
       if (msg_date_d(&s, &t) < 0) {
-	fprintf(stderr, "sipdate: %s is not valid time\n", s);
+	fprintf(stderr, "sip-date: %s is not valid time\n", s);
 	exit(1);
       }
     }

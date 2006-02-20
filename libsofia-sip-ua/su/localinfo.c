@@ -22,51 +22,27 @@
  *
  */
 
-/**@ingroup su_programs
- * @CFILE localinfo.c
- *
- * Utility for obtaining local addressing info.
- *
- * @author Pekka Pessi <Pekka.Pessi@nokia.com>
- *
- *
- */
-
-#include "config.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include "sofia-sip/su.h"
-#include "sofia-sip/su_localinfo.h"
-#include "su_module_debug.h"
-
-/**@ingroup su_programs
- * @page localinfo localinfo - obtain local network addresses
+/**@page localinfo list local network addresses
  * 
- * @par Name    
- * localinfo - obtain local network addresses
- *
- * @par Synopsis
+ * @section synopsis Synopsis
  *
  * <tt>localinfo [-imdn46gslh] [domainname]</tt>
  *
- * @par Description
+ * @section description Description
  * 
  * The @em localinfo utility will obtain the local network addresses
  * and print them.
  *
- * @par Options
+ * @section options Options
  *
- * The @e localinfo utility accepts following ccommand line options:
+ * The @e localinfo utility accepts following command line options:
  * <dl>
  * <dt>-i</dt>
  * <dd>include interface name.</dd>
  * <dt>-m</dt>
  * <dd>map IPv4 addresses.</dd>
  * <dt>-d</dt>
- * <dd>require DNS entry.</dd>
+ * <dd>require a reverse DNS entry.</dd>
  * <dt>-n</dt>
  * <dd>use numeric host names.</dd>
  * <dt>-4</dt>
@@ -80,25 +56,43 @@
  * <dt>-l</dt>
  * <dd>Link-level addresses.</dd>
  * <dt>-h</dt>
- * <dd>Host-internal addresses\.</dd>
+ * <dd>Host-internal addresses.</dd>
  * </dl>
  *
- * @par Examples
+ * @section examples Examples
  *
  * You want to find out local IPv6 addresses: 
  * @code
  * $ localinfo -6
  * @endcode
- *
- * @par
  * You want to find out to link-local addresses
  * @code
  * $ localinfo -l -n
  * @endcode
  *
- * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @section bugs Reporting Bugs
+ * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
  *
+ * @section author Author
+ * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
+ *
+ * @section copyright Copyright
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * This program is free software; see the source for copying conditions.
+ * There is @b NO warranty; not even for @b MERCHANTABILITY or <b>FITNESS
+ * FOR A PARTICULAR PURPOSE</b>.
  */
+
+#include "config.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_localinfo.h"
+#include "su_module_debug.h"
 
 char const help[] =
 "usage: localinfo [-imdn46gslh] [domainname]\n"

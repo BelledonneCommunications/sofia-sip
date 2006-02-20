@@ -1,21 +1,41 @@
-/**@page sip-options sip-options - Query SIP OPTIONS
- * 
- * @par Name    
- * sip-options - Query SIP OPTIONS
+/*
+ * This file is part of the Sofia-SIP package
  *
- * @par Synopsis
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@page sip-options Query SIP OPTIONS
+ * 
+ * @section synopsis Synopsis
  * <tt>sip-options [--bind=url] [--from=url] [-a|--all] to </tt>
  *
- * @par Description
+ * @section description Description
  * The @em sip-options utility sends a SIP OPTIONS request (or any other SIP
  * request) to a SIP server.
  *
- * @par 
- * The @em options tool will print out status line and interesting headers
+ * The @em sip-options tool will print out status line and interesting headers
  * from the response, excluding From, Via, Call-ID, and CSeq. The message
  * body is also printed.
  *
- * @par Command Line Options
+ * @section options Command Line Options
  * The @e options utility accepts following command line options:
  * <dl>
  * <dt>-m url | --contact=url | --bind=url</dt>
@@ -33,7 +53,7 @@
  * <dt>--from=url</dt>
  * <dd>Specifies the @b From header. Unless this option is used or the
  *     environment variable @c SIPADDRESS is set, local Contact URL is used
- *     as b@b From header as well.
+ *     as @b From header as well.
  * </dd>
  * <dt>--mf=n</dt>
  * <dd>Specify the initial Max-Forwards count (defaults to 70, stack default).
@@ -43,42 +63,34 @@
  * </dd>
  * </dl>
  *
- * @par Return Codes
+ * @section return Return Codes
  * <table>
  * <tr><td>0<td>when successful (a 2XX-series response is received)
  * <tr><td>1<td>when unsuccessful (a 3XX..6XX-series response is received)
  * <tr><td>2<td>initialization failure
  * </table>
  *
- * @par Examples
+ * @section examples Examples
  * You want to query supported features of sip:essip00net.nokia.com:
  * @code
  * $ options sip:essip00net.nokia.com
  * @endcode
  *
- * @par Environment
- * @c SIPADDRESS, @c sip_proxy, @c NTA_DEBUG, @c TPORT_DEBUG, @c TPORT_LOG.
+ * @section environment Environment
+ * #SIPADDRESS, #sip_proxy, #NTA_DEBUG, #TPORT_DEBUG, #TPORT_LOG.
  * 
- * Copyright (C) 2005 Nokia Corporation.
+ * @section bugs Reporting Bugs
+ * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
  *
+ * @section author Author
  * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
  *
- * @STARTLGPL@
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
+ * @section copyright Copyright
+ * Copyright (C) 2005 Nokia Corporation.
  *
- * This library is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
- * @ENDLGPL@
+ * This program is free software; see the source for copying conditions.
+ * There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.
  */
 
 #include "config.h"

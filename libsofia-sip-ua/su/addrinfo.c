@@ -22,41 +22,18 @@
  *
  */
 
-/**@ingroup su_programs
- * @CFILE addrinfo.c
- *
- * Resolve network address.
- *
- * @author Pekka Pessi <Pekka.Pessi@nokia.com>
- *
- * @date Created: Sun Jul 14 09:17:21 2002 ppessi
- */
-
-#include "config.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include "sofia-sip/su.h"
-
-/**@ingroup su_programs
- * <hr>
- * @page addrinfo addrinfo - resolve network services
+/**@page addrinfo Resolve network services
  * 
- * @par Name    
- * addrinfo - resolve network services
- *
- * @par Synopsis
+ * @section synopsis Synopsis
  *
  * <tt>addrinfo [-pcn46] host service</tt>
  *
- * @par Description
+ * @section description Description
  * 
  * The @em addrinfo utility will use su_getaddrinfo() to resolve the network
  * services and print resolved names.
  *
- * @par Options
+ * @section options Options
  *
  * The @e addrinfo utility accepts following ccommand line options:
  * <dl>
@@ -72,12 +49,30 @@
  * <dd>IPv6 only (but including mapped IPv4 addresses).</dd>
  * </dl>
  *
- * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @section bugs Reporting Bugs
+ * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
  *
+ * @section author Author
+ * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
+ *
+ * @section copyright Copyright
+ * Copyright (C) 2005 Nokia Corporation.
+ *
+ * This program is free software; see the source for copying conditions.
+ * There is @b NO warranty; not even for @b MERCHANTABILITY or <b>FITNESS
+ * FOR A PARTICULAR PURPOSE</b>.
  */
 
+#include "config.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "sofia-sip/su.h"
+
 char const help[] =
-"usage: addrinfo [-imdn46gslh] [domainname]\n"
+"usage: addrinfo [-pnc46] [domainname]\n"
 "\t-p query for passive open\n"
 "\t-n use numeric host names\n"
 "\t-c ask for canonic names\n"
