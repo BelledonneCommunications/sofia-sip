@@ -1,3 +1,38 @@
+2006-02-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * If opaque is not given, do not include it in challenge (auth_module.c).
+
+    M ./libsofia-sip-ua/iptsec/auth_module.c -2 +4
+
+  * Generating man pages for utilities.
+
+    M ./Makefile.am -4 +22
+    M ./configure.ac +3
+    M ./libsofia-sip-ua/su/Doxyfile -3 +1
+    M ./libsofia-sip-ua/su/addrinfo.c -29 +24
+    M ./libsofia-sip-ua/su/localinfo.c -35 +29
+    M ./utils/Makefile.am +3
+    M ./utils/sip-date.c -44 +34
+    M ./utils/sip-options.c -30 +42
+
+  * Including <unistd.h> for getpid() in test_nta.c.
+
+  * Added install script.
+
+    A ./win32/install.cmd
+    M ./win32/libsofia-sip-ua/libsofia_sip_ua.dsp -4 +4
+
+  * Simplified use of sofia-sip/su_configure.h in win32
+
+     ./win32/su_configure_win32.h -> ./win32/sofia-sip/su_configure.h
+    M ./win32/autogen.cmd -4 +3
+    A ./win32/sofia-sip/
+
+  * Fixed tests of unsigned tag values in test_nua.c
+  Tests pass now on amd64, too.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -4 +4
+
 2006-02-15  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Release 1.11.6.
