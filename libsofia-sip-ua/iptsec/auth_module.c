@@ -735,7 +735,7 @@ void auth_challenge_digest(auth_mod_t *am,
 		      "%s%s%s"
 		      "%s%s%s"
 		      " nonce=\"%s\","
-		      " opaque=\"%s\","
+		      "%s%s%s"
 		      "%s"	/* stale */
 		      " algorithm=%s" 
 		      "%s%s%s",
@@ -743,7 +743,9 @@ void auth_challenge_digest(auth_mod_t *am,
 		      u ? " uri=\"" : "", u ? u : "", u ? "\"," : "", 
 		      d ? " domain=\"" : "", d ? d : "", d ? "\"," : "", 
 		      nonce, 
-		      am->am_opaque ? am->am_opaque : "==",
+		      am->am_opaque ? " opaque=\"" : "",
+		      am->am_opaque ? am->am_opaque : "",
+		      am->am_opaque ? "\"," : "",
 		      as->as_stale ? " stale=true," : "",
 		      am->am_algorithm,
 		      am->am_qop ? ", qop=\"" : "",
