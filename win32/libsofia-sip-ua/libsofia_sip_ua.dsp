@@ -732,10 +732,6 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_config.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_configure.h"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_debug.h"
 # End Source File
 # Begin Source File
@@ -821,6 +817,10 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\tstdef.h"
 # Begin Source File
 
 SOURCE=..\config.h
+# End Source File
+# Begin Source File
+
+SOURCE="..\sofia-sip\su_configure.h"
 # End Source File
 # Begin Source File
 
