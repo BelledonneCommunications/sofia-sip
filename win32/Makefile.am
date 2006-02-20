@@ -23,7 +23,8 @@ EXTRA_DIST = SofiaSIP.dsw \
 	tests/torture_su_port/torture_su_port.dsp \
 	$(PTHREAD_DIST) \
 	README.txt \
-	autogen.cmd build_sources.cmd version_files.cmd version.awk check.cmd
+	autogen.cmd build_sources.cmd version_files.cmd version.awk \
+	install.cmd check.cmd
 
 PTHREAD_DIST = \
 	pthread/ChangeLog \
