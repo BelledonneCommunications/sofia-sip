@@ -136,6 +136,9 @@ typedef struct _tls_t tls_t;	/* dummy */
 #define MSG_NOSIGNAL (0)
 #endif
 
+/* Number of supported transports */
+#define TPORT_N (8)
+
 #if HAVE_SOFIA_STUN
 #include "sofia-sip/stun.h"
 #include "sofia-sip/stun_tag.h"
@@ -264,8 +267,10 @@ struct tport_s {
   su_socket_t  	      tp_socket;	/**< Socket of this tport*/
   int                 tp_index;		/**< Root registration index */
   int                 tp_events;        /**< Subscribed events */
-  int                 tp_addrlen;       /**< Size fo tp_addr */
-  su_sockaddr_t       tp_addr[1];	/**< Peer address */
+
+  su_addrinfo_t       tp_addrinfo[1];   /**< Peer/own address info */
+  su_sockaddr_t       tp_addr[1];	/**< Peer/own address */
+#define tp_addrlen tp_addrinfo->ai_addrlen
 
 #if HAVE_TLS
   tls_t              *tp_tls;
@@ -333,12 +338,8 @@ struct tport_primary {
 
   tport_threadpool_t *pri_threadpool;   /**< Worker threads */
   unsigned            pri_thrpsize;
-  unsigned            pri_family : 8;   /**< Network family (INET/INET6) */
-  unsigned            pri_socktype : 8; /**< Socket type  */
-  unsigned            pri_protocol : 8;	/**< IP protocol number  */
 
   unsigned            pri_natted:1;	/**< Using natted address  */
-
   unsigned:0;
 
   tport_params_t      pri_params[1];      /**< Transport parameters */
@@ -544,7 +545,7 @@ static inline int tp_cmp(tport_t const *a, tport_t const *b)
   if (a->tp_addrlen != b->tp_addrlen)
     return a->tp_addrlen - b->tp_addrlen;
 
-  return memcmp(a->tp_addr, b->tp_addr, sizeof(a->tp_addr));
+  return memcmp(a->tp_addr, b->tp_addr, a->tp_addrlen);
 }
 
 static inline int tprb_is_inserted(tport_t const *a)
@@ -606,25 +607,25 @@ static inline int tport_is_registered(tport_t const *self)
 /** Test if transport is stream. */
 inline int tport_is_stream(tport_t const *self)
 {
-  return self->tp_pri->pri_socktype == SOCK_STREAM;
+  return self->tp_addrinfo->ai_socktype == SOCK_STREAM;
 }
  
 /** Test if transport is dgram. */
 static inline int tport_is_dgram(tport_t const *self)
 {
-  return self->tp_pri->pri_socktype == SOCK_DGRAM;
+  return self->tp_addrinfo->ai_socktype == SOCK_DGRAM;
 }
  
 /** Test if transport is udp. */
 inline int tport_is_udp(tport_t const *self)
 {
-  return self->tp_pri->pri_protocol == IPPROTO_UDP;
+  return self->tp_addrinfo->ai_protocol == IPPROTO_UDP;
 }
  
 /** Test if transport is tcp. */
 inline int tport_is_tcp(tport_t const *self)
 {
-  return self->tp_pri->pri_protocol == IPPROTO_TCP;
+  return self->tp_addrinfo->ai_protocol == IPPROTO_TCP;
 }
  
 /** Test if transport is needs connect() before sending. */
@@ -646,8 +647,8 @@ static inline int tport_is_connected(tport_t const *self)
 int tport_is_reliable(tport_t const *self)
 {
   return self != NULL && 
-    (self->tp_pri->pri_socktype == SOCK_STREAM || 
-     self->tp_pri->pri_socktype == SOCK_SEQPACKET);
+    (self->tp_addrinfo->ai_socktype == SOCK_STREAM || 
+     self->tp_addrinfo->ai_socktype == SOCK_SEQPACKET);
 }
 
 
@@ -655,9 +656,8 @@ int tport_is_reliable(tport_t const *self)
 int tport_has_ip4(tport_t const *self)
 {
   return self && 
-    (self->tp_pri->pri_family == 0 || 
-     self->tp_pri->pri_family == AF_INET 
-     /* || self->tp_pri->pri_family2 == AF_INET */);
+    (self->tp_addrinfo->ai_family == 0 || 
+     self->tp_addrinfo->ai_family == AF_INET);
 }
 
 
@@ -666,7 +666,8 @@ int tport_has_ip4(tport_t const *self)
 int tport_has_ip6(tport_t const *self)
 {
   return self && 
-    (self->tp_pri->pri_family == 0 || self->tp_pri->pri_family == AF_INET6);
+    (self->tp_addrinfo->ai_family == 0 || 
+     self->tp_addrinfo->ai_family == AF_INET6);
 }
 #endif
 
@@ -778,21 +779,32 @@ int tport_nat_set_canon(tport_t *self, struct tport_nat_s *nat);
 static
 int tport_nat_finish(tport_primary_t *self);
 
-#define PASSIVE PASSIVE
-#define ACTIVE  ACTIVE
-enum socket_open { PASSIVE = 0, ACTIVE = 1 };
-
 static 
 tport_t *tport_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
 		       tp_name_t const *tpn);
 
+static int bind6only_check(void);
+
+static
+int tport_server_addrinfo(tport_master_t *mr,
+			  char const *canon,
+			  int family,
+			  char const *host, 
+			  char const *service,
+			  char const *protocol,
+			  char const * const transports[],
+			  su_addrinfo_t **res);
+
 static int tport_get_local_addrinfo(tport_master_t *mr, 
-				    su_localinfo_t *li,
 				    char const *port,
 				    su_addrinfo_t const *hints,
 				    su_addrinfo_t **return_ai);
 
-static void tport_freeaddrinfo(tport_master_t *mr, su_addrinfo_t *ai);
+int tport_getaddrinfo(char const *node, char const *service,
+		      su_addrinfo_t const *hints,
+		      su_addrinfo_t **res);
+
+static void tport_freeaddrinfo(su_addrinfo_t *ai);
 
 #if HAVE_TLS
 static tls_t *tport_init_tls(tagi_t *tags);
@@ -807,7 +819,7 @@ static int
   tport_init_compression(tport_primary_t *self, char const *compression, 
 			 tagi_t *tl),
 
-  tport_setname(tport_t *, char const *, su_sockaddr_t const *, char const *),
+  tport_setname(tport_t *, char const *, su_addrinfo_t const *, char const *),
   tport_recv(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_accept(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_connected(su_root_magic_t *m, su_wait_t *w, tport_t *self),
@@ -1100,6 +1112,8 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr)
     memcpy(tp->tp_params, mr->mr_params, sizeof (*tp->tp_params));
     tp->tp_reusable = mr->mr_master->tp_reusable;
 
+    tp->tp_addrinfo->ai_addr = &tp->tp_addr->su_sa;
+
     SU_DEBUG_5(("%s(%p): new primary tport %p\n", __func__, mr, pri));
   }
 
@@ -1114,12 +1128,13 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr)
  * registers the socket with suitable events to the root.
  *
  * @param dad   parent (master or primary) transport object
- * @param ai    pointer to addrinfo structure
+ * @param ainfo pointer to addrinfo structure
  * @param canon canonical name of node
  * @param protoname name of the protocol
  */
 static
-tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai, 
+tport_primary_t *tport_listen(tport_master_t *mr, 
+			      su_addrinfo_t const *ainfo, 
 			      char const *canon, char const *protoname,
 			      int port,
 			      tagi_t *tags)
@@ -1131,8 +1146,8 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
   su_wakeup_f wakeup = NULL;
   su_wait_t wait[1] = { SU_WAIT_INIT };
 
+  su_addrinfo_t ai[1];
   su_sockaddr_t su[1];
-  socklen_t sulen = ai->ai_addrlen;
 
   int err;
   int errlevel = 3;
@@ -1152,9 +1167,22 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
 	    su_seterrno(err)),					     \
      (void *)NULL)
 
-  if (sulen > sizeof(su))
+  if (ainfo->ai_addrlen > sizeof(su))
     return NULL;
-  memcpy(su, ai->ai_addr, sulen);
+
+  if (!(ainfo->ai_socktype == SOCK_STREAM ||
+	ainfo->ai_socktype == SOCK_SEQPACKET ||	   
+	ainfo->ai_socktype == SOCK_DGRAM)) {
+    assert(ainfo->ai_socktype == SOCK_STREAM ||
+	   ainfo->ai_socktype == SOCK_SEQPACKET ||	   
+	   ainfo->ai_socktype == SOCK_DGRAM);
+    return NULL;
+  }
+
+  memcpy(ai, ainfo, sizeof ai);
+
+  ai->ai_addr = memcpy(su, ai->ai_addr, ai->ai_addrlen);
+  ai->ai_next = NULL;
 
   if (port > 0)
     su->su_port = htons(port);
@@ -1163,9 +1191,6 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
   pri = tport_alloc_primary(mr);
   if (pri == NULL)
     return TPORT_LISTEN_ERROR(errno, tport_alloc_primary);
-  pri->pri_family = ai->ai_family;
-  pri->pri_socktype = ai->ai_socktype;
-  pri->pri_protocol = ai->ai_protocol;
 
   if (tport_set_params(pri->pri_primary, TAG_NEXT(tags)) < 0)
     return TPORT_LISTEN_ERROR(su_errno(), tport_set_params);    
@@ -1198,21 +1223,33 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
 
   if (!nat_bound /* || !mr->mr_nat->stun_enabled */) {
     /* STUN has a problem or is not enabled */
-    if (bind(s, &su->su_sa, sulen) == SOCKET_ERROR) {
+    if (bind(s, ai->ai_addr, ai->ai_addrlen) == SOCKET_ERROR) {
       if (su_errno() == EADDRINUSE) errlevel = 7;
       return TPORT_LISTEN_ERROR(su_errno(), bind);
     }
 
-    if (getsockname(s, &su->su_sa, &sulen) == SOCKET_ERROR)
+    if (getsockname(s, ai->ai_addr, &ai->ai_addrlen) == SOCKET_ERROR)
       return TPORT_LISTEN_ERROR(su_errno(), getsockname);
 
 #if defined (__linux__) && defined (SU_HAVE_IN6)
     if (ai->ai_family == AF_INET6) {
-      if (SU_SOCKADDR_INADDR_ANY(su))
-	/* pri->pri_family2 = AF_INET */ ;
-      else if (IN6_IS_ADDR_V4MAPPED(&su->su_sin6.sin6_addr) ||
-	       IN6_IS_ADDR_V4COMPAT(&su->su_sin6.sin6_addr))
-	pri->pri_family = AF_INET;
+      if (!SU_SOCKADDR_INADDR_ANY(su) &&
+	  (IN6_IS_ADDR_V4MAPPED(&su->su_sin6.sin6_addr) ||
+	   IN6_IS_ADDR_V4COMPAT(&su->su_sin6.sin6_addr))) {
+	su_sockaddr_t su0[1];
+
+	memcpy(su0, su, sizeof su0);
+
+	memset(su, 0, ai->ai_addrlen = sizeof su->su_sin);
+	su->su_family = ai->ai_family = AF_INET;
+	su->su_port = su0->su_port;
+
+#ifndef IN6_V4MAPPED_TO_INADDR
+#define IN6_V4MAPPED_TO_INADDR(in6, in4) \
+	memcpy((in4), 12 + (uint8_t *)(in6), sizeof(struct in_addr))
+#endif
+	IN6_V4MAPPED_TO_INADDR(&su0->su_sin6.sin6_addr, &su->su_sin.sin_addr);
+      }
     }
 #endif
   }
@@ -1234,7 +1271,8 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
      */
     su_setreuseaddr(s, 1);
 #endif
-  } else {
+  }
+  else /* if (ai->ai_socktype == SOCK_DGRAM) */ {
     /* Connectionless protocols sendto() and recvfrom() messages */
     wakeup = tport_recv;	/* receiving function will be registered */
     events = SU_WAIT_IN;
@@ -1286,10 +1324,11 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
     return TPORT_LISTEN_ERROR(su_errno(), su_wait_create);
 
   /* Register receiving or accepting function with events specified above */
-  index =  su_root_register(mr->mr_root, wait, wakeup, pri->pri_primary, 0);
+  index = su_root_register(mr->mr_root, wait, wakeup, pri->pri_primary, 0);
    if (index == -1)
      return TPORT_LISTEN_ERROR(su_errno(), su_root_register);
-  if (tport_setname(pri->pri_primary, protoname, su, canon) == -1) 
+
+  if (tport_setname(pri->pri_primary, protoname, ai, canon) == -1) 
     return TPORT_LISTEN_ERROR(su_errno(), tport_setname);
 
   pri->pri_primary->tp_socket   = s;
@@ -1297,8 +1336,6 @@ tport_primary_t *tport_listen(tport_master_t *mr, su_addrinfo_t const *ai,
   pri->pri_primary->tp_events   = events;
   pri->pri_primary->tp_connected = 0;
   pri->pri_primary->tp_conn_orient = ai->ai_socktype != SOCK_DGRAM;
-  pri->pri_primary->tp_addr[0] = su[0];
-  pri->pri_primary->tp_addrlen = sulen;
   
   if (nat_bound) {
     /* XXX - should set also the IP address in tp_addr? */
@@ -1376,6 +1413,8 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri)
     self->tp_reusable = pri->pri_primary->tp_reusable;
 
     self->tp_magic = pri->pri_primary->tp_magic;
+
+    self->tp_addrinfo->ai_addr = (void *)self->tp_addr;
   }
 
   return self;
@@ -1484,9 +1523,8 @@ tport_t *tport_connect(tport_primary_t *pri,
   if ((index = su_root_register(mr->mr_root, wait, wakeup, self, 0)) == -1)
     TPORT_CONNECT_ERROR(su_errno(), su_root_register);
 
-  /* */
-  if (tport_setname(self, tpn->tpn_proto, 
-		    (void *)ai->ai_addr, tpn->tpn_canon) == -1) 
+  /* Set sockname for the tport */
+  if (tport_setname(self, tpn->tpn_proto, ai, tpn->tpn_canon) == -1) 
     TPORT_CONNECT_ERROR(su_errno(), tport_setname);
 
   self->tp_socket   = s;
@@ -1510,8 +1548,6 @@ tport_t *tport_connect(tport_primary_t *pri,
   }
 #endif
 
-  memcpy(self->tp_addr, ai->ai_addr, self->tp_addrlen = ai->ai_addrlen);
-  
   SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
 	      __func__, self, "connecting to",
 	      TPN_ARGS(self->tp_name)));
@@ -1808,7 +1844,7 @@ int tport_bind_client(tport_master_t *mr,
     ;
 
   for (i = 0; transports[i]; i++) {
-    su_addrinfo_t hints[1];
+    su_addrinfo_t *tpai, hints[1];
     char const *proto = transports[i];
     
     if (strcmp(proto, tpn->tpn_proto) != 0 && 
@@ -1831,16 +1867,20 @@ int tport_bind_client(tport_master_t *mr,
 	break;
     }
 #endif
+    tpai = tp->tp_addrinfo;
 
-    pri->pri_family   = hints->ai_family;
-    pri->pri_socktype = hints->ai_socktype;
-    pri->pri_protocol = hints->ai_protocol;
+    tpai->ai_flags = TP_AI_MASK & hints->ai_flags;
+    tpai->ai_family   = hints->ai_family;
+    tpai->ai_socktype = hints->ai_socktype;
+    tpai->ai_protocol = hints->ai_protocol;
 
     tp->tp_name->tpn_proto = proto;
     tp->tp_name->tpn_host = "*";
     tp->tp_name->tpn_port = "*";
     tp->tp_name->tpn_canon = "*";
     tp->tp_name->tpn_ident = su_strdup(tp->tp_home, tpn->tpn_ident);
+
+    tpai->ai_canonname = "*";
 
     tport_init_compression(pri, tpn->tpn_comp, tags);
   }
@@ -1858,51 +1898,22 @@ int tport_bind_server(tport_master_t *mr,
 		      tagi_t *tags)
 {
   char hostname[256];
-  char const *proto, *canon = NULL, *host, *port;
-  char port0[16];
-  int ephemeral_port;
-  int i, error = 0, not_supported, family = 0;
+  char const *canon = NULL, *host, *service;
+  int error = 0, not_supported, family = 0;
   tport_primary_t *pri = NULL, **tbf;
-  su_localinfo_t *li = NULL;
-  unsigned p;
+  su_addrinfo_t *ai, *res = NULL;
+  unsigned port, port0, port1, old;
   unsigned short step = 0;
 
   struct tport_nat_s *nat;
 
 #if SU_HAVE_IN6
   if (!mr->mr_boundserver) {
-    /* Check if we can bind to IPv6 separately */
-    su_sockaddr_t su[1], su4[1];
-    socklen_t sulen, su4len;
-    int s6, s4;
-
-    s4 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-
-    memset(su, 0, sizeof *su);
-    su->su_len = sulen = (sizeof su->su_sin6);
-    su->su_family = AF_INET6;
-
-    memset(su4, 0, sizeof *su4);
-    su4->su_len = su4len = (sizeof su->su_sin);
-    su4->su_family = AF_INET;
-
-    if (bind(s6, &su->su_sa, sulen) < 0)
-      ;
-    else if (getsockname(s6, &su->su_sa, &sulen) < 0)
-      ;
-    else if ((su4->su_port = su->su_port) != 0 && 
-	     bind(s4, &su4->su_sa, su4len) == 0)
-      mr->mr_bindv6only = 1;
-
-    su_close(s6), su_close(s4);
-
     mr->mr_boundserver = 1;
+    /* Check if we can bind to IPv6 separately */
+    mr->mr_bindv6only = bind6only_check();
   }
 #endif
-
-  for (tbf = &mr->mr_primaries; *tbf; tbf = &(*tbf)->pri_next)
-    ;
 
   SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n", __func__, mr, TPN_ARGS(tpn)));
 
@@ -1926,9 +1937,9 @@ int tport_bind_server(tport_master_t *mr,
 
   if (tpn->tpn_port != NULL && strlen(tpn->tpn_port) > 0 &&
       strcmp(tpn->tpn_port, tpn_any) != 0)
-    port = tpn->tpn_port, ephemeral_port = 0;
+    service = tpn->tpn_port;
   else 
-    port = "", ephemeral_port = -1;			/* XXX */
+    service = "";
 
   if (host && (strcmp(host, "0.0.0.0") == 0 || strcmp(host, "0") == 0))
     host = NULL, family = AF_INET;
@@ -1945,175 +1956,93 @@ int tport_bind_server(tport_master_t *mr,
     canon = tport_nat_get_external_ip_address(nat);
   }
 
-  if (host == NULL) {
-    su_localinfo_t hints[1] = {{ 0 }};
-    
-    hints->li_flags = 0;
-    hints->li_family = family;
-    hints->li_scope = LI_SCOPE_GLOBAL | LI_SCOPE_SITE | LI_SCOPE_HOST;
+  if (tport_server_addrinfo(mr, canon, family, 
+			    host, service, tpn->tpn_proto,
+			    transports, &res) < 0)
+    return -1;
 
-    error = su_getlocalinfo(hints, &li);
-    if (error) {
-#if SU_HAVE_IN6
-      SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
-		  __func__, mr, 
-		  family == AF_INET6 ? "ip6" 
-		  : family == AF_INET ? "ip4" : "ip",
-		  su_gli_strerror(error)));
-#else
-      SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
-		  __func__, mr, 
-		  family == AF_INET ? "ip4" : "ip",
-		  su_gli_strerror(error)));
-#endif
-      su_seterrno(ENOENT);
-      return -1;
-    }
-  }
+  for (tbf = &mr->mr_primaries; *tbf; tbf = &(*tbf)->pri_next)
+    ;
+
+  port = port0 = port1 = ntohs(((su_sockaddr_t *)res->ai_addr)->su_port);
+  error = ENOENT, not_supported = 1;
 
   /* 
    * Loop until we can bind all the transports requested by the protocol to
    * the same port. 
    */
-  do {
-    not_supported = 1;		/* Make sure we don't loop for ever */
-    pri = NULL;
-    
-    for (i = 0; transports[i]; i++) {
-      su_addrinfo_t *ai, *res, hints[1];
+  for (;;) {
+    for (ai = res; ai; ai = ai->ai_next) {
+      SU_DEBUG_9(("%s(%p): calling tport_listen\n", __func__, mr));
 
-      int tried = 0;
+      ((su_sockaddr_t *)ai->ai_addr)->su_port = htons(port);
 
-      proto = transports[i];
-      error = EPROTONOSUPPORT;
-
-      if (strcasecmp(proto, tpn->tpn_proto) != 0 && 
-          strcmp(tpn->tpn_proto, tpn_any) != 0)
-        continue;
-
-      /* Resolve protocol, skip unknown transport protocols. */
-      if (getprotohints(hints, proto, AI_PASSIVE) < 0)
-        continue;
-
-      hints->ai_family = family;
-
-      if (host == NULL)
-	hints->ai_flags |= AI_NUMERICHOST;
-
-      pri = NULL;
-
-      if (host)
-	error = su_getaddrinfo(host, port, hints, &res);
-      else
-	error = tport_get_local_addrinfo(mr, li, port, hints, &res);
-
-      if (error || !res) {
-	if (error == EAI_SOCKTYPE)
-	  SU_DEBUG_7(("%s(%p): su_getaddrinfo(%s, %s) for %s: %s\n", 
-		      __func__, mr, host ? host : "\"\"", port, proto,
-		      su_gai_strerror(error)));
-	else
-	  SU_DEBUG_3(("%s(%p): su_getaddrinfo(%s, %s) for %s: %s\n", 
-		      __func__, mr, host ? host : "\"\"", port, proto,
-		      su_gai_strerror(error)));
-	error = ENOENT;
-        continue;
+      pri = tport_listen(mr, ai, canon, ai->ai_canonname, port, tags);
+      if (!pri) {
+	switch (error = su_errno()) {
+	case EADDRNOTAVAIL:	/* Not our address */
+	case ENOPROTOOPT:	/* Protocol not supported */
+	case ESOCKTNOSUPPORT:	/* Socket type not supported */
+	  continue;
+	default:
+	  break;
+	}
+	break;
       }
 
-      p = ntohs(((su_sockaddr_t *)res->ai_addr)->su_port);
-
-      for (ai = res; ai; ai = ai->ai_next) {
-        /* Skip non-internet (AF_LOCAL) addresses */
-#if SU_HAVE_IN6
-        if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
-          continue;
-#else
-        if (ai->ai_family != AF_INET)
-          continue;
-#endif
-
-        SU_DEBUG_9(("%s(%p): calling tport_socket\n", __func__, mr));
-
-	ai->ai_socktype = hints->ai_socktype;
-	ai->ai_protocol = hints->ai_protocol;
-
-	tried = 1;
-
-        pri = tport_listen(mr, ai, canon, proto, p, tags);
-
-        if (pri) {
-	  pri->pri_primary->tp_ident = su_strdup(pri->pri_home, tpn->tpn_ident);
-	  tport_init_compression(pri, tpn->tpn_comp, tags);
+      pri->pri_primary->tp_ident = su_strdup(pri->pri_home, tpn->tpn_ident);
+      tport_init_compression(pri, tpn->tpn_comp, tags);
+      not_supported = 0;
 
 #if HAVE_TLS
-	  if (strcasecmp(tpn->tpn_proto, "tls") == 0) {
-	    pri->pri_primary->tp_tls = tport_init_tls(tags);
-	    if (!pri->pri_primary->tp_tls)
-	      goto error;
-	  }
-#endif
-	  not_supported = 0;
-          if (ephemeral_port)
-            port = strcpy(port0, pri->pri_primary->tp_port);
-          if (ephemeral_port == -1) {
-            ephemeral_port = ntohs(pri->pri_primary->tp_addr->su_port);
-	    assert(ephemeral_port != 0);
-	    if (p == 0)
-	      p = ephemeral_port;
-	  }
-        }
-	else {
+      if (strcasecmp(tpn->tpn_proto, "tls") == 0) {
+	pri->pri_primary->tp_tls = tport_init_tls(tags);
+	if (!pri->pri_primary->tp_tls) {
 	  error = su_errno();
-	  if (error == EADDRINUSE)
-	    not_supported = 0;
+	  break;
 	}
       }
+#endif
 
-      if (host)
-	su_freeaddrinfo(res);
-      else
-	tport_freeaddrinfo(mr, res);
-
-      if (!pri) {
-        while (*tbf)
-	  tport_zap_primary(*tbf);
-
-	if (!tried)
-	  not_supported = 1;
-
-        if (ephemeral_port != 0 && ephemeral_port != -1) {
-	  while (step == 0) {
-	    /* step should be relative prime to 65536 - 1024 */
-	    /* 65536 - 1024 = 7 * 3 * 3 * 1024 */
-	    step = (random() | 1) % (65535 - 1024);
-	    if (step % 3 == 0)
-	      step = (step + 2) % (65536 - 1024);
-	    if (step % 7 == 0)
-	      step = (step + 2) % (65536 - 1024);
-	  }
-	  p += step;
-          if (p >= 65536) p -= (65536 - 1024);
-          if (p == ephemeral_port)
-            ephemeral_port = 0;
-          SU_DEBUG_3(("%s(%p): cannot bind all transports to port %s, "
-		      "trying %u\n", 
-		      __func__, mr, port, p));
-          snprintf(port0, sizeof(port0), "%u", p);
-          port = port0;
-        }
-        break;
+      if (port0 == 0 && port == 0) {
+	port = port1 = ntohs(pri->pri_primary->tp_addr->su_port);
+	assert(port != 0);
       }
     }
+
+    if (ai == NULL)
+      break;
+
+    while (*tbf)
+      tport_zap_primary(*tbf);
+
+    if (error != EADDRINUSE || port0 != 0 || port == 0)
+      break;
+
+    while (step == 0) {
+      /* step should be relative prime to 65536 - 1024 */
+      /* 65536 - 1024 = 7 * 3 * 3 * 1024 */
+      step = (random() | 1) % (65535 - 1024);
+      if (step % 3 == 0)
+	step = (step + 2) % (65536 - 1024);
+      if (step % 7 == 0)
+	step = (step + 2) % (65536 - 1024);
+    }
+    old = port; port += step; if (port >= 65536) port -= (65536 - 1024);
+
+    if (port == port1)		/* All ports in use! */
+      break;
+
+    SU_DEBUG_3(("%s(%p): cannot bind all transports to port %u, trying %u\n", 
+		__func__, mr, old, port));
   }
-  while (!pri && ephemeral_port && !not_supported);
 
-  if (li)
-    su_freelocalinfo(li);
+  tport_freeaddrinfo(res);
 
-  if (not_supported)
+  if (res && not_supported)
     error = EPROTONOSUPPORT;
 
-  if (!pri) {
+  if (!*tbf) {
     su_seterrno(error);
     return -1;
   }
@@ -2123,65 +2052,308 @@ int tport_bind_server(tport_master_t *mr,
   }
 
   return 0;
-
- error:
-  if (li)
-    su_freelocalinfo(li);
-  return -1;
 }
 
+/** Check if we can bind to IPv6 separately from IPv4 bind */
+static
+int bind6only_check(void)
+{
+  int retval = 0;
+  su_sockaddr_t su[1], su4[1];
+  socklen_t sulen, su4len;
+  int s6, s4;
+
+  s4 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+  
+  memset(su, 0, sizeof *su);
+  su->su_len = sulen = (sizeof su->su_sin6);
+  su->su_family = AF_INET6;
+  
+  memset(su4, 0, sizeof *su4);
+  su4->su_len = su4len = (sizeof su->su_sin);
+  su4->su_family = AF_INET;
+  
+  if (bind(s6, &su->su_sa, sulen) < 0)
+    ;
+  else if (getsockname(s6, &su->su_sa, &sulen) < 0)
+    ;
+  else if ((su4->su_port = su->su_port) != 0 && 
+	   bind(s4, &su4->su_sa, su4len) == 0)
+    retval = 1;
+
+  su_close(s6), su_close(s4);
+
+  return retval;
+}
+
+
+/** Return list of addrinfo structures matching to 
+ * canon/host/service/protocol
+ */
+static
+int tport_server_addrinfo(tport_master_t *mr,
+			  char const *canon,
+			  int family,
+			  char const *host, 
+			  char const *service,
+			  char const *protocol,
+			  char const * const transports[],
+			  su_addrinfo_t **return_addrinfo)
+{
+  int i, N;
+  su_addrinfo_t hints[TPORT_N + 1];
+
+  *return_addrinfo = NULL;
+
+  /* 
+   * Resolve all the transports requested by the protocol
+   */
+  for (i = 0, N = 0; transports[i] && N < TPORT_N; i++) {
+    su_addrinfo_t *ai = &hints[N];
+
+    if (strcasecmp(transports[i], protocol) != 0 && 
+	strcmp(protocol, tpn_any) != 0)
+      continue;
+
+    /* Resolve protocol, skip unknown transport protocols. */
+    if (getprotohints(ai, transports[i], AI_PASSIVE) < 0)
+      continue;
+
+    ai->ai_family = family;
+    ai->ai_next = &hints[++N];
+  }
+
+  if (N == 0)
+    return su_seterrno(ENOENT);
+  if (transports[i] /* Too many protocols */) 
+    return su_seterrno(ENOMEM);
+
+  hints[N - 1].ai_next = NULL;
+
+  if (host) {
+    int error = tport_getaddrinfo(host, service, hints, return_addrinfo);
+    if (error || !*return_addrinfo) {
+      SU_DEBUG_3(("%s(%p): su_getaddrinfo(%s, %s) for %s: %s\n", 
+		  __func__, mr, host ? host : "\"\"", service, protocol,
+		  su_gai_strerror(error)));
+      return su_seterrno(error != EAI_MEMORY ? ENOENT : ENOMEM);
+    }
+    return 0;
+  }
+
+  return tport_get_local_addrinfo(mr, service, hints, return_addrinfo);
+}
 
 /** Convert localinfo into addrinfo */
 static
 int
 tport_get_local_addrinfo(tport_master_t *mr, 
-			 su_localinfo_t *li,
 			 char const *port,
 			 su_addrinfo_t const *hints,
 			 su_addrinfo_t **return_ai)
 {
+  int error, family;
+  su_localinfo_t lihints[1] = {{ 0 }};
+  su_localinfo_t *li, *li_result;
+  su_addrinfo_t const *h;
   su_addrinfo_t *ai, **prev;
   su_sockaddr_t *su;
   unsigned long lport = 0;
   char *rest;
 
+  prev = return_ai, *prev = NULL;
+
   if (port) {
     lport = strtoul(port, &rest, 10);
     if (lport >= 65536) {
       su_seterrno(EINVAL);
-      return EAI_NONAME;
+      return -1;
     }
   }
 
-  prev = return_ai;
+  family = hints->ai_family;
 
-  for (; li; li = li->li_next) {
-    if (hints->ai_family && hints->ai_family != li->li_family)
-      continue;
+  for (h = hints->ai_next; h && family; h = h->ai_next)
+    if (h->ai_family != family)
+      family = 0;
 
-    ai = calloc(1, sizeof *ai + li->li_addrlen);
-    if (ai == NULL) {
-      tport_freeaddrinfo(mr, *return_ai);
-      return EAI_MEMORY;
-    }
+  lihints->li_flags = 0;
+  lihints->li_family = family;
+  lihints->li_scope = LI_SCOPE_GLOBAL | LI_SCOPE_SITE | LI_SCOPE_HOST;
+
+  error = su_getlocalinfo(lihints, &li_result);
+  if (error) {
+#if SU_HAVE_IN6
+    SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
+		__func__, mr, 
+		family == AF_INET6 ? "ip6" 
+		: family == AF_INET ? "ip4" : "ip",
+		su_gli_strerror(error)));
+#else
+    SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
+		__func__, mr, 
+		family == AF_INET ? "ip4" : "ip",
+		su_gli_strerror(error)));
+#endif
+    su_seterrno(ENOENT);
+    return -1;
+  }
+
+  for (li = li_result; li; li = li->li_next) {
+    for (h = hints; h; h = h->ai_next) {
+      if (h->ai_family && h->ai_family != li->li_family)
+	continue;
+
+      ai = calloc(1, sizeof *ai + li->li_addrlen);
+      if (ai == NULL)
+	break;
     
-    *prev = ai, prev = &ai->ai_next;
+      *prev = ai, prev = &ai->ai_next;
 
-    ai->ai_flags = AI_PASSIVE | TP_AI_ANY;
-    ai->ai_family = li->li_family;
-    ai->ai_socktype = hints->ai_socktype;
-    ai->ai_protocol = hints->ai_protocol;
-    ai->ai_addr = memcpy(ai + 1, li->li_addr, ai->ai_addrlen = li->li_addrlen);
-    su = (void *)ai->ai_addr;
-    su->su_port = htons(lport);
+      ai->ai_flags = AI_PASSIVE | TP_AI_ANY;
+      ai->ai_family = li->li_family;
+      ai->ai_socktype = h->ai_socktype;
+      ai->ai_protocol = h->ai_protocol;
+      ai->ai_canonname = h->ai_canonname;
+      ai->ai_addr = memcpy(ai + 1, li->li_addr, 
+			   ai->ai_addrlen = li->li_addrlen);
+      su = (void *)ai->ai_addr;
+      su->su_port = htons(lport);
+    }
+  }
+
+  su_freelocalinfo(li_result);
+
+  if (li) {
+    tport_freeaddrinfo(*return_ai);
+    su_seterrno(ENOMEM);
+    return -1;
+  }
+
+  if (*return_ai == NULL) {
+    su_seterrno(ENOENT);
+    return -1;
   }
 
   return 0;
 }
 
+static inline su_addrinfo_t *get_next_addrinfo(su_addrinfo_t **all);
+
+/** Translate address and service.
+ *
+ * This is a getaddrinfo() supporting multiple hints in a list.
+ */
+int tport_getaddrinfo(char const *node, char const *service,
+		      su_addrinfo_t const *hints,
+		      su_addrinfo_t **res)
+{
+  su_addrinfo_t const *h0;
+  su_addrinfo_t *tbf, **prev;
+  int error = EAI_SOCKTYPE;
+  int i, N;
+  su_addrinfo_t *all[TPORT_N + 1]; /* Lists for all supported transports */
+  su_addrinfo_t *results[TPORT_N + 1]; 
+  void *addr;
+  int addrlen;
+
+  *res = NULL;
+
+  for (N = 0, h0 = hints; h0; h0 = h0->ai_next) {
+    su_addrinfo_t h[1];
+
+    *h = *h0, h->ai_next = NULL, h->ai_canonname = NULL;
+
+    error = su_getaddrinfo(node, service, h, &all[N]);
+    results[N] = all[N];
+    if (error == EAI_SOCKTYPE) {
+      SU_DEBUG_7(("%s(): su_getaddrinfo(%s, %s) for %s: %s\n", 
+		  __func__, node ? node : "\"\"", service,
+		  h0->ai_canonname, su_gai_strerror(error)));
+      continue;
+    }
+
+    if (error || !all[N])
+      break;
+    N++;
+  }
+
+  if (h0)
+    for (i = 0; i < N; i++)
+      su_freeaddrinfo(all[i]);
+  if (error)
+    return error;
+
+  /* Combine all the valid addrinfo structures to a single list */
+  prev = &tbf, tbf = NULL;
+
+  for (;;) {
+    su_addrinfo_t *ai = NULL, *ai0;
+
+    for (i = 0, h0 = hints; i < N; i++, h0 = h0->ai_next) {
+      if ((ai = get_next_addrinfo(&results[i])))
+	break;
+    }
+    if (i == N)
+      break;
+
+    assert(ai);
+    addr = SU_ADDR((su_sockaddr_t *)ai->ai_addr);
+    addrlen = SU_ADDRLEN((su_sockaddr_t *)ai->ai_addr);
+
+    /* Copy all the addrinfo structures with same address to the list */
+    for (; i < N; i++, h0 = h0->ai_next) {
+      while ((ai0 = get_next_addrinfo(&results[i]))) {
+	void *a = SU_ADDR((su_sockaddr_t *)ai0->ai_addr);
+
+	if (memcmp(addr, a, addrlen)) /* Different address */
+	  break;
+	
+	results[i] = ai0->ai_next;
+
+	ai = calloc(1, sizeof *ai + ai0->ai_addrlen);
+	if (ai == NULL) 
+	  goto error;
+	*prev = memcpy(ai, ai0, sizeof *ai); prev = &ai->ai_next; *prev = NULL;
+	ai->ai_addr = memcpy(ai + 1, ai0->ai_addr, ai0->ai_addrlen);
+	ai->ai_canonname = h0->ai_canonname;
+      }
+    }
+  }    
+
+  for (i = 0; i < N; i++)
+    su_freeaddrinfo(all[i]);
+  
+  *res = tbf;
+  return 0;
+
+ error:
+  for (i = 0; i < N; i++)
+    su_freeaddrinfo(all[i]);
+  tport_freeaddrinfo(tbf);
+  return EAI_MEMORY;
+}
+
+static inline
+su_addrinfo_t *get_next_addrinfo(su_addrinfo_t **all)
+{
+  su_addrinfo_t *ai;
+
+  while ((ai = *all)) {
+    if (ai->ai_family == AF_INET)
+      return ai;
+#if SU_HAVE_IN6
+    if (ai->ai_family == AF_INET6)
+      return ai;
+#endif
+    *all = ai->ai_next;
+  }
+  return ai;
+}
+
 static
-void tport_freeaddrinfo(tport_master_t *mr, 
-			su_addrinfo_t *ai)
+void tport_freeaddrinfo(su_addrinfo_t *ai)
 {
   su_addrinfo_t *ai_next;
 
@@ -2406,7 +2578,7 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
 
   /* Go through all primary transports */
   for (dad = mr->mr_primaries; dad; dad = dad->pri_next) {
-    if (dad->pri_protocol == IPPROTO_SCTP) {
+    if (dad->pri_primary->tp_addrinfo->ai_protocol == IPPROTO_SCTP) {
       /* Go through all SCTP connections */
 
       tp = dad->pri_secondary;
@@ -2540,15 +2712,25 @@ int tport_convert_addr(su_home_t *home,
 static
 int tport_setname(tport_t *self,
 		  char const *protoname,
-		  su_sockaddr_t const *su,
+		  su_addrinfo_t const *ai,
 		  char const *canon)
 {
+  su_addrinfo_t *selfai = self->tp_addrinfo;
+
   if (tport_convert_addr(self->tp_home, self->tp_name, 
-			 protoname, canon, su) < 0)
+			 protoname, canon, 
+			 (su_sockaddr_t *)ai->ai_addr) < 0)
     return -1;
 
   if (tport_is_secondary(self))
     self->tp_ident = self->tp_pri->pri_primary->tp_ident;
+
+  selfai->ai_flags = ai->ai_flags & TP_AI_MASK;
+  selfai->ai_family = ai->ai_family;     assert(ai->ai_family);
+  selfai->ai_socktype = ai->ai_socktype; assert(ai->ai_socktype);
+  selfai->ai_protocol = ai->ai_protocol; assert(ai->ai_protocol);
+  selfai->ai_canonname = (char *)self->tp_name->tpn_canon;
+  memcpy(selfai->ai_addr, ai->ai_addr, selfai->ai_addrlen = ai->ai_addrlen);
 
   return 0;
 }
@@ -2570,6 +2752,7 @@ int getprotohints(su_addrinfo_t *hints,
   memset(hints, 0, sizeof *hints);
 
   hints->ai_flags = flags;
+  hints->ai_canonname = (char *)proto;
 
 #if HAVE_TLS
   if (strcasecmp(proto, "tls") == 0)
@@ -2722,8 +2905,8 @@ int tport_accept(su_root_magic_t *m, su_wait_t *w, tport_t *_pri)
 {
   tport_primary_t *pri = _pri->tp_pri;
   tport_t *self;
+  su_addrinfo_t ai[1];
   su_sockaddr_t su[1]; 
-  socklen_t sulen = sizeof(su);
   su_socket_t s = SOCKET_ERROR, l = pri->pri_primary->tp_socket;
   int events = su_wait_events(w, l);
   int one = 1;
@@ -2736,7 +2919,12 @@ int tport_accept(su_root_magic_t *m, su_wait_t *w, tport_t *_pri)
   if (!(events & SU_WAIT_ACCEPT))
     return 0;
 
-  s = accept(l, &su->su_sa, &sulen);
+  memcpy(ai, pri->pri_primary->tp_addrinfo, sizeof ai);
+  ai->ai_canonname = NULL;
+
+  ai->ai_addr = &su->su_sa, ai->ai_addrlen = sizeof su;
+
+  s = accept(l, ai->ai_addr, &ai->ai_addrlen);
 
   if (s < 0) {
     tport_error_report(pri->pri_primary, su_errno(), NULL);
@@ -2758,7 +2946,7 @@ int tport_accept(su_root_magic_t *m, su_wait_t *w, tport_t *_pri)
     
     self->tp_socket = s;
 
-    if (pri->pri_socktype == SOCK_STREAM)
+    if (ai->ai_socktype != SOCK_DGRAM)
       su_setblocking(s, 0);
 
 #if HAVE_TLS
@@ -2780,15 +2968,13 @@ int tport_accept(su_root_magic_t *m, su_wait_t *w, tport_t *_pri)
       self->tp_connected = 1;
       self->tp_conn_orient = 1;
       self->tp_events   = events;
-      self->tp_addr[0]  = su[0];
-      self->tp_addrlen  = sulen;
 
 #if HAVE_TLS
       if (self->tp_tls && events != tls_events(self->tp_tls, events))
 	tport_events(self);
 #endif
 
-      if (tport_setname(self, pri->pri_protoname, su, NULL) != -1) {
+      if (tport_setname(self, pri->pri_protoname, ai, NULL) != -1) {
 #if HAVE_SIGCOMP
 	if (!pri->pri_primary->tp_name->tpn_comp)
 	  self->tp_sigcomp->sc_infmt = format_is_noncomp;
@@ -2826,9 +3012,12 @@ msg_t *tport_msg_alloc(tport_t const *self, unsigned size)
     msg_t *msg = mr->mr_tpac->tpac_alloc(mr->mr_stack, mr->mr_log,
 					 NULL, size, self, NULL);
     if (msg) {
-      msg_addrinfo(msg)->ai_family =   self->tp_pri->pri_family;
-      msg_addrinfo(msg)->ai_protocol = self->tp_pri->pri_protocol;
-      msg_addrinfo(msg)->ai_socktype = self->tp_pri->pri_socktype;
+      su_addrinfo_t *mai = msg_addrinfo(msg);
+      su_addrinfo_t const *tai = self->tp_addrinfo;
+
+      mai->ai_family =   tai->ai_family;
+      mai->ai_protocol = tai->ai_protocol;
+      mai->ai_socktype = tai->ai_socktype;
     }
 
     return msg;
@@ -3269,7 +3458,7 @@ int tport_recv_data(tport_t *self)
 #endif
 
   /* Simulate packet loss */
-  if (self->tp_pri->pri_protocol == IPPROTO_UDP &&
+  if (self->tp_addrinfo->ai_protocol == IPPROTO_UDP &&
       self->tp_params->tpp_drop && 
       su_randint(0, 1000) < self->tp_params->tpp_drop) {
     char sample[1];
@@ -3283,14 +3472,14 @@ int tport_recv_data(tport_t *self)
     return tport_recv_sigcomp(self);
 #endif
 #if 0
-  if (self->tp_pri->pri_socktype == 0)
+  if (self->tp_addrinfo->ai_socktype == 0)
     return tport_recv_file(self);
 #endif
-  if (self->tp_pri->pri_protocol == IPPROTO_SCTP)
+  if (self->tp_addrinfo->ai_protocol == IPPROTO_SCTP)
     return tport_recv_sctp(self);
-  if (self->tp_pri->pri_socktype == SOCK_STREAM)
+  if (self->tp_addrinfo->ai_socktype == SOCK_STREAM)
     return tport_recv_stream(self);
-  if (self->tp_pri->pri_socktype == SOCK_DGRAM)
+  if (self->tp_addrinfo->ai_socktype == SOCK_DGRAM)
     return tport_recv_dgram(self);
   
   SU_DEBUG_1(("%s(%p): receive semantics not implemented\n", __func__, self));
@@ -3610,7 +3799,7 @@ static int tport_recv_sigcomp(tport_t *self)
 
     if ((sample & 0xf8) != 0xf8) {
       /* Not SigComp, receive as usual */
-      if (self->tp_pri->pri_socktype == SOCK_DGRAM)
+      if (self->tp_addrinfo->ai_socktype == SOCK_DGRAM)
 	return tport_recv_dgram(self);
 
       if (tport_is_primary(self)) {
@@ -3684,8 +3873,8 @@ static int tport_recv_sigcomp_r(tport_t *self,
       return -1;
 
     if (N == 0) {
-      assert(self->tp_pri->pri_socktype != SOCK_DGRAM);
-      if (self->tp_pri->pri_socktype == SOCK_DGRAM) {
+      assert(self->tp_addrinfo->ai_socktype != SOCK_DGRAM);
+      if (self->tp_addrinfo->ai_socktype == SOCK_DGRAM) {
 	recv(self->tp_socket, (void *)su, 1, 0);
 	return 1;
       }
@@ -3768,7 +3957,7 @@ static int tport_recv_sigcomp_r(tport_t *self,
     
     if (msg) {
       /* Message address */
-      if (self->tp_pri->pri_socktype == SOCK_STREAM) {
+      if (self->tp_addrinfo->ai_socktype == SOCK_STREAM) {
 	*msg_addr(msg) = *self->tp_addr;
 	*msg_addrlen(msg) = self->tp_addrlen;
       } else {
@@ -3795,7 +3984,7 @@ static int tport_recv_sigcomp_r(tport_t *self,
       }
     }
 
-    if (self->tp_pri->pri_socktype == SOCK_STREAM) {
+    if (self->tp_addrinfo->ai_socktype == SOCK_STREAM) {
       if (eos)
 	return 0;
     
@@ -3825,7 +4014,7 @@ struct sigcomp_udvm *tport_init_udvm(tport_t *self)
   if (!cc)
     return NULL;
 
-  if (self->tp_pri->pri_socktype == SOCK_STREAM)
+  if (self->tp_addrinfo->ai_socktype == SOCK_STREAM)
     udvm = sigcomp_udvm_create_for_stream(cc);
   else
     udvm = sigcomp_udvm_create_for_compartment(cc);
@@ -4501,10 +4690,10 @@ int tport_vsend_iovec(tport_t const *self, msg_t *msg,
   sulen = *msg_addrlen(msg);
 
 #if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
-  if (su->su_family == AF_INET && self->tp_pri->pri_family == AF_INET6) {
+  if (su->su_family == AF_INET && self->tp_addrinfo->ai_family == AF_INET6) {
     memset(su0, 0, sizeof su0);
 
-    su0->su_family = self->tp_pri->pri_family;
+    su0->su_family = self->tp_addrinfo->ai_family;
     su0->su_port = su->su_port;
 
     IN6_INADDR_TO_V4MAPPED(&su->su_sin.sin_addr, &su0->su_sin6.sin6_addr);
@@ -4538,13 +4727,13 @@ int tport_send_error(tport_t *self, msg_t *msg,
 
   msg_set_errno(msg, error);
 
-  if (self->tp_pri->pri_family == AF_INET) {
+  if (self->tp_addrinfo->ai_family == AF_INET) {
     SU_DEBUG_3(("tport_vsend(%p): %s with (s=%d %s/%s:%s%s)\n", 
 		self, su_strerror(error), self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp));
   }
 #if SU_HAVE_IN6
-  else if (self->tp_pri->pri_family == AF_INET6) {
+  else if (self->tp_addrinfo->ai_family == AF_INET6) {
     su_sockaddr_t const *su = msg_addr(msg);
     SU_DEBUG_3(("tport_vsend(%p): %s with "
 		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%d)\n", 
@@ -4554,11 +4743,11 @@ int tport_send_error(tport_t *self, msg_t *msg,
   }
 #endif
   else {
-    su_sockaddr_t const *su = msg_addr(msg);
+    su_addrinfo_t const *ai = msg_addrinfo(msg);
     SU_DEBUG_3(("\ttport_vsend(%p): %s with "
 		"(s=%d, AF=%u addrlen=%d)%s\n", 
 		self, su_strerror(error), 
-		self->tp_socket, su->su_family, *msg_addrlen(msg), comp));
+		self->tp_socket, ai->ai_family, ai->ai_addrlen, comp));
   }
 
 #if 0
@@ -4599,7 +4788,7 @@ int tport_sigcomp_vsend(tport_t const *self,
   
   if (c == NULL) {
     assert(input == NULL);
-    if (self->tp_pri->pri_socktype == SOCK_STREAM)
+    if (self->tp_addrinfo->ai_socktype == SOCK_STREAM)
       c = sigcomp_compressor_create_for_stream(cc);
     else
       c = sigcomp_compressor_create(cc);
@@ -4880,7 +5069,7 @@ int tport_queue_rest(tport_t *self,
   self->tp_unsentlen = iovused;
 
   /* the POLLOUT event is far too unreliable with SCTP */
-  if (self->tp_pri->pri_protocol == IPPROTO_SCTP)
+  if (self->tp_addrinfo->ai_protocol == IPPROTO_SCTP)
     return 0;
 
   /* Ask for a send event */
@@ -5178,8 +5367,8 @@ tport_resolve(tport_t *self, msg_t *msg, tp_name_t const *tpn)
   char const *host;
   su_sockaddr_t *su;
 
-  hints->ai_socktype = self->tp_pri->pri_socktype;
-  hints->ai_protocol = self->tp_pri->pri_protocol;
+  hints->ai_socktype = self->tp_addrinfo->ai_socktype;
+  hints->ai_protocol = self->tp_addrinfo->ai_protocol;
 
   if (tpn->tpn_host[0] == '[') {
     /* Remove [] around IPv6 address */
@@ -5271,14 +5460,14 @@ msg_select_addrinfo(msg_t *msg, su_addrinfo_t *res)
 void
 tport_peer_address(tport_t *self, msg_t *msg)
 {
-  su_addrinfo_t *ai = msg_addrinfo(msg);
-  socklen_t addrlen = su_sockaddr_size(self->tp_addr);
+  su_addrinfo_t *mai = msg_addrinfo(msg);
+  su_addrinfo_t const *tai = self->tp_addrinfo;
+  void *maddr = mai->ai_addr;
+  int flags = mai->ai_flags;
 
-  ai->ai_family   = self->tp_pri->pri_family;
-  ai->ai_socktype = self->tp_pri->pri_socktype;
-  ai->ai_protocol = self->tp_pri->pri_protocol;
-
-  memcpy(ai->ai_addr, self->tp_addr, ai->ai_addrlen = addrlen);
+  memcpy(mai, tai, sizeof *mai);
+  mai->ai_addr = memcpy(maddr, tai->ai_addr, tai->ai_addrlen);
+  mai->ai_flags = flags;
 }
 
 static int tport_udp_error(tport_t const *self, 
@@ -5816,10 +6005,16 @@ tport_t *tport_secondary(tport_t const *self)
 #if 0
 void tport_hints(tport_t const *self, su_addrinfo_t *hints)
 {
-  hints->ai_protocol = self->tp_pri->pri_protocol;
-  hints->ai_socktype = self->tp_pri->pri_socktype;
+  hints->ai_protocol = self->tp_addrinfo->ai_protocol;
+  hints->ai_socktype = self->tp_addrinfo->ai_socktype;
 }
 #endif
+
+/** Get transport address list. */
+su_addrinfo_t const *tport_get_address(tport_t const *self)
+{
+  return self ? self->tp_addrinfo : NULL;
+}
 
 /** Get transport name. */
 tp_name_t const *tport_name(tport_t const *self)
@@ -6376,7 +6571,8 @@ int tport_launch_threadpool(tport_primary_t *pri)
   tport_threadpool_t *thrp = pri->pri_threadpool;
   int i, N = tp->tp_params->tpp_thrpsize;
 
-  if (N == 0 || thrp != NULL || pri->pri_socktype != SOCK_DGRAM)
+  if (N == 0 || thrp != NULL || 
+      pri->pri_primary->tp_addrinfo->ai_socktype != SOCK_DGRAM)
     return 0;
   
   thrp = su_zalloc(tp->tp_home, (sizeof *thrp) * N);

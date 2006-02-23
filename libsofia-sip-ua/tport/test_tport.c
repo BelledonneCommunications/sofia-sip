@@ -630,11 +630,14 @@ static int init_test(tp_test_t *tt)
   for (tp = tport_primaries(tt->tt_srv_tports); tp; tp = tport_next(tp)) {
     TEST_1(tpn = tport_name(tp));
 
-    if (1 || tt->tt_flags & tst_verbatim)
-      printf("bound transport to %s/%s:%s;maddr=%s%s%s\n",
-	     tpn->tpn_proto, tpn->tpn_canon, tpn->tpn_port, tpn->tpn_host,
+    if (1 || tt->tt_flags & tst_verbatim) {
+      char const *host = tpn->tpn_host != tpn->tpn_canon ? tpn->tpn_host : "";
+      printf("bound transport to %s/%s:%s%s%s%s%s\n",
+	     tpn->tpn_proto, tpn->tpn_canon, tpn->tpn_port, 
+	     host[0] ? ";maddr=" : "", host,
 	     tpn->tpn_comp ? ";comp=" : "", 
 	     tpn->tpn_comp ? tpn->tpn_comp : "");
+    }
 
     /* Ignore server2 tports for now */
     if (strcmp(tpn->tpn_ident, "server"))

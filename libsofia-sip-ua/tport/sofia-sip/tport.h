@@ -102,6 +102,9 @@ typedef struct {
   /** Ask stack to accept/reject early SigComp message */
   int (*tpac_sigcomp_accept)(tp_stack_t *, tport_t *, msg_t *);
 
+  /** Indicate stack that address has changed */
+  void (*tpac_address)(tp_stack_t *, tport_t *);
+
 } tport_stack_class_t;
 
 /* Compatibility */
@@ -119,16 +122,19 @@ enum {
 /* AI extension flags - these must not overlap with existing AI flags. */
 
 /** Message is to be sent/received compressed */
-#define TP_AI_COMPRESSED 0x1000
+#define TP_AI_COMPRESSED 0x01000
+/** Message is to be sent/received on secure connection */
+#define TP_AI_SECURE     0x02000
+
 /** Halfclose (shutdown(c, 1)) connection after sending message */
-#define TP_AI_SHUTDOWN   0x2000
+#define TP_AI_SHUTDOWN   0x04000
 /** Close connection (shutdown(c, 2)) after sending message */
-#define TP_AI_CLOSE      0x4000
+#define TP_AI_CLOSE      0x08000
 
 /** Address was inaddr_any */
-#define TP_AI_ANY        0x8000
+#define TP_AI_ANY        0x80000
 
-#define TP_AI_MASK       0xf000
+#define TP_AI_MASK       0xff000
 
 /** Maximum size of a @e host:port string, including final NUL. */
 #define TPORT_HOSTPORTSIZE (55)
