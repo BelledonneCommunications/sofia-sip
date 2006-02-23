@@ -94,13 +94,14 @@ struct nta_agent_s
   su_timer_t        *sa_timer;
   nta_agent_magic_t *sa_magic;
   nta_message_f     *sa_callback;     
+  nta_update_tport_f*sa_update_tport;
 
   su_time_t          sa_now;	/**< Timestamp in microsecond resolution. */
   uint32_t           sa_millisec; /**< Timestamp in milliseconds resolution. */
 
   uint32_t           sa_flags;	/**< Message flags */
   msg_mclass_t      *sa_mclass;
-  
+
   sip_contact_t     *sa_contact;
   sip_via_t         *sa_vias;   /**< Via headers for all transports */
   sip_contact_t     *sa_aliases;/**< List of aliases for agent */

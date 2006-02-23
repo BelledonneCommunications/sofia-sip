@@ -63,6 +63,15 @@ NTA_DLL extern tag_typedef_t ntatag_mclass;
 NTA_DLL extern tag_typedef_t ntatag_mclass_ref;
 #define NTATAG_MCLASS_REF(x) ntatag_mclass_ref, tag_ptr_vr(&(x), (x))
 
+NTA_DLL extern tag_typedef_t ntatag_update_tport;
+/** Transport update callback. @HI */
+#define NTATAG_UPDATE_TPORT(x) \
+  ntatag_update_tport, tag_ptr_v((x))
+
+NTA_DLL extern tag_typedef_t ntatag_update_tport_ref;
+#define NTATAG_UPDATE_TPORT_REF(x) \
+  ntatag_update_tport_ref, tag_ptr_vr(&(x), (x))
+
 NTA_DLL extern tag_typedef_t ntatag_bad_req_mask;
 /** Mask for bad request messages. 
  * 

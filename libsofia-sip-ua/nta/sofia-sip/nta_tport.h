@@ -65,6 +65,8 @@ nta_outgoing_compartment(nta_outgoing_t *orq);
 void
 nta_compartment_decref(struct sigcomp_compartment **);
 
+typedef void nta_update_tport_f(nta_agent_magic_t *, nta_agent_t *); 
+
 SOFIA_END_DECLS
 
 #endif /* !defined NTA_TPORT_H */

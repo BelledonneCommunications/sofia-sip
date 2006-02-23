@@ -50,6 +50,8 @@
 tag_typedef_t ntatag_any = NSTAG_TYPEDEF(*);
 
 tag_typedef_t ntatag_mclass = PTRTAG_TYPEDEF(mclass);
+tag_typedef_t ntatag_update_tport = PTRTAG_TYPEDEF(update_tport);
+
 tag_typedef_t ntatag_bad_req_mask = UINTTAG_TYPEDEF(bad_req_mask);
 tag_typedef_t ntatag_bad_resp_mask = UINTTAG_TYPEDEF(bad_resp_mask);
 

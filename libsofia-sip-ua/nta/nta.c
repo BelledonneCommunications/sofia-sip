@@ -787,6 +787,7 @@ static
 int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 {
   int n, m;
+  nta_update_tport_f *update_tport = agent->sa_update_tport;
   unsigned bad_req_mask = agent->sa_bad_req_mask;
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
   unsigned maxsize    = agent->sa_maxsize;
@@ -832,6 +833,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   n = tl_gets(tags,
 	      NTATAG_MCLASS_REF(mclass),
+	      NTATAG_UPDATE_TPORT_REF(update_tport),
 	      NTATAG_BAD_REQ_MASK_REF(bad_req_mask),
 	      NTATAG_BAD_RESP_MASK_REF(bad_resp_mask),
 	      NTATAG_ALIASES_REF(aliases),
@@ -879,6 +881,8 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   if (mclass != NONE)
     agent->sa_mclass = mclass ? mclass : sip_default_mclass();
+
+  agent->sa_update_tport = update_tport;
 
   m = 0;
   for (tport = agent->sa_tports; tport; tport = tport_next(tport)) {
@@ -1287,6 +1291,7 @@ static void agent_tp_error(nta_agent_t *agent,
 			   tport_t *tport,
 			   int errcode,
 			   char const *remote);
+static void agent_update_tport(nta_agent_t *agent, tport_t *);
 
 /**For each transport, we have name used by tport module, SRV prefixes used
  * for resolving, and NAPTR service/conversion.
@@ -1322,7 +1327,8 @@ static tport_stack_class_t nta_agent_class[1] =
     agent_recv_message,
     agent_tp_error,
     (void *)nta_msg_create_for_transport,
-    agent_sigcomp_accept
+    agent_sigcomp_accept,
+    agent_update_tport,
   }};
 
 
@@ -1854,6 +1860,19 @@ void agent_tp_error(nta_agent_t *agent,
 	  su_strerror(errcode));
 }
 
+/** Handle updated transport addresses */
+static void agent_update_tport(nta_agent_t *self, tport_t *tport)
+{
+  agent_init_via(self, 0);
+
+  if (self->sa_update_tport) {
+    self->sa_update_tport(self->sa_magic, self);
+  }
+  else {
+    /* XXX - we should do something else? */
+    SU_DEBUG_3(("nta(%p): transport address updated\n", self));
+  }
+}
 
 /* ====================================================================== */
 /* 3) Message dispatch */
