@@ -1394,7 +1394,11 @@ int url_cmp(url_t const *a, url_t const *b)
     char const *a_port;
     char const *b_port;
 
+#define is_ip_address(s) ((s) && s[span_ip_address(s)] == '\0')
+
     if (a->url_type != url_sip && a->url_type != url_sips)
+      a_port = b_port = url_port_default(a->url_type);
+    else if (is_ip_address(a->url_host))
       a_port = b_port = url_port_default(a->url_type);
     else
       a_port = b_port = "";

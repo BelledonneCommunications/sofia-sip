@@ -237,6 +237,7 @@ int test_sip(void)
     "sips:user:pass@host:32;param=1"
     "?From=foo@bar&To=bar@baz#unf";
   int i, j;
+  url_t *a, *b;
 
   BEGIN();
 
@@ -380,6 +381,31 @@ int test_sip(void)
   TEST_1(url_strip_transport(u));
   TEST_S(u->url_params, "isfocus");
   TEST_1(!url_have_transport(u));
+
+  a = url_hdup(home, (void *)"sip:172.21.55.55:5060");
+  b = url_hdup(home, (void *)"sip:172.21.55.55");
+  TEST_1(a); TEST_1(b);
+  TEST_1(url_cmp(a, b) == 0);
+
+  a = url_hdup(home, (void *)"sips:172.21.55.55:5060");
+  b = url_hdup(home, (void *)"sips:172.21.55.55");
+  TEST_1(a); TEST_1(b);
+  TEST_1(url_cmp(a, b) != 0);
+
+  a = url_hdup(home, (void *)"sips:172.21.55.55:5061");
+  b = url_hdup(home, (void *)"sips:172.21.55.55");
+  TEST_1(a); TEST_1(b);
+  TEST_1(url_cmp(a, b) == 0);
+
+  a = url_hdup(home, (void *)"sip:my.domain:5060");
+  b = url_hdup(home, (void *)"sip:my.domain");
+  TEST_1(a); TEST_1(b);
+  TEST_1(url_cmp(a, b) != 0);
+
+  a = url_hdup(home, (void *)"sips:my.domain:5061");
+  b = url_hdup(home, (void *)"sips:my.domain");
+  TEST_1(a); TEST_1(b);
+  TEST_1(url_cmp(a, b) != 0);
 
   su_home_deinit(home);
 
