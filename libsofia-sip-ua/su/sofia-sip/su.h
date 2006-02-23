@@ -306,6 +306,22 @@ const char *inet_ntop(int af, void const *src, char *dst, size_t size);
   (void *)&(su)->su_sa.sa_data)
 #endif
 
+/**@HI Get length of address field.
+ *
+ * The macro SU_ADDRLEN() returns length of the address field (sin_data,
+ * sin_addr or sin_addr6, depending on the address family).
+ */
+#if SU_HAVE_IN6
+#define SU_ADDRLEN(su) \
+  ((su)->su_family == AF_INET ? sizeof((su)->su_sin.sin_addr) :	    \
+   ((su)->su_family == AF_INET6 ? sizeof((su)->su_sin6.sin6_addr) : \
+    sizeof((su)->su_sa.sa_data)))
+#else
+#define SU_ADDRLEN(su) \
+  ((su)->su_family == AF_INET ? sizeof((su)->su_sin.sin_addr) :	    \
+   sizeof((su)->su_sa.sa_data))
+#endif
+
 /**@HI Test if su_sockaddr_t is INADDR_ANY or IN6ADDR_ANY. */
 #if SU_HAVE_IN6
 #define SU_HAS_INADDR_ANY(su) \
