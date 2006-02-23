@@ -23,7 +23,7 @@
  */
 
 /**@CFILE nta.c
- * @brief Nokia SIP Transaction API implementation
+ * @brief Sofia SIP Transaction API implementation
  * 
  * This source file has been divided into sections as follows:
  * 1) agent
@@ -36,6 +36,7 @@
  * 8) client transactions (outgoing)
  * 9) resolving URLs for client transactions
  * 10) 100rel reliable responses (reliable)
+ * 11) SigComp handling and public transport interface
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
@@ -45,15 +46,7 @@
 #include "config.h"
 
 /* From AM_INIT/AC_INIT in our "config.h" */
-char const nta_version[] = VERSION;
-
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <assert.h>
-#include <limits.h>
-#include <errno.h>
+char const nta_version[] = PACKAGE_VERSION;
 
 #include <sofia-sip/string0.h>
 
@@ -88,6 +81,14 @@ char const nta_version[] = VERSION;
 #if !defined(EMSGSIZE) && defined(_WIN32)
 #define EMSGSIZE WSAEMSGSIZE
 #endif
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <assert.h>
+#include <limits.h>
+#include <errno.h>
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -1024,7 +1025,7 @@ void agent_set_udp_params(nta_agent_t *self, unsigned udp_mtu)
 
   /* Set via fields for the tports */
   for (tp = tport_primaries(self->sa_tports); tp; tp = tport_next(tp)) {
-    if (strcasecmp(tport_name(tp)->tpn_proto, "udp") == 0)
+    if (tport_is_udp(tp))
       tport_set_params(tp,
 		       TPTAG_TIMEOUT(2 * self->sa_t1x64),
 		       TPTAG_MTU(self->sa_udp_mtu),
@@ -1280,6 +1281,7 @@ char const *stateless_branch(nta_agent_t *sa,
 /* 2) Transport interface */
 
 /* Local prototypes */
+static int agent_create_master_transport(nta_agent_t *self, tagi_t *tags);
 static int agent_init_via(nta_agent_t *self, int use_maddr);
 static int agent_init_contact(nta_agent_t *self);
 static void agent_recv_message(nta_agent_t *agent,
@@ -1474,42 +1476,12 @@ int nta_agent_add_tport(nta_agent_t *self,
   ta_start(ta, tag, value);
 
   if (self->sa_tports == NULL) {
-    /* Create master transport */
-#if HAVE_SIGCOMP
-    struct sigcomp_algorithm const *algorithm = self->sa_algorithm;
-
-    if (algorithm == NULL)
-      algorithm = sigcomp_algorithm_by_name(getenv("SIGCOMP_ALGORITHM"));
-
-    self->sa_state_handler = sigcomp_state_handler_create();
-
-    if (self->sa_state_handler)
-      self->sa_compartment = 
-	sigcomp_compartment_create(algorithm, self->sa_state_handler, 0,
-				   "", 0, NULL, 0);
-
-    if (self->sa_compartment) {
-      agent_sigcomp_options(self, self->sa_compartment);
-      sigcomp_compartment_option(self->sa_compartment, "stateless");
-    }
-    else
-      SU_DEBUG_1(("nta: initializing SigComp: %s\n", strerror(errno)));
-#endif
-
-    if (!(self->sa_tports = 
-	  tport_tcreate(self, nta_agent_class, self->sa_root,
-			TPTAG_SDWN_ERROR(0),
-			TPTAG_IDLE(1800000),
-			TPTAG_DEBUG_DROP(self->sa_drop_prob),
-			IF_SIGCOMP_TPTAG_COMPARTMENT(self->sa_compartment)
-			ta_tags(ta)))) {
+    if (agent_create_master_transport(self, ta_args(ta)) < 0) {
       error = su_errno();
-      SU_DEBUG_9(("nta: cannot create master transport: %s\n",
+      SU_DEBUG_1(("nta: cannot create master transport: %s\n",
 		  su_strerror(error)));
       goto error;
     }
-    else
-      SU_DEBUG_9(("nta: master transport created\n"));
   }
 
   if (tport_tbind(self->sa_tports, tpn, tports, ta_tags(ta)) < 0) {
@@ -1559,16 +1531,58 @@ int nta_agent_add_tport(nta_agent_t *self,
   return -1;
 }
 
+static
+int agent_create_master_transport(nta_agent_t *self, tagi_t *tags)
+{
+#if HAVE_SIGCOMP
+  struct sigcomp_algorithm const *algorithm = self->sa_algorithm;
+
+  if (algorithm == NULL)
+    algorithm = sigcomp_algorithm_by_name(getenv("SIGCOMP_ALGORITHM"));
+
+  self->sa_state_handler = sigcomp_state_handler_create();
+
+  if (self->sa_state_handler)
+    self->sa_compartment = 
+      sigcomp_compartment_create(algorithm, self->sa_state_handler, 0,
+				 "", 0, NULL, 0);
+
+  if (self->sa_compartment) {
+    agent_sigcomp_options(self, self->sa_compartment);
+    sigcomp_compartment_option(self->sa_compartment, "stateless");
+  }
+  else
+    SU_DEBUG_1(("nta: initializing SigComp: %s\n", strerror(errno)));
+#endif
+
+  self->sa_tports = 
+    tport_tcreate(self, nta_agent_class, self->sa_root,
+		  TPTAG_SDWN_ERROR(0),
+		  TPTAG_IDLE(1800000),
+		  TPTAG_DEBUG_DROP(self->sa_drop_prob),
+		  IF_SIGCOMP_TPTAG_COMPARTMENT(self->sa_compartment)
+		  TAG_NEXT(tags));
+
+  if (!self->sa_tports)
+    return -1;
+
+  SU_DEBUG_9(("nta: master transport created\n"));
+
+  return 0;
+}
+
 
 /** Initialize Via headers. */
 static
 int agent_init_via(nta_agent_t *self, int use_maddr)
 {
-  sip_via_t *v, **vv;
+  sip_via_t *via = NULL, *new_via, *dup_via, *v, **vv = &via;
   tport_t *tp;
+  su_addrinfo_t const *ai;
 
-  for (vv = &self->sa_vias; *vv; vv = &(*vv)->v_next)
-    ;
+  su_home_t autohome[SU_HOME_AUTO_SIZE(2048)];
+
+  su_home_auto(autohome, sizeof autohome);
 
   self->sa_tport_ip4 = 0;
   self->sa_tport_ip6 = 0;
@@ -1579,7 +1593,7 @@ int agent_init_via(nta_agent_t *self, int use_maddr)
 
   /* Set via fields for the tports */
   for (tp = tport_primaries(self->sa_tports); tp; tp = tport_next(tp)) {
-    int maddr;
+    int maddr, first_via;
     tp_name_t tpn[1];
     char const *comp = NULL;
 
@@ -1611,39 +1625,83 @@ int agent_init_via(nta_agent_t *self, int use_maddr)
 
     if (tport_has_tls(tp)) self->sa_tport_tls = 1;
 
-    if (tport_magic(tp))
-      continue;
+    first_via = 1;
 
-    if (strcmp(tpn->tpn_port, SIP_DEFAULT_SERV) == 0)
-      tpn->tpn_port = NULL;
+    for (ai = tport_get_address(tp); ai; ai = ai->ai_next) {
+      char host[TPORT_HOSTPORTSIZE];
+      char sport[6];
+      char const *canon = ai->ai_canonname;
+      su_sockaddr_t *su = (void *)ai->ai_addr;
+      int port = ntohs(su->su_port);
 
-    maddr = use_maddr && strcasecmp(tpn->tpn_canon, tpn->tpn_host) != 0;
+      inet_ntop(su->su_family, SU_ADDR(su), host, sizeof host);
 
-    comp = tpn->tpn_comp;
+      maddr = use_maddr && strcasecmp(canon, host) != 0;
 
-    v = sip_via_format(self->sa_home,
-		       "%s/%s %s%s%s%s%s%s%s",
-		       SIP_VERSION_CURRENT, tpn->tpn_proto,
-		       tpn->tpn_canon,
-		       tpn->tpn_port ? ":" : "",
-		       tpn->tpn_port ? tpn->tpn_port : "",
-		       maddr ? ";maddr=" : "", maddr ? tpn->tpn_host : "",
-		       comp ? ";comp=" : "", comp ? comp : "");
+      if (strncasecmp(tpn->tpn_proto, "tls", 3)
+	  ? port == SIP_DEFAULT_PORT
+	  : port == SIPS_DEFAULT_PORT)
+	port = 0;
 
-    if (v == NULL)
-      return -1;
+      snprintf(sport, sizeof sport, "%u", port);
+      
+      comp = tpn->tpn_comp;
 
-    tport_set_magic(tp, v);
+      v = sip_via_format(autohome,
+			 "%s/%s %s%s%s%s%s%s%s",
+			 SIP_VERSION_CURRENT, tpn->tpn_proto,
+			 canon, port ? ":" : "", port ? sport : "",
+			 maddr ? ";maddr=" : "", maddr ? host : "",
+			 comp ? ";comp=" : "", comp ? comp : "");
 
-    /** Add a duplicate to the list shown to application */
-    *vv = sip_via_dup(self->sa_home, v);
-    if (*vv == NULL)
-      return -1;
-    vv = &(*vv)->v_next;
+      if (v == NULL) {
+	su_home_deinit(autohome);
+	return -1;
+      }
+
+      v->v_comment = tpn->tpn_ident;
+
+      v->v_common->h_data = tp;
+
+      *vv = v; vv = &(*vv)->v_next;
+    }
+  }
+
+  /* Duplicate the list bind to the transports */
+  new_via = sip_via_dup(self->sa_home, via);
+  /* Duplicate the complete list shown to the application */
+  dup_via = sip_via_dup(self->sa_home, via);
+
+  if (via && (!new_via || !dup_via)) {
+    msg_header_free(self->sa_home, (void *)new_via);
+    msg_header_free(self->sa_home, (void *)dup_via);
+    su_home_deinit(autohome);
+    return -1;
+  }
+
+  v = self->sa_vias;
+  self->sa_vias = dup_via;
+  msg_header_free(self->sa_home, (void *)v);
+
+  /* Set via field magic for the tports */
+  for (tp = tport_primaries(self->sa_tports); tp; tp = tport_next(tp)) {
+    assert(via->v_common->h_data == tp);
+    v = tport_magic(tp);
+    tport_set_magic(tp, new_via);
+    msg_header_free(self->sa_home, (void *)v);
+
+    while (via->v_next && via->v_next->v_common->h_data == tp)
+      via = via->v_next, new_via = new_via->v_next;
+    
+    via = via->v_next;
+    /* break the link in via list between transports */
+    vv = &new_via->v_next, new_via = *vv, *vv = NULL;
   }
 
   if (self->sa_tport_udp)
     agent_set_udp_params(self, self->sa_udp_mtu);
+
+  su_home_deinit(autohome);
 
   return 0;
 }
@@ -1693,7 +1751,10 @@ int agent_init_contact(nta_agent_t *self)
 static
 sip_via_t const *agent_tport_via(tport_t *tport)
 {
-  return tport_magic(tport);
+  sip_via_t *v = tport_magic(tport);
+  while (v && v->v_next)
+    v = v->v_next;
+  return v;
 }
 
 /** Insert Via to a request message */
@@ -2151,7 +2212,7 @@ int agent_check_request_via(nta_agent_t *agent,
   char *hostport = received + receivedlen;
   char const *rport;
   su_sockaddr_t *from;
-  sip_via_t *tpv = tport_magic(tport);
+  sip_via_t const *tpv = agent_tport_via(tport);
 
   assert(tport); assert(msg); assert(sip);
   assert(sip->sip_request); assert(tpv);
@@ -2225,7 +2286,7 @@ static
 int agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
 {
   sip_contact_t *m;
-  sip_via_t *lv;
+  sip_via_t const *lv;
   char const *tport_port = "";
 
   if (!url->url_host)
@@ -2277,7 +2338,7 @@ int agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
   else {
     /* Canonize the request URL port */
     if (tport) {
-      lv = tport_magic(tport_parent(tport)); assert(lv);
+      lv = agent_tport_via(tport_parent(tport)); assert(lv);
       if (lv->v_port)
 	/* Add non-default port */
 	url->url_port = lv->v_port;
@@ -9676,7 +9737,7 @@ int nta_outgoing_setrseq(nta_outgoing_t *orq, uint32_t rseq)
 }
 
 /* ------------------------------------------------------------------------ */
-/* 9) Transport handling */
+/* 11) SigComp handling and public transport interface */
 
 #include <sofia-sip/nta_tport.h>
 
