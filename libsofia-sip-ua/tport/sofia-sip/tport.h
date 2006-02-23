@@ -25,7 +25,7 @@
 #ifndef TPORT_H /** Defined when <tport.h> has been included. */
 #define TPORT_H
 /**@file tport.h
- * @brief Transport interface 
+ * @brief Transport interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -87,15 +87,15 @@ typedef struct {
   int      tpac_size;
 
   /** Function used to pass a received message to the protocol stack */
-  void   (*tpac_recv)(tp_stack_t *, tport_t *, msg_t *msg, tp_magic_t *magic, 
+  void   (*tpac_recv)(tp_stack_t *, tport_t *, msg_t *msg, tp_magic_t *magic,
 		      su_time_t received);
 
   /** Function used to indicate an error to the protocol stack */
-  void   (*tpac_error)(tp_stack_t *, tport_t *, 
+  void   (*tpac_error)(tp_stack_t *, tport_t *,
 		       int errcode, char const *remote);
 
   /** Ask stack to allocate a message. */
-  msg_t *(*tpac_alloc)(tp_stack_t *, int flags, 
+  msg_t *(*tpac_alloc)(tp_stack_t *, int flags,
 		       char const [], unsigned,
 		       tport_t const *, tp_client_t *);
 
@@ -108,7 +108,7 @@ typedef struct {
 typedef tport_stack_class_t tp_stack_class_t;
 
 /** Callback to report error by pending requests. */
-typedef void tport_pending_error_f(tp_stack_t *, tp_client_t *, 
+typedef void tport_pending_error_f(tp_stack_t *, tp_client_t *,
 				   tport_t *, msg_t *msg, int error);
 
 enum {
@@ -135,7 +135,7 @@ enum {
 
 /** Transport name.
  *
- * This structure represents the address of the transport in textual format. 
+ * This structure represents the address of the transport in textual format.
  * For primary transports, the transport name contains the local address,
  * for secondary transports, the peer address.
  *
@@ -149,7 +149,7 @@ typedef struct {
   char const *tpn_port;		/**< Port number in textual format. */
   char const *tpn_comp;		/**< Compression algorithm (NULL if none) */
   char const *tpn_ident;	/**< Transport identifier (NULL if none) */
-} tp_name_t; 
+} tp_name_t;
 
 #define TPN_FORMAT "%s/%s:%s%s%s%s%s"
 
@@ -161,75 +161,75 @@ typedef struct {
 #include <sofia-sip/tport_tag.h>
 
 /** Create first primary transport. */
-tport_t *tport_tcreate(tp_stack_t *stack,
+TPORT_DLL tport_t *tport_tcreate(tp_stack_t *stack,
 		       tport_stack_class_t const *tpac,
-		       su_root_t *root, 
+		       su_root_t *root,
 		       tag_type_t tag, tag_value_t value, ...);
 
 /** Create first primary transport. @deprecated Use tport_tcreate(). */
-tport_t *tport_create(tp_stack_t *stack,
+TPORT_DLL tport_t *tport_create(tp_stack_t *stack,
 		      tport_stack_class_t const *stack_class,
 		      su_root_t *root);
 
 /** Bind transports to network */
-int tport_bind(tport_t *self,
+TPORT_DLL int tport_bind(tport_t *self,
 	       tp_name_t const *tpn,
 	       char const * const transports[],
 	       int flags);
 
 /** Bind transports to network. */
-int tport_tbind(tport_t *self,
+TPORT_DLL int tport_tbind(tport_t *self,
 		tp_name_t const *tpn,
 		char const * const transports[],
 		tag_type_t tag, tag_value_t value, ...);
 
 /** Get transport parameters. */
-int tport_get_params(tport_t const *, tag_type_t tag, tag_value_t value, ...);
+TPORT_DLL int tport_get_params(tport_t const *, tag_type_t tag, tag_value_t value, ...);
 
 /** Set transport parameters. */
-int tport_set_params(tport_t *self, tag_type_t tag, tag_value_t value, ...);
+TPORT_DLL int tport_set_params(tport_t *self, tag_type_t tag, tag_value_t value, ...);
 
 /** Destroy transport(s). */
-void tport_destroy(tport_t *tport);
+TPORT_DLL void tport_destroy(tport_t *tport);
 
 /** Shutdown a transport connection. */
-int tport_shutdown(tport_t *tport, int how);
+TPORT_DLL int tport_shutdown(tport_t *tport, int how);
 
 /** Create a new transport reference. */
-tport_t *tport_incref(tport_t *tp);
+TPORT_DLL tport_t *tport_incref(tport_t *tp);
 
 /** Destroy a transport reference. */
-void tport_decref(tport_t **tp);
+TPORT_DLL void tport_decref(tport_t **tp);
 
 /** Send a message using transport. @deprecated Use tport_tsend(). */
-int tport_send(tport_t *, msg_t *, tp_name_t const *);
+TPORT_DLL int tport_send(tport_t *, msg_t *, tp_name_t const *);
 
 /** Send a message using transport. */
-tport_t *tport_tsend(tport_t *, msg_t *, tp_name_t const *, 
+TPORT_DLL tport_t *tport_tsend(tport_t *, msg_t *, tp_name_t const *,
 		     tag_type_t, tag_value_t, ...);
 
 /** Queue a message to transport. */
-int tport_tqueue(tport_t *, msg_t *, tag_type_t, tag_value_t, ...);
+TPORT_DLL int tport_tqueue(tport_t *, msg_t *, tag_type_t, tag_value_t, ...);
 
 /** Return number of queued messages. */
-int tport_queuelen(tport_t const *self);
+TPORT_DLL int tport_queuelen(tport_t const *self);
 
 /** Send a queued message (and queue another, if required). */
-int tport_tqsend(tport_t *, msg_t *, msg_t *, tag_type_t, tag_value_t, ...);
+TPORT_DLL int tport_tqsend(tport_t *, msg_t *, msg_t *, tag_type_t, tag_value_t, ...);
 
 /** Stop reading from socket until tport_continue() is called. */
-int tport_stall(tport_t *self);
+TPORT_DLL int tport_stall(tport_t *self);
 
 /** Continue reading from socket. */
-int tport_continue(tport_t *self);
+TPORT_DLL int tport_continue(tport_t *self);
 
 /** Mark message as waiting for a response. */
-int tport_pend(tport_t *self, msg_t *msg, 
+TPORT_DLL int tport_pend(tport_t *self, msg_t *msg,
 	       tport_pending_error_f *callback, tp_client_t *client);
 
 /** Do not wait for response anymore. */
-int tport_release(tport_t *self, int pendd,		  
-		  msg_t *msg, msg_t *reply, tp_client_t *client, 
+TPORT_DLL int tport_release(tport_t *self, int pendd,
+		  msg_t *msg, msg_t *reply, tp_client_t *client,
 		  int still_pending);
 
 /** Return true if transport is master. */
@@ -255,7 +255,7 @@ TPORT_DLL int tport_has_ip6(tport_t const *tport);
 
 /** Test if transport is udp. */
 TPORT_DLL int tport_is_udp(tport_t const *self);
- 
+
 /** Test if transport is tcp. */
 TPORT_DLL int tport_is_tcp(tport_t const *self);
 
@@ -263,68 +263,73 @@ TPORT_DLL int tport_is_tcp(tport_t const *self);
 TPORT_DLL int tport_has_tls(tport_t const *tport);
 
 /** Test if transport has just been accepted. */
-int tport_is_newly_accepted(tport_t *self);
- 
+TPORT_DLL int tport_is_newly_accepted(tport_t *self);
+
 /** Set transport magic. */
-void tport_set_magic(tport_t *self, tp_magic_t *magic);
+TPORT_DLL void tport_set_magic(tport_t *self, tp_magic_t *magic);
 
 /** Get transport magic. */
-tp_magic_t *tport_magic(tport_t const *tport);
+TPORT_DLL tp_magic_t *tport_magic(tport_t const *tport);
 
 /** Get transport name. */
-tp_name_t const *tport_name(tport_t const *tport);
+TPORT_DLL tp_name_t const *tport_name(tport_t const *tport);
+
+/** Get transport address list. */
+TPORT_DLL su_addrinfo_t const *tport_get_address(tport_t const *tport);
 
 /** Get transport ident. */
-char const *tport_ident(tport_t const *self);
+TPORT_DLL char const *tport_ident(tport_t const *self);
 
 /** Get primary transport (or self, if already parent) */
-tport_t *tport_parent(tport_t const *self);
+TPORT_DLL tport_t *tport_parent(tport_t const *self);
 
 /** Flush idle connections */
-int tport_flush(tport_t *);
+TPORT_DLL int tport_flush(tport_t *);
 
 /** Get primary transports */
-tport_t *tport_primaries(tport_t const *tport);
+TPORT_DLL tport_t *tport_primaries(tport_t const *tport);
 
 /** Get next transport */
-tport_t *tport_next(tport_t const *tport);
+TPORT_DLL tport_t *tport_next(tport_t const *tport);
 
 /** Get secondary transports. */
-tport_t *tport_secondary(tport_t const *tport);
+TPORT_DLL tport_t *tport_secondary(tport_t const *tport);
 
 /** Get a protocol corresponding to the protocol name. */
-tport_t *tport_by_protocol(tport_t const *self, char const *proto);
+TPORT_DLL tport_t *tport_by_protocol(tport_t const *self, char const *proto);
 
 /** Get transport by interface identifier and protocol name. */
-tport_t *tport_primary_by_name(tport_t const *self, tp_name_t const *tpn);
+TPORT_DLL tport_t *tport_primary_by_name(tport_t const *self, tp_name_t const *tpn);
 
 /** Get a transport corresponding to the name */
-tport_t *tport_by_name(tport_t const *self, tp_name_t const  *);
+TPORT_DLL tport_t *tport_by_name(tport_t const *self, tp_name_t const  *);
 
 /** Create a transport name corresponding to the URL. */
-int tport_name_by_url(su_home_t *, tp_name_t *, url_string_t const *us);
+TPORT_DLL int tport_name_by_url(su_home_t *, tp_name_t *,
+				url_string_t const *us);
 
 /** Return source transport object for delivered message */
-tport_t *tport_delivered_by(tport_t const *tp, msg_t const *msg);
+TPORT_DLL tport_t *tport_delivered_by(tport_t const *tp, msg_t const *msg);
 
 /** Return source transport name for delivered message */
-int tport_delivered_from(tport_t *tp, msg_t const *msg, tp_name_t name[1]);
+TPORT_DLL int tport_delivered_from(tport_t *tp, msg_t const *msg,
+				   tp_name_t name[1]);
 
 /** Check if transport named is already resolved */
-int tport_name_is_resolved(tp_name_t const *);
+TPORT_DLL int tport_name_is_resolved(tp_name_t const *);
 
 /** Duplicate a transport name. */
-int tport_name_dup(su_home_t *, tp_name_t *dst, tp_name_t const *src);
+TPORT_DLL int tport_name_dup(su_home_t *, tp_name_t *dst, tp_name_t const *src);
 
 /** Convert a socket address to a transport name. */
-int tport_convert_addr(su_home_t *home,
+TPORT_DLL int tport_convert_addr(su_home_t *home,
 		       tp_name_t *tpn,
 		       char const *protoname,
 		       char const *canon,
 		       su_sockaddr_t const *su);
 
 /** Print host and port separated with ':' to a string. */
-char *tport_hostport(char buf[], int bufsize, 
+TPORT_DLL char *tport_hostport(char buf[], int bufsize,
 		     su_sockaddr_t const *su, int with_port);
 
 /** Initialize STUN keepalives. */
@@ -333,55 +338,60 @@ int tport_keepalive(tport_t *tp, tp_name_t *tpn);
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */
 
-int tport_can_send_sigcomp(tport_t const *self);
-int tport_can_recv_sigcomp(tport_t const *self);
+TPORT_DLL int tport_can_send_sigcomp(tport_t const *self);
+TPORT_DLL int tport_can_recv_sigcomp(tport_t const *self);
 
-int tport_has_compression(tport_t const *self, char const *comp);
-int tport_set_compression(tport_t *self, char const *comp);
+TPORT_DLL int tport_has_compression(tport_t const *self, char const *comp);
+TPORT_DLL int tport_set_compression(tport_t *self, char const *comp);
 
 /** Set SigComp option. */
-int tport_sigcomp_option(tport_t const *self,
-			 struct sigcomp_compartment *cc, 
+TPORT_DLL int tport_sigcomp_option(tport_t const *self,
+			 struct sigcomp_compartment *cc,
 			 char const *option);
 
 /** Obtain a SigComp compartment with given name. */
-struct sigcomp_compartment *
-tport_sigcomp_compartment(tport_t *self, 
+TPORT_DLL struct sigcomp_compartment *
+tport_sigcomp_compartment(tport_t *self,
 			  char const *name, int namelen,
 			  int create_if_needed);
 
-struct sigcomp_compartment *
+TPORT_DLL struct sigcomp_compartment *
 tport_compartment_incref(struct sigcomp_compartment *cc);
 
-void
+TPORT_DLL void
 tport_compartment_decref(struct sigcomp_compartment **pointer_to_cc);
 
 /** Assign a SigComp compartment to a connection-oriented tport. */
-int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *);
+TPORT_DLL int
+tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *);
 
 /** Test if a SigComp compartment is assigned to a tport. */
-int tport_has_sigcomp_assigned(tport_t const *self);
+TPORT_DLL int tport_has_sigcomp_assigned(tport_t const *self);
 
 /** Accept SigComp message */
-int tport_sigcomp_accept(tport_t *self, 
-			 struct sigcomp_compartment *cc, 
-			 msg_t *msg);
+TPORT_DLL int
+tport_sigcomp_accept(tport_t *self,
+		     struct sigcomp_compartment *cc,
+		     msg_t *msg);
 
 /** Get UDVM with which the request was delivered */
-int tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
-			       struct sigcomp_udvm **return_pointer_to_udvm,
-			       int remove);
+TPORT_DLL int
+tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
+			   struct sigcomp_udvm **return_pointer_to_udvm,
+			   int remove);
 
 /** Shutdown SigComp compartment */
-int tport_sigcomp_close(tport_t *self, 
-			struct sigcomp_compartment *cc, 
-			int how);
+TPORT_DLL int
+tport_sigcomp_close(tport_t *self,
+		    struct sigcomp_compartment *cc,
+		    int how);
 
 /** Set SigComp compartment lifetime. */
-int tport_sigcomp_lifetime(tport_t *self, 
-			   struct sigcomp_compartment *,
-			   unsigned lifetime_in_ms,
-			   int only_expand);
+TPORT_DLL int
+tport_sigcomp_lifetime(tport_t *self,
+		       struct sigcomp_compartment *,
+		       unsigned lifetime_in_ms,
+		       int only_expand);
 
 
 SOFIA_END_DECLS
