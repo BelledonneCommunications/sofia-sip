@@ -81,7 +81,7 @@
 #include <sofia-sip/sip.h>
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/msg_date.h>
-b
+
 void usage(void)
 {
   fprintf(stderr, 
