@@ -54,6 +54,11 @@
 
 #include <openssl/opensslv.h>
 
+/* Missing socket symbols */
+#ifndef SOL_TCP
+#define SOL_TCP IPPROTO_TCP
+#endif
+
 /** STUN log. */
 su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", SU_DEBUG) }; 
 
