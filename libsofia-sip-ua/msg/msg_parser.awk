@@ -156,7 +156,7 @@ function replace (p, hash, name, NAME, comment, Comment, COMMENT)
     gsub(/#Xxxxxxx_Xxxxxxx#/, Comment, p);
     gsub(/#XXXXXXX_XXXXXXX#/, COMMENT, p);
     	    
-    print p > PR NEW;
+    print p > PR;
   }
 }
 
@@ -173,7 +173,7 @@ function process_footer (text)
       text = substr(text, 1, n);
     }
     if (n > 0)
-      print text > PR NEW;
+      print text > PR;
     return;
   }
   
@@ -190,10 +190,10 @@ function process_footer (text)
 	gsub(/#XXXXXXX_XXXXXXX#/, COMMENTS[j], l);
 	gsub(/#xxxxxx#/, names[j], l); 
 	gsub(/#XXXXXX#/, NAMES[j], l);
-	print l > PR NEW;
+	print l > PR;
       }
     } else {
-      print l > PR NEW;
+      print l > PR;
     }
   }
 }
@@ -271,7 +271,7 @@ function read_header_flags (flagfile,    line, tokens, name, value)
       gsub(/#DATE#/, "@date Generated: " date, header);
       if (PACKAGE_NAME) gsub(/#PACKAGE_NAME#/, PACKAGE_NAME, header);
       if (PACKAGE_VERSION) gsub(/#PACKAGE_VERSION#/, PACKAGE_VERSION, header);
-      print header > PR NEW;
+      print header > PR;
 
       RS=RS0;
     }
@@ -338,12 +338,12 @@ END {
     sub(/.*[\/]/, "", TEMPLATE);
     gsub(/#AUTO#/, auto, header);
     gsub(/#DATE#/, "@date Generated: " date, header);
-    print header > PT NEW;
+    print header > PT;
 
     if (MC_SHORT_SIZE) {
       printf("static msg_href_t const " \
 	     "%s_short_forms[MC_SHORT_SIZE] = \n{\n", 
-	     module) > PT NEW;      
+	     module) > PT;      
 
       for (i = 1; i <= MC_SHORT_SIZE; i = i + 1) {
 	c = (i == MC_SHORT_SIZE) ? "" : ",";
@@ -354,54 +354,54 @@ END {
 	  printf("  { /* %s */ %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
 		 substr(lower_case, i, 1), 
 		 tprefix, n, module, prefix, n, flags, c)	\
-	    > PT NEW;
+	    > PT;
 	}
 	else {
 	  printf("  { NULL }%s\n", c) \
-	    > PT NEW;
+	    > PT;
 	}
       }
-      printf("};\n\n") > PT NEW;      
+      printf("};\n\n") > PT;      
     }
 
-    # printf("extern msg_hclass_t msg_multipart_class[];\n\n") > PT NEW;
+    # printf("extern msg_hclass_t msg_multipart_class[];\n\n") > PT;
 
-    printf("msg_mclass_t const %s_mclass[1] = \n{{\n", module) > PT NEW;
-    printf("# if defined (%s_HCLASS)\n", toupper(module)) > PT NEW;
-    printf("  %s_HCLASS,\n", toupper(module)) > PT NEW;
-    printf("#else\n") > PT NEW;
-    printf("  {{ 0 }},\n") > PT NEW;
-    printf("#endif\n") > PT NEW;
-    printf("  %s_VERSION_CURRENT,\n", toupper(module)) > PT NEW;
-    printf("  %s_PROTOCOL_TAG,\n", toupper(module)) > PT NEW;
-    printf("#if defined (%s_PARSER_FLAGS)\n", toupper(module)) > PT NEW;
-    printf("  %s_PARSER_FLAGS,\n", toupper(module)) > PT NEW;
-    printf("#else\n") > PT NEW;
-    printf("  0,\n") > PT NEW;
-    printf("#endif\n") > PT NEW;
-    printf("  sizeof(%s_t),\n", module) > PT NEW;
-    printf("  %s_extract_body,\n", module) > PT NEW;
+    printf("msg_mclass_t const %s_mclass[1] = \n{{\n", module) > PT;
+    printf("# if defined (%s_HCLASS)\n", toupper(module)) > PT;
+    printf("  %s_HCLASS,\n", toupper(module)) > PT;
+    printf("#else\n") > PT;
+    printf("  {{ 0 }},\n") > PT;
+    printf("#endif\n") > PT;
+    printf("  %s_VERSION_CURRENT,\n", toupper(module)) > PT;
+    printf("  %s_PROTOCOL_TAG,\n", toupper(module)) > PT;
+    printf("#if defined (%s_PARSER_FLAGS)\n", toupper(module)) > PT;
+    printf("  %s_PARSER_FLAGS,\n", toupper(module)) > PT;
+    printf("#else\n") > PT;
+    printf("  0,\n") > PT;
+    printf("#endif\n") > PT;
+    printf("  sizeof(%s_t),\n", module) > PT;
+    printf("  %s_extract_body,\n", module) > PT;
 
     len = split("request status separator payload unknown error", unnamed, " ");
 
     for (i = 1; i <= len; i++) {
       printf("  {{ %s_%s_class, offsetof(%s_t, %s_%s) }},\n", 
-	     tprefix, unnamed[i], module, prefix, unnamed[i]) > PT NEW;
+	     tprefix, unnamed[i], module, prefix, unnamed[i]) > PT;
     }
     if (multipart) {
       printf("  {{ %s_class, offsetof(%s_t, %s_multipart) }},\n",
-	     multipart, module, prefix) > PT NEW;
+	     multipart, module, prefix) > PT;
     } else {
-      printf("  {{ NULL, 0 }},\n") > PT NEW;
+      printf("  {{ NULL, 0 }},\n") > PT;
     }
     if (MC_SHORT_SIZE) {
-      printf("  %s_short_forms, \n", module) > PT NEW;      
+      printf("  %s_short_forms, \n", module) > PT;      
     }
     else {
-      printf("  NULL, \n") > PT NEW;
+      printf("  NULL, \n") > PT;
     }
-    printf("  %d, %d, \n", MC_HASH_SIZE, total) > PT NEW;
-    printf("  {\n") > PT NEW;
+    printf("  %d, %d, \n", MC_HASH_SIZE, total) > PT;
+    printf("  {\n") > PT;
 
     for (i = 0; i < total; i++) {
       n = headers[i];
@@ -426,12 +426,12 @@ END {
         flags = header_flags[n]; if (flags) flags = ",\n      " flags;
 
 	printf("    { %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
-	       tprefix, n, module, prefix, n, flags, c) > PT NEW;
+	       tprefix, n, module, prefix, n, flags, c) > PT;
       }
       else {
-	printf("    { NULL, 0 }%s\n", c) > PT NEW;
+	printf("    { NULL, 0 }%s\n", c) > PT;
       }
     }
-    printf("  }\n}};\n\n") > PT NEW;
+    printf("  }\n}};\n\n") > PT;
   }
 }
