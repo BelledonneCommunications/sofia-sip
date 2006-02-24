@@ -568,7 +568,7 @@ void *
 sres_resolver_get_userdata(sres_resolver_t const *res)
 {
   if (res == NULL)
-    return su_seterrno(EFAULT), NULL;
+    return su_seterrno(EFAULT), (void *)NULL;
   else
     return res->res_userdata;
 }
@@ -595,7 +595,7 @@ sres_query_make(sres_resolver_t *res,
   SU_DEBUG_9(("sres_query_make() called\n"));
 
   if (domain == NULL)
-    return su_seterrno(EFAULT), NULL;
+    return su_seterrno(EFAULT), (void *)NULL;
 
   dlen = strlen(domain);
   if (dlen > SRES_MAXDNAME ||
@@ -1065,7 +1065,9 @@ sres_record_compare(sres_record_t const *aa, sres_record_t const *bb)
     {
       sres_a6_record_t const *A = aa->sr_a6, *B = bb->sr_a6;
       D = A->a6_prelen - B->a6_prelen; if (D) return D;
-      D = strcasecmp(A->a6_prename, B->a6_prename); if (D) return D;
+      D = !A->a6_prename - !B->a6_prename; 
+      if (D == 0 && A->a6_prename && B->a6_prename)
+	D = strcasecmp(A->a6_prename, B->a6_prename); if (D) return D;
       return memcmp(&A->a6_suffix, &B->a6_suffix, sizeof A->a6_suffix);
     }
   case sres_type_aaaa:
@@ -1261,17 +1263,17 @@ sres_parse_resolv_conf(sres_resolver_t *res, const char *filename)
 #if HAVE_SIN6
     if (strchr(server, ':')) {
       struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+      memset(sa, 0, dns->dns_addrlen = sizeof *sin6);
       err = inet_pton(sa->sa_family = AF_INET6, server, &sin6->sin6_addr);
       sin6->sin6_port = htons(res->res_port);
-      dns->dns_addrlen = sizeof *sin6;
     } 
     else 
 #endif
       {
       struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+      memset(sa, 0, dns->dns_addrlen = sizeof *sin);
       err = inet_pton(sa->sa_family = AF_INET, server, &sin->sin_addr);
       sin->sin_port = htons(res->res_port);
-      dns->dns_addrlen = sizeof *sin;
     }
 
     if (err <= 0) {
@@ -1279,7 +1281,9 @@ sres_parse_resolv_conf(sres_resolver_t *res, const char *filename)
       SU_DEBUG_3(("sres: nameserver %s: invalid address\n", server));
       continue;
     }
-
+#if HAVE_SA_LEN
+    sa->sa_len = dns->dns_addrlen;
+#endif
     dns->dns_name = su_strdup(res->res_home, server);
     dns->dns_edns = 1;
     dns++;
@@ -1590,12 +1594,12 @@ sres_toplevel(char buf[SRES_MAXDNAME], char const *domain)
   int already;
 
   if (!domain)
-    return su_seterrno(EFAULT), NULL;
+    return su_seterrno(EFAULT), (void *)NULL;
 
   len = strlen(domain);
 
   if (len >= SRES_MAXDNAME)
-    return su_seterrno(ENAMETOOLONG), NULL;
+    return su_seterrno(ENAMETOOLONG), (void *)NULL;
 
   already = len > 0 && domain[len - 1] == '.';
 
@@ -1603,7 +1607,7 @@ sres_toplevel(char buf[SRES_MAXDNAME], char const *domain)
     return domain;
 
   if (len + 1 >= SRES_MAXDNAME)
-    return su_seterrno(ENAMETOOLONG), NULL;
+    return su_seterrno(ENAMETOOLONG), (void *)NULL;
 
   strcpy(buf, domain);
   buf[len] = '.'; buf[len + 1] = '\0';
@@ -1693,7 +1697,8 @@ int sres_resolver_sockets(sres_resolver_t const *res,
 
   retval = 1 + res->res_n_servers;
 
-#if HAVE_SIN6
+#if HAVE_SIN6 && 0
+  /* XXX - disable this until we define better API for sockets */
   s = socket(family = AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
   namelen = sizeof(struct sockaddr_in6);
 #endif
@@ -2953,7 +2958,7 @@ sres_resolver_create(su_root_t *root,
   ta_list ta;
 
   if (root == NULL)
-    return su_seterrno(EFAULT), NULL;
+    return su_seterrno(EFAULT), (void *)NULL;
 
   ta_start(ta, tag, value);
   tl_gets(ta_args(ta),
@@ -3093,7 +3098,7 @@ sres_query(sres_resolver_t *res,
   sres_sofia_t *srs;
 
   if (res == NULL)
-    return su_seterrno(EFAULT), NULL;
+    return su_seterrno(EFAULT), (void *)NULL;
   
   srs = sres_resolver_get_userdata(res);
 
@@ -3102,7 +3107,7 @@ sres_query(sres_resolver_t *res,
 			   srs->srs_socket,
 			   type, domain);
   else
-    return su_seterrno(EINVAL), NULL;
+    return su_seterrno(EINVAL), (void *)NULL;
 }
 
 /** Make a reverse DNS query.
@@ -3123,12 +3128,12 @@ sres_query_sockaddr(sres_resolver_t *res,
   sres_sofia_t *srs;
 
   if (res == NULL)
-    return su_seterrno(EFAULT), NULL;
+    return su_seterrno(EFAULT), (void *)NULL;
   
   srs = sres_resolver_get_userdata(res);
 
   if (srs == NULL)
-    return su_seterrno(EINVAL), NULL;
+    return su_seterrno(EINVAL), (void *)NULL;
 
   return sres_query_make_sockaddr(res, callback, context, 
 				  srs->srs_socket,
