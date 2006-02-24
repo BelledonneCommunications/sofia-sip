@@ -237,7 +237,7 @@ int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags,
 {
   struct msghdr hdr[1] = {{0}};
 
-  hdr->msg_name = (struct sockaddr *)&su->su_sa;
+  hdr->msg_name = (void *)su;
   hdr->msg_namelen = sulen;
   hdr->msg_iov = (struct iovec *)iov;
   hdr->msg_iovlen = iovlen;
@@ -251,7 +251,7 @@ int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags,
   struct msghdr hdr[1] = {{0}};
   int retval;
 
-  hdr->msg_name = (struct sockaddr *)&su->su_sa;
+  hdr->msg_name = (void *)su;
   if (su && sulen)
     hdr->msg_namelen = *sulen;
   hdr->msg_iov = (struct iovec *)iov;
