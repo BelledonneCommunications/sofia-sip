@@ -78,6 +78,8 @@
 #define MBOX_SEND  0
 #endif
 
+#undef HAVE_EPOLL
+
 #if HAVE_EPOLL
 #include <sys/epoll.h>
 #endif

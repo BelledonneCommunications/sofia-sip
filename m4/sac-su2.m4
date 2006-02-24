@@ -112,7 +112,9 @@ esac
 
 AC_CHECK_HEADERS([unistd.h sys/time.h])
 AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
-AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h net/if.h net/if_types.h])
+AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
+                  net/if.h net/if_types.h ifaddr.h],,,
+		[sys/types.h sys/socket.h])
 
 AC_CACHE_CHECK([for struct addrinfo],
 [ac_cv_struct_addrinfo],[
@@ -259,22 +261,17 @@ AC_SUBST(GLIB_VERSION)
 # Checks for library functions.
 # ===========================================================================
 
-AC_CHECK_FUNCS(gettimeofday strerror random initstate tcsetattr flock alarm)
-AC_CHECK_FUNCS(socketpair gethostname getipnodebyname poll)
-AC_CHECK_FUNCS(getaddrinfo getnameinfo freeaddrinfo gai_strerror)
-
-if false; then
-	# not yet
-	AC_CHECK_FUNCS(epoll)
-fi
+AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm])
+AC_CHECK_FUNCS([socketpair gethostname getipnodebyname poll epoll])
+AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs])
 
 # _GNU_SOURCE stuff
-AC_CHECK_FUNCS(getline getdelim getpass)
+AC_CHECK_FUNCS([getline getdelim getpass])
 
 AC_REQUIRE([SAC_WITH_RT])
 
 if test "${with_rt}" != no; then
-    AC_CHECK_FUNCS(clock_gettime clock_getcpuclockid)
+    AC_CHECK_FUNCS([clock_gettime clock_getcpuclockid])
 fi
 
 SAC_REPLACE_FUNCS(memmem memccpy memspn memcspn strcasestr strtoull)

@@ -65,16 +65,27 @@
 #include <net/if_types.h>
 #endif
 
-#if HAVE_IPHLPAPI_H
+#if HAVE_GETIFADDRS
+
+#define USE_LOCALINFO0 1
+#define localinfo0 bsd_localinfo
+static int bsd_localinfo(su_localinfo_t const *, su_localinfo_t **);
+
+#elif HAVE_IPHLPAPI_H
+
 #include <iphlpapi.h>
 #define USE_LOCALINFO0 1
-static int localinfo0(su_localinfo_t const *, su_localinfo_t **);
+#define localinfo0 win_localinfo
+static int win_localinfo(su_localinfo_t const *, su_localinfo_t **);
+
 #else
+
 #undef USE_LOCALINFO0
 static int localinfo4(su_localinfo_t const *, su_localinfo_t **);
 #  if SU_HAVE_IN6
 static int localinfo6(su_localinfo_t const *, su_localinfo_t **);
 #  endif
+
 #endif
 
 static int li_name(su_localinfo_t const*, int, su_sockaddr_t const*, char **);
@@ -91,7 +102,7 @@ static int li_scope4(uint32_t ip4);
  * scope, and domain names corresponding to the local addresses.
  *
  * @param hints specifies selection criteria
- * @param res   list of local addresses
+ * @param return_localinfo   return list of local addresses
  *
  * @par Selection criteria - hints
  *
@@ -158,15 +169,15 @@ static int li_scope4(uint32_t ip4);
  *
  */
 int su_getlocalinfo(su_localinfo_t const *hints, 
-		    su_localinfo_t **res)
+		    su_localinfo_t **return_localinfo)
 {
   int error = 0, ip4 = 0, ip6 = 0;
   su_localinfo_t *result = NULL, **rr = &result;
   su_localinfo_t hh[1] = {{ 0 }};
 
-  assert(res);
+  assert(return_localinfo);
 
-  *res = result;
+  *return_localinfo = NULL;
 
   if (hints) {
     /* Copy hints so that it can be modified */
@@ -200,31 +211,34 @@ int su_getlocalinfo(su_localinfo_t const *hints,
   }
 
 #if USE_LOCALINFO0 
-  error = localinfo0(hh, &result);
+  error = localinfo0(hh, rr);
 #else
+
 #  if SU_HAVE_IN6
   if (ip6) {
     error = localinfo6(hh, rr);
-    if (error && (error != ELI_NOADDRESS || !ip4))
-      return error;
-
-    /* Search end of list */
-    for (; *rr; rr = &(*rr)->li_next)
-      ;
+    if (error == ELI_NOADDRESS && ip4)
+      error = 0;
+    
+    if (!error) 
+      /* Search end of list */
+      for (; *rr; rr = &(*rr)->li_next)
+	;
   }
 #  endif
-  if (ip4) {
+  if (ip4 && !error) {
     /* Append IPv4 addresses */
     error = localinfo4(hh, rr);
-    if (error)
-      su_freelocalinfo(result);
   }
 #endif
 
-  if (result)
-    li_sort(result, res);
-  else
+  if (!result)
     error = ELI_NOADDRESS;
+
+  if (!error)
+    li_sort(result, return_localinfo);
+  else
+    su_freelocalinfo(result);
 
   return error;
 }
@@ -761,11 +775,10 @@ err:
 #if USE_LOCALINFO0 || !SU_HAVE_IN6
 
 #elif HAVE_PROC_NET_IF_INET6 
-/** Build a list of local IPv6 addresses and append it to *rresult. */
+/** Build a list of local IPv6 addresses and append it to *return_result. */
 static
-int localinfo6(su_localinfo_t const *hints, su_localinfo_t **rresult)
+int localinfo6(su_localinfo_t const *hints, su_localinfo_t **return_result)
 {
-  su_localinfo_t *tbf = NULL, **lli = &tbf;
   su_localinfo_t *li = NULL;
   su_sockaddr_t su[1] = {{ 0 }}, *addr;
   int error = ELI_NOADDRESS;
@@ -841,8 +854,7 @@ int localinfo6(su_localinfo_t const *hints, su_localinfo_t **rresult)
 	break;
       }
       addr = (su_sockaddr_t*)memcpy((li + 1), su, addrlen);
-      if (!tbf) tbf = li;
-      *lli = li; lli = &li->li_next;
+      *return_result = li; return_result = &li->li_next;
 
       li->li_flags = flags;
       li->li_family = AF_INET6;
@@ -862,13 +874,6 @@ int localinfo6(su_localinfo_t const *hints, su_localinfo_t **rresult)
 
   if (canonname) 
     free(canonname);
-
-  if (error && tbf) {
-    su_freelocalinfo(tbf);
-  }
-  else {
-    *rresult = tbf;
-  }
 
   return error;
 }
@@ -974,7 +979,122 @@ err:
 }
 #endif
 
-#if USE_LOCALINFO0 && HAVE_IPHLPAPI_H && SU_HAVE_IN6
+
+#if HAVE_GETIFADDRS
+
+#include <ifaddrs.h>
+
+static
+int bsd_localinfo(su_localinfo_t const hints[1], 
+		  su_localinfo_t **return_result)
+{
+  struct ifaddrs *ifa, *results;
+  int error = 0;
+  int v4_mapped = (hints->li_flags & LI_V4MAPPED) != 0;
+  char *canonname = NULL;
+
+  if (getifaddrs(&results) < 0) {
+    if (errno == ENOMEM)
+      return ELI_MEMORY;
+    else
+      return ELI_SYSTEM;
+  }
+
+  for (ifa = results; ifa; ifa = ifa->ifa_next) {
+    su_localinfo_t *li;
+    su_sockaddr_t *su, su2[1];
+    socklen_t sulen;
+    int scope, flags = 0, gni_flags = 0, if_index = 0;
+    char const *ifname = 0;
+    size_t ifnamelen = 0;
+
+    su = (su_sockaddr_t *)ifa->ifa_addr;
+
+    if (!su)
+      continue;
+
+    if (su->su_family == AF_INET) {
+      sulen = sizeof(su->su_sin);
+      scope = li_scope4(su->su_sin.sin_addr.s_addr);
+      if (v4_mapped)
+	sulen = sizeof(su->su_sin6);
+    }
+    else if (su->su_family == AF_INET6) {
+      if (IN6_IS_ADDR_MULTICAST(&su->su_sin6.sin6_addr))
+	continue;
+      sulen = sizeof(su->su_sin6);
+      scope = li_scope6(&su->su_sin6.sin6_addr);
+    }
+    else 
+      continue;
+
+    if (hints->li_flags & LI_IFNAME) {
+      ifname = ifa->ifa_name;
+      if (ifname)
+	ifnamelen = strlen(ifname) + 1;
+    }
+
+    if ((hints->li_scope && (hints->li_scope & scope) == 0) ||
+	(hints->li_family && hints->li_family != su->su_family) ||
+	(hints->li_ifname && (!ifname || strcmp(hints->li_ifname, ifname))) ||
+	(hints->li_index && hints->li_index != if_index))
+      continue;
+    
+    if (scope == LI_SCOPE_HOST || scope == LI_SCOPE_LINK)
+      gni_flags = NI_NUMERICHOST;
+
+    if (v4_mapped && su->su_family == AF_INET) {
+      /* Map IPv4 address to IPv6 address */
+      memset(su2, 0, sizeof(*su2));
+      su2->su_family = AF_INET6;
+      ((int32_t*)&su2->su_sin6.sin6_addr)[2] = htonl(0xffff);
+      ((int32_t*)&su2->su_sin6.sin6_addr)[3] = su->su_sin.sin_addr.s_addr;
+      su = su2;
+    }
+
+    if ((error = li_name(hints, gni_flags, su, &canonname)) < 0)
+      break;
+
+    if (error > 0) {
+      error = 0;
+      continue;
+    }
+    
+    if (canonname)
+      if (strchr(canonname, ':') ||
+	  canonname[strspn(canonname, "0123456789.")] == '\0')
+	flags |= LI_NUMERIC;
+
+    if (!(li = calloc(1, sizeof(*li) + sulen + ifnamelen))) {
+      SU_DEBUG_1(("su_getlocalinfo: memory exhausted\n"));
+      error = ELI_MEMORY;
+      break;
+    } 
+    *return_result = li, return_result = &li->li_next;
+
+    li->li_flags = flags;
+    li->li_family = su->su_family;
+    li->li_scope = scope;
+    li->li_index = if_index;
+    li->li_addrlen = sulen;
+    li->li_addr = memcpy(li + 1, su, sulen);
+    li->li_canonname = canonname;
+    if (ifnamelen) {
+      li->li_ifname = strcpy((char *)(li + 1) + sulen, ifname);
+    }
+
+    canonname = NULL;
+  }
+
+  if (canonname)
+    free(canonname);
+
+  freeifaddrs(results);
+
+  return error;
+}
+
+#elif USE_LOCALINFO0 && HAVE_IPHLPAPI_H && SU_HAVE_IN6
 
 static 
 char const *ws2ifname(DWORD iftype)
@@ -1006,7 +1126,7 @@ char const *ws2ifname(DWORD iftype)
 }
 
 static
-int localinfo0(su_localinfo_t const hints[1], su_localinfo_t **rresult)
+int win_localinfo(su_localinfo_t const hints[1], su_localinfo_t **rresult)
 {
   /* This is Windows XP code, for both IPv6 and IPv4. */
   size_t iaa_size = 2048;
@@ -1119,7 +1239,7 @@ int localinfo0(su_localinfo_t const hints[1], su_localinfo_t **rresult)
 	  flags |= LI_NUMERIC;
 
       if (!(li = calloc(1, sizeof(*li) + sulen + ifnamelen))) {
-	SU_DEBUG_1(("su_getlocaladdr: memory exhausted\n"));
+	SU_DEBUG_1(("su_getlocalinfo: memory exhausted\n"));
 	error = ELI_MEMORY; goto err;
       } 
       *next = li, next = &li->li_next;
@@ -1180,7 +1300,7 @@ int localinfo0(su_localinfo_t const *hints, su_localinfo_t **rresult)
 
   s = su_socket(family, SOCK_DGRAM, 0);
   if (s == SOCKET_ERROR) {
-    SU_DEBUG_1(("su_getlocaladdr: %s: %s\n", "su_socket",
+    SU_DEBUG_1(("su_getlocalinfo: %s: %s\n", "su_socket",
 		            su_strerror(su_errno())));
     return -1;
   }
@@ -1188,12 +1308,12 @@ int localinfo0(su_localinfo_t const *hints, su_localinfo_t **rresult)
   /* get the list of known IP address (NT5 and up) */
   if (WSAIoctl(s, SIO_ADDRESS_LIST_QUERY, NULL, 0,
                &b, sizeof(b), &salen, NULL, NULL) == SOCKET_ERROR) {
-    SU_DEBUG_1(("su_getlocaladdr: %s: %s\n", "SIO_ADDRESS_LIST_QUERY",
+    SU_DEBUG_1(("su_getlocalinfo: %s: %s\n", "SIO_ADDRESS_LIST_QUERY",
 		su_strerror(su_errno())));
     error = -1; goto err;
   }
   if (b.sal->iAddressCount < 1) {
-    SU_DEBUG_1(("su_getlocaladdr: no local addresses\n"));
+    SU_DEBUG_1(("su_getlocalinfo: no local addresses\n"));
     error = -1; goto err;
   }
   
@@ -1216,7 +1336,7 @@ int localinfo0(su_localinfo_t const *hints, su_localinfo_t **rresult)
       gni_flags = NI_NUMERICHOST;
 
     if (!(li = calloc(1, sizeof(*li) + sulen))) {
-      SU_DEBUG_1(("su_getlocaladdr: memory exhausted\n"));
+      SU_DEBUG_1(("su_getlocalinfo: memory exhausted\n"));
       error = -1; goto err;
     }
     *next = li, next = &li->li_next;
@@ -1294,8 +1414,9 @@ int li_name(su_localinfo_t const *hints,
     if (error) {
       if ((flags & LI_NAMEREQD) == LI_NAMEREQD)
 	return 1;
-      SU_DEBUG_1(("li_name: getnameinfo() failed\n"));
-      return ELI_RESOLVER;
+      SU_DEBUG_7(("li_name: getnameinfo() failed\n"));
+      if (!inet_ntop(su->su_family, SU_ADDR(su), name, sizeof name))
+	return ELI_RESOLVER;
     }
 
     if (hints->li_canonname && strcasecmp(name, hints->li_canonname))
