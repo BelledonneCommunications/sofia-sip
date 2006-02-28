@@ -1260,7 +1260,7 @@ sres_parse_resolv_conf(sres_resolver_t *res, const char *filename)
     struct sockaddr *sa = (struct sockaddr *)dns->dns_addr;
     int err;
 
-#if HAVE_SIN6
+#if HAVE_SIN6 && 0		/* Disabled for now */
     if (strchr(server, ':')) {
       struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
       memset(sa, 0, dns->dns_addrlen = sizeof *sin6);
@@ -1341,7 +1341,7 @@ sres_send_dns_query(sres_resolver_t *res,
   edns_size = m->m_offset;
 
   if (m->m_error) {
-    SU_DEBUG_3(("sres_query_create(): encoding: %s\n", m->m_error));
+    SU_DEBUG_3(("%s(): encoding: %s\n", "sres_send_dns_query", m->m_error));
     su_seterrno(EIO);
     return -1;
   }
@@ -1375,7 +1375,8 @@ sres_send_dns_query(sres_resolver_t *res,
     for (i = (i + 1) % N; res->res_servers[i].dns_icmp_error; i = (i + 1) % N) {
       if (i == i0) {
 	/* All servers have reported errors */
-	SU_DEBUG_5(("sres_query_create(): sendto: %s\n", su_strerror(error)));
+	SU_DEBUG_5(("%s(): sendto: %s\n", "sres_send_dns_query",
+		    su_strerror(error)));
 	return su_seterrno(error);
       }
     }
@@ -1384,7 +1385,7 @@ sres_send_dns_query(sres_resolver_t *res,
 
   q->q_i_server = i;
 
-  SU_DEBUG_5(("sres_send_dns_query(%p, %p) id=%u %u? %s (to [%s]:%u)\n", 
+  SU_DEBUG_5(("%s(%p, %p) id=%u %u? %s (to [%s]:%u)\n", "sres_send_dns_query",
 	      res, q, id, type, domain, dns->dns_name, res->res_port));
 
   return 0;
