@@ -180,8 +180,9 @@ int msg_date_d(char const **ss, msg_time_t *date)
   char const *s = *ss;
   char const *wkday;
   char const *tz;
-  unsigned long day, mon, year, hour, min, sec;
-  
+  unsigned long day, year, hour, min, sec;
+  int mon;
+
   if (!IS_TOKEN(*s) || !date)
     return -1;
 
