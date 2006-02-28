@@ -1156,6 +1156,13 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 
   BEGIN();
 
+  nta_agent_set_params(ag->ag_agent, 
+		       NTATAG_SIP_T1(8 * 25), 
+		       NTATAG_SIP_T1X64(64 * 25), 
+		       NTATAG_SIP_T4(10 * 25),
+		       TAG_END());
+
+
   TEST_1(v = nta_agent_via(ag->ag_agent));
   for (; v; v = v->v_next) {
     if (strcasecmp(v->v_protocol, sip_transport_udp) == 0)
@@ -1255,6 +1262,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     TEST(ag->ag_status, 200);
     TEST(ag->ag_orq, NULL);
     TEST(ag->ag_latest_leg, ag->ag_default_leg);
+
   }
 
   {
@@ -1498,8 +1506,6 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     TEST(ag->ag_latest_leg, ag->ag_default_leg);
     url->url_params = NULL;
   }
-
-  return 0;
 
 #if 0
   /* Test 0.1.1
@@ -1854,6 +1860,13 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			 TAG_END());
   }
 #endif  
+
+  nta_agent_set_params(ag->ag_agent,
+		       NTATAG_SIP_T1(500),
+		       NTATAG_SIP_T1X64(64 * 500),
+		       NTATAG_SIP_T2(NTA_SIP_T2),
+		       NTATAG_SIP_T4(NTA_SIP_T4),
+		       TAG_END());
 
   END();
 }

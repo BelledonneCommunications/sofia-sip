@@ -67,7 +67,8 @@ port=$(./portbind $v6flag $((port + 1))) down=$port
 port=$(./portbind $v6flag $((port + 1))) bind=$port
 port=$(./portbind $v6flag $((port + 1))) contact=$port
 
-if eval $ipv6 ; then
+# Disable IPv6 resolver for now 
+if false && eval $ipv6 ; then
     listen="listen-on-v6 port $bind { any; };"
     ns=$me6
 else
