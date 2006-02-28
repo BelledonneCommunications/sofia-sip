@@ -515,7 +515,8 @@ int _url_d(url_t *url, char *s)
     url->url_type = url_get_type(url->url_scheme, n);
 
     net_path = !url_type_is_opaque(url->url_type);
-  } else {
+  }
+  else {
     url->url_type = url_unknown;
   }
 
@@ -1383,7 +1384,10 @@ int url_cmp(url_t const *a, url_t const *b)
   }
 
   if (a->url_type <= url_unknown && 
-      (rv = strcasecmp(a->url_scheme, b->url_scheme)));
+      ((rv = !a->url_scheme - !b->url_scheme) ||
+       (a->url_scheme && b->url_scheme &&
+	(rv = strcasecmp(a->url_scheme, b->url_scheme)))))
+    return rv;
 
   if (a->url_host != b->url_host && 
       ((rv = !a->url_host - !b->url_host) ||

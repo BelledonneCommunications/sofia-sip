@@ -262,8 +262,9 @@ int url_sanitize(url_t *u);
 
 /** Argument list used when printing url with printf(). @HI */
 #define URL_PRINT_ARGS(u) \
-  (u)->url_scheme ? (u)->url_scheme : "", \
-  (u)->url_type != url_any && (u)->url_scheme ? ":" : "", \
+  (u)->url_scheme ? (u)->url_scheme : "",	\
+  (u)->url_type != url_any && (u)->url_scheme && (u)->url_scheme[0] \
+    ? ":" : "", \
   (u)->url_root && ((u)->url_host || (u)->url_user) ? "//" : "", \
   (u)->url_user ? (u)->url_user : "", \
   (u)->url_user && (u)->url_password ? ":" : "", \
