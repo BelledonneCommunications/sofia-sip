@@ -160,10 +160,13 @@ static int init_test(tester_t *t)
   t->t_mclass = msg_mclass_clone(http_default_mclass(), 0, 0); 
   TEST_1(t->t_mclass);
 
+  t->t_addr->su_len = (sizeof t->t_addr->su_sin);
   s = socket(t->t_addr->su_family = AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
+  TEST_1(inet_pton(AF_INET, "127.0.0.1", &t->t_addr->su_sin.sin_addr) >= 0);
   TEST_1(bind(s, &t->t_addr->su_sa, 
 	      t->t_addrlen = (sizeof t->t_addr->su_sin)) != -1);
   TEST_1(getsockname(s, &t->t_addr->su_sa, &t->t_addrlen) != -1);
+  TEST_1(t->t_addr->su_port != 0);
   TEST_1(su_close(s) != -1);
 
   agent_pem = su_sprintf(t->t_home, "%s/agent.pem", t->t_srcdir);
@@ -441,13 +444,14 @@ static int init_server(tester_t *t)
   END();
 }
 
-static int send_request(tester_t *t, char const *req, size_t reqlen, 
+static int send_request(tester_t *t, char const *req, size_t reqlen,
 			int close_socket,
 			char reply[], int rlen,
 			int *return_len)
 {
   static su_socket_t c = -1;
   int m, r;
+  su_wait_t w[1];
 
   BEGIN();
 
@@ -466,7 +470,9 @@ static int send_request(tester_t *t, char const *req, size_t reqlen,
   if (close_socket == 1)
     shutdown(c, 1);
 
-  while (su_root_step(t->t_root, 1) == 0);
+  TEST(su_wait_create(w, c, SU_WAIT_IN), 0);
+
+  while (su_root_step(t->t_root, 1) == 0 || su_wait(w, 1, 0) < 0);
 
   for (r = 0;;) {
     TEST_1((m = recv(c, reply, rlen - r - 1, 0)) != -1);
