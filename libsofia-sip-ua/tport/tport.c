@@ -3013,7 +3013,7 @@ static void tport_recv_event(tport_t *self, int event)
 		    su_strerror(EAGAIN), EAGAIN));
       }
     }
-    else if (again == 1) /* STUN keepalive */
+    else if (again == 3) /* STUN keepalive */
       return;
 
     self->tp_time = su_time_ms(now);
@@ -3217,9 +3217,11 @@ tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
 
 static int tport_recv_stream(tport_t *self);
 static int tport_recv_dgram(tport_t *self);
-static int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
-static int tport_recv_try_stun_dgram(tport_t const *self);
 
+static int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
+#if HAVE_SOFIA_STUN
+static int tport_recv_try_stun_dgram(tport_t const *self);
+#endif
 #if HAVE_TLS
 static int tport_recv_tls(tport_t *self);
 #endif
@@ -3234,6 +3236,7 @@ static int tport_recv_sctp(tport_t *self);
  * @retval 0  end-of-stream  
  * @retval 1  normal receive
  * @retval 2  incomplete recv, recv again
+ * @retval 3  STUN keepalive, ignore
  */
 static 
 int tport_recv_data(tport_t *self)
@@ -3380,6 +3383,9 @@ int tport_recv_dgram(tport_t *self)
  *
  * @retval -1 error
  * @retval 0  end-of-stream  
+ * @retval 1  normal receive (should never happen)
+ * @retval 2  incomplete recv, recv again (should never happen)
+ * @retval 3  STUN keepalive, ignore
  */
 static 
 int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
@@ -3393,11 +3399,9 @@ int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
   assert(*mmsg == NULL);
 
 #if HAVE_SOFIA_STUN
-  {
-    /* Check always if incoming data is STUN keepalive */
-    if (tport_recv_try_stun_dgram(self) >= 0)
-      return 1;
-  }
+  /* Check always if incoming data is STUN keepalive */
+  if (tport_recv_try_stun_dgram(self) >= 0)
+    return 3;
 #endif
 
   veclen = tport_recv_iovec(self, mmsg, iovec, N, 1);
@@ -3439,7 +3443,7 @@ int tport_keepalive(tport_t *tp, tp_name_t *tpn)
   stun_handle_t *sh = mr->mr_nat->stun;
   su_sockaddr_t sa[1] = {{ 0 }};
 
-  if (tp->tp_has_keepalive == 1)
+  if (tp->tp_has_keepalive == 1 || sh == NULL)
     return 0;
 
   inet_pton(AF_INET, tpn->tpn_host, (void *) &sa->su_sin.sin_addr.s_addr);
@@ -3461,7 +3465,6 @@ int tport_keepalive(tport_t *tp, tp_name_t *tpn)
 
   return 0;
 }
-
 
 /** Receive STUN datagram.
  *

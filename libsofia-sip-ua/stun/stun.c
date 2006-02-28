@@ -2532,6 +2532,9 @@ int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
   stun_request_t *req;
   stun_action_t action = stun_action_keepalive;
 
+  if (sh == NULL)
+    return 1;
+
   /* Go through the request queue and destroy keepalive requests
    * associated with the given socket. */
   for (req = sh->sh_requests; req; req = req->sr_next) {
