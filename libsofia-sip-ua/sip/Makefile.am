@@ -123,7 +123,6 @@ sip_tag.c $(GENERATED_H): $(srcdir)/sofia-sip/sip.h
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 sip_parser_table.c: $(srcdir)/sofia-sip/sip.h
-	@-mkdir sofia-sip 2>/dev/null
 	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/$@.in \
 		FLAGFILE=$(srcdir)/sip_bad_mask \
 		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
