@@ -410,7 +410,9 @@ END {
       if (h < 0)
 	continue;
 
-      for (j = h % MC_HASH_SIZE; j in header_hash;) {
+      j = h % MC_HASH_SIZE; if (j == -0) j = 0;
+
+      for (; j in header_hash;) {
 	if (++j == MC_HASH_SIZE) {
 	  j = 0;
 	}
