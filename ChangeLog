@@ -1,3 +1,111 @@
+2006-03-01  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Synchronized darcs and CVS. 
+	
+  * Added utils/Doxyfile
+
+    A ./utils/Doxyfile
+
+  * Changed output from localinfo so that emacs is not fooled anymore.
+
+    M ./libsofia-sip-ua/su/run_addrinfo -1 +1
+    M ./libsofia-sip-ua/su/run_localinfo -1 +1
+
+  * Added SU_ADDRLEN() macro.
+
+    M ./libsofia-sip-ua/su/sofia-sip/su.h +16
+
+  * Not creating sofia-sip when building sip_parser_table.c
+
+    M ./libsofia-sip-ua/sip/Makefile.am -1
+
+  * Printing warning message if resolv.conf nameserver address is IPv6.
+
+    M ./libsofia-sip-ua/sresolv/sresolv.c -4 +5
+
+  * Fixed problems with sa_len in nth_test.c.
+  Added explicit su_wait() to to send_request().
+
+    M ./libsofia-sip-ua/nth/nth_test.c -2 +8
+
+  * Disabling IPv6 resolving in nta test. Not reying in ICMP in nta test.
+
+    M ./libsofia-sip-ua/nta/run_test_nta -1 +2
+    M ./libsofia-sip-ua/nta/test_nta.c -2 +15
+
+  * Fixed problem of BSD awk returning -0 from 10 % 5.
+
+    M ./libsofia-sip-ua/msg/msg_parser.awk -1 +3
+
+  * Fixed problems in stun/tport.
+
+    M ./libsofia-sip-ua/stun/stun.c +3
+    M ./libsofia-sip-ua/tport/tport.c -9 +12
+
+  * Fixed signedness problem in msg_date_d().
+
+    M ./libsofia-sip-ua/msg/msg_date.c -2 +3
+
+  * Fixed url_cmp() crashing with invalid URLs.
+
+    M ./libsofia-sip-ua/url/sofia-sip/url.h -2 +3
+    M ./libsofia-sip-ua/url/url.c -2 +6
+
+  * Removed warnings on BSDish systems.
+
+    M ./libsofia-sip-ua/su/su.c -2 +2
+
+  * Added tests for getifaddrs(), using it in su_localinfo.c.
+
+    M ./libsofia-sip-ua/su/su_localinfo.c -40 +161
+    M ./libsofia-sip-ua/su/su_port.c +2
+    M ./m4/sac-su2.m4 -11 +8
+
+  * Fixed typo in utils/sip-date.c
+
+    M ./utils/sip-date.c -1 +1
+
+  * Defining missing SOL_TCP.
+
+    M ./libsofia-sip-ua/stun/stun.c +5
+
+  * Fixed A6 record handling, sa_len usage.
+  Removed some warnings, too. Disabled IN6 nameservers for the moment.
+
+    M ./libsofia-sip-ua/sresolv/sresolv.c -15 +20
+
+  * Disabled a badly designed test failing in BSD systems.
+
+    M ./libsofia-sip-ua/sresolv/test_sresolv.c -1 +16
+
+  * Removed debugging feature from msg_parser.awk making it fail with BSD awk.
+
+    M ./libsofia-sip-ua/msg/msg_parser.awk -36 +36
+
+  * Using default sip and sips port in url comparisons if url has IP address
+
+    M ./libsofia-sip-ua/url/torture_url.c +26
+    M ./libsofia-sip-ua/url/url.c +4
+
+2006-02-20 martti.mela@nokia.com
+
+  * stun: initial keepalive support
+
+    M ./libsofia-sip-ua/nta/nta.c +10
+    M ./libsofia-sip-ua/nta/sofia-sip/nta.h +2
+    M ./libsofia-sip-ua/nua/nua_stack.c +4
+    M ./libsofia-sip-ua/stun/ChangeLog +31
+    M ./libsofia-sip-ua/stun/sofia-sip/stun.h -1 +11
+    M ./libsofia-sip-ua/stun/stun.c -79 +219
+    M ./libsofia-sip-ua/stun/stun_internal.h -1
+    M ./libsofia-sip-ua/tport/sofia-sip/tport.h +3
+    M ./libsofia-sip-ua/tport/tport.c -1 +90
+
+  * stun: dst addr improvements
+
+    M! ./libsofia-sip-ua/stun/ChangeLog -18
+    M! ./libsofia-sip-ua/stun/stun.c -7 +16
+
 2006-02-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * If opaque is not given, do not include it in challenge (auth_module.c).
