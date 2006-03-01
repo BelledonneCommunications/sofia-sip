@@ -1,0 +1,65 @@
+PROJECT_NAME         = "libsofia-sip-ua"
+OUTPUT_DIRECTORY     = ../man
+
+INPUT 		     = . 
+INPUT               += ../libsofia-sip-ua/su/localinfo.c
+INPUT               += ../libsofia-sip-ua/su/addrinfo.c
+
+FILE_PATTERNS        = *.h *.c 
+
+EXCLUDE_PATTERNS     = acconfig.h config.h confdefs.h \
+			test*.h test*.c torture*.c *test.c *torture.c \
+			*_tag_dll.c *_tag_ref.c
+
+TAGFILES            = 
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_su=su
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_ipt=ipt
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_bnf=bnf
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_url=url
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_msg=msg
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_sip=sip
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_sresolv=sresolv
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_stun=stun
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_tport=tport
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_nta=nta
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_iptsec=iptsec
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_sdp=sdp
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_soa=soa
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_nea=nea
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_nua=nua
+TAGFILES            += ../libsofia-sip-ua/docs/doxytags_features=features
+
+OUTPUT_LANGUAGE      = English
+
+DETAILS_AT_TOP       = YES
+OPTIMIZE_OUTPUT_FOR_C = YES
+SHOW_USED_FILES      = NO
+
+QUIET                = YES
+WARNINGS             = YES
+DISABLE_INDEX        = NO
+
+HAVE_DOT	     = YES
+INCLUDE_GRAPH	     = NO
+INCLUDED_BY_GRAPH    = NO
+
+EXTRACT_ALL          = NO
+EXTRACT_PRIVATE      = NO
+HIDE_UNDOC_MEMBERS   = YES
+HIDE_UNDOC_CLASSES   = YES
+HIDE_SCOPE_NAMES     = YES
+BRIEF_MEMBER_DESC    = YES
+REPEAT_BRIEF         = YES
+JAVADOC_AUTOBRIEF    = YES
+MAX_INITIALIZER_LINES = 0
+ENUM_VALUES_PER_LINE = 1
+
+ENABLE_PREPROCESSING = NO
+
+GENERATE_MAN         = YES
+MAN_OUTPUT           = .
+MAN_EXTENSION        = .1
+MAN_LINKS            = NO
+
+GENERATE_HTML        = NO
+GENERATE_LATEX       = NO
