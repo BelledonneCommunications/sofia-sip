@@ -15,7 +15,7 @@ INCLUDES = 		-I$(srcdir)/../su -I../su
 # ----------------------------------------------------------------------
 # Build targets
 
-if HAVE_TLS
+# if HAVE_TLS
 stun_lib_sources = 	stun.c stun_common.c
 stun_prog_targets =     stunc torture_stun
 else

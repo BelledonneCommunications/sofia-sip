@@ -1,5 +1,5 @@
 #
-# Template for Sofia SIP UA library RPM spec file
+# Template for Sofia SIP UA RPM spec file
 #
 # Options:
 # --with doxygen   - Generate documents using doxygen and dot

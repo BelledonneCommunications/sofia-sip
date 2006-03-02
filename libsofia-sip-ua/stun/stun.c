@@ -52,7 +52,9 @@
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_localinfo.h>
 
+#if defined(HAVE_OPENSSL)
 #include <openssl/opensslv.h>
+#endif
 
 /* Missing socket symbols */
 #ifndef SOL_TCP
@@ -182,8 +184,14 @@ struct stun_handle_s
   su_localinfo_t  sh_localinfo;     /**< local addrinfo */
   su_sockaddr_t   sh_local_addr[1]; /**< local address */
 
+#if defined(HAVE_OPENSSL)
   SSL_CTX        *sh_ctx;           /**< SSL context for TLS */
   SSL            *sh_ssl;           /**< SSL handle for TLS */
+#else
+  void           *sh_ctx;           /**< SSL context for TLS */
+  void           *sh_ssl;           /**< SSL handle for TLS */
+#endif
+
   stun_msg_t      sh_tls_request;
   stun_msg_t      sh_tls_response;
   int             sh_nattype;       /**< NAT-type, see stun_common.h */
@@ -258,8 +266,13 @@ int stun_lifetime(stun_discovery_t *sd)
 }
 
 
+#if defined(HAVE_OPENSSL)
 char const stun_version[] = 
  "sofia-sip-stun using " OPENSSL_VERSION_TEXT;
+#else
+char const stun_version[] = 
+ "sofia-sip-stun";
+#endif
 
 int do_action(stun_handle_t *sh, stun_msg_t *binding_response);
 int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
@@ -417,7 +430,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   return stun;
 }
 
-
+#if defined(HAVE_OPENSSL)
 /** Shared secret request/response processing */
 int stun_handle_request_shared_secret(stun_handle_t *sh)
 {
@@ -509,6 +522,12 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
 
   return 0;
 }
+#else
+int stun_handle_request_shared_secret(stun_handle_t *sh)
+{
+  return 0;
+}
+#endif /* HAVE_OPENSSL */
 
 
 stun_request_t *stun_request_create(stun_discovery_t *sd)
@@ -762,7 +781,6 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 
   return 0;
 }
-#endif
 
 
 /** Bind a socket using STUN client. 
@@ -995,6 +1013,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
  * Internal functions
  *******************************************************************/
 
+#if defined(HAVE_OPENSSL)
 int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 {
   stun_discovery_t *sd = arg;
@@ -1242,8 +1261,15 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 
   return 0;
 }
+#else
+int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
+{
+  return 0;
+}
+#endif /* HAVE_OPENSSL */
 
 
+#if defined(HAVE_OPENSSL)
 void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
 			       su_timer_t *t,
 			       su_timer_arg_t *arg)
@@ -1269,7 +1295,12 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 
   return;
 }
-
+#else
+void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
+			       su_timer_t *t,
+			       su_timer_arg_t *arg)
+{
+#endif /* HAVE_OPENSSL */
 
 /** Compose a STUN message of the format defined by stun_msg_t
  *  result encoded in enc_buf ready for sending as well.

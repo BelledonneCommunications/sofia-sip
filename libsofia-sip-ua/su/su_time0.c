@@ -48,7 +48,13 @@
 #include <sys/time.h> /* Get struct timeval */
 #endif
 
-#if HAVE_FILETIME 
+#if defined(__MINGW32__)
+#define HAVE_FILETIME 1
+#include <windows.h>
+#endif
+
+#if HAVE_FILETIME
+#define HAVE_FILETIME 1
 #include <windows.h>
 #endif
 

@@ -404,6 +404,7 @@ int stun_encode_buffer(stun_attr_t *attr) {
   return attr->enc_buf.size;
 }
 
+#if defined(HAVE_OPENSSL)
 int stun_encode_message_integrity(stun_attr_t *attr,
 				  unsigned char *buf,
 				  int len,
@@ -427,6 +428,15 @@ int stun_encode_message_integrity(stun_attr_t *attr,
   free(padded_text);
   return attr->enc_buf.size;
 }
+#else
+int stun_encode_message_integrity(stun_attr_t *attr,
+				  unsigned char *buf,
+				  int len,
+				  stun_buffer_t *pwd) {
+
+  return 0;
+}
+#endif /* HAVE_OPENSSL */
 
 /** this function allocates the enc_buf, fills in type, length */
 int stun_encode_type_len(stun_attr_t *attr, uint16_t len) {

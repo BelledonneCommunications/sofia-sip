@@ -78,8 +78,13 @@ typedef struct tport_nat_s tport_nat_t;
 
 #include <sofia-sip/su_wait.h>
 
-#include <sofia-sip/msg.h>
-#include <sofia-sip/msg_addr.h>
+#include <msg.h>
+#include <msg_addr.h>
+
+#if !HAVE_RANDOM
+#define random() rand()
+#define srandom(x) srand(x)
+#endif
 
 #if HAVE_IP_RECVERR || HAVE_IPV6_RECVERR
 #include <linux/types.h>
@@ -258,7 +263,6 @@ struct tport_s {
   stun_socket_t      *tp_stun_socket;
 #endif
   su_socket_t         tp_stun_socket;
-  int                 tp_has_keepalive;
 #endif
 
   /* ==== Receive queue ================================================== */
@@ -7022,7 +7026,7 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
     for (i = 0; stun_transports[i]; i++) {
       if ((strcmp(tpn->tpn_proto, "*") == 0 || 
 	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
-        SU_DEBUG_5(("%s(%p) creating STUN handle\n", __func__, mr));
+        SU_DEBUG_5(("%s(%p) starting STUN engine\n", __func__, mr));
 
         nat->stun = stun_handle_create(mr,
 				       mr->mr_root,

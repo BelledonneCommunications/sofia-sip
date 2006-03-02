@@ -345,10 +345,12 @@ gboolean su_source_check(GSource *gs)
 
   I = self->sup_n_waits;
 
+#if SU_HAVE_POLL
   for (i = 0; i < I; i++) {
     if (self->sup_waits[i].revents)
       return TRUE;
   }
+#endif
 
   return su_source_prepare(gs, &tout);
 }
@@ -382,6 +384,7 @@ gboolean su_source_dispatch(GSource *gs,
     timers = su_timer_expire(&self->sup_timers, &tout, now);
   }
 
+#if SU_HAVE_POLL
   {
     su_root_t *root;
     su_wait_t *waits = self->sup_waits;
@@ -400,6 +403,7 @@ gboolean su_source_dispatch(GSource *gs,
       }
     }
   }
+#endif
 
   if (!callback)
     return TRUE;
@@ -996,7 +1000,7 @@ su_duration_t su_source_step(su_port_t *self, su_duration_t tout)
       if (tout < timeout)
 	timeout = tout;
 
-      i = poll((struct pollfd *)fds, n, timeout);
+      i = su_wait((su_wait_t *)fds, n, timeout);
 
       if (g_main_context_check(gmc, priority, fds, n))
 	g_main_context_dispatch(gmc);

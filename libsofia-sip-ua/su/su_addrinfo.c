@@ -119,7 +119,7 @@ static struct gai_afd {
 
 #if !SU_HAVE_IN6
 extern
-#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
 __declspec(dllimport)
 #endif
 int h_errno;
@@ -617,10 +617,6 @@ get_addr(hostname, af, res, pai, port0)
 	return error;
 }
 
-#endif /* !HAVE_GETADDRINFO */
-
-#if !HAVE_GETNAMEINFO
-
 /*
  * Issues to be discussed:
  * - Thread safe-ness must be checked
@@ -883,7 +879,7 @@ int su_getaddrinfo(char const *node, char const *service,
 		   su_addrinfo_t const *hints,
 		   su_addrinfo_t **res)
 {
-#if HAVE_SCTP
+#if HAVE_SCTP && SU_HAVE_GETADDRINFO
   if (res && hints && hints->ai_protocol == IPPROTO_SCTP) {
     su_addrinfo_t *ai, system_hints[1];
     int retval, socktype;

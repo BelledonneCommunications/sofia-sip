@@ -73,7 +73,8 @@ if test x$enable_stun = xno ; then
   AC_MSG_WARN([** STUN support disabled **])
 elif test x${HAVE_OPENSSL} != x1 ; then
   dnl compile STUN only if OPENSSL is available
-  AC_MSG_WARN([** STUN support disabled as OpenSSL headers and/or libraries were not found **])
+  AC_MSG_WARN([** TLS support for STUN disabled as OpenSSL headers and/or libraries were not found **])
+  AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
 else
   AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
 fi

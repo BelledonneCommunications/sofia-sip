@@ -432,6 +432,36 @@ fi
 AM_CONDITIONAL(EXPENSIVE_CHECKS, test x$enable_expensive_checks != no)
 ])
 
+
+dnl ======================================================================
+dnl Check if we are using Windows with MinGW compiler
+dnl ======================================================================
+
+AC_DEFUN([AC_CHECK_COMPILATION_ENVIRONMENT], [
+AC_REQUIRE([AC_PROG_CC])
+AC_CACHE_CHECK([for compilation environment], 
+  ac_cc_environment, [
+machine=`$CC -dumpmachine`
+if test $machine == "mingw32" ; then
+  ac_cc_environment=$machine
+fi
+])
+
+if test X$ac_cc_environment == "Xmingw32" ; then
+CFLAGS="$CFLAGS -I\$(top_srcdir)/win32/pthread -DWINVER=0x0501 \
+	-D_WIN32_WINNT=0x0501 -DIN_LIBSOFIA_SIP_UA  -mms-bitfields \
+	-pipe -mno-cygwin -mwindows -mconsole -Wall -g -O0"
+LDFLAGS="$LDFLAGS -Wl,--enable-auto-image-base"
+LIBS="-L\$(top_srcdir)/win32/pthread -lpthread -lws2_32 \
+	-lwsock32"
+AC_SUBST(MINGW_ENVIRONMENT)
+AC_DEFINE([HAVE_MINGW], [1], [Define this as 1 if you are compiling in MinGW environment])
+AC_DEFINE([HAVE_WIN32], [1], [Define this as 1 if you have WIN32])
+fi
+AM_CONDITIONAL([HAVE_MINGW32], [test "x$ac_cc_environment" != x])
+])dnl
+
+
 dnl ======================================================================
 dnl Find long long (at least 64 bits)
 dnl ======================================================================
