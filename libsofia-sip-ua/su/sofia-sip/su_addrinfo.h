@@ -106,6 +106,17 @@ struct addrinfo {
 };
 #endif	/* SU_WITH_GETADDRINFO */
 
+#ifndef EAI_BADHINTS     
+#define EAI_BADHINTS	10012
+#endif
+#ifndef EAI_PROTOCOL  
+#define EAI_PROTOCOL	10013
+#endif
+
+#ifndef AI_MASK
+#define	AI_MASK		(AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST)
+#endif
+
 /** RFC 1576 address info structure. */
 typedef struct addrinfo su_addrinfo_t;
 

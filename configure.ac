@@ -29,6 +29,8 @@ AC_GNU_SOURCE
 
 dnl checks for programs
 dnl -------------------
+AC_CHECK_COMPILATION_ENVIRONMENT
+
 AX_TOOL_CC
 AC_PROG_INSTALL
 AC_PROG_CPP
@@ -105,9 +107,9 @@ AC_DEFINE([LLX], ["%llx"], [Define as format (%llx) for long long hex])dnl
 ### checks for structures
 ### ---------------------
 AC_HEADER_STDC
-AC_CHECK_HEADERS(pthread.h)
-AC_CHECK_HEADERS(stdint.h)
-AC_CHECK_HEADERS(inttypes.h)
+dnl AC_CHECK_HEADERS(pthread.h)
+dnl AC_CHECK_HEADERS(stdint.h)
+dnl AC_CHECK_HEADERS(inttypes.h)
 
 ### checks for typedefs, structures, and compiler characteristics.
 ### --------------------------------------------------------------

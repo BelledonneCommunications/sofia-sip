@@ -18,10 +18,10 @@ INCLUDES = 		-I$(srcdir)/../su -I../su
 # if HAVE_TLS
 stun_lib_sources = 	stun.c stun_common.c
 stun_prog_targets =     stunc torture_stun
-else
-stun_lib_targets = 
-stun_prog_targets =
-endif
+#else
+#stun_lib_targets = 
+#stun_prog_targets =
+#endif
 
 noinst_LTLIBRARIES = 	libstun.la
 

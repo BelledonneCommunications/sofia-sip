@@ -60,7 +60,7 @@ if $ax_inttypes; then : ; else
 fi
 
 if test "x$MINGW_ENVIRONMENT" != x1 ; then
-AC_CHECK_HEADER(pthread.h, 
+  AC_CHECK_HEADER(pthread.h, 
         HAVE_PTHREADS=1;
 	SAC_SU_DEFINE([SU_HAVE_PTHREADS], 1, [Sofia SU uses pthreads]))
 else
@@ -123,6 +123,14 @@ AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
   SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define as 1 you have WinSock2])
   SAC_SU_DEFINE(SU_HAVE_SOCKADDR_STORAGE, 1, 
       [Define this as 1 if you have struct sockaddr_storage])
+  AC_DEFINE([HAVE_ADDRINFO], 1,
+      [Define this as 1 if you have addrinfo structure.])
+  AC_DEFINE([HAVE_GETADDRINFO], 1,
+      [Define this as 1 if you have addrinfo structure.])
+  AC_DEFINE([HAVE_FREEADDRINFO], 1,
+      [Define this as 1 if you have addrinfo structure.])
+  SAC_SU_DEFINE([SU_HAVE_ADDRINFO], 1,
+      [Define this as 1 if you have addrinfo structure.])
   SAC_SU_DEFINE([SU_HAVE_GETADDRINFO], 1,
       [Define this as 1 if you have getaddrinfo() function.])
   AC_CHECK_HEADERS([windef.h])

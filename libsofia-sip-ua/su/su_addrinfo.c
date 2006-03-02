@@ -32,6 +32,14 @@
 #include <sofia-sip/su_addrinfo.h>
 #include <sofia-sip/su.h>
 
+#ifndef IN_LOOPBACKNET
+#define IN_LOOPBACKNET          127
+#endif
+
+#ifndef IN_EXPERIMENTAL
+#define IN_EXPERIMENTAL(a)      ((((long int) (a)) & 0xf0000000) == 0xf0000000)
+#endif
+
 #if !HAVE_GETADDRINFO
 
 #include <string.h>
@@ -867,6 +875,7 @@ gai_strerror(ecode)
 #endif
   default:
     return "unknown error.";
+  }
 }
 #endif
 

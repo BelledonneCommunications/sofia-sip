@@ -454,6 +454,7 @@ CFLAGS="$CFLAGS -I\$(top_srcdir)/win32/pthread -DWINVER=0x0501 \
 LDFLAGS="$LDFLAGS -Wl,--enable-auto-image-base"
 LIBS="-L\$(top_srcdir)/win32/pthread -lpthread -lws2_32 \
 	-lwsock32"
+MINGW_ENVIRONMENT=1
 AC_SUBST(MINGW_ENVIRONMENT)
 AC_DEFINE([HAVE_MINGW], [1], [Define this as 1 if you are compiling in MinGW environment])
 AC_DEFINE([HAVE_WIN32], [1], [Define this as 1 if you have WIN32])
