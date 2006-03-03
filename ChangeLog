@@ -1,3 +1,61 @@
+2006-03-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Do not use glib upon --without-glib-dir or --without-glib in configure.
+
+    M ./m4/sac-su2.m4 -4 +4
+
+  * Returning unparsed remote SDP in SOATAG_REMOTE_SDP_STR()
+
+    M ./libsofia-sip-ua/soa/soa.c -2 +2
+
+  * Using SU_HAVE_PTHREADS to check for pthread support in nua_stack.h
+
+    M ./libsofia-sip-ua/nua/nua_stack.h -1 +5
+
+  * Fixed documentation problems.
+
+    M ./Makefile.am -2 +3
+    M ./utils/sip-date.c -2 +2
+
+  * Fixed problems when there is no stun available.
+
+    M ./libsofia-sip-ua/tport/tport.c -9 +5
+
+  * Fixed BDSSOCK checks in sac-su2.m4.
+
+    M ./libsofia-sip-ua/su/su_addrinfo.c -1 +1
+    M ./m4/sac-su2.m4 -55 +73
+
+  * Using int as SOATAG_AF() value.
+
+    M ./libsofia-sip-ua/soa/sofia-sip/soa_tag.h -2 +2
+    M ./libsofia-sip-ua/soa/test_soa.c -1 +1
+
+2006-03-03  Martti Mela  martti.mela@nokia.com
+
+  * mingw support
+
+    M ./configure.ac -3 +5
+    M ./libsofia-sip-ua/stun/Makefile.am -4 +4
+    M ./libsofia-sip-ua/su/sofia-sip/su_addrinfo.h +11
+    M ./libsofia-sip-ua/su/su_addrinfo.c +9
+    M ./m4/sac-general.m4 +1
+    M ./m4/sac-su2.m4 -1 +9
+
+  * mingw mods
+
+    M ./configure.ac -1 +2
+    M ./libsofia-sip-ua/stun/Makefile.am -1 +1
+    M ./libsofia-sip-ua/stun/stun.c -3 +34
+    M ./libsofia-sip-ua/stun/stun_common.c +10
+    M ./libsofia-sip-ua/su/su_addrinfo.c -6 +2
+    M ./libsofia-sip-ua/su/su_source.c -1 +5
+    M ./libsofia-sip-ua/su/su_time0.c -1 +7
+    M ./libsofia-sip-ua/tport/tport.c -4 +8
+    M ./m4/sac-general.m4 +30
+    M ./m4/sac-su2.m4 -31 +72
+    M ./packages/sofia-sip.spec.in -1 +1
+
 2006-03-01  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Synchronized darcs and CVS. 
