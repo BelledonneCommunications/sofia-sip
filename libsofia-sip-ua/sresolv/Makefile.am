@@ -27,7 +27,7 @@ CLEANFILES =		resolv.conf error.conf named.conf.tmp \
 
 nobase_include_sofia_HEADERS = sofia-sip/sresolv.h
 
-libsresolv_la_SOURCES =	sresolv.c
+libsresolv_la_SOURCES =	sresolv.c sres_cache.c sres.c
 
 COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_sofia_HEADERS)
 

@@ -33,29 +33,11 @@
 
 #include "config.h"
 
-#if HAVE_SU_WAIT_H
-
 struct sres_context_s;
 #define SU_WAKEUP_ARG_T struct sres_context_s
 
-#include <sofia-sip/su_wait.h>
-
-#include <sofia-sip/su_time.h>
-#else
-
-#define _XOPEN_SOURCE (500)
-
-#include <stdint.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <poll.h>
-#include <errno.h>
-#endif
-
-#define TSTFLAGS tstflags
-#include <sofia-sip/tstdef.h>
-
-#include "sofia-sip/sresolv.h"
+#include <sofia-sip/sresolv.h>
+#include <sofia-sip/su_alloc.h>
 
 #include <assert.h>
 #include <stdlib.h>
@@ -64,7 +46,8 @@ struct sres_context_s;
 #include <pthread.h>
 #include <unistd.h>
 
-#include <sofia-sip/su_alloc.h>
+#define TSTFLAGS tstflags
+#include <sofia-sip/tstdef.h>
 
 #if HAVE_ALARM
 #include <unistd.h>
@@ -1639,6 +1622,11 @@ int test_net(sres_context_t *ctx)
   END();
 }
 
+int updcb(void *userdate, sres_resolver_t *sres)
+{
+  return 0;
+}
+
 /* Test API function argument validation */
 static
 int test_api_errors(sres_context_t *noctx)
@@ -1690,17 +1678,20 @@ int test_api_errors(sres_context_t *noctx)
   TEST(sres_resolver_add_mutex(NULL, NULL, NULL, NULL), -1);
   TEST(errno, EFAULT);
 
-  TEST(sres_resolver_set_userdata(NULL, NULL), NULL);
+  TEST(sres_resolver_set_userdata(NULL, NULL, NULL), NULL);
   TEST(errno, EFAULT);
 
-  TEST(sres_resolver_get_userdata(NULL), NULL);
+  TEST(sres_resolver_get_userdata(NULL, NULL), NULL);
 
-  TEST(sres_resolver_get_userdata(res), NULL);
-  TEST(sres_resolver_set_userdata(res, sa), NULL);
-  TEST(sres_resolver_set_userdata(res, sa), sa);
-  TEST(sres_resolver_get_userdata(res), sa);
-  TEST(sres_resolver_set_userdata(res, NULL), sa); 
-  TEST(sres_resolver_get_userdata(res), NULL);
+  TEST(sres_resolver_get_userdata(res, updcb), NULL);
+  TEST(sres_resolver_get_userdata(res, NULL), NULL);
+  TEST(sres_resolver_set_userdata(res, NULL, sa), NULL);
+  TEST(sres_resolver_get_userdata(res, NULL), sa);
+  TEST(sres_resolver_set_userdata(res, updcb, sa), sa);
+  TEST(sres_resolver_get_userdata(res, updcb), sa);
+  TEST(sres_resolver_get_userdata(res, NULL), NULL);
+  TEST(sres_resolver_set_userdata(res, updcb, NULL), sa); 
+  TEST(sres_resolver_get_userdata(res, updcb), NULL);
 
 #if HAVE_SU_WAIT_H
   errno = 0;
