@@ -78,13 +78,8 @@ typedef struct tport_nat_s tport_nat_t;
 
 #include <sofia-sip/su_wait.h>
 
-#include <msg.h>
-#include <msg_addr.h>
-
-#if !HAVE_RANDOM
-#define random() rand()
-#define srandom(x) srand(x)
-#endif
+#include <sofia-sip/msg.h>
+#include <sofia-sip/msg_addr.h>
 
 #if HAVE_IP_RECVERR || HAVE_IPV6_RECVERR
 #include <linux/types.h>
@@ -3435,13 +3430,13 @@ int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
 }
 
 
-#if HAVE_SOFIA_STUN
 /** Initialize STUN keepalives.
  *
  *@retval 0
  */
 int tport_keepalive(tport_t *tp, tp_name_t *tpn)
 {
+#if HAVE_SOFIA_STUN
   int err;
   tport_master_t *mr = tp->tp_master;
   stun_handle_t *sh = mr->mr_nat->stun;
@@ -3466,10 +3461,11 @@ int tport_keepalive(tport_t *tp, tp_name_t *tpn)
     return -1;
 
   tp->tp_has_keepalive = 1;
-
+#endif
   return 0;
 }
 
+#if HAVE_SOFIA_STUN
 /** Receive STUN datagram.
  *
  * @retval -1 error
