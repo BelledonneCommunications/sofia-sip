@@ -29,5 +29,7 @@
 
 @call build_sources.cmd
 
-@echo
-@echo Remember to install pthreadVC2.dll to your path, too!
+@echo.
+@echo NOTE:
+@echo NOTE: Remember to install pthreadVC2.dll to your path, too!
+@echo NOTE:

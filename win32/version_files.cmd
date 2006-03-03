@@ -30,3 +30,4 @@ set AC=..\configure.ac
 
 for %%f in (config.h ..\libsofia-sip-ua\features\sofia-sip\features.h) ^
 do %VERSION% %AC% OUT=1 %%f.in > %%f
+@if errorlevel 1 echo *** version_files failed ***
