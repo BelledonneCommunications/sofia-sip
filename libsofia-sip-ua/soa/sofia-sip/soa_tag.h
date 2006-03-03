@@ -132,10 +132,10 @@ extern tag_typedef_t soatag_local_sdp_str;
   soatag_local_sdp_str_ref, tag_str_vr(&(x))
 extern tag_typedef_t soatag_session_sdp_str_ref;
 
-#define SOATAG_AF(x)             soatag_af, tag_uint_v((x))
+#define SOATAG_AF(x)             soatag_af, tag_int_v((x))
 extern tag_typedef_t soatag_af;
 
-#define SOATAG_AF_REF(x)         soatag_af_ref, tag_uint_vr(&(x))
+#define SOATAG_AF_REF(x)         soatag_af_ref, tag_int_vr(&(x))
 extern tag_typedef_t soatag_af_ref;
 
 enum soa_af {

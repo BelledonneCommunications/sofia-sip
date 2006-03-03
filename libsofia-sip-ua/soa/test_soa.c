@@ -209,7 +209,7 @@ int test_params(struct context *ctx)
 {
   BEGIN();
   int n;
-  unsigned af;
+  int af;
   char const *address;
   char const *hold;
   unsigned rtp_select, rtp_sort;
