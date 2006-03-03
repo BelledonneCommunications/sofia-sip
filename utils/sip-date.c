@@ -90,9 +90,9 @@ void usage(void)
   exit(1);
 }
 
-/** Epoch year. */
+/* Epoch year. */
 #define EPOCH 1900		
-/** Day number of New Year Day of given year */
+/* Day number of New Year Day of given year */
 #define YEAR_DAYS(y) \
   (((y)-1) * 365 + ((y)-1) / 4 - ((y)-1) / 100 + ((y)-1) / 400)
 

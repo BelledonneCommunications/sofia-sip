@@ -22,13 +22,13 @@ $(man_MANS): doxygen-manpages
 coverage built-sources clean-built-sources:
 	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
 
-doxygen-manpages:
+manpages doxygen-manpages:
 if HAVE_DOXYGEN
 	mkdir -p man man/man1 2> /dev/null
 	cd utils; doxygen
 else
 	mkdir -p man man/man1 2> /dev/null
-	-touch $(man_DATA)
+	-touch $(man_MANS)
 endif
 
 doxygen:
@@ -37,3 +37,4 @@ if HAVE_DOXYGEN
 endif
 
 .PHONY: coverage built-sources clean-built-sources doxygen
+.PHONY: manpages doxygen-manpages
