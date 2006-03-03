@@ -888,7 +888,7 @@ int su_getaddrinfo(char const *node, char const *service,
 		   su_addrinfo_t const *hints,
 		   su_addrinfo_t **res)
 {
-#if HAVE_SCTP && SU_HAVE_GETADDRINFO
+#if HAVE_SCTP
   if (res && hints && hints->ai_protocol == IPPROTO_SCTP) {
     su_addrinfo_t *ai, system_hints[1];
     int retval, socktype;

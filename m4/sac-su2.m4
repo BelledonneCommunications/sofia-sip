@@ -17,7 +17,6 @@ AC_REQUIRE([SAC_WITH_RT])
 # Check for features used by su
 
 dnl Define compilation options for su_configure.h
-dnl SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
 
 case "$target" in 
 *-*-solaris?.* )
@@ -64,8 +63,7 @@ if test "x$MINGW_ENVIRONMENT" != x1 ; then
         HAVE_PTHREADS=1;
 	SAC_SU_DEFINE([SU_HAVE_PTHREADS], 1, [Sofia SU uses pthreads]))
 else
-  AC_DEFINE([HAVE_PTHREAD_H], 1, [Define to 1 if you have the <pthread.h> header file.])
-  AC_DEFINE([HAVE_PTHREADS], 1, [Define as 1 you have PTHREADS])
+  HAVE_PTHREADS=1;
   SAC_SU_DEFINE([SU_HAVE_PTHREADS], 1, [Sofia SU uses pthreads])
 fi
 
@@ -121,7 +119,7 @@ AC_CHECK_HEADERS([unistd.h sys/time.h])
 AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
   SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define as 1 you have WinSock])
   SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define as 1 you have WinSock2])
-  SAC_SU_DEFINE(SU_HAVE_SOCKADDR_STORAGE, 1, 
+  SAC_SU_DEFINE([SU_HAVE_SOCKADDR_STORAGE], 1, 
       [Define this as 1 if you have struct sockaddr_storage])
   AC_DEFINE([HAVE_ADDRINFO], 1,
       [Define this as 1 if you have addrinfo structure.])
@@ -131,8 +129,6 @@ AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
       [Define this as 1 if you have addrinfo structure.])
   SAC_SU_DEFINE([SU_HAVE_ADDRINFO], 1,
       [Define this as 1 if you have addrinfo structure.])
-  SAC_SU_DEFINE([SU_HAVE_GETADDRINFO], 1,
-      [Define this as 1 if you have getaddrinfo() function.])
   AC_CHECK_HEADERS([windef.h])
   AC_CHECK_HEADERS([iphlpapi.h], [
     AC_DEFINE([HAVE_INTERFACE_INFO_EX], 1, [
@@ -144,10 +140,28 @@ AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
 #include <winbase.h>
 #endif
   ])
-], [
-  AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
-  AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h net/if.h net/if_types.h], [], [
-  SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
+],[
+dnl no winsock2
+SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
+AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
+AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
+                  net/if.h net/if_types.h ifaddr.h],,,
+		[sys/types.h sys/socket.h])
+
+AC_CACHE_CHECK([for struct addrinfo],
+[ac_cv_struct_addrinfo],[
+ac_cv_struct_addrinfo=no
+if test "$ac_cv_header_sys_socket_h" = yes; then
+  AC_EGREP_HEADER([struct.+addrinfo], [netdb.h], [
+  ac_cv_struct_addrinfo=yes])
+else
+  ac_cv_struct_addrinfo='sys/socket.h missing'
+fi])
+
+if test "$ac_cv_struct_addrinfo" = yes; then
+  SAC_SU_DEFINE([SU_HAVE_ADDRINFO], 1, 
+    [Define as 1 if you have struct addrinfo.])
+fi
 
 AC_CACHE_CHECK([for struct sockaddr_storage],
 [ac_cv_struct_sockaddr_storage],[
@@ -162,14 +176,6 @@ if test "$ac_cv_struct_sockaddr_storage" = yes; then
   SAC_SU_DEFINE(SU_HAVE_SOCKADDR_STORAGE, 1, 
     [Define this as 1 if you have struct sockaddr_storage])
 fi
-
-  # Test for getaddrinfo(), getnameinfo(), freeaddrinfo() and gai_strerror()
-  AC_CHECK_FUNC([getaddrinfo],[
-	  SAC_SU_DEFINE([SU_HAVE_GETADDRINFO], 1, [
-  	Define this as 1 if you have getaddrinfo() function.
-	  ])])
-  ])
-])
 
 AC_CACHE_CHECK([for field ifr_index in struct ifreq],
 [ac_cv_struct_ifreq_ifr_index],[
@@ -245,42 +251,13 @@ else
   HAVE_IFNUM=0
 fi
 
+]) dnl AC_CHECK_HEADERS([winsock2.h ... ])
+
 # ===========================================================================
 # Checks for libraries
 # ===========================================================================
 
 SAC_CHECK_SU_LIBS
-
-AC_ARG_WITH(glib-dir,
-[  --with-glib-dir=PREFIX  explicitly define GLib path],
-  glib_dir="$withval", glib_dir="no")
-
-#check if GLib path is explicitly defined 
-if test X$glib_dir != Xno ; then
-
-gprefix=$glib_dir
-exec_gprefix=${gprefix}
-glibdir=${exec_gprefix}/lib
-gincludedir=${gprefix}/include
-
-# glib_genmarshal=glib-genmarshal
-# gobject_query=gobject-query
-# glib_mkenums=glib-mkenums
-
-# GLIB_LIBS="-L${glibdir} -lglib-2.0 -lintl -liconv"
-GLIB_LIBS="-L${glibdir} ${glibdir}/libglib-2.0.dll.a ${glibdir}/libintl.a ${glibdir}/libiconv.a"
-GLIB_CFLAGS="-I${gincludedir}/glib-2.0 -I${glibdir}/glib-2.0/include"
-
-# how the hell should I know?
-GLIB_VERSION="2.0"
-
-SAC_SU_DEFINE([SU_HAVE_GLIB], 1, [Define as 1 if you have >= glib-2.0])
-HAVE_GLIB=yes
-
-AC_SUBST(GLIB_LIBS)
-AC_SUBST(GLIB_CFLAGS)
-
-else
 
 # No GLib path explicitly defined, use pkg-config
 AC_ARG_WITH(glib,
@@ -290,16 +267,57 @@ yes | "" ) with_glib=2.0 ;;
 esac
 ], [with_glib=2.0])
 
-if test X$with_glib != Xno ; then 
+AC_ARG_WITH(glib-dir,
+[  --with-glib-dir=PREFIX  explicitly define GLib path],, 
+ with_glib_dir="pkg-config")
 
-PKG_CHECK_MODULES(GLIB, glib-$with_glib, [dnl
-SAC_SU_DEFINE([SU_HAVE_GLIB], 1, [Define as 1 if you have >= glib-2.0])
-HAVE_GLIB=yes
-])
+if test "$with_glib_dir" = "pkg-config" ; then 
 
+  PKG_CHECK_MODULES(GLIB, glib-$with_glib, [HAVE_GLIB=yes])
+
+elif test "$with_glib_dir" = "no" ; then 
+
+  : # No glib
+
+else # GLib path is explicitly defined 
+
+  gprefix=$with_glib_dir
+  GLIB_VERSION="$with_glib"
+  GLIBXXX=glib-$with_glib
+
+  if test "$gprefix" = "yes" ; then 
+    for gprefix in /usr /usr/local /opt/$GLIBXXX
+    do
+  	test -d $gprefix/include/$GLIBXXX && break
+    done
+  fi
+
+  if ! test -d $gprefix/include/$GLIBXXX ; then
+    AC_MSG_ERROR("No $GLIBXXX in --with-glib=$with_glib_dir")
+  else
+    exec_gprefix=${gprefix}
+    glibdir=${exec_gprefix}/lib
+    gincludedir=${gprefix}/include
+
+    # glib_genmarshal=glib-genmarshal
+    # gobject_query=gobject-query
+    # glib_mkenums=glib-mkenums
+
+    HAVE_GLIB=yes
+    
+    if test "x$MINGW_ENVIRONMENT" = x1 ; then
+      GLIB_LIBS="${glibdir}/lib$GLIBXXX.dll.a ${glibdir}/libintl.a ${glibdir}/libiconv.a"
+    else
+      GLIB_LIBS="-L${glibdir} -l$GLIBXXX -lintl -liconv"
+    fi
+    GLIB_CFLAGS="-I${gincludedir}/$GLIBXXX -I${glibdir}/$GLIBXXX/include"
+  fi
+
+fi # GLib path is explicitly defined 
+
+if test x$HAVE_GLIB != x; then 
+  SAC_SU_DEFINE([SU_HAVE_GLIB], 1, [Define as 1 if you have >= glib-2.0])
 fi
-fi
-
 AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" != x])
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GLIB_CFLAGS)
@@ -311,7 +329,7 @@ AC_SUBST(GLIB_VERSION)
 # ===========================================================================
 
 AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm])
-AC_CHECK_FUNCS([socketpair gethostname getipnodebyname poll epoll])
+AC_CHECK_FUNCS([socketpair gethostname getipnodebyname epoll])
 AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs])
 
 # _GNU_SOURCE stuff
@@ -323,7 +341,7 @@ if test "${with_rt}" != no; then
     AC_CHECK_FUNCS([clock_gettime clock_getcpuclockid])
 fi
 
-SAC_REPLACE_FUNCS(memmem memccpy memspn memcspn strcasestr strtoull inet_ntop inet_pton)
+SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull inet_ntop inet_pton])
 
 AC_CHECK_FUNC([poll], 
 	SAC_SU_DEFINE([SU_HAVE_POLL], 1, [
