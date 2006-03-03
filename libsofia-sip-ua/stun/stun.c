@@ -781,7 +781,7 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 
   return 0;
 }
-
+#endif
 
 /** Bind a socket using STUN client. 
  *
