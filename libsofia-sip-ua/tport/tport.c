@@ -218,6 +218,7 @@ struct tport_s {
   unsigned            tp_recv_close:2;
   /** We will send FIN (1) or have sent FIN (2) */
   unsigned            tp_send_close:2; 
+  unsigned            tp_has_keepalive:1;
 
   unsigned:0;
 
