@@ -271,13 +271,13 @@ AC_ARG_WITH(glib-dir,
 [  --with-glib-dir=PREFIX  explicitly define GLib path],, 
  with_glib_dir="pkg-config")
 
-if test "$with_glib_dir" = "pkg-config" ; then 
-
-  PKG_CHECK_MODULES(GLIB, glib-$with_glib, [HAVE_GLIB=yes])
-
-elif test "$with_glib_dir" = "no" ; then 
+if test "$with_glib" = no || test "$with_glib_dir" = "no" ; then
 
   : # No glib
+
+elif test "$with_glib_dir" = "pkg-config" ; then 
+
+  PKG_CHECK_MODULES(GLIB, glib-$with_glib, [HAVE_GLIB=yes])
 
 else # GLib path is explicitly defined 
 
