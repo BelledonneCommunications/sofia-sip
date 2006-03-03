@@ -33,11 +33,15 @@
  * @date Created: Wed Feb 14 17:09:44 2001 ppessi
  */
 
+#ifndef SU_CONFIG_H
+#include <su_config.h>
+#endif
+
 #if HAVE_UICC_H
 #include <uicc.h>
 #endif
 
-#if HAVE_PTHREAD_H
+#if SU_HAVE_PTHREADS
 #include <pthread.h>
 #endif
 
