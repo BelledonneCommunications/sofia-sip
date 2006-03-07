@@ -89,10 +89,16 @@ enum {
   /** Default port for SIP as integer */
  SIP_DEFAULT_PORT = 5060,
 #define SIP_DEFAULT_PORT SIP_DEFAULT_PORT
-};
 
 /** Default port for SIP as string */
 #define SIP_DEFAULT_SERV "5060"
+
+ /** Default port for SIPS as integer */
+ SIPS_DEFAULT_PORT = 5061,
+#define SIPS_DEFAULT_PORT SIPS_DEFAULT_PORT
+ /** Default port for SIPS as string */
+#define SIPS_DEFAULT_SERV "5061"
+};
 
 /** Time in seconds */
 typedef msg_time_t sip_time_t;
