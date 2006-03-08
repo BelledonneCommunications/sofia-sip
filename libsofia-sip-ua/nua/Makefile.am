@@ -29,6 +29,8 @@ noinst_PROGRAMS =	test_nua
 
 TESTS = 		test_nua
 
+CLEANFILES =           tmp_sippasswd.??????
+
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
@@ -38,6 +40,10 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/nua.h sofia-sip/nua_tag.h
 
 libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
+			nua_dialog.c \
+			nua_register.c nua_session.c nua_options.c \
+			nua_message.c nua_publish.c nua_subnotref.c \
+			nua_event_server.c \
 			nua_tag.c nua_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_sofia_HEADERS)

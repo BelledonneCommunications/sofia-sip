@@ -70,6 +70,10 @@ SOFIA_BEGIN_DECLS
 #include <sigcomp.h>
 #endif
 
+#ifndef NUA_DIALOG_H
+#include <nua_dialog.h>
+#endif
+
 typedef struct event_s event_t;
 
 #define       NONE ((void *)-1)
@@ -94,126 +98,15 @@ enum nh_oa_event {
 typedef struct nua_chat_s nua_chat_t;
 typedef struct nua_remote_s nua_remote_t;
 
-typedef struct nua_dialog_state nua_dialog_state_t;
-typedef union  nua_dialog_usage nua_dialog_usage_t;
 typedef struct nua_client_request nua_client_request_t; 
 typedef struct nua_server_request nua_server_request_t; 
 
-typedef void nh_pending_f(nua_handle_t *nh, 
-			  nua_dialog_usage_t *du,
-			  sip_time_t now);
-
-enum nua_dialog_usage_e
-{
-  nua_transaction_usage = 0,
-  nua_session_usage,
-  nua_notifier_usage,
-  nua_subscriber_usage,
-  nua_register_usage,
-  nua_publish_usage
-};
-
-struct nua_common_usage {
-  nua_dialog_usage_t *cu_next;
-  unsigned     cu_kind:3;
-  unsigned     cu_terminating:1;	/**< Trying to terminate */
-  unsigned     cu_ready:1;	/**< Established usage */
-  unsigned:0;
-  /** Pending operation.
-   *
-   * The nh_pending() is called 
-   * a) when current time sip_now() will soon exceed nh_refresh (now > 1)
-   * b) when handle operation is restarted (now is 1)
-   * c) when handle is destroyed (now is 0)
-   */
-  nh_pending_f   *cu_pending;
-  sip_time_t      cu_refresh;	/**< When execute cu_pending */
-};
-
-struct nua_session_usage {
-  struct nua_common_usage su_common[1];
-};
-
-struct nua_event_usage {
-  struct nua_common_usage de_common[1];
-  msg_t *de_msg;
-  sip_event_t const *de_event;		/**< Event of usage */
-  unsigned           de_substate:2;	/**< Subscription state */
-  unsigned:0;
-};
-
-struct nua_register_usage {
-  struct nua_common_usage ru_common[1];
-  msg_t *ru_msg;
-  struct sigcomp_compartment *ru_compartment;
-};
-
-struct nua_publish_usage {
-  struct nua_common_usage pu_common[1];
-  msg_t *pu_msg;
-  sip_etag_t *pu_etag;	/**< ETag */
-};
-
-
-union nua_dialog_usage
-{
-  nua_dialog_usage_t *du_next;
-  struct nua_common_usage du_common[1];
-#define du_kind du_common->cu_kind
-#define du_terminating du_common->cu_terminating
-#define du_ready du_common->cu_ready
-#define du_pending du_common->cu_pending
-#define du_refresh du_common->cu_refresh
-
-  struct nua_session_usage du_session[1];
-#define du_event du_subscriber->de_event
-  struct nua_event_usage du_subscriber[1];
-  struct nua_event_usage du_notifier[1];
-  struct nua_register_usage du_register[1];
-  struct nua_publish_usage du_publisher[1];
-};
-
-
-struct nua_dialog_state
-{
-  /** Dialog usages. */
-  nua_dialog_usage_t     *ds_usage;
-
-  /* Dialog and subscription state */
-  unsigned ds_route:1;		/**< We have route */
-  unsigned ds_terminated:1;	/**< Being terminated */
-
-  unsigned ds_has_session:1;	/**< We have session */
-  unsigned ds_has_register:1;	/**< We have registration */
-  unsigned ds_has_publish:1;	/**< We have publish */
-  unsigned ds_has_events:1;	/**< We have some events */
-  unsigned ds_has_subscription:1; /**< We have subscriptions */
-  unsigned ds_has_notifier:1;	/**< We have notifiers */
-  unsigned :0;
-
-  sip_from_t const *ds_local;		/**< Local address */
-  sip_to_t const *ds_remote;		/**< Remote address */
-  nta_leg_t      *ds_leg;
-  char const     *ds_remote_tag;	/**< Remote tag (if any). 
-					 * Should be non-NULL 
-					 * if dialog is established.
-					 */
-
-  struct nua_remote_s {
-    sip_allow_t      *nr_allow;
-    sip_accept_t     *nr_accept;
-    sip_require_t    *nr_require;
-    sip_supported_t  *nr_supported;
-    sip_user_agent_t *nr_user_agent;
-  } ds_remote_ua[1];
-};
-
-typedef void crequest_restart_f(nua_handle_t *, tagi_t *tags);
+typedef void nua_creq_restart_f(nua_handle_t *, tagi_t *tags);
 
 struct nua_client_request
 {
   nua_event_t         cr_event;		/**< Request event */
-  crequest_restart_f *cr_restart;
+  nua_creq_restart_f *cr_restart;
   nta_outgoing_t     *cr_orq;
   msg_t              *cr_msg;
   nua_dialog_usage_t *cr_usage;
@@ -313,6 +206,8 @@ typedef struct nua_handle_preferences
   unsigned         nhp_early_media:1;/**< Establish early media session */
   unsigned         nhp_auto_answer:1;
   unsigned         nhp_auto_ack:1; /**< Automatically ACK a final response */
+  unsigned         nhp_natify:1;
+  unsigned         nhp_gruuize:1;
   unsigned         :0;
 
   /** INVITE timeout. 
@@ -370,6 +265,8 @@ typedef struct nua_handle_preferences
       unsigned nhp_early_media:1;
       unsigned nhp_auto_answer:1;
       unsigned nhp_auto_ack:1;
+      unsigned nhp_natify:1;
+      unsigned nhp_gruuize:1;
       unsigned nhp_invite_timeout:1;
       unsigned nhp_session_timer:1;
       unsigned nhp_min_se:1;
@@ -488,6 +385,21 @@ struct nua_handle_s
 
 #define NH_IS_DEFAULT(nh) ((nh) == (nh)->nh_nua->nua_handles)
 
+static inline
+int nh_is_special(nua_handle_t *nh)
+{
+  return nh == NULL || nh->nh_special;
+}
+
+static inline
+int nh_has_session(nua_handle_t const *nh)
+{
+  return nh != NULL && 
+    nh->nh_ss->ss_state > nua_callstate_init &&
+    nh->nh_ss->ss_state < nua_callstate_terminated;
+}
+
+
 extern char const nua_500_error[];
 
 #define NUA_500_ERROR 500, nua_500_error
@@ -570,27 +482,156 @@ struct nua_s {
 #endif
 
 /* Internal prototypes */
-int  ua_init(su_root_t *root, nua_t *nua);
-void ua_deinit(su_root_t *root, nua_t *nua);
-void ua_signal(nua_t *nua, su_msg_r msg, event_t *e);
-int ua_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
-	     nua_event_t event, int status, char const *phrase,
-	     tag_type_t tag, tag_value_t value, ...);
+int  nua_stack_init(su_root_t *root, nua_t *nua);
+void nua_stack_deinit(su_root_t *root, nua_t *nua);
+void nua_stack_signal(nua_t *nua, su_msg_r msg, event_t *e);
+
+void nua_stack_post_signal(nua_handle_t *nh, nua_event_t event, 
+			   tag_type_t tag, tag_value_t value, ...);
+
+typedef int nua_stack_signal_handler(nua_t *, 
+				     nua_handle_t *, 
+				     nua_event_t, 
+				     tagi_t const *);
+
+nua_stack_signal_handler 
+  nua_stack_set_params, nua_stack_get_params,
+  nua_stack_register, 
+  nua_stack_invite, nua_stack_ack, nua_stack_cancel, 
+  nua_stack_bye, nua_stack_info, nua_stack_update, 
+  nua_stack_options, nua_stack_publish, nua_stack_message, 
+  nua_stack_subscribe, nua_stack_notify, nua_stack_refer,
+  nua_stack_method;
+
+#define UA_EVENT1(e, statusphrase) \
+  nua_stack_event(nua, nh, NULL, e, statusphrase, TAG_END())
+
+#define UA_EVENT2(e, status, phrase)			\
+  nua_stack_event(nua, nh, NULL, e, status, phrase, TAG_END())
+
+#define UA_EVENT3(e, status, phrase, tag)			\
+  nua_stack_event(nua, nh, NULL, e, status, phrase, tag, TAG_END())
+
+int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
+		    nua_event_t event, int status, char const *phrase,
+		    tag_type_t tag, tag_value_t value, ...);
 
 nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 			       tagi_t *tags);
 
-/* Private prototypes (XXX: move to nua_priv.h; nua.c interface) */
+nua_handle_t *nua_stack_incoming_handle(nua_t *nua, 
+					nta_incoming_t *irq,
+					sip_t const *sip,
+					enum nh_kind kind,
+					int create_dialog);
+
+void nh_destroy(nua_t *nua, nua_handle_t *nh);
+
+nua_handle_t *nh_validate(nua_t *nua, nua_handle_t *maybe);
+
+int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh, 
+			  enum nh_kind kind,
+			  char const *default_allow,
+			  tag_type_t tag, tag_value_t value, ...);
+
+int nua_stack_process_request(nua_handle_t *nh,
+			      nta_leg_t *leg,
+			      nta_incoming_t *irq,
+			      sip_t const *sip);
+
+int nua_stack_process_response(nua_handle_t *nh,
+			       struct nua_client_request *cr,
+			       nta_outgoing_t *orq,
+			       sip_t const *sip,
+			       tag_type_t tag, tag_value_t value, ...);
+
+msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
+		    struct nua_client_request *cr,
+		    int restart, 
+		    sip_method_t method, char const *name,
+		    tag_type_t tag, tag_value_t value, ...);
+
+int nua_creq_check_restart(nua_handle_t *nh,
+			   struct nua_client_request *cr,
+			   nta_outgoing_t *orq,
+			   sip_t const *sip,
+			   nua_creq_restart_f *f);
+
+int nua_creq_restart(nua_handle_t *nh,
+		     struct nua_client_request *cr,
+		     nta_response_f *cb,
+		     tagi_t *tags);
+
+void nua_creq_deinit(struct nua_client_request *cr, nta_outgoing_t *orq);
+
+msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh, 
+			nta_incoming_t *irq,
+			int status, char const *phrase,
+			tag_type_t tag, tag_value_t value, ...);
+
+
+typedef int nua_stack_process_request_t(nua_t *nua,
+					nua_handle_t *nh,
+					nta_incoming_t *irq,
+					sip_t const *sip);
+
+nua_stack_process_request_t nua_stack_process_invite;
+nua_stack_process_request_t nua_stack_process_info;
+nua_stack_process_request_t nua_stack_process_update;
+nua_stack_process_request_t nua_stack_process_bye;
+nua_stack_process_request_t nua_stack_process_message;
+nua_stack_process_request_t nua_stack_process_options;
+nua_stack_process_request_t nua_stack_process_publish;
+nua_stack_process_request_t nua_stack_process_subsribe;
+nua_stack_process_request_t nua_stack_process_notify;
+nua_stack_process_request_t nua_stack_process_refer;
+nua_stack_process_request_t nua_stack_process_unknown;
+
+#ifndef SDP_MIME_TYPE
+#define SDP_MIME_TYPE nua_application_sdp
+#endif
+
+extern char const nua_application_sdp[];
+
+/* ---------------------------------------------------------------------- */
+
+#define SIP_METHOD_UNKNOWN sip_method_unknown, NULL
+
+/* Private tags */
+#define NUTAG_ADD_CONTACT(v) _nutag_add_contact, tag_bool_v(v)
+extern tag_typedef_t _nutag_add_contact;
+
+#define NUTAG_ADD_CONTACT_REF(v) _nutag_add_contact_ref, tag_bool_vr(&v)
+extern tag_typedef_t _nutag_add_contact_ref;
+
+#define NUTAG_COPY(v) _nutag_copy, tag_bool_v(v)
+extern tag_typedef_t _nutag_copy;
+
+#define NUTAG_COPY_REF(v) _nutag_copy_ref, tag_bool_vr(&v)
+extern tag_typedef_t _nutag_copy_ref;
+
+/* ---------------------------------------------------------------------- */
+
+typedef unsigned longlong ull;
+
+#define SET_STATUS(_status, _phrase) status = _status, phrase = _phrase
+
+/* This is an "interesting" macro:
+ * x is a define expanding to <i>num, str</i>.
+ * @a num is assigned to variable status, @a str to variable phrase.
+ * Macro SET_STATUS1 expands to two comma-separated expressions that are
+ * also usable as function arguments.
+ */
+#define SET_STATUS1(x) ((status = x), status), (phrase = ((void)x))
+
+/* ---------------------------------------------------------------------- */
+/* Application side prototypes */
+
 void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
 		nua_event_t event, int status, char const *phrase,
 		tag_type_t tag, tag_value_t value, ...);
 
-/*  (XXX: move to nua_priv.h; nua.c interface) */
 void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e);
-
-#define SIP_METHOD_UNKNOWN sip_method_unknown, NULL
-
-#define UA_INTERVAL 5
 
 SOFIA_END_DECLS
 

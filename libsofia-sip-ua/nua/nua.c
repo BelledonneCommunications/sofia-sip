@@ -25,6 +25,8 @@
 /**@CFILE nua.c Nokia User Agent API.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
+ * @author Pasi Rinne-Rahkola
  *
  * @date Created: Wed Feb 14 18:32:58 2001 ppessi
  *
@@ -35,17 +37,9 @@
 /* From AM_INIT/AC_INIT in our "config.h" */
 char const nua_version[] = VERSION;
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <assert.h>
-
 #include <sofia-sip/su_tag.h>
 #include <sofia-sip/su_tag_class.h>
 #include <sofia-sip/su_tagarg.h>
-
-#include <stdio.h>
 
 #include <sofia-sip/su_tag_io.h>
 
@@ -54,54 +48,21 @@ char const nua_version[] = VERSION;
 
 #define SU_ROOT_MAGIC_T   struct nua_s
 #define SU_MSG_ARG_T      struct event_s
-
-#include <sofia-sip/su_wait.h>
-
-#include <sofia-sip/su_strlst.h>
-
 #define NUA_SAVED_EVENT_T su_msg_t *
+
+#include <sofia-sip/sip_status.h>
+#include <sofia-sip/sip_header.h>
+#include <sofia-sip/nta.h>
 
 #include "sofia-sip/nua.h"
 #include "sofia-sip/nua_tag.h"
-
-#define NTA_AGENT_MAGIC_T    struct nua_s
-#define NTA_LEG_MAGIC_T      struct nua_handle_s
-#define NTA_OUTGOING_MAGIC_T struct nua_handle_s
-#define NTA_INCOMING_MAGIC_T struct nua_handle_s
-
-#define NTR_AGENT_MAGIC_T    struct nua_s
-#define NTR_SESSION_MAGIC_T  struct nua_handle_s
-#define NTR_OUTGOING_MAGIC_T struct nua_handle_s
-#define NTR_INCOMING_MAGIC_T struct nua_handle_s
-
-#define NEA_SMAGIC_T         nua_handle_t
-#define NEA_EMAGIC_T         nua_handle_t
-
-#include <sofia-sip/sip.h>
-#include <sofia-sip/sip_header.h>
-#include <sofia-sip/sip_status.h>
-#include <sofia-sip/sip_util.h>
-
-#include <sofia-sip/nta.h>
-#include <sofia-sip/nea.h>
-
-#include <sofia-sip/tport_tag.h>
-#if HAVE_UICC_H
-#include <uicc.h>
-#endif
-#include <sofia-sip/auth_client.h>
-
-#if HAVE_SMIME 		/* Start NRC Boston */
-#include "smimec.h"
-#endif                  /* End NRC Boston */
-
-#include <sofia-sip/sdp.h>
-
-#include <sofia-sip/sl_utils.h>
-
 #include "nua_stack.h"
 
-#undef nua_default
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
 
 /**@var NUA_DEBUG
  *
@@ -191,8 +152,8 @@ nua_t *nua_create(su_root_t *root,
     if (su_clone_start(root,
 		       nua->nua_clone,
 		       nua,
-		       ua_init,
-		       ua_deinit) == SU_SUCCESS) {
+		       nua_stack_init,
+		       nua_stack_deinit) == SU_SUCCESS) {
       su_task_copy(nua->nua_server, su_clone_task(nua->nua_clone));
       nua->nua_callback = callback;
       nua->nua_magic = magic;
@@ -1400,7 +1361,7 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
   xtra = tl_xtra(ta_args(ta), len);
 
   if (su_msg_create(sumsg, nua->nua_server, nua->nua_client,
-		    ua_signal,
+		    nua_stack_signal,
 		    e_len + len + l_len + xtra + l_xtra) == 0) {
     event_t *e = su_msg_data(sumsg);
     tagi_t *t = e->e_tags;
