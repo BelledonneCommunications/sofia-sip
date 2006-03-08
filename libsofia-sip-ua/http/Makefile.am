@@ -75,7 +75,7 @@ http_tag.c: http_tag.c.in $(MSG_PARSER_AWK)
 http_parser_table.c: http_parser_table.c.in $(MSG_PARSER_AWK)
 
 http_tag.c $(BUILT_H): $(srcdir)/sofia-sip/http.h
-	@-mkdir sofia-sip 2>/dev/null
+	@-mkdir sofia-sip 2>/dev/null || true
 	$(AWK_HTTP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 http_parser_table.c: $(srcdir)/sofia-sip/http.h

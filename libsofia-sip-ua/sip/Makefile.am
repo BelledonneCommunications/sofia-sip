@@ -119,7 +119,7 @@ sip_parser_table.c: sip_parser_table.c.in $(MSG_PARSER_AWK)
 sip_tag.c: sip_tag.c.in $(MSG_PARSER_AWK)
 
 sip_tag.c $(GENERATED_H): $(srcdir)/sofia-sip/sip.h
-	@-mkdir sofia-sip 2>/dev/null
+	@-mkdir sofia-sip 2>/dev/null || true
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 sip_parser_table.c: $(srcdir)/sofia-sip/sip.h

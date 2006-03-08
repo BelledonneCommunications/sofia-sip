@@ -101,12 +101,12 @@ test_table.c: $(srcdir)/test_class.h
 		PT=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 sofia-sip/msg_protos.h: $(srcdir)/sofia-sip/msg_mime.h
-	@-mkdir sofia-sip 2>/dev/null
+	@-mkdir sofia-sip 2>/dev/null || true
 	$(AWK_MSG_AWK) module=msg NO_FIRST=1 NO_MIDDLE=1 \
 		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
 sofia-sip/msg_mime_protos.h: $(srcdir)/sofia-sip/msg_mime.h
-	@-mkdir sofia-sip 2>/dev/null
+	@-mkdir sofia-sip 2>/dev/null || true
 	$(AWK_MSG_AWK) module=msg NO_FIRST=1 NO_LAST=1 \
 		PR=$@ TEMPLATE=$(srcdir)/$@.in $<
 
