@@ -23,11 +23,9 @@ coverage built-sources clean-built-sources:
 	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
 
 manpages doxygen-manpages:
-if HAVE_DOXYGEN
-	mkdir -p man man/man1 2> /dev/null
-	cd utils; doxygen
-else
-	mkdir -p man man/man1 2> /dev/null
+	mkdir -p $(srcdir)/man man/man1 2> /dev/null
+	cd $(srcdir)/utils; $(DOXYGEN)
+if !HAVE_DOXYGEN
 	-touch $(man_MANS)
 endif
 
