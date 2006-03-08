@@ -25,7 +25,6 @@
 #ifndef SL_UTILS_H /** Defined when <sl_utils.h> has been included. */
 #define SL_UTILS_H 
 
-
 /**@ingroup sl_utils 
  * 
  * @file sl_utils.h @brief Prototypes for SIP helper functions.
@@ -33,7 +32,6 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Thu Oct  5 15:38:39 2000 ppessi
- * @{
  */
 
 #include <stdio.h>
@@ -77,8 +75,6 @@ void sl_contact_log(su_log_t *, int lvl, char const *, sip_contact_t const *m);
 void sl_allow_log(su_log_t *, int, char const *, sip_allow_t const *g);
 void sl_via_log(su_log_t *, int, char const *, sip_via_t const *v);
 void sl_payload_log(su_log_t *, int, char const *, sip_payload_t const *pl);
-
-/** @} */
 
 SOFIA_END_DECLS
 
