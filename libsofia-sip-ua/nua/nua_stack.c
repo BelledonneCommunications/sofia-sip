@@ -1502,7 +1502,7 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
   if (nh && create_dialog) {
     struct nua_dialog_state *ds = nh->nh_ds;
 
-    nua_dialog_get_peer_info(nh, sip);
+    nua_dialog_store_peer_info(nh, ds, sip);
 
     ds->ds_leg = nta_leg_tcreate(nua->nua_nta, nua_stack_process_request, nh,
 				 SIPTAG_CALL_ID(sip->sip_call_id),
@@ -1516,7 +1516,7 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
   }
 
   if (nh)
-    nua_dialog_uas_route(nh, sip, 1);
+    nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);
 
   return nh;
 }

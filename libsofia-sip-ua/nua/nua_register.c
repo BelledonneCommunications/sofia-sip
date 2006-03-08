@@ -45,7 +45,7 @@
 #define NTA_LEG_MAGIC_T      struct nua_handle_s
 #define NTA_OUTGOING_MAGIC_T struct nua_handle_s
 
-#include "nua_dialog.h"
+#include "nua_stack.h"
 
 #if HAVE_SIGCOMP
 #include <sigcomp.h>

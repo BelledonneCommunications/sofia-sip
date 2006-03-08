@@ -36,10 +36,13 @@
 
 typedef struct nua_dialog_state nua_dialog_state_t;
 typedef struct nua_dialog_usage nua_dialog_usage_t;
+typedef struct nua_remote_s nua_remote_t;
 
-#ifndef NUA_H
-#include <sofia-sip/nua.h>
+#ifndef NUA_OWNER_T
+#define NUA_OWNER_T struct nua_owner_s
 #endif
+typedef NUA_OWNER_T nua_owner_t;
+
 #ifndef NTA_H
 #include <sofia-sip/nta.h>
 #endif
@@ -79,29 +82,18 @@ struct nua_dialog_state
   } ds_remote_ua[1];
 };
 
-typedef void nh_pending_f(nua_handle_t *nh, 
+typedef void nh_pending_f(nua_owner_t *, 
 			  nua_dialog_usage_t *du,
 			  sip_time_t now);
 
-
-enum nua_dialog_usage_e
-{
-  nua_is_transaction_usage = 0,
-  nua_is_session_usage,
-  nua_is_notifier_usage,
-  nua_is_subscriber_usage,
-  nua_is_register_usage,
-  nua_is_publish_usage
-};
-
 typedef struct {
   unsigned usage_size, usage_class_size;
-  int (*usage_add)(nua_handle_t *nh, 
+  int (*usage_add)(nua_owner_t *, 
+		   nua_dialog_state_t *ds,
+		   nua_dialog_usage_t *du);
+  void (*usage_remove)(nua_owner_t *, 
 		       nua_dialog_state_t *ds,
 		       nua_dialog_usage_t *du);
-  void (*usage_remove)(nua_handle_t *nh, 
-			   nua_dialog_state_t *ds,
-			   nua_dialog_usage_t *du);
   char const *(*usage_name)(nua_dialog_usage_t const *du);
 } nua_usage_class;
 
@@ -127,13 +119,16 @@ struct nua_dialog_usage {
   msg_t *du_msg;			/**< Template message */
 };
 
-void nua_dialog_uac_route(nua_handle_t *nh, sip_t const *sip, int rtag);
-void nua_dialog_uas_route(nua_handle_t *nh, sip_t const *sip, int rtag);
-void nua_dialog_get_peer_info(nua_handle_t *nh, sip_t const *sip);
+void nua_dialog_uac_route(nua_owner_t *, nua_dialog_state_t *ds,
+			  sip_t const *sip, int rtag);
+void nua_dialog_uas_route(nua_owner_t *, nua_dialog_state_t *ds,
+			  sip_t const *sip, int rtag);
+void nua_dialog_store_peer_info(nua_owner_t *, nua_dialog_state_t *ds,
+				sip_t const *sip);
 
 char const *nua_dialog_usage_name(nua_dialog_usage_t const *du);
 
-nua_dialog_usage_t *nua_dialog_usage_add(nua_handle_t *nh, 
+nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *, 
 					 struct nua_dialog_state *ds,
 					 nua_usage_class const *uclass,
 					 sip_event_t const *event);
@@ -142,11 +137,11 @@ nua_dialog_usage_t *nua_dialog_usage_get(nua_dialog_state_t const *ds,
 					 nua_usage_class const *uclass,
 					 sip_event_t const *event);
 
-void nua_dialog_usage_remove(nua_handle_t *nh, 
+void nua_dialog_usage_remove(nua_owner_t *, 
 			     nua_dialog_state_t *ds,
 			     nua_dialog_usage_t *du);
 
-void nua_dialog_terminated(nua_handle_t *nh,
+void nua_dialog_terminated(nua_owner_t *,
 			   struct nua_dialog_state *ds,
 			   int status,
 			   char const *phrase);
@@ -168,10 +163,6 @@ void *nua_dialog_usage_private(nua_dialog_usage_t const *du)
 }
 #else
 #define nua_dialog_usage_private(du) ((void*)((du) + 1))
-#endif
-
-#ifndef NUA_STACK_H
-#include <nua_stack.h>
 #endif
 
 #endif /* NUA_DIALOG_H */

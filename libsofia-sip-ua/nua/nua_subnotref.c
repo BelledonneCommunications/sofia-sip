@@ -47,7 +47,7 @@
 #define NTA_LEG_MAGIC_T      struct nua_handle_s
 #define NTA_OUTGOING_MAGIC_T struct nua_handle_s
 
-#include "nua_dialog.h"
+#include "nua_stack.h"
 
 /* ---------------------------------------------------------------------- */
 /* Subcribe event usage */
@@ -282,8 +282,8 @@ static int process_response_to_subscribe(nua_handle_t *nh,
 
     /* We have not received notify. */
     if (!win_messenger_enable)
-      nua_dialog_uac_route(nh, sip, 1);
-    nua_dialog_get_peer_info(nh, sip);
+      nua_dialog_uac_route(nh, nh->nh_ds, sip, 1);
+    nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
 
     if (delta > 0) {
       nua_dialog_usage_set_refresh(du, delta);
@@ -463,8 +463,8 @@ int nua_stack_process_subsribe(nua_t *nua,
   /* Refresh existing subscription */
   eu = nua_dialog_usage_private(du);  assert(nh && du && eu);
 
-  nua_dialog_get_peer_info(nh, sip);
-  nua_dialog_uas_route(nh, sip, 1);
+  nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
+  nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);
 
   refer_expires = NH_PGET(nh, refer_expires);
   expires = refer_expires;
@@ -723,8 +723,8 @@ int nua_stack_process_notify(nua_t *nua,
     }
   }
 
-  nua_dialog_get_peer_info(nh, sip);
-  nua_dialog_uas_route(nh, sip, 1);
+  nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
+  nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);
 
   if (strcasecmp(subs->ss_substate, what = "terminated") == 0) {
     eu->eu_substate = nua_substate_terminated;
@@ -888,8 +888,8 @@ static int process_response_to_refer(nua_handle_t *nh,
   else if (status < 300) {
     if (cr->cr_usage)
       cr->cr_usage->du_ready = 1;
-    nua_dialog_uac_route(nh, sip, 1);
-    nua_dialog_get_peer_info(nh, sip);
+    nua_dialog_uac_route(nh, nh->nh_ds, sip, 1);
+    nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
   }
   else /* if (status >= 300) */ {
     if (cr->cr_usage)
@@ -935,7 +935,7 @@ int nua_stack_process_refer(nua_t *nua,
 
   du->du_ready = 1;
 
-  nua_dialog_uas_route(nh, sip, 1);	/* Set route and tags */
+  nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);	/* Set route and tags */
 
   if (!sip->sip_referred_by) {
     sip_from_t *a = sip->sip_from;

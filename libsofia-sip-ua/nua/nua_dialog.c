@@ -42,23 +42,42 @@
 #include <sofia-sip/string0.h>
 
 #include <sofia-sip/sip_protos.h>
+
+#define NUA_OWNER_T su_home_t
+
 #include "nua_dialog.h"
+
+#define SU_LOG (nua_log)
+#include <sofia-sip/su_debug.h>
+
+#ifndef NONE
+#define NONE ((void *)-1)
+#endif
 
 /* ======================================================================== */
 /* Dialog handling */
 
-static void nua_dialog_usage_remove_at(nua_handle_t*, nua_dialog_state_t*, 
+static void nua_dialog_usage_remove_at(nua_owner_t*, nua_dialog_state_t*, 
 				       nua_dialog_usage_t**);
-static void nua_dialog_log_usage(nua_handle_t *, nua_dialog_state_t *);
+static void nua_dialog_log_usage(nua_owner_t *, nua_dialog_state_t *);
 
-/** UAS tag and route */
-void nua_dialog_uas_route(nua_handle_t *nh, sip_t const *sip, int rtag)
+/** UAS tag and route.
+ *
+ * Update dialog tags and route on the UAS side.
+ *
+ * @param own  dialog owner
+ * @param sip  SIP message containing response used to update dialog
+ * @param rtag if true, set remote tag within the leg
+ */
+void nua_dialog_uas_route(nua_owner_t *own, 
+			  nua_dialog_state_t *ds,
+			  sip_t const *sip, 
+			  int rtag)
 {
-  struct nua_dialog_state *ds = nh->nh_ds;
   int established = nua_dialog_is_established(ds);
 
   if (!established && sip->sip_from->a_tag)
-    ds->ds_remote_tag = su_strdup(nh->nh_home, sip->sip_from->a_tag);
+    ds->ds_remote_tag = su_strdup(own, sip->sip_from->a_tag);
 
   if (ds->ds_leg == NULL)
     return;
@@ -74,17 +93,19 @@ void nua_dialog_uas_route(nua_handle_t *nh, sip_t const *sip, int rtag)
  *
  * Update dialog tags and route on the UAC side.
  *
- * @param nh   NUA handle
+ * @param own  dialog owner
  * @param sip  SIP message containing response used to update dialog
  * @param rtag if true, set remote tag within the leg
  */
-void nua_dialog_uac_route(nua_handle_t *nh, sip_t const *sip, int rtag)
+void nua_dialog_uac_route(nua_owner_t *own, 
+			  nua_dialog_state_t *ds,
+			  sip_t const *sip,
+			  int rtag)
 {
-  struct nua_dialog_state *ds = nh->nh_ds;
   int established = nua_dialog_is_established(ds);
 
   if (!established && sip->sip_to->a_tag)
-    ds->ds_remote_tag = su_strdup(nh->nh_home, sip->sip_to->a_tag);
+    ds->ds_remote_tag = su_strdup(own, sip->sip_to->a_tag);
 
   if (ds->ds_leg == NULL)
     return;
@@ -97,35 +118,42 @@ void nua_dialog_uac_route(nua_handle_t *nh, sip_t const *sip, int rtag)
 }
 
 /** Store information from remote endpoint. */
-void nua_dialog_get_peer_info(nua_handle_t *nh, sip_t const *sip)
+void nua_dialog_store_peer_info(nua_owner_t *own, 
+				nua_dialog_state_t *ds,
+				sip_t const *sip)
 {
-  nua_remote_t *nr = nh->nh_ds->ds_remote_ua, old[1];
+  nua_remote_t *nr = ds->ds_remote_ua;
+  nua_remote_t old[1];
 
   *old = *nr;
 
   if (sip->sip_allow) {
-    nr->nr_allow = sip_allow_dup(nh->nh_home, sip->sip_allow);
-    su_free(nh->nh_home, old->nr_allow);
+    nr->nr_allow = sip_allow_dup(own, sip->sip_allow);
+    su_free(own, old->nr_allow);
   }
 
   if (sip->sip_accept) {
-    nr->nr_accept = sip_accept_dup(nh->nh_home, sip->sip_accept);
-    su_free(nh->nh_home, old->nr_accept);
+    nr->nr_accept = sip_accept_dup(own, sip->sip_accept);
+    su_free(own, old->nr_accept);
   }
 
   if (sip->sip_require) {
-    nr->nr_require = sip_require_dup(nh->nh_home, sip->sip_require);
-    su_free(nh->nh_home, old->nr_require);
+    nr->nr_require = sip_require_dup(own, sip->sip_require);
+    su_free(own, old->nr_require);
   }
 
   if (sip->sip_supported) {
-    nr->nr_supported = sip_supported_dup(nh->nh_home, sip->sip_supported);
-    su_free(nh->nh_home, old->nr_supported);
+    nr->nr_supported = sip_supported_dup(own, sip->sip_supported);
+    su_free(own, old->nr_supported);
   }
 
   if (sip->sip_user_agent) {
-    nr->nr_user_agent = sip_user_agent_dup(nh->nh_home, sip->sip_user_agent);
-    su_free(nh->nh_home, old->nr_user_agent);
+    nr->nr_user_agent = sip_user_agent_dup(own, sip->sip_user_agent);
+    su_free(own, old->nr_user_agent);
+  }
+  else if (sip->sip_server) {
+    nr->nr_user_agent = sip_user_agent_dup(own, sip->sip_server);
+    su_free(own, old->nr_user_agent);
   }
 }
 
@@ -186,7 +214,7 @@ char const *nua_dialog_usage_name(nua_dialog_usage_t const *du)
 } 
 
 /** Add dialog usage */
-nua_dialog_usage_t *nua_dialog_usage_add(nua_handle_t *nh, 
+nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own, 
 					 struct nua_dialog_state *ds, 
 					 nua_usage_class const *uclass,
 					 sip_event_t const *event)
@@ -199,7 +227,7 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_handle_t *nh,
     du = *prev_du;
     if (du) {		/* Already exists */
       SU_DEBUG_5(("nua(%p): adding already existing %s usage%s%s\n",
-		  nh, nua_dialog_usage_name(du), 
+		  own, nua_dialog_usage_name(du), 
 		  event ? "  with event " : "", event ? event->o_type : ""));
       
       if (prev_du != &ds->ds_usage) {
@@ -211,45 +239,45 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_handle_t *nh,
       return du;
     }
 
-    o = event ? sip_event_dup(nh->nh_home, event) : NULL;
+    o = event ? sip_event_dup(own, event) : NULL;
 
     if (o != NULL || event == NULL)
-      du = su_zalloc(nh->nh_home, sizeof *du + uclass->usage_size);
+      du = su_zalloc(own, sizeof *du + uclass->usage_size);
 
     if (du) {
       du->du_class = uclass;
       du->du_event = o;
 
-      if (uclass->usage_add(nh, ds, du) < 0) {
-	su_free(nh->nh_home, o);
-	su_free(nh->nh_home, du);
+      if (uclass->usage_add(own, ds, du) < 0) {
+	su_free(own, o);
+	su_free(own, du);
 	return NULL;
       }
 	
       SU_DEBUG_5(("nua(%p): adding %s usage%s%s\n",
-		  nh, nua_dialog_usage_name(du), 
+		  own, nua_dialog_usage_name(du), 
 		  o ? " with event " : "", o ? o->o_type :""));
 
-      nua_handle_ref(nh);
+      su_home_ref(own);
       du->du_next = ds->ds_usage, ds->ds_usage = du;
 
       return du;
     }
 
-    su_free(nh->nh_home, o);
+    su_free(own, o);
   }
 
   return NULL;
 }
 
 /** Remove dialog usage. */
-void nua_dialog_usage_remove(nua_handle_t *nh, 
+void nua_dialog_usage_remove(nua_owner_t *own, 
 			     nua_dialog_state_t *ds,
 			     nua_dialog_usage_t *du)
 {
   nua_dialog_usage_t **at;
 
-  assert(nh); assert(ds); assert(du);
+  assert(own); assert(ds); assert(du);
 
   for (at = &ds->ds_usage; *at; at = &(*at)->du_next)
     if (du == *at)
@@ -257,7 +285,7 @@ void nua_dialog_usage_remove(nua_handle_t *nh,
 
   assert(*at);
 
-  nua_dialog_usage_remove_at(nh, ds, at);
+  nua_dialog_usage_remove_at(own, ds, at);
 }
 
 /** Remove dialog usage.
@@ -265,7 +293,7 @@ void nua_dialog_usage_remove(nua_handle_t *nh,
  * Zap dialog state (leg, tag and route) if no usages remain. 
 */
 static 
-void nua_dialog_usage_remove_at(nua_handle_t *nh, 
+void nua_dialog_usage_remove_at(nua_owner_t *own, 
 				nua_dialog_state_t *ds,
 				nua_dialog_usage_t **at)
 {
@@ -278,34 +306,34 @@ void nua_dialog_usage_remove_at(nua_handle_t *nh,
     o = du->du_event;
 
     SU_DEBUG_5(("nua(%p): removing %s usage%s%s\n",
-		nh, nua_dialog_usage_name(du), 
+		own, nua_dialog_usage_name(du), 
 		o ? " with event " : "", o ? o->o_type :""));
-    du->du_class->usage_remove(nh, ds, du);
+    du->du_class->usage_remove(own, ds, du);
     msg_destroy(du->du_msg);
-    nua_handle_unref(nh);
-    su_free(nh->nh_home, du);
+    su_home_unref(own);
+    su_free(own, du);
   }
 
   /* Zap dialog if there is no more usages */
   if (ds->ds_usage == NULL) {
     nta_leg_destroy(ds->ds_leg), ds->ds_leg = NULL;
-    su_free(nh->nh_home, (void *)ds->ds_remote_tag), ds->ds_remote_tag = NULL;
+    su_free(own, (void *)ds->ds_remote_tag), ds->ds_remote_tag = NULL;
     ds->ds_route = 0;
     ds->ds_has_events = 0;
     ds->ds_terminated = 0;
     return;
   }
   else if (!ds->ds_terminated) {
-    nua_dialog_log_usage(nh, ds);
+    nua_dialog_log_usage(own, ds);
   }
 }
 
 static
-void nua_dialog_log_usage(nua_handle_t *nh, nua_dialog_state_t *ds)
+void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
 {
   nua_dialog_usage_t *du;
 
-  if (nua_log->log_level >= 3) {
+  if (SU_LOG->log_level >= 3) {
     char buffer[160];
     int l = 0, n, N = sizeof buffer;
     
@@ -327,7 +355,7 @@ void nua_dialog_log_usage(nua_handle_t *nh, nua_dialog_state_t *ds)
       }
     }
     
-    SU_DEBUG_3(("nua(%p): handle with %s%s%s\n", nh,
+    SU_DEBUG_3(("nua(%p): handle with %s%s%s\n", own,
 		ds->ds_has_session ? "session and " : "", 
 		ds->ds_has_events ? "events " : "",
 		buffer));
@@ -335,7 +363,7 @@ void nua_dialog_log_usage(nua_handle_t *nh, nua_dialog_state_t *ds)
 }
 
 /** Dialog has been terminated. */
-void nua_dialog_terminated(nua_handle_t *nh,
+void nua_dialog_terminated(nua_owner_t *own,
 			   struct nua_dialog_state *ds,
 			   int status,
 			   char const *phrase)
@@ -352,7 +380,7 @@ void nua_dialog_terminated(nua_handle_t *nh,
     else
       /* XXX */;
 #endif
-    nua_dialog_usage_remove_at(nh, ds, &ds->ds_usage);
+    nua_dialog_usage_remove_at(own, ds, &ds->ds_usage);
   }
 }
 
@@ -383,70 +411,3 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 
   du->du_refresh = target;
 }
-
-#if 0
-
-    switch (kind) {
-    case nua_session_usage:  
-      ds->ds_has_session = 0;
-      break;
-
-    case nua_notifier_usage:
-      su_free(nh->nh_home, (void *)du->du_event);
-      ds->ds_has_notifier = NULL != *nua_dialog_usage_at(ds, kind, NONE);
-      ds->ds_has_events = ds->ds_has_notifier || ds->ds_has_subscription;
-      break;
-
-    case nua_subscriber_usage:
-      su_free(nh->nh_home, (void *)du->du_event);
-      ds->ds_has_subscription = NULL != *nua_dialog_usage_at(ds, kind, NONE);
-      ds->ds_has_events = ds->ds_has_subscription || ds->ds_has_notifier;
-      msg_destroy(du->du_subscriber->de_msg);
-      break;
-
-    case nua_register_usage:
-      ds->ds_has_register = 0;
-      msg_destroy(du->du_register->ru_msg);
-      break;
-
-    case nua_publish_usage:
-      ds->ds_has_publish = 0;
-      su_free(nh->nh_home, du->du_publisher->pu_etag);
-      break;
-
-    case nua_transaction_usage:
-    default:
-      break;
-    }
-
-
-      switch (kind) {
-      case nua_session_usage:  
-	ds->ds_has_session = 1; 
-	break;
-      case nua_notifier_usage:
-	ds->ds_has_events = 1;
-	ds->ds_has_notifier = 1;
-	break;
-      case nua_subscriber_usage:
-	ds->ds_has_events = 1;
-	ds->ds_has_subscription = 1;
-	break;
-      case nua_register_usage:
-	ds->ds_has_register = 1;
-	break;
-      case nua_publish_usage:
-	ds->ds_has_publish = 1;
-	break;
-      case nua_transaction_usage:
-      default:
-	break;
-      }
-
-
-typedef struct {
-  void (*nua_dialog_destructor)(nua_handle_t *nh, 
-				nua_dialog_usage_t *du);
-} nua_usage_class;
-
-#endif

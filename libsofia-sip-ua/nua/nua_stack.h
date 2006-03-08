@@ -64,14 +64,15 @@
 #define SU_LOG (nua_log)
 #include <sofia-sip/su_debug.h>
 
+#ifndef NUA_DIALOG_H
+#define NUA_OWNER_T struct nua_handle_s
+#include <nua_dialog.h>
+#endif
+
 SOFIA_BEGIN_DECLS
 
 #if HAVE_SIGCOMP
 #include <sigcomp.h>
-#endif
-
-#ifndef NUA_DIALOG_H
-#include <nua_dialog.h>
 #endif
 
 typedef struct event_s event_t;
@@ -96,7 +97,6 @@ enum nh_oa_event {
 };
 
 typedef struct nua_chat_s nua_chat_t;
-typedef struct nua_remote_s nua_remote_t;
 
 typedef struct nua_client_request nua_client_request_t; 
 typedef struct nua_server_request nua_server_request_t; 

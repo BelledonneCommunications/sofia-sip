@@ -362,8 +362,8 @@ static int process_response_to_invite(nua_handle_t *nh,
       
     /* XXX - check remote tag, handle forks */
     /* Set route, contact, nh_ds->ds_remote_tag */
-    nua_dialog_uac_route(nh, sip, 1); 
-    nua_dialog_get_peer_info(nh, sip);
+    nua_dialog_uac_route(nh, nh->nh_ds, sip, 1); 
+    nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
 
     init_session_timer(nua, nh, sip);
 
@@ -550,8 +550,8 @@ process_100rel(nua_handle_t *nh,
 
   if (!nua_dialog_is_established(nh->nh_ds)) {
     /* Tag the INVITE request */
-    nua_dialog_uac_route(nh, sip, 1);
-    nua_dialog_get_peer_info(nh, sip);
+    nua_dialog_uac_route(nh, nh->nh_ds, sip, 1);
+    nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
 
     cr_invite->cr_orq = 
       nta_outgoing_tagged(orq, process_response_to_invite, nh,
@@ -927,7 +927,7 @@ int process_invite2(nua_t *nua,
   /* Session Timer negotiation */
   init_session_timer(nua, nh, sip);
 
-  nua_dialog_uas_route(nh, sip, 1);	/* Set route and tags */
+  nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);	/* Set route and tags */
 
   nta_incoming_bind(irq, process_ack_or_cancel, nh);
 
@@ -1824,8 +1824,9 @@ static int process_response_to_update(nua_handle_t *nh,
   }
   else if (status >= 200) {
     /* XXX - check remote tag, handle forks */
-    nua_dialog_uac_route(nh, sip, 1); /* Set (route), contact, (remote tag) */
-    nua_dialog_get_peer_info(nh, sip);
+    /* Set (route), contact, (remote tag) */
+    nua_dialog_uac_route(nh, nh->nh_ds, sip, 1); 
+    nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
 
     if (is_session_timer_set(ss)) {
       init_session_timer(nua, nh, sip);
