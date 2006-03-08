@@ -36,7 +36,7 @@
 
 #include <sofia-sip/su_configure.h>
 #include <tport_tls.h>
-#include "sofia-sip/features.h"
+#include "sofia-sip/sofia_features.h"
 
 /** The name and version of software package providing Sofia-SIP-UA library. */
 char const * const sofia_sip_name_version = SOFIA_SIP_NAME_VERSION;
