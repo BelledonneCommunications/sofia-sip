@@ -30,15 +30,6 @@ i?86-*-* )
 ;;
 esac
 
-if false; then # Define Win32 macros
-  AC_DEFINE([HAVE_WIN32], 1, [Define as 1 you have WIN32])
-  SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define as 1 you have WinSock])
-  SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define as 1 you have WinSock2])
-  AC_DEFINE([HAVE_FILETIME], 1, [
-     Define this as 1 if you have WIN32 FILETIME type and 
-     GetSystemTimeAsFileTime().])
-fi
-
 # Check includes used by su includes
 AC_CHECK_HEADER(sys/types.h, 
 	SAC_SU_DEFINE([SU_HAVE_SYS_TYPES], 1, 
@@ -117,6 +108,7 @@ esac
 AC_CHECK_HEADERS([unistd.h sys/time.h])
 
 AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
+  AC_DEFINE([HAVE_WIN32], 1, [Define as 1 you have WIN32])
   SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define as 1 you have WinSock])
   SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define as 1 you have WinSock2])
   SAC_SU_DEFINE([SU_HAVE_SOCKADDR_STORAGE], 1, 
@@ -140,6 +132,9 @@ AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
 #include <winbase.h>
 #endif
   ])
+  AC_DEFINE([HAVE_FILETIME], 1, [
+     Define this as 1 if you have WIN32 FILETIME type and 
+     GetSystemTimeAsFileTime().])
 ],[
 dnl no winsock2
 SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
@@ -328,30 +323,36 @@ AC_SUBST(GLIB_VERSION)
 # Checks for library functions.
 # ===========================================================================
 
-AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm])
-AC_CHECK_FUNCS([socketpair gethostname getipnodebyname epoll])
-AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs])
+AC_SEARCH_LIBS(socket, xnet socket)
+AC_SEARCH_LIBS(inet_ntop, socket nsl)
+dnl AC_SEARCH_LIBS(inet_pton, socket nsl)
+AC_SEARCH_LIBS(getipnodebyname, xnet socket nsl)
+AC_SEARCH_LIBS(gethostbyname, xnet nsl)
+AC_SEARCH_LIBS(getaddrinfo, xnet socket nsl)
 
-# _GNU_SOURCE stuff
-AC_CHECK_FUNCS([getline getdelim getpass])
+AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm \
+                socketpair gethostname gethostbyname getipnodebyname \
+                poll epoll if_nameindex \
+	        getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs \
+                getline getdelim getpass])
+# getline getdelim getpass are _GNU_SOURCE stuff
+if test $ac_cv_func_poll = yes ; then
+  SAC_SU_DEFINE([SU_HAVE_POLL], 1, [Define this as 1 if you have poll().])
+fi
+
+if test $ac_cv_func_if_nameindex = yes ; then
+  SAC_SU_DEFINE([SU_HAVE_IF_NAMEINDEX], 1, 
+    [Define this as 1 if you have if_nameindex().])
+fi
 
 AC_REQUIRE([SAC_WITH_RT])
-
 if test "${with_rt}" != no; then
     AC_CHECK_FUNCS([clock_gettime clock_getcpuclockid])
 fi
 
-SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull inet_ntop inet_pton])
+SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull \
+		   inet_ntop inet_pton])
 
-AC_CHECK_FUNC([poll], 
-	SAC_SU_DEFINE([SU_HAVE_POLL], 1, [
-	Define this as 1 if you have poll() function.
-	]))
-
-AC_CHECK_FUNC([if_nameindex], 
-	SAC_SU_DEFINE([SU_HAVE_IF_NAMEINDEX], 1, [
-	Define this as 1 if you have if_nameindex() function.
-	]))
 
 # ===========================================================================
 # Check pthread_rwlock_unlock()
@@ -410,6 +411,8 @@ if test -r ${srcdir}/libsofia-sip-ua/su/sofia-sip/su_wait.h ; then
 fi
 
 AM_CONFIG_HEADER([libsofia-sip-ua/su/sofia-sip/su_configure.h])
+
+# End of SAC_SOFIA_SU
 ])
 
 # SAC_SU_DEFINE(VARIABLE, [VALUE], [DESCRIPTION])
