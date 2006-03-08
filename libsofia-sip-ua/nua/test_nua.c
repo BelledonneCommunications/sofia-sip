@@ -50,6 +50,7 @@ struct call;
 #include <sofia-sip/su_tag_io.h>
 
 #include <test_proxy.h>
+#include <test_nat.h>
 #include <sofia-sip/auth_module.h>
 
 #include <stddef.h>
@@ -159,6 +160,7 @@ struct context
   } a, b, c;
 
   struct proxy *p;
+  struct nat *nat;
 };
 
 struct event
@@ -1108,13 +1110,17 @@ static char const passwd[] =
   "bob:secret:\n"
   "charlie:secret:\n";
 
-int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
+int test_init(struct context *ctx, 
+	      int start_proxy,
+	      url_t const *o_proxy,
+	      int start_nat)
 {
   BEGIN();
   struct event *e;
   sip_contact_t const *m = NULL;
   sip_from_t const *sipaddress = NULL;
-  url_t const *p_uri;		/* Proxy URI */
+  url_t const *p_uri, *a_uri;		/* Proxy URI */
+  char const *a_bind = "sip:0.0.0.0:*";
 
   ctx->root = su_root_create(NULL); TEST_1(ctx->root);
 
@@ -1125,7 +1131,7 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
     int temp;
 
     if (print_headings)
-      printf("TEST NUA-2.0.0: init proxy P\n");
+      printf("TEST NUA-2.1.1: init proxy P\n");
 
     temp = mkstemp(passwd_name); TEST_1(temp != -1);
     atexit(remove_tmp);		/* Make sure temp file is unlinked */
@@ -1144,18 +1150,89 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
 			       TAG_END());
 
     if (print_headings)
-      printf("TEST NUA-2.0.0: PASSED\n");
+      printf("TEST NUA-2.1.1: PASSED\n");
+  }
+
+  p_uri = a_uri = test_proxy_uri(ctx->p);
+
+  if (start_nat && p_uri == NULL)
+    p_uri = url_hdup(ctx->home, (void *)o_proxy);
+
+  if (start_nat && p_uri != NULL) {
+    int family = 0;
+    su_sockaddr_t su[1];
+    socklen_t sulen = sizeof su;
+    char b[64];
+    int len;
+
+    if (print_headings)
+      printf("TEST NUA-2.1.2: creating test NAT\n");
+
+    /* Try to use different family than proxy. */
+    if (p_uri->url_host[0] == '[')
+      family = AF_INET;
+    else
+      family = AF_INET6;
+
+    ctx->nat = test_nat_create(ctx->root, family, TAG_END());
+
+    if (test_nat_private(ctx->nat, su, &sulen) < 0) {
+      printf("%s:%u: NUA-2.1.2: failed to get private NAT address\n",
+	     __FILE__, __LINE__);
+    }
+    else if (su->su_family == AF_INET6) {
+      a_uri = (void *)
+	su_sprintf(ctx->home, "sip:[%s]:%u",
+		   inet_ntop(su->su_family, SU_ADDR(su), b, sizeof b),
+		   ntohs(su->su_port));
+      a_bind = "sip:[::]:*";
+    }
+    else if (su->su_family == AF_INET) {
+      a_uri = (void *)
+	su_sprintf(ctx->home, "sip:%s:%u",
+		   inet_ntop(su->su_family, SU_ADDR(su), b, sizeof b),
+		   ntohs(su->su_port));
+      a_bind = "sip:0.0.0.0:*";
+    }
+
+    if (p_uri->url_host[0] == '[') {
+      su->su_len = sulen = (sizeof su->su_sin6), su->su_family = AF_INET6;
+      len = strcspn(p_uri->url_host + 1, "]"); assert(len < sizeof b);
+      memcpy(b, p_uri->url_host + 1, len); b[len] = '\0';
+      inet_pton(su->su_family, b, SU_ADDR(su));
+    }
+    else {
+      su->su_len = sulen = (sizeof su->su_sin), su->su_family = AF_INET;
+      inet_pton(su->su_family, p_uri->url_host, SU_ADDR(su));
+    }
+
+    su->su_port = htons(strtoul(url_port(p_uri), NULL, 10));
+
+    if (test_nat_public(ctx->nat, su, sulen) < 0) {
+      printf("%s:%u: NUA-2.1.2: failed to set public address\n",
+	     __FILE__, __LINE__);
+      a_uri = NULL;
+    }
+
+    if (print_headings) {
+      if (ctx->nat && a_uri) {
+	printf("TEST NUA-2.1.2: PASSED\n");
+      } else {
+	printf("TEST NUA-2.1.2: FAILED\n");
+      }
+    }
   }
 
   if (print_headings)
-    printf("TEST NUA-2.0.1: init endpoint A\n");
+    printf("TEST NUA-2.2.1: init endpoint A\n");
 
-  p_uri = test_proxy_uri(ctx->p);
+  if (a_uri == NULL)
+    a_uri = p_uri;
 
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
-			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
+			  NUTAG_PROXY(a_uri ? a_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
-			  NUTAG_URL("sip:0.0.0.0:*"),
+			  NUTAG_URL(a_bind),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 			  TAG_END());
   TEST_1(ctx->a.nua);
@@ -1173,10 +1250,10 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
   free_events_in_list(ctx, ctx->a.call);
 
   if (print_headings)
-    printf("TEST NUA-2.0.1: PASSED\n");
+    printf("TEST NUA-2.2.1: PASSED\n");
 
   if (print_headings)
-    printf("TEST NUA-2.0.2: init endpoint B\n");
+    printf("TEST NUA-2.2.2: init endpoint B\n");
 
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
 			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
@@ -1198,10 +1275,10 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
   free_events_in_list(ctx, ctx->b.call);
 
   if (print_headings)
-    printf("TEST NUA-2.0.2: PASSED\n");
+    printf("TEST NUA-2.2.2: PASSED\n");
 
   if (print_headings)
-    printf("TEST NUA-2.0.3: init endpoint C\n");
+    printf("TEST NUA-2.2.3: init endpoint C\n");
 
   ctx->c.nua = nua_create(ctx->root, c_callback, ctx,
 			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
@@ -1223,7 +1300,7 @@ int test_init(struct context *ctx, int start_proxy, url_t const *o_proxy)
   free_events_in_list(ctx, ctx->c.call);
   
   if (print_headings)
-    printf("TEST NUA-2.0.3: PASSED\n");
+    printf("TEST NUA-2.2.3: PASSED\n");
 
   END();
 }
@@ -1252,7 +1329,7 @@ int test_register(struct context *ctx)
 
 */
   if (print_headings)
-    printf("TEST NUA-2.1: REGISTER a\n");
+    printf("TEST NUA-2.3.1: REGISTER a\n");
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, TAG_END()));
 
@@ -1281,10 +1358,10 @@ int test_register(struct context *ctx)
   free_events_in_list(ctx, a->call);
 
   if (print_headings)
-    printf("TEST NUA-2.1: PASSED\n");
+    printf("TEST NUA-2.3.1: PASSED\n");
 
   if (print_headings)
-    printf("TEST NUA-2.2: REGISTER b\n");
+    printf("TEST NUA-2.3.2: REGISTER b\n");
 
   TEST_1(b_call->nh = nua_handle(b->nua, b_call, TAG_END()));
 
@@ -1313,10 +1390,10 @@ int test_register(struct context *ctx)
   free_events_in_list(ctx, b->call);
 
   if (print_headings)
-    printf("TEST NUA-2.2: PASSED\n");
+    printf("TEST NUA-2.3.2: PASSED\n");
 
   if (print_headings)
-    printf("TEST NUA-2.3: REGISTER c\n");
+    printf("TEST NUA-2.3.3: REGISTER c\n");
 
   TEST_1(c_call->nh = nua_handle(c->nua, c_call, TAG_END()));
 
@@ -1345,7 +1422,130 @@ int test_register(struct context *ctx)
   free_events_in_list(ctx, c->call);
 
   if (print_headings)
-    printf("TEST NUA-2.3: PASSED\n");
+    printf("TEST NUA-2.3.3: PASSED\n");
+
+  END();
+}
+
+int test_connectivity(struct context *ctx)
+{
+  if (!ctx->p)
+    return 0;			/* No proxy */
+
+  BEGIN();
+
+  struct endpoint *a = &ctx->a,  *b = &ctx->b, *c = &ctx->c;
+  struct call *a_call = a->call, *b_call = b->call, *c_call = c->call;
+  struct event *e;
+  sip_t const *sip;
+
+  /* Connectivity test using OPTIONS */
+
+  if (print_headings)
+    printf("TEST NUA-2.4.1: OPTIONS from A to B\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  options(a, a_call, a_call->nh,
+	  TAG_IF(!ctx->p, NUTAG_URL(b->contact->m_url)),
+	  TAG_END());
+
+  run_ab_until(ctx, -1, save_until_final_response, -1, save_until_received);
+
+  /* Client events: nua_options(), nua_r_options */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_r_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_allow); TEST_1(sip->sip_accept); TEST_1(sip->sip_supported);
+  /* TEST_1(sip->sip_content_type); */
+  /* TEST_1(sip->sip_payload); */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  /* Server events: nua_i_options */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_i_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b_call);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-2.4.1: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-2.4.2: OPTIONS from B to C\n");
+
+  TEST_1(b_call->nh = nua_handle(b->nua, b_call, SIPTAG_TO(c->to), TAG_END()));
+
+  options(b, b_call, b_call->nh,
+	  TAG_IF(!ctx->p, NUTAG_URL(c->contact->m_url)),
+	  TAG_END());
+
+  run_abc_until(ctx, -1, NULL, 
+		-1, save_until_final_response,
+		-1, save_until_received);
+
+  /* Client events: nua_options(), nua_r_options */
+  TEST_1(e = b_call->events.head); TEST_E(e->data->e_event, nua_r_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_allow); TEST_1(sip->sip_accept); TEST_1(sip->sip_supported);
+  /* TEST_1(sip->sip_content_type); */
+  /* TEST_1(sip->sip_payload); */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b_call);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  /* Server events: nua_i_options */
+  TEST_1(e = c_call->events.head); TEST_E(e->data->e_event, nua_i_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, c_call);
+  nua_handle_destroy(c_call->nh), c_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-2.4.2: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-2.4.3: OPTIONS from C to A\n");
+
+  TEST_1(c_call->nh = nua_handle(c->nua, c_call, SIPTAG_TO(a->to), TAG_END()));
+
+  options(c, c_call, c_call->nh,
+	  TAG_IF(!ctx->p, NUTAG_URL(a->contact->m_url)),
+	  TAG_END());
+
+  run_abc_until(ctx, -1, save_until_received, 
+		-1, NULL,
+		-1, save_until_final_response);
+
+  /* Client events: nua_options(), nua_r_options */
+  TEST_1(e = c_call->events.head); TEST_E(e->data->e_event, nua_r_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_allow); TEST_1(sip->sip_accept); TEST_1(sip->sip_supported);
+  /* TEST_1(sip->sip_content_type); */
+  /* TEST_1(sip->sip_payload); */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, c_call);
+  nua_handle_destroy(c_call->nh), c_call->nh = NULL;
+
+  /* Server events: nua_i_options */
+  TEST_1(e = a_call->events.head); TEST_E(e->data->e_event, nua_i_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a_call);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-2.4.3: PASSED\n");
 
   END();
 }
@@ -5179,6 +5379,8 @@ int test_deinit(struct context *ctx)
   nua_destroy(ctx->c.nua), ctx->c.nua = NULL;
 
   test_proxy_destroy(ctx->p), ctx->p = NULL;
+
+  test_nat_destroy(ctx->nat), ctx->nat = NULL;
   
   su_root_destroy(ctx->root);
 
@@ -5204,6 +5406,7 @@ static char const options_usage[] =
   "   -C                print nua events for C\n"
   "   --attach          print pid, wait for a debugger to be attached\n"
   "   --no-proxy        do not use internal proxy\n"
+  "   --no-nat          do not use internal \"nat\"\n"
   "   --no-alarm        don't ask for guard ALARM\n"
   "   -p uri            specify uri of outbound proxy (implies --no-proxy)\n"
   "   -k                do not exit after first error\n"
@@ -5220,8 +5423,8 @@ int main(int argc, char *argv[])
 {
   int retval = 0, quit_on_single_failure = 1;
   int i, o_quiet = 0, o_attach = 0, o_alarm = 1;
-  int o_events_a = 0, o_events_b = 0, o_events_c = 0, o_iproxy = 1;
-  char const *o_proxy = NULL;
+  int o_events_a = 0, o_events_b = 0, o_events_c = 0, o_iproxy = 1, o_inat = 0;
+  url_t const *o_proxy = NULL;
   int level = 0;
 
   struct context ctx[1] = {{{ SU_HOME_INIT(ctx) }}};
@@ -5286,14 +5489,20 @@ int main(int argc, char *argv[])
     }
     else if (strncmp(argv[i], "-p", 2) == 0) {
       if (argv[i][2])
-	o_proxy = argv[i] + 2;
-      else if (!argv[i + 1] || argv[i + 1][0] == '-')
+	o_proxy = URL_STRING_MAKE(argv[i] + 2)->us_url;
+      else if (!argv[++i] || argv[i][0] == '-')
 	usage(1);
-      else
-	o_proxy = argv[++i];
+      else 
+	o_proxy = URL_STRING_MAKE(argv[i])->us_url;
     }
     else if (strcmp(argv[i], "--no-proxy") == 0) {
       o_iproxy = 0;
+    }
+    else if (strcmp(argv[i], "--no-nat") == 0) {
+      o_inat = 0;
+    }
+    else if (strcmp(argv[i], "--nat") == 0) {
+      o_inat = 1;
     }
     else if (strcmp(argv[i], "--no-alarm") == 0) {
       o_alarm = 0;
@@ -5346,8 +5555,8 @@ int main(int argc, char *argv[])
   retval |= test_tag_filter(); SINGLE_FAILURE_CHECK();
   retval |= test_params(ctx); SINGLE_FAILURE_CHECK();
 
-  retval |= test_init(ctx, o_iproxy, 
-		      URL_STRING_MAKE(o_proxy)->us_url); 
+  retval |= test_init(ctx, o_iproxy, o_proxy, o_inat);
+
   if (retval == 0) {
     if (o_events_a)
       ctx->a.printer = print_event;
@@ -5356,9 +5565,12 @@ int main(int argc, char *argv[])
     if (o_events_c)
       ctx->c.printer = print_event;
 
-    retval |= test_register(ctx);  SINGLE_FAILURE_CHECK();
-    
-    if (retval == 0) {
+    retval |= test_register(ctx);  
+
+    if (retval == 0)
+      retval |= test_connectivity(ctx);
+
+    if (!o_inat && retval == 0) {
       retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
