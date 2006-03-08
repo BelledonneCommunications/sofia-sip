@@ -1,3 +1,60 @@
+2006-03-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Renamed sofia-sip/features.h as sofia-sip/sofia_features.h.
+
+    M ./RELEASE +3
+    M ./configure.ac -1 +1
+    M ./libsofia-sip-ua/features/Makefile.am -1 +1
+    M ./libsofia-sip-ua/features/sofia-sip/features.h.in -2 +4
+    M ./scripts/fix-include-sofia-sip -2 +5
+
+  * Generating man pages in $(srcdir).
+
+    M ./Makefile.am -5 +3
+
+  * Split nua_stack.c into multiple files.
+
+    M ./libsofia-sip-ua/nua/Makefile.am +6
+    M ./libsofia-sip-ua/nua/nua.c -52 +13
+    A ./libsofia-sip-ua/nua/nua_dialog.c
+    A ./libsofia-sip-ua/nua/nua_dialog.h
+    A ./libsofia-sip-ua/nua/nua_event_server.c
+    A ./libsofia-sip-ua/nua/nua_message.c
+    A ./libsofia-sip-ua/nua/nua_options.c
+    A ./libsofia-sip-ua/nua/nua_publish.c
+    A ./libsofia-sip-ua/nua/nua_register.c
+    A ./libsofia-sip-ua/nua/nua_session.c
+    M ./libsofia-sip-ua/nua/nua_stack.c -5026 +177
+    M ./libsofia-sip-ua/nua/nua_stack.h -125 +166
+    A ./libsofia-sip-ua/nua/nua_subnotref.c
+    A ./libsofia-sip-ua/nua/nua_tag_ref.c
+
+  * Added nta_check_*() functions.
+
+    M ./libsofia-sip-ua/nta/Makefile.am -1 +1
+    A ./libsofia-sip-ua/nta/nta_check.c
+    M ./libsofia-sip-ua/nta/sofia-sip/nta.h +26
+
+  * msg_parser.awk was printing spurious errors by SIP-ETag header etc.
+
+  * Removed doxygen crud from <sofia-sip/sl_utils.h>.
+
+  * Added SIPS_DEFAULT_PORT and SIPS_DEFAULT_SERV.
+
+    M ./libsofia-sip-ua/sip/sofia-sip/sip.h -1 +7
+
+  * Removed redundant reference to <sl_utils.h>.
+
+    M ./libsofia-sip-ua/nea/nea.c -2
+    M ./libsofia-sip-ua/nea/nea_server.c -1
+
+  * Added some error checking to the win32 autogen scripts.
+
+    M ./win32/Makefile.am -1 +1
+    M ./win32/autogen.cmd -2 +4
+    M ./win32/build_sources.cmd -22 +53
+    M ./win32/version_files.cmd +1
+
 2006-03-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Do not use glib upon --without-glib-dir or --without-glib in configure.
