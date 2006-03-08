@@ -18,6 +18,9 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+- Renamed sofia-sip/features.h as sofia-sip/sofia_features.h
+  (it got confused with glibc features.h)
+- Added nta_check_*() functions to <sofia-sip/nta.h>
 
 Contributors to this release
 ----------------------------

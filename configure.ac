@@ -171,7 +171,7 @@ libsofia-sip-ua/stun/Makefile
 libsofia-sip-ua/su/Makefile
 libsofia-sip-ua/tport/Makefile
 libsofia-sip-ua/url/Makefile
-libsofia-sip-ua/features/sofia-sip/features.h
+libsofia-sip-ua/features/sofia-sip/sofia_features.h
 utils/Makefile
 win32/Makefile
 win32/config.h

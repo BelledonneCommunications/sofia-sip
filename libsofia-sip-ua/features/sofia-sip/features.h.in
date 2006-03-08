@@ -21,8 +21,10 @@
  *
  */
 
-/**@file sofia-sip/features.h
- * @brief Nokia User Agent Library Features
+/**@file sofia-sip/sofia_features.h
+ * @brief Sofia-SIP Library Features
+ *
+ * @configure_input@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
