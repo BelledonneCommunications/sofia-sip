@@ -45,8 +45,6 @@
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/sip_status.h>
 
-#include <sofia-sip/sl_utils.h>
-
 #define SU_TIMER_ARG_T       struct nea_s
 #define NTA_LEG_MAGIC_T      struct nea_s
 #define NTA_OUTGOING_MAGIC_T struct nea_s

@@ -38,7 +38,6 @@
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/su_tagarg.h>
-#include <sofia-sip/sl_utils.h>
 
 #include "nea_debug.h"
 
