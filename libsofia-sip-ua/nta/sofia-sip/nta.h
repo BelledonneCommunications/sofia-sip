@@ -286,6 +286,32 @@ int nta_incoming_mreply(nta_incoming_t *irq, msg_t *msg);
 
 void nta_incoming_destroy(nta_incoming_t *irq);
 
+int nta_check_required(nta_incoming_t *irq,
+		       sip_t const *sip,
+		       sip_supported_t const *supported,
+		       tag_type_t tag, tag_value_t value, ...);
+int nta_check_supported(nta_incoming_t *irq,
+			sip_t const *sip,
+			sip_require_t *require,
+			tag_type_t tag, tag_value_t value, ...);
+int nta_check_method(nta_incoming_t *irq,
+		     sip_t const *sip,
+		     sip_allow_t const *allow,
+		     tag_type_t tag, tag_value_t value, ...);
+int nta_check_session_content(nta_incoming_t *irq, sip_t const *sip,
+			      sip_accept_t const *session_accepts,
+			      tag_type_t tag, tag_value_t value, ...);
+int nta_check_accept(nta_incoming_t *irq,
+		     sip_t const *sip,
+		     sip_accept_t const *acceptable,
+		     sip_accept_t const **return_acceptable,
+		     tag_type_t tag, tag_value_t value, ...);
+
+int nta_check_session_expires(nta_incoming_t *irq,
+			      sip_t const *sip,
+			      sip_time_t my_min_se,
+			      tag_type_t tag, tag_value_t value, ...);
+
 /* ----------------------------------------------------------------------
  * 7) Prototypes for outgoing transactions
  */

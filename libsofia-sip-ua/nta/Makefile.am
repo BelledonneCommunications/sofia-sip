@@ -35,7 +35,7 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/nta_tport.h sofia-sip/nta_tag.h \
 			sofia-sip/sl_utils.h 
 
-libnta_la_SOURCES = 	nta.c nta_tag.c nta_tag_ref.c \
+libnta_la_SOURCES = 	nta.c nta_check.c nta_tag.c nta_tag_ref.c \
 			nta_internal.h \
 			sl_utils_print.c sl_utils_log.c \
 			sl_read_payload.c
