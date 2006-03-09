@@ -57,7 +57,7 @@ typedef struct agent_t agent_t;
 #include <sofia-sip/htable.h>
 #include <sofia-sip/sresolv.h>
 #include <sofia-sip/su_log.h>
-#include <sofia-sip/features.h>
+#include <sofia-sip/sofia_features.h>
 
 #include <sofia-sip/string0.h>
 
