@@ -1,0 +1,23 @@
+PROJECT_NAME         = "nua-glib"
+OUTPUT_DIRECTORY     = ../docs/html/nua-glib
+
+INPUT 		     = nua_glib.docs . sofia-sip
+
+@INCLUDE             = ../docs/Doxyfile.conf
+
+TAGFILES            += ../docs/doxytags_docs=../docs
+TAGFILES            += ../docs/doxytags_su=../su
+TAGFILES            += ../docs/doxytags_ipt=../ipt
+TAGFILES            += ../docs/doxytags_bnf=../bnf
+TAGFILES            += ../docs/doxytags_url=../url
+TAGFILES            += ../docs/doxytags_msg=../msg
+TAGFILES            += ../docs/doxytags_sip=../sip
+TAGFILES            += ../docs/doxytags_sresolv=../sresolv
+TAGFILES            += ../docs/doxytags_tport=../tport
+TAGFILES            += ../docs/doxytags_nta=../nta
+TAGFILES            += ../docs/doxytags_sdp=../sdp
+TAGFILES            += ../docs/doxytags_nua=../nua
+
+GENERATE_TAGFILE     = ../docs/doxytags_nua_glib
+
+ALIASES             +=

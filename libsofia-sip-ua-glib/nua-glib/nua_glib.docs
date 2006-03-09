@@ -1,0 +1,20 @@
+/**@mainpage Sofia-SIP nua-glib Module
+
+@section stun_meta Module Meta Information
+
+The nua-glib module is a highlevel interface for building
+SIP user-agent software, using the glib object system based.
+It is basicly provides gobject bindings to the Sofia-SIP nua
+module interface. 
+
+@CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
+
+@STATUS Core library
+
+@LICENSE LGPL
+
+@section todo Todo
+
+- see sourceforge.net issue tracker for sofia-sip
+
+*/
