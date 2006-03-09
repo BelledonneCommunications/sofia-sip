@@ -650,3 +650,55 @@ int scan_host(char **inout_host)
   return scan_domain(inout_host);
 }
 
+#include <sofia-sip/hostdomain.h>
+
+/** Return true if @a string is valid IP4 address in dot-notation.
+ *
+ * @note Only 4-octet form is accepted, e.g., @c 127.1 is not considered
+ * valid IP4 address.
+ */
+int host_is_ip4_address(char const *string)
+{
+  int n = span_ip4_address(string);
+  return n > 0 && string[n] == '\0';
+}
+
+/** Return true if @a string is valid IP4 address in dot-notation.
+ *
+ * @note Only 4-octet form is accepted, e.g., @c 127.1 is not considered
+ * valid IP4 address.
+ */
+int host_is_ip6_address(char const *string)
+{
+  int n = span_ip6_address(string);
+  return n > 0 && string[n] == '\0';
+}
+
+int host_ip6_reference(char const *string)
+{
+  int n = span_ip6_reference(string);
+  return n > 0 && string[n] == '\0';
+}
+
+
+int host_is_ip_address(char const *string)
+{
+  int n = span_ip_address(string);
+  return n > 0 && string[n] == '\0';
+}
+
+
+int host_is_domain(char *string)
+{
+  int n = span_domain(string);
+  return n > 0 && string[n] == '\0';
+}
+
+
+int host_is_valid(char const *string)
+{
+  int n = span_host(string);
+  return n > 0 && string[n] == '\0';
+}
+
+
