@@ -172,6 +172,8 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
 				  URL_STRING_MAKE("sip:0.0.0.0:*"),
 				  NULL, NULL,
 				  NTATAG_UA(0),
+				  NTATAG_SERVER_RPORT(1),
+				  NTATAG_CLIENT_RPORT(1),
 				  TAG_END());
 
   proxy->defleg = nta_leg_tcreate(proxy->agent, 
