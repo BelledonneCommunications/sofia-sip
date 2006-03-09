@@ -1,3 +1,58 @@
+2006-03-09  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+  * Synchronized darcs and CVS. 
+	
+  * Added missing su_source_test.c file.
+
+    A ./libsofia-sip-ua-glib/su-glib/su_source_test.c
+
+  * Added missing Makefile.am for su-glib.
+
+    A ./libsofia-sip-ua-glib/su-glib/Makefile.am
+
+  * Modified Makefile.ams to correctly build the new glib library.
+
+    M ./configure.ac +4
+    A ./libsofia-sip-ua-glib/Makefile.am
+
+  * Added sofia-sip-ua-glib to the packaging files.
+
+    M ./packages/Makefile.am -2 +2
+    A ./packages/sofia-sip-ua-glib.pc.in
+    M ./packages/sofia-sip-ua.pc.in -2 +2
+    M ./packages/sofia-sip.spec.in -4 +7
+
+  * Added nua-glib module to the tree.
+
+    A ./libsofia-sip-ua-glib/nua-glib/
+    A ./libsofia-sip-ua-glib/nua-glib/Doxyfile
+    A ./libsofia-sip-ua-glib/nua-glib/Makefile.am
+    A ./libsofia-sip-ua-glib/nua-glib/nua_glib.c
+    A ./libsofia-sip-ua-glib/nua-glib/nua_glib.docs
+    A ./libsofia-sip-ua-glib/nua-glib/nua_glib_marshal.list
+    A ./libsofia-sip-ua-glib/nua-glib/sofia-sip/
+    A ./libsofia-sip-ua-glib/nua-glib/sofia-sip/nua_glib.h
+    A ./libsofia-sip-ua-glib/nua-glib/test_nua_glib.c
+
+  * Moved glib stuff from libsofia-sip-ua to libsofia-sip-ua-glib.
+
+     ./libsofia-sip-ua/su/su_source.c -> ./libsofia-sip-ua-glib/su-glib/su_source.c
+     ./libsofia-sip-ua/su/sofia-sip/su_source.h -> ./libsofia-sip-ua-glib/su-glib/sofia-sip/su_source.h
+    A ./libsofia-sip-ua-glib/su-glib/
+    A ./libsofia-sip-ua-glib/su-glib/sofia-sip/
+    M ./libsofia-sip-ua-glib/su-glib/su_source.c -1 +3
+    M ./libsofia-sip-ua/Makefile.am -1
+    M ./libsofia-sip-ua/su/Makefile.am -10 +7
+    M ./libsofia-sip-ua/su/sofia-sip/su_configure.h.in -2
+    M ./libsofia-sip-ua/su/su_root_test.c -4
+    M ./libsofia-sip-ua/su/su_test.c -18 +2
+    M ./m4/sac-su2.m4 -5 +9
+
+  * Created libsofia-sip-ua-glib.
+
+    M ./Makefile.am -1 +1
+    A ./libsofia-sip-ua-glib/
+
 2006-03-09  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Updated globally unique identifier (uuid) generation.
