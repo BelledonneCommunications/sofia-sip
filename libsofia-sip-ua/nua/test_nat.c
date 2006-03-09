@@ -90,6 +90,9 @@ struct nat {
 
   struct binding *bindings;
 
+  /* True if we act in symmetric way */
+  int symmetric;
+
   /* Everything sent to in_address will be forwarded to out_address */
   su_sockaddr_t in_address[1], out_address[1];
   socklen_t in_addrlen, out_addrlen;
@@ -484,11 +487,13 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     su_close(in); su_close(out);
     return 0;
   }
-  if (connect(out, (void *)nat->out_address, nat->out_addrlen) < 0) {
-    su_perror("new_udp: connect(to)");
-    su_close(in); su_close(out);
-    return 0;
-  }
+
+  if (nat->symmetric)
+    if (connect(out, (void *)nat->out_address, nat->out_addrlen) < 0) {
+      su_perror("new_udp: connect(to)");
+      su_close(in); su_close(out);
+      return 0;
+    }
 
   if (su_wait_create(win, in, SU_WAIT_IN) < 0) {
     su_perror("new_udp: su_wait_create");
@@ -528,7 +533,11 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
 
   printf("nat: new UDP binding %s <=> %s\n", b->in_name, b->out_name);
 
-  m = send(b->out_socket, nat->buffer, n, 0);
+  if (nat->symmetric)
+    m = send(b->out_socket, nat->buffer, n, 0);
+  else
+    m = sendto(b->out_socket, nat->buffer, n, 0, 
+	       (void *)nat->out_address, nat->out_addrlen);
 
   printf("nat: udp out %d/%d %s => %s\n",
 	 (int)m, (int)n, b->in_name, b->out_name);
@@ -549,7 +558,11 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
     return 0;
   }
 
-  m = send(b->out_socket, nat->buffer, n, 0);
+  if (nat->symmetric)
+    m = send(b->out_socket, nat->buffer, n, 0);
+  else
+    m = sendto(b->out_socket, nat->buffer, n, 0,
+	       (void *)nat->out_address, nat->out_addrlen);
 
   printf("nat: udp out %d/%d %s => %s\n",
 	 (int)m, (int)n, b->in_name, b->out_name);
