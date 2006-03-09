@@ -208,6 +208,7 @@ typedef struct nua_handle_preferences
   unsigned         nhp_auto_ack:1; /**< Automatically ACK a final response */
   unsigned         nhp_natify:1;
   unsigned         nhp_gruuize:1;
+  unsigned         nhp_check_register:1;
   unsigned         :0;
 
   /** INVITE timeout. 
@@ -253,6 +254,8 @@ typedef struct nua_handle_preferences
   sip_user_agent_t   *nhp_user_agent;
   char const         *nhp_ua_name;
   sip_organization_t *nhp_organization;
+
+  char const         *nhp_instance;
   
   /* A bit for each feature set by application */
   union {
@@ -286,6 +289,7 @@ typedef struct nua_handle_preferences
       unsigned nhp_user_agent:1;
       unsigned nhp_ua_name:1;
       unsigned nhp_organization:1;
+      unsigned nhp_instance;
       unsigned :0;
     } set_bits;
   } nhp_set;
@@ -556,6 +560,13 @@ int nua_creq_check_restart(nua_handle_t *nh,
 			   nta_outgoing_t *orq,
 			   sip_t const *sip,
 			   nua_creq_restart_f *f);
+
+int nua_creq_restart_with(nua_handle_t *nh,
+			  struct nua_client_request *cr,
+			  nta_outgoing_t *orq,
+			  int status, char const *phrase,
+			  nua_creq_restart_f *f, 
+			  tag_type_t tag, tag_value_t value, ...);
 
 int nua_creq_restart(nua_handle_t *nh,
 		     struct nua_client_request *cr,
