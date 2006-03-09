@@ -47,7 +47,11 @@
 
 SOFIA_BEGIN_DECLS
 
-typedef struct tport_s tport_t;
+struct tport_s;
+#ifndef TPORT_T
+#define TPORT_T struct tport_s
+typedef TPORT_T tport_t;
+#endif
 
 #ifndef TP_STACK_T
 #ifndef TP_AGENT_T

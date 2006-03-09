@@ -42,6 +42,12 @@
 SOFIA_BEGIN_DECLS
 
 struct tport_s;
+
+#ifndef TPORT_T
+#define TPORT_T struct tport_s
+typedef TPORT_T tport_t;
+#endif
+
 struct sigcomp_compartment;
 struct sigcomp_udvm;
 
