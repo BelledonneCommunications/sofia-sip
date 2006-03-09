@@ -315,8 +315,11 @@ char const *sip_via_transport(sip_via_t const *v)
   }
   return NULL;
 }
-#endif
+#else
 char const *sip_via_transport(sip_via_t const *v);
+#endif
+
+char const *sip_via_port(sip_via_t const *v, int *using_rport);
 
 sip_payload_t *sip_payload_create(su_home_t *home, void const *data, int len);
 

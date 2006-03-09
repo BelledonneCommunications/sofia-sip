@@ -1765,22 +1765,8 @@ int nta_tpn_by_via(tp_name_t *tpn, sip_via_t const *v, int *using_rport)
   else
     tpn->tpn_host = v->v_host;
 
-  if (v->v_maddr || !using_rport)
-    rport = NULL;
-  else if (strcasecmp(v->v_protocol, "SIP/2.0/UDP") == 0)
-    rport = v->v_rport, *using_rport = 0;
-  else if (*using_rport)
-    rport = v->v_rport;
-  else
-    rport = NULL;
-
-  if (rport && rport[0])
-    tpn->tpn_port = rport;
-  else
-    tpn->tpn_port = SIP_PORT(v->v_port), using_rport ? *using_rport = 0 : 0;
-
+  tpn->tpn_port = sip_via_port(v, using_rport);
   tpn->tpn_comp = v->v_comp;
-
   tpn->tpn_ident = NULL;
 
   return 0;

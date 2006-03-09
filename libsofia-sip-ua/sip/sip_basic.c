@@ -2792,3 +2792,41 @@ sip_via_t *sip_via_create(su_home_t *home,
 
   return v;
 }
+
+/**@ingroup sip_via
+ *
+ * Get port number corresponding to a Via line. 
+ *
+ */
+char const *sip_via_port(sip_via_t const *v, int *using_rport)
+{
+  char const *port;
+
+  if (v->v_maddr || !using_rport)
+    port = NULL;
+  else if (strcasecmp(v->v_protocol, "SIP/2.0/UDP") == 0)
+    port = v->v_rport, *using_rport = 0;
+  else if (*using_rport)
+    port = v->v_rport;
+  else
+    port = NULL;
+
+  if (port && port[0])
+    return port;
+
+  if (using_rport)
+    *using_rport = 0;
+
+  if (v->v_port)
+    return v->v_port;
+
+  if (v->v_protocol == sip_transport_udp ||
+      v->v_protocol == sip_transport_tcp ||
+      v->v_protocol == sip_transport_sctp)
+    return SIP_DEFAULT_SERV;	/* 5060 */
+  else if (v->v_protocol == sip_transport_tls ||
+	   strncasecmp(v->v_protocol, "SIP/2.0/TLS", 11) == 0)
+    return SIPS_DEFAULT_SERV;	/* 5061 */
+  else
+    return SIP_DEFAULT_SERV;	/* 5060 */
+}
