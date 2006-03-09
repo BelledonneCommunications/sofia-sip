@@ -25,6 +25,12 @@
 /**@CFILE test_nat.c
  * @brief Simulated NAT for testing nua
  *
+ * NAT thing works so that we set the outgoing proxy URI to point
+ * towards its "private" address and give the real address of the proxy
+ * as its "public" address. If we use different IP families here, we may
+ * even manage to test real connectivity problems as proxy and endpoint
+ * can not talk to each other.
+ *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Mar  8 19:54:28 EET 2006
@@ -50,7 +56,7 @@ struct binding;
 
 #define LIST_PROTOS(STORAGE, PREFIX, T)			 \
 STORAGE void PREFIX ##_insert(T **list, T *node),	 \
-        PREFIX ##_remove(T *node)			 
+        PREFIX ##_remove(T *node)
 
 #define LIST_BODIES(STORAGE, PREFIX, T, NEXT, PREV)	  \
 STORAGE void PREFIX ##_insert(T **list, T *node)   \
@@ -92,7 +98,7 @@ struct nat {
 
   /* ...but source address will be "fake" */
   su_localinfo_t *localinfo, *private, *fake;
-  
+
   int udp_socket, tcp_socket;
   int udp_register, tcp_register;
 
@@ -123,25 +129,25 @@ static int tcp_in_to_out(struct nat *, su_wait_t *wait, struct binding *);
 static int tcp_out_to_in(struct nat *, su_wait_t *wait, struct binding *);
 
 /* nat entry point */
-static int 
+static int
 test_nat_init(su_root_t *root, struct nat *nat)
 {
   su_localinfo_t *li, hints[1] = {{ 0 }};
   int error;
   unsigned port = 0, port0 = 0;
-  su_sockaddr_t *su; 
+  su_sockaddr_t *su;
   socklen_t sulen;
   su_wait_t wait[1];
 
   nat->root = root;
   nat->udp_socket = -1, nat->tcp_socket = -1;
-  
+
   error = su_getlocalinfo(hints, &nat->localinfo);
   if (error) {
     fprintf(stderr, "test_nat: su_getlocalinfo: %s\n", su_gli_strerror(error));
     return -1;
   }
-  
+
   /* We must have two different IP addresses. */
   if (!nat->localinfo || !nat->localinfo->li_next) {
     fprintf(stderr, "test_nat: only one IP address available\n");
@@ -171,7 +177,7 @@ test_nat_init(su_root_t *root, struct nat *nat)
 	return -1;
       }
 
-      fprintf(stderr, "test_nat: port %u: %s\n", 
+      fprintf(stderr, "test_nat: port %u: %s\n",
 	      port, su_strerror(su_errno()));
 
       su_close(nat->udp_socket);
@@ -203,12 +209,12 @@ test_nat_init(su_root_t *root, struct nat *nat)
     nat->tcp_socket = su_socket(li->li_family, SOCK_STREAM, IPPROTO_TCP);
     if (nat->tcp_socket == -1)
       return -1;
-    
+
     if (bind(nat->tcp_socket, (void *)su, sulen) < 0) {
       su_close(nat->tcp_socket);
       nat->tcp_socket = -1;
 
-      fprintf(stderr, "test_nat: port %u: %s\n", 
+      fprintf(stderr, "test_nat: port %u: %s\n",
 	      port, su_strerror(su_errno()));
 
       if (++port > 65535)
@@ -222,7 +228,7 @@ test_nat_init(su_root_t *root, struct nat *nat)
     }
 
     break;
-  } 
+  }
 
   nat->in_addrlen = sulen;
 
@@ -257,7 +263,7 @@ test_nat_init(su_root_t *root, struct nat *nat)
     su_perror("nat: su_root_register");
     return -1;
   }
-	  
+
   return 0;
 }
 
@@ -283,7 +289,7 @@ test_nat_deinit(su_root_t *root, struct nat *nat)
   free(nat->tags);
 }
 
-struct nat *test_nat_create(su_root_t *root, 
+struct nat *test_nat_create(su_root_t *root,
 			    int family,
 			    tag_type_t tag, tag_value_t value, ...)
 {
@@ -298,10 +304,10 @@ struct nat *test_nat_create(su_root_t *root,
     ta_start(ta, tag, value);
     nat->tags = tl_llist(ta_tags(ta));
     ta_end(ta);
-    
+
     if (su_clone_start(root,
 		       nat->clone,
-		       nat, 
+		       nat,
 		       test_nat_init,
 		       test_nat_deinit) == -1)
       su_home_unref(nat->home), nat = NULL;
@@ -323,7 +329,7 @@ int test_nat_private(struct nat *nat, void *address, int *return_addrlen)
 {
   if (nat == NULL || address == NULL || return_addrlen == NULL)
     return su_seterrno(EFAULT);
-  
+
   if (*return_addrlen < nat->in_addrlen)
     return su_seterrno(EINVAL);
 
@@ -348,14 +354,14 @@ int test_nat_public(struct nat *nat, void const *address, int addrlen)
 
   if (addrlen > sizeof nat->out_address)
     return su_seterrno(EINVAL);
-  
+
   for (li = nat->localinfo; li; li = li->li_next) {
-    if (li != nat->private && 
-	li->li_scope == LI_SCOPE_HOST && 
+    if (li != nat->private &&
+	li->li_scope == LI_SCOPE_HOST &&
 	li->li_family == su->su_family)
       break;
   }
-  
+
   if (li == NULL)
     for (li = nat->localinfo; li; li = li->li_next) {
       if (li != nat->private && li->li_family == su->su_family)
@@ -374,7 +380,7 @@ int test_nat_public(struct nat *nat, void const *address, int addrlen)
 
 /* ====================================================================== */
 
-static struct binding *nat_binding_new(struct nat *nat, 
+static struct binding *nat_binding_new(struct nat *nat,
 				       int in_socket,
 				       int out_socket)
 {
@@ -393,7 +399,7 @@ static struct binding *nat_binding_new(struct nat *nat,
 
   getpeername(in_socket, (void *)addr, &addrlen);
   inet_ntop(addr->su_family, SU_ADDR(addr), name, sizeof name);
-  snprintf(b->in_name, sizeof b->in_name, 
+  snprintf(b->in_name, sizeof b->in_name,
 	   addr->su_family == AF_INET6 ? "[%s]:%u" : "%s:%u",
 	   name, ntohs(addr->su_port));
 
@@ -441,7 +447,7 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     return 0;
   }
 
-  if (nat->fake == NULL) {	/* Xyzzy */ 
+  if (nat->fake == NULL) {	/* Xyzzy */
     fprintf(stderr, "test_nat: fake address missing\n");
     return -1;
   }
@@ -520,11 +526,12 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     return 0;
   }
 
-  printf("nat: new UDP binding %s => %s\n", b->in_name, b->out_name);
+  printf("nat: new UDP binding %s <=> %s\n", b->in_name, b->out_name);
 
   m = send(b->out_socket, nat->buffer, n, 0);
 
-  printf("nat: udp out %d/%d %s => %s\n", m, n, b->in_name, b->out_name);
+  printf("nat: udp out %d/%d %s => %s\n",
+	 (int)m, (int)n, b->in_name, b->out_name);
 
   return 0;
 }
@@ -544,7 +551,8 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   m = send(b->out_socket, nat->buffer, n, 0);
 
-  printf("nat: udp out %d/%d %s => %s\n", m, n, b->in_name, b->out_name);
+  printf("nat: udp out %d/%d %s => %s\n",
+	 (int)m, (int)n, b->in_name, b->out_name);
 
   return 0;
 }
@@ -564,7 +572,8 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   m = send(b->in_socket, nat->buffer, n, 0);
 
-  printf("nat: udp in %d/%d %s => %s\n", m, n, b->out_name, b->in_name);
+  printf("nat: udp in %d/%d %s => %s\n",
+	 (int)m, (int)n, b->out_name, b->in_name);
 
   return 0;
 }
@@ -588,7 +597,7 @@ static int new_tcp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     return 0;
   }
 
-  if (nat->fake == NULL) {	/* Xyzzy */ 
+  if (nat->fake == NULL) {	/* Xyzzy */
     fprintf(stderr, "test_nat: fake address missing\n");
     su_close(in);
     return -1;
@@ -647,7 +656,7 @@ static int new_tcp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     return 0;
   }
 
-  printf("nat: new TCP binding %s => %s\n", b->in_name, b->out_name);
+  printf("nat: new TCP binding %s <=> %s\n", b->in_name, b->out_name);
 
   return 0;
 }
@@ -674,7 +683,7 @@ static int tcp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
       nat_binding_destroy(b);
     return 0;
   }
-  
+
   for (m = 0; m < n; m += o) {
     o = send(b->out_socket, nat->buffer + m, n - m, 0);
     if (o < 0) {
@@ -683,7 +692,8 @@ static int tcp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
     }
   }
 
-  printf("nat: tcp out %d/%d %s => %s\n", m, n, b->in_name, b->out_name);
+  printf("nat: tcp out %d/%d %s => %s\n",
+	 (int)m, (int)n, b->in_name, b->out_name);
 
   return 0;
 }
@@ -719,7 +729,8 @@ static int tcp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
     }
   }
 
-  printf("nat: tcp in %d/%d %s => %s\n", m, n, b->out_name, b->in_name);
+  printf("nat: tcp in %d/%d %s => %s\n",
+	 (int)m, (int)n, b->out_name, b->in_name);
 
   return 0;
 }
