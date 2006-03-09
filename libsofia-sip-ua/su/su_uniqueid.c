@@ -73,6 +73,7 @@ int _getpid(void);
 static int initialized = 0;
 
 static void init(void);
+static void init_node(void);
 
 /* Constants */
 static const unsigned version = 1;	/* Current version */
@@ -89,6 +90,8 @@ static const uint64_t ntp_epoch =
 static uint64_t timestamp0 = 0;
 static unsigned clock_sequence = MAGIC;
 static unsigned char node[6];
+
+FILE *urandom;
 
 /*
  * Get current timestamp
@@ -109,10 +112,8 @@ static uint64_t timestamp(void)
 
   tl &= mask60;
 
-  if (tl <= timestamp0) {
-    clock_sequence++;
-    clock_sequence &= MAGIC - 1;
-  }
+  if (tl <= timestamp0)
+    clock_sequence = (clock_sequence + 1) & (MAGIC - 1);
 
   timestamp0 = tl;
 
@@ -137,18 +138,28 @@ static void init(void)
   initialized = 1;
 
   /* Initialize our random number generator */
-  for (i = 0; i < 16; i++) {
-#if HAVE_CLOCK_GETTIME
-    struct timespec ts;
-    (void)clock_gettime(CLOCK_REALTIME, &ts);
-    seed[2*i] ^= ts.tv_sec; seed[2*i+1] ^= ts.tv_nsec; 
-#endif
-    su_time(&now);
-    seed[2*i] ^= now.tv_sec; seed[2*i+1] ^= now.tv_sec;     
-  }
+#if HAVE_DEV_URANDOM
+  if (!urandom) 
+    urandom = fopen("/dev/urandom", "rb");
+#endif	/* HAVE_DEV_URANDOM */
 
-  seed[30] ^= getuid(); 
-  seed[31] ^= getpid();
+  if (urandom) {
+    fread(seed, sizeof seed, 1, urandom);
+  }
+  else {
+    for (i = 0; i < 16; i++) {
+#if HAVE_CLOCK_GETTIME
+      struct timespec ts;
+      (void)clock_gettime(CLOCK_REALTIME, &ts);
+      seed[2*i] ^= ts.tv_sec; seed[2*i+1] ^= ts.tv_nsec;
+#endif
+      su_time(&now);
+      seed[2*i] ^= now.tv_sec; seed[2*i+1] ^= now.tv_sec;
+    }
+
+    seed[30] ^= getuid(); 
+    seed[31] ^= getpid();
+  }
 
 #if HAVE_INITSTATE
   initstate(seed[0] ^ seed[1], (char *)&seed, sizeof(seed));
@@ -160,12 +171,76 @@ static void init(void)
 
   (void)timestamp();
 
-  for (i = 0; i < sizeof(node); i++) {
+  init_node();
+}
+
+#if HAVE_GETIFADDRS
+#include <ifaddrs.h>
+#if HAVE_NETPACKET_PACKET_H
+#define HAVE_SOCKADDR_LL
+#include <netpacket/packet.h>
+#include <net/if_arp.h>
+#endif
+#endif
+
+static
+void init_node(void)
+{
+  int i;
+
+#if HAVE_GETIFADDRS && HAVE_SOCKADDR_LL
+  struct ifaddrs *ifa, *results;
+
+  if (getifaddrs(&results) == 0) {
+    for (ifa = results; ifa; ifa = ifa->ifa_next) {
+#if HAVE_SOCKADDR_LL
+      struct sockaddr_ll const *sll = (void *)ifa->ifa_addr;
+
+      if (sll->sll_family != AF_PACKET)
+	continue;
+      switch (sll->sll_hatype) {
+      case ARPHRD_ETHER:
+      case ARPHRD_EETHER:
+      case ARPHRD_IEEE802:
+	break;
+      default:
+	continue;
+      }
+
+      memcpy(node, sll->sll_addr, sizeof node);
+
+      break;
+#endif
+    }
+
+    freeifaddrs(results);
+
+    if (ifa)
+      return;			/* Success */
+  }
+#endif
+
+  if (urandom) {
+    fread(node, sizeof node, 1, urandom);
+  }
+  else for (i = 0; i < sizeof(node); i++) {
     unsigned r = random();
     node[i] = (r >> 24) ^ (r >> 16) ^ (r >> 8) ^ r;
   }
 
   node[0] |= 1;			/* "multicast" address */
+}
+
+size_t su_node_identifier(void *address, size_t addrlen)
+{
+  if (addrlen > sizeof node)
+    addrlen = sizeof node;
+
+  if (!initialized) init();
+
+  memcpy(address, node, addrlen);
+
+  return addrlen;
 }
 
 void su_guid_generate(su_guid_t *v)
@@ -190,7 +265,8 @@ void su_guid_generate(su_guid_t *v)
 /*
  * Human-readable form of GloballyUniqueID
  */
-int su_guid_sprintf(char* buf, size_t len, su_guid_t const *v) {
+int su_guid_sprintf(char* buf, size_t len, su_guid_t const *v)
+{
   char mybuf[su_guid_strlen + 1];
   sprintf(mybuf, "%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 	  (unsigned long)ntohl(v->s.time_low),

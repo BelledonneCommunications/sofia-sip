@@ -27,8 +27,8 @@ SAC_ENABLE_EXPENSIVE_CHECKS
 
 AC_GNU_SOURCE
 
-dnl checks for programs
-dnl -------------------
+### checks for programs
+### -------------------
 AC_CHECK_COMPILATION_ENVIRONMENT
 
 AX_TOOL_CC
@@ -86,6 +86,7 @@ AC_DEFINE([HAVE_UPNP], 0, [Define as 1 if we use UPnP])
 
 ### checks for header files
 ### -----------------------
+AC_HEADER_STDC
 
 ### checks for declarations
 ### -----------------------
@@ -106,10 +107,6 @@ AC_DEFINE([LLX], ["%llx"], [Define as format (%llx) for long long hex])dnl
 
 ### checks for structures
 ### ---------------------
-AC_HEADER_STDC
-dnl AC_CHECK_HEADERS(pthread.h)
-dnl AC_CHECK_HEADERS(stdint.h)
-dnl AC_CHECK_HEADERS(inttypes.h)
 
 ### checks for typedefs, structures, and compiler characteristics.
 ### --------------------------------------------------------------
@@ -130,16 +127,11 @@ AC_SYS_SA_LEN
 
 ### checks for library functions
 ### ----------------------------
-AC_SEARCH_LIBS(gethostbyname, xnet nsl)
-AC_SEARCH_LIBS(getipnodebyname, xnet socket nsl)
-AC_SEARCH_LIBS(getaddrinfo, xnet socket nsl)
-AC_SEARCH_LIBS(socket, xnet socket)
-AC_SEARCH_LIBS(inet_ntop, socket nsl)
-AC_SEARCH_LIBS(inet_pton, socket nsl)
 
 ### checks for system services
 ### --------------------------
-dnl XXX
+
+AC_DEV_URANDOM
 
 ### output
 ### ------

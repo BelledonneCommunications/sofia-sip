@@ -140,7 +140,7 @@ dnl no winsock2
 SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
 AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
 AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
-                  net/if.h net/if_types.h ifaddr.h],,,
+                  net/if.h net/if_types.h ifaddr.h netpacket/packet.h],,,
 		[sys/types.h sys/socket.h])
 
 AC_CACHE_CHECK([for struct addrinfo],

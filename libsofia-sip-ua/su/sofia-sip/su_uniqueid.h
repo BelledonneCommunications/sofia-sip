@@ -56,6 +56,9 @@ typedef union GloballyUniqueIdentifier {
   } s;
 } su_guid_t;
 
+/** Return node identifier */
+size_t su_node_identifier(void *address, size_t addrlen);
+
 /** Generate a GUID 
  * 
  * The function guid_generate() generates a new globally unique identifier

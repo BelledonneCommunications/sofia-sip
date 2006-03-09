@@ -471,3 +471,19 @@ AC_DEFUN([AC_TYPE_LONGLONG],[dnl
 AC_CHECK_TYPE([long long],[dnl
 AC_DEFINE([longlong], [long long], [Define as at least 64-bit int type])dnl
 ifelse([$1], ,:, [$1])],[ifelse([$2], ,:, [$2])])])
+
+dnl ======================================================================
+dnl Check for /dev/urandom
+dnl ======================================================================
+
+AC_DEFUN([AC_DEV_URANDOM],[
+AC_CACHE_CHECK([/dev/urandom], [ac_cv_dev_urandom],
+  [ac_cv_dev_urandom=no
+   if test -r /dev/urandom; then ac_cv_dev_urandom=yes; fi])
+if test $ac_cv_dev_urandom = yes; then
+  AC_DEFINE([HAVE_DEV_URANDOM], 1, 
+    [Define this as 1 if you have /dev/urandom.])
+  AC_DEFINE([DEV_URANDOM], 1,
+    [Define this as the random number source name.])
+fi
+])
