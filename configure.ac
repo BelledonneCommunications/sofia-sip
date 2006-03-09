@@ -141,6 +141,7 @@ Makefile
 packages/Makefile
 packages/sofia-sip.spec
 packages/sofia-sip-ua.pc
+packages/sofia-sip-ua-glib.pc
 libsofia-sip-ua/Makefile
 libsofia-sip-ua/bnf/Makefile
 libsofia-sip-ua/docs/Makefile
@@ -164,6 +165,9 @@ libsofia-sip-ua/su/Makefile
 libsofia-sip-ua/tport/Makefile
 libsofia-sip-ua/url/Makefile
 libsofia-sip-ua/features/sofia-sip/sofia_features.h
+libsofia-sip-ua-glib/Makefile
+libsofia-sip-ua-glib/nua-glib/Makefile
+libsofia-sip-ua-glib/su-glib/Makefile
 utils/Makefile
 win32/Makefile
 win32/config.h
