@@ -52,10 +52,6 @@ struct pinger;
 #include "sofia-sip/su_wait.h"
 #include "sofia-sip/su_log.h"
 
-#if SU_HAVE_GLIB
-#include "sofia-sip/su_source.h"
-#endif
-
 struct pinger {
   enum { PINGER = 1, PONGER = 2 } const sort;
   char const *  name;
@@ -469,20 +465,8 @@ int main(int argc, char *argv[])
 
   time_test();
 
-#if SU_HAVE_GLIB
-  if (opt_glib) {
-    root = su_root_source_create(NULL); 
-
-    if (!root) perror("su_root_glib_create"), exit(1);
-
-    if (!g_source_attach(su_root_gsource(root), NULL)) 
-      perror("g_source_attach"), exit(1);
-  } else
-#endif
-  {
-    root = su_root_create(NULL);
-    if (!root) perror("su_root_create"), exit(1);
-  }
+  root = su_root_create(NULL);
+  if (!root) perror("su_root_create"), exit(1);
   
   su_root_threading(root, 0 && !opt_singlethread);
 

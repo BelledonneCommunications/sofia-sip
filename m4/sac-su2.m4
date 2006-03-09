@@ -268,17 +268,21 @@ AC_ARG_WITH(glib-dir,
 
 if test "$with_glib" = no || test "$with_glib_dir" = "no" ; then
 
-  : # No glib
+  : # No glib (also disable gobject)
 
 elif test "$with_glib_dir" = "pkg-config" ; then 
 
   PKG_CHECK_MODULES(GLIB, glib-$with_glib, [HAVE_GLIB=yes])
+  PKG_CHECK_MODULES(GOBJECT, gobject-$with_glib, [HAVE_GOBJECT=yes])
 
 else # GLib path is explicitly defined 
 
   gprefix=$with_glib_dir
   GLIB_VERSION="$with_glib"
   GLIBXXX=glib-$with_glib
+
+  # XXX: add non-pkgconfig checks for gobject
+  HAVE_GOBJECT=no
 
   if test "$gprefix" = "yes" ; then 
     for gprefix in /usr /usr/local /opt/$GLIBXXX
@@ -310,14 +314,14 @@ else # GLib path is explicitly defined
 
 fi # GLib path is explicitly defined 
 
-if test x$HAVE_GLIB != x; then 
-  SAC_SU_DEFINE([SU_HAVE_GLIB], 1, [Define as 1 if you have >= glib-2.0])
-fi
 AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" != x])
+AM_CONDITIONAL([HAVE_GOBJECT], [test "x$HAVE_GOBJECT" != x])
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_VERSION)
-
+AC_SUBST(GOBJECT_LIBS)
+AC_SUBST(GOBJECT_CFLAGS)
+AC_SUBST(GOBJECT_VERSION)
 
 # ===========================================================================
 # Checks for library functions.

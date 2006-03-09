@@ -1,11 +1,13 @@
 #
 # Makefile.am @template@ for su module
 #
+# Copyright (C) 2006 Nokia Corporation
+# Contact: Pekka Pessi <pekka.pessi@nokia.com>
+# Licensed under LGPL. See file COPYING.
+#
 
 # ----------------------------------------------------------------------
 # Headers
-
-INCLUDES =		$(GLIB_CFLAGS)
 
 # ----------------------------------------------------------------------
 # Build targets
@@ -34,11 +36,6 @@ TESTS = 		su_torture torture_su_port \
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-if HAVE_GLIB
-GHEADERS = sofia-sip/su_source.h
-GSOURCES = su_source.c
-endif
-
 BUILT_SOURCES = su_tag_ref.c
 
 nobase_include_sofia_HEADERS = \
@@ -55,12 +52,12 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/su_log.h \
 			sofia-sip/su_config.h sofia-sip/su_md5.h \
 			sofia-sip/su_uniqueid.h sofia-sip/su_bm.h \
-			sofia-sip/tstdef.h $(GHEADERS)
+			sofia-sip/tstdef.h
 
 nobase_nodist_include_sofia_HEADERS = sofia-sip/su_configure.h
 
 libsu_la_SOURCES = \
-	su.c su_errno.c su_addrinfo.c $(GSOURCES) \
+	su.c su_errno.c su_addrinfo.c \
 	su_alloc.c su_alloc_lock.c su_strdup.c su_sprintf.c \
 	su_strlst.c su_vector.c \
 	su_time.c su_time0.c \
@@ -81,7 +78,7 @@ libsu_la_DEPENDENCIES = $(REPLACE_LIBADD)
 
 COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_sofia_HEADERS)
 
-LDADD = 		libsu.la $(GLIB_LIBS)
+LDADD = 		libsu.la
 
 if NDEBUG
 AM_CFLAGS = -DNDEBUG

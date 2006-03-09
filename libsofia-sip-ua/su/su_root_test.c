@@ -54,10 +54,6 @@ typedef struct test_ep_s   test_ep_t;
 #include <sofia-sip/su_wait.h>
 #include <sofia-sip/su_alloc.h>
 
-#if SU_HAVE_GLIB
-#include <sofia-sip/su_source.h>
-#endif
-
 typedef struct test_ep_s {
   int           i;
   int           s;

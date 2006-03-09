@@ -24,7 +24,7 @@
 
 /**
  * @file su_source.c
- * @brief Wrapper for GSource.
+ * @brief Wrapper for glib GSource.
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  * 
@@ -32,7 +32,9 @@
  * 
  */
 
+#if HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 /* Use Posix stuff */
 #define _XOPEN_SOURCE  (500)

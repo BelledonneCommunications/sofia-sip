@@ -32,7 +32,6 @@ libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
 				tport/libtport.la \
 				url/liburl.la
 
-
 if ENABLE_COVERAGE
 COVERAGE_RECURSIVE = coverage-recursive
 coverage: $(COVERAGE_RECURSIVE)

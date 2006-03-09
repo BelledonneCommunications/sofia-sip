@@ -55,8 +55,6 @@
 #undef SU_HAVE_POLL
 /** Define as 1 if you have IPv6 structures, macros and constants */
 #undef SU_HAVE_IN6
-/** Define as 1 if you have >= glib-2.0 */
-#undef SU_HAVE_GLIB
 
 /** Define as 1 if you have sa_len field in struct sockaddr */
 #undef SU_HAVE_SOCKADDR_SA_LEN
