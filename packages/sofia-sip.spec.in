@@ -51,8 +51,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_prefix}/%{_lib}/libsofia-sip-ua.so
-%{_prefix}/%{_lib}/libsofia-sip-ua.so.*
+%{_prefix}/%{_lib}/libsofia-sip-ua*.so
+%{_prefix}/%{_lib}/libsofia-sip-ua*.so.*
 %doc AUTHORS COPYING COPYRIGHTS README
 
 %package	devel
@@ -72,8 +72,8 @@ static libraries and include files.
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h.in
 %{_prefix}/libexec/sofia/tag_dll.awk
 %{_prefix}/libexec/sofia/msg_parser.awk
-%{_prefix}/%{_lib}/libsofia-sip-ua.la
-%{_prefix}/%{_lib}/libsofia-sip-ua.a
+%{_prefix}/%{_lib}/libsofia-sip-ua*.la
+%{_prefix}/%{_lib}/libsofia-sip-ua*.a
 %{_prefix}/%{_lib}/pkgconfig/%{name}-ua.pc
 %doc TODO README.developers
 %{?_with_doxygen:%doc manual}
@@ -104,6 +104,9 @@ Command line utilities for Sofia SIP UA library.
 %{_prefix}/bin/sip-date
 
 %changelog
+* Wed Mar 08 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
+- Added libsofia-sip-ua-glib to the package.
+
 * Tue Nov 15 2005 Kai Vehmanen <kai.vehmanen@nokia.com>
 - Removed the --includedir parameter. The public headers are
   now installed under includedir/sofia-sip-MAJOR.MINOR/
