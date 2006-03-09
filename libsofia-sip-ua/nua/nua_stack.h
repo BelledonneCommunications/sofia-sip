@@ -435,7 +435,8 @@ struct nua_s {
   /* Protocol (server) side */
   sip_contact_t      *nua_contact;
   sip_contact_t      *nua_sips_contact;
-  sip_content_type_t *nua_sdp_content;
+
+  /* Constants */
   sip_accept_t       *nua_invite_accept; /* What we accept for invite */
 
   /* char const         *nua_ua_name; => nhp_ua_name */

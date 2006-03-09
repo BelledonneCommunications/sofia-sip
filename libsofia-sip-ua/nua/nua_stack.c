@@ -266,7 +266,6 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 #endif
 		       TAG_NEXT(nua->nua_args));
 
-  nua->nua_sdp_content = sip_content_type_make(home, SDP_MIME_TYPE);
   nua->nua_invite_accept = sip_accept_make(home, SDP_MIME_TYPE);
 
   if (media_enable) {
@@ -293,7 +292,6 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 	dnhp->nhp_supported &&
 	(nua->nua_contact || nua->nua_sips_contact) &&
 	nua->nua_from &&
-	nua->nua_sdp_content &&
 	nua->nua_timer))
     return -1;
 
