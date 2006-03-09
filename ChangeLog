@@ -1,3 +1,53 @@
+2006-03-09  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Updated globally unique identifier (uuid) generation.
+  Using getifaddrs() and /dev/urandom. Added checks for /dev/urandom
+  and <netpacket/packet.h> (for link-level addresses).
+
+    M ./configure.ac -13 +5
+    M ./libsofia-sip-ua/su/sofia-sip/su_uniqueid.h +3
+    M ./libsofia-sip-ua/su/su_uniqueid.c -15 +91
+    M ./m4/sac-general.m4 +16
+    M ./m4/sac-su2.m4 -1 +1
+
+  * Cache checked functions a bit more efficiently in sac-su2.m4.
+
+    M ./m4/sac-su2.m4 -25 +28
+
+  * Added sip_via_port().
+
+    M ./libsofia-sip-ua/nta/nta.c -15 +1
+    M ./libsofia-sip-ua/sip/sip_basic.c +38
+    M ./libsofia-sip-ua/sip/sofia-sip/sip_header.h -1 +4
+
+  * Using sofia-sip/sofia_features.h.
+
+    M ./libsofia-sip-ua/features/features.c -1 +1
+
+  * Using nua_owner_t instead of nua_handle_t with <nua_dialog.h>.
+  Prepare to move nua_dialog.[hc] to nta or to its own module.
+
+    M ./libsofia-sip-ua/nua/nua_dialog.c -114 +75
+    M ./libsofia-sip-ua/nua/nua_dialog.h -28 +19
+    M ./libsofia-sip-ua/nua/nua_register.c -1 +1
+    M ./libsofia-sip-ua/nua/nua_session.c -7 +8
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +2
+    M ./libsofia-sip-ua/nua/nua_stack.h -5 +5
+    M ./libsofia-sip-ua/nua/nua_subnotref.c -10 +10
+
+  * Added fake "nat" to test_nua
+
+    M ./libsofia-sip-ua/nua/Makefile.am -1 +2
+    A ./libsofia-sip-ua/nua/test_nat.c
+    A ./libsofia-sip-ua/nua/test_nat.h
+    M ./libsofia-sip-ua/nua/test_nua.c -30 +242
+
+  * Removed spurious message when sofia-sip subdirectory is recreated.
+
+    M ./libsofia-sip-ua/http/Makefile.am -1 +1
+    M ./libsofia-sip-ua/msg/Makefile.am -2 +2
+    M ./libsofia-sip-ua/sip/Makefile.am -1 +1
+
 2006-03-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Renamed sofia-sip/features.h as sofia-sip/sofia_features.h.
