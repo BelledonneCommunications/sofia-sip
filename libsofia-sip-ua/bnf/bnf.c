@@ -663,10 +663,9 @@ int host_is_ip4_address(char const *string)
   return n > 0 && string[n] == '\0';
 }
 
-/** Return true if @a string is valid IP4 address in dot-notation.
+/** Return true if @a string is valid IP6 address in hex notation.
  *
- * @note Only 4-octet form is accepted, e.g., @c 127.1 is not considered
- * valid IP4 address.
+ * E.g., fe80::1 is a valid IP6 address. 
  */
 int host_is_ip6_address(char const *string)
 {
@@ -674,31 +673,53 @@ int host_is_ip6_address(char const *string)
   return n > 0 && string[n] == '\0';
 }
 
+/** Return true if @a string is valid IP6 reference, 
+ *  i.e. hex notation in square brackets.
+ *
+ * E.g., [::1] is a valid IP6 reference.
+ */
 int host_ip6_reference(char const *string)
 {
   int n = span_ip6_reference(string);
   return n > 0 && string[n] == '\0';
 }
 
-
+/** Return true if @a string is valid IP address.
+ *
+ * Valid IP address is either a IP4 adddress in quad-octet notation, 
+ * IP6 hex address or IP6 reference in square brackets ([]).
+ */
 int host_is_ip_address(char const *string)
 {
   int n = span_ip_address(string);
   return n > 0 && string[n] == '\0';
 }
 
-
+/** Return true if @a string is valid a domain name.
+ *
+ * Valid domain name consists of alphanumeric labels separated with 
+ * dot ("."). There can be a "-" in the middle of label.
+ * The last label must start with a letter.
+ *
+ * @code
+ * hostname         =  *( domainlabel "." ) toplabel [ "." ]
+ * domainlabel      =  alphanum
+ *                     / alphanum *( alphanum / "-" ) alphanum
+ * toplabel         =  ALPHA / ALPHA *( alphanum / "-" ) alphanum
+ * @endcode
+ */
 int host_is_domain(char *string)
 {
   int n = span_domain(string);
   return n > 0 && string[n] == '\0';
 }
 
-
+/** Return true if @a string is valid a host name.
+ *
+ * Check if the @a string is a domain name, IP address or IP6 reference.
+ */
 int host_is_valid(char const *string)
 {
   int n = span_host(string);
   return n > 0 && string[n] == '\0';
 }
-
-
