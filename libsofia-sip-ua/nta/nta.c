@@ -1745,13 +1745,13 @@ int outgoing_insert_via(nta_outgoing_t *orq,
 
 /** Get destination name from Via. 
  *
- * If using_rport is non-NULL, use value from rport.
+ * If @a using_rport is non-null, try rport.
+ * If *using_rport is non-zero, try rport even if <protocol> is not UDP.
+ * If <protocol> is UDP, set *using_rport to zero.
  */
 static
 int nta_tpn_by_via(tp_name_t *tpn, sip_via_t const *v, int *using_rport)
 {
-  char const *rport;
-
   if (!v)
     return -1;
 
@@ -2507,7 +2507,7 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
 	tport = tport_by_protocol(agent->sa_tports, tpn->tpn_proto);
 
       if (retry_without_rport)
-	tpn->tpn_port = SIP_PORT(sip->sip_via->v_port);
+	tpn->tpn_port = sip_via_port(sip->sip_via, NULL);
 
 #if HAVE_SIGCOMP
       if (tport && tpn->tpn_comp && cc == NONE)
@@ -2649,7 +2649,7 @@ int nta_msg_mreply(nta_agent_t *agent,
     }
 
     if (retry_without_rport)
-      tpn->tpn_port = SIP_PORT(sip->sip_via->v_port);
+      tpn->tpn_port = sip_via_port(sip->sip_via, NULL);
 
 #if HAVE_SIGCOMP
     if (tport && tpn->tpn_comp) {

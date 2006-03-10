@@ -396,12 +396,15 @@ NTA_DLL extern tag_typedef_t ntatag_sipflags;
 NTA_DLL extern tag_typedef_t ntatag_sipflags_ref;
 #define NTATAG_SIPFLAGS_REF(x) ntatag_sipflags_ref, tag_uint_vr(&(x))
  
-NTA_DLL extern tag_typedef_t ntatag_rport;
+NTA_DLL extern tag_typedef_t ntatag_client_rport;
 /** Add rport at client. @HI */
-#define NTATAG_RPORT(x) ntatag_rport, tag_bool_v((x))
+#define NTATAG_CLIENT_RPORT(x) ntatag_client_rport, tag_bool_v((x))
 
-NTA_DLL extern tag_typedef_t ntatag_rport_ref;
-#define NTATAG_RPORT_REF(x) ntatag_rport_ref, tag_bool_vr(&(x))
+NTA_DLL extern tag_typedef_t ntatag_client_rport_ref;
+#define NTATAG_CLIENT_RPORT_REF(x) ntatag_client_rport_ref, tag_bool_vr(&(x))
+
+#define NTATAG_RPORT(x) ntatag_client_rport, tag_bool_v((x))
+#define NTATAG_RPORT_REF(x) ntatag_client_rport_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_server_rport;
 /** Use rport at server. @HI */

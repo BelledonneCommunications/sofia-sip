@@ -1085,9 +1085,9 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
 
     su_guid_generate(guid);
     /*
-     * Guid looks like "NNNNNNNN-NNNN-NNNN-NNNN-XX:XX:XX:XX:XX:XX"
+     * Guid looks like "NNNNNNNN-NNNN-NNNN-NNNN-XXXXXXXXXXXX"
      * where NNNNNNNN-NNNN-NNNN-NNNN is timestamp and XX is MAC address
-     * (but we use random ID for MAC because we do not have
+     * (but we use usually random ID for MAC because we do not have
      *  guid generator available for all processes within node)
      */
     su_guid_sprintf(b, su_guid_strlen + 1, guid);
@@ -2795,27 +2795,35 @@ sip_via_t *sip_via_create(su_home_t *home,
 
 /**@ingroup sip_via
  *
- * Get port number corresponding to a Via line. 
- *
+ * Get port number corresponding to a Via line.
+ * 
+ * If @a using_rport is non-null, try rport.
+ * If *using_rport is non-zero, try rport even if <protocol> is not UDP.
+ * If <protocol> is UDP, set *using_rport to zero.
  */
 char const *sip_via_port(sip_via_t const *v, int *using_rport)
 {
-  char const *port;
+  if (v == NULL)
+    return NULL;
 
-  if (v->v_maddr || !using_rport)
-    port = NULL;
-  else if (strcasecmp(v->v_protocol, "SIP/2.0/UDP") == 0)
-    port = v->v_rport, *using_rport = 0;
-  else if (*using_rport)
-    port = v->v_rport;
-  else
-    port = NULL;
+  if (using_rport) {
+    char const *port;
 
-  if (port && port[0])
-    return port;
+    if (v->v_rport && !v->v_maddr /* multicast */) {
+      if (v->v_protocol == sip_transport_udp || 
+	  strcasecmp(v->v_protocol, sip_transport_udp) == 0)
+	port = v->v_rport, *using_rport = 0;
+      else if (*using_rport)
+	port = v->v_rport;
+      else
+	port = NULL;
 
-  if (using_rport)
-    *using_rport = 0;
+      if (port && port[0])
+	return port;
+    }
+
+    *using_rport = 0;		/* No, we don't... */
+  }
 
   if (v->v_port)
     return v->v_port;

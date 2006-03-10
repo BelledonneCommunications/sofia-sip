@@ -128,14 +128,17 @@ nta_agent_t *nta_agent_create(su_root_t *root,
 			      tag_type_t tag, tag_value_t value, ...);
 
 void nta_agent_destroy(nta_agent_t *agent);
-sip_contact_t *nta_agent_contact(nta_agent_t const *a);
-sip_via_t *nta_agent_via(nta_agent_t const *a);
+
 char const *nta_agent_version(nta_agent_t const *a);
 nta_agent_magic_t *nta_agent_magic(nta_agent_t const *a);
 
 int nta_agent_add_tport(nta_agent_t *agent,
 			url_string_t const *url,
 			tag_type_t tag, tag_value_t value, ...);
+
+sip_contact_t *nta_agent_contact(nta_agent_t const *a);
+sip_via_t *nta_agent_via(nta_agent_t const *a);
+sip_via_t *nta_agent_public_via(nta_agent_t const *a);
 
 char const *nta_agent_newtag(su_home_t *, char const *fmt, nta_agent_t *);
 
