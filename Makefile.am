@@ -17,17 +17,15 @@ EXTRA_DIST += 	m4/sac-su2.m4 m4/sac-tport.m4 m4/sac-openssl.m4
 man_MANS = 	man/man1/sip-date.1 man/man1/sip-options.1 \
 		man/man1/localinfo.1 man/man1/addrinfo.1 
 
-$(man_MANS): doxygen-manpages
-
-coverage built-sources clean-built-sources:
-	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
-
-manpages doxygen-manpages:
-	mkdir -p $(srcdir)/man man/man1 2> /dev/null
+manpages $(man_MANS):
+	mkdir -p $(srcdir)/man $(srcdir)/man/man1 2> /dev/null
 	cd $(srcdir)/utils; $(DOXYGEN)
 if !HAVE_DOXYGEN
 	-touch $(man_MANS)
 endif
+
+coverage built-sources clean-built-sources:
+	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
 
 doxygen:
 if HAVE_DOXYGEN
