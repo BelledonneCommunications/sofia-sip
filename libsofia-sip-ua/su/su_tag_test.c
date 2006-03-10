@@ -423,12 +423,11 @@ static int test_filters(void)
 /* Test tl_print */
 static int test_print(void)
 {
+  BEGIN();
+
   tagi_t *lst;
   FILE *out;
 
-  BEGIN();
-
-#if !HAVE_WIN32
   lst = tl_list(TAG_A("Moro"), 
 		TAG_I(2), 
 		TAG_J(3),
@@ -450,7 +449,6 @@ static int test_print(void)
     if ((tstflags & tst_verbatim) == 0)
       fclose(out);
   }
-#endif
 
   END();
 }
