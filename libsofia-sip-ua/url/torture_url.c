@@ -125,7 +125,7 @@ int test_quote(void)
   d = "sip:&=+$,;?/:&=+$,@host:56001;param=+$,/:@&;another=@"
     "?header=" RESERVED "&%3b%2f%3f%3a%40%26%3d%2b%24%2c";
   u = url_hdup(home, (url_t *)d); TEST_1(u);
-  TEST_S(u->url_headers, "header=" RESERVED "&%3b%2f%3f%3a%40%26%3d%2b%24%2c");
+  TEST_S(u->url_headers, "header=" RESERVED "&%3B%2F%3F%3A%40%26%3D%2B%24%2C");
   url_digest(hash1, sizeof(hash1), u, NULL);
   url_digest(hash2, sizeof(hash2), (url_t const *)d, NULL);
   TEST(memcmp(hash1, hash2, sizeof(hash1)), 0);

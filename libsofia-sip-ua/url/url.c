@@ -39,6 +39,7 @@
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/bnf.h>
+#include <sofia-sip/hostdomain.h>
 #include <sofia-sip/url.h>
 
 /**@def URL_PRINT_FORMAT
@@ -307,7 +308,7 @@ char *url_canonize2(char *d, char const *s, int n,
 	break;
 
   for (;*s && s - s0 < (unsigned)n; d++, s++) {
-    unsigned char c = *s;
+    unsigned char c = *s, h1, h2;
 
     if (c != '%') {
       if (IS_EXCLUDED(c, m32, m64, m96))
@@ -315,19 +316,31 @@ char *url_canonize2(char *d, char const *s, int n,
       *d = c;
       continue;
     }
+
+    h1 = s[1], h2 = s[2];
     
-    if (!IS_HEX(s[1]) || !IS_HEX(s[2])) {
+    if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
       return NULL;
     }
     
 #define UNHEX(a) (a - (a >= 'a' ? 'a' - 10 : (a >= 'A' ? 'A' - 10 : '0')))
-    c = (UNHEX(s[1]) << 4) | UNHEX(s[2]);
+    c = (UNHEX(h1) << 4) | UNHEX(h2);
 
-    if (IS_EXCLUDED(c, m32, m64, m96))
-      *d++ = *s++, *d++ = *s++, *d = *s;
-    else
+    if (!IS_EXCLUDED(c, m32, m64, m96)) {
       *d = c, s += 2;
+      continue;
+    }
+
+    /* Convert hex to uppercase */
+    if (h1 >= 'a' /* && h1 <= 'f' */)
+      h1 = h1 - 'a' + 'A';
+    if (h2 >= 'a' /* && h2 <= 'f' */)
+      h2 = h2 - 'a' + 'A';
+
+    d[0] = '%', d[1] = h1, d[2] = h2;
+
+    d +=2, s += 2;
 #undef    UNHEX
   }
   
@@ -335,6 +348,7 @@ char *url_canonize2(char *d, char const *s, int n,
 
   return d;
 }
+
 
 /** Canonize a URL component (with precomputed mask) */
 static
@@ -349,25 +363,37 @@ char *url_canonize3(char *d, char const *s, int n,
 	break;
 
   for (;*s && s - s0 < (unsigned)n; d++, s++) {
-    unsigned char c = *s;
+    unsigned char c = *s, h1, h2;
 
     if (c != '%') {
       *d = c;
       continue;
     }
+
+    h1 = s[1], h2 = s[2];
     
-    if (!IS_HEX(s[1]) || !IS_HEX(s[2])) {
+    if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
       return NULL;
     }
     
 #define UNHEX(a) (a - (a >= 'a' ? 'a' - 10 : (a >= 'A' ? 'A' - 10 : '0')))
-    c = (UNHEX(s[1]) << 4) | UNHEX(s[2]);
+    c = (UNHEX(h1) << 4) | UNHEX(h2);
 
-    if (IS_EXCLUDED(c, m32, m64, m96))
-      *d++ = *s++, *d++ = *s++, *d = *s;
-    else
+    if (!IS_EXCLUDED(c, m32, m64, m96)) {
       *d = c, s += 2;
+      continue;
+    }
+
+    /* Convert hex to uppercase */
+    if (h1 >= 'a' /* && h1 <= 'f' */)
+      h1 = h1 - 'a' + 'A';
+    if (h2 >= 'a' /* && h2 <= 'f' */)
+      h2 = h2 - 'a' + 'A';
+
+    d[0] = '%', d[1] = h1, d[2] = h2;
+
+    d +=2, s += 2;
 #undef    UNHEX
   }
   
@@ -1398,11 +1424,9 @@ int url_cmp(url_t const *a, url_t const *b)
     char const *a_port;
     char const *b_port;
 
-#define is_ip_address(s) ((s) && s[span_ip_address(s)] == '\0')
-
     if (a->url_type != url_sip && a->url_type != url_sips)
       a_port = b_port = url_port_default(a->url_type);
-    else if (is_ip_address(a->url_host))
+    else if (host_is_ip_address(a->url_host))
       a_port = b_port = url_port_default(a->url_type);
     else
       a_port = b_port = "";
