@@ -103,6 +103,8 @@ typedef struct nua_server_request nua_server_request_t;
 
 typedef void nua_creq_restart_f(nua_handle_t *, tagi_t *tags);
 
+typedef struct register_usage nua_registration_t;
+
 struct nua_client_request
 {
   nua_event_t         cr_event;		/**< Request event */
@@ -433,13 +435,15 @@ struct nua_s {
   sip_from_t          nua_from[1];
 
   /* Protocol (server) side */
+
+  nua_registration_t *nua_registrations; /**< Active registrations */
+
   sip_contact_t      *nua_contact;
   sip_contact_t      *nua_sips_contact;
 
   /* Constants */
   sip_accept_t       *nua_invite_accept; /* What we accept for invite */
 
-  /* char const         *nua_ua_name; => nhp_ua_name */
   url_t        	     *nua_registrar;
 
   su_root_t          *nua_root;
@@ -627,6 +631,8 @@ extern tag_typedef_t _nutag_copy_ref;
 typedef unsigned longlong ull;
 
 #define SET_STATUS(_status, _phrase) status = _status, phrase = _phrase
+
+#define SET_STATUS2(_status, _phrase) status = _status, phrase = _phrase
 
 /* This is an "interesting" macro:
  * x is a define expanding to <i>num, str</i>.

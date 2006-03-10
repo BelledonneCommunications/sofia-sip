@@ -95,7 +95,6 @@ typedef struct tport_nat_s tport_nat_t;
 #define SU_MSG_ARG_T    union tport_su_msg_arg
 #define STUN_MAGIC_T    tport_master_t
 
-
 #include <sofia-sip/su_wait.h>
 
 #include <sofia-sip/msg.h>
@@ -134,6 +133,11 @@ typedef struct _tls_t tls_t;	/* dummy */
 #if !defined(MSG_NOSIGNAL) || defined(__CYGWIN__)
 #undef MSG_NOSIGNAL
 #define MSG_NOSIGNAL (0)
+#endif
+
+#if !defined(MSG_TRUNC) || defined(SU_HAVE_WINSOCK)
+#undef MSG_TRUNC
+#define MSG_TRUNC (0)
 #endif
 
 /* Number of supported transports */
@@ -445,7 +449,8 @@ void msg_mark_as_compressed(msg_t *msg)
 }
 
 static struct sigcomp_udvm *tport_init_udvm(tport_t *self);
-static int tport_recv_sigcomp_r(tport_t *, msg_t **, struct sigcomp_udvm *);
+static int tport_recv_sigcomp_r(tport_t *, msg_t **, 
+				struct sigcomp_udvm *, N);
 static struct sigcomp_compartment *tport_primary_compartment(tport_master_t *);
 static inline void tport_try_accept_sigcomp(tport_t *self, msg_t *msg);
 
@@ -3430,15 +3435,14 @@ static int tport_recv_stream(tport_t *self);
 static int tport_recv_dgram(tport_t *self);
 
 static int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
-#if HAVE_SOFIA_STUN
-static int tport_recv_try_stun_dgram(tport_t const *self);
-#endif
+static int tport_recv_stun_dgram(tport_t const *self, int N);
 #if HAVE_TLS
 static int tport_recv_tls(tport_t *self);
 #endif
 #if HAVE_SIGCOMP
-static int tport_recv_sigcomp(tport_t *self);
+static int tport_recv_sigcomp_stream(tport_t *self);
 #endif
+static int tport_recv_sigcomp_dgram(tport_t *self, int N);
 static int tport_recv_sctp(tport_t *self);
 
 /** Receive data available on the socket.
@@ -3467,10 +3471,6 @@ int tport_recv_data(tport_t *self)
     return 0;
   }
 
-#if HAVE_SIGCOMP
-  if (tport_can_recv_sigcomp(self))
-    return tport_recv_sigcomp(self);
-#endif
 #if 0
   if (self->tp_addrinfo->ai_socktype == 0)
     return tport_recv_file(self);
@@ -3568,26 +3568,39 @@ static int tport_recv_error_report(tport_t *self)
 static 
 int tport_recv_dgram(tport_t *self)
 {
-  int N = su_getmsgsize(self->tp_socket);
+  int N;
+  int s = self->tp_socket;
+  unsigned char sample[2];
 
-  if (N == 0) {
-#if defined(__arm__) && defined(__GNUC__)
-    /* XXX: recv() with zero len blocks infinitely on some arm-linux targets */
-    tport_error_event(self, 0);
-#else
-    SU_DEBUG_1(("tport_recv_dgram(%p): empty msg\n", self));
-    /* recv(self->tp_socket, (void *)iovec, sizeof(iovec), 0); */
-#endif
-    return 0;
+  /* Peek for first two bytes in message:
+     determine if this is stun, sigcomp or sip
+  */
+  N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
+
+  if (N < 0) {
+    if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
+      N = 0;
   }
-  if (N == -1) {
-    int err = su_errno();
+  else if (N <= 1) {
+    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "tport_recv_dgram", self, N));
+    recv(s, sample, sizeof sample, 0);
+    N = 0;
+  }
+#if MSG_TRUNC
+  else if ((N = su_getmsgsize(s)) < 0)
     SU_DEBUG_1(("%s: su_getmsgsize(): %s (%d)\n", __func__, 
-		su_strerror(err), err));
-    return -1;
+		su_strerror(su_errno()), su_errno()));
+#endif
+  else if ((sample[0] & 0xf8) == 0xf8) {
+    return tport_recv_sigcomp_dgram(self, N); /* SigComp */
   }
+  else if (sample[0] == 0 || sample[0] == 1) {
+    return tport_recv_stun_dgram(self, N);    /* STUN */
+  }
+  else
+    return tport_recv_dgram_r(self, &self->tp_msg, N);
 
-  return tport_recv_dgram_r(self, &self->tp_msg, N);
+  return N;
 }
 
 /** Receive datagram.
@@ -3608,12 +3621,6 @@ int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
 
   assert(*mmsg == NULL);
-
-#if HAVE_SOFIA_STUN
-  /* Check always if incoming data is STUN keepalive */
-  if (tport_recv_try_stun_dgram(self) >= 0)
-    return 3;
-#endif
 
   veclen = tport_recv_iovec(self, mmsg, iovec, N, 1);
   if (veclen < 0)
@@ -3641,81 +3648,143 @@ int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
   return 0;
 }
 
-
-/** Initialize STUN keepalives.
- *
- *@retval 0
- */
-int tport_keepalive(tport_t *tp, tp_name_t *tpn)
+/** Receive data from datagram using SigComp. */
+static int tport_recv_sigcomp_dgram(tport_t *self, int N)
 {
-#if HAVE_SOFIA_STUN
-  int err;
-  tport_master_t *mr = tp->tp_master;
-  stun_handle_t *sh = mr->mr_nat->stun;
-  su_sockaddr_t sa[1] = {{ 0 }};
+  char dummy[1];
+  int error = EBADMSG;
+#if HAVE_SIGCOMP
+  struct sigcomp_udvm *udvm;
 
-  if (tp->tp_has_keepalive == 1 || sh == NULL)
-    return 0;
+  if (self->tp_sigcomp->sc_udvm == 0)
+    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
 
-  inet_pton(AF_INET, tpn->tpn_host, (void *) &sa->su_sin.sin_addr.s_addr);
-  sa->su_port = htons(atoi(tpn->tpn_port));
-  sa->su_family = AF_INET;
+  udvm = self->tp_sigcomp->sc_udvm;
 
-  /*XXX -- remove me after it's working */
-  memcpy(sa, tp->tp_addr, sizeof(*sa));
-
-  err = stun_keepalive(sh, sa,
-		       STUNTAG_SOCKET(tp->tp_socket),
-		       STUNTAG_TIMEOUT(10000),
-		       TAG_NULL());
-  
-  if (err < 0)
-    return -1;
-
-  tp->tp_has_keepalive = 1;
+  if (udvm) {
+    retval = tport_recv_sigcomp_r(self, &self->tp_msg, udvm, N);
+    if (retval < 0)
+      sigcomp_udvm_reject(udvm);
+    return retval;
+  }
+  error = su_errno();
 #endif
-  return 0;
+  recv(self->tp_socket, dummy, 1, 0); /* remove msg from socket */
+  /* XXX - send NACK ? */
+  return su_seterrno(error);     
 }
 
-#if HAVE_SOFIA_STUN
 /** Receive STUN datagram.
  *
  * @retval -1 error
  * @retval 0  end-of-stream  
  */
 static 
-int tport_recv_try_stun_dgram(tport_t const *self)
+int tport_recv_stun_dgram(tport_t const *self, int N)
 {
-  int n, len;
+  int n;
   su_sockaddr_t from[1];
   socklen_t fromlen = sizeof(su_sockaddr_t);
-  /* char *buf = NULL; */
-  char dgram[50] = { 0 }; /* XXX - max size of STUN msg, please. */
-  stun_msg_t msg;
-  char sample[2];
-
-  recv(self->tp_socket, &sample, sizeof(sample), MSG_PEEK);
-  len = stun_message_length(sample, sizeof(sample), 0);
+  int status = 600;
+  char const *error = NULL;
   
-  /* message is not a STUN message */
-  if (len < 0)
-    return len;
+  unsigned char buffer[128];
+  unsigned char *dgram = buffer;
+
+  if (N > sizeof buffer)
+    dgram = malloc(N);
+
+  if (dgram == NULL)
+    dgram = buffer, N = sizeof buffer, status = 500, error = "Server Error";
 
   memset(from, 0, sizeof(su_sockaddr_t));
-  n = recvfrom(self->tp_socket, &dgram, sizeof(dgram), 0, &from->su_sa,
-	       &fromlen);
-  if (n == SOCKET_ERROR) {
-    int error = su_errno();
-    su_seterrno(error);
+  n = recvfrom(self->tp_socket, (void *)dgram, N, MSG_TRUNC, 
+	       (void *)from, &fromlen);
+
+  if (n < 20) {
+    if (n != SOCKET_ERROR)
+      su_seterrno(EBADMSG);	/* Runt */
+    if (dgram != buffer)
+      free(dgram);
     return -1;
   }
 
-  stun_handle_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
-			      from, fromlen, dgram, n);
+  if ((!error || dgram[0] == 1) && self->tp_master->mr_nat->stun) {
+#if HAVE_SOFIA_STUN
+    if (n > N) n = N;		/* Truncated? */
+    stun_handle_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
+				from, fromlen, (void *)dgram, n);
+    if (dgram != buffer)
+      free(dgram);
+    return 0;
+#endif /* HAVE_SOFIA_STUN */
+  }
+
+  if (dgram[0] == 0 && (dgram[1] == 1 || dgram[1] == 2)) {
+    uint16_t elen;
+    if (error == NULL)
+      status = 600, error = "Not Implemented";
+    elen = strlen(error);
+
+    /*
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      STUN Message Type        |         Message Length        |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                             Transaction ID
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                                                                    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    */
+
+#define set16(b, offset, value)			\
+  (((b)[(offset) + 0] = ((value) >> 8) & 255),	\
+   ((b)[(offset) + 1] = (value) & 255))
+
+    /* Respond to request */
+    dgram[0] = 1; /* Mark as response */
+    dgram[1] |= 0x10; /* Mark as error response */
+    set16(dgram, 2, elen + 4 + 4);
+    /* TransactionID is there at bytes 4..19 */
+    /*
+    TLV At 20:
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |         Type                  |            Length             |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    */
+    set16(dgram, 20, 0x0009); /* ERROR-CODE */
+    set16(dgram, 22, elen + 4);
+    /*
+    ERROR-CODE at 24:
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                   0                     |Class|     Number    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      Reason Phrase (variable)                                ..
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     */
+    dgram[24] = 0, dgram[25] = 0;
+    dgram[26] = status / 100, dgram[27] = status % 100;
+    memcpy(dgram + 28, error, elen);
+    N = 28 + elen;
+    sendto(self->tp_socket, (void *)dgram, N, 0, (void *)from, fromlen);
+
+#undef set16
+  }
+
+  if (dgram != buffer)
+    free(dgram);
 
   return 0;
 }
-#endif /* HAVE_SOFIA_STUN */
 
 
 /** Receive from stream.
@@ -3731,6 +3800,11 @@ static int tport_recv_stream(tport_t *self)
   msg_t *msg;
   int n, N, veclen, err;
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
+
+#if HAVE_SIGCOMP
+  if (tport_can_recv_sigcomp(self))
+    return tport_recv_sigcomp_stream(self);
+#endif
 
   N = su_getmsgsize(self->tp_socket);
   if (N == 0) {
@@ -3772,26 +3846,24 @@ static int tport_recv_stream(tport_t *self)
 }
 
 #if HAVE_SIGCOMP
-
-/** Receive data using SigComp. */
-static int tport_recv_sigcomp(tport_t *self)
+/** Try to receive stream data using SigComp. */
+static int tport_recv_sigcomp_stream(tport_t *self)
 {
   struct sigcomp_udvm *udvm;
-  int retval, stream;
+  int retval;
 
   SU_DEBUG_7(("%s(%p)\n", __func__, self));
 
-  stream = tport_is_stream(self);
-
-  /* Peek for first byte in message/stream, 
+  /* Peek for first byte in stream,
      determine if this is a compressed stream or not */
-  if (!stream || self->tp_sigcomp->sc_infmt == format_is_unknown) {
+  if (self->tp_sigcomp->sc_infmt == format_is_unknown) {
     unsigned char sample;
     int n;
 
     n = recv(self->tp_socket, &sample, 1, MSG_PEEK);
     if (n < 0)
       return n;
+
     if (n == 0) {
       recv(self->tp_socket, &sample, 1, 0);
       return 0;			/* E-o-S from first message */
@@ -3799,34 +3871,28 @@ static int tport_recv_sigcomp(tport_t *self)
 
     if ((sample & 0xf8) != 0xf8) {
       /* Not SigComp, receive as usual */
-      if (self->tp_addrinfo->ai_socktype == SOCK_DGRAM)
-	return tport_recv_dgram(self);
-
       if (tport_is_primary(self)) {
-	SU_DEBUG_1(("%s(%p): receive semantics not implemented\n", 
+	SU_DEBUG_1(("%s(%p): receive semantics not implemented\n",
 		    __func__, self));
 	su_seterrno(EINVAL);		/* Internal error */
 	return -1;
       }
 
       /* Do not try to receive with sigcomp from this socket */
-      if (stream)
-	self->tp_sigcomp->sc_infmt = format_is_noncomp;
+      self->tp_sigcomp->sc_infmt = format_is_noncomp;
 
       return tport_recv_data(self);
     }
-    else {
-      /* SigComp, receive using UDVM */ 
-      if (stream)
-	self->tp_sigcomp->sc_infmt = format_is_sigcomp;      
 
-      self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
+    /* SigComp, receive using UDVM */
+    self->tp_sigcomp->sc_infmt = format_is_sigcomp;
 
-      if (!self->tp_sigcomp->sc_udvm) {
-	int save = su_errno();
-	recv(self->tp_socket, &sample, 1, 0); /* remove msg from socket */
-	return su_seterrno(save);
-      }
+    /* Initialize UDVM */
+    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
+    if (!self->tp_sigcomp->sc_udvm) {
+      int save = su_errno();
+      recv(self->tp_socket, &sample, 1, 0); /* remove msg from socket */
+      return su_seterrno(save);
     }
   }
 
@@ -3843,16 +3909,17 @@ static int tport_recv_sigcomp(tport_t *self)
 /** Receive data available on the socket.
  *
  * @retval -1 error
- * @retval 0  end-of-stream  
+ * @retval 0  end-of-stream
  * @retval 1  normal receive
  * @retval 2  incomplete recv, recv again
  */
-static int tport_recv_sigcomp_r(tport_t *self, 
+static int tport_recv_sigcomp_r(tport_t *self,
 				msg_t **mmsg,
-				struct sigcomp_udvm *udvm)
+				struct sigcomp_udvm *udvm,
+				int N)
 {
   msg_t *msg;
-  unsigned n, N, m, i, eos, complete;
+  unsigned n, m, i, eos, complete;
   int veclen;
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
   su_sockaddr_t su[1];
@@ -3867,11 +3934,8 @@ static int tport_recv_sigcomp_r(tport_t *self,
 
   if (sigcomp_udvm_has_input(udvm)) {
     input = sigcomp_udvm_input_buffer(udvm, n = N = 0); assert(input);
-  } else {
-    N = su_getmsgsize(self->tp_socket);
-    if (N == (unsigned)-1) 
-      return -1;
-
+  }
+  else {
     if (N == 0) {
       assert(self->tp_addrinfo->ai_socktype != SOCK_DGRAM);
       if (self->tp_addrinfo->ai_socktype == SOCK_DGRAM) {
@@ -6802,86 +6866,97 @@ static
 int thrp_udp_recv(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd)
 {
   tport_t const *tp = thrp->thrp_tport->pri_primary;
-  unsigned char sample;
+  unsigned char sample[2];
   int N;
+  int s = tp->tp_socket;
 
   pthread_mutex_lock(mutex);
 
   /* Simulate packet loss */
   if (tp->tp_params->tpp_drop && 
       su_randint(0, 1000) < tp->tp_params->tpp_drop) {
-    recv(tp->tp_socket, &sample, 1, 0);
+    recv(s, &sample, 1, 0);
+    pthread_mutex_unlock(mutex);
     SU_DEBUG_3(("tport(%p): simulated packet loss!\n", tp));
     return 0;
   }
 
-  /* Peek for first byte in message
-     determine if this is compressed or not */
-  N = recv(tp->tp_socket, &sample, 1, MSG_PEEK);
+  /* Peek for first two bytes in message:
+     determine if this is stun, sigcomp or sip
+  */
+  N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
 
   if (N < 0) {
     if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
       N = 0;
-  } else if (N == 0) {
-    SU_DEBUG_1(("thrp_udp_recv(%p): zero len packet\n", thrp));
-    recv(tp->tp_socket, &sample, 1, 0);
   }
+  else if (N <= 1) {
+    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "thrp_udp_recv", thrp, N));
+    recv(s, sample, sizeof sample, 0);
+    N = 0;
+  }
+#if !MSG_TRUNC
   else if ((N = su_getmsgsize(tp->tp_socket)) < 0)
     ;
-  else if ((sample & 0xf8) != 0xf8) {
-    /* Not SigComp, receive as usual */
-    N = tport_recv_dgram_r(tp, &tpd->tpd_msg, N);
-  } 
+#endif
+  else if ((sample[0] & 0xf8) == 0xf8) {
 #if HAVE_SIGCOMP
-  else if (thrp->thrp_compartment) {
-    struct sigcomp_buffer *input;
-    void *data;
-    int dlen;
+    if (thrp->thrp_compartment) {
+      struct sigcomp_buffer *input;
+      void *data;
+      int dlen;
 
-    tpd->tpd_udvm = sigcomp_udvm_create_for_compartment(thrp->thrp_compartment);
-    input = sigcomp_udvm_input_buffer(tpd->tpd_udvm, N); assert(input);
+      tpd->tpd_udvm = 
+	sigcomp_udvm_create_for_compartment(thrp->thrp_compartment);
+      input = sigcomp_udvm_input_buffer(tpd->tpd_udvm, N); assert(input);
 
-    data = input->b_data + input->b_avail;
-    dlen = input->b_size - input->b_avail;
+      data = input->b_data + input->b_avail;
+      dlen = input->b_size - input->b_avail;
 
-    if (dlen < N)
-      dlen = 0;
+      if (dlen < N)
+	dlen = 0;
 
-    tpd->tpd_namelen = sizeof(tpd->tpd_name);
+      tpd->tpd_namelen = sizeof(tpd->tpd_name);
     
-    dlen = recvfrom(tp->tp_socket, data, dlen, 0, 
-		    &tpd->tpd_name->su_sa, &tpd->tpd_namelen);
+      dlen = recvfrom(tp->tp_socket, data, dlen, 0, 
+		      &tpd->tpd_name->su_sa, &tpd->tpd_namelen);
 
-    SU_CANONIZE_SOCKADDR(tpd->tpd_name);
+      SU_CANONIZE_SOCKADDR(tpd->tpd_name);
       
-    if (dlen < N) {
-      su_seterrno(EMSGSIZE);		/* Protocol error */
-      N = -1;
-    } else if (dlen == -1) 
-      N = -1;
-    else {
-      input->b_avail += dlen; 
-      input->b_complete = 1;
+      if (dlen < N) {
+	su_seterrno(EMSGSIZE);		/* Protocol error */
+	N = -1;
+      } else if (dlen == -1) 
+	N = -1;
+      else {
+	input->b_avail += dlen; 
+	input->b_complete = 1;
+	
+	pthread_mutex_unlock(mutex);
+      
+	N = thrp_udvm_decompress(thrp, tpd);
 
+	if (N == -1)
+	  /* Do not report decompression errors as ICMP errors */
+	  memset(tpd->tpd_name, 0, tpd->tpd_namelen);
+
+	return N;
+      }
       pthread_mutex_unlock(mutex);
-
-      N = thrp_udvm_decompress(thrp, tpd);
-
-      if (N == -1)
-	/* Do not report decompression errors as ICMP errors */
-	memset(tpd->tpd_name, 0, tpd->tpd_namelen);
-
       return N;
     }
-  }
 #endif
-  else {
-    recv(tp->tp_socket, &sample, 1, 0);
-    /* XXX - send NACK */
+    recv(s, sample, 1, 0);
+    pthread_mutex_unlock(mutex);
+    /* XXX - send NACK ? */
     su_seterrno(EBADMSG);
     N = -1;
   }
-
+  else {
+    /* receive as usual */
+    N = tport_recv_dgram_r(tp, &tpd->tpd_msg, N);
+  } 
+  
   pthread_mutex_unlock(mutex);
 
   return N;
@@ -7172,6 +7247,41 @@ void thrp_udp_send_report(su_root_magic_t *magic,
   msg_ref_destroy(tpd->tpd_msg);
 }
 
+
+/** Initialize STUN keepalives.
+ *
+ *@retval 0
+ */
+int tport_keepalive(tport_t *tp, tp_name_t *tpn)
+{
+#if HAVE_SOFIA_STUN
+  int err;
+  tport_master_t *mr = tp->tp_master;
+  stun_handle_t *sh = mr->mr_nat->stun;
+  su_sockaddr_t sa[1] = {{ 0 }};
+
+  if (tp->tp_has_keepalive == 1 || sh == NULL)
+    return 0;
+
+  inet_pton(AF_INET, tpn->tpn_host, (void *) &sa->su_sin.sin_addr.s_addr);
+  sa->su_port = htons(atoi(tpn->tpn_port));
+  sa->su_family = AF_INET;
+
+  /*XXX -- remove me after it's working */
+  memcpy(sa, tp->tp_addr, sizeof(*sa));
+
+  err = stun_keepalive(sh, sa,
+		       STUNTAG_SOCKET(tp->tp_socket),
+		       STUNTAG_TIMEOUT(10000),
+		       TAG_NULL());
+  
+  if (err < 0)
+    return -1;
+
+  tp->tp_has_keepalive = 1;
+#endif
+  return 0;
+}
 
 #if HAVE_SOFIA_STUN
 void tport_stun_cb(tport_master_t *mr, stun_handle_t *sh,
