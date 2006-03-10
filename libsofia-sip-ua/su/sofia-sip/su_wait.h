@@ -284,7 +284,8 @@ typedef _su_task_t const *_su_task_r;
 /* Messages */
 #ifndef SU_MSG_ARG_T
 /** Default type of su_msg_t message data.  Application may define this to
- * appropriate type before including <su_wait.h>. */
+ * appropriate type before including <su_wait.h>.
+ */
 #define SU_MSG_ARG_T void 
 #endif
 
@@ -444,6 +445,9 @@ _su_task_r su_clone_task(su_clone_r);
 void su_clone_forget(su_clone_r);
 void su_clone_stop(su_clone_r);
 void su_clone_wait(su_root_t *root, su_clone_r clone);
+
+int su_clone_pause(su_clone_r);
+int su_clone_resume(su_clone_r);
 
 /* ---------------------------------------------------------------------- */
 /* Compatibility */

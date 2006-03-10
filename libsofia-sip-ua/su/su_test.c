@@ -345,7 +345,7 @@ start_pong(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
     su_msg_send(reply);
   }
   else {
-    fprintf(stderr, "su_msg_create failed!\n");
+    fprintf(stderr, "su_msg_reply failed!\n");
   }
 }
 
@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
   root = su_root_create(NULL);
   if (!root) perror("su_root_create"), exit(1);
   
-  su_root_threading(root, 0 && !opt_singlethread);
+  su_root_threading(root, !opt_singlethread);
 
   if (su_clone_start(root, ping, &pinger, do_init, do_destroy) != 0)
     perror("su_clone_start"), exit(1);
@@ -481,9 +481,15 @@ int main(int argc, char *argv[])
     su_perror("su_timer_create"), exit(1);
   su_timer_set(t, (su_timer_f)do_exit, NULL);
 
+  su_clone_pause(ping);
+  su_clone_pause(pong);
+
   su_msg_create(start_msg, su_clone_task(ping), su_clone_task(pong), 
 		init_ping, 0);
   su_msg_send(start_msg);
+
+  su_clone_resume(ping);
+  su_clone_resume(pong);
 
   su_root_run(root);
 

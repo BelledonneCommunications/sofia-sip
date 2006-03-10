@@ -53,6 +53,9 @@ typedef struct su_cloned_s {
   int *sc_wait;
 #if SU_HAVE_PTHREADS
   pthread_t  sc_tid;
+  pthread_mutex_t sc_pause[1];
+  pthread_cond_t sc_resume[1];
+  int sc_paused;
 #endif  
 } su_cloned_t;
 
@@ -920,6 +923,10 @@ static void *su_clone_main(void *varg)
   sc->sc_root = self;
   sc->sc_tid = pthread_self();
 
+  pthread_mutex_init(sc->sc_pause, NULL);
+  pthread_cond_init(sc->sc_resume, NULL);
+  pthread_mutex_lock(sc->sc_pause);
+
   if (arg->init && arg->init(self, self->sur_magic) != 0) {
     if (arg->deinit)
       arg->deinit(self, self->sur_magic);
@@ -1088,6 +1095,9 @@ int su_clone_start(su_root_t *parent,
 	sc->sc_root = child;
 #if SU_HAVE_PTHREADS
 	sc->sc_tid = pthread_self();
+	pthread_mutex_init(sc->sc_pause, NULL);
+	pthread_cond_init(sc->sc_resume, NULL);
+	pthread_mutex_lock(sc->sc_pause);
 #endif
 	retval = 0;
       } else {
@@ -1185,6 +1195,77 @@ void su_clone_wait(su_root_t *root, su_clone_r rclone)
   }
 }
 
+#if SU_HAVE_PTHREADS		/* No-op without threads */
+static
+void su_clone_paused(su_root_magic_t *magic, su_msg_r msg, su_msg_arg_t *arg)
+{
+  su_cloned_t *cloned = *(su_cloned_t **)arg;
+  assert(cloned);
+  pthread_cond_wait(cloned->sc_resume, cloned->sc_pause);
+}
+#endif
+
+/** Pause a clone.
+ *
+ * Obtain a exclusive lock on clone's private data.
+ *
+ * @retval 0 if successful (and clone is paused)
+ * @retval -1 upon an error
+ */
+int su_clone_pause(su_clone_r rclone)
+{
+#if SU_HAVE_PTHREADS		/* No-op without threads */
+  su_cloned_t *cloned = su_msg_data(rclone);
+  su_msg_r m = SU_MSG_RINITIALIZER;
+
+  if (!cloned)
+    return (errno = EFAULT), -1;
+
+  if (pthread_equal(pthread_self(), cloned->sc_tid))
+    return 0;
+
+  if (su_msg_create(m, su_clone_task(rclone), su_task_null,
+		    su_clone_paused, sizeof cloned) < 0)
+    return -1;
+
+  *(su_cloned_t **)su_msg_data(m) = cloned;
+
+  if (su_msg_send(m) < 0)
+    return -1;
+
+  if (pthread_mutex_lock(cloned->sc_pause) < 0)
+    return -1;
+  pthread_cond_signal(cloned->sc_resume);
+#endif
+
+  return 0;
+}
+
+/** Resume a clone.
+ *
+ * Give up a exclusive lock on clone's private data.
+ *
+ * @retval 0 if successful (and clone is resumed)
+ * @retval -1 upon an error
+ */
+int su_clone_resume(su_clone_r rclone)
+{
+#if SU_HAVE_PTHREADS		/* No-op without threads */
+  su_cloned_t *cloned = su_msg_data(rclone);
+
+  if (!cloned)
+    return (errno = EFAULT), -1;
+
+  if (pthread_equal(pthread_self(), cloned->sc_tid))
+    return 0;
+
+  if (pthread_mutex_unlock(cloned->sc_pause) < 0)
+    return -1;
+#endif
+
+  return 0;
+}
+
 
 /* =========================================================================
  * Messages
@@ -1224,10 +1305,10 @@ int su_msg_create(su_msg_r        rmsg,
     msg->sum_func = wakeup;
     *rmsg = msg;
     return 0;
-  } else {
-    *rmsg = NULL;
-    return -1;
-  }
+  } 
+
+  *rmsg = NULL;
+  return -1;
 }
 
 /** Add a report function to a message
