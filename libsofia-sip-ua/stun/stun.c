@@ -678,7 +678,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s)
   /* Register receiving function with events specified above */
   if ((sd->sd_index = su_root_register(sh->sh_root,
 				       wait, stun_bind_callback,
-				       (su_wakeup_arg_t *) sh, 0)) < 0) {
+				       (su_wakeup_arg_t *) sd, 0)) < 0) {
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
@@ -1380,7 +1380,8 @@ stun_request_t *find_request(stun_handle_t *self, uint16_t *id)
 /** Process socket event */
 int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 {
-  stun_handle_t *self = arg;
+  stun_discovery_t *sd = arg;
+  stun_handle_t *self = sd->sd_handle;
 
   int retval = -1, err = -1, dgram_len;
   char ipaddr[SU_ADDRSIZE + 2];
@@ -1388,7 +1389,7 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
   unsigned char dgram[512] = { 0 };
   su_sockaddr_t recv;
   socklen_t recv_len;
-  su_socket_t s = su_wait_socket(w);
+  su_socket_t s = sd->sd_socket;
   int events = su_wait_events(w, s);
 
   enter;
@@ -2593,7 +2594,7 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
 			 int from_len)
 {
   stun_msg_t resp;
-  su_sockaddr_t m_addr[1] = {{ 0 }}, s_addr[1] = {{ 0 }}, c_addr[1] = {{ 0 }};
+  su_sockaddr_t mod_addr[1] = {{ 0 }}, src_addr[1] = {{ 0 }}, chg_addr[1] = {{ 0 }};
   stun_attr_t *tmp, m_attr[1], s_attr[1], c_attr[1], **p;
   su_sockaddr_t to_addr;
   int c, i;
@@ -2620,8 +2621,8 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
   /* MAPPED-ADDRESS */
   tmp = m_attr;
   tmp->attr_type = MAPPED_ADDRESS;
-  memcpy(m_addr, from_addr, sizeof(*m_addr));
-  tmp->pattr = m_addr;
+  memcpy(mod_addr, from_addr, sizeof(*mod_addr));
+  tmp->pattr = mod_addr;
   tmp->next = NULL;
   *p = tmp; p = &(tmp->next);
 
@@ -2652,16 +2653,16 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
   tmp = s_attr;
   tmp->attr_type = SOURCE_ADDRESS;
 
-  /* memcpy(s_addr, &stun_change_map[c][sid], sizeof(*s_addr)); */
-  tmp->pattr = s_addr;
+  /* memcpy(src_addr, &stun_change_map[c][sid], sizeof(*src_addr)); */
+  tmp->pattr = src_addr;
   tmp->next = NULL;
   *p = tmp; p = &(tmp->next);
 
   /* CHANGED-ADDRESS */ /* depends on sid */
   tmp = c_attr;
   tmp->attr_type = CHANGED_ADDRESS;
-  /* memcpy(c_addr, &stun_change_map[3][sid], sizeof(*c_addr)); */
-  tmp->pattr = c_addr;
+  /* memcpy(chg_addr, &stun_change_map[3][sid], sizeof(*chg_addr)); */
+  tmp->pattr = chg_addr;
   tmp->next = NULL;
   *p = tmp; p = &(tmp->next);
 

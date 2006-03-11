@@ -49,12 +49,14 @@
 #include <arpa/inet.h>
 #endif
 
+#if defined(HAVE_OPENSSL)
 /* avoid krb5-related build failures */
 #define OPENSSL_NO_KRB5
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
+#endif
 
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_localinfo.h>

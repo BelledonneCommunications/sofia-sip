@@ -42,9 +42,12 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef _WIN32
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sofia-sip/su_types.h>
 #include <sofia-sip/su_alloc_stat.h>
@@ -270,15 +273,23 @@ int validate_file(int fd, char const *name, context_t *ctx)
     return -1;
   }
 
+#ifndef _WIN32
   p = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0L);
   if (p == NULL) {
     perror("mmap");
     return -1;
   }
-    
+
   retval = validate_dump(p, size, ctx);
   munmap(p, size);
   return retval;
+
+#else
+  errno = EINVAL;
+  perror("mmap not implemented");
+  return -1;
+#endif    
+
 }
 
 static inline 

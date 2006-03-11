@@ -53,6 +53,12 @@
 
 #include <sofia-sip/su_uniqueid.h>
 
+#ifndef EBADMSG
+/*xxx -- mela: check the number */
+#define EBADMSG 71
+#endif
+
+
 #if !HAVE_MEMMEM
 void *memmem(const void *haystack, size_t haystacklen,
 	     const void *needle, size_t needlelen);
