@@ -1299,6 +1299,10 @@ int test_query_one_type(sres_context_t *ctx)
 }
 #endif /* HAVE_SIN6*/
 
+#ifdef _WIN32
+#include <fcntl.h>
+#endif
+
 int sink_make(sres_context_t *ctx)
 {
   char *tmpdir = getenv("TMPDIR");
@@ -1321,9 +1325,13 @@ int sink_make(sres_context_t *ctx)
   template = su_sprintf(ctx->home, "%s/test_sresolv.XXXXXX", 
 			tmpdir ? tmpdir : "/tmp");
   TEST_1(template);
-  
+
+#ifndef _WIN32  
   fd = mkstemp(template); TEST_1(fd != -1);
-  
+#else
+  fd = open(template, O_WRONLY); TEST_1(fd != -1);
+#endif  
+
   f = fdopen(fd, "w"); TEST_1(f);
   fprintf(f, 
 	  "domain example.com\n"
@@ -1447,7 +1455,11 @@ time_t time(time_t *tp)
 {
   struct timeval tv[1];
 
+#ifndef _WIN32
   gettimeofday(tv, NULL);
+#else
+  return 0;
+#endif
 
   if (tp)
     *tp = tv->tv_sec + offset;
@@ -1649,8 +1661,12 @@ int test_api_errors(sres_context_t *noctx)
   TEST_1(res = sres_resolver_new(NULL));
   sres_resolver_unref(res);
 
+#ifndef _WIN32
   fd = mkstemp(template); TEST_1(fd != -1);
-  
+#else
+  fd = open(template, O_WRONLY); TEST_1(fd != -1);
+#endif  
+
   f = fdopen(fd, "w"); TEST_1(f);
   fprintf(f, "domain example.com\n");
   fclose(f);
