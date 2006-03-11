@@ -53,6 +53,14 @@
 
 #include <sofia-sip/string0.h>
 
+#ifndef EALREADY && defined(_WIN32)
+#define EALREADY WSAEALREADY
+#endif
+
+#ifndef EPROTO && defined(_WIN32)
+#define EPROTO 127 /* XXX -- mela: wrong number? */
+#endif
+
 #define NONE ((void *)-1)
 #define XXX assert(!"implemented")
 

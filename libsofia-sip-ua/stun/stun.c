@@ -56,6 +56,10 @@
 #include <openssl/opensslv.h>
 #endif
 
+#if !defined(ETIMEDOUT) && defined(_WIN32)
+#define ETIMEDOUT WSAETIMEDOUT
+#endif
+
 /* Missing socket symbols */
 #ifndef SOL_TCP
 #define SOL_TCP IPPROTO_TCP
@@ -1300,6 +1304,7 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 			       su_timer_t *t,
 			       su_timer_arg_t *arg)
 {
+}
 #endif /* HAVE_OPENSSL */
 
 /** Compose a STUN message of the format defined by stun_msg_t

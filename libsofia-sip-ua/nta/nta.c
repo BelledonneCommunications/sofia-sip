@@ -81,6 +81,14 @@ char const nta_version[] = VERSION;
 #include "sofia-sip/nta_stateless.h"
 #include "sofia-sip/url_tag.h"
 
+#if !defined(random) && defined(_WIN32)
+#define random rand
+#endif
+
+#if !defined(EMSGSIZE) && defined(_WIN32)
+#define EMSGSIZE WSAEMSGSIZE
+#endif
+
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
 #define __func__ __FUNCTION__

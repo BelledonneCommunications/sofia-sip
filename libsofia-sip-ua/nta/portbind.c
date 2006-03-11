@@ -40,9 +40,17 @@ char const name[] = "portbind";
 #include <assert.h>
 #include <unistd.h>
 
+#if HAVE_SYS_SOCKET_T
 #include <sys/socket.h>
+#endif
+
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#if HAVE_NETDB_H
 #include <netdb.h>
+#endif
 
 #include "sofia-sip/su.h"
 

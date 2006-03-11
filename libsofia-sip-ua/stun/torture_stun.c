@@ -357,7 +357,9 @@ int torture_test_get_nattype(char *localaddr)
   END();
 }
 
+#ifndef _WIN32
 #include <poll.h>
+#endif
 
 /* XXX: Not used in the test set yet. */
 #if 0

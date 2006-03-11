@@ -59,7 +59,7 @@
 #include "sofia-sip/msg_mclass_hash.h"
 #include "sofia-sip/msg_mime.h"
 
-#if !defined(ENOBUFS) || defined(_WIN32)
+#if !defined(ENOBUFS) && defined(_WIN32)
 #define ENOBUFS WSAENOBUFS
 #endif
 

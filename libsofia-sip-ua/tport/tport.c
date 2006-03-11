@@ -50,6 +50,26 @@
 #include <netinet/tcp.h>
 #endif
 
+#if !defined(EPROTONOSUPPORT) && defined(_WIN32)
+#define EPROTONOSUPPORT WSAEPROTONOSUPPORT
+#endif
+
+#if !defined(ENOBUFS) && defined(_WIN32)
+#define ENOBUFS WSAENOBUFS
+#endif
+
+#ifndef EBADMSG
+#define EBADMSG 117 /* XXX -- mela: number? */
+#endif
+
+#if !defined(EMSGSIZE) && defined(_WIN32)
+#define EMSGSIZE WSAEMSGSIZE
+#endif
+
+#if !defined(random) && defined(_WIN32)
+#define random rand
+#endif
+
 #ifndef SU_DEBUG
 #define SU_DEBUG 3
 #endif

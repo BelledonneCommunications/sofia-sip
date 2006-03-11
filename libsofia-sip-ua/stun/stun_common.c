@@ -454,7 +454,9 @@ int stun_encode_type_len(stun_attr_t *attr, uint16_t len) {
 /** validate message integrity based on pwd
  *  received content is in msg->enc_buf
  */
-int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
+#if defined(HAVE_OPENSSL)
+int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
+{
 
   int padded_len, len;
   size_t dig_len;
@@ -494,6 +496,12 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd) {
 
   return 0;
 }
+#else
+int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
+{
+  return -1;
+}
+#endif /* HAVE_OPENSSL */
 
 void debug_print(stun_buffer_t *buf) {
   int i;
