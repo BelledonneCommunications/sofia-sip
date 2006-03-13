@@ -6,33 +6,31 @@
 # Licensed under LGPL. See file COPYING.
 #
 
-if HAVE_GLIB
 GLIB_BUILT = 	nua_glib_marshal.c \
 		nua_glib_marshal.h
-else
-GLIB_BUILT =
-endif
 
 # ----------------------------------------------------------------------
 # Header paths
 
-S_BASE=../../libsofia-sip-ua
+S_BASE = $(top_srcdir)/libsofia-sip-ua
+B_BASE = $(top_builddir)/libsofia-sip-ua
 
-INCLUDES = 		-I$(srcdir)/$(S_BASE)/bnf -I$(S_BASE)/bnf \
-	 		-I$(srcdir)/$(S_BASE)/ipt -I$(S_BASE)/ipt \
-	 		-I$(srcdir)/$(S_BASE)/iptsec -I$(S_BASE)/iptsec \
-	 		-I$(srcdir)/$(S_BASE)/http -I$(S_BASE)/http \
-			-I$(srcdir)/$(S_BASE)/msg -I$(S_BASE)/msg \
-			-I$(srcdir)/$(S_BASE)/nea -I$(S_BASE)/nea \
-			-I$(srcdir)/$(S_BASE)/nta -I$(S_BASE)/nta \
-			-I$(srcdir)/$(S_BASE)/nth -I$(S_BASE)/nth \
-			-I$(srcdir)/$(S_BASE)/nua -I$(S_BASE)/nua \
-			-I$(srcdir)/$(S_BASE)/sdp -I$(S_BASE)/sdp \
-			-I$(srcdir)/$(S_BASE)/sip -I$(S_BASE)/sip \
-			-I$(srcdir)/$(S_BASE)/soa -I$(S_BASE)/soa \
-			-I$(srcdir)/$(S_BASE)/tport -I$(S_BASE)/tport \
-			-I$(srcdir)/$(S_BASE)/url -I$(S_BASE)/url \
-			-I$(srcdir)/$(S_BASE)/su -I$(S_BASE)/su \
+INCLUDES = 		-I$(S_BASE)/bnf -I$(B_BASE)/bnf \
+	 		-I$(S_BASE)/ipt -I$(B_BASE)/ipt \
+	 		-I$(S_BASE)/iptsec -I$(B_BASE)/iptsec \
+	 		-I$(S_BASE)/http -I$(B_BASE)/http \
+			-I$(S_BASE)/msg -I$(B_BASE)/msg \
+			-I$(S_BASE)/nea -I$(B_BASE)/nea \
+			-I$(S_BASE)/nta -I$(B_BASE)/nta \
+			-I$(S_BASE)/nth -I$(B_BASE)/nth \
+			-I$(S_BASE)/nua -I$(B_BASE)/nua \
+			-I$(S_BASE)/sdp -I$(B_BASE)/sdp \
+			-I$(S_BASE)/sip -I$(B_BASE)/sip \
+			-I$(S_BASE)/soa -I$(B_BASE)/soa \
+			-I$(S_BASE)/tport -I$(B_BASE)/tport \
+			-I$(S_BASE)/url -I$(B_BASE)/url \
+			-I$(S_BASE)/su -I$(B_BASE)/su \
+			-I$(srcdir)/../su-glib/ \
 			$(GLIB_CFLAGS)
 
 # ----------------------------------------------------------------------
@@ -49,18 +47,18 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/nua_glib.h
 
 noinst_HEADERS =	nua_glib_priv.h
+
 noinst_PROGRAMS =	test_nua_glib
 
-libnua_glib_la_SOURCES = \
-			nua_glib.c \
-			$(GLIB_BUILT)
+libnua_glib_la_SOURCES = nua_glib.c
 
-LDADD = 		$(GLIB_LIBS) -lgobject-2.0 \
-			libnua-glib.la \
+libnua_glib_la_LIBADD =  nua_glib_marshal.lo
+
+LDADD =  		$(GLIB_LIBS) -lgobject-2.0 \
+			libnua-glib.la ../su-glib/libsu-glib.la \
 			../../libsofia-sip-ua/libsofia-sip-ua.la
 
 test_nua_glib_LDFLAGS = -static
-test_nua_glib_SOURCES = test_nua_glib.c
 
 if HAVE_GLIB
 %_marshal.h: %_marshal.list Makefile
@@ -78,3 +76,4 @@ EXTRA_DIST =		Doxyfile nua_glib.docs $(BUILT_SOURCES)
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
+include ../../libsofia-sip-ua/sofia.am

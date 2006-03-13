@@ -17,7 +17,7 @@ TAG_AWK=$(top_srcdir)/libsofia-sip-ua/su/tag_dll.awk
 
 if ENABLE_COVERAGE
 coverage:
-	@$(srcdir)/../../scripts/coverage $(COVERAGE_FLAGS) $(COVERAGE_INPUT)
+	@$(top_srcdir)/scripts/coverage $(COVERAGE_FLAGS) $(COVERAGE_INPUT)
 endif
 
 ../bnf/libbnf.la ../http/libhttp.la ../ipt/libipt.la ../iptsec/libiptsec.la \

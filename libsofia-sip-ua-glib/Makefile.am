@@ -25,14 +25,16 @@ GOBJECT_TARGETS=
 endif
 
 # note: order does matter in the subdir list
-SUBDIRS = $(GLIB_SUBDIRS)
+SUBDIRS = $(GLIB_SUBDIRS) $(GOBJECT_SUBDIRS)
+
+DIST_SUBDIRS=su-glib nua-glib
 
 DOXYGEN = doxygen
 
 lib_LTLIBRARIES = libsofia-sip-ua-glib.la
 
 libsofia_sip_ua_glib_la_SOURCES = 
-libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS)
+libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GOBJECT_TARGETS)
 
 built-sources-recursive clean-built-sources-recursive:
 	target=`echo $@ | sed s/-recursive//`; \

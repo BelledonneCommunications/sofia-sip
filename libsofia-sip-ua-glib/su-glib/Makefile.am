@@ -9,8 +9,10 @@
 # ----------------------------------------------------------------------
 # Headers
 
-S_BASE=../../libsofia-sip-ua
-INCLUDES =		-I$(srcdir)/$(S_BASE)/su -I$(S_BASE)/su \
+S_BASE = $(top_srcdir)/libsofia-sip-ua
+B_BASE = $(top_builddir)/libsofia-sip-ua
+
+INCLUDES =		-I$(S_BASE)/su -I$(B_BASE)/su \
 			$(GLIB_CFLAGS)
 
 # ----------------------------------------------------------------------
@@ -55,3 +57,5 @@ AUTOMAKE_OPTIONS = 	foreign
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
+
+include ../../libsofia-sip-ua/sofia.am
