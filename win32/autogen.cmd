@@ -25,6 +25,9 @@
 :: 02110-1301 USA
 ::
 
+@setlocal
+@if x%AWK%==x set AWK=gawk
+
 @call version_files.cmd
 
 @call build_sources.cmd
@@ -33,3 +36,4 @@
 @echo NOTE:
 @echo NOTE: Remember to install pthreadVC2.dll to your path, too!
 @echo NOTE:
+@endlocal

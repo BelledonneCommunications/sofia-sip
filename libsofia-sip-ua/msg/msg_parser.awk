@@ -61,6 +61,8 @@ BEGIN {
   template3="";
   prefix="";
   tprefix="";
+  failed=0;
+  success=0;
 }
 
 function name_hash (name)
@@ -304,6 +306,7 @@ in_header_list && /^  (sip|rtsp|http|msg|mp)_[a-z_0-9]+_t/ {
   }
   if ($0 !~ /[\/][*][*][<]/) {
     printf "msg_protos.awk: header %s is malformed\n", n;
+    failed=1;
     exit 1;
   }
 
@@ -314,6 +317,8 @@ in_header_list && /^  (sip|rtsp|http|msg|mp)_[a-z_0-9]+_t/ {
 }
 
 END {
+  if (failed) { exit };
+
   if (!NO_LAST) {
     protos("unknown", "/**< Unknown headers */", -3);
     protos("error", "/**< Erroneous headers */", -4);
@@ -439,4 +444,6 @@ END {
     }
     printf("  }\n}};\n\n") > PT;
   }
+
+  exit success;
 }

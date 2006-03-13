@@ -2,8 +2,19 @@
 :: Build sources on win32
 ::
 
-@set CHECK=@IF errorlevel 1 GOTO failed 
-@set MSG_AWK=gawk -v BINMODE=rw -f ../libsofia-sip-ua/msg/msg_parser.awk
+@setlocal
+@if x%AWK%==x setlocal AWK=gawk
+@set CHECK=@IF errorlevel 1 GOTO failed
+
+:: Check that we really have awk
+@%AWK% "{ exit(0); }" < NUL >NUL
+@if not errorlevel 9009 goto have_awk
+@echo *** install %AWK% (GNU awk) into your PATH ***
+@goto failed
+:have_awk
+
+:: in Win32 exit 0; from awk gets converted to errorlevel 1
+@set MSG_AWK=gawk -v BINMODE=rw -f ../libsofia-sip-ua/msg/msg_parser.awk success=-1
 @set TAG_AWK=gawk -f ../libsofia-sip-ua/su/tag_dll.awk BINMODE=rw
 
 @set IN=../libsofia-sip-ua/msg/test_class.h
@@ -95,7 +106,8 @@
 %TAG_AWK% NO_DLL=1 %P%/url/url_tag.c  < NUL
 %CHECK%
 
-GOTO end
+@GOTO end
 :failed
 @ECHO *** FAILED ***
 :end
+@endlocal

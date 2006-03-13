@@ -25,9 +25,21 @@
 :: 02110-1301 USA
 ::
 
-set VERSION=gawk -v BINMODE="rw" -f version.awk
-set AC=..\configure.ac
+@setlocal
+@if x%AWK%==x set AWK=gawk
+@set VERSION=%AWK% -v BINMODE="rw" -f version.awk
+@set AC=..\configure.ac
 
-for %%f in (config.h ..\libsofia-sip-ua\features\sofia-sip\features.h) ^
+:: Check that we really have awk
+@%AWK% "{ exit(0); }" < NUL >NUL
+@if not errorlevel 9009 goto have_awk
+@echo *** install %AWK% (GNU awk) into your PATH ***
+@goto end
+:have_awk
+
+for %%f in (config.h ..\libsofia-sip-ua\features\sofia-sip\sofia_features.h) ^
 do %VERSION% %AC% OUT=1 %%f.in > %%f
-@if errorlevel 1 echo *** version_files failed ***
+@if errorlevel 1 goto echo *** version_files failed ***
+
+:end
+@endlocal
