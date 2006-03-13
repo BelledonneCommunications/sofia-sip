@@ -1,3 +1,70 @@
+2006-03-13  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Release 1.11.7
+
+  * Synchronized CVS with darcs.
+
+  * Added man pages to dist.
+
+  * Updated libsofia-sip-ua-glib dist targets.
+
+    M ./libsofia-sip-ua-glib/Makefile.am -2 +4
+    M ./libsofia-sip-ua-glib/nua-glib/Makefile.am -26 +25
+    M ./libsofia-sip-ua-glib/su-glib/Makefile.am -2 +6
+    M ./libsofia-sip-ua/sofia.am -1 +1
+
+  * Removed warnings on 64bit platforms.
+
+    M ./libsofia-sip-ua/soa/soa.c -3 +3
+    M ./libsofia-sip-ua/stun/stun_common.c -8 +19
+    M ./libsofia-sip-ua/su/su_timer_test.c -2 +1
+
+  * Added missing files to dist.
+
+    M ./libsofia-sip-ua/bnf/Makefile.am -1 +1
+    M ./libsofia-sip-ua/nua/Makefile.am -1 +1
+
+  * Using alarm() with su_test.c.
+
+  * Fixed hc_print usage in msg_header_prepare().
+  Some headers use snprintf() which may return -1 on some platforms if 
+  buffer is too small.
+
+  * Fixed problems in test_nua on win32.
+
+  * Fixed problem of using destroying registered handle in su_root.
+  This is a bug showing only in win32.
+
+  * Cleaning ACK transactions in test_proxy
+
+  * Fixed source file building rules for GNU make >= 3.80.
+  The way VPATH is handled and $@ expands has changed between GNU make 3.79
+  and 3.80.
+
+    M ./libsofia-sip-ua/http/Makefile.am -6 +14
+    M ./libsofia-sip-ua/msg/Makefile.am -13 +13
+    M ./libsofia-sip-ua/sip/Makefile.am -7 +18
+    M ./libsofia-sip-ua/sofia.am -1 +1
+
+  * Using sofia-sip/su_errno.h for error codes not present in win32.
+
+    M ./libsofia-sip-ua/msg/msg_mime.c -6 +1
+    M ./libsofia-sip-ua/msg/msg_parser.c -4
+    M ./libsofia-sip-ua/soa/soa.c -8 +1
+    M ./libsofia-sip-ua/su/sofia-sip/su_errno.h +36
+    M ./libsofia-sip-ua/su/su_errno.c -6 +22
+    M ./win32/sofia-sip/su_configure.h -7
+
+  * Fixed problems with nua timers.
+
+    M ./libsofia-sip-ua/nua/nua_dialog.c -2 +2
+    M ./libsofia-sip-ua/nua/nua_session.c -3 +7
+    M ./libsofia-sip-ua/nua/nua_stack.c -1 +1
+
+2006-03-13  Martti Mela  <martti.mela@nokia.com>
+	
+  * win32 defs, compiles and installs in mingw environment
+
 2006-03-09  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
   * Synchronized darcs and CVS. 
