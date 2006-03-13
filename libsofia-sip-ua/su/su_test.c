@@ -403,10 +403,25 @@ time_test(void)
 
 char const name[] = "su_test";
 
+#if HAVE_ALARM
+#include <unistd.h>
+#include <signal.h>
+
+static RETSIGTYPE sig_alarm(int s)
+{
+  fprintf(stderr, "%s: FAIL! test timeout!\n", name);
+  exit(1);
+}
+static char const no_alarm[] = " [--no-alarm]";
+#else
+static char const no_alarm[] = "";
+#endif
+
 void
 usage(int exitcode)
 {
-  fprintf(stderr, "usage: %s [-6vsg] [pid]\n", name);
+  fprintf(stderr, "usage: %s [-6vs]%s\n", name, no_alarm);
+
   exit(exitcode);
 }
 
@@ -427,8 +442,7 @@ int main(int argc, char *argv[])
   su_clone_r ping = SU_CLONE_R_INIT, pong = SU_CLONE_R_INIT;
   su_msg_r start_msg = SU_MSG_RINITIALIZER;
   su_timer_t *t;
-
-  int opt_glib = getenv("USE_SU_SOURCE") != NULL;
+  int opt_alarm = 1;
 
   struct pinger 
     pinger = { PINGER, "ping", 1 }, 
@@ -451,10 +465,12 @@ int main(int argc, char *argv[])
       opt_singlethread = 1;
       argv++;
     }
-    else if (strcmp(argv[1], "-g") == 0) {
-      opt_glib = 1;
+#if HAVE_ALARM
+    else if (strcmp(argv[1], "--no-alarm") == 0) {
+      opt_alarm = 0;
       argv++;
     }
+#endif
     else {
       usage(1);
     }
@@ -465,6 +481,13 @@ int main(int argc, char *argv[])
   su_init(); atexit(su_deinit);
 
   time_test();
+
+#if HAVE_ALARM
+  if (opt_alarm) {
+    alarm(60);
+    signal(SIGALRM, sig_alarm);
+  }
+#endif
 
   root = su_root_create(NULL);
   if (!root) perror("su_root_create"), exit(1);

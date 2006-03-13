@@ -1,54 +1,19 @@
 #! /bin/bash
 
-trap "true" CHLD
-
 rc=0
-sleep 5 & sleep=$!
-$VALGRIND ./su_test $sleep & test=$!
 
-if kill -0 $test && ! wait $sleep 2> /dev/null ; then
+if $VALGRIND ./su_test ; then
     echo PASS: multithread su_test
 else
     echo FAIL: multithread su_test failed
     rc=1
 fi
 
-kill $test 2>/dev/null
-
-sleep 5 & sleep=$!
-$VALGRIND ./su_test -g $sleep & test=$!
-
-if kill -0 $test && ! wait $sleep 2> /dev/null ; then
-    echo PASS: multithread su_test with glib
-else
-    echo FAIL: multithread su_test with glib failed 
-    rc=1
-fi
-
-kill $test 2>/dev/null
-
-sleep 5 & sleep=$!
-$VALGRIND ./su_test -s $sleep & test=$!
-
-if kill -0 $test && ! wait $sleep 2> /dev/null ; then
+if $VALGRIND ./su_test -s ; then
     echo PASS: singlethread su_test
 else
     echo FAIL: singlethread su_test failed
     rc=1
 fi
-
-kill $test 2>/dev/null
-
-sleep 5 & sleep=$!
-$VALGRIND ./su_test -s -g $sleep & test=$!
-
-if kill -0 $test && ! wait $sleep 2> /dev/null ; then
-    echo PASS: singlethread su_test with glib
-else
-    echo FAIL: singlethread su_test with glib failed 
-    rc=1
-fi
-
-kill $test 2>/dev/null
 
 exit $rc
