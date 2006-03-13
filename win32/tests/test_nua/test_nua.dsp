@@ -88,6 +88,14 @@ SOURCE="..\..\..\libsofia-sip-ua\nua\test_nua.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_nat.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_nat.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\..\libsofia-sip-ua\nua\test_proxy.c"
 # End Source File
 # Begin Source File

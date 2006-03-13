@@ -584,7 +584,47 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_common.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\nua\nua_dialog.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_dialog.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_event_server.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_message.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_options.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_publish.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_register.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_session.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\nua\nua_stack.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_stack.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_subnotref.c"
 # End Source File
 # Begin Source File
 
@@ -601,6 +641,10 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_tag_ref.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\nta\nta.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nta\nta_check.c"
 # End Source File
 # Begin Source File
 
@@ -872,7 +916,7 @@ SOURCE="..\..\libsofia-sip-ua\url\sofia-sip\url_tag_class.h"
 # PROP Default_Filter "features*.h"
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\features\sofia-sip\features.h"
+SOURCE="..\..\libsofia-sip-ua\features\sofia-sip\sofia_features.h"
 # End Source File
 # End Group
 # Begin Group "bnf headers"
@@ -881,6 +925,10 @@ SOURCE="..\..\libsofia-sip-ua\features\sofia-sip\features.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\bnf\sofia-sip\bnf.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\bnf\sofia-sip\hostdomain.h"
 # End Source File
 # End Group
 # Begin Group "msg headers"
@@ -1109,10 +1157,6 @@ SOURCE="..\..\libsofia-sip-ua\stun\sofia-sip\stun_tag.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\nua\sofia-sip\nua.h"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\nua\nua_stack.h"
 # End Source File
 # Begin Source File
 
