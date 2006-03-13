@@ -45,6 +45,8 @@
 
 #include "stun_internal.h"
 
+#include <assert.h>
+
 const char stun_400_Bad_request[] = "Bad Request",
   stun_401_Unauthorized[] = "Unauthorized",
   stun_420_Unknown_attribute[] = "Unknown Attribute",
