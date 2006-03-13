@@ -75,7 +75,7 @@ static void nua_session_usage_remove(nua_handle_t *nh,
 
 static nua_usage_class const nua_session_usage[1] = {
   {
-    sizeof (/*struct event_usage */ void),
+    0 /* sizeof (struct session_usage) */,
     sizeof nua_session_usage,
     nua_session_usage_add,
     nua_session_usage_remove,

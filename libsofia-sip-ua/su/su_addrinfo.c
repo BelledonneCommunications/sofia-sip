@@ -126,11 +126,10 @@ static struct gai_afd {
 #endif
 
 #if !SU_HAVE_IN6
-extern
 #if defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
-__declspec(dllimport)
+#else
+extern int h_errno;
 #endif
-int h_errno;
 #endif
 
 static int get_name(const char *, struct gai_afd *,
