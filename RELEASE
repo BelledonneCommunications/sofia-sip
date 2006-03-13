@@ -21,6 +21,18 @@ API/ABI changes and versioning
 - Renamed sofia-sip/features.h as sofia-sip/sofia_features.h
   (it got confused with glibc features.h)
 - Added nta_check_*() functions to <sofia-sip/nta.h>
+- The glib dependent parts of libsofia-sip-ua have been moved
+  to a separate library - libsofia-sip-ua-glib. This change
+  will require a recompilation of clients using the sofia-sip 
+  glib event loop integration. See following sofia-sip-devel
+  mail for details:
+  http://article.gmane.org/gmane.comp.telephony.sofia-sip.devel/164
+- A new glib/gobject based interface to sofia-sip has been
+  added to the package. This code was originally written 
+  by Rob Taylor for the telepathy-sip package (see 
+  http://telepathy.freedesktop.org/ ). This interface is still
+  subject to change during the 1.11.x development series. 
+
 
 Contributors to this release
 ----------------------------
