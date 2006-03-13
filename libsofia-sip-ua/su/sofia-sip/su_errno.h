@@ -69,6 +69,42 @@ int su_seterrno(int);
 #endif
 #endif
 
+#if defined(_WIN32)
+
+#ifndef ENOBUFS
+#define ENOBUFS (10055) /* WSAENOBUFS */
+#endif
+
+#ifndef EMSGSIZE
+#define EMSGSIZE (10040) /* WSAEMSGSIZE */
+#endif
+
+#ifndef EPROTONOSUPPORT
+#define EPROTONOSUPPORT (10043) /* WSAEPROTONOSUPPORT */
+#endif
+
+#ifndef EALREADY
+#define EALREADY (10037) /* WSAEALREADY */
+#endif
+
+#ifndef EBADMSG
+#  if defined(WSABADMSG)
+#    define EBADMSG (WSAEBADMSG)
+#  else
+#    define EBADMSG (20005)
+#  endif
+#endif
+
+#ifndef EPROTO
+#  if defined(WSAEPROTO)
+#    define EPROTO WSAEPROTO
+#  else
+#    define EPROTO (20006)
+#  endif
+#endif
+
+#endif
+
 SOFIA_END_DECLS
 
 #endif

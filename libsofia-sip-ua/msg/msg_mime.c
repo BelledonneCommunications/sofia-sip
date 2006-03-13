@@ -52,12 +52,7 @@
 #include "sofia-sip/msg_mime.h"
 
 #include <sofia-sip/su_uniqueid.h>
-
-#ifndef EBADMSG
-/*xxx -- mela: check the number */
-#define EBADMSG 71
-#endif
-
+#include <sofia-sip/su_errno.h>
 
 #if !HAVE_MEMMEM
 void *memmem(const void *haystack, size_t haystacklen,

@@ -57,7 +57,9 @@ int su_seterrno(int errcode)
 
 const char *su_strerror(int errcode)
 {
-  static struct { int no; const char *msg; } *msgp, msgs[] = {
+  struct errmsg { int no; const char *msg; };
+  static struct errmsg *msgp;
+  static struct errmsg msgs[] = {
     { 0, "Success" },
     { WSAEINTR, "Interrupted system call" },
     { WSAEBADF, "Bad file descriptor" },
@@ -119,14 +121,28 @@ const char *su_strerror(int errcode)
     { WSANO_ADDRESS, "No address, look for MX record" },
     { 0, NULL }
   };
-
+  static struct errmsg sofia_msgs[] = {
+    { EBADMSG, "Bad message" },
+    { EPROTO, "Protocol error" },
+    { 0, NULL }
+  };
   static char buf[64];
 
-  for (msgp = msgs; msgp->msg; msgp++) {
-    if (errcode == msgp->no) {
-      return msgp->msg;
+  if (errcode < WSABASEERR) 
+    return strerror(errcode);
+
+  if (errcode < 20000)
+    for (msgp = msgs; msgp->msg; msgp++) {
+      if (errcode == msgp->no) {
+	return msgp->msg;
+      }
     }
-  }
+  else
+    for (msgp = sofia_msgs; msgp->msg; msgp++) {
+      if (errcode == msgp->no) {
+	return msgp->msg;
+      }
+    }
 
   /* This can not overflow, but in other hand, it is not thread-safe */
   sprintf(buf, "winsock error %d", errcode);

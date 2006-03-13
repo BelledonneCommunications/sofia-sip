@@ -59,10 +59,6 @@
 #include "sofia-sip/msg_mclass_hash.h"
 #include "sofia-sip/msg_mime.h"
 
-#if !defined(ENOBUFS) && defined(_WIN32)
-#define ENOBUFS WSAENOBUFS
-#endif
-
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
 #define __func__ __FUNCTION__
