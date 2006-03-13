@@ -40,7 +40,7 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/nua.h sofia-sip/nua_tag.h
 
 libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
-			nua_dialog.c \
+			nua_dialog.c nua_dialog.h \
 			nua_register.c nua_session.c nua_options.c \
 			nua_message.c nua_publish.c nua_subnotref.c \
 			nua_event_server.c \
