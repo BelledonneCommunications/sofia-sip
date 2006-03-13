@@ -1539,8 +1539,12 @@ int msg_header_prepare(msg_mclass_t const *mc, int flags,
     if (!middle && hc->hc_name && hc->hc_name[0])
       n += msg_header_name_e(b + n, bsiz >= n ? bsiz - n : 0, h, flags);
 
-    if ((m = hc->hc_print(b + n, bsiz >= n ? bsiz - n : 0, h, flags)) < 0)
-      return -1;
+    if ((m = hc->hc_print(b + n, bsiz >= n ? bsiz - n : 0, h, flags)) < 0) {
+      if (bsiz >= n + 64)
+	m = 2 * (bsiz - n);
+      else
+	m = 128;
+    }
 
     n += m;
 
