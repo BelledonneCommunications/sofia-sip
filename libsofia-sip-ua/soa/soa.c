@@ -717,7 +717,7 @@ int soa_set_capability_sdp(soa_session_t *ss,
 {
   SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %p, %d) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
-	      str && len == -1 ? strlen(str) : len));
+	      str && len == -1 ? (int)strlen(str) : len));
 
   return soa_set_sdp(ss, soa_capability_sdp_kind, sdp, str, len);
 }
@@ -818,7 +818,7 @@ int soa_set_user_sdp(soa_session_t *ss,
 {
   SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %p, %d) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
-	      str && len == -1 ? strlen(str) : len));
+	      str && len == -1 ? (int)strlen(str) : len));
   return soa_set_sdp(ss, soa_user_sdp_kind, sdp, str, len);
 }
 
@@ -884,7 +884,7 @@ int soa_set_remote_sdp(soa_session_t *ss,
 {
   SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %p, %d) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
-	      str && len == -1 ? strlen(str) : len));
+	      str && len == -1 ? (int)strlen(str) : len));
   return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);
 }
 

@@ -410,21 +410,32 @@ int stun_encode_message_integrity(stun_attr_t *attr,
 				  int len,
 				  stun_buffer_t *pwd) {
   int padded_len;
-  size_t dig_len;
-  unsigned char *padded_text;
+  unsigned int dig_len;
+  unsigned char *padded_text = NULL;
+  void *sha1_hmac;
 
   if (stun_encode_type_len(attr, 20) < 0) {
     return -1;
   }
 
   /* zero padding */
-  padded_len = len + (len % 64 == 0 ? 0 : 64 - (len % 64));
-  padded_text = (unsigned char *) malloc(padded_len);
-  memset(padded_text, 0, padded_len);
-  memcpy(padded_text, buf, len);
+  if (len % 64 == 0) {
+    void *sha_hmac;
 
-  memcpy(attr->enc_buf.data+4, HMAC(EVP_sha1(), pwd->data, pwd->size, padded_text, padded_len, NULL, &dig_len), 20);
+    padded_len = len + (64 - (len % 64));
+    padded_text = (unsigned char *) malloc(padded_len);
+    memcpy(padded_text, buf, len);
+    memset(padded_text + len, 0, padded_len - len);
 
+    sha1_hmac = HMAC(EVP_sha1(), pwd->data, pwd->size, padded_text, padded_len, NULL, &dig_len);
+  }
+  else {
+    sha1_hmac = HMAC(EVP_sha1(), pwd->data, pwd->size, buf, len, NULL, &dig_len);
+  }
+
+  assert(dig_len == 20);
+
+  memcpy(attr->enc_buf.data + 4, sha1_hmac, 20);
   free(padded_text);
   return attr->enc_buf.size;
 }
@@ -459,7 +470,7 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
 {
 
   int padded_len, len;
-  size_t dig_len;
+  unsigned int dig_len;
   unsigned char dig[20]; /* received sha1 digest */
   unsigned char *padded_text;
 

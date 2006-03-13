@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
   char *s;
   int use_t1 = 0;
   su_time_t now, started;
-  int i, N;
+  intptr_t i, N;
 
   struct timing timing[1] = {{ 0 }};
   struct tester tester[1] = {{ 0 }};
@@ -219,7 +219,6 @@ int main(int argc, char *argv[])
 	    argv0, timing->t_times);
     return 1;
   }
-
 
   /* Insert 500 timers in order */
   timers = calloc(N = 500, sizeof *timers);
