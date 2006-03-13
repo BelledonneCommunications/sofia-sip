@@ -400,11 +400,11 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
   if (delta > 60 && delta < 5 * 60)
     /* refresh 30 seconds before deadline */
     delta -= 30;
-  else 
+  else if (delta > 1)
     /* refresh at half time before deadline */
     delta /= 2;
 
-  if (target + delta >= target)
+  if (delta != 0 && target + delta >= target)
     target = target + delta;
   else
     target = SIP_TIME_MAX;

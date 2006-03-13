@@ -285,6 +285,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
       cr->cr_offer_sent = offer_sent;
       cr->cr_usage = du;
       du->du_pending = cancel_invite;
+      du->du_refresh = 0;
       signal_call_state_change(nh, 0, "INVITE sent",
 			       nua_callstate_calling, 0,
 			       offer_sent ? "offer" : 0);
@@ -675,7 +676,7 @@ void cancel_invite(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
     { NULL }
   };
 
-  signal_call_state_change(nh, 408, "Session Timeout",
+  signal_call_state_change(nh, 487, "Call Canceled",
 			   nua_callstate_init, NULL, NULL);
 
   nua_stack_cancel(nh->nh_nua, nh, nua_r_destroy, timeout_tags);
@@ -684,10 +685,13 @@ void cancel_invite(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 void
 refresh_invite(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 {
+  tagi_t tags[2] = 
+    {{ SIPTAG_SUBJECT_STR("Session refresh") }, { TAG_END() }};
+
   if (now > 0 && NH_PGET(nh, update_refresh))
-    nua_stack_update(nh->nh_nua, nh, nua_r_update, NULL);
+    nua_stack_update(nh->nh_nua, nh, nua_r_update, tags);
   else if (now > 0)
-    nua_stack_invite(nh->nh_nua, nh, nua_r_invite, NULL);
+    nua_stack_invite(nh->nh_nua, nh, nua_r_invite, tags);
   else
     session_timeout(nh, du, SIP_TIME_MAX);
 }

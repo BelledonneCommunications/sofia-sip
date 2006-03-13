@@ -700,7 +700,7 @@ static
 int nh_call_pending(nua_handle_t *nh, sip_time_t now)
 {
   nua_dialog_usage_t *du;
-  sip_time_t next = now + NUA_STACK_TIMER_INTERVAL;
+  sip_time_t next = now + NUA_STACK_TIMER_INTERVAL / 1000;
 
   for (du = nh->nh_ds->ds_usage; du; du = du->du_next) {
     if (!du->du_pending)
