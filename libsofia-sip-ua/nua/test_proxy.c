@@ -325,6 +325,8 @@ int proxy_request(struct proxy *proxy,
     nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
     return 500;
   }
+  else if (sip->sip_request->rq_method == sip_method_ack)
+    proxy_transaction_destroy(t);
 
   return 0;
 }
