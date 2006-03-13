@@ -255,7 +255,7 @@ do_exit(struct pinger *x, su_timer_t *t, void *x0)
 int
 do_init(su_root_t *root, struct pinger *p)
 {
-  su_wait_t w;
+  su_wait_t w, w0;
   su_socket_t s;
   long interval;
   su_timer_t *t;
@@ -269,21 +269,27 @@ do_init(su_root_t *root, struct pinger *p)
     return SU_FAILURE;
   }
 
-  /* Create a sockets,  */
-  s = udpsocket();
-  if (su_create_wait(&w, s, SU_WAIT_IN) == SOCKET_ERROR)
-    su_perror("su_create_wait"), exit(1);
-
-  p->s = s;
   p->t = t = su_timer_create(su_root_task(root), interval);
   if (t == NULL) {
     su_perror("su_timer_create");
     return SU_FAILURE;
   }
 
-  index0 = su_root_register(root, &w, f, p, 0);
+  /* Create a sockets,  */
+  p->s = s = udpsocket();
+  if (su_create_wait(&w0, s, SU_WAIT_IN) == SOCKET_ERROR) {
+    su_perror("su_create_wait");
+    return SU_FAILURE;
+  }
+
+  index0 = su_root_register(root, &w0, f, p, 0);
   if (index0 == SOCKET_ERROR) {
     su_perror("su_root_register");
+    return SU_FAILURE;
+  }
+
+  if (su_create_wait(&w, s, SU_WAIT_IN) == SOCKET_ERROR) {
+    su_perror("su_create_wait");
     return SU_FAILURE;
   }
 
@@ -421,7 +427,6 @@ int main(int argc, char *argv[])
   su_clone_r ping = SU_CLONE_R_INIT, pong = SU_CLONE_R_INIT;
   su_msg_r start_msg = SU_MSG_RINITIALIZER;
   su_timer_t *t;
-  unsigned long sleeppid = 0;
 
   int opt_glib = getenv("USE_SU_SOURCE") != NULL;
 
@@ -448,10 +453,6 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(argv[1], "-g") == 0) {
       opt_glib = 1;
-      argv++;
-    }
-    else if (strlen(argv[1]) == strspn(argv[1], "0123456789")) {
-      sleeppid = strtoul(argv[1], NULL, 10);
       argv++;
     }
     else {
@@ -506,11 +507,6 @@ int main(int argc, char *argv[])
 
   if (opt_verbatim)
     printf("%s exiting\n", argv0); 
-
-#ifndef HAVE_WIN32
-   if (sleeppid)
-     kill(sleeppid, SIGTERM);
-#endif
 
   return 0;
 }
