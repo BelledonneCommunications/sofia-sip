@@ -4,7 +4,7 @@
 built-sources: $(BUILT_SOURCES)
 
 clean-built-sources:
-	@-rm -rf $(BUILT_SOURCES)
+	-rm -rf $(BUILT_SOURCES) $(BUILT_SOURCES:%=$(srcdir)/%)
 
 # rules for building tag files
 

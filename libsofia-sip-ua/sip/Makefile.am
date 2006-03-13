@@ -109,20 +109,31 @@ AWK_SIP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=sip
 #
 sip_parser_table.c: sip_bad_mask
 
-sofia-sip/sip_hclasses.h: $(srcdir)/sofia-sip/sip_hclasses.h.in 
-sofia-sip/sip_protos.h: $(srcdir)/sofia-sip/sip_protos.h.in
-sofia-sip/sip_tag.h: $(srcdir)/sofia-sip/sip_tag.h.in 
+sofia-sip/sip_hclasses.h: sofia-sip/sip_hclasses.h.in
+sofia-sip/sip_protos.h: sofia-sip/sip_protos.h.in
+sofia-sip/sip_tag.h: sofia-sip/sip_tag.h.in
 
 $(GENERATED_H): $(MSG_PARSER_AWK)
 
 sip_parser_table.c: sip_parser_table.c.in $(MSG_PARSER_AWK)
 sip_tag.c: sip_tag.c.in $(MSG_PARSER_AWK)
 
-sip_tag.c $(GENERATED_H): $(srcdir)/sofia-sip/sip.h
+sofia-sip/sip_hclasses.h: sofia-sip/sip.h
 	@-mkdir sofia-sip 2>/dev/null || true
-	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/$@.in $<
+	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_hclasses.h.in $<
 
-sip_parser_table.c: $(srcdir)/sofia-sip/sip.h
-	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/$@.in \
+sofia-sip/sip_protos.h: sofia-sip/sip.h
+	@-mkdir sofia-sip 2>/dev/null || true
+	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_protos.h.in $<
+
+sofia-sip/sip_tag.h: sofia-sip/sip.h
+	@-mkdir sofia-sip 2>/dev/null || true
+	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_tag.h.in $<
+
+sip_tag.c: sofia-sip/sip.h
+	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sip_tag.c.in $<
+
+sip_parser_table.c: sofia-sip/sip.h
+	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/sip_parser_table.c.in \
 		FLAGFILE=$(srcdir)/sip_bad_mask \
 		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
