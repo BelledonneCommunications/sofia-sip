@@ -85,6 +85,10 @@ char *argv0;
 
 #include <sofia-sip/tstdef.h>
 
+#if defined(_WIN32)
+#include <fcntl.h>
+#endif
+
 char const name[] = "test_auth_digest";
 
 /* Fake su_time() implementation */
@@ -932,6 +936,8 @@ int test_digest_client()
 
 char tmppasswd[] = "/tmp/test_auth_digest.XXXXXX";
 
+#include <unistd.h>
+
 static void rmtmp(void)
 {
   if (tmppasswd[0])
@@ -958,7 +964,11 @@ int test_module_io()
 
   BEGIN();
 
+#ifndef _WIN32
   tmpfd = mkstemp(tmppasswd); TEST_1(tmpfd != -1);
+#else
+  tmpfd = open(tmppasswd, O_WRONLY); TEST_1(tmpfd != -1);
+#endif
   atexit(rmtmp);		/* Make sure temp file is unlinked */
 
   TEST(write(tmpfd, passwd, strlen(passwd)), strlen(passwd));

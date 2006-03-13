@@ -41,6 +41,10 @@
 
 #include <sofia-sip/string0.h>
 
+#if !defined(EALREADY) && defined(_WIN32)
+#define EALREADY WSAEALREADY
+#endif
+
 typedef struct server_s server_t;
 
 /** @internal SU timer argument pointer type */

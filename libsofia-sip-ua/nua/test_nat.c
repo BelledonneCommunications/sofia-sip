@@ -54,6 +54,11 @@ struct binding;
 #include <stdlib.h>
 #include <assert.h>
 
+#if !defined(EADDRNOTAVAIL) && defined(_WIN32)
+#define EADDRNOTAVAIL WSAEADDRNOTAVAIL
+#endif
+
+
 #define LIST_PROTOS(STORAGE, PREFIX, T)			 \
 STORAGE void PREFIX ##_insert(T **list, T *node),	 \
         PREFIX ##_remove(T *node)

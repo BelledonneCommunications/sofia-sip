@@ -52,6 +52,10 @@
 #include "nua_stack.h"
 #include <sofia-sip/soa.h>
 
+#if !defined(random) && defined(_WIN32)
+#define random rand
+#endif
+
 #ifndef SDP_H
 typedef struct sdp_session_s sdp_session_t;
 #endif

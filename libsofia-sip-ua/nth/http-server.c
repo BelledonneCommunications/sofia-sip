@@ -142,9 +142,12 @@ int main(int argc, char *argv[])
 		server_break, 0);
 
   signal(SIGINT, server_intr_handler);
+
+#ifndef _WIN32
   signal(SIGPIPE, server_intr_handler);
   signal(SIGQUIT, server_intr_handler);
   signal(SIGHUP, server_intr_handler);
+#endif
 
   if (context->c_root) {
     context->c_site =

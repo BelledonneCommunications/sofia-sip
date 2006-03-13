@@ -51,6 +51,10 @@
 #include <sigcomp.h>
 #endif
 
+#if !defined(random) && defined(_WIN32)
+#define random rand
+#endif
+
 /* ====================================================================== */
 /* Register usage */
 

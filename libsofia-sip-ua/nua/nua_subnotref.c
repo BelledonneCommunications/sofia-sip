@@ -49,6 +49,10 @@
 
 #include "nua_stack.h"
 
+#if !defined(random) && defined(_WIN32)
+#define random rand
+#endif
+
 /* ---------------------------------------------------------------------- */
 /* Subcribe event usage */
 

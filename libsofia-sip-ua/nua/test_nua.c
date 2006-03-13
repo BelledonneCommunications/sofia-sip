@@ -64,6 +64,10 @@ struct call;
 #include <signal.h>
 #endif
 
+#if defined(_WIN32)
+#include <fcntl.h>
+#endif
+
 extern su_log_t nua_log[];
 extern su_log_t soa_log[];
 extern su_log_t nea_log[];
@@ -1133,7 +1137,11 @@ int test_init(struct context *ctx,
     if (print_headings)
       printf("TEST NUA-2.1.1: init proxy P\n");
 
+#ifndef _WIN32
     temp = mkstemp(passwd_name); TEST_1(temp != -1);
+#else
+    temp = open(passwd_name, O_WRONLY); TEST_1(temp != -1);
+#endif
     atexit(remove_tmp);		/* Make sure temp file is unlinked */
     
     TEST(write(temp, passwd, strlen(passwd)), strlen(passwd));
@@ -1171,8 +1179,10 @@ int test_init(struct context *ctx,
     /* Try to use different family than proxy. */
     if (p_uri->url_host[0] == '[')
       family = AF_INET;
+#if defined(SU_HAVE_IN6)
     else
       family = AF_INET6;
+#endif
 
     ctx->nat = test_nat_create(ctx->root, family, TAG_END());
 
@@ -1180,6 +1190,8 @@ int test_init(struct context *ctx,
       printf("%s:%u: NUA-2.1.2: failed to get private NAT address\n",
 	     __FILE__, __LINE__);
     }
+
+#if defined(SU_HAVE_IN6)
     else if (su->su_family == AF_INET6) {
       a_uri = (void *)
 	su_sprintf(ctx->home, "sip:[%s]:%u",
@@ -1187,6 +1199,7 @@ int test_init(struct context *ctx,
 		   ntohs(su->su_port));
       a_bind = "sip:[::]:*";
     }
+#endif
     else if (su->su_family == AF_INET) {
       a_uri = (void *)
 	su_sprintf(ctx->home, "sip:%s:%u",
@@ -1195,6 +1208,7 @@ int test_init(struct context *ctx,
       a_bind = "sip:0.0.0.0:*";
     }
 
+#if defined(SU_HAVE_IN6)
     if (p_uri->url_host[0] == '[') {
       su->su_len = sulen = (sizeof su->su_sin6), su->su_family = AF_INET6;
       len = strcspn(p_uri->url_host + 1, "]"); assert(len < sizeof b);
@@ -1205,6 +1219,10 @@ int test_init(struct context *ctx,
       su->su_len = sulen = (sizeof su->su_sin), su->su_family = AF_INET;
       inet_pton(su->su_family, p_uri->url_host, SU_ADDR(su));
     }
+#else
+    su->su_len = sulen = (sizeof su->su_sin), su->su_family = AF_INET;
+    inet_pton(su->su_family, p_uri->url_host, SU_ADDR(su));
+#endif
 
     su->su_port = htons(strtoul(url_port(p_uri), NULL, 10));
 
