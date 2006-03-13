@@ -1138,10 +1138,11 @@ int test_init(struct context *ctx,
       printf("TEST NUA-2.1.1: init proxy P\n");
 
 #ifndef _WIN32
-    temp = mkstemp(passwd_name); TEST_1(temp != -1);
+    temp = mkstemp(passwd_name);
 #else
-    temp = open(passwd_name, O_WRONLY); TEST_1(temp != -1);
+    temp = open(passwd_name, O_WRONLY|O_CREAT|O_TRUNC, 666);
 #endif
+    TEST_1(temp != -1);
     atexit(remove_tmp);		/* Make sure temp file is unlinked */
     
     TEST(write(temp, passwd, strlen(passwd)), strlen(passwd));
@@ -5375,26 +5376,32 @@ int test_deinit(struct context *ctx)
 
   struct call *call;
 
-  for (call = ctx->a.call; call; call = call->next)
-    nua_handle_destroy(call->nh), call->nh = NULL;
+  if (ctx->a.nua) {
+    for (call = ctx->a.call; call; call = call->next)
+      nua_handle_destroy(call->nh), call->nh = NULL;
 
-  nua_shutdown(ctx->a.nua);
-  run_a_until(ctx, nua_r_shutdown, until_final_response);
-  nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
+    nua_shutdown(ctx->a.nua);
+    run_a_until(ctx, nua_r_shutdown, until_final_response);
+    nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
+  }
 
-  for (call = ctx->b.call; call; call = call->next)
-    nua_handle_destroy(call->nh), call->nh = NULL;
+  if (ctx->b.nua) {
+    for (call = ctx->b.call; call; call = call->next)
+      nua_handle_destroy(call->nh), call->nh = NULL;
 
-  nua_shutdown(ctx->b.nua);
-  run_b_until(ctx, nua_r_shutdown, until_final_response);
-  nua_destroy(ctx->b.nua), ctx->b.nua = NULL;
+    nua_shutdown(ctx->b.nua);
+    run_b_until(ctx, nua_r_shutdown, until_final_response);
+    nua_destroy(ctx->b.nua), ctx->b.nua = NULL;
+  }
 
-  for (call = ctx->c.call; call; call = call->next)
-    nua_handle_destroy(call->nh), call->nh = NULL;
+  if (ctx->c.nua) {
+    for (call = ctx->c.call; call; call = call->next)
+      nua_handle_destroy(call->nh), call->nh = NULL;
 
-  nua_shutdown(ctx->c.nua);
-  run_c_until(ctx, nua_r_shutdown, until_final_response);
-  nua_destroy(ctx->c.nua), ctx->c.nua = NULL;
+    nua_shutdown(ctx->c.nua);
+    run_c_until(ctx, nua_r_shutdown, until_final_response);
+    nua_destroy(ctx->c.nua), ctx->c.nua = NULL;
+  }
 
   test_proxy_destroy(ctx->p), ctx->p = NULL;
 
