@@ -74,7 +74,7 @@ static libraries and include files.
 %{_prefix}/libexec/sofia/msg_parser.awk
 %{_prefix}/%{_lib}/libsofia-sip-ua*.la
 %{_prefix}/%{_lib}/libsofia-sip-ua*.a
-%{_prefix}/%{_lib}/pkgconfig/%{name}-ua.pc
+%{_prefix}/%{_lib}/pkgconfig/*.pc
 %doc TODO README.developers
 %{?_with_doxygen:%doc manual}
 
@@ -102,6 +102,7 @@ Command line utilities for Sofia SIP UA library.
 %{_prefix}/bin/addrinfo
 %{_prefix}/bin/sip-options
 %{_prefix}/bin/sip-date
+%{_mandir}/man?/*
 
 %changelog
 * Wed Mar 08 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
