@@ -5,42 +5,35 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-Added nua_glib, a gobject-based interface to nua in libsofia-sip-ua-glib.
+<changes since last written in freshmeat.net "Changes:" style;
+ and in less than 10 lines />
+
 
 API/ABI changes and versioning
 ------------------------------
 
-- Renamed sofia-sip/features.h as sofia-sip/sofia_features.h
-  (it got confused with glibc features.h)
-- Added nta_check_*() functions to <sofia-sip/nta.h>
-- Renamed NTATAG_RPORT() as NTATAG_CLIENT_RPORT()
-- Added sip_via_port()
-- Added host_is_*() functions to <sofia-sip/hostdomain.h>
-- Added su_node_identifier(), su_clone_pause(), su_clone_resume()
-- Moved errors missing from win32 to su_errno.h/su_errno.c.
-- Defining AI_MASK, EAI_BADHINTS and EAI_PROTOCOL if they are missing
-- Added macro SU_ADDRLEN()
-- Updated stun_handle_process_message(), added stun_process_request().
-- The glib dependent parts of libsofia-sip-ua have been moved
-  to a separate library - libsofia-sip-ua-glib. This change
-  will require a recompilation of clients using the sofia-sip 
-  glib event loop integration. See following sofia-sip-devel
-  mail for details:
-  http://article.gmane.org/gmane.comp.telephony.sofia-sip.devel/164
-- A new glib/gobject based interface to sofia-sip has been
-  added to the package. This code was originally written 
-  by Rob Taylor for the telepathy-sip package (see 
-  http://telepathy.freedesktop.org/ ). This interface is still
-  subject to change during the 1.11.x development series. 
+<see previous release notes at
+ http://sofia-sip.sourceforge.net/relnotes/ for examples ;
+ - should include all changes to public headers, and 
+   other important information to developers; 
+ - and should be updated _continuously_! />
+
 
 Contributors to this release
 ----------------------------
 
-- Rob Taylor (glib bindings)
+<list of people who contributed to _this_ release
+ - update as people's patches are added, or when
+   you commit stuff
+ - name of the contributor should be enough
+/> 
 
-See the AUTHORS file in the distribution package, too.
 
 Bugs fixed in this release
 --------------------------
 
-- #1444959: sofia-sip/features.h clash with /usr/include/features.h
+< notable bugs fixed in this release
+ - check the sf.net bug tracker; see closed bugs,
+   sorted by closing date
+ - other bugs as fixed in CVS/darcs
+/>
