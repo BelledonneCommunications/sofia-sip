@@ -935,6 +935,26 @@ extern tag_typedef_t nutag_identity;
 #define NUTAG_IDENTITY_REF(x) nutag_identity_ref, nutag_handle_vr(&(x))
 extern tag_typedef_t nutag_identity_ref;
 
+/**Intance identifier.
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(), nua_get_params(), 
+ *    nua_register()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Value
+ *    urn:uuid string.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_INSTANCE_REF()
+ */
+#define NUTAG_INSTANCE(x)        nutag_instance, tag_str_v(x)
+extern tag_typedef_t nutag_instance;
+
+#define NUTAG_INSTANCE_REF(x)    nutag_instance_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_instance_ref;
+
 /** Refer reply handle (used with refer)
  *
  * When making a call in response to a REFER request [RFC3515] with

@@ -495,6 +495,8 @@ int  nua_stack_init(su_root_t *root, nua_t *nua);
 void nua_stack_deinit(su_root_t *root, nua_t *nua);
 void nua_stack_signal(nua_t *nua, su_msg_r msg, event_t *e);
 
+int nua_stack_registrations_init(nua_t *nua);
+
 void nua_stack_post_signal(nua_handle_t *nh, nua_event_t event, 
 			   tag_type_t tag, tag_value_t value, ...);
 
@@ -579,6 +581,10 @@ int nua_creq_restart(nua_handle_t *nh,
 		     tagi_t *tags);
 
 void nua_creq_deinit(struct nua_client_request *cr, nta_outgoing_t *orq);
+
+sip_contact_t const *nua_contact_by_aor(nua_t *nua, 
+					url_t const *aor,
+					int only_default);
 
 msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh, 
 			nta_incoming_t *irq,

@@ -434,7 +434,7 @@ int nua_stack_process_subsribe(nua_t *nua,
   nua_dialog_usage_t *du = NULL;
   struct event_usage *eu;
   sip_event_t *o = sip->sip_event;
-  sip_contact_t *m = NULL, m0[1];
+  sip_contact_t *m;
   int status; char const *phrase;
   unsigned long expires, refer_expires;
 
@@ -492,11 +492,11 @@ int nua_stack_process_subsribe(nua_t *nua,
   else
     SET_STATUS1(SIP_200_OK);
 
-  if (nta_incoming_url(irq)->url_type == url_sips && nua->nua_sips_contact)
-    *m0 = *nua->nua_sips_contact, m = m0;
-  else if (nua->nua_contact)
-    *m0 = *nua->nua_contact, m = m0;
-  m0->m_params = NULL;
+  m = nua_contact_by_aor(nua, nta_incoming_url(irq), 0);
+  if (status < 300 && m == NULL) {
+    SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR); 
+    eu->eu_substate = nua_substate_terminated;
+  }
     
   nta_incoming_treply(irq, status, phrase, SIPTAG_CONTACT(m), NULL);
 
@@ -508,9 +508,10 @@ int nua_stack_process_subsribe(nua_t *nua,
   nta_incoming_destroy(irq), irq = NULL;
 
   /* Immediate notify */
-  nua_stack_post_signal(nh, nua_r_notify,
-			SIPTAG_EVENT(du->du_event),
-			TAG_END());
+  if (status < 300)
+    nua_stack_post_signal(nh, nua_r_notify,
+			  SIPTAG_EVENT(du->du_event),
+			  TAG_END());
 
   return 0;
 }

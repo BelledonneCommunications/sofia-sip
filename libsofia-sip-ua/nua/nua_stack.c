@@ -97,8 +97,7 @@ static void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a);
 
 static void ua_set_from(nua_t *nua, sip_from_t const *f, char const *fromstr);
 
-static void ua_init_instance(nua_t *nua);
-static void ua_init_contact(nua_t *nua);
+static void ua_init_instance(nua_t *nua, char const *instance);
 
 /* ---------------------------------------------------------------------- */
 /* Constant data */
@@ -136,6 +135,7 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
   int media_enable = 1;
   soa_session_t *soa = NULL;
   char const *soa_name = NULL;
+  char const *instance = NONE;
 
   static int initialized_logs = 0;
 
@@ -225,6 +225,7 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 	  NUTAG_MEDIA_ENABLE_REF(media_enable),
 	  /* NUTAG_SOA_SESSION_REF(soa), */
 	  NUTAG_SOA_NAME_REF(soa_name),
+	  NUTAG_INSTANCE_REF(instance),
 	  TAG_NULL());
 
 #if HAVE_UICC_H
@@ -255,8 +256,11 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
     return -1;
   }
 
-  nua->nua_media_enable = media_enable;
+  if (nua_stack_registrations_init(nua) < 0)
+    return -1;
 
+  nua->nua_media_enable = media_enable;
+  
   nta_agent_set_params(nua->nua_nta,
 		       NTATAG_UA(1),
 		       NTATAG_MERGE_482(1),
@@ -280,8 +284,7 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 				       NTATAG_NO_DIALOG(1),
 				       TAG_END());
 
-  ua_init_instance(nua);
-  ua_init_contact(nua);
+  ua_init_instance(nua, instance);
   ua_set_from(nua, from, from_str);
 
   nua->nua_timer = su_timer_create(su_root_task(root),
@@ -290,7 +293,7 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
   if (!(dnh->nh_ds->ds_leg &&
 	dnhp->nhp_allow &&
 	dnhp->nhp_supported &&
-	(nua->nua_contact || nua->nua_sips_contact) &&
+	nua->nua_registrations &&
 	nua->nua_from &&
 	nua->nua_timer))
     return -1;
@@ -332,11 +335,13 @@ void ua_set_from(nua_t *nua, sip_from_t const *f, char const *str)
       *from = *f0, f0 = from, f0->a_params = NULL;
   }
   else {
-    sip_contact_t *m;
-    m = nua->nua_contact ? nua->nua_contact : nua->nua_sips_contact;
-    from->a_display = m->m_display;
-    *from->a_url = *m->m_url;
-    f0 = sip_from_dup(nua->nua_home, from);
+    sip_contact_t const *m = nua_contact_by_aor(nua, NULL, 0);
+    
+    if (m) {
+      from->a_display = m->m_display;
+      *from->a_url = *m->m_url;
+      f0 = sip_from_dup(nua->nua_home, from);
+    }
   }
 
   if (f0)
@@ -346,109 +351,31 @@ void ua_set_from(nua_t *nua, sip_from_t const *f, char const *str)
 
 /** Initialize instance ID. */
 static
-void ua_init_instance(nua_t *nua)
+void ua_init_instance(nua_t *nua, char const *instance)
 {
   nua_handle_t *dnh = nua->nua_dhandle;
   nua_handle_preferences_t *dnhp = dnh->nh_prefs;
-  char str[su_guid_strlen + 1];
-  su_guid_t guid[1];
 
-  su_guid_generate(guid);
-  /*
-   * Guid looks like "NNNNNNNN-NNNN-NNNN-NNNN-XXXXXXXXXXXX"
-   * where NNNNNNNN-NNNN-NNNN-NNNN is timestamp and XX is MAC address
-   * (but we use usually random ID for MAC because we do not have
-   *  guid generator available for all processes within node)
-   */
-  su_guid_sprintf(str, su_guid_strlen + 1, guid);
+  if (instance == NONE) {
+    char str[su_guid_strlen + 1];
+    su_guid_t guid[1];
 
-  DNHP_SET(dnhp, instance, su_sprintf(dnh->nh_home, "urn:uuid:%s", str));
+    su_guid_generate(guid);
+    /*
+     * Guid looks like "NNNNNNNN-NNNN-NNNN-NNNN-XXXXXXXXXXXX"
+     * where NNNNNNNN-NNNN-NNNN-NNNN is timestamp and XX is MAC address
+     * (but we use usually random ID for MAC because we do not have
+     *  guid generator available for all processes within node)
+     */
+    su_guid_sprintf(str, su_guid_strlen + 1, guid);
+
+    DNHP_SET(dnhp, instance, su_sprintf(dnh->nh_home, "urn:uuid:%s", str));
+  }
+  else {
+    DNHP_SET(dnhp, instance, su_strdup(dnh->nh_home, instance));
+  }
 }
 
-static
-void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m);
-
-/** Initialize our contacts. */
-void ua_init_contact(nua_t *nua)
-{
-  su_home_t home[1] = { SU_HOME_INIT(home) };
-  sip_via_t *v;
-  int sip = 0, sips = 0;
-  sip_contact_t *m;
-
-  for (v = nta_agent_via(nua->nua_nta); v; v = v->v_next) {
-    if (strcasecmp(v->v_protocol, sip_transport_tls) != 0) {
-      if (!sip) {
-	m = sip_contact_create_from_via(home, v, NULL);
-	if (m) {
-	  ua_init_a_contact(nua, home, m);
-	  sip = 1;
-	}
-      }
-    }
-    else if (!sips) {
-      m = sip_contact_create_from_via(home, v, NULL);
-      if (m) {
-	ua_init_a_contact(nua, home, m);
-	sips = 1;
-      }
-    }
-
-    if (sip && sips)
-      break;
-  }
-
-  su_home_deinit(home);
-}
-
-static
-void ua_init_a_contact(nua_t *nua, su_home_t *home, sip_contact_t *m)
-{
-  su_strlst_t *l = su_strlst_create(home);
-  nua_handle_t *dnh = nua->nua_dhandle;
-  int i;
-
-  if (DNH_PGET(dnh, instance)) {
-    char const *instance = DNH_PGET(dnh, instance);
-    instance = su_sprintf(home, "+sip.instance=\"<%s>\"", instance);
-    msg_header_replace_param(home, m->m_common, instance);
-  }
-
-  if (DNH_PGET(dnh, callee_caps)) {
-    sip_allow_t const *allow = DNH_PGET(dnh, allow);
-
-    if (allow) {
-      char *methods;
-      if (allow->k_items)
-	for (i = 0; allow->k_items[i]; i++)
-	  su_strlst_append(l, allow->k_items[i]);
-      methods = su_strlst_join(l, home, ",");
-      methods = su_sprintf(home, "methods=\"%s\"", methods);
-      msg_header_replace_param(home, m->m_common, methods);
-    }
-
-    if (dnh->nh_soa) {
-      char **media = soa_media_features(dnh->nh_soa, 0, home);
-
-      while (*media) {
-	msg_header_replace_param(home, m->m_common, *media);
-	media++;
-      }
-    }
-  }
-
-  m = sip_contact_dup(nua->nua_home, m);
-
-  if (m) {
-    if (m->m_url->url_type == url_sip)
-      su_free(nua->nua_home, nua->nua_contact),
-	nua->nua_contact = m;
-    else
-      su_free(nua->nua_home, nua->nua_sips_contact),
-	nua->nua_sips_contact = m;
-  }
-
-}
 
 /* ----------------------------------------------------------------------
  * Sending events to client application
@@ -1122,7 +1049,7 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     ua_set_from(nua, from, from_str);
   }
 
-  ua_init_contact(nua);
+  /* XXX ua_init_contact(nua); */
 
 #if HAVE_SOFIA_SMIME
   /* XXX - all S/MIME other parameters? */
@@ -1156,6 +1083,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   int has_from;
   sip_from_t from[1];
+
+  sip_contact_t const *m;
 
   /* nta */
   unsigned udp_mtu = 0, sip_t1 = 0, sip_t2 = 0, sip_t4 = 0, sip_t1x64 = 0;
@@ -1191,6 +1120,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     has_from = 0;
 
   media_params = soa_get_paramlist(nh->nh_soa, TAG_END());
+
+  m = nua_contact_by_aor(nh->nh_nua, NULL, 0);
 
   /* Include tag in list returned to user
    * if it has been earlier set (by user) */
@@ -1254,8 +1185,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
      NUTAG_MEDIA_ENABLE(nua->nua_media_enable),
      NUTAG_REGISTRAR(nua->nua_registrar),
-     NTATAG_CONTACT(nua->nua_contact
-		    ? nua->nua_contact : nua->nua_sips_contact),
+
+     NTATAG_CONTACT(m),
 
 #if HAVE_SOFIA_SMIME
      NUTAG_SMIME_ENABLE(nua->sm->sm_enable),
@@ -1748,11 +1679,9 @@ msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
 	  !tl_find(nh->nh_tags, siptag_contact_str) &&
 	  !tl_find(ta_args(ta), siptag_contact) &&
 	  !tl_find(ta_args(ta), siptag_contact_str)) {
-	if (sip->sip_request->rq_url->url_type == url_sips &&
-	    nua->nua_sips_contact)
-	  sip_add_dup(msg, sip, (sip_header_t *)nua->nua_sips_contact);
-	else
-	  sip_add_dup(msg, sip, (sip_header_t *)nua->nua_contact);
+	sip_contact_t const *m;
+	m = nua_contact_by_aor(nh->nh_nua, sip->sip_request->rq_url, 0);
+	sip_add_dup(msg, sip, (void const *)m);
       }
     }
 
@@ -1832,13 +1761,10 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
   ta_list ta;
   msg_t *msg = nta_msg_create(nua->nua_nta, 0);
   sip_t *sip = sip_object(msg);
-  sip_header_t *m;
+  sip_contact_t const *m;
   int add_contact = 0;
 
-  if (nta_incoming_url(irq)->url_type == url_sips && nua->nua_sips_contact)
-    m = (sip_header_t*)nua->nua_sips_contact;
-  else
-    m = (sip_header_t*)nua->nua_contact;
+  m = nua_contact_by_aor(nua, nta_incoming_url(irq), 0);
 
   ta_start(ta, tag, value);
 
@@ -1854,7 +1780,8 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
     msg_destroy(msg);
   else if (sip_complete_message(msg) < 0)
     msg_destroy(msg);
-  else if (add_contact && !sip->sip_contact && sip_add_dup(msg, sip, m) < 0)
+  else if (add_contact && !sip->sip_contact && 
+	   sip_add_dup(msg, sip, (sip_header_t *)m) < 0)
     msg_destroy(msg);
   else if (!sip->sip_supported && NH_PGET(nh, supported) &&
 	   sip_add_dup(msg, sip, (sip_header_t *)NH_PGET(nh, supported)) < 0)
@@ -2067,7 +1994,8 @@ int nua_creq_check_restart(nua_handle_t *nh,
 	du->du_pending = NULL;
 	du->du_refresh = 0;
       }
-      /* Wait for nua_authenticate() */
+
+      /* Operation waits for application to call nua_authenticate() */
 
       cr->cr_restart = f;
       return 1;
@@ -2141,7 +2069,7 @@ int nua_creq_restart(nua_handle_t *nh,
 
 void
 nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
-		tagi_t const *tags)
+		       tagi_t const *tags)
 {
   int status = nh_authorize(nh, TAG_NEXT(tags));
 
