@@ -1124,7 +1124,9 @@ int test_init(struct context *ctx,
   sip_contact_t const *m = NULL;
   sip_from_t const *sipaddress = NULL;
   url_t const *p_uri, *a_uri;		/* Proxy URI */
-  char const *a_bind = "sip:0.0.0.0:*";
+  char const *a_bind, *a_bind2;
+
+  a_bind = a_bind2 = "sip:0.0.0.0:*";
 
   ctx->root = su_root_create(NULL); TEST_1(ctx->root);
 
@@ -1187,6 +1189,14 @@ int test_init(struct context *ctx,
 
     ctx->nat = test_nat_create(ctx->root, family, TAG_END());
 
+    /*
+     * NAT thingy works so that we set the outgoing proxy URI to point
+     * towards its "private" address and give the real address of the proxy
+     * as its "public" address. If we use different IP families here, we may
+     * even manage to test real connectivity problems as proxy and endpoint
+     * can not talk to each other.
+     */
+
     if (test_nat_private(ctx->nat, su, &sulen) < 0) {
       printf("%s:%u: NUA-2.1.2: failed to get private NAT address\n",
 	     __FILE__, __LINE__);
@@ -1206,7 +1216,6 @@ int test_init(struct context *ctx,
 	su_sprintf(ctx->home, "sip:%s:%u",
 		   inet_ntop(su->su_family, SU_ADDR(su), b, sizeof b),
 		   ntohs(su->su_port));
-      a_bind = "sip:0.0.0.0:*";
     }
 
 #if defined(SU_HAVE_IN6)
@@ -1252,6 +1261,7 @@ int test_init(struct context *ctx,
 			  NUTAG_PROXY(a_uri ? a_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
 			  NUTAG_URL(a_bind),
+			  TAG_IF(a_bind != a_bind2, NUTAG_SIPS_URL(a_bind2)),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 			  TAG_END());
   TEST_1(ctx->a.nua);
@@ -5595,7 +5605,7 @@ int main(int argc, char *argv[])
     if (retval == 0)
       retval |= test_connectivity(ctx);
 
-    if (!o_inat && retval == 0) {
+    if (retval == 0) {
       retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
