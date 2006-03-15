@@ -80,7 +80,7 @@ nua_stack_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *ta
   char const *event_s = NULL, *ct_s = NULL, *pl_s = NULL;
   nea_event_t *ev;
   int status = 500;
-  char const *phrase = "Internal NUA Error";
+  char const *phrase = nua_500_error;
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
 
@@ -106,7 +106,7 @@ nua_stack_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *ta
 			       NH_PGET(nh, max_subscriptions), 
 			       NULL, nh,
 			       TAG_NEXT(tags)))) 
-    status = 500, phrase = "Internal NUA Error";
+    status = 500, phrase = nua_500_error;
 
   else if (!event && !(event = sip_event_make(home, event_s)))
     status = 500, phrase = "Could not create an event header";
