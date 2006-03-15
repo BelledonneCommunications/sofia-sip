@@ -104,6 +104,7 @@ struct nta_agent_s
 
   sip_contact_t     *sa_contact;
   sip_via_t         *sa_vias;   /**< Via headers for all transports */
+  sip_via_t         *sa_public_vias;   /**< Vias for public transports */
   sip_contact_t     *sa_aliases;/**< List of aliases for agent */
 
   uint64_t           sa_branch; /**< Counter for generating branch parameter */

@@ -610,6 +610,17 @@ sip_via_t *nta_agent_via(nta_agent_t const *agent)
   return agent ? agent->sa_vias : NULL;
 }
 
+/** Return a list of public @b Via headers.
+ *
+ * Return @b Via headers for all public transports.
+ *
+ * @param agent NTA agent object
+ */
+sip_via_t *nta_agent_public_via(nta_agent_t const *agent)
+{
+  return agent ? agent->sa_public_vias : NULL;
+}
+
 /** Return @b User-Agent header.
  *
  * The function nta_agent_name() returns a @b User-Agent information with
