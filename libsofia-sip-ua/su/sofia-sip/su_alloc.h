@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -112,6 +112,9 @@ SU_DLL char *su_strdup(su_home_t *home, char const *s)
 SU_DLL char *su_strcat(su_home_t *home, char const *s1, char const *s2)
      __attribute__((__malloc__));
 SU_DLL char *su_strndup(su_home_t *home, char const *s, int n)
+     __attribute__((__malloc__));
+
+SU_DLL char *su_strcat_all(su_home_t *home, ...)
      __attribute__((__malloc__));
 
 SU_DLL char *su_sprintf(su_home_t *home, char const *fmt, ...)

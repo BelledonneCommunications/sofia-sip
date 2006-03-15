@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -23,13 +23,13 @@
  */
 
 /**@ingroup su_alloc
- * 
+ *
  * @file su_alloc_test.c
  *
  * Testing functions for su_alloc functions.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
- * 
+ *
  * @date Created: Thu May  2 18:17:46 2002 ppessi
  */
 
@@ -65,7 +65,7 @@ void exdestructor(void *arg)
 }
 
 /** Test basic memory home operations  */
-int test_alloc(void)
+static int test_alloc(void)
 {
   exhome_t *h0, *h1, *h2, *h3;
   su_home_t home[1] = { SU_HOME_INIT(home) };
@@ -116,9 +116,9 @@ int test_alloc(void)
   su_home_preload(home, 1, 1024 + 2 * 8);
 
   TEST_1(c = su_zalloc(home, 64)); p0 = c; p1 = c + 1024;
-  TEST(c = su_realloc(home, c0 = c, 127), c0); 
+  TEST(c = su_realloc(home, c0 = c, 127), c0);
 
-  TEST_1(c = c0 = su_zalloc(home, 1024 - 128)); 
+  TEST_1(c = c0 = su_zalloc(home, 1024 - 128));
   TEST_1(p0 <= c); TEST_1(c < p1);
   TEST(c = su_realloc(home, c, 128), c0);
   TEST(c = su_realloc(home, c, 1023 - 128), c0);
@@ -151,8 +151,11 @@ static int test_strdupcat(void)
   TEST_S(su_strcat(home, "foo", "bar"), "foobar");
   TEST_S(su_strndup(home, "foobar", 3), "foo");
 
+  TEST_S(su_strcat_all(home, NULL), "");
+  TEST_S(su_strcat_all(home, "a", "", "b", "", NULL), "ab");
+
   su_home_deinit(home);
-  
+
   END();
 }
 
@@ -170,14 +173,14 @@ static int test_sprintf(char const *fmt, ...)
   va_start(va, fmt);
   TEST_S(su_vsprintf(home, fmt, va), "foo.bar");
 
-  TEST_S(su_sprintf(home, "foo%200s", "bar"), 
+  TEST_S(su_sprintf(home, "foo%200s", "bar"),
 	 "foo                                                             "
 	 "                                                                "
 	 "                                                                "
 	 "        bar");
 
   su_home_deinit(home);
-  
+
   END();
 }
 
@@ -197,7 +200,7 @@ static int test_strlst(void)
   parent->hs_size = (sizeof parent);
   kids[0].hs_size = (sizeof kids[0]);
   kids[1].hs_size = (sizeof kids[1]);
- 
+
   su_home_init_stats(home);
 
   /* Test API for invalid arguments */
@@ -249,12 +252,12 @@ static int test_strlst(void)
   TEST_1(l = su_strlst_create(home));
 
   su_home_init_stats(su_strlst_home(l));
-  
-  TEST_S(su_strlst_join(l, home, "bar"), "");  
+
+  TEST_S(su_strlst_join(l, home, "bar"), "");
   TEST_S(su_strlst_append(l, foo), "foo");
   TEST_S(su_strlst_dup_append(l, bar), "bar");
   TEST_S(su_strlst_append(l, baz), "baz");
-  TEST_S((s = su_strlst_join(l, home, "!")), "foo!bar!baz");  
+  TEST_S((s = su_strlst_join(l, home, "!")), "foo!bar!baz");
 
   TEST_S(su_strlst_item(l, 0), foo);
   TEST_S(su_strlst_item(l, 1), bar);
@@ -264,15 +267,15 @@ static int test_strlst(void)
 
   TEST_1(l1 = su_strlst_copy(su_strlst_home(l), l));
   TEST_1(l2 = su_strlst_dup(su_strlst_home(l), l));
-    
+
   strcpy(foo, "hum"); strcpy(bar, "pah"); strcpy(baz, "hah");
- 
+
   TEST_S(su_strlst_dup_append(l1, "kuik"), "kuik");
   TEST_S(su_strlst_dup_append(l2, "uik"), "uik");
-    
-  TEST_S((s = su_strlst_join(l, home, ".")), "hum.bar.hah");  
-  TEST_S((su_strlst_join(l1, home, ".")), "hum.bar.hah.kuik");  
-  TEST_S((su_strlst_join(l2, home, ".")), "foo.bar.baz.uik");  
+
+  TEST_S((s = su_strlst_join(l, home, ".")), "hum.bar.hah");
+  TEST_S((su_strlst_join(l1, home, ".")), "hum.bar.hah.kuik");
+  TEST_S((su_strlst_join(l2, home, ".")), "foo.bar.baz.uik");
 
   su_strlst_destroy(l2);
 
@@ -302,7 +305,7 @@ static int test_strlst(void)
   TEST_S(su_strlst_append(l, "i"), "i");
   TEST_S(su_strlst_append(l, "j"), "j");
 
-  TEST_S((s = su_strlst_join(l, home, "")), "abcdefghij");  
+  TEST_S((s = su_strlst_join(l, home, "")), "abcdefghij");
   TEST_S(su_strlst_append(l, "a"), "a");
   TEST_S(su_strlst_append(l, "b"), "b");
   TEST_S(su_strlst_append(l, "c"), "c");
@@ -314,7 +317,7 @@ static int test_strlst(void)
   TEST_S(su_strlst_append(l, "i"), "i");
   TEST_S(su_strlst_append(l, "j"), "j");
 
-  TEST_S((s = su_strlst_join(l, home, "")), "abcdefghijabcdefghij");  
+  TEST_S((s = su_strlst_join(l, home, "")), "abcdefghijabcdefghij");
 
   su_home_get_stats(su_strlst_home(l), 0, kids + 1, (sizeof kids[1]));
   su_home_stat_add(kids, kids + 1);
@@ -322,7 +325,7 @@ static int test_strlst(void)
   su_strlst_destroy(l);
 
   su_home_get_stats(home, 1, parent, (sizeof parent));
-    
+
   su_home_check(home);
   su_home_deinit(home);
 
@@ -353,7 +356,7 @@ static int test_strlst(void)
     TEST_1((l = su_strlst_split(home, s, "\n")));
     TEST(su_strlst_len(l), 1);
   }
-  
+
   {
     int i;
 
@@ -382,6 +385,45 @@ static int test_strlst(void)
     TEST(su_strlst_len(l), 0);
   }
 
+  {
+    char const *s0;
+
+    TEST_1(l = su_strlst_create_with(NULL, s0 = "a", "b", NULL));
+    TEST_1(su_strlst_item(l, 0) == s0);
+    TEST_S(su_strlst_item(l, 0), "a");
+    TEST_S(su_strlst_item(l, 1), "b");
+    TEST_1(su_strlst_item(l, 2) == NULL);
+
+    TEST_S(su_slprintf(l, "1: %u", 1), "1: 1");
+    TEST_S(su_slprintf(l, "1.0: %g", 1.0), "1.0: 1");
+
+    TEST_1(su_strlst_append(l, ""));
+
+    TEST_S(su_strlst_join(l, home, "\n"), 
+	   "a\n" "b\n" "1: 1\n" "1.0: 1\n");
+
+    TEST_VOID(su_strlst_destroy(l));
+
+    TEST_1(l2 = su_strlst_create_with_dup(NULL,
+					  s0 = "0", "1", "2", "3",
+					  "4", "5", "6", "7",
+					  NULL));
+    TEST_1(su_strlst_item(l2, 0) != s0);
+    TEST_S(su_strlst_item(l2, 0), "0");
+    TEST_S(su_strlst_item(l2, 1), "1");
+    TEST_S(su_strlst_item(l2, 2), "2");
+    TEST_S(su_strlst_item(l2, 3), "3");
+    TEST_S(su_strlst_item(l2, 4), "4");
+    TEST_S(su_strlst_item(l2, 5), "5");
+    TEST_S(su_strlst_item(l2, 6), "6");
+    TEST_S(su_strlst_item(l2, 7), "7");
+    TEST_1(su_strlst_item(l2, 8) == NULL);
+
+    TEST_S(su_strlst_join(l2, home, ""), "01234567");
+
+    TEST_VOID(su_strlst_destroy(l2));
+  }
+  su_home_check(home);
   su_home_deinit(home);
 
   END();
@@ -424,7 +466,7 @@ static int test_vectors(void)
   TEST(su_vector_item(v, 3), NULL);
   TEST(su_vector_item(v, (unsigned)-1), NULL);
   TEST_1(!su_vector_is_empty(v));
-    
+
   su_vector_destroy(v);
 
   TEST_1(v = su_vector_create(home, NULL));
@@ -472,7 +514,7 @@ static int test_vectors(void)
 
   su_vector_destroy(v);
   su_vector_destroy(w);
-    
+
   TEST_1(v = su_vector_create(home, test_vector_free));
   data1 = su_home_clone(home, sizeof(test_data_t));
   data1->data = 1;
@@ -489,7 +531,7 @@ static int test_vectors(void)
   TEST(su_vector_append(v, data1), 0);
   TEST(su_vector_append(v, data2), 0);
   TEST(su_vector_append(v, data3), 0);
-  TEST(su_vector_append(v, data4), 0);  
+  TEST(su_vector_append(v, data4), 0);
 
   TEST(su_vector_len(v), 4);
 
@@ -537,20 +579,20 @@ static int test_auto(void)
 
   TEST_1(!su_home_auto(tmphome, sizeof tmphome[0]));
   TEST_1(su_home_auto(tmphome, sizeof tmphome));
-  
+
   for (i = 0; i < 8192; i++)
     TEST_1(su_alloc(tmphome, 12));
 
   TEST_VOID(su_home_deinit(tmphome));
 
   TEST_1(su_home_auto(tmphome, sizeof tmphome));
- 
+
   su_home_init_stats(tmphome);
 
   for (i = 1; i < 8192; i++) {
     TEST_1(b = su_realloc(tmphome, b, i));
     b[i - 1] = (char)0xaa;
- 
+
     if ((i % 32) == 0)
       TEST_1(b = su_realloc(tmphome, b, 1));
   }
@@ -563,7 +605,7 @@ static int test_auto(void)
     This test depends on macro SU_HOME_AUTO_SIZE() calculating
     offsetof(su_block_t, sub_nodes[7]) correctly with
 
-    ((3 * sizeof (void *) + 4 * sizeof(unsigned) +  
+    ((3 * sizeof (void *) + 4 * sizeof(unsigned) +
       7 * (sizeof (long) + sizeof(void *)) + 7)
   */
   TEST_1(hs->hs_frees.hsf_preload == hs->hs_allocs.hsa_preload);
@@ -574,7 +616,7 @@ static int test_auto(void)
     TEST_1(b = su_alloc(tmphome, 1));
 
   TEST_VOID(su_home_deinit(tmphome));
-  
+
   END();
 }
 
@@ -594,7 +636,7 @@ int main(int argc, char *argv[])
     else
       usage();
   }
-  
+
   retval |= test_alloc();
   retval |= test_strdupcat();
   retval |= test_sprintf("%s.%s", "foo", "bar");

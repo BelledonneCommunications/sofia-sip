@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -46,6 +46,22 @@ SU_DLL su_strlst_t *su_strlst_create(su_home_t *home)
 /** Destroy a string list. */
 SU_DLL void su_strlst_destroy(su_strlst_t *);
 
+SU_DLL su_strlst_t *su_strlst_create_with(su_home_t *, char const *, ...)
+     __attribute__((__malloc__));
+
+SU_DLL su_strlst_t *su_strlst_create_with_dup(su_home_t *, char const *, ...)
+     __attribute__((__malloc__));
+
+SU_DLL su_strlst_t *su_strlst_vcreate_with(su_home_t *,
+					   char const *,
+					   va_list va)
+     __attribute__((__malloc__));
+
+SU_DLL su_strlst_t *su_strlst_vcreate_with_dup(su_home_t *,
+					       char const *, 
+					       va_list va)
+     __attribute__((__malloc__));
+
 /** Shallow copy a string list. */
 SU_DLL su_strlst_t *su_strlst_copy(su_home_t *home, su_strlst_t const *orig);
 
@@ -57,6 +73,12 @@ SU_DLL char *su_strlst_dup_append(su_strlst_t *, char const *str);
 
 /** Append a string to list. */
 SU_DLL char const *su_strlst_append(su_strlst_t *, char const *str);
+
+/** Append a formatted string to the list. */
+char const *su_slprintf(su_strlst_t *self, char const *fmt, ...);
+
+/** Append a formatted string to the list. */
+char const *su_slvprintf(su_strlst_t *self, char const *fmt, va_list ap);
 
 /** Get a numbered item from list. */
 SU_DLL char const *su_strlst_item(su_strlst_t const *, unsigned i);

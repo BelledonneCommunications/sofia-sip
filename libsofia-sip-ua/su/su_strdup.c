@@ -62,17 +62,17 @@ char *su_strdup(su_home_t *home, char const *s)
 
 /**Concate two strings, allocate memory for result from @a home.
  *
- * The function su_strcat() concatenates the strings @a s1 and @a s2. It
- * allocates @c strlen(s1)+strlen(s2)+1 bytes from @a home, copies the
- * contents of @a s1 and @a s2 to the newly allocated memory, and returns
- * pointer to the concatenated string.
+ * Concatenate the strings @a s1 and @a s2. The @c strlen(s1)+strlen(s2)+1
+ * bytes is allocated from @a home, the contents of @a s1 and @a s2 is
+ * copied to the newly allocated memory area, and pointer to the
+ * concatenated string is returned.
  *
  * @param home  pointer to memory home
  * @param s1    string to be first string
  * @param s2    string to be first string
  * 
- * @return The function su_strcat() returns pointer to the newly created
- *         string, or @c NULL upon an error.
+ * @return Pointer to the newly created string is returned, or @c NULL upon
+ * an error.
  */
 char *su_strcat(su_home_t *home, char const *s1, char const *s2)
 {
@@ -94,6 +94,53 @@ char *su_strcat(su_home_t *home, char const *s1, char const *s2)
 
   return retval;
 }
+
+/**Concate multiple strings, allocate memory for result from @a home.
+ *
+ * Concatenate the strings in list. The lenght of result is calculate,
+ * result is allocated from @a home, the contents of strings is copied to
+ * the newly allocated memory arex, and pointer to the concatenated string is
+ * returned.
+ *
+ * @param home  pointer to memory home
+ * @param s,... strings to be concatenated
+ * 
+ * @return Pointer to the newly created string is returned, or @c NULL upon
+ * an error.
+ */
+char *su_strcat_all(su_home_t *home, ...)
+{
+  int i, n;
+  size_t size = 0;
+  va_list va;
+  char *s, *retval, *end;
+
+  /* Count number arguments and their size */
+  va_start(va, home);
+  s = va_arg(va, char *);
+  for (n = 0; s; s = va_arg(va, char *), n++)
+    size += strlen(s);
+  va_end(va);
+
+  retval = su_alloc(home, size + 1);
+  if (retval) {
+    s = retval;
+    end = s + size + 1;
+
+    va_start(va, home);
+
+    for (i = 0; i < n; i++)
+      s = memccpy(s, va_arg(va, char const *), '\0', end - s) - 1;
+
+    va_end(va);
+
+    retval[size] = '\0';
+  }
+
+  return retval;
+}
+
+
 
 /** Duplicate a string with given size, allocate memory from @a home.
  *

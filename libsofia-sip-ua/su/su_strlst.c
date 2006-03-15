@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -40,12 +40,13 @@
  * Example of concatenating a number of strings to @a s:
  * @code
  * su_strlst_t *l = su_strlist_create(home);
- * su_strlst_append(l, su_sprintf(su_strlst_home(l), "a is: %d", a));
- * su_strlst_append(l, su_sprintf(su_strlst_home(l), "b is: %d", b));
- * su_strlst_append(l, su_sprintf(su_strlst_home(l), "c is: %d", c));
+ * su_strlst_append(l, "=============");
+ * su_slprintf(l, "a is: %d", a)
+ * su_slprintf(l, "b is: %d", b)
+ * su_slprintf(l, "c is: %d", c)
  * su_strlst_append(l, "------------");
- * su_strlst_append(l, su_sprintf(su_strlst_home(l), "total: %d", a + b + c));
- * su_strlst_append(l, "");
+ * su_slprintf(l, "total: %d", a + b + c));
+ * su_strlst_append(l, "=============");
  * s = su_strlst_join(l, "\n");
  * @endcode
  *
@@ -73,6 +74,9 @@
 
 #include "config.h"
 
+#include "sofia-sip/su_config.h"
+#include "sofia-sip/su_strlst.h"
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <memory.h>
@@ -81,8 +85,13 @@
 
 #include <assert.h>
 
-#include "sofia-sip/su_config.h"
-#include "sofia-sip/su_strlst.h"
+#if defined(va_copy)
+/* Xyzzy */
+#elif defined(__va_copy)
+#define va_copy(dst, src) __va_copy((dst), (src))
+#else
+#define va_copy(dst, src) (memcpy(&(dst), &(src), sizeof (va_list)))
+#endif
 
 enum { N = 8 };
 
@@ -95,23 +104,140 @@ struct su_strlst_s
   char const **sl_list;
 };
 
-/** Create a string list. 
+/** Create a list with initial values */
+static
+su_strlst_t *su_strlst_vcreate_with_by(su_home_t *home,
+				       char const *value,
+				       va_list va,
+				       int deeply)
+{
+  su_strlst_t *self;
+  int i, n, m;
+  size_t total, size;
+
+  m = 0, total = 0;
+
+  /* Count arguments and their length */
+  if (value) {
+    char const *s;
+    va_list va0;
+
+    va_copy(va0, va);
+    for (s = value; s; m++, s = va_arg(va0, char *))
+      total += strlen(s);
+    va_end(va0);
+  }
+
+  for (n = N; m > n; n *= 2)
+    ;
+
+  size = sizeof(*self) + n * sizeof(*self->sl_list);
+  if (deeply)
+    size += total + m;
+
+  self = su_home_clone(home, size);
+  if (self) {
+    self->sl_size = n;
+    self->sl_list = (char const **)(self + 1);
+    self->sl_len = m;
+    self->sl_total = total;
+
+    if (deeply) {
+      char *s = (char *)(self->sl_list + self->sl_size);
+      char *end = s + total + m;
+
+      for (i = 0; i < m; i++) {
+	assert(s);
+	self->sl_list[i] = s;
+	s = memccpy(s, value, '\0', end - s);
+	value = va_arg(va, char const *);
+      }
+    }
+    else {
+      for (i = 0; i < m; i++) {
+	self->sl_list[i] = value;
+	value = va_arg(va, char const *);
+      }
+    }
+  }
+
+  return self;
+}
+
+/** Create an empty string list.
  *
- * The function su_strlst_create() creates a list of strings. The list is
- * initially empty. It clones a memory home for the list from @a home.
+ * The list is initially empty. The memory home for the list is cloned from
+ * @a home.
  *
  */
 su_strlst_t *su_strlst_create(su_home_t *home)
 {
-  su_strlst_t *self;
-
-  self = su_home_clone(home, sizeof(*self) + N * sizeof(*self->sl_list));
-  if (self) {
-    self->sl_size = N;
-    self->sl_list = (char const **)(self + 1);
-  }
-  return self;
+  va_list va;
+  return su_strlst_vcreate_with_by(home, NULL, va, 0);
 }
+
+/** Create a string list with initial values.
+ *
+ * The list is initialized with strings in argument. The argument list is
+ * terminated with NULL. The memory home for the list is cloned from @a
+ * home.
+ */
+su_strlst_t *su_strlst_create_with(su_home_t *home, char const *value, ...)
+{
+  va_list va;
+  su_strlst_t *l;
+
+  va_start(va, value);
+  l = su_strlst_vcreate_with_by(home, value, va, 0);
+  va_end(va);
+
+  return l;
+}
+
+/** Create a string list with initial values.
+ *
+ * The string list is initialized with strings from @a va_list @a va. The
+ * argument list is terminated with NULL. The memory home for the list is
+ * cloned from @a home.
+ */
+su_strlst_t *su_strlst_vcreate_with(su_home_t *home,
+				    char const *value,
+				    va_list va)
+{
+  return su_strlst_vcreate_with_by(home, value, va, 0);
+}
+
+/** Create a string list with duplicatedd initial values.
+ *
+ * The list is initialized with copies of strings in argument list. The
+ * argument list is terminated with NULL. The memory home for the list is
+ * cloned from @a home.
+ */
+su_strlst_t *su_strlst_create_with_dup(su_home_t *home, char const *value, ...)
+{
+  va_list va;
+  su_strlst_t *l;
+
+  va_start(va, value);
+  l = su_strlst_vcreate_with_by(home, value, va, 1);
+  va_end(va);
+
+  return l;
+}
+
+/** Create a string list with duplicates of initial values.
+ *
+ * The string list is initialized with copies of strings from @a va_list @a
+ * va. The argument list is terminated with NULL. The memory home for the
+ * list is cloned from @a home.
+ */
+su_strlst_t *su_strlst_vcreate_with_dup(su_home_t *home,
+					char const *value,
+					va_list va)
+{
+  return su_strlst_vcreate_with_by(home, value, va, 1);
+}
+
 
 /** Copy a string list */
 static
@@ -210,9 +336,6 @@ static int su_strlst_increase(su_strlst_t *self)
 
 /**Duplicate and append a string to list. 
  *
- * The function su_strlst_append() duplicates and appends a string to a
- * list.
- *
  * @param self  pointer to a string list object
  * @param str   string to be duplicated and appended
  *
@@ -238,10 +361,10 @@ char *su_strlst_dup_append(su_strlst_t *self, char const *str)
   return NULL;
 }
 
-/**Append a string to list. 
+/**Append a string to list.
  *
- * The function su_strlst_append() appends a string to a list. The string is
- * not copied, and it @b must not be modified while string list exists.
+ * The string is not copied, and it @b must not be modified while string
+ * list exists.
  *
  * @param self  pointer to a string list object
  * @param str   string to be appended
@@ -260,6 +383,57 @@ char const *su_strlst_append(su_strlst_t *self, char const *str)
     return str;
   }
   return NULL;
+}
+
+/**Append a formatted string to the list.
+ *
+ * Format a string according to a @a fmt like printf(). The resulting string
+ * is copied to a memory area freshly allocated from a the memory home of
+ * the list and appended to the string list.
+ *
+ * @param self  pointer to a string list object
+ * @param fmt format string
+ * @param ... argument list (must match with the @a fmt format string)
+ *
+ * @return A pointer to a fresh copy of formatting result, or NULL upon an
+ * error.
+ */
+char const *su_slprintf(su_strlst_t *self, char const *fmt, ...)
+{
+  char const *str;
+  va_list ap;
+  va_start(ap, fmt);
+  str = su_slvprintf(self, fmt, ap);
+  va_end(ap);
+
+  return str;
+}
+
+/**Append a formatted string to the list.
+ *
+ * Format a string according to a @a fmt like vprintf(). The resulting
+ * string is copied to a memory area freshly allocated from a the memory
+ * home of the list and appended to the string list.
+ *
+ * @param self  pointer to a string list object
+ * @param fmt format string
+ * @param ... argument list (must match with the @a fmt format string)
+ *
+ * @return A pointer to a fresh copy of formatting result, or NULL upon an
+ * error.
+ */
+char const *su_slvprintf(su_strlst_t *self, char const *fmt, va_list ap)
+{
+  char *str = NULL;
+
+  if (self && su_strlst_increase(self)) {
+    str = su_vsprintf(self->sl_home, fmt, ap);
+    if (str) {
+      self->sl_list[self->sl_len++] = str;
+      self->sl_total += strlen(str);
+    }
+  }
+  return str;
 }
 
 /**Returns a numbered item from the list of strings. The numbering starts from

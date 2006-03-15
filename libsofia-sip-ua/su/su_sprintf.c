@@ -101,7 +101,7 @@ char *su_vsprintf(su_home_t *home, char const *fmt, va_list ap)
  *
  * The function su_sprintf() print a string according to a @a fmt like
  * printf() or snprintf(). The resulting string is copied to a memory area
- * fresly allocated from a memory @a home. The returned string is reclaimed
+ * freshly allocated from a memory @a home. The returned string is reclaimed
  * when @a home is destroyed. It can explicitly be freed with su_free() or
  * free() if @a home is NULL.
  *
