@@ -57,6 +57,14 @@ sip_contact_create_from_via_with_transport(su_home_t *home,
 sip_contact_t *sip_contact_create_from_via(su_home_t *, sip_via_t const *,
 					   char const *user);
 
+char *
+sip_contact_string_from_via(su_home_t *home,
+			    sip_via_t const *v,
+			    char const *user,
+			    char const *transport);
+
+int sip_transport_has_tls(char const *transport_name);
+
 int sip_response_terminates_dialog(int response_code,
 				   sip_method_t method,
 				   int *return_graceful_terminate);
@@ -87,6 +95,9 @@ sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route);
 sip_route_t *sip_route_fix(sip_route_t *route);
 
 sip_via_t *sip_via_remove(msg_t *msg, sip_t *sip);
+
+/* ---------------------------------------------------------------------- */
+/* Caller preferences */
 
 /** Check callerprefs. */
 int sip_prefs_matching(char const *pvalue,

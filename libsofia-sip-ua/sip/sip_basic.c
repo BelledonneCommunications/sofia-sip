@@ -1422,53 +1422,6 @@ static int sip_contact_update(msg_common_t *h,
 
 /**@ingroup sip_contact 
  *
- * Create a contact header.
- *
- * The function sip_contact_create() creates a Contact header object with
- * the given URL and parameters.
- *
- * @param home      memory home
- * @param url       URL (string or pointer to url_t)
- * @param p,...     NULL-terminated list of parameters
- *
- * @return
- * The function sip_contact_create() returns a pointer to newly created @b
- * Contact header object when successful or NULL upon an error.
- * 
- */
-sip_contact_t * sip_contact_create(su_home_t *home, url_string_t const *url, 
-				   msg_param_t p, ...)
-{
-  int n;
-  sip_header_t *h;
-  sip_contact_t *m;
-
-  n = url_xtra(url->us_url);
-  h = sip_header_alloc(home, sip_contact_class, n);
-  m = h->sh_contact;
-
-  if (m) {
-    char *s = sip_header_data(h);
-
-    if (url_dup(s, n, m->m_url, url->us_url) == n) {
-      va_list ap;
-      
-      for (va_start(ap, p); p; p = va_arg(ap, msg_param_t)) {
-	p = su_strdup(home, p);
-	msg_header_add_param(home, m->m_common, p);
-      }
-
-      va_end(ap);
-    }
-    else
-      su_free(home, m), m = NULL;
-  }
-
-  return m;
-}
-
-/**@ingroup sip_contact 
- *
  * Add a parameter to a @b Contact header object
  *
  * The function sip_contact_add_param() adds a parameter to a contact
@@ -2828,12 +2781,7 @@ char const *sip_via_port(sip_via_t const *v, int *using_rport)
   if (v->v_port)
     return v->v_port;
 
-  if (v->v_protocol == sip_transport_udp ||
-      v->v_protocol == sip_transport_tcp ||
-      v->v_protocol == sip_transport_sctp)
-    return SIP_DEFAULT_SERV;	/* 5060 */
-  else if (v->v_protocol == sip_transport_tls ||
-	   strncasecmp(v->v_protocol, "SIP/2.0/TLS", 11) == 0)
+  if (sip_transport_has_tls(v->v_protocol))
     return SIPS_DEFAULT_SERV;	/* 5061 */
   else
     return SIP_DEFAULT_SERV;	/* 5060 */

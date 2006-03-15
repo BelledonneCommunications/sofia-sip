@@ -42,13 +42,15 @@
 #include <ctype.h>
 
 #include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_strlst.h>
 
 #include "sofia-sip/sip_parser.h"
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/sip_status.h>
 
-#include "sofia-sip/bnf.h"
+#include <sofia-sip/bnf.h>
+#include <sofia-sip/hostdomain.h>
 
 #ifndef STRING0_H
 #include <sofia-sip/string0.h>
@@ -74,9 +76,66 @@ int sip_addr_match(sip_addr_t const *a, sip_addr_t const *b)
 }
 
 
+/**@ingroup sip_contact
+ *
+ * Create a contact header.
+ *
+ * The function sip_contact_create() creates a Contact header object with
+ * the given URL and parameters.
+ *
+ * @param home      memory home
+ * @param url       URL (string or pointer to url_t)
+ * @param p,...     NULL-terminated list of Contact parameters
+ *
+ * @return
+ * The function sip_contact_create() returns a pointer to newly created @b
+ * Contact header object when successful or NULL upon an error.
+ *
+ */
+sip_contact_t * sip_contact_create(su_home_t *home,
+				   url_string_t const *url,
+				   char const *p, ...)
+{
+  su_strlst_t *l;
+  su_home_t *lhome;
+  sip_contact_t *m;
+
+  if (url == NULL)
+    return NULL;
+
+  l = su_strlst_create_with(NULL, "<", NULL), lhome = su_strlst_home(l);
+  if (l == NULL)
+    return NULL;
+
+  if (url_is_string(url))
+    su_strlst_append(l, (char const *)url);
+  else
+    su_strlst_append(l, url_as_string(lhome, url->us_url));
+
+  su_strlst_append(l, ">");
+
+  if (p) {
+    va_list ap;
+    va_start(ap, p);
+
+    for (; p; p = va_arg(ap, char const *)) {
+      su_strlst_append(l, ";");
+      su_strlst_append(l, p);
+    }
+
+    va_end(ap);
+  }
+
+  m = sip_contact_make(home, su_strlst_join(l, lhome, ""));
+
+  su_strlst_destroy(l);
+
+  return m;
+}
+
 /** Convert a Via header to Contact header */
 sip_contact_t *
-sip_contact_create_from_via(su_home_t *home, 
+sip_contact_create_from_via(su_home_t *home,
 			    sip_via_t const *v,
 			    char const *user)
 {
@@ -84,11 +143,10 @@ sip_contact_create_from_via(su_home_t *home,
 
   if (!v) return NULL;
 
-  tp = strrchr(v->v_protocol, '/');
-  if (!tp++)
-    return NULL;
+  tp = v->v_protocol;
 
-  if (strcasecmp(tp, "udp") == 0)  /* Default is UDP */
+  if (tp == sip_transport_udp ||
+      strcasecmp(tp, sip_transport_udp) == 0)  /* Default is UDP */
     tp = NULL;
 
   return sip_contact_create_from_via_with_transport(home, v, user, tp);
@@ -96,68 +154,106 @@ sip_contact_create_from_via(su_home_t *home,
 
 /** Convert a Via header to Contact header */
 sip_contact_t *
-sip_contact_create_from_via_with_transport(su_home_t *home, 
+sip_contact_create_from_via_with_transport(su_home_t *home,
 					   sip_via_t const *v,
 					   char const *user,
 					   char const *transport)
 {
+  char *s = sip_contact_string_from_via(NULL, v, user, transport);
+  sip_contact_t *m = sip_contact_make(home, s);
+  su_free(NULL, s);
+  return m;
+}
+
+/** Convert a Via header to Contact URL string */
+char *
+sip_contact_string_from_via(su_home_t *home,
+			    sip_via_t const *v,
+			    char const *user,
+			    char const *transport)
+{
   const char *host, *port, *maddr, *comp;
-  char const *scheme = "sip";
-  sip_contact_t *m;
+  char const *scheme = "sip:";
+  int one = 1;
+  char _transport[16];
 
   if (!v) return NULL;
 
   host = v->v_host;
-  port = v->v_port;
+  if (v->v_received)
+    host = v->v_received;
+  port = sip_via_port(v, &one);
   maddr = v->v_maddr;
+  comp = v->v_comp;
 
   if (host == NULL)
     return NULL;
 
-  if (transport && strcasecmp(transport, "tls") == 0) {
-    scheme = "sips", transport = NULL;
-    if (port && strcmp(port, "5061") == 0)
+  if (sip_transport_has_tls(v->v_protocol) ||
+      sip_transport_has_tls(transport)) {
+    scheme = "sips";
+    if (port && strcmp(port, SIPS_DEFAULT_SERV) == 0)
       port = NULL;
+    if (port || host_is_ip_address(host))
+      transport = NULL;
+  }
+  else if (port && host_is_ip_address(host) &&
+	   strcmp(port, SIP_DEFAULT_SERV) == 0) {
+    port = NULL;
   }
 
-  comp = v->v_comp;
+  if (transport && strncasecmp(transport, "SIP/2.0/", 8 == 0))
+    transport += 8;
 
-  m = sip_contact_format(home,
-			 "<%s:%s%s%s%s%s%s%s%s%s%s%s>",
-			 scheme,
-			 user ? user : "", user ? "@" : "", 
-			 host, 
-			 SIP_STRLOG(":", port),
-			 SIP_STRLOG(";transport=", transport),
-			 SIP_STRLOG(";maddr=", maddr),
-			 SIP_STRLOG(";comp=", comp));
+  /* Make transport parameter lowercase */
+  if (transport && strlen(transport) < (sizeof _transport)) {
+    char *s = strcpy(_transport, transport);
 
-  /* Convert transport to lowercase */
-  if (transport && m && m->m_url->url_params) {
-    char *s = (char *)m->m_url->url_params + strlen("transport=");
-    
-    while (*s && *s != ';') {
+    for (s = _transport; *s && *s != ';'; s++)
       if (isupper(*s))
 	*s = tolower(*s);
-      s++;
-    }
+
+    transport = _transport;
   }
 
-  return m;
+  return su_strcat_all(home,
+		       "<",
+		       scheme,
+		       user ? user : "", user ? "@" : "",
+		       host,
+		       SIP_STRLOG(":", port),
+		       SIP_STRLOG(";transport=", transport),
+		       SIP_STRLOG(";maddr=", maddr),
+		       SIP_STRLOG(";comp=", comp),
+		       ">",
+		       NULL);
 }
 
+/** Check if tranport name refers to TLS */
+int sip_transport_has_tls(char const *transport_name)
+{
+  if (!transport_name)
+    return 0;
+
+  if (transport_name == sip_transport_tls)
+    return 1;
+
+  /* transport name starts with SIP/2.0/ ? */
+  if (strncasecmp(transport_name, sip_transport_tls, 8) == 0)
+    transport_name += 8;
+
+  return strncasecmp(transport_name, "tls", 3) == 0;
+}
 
 /**Perform sanity check on a SIP message
  * 
- * The function sip_sanity_check() checks that the SIP message has all the
- * mandatory fields.  When the SIP message fulfills the minimum
- * requirements, it returns zero, otherwise a negative status code.
+ * Check that the SIP message has all the mandatory fields. 
  *
  * @param sip SIP message to be checked
  *
- * @return
- * The function sip_sanity_check() returns zero when the SIP message
- * has all the mandatory fields, and otherwise a negative status code.
+ * @return 
+ * When the SIP message fulfills the minimum requirements, return zero,
+ * otherwise a negative status code.
  */
 int
 sip_sanity_check(sip_t const *sip)
