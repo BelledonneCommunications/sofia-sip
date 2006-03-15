@@ -446,7 +446,7 @@ int span_ip6_reference(char const *host)
 {
   /* IPv6reference  =  "[" IPv6address "]" */
 
-  if (host[0] == '[') {
+  if (host && host[0] == '[') {
     int n = span_ip6_address(host + 1);
     if (n > 0 && host[n + 1] == ']')
       return n + 2;
@@ -710,8 +710,8 @@ int host_is_ip_address(char const *string)
  */
 int host_is_domain(char *string)
 {
-  int n = span_domain(string);
-  return n > 0 && string[n] == '\0';
+  int n = string ? span_domain(string) : 0;
+  return string && n > 0 && string[n] == '\0';
 }
 
 /** Return true if @a string is valid a host name.
@@ -722,4 +722,24 @@ int host_is_valid(char const *string)
 {
   int n = span_host(string);
   return n > 0 && string[n] == '\0';
+}
+
+/** Return true if @a string has domain name in "invalid." domain.
+ *
+ */
+int host_has_domain_invalid(char const *string)
+{
+  int n = span_domain(string);
+
+  if (n >= 7 && string[n] == '\0') {
+    static char const invalid[] = ".invalid";
+    if (string[n - 1] == '.')	/* .invalid. perhaps? */
+      n--;
+    if (n == 7 /* strlen("invalid") */)
+      return strncasecmp(string, invalid + 1, 7) == 0;
+    else
+      return strncasecmp(string + n - 8, invalid, 8) == 0;
+  }
+
+  return 0;
 }

@@ -240,9 +240,19 @@ int ip_test(void)
     int n = sizeof(input) - sizeof(output);				\
     TEST(scanner(&s), n); TEST_S(s, output); TEST_S(s0, canonic); } while(0)
 
+#include <sofia-sip/hostdomain.h>
+
 int host_test(void)
 {
   BEGIN();
+
+  TEST(host_is_ip4_address(NULL), 0);
+  TEST(host_is_ip6_address(NULL), 0);
+  TEST(host_ip6_reference(NULL), 0);
+  TEST(host_is_ip_address(NULL), 0);
+  TEST(host_is_domain(NULL), 0);
+  TEST(host_is_valid(NULL), 0);
+  TEST(host_has_domain_invalid(NULL), 0);
 
   TEST(span_host("rama"), 4);
   TEST(span_host("ra-ma.1-2.3-4.a4-9."), 19);
@@ -278,6 +288,14 @@ int host_test(void)
   TEST(span_domain("a..b"), 0);
   TEST(span_domain("a.b.-"), 0);
   TEST(span_domain("a.b-"), 0);
+
+  TEST(host_has_domain_invalid("invalid"), 1);
+  TEST(host_has_domain_invalid("invalid."), 1);
+  TEST(host_has_domain_invalid("1.invalid"), 1);
+  TEST(host_has_domain_invalid("1.invalid."), 1);
+  TEST(host_has_domain_invalid("1invalid"), 0);
+  TEST(host_has_domain_invalid("valid."), 0);
+  TEST(host_has_domain_invalid("1-.invalid."), 0);
 
   END();
 }

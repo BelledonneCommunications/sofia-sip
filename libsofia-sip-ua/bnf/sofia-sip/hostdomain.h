@@ -47,6 +47,7 @@ SOFIAPUBFUN int host_ip6_reference(char const *string);
 SOFIAPUBFUN int host_is_ip_address(char const *string);
 SOFIAPUBFUN int host_is_domain(char *string);
 SOFIAPUBFUN int host_is_valid(char const *string);
+SOFIAPUBFUN int host_has_domain_invalid(char const *string);
 
 SOFIA_END_DECLS
 
