@@ -3345,6 +3345,13 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   return NULL;
 }
 
+/** Return the default leg, if any */
+nta_leg_t *nta_default_leg(nta_agent_t const *agent)
+{
+  return agent ? agent->sa_default_leg : NULL;
+}
+
+
 /**
  * Insert a call leg to agent.
  */

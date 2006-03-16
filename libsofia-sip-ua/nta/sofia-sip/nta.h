@@ -183,6 +183,8 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
 
 void nta_leg_destroy(nta_leg_t *leg);
 
+nta_leg_t *nta_default_leg(nta_agent_t const *agent);
+
 nta_leg_magic_t *nta_leg_magic(nta_leg_t const *leg,
 			       nta_request_f *callback);
 
