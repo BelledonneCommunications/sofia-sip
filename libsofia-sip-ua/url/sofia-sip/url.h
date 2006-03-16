@@ -202,9 +202,13 @@ int url_have_param(char const *params, char const *tag);
 URL_DLL
 int url_param_add(su_home_t *h, url_t *url, char const *param);
 
-/** Compare two URLs. */
+/** Compare two URLs lazily. */
 URL_DLL
 int url_cmp(url_t const *a, url_t const *b);
+
+/** Compare two URLs conservatively. */
+URL_DLL
+int url_cmp_all(url_t const *a, url_t const *b);
 
 /** Strip transport-specific stuff away from URI. */
 URL_DLL

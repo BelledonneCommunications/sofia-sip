@@ -386,26 +386,37 @@ int test_sip(void)
   b = url_hdup(home, (void *)"sip:172.21.55.55");
   TEST_1(a); TEST_1(b);
   TEST_1(url_cmp(a, b) == 0);
+  TEST(url_cmp_all(a, b), 0);
 
   a = url_hdup(home, (void *)"sips:172.21.55.55:5060");
   b = url_hdup(home, (void *)"sips:172.21.55.55");
   TEST_1(a); TEST_1(b);
   TEST_1(url_cmp(a, b) != 0);
+  TEST_1(url_cmp_all(a, b) < 0);
 
   a = url_hdup(home, (void *)"sips:172.21.55.55:5061");
   b = url_hdup(home, (void *)"sips:172.21.55.55");
   TEST_1(a); TEST_1(b);
   TEST_1(url_cmp(a, b) == 0);
+  TEST(url_cmp_all(a, b), 0);
 
   a = url_hdup(home, (void *)"sip:my.domain:5060");
   b = url_hdup(home, (void *)"sip:my.domain");
   TEST_1(a); TEST_1(b);
-  TEST_1(url_cmp(a, b) != 0);
+  TEST_1(url_cmp(a, b) > 0);
+  TEST_1(url_cmp_all(a, b) > 0);
 
   a = url_hdup(home, (void *)"sips:my.domain:5061");
   b = url_hdup(home, (void *)"sips:my.domain");
   TEST_1(a); TEST_1(b);
-  TEST_1(url_cmp(a, b) != 0);
+  TEST_1(url_cmp(a, b) > 0);
+  TEST_1(url_cmp_all(a, b) > 0);
+
+  a = url_hdup(home, (void *)"sip:my.domain");
+  b = url_hdup(home, (void *)"SIP:MY.DOMAIN");
+  TEST_1(a); TEST_1(b);
+  TEST_1(url_cmp(a, b) == 0);
+  TEST_1(url_cmp_all(a, b) == 0);
 
   su_home_deinit(home);
 
@@ -458,7 +469,7 @@ int test_wv(void)
 
 int test_tel(void)
 {
-  /* tel urls */
+  /* tel urls: RFC 3906 */
   su_home_t home[1] = { SU_HOME_INIT(home) };
   url_t tel[1] = { URL_INIT_AS(tel) };
   url_t *u, url[1];
@@ -468,6 +479,7 @@ int test_tel(void)
     ";param=1;param=2"
     "?From=foo@bar&To=bar@baz#unf";
   char tel2[sizeof(telurl) + 32];
+  url_t *a, *b;
   
   BEGIN();
 
@@ -497,6 +509,12 @@ int test_tel(void)
   url_digest(hash1, sizeof(hash1), url, NULL);
   url_digest(hash2, sizeof(hash2), (url_t *)telurl, NULL);
   TEST(memcmp(hash1, hash2, sizeof(hash1)), 0);
+
+  a = url_hdup(home, (void *)"tel:+1.245.62357");
+  b = url_hdup(home, (void *)"tel:+(1).245.62357");
+  TEST_1(a); TEST_1(b);
+  TEST_1(url_cmp(a, b) == 0);
+  TEST_1(url_cmp_all(a, b) == 0);
 
   su_home_deinit(home);
 

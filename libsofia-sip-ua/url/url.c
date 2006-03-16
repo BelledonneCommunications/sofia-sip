@@ -33,14 +33,15 @@
 
 #include "config.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/bnf.h>
 #include <sofia-sip/hostdomain.h>
 #include <sofia-sip/url.h>
+
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <ctype.h>
 
 /**@def URL_PRINT_FORMAT
  * Format string used when printing url with printf().
@@ -134,6 +135,12 @@
 #define URIC_MASK     0xb400000a, 0x0000001e, 0x8000001d
 
 #define IS_EXCLUDED_MASK(u, m) IS_EXCLUDED(u, m)
+
+/* Internal prototypes */
+static char *url_canonize(char *d, char const *s, int n, char const allowed[]);
+static char *url_canonize2(char *d, char const *s, int n, 
+			   unsigned m32, unsigned m64, unsigned m96);
+static int url_tel_cmp_numbers(char const *A, char const *B);
 
 /**Test if string contains excluded or url-reserved characters. 
  *
@@ -279,10 +286,6 @@ char *url_unescape(char *d, char const *s)
 
   return r;
 }
-
-static
-char *url_canonize2(char *d, char const *s, int n, 
-		    unsigned m32, unsigned m64, unsigned m96);
 
 /** Canonize a URL component */
 static
@@ -1375,18 +1378,25 @@ int url_have_transport(url_t const *url)
   return url_strip_transport2((url_t *)url, 0);
 }
 
-/** Compare two URLs.
+/**Lazily compare two URLs.
+ *
+ * Compare essential parts of URLs: schema, host, port, and username.
+ *
+ * any_url compares 0 with any other URL.
+ *
+ * pres: and im: URIs compares 0 with SIP URIs.
  *
  * @note
  * The @a a and @a b must be pointers to URL structures.
  *
  * @note Currently, the url parameters are not compared. This is because the
  * url_cmp() is used to sort URLs: taking parameters into account makes that
- * impossible.
+ * impossible. 
  */
 int url_cmp(url_t const *a, url_t const *b)
 {
   int rv;
+  int url_type;
 
   if ((a && a->url_type == url_any) || (b && b->url_type == url_any))
     return 0;
@@ -1395,6 +1405,7 @@ int url_cmp(url_t const *a, url_t const *b)
     return (a != NULL) - (b != NULL);
 
   if ((rv = a->url_type - b->url_type)) {
+#if 0
     /* presence and instant messaging URLs match magically with SIP */
     enum url_type_e a_type = a->url_type;
     enum url_type_e b_type = b->url_type;
@@ -1406,10 +1417,13 @@ int url_cmp(url_t const *a, url_t const *b)
       b_type = url_sip;
 
     if (a_type != b_type)
+#endif
       return rv;
   }
 
-  if (a->url_type <= url_unknown && 
+  url_type = a->url_type;	/* Or b->url_type, they are equal! */
+
+  if (url_type <= url_unknown && 
       ((rv = !a->url_scheme - !b->url_scheme) ||
        (a->url_scheme && b->url_scheme &&
 	(rv = strcasecmp(a->url_scheme, b->url_scheme)))))
@@ -1424,10 +1438,10 @@ int url_cmp(url_t const *a, url_t const *b)
     char const *a_port;
     char const *b_port;
 
-    if (a->url_type != url_sip && a->url_type != url_sips)
-      a_port = b_port = url_port_default(a->url_type);
+    if (url_type != url_sip && url_type != url_sips)
+      a_port = b_port = url_port_default(url_type);
     else if (host_is_ip_address(a->url_host))
-      a_port = b_port = url_port_default(a->url_type);
+      a_port = b_port = url_port_default(url_type);
     else
       a_port = b_port = "";
     
@@ -1441,7 +1455,15 @@ int url_cmp(url_t const *a, url_t const *b)
   if (a->url_user != b->url_user) {
     if (a->url_user == NULL) return -1;
     if (b->url_user == NULL) return +1;
-    if ((rv = strcmp(a->url_user, b->url_user)))
+    switch (url_type) {
+    case url_tel: case url_modem: case url_fax:
+      rv = url_tel_cmp_numbers(a->url_user, b->url_user);
+      break;
+    default:
+      rv = strcmp(a->url_user, b->url_user);
+      break;
+    }
+    if (rv)
       return rv;
   }
 
@@ -1453,6 +1475,146 @@ int url_cmp(url_t const *a, url_t const *b)
       return rv;
   }
 #endif
+
+  return 0;
+}
+
+static
+int url_tel_cmp_numbers(char const *A, char const *B)
+{
+  char a, b;
+  int rv;
+
+  while (*A && *B) {
+    #define UNHEX(a) (a - (a >= 'a' ? 'a' - 10 : (a >= 'A' ? 'A' - 10 : '0')))
+    /* Skip visual-separators */
+    do {
+      a = *A++;
+      if (a == '%' && IS_HEX(A[0]) && IS_HEX(A[1])) 
+	a = (UNHEX(A[0]) << 4) | UNHEX(A[1]), A +=2;
+    } while (a == ' ' || a == '-' || a == '.' || a == '(' || a == ')');
+
+    if (isupper(a))
+      a = tolower(a);
+
+    do {
+      b = *B++;
+      if (b == '%' && IS_HEX(B[0]) && IS_HEX(B[1])) 
+	b = (UNHEX(B[0]) << 4) | UNHEX(B[1]), B +=2;
+    } while (b == ' ' || b == '-' || b == '.' || b == '(' || b == ')');
+
+    if (isupper(b))
+      b = tolower(b);
+
+    if ((rv = a - b))
+      return rv;
+  }
+
+  return (int)*A - (int)*B;
+}
+
+/**Conservative comparison of urls.
+ *
+ * Compare all parts of URLs.
+ *
+ * @note
+ * The @a a and @a b must be pointers to URL structures.
+ *
+ */
+int url_cmp_all(url_t const *a, url_t const *b)
+{
+  int rv, url_type;
+
+  if (!a || !b)
+    return (a != NULL) - (b != NULL);
+
+  if ((rv = a->url_type - b->url_type))
+    return rv;
+
+  url_type = a->url_type;	/* Or b->url_type, they are equal! */
+
+  if (url_type <= url_unknown && 
+      ((rv = !a->url_scheme - !b->url_scheme) ||
+       (a->url_scheme && b->url_scheme &&
+	(rv = strcasecmp(a->url_scheme, b->url_scheme)))))
+    return rv;
+
+  if ((rv = a->url_root - b->url_root))
+    return rv;
+
+  if (a->url_host != b->url_host && 
+      ((rv = !a->url_host - !b->url_host) ||
+       (rv = strcasecmp(a->url_host, b->url_host))))
+    return rv;
+
+  if (a->url_port != b->url_port) {
+    char const *a_port;
+    char const *b_port;
+
+    if (url_type != url_sip && url_type != url_sips)
+      a_port = b_port = url_port_default(url_type);
+    else if (host_is_ip_address(a->url_host))
+      a_port = b_port = url_port_default(url_type);
+    else
+      a_port = b_port = "";
+    
+    if (a->url_port) a_port = a->url_port;
+    if (b->url_port) b_port = b->url_port;
+
+    if ((rv = strcmp(a_port, b_port)))
+      return rv;
+  }
+
+  if (a->url_user != b->url_user) {
+    if (a->url_user == NULL) return -1;
+    if (b->url_user == NULL) return +1;
+
+    switch (url_type) {
+    case url_tel: case url_modem: case url_fax:
+      rv = url_tel_cmp_numbers(a->url_user, b->url_user);
+      break;
+    default:
+      rv = strcmp(a->url_user, b->url_user);
+      break;
+    }
+    if (rv)
+      return rv;
+  }
+
+  if (a->url_path != b->url_path) {
+    if (a->url_path == NULL) return -1;
+    if (b->url_path == NULL) return +1;
+    if ((rv = strcmp(a->url_path, b->url_path)))
+      return rv;
+  }
+
+  if (a->url_params != b->url_params) {
+    if (a->url_params == NULL) return -1;
+    if (b->url_params == NULL) return +1;
+    if ((rv = strcmp(a->url_params, b->url_params)))
+      return rv;
+  }
+
+  if (a->url_headers != b->url_headers) {
+    if (a->url_headers == NULL) return -1;
+    if (b->url_headers == NULL) return +1;
+    if ((rv = strcmp(a->url_headers, b->url_headers)))
+      return rv;
+  }
+
+  if (a->url_headers != b->url_headers) {
+    if (a->url_headers == NULL) return -1;
+    if (b->url_headers == NULL) return +1;
+    if ((rv = strcmp(a->url_headers, b->url_headers)))
+      return rv;
+  }
+
+  if (a->url_fragment != b->url_fragment) {
+    if (a->url_fragment == NULL) return -1;
+    if (b->url_fragment == NULL) return +1;
+    if ((rv = strcmp(a->url_fragment, b->url_fragment)))
+      return rv;
+  }
 
   return 0;
 }
