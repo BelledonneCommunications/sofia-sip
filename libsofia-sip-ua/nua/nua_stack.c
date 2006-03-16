@@ -316,7 +316,7 @@ void nua_stack_deinit(su_root_t *root, nua_t *nua)
 /** Set the default from field */
 void ua_set_from(nua_t *nua, sip_from_t const *f, char const *str)
 {
-  sip_from_t from[1], *f0;
+  sip_from_t from[1], *f0 = NULL;
 
 #if HAVE_UICC_H
   /* XXX: add */
@@ -1910,6 +1910,32 @@ int nua_creq_restart_with(nua_handle_t *nh,
   return 1;
 }
 
+
+/** Save operation until it can be restarted */
+int nua_creq_save_restart(nua_handle_t *nh,
+			  struct nua_client_request *cr,
+			  nta_outgoing_t *orq,
+			  int status, char const *phrase,
+			  nua_creq_restart_f *restart_function)
+{
+  nua_dialog_usage_t *du = cr->cr_usage;
+  msg_t *msg = nta_outgoing_getresponse(orq);
+
+  nua_stack_event(nh->nh_nua, nh, msg, cr->cr_event,
+		  status, phrase, 
+		  TAG_END());
+  nta_outgoing_destroy(orq);
+
+  if (du) {
+    du->du_pending = NULL;
+    du->du_refresh = 0;
+  }
+
+  cr->cr_restart = restart_function;
+  return 1;
+}
+
+
 /** Check response, return true if we can restart the request.
  *
  */
@@ -1917,7 +1943,7 @@ int nua_creq_check_restart(nua_handle_t *nh,
 			   struct nua_client_request *cr,
 			   nta_outgoing_t *orq,
 			   sip_t const *sip,
-			   nua_creq_restart_f *f)
+			   nua_creq_restart_f *restart_function)
 {
   int status = sip->sip_status->st_status;
   sip_method_t method = nta_outgoing_method(orq);
@@ -1925,7 +1951,7 @@ int nua_creq_check_restart(nua_handle_t *nh,
 
   nua_dialog_usage_t *du = cr->cr_usage;
 
-  assert(f);
+  assert(restart_function);
 
   if (orq == cr->cr_orq)
     removed = 1, cr->cr_orq = NULL;
@@ -1940,7 +1966,8 @@ int nua_creq_check_restart(nua_handle_t *nh,
     if (can_redirect(sip->sip_contact, method)) {
       return
 	nua_creq_restart_with(nh, cr, orq, 100, "Redirected",
-			      f, NUTAG_URL(sip->sip_contact->m_url),
+			      restart_function,
+			      NUTAG_URL(sip->sip_contact->m_url),
 			      TAG_END());
     }
   }
@@ -1960,7 +1987,9 @@ int nua_creq_check_restart(nua_handle_t *nh,
       return
 	nua_creq_restart_with(nh, cr, orq,
 			      100, "Re-Negotiating Subscription Expiration",
-			      f, SIPTAG_EXPIRES(ex), TAG_END());
+			      restart_function, 
+			      SIPTAG_EXPIRES(ex),
+			      TAG_END());
     }
   }
   else if (method != sip_method_ack && method != sip_method_cancel &&
@@ -1982,23 +2011,13 @@ int nua_creq_check_restart(nua_handle_t *nh,
       return
 	nua_creq_restart_with(nh, cr, orq,
 			      100, "Request Authorized by Cache",
-			      f, TAG_END());
+			      restart_function, TAG_END());
     }
     else if (done == 0) {
-      msg_t *msg = nta_outgoing_getresponse(orq);
-      nua_stack_event(nh->nh_nua, nh, msg, cr->cr_event,
-	       status, sip->sip_status->st_phrase, TAG_END());
-      nta_outgoing_destroy(orq);
-
-      if (du) {
-	du->du_pending = NULL;
-	du->du_refresh = 0;
-      }
-
       /* Operation waits for application to call nua_authenticate() */
-
-      cr->cr_restart = f;
-      return 1;
+      return nua_creq_save_restart(nh, cr, orq, 
+				   status, sip->sip_status->st_phrase, 
+				   restart_function);
     }
     else {
       SU_DEBUG_5(("nua(%p): auc_authorization failed\n", nh));
@@ -2017,7 +2036,7 @@ int nua_creq_check_restart(nua_handle_t *nh,
     return
       nua_creq_restart_with(nh, cr, orq,
 			    100, "Re-Negotiating Session Timer",
-			    f, TAG_END());
+			    restart_function, TAG_END());
   }
 
   /* This was final response that cannot be restarted. */

@@ -575,6 +575,12 @@ int nua_creq_restart_with(nua_handle_t *nh,
 			  nua_creq_restart_f *f, 
 			  tag_type_t tag, tag_value_t value, ...);
 
+int nua_creq_save_restart(nua_handle_t *nh,
+			  struct nua_client_request *cr,
+			  nta_outgoing_t *orq,
+			  int status, char const *phrase,
+			  nua_creq_restart_f *f);
+
 int nua_creq_restart(nua_handle_t *nh,
 		     struct nua_client_request *cr,
 		     nta_response_f *cb,
