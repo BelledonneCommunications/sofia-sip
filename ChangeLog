@@ -1,3 +1,50 @@
+2006-03-16  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  Synchronizing CVS with darcs.
+	
+  * Fixed lib-sofia-sip-ua-glib Makefile.ams.
+  Tried to sanitize glib-less compilation.
+
+    M ./Makefile.am -2 +6
+    M ./libsofia-sip-ua-glib/Makefile.am -12 +4
+    M ./libsofia-sip-ua-glib/nua-glib/Makefile.am -2
+
+  * Added host_has_domain_invalid().
+
+    M ./libsofia-sip-ua/bnf/bnf.c -3 +23
+    M ./libsofia-sip-ua/bnf/sofia-sip/hostdomain.h +1
+    M ./libsofia-sip-ua/bnf/torture_bnf.c +18
+
+  * More string manipulation functions
+  Added:
+  - su_strcat_all()
+  - su_slprintf(), su_slvprintf()
+  - su_strlst_create_with(), su_strlst_vcreate_with()
+  - su_strlst_create_with_dup(), su_strlst_vcreate_with_dup()
+
+    M ./libsofia-sip-ua/su/sofia-sip/su_alloc.h -1 +4
+    M ./libsofia-sip-ua/su/sofia-sip/su_strlst.h -1 +23
+    M ./libsofia-sip-ua/su/su_alloc_test.c -32 +74
+    M ./libsofia-sip-ua/su/su_sprintf.c -1 +1
+    M ./libsofia-sip-ua/su/su_strdup.c -6 +53
+    M ./libsofia-sip-ua/su/su_strlst.c -23 +197
+
+  * Binding the endpoint behind "nat" to both IP families, if possible.
+
+    M ./libsofia-sip-ua/nua/test_nua.c -3 +13
+
+  * Removed nutag_media_subsystem and nutag_media_session.
+
+    M ./libsofia-sip-ua/nua/nua_tag.c -3
+
+  * Using nua_500_error.
+
+    M ./libsofia-sip-ua/nua/nua_event_server.c -2 +2
+
+  * Allowing intending of #include directives in fix-include-sofia-sip.
+
+    M ./scripts/fix-include-sofia-sip -197 +197
+
 2006-03-13  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Release 1.11.7
