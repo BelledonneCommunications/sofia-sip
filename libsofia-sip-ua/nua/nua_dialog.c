@@ -127,6 +127,20 @@ void nua_dialog_store_peer_info(nua_owner_t *own,
 
   *old = *nr;
 
+  if (sip && sip->sip_status &&
+      sip->sip_status->st_status >= 300 &&
+      sip->sip_status->st_status <= 399)
+    sip = NULL;			/* Redirected */
+
+  if (sip == NULL) {
+    nr->nr_allow = NULL, su_free(own, old->nr_allow);
+    nr->nr_accept = NULL, su_free(own, old->nr_accept);
+    nr->nr_require = NULL, su_free(own, old->nr_require);
+    nr->nr_supported = NULL, su_free(own, old->nr_supported);
+    nr->nr_user_agent = NULL, su_free(own, old->nr_user_agent);
+    return;
+  }
+
   if (sip->sip_allow) {
     nr->nr_allow = sip_allow_dup(own, sip->sip_allow);
     su_free(own, old->nr_allow);
