@@ -191,7 +191,7 @@ sip_contact_string_from_via(su_home_t *home,
 
   if (sip_transport_has_tls(v->v_protocol) ||
       sip_transport_has_tls(transport)) {
-    scheme = "sips";
+    scheme = "sips:";
     if (port && strcmp(port, SIPS_DEFAULT_SERV) == 0)
       port = NULL;
     if (port || host_is_ip_address(host))
@@ -202,7 +202,7 @@ sip_contact_string_from_via(su_home_t *home,
     port = NULL;
   }
 
-  if (transport && strncasecmp(transport, "SIP/2.0/", 8 == 0))
+  if (transport && strncasecmp(transport, "SIP/2.0/", 8) == 0)
     transport += 8;
 
   /* Make transport parameter lowercase */
