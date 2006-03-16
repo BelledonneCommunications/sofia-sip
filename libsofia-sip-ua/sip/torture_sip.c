@@ -186,7 +186,40 @@ int test_methods(void)
     TEST_S(result, "protocol/version");
   }
 
+  {
+    char udp[] = "SIP/ 2.0  /  udp";
+    char tcp[] = "SIP / 2.0  /  tcp";
+    char tls[] = "SIP / 2.0  /  tls";
+    char sctp[] = "SIP / 2.0  /  scTp";
+    char dtls[] = "SIP/2.0/TLS-UDP";
+    char tls_sctp[] = "SIP/2.0/TLS-SCTP";
+    char *s, *end;
+    char const *result = NULL;
 
+    s = udp; end = s + strlen(s);
+    TEST(sip_transport_d(&s, &result), 0); TEST(s, end);
+    TEST_S(result, sip_transport_udp);
+
+    s = tcp; end = s + strlen(s);
+    TEST(sip_transport_d(&s, &result), 0); TEST(s, end);
+    TEST_S(result, sip_transport_tcp);
+
+    s = tls; end = s + strlen(s);
+    TEST(sip_transport_d(&s, &result), 0); TEST(s, end);
+    TEST_S(result, sip_transport_tls);
+
+    s = sctp; end = s + strlen(s);
+    TEST(sip_transport_d(&s, &result), 0); TEST(s, end);
+    TEST_S(result, sip_transport_sctp);
+
+    s = dtls; end = s + strlen(s);
+    TEST(sip_transport_d(&s, &result), 0); TEST(s, end);
+    TEST_S(result, "SIP/2.0/TLS-UDP");
+
+    s = tls_sctp; end = s + strlen(s);
+    TEST(sip_transport_d(&s, &result), 0); TEST(s, end);
+    TEST_S(result, "SIP/2.0/TLS-SCTP");
+  }
   END();
 }
 
@@ -438,6 +471,21 @@ int test_basic(void)
 
     su_free(home, m);
     su_free(home, m0);
+  }
+
+  {
+    sip_via_t *v;
+    char *s;
+
+    v = sip_via_make(home, "SIP/2.0/UDP domain.invalid:5060"); TEST_1(v);
+    s = sip_contact_string_from_via(home, v, NULL, v->v_protocol);
+    TEST_S(s, "<sip:domain.invalid:5060;transport=udp>");
+    su_free(home, v), su_free(home, s);
+
+    v = sip_via_make(home, "SIP/2.0/TLS-SCTP domain.invalid"); TEST_1(v);
+    s = sip_contact_string_from_via(home, v, NULL, v->v_protocol);
+    TEST_S(s, "<sips:domain.invalid;transport=tls-sctp>");
+    su_free(home, v), su_free(home, s);
   }
 
   {

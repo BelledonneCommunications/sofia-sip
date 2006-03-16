@@ -367,8 +367,9 @@ int sip_transport_d(char **ss, char const **ttransport)
   int  pn_len, pv_len, pt_len;
   char *s = *ss;
 
-#define TRANSPORT_MATCH(t) \
-  (strncasecmp(s+7,t+7,sizeof(t)-8) == 0 && (transport = t, s += sizeof(t) - 1))
+#define TRANSPORT_MATCH(t)					     \
+  (strncasecmp(s+7, t+7, sizeof(t)-8) == 0 && (IS_LWS(s[sizeof(t)])) \
+   && (transport = t, s += sizeof(t) - 1))
 
   if (strncasecmp(s, "SIP/2.0", 7) != 0 ||
       (!TRANSPORT_MATCH(sip_transport_udp) &&
