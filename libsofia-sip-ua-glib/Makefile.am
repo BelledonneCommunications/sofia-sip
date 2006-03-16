@@ -8,33 +8,25 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-if HAVE_GLIB
+DIST_SUBDIRS=su-glib nua-glib
+
 GLIB_SUBDIRS=su-glib
 GLIB_TARGETS=su-glib/libsu-glib.la
-else
-GLIB_SUBDIRS=
-GLIB_TARGETS=
-endif
 
 if HAVE_GOBJECT
 GOBJECT_SUBDIRS=nua-glib
 GOBJECT_TARGETS=nua-glib/libnua-glib.la
-else
-GOBJECT_SUBDIRS=
-GOBJECT_TARGETS=
 endif
 
 # note: order does matter in the subdir list
 SUBDIRS = $(GLIB_SUBDIRS) $(GOBJECT_SUBDIRS)
 
-DIST_SUBDIRS=su-glib nua-glib
-
-DOXYGEN = doxygen
-
 lib_LTLIBRARIES = libsofia-sip-ua-glib.la
 
 libsofia_sip_ua_glib_la_SOURCES = 
 libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GOBJECT_TARGETS)
+
+DOXYGEN = doxygen
 
 built-sources-recursive clean-built-sources-recursive:
 	target=`echo $@ | sed s/-recursive//`; \

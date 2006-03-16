@@ -60,13 +60,11 @@ LDADD =  		$(GLIB_LIBS) -lgobject-2.0 \
 
 test_nua_glib_LDFLAGS = -static
 
-if HAVE_GLIB
 %_marshal.h: %_marshal.list Makefile
 	glib-genmarshal --header --prefix=$(subst -,_,$*)_marshal $< > $*_marshal.h
 
 %_marshal.c: %_marshal.list Makefile
 	glib-genmarshal --body --prefix=$(subst -,_,$*)_marshal $< > $*_marshal.c
-endif
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
