@@ -95,6 +95,12 @@ struct proxy {
   
   nta_leg_t *defleg;
 
+  nta_leg_t *example_net;
+  nta_leg_t *example_org;
+  nta_leg_t *example_com;
+
+  sip_contact_t *transport_contacts;
+
   struct proxy_transaction *stateless;
   struct proxy_transaction *transactions;
   struct registration_entry *entries;
@@ -127,22 +133,33 @@ struct proxy_transaction
   nta_outgoing_t *client;	/* client transaction */
 };
 
-static int proxy_request(struct proxy *proxy, 
+static sip_contact_t *create_transport_contacts(struct proxy *p);
+
+static int proxy_request(struct proxy *proxy,
 			 nta_leg_t *leg,
-			 nta_incoming_t *irq, 
+			 nta_incoming_t *irq,
 			 sip_t const *sip);
 
 static int proxy_ack_cancel(struct proxy_transaction *t,
-			    nta_incoming_t *irq, 
+			    nta_incoming_t *irq,
 			    sip_t const *sip);
 
 static int proxy_response(struct proxy_transaction *t,
 			  nta_outgoing_t *client,
 			  sip_t const *sip);
 
-static int process_register(struct proxy *proxy, 
-			    nta_incoming_t *irq, 
+static int process_register(struct proxy *proxy,
+			    nta_incoming_t *irq,
 			    sip_t const *sip);
+
+static int domain_request(struct proxy *proxy,
+			  nta_leg_t *leg,
+			  nta_incoming_t *irq,
+			  sip_t const *sip);
+
+static int process_options(struct proxy *proxy,
+			   nta_incoming_t *irq,
+			   sip_t const *sip);
 
 static struct registration_entry *
 registration_entry_find(struct proxy const *proxy, url_t const *uri);
@@ -158,7 +175,7 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
 
   auth_challenger_t _registrar_challenger[1] = 
   {{ 
-      SIP_401_UNAUTHORIZED, 
+      SIP_401_UNAUTHORIZED,
       sip_www_authenticate_class,
       sip_authentication_info_class
     }};
@@ -176,13 +193,35 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
 				  NTATAG_CLIENT_RPORT(1),
 				  TAG_END());
 
-  proxy->defleg = nta_leg_tcreate(proxy->agent, 
+  proxy->transport_contacts = create_transport_contacts(proxy);
+
+  proxy->defleg = nta_leg_tcreate(proxy->agent,
 				  proxy_request,
 				  proxy,
 				  NTATAG_NO_DIALOG(1),
 				  TAG_END());
 
-  if (!proxy->defleg)
+  proxy->example_net = nta_leg_tcreate(proxy->agent,
+				       domain_request,
+				       proxy,
+				       NTATAG_NO_DIALOG(1),
+				       URLTAG_URL("sip:example.net"),
+				       TAG_END());
+  proxy->example_org = nta_leg_tcreate(proxy->agent,
+				       domain_request,
+				       proxy,
+				       NTATAG_NO_DIALOG(1),
+				       URLTAG_URL("sip:example.org"),
+				       TAG_END());
+  proxy->example_com = nta_leg_tcreate(proxy->agent,
+				       domain_request,
+				       proxy,
+				       NTATAG_NO_DIALOG(1),
+				       URLTAG_URL("sip:example.com"),
+				       TAG_END());
+
+  if (!proxy->defleg || 
+      !proxy->example_net || !proxy->example_org || !proxy->example_com)
     return -1;
 
   t = su_zalloc(proxy->home, sizeof *t); 
@@ -221,7 +260,7 @@ test_proxy_deinit(su_root_t *root, struct proxy *proxy)
 }
 
 /* Create tst proxy object */
-struct proxy *test_proxy_create(su_root_t *root, 
+struct proxy *test_proxy_create(su_root_t *root,
 				tag_type_t tag, tag_value_t value, ...)
 {
   struct proxy *p = su_home_new(sizeof *p);
@@ -237,7 +276,7 @@ struct proxy *test_proxy_create(su_root_t *root,
     
     if (su_clone_start(root,
 		       p->clone,
-		       p, 
+		       p,
 		       test_proxy_init,
 		       test_proxy_deinit) == -1)
       su_home_unref(p->home), p = NULL;
@@ -261,11 +300,46 @@ url_t const *test_proxy_uri(struct proxy const *p)
   return p ? p->uri : NULL;
 }
 
+/* ---------------------------------------------------------------------- */
+
+static sip_contact_t *create_transport_contacts(struct proxy *p)
+{
+  su_home_t *home = p->home;
+  sip_via_t *v;
+  sip_contact_t *retval = NULL, **mm = &retval;
+
+  if (!p->agent)
+    return NULL;
+
+  for (v = nta_agent_via(p->agent); v; v = v->v_next) {
+    char const *proto = v->v_protocol;
+
+    if (v->v_next && 
+	strcasecmp(v->v_host, v->v_next->v_host) == 0 &&
+	str0cmp(v->v_port, v->v_next->v_port) == 0 &&
+	((proto == sip_transport_udp &&
+	  v->v_next->v_protocol == sip_transport_tcp) ||
+	 (proto == sip_transport_tcp &&
+	  v->v_next->v_protocol == sip_transport_udp)))
+      /* We have udp/tcp pair, insert URL without tport parameter */
+      *mm = sip_contact_create_from_via_with_transport(home, v, NULL, NULL);
+    if (*mm) mm = &(*mm)->m_next;
+
+    *mm = sip_contact_create_from_via_with_transport(home, v, NULL, proto);
+
+    if (*mm) mm = &(*mm)->m_next;
+  }
+
+  return retval;
+}
+
+/* ---------------------------------------------------------------------- */
+
 /** Forward request */
 static
-int proxy_request(struct proxy *proxy, 
+int proxy_request(struct proxy *proxy,
 		  nta_leg_t *leg,
-		  nta_incoming_t *irq, 
+		  nta_incoming_t *irq,
 		  sip_t const *sip)
 {
   url_t const *request_uri, *target;
@@ -302,10 +376,10 @@ int proxy_request(struct proxy *proxy,
   }
   nta_incoming_bind(t->server = irq, proxy_ack_cancel, t);
   
-  rq = sip_request_create(proxy->home, 
+  rq = sip_request_create(proxy->home,
 			  sip->sip_request->rq_method,
 			  sip->sip_request->rq_method_name,
-			  (url_string_t *)target, 
+			  (url_string_t *)target,
 			  NULL);
   if (rq == NULL) {
     nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
@@ -332,7 +406,7 @@ int proxy_request(struct proxy *proxy,
 }
 
 int proxy_ack_cancel(struct proxy_transaction *t,
-		     nta_incoming_t *irq, 
+		     nta_incoming_t *irq,
 		     sip_t const *sip)
 {
   if (sip == NULL) {
@@ -407,17 +481,47 @@ LIST_BODIES(static, proxy_transaction, struct proxy_transaction, next, prev);
 
 /* ---------------------------------------------------------------------- */
 
+static
+
+int domain_request(struct proxy *proxy,
+		   nta_leg_t *leg,
+		   nta_incoming_t *irq,
+		   sip_t const *sip)
+{
+  sip_method_t method = sip->sip_request->rq_method;
+
+  if (method == sip_method_register)
+    return process_register(proxy, irq, sip);
+
+  if (method == sip_method_options) 
+    return process_options(proxy, irq, sip);
+
+  return 501;
+}
+
+static
+int process_options(struct proxy *proxy,
+		    nta_incoming_t *irq,
+		    sip_t const *sip)
+{
+  nta_incoming_treply(irq, SIP_200_OK,
+		      SIPTAG_CONTACT(proxy->transport_contacts),
+		      TAG_END());
+  return 200;
+}
+
+/* ---------------------------------------------------------------------- */
+
 static int check_unregister(sip_t const *sip);
 
-int process_register(struct proxy *proxy, 
-		     nta_incoming_t *irq, 
+int process_register(struct proxy *proxy,
+		     nta_incoming_t *irq,
 		     sip_t const *sip)
 {
   auth_status_t *as;
   struct registration_entry *e;
   sip_contact_t *old_binding, *new_binding;
   int unregister;
-
 
   as = su_home_clone(proxy->home, (sizeof *as));
   as->as_status = 500, as->as_phrase = sip_500_Internal_server_error;
@@ -434,15 +538,15 @@ int process_register(struct proxy *proxy,
   as->as_display = sip->sip_from->a_display;
 
   if (sip->sip_payload)
-    as->as_body = sip->sip_payload->pl_data, 
+    as->as_body = sip->sip_payload->pl_data,
       as->as_bodylen = sip->sip_payload->pl_len;
 
-  auth_mod_check_client(proxy->auth, as, sip->sip_authorization, 
+  auth_mod_check_client(proxy->auth, as, sip->sip_authorization,
 			registrar_challenger);
 
   if (as->as_status != 0) {
     assert(as->as_status >= 300);
-    nta_incoming_treply(irq, 
+    nta_incoming_treply(irq,
 			as->as_status, as->as_phrase,
 			SIPTAG_HEADER((void *)as->as_info),
 			SIPTAG_HEADER((void *)as->as_response),
@@ -466,8 +570,8 @@ int process_register(struct proxy *proxy,
   }
 
   if (!sip->sip_contact) {
-    nta_incoming_treply(irq, SIP_200_OK, 
-			SIPTAG_CONTACT(e ? e->binding : NULL), 
+    nta_incoming_treply(irq, SIP_200_OK,
+			SIPTAG_CONTACT(e ? e->binding : NULL),
 			TAG_END());
     return 200;
   }
@@ -482,10 +586,10 @@ int process_register(struct proxy *proxy,
   old_binding = e->binding;
   e->binding = new_binding;
 
-  msg_header_free(proxy->home, (msg_header_t *)old_binding);
+  msg_header_free(proxy->home, old_binding->m_common);
     
-  nta_incoming_treply(irq, SIP_200_OK, 
-		      SIPTAG_CONTACT(new_binding), 
+  nta_incoming_treply(irq, SIP_200_OK,
+		      SIPTAG_CONTACT(new_binding),
 		      TAG_END());
   return 200;
 }
@@ -510,7 +614,7 @@ int check_unregister(sip_t const *sip)
 
     if (!m->m_expires && !sip->sip_expires)
       return 0;
-    else if (sip_contact_expires(m, sip->sip_expires, sip->sip_date, 
+    else if (sip_contact_expires(m, sip->sip_expires, sip->sip_date,
 				 3600, now) > 0)
       return 0;
   }
@@ -558,7 +662,7 @@ registration_entry_destroy(struct registration_entry *e)
   if (e) {
     registration_entry_remove(e);
     su_free(e->proxy->home, e->aor);
-    msg_header_free(e->proxy->home, (msg_header_t *)e->binding);
+    msg_header_free(e->proxy->home, e->binding->m_common);
     su_free(e->proxy->home, e);
   }
 }
