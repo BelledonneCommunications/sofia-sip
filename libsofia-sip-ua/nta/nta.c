@@ -3027,9 +3027,12 @@ int nta_msg_request_complete(msg_t *msg,
   }
   if (!request_uri)
     return -1;
-  if (method || method_name)
-    sip->sip_request =
+  if (method || method_name) {
+    sip_request_t *rq =
       sip_request_create(home, method, method_name, request_uri, NULL);
+    if (msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)rq) < 0)
+      return -1;
+  }
 
   if (!sip->sip_request)
     return -1;
@@ -6066,6 +6069,9 @@ nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
 {
 
   nta_outgoing_t *orq = NULL;
+
+  if (msg == NONE)
+    msg = nta_msg_create(agent, 0);
 
   if (msg && agent) {
     ta_list ta;
@@ -9914,7 +9920,7 @@ int nta_tport_keepalive(nta_outgoing_t *orq)
 {
   tport_t *tp;
 
-  assert(orq);
+  assert(orq); (void)tp;
 
   return tport_keepalive(orq->orq_tport, orq->orq_tpn);
 }
