@@ -47,101 +47,134 @@
 #ifndef MSG_H
 #include <sofia-sip/msg.h>
 #endif
+#ifndef URL_H
+#include <sofia-sip/url.h>
+#endif
 
 SOFIA_BEGIN_DECLS
 
-msg_header_t *msg_header_alloc(su_home_t *, msg_hclass_t *hc, int extra)
+SOFIAPUBFUN msg_header_t *msg_header_alloc(su_home_t *,
+					   msg_hclass_t *hc,
+					   int extra)
+  __attribute__((__malloc__));
+
+SOFIAPUBFUN int msg_header_size(msg_header_t const *h);
+
+SOFIAPUBFUN msg_header_t **msg_header_offset(msg_t const *,
+					 msg_pub_t const *,
+					 msg_header_t const *);
+SOFIAPUBFUN msg_header_t **msg_hclass_offset(msg_mclass_t const *,
+					     msg_pub_t const *,
+					     msg_hclass_t *);
+SOFIAPUBFUN msg_header_t *msg_header_access(msg_pub_t const *pub,
+					    msg_hclass_t *hc);
+
+SOFIAPUBFUN msg_header_t *msg_header_copy_as(su_home_t *home,
+					     msg_hclass_t *hc,
+					     msg_header_t const *o)
+  __attribute__((__malloc__));
+SOFIAPUBFUN msg_header_t *msg_header_copy(su_home_t *home,
+					  msg_header_t const *o)
+  __attribute__((__malloc__));
+SOFIAPUBFUN msg_header_t *msg_header_copy_one(su_home_t *home,
+					      msg_header_t const *o)
+  __attribute__((__malloc__));
+SOFIAPUBFUN msg_header_t *msg_header_dup_as(su_home_t *home,
+					    msg_hclass_t *hc,
+					    msg_header_t const *o)
+  __attribute__((__malloc__));
+SOFIAPUBFUN msg_header_t *msg_header_dup(su_home_t *home,
+					 msg_header_t const *h)
+  __attribute__((__malloc__));
+SOFIAPUBFUN msg_header_t *msg_header_dup_one(su_home_t *home,
+					     msg_header_t const *h)
+  __attribute__((__malloc__));
+
+SOFIAPUBFUN msg_header_t *msg_header_d(su_home_t *home,
+				       msg_t const *msg,
+				       char const *b);
+SOFIAPUBFUN int msg_header_e(char b[], int bsiz,
+			     msg_header_t const *h,
+			     int flags);
+SOFIAPUBFUN int msg_object_e(char b[], int size,
+			     msg_pub_t const *mo,
+			     int flags);
+
+SOFIAPUBFUN int msg_header_field_e(char b[], int bsiz,
+				   msg_header_t const *h,
+				   int flags);
+
+SOFIAPUBFUN int msg_copy_all(msg_t *msg,
+			     msg_pub_t *dst,
+			     msg_pub_t const *src);
+
+SOFIAPUBFUN int msg_header_remove(msg_t *msg,
+				  msg_pub_t *mo,
+				  msg_header_t *h);
+SOFIAPUBFUN int msg_header_remove_all(msg_t *msg,
+				      msg_pub_t *mo,
+				      msg_header_t *h);
+
+SOFIAPUBFUN int msg_header_insert(msg_t *msg, msg_pub_t *mo,
+				  msg_header_t *h);
+
+SOFIAPUBFUN int msg_header_replace(msg_t *msg, msg_pub_t *mo,
+				   msg_header_t *old_header,
+				   msg_header_t *new_header);
+
+SOFIAPUBFUN int msg_header_add_dup(msg_t *msg,
+				   msg_pub_t *pub,
+				   msg_header_t const *o);
+
+SOFIAPUBFUN int msg_header_add_str(msg_t *msg,
+				   msg_pub_t *pub,
+				   char const *str);
+
+SOFIAPUBFUN int msg_header_add_dup_as(msg_t *msg,
+				      msg_pub_t *pub,
+				      msg_hclass_t *hc,
+				      msg_header_t const *o);
+
+SOFIAPUBFUN int msg_header_add_make(msg_t *msg,
+				    msg_pub_t *pub,
+				    msg_hclass_t *hc,
+				    char const *s);
+
+SOFIAPUBFUN int msg_header_prepend(msg_t *msg,
+				   msg_pub_t *pub,
+				   msg_header_t **hh,
+				   msg_header_t *h);
+
+SOFIAPUBFUN msg_header_t *msg_header_make(su_home_t *home,
+					  msg_hclass_t *hc,
+					  char const *s)
      __attribute__((__malloc__));
-int msg_header_size(msg_header_t const *h);
 
-msg_header_t **msg_header_offset(msg_t const *, msg_pub_t const *, msg_header_t const *);
-msg_header_t **msg_hclass_offset(msg_mclass_t const *, 
-				 msg_pub_t const *, msg_hclass_t *);
-msg_header_t *msg_header_access(msg_pub_t const *pub, msg_hclass_t *hc);
-
-msg_header_t *msg_header_copy_as(su_home_t *home, 
-				 msg_hclass_t *hc,
-				 msg_header_t const *o)
-     __attribute__((__malloc__));
-msg_header_t *msg_header_copy(su_home_t *home, msg_header_t const *o)
-     __attribute__((__malloc__));
-msg_header_t *msg_header_copy_one(su_home_t *home, msg_header_t const *o)
-     __attribute__((__malloc__));
-msg_header_t *msg_header_dup_as(su_home_t *home, msg_hclass_t *hc,
-				msg_header_t const *o)
-     __attribute__((__malloc__));
-msg_header_t *msg_header_dup(su_home_t *home, msg_header_t const *h)
-     __attribute__((__malloc__));
-msg_header_t *msg_header_dup_one(su_home_t *home, msg_header_t const *h)
-     __attribute__((__malloc__));
-
-msg_header_t *msg_header_d(su_home_t *home, msg_t const *msg, char const *b);
-int msg_header_e(char b[], int bsiz, msg_header_t const *h, int flags);
-int msg_object_e(char b[], int size, msg_pub_t const *mo, int flags);
-
-int msg_header_field_e(char b[], int bsiz, msg_header_t const *h, int flags);
-
-int msg_copy_all(msg_t *msg, msg_pub_t *dst, msg_pub_t const *src);
-
-int msg_header_remove(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
-int msg_header_remove_all(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
-
-int msg_header_insert(msg_t *msg, msg_pub_t *mo, msg_header_t *h);
-
-int msg_header_replace(msg_t *msg, msg_pub_t *mo, 
-		       msg_header_t *old_header,
-		       msg_header_t *new_header);
-
-int msg_header_add_dup(msg_t *msg,
-		       msg_pub_t *pub,
-		       msg_header_t const *o);
-
-int msg_header_add_str(msg_t *msg, 
-		       msg_pub_t *pub,
-		       char const *str);
-
-int msg_header_add_dup_as(msg_t *msg,
-			  msg_pub_t *pub,
-			  msg_hclass_t *hc,
-			  msg_header_t const *o);
-
-int msg_header_add_make(msg_t *msg,
-			msg_pub_t *pub,
-			msg_hclass_t *hc,
-			char const *s);
-
-int msg_header_prepend(msg_t *msg, 
-		       msg_pub_t *pub, 
-		       msg_header_t **hh, 
-		       msg_header_t *h);
-
-msg_header_t *msg_header_make(su_home_t *home, 
-			      msg_hclass_t *hc,
-			      char const *s)
-     __attribute__((__malloc__));
-
-msg_header_t *msg_header_format(su_home_t *home, 
-				msg_hclass_t *hc,
-				char const *fmt,
-				...)
+SOFIAPUBFUN msg_header_t *msg_header_format(su_home_t *home,
+					    msg_hclass_t *hc,
+					    char const *fmt, ...)
      __attribute__ ((__malloc__, __format__ (printf, 3, 4)));
 
-msg_header_t *msg_header_vformat(su_home_t *home, 
-				 msg_hclass_t *hc,
-				 char const *fmt,
-				 va_list ap)
+SOFIAPUBFUN msg_header_t *msg_header_vformat(su_home_t *home,
+					     msg_hclass_t *hc,
+					     char const *fmt,
+					     va_list ap)
      __attribute__((__malloc__));
 
 
-void msg_header_free(su_home_t *home, msg_header_t *h);
+SOFIAPUBFUN void msg_header_free(su_home_t *home,
+				 msg_header_t *h);
 
-void msg_header_free_all(su_home_t *home, msg_header_t *h);
+SOFIAPUBFUN void msg_header_free_all(su_home_t *home,
+				     msg_header_t *h);
 
-msg_payload_t *msg_payload_create(su_home_t *home, void const *data, int len)
+SOFIAPUBFUN msg_payload_t *msg_payload_create(su_home_t *home,
+					      void const *data,
+					      int len)
      __attribute__((__malloc__));
 
-msg_separator_t *msg_separator_create(su_home_t *home)
-     __attribute__((__malloc__));
+SOFIAPUBFUN msg_separator_t *msg_separator_create(su_home_t *home)
+  __attribute__((__malloc__));
 
 /* Chunk handling macros */
 
@@ -156,7 +189,9 @@ msg_separator_t *msg_separator_create(su_home_t *home)
 #define MSG_CHUNK_NEXT(pl) \
   ((pl)->pl_next)
 
-int msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags);
+SOFIAPUBFUN int msg_headers_prepare(msg_t *,
+				    msg_header_t *headers,
+				    int flags);
 
 #ifdef SU_HAVE_INLINE
 /** Clear encoded data from header structure. */
@@ -164,6 +199,7 @@ static inline void msg_fragment_clear(msg_common_t *h)
 {
   h->h_data = NULL, h->h_len = 0;
 }
+
 /** Pointer to header parameters. */
 static inline 
 msg_param_t **msg_header_params(msg_common_t const *h)
@@ -180,37 +216,50 @@ msg_param_t **msg_header_params(msg_common_t const *h)
   (msg_param_t **)((char *)(h) + ((msg_common_t *)h)->h_class->hc_params) : NULL)
 #endif
 
-char const *msg_header_find_param(msg_common_t const *h, char const *name);
-int msg_header_add_param(su_home_t *, msg_common_t *h, char const *param);
-int msg_header_replace_param(su_home_t *, msg_common_t *h, char const *param);
-int msg_header_remove_param(msg_common_t *h, char const *name);
-
-int msg_random_token(char token[], int tlen, void const *data, int dlen);
-
-msg_param_t msg_params_find(msg_param_t const pp[], msg_param_t);
-msg_param_t *msg_params_find_slot(msg_param_t params[], msg_param_t token);
-int msg_params_add(su_home_t *sh, msg_param_t **pp, msg_param_t);
-int msg_params_cmp(msg_param_t const a[], msg_param_t const b[]);
-int msg_params_replace(su_home_t *, msg_param_t **pp, msg_param_t);
-int msg_params_remove(msg_param_t *pparams, msg_param_t param);
-size_t msg_params_length(msg_param_t const params[]);
+SOFIAPUBFUN char const *msg_header_find_param(msg_common_t const *,
+					      char const *name);
+SOFIAPUBFUN int msg_header_add_param(su_home_t *, msg_common_t *h,
+				     char const *param);
+SOFIAPUBFUN int msg_header_replace_param(su_home_t *, msg_common_t *h,
+					 char const *param);
+SOFIAPUBFUN int msg_header_remove_param(msg_common_t *h, char const *name);
 
 /** Append a list of constant items to a list. */
-MSG_DLL int msg_list_append_items(su_home_t *home, msg_list_t *k, 
-				  msg_param_t const items[]);
+SOFIAPUBFUN int msg_list_append_items(su_home_t *home, msg_list_t *k,
+				      msg_param_t const items[]);
 
 /** Replace a list of constant items on a list */
-MSG_DLL int msg_list_replace_items(su_home_t *home, msg_list_t *k, 
-				   msg_param_t const items[]);
+SOFIAPUBFUN int msg_list_replace_items(su_home_t *home,
+				       msg_list_t *k,
+				       msg_param_t const items[]);
+
+SOFIAPUBFUN int msg_random_token(char token[], int tlen,
+				 void const *d, int dlen);
+
+SOFIAPUBFUN msg_param_t msg_params_find(msg_param_t const pp[],
+					char const *name);
+SOFIAPUBFUN msg_param_t *msg_params_find_slot(msg_param_t [],
+					      char const *name);
+SOFIAPUBFUN int msg_params_add(su_home_t *sh,
+			       msg_param_t **pp,
+			       char const *param);
+SOFIAPUBFUN int msg_params_cmp(char const * const a[],
+			       char const * const b[]);
+SOFIAPUBFUN int msg_params_replace(su_home_t *,
+				   char const * **inout_paramlist,
+				   char const *);
+SOFIAPUBFUN int msg_params_remove(char const **paramlist,
+				  char const *name);
+SOFIAPUBFUN size_t msg_params_length(char const * const * params);
 
 /** Unquote a string, return a duplicate. */
-MSG_DLL char *msg_unquote_dup(su_home_t *home, char const *q)
+SOFIAPUBFUN char *msg_unquote_dup(su_home_t *home, char const *q)
      __attribute__((__malloc__));
 
-MSG_DLL char *msg_unquote(char *dst, char const *s);
+SOFIAPUBFUN char *msg_unquote(char *dst, char const *s);
 
 /** Calculate a hash over a string. */
-MSG_DLL unsigned long msg_hash_string(char const *id);
+SOFIAPUBFUN unsigned long msg_hash_string(char const *id);
 
 /* Align pointer p for multiple of t (which must be a power of 2) */
 #define MSG_ALIGN(p, t) (((t) - 1 + (long)(p))&-(long)(t))

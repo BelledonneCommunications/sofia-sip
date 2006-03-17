@@ -1093,8 +1093,8 @@ int msg_params_remove(msg_param_t *params, msg_param_t param)
   return 0;
 }
 
-/** Calculate lenght of a parameter list */
-size_t msg_params_length(msg_param_t const params[])
+/** Calculate number of parameters in a parameter list */
+size_t msg_params_length(char const * const * params)
 {
   size_t len;
 
@@ -1273,7 +1273,7 @@ int msg_params_join(su_home_t *home,
  * @retval an integer zero if @a match with @a b
  * @retval an integer greater than zero if @a is greater than @a b
  */
-int msg_params_cmp(msg_param_t const a[], msg_param_t const b[])
+int msg_params_cmp(char const * const a[], char const * const b[])
 {
   int c;
   int nlen;
