@@ -215,6 +215,7 @@ char const *nua_event_name(nua_event_t event)
   case nua_i_active: return "nua_i_active";
   case nua_i_terminated: return "nua_i_terminated";
   case nua_i_state: return "nua_i_state";
+  case nua_i_outbound: return "nua_i_outbound";
 
   case nua_i_bye: return "nua_i_bye";
   case nua_i_options: return "nua_i_options";

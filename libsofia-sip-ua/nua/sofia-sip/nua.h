@@ -77,6 +77,8 @@ typedef enum nua_event_e {
   nua_i_terminated,		/**< A call has been terminated */
   nua_i_state,		        /**< Call state has changed */
 
+  nua_i_outbound,		/**< Status from outbound processing */
+
   nua_i_bye,			/**< Incoming call hangup */
   nua_i_options,		/**< Incoming options */
   nua_i_refer,			/**< Incoming call transfer */
