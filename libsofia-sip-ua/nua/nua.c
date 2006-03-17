@@ -1162,8 +1162,7 @@ void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 /** Send an INFO request. 
  *
  * INFO is used to send call related information like DTMF 
- * digit input events. See
- * <a href="http://www.ietf.org/rfc/rfc2976.txt">RFC 2976</a>
+ * digit input events. See @RFC2976.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -1182,16 +1181,37 @@ void nua_info(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_info, tag, value);
 }
 
+
+/** Send a PRACK request. 
+ *
+ * PRACK is used to acknowledge receipt of 100rel responses. See @RFC3262.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    Tags in <sofia-sip/soa_tag.h>, <sofia-sip/sip_tag.h>.
+ *
+ * @par Events:
+ *    #nua_r_prack
+ */
+void nua_prack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  NUA_SIGNAL(nh, nua_r_prack, tag, value);
+}
+
+
 /** Update a session. 
  * 
- * Update a session using SIP UPDATE method. See RFC
- * <a href="http://www.ietf.org/rfc/rfc3311.txt">RFC 3311</a>
+ * Update a session using SIP UPDATE method. See @RFC3311.
  *
- * Update method can be used when the session has been established 
- * with INVITE. It's mainly used during the session establishment 
- * when preconditions are used (
- * <a href="http://www.ietf.org/rfc/rfc3312.txt">RFC 3312</a>
- * ). It can be also used during the call if no user input is needed.
+ * Update method can be used when the session has been established with
+ * INVITE. It's mainly used during the session establishment when
+ * preconditions are used (@RFC3312). It can be also used during the call if
+ * no user input is needed for offer/answer negotiation.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
