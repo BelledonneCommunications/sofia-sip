@@ -408,6 +408,10 @@ int su_task_is_running(su_task_r const);
 su_root_t *su_task_root(su_task_r const self);
 su_timer_t **su_task_timers(su_task_r const self);
 
+int su_task_execute(su_task_r const task,
+		    int (*function)(void *), void *arg,
+		    int *return_value);
+
 /* Messages */
 int su_msg_create(su_msg_r msg, su_task_r const to, su_task_r const from, 
 		  su_msg_f wakeup, int size);
