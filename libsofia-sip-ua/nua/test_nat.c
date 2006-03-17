@@ -285,15 +285,22 @@ test_nat_deinit(su_root_t *root, struct nat *nat)
       su_root_deregister(root, b->in_register);
     su_close(b->in_socket);
     if (b->out_register)
-      su_root_deregister(root, b->in_register);
+      su_root_deregister(root, b->out_register);
     su_close(b->out_socket);
   }
+
+  if (nat->tcp_register)
+    su_root_deregister(root, nat->tcp_register);
+  if (nat->udp_register)
+    su_root_deregister(root, nat->udp_register);
 
   if (nat->udp_socket != -1)
     su_close(nat->udp_socket);
   if (nat->tcp_socket != -1)
     su_close(nat->tcp_socket);
+
   su_freelocalinfo(nat->localinfo);
+
   free(nat->tags);
 }
 
