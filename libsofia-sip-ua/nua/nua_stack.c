@@ -23,7 +23,7 @@
  */
 
 /**@CFILE nua_stack.c
- * @brief Nokia User Agent (NUA) implementation
+ * @brief Sofia-SIP User Agent Engine implementation
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>

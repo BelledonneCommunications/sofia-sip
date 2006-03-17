@@ -25,7 +25,7 @@
 #ifndef NUA_STACK_H /** Defined when <nua_stack.h> has been included. */
 #define NUA_STACK_H
 /**@file nua_stack.h 
- * @brief  Nokia User Agent Library - internal stack interface
+ * @brief Sofia-SIP User Agent Engine - internal stack interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>

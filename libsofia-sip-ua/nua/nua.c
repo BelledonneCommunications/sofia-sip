@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE nua.c Nokia User Agent API.
+/**@CFILE nua.c Sofia-SIP User Agent Library API Implementation.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
@@ -88,7 +88,7 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
 
 /**Create a NUA agent.
  *
- * This function creates a Nokia User Agent stack object and 
+ * This function creates a Sofia-SIP User Agent stack object (nua) and
  * initializes its parameters by given tagged values.
  *
  * @param root            Pointer to a root object

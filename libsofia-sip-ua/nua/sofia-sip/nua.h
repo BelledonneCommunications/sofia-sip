@@ -22,7 +22,8 @@
  *
  */
 
-/**@file sofia-sip/nua.h  @brief  Nokia User Agent Library
+/**@file sofia-sip/nua.h  
+ * @brief Sofia-SIP User Agent Library API
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *

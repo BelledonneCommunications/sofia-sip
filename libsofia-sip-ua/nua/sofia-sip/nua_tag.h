@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -26,7 +26,7 @@
 #define NUA_TAG_H
 
 /**@file nua_tag.h
- * @brief Tags for Nokia User Agent Library
+ * @brief Tags for Sofia-SIP User Agent Library
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
