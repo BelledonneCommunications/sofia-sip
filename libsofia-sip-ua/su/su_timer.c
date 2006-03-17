@@ -286,10 +286,8 @@ int su_timer_set(su_timer_t *t,
   char const *func = "su_timer_set";
   su_timer_t **timers;
 
-  if (t == NULL) {
-    SU_DEBUG_1(("%s(%p): %s\n", func, t, "NULL argument"));
+  if (t == NULL)
     return -1;
-  }
 
   assert(t->sut_duration > 0);
   if (t->sut_duration == 0) {
