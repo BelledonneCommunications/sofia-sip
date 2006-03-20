@@ -710,7 +710,6 @@ void nua_stack_shutdown(nua_t *nua)
       busy++;
   }
 
-
   if (!busy)
     SET_STATUS(200, "Shutdown successful");
   else if (now == nua->nua_shutdown)
@@ -721,6 +720,12 @@ void nua_stack_shutdown(nua_t *nua)
     SET_STATUS(500, "Shutdown timeout");
 
   if (status >= 200) {
+    for (nh = nua->nua_handles; nh; nh = nh_next) {
+      nh_next = nh->nh_next;
+      while (nh->nh_ds && nh->nh_ds->ds_usage) {
+	nua_dialog_usage_remove(nh, nh->nh_ds, nh->nh_ds->ds_usage);
+      }
+    }
     su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
     nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
   }
@@ -1860,7 +1865,7 @@ int nua_stack_process_response(nua_handle_t *nh,
   ta_start(ta, tag, value);
 
   nua_stack_event(nh->nh_nua, nh, msg, cr->cr_event, status, phrase,
-	   ta_tags(ta));
+		  ta_tags(ta));
 
   if (final)
     cr->cr_event = nua_i_error;
