@@ -37,6 +37,7 @@
 struct proxy;
 struct proxy_transaction;
 struct registration_entry;
+struct binding;
 
 #define SU_ROOT_MAGIC_T struct proxy
 #define NTA_LEG_MAGIC_T struct proxy
@@ -107,17 +108,40 @@ struct proxy {
 };
 
 LIST_PROTOS(static, registration_entry, struct registration_entry);
-static struct registration_entry *
-registration_entry_new(struct proxy *, url_t const *);
+static struct registration_entry *registration_entry_new(struct proxy *,
+							 url_t const *);
 static void registration_entry_destroy(struct registration_entry *e);
+
 
 struct registration_entry
 {
   struct registration_entry *next, **prev;
   struct proxy *proxy;		/* backpointer */
   url_t *aor;			/* address-of-record */
-  sip_contact_t *binding;	/* bindings */
+  struct binding *bindings;	/* list of bindings */
+  sip_contact_t *contacts;
 };
+
+struct binding
+{
+  struct binding *next, **prev;
+  sip_contact_t *contact;	/* bindings */
+  sip_time_t registered, expires; /* When registered and when expires */
+  sip_call_id_t *call_id;	
+  uint32_t cseq;
+};
+
+static struct binding *binding_new(su_home_t *home, 
+				   sip_contact_t *contact,
+				   sip_call_id_t *call_id,
+				   uint32_t cseq,
+				   sip_time_t registered, 
+				   sip_time_t expires);
+static void binding_destroy(su_home_t *home, struct binding *b);
+static int binding_is_active(struct binding const *b)
+{
+  return b->expires > sip_now();
+}
 
 LIST_PROTOS(static, proxy_transaction, struct proxy_transaction);
 struct proxy_transaction *proxy_transaction_new(struct proxy *);
@@ -256,6 +280,9 @@ test_proxy_deinit(su_root_t *root, struct proxy *proxy)
 
   nta_agent_destroy(proxy->agent);
 
+  while (proxy->entries)
+    registration_entry_destroy(proxy->entries);
+
   free(proxy->tags);
 }
 
@@ -357,6 +384,7 @@ int proxy_request(struct proxy *proxy,
   }
   else {
     struct registration_entry *e;
+    struct binding *b;
 
     if (sip->sip_request->rq_method == sip_method_register) 
       return process_register(proxy, irq, sip);
@@ -366,7 +394,17 @@ int proxy_request(struct proxy *proxy,
       nta_incoming_treply(irq, SIP_404_NOT_FOUND, TAG_END());
       return 404;
     }
-    target = e->binding->m_url;
+
+    for (b = e->bindings; b; b = b->next)
+      if (binding_is_active(b))
+	break;
+
+    if (b == NULL) {
+      nta_incoming_treply(irq, SIP_480_TEMPORARILY_UNAVAILABLE, TAG_END());
+      return 480;
+    }
+    
+    target = b->contact->m_url;
   }
 
   t = proxy_transaction_new(proxy);
@@ -512,7 +550,14 @@ int process_options(struct proxy *proxy,
 
 /* ---------------------------------------------------------------------- */
 
-static int check_unregister(sip_t const *sip);
+
+static int validate_contacts(sip_t const *sip);
+static int check_out_of_order_unregister(struct registration_entry *e, sip_t const *);
+static int binding_update(struct proxy *p,
+			  struct registration_entry *e,
+			  sip_t const *sip);
+
+sip_contact_t *binding_contacts(su_home_t *home, struct binding *bindings);
 
 int process_register(struct proxy *proxy,
 		     nta_incoming_t *irq,
@@ -520,8 +565,7 @@ int process_register(struct proxy *proxy,
 {
   auth_status_t *as;
   struct registration_entry *e;
-  sip_contact_t *old_binding, *new_binding;
-  int unregister;
+  int status;
 
   as = su_home_clone(proxy->home, (sizeof *as));
   as->as_status = 500, as->as_phrase = sip_500_Internal_server_error;
@@ -554,72 +598,84 @@ int process_register(struct proxy *proxy,
     return as->as_status;
   }
 
-  unregister = check_unregister(sip);
+  status = validate_contacts(sip);
+  if (status)
+    return status;
+
+  status = check_out_of_order_unregister(e, sip);
+  if (status)
+    return status;
 
   e = registration_entry_find(proxy, sip->sip_to->a_url);
 
-  if (unregister < 0)
-    return 400;
-
-  if (!e && unregister)
-    return 200;
-  
-  if (unregister) {
-    registration_entry_destroy(e);
-    return 200;
-  }
-
   if (!sip->sip_contact) {
     nta_incoming_treply(irq, SIP_200_OK,
-			SIPTAG_CONTACT(e ? e->binding : NULL),
+			SIPTAG_CONTACT(e ? e->contacts : NULL),
 			TAG_END());
     return 200;
   }
 
-  new_binding = sip_contact_dup(proxy->home, sip->sip_contact);
-  if (!new_binding)
-    return 500;
-
   if (!e) 
     e = registration_entry_new(proxy, sip->sip_to->a_url);
 
-  old_binding = e->binding;
-  e->binding = new_binding;
+  status = binding_update(proxy, e, sip);
+  if (status)
+    return status;
 
-  msg_header_free(proxy->home, old_binding->m_common);
-    
+  msg_header_free(proxy->home, (void *)e->contacts);
+  e->contacts = binding_contacts(proxy->home, e->bindings);
+
   nta_incoming_treply(irq, SIP_200_OK,
-		      SIPTAG_CONTACT(new_binding),
+		      SIPTAG_CONTACT(e->contacts),
 		      TAG_END());
+
   return 200;
 }
 
 static
-int check_unregister(sip_t const *sip)
+int validate_contacts(sip_t const *sip)
 {
-  sip_time_t now = sip_now();
   sip_contact_t const *m;
 
   for (m = sip->sip_contact; m; m = m->m_next) {
     if (m->m_url->url_type == url_any) {
-      /* "*" should be only contact, with Expires: 0 header */
-      if (sip->sip_expires && 
-	  sip->sip_expires->ex_delta == 0 && 
-	  sip->sip_expires->ex_time == 0 &&
-	  m == sip->sip_contact && m->m_next == NULL)
-	return 1;		/* Unregister OK */
+      if (!sip->sip_expires ||
+	  sip->sip_expires->ex_delta || 
+	  sip->sip_expires->ex_time ||
+	  sip->sip_contact->m_next)
+	return 400;
       else
-	return -1;		/* Bad unregister */
+	break;
     }
-
-    if (!m->m_expires && !sip->sip_expires)
-      return 0;
-    else if (sip_contact_expires(m, sip->sip_expires, sip->sip_date,
-				 3600, now) > 0)
-      return 0;
   }
+
+  return 0;
+}
+
+/** Check for out-of-order un-register request */
+static
+int check_out_of_order_unregister(struct registration_entry *e,
+				  sip_t const *sip)
+{
+  struct binding const *b;
+  sip_call_id_t const *id;
+
+  if (!sip->sip_contact || sip->sip_contact->m_url->url_type != url_any)
+    return 0;
+
+  id = sip->sip_call_id;
   
-  return 1;
+  /* RFC 3261 subsection 10.3 step 6: */
+  /* Check for reordered un-register requests */
+  for (b = e->bindings; b; b = b->next) {
+    if (binding_is_active(b) &&
+	strcmp(sip->sip_call_id->i_id, b->call_id->i_id) == 0 &&
+        sip->sip_cseq->cs_seq <= b->cseq) {
+      return 500;
+    }
+  }
+
+  return 0;
 }
 
 static struct registration_entry *
@@ -662,9 +718,151 @@ registration_entry_destroy(struct registration_entry *e)
   if (e) {
     registration_entry_remove(e);
     su_free(e->proxy->home, e->aor);
-    msg_header_free(e->proxy->home, e->binding->m_common);
+    while (e->bindings)
+      binding_destroy(e->proxy->home, e->bindings);
+    msg_header_free(e->proxy->home, (void *)e->contacts);
     su_free(e->proxy->home, e);
   }
 }
 
 LIST_BODIES(static, registration_entry, struct registration_entry, next, prev);
+
+/* ---------------------------------------------------------------------- */
+/* Bindings */
+
+static
+struct binding *binding_new(su_home_t *home, 
+			    sip_contact_t *contact,
+			    sip_call_id_t *call_id,
+			    uint32_t cseq,
+			    sip_time_t registered, 
+			    sip_time_t expires)
+{
+  struct binding *b;
+  
+  b = su_zalloc(home, sizeof *b);
+
+  if (b) {
+    sip_contact_t m[1];
+    *m = *contact; m->m_next = NULL;
+
+    b->contact = sip_contact_dup(home, m);
+    b->call_id = sip_call_id_dup(home, call_id);
+    b->cseq = cseq;
+    b->registered = registered;
+    b->expires = expires;
+
+    if (!b->contact || !b->call_id)
+      binding_destroy(home, b), b = NULL;
+
+    if (b)
+      msg_header_remove_param(b->contact->m_common, "expires");
+  }
+  
+  return b;
+}
+
+static
+void binding_destroy(su_home_t *home, struct binding *b)
+{
+  if (b->prev) {
+    if ((*b->prev = b->next))
+      b->next->prev = b->prev;
+  }
+  msg_header_free(home, (void *)b->contact);
+  msg_header_free(home, (void *)b->call_id);
+  su_free(home, b);
+}
+
+static
+int binding_update(struct proxy *p,
+		   struct registration_entry *e,
+		   sip_t const *sip)
+{
+  struct binding *b, *old, *next, *last, *bindings = NULL, **bb = &bindings;
+  sip_contact_t *m;
+  sip_time_t expires;
+  int status = 0;
+
+  sip_time_t now = sip_now();
+
+  assert(sip->sip_contact);
+
+  /* Create new bindings */
+  for (m = sip->sip_contact; m; m = m->m_next) {
+    if (m->m_url->url_type == url_any)
+      break;
+    
+    expires = sip_contact_expires(m, sip->sip_expires, sip->sip_date,
+				  3600, now);
+
+    msg_header_remove_param(m->m_common, "expires");
+
+    b = binding_new(p->home, m, sip->sip_call_id, sip->sip_cseq->cs_seq, 
+		    now, now + expires);
+    if (!b)
+      break;
+
+    *bb = b, b->prev = bb, bb = &b->next;
+  }
+
+  last = NULL;
+
+  if (m == NULL) {
+    /* Merge new bindings with old ones */
+    for (old = e->bindings; old; old = next) {
+      next = old->next;
+
+      for (b = bindings; b != last; b = b->next) {
+	if (url_cmp(old->contact->m_url, b->contact->m_url) != 0) 
+	  continue;
+
+	if (strcmp(old->call_id->i_id, b->call_id->i_id) == 0) {
+	  b->registered = old->registered;
+	}
+	binding_destroy(p->home, old);
+	break;
+      }
+    }
+
+    for (bb = &e->bindings; *bb; bb = &(*bb)->next)
+      ;
+
+    if ((*bb = bindings))
+      bindings->prev = bb;
+  }
+  else if (m->m_url->url_type == url_any) {
+    /* Unregister all */
+    for (b = e->bindings; b; b = b->next) {
+      b->expires = now;
+    }
+  }
+  else {
+    /* Infernal error */
+    status = 501;
+    for (old = bindings; old; old = next) {
+      next = old->next;
+      binding_destroy(p->home, old);
+    }
+  }
+
+  return status;
+}
+
+sip_contact_t *binding_contacts(su_home_t *home, struct binding *bindings)
+{
+  sip_contact_t *retval = NULL, **mm = &retval; 
+  struct binding *b;
+  sip_time_t now = sip_now();
+
+  for (b = bindings; b; b = b->next) {
+    char const *expires;
+    if (b->expires <= now)
+      continue;
+    *mm = sip_contact_copy(home, b->contact);
+    expires = su_sprintf(home, "expires=%u", (unsigned)(b->expires - now));
+    msg_header_add_param(home, (*mm)->m_common, expires);
+  }
+
+  return retval;
+}
