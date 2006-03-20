@@ -434,7 +434,7 @@ int nua_stack_process_subsribe(nua_t *nua,
   nua_dialog_usage_t *du = NULL;
   struct event_usage *eu;
   sip_event_t *o = sip->sip_event;
-  sip_contact_t *m;
+  sip_contact_t const *m;
   int status; char const *phrase;
   unsigned long expires, refer_expires;
 
