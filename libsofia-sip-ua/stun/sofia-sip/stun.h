@@ -54,6 +54,12 @@ typedef struct stun_discovery_s stun_discovery_t;
 /** STUN server context */
 typedef STUN_MAGIC_T stun_magic_t;
 
+#ifndef STUN_DISCOVERY_MAGIC_T 
+#define STUN_DISCOVERY_MAGIC_T            struct stun_discovery_magic_t
+#endif
+/** STUN discovery_ context */
+typedef STUN_DISCOVERY_MAGIC_T stun_discovery_magic_t;
+
 extern char const stun_version[]; /**< Name and version of STUN software */
 
 /**
@@ -115,6 +121,15 @@ typedef enum stun_state_e {
 } stun_state_t;
 
 
+/* Per discovery */
+typedef void (*stun_discovery_f)(stun_discovery_magic_t *magic,
+				 stun_handle_t *sh,
+				 stun_request_t *req,
+				 stun_discovery_t *sd,
+				 stun_action_t action,
+				 stun_state_t event);
+
+/* Used if no stun_discovery_f specified for a discovery  */
 typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_handle_t *sh,
 			     stun_request_t *req,
@@ -155,17 +170,23 @@ int stun_handle_request_shared_secret(stun_handle_t *sh);
 
 /** Bind a socket using STUN.  */
 int stun_handle_bind(stun_handle_t *sh, 
+		     stun_discovery_f,
+		     stun_discovery_magic_t *magic,
 		     /* su_localinfo_t *my_addr, */
 		     tag_type_t tag, tag_value_t value,
 		     ...);
 
 int stun_handle_get_nattype(stun_handle_t *sh,
+			    stun_discovery_f,
+			    stun_discovery_magic_t *magic,
 			    tag_type_t tag, tag_value_t value,
 			    ...);
 
 char const *stun_nattype(stun_discovery_t *sd);
 
 int stun_handle_get_lifetime(stun_handle_t *sh,
+			     stun_discovery_f,
+			     stun_discovery_magic_t *magic,
 			     tag_type_t tag, tag_value_t value,
 			     ...);
 
@@ -204,6 +225,9 @@ int stun_keepalive(stun_handle_t *sh,
 /* Destroy the keepalive dispatcher without touching the socket */
 int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
 
+
+/* Return socket attached to discovery object */
+su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
 
 SOFIA_END_DECLS
 

@@ -110,7 +110,9 @@ typedef enum stun_nattype_e {
 struct stun_discovery_s {
   stun_discovery_t   *sd_next, **sd_prev; /**< Linked list */
 
-  stun_handle_t   *sd_handle;
+  stun_handle_t          *sd_handle;
+  stun_discovery_f        sd_callback;
+  stun_discovery_magic_t *sd_magic;
 
   su_addrinfo_t    sd_pri_info;      /**< server primary info */
   su_sockaddr_t    sd_pri_addr[1];   /**< server primary address */
@@ -282,7 +284,9 @@ int do_action(stun_handle_t *sh, stun_msg_t *binding_response);
 int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
 int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
 stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
-					stun_action_t action);
+					stun_action_t action,
+					stun_discovery_f sdf,
+					stun_discovery_magic_t *magic);
 int stun_discovery_destroy(stun_discovery_t *sd);
 int action_bind(stun_request_t *req, stun_msg_t *binding_response);
 int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response);
@@ -497,7 +501,7 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   SU_DEBUG_9(("%s: %s: %s\n", __func__, "connect",
 	      su_strerror(err)));
   
-  sd = stun_discovery_create(sh, stun_action_tls_query);
+  sd = stun_discovery_create(sh, stun_action_tls_query, NULL, NULL);
   sd->sd_socket = s;
   /* req = stun_request_create(sd); */
 
@@ -632,7 +636,7 @@ void stun_handle_destroy(stun_handle_t *sh)
 
 
 /** Create wait object and register it to the handle callback */
-int assign_socket(stun_discovery_t *sd, su_socket_t s) 
+int assign_socket(stun_discovery_t *sd, su_socket_t s, int reg_socket) 
 {
   stun_handle_t *sh = sd->sd_handle;
   int events;
@@ -662,6 +666,9 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s)
     }
   }
   sd->sd_socket = s;
+
+  if (reg_socket != 1)
+    return 0;
 
   /* set socket asynchronous */
   if (su_setblocking(s, 0) < 0) {
@@ -815,6 +822,8 @@ static int get_localinfo(su_localinfo_t *clientinfo)
  * 
  */
 int stun_handle_bind(stun_handle_t *sh,
+		     stun_discovery_f sdf,
+		     stun_discovery_magic_t *magic,
 		     tag_type_t tag, tag_value_t value,
 		     ...)
 {
@@ -823,7 +832,7 @@ int stun_handle_bind(stun_handle_t *sh,
   stun_discovery_t *sd = NULL;
   ta_list ta;
   stun_action_t action = stun_action_binding_request;
-  int index;
+  int index, s_reg = 0;
 
   enter;
 
@@ -834,12 +843,13 @@ int stun_handle_bind(stun_handle_t *sh,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
+	  STUNTAG_REGISTER_SOCKET_REF(s_reg),
 	  TAG_END());
 
   ta_end(ta);
 
-  sd = stun_discovery_create(sh, action);
-  if ((index = assign_socket(sd, s)) < 0)
+  sd = stun_discovery_create(sh, action, sdf, magic);
+  if ((index = assign_socket(sd, s, s_reg)) < 0)
     return -1;
 
   req = stun_request_create(sd);
@@ -871,7 +881,9 @@ su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd)
 }
 
 stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
-					stun_action_t action)
+					stun_action_t action,
+					stun_discovery_f sdf,
+					stun_discovery_magic_t *magic)
 {
   stun_discovery_t *sd = NULL;
 
@@ -881,6 +893,8 @@ stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
 
   sd->sd_action = action;
   sd->sd_handle = sh;
+  sd->sd_callback = sdf;
+  sd->sd_magic = magic;
 
   sd->sd_lt_cur = 0;
   sd->sd_lt = STUN_LIFETIME_EST;
@@ -925,10 +939,12 @@ int stun_discovery_destroy(stun_discovery_t *sd)
 
 
 int stun_handle_get_nattype(stun_handle_t *sh,
+			    stun_discovery_f sdf,
+			    stun_discovery_magic_t *magic,
 			    tag_type_t tag, tag_value_t value,
 			    ...)
 {
-  int err = 0, index = 0;
+  int err = 0, index = 0, s_reg = 0;
   ta_list ta;
   char const *server = NULL;
   stun_request_t *req = NULL;
@@ -944,6 +960,7 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
+	  STUNTAG_REGISTER_SOCKET_REF(s_reg),
 	  STUNTAG_SERVER_REF(server),
 	  TAG_END());
 
@@ -954,8 +971,8 @@ int stun_handle_get_nattype(stun_handle_t *sh,
   if (s < 0)
     return errno = EFAULT, -1;
 
-  sd = stun_discovery_create(sh, stun_action_get_nattype);
-  if ((index = assign_socket(sd, s)) < 0)
+  sd = stun_discovery_create(sh, stun_action_get_nattype, sdf, magic);
+  if ((index = assign_socket(sd, s, s_reg)) < 0)
     return errno = EFAULT, -1;
 
   /* If no server given, use default address from stun_handle_create() */
@@ -1618,14 +1635,26 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
   if ((req->sr_state == stun_request_timeout) && (req->sr_from_y == -1)) {
     SU_DEBUG_0(("%s: lifetime determination failed.\n", __func__));
     sd->sd_state = stun_discovery_timeout;
-    sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+    /* Use per discovery specific callback */
+    if (sd->sd_callback)
+      sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+    else
+      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
     req->sr_state = stun_dispose_me;
     return 0;
   }
 
   if (abs(sd->sd_lt_cur - sd->sd_lt) <= STUN_LIFETIME_CI) {
     sd->sd_state = stun_discovery_done;
-    sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+    /* Use per discovery specific callback */
+    if (sd->sd_callback)
+      sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+    else
+      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
     req->sr_state = stun_dispose_me;
     return 0;
   }
@@ -1713,7 +1742,12 @@ int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   memcpy(sd->sd_addr_seen_outside, sa, sizeof(su_sockaddr_t));
 
   sd->sd_state = stun_bind_done;
-  sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+  
+  if (sd->sd_callback)
+    sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+  else
+    sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
   req->sr_state = stun_dispose_me;
 
   return 0;
@@ -1767,7 +1801,13 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
     if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
 	  sd->sd_nattype = stun_nat_port_res_cone;
 	  sd->sd_state = stun_discovery_done;
-	  sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+	  /* Use per discovery specific callback */
+	  if (sd->sd_callback)
+	    sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	  else
+	    sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
 	  req->sr_state = stun_dispose_me;
 	  /* stun_request_destroy(req); */
 	  /* stun_discovery_destroy(sd); */
@@ -1777,7 +1817,13 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       /* Sudden network problem */
       sd->sd_nattype = stun_nat_unknown;
       sd->sd_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+      /* Use per discovery specific callback */
+      if (sd->sd_callback)
+	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      else
+	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
       /* stun_discovery_destroy(sd); */
@@ -1787,7 +1833,13 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       if (memcmp(li->li_addr, li->li_addr, 8) == 0) {
 	sd->sd_nattype = stun_sym_udp_fw;
 	sd->sd_state = stun_discovery_done;
-	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+	/* Use per discovery specific callback */
+	if (sd->sd_callback)
+	  sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	else
+	  sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
 	req->sr_state = stun_dispose_me;
 	/* stun_request_destroy(req); */
 	/* stun_discovery_destroy(sd); */
@@ -1815,7 +1867,13 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
     else if (sd->sd_first) {
       sd->sd_nattype = stun_udp_blocked;
       sd->sd_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+      /* Use per discovery specific callback */
+      if (sd->sd_callback)
+	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      else
+	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
       /* stun_discovery_destroy(sd); */
@@ -1833,7 +1891,13 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
       }
 
       sd->sd_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+      /* Use per discovery specific callback */
+      if (sd->sd_callback)
+	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      else
+	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
       /* stun_discovery_destroy(sd); */
@@ -1846,7 +1910,13 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 	sd->sd_nattype = stun_nat_full_cone;
 
       sd->sd_state = stun_discovery_done;
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+      /* Use per discovery specific callback */
+      if (sd->sd_callback)
+	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      else
+	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
       /* stun_discovery_destroy(sd); */
@@ -1902,7 +1972,13 @@ void stun_sendto_timer_cb(su_root_magic_t *magic,
     switch (action) {
     case stun_action_binding_request:
       sd->sd_state = stun_discovery_timeout;
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+      /* Use per discovery specific callback */
+      if (sd->sd_callback)
+	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      else
+	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
       req->sr_state = stun_dispose_me;
       break;
 
@@ -1916,7 +1992,13 @@ void stun_sendto_timer_cb(su_root_magic_t *magic,
       
     case stun_action_keepalive:
       sd->sd_state = stun_discovery_timeout;
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
+      /* Use per discovery specific callback */
+      if (sd->sd_callback)
+	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      else
+	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+
       stun_keepalive_destroy(sh, sd->sd_socket);
       
       break;
@@ -2239,13 +2321,15 @@ int stun_atoaddr(int ai_family,
 
 
 int stun_handle_get_lifetime(stun_handle_t *sh,
+			     stun_discovery_f sdf,
+			     stun_discovery_magic_t *magic,
 			     tag_type_t tag, tag_value_t value,
 			     ...)
 {
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
-  int s = -1, err, index = 0;
+  int s = -1, err, index = 0, s_reg = 0;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   char const *server = NULL;
   su_socket_t sockfdy;
@@ -2261,11 +2345,12 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
+	  STUNTAG_REGISTER_SOCKET_REF(s_reg),
 	  STUNTAG_SERVER_REF(server),
 	  TAG_END());
 
-  sd = stun_discovery_create(sh, stun_action_get_lifetime);
-  if ((index = assign_socket(sd, s)) < 0)
+  sd = stun_discovery_create(sh, stun_action_get_lifetime, sdf, magic);
+  if ((index = assign_socket(sd, s, s_reg)) < 0)
       return errno = EFAULT, -1;
 
   /* If no server given, use default address from stun_handle_create() */
@@ -2405,12 +2490,8 @@ int stun_handle_process_message(stun_handle_t *sh, su_socket_t s,
 				su_sockaddr_t *sa, socklen_t salen,
 				void *data, int len)
 {
-  int retval = -1, err = -1, dgram_len;
-  char ipaddr[SU_ADDRSIZE + 2];
+  int retval = -1;
   stun_msg_t msg;
-  unsigned char dgram[20] = { 0 };
-  su_sockaddr_t recv;
-  socklen_t recv_len;
 
   enter;
 
@@ -2502,7 +2583,10 @@ int stun_keepalive(stun_handle_t *sh,
   stun_keepalive_destroy(sh, s);
   
   /*Ok, here we go */
-  sd = stun_discovery_create(sh, action);
+  sd = stun_discovery_create(sh, action, NULL, NULL); /* XXX --
+							 specify last
+							 params if
+							 necessary */
   sd->sd_socket = s;
   sd->sd_timeout = timeout;
   memcpy(sd->sd_pri_addr, sa, sizeof(*sa));
@@ -2679,3 +2763,10 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
   stun_send_message(s, &to_addr, &resp, NULL);
   return 0;
 } 
+
+
+su_socket_t stun_discovery_get_socket(stun_discovery_t *sd)
+{
+  assert(sd);
+  return sd->sd_socket;
+}

@@ -301,7 +301,7 @@ int torture_test_get_lifetime(char *localaddr)
 
   atonetaddr(my_addr, localaddr);
   addrlen = sizeof(*my_addr);
-  result = stun_handle_get_lifetime(se, &addr.li_addr, &addrlen, &lifetime); TEST(result, 0);
+  result = stun_handle_get_lifetime(se, NULL, &addr.li_addr, &addrlen, &lifetime); TEST(result, 0);
   printf("Binding Lifetime determined to be: %d seconds\n", lifetime);
 
   su_close(s);

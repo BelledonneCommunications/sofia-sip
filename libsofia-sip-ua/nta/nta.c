@@ -610,11 +610,16 @@ sip_via_t *nta_agent_via(nta_agent_t const *agent)
   return agent ? agent->sa_vias : NULL;
 }
 
-/** Return a list of public @b Via headers.
+
+/** Return a list of public (UPnP, STUN) @b Via headers.
  *
- * Return @b Via headers for all public transports.
+ * The function nta_agent_public_via() returns public @b Via headers for all activated
+ * transports.
  *
  * @param agent NTA agent object
+ *
+ * @return The function nta_agent_public_via() returns a list of sip_via_t objects
+ * used by the @a agent.
  */
 sip_via_t *nta_agent_public_via(nta_agent_t const *agent)
 {
@@ -1289,7 +1294,7 @@ char const *stateless_branch(nta_agent_t *sa,
 
 /* Local prototypes */
 static int agent_create_master_transport(nta_agent_t *self, tagi_t *tags);
-static int agent_init_via(nta_agent_t *self, int use_maddr);
+static int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr);
 static int agent_init_contact(nta_agent_t *self);
 static void agent_recv_message(nta_agent_t *agent,
 			       tport_t *tport,
@@ -1511,7 +1516,7 @@ int nta_agent_add_tport(nta_agent_t *self,
 		tpn->tpn_comp ? tpn->tpn_comp : ""));
 
   /* XXX - when to use maddr? */
-  if ((agent_init_via(self, 0)) < 0) {
+  if ((agent_init_via(self, tport_primaries(self->sa_tports), 0)) < 0) {
     error = su_errno();
     SU_DEBUG_1(("nta: cannot create Via headers\n"));
     goto error;
@@ -1581,7 +1586,7 @@ int agent_create_master_transport(nta_agent_t *self, tagi_t *tags)
 
 /** Initialize Via headers. */
 static
-int agent_init_via(nta_agent_t *self, int use_maddr)
+int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
 {
   sip_via_t *via = NULL, *new_via, *dup_via, *v, **vv = &via;
   tport_t *tp;
@@ -1599,7 +1604,7 @@ int agent_init_via(nta_agent_t *self, int use_maddr)
   self->sa_tport_tls = 0;
 
   /* Set via fields for the tports */
-  for (tp = tport_primaries(self->sa_tports); tp; tp = tport_next(tp)) {
+  for (tp = primaries; tp; tp = tport_next(tp)) {
     int maddr, first_via;
     tp_name_t tpn[1];
     char const *comp = NULL;
@@ -1691,7 +1696,7 @@ int agent_init_via(nta_agent_t *self, int use_maddr)
   msg_header_free(self->sa_home, (void *)v);
 
   /* Set via field magic for the tports */
-  for (tp = tport_primaries(self->sa_tports); tp; tp = tport_next(tp)) {
+  for (tp = primaries; tp; tp = tport_next(tp)) {
     assert(via->v_common->h_data == tp);
     v = tport_magic(tp);
     tport_set_magic(tp, new_via);
@@ -1931,7 +1936,12 @@ void agent_tp_error(nta_agent_t *agent,
 /** Handle updated transport addresses */
 static void agent_update_tport(nta_agent_t *self, tport_t *tport)
 {
-  agent_init_via(self, 0);
+  /* Initialize non-natted Vias first */
+  agent_init_via(self, tport_primaries(self->sa_tports), 0);
+
+  /* Initialize natted Vias */
+  agent_init_via(self, tport_public_primaries(self->sa_tports), 0);
+
 
   if (self->sa_update_tport) {
     self->sa_update_tport(self->sa_update_magic, self);

@@ -89,11 +89,12 @@
 typedef struct tport_master tport_master_t;
 typedef struct tport_nat_s tport_nat_t;
 
-#define SU_WAKEUP_ARG_T struct tport_s
-#define SU_TIMER_ARG_T  struct tport_master
-#define SU_ROOT_MAGIC_T struct tport_threadpool
-#define SU_MSG_ARG_T    union tport_su_msg_arg
-#define STUN_MAGIC_T    tport_master_t
+#define SU_WAKEUP_ARG_T         struct tport_s
+#define SU_TIMER_ARG_T          struct tport_master
+#define SU_ROOT_MAGIC_T         struct tport_threadpool
+#define SU_MSG_ARG_T            union tport_su_msg_arg
+#define STUN_MAGIC_T            tport_master_t
+#define STUN_DISCOVERY_MAGIC_T  struct tport_primary
 
 #include <sofia-sip/su_wait.h>
 
@@ -372,7 +373,8 @@ struct tport_master {
   /** File to dump received and sent data */
   FILE               *mr_dump_file;	
 
-  tport_primary_t    *mr_primaries;     /**< List of primary contacts */
+  tport_primary_t    *mr_primaries;        /**< List of primary contacts */
+  tport_primary_t    *mr_public_primaries; /**< List of primary contacts */
 
   tport_params_t      mr_params[1];
   
@@ -424,6 +426,9 @@ struct tport_master {
 #define STACK_SIGCOMP_ACCEPT(tp, msg)				  \
   (tp)->tp_master->mr_tpac->					  \
   tpac_sigcomp_accept((tp)->tp_master->mr_stack, (tp), (msg))
+
+#define STACK_ADDRESS(tp)		       \
+  (tp)->tp_master->mr_tpac->tpac_address((tp)->tp_master->mr_stack, (tp))
 
 #define TP_STACK   tp_master->mr_stack
 
@@ -772,14 +777,21 @@ char *tport_nat_get_external_ip_address(struct tport_nat_s *nat);
 
 #if HAVE_SOFIA_STUN
 static
-int tport_nat_stun_bind(struct tport_nat_s *nat,
+int tport_nat_stun_bind(tport_primary_t *pub,
+			struct tport_nat_s *nat,
 			su_sockaddr_t su[1],
 			socklen_t *sulen,
 			su_socket_t s);
+static
+void tport_stun_bind_done(tport_primary_t *pri,
+			  stun_handle_t *sh,
+			  stun_discovery_t *sd);
+
 #endif
 
 static
 int tport_nat_traverse_nat(tport_master_t *, 
+			   tport_primary_t *pub,
 			   su_sockaddr_t su[1],
 			   su_addrinfo_t const *ai,
 			   su_socket_t s);
@@ -883,6 +895,7 @@ static void tport_deliver(tport_t *, msg_t *msg, msg_t *next,
 			  struct sigcomp_udvm **udvm, su_time_t now);
 
 static tport_primary_t *tport_alloc_primary(tport_master_t *tpm);
+static tport_primary_t *tport_alloc_public_primary(tport_master_t *tpm);
 static tport_primary_t *tport_listen(tport_master_t *mr, 
 				     su_addrinfo_t const *ai, 
 				     char const *canon, char const *protoname,
@@ -1133,6 +1146,73 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr)
   return pri;
 }
 
+
+/** Allocate a public primary transport */
+static 
+tport_primary_t *tport_alloc_public_primary(tport_master_t *mr)
+{
+  tport_primary_t *pri, **next;
+
+  for (next = &mr->mr_public_primaries; *next; next = &(*next)->pri_next)
+    ;
+
+  if ((pri = su_home_clone(mr->mr_home, sizeof (*pri)))) {
+    tport_t *tp = pri->pri_primary;
+    tp->tp_master = mr;
+    tp->tp_pri = pri;
+    tp->tp_socket = SOCKET_ERROR;
+
+    tp->tp_magic = mr->mr_master->tp_magic;
+
+    tp->tp_params = pri->pri_params;
+    memcpy(tp->tp_params, mr->mr_params, sizeof (*tp->tp_params));
+    tp->tp_reusable = mr->mr_master->tp_reusable;
+
+    tp->tp_addrinfo->ai_addr = &tp->tp_addr->su_sa;
+
+    SU_DEBUG_5(("%s(%p): new public primary tport %p\n", __func__, mr, pri));
+  }
+
+  *next = pri;
+
+  return pri;
+}
+
+#if 0
+int tport_tcp_socket_http_connect(su_home_t *home, su_socket_t s,
+				  su_sockaddr_t *sa, url_t const *srv)
+{
+  char ua[] = "sofia-sip-1.11.6";
+  char *str;
+  int len;
+  url_string_t *url;
+
+  len = url_len(srv);
+  url = su_zalloc(home, len);
+  url_e(url, len, srv);
+
+  str = su_sprintf(home, "CONNECT %s HTTP/1.1\nUser-agent: %s\n\n", (char *) url, ua);
+  su_free(home, url);
+
+  if (connect(s, sa->su_sa, sa->su_len) == SOCKET_ERROR) {
+    err = su_errno();
+    if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK)
+      TPORT_CONNECT_ERROR(err, connect);
+    events = SU_WAIT_CONNECT | SU_WAIT_ERR;
+    wakeup = tport_http_connected;
+  }
+
+  if (su_wait_create(wait, s, events) == -1)
+    TPORT_CONNECT_ERROR(su_errno(), su_wait_create);
+
+  /* Register receiving function with events specified above */
+  if ((index = su_root_register(mr->mr_root, wait, wakeup, self, 0)) == -1)
+    TPORT_CONNECT_ERROR(su_errno(), su_root_register);
+
+  return 0;
+}
+#endif
+
 /**Create a primary transport object with socket.
  *
  * Creates a primary transport object with a server socket, and then
@@ -1230,8 +1310,9 @@ tport_primary_t *tport_listen(tport_master_t *mr,
     su_setreuseaddr(s, 1);
 #endif
 
-  nat_bound = tport_nat_traverse_nat(mr, su, ai, s);
-
+  /* nat_bound = tport_nat_traverse_nat(mr, su, ai, s, tags); */
+  nat_bound = 0;
+  
   if (!nat_bound /* || !mr->mr_nat->stun_enabled */) {
     /* STUN has a problem or is not enabled */
     if (bind(s, ai->ai_addr, ai->ai_addrlen) == SOCKET_ERROR) {
@@ -1359,6 +1440,121 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 	      TPN_ARGS(pri->pri_primary->tp_name)));
 
   return pri;
+}
+
+/**Launch a discovery procedure for finding public address. Create a
+ * public primary transport object with socket.
+ *
+ * Creates a public primary transport object with a server socket, and
+ * then registers the socket with suitable events to the
+ * root. Launches NAT traversal discovery procedure.
+ *
+ * @param mr   parent (master or primary) transport object
+ * @param ainfo pointer to addrinfo structure
+ * @param canon canonical name of node
+ * @param protoname name of the protocol
+ * @param port port to bind
+ * @param tags tag list
+ */
+static
+tport_primary_t *tport_start_public_listen(tport_master_t *mr, 
+					   tport_primary_t *pri,
+					   su_addrinfo_t const *ainfo, 
+					   char const *canon, char const *protoname,
+					   int port,
+					   tagi_t *tags)
+{
+  tport_primary_t *pub = NULL;
+
+  su_socket_t s = SOCKET_ERROR;
+  int nat_bound = 0;
+
+  su_addrinfo_t ai[1];
+  su_sockaddr_t su[1];
+
+  int err;
+  int errlevel = 3;
+  char buf[TPORT_HOSTPORTSIZE];
+
+  /* Log an error, return error */
+#define TPORT_PUBLIC_LISTEN_ERROR(errno, what)  \
+  ((void)(err = errno, s != SOCKET_ERROR ? su_close(s) : 0,	     \
+	    (SU_LOG_LEVEL >= errlevel ?				     \
+	     su_llog(tport_log, errlevel,			     \
+		     "%s(%p): %s(pf=%d %s/%s): %s\n",		     \
+		     __func__, mr, #what, ai->ai_family,	     \
+		     protoname,					     \
+		     tport_hostport(buf, sizeof(buf), su, 2),	     \
+		     su_strerror(err)) : (void)0),		     \
+	    tport_zap_primary(pub),		                     \
+	    su_seterrno(err)),					     \
+     (void *)NULL)
+
+  if (ainfo->ai_addrlen > sizeof(su))
+    return NULL;
+
+  if (!(ainfo->ai_socktype == SOCK_STREAM ||
+	ainfo->ai_socktype == SOCK_SEQPACKET ||	   
+	ainfo->ai_socktype == SOCK_DGRAM)) {
+    assert(ainfo->ai_socktype == SOCK_STREAM ||
+	   ainfo->ai_socktype == SOCK_SEQPACKET ||	   
+	   ainfo->ai_socktype == SOCK_DGRAM);
+    return NULL;
+  }
+
+  memcpy(ai, ainfo, sizeof ai);
+
+  ai->ai_addr = memcpy(su, ai->ai_addr, ai->ai_addrlen);
+  ai->ai_next = NULL;
+
+  if (port > 0)
+    su->su_port = htons(port);
+
+  /* Create a public primary transport object for another transport. */
+  pub = tport_alloc_public_primary(mr);
+  if (pub == NULL)
+    return TPORT_PUBLIC_LISTEN_ERROR(errno, tport_alloc_primary);
+
+  if (tport_set_params(pub->pri_primary, TAG_NEXT(tags)) < 0)
+    return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), tport_set_params);    
+
+  /* Use the same socket as in the real primary transport */
+  s = pri->pri_primary->tp_socket;
+
+#if SU_HAVE_IN6
+  if (s == SOCKET_ERROR) {
+    if (ai->ai_family == AF_INET6 && su_errno() == EAFNOSUPPORT)
+      errlevel = 7;
+    return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), socket);
+  }
+#endif
+
+  if (getsockname(s, ai->ai_addr, &ai->ai_addrlen) == SOCKET_ERROR)
+    return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), getsockname);
+  
+  if (tport_setname(pub->pri_primary, protoname, ai, canon) == -1) 
+    return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), tport_setname);
+
+  pub->pri_primary->tp_socket   = s;
+  pub->pri_primary->tp_index    = pri->pri_primary->tp_index;
+  pub->pri_primary->tp_events   = pri->pri_primary->tp_events;
+  pub->pri_primary->tp_connected = 0;
+  pub->pri_primary->tp_conn_orient = ai->ai_socktype != SOCK_DGRAM;
+  
+  /* Launch NAT resolving */
+  nat_bound = tport_nat_traverse_nat(mr, pub, su, ai, s);
+
+  if (nat_bound) {
+    /* XXX - should set also the IP address in tp_addr? */
+    pub->pri_natted = 1;
+    tport_nat_set_canon(pub->pri_primary, mr->mr_nat);
+  }
+
+  SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
+	      __func__, pub, "listening at",
+	      TPN_ARGS(pub->pri_primary->tp_name)));
+
+  return pub;
 }
 
 /** Destroy a primary transport and its secondary transports. @internal */
@@ -1910,8 +2106,8 @@ int tport_bind_server(tport_master_t *mr,
 {
   char hostname[256];
   char const *canon = NULL, *host, *service;
-  int error = 0, not_supported, family = 0;
-  tport_primary_t *pri = NULL, **tbf;
+  int error = 0, not_supported, family = 0, natted = 0;
+  tport_primary_t *pri = NULL, *pub = NULL, **tbf, **tbf_pub;
   su_addrinfo_t *ai, *res = NULL;
   unsigned port, port0, port1, old;
   unsigned short step = 0;
@@ -1975,6 +2171,9 @@ int tport_bind_server(tport_master_t *mr,
   for (tbf = &mr->mr_primaries; *tbf; tbf = &(*tbf)->pri_next)
     ;
 
+  for (tbf_pub = &mr->mr_public_primaries; *tbf_pub; tbf_pub = &(*tbf_pub)->pri_next)
+    ;
+
   port = port0 = port1 = ntohs(((su_sockaddr_t *)res->ai_addr)->su_port);
   error = ENOENT, not_supported = 1;
 
@@ -1999,6 +2198,17 @@ int tport_bind_server(tport_master_t *mr,
 	  break;
 	}
 	break;
+      }
+
+      /* Launch NAT discovery requests */
+      if (!natted && ai->ai_protocol == IPPROTO_UDP && ai->ai_family == AF_INET) {
+	pub = tport_start_public_listen(mr, pri, ai, canon, ai->ai_canonname, port, tags);
+	if (!pub) {
+	  SU_DEBUG_3(("%s(%p): cannot start NAT traversal discovery\n", __func__, mr));
+	}
+	else {
+	  natted = 1;
+	}
       }
 
       pri->pri_primary->tp_ident = su_strdup(pri->pri_home, tpn->tpn_ident);
@@ -6050,8 +6260,30 @@ tport_t *tport_primaries(tport_t const *self)
     return NULL;
 }
 
+/** Get list of primary transports */
+tport_t *tport_public_primaries(tport_t const *self)
+{
+  if (self)
+    return self->tp_master->mr_public_primaries->pri_primary;
+  else
+    return NULL;
+}
+
 /** Get next transport */
 tport_t *tport_next(tport_t const *self)
+{
+  if (self == NULL)
+    return NULL;
+  else if (tport_is_master(self))
+    return ((tport_master_t *)self)->mr_primaries->pri_primary;
+  else if (tport_is_primary(self))
+    return ((tport_primary_t *)self)->pri_next->pri_primary;
+  else
+    return tprb_succ(self);
+}
+
+/** Get next transport */
+tport_t *tport_public_next(tport_t const *self)
 {
   if (self == NULL)
     return NULL;
@@ -7290,39 +7522,59 @@ int tport_keepalive(tport_t *tp, tp_name_t *tpn)
 }
 
 #if HAVE_SOFIA_STUN
-void tport_stun_cb(tport_master_t *mr, stun_handle_t *sh,
-		    stun_request_t *req,
-		    stun_discovery_t *sd,
-		    stun_action_t action,
-		    stun_state_t event)
+void tport_stun_cb(tport_master_t *mr,
+		   stun_handle_t *sh,
+		   stun_request_t *req,
+		   stun_discovery_t *sd,
+		   stun_action_t action,
+		   stun_state_t event)
 {
-  su_sockaddr_t *sa = NULL;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
-
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
   switch (action) {
   case stun_action_tls_query:
-    mr->mr_stun_step_ready = 1;
+    break;
+
+  default:
+    break;
+  }
+
+  return;
+}
+
+
+/**Callback for STUN bind
+*/
+void tport_stun_bind_cb(tport_primary_t *pri,
+			stun_handle_t *sh,
+			stun_request_t *req,
+			stun_discovery_t *sd,
+			stun_action_t action,
+			stun_state_t event)
+{
+  tport_master_t *mr;
+  SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
+
+  mr = pri->pri_master;
+
+  switch (action) {
+  case stun_action_tls_query:
     break;
 
   case stun_action_binding_request:
     if (event != stun_bind_done && event != stun_discovery_timeout)
       break;
 
-    memset(&mr->mr_nat->sockaddr, 0, sizeof(su_sockaddr_t));
-    if (event == stun_bind_done) {
-      sa = stun_discovery_get_address(sd);
-      memcpy(&mr->mr_nat->sockaddr, sa, sizeof(su_sockaddr_t));
-      SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
-		  inet_ntop(mr->mr_nat->sockaddr.su_family,
-			    SU_ADDR(&mr->mr_nat->sockaddr),
-			    ipaddr, sizeof(ipaddr)),
-		  (unsigned) ntohs(mr->mr_nat->sockaddr.su_port)));
-    }
-    mr->mr_stun_step_ready = 1;
+    if (event == stun_bind_done)
+      tport_stun_bind_done(pri, sh, sd);
+
+    /* send event to nta indicating to call nta_agent_public_via() */
+#if 0
+    /* new primary transport available */
+#endif
+
     break;
-    
+
   default:
     break;
   }
@@ -7330,6 +7582,35 @@ void tport_stun_cb(tport_master_t *mr, stun_handle_t *sh,
   return;
 }
 #endif
+
+static
+void tport_stun_bind_done(tport_primary_t *pri,
+			  stun_handle_t *sh,
+			  stun_discovery_t *sd)
+{
+  tport_t *tp = pri->pri_primary;
+  su_sockaddr_t *sa = NULL;
+  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  su_socket_t s;
+
+  s = stun_discovery_get_socket(sd);
+  sa = stun_discovery_get_address(sd);
+
+  SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
+	      inet_ntop(sa->su_family,
+			SU_ADDR(sa),
+			ipaddr, sizeof(ipaddr)),
+	      (unsigned) ntohs(sa->su_port)));
+
+  SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
+  
+
+  /* Send message to calling application indicating there's a new
+     public address available */
+  STACK_ADDRESS(tp);
+
+  return;
+}
 
 static
 struct tport_nat_s *
@@ -7357,7 +7638,7 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
     for (i = 0; stun_transports[i]; i++) {
       if ((strcmp(tpn->tpn_proto, "*") == 0 || 
 	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
-        SU_DEBUG_5(("%s(%p) starting STUN engine\n", __func__, mr));
+        SU_DEBUG_5(("%s(%p) initializing STUN handle\n", __func__, mr));
 
         nat->stun = stun_handle_create(mr,
 				       mr->mr_root,
@@ -7370,12 +7651,6 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
 	if (stun_handle_request_shared_secret(nat->stun) < 0) {
 	  SU_DEBUG_3(("%s: %s failed\n", __func__,
 		      "stun_handle_request_shared_secret()"));
-	}
-
-	/* Change me in tport_stun_cb() */
-	mr->mr_stun_step_ready = 0;
-	while (mr->mr_stun_step_ready != 1) {
-	  su_root_step(mr->mr_root, 1000);
 	}
 
 	nat->try_stun = 1;
@@ -7426,58 +7701,35 @@ char *tport_nat_get_external_ip_address(struct tport_nat_s *nat)
  *
  * @return non-zero on success
  */
-int tport_nat_stun_bind(struct tport_nat_s *nat,
+int tport_nat_stun_bind(tport_primary_t *pub,
+			struct tport_nat_s *nat,
 			su_sockaddr_t su[1],
 			socklen_t *sulen,
 			su_socket_t s)
 {
-  int nat_bound = 0;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  stun_handle_t *sh = nat->stun;
+  int nat_bound = 0, reg_socket;
+
   /* nat->stun_socket = stun_socket_create(nat->stun, s); */
 
-  tport_master_t *mr = nat->tport;
   nat->stun_socket = s;
-  if (stun_handle_bind(nat->stun, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+  
+  /* Do not register socket to stun's event loop */
+  reg_socket = 0;
+
+  nat_bound = stun_handle_bind(sh, tport_stun_bind_cb, pub,
+			       STUNTAG_SOCKET(s),
+			       STUNTAG_REGISTER_SOCKET(reg_socket),
+			       TAG_NULL());
+
+  if (nat_bound < 0) {
     SU_DEBUG_9(("%s: %s  failed.\n", __func__, "stun_handle_bind()"));
     return nat_bound;
   }
 
-  /* Change me in tport_stun_cb() */
-  mr->mr_stun_step_ready = 0;
-  while (mr->mr_stun_step_ready != 1) {
-    su_root_step(mr->mr_root, 1000);
-  }
-
-  stun_handle_release(nat->stun, s);
-  SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
-
-  /* Check if we ended up here because of STUN timeout */
-  if (nat->sockaddr.su_port == 0) {
-    stun_handle_destroy(nat->stun), nat->stun = NULL;
-    return nat_bound;
-  }
-  memcpy(su, &nat->sockaddr, sizeof(su_sockaddr_t));
-  *sulen = sizeof(struct sockaddr_in);
-  SU_DEBUG_0(("%s: local address copied as %s:%u\n", __func__,
-	      inet_ntop(su->su_family, SU_ADDR(su),
-			ipaddr, sizeof(ipaddr)),
-	      (unsigned) ntohs(su->su_port)));
-  
   nat->stun_enabled = 1;
   nat_bound = 1;
 
-#if 0
-  bind_res = stun_bind(nat->stun_socket, /* &su->su_sa, sulen, */ &lifetime);
-  if (bind_res >= 0) {
-    SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
-    nat->stun_enabled = 1;
-    nat_bound = 1;
-  }
-  else {
-    /* TP_SOCKET_ERROR(errno, stun_bind); */
-    SU_DEBUG_3(("%s: STUN bind failed.\n", __func__));
-  }
-#endif
   return nat_bound;
 }
 #endif /* HAVE_SOFIA_STUN */
@@ -7491,6 +7743,7 @@ int tport_nat_stun_bind(struct tport_nat_s *nat,
  *         non-zero.
  */
 int tport_nat_traverse_nat(tport_master_t *self,
+			   tport_primary_t *pub,
 			   su_sockaddr_t su[1],
 			   su_addrinfo_t const *ai,
 			   su_socket_t s)
@@ -7545,7 +7798,7 @@ int tport_nat_traverse_nat(tport_master_t *self,
   if (nat->try_stun) {
 
     if (nat->stun && ai->ai_protocol == IPPROTO_UDP) {
-      nat_bound = tport_nat_stun_bind(nat, su, &sulen, s);
+      nat_bound = tport_nat_stun_bind(pub, nat, su, &sulen, s);
     }
 
     if (nat->stun == NULL || !nat_bound) { /* UPnP fallback, cascading NAT */
@@ -7593,7 +7846,7 @@ int tport_nat_traverse_nat(tport_master_t *self,
   SU_DEBUG_5(("%s: Only STUN selected in compilation.\n", __func__));
 
   if (nat->stun && ai->ai_protocol == IPPROTO_UDP) {
-    nat_bound = tport_nat_stun_bind(nat, su, &sulen, s);
+    nat_bound = tport_nat_stun_bind(pub, nat, su, &sulen, s);
   }
 #endif
 

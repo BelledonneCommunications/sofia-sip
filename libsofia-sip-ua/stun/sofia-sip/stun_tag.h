@@ -71,6 +71,11 @@ extern tag_typedef_t stuntag_socket;
 #define STUNTAG_SOCKET_REF(x) stuntag_socket_ref, tag_int_vr(&(x))
 extern tag_typedef_t stuntag_socket_ref;
 
+#define STUNTAG_REGISTER_SOCKET(x) stuntag_register_socket, tag_int_v(x)
+extern tag_typedef_t stuntag_register_socket;
+#define STUNTAG_REGISTER_SOCKET_REF(x) stuntag_register_socket_ref, tag_int_vr(&(x))
+extern tag_typedef_t stuntag_register_socket_ref;
+
 #define STUNTAG_ACTION(x) stuntag_action, tag_int_v(x)
 extern tag_typedef_t stuntag_action;
 #define STUNTAG_ACTION_REF(x) stuntag_action_ref, tag_int_vr(&(x))

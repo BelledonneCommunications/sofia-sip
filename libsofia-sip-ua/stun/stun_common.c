@@ -422,7 +422,6 @@ int stun_encode_message_integrity(stun_attr_t *attr,
 
   /* zero padding */
   if (len % 64 == 0) {
-    void *sha_hmac;
 
     padded_len = len + (64 - (len % 64));
     padded_text = (unsigned char *) malloc(padded_len);
