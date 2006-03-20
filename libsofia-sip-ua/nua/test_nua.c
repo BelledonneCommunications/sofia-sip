@@ -121,7 +121,7 @@ void printer_function(nua_event_t event,
 struct proxy_transaction;
 struct registration_entry;
 
-enum { event_is_normal, event_is_special, event_is_extra };
+enum { event_is_extra, event_is_normal, event_is_special };
 
 struct eventlist {
   nua_event_t kind;
@@ -211,13 +211,24 @@ int save_until_final_response(CONDITION_PARAMS)
   return event >= nua_r_set_params && status >= 200;
 }
 
-/** Save events (except nua_i_active or terminated).
+/** Save events.
+ *
  * Terminate when a event is saved.
  */
 int save_until_received(CONDITION_PARAMS)
 {
-  save_event_in_list(ctx, event, ep, ep->call);
-  return 1;
+  return save_event_in_list(ctx, event, ep, ep->call) == event_is_normal;
+}
+
+int save_events(CONDITION_PARAMS)
+{
+  return save_event_in_list(ctx, event, ep, ep->call) == event_is_normal;
+}
+
+/** Save events until nua_i_outbound is received.  */
+int save_until_special(CONDITION_PARAMS)
+{
+  return save_event_in_list(ctx, event, ep, ep->call) == event_is_special;
 }
 
 /* Return call state from event tag list */
@@ -570,7 +581,7 @@ int save_event_in_list(struct context *ctx,
   e->call = call;
   e->data = nua_event_data(e->saved_event);
 
-  return 1;
+  return action;
 }
 
 /* Save nua event in endpoint list */
@@ -1317,6 +1328,7 @@ int test_init(struct context *ctx,
 			  NUTAG_URL(a_bind),
 			  TAG_IF(a_bind != a_bind2, NUTAG_SIPS_URL(a_bind2)),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+			  NTATAG_SIP_T1X64(4000),
 			  TAG_END());
   TEST_1(ctx->a.nua);
 
@@ -1637,6 +1649,52 @@ int test_connectivity(struct context *ctx)
   END();
 }
 
+int test_nat_timeout(struct context *ctx)
+{
+  if (!ctx->p || !ctx->nat)
+    return 0;			/* No proxy */
+
+  BEGIN();
+
+  struct endpoint *a = &ctx->a,  *b = &ctx->b, *c = &ctx->c;
+  struct event *e;
+  sip_t const *sip;
+
+  /* Test what happens when NAT bindings go away */
+
+  if (print_headings)
+    printf("TEST NUA-2.5.1: NAT binding change\n");
+
+  free_events_in_list(ctx, a->specials);
+
+  test_nat_flush(ctx->nat);	/* Break our connections */
+
+  run_a_until(ctx, -1, save_until_special);
+
+  TEST_1(e = a->specials->head);
+  TEST_E(e->data->e_event, nua_i_outbound);
+  TEST(e->data->e_status, 102);
+  TEST_S(e->data->e_phrase, "NAT binding changed");
+  TEST_1(!e->next);
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->events->head);
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->specials);
+  free_events_in_list(ctx, a->events);
+
+  if (print_headings)
+    printf("TEST NUA-2.5.1: PASSED\n");
+  
+  (void)b; (void)c; (void)sip;
+
+  END();
+}
+
 int test_unregister(struct context *ctx)
 {
   if (!ctx->p)
@@ -1743,11 +1801,6 @@ int test_unregister(struct context *ctx)
 
 
 /* ======================================================================== */
-
-int save_events(CONDITION_PARAMS)
-{
-  return save_event_in_list(ctx, event, ep, ep->call) > 0;
-}
 
 int until_terminated(CONDITION_PARAMS)
 {
@@ -5656,6 +5709,9 @@ int main(int argc, char *argv[])
 
     if (retval == 0)
       retval |= test_connectivity(ctx);
+
+    if (retval == 0 && o_inat)
+      retval |= test_nat_timeout(ctx);
 
     if (retval == 0) {
       retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
