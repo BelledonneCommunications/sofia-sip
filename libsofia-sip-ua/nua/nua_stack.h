@@ -497,6 +497,12 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, event_t *e);
 
 int nua_stack_registrations_init(nua_t *nua);
 
+int register_usage_check_accept(sip_accept_t const *accept);
+
+int register_usage_process_options(struct register_usage *usages,
+				   nta_incoming_t *irq,
+				   sip_t const *sip);
+
 void nua_stack_post_signal(nua_handle_t *nh, nua_event_t event, 
 			   tag_type_t tag, tag_value_t value, ...);
 

@@ -109,6 +109,9 @@ int nua_stack_process_options(nua_t *nua,
 
   int status = 200; char const *phrase = sip_200_OK;
 
+  if (register_usage_check_accept(sip->sip_accept))
+    return register_usage_process_options(nua->nua_registrations, irq, sip);
+
   if (nh == NULL)
     nh = nua->nua_dhandle;
 
