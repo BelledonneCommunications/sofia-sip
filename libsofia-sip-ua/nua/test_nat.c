@@ -119,14 +119,18 @@ struct binding
 {
   struct binding *next, **prev;
   struct nat *nat;		/* backpointer */
+  int socktype;
   int in_socket, out_socket;
   int in_register, out_register;
   int in_closed, out_closed;
   char in_name[64], out_name[64];
 };
 
-static struct binding *nat_binding_new(struct nat *, int, int);
+static struct binding *nat_binding_new(struct nat *, int, int, int);
 static void nat_binding_destroy(struct binding *);
+
+static void flush_bindings(struct nat *nat);
+static void invalidate_bindings(struct nat *nat);
 
 static int new_udp(struct nat *, su_wait_t *wait, struct binding *dummy);
 static int udp_in_to_out(struct nat *, su_wait_t *wait, struct binding *);
@@ -135,6 +139,8 @@ static int udp_out_to_in(struct nat *, su_wait_t *wait, struct binding *);
 static int new_tcp(struct nat *, su_wait_t *wait, struct binding *dummy);
 static int tcp_in_to_out(struct nat *, su_wait_t *wait, struct binding *);
 static int tcp_out_to_in(struct nat *, su_wait_t *wait, struct binding *);
+
+static int invalidate_binding(struct binding *b);
 
 /* nat entry point */
 static int
@@ -278,16 +284,7 @@ test_nat_init(su_root_t *root, struct nat *nat)
 static void
 test_nat_deinit(su_root_t *root, struct nat *nat)
 {
-  struct binding *b;
-
-  for (b = nat->bindings; b; b = b->next) {
-    if (b->in_register)
-      su_root_deregister(root, b->in_register);
-    su_close(b->in_socket);
-    if (b->out_register)
-      su_root_deregister(root, b->out_register);
-    su_close(b->out_socket);
-  }
+  flush_bindings(nat);
 
   if (nat->tcp_register)
     su_root_deregister(root, nat->tcp_register);
@@ -386,16 +383,27 @@ int test_nat_public(struct nat *nat, void const *address, int addrlen)
   if (li == NULL)
     return su_seterrno(EADDRNOTAVAIL);
 
+  su_clone_pause(nat->clone);
   memcpy(nat->out_address, address, nat->out_addrlen = addrlen);
-
   nat->fake = li;
+  su_clone_resume(nat->clone);
 
   return 0;
+}
+
+int test_nat_flush(struct nat *nat)
+{
+  if (nat == NULL)
+    return su_seterrno(EFAULT);
+
+  return su_task_execute(su_clone_task(nat->clone), 
+			 (void *)invalidate_bindings, nat, NULL);
 }
 
 /* ====================================================================== */
 
 static struct binding *nat_binding_new(struct nat *nat,
+				       int socktype,
 				       int in_socket,
 				       int out_socket)
 {
@@ -409,6 +417,8 @@ static struct binding *nat_binding_new(struct nat *nat,
 
   nat_binding_insert(&nat->bindings, b);
 
+  b->nat = nat;
+  b->socktype = socktype;
   b->in_socket = in_socket, b->out_socket = out_socket;
   b->in_register = -1, b->out_register = -1;
 
@@ -435,6 +445,29 @@ static void nat_binding_destroy(struct binding *b)
   if (b->out_register != -1)
     su_root_deregister(b->nat->root, b->out_register);
   su_close(b->in_socket), su_close(b->out_socket);
+}
+
+static void flush_bindings(struct nat *nat)
+{
+  struct binding *b;
+
+  for (b = nat->bindings; b; b = b->next) {
+    if (b->in_register)
+      su_root_deregister(nat->root, b->in_register);
+    su_close(b->in_socket);
+    if (b->out_register)
+      su_root_deregister(nat->root, b->out_register);
+    su_close(b->out_socket);
+  }
+}
+
+static void invalidate_bindings(struct nat *nat)
+{
+  struct binding *b;
+
+  for (b = nat->bindings; b; b = b->next) {
+    invalidate_binding(b);
+  }
 }
 
 /* ====================================================================== */
@@ -519,7 +552,7 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     return 0;
   }
 
-  b = nat_binding_new(nat, in, out);
+  b = nat_binding_new(nat, SOCK_DGRAM, in, out);
 
   if (b == NULL) {
     su_perror("new_udp: nat_binding_new");
@@ -657,7 +690,7 @@ static int new_tcp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     return 0;
   }
 
-  b = nat_binding_new(nat, in, out);
+  b = nat_binding_new(nat, SOCK_STREAM, in, out);
 
   if (b == NULL) {
     su_perror("new_tcp: nat_binding_new");
@@ -756,6 +789,68 @@ static int tcp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   printf("nat: tcp in %d/%d %s => %s\n",
 	 (int)m, (int)n, b->out_name, b->in_name);
+
+  return 0;
+}
+
+static int invalidate_binding(struct binding *b)
+{
+  struct nat *nat = b->nat;
+  su_sockaddr_t addr[1];
+  socklen_t addrlen = (sizeof addr);
+  int out, out_register;
+  su_wait_t wout[1];
+  char name[64];
+
+  out = su_socket(nat->fake->li_family, b->socktype, 0);
+  if (out < 0) {
+    su_perror("new_udp: socket");
+    return -1;
+  }
+  if (bind(out, (void *)nat->fake->li_addr, nat->fake->li_addrlen) < 0) {
+    su_perror("new_udp: bind(to)");
+    su_close(out);
+    return -1;
+  }
+
+  if (nat->symmetric)
+    if (connect(out, (void *)nat->out_address, nat->out_addrlen) < 0) {
+      su_perror("new_udp: connect(to)");
+      su_close(out);
+      return -1;
+    }
+
+  if (su_wait_create(wout, out, SU_WAIT_IN) < 0) {
+    su_perror("new_udp: su_wait_create");
+    su_close(out);
+    return -1;
+  }
+
+  if (b->socktype == SOCK_DGRAM)
+    out_register = su_root_register(nat->root, wout, udp_out_to_in, b, 0);
+  else
+    out_register = su_root_register(nat->root, wout, tcp_out_to_in, b, 0);
+
+  if (out_register < 0) {
+    su_perror("new_udp: su_root_register");
+    su_wait_destroy(wout);
+    su_close(out);
+    return -1;
+  }
+
+  su_root_deregister(nat->root, b->out_register);
+  su_close(b->out_socket);
+
+  b->out_socket = out;
+  b->out_register = out_register;
+
+  getsockname(out, (void *)addr, &addrlen);
+  inet_ntop(addr->su_family, SU_ADDR(addr), name, sizeof name);
+  snprintf(b->out_name, sizeof b->out_name,
+	   addr->su_family == AF_INET6 ? "[%s]:%u" : "%s:%u",
+	   name, ntohs(addr->su_port));
+
+  printf("nat: flushed binding %s <=> %s\n", b->in_name, b->out_name);
 
   return 0;
 }
