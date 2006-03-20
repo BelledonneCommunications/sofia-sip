@@ -686,6 +686,12 @@ int tport_has_tls(tport_t const *self)
 #endif  
 }
 
+/** Return true if transport is being updated. */
+int tport_is_updating(tport_t const *self)
+{
+  return 0;			/* XXX */
+}
+
 /** Test if transport has been closed */
 static inline int tport_is_closed(tport_t const *self)
 {

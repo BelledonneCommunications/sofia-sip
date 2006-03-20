@@ -48,6 +48,11 @@ struct tport_s;
 typedef TPORT_T tport_t;
 #endif
 
+#ifndef NTA_UPDATE_MAGIC_T
+#define NTA_UPDATE_MAGIC_T void
+#endif
+typedef NTA_UPDATE_MAGIC_T nta_update_magic_t;
+
 struct sigcomp_compartment;
 struct sigcomp_udvm;
 
@@ -65,7 +70,11 @@ nta_outgoing_compartment(nta_outgoing_t *orq);
 void
 nta_compartment_decref(struct sigcomp_compartment **);
 
-typedef void nta_update_tport_f(nta_agent_magic_t *, nta_agent_t *); 
+typedef void nta_update_tport_f(nta_update_magic_t *, nta_agent_t *);
+
+int nta_agent_bind_tport_update(nta_agent_t *agent,
+				nta_update_magic_t *magic,
+				nta_update_tport_f *);
 
 SOFIA_END_DECLS
 

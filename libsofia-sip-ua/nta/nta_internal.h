@@ -94,6 +94,8 @@ struct nta_agent_s
   su_timer_t        *sa_timer;
   nta_agent_magic_t *sa_magic;
   nta_message_f     *sa_callback;     
+
+  nta_update_magic_t*sa_update_magic;
   nta_update_tport_f*sa_update_tport;
 
   su_time_t          sa_now;	/**< Timestamp in microsecond resolution. */

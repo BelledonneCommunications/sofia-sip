@@ -799,7 +799,6 @@ static
 int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 {
   int n, m;
-  nta_update_tport_f *update_tport = agent->sa_update_tport;
   unsigned bad_req_mask = agent->sa_bad_req_mask;
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
   unsigned maxsize    = agent->sa_maxsize;
@@ -845,7 +844,6 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   n = tl_gets(tags,
 	      NTATAG_MCLASS_REF(mclass),
-	      NTATAG_UPDATE_TPORT_REF(update_tport),
 	      NTATAG_BAD_REQ_MASK_REF(bad_req_mask),
 	      NTATAG_BAD_RESP_MASK_REF(bad_resp_mask),
 	      NTATAG_ALIASES_REF(aliases),
@@ -893,8 +891,6 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   if (mclass != NONE)
     agent->sa_mclass = mclass ? mclass : sip_default_mclass();
-
-  agent->sa_update_tport = update_tport;
 
   m = 0;
   for (tport = agent->sa_tports; tport; tport = tport_next(tport)) {
@@ -1938,7 +1934,7 @@ static void agent_update_tport(nta_agent_t *self, tport_t *tport)
   agent_init_via(self, 0);
 
   if (self->sa_update_tport) {
-    self->sa_update_tport(self->sa_magic, self);
+    self->sa_update_tport(self->sa_update_magic, self);
   }
   else {
     /* XXX - we should do something else? */
@@ -9914,6 +9910,24 @@ nta_compartment_decref(struct sigcomp_compartment **pcc)
 }
 
 #endif
+
+/** Bind transport update callback */
+int nta_agent_bind_tport_update(nta_agent_t *agent,
+				nta_update_magic_t *magic,
+				nta_update_tport_f *callback)
+{
+  if (!agent)
+    return su_seterrno(EFAULT), -1;
+  agent->sa_update_magic = magic;
+  agent->sa_update_tport = callback;
+  return 0;
+}
+
+/** Check if public transport binding is in progress */
+int nta_agent_tport_is_updating(nta_agent_t *agent)
+{
+  return agent && tport_is_updating(agent->sa_tports);
+}
 
 /** Initiate STUN keepalive controller to TPORT */
 int nta_tport_keepalive(nta_outgoing_t *orq)

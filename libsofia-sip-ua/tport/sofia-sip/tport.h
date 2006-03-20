@@ -268,8 +268,8 @@ TPORT_DLL int tport_is_tcp(tport_t const *self);
 /** Test if transport has TLS. */
 TPORT_DLL int tport_has_tls(tport_t const *tport);
 
-/** Test if transport has just been accepted. */
-TPORT_DLL int tport_is_newly_accepted(tport_t *self);
+/** Return true if transport is being updated. */
+TPORT_DLL int tport_is_updating(tport_t const *self);
 
 /** Set transport magic. */
 TPORT_DLL void tport_set_magic(tport_t *self, tp_magic_t *magic);
