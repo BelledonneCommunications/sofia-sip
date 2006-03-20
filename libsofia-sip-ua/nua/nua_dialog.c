@@ -425,3 +425,18 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 
   du->du_refresh = target;
 }
+
+/** Call the owner operation function */
+void nua_dialog_usage_refresh(nua_owner_t *owner,
+			      nua_dialog_usage_t *du, 
+			      sip_time_t now)
+{
+  if (du) {
+    nh_pending_f *pending = du->du_pending;
+
+    du->du_pending = NULL;
+    if (pending)
+      pending(owner, du, now);
+  }
+}
+

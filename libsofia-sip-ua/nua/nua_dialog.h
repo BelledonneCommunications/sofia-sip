@@ -148,6 +148,10 @@ void nua_dialog_terminated(nua_owner_t *,
 
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
 
+void nua_dialog_usage_refresh(nua_owner_t *owner,
+			      nua_dialog_usage_t *du, 
+			      sip_time_t now);
+
 
 static inline
 int nua_dialog_is_established(nua_dialog_state_t const *ds)
@@ -159,10 +163,17 @@ int nua_dialog_is_established(nua_dialog_state_t const *ds)
 static inline
 void *nua_dialog_usage_private(nua_dialog_usage_t const *du)
 {
-  return (void *)(du + 1);
+  return du ? (void *)(du + 1) : NULL;
+}
+
+static inline
+nua_dialog_usage_t *nua_dialog_usage_public(void const *p)
+{
+  return p ? (nua_dialog_usage_t *)p - 1 : NULL;
 }
 #else
-#define nua_dialog_usage_private(du) ((void*)((du) + 1))
+#define nua_dialog_usage_private(du) ((du) ? (void*)((du) + 1) : NULL)
+#define nua_dialog_usage_public(p) ((p) ? (nua_dialog_usage_t*)(p) - 1 : NULL)
 #endif
 
 #endif /* NUA_DIALOG_H */
