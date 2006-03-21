@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005-2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -24,7 +24,8 @@
 
 #ifndef STUN_H /** Defined when stun.h has been included. */
 #define STUN_H
-/**@file stun.h STUN client interface
+
+/**@file stun.h STUN module public interface
  *
  * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Martti Mela <Martti.Mela@nokia.com>
@@ -74,7 +75,6 @@ typedef enum stun_action_s {
   stun_action_get_lifetime,
 } stun_action_t;
 
-
 /**
  * States of the STUN client->server query process.
  */ 
@@ -120,7 +120,6 @@ typedef enum stun_state_e {
 
 } stun_state_t;
 
-
 /* Per discovery */
 typedef void (*stun_discovery_f)(stun_discovery_magic_t *magic,
 				 stun_handle_t *sh,
@@ -145,30 +144,28 @@ typedef int (*stun_send_callback)(stun_magic_t *magic,
 				  unsigned len,
 				  int only_a_keepalive);
 
-/* Return the associated socket */
-int stun_handle_get_bind_socket(stun_handle_t *sh);
-
-char const *stun_str_state(stun_state_t state);
-
-/** Check if a STUN handle should be created. */
-int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
+/* -------------------------------------------------------------------
+ * Functions for managing STUN handles. */
 
 stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
 				  tag_type_t tag, tag_value_t value, ...); 
-
-/** Unregister socket from STUN handle event loop */
 int stun_handle_release(stun_handle_t *sh, su_socket_t s);
-
-
 void stun_handle_destroy(stun_handle_t *sh);
-
 su_root_t *stun_handle_root(stun_handle_t *sh);
+int stun_handle_process_message(stun_handle_t *sh, su_socket_t s,
+				su_sockaddr_t *sa, socklen_t salen,
+				void *data, int len);
+int stun_process_request(su_socket_t s, stun_msg_t *req,
+			 int sid, su_sockaddr_t *from_addr,
+			 int from_len);
+char const *stun_str_state(stun_state_t state);
+int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
-int stun_handle_request_shared_secret(stun_handle_t *sh);
+/* ------------------------------------------------------------------- 
+ * Functions for 'Binding Discovery' usage (RFC3489bis) */
 
-/** Bind a socket using STUN.  */
 int stun_handle_bind(stun_handle_t *sh, 
 		     stun_discovery_f,
 		     stun_discovery_magic_t *magic,
@@ -183,6 +180,11 @@ int stun_handle_get_nattype(stun_handle_t *sh,
 			    ...);
 
 char const *stun_nattype(stun_discovery_t *sd);
+su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
+su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
+
+/* -------------------------------------------------------------------
+ * Functions for binding lifetime discovery (orig. RFC3489) */
 
 int stun_handle_get_lifetime(stun_handle_t *sh,
 			     stun_discovery_f,
@@ -192,42 +194,27 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
 
 int stun_lifetime(stun_discovery_t *sd);
 
-/* other functions */
+/* ------------------------------------------------------------------- 
+ * Functions for 'Connectivity Check' and 'NAT Keepalives' usages (RFC3489bis) */
+
+int stun_msg_is_keepalive(uint16_t data);
+int stun_message_length(void *data, int len, int end_of_message);
+int stun_keepalive(stun_handle_t *sh,
+		   su_sockaddr_t *sa,
+		   tag_type_t tag, tag_value_t value,
+		   ...);
+int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
+
+/* -------------------------------------------------------------------
+ * Functions for 'Short-Term password' usage (RFC3489bis) */
+
+int stun_handle_request_shared_secret(stun_handle_t *sh);
 int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
 			      int len_uname, 
 			      const char *pwd,
 			      int len_pwd);
 
-su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
-
-/** Determine if the message is STUN message (-1 if not stun). */
-int stun_msg_is_keepalive(uint16_t data);
-
-/** Determine length of STUN message (0 if not stun). */
-int stun_message_length(void *data, int len, int end_of_message);
-
-/** Process incoming message */
-int stun_handle_process_message(stun_handle_t *sh, su_socket_t s,
-				su_sockaddr_t *sa, socklen_t salen,
-				void *data, int len);
-
-int stun_process_request(su_socket_t s, stun_msg_t *req,
-			 int sid, su_sockaddr_t *from_addr,
-			 int from_len);
-
-/* Create a keepalive dispatcher for bound SIP sockets */
-int stun_keepalive(stun_handle_t *sh,
-		   su_sockaddr_t *sa,
-		   tag_type_t tag, tag_value_t value,
-		   ...);
-
-/* Destroy the keepalive dispatcher without touching the socket */
-int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
-
-
-/* Return socket attached to discovery object */
-su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
 
 SOFIA_END_DECLS
 

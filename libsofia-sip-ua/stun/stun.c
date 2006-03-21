@@ -245,7 +245,9 @@ char const *stun_str_state(stun_state_t state)
   }
 }
 
-/* char const *stun_nattype(stun_handle_t *sh) */
+/** 
+ * Returns the NAT type attached to STUN discovery handle.
+ */
 char const *stun_nattype(stun_discovery_t *sd)
 {
   char const *stun_nattype_str[] = {
@@ -438,8 +440,12 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   return stun;
 }
 
+/** 
+ * Performs shared secret request/response processing.
+ * Result will be trigged in STUN handle callback (state
+ * one of stun_tls_*).
+ **/
 #if defined(HAVE_OPENSSL)
-/** Shared secret request/response processing */
 int stun_handle_request_shared_secret(stun_handle_t *sh)
 {
   int events = -1;
@@ -624,7 +630,6 @@ void stun_handle_destroy(stun_handle_t *sh)
     /* Index has same value as sockfd, right? ... or not? */
     if (kill->sd_index != -1)
       su_root_deregister(sh->sh_root, kill->sd_index);
-
     if (kill->sd_action == stun_action_tls_query)
       su_close(kill->sd_socket);
 
@@ -868,7 +873,12 @@ int stun_handle_bind(stun_handle_t *sh,
 }
 
 
-/** Return local NATed address 
+/** 
+ * Returns the address of the public binding allocated by the NAT.
+ *
+ * In case of multiple on path NATs, the binding allocated by
+ * the outermost NAT is returned.
+ *
  * This function returns the local address seen from outside.
  * Note that the address is not valid until the event stun_clien_done is launched.
  */
@@ -937,7 +947,10 @@ int stun_discovery_destroy(stun_discovery_t *sd)
   return 0;
 }
 
-
+/**
+ * Initiates STUN discovery proces to find out NAT 
+ * characteristics.
+ */
 int stun_handle_get_nattype(stun_handle_t *sh,
 			    stun_discovery_f sdf,
 			    stun_discovery_magic_t *magic,
@@ -2233,14 +2246,16 @@ int stun_process_error_response(stun_msg_t *msg)
   return 0;
 }
 
-
+/**
+ * Sets values for USERNAME and PASSWORD stun fields 
+ * for the handle.
+ */
 int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
 			      int len_uname,
 			      const char *pwd,
 			      int len_pwd)
 {
-
   enter;
 
   sh->sh_username.data = (unsigned char *) malloc(len_uname);
@@ -2445,7 +2460,9 @@ int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr)
 }
 
 
-/** Determine if the message is STUN message (0 if not). */
+/**
+ * Determines if the message is STUN message (-1 if not stun). 
+ */
 int stun_msg_is_keepalive(uint16_t data)
 {
   uint16_t msg_type;
@@ -2461,8 +2478,9 @@ int stun_msg_is_keepalive(uint16_t data)
   return -1;
 }
 
-
-/** Determine length of STUN message (0 if not stun). */
+/**
+ * Determines length of STUN message (0 if not stun). 
+ */
 int stun_message_length(void *data, int len, int end_of_message)
 {
   unsigned char *p;
@@ -2521,7 +2539,9 @@ int stun_handle_process_message(stun_handle_t *sh, su_socket_t s,
 }
 
 
-/** Unregister socket from STUN handle event loop */
+/** 
+ * Unregisters socket from STUN handle event loop 
+ */
 int stun_handle_release(stun_handle_t *sh, su_socket_t s)
 {
   stun_discovery_t *sd;
@@ -2551,8 +2571,9 @@ int stun_handle_release(stun_handle_t *sh, su_socket_t s)
   return -1;
 }
 
-
-/** stun_keepalive won't do su_root_register() */
+/** 
+ * Creates a keepalive dispatcher for bound SIP sockets 
+ */
 int stun_keepalive(stun_handle_t *sh,
 		   su_sockaddr_t *sa,
 		   tag_type_t tag, tag_value_t value,
@@ -2646,7 +2667,9 @@ void stun_keepalive_timer_cb(su_root_magic_t *magic,
   return;
 }
 
-
+/**
+ * Destroys the keepalive dispatcher without touching the socket
+ */
 int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
 {
   stun_discovery_t *sd = NULL;
@@ -2764,7 +2787,7 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
   return 0;
 } 
 
-
+/** Return socket attached to discovery object */
 su_socket_t stun_discovery_get_socket(stun_discovery_t *sd)
 {
   assert(sd);
