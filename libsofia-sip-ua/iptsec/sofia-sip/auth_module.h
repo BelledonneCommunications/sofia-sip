@@ -89,7 +89,8 @@ typedef void auth_callback_t(auth_magic_t *, auth_status_t *);
  * operation is completed.
  *
  * It is recommended that the auth_status_t structure is allocated with
- * auth_status_new() or initialized with auth_status_init() function.
+ * auth_status_new() or initialized with auth_status_init() or
+ * auth_status_init_with() functions.
  */
 struct auth_status_t
 {
@@ -97,10 +98,13 @@ struct auth_status_t
 
   int          	  as_status;	/**< Return authorization status [out] */
   char const   	 *as_phrase;	/**< Return response phrase [out] */
-  char const   	 *as_user;	/**< Authenticated user name [in/out] */
+  char const   	 *as_user;	/**< Authenticated username [in/out] */
   char const   	 *as_display;	/**< Return user's real name [in/out] */
   url_t const    *as_user_uri;	/**< Return user's identity [in/out] */
 
+  char const     *as_alt_uri;	/**< List of alternative identities [out] */
+  unsigned        as_profile;	/**< User profile (group) [out] */
+  
   su_addrinfo_t  *as_source;	/**< Source address [in] */
 
   char const   	 *as_realm;	/**< Authentication realm [in] */
@@ -169,6 +173,8 @@ auth_mod_t *auth_mod_ref(auth_mod_t *am);
 void auth_mod_unref(auth_mod_t *am);
 
 auth_status_t *auth_status_init(void *, int size);
+auth_status_t *auth_status_init_with(void *, int size, 
+				     int status, char const *phrase);
 
 auth_status_t *auth_status_new(su_home_t *);
 
@@ -182,6 +188,10 @@ void auth_mod_method(auth_mod_t *am,
 		     auth_challenger_t const *ach);
 
 void auth_mod_challenge(auth_mod_t *am, 
+			auth_status_t *as,
+			auth_challenger_t const *ach);
+
+void auth_mod_authorize(auth_mod_t *am, 
 			auth_status_t *as,
 			auth_challenger_t const *ach);
 

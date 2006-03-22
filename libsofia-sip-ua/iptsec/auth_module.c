@@ -278,18 +278,30 @@ void auth_mod_unref(auth_mod_t *am)
  */
 auth_status_t *auth_status_init(void *p, int size)
 {
-  auth_status_t *as;
+  return auth_status_init_with(p, size, 500, auth_internal_server_error);
+}
 
+/** Initialize a auth_status_t stucture.
+ *
+ * @retval NULL upon an error
+ * @relates auth_status_t
+ */
+auth_status_t *auth_status_init_with(void *p,
+				     int size,
+				     int status,
+				     char const *phrase)
+{
+  auth_status_t *as;
+  
   if (!p || size < (sizeof *as))
     return NULL;
 
   as = memset(p, 0, size);
   as->as_home->suh_size = size;
 
-  su_home_init(as->as_home);
+  /* su_home_init(as->as_home); */
 
-  as->as_status = 500;
-  as->as_phrase = auth_internal_server_error;
+  as->as_status = status, as->as_phrase = phrase;
   
   return as;
 }
