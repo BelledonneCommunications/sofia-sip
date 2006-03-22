@@ -10,18 +10,13 @@ AUTOMAKE_OPTIONS = 	foreign
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 		-I$(srcdir)/../su -I../su
+INCLUDES = 		-I$(srcdir)/../su -I../su -I$(srcdir)/../sresolv
 
 # ----------------------------------------------------------------------
 # Build targets
 
-# if HAVE_TLS
-stun_lib_sources = 	stun.c stun_common.c
-stun_prog_targets =     stunc torture_stun
-#else
-#stun_lib_targets = 
-#stun_prog_targets =
-#endif
+stun_lib_sources = 	stun.c stun_common.c stun_dns.c
+stun_prog_targets =     stunc torture_stun lookup_stun_server
 
 noinst_LTLIBRARIES = 	libstun.la
 
@@ -44,6 +39,8 @@ LDADD =			libstun.la \
 			../su/libsu.la
 
 torture_stun_LDFLAGS = 	-static
+
+lookup_stun_server_LDADD = libstun.la ../sresolv/libsresolv.la ../su/libsu.la
 
 # ----------------------------------------------------------------------
 # tests

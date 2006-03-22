@@ -18,6 +18,7 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+- Added the stun_dns_lookup.*() interface to sofia-sip/stun.h.
 
 Contributors to this release
 ----------------------------

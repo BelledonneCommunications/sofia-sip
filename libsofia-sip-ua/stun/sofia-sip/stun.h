@@ -45,9 +45,10 @@
 
 SOFIA_BEGIN_DECLS
 
-typedef struct stun_handle_s    stun_handle_t;
-typedef struct stun_request_s   stun_request_t;
-typedef struct stun_discovery_s stun_discovery_t;
+typedef struct stun_handle_s     stun_handle_t;
+typedef struct stun_request_s    stun_request_t;
+typedef struct stun_discovery_s  stun_discovery_t;
+typedef struct stun_dns_lookup_s stun_dns_lookup_t;
 
 #ifndef STUN_MAGIC_T 
 #define STUN_MAGIC_T            struct stun_magic_t
@@ -120,6 +121,9 @@ typedef enum stun_state_e {
 
 } stun_state_t;
 
+/* -------------------------------------------------------------------
+ * Calback function prototypes (signals emitted by the stack) */
+
 /* Per discovery */
 typedef void (*stun_discovery_f)(stun_discovery_magic_t *magic,
 				 stun_handle_t *sh,
@@ -143,6 +147,10 @@ typedef int (*stun_send_callback)(stun_magic_t *magic,
 				  void *data,
 				  unsigned len,
 				  int only_a_keepalive);
+
+/** Callback for delivering DNS lookup results */
+typedef void (*stun_dns_lookup_f)(stun_dns_lookup_t *self,
+				  stun_magic_t *magic);
 
 /* -------------------------------------------------------------------
  * Functions for managing STUN handles. */
@@ -215,6 +223,19 @@ int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *pwd,
 			      int len_pwd);
 
+/* -------------------------------------------------------------------
+ * Functions for STUN server discovery using DNS (RFC3489/3489bis) */
+
+stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic, 
+				   su_root_t *root,
+				   stun_dns_lookup_f func, 
+				   const char *domain);
+int stun_dns_lookup_get_results(stun_dns_lookup_t *self, 
+				const char **tls_target,
+				uint16_t *tls_port,
+				const char **udp_target,
+				uint16_t *udp_port);
+void stun_dns_lookup_destroy(stun_dns_lookup_t *self);
 
 SOFIA_END_DECLS
 
