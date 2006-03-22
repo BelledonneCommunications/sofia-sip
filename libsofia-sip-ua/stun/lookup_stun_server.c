@@ -54,7 +54,7 @@ static void lookup_cb(stun_dns_lookup_t *self,
 				    &tls_target, &tls_port, 
 				    &udp_target, &udp_port);
   if (res == 0) {
-    printf("STUN DNS-SRV: stun-tls at %s:%u.\n", tls_target, tls_port); 
+    printf("STUN DNS-SRV: stun (tcp) at %s:%u.\n", tls_target, tls_port); 
     printf("STUN DNS-SRV: stun (udp) at %s:%u.\n", udp_target, udp_port); 
   }
   

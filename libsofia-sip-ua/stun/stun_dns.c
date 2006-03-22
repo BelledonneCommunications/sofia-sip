@@ -37,7 +37,7 @@
 #include "config.h"
 #endif
 
-#define STUN_SRV_SERVICE_TLS "_stun-tls._tcp"
+#define STUN_SRV_SERVICE_TLS "_stun._tcp"
 #define STUN_SRV_SERVICE_UDP "_stun._udp"
 
 #include <sofia-sip/stun.h>
@@ -60,7 +60,7 @@ struct stun_dns_lookup_s {
   char              *stun_udp_target;
   uint16_t           stun_tls_port;
   uint16_t           stun_udp_port;
-  unsigned           stun_state:2;       /**< bit0:udp, bit1:stun-tls */
+  unsigned           stun_state:2;       /**< bit0:udp, bit1:tcp */
 };
 
 enum stun_dns_state {
@@ -93,7 +93,7 @@ static void priv_sres_cb(stun_dns_lookup_t *self,
 	self->stun_tls_target = su_strdup(self->stun_home, rr->srv_target);
 	self->stun_tls_port = rr->srv_port;
 	self->stun_state |= stun_dns_tls;
-	SU_DEBUG_5(("%s: stun-tls for domain %s is at %s:%u.\n", 
+	SU_DEBUG_5(("%s: stun (tcp) for domain %s is at %s:%u.\n", 
 		    __func__, rr->srv_record->r_name, self->stun_tls_target, self->stun_tls_port)); 
       }
       else if ((self->stun_state & stun_dns_udp) == 0 &&
@@ -101,7 +101,7 @@ static void priv_sres_cb(stun_dns_lookup_t *self,
 	self->stun_udp_target = su_strdup(self->stun_home, rr->srv_target);
 	self->stun_udp_port = rr->srv_port;
 	self->stun_state |= stun_dns_udp;
-	SU_DEBUG_5(("%s: stun for domain %s is at %s:%u.\n", 
+	SU_DEBUG_5(("%s: stun (udp) for domain %s is at %s:%u.\n", 
 		    __func__, rr->srv_record->r_name, self->stun_udp_target, self->stun_udp_port)); 
       }
     }
@@ -115,7 +115,7 @@ static void priv_sres_cb(stun_dns_lookup_t *self,
 }
 
 /**
- * Performs a DNS-SRV check for STUN 'stun-tls' and
+ * Performs a DNS-SRV check for STUN 'stun' (tcp) and
  * 'stun' (udp) services for 'domain'.
  *
  * The result will be delivered asynchronously in the
@@ -163,7 +163,7 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
  *
  * @param self context pointer
  * @param tls_target location where to stored the 'target'
- *        SRV field for stun-tls service
+ *        SRV field for stun service (tcp)
  * @param tls_port location where to store port number
  * @param udp_target location where to stored the 'target'
  *        SRV field for stun service (udp)
