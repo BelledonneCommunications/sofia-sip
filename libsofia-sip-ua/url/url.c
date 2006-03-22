@@ -566,7 +566,8 @@ int _url_d(url_t *url, char *s)
   }
   else if (url->url_type == url_invalid) {
     n = strcspn(s, "#");
-  } else if (net_path && host[0] == '/') {
+  }
+  else if (net_path && host[0] == '/') {
     url->url_root = host[0];	/* Absolute path */
 
     if (host[1] == '/') {	/* We have host-part */
@@ -575,7 +576,8 @@ int _url_d(url_t *url, char *s)
     else 
       host = NULL;
     n = strcspn(s, "/;?#");	/* Find path, query and/or fragment */
-  } else {
+  }
+  else {
     n = strcspn(s, "/;?#");	/* Find params, query and/or fragment */
   }
 
@@ -1194,11 +1196,15 @@ int url_param(char const *params,
 	      char const *tag, 
 	      char value[], int vlen)
 {
-  size_t n, tlen = strlen(tag), flen;
+  size_t n, tlen, flen;
   char *p;
-  
+
   if (!params)
     return 0;
+
+  tlen = strlen(tag);
+  if (tlen && tag[tlen - 1] == '=')
+    tlen--;
 
   for (p = (char *)params; *p; p += n + 1) {
     n = strcspn(p, ";");
@@ -1246,7 +1252,7 @@ int url_has_param(url_t const *url, char const *tag)
 /** Add an parameter. */
 int url_param_add(su_home_t *h, url_t *url, char const *param)
 {
-  /* XXX - should remove existing parameters? */
+  /* XXX - should remove existing parameters with same name? */
   int n = url->url_params ? strlen(url->url_params) + 1: 0;
   int nn = strlen(param) + 1;
   char *s = su_alloc(h, n + nn);
@@ -1703,10 +1709,14 @@ char const *url_port(url_t const *u)
 {
   if (!u)
     return "";
-  else if (u->url_port)
+  else if (u->url_port && u->url_port[0])
     return u->url_port;
-  else
-    return url_port_default(u->url_type);
+
+  if (u->url_type == url_sips || u->url_type == url_sip)
+    if (!host_is_ip_address(u->url_host))
+      return "";
+
+  return url_port_default(u->url_type);
 }
 
 /** Sanitize URL.
@@ -1904,4 +1914,3 @@ void url_digest(void *hash, int hsize, url_t const *url, char const *key)
 
   memcpy(hash, digest, hsize);
 }
-
