@@ -25,7 +25,7 @@
 /**
  * @file stun.c STUN client module
  *
- * See RFC 3489 for further information.
+ * See RFC 3489/3489bis for further information.
  *
  * @author Martti Mela <Martti.Mela@nokia.com>
  * @author Tat Chan <Tat.Chan@nokia.com>
@@ -40,7 +40,6 @@
 #include <assert.h>
 
 #define SU_ROOT_MAGIC_T struct stun_magic_t
-/* #define SU_WAKEUP_ARG_T struct stun_handle_s */
 
 #include "sofia-sip/stun.h"
 #include "stun_internal.h"
@@ -74,12 +73,14 @@ enum {
 };
 
 
-int stun_change_map[4][4] = {
+#if 0 /* XXX: not used at the moment (2006/03) */
+static int stun_change_map[4][4] = {
   {0, 1, 2, 3}, /* no change */
   {2, 3, 0, 1}, /* change ip */
   {1, 0, 3, 2}, /* change port */
   {3, 2, 1, 0}  /* change ip and port, Ca:Cp */
 };
+#endif
 
 
 /* NAT TYPES */
@@ -129,16 +130,17 @@ struct stun_discovery_s {
   su_socket_t      sd_socket2;       /**< Alternative socket */
 
   int              sd_index;         /**< root_register index */
-  
+
   /* Binding discovery */
   su_sockaddr_t    sd_addr_seen_outside[1];   /**< local address */
 
   /* NAT type related */
   stun_nattype_t   sd_nattype;       /**< Determined NAT type */
-  int              sd_first;         /**< These are the requests  */
-  int              sd_second;
-  int              sd_third;
-  int              sd_fourth;
+  unsigned         sd_first:1;       /**< These are the requests  */
+  unsigned         sd_second:1;
+  unsigned         sd_third:1;
+  unsigned         sd_fourth:1;
+  unsigned         :0;
 
   /* Life time related */
   int              sd_lt_cur;
@@ -188,6 +190,13 @@ struct stun_handle_s
 
   su_localinfo_t  sh_localinfo;     /**< local addrinfo */
   su_sockaddr_t   sh_local_addr[1]; /**< local address */
+
+  char           *sh_domain;        /**< domain address for DNS-SRV lookups */
+
+  stun_request_t     *sh_dns_pend_req;
+  stun_discovery_t   *sh_dns_pend_sd; 
+  stun_action_t       sh_dns_pend_action; 
+  stun_dns_lookup_t  *sh_dns_lookup;
 
 #if defined(HAVE_OPENSSL)
   SSL_CTX        *sh_ctx;           /**< SSL context for TLS */
@@ -281,37 +290,42 @@ char const stun_version[] =
  "sofia-sip-stun";
 #endif
 
-int do_action(stun_handle_t *sh, stun_msg_t *binding_response);
-int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
-int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
-stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
-					stun_action_t action,
-					stun_discovery_f sdf,
-					stun_discovery_magic_t *magic);
-int stun_discovery_destroy(stun_discovery_t *sd);
-int action_bind(stun_request_t *req, stun_msg_t *binding_response);
-int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response);
-int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
+static int do_action(stun_handle_t *sh, stun_msg_t *binding_response);
+static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
+static int process_binding_request(stun_request_t *req, stun_msg_t *binding_response);
+static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
+					       stun_action_t action,
+					       stun_discovery_f sdf,
+					       stun_discovery_magic_t *magic);
+static int stun_discovery_destroy(stun_discovery_t *sd);
+static int action_bind(stun_request_t *req, stun_msg_t *binding_response);
+static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response);
+static int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
 
-stun_request_t *stun_request_create(stun_discovery_t *sd);
-int stun_send_binding_request(stun_request_t *req,
+static stun_request_t *stun_request_create(stun_discovery_t *sd);
+static int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
-int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
+static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
 
 /* timers */
-void stun_sendto_timer_cb(su_root_magic_t *magic, 
-			  su_timer_t *t,
-			  su_timer_arg_t *arg);
-void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
-			       su_timer_t *t,
-			       su_timer_arg_t *arg);
-void stun_get_lifetime_timer_cb(su_root_magic_t *magic, 
-				su_timer_t *t,
-				su_timer_arg_t *arg);
-void stun_keepalive_timer_cb(su_root_magic_t *magic, 
-			     su_timer_t *t,
-			     su_timer_arg_t *arg);
+static void stun_sendto_timer_cb(su_root_magic_t *magic, 
+				 su_timer_t *t,
+				 su_timer_arg_t *arg);
+static void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
+				      su_timer_t *t,
+				      su_timer_arg_t *arg);
+static void stun_get_lifetime_timer_cb(su_root_magic_t *magic, 
+				       su_timer_t *t,
+				       su_timer_arg_t *arg);
+static void stun_keepalive_timer_cb(su_root_magic_t *magic, 
+				    su_timer_t *t,
+				    su_timer_arg_t *arg);
 
+
+static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
+static void priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
+static void priv_dns_queue_shared_secret(stun_handle_t *sh);
+static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
 
 /* Deprecated. Use stun_root(). */
 su_root_t *stun_handle_root(stun_handle_t *self)
@@ -358,7 +372,7 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
   if (t && t->t_value) 
     stun_server = (char *)t->t_value;
   else if (t2 && t2->t_value)
-    stun_server = (char *)t->t_value;
+    stun_server = (char *)t2->t_value;
   else
     stun_server = getenv("STUN_SERVER");
   ta_end(ta);
@@ -415,7 +429,8 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   SU_DEBUG_5(("%s(\"%s\"): called\n", 
 	      "stun_handle_tcreate", server));
 
-  if (!server)
+  /* fail, if no server or a domain for a DNS-SRV lookup is specified */
+  if (!server && !domain)
     return NULL;
   
   stun->sh_pri_info.ai_addrlen = 16;
@@ -427,10 +442,15 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   stun->sh_localinfo.li_addrlen = 16;
   stun->sh_localinfo.li_addr = stun->sh_local_addr;
 
-  err = stun_atoaddr(AF_INET, &stun->sh_pri_info, server);
+  stun->sh_domain = su_strdup(stun->sh_home, domain);
+  stun->sh_dns_lookup = NULL;
+  
+  if (server) {
+    err = stun_atoaddr(AF_INET, &stun->sh_pri_info, server);
 
-  if (err < 0)
-    return NULL;
+    if (err < 0)
+      return NULL;
+  }
 
   stun->sh_nattype = stun_nat_unknown;
 
@@ -438,7 +458,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   stun->sh_context  = context;
   stun->sh_callback = cb;
   /* always try TLS: */
-  stun->sh_use_msgint = 1; 
+  stun->sh_use_msgint = 1;  /* XXX: do not commit */
   /* whether use of shared-secret msgint is required */
   stun->sh_req_msgint = req_msg_integrity;
 
@@ -488,6 +508,13 @@ int stun_request_shared_secret(stun_handle_t *sh)
   assert(sh);
 
   enter;
+
+  if (!sh->sh_pri_addr[0].su_port) {
+    /* no STUN server address, perform a DNS-SRV lookup */
+    SU_DEBUG_5(("Delaying STUN shared-secret req. for DNS-SRV query.\n"));
+    priv_dns_queue_shared_secret(sh);
+    return 0;
+  }
 
   ai = &sh->sh_pri_info;
 
@@ -570,8 +597,7 @@ int stun_request_shared_secret(stun_handle_t *sh)
 }
 #endif /* HAVE_OPENSSL */
 
-
-stun_request_t *stun_request_create(stun_discovery_t *sd)
+static stun_request_t *stun_request_create(stun_discovery_t *sd)
 {
   stun_handle_t *sh = sd->sd_handle;
   stun_request_t *req = NULL;
@@ -647,6 +673,8 @@ void stun_handle_destroy(stun_handle_t *sh)
   stun_discovery_t *sd = NULL, *kill = NULL;
 
   enter;
+
+  stun_dns_lookup_destroy(sh->sh_dns_lookup);
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
@@ -840,6 +868,86 @@ int stun_handle_bind(stun_handle_t *sh,
   return err; 
 }
 
+
+static void priv_lookup_cb(stun_dns_lookup_t *self,
+			   stun_magic_t *magic)
+{
+  const char *udp_target = NULL;
+  uint16_t udp_port = 0;
+  int res;
+  stun_handle_t *sh = (stun_handle_t *)magic;
+
+  res = stun_dns_lookup_get_results(self, 
+				    NULL, NULL, 
+				    &udp_target, &udp_port);
+  if (res == 0) {
+    /* XXX: assumption that same host and port used for UDP/TLS */
+    if (udp_target) {
+
+      stun_atoaddr(AF_INET, &sh->sh_pri_info, udp_target);
+      
+      if (udp_port) 
+	sh->sh_pri_addr[0].su_port = htons(udp_port);
+      else
+	sh->sh_pri_addr[0].su_port = htons(STUN_DEFAULT_PORT);
+
+      /* step: now that server address is known, continue 
+       *       the pending action */
+
+
+      SU_DEBUG_5(("STUN server address found, running queue actions (%d).\n",
+		  sh->sh_dns_pend_action));
+
+      if (sh->sh_dns_pend_action & stun_action_tls_query)
+	stun_request_shared_secret(sh);
+
+      if (sh->sh_dns_pend_action & stun_action_binding_request)
+	priv_stun_bind_send(sh, sh->sh_dns_pend_req, sh->sh_dns_pend_sd);
+
+      sh->sh_dns_pend_action = 0;
+    }
+  }
+}
+
+/**
+ * Queus an stun bind action for later execution once
+ * DNS-SRV lookup is succesfully completed.
+ */
+static void priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd)
+{
+  
+  if (!sh->sh_dns_lookup) {
+    sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
+  }
+  sh->sh_dns_pend_req = req;
+  sh->sh_dns_pend_sd = sd;
+  sh->sh_dns_pend_action |= stun_action_binding_request;
+}
+
+/**
+ * Queus an stun shared-secret action for later execution 
+ * once DNS-SRV lookup is succesfully completed.
+ */
+static void priv_dns_queue_shared_secret(stun_handle_t *sh)
+{
+  
+  if (!sh->sh_dns_lookup) {
+    sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
+  }
+  sh->sh_dns_pend_action |= stun_action_tls_query;
+}
+
+static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd)
+{
+  int res = stun_send_binding_request(req, sh->sh_pri_addr);
+  if (res < 0) {
+    stun_free_message(req->sr_msg);
+    stun_discovery_destroy(sd);
+  }
+  return -1;
+}
+
+
 /** Bind a socket using STUN client. 
  *
  * The function stun_bind() obtains a global address for a UDP socket using
@@ -883,7 +991,7 @@ int stun_bind(stun_handle_t *sh,
   ta_list ta;
   stun_action_t action = stun_action_binding_request;
   int index, s_reg = 0;
-
+  
   enter;
 
   if (sh == NULL)
@@ -904,17 +1012,21 @@ int stun_bind(stun_handle_t *sh,
 
   req = stun_request_create(sd);
 
-  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0 ||
-      stun_send_binding_request(req, sh->sh_pri_addr) < 0) {
+  if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) {
     stun_discovery_destroy(sd);
     stun_free_message(req->sr_msg);
     return -1;
   }
 
+  if (!sh->sh_pri_addr[0].su_port) {
+    /* no STUN server address, perform a DNS-SRV lookup */
+    SU_DEBUG_5(("Delaying STUN bind for DNS-SRV query.\n"));
+    priv_dns_queue_bind(sh, req, sd);
+    return 0;
+  }
+
   /* note: we always report success if bind() succeeds */
-
-  return 0;
-
+  return priv_stun_bind_send(sh, req, sd);
 }
 
 
@@ -935,10 +1047,10 @@ su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd)
   return sd->sd_addr_seen_outside;
 }
 
-stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
-					stun_action_t action,
-					stun_discovery_f sdf,
-					stun_discovery_magic_t *magic)
+static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
+					       stun_action_t action,
+					       stun_discovery_f sdf,
+					       stun_discovery_magic_t *magic)
 {
   stun_discovery_t *sd = NULL;
 
@@ -967,7 +1079,7 @@ stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
   return sd;
 }
 
-int stun_discovery_destroy(stun_discovery_t *sd)
+static int stun_discovery_destroy(stun_discovery_t *sd)
 {
   stun_handle_t *sh;
 
@@ -985,7 +1097,6 @@ int stun_discovery_destroy(stun_discovery_t *sd)
   else if (!sd->sd_next)
     sh->sh_discoveries = NULL;
 
-  sd->sd_prev = NULL;
   sd->sd_next = NULL;
 
   free(sd);
@@ -1011,11 +1122,14 @@ int stun_handle_get_nattype(stun_handle_t *sh,
  * Initiates STUN discovery proces to find out NAT 
  * characteristics.
  *
+ * Note: does not support STUNTAG_DOMAIN().
+ *
  * @TAGS
  * @TAG STUNTAG_SOCKET Bind socket for STUN
  * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  *
+ * @return 0 on success, non-zero on error
  */
 int stun_get_nattype(stun_handle_t *sh,
 		     stun_discovery_f sdf,
@@ -1114,7 +1228,7 @@ int stun_get_nattype(stun_handle_t *sh,
  *******************************************************************/
 
 #if defined(HAVE_OPENSSL)
-int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
+static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 {
   stun_discovery_t *sd = arg;
   stun_handle_t *self = sd->sd_handle;
@@ -1362,7 +1476,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
   return 0;
 }
 #else
-int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
+static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 {
   return 0;
 }
@@ -1370,9 +1484,9 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 
 
 #if defined(HAVE_OPENSSL)
-void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
-			       su_timer_t *t,
-			       su_timer_arg_t *arg)
+static void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
+				      su_timer_t *t,
+				      su_timer_arg_t *arg)
 {
   stun_discovery_t *sd = arg;
   stun_handle_t *sh = sd->sd_handle;
@@ -1396,9 +1510,9 @@ void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   return;
 }
 #else
-void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
-			       su_timer_t *t,
-			       su_timer_arg_t *arg)
+static void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
+				      su_timer_t *t,
+				      su_timer_arg_t *arg)
 {
 }
 #endif /* HAVE_OPENSSL */
@@ -1479,7 +1593,7 @@ stun_request_t *find_request(stun_handle_t *self, uint16_t *id)
 }
 
 /** Process socket event */
-int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
+static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 {
   stun_discovery_t *sd = arg;
   stun_handle_t *self = sd->sd_handle;
@@ -1508,8 +1622,6 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 		      stun_action_no_action, stun_bind_error);
     return 0;
   }
-
-/*   s = self->sh_bind_socket; */
 
   /* receive response */
   recv_len = sizeof(recv);
@@ -1557,7 +1669,7 @@ int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
 }
 
 /** Choose the right state machine */
-int do_action(stun_handle_t *sh, stun_msg_t *msg)
+static int do_action(stun_handle_t *sh, stun_msg_t *msg)
 {
   stun_request_t *req = NULL;
   stun_action_t action = stun_action_no_action;
@@ -1614,8 +1726,7 @@ int do_action(stun_handle_t *sh, stun_msg_t *msg)
   return 0;
 }
 
-
-int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
+static int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
 {
   int retval = -1, clnt_addr_len;
   stun_attr_t *mapped_addr, *chg_addr;
@@ -1671,9 +1782,9 @@ int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
 
 }
 
-void stun_get_lifetime_timer_cb(su_root_magic_t *magic, 
-				su_timer_t *t,
-				su_timer_arg_t *arg)
+static void stun_get_lifetime_timer_cb(su_root_magic_t *magic, 
+				       su_timer_t *t,
+				       su_timer_arg_t *arg)
 {
   stun_request_t *req = arg;
   stun_discovery_t *sd = req->sr_discovery;
@@ -1697,7 +1808,7 @@ void stun_get_lifetime_timer_cb(su_root_magic_t *magic,
 
 }
 
-int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
+static int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
 {
   stun_discovery_t *sd = req->sr_discovery;
   stun_request_t *new;
@@ -1802,7 +1913,7 @@ int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
 }
 
 
-int action_bind(stun_request_t *req, stun_msg_t *binding_response)
+static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
 {
   su_localinfo_t *li = NULL;
   su_sockaddr_t *sa = NULL;
@@ -1832,7 +1943,7 @@ int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   return 0;
 }
 
-int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
+static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 {
   su_sockaddr_t local;
   socklen_t locallen;
@@ -2014,9 +2125,9 @@ int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 }
 
 
-void stun_sendto_timer_cb(su_root_magic_t *magic, 
-			  su_timer_t *t,
-			  su_timer_arg_t *arg)
+static void stun_sendto_timer_cb(su_root_magic_t *magic, 
+				 su_timer_t *t,
+				 su_timer_arg_t *arg)
 {
   stun_request_t *req = arg;
   stun_handle_t *sh = req->sr_handle;
@@ -2136,8 +2247,8 @@ void stun_sendto_timer_cb(su_root_magic_t *magic,
  * @ERROR ETIMEDOUT       Request timed out.
  * 
  */   
-int stun_send_binding_request(stun_request_t *req,
-			      su_sockaddr_t  *srvr_addr)
+static int stun_send_binding_request(stun_request_t *req,
+				     su_sockaddr_t  *srvr_addr)
 {
   su_timer_t *sendto_timer = NULL;
   int s;
@@ -2430,11 +2541,14 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
  * Initiates STUN discovery proces to find out NAT 
  * binding life-time settings.
  *
+ * Note: does not support STUNTAG_DOMAIN().
+ *
  * @TAGS
  * @TAG STUNTAG_SOCKET Bind socket for STUN
  * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  *
+ * @return 0 on success, non-zero on error
  */
 int stun_get_lifetime(stun_handle_t *sh,
 		      stun_discovery_f sdf,
@@ -2745,9 +2859,9 @@ int stun_keepalive(stun_handle_t *sh,
 }
 
 /** Send SIP keepalives */
-void stun_keepalive_timer_cb(su_root_magic_t *magic, 
-			     su_timer_t *t,
-			     su_timer_arg_t *arg)
+static void stun_keepalive_timer_cb(su_root_magic_t *magic, 
+				    su_timer_t *t,
+				    su_timer_arg_t *arg)
 {
   stun_discovery_t *sd = arg;
   stun_handle_t *sh = sd->sd_handle;

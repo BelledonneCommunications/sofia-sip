@@ -55,6 +55,8 @@ struct stun_dns_lookup_s {
   su_root_t         *stun_root;
   stun_magic_t      *stun_magic;
   sres_resolver_t   *stun_sres;
+  sres_record_t    **stun_answers;
+  int                stun_socket;
   stun_dns_lookup_f  stun_cb;
   char              *stun_tls_target;
   char              *stun_udp_target;
@@ -109,6 +111,9 @@ static void priv_sres_cb(stun_dns_lookup_t *self,
 
   if (self->stun_state == stun_dns_done) {
     self->stun_cb(self, self->stun_magic);
+
+    if (self->stun_socket >= 0) 
+      sres_resolver_timer(self->stun_sres, self->stun_socket);
   }
 
   sres_free_answers(self->stun_sres, answer);
@@ -143,12 +148,15 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
       char *query_udp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_UDP, domain);
       char *query_tcp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_TLS, domain);
       
+      self->stun_socket = socket;
+
       query = sres_query_make(self->stun_sres, priv_sres_cb, self, socket, sres_type_srv, query_udp);
       query = sres_query_make(self->stun_sres, priv_sres_cb, self, socket, sres_type_srv, query_tcp);
     }
     else {
       sres_resolver_destroy(self->stun_sres);
       su_free(NULL, self), self = NULL;
+      self->stun_socket = -1;
     }
   }
   else {
@@ -196,6 +204,7 @@ void stun_dns_lookup_destroy(stun_dns_lookup_t *self)
 {
   if (self->stun_sres)
     sres_resolver_destroy(self->stun_sres);
+
   su_home_destroy(self->stun_home);
   su_free(NULL, self);
 }

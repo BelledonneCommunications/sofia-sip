@@ -46,6 +46,7 @@ COVERAGE_INPUT = 	$(libtport_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libtport.la \
 			../stun/libstun.la \
+			../sresolv/libsresolv.la \
 			../ipt/libipt.la \
 			../msg/libtest_msg.a ../msg/libmsg.la \
 			../url/liburl.la \

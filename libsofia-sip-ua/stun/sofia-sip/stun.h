@@ -66,14 +66,15 @@ extern char const stun_version[]; /**< Name and version of STUN software */
 
 /**
  * STUN Action types. These define the current discovery process.
+ * Defined as a bitmap.
  */
 typedef enum stun_action_s {
-  stun_action_no_action,
-  stun_action_tls_query,
-  stun_action_binding_request,
-  stun_action_keepalive,
-  stun_action_get_nattype,
-  stun_action_get_lifetime,
+  stun_action_no_action = 1,
+  stun_action_tls_query = 2,
+  stun_action_binding_request = 4,
+  stun_action_keepalive = 8,
+  stun_action_get_nattype = 16,
+  stun_action_get_lifetime = 32,
 } stun_action_t;
 
 /**
@@ -83,6 +84,9 @@ typedef enum stun_state_e {
   
   stun_no_assigned_event,
   stun_dispose_me,
+
+  /* DNS-SRV lookups */
+  stun_dns_lookup_pending,
 
   /* TLS events */
   stun_tls_connecting,
@@ -170,14 +174,13 @@ su_root_t *stun_root(stun_handle_t *sh);
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 /* ------------------------------------------------------------------- 
- * Functions for 'Binding Discovery' usage (RFC3489bis) */
+ * Functions for 'Binding Discovery' usage (RFC3489/3489bis) */
+
 int stun_request_shared_secret(stun_handle_t *sh);
 
-/** Bind a socket using STUN.  */
 int stun_bind(stun_handle_t *sh, 
 	      stun_discovery_f,
 	      stun_discovery_magic_t *magic,
-	      /* su_localinfo_t *my_addr, */
 	      tag_type_t tag, tag_value_t value,
 	      ...);
 
@@ -201,7 +204,6 @@ int stun_lifetime(stun_discovery_t *sd);
 
 /* ------------------------------------------------------------------- 
  * Functions for 'Connectivity Check' and 'NAT Keepalives' usages (RFC3489bis) */
-/* other functions */
 int stun_set_uname_pwd(stun_handle_t *sh,
 		       const char *uname,
 		       int len_uname, 
@@ -211,7 +213,8 @@ int stun_set_uname_pwd(stun_handle_t *sh,
 int stun_msg_is_keepalive(uint16_t data);
 int stun_message_length(void *data, int len, int end_of_message);
 
-/** Process incoming message */
+/* Process incoming message */
+
 int stun_process_message(stun_handle_t *sh, su_socket_t s,
 			 su_sockaddr_t *sa, socklen_t salen,
 			 void *data, int len);
@@ -236,9 +239,9 @@ su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
 
 
 
-/*********************************************************/
-/* Deprecated functions. These are supported with limited
-   compatibility. */
+/* --------------------------------------------------------------------
+ * Deprecated functions. These are supported with limited
+ * compatibility. */
 
 su_root_t *stun_handle_root(stun_handle_t *sh);
 int stun_handle_request_shared_secret(stun_handle_t *sh);

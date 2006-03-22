@@ -42,6 +42,7 @@ LDADD = 		libnth.la \
 			../sresolv/libsresolv.la \
 			../tport/libtport.la \
 			../stun/libstun.la \
+			../sresolv/libsresolv.la \
 			../url/liburl.la \
 			../msg/libmsg.la \
 			../bnf/libbnf.la \
