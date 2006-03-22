@@ -85,7 +85,7 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
   case stun_tls_connection_failed:
   case stun_tls_connection_timeout:
     SU_DEBUG_0(("%s: TLS query done, start binding process.\n", __func__));
-    if (stun_handle_bind(sh, NULL, NULL, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+    if (stun_handle_bind(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
       su_root_break(stun_handle_root(sh));
     }
@@ -112,12 +112,12 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 		(unsigned) ntohs(sa->su_port)));
     /* su_root_break(stun_handle_root(sh)); */
 
-    if (stun_handle_get_nattype(sh, NULL, NULL, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+    if (stun_handle_get_nattype(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
       su_root_break(stun_handle_root(sh));
     }
 
-    if (stun_handle_get_lifetime(sh, NULL, NULL, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+    if (stun_handle_get_lifetime(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_lifetime()"));
       su_root_break(stun_handle_root(sh));
     }
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
   }
 
   /* If no TSL query, start bind here */
-  if (stun_handle_bind(sh, NULL, NULL, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+  if (stun_handle_bind(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
     SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
     return -1;
   }

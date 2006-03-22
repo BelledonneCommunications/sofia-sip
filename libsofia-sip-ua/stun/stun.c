@@ -313,13 +313,19 @@ void stun_keepalive_timer_cb(su_root_magic_t *magic,
 			     su_timer_arg_t *arg);
 
 
+/* Deprecated. Use stun_root(). */
+su_root_t *stun_handle_root(stun_handle_t *self)
+{
+  return stun_root(self);
+}
+
 /**
  * Return su_root_t assigned to stun_handle_t.
  *
  * @param self stun_handle_t object
  * @return su_root_t object, NULL if self not given.
  */
-su_root_t *stun_handle_root(stun_handle_t *self)
+su_root_t *stun_root(stun_handle_t *self)
 {
   return self ? self->sh_root : NULL;
 }
@@ -452,13 +458,22 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   return stun;
 }
 
+
+/* Deprecated. Use stun_request_shared_secret() */
+int stun_handle_request_shared_secret(stun_handle_t *sh)
+{
+  return stun_request_shared_secret(sh);
+}
+
 /** 
  * Performs shared secret request/response processing.
  * Result will be trigged in STUN handle callback (state
  * one of stun_tls_*).
  **/
 #if defined(HAVE_OPENSSL)
-int stun_handle_request_shared_secret(stun_handle_t *sh)
+
+/** Shared secret request/response processing */
+int stun_request_shared_secret(stun_handle_t *sh)
 {
   int events = -1;
   int one, err = -1;
@@ -549,7 +564,7 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
   return 0;
 }
 #else
-int stun_handle_request_shared_secret(stun_handle_t *sh)
+int stun_request_shared_secret(stun_handle_t *sh)
 {
   return 0;
 }
@@ -811,6 +826,20 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 }
 #endif
 
+/* Deprecated. Use stun_bind() */
+int stun_handle_bind(stun_handle_t *sh,
+		     tag_type_t tag, tag_value_t value,
+		     ...)
+{
+  int err;
+  ta_list ta;
+  ta_start(ta, tag, value);
+  err = stun_bind(sh, NULL, NULL, ta_tags(ta));
+  ta_end(ta);
+  
+  return err; 
+}
+
 /** Bind a socket using STUN client. 
  *
  * The function stun_bind() obtains a global address for a UDP socket using
@@ -842,11 +871,11 @@ static int get_localinfo(su_localinfo_t *clientinfo)
  *                        the socket.
  * 
  */
-int stun_handle_bind(stun_handle_t *sh,
-		     stun_discovery_f sdf,
-		     stun_discovery_magic_t *magic,
-		     tag_type_t tag, tag_value_t value,
-		     ...)
+int stun_bind(stun_handle_t *sh,
+	      stun_discovery_f sdf,
+	      stun_discovery_magic_t *magic,
+	      tag_type_t tag, tag_value_t value,
+	      ...)
 {
   su_socket_t s = -1;
   stun_request_t *req = NULL;
@@ -963,6 +992,21 @@ int stun_discovery_destroy(stun_discovery_t *sd)
   return 0;
 }
 
+
+/* Deprecated. Use stun_get_nattype() */
+int stun_handle_get_nattype(stun_handle_t *sh,
+			    tag_type_t tag, tag_value_t value,
+			    ...)
+{
+  int err;
+  ta_list ta;
+  ta_start(ta, tag, value);
+  err = stun_get_nattype(sh, NULL, NULL, ta_tags(ta));
+  ta_end(ta);
+  
+  return err; 
+}
+
 /**
  * Initiates STUN discovery proces to find out NAT 
  * characteristics.
@@ -973,11 +1017,11 @@ int stun_discovery_destroy(stun_discovery_t *sd)
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  *
  */
-int stun_handle_get_nattype(stun_handle_t *sh,
-			    stun_discovery_f sdf,
-			    stun_discovery_magic_t *magic,
-			    tag_type_t tag, tag_value_t value,
-			    ...)
+int stun_get_nattype(stun_handle_t *sh,
+		     stun_discovery_f sdf,
+		     stun_discovery_magic_t *magic,
+		     tag_type_t tag, tag_value_t value,
+		     ...)
 {
   int err = 0, index = 0, s_reg = 0;
   ta_list ta;
@@ -2268,15 +2312,26 @@ int stun_process_error_response(stun_msg_t *msg)
   return 0;
 }
 
-/**
- * Sets values for USERNAME and PASSWORD stun fields 
- * for the handle.
- */
+/* Deprecated. Use stun_set_uname_pwd(). */
 int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
 			      int len_uname,
 			      const char *pwd,
 			      int len_pwd)
+{
+  return stun_set_uname_pwd(sh, uname, len_uname,
+			    pwd, len_pwd);
+}
+
+/**
+ * Sets values for USERNAME and PASSWORD stun fields 
+ * for the handle.
+ */
+int stun_set_uname_pwd(stun_handle_t *sh,
+		       const char *uname,
+		       int len_uname,
+		       const char *pwd,
+		       int len_pwd)
 {
   enter;
 
@@ -2357,6 +2412,20 @@ int stun_atoaddr(int ai_family,
 }
 
 
+/* Deprecated. Use stun_get_lifetime() */
+int stun_handle_get_lifetime(stun_handle_t *sh,
+			     tag_type_t tag, tag_value_t value,
+			     ...)
+{
+  int err;
+  ta_list ta;
+  ta_start(ta, tag, value);
+  err = stun_get_lifetime(sh, NULL, NULL, ta_tags(ta));
+  ta_end(ta);
+  
+  return err; 
+}
+
 /**
  * Initiates STUN discovery proces to find out NAT 
  * binding life-time settings.
@@ -2367,11 +2436,11 @@ int stun_atoaddr(int ai_family,
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  *
  */
-int stun_handle_get_lifetime(stun_handle_t *sh,
-			     stun_discovery_f sdf,
-			     stun_discovery_magic_t *magic,
-			     tag_type_t tag, tag_value_t value,
-			     ...)
+int stun_get_lifetime(stun_handle_t *sh,
+		      stun_discovery_f sdf,
+		      stun_discovery_magic_t *magic,
+		      tag_type_t tag, tag_value_t value,
+		      ...)
 {
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
@@ -2535,10 +2604,19 @@ int stun_message_length(void *data, int len, int end_of_message)
     return -1;
 }
 
-/** Process incoming message */
+/* Deprecated. Use stun_process_message() */
 int stun_handle_process_message(stun_handle_t *sh, su_socket_t s, 
 				su_sockaddr_t *sa, socklen_t salen,
 				void *data, int len)
+{
+  return stun_process_message(sh, s, sa, salen,
+			      data, len);
+
+}
+/** Process incoming message */
+int stun_process_message(stun_handle_t *sh, su_socket_t s, 
+			 su_sockaddr_t *sa, socklen_t salen,
+			 void *data, int len)
 {
   int retval = -1;
   stun_msg_t msg;

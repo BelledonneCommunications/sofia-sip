@@ -900,6 +900,7 @@ static tport_primary_t *tport_listen(tport_master_t *mr,
 				     su_addrinfo_t const *ai, 
 				     char const *canon, char const *protoname,
 				     int port,
+				     int try_http,
 				     tagi_t *tags);
 
 static void tport_zap_primary(tport_primary_t *);
@@ -1179,35 +1180,110 @@ tport_primary_t *tport_alloc_public_primary(tport_master_t *mr)
 }
 
 #if 0
-int tport_tcp_socket_http_connect(su_home_t *home, su_socket_t s,
-				  su_sockaddr_t *sa, url_t const *srv)
+/** Process events for socket waiting to be connected
+ */
+static int tport_http_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
+{
+  int events = su_wait_events(w, self->tp_socket);
+  tport_master_t *mr = self->tp_master;
+  su_wait_t wait[1] =  { SU_WAIT_INIT };
+
+  int error;
+
+  SU_DEBUG_7(("%s(%p): events%s%s\n", __func__, self,
+	      events & SU_WAIT_CONNECT ? " CONNECTED" : "",
+	      events & SU_WAIT_ERR ? " ERR" : ""));
+
+#if HAVE_POLL
+  assert(w->fd == self->tp_socket);
+#endif
+
+  if (events & SU_WAIT_ERR)
+    tport_error_event(self, events);
+
+  if (!(events & SU_WAIT_CONNECT) || self->tp_closed) {
+    return 0;
+  }
+
+  error = su_soerror(self->tp_socket);
+  if (error) {
+    tport_error_report(self, error, NULL);
+    return 0;
+  }
+
+  su_root_deregister(mr->mr_root, self->tp_index);
+  self->tp_index = -1;
+  self->tp_events = SU_WAIT_IN | SU_WAIT_ERR;
+  if (su_wait_create(wait, self->tp_socket, self->tp_events) == -1 ||
+      (self->tp_index = su_root_register(mr->mr_root, 
+					 wait, tport_recv, self, 0))
+      == -1) {
+    tport_close(self);
+  }
+  else if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
+    tport_send_event(self, events);
+  }
+
+  return 0;
+}
+
+
+int tport_tcp_socket_http_connect(su_socket_t s, const char *httpd,
+				  tagi_t *tags)
 {
   char ua[] = "sofia-sip-1.11.6";
   char *str;
   int len;
-  url_string_t *url;
+  url_string_t *url_string;
+  url_t const *url;
+  su_addrinfo_t *res = NULL, *ai, hints[1] = {{ 0 }};
+  su_sockaddr_t sa[1];
 
-  len = url_len(srv);
-  url = su_zalloc(home, len);
-  url_e(url, len, srv);
+  su_home_t autohome[SU_HOME_AUTO_SIZE(2048)];
 
-  str = su_sprintf(home, "CONNECT %s HTTP/1.1\nUser-agent: %s\n\n", (char *) url, ua);
-  su_free(home, url);
+  su_home_auto(autohome, sizeof autohome);
+
+  /* Get the SIP proxy address */
+  tl_gets(tags, 
+	  URLTAG_URL_REF(url_string),
+	  TAG_END());
+
+  str = su_sprintf(autohome, "CONNECT %s HTTP/1.1\nUser-agent: %s\n\n",
+		   url_string->us_str, ua);
+
+
+  if ((err = su_getaddrinfo(httpd, NULL, hints, &res)) != 0) {
+    STUN_ERROR(err, su_getaddrinfo);
+    return -1;
+  }
+
+  memset(sa, 0, sizeof(*sa));
+
+  for (ai = res; ai; ai = ai->ai_next) {
+    if (ai->ai_family != AF_INET)
+      continue;
+
+    /* info->ai_flags = ai->ai_flags; */
+    sa->su_family = ai->ai_family;
+    sa->su_len = ai->ai_addrlen;
+    memcpy(sa->su_sa, ai->ai_addr, sizeof(struct su_sockaddr_t));
+    break;
+  }
+
+  /* If no port specified, use default */
+  if (!sa->su_port) 
+    sa->su_port = htons(443);
+
+  if (res)
+    su_freeaddrinfo(res);
 
   if (connect(s, sa->su_sa, sa->su_len) == SOCKET_ERROR) {
     err = su_errno();
     if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK)
       TPORT_CONNECT_ERROR(err, connect);
-    events = SU_WAIT_CONNECT | SU_WAIT_ERR;
-    wakeup = tport_http_connected;
   }
 
-  if (su_wait_create(wait, s, events) == -1)
-    TPORT_CONNECT_ERROR(su_errno(), su_wait_create);
-
-  /* Register receiving function with events specified above */
-  if ((index = su_root_register(mr->mr_root, wait, wakeup, self, 0)) == -1)
-    TPORT_CONNECT_ERROR(su_errno(), su_root_register);
+  su_home_deinit(autohome);
 
   return 0;
 }
@@ -1228,6 +1304,7 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 			      su_addrinfo_t const *ainfo, 
 			      char const *canon, char const *protoname,
 			      int port,
+			      int try_http_connect,
 			      tagi_t *tags)
 {
   tport_primary_t *pri = NULL;
@@ -1345,8 +1422,23 @@ tport_primary_t *tport_listen(tport_master_t *mr,
     }
 #endif
   }
-    
-  if (ai->ai_socktype == SOCK_STREAM || 
+
+  if (try_http_connect) {
+    /* tport_tcp_socket_http_connect(s, httpd, sip_registrar); */
+
+    /* wakeup = tport_http_connected; */
+    events = SU_WAIT_CONNECT | SU_WAIT_ERR;
+
+#if !defined(__linux__)
+    /* Allow reusing TCP sockets
+     *
+     * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
+     * binding to a port owned by an existing server.
+     */
+    su_setreuseaddr(s, 1);
+#endif
+  }
+  else if (ai->ai_socktype == SOCK_STREAM || 
       ai->ai_socktype == SOCK_SEQPACKET) {
     /* Connection-oriented protocols listen and accept connections */
     wakeup = tport_accept;	/* accepting function will be registered */
@@ -2106,7 +2198,7 @@ int tport_bind_server(tport_master_t *mr,
 {
   char hostname[256];
   char const *canon = NULL, *host, *service;
-  int error = 0, not_supported, family = 0, natted = 0;
+  int error = 0, not_supported, family = 0, natted = 0, http_enabled = 0;
   tport_primary_t *pri = NULL, *pub = NULL, **tbf, **tbf_pub;
   su_addrinfo_t *ai, *res = NULL;
   unsigned port, port0, port1, old;
@@ -2187,7 +2279,7 @@ int tport_bind_server(tport_master_t *mr,
 
       ((su_sockaddr_t *)ai->ai_addr)->su_port = htons(port);
 
-      pri = tport_listen(mr, ai, canon, ai->ai_canonname, port, tags);
+      pri = tport_listen(mr, ai, canon, ai->ai_canonname, port, 0, tags);
       if (!pri) {
 	switch (error = su_errno()) {
 	case EADDRNOTAVAIL:	/* Not our address */
@@ -2201,7 +2293,7 @@ int tport_bind_server(tport_master_t *mr,
       }
 
       /* Launch NAT discovery requests */
-      if (!natted && ai->ai_protocol == IPPROTO_UDP && ai->ai_family == AF_INET) {
+      if (!natted && ai->ai_family == AF_INET) {
 	pub = tport_start_public_listen(mr, pri, ai, canon, ai->ai_canonname, port, tags);
 	if (!pub) {
 	  SU_DEBUG_3(("%s(%p): cannot start NAT traversal discovery\n", __func__, mr));
@@ -3928,8 +4020,8 @@ int tport_recv_stun_dgram(tport_t const *self, int N)
   if ((!error || dgram[0] == 1) && self->tp_master->mr_nat->stun) {
 #if HAVE_SOFIA_STUN
     if (n > N) n = N;		/* Truncated? */
-    stun_handle_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
-				from, fromlen, (void *)dgram, n);
+    stun_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
+			 from, fromlen, (void *)dgram, n);
     if (dgram != buffer)
       free(dgram);
     return 0;
@@ -7648,9 +7740,9 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
         if (!nat->stun) 
 	  return NULL;
 
-	if (stun_handle_request_shared_secret(nat->stun) < 0) {
+	if (stun_request_shared_secret(nat->stun) < 0) {
 	  SU_DEBUG_3(("%s: %s failed\n", __func__,
-		      "stun_handle_request_shared_secret()"));
+		      "stun_request_shared_secret()"));
 	}
 
 	nat->try_stun = 1;
@@ -7717,13 +7809,13 @@ int tport_nat_stun_bind(tport_primary_t *pub,
   /* Do not register socket to stun's event loop */
   reg_socket = 0;
 
-  nat_bound = stun_handle_bind(sh, tport_stun_bind_cb, pub,
-			       STUNTAG_SOCKET(s),
-			       STUNTAG_REGISTER_SOCKET(reg_socket),
-			       TAG_NULL());
+  nat_bound = stun_bind(sh, tport_stun_bind_cb, pub,
+			STUNTAG_SOCKET(s),
+			STUNTAG_REGISTER_SOCKET(reg_socket),
+			TAG_NULL());
 
   if (nat_bound < 0) {
-    SU_DEBUG_9(("%s: %s  failed.\n", __func__, "stun_handle_bind()"));
+    SU_DEBUG_9(("%s: %s  failed.\n", __func__, "stun_bind()"));
     return nat_bound;
   }
 

@@ -155,58 +155,73 @@ typedef void (*stun_dns_lookup_f)(stun_dns_lookup_t *self,
 /* -------------------------------------------------------------------
  * Functions for managing STUN handles. */
 
+char const *stun_str_state(stun_state_t state);
+
+/** Check if a STUN handle should be created. */
+
 stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
 				  tag_type_t tag, tag_value_t value, ...); 
 int stun_handle_release(stun_handle_t *sh, su_socket_t s);
 void stun_handle_destroy(stun_handle_t *sh);
-su_root_t *stun_handle_root(stun_handle_t *sh);
-int stun_handle_process_message(stun_handle_t *sh, su_socket_t s,
-				su_sockaddr_t *sa, socklen_t salen,
-				void *data, int len);
-int stun_process_request(su_socket_t s, stun_msg_t *req,
-			 int sid, su_sockaddr_t *from_addr,
-			 int from_len);
-char const *stun_str_state(stun_state_t state);
+
+su_root_t *stun_root(stun_handle_t *sh);
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
 /* ------------------------------------------------------------------- 
  * Functions for 'Binding Discovery' usage (RFC3489bis) */
+int stun_request_shared_secret(stun_handle_t *sh);
 
-int stun_handle_bind(stun_handle_t *sh, 
+/** Bind a socket using STUN.  */
+int stun_bind(stun_handle_t *sh, 
+	      stun_discovery_f,
+	      stun_discovery_magic_t *magic,
+	      /* su_localinfo_t *my_addr, */
+	      tag_type_t tag, tag_value_t value,
+	      ...);
+
+int stun_get_nattype(stun_handle_t *sh,
 		     stun_discovery_f,
 		     stun_discovery_magic_t *magic,
-		     /* su_localinfo_t *my_addr, */
 		     tag_type_t tag, tag_value_t value,
 		     ...);
-
-int stun_handle_get_nattype(stun_handle_t *sh,
-			    stun_discovery_f,
-			    stun_discovery_magic_t *magic,
-			    tag_type_t tag, tag_value_t value,
-			    ...);
 
 char const *stun_nattype(stun_discovery_t *sd);
 su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
 su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
 
-/* -------------------------------------------------------------------
- * Functions for binding lifetime discovery (orig. RFC3489) */
-
-int stun_handle_get_lifetime(stun_handle_t *sh,
-			     stun_discovery_f,
-			     stun_discovery_magic_t *magic,
-			     tag_type_t tag, tag_value_t value,
-			     ...);
+int stun_get_lifetime(stun_handle_t *sh,
+		      stun_discovery_f,
+		      stun_discovery_magic_t *magic,
+		      tag_type_t tag, tag_value_t value,
+		      ...);
 
 int stun_lifetime(stun_discovery_t *sd);
 
 /* ------------------------------------------------------------------- 
  * Functions for 'Connectivity Check' and 'NAT Keepalives' usages (RFC3489bis) */
+/* other functions */
+int stun_set_uname_pwd(stun_handle_t *sh,
+		       const char *uname,
+		       int len_uname, 
+		       const char *pwd,
+		       int len_pwd);
 
 int stun_msg_is_keepalive(uint16_t data);
 int stun_message_length(void *data, int len, int end_of_message);
+
+/** Process incoming message */
+int stun_process_message(stun_handle_t *sh, su_socket_t s,
+			 su_sockaddr_t *sa, socklen_t salen,
+			 void *data, int len);
+
+int stun_process_request(su_socket_t s, stun_msg_t *req,
+			 int sid, su_sockaddr_t *from_addr,
+			 int from_len);
+
+/* Create a keepalive dispatcher for bound SIP sockets */
+
 int stun_keepalive(stun_handle_t *sh,
 		   su_sockaddr_t *sa,
 		   tag_type_t tag, tag_value_t value,
@@ -216,6 +231,41 @@ int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
 /* -------------------------------------------------------------------
  * Functions for 'Short-Term password' usage (RFC3489bis) */
 
+/* Return socket attached to discovery object */
+su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
+
+
+
+/*********************************************************/
+/* Deprecated functions. These are supported with limited
+   compatibility. */
+
+su_root_t *stun_handle_root(stun_handle_t *sh);
+int stun_handle_request_shared_secret(stun_handle_t *sh);
+
+/** Bind a socket using STUN.  */
+int stun_handle_bind(stun_handle_t *sh, 
+		     /* su_localinfo_t *my_addr, */
+		     tag_type_t tag, tag_value_t value,
+		     ...);
+int stun_handle_get_nattype(stun_handle_t *sh,
+			    tag_type_t tag, tag_value_t value,
+			    ...);
+int stun_handle_get_lifetime(stun_handle_t *sh,
+			     tag_type_t tag, tag_value_t value,
+			     ...);
+int stun_handle_set_uname_pwd(stun_handle_t *sh,
+			      const char *uname,
+			      int len_uname, 
+			      const char *pwd,
+			      int len_pwd);
+
+int stun_handle_process_message(stun_handle_t *sh,
+				su_socket_t s,
+				su_sockaddr_t *sa,
+				socklen_t salen,
+				void *data,
+				int len);
 int stun_handle_request_shared_secret(stun_handle_t *sh);
 int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
