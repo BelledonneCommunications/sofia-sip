@@ -159,10 +159,6 @@ typedef void (*stun_dns_lookup_f)(stun_dns_lookup_t *self,
 /* -------------------------------------------------------------------
  * Functions for managing STUN handles. */
 
-char const *stun_str_state(stun_state_t state);
-
-/** Check if a STUN handle should be created. */
-
 stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
@@ -172,6 +168,7 @@ void stun_handle_destroy(stun_handle_t *sh);
 
 su_root_t *stun_root(stun_handle_t *sh);
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
+char const *stun_str_state(stun_state_t state);
 
 /* ------------------------------------------------------------------- 
  * Functions for 'Binding Discovery' usage (RFC3489/3489bis) */
@@ -189,8 +186,8 @@ int stun_get_nattype(stun_handle_t *sh,
 		     stun_discovery_magic_t *magic,
 		     tag_type_t tag, tag_value_t value,
 		     ...);
-
 char const *stun_nattype(stun_discovery_t *sd);
+
 su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
 su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
 
@@ -199,7 +196,6 @@ int stun_get_lifetime(stun_handle_t *sh,
 		      stun_discovery_magic_t *magic,
 		      tag_type_t tag, tag_value_t value,
 		      ...);
-
 int stun_lifetime(stun_discovery_t *sd);
 
 /* ------------------------------------------------------------------- 
@@ -234,10 +230,7 @@ int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
 /* -------------------------------------------------------------------
  * Functions for 'Short-Term password' usage (RFC3489bis) */
 
-/* Return socket attached to discovery object */
-su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
-
-
+/* (not implemented, see stun_request_shared_secret()) */
 
 /* --------------------------------------------------------------------
  * Deprecated functions. These are supported with limited

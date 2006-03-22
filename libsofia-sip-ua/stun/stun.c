@@ -3011,7 +3011,9 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
   return 0;
 } 
 
-/** Return socket attached to discovery object */
+/**
+ * Returns socket attached to the discovery object 
+ */
 su_socket_t stun_discovery_get_socket(stun_discovery_t *sd)
 {
   assert(sd);

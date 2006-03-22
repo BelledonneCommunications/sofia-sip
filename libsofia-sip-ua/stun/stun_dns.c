@@ -55,7 +55,6 @@ struct stun_dns_lookup_s {
   su_root_t         *stun_root;
   stun_magic_t      *stun_magic;
   sres_resolver_t   *stun_sres;
-  sres_record_t    **stun_answers;
   int                stun_socket;
   stun_dns_lookup_f  stun_cb;
   char              *stun_tls_target;
