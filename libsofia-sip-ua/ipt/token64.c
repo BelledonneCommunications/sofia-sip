@@ -39,12 +39,12 @@
 #include "sofia-sip/token64.h"
 
 static const char code[64] = 
-"0123456789-abcdefghijklmnopqrstuvwxyz+ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+"0123456789-abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /** Encode data as an http token. 
  *
- * @deprecated
- * Note that a token is case-independent, so this is really not a good idea.
+ * @note
+ * A token is case-independent, so this is really not a good idea.
  * Use msg_random_token() instead.
  */
 int token64_e(char b[], int bsiz, void const *data, int dlen)
