@@ -95,6 +95,9 @@ typedef struct {
 		       nua_dialog_state_t *ds,
 		       nua_dialog_usage_t *du);
   char const *(*usage_name)(nua_dialog_usage_t const *du);
+  void (*usage_peer_info)(nua_dialog_usage_t *du,
+			  nua_dialog_state_t const *ds,
+			  sip_t const *sip);
 } nua_usage_class;
 
 struct nua_dialog_usage {

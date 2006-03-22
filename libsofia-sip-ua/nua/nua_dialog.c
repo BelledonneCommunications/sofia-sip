@@ -123,6 +123,7 @@ void nua_dialog_store_peer_info(nua_owner_t *own,
 				sip_t const *sip)
 {
   nua_remote_t *nr = ds->ds_remote_ua;
+  nua_dialog_usage_t *du;
   nua_remote_t old[1];
 
   *old = *nr;
@@ -168,6 +169,11 @@ void nua_dialog_store_peer_info(nua_owner_t *own,
   else if (sip->sip_server) {
     nr->nr_user_agent = sip_user_agent_dup(own, sip->sip_server);
     su_free(own, old->nr_user_agent);
+  }
+
+  for (du = ds->ds_usage; du; du = du->du_next) {
+    if (du->du_class->usage_peer_info)
+      du->du_class->usage_peer_info(du, ds, sip);
   }
 }
 
