@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005-2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -132,7 +132,6 @@ struct stun_discovery_s {
   
   /* Binding discovery */
   su_sockaddr_t    sd_addr_seen_outside[1];   /**< local address */
-
 
   /* NAT type related */
   stun_nattype_t   sd_nattype;       /**< Determined NAT type */
@@ -329,22 +328,33 @@ su_root_t *stun_handle_root(stun_handle_t *self)
 /**
  * Check if a STUN handle should be created.
  *
- * Return true either there is a tag STUNTAG_SERVER() in list or if
- * STUN_SERVER environment variable is set.
+ * Return true if STUNTAG_SERVER() or STUNTAG_DOMAIN() tags have 
+ * been specified, or otherwise if STUN_SERVER environment variable 
+ * is set.
+ *
+ * @TAGS
+ * @TAG STUNTAG_DOMAIN() domain to use in DNS-SRV based STUN server
+ * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  *
  * @param tag,value,... tag-value list
  */
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
-  tagi_t const *t;
+  tagi_t const *t, *t2;
   char const *stun_server;
 
   enter;
 
   ta_start(ta, tag, value);
   t = tl_find(ta_args(ta), stuntag_server);
-  stun_server = t && t->t_value ? (char *)t->t_value : getenv("STUN_SERVER");
+  t2 = tl_find(ta_args(ta), stuntag_domain);
+  if (t && t->t_value) 
+    stun_server = (char *)t->t_value;
+  else if (t2 && t2->t_value)
+    stun_server = (char *)t->t_value;
+  else
+    stun_server = getenv("STUN_SERVER");
   ta_end(ta);
 
   return stun_server != NULL;
@@ -356,6 +366,7 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
  * @param tag,value,... tag-value list 
  *
  * @TAGS
+ * @TAG STUNTAG_DOMAIN() domain to use in DNS-SRV based STUN server
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  * @TAG STUNTAG_REQUIRE_INTEGRITY() true if msg integrity should be
  * used enforced
@@ -367,7 +378,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  tag_type_t tag, tag_value_t value, ...)
 {
   stun_handle_t *stun = NULL;
-  char const *server = NULL;
+  char const *server = NULL, *domain = NULL;
   int req_msg_integrity = 1;
   int err;
   ta_list ta;
@@ -378,6 +389,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SERVER_REF(server),
+	  STUNTAG_DOMAIN_REF(domain),
 	  STUNTAG_REQUIRE_INTEGRITY_REF(req_msg_integrity),
 	  TAG_END());
 
@@ -810,6 +822,10 @@ static int get_localinfo(su_localinfo_t *clientinfo)
  * @param lifetime return value pointer to lifetime of 
  *                 binding, -1 if no STUN not used (OUT)
  *
+ * @TAGS
+ * @TAG STUNTAG_SOCKET Bind socket for STUN
+ * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN
+
  * @return
  * On success, zero is returned.  Upon error, -1 is returned, and @e errno is
  * set appropriately.
@@ -950,6 +966,12 @@ int stun_discovery_destroy(stun_discovery_t *sd)
 /**
  * Initiates STUN discovery proces to find out NAT 
  * characteristics.
+ *
+ * @TAGS
+ * @TAG STUNTAG_SOCKET Bind socket for STUN
+ * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN
+ * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
+ *
  */
 int stun_handle_get_nattype(stun_handle_t *sh,
 			    stun_discovery_f sdf,
@@ -2335,6 +2357,16 @@ int stun_atoaddr(int ai_family,
 }
 
 
+/**
+ * Initiates STUN discovery proces to find out NAT 
+ * binding life-time settings.
+ *
+ * @TAGS
+ * @TAG STUNTAG_SOCKET Bind socket for STUN
+ * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN
+ * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
+ *
+ */
 int stun_handle_get_lifetime(stun_handle_t *sh,
 			     stun_discovery_f sdf,
 			     stun_discovery_magic_t *magic,
