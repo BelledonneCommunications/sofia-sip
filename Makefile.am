@@ -21,7 +21,7 @@ EXTRA_DIST += 	m4/sac-su2.m4 m4/sac-tport.m4 m4/sac-openssl.m4
 dist_man_MANS = man/man1/sip-date.1 man/man1/sip-options.1 \
 		man/man1/localinfo.1 man/man1/addrinfo.1 
 
-manpages $(man_MANS):
+manpages $(MANS):
 	-mkdir -p $(srcdir)/man $(srcdir)/man/man1 2> /dev/null
 	cd $(srcdir)/utils; $(DOXYGEN)
 if !HAVE_DOXYGEN
