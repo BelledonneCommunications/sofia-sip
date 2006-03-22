@@ -770,6 +770,116 @@ extern tag_typedef_t nutag_registrar;
 #define NUTAG_REGISTRAR_REF(x)  nutag_registrar_ref, urltag_url_vr(&(x))
 extern tag_typedef_t nutag_registrar_ref;
 
+/** Outbound option string.
+ *
+ * @par Used with
+ *    nua_register()   \n
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *    nua_set_hparams() \n
+ *    nua_get_hparams()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *
+ * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_REF()
+ */
+#define NUTAG_OUTBOUND(x)      nutag_outbound, tag_str_v(x)
+extern tag_typedef_t nutag_outbound;
+
+#define NUTAG_OUTBOUND_REF(x)  nutag_outbound_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_outbound_ref;
+
+/** Outbound proxy set 1.
+ *
+ * @par Used with
+ *    nua_register()   \n
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *    nua_set_hparams() \n
+ *    nua_get_hparams()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *
+ * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET1_REF()
+ */
+#define NUTAG_OUTBOUND_SET1(x)      nutag_outbound_set1, tag_str_v(x)
+extern tag_typedef_t nutag_outbound_set1;
+
+#define NUTAG_OUTBOUND_SET1_REF(x)  nutag_outbound_set1_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_outbound_set1_ref;
+
+/** Outbound proxy set 2.
+ *
+ * @par Used with
+ *    nua_register()   \n
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *    nua_set_hparams() \n
+ *    nua_get_hparams()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *
+ * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET2_REF()
+ */
+#define NUTAG_OUTBOUND_SET2(x)      nutag_outbound_set2, tag_str_v(x)
+extern tag_typedef_t nutag_outbound_set2;
+
+#define NUTAG_OUTBOUND_SET2_REF(x)  nutag_outbound_set2_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_outbound_set2_ref;
+
+/** Outbound proxy set 3.
+ *
+ * @par Used with
+ *    nua_register()   \n
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *    nua_set_hparams() \n
+ *    nua_get_hparams()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *
+ * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET3_REF()
+ */
+#define NUTAG_OUTBOUND_SET3(x)      nutag_outbound_set3, tag_str_v(x)
+extern tag_typedef_t nutag_outbound_set3;
+
+#define NUTAG_OUTBOUND_SET3_REF(x)  nutag_outbound_set3_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_outbound_set3_ref;
+
+/** Outbound proxy set 4.
+ *
+ * @par Used with
+ *    nua_register()   \n
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *    nua_set_hparams() \n
+ *    nua_get_hparams()
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *
+ * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET4_REF()
+ */
+#define NUTAG_OUTBOUND_SET4(x)      nutag_outbound_set4, tag_str_v(x)
+extern tag_typedef_t nutag_outbound_set4;
+
+#define NUTAG_OUTBOUND_SET4_REF(x)  nutag_outbound_set4_ref, tag_str_vr(&(x))
+extern tag_typedef_t nutag_outbound_set4_ref;
+
 /** Pointer to SIP parser structure
  *
  * @par Used with

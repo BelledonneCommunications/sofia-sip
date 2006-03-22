@@ -99,6 +99,12 @@ tag_typedef_t nutag_certificate_phrase = STRTAG_TYPEDEF(certificate_phrase);
 tag_typedef_t nutag_registrar = URLTAG_TYPEDEF(registrar);
 tag_typedef_t nutag_identity = PTRTAG_TYPEDEF(identity);
 tag_typedef_t nutag_instance = STRTAG_TYPEDEF(instance);
+tag_typedef_t nutag_outbound = STRTAG_TYPEDEF(outbound);
+
+tag_typedef_t nutag_outbound_set1 = STRTAG_TYPEDEF(outbound_set1);
+tag_typedef_t nutag_outbound_set2 = STRTAG_TYPEDEF(outbound_set2);
+tag_typedef_t nutag_outbound_set3 = STRTAG_TYPEDEF(outbound_set3);
+tag_typedef_t nutag_outbound_set4 = STRTAG_TYPEDEF(outbound_set4);
 
 tag_typedef_t nutag_sip_parser = PTRTAG_TYPEDEF(sip_parser);
 

@@ -103,7 +103,7 @@ typedef struct nua_server_request nua_server_request_t;
 
 typedef void nua_creq_restart_f(nua_handle_t *, tagi_t *tags);
 
-typedef struct register_usage nua_registration_t;
+typedef struct outbound_connect nua_registration_t;
 
 struct nua_client_request
 {
@@ -208,9 +208,6 @@ typedef struct nua_handle_preferences
   unsigned         nhp_early_media:1;/**< Establish early media session */
   unsigned         nhp_auto_answer:1;
   unsigned         nhp_auto_ack:1; /**< Automatically ACK a final response */
-  unsigned         nhp_natify:1;
-  unsigned         nhp_gruuize:1;
-  unsigned         nhp_check_register:1;
   unsigned         :0;
 
   /** INVITE timeout. 
@@ -258,6 +255,8 @@ typedef struct nua_handle_preferences
   sip_organization_t *nhp_organization;
 
   char const         *nhp_instance;
+  /**< Outbound OPTIONS */
+  char const         *nhp_outbound; 
   
   /* A bit for each feature set by application */
   union {
@@ -270,8 +269,6 @@ typedef struct nua_handle_preferences
       unsigned nhp_early_media:1;
       unsigned nhp_auto_answer:1;
       unsigned nhp_auto_ack:1;
-      unsigned nhp_natify:1;
-      unsigned nhp_gruuize:1;
       unsigned nhp_invite_timeout:1;
       unsigned nhp_session_timer:1;
       unsigned nhp_min_se:1;
@@ -292,6 +289,7 @@ typedef struct nua_handle_preferences
       unsigned nhp_ua_name:1;
       unsigned nhp_organization:1;
       unsigned nhp_instance;
+      unsigned nhp_outbound;
       unsigned :0;
     } set_bits;
   } nhp_set;
@@ -497,11 +495,11 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, event_t *e);
 
 int nua_stack_registrations_init(nua_t *nua);
 
-int register_usage_check_accept(sip_accept_t const *accept);
+int outbound_connect_check_accept(sip_accept_t const *accept);
 
-int register_usage_process_options(struct register_usage *usages,
-				   nta_incoming_t *irq,
-				   sip_t const *sip);
+int outbound_connect_process_options(struct outbound_connect *usages,
+				     nta_incoming_t *irq,
+				     sip_t const *sip);
 
 void nua_stack_post_signal(nua_handle_t *nh, nua_event_t event, 
 			   tag_type_t tag, tag_value_t value, ...);

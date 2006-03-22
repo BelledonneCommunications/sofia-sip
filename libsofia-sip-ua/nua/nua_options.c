@@ -109,8 +109,9 @@ int nua_stack_process_options(nua_t *nua,
 
   int status = 200; char const *phrase = sip_200_OK;
 
-  if (register_usage_check_accept(sip->sip_accept))
-    return register_usage_process_options(nua->nua_registrations, irq, sip);
+  /* Hook to outbound */
+  if (outbound_connect_check_accept(sip->sip_accept))
+    return outbound_connect_process_options(nua->nua_registrations, irq, sip);
 
   if (nh == NULL)
     nh = nua->nua_dhandle;
@@ -118,9 +119,9 @@ int nua_stack_process_options(nua_t *nua,
   msg = nh_make_response(nua, nh, irq, status, phrase,
 			 SIPTAG_ALLOW(NH_PGET(nh, allow)),
 			 SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
-			 SIPTAG_ACCEPT_STR(SDP_MIME_TYPE),
 			 TAG_IF(NH_PGET(nh, path_enable),
 				SIPTAG_SUPPORTED_STR("path")),
+			 SIPTAG_ACCEPT_STR(SDP_MIME_TYPE),
 			 TAG_END());
 
   if (msg) {

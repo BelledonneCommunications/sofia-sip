@@ -39,6 +39,8 @@
 #include <sofia-sip/token64.h>
 #include <sofia-sip/su_tagarg.h>
 
+#include <sofia-sip/bnf.h>
+
 #include <sofia-sip/sip_protos.h>
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/sip_status.h>
@@ -65,132 +67,155 @@
 #define random rand
 #endif
 
-typedef struct register_usage register_usage;
-typedef struct register_owner_vtable register_owner_vtable;
+/* ====================================================================== */
+/* Outbound connection */
 
-int register_usage_init(register_usage *ru,
-			register_owner_vtable const *owner_methods,
-			su_root_t *root,
-			nta_agent_t *agent);
+typedef struct outbound_connect outbound_connect;
+typedef struct outbound_owner_vtable outbound_owner_vtable;
 
-int register_usage_set_features(register_usage *ru, char *features);
+int outbound_connect_init(outbound_connect *ru,
+			  outbound_owner_vtable const *owner_methods,
+			  su_root_t *root,
+			  nta_agent_t *agent,
+			  char const *options);
 
-int register_usage_check_for_nat(struct register_usage *ru,
+int outbound_connect_set_options(outbound_connect *oc, char const *options);
+
+int outbound_connect_set_features(outbound_connect *ru, char *features);
+
+int outbound_connect_check_for_nat(struct outbound_connect *ru,
 				 nta_outgoing_t *orq,
 				 sip_t const *sip);
 
-int register_usage_contacts_from_via(register_usage *ru,
+int outbound_connect_contacts_from_via(outbound_connect *ru,
 				     sip_via_t const *via,
 				     sip_via_t const *pair);
 
-int register_usage_set_contact(struct register_usage *ru,
+int outbound_connect_set_contact(struct outbound_connect *ru,
 			       sip_contact_t *m);
 
-int register_usages_from_via(struct register_usage **list,
+int outbound_connects_from_via(struct outbound_connect **list,
 			     nua_owner_t *owner,
 			     sip_via_t const *via,
 			     int public);
 
-int register_usage_set_contact_by_aor(struct register_usage *ru,
+int outbound_connect_set_contact_by_aor(struct outbound_connect *ru,
 				      url_t const *aor,
-				      register_usage const *defaults);
+				      outbound_connect const *defaults);
 
-register_usage *register_usage_by_aor(register_usage const *usages,
+outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
 				      url_t const *aor,
 				      int only_default);
 
-void register_usage_start_keepalive(struct register_usage *ru,
+void outbound_connect_start_keepalive(struct outbound_connect *ru,
 				    unsigned interval,
 				    nta_outgoing_t *register_trans);
 
-void register_usage_stop_keepalive(struct register_usage *ru);
+void outbound_connect_stop_keepalive(struct outbound_connect *ru);
 
-int register_usage_check_accept(sip_accept_t const *accept);
+int outbound_connect_check_accept(sip_accept_t const *accept);
 
-int register_usage_process_options(struct register_usage *usages,
-				   nta_incoming_t *irq,
-				   sip_t const *sip);
+int outbound_connect_process_options(struct outbound_connect *usages,
+				     nta_incoming_t *irq,
+				     sip_t const *sip);
 
-sip_contact_t const *register_usage_contact(register_usage const *ru);
+sip_contact_t const *outbound_connect_contact(outbound_connect const *ru);
 
-char const * const register_usage_content_type;
-nua_usage_class const *nua_register_usage;
+char const * const outbound_connect_content_type;
+nua_usage_class const *nua_outbound_connect;
 
-struct register_owner_vtable
+struct outbound_owner_vtable
 {
-  int ro_size;
-  int (*ro_status)(nua_owner_t *, register_usage *ru,
+  int oo_size;
+  int (*oo_status)(nua_owner_t *, outbound_connect *ru,
 		   int status, char const *phrase,
 		   tag_type_t tag, tag_value_t value, ...);
-  int (*ro_report_probe_error)(nua_owner_t *, register_usage *ru,
-			       int status, char const *phrase,
-			       tag_type_t tag, tag_value_t value, ...);
-  int (*ro_report_keepalive_error)(nua_owner_t *, register_usage *ru,
-				   int status, char const *phrase,
-				   tag_type_t tag, tag_value_t value, ...);
+  int (*oo_probe_error)(nua_owner_t *, outbound_connect *ru,
+			int status, char const *phrase,
+			tag_type_t tag, tag_value_t value, ...);
+  int (*oo_keepalive_error)(nua_owner_t *, outbound_connect *ru,
+			    int status, char const *phrase,
+			    tag_type_t tag, tag_value_t value, ...);
 };
 
-/* ====================================================================== */
-/* Register usage */
+struct outbound_connect {
+  struct outbound_connect *oc_next, **oc_prev; /* Doubly linked list */
+  outbound_owner_vtable
+  const *oc_oo;			/**< Callbacks */
+  nua_owner_t *oc_owner;	/**< Backpointer */
+  su_root_t *oc_root;		/**< Root for timers and stuff */
+  nta_agent_t *oc_nta;		/**< SIP transactions */
 
-struct register_usage {
-  struct register_usage *ru_next, **ru_prev; /* Doubly linked list */
-  unsigned ru_default:1, ru_secure:1, ru_public:1;
+  char oc_cookie[32];		/**< Our magic cookie */
 
-  unsigned ru_by_application:1, ru_add_contact:1;
+  int32_t oc_reg_id;		/**< Flow-id */
+
+  struct outbound_prefs {
+    unsigned gruuize:1;		/**< Establish a GRUU */
+    unsigned outbound:1;	/**< Try to use outbound */
+    unsigned natify:1;		/**< Try to detect NAT */
+    unsigned validate:1;	/**< Validate registration with OPTIONS */
+    /* How to detect NAT binding or connect to outbound: */
+    unsigned use_connect:1;	/**< Use HTTP connect */
+    unsigned use_rport:1;	/**< Use received/rport */
+    unsigned use_socks:1;	/**< Detect and use SOCKS V5 */
+    unsigned use_upnp:1;	/**< Detect and use UPnP */
+    unsigned use_stun:1;	/**< Detect and try to use STUN */
+    unsigned :0;
+  } oc_prefs;
+
+  struct outbound_info {
+    /* 0 do not support, 1 - perhaps supports, 2 supports, 4 requires */
+    unsigned gruu:2, outbound:2, pref:2;
+  } oc_info;
+
+  unsigned oc_default:1, oc_secure:1, oc_public:1;
+  unsigned oc_by_application:1;
+  unsigned oc_add_contact:1;
 
   /* The registration state machine. */
-  /**< Initial REGISTER containing ru_rcontact has been sent */
-  unsigned ru_registering:1;
-  /**< 2XX response to REGISTER containg ru_rcontact has been received */
-  unsigned ru_registered:1;
+  /**< Initial REGISTER containing oc_rcontact has been sent */
+  unsigned oc_registering:1;
+  /**< 2XX response to REGISTER containg oc_rcontact has been received */
+  unsigned oc_registered:1;
   /**< The registration has been validated:
    *   We have successfully sent OPTIONS to ourselves.
    */
-  unsigned ru_validated:1;
+  unsigned oc_validated:1;
   /**< The registration has been validated once.
    *   We have successfully sent OPTIONS to ourselves, so do not give
    *   up if OPTIONS probe fails.
    */
-  unsigned ru_once_validated:1;
+  unsigned oc_once_validated:1;
 
   unsigned :0;
 
+  tport_t *oc_tport;		/**< Transport used when registered */
+  char const *oc_features;	/**< Feature parameters for rcontact */
+  sip_via_t *oc_via;		/**< Our Via (or Via pair) */
+  sip_contact_t *oc_rcontact;	/**< Our contact */
+  sip_contact_t *oc_dcontact;	/**< Contact for dialogs */
+  sip_contact_t *oc_previous;	/**< Stale contact */
+  sip_contact_t *oc_gruu;	/**< Contact added to requests */
+  sip_route_t *oc_route;	/**< Outgoing Service-Route */
+  sip_path_t *oc_path;		/**< Incoming Path */
+  sip_contact_t *oc_obp;	/**< Contacts from outbound proxy */
 
-  register_owner_vtable 
-  const *ru_ro;			/**< Callbacks */
-  nua_owner_t *ru_owner;	/**< Backpointer */
-  su_root_t *ru_root;		/**< Root for timers and stuff */
-  nta_agent_t *ru_nta;		/**< SIP transactions */
+  char *oc_nat_detected;	/**< Our public address */
+  char *oc_nat_port;		/**< Our public port number */
 
-  char ru_cookie[32];		/**< Our magic cookie */
+  void *oc_stun;		/**< Stun context */
+  void *oc_upnp;		/**< UPnP context  */
+
+  char *oc_sipstun;		/**< Stun server usable for keep-alives */
+  unsigned oc_keepalive;	/**< Interval. */
+  su_timer_t *oc_kalt;		/**< Keep-alive timer */
+  msg_t *oc_kalmsg;		/**< Keep-alive OPTIONS message */
+  nta_outgoing_t *oc_kalo;	/**< Keep-alive OPTIONS transaction */
 
 #if HAVE_SIGCOMP
-  struct sigcomp_compartment *ru_compartment;
+  struct sigcomp_compartment *oc_compartment;
 #endif
-
-  tport_t *ru_tport;		/**< Transport used when registered */
-  char const *ru_features;	/**< Feature parameters for rcontact */
-  sip_via_t *ru_via;		/**< Our Via (or Via pair) */
-  sip_contact_t *ru_rcontact;	/**< Our contact */
-  sip_contact_t *ru_dcontact;	/**< Contact for dialogs */
-  sip_contact_t *ru_previous;	/**< Stale contact */
-  sip_contact_t *ru_gruu;	/**< Contact added to requests */
-  sip_route_t *ru_route;	/**< Outgoing Service-Route */
-  sip_path_t *ru_path;		/**< Incoming Path */
-  sip_contact_t *ru_obp;	/**< Contacts from outbound proxy */
-
-  char *ru_nat_detected;	/**< Our public address */
-  char *ru_nat_port;		/**< Our public port number */
-
-  void *ru_stun;		/**< Stun context */
-  void *ru_upnp;		/**< UPnP context  */
-
-  char *ru_sipstun;		/**< Stun server usable for keep-alives */
-  unsigned ru_keepalive;	/**< Interval. */
-  su_timer_t *ru_kalt;		/**< Keep-alive timer */
-  msg_t *ru_kalmsg;		/**< Keep-alive OPTIONS message */
-  nta_outgoing_t *ru_kalo;	/**< Keep-alive OPTIONS transaction */
 };
 
 /* ======================================================================== */
@@ -207,15 +232,15 @@ static void unregister_expires_contacts(msg_t *msg, sip_t *sip);
 
 static char *nua_stack_register_features(nua_handle_t *nh);
 
-static int nua_stack_register_status(nua_handle_t *, register_usage *ru,
+static int nua_stack_register_status(nua_handle_t *, outbound_connect *oc,
 				     int status, char const *phrase,
 				     tag_type_t tag, tag_value_t value, ...);
 
-static int nua_stack_register_failed(nua_handle_t *, register_usage *ru,
+static int nua_stack_register_failed(nua_handle_t *, outbound_connect *oc,
 				     int status, char const *phrase,
 				     tag_type_t tag, tag_value_t value, ...);
 
-register_owner_vtable nua_stack_register_callbacks = {
+outbound_owner_vtable nua_stack_register_callbacks = {
     sizeof nua_stack_register_callbacks,
     nua_stack_register_status,
     nua_stack_register_failed,
@@ -227,7 +252,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		   tagi_t const *tags)
 {
   nua_dialog_usage_t *du;
-  struct register_usage *ru = NULL;
+  struct outbound_connect *oc = NULL;
   struct nua_client_request *cr = nh->nh_cr;
   msg_t *msg = NULL;
   sip_t *sip;
@@ -241,16 +266,18 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   nua_stack_init_handle(nua, nh, nh_has_register, "", TAG_NEXT(tags));
   nh->nh_special = nua_r_register;
 
-  du = nua_dialog_usage_add(nh, nh->nh_ds, nua_register_usage, NULL);
+  du = nua_dialog_usage_add(nh, nh->nh_ds, nua_outbound_connect, NULL);
   if (!du)
     return UA_EVENT1(e, NUA_500_ERROR);
-  ru = nua_dialog_usage_private(du); assert(ru);
+  oc = nua_dialog_usage_private(du); assert(oc);
 
-  register_usage_init(ru, &nua_stack_register_callbacks, 
-		      nh->nh_nua->nua_root, nh->nh_nua->nua_nta);
-  register_usage_set_features(ru, nua_stack_register_features(nh));
+  outbound_connect_init(oc, &nua_stack_register_callbacks,
+			nh->nh_nua->nua_root, nh->nh_nua->nua_nta,
+			NH_PGET(nh, outbound));
 
-  register_usage_stop_keepalive(ru);
+  outbound_connect_set_features(oc, nua_stack_register_features(nh));
+
+  outbound_connect_stop_keepalive(oc);
 
   if (du->du_msg)
     cr->cr_msg = msg_ref_create(du->du_msg);
@@ -269,13 +296,13 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     du->du_msg = msg_ref_create(cr->cr_msg);
 
     if (sip->sip_contact)
-      register_usage_set_contact(ru, sip->sip_contact);
+      outbound_connect_set_contact(oc, sip->sip_contact);
 
-    if (!ru->ru_rcontact) {
-      register_usage_set_contact_by_aor(ru, sip->sip_to->a_url,
-					nh->nh_nua->nua_registrations);
+    if (!oc->oc_rcontact) {
+      outbound_connect_set_contact_by_aor(oc, sip->sip_to->a_url,
+					  nh->nh_nua->nua_registrations);
       /* Try first time without contact if we are not natifying */
-      ru->ru_add_contact = !NH_PGET(nh, natify);
+      oc->oc_add_contact = !oc->oc_prefs.natify;
     }
 
     if (terminating)
@@ -286,17 +313,17 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       nta_outgoing_mcreate(nua->nua_nta,
 			   process_response_to_register, nh, NULL,
 			   msg,
-			   TAG_IF(ru->ru_add_contact,
-				  SIPTAG_CONTACT(ru->ru_rcontact)),
-			   TAG_IF(ru->ru_add_contact,
-				  SIPTAG_CONTACT(ru->ru_previous)),
+			   TAG_IF(oc->oc_add_contact,
+				  SIPTAG_CONTACT(oc->oc_rcontact)),
+			   TAG_IF(oc->oc_add_contact,
+				  SIPTAG_CONTACT(oc->oc_previous)),
 			   SIPTAG_END(),
 			   TAG_IF(terminating, NTATAG_SIGCOMP_CLOSE(1)),
 			   TAG_IF(!terminating, NTATAG_COMP("sigcomp")),
 			   TAG_NEXT(tags));
 
     if (cr->cr_orq)
-      ru->ru_registering = 1;
+      oc->oc_registering = 1;
   }
 
   if (!cr->cr_orq) {
@@ -316,7 +343,7 @@ restart_register(nua_handle_t *nh, tagi_t *tags)
   struct nua_client_request *cr = nh->nh_cr;
   msg_t *msg;
   nua_dialog_usage_t *du = cr->cr_usage;
-  struct register_usage *ru = nua_dialog_usage_private(du);
+  struct outbound_connect *oc = nua_dialog_usage_private(du);
   int unregistering = du && du->du_terminating;
   sip_contact_t *contact = NULL, *previous = NULL;
 
@@ -335,11 +362,11 @@ restart_register(nua_handle_t *nh, tagi_t *tags)
   if (unregistering)
     unregister_expires_contacts(msg, sip_object(msg));
 
-  if (ru) {
-    if (ru->ru_add_contact) {
-      contact = ru->ru_rcontact;
-      if (ru->ru_previous && ru->ru_previous->m_expires)
-	previous = ru->ru_previous;
+  if (oc) {
+    if (oc->oc_add_contact) {
+      contact = oc->oc_rcontact;
+      if (oc->oc_previous && oc->oc_previous->m_expires)
+	previous = oc->oc_previous;
     }
   }
 
@@ -351,7 +378,7 @@ restart_register(nua_handle_t *nh, tagi_t *tags)
 				    SIPTAG_END(), TAG_NEXT(tags));
 
   if (cr->cr_orq) {
-    ru->ru_registering = 1;
+    oc->oc_registering = 1;
   }
   else
     msg_destroy(msg);
@@ -364,13 +391,13 @@ int process_response_to_register(nua_handle_t *nh,
 {
   struct nua_client_request *cr = nh->nh_cr;
   nua_dialog_usage_t *du = cr->cr_usage;
-  struct register_usage *ru = nua_dialog_usage_private(du);
+  struct outbound_connect *oc = nua_dialog_usage_private(du);
   int status;
   char const *phrase;
   sip_t *req = sip_object(cr->cr_msg);
 
   assert(sip);
-  assert(du && du->du_class == nua_register_usage);
+  assert(du && du->du_class == nua_outbound_connect);
   status = sip->sip_status->st_status;
   phrase = sip->sip_status->st_phrase;
 
@@ -379,16 +406,22 @@ int process_response_to_register(nua_handle_t *nh,
 
   nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
 
-  if (NH_PGET(nh, natify)) {
+  if (oc->oc_prefs.natify && status >= 200) {
     int reregister;
 
-    reregister = register_usage_check_for_nat(ru, orq, sip);
+    reregister = outbound_connect_check_for_nat(oc, orq, sip);
 
     if (reregister < 0)
       SET_STATUS2(500, nua_500_error);
     else if (reregister > 0) {
-      if (nua_creq_check_restart(nh, cr, orq, sip, restart_register))
+      msg_t *msg = msg_ref_create(cr->cr_msg);
+      if (nua_creq_check_restart(nh, cr, orq, sip, restart_register)) {
+	msg_destroy(msg);
 	return 0;
+      }
+
+      assert(cr->cr_msg == NULL);
+      cr->cr_msg = msg;
 
       if (reregister > 1) {
 	/* We can try to reregister immediately */
@@ -414,11 +447,11 @@ int process_response_to_register(nua_handle_t *nh,
     du->du_ready = 1;
 
     if (!du->du_terminating && sip->sip_contact)
-      ru->ru_registered = ru->ru_registering;
+      oc->oc_registered = oc->oc_registering;
     else
-      ru->ru_registered = 0;
+      oc->oc_registered = 0;
 
-    if (ru->ru_registered) {
+    if (oc->oc_registered) {
       sip_time_t now = sip_now(), delta, mindelta;
       sip_contact_t const *m, *m0;
 
@@ -450,8 +483,8 @@ int process_response_to_register(nua_handle_t *nh,
 #if HAVE_SIGCOMP
       struct sigcomp_compartment *cc;
       cc = nta_outgoing_compartment(orq);
-      sigcomp_compartment_unref(ru->ru_compartment);
-      ru->ru_compartment = cc;
+      sigcomp_compartment_unref(oc->oc_compartment);
+      oc->oc_compartment = cc;
 #endif
     }
   }
@@ -475,12 +508,12 @@ int process_response_to_register(nua_handle_t *nh,
 
   */
   if (!du->du_terminating && status < 300) {
-    su_free(nh->nh_home, ru->ru_route);
-    ru->ru_route = sip_route_dup(nh->nh_home, sip->sip_service_route);
+    su_free(nh->nh_home, oc->oc_route);
+    oc->oc_route = sip_route_dup(nh->nh_home, sip->sip_service_route);
   }
   else {
-    su_free(nh->nh_home, ru->ru_route);
-    ru->ru_route = NULL;
+    su_free(nh->nh_home, oc->oc_route);
+    oc->oc_route = NULL;
   }
 
   /* RFC 3327 */
@@ -491,27 +524,27 @@ int process_response_to_register(nua_handle_t *nh,
     while (path && path->r_next)
       path = path->r_next;
 
-    if (!ru->ru_path || !path ||
-	url_cmp_all(ru->ru_path->r_url, path->r_url)) {
-      su_free(nh->nh_home, ru->ru_path);
-      ru->ru_path = sip_path_dup(nh->nh_home, path);
+    if (!oc->oc_path || !path ||
+	url_cmp_all(oc->oc_path->r_url, path->r_url)) {
+      su_free(nh->nh_home, oc->oc_path);
+      oc->oc_path = sip_path_dup(nh->nh_home, path);
     }
   }
 
   if (!du->du_terminating && status < 300) {
-    if (!ru->ru_prev) {
+    if (!oc->oc_prev) {
       /* Add to the list of registrations */
-      if ((ru->ru_next = nh->nh_nua->nua_registrations))
-	ru->ru_next->ru_prev = &ru->ru_next;
-      ru->ru_prev = &nh->nh_nua->nua_registrations;
-      nh->nh_nua->nua_registrations = ru;
+      if ((oc->oc_next = nh->nh_nua->nua_registrations))
+	oc->oc_next->oc_prev = &oc->oc_next;
+      oc->oc_prev = &nh->nh_nua->nua_registrations;
+      nh->nh_nua->nua_registrations = oc;
     }
   }
 
-  if (!du->du_terminating && status < 300 && ru->ru_nat_detected)
-    register_usage_start_keepalive(ru, 15, orq);
+  if (!du->du_terminating && status < 300 && oc->oc_nat_detected)
+    outbound_connect_start_keepalive(oc, 15, orq);
   else
-    register_usage_stop_keepalive(ru);
+    outbound_connect_stop_keepalive(oc);
 
   return nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 }
@@ -521,7 +554,7 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 {
   nua_t *nua = nh->nh_nua;
   nua_client_request_t *cr = nh->nh_cr;
-  register_usage *ru = nua_dialog_usage_private(du);
+  outbound_connect *oc = nua_dialog_usage_private(du);
   nua_event_t e;
   msg_t *msg;
   sip_t *sip;
@@ -538,7 +571,7 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   else
     e = nua_r_destroy, du->du_terminating = 1;
 
-  register_usage_stop_keepalive(ru);
+  outbound_connect_stop_keepalive(oc);
 
   cr->cr_msg = msg_ref_create(du->du_msg);
   msg = nua_creq_msg(nua, nh, cr, 1,
@@ -554,11 +587,11 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
     if (unregistering)
       unregister_expires_contacts(msg, sip);
 
-    if (ru) {
-      if (ru->ru_add_contact) {
-	contact = ru->ru_rcontact;
-	if (ru->ru_previous && ru->ru_previous->m_expires)
-	  previous = ru->ru_previous;
+    if (oc) {
+      if (oc->oc_add_contact) {
+	contact = oc->oc_rcontact;
+	if (oc->oc_previous && oc->oc_previous->m_expires)
+	  previous = oc->oc_previous;
       }
     }
 
@@ -597,12 +630,12 @@ nua_stack_registrations_init(nua_t *nua)
 
   v = nta_agent_public_via(nua->nua_nta);
   if (v) {
-    register_usages_from_via(&nua->nua_registrations, dnh, v, 1);
+    outbound_connects_from_via(&nua->nua_registrations, dnh, v, 1);
   }
 
   v = nta_agent_via(nua->nua_nta);
   if (v) {
-    register_usages_from_via(&nua->nua_registrations, dnh, v, 0);
+    outbound_connects_from_via(&nua->nua_registrations, dnh, v, 0);
   }
   else {
     sip_via_t v[2];
@@ -614,10 +647,10 @@ nua_stack_registrations_init(nua_t *nua)
     v[1].v_protocol = sip_transport_tcp;
     v[1].v_host = "addr.is.invalid.";
 
-    register_usages_from_via(&nua->nua_registrations, dnh, v, 0);
+    outbound_connects_from_via(&nua->nua_registrations, dnh, v, 0);
   }
 
-  nta_agent_bind_tport_update(nua->nua_nta, nua, 
+  nta_agent_bind_tport_update(nua->nua_nta, nua,
 			      nua_stack_tport_update);
 
   return 0;
@@ -650,11 +683,11 @@ sip_contact_t const *nua_contact_by_aor(nua_t *nua,
 					url_t const *aor,
 					int only_default)
 {
-  register_usage *ru = nua->nua_registrations;
+  outbound_connect *oc = nua->nua_registrations;
 
-  ru = register_usage_by_aor(ru, aor, only_default);
+  oc = outbound_connect_by_aor(oc, aor, only_default);
 
-  return register_usage_contact(ru);
+  return outbound_connect_contact(oc);
 }
 
 /** Return a string descibing our features. */
@@ -740,8 +773,8 @@ void unregister_expires_contacts(msg_t *msg, sip_t *sip)
 }
 
 
-/** Callback from register_usage */
-static int nua_stack_register_status(nua_handle_t *nh, register_usage *ru,
+/** Callback from outbound_connect */
+static int nua_stack_register_status(nua_handle_t *nh, outbound_connect *oc,
 				     int status, char const *phrase,
 				     tag_type_t tag, tag_value_t value, ...)
 {
@@ -749,8 +782,8 @@ static int nua_stack_register_status(nua_handle_t *nh, register_usage *ru,
 
   ta_start(ta, tag, value);
 
-  nua_stack_event(nh->nh_nua, nh, NULL, 
-		  nua_i_outbound, status, phrase, 
+  nua_stack_event(nh->nh_nua, nh, NULL,
+		  nua_i_outbound, status, phrase,
 		  ta_tags(ta));
 
   ta_end(ta);
@@ -758,16 +791,16 @@ static int nua_stack_register_status(nua_handle_t *nh, register_usage *ru,
   return 0;
 }
 
-/** Callback from register_usage */
-static int nua_stack_register_failed(nua_handle_t *nh, register_usage *ru,
+/** Callback from outbound_connect */
+static int nua_stack_register_failed(nua_handle_t *nh, outbound_connect *oc,
 				     int status, char const *phrase,
 				     tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
   ta_start(ta, tag, value);
 
-  nua_stack_event(nh->nh_nua, nh, NULL, 
-		  nua_i_outbound, status, phrase, 
+  nua_stack_event(nh->nh_nua, nh, NULL,
+		  nua_i_outbound, status, phrase,
 		  ta_tags(ta));
 
   ta_end(ta);
@@ -779,18 +812,18 @@ static int nua_stack_register_failed(nua_handle_t *nh, register_usage *ru,
 /* Register-usage side */
 
 static
-int register_usage_nat_detect(register_usage *ru, sip_via_t const *v);
+int outbound_connect_nat_detect(outbound_connect *oc, sip_via_t const *v);
 
 /* ---------------------------------------------------------------------- */
 
 /** Check if there is a NAT between us and registrar */
-int register_usage_check_for_nat(struct register_usage *ru,
+int outbound_connect_check_for_nat(struct outbound_connect *oc,
 				 nta_outgoing_t *orq,
 				 sip_t const *sip)
 {
   sip_via_t *v = sip->sip_via;
   int binding_changed;
-  sip_contact_t *m = ru->ru_rcontact;
+  sip_contact_t *m = oc->oc_rcontact;
 
 #if 0
   if (host_is_domain(v->v_host)) {
@@ -807,25 +840,25 @@ int register_usage_check_for_nat(struct register_usage *ru,
       invalid++;
 
     if (!invalid || invalid[0] != '\0') {
-      if (!ru->ru_rcontact)
+      if (!oc->oc_rcontact)
 	...
-      if (!ru->ru_rcontact)
+      if (!oc->oc_rcontact)
 	return -1;
       return 0;
     }
   }
 #endif
 
-  binding_changed = register_usage_nat_detect(ru, v);
+  binding_changed = outbound_connect_nat_detect(oc, v);
 
   /* Contact was set by application, do not change it */
-  if (ru->ru_by_application)
+  if (oc->oc_by_application)
     return 0;
 
-  if (!ru->ru_nat_detected) {
-    if (ru->ru_add_contact)
+  if (!oc->oc_nat_detected) {
+    if (oc->oc_add_contact)
       return 0;
-    ru->ru_add_contact = 1;
+    oc->oc_add_contact = 1;
     return 2;
   }
 
@@ -838,21 +871,21 @@ int register_usage_check_for_nat(struct register_usage *ru,
 
   /* Do we have to ask for reregistration */
   if (!m || binding_changed > 1) {
-    if (ru->ru_stun) {
+    if (oc->oc_stun) {
       /* Use STUN? */
       return 1;
     }
-    else if (ru->ru_upnp) {
+    else if (oc->oc_upnp) {
       /* Use UPnP */
       return 1;
     }
     else {
-      if (register_usage_contacts_from_via(ru, sip->sip_via, NULL) < 0)
+      if (outbound_connect_contacts_from_via(oc, sip->sip_via, NULL) < 0)
 	return -1;
-      ru->ru_add_contact = 1;
+      oc->oc_add_contact = 1;
     }
 
-    return 1;
+    return 2;
   }
 
   return 0;
@@ -867,8 +900,8 @@ int register_usage_check_for_nat(struct register_usage *ru,
  * @retval -1 an error occurred
  */
 static
-int register_usage_nat_detect(register_usage *ru,
-			      sip_via_t const *v)
+int outbound_connect_nat_detect(outbound_connect *oc,
+				sip_via_t const *v)
 {
   int one = 1;
   char const *received, *rport;
@@ -876,7 +909,7 @@ int register_usage_nat_detect(register_usage *ru,
   char *new_detected, *new_port;
   su_home_t *home;
 
-  if (!ru || !v)
+  if (!oc || !v)
     return -1;
 
   received = v->v_received;
@@ -885,30 +918,30 @@ int register_usage_nat_detect(register_usage *ru,
 
   rport = sip_via_port(v, &one); assert(rport);
 
-  nat_detected = ru->ru_nat_detected;
-  nat_port = ru->ru_nat_port;
+  nat_detected = oc->oc_nat_detected;
+  nat_port = oc->oc_nat_port;
 
   if (nat_detected && strcasecmp(received, nat_detected) == 0 &&
       nat_port && strcasecmp(rport, nat_port) == 0)
     return 1;
 
   if (!nat_detected) {
-    SU_DEBUG_1(("register_usage: detected NAT: %s != %s\n",
+    SU_DEBUG_1(("outbound_connect: detected NAT: %s != %s\n",
 		v->v_host, received));
-    if (ru->ru_ro && ru->ru_ro->ro_status)
-      ru->ru_ro->ro_status(ru->ru_owner, ru, 101, "NAT detected", TAG_END());
+    if (oc->oc_oo && oc->oc_oo->oo_status)
+      oc->oc_oo->oo_status(oc->oc_owner, oc, 101, "NAT detected", TAG_END());
   }
   else {
-    SU_DEBUG_1(("register_usage: NAT binding changed: "
+    SU_DEBUG_1(("outbound_connect: NAT binding changed: "
 		"[%s]:%s != [%s]:%s\n",
 		nat_detected, nat_port, received, rport));
-    if (ru->ru_ro && ru->ru_ro->ro_status)
-      ru->ru_ro->ro_status(ru->ru_owner, ru, 102, "NAT binding changed", TAG_END());
+    if (oc->oc_oo && oc->oc_oo->oo_status)
+      oc->oc_oo->oo_status(oc->oc_owner, oc, 102, "NAT binding changed", TAG_END());
   }
 
   /* Save our nat binding */
 
-  home = (su_home_t *)ru->ru_owner;
+  home = (su_home_t *)oc->oc_owner;
 
   new_detected = su_strdup(home, received);
   new_port = su_strdup(home, rport);
@@ -919,8 +952,8 @@ int register_usage_nat_detect(register_usage *ru,
     return -1;
   }
 
-  ru->ru_nat_detected = new_detected;
-  ru->ru_nat_port = new_port;
+  oc->oc_nat_detected = new_detected;
+  oc->oc_nat_port = new_port;
 
   su_free(home, nat_detected);
   su_free(home, nat_port);
@@ -930,71 +963,71 @@ int register_usage_nat_detect(register_usage *ru,
 
 /* ---------------------------------------------------------------------- */
 
-static int create_keepalive_message(struct register_usage *ru,
+static int create_keepalive_message(struct outbound_connect *oc,
 				    sip_t const *register_request);
 
-static int keepalive_options(register_usage *ru);
-static int keepalive_options_with_registration_probe(register_usage *ru);
+static int keepalive_options(outbound_connect *oc);
+static int keepalive_options_with_registration_probe(outbound_connect *oc);
 
-static int response_to_keepalive_options(nua_owner_t *ru_casted_as_owner,
+static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
 					 nta_outgoing_t *orq,
 					 sip_t const *sip);
 
 static void keepalive_timer(su_root_magic_t *root_magic,
 			    su_timer_t *t,
-			    su_timer_arg_t *ru_as_timer_arg);
+			    su_timer_arg_t *oc_as_timer_arg);
 
-void register_usage_start_keepalive(struct register_usage *ru,
+void outbound_connect_start_keepalive(struct outbound_connect *oc,
 				    unsigned interval,
 				    nta_outgoing_t *register_transaction)
 {
-  if (ru->ru_kalt)
-    su_timer_destroy(ru->ru_kalt), ru->ru_kalt = NULL;
+  if (oc->oc_kalt)
+    su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
 
   if (interval)
-    ru->ru_kalt = su_timer_create(su_root_task(ru->ru_root),
+    oc->oc_kalt = su_timer_create(su_root_task(oc->oc_root),
 				  /* 1000 * */ 100 * interval);
 
-  ru->ru_keepalive = interval;
+  oc->oc_keepalive = interval;
 
-  if (!ru->ru_validated && ru->ru_sipstun && 0) {
+  if (!oc->oc_validated && oc->oc_sipstun && 0) {
     /* XXX */
   }
   else {
     if (register_transaction) {
       msg_t *msg = nta_outgoing_getrequest(register_transaction);
       sip_t const *register_request = sip_object(msg);
-      create_keepalive_message(ru, register_request);
+      create_keepalive_message(oc, register_request);
       msg_destroy(msg);
     }
 
-    keepalive_options(ru);
+    keepalive_options(oc);
   }
 }
 
-void register_usage_stop_keepalive(struct register_usage *ru)
+void outbound_connect_stop_keepalive(struct outbound_connect *oc)
 {
-  ru->ru_keepalive = 0;
+  oc->oc_keepalive = 0;
 
-  if (ru->ru_kalt)
-    su_timer_destroy(ru->ru_kalt), ru->ru_kalt = NULL;
+  if (oc->oc_kalt)
+    su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
 
-  if (ru->ru_kalo)
-    nta_outgoing_destroy(ru->ru_kalo), ru->ru_kalo = NULL;
+  if (oc->oc_kalo)
+    nta_outgoing_destroy(oc->oc_kalo), oc->oc_kalo = NULL;
 }
 
 /** Create a message template for keepalive. */
-static int create_keepalive_message(struct register_usage *ru,
+static int create_keepalive_message(struct outbound_connect *oc,
 				    sip_t const *regsip)
 {
-  msg_t *msg = nta_msg_create(ru->ru_nta, MSG_FLG_COMPACT), *previous;
+  msg_t *msg = nta_msg_create(oc->oc_nta, MSG_FLG_COMPACT), *previous;
   sip_t *osip = sip_object(msg);
 
   assert(regsip); assert(regsip->sip_request);
 
   if (
       sip_add_tl(msg, osip,
-		 /* Duplicate essential headers from REGISTER request: 
+		 /* Duplicate essential headers from REGISTER request:
 		    From/To, Route */
 		 SIPTAG_TO(regsip->sip_to),
 		 SIPTAG_FROM(regsip->sip_from),
@@ -1006,60 +1039,60 @@ static int create_keepalive_message(struct register_usage *ru,
 		 /* Add Max-Forwards 0 */
 		 SIPTAG_MAX_FORWARDS_STR("0"),
 		 SIPTAG_SUBJECT_STR("KEEPALIVE"),
-		 SIPTAG_CALL_ID_STR(ru->ru_cookie),
+		 SIPTAG_CALL_ID_STR(oc->oc_cookie),
 		 TAG_END()) < 0 ||
       /* Create request-line, Call-ID, CSeq */
       nta_msg_request_complete(msg,
-			       nta_default_leg(ru->ru_nta),
+			       nta_default_leg(oc->oc_nta),
 			       SIP_METHOD_OPTIONS,
 			       (void *)regsip->sip_request->rq_url) < 0 ||
       msg_serialize(msg, (void *)osip) < 0 ||
       msg_prepare(msg) < 0)
     return msg_destroy(msg), -1;
 
-  previous = ru->ru_kalmsg;
-  ru->ru_kalmsg = msg;
+  previous = oc->oc_kalmsg;
+  oc->oc_kalmsg = msg;
   msg_destroy(previous);
 
   return 0;
 }
 
-static int keepalive_options(register_usage *ru)
+static int keepalive_options(outbound_connect *oc)
 {
   msg_t *req;
 
-  if (ru->ru_kalo)
+  if (oc->oc_kalo)
     return 0;
 
-  if (ru->ru_registered && !ru->ru_validated)
-    return keepalive_options_with_registration_probe(ru);
+  if (oc->oc_registered && !oc->oc_validated)
+    return keepalive_options_with_registration_probe(oc);
 
-  req = msg_copy(ru->ru_kalmsg);
+  req = msg_copy(oc->oc_kalmsg);
   if (!req)
     return -1;
 
-  if (nta_msg_request_complete(req, nta_default_leg(ru->ru_nta),
+  if (nta_msg_request_complete(req, nta_default_leg(oc->oc_nta),
 			       SIP_METHOD_UNKNOWN, NULL) < 0)
     return msg_destroy(req), -1;
 
-  ru->ru_kalo = nta_outgoing_mcreate(ru->ru_nta,
+  oc->oc_kalo = nta_outgoing_mcreate(oc->oc_nta,
 				     response_to_keepalive_options,
-				     (nua_owner_t *)ru,
+				     (nua_owner_t *)oc,
 				     NULL,
 				     req,
 				     TAG_END());
 
-  if (!ru->ru_kalo)
+  if (!oc->oc_kalo)
     return msg_destroy(req), -1;
 
   return 0;
 }
 
-static int response_to_keepalive_options(nua_owner_t *ru_casted_as_owner,
+static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
 					 nta_outgoing_t *orq,
 					 sip_t const *sip)
 {
-  register_usage *ru = (register_usage *)ru_casted_as_owner;
+  outbound_connect *oc = (outbound_connect *)oc_casted_as_owner;
   int status = 408;
   int binding_check;
 
@@ -1073,128 +1106,129 @@ static int response_to_keepalive_options(nua_owner_t *ru_casted_as_owner,
   if (status < 200)
     return 0;
 
-  if (orq == ru->ru_kalo)
-    ru->ru_kalo = NULL;
+  if (orq == oc->oc_kalo)
+    oc->oc_kalo = NULL;
   nta_outgoing_destroy(orq);
 
   if (status == 408) {
-    SU_DEBUG_1(("register_usage(%p): keepalive timeout\n", ru));
+    SU_DEBUG_1(("outbound_connect(%p): keepalive timeout\n", oc));
     /* XXX - do something about it! */
     return 0;
   }
 
-  binding_check = register_usage_nat_detect(ru, sip->sip_via);
+  binding_check = outbound_connect_nat_detect(oc, sip->sip_via);
 
   if (binding_check > 1) {
     /* Bindings have changed */
     /* XXX - do something about it! */
-    if (register_usage_contacts_from_via(ru, sip->sip_via, NULL) == 0) {
+    if (outbound_connect_contacts_from_via(oc, sip->sip_via, NULL) == 0) {
       /* re-REGISTER */
-      nua_dialog_usage_refresh(ru->ru_owner, nua_dialog_usage_public(ru), 1); 
+      nua_dialog_usage_refresh(oc->oc_owner, nua_dialog_usage_public(oc), 1);
       return 0;
     }
   }
 
-  if (binding_check <= 1 && status < 300 && ru->ru_registered) {
-    if (!ru->ru_validated)
-      SU_DEBUG_1(("register_usage(%p): validated contact "
+  if (binding_check <= 1 && status < 300 && oc->oc_registered) {
+    if (!oc->oc_validated)
+      SU_DEBUG_1(("outbound_connect(%p): validated contact "
 		  URL_PRINT_FORMAT "\n",
-		  ru, URL_PRINT_ARGS(ru->ru_rcontact->m_url)));
-    ru->ru_validated = ru->ru_once_validated = 1;
+		  oc, URL_PRINT_ARGS(oc->oc_rcontact->m_url)));
+    oc->oc_validated = oc->oc_once_validated = 1;
   }
 
-  su_timer_set(ru->ru_kalt, keepalive_timer, ru);
+  su_timer_set(oc->oc_kalt, keepalive_timer, oc);
 
   return 0;
 }
 
 static void keepalive_timer(su_root_magic_t *root_magic,
 			    su_timer_t *t,
-			    su_timer_arg_t *ru_casted_as_timer_arg)
+			    su_timer_arg_t *oc_casted_as_timer_arg)
 {
-  register_usage *ru = (register_usage *)ru_casted_as_timer_arg;
+  outbound_connect *oc = (outbound_connect *)oc_casted_as_timer_arg;
 
   (void)root_magic;
 
-  if (keepalive_options(ru) < 0)
-    su_timer_set(t, keepalive_timer, ru_casted_as_timer_arg);	/* XXX */
+  if (keepalive_options(oc) < 0)
+    su_timer_set(t, keepalive_timer, oc_casted_as_timer_arg);	/* XXX */
 }
 
 
 /** Send a keepalive OPTIONS that probes the registration */
-static int keepalive_options_with_registration_probe(register_usage *ru)
+static int keepalive_options_with_registration_probe(outbound_connect *oc)
 {
   msg_t *req;
   sip_t *sip;
   void *request_uri;
 
-  if (ru->ru_kalo)
+  if (oc->oc_kalo)
     return 0;
 
-  req = msg_copy(ru->ru_kalmsg);
+  req = msg_copy(oc->oc_kalmsg);
   if (!req)
     return -1;
 
   sip = sip_object(req);
   request_uri = sip->sip_to->a_url;
 
-  if (nta_msg_request_complete(req, nta_default_leg(ru->ru_nta),
+  if (nta_msg_request_complete(req, nta_default_leg(oc->oc_nta),
 			       SIP_METHOD_OPTIONS, request_uri) < 0)
     return msg_destroy(req), -1;
 
-  if (ru->ru_features) {
+  if (oc->oc_features) {
     sip_accept_contact_t *ac;
-    ac = sip_accept_contact_format(msg_home(req), "*;%s", ru->ru_features);
+    ac = sip_accept_contact_format(msg_home(req), "*;%s", oc->oc_features);
+    msg_header_insert(req, NULL, (void *)ac);
   }
 
-  ru->ru_kalo = nta_outgoing_mcreate
-    (ru->ru_nta,
+  oc->oc_kalo = nta_outgoing_mcreate
+    (oc->oc_nta,
      response_to_keepalive_options,
-     (nua_owner_t *)ru,
+     (nua_owner_t *)oc,
      NULL,
      req,
      /* See RFC 3841 */
-     SIPTAG_ACCEPT_STR(register_usage_content_type),
+     SIPTAG_ACCEPT_STR(outbound_connect_content_type),
      SIPTAG_PROXY_REQUIRE_STR("pref"),
      SIPTAG_REQUEST_DISPOSITION_STR("proxy"),
      SIPTAG_SUBJECT_STR("REGISTRATION PROBE"),
      SIPTAG_MAX_FORWARDS(NONE),	/* Remove 0 used in ordinary keepalives */
      TAG_END());
 
-  if (!ru->ru_kalo)
+  if (!oc->oc_kalo)
     return msg_destroy(req), -1;
 
   return 0;
 }
 
 /** Check if incoming OPTIONS is a registration probe */
-int register_usage_check_accept(sip_accept_t const *accept)
+int outbound_connect_check_accept(sip_accept_t const *accept)
 {
   return
     accept &&
     accept->ac_type &&
-    strcasecmp(accept->ac_type, register_usage_content_type) == 0;
+    strcasecmp(accept->ac_type, outbound_connect_content_type) == 0;
 }
 
 /** Process incoming keepalive/validate OPTIONS */
-int register_usage_process_options(struct register_usage *usages,
+int outbound_connect_process_options(struct outbound_connect *usages,
 				   nta_incoming_t *irq,
 				   sip_t const *sip)
 {
   sip_call_id_t *i = sip->sip_call_id; assert(i);
-  struct register_usage *ru;
+  struct outbound_connect *oc;
 
-  for (ru = usages; ru; ru = ru->ru_next) {
-    if (strcmp(i->i_id, ru->ru_cookie) == 0)
+  for (oc = usages; oc; oc = oc->oc_next) {
+    if (strcmp(i->i_id, oc->oc_cookie) == 0)
       break;
   }
 
-  if (!ru)
+  if (!oc)
     return 481;			/* Call/Transaction does not exist */
 
   nta_incoming_treply(irq, SIP_200_OK,
-		      SIPTAG_CONTENT_TYPE_STR(register_usage_content_type),
-		      SIPTAG_PAYLOAD_STR(ru->ru_cookie),
+		      SIPTAG_CONTENT_TYPE_STR(outbound_connect_content_type),
+		      SIPTAG_PAYLOAD_STR(oc->oc_cookie),
 		      TAG_END());
 
   return 501;
@@ -1207,18 +1241,18 @@ int register_usage_process_options(struct register_usage *usages,
  * Each registration has two contacts: one suitable for registrations and
  * another that can be used in dialogs.
  */
-int register_usage_contacts_from_via(register_usage *ru,
+int outbound_connect_contacts_from_via(outbound_connect *oc,
 				     sip_via_t const *via,
 				     sip_via_t const *pair)
 {
-  su_home_t *home = (su_home_t *)ru->ru_owner;
+  su_home_t *home = (su_home_t *)oc->oc_owner;
   char *uri;
   sip_contact_t *rcontact, *dcontact;
   sip_contact_t *previous_rcontact, *previous_dcontact;
   char const *transport;
   sip_via_t *v, v0[1], *previous_via;
   int contact_uri_changed;
-
+  
   if (!via)
     return -1;
 
@@ -1233,8 +1267,11 @@ int register_usage_contacts_from_via(register_usage *ru,
   uri = sip_contact_string_from_via(NULL, via, NULL, transport);
 
   dcontact = sip_contact_make(home, uri);
-  if (ru->ru_features)
-    rcontact = sip_contact_format(home, "%s%s", uri, ru->ru_features);
+  if (oc->oc_features && oc->oc_reg_id && oc->oc_prefs.outbound)
+    rcontact = sip_contact_format(home, "%s%s;reg-id=%u", 
+				  uri, oc->oc_features, oc->oc_reg_id);
+  else if (oc->oc_features) 
+    rcontact = sip_contact_format(home, "%s%s", uri, oc->oc_features);
   else
     rcontact = dcontact;
   v = sip_via_dup(home, v);
@@ -1249,36 +1286,36 @@ int register_usage_contacts_from_via(register_usage *ru,
     return -1;
   }
 
-  contact_uri_changed = !ru->ru_rcontact ||
-    url_cmp_all(ru->ru_rcontact->m_url, rcontact->m_url);
+  contact_uri_changed = !oc->oc_rcontact ||
+    url_cmp_all(oc->oc_rcontact->m_url, rcontact->m_url);
 
   if (contact_uri_changed) {
-    previous_rcontact = ru->ru_previous;
-    previous_dcontact = ru->ru_dcontact;
-    previous_via = ru->ru_via;
+    previous_rcontact = oc->oc_previous;
+    previous_dcontact = oc->oc_dcontact;
+    previous_via = oc->oc_via;
 
-    ru->ru_previous = ru->ru_rcontact;
-    if (ru->ru_previous)
-      msg_header_replace_param(home, (void*)ru->ru_previous, "expires=0");
+    oc->oc_previous = oc->oc_rcontact;
+    if (oc->oc_previous)
+      msg_header_replace_param(home, (void*)oc->oc_previous, "expires=0");
   }
   else {
-    previous_rcontact = ru->ru_rcontact;
-    previous_dcontact = ru->ru_dcontact;
-    previous_via = ru->ru_via;
+    previous_rcontact = oc->oc_rcontact;
+    previous_dcontact = oc->oc_dcontact;
+    previous_via = oc->oc_via;
   }
 
-  ru->ru_rcontact = rcontact;
-  ru->ru_dcontact = dcontact;
-  ru->ru_via = v;
+  oc->oc_rcontact = rcontact;
+  oc->oc_dcontact = dcontact;
+  oc->oc_via = v;
 
   if (contact_uri_changed) {
-    ru->ru_registering = 0;
-    ru->ru_registered = 0;
-    ru->ru_validated = 0;
+    oc->oc_registering = 0;
+    oc->oc_registered = 0;
+    oc->oc_validated = 0;
   }
 
   msg_header_free(home, (void *)previous_rcontact);
-  if (previous_dcontact != ru->ru_previous &&
+  if (previous_dcontact != oc->oc_previous &&
       previous_dcontact != previous_rcontact)
     msg_header_free(home, (void *)previous_dcontact);
   msg_header_free(home, (void *)previous_via);
@@ -1287,10 +1324,10 @@ int register_usage_contacts_from_via(register_usage *ru,
 }
 
 /** Set contact by application */
-int register_usage_set_contact(struct register_usage *ru,
+int outbound_connect_set_contact(struct outbound_connect *oc,
 			       sip_contact_t *m)
 {
-  su_home_t *home = (su_home_t *)ru->ru_owner;
+  su_home_t *home = (su_home_t *)oc->oc_owner;
   sip_contact_t *m1, *m2, *m3;
   int contact_uri_changed;
 
@@ -1298,20 +1335,20 @@ int register_usage_set_contact(struct register_usage *ru,
   if (!m)
     return -1;
 
-  ru->ru_by_application = 1;
+  oc->oc_by_application = 1;
 
-  m1 = ru->ru_rcontact;
-  m2 = ru->ru_dcontact;
-  m3 = ru->ru_previous;
+  m1 = oc->oc_rcontact;
+  m2 = oc->oc_dcontact;
+  m3 = oc->oc_previous;
 
   contact_uri_changed = !m1 || url_cmp_all(m1->m_url, m->m_url);
 
-  ru->ru_rcontact = m, ru->ru_dcontact = m, ru->ru_previous = NULL;
+  oc->oc_rcontact = m, oc->oc_dcontact = m, oc->oc_previous = NULL;
 
   if (contact_uri_changed) {
-    ru->ru_registering = 0;
-    ru->ru_registered = 0;
-    ru->ru_validated = 0;
+    oc->oc_registering = 0;
+    oc->oc_registered = 0;
+    oc->oc_validated = 0;
   }
 
   msg_header_free(home, (void *)m1);
@@ -1323,39 +1360,39 @@ int register_usage_set_contact(struct register_usage *ru,
 }
 
 /** Set contact to by using aor */
-int register_usage_set_contact_by_aor(struct register_usage *ru,
+int outbound_connect_set_contact_by_aor(struct outbound_connect *oc,
 				      url_t const *aor,
-				      register_usage const *defaults)
+				      outbound_connect const *defaults)
 {
-  register_usage *default_ru;
+  outbound_connect *default_ru;
 
-  default_ru = register_usage_by_aor(defaults, aor, 1);
+  default_ru = outbound_connect_by_aor(defaults, aor, 1);
 
   if (default_ru) {
-    assert(default_ru->ru_via);
+    assert(default_ru->oc_via);
 
-    register_usage_contacts_from_via(ru,
-				     default_ru->ru_via,
-				     default_ru->ru_via->v_next);
+    outbound_connect_contacts_from_via(oc,
+				     default_ru->oc_via,
+				     default_ru->oc_via->v_next);
 
   }
 
   return 0;
 }
 
-int register_usages_from_via(struct register_usage **list,
+int outbound_connects_from_via(struct outbound_connect **list,
 			     nua_owner_t *owner,
 			     sip_via_t const *via,
 			     int public)
 {
   su_home_t *ohome = (su_home_t *)owner;
   sip_via_t *v, *pair, *vias, **vv, **prev;
-  nua_registration_t *ru = NULL, **next;
+  nua_registration_t *oc = NULL, **next;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
 
   vias = sip_via_copy(su_home_auto(autohome, sizeof autohome), via);
 
-  for (; *list; list = &(*list)->ru_next)
+  for (; *list; list = &(*list)->oc_next)
     ;
 
   next = list;
@@ -1388,21 +1425,21 @@ int register_usages_from_via(struct register_usage **list,
       }
     }
 
-    ru = su_zalloc(ohome, sizeof *ru);
-    if (!ru)
+    oc = su_zalloc(ohome, sizeof *oc);
+    if (!oc)
       break;
 
-    ru->ru_owner = owner;
-    ru->ru_default = 1, ru->ru_public = public;
+    oc->oc_owner = owner;
+    oc->oc_default = 1, oc->oc_public = public;
 
-    if (register_usage_contacts_from_via(ru, v, pair) < 0) {
-      su_free(ohome, ru);
+    if (outbound_connect_contacts_from_via(oc, v, pair) < 0) {
+      su_free(ohome, oc);
       break;
     }
 
-    ru->ru_secure = ru->ru_rcontact->m_url->url_type == url_sips;
+    oc->oc_secure = oc->oc_rcontact->m_url->url_type == url_sips;
 
-    ru->ru_next = *next, ru->ru_prev = next; *next = ru, next = &ru->ru_next;
+    oc->oc_next = *next, oc->oc_prev = next; *next = oc, next = &oc->oc_next;
   }
 
   su_home_deinit(autohome);
@@ -1410,149 +1447,247 @@ int register_usages_from_via(struct register_usage **list,
   return 0;
 }
 
-register_usage *register_usage_by_aor(register_usage const *usages,
+outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
 				      url_t const *aor,
 				      int only_default)
 {
   int secure = aor && aor->url_type == url_sips;
-  register_usage const *ru, *public = NULL;
+  outbound_connect const *oc, *public = NULL;
 
-  for (ru = usages; ru; ru = ru->ru_next) {
-    if (only_default && !ru->ru_default)
+  for (oc = usages; oc; oc = oc->oc_next) {
+    if (only_default && !oc->oc_default)
       continue;
 
-    if (!ru->ru_via)
+    if (!oc->oc_via)
       continue;
 
-    if (public == NULL && ru->ru_public)
-      public = ru;
+    if (public == NULL && oc->oc_public)
+      public = oc;
 
     if (secure) {
-      if (ru->ru_secure)
-	return (register_usage *)ru;
+      if (oc->oc_secure)
+	return (outbound_connect *)oc;
     }
     else {
-      if (!ru->ru_secure)
-	return (register_usage *)ru;
+      if (!oc->oc_secure)
+	return (outbound_connect *)oc;
     }
   }
 
-  return (register_usage *)public;
+  return (outbound_connect *)public;
 }
 
-sip_contact_t const *register_usage_contact(register_usage const *ru)
+sip_contact_t const *outbound_connect_contact(outbound_connect const *oc)
 {
-  if (ru == NULL)
+  if (oc == NULL)
     return NULL;
-  if (ru->ru_gruu)
-    return ru->ru_gruu;
+  if (oc->oc_gruu)
+    return oc->oc_gruu;
   else
-    return ru->ru_dcontact;
+    return oc->oc_dcontact;
 }
 
 /* ---------------------------------------------------------------------- */
 
-static char const *nua_register_usage_name(nua_dialog_usage_t const *du);
+static char const *nua_outbound_connect_name(nua_dialog_usage_t const *du);
 
-static int nua_register_usage_add(nua_handle_t *nh,
+static int nua_outbound_connect_add(nua_handle_t *nh,
 				  nua_dialog_state_t *ds,
 				  nua_dialog_usage_t *du);
-static void nua_register_usage_remove(nua_handle_t *nh,
+static void nua_outbound_connect_remove(nua_handle_t *nh,
 				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du);
+static void nua_outbound_peer_info(nua_dialog_usage_t *du,
+				   nua_dialog_state_t const *ds,
+				   sip_t const *sip);
+static int feature_level(sip_t const *sip, char const *tag, int level);
 
 /* ---------------------------------------------------------------------- */
 
-nua_usage_class const _nua_register_usage[1] = {
+nua_usage_class const _nua_outbound_connect[1] = {
   {
-    sizeof (struct register_usage),
-    (sizeof _nua_register_usage),
-    nua_register_usage_add,
-    nua_register_usage_remove,
-    nua_register_usage_name,
+    sizeof (struct outbound_connect),
+    (sizeof _nua_outbound_connect),
+    nua_outbound_connect_add,
+    nua_outbound_connect_remove,
+    nua_outbound_connect_name,
+    nua_outbound_peer_info,
   }};
 
-nua_usage_class const *nua_register_usage = _nua_register_usage;
+nua_usage_class const *nua_outbound_connect = _nua_outbound_connect;
 
-char const * const register_usage_content_type =
+char const * const outbound_connect_content_type =
   "application/vnd.nokia-register-usage";
 
 /* ---------------------------------------------------------------------- */
 
 static
-char const *nua_register_usage_name(nua_dialog_usage_t const *du)
+char const *nua_outbound_connect_name(nua_dialog_usage_t const *du)
 {
   return "register";
 }
 
 static
-int nua_register_usage_add(nua_handle_t *nh,
+int nua_outbound_connect_add(nua_handle_t *nh,
 			   nua_dialog_state_t *ds,
 			   nua_dialog_usage_t *du)
 {
-  struct register_usage *ru = nua_dialog_usage_private(du);
+  struct outbound_connect *oc = nua_dialog_usage_private(du);
 
-  ru->ru_owner = nh;
+  oc->oc_owner = nh;
 
   if (ds->ds_has_register)
     return -1;			/* There can be only one usage */
   ds->ds_has_register = 1;
+  oc->oc_reg_id = 1;
 
   return 0;
 }
 
 static
-void nua_register_usage_remove(nua_handle_t *nh,
+void nua_outbound_connect_remove(nua_handle_t *nh,
 			       nua_dialog_state_t *ds,
 			       nua_dialog_usage_t *du)
 {
-  struct register_usage *ru = nua_dialog_usage_private(du);
+  struct outbound_connect *oc = nua_dialog_usage_private(du);
 
-  if (ru->ru_prev) {  /* Remove from list of registrations */
-    *ru->ru_prev = ru->ru_next;
-    ru->ru_next->ru_prev = ru->ru_prev;
-    ru->ru_prev = NULL;
+  if (oc->oc_prev) {  /* Remove from list of registrations */
+    *oc->oc_prev = oc->oc_next;
+    oc->oc_next->oc_prev = oc->oc_prev;
+    oc->oc_prev = NULL;
   }
 
 #if HAVE_SIGCOMP
-  if (ru->ru_compartment)
-    sigcomp_compartment_unref(ru->ru_compartment);
-  ru->ru_compartment = NULL;
+  if (oc->oc_compartment)
+    sigcomp_compartment_unref(oc->oc_compartment);
+  oc->oc_compartment = NULL;
 #endif
 
   /* XXX - free headers, too */
 
-  if (ru->ru_kalt)
-    su_timer_destroy(ru->ru_kalt), ru->ru_kalt = NULL;
+  if (oc->oc_kalt)
+    su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
 
-  if (ru->ru_kalo)
-    nta_outgoing_destroy(ru->ru_kalo), ru->ru_kalo = NULL;
+  if (oc->oc_kalo)
+    nta_outgoing_destroy(oc->oc_kalo), oc->oc_kalo = NULL;
 
-  if (ru->ru_kalmsg)
-    msg_destroy(ru->ru_kalmsg), ru->ru_kalmsg = NULL;
+  if (oc->oc_kalmsg)
+    msg_destroy(oc->oc_kalmsg), oc->oc_kalmsg = NULL;
 
   ds->ds_has_register = 0;	/* There can be only one */
 }
 
-int register_usage_init(register_usage *ru,
-			register_owner_vtable const *owner_methods,			
-			su_root_t *root,
-			nta_agent_t *agent)
+/** Store information about registrar. */
+static void nua_outbound_peer_info(nua_dialog_usage_t *du,
+				   nua_dialog_state_t const *ds,
+				   sip_t const *sip)
 {
-  ru->ru_ro = owner_methods;
-  ru->ru_root = root;
-  ru->ru_nta = agent;
+  struct outbound_connect *oc = nua_dialog_usage_private(du);
+
+  if (sip == NULL) {
+    oc->oc_info.outbound = 1;
+    oc->oc_info.gruu = 1;
+    oc->oc_info.pref = 1;
+    return;
+  }
+
+  oc->oc_info.outbound = feature_level(sip, "outbound", oc->oc_info.outbound);
+  oc->oc_info.gruu = feature_level(sip, "gruu", oc->oc_info.gruu);
+  oc->oc_info.pref = feature_level(sip, "pref", oc->oc_info.pref);
+
+}
+
+static int feature_level(sip_t const *sip, char const *tag, int level)
+{
+  if (sip_has_feature(sip->sip_require, tag))
+    return 3;
+  else if (sip_has_feature(sip->sip_supported, tag))
+    return 2;
+  else if (sip_has_feature(sip->sip_unsupported, tag))
+    return 0;
+  else
+    return level;
+}
+
+int outbound_connect_init(outbound_connect *oc,
+			  outbound_owner_vtable const *owner_methods,
+			  su_root_t *root,
+			  nta_agent_t *agent,
+			  char const *options)
+{
+  oc->oc_oo = owner_methods;
+  oc->oc_root = root;
+  oc->oc_nta = agent;
+
+  return outbound_connect_set_options(oc, options);
+}
+
+int outbound_connect_set_options(outbound_connect *oc, char const *options)
+{
+  struct outbound_prefs prefs[1] = {{ 0 }};
+  char *s;
+
+#define MATCH(v) (len == sizeof(#v) - 1 && strncasecmp(#v, s, len) == 0)
+
+  for (s = (char *)options; s && s[0]; ) {
+    int len = span_token(s);
+    int value = 1;
+
+    if (len > 3 && strncasecmp(s, "no-", 3) == 0)
+      value = 0, s += 3, len -= 3;
+    else if (len > 3 && strncasecmp(s, "no_", 3) == 0)
+      value = 0, s += 3, len -= 3;
+
+    if (len == 0)
+      break;
+    else if (MATCH(gruuize)) prefs->gruuize = value;
+    else if (MATCH(outbound)) prefs->outbound = value;
+    else if (MATCH(natify)) prefs->natify = value;
+    else if (MATCH(validate)) prefs->validate = value;
+    else if (MATCH(use-connect) || MATCH(use_connect)) prefs->use_connect = value;
+    else if (MATCH(use-rport) || MATCH(use_rport)) prefs->use_rport = value;
+    else if (MATCH(use-socks) || MATCH(use_socks)) prefs->use_socks = value;
+    else if (MATCH(use-upnp) || MATCH(use_upnp)) prefs->use_upnp = value;
+    else if (MATCH(use-stun) || MATCH(use_stun)) prefs->use_stun = value;
+    else 
+      SU_DEBUG_1(("outbound_connect: unknown option \"%.*s\"\n", len, s));
+
+    s += len;
+    len = strspn(s, " \t\n\r,;");
+    if (len == 0)
+      break;
+    s += len;
+  }
+
+  if (s && s[0]) {
+    SU_DEBUG_1(("outbound_connect: invalid options \"%s\"\n", options));
+    return -1;
+  }
+
+  if (prefs->natify && 
+      !(prefs->outbound ||
+	prefs->use_connect || 
+	prefs->use_rport || 
+	prefs->use_socks || 
+	prefs->use_upnp || 
+	prefs->use_stun)) {
+    SU_DEBUG_1(("outbound_connect: no nat traversal method given\n"));
+  }
+       
+
+  oc->oc_prefs = *prefs;
+
   return 0;
 }
 
-int register_usage_set_features(register_usage *ru, char *features)
+int outbound_connect_set_features(outbound_connect *oc, char *features)
 {
-  su_home_t *home = (su_home_t *)ru->ru_owner;
-  char *old = (char *)ru->ru_features;
+  su_home_t *home = (su_home_t *)oc->oc_owner;
+  char *old = (char *)oc->oc_features;
 
-  ru->ru_features = features;
+  oc->oc_features = features;
 
-  if (!ru->ru_cookie[0]) {
+  if (!oc->oc_cookie[0]) {
     SHA1Context sha1[1];
     uint8_t digest[SHA1HashSize];
     su_guid_t guid[1];
@@ -1562,7 +1697,7 @@ int register_usage_set_features(register_usage *ru, char *features)
     SHA1Input(sha1, (void *)features, strlen(features));
     SHA1Input(sha1, (void *)guid, sizeof guid);
     SHA1Result(sha1, digest);
-    token64_e(ru->ru_cookie, sizeof ru->ru_cookie, digest, sizeof digest);
+    token64_e(oc->oc_cookie, sizeof oc->oc_cookie, digest, sizeof digest);
   }
 
   su_free(home, old);

@@ -186,9 +186,6 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
   DNHP_SET(dnhp, auto_ack, 1);
   DNHP_SET(dnhp, invite_timeout, 120);
 
-  DNHP_SET(dnhp, natify, 1);
-  DNHP_SET(dnhp, gruuize, 1);
-
   DNHP_SET(dnhp, session_timer, 1800);
   DNHP_SET(dnhp, min_se, 120);
   DNHP_SET(dnhp, refresher, nua_no_refresher);
@@ -212,6 +209,8 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
   DNHP_SET(dnhp, supported, sip_supported_make(dnh->nh_home, "timer, 100rel"));
   DNHP_SET(dnhp, user_agent,
 	   sip_user_agent_make(dnh->nh_home, PACKAGE_NAME "/" PACKAGE_VERSION));
+
+  DNHP_SET(dnhp, outbound, su_strdup(dnh->nh_home, "gruuize, outbound, natify, use-rport"));
 
   /* Set initial nta parameters */
   tl_gets(nua->nua_args,
@@ -792,6 +791,9 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sip_from_t const *from = NONE;
   char const *from_str = NONE;
 
+  char const *instance = NONE;
+  char const *outbound = NONE;
+  
 #if HAVE_SOFIA_SMIME
   int           smime_enable = nua->sm->sm_enable;
   int           smime_opt = nua->sm->sm_opt;
@@ -859,6 +861,9 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	       NUTAG_REGISTRAR_REF(registrar),
 	       SIPTAG_FROM_REF(from),
 	       SIPTAG_FROM_STR_REF(from_str),
+
+	       NUTAG_INSTANCE_REF(instance),
+	       NUTAG_OUTBOUND_REF(outbound),
 
 #if HAVE_SOFIA_SMIME
 	       NUTAG_SMIME_ENABLE_REF(smime_enable),
@@ -985,6 +990,9 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   NHP_SET_HEADER(nhp, user_agent, user_agent, user_agent_str);
   NHP_SET_STR(nhp, ua_name, ua_name);
   NHP_SET_HEADER(nhp, organization, organization, organization_str);
+
+  NHP_SET_STR(nhp, instance, instance);
+  NHP_SET_STR(nhp, outbound, outbound);
 
   if (n > 0 && NHP_IS_ANY_SET(nhp)) {
     /* Move allocations from tmphome to handle's home */
