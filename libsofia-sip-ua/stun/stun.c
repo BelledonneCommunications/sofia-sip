@@ -323,8 +323,8 @@ static void stun_keepalive_timer_cb(su_root_magic_t *magic,
 
 
 static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
-static void priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
-static void priv_dns_queue_shared_secret(stun_handle_t *sh);
+static int priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
+static int priv_dns_queue_shared_secret(stun_handle_t *sh);
 static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
 
 /* Deprecated. Use stun_root(). */
@@ -512,8 +512,7 @@ int stun_request_shared_secret(stun_handle_t *sh)
   if (!sh->sh_pri_addr[0].su_port) {
     /* no STUN server address, perform a DNS-SRV lookup */
     SU_DEBUG_5(("Delaying STUN shared-secret req. for DNS-SRV query.\n"));
-    priv_dns_queue_shared_secret(sh);
-    return 0;
+    return priv_dns_queue_shared_secret(sh);
   }
 
   ai = &sh->sh_pri_info;
@@ -674,7 +673,8 @@ void stun_handle_destroy(stun_handle_t *sh)
 
   enter;
 
-  stun_dns_lookup_destroy(sh->sh_dns_lookup);
+  if (sh->sh_dns_lookup)
+    stun_dns_lookup_destroy(sh->sh_dns_lookup);
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
@@ -898,11 +898,18 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
       SU_DEBUG_5(("STUN server address found, running queue actions (%d).\n",
 		  sh->sh_dns_pend_action));
 
-      if (sh->sh_dns_pend_action & stun_action_tls_query)
+      switch(sh->sh_dns_pend_action) {
+      case stun_action_tls_query:
 	stun_request_shared_secret(sh);
+	break;
 
-      if (sh->sh_dns_pend_action & stun_action_binding_request)
+      case stun_action_binding_request:
 	priv_stun_bind_send(sh, sh->sh_dns_pend_req, sh->sh_dns_pend_sd);
+	break;
+
+      default:
+	SU_DEBUG_5(("Warning: unknown pending DNS-SRV action.\n"));
+      }
 
       sh->sh_dns_pend_action = 0;
     }
@@ -913,28 +920,39 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
  * Queus an stun bind action for later execution once
  * DNS-SRV lookup is succesfully completed.
  */
-static void priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd)
+static int priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd)
 {
-  
-  if (!sh->sh_dns_lookup) {
-    sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
+  if (!sh->sh_dns_pend_action) {
+
+    if (!sh->sh_dns_lookup) {
+      sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
+    }
+    sh->sh_dns_pend_req = req;
+    sh->sh_dns_pend_sd = sd;
+    sh->sh_dns_pend_action |= stun_action_binding_request;
+
+    return 0;
   }
-  sh->sh_dns_pend_req = req;
-  sh->sh_dns_pend_sd = sd;
-  sh->sh_dns_pend_action |= stun_action_binding_request;
+  
+  return -1;
 }
 
 /**
  * Queus an stun shared-secret action for later execution 
  * once DNS-SRV lookup is succesfully completed.
  */
-static void priv_dns_queue_shared_secret(stun_handle_t *sh)
+static int priv_dns_queue_shared_secret(stun_handle_t *sh)
 {
-  
-  if (!sh->sh_dns_lookup) {
-    sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
+  if (!sh->sh_dns_pend_action) {
+    if (!sh->sh_dns_lookup) {
+      sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
+    }
+    sh->sh_dns_pend_action |= stun_action_tls_query;
+
+    return 0;
   }
-  sh->sh_dns_pend_action |= stun_action_tls_query;
+  
+  return -1;
 }
 
 static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd)
@@ -944,7 +962,7 @@ static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_disc
     stun_free_message(req->sr_msg);
     stun_discovery_destroy(sd);
   }
-  return -1;
+  return res;
 }
 
 
