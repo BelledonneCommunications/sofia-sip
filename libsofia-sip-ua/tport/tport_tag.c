@@ -74,3 +74,4 @@ tag_typedef_t tptag_udp_rmem = UINTTAG_TYPEDEF(udp_rmem);
 tag_typedef_t tptag_udp_wmem = UINTTAG_TYPEDEF(udp_wmem);
 tag_typedef_t tptag_thrpsize = UINTTAG_TYPEDEF(thrpsize);
 tag_typedef_t tptag_thrprqsize = UINTTAG_TYPEDEF(thrprqsize);
+tag_typedef_t tptag_http_connect = STRTAG_TYPEDEF(http_connect);

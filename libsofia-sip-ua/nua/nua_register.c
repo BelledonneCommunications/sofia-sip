@@ -626,7 +626,25 @@ nua_stack_registrations_init(nua_t *nua)
 static
 void nua_stack_tport_update(nua_t *nua, nta_agent_t *nta)
 {
+  register_usage *default_ru;
+  register_usage const *defaults = nua->nua_registrations;
+  sip_via_t *via = nta_agent_via(nta);
+  
+  default_ru = register_usage_by_aor(defaults, NULL, 1);
+
+  if (default_ru) {
+    assert(default_ru->ru_via);
+
+    register_usage_contacts_from_via(default_ru,
+				     via,
+				     via->v_next);
+
+    /* refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now); */
+  }
+
+  return;
 }
+
 
 sip_contact_t const *nua_contact_by_aor(nua_t *nua,
 					url_t const *aor,

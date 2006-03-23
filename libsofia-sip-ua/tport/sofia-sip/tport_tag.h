@@ -221,6 +221,13 @@ TPORT_DLL extern tag_typedef_t tptag_thrprqsize;
 TPORT_DLL extern tag_typedef_t tptag_thrprqsize_ref;
 #define TPTAG_THRPRQSIZE_REF(x) tptag_thrprqsize_ref, tag_uint_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_http_connect;
+/** Specify that tport can use HTTP connect method. */
+#define TPTAG_HTTP_CONNECT(x) tptag_http_connect, tag_str_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_http_connect_ref;
+#define TPTAG_HTTP_CONNECT_REF(x) tptag_http_connect_ref, tag_str_vr(&(x))
+
 SOFIA_END_DECLS
 
 #endif /* !defined TPORT_TAG_H */

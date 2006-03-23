@@ -900,7 +900,6 @@ static tport_primary_t *tport_listen(tport_master_t *mr,
 				     su_addrinfo_t const *ai, 
 				     char const *canon, char const *protoname,
 				     int port,
-				     int try_http,
 				     tagi_t *tags);
 
 static void tport_zap_primary(tport_primary_t *);
@@ -1179,7 +1178,6 @@ tport_primary_t *tport_alloc_public_primary(tport_master_t *mr)
   return pri;
 }
 
-#if 0
 /** Process events for socket waiting to be connected
  */
 static int tport_http_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
@@ -1211,6 +1209,11 @@ static int tport_http_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *s
     return 0;
   }
 
+#if 0
+  str = su_sprintf(autohome, "CONNECT %s HTTP/1.1\nUser-agent: %s\n\n",
+		   url_string->us_str, ua);
+#endif
+
   su_root_deregister(mr->mr_root, self->tp_index);
   self->tp_index = -1;
   self->tp_events = SU_WAIT_IN | SU_WAIT_ERR;
@@ -1233,7 +1236,7 @@ int tport_tcp_socket_http_connect(su_socket_t s, const char *httpd,
 {
   char ua[] = "sofia-sip-1.11.6";
   char *str;
-  int len;
+  int len, err;
   url_string_t *url_string;
   url_t const *url;
   su_addrinfo_t *res = NULL, *ai, hints[1] = {{ 0 }};
@@ -1243,17 +1246,15 @@ int tport_tcp_socket_http_connect(su_socket_t s, const char *httpd,
 
   su_home_auto(autohome, sizeof autohome);
 
+#if a0
   /* Get the SIP proxy address */
   tl_gets(tags, 
 	  URLTAG_URL_REF(url_string),
 	  TAG_END());
-
-  str = su_sprintf(autohome, "CONNECT %s HTTP/1.1\nUser-agent: %s\n\n",
-		   url_string->us_str, ua);
-
+#endif
 
   if ((err = su_getaddrinfo(httpd, NULL, hints, &res)) != 0) {
-    STUN_ERROR(err, su_getaddrinfo);
+    /* STUN_ERROR(err, su_getaddrinfo); */
     return -1;
   }
 
@@ -1266,7 +1267,7 @@ int tport_tcp_socket_http_connect(su_socket_t s, const char *httpd,
     /* info->ai_flags = ai->ai_flags; */
     sa->su_family = ai->ai_family;
     sa->su_len = ai->ai_addrlen;
-    memcpy(sa->su_sa, ai->ai_addr, sizeof(struct su_sockaddr_t));
+    memcpy(&sa->su_sa, ai->ai_addr, sizeof(su_sockaddr_t));
     break;
   }
 
@@ -1277,17 +1278,17 @@ int tport_tcp_socket_http_connect(su_socket_t s, const char *httpd,
   if (res)
     su_freeaddrinfo(res);
 
-  if (connect(s, sa->su_sa, sa->su_len) == SOCKET_ERROR) {
+  if (connect(s, &sa->su_sa, sa->su_len) == SOCKET_ERROR) {
     err = su_errno();
     if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK)
-      TPORT_CONNECT_ERROR(err, connect);
+      /* TPORT_CONNECT_ERROR(err, connect) */;
   }
 
   su_home_deinit(autohome);
 
   return 0;
 }
-#endif
+
 
 /**Create a primary transport object with socket.
  *
@@ -1304,7 +1305,6 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 			      su_addrinfo_t const *ainfo, 
 			      char const *canon, char const *protoname,
 			      int port,
-			      int try_http_connect,
 			      tagi_t *tags)
 {
   tport_primary_t *pri = NULL;
@@ -1423,22 +1423,7 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 #endif
   }
 
-  if (try_http_connect) {
-    /* tport_tcp_socket_http_connect(s, httpd, sip_registrar); */
-
-    /* wakeup = tport_http_connected; */
-    events = SU_WAIT_CONNECT | SU_WAIT_ERR;
-
-#if !defined(__linux__)
-    /* Allow reusing TCP sockets
-     *
-     * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
-     * binding to a port owned by an existing server.
-     */
-    su_setreuseaddr(s, 1);
-#endif
-  }
-  else if (ai->ai_socktype == SOCK_STREAM || 
+  if (ai->ai_socktype == SOCK_STREAM || 
       ai->ai_socktype == SOCK_SEQPACKET) {
     /* Connection-oriented protocols listen and accept connections */
     wakeup = tport_accept;	/* accepting function will be registered */
@@ -1549,17 +1534,19 @@ tport_primary_t *tport_listen(tport_master_t *mr,
  * @param tags tag list
  */
 static
-tport_primary_t *tport_start_public_listen(tport_master_t *mr, 
-					   tport_primary_t *pri,
-					   su_addrinfo_t const *ainfo, 
-					   char const *canon, char const *protoname,
-					   int port,
-					   tagi_t *tags)
+tport_primary_t *tport_public_listen(tport_master_t *mr, 
+				     tport_primary_t *pri,
+				     su_addrinfo_t const *ainfo, 
+				     char const *canon, char const *protoname,
+				     int port,
+				     tagi_t *tags)
 {
   tport_primary_t *pub = NULL;
 
   su_socket_t s = SOCKET_ERROR;
-  int nat_bound = 0;
+  su_wakeup_f wakeup = NULL;
+  su_wait_t wait[1] = { SU_WAIT_INIT };
+  int nat_bound = 0, events, index;
 
   su_addrinfo_t ai[1];
   su_sockaddr_t su[1];
@@ -1567,6 +1554,7 @@ tport_primary_t *tport_start_public_listen(tport_master_t *mr,
   int err;
   int errlevel = 3;
   char buf[TPORT_HOSTPORTSIZE];
+  char const *httpd = NULL;
 
   /* Log an error, return error */
 #define TPORT_PUBLIC_LISTEN_ERROR(errno, what)  \
@@ -1594,6 +1582,14 @@ tport_primary_t *tport_start_public_listen(tport_master_t *mr,
     return NULL;
   }
 
+  tl_gets(tags, 
+	  TPTAG_HTTP_CONNECT_REF(httpd),
+	  TAG_END());
+
+  /* tcp for http connect only */
+  if (!httpd && ainfo->ai_socktype == SOCK_STREAM)
+    return NULL;
+
   memcpy(ai, ainfo, sizeof ai);
 
   ai->ai_addr = memcpy(su, ai->ai_addr, ai->ai_addrlen);
@@ -1610,8 +1606,19 @@ tport_primary_t *tport_start_public_listen(tport_master_t *mr,
   if (tport_set_params(pub->pri_primary, TAG_NEXT(tags)) < 0)
     return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), tport_set_params);    
 
+  if (ai->ai_protocol == IPPROTO_SCTP) {
+    if (pri->pri_params->tpp_mtu > TP_SCTP_MSG_MAX)
+      pri->pri_params->tpp_mtu = TP_SCTP_MSG_MAX;
+  }
+
   /* Use the same socket as in the real primary transport */
-  s = pri->pri_primary->tp_socket;
+  if (pri) {
+    s = pri->pri_primary->tp_socket;
+  }
+  else {
+    /* If no pri given, create a new socket */
+    s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+  }
 
 #if SU_HAVE_IN6
   if (s == SOCKET_ERROR) {
@@ -1621,25 +1628,97 @@ tport_primary_t *tport_start_public_listen(tport_master_t *mr,
   }
 #endif
 
+  /* Passive open, do bind() (and listen() if connection-oriented). */
+
+#ifdef __linux__
+  /* Linux does not allow reusing TCP port while this one is open,
+     so we can safely call su_setreuseaddr() before bind(). */
+  if (ai->ai_socktype == SOCK_STREAM || ai->ai_socktype == SOCK_SEQPACKET)
+    su_setreuseaddr(s, 1);
+#endif
+
+  /* If no pri given, bind the newly created socket */
+  if (!pri && bind(s, ai->ai_addr, ai->ai_addrlen) == SOCKET_ERROR) {
+    if (su_errno() == EADDRINUSE) errlevel = 7;
+    return TPORT_LISTEN_ERROR(su_errno(), bind);
+  }
+  
   if (getsockname(s, ai->ai_addr, &ai->ai_addrlen) == SOCKET_ERROR)
     return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), getsockname);
   
-  if (tport_setname(pub->pri_primary, protoname, ai, canon) == -1) 
-    return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), tport_setname);
+#if defined (__linux__) && defined (SU_HAVE_IN6)
+  if (ai->ai_family == AF_INET6) {
+    if (!SU_SOCKADDR_INADDR_ANY(su) &&
+	(IN6_IS_ADDR_V4MAPPED(&su->su_sin6.sin6_addr) ||
+	 IN6_IS_ADDR_V4COMPAT(&su->su_sin6.sin6_addr))) {
+      su_sockaddr_t su0[1];
+      
+      memcpy(su0, su, sizeof su0);
+      
+      memset(su, 0, ai->ai_addrlen = sizeof su->su_sin);
+      su->su_family = ai->ai_family = AF_INET;
+      su->su_port = su0->su_port;
+      
+#ifndef IN6_V4MAPPED_TO_INADDR
+#define IN6_V4MAPPED_TO_INADDR(in6, in4)				\
+      memcpy((in4), 12 + (uint8_t *)(in6), sizeof(struct in_addr))
+#endif
+      IN6_V4MAPPED_TO_INADDR(&su0->su_sin6.sin6_addr, &su->su_sin.sin_addr);
+    }
+  }
+#endif
 
-  pub->pri_primary->tp_socket   = s;
-  pub->pri_primary->tp_index    = pri->pri_primary->tp_index;
-  pub->pri_primary->tp_events   = pri->pri_primary->tp_events;
-  pub->pri_primary->tp_connected = 0;
-  pub->pri_primary->tp_conn_orient = ai->ai_socktype != SOCK_DGRAM;
-  
-  /* Launch NAT resolving */
-  nat_bound = tport_nat_traverse_nat(mr, pub, su, ai, s);
+  /* Connect to TLS port of httpd */
+  if (!pri && ai->ai_socktype == SOCK_STREAM) {
+    /* tport_tcp_socket_http_connect(s, httpd, sip_registrar); */
+    
+    wakeup = tport_http_connected;
+    events = SU_WAIT_CONNECT | SU_WAIT_ERR;
+    
+#if !defined(__linux__)
+    /* Allow reusing TCP sockets
+     *
+     * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
+     * binding to a port owned by an existing server.
+     */
+    su_setreuseaddr(s, 1);
+#endif
 
-  if (nat_bound) {
-    /* XXX - should set also the IP address in tp_addr? */
-    pub->pri_natted = 1;
-    tport_nat_set_canon(pub->pri_primary, mr->mr_nat);
+  }
+
+  if (pri) {
+    if (tport_setname(pub->pri_primary, protoname, ai, canon) == -1) 
+      return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), tport_setname);
+    
+    pub->pri_primary->tp_socket   = s;
+    pub->pri_primary->tp_index    = pri->pri_primary->tp_index;
+    pub->pri_primary->tp_events   = pri->pri_primary->tp_events;
+    pub->pri_primary->tp_connected = 0;
+    pub->pri_primary->tp_conn_orient = ai->ai_socktype != SOCK_DGRAM;
+    
+    /* Launch NAT resolving */
+    nat_bound = tport_nat_traverse_nat(mr, pub, su, ai, s);
+    
+    if (nat_bound) {
+      /* XXX - should set also the IP address in tp_addr? */
+      pub->pri_natted = 1;
+      tport_nat_set_canon(pub->pri_primary, mr->mr_nat);
+    }
+  }
+  else if (!pri) {
+    if (su_wait_create(wait, s, events) == -1)
+      return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), su_wait_create);
+    
+    /* Register receiving or accepting function with events specified above */
+    index = su_root_register(mr->mr_root, wait, wakeup, pri->pri_primary, 0);
+    if (index == -1)
+      return TPORT_PUBLIC_LISTEN_ERROR(su_errno(), su_root_register);
+
+    pri->pri_primary->tp_socket   = s;
+    pri->pri_primary->tp_index    = index;
+    pri->pri_primary->tp_events   = events;
+    pri->pri_primary->tp_connected = 0;
+    pri->pri_primary->tp_conn_orient = ai->ai_socktype != SOCK_DGRAM;
   }
 
   SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
@@ -2279,7 +2358,7 @@ int tport_bind_server(tport_master_t *mr,
 
       ((su_sockaddr_t *)ai->ai_addr)->su_port = htons(port);
 
-      pri = tport_listen(mr, ai, canon, ai->ai_canonname, port, 0, tags);
+      pri = tport_listen(mr, ai, canon, ai->ai_canonname, port, tags);
       if (!pri) {
 	switch (error = su_errno()) {
 	case EADDRNOTAVAIL:	/* Not our address */
@@ -2292,11 +2371,11 @@ int tport_bind_server(tport_master_t *mr,
 	break;
       }
 
-      /* Launch NAT discovery requests */
+      /* Create special primary tports */
       if (!natted && ai->ai_family == AF_INET) {
-	pub = tport_start_public_listen(mr, pri, ai, canon, ai->ai_canonname, port, tags);
+	pub = tport_public_listen(mr, pri, ai, canon, ai->ai_canonname, port, tags);
 	if (!pub) {
-	  SU_DEBUG_3(("%s(%p): cannot start NAT traversal discovery\n", __func__, mr));
+	  SU_DEBUG_3(("%s(%p): cannot create public primary tport\n", __func__, mr));
 	}
 	else {
 	  natted = 1;
@@ -7649,27 +7728,8 @@ void tport_stun_bind_cb(tport_primary_t *pri,
 
   mr = pri->pri_master;
 
-  switch (action) {
-  case stun_action_tls_query:
-    break;
-
-  case stun_action_binding_request:
-    if (event != stun_bind_done && event != stun_discovery_timeout)
-      break;
-
-    if (event == stun_bind_done)
-      tport_stun_bind_done(pri, sh, sd);
-
-    /* send event to nta indicating to call nta_agent_public_via() */
-#if 0
-    /* new primary transport available */
-#endif
-
-    break;
-
-  default:
-    break;
-  }
+  if (event == stun_bind_done)
+    tport_stun_bind_done(pri, sh, sd);
 
   return;
 }
