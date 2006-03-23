@@ -381,8 +381,14 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
 }
 
 /** 
- * Create a STUN handle 
+ * Creates a STUN handle.
  *
+ * The created handles can be used for STUN binding discovery, 
+ * keepalives, and other STUN usages.
+ *
+ * @param context self pointer for callback 'cb'
+ * @param root eventloop to used by the stun state machine
+ * @param cb callback to signal state machine events
  * @param tag,value,... tag-value list 
  *
  * @TAGS
@@ -490,11 +496,9 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
  * Result will be trigged in STUN handle callback (state
  * one of stun_tls_*).
  **/
-#if defined(HAVE_OPENSSL)
-
-/** Shared secret request/response processing */
 int stun_request_shared_secret(stun_handle_t *sh)
 {
+#if defined(HAVE_OPENSSL)
   int events = -1;
   int one, err = -1;
   su_wait_t wait[1] = { SU_WAIT_INIT };
@@ -588,13 +592,10 @@ int stun_request_shared_secret(stun_handle_t *sh)
   su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sd);
 
   return 0;
+#else /* !HAVE_OPENSSL */
+  return -1;
+#endif
 }
-#else
-int stun_request_shared_secret(stun_handle_t *sh)
-{
-  return 0;
-}
-#endif /* HAVE_OPENSSL */
 
 static stun_request_t *stun_request_create(stun_discovery_t *sd)
 {
@@ -965,21 +966,24 @@ static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_disc
   return res;
 }
 
-
-/** Bind a socket using STUN client. 
+/** 
+ * Performs a STUN Binding Discovery (see RFC3489/3489bis) process
  *
- * The function stun_bind() obtains a global address for a UDP socket using
- * a STUN server. 
+ * To integrity protect the discovery process, first call 
+ * stun_request_shared_secret() on the handle 'sh'.
+ *
+ * If STUNTAG_REGISTER_SOCKET() is omitted, or set to false, the
+ * client is responsible for socket i/o. Other stun module will
+ * perform the whole discovery process and return the results
+ * via callback 'sdf'.
  * 
- * @param ss       dpointer to a STUN client object (IN)
- * @param my_addr  public address for socket (IN/OUT)
- * @param addrlen  length of pub_addr (IN/OUT)
- * @param lifetime return value pointer to lifetime of 
- *                 binding, -1 if no STUN not used (OUT)
+ * @param sh       pointer to valid stun handle
+ * @param sdf      callback to signal process progress
+ * @param magic    context pointer attached to 'sdf'
  *
  * @TAGS
- * @TAG STUNTAG_SOCKET Bind socket for STUN
- * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN
+ * @TAG STUNTAG_SOCKET Bind socket for STUN (socket handle).
+ * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN (boolean)
 
  * @return
  * On success, zero is returned.  Upon error, -1 is returned, and @e errno is
@@ -995,7 +999,6 @@ static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_disc
  * @ERROR EAGAIN          Operation in progress. Application should call 
  *                        stun_bind() again when there is data available on 
  *                        the socket.
- * 
  */
 int stun_bind(stun_handle_t *sh,
 	      stun_discovery_f sdf,
@@ -1039,8 +1042,7 @@ int stun_bind(stun_handle_t *sh,
   if (!sh->sh_pri_addr[0].su_port) {
     /* no STUN server address, perform a DNS-SRV lookup */
     SU_DEBUG_5(("Delaying STUN bind for DNS-SRV query.\n"));
-    priv_dns_queue_bind(sh, req, sd);
-    return 0;
+    return priv_dns_queue_bind(sh, req, sd);
   }
 
   /* note: we always report success if bind() succeeds */
@@ -1140,7 +1142,8 @@ int stun_handle_get_nattype(stun_handle_t *sh,
  * Initiates STUN discovery proces to find out NAT 
  * characteristics.
  *
- * Note: does not support STUNTAG_DOMAIN().
+ * Note: does not support STUNTAG_DOMAIN() even if specified to
+ * stun_handle_create().
  *
  * @TAGS
  * @TAG STUNTAG_SOCKET Bind socket for STUN
@@ -2559,7 +2562,8 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
  * Initiates STUN discovery proces to find out NAT 
  * binding life-time settings.
  *
- * Note: does not support STUNTAG_DOMAIN().
+ * Note: does not support STUNTAG_DOMAIN() even if specified to
+ * stun_handle_create().
  *
  * @TAGS
  * @TAG STUNTAG_SOCKET Bind socket for STUN
