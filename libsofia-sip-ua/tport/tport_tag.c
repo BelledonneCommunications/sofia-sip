@@ -56,6 +56,7 @@ tag_typedef_t tptag_ident = CSTRTAG_TYPEDEF(ident);
 tag_typedef_t tptag_reuse = BOOLTAG_TYPEDEF(reuse);
 tag_typedef_t tptag_fresh = BOOLTAG_TYPEDEF(fresh);
 tag_typedef_t tptag_server = BOOLTAG_TYPEDEF(server);
+tag_typedef_t tptag_public = INTTAG_TYPEDEF(public);
 tag_typedef_t tptag_mtu = UINTTAG_TYPEDEF(mtu);
 tag_typedef_t tptag_connect = BOOLTAG_TYPEDEF(connect);
 tag_typedef_t tptag_sdwn_error = BOOLTAG_TYPEDEF(sdwn_error);

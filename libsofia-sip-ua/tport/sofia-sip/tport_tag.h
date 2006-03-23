@@ -77,6 +77,13 @@ TPORT_DLL extern tag_typedef_t tptag_server;
 TPORT_DLL extern tag_typedef_t tptag_server_ref;
 #define TPTAG_SERVER_REF(x) tptag_server_ref, tag_bool_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_public;
+/** Bind public sockets (default false, enable with TPTAG_PUBLIC(1), TPTAG_PUBLIC(2) etc). */
+#define TPTAG_PUBLIC(x) tptag_public, tag_int_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_public_ref;
+#define TPTAG_PUBLIC_REF(x) tptag_public_ref, tag_int_vr(&(x))
+
 TPORT_DLL extern tag_typedef_t tptag_mtu;
 /** Specify MTU. */
 #define TPTAG_MTU(x) tptag_mtu, tag_uint_v((x))

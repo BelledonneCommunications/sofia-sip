@@ -1939,10 +1939,6 @@ static void agent_update_tport(nta_agent_t *self, tport_t *tport)
   /* Initialize local Vias first */
   agent_init_via(self, tport_primaries(self->sa_tports), 0);
 
-  /* Initialize natted Vias */
-  agent_init_via(self, tport_public_primaries(self->sa_tports), 0);
-
-
   if (self->sa_update_tport) {
     self->sa_update_tport(self->sa_update_magic, self);
   }

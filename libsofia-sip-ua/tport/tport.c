@@ -210,6 +210,9 @@ typedef struct {
 
   unsigned tpp_drop;		/**< Packet drop probablity */
 
+  int      tpp_is_public;       /**< Primary type; local, natted, etc. */
+
+
   unsigned tpp_conn_orient:1;   /**< Connection-orienteded */
   unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
   unsigned :0;
@@ -374,7 +377,6 @@ struct tport_master {
   FILE               *mr_dump_file;	
 
   tport_primary_t    *mr_primaries;        /**< List of primary contacts */
-  tport_primary_t    *mr_public_primaries; /**< List of primary contacts */
 
   tport_params_t      mr_params[1];
   
@@ -661,6 +663,13 @@ int tport_is_reliable(tport_t const *self)
      self->tp_addrinfo->ai_socktype == SOCK_SEQPACKET);
 }
 
+/** Return 0 if self is local, 1 if stun, 2 if for HTTP CONNECT
+ *
+ */
+static inline int tport_is_public(tport_t const *self)
+{
+  return self->tp_params->tpp_is_public;
+}
 
 /** Return true if transport supports IPv4 */
 int tport_has_ip4(tport_t const *self)
@@ -895,7 +904,6 @@ static void tport_deliver(tport_t *, msg_t *msg, msg_t *next,
 			  struct sigcomp_udvm **udvm, su_time_t now);
 
 static tport_primary_t *tport_alloc_primary(tport_master_t *tpm);
-static tport_primary_t *tport_alloc_public_primary(tport_master_t *tpm);
 static tport_primary_t *tport_listen(tport_master_t *mr, 
 				     su_addrinfo_t const *ai, 
 				     char const *canon, char const *protoname,
@@ -1146,37 +1154,6 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr)
   return pri;
 }
 
-
-/** Allocate a public primary transport */
-static 
-tport_primary_t *tport_alloc_public_primary(tport_master_t *mr)
-{
-  tport_primary_t *pri, **next;
-
-  for (next = &mr->mr_public_primaries; *next; next = &(*next)->pri_next)
-    ;
-
-  if ((pri = su_home_clone(mr->mr_home, sizeof (*pri)))) {
-    tport_t *tp = pri->pri_primary;
-    tp->tp_master = mr;
-    tp->tp_pri = pri;
-    tp->tp_socket = SOCKET_ERROR;
-
-    tp->tp_magic = mr->mr_master->tp_magic;
-
-    tp->tp_params = pri->pri_params;
-    memcpy(tp->tp_params, mr->mr_params, sizeof (*tp->tp_params));
-    tp->tp_reusable = mr->mr_master->tp_reusable;
-
-    tp->tp_addrinfo->ai_addr = &tp->tp_addr->su_sa;
-
-    SU_DEBUG_5(("%s(%p): new public primary tport %p\n", __func__, mr, pri));
-  }
-
-  *next = pri;
-
-  return pri;
-}
 
 /** Process events for socket waiting to be connected
  */
@@ -1489,6 +1466,18 @@ tport_primary_t *tport_listen(tport_master_t *mr,
     }
   }
 
+  if ((ai->ai_protocol == IPPROTO_UDP) &&
+      (tport_is_public(pri->pri_primary) == tp_pri_is_stun)) {
+    /* Launch NAT resolving */
+    nat_bound = tport_nat_traverse_nat(mr, pri, su, ai, s);
+  }
+    
+  if (nat_bound) {
+    /* XXX - should set also the IP address in tp_addr? */
+    pri->pri_natted = 1;
+    tport_nat_set_canon(pri->pri_primary, mr->mr_nat);
+  }
+
   if (su_wait_create(wait, s, events) == -1)
     return TPORT_LISTEN_ERROR(su_errno(), su_wait_create);
 
@@ -1533,6 +1522,8 @@ tport_primary_t *tport_listen(tport_master_t *mr,
  * @param port port to bind
  * @param tags tag list
  */
+
+#if 0
 static
 tport_primary_t *tport_public_listen(tport_master_t *mr, 
 				     tport_primary_t *pri,
@@ -1599,7 +1590,7 @@ tport_primary_t *tport_public_listen(tport_master_t *mr,
     su->su_port = htons(port);
 
   /* Create a public primary transport object for another transport. */
-  pub = tport_alloc_public_primary(mr);
+  pub = tport_public_primary(mr, );
   if (pub == NULL)
     return TPORT_PUBLIC_LISTEN_ERROR(errno, tport_alloc_primary);
 
@@ -1727,6 +1718,8 @@ tport_primary_t *tport_public_listen(tport_master_t *mr,
 
   return pub;
 }
+#endif
+
 
 /** Destroy a primary transport and its secondary transports. @internal */
 static 
@@ -2050,6 +2043,7 @@ int tport_get_params(tport_t const *self,
 	       TPTAG_DEBUG_DROP(tpp->tpp_drop),
 	       TPTAG_THRPSIZE(tpp->tpp_thrpsize),
 	       TPTAG_THRPRQSIZE(tpp->tpp_thrprqsize),
+	       TPTAG_PUBLIC(tpp->tpp_is_public),
 	       TAG_END());
 
   ta_end(ta);
@@ -2069,7 +2063,7 @@ int tport_set_params(tport_t *self,
   int n;
   tport_params_t tpp[1], *tpp0;
 
-  int connect, sdwn_error, reusable;
+  int connect, sdwn_error, reusable, public = 0;
 
   struct sigcomp_compartment *cc = NONE;
 
@@ -2097,6 +2091,7 @@ int tport_set_params(tport_t *self,
 	      TPTAG_SDWN_ERROR_REF(sdwn_error),
 	      TPTAG_REUSE_REF(reusable),
 	      TPTAG_COMPARTMENT_REF(cc),
+	      TPTAG_PUBLIC_REF(public),
 	      TAG_END());
 
   ta_end(ta);
@@ -2117,9 +2112,13 @@ int tport_set_params(tport_t *self,
   if (tpp->tpp_qsize >= 1000)
     tpp->tpp_qsize = 1000;
 
+
   tpp->tpp_sdwn_error = sdwn_error;
 
   self->tp_reusable = reusable;
+
+  /* Enumerated primary type: local, stun, ice, http connect */
+  tpp->tpp_is_public = public;
 
   /* Currently only primary UDP transport can *not* be connection oriented */ 
   tpp->tpp_conn_orient = connect 
@@ -2169,7 +2168,7 @@ int tport_tbind(tport_t *self,
 		tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
-  int server = 1, retval;
+  int server = 1, retval, public = 0;
   tp_name_t mytpn[1];
   tport_master_t *mr;
 
@@ -2188,6 +2187,7 @@ int tport_tbind(tport_t *self,
 
   tl_gets(ta_args(ta),
 	  TPTAG_SERVER_REF(server),
+	  TPTAG_PUBLIC_REF(public),
 	  TPTAG_IDENT_REF(mytpn->tpn_ident),
 	  TAG_END());
 
@@ -2197,7 +2197,6 @@ int tport_tbind(tport_t *self,
     retval = tport_bind_server(mr, mytpn, transports, ta_args(ta));
   else
     retval = tport_bind_client(mr, mytpn, transports, ta_args(ta));
-
 
   ta_end(ta);
 
@@ -2342,9 +2341,6 @@ int tport_bind_server(tport_master_t *mr,
   for (tbf = &mr->mr_primaries; *tbf; tbf = &(*tbf)->pri_next)
     ;
 
-  for (tbf_pub = &mr->mr_public_primaries; *tbf_pub; tbf_pub = &(*tbf_pub)->pri_next)
-    ;
-
   port = port0 = port1 = ntohs(((su_sockaddr_t *)res->ai_addr)->su_port);
   error = ENOENT, not_supported = 1;
 
@@ -2371,6 +2367,7 @@ int tport_bind_server(tport_master_t *mr,
 	break;
       }
 
+#if 0
       /* Create special primary tports */
       if (!natted && ai->ai_family == AF_INET) {
 	pub = tport_public_listen(mr, pri, ai, canon, ai->ai_canonname, port, tags);
@@ -2381,6 +2378,7 @@ int tport_bind_server(tport_master_t *mr,
 	  natted = 1;
 	}
       }
+#endif
 
       pri->pri_primary->tp_ident = su_strdup(pri->pri_home, tpn->tpn_ident);
       tport_init_compression(pri, tpn->tpn_comp, tags);
@@ -6431,30 +6429,8 @@ tport_t *tport_primaries(tport_t const *self)
     return NULL;
 }
 
-/** Get list of primary transports */
-tport_t *tport_public_primaries(tport_t const *self)
-{
-  if (self)
-    return self->tp_master->mr_public_primaries->pri_primary;
-  else
-    return NULL;
-}
-
 /** Get next transport */
 tport_t *tport_next(tport_t const *self)
-{
-  if (self == NULL)
-    return NULL;
-  else if (tport_is_master(self))
-    return ((tport_master_t *)self)->mr_primaries->pri_primary;
-  else if (tport_is_primary(self))
-    return ((tport_primary_t *)self)->pri_next->pri_primary;
-  else
-    return tprb_succ(self);
-}
-
-/** Get next transport */
-tport_t *tport_public_next(tport_t const *self)
 {
   if (self == NULL)
     return NULL;

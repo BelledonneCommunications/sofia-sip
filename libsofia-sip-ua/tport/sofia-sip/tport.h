@@ -119,6 +119,14 @@ enum {
   TPORT_QUEUESIZE = 64
 };
 
+
+typedef enum tport_pri_type_e tport_pri_type_t;
+enum {
+  tp_pri_is_local = 0,
+  tp_pri_is_stun,
+  tp_pri_is_http_connect,
+} tport_primary_type_e;
+
 /* AI extension flags - these must not overlap with existing AI flags. */
 
 /** Message is to be sent/received compressed */

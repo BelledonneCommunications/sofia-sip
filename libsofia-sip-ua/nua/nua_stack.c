@@ -244,7 +244,11 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
     if (nta_agent_add_tport(nua->nua_nta, NULL,
 			    TAG_NEXT(nua->nua_args)) < 0 &&
 	nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
+			    TAG_NEXT(nua->nua_args)) < 0 &&
+	nta_agent_add_tport(nua->nua_nta, NULL,
+			    TPTAG_PUBLIC(1), /* use stun */
 			    TAG_NEXT(nua->nua_args)) < 0)
+
       return -1;
   }
   else if ((!contact ||
