@@ -109,6 +109,8 @@ typedef struct tport_nat_s tport_nat_t;
 
 #if HAVE_SCTP && HAVE_NETINET_SCTP_H
 #include <netinet/sctp.h>
+#undef HAVE_SCTP
+#define HAVE_SCTP 1
 #endif
 
 #if HAVE_TLS
