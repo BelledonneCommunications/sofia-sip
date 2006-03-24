@@ -12,7 +12,7 @@ INCLUDES = 		-I$(srcdir)/../su -I../su
 
 noinst_LTLIBRARIES = 	libsresolv.la
 
-noinst_PROGRAMS = 	test_virgin test_sresolv
+noinst_PROGRAMS = 	test_sresolv
 
 TESTS = 		run_test_sresolv
 
@@ -35,7 +35,6 @@ LDADD = 		libsresolv.la \
 			../su/libsu.la
 
 test_sresolv_LDFLAGS = 	-static
-test_virgin_LDFLAGS =   -static
 
 # ----------------------------------------------------------------------
 # Distribution
