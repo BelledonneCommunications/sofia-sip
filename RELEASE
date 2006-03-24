@@ -18,6 +18,23 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+- Added string manipulation functions:
+  - su_strcat_all()
+  - su_strlst_create_with(), su_strlst_vcreate_with()
+  - su_strlst_create_with_dup(), su_strlst_vcreate_with_dup()
+- Added sip utility functions:
+  - sip_contact_string_from_via(), sip_transport_has_tls()
+
+- tport, nta: initial support for dynamic transport additions / updates for
+  NAT traversal.
+
+- Added the stun_dns_lookup.*() interface to sofia-sip/stun.h.
+
+- stun_handle_() functions are now marked as 'deprecated' and replaced
+by stun_() functions in sofia-sip/stun.h.
+
+- Per discovery magic and callback added to stun_bind(),
+stun_get_nattype(), stun_get_lifetime()
 
 Contributors to this release
 ----------------------------
