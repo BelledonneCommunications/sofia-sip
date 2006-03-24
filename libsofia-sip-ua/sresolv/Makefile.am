@@ -43,7 +43,8 @@ test_virgin_LDFLAGS =   -static
 EXTRA_DIST =		Doxyfile sresolv.docs
 
 dist_noinst_DATA = run_test_sresolv \
-	127.zone 194.2.188 3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0 example.com
+	127.zone 194.2.188 3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0 example.com \
+	3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0.arpa
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
