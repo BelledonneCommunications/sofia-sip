@@ -73,6 +73,7 @@ static int test_alloc(void)
   void *m0[N], *m1[N], *m;
   char *c, *c0, *p0, *p1;
   int i;
+  enum { destructed_once = 1 };
   int d0, d1, d2, d3;
 
   BEGIN();
@@ -88,10 +89,20 @@ static int test_alloc(void)
   TEST_1(h2 = su_home_ref(h0->home));
   su_home_unref(h0->home);
   TEST(d0, 0);
+
+  for (i = 0; i < 128; i++)
+    TEST_1(su_alloc(h0->home, 16));
+
+  for (i = 0; i < 128; i++)
+    TEST_1(su_alloc(h1->home, 16));
+
+  for (i = 0; i < 128; i++)
+    TEST_1(su_alloc(h2->home, 16));
+
   su_home_unref(h2->home); /* Should call destructor of cloned home, too */
 
-  TEST(d0, 1);
-  TEST(d1, 1);
+  TEST(d0, destructed_once);
+  TEST(d1, destructed_once);
 
   TEST_1(h0 = su_home_new(sizeof(*h0)));
   TEST_1(h1 = su_home_clone(h0->home, sizeof(*h1)));

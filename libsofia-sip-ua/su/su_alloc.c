@@ -399,6 +399,7 @@ void *sub_alloc(su_home_t *home,
       b2->sub_prsize = sub->sub_prsize;
       b2->sub_prused = sub->sub_prused;
       b2->sub_preauto = sub->sub_preauto;
+      b2->sub_destructor = sub->sub_destructor;
       /* auto_all is not copied! */
       b2->sub_stats = sub->sub_stats;
     }
@@ -901,6 +902,8 @@ void su_home_deinit(su_home_t *home)
  * error. It uses a temporary home and moves the blocks from temporary to a
  * proper home when successful, but frees the temporary home upon an error.
  *
+ * If @src has destructor, it is called before starting to move.
+ *
  * @param dst destination home
  * @param src source home
  *
@@ -919,6 +922,13 @@ int su_home_move(su_home_t *dst, su_home_t *src)
     s = MEMLOCK(src); d = MEMLOCK(dst);
 
     if (s && s->sub_n) {
+
+      if (s->sub_destructor) {
+	void (*destructor)(void *) = s->sub_destructor;
+	s->sub_destructor = NULL;
+	destructor(src);
+      }
+
       if (d) 
 	used = s->sub_used + d->sub_used;
       else
