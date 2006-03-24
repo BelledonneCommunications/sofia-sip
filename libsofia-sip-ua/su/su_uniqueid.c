@@ -177,7 +177,7 @@ static void init(void)
 #if HAVE_GETIFADDRS
 #include <ifaddrs.h>
 #if HAVE_NETPACKET_PACKET_H
-#define HAVE_SOCKADDR_LL
+#define HAVE_SOCKADDR_LL 1
 #include <netpacket/packet.h>
 #include <net/if_arp.h>
 #endif
