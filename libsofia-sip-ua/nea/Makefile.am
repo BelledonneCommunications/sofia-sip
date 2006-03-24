@@ -42,8 +42,9 @@ LDADD = 		libnea.la \
 			../sresolv/libsresolv.la \
 			../tport/libtport.la \
 			../stun/libstun.la \
-			../url/liburl.la \
+			../http/libhttp.la \
 			../msg/libmsg.la \
+			../url/liburl.la \
 			../bnf/libbnf.la \
 			../su/libsu.la 
 

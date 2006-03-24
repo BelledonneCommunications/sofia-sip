@@ -9,6 +9,7 @@ INCLUDES = 		-I$(srcdir)/../bnf -I../bnf \
 			-I$(srcdir)/../stun -I../stun \
 			-I$(srcdir)/../ipt -I../ipt \
 			-I$(srcdir)/../msg -I../msg \
+			-I$(srcdir)/../http -I../http \
 			-I$(srcdir)/../url -I../url \
 			-I$(srcdir)/../su -I../su
 
@@ -48,6 +49,7 @@ LDADD = 		libtport.la \
 			../stun/libstun.la \
 			../sresolv/libsresolv.la \
 			../ipt/libipt.la \
+			../http/libhttp.la \
 			../msg/libtest_msg.a ../msg/libmsg.la \
 			../url/liburl.la \
 			../bnf/libbnf.la \

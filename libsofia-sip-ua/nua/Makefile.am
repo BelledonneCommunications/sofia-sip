@@ -51,7 +51,6 @@ COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_sofia_HEADERS)
 LDADD = 		libnua.la \
 			../iptsec/libiptsec.la \
 			../ipt/libipt.la \
-			../http/libhttp.la \
 			../nea/libnea.la \
 			../nta/libnta.la \
 			../sresolv/libsresolv.la \
@@ -60,6 +59,7 @@ LDADD = 		libnua.la \
 			../soa/libsoa.la \
 			../sdp/libsdp.la \
 			../sip/libsip.la \
+			../http/libhttp.la \
 			../msg/libmsg.la \
 			../url/liburl.la \
 			../bnf/libbnf.la \

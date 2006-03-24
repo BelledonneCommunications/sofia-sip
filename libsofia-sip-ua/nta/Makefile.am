@@ -49,6 +49,7 @@ LDADD = 		libnta.la \
 			../features/libfeatures.la \
 			../sresolv/libsresolv.la \
 			../tport/libtport.la \
+			../http/libhttp.la \
 			../stun/libstun.la \
 			../url/liburl.la \
 			../msg/libmsg.la \
