@@ -25,7 +25,7 @@ manpages $(MANS):
 	-mkdir -p $(srcdir)/man $(srcdir)/man/man1 2> /dev/null
 	cd $(srcdir)/utils; $(DOXYGEN)
 if !HAVE_DOXYGEN
-	-touch $(man_MANS)
+	-touch $(MANS)
 endif
 
 coverage built-sources clean-built-sources:
