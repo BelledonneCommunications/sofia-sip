@@ -659,16 +659,16 @@ nua_stack_registrations_init(nua_t *nua)
 static
 void nua_stack_tport_update(nua_t *nua, nta_agent_t *nta)
 {
-  register_usage *default_ru;
-  register_usage const *defaults = nua->nua_registrations;
+  outbound_connect *default_oc;
+  outbound_connect const *defaults = nua->nua_registrations;
   sip_via_t *via = nta_agent_via(nta);
   
-  default_ru = register_usage_by_aor(defaults, NULL, 1);
+  default_oc = outbound_connect_by_aor(defaults, NULL, 1);
 
-  if (default_ru) {
-    assert(default_ru->ru_via);
+  if (default_oc) {
+    assert(default_oc->oc_via);
 
-    register_usage_contacts_from_via(default_ru,
+    outbound_connect_contacts_from_via(default_oc,
 				     via,
 				     via->v_next);
 
