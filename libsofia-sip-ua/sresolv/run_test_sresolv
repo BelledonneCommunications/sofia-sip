@@ -124,6 +124,11 @@ zone "0.0.0.c.2.1.0.3.0.0.2.1.e.f.f.3.ip6.int" in {
 	file "3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0";
 };
 
+zone "0.0.0.c.2.1.0.3.0.0.2.1.e.f.f.3.ip6.arpa" in {
+        type master;
+	file "3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0.arpa";
+};
+
 EOF
 
 PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin"

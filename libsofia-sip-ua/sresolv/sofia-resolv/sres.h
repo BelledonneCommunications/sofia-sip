@@ -41,6 +41,8 @@
  *
  */
 
+#include <stdarg.h>
+
 #ifdef __cplusplus
 extern "C" { }
 #endif
@@ -99,17 +101,7 @@ typedef SRES_CONTEXT_T sres_context_t;
 
 typedef struct sres_query_s         sres_query_t;
 
-/** Prototype for update function.
- *
- * This kind of function is called when the nameserver configuration has
- * been updated. The called function should register the @a new_sockets with
- * resolver: it is up to thread to invoke sres_resolver_receive() whenever
- * it receives data from one of the new sockets. The @a old_sockets are
- * provided for reference.
- */
-typedef int sres_update_f(sres_async_t *async,
-			  int new_socket,
-			  int old_socket);
+struct sockaddr;
 
 /** Prototype for callback function.
  *
@@ -122,8 +114,17 @@ typedef void sres_answer_f(sres_context_t *context,
 			   sres_record_t **answers);
 
 /** Create an resolver object. */
-sres_resolver_t *sres_resolver_new(char const *resolv_conf_path,
-				   sres_cache_t *cache);
+sres_resolver_t *sres_resolver_new(char const *resolv_conf_path);
+
+sres_resolver_t *
+sres_resolver_new_with_cache(char const *conf_file_path,
+			     sres_cache_t *cache,
+			     char const *options, ...);
+
+sres_resolver_t *
+sres_resolver_new_with_cache_va(char const *conf_file_path,
+				sres_cache_t *cache,
+				char const *options, va_list va);
 
 sres_resolver_t *sres_resolver_ref(sres_resolver_t *res);
 
@@ -135,6 +136,21 @@ void *sres_resolver_set_userdata(sres_resolver_t *res, void *userdata);
 /** Get userdata pointer. */
 void *sres_resolver_get_userdata(sres_resolver_t const *res);
 
+/** Prototype for update function.
+ *
+ * This kind of function is called when the nameserver configuration has
+ * been updated. 
+ *
+ * If the old_socket is not -1, it indicates that old_socket will be closed
+ * and it should be removed from poll() or select() set.
+ *
+ * If the new_socket is not -1, it indicates that resolver has created new
+ * socket that should be added to the poll() or select() set.
+ */
+typedef int sres_update_f(sres_async_t *async,
+			  int new_socket,
+			  int old_socket);
+
 /** Set asynchronous operation data. */
 sres_async_t *sres_resolver_set_async(sres_resolver_t *res, 
 				      sres_update_f *update,
@@ -145,8 +161,11 @@ sres_async_t *sres_resolver_set_async(sres_resolver_t *res,
 sres_async_t *sres_resolver_get_async(sres_resolver_t const *res,
 				      sres_update_f *update);
 
+/** Create sockets for resolver. */
+int sres_resolver_sockets(sres_resolver_t *res, int *sockets, int n);
+
 /** Resolver timer function. */
-void sres_resolver_timer(sres_resolver_t *res);
+void sres_resolver_timer(sres_resolver_t *res, int dummy);
 
 /** Receive DNS response from socket. */
 int sres_resolver_receive(sres_resolver_t *res, int socket);
@@ -155,16 +174,32 @@ int sres_resolver_receive(sres_resolver_t *res, int socket);
 int sres_resolver_error(sres_resolver_t *res, int socket);
 
 /** Make a DNS query. */
+sres_query_t *sres_query(sres_resolver_t *res,
+                         sres_answer_f *callback,
+                         sres_context_t *context,
+                         uint16_t type,
+                         char const *domain);
+
+/** Make a DNS query. */
+sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
+                                  sres_answer_f *callback,
+                                  sres_context_t *context,
+                                  uint16_t type,
+				  struct sockaddr const *addr);
+
+/** Make a DNS query with socket. */
 sres_query_t *sres_query_make(sres_resolver_t *res,
 			      sres_answer_f *callback,
 			      sres_context_t *context,
+			      int dummy,
 			      uint16_t type,
 			      char const *domain);
 
-/** Make a reverse DNS query. */
+/** Make a reverse DNS query with socket. */
 sres_query_t *sres_query_make_sockaddr(sres_resolver_t *res,
 				       sres_answer_f *callback,
 				       sres_context_t *context,
+				       int dummy,
 				       uint16_t type,
 				       struct sockaddr const *addr);
 
@@ -172,6 +207,18 @@ sres_query_t *sres_query_make_sockaddr(sres_resolver_t *res,
 void sres_query_bind(sres_query_t *q,
                      sres_answer_f *callback,
                      sres_context_t *context);
+
+/** Send a query, return results. */
+int sres_blocking_query(sres_resolver_t *res,
+			uint16_t type,
+			char const *domain,
+			sres_record_t ***return_records);
+
+/** Send a a reverse DNS query, return results. */
+int sres_blocking_query_sockaddr(sres_resolver_t *res,
+				 uint16_t type,
+				 struct sockaddr const *addr,
+				 sres_record_t ***return_records);
 
 /** Get a list of matching records from cache. */
 sres_record_t **sres_cached_answers(sres_resolver_t *res,

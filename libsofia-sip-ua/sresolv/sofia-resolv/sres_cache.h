@@ -60,7 +60,7 @@ enum {
 #define SRES_CACHE_TIMER_INTERVAL (SRES_CACHE_TIMER_INTERVAL)
 };
 
-sres_cache_t *sres_cache_new(size_t n);
+sres_cache_t *sres_cache_new(int n);
 
 sres_cache_t *sres_cache_ref(sres_cache_t *);
 

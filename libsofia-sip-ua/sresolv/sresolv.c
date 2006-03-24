@@ -37,6 +37,7 @@ struct sres_sofia_s {
   sres_resolver_t *srs_resolver;
   su_root_t  	  *srs_root;
   su_timer_t 	  *srs_timer;
+  int              srs_socket;
   sres_sofia_register_t srs_reg[SRES_MAX_NAMESERVERS];
 };
 
@@ -74,7 +75,7 @@ sres_resolver_create(su_root_t *root,
 	  TAG_END());
   ta_end(ta);
 
-  res = sres_resolver_new(conf_file_path, NULL);
+  res = sres_resolver_new_with_cache(conf_file_path, NULL, NULL);
   srs = res ? su_zalloc(0, sizeof *srs) : NULL;
 
   if (res && srs) {
@@ -114,12 +115,7 @@ sres_resolver_destroy(sres_resolver_t *res)
   if (srs == NULL)
     return su_seterrno(EINVAL);
 
-  su_timer_destroy(srs->srs_timer), srs->srs_timer = NULL;
-
-  sres_resolver_set_async(res, sres_sofia_update, NULL, 0);
   sres_resolver_unref(srs->srs_resolver); 
-
-  su_free(NULL, srs);
 
   return 0;
 }
@@ -140,8 +136,20 @@ static int sres_sofia_update(sres_sofia_t *srs,
   int i, index = -1, error = 0;
   int N = SRES_MAX_NAMESERVERS;
 
-  if (old_socket == new_socket)
+  if (old_socket == new_socket) {
+    if (old_socket == -1) {
+      /* Destroy srs */
+      for (i = 0; i < N; i++) {
+	if (!srs->srs_reg[i].srsr_index)
+	  continue;
+	su_root_deregister(srs->srs_root, srs->srs_reg[i].srsr_index);
+	memset(&srs->srs_reg[i], 0, sizeof(srs->srs_reg[i]));
+      }
+      su_timer_destroy(srs->srs_timer), srs->srs_timer = NULL;
+      su_free(NULL, srs);
+    }
     return 0;
+  }
 
   if (old_socket != -1)
     for (i = 0; i < N; i++)
@@ -184,11 +192,13 @@ static int sres_sofia_update(sres_sofia_t *srs,
   }
 
   if (old_srsr) {
+    srsr->srsr_socket = -1;
     su_root_deregister(srs->srs_root, old_srsr->srsr_index);
     memset(old_srsr, 0, sizeof *old_srsr);
   }
 
   if (srsr) {
+    srs->srs_socket = new_socket;
     srsr->srsr_ptr = srs;
     srsr->srsr_socket = new_socket;
     srsr->srsr_index = index;
@@ -203,12 +213,51 @@ static int sres_sofia_update(sres_sofia_t *srs,
 }
 
 
+/** Return socket registered to su_root_t object.
+ *
+ * @retval sockfd if succesful
+ * @retval -1 upon an error
+ *
+ * @ERRORS
+ * @ERROR EFAULT Invalid argument passed.
+ * @ERROR EINVAL Resolver is not using su_root_t.
+ */
+int sres_resolver_root_socket(sres_resolver_t *res)
+{
+  sres_sofia_t *srs;
+  int i, N = SRES_MAX_NAMESERVERS;
+
+  if (res == NULL)
+    return su_seterrno(EFAULT);
+
+  srs = sres_resolver_get_userdata(res);
+
+  if (!srs)
+    return su_seterrno(EINVAL);
+
+  if (srs->srs_socket != -1)
+    return srs->srs_socket;
+
+  for (i = 0; i < N; i++) {
+    if (!srs->srs_reg[i].srsr_ptr)
+      break;
+  }
+
+  if (i == N) 
+    return su_seterrno(EINVAL);
+  
+  srs->srs_socket = srs->srs_reg[i].srsr_socket;
+
+  return srs->srs_socket; 
+}
+
+
 /** Sofia timer wrapper. */
 static 
 void 
 sres_sofia_timer(su_root_magic_t *magic, su_timer_t *t, sres_sofia_t *srs)
 {
-  sres_resolver_timer(srs->srs_resolver);
+  sres_resolver_timer(srs->srs_resolver, -1);
 }
 
 
@@ -230,52 +279,4 @@ sres_sofia_poll(su_root_magic_t *magic,
     retval = sres_resolver_receive(srs->srs_resolver, socket);
 
   return retval;
-}
-
-sres_query_t *
-sres_query(sres_resolver_t *res,
-	   sres_answer_f *callback,
-	   sres_context_t *context,
-	   uint16_t type,
-	   char const *domain)
-{
-  sres_sofia_t *srs;
-
-  if (res == NULL)
-    return su_seterrno(EFAULT), (void *)NULL;
-  
-  srs = sres_resolver_get_async(res, sres_sofia_update);
-
-  if (srs)
-    return sres_query_make(res, callback, context, type, domain);
-  else
-    return su_seterrno(EINVAL), (void *)NULL;
-}
-
-/** Make a reverse DNS query.
- *
- * The function sres_query_sockaddr() sends a query with specified @a type
- * and domain name formed from the socket address @a addr. The sres resolver
- * takes care of retransmitting the query, and generating an error record
- * with nonzero status if no response is received.
- *
- */
-sres_query_t *
-sres_query_sockaddr(sres_resolver_t *res,
-		    sres_answer_f *callback,
-		    sres_context_t *context,
-		    uint16_t type,
-		    struct sockaddr const *addr)
-{
-  sres_sofia_t *srs;
-
-  if (res == NULL)
-    return su_seterrno(EFAULT), (void *)NULL;
-  
-  srs = sres_resolver_get_async(res, sres_sofia_update);
-
-  if (srs)
-    return sres_query_make_sockaddr(res, callback, context, type, addr);
-  else
-    return su_seterrno(EINVAL), (void *)NULL;
 }

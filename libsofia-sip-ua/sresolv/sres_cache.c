@@ -83,7 +83,7 @@ HTABLE_PROTOS(sres_htable, ht, sres_rr_hash_entry_t);
 /* ---------------------------------------------------------------------- */
 /* Public functions */
 
-sres_cache_t *sres_cache_new(size_t n)
+sres_cache_t *sres_cache_new(int n)
 {
   sres_cache_t *cache = su_home_new(sizeof *cache);
 
@@ -215,7 +215,7 @@ sres_cache_alloc_record(sres_cache_t *cache,
 
   if (sr) {
     sr->sr_size = size;
-    sr->sr_name = memcpy(size + (char *)name, name, name_length + 1);
+    sr->sr_name = memcpy(size + (char *)sr, name, name_length + 1);
   }
     
   return sr;

@@ -42,7 +42,7 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#include <sofia-sip/su.h>
+#include <time.h>
 
 #include "sofia-resolv/sres.h"
 #include "sofia-resolv/sres_cache.h"
@@ -53,15 +53,15 @@
 
 #include "sofia-sip/htable.h"
 
+#include <sofia-sip/su.h>
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
 
-#include <time.h>
 #include <limits.h>
 
 #include <assert.h>
@@ -106,7 +106,7 @@ struct sres_resolver_s {
   time_t              res_now;
   sres_qtable_t       res_queries[1];   /**< Table of active queries */
 
-  char const         *res_cnffile;    /**< Configuration file name */
+  char const         *res_cnffile;      /**< Configuration file name */
 
   sres_config_t      *res_config;
   time_t              res_checked;
@@ -315,10 +315,6 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout);
 static 
 sres_server_t *sres_server_by_socket(sres_resolver_t const *ts, int socket);
 
-static 
-sres_server_t *sres_server_by_sockaddr(sres_resolver_t const *res, 
-				       void const *from, int fromlen);
-
 static
 int sres_resolver_report_error(sres_resolver_t *res, 
 			       int socket,
@@ -326,9 +322,6 @@ int sres_resolver_report_error(sres_resolver_t *res,
 			       struct sockaddr_storage *remote,
 			       socklen_t remotelen, 
 			       char const *info);
-
-static inline void _sres_free_answer(sres_resolver_t *, sres_record_t *);
-static inline void _sres_free_answers(sres_resolver_t *, sres_record_t **);
 
 static
 void sres_log_response(sres_resolver_t const *res, 
@@ -421,22 +414,71 @@ enum {
 
 /**Create a resolver.
  *
- * The function sres_resolver_new() is used to allocate and initialize a new
- * sres resolver object. The resolver object contains the parsed resolv.conf
- * file, cached answers from DNS, and a list of active queries. The default
- * resolv.conf file can be overriden by giving the name of the configuration
- * file as @a conf_file_path.
+ * Allocate and initialize a new sres resolver object. The resolver object
+ * contains the parsed resolv.conf file, a cache object containing past
+ * answers from DNS, and a list of active queries. The default resolv.conf
+ * file can be overriden by giving the name of the configuration file as @a
+ * conf_file_path.
  *
  * @param conf_file_path name of the resolv.conf configuration file 
- * @param cache    optional pointer to a resolver cache
  *
- * @return The function sres_resolver_new() returns a pointer to a newly
- * created sres resolver object, or NULL upon an error.
- * 
+ * @return A pointer to a newly created sres resolver object, or NULL upon
+ * an error.
  */
 sres_resolver_t *
-sres_resolver_new(char const *conf_file_path, 
-		  sres_cache_t *cache)
+sres_resolver_new(char const *conf_file_path)
+{
+  return sres_resolver_new_with_cache(conf_file_path, NULL, NULL);
+}
+
+/**Create a resolver.
+ *
+ * Allocate and initialize a new sres resolver object. The resolver object
+ * contains the parsed resolv.conf file, a cache object containing past
+ * answers from DNS, and a list of active queries. The default resolv.conf
+ * file can be overriden by giving the name of the configuration file as @a
+ * conf_file_path.
+ *
+ * It is also possible to override the values in the resolv.conf and
+ * RES_OPTIONS by giving the directives in the NULL-terminated list.
+ *
+ * @param conf_file_path name of the resolv.conf configuration file 
+ * @param cache          optional pointer to a resolver cache
+ * @param options, ...   list of resolv.conf directives (overriding conf_file)
+ *
+ * @par Environment Variables
+ * - LOCALDOMAIN overrides @c domain or @c search directives
+ * - RES_OPTIONS overrides values of @a options in resolv.conf
+ * - SRES_OPTIONS overrides values of @a options in resolv.conf, RES_OPTIONS,
+ *   and @a options, ... list given as argument for this function
+ *
+ * @return A pointer to a newly created sres resolver object, or NULL upon
+ * an error.
+ */
+sres_resolver_t *
+sres_resolver_new_with_cache(char const *conf_file_path,
+			     sres_cache_t *cache,
+			     char const *options, ...)
+{
+  sres_resolver_t *retval;
+  va_list va;
+  va_start(va, options);
+  retval = sres_resolver_new_with_cache_va(conf_file_path, cache, options, va);
+  va_end(va);
+  return retval;
+}
+
+/**Create a resolver.
+ *
+ * Allocate and initialize a new sres resolver object. 
+ *
+ * This is a stdarg version of sres_resolver_new_with_cache().
+ */
+sres_resolver_t *
+sres_resolver_new_with_cache_va(char const *conf_file_path,
+				sres_cache_t *cache,
+				char const *options, 
+				va_list va)
 {
   sres_resolver_t *res;
 
@@ -449,7 +491,7 @@ sres_resolver_new(char const *conf_file_path,
 
   while (res->res_id == 0) {
 #if HAVE_DEV_URANDOM
-    int fd, n;
+    int fd;
     if ((fd = open("/dev/urandom", O_RDONLY, 0)) != -1) {
       read(fd, &res->res_id, (sizeof res->res_id));
       close(fd);
@@ -461,7 +503,10 @@ sres_resolver_new(char const *conf_file_path,
 
   time(&res->res_now);
 
-  res->res_cache = sres_cache_new(0);
+  if (cache)
+    res->res_cache = sres_cache_ref(cache);
+  else
+    res->res_cache = sres_cache_new(0);
 
   if (conf_file_path)
     res->res_cnffile = su_strdup(res->res_home, conf_file_path);
@@ -560,20 +605,31 @@ sres_resolver_set_async(sres_resolver_t *res,
   return async;
 }
 
+sres_async_t *
+sres_resolver_get_async(sres_resolver_t const *res,
+			sres_update_f *callback)
+{
+  if (res == NULL || res->res_updcb != callback)
+    return su_seterrno(EFAULT), (void *)NULL;
+  else
+    return res->res_async;
+}
 
 /** Make a DNS query.
  *
- * The function sres_query_make() sends a query with specified @a type and
- * @a domain. The sres resolver takes care of retransmitting the query, and
- * generating an error record with nonzero status if no response is
- * received.
+ * Sends a DNS query with specified @a type and @a domain to the DNS server. 
+ * The sres resolver takes care of retransmitting the query if
+ * sres_resolver_timer() is called in regular intervals. It generates an
+ * error record with nonzero status if no response is received.
+ *
+ * @sa sres_blocking_query(), sres_query_make()
  */
 sres_query_t *
-sres_query_make(sres_resolver_t *res,
-		sres_answer_f *callback,
-		sres_context_t *context,
-		uint16_t type,
-		char const *domain)
+sres_query(sres_resolver_t *res,
+	   sres_answer_f *callback,
+	   sres_context_t *context,
+	   uint16_t type,
+	   char const *domain)
 {
   sres_query_t *query = NULL;
   size_t dlen;
@@ -595,8 +651,7 @@ sres_query_make(sres_resolver_t *res,
 
   time(&res->res_now);
 
-  query = sres_query_alloc(res, callback, context, 
-			   type, domain);
+  query = sres_query_alloc(res, callback, context, type, domain);
 
   if (query) {
     /* Create sub-query for each search domain */
@@ -649,25 +704,80 @@ sres_query_make(sres_resolver_t *res,
 
 /** Make a reverse DNS query.
  *
- * The function sres_query_sockaddr() sends a query with specified @a type
- * and domain name formed from the socket address @a addr. The sres resolver
- * takes care of retransmitting the query, and generating an error record
- * with nonzero status if no response is received.
- *
+ * Send a query to DNS server with specified @a type and domain name formed
+ * from the socket address @a addr. The sres resolver takes care of
+ * retransmitting the query if sres_resolver_timer() is called in regular
+ * intervals. It generates an error record with nonzero status if no
+ * response is received.
  */
 sres_query_t *
-sres_query_make_sockaddr(sres_resolver_t *res,
-			 sres_answer_f *callback,
-			 sres_context_t *context,
-			 uint16_t type,
-			 struct sockaddr const *addr)
+sres_query_sockaddr(sres_resolver_t *res,
+		    sres_answer_f *callback,
+		    sres_context_t *context,
+		    uint16_t type,
+		    struct sockaddr const *addr)
 {
   char name[80]; 
 
   if (!sres_sockaddr2string(res, name, sizeof(name), addr))
     return NULL;
 
-  return sres_query_make(res, callback, context, type, name);
+  return sres_query(res, callback, context, type, name);
+}
+
+
+/** Make a DNS query.
+ *
+ * Sends a DNS query with specified @a type and @a domain to the DNS server. 
+ * The sres resolver takes care of retransmitting the query if
+ * sres_resolver_timer() is called in regular intervals. It generates an
+ * error record with nonzero status if no response is received.
+ *
+ * This function just makes sure that we have the @a socket is valid,
+ * otherwise it behaves exactly like sres_query().
+ */
+sres_query_t *
+sres_query_make(sres_resolver_t *res,
+		sres_answer_f *callback,
+		sres_context_t *context,
+		int socket,
+		uint16_t type,
+		char const *domain)
+{
+  if (socket == -1)
+    return errno = EINVAL, NULL;
+
+  return sres_query(res, callback, context, type, domain);
+}
+
+/** Make a reverse DNS query.
+ *
+ * Send a query to DNS server with specified @a type and domain name formed
+ * from the socket address @a addr. The sres resolver takes care of
+ * retransmitting the query if sres_resolver_timer() is called in regular
+ * intervals. It generates an error record with nonzero status if no
+ * response is received.
+ *
+ * This function just makes sure that we have the @a socket is valid,
+ * otherwise it behaves exactly like sres_query_sockaddr().
+ */
+sres_query_t *
+sres_query_make_sockaddr(sres_resolver_t *res,
+			 sres_answer_f *callback,
+			 sres_context_t *context,
+			 int socket,
+			 uint16_t type,
+			 struct sockaddr const *addr)
+{
+  char name[80]; 
+
+  if (socket == -1)
+    return errno = EINVAL, NULL;
+
+  if (!sres_sockaddr2string(res, name, sizeof(name), addr))
+    return NULL;
+
+  return sres_query_make(res, callback, context, socket, type, name);
 }
 
 
@@ -1174,8 +1284,8 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res)
 static
 int sres_parse_config(sres_config_t *c, FILE *f)
 {
+  su_home_t *home = c->c_home;
   int line;
-  su_home_t *home;
   char const *localdomain;
   char *search = NULL, *domain = NULL;
   char buf[1025];
@@ -1294,7 +1404,7 @@ sres_parse_options(sres_config_t *c, char const *options)
 
   while (value[0]) {
     int len;
-    unsigned long n;
+    unsigned long n = 0;
     char const *b;
 
     b = value; 
@@ -1442,6 +1552,9 @@ void sres_servers_unref(sres_resolver_t *res,
     return;
 
   for (i = 0; i < SRES_MAX_NAMESERVERS; i++) {
+    if (!servers[i])
+      break;
+
     if (servers[i]->dns_socket) {
       if (res->res_updcb)
 	res->res_updcb(res->res_async, -1, servers[i]->dns_socket);
@@ -1482,6 +1595,13 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 		su_strerror(su_errno())));
     return s;
   }
+
+  if (connect(s, (void *)dns->dns_addr, dns->dns_addrlen) < 0) {
+    SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "connect",
+		su_strerror(su_errno())));
+    su_close(s);
+    return -1;
+  }
   
   if (res->res_updcb) {
     if (res->res_updcb(res->res_async, s, -1) < 0) {
@@ -1507,7 +1627,7 @@ sres_send_dns_query(sres_resolver_t *res,
 {                        
   sres_message_t m[1];
   int i, i0, N = res->res_n_servers;
-  int s, transient, error;
+  int s, transient, error = 0;
   unsigned size, no_edns_size, edns_size;
   uint16_t id = q->q_id;
   uint16_t type = q->q_type;
@@ -1611,12 +1731,14 @@ sres_server_t *sres_next_server(sres_resolver_t *res,
   int i, j, N;
   sres_server_t **servers;
 
-  assert(res && res->res_servers && res->res_servers[i]);
-  
+  assert(res && in_out_i);
+
   N = res->res_n_servers;
   servers = res->res_servers;
   i = *in_out_i;
 
+  assert(res->res_servers && res->res_servers[i]);
+  
   /* Retry using another server? */
   for (j = (i + 1) % N; (j != i); j = (j + 1) % N) {
     if (servers[j]->dns_icmp == 0) {
@@ -1716,8 +1838,9 @@ sres_query_report_error(sres_query_t *q,
  * The function sresolver_timer() should be called in regular intervals. We
  * recommend calling it in 500 ms intervals.
  *
+ * @param dummy argument for compatibility 
  */
-void sres_resolver_timer(sres_resolver_t *res)
+void sres_resolver_timer(sres_resolver_t *res, int dummy)
 {
   int i;
   sres_query_t *q;
@@ -1810,24 +1933,6 @@ sres_server_by_socket(sres_resolver_t const *res, int socket)
   return NULL;
 }
 
-/** Get a server by socket address */
-static
-sres_server_t *
-sres_server_by_sockaddr(sres_resolver_t const *res, 
-			void const *from, int fromlen)
-{
-  int i;
-
-  for (i = 0; i < res->res_n_servers; i++) {
-    sres_server_t *dns = res->res_servers[i];
-    if (dns->dns_addrlen == fromlen && 
-	memcmp(dns->dns_addr, from, fromlen) == 0)
-      return dns;
-  }
-  
-  return NULL;
-}
-
 static
 void
 sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
@@ -1872,67 +1977,58 @@ sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
 #include <sys/uio.h>
 #endif
 
-#if 0
+static
+int sres_no_update(sres_async_t *async, int new_socket, int old_socket)
+{
+  return 0;
+}
+
 /** Create connected sockets for resolver.
  *
  * @related sres_resolver_t
  */
-int sres_resolver_sockets(sres_resolver_t const *res,
-			  int *return_sockets, int n)
+int sres_resolver_sockets(sres_resolver_t *res,
+			  int *return_sockets, 
+			  int n)
 {
-  int s = -1, i, j, retval, family;
-  int error = su_errno();
-  static int const one = 1;
-  char const *what = "socket", *who = "sres_resolver_sockets";
-  int sockets[SRES_MAX_NAMESERVERS];
+  int s = -1, i, retval;
 
-  if (res == NULL)
-    return su_seterrno(EFAULT);
+  if (!sres_resolver_set_async(res, sres_no_update,
+			       (sres_async_t *)-1, 1))
+    return -1;
 
   retval = res->res_n_servers; assert(retval <= SRES_MAX_NAMESERVERS);
 
-  if (!sockets || n == 0)
+  if (!return_sockets || n == 0)
     return retval;
 
   for (i = 0; i < retval && i < n;) {
-    sres_server_t *dns = res->res_servers + i;
+    sres_server_t *dns = res->res_servers[i];
 
-    s = socket(dns->dns_addr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
-    if (s == -1) {
-      retval = -1;
-      break;
-    }
-
-    sockets[i++] = s;
-
-#if HAVE_IP_RECVERR
-    if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0)
-      SU_DEBUG_3(("%s: %s: %s\n", who, "IP_RECVERR", strerror(su_errno())));
-#endif
-#if HAVE_IPV6_RECVERR
-    if (family == AF_INET6 && 
-	setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
-      SU_DEBUG_3(("%s: %s: %s\n", who, "IPV6_RECVERR", strerror(su_errno())));
-#endif
-
-    if (connect(s, (struct sockaddr *)dns->dns_addr, dns->dns_addrlen) < 0) {
-      SU_DEBUG_3(("%s: %s: %s\n", who, "connect", strerror(su_errno())));
-    }
+    s = sres_server_socket(res, dns);
+    return_sockets[i++] = s;
   }
 
-  if (retval < 0) {
-    error = su_errno();
-    SU_DEBUG_3(("%s: %s: %s\n", who, what, strerror(error)));
-    for (j = 0; j < i; j++)
-      su_close(sockets[j]);
-    su_seterrno(error);
-  }
-  else {
-    for (j = 0; j < i; j++)
-      return_sockets[j] = sockets[j];
+  return retval;
+}
+
+#if 0
+/** Get a server by socket address */
+static
+sres_server_t *
+sres_server_by_sockaddr(sres_resolver_t const *res, 
+			void const *from, int fromlen)
+{
+  int i;
+
+  for (i = 0; i < res->res_n_servers; i++) {
+    sres_server_t *dns = res->res_servers[i];
+    if (dns->dns_addrlen == fromlen && 
+	memcmp(dns->dns_addr, from, fromlen) == 0)
+      return dns;
   }
   
-  return retval;
+  return NULL;
 }
 #endif
 
@@ -2069,13 +2165,7 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 
   getsockopt(socket, SOL_SOCKET, SO_ERROR, (void *)&errcode, &errorlen);
 
-  if (getpeername(socket, (struct sockaddr *)remote, &remotelen) == 0) {
-    return sres_resolver_report_error(res, socket, errcode, 
-				      remote, remotelen, "");
-  }
-  else
-    return sres_resolver_report_error(res, socket, errcode, 
-				      NULL, 0, "");
+  return sres_resolver_report_error(res, socket, errcode, NULL, 0, "");
 }
 #endif
 
@@ -2122,8 +2212,8 @@ sres_resolver_report_error(sres_resolver_t *res,
     sres_server_t *dns;
     sres_query_t *q;
     int i;
-    
-    dns = sres_server_by_sockaddr(res, remote, remotelen);
+
+    dns = sres_server_by_socket(res, socket);
 
     if (dns) {
       time(&res->res_now);
@@ -2132,10 +2222,9 @@ sres_resolver_report_error(sres_resolver_t *res,
       for (i = 0; i < res->res_queries->qt_size; i++) {
 	q = res->res_queries->qt_table[i];
       
-	if (!q || 
-	    q->q_socket != socket ||
-	    dns != res->res_servers + q->q_i_server)
+	if (!q || dns != res->res_servers[q->q_i_server])
 	  continue;
+
 	/* Resend query/report error to application */
 	sres_resend_dns_query(res, q, 1);
 
@@ -2160,11 +2249,15 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
   sres_record_t **reply;
   sres_server_t *dns;
 
+  struct sockaddr_storage from[1];
+  socklen_t fromlen = sizeof from;
+
   SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_receive", res, socket));
 
   memset(m, 0, offsetof(sres_message_t, m_data)); 
   
-  num_bytes = recv(socket, m->m_data, sizeof (m->m_data), 0);
+  num_bytes = recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
+		       (void *)from, &fromlen);
 
   if (num_bytes <= 0) {
     SU_DEBUG_5(("%s: %s\n", "sres_receive_packet", su_strerror(su_errno())));
@@ -2177,8 +2270,6 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
 
   m->m_size = num_bytes;
 
-  time(&res->res_now);
-
   /* Decode the received message and get the matching query object */
   error = sres_decode_msg(res, m, &query, &reply);
 
@@ -2189,20 +2280,18 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
   else if (error == SRES_EDNS0_ERR) {
     dns->dns_edns = edns_not_supported;
     assert(query->q_id);
-    sres_remove_query(st, query, 0);
-    query->q_id = sres_new_id(st);
+    sres_remove_query(res, query, 0);
+    query->q_id = sres_new_id(res);
     query->q_hash = query->q_id * Q_PRIME;
     sres_qtable_append(res->res_queries, query);
-    sres_send_dns_query(st, query);
+    sres_send_dns_query(res, query);
     query->q_retry_count++;
   } 
   else if (!error && reply) {
     /* Remove the query from the pending list and notify the listener */
     sres_remove_query(res, query, 1);
-    UNLOCK(res);
     if (query->q_callback != NULL)
       (query->q_callback)(query->q_context, query, reply); 
-    LOCK(res);
     sres_free_query(res, query);
   }
   else {
@@ -2223,9 +2312,11 @@ void sres_log_response(sres_resolver_t const *res,
 #ifndef ADDRSIZE
 #define ADDRSIZE 48
 #endif
-    char host[ADDRSIZE];
+    char host[ADDRSIZE] = "*";
 
-    if (from->ss_family == AF_INET) {
+    if (from == NULL)
+      ;
+    else if (from->ss_family == AF_INET) {
       struct sockaddr_in const *sin = (void *)from;
       inet_ntop(AF_INET, &sin->sin_addr, host, sizeof host);
     } 
@@ -2235,8 +2326,6 @@ void sres_log_response(sres_resolver_t const *res,
       inet_ntop(AF_INET6, &sin6->sin6_addr, host, sizeof host);
     }
 #endif
-    else
-      strcpy(host, "*");
 
     SU_DEBUG_5(("sres_resolver_receive(%p, %p) id=%u (from [%s]:%u)\n", 
 		res, query, m->m_id, 
@@ -2259,9 +2348,11 @@ sres_decode_msg(sres_resolver_t *res,
   su_home_t *chome = CHOME(res->res_cache);
   hash_value_t hash;
   int i, err;
-  unsigned total, errorcount;
+  unsigned total, errorcount = 0;
 
   assert(res && m && return_answers);
+
+  time(&res->res_now);
 
   *qq = NULL;
   *return_answers = NULL;
@@ -2321,7 +2412,7 @@ sres_decode_msg(sres_resolver_t *res,
 
   if (err == SRES_RECORD_ERR || 
       err == SRES_NAME_ERR || 
-      err == SRES_UNIMPL_ERR) {
+      err == SRES_UNIMPL_ERR)
     errorcount = 1;
 
   total = errorcount + m->m_ancount + m->m_nscount + m->m_arcount;
@@ -2332,8 +2423,8 @@ sres_decode_msg(sres_resolver_t *res,
 
   /* Scan resource records */
   for (i = 0; i < total; i++) {
-    if (errorcount)
-      rr = error = sres_create_error_rr(res, query, err), errorcount = 0;
+    if (i < errorcount)
+      rr = error = sres_create_error_rr(res, query, err);
     else
       rr = sres_create_record(res, m);
  
@@ -2347,7 +2438,7 @@ sres_decode_msg(sres_resolver_t *res,
       if (error->sr_ttl > soa->soa_minimum && soa->soa_minimum > 10)
 	  error->sr_ttl = soa->soa_minimum;
     }
-	
+
     answers[i] = rr;
   }
 
@@ -2358,12 +2449,15 @@ sres_decode_msg(sres_resolver_t *res,
     return -1;
   }
 
-  for (i = 0; i < total; i++)
-    sres_cache_store(res->res_cache, answers[i]);
+  for (i = 0; i < total; i++) {
+    rr = answers[i];
+
     if (i < m->m_ancount + errorcount)
       rr->sr_refcount++;
     else
       answers[i] = NULL;
+
+    sres_cache_store(res->res_cache, rr, res->res_now);
   }
 
   *return_answers = answers;
@@ -2388,7 +2482,8 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m)
   ttl = m_get_uint32(m);    /* TTL */
   rdlen = m_get_uint16(m);   /* rdlength */
 
-  SU_DEBUG_9(("rr: %s %d %d %d %d\n", name, qtype, qclass, ttl, rdlen));
+  SU_DEBUG_9(("rr: %.*s %d %d %d %d\n", name_length, name, 
+	      qtype, qclass, ttl, rdlen));
 
   if (m->m_error)
     return NULL;
@@ -2397,7 +2492,7 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m)
   size_old = m->m_size; 
   m->m_size = m->m_offset + rdlen;
 
-  rr = sres_cache_alloc_record(res, name, name_length, qtype, rdlen);
+  rr = sres_cache_alloc_record(res->res_cache, name, name_length, qtype, rdlen);
   if (rr) switch(qtype) {
   case sres_type_soa:
     sres_init_rr_soa(res, rr->sr_soa, m);
@@ -2581,12 +2676,11 @@ sres_create_error_rr(sres_resolver_t *res,
 {
   sres_record_t *sr;
   char name[SRES_MAXDNAME];
-  size_t name_len;
 
-  if (!sres_toplevel(name, q->q_name))
+  if (!sres_toplevel(name, sizeof name, q->q_name))
     return NULL;
 
-  sr = sres_cache_alloc_record(res, name, strlen(name), q->q_type, 0);
+  sr = sres_cache_alloc_record(res->res_cache, name, strlen(name), q->q_type, 0);
   
   if (sr) {
     sr->sr_status = errcode;

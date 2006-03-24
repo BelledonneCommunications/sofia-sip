@@ -40,6 +40,7 @@
 #include <sofia-sip/su_tag.h>
 
 #include <sofia-resolv/sres.h>
+#include <sofia-resolv/sres_record.h>
 
 SOFIA_BEGIN_DECLS
 
@@ -63,20 +64,6 @@ int sres_resolver_destroy(sres_resolver_t *res);
 
 /* Return socket used by root */
 int sres_resolver_root_socket(sres_resolver_t *res);
-
-/** Make a DNS query. */
-sres_query_t *sres_query(sres_resolver_t *res,
-                         sres_answer_f *callback,
-                         sres_context_t *context,
-                         uint16_t type,
-                         char const *domain);
-
-/** Make a DNS query. */
-sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
-                                  sres_answer_f *callback,
-                                  sres_context_t *context,
-                                  uint16_t type,
-				  struct sockaddr const *addr);
 
 SOFIA_END_DECLS
 

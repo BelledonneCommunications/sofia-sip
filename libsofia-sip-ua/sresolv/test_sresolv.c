@@ -33,10 +33,19 @@
 
 #include "config.h"
 
-struct sres_context_s;
-#define SU_WAKEUP_ARG_T struct sres_context_s
+#if HAVE_STDINT_H
+#include <stdint.h>
+#elif HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 
-#include <sofia-sip/sresolv.h>
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
+#include <sofia-resolv/sres.h>
+#include <sofia-resolv/sres_record.h>
+
 #include <sofia-sip/su_alloc.h>
 
 #include <assert.h>
@@ -44,10 +53,20 @@ struct sres_context_s;
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <unistd.h>
+#include <errno.h>
 
 #define TSTFLAGS tstflags
 #include <sofia-sip/tstdef.h>
+
+#if HAVE_POLL
+#include <poll.h>
+#elif HAVE_SELECT
+#include <sys/select.h>
+#endif
+
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #if HAVE_ALARM
 #include <unistd.h>
@@ -63,7 +82,6 @@ struct sres_context_s
   sres_query_t    *query;
   sres_record_t  **result;
 
-  int              socket;
   pthread_mutex_t  mutex[1];
 
   int              timeout;
@@ -71,13 +89,11 @@ struct sres_context_s
   int              sinkidx;
   char const      *sinkconf;
   
-#if HAVE_SU_WAIT_H
-  su_root_t       *root;
-#else
   int              ready;
   int              n_sockets;
-  int             *sockets;
-  struct pollfd   *pollfds;
+  int              sockets[SRES_MAX_NAMESERVERS];
+#if HAVE_POLL
+  struct pollfd    fds[SRES_MAX_NAMESERVERS];
 #endif
 };
 
@@ -201,51 +217,47 @@ static unsigned offset;
   { sres_free_answers(ctx->resolver, ctx->result); ctx->result = NULL;	\
     ctx->query = NULL; run(ctx); TEST_1(ctx->query); }
 
-#if HAVE_SU_WAIT_H
-#define BREAK(ctx) (su_root_break(ctx->root))
-static void run(sres_context_t *ctx)
-{ 
-  if (ctx->timeout)
-    offset += 1 << 7;
-  
-  su_root_run(ctx->root); 
-}
-#else
-#define BREAK(ctx) (ctx->ready = 1)
-static void run(sres_context_t *ctx)
+static
+int poll_sockets(sres_context_t *ctx)
 {
   int i, n, events;
 
   n = ctx->n_sockets;
 
-  for (ctx->ready = 0; !ctx->ready; ) {
-    events = poll(ctx->pollfds, n, ctx->timeout ? 100 : 500);
+  events = poll(ctx->fds, ctx->n_sockets, ctx->timeout ? 50 : 500);
       
-    if (events) 
-      for (i = 0; i < n; i++) {
-	if (ctx->pollfds[i].revents & POLLERR)
-	  sres_resolver_error(ctx->resolver, ctx->pollfds[i].fd);
-	if (ctx->pollfds[i].revents & POLLIN)
-	  sres_resolver_receive(ctx->resolver, ctx->pollfds[i].fd);
-      }
+  if (!events)
+    return events;
+
+  for (i = 0; i < n; i++) {
+    if (ctx->fds[i].revents & POLLERR)
+      sres_resolver_error(ctx->resolver, ctx->fds[i].fd);
+    if (ctx->fds[i].revents & POLLIN)
+      sres_resolver_receive(ctx->resolver, ctx->fds[i].fd);
+  }
+  
+  return events;
+}
+
+#define BREAK(ctx) (ctx->ready = 1)
+static void run(sres_context_t *ctx)
+{
+  for (ctx->ready = 0; !ctx->ready; ) {
+    poll_sockets(ctx);
 
     if (ctx->timeout) {
       ctx->timeout <<= 1;
       offset += ctx->timeout;
     }
     
-    
     /* No harm is done (except wasted CPU) if timer is called more often */
-    sres_resolver_timer(ctx->resolver, ctx->socket); 
+    sres_resolver_timer(ctx->resolver, -1); 
   }
 }
-#endif
-
 
 int test_soa(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_soa_record_t *rr_soa;
 
@@ -253,15 +265,10 @@ int test_soa(sres_context_t *ctx)
 
   BEGIN();
 
-#if HAVE_SU_WAIT_H
-  /* Deprecated compatibility function */
   TEST_1(sres_query(res, test_answer, ctx, sres_type_soa, domain));
-#else
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_soa, domain));
-#endif
   TEST_RUN(ctx);
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_soa, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_soa, domain));
   TEST_RUN(ctx);
 
   TEST_1(result = sres_cached_answers(res, sres_type_soa, domain));
@@ -289,7 +296,6 @@ int test_soa(sres_context_t *ctx)
 int test_naptr(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_naptr_record_t *rr;
   char const *domain = "example.com";
@@ -297,7 +303,7 @@ int test_naptr(sres_context_t *ctx)
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_naptr, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_naptr, domain));
   TEST_RUN(ctx);
 
   TEST_1(result = ctx->result);
@@ -442,7 +448,6 @@ char name2048[2049] =
 int test_a(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_query_t *query;
   sres_record_t **result;
   const sres_a_record_t *rr_a;
@@ -488,23 +493,23 @@ int test_a(sres_context_t *ctx)
 
   BEGIN();
 
-  TEST_1(!sres_query_make(res, test_answer, ctx, s, sres_type_a, name1025));
+  TEST_1(!sres_query(res, test_answer, ctx, sres_type_a, name1025));
 
   name1025[1024] = '\0';
 
-  TEST_1(!sres_query_make(res, test_answer, ctx, s, sres_type_a, name1025));
+  TEST_1(!sres_query(res, test_answer, ctx, sres_type_a, name1025));
 
   name1025[1023] = '\0';
 
-  TEST_1(!sres_query_make(res, test_answer, ctx, s, sres_type_a, name1025));
+  TEST_1(!sres_query(res, test_answer, ctx, sres_type_a, name1025));
 
-  TEST_1(!sres_query_make(res, test_answer, ctx, s, sres_type_a, name2048));
+  TEST_1(!sres_query(res, test_answer, ctx, sres_type_a, name2048));
 
-  query = sres_query_make(res, test_answer, ctx, s, sres_type_a, longname);
+  query = sres_query(res, test_answer, ctx, sres_type_a, longname);
   TEST_1(query);
   sres_query_bind(query, NULL, NULL);
   
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_a, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a, domain));
 
   TEST_RUN(ctx);
 
@@ -514,6 +519,7 @@ int test_a(sres_context_t *ctx)
   TEST(rr_a->a_record->r_type, sres_type_a);
   TEST(rr_a->a_record->r_class, sres_class_in);
   TEST(rr_a->a_record->r_ttl, 60);
+
   TEST_S(inet_ntoa(rr_a->a_addr), "194.2.188.133");
 
   sres_free_answers(res, ctx->result), ctx->result = NULL;
@@ -529,7 +535,7 @@ int test_a(sres_context_t *ctx)
   sres_free_answers(res, result);
 
   /* Try sub-queries */
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_a, "sip00"));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a, "sip00"));
 
   TEST_RUN(ctx);
 
@@ -549,7 +555,7 @@ int test_a(sres_context_t *ctx)
   sres_free_answers(res, ctx->result), ctx->result = NULL;
 
   /* Try missing domain */
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_a, 
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a, 
 			 "no-sip.example.com"));
 
   TEST_RUN(ctx);
@@ -564,7 +570,7 @@ int test_a(sres_context_t *ctx)
 
   /* Try domain without A record => 
      we should get a record with SRES_RECORD_ERR */
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_a, 
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a, 
 			 "aaaa.example.com"));
 
   TEST_RUN(ctx);
@@ -584,7 +590,6 @@ int test_a(sres_context_t *ctx)
 int test_a6(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_a6_record_t *rr_a6;
   char buf[50] = {0};
@@ -592,7 +597,7 @@ int test_a6(sres_context_t *ctx)
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_a6, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a6, domain));
   TEST_RUN(ctx);
 
   TEST_1(result = ctx->result);
@@ -631,7 +636,6 @@ int test_a6(sres_context_t *ctx)
 int test_a6_prefix(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_a6_record_t *rr_a6;
   char buf[50] = {0};
@@ -639,7 +643,7 @@ int test_a6_prefix(sres_context_t *ctx)
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_a6, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a6, domain));
   TEST_RUN(ctx);
 
   TEST_1(result = ctx->result);
@@ -677,7 +681,6 @@ int test_a6_prefix(sres_context_t *ctx)
 int test_aaaa(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_aaaa_record_t *rr_aaaa;
   char buf[50] = {0};
@@ -685,7 +688,7 @@ int test_aaaa(sres_context_t *ctx)
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_aaaa, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_aaaa, domain));
   TEST_RUN(ctx);
 
   TEST_1(result = ctx->result);
@@ -718,7 +721,6 @@ int test_aaaa(sres_context_t *ctx)
 int test_srv(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_srv_record_t *rr;
   char const *domain = "_sips._tcp.example.com";
@@ -726,7 +728,7 @@ int test_srv(sres_context_t *ctx)
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_srv, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_srv, domain));
   TEST_RUN(ctx);
 
   TEST_1(result = ctx->result);
@@ -815,14 +817,13 @@ int test_srv(sres_context_t *ctx)
 int test_cname(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_cname_record_t *rr;
   char const *domain = "sip.example.com";
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_a, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a, domain));
   TEST_RUN(ctx);
 
   TEST_1(result = ctx->result);
@@ -840,14 +841,13 @@ int test_cname(sres_context_t *ctx)
 int test_ptr_ipv4(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_ptr_record_t *rr;
   char const *domain = "1.0.0.127.in-addr.arpa";
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_ptr, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_ptr, domain));
   TEST_RUN(ctx);
 
   result = ctx->result;
@@ -866,7 +866,6 @@ int test_ptr_ipv4(sres_context_t *ctx)
 int test_ptr_ipv4_sockaddr(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   sres_query_t *query;
   const sres_ptr_record_t *rr;
@@ -877,13 +876,7 @@ int test_ptr_ipv4_sockaddr(sres_context_t *ctx)
 
   BEGIN();
 
-#if HAVE_SU_WAIT_H
   query = sres_query_sockaddr(res, test_answer, ctx,
-			      sres_qtype_any, (struct sockaddr*)&sin);
-  TEST_1(query != NULL);
-  sres_query_bind(query, NULL, NULL);
-#endif
-  query = sres_query_make_sockaddr(res, test_answer, ctx, s,
 				   sres_qtype_any, (struct sockaddr*)&sin);
   TEST_1(query != NULL);
 
@@ -907,7 +900,6 @@ int test_ptr_ipv4_sockaddr(sres_context_t *ctx)
 int test_ptr_ipv6(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_ptr_record_t *rr;
   char const *domain = 
@@ -915,7 +907,7 @@ int test_ptr_ipv6(sres_context_t *ctx)
 
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s, sres_type_ptr, domain));
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_ptr, domain));
   TEST_RUN(ctx);
 
   result = ctx->result;
@@ -935,7 +927,6 @@ int test_ptr_ipv6(sres_context_t *ctx)
 int test_ptr_ipv6_sockaddr(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_ptr_record_t *rr;
   struct sockaddr_in6 sin6 = {0};
@@ -948,7 +939,7 @@ int test_ptr_ipv6_sockaddr(sres_context_t *ctx)
   sin6.sin6_family = AF_INET6;
 
   ctx->query = 
-    sres_query_make_sockaddr(res, test_answer, ctx, s,
+    sres_query_sockaddr(res, test_answer, ctx,
 			     sres_type_ptr, (struct sockaddr*)&sin6);
   TEST_1(ctx->query != NULL);
 
@@ -973,7 +964,6 @@ int test_ptr_ipv6_sockaddr(sres_context_t *ctx)
 int test_cache(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   int ok = 0;
   sres_record_t *sort_array[3];
   sres_record_t **result;
@@ -992,20 +982,20 @@ int test_cache(sres_context_t *ctx)
 
   BEGIN();
 
-  sres_query_make(res, test_answer_multi, ctx, s,
+  sres_query(res, test_answer_multi, ctx,
 		  sres_qtype_any, "example.com");
 
-  sres_query_make(res, test_answer_multi, ctx, s,
+  sres_query(res, test_answer_multi, ctx,
 		  sres_qtype_any, "_sips._tcp.example.com");
 
-  sres_query_make(res, test_answer_multi, ctx, s, 
+  sres_query(res, test_answer_multi, ctx, 
 		  sres_qtype_any, "sip.example.com");
 
-  sres_query_make(res, test_answer_multi, ctx, s,
+  sres_query(res, test_answer_multi, ctx,
 		  sres_qtype_any, "subnet.example.com");
 
 #if HAVE_SIN6
-  sres_query_make(res, test_answer_multi, ctx, s,
+  sres_query(res, test_answer_multi, ctx,
 		  sres_type_aaaa, "mgw02.example.com");
 
   inet_pton(AF_INET6, 
@@ -1014,7 +1004,7 @@ int test_cache(sres_context_t *ctx)
 
   sin6.sin6_family = AF_INET6;
 
-  query = sres_query_make_sockaddr(res, test_answer_multi, ctx, s,
+  query = sres_query_sockaddr(res, test_answer_multi, ctx,
 				   sres_qtype_any, (struct sockaddr *)&sin6);
 
   TEST_1(query != NULL);
@@ -1256,14 +1246,13 @@ int test_cache(sres_context_t *ctx)
 int test_query_one_type(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   const sres_aaaa_record_t *rr_aaaa;
   char buf[50] = {0};
   
   BEGIN();
 
-  TEST_1(sres_query_make(res, test_answer, ctx, s,
+  TEST_1(sres_query(res, test_answer, ctx,
 			 sres_type_aaaa, "mgw02.example.com"));
   TEST_RUN(ctx);
   TEST_1(result = ctx->result);
@@ -1328,6 +1317,7 @@ int sink_make(sres_context_t *ctx)
   END();
 }
 
+#if 0
 int recv_sink(su_root_magic_t *rm, su_wait_t *w, sres_context_t *ctx)
 {
   union {
@@ -1364,19 +1354,18 @@ int sink_deinit(sres_context_t *ctx)
 
   END();
 }
-
+#endif
 
 int test_timeout(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
-  int s = ctx->socket;
   sres_record_t **result;
   /* const sres_soa_record_t *rr_soa; */
   char const *domain = "test";
 
   BEGIN();
 
-  sres_query_make(res, test_answer, ctx, s, sres_type_a, domain);
+  sres_query(res, test_answer, ctx, sres_type_a, domain);
 
   ctx->timeout = 1;
   TEST_RUN(ctx);
@@ -1460,7 +1449,7 @@ int test_expiration(sres_context_t *ctx)
 
   offset = 3600;		/* Time suddenly proceeds by an hour.. */
 
-  sres_resolver_timer(res, ctx->socket);
+  sres_resolver_timer(res, -1);
 
   result = sres_cached_answers(res, sres_qtype_any, domain);
 
@@ -1553,7 +1542,6 @@ int test_net(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
   sres_query_t *q = NULL;
-  int s = ctx->socket;
   int c = ctx->sink;
   struct sockaddr_storage ss[1];
   struct sockaddr *sa = (void *)ss;
@@ -1579,7 +1567,7 @@ int test_net(sres_context_t *ctx)
   for (i = 1; i < binlen; i++) {
     if (!q) {
       /* We got an error => make new query */
-      TEST_1(q = sres_query_make(res, test_answer, ctx, s, /* Send query */
+      TEST_1(q = sres_query(res, test_answer, ctx, /* Send query */
 				 sres_type_naptr, domain));
       TEST_1((n = recvfrom(c, query, sizeof query, 0, sa, &salen)) != -1);
       memcpy(bin, query, 2); /* Copy ID */
@@ -1595,7 +1583,10 @@ int test_net(sres_context_t *ctx)
       bin[3] ^= SRES_FORMAT_ERR;
     if (n == -1)
       perror("sendto");
-    sres_resolver_receive(res, s);
+
+    while (!poll_sockets(ctx))
+      ;
+
     if (ctx->query)
       q = NULL;
   }
@@ -1604,7 +1595,7 @@ int test_net(sres_context_t *ctx)
   for (i = 1; i <= binlen; i++) {
     if (!q) {
       /* We got an error => make new query */
-      TEST_1(q = sres_query_make(res, test_answer, ctx, s, /* Send query */
+      TEST_1(q = sres_query(res, test_answer, ctx, /* Send query */
 				 sres_type_naptr, domain));
       TEST_1((n = recvfrom(c, query, sizeof query, 0, sa, &salen)) != -1);
       memcpy(bin, query, 2); /* Copy ID */
@@ -1612,7 +1603,9 @@ int test_net(sres_context_t *ctx)
     n = sendto(c, bin, i, 0, sa, salen);
     if (n == -1)
       perror("sendto");
-    sres_resolver_receive(res, s);
+    while (!poll_sockets(ctx))
+      ;
+
     if (ctx->query)
       q = NULL;
   }
@@ -1622,10 +1615,6 @@ int test_net(sres_context_t *ctx)
   END();
 }
 
-int updcb(void *userdate, sres_resolver_t *sres)
-{
-  return 0;
-}
 
 /* Test API function argument validation */
 static
@@ -1647,7 +1636,7 @@ int test_api_errors(sres_context_t *noctx)
   TEST_1(template);
   
   TEST_1(res = sres_resolver_new(NULL));
-  sres_resolver_unref(res);
+  TEST_VOID(sres_resolver_unref(res));
 
 #ifndef _WIN32
   fd = mkstemp(template); TEST_1(fd != -1);
@@ -1666,62 +1655,29 @@ int test_api_errors(sres_context_t *noctx)
 
   unlink(template);
   
-  TEST_1(sres_resolver_sockets(NULL, NULL, 20) == -1);
-  TEST_1(sres_resolver_sockets(res, NULL, 20) >= 1);
-  TEST_1(sres_resolver_sockets(res, sockets, 20) >= 1);
   s = sockets[0];
   
   TEST(sres_resolver_ref(NULL), NULL);
   TEST(errno, EFAULT);
   sres_resolver_unref(NULL);
 
-  TEST(sres_resolver_add_mutex(NULL, NULL, NULL, NULL), -1);
+  TEST(sres_resolver_set_userdata(NULL, NULL), NULL);
   TEST(errno, EFAULT);
 
-  TEST(sres_resolver_set_userdata(NULL, NULL, NULL), NULL);
-  TEST(errno, EFAULT);
+  TEST(sres_resolver_get_userdata(NULL), NULL);
 
-  TEST(sres_resolver_get_userdata(NULL, NULL), NULL);
-
-  TEST(sres_resolver_get_userdata(res, updcb), NULL);
-  TEST(sres_resolver_get_userdata(res, NULL), NULL);
-  TEST(sres_resolver_set_userdata(res, NULL, sa), NULL);
-  TEST(sres_resolver_get_userdata(res, NULL), sa);
-  TEST(sres_resolver_set_userdata(res, updcb, sa), sa);
-  TEST(sres_resolver_get_userdata(res, updcb), sa);
-  TEST(sres_resolver_get_userdata(res, NULL), NULL);
-  TEST(sres_resolver_set_userdata(res, updcb, NULL), sa); 
-  TEST(sres_resolver_get_userdata(res, updcb), NULL);
-
-#if HAVE_SU_WAIT_H
-  errno = 0;
-  TEST(sres_resolver_create(NULL, NULL, TAG_END()), NULL);
-  TEST(errno, EFAULT); errno = 0;
-  TEST(sres_resolver_root_socket(NULL), -1);
-  TEST(errno, EFAULT); errno = 0;
-  TEST(sres_query(NULL, test_answer, ctx, sres_type_a, "example.com"), NULL);
-  TEST(errno, EFAULT); errno = 0;
-  TEST(sres_query_sockaddr(NULL, test_answer, ctx, sres_qtype_any, sa), NULL);
-  TEST(errno, EFAULT); errno = 0;
-  TEST(sres_resolver_destroy(NULL), -1);
-  TEST(errno, EFAULT); errno = 0;
-
-  TEST(sres_resolver_root_socket(res), -1);
-  TEST(errno, EINVAL); errno = 0;
-  TEST(sres_query(res, test_answer, ctx, sres_type_a, "example.com"), NULL);
-  TEST(errno, EINVAL); errno = 0;
-  TEST(sres_query_sockaddr(res, test_answer, ctx, sres_qtype_any, sa), NULL);
-  TEST(errno, EINVAL); errno = 0;
-  TEST(sres_resolver_destroy(res), -1);	/* res should be alive after this! */
-  TEST(errno, EINVAL); errno = 0;
-#endif  
+  TEST(sres_resolver_get_userdata(res), NULL);
+  TEST(sres_resolver_set_userdata(res, sa), sa);
+  TEST(sres_resolver_get_userdata(res), sa);
+  TEST(sres_resolver_set_userdata(res, NULL), NULL); 
+  TEST(sres_resolver_get_userdata(res), NULL);
 
   errno = 0;
-  TEST(sres_query_make(NULL, test_answer, ctx, s, sres_type_a, "com"), NULL);
+  TEST(sres_query(NULL, test_answer, ctx, sres_type_a, "com"), NULL);
   TEST(errno, EFAULT); errno = 0;
-  TEST(sres_query_make(res, test_answer, ctx, s, sres_type_a, NULL), NULL);
+  TEST(sres_query(res, test_answer, ctx, sres_type_a, NULL), NULL);
   TEST(errno, EFAULT); errno = 0;
-  TEST(sres_query_make_sockaddr(res, test_answer, ctx, s,
+  TEST(sres_query_sockaddr(res, test_answer, ctx,
 				sres_qtype_any, sa), NULL);
   TEST(errno, EAFNOSUPPORT); errno = 0;
 
@@ -1753,47 +1709,24 @@ int test_init(sres_context_t *ctx, char const *conf_file)
 {
   BEGIN();
 
+  sres_resolver_t *res;
+  int i, n;
+
   ctx->query = NULL, ctx->result = NULL;
 
-#if HAVE_SU_WAIT_H
-  su_init();
-  TEST_1(ctx->root = su_root_create(NULL));
-  ctx->resolver = sres_resolver_create(ctx->root, conf_file, TAG_END());
-  TEST_1(ctx->resolver);
-
-  ctx->socket = sres_resolver_root_socket(ctx->resolver);
-#elif 1
-  {
-    sres_resolver_t *res;
-    int i, n;
-
-    TEST_1(ctx->resolver = res = sres_resolver_new(conf_file));
-    n = sres_resolver_sockets(res, NULL, 0);
-    ctx->n_sockets = n;
-    TEST_1(n > 0);
-    TEST_1(ctx->sockets = calloc(n, sizeof(*ctx->sockets)));
-    TEST_1(ctx->pollfds = calloc(n, sizeof(*ctx->pollfds)));
-    
-    TEST(sres_resolver_sockets(res, ctx->sockets, n), n);
-    
-    for (i = 0; i < n; i++) {
-      ctx->pollfds[i].fd = ctx->sockets[i];
-      ctx->pollfds[i].events = POLLIN | POLLERR;
-    }
-
-    ctx->socket = ctx->sockets[0];
-
+  TEST_1(ctx->resolver = res = sres_resolver_new(conf_file));
+  n = sres_resolver_sockets(res, NULL, 0);
+  ctx->n_sockets = n;
+  TEST_1(n < SRES_MAX_NAMESERVERS);
+  TEST(sres_resolver_sockets(res, ctx->sockets, n), n);
+  
+  for (i = 0; i < n; i++) {
+    ctx->fds[i].fd = ctx->sockets[i];
+    ctx->fds[i].events = POLLIN | POLLERR;
   }
-#endif
-
+  
   TEST(sres_resolver_ref(ctx->resolver), ctx->resolver);
   sres_resolver_unref(ctx->resolver);
-
-  TEST_1(pthread_mutex_init(ctx->mutex, NULL) == 0);
-  TEST_1(sres_resolver_add_mutex(ctx->resolver,
-				 ctx->mutex,
-				 (void *)pthread_mutex_lock,
-				 (void *)pthread_mutex_unlock) == 0);
 
   END();
 }
@@ -1803,26 +1736,13 @@ int test_deinit(sres_context_t *ctx)
 {
   offset += 2 * 36000000;
 
-  sres_resolver_timer(ctx->resolver, ctx->socket); /* Zap everything */
+  sres_resolver_timer(ctx->resolver, -1); /* Zap everything */
 
   sres_free_answers(ctx->resolver, ctx->result); ctx->result = NULL;
 
   su_free(ctx->home, (void *)ctx->sinkconf); ctx->sinkconf = NULL;
 
-#if HAVE_SU_WAIT_H
-  sres_resolver_destroy(ctx->resolver), ctx->resolver = 0;
-  su_root_destroy(ctx->root), ctx->root = 0;
-  su_deinit();
-#else
-  {
-    int i;
-    for (i = 0; i < ctx->n_sockets; i++)
-      su_close(ctx->sockets[i]);
-    sres_resolver_unref(ctx->resolver), ctx->resolver = 0;
-    free(ctx->sockets);
-    free(ctx->pollfds);
-  }
-#endif
+  sres_resolver_unref(ctx->resolver);
 
   offset = 0;
   memset(ctx, 0, sizeof ctx);
@@ -1860,8 +1780,7 @@ port $port
   printf("%s:%u: %s test should be updated\n", 
 	 __FILE__, __LINE__, __func__);
 #else
-  TEST(sres_query_make(res, test_answer, ctx, socket, 
-		       sres_type_a, "example.com"), NULL);
+  TEST(sres_query(res, test_answer, ctx, sres_type_a, "example.com"), NULL);
 #endif
     
   sres_resolver_unref(ctx->resolver);
@@ -1937,8 +1856,6 @@ int main(int argc, char **argv)
       usage();
   }
 
-  su_init();
-
   if (o_attach) {
     char buf[8];
 
@@ -1958,6 +1875,7 @@ int main(int argc, char **argv)
     su_log_soft_set_level(sresolv_log, 0);
   }
 
+#if 0
   if (sink_make(ctx) == 0)
   {
     error |= test_init(ctx, ctx->sinkconf);
@@ -1967,6 +1885,7 @@ int main(int argc, char **argv)
     error |= sink_deinit(ctx);
     error |= test_deinit(ctx);
   }
+#endif
 
   offset = 0;
 
