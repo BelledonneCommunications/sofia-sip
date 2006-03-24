@@ -47,6 +47,7 @@
 #include "sofia-resolv/sres.h"
 #include "sofia-resolv/sres_cache.h"
 #include "sofia-resolv/sres_record.h"
+#include "sofia-resolv/sres_async.h"
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
@@ -126,6 +127,7 @@ struct sres_resolver_s {
 struct sres_config {
   su_home_t c_home[1];
 
+  time_t c_update;
   time_t c_modified;
   char const *c_filename;
 
@@ -263,8 +265,6 @@ sres_has_search_domain(sres_resolver_t *res)
 }
 
 static void sres_resolver_destructor(void *);
-
-static int sres_resolver_update(sres_resolver_t *res);
 
 static sres_server_t **sres_servers_new(sres_resolver_t *res,
 				       sres_config_t const *c);
@@ -519,7 +519,7 @@ sres_resolver_new_with_cache_va(char const *conf_file_path,
   else if (sres_qtable_resize(res->res_home, res->res_queries, 0) < 0) {
     perror("sres: res_qtable_resize");
   }
-  else if (sres_resolver_update(res) < 0) {
+  else if (sres_resolver_update(res, 1) < 0) {
     perror("sres: res_qtable_resize");
   }
   else {
@@ -556,10 +556,14 @@ void *
 sres_resolver_set_userdata(sres_resolver_t *res, 
 			   void *userdata)
 {
+  void *old;
+
   if (!res)
     return su_seterrno(EFAULT), (void *)NULL;
 
-  return res->res_userdata = userdata;
+  old = res->res_userdata, res->res_userdata = userdata;
+
+  return old;
 }
 
 /**Get userdata pointer.
@@ -600,7 +604,7 @@ sres_resolver_set_async(sres_resolver_t *res,
     
   res->res_async = async;
   res->res_updcb = callback;
-  res->res_update_all = update_all != 0;
+  res->res_update_all = callback && update_all != 0;
 
   return async;
 }
@@ -635,7 +639,7 @@ sres_query(sres_resolver_t *res,
   size_t dlen;
   int enough_dots;
 
-  SU_DEBUG_9(("sres_query_make() called\n"));
+  SU_DEBUG_9(("sres_query() called\n"));
 
   if (res == NULL || domain == NULL)
     return su_seterrno(EFAULT), (void *)NULL;
@@ -649,7 +653,7 @@ sres_query(sres_resolver_t *res,
 
   enough_dots = strchr(domain, '.') != NULL;
 
-  time(&res->res_now);
+  sres_resolver_update(res, 0);
 
   query = sres_query_alloc(res, callback, context, type, domain);
 
@@ -719,6 +723,9 @@ sres_query_sockaddr(sres_resolver_t *res,
 {
   char name[80]; 
 
+  if (!res || !addr)
+    return su_seterrno(EFAULT), (void *)NULL;
+
   if (!sres_sockaddr2string(res, name, sizeof(name), addr))
     return NULL;
 
@@ -770,6 +777,9 @@ sres_query_make_sockaddr(sres_resolver_t *res,
 			 struct sockaddr const *addr)
 {
   char name[80]; 
+
+  if (!res || !addr)
+    return su_seterrno(EFAULT), (void *)NULL;
 
   if (socket == -1)
     return errno = EINVAL, NULL;
@@ -945,6 +955,9 @@ sres_resolver_destructor(void *arg)
   res->res_cache = NULL;
 
   sres_servers_unref(res, res->res_servers);
+
+  if (res->res_updcb)
+    res->res_updcb(res->res_async, -1, -1);
 }
 
 /*
@@ -1219,16 +1232,23 @@ static int sres_parse_options(sres_config_t *c, char const *value);
 static int sres_parse_nameserver(sres_config_t *c, char const *server);
 static time_t sres_config_timestamp(sres_config_t const *c);
 
-static
-int sres_resolver_update(sres_resolver_t *res)
+/** Update configuration
+ *
+ */
+int sres_resolver_update(sres_resolver_t *res, int always)
 {
   sres_config_t *previous, *c = NULL;
   sres_server_t **servers, **old_servers;
 
   previous = res->res_config;
-  
-  if (previous && previous->c_modified == sres_config_timestamp(previous))
+
+  time(&res->res_now);
+
+  if (!always && previous && 
+      (res->res_now < previous->c_update ||
+       sres_config_timestamp(previous) == previous->c_modified)) {
     return 0;
+  }
 
   c = sres_parse_resolv_conf(res);
   if (!c)
@@ -1246,6 +1266,8 @@ int sres_resolver_update(sres_resolver_t *res)
   res->res_i_server = 0;
   res->res_n_servers = sres_servers_count(servers);
   res->res_servers = servers;
+
+  c->c_update = res->res_now + 5; /* Do not try to read for 5 sec?  */
   
   sres_servers_unref(res, old_servers);
   su_home_unref(previous->c_home);
@@ -1362,9 +1384,6 @@ int sres_parse_config(sres_config_t *c, FILE *f)
     if (stat(c->c_filename, &st) == 0)
       c->c_modified = st.st_mtime;
   }
-
-  if (c->c_modified == 0)
-    time(&c->c_modified);
 
   if (localdomain)
     c->c_search[0] = localdomain;
@@ -1555,13 +1574,13 @@ void sres_servers_unref(sres_resolver_t *res,
     if (!servers[i])
       break;
 
-    if (servers[i]->dns_socket) {
+    if (servers[i]->dns_socket != -1) {
       if (res->res_updcb)
 	res->res_updcb(res->res_async, -1, servers[i]->dns_socket);
       su_close(servers[i]->dns_socket);
     }
   }
-  
+
   su_free(res->res_home, servers);
 }
 
@@ -1851,6 +1870,8 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
 
   now = time(&res->res_now);
 
+  SU_DEBUG_9(("sres_resolver_timer() called at %lu\n", (long) now));
+
   if (res->res_queries->qt_used) {
     /** Every time it is called it goes through all query structures, and
      * retransmits all the query messages, which have not been answered yet.
@@ -1969,7 +1990,6 @@ sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
     memset(sin->sin_zero, 0, sizeof (sin->sin_zero));
   }
 }
-
 
 #if HAVE_IP_RECVERR || HAVE_IPV6_RECVERR
 #include <linux/types.h>

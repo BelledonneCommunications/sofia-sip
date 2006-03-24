@@ -103,17 +103,7 @@ typedef struct sres_query_s         sres_query_t;
 
 struct sockaddr;
 
-/** Prototype for callback function.
- *
- * This kind of function is called when a query is completed. The called
- * function is responsible for freeing the list of answers and it must
- * (eventually) call sres_free_answers().
- */
-typedef void sres_answer_f(sres_context_t *context, 
-			   sres_query_t *query,
-			   sres_record_t **answers);
-
-/** Create an resolver object. */
+/** New resolver object. */
 sres_resolver_t *sres_resolver_new(char const *resolv_conf_path);
 
 sres_resolver_t *
@@ -130,48 +120,24 @@ sres_resolver_t *sres_resolver_ref(sres_resolver_t *res);
 
 void sres_resolver_unref(sres_resolver_t *res);
 
+/** Re-read resolv.conf if needed */
+int sres_resolver_update(sres_resolver_t *res, int always);
+
 /** Set userdata pointer. */
 void *sres_resolver_set_userdata(sres_resolver_t *res, void *userdata);
 
 /** Get userdata pointer. */
 void *sres_resolver_get_userdata(sres_resolver_t const *res);
 
-/** Prototype for update function.
+/** Prototype for callback function.
  *
- * This kind of function is called when the nameserver configuration has
- * been updated. 
- *
- * If the old_socket is not -1, it indicates that old_socket will be closed
- * and it should be removed from poll() or select() set.
- *
- * If the new_socket is not -1, it indicates that resolver has created new
- * socket that should be added to the poll() or select() set.
+ * This kind of function is called when a query is completed. The called
+ * function is responsible for freeing the list of answers and it must
+ * (eventually) call sres_free_answers().
  */
-typedef int sres_update_f(sres_async_t *async,
-			  int new_socket,
-			  int old_socket);
-
-/** Set asynchronous operation data. */
-sres_async_t *sres_resolver_set_async(sres_resolver_t *res, 
-				      sres_update_f *update,
-				      sres_async_t *async,
-				      int update_all);
-
-/** Get async operation data. */
-sres_async_t *sres_resolver_get_async(sres_resolver_t const *res,
-				      sres_update_f *update);
-
-/** Create sockets for resolver. */
-int sres_resolver_sockets(sres_resolver_t *res, int *sockets, int n);
-
-/** Resolver timer function. */
-void sres_resolver_timer(sres_resolver_t *res, int dummy);
-
-/** Receive DNS response from socket. */
-int sres_resolver_receive(sres_resolver_t *res, int socket);
-
-/** Receive error message from socket. */
-int sres_resolver_error(sres_resolver_t *res, int socket);
+typedef void sres_answer_f(sres_context_t *context, 
+			   sres_query_t *query,
+			   sres_record_t **answers);
 
 /** Make a DNS query. */
 sres_query_t *sres_query(sres_resolver_t *res,
@@ -208,19 +174,6 @@ void sres_query_bind(sres_query_t *q,
                      sres_answer_f *callback,
                      sres_context_t *context);
 
-/** Send a query, return results. */
-int sres_blocking_query(sres_resolver_t *res,
-			uint16_t type,
-			char const *domain,
-			sres_record_t ***return_records);
-
-/** Send a a reverse DNS query, return results. */
-int sres_blocking_query_sockaddr(sres_resolver_t *res,
-				 uint16_t type,
-				 struct sockaddr const *addr,
-				 sres_record_t ***return_records);
-
-/** Get a list of matching records from cache. */
 sres_record_t **sres_cached_answers(sres_resolver_t *res,
 				    uint16_t type,
 				    char const *domain);
@@ -229,6 +182,19 @@ sres_record_t **sres_cached_answers_sockaddr(sres_resolver_t *res,
                                              uint16_t type,
 					     struct sockaddr const *addr);
 
+/** Send a query, wait for answer, return results. */
+int sres_blocking_query(sres_resolver_t *res,
+			uint16_t type,
+			char const *domain,
+			sres_record_t ***return_records);
+
+/** Send a a reverse DNS query, wait for answer, return results. */
+int sres_blocking_query_sockaddr(sres_resolver_t *res,
+				 uint16_t type,
+				 struct sockaddr const *addr,
+				 sres_record_t ***return_records);
+
+/** Get a list of matching records from cache. */
 /** Sort the list of records */
 int sres_sort_answers(sres_resolver_t *res, sres_record_t **answers);
 

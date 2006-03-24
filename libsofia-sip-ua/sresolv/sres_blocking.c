@@ -46,6 +46,7 @@ typedef struct sres_blocking_context_s sres_blocking_context_t;
 #define SRES_ASYNC_T struct sres_blocking_s
 
 #include "sofia-resolv/sres.h"
+#include "sofia-resolv/sres_async.h"
 
 #if HAVE_POLL
 #include <poll.h>

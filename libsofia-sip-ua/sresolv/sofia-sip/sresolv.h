@@ -23,7 +23,7 @@
  */
 
 #ifndef SRESOLV_SOFIA_H 
-/** Defined when <sofia-sip/sresolv_sofia.h> has been included. */
+/** Defined when <sofia-sip/sresolv.h> has been included. */
 #define SRESOLV_SOFIA_H
 
 /**
@@ -41,6 +41,7 @@
 
 #include <sofia-resolv/sres.h>
 #include <sofia-resolv/sres_record.h>
+#include <sofia-resolv/sres_async.h>
 
 SOFIA_BEGIN_DECLS
 
@@ -62,7 +63,7 @@ sres_resolver_t *sres_resolver_create(su_root_t *root,
 /** Destroy a resolver object. */
 int sres_resolver_destroy(sres_resolver_t *res);
 
-/* Return socket used by root */
+/* Return socket used by root. @deprecated */
 int sres_resolver_root_socket(sres_resolver_t *res);
 
 SOFIA_END_DECLS

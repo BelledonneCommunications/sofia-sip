@@ -28,9 +28,9 @@ typedef struct sres_sofia_s sres_sofia_t;
 typedef struct sres_sofia_register_s sres_sofia_register_t;
 
 struct sres_sofia_register_s {
-  sres_sofia_t *srsr_ptr;
-  int srsr_socket;
-  int srsr_index;		/**< Registration index */
+  sres_sofia_t *reg_ptr;
+  int reg_socket;
+  int reg_index;		/**< Registration index */
 };
 
 struct sres_sofia_s {
@@ -83,6 +83,7 @@ sres_resolver_create(su_root_t *root,
 
     srs->srs_resolver = res;
     srs->srs_root = root;
+    srs->srs_socket = -1;
 
     sres_resolver_set_async(res, sres_sofia_update, srs, 0);
     
@@ -131,18 +132,24 @@ static int sres_sofia_update(sres_sofia_t *srs,
 {
   char const *what = NULL;
   su_wait_t wait[1];
-  sres_sofia_register_t *srsr = NULL;
-  sres_sofia_register_t *old_srsr = NULL;
+  sres_sofia_register_t *reg = NULL;
+  sres_sofia_register_t *old_reg = NULL;
   int i, index = -1, error = 0;
   int N = SRES_MAX_NAMESERVERS;
 
+  SU_DEBUG_9(("sres_sofia_update(%p, %d, %d)\n", srs, new_socket, old_socket));
+
+  if (srs == NULL)
+    return 0;
+
   if (old_socket == new_socket) {
     if (old_socket == -1) {
+      sres_resolver_set_async(srs->srs_resolver, sres_sofia_update, NULL, 0);
       /* Destroy srs */
       for (i = 0; i < N; i++) {
-	if (!srs->srs_reg[i].srsr_index)
+	if (!srs->srs_reg[i].reg_index)
 	  continue;
-	su_root_deregister(srs->srs_root, srs->srs_reg[i].srsr_index);
+	su_root_deregister(srs->srs_root, srs->srs_reg[i].reg_index);
 	memset(&srs->srs_reg[i], 0, sizeof(srs->srs_reg[i]));
       }
       su_timer_destroy(srs->srs_timer), srs->srs_timer = NULL;
@@ -153,55 +160,57 @@ static int sres_sofia_update(sres_sofia_t *srs,
 
   if (old_socket != -1)
     for (i = 0; i < N; i++)
-      if ((srs->srs_reg + i)->srsr_socket == old_socket) {
-	old_srsr = srs->srs_reg + i;
+      if ((srs->srs_reg + i)->reg_socket == old_socket) {
+	old_reg = srs->srs_reg + i;
 	break;
       }
 
   if (new_socket != -1) {
-    if (old_srsr == NULL) {
+    if (old_reg == NULL) {
       for (i = 0; i < N; i++) {
-	if (!(srs->srs_reg + i)->srsr_ptr)
+	if (!(srs->srs_reg + i)->reg_ptr)
 	  break;
       }
       if (i > N)
 	return su_seterrno(ENOMEM);
 
-      srsr = srs->srs_reg + i;
+      reg = srs->srs_reg + i;
     }
     else 
-      srsr = old_srsr;
+      reg = old_reg;
   }
 
-  if (srsr) {
+  if (reg) {
     if (su_wait_create(wait, new_socket, SU_WAIT_IN | SU_WAIT_ERR) == -1) {
-      srsr = NULL;
+      reg = NULL;
       what = "su_wait_create";
       error = su_errno();
     }
 
-    if (srsr)
-      index = su_root_register(srs->srs_root, wait, sres_sofia_poll, srsr, 0);
+    if (reg)
+      index = su_root_register(srs->srs_root, wait, sres_sofia_poll, reg, 0);
 
     if (index < 0) {
-      srsr = NULL;
+      reg = NULL;
       what = "su_root_register";
       error = su_errno();
       su_wait_destroy(wait);
     }
   }
 
-  if (old_srsr) {
-    srsr->srsr_socket = -1;
-    su_root_deregister(srs->srs_root, old_srsr->srsr_index);
-    memset(old_srsr, 0, sizeof *old_srsr);
+  if (old_reg) {
+    if (old_socket == srs->srs_socket)
+      srs->srs_socket = -1;
+    su_root_deregister(srs->srs_root, old_reg->reg_index);
+    memset(old_reg, 0, sizeof *old_reg);
   }
 
-  if (srsr) {
+  if (reg) {
     srs->srs_socket = new_socket;
-    srsr->srsr_ptr = srs;
-    srsr->srsr_socket = new_socket;
-    srsr->srsr_index = index;
+
+    reg->reg_ptr = srs;
+    reg->reg_socket = new_socket;
+    reg->reg_index = index;
   }
 
   if (!what)
@@ -213,7 +222,7 @@ static int sres_sofia_update(sres_sofia_t *srs,
 }
 
 
-/** Return socket registered to su_root_t object.
+/** Return a socket registered to su_root_t object.
  *
  * @retval sockfd if succesful
  * @retval -1 upon an error
@@ -230,23 +239,30 @@ int sres_resolver_root_socket(sres_resolver_t *res)
   if (res == NULL)
     return su_seterrno(EFAULT);
 
-  srs = sres_resolver_get_userdata(res);
+  srs = sres_resolver_get_async(res, sres_sofia_update);
 
   if (!srs)
     return su_seterrno(EINVAL);
+
+  if (sres_resolver_set_async(res, sres_sofia_update, srs, 1) < 0)
+    return -1;
 
   if (srs->srs_socket != -1)
     return srs->srs_socket;
 
   for (i = 0; i < N; i++) {
-    if (!srs->srs_reg[i].srsr_ptr)
+    if (!srs->srs_reg[i].reg_ptr)
       break;
   }
 
-  if (i == N) 
-    return su_seterrno(EINVAL);
-  
-  srs->srs_socket = srs->srs_reg[i].srsr_socket;
+  if (i < N) {
+    srs->srs_socket = srs->srs_reg[i].reg_socket;
+  }
+  else {
+    int socket;
+    if (sres_resolver_sockets(res, &socket, 1) < 0)
+      return -1;
+  }
 
   return srs->srs_socket; 
 }
@@ -266,11 +282,11 @@ static
 int 
 sres_sofia_poll(su_root_magic_t *magic, 
 		su_wait_t *w, 
-		sres_sofia_register_t *srsr)
+		sres_sofia_register_t *reg)
 {
-  sres_sofia_t *srs = srsr->srsr_ptr;
+  sres_sofia_t *srs = reg->reg_ptr;
   int retval = 0;
-  int socket = srsr->srsr_socket;
+  int socket = reg->reg_socket;
   int events = su_wait_events(w, socket);
 
   if (events & SU_WAIT_ERR)

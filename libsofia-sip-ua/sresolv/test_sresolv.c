@@ -1667,9 +1667,9 @@ int test_api_errors(sres_context_t *noctx)
   TEST(sres_resolver_get_userdata(NULL), NULL);
 
   TEST(sres_resolver_get_userdata(res), NULL);
-  TEST(sres_resolver_set_userdata(res, sa), sa);
+  TEST(sres_resolver_set_userdata(res, sa), NULL);
   TEST(sres_resolver_get_userdata(res), sa);
-  TEST(sres_resolver_set_userdata(res, NULL), NULL); 
+  TEST(sres_resolver_set_userdata(res, NULL), sa); 
   TEST(sres_resolver_get_userdata(res), NULL);
 
   errno = 0;
