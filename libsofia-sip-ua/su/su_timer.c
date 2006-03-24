@@ -435,6 +435,8 @@ int su_timer_set_for_ever(su_timer_t *t,
   }
 
   t->sut_running = run_for_ever;
+  t->sut_run = now;
+  t->sut_woken = 0;
 
   su_timer_set0(timers, t, wakeup, arg, su_time_add(now, t->sut_duration));
 
@@ -514,18 +516,19 @@ int su_timer_expire(su_timer_t ** const timers,
 	  f(su_root_magic(su_task_root(t->sut_task)), t, t->sut_arg), n++;
 	}
       }
-      else
+      else {
+	t->sut_woken++;
 	f(su_root_magic(su_task_root(t->sut_task)), t, t->sut_arg), n++;
+      }
 
-      if (t->sut_running) {
+      if (t->sut_running == run_at_intervals) {
 	next = su_time_add(t->sut_run, (t->sut_woken + 1) * t->sut_duration);
 	su_timer_set0(timers, t, f, t->sut_arg, next);
       }
-    }
-    else
-      if (t->sut_running) {
-	next = su_time_add(t->sut_run, (t->sut_woken + 1) * t->sut_duration);
+      else if (t->sut_running == run_for_ever) {
+	next = su_time_add(now, t->sut_duration);
 	su_timer_set0(timers, t, f, t->sut_arg, next);
+      }
     }
     else {
       f(su_root_magic(su_task_root(t->sut_task)), t, t->sut_arg); n++;
