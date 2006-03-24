@@ -83,6 +83,7 @@ TPORT_DLL extern tag_typedef_t tptag_server_ref;
  */
 enum tport_via {
   tport_type_local = 0,
+  tport_type_server = 0,
   tport_type_client = 1,
   tport_type_stun = 2,
   tport_type_upnp = 3,

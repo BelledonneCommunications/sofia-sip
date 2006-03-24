@@ -867,12 +867,15 @@ static int
   tport_accept(tport_primary_t *pri, int events),
   tport_connected(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_resolve(tport_t *self, msg_t *msg, tp_name_t const *tpn),
+  tport_recv_dgram(tport_t *self),
   tport_send_msg(tport_t *, msg_t *, tp_name_t const *tpn,
 		 struct sigcomp_compartment *cc),
   tport_vsend(tport_t *self, msg_t *msg, tp_name_t const *tpn,
 	      msg_iovec_t iov[], int iovused,
 	      struct sigcomp_compartment *cc),
   tport_send_error(tport_t *, msg_t *, tp_name_t const *),
+  tport_send_dgram(tport_t const *self, msg_t *msg,
+		   msg_iovec_t iov[], int iovused),
   tport_queue(tport_t *self, msg_t *msg),
   tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], int iovused),
   tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error),
@@ -1833,7 +1836,8 @@ int tport_tbind(tport_t *self,
   int server = 1, retval, public = 0;
   tp_name_t mytpn[1];
   tport_master_t *mr;
-
+  char const *http_connect = NULL;
+  
   if (self == NULL || tport_is_secondary(self) ||
       tpn == NULL || transports == NULL) {
     su_seterrno(EINVAL);
@@ -1851,11 +1855,15 @@ int tport_tbind(tport_t *self,
 	  TPTAG_SERVER_REF(server),
 	  TPTAG_PUBLIC_REF(public),
 	  TPTAG_IDENT_REF(mytpn->tpn_ident),
+	  TPTAG_HTTP_CONNECT_REF(http_connect),
 	  TAG_END());
 
   mr = self->tp_master; assert(mr);
-  
-  if (server)
+
+  if (http_connect && public == 0)
+    public = tport_type_connect;
+    
+  if (server && public == 0)
     retval = tport_bind_server(mr, mytpn, transports, public, ta_args(ta));
   else
     retval = tport_bind_client(mr, mytpn, transports, public, ta_args(ta));
@@ -8233,6 +8241,8 @@ static int tport_http_connect_init_primary(tport_primary_t *,
 					   tagi_t const *,
 					   char const **return_culprit);
 
+static void tport_http_connect_deinit_primary(tport_primary_t *);
+
 static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
 				   tp_name_t const *tpn);
 
@@ -8241,8 +8251,7 @@ static void tport_http_deliver(tport_t *self, msg_t *msg, su_time_t now);
 typedef struct
 {
   tport_primary_t thc_primary[1];
-  su_addrinfo_t  thc_proxy[1];
-  su_sockaddr_t  thc_proxy_addr[1];
+  su_addrinfo_t  *thc_proxy;
 } tport_http_connect_t;
 
 typedef struct
@@ -8257,8 +8266,8 @@ tport_vtable_t const tport_http_connect_vtable =
   NEXT_VTABLE, "TCP", tport_type_connect,
   sizeof (tport_http_connect_t),
   tport_http_connect_init_primary,
-  tport_init_compression,
   NULL,
+  tport_http_connect_deinit_primary,
   NULL,
   tport_http_connect,
   sizeof (tport_http_connect_instance_t),
@@ -8281,12 +8290,46 @@ static int tport_http_connect_init_primary(tport_primary_t *pri,
 					   char const **return_culprit)
 {
   tport_http_connect_t *thc = (tport_http_connect_t *)pri;
+  char const *http_connect = NULL;
+  url_t *http_proxy;
+  int error;
+  char const *host, *port;
+  su_addrinfo_t hints[1];
 
-  tport_addrinfo_copy(thc->thc_proxy, thc->thc_proxy_addr, 
-		      sizeof thc->thc_proxy_addr, 
-		      ai);
+  tl_gets(tags,
+	  TPTAG_HTTP_CONNECT_REF(http_connect),
+	  TAG_END());
+  if (!http_connect)
+    return *return_culprit = "missing proxy url", -1;
+
+  http_proxy = url_hdup(pri->pri_home, URL_STRING_MAKE(http_connect)->us_url);
+  if (!http_proxy || !http_proxy->url_host)
+    return *return_culprit = "invalid proxy url", -1;
+
+  host = http_proxy->url_host;
+  port = http_proxy->url_port;
+  if (!port || !port[0])
+    port = "8080";
+
+  memcpy(hints, ai, sizeof hints);
+  
+  hints->ai_flags = 0;
+  hints->ai_addr = NULL;
+  hints->ai_addrlen = 0;
+  hints->ai_next = NULL;
+  
+  error = su_getaddrinfo(host, port, hints, &thc->thc_proxy);
+  if (error)
+    return *return_culprit = "su_getaddrinfo", -1;
 
   return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
+}
+
+static void tport_http_connect_deinit_primary(tport_primary_t *pri)
+{
+  tport_http_connect_t *thc = (tport_http_connect_t *)pri;
+  
+  su_freeaddrinfo(thc->thc_proxy), thc->thc_proxy = NULL;
 }
 
 static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
@@ -8296,7 +8339,7 @@ static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai,
   tport_http_connect_instance_t *thci;
   tport_master_t *mr = pri->pri_master;
   
-  msg_t *msg, *response, *stackmsg;
+  msg_t *msg, *response;
 
   char hostport[TPORT_HOSTPORTSIZE];
 
@@ -8331,6 +8374,7 @@ static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai,
   tport = tport_base_connect(pri, thc->thc_proxy, ai, tpn);
   if (!tport) {
     msg_destroy(msg); msg_destroy(response);
+    return tport;
   }
 
   thci = (tport_http_connect_instance_t*)tport;
@@ -8373,7 +8417,7 @@ static void tport_http_deliver(tport_t *self, msg_t *msg, su_time_t now)
 
     msg_destroy(msg);
     thci->thci_response = NULL;
-    tport_error_report(self, EPROTO, thc->thc_proxy_addr);
+    tport_error_report(self, EPROTO, (void *)thc->thc_proxy->ai_addr);
     tport_close(self);
     return;
   }

@@ -110,6 +110,7 @@ typedef struct context_s context_t;
 #include <sofia-sip/sl_utils.h>
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/auth_client.h>
+#include <sofia-sip/tport_tag.h>
 
 struct context_s {
   su_home_t   	  c_home[1];
@@ -163,6 +164,7 @@ int main(int argc, char *argv[])
     *extra = NULL,
     *o_bind = "sip:*:*", 
     *o_from = getenv("SIPADDRESS"),
+    *o_http_proxy = NULL,
     *o_max_forwards = NULL,
     *o_method = NULL,
     *o_to = NULL;
@@ -191,6 +193,7 @@ int main(int argc, char *argv[])
     else if (MATCH(s, "-1") || MATCH(s, "--1XX")) 
                                     { context->c_pre = 1; }
     else if (MATCH2(s, "--mf"))     { o_max_forwards = v; }
+    else if (MATCH2(s, "--http-proxy"))     { o_http_proxy = v; }
     else if (MATCH2(s, "--max-forwards"))     { o_max_forwards = v; }
     else if (MATCH2(s, "--bind"))   { o_bind = v; }
     else if (MATCH1(s, "-m"))       { o_bind = v; }
@@ -219,8 +222,10 @@ int main(int argc, char *argv[])
     url_string_t *r_uri;
 
     context->c_agent = 
-      nta_agent_create(context->c_root, URL_STRING_MAKE(o_bind), 
+      nta_agent_create(context->c_root,
+		       URL_STRING_MAKE(o_bind),
 		       NULL, NULL, /* Ignore incoming messages */
+		       TPTAG_HTTP_CONNECT(o_http_proxy),
 		       TAG_END());
 
     if (context->c_agent) {
