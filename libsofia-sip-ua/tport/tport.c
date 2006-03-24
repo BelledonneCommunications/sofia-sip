@@ -418,6 +418,7 @@ struct tport_master {
     su_sockaddr_t sockaddr;
 #endif
   }                   mr_nat[1];
+
 };
 
 /** Virtual funtion table */
@@ -429,7 +430,6 @@ struct tport_vtable
 
   int vtp_pri_size;		/* Size of primary tport */
   int (*vtp_init_primary)(tport_primary_t *pri,
-			  int socket,
 			  tp_name_t const tpn[1],
 			  su_addrinfo_t *ai, tagi_t const *,
 			  char const **return_culprit);
@@ -449,6 +449,7 @@ struct tport_vtable
   int (*vtp_recv)(tport_t *self);
   int (*vtp_send)(tport_t const *self, msg_t *msg,
 		  msg_iovec_t iov[], int iovused);
+  void (*vtp_deliver)(tport_t *self,  msg_t *msg, su_time_t now);
 };
 
 #define STACK_RECV(tp, msg, now)		       \
@@ -816,8 +817,10 @@ int tport_nat_finish(tport_primary_t *self);
 static 
 tport_t *tport_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
 		       tp_name_t const *tpn);
-static tport_t *tport_base_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
-				  tp_name_t const *tpn);
+static tport_t *tport_base_connect(tport_primary_t *pri, 
+				   su_addrinfo_t *ai, 
+				   su_addrinfo_t *name, 
+				   tp_name_t const *tpn);
 
 static int bind6only_check(void);
 
@@ -841,6 +844,10 @@ int tport_getaddrinfo(char const *node, char const *service,
 		      su_addrinfo_t **res);
 
 static void tport_freeaddrinfo(su_addrinfo_t *ai);
+
+static
+int tport_addrinfo_copy(su_addrinfo_t *dst, void *addr, socklen_t addrlen,
+			su_addrinfo_t const *src);
 
 static int
   tport_bind_client(tport_master_t *self, tp_name_t const *tpn,
@@ -902,9 +909,10 @@ static void tport_parse(tport_t *self, int complete, su_time_t now);
 static void tport_deliver(tport_t *, msg_t *msg, msg_t *next,
 			  struct sigcomp_udvm **udvm, su_time_t now);
 
+void tport_base_deliver(tport_t *self, msg_t *msg, su_time_t now);
+
 static tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 					    tport_vtable_t const *vtable,
-					    int socket,
 					    tp_name_t const tpn[1],
 					    su_addrinfo_t *ai, 
 					    tagi_t const *tags,
@@ -1127,7 +1135,6 @@ void tport_destroy(tport_t *self)
 static 
 tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 				     tport_vtable_t const *vtable,
-				     int socket,
 				     tp_name_t const tpn[1],
 				     su_addrinfo_t *ai,
 				     tagi_t const *tags,
@@ -1156,7 +1163,7 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
     memcpy(tp->tp_params, mr->mr_params, sizeof (*tp->tp_params));
     tp->tp_reusable = mr->mr_master->tp_reusable;
 
-    if (socket != SOCKET_ERROR)
+    if (!pri->pri_public)
       tp->tp_addrinfo->ai_addr = &tp->tp_addr->su_sa;
 
     SU_DEBUG_5(("%s(%p): new primary tport %p\n", __func__, mr, pri));
@@ -1169,8 +1176,8 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
     *return_culprit = "alloc";
   else if (tport_set_params(tp, TAG_NEXT(tags)) < 0)
     *return_culprit = "tport_set_params";
-  else if (vtable->vtp_init_primary(pri, socket, tpn, ai, tags, 
-				    return_culprit) < 0)
+  else if (vtable->vtp_init_primary &&
+	   vtable->vtp_init_primary(pri, tpn, ai, tags, return_culprit) < 0)
     ;
   else if (tport_setname(tp, vtable->vtp_name, ai, tpn->tpn_canon) == -1) 
     *return_culprit = "tport_setname";
@@ -1188,119 +1195,6 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
   return NULL;
 }
 
-#if 0
-/** Process events for socket waiting to be connected
- */
-static int tport_http_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
-{
-  int events = su_wait_events(w, self->tp_socket);
-  tport_master_t *mr = self->tp_master;
-  su_wait_t wait[1] =  { SU_WAIT_INIT };
-
-  int error;
-
-  SU_DEBUG_7(("%s(%p): events%s%s\n", __func__, self,
-	      events & SU_WAIT_CONNECT ? " CONNECTED" : "",
-	      events & SU_WAIT_ERR ? " ERR" : ""));
-
-#if HAVE_POLL
-  assert(w->fd == self->tp_socket);
-#endif
-
-  if (events & SU_WAIT_ERR)
-    tport_error_event(self);
-
-  if (!(events & SU_WAIT_CONNECT) || self->tp_closed) {
-    return 0;
-  }
-
-  error = su_soerror(self->tp_socket);
-  if (error) {
-    tport_error_report(self, error, NULL);
-    return 0;
-  }
-
-#if 0
-  str = su_sprintf(autohome, "CONNECT %s HTTP/1.1\nUser-agent: %s\n\n",
-		   url_string->us_str, ua);
-#endif
-
-  su_root_deregister(mr->mr_root, self->tp_index);
-  self->tp_index = -1;
-  tport_set_events(self, SU_WAIT_IN | SU_WAIT_ERR, 
-		   SU_WAIT_CONNECT | );
-  self->tp_events = 
-  if (su_wait_create(wait, self->tp_socket, self->tp_events) == -1 ||
-      (self->tp_index = su_root_register(mr->mr_root, 
-					 wait, tport_wakeup, self, 0))
-      == -1) {
-    tport_close(self);
-  }
-  else if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
-    tport_send_event(self, events);
-  }
-
-  return 0;
-}
-
-int tport_tcp_socket_http_connect(su_socket_t s, const char *httpd,
-				  tagi_t *tags)
-{
-  char ua[] = "sofia-sip-1.11.6";
-  char *str;
-  int len, err;
-  url_string_t *url_string;
-  url_t const *url;
-  su_addrinfo_t *res = NULL, *ai, hints[1] = {{ 0 }};
-  su_sockaddr_t sa[1];
-
-  su_home_t autohome[SU_HOME_AUTO_SIZE(2048)];
-
-  su_home_auto(autohome, sizeof autohome);
-
-#if a0
-  /* Get the SIP proxy address */
-  tl_gets(tags, 
-	  URLTAG_URL_REF(url_string),
-	  TAG_END());
-#endif
-
-  if ((err = su_getaddrinfo(httpd, NULL, hints, &res)) != 0) {
-    /* STUN_ERROR(err, su_getaddrinfo); */
-    return -1;
-  }
-
-  memset(sa, 0, sizeof(*sa));
-
-  for (ai = res; ai; ai = ai->ai_next) {
-    if (ai->ai_family != AF_INET)
-      continue;
-
-    /* info->ai_flags = ai->ai_flags; */
-    sa->su_family = ai->ai_family;
-    sa->su_len = ai->ai_addrlen;
-    memcpy(&sa->su_sa, ai->ai_addr, sizeof(su_sockaddr_t));
-    break;
-  }
-
-  /* If no port specified, use default */
-  if (!sa->su_port) 
-    sa->su_port = htons(443);
-
-  if (res)
-    su_freeaddrinfo(res);
-
-  if (connect(s, &sa->su_sa, sa->su_len) == SOCKET_ERROR) {
-    err = su_errno();
-    if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK)
-      /* TPORT_CONNECT_ERROR(err, connect) */;
-  }
-
-  su_home_deinit(autohome);
-
-  return 0;
-}
-#endif
 
 /** Destroy a primary transport and its secondary transports. @internal */
 static 
@@ -1343,7 +1237,7 @@ void tport_zap_primary(tport_primary_t *pri)
  * registers the socket with suitable events to the root.
  *
  * @param dad   parent (master or primary) transport object
- * @param ainfo pointer to addrinfo structure
+ * @param ai    pointer to addrinfo structure
  * @param canon canonical name of node
  * @param protoname name of the protocol
  */
@@ -1356,10 +1250,6 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 {
   tport_primary_t *pri = NULL;
 
-  su_socket_t s = SOCKET_ERROR;
-  int index = 0;
-  su_wait_t wait[1] = { SU_WAIT_INIT };
-  
   int err;
   int errlevel = 3;
   char buf[TPORT_HOSTPORTSIZE];
@@ -1370,8 +1260,8 @@ tport_primary_t *tport_listen(tport_master_t *mr,
   su_sockaddr_t *su = (void *)ai->ai_addr;
 
   /* Log an error, return error */
-#define TPORT_LISTEN_ERROR(errno, what)  \
-  ((void)(err = errno, s != SOCKET_ERROR ? su_close(s) : 0,	     \
+#define TPORT_LISTEN_ERROR(errno, what)				     \
+  ((void)(err = errno,						     \
 	  ((err == EADDRINUSE || err == EAFNOSUPPORT ||		     \
 	    err == ESOCKTNOSUPPORT || err == EPROTONOSUPPORT ||	     \
 	    err == ENOPROTOOPT ? 7 : 3) < SU_LOG_LEVEL ?	     \
@@ -1385,18 +1275,8 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 	    su_seterrno(err)),					     \
      (void *)NULL)
 
-  s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-
-#if SU_HAVE_IN6
-  if (s == SOCKET_ERROR) {
-    if (ai->ai_family == AF_INET6 && su_errno() == EAFNOSUPPORT)
-      errlevel = 7;
-    return TPORT_LISTEN_ERROR(su_errno(), "socket");
-  }
-#endif
-
   /* Create a primary transport object for another transport. */
-  pri = tport_alloc_primary(mr, vtable, s, tpn, ai, tags, &culprit);
+  pri = tport_alloc_primary(mr, vtable, tpn, ai, tags, &culprit);
   if (pri == NULL)
     return TPORT_LISTEN_ERROR(errno, culprit);
 
@@ -1414,19 +1294,25 @@ tport_primary_t *tport_listen(tport_master_t *mr,
   }
 #endif
 
-  if (su_wait_create(wait, s, pri->pri_primary->tp_events) == -1)
-    return TPORT_LISTEN_ERROR(su_errno(), "su_wait_create");
+  if (pri->pri_primary->tp_socket != SOCKET_ERROR) {
+    int index = 0;
+    tport_t *tp = pri->pri_primary;
+    su_wait_t wait[1] = { SU_WAIT_INIT };
 
-  /* Register receiving or accepting function with events specified above */
-  index = su_root_register(mr->mr_root, wait, tport_wakeup_pri,
-			   pri->pri_primary, 0);
-   if (index == -1)
-     return TPORT_LISTEN_ERROR(su_errno(), "su_root_register");
+    if (su_wait_create(wait, tp->tp_socket, tp->tp_events) == -1)
+      return TPORT_LISTEN_ERROR(su_errno(), "su_wait_create");
 
-  pri->pri_primary->tp_socket   = s;
-  pri->pri_primary->tp_index    = index;
+    /* Register receiving or accepting function with events specified above */
+    index = su_root_register(mr->mr_root, wait, tport_wakeup_pri, tp, 0); 
+    if (index == -1) {
+      su_wait_destroy(wait);
+      return TPORT_LISTEN_ERROR(su_errno(), "su_root_register");
+    }
+
+    tp->tp_index = index;
+  }
+
   pri->pri_primary->tp_connected = 0;
-  pri->pri_primary->tp_conn_orient = ai->ai_socktype != SOCK_DGRAM;
 
 #if 0  
   if (nat_bound) {
@@ -1444,17 +1330,19 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 }
 
 static
-int bind_socket(int socket,
-		su_addrinfo_t *ai,
-		char const **return_culprit)
+int tport_bind_socket(int socket,
+		      su_addrinfo_t *ai,
+		      char const **return_culprit)
 {
   su_sockaddr_t *su = (su_sockaddr_t *)ai->ai_addr;
 
-  if (bind(socket, ai->ai_addr, ai->ai_addrlen) == -1)
+  if (bind(socket, ai->ai_addr, ai->ai_addrlen) == -1) {
     return *return_culprit = "bind", -1;
+  }
 
-  if (getsockname(socket, ai->ai_addr, &ai->ai_addrlen) == SOCKET_ERROR)
+  if (getsockname(socket, ai->ai_addr, &ai->ai_addrlen) == SOCKET_ERROR) {
     return *return_culprit = "getsockname", -1;
+  }
 
 #if defined (__linux__) && defined (SU_HAVE_IN6)
   if (ai->ai_family == AF_INET6) {
@@ -1526,7 +1414,7 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri, int socket, int accepted)
   tport_master_t *mr = pri->pri_master;
   tport_t *self;
 
-  self = su_home_clone(mr->mr_home, sizeof *self);
+  self = su_home_clone(mr->mr_home, pri->pri_vtable->vtp_secondary_size);
 
   if (self) {
     SU_DEBUG_7(("%s(%p): new secondary tport %p\n", __func__, pri, self));
@@ -1575,7 +1463,7 @@ tport_t *tport_connect(tport_primary_t *pri,
   if (pri->pri_vtable->vtp_connect)
     return pri->pri_vtable->vtp_connect(pri, ai, tpn);
   else
-    return tport_base_connect(pri, ai, tpn);
+    return tport_base_connect(pri, ai, ai, tpn);
 }
 
 /**Create a connected transport object with socket.
@@ -1585,12 +1473,13 @@ tport_t *tport_connect(tport_primary_t *pri,
  * root.
  *
  * @param pri   primary transport object
- * @param ai    pointer to addrinfo structure
+ * @param name    pointer to addrinfo structure
  * @param tpn   canonical name of node
  */
 static
 tport_t *tport_base_connect(tport_primary_t *pri, 
 			    su_addrinfo_t *ai,
+			    su_addrinfo_t *name,
 			    tp_name_t const *tpn)
 {
   tport_master_t *mr = pri->pri_master;
@@ -1672,13 +1561,12 @@ tport_t *tport_base_connect(tport_primary_t *pri,
     TPORT_CONNECT_ERROR(su_errno(), su_root_register);
 
   /* Set sockname for the tport */
-  if (tport_setname(self, tpn->tpn_proto, ai, tpn->tpn_canon) == -1) 
+  if (tport_setname(self, tpn->tpn_proto, name, tpn->tpn_canon) == -1) 
     TPORT_CONNECT_ERROR(su_errno(), tport_setname);
 
   self->tp_socket   = s;
   self->tp_index    = index;
   self->tp_events   = events;
-  self->tp_connected = ai->ai_socktype != SOCK_DGRAM;
   self->tp_conn_orient = 1;
 
 #if HAVE_SIGCOMP
@@ -1919,6 +1807,10 @@ tport_vtable_t const *tport_vtable_by_name(char const *protoname,
       continue;
     if (strcasecmp(vtable->vtp_name, protoname))
       continue;
+
+    assert(vtable->vtp_pri_size >= sizeof (tport_primary_t));
+    assert(vtable->vtp_secondary_size >= sizeof (tport_t));
+    
     return vtable;
   }
 
@@ -1989,6 +1881,9 @@ int tport_bind_client(tport_master_t *mr,
 
   tport_vtable_t const *vtable;
 
+  if (public == tport_type_local)
+    public = tport_type_client;
+
   SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n", __func__, mr, TPN_ARGS(tpn)));
 
   memset(tpn0, 0, sizeof(tpn0));
@@ -2018,7 +1913,7 @@ int tport_bind_client(tport_master_t *mr,
 
     hints->ai_canonname = "*";
 
-    if (!(pri = tport_alloc_primary(mr, vtable, -1, tpn0, hints, tags, &why)))
+    if (!(pri = tport_alloc_primary(mr, vtable, tpn0, hints, tags, &why)))
       break;
 
     pri->pri_public = tport_type_client; /* XXX */
@@ -2127,12 +2022,8 @@ int tport_bind_server(tport_master_t *mr,
       if (!vtable)
 	continue;
 
-      memcpy(ainfo, ai, sizeof ainfo);
-
+      tport_addrinfo_copy(ainfo, su, sizeof su, ai);
       ainfo->ai_canonname = (char *)canon;
-      ainfo->ai_addr = memcpy(su, ai->ai_addr, ai->ai_addrlen);
-      ainfo->ai_next = NULL;
-
       su->su_port = htons(port);
 
       SU_DEBUG_9(("%s(%p): calling tport_listen for %s\n", 
@@ -2154,8 +2045,8 @@ int tport_bind_server(tport_master_t *mr,
       not_supported = 0;
 
       if (port0 == 0 && port == 0) {
-	port = port1 = ntohs(pri->pri_primary->tp_addr->su_port);
-	assert(port != 0);
+	port = port1 = ntohs(su->su_port);
+	assert(public != tport_type_server || port != 0);
       }
     }
 
@@ -2513,6 +2404,24 @@ void tport_freeaddrinfo(su_addrinfo_t *ai)
   }
 }
 
+static
+int tport_addrinfo_copy(su_addrinfo_t *dst, void *addr, socklen_t addrlen,
+			su_addrinfo_t const *src)
+{
+  if (addrlen < src->ai_addrlen)
+    return -1;
+
+  memcpy(dst, src, sizeof *dst);
+
+  if (src->ai_addrlen < addrlen)
+    memset(addr, 0, addrlen);
+
+  dst->ai_addr = memcpy(addr, src->ai_addr, src->ai_addrlen);
+  dst->ai_next = NULL;
+
+  return 0;
+}
+
 static 
 int tport_init_compression(tport_primary_t *pri,
 			   char const *compression,
@@ -2829,7 +2738,7 @@ int tport_setname(tport_t *self,
 
   if (ai->ai_addr) {
     assert(ai->ai_family), assert(ai->ai_socktype), assert(ai->ai_protocol);
-    memcpy(selfai->ai_addr, ai->ai_addr, selfai->ai_addrlen = ai->ai_addrlen);
+    memcpy(self->tp_addr, ai->ai_addr, selfai->ai_addrlen = ai->ai_addrlen);
   }
 
   return 0;
@@ -3048,7 +2957,6 @@ int tport_accept(tport_primary_t *pri, int events)
 	(i = su_root_register(root, wait, wakeup, self, 0)) != -1) {
 
       self->tp_index     = i;
-      self->tp_connected = 1;
       self->tp_conn_orient = 1;
       self->tp_events = events;
 
@@ -3162,6 +3070,17 @@ static int tport_wakeup_pri(su_root_magic_t *m, su_wait_t *w, tport_t *self)
   assert(w->fd == self->tp_socket);
 #endif
 
+  SU_DEBUG_7(("%s(%p): events%s%s%s%s%s%s\n", 
+	      "tport_wakeup_pri", self,
+	      events & SU_WAIT_IN ? " IN" : "",
+	      SU_WAIT_ACCEPT != SU_WAIT_IN && 
+	      (events & SU_WAIT_ACCEPT) ? " ACCEPT" : "",
+	      events & SU_WAIT_OUT ? " OUT" : "",
+	      events & SU_WAIT_HUP ? " HUP" : "",
+	      events & SU_WAIT_ERR ? " ERR" : "",
+	      self->tp_closed ? " (closed)" : ""));
+
+
   if (pri->pri_vtable->vtp_wakeup_pri)
     return pri->pri_vtable->vtp_wakeup_pri(pri, events);
   else
@@ -3177,6 +3096,14 @@ static int tport_wakeup(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
   assert(w->fd == self->tp_socket);
 #endif
 
+  SU_DEBUG_7(("%s(%p): events%s%s%s%s%s\n", 
+	      "tport_wakeup", self,
+	      events & SU_WAIT_IN ? " IN" : "",
+	      events & SU_WAIT_OUT ? " OUT" : "",
+	      events & SU_WAIT_HUP ? " HUP" : "",
+	      events & SU_WAIT_ERR ? " ERR" : "",
+	      self->tp_closed ? " (closed)" : ""));
+
   if (self->tp_pri->pri_vtable->vtp_wakeup)
     return self->tp_pri->pri_vtable->vtp_wakeup(self, events);
   else
@@ -3186,14 +3113,6 @@ static int tport_wakeup(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
 static int tport_base_wakeup(tport_t *self, int events)
 {
   int error = 0;
-
-  SU_DEBUG_7(("%s(%p): events%s%s%s%s%s\n", 
-	      "tport_base_wakeup", self,
-	      events & SU_WAIT_IN ? " IN" : "",
-	      events & SU_WAIT_OUT ? " OUT" : "",
-	      events & SU_WAIT_HUP ? " HUP" : "",
-	      events & SU_WAIT_ERR ? " ERR" : "",
-	      self->tp_closed ? " (closed)" : ""));
 
   if (events & SU_WAIT_ERR)
     error = tport_error_event(self);
@@ -3272,7 +3191,14 @@ static void tport_recv_event(tport_t *self)
     now = su_now(); 
 
     /* Receive data from socket */
-    if ((again = tport_recv_data(self)) < 0) {
+    again = tport_recv_data(self);
+
+    self->tp_time = su_time_ms(now);
+
+    if (again == 3) /* STUN keepalive */
+      return;
+
+    if (again < 0) {
       int error = su_errno();
 
       if (error != EAGAIN && error != EWOULDBLOCK) {
@@ -3281,15 +3207,12 @@ static void tport_recv_event(tport_t *self)
 	if (tport_is_connected(self))
 	  tport_close(self);
 	return;
-      } else {
+      } 
+      else {
 	SU_DEBUG_3(("%s: recvfrom(): %s (%d)\n", __func__, 
 		    su_strerror(EAGAIN), EAGAIN));
       }
     }
-    else if (again == 3) /* STUN keepalive */
-      return;
-
-    self->tp_time = su_time_ms(now);
 
     if (again >= 0)
       tport_parse(self, !again, now);
@@ -3421,22 +3344,33 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
   }
 
   SU_DEBUG_7(("%s(%p): %smsg %p (%u bytes)"
-	      " to stack from " TPN_FORMAT " next=%p\n", 
+	      " from " TPN_FORMAT " next=%p\n", 
 	      __func__, self, error ? "bad " : "", msg, msg_size(msg),
 	      TPN_ARGS(d->d_from), next));
 
   ref = tport_incref(self);
-  /* Pass message to the protocol stack */
-  STACK_RECV(self, msg, now);
+
+  if (self->tp_pri->pri_vtable->vtp_deliver) {
+    self->tp_pri->pri_vtable->vtp_deliver(self, msg, now);
+  }
+  else
+    tport_base_deliver(self, msg, now);
 
 #if HAVE_SIGCOMP
   if (d->d_udvm && *d->d_udvm)
-    sigcomp_udvm_accept(*d->d_udvm, NULL);
+    sigcomp_udvm_accept(*d->d_udvm, NULL); /* reject */
 #endif
 
   tport_decref(&ref);
 
   d->d_msg = NULL;
+}
+
+/** Pass message to the protocol stack */
+void
+tport_base_deliver(tport_t *self, msg_t *msg, su_time_t now)
+{
+  STACK_RECV(self, msg, now);
 }
 
 /** Return source transport object for delivered message */
@@ -3489,13 +3423,12 @@ tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
 }
 
 static int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
-
 static int tport_recv_stun_dgram(tport_t const *self, int N);
+static int tport_recv_sigcomp_dgram(tport_t *self, int N);
 
 #if HAVE_SIGCOMP
 static int tport_recv_sigcomp_stream(tport_t *self);
 #endif
-static int tport_recv_sigcomp_dgram(tport_t *self, int N);
 static int tport_recv_sctp(tport_t *self);
 
 /** Allocate message for N bytes,
@@ -3569,299 +3502,6 @@ static int tport_recv_error_report(tport_t *self)
   tport_error_report(self, su_errno(), NULL);
 
   return -1;
-}
-
-/** Receive datagram.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- */
-static 
-int tport_recv_dgram(tport_t *self)
-{
-  int N;
-  int s = self->tp_socket;
-  unsigned char sample[2];
-
-  /* Simulate packet loss */
-  if (self->tp_params->tpp_drop && 
-      su_randint(0, 1000) < self->tp_params->tpp_drop) {
-    recv(self->tp_socket, sample, 1, 0);
-    SU_DEBUG_3(("tport(%p): simulated packet loss!\n", self));
-    return 0;
-  }
-
-  /* Peek for first two bytes in message:
-     determine if this is stun, sigcomp or sip
-  */
-  N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
-
-  if (N < 0) {
-    if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
-      N = 0;
-  }
-  else if (N <= 1) {
-    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "tport_recv_dgram", self, N));
-    recv(s, sample, sizeof sample, 0);
-    N = 0;
-  }
-#if MSG_TRUNC
-  else if ((N = su_getmsgsize(s)) < 0)
-    SU_DEBUG_1(("%s: su_getmsgsize(): %s (%d)\n", __func__, 
-		su_strerror(su_errno()), su_errno()));
-#endif
-  else if ((sample[0] & 0xf8) == 0xf8) {
-    return tport_recv_sigcomp_dgram(self, N); /* SigComp */
-  }
-  else if (sample[0] == 0 || sample[0] == 1) {
-    return tport_recv_stun_dgram(self, N);    /* STUN */
-  }
-  else
-    return tport_recv_dgram_r(self, &self->tp_msg, N);
-
-  return N;
-}
-
-/** Receive datagram statelessly.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- * @retval 1  normal receive (should never happen)
- * @retval 2  incomplete recv, recv again (should never happen)
- * @retval 3  STUN keepalive, ignore
- */
-static 
-int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
-{
-  msg_t *msg;
-  int n, veclen;
-  su_sockaddr_t *from;
-  socklen_t *fromlen;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-
-  assert(*mmsg == NULL);
-
-  veclen = tport_recv_iovec(self, mmsg, iovec, N, 1);
-  if (veclen < 0)
-    return -1;
-
-  msg = *mmsg;
-
-  n = su_vrecv(self->tp_socket, iovec, veclen, 0, 
-	       from = msg_addr(msg), fromlen = msg_addrlen(msg));
-  if (n == SOCKET_ERROR) {
-    int error = su_errno();
-    msg_destroy(msg); *mmsg = NULL;
-    su_seterrno(error);
-    return -1;
-  }
-
-  SU_CANONIZE_SOCKADDR(from);
-  assert(n <= N);		/* FIONREAD tells the size of all messages.. */
-
-  if (self->tp_master->mr_dump_file && !self->tp_pri->pri_threadpool)
-    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
-
-  msg_recv_commit(msg, n, 1);  /* Mark buffer as used */
-
-  return 0;
-}
-
-/** Receive data from datagram using SigComp. */
-static int tport_recv_sigcomp_dgram(tport_t *self, int N)
-{
-  char dummy[1];
-  int error = EBADMSG;
-#if HAVE_SIGCOMP
-  struct sigcomp_udvm *udvm;
-
-  if (self->tp_sigcomp->sc_udvm == 0)
-    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
-
-  udvm = self->tp_sigcomp->sc_udvm;
-
-  if (udvm) {
-    retval = tport_recv_sigcomp_r(self, &self->tp_msg, udvm, N);
-    if (retval < 0)
-      sigcomp_udvm_reject(udvm);
-    return retval;
-  }
-  error = su_errno();
-#endif
-  recv(self->tp_socket, dummy, 1, 0); /* remove msg from socket */
-  /* XXX - send NACK ? */
-  return su_seterrno(error);     
-}
-
-/** Receive STUN datagram.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- */
-static 
-int tport_recv_stun_dgram(tport_t const *self, int N)
-{
-  int n;
-  su_sockaddr_t from[1];
-  socklen_t fromlen = sizeof(su_sockaddr_t);
-  int status = 600;
-  char const *error = NULL;
-  
-  unsigned char buffer[128];
-  unsigned char *dgram = buffer;
-
-  if (N > sizeof buffer)
-    dgram = malloc(N);
-
-  if (dgram == NULL)
-    dgram = buffer, N = sizeof buffer, status = 500, error = "Server Error";
-
-  memset(from, 0, sizeof(su_sockaddr_t));
-  n = recvfrom(self->tp_socket, (void *)dgram, N, MSG_TRUNC, 
-	       (void *)from, &fromlen);
-
-  if (n < 20) {
-    if (n != SOCKET_ERROR)
-      su_seterrno(EBADMSG);	/* Runt */
-    if (dgram != buffer)
-      free(dgram);
-    return -1;
-  }
-
-  if ((!error || dgram[0] == 1) && self->tp_master->mr_nat->stun) {
-#if HAVE_SOFIA_STUN
-    if (n > N) n = N;		/* Truncated? */
-    stun_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
-			 from, fromlen, (void *)dgram, n);
-    if (dgram != buffer)
-      free(dgram);
-    return 0;
-#endif /* HAVE_SOFIA_STUN */
-  }
-
-  if (dgram[0] == 0 && (dgram[1] == 1 || dgram[1] == 2)) {
-    uint16_t elen;
-    if (error == NULL)
-      status = 600, error = "Not Implemented";
-    elen = strlen(error);
-
-    /*
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |      STUN Message Type        |         Message Length        |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-                             Transaction ID
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-                                                                    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    */
-
-#define set16(b, offset, value)			\
-  (((b)[(offset) + 0] = ((value) >> 8) & 255),	\
-   ((b)[(offset) + 1] = (value) & 255))
-
-    /* Respond to request */
-    dgram[0] = 1; /* Mark as response */
-    dgram[1] |= 0x10; /* Mark as error response */
-    set16(dgram, 2, elen + 4 + 4);
-    /* TransactionID is there at bytes 4..19 */
-    /*
-    TLV At 20:
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |         Type                  |            Length             |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    */
-    set16(dgram, 20, 0x0009); /* ERROR-CODE */
-    set16(dgram, 22, elen + 4);
-    /*
-    ERROR-CODE at 24:
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                   0                     |Class|     Number    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |      Reason Phrase (variable)                                ..
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     */
-    dgram[24] = 0, dgram[25] = 0;
-    dgram[26] = status / 100, dgram[27] = status % 100;
-    memcpy(dgram + 28, error, elen);
-    N = 28 + elen;
-    sendto(self->tp_socket, (void *)dgram, N, 0, (void *)from, fromlen);
-
-#undef set16
-  }
-
-  if (dgram != buffer)
-    free(dgram);
-
-  return 0;
-}
-
-
-/** Receive from stream.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- * @retval 1  normal receive
- * @retval 2  incomplete recv, recv again
- * 
- */
-static int tport_recv_stream(tport_t *self)
-{
-  msg_t *msg;
-  int n, N, veclen, err;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-
-#if HAVE_SIGCOMP
-  if (tport_can_recv_sigcomp(self))
-    return tport_recv_sigcomp_stream(self);
-#endif
-
-  N = su_getmsgsize(self->tp_socket);
-  if (N == 0) {
-    if (self->tp_msg)
-      msg_recv_commit(self->tp_msg, 0, 1);
-    return 0;    /* End of stream */
-  }
-  if (N == -1) {
-    err = su_errno();
-    SU_DEBUG_1(("%s(%p): su_getmsgsize(): %s (%d)\n", __func__, self,
-		su_strerror(err), err));
-    return -1;
-  }
-
-  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 0);
-  if (veclen < 0)
-    return -1;
-
-  msg = self->tp_msg;
-
-  /* Message address */
-  *msg_addr(msg) = *self->tp_addr;
-  *msg_addrlen(msg) = self->tp_addrlen;
-
-  n = su_vrecv(self->tp_socket, iovec, veclen, 0, NULL, NULL);
-  if (n == SOCKET_ERROR)
-    return tport_recv_error_report(self);
-
-  assert(n <= N);
-
-  /* Write the received data to the message dump file */
-  if (self->tp_master->mr_dump_file)
-    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
-
-  /* Mark buffer as used */
-  msg_recv_commit(msg, n, 0);
-
-  return 1;
 }
 
 #if HAVE_SIGCOMP
@@ -4621,54 +4261,6 @@ int tport_vsend(tport_t *self,
 }
 
 static
-int tport_send_stream(tport_t const *self, msg_t *msg, 
-		      msg_iovec_t iov[], 
-		      int iovused)
-{
-#if __sun__			/* XXX - there must be better way... */
-  if (iovused > 16)
-    iovused = 16;
-#endif
-  return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
-}
-
-/** Send using su_vsend(). Map IPv4 addresses as IPv6 addresses, if needed. */
-static
-int tport_send_dgram(tport_t const *self, msg_t *msg, 
-		     msg_iovec_t iov[], 
-		     int iovused)
-{
-  su_sockaddr_t *su;
-  int sulen;
-#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
-  su_sockaddr_t su0[1];
-#endif
-
-  if (tport_is_connection_oriented(self))
-    return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
-
-  su = msg_addr(msg);
-  sulen = *msg_addrlen(msg);
-
-#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
-  if (su->su_family == AF_INET && self->tp_addrinfo->ai_family == AF_INET6) {
-    memset(su0, 0, sizeof su0);
-
-    su0->su_family = self->tp_addrinfo->ai_family;
-    su0->su_port = su->su_port;
-
-    IN6_INADDR_TO_V4MAPPED(&su->su_sin.sin_addr, &su0->su_sin6.sin6_addr);
-
-    su = su0, sulen = sizeof(su0->su_sin6);
-  }
-#endif
-
-  su_soerror(self->tp_socket); /* XXX - we *still* have a race condition */
-
-  return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, su, sulen);
-}
-
-static
 int tport_send_error(tport_t *self, msg_t *msg, 
 		     tp_name_t const *tpn)
 {
@@ -5390,127 +4982,6 @@ tport_error_event(tport_t *self)
   return 0;
 }
 
-
-#if !HAVE_IP_RECVERR && !HAVE_IPV6_RECVERR
-
-/** Process UDP error event. */
-static int
-tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
-{
-  if (tport_is_connection_oriented(self))
-    name[0] = self->tp_addr[0];
-  return su_soerror(self->tp_socket);
-}
-
-#else
-
-/** Process UDP error event. */
-static int
-tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
-{
-  struct cmsghdr *c;
-  struct sock_extended_err *ee;
-  su_sockaddr_t *from;
-  char control[512];
-  char errmsg[64 + 768];
-  struct iovec iov[1];
-  struct msghdr msg[1] = {{ 0 }};
-  int n;
-
-  msg->msg_name = name, msg->msg_namelen = sizeof(*name);
-  msg->msg_iov = iov, msg->msg_iovlen = 1;
-  iov->iov_base = errmsg, iov->iov_len = sizeof(errmsg);
-  msg->msg_control = control, msg->msg_controllen = sizeof(control);
-
-  n = recvmsg(self->tp_socket, msg, MSG_ERRQUEUE);
-
-  if (n < 0) {
-    int err = su_errno();
-    if (err != EAGAIN && err != EWOULDBLOCK)
-      SU_DEBUG_1(("%s: recvmsg: %s\n", __func__, su_strerror(err)));
-    return 0;
-  }
-
-  if ((msg->msg_flags & MSG_ERRQUEUE) != MSG_ERRQUEUE) {
-    SU_DEBUG_1(("%s: recvmsg: no errqueue\n", __func__));
-    return 0;
-  }
-
-  if (msg->msg_flags & MSG_CTRUNC) {
-    SU_DEBUG_1(("%s: extended error was truncated\n", __func__));
-    return 0;
-  }
-
-  if (msg->msg_flags & MSG_TRUNC) {
-    /* ICMP message may contain original message... */
-    SU_DEBUG_3(("%s: icmp(6) message was truncated (at %d)\n", __func__, n));
-  }
-
-  /* Go through the ancillary data */
-  for (c = CMSG_FIRSTHDR(msg); c; c = CMSG_NXTHDR(msg, c)) {
-    if (0
-#if HAVE_IP_RECVERR
-	|| (c->cmsg_level == SOL_IP && c->cmsg_type == IP_RECVERR)
-#endif
-#if HAVE_IPV6_RECVERR
-	|| (c->cmsg_level == SOL_IPV6 && c->cmsg_type == IPV6_RECVERR)
-#endif
-	) {
-      char info[128];
-      char const *origin;
-
-      ee = (struct sock_extended_err *)CMSG_DATA(c);
-      from = (su_sockaddr_t *)SO_EE_OFFENDER(ee);
-      info[0] = '\0';
-
-      switch (ee->ee_origin) {
-      case SO_EE_ORIGIN_LOCAL:
-	origin = "local";
-	break;
-      case SO_EE_ORIGIN_ICMP:
-	origin = "icmp";
-	snprintf(info, sizeof(info), " type=%u code=%u", 
-		 ee->ee_type, ee->ee_code);
-	break;
-      case SO_EE_ORIGIN_ICMP6:
-	origin = "icmp6";
-	snprintf(info, sizeof(info), " type=%u code=%u", 
-		ee->ee_type, ee->ee_code);
-	break;
-      case SO_EE_ORIGIN_NONE:
-	origin = "none";
-	break;
-      default:
-	origin = "unknown";
-	break;
-      }
-
-      if (ee->ee_info)
-	snprintf(info + strlen(info), sizeof(info) - strlen(info), 
-		 " info=%08x", ee->ee_info);
-
-      SU_DEBUG_3(("%s: %s (%d) [%s%s]\n",
-		  __func__, su_strerror(ee->ee_errno), ee->ee_errno, 
-		  origin, info));
-      if (from->su_family != AF_UNSPEC)
-	SU_DEBUG_3(("\treported by [%s]:%u\n",
-		    inet_ntop(from->su_family, SU_ADDR(from), 
-			      info, sizeof(info)),
-		    ntohs(from->su_port)));
-
-      if (msg->msg_namelen == 0)
-	name->su_family = AF_UNSPEC;
-
-      SU_CANONIZE_SOCKADDR(name);
-
-      return ee->ee_errno;
-    }
-  }
-
-  return 0;
-}
-#endif
-
 /** Initialize logging. */
 static void
 tport_open_log(tport_master_t *mr, tagi_t *tags)
@@ -5545,7 +5016,7 @@ void tport_stamp(tport_t const *self, msg_t *msg,
 {
   char label[24] = "";
   char *comp = "";
-  char name[SU_ADDRSIZE];
+  char name[SU_ADDRSIZE] = "";
   su_sockaddr_t const *su = msg_addr(msg);
   unsigned short second, minute, hour;
 
@@ -7470,7 +6941,6 @@ int tport_nat_finish(tport_primary_t *pri)
 /* UDP */
 
 static int tport_udp_init_primary(tport_primary_t *, 
-				  int socket,
 				  tp_name_t const tpn[1], 
 				  su_addrinfo_t *, 
 				  tagi_t const *,
@@ -7478,6 +6948,27 @@ static int tport_udp_init_primary(tport_primary_t *,
 static int tport_recv_dgram(tport_t *self);
 static int tport_send_dgram(tport_t const *self, msg_t *msg,
 			    msg_iovec_t iov[], int iovused);
+
+tport_vtable_t const tport_udp_client_vtable =
+{
+  NEXT_VTABLE, "udp", tport_type_client,
+  sizeof (tport_primary_t),
+  NULL,
+  tport_init_compression,
+  NULL,
+  NULL,
+  NULL,
+  sizeof (tport_t),
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  tport_recv_dgram,
+  tport_send_dgram,
+};
+
+#undef NEXT_VTABLE
+#define NEXT_VTABLE &tport_udp_client_vtable
 
 tport_vtable_t const tport_udp_vtable =
 {
@@ -7501,25 +6992,28 @@ tport_vtable_t const tport_udp_vtable =
 #define NEXT_VTABLE &tport_udp_vtable
 
 static int tport_udp_init_primary(tport_primary_t *pri,
-				  int socket,
 				  tp_name_t const tpn[1],
 				  su_addrinfo_t *ai,
 				  tagi_t const *tags,
 				  char const **return_culprit)
 {
   unsigned rmem = 0, wmem = 0;
-  int events;
+  int events = SU_WAIT_IN;
+  int s;
 
-  if (socket == -1)
-    return 0;
+  s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+  if (s == SOCKET_ERROR)
+    return *return_culprit = "socket", -1;
 
-  if (bind_socket(socket, ai, return_culprit) < 0)
+  pri->pri_primary->tp_socket = s;
+
+  if (tport_bind_socket(s, ai, return_culprit) < 0)
     return -1;
 
 #if HAVE_IP_RECVERR
   if (ai->ai_family == AF_INET || ai->ai_family == AF_INET6) {
     int const one = 1;
-    if (setsockopt(socket, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
+    if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
       if (ai->ai_family == AF_INET)
 	SU_DEBUG_3(("setsockopt(IPVRECVERR): %s\n", su_strerror(su_errno())));
     }
@@ -7529,7 +7023,7 @@ static int tport_udp_init_primary(tport_primary_t *pri,
 #if HAVE_IPV6_RECVERR
   if (ai->ai_family == AF_INET6) {
     int const one = 1;
-    if (setsockopt(socket, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
+    if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
       SU_DEBUG_3(("setsockopt(IPV6_RECVERR): %s\n", su_strerror(su_errno())));
     events |= SU_WAIT_ERR;
   }
@@ -7541,32 +7035,312 @@ static int tport_udp_init_primary(tport_primary_t *pri,
 	  TAG_END());
 
   if (rmem != 0 && 
-      setsockopt(socket, SOL_SOCKET,
-		 SO_RCVBUF, (void *)&rmem, sizeof rmem) < 0) {
+      setsockopt(s, SOL_SOCKET, SO_RCVBUF, (void *)&rmem, sizeof rmem) < 0) {
     SU_DEBUG_3(("setsockopt(SO_RCVBUF): %s\n", 
 		su_strerror(su_errno())));
   }
 
   if (wmem != 0 && 
-      setsockopt(socket, SOL_SOCKET,
-		 SO_SNDBUF, (void *)&wmem, sizeof wmem) < 0) {
+      setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *)&wmem, sizeof wmem) < 0) {
     SU_DEBUG_3(("setsockopt(SO_SNDBUF): %s\n", 
 		su_strerror(su_errno())));
   }
 
-  pri->pri_primary->tp_events = SU_WAIT_IN;
+  pri->pri_primary->tp_events = events;
 
   return 0;
 }
+
+/** Receive datagram.
+ *
+ * @retval -1 error
+ * @retval 0  end-of-stream  
+ */
+static 
+int tport_recv_dgram(tport_t *self)
+{
+  int N;
+  int s = self->tp_socket;
+  unsigned char sample[2];
+
+  /* Simulate packet loss */
+  if (self->tp_params->tpp_drop && 
+      su_randint(0, 1000) < self->tp_params->tpp_drop) {
+    recv(self->tp_socket, sample, 1, 0);
+    SU_DEBUG_3(("tport(%p): simulated packet loss!\n", self));
+    return 0;
+  }
+
+  /* Peek for first two bytes in message:
+     determine if this is stun, sigcomp or sip
+  */
+  N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
+
+  if (N < 0) {
+    if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
+      N = 0;
+  }
+  else if (N <= 1) {
+    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "tport_recv_dgram", self, N));
+    recv(s, sample, sizeof sample, 0);
+    N = 0;
+  }
+#if MSG_TRUNC
+  else if ((N = su_getmsgsize(s)) < 0)
+    SU_DEBUG_1(("%s: su_getmsgsize(): %s (%d)\n", __func__, 
+		su_strerror(su_errno()), su_errno()));
+#endif
+  else if ((sample[0] & 0xf8) == 0xf8) {
+    return tport_recv_sigcomp_dgram(self, N); /* SigComp */
+  }
+  else if (sample[0] == 0 || sample[0] == 1) {
+    return tport_recv_stun_dgram(self, N);    /* STUN */
+  }
+  else
+    return tport_recv_dgram_r(self, &self->tp_msg, N);
+
+  return N;
+}
+
+/** Receive datagram statelessly.
+ *
+ * @retval -1 error
+ * @retval 0  end-of-stream  
+ * @retval 1  normal receive (should never happen)
+ * @retval 2  incomplete recv, recv again (should never happen)
+ * @retval 3  STUN keepalive, ignore
+ */
+static 
+int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
+{
+  msg_t *msg;
+  int n, veclen;
+  su_sockaddr_t *from;
+  socklen_t *fromlen;
+  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
+
+  assert(*mmsg == NULL);
+
+  veclen = tport_recv_iovec(self, mmsg, iovec, N, 1);
+  if (veclen < 0)
+    return -1;
+
+  msg = *mmsg;
+
+  n = su_vrecv(self->tp_socket, iovec, veclen, 0, 
+	       from = msg_addr(msg), fromlen = msg_addrlen(msg));
+  if (n == SOCKET_ERROR) {
+    int error = su_errno();
+    msg_destroy(msg); *mmsg = NULL;
+    su_seterrno(error);
+    return -1;
+  }
+
+  SU_CANONIZE_SOCKADDR(from);
+  assert(n <= N);		/* FIONREAD tells the size of all messages.. */
+
+  if (self->tp_master->mr_dump_file && !self->tp_pri->pri_threadpool)
+    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
+
+  msg_recv_commit(msg, n, 1);  /* Mark buffer as used */
+
+  return 0;
+}
+
+/** Receive data from datagram using SigComp. */
+static int tport_recv_sigcomp_dgram(tport_t *self, int N)
+{
+  char dummy[1];
+  int error = EBADMSG;
+#if HAVE_SIGCOMP
+  struct sigcomp_udvm *udvm;
+
+  if (self->tp_sigcomp->sc_udvm == 0)
+    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
+
+  udvm = self->tp_sigcomp->sc_udvm;
+
+  if (udvm) {
+    retval = tport_recv_sigcomp_r(self, &self->tp_msg, udvm, N);
+    if (retval < 0)
+      sigcomp_udvm_reject(udvm);
+    return retval;
+  }
+  error = su_errno();
+#endif
+  recv(self->tp_socket, dummy, 1, 0); /* remove msg from socket */
+  /* XXX - send NACK ? */
+  return su_seterrno(error);     
+}
+
+/** Send using su_vsend(). Map IPv4 addresses as IPv6 addresses, if needed. */
+static
+int tport_send_dgram(tport_t const *self, msg_t *msg, 
+		     msg_iovec_t iov[], 
+		     int iovused)
+{
+  su_sockaddr_t *su;
+  int sulen;
+#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
+  su_sockaddr_t su0[1];
+#endif
+
+  if (tport_is_connection_oriented(self))
+    return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
+
+  su = msg_addr(msg);
+  sulen = *msg_addrlen(msg);
+
+#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
+  if (su->su_family == AF_INET && self->tp_addrinfo->ai_family == AF_INET6) {
+    memset(su0, 0, sizeof su0);
+
+    su0->su_family = self->tp_addrinfo->ai_family;
+    su0->su_port = su->su_port;
+
+    IN6_INADDR_TO_V4MAPPED(&su->su_sin.sin_addr, &su0->su_sin6.sin6_addr);
+
+    su = su0, sulen = sizeof(su0->su_sin6);
+  }
+#endif
+
+  su_soerror(self->tp_socket); /* XXX - we *still* have a race condition */
+
+  return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, su, sulen);
+}
+
+
+#if !HAVE_IP_RECVERR && !HAVE_IPV6_RECVERR
+
+/** Process UDP error event. */
+static int
+tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
+{
+  if (tport_is_connection_oriented(self))
+    name[0] = self->tp_addr[0];
+  return su_soerror(self->tp_socket);
+}
+
+#else
+
+/** Process UDP error event. */
+static int
+tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
+{
+  struct cmsghdr *c;
+  struct sock_extended_err *ee;
+  su_sockaddr_t *from;
+  char control[512];
+  char errmsg[64 + 768];
+  struct iovec iov[1];
+  struct msghdr msg[1] = {{ 0 }};
+  int n;
+
+  msg->msg_name = name, msg->msg_namelen = sizeof(*name);
+  msg->msg_iov = iov, msg->msg_iovlen = 1;
+  iov->iov_base = errmsg, iov->iov_len = sizeof(errmsg);
+  msg->msg_control = control, msg->msg_controllen = sizeof(control);
+
+  n = recvmsg(self->tp_socket, msg, MSG_ERRQUEUE);
+
+  if (n < 0) {
+    int err = su_errno();
+    if (err != EAGAIN && err != EWOULDBLOCK)
+      SU_DEBUG_1(("%s: recvmsg: %s\n", __func__, su_strerror(err)));
+    return 0;
+  }
+
+  if ((msg->msg_flags & MSG_ERRQUEUE) != MSG_ERRQUEUE) {
+    SU_DEBUG_1(("%s: recvmsg: no errqueue\n", __func__));
+    return 0;
+  }
+
+  if (msg->msg_flags & MSG_CTRUNC) {
+    SU_DEBUG_1(("%s: extended error was truncated\n", __func__));
+    return 0;
+  }
+
+  if (msg->msg_flags & MSG_TRUNC) {
+    /* ICMP message may contain original message... */
+    SU_DEBUG_3(("%s: icmp(6) message was truncated (at %d)\n", __func__, n));
+  }
+
+  /* Go through the ancillary data */
+  for (c = CMSG_FIRSTHDR(msg); c; c = CMSG_NXTHDR(msg, c)) {
+    if (0
+#if HAVE_IP_RECVERR
+	|| (c->cmsg_level == SOL_IP && c->cmsg_type == IP_RECVERR)
+#endif
+#if HAVE_IPV6_RECVERR
+	|| (c->cmsg_level == SOL_IPV6 && c->cmsg_type == IPV6_RECVERR)
+#endif
+	) {
+      char info[128];
+      char const *origin;
+
+      ee = (struct sock_extended_err *)CMSG_DATA(c);
+      from = (su_sockaddr_t *)SO_EE_OFFENDER(ee);
+      info[0] = '\0';
+
+      switch (ee->ee_origin) {
+      case SO_EE_ORIGIN_LOCAL:
+	origin = "local";
+	break;
+      case SO_EE_ORIGIN_ICMP:
+	origin = "icmp";
+	snprintf(info, sizeof(info), " type=%u code=%u", 
+		 ee->ee_type, ee->ee_code);
+	break;
+      case SO_EE_ORIGIN_ICMP6:
+	origin = "icmp6";
+	snprintf(info, sizeof(info), " type=%u code=%u", 
+		ee->ee_type, ee->ee_code);
+	break;
+      case SO_EE_ORIGIN_NONE:
+	origin = "none";
+	break;
+      default:
+	origin = "unknown";
+	break;
+      }
+
+      if (ee->ee_info)
+	snprintf(info + strlen(info), sizeof(info) - strlen(info), 
+		 " info=%08x", ee->ee_info);
+
+      SU_DEBUG_3(("%s: %s (%d) [%s%s]\n",
+		  __func__, su_strerror(ee->ee_errno), ee->ee_errno, 
+		  origin, info));
+      if (from->su_family != AF_UNSPEC)
+	SU_DEBUG_3(("\treported by [%s]:%u\n",
+		    inet_ntop(from->su_family, SU_ADDR(from), 
+			      info, sizeof(info)),
+		    ntohs(from->su_port)));
+
+      if (msg->msg_namelen == 0)
+	name->su_family = AF_UNSPEC;
+
+      SU_CANONIZE_SOCKADDR(name);
+
+      return ee->ee_errno;
+    }
+  }
+
+  return 0;
+}
+#endif
 
 /* ---------------------------------------------------------------------- */
 /* TCP */
 
 static int tport_tcp_init_primary(tport_primary_t *, 
-				  int socket, 
 				  tp_name_t const tpn[1], 
 				  su_addrinfo_t *, tagi_t const *,
 				  char const **return_culprit);
+static int tport_tcp_init_client(tport_primary_t *, 
+				 tp_name_t const tpn[1], 
+				 su_addrinfo_t *, tagi_t const *,
+				 char const **return_culprit);
 static int tport_tcp_init_secondary(tport_t *self, int socket, int accepted);
 static int tport_recv_stream(tport_t *self);
 static int tport_send_stream(tport_t const *self, msg_t *msg,
@@ -7593,26 +7367,52 @@ static tport_vtable_t const tport_tcp_vtable =
 #undef NEXT_VTABLE
 #define NEXT_VTABLE &tport_tcp_vtable
 
+static tport_vtable_t const tport_tcp_client_vtable =
+{
+  NEXT_VTABLE, "tcp", tport_type_client,
+  sizeof (tport_primary_t),
+  tport_tcp_init_client,
+  tport_init_compression,
+  NULL,
+  tport_accept,
+  NULL,
+  sizeof (tport_t),
+  tport_tcp_init_secondary,
+  NULL,
+  NULL,
+  NULL,
+  tport_recv_stream,
+  tport_send_stream,
+};
+
+#undef NEXT_VTABLE
+#define NEXT_VTABLE &tport_tcp_client_vtable
+
 static int tport_tcp_init_primary(tport_primary_t *pri, 
-				  int socket,
 				  tp_name_t const tpn[1],
 				  su_addrinfo_t *ai,
 				  tagi_t const *tags,
 				  char const **return_culprit)
 {
-  if (socket == -1)
-    return 0;
+  int s;
+
+  s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+
+  if (s == SOCKET_ERROR)
+    return *return_culprit = "socket", -1;
+
+  pri->pri_primary->tp_socket = s;
 
 #if defined(__linux__)
   /* Linux does not allow reusing TCP port while this one is open,
      so we can safely call su_setreuseaddr() before bind(). */
-  su_setreuseaddr(socket, 1);
+  su_setreuseaddr(s, 1);
 #endif
 
-  if (bind_socket(socket, ai, return_culprit) == SOCKET_ERROR)
+  if (tport_bind_socket(s, ai, return_culprit) == SOCKET_ERROR)
     return -1;
 
-  if (listen(socket, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
+  if (listen(s, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
     return *return_culprit = "listen", -1;
 
 #if !defined(__linux__)
@@ -7621,10 +7421,22 @@ static int tport_tcp_init_primary(tport_primary_t *pri,
    * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
    * binding to a port owned by an existing server.
    */
-  su_setreuseaddr(socket, 1);
+  su_setreuseaddr(s, 1);
 #endif
 
   pri->pri_primary->tp_events = SU_WAIT_ACCEPT;
+  pri->pri_primary->tp_conn_orient = 1;
+
+  return 0;
+}
+
+static int tport_tcp_init_client(tport_primary_t *pri, 
+				 tp_name_t const tpn[1],
+				 su_addrinfo_t *ai,
+				 tagi_t const *tags,
+				 char const **return_culprit)
+{
+  pri->pri_primary->tp_conn_orient = 1;
 
   return 0;
 }
@@ -7632,6 +7444,8 @@ static int tport_tcp_init_primary(tport_primary_t *pri,
 static int tport_tcp_init_secondary(tport_t *self, int socket, int accepted)
 {
   int one = 1;
+
+  self->tp_connected = 1;
 
   if (setsockopt(socket, SOL_TCP, TCP_NODELAY, (void *)&one, sizeof one) == -1)
     return -1;
@@ -7641,20 +7455,114 @@ static int tport_tcp_init_secondary(tport_t *self, int socket, int accepted)
   return 0;
 }
 
+/** Receive from stream.
+ *
+ * @retval -1 error
+ * @retval 0  end-of-stream  
+ * @retval 1  normal receive
+ * @retval 2  incomplete recv, recv again
+ * 
+ */
+static int tport_recv_stream(tport_t *self)
+{
+  msg_t *msg;
+  int n, N, veclen, err;
+  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
+
+#if HAVE_SIGCOMP
+  if (tport_can_recv_sigcomp(self))
+    return tport_recv_sigcomp_stream(self);
+#endif
+
+  N = su_getmsgsize(self->tp_socket);
+  if (N == 0) {
+    if (self->tp_msg)
+      msg_recv_commit(self->tp_msg, 0, 1);
+    return 0;    /* End of stream */
+  }
+  if (N == -1) {
+    err = su_errno();
+    SU_DEBUG_1(("%s(%p): su_getmsgsize(): %s (%d)\n", __func__, self,
+		su_strerror(err), err));
+    return -1;
+  }
+
+  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 0);
+  if (veclen < 0)
+    return -1;
+
+  msg = self->tp_msg;
+
+  /* Message address */
+  *msg_addr(msg) = *self->tp_addr;
+  *msg_addrlen(msg) = self->tp_addrlen;
+
+  n = su_vrecv(self->tp_socket, iovec, veclen, 0, NULL, NULL);
+  if (n == SOCKET_ERROR)
+    return tport_recv_error_report(self);
+
+  assert(n <= N);
+
+  /* Write the received data to the message dump file */
+  if (self->tp_master->mr_dump_file)
+    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
+
+  /* Mark buffer as used */
+  msg_recv_commit(msg, n, 0);
+
+  return 1;
+}
+
+static
+int tport_send_stream(tport_t const *self, msg_t *msg, 
+		      msg_iovec_t iov[], 
+		      int iovused)
+{
+#if __sun__			/* XXX - there must be better way... */
+  if (iovused > 16)
+    iovused = 16;
+#endif
+  return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
+}
+
 /* ---------------------------------------------------------------------- */
 /* SCTP */
 #if HAVE_SCTP
 
 static int tport_sctp_init_primary(tport_primary_t *, 
-				   int socket,
 				   tp_name_t const tpn[1], 
 				   su_addrinfo_t *, tagi_t const *,
 				   char const **return_culprit);
+static int tport_sctp_init_client(tport_primary_t *, 
+				  tp_name_t const tpn[1], 
+				  su_addrinfo_t *, tagi_t const *,
+				  char const **return_culprit);
 static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted);
 static int tport_recv_sctp(tport_t *self);
 #define tport_send_sctp tport_send_dgram
 static int tport_send_sctp(tport_t const *self, msg_t *msg,
 			   msg_iovec_t iov[], int iovused);
+
+tport_vtable_t const tport_sctp_client_vtable =
+{
+  NEXT_VTABLE, "sctp", tport_type_client,
+  sizeof (tport_primary_t),
+  tport_sctp_init_client,
+  NULL,
+  NULL,
+  tport_accept,
+  NULL,
+  sizeof (tport_t),
+  tport_sctp_init_secondary,
+  NULL,
+  NULL,
+  NULL,
+  tport_recv_sctp,
+  tport_send_sctp,
+};
+
+#undef NEXT_VTABLE
+#define NEXT_VTABLE &tport_sctp_client_vtable
 
 tport_vtable_t const tport_sctp_vtable =
 {
@@ -7678,7 +7586,6 @@ tport_vtable_t const tport_sctp_vtable =
 #define NEXT_VTABLE &tport_sctp_vtable
 
 static int tport_sctp_init_primary(tport_primary_t *pri, 
-				   int socket,
 				   tp_name_t const tpn[1],
 				   su_addrinfo_t *ai,
 				   tagi_t const *tags,
@@ -7687,11 +7594,26 @@ static int tport_sctp_init_primary(tport_primary_t *pri,
   if (pri->pri_params->tpp_mtu > TP_SCTP_MSG_MAX)
     pri->pri_params->tpp_mtu = TP_SCTP_MSG_MAX;
 
-  return tport_tcp_init_primary(pri, socket, tpn, ai, tags, return_culprit);
+  return tport_tcp_init_primary(pri, tpn, ai, tags, return_culprit);
 }
+
+static int tport_sctp_init_client(tport_primary_t *pri, 
+				   tp_name_t const tpn[1],
+				   su_addrinfo_t *ai,
+				   tagi_t const *tags,
+				   char const **return_culprit)
+{
+  if (pri->pri_params->tpp_mtu > TP_SCTP_MSG_MAX)
+    pri->pri_params->tpp_mtu = TP_SCTP_MSG_MAX;
+
+  return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
+}
+
 
 static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted)
 {
+  self->tp_connected = 1;
+
   if (su_setblocking(socket, 0) < 0)
     return -1;
 
@@ -7749,10 +7671,18 @@ int tport_recv_sctp(tport_t *self)
 /* TLS */
 
 static int tport_tls_init_primary(tport_primary_t *,
-				  int socket, 
 				  tp_name_t const tpn[1], 
 				  su_addrinfo_t *, tagi_t const *,
 				  char const **return_culprit);
+static int tport_tls_init_client(tport_primary_t *,
+				 tp_name_t const tpn[1], 
+				 su_addrinfo_t *, tagi_t const *,
+				 char const **return_culprit);
+static int tport_tls_init_master(tport_primary_t *pri,
+				 tp_name_t const tpn[1],
+				 su_addrinfo_t *ai,
+				 tagi_t const *tags,
+				 char const **return_culprit);
 static void tport_tls_deinit_primary(tport_primary_t *pri);
 static int tport_tls_init_secondary(tport_t *self, int socket, int accepted);
 static void tport_tls_deinit_secondary(tport_t *self);
@@ -7764,7 +7694,7 @@ static int tport_tls_send(tport_t const *self, msg_t *msg,
 
 tport_vtable_t const tport_tls_vtable =
 {
-  NEXT_VTABLE, "sctp", tport_type_local,
+  NEXT_VTABLE, "tls", tport_type_local,
   sizeof (tport_primary_t),
   tport_tls_init_primary,
   NULL,
@@ -7783,12 +7713,55 @@ tport_vtable_t const tport_tls_vtable =
 #undef NEXT_VTABLE
 #define NEXT_VTABLE &tport_tls_vtable
 
+tport_vtable_t const tport_tls_client_vtable =
+{
+  NEXT_VTABLE, "tls", tport_type_client,
+  sizeof (tport_primary_t),
+  tport_tls_init_client,
+  NULL,
+  tport_tls_deinit_primary,
+  tport_accept,
+  NULL,
+  sizeof (tport_t),
+  tport_tls_init_secondary,
+  tport_tls_deinit_secondary,
+  tport_tls_set_events,
+  tport_tls_events,
+  tport_tls_recv,
+  tport_tls_send,
+};
+
+#undef NEXT_VTABLE
+#define NEXT_VTABLE &tport_tls_client_vtable
+
 static int tport_tls_init_primary(tport_primary_t *pri,
-				  int socket,
 				  tp_name_t const tpn[1],
 				  su_addrinfo_t *ai,
 				  tagi_t const *tags,
 				  char const **return_culprit)
+{
+  if (tport_tls_init_master(pri, tpn, ai, tags, return_culprit) < 0)
+    return -1;
+
+  return tport_tcp_init_primary(pri, tpn, ai, tags, return_culprit);
+}
+
+static int tport_tls_init_client(tport_primary_t *pri,
+				 tp_name_t const tpn[1],
+				 su_addrinfo_t *ai,
+				 tagi_t const *tags,
+				 char const **return_culprit)
+{
+  tport_tls_init_master(pri, tpn, ai, tags, return_culprit);
+
+  return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
+}
+
+static int tport_tls_init_master(tport_primary_t *pri,
+				 tp_name_t const tpn[1],
+				 su_addrinfo_t *ai,
+				 tagi_t const *tags,
+				 char const **return_culprit)
 {
   char *homedir;
   char *tbf = NULL;
@@ -7832,12 +7805,12 @@ static int tport_tls_init_primary(tport_primary_t *pri,
 
   su_home_zap(autohome);
 
-  if (!pri->pri_primary->tp_tls && socket != -1) {
-    SU_DEBUG_1(("tls_init_master: %s\n", strerror(errno)));
+  if (!pri->pri_primary->tp_tls) {
+    SU_DEBUG_3(("tls_init_master: %s\n", strerror(errno)));
     return *return_culprit = "tls_init_master", -1;
   }
 
-  return tport_tcp_init_primary(pri, socket, tpn, ai, tags, return_culprit);
+  return 0;
 }
 
 static void tport_tls_deinit_primary(tport_primary_t *pri)
@@ -8081,5 +8054,331 @@ int tport_tls_send(tport_t const *self,
 }
 
 #endif
+
+#if HAVE_SOFIA_STUN && 0
+/* ---------------------------------------------------------------------- */
+/* STUN */
+
+static int tport_udp_init_stun(tport_primary_t *,
+			       tp_name_t const tpn[1], 
+			       su_addrinfo_t *, 
+			       tagi_t const *,
+			       char const **return_culprit);
+
+typedef struct
+{
+  tport_primary_t stuntp_primary[1];
+  int stun_try;
+  char *stun_server;
+  stun_handle_t *stun_handle;
+  su_socket_t stun_socket;
+  su_sockaddr_t stun_sockaddr;
+} tport_stun_t;
+
+tport_vtable_t const tport_stun_vtable =
+{
+  NEXT_VTABLE, "UDP", tport_type_stun,
+  sizeof (tport_stun_t),
+  tport_stun_init_primary,
+  tport_init_compression,
+  NULL,
+  NULL,
+  NULL,
+  sizeof (tport_t),
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  tport_recv_dgram,
+  tport_send_dgram,
+};
+
+#define NEXT_VTABLE &tport_stun_vtable
+
+static int tport_udp_init_stun(tport_primary_t *pri,
+			       tp_name_t const tpn[1], 
+			       su_addrinfo_t *ai, 
+			       tagi_t const *tpn,
+			       char const **return_culprit)
+{
+  if (tport_udp_init_primary(pri, tpn, ai, tpn, return_culprit) < 0)
+    return -1;
+
+  return 0;
+}
+
+#endif
+
+/** Receive STUN datagram.
+ *
+ * @retval -1 error
+ * @retval 0  end-of-stream  
+ */
+static 
+int tport_recv_stun_dgram(tport_t const *self, int N)
+{
+  int n;
+  su_sockaddr_t from[1];
+  socklen_t fromlen = sizeof(su_sockaddr_t);
+  int status = 600;
+  char const *error = NULL;
+  
+  unsigned char buffer[128];
+  unsigned char *dgram = buffer;
+
+  if (N > sizeof buffer)
+    dgram = malloc(N);
+
+  if (dgram == NULL)
+    dgram = buffer, N = sizeof buffer, status = 500, error = "Server Error";
+
+  memset(from, 0, sizeof(su_sockaddr_t));
+  n = recvfrom(self->tp_socket, (void *)dgram, N, MSG_TRUNC, 
+	       (void *)from, &fromlen);
+
+  if (n < 20) {
+    if (n != SOCKET_ERROR)
+      su_seterrno(EBADMSG);	/* Runt */
+    if (dgram != buffer)
+      free(dgram);
+    return -1;
+  }
+
+  if ((!error || dgram[0] == 1) && self->tp_master->mr_nat->stun) {
+#if HAVE_SOFIA_STUN
+    if (n > N) n = N;		/* Truncated? */
+    stun_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
+			 from, fromlen, (void *)dgram, n);
+    if (dgram != buffer)
+      free(dgram);
+    return 0;
+#endif /* HAVE_SOFIA_STUN */
+  }
+
+  if (dgram[0] == 0 && (dgram[1] == 1 || dgram[1] == 2)) {
+    uint16_t elen;
+    if (error == NULL)
+      status = 600, error = "Not Implemented";
+    elen = strlen(error);
+
+    /*
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      STUN Message Type        |         Message Length        |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                             Transaction ID
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                                                                    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    */
+
+#define set16(b, offset, value)			\
+  (((b)[(offset) + 0] = ((value) >> 8) & 255),	\
+   ((b)[(offset) + 1] = (value) & 255))
+
+    /* Respond to request */
+    dgram[0] = 1; /* Mark as response */
+    dgram[1] |= 0x10; /* Mark as error response */
+    set16(dgram, 2, elen + 4 + 4);
+    /* TransactionID is there at bytes 4..19 */
+    /*
+    TLV At 20:
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |         Type                  |            Length             |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    */
+    set16(dgram, 20, 0x0009); /* ERROR-CODE */
+    set16(dgram, 22, elen + 4);
+    /*
+    ERROR-CODE at 24:
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                   0                     |Class|     Number    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      Reason Phrase (variable)                                ..
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     */
+    dgram[24] = 0, dgram[25] = 0;
+    dgram[26] = status / 100, dgram[27] = status % 100;
+    memcpy(dgram + 28, error, elen);
+    N = 28 + elen;
+    sendto(self->tp_socket, (void *)dgram, N, 0, (void *)from, fromlen);
+
+#undef set16
+  }
+
+  if (dgram != buffer)
+    free(dgram);
+
+  return 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* TCP using HTTP CONNECT */
+
+#include <sofia-sip/http.h>
+#include <sofia-sip/http_header.h>
+
+static int tport_http_connect_init_primary(tport_primary_t *,
+					   tp_name_t const tpn[1], 
+					   su_addrinfo_t *, 
+					   tagi_t const *,
+					   char const **return_culprit);
+
+static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
+				   tp_name_t const *tpn);
+
+static void tport_http_deliver(tport_t *self, msg_t *msg, su_time_t now);
+
+typedef struct
+{
+  tport_primary_t thc_primary[1];
+  su_addrinfo_t  thc_proxy[1];
+  su_sockaddr_t  thc_proxy_addr[1];
+} tport_http_connect_t;
+
+typedef struct
+{
+  tport_t thci_tport[1];
+  msg_t *thci_response;
+  msg_t *thci_stackmsg;
+} tport_http_connect_instance_t;
+
+tport_vtable_t const tport_http_connect_vtable =
+{
+  NEXT_VTABLE, "TCP", tport_type_connect,
+  sizeof (tport_http_connect_t),
+  tport_http_connect_init_primary,
+  tport_init_compression,
+  NULL,
+  NULL,
+  tport_http_connect,
+  sizeof (tport_http_connect_instance_t),
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  tport_recv_stream,
+  tport_send_stream,
+  tport_http_deliver,
+};
+
+#undef NEXT_VTABLE
+#define NEXT_VTABLE &tport_http_connect_vtable
+
+static int tport_http_connect_init_primary(tport_primary_t *pri,
+					   tp_name_t const tpn[1], 
+					   su_addrinfo_t *ai, 
+					   tagi_t const *tags,
+					   char const **return_culprit)
+{
+  tport_http_connect_t *thc = (tport_http_connect_t *)pri;
+
+  tport_addrinfo_copy(thc->thc_proxy, thc->thc_proxy_addr, 
+		      sizeof thc->thc_proxy_addr, 
+		      ai);
+
+  return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
+}
+
+static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
+				   tp_name_t const *tpn)
+{
+  tport_http_connect_t *thc = (tport_http_connect_t *)pri;
+  tport_http_connect_instance_t *thci;
+  tport_master_t *mr = pri->pri_master;
+  
+  msg_t *msg, *response, *stackmsg;
+
+  char hostport[TPORT_HOSTPORTSIZE];
+
+  tport_t *tport;
+  http_request_t *rq;
+  
+  msg = msg_create(http_default_mclass(), 0);
+
+  if (!msg)
+    return NULL;
+
+  tport_hostport(hostport, sizeof hostport, (void *)ai->ai_addr, 1);
+
+  rq = http_request_format(msg_home(msg), "CONNECT %s HTTP/1.1", hostport);
+
+  if (msg_header_insert(msg, NULL, (void *)rq) < 0
+      || msg_header_add_str(msg, NULL, 
+			    "User-Agent: Sofia-SIP/" VERSION "\n") < 0
+      || msg_header_add_str(msg, NULL, "Proxy-Connection: keepalive\n") < 0
+      || msg_header_add_make(msg, NULL, http_host_class, hostport) < 0
+      || msg_header_add_make(msg, NULL, http_separator_class, "\r\n") < 0 
+      || msg_serialize(msg, NULL) < 0
+      || msg_prepare(msg) < 0)
+    return (void)msg_destroy(msg), NULL;
+
+  /* 
+   * Create a response message that ignores the body 
+   * if there is no Content-Length 
+   */
+  response = msg_create(http_default_mclass(), mr->mr_log | MSG_FLG_MAILBOX);
+  
+  tport = tport_base_connect(pri, thc->thc_proxy, ai, tpn);
+  if (!tport) {
+    msg_destroy(msg); msg_destroy(response);
+  }
+
+  thci = (tport_http_connect_instance_t*)tport;
+  
+  thci->thci_response = response;
+  tport->tp_msg = response;
+  msg_set_next(response, thci->thci_stackmsg = tport_msg_alloc(tport, 512));
+
+  if (tport_send_msg(tport, msg, tpn, NULL) < 0) {
+    SU_DEBUG_9(("tport_send_msg failed in tpot_http_connect\n"));
+    msg_destroy(msg); 
+    tport_zap_secondary(tport);
+    return NULL;
+  }  
+
+  return tport;
+}
+
+#include <sofia-sip/msg_buffer.h>
+
+static void tport_http_deliver(tport_t *self, msg_t *msg, su_time_t now)
+{
+  tport_http_connect_instance_t *thci = (tport_http_connect_instance_t*)self;
+
+  if (msg && thci->thci_response == msg) {
+    tport_http_connect_t *thc = (tport_http_connect_t *)self->tp_pri;
+    http_t *http = http_object(msg);
+
+    if (http && http->http_status) {
+      SU_DEBUG_0(("tport_http_connect: %u %s\n", 
+		  http->http_status->st_status,
+		  http->http_status->st_phrase));
+      if (http->http_status->st_status < 300) {
+	msg_buf_move(thci->thci_stackmsg, msg);
+	thci->thci_response = NULL;
+	thci->thci_stackmsg = NULL;
+	return;
+      }
+    }
+
+    msg_destroy(msg);
+    thci->thci_response = NULL;
+    tport_error_report(self, EPROTO, thc->thc_proxy_addr);
+    tport_close(self);
+    return;
+  }
+
+  tport_base_deliver(self, msg, now);
+}
 
 tport_vtable_t const *tport_vtables = NEXT_VTABLE;
