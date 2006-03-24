@@ -1110,6 +1110,9 @@ static int stun_discovery_destroy(stun_discovery_t *sd)
 
   sh = sd->sd_handle;
 
+  if (sd->sd_timer) 
+    su_timer_destroy(sd->sd_timer), sd->sd_timer = NULL;
+
   /* if we are in the queue*/
   if (x_is_inserted(sd, sd))
     x_remove(sd, sd);
@@ -2791,6 +2794,7 @@ int stun_process_message(stun_handle_t *sh, su_socket_t s,
 int stun_handle_release(stun_handle_t *sh, su_socket_t s)
 {
   stun_discovery_t *sd;
+  int removed = 0;
 
   assert (sh);
 
@@ -2801,20 +2805,28 @@ int stun_handle_release(stun_handle_t *sh, su_socket_t s)
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
+  
+  /* count how many discoveries are using 's' */
   for (sd = sh->sh_discoveries; sd; sd = sd->sd_next) {
-    if (sd->sd_socket != s)
+    if (sd->sd_socket != s) 
       continue;
 
-    su_root_deregister(sh->sh_root, sd->sd_index);
-    sd->sd_index = -1; /* mark index as deregistered */
-    SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
+    if (!removed) {
+      su_root_deregister(sh->sh_root, sd->sd_index);
+      SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
+      ++removed;
+    }
 
-    return 0;
+    sd->sd_index = -1; /* mark index as deregistered */
   }
 
-  /* Oops, user passed wrong socket */
-  SU_DEBUG_3(("%s: socket given is not associated with STUN \n", __func__));
-  return -1;
+  if (!removed) {
+    /* Oops, user passed wrong socket */
+    SU_DEBUG_3(("%s: socket given is not associated with STUN \n", __func__));
+    return -1;
+  }
+
+  return 0;
 }
 
 /** 
@@ -2939,8 +2951,7 @@ int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
   if (!sd)
     return 1;
 
-  su_timer_destroy(sd->sd_timer);
-
+  su_timer_destroy(sd->sd_timer), sd->sd_timer = NULL;
   stun_discovery_destroy(sd);
 
   return 0;
