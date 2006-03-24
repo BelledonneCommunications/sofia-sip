@@ -61,7 +61,7 @@
 
 char const tls_version[] = OPENSSL_VERSION_TEXT;
 
-enum  { tls_master, tls_client, tls_slave };
+enum  { tls_master, tls_slave };
 
 struct tls_s {
   SSL_CTX *ctx;
@@ -96,21 +96,6 @@ tls_t *tls_create(int type)
     tls->type = type;
 
   return tls;
-}
-
-static
-tls_t *tls_clone(tls_t *tls)
-{
-  tls_t *tls_new = tls_create(tls_slave);
-
-  if (tls_new) {
-    tls_new->ctx = tls->ctx;
-    tls_new->bio_err = tls->bio_err;
-
-    if (!(tls_new->read_buffer = malloc(tls_buffer_size)))
-      free(tls_new), tls_new = NULL;
-  }
-  return tls_new;
 }
 
 static
@@ -381,10 +366,17 @@ int tls_accept(tls_t *tls)
 }
 #endif
 
-tls_t *tls_init_slave(tls_t *master, int sock)
+tls_t *tls_clone(tls_t *master, int sock, int accept)
 {
-  tls_t *tls = tls_clone(master);
+  tls_t *tls = tls_create(tls_slave);
 
+  if (tls) {
+    tls->ctx = master->ctx;
+    tls->bio_err = master->bio_err;
+
+    if (!(tls->read_buffer = malloc(tls_buffer_size)))
+      free(tls), tls = NULL;
+  }
   if (!tls)
     return tls;
 
@@ -394,7 +386,7 @@ tls_t *tls_init_slave(tls_t *master, int sock)
   tls->con = SSL_new(tls->ctx);
 
   if (tls->con == NULL) {
-    BIO_printf(tls->bio_err, "tls_init_slave: SSL_new failed\n");
+    BIO_printf(tls->bio_err, "tls_clone: SSL_new failed\n");
     ERR_print_errors(tls->bio_err);
     tls_free(tls);
     errno = EIO;
@@ -402,7 +394,10 @@ tls_t *tls_init_slave(tls_t *master, int sock)
   }
 
   SSL_set_bio(tls->con, tls->bio_con, tls->bio_con);
-  SSL_set_accept_state(tls->con);
+  if (accept)
+    SSL_set_accept_state(tls->con);
+  else
+    SSL_set_connect_state(tls->con);
   SSL_set_mode(tls->con, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
   tls_read(tls); /* XXX - works only with non-blocking sockets */
@@ -410,32 +405,16 @@ tls_t *tls_init_slave(tls_t *master, int sock)
   return tls;
 }
 
+tls_t *tls_init_slave(tls_t *master, int sock)
+{
+  int accept;
+  return tls_clone(master, sock, accept = 1);
+}
 
 tls_t *tls_init_client(tls_t *master, int sock)
 {
-  tls_t *tls = tls_clone(master);
-
-  if (!tls)
-    return tls;
-
-  tls->bio_con = BIO_new_socket(sock, BIO_NOCLOSE);
-  tls->con = SSL_new(tls->ctx);
-
-  if (tls->con == NULL || tls->bio_con == NULL) {
-      BIO_printf(tls->bio_err, "tls_init_client: SSL_new failed\n");
-      ERR_print_errors(tls->bio_err);
-      tls_free(tls);
-      errno = EIO;
-      return NULL;      
-  }
-
-  SSL_set_bio(tls->con, tls->bio_con, tls->bio_con);
-  SSL_set_connect_state(tls->con);
-  SSL_set_mode(tls->con, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
-
-  tls_read(tls); /* XXX - works only with non-blocking sockets */
-
-  return tls;
+  int accept;
+  return tls_clone(master, sock, accept = 0);
 }
 
 static char *tls_strdup(char const *s)

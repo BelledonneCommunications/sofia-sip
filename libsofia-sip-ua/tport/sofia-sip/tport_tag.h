@@ -77,8 +77,21 @@ TPORT_DLL extern tag_typedef_t tptag_server;
 TPORT_DLL extern tag_typedef_t tptag_server_ref;
 #define TPTAG_SERVER_REF(x) tptag_server_ref, tag_bool_vr(&(x))
 
+/** Define how the public transport connects to Internet. 
+ *
+ * @sa TPTAG_PUBLIC(), tport_is_public().
+ */
+enum tport_via {
+  tport_type_local = 0,
+  tport_type_client = 1,
+  tport_type_stun = 2,
+  tport_type_upnp = 3,
+  tport_type_connect = 4,
+  tport_type_socks = 5,
+} tport_pri_type_t;
+
 TPORT_DLL extern tag_typedef_t tptag_public;
-/** Bind public sockets (default false, enable with TPTAG_PUBLIC(1), TPTAG_PUBLIC(2) etc). */
+/** Use a transport reaching to public Internet. */
 #define TPTAG_PUBLIC(x) tptag_public, tag_int_v((x))
 
 TPORT_DLL extern tag_typedef_t tptag_public_ref;

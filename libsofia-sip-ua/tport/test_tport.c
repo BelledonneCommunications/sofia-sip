@@ -35,6 +35,8 @@
 
 #include "config.h"
 
+#undef HAVE_TLS
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -465,6 +467,7 @@ static int init_test(tp_test_t *tt)
 #endif
   tp_name_t const *tpn;
   tport_t *tp;
+  int idle;
 
   BEGIN();
 
@@ -539,6 +542,10 @@ static int init_test(tp_test_t *tt)
 		   TPTAG_SERVER(1),
 		   TAG_END()), 
        0);
+
+  TEST(tport_get_params(tt->tt_srv_tports,
+			TPTAG_IDLE_REF(idle),
+			TAG_END()), 1);
 
   for (tp = tport_primaries(tt->tt_srv_tports); tp; tp = tport_next(tp))
     TEST_S(tport_name(tp)->tpn_ident, "server");
