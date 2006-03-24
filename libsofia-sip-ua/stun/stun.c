@@ -464,7 +464,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   stun->sh_context  = context;
   stun->sh_callback = cb;
   /* always try TLS: */
-  stun->sh_use_msgint = 1;  /* XXX: do not commit */
+  stun->sh_use_msgint = 1;
   /* whether use of shared-secret msgint is required */
   stun->sh_req_msgint = req_msg_integrity;
 
