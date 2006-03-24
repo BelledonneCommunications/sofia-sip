@@ -74,7 +74,7 @@ typedef struct
   msg_t *thci_stackmsg;
 } tport_http_connect_instance_t;
 
-tport_vtable_t const tport_http_connect_vtable_ =
+tport_vtable_t const tport_http_connect_vtable =
 {
   "TCP", tport_type_connect,
   sizeof (tport_http_connect_t),
@@ -93,9 +93,6 @@ tport_vtable_t const tport_http_connect_vtable_ =
   tport_send_stream,
   tport_http_deliver,
 };
-
-tport_vtable_t const * const tport_http_connect_vtable =
-  &tport_http_connect_vtable_;
 
 static int tport_http_connect_init_primary(tport_primary_t *pri,
 					   tp_name_t const tpn[1], 

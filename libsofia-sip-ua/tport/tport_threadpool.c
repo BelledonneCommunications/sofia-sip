@@ -114,7 +114,7 @@ static int tport_thread_send(tport_t *tp,
 			     struct sigcomp_compartment *cc,
 			     unsigned mtu);
 
-tport_vtable_t const tport_threadpool_vtable_ =
+tport_vtable_t const tport_threadpool_vtable =
 {
   "udp", tport_type_local,
   sizeof (tport_primary_t),

@@ -1138,35 +1138,35 @@ int tport_set_params(tport_t *self,
   return n;
 }
 
-extern tport_vtable_t const tport_udp_vtable_;
-extern tport_vtable_t const tport_tcp_vtable_;
-extern tport_vtable_t const tport_tls_vtable_;
-extern tport_vtable_t const tport_sctp_vtable_;
-extern tport_vtable_t const tport_udp_client_vtable_;
-extern tport_vtable_t const tport_tcp_client_vtable_;
-extern tport_vtable_t const tport_sctp_client_vtable_;
-extern tport_vtable_t const tport_tls_client_vtable_;
-extern tport_vtable_t const tport_http_connect_vtable_;
-extern tport_vtable_t const tport_threadpool_vtable_;
+extern tport_vtable_t const tport_udp_vtable;
+extern tport_vtable_t const tport_tcp_vtable;
+extern tport_vtable_t const tport_tls_vtable;
+extern tport_vtable_t const tport_sctp_vtable;
+extern tport_vtable_t const tport_udp_client_vtable;
+extern tport_vtable_t const tport_tcp_client_vtable;
+extern tport_vtable_t const tport_sctp_client_vtable;
+extern tport_vtable_t const tport_tls_client_vtable;
+extern tport_vtable_t const tport_http_connect_vtable;
+extern tport_vtable_t const tport_threadpool_vtable;
 
 #define TPORT_NUMBER_OF_TYPES 64
 
 tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
 {
-  &tport_http_connect_vtable_,
+  &tport_http_connect_vtable,
 #if HAVE_TLS
-  &tport_tls_client_vtable_,
-  &tport_tls_vtable_,
+  &tport_tls_client_vtable,
+  &tport_tls_vtable,
 #endif
 #if HAVE_SCTP
-  &tport_sctp_client_vtable_,
-  &tport_sctp_vtable_,
+  &tport_sctp_client_vtable,
+  &tport_sctp_vtable,
 #endif
-  &tport_tcp_client_vtable_,
-  &tport_tcp_vtable_,
-  &tport_udp_client_vtable_,
-  &tport_udp_vtable_,
-  &tport_threadpool_vtable_,
+  &tport_tcp_client_vtable,
+  &tport_tcp_vtable,
+  &tport_udp_client_vtable,
+  &tport_udp_vtable,
+  &tport_threadpool_vtable,
 };
 
 /**Get a vtable for given protocol */

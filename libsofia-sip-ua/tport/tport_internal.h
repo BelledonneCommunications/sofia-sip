@@ -428,8 +428,8 @@ void tport_dump_iovec(tport_t const *self, msg_t *msg,
 		      int n, su_iovec_t const iov[], int iovused,
 		      char const *what, char const *how);
 
-extern tport_vtable_t const * const tport_udp_vtable;
-extern tport_vtable_t const * const tport_udp_client_vtable;
+extern tport_vtable_t const tport_udp_vtable;
+extern tport_vtable_t const tport_udp_client_vtable;
 
 int tport_udp_init_primary(tport_primary_t *, 
 			   tp_name_t const tpn[1], 
@@ -442,8 +442,8 @@ int tport_send_dgram(tport_t const *self, msg_t *msg,
 		     msg_iovec_t iov[], int iovused);
 int tport_udp_error(tport_t const *self, su_sockaddr_t name[1]);
 
-extern tport_vtable_t const * const tport_tcp_vtable;
-extern tport_vtable_t const * const tport_tcp_client_vtable;
+extern tport_vtable_t const tport_tcp_vtable;
+extern tport_vtable_t const tport_tcp_client_vtable;
 
 int tport_tcp_init_primary(tport_primary_t *, 
  			  tp_name_t const tpn[1], 
@@ -458,13 +458,13 @@ int tport_recv_stream(tport_t *self);
 int tport_send_stream(tport_t const *self, msg_t *msg,
 		      msg_iovec_t iov[], int iovused);
 
-extern tport_vtable_t const * const tport_sctp_vtable;
-extern tport_vtable_t const * const tport_sctp_client_vtable;
-extern tport_vtable_t const * const tport_tls_vtable;
-extern tport_vtable_t const * const tport_tls_client_vtable;
-extern tport_vtable_t const * const tport_stun_vtable;
-extern tport_vtable_t const * const tport_http_connect_vtable;
-extern tport_vtable_t const * const tport_threadpool_vtable;
+extern tport_vtable_t const tport_sctp_vtable;
+extern tport_vtable_t const tport_sctp_client_vtable;
+extern tport_vtable_t const tport_tls_vtable;
+extern tport_vtable_t const tport_tls_client_vtable;
+extern tport_vtable_t const tport_stun_vtable;
+extern tport_vtable_t const tport_http_connect_vtable;
+extern tport_vtable_t const tport_threadpool_vtable;
 
 SOFIA_END_DECLS
 

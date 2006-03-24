@@ -53,7 +53,7 @@
 /* ---------------------------------------------------------------------- */
 /* TCP */
 
-tport_vtable_t const tport_tcp_vtable_ =
+tport_vtable_t const tport_tcp_vtable =
 {
   "tcp", tport_type_local,
   sizeof (tport_primary_t),
@@ -72,7 +72,7 @@ tport_vtable_t const tport_tcp_vtable_ =
   tport_send_stream,
 };
 
-tport_vtable_t const tport_tcp_client_vtable_ =
+tport_vtable_t const tport_tcp_client_vtable =
 {
   "tcp", tport_type_client,
   sizeof (tport_primary_t),

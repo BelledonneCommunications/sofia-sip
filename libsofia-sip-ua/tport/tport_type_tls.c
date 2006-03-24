@@ -87,7 +87,7 @@ typedef struct
   char   *tlstp_buffer;    /**< 2k Buffer  */
 } tport_tls_t;
 
-tport_vtable_t const tport_tls_vtable_ =
+tport_vtable_t const tport_tls_vtable =
 {
   "tls", tport_type_local,
   sizeof (tport_tls_primary_t),
@@ -106,7 +106,7 @@ tport_vtable_t const tport_tls_vtable_ =
   tport_tls_send,
 };
 
-tport_vtable_t const tport_tls_client_vtable_ =
+tport_vtable_t const tport_tls_client_vtable =
 {
   "tls", tport_type_client,
   sizeof (tport_tls_primary_t),

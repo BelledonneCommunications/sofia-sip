@@ -56,7 +56,7 @@
 static int tport_recv_stun_dgram(tport_t const *self, int N);
 static int tport_recv_sigcomp_dgram(tport_t *self, int N);
 
-tport_vtable_t const tport_udp_client_vtable_ =
+tport_vtable_t const tport_udp_client_vtable =
 {
   "udp", tport_type_client,
   sizeof (tport_primary_t),
@@ -75,7 +75,7 @@ tport_vtable_t const tport_udp_client_vtable_ =
   tport_send_dgram,
 };
 
-tport_vtable_t const tport_udp_vtable_ =
+tport_vtable_t const tport_udp_vtable =
 {
   "udp", tport_type_local,
   sizeof (tport_primary_t),

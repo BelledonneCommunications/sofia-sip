@@ -69,7 +69,7 @@ static int tport_recv_sctp(tport_t *self);
 static int tport_send_sctp(tport_t const *self, msg_t *msg,
 			   msg_iovec_t iov[], int iovused);
 
-tport_vtable_t const tport_sctp_client_vtable_ =
+tport_vtable_t const tport_sctp_client_vtable =
 {
   "sctp", tport_type_client,
   sizeof (tport_primary_t),
@@ -91,7 +91,7 @@ tport_vtable_t const tport_sctp_client_vtable_ =
 #undef NEXT_VTABLE
 #define NEXT_VTABLE &tport_sctp_client_vtable
 
-tport_vtable_t const tport_sctp_vtable_ =
+tport_vtable_t const tport_sctp_vtable =
 {
   "sctp", tport_type_local,
   sizeof (tport_primary_t),

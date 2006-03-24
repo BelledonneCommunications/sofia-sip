@@ -106,7 +106,7 @@ typedef struct
   su_sockaddr_t stun_sockaddr;
 } tport_stun_t;
 
-tport_vtable_t const tport_stun_vtable_ =
+tport_vtable_t const tport_stun_vtable =
 {
   "UDP", tport_type_stun,
   sizeof (tport_stun_t),
