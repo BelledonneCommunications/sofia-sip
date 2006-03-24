@@ -1656,7 +1656,8 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
       }
       else {
 	msg_random_token(host, 16, NULL, 0);
-	canon = strcat(host, "is.invalid");
+	canon = strcat(host, ".is.invalid");
+	maddr = 0;
 	port = 0;
       }
 	
@@ -1760,13 +1761,20 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
 static
 int agent_init_contact(nta_agent_t *self)
 {
-  sip_via_t const *v1 = self->sa_vias, *v2;
+  sip_via_t const *v1, *v2;
   char const *tp;
 
   if (self->sa_contact)
     return 0;
 
-  if (!v1) return -1;
+  if (self->sa_vias)
+    v1 = self->sa_vias;
+  else
+    v1 = self->sa_public_vias;
+
+  if (!v1)
+    return -1;
+
   tp = strrchr(v1->v_protocol, '/');
   if (!tp++)
     return -1;
