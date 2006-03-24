@@ -64,24 +64,25 @@ const char stun_400_Bad_request[] = "Bad Request",
   stun_500_Server_error[] = "Server Error",
   stun_600_Global_failure[] = "Global Failure";
 
-int stun_parse_message(stun_msg_t *msg) {
+#define set16(b, offset, value)			\
+  (((b)[(offset) + 0] = ((value) >> 8) & 255),	\
+   ((b)[(offset) + 1] = (value) & 255))
 
+#define get16(b, offset)	\
+  (((b)[(offset) + 0] << 8) |	\
+   ((b)[(offset) + 1] << 0))
+
+int stun_parse_message(stun_msg_t *msg)
+{
   unsigned len;
   int i;
   unsigned char *p;
-  uint16_t tmp16;
 
   /* parse header first */
   p = msg->enc_buf.data;
-  memcpy(&tmp16, p, 2); p+=2;
-  msg->stun_hdr.msg_type = ntohs(tmp16);
-  memcpy(&tmp16, p, 2); p+=2;
-  msg->stun_hdr.msg_len = ntohs(tmp16);
-
-  for (i = 0; i < 8; i++) {
-    memcpy(&tmp16, p, 2); p+=2;
-    msg->stun_hdr.tran_id[i] = ntohs(tmp16);
-  }
+  msg->stun_hdr.msg_type = get16(p, 0);
+  msg->stun_hdr.msg_len = get16(p, 2); 
+  memcpy(msg->stun_hdr.tran_id, p + 4, 16);
 
   SU_DEBUG_5(("%s: Parse STUN message: Length = %d\n", __func__,
 	      msg->stun_hdr.msg_len));
@@ -99,32 +100,33 @@ int stun_parse_message(stun_msg_t *msg) {
     p += i;
     len -= i;
   }
+
   return 0;
 }
+
 
 int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
 
   int len;
-  uint16_t tmp16;
+  uint16_t attr_type;
   stun_attr_t *attr, *next;
 
-  attr = (stun_attr_t *) malloc(sizeof(stun_attr_t));
-  attr->next = NULL;
+  attr_type = get16(p, 0);
+  len = get16(p, 2);
 
-  memcpy(&tmp16, p, 2);
-  p+=2;
-  attr->attr_type = ntohs(tmp16);
-  if (attr->attr_type > LARGEST_ATTRIBUTE && attr->attr_type < OPTIONAL_ATTRIBUTE) {
-    free(attr);
+  SU_DEBUG_5(("%s: received attribute: Type %02X, Length %d - %s\n", 
+	      __func__, attr_type, len, stun_attr_phrase(attr_type)));
+
+  if (attr_type > LARGEST_ATTRIBUTE && attr_type < OPTIONAL_ATTRIBUTE) {
     return -1;
   }
 
-  memcpy(&tmp16, p, 2);
-  p+=2;
-  len = ntohs(tmp16);
-
-  SU_DEBUG_5(("%s: received attribute: Type %02X, Length %d - %s\n", __func__,
-	      attr->attr_type, len, stun_attr_phrase(attr->attr_type)));
+  attr = (stun_attr_t *)calloc(1, sizeof(stun_attr_t));
+  if (!attr)
+    return -1;
+  attr->next = NULL;
+  attr->attr_type = attr_type;
+  p += 4;
 
   switch (attr->attr_type) {
   case MAPPED_ADDRESS:
@@ -143,7 +145,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
     }
     break;
   case ERROR_CODE:
-    if(stun_parse_attr_error_code(attr, p, len) <0) { free(attr); return -1; }
+    if (stun_parse_attr_error_code(attr, p, len) <0) { free(attr); return -1; }
     break;
   case UNKNOWN_ATTRIBUTES:
     if(stun_parse_attr_unknown_attributes(attr, p, len) <0) { free(attr); return -1; }
@@ -154,7 +156,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   case TURN_MAGIC_COOKIE:
   case TURN_BANDWIDTH:
 #endif
-    if(stun_parse_attr_uint32(attr, p, len) <0) { free(attr); return -1; }
+    if (stun_parse_attr_uint32(attr, p, len) <0) { free(attr); return -1; }
     break;
   case USERNAME:
   case PASSWORD:
@@ -162,7 +164,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   case TURN_DATA:
   case TURN_NONCE:
 #endif
-    if(stun_parse_attr_buffer(attr, p, len) <0) { free(attr); return -1; }
+    if (stun_parse_attr_buffer(attr, p, len) <0) { free(attr); return -1; }
     break;
   default:
     /* just copy as is */
@@ -187,7 +189,16 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   return len+4;
 }
 
-int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned len)
+int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
+  attr = (stun_attr_t *)calloc(1, sizeof(stun_attr_t));
+  if (!attr)
+    return -1;
+  return stun_parse_attr_any(attr, type, len, p);
+}
+
+int stun_parse_attr_address(stun_attr_t *attr, 
+			    const unsigned char *p, 
+			    unsigned len)
 {
   stun_attr_sockaddr_t *addr;
   int addrlen;
@@ -272,7 +283,7 @@ int stun_parse_attr_unknown_attributes(stun_attr_t *attr,
   return 0;
 }
 
-/** scan thru attribute list and return the requested attr */
+/** scan thru attribute list and return the next requested attr */
 stun_attr_t *stun_get_attr(stun_attr_t *attr, uint16_t attr_type) {
   stun_attr_t *p;
 
@@ -543,9 +554,7 @@ int stun_free_message(stun_msg_t *msg) {
   stun_attr_t *p, *p2;
 
   /* clearing header */
-  msg->stun_hdr.msg_type = 0;
-  msg->stun_hdr.msg_len = 0;
-  for(i=0; i<8; i++) msg->stun_hdr.tran_id[i] = 0;
+  memset(&msg->stun_hdr, 0, sizeof msg->stun_hdr);
 
   /* clearing attr */
   p = msg->stun_attr;
@@ -675,38 +684,37 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
     buf = (unsigned char *)malloc(buf_len);
     
     /* convert to binary format for transmission */
-    len = 0;
-    tmp16 = htons(msg->stun_hdr.msg_type);
-    memcpy(buf, (unsigned char *)&tmp16, 2); len+=2;
-    tmp16 = htons(msg->stun_hdr.msg_len);
-    memcpy(buf+len, (unsigned char *)&tmp16, 2); len+=2;
-    for(i=0; i<8; i++) {
-      tmp16 = htons(msg->stun_hdr.tran_id[i]);
-      memcpy(buf+len, (unsigned char *)&tmp16, 2); len+=2;
-    }
+    set16(buf, 0, msg->stun_hdr.msg_type);
+    set16(buf, 2, msg->stun_hdr.msg_len);
+    memcpy(buf + 4, msg->stun_hdr.tran_id, 16);
+
+    len = 20;
 
     /* attaching encoded attributes */
     attr = msg->stun_attr;
     while(attr) {
       /* attach only if enc_buf is not null */
       if(attr->enc_buf.data && attr->attr_type != MESSAGE_INTEGRITY) {
-	memcpy(buf+len, (unsigned char *)attr->enc_buf.data, attr->enc_buf.size); 
+	memcpy(buf+len, (void *)attr->enc_buf.data, attr->enc_buf.size); 
 	len += attr->enc_buf.size;
       }
       attr = attr->next;
     }
-    if(msg_int) {
+
+    if (msg_int) {
       /* compute message integrity */
       if(stun_encode_message_integrity(msg_int, buf, len, pwd)!=24) {
 	free(buf);
 	return -1;
       }
-      memcpy(buf+len, (unsigned char *)msg_int->enc_buf.data, msg_int->enc_buf.size);
+      memcpy(buf+len, (void *)msg_int->enc_buf.data, 
+	     msg_int->enc_buf.size);
     }
     
     /* save binary buffer for future reference */
     if (msg->enc_buf.data)
       free(msg->enc_buf.data);
+
     msg->enc_buf.data = buf; msg->enc_buf.size = buf_len;
   }
 

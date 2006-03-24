@@ -139,7 +139,7 @@ typedef struct stun_buffer_s stun_buffer_t;
 typedef struct {
   uint16_t msg_type;        /**< message type */
   uint16_t msg_len;         /**< message length */
-  uint16_t tran_id[8];      /**< transaction id, 128 bits */
+  uint8_t tran_id[16];      /**< transaction id, 128 bits */
 } stun_hdr_t;
 
 typedef struct stun_attr_s {
