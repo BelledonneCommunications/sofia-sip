@@ -602,10 +602,6 @@ int process_register(struct proxy *proxy,
   if (status)
     return status;
 
-  status = check_out_of_order_unregister(e, sip);
-  if (status)
-    return status;
-
   e = registration_entry_find(proxy, sip->sip_to->a_url);
 
   if (!sip->sip_contact) {
@@ -614,6 +610,10 @@ int process_register(struct proxy *proxy,
 			TAG_END());
     return 200;
   }
+
+  status = check_out_of_order_unregister(e, sip);
+  if (status)
+    return status;
 
   if (!e) 
     e = registration_entry_new(proxy, sip->sip_to->a_url);
@@ -661,6 +661,9 @@ int check_out_of_order_unregister(struct registration_entry *e,
   sip_call_id_t const *id;
 
   if (!sip->sip_contact || sip->sip_contact->m_url->url_type != url_any)
+    return 0;
+
+  if (e == NULL)
     return 0;
 
   id = sip->sip_call_id;
