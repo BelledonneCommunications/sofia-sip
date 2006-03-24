@@ -69,6 +69,7 @@ static libraries and include files.
 /usr/share/aclocal/sac-general.m4
 /usr/share/aclocal/sac-su.m4
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h
+%{_prefix}/include/sofia-sip*/sofia-resolv/*.h
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h.in
 %{_prefix}/libexec/sofia/tag_dll.awk
 %{_prefix}/libexec/sofia/msg_parser.awk
