@@ -38,63 +38,17 @@
 #include "config.h"
 
 #include <sofia-sip/string0.h>
-#include <stdlib.h>
-#include <time.h>
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-
 #include <sofia-sip/su.h>
-
-#if HAVE_NETINET_TCP_H
-#include <netinet/tcp.h>
-#endif
-
-#if !defined(EPROTONOSUPPORT) && defined(_WIN32)
-#define EPROTONOSUPPORT WSAEPROTONOSUPPORT
-#endif
-
-#if !defined(ENOBUFS) && defined(_WIN32)
-#define ENOBUFS WSAENOBUFS
-#endif
-
-#ifndef EBADMSG
-#define EBADMSG 117 /* XXX -- mela: number? */
-#endif
-
-#if !defined(EMSGSIZE) && defined(_WIN32)
-#define EMSGSIZE WSAEMSGSIZE
-#endif
-
-#if !defined(random) && defined(_WIN32)
-#define random rand
-#endif
-
-#ifndef SU_DEBUG
-#define SU_DEBUG 3
-#endif
-
-#define SU_LOG   tport_log
-
-#include <sofia-sip/su_debug.h>
+#include <sofia-sip/su_errno.h>
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_tagarg.h>
-
 #include <sofia-sip/su_localinfo.h>
 
-#ifndef NONE
-#define NONE ((void *)-1)
-#endif
-
-typedef struct tport_master tport_master_t;
 typedef struct tport_nat_s tport_nat_t;
 
 #define SU_WAKEUP_ARG_T         struct tport_s
 #define SU_TIMER_ARG_T          struct tport_master
-#define SU_ROOT_MAGIC_T         struct tport_threadpool
 #define SU_MSG_ARG_T            union tport_su_msg_arg
-#define STUN_MAGIC_T            tport_master_t
-#define STUN_DISCOVERY_MAGIC_T  struct tport_primary
 
 #include <sofia-sip/su_wait.h>
 
@@ -129,31 +83,11 @@ typedef struct _tls_t tls_t;	/* dummy */
 #define IPPROTO_SCTP (132)
 #endif
 
-#if !defined(MSG_NOSIGNAL) || defined(__CYGWIN__)
-#undef MSG_NOSIGNAL
-#define MSG_NOSIGNAL (0)
-#endif
-
-#if !defined(MSG_TRUNC) || defined(SU_HAVE_WINSOCK)
-#undef MSG_TRUNC
-#define MSG_TRUNC (0)
-#endif
-
-/* Number of supported transports */
-#define TPORT_N (8)
-
-#if HAVE_SOFIA_STUN
-#include "sofia-sip/stun.h"
-#include "sofia-sip/stun_tag.h"
-#endif
-
-#if HAVE_UPNP
-#include "upnp_wrapper.h"
-#endif
-
 #include "sofia-sip/tport.h"
 #include "sofia-sip/su_uniqueid.h"
 #include <sofia-sip/rbtree.h>
+
+#include "tport_internal.h"
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -161,296 +95,6 @@ typedef struct _tls_t tls_t;	/* dummy */
 #else
 char const __func__[] = "tport";
 #endif
-
-typedef struct tport_pending_s tport_pending_t;
-typedef struct tport_threadpool tport_threadpool_t;
-typedef struct tport_sigcomp_handler tport_sigcomp_handler_t;
-typedef struct tport_sigcomp tport_sigcomp_t;
-typedef struct tport_primary tport_primary_t;
-typedef struct tport_vtable tport_vtable_t;
-
-struct sigcomp_state_handler;
-struct sigcomp_algorithm;
-struct sigcomp_udvm;
-struct sigcomp_magic;
-
-#if HAVE_SIGCOMP
-
-/** Per-socket SigComp data */
-struct tport_sigcomp {
-  struct sigcomp_udvm          *sc_udvm;
-  struct sigcomp_compartment   *sc_cc;
-  struct sigcomp_compressor    *sc_compressor;
-  struct sigcomp_buffer        *sc_output;
-  unsigned                      sc_compressed; 
-
-  struct sigcomp_buffer        *sc_input;
-  unsigned                      sc_copied;
-  
-  enum {
-    format_is_unknown,
-    format_is_sigcomp,
-    format_is_noncomp
-  } sc_infmt, sc_outfmt;
-};
-
-#endif
-
-/** Transport parameters */
-typedef struct {
-  unsigned tpp_mtu;		/**< Maximum packet size */
-  unsigned tpp_idle;		/**< Allowed connection idle time. */
-  unsigned tpp_timeout;		/**< Allowed idle time for message. */
-  unsigned tpp_sigcomp_lifetime;  /**< SigComp compartment lifetime  */
-  unsigned tpp_thrpsize;	/**< Size of thread pool */
-
-  unsigned tpp_thrprqsize;	/**< Length of per-thread recv queue */
-  unsigned tpp_qsize;		/**< Size of queue */
-
-  unsigned tpp_drop;		/**< Packet drop probablity */
-
-  unsigned tpp_conn_orient:1;   /**< Connection-orienteded */
-  unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
-  unsigned :0;
-
-} tport_params_t;
-
-
-/** Transport object.
- *
- * A transport object can be used in three roles, to represent transport
- * list (aka master transport), to represent available transports (aka
- * primary transport) and to represent actual transport connections (aka
- * secondary transport).
- */
-struct tport_s {
-  su_home_t           tp_home[1];       /**< Memory home */
-
-  int                 tp_refs;		/**< Number of references to tport */
-
-  tport_t *tp_left, *tp_right, *tp_dad; /**< Links in tport tree */
-
-  tport_master_t     *tp_master;        /**< Master transport */
-  tport_primary_t    *tp_pri;           /**< Primary transport */
-
-  tport_params_t     *tp_params;        /**< Transport parameters */
-
-  tp_magic_t         *tp_magic; 	/**< Context provided by consumer */
-
-  unsigned            tp_black:1;       /**< Used by red-black-tree */
-  
-  unsigned            tp_accepted:1;    /**< Originally server? */
-  unsigned            tp_conn_orient:1;	/**< Is connection-oriented */
-  unsigned            tp_connected : 1;	/**< Has real connection */
-  unsigned            tp_reusable:1;    /**< Can this connection be reused */
-  unsigned            tp_closed : 1;    /**< This transport is closed */
-  /**< Remote end has sent FIN (2) or we should not just read */
-  unsigned            tp_recv_close:2;
-  /** We will send FIN (1) or have sent FIN (2) */
-  unsigned            tp_send_close:2; 
-  unsigned            tp_has_keepalive:1;
-
-  unsigned:0;
-
-  msg_t const        *tp_rlogged;       /**< Last logged when receiving */
-  msg_t const        *tp_slogged;       /**< Last logged when sending */
-
-  unsigned            tp_time;	        /**< When this transport was last used */
-
-  tp_name_t           tp_name[1];	/**< Transport name.
-					 * 
-					 * This is either our name (if primary)
-					 * or peer name (if secondary).
-					 */
-
-#define tp_protoname tp_name->tpn_proto
-#define tp_canon     tp_name->tpn_canon
-#define tp_host      tp_name->tpn_host
-#define tp_port      tp_name->tpn_port
-#define tp_ident     tp_name->tpn_ident
-
-  su_socket_t  	      tp_socket;	/**< Socket of this tport*/
-  int                 tp_index;		/**< Root registration index */
-  int                 tp_events;        /**< Subscribed events */
-
-  su_addrinfo_t       tp_addrinfo[1];   /**< Peer/own address info */
-  su_sockaddr_t       tp_addr[1];	/**< Peer/own address */
-#define tp_addrlen tp_addrinfo->ai_addrlen
-
-#if HAVE_TLS
-  tls_t              *tp_tls;
-  char               *tp_tls_buffer;    /**< 2k Buffer  */
-#endif
-
-#if HAVE_SIGCOMP
-  tport_sigcomp_t     tp_sigcomp[1];
-#endif  
-
-#if HAVE_SOFIA_STUN
-#if 0
-  stun_socket_t      *tp_stun_socket;
-#endif
-  su_socket_t         tp_stun_socket;
-#endif
-
-  /* ==== Receive queue ================================================== */
-
-  msg_t   	     *tp_msg;		/**< Message being received */
-
-  /* ==== Pending messages =============================================== */
-
-  tport_pending_t    *tp_pending;       /**< Pending requests */
-  tport_pending_t    *tp_released;      /**< Released pends */
-  unsigned            tp_plen;          /**< Size of tp_pending */
-  unsigned            tp_pused;         /**< Used pends */
-  unsigned            tp_reported;      /**< Report counter */
-
-  /* ==== Send queue ===================================================== */
-
-  msg_t             **tp_queue;		/**< Messages being sent */
-  unsigned short      tp_qhead;		/**< Head of queue */
-
-  msg_iovec_t        *tp_unsent;	/**< Pointer to first unsent iovec */
-  unsigned            tp_unsentlen;	/**< Number of unsent iovecs */
-
-  msg_iovec_t        *tp_iov;		/**< Iovecs allocated for sending */
-  unsigned            tp_iovlen;	/**< Number of allocated iovecs */
-
-  /* ==== Statistics  ===================================================== */
-  
-  struct {
-    uint64_t sent_bytes, sent_on_line, recv_bytes, recv_on_line;
-    uint64_t sent_msgs, recv_msgs;
-  } tp_stats;
-};
-
-/** Primary structure */
-struct tport_primary {
-  tport_t             pri_primary[1];   /**< Transport part */
-#if DOX
-  su_home_t           pri_home[1];
-  tport_t           **pri_stail;	/**< End of secondary list */
-#else
-#define pri_home      pri_primary->tp_home
-#define pri_master    pri_primary->tp_master
-#define pri_protoname pri_primary->tp_name->tpn_proto
-#endif
-  tport_vtable_t const
-                     *pri_vtable;
-  int                 pri_public;       /**< Type of primary transport; 
-					 * tport_type_local,
-					 * tport_type_stun, etc. 
-					 */
-
-  char                pri_ident[16];
-  tport_primary_t    *pri_next;	        /**< Next primary tport */
-
-  tport_t            *pri_secondary;	/**< Secondary tports */
-
-  tport_threadpool_t *pri_threadpool;   /**< Worker threads */
-  unsigned            pri_thrpsize;
-
-  unsigned            pri_natted:1;	/**< Using natted address  */
-  unsigned:0;
-
-  tport_params_t      pri_params[1];      /**< Transport parameters */
-
-};
-
-/** Master structure */
-struct tport_master {
-  tport_t             mr_master[1];
-#if DOX
-  su_home_t           mr_home[1];
-#else
-#define mr_home mr_master->tp_home
-#endif
-
-  int                 mr_stun_step_ready; /**< for stun's callback */
-
-  tp_stack_t  	     *mr_stack;         /**< Transport consumer */
-  tp_stack_class_t 
-               const *mr_tpac;		/**< Methods provided by stack */
-  int                 mr_log;	        /**< Do logging of parsed messages */
-  su_root_t    	     *mr_root;		/**< SU root pointer */
-
-  /**< Timer reclaiming unused connections and compartment */
-  su_timer_t         *mr_timer;		
-  /** File to dump received and sent data */
-  FILE               *mr_dump_file;	
-
-  tport_primary_t    *mr_primaries;        /**< List of primary contacts */
-
-  tport_params_t      mr_params[1];
-  
-  unsigned            mr_boundserver:1; /**< Server has been bound */
-  unsigned            mr_bindv6only:1; /**< We can bind separately to IPv6/4 */
-  unsigned :0;
-
-#if HAVE_SIGCOMP
-  struct sigcomp_compartment   *mr_compartment;
-#endif
-
-  /* Delivery context */
-  struct tport_delivery {
-    tport_t              *d_tport;
-    msg_t                *d_msg;
-    tp_name_t             d_from[1];
-    struct sigcomp_udvm **d_udvm;
-  } mr_delivery[1];
-
-  struct tport_nat_s {
-    int initialized;
-    int bound;
-    int stun_enabled;
-    char *external_ip_address;
-#if HAVE_UPNP || HAVE_SOFIA_STUN
-    int try_stun;
-#endif
-#if HAVE_UPNP
-#endif
-#if HAVE_SOFIA_STUN
-    tport_master_t *tport;
-    char *stun_server;
-    /* stun_socket_t *stun_socket; */
-    stun_handle_t *stun;
-    su_socket_t stun_socket;
-    su_sockaddr_t sockaddr;
-#endif
-  }                   mr_nat[1];
-
-};
-
-/** Virtual funtion table */
-struct tport_vtable
-{
-  tport_vtable_t const *vtp_next;
-  char const *vtp_name;
-  enum tport_via vtp_public;
-
-  int vtp_pri_size;		/* Size of primary tport */
-  int (*vtp_init_primary)(tport_primary_t *pri,
-			  tp_name_t const tpn[1],
-			  su_addrinfo_t *ai, tagi_t const *,
-			  char const **return_culprit);
-  int (*vtp_init_compression)(tport_primary_t *self, char const *compression, 
-			      tagi_t const *tl);
-  void (*vtp_deinit_primary)(tport_primary_t *pri);
-  int (*vtp_wakeup_pri)(tport_primary_t *pri, int events);
-  tport_t *(*vtp_connect)(tport_primary_t *pri, su_addrinfo_t *ai, 
-			  tp_name_t const *tpn);
-
-  int vtp_secondary_size;	/* Size of secondary tport */
-
-  int (*vtp_init_secondary)(tport_t *, int socket, int accepted);
-  void (*vtp_deinit_secondary)(tport_t *);
-  int (*vtp_set_events)(tport_t const *self);
-  int (*vtp_wakeup)(tport_t *self, int events);
-  int (*vtp_recv)(tport_t *self);
-  int (*vtp_send)(tport_t const *self, msg_t *msg,
-		  msg_iovec_t iov[], int iovused);
-  void (*vtp_deliver)(tport_t *self,  msg_t *msg, su_time_t now);
-};
 
 #define STACK_RECV(tp, msg, now)		       \
   (tp)->tp_master->mr_tpac->tpac_recv((tp)->tp_master->mr_stack, (tp), \
@@ -468,109 +112,6 @@ struct tport_vtable
   (tp)->tp_master->mr_tpac->tpac_address((tp)->tp_master->mr_stack, (tp))
 
 #define TP_STACK   tp_master->mr_stack
-
-#define TP_SCTP_MSG_MAX (32768)
-
-typedef long unsigned LU; 	/* for printf() and friends */
-
-char const tport_sigcomp_name[] = "sigcomp";
-
-#if HAVE_SIGCOMP
-static inline
-int msg_is_compressed(msg_t *msg)
-{
-  return msg && 
-    (msg_addrinfo(msg)->ai_flags & TP_AI_COMPRESSED) == TP_AI_COMPRESSED;
-}
-
-static inline
-void msg_mark_as_compressed(msg_t *msg)
-{
-  if (msg)
-    msg_addrinfo(msg)->ai_flags |= TP_AI_COMPRESSED;
-}
-
-static struct sigcomp_udvm *tport_init_udvm(tport_t *self);
-static int tport_recv_sigcomp_r(tport_t *, msg_t **, 
-				struct sigcomp_udvm *, N);
-static struct sigcomp_compartment *tport_primary_compartment(tport_master_t *);
-static inline void tport_try_accept_sigcomp(tport_t *self, msg_t *msg);
-
-static
-char const *tport_canonize_comp(char const *comp)
-{
-  if (comp && strcasecmp(comp, tport_sigcomp_name) == 0)
-    return tport_sigcomp_name;
-  return NULL;
-}
-
-/** Check if transport can receive compressed messages */
-int tport_can_recv_sigcomp(tport_t const *self)
-{
-  return self && self->tp_sigcomp->sc_infmt != format_is_noncomp;
-}
-
-/** Check if transport can send compressed messages */
-int tport_can_send_sigcomp(tport_t const *self)
-{
-  return self && self->tp_sigcomp->sc_outfmt != format_is_noncomp;
-}
-
-/** Check if transport supports named compression */
-int tport_has_compression(tport_t const *self, char const *comp)
-{
-  return
-    self && comp && 
-    self->tp_name->tpn_comp == tport_canonize_comp(comp);
-}
-
-/** Set/reset compression */
-int tport_set_compression(tport_t *self, char const *comp)
-{
-  if (self == NULL)
-    ;
-  else if (comp == NULL) {
-    if (self->tp_sigcomp->sc_outfmt != format_is_sigcomp) {
-      self->tp_name->tpn_comp = NULL;
-      return 0;
-    }
-  }
-  else {
-    comp = tport_canonize_comp(comp);
-
-    if (comp && self->tp_sigcomp->sc_outfmt != format_is_noncomp) {
-      self->tp_name->tpn_comp = comp;
-      return 0;
-    }
-  }
-  
-  return -1;
-}
-#else
-
-#define tport_try_accept_sigcomp(self, msg) ((void)0)
-#define tport_canonize_comp(comp) ((void *)0)
-
-int tport_can_recv_sigcomp(tport_t const *self)
-{
-  return 0;
-}
-
-int tport_can_send_sigcomp(tport_t const *self)
-{
-  return 0;
-}
-
-int tport_has_compression(tport_t const *self, char const *comp)
-{
-  return 0;
-}
-
-int tport_set_compression(tport_t *self, char const *comp)
-{
-  return (self == NULL || comp) ? -1 : 0;
-}
-#endif
 
 /* Define macros for rbtree implementation */
 #define TP_LEFT(tp) ((tp)->tp_left)
@@ -646,7 +187,7 @@ inline int tport_is_secondary(tport_t const *self)
 }
 
 /** Test if transport has been registered */
-static inline int tport_is_registered(tport_t const *self)
+inline int tport_is_registered(tport_t const *self)
 {
   return self->tp_index != 0;
 }
@@ -658,7 +199,7 @@ inline int tport_is_stream(tport_t const *self)
 }
  
 /** Test if transport is dgram. */
-static inline int tport_is_dgram(tport_t const *self)
+inline int tport_is_dgram(tport_t const *self)
 {
   return self->tp_addrinfo->ai_socktype == SOCK_DGRAM;
 }
@@ -675,18 +216,6 @@ inline int tport_is_tcp(tport_t const *self)
   return self->tp_addrinfo->ai_protocol == IPPROTO_TCP;
 }
  
-/** Test if transport is needs connect() before sending. */
-static inline int tport_is_connection_oriented(tport_t const *self)
-{
-  return self->tp_conn_orient;
-}
-
-/** Test if transport has actual connection. */
-static inline int tport_is_connected(tport_t const *self)
-{
-  return self->tp_connected;
-}
-
 /** Return 1 if transport is reliable, 0 otherwise.
  *
  * (Note that this is part of external API).
@@ -731,11 +260,8 @@ int tport_has_ip6(tport_t const *self)
 /** Return true if transport supports TLS. */
 int tport_has_tls(tport_t const *self)
 {
-#if HAVE_TLS
-  return self && self->tp_tls != NULL;
-#else
-  return 0;
-#endif  
+  return self && self->tp_pri->pri_has_tls;
+
 }
 
 /** Return true if transport is being updated. */
@@ -774,55 +300,14 @@ int tport_has_sigcomp(tport_t const *self)
   return self->tp_name->tpn_comp != NULL;
 }
 
-/* NAT things */
-
-static
-struct tport_nat_s *
-tport_nat_initialize_nat_traversal(tport_master_t *mr, 
-				   tp_name_t const *tpn,
-				   char const * const **return_transports,
-				   tagi_t const *tags);
-
-static
-char *tport_nat_get_external_ip_address(struct tport_nat_s *nat);
-
-
-#if HAVE_SOFIA_STUN
-static
-int tport_nat_stun_bind(tport_primary_t *pub,
-			struct tport_nat_s *nat,
-			su_sockaddr_t su[1],
-			socklen_t *sulen,
-			su_socket_t s);
-static
-void tport_stun_bind_done(tport_primary_t *pri,
-			  stun_handle_t *sh,
-			  stun_discovery_t *sd);
-
-#endif
-
-static
-int tport_nat_traverse_nat(tport_master_t *, 
-			   tport_primary_t *pub,
-			   su_sockaddr_t su[1],
-			   su_addrinfo_t const *ai,
-			   su_socket_t s);
-
-static
-int tport_nat_set_canon(tport_t *self, struct tport_nat_s *nat);
-
-static
-int tport_nat_finish(tport_primary_t *self);
+int tport_master_set_compartment(tport_master_t *mr, 
+				 struct sigcomp_compartment *cc);
 
 static 
 tport_t *tport_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
 		       tp_name_t const *tpn);
-static tport_t *tport_base_connect(tport_primary_t *pri, 
-				   su_addrinfo_t *ai, 
-				   su_addrinfo_t *name, 
-				   tp_name_t const *tpn);
 
-static int bind6only_check(void);
+static int bind6only_check(tport_master_t *mr);
 
 static
 int tport_server_addrinfo(tport_master_t *mr,
@@ -857,35 +342,22 @@ static int
 		    char const * const transports[],  enum tport_via public,
 		    tagi_t *tags),
 
-  tport_init_compression(tport_primary_t *self, char const *compression, 
-			 tagi_t const *tl),
-
   tport_setname(tport_t *, char const *, su_addrinfo_t const *, char const *),
   tport_wakeup_pri(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_wakeup(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_base_wakeup(tport_t *self, int events),
-  tport_accept(tport_primary_t *pri, int events),
   tport_connected(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_resolve(tport_t *self, msg_t *msg, tp_name_t const *tpn),
-  tport_recv_dgram(tport_t *self),
-  tport_send_msg(tport_t *, msg_t *, tp_name_t const *tpn,
-		 struct sigcomp_compartment *cc),
   tport_vsend(tport_t *self, msg_t *msg, tp_name_t const *tpn,
 	      msg_iovec_t iov[], int iovused,
 	      struct sigcomp_compartment *cc),
   tport_send_error(tport_t *, msg_t *, tp_name_t const *),
-  tport_send_dgram(tport_t const *self, msg_t *msg,
-		   msg_iovec_t iov[], int iovused),
   tport_queue(tport_t *self, msg_t *msg),
   tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], int iovused),
   tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error),
-  tport_pending_errmsg(tport_t *self, msg_t *msg, int error),
-  tport_launch_threadpool(tport_primary_t *pri),
-  tport_kill_threadpool(tport_primary_t *pri),
-  tport_thread_send(tport_t *, struct sigcomp_compartment *, 
-		    msg_t *, unsigned mtu);
+  tport_pending_errmsg(tport_t *self, msg_t *msg, int error);
 
-extern tport_vtable_t const *tport_vtables;
+void tport_try_accept_sigcomp(tport_t *self, msg_t *msg);
 
 tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 			   su_addrinfo_t const *ai,
@@ -893,26 +365,10 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 
 void tport_peer_address(tport_t *self, msg_t *msg);
 static unsigned long tport_now(void);
+
 static void tport_tick(su_root_magic_t *, su_timer_t *, tport_master_t *mr);
 
-
-#if HAVE_SIGCOMP
-static int 
-tport_sigcomp_vsend(tport_t const *self, 
-		    msg_t *msg, msg_iovec_t iov[], int iovused,
-		    struct sigcomp_compartment *cc, tport_sigcomp_t *sc);
-#endif 
-
-static int tport_error_event(tport_t *self);
-static void tport_send_event(tport_t *self);
-static void tport_recv_event(tport_t *self);
-static void tport_hup_event(tport_t *self);
-
 static void tport_parse(tport_t *self, int complete, su_time_t now);
-static void tport_deliver(tport_t *, msg_t *msg, msg_t *next,
-			  struct sigcomp_udvm **udvm, su_time_t now);
-
-void tport_base_deliver(tport_t *self, msg_t *msg, su_time_t now);
 
 static tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 					    tport_vtable_t const *vtable,
@@ -926,32 +382,11 @@ static tport_primary_t *tport_listen(tport_master_t *mr,
 				     tp_name_t const tpn[1],
 				     su_addrinfo_t *ai,
 				     tagi_t *tags);
-
 static void tport_zap_primary(tport_primary_t *);
 
-static tport_t *tport_alloc_secondary(tport_primary_t *pri, 
-				      int socket,
-				      int accepted);
-static void tport_zap_secondary(tport_t *);
-
-static void tport_close(tport_t *self);
-
-static void tport_open_log(tport_master_t *mr, tagi_t *tags);
-static void tport_dump_iovec(tport_t const *self, msg_t *msg, int n,
-			     su_iovec_t const iov[], int iovused,
-			     char const *what, char const *how);
-static void tport_log_msg(tport_t *tp, msg_t *msg, char const *what, 
-			  char const *via, char const *indent, su_time_t now);
-static void tport_stamp(tport_t const *tp, msg_t *msg, char stamp[128], 
-			char const *what, int n, char const *via,
-			su_time_t now);
-
 static char *localipname(int pf, char *buf, int bufsiz);
-static void tport_error_report(tport_t *self, int errcode, 
-			       su_sockaddr_t const *dst);
 static int getprotohints(su_addrinfo_t *hints,
 			 char const *proto, int flags);
-
 static void tport_send_queue(tport_t *self);
 
 
@@ -978,49 +413,6 @@ msg_t *tport_destroy_alloc(tp_stack_t *stack, int flags,
 {
   return NULL;
 }
-
-/**@var TPORT_LOG
- *
- * Environment variable determining if parsed message contents are logged.
- *
- * If the TPORT_LOG environment variable is set, the tport module logs the
- * contents of parsed messages. This eases debugging the signaling greatly.
- * 
- * @sa TPORT_DUMP, TPORT_DEBUG, tport_log
- */
-extern char const TPORT_LOG[];	/* dummy declaration for Doxygen */
-
-/**@var TPORT_DUMP
- *
- * Environment variable for transport data dump.
- *
- * The received and sent data is dumped to the file specified by TPORT_DUMP
- * environment variable. This can be used to save message traces and help
- * hairy debugging tasks.
- * 
- * @sa TPORT_LOG, TPORT_DEBUG, tport_log
- */
-extern char const TPORT_DUMP[];	/* dummy declaration for Doxygen */
-
-/**@var TPORT_DEBUG
- *
- * Environment variable determining the debug log level for @b tport module.
- *
- * The TPORT_DEBUG environment variable is used to determine the debug logging
- * level for @b tport module. The default level is 3.
- * 
- * @sa <su_debug.h>, tport_log, SOFIA_DEBUG
- */
-extern char const TPORT_DEBUG[]; /* dummy declaration for Doxygen */
-
-/**Debug log for @b tport module. 
- * 
- * The tport_log is the log object used by @b tport module. The level of
- * #tport_log is set using #TPORT_DEBUG environment variable.
- */
-su_log_t tport_log[] = { 
-  SU_LOG_INIT("tport", "TPORT_DEBUG", SU_DEBUG)
-};
 
 /** Name for "any" transport. @internal */
 static char const tpn_any[] = "*";
@@ -1213,15 +605,8 @@ void tport_zap_primary(tport_primary_t *pri)
   if (pri->pri_vtable->vtp_deinit_primary)
     pri->pri_vtable->vtp_deinit_primary(pri);
 
-  if (pri->pri_threadpool) {
-    tport_kill_threadpool(pri);
-    SU_DEBUG_3(("%s(%p): zapped threadpool\n", __func__, pri));
-  }
-
   while (pri->pri_secondary)
     tport_zap_secondary(pri->pri_secondary);
-
-  tport_nat_finish(pri);	/* XXX */
 
   /* We have just a single-linked list for primary transports */
   for (prip = &pri->pri_master->mr_primaries;
@@ -1283,20 +668,6 @@ tport_primary_t *tport_listen(tport_master_t *mr,
   if (pri == NULL)
     return TPORT_LISTEN_ERROR(errno, culprit);
 
-#if 0
-  if ((ai->ai_protocol == IPPROTO_UDP) &&
-      (tport_is_public(pri->pri_primary) == tport_type_stun)) {
-    /* Launch NAT resolving */
-    nat_bound = tport_nat_traverse_nat(mr, pri, su, ai, s);
-  }
-    
-  if (nat_bound) {
-    /* XXX - should set also the IP address in tp_addr? */
-    pri->pri_natted = 1;
-    tport_nat_set_canon(pri->pri_primary, mr->mr_nat);
-  }
-#endif
-
   if (pri->pri_primary->tp_socket != SOCKET_ERROR) {
     int index = 0;
     tport_t *tp = pri->pri_primary;
@@ -1317,14 +688,6 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 
   pri->pri_primary->tp_connected = 0;
 
-#if 0  
-  if (nat_bound) {
-    /* XXX - should set also the IP address in tp_addr? */
-    pri->pri_natted = 1;
-    tport_nat_set_canon(pri->pri_primary, mr->mr_nat);
-  }
-#endif
-
   SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
 	      __func__, pri, "listening at",
 	      TPN_ARGS(pri->pri_primary->tp_name)));
@@ -1332,7 +695,6 @@ tport_primary_t *tport_listen(tport_master_t *mr,
   return pri;
 }
 
-static
 int tport_bind_socket(int socket,
 		      su_addrinfo_t *ai,
 		      char const **return_culprit)
@@ -1411,7 +773,6 @@ int tport_set_events(tport_t *self, int set, int clear)
  * The function tport_alloc_seconary() returns a pointer to the newly
  * created transport, or NULL upon an error.
  */
-static
 tport_t *tport_alloc_secondary(tport_primary_t *pri, int socket, int accepted)
 {
   tport_master_t *mr = pri->pri_master;
@@ -1476,13 +837,13 @@ tport_t *tport_connect(tport_primary_t *pri,
  * root.
  *
  * @param pri   primary transport object
- * @param name    pointer to addrinfo structure
+ * @param ai    pointer to addrinfo structure describing socket
+ * @param real_ai  pointer to addrinfo structure describing real target
  * @param tpn   canonical name of node
  */
-static
 tport_t *tport_base_connect(tport_primary_t *pri, 
 			    su_addrinfo_t *ai,
-			    su_addrinfo_t *name,
+			    su_addrinfo_t *real_ai,
 			    tp_name_t const *tpn)
 {
   tport_master_t *mr = pri->pri_master;
@@ -1564,20 +925,13 @@ tport_t *tport_base_connect(tport_primary_t *pri,
     TPORT_CONNECT_ERROR(su_errno(), su_root_register);
 
   /* Set sockname for the tport */
-  if (tport_setname(self, tpn->tpn_proto, name, tpn->tpn_canon) == -1) 
+  if (tport_setname(self, tpn->tpn_proto, real_ai, tpn->tpn_canon) == -1) 
     TPORT_CONNECT_ERROR(su_errno(), tport_setname);
 
   self->tp_socket   = s;
   self->tp_index    = index;
   self->tp_events   = events;
   self->tp_conn_orient = 1;
-
-#if HAVE_SIGCOMP
-  if (tpn->tpn_comp == pri->pri_primary->tp_name->tpn_comp)
-    self->tp_name->tpn_comp = pri->pri_primary->tp_name->tpn_comp;
-  if (!pri->pri_primary->tp_name->tpn_comp)
-    self->tp_sigcomp->sc_infmt = format_is_noncomp;
-#endif
 
   SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
 	      __func__, self, "connecting to",
@@ -1589,7 +943,6 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 }
 
 /** Destroy a secondary transport. @internal */
-static 
 void tport_zap_secondary(tport_t *self)
 {
   tport_master_t *mr;
@@ -1600,7 +953,9 @@ void tport_zap_secondary(tport_t *self)
   /* Remove from rbtree */
   tprb_remove(&self->tp_pri->pri_secondary, self);
 
-  if (self->tp_pri->pri_vtable->vtp_deinit_secondary)
+  /* Do not deinit primary as secondary! */
+  if (tport_is_secondary(self) &&
+      self->tp_pri->pri_vtable->vtp_deinit_secondary)
     self->tp_pri->pri_vtable->vtp_deinit_secondary(self);
 
   if (self->tp_msg) {
@@ -1631,17 +986,6 @@ void tport_zap_secondary(tport_t *self)
   if (self->tp_socket != -1)
     su_close(self->tp_socket);
   self->tp_socket = -1;
-
-#if HAVE_SIGCOMP
-  if (self->tp_sigcomp) {
-    tport_sigcomp_t *sc = self->tp_sigcomp;
-
-    if (sc->sc_udvm)
-      sigcomp_udvm_free(sc->sc_udvm), sc->sc_udvm = NULL;
-    if (sc->sc_compressor)
-      sigcomp_compressor_free(sc->sc_compressor), sc->sc_compressor = NULL;
-  }
-#endif
 
   su_home_zap(self->tp_home);
 }
@@ -1785,27 +1129,57 @@ int tport_set_params(tport_t *self,
     tpp0 = su_zalloc(self->tp_home, sizeof *tpp0); if (!tpp0) return -1;
   }
 
-#if HAVE_SIGCOMP
-  if (cc != NONE && self == self->tp_master->mr_master) {
-    if (self->tp_master->mr_compartment)
-      sigcomp_compartment_unref(self->tp_master->mr_compartment);
-    self->tp_master->mr_compartment = sigcomp_compartment_ref(cc);
+  if (cc != NONE && tport_is_master(self)) {
+    tport_master_set_compartment(self->tp_master, cc);
   }
-#endif
 
   memcpy(tpp0, tpp, sizeof *tpp);
 
   return n;
 }
 
+extern tport_vtable_t const tport_udp_vtable_;
+extern tport_vtable_t const tport_tcp_vtable_;
+extern tport_vtable_t const tport_tls_vtable_;
+extern tport_vtable_t const tport_sctp_vtable_;
+extern tport_vtable_t const tport_udp_client_vtable_;
+extern tport_vtable_t const tport_tcp_client_vtable_;
+extern tport_vtable_t const tport_sctp_client_vtable_;
+extern tport_vtable_t const tport_tls_client_vtable_;
+extern tport_vtable_t const tport_http_connect_vtable_;
+extern tport_vtable_t const tport_threadpool_vtable_;
+
+#define TPORT_NUMBER_OF_TYPES 64
+
+tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
+{
+  &tport_http_connect_vtable_,
+#if HAVE_TLS
+  &tport_tls_client_vtable_,
+  &tport_tls_vtable_,
+#endif
+#if HAVE_SCTP
+  &tport_sctp_client_vtable_,
+  &tport_sctp_vtable_,
+#endif
+  &tport_tcp_client_vtable_,
+  &tport_tcp_vtable_,
+  &tport_udp_client_vtable_,
+  &tport_udp_vtable_,
+  &tport_threadpool_vtable_,
+};
+
 /**Get a vtable for given protocol */
-static
 tport_vtable_t const *tport_vtable_by_name(char const *protoname,
 					   enum tport_via public) 
 {
-  tport_vtable_t const *vtable;
+  int i;
 
-  for (vtable = tport_vtables; vtable; vtable = vtable->vtp_next) {
+  for (i = TPORT_NUMBER_OF_TYPES; i >= 0; i--) {
+    tport_vtable_t const *vtable = tport_vtables[i];
+
+    if (vtable == NULL)
+      continue;
     if (vtable->vtp_public != public)
       continue;
     if (strcasecmp(vtable->vtp_name, protoname))
@@ -1817,6 +1191,15 @@ tport_vtable_t const *tport_vtable_by_name(char const *protoname,
     return vtable;
   }
 
+  return NULL;
+}
+
+char const tport_sigcomp_name[] = "sigcomp";
+
+char const *tport_canonize_comp(char const *comp)
+{
+  if (comp && strcasecmp(comp, tport_sigcomp_name) == 0)
+    return tport_sigcomp_name;
   return NULL;
 }
 
@@ -1935,13 +1318,12 @@ int tport_bind_client(tport_master_t *mr,
 
 /** Bind primary transport objects used by a server application. */
 int tport_bind_server(tport_master_t *mr,
-                      tp_name_t const *tpn0,
+                      tp_name_t const *tpn,
                       char const * const transports[],
 		      enum tport_via public,
 		      tagi_t *tags)
 {
   char hostname[256];
-  tp_name_t tpn[1];
   char const *canon = NULL, *host, *service;
   int error = 0, not_supported, family = 0;
   tport_primary_t *pri = NULL, **tbf;
@@ -1949,23 +1331,9 @@ int tport_bind_server(tport_master_t *mr,
   unsigned port, port0, port1, old;
   unsigned short step = 0;
 
-  struct tport_nat_s *nat;
-
-  memcpy(tpn, tpn0, sizeof tpn);
-
-#if SU_HAVE_IN6
-  if (!mr->mr_boundserver) {
-    mr->mr_boundserver = 1;
-    /* Check if we can bind to IPv6 separately */
-    mr->mr_bindv6only = bind6only_check();
-  }
-#endif
+  bind6only_check(mr);
 
   SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n", __func__, mr, TPN_ARGS(tpn)));
-
-  nat = tport_nat_initialize_nat_traversal(mr, tpn, &transports, tags);
-  if (!nat) 
-    SU_DEBUG_1(("%s: %s\n", __func__, strerror(errno)));
 
   if (tpn->tpn_host == NULL || strcmp(tpn->tpn_host, tpn_any) == 0) {
     /* Use a local IP address */
@@ -1997,10 +1365,6 @@ int tport_bind_server(tport_master_t *mr,
   if (tpn->tpn_canon && strcmp(tpn->tpn_canon, tpn_any) &&
       (host || tpn->tpn_canon != tpn->tpn_host))
     canon = tpn->tpn_canon;
-  else if (nat) {
-    /* NULL if UPnP not present */
-    canon = tport_nat_get_external_ip_address(nat);
-  }
 
   if (tport_server_addrinfo(mr, canon, family, 
 			    host, service, tpn->tpn_proto,
@@ -2013,15 +1377,13 @@ int tport_bind_server(tport_master_t *mr,
   port = port0 = port1 = ntohs(((su_sockaddr_t *)res->ai_addr)->su_port);
   error = ENOENT, not_supported = 1;
 
-  tpn->tpn_canon = canon;
-  tpn->tpn_host = host;
-
   /* 
    * Loop until we can bind all the transports requested 
    * by the transport user to the same port. 
    */
   for (;;) {
     for (ai = res; ai; ai = ai->ai_next) {
+      tp_name_t tpname[1];
       su_addrinfo_t ainfo[1];
       su_sockaddr_t su[1];
       tport_vtable_t const *vtable;
@@ -2034,10 +1396,14 @@ int tport_bind_server(tport_master_t *mr,
       ainfo->ai_canonname = (char *)canon;
       su->su_port = htons(port);
 
+      memcpy(tpname, tpn, sizeof tpname);
+      tpname->tpn_canon = canon;
+      tpname->tpn_host = host;
+
       SU_DEBUG_9(("%s(%p): calling tport_listen for %s\n", 
 		  __func__, mr, ai->ai_canonname));
 
-      pri = tport_listen(mr, vtable, tpn, ainfo, tags);
+      pri = tport_listen(mr, vtable, tpname, ainfo, tags);
       if (!pri) {
 	switch (error = su_errno()) {
 	case EADDRNOTAVAIL:	/* Not our address */
@@ -2070,7 +1436,7 @@ int tport_bind_server(tport_master_t *mr,
     while (step == 0) {
       /* step should be relative prime to 65536 - 1024 */
       /* 65536 - 1024 = 7 * 3 * 3 * 1024 */
-      step = (random() | 1) % (65535 - 1024);
+      step = su_randint(1, 65535 - 1024 - 1) | 1;
       if (step % 3 == 0)
 	step = (step + 2) % (65536 - 1024);
       if (step % 7 == 0)
@@ -2095,21 +1461,22 @@ int tport_bind_server(tport_master_t *mr,
     return -1;
   }
 
-  for (pri = *tbf; pri; pri = pri->pri_next) {
-    tport_launch_threadpool(pri);
-  }
-
   return 0;
 }
 
+
 /** Check if we can bind to IPv6 separately from IPv4 bind */
 static
-int bind6only_check(void)
+int bind6only_check(tport_master_t *mr)
 {
   int retval = 0;
+#if SU_HAVE_IN6
   su_sockaddr_t su[1], su4[1];
   socklen_t sulen, su4len;
   int s6, s4;
+
+  if (mr->mr_boundserver)
+    return 0;
 
   s4 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
@@ -2132,9 +1499,15 @@ int bind6only_check(void)
 
   su_close(s6), su_close(s4);
 
+  mr->mr_bindv6only = retval;
+  mr->mr_boundserver = 1;
+#endif
+
   return retval;
 }
 
+/* Number of supported transports */
+#define TPORT_N (8)
 
 /** Return list of addrinfo structures matching to 
  * canon/host/service/protocol
@@ -2430,26 +1803,6 @@ int tport_addrinfo_copy(su_addrinfo_t *dst, void *addr, socklen_t addrlen,
   return 0;
 }
 
-static 
-int tport_init_compression(tport_primary_t *pri,
-			   char const *compression,
-			   tagi_t const *tl)
-{
-#if HAVE_SIGCOMP
-  tport_master_t *mr = pri->pri_master;
-
-  if (compression == NULL || 
-      strcasecmp(compression, tport_sigcomp_name))
-    return 0;
-
-  if (mr->mr_compartment) {
-    pri->pri_primary->tp_name->tpn_comp = tport_sigcomp_name;
-  }
-#endif
-
-  return 0;
-}
-
 /** Close a transport. 
  * 
  * The function tport_close() closes a socket associated with a transport
@@ -2466,17 +1819,12 @@ void tport_close(tport_t *self)
   self->tp_send_close = 3;
   self->tp_recv_close = 3;
 
-#if HAVE_TLS
-  if (self->tp_tls != NULL) {
-    /* if (tport_is_primary(self)) */
-      tls_free(self->tp_tls);
-      /* XXX - PPe: does the tls_shutdown zap everything but socket? */
-    self->tp_tls = NULL;
-    su_free(self->tp_home, self->tp_tls_buffer);
-  }
-  else 
-#endif
-  if (self->tp_socket != -1)
+  if (self->tp_params->tpp_sdwn_error && self->tp_pused)
+    tport_error_report(self, -1, NULL);
+
+  if (self->tp_pri->pri_vtable->vtp_shutdown)
+    self->tp_pri->pri_vtable->vtp_shutdown(self, 2);
+  else if (self->tp_socket != -1)
     shutdown(self->tp_socket, 2);
 
   if (self->tp_index)
@@ -2486,16 +1834,6 @@ void tport_close(tport_t *self)
   if (self->tp_socket != -1)
     su_close(self->tp_socket);
   self->tp_socket = -1;
-#endif
-
-  if (self->tp_params->tpp_sdwn_error && self->tp_pused)
-    tport_error_report(self, -1, NULL);
-
-#if HAVE_SIGCOMP
-  if (self->tp_sigcomp->sc_cc) {
-    sigcomp_compartment_unref(self->tp_sigcomp->sc_cc);
-    self->tp_sigcomp->sc_cc = NULL;
-  }  
 #endif
 
   /* Zap the queued messages */
@@ -2535,14 +1873,10 @@ int tport_shutdown(tport_t *self, int how)
     return 1;
   }
 
-#if HAVE_TLS
-  if (self->tp_tls != NULL) {
-    /* XXX - send alert */
-    return 0;
-  }
-#endif
-
-  shutdown(self->tp_socket, how);
+  if (self->tp_pri->pri_vtable->vtp_shutdown)
+    self->tp_pri->pri_vtable->vtp_shutdown(self, how);
+  else
+    shutdown(self->tp_socket, how);
 
   if (how == 0) {
     self->tp_recv_close = 2;
@@ -2864,8 +2198,8 @@ char *localipname(int pf, char *buf, int bufsiz)
 }
 
 /** Process errors from transport. */
-static void tport_error_report(tport_t *self, int errcode, 
-			       su_sockaddr_t const *addr)
+void tport_error_report(tport_t *self, int errcode, 
+			su_sockaddr_t const *addr)
 {
   char const *errmsg;
 
@@ -2917,7 +2251,6 @@ static void tport_error_report(tport_t *self, int errcode,
  * The function tport_accept() accepts a new connection and creates a
  * secondary transport object for the new socket.
  */
-static 
 int tport_accept(tport_primary_t *pri, int events)
 {
   tport_t *self;
@@ -2969,10 +2302,6 @@ int tport_accept(tport_primary_t *pri, int events)
       self->tp_events = events;
 
       if (tport_setname(self, pri->pri_protoname, ai, NULL) != -1) {
-#if HAVE_SIGCOMP
-	if (!pri->pri_primary->tp_name->tpn_comp)
-	  self->tp_sigcomp->sc_infmt = format_is_noncomp;
-#endif
 	SU_DEBUG_5(("%s(%p): new connection from " TPN_FORMAT "\n", 
 		    __func__,  self, TPN_ARGS(self->tp_name)));
 
@@ -3157,7 +2486,7 @@ int tport_continue(tport_t *self)
 /** Process "hangup" event.
  *
  */
-static void tport_hup_event(tport_t *self)
+void tport_hup_event(tport_t *self)
 {
   SU_DEBUG_7(("%s(%p)\n", __func__, self));
 
@@ -3188,7 +2517,7 @@ int tport_recv_data(tport_t *self)
 /** Process "ready to receive" event.
  *
  */
-static void tport_recv_event(tport_t *self)
+void tport_recv_event(tport_t *self)
 {
   su_time_t now;
   int again;
@@ -3296,7 +2625,6 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
 }
 
 /** Deliver message to the protocol stack */
-static 
 void tport_deliver(tport_t *self, msg_t *msg, msg_t *next, 
 		   struct sigcomp_udvm **pointer_to_udvm,
 		   su_time_t now)
@@ -3364,11 +2692,6 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
   else
     tport_base_deliver(self, msg, now);
 
-#if HAVE_SIGCOMP
-  if (d->d_udvm && *d->d_udvm)
-    sigcomp_udvm_accept(*d->d_udvm, NULL); /* reject */
-#endif
-
   tport_decref(&ref);
 
   d->d_msg = NULL;
@@ -3430,22 +2753,13 @@ tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
   return 0;
 }
 
-static int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
-static int tport_recv_stun_dgram(tport_t const *self, int N);
-static int tport_recv_sigcomp_dgram(tport_t *self, int N);
-
-#if HAVE_SIGCOMP
-static int tport_recv_sigcomp_stream(tport_t *self);
-#endif
-static int tport_recv_sctp(tport_t *self);
-
 /** Allocate message for N bytes,
  *  return message buffer as a iovec 
  */
-static int tport_recv_iovec(tport_t const *self, 
-			    msg_t **mmsg,
-			    msg_iovec_t iovec[msg_n_fragments], int N, 
-			    int exact)
+int tport_recv_iovec(tport_t const *self, 
+		     msg_t **mmsg,
+		     msg_iovec_t iovec[msg_n_fragments], int N, 
+		     int exact)
 {
   msg_t *msg = *mmsg;
   int veclen, fresh;
@@ -3501,7 +2815,7 @@ static int tport_recv_iovec(tport_t const *self,
   return veclen;
 }
 
-static int tport_recv_error_report(tport_t *self)
+int tport_recv_error_report(tport_t *self)
 {
   if (su_errno() == EAGAIN && su_errno() != EWOULDBLOCK)
     return 1;
@@ -3511,391 +2825,6 @@ static int tport_recv_error_report(tport_t *self)
 
   return -1;
 }
-
-#if HAVE_SIGCOMP
-/** Try to receive stream data using SigComp. */
-static int tport_recv_sigcomp_stream(tport_t *self)
-{
-  struct sigcomp_udvm *udvm;
-  int retval;
-
-  SU_DEBUG_7(("%s(%p)\n", __func__, self));
-
-  /* Peek for first byte in stream,
-     determine if this is a compressed stream or not */
-  if (self->tp_sigcomp->sc_infmt == format_is_unknown) {
-    unsigned char sample;
-    int n;
-
-    n = recv(self->tp_socket, &sample, 1, MSG_PEEK);
-    if (n < 0)
-      return n;
-
-    if (n == 0) {
-      recv(self->tp_socket, &sample, 1, 0);
-      return 0;			/* E-o-S from first message */
-    }
-
-    if ((sample & 0xf8) != 0xf8) {
-      /* Not SigComp, receive as usual */
-      if (tport_is_primary(self)) {
-	SU_DEBUG_1(("%s(%p): receive semantics not implemented\n",
-		    __func__, self));
-	su_seterrno(EINVAL);		/* Internal error */
-	return -1;
-      }
-
-      /* Do not try to receive with sigcomp from this socket */
-      self->tp_sigcomp->sc_infmt = format_is_noncomp;
-
-      return tport_recv_stream(self);
-    }
-
-    /* SigComp, receive using UDVM */
-    self->tp_sigcomp->sc_infmt = format_is_sigcomp;
-
-    /* Initialize UDVM */
-    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
-    if (!self->tp_sigcomp->sc_udvm) {
-      int save = su_errno();
-      recv(self->tp_socket, &sample, 1, 0); /* remove msg from socket */
-      return su_seterrno(save);
-    }
-  }
-
-  udvm = self->tp_sigcomp->sc_udvm; assert(udvm);
-
-  retval = tport_recv_sigcomp_r(self, &self->tp_msg, udvm);
-
-  if (retval < 0)
-    sigcomp_udvm_reject(udvm);
-
-  return retval;
-}
-
-/** Receive data available on the socket.
- *
- * @retval -1 error
- * @retval 0  end-of-stream
- * @retval 1  normal receive
- * @retval 2  incomplete recv, recv again
- */
-static int tport_recv_sigcomp_r(tport_t *self,
-				msg_t **mmsg,
-				struct sigcomp_udvm *udvm,
-				int N)
-{
-  msg_t *msg;
-  unsigned n, m, i, eos, complete;
-  int veclen;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-  su_sockaddr_t su[1];
-  socklen_t su_size = sizeof(su);
-  struct sigcomp_buffer *input, *output;
-  void *data;
-  unsigned dlen;
-
-  SU_DEBUG_7(("%s(%p)\n", __func__, self));
-
-  assert(udvm);
-
-  if (sigcomp_udvm_has_input(udvm)) {
-    input = sigcomp_udvm_input_buffer(udvm, n = N = 0); assert(input);
-  }
-  else {
-    if (N == 0) {
-      assert(self->tp_addrinfo->ai_socktype != SOCK_DGRAM);
-      if (self->tp_addrinfo->ai_socktype == SOCK_DGRAM) {
-	recv(self->tp_socket, (void *)su, 1, 0);
-	return 1;
-      }
-    }
-
-    input = sigcomp_udvm_input_buffer(udvm, N); assert(input);
-    if (input == NULL)
-      return su_seterrno(EIO);
-
-    data = input->b_data + input->b_avail;
-    dlen = input->b_size - input->b_avail;
-    
-    if (tport_is_stream(self)) {
-      n = recv(self->tp_socket, data, dlen, 0);
-    } 
-    else if (dlen >= N) {
-      n = recvfrom(self->tp_socket, data, dlen, 0, &su->su_sa, &su_size);
-      SU_CANONIZE_SOCKADDR(su);
-    } 
-    else {
-      recvfrom(self->tp_socket, data, dlen, 0, &su->su_sa, &su_size);
-      SU_CANONIZE_SOCKADDR(su);
-      su_seterrno(EMSGSIZE);		/* Protocol error */
-      return -1;
-    }
-  
-    if (n == (unsigned)-1) {
-      char const *pn = self->tp_protoname;
-      int err = su_errno();
-    
-      if (err == EAGAIN || err == EWOULDBLOCK) {
-	SU_DEBUG_7(("%s(%p): recv from %s: EAGAIN\n", __func__, self, pn));
-	return 1;
-      }
-    
-      SU_DEBUG_1(("%s(%p): recv from %s: %s (%d)\n", __func__, self, pn,
-		  su_strerror(err), err));
-      return -1;
-    }
-  
-    /* XXX - in case of stream, use message buffers for output? */
-    
-    input->b_avail += n;
-    input->b_complete = (n == 0) || !tport_is_stream(self);
-  }
-
-  for (complete = eos = 0; !complete;) {
-    output = sigcomp_udvm_output_buffer(udvm, 16384);
-    
-    if (sigcomp_udvm_decompress(udvm, output, input) < 0) {
-      int error = sigcomp_udvm_errno(udvm);
-      
-      SU_DEBUG_3(("%s: UDVM error %d: %s\n", __func__,
-		  error, sigcomp_udvm_strerror(udvm)));
-      
-      su_seterrno(EREMOTEIO);
-
-      return -1;
-    }
-
-    data = output->b_data + output->b_used;
-    dlen = output->b_avail - output->b_used;
-    complete = output->b_complete;
-    eos = complete && input->b_complete;
-
-    veclen = tport_recv_iovec(self, mmsg, iovec, dlen, eos);
-    
-    if (dlen ? veclen <= 0 : veclen < 0) {
-      return -1;
-    }
-
-    for (i = 0, n = 0; i < veclen; i++) {
-      m = iovec[i].mv_len; assert(dlen >= n + m);
-      memcpy(iovec[i].mv_base, data + n, m);
-      n += m;
-    }
-    assert(dlen == n);
-
-    msg = *mmsg;
-    
-    if (msg) {
-      /* Message address */
-      if (self->tp_addrinfo->ai_socktype == SOCK_STREAM) {
-	*msg_addr(msg) = *self->tp_addr;
-	*msg_addrlen(msg) = self->tp_addrlen;
-      } else {
-	*msg_addr(msg) = *su;
-	*msg_addrlen(msg) = su_size;
-      }
-      
-      SU_DEBUG_5(("%s(%p): sigcomp recv = %u => %u %s\n", __func__, self, 
-		  N, dlen, eos ? " (complete)" : ""));
-
-      msg_mark_as_compressed(msg);
-      
-      /* Write the received data to the message dump file */
-      if (self->tp_master->mr_dump_file && !self->tp_pri->pri_threadpool)
-	tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
-      
-      msg_recv_commit(msg, dlen, eos);    /* Mark buffer as used */
-    }
-    else {
-      SU_DEBUG_5(("%s(%p): sigcomp recv = %u => %u %s\n", __func__, self, 
-		  N, dlen, eos ? " (complete)" : ""));
-      if (complete || !tport_is_stream(self)) {
-	sigcomp_udvm_reject(udvm); /* Reject empty message */
-      }
-    }
-
-    if (self->tp_addrinfo->ai_socktype == SOCK_STREAM) {
-      if (eos)
-	return 0;
-    
-      if (output->b_complete)
-	return n < N || sigcomp_udvm_has_pending_data(udvm) ? 2 : 1;
-
-      if (!sigcomp_udvm_has_input(udvm))
-	return 1;
-    }
-  }
-
-  return eos ? 0 : 2;
-}
-
-/** Initialize UDVM */
-static 
-struct sigcomp_udvm *tport_init_udvm(tport_t *self)
-{
-  struct sigcomp_compartment *cc;
-  struct sigcomp_udvm *udvm;
-
-  if (self->tp_sigcomp->sc_udvm)
-    return self->tp_sigcomp->sc_udvm;
-
-  cc = tport_primary_compartment(self->tp_master);
-
-  if (!cc)
-    return NULL;
-
-  if (self->tp_addrinfo->ai_socktype == SOCK_STREAM)
-    udvm = sigcomp_udvm_create_for_stream(cc);
-  else
-    udvm = sigcomp_udvm_create_for_compartment(cc);
-
-  return udvm;
-}
-
-
-/** Get primary compartment */
-static 
-struct sigcomp_compartment *
-tport_primary_compartment(tport_master_t *mr)
-{
-  return mr->mr_compartment;
-}
-
-/** Assign a SigComp compartment (to a possibly connected tport). */
-int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
-{
-  if (tport_is_connection_oriented(self) && 
-      tport_is_secondary(self) &&
-      self->tp_socket != SOCKET_ERROR) {
-
-    if (self->tp_sigcomp->sc_cc) {
-      if (cc == self->tp_sigcomp->sc_cc)
-	return 0;
-
-      /* Remove old assignment */
-      sigcomp_compartment_unref(self->tp_sigcomp->sc_cc);
-    }
-    
-    self->tp_sigcomp->sc_cc = sigcomp_compartment_ref(cc);
-
-    return 0;
-  }
-
-  return su_seterrno(EINVAL);
-}
-
-/** Test if tport has a SigComp compartment is assigned to it. */
-int tport_has_sigcomp_assigned(tport_t const *self)
-{
-  return self && self->tp_sigcomp->sc_udvm != NULL;
-}
-
-static inline
-void tport_try_accept_sigcomp(tport_t *self, msg_t *msg)
-{
-  struct sigcomp_udvm *udvm;
-
-  udvm = self->tp_sigcomp->sc_udvm;
-  if (udvm && sigcomp_udvm_is_complete(udvm)) {
-    if (self->tp_master->mr_tpac->tpac_sigcomp_accept && 
-	self->tp_sigcomp->sc_cc == NULL) {
-      tport_t *ref;
-      struct tport_delivery *d;
-
-      d = self->tp_master->mr_delivery;
-
-      d->d_tport = self; 
-      d->d_msg = msg;
-      d->d_udvm = &self->tp_sigcomp->sc_udvm;
-      *d->d_from = *self->tp_name;
-
-      ref = tport_incref(self);
-      STACK_SIGCOMP_ACCEPT(self, msg);
-      /* Reject by default */
-      if (self->tp_sigcomp->sc_udvm)
-	sigcomp_udvm_accept(self->tp_sigcomp->sc_udvm, NULL);
-      tport_decref(&ref);
-
-      d->d_msg = NULL;
-    }
-    else {
-      if (tport_log->log_level >= 5) {
-	char const *name; 
-	int namelen;
-      
-	name = sigcomp_compartment_name(self->tp_sigcomp->sc_cc, &namelen);
-	SU_DEBUG_5(("tport(%p): msg %p SigComp implicit accept '%.*s'\n", 
-		    self, msg, namelen, name));
-      }
-      sigcomp_udvm_accept(udvm, self->tp_sigcomp->sc_cc);
-    }
-  }
-}
-
-
-/** Accept a SigComp message */
-int 
-tport_sigcomp_accept(tport_t *self, 
-		     struct sigcomp_compartment *cc, 
-		     msg_t *msg)
-{
-  struct sigcomp_udvm *udvm;
-
-  if (self == NULL || msg != self->tp_master->mr_delivery->d_msg)
-    return su_seterrno(EINVAL);
-
-  if (!self->tp_master->mr_delivery->d_udvm || cc == NONE)
-    return 0;
-
-  udvm = *self->tp_master->mr_delivery->d_udvm;
-
-  if (udvm) {
-    if (tport_log->log_level >= 5) {
-      char const *name; 
-      int namelen;
-   
-      if (cc) {
-	name = sigcomp_compartment_name(cc, &namelen);
-	SU_DEBUG_5(("tport(%p): msg %p SigComp accept '%.*s'\n", 
-		    self, msg, namelen, name));
-      }
-      else {
-	SU_DEBUG_5(("tport(%p): msg %p SigComp reject\n", self, msg));
-      }
-    }
-    sigcomp_udvm_accept(udvm, cc);
-  }
-
-  self->tp_master->mr_delivery->d_udvm = NULL;
-
-  return 0;
-}
-
-
-#else
-
-int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
-{
-  return 0;
-}
-
-/** Test if tport has a SigComp compartment is assigned to it. */
-int tport_has_sigcomp_assigned(tport_t const *self)
-{
-  return 0;
-}
-
-int 
-tport_sigcomp_accept(tport_t *self, 
-		     struct sigcomp_compartment *cc, 
-		     msg_t *msg)
-{
-  return 0;
-}
-
-#endif
-
 
 /** Send a message. 
  *
@@ -4086,22 +3015,28 @@ tport_t *tport_tsend(tport_t *self,
       self->tp_reusable = 0;
   }
 
-  /* If there is threadpool, pass the message to it */
-  if (self->tp_pri->pri_threadpool && 
-      tport_thread_send(self, cc, msg, mtu) == 0) {
-    SU_DEBUG_9(("tport_thread_send()\n"));
+  if (self->tp_pri->pri_vtable->vtp_prepare
+      ? self->tp_pri->pri_vtable->vtp_prepare(self, msg, tpn, cc, mtu) < 0 
+      : tport_prepare_and_send(self, msg, tpn, cc, mtu) < 0)
+    return NULL;
+  else
     return self;
-  }
+}
 
+int tport_prepare_and_send(tport_t *self, msg_t *msg, 
+			   tp_name_t const *tpn, 
+			   struct sigcomp_compartment *cc,
+			   unsigned mtu)
+{
   /* Prepare message for sending - i.e., encode it */
   if (msg_prepare(msg) < 0) {
     msg_set_errno(msg, errno);
-    return NULL;
+    return -1;
   }
 
   if (msg_size(msg) > (mtu ? mtu : tport_mtu(self))) {
     msg_set_errno(msg, EMSGSIZE);
-    return NULL;
+    return -1;
   }
 
   /*
@@ -4113,16 +3048,12 @@ tport_t *tport_tsend(tport_t *self,
       (self->tp_events & (SU_WAIT_CONNECT | SU_WAIT_OUT))) {
     if (tport_queue(self, msg) < 0) {
       SU_DEBUG_9(("tport_queue failed in tsend\n"));
-      return NULL;
+      return -1;
     }
+    return 0;
   }
-
-  else if (tport_send_msg(self, msg, tpn, cc) < 0) {
-    SU_DEBUG_9(("tport_send_msg failed in tsend\n"));
-    return NULL;
-  }
-
-  return self;
+  
+  return tport_send_msg(self, msg, tpn, cc);
 }
 
 
@@ -4130,7 +3061,6 @@ tport_t *tport_tsend(tport_t *self,
  *
  * 
  */
-static
 int tport_send_msg(tport_t *self, msg_t *msg, 
 		   tp_name_t const *tpn, 
 		   struct sigcomp_compartment *cc)
@@ -4233,8 +3163,8 @@ int tport_vsend(tport_t *self,
   int n;
   su_addrinfo_t *ai = msg_addrinfo(msg);
 
-#if HAVE_SIGCOMP
-  n = tport_sigcomp_vsend(self, msg, iov, iovused, cc, self->tp_sigcomp);
+#if 0
+  n = tport_send_sigcomp(self, msg, iov, iovused, cc, self->tp_sigcomp);
 #else
   ai->ai_flags &= ~TP_AI_COMPRESSED;
   n = self->tp_pri->pri_vtable->vtp_send(self, msg, iov, iovused);
@@ -4327,201 +3257,6 @@ int tport_send_error(tport_t *self, msg_t *msg,
   return -1;
 }
 
-#if HAVE_SIGCOMP
-static
-int tport_sigcomp_vsend(tport_t const *self,
-			msg_t *msg, 
-			msg_iovec_t iov[], 
-			int iovused,
-			struct sigcomp_compartment *cc,
-			tport_sigcomp_t *sc)
-{
-  struct sigcomp_compressor *c = sc->sc_compressor;
-  struct sigcomp_buffer *input = sc->sc_input;
-  struct sigcomp_buffer *output = sc->sc_output;
-  msg_iovec_t ciov[1];
-
-  int i, n, m, k, stream = tport_is_stream(self);
-  char const *ccname;
-  int ccnamelen;
-
-  int compress = 
-    (cc || (cc = sc->sc_cc)) && ai->ai_flags & TP_AI_COMPRESSED;
-
-  if (stream)
-    sc->sc_outfmt = compress ? format_is_sigcomp : format_is_noncomp;
-
-  if (!compress) {
-    ai->ai_flags &= ~TP_AI_COMPRESSED;
-    return self->tp_pri->pri_vtable->vtp_send(self, msg, iov, iovused);
-  }
-
-  assert(cc);
-  
-  if (c == NULL) {
-    assert(input == NULL);
-    if (self->tp_addrinfo->ai_socktype == SOCK_STREAM)
-      c = sigcomp_compressor_create_for_stream(cc);
-    else
-      c = sigcomp_compressor_create(cc);
-    sc->sc_compressor = c;
-  } 
-
-  ccname = sigcomp_compartment_name(cc, &ccnamelen);
-
-  if (sc->sc_compressed != 0) {
-    input = NONE;
-  }
-  else if (input == NULL) {
-    int input_size = -1;
-
-    if (tport_is_udp(self)) {
-      input_size = 0;
-
-      for (i = 0; i < iovused; i++)
-	input_size += iov[i].siv_len;
-    }
-
-    sc->sc_input = input = sigcomp_compressor_input_buffer(c, input_size);
-
-    assert(input->b_avail == 0 && input->b_used == 0);
-  } 
-  else if (!input->b_complete) {
-    int input_size = 0;
-
-    for (i = 0; i < iovused; i++)
-      input_size += iov[i].siv_len;
-
-    if (input_size > input->b_size - input->b_avail)
-      sigcomp_buffer_align_available(input, 0);
-  }
-
-  if (output == NULL)
-    sc->sc_output = output = sigcomp_compressor_output_buffer(c, NULL);
-    
-  if (!c || !input || !output) {
-    SU_DEBUG_3(("%s(%p): %s (%u)%s%s%s\n", 
-		__func__, self, strerror(errno), errno,
-		c ? "" : " (comp)",
-		input ? "" : " (input)",
-		output ? "" : " (output)"));
-    sigcomp_compressor_free(c);
-    sc->sc_compressor = NULL; 
-    sc->sc_output = NULL; sc->sc_input = NULL;
-    sc->sc_compressed = 0; sc->sc_copied = 0;
-    return -1;
-  }
-
-  if (sc->sc_compressed == 0) {
-    k = sc->sc_copied;
-
-    if (!input->b_complete) {
-      int m = sc->sc_copied;
-
-      for (i = 0, n = 0; i < iovused; i++) {
-	char *b = iov[i].siv_base;
-	int l = iov[i].siv_len;
-
-	if (m >= l) {
-	  m -= l;
-	  continue;
-	}
-
-	b += m; l -= m;
-
-	if (input->b_size == input->b_avail)
-	  break;
-
-	if (l > input->b_size - input->b_avail)
-	  l = input->b_size - input->b_avail;
-
-	memcpy(input->b_data + input->b_avail, b, l);
-	input->b_avail += l; n += l; sc->sc_copied += l;
-
-	if (l != iov[i].siv_len)
-	  break;
-      }
-      input->b_complete = i == iovused;
-      assert(stream || input->b_complete); (void)stream;
-    }
-    
-    m = output->b_avail - output->b_used;
-
-    n = sigcomp_compressor_compress(c, output, input);
-    
-    if (n < 0) {
-      SU_DEBUG_3(("%s(%p): %s (%u)\n", __func__, self,
-		  sigcomp_compressor_strerror(c), 
-		  sigcomp_compressor_errno(c)));
-      sigcomp_compressor_free(c);
-      sc->sc_compressor = NULL; 
-      sc->sc_output = NULL; sc->sc_input = NULL;
-      sc->sc_compressed = 0;
-      return -1;
-    }
-
-    assert(input->b_complete || sc->sc_copied - k > 0);
-
-    SU_DEBUG_5(("%s: input %u (%u new) compressed %u to %u with '%.*s'\n", 
-		__func__, sc->sc_copied, k, n, 
-		(output->b_avail - output->b_used) - m, 
-		ccnamelen, ccname));
-
-    sc->sc_compressed = n;
-
-    assert(stream || output->b_complete);
-  } 
-  else {
-    assert(tport_is_connection_oriented(self));
-    n = sc->sc_compressed;
-  }
-
-  assert(input && cc && c && output);
-
-  ciov->siv_base = output->b_data + output->b_used;
-  ciov->siv_len = output->b_avail - output->b_used;
-
-  m = self->tp_pri->pri_vtable->vtp_send(self, msg, ciov, 1);
-  
-  if (m == -1) {
-    int error = su_errno();
-
-    if (error != EAGAIN && error != EWOULDBLOCK) {
-      sigcomp_compressor_free(c);
-      sc->sc_compressor = NULL;
-      sc->sc_output = NULL; sc->sc_input = NULL;
-      sc->sc_compressed = 0; sc->sc_copied = 0;
-      su_seterrno(error);
-    }
-
-    return -1;
-  }
-  
-  output->b_used += m;
-  
-  if (output->b_used < output->b_avail)
-    return 0;
-
-  if (output->b_complete) {
-    sigcomp_compressor_accept(c, cc), sc->sc_output = output = NULL;
-  }
-
-  if (input != NONE && input->b_avail == input->b_used && input->b_complete)
-    sigcomp_buffer_reset(input, -1), sc->sc_input = input = NULL;
-
-  if (!input && !output) {
-    sigcomp_compressor_free(c);
-    sc->sc_compressor = NULL;
-  }
-
-  assert(sc->sc_compressed >= n); assert(sc->sc_copied >= n); 
-
-  sc->sc_compressed -= n;
-  sc->sc_copied -= n;
-
-  return n;
-}
-#endif
 
 static
 int tport_queue_rest(tport_t *self, 
@@ -4766,7 +3501,6 @@ int tport_tqsend(tport_t *self, msg_t *msg, msg_t *next,
  *
  * Process SU_WAIT_OUT event.
  */ 
-static
 void tport_send_event(tport_t *self)
 {
   assert(tport_is_connection_oriented(self));
@@ -4960,15 +3694,11 @@ tport_peer_address(tport_t *self, msg_t *msg)
   mai->ai_flags = flags;
 }
 
-static int tport_udp_error(tport_t const *self, 
-			   su_sockaddr_t name[1]);
-
 /** Process error event. 
  *
  * Return events that can be processed afterwards.
  */
-static int
-tport_error_event(tport_t *self)
+int tport_error_event(tport_t *self)
 {
   int errcode;
   su_sockaddr_t name[1] = {{ 0 }};
@@ -4988,169 +3718,6 @@ tport_error_event(tport_t *self)
   tport_error_report(self, errcode, name);
 
   return 0;
-}
-
-/** Initialize logging. */
-static void
-tport_open_log(tport_master_t *mr, tagi_t *tags)
-{
-  char const *log;
-  
-  mr->mr_log = 
-    getenv("MSG_STREAM_LOG") != NULL ||
-    getenv("TPORT_LOG") != NULL 
-    ? MSG_DO_EXTRACT_COPY : 0;
-    
-  if ((log = getenv("TPORT_DUMP")) || (log = getenv("MSG_DUMP"))) {
-    time_t now;
-
-    if (strcmp(log, "-")) 
-      mr->mr_dump_file = fopen(log, "ab"); /* XXX */
-    else
-      mr->mr_dump_file = stdout;
-
-    if (mr->mr_dump_file) {
-      time(&now);
-      fprintf(mr->mr_dump_file, "dump started at %s\n\n", ctime(&now));
-    }
-  }
-}
-
-/** Create log stamp */
-void tport_stamp(tport_t const *self, msg_t *msg, 
-		 char stamp[128], char const *what, 
-		 int n, char const *via,
-		 su_time_t now)
-{
-  char label[24] = "";
-  char *comp = "";
-  char name[SU_ADDRSIZE] = "";
-  su_sockaddr_t const *su = msg_addr(msg);
-  unsigned short second, minute, hour;
-
-  second = (unsigned short)(now.tv_sec % 60);
-  minute = (unsigned short)((now.tv_sec / 60) % 60);
-  hour = (unsigned short)((now.tv_sec / 3600) % 24);
-
-#if SU_HAVE_IN6
-  if (su->su_family == AF_INET6) {
-    if (su->su_sin6.sin6_flowinfo)
-      snprintf(label, sizeof(label), "/%u", ntohl(su->su_sin6.sin6_flowinfo));
-  }
-#endif
-
-  if (tport_has_sigcomp(self) &&
-      msg_addrinfo(msg)->ai_flags & TP_AI_COMPRESSED)
-    comp = ";comp=sigcomp";
-
-  inet_ntop(su->su_family, SU_ADDR(su), name, sizeof(name));
-
-  snprintf(stamp, 128,
-	   "%s %d bytes %s %s/[%s]:%u%s%s at %02u:%02u:%02u.%06lu:\n",
-	   what, n, via, self->tp_name->tpn_proto,
-	   name, ntohs(su->su_port), label[0] ? label : "", comp,
-	   hour, minute, second, now.tv_usec);
-
-}
-
-/** Dump the data from the iovec */
-static 
-void tport_dump_iovec(tport_t const *self, msg_t *msg, 
-		      int n, su_iovec_t const iov[], int iovused,
-		      char const *what, char const *how)
-{
-  tport_master_t *mr = self->tp_master;
-  char stamp[128];
-  int i;
-
-  if (!mr->mr_dump_file)
-    return;
-
-  tport_stamp(self, msg, stamp, what, n, how, su_now());
-  fputs(stamp, mr->mr_dump_file);
-
-  for (i = 0; i < iovused && n > 0; i++) {
-    int len = iov[i].mv_len;
-    if (len > n)
-      len = n;
-    fwrite(iov[i].mv_base, len, 1, mr->mr_dump_file);
-    n -= len;
-  }
-
-  fputs("\v\n", mr->mr_dump_file);
-  fflush(mr->mr_dump_file);
-}
-
-/** Log the message. */
-void tport_log_msg(tport_t *self, msg_t *msg, 
-		   char const *what, char const *via,
-		   char const *first, su_time_t now)
-{
-  char stamp[128];
-  msg_iovec_t iov[80];
-  int i, n, iovlen = msg_iovec(msg, iov, 80);
-  int skip_lf = 0, linelen = 0;
-  char const *prefix = first;
-
-  if (iovlen < 0) return;
-
-  for (i = n = 0; i < iovlen && i < 80; i++)
-    n += iov[i].mv_len;
-
-  tport_stamp(self, msg, stamp, what, n, via, now);
-  su_log(stamp);
-
-  for (i = 0; i < iovlen && i < 80; i++) {
-    char *s = iov[i].mv_base, *end = s + iov[i].mv_len;
-    int n;
-
-    if (skip_lf && s < end && s[0] == '\n') { s++; skip_lf = 0; }
-
-    while (s < end) {
-      if (s[0] == '\0') {
-	int j, len = s - (char *)iov[i].mv_base;
-	for (j = 0; j < i; j++)
-	  len += iov[j].mv_len;
-	su_log("\n%s*** message truncated at %d\n", prefix, len);
-	return;
-      }
-
-      n = strncspn(s, end - s, "\r\n");
-      if (prefix) {
-	su_log("%s", prefix); linelen = n;
-      } else {
-	linelen += n;
-      }
-      su_log("%.*s", n, s);
-      if (s + n < end) {
-	su_log("\n");
-	prefix = first;
-      }
-      else {
-	prefix = "";
-      }
-      s += n;
-      /* Skip a eol */
-      if (s < end) {
-	if (s + 1 < end && s[0] == '\r' && s[1] == '\n')
-	  s += 2;
-	else if (s[0] == '\r')
-	  s++, (skip_lf = s + 1 == end);
-	else if (s[0] == '\n')
-	  s++;
-      }
-    }
-  }
-
-  if (linelen) su_log("\n");
-
-  if (i == 80) {
-    int j, len = 0;
-    for (j = 0; j < i; j++)
-      len += iov[j].mv_len;
-    su_log("\n%s*** message truncated at %d\n", prefix, len);
-    return;
-  }
 }
 
 /** Mark message as waiting for a response.
@@ -5441,8 +4008,7 @@ tport_t *tport_primary_by_name(tport_t const *tp, tp_name_t const *tpn)
   if (!ident && !proto && !family && !comp)
     return (tport_t *)self;		/* Anything goes */
 
-  if (comp && strcasecmp(comp, tport_sigcomp_name) == 0)
-    comp = tport_sigcomp_name;
+  comp = tport_canonize_comp(comp);
 
   for (; self; self = self->pri_next) {
     tp = self->pri_primary;
@@ -5474,6 +4040,7 @@ tport_t *tport_primary_by_name(tport_t const *tp, tp_name_t const *tpn)
   else
     return (tport_t *)nocomp;
 }
+
 
 /** Get transport by name. */
 tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
@@ -5856,2573 +4423,68 @@ char *tport_hostport(char buf[], int bufsize,
   return buf;
 }
 
-/* ==== Thread pools =================================================== */
+/* ----------------------------------------------------------------------  */
 
-struct tport_threadpool
+int tport_master_set_compartment(tport_master_t *mr, 
+				 struct sigcomp_compartment *cc)
 {
-  /* Shared */
-  su_clone_r thrp_clone;
-  tport_primary_t *thrp_tport;
-
-  int        thrp_killing; /* Threadpool is being killed */
-
-  /* Private variables */
-  su_root_t    *thrp_root;
-  int           thrp_reg;
-  struct sigcomp_compartment *thrp_compartment;
-  su_msg_r   thrp_rmsg;
-
-  /* Slave thread counters */
-  int        thrp_r_sent;
-  int        thrp_s_recv;
-
-  unsigned   thrp_rcvd_msgs;
-  unsigned   thrp_rcvd_bytes;
-
-  /* Master thread counters */
-  int        thrp_s_sent;
-  int        thrp_r_recv;
-
-  int        thrp_yield;
-};
-
-typedef struct 
-{
-  tport_threadpool_t *tpd_thrp;
-  int  tpd_errorcode;
-  msg_t *tpd_msg;
-  su_time_t tpd_when;
-  unsigned tpd_mtu;
-#if HAVE_SIGCOMP
-  struct sigcomp_compartment *tpd_cc;
-#endif
-  struct sigcomp_udvm *tpd_udvm;
-  socklen_t tpd_namelen;
-  su_sockaddr_t tpd_name[1];
-} thrp_udp_deliver_t;
-
-union tport_su_msg_arg
-{
-  tport_threadpool_t   *thrp;
-  thrp_udp_deliver_t thrp_udp_deliver[1];
-};
-
-static int thrp_udp_init(su_root_t *, tport_threadpool_t *);
-static void thrp_udp_deinit(su_root_t *, tport_threadpool_t *);
-static int thrp_udp_event(tport_threadpool_t *thrp, 
-			    su_wait_t *w, 
-			    tport_t *_tp);
-static int thrp_udp_recv_deliver(tport_threadpool_t *thrp, 
-				 tport_t const *tp, 
-				 thrp_udp_deliver_t *tpd,
-				 int events);
-static int thrp_udp_recv(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd);
-#if HAVE_SIGCOMP
-static int thrp_udvm_decompress(tport_threadpool_t *thrp, 
-				thrp_udp_deliver_t *tpd);
-#endif
-static void thrp_udp_deliver(tport_threadpool_t *thrp,
-			     su_msg_r msg,
-			     union tport_su_msg_arg *arg);
-static void thrp_udp_deliver_report(tport_threadpool_t *thrp,
-				    su_msg_r m,
-				    union tport_su_msg_arg *arg);
-static void thrp_udp_send(tport_threadpool_t *thrp,
-			  su_msg_r msg,
-			  union tport_su_msg_arg *arg);
-static void thrp_udp_send_report(tport_threadpool_t *thrp,
-				 su_msg_r msg,
-				 union tport_su_msg_arg *arg);
-
-/** Launch threads in the tport pool. */
-static 
-int tport_launch_threadpool(tport_primary_t *pri)
-{
-  tport_t *tp = pri->pri_primary;
-  tport_threadpool_t *thrp = pri->pri_threadpool;
-  int i, N = tp->tp_params->tpp_thrpsize;
-
-  if (N == 0 || thrp != NULL || 
-      pri->pri_primary->tp_addrinfo->ai_socktype != SOCK_DGRAM)
-    return 0;
-  
-  thrp = su_zalloc(tp->tp_home, (sizeof *thrp) * N);
-  if (!thrp)
-    return -1;
-
-  su_setblocking(tp->tp_socket, 0);
-
-  pri->pri_threadpool = thrp;
-  pri->pri_thrpsize = N;
-
-  for (i = 0; i < N; i++) {
-#if HAVE_SIGCOMP
-    if (tport_has_sigcomp(tp))
-      thrp[i].thrp_compartment = tport_primary_compartment(tp->tp_master);
-#endif
-    thrp[i].thrp_tport = pri;
-    if (su_clone_start(pri->pri_master->mr_root, 
-		       thrp[i].thrp_clone,
-		       thrp + i,
-		       thrp_udp_init,
-		       thrp_udp_deinit) < 0)
-      goto error;
-  }
-
-  if (tp->tp_index) {
-    su_root_deregister(tp->tp_master->mr_root, tp->tp_index);
-    tp->tp_index = -1;
-  }
-  
-  return 0;
-
- error:
-  assert(!"tport_launch_threadpool");
-  return -1;
-}
-
-/** Kill threads in the tport pool.
- *
- * @note Executed by stack thread only.
- */
-static 
-int tport_kill_threadpool(tport_primary_t *pri)
-{
-  tport_threadpool_t *thrp = pri->pri_threadpool;
-  int i, N = pri->pri_thrpsize;
-
-  if (!thrp)
-    return 0;
-
-  /* Prevent application from using these. */
-  for (i = 0; i < N; i++)
-    thrp[i].thrp_killing = 1;
-
-  /* Stop every task in the threadpool. */
-  for (i = 0; i < N; i++) 
-    su_clone_wait(pri->pri_master->mr_root, thrp[i].thrp_clone);
-
-  su_free(pri->pri_home, thrp), pri->pri_threadpool = NULL;
-  
   return 0;
 }
 
-static int thrp_udp_init(su_root_t *root, tport_threadpool_t *thrp)
+int tport_init_compression(tport_primary_t *pri,
+			   char const *compression,
+			   tagi_t const *tl)
 {
-  tport_t *tp = thrp->thrp_tport->pri_primary;
-  su_wait_t wait[1];
-
-  assert(tp);
-
-  thrp->thrp_root = root;
-
-  if (su_wait_create(wait, tp->tp_socket, SU_WAIT_IN | SU_WAIT_ERR) < 0)
-    return -1;
-
-  thrp->thrp_reg = su_root_register(root, wait, thrp_udp_event, tp, 0);
-
-  if (thrp->thrp_reg  == -1)
-    return -1;
-
   return 0;
 }
 
-static void thrp_udp_deinit(su_root_t *root, tport_threadpool_t *thrp)
+int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
 {
-  if (thrp->thrp_reg)
-    su_root_deregister(root, thrp->thrp_reg), thrp->thrp_reg = 0;
-  su_msg_destroy(thrp->thrp_rmsg);
-}
-
-static inline void
-thrp_yield(tport_threadpool_t *thrp)
-{
-  su_root_eventmask(thrp->thrp_root, thrp->thrp_reg, 
-		    thrp->thrp_tport->pri_primary->tp_socket, 0);
-  thrp->thrp_yield = 1;
-}
-
-static inline void
-thrp_gain(tport_threadpool_t *thrp)
-{
-  su_root_eventmask(thrp->thrp_root, thrp->thrp_reg, 
-		    thrp->thrp_tport->pri_primary->tp_socket, 
-		    SU_WAIT_IN | SU_WAIT_ERR);
-  thrp->thrp_yield = 0;
-}
-
-static int thrp_udp_event(tport_threadpool_t *thrp, 
-			  su_wait_t *w, 
-			  tport_t *tp)
-{
-#if HAVE_POLL
-  assert(w->fd == tp->tp_socket);
-#endif
-
-  for (;;) {
-    thrp_udp_deliver_t *tpd;
-    int events;
-
-    if (!*thrp->thrp_rmsg) {
-      if (su_msg_create(thrp->thrp_rmsg,
-			su_root_parent(thrp->thrp_root),
-			su_root_task(thrp->thrp_root),
-			thrp_udp_deliver,
-			sizeof (*tpd)) == -1) {
-	SU_DEBUG_1(("thrp_udp_event(%p): su_msg_create(): %s\n", thrp, 
-		    strerror(errno)));
-	return 0;
-      }
-    }
-
-    tpd = su_msg_data(thrp->thrp_rmsg)->thrp_udp_deliver; assert(tpd);
-    tpd->tpd_thrp = thrp;
-
-    events = su_wait_events(w, tp->tp_socket);
-    if (!events)
-      return 0;
-
-    thrp_udp_recv_deliver(thrp, tp, tpd, events);
-
-    if (*thrp->thrp_rmsg) {
-      SU_DEBUG_7(("thrp_udp_event(%p): no msg sent\n", thrp));
-      tpd = su_msg_data(thrp->thrp_rmsg)->thrp_udp_deliver;
-      memset(tpd, 0, sizeof *tpd);
-      return 0;
-    } 
-
-    if (thrp->thrp_yield || (thrp->thrp_s_sent - thrp->thrp_s_recv) > 0)
-      return 0;
-
-    su_wait(w, 1, 0);
-  }
-}
-
-static int thrp_udp_recv_deliver(tport_threadpool_t *thrp, 
-				 tport_t const *tp, 
-				 thrp_udp_deliver_t *tpd,
-				 int events)
-{
-  unsigned qlen = thrp->thrp_r_sent - thrp->thrp_r_recv;
-
-  SU_DEBUG_7(("thrp_udp_event(%p): events%s%s%s%s for %p\n", thrp,
-	      events & SU_WAIT_IN ? " IN" : "",
-	      events & SU_WAIT_HUP ? " HUP" : "",
-	      events & SU_WAIT_OUT ? " OUT" : "",
-	      events & SU_WAIT_ERR ? " ERR" : "",
-	      tpd));
-
-  if (events & SU_WAIT_ERR) {
-    tpd->tpd_errorcode = tport_udp_error(tp, tpd->tpd_name);
-    if (tpd->tpd_errorcode) {
-      if (thrp->thrp_yield)
-	su_msg_report(thrp->thrp_rmsg, thrp_udp_deliver_report);
-      tpd->tpd_when = su_now();
-      su_msg_send(thrp->thrp_rmsg);
-      thrp->thrp_r_sent++;
-      return 0;
-    }
-  }
-
-  if (events & SU_WAIT_IN) {
-    if (thrp_udp_recv(thrp, tpd) < 0) {
-      tpd->tpd_errorcode = su_errno();
-      assert(tpd->tpd_errorcode);
-      if (tpd->tpd_errorcode == EAGAIN || tpd->tpd_errorcode == EWOULDBLOCK)
-	return 0;
-    } else if (tpd->tpd_msg) {
-      int n = msg_extract(tpd->tpd_msg); (void)n;
-      
-      thrp->thrp_rcvd_msgs++;
-      thrp->thrp_rcvd_bytes += msg_size(tpd->tpd_msg);
-    }
-
-#if HAVE_SIGCOMP
-    if (tpd->tpd_udvm && !tpd->tpd_msg)
-      sigcomp_udvm_free(tpd->tpd_udvm), tpd->tpd_udvm = NULL;
-#endif
-
-    assert(!tpd->tpd_msg || !tpd->tpd_errorcode);
-
-    if (tpd->tpd_msg || tpd->tpd_errorcode) {
-      if (qlen >= tp->tp_params->tpp_thrprqsize) {
-	SU_DEBUG_7(("tport recv queue %i: %u\n", 
-		    (int)(thrp - tp->tp_pri->pri_threadpool), qlen));
-	thrp_yield(thrp);
-      }
-
-      if (qlen >= tp->tp_params->tpp_thrprqsize / 2)
-	su_msg_report(thrp->thrp_rmsg, thrp_udp_deliver_report);
-      tpd->tpd_when = su_now();
-      su_msg_send(thrp->thrp_rmsg);
-      thrp->thrp_r_sent++;
-      return 0;
-    }
-  }
-
   return 0;
 }
 
-#include <pthread.h>
-
-/** Mutex for reading from socket */
-static pthread_mutex_t mutex[1] = { PTHREAD_MUTEX_INITIALIZER };
-
-/** Receive a UDP packet by threadpool. */
-static
-int thrp_udp_recv(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd)
+/** Test if tport has a SigComp compartment assigned to it. */
+int tport_has_sigcomp_assigned(tport_t const *self)
 {
-  tport_t const *tp = thrp->thrp_tport->pri_primary;
-  unsigned char sample[2];
-  int N;
-  int s = tp->tp_socket;
-
-  pthread_mutex_lock(mutex);
-
-  /* Simulate packet loss */
-  if (tp->tp_params->tpp_drop && 
-      su_randint(0, 1000) < tp->tp_params->tpp_drop) {
-    recv(s, &sample, 1, 0);
-    pthread_mutex_unlock(mutex);
-    SU_DEBUG_3(("tport(%p): simulated packet loss!\n", tp));
-    return 0;
-  }
-
-  /* Peek for first two bytes in message:
-     determine if this is stun, sigcomp or sip
-  */
-  N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
-
-  if (N < 0) {
-    if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
-      N = 0;
-  }
-  else if (N <= 1) {
-    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "thrp_udp_recv", thrp, N));
-    recv(s, sample, sizeof sample, 0);
-    N = 0;
-  }
-#if !MSG_TRUNC
-  else if ((N = su_getmsgsize(tp->tp_socket)) < 0)
-    ;
-#endif
-  else if ((sample[0] & 0xf8) == 0xf8) {
-#if HAVE_SIGCOMP
-    if (thrp->thrp_compartment) {
-      struct sigcomp_buffer *input;
-      void *data;
-      int dlen;
-
-      tpd->tpd_udvm = 
-	sigcomp_udvm_create_for_compartment(thrp->thrp_compartment);
-      input = sigcomp_udvm_input_buffer(tpd->tpd_udvm, N); assert(input);
-
-      data = input->b_data + input->b_avail;
-      dlen = input->b_size - input->b_avail;
-
-      if (dlen < N)
-	dlen = 0;
-
-      tpd->tpd_namelen = sizeof(tpd->tpd_name);
-    
-      dlen = recvfrom(tp->tp_socket, data, dlen, 0, 
-		      &tpd->tpd_name->su_sa, &tpd->tpd_namelen);
-
-      SU_CANONIZE_SOCKADDR(tpd->tpd_name);
-      
-      if (dlen < N) {
-	su_seterrno(EMSGSIZE);		/* Protocol error */
-	N = -1;
-      } else if (dlen == -1) 
-	N = -1;
-      else {
-	input->b_avail += dlen; 
-	input->b_complete = 1;
-	
-	pthread_mutex_unlock(mutex);
-      
-	N = thrp_udvm_decompress(thrp, tpd);
-
-	if (N == -1)
-	  /* Do not report decompression errors as ICMP errors */
-	  memset(tpd->tpd_name, 0, tpd->tpd_namelen);
-
-	return N;
-      }
-      pthread_mutex_unlock(mutex);
-      return N;
-    }
-#endif
-    recv(s, sample, 1, 0);
-    pthread_mutex_unlock(mutex);
-    /* XXX - send NACK ? */
-    su_seterrno(EBADMSG);
-    N = -1;
-  }
-  else {
-    /* receive as usual */
-    N = tport_recv_dgram_r(tp, &tpd->tpd_msg, N);
-  } 
-  
-  pthread_mutex_unlock(mutex);
-
-  return N;
+  return 0;
 }
 
-#if HAVE_SIGCOMP
-static
-int thrp_udvm_decompress(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd)
+int 
+
+tport_sigcomp_accept(tport_t *self, 
+		     struct sigcomp_compartment *cc, 
+		     msg_t *msg)
 {
-  struct sigcomp_udvm *udvm = tpd->tpd_udvm;
-  struct sigcomp_buffer *output;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-  su_addrinfo_t *ai;
-  tport_t *tp = thrp->thrp_tport->pri_primary;
-  unsigned n, m, i, eos, dlen;
-  void *data;
-  int veclen;
-
-  output = sigcomp_udvm_output_buffer(udvm, -1);
-  
-  if (sigcomp_udvm_decompress(udvm, output, NULL) < 0) {
-    int error = sigcomp_udvm_errno(udvm);
-    SU_DEBUG_3(("%s: UDVM error %d: %s\n", __func__,
-		error, sigcomp_udvm_strerror(udvm)));
-    su_seterrno(EREMOTEIO);
-    return -1;
-  } 
-
-  data = output->b_data + output->b_used;
-  dlen = output->b_avail - output->b_used;
-  /* XXX - if a message is larger than default output size... */
-  eos = output->b_complete; assert(output->b_complete);
-    
-  veclen = tport_recv_iovec(tp, &tpd->tpd_msg, iovec, dlen, eos);
-    
-  if (veclen <= 0) {
-    n = -1;
-  } else {
-    for (i = 0, n = 0; i < veclen; i++) {
-      m = iovec[i].mv_len; assert(dlen >= n + m);
-      memcpy(iovec[i].mv_base, data + n, m);
-      n += m;
-    }
-    assert(dlen == n);
-
-    msg_recv_commit(tpd->tpd_msg, dlen, eos);    /* Mark buffer as used */
-    
-    /* Message address */
-    ai = msg_addrinfo(tpd->tpd_msg);
-    ai->ai_flags |= TP_AI_COMPRESSED;
-    ai->ai_family = tpd->tpd_name->su_sa.sa_family;
-    ai->ai_socktype = SOCK_DGRAM;
-    ai->ai_protocol = IPPROTO_UDP;
-    memcpy(ai->ai_addr, tpd->tpd_name, ai->ai_addrlen = tpd->tpd_namelen);
-
-    SU_DEBUG_9(("%s(%p): sigcomp msg sz = %d\n", __func__, tp, n));
-  }
-
-  return n;
-}
-#endif
-
-/** Deliver message from threadpool to the stack
- *
- * @note Executed by stack thread only.
- */
-static 
-void thrp_udp_deliver(su_root_magic_t *magic,
-		      su_msg_r m,
-		      union tport_su_msg_arg *arg)
-{
-  thrp_udp_deliver_t *tpd = arg->thrp_udp_deliver;
-  tport_threadpool_t *thrp = tpd->tpd_thrp;
-  tport_t *tp = thrp->thrp_tport->pri_primary;
-  su_time_t now = su_now();
-
-  assert(magic != thrp);
-
-  thrp->thrp_r_recv++;
-
-  if (thrp->thrp_killing) {
-#if HAVE_SIGCOMP
-    sigcomp_udvm_free(tpd->tpd_udvm), tpd->tpd_udvm = NULL;
-#endif
-    msg_destroy(tpd->tpd_msg);
-    return;
-  }
-
-  SU_DEBUG_7(("thrp_udp_deliver(%p): got %p delay %f\n", 
-	      thrp, tpd, 1000 * su_time_diff(now, tpd->tpd_when)));
-
-  if (tpd->tpd_errorcode)
-    tport_error_report(tp, tpd->tpd_errorcode, tpd->tpd_name);
-  else if (tpd->tpd_msg) {
-    tport_deliver(tp, tpd->tpd_msg, NULL, &tpd->tpd_udvm, tpd->tpd_when);
-    tp->tp_rlogged = NULL;
-  }
-
-#if HAVE_SIGCOMP 
-  if (tpd->tpd_udvm) {
-    sigcomp_udvm_free(tpd->tpd_udvm), tpd->tpd_udvm = NULL;
-  }
-#endif
-}
-
-static 
-void thrp_udp_deliver_report(tport_threadpool_t *thrp,
-			     su_msg_r m,
-			     union tport_su_msg_arg *arg)
-{
-  if (thrp->thrp_yield) {
-    int qlen = thrp->thrp_r_sent - thrp->thrp_r_recv;
-    int qsize = thrp->thrp_tport->pri_params->tpp_thrprqsize;
-    if (qlen == 0 || qlen < qsize / 2)
-      thrp_gain(thrp);
-  }
-}
-
-/** Send a message to network using threadpool.
- *
- * @note Executed by stack thread only.
- */
-static
-int tport_thread_send(tport_t *tp,
-		      struct sigcomp_compartment *cc,
-		      msg_t *msg,
-		      unsigned mtu)
-{
-  tport_threadpool_t *thrp = tp->tp_pri->pri_threadpool;
-  thrp_udp_deliver_t *tpd;
-  int i, N = tp->tp_pri->pri_thrpsize;
-  su_msg_r m;
-  unsigned totalqlen = 0;
-  unsigned qlen;
-
-  if (thrp->thrp_killing)
-    return (su_seterrno(ECHILD)), -1;
-
-  qlen = totalqlen = thrp->thrp_s_sent - thrp->thrp_s_recv;
-
-  /* Select thread with shortest queue */ 
-  for (i = 1; i < N; i++) {
-    tport_threadpool_t *other = tp->tp_pri->pri_threadpool + i;
-    unsigned len = other->thrp_s_sent - other->thrp_s_recv;
-
-    if (len < qlen || 
-	(len == qlen && (other->thrp_s_sent - thrp->thrp_s_sent) < 0))
-      thrp = other, qlen = len;
-
-    totalqlen += len;
-  }
-
-  if (totalqlen >= N * tp->tp_params->tpp_qsize)
-    SU_DEBUG_3(("tport send queue: %u (shortest %u)\n", totalqlen, qlen));
-
-  if (su_msg_create(m,
-		    su_clone_task(thrp->thrp_clone),
-		    su_root_task(tp->tp_master->mr_root),
-		    thrp_udp_send,
-		    sizeof (*tpd)) != su_success) {
-    SU_DEBUG_1(("thrp_udp_event(%p): su_msg_create(): %s\n", thrp, 
-		strerror(errno)));
-    return -1;
-  }
-
-  tpd = su_msg_data(m)->thrp_udp_deliver;
-  tpd->tpd_thrp = thrp;
-  tpd->tpd_when = su_now();
-  tpd->tpd_mtu = mtu;
-  tpd->tpd_msg = msg_ref_create(msg);
-
-#if HAVE_SIGCOMP
-  tpd->tpd_cc = cc;
-#endif
-
-  su_msg_report(m, thrp_udp_send_report);
-
-  if (su_msg_send(m) == su_success) {
-    thrp->thrp_s_sent++;
-    return 0;
-  }
-
-  msg_ref_destroy(msg);
-  return -1;
-}
-
-/** thrp_udp_send() is run by threadpool to send the message. */
-static 
-void thrp_udp_send(tport_threadpool_t *thrp,
-		   su_msg_r m,
-		   union tport_su_msg_arg *arg)
-{
-  thrp_udp_deliver_t *tpd = arg->thrp_udp_deliver;
-  tport_t *tp = thrp->thrp_tport->pri_primary;
-  msg_t *msg = tpd->tpd_msg;
-  msg_iovec_t *iov, auto_iov[40], *iov0 = NULL;
-  int iovlen, iovused, n;
-
-  assert(thrp == tpd->tpd_thrp);
-
-  thrp->thrp_s_recv++;
-
-  { 
-    double delay = 1000 * su_time_diff(su_now(), tpd->tpd_when);
-    if (delay > 100)
-      SU_DEBUG_3(("thrp_udp_deliver(%p): got %p delay %f\n", thrp, tpd, delay));
-    else
-      SU_DEBUG_7(("thrp_udp_deliver(%p): got %p delay %f\n", thrp, tpd, delay));
-  }
-
-  if (!msg) {
-    tpd->tpd_errorcode = EINVAL;
-    return;
-  }
-
-  /* Prepare message for sending - i.e., encode it */
-  if (msg_prepare(msg) < 0) {
-    tpd->tpd_errorcode = errno;
-    return;
-  }
-
-  if (tpd->tpd_mtu != 0 && msg_size(msg) > tpd->tpd_mtu) {
-    tpd->tpd_errorcode = EMSGSIZE;
-    return;
-  }
-
-  /* Use initially the I/O vector from stack */
-  iov = auto_iov, iovlen = sizeof(auto_iov)/sizeof(auto_iov[0]);
-
-  /* Get a iovec for message contents */
-  for (;;) {
-    iovused = msg_iovec(msg, iov, iovlen);
-    if (iovused <= iovlen) 
-      break;
-
-    iov = iov0 = realloc(iov0, sizeof(*iov) * iovused);
-    iovlen = iovused;
-
-    if (iov0 == NULL) {
-      tpd->tpd_errorcode = errno;
-      return;
-    }
-  }
-
-  assert(iovused > 0);
-
-  tpd->tpd_when = su_now();
-
-  if (0)
-    ;
-#if HAVE_SIGCOMP
-  else if (tpd->tpd_cc) {
-    tport_sigcomp_t sc[1] = {{ NULL }};
-
-    n = tport_sigcomp_vsend(tp, msg, iov, iovused, tpd->tpd_cc, sc);
-  } 
-#endif
-  else 
-    n = tport_send_dgram(tp, msg, iov, iovused);
-
-  if (n == -1)
-    tpd->tpd_errorcode = su_errno();
-
-  if (iov0)
-    free(iov0);
-}
-
-static 
-void thrp_udp_send_report(su_root_magic_t *magic,
-			  su_msg_r msg,
-			  union tport_su_msg_arg *arg)
-{
-  thrp_udp_deliver_t *tpd = arg->thrp_udp_deliver;
-  tport_threadpool_t *thrp = tpd->tpd_thrp;
-  tport_t *tp = thrp->thrp_tport->pri_primary;
-
-  assert(magic != thrp);
-
-  SU_DEBUG_7(("thrp_udp_send_report(%p): got %p delay %f\n", 
-	      thrp, tpd, 1000 * su_time_diff(su_now(), tpd->tpd_when)));
-
-  if (tp->tp_master->mr_log)
-    tport_log_msg(tp, tpd->tpd_msg, "sent", "to", "   ", tpd->tpd_when);
-
-  if (tpd->tpd_errorcode)
-    tport_error_report(tp, tpd->tpd_errorcode, msg_addr(tpd->tpd_msg));
-
-  msg_ref_destroy(tpd->tpd_msg);
+  return 0;
 }
 
 
-/** Initialize STUN keepalives.
- *
- *@retval 0
- */
+void tport_try_accept_sigcomp(tport_t *self, 
+			      msg_t *msg)
+{
+}
+
+int tport_can_recv_sigcomp(tport_t const *self)
+{
+  return 0;
+}
+
+int tport_can_send_sigcomp(tport_t const *self)
+{
+  return 0;
+}
+
+int tport_has_compression(tport_t const *self, char const *comp)
+{
+  return 0;
+}
+
+int tport_set_compression(tport_t *self, char const *comp)
+{
+  return (self == NULL || comp) ? -1 : 0;
+}
+
 int tport_keepalive(tport_t *tp, tp_name_t *tpn)
 {
-#if HAVE_SOFIA_STUN
-  int err;
-  tport_master_t *mr = tp->tp_master;
-  stun_handle_t *sh = mr->mr_nat->stun;
-  su_sockaddr_t sa[1] = {{ 0 }};
-
-  if (tp->tp_has_keepalive == 1 || sh == NULL)
-    return 0;
-
-  inet_pton(AF_INET, tpn->tpn_host, (void *) &sa->su_sin.sin_addr.s_addr);
-  sa->su_port = htons(atoi(tpn->tpn_port));
-  sa->su_family = AF_INET;
-
-  /*XXX -- remove me after it's working */
-  memcpy(sa, tp->tp_addr, sizeof(*sa));
-
-  err = stun_keepalive(sh, sa,
-		       STUNTAG_SOCKET(tp->tp_socket),
-		       STUNTAG_TIMEOUT(10000),
-		       TAG_NULL());
-  
-  if (err < 0)
-    return -1;
-
-  tp->tp_has_keepalive = 1;
-#endif
   return 0;
 }
-
-#if HAVE_SOFIA_STUN
-void tport_stun_cb(tport_master_t *mr,
-		   stun_handle_t *sh,
-		   stun_request_t *req,
-		   stun_discovery_t *sd,
-		   stun_action_t action,
-		   stun_state_t event)
-{
-  SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
-
-  switch (action) {
-  case stun_action_tls_query:
-    break;
-
-  default:
-    break;
-  }
-
-  return;
-}
-
-
-/**Callback for STUN bind
-*/
-void tport_stun_bind_cb(tport_primary_t *pri,
-			stun_handle_t *sh,
-			stun_request_t *req,
-			stun_discovery_t *sd,
-			stun_action_t action,
-			stun_state_t event)
-{
-  tport_master_t *mr;
-  SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
-
-  mr = pri->pri_master;
-
-  if (event == stun_bind_done)
-    tport_stun_bind_done(pri, sh, sd);
-
-  return;
-}
-#endif
-
-static
-void tport_stun_bind_done(tport_primary_t *pri,
-			  stun_handle_t *sh,
-			  stun_discovery_t *sd)
-{
-  tport_t *tp = pri->pri_primary;
-  su_sockaddr_t *sa = NULL;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
-  su_socket_t s;
-
-  s = stun_discovery_get_socket(sd);
-  sa = stun_discovery_get_address(sd);
-
-  SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
-	      inet_ntop(sa->su_family,
-			SU_ADDR(sa),
-			ipaddr, sizeof(ipaddr)),
-	      (unsigned) ntohs(sa->su_port)));
-
-  SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
-  
-
-  /* Send message to calling application indicating there's a new
-     public address available */
-  STACK_ADDRESS(tp);
-
-  return;
-}
-
-static
-struct tport_nat_s *
-tport_nat_initialize_nat_traversal(tport_master_t *mr, 
-				   tp_name_t const *tpn,
-				   char const * const ** return_transports,
-				   tagi_t const *tags)
-{
-  struct tport_nat_s *nat = mr->mr_nat;
-
-  if (nat->initialized)
-    return nat;
-
-#if HAVE_SOFIA_STUN
-  if (stun_is_requested(TAG_NEXT(tags))) {
-    static char const * const stun_transports[] = { "udp", NULL };
-    int i;
-
-    nat->stun = NULL;
-    nat->external_ip_address = NULL;
-    /* nat->stun_socket = NULL; */
-
-    nat->tport = mr;
-
-    for (i = 0; stun_transports[i]; i++) {
-      if ((strcmp(tpn->tpn_proto, "*") == 0 || 
-	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
-        SU_DEBUG_5(("%s(%p) initializing STUN handle\n", __func__, mr));
-
-        nat->stun = stun_handle_create(mr,
-				       mr->mr_root,
-				       tport_stun_cb,
-				       TAG_NEXT(tags));
-
-        if (!nat->stun) 
-	  return NULL;
-
-	if (stun_request_shared_secret(nat->stun) < 0) {
-	  SU_DEBUG_3(("%s: %s failed\n", __func__,
-		      "stun_request_shared_secret()"));
-	}
-
-	nat->try_stun = 1;
-	/* We support only UDP if STUN is used */
-	*return_transports = stun_transports;
-        break;
-      }
-    }
-  }
-#endif
-
-#if HAVE_UPNP
-  /* Register upnp control point and collect descriptions from NATs */
-  /* parameter is time in seconds to wait for devices */
-  /* return value of 0 unsuccessful; -1 already mapped */
-  if (upnp_register_upnp_client(1) != 0) {
-    /* see if nat is enabled and if it is, find out the external ip address */
-    upnp_check_for_nat();
-
-    SU_DEBUG_5(("Using UPnP IGD for NAT/FW traversal.\n"));
-
-    if (igd_list_s) {
-      if (upnp_has_nat_enabled(igd_list_s)) {
-	if (upnp_has_external_ip(igd_list_s)) {
-	  nat->external_ip_address = upnp_get_external_ip(igd_list_s);
-	  SU_DEBUG_5(("UPnP-IGD: queried external IP %s.\n", nat->external_ip_address));
-	}
-      }
-    }
-  }
-#endif
-
-  nat->initialized = 1;
-
-  return nat;
-}
-
-char *tport_nat_get_external_ip_address(struct tport_nat_s *nat)
-{
-  return nat->external_ip_address;
-}
-
-
-#if HAVE_SOFIA_STUN
-/**
- * Binds to socket and tries to create port bindings
- * using STUN.
- *
- * @return non-zero on success
- */
-int tport_nat_stun_bind(tport_primary_t *pub,
-			struct tport_nat_s *nat,
-			su_sockaddr_t su[1],
-			socklen_t *sulen,
-			su_socket_t s)
-{
-  stun_handle_t *sh = nat->stun;
-  int nat_bound = 0, reg_socket;
-
-  /* nat->stun_socket = stun_socket_create(nat->stun, s); */
-
-  nat->stun_socket = s;
-  
-  /* Do not register socket to stun's event loop */
-  reg_socket = 0;
-
-  nat_bound = stun_bind(sh, tport_stun_bind_cb, pub,
-			STUNTAG_SOCKET(s),
-			STUNTAG_REGISTER_SOCKET(reg_socket),
-			TAG_NULL());
-
-  if (nat_bound < 0) {
-    SU_DEBUG_9(("%s: %s  failed.\n", __func__, "stun_bind()"));
-    return nat_bound;
-  }
-
-  nat->stun_enabled = 1;
-  nat_bound = 1;
-
-  return nat_bound;
-}
-#endif /* HAVE_SOFIA_STUN */
-
-/**
- * Creates a binding for address 'su' using various
- * NAT/FW traversal mechanisms.
- *
- * @return Some NAT/FW mechanisms will also bind to the given local
- *         address. In this cases, the return value will be
- *         non-zero.
- */
-int tport_nat_traverse_nat(tport_master_t *self,
-			   tport_primary_t *pub,
-			   su_sockaddr_t su[1],
-			   su_addrinfo_t const *ai,
-			   su_socket_t s)
-{
-  int nat_bound = 0;
-
-#if HAVE_SOFIA_STUN
-  socklen_t sulen = ai->ai_addrlen;
-  struct tport_nat_s *nat = self->mr_nat;
-#endif
-
-#if HAVE_SOFIA_STUN && HAVE_UPNP
-  /* If both STUN and UPnP are enabled, we need to choose
-     which of them we wish to use under which circumstances */
-
-  /* Algorithm:
-   * 1. Check if there are any UPnP-enabled IGDs
-   * 2. If there are, see whether they are connected directly to the Internet
-   * 3. If they are and a port can be opened, do not use STUN
-   * 4. Otherwise use STUN
-   *
-   * The problem is the case where even the address space on the WAN side of
-   * the NAT is part of a private address range, but still includes the 
-   * recipient. In this case UPnP could be used but is not.
-   *
-   * The solution would be to check whether the recipient is on the same
-   * address space. The check would need to see if the recipient IP
-   * address is also private and on the same range.
-   */
-
-  SU_DEBUG_5(("%s: Both UPnP and STUN selected in compilation.\n", __func__));
-   
-  /* Check if UPnP is available */
-
-  if (igd_list_s 
-      && upnp_has_nat_enabled(igd_list_s) /* 1 if enabled, 0 otherwise */
-      && upnp_has_external_ip(igd_list_s)
-      && su->su_port != 0      /* is there a port to open? */
-      /* if external address is not private  */
-      && (!upnp_is_private_address(upnp_get_external_ip(igd_list_s)) 
-	  /* or if the STUN server was not specified */
-	  || !nat->try_stun)
-      && upnp_open_port(igd_list_s, ntohs(su->su_port), ntohs(su->su_port), 
-			ai->ai_protocol, self, ai->ai_family)) {
-    SU_DEBUG_9(("%s: upnp_open_port ok\n", __func__));
-
-    nat->try_stun = 0;
-  }
-
-  /* if it isn't, it's time to try STUN */
-
-  if (nat->try_stun) {
-
-    if (nat->stun && ai->ai_protocol == IPPROTO_UDP) {
-      nat_bound = tport_nat_stun_bind(pub, nat, su, &sulen, s);
-    }
-
-    if (nat->stun == NULL || !nat_bound) { /* UPnP fallback, cascading NAT */
-      if (igd_list_s) {
-        if (upnp_has_nat_enabled(igd_list_s)) { /* 1 if enabled, 0 otherwise */
-          if (upnp_has_external_ip(igd_list_s)) {
-            if (ntohs(su->su_port)) {
-              if (upnp_open_port(igd_list_s, 
-				 ntohs(su->su_port), 
-				 ntohs(su->su_port), 
-				 ai->ai_protocol, self, ai->ai_family)) {
-                SU_DEBUG_9(("%s: upnp_open_port ok\n", __func__));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-#elif HAVE_UPNP
-
-  SU_DEBUG_5(("%s: Only UPnP selected in compilation.\n", __func__));
-
-  /* There needs to be some sort of mechanism of choosing the right IGD: now we
-     just use the first one in the IGD linked list (usually the only one) */
-    
-  /* If the linked list does exist, ie. we are behind a firewall: */
-  if (igd_list_s) {
-    if (upnp_has_nat_enabled(igd_list_s)) { /* 1 if enabled, 0 otherwise */
-      if (upnp_has_external_ip(igd_list_s)) {
-      /* is there a port to open? */
-        if (ntohs(su->su_port)) {
-          if (!upnp_open_port(igd_list_s, ntohs(su->su_port), ntohs(su->su_port), ai->ai_protocol, self, ai->ai_family)) {
-            SU_DEBUG_3(("%s: upnp_open_port failed\n", __func__));
-          }
-          else {
-            SU_DEBUG_9(("%s: upnp_open_port ok\n", __func__));
-          }
-        }
-      }
-    }
-  }
-#elif HAVE_SOFIA_STUN
-    
-  SU_DEBUG_5(("%s: Only STUN selected in compilation.\n", __func__));
-
-  if (nat->stun && ai->ai_protocol == IPPROTO_UDP) {
-    nat_bound = tport_nat_stun_bind(pub, nat, su, &sulen, s);
-  }
-#endif
-
-  return nat_bound;
-}
-
-static
-int tport_nat_set_canon(tport_t *self, struct tport_nat_s *nat)
-{
-#if HAVE_SOFIA_STUN || HAVE_UPNP
-  tp_name_t *tpn = self->tp_name;
-#endif
-
-#if HAVE_SOFIA_STUN && HAVE_UPNP
-  if (nat->stun_enabled) {
-    self->tp_stun_socket = nat->stun_socket;
-    if (nat->stun_socket && strcmp(tpn->tpn_canon, tpn->tpn_host)) {
-      tpn->tpn_canon = tpn->tpn_host;
-    }
-  } 
-  else {
-    if (strcmp(tpn->tpn_canon, tpn->tpn_host))
-      tpn->tpn_canon = tpn->tpn_host;
-  }
-#elif HAVE_SOFIA_STUN
-
-  self->tp_stun_socket = nat->stun_socket;
-  if (nat->stun_socket && strcmp(tpn->tpn_canon, tpn->tpn_host))
-    tpn->tpn_canon = tpn->tpn_host;
-#elif HAVE_UPNP
-  if (strcasecmp(tpn->tpn_canon, tpn->tpn_host))
-    tpn->tpn_canon = tpn->tpn_host;
-#endif
-
-  return 1;
-}
-
-int tport_nat_finish(tport_primary_t *pri)
-{
-#if HAVE_UPNP
-  /* close all ports which were registered by self */
-  upnp_close_all_ports(pri->pri_primary);
-#endif
-  return 1;
-}
-
-#define NEXT_VTABLE NULL
-
-/* ---------------------------------------------------------------------- */
-/* UDP */
-
-static int tport_udp_init_primary(tport_primary_t *, 
-				  tp_name_t const tpn[1], 
-				  su_addrinfo_t *, 
-				  tagi_t const *,
-				  char const **return_culprit);
-static int tport_recv_dgram(tport_t *self);
-static int tport_send_dgram(tport_t const *self, msg_t *msg,
-			    msg_iovec_t iov[], int iovused);
-
-tport_vtable_t const tport_udp_client_vtable =
-{
-  NEXT_VTABLE, "udp", tport_type_client,
-  sizeof (tport_primary_t),
-  NULL,
-  tport_init_compression,
-  NULL,
-  NULL,
-  NULL,
-  sizeof (tport_t),
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_dgram,
-  tport_send_dgram,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_udp_client_vtable
-
-tport_vtable_t const tport_udp_vtable =
-{
-  NEXT_VTABLE, "udp", tport_type_local,
-  sizeof (tport_primary_t),
-  tport_udp_init_primary,
-  tport_init_compression,
-  NULL,
-  NULL,
-  NULL,
-  sizeof (tport_t),
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_dgram,
-  tport_send_dgram,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_udp_vtable
-
-static int tport_udp_init_primary(tport_primary_t *pri,
-				  tp_name_t const tpn[1],
-				  su_addrinfo_t *ai,
-				  tagi_t const *tags,
-				  char const **return_culprit)
-{
-  unsigned rmem = 0, wmem = 0;
-  int events = SU_WAIT_IN;
-  int s;
-
-  s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-  if (s == SOCKET_ERROR)
-    return *return_culprit = "socket", -1;
-
-  pri->pri_primary->tp_socket = s;
-
-  if (tport_bind_socket(s, ai, return_culprit) < 0)
-    return -1;
-
-#if HAVE_IP_RECVERR
-  if (ai->ai_family == AF_INET || ai->ai_family == AF_INET6) {
-    int const one = 1;
-    if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
-      if (ai->ai_family == AF_INET)
-	SU_DEBUG_3(("setsockopt(IPVRECVERR): %s\n", su_strerror(su_errno())));
-    }
-    events |= SU_WAIT_ERR;
-  }
-#endif
-#if HAVE_IPV6_RECVERR
-  if (ai->ai_family == AF_INET6) {
-    int const one = 1;
-    if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
-      SU_DEBUG_3(("setsockopt(IPV6_RECVERR): %s\n", su_strerror(su_errno())));
-    events |= SU_WAIT_ERR;
-  }
-#endif
-
-  tl_gets(tags, 
-	  TPTAG_UDP_RMEM_REF(rmem),
-	  TPTAG_UDP_WMEM_REF(wmem),
-	  TAG_END());
-
-  if (rmem != 0 && 
-      setsockopt(s, SOL_SOCKET, SO_RCVBUF, (void *)&rmem, sizeof rmem) < 0) {
-    SU_DEBUG_3(("setsockopt(SO_RCVBUF): %s\n", 
-		su_strerror(su_errno())));
-  }
-
-  if (wmem != 0 && 
-      setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *)&wmem, sizeof wmem) < 0) {
-    SU_DEBUG_3(("setsockopt(SO_SNDBUF): %s\n", 
-		su_strerror(su_errno())));
-  }
-
-  pri->pri_primary->tp_events = events;
-
-  return 0;
-}
-
-/** Receive datagram.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- */
-static 
-int tport_recv_dgram(tport_t *self)
-{
-  int N;
-  int s = self->tp_socket;
-  unsigned char sample[2];
-
-  /* Simulate packet loss */
-  if (self->tp_params->tpp_drop && 
-      su_randint(0, 1000) < self->tp_params->tpp_drop) {
-    recv(self->tp_socket, sample, 1, 0);
-    SU_DEBUG_3(("tport(%p): simulated packet loss!\n", self));
-    return 0;
-  }
-
-  /* Peek for first two bytes in message:
-     determine if this is stun, sigcomp or sip
-  */
-  N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
-
-  if (N < 0) {
-    if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
-      N = 0;
-  }
-  else if (N <= 1) {
-    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "tport_recv_dgram", self, N));
-    recv(s, sample, sizeof sample, 0);
-    N = 0;
-  }
-#if MSG_TRUNC
-  else if ((N = su_getmsgsize(s)) < 0)
-    SU_DEBUG_1(("%s: su_getmsgsize(): %s (%d)\n", __func__, 
-		su_strerror(su_errno()), su_errno()));
-#endif
-  else if ((sample[0] & 0xf8) == 0xf8) {
-    return tport_recv_sigcomp_dgram(self, N); /* SigComp */
-  }
-  else if (sample[0] == 0 || sample[0] == 1) {
-    return tport_recv_stun_dgram(self, N);    /* STUN */
-  }
-  else
-    return tport_recv_dgram_r(self, &self->tp_msg, N);
-
-  return N;
-}
-
-/** Receive datagram statelessly.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- * @retval 1  normal receive (should never happen)
- * @retval 2  incomplete recv, recv again (should never happen)
- * @retval 3  STUN keepalive, ignore
- */
-static 
-int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
-{
-  msg_t *msg;
-  int n, veclen;
-  su_sockaddr_t *from;
-  socklen_t *fromlen;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-
-  assert(*mmsg == NULL);
-
-  veclen = tport_recv_iovec(self, mmsg, iovec, N, 1);
-  if (veclen < 0)
-    return -1;
-
-  msg = *mmsg;
-
-  n = su_vrecv(self->tp_socket, iovec, veclen, 0, 
-	       from = msg_addr(msg), fromlen = msg_addrlen(msg));
-  if (n == SOCKET_ERROR) {
-    int error = su_errno();
-    msg_destroy(msg); *mmsg = NULL;
-    su_seterrno(error);
-    return -1;
-  }
-
-  SU_CANONIZE_SOCKADDR(from);
-  assert(n <= N);		/* FIONREAD tells the size of all messages.. */
-
-  if (self->tp_master->mr_dump_file && !self->tp_pri->pri_threadpool)
-    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
-
-  msg_recv_commit(msg, n, 1);  /* Mark buffer as used */
-
-  return 0;
-}
-
-/** Receive data from datagram using SigComp. */
-static int tport_recv_sigcomp_dgram(tport_t *self, int N)
-{
-  char dummy[1];
-  int error = EBADMSG;
-#if HAVE_SIGCOMP
-  struct sigcomp_udvm *udvm;
-
-  if (self->tp_sigcomp->sc_udvm == 0)
-    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
-
-  udvm = self->tp_sigcomp->sc_udvm;
-
-  if (udvm) {
-    retval = tport_recv_sigcomp_r(self, &self->tp_msg, udvm, N);
-    if (retval < 0)
-      sigcomp_udvm_reject(udvm);
-    return retval;
-  }
-  error = su_errno();
-#endif
-  recv(self->tp_socket, dummy, 1, 0); /* remove msg from socket */
-  /* XXX - send NACK ? */
-  return su_seterrno(error);     
-}
-
-/** Send using su_vsend(). Map IPv4 addresses as IPv6 addresses, if needed. */
-static
-int tport_send_dgram(tport_t const *self, msg_t *msg, 
-		     msg_iovec_t iov[], 
-		     int iovused)
-{
-  su_sockaddr_t *su;
-  int sulen;
-#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
-  su_sockaddr_t su0[1];
-#endif
-
-  if (tport_is_connection_oriented(self))
-    return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
-
-  su = msg_addr(msg);
-  sulen = *msg_addrlen(msg);
-
-#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
-  if (su->su_family == AF_INET && self->tp_addrinfo->ai_family == AF_INET6) {
-    memset(su0, 0, sizeof su0);
-
-    su0->su_family = self->tp_addrinfo->ai_family;
-    su0->su_port = su->su_port;
-
-    IN6_INADDR_TO_V4MAPPED(&su->su_sin.sin_addr, &su0->su_sin6.sin6_addr);
-
-    su = su0, sulen = sizeof(su0->su_sin6);
-  }
-#endif
-
-  su_soerror(self->tp_socket); /* XXX - we *still* have a race condition */
-
-  return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, su, sulen);
-}
-
-
-#if !HAVE_IP_RECVERR && !HAVE_IPV6_RECVERR
-
-/** Process UDP error event. */
-static int
-tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
-{
-  if (tport_is_connection_oriented(self))
-    name[0] = self->tp_addr[0];
-  return su_soerror(self->tp_socket);
-}
-
-#else
-
-/** Process UDP error event. */
-static int
-tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
-{
-  struct cmsghdr *c;
-  struct sock_extended_err *ee;
-  su_sockaddr_t *from;
-  char control[512];
-  char errmsg[64 + 768];
-  struct iovec iov[1];
-  struct msghdr msg[1] = {{ 0 }};
-  int n;
-
-  msg->msg_name = name, msg->msg_namelen = sizeof(*name);
-  msg->msg_iov = iov, msg->msg_iovlen = 1;
-  iov->iov_base = errmsg, iov->iov_len = sizeof(errmsg);
-  msg->msg_control = control, msg->msg_controllen = sizeof(control);
-
-  n = recvmsg(self->tp_socket, msg, MSG_ERRQUEUE);
-
-  if (n < 0) {
-    int err = su_errno();
-    if (err != EAGAIN && err != EWOULDBLOCK)
-      SU_DEBUG_1(("%s: recvmsg: %s\n", __func__, su_strerror(err)));
-    return 0;
-  }
-
-  if ((msg->msg_flags & MSG_ERRQUEUE) != MSG_ERRQUEUE) {
-    SU_DEBUG_1(("%s: recvmsg: no errqueue\n", __func__));
-    return 0;
-  }
-
-  if (msg->msg_flags & MSG_CTRUNC) {
-    SU_DEBUG_1(("%s: extended error was truncated\n", __func__));
-    return 0;
-  }
-
-  if (msg->msg_flags & MSG_TRUNC) {
-    /* ICMP message may contain original message... */
-    SU_DEBUG_3(("%s: icmp(6) message was truncated (at %d)\n", __func__, n));
-  }
-
-  /* Go through the ancillary data */
-  for (c = CMSG_FIRSTHDR(msg); c; c = CMSG_NXTHDR(msg, c)) {
-    if (0
-#if HAVE_IP_RECVERR
-	|| (c->cmsg_level == SOL_IP && c->cmsg_type == IP_RECVERR)
-#endif
-#if HAVE_IPV6_RECVERR
-	|| (c->cmsg_level == SOL_IPV6 && c->cmsg_type == IPV6_RECVERR)
-#endif
-	) {
-      char info[128];
-      char const *origin;
-
-      ee = (struct sock_extended_err *)CMSG_DATA(c);
-      from = (su_sockaddr_t *)SO_EE_OFFENDER(ee);
-      info[0] = '\0';
-
-      switch (ee->ee_origin) {
-      case SO_EE_ORIGIN_LOCAL:
-	origin = "local";
-	break;
-      case SO_EE_ORIGIN_ICMP:
-	origin = "icmp";
-	snprintf(info, sizeof(info), " type=%u code=%u", 
-		 ee->ee_type, ee->ee_code);
-	break;
-      case SO_EE_ORIGIN_ICMP6:
-	origin = "icmp6";
-	snprintf(info, sizeof(info), " type=%u code=%u", 
-		ee->ee_type, ee->ee_code);
-	break;
-      case SO_EE_ORIGIN_NONE:
-	origin = "none";
-	break;
-      default:
-	origin = "unknown";
-	break;
-      }
-
-      if (ee->ee_info)
-	snprintf(info + strlen(info), sizeof(info) - strlen(info), 
-		 " info=%08x", ee->ee_info);
-
-      SU_DEBUG_3(("%s: %s (%d) [%s%s]\n",
-		  __func__, su_strerror(ee->ee_errno), ee->ee_errno, 
-		  origin, info));
-      if (from->su_family != AF_UNSPEC)
-	SU_DEBUG_3(("\treported by [%s]:%u\n",
-		    inet_ntop(from->su_family, SU_ADDR(from), 
-			      info, sizeof(info)),
-		    ntohs(from->su_port)));
-
-      if (msg->msg_namelen == 0)
-	name->su_family = AF_UNSPEC;
-
-      SU_CANONIZE_SOCKADDR(name);
-
-      return ee->ee_errno;
-    }
-  }
-
-  return 0;
-}
-#endif
-
-/* ---------------------------------------------------------------------- */
-/* TCP */
-
-static int tport_tcp_init_primary(tport_primary_t *, 
-				  tp_name_t const tpn[1], 
-				  su_addrinfo_t *, tagi_t const *,
-				  char const **return_culprit);
-static int tport_tcp_init_client(tport_primary_t *, 
-				 tp_name_t const tpn[1], 
-				 su_addrinfo_t *, tagi_t const *,
-				 char const **return_culprit);
-static int tport_tcp_init_secondary(tport_t *self, int socket, int accepted);
-static int tport_recv_stream(tport_t *self);
-static int tport_send_stream(tport_t const *self, msg_t *msg,
-			     msg_iovec_t iov[], int iovused);
-
-static tport_vtable_t const tport_tcp_vtable =
-{
-  NEXT_VTABLE, "tcp", tport_type_local,
-  sizeof (tport_primary_t),
-  tport_tcp_init_primary,
-  tport_init_compression,
-  NULL,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_tcp_init_secondary,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_stream,
-  tport_send_stream,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_tcp_vtable
-
-static tport_vtable_t const tport_tcp_client_vtable =
-{
-  NEXT_VTABLE, "tcp", tport_type_client,
-  sizeof (tport_primary_t),
-  tport_tcp_init_client,
-  tport_init_compression,
-  NULL,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_tcp_init_secondary,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_stream,
-  tport_send_stream,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_tcp_client_vtable
-
-static int tport_tcp_init_primary(tport_primary_t *pri, 
-				  tp_name_t const tpn[1],
-				  su_addrinfo_t *ai,
-				  tagi_t const *tags,
-				  char const **return_culprit)
-{
-  int s;
-
-  s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-
-  if (s == SOCKET_ERROR)
-    return *return_culprit = "socket", -1;
-
-  pri->pri_primary->tp_socket = s;
-
-#if defined(__linux__)
-  /* Linux does not allow reusing TCP port while this one is open,
-     so we can safely call su_setreuseaddr() before bind(). */
-  su_setreuseaddr(s, 1);
-#endif
-
-  if (tport_bind_socket(s, ai, return_culprit) == SOCKET_ERROR)
-    return -1;
-
-  if (listen(s, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
-    return *return_culprit = "listen", -1;
-
-#if !defined(__linux__)
-  /* Allow reusing TCP sockets
-   *
-   * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
-   * binding to a port owned by an existing server.
-   */
-  su_setreuseaddr(s, 1);
-#endif
-
-  pri->pri_primary->tp_events = SU_WAIT_ACCEPT;
-  pri->pri_primary->tp_conn_orient = 1;
-
-  return 0;
-}
-
-static int tport_tcp_init_client(tport_primary_t *pri, 
-				 tp_name_t const tpn[1],
-				 su_addrinfo_t *ai,
-				 tagi_t const *tags,
-				 char const **return_culprit)
-{
-  pri->pri_primary->tp_conn_orient = 1;
-
-  return 0;
-}
-
-static int tport_tcp_init_secondary(tport_t *self, int socket, int accepted)
-{
-  int one = 1;
-
-  self->tp_connected = 1;
-
-  if (setsockopt(socket, SOL_TCP, TCP_NODELAY, (void *)&one, sizeof one) == -1)
-    return -1;
-  if (su_setblocking(socket, 0) < 0)
-    return -1;
-
-  return 0;
-}
-
-/** Receive from stream.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- * @retval 1  normal receive
- * @retval 2  incomplete recv, recv again
- * 
- */
-static int tport_recv_stream(tport_t *self)
-{
-  msg_t *msg;
-  int n, N, veclen, err;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-
-#if HAVE_SIGCOMP
-  if (tport_can_recv_sigcomp(self))
-    return tport_recv_sigcomp_stream(self);
-#endif
-
-  N = su_getmsgsize(self->tp_socket);
-  if (N == 0) {
-    if (self->tp_msg)
-      msg_recv_commit(self->tp_msg, 0, 1);
-    return 0;    /* End of stream */
-  }
-  if (N == -1) {
-    err = su_errno();
-    SU_DEBUG_1(("%s(%p): su_getmsgsize(): %s (%d)\n", __func__, self,
-		su_strerror(err), err));
-    return -1;
-  }
-
-  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 0);
-  if (veclen < 0)
-    return -1;
-
-  msg = self->tp_msg;
-
-  /* Message address */
-  *msg_addr(msg) = *self->tp_addr;
-  *msg_addrlen(msg) = self->tp_addrlen;
-
-  n = su_vrecv(self->tp_socket, iovec, veclen, 0, NULL, NULL);
-  if (n == SOCKET_ERROR)
-    return tport_recv_error_report(self);
-
-  assert(n <= N);
-
-  /* Write the received data to the message dump file */
-  if (self->tp_master->mr_dump_file)
-    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
-
-  /* Mark buffer as used */
-  msg_recv_commit(msg, n, 0);
-
-  return 1;
-}
-
-static
-int tport_send_stream(tport_t const *self, msg_t *msg, 
-		      msg_iovec_t iov[], 
-		      int iovused)
-{
-#if __sun__			/* XXX - there must be better way... */
-  if (iovused > 16)
-    iovused = 16;
-#endif
-  return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
-}
-
-/* ---------------------------------------------------------------------- */
-/* SCTP */
-#if HAVE_SCTP
-
-static int tport_sctp_init_primary(tport_primary_t *, 
-				   tp_name_t const tpn[1], 
-				   su_addrinfo_t *, tagi_t const *,
-				   char const **return_culprit);
-static int tport_sctp_init_client(tport_primary_t *, 
-				  tp_name_t const tpn[1], 
-				  su_addrinfo_t *, tagi_t const *,
-				  char const **return_culprit);
-static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted);
-static int tport_recv_sctp(tport_t *self);
-#define tport_send_sctp tport_send_dgram
-static int tport_send_sctp(tport_t const *self, msg_t *msg,
-			   msg_iovec_t iov[], int iovused);
-
-tport_vtable_t const tport_sctp_client_vtable =
-{
-  NEXT_VTABLE, "sctp", tport_type_client,
-  sizeof (tport_primary_t),
-  tport_sctp_init_client,
-  NULL,
-  NULL,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_sctp_init_secondary,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_sctp,
-  tport_send_sctp,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_sctp_client_vtable
-
-tport_vtable_t const tport_sctp_vtable =
-{
-  NEXT_VTABLE, "sctp", tport_type_local,
-  sizeof (tport_primary_t),
-  tport_sctp_init_primary,
-  NULL,
-  NULL,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_sctp_init_secondary,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_sctp,
-  tport_send_sctp,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_sctp_vtable
-
-static int tport_sctp_init_primary(tport_primary_t *pri, 
-				   tp_name_t const tpn[1],
-				   su_addrinfo_t *ai,
-				   tagi_t const *tags,
-				   char const **return_culprit)
-{
-  if (pri->pri_params->tpp_mtu > TP_SCTP_MSG_MAX)
-    pri->pri_params->tpp_mtu = TP_SCTP_MSG_MAX;
-
-  return tport_tcp_init_primary(pri, tpn, ai, tags, return_culprit);
-}
-
-static int tport_sctp_init_client(tport_primary_t *pri, 
-				   tp_name_t const tpn[1],
-				   su_addrinfo_t *ai,
-				   tagi_t const *tags,
-				   char const **return_culprit)
-{
-  if (pri->pri_params->tpp_mtu > TP_SCTP_MSG_MAX)
-    pri->pri_params->tpp_mtu = TP_SCTP_MSG_MAX;
-
-  return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
-}
-
-
-static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted)
-{
-  self->tp_connected = 1;
-
-  if (su_setblocking(socket, 0) < 0)
-    return -1;
-
-  return 0;
-}
-
-/** Receive data available on the socket.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- * @retval 1  normal receive
- * @retval 2  incomplete recv, recv again
- */
-static 
-int tport_recv_sctp(tport_t *self)
-{
-  msg_t *msg;
-  int N, veclen, exact = 0, eos;
-  msg_iovec_t iovec[2] = {{ 0 }};
-
-  char sctp_buf[TP_SCTP_MSG_MAX];
-
-  iovec[0].mv_base = sctp_buf;
-  iovec[0].mv_len = sizeof(sctp_buf);
-
-  N = su_vrecv(self->tp_socket, iovec, 1, 0, NULL, NULL);
-  if (N == SOCKET_ERROR)
-    return tport_recv_error_report(self);
-
-  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, exact = 1);
-  if (veclen < 0)
-    return -1;
-
-  assert(veclen == 1); assert(iovec[0].mv_len == N);
-  msg = self->tp_msg;
-
-  /* Message address */
-  *msg_addr(msg) = *self->tp_addr;
-  *msg_addrlen(msg) = su_sockaddr_size(self->tp_addr);
-
-  memcpy(iovec[0].mv_base, sctp_buf, iovec[0].mv_len);
-
-  if (self->tp_master->mr_dump_file)
-    tport_dump_iovec(self, msg, N, iovec, veclen, "recv", "from");
-
-  msg_recv_commit(msg, N, eos = 1);  /* Mark buffer as used */
-
-  return 2;
-}
-
-#endif
-
-#if HAVE_TLS
-/* ---------------------------------------------------------------------- */
-/* TLS */
-
-static int tport_tls_init_primary(tport_primary_t *,
-				  tp_name_t const tpn[1], 
-				  su_addrinfo_t *, tagi_t const *,
-				  char const **return_culprit);
-static int tport_tls_init_client(tport_primary_t *,
-				 tp_name_t const tpn[1], 
-				 su_addrinfo_t *, tagi_t const *,
-				 char const **return_culprit);
-static int tport_tls_init_master(tport_primary_t *pri,
-				 tp_name_t const tpn[1],
-				 su_addrinfo_t *ai,
-				 tagi_t const *tags,
-				 char const **return_culprit);
-static void tport_tls_deinit_primary(tport_primary_t *pri);
-static int tport_tls_init_secondary(tport_t *self, int socket, int accepted);
-static void tport_tls_deinit_secondary(tport_t *self);
-static int tport_tls_set_events(tport_t const *self);
-static int tport_tls_events(tport_t *self, int events);
-static int tport_tls_recv(tport_t *self);
-static int tport_tls_send(tport_t const *self, msg_t *msg,
-			  msg_iovec_t iov[], int iovused);
-
-tport_vtable_t const tport_tls_vtable =
-{
-  NEXT_VTABLE, "tls", tport_type_local,
-  sizeof (tport_primary_t),
-  tport_tls_init_primary,
-  NULL,
-  tport_tls_deinit_primary,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_tls_init_secondary,
-  tport_tls_deinit_secondary,
-  tport_tls_set_events,
-  tport_tls_events,
-  tport_tls_recv,
-  tport_tls_send,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_tls_vtable
-
-tport_vtable_t const tport_tls_client_vtable =
-{
-  NEXT_VTABLE, "tls", tport_type_client,
-  sizeof (tport_primary_t),
-  tport_tls_init_client,
-  NULL,
-  tport_tls_deinit_primary,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_tls_init_secondary,
-  tport_tls_deinit_secondary,
-  tport_tls_set_events,
-  tport_tls_events,
-  tport_tls_recv,
-  tport_tls_send,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_tls_client_vtable
-
-static int tport_tls_init_primary(tport_primary_t *pri,
-				  tp_name_t const tpn[1],
-				  su_addrinfo_t *ai,
-				  tagi_t const *tags,
-				  char const **return_culprit)
-{
-  if (tport_tls_init_master(pri, tpn, ai, tags, return_culprit) < 0)
-    return -1;
-
-  return tport_tcp_init_primary(pri, tpn, ai, tags, return_culprit);
-}
-
-static int tport_tls_init_client(tport_primary_t *pri,
-				 tp_name_t const tpn[1],
-				 su_addrinfo_t *ai,
-				 tagi_t const *tags,
-				 char const **return_culprit)
-{
-  tport_tls_init_master(pri, tpn, ai, tags, return_culprit);
-
-  return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
-}
-
-static int tport_tls_init_master(tport_primary_t *pri,
-				 tp_name_t const tpn[1],
-				 su_addrinfo_t *ai,
-				 tagi_t const *tags,
-				 char const **return_culprit)
-{
-  char *homedir;
-  char *tbf = NULL;
-  char const *path = NULL;
-  unsigned tls_version = 1;
-  su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
-
-  su_home_auto(autohome, sizeof autohome);
-
-  if (getenv("TPORT_SSL"))
-    tls_version = 0;
-
-  tl_gets(tags,
-	  TPTAG_CERTIFICATE_REF(path),
-	  TPTAG_TLS_VERSION_REF(tls_version),
-	  TAG_END());
-
-  if (!path) {
-    homedir = getenv("HOME");
-    if (!homedir)
-      homedir = "";
-    path = tbf = su_sprintf(autohome, "%s/.sip/auth", homedir);
-  }
-  
-  if (path) {
-    tls_issues_t ti = {0};
-    ti.verify_depth = 2;
-    ti.configured = path != tbf;
-    ti.randFile = su_sprintf(autohome, "%s/%s", path, "tls_seed.dat");
-    ti.key = su_sprintf(autohome, "%s/%s", path, "agent.pem");
-    ti.cert = ti.key;
-    ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
-    ti.version = tls_version;
-
-    SU_DEBUG_9(("%s(%p): tls key = %s\n", __func__, pri, ti.key));
-
-    if (ti.key && ti.CAfile && ti.randFile) {
-      pri->pri_primary->tp_tls = tls_init_master(&ti);
-    }
-  }
-
-  su_home_zap(autohome);
-
-  if (!pri->pri_primary->tp_tls) {
-    SU_DEBUG_3(("tls_init_master: %s\n", strerror(errno)));
-    return *return_culprit = "tls_init_master", -1;
-  }
-
-  return 0;
-}
-
-static void tport_tls_deinit_primary(tport_primary_t *pri)
-{
-  tls_free(pri->pri_primary->tp_tls), pri->pri_primary->tp_tls = NULL;
-}
-
-static int tport_tls_init_secondary(tport_t *self, int socket, int accepted)
-{
-  tls_t *tls = self->tp_pri->pri_primary->tp_tls;
-
-  if (accepted)
-    self->tp_tls = tls_init_slave(tls, socket);
-  else
-    self->tp_tls = tls_init_client(tls, socket);
-
-  if (!self->tp_tls)
-    return -1;
-
-  return tport_tcp_init_secondary(self, socket, accepted);
-}
-
-static void tport_tls_deinit_secondary(tport_t *self)
-{
-  tls_free(self->tp_tls), self->tp_tls = NULL;
-}
-
-
-static
-int tport_tls_set_events(tport_t const *self)
-{
-  int mask = tls_events(self->tp_tls, self->tp_events);
-
-  SU_DEBUG_7(("%s(%p): logical events%s%s real%s%s\n",
-	      "tport_tls_set_events", self, 
-	      (self->tp_events & SU_WAIT_IN) ? " IN" : "",
-	      (self->tp_events & SU_WAIT_OUT) ? " OUT" : "",
-	      (mask & SU_WAIT_IN) ? " IN" : "",
-	      (mask & SU_WAIT_OUT) ? " OUT" : ""));
-
-  return
-    su_root_eventmask(self->tp_master->mr_root, 
-		      self->tp_index, 
-		      self->tp_socket, 
-		      mask);
-}
-
-
-/** Handle poll events for tls */
-int tport_tls_events(tport_t *self, int events)
-{
-  int ret, error = 0;
-  int old_mask = tls_events(self->tp_tls, self->tp_events), mask;
-
-  if (events & SU_WAIT_ERR)
-    error = tport_error_event(self);
-
-  if ((self->tp_events & SU_WAIT_OUT) && !self->tp_closed) {
-    ret = tls_want_write(self->tp_tls, events);
-    if (ret > 0)
-      tport_send_event(self);
-    else if (ret < 0)
-      tport_error_report(self, errno, NULL);
-  }
-  
-  if ((self->tp_events & SU_WAIT_IN) && !self->tp_closed) {
-    ret = tls_want_read(self->tp_tls, events);
-    if (ret > 0)
-      tport_recv_event(self);
-    else if (ret < 0)
-      tport_error_report(self, errno, NULL);
-  }
-
-  if ((events & SU_WAIT_HUP) && !self->tp_closed)
-    tport_hup_event(self);
-
-  if (error && !self->tp_closed)
-    tport_error_report(self, error, NULL);
-
-  if (self->tp_closed)
-    return 0;
-
-  events = self->tp_events;
-  mask = tls_events(self->tp_tls, events);
-  if ((old_mask ^ mask) == 0)
-    return 0;
-
-  SU_DEBUG_7(("%s(%p): logical events%s%s real%s%s\n",
-	      "tport_tls_events", self, 
-	      (events & SU_WAIT_IN) ? " IN" : "",
-	      (events & SU_WAIT_OUT) ? " OUT" : "",
-	      (mask & SU_WAIT_IN) ? " IN" : "",
-	      (mask & SU_WAIT_OUT) ? " OUT" : ""));
-
-  su_root_eventmask(self->tp_master->mr_root, 
-		    self->tp_index, 
-		    self->tp_socket, 
-		    mask);
-
-  return 0;
-}
-
-/** Receive data from TLS.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- * @retval 1  normal receive
- * @retval 2  incomplete recv, recv again
- * 
- */
-static 
-int tport_tls_recv(tport_t *self)
-{
-  msg_t *msg;
-  int n, N, veclen, i, m;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-  char *tls_buf;
-
-  N = tls_read(self->tp_tls);
-
-  SU_DEBUG_7(("%s(%p): tls_read() returned %d\n", __func__, self, N));
-
-  if (N == 0) /* End-of-stream */
-    return 0;
-  else if (N == -1) {
-    int err = su_errno();
-    if (err == EAGAIN || err == EWOULDBLOCK) {
-      tport_tls_set_events(self);
-      return 1;
-    }
-    return -1;
-  }
-
-  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 0);
-  if (veclen < 0)
-    return -1;
-
-  msg = self->tp_msg;
-
-  tls_buf = tls_read_buffer(self->tp_tls, N);
-
-  /* Message address */
-  *msg_addr(msg) = *self->tp_addr;
-  *msg_addrlen(msg) = self->tp_addrlen;
-
-  for (i = 0, n = 0; i < veclen; i++) {
-    m = iovec[i].mv_len; assert(N >= n + m);
-    memcpy(iovec[i].mv_base, tls_buf + n, m);
-    n += m;
-  }
-    
-  assert(N == n);
-
-  /* Write the received data to the message dump file */
-  if (self->tp_master->mr_dump_file)
-    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
-
-  /* Mark buffer as used */
-  msg_recv_commit(msg, N, 0);
-
-  return tls_pending(self->tp_tls) ? 2 : 1;
-}
-
-static
-int tport_tls_send(tport_t const *self,
-		   msg_t *msg,
-		   msg_iovec_t iov[],
-		   int iovlen)
-{
-  enum { TLSBUFSIZE = 2048 };
-  int i, j, n, m, size = 0;
-  int oldmask, mask;
-
-  oldmask = tls_events(self->tp_tls, self->tp_events);
-
-#if 0
-  if (!self->tp_tls_buffer)
-    self->tp_tls_buffer = su_alloc(self->tp_home, TLSBUFSIZE);
-#endif
-
-  for (i = 0; i < iovlen; i = j) {
-#if 0
-    n = tls_write(self->tp_tls, 
-		  iov[i].siv_base,
-		  m = iov[i].siv_len);
-    j = i + 1;
-#else
-    char *buf = self->tp_tls_buffer;
-    unsigned tlsbufsize = TLSBUFSIZE;
-
-    if (i + 1 == iovlen)
-      buf = NULL;		/* Don't bother copying single chunk */
-
-    if (buf && 
-	(char *)iov[i].siv_base - buf < TLSBUFSIZE &&
-	(char *)iov[i].siv_base - buf >= 0) {
-      tlsbufsize = buf + TLSBUFSIZE - (char *)iov[i].siv_base;
-      assert(tlsbufsize <= TLSBUFSIZE);
-    }
-
-    for (j = i, m = 0; buf && j < iovlen; j++) {
-      if (m + iov[j].siv_len > tlsbufsize)
-	break;
-      if (buf + m != iov[j].siv_base)
-	memcpy(buf + m, iov[j].siv_base, iov[j].siv_len);
-      m += iov[j].siv_len; iov[j].siv_len = 0;
-    }
-
-    if (j == i)
-      buf = iov[i].siv_base, m = iov[i].siv_len, j++;
-    else
-      iov[j].siv_base = buf, iov[j].siv_len = m;
-
-    n = tls_write(self->tp_tls, buf, m);
-#endif
-
-    SU_DEBUG_9(("tport_tls_writevec: vec %p %p %lu (%d)\n",  
-		self->tp_tls, iov[i].siv_base, (LU)iov[i].siv_len, n));
-
-    if (n < 0) {
-      int err = su_errno();
-      if (err == EAGAIN || err == EWOULDBLOCK)
-	break;
-      SU_DEBUG_3(("tls_write: %s\n", strerror(errno)));
-      return -1;
-    }
-
-    size += n;
-
-    /* Return if the write buffer is full for now */
-    if (n != m)
-      break;
-  }
-
-  mask = tls_events(self->tp_tls, self->tp_events);
-
-  if (oldmask != mask)
-    tport_tls_set_events(self);
-
-  return size;
-}
-
-#endif
-
-#if HAVE_SOFIA_STUN && 0
-/* ---------------------------------------------------------------------- */
-/* STUN */
-
-static int tport_udp_init_stun(tport_primary_t *,
-			       tp_name_t const tpn[1], 
-			       su_addrinfo_t *, 
-			       tagi_t const *,
-			       char const **return_culprit);
-
-typedef struct
-{
-  tport_primary_t stuntp_primary[1];
-  int stun_try;
-  char *stun_server;
-  stun_handle_t *stun_handle;
-  su_socket_t stun_socket;
-  su_sockaddr_t stun_sockaddr;
-} tport_stun_t;
-
-tport_vtable_t const tport_stun_vtable =
-{
-  NEXT_VTABLE, "UDP", tport_type_stun,
-  sizeof (tport_stun_t),
-  tport_stun_init_primary,
-  tport_init_compression,
-  NULL,
-  NULL,
-  NULL,
-  sizeof (tport_t),
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_dgram,
-  tport_send_dgram,
-};
-
-#define NEXT_VTABLE &tport_stun_vtable
-
-static int tport_udp_init_stun(tport_primary_t *pri,
-			       tp_name_t const tpn[1], 
-			       su_addrinfo_t *ai, 
-			       tagi_t const *tpn,
-			       char const **return_culprit)
-{
-  if (tport_udp_init_primary(pri, tpn, ai, tpn, return_culprit) < 0)
-    return -1;
-
-  return 0;
-}
-
-#endif
-
-/** Receive STUN datagram.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- */
-static 
-int tport_recv_stun_dgram(tport_t const *self, int N)
-{
-  int n;
-  su_sockaddr_t from[1];
-  socklen_t fromlen = sizeof(su_sockaddr_t);
-  int status = 600;
-  char const *error = NULL;
-  
-  unsigned char buffer[128];
-  unsigned char *dgram = buffer;
-
-  if (N > sizeof buffer)
-    dgram = malloc(N);
-
-  if (dgram == NULL)
-    dgram = buffer, N = sizeof buffer, status = 500, error = "Server Error";
-
-  memset(from, 0, sizeof(su_sockaddr_t));
-  n = recvfrom(self->tp_socket, (void *)dgram, N, MSG_TRUNC, 
-	       (void *)from, &fromlen);
-
-  if (n < 20) {
-    if (n != SOCKET_ERROR)
-      su_seterrno(EBADMSG);	/* Runt */
-    if (dgram != buffer)
-      free(dgram);
-    return -1;
-  }
-
-  if ((!error || dgram[0] == 1) && self->tp_master->mr_nat->stun) {
-#if HAVE_SOFIA_STUN
-    if (n > N) n = N;		/* Truncated? */
-    stun_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
-			 from, fromlen, (void *)dgram, n);
-    if (dgram != buffer)
-      free(dgram);
-    return 0;
-#endif /* HAVE_SOFIA_STUN */
-  }
-
-  if (dgram[0] == 0 && (dgram[1] == 1 || dgram[1] == 2)) {
-    uint16_t elen;
-    if (error == NULL)
-      status = 600, error = "Not Implemented";
-    elen = strlen(error);
-
-    /*
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |      STUN Message Type        |         Message Length        |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-                             Transaction ID
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-                                                                    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    */
-
-#define set16(b, offset, value)			\
-  (((b)[(offset) + 0] = ((value) >> 8) & 255),	\
-   ((b)[(offset) + 1] = (value) & 255))
-
-    /* Respond to request */
-    dgram[0] = 1; /* Mark as response */
-    dgram[1] |= 0x10; /* Mark as error response */
-    set16(dgram, 2, elen + 4 + 4);
-    /* TransactionID is there at bytes 4..19 */
-    /*
-    TLV At 20:
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |         Type                  |            Length             |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    */
-    set16(dgram, 20, 0x0009); /* ERROR-CODE */
-    set16(dgram, 22, elen + 4);
-    /*
-    ERROR-CODE at 24:
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                   0                     |Class|     Number    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |      Reason Phrase (variable)                                ..
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     */
-    dgram[24] = 0, dgram[25] = 0;
-    dgram[26] = status / 100, dgram[27] = status % 100;
-    memcpy(dgram + 28, error, elen);
-    N = 28 + elen;
-    sendto(self->tp_socket, (void *)dgram, N, 0, (void *)from, fromlen);
-
-#undef set16
-  }
-
-  if (dgram != buffer)
-    free(dgram);
-
-  return 0;
-}
-
-/* ---------------------------------------------------------------------- */
-/* TCP using HTTP CONNECT */
-
-#include <sofia-sip/http.h>
-#include <sofia-sip/http_header.h>
-
-static int tport_http_connect_init_primary(tport_primary_t *,
-					   tp_name_t const tpn[1], 
-					   su_addrinfo_t *, 
-					   tagi_t const *,
-					   char const **return_culprit);
-
-static void tport_http_connect_deinit_primary(tport_primary_t *);
-
-static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
-				   tp_name_t const *tpn);
-
-static void tport_http_deliver(tport_t *self, msg_t *msg, su_time_t now);
-
-typedef struct
-{
-  tport_primary_t thc_primary[1];
-  su_addrinfo_t  *thc_proxy;
-} tport_http_connect_t;
-
-typedef struct
-{
-  tport_t thci_tport[1];
-  msg_t *thci_response;
-  msg_t *thci_stackmsg;
-} tport_http_connect_instance_t;
-
-tport_vtable_t const tport_http_connect_vtable =
-{
-  NEXT_VTABLE, "TCP", tport_type_connect,
-  sizeof (tport_http_connect_t),
-  tport_http_connect_init_primary,
-  NULL,
-  tport_http_connect_deinit_primary,
-  NULL,
-  tport_http_connect,
-  sizeof (tport_http_connect_instance_t),
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_stream,
-  tport_send_stream,
-  tport_http_deliver,
-};
-
-#undef NEXT_VTABLE
-#define NEXT_VTABLE &tport_http_connect_vtable
-
-static int tport_http_connect_init_primary(tport_primary_t *pri,
-					   tp_name_t const tpn[1], 
-					   su_addrinfo_t *ai, 
-					   tagi_t const *tags,
-					   char const **return_culprit)
-{
-  tport_http_connect_t *thc = (tport_http_connect_t *)pri;
-  char const *http_connect = NULL;
-  url_t *http_proxy;
-  int error;
-  char const *host, *port;
-  su_addrinfo_t hints[1];
-
-  tl_gets(tags,
-	  TPTAG_HTTP_CONNECT_REF(http_connect),
-	  TAG_END());
-  if (!http_connect)
-    return *return_culprit = "missing proxy url", -1;
-
-  http_proxy = url_hdup(pri->pri_home, URL_STRING_MAKE(http_connect)->us_url);
-  if (!http_proxy || !http_proxy->url_host)
-    return *return_culprit = "invalid proxy url", -1;
-
-  host = http_proxy->url_host;
-  port = http_proxy->url_port;
-  if (!port || !port[0])
-    port = "8080";
-
-  memcpy(hints, ai, sizeof hints);
-  
-  hints->ai_flags = 0;
-  hints->ai_addr = NULL;
-  hints->ai_addrlen = 0;
-  hints->ai_next = NULL;
-  
-  error = su_getaddrinfo(host, port, hints, &thc->thc_proxy);
-  if (error)
-    return *return_culprit = "su_getaddrinfo", -1;
-
-  return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
-}
-
-static void tport_http_connect_deinit_primary(tport_primary_t *pri)
-{
-  tport_http_connect_t *thc = (tport_http_connect_t *)pri;
-  
-  su_freeaddrinfo(thc->thc_proxy), thc->thc_proxy = NULL;
-}
-
-static tport_t *tport_http_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
-				   tp_name_t const *tpn)
-{
-  tport_http_connect_t *thc = (tport_http_connect_t *)pri;
-  tport_http_connect_instance_t *thci;
-  tport_master_t *mr = pri->pri_master;
-  
-  msg_t *msg, *response;
-
-  char hostport[TPORT_HOSTPORTSIZE];
-
-  tport_t *tport;
-  http_request_t *rq;
-  
-  msg = msg_create(http_default_mclass(), 0);
-
-  if (!msg)
-    return NULL;
-
-  tport_hostport(hostport, sizeof hostport, (void *)ai->ai_addr, 1);
-
-  rq = http_request_format(msg_home(msg), "CONNECT %s HTTP/1.1", hostport);
-
-  if (msg_header_insert(msg, NULL, (void *)rq) < 0
-      || msg_header_add_str(msg, NULL, 
-			    "User-Agent: Sofia-SIP/" VERSION "\n") < 0
-      || msg_header_add_str(msg, NULL, "Proxy-Connection: keepalive\n") < 0
-      || msg_header_add_make(msg, NULL, http_host_class, hostport) < 0
-      || msg_header_add_make(msg, NULL, http_separator_class, "\r\n") < 0 
-      || msg_serialize(msg, NULL) < 0
-      || msg_prepare(msg) < 0)
-    return (void)msg_destroy(msg), NULL;
-
-  /* 
-   * Create a response message that ignores the body 
-   * if there is no Content-Length 
-   */
-  response = msg_create(http_default_mclass(), mr->mr_log | MSG_FLG_MAILBOX);
-  
-  tport = tport_base_connect(pri, thc->thc_proxy, ai, tpn);
-  if (!tport) {
-    msg_destroy(msg); msg_destroy(response);
-    return tport;
-  }
-
-  thci = (tport_http_connect_instance_t*)tport;
-  
-  thci->thci_response = response;
-  tport->tp_msg = response;
-  msg_set_next(response, thci->thci_stackmsg = tport_msg_alloc(tport, 512));
-
-  if (tport_send_msg(tport, msg, tpn, NULL) < 0) {
-    SU_DEBUG_9(("tport_send_msg failed in tpot_http_connect\n"));
-    msg_destroy(msg); 
-    tport_zap_secondary(tport);
-    return NULL;
-  }  
-
-  return tport;
-}
-
-#include <sofia-sip/msg_buffer.h>
-
-static void tport_http_deliver(tport_t *self, msg_t *msg, su_time_t now)
-{
-  tport_http_connect_instance_t *thci = (tport_http_connect_instance_t*)self;
-
-  if (msg && thci->thci_response == msg) {
-    tport_http_connect_t *thc = (tport_http_connect_t *)self->tp_pri;
-    http_t *http = http_object(msg);
-
-    if (http && http->http_status) {
-      SU_DEBUG_0(("tport_http_connect: %u %s\n", 
-		  http->http_status->st_status,
-		  http->http_status->st_phrase));
-      if (http->http_status->st_status < 300) {
-	msg_buf_move(thci->thci_stackmsg, msg);
-	thci->thci_response = NULL;
-	thci->thci_stackmsg = NULL;
-	return;
-      }
-    }
-
-    msg_destroy(msg);
-    thci->thci_response = NULL;
-    tport_error_report(self, EPROTO, (void *)thc->thc_proxy->ai_addr);
-    tport_close(self);
-    return;
-  }
-
-  tport_base_deliver(self, msg, now);
-}
-
-tport_vtable_t const *tport_vtables = NEXT_VTABLE;

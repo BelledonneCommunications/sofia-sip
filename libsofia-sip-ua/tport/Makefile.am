@@ -30,16 +30,20 @@ TESTS =			test_tport
 nobase_include_sofia_HEADERS = \
 			sofia-sip/tport.h sofia-sip/tport_tag.h
 
-TLS_SRC =		tport_tls.c tport_tls.h
+TLS_SRC =		tport_type_tls.c tport_tls.c tport_tls.h
 
 if HAVE_TLS
 USE_TLS_SRC = 		$(TLS_SRC)
 endif
 
-libtport_la_SOURCES = 	tport.c tport_tag.c tport_tag_ref.c $(USE_TLS_SRC)
+libtport_la_SOURCES = 	tport.c tport_logging.c \
+			tport_type_udp.c tport_type_tcp.c \
+			tport_type_sctp.c tport_type_connect.c \
+			tport_threadpool.c tport_internal.h \
+			tport_tag.c tport_tag_ref.c $(USE_TLS_SRC)
 
 # to make sure all files end up in the dist package
-EXTRA_libtport_la_SOURCES = $(TLS_SRC)
+EXTRA_libtport_la_SOURCES = $(TLS_SRC) tport_sigcomp.c tport_stun.c
 
 BUILT_SOURCES =		tport_tag_ref.c
 

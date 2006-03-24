@@ -35,8 +35,6 @@
 
 #include "config.h"
 
-#undef HAVE_TLS
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -346,7 +344,7 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
 
 static
 struct sigcomp_compartment *
-tp_sigcomp_compartment(tp_test_t *tt, tport_t *tp, tp_name_t const *tpn);
+test_sigcomp_compartment(tp_test_t *tt, tport_t *tp, tp_name_t const *tpn);
 
 static void tp_test_recv(tp_test_t *tt,
 			 tport_t *tp,
@@ -358,7 +356,7 @@ static void tp_test_recv(tp_test_t *tt,
   tp_name_t frm[1];
 
   if (tport_delivered_from(tp, msg, frm) != -1 && frm->tpn_comp) {
-    struct sigcomp_compartment *cc = tp_sigcomp_compartment(tt, tp, frm);
+    struct sigcomp_compartment *cc = test_sigcomp_compartment(tt, tp, frm);
    
     tport_sigcomp_accept(tp, cc, msg);
   }
@@ -403,9 +401,9 @@ msg_t *tp_test_msg(tp_test_t *tt, int flags,
 
 static
 struct sigcomp_compartment *
-tp_sigcomp_compartment(tp_test_t *tt, 
-		       tport_t *tp, 
-		       tp_name_t const *tpn)
+test_sigcomp_compartment(tp_test_t *tt, 
+			 tport_t *tp, 
+			 tp_name_t const *tpn)
 {
   struct sigcomp_compartment *cc = NULL;
 #if HAVE_SIGCOMP
@@ -435,11 +433,11 @@ tp_sigcomp_compartment(tp_test_t *tt,
 }
 
 /* Accept/reject early SigComp message */
-int tp_sigcomp_accept(tp_stack_t *tt, tport_t *tp, msg_t *msg)
+int test_sigcomp_accept(tp_stack_t *tt, tport_t *tp, msg_t *msg)
 {
   struct sigcomp_compartment *cc = NULL;
 
-  cc = tp_sigcomp_compartment(tt, tp, tport_name(tp));
+  cc = test_sigcomp_compartment(tt, tp, tport_name(tp));
 
   if (cc)
     tport_sigcomp_assign(tp, cc);
@@ -454,7 +452,7 @@ tp_stack_class_t const tp_test_class[1] =
       /* tpac_recv */  tp_test_recv,
       /* tpac_error */ tp_test_error,
       /* tpac_alloc */ tp_test_msg,
-      /* tpac_sigcomp_accept */ tp_sigcomp_accept
+      /* tpac_sigcomp_accept */ test_sigcomp_accept
   }};
 
 static int init_test(tp_test_t *tt)
@@ -1115,7 +1113,7 @@ static int sigcomp_test(tp_test_t *tt)
   if (tt->tt_udp_comp->tpn_comp) {
     msg_t *msg = NULL;
 
-    TEST_1(cc = tp_sigcomp_compartment(tt, tt->tt_tports, tt->tt_udp_comp));
+    TEST_1(cc = test_sigcomp_compartment(tt, tt->tt_tports, tt->tt_udp_comp));
 
     TEST_1(!new_test_msg(tt, &msg, "udp-sigcomp", 1, 1200));
     test_create_md5(tt, msg);
@@ -1141,7 +1139,7 @@ static int sigcomp_test(tp_test_t *tt)
     tpn->tpn_comp = tport_name(tt->tt_rtport)->tpn_comp;
     
     /* reply */
-    TEST_1(cc = tp_sigcomp_compartment(tt, tt->tt_tports, tpn));
+    TEST_1(cc = test_sigcomp_compartment(tt, tt->tt_tports, tpn));
     TEST_1(tport_tsend(tt->tt_rtport, msg, tpn, 
 		       TPTAG_COMPARTMENT(cc),
 		       TAG_END()) != NULL);
@@ -1166,7 +1164,7 @@ static int sigcomp_test(tp_test_t *tt)
 
     tport_log->log_level = 9;
 
-    TEST_1(cc = tp_sigcomp_compartment(tt, tt->tt_tports, tpn));
+    TEST_1(cc = test_sigcomp_compartment(tt, tt->tt_tports, tpn));
     TEST_1(tp = tport_tsend(tt->tt_tports, 
 			    msg, 
 			    tpn, 
