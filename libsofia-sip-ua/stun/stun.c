@@ -505,7 +505,6 @@ int stun_request_shared_secret(stun_handle_t *sh)
   su_socket_t s = SOCKET_ERROR;
   int family;
   su_addrinfo_t *ai = NULL;
-  su_timer_t *connect_timer = NULL;
   stun_discovery_t *sd;
   /* stun_request_t *req; */
 
@@ -585,11 +584,10 @@ int stun_request_shared_secret(stun_handle_t *sh)
   /* Create and start timer for connect() timeout */
   SU_DEBUG_3(("%s: creating timeout timer for connect()\n", __func__));
 
-  connect_timer = su_timer_create(su_root_task(sh->sh_root),
-				  STUN_TLS_CONNECT_TIMEOUT);
+  sd->sd_timer = su_timer_create(su_root_task(sh->sh_root),
+				 STUN_TLS_CONNECT_TIMEOUT);
 
-  /* sd->sd_connect_timer = connect_timer; */
-  su_timer_set(connect_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sd);
+  su_timer_set(sd->sd_timer, stun_tls_connect_timer_cb, (su_wakeup_arg_t *) sd);
 
   return 0;
 #else /* !HAVE_OPENSSL */
@@ -1287,11 +1285,11 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
     su_root_deregister(self->sh_root, sd->sd_index);
     sd->sd_index = -1; /* mark index as deregistered */
 
-    /* Destroy the timeout timer */
-    /* su_timer_destroy(sd->sd_connect_timer); */
+    su_timer_reset(sd->sd_timer);
 
     SU_DEBUG_3(("%s: shared secret not obtained from server. "	\
 		"Proceed without username/password.\n", __func__));
+
     sd->sd_state = stun_tls_connection_failed;
     self->sh_callback(self->sh_context, self, NULL, sd,
 		      sd->sd_action, sd->sd_state);
