@@ -8,6 +8,7 @@
 INCLUDES = 		-I$(srcdir)/../ipt -I../ipt \
 			-I$(srcdir)/../msg -I../msg \
 			-I$(srcdir)/../sip -I../sip \
+			-I$(srcdir)/../bnf -I../bnf \
 			-I$(srcdir)/../sresolv -I../sresolv \
 			-I$(srcdir)/../tport -I../tport \
 			-I$(srcdir)/../url -I../url \

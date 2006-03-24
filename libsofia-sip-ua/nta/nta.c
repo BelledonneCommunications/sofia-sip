@@ -1589,6 +1589,7 @@ static
 int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
 {
   sip_via_t *via = NULL, *new_via, *dup_via, *v, **vv = &via;
+  sip_via_t *new_vias, **next_new_via, *new_publics, **next_new_public;
   tport_t *tp;
   su_addrinfo_t const *ai;
 
@@ -1639,42 +1640,54 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
 
     first_via = 1;
 
-    for (ai = tport_get_address(tp); ai; ai = ai->ai_next) {
-      char host[TPORT_HOSTPORTSIZE];
-      char sport[6];
+    ai = tport_get_address(tp);
+
+    for (; ai; ai = ai->ai_next) {
+      char host[TPORT_HOSTPORTSIZE] = "";
+      char sport[8];
       char const *canon = ai->ai_canonname;
       su_sockaddr_t *su = (void *)ai->ai_addr;
-      int port = ntohs(su->su_port);
+      int port;
 
-      inet_ntop(su->su_family, SU_ADDR(su), host, sizeof host);
-
-      maddr = use_maddr && strcasecmp(canon, host) != 0;
-
+      if (su) {
+	inet_ntop(su->su_family, SU_ADDR(su), host, sizeof host);
+	maddr = use_maddr && strcasecmp(canon, host) != 0;
+	port = ntohs(su->su_port);
+      }
+      else {
+	msg_random_token(host, 16, NULL, 0);
+	canon = strcat(host, "is.invalid");
+	port = 0;
+      }
+	
       if (strncasecmp(tpn->tpn_proto, "tls", 3)
 	  ? port == SIP_DEFAULT_PORT
 	  : port == SIPS_DEFAULT_PORT)
 	port = 0;
 
-      snprintf(sport, sizeof sport, "%u", port);
+      snprintf(sport, sizeof sport, ":%u", port);
       
       comp = tpn->tpn_comp;
 
+      SU_DEBUG_9(("nta: agent_init_via: "
+		  "%s/%s %s%s%s%s%s%s (%s)\n",
+		  SIP_VERSION_CURRENT, tpn->tpn_proto,
+		  canon, port ? sport : "",
+		  maddr ? ";maddr=" : "", maddr ? host : "",
+		  comp ? ";comp=" : "", comp ? comp : "",
+		  tpn->tpn_ident ? tpn->tpn_ident : "*"));
+
       v = sip_via_format(autohome,
-			 "%s/%s %s%s%s%s%s%s%s",
+			 "%s/%s %s%s%s%s%s%s",
 			 SIP_VERSION_CURRENT, tpn->tpn_proto,
-			 canon, port ? ":" : "", port ? sport : "",
+			 canon, port ? sport : "",
 			 maddr ? ";maddr=" : "", maddr ? host : "",
 			 comp ? ";comp=" : "", comp ? comp : "");
-
-      if (v == NULL) {
-	su_home_deinit(autohome);
-	return -1;
-      }
+      if (v == NULL)
+	goto error;
 
       v->v_comment = tpn->tpn_ident;
-
-      v->v_common->h_data = tp;
-
+      v->v_common->h_data = tp;	/* Nasty trick */
       *vv = v; vv = &(*vv)->v_next;
     }
   }
@@ -1687,13 +1700,11 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
   if (via && (!new_via || !dup_via)) {
     msg_header_free(self->sa_home, (void *)new_via);
     msg_header_free(self->sa_home, (void *)dup_via);
-    su_home_deinit(autohome);
-    return -1;
+    goto error;
   }
 
-  v = self->sa_vias;
-  self->sa_vias = dup_via;
-  msg_header_free(self->sa_home, (void *)v);
+  new_vias = NULL, next_new_via = &new_vias;
+  new_publics = NULL, next_new_public = &new_publics;
 
   /* Set via field magic for the tports */
   for (tp = primaries; tp; tp = tport_next(tp)) {
@@ -1702,20 +1713,46 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
     tport_set_magic(tp, new_via);
     msg_header_free(self->sa_home, (void *)v);
 
+    if (tport_is_public(tp))
+      *next_new_public = dup_via;
+    else
+      *next_new_via = dup_via;
+
     while (via->v_next && via->v_next->v_common->h_data == tp)
-      via = via->v_next, new_via = new_via->v_next;
+      via = via->v_next, new_via = new_via->v_next, dup_via = dup_via->v_next;
     
     via = via->v_next;
-    /* break the link in via list between transports */
+    /* Break the link in via list between transports */
     vv = &new_via->v_next, new_via = *vv, *vv = NULL;
+    vv = &dup_via->v_next, dup_via = *vv, *vv = NULL;
+
+    if (tport_is_public(tp))
+      while (*next_new_public) next_new_public = &(*next_new_public)->v_next;
+    else
+      while (*next_new_via) next_new_via = &(*next_new_via)->v_next;
   }
+
+  assert(dup_via == NULL);
+  assert(new_via == NULL);
 
   if (self->sa_tport_udp)
     agent_set_udp_params(self, self->sa_udp_mtu);
 
+  v = self->sa_vias;
+  self->sa_vias = new_vias; 
+  msg_header_free(self->sa_home, (void *)v);
+
+  v = self->sa_public_vias;
+  self->sa_public_vias = new_publics;
+  msg_header_free(self->sa_home, (void *)v);
+
   su_home_deinit(autohome);
 
   return 0;
+
+ error:
+  su_home_deinit(autohome);
+  return -1;
 }
 
 
