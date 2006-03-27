@@ -24,10 +24,7 @@ To be written. See torture_stun.c and tport/tport.c.
 
 @section todo Todo
 
-- split stun.c into smaller files (added 20060322)
-- implement full support for STUN_REQUIRE_INTEGRITY() - IOW,
-  always try TLS, but only in strict mode fail the discovery if
-  TLS is not available (added 20060209)
+- split stun.c into smaller files? (added 20060322)
 - stun_bind_test does not detect, if the server does
   _not_ honor the change-{address,port} requests (i.e. that
   response should be send from a different port/address), 
