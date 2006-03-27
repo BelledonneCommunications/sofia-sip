@@ -1186,6 +1186,7 @@ tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
   &tport_udp_client_vtable,
   &tport_udp_vtable,
   &tport_threadpool_vtable,
+  &tport_stun_vtable,
 };
 
 /**Get a vtable for given protocol */
