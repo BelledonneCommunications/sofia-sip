@@ -279,6 +279,10 @@ char const *stun_nattype(stun_discovery_t *sd)
     return stun_nattype_str[stun_nat_unknown];
 }
 
+su_addrinfo_t const *stun_server_address(stun_handle_t *sh)
+{
+  return &sh->sh_pri_info;
+}
 
 int stun_lifetime(stun_discovery_t *sd)
 {
@@ -449,7 +453,7 @@ stun_handle_t *stun_handle_init(su_root_t *root,
   stun->sh_dns_lookup = NULL;
   
   if (server) {
-    err = stun_atoaddr(AF_INET, &stun->sh_pri_info, server);
+    err = stun_atoaddr(stun->sh_home, AF_INET, &stun->sh_pri_info, server);
 
     if (err < 0)
       return NULL;
@@ -552,7 +556,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
   stun->sh_dns_lookup = NULL;
   
   if (server) {
-    err = stun_atoaddr(AF_INET, &stun->sh_pri_info, server);
+    err = stun_atoaddr(stun->sh_home, AF_INET, &stun->sh_pri_info, server);
 
     if (err < 0)
       return NULL;
@@ -978,7 +982,7 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
     /* XXX: assumption that same host and port used for UDP/TLS */
     if (udp_target) {
 
-      stun_atoaddr(AF_INET, &sh->sh_pri_info, udp_target);
+      stun_atoaddr(sh->sh_home, AF_INET, &sh->sh_pri_info, udp_target);
       
       if (udp_port) 
 	sh->sh_pri_addr[0].su_port = htons(udp_port);
@@ -1294,7 +1298,7 @@ int stun_test_nattype(stun_handle_t *sh,
     memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {
-    err = stun_atoaddr(AF_INET, &sd->sd_pri_info, server);
+    err = stun_atoaddr(sh->sh_home, AF_INET, &sd->sd_pri_info, server);
     memcpy(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
   }
   destination = (su_sockaddr_t *) sd->sd_pri_addr;
@@ -2586,8 +2590,11 @@ int stun_set_uname_pwd(stun_handle_t *sh,
 }
 
   
-/* convert character address format to sockaddr_in */
-int stun_atoaddr(int ai_family,
+/**
+ * Converts character address format to sockaddr_in 
+ */
+int stun_atoaddr(su_home_t *home,
+		 int ai_family,
 		 su_addrinfo_t *info,
 		 char const *in)
 {
@@ -2595,13 +2602,13 @@ int stun_atoaddr(int ai_family,
   char const *host;
   char *port = NULL, tmp[SU_ADDRSIZE];
   int err;
-  su_sockaddr_t *addr;
+  su_sockaddr_t *dstaddr;
 
   assert(info && in);
 
   enter;
 
-  addr = (su_sockaddr_t *) info->ai_addr;
+  dstaddr = (su_sockaddr_t *) info->ai_addr;
 
   /* note: works only for IPv4 */
   hints->ai_family = ai_family;
@@ -2618,29 +2625,31 @@ int stun_atoaddr(int ai_family,
     ++port;
   }
     
-  if ((err = su_getaddrinfo(host, NULL, hints, &res)) != 0) {
+  err = su_getaddrinfo(host, NULL, hints, &res);
+  if (err == 0) {
+    for (ai = res; ai; ai = ai->ai_next) {
+      if (ai->ai_family != AF_INET)
+	continue;
+
+      info->ai_flags = ai->ai_flags;
+      info->ai_family = ai->ai_family;
+      info->ai_socktype = ai->ai_socktype;
+      info->ai_protocol = ai->ai_protocol;
+      info->ai_addrlen = ai->ai_addrlen;
+      info->ai_canonname = su_strdup(home, host);
+      
+      memcpy(&dstaddr->su_sa, res->ai_addr, sizeof(struct sockaddr));
+      break;
+    }
+
+    if (port) 
+      dstaddr->su_port = htons(atoi(port));
+    else
+      dstaddr->su_port = htons(STUN_DEFAULT_PORT);
+  }
+  else {
     STUN_ERROR(err, su_getaddrinfo);
-    return -1;
   }
-
-  for (ai = res; ai; ai = ai->ai_next) {
-    if (ai->ai_family != AF_INET)
-      continue;
-
-    info->ai_flags = ai->ai_flags;
-    info->ai_family = ai->ai_family;
-    info->ai_socktype = ai->ai_socktype;
-    info->ai_protocol = ai->ai_protocol;
-    info->ai_addrlen = ai->ai_addrlen;
-
-    memcpy(&addr->su_sa, res->ai_addr, sizeof(struct sockaddr));
-    break;
-  }
-
-  if (port) 
-    addr->su_port = htons(atoi(port));
-  else
-    addr->su_port = htons(STUN_DEFAULT_PORT);
 
   if (res)
     su_freeaddrinfo(res);
@@ -2649,7 +2658,7 @@ int stun_atoaddr(int ai_family,
 }
 
 /**
- * Initiates STUN discovery proces to find out NAT 
+ * Initiates STUN discovery process to find out NAT 
  * binding life-time settings.
  *
  * @TAGS
@@ -2710,7 +2719,7 @@ int stun_test_lifetime(stun_handle_t *sh,
     memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {
-    err = stun_atoaddr(AF_INET, &sd->sd_pri_info, server);
+    err = stun_atoaddr(sh->sh_home, AF_INET, &sd->sd_pri_info, server);
     memcpy(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
   }
   destination = (su_sockaddr_t *) sd->sd_pri_addr;

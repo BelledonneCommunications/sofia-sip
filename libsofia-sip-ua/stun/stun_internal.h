@@ -98,7 +98,7 @@ int stun_process_response(stun_msg_t *msg);
 int stun_process_binding_response(stun_msg_t *msg);
 int stun_process_error_response(stun_msg_t *msg);
 
-int stun_atoaddr(int ai_family, su_addrinfo_t *info, /* su_sockaddr_t *addr, */ char const *in);
+int stun_atoaddr(su_home_t *home, int ai_family, su_addrinfo_t *info, char const *in);
 int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr);
 
 SOFIA_END_DECLS

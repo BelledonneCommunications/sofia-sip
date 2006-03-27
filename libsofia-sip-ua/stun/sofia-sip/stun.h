@@ -167,6 +167,7 @@ void stun_handle_destroy(stun_handle_t *sh);
 su_root_t *stun_root(stun_handle_t *sh);
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 char const *stun_str_state(stun_state_t state);
+su_addrinfo_t const *stun_server_address(stun_handle_t *sh);
 
 int stun_process_message(stun_handle_t *sh, su_socket_t s,
 			 su_sockaddr_t *sa, socklen_t salen,
