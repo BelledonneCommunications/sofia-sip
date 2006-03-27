@@ -79,7 +79,6 @@ tport_vtable_t const tport_http_connect_vtable =
   "TCP", tport_type_connect,
   sizeof (tport_http_connect_t),
   tport_http_connect_init_primary,
-  NULL,
   tport_http_connect_deinit_primary,
   NULL,
   tport_http_connect,

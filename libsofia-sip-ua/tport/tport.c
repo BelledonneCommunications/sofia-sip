@@ -579,9 +579,6 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
   else if (tpn->tpn_ident && 
 	   !(tp->tp_name->tpn_ident = su_strdup(tp->tp_home, tpn->tpn_ident)))
     *return_culprit = "alloc ident";
-  else if (vtable->vtp_init_compression && tpn->tpn_comp &&
-	   vtable->vtp_init_compression(pri, tpn->tpn_comp, tags) < 0)
-    *return_culprit = "init compression";
   else
     return pri;			/* Success */
 

@@ -98,7 +98,7 @@ static int tport_udp_init_stun(tport_primary_t *,
 
 typedef struct
 {
-  tport_primary_t stuntp_primary[1];
+  tport_primary_t stun_primary[1];
   int stun_try;
   char *stun_server;
   stun_handle_t *stun_handle;
@@ -110,9 +110,8 @@ tport_vtable_t const tport_stun_vtable =
 {
   "UDP", tport_type_stun,
   sizeof (tport_stun_t),
-  tport_stun_init_primary,
-  tport_init_compression,
-  tport_stun_deinit_primary,
+  tport_udp_init_stun,
+  tport_udp_deinit_stun,
   NULL,
   NULL,
   sizeof (tport_t),

@@ -119,7 +119,6 @@ tport_vtable_t const tport_threadpool_vtable =
   "udp", tport_type_local,
   sizeof (tport_primary_t),
   tport_threadpool_init_primary,
-  tport_init_compression,
   tport_threadpool_deinit_primary,
   NULL,
   NULL,

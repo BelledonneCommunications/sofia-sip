@@ -338,8 +338,6 @@ struct tport_vtable
 			  tp_name_t const tpn[1],
 			  su_addrinfo_t *ai, tagi_t const *,
 			  char const **return_culprit);
-  int (*vtp_init_compression)(tport_primary_t *self, char const *compression, 
-			      tagi_t const *tl);
   void (*vtp_deinit_primary)(tport_primary_t *pri);
   int (*vtp_wakeup_pri)(tport_primary_t *pri, int events);
   tport_t *(*vtp_connect)(tport_primary_t *pri, su_addrinfo_t *ai, 
