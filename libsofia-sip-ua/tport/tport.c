@@ -267,7 +267,18 @@ int tport_has_tls(tport_t const *self)
 /** Return true if transport is being updated. */
 int tport_is_updating(tport_t const *self)
 {
-  return 0;			/* XXX */
+  tport_primary_t *pri;
+
+  if (tport_is_master(self)) {
+    for (pri = self->tp_master->mr_primaries; pri; pri = pri->pri_next) 
+      if (pri->pri_updating)
+	return 1;
+  }
+  else if (tport_is_primary(self)) {
+    return self->tp_pri->pri_updating;
+  }
+
+  return 0;
 }
 
 /** Test if transport has been closed */
@@ -372,14 +383,14 @@ static void tport_parse(tport_t *self, int complete, su_time_t now);
 
 static tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 					    tport_vtable_t const *vtable,
-					    tp_name_t const tpn[1],
+					    tp_name_t tpn[1],
 					    su_addrinfo_t *ai, 
 					    tagi_t const *tags,
 					    char const **return_culprit);
 
 static tport_primary_t *tport_listen(tport_master_t *mr,
 				     tport_vtable_t const *vtable,
-				     tp_name_t const tpn[1],
+				     tp_name_t tpn[1],
 				     su_addrinfo_t *ai,
 				     tagi_t *tags);
 static void tport_zap_primary(tport_primary_t *);
@@ -530,7 +541,7 @@ void tport_destroy(tport_t *self)
 static 
 tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 				     tport_vtable_t const *vtable,
-				     tp_name_t const tpn[1],
+				     tp_name_t tpn[1],
 				     su_addrinfo_t *ai,
 				     tagi_t const *tags,
 				     char const **return_culprit)
@@ -629,7 +640,7 @@ void tport_zap_primary(tport_primary_t *pri)
 static
 tport_primary_t *tport_listen(tport_master_t *mr,
 			      tport_vtable_t const *vtable,
-			      tp_name_t const tpn[1],
+			      tp_name_t tpn[1],
 			      su_addrinfo_t *ai, 
 			      tagi_t *tags)
 {
@@ -730,6 +741,17 @@ int tport_bind_socket(int socket,
 
   return 0;
 }
+
+
+/** Indicate stack that a transport has been updated */
+void tport_has_been_updated(tport_t *self)
+{
+  self->tp_pri->pri_updating = 0;
+
+  if (self->tp_master->mr_tpac->tpac_address)
+    self->tp_master->mr_tpac->tpac_address(self->tp_master->mr_stack, self);
+}
+
 
 static
 int tport_set_events(tport_t *self, int set, int clear)
@@ -3704,7 +3726,8 @@ int tport_error_event(tport_t *self)
 
   if (tport_is_udp(self)) {
     errcode = tport_udp_error(self, name);
-  } else {
+  }
+  else {
     /* Process error event for basic transport. */
     errcode = su_soerror(self->tp_socket);
   }
@@ -4481,7 +4504,16 @@ int tport_set_compression(tport_t *self, char const *comp)
   return (self == NULL || comp) ? -1 : 0;
 }
 
-int tport_keepalive(tport_t *tp, tp_name_t *tpn)
+int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
+		    tag_type_t tag, tag_value_t value, ...)
 {
-  return 0;
+  if (tp && tp->tp_pri && tp->tp_pri->pri_vtable->vtp_keepalive) {
+    int retval;
+    ta_list ta;
+    ta_start(ta, tag, value);
+    retval = tp->tp_pri->pri_vtable->vtp_keepalive(tp, ai, ta_args(ta));
+    ta_end(ta);
+    return retval;
+  }
+  return -1;
 }

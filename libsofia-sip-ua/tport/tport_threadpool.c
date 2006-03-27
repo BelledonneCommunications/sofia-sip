@@ -102,7 +102,7 @@ union tport_su_msg_arg
 };
 
 int tport_threadpool_init_primary(tport_primary_t *, 
-				  tp_name_t const tpn[1], 
+				  tp_name_t tpn[1], 
 				  su_addrinfo_t *, 
 				  tagi_t const *,
 				  char const **return_culprit);
@@ -164,7 +164,7 @@ static void thrp_udp_send_report(tport_threadpool_t *thrp,
 
 /** Launch threads in the tport pool. */
 int tport_threadpool_init_primary(tport_primary_t *pri, 
-				  tp_name_t const tpn[1], 
+				  tp_name_t tpn[1], 
 				  su_addrinfo_t *ai,
 				  tagi_t const *tags,
 				  char const **return_culprit)

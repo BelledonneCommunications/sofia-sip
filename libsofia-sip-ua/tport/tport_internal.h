@@ -256,6 +256,7 @@ struct tport_primary {
   tport_threadpool_t *pri_threadpool;   /**< Worker threads */
   unsigned            pri_thrpsize;
 
+  unsigned            pri_updating:1;   /**< Currently updating address */
   unsigned            pri_natted:1;	/**< Using natted address  */
   unsigned            pri_has_tls:1;	/**< Supports tls  */
   unsigned:0;
@@ -335,7 +336,7 @@ struct tport_vtable
 
   int vtp_pri_size;		/* Size of primary tport */
   int (*vtp_init_primary)(tport_primary_t *pri,
-			  tp_name_t const tpn[1],
+			  tp_name_t tpn[1],
 			  su_addrinfo_t *ai, tagi_t const *,
 			  char const **return_culprit);
   void (*vtp_deinit_primary)(tport_primary_t *pri);
@@ -358,6 +359,8 @@ struct tport_vtable
 		     tp_name_t const *tpn, 
 		     struct sigcomp_compartment *cc,
 		     unsigned mtu);
+  int (*vtp_keepalive)(tport_t *self, su_addrinfo_t const *ai,
+		       tagi_t const *taglist);
 };
 
 /** Test if transport is needs connect() before sending. */
@@ -371,6 +374,8 @@ static inline int tport_is_connected(tport_t const *self)
 {
   return self->tp_connected;
 }
+
+void tport_has_been_updated(tport_t *tport);
 
 int tport_init_compression(tport_primary_t *pri,
 			   char const *compression,
@@ -387,8 +392,8 @@ void tport_zap_secondary(tport_t *self);
 int tport_bind_socket(int socket,
 		      su_addrinfo_t *ai,
 		      char const **return_culprit);
-
 void tport_close(tport_t *self);
+
 
 int tport_error_event(tport_t *self);
 void tport_recv_event(tport_t *self);
@@ -430,7 +435,7 @@ extern tport_vtable_t const tport_udp_vtable;
 extern tport_vtable_t const tport_udp_client_vtable;
 
 int tport_udp_init_primary(tport_primary_t *, 
-			   tp_name_t const tpn[1], 
+			   tp_name_t tpn[1], 
 			   su_addrinfo_t *, 
 			   tagi_t const *,
 			   char const **return_culprit);
@@ -444,11 +449,11 @@ extern tport_vtable_t const tport_tcp_vtable;
 extern tport_vtable_t const tport_tcp_client_vtable;
 
 int tport_tcp_init_primary(tport_primary_t *, 
- 			  tp_name_t const tpn[1], 
+ 			  tp_name_t  tpn[1], 
  			  su_addrinfo_t *, tagi_t const *,
  			  char const **return_culprit);
 int tport_tcp_init_client(tport_primary_t *, 
- 			 tp_name_t const tpn[1], 
+ 			 tp_name_t tpn[1], 
  			 su_addrinfo_t *, tagi_t const *,
  			 char const **return_culprit);
 int tport_tcp_init_secondary(tport_t *self, int socket, int accepted);

@@ -57,11 +57,11 @@
 #define TP_SCTP_MSG_MAX (32768)
 
 static int tport_sctp_init_primary(tport_primary_t *, 
-				   tp_name_t const tpn[1], 
+				   tp_name_t tpn[1], 
 				   su_addrinfo_t *, tagi_t const *,
 				   char const **return_culprit);
 static int tport_sctp_init_client(tport_primary_t *, 
-				  tp_name_t const tpn[1], 
+				  tp_name_t tpn[1], 
 				  su_addrinfo_t *, tagi_t const *,
 				  char const **return_culprit);
 static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted);
@@ -112,7 +112,7 @@ tport_vtable_t const tport_sctp_vtable =
 #define NEXT_VTABLE &tport_sctp_vtable
 
 static int tport_sctp_init_primary(tport_primary_t *pri, 
-				   tp_name_t const tpn[1],
+				   tp_name_t tpn[1],
 				   su_addrinfo_t *ai,
 				   tagi_t const *tags,
 				   char const **return_culprit)
@@ -124,7 +124,7 @@ static int tport_sctp_init_primary(tport_primary_t *pri,
 }
 
 static int tport_sctp_init_client(tport_primary_t *pri, 
-				   tp_name_t const tpn[1],
+				   tp_name_t tpn[1],
 				   su_addrinfo_t *ai,
 				   tagi_t const *tags,
 				   char const **return_culprit)

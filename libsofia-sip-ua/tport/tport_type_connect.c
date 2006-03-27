@@ -49,7 +49,7 @@
 #include <sofia-sip/http_header.h>
 
 static int tport_http_connect_init_primary(tport_primary_t *,
-					   tp_name_t const tpn[1], 
+					   tp_name_t tpn[1], 
 					   su_addrinfo_t *, 
 					   tagi_t const *,
 					   char const **return_culprit);
@@ -94,7 +94,7 @@ tport_vtable_t const tport_http_connect_vtable =
 };
 
 static int tport_http_connect_init_primary(tport_primary_t *pri,
-					   tp_name_t const tpn[1], 
+					   tp_name_t tpn[1], 
 					   su_addrinfo_t *ai, 
 					   tagi_t const *tags,
 					   char const **return_culprit)

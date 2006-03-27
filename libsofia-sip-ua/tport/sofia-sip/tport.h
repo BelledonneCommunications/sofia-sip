@@ -343,7 +343,8 @@ TPORT_DLL char *tport_hostport(char buf[], int bufsize,
 		     su_sockaddr_t const *su, int with_port);
 
 /** Initialize STUN keepalives. */
-int tport_keepalive(tport_t *tp, tp_name_t *tpn);
+int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
+		    tag_type_t tag, tag_value_t value, ...);
 
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */

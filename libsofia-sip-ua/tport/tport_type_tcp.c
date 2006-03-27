@@ -90,7 +90,7 @@ tport_vtable_t const tport_tcp_client_vtable =
 };
 
 int tport_tcp_init_primary(tport_primary_t *pri, 
-			   tp_name_t const tpn[1],
+			   tp_name_t tpn[1],
 			   su_addrinfo_t *ai,
 			   tagi_t const *tags,
 			   char const **return_culprit)
@@ -132,7 +132,7 @@ int tport_tcp_init_primary(tport_primary_t *pri,
 }
 
 int tport_tcp_init_client(tport_primary_t *pri, 
-			  tp_name_t const tpn[1],
+			  tp_name_t tpn[1],
 			  su_addrinfo_t *ai,
 			  tagi_t const *tags,
 			  char const **return_culprit)
