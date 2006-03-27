@@ -266,8 +266,6 @@ int su_getlocalip(su_sockaddr_t *sin);
 #include <sofia-sip/su_addrinfo.h>
 
 #if SU_HAVE_BSDSOCK
-#define su_socket socket
-#define su_close  close
 #define su_ioctl  ioctl
 #define su_isblocking() (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
 #endif

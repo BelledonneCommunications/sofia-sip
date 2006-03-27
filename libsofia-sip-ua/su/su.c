@@ -44,6 +44,12 @@
 #error Bad configuration
 #endif
 
+/** Create an endpoint for communication. */
+su_socket_t su_socket(int af, int sock, int proto)
+{
+  return socket(af, sock, proto);
+}
+
 #if SU_HAVE_BSDSOCK
 int su_init(void)
 {
@@ -59,6 +65,12 @@ int su_init(void)
 
 void su_deinit(void)
 {
+}
+
+/** Close an socket descriptor. */
+int su_close(su_socket_t s)
+{
+  return close(s);
 }
 
 int su_setblocking(int s, int blocking)
@@ -99,12 +111,6 @@ int su_init(void)
 void su_deinit(void)
 {
   WSACleanup();
-}
-
-/** Create an endpoint for communication. */
-su_socket_t su_socket(int af, int sock, int proto)
-{
-  return socket(af, sock, proto);
 }
 
 /** Close an socket descriptor. */
