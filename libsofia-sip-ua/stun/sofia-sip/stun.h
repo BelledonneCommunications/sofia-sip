@@ -136,14 +136,6 @@ typedef void (*stun_discovery_f)(stun_discovery_magic_t *magic,
 				 stun_action_t action,
 				 stun_state_t event);
 
-/* Used if no stun_discovery_f specified for a discovery  */
-typedef void (*stun_event_f)(stun_magic_t *magic,
-			     stun_handle_t *sh,
-			     stun_request_t *req,
-			     stun_discovery_t *sd,
-			     stun_action_t action,
-			     stun_state_t event);
-
 /** Callback invoked by stun handle when it has a message to send. */
 typedef int (*stun_send_callback)(stun_magic_t *magic,
 				  stun_handle_t *sh,
@@ -240,8 +232,16 @@ int stun_dns_lookup_tcp_addr(stun_dns_lookup_t *self, const char **target, uint1
 int stun_dns_lookup_stp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
 
 /* --------------------------------------------------------------------
- * Deprecated functions. These are supported with limited
+ * Deprecated functions and definitions. These are supported with limited
  * compatibility. */
+
+/* Used if no stun_discovery_f specified for a discovery  */
+typedef void (*stun_event_f)(stun_magic_t *magic,
+			     stun_handle_t *sh,
+			     stun_request_t *req,
+			     stun_discovery_t *sd,
+			     stun_action_t action,
+			     stun_state_t event);
 
 stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
