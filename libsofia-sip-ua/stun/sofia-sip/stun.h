@@ -162,7 +162,6 @@ typedef void (*stun_dns_lookup_f)(stun_dns_lookup_t *self,
 stun_handle_t *stun_handle_init(su_root_t *root,
 				tag_type_t tag, tag_value_t value, ...);
 
-int stun_handle_release(stun_handle_t *sh, su_socket_t s);
 void stun_handle_destroy(stun_handle_t *sh);
 
 su_root_t *stun_root(stun_handle_t *sh);
@@ -251,6 +250,8 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
 				  tag_type_t tag, tag_value_t value, ...);
+
+int stun_handle_release(stun_handle_t *sh, su_socket_t s);
 
 su_root_t *stun_handle_root(stun_handle_t *sh);
 int stun_handle_request_shared_secret(stun_handle_t *sh);

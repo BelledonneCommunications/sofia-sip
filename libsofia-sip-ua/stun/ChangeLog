@@ -1,4 +1,7 @@
-v v v v v v v
+2006-03-27  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* stun.h: Deprecated stun_handle_release().
+
 2006-01-26  Martti Mela  <martti.mela@nokia.com>
 
 	* STUN: initial keepalive dispatcher
@@ -9,7 +12,6 @@ v v v v v v v
 	M ./libsofia-sip-ua/stun/stun_tag.h +6
 	M ./libsofia-sip-ua/stun/stunc.c +6
 
-*************
 2006-02-09  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* stun_tag.h: Added STUN_DOMAIN() and STUN_REQUIRE_INTEGRITY(). 
@@ -28,7 +30,6 @@ v v v v v v v
 	M ./libsofia-sip-ua/stun/stun_tag.h +6
 	M ./libsofia-sip-ua/stun/stunc.c +6
 
-^ ^ ^ ^ ^ ^ ^
 2006-01-19  Martti Mela  <martti.mela@nokia.com>
 
 	* stun.c: assign_socket() now takes care of socket registering and
