@@ -178,13 +178,9 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
 /* ------------------------------------------------------------------- 
  * Functions for 'Binding Discovery' usage (RFC3489/3489bis) */
 
-int stun_discovery_release_socket(stun_discovery_t *sd);
-
 int stun_obtain_shared_secret(stun_handle_t *sh, stun_discovery_f,
 			      stun_discovery_magic_t *magic,
 			      tag_type_t tag, tag_value_t value, ...);
-
-int stun_request_shared_secret(stun_handle_t *sh);
 
 int stun_bind(stun_handle_t *sh, 
 	      stun_discovery_f, stun_discovery_magic_t *magic,
@@ -192,6 +188,7 @@ int stun_bind(stun_handle_t *sh,
 
 su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
 su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
+int stun_discovery_release_socket(stun_discovery_t *sd);
 
 int stun_get_nattype(stun_handle_t *sh,
 		     stun_discovery_f, stun_discovery_magic_t *magic,
