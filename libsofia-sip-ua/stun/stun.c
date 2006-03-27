@@ -1004,7 +1004,7 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
 
       switch(sh->sh_dns_pend_action) {
       case stun_action_tls_query:
-	stun_request_shared_secret(sh);
+	stun_obtain_shared_secret(sh);
 	break;
 
       case stun_action_binding_request:
