@@ -92,11 +92,11 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
     break;
 
   case stun_discovery_done:
-    if (action == stun_action_get_nattype) {
+    if (action == stun_action_test_nattype) {
       nattype = stun_nattype(sd);
       SU_DEBUG_0(("%s: NAT type: %s\n", __func__, nattype));
     }
-    else if (action == stun_action_get_lifetime) {
+    else if (action == stun_action_test_lifetime) {
       lifetime = stun_lifetime(sd);
       SU_DEBUG_0(("%s: Life time is %d s.\n", __func__, lifetime));
       su_root_break(stun_handle_root(sh));
@@ -112,15 +112,18 @@ void stunc_callback(stunc_t *stunc, stun_handle_t *sh,
 		(unsigned) ntohs(sa->su_port)));
     /* su_root_break(stun_handle_root(sh)); */
 
-    if (stun_handle_get_nattype(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
-      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_nattype()"));
+    /* XXX: do not work (2006/03;kv) */
+#if 0
+    if (stun_test_nattype(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_test_nattype()"));
       su_root_break(stun_handle_root(sh));
     }
 
-    if (stun_handle_get_lifetime(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
-      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_get_lifetime()"));
+    if (stun_handle_test_lifetime(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
+      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_test_lifetime()"));
       su_root_break(stun_handle_root(sh));
     }
+#endif
 
   break;
 

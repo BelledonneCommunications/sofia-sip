@@ -304,7 +304,7 @@ static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
 static int stun_discovery_destroy(stun_discovery_t *sd);
 static int action_bind(stun_request_t *req, stun_msg_t *binding_response);
 static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response);
-static int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response);
+static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_response);
 
 static stun_request_t *stun_request_create(stun_discovery_t *sd);
 static int stun_send_binding_request(stun_request_t *req,
@@ -318,9 +318,9 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 static void stun_tls_connect_timer_cb(su_root_magic_t *magic, 
 				      su_timer_t *t,
 				      su_timer_arg_t *arg);
-static void stun_get_lifetime_timer_cb(su_root_magic_t *magic, 
-				       su_timer_t *t,
-				       su_timer_arg_t *arg);
+static void stun_test_lifetime_timer_cb(su_root_magic_t *magic, 
+					su_timer_t *t,
+					su_timer_arg_t *arg);
 static void stun_keepalive_timer_cb(su_root_magic_t *magic, 
 				    su_timer_t *t,
 				    su_timer_arg_t *arg);
@@ -1005,6 +1005,15 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
 	stun_bind(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
 	break;
 
+      case stun_action_test_lifetime:
+	stun_test_lifetime(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
+	break;
+
+      case stun_action_test_nattype:
+	stun_test_nattype(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
+	break;
+
+
       default:
 	SU_DEBUG_5(("Warning: unknown pending DNS-SRV action.\n"));
       }
@@ -1232,11 +1241,11 @@ static int stun_discovery_destroy(stun_discovery_t *sd)
  *
  * @return 0 on success, non-zero on error
  */
-int stun_get_nattype(stun_handle_t *sh,
-		     stun_discovery_f sdf,
-		     stun_discovery_magic_t *magic,
-		     tag_type_t tag, tag_value_t value,
-		     ...)
+int stun_test_nattype(stun_handle_t *sh,
+		       stun_discovery_f sdf,
+		       stun_discovery_magic_t *magic,
+		       tag_type_t tag, tag_value_t value,
+		       ...)
 {
   int err = 0, index = 0, s_reg = 0;
   ta_list ta;
@@ -1265,7 +1274,7 @@ int stun_get_nattype(stun_handle_t *sh,
   if (s < 0)
     return errno = EFAULT, -1;
 
-  sd = stun_discovery_create(sh, stun_action_get_nattype, sdf, magic);
+  sd = stun_discovery_create(sh, stun_action_test_nattype, sdf, magic);
   if ((index = assign_socket(sd, s, s_reg)) < 0)
     return errno = EFAULT, -1;
 
@@ -1811,12 +1820,12 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
     action_bind(req, msg);
     break;
 
-  case stun_action_get_nattype:
+  case stun_action_test_nattype:
     action_determine_nattype(req, msg);
     break;
 
-  case stun_action_get_lifetime:
-    process_get_lifetime(req, msg);
+  case stun_action_test_lifetime:
+    process_test_lifetime(req, msg);
     break;
 
   case stun_action_keepalive:
@@ -1900,7 +1909,7 @@ static int process_binding_request(stun_request_t *req, stun_msg_t *binding_resp
 
 }
 
-static void stun_get_lifetime_timer_cb(su_root_magic_t *magic, 
+static void stun_test_lifetime_timer_cb(su_root_magic_t *magic, 
 				       su_timer_t *t,
 				       su_timer_arg_t *arg)
 {
@@ -1926,7 +1935,7 @@ static void stun_get_lifetime_timer_cb(su_root_magic_t *magic,
 
 }
 
-static int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_response)
+static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_response)
 {
   stun_discovery_t *sd = req->sr_discovery;
   stun_request_t *new;
@@ -2025,7 +2034,7 @@ static int process_get_lifetime(stun_request_t *req, stun_msg_t *binding_respons
 
   /* Create and start timer */
   sockfdy_timer = su_timer_create(su_root_task(sh->sh_root), sd->sd_lt);
-  su_timer_set(sockfdy_timer, stun_get_lifetime_timer_cb, (su_wakeup_arg_t *) new);
+  su_timer_set(sockfdy_timer, stun_test_lifetime_timer_cb, (su_wakeup_arg_t *) new);
 
   return 0;
 }
@@ -2290,12 +2299,12 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
       req->sr_state = stun_dispose_me;
       break;
 
-    case stun_action_get_nattype:
+    case stun_action_test_nattype:
       action_determine_nattype(req, NULL);
       break;
       
-    case stun_action_get_lifetime:
-      process_get_lifetime(req, NULL);
+    case stun_action_test_lifetime:
+      process_test_lifetime(req, NULL);
       break;
       
     case stun_action_keepalive:
@@ -2633,9 +2642,6 @@ int stun_atoaddr(int ai_family,
  * Initiates STUN discovery proces to find out NAT 
  * binding life-time settings.
  *
- * Note: does not support STUNTAG_DOMAIN() even if specified to
- * stun_handle_create().
- *
  * @TAGS
  * @TAG STUNTAG_SOCKET Bind socket for STUN
  * @TAG STUNTAG_REGISTER_EVENTS Register socket for eventloop owned by STUN
@@ -2643,7 +2649,7 @@ int stun_atoaddr(int ai_family,
  *
  * @return 0 on success, non-zero on error
  */
-int stun_get_lifetime(stun_handle_t *sh,
+int stun_test_lifetime(stun_handle_t *sh,
 		      stun_discovery_f sdf,
 		      stun_discovery_magic_t *magic,
 		      tag_type_t tag, tag_value_t value,
@@ -2672,7 +2678,7 @@ int stun_get_lifetime(stun_handle_t *sh,
 	  STUNTAG_SERVER_REF(server),
 	  TAG_END());
 
-  sd = stun_discovery_create(sh, stun_action_get_lifetime, sdf, magic);
+  sd = stun_discovery_create(sh, stun_action_test_lifetime, sdf, magic);
   if ((index = assign_socket(sd, s, s_reg)) < 0)
       return errno = EFAULT, -1;
 
@@ -3158,20 +3164,6 @@ int stun_handle_bind(stun_handle_t *sh,
   return err; 
 }
 
-/* Deprecated. Use stun_get_nattype() */
-int stun_handle_get_nattype(stun_handle_t *sh,
-			    tag_type_t tag, tag_value_t value,
-			    ...)
-{
-  int err;
-  ta_list ta;
-  ta_start(ta, tag, value);
-  err = stun_get_nattype(sh, NULL, NULL, ta_tags(ta));
-  ta_end(ta);
-  
-  return err; 
-}
-
 /* Deprecated. Use stun_set_uname_pwd(). */
 int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
@@ -3181,20 +3173,6 @@ int stun_handle_set_uname_pwd(stun_handle_t *sh,
 {
   return stun_set_uname_pwd(sh, uname, len_uname,
 			    pwd, len_pwd);
-}
-
-/* Deprecated. Use stun_get_lifetime() */
-int stun_handle_get_lifetime(stun_handle_t *sh,
-			     tag_type_t tag, tag_value_t value,
-			     ...)
-{
-  int err;
-  ta_list ta;
-  ta_start(ta, tag, value);
-  err = stun_get_lifetime(sh, NULL, NULL, ta_tags(ta));
-  ta_end(ta);
-  
-  return err; 
 }
 
 /* Deprecated. Use stun_process_message() */

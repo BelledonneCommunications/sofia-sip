@@ -73,8 +73,8 @@ typedef enum stun_action_s {
   stun_action_tls_query = 2,
   stun_action_binding_request = 4,
   stun_action_keepalive = 8,
-  stun_action_get_nattype = 16,
-  stun_action_get_lifetime = 32,
+  stun_action_test_nattype = 16,
+  stun_action_test_lifetime = 32,
 } stun_action_t;
 
 /**
@@ -190,14 +190,14 @@ su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
 su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
 int stun_discovery_release_socket(stun_discovery_t *sd);
 
-int stun_get_nattype(stun_handle_t *sh,
-		     stun_discovery_f, stun_discovery_magic_t *magic,
-		     tag_type_t tag, tag_value_t value, ...);
+int stun_test_nattype(stun_handle_t *sh,
+		       stun_discovery_f, stun_discovery_magic_t *magic,
+		       tag_type_t tag, tag_value_t value, ...);
 char const *stun_nattype(stun_discovery_t *sd);
 
-int stun_get_lifetime(stun_handle_t *sh,
-		      stun_discovery_f, stun_discovery_magic_t *magic,
-		      tag_type_t tag, tag_value_t value, ...);
+int stun_test_lifetime(stun_handle_t *sh,
+			stun_discovery_f, stun_discovery_magic_t *magic,
+			tag_type_t tag, tag_value_t value, ...);
 int stun_lifetime(stun_discovery_t *sd);
 
 /* ------------------------------------------------------------------- 
@@ -258,12 +258,6 @@ int stun_handle_bind(stun_handle_t *sh,
 		     /* su_localinfo_t *my_addr, */
 		     tag_type_t tag, tag_value_t value,
 		     ...);
-int stun_handle_get_nattype(stun_handle_t *sh,
-			    tag_type_t tag, tag_value_t value,
-			    ...);
-int stun_handle_get_lifetime(stun_handle_t *sh,
-			     tag_type_t tag, tag_value_t value,
-			     ...);
 int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      const char *uname,
 			      int len_uname, 
