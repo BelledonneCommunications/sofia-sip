@@ -9987,5 +9987,6 @@ int nta_tport_keepalive(nta_outgoing_t *orq)
 
   assert(orq); (void)tp;
 
-  return tport_keepalive(orq->orq_tport, orq->orq_tpn);
+  return tport_keepalive(orq->orq_tport, msg_addrinfo(orq->orq_request),
+			 TAG_END());
 }
