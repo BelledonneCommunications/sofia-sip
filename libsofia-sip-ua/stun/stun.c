@@ -380,6 +380,106 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
   return stun_server != NULL;
 }
 
+
+/** 
+ * Creates a STUN handle.
+ *
+ * The created handles can be used for STUN binding discovery, 
+ * keepalives, and other STUN usages.
+ *
+ * @param root eventloop to used by the stun state machine
+ * @param tag,value,... tag-value list 
+ *
+ * @TAGS
+ * @TAG STUNTAG_DOMAIN() domain to use in DNS-SRV based STUN server
+ * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
+ * @TAG STUNTAG_REQUIRE_INTEGRITY() true if msg integrity should be
+ * used enforced
+ *
+ */
+stun_handle_t *stun_handle_init(su_root_t *root,
+				tag_type_t tag, tag_value_t value, ...)
+{
+  stun_handle_t *stun = NULL;
+  char const *server = NULL, *domain = NULL;
+  int req_msg_integrity = 1;
+  int err;
+  ta_list ta;
+  
+  enter;
+
+  ta_start(ta, tag, value);
+
+  tl_gets(ta_args(ta),
+	  STUNTAG_SERVER_REF(server),
+	  STUNTAG_DOMAIN_REF(domain),
+	  STUNTAG_REQUIRE_INTEGRITY_REF(req_msg_integrity),
+	  TAG_END());
+
+  stun = su_home_clone(NULL, sizeof(*stun));
+
+  if (!stun) {
+    SU_DEBUG_3(("%s: %s failed\n", __func__, "su_home_clone()"));
+    return NULL;
+  }
+
+  /* Enviroment overrides */
+  if (getenv("STUN_SERVER")) {
+    server = getenv("STUN_SERVER");
+    SU_DEBUG_5(("%s: using STUN_SERVER=%s\n", __func__, server));
+  }
+
+  SU_DEBUG_5(("%s(\"%s\"): called\n", 
+	      __func__, server));
+
+  /* fail, if no server or a domain for a DNS-SRV lookup is specified */
+  if (!server && !domain)
+    return NULL;
+  
+  stun->sh_pri_info.ai_addrlen = 16;
+  stun->sh_pri_info.ai_addr = &stun->sh_pri_addr->su_sa;
+
+  stun->sh_sec_info.ai_addrlen = 16;
+  stun->sh_sec_info.ai_addr = &stun->sh_sec_addr->su_sa;
+
+  stun->sh_localinfo.li_addrlen = 16;
+  stun->sh_localinfo.li_addr = stun->sh_local_addr;
+
+  stun->sh_domain = su_strdup(stun->sh_home, domain);
+  stun->sh_dns_lookup = NULL;
+  
+  if (server) {
+    err = stun_atoaddr(AF_INET, &stun->sh_pri_info, server);
+
+    if (err < 0)
+      return NULL;
+  }
+
+  stun->sh_nattype = stun_nat_unknown;
+
+  stun->sh_root     = root;
+  /* always try TLS: */
+  stun->sh_use_msgint = 1;
+  /* whether use of shared-secret msgint is required */
+  stun->sh_req_msgint = req_msg_integrity;
+
+  stun->sh_max_retries = STUN_MAX_RETRX;
+
+  /* initialize username and password */
+  stun_init_buffer(&stun->sh_username);
+  stun_init_buffer(&stun->sh_passwd);
+  
+  stun->sh_nattype = stun_nat_unknown;
+  
+  /* initialize random number generator */
+  srand(time(NULL));
+  
+  ta_end(ta);
+
+  return stun;
+}
+
+
 /** 
  * Creates a STUN handle.
  *
@@ -398,6 +498,8 @@ int stun_is_requested(tag_type_t tag, tag_value_t value, ...)
  * used enforced
  *
  */
+
+/* Deprecated. Use stun_agent_create() */
 stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
@@ -488,7 +590,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 /* Deprecated. Use stun_request_shared_secret() */
 int stun_handle_request_shared_secret(stun_handle_t *sh)
 {
-  return stun_request_shared_secret(sh);
+  return stun_obtain_shared_secret(sh, NULL, NULL, TAG_NULL());
 }
 
 /** 
@@ -496,7 +598,10 @@ int stun_handle_request_shared_secret(stun_handle_t *sh)
  * Result will be trigged in STUN handle callback (state
  * one of stun_tls_*).
  **/
-int stun_request_shared_secret(stun_handle_t *sh)
+int stun_obtain_shared_secret(stun_handle_t *sh,
+			      stun_discovery_f sdf,
+			      stun_discovery_magic_t *magic,
+			      tag_type_t tag, tag_value_t value, ...)
 {
 #if defined(HAVE_OPENSSL)
   int events = -1;
@@ -563,7 +668,7 @@ int stun_request_shared_secret(stun_handle_t *sh)
   SU_DEBUG_9(("%s: %s: %s\n", __func__, "connect",
 	      su_strerror(err)));
   
-  sd = stun_discovery_create(sh, stun_action_tls_query, NULL, NULL);
+  sd = stun_discovery_create(sh, stun_action_tls_query, sdf, magic);
   sd->sd_socket = s;
   /* req = stun_request_create(sd); */
 
@@ -1020,7 +1125,7 @@ int stun_bind(stun_handle_t *sh,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
-	  STUNTAG_REGISTER_SOCKET_REF(s_reg),
+	  STUNTAG_REGISTER_EVENTS_REF(s_reg),
 	  TAG_END());
 
   ta_end(ta);
@@ -1175,7 +1280,7 @@ int stun_get_nattype(stun_handle_t *sh,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
-	  STUNTAG_REGISTER_SOCKET_REF(s_reg),
+	  STUNTAG_REGISTER_EVENTS_REF(s_reg),
 	  STUNTAG_SERVER_REF(server),
 	  TAG_END());
 
@@ -1291,8 +1396,12 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 		"Proceed without username/password.\n", __func__));
 
     sd->sd_state = stun_tls_connection_failed;
-    self->sh_callback(self->sh_context, self, NULL, sd,
-		      sd->sd_action, sd->sd_state);
+
+    if (sd->sd_callback)
+      sd->sd_callback(sd->sd_magic, self, NULL, sd, sd->sd_action, sd->sd_state);
+    else
+      self->sh_callback(self->sh_context, self, NULL, sd,
+			sd->sd_action, sd->sd_state);
     return 0;
   }
 
@@ -1362,8 +1471,13 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 
       stun_free_buffer(&msg_req->enc_buf);
       sd->sd_state = stun_tls_connection_failed;
-      self->sh_callback(self->sh_context, self, NULL, sd,
-			sd->sd_action, sd->sd_state);
+
+      if (sd->sd_callback)
+	sd->sd_callback(sd->sd_magic, self, NULL, sd, sd->sd_action, sd->sd_state);
+      else
+	self->sh_callback(self->sh_context, self, NULL, sd,
+			  sd->sd_action, sd->sd_state);
+
       return -1;
     }
     
@@ -1486,8 +1600,12 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 
     self->sh_use_msgint = 1;
     sd->sd_state = stun_tls_done;
-    self->sh_callback(self->sh_context, self, NULL, sd,
-		      sd->sd_action, sd->sd_state);
+
+    if (sd->sd_callback)
+      sd->sd_callback(sd->sd_magic, self, NULL, sd, sd->sd_action, sd->sd_state);
+    else
+      self->sh_callback(self->sh_context, self, NULL, sd,
+			sd->sd_action, sd->sd_state);
     
     break;
 
@@ -1599,11 +1717,11 @@ stun_action_t get_action(stun_request_t *req)
 
 /* Find request from the request queue, based on TID */
 static inline
-stun_request_t *find_request(stun_handle_t *self, uint16_t *id)
+stun_request_t *find_request(stun_handle_t *self, void *id)
 {
-  uint16_t *match;
+  void *match;
   stun_request_t *req = NULL;
-  int len = sizeof(uint16_t)*8;
+  int len = sizeof (uint8_t) * 16; /* sizeof tran_id */
 
   for (req = self->sh_requests; req; req = req->sr_next) {
     match = req->sr_msg->stun_hdr.tran_id;
@@ -1695,7 +1813,7 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
 {
   stun_request_t *req = NULL;
   stun_action_t action = stun_action_no_action;
-  uint16_t *id;
+  void *id;
 
   enter;
 
@@ -2568,7 +2686,7 @@ int stun_handle_get_lifetime(stun_handle_t *sh,
  *
  * @TAGS
  * @TAG STUNTAG_SOCKET Bind socket for STUN
- * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN
+ * @TAG STUNTAG_REGISTER_EVENTS Register socket for eventloop owned by STUN
  * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
  *
  * @return 0 on success, non-zero on error
@@ -2598,7 +2716,7 @@ int stun_get_lifetime(stun_handle_t *sh,
 
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
-	  STUNTAG_REGISTER_SOCKET_REF(s_reg),
+	  STUNTAG_REGISTER_EVENTS_REF(s_reg),
 	  STUNTAG_SERVER_REF(server),
 	  TAG_END());
 
@@ -2780,6 +2898,21 @@ int stun_process_message(stun_handle_t *sh, su_socket_t s,
     /* Based on the decoded payload, find the corresponding request
      * (based on TID). */
     return do_action(sh, &msg);
+  }
+
+  return -1;
+}
+
+
+int stun_discovery_release_socket(stun_discovery_t *sd)
+{
+  stun_handle_t *sh = sd->sd_handle;
+
+  if (su_root_deregister(sh->sh_root, sd->sd_index) >= 0) {
+    SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
+    sd->sd_index = -1; /* mark index as deregistered */
+
+    return 0;
   }
 
   return -1;

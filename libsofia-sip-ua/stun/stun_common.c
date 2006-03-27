@@ -105,6 +105,7 @@ int stun_parse_message(stun_msg_t *msg)
 }
 
 
+#if 1
 int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
 
   int len;
@@ -189,12 +190,15 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   return len+4;
 }
 
+#else
 int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   attr = (stun_attr_t *)calloc(1, sizeof(stun_attr_t));
   if (!attr)
     return -1;
   return stun_parse_attr_any(attr, type, len, p);
 }
+#endif
+
 
 int stun_parse_attr_address(stun_attr_t *attr, 
 			    const unsigned char *p, 
@@ -550,7 +554,6 @@ int stun_init_message(stun_msg_t *msg) {
 
 int stun_free_message(stun_msg_t *msg) {
 
-  int i;
   stun_attr_t *p, *p2;
 
   /* clearing header */
@@ -618,9 +621,8 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
  */
 int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
 
-  int i, z, len, buf_len = 0;
+  int z, len, buf_len = 0;
   unsigned char *buf;
-  uint16_t tmp16;
   stun_attr_t *attr, *msg_int=NULL;
 
   if(msg->enc_buf.data == NULL) {

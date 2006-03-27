@@ -159,10 +159,9 @@ typedef void (*stun_dns_lookup_f)(stun_dns_lookup_t *self,
 /* -------------------------------------------------------------------
  * Functions for managing STUN handles. */
 
-stun_handle_t *stun_handle_create(stun_magic_t *context,
-				  su_root_t *root,
-				  stun_event_f cb,
-				  tag_type_t tag, tag_value_t value, ...); 
+stun_handle_t *stun_handle_init(su_root_t *root,
+				tag_type_t tag, tag_value_t value, ...);
+
 int stun_handle_release(stun_handle_t *sh, su_socket_t s);
 void stun_handle_destroy(stun_handle_t *sh);
 
@@ -179,6 +178,12 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
 
 /* ------------------------------------------------------------------- 
  * Functions for 'Binding Discovery' usage (RFC3489/3489bis) */
+
+int stun_discovery_release_socket(stun_discovery_t *sd);
+
+int stun_obtain_shared_secret(stun_handle_t *sh, stun_discovery_f,
+			      stun_discovery_magic_t *magic,
+			      tag_type_t tag, tag_value_t value, ...);
 
 int stun_request_shared_secret(stun_handle_t *sh);
 
@@ -241,6 +246,11 @@ void stun_dns_lookup_destroy(stun_dns_lookup_t *self);
 /* --------------------------------------------------------------------
  * Deprecated functions. These are supported with limited
  * compatibility. */
+
+stun_handle_t *stun_handle_create(stun_magic_t *context,
+				  su_root_t *root,
+				  stun_event_f cb,
+				  tag_type_t tag, tag_value_t value, ...);
 
 su_root_t *stun_handle_root(stun_handle_t *sh);
 int stun_handle_request_shared_secret(stun_handle_t *sh);

@@ -128,24 +128,25 @@ tag_typedef_t stuntag_integrity = BOOLTAG_TYPEDEF(integrity);
  */
 tag_typedef_t stuntag_socket = INTTAG_TYPEDEF(socket);
 
-/**@def STUNTAG_REGISTER_SOCKET(x)
+/**@def STUNTAG_REGISTER_EVENTS(x)
  *  
- * Register socket for eventloop owned by STUN.
+ * Register socket events for eventloop owned by STUN.
  *
  * @par Used with
- *    stun_handle_bind() \n
- *    stun_handle_get_lifetime() \n
- *    stun_handle_get_nattype() \n
+ *    stun_bind() \n
+ *    stun_get_lifetime() \n
+ *    stun_get_nattype() \n
+ *    stun_keepalive() \n
  *
  * @par Parameter type
  *    int (su_register_socket_t)
  *
  * @par Values
- *    IPv4 (AF_INET) register_socket
+ *    IPv4 (AF_INET) register_events
  *
- * Corresponding tag taking reference parameter is STUNTAG_REGISTER_SOCKET_REF()
+ * Corresponding tag taking reference parameter is STUNTAG_REGISTER_EVENTS_REF()
  */
-tag_typedef_t stuntag_register_socket = INTTAG_TYPEDEF(register_socket);
+tag_typedef_t stuntag_register_events = INTTAG_TYPEDEF(register_events);
 
 /**@def STUNTAG_ACTION(x)
  *  

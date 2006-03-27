@@ -208,6 +208,7 @@ int tport_keepalive(tport_t *tp, tp_name_t *tpn)
 }
 
 #if HAVE_SOFIA_STUN
+#if 0
 void tport_stun_cb(tport_master_t *mr,
 		   stun_handle_t *sh,
 		   stun_request_t *req,
@@ -227,6 +228,7 @@ void tport_stun_cb(tport_master_t *mr,
 
   return;
 }
+#endif
 
 
 /**Callback for STUN bind
@@ -307,15 +309,13 @@ tport_nat_initialize_nat_traversal(tport_master_t *mr,
 	   strcasecmp(tpn->tpn_proto, stun_transports[i]) == 0)) {
         SU_DEBUG_5(("%s(%p) initializing STUN handle\n", __func__, mr));
 
-        nat->stun = stun_handle_create(mr,
-				       mr->mr_root,
-				       tport_stun_cb,
-				       TAG_NEXT(tags));
+        nat->stun = stun_handle_init(mr->mr_root,
+				     TAG_NEXT(tags));
 
         if (!nat->stun) 
 	  return NULL;
 
-	if (stun_request_shared_secret(nat->stun) < 0) {
+	if (stun_obtain_key(nat->stun, tport_stun_tls_cb, mr, TAG_NEXT(tags)) < 0) {
 	  SU_DEBUG_3(("%s: %s failed\n", __func__,
 		      "stun_request_shared_secret()"));
 	}
