@@ -196,8 +196,9 @@ struct stun_handle_s
 
   char           *sh_domain;        /**< domain address for DNS-SRV lookups */
 
-  stun_request_t     *sh_dns_pend_req;
-  stun_discovery_t   *sh_dns_pend_sd; 
+  stun_discovery_f    sh_dns_pend_cb;
+  stun_discovery_magic_t *sh_dns_pend_ctx;
+  tagi_t             *sh_dns_pend_tags;
   stun_action_t       sh_dns_pend_action; 
   stun_dns_lookup_t  *sh_dns_lookup;
 
@@ -326,15 +327,12 @@ static void stun_keepalive_timer_cb(su_root_magic_t *magic,
 
 
 static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
-static int priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
-static int priv_dns_queue_shared_secret(stun_handle_t *sh);
+static int priv_dns_queue_action(stun_handle_t *sh,
+				 stun_action_t action,
+				 stun_discovery_f sdf,
+				 stun_discovery_magic_t *magic,
+				 tag_type_t tag, tag_value_t value, ...);
 static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
-
-/* Deprecated. Use stun_root(). */
-su_root_t *stun_handle_root(stun_handle_t *self)
-{
-  return stun_root(self);
-}
 
 /**
  * Return su_root_t assigned to stun_handle_t.
@@ -501,8 +499,6 @@ stun_handle_t *stun_handle_init(su_root_t *root,
  * used enforced
  *
  */
-
-/* Deprecated. Use stun_agent_create() */
 stun_handle_t *stun_handle_create(stun_magic_t *context,
 				  su_root_t *root,
 				  stun_event_f cb,
@@ -590,12 +586,6 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 }
 
 
-/* Deprecated. Use stun_request_shared_secret() */
-int stun_handle_request_shared_secret(stun_handle_t *sh)
-{
-  return stun_obtain_shared_secret(sh, NULL, NULL, TAG_NULL());
-}
-
 /** 
  * Performs shared secret request/response processing.
  * Result will be trigged in STUN handle callback (state
@@ -624,8 +614,14 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
 
   if (!sh->sh_pri_addr[0].su_port) {
     /* no STUN server address, perform a DNS-SRV lookup */
+   
+    ta_list ta;
+    ta_start(ta, tag, value);
     SU_DEBUG_5(("Delaying STUN shared-secret req. for DNS-SRV query.\n"));
-    return priv_dns_queue_shared_secret(sh);
+    err = priv_dns_queue_action(sh, stun_action_tls_query, sdf, magic, ta_tags(ta));
+    ta_end(ta);
+       
+    return err;
   }
 
   ai = &sh->sh_pri_info;
@@ -788,6 +784,9 @@ void stun_handle_destroy(stun_handle_t *sh)
 
   if (sh->sh_dns_lookup)
     stun_dns_lookup_destroy(sh->sh_dns_lookup);
+
+  if (sh->sh_dns_pend_tags)
+    su_free(sh->sh_home, sh->sh_dns_pend_tags);
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
@@ -967,21 +966,6 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 }
 #endif
 
-/* Deprecated. Use stun_bind() */
-int stun_handle_bind(stun_handle_t *sh,
-		     tag_type_t tag, tag_value_t value,
-		     ...)
-{
-  int err;
-  ta_list ta;
-  ta_start(ta, tag, value);
-  err = stun_bind(sh, NULL, NULL, ta_tags(ta));
-  ta_end(ta);
-  
-  return err; 
-}
-
-
 static void priv_lookup_cb(stun_dns_lookup_t *self,
 			   stun_magic_t *magic)
 {
@@ -1014,11 +998,11 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
       switch(sh->sh_dns_pend_action) {
 	stun_discovery_t *sd = NULL;
       case stun_action_tls_query:
-	stun_obtain_shared_secret(sh, NULL, NULL, TAG_NEXT(sd->sd_tags));
+	stun_obtain_shared_secret(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
 	break;
 
       case stun_action_binding_request:
-	priv_stun_bind_send(sh, sh->sh_dns_pend_req, sh->sh_dns_pend_sd);
+	stun_bind(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
 	break;
 
       default:
@@ -1031,37 +1015,28 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
 }
 
 /**
- * Queus an stun bind action for later execution once
- * DNS-SRV lookup is succesfully completed.
+ * Queus a discovery process for later execution when DNS-SRV lookup
+ * has been completed.
  */
-static int priv_dns_queue_bind(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd)
+static int priv_dns_queue_action(stun_handle_t *sh,
+				 stun_action_t action,
+				 stun_discovery_f sdf,
+				 stun_discovery_magic_t *magic,
+				 tag_type_t tag, tag_value_t value, ...)
 {
-  if (!sh->sh_dns_pend_action) {
-
-    if (!sh->sh_dns_lookup) {
-      sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
-    }
-    sh->sh_dns_pend_req = req;
-    sh->sh_dns_pend_sd = sd;
-    sh->sh_dns_pend_action |= stun_action_binding_request;
-
-    return 0;
-  }
-  
-  return -1;
-}
-
-/**
- * Queus an stun shared-secret action for later execution 
- * once DNS-SRV lookup is succesfully completed.
- */
-static int priv_dns_queue_shared_secret(stun_handle_t *sh)
-{
+  ta_list ta;
   if (!sh->sh_dns_pend_action) {
     if (!sh->sh_dns_lookup) {
       sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
+      ta_start(ta, tag, value);
+      sh->sh_dns_pend_tags = tl_tlist(sh->sh_home, 
+				      ta_tags(ta));
+      ta_end(ta);
+      sh->sh_dns_pend_cb = sdf;
+      sh->sh_dns_pend_ctx = magic;
+
     }
-    sh->sh_dns_pend_action |= stun_action_tls_query;
+    sh->sh_dns_pend_action |= action;
 
     return 0;
   }
@@ -1123,13 +1098,23 @@ int stun_bind(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
-  stun_action_t action = stun_action_binding_request;
   int index, s_reg = 0;
   
   enter;
 
   if (sh == NULL)
     return errno = EFAULT, -1;
+
+  if (!sh->sh_pri_addr[0].su_port) {
+    /* no STUN server address, perform a DNS-SRV lookup */
+    int err;
+    ta_list ta;
+    ta_start(ta, tag, value);
+    SU_DEBUG_5(("Delaying STUN bind for DNS-SRV query.\n"));
+    err = priv_dns_queue_action(sh, stun_action_binding_request, sdf, magic, ta_tags(ta));
+    ta_end(ta);
+    return err;
+  }
 
   ta_start(ta, tag, value);
 
@@ -1140,7 +1125,7 @@ int stun_bind(stun_handle_t *sh,
 
   ta_end(ta);
 
-  sd = stun_discovery_create(sh, action, sdf, magic);
+  sd = stun_discovery_create(sh, stun_action_binding_request, sdf, magic);
   if ((index = assign_socket(sd, s, s_reg)) < 0)
     return -1;
 
@@ -1150,12 +1135,6 @@ int stun_bind(stun_handle_t *sh,
     stun_discovery_destroy(sd);
     stun_free_message(req->sr_msg);
     return -1;
-  }
-
-  if (!sh->sh_pri_addr[0].su_port) {
-    /* no STUN server address, perform a DNS-SRV lookup */
-    SU_DEBUG_5(("Delaying STUN bind for DNS-SRV query.\n"));
-    return priv_dns_queue_bind(sh, req, sd);
   }
 
   /* note: we always report success if bind() succeeds */
@@ -1237,21 +1216,6 @@ static int stun_discovery_destroy(stun_discovery_t *sd)
 
   free(sd);
   return 0;
-}
-
-
-/* Deprecated. Use stun_get_nattype() */
-int stun_handle_get_nattype(stun_handle_t *sh,
-			    tag_type_t tag, tag_value_t value,
-			    ...)
-{
-  int err;
-  ta_list ta;
-  ta_start(ta, tag, value);
-  err = stun_get_nattype(sh, NULL, NULL, ta_tags(ta));
-  ta_end(ta);
-  
-  return err; 
 }
 
 /**
@@ -1644,6 +1608,10 @@ static void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   enter;
 
   su_destroy_timer(t);
+  if (t == sd->sd_timer) {
+    sd->sd_timer = NULL;
+  }
+
   SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
 
   if (sd->sd_state != stun_tls_connecting)
@@ -2573,17 +2541,6 @@ int stun_process_error_response(stun_msg_t *msg)
   return 0;
 }
 
-/* Deprecated. Use stun_set_uname_pwd(). */
-int stun_handle_set_uname_pwd(stun_handle_t *sh,
-			      const char *uname,
-			      int len_uname,
-			      const char *pwd,
-			      int len_pwd)
-{
-  return stun_set_uname_pwd(sh, uname, len_uname,
-			    pwd, len_pwd);
-}
-
 /**
  * Sets values for USERNAME and PASSWORD stun fields 
  * for the handle.
@@ -2670,21 +2627,6 @@ int stun_atoaddr(int ai_family,
     su_freeaddrinfo(res);
 
   return err;
-}
-
-
-/* Deprecated. Use stun_get_lifetime() */
-int stun_handle_get_lifetime(stun_handle_t *sh,
-			     tag_type_t tag, tag_value_t value,
-			     ...)
-{
-  int err;
-  ta_list ta;
-  ta_start(ta, tag, value);
-  err = stun_get_lifetime(sh, NULL, NULL, ta_tags(ta));
-  ta_end(ta);
-  
-  return err; 
 }
 
 /**
@@ -2869,15 +2811,6 @@ int stun_message_length(void *data, int len, int end_of_message)
     return -1;
 }
 
-/* Deprecated. Use stun_process_message() */
-int stun_handle_process_message(stun_handle_t *sh, su_socket_t s, 
-				su_sockaddr_t *sa, socklen_t salen,
-				void *data, int len)
-{
-  return stun_process_message(sh, s, sa, salen,
-			      data, len);
-
-}
 /** Process incoming message */
 int stun_process_message(stun_handle_t *sh, su_socket_t s, 
 			 su_sockaddr_t *sa, socklen_t salen,
@@ -2928,47 +2861,6 @@ int stun_discovery_release_socket(stun_discovery_t *sd)
   return -1;
 }
 
-
-/** 
- * Unregisters socket from STUN handle event loop 
- */
-int stun_handle_release(stun_handle_t *sh, su_socket_t s)
-{
-  stun_discovery_t *sd;
-  int removed = 0;
-
-  assert (sh);
-
-  enter;
-
-  if (s < 0)
-    return errno = EFAULT, -1;
-
-  /* There can be several discoveries using the same socket. It is
-     still enough to deregister the socket in first of them */
-  
-  /* count how many discoveries are using 's' */
-  for (sd = sh->sh_discoveries; sd; sd = sd->sd_next) {
-    if (sd->sd_socket != s) 
-      continue;
-
-    if (!removed) {
-      su_root_deregister(sh->sh_root, sd->sd_index);
-      SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
-      ++removed;
-    }
-
-    sd->sd_index = -1; /* mark index as deregistered */
-  }
-
-  if (!removed) {
-    /* Oops, user passed wrong socket */
-    SU_DEBUG_3(("%s: socket given is not associated with STUN \n", __func__));
-    return -1;
-  }
-
-  return 0;
-}
 
 /** 
  * Creates a keepalive dispatcher for bound SIP sockets 
@@ -3192,4 +3084,125 @@ su_socket_t stun_discovery_get_socket(stun_discovery_t *sd)
 {
   assert(sd);
   return sd->sd_socket;
+}
+
+/* -------------------------------------------------------------------
+ * DEPRECATED functions
+ * -------------------------------------------------------------------
+ */
+
+/** 
+ * Deprecated. Unregisters socket from STUN handle event loop 
+ */
+int stun_handle_release(stun_handle_t *sh, su_socket_t s)
+{
+  stun_discovery_t *sd;
+  int removed = 0;
+
+  assert (sh);
+
+  enter;
+
+  if (s < 0)
+    return errno = EFAULT, -1;
+
+  /* There can be several discoveries using the same socket. It is
+     still enough to deregister the socket in first of them */
+  
+  /* count how many discoveries are using 's' */
+  for (sd = sh->sh_discoveries; sd; sd = sd->sd_next) {
+    if (sd->sd_socket != s) 
+      continue;
+
+    if (!removed) {
+      su_root_deregister(sh->sh_root, sd->sd_index);
+      SU_DEBUG_3(("%s: socket deregistered from STUN \n", __func__));
+      ++removed;
+    }
+
+    sd->sd_index = -1; /* mark index as deregistered */
+  }
+
+  if (!removed) {
+    /* Oops, user passed wrong socket */
+    SU_DEBUG_3(("%s: socket given is not associated with STUN \n", __func__));
+    return -1;
+  }
+
+  return 0;
+}
+
+/* Deprecated. Use stun_root(). */
+su_root_t *stun_handle_root(stun_handle_t *self)
+{
+  return stun_root(self);
+}
+
+/* Deprecated. Use stun_request_shared_secret() */
+int stun_handle_request_shared_secret(stun_handle_t *sh)
+{
+  return stun_obtain_shared_secret(sh, NULL, NULL, TAG_NULL());
+}
+
+/* Deprecated. Use stun_bind() */
+int stun_handle_bind(stun_handle_t *sh,
+		     tag_type_t tag, tag_value_t value,
+		     ...)
+{
+  int err;
+  ta_list ta;
+  ta_start(ta, tag, value);
+  err = stun_bind(sh, NULL, NULL, ta_tags(ta));
+  ta_end(ta);
+  
+  return err; 
+}
+
+/* Deprecated. Use stun_get_nattype() */
+int stun_handle_get_nattype(stun_handle_t *sh,
+			    tag_type_t tag, tag_value_t value,
+			    ...)
+{
+  int err;
+  ta_list ta;
+  ta_start(ta, tag, value);
+  err = stun_get_nattype(sh, NULL, NULL, ta_tags(ta));
+  ta_end(ta);
+  
+  return err; 
+}
+
+/* Deprecated. Use stun_set_uname_pwd(). */
+int stun_handle_set_uname_pwd(stun_handle_t *sh,
+			      const char *uname,
+			      int len_uname,
+			      const char *pwd,
+			      int len_pwd)
+{
+  return stun_set_uname_pwd(sh, uname, len_uname,
+			    pwd, len_pwd);
+}
+
+/* Deprecated. Use stun_get_lifetime() */
+int stun_handle_get_lifetime(stun_handle_t *sh,
+			     tag_type_t tag, tag_value_t value,
+			     ...)
+{
+  int err;
+  ta_list ta;
+  ta_start(ta, tag, value);
+  err = stun_get_lifetime(sh, NULL, NULL, ta_tags(ta));
+  ta_end(ta);
+  
+  return err; 
+}
+
+/* Deprecated. Use stun_process_message() */
+int stun_handle_process_message(stun_handle_t *sh, su_socket_t s, 
+				su_sockaddr_t *sa, socklen_t salen,
+				void *data, int len)
+{
+  return stun_process_message(sh, s, sa, salen,
+			      data, len);
+
 }
