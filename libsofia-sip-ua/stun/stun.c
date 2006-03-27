@@ -196,11 +196,11 @@ struct stun_handle_s
 
   char           *sh_domain;        /**< domain address for DNS-SRV lookups */
 
+  stun_dns_lookup_t  *sh_dns_lookup;
+  stun_action_t       sh_dns_pend_action; 
   stun_discovery_f    sh_dns_pend_cb;
   stun_discovery_magic_t *sh_dns_pend_ctx;
   tagi_t             *sh_dns_pend_tags;
-  stun_action_t       sh_dns_pend_action; 
-  stun_dns_lookup_t  *sh_dns_lookup;
 
 #if defined(HAVE_OPENSSL)
   SSL_CTX        *sh_ctx;           /**< SSL context for TLS */
@@ -332,7 +332,6 @@ static int priv_dns_queue_action(stun_handle_t *sh,
 				 stun_discovery_f sdf,
 				 stun_discovery_magic_t *magic,
 				 tag_type_t tag, tag_value_t value, ...);
-static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_discovery_t *sd);
 
 /**
  * Return su_root_t assigned to stun_handle_t.
@@ -996,13 +995,12 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
 		  sh->sh_dns_pend_action));
 
       switch(sh->sh_dns_pend_action) {
-	stun_discovery_t *sd = NULL;
       case stun_action_tls_query:
 	stun_obtain_shared_secret(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
 	break;
 
       case stun_action_binding_request:
-	stun_bind(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
+	stun_bind(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
 	break;
 
       case stun_action_test_lifetime:
@@ -1257,10 +1255,21 @@ int stun_test_nattype(stun_handle_t *sh,
   socklen_t bind_len;
   su_sockaddr_t *destination = NULL;
 
-  ta_start(ta, tag, value);
-
   enter;
 
+  if (!sh->sh_pri_addr[0].su_port) {
+    /* no STUN server address, perform a DNS-SRV lookup */
+   
+    ta_list ta;
+    ta_start(ta, tag, value);
+    SU_DEBUG_5(("Delaying STUN get-nat-type req. for DNS-SRV query.\n"));
+    err = priv_dns_queue_action(sh, stun_action_test_nattype, sdf, magic, ta_tags(ta));
+    ta_end(ta);
+       
+    return err;
+  }
+
+  ta_start(ta, tag, value);
   tl_gets(ta_args(ta),
 	  STUNTAG_SOCKET_REF(s),
 	  STUNTAG_REGISTER_EVENTS_REF(s_reg),
@@ -2669,6 +2678,18 @@ int stun_test_lifetime(stun_handle_t *sh,
   assert(sh);
 
   enter;
+
+  if (!sh->sh_pri_addr[0].su_port) {
+    /* no STUN server address, perform a DNS-SRV lookup */
+   
+    ta_list ta;
+    ta_start(ta, tag, value);
+    SU_DEBUG_5(("Delaying STUN get-lifetime req. for DNS-SRV query.\n"));
+    err = priv_dns_queue_action(sh, stun_action_test_lifetime, sdf, magic, ta_tags(ta));
+    ta_end(ta);
+       
+    return err;
+  }
 
   ta_start(ta, tag, value);
 
