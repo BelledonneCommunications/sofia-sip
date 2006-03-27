@@ -16,7 +16,7 @@ INCLUDES = 		-I$(srcdir)/../su -I../su -I$(srcdir)/../sresolv
 # Build targets
 
 stun_lib_sources = 	stun.c stun_common.c stun_dns.c
-stun_prog_targets =     stunc torture_stun lookup_stun_server
+stun_prog_targets =     stunc lookup_stun_server
 
 noinst_LTLIBRARIES = 	libstun.la
 
@@ -39,19 +39,10 @@ LDADD =			libstun.la \
 			../sresolv/libsresolv.la \
 			../su/libsu.la
 
-torture_stun_LDFLAGS = 	-static
-
 lookup_stun_server_LDADD = libstun.la ../sresolv/libsresolv.la ../su/libsu.la
 
 # ----------------------------------------------------------------------
 # tests
-# XXX: torture_stun cannot be used as a automake test as is
-#TESTS = 		torture_stun
-
-# ----------------------------------------------------------------------
-# tests
-# XXX: torture_stun cannot be used as a automake test as is
-#TESTS = 		torture_stun
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
