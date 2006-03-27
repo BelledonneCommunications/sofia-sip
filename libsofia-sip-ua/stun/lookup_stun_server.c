@@ -42,22 +42,28 @@
 #define STUN_MAGIC_T su_root_t
 #include <sofia-sip/stun.h>
 
+static char* g_domain = NULL;
 
 static void lookup_cb(stun_dns_lookup_t *self,
 		      su_root_t *root)
 {
-  const char *tls_target = NULL, *udp_target = NULL;
-  uint16_t tls_port = 0, udp_port = 0;
-  int res;
+# define RESULT(x) (x == 0 ? "OK" : "ERRORS")
 
-  res = stun_dns_lookup_get_results(self, 
-				    &tls_target, &tls_port, 
-				    &udp_target, &udp_port);
-  if (res == 0) {
-    printf("STUN DNS-SRV: stun (tcp) at %s:%u.\n", tls_target, tls_port); 
-    printf("STUN DNS-SRV: stun (udp) at %s:%u.\n", udp_target, udp_port); 
-  }
-  
+  const char *tcp_target = NULL, *udp_target = NULL, *stp_target = NULL;
+  uint16_t tcp_port = 0, udp_port = 0, stp_port = 0;
+  int res = 0;
+
+  printf("STUN DNS-SRV lookup results:\n"); 
+
+  res = stun_dns_lookup_udp_addr(self, &udp_target, &udp_port);
+  printf(" _stun._udp.%s:     %s:%u (%s).\n", g_domain, udp_target, udp_port, RESULT(res)); 
+
+  res = stun_dns_lookup_tcp_addr(self, &tcp_target, &tcp_port);
+  printf(" _stun._tcp.%s:     %s:%u (%s).\n", g_domain, tcp_target, tcp_port, RESULT(res)); 
+
+  res = stun_dns_lookup_stp_addr(self, &stp_target, &stp_port);
+  printf(" _stun-tls._tcp.%s: %s:%u (%s).\n", g_domain, stp_target, stp_port, RESULT(res)); 
+
   su_root_break(root);
 }
 
@@ -65,11 +71,13 @@ int main(int argc, char *argv[])
 {
   su_root_t *root;
   stun_dns_lookup_t *lookup;
-
+  
   if (argc < 2) {
     printf("usage: ./lookup_stun_server <domain>\n");
     return -1;
   }
+
+  g_domain = argv[1];
 
   /* step: initialize sofia su OS abstraction layer */
   su_init();
@@ -78,13 +86,19 @@ int main(int argc, char *argv[])
   root = su_root_create(NULL);
 
   /* step: initiate the DNS-SRV lookup */
-  lookup = stun_dns_lookup(root, root, lookup_cb, argv[1]);
+  lookup = stun_dns_lookup(root, root, lookup_cb, g_domain);
  
-  /* step: enter the main loop (break fro lookup_cb()) */
-  su_root_run(root);
+  if (lookup) {
+    /* step: enter the main loop (break fro lookup_cb()) */
+    su_root_run(root);
 
-  /* step: free any allocated resources */
-  stun_dns_lookup_destroy(lookup);
+    /* step: free any allocated resources */
+    stun_dns_lookup_destroy(lookup);
+  }
+  else {
+    printf("ERROR: failed to create lookup object.\n");
+  }
+
   su_root_destroy(root);
   su_deinit();
 

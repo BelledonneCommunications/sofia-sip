@@ -1,5 +1,9 @@
 2006-03-27  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
+	* stun.h: Added stun_server_address().
+
+	* stun.h: Added stun_dns_lookup*() interface.
+
 	* stun.h: Renamed get_nattype to test_nattype and
 	get_lifetime to test_lifetime. Removed deprecated
 	wrappers.

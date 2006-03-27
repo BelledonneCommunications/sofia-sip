@@ -37,7 +37,7 @@
 #include "config.h"
 #endif
 
-#define STUN_SRV_SERVICE_TLS "_stun._tcp"
+#define STUN_SRV_SERVICE_TCP "_stun._tcp"
 #define STUN_SRV_SERVICE_UDP "_stun._udp"
 
 #include <sofia-sip/stun.h>
@@ -57,9 +57,9 @@ struct stun_dns_lookup_s {
   sres_resolver_t   *stun_sres;
   int                stun_socket;
   stun_dns_lookup_f  stun_cb;
-  char              *stun_tls_target;
+  char              *stun_tcp_target;
   char              *stun_udp_target;
-  uint16_t           stun_tls_port;
+  uint16_t           stun_tcp_port;
   uint16_t           stun_udp_port;
   unsigned           stun_state:2;       /**< bit0:udp, bit1:tcp */
 };
@@ -87,15 +87,15 @@ static void priv_sres_cb(stun_dns_lookup_t *self,
   for (i = 0; answer[i] != NULL; i++) {
     sres_srv_record_t *rr = (sres_srv_record_t *) answer[i]->sr_srv;
     if (rr && rr->srv_record && rr->srv_record->r_type == sres_type_srv) {
-      const char *tls_name = STUN_SRV_SERVICE_TLS;
+      const char *tcp_name = STUN_SRV_SERVICE_TCP;
       const char *udp_name = STUN_SRV_SERVICE_UDP;
       if ((self->stun_state & stun_dns_tls) == 0 &&
-	  strncmp(rr->srv_record->r_name, tls_name, strlen(tls_name)) == 0) {
-	self->stun_tls_target = su_strdup(self->stun_home, rr->srv_target);
-	self->stun_tls_port = rr->srv_port;
+	  strncmp(rr->srv_record->r_name, tcp_name, strlen(tcp_name)) == 0) {
+	self->stun_tcp_target = su_strdup(self->stun_home, rr->srv_target);
+	self->stun_tcp_port = rr->srv_port;
 	self->stun_state |= stun_dns_tls;
 	SU_DEBUG_5(("%s: stun (tcp) for domain %s is at %s:%u.\n", 
-		    __func__, rr->srv_record->r_name, self->stun_tls_target, self->stun_tls_port)); 
+		    __func__, rr->srv_record->r_name, self->stun_tcp_target, self->stun_tcp_port)); 
       }
       else if ((self->stun_state & stun_dns_udp) == 0 &&
 	       strncmp(rr->srv_record->r_name, udp_name, strlen(udp_name)) == 0) {
@@ -143,9 +143,9 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
   self->stun_sres = sres_resolver_create(root, NULL, TAG_END());
   if (self->stun_sres) {
     socket = sres_resolver_root_socket(self->stun_sres);
-    if (socket > 0) {
+    if (socket >= 0) {
       char *query_udp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_UDP, domain);
-      char *query_tcp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_TLS, domain);
+      char *query_tcp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_TCP, domain);
       
       self->stun_socket = socket;
 
@@ -154,8 +154,8 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
     }
     else {
       sres_resolver_destroy(self->stun_sres);
-      su_free(NULL, self), self = NULL;
       self->stun_socket = -1;
+      su_free(NULL, self), self = NULL;
     }
   }
   else {
@@ -163,37 +163,6 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
   }
   
   return self;
-}
-
-/**
- * Fetches the results of a completed STUN DNS-SRV lookup.
- *
- * @param self context pointer
- * @param tls_target location where to stored the 'target'
- *        SRV field for stun service (tcp)
- * @param tls_port location where to store port number
- * @param udp_target location where to stored the 'target'
- *        SRV field for stun service (udp)
- * @param udp_port location where to store port number
- *
- * @return 0 on success, non-zero otherwise
- */ 
-int stun_dns_lookup_get_results(stun_dns_lookup_t *self, 
-				const char **tls_target,
-				uint16_t *tls_port,
-				const char **udp_target,
-				uint16_t *udp_port)
-{
-  int result = -1;
-  if (self->stun_state == stun_dns_done) {
-    if (tls_target) *tls_target = self->stun_tls_target;
-    if (tls_port) *tls_port = self->stun_tls_port;
-    if (udp_target) *udp_target = self->stun_udp_target;
-    if (udp_port) *udp_port = self->stun_udp_port;
-    result = 0;
-  }
-
-  return result;
 }
 
 /**
@@ -207,4 +176,68 @@ void stun_dns_lookup_destroy(stun_dns_lookup_t *self)
   su_home_destroy(self->stun_home);
   su_free(NULL, self);
 }
+
+/**
+ * Fetches the results of a completed STUN DNS-SRV lookup
+ * for "_stun._udp" service (RFC3489/3489bis).
+ *
+ * @param self context pointer
+ * @param target location where to stored the 'target'
+ *        SRV field for stun service
+ * @param port location where to store port number
+ *
+ * @return 0 on success, non-zero otherwise
+ */ 
+int stun_dns_lookup_udp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port)
+{
+  int result = -1;
+  if (self->stun_state == stun_dns_done) {
+    if (target) *target = self->stun_udp_target;
+    if (port) *port = self->stun_udp_port;
+    result = 0;
+  }
+
+  return result;
+}
+
+/**
+ * Fetches the results of a completed STUN DNS-SRV lookup
+ * for "_stun._tcp" service (RFC3489).
+ *
+ * @param self context pointer
+ * @param target location where to stored the 'target'
+ *        SRV field for stun service
+ * @param port location where to store port number
+ *
+ * @return 0 on success, non-zero otherwise
+ */ 
+int stun_dns_lookup_tcp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port)
+{
+  int result = -1;
+  if (self->stun_state == stun_dns_done) {
+    if (target) *target = self->stun_tcp_target;
+    if (port) *port = self->stun_tcp_port;
+    result = 0;
+  }
+
+  return result;
+}
+
+/**
+ * Fetches the results of a completed STUN DNS-SRV lookup
+ * for "_stun._udp" service (3489bis, "Short-Term Password").
+ *
+ * @param self context pointer
+ * @param target location where to stored the 'target'
+ *        SRV field for stun service
+ * @param port location where to store port number
+ *
+ * @return 0 on success, non-zero otherwise
+ */ 
+int stun_dns_lookup_stp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port)
+{
+  /* XXX: not implemented */
+  return -1;
+}
+
 

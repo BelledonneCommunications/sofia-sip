@@ -973,9 +973,7 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
   int res;
   stun_handle_t *sh = (stun_handle_t *)magic;
 
-  res = stun_dns_lookup_get_results(self, 
-				    NULL, NULL, 
-				    &udp_target, &udp_port);
+  res = stun_dns_lookup_udp_addr(self, &udp_target, &udp_port);
   if (res == 0) {
     /* XXX: assumption that same host and port used for UDP/TLS */
     if (udp_target) {
@@ -1016,6 +1014,7 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
 	SU_DEBUG_5(("Warning: unknown pending DNS-SRV action.\n"));
       }
 
+      su_free(sh->sh_home, sh->sh_dns_pend_tags), sh->sh_dns_pend_tags = NULL;
       sh->sh_dns_pend_action = 0;
     }
   }
@@ -1032,10 +1031,12 @@ static int priv_dns_queue_action(stun_handle_t *sh,
 				 tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
+
   if (!sh->sh_dns_pend_action) {
     if (!sh->sh_dns_lookup) {
       sh->sh_dns_lookup = stun_dns_lookup((stun_magic_t*)sh, sh->sh_root, priv_lookup_cb, sh->sh_domain);
       ta_start(ta, tag, value);
+      assert(sh->sh_dns_pend_tags == NULL);
       sh->sh_dns_pend_tags = tl_tlist(sh->sh_home, 
 				      ta_tags(ta));
       ta_end(ta);

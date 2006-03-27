@@ -232,12 +232,11 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
 				   su_root_t *root,
 				   stun_dns_lookup_f func, 
 				   const char *domain);
-int stun_dns_lookup_get_results(stun_dns_lookup_t *self, 
-				const char **tls_target,
-				uint16_t *tls_port,
-				const char **udp_target,
-				uint16_t *udp_port);
 void stun_dns_lookup_destroy(stun_dns_lookup_t *self);
+
+int stun_dns_lookup_udp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
+int stun_dns_lookup_tcp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
+int stun_dns_lookup_stp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
 
 /* --------------------------------------------------------------------
  * Deprecated functions. These are supported with limited
