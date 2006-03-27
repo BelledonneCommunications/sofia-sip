@@ -115,6 +115,9 @@ struct stun_discovery_s {
   stun_discovery_f        sd_callback;
   stun_discovery_magic_t *sd_magic;
 
+  tagi_t          *sd_tags;          /** stored tags for the discovery */
+
+
   su_addrinfo_t    sd_pri_info;      /**< server primary info */
   su_sockaddr_t    sd_pri_addr[1];   /**< server primary address */
 
@@ -613,6 +616,8 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
   stun_discovery_t *sd;
   /* stun_request_t *req; */
 
+  ta_list ta;
+
   assert(sh);
 
   enter;
@@ -683,6 +688,10 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
     STUN_ERROR(errno, su_root_register);
     return -1;
   }
+
+  ta_start(ta, tag, value);
+  sd->sd_tags = tl_adup(sh->sh_home, ta_args(ta));
+  ta_end(ta);
 
   sd->sd_state = stun_tls_connecting;
 
@@ -1003,8 +1012,9 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
 		  sh->sh_dns_pend_action));
 
       switch(sh->sh_dns_pend_action) {
+	stun_discovery_t *sd = NULL;
       case stun_action_tls_query:
-	stun_obtain_shared_secret(sh);
+	stun_obtain_shared_secret(sh, NULL, NULL, TAG_NEXT(sd->sd_tags));
 	break;
 
       case stun_action_binding_request:
