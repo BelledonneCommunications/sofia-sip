@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -22,10 +22,11 @@
  *
  */
 
-/**@CFILE sres_sync.c
- * @brief Synchronous interface for Sofia DNS Resolver implementation.
+/**@CFILE sres_blocking.c
+ * @brief Blocking interface for Sofia DNS Resolver implementation.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @date Created: Fri Mar 24 15:23:08 EET 2006 ppessi
  */
 
 #include "config.h"
@@ -37,6 +38,10 @@
 #endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #endif
 
 typedef struct sres_blocking_s sres_blocking_t;
@@ -50,7 +55,7 @@ typedef struct sres_blocking_context_s sres_blocking_context_t;
 
 #if HAVE_POLL
 #include <poll.h>
-#elif HAVE_SELECT
+#elif HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
 

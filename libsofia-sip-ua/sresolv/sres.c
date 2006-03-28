@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -22,14 +22,14 @@
  *
  */
 
-/**@CFILE sresolv.c
- * @brief Sofia Asynchronous DNS Resolver implementation.
+/**@CFILE sres.c
+ * @brief Sofia DNS Resolver implementation.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>
- * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>
+ * @author Mikko Haataja
  *
- * @todo The resolver should allow handling arbitrary records.
+ * @todo The resolver should allow handling arbitrary records, too.
  */
 
 #include "config.h"
@@ -41,6 +41,10 @@
 #endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #endif
 #include <time.h>
 

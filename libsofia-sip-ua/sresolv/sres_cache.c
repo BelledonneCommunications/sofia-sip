@@ -1,3 +1,37 @@
+/*
+ * This file is part of the Sofia-SIP package
+ *
+ * Copyright (C) 2006 Nokia Corporation.
+ *
+ * Contact: Pekka Pessi <pekka.pessi@nokia.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+/**@CFILE sres_cache.c
+ * @brief Cache for Sofia DNS Resolver.
+ * 
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Teemu Jalava <Teemu.Jalava@nokia.com>
+ * @author Mikko Haataja
+ *
+ * @todo The resolver should allow handling arbitrary records, too.
+ */
+
 #include "config.h"
 
 #if HAVE_STDINT_H
@@ -8,15 +42,17 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#include <sofia-sip/su.h>
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #include "sofia-resolv/sres_cache.h"
 #include "sofia-resolv/sres_record.h"
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
-
-#include "sofia-sip/htable.h"
+#include <sofia-sip/htable.h>
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -372,4 +408,3 @@ void sres_cache_clean(sres_cache_t *cache, time_t now)
 }
 
 HTABLE_BODIES(sres_htable, ht, sres_rr_hash_entry_t, SRES_HENTRY_HASH);
-

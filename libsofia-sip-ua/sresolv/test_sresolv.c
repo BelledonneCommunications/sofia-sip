@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -26,7 +26,7 @@
  *
  * @CFILE test_sresolv.c Test module for sresolv
  * 
- * @author Mikko Haataja <ext-Mikko.A.Haataja@nokia.com>,
+ * @author Mikko Haataja
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
  */
@@ -42,8 +42,13 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #include <sofia-resolv/sres.h>
+#include <sofia-resolv/sres_async.h>
 #include <sofia-resolv/sres_record.h>
 
 #include <sofia-sip/su_alloc.h>
@@ -60,7 +65,7 @@
 
 #if HAVE_POLL
 #include <poll.h>
-#elif HAVE_SELECT
+#elif HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
 
