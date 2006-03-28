@@ -48,6 +48,15 @@
 #include "sofia-sip/stun.h"
 #endif
 
+#if defined(HAVE_OPENSSL)
+/* avoid krb5-related build failures */
+#define OPENSSL_NO_KRB5
+#include <openssl/sha.h>
+#include <openssl/hmac.h>
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+#endif
+
 #ifndef STUN_COMMON_H
 #include "sofia-sip/stun_common.h"
 #endif
