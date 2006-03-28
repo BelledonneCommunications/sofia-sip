@@ -978,50 +978,55 @@ static void priv_lookup_cb(stun_dns_lookup_t *self,
   stun_handle_t *sh = (stun_handle_t *)magic;
 
   res = stun_dns_lookup_udp_addr(self, &udp_target, &udp_port);
-  if (res == 0) {
+  if (res == 0 && udp_target) {
     /* XXX: assumption that same host and port used for UDP/TLS */
-    if (udp_target) {
+    stun_atoaddr(sh->sh_home, AF_INET, &sh->sh_pri_info, udp_target);
+    
+    if (udp_port) 
+      sh->sh_pri_addr[0].su_port = htons(udp_port);
+    else
+      sh->sh_pri_addr[0].su_port = htons(STUN_DEFAULT_PORT);
 
-      stun_atoaddr(sh->sh_home, AF_INET, &sh->sh_pri_info, udp_target);
+    /* step: now that server address is known, continue 
+     *       the pending action */
+
+    SU_DEBUG_5(("STUN server address found, running queue actions (%d).\n",
+		sh->sh_dns_pend_action));
+
+    switch(sh->sh_dns_pend_action) {
+    case stun_action_tls_query:
+      stun_obtain_shared_secret(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
+      break;
+
+    case stun_action_binding_request:
+      stun_bind(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
+      break;
       
-      if (udp_port) 
-	sh->sh_pri_addr[0].su_port = htons(udp_port);
-      else
-	sh->sh_pri_addr[0].su_port = htons(STUN_DEFAULT_PORT);
-
-      /* step: now that server address is known, continue 
-       *       the pending action */
-
-
-      SU_DEBUG_5(("STUN server address found, running queue actions (%d).\n",
-		  sh->sh_dns_pend_action));
-
-      switch(sh->sh_dns_pend_action) {
-      case stun_action_tls_query:
-	stun_obtain_shared_secret(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
-	break;
-
-      case stun_action_binding_request:
-	stun_bind(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
-	break;
-
-      case stun_action_test_lifetime:
-	stun_test_lifetime(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
-	break;
-
-      case stun_action_test_nattype:
-	stun_test_nattype(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
-	break;
-
-
-      default:
-	SU_DEBUG_5(("Warning: unknown pending DNS-SRV action.\n"));
+    case stun_action_test_lifetime:
+      stun_test_lifetime(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
+      break;
+      
+    case stun_action_test_nattype:
+      stun_test_nattype(sh, sh->sh_dns_pend_cb, sh->sh_dns_pend_ctx, TAG_NEXT(sh->sh_dns_pend_tags));
+      break;
+      
+    default:
+      SU_DEBUG_5(("Warning: unknown pending STUN DNS-SRV action.\n"));
+    }
       }
-
-      su_free(sh->sh_home, sh->sh_dns_pend_tags), sh->sh_dns_pend_tags = NULL;
-      sh->sh_dns_pend_action = 0;
+  else {
+    /* DNS lookup failed */
+    SU_DEBUG_5(("Warning: STUN DNS-SRV lookup failed.\n"));
+    if (sh->sh_dns_pend_cb) {
+      sh->sh_dns_pend_cb(sh->sh_dns_pend_ctx, sh, NULL,
+			 sh->sh_dns_pend_action, stun_error);
     }
   }
+
+  su_free(sh->sh_home, sh->sh_dns_pend_tags), sh->sh_dns_pend_tags = NULL;
+  sh->sh_dns_pend_action = 0;
+  sh->sh_dns_pend_cb = NULL;
+  sh->sh_dns_pend_ctx = NULL;
 }
 
 /**
