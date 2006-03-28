@@ -38,6 +38,7 @@
 #include "config.h" 
 
 #include <assert.h>
+#include <string.h>
 
 #define SU_ROOT_MAGIC_T struct stun_magic_t
 
@@ -1695,7 +1696,7 @@ int stun_make_sharedsecret_req(stun_msg_t *msg)
   msg->stun_hdr.msg_type = SHARED_SECRET_REQUEST;
   msg->stun_hdr.msg_len = 0; /* actual len computed by
 				stun_send_message */
-  for (i = 0; i < 8; i++) {
+  for (i = 0; i < STUN_TID_BYTES; i++) {
     msg->stun_hdr.tran_id[i] = (1 + rand() % RAND_MAX_16);
   } 
   
@@ -1715,12 +1716,9 @@ int stun_make_sharedsecret_req(stun_msg_t *msg)
   memcpy(msg->enc_buf.data+len, &tmp, sizeof(tmp));
   len+=sizeof(tmp);
 
-  for (i = 0; i < 8; i++) {
-    tmp = htons(msg->stun_hdr.tran_id[i]);
-    memcpy(msg->enc_buf.data+len, &tmp, sizeof(tmp));
-    len+=sizeof(tmp);
-  }
-  
+  memcpy(msg->enc_buf.data+len, msg->stun_hdr.tran_id, STUN_TID_BYTES);
+  len+=STUN_TID_BYTES;
+    
   return 0;
 }
 
@@ -1742,7 +1740,7 @@ stun_action_t get_action(stun_request_t *req)
 
 /* Find request from the request queue, based on TID */
 static inline
-stun_request_t *find_request(stun_handle_t *self, void *id)
+stun_request_t *priv_find_request(stun_handle_t *self, void *id)
 {
   void *match;
   stun_request_t *req = NULL;
@@ -2506,7 +2504,7 @@ int stun_make_binding_req(stun_handle_t *sh,
   msg->stun_hdr.msg_type = BINDING_REQUEST;
   msg->stun_hdr.msg_len = 0; /* actual len computed by
 				stun_send_message */
-  for (i = 0; i < 8; i++) {
+  for (i = 0; i < STUN_TID_BYTES; i++) {
     msg->stun_hdr.tran_id[i] = (1 + rand() % RAND_MAX_16);
   } 
   
@@ -3105,7 +3103,7 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
   resp.stun_hdr.msg_type = BINDING_RESPONSE;
   resp.stun_hdr.msg_len = 0; /* actual len computed later */
 
-  for (i = 0; i < 8; i++) {
+  for (i = 0; i < STUN_TID_BYTES; i++) {
     resp.stun_hdr.tran_id[i] = req->stun_hdr.tran_id[i];
   }
   p = &(resp.stun_attr);

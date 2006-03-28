@@ -99,6 +99,8 @@ SOFIA_BEGIN_DECLS
 
 #define RAND_MAX_16                     65535
 
+#define STUN_TID_BYTES                  16
+
 /* other protocol specific parameters */
 #define STUN_MAX_RETRX                  5 /* should be 8? */
 #define STUN_MAX_RETRX_INT              1600  /**< max retrx interval in

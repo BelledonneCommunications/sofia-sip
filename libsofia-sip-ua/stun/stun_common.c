@@ -82,7 +82,7 @@ int stun_parse_message(stun_msg_t *msg)
   p = msg->enc_buf.data;
   msg->stun_hdr.msg_type = get16(p, 0);
   msg->stun_hdr.msg_len = get16(p, 2); 
-  memcpy(msg->stun_hdr.tran_id, p + 4, 16);
+  memcpy(msg->stun_hdr.tran_id, p + 4, STUN_TID_BYTES);
 
   SU_DEBUG_5(("%s: Parse STUN message: Length = %d\n", __func__,
 	      msg->stun_hdr.msg_len));
@@ -688,7 +688,7 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
     /* convert to binary format for transmission */
     set16(buf, 0, msg->stun_hdr.msg_type);
     set16(buf, 2, msg->stun_hdr.msg_len);
-    memcpy(buf + 4, msg->stun_hdr.tran_id, 16);
+    memcpy(buf + 4, msg->stun_hdr.tran_id, STUN_TID_BYTES);
 
     len = 20;
 
