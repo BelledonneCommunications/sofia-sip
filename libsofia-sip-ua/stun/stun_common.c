@@ -33,7 +33,7 @@
  * 
  */
 
-#ifndef WIN32
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -615,7 +615,7 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
 }  
 
 
-/** send a STUN message.
+/** Send a STUN message.
  *  This will convert the stun_msg_t to the binary format based on the
  *  spec
  */
