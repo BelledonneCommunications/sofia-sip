@@ -173,23 +173,21 @@ void tport_stun_bind_done(tport_primary_t *pri,
 			  stun_discovery_t *sd)
 {
   tport_t *self = pri->pri_primary;
-  su_sockaddr_t *su = NULL;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   su_socket_t socket;
+  su_sockaddr_t *su = self->tp_addr;
+  su_addrinfo_t *ai = self->tp_addrinfo;
 
   socket = stun_discovery_get_socket(sd);
   assert(pri->pri_primary->tp_socket == socket);
 
-  su = stun_discovery_get_address(sd);
-  if (su) {
-    SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
-		inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr)),
-		(unsigned) ntohs(su->su_port)));
-    
-    SU_DEBUG_9(("%s: stun_bind() ok\n", __func__));
+  if (stun_discovery_get_address(sd, su, &ai->ai_addrlen) == 0) {
+    char ipname[SU_ADDRSIZE + 2] = { 0 };
+    ai->ai_addr = (void *)su;
 
-    memcpy(self->tp_addr, su, self->tp_addrinfo->ai_addrlen = SU_ADDRLEN(su));
-    self->tp_addrinfo->ai_addr = (void *)self->tp_addr;
+    SU_DEBUG_5(("%s: stun_bind() ok: local address NATed as %s:%u\n", 
+		__func__,
+		inet_ntop(su->su_family, SU_ADDR(su), ipname, sizeof(ipname)),
+		(unsigned) ntohs(su->su_port)));
   }
 
   /* Send message to calling application indicating 
