@@ -138,7 +138,8 @@ AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
 ],[
 dnl no winsock2
 SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
-AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h])
+AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h \
+		  sys/select.h])
 AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
                   net/if.h net/if_types.h ifaddr.h netpacket/packet.h],,,
 		[
@@ -338,7 +339,7 @@ AC_SEARCH_LIBS(getaddrinfo, xnet socket nsl)
 
 AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm \
                 socketpair gethostname gethostbyname getipnodebyname \
-                poll epoll if_nameindex \
+                poll epoll select if_nameindex \
 	        getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs \
                 getline getdelim getpass])
 # getline getdelim getpass are _GNU_SOURCE stuff
@@ -407,15 +408,6 @@ case "$target" in
 	[Define this as 1 if you have /proc/net/if_inet6 control file]) ;;
 esac
 
-# ===========================================================================
-# Check for partial su distibutions
-# ===========================================================================
-
-if test -r ${srcdir}/libsofia-sip-ua/su/sofia-sip/su_wait.h ; then
-  AC_DEFINE(HAVE_SU_WAIT_H, 1, 
-            [Define to 1 if you have the <sofia-sip/su_wait.h> header file.])
-fi
-
 AM_CONFIG_HEADER([libsofia-sip-ua/su/sofia-sip/su_configure.h])
 
 # End of SAC_SOFIA_SU
@@ -442,7 +434,7 @@ _ACEOF
 ])
 
 AC_DEFUN([SAC_REPLACE_FUNCS],[dnl
-AC_CHECK_FUNCS($1,ifelse([$2], , :, [$2]),[dnl
+AC_CHECK_FUNCS([$1],ifelse([$2], , :,[$2]),[dnl
 case "$REPLACE_LIBADD" in
     "$ac_func.lo"   | \
   *" $ac_func.lo"   | \
