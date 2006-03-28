@@ -133,7 +133,6 @@ typedef enum stun_state_e {
 /* Per discovery */
 typedef void (*stun_discovery_f)(stun_discovery_magic_t *magic,
 				 stun_handle_t *sh,
-				 stun_request_t *req,
 				 stun_discovery_t *sd,
 				 stun_action_t action,
 				 stun_state_t event);
@@ -255,7 +254,6 @@ void stun_mini_request(stun_mini_t *server, int socket,
 /* Used if no stun_discovery_f specified for a discovery  */
 typedef void (*stun_event_f)(stun_magic_t *magic,
 			     stun_handle_t *sh,
-			     stun_request_t *req,
 			     stun_discovery_t *sd,
 			     stun_action_t action,
 			     stun_state_t event);

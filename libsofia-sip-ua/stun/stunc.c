@@ -45,6 +45,13 @@ typedef struct stunc_s stunc_t;
 #include "sofia-sip/stun_tag.h"
 #include <sofia-sip/su.h>
 
+enum {
+  do_secret = 1,
+  do_bind = 2,
+  do_nat_check = 4,
+  do_life_check = 8,
+};
+
 
 #ifndef SU_DEBUG
 #define SU_DEBUG 0
@@ -52,24 +59,28 @@ typedef struct stunc_s stunc_t;
 #define SU_LOG (stun_log)
 #include <sofia-sip/su_debug.h>
 
-char const *name = "stunc";
-
-void usage(int exitcode)
+void usage(char *name)
 {
-  fprintf(stderr, "usage: %s server <use message integrity> <determine NAT type>\n", name);
-  exit(exitcode);
+  fprintf(stderr, "usage: %s <server> [-s] [-b] [-n] [-l]\n", name);
+  exit(1);
 }
 
 struct stunc_s {
   su_socket_t  sc_socket;
-  int          sc_test_nattype;
+  int          sc_flags;
 };
 
 
 static
+void stunc_lifetime_cb(stunc_t *stunc,
+		       stun_handle_t *sh,
+		       stun_discovery_t *sd,
+		       stun_action_t action,
+		       stun_state_t event);
+
+static
 void stunc_nattype_cb(stunc_t *stunc,
 		      stun_handle_t *sh,
-		      stun_request_t *req,
 		      stun_discovery_t *sd,
 		      stun_action_t action,
 		      stun_state_t event);
@@ -77,7 +88,6 @@ void stunc_nattype_cb(stunc_t *stunc,
 static
 void stunc_bind_cb(stunc_t *stunc,
 		   stun_handle_t *sh,
-		   stun_request_t *req,
 		   stun_discovery_t *sd,
 		   stun_action_t action,
 		   stun_state_t event);
@@ -85,7 +95,6 @@ void stunc_bind_cb(stunc_t *stunc,
 static
 void stunc_ss_cb(stunc_t *stunc,
 		 stun_handle_t *sh,
-		 stun_request_t *req,
 		 stun_discovery_t *sd,
 		 stun_action_t action,
 		 stun_state_t event)
@@ -93,50 +102,39 @@ void stunc_ss_cb(stunc_t *stunc,
   int err;
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
+  stunc->sc_flags &= ~do_secret;
+  if (!stunc->sc_flags)
+    su_root_break(stun_handle_root(sh));
+
   switch (event) {
   case stun_tls_done:
-    err = stun_bind(sh, stunc_bind_cb, stunc,
-		    STUNTAG_SOCKET(stunc->sc_socket),
-		    STUNTAG_REGISTER_EVENTS(1),
-		    TAG_NULL());
-
-    if (err < 0) {
-      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
-      su_root_break(stun_handle_root(sh));
+    if (stunc->sc_flags & do_bind) {
+      err = stun_bind(sh, stunc_bind_cb, stunc,
+		      STUNTAG_SOCKET(stunc->sc_socket),
+		      STUNTAG_REGISTER_EVENTS(1),
+		      TAG_NULL());
+    
+      if (err < 0) {
+	SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
+	su_root_break(stun_handle_root(sh));
+      }
     }
-
+    break;
+    
   case stun_tls_connection_failed:
-    SU_DEBUG_0(("%s: Obtaining shared secret failed, starting binding process.\n",
+    SU_DEBUG_0(("%s: Obtaining shared secret failed.\n",
 		__func__));
+    stunc->sc_flags &= ~do_bind;
 
-    err = stun_bind(sh, stunc_bind_cb, stunc,
-		    STUNTAG_SOCKET(stunc->sc_socket),
-		    STUNTAG_REGISTER_EVENTS(1),
-		    TAG_NULL());
-
-    if (err < 0) {
-      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
-      su_root_break(stun_handle_root(sh));
-    }
     break;
 
   case stun_tls_connection_timeout:
-    SU_DEBUG_0(("%s: Timeout when obtaining shared secret, starting binding process.\n",
+    SU_DEBUG_0(("%s: Timeout when obtaining shared secret.\n",
 		__func__));
-
-    err = stun_bind(sh, stunc_bind_cb, stunc,
-		    STUNTAG_SOCKET(stunc->sc_socket),
-		    STUNTAG_REGISTER_EVENTS(1),
-		    TAG_NULL());
-
-    if (err < 0) {
-      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
-      su_root_break(stun_handle_root(sh));
-    }
+    stunc->sc_flags &= ~do_bind;
     break;
 
   default:
-    su_root_break(stun_handle_root(sh));
     break;
   }
 
@@ -147,18 +145,20 @@ void stunc_ss_cb(stunc_t *stunc,
 static
 void stunc_bind_cb(stunc_t *stunc,
 		   stun_handle_t *sh,
-		   stun_request_t *req,
 		   stun_discovery_t *sd,
 		   stun_action_t action,
 		   stun_state_t event)
 {
   su_sockaddr_t sa[1];
   char ipaddr[48];
-  char const *nattype;
-  int lifetime, err;
   socklen_t addrlen;
 
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
+
+  stunc->sc_flags &= ~do_bind;
+
+  if (!stunc->sc_flags)
+    su_root_break(stun_handle_root(sh));
 
   switch (event) {
   case stun_bind_done:
@@ -175,19 +175,6 @@ void stunc_bind_cb(stunc_t *stunc,
 			  ipaddr, sizeof(ipaddr)),
 		(unsigned) ntohs(sa->su_port)));
 
-    if (stunc->sc_test_nattype) {
-      err = stun_test_nattype(sh, stunc_nattype_cb, stunc,
-			      STUNTAG_REGISTER_EVENTS(1),
-			      STUNTAG_SOCKET(stunc->sc_socket),
-			      TAG_NULL());
-
-      if (err < 0) {
-	SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_test_nattype()"));
-	su_root_break(stun_handle_root(sh));
-      }
-    }
-    else
-      su_root_break(stun_handle_root(sh));
 
 #if 0
     if (stun_handle_test_lifetime(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
@@ -199,18 +186,10 @@ void stunc_bind_cb(stunc_t *stunc,
   break;
 
   case stun_discovery_timeout:
-    if (action == stun_action_binding_request) {
-      su_root_break(stun_handle_root(sh));
-    }
-    break;
-
   case stun_bind_error:
   case stun_error:
-/*     su_root_break(stun_handle_root(sh)); */
-
   case stun_bind_timeout:
   default:
-    su_root_break(stun_handle_root(sh));
     break;
   }
 
@@ -221,33 +200,60 @@ void stunc_bind_cb(stunc_t *stunc,
 static
 void stunc_nattype_cb(stunc_t *stunc,
 		      stun_handle_t *sh,
-		      stun_request_t *req,
 		      stun_discovery_t *sd,
 		      stun_action_t action,
 		      stun_state_t event)
 {
-  su_sockaddr_t sa[1];
-  char ipaddr[48];
-  char const *nattype;
-  int lifetime;
-  socklen_t addrlen;
-
   SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
 
-  switch (event) {
+  stunc->sc_flags &= ~do_nat_check;
 
+  if (!stunc->sc_flags)
+    su_root_break(stun_handle_root(sh));
+
+  switch (event) {
   case stun_discovery_timeout:
-    if (action == stun_action_binding_request) {
-      su_root_break(stun_handle_root(sh));
-    }
+    SU_DEBUG_3(("%s: NAT type determination timeout.\n", __func__));
     break;
 
   case stun_discovery_done:
     SU_DEBUG_3(("%s: NAT type determined to be %s.\n", __func__, stun_nattype(sd)));
+    break;
 
   case stun_error:
   default:
+    break;
+  }
+
+  return;
+}
+
+
+static
+void stunc_lifetime_cb(stunc_t *stunc,
+		       stun_handle_t *sh,
+		       stun_discovery_t *sd,
+		       stun_action_t action,
+		       stun_state_t event)
+{
+  SU_DEBUG_3(("%s: %s\n", __func__, stun_str_state(event)));
+
+  stunc->sc_flags &= ~do_life_check;
+
+  if (!stunc->sc_flags)
     su_root_break(stun_handle_root(sh));
+
+  switch (event) {
+  case stun_discovery_timeout:
+    SU_DEBUG_3(("%s: Lifetime determination timeout.\n", __func__));
+    break;
+
+  case stun_discovery_done:
+    SU_DEBUG_3(("%s: Lifetime determined to be %d.\n", __func__, stun_lifetime(sd)));
+    break;
+
+  case stun_error:
+  default:
     break;
   }
 
@@ -257,25 +263,33 @@ void stunc_nattype_cb(stunc_t *stunc,
 
 int main(int argc, char *argv[])
 {
-  int param_integrity, param_nattype, err;
+  int err, i, sflags = 0;
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_handle_t *sh;
-
-  /* Our UDP socket */
+  su_sockaddr_t sa[1];
   su_socket_t s;
 
-  if (argc != 4)
-    usage(1);
+  if (!argv[1] || !argv[2] || inet_pton(AF_INET, argv[1], sa) < 1)
+    usage(argv[0]);
 
-  param_integrity = atoi(argv[2]);
-
-  param_nattype = atoi(argv[3]);
+  for (i = 2; argv[i]; i++) {
+    if (strcmp(argv[i], "-s") == 0)
+      sflags |= do_secret;
+    else if (strcmp(argv[i], "-b") == 0)
+      sflags |= do_bind;
+    else if (strcmp(argv[i], "-n") == 0)
+      sflags |= do_nat_check;
+    else if (strcmp(argv[i], "-l") == 0)
+      sflags |= do_life_check;
+    else
+      usage(argv[0]);
+  }
 
   /* Running this test requires a local STUN server on default port */
   sh = stun_handle_init(root,
 			STUNTAG_SERVER(argv[1]), 
-			STUNTAG_REQUIRE_INTEGRITY(param_integrity),
+			STUNTAG_REQUIRE_INTEGRITY(sflags & do_secret),
 			TAG_NULL()); 
 
   if (!sh) {
@@ -285,33 +299,60 @@ int main(int argc, char *argv[])
 
   s = su_socket(AF_INET, SOCK_DGRAM, 0); 
   if (s == -1) {
-    SU_DEBUG_0(("%s: %s  failed: %s\n", __func__, "su_socket()", su_gli_strerror(errno)));
+    SU_DEBUG_0(("%s: %s  failed: %s\n", __func__,
+		"su_socket()", su_gli_strerror(errno)));
     return -1;
   }
 
   stunc->sc_socket = s;
-  stunc->sc_test_nattype = param_nattype;
+  stunc->sc_flags = sflags;
 
-  if (param_integrity == 1) {
+  if (sflags & do_secret) {
     if (stun_obtain_shared_secret(sh, stunc_ss_cb, stunc, TAG_NULL()) < 0) {
-      SU_DEBUG_3(("%s: %s failed\n", __func__, "stun_handle_request_shared_secret()"));
+      SU_DEBUG_3(("%s: %s failed\n", __func__,
+		  "stun_handle_request_shared_secret()"));
       return -1;
     }
-    su_root_run(root);
-    stun_handle_destroy(sh);
-    return 0;
   }
 
-  /* If no TSL query, start bind here */
-  err = stun_bind(sh, stunc_bind_cb, stunc,
-		  STUNTAG_SOCKET(s),
-		  STUNTAG_REGISTER_EVENTS(1),
-		  TAG_NULL());
 
-  if (err < 0) {
-    SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_bind()"));
-    return -1;
+  /* If we want to bind and no integrity required */
+  if ((sflags & do_bind) && !(sflags & do_secret)) {
+    err = stun_bind(sh, stunc_bind_cb, stunc,
+		    STUNTAG_SOCKET(s),
+		    STUNTAG_REGISTER_EVENTS(1),
+		    TAG_NULL());
+    
+    if (err < 0) {
+      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_bind()"));
+      return -1;
+    }
   }
+
+  if (sflags & do_nat_check) {
+    err = stun_test_nattype(sh, stunc_nattype_cb, stunc,
+			    STUNTAG_REGISTER_EVENTS(1),
+			    STUNTAG_SOCKET(stunc->sc_socket),
+			    TAG_NULL());
+    
+    if (err < 0) {
+      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_test_nattype()"));
+      su_root_break(stun_handle_root(sh));
+    }
+  }
+
+  if (sflags & do_life_check) {
+    err = stun_test_lifetime(sh, stunc_lifetime_cb, stunc,
+			     STUNTAG_REGISTER_EVENTS(1),
+			     STUNTAG_SOCKET(stunc->sc_socket),
+			     TAG_NULL());
+    
+    if (err < 0) {
+      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_test_lifetime()"));
+      su_root_break(stun_handle_root(sh));
+    }
+  }
+  
   su_root_run(root);
 
   stun_handle_destroy(sh);

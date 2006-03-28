@@ -26,6 +26,7 @@
 #define STUN_INTERNAL_H
 /**@file stun_internal.h STUN client interface
  *
+ * @author Martti Mela <martti.mela@nokia.com>
  * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>

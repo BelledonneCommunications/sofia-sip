@@ -1409,10 +1409,13 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
     sd->sd_state = stun_tls_connection_failed;
 
     if (sd->sd_callback)
-      sd->sd_callback(sd->sd_magic, self, NULL, sd, sd->sd_action, sd->sd_state);
+      sd->sd_callback(sd->sd_magic, self, sd, sd->sd_action, sd->sd_state);
+#if 0
     else
-      self->sh_callback(self->sh_context, self, NULL, sd,
+      self->sh_callback(self->sh_context, self, sd,
 			sd->sd_action, sd->sd_state);
+#endif
+
     return 0;
   }
 
@@ -1484,10 +1487,12 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
       sd->sd_state = stun_tls_connection_failed;
 
       if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, self, NULL, sd, sd->sd_action, sd->sd_state);
+	sd->sd_callback(sd->sd_magic, self, sd, sd->sd_action, sd->sd_state);
+#if 0
       else
-	self->sh_callback(self->sh_context, self, NULL, sd,
+	self->sh_callback(self->sh_context, self, sd,
 			  sd->sd_action, sd->sd_state);
+#endif
 
       return -1;
     }
@@ -1613,11 +1618,13 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
     sd->sd_state = stun_tls_done;
 
     if (sd->sd_callback)
-      sd->sd_callback(sd->sd_magic, self, NULL, sd, sd->sd_action, sd->sd_state);
+      sd->sd_callback(sd->sd_magic, self, sd, sd->sd_action, sd->sd_state);
+#if 0
     else
-      self->sh_callback(self->sh_context, self, NULL, sd,
+      self->sh_callback(self->sh_context, self, sd,
 			sd->sd_action, sd->sd_state);
-    
+#endif
+
     break;
 
   default:
@@ -1660,7 +1667,7 @@ static void stun_tls_connect_timer_cb(su_root_magic_t *magic,
   sd->sd_index = -1; /* mark index as deregistered */
   
   sd->sd_state = stun_tls_connection_timeout;
-  sh->sh_callback(sh->sh_context, sh, NULL, sd, sd->sd_action, sd->sd_state);
+  sd->sd_callback(sd->sd_magic, sh, sd, sd->sd_action, sd->sd_state);
 
   return;
 }
@@ -1773,8 +1780,10 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
     /* su_wait_destroy(w); */
     /* su_root_deregister(self->sh_root, self->ss_root_index); */
     /* self->sh_state = stun_bind_error; */
-    self->sh_callback(self->sh_context, self, NULL, NULL, 
+#if 0
+    self->sh_callback(self->sh_context, self, NULL, 
 		      stun_action_no_action, stun_bind_error);
+#endif
     return 0;
   }
 
@@ -1864,16 +1873,20 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
   case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
     req->sr_state = stun_request_not_found;
-    sh->sh_callback(sh->sh_context, sh, req, NULL,
+#if 0
+    sh->sh_callback(sh->sh_context, sh, NULL,
 		    stun_action_no_action, req->sr_state);
+#endif
     req->sr_state = stun_dispose_me;
     break;
 
   default:
     SU_DEBUG_3(("%s: bad action.\n", __func__));
     req->sr_state = stun_error;
-    sh->sh_callback(sh->sh_context, sh, req, NULL,
+#if 0
+    sh->sh_callback(sh->sh_context, sh, NULL,
 		    stun_action_no_action, req->sr_state);
+#endif
     req->sr_state = stun_dispose_me;
     break;
   }
@@ -1983,9 +1996,12 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
 
     /* Use per discovery specific callback */
     if (sd->sd_callback)
-      sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+
+#if 0
     else
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+      sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
     req->sr_state = stun_dispose_me;
     return 0;
@@ -1996,9 +2012,11 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
 
     /* Use per discovery specific callback */
     if (sd->sd_callback)
-      sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+      sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
     else
-      sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+      sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
     req->sr_state = stun_dispose_me;
     return 0;
@@ -2089,9 +2107,11 @@ static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   sd->sd_state = stun_bind_done;
   
   if (sd->sd_callback)
-    sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+    sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
   else
-    sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+    sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
   req->sr_state = stun_dispose_me;
 
@@ -2149,9 +2169,11 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
 	  /* Use per discovery specific callback */
 	  if (sd->sd_callback)
-	    sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	    sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
 	  else
-	    sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	    sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
 	  req->sr_state = stun_dispose_me;
 	  /* stun_request_destroy(req); */
@@ -2165,9 +2187,11 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
       /* Use per discovery specific callback */
       if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
       else
-	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2181,9 +2205,11 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
 	/* Use per discovery specific callback */
 	if (sd->sd_callback)
-	  sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	  sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
 	else
-	  sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	  sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
 	req->sr_state = stun_dispose_me;
 	/* stun_request_destroy(req); */
@@ -2215,9 +2241,11 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
       /* Use per discovery specific callback */
       if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
       else
-	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2239,9 +2267,11 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
       /* Use per discovery specific callback */
       if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
       else
-	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2258,9 +2288,11 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
       /* Use per discovery specific callback */
       if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
       else
-	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2320,9 +2352,11 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
       /* Use per discovery specific callback */
       if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
       else
-	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
       req->sr_state = stun_dispose_me;
       break;
@@ -2340,9 +2374,11 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
       /* Use per discovery specific callback */
       if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, req, sd, action, sd->sd_state);
+	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+#if 0
       else
-	sh->sh_callback(sh->sh_context, sh, req, sd, action, sd->sd_state);
+	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
+#endif
 
       stun_keepalive_destroy(sh, sd->sd_socket);
       
