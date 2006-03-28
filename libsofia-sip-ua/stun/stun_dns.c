@@ -44,7 +44,6 @@
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_wait.h>
-#define HAVE_SU_WAIT_H 1 /* workaround for bug in sresolv.h */
 #define SRES_CONTEXT_T stun_dns_lookup_t
 #include <sofia-sip/sresolv.h>
 
