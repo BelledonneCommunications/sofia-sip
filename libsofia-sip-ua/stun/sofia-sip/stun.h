@@ -50,6 +50,8 @@ typedef struct stun_request_s    stun_request_t;
 typedef struct stun_discovery_s  stun_discovery_t;
 typedef struct stun_dns_lookup_s stun_dns_lookup_t;
 
+typedef struct stun_mini_s     stun_mini_t;
+
 #ifndef STUN_MAGIC_T 
 #define STUN_MAGIC_T            struct stun_magic_t
 #endif
@@ -230,6 +232,19 @@ void stun_dns_lookup_destroy(stun_dns_lookup_t *self);
 int stun_dns_lookup_udp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
 int stun_dns_lookup_tcp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
 int stun_dns_lookup_stp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
+
+/* -------------------------------------------------------------------
+ * Functions for minimal STUN server */
+
+stun_mini_t *stun_mini_create(void);
+void stun_mini_destroy(stun_mini_t *);
+
+int stun_mini_add_socket(stun_mini_t *server, int socket);
+int stun_mini_remove_socket(stun_mini_t *server, int socket);
+
+void stun_mini_request(stun_mini_t *server, int socket,
+			 void *msg, ssize_t msglen,
+			 void *addr, socklen_t addrlen);
 
 /* --------------------------------------------------------------------
  * Deprecated functions and definitions. These are supported with limited

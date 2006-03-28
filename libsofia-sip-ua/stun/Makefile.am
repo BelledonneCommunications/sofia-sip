@@ -15,7 +15,7 @@ INCLUDES = 		-I$(srcdir)/../su -I../su -I$(srcdir)/../sresolv
 # ----------------------------------------------------------------------
 # Build targets
 
-stun_lib_sources = 	stun.c stun_common.c stun_dns.c
+stun_lib_sources = 	stun.c stun_common.c stun_dns.c stun_mini.c
 stun_prog_targets =     stunc lookup_stun_server
 
 noinst_LTLIBRARIES = 	libstun.la
