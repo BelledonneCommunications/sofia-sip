@@ -181,7 +181,9 @@ int stun_bind(stun_handle_t *sh,
 	      stun_discovery_f, stun_discovery_magic_t *magic,
 	      tag_type_t tag, tag_value_t value, ...);
 
-su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd);
+int stun_discovery_get_address(stun_discovery_t *sd,
+			       void *addr,
+			       socklen_t *return_addrlen);
 su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
 int stun_discovery_release_socket(stun_discovery_t *sd);
 

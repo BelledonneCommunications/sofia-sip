@@ -630,8 +630,7 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
   ai = &sh->sh_pri_info;
 
   if (sh->sh_use_msgint == 1) {
-    SU_DEBUG_3(("Contacting Server to obtain shared secret. " \
-		"Please wait.\n"));
+    SU_DEBUG_3(("%s: Obtaining shared secret.\n", __func__));
   }
   else {
     SU_DEBUG_3(("No message integrity enabled.\n"));
@@ -1163,12 +1162,27 @@ int stun_bind(stun_handle_t *sh,
  * This function returns the local address seen from outside.
  * Note that the address is not valid until the event stun_clien_done is launched.
  */
-su_sockaddr_t *stun_discovery_get_address(stun_discovery_t *sd)
+int stun_discovery_get_address(stun_discovery_t *sd,
+			       void *addr,
+			       socklen_t *return_addrlen)
 {
-
+  int siz;
+  
   enter;
 
-  return sd->sd_addr_seen_outside;
+  assert(sd && addr);
+
+  siz = SU_SOCKADDR_SIZE(sd->sd_addr_seen_outside);
+
+  /* Check if enough memory provided */
+  if (siz > *return_addrlen)
+    return errno = EFAULT, -1;
+  else
+    *return_addrlen = siz;
+
+  memcpy(addr, sd->sd_addr_seen_outside, siz);
+  
+  return 0;
 }
 
 static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
