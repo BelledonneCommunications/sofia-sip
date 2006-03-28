@@ -679,7 +679,7 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
   if (su_wait_create(wait, s, events) == -1)
     STUN_ERROR(errno, su_wait_create);
 
-  su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events);
+  /* su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events); */
 
   if ((sd->sd_index =
        su_root_register(sh->sh_root, wait, stun_tls_callback, (su_wakeup_arg_t *) sd, 0)) == -1) {
@@ -1567,11 +1567,14 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 
     /* closed TLS connection */
     SSL_shutdown(ssl);
-    sd->sd_state = stun_tls_closing;
 
+#if 0
+    sd->sd_state = stun_tls_closing;
     break;
 
   case stun_tls_closing:
+#endif
+
     su_close(sd->sd_socket);
 
     SSL_free(self->sh_ssl), ssl = NULL;
