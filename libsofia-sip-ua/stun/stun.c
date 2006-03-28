@@ -1740,11 +1740,11 @@ stun_action_t get_action(stun_request_t *req)
 
 /* Find request from the request queue, based on TID */
 static inline
-stun_request_t *priv_find_request(stun_handle_t *self, void *id)
+stun_request_t *find_request(stun_handle_t *self, void *id)
 {
   void *match;
   stun_request_t *req = NULL;
-  int len = sizeof (uint8_t) * 16; /* sizeof tran_id */
+  int len = STUN_TID_BYTES;
 
   for (req = self->sh_requests; req; req = req->sr_next) {
     match = req->sr_msg->stun_hdr.tran_id;
@@ -1752,6 +1752,7 @@ stun_request_t *priv_find_request(stun_handle_t *self, void *id)
       return req;
     }
   }
+
   return NULL;
 }
 
@@ -1847,8 +1848,10 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
 
   id = msg->stun_hdr.tran_id;
   req = find_request(sh, id);
-  if (!req)
+  if (!req) {
+    SU_DEBUG_7(("warning: unable to find matching TID for response\n"));
     return 0;
+  }
 
   action = get_action(req);
 
