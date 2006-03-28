@@ -1186,7 +1186,9 @@ tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
   &tport_udp_client_vtable,
   &tport_udp_vtable,
   &tport_threadpool_vtable,
+#if HAVE_SOFIA_STUN
   &tport_stun_vtable,
+#endif
 };
 
 /**Get a vtable for given protocol */
@@ -1262,6 +1264,11 @@ int tport_tbind(tport_t *self,
 	  TAG_END());
 
   mr = self->tp_master; assert(mr);
+
+#if HAVE_SOFIA_STUN
+  if (public == 0 && stun_is_requested(ta_tags(ta)))
+    public = tport_type_stun;
+#endif
 
   if (http_connect && public == 0)
     public = tport_type_connect;
