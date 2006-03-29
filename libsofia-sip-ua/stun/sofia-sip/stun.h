@@ -103,12 +103,14 @@ typedef enum stun_state_e {
   stun_discovery_processing,
   stun_discovery_done,
 
+#if 0
   /* STUN bind events */
   stun_bind_init,             /**< Initial state */
   stun_bind_processing,       /**< Processing server reply */
   stun_bind_done,             /**< Initial state */
 
   stun_request_not_found,     /**< Response without matching request */
+#endif
 
   /* STUN errors */
   /* Do not change the order! Errors need to be after stun_error */
@@ -118,11 +120,14 @@ typedef enum stun_state_e {
   stun_tls_connection_failed,
   stun_tls_ssl_connect_failed,
 
+#if 0
   /* stun client errors */
   stun_bind_error,
   stun_bind_timeout,
+#endif
 
   stun_request_timeout,
+  stun_discovery_error,
   stun_discovery_timeout,
 
 } stun_state_t;

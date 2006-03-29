@@ -125,6 +125,8 @@ void stunc_ss_cb(stunc_t *stunc,
     SU_DEBUG_0(("%s: Obtaining shared secret failed.\n",
 		__func__));
     stunc->sc_flags &= ~do_bind;
+    if (!stunc->sc_flags)
+      su_root_break(stun_handle_root(sh));
 
     break;
 
@@ -161,7 +163,7 @@ void stunc_bind_cb(stunc_t *stunc,
     su_root_break(stun_handle_root(sh));
 
   switch (event) {
-  case stun_bind_done:
+  case stun_discovery_done:
     addrlen = sizeof(*sa);
     memset(sa, 0, addrlen);
     
@@ -186,9 +188,8 @@ void stunc_bind_cb(stunc_t *stunc,
   break;
 
   case stun_discovery_timeout:
-  case stun_bind_error:
+  case stun_discovery_error:
   case stun_error:
-  case stun_bind_timeout:
   default:
     break;
   }

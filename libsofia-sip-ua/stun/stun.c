@@ -241,15 +241,17 @@ char const *stun_str_state(stun_state_t state)
   STUN_STATE_STR(stun_discovery_init);
   STUN_STATE_STR(stun_discovery_processing);
   STUN_STATE_STR(stun_discovery_done);
+#if 0
   STUN_STATE_STR(stun_bind_init);
   STUN_STATE_STR(stun_bind_processing);
   STUN_STATE_STR(stun_bind_done);
+  STUN_STATE_STR(stun_bind_error);
+  STUN_STATE_STR(stun_bind_timeout);
+  STUN_STATE_STR(stun_request_not_found);
+#endif
   STUN_STATE_STR(stun_tls_connection_timeout);
   STUN_STATE_STR(stun_tls_connection_failed);
   STUN_STATE_STR(stun_tls_ssl_connect_failed);
-  STUN_STATE_STR(stun_request_not_found);
-  STUN_STATE_STR(stun_bind_error);
-  STUN_STATE_STR(stun_bind_timeout);
   STUN_STATE_STR(stun_discovery_timeout);
   STUN_STATE_STR(stun_request_timeout);
   
@@ -1881,8 +1883,8 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
 
   case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
-    req->sr_state = stun_request_not_found;
 #if 0
+    req->sr_state = stun_request_not_found;
     sh->sh_callback(sh->sh_context, sh, NULL,
 		    stun_action_no_action, req->sr_state);
 #endif
@@ -1950,7 +1952,7 @@ static int process_binding_request(stun_request_t *req, stun_msg_t *binding_resp
     if (stun_process_error_response(binding_response) < 0) {
       SU_DEBUG_3(("%s: Error in Binding Error Response.\n", __func__));
     }
-    req->sr_state = stun_bind_error;
+    req->sr_state = stun_discovery_error;
       
     break;
   }
@@ -2113,7 +2115,7 @@ static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
 
   memcpy(sd->sd_addr_seen_outside, sa, sizeof(su_sockaddr_t));
 
-  sd->sd_state = stun_bind_done;
+  sd->sd_state = stun_discovery_done;
   
   if (sd->sd_callback)
     sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
