@@ -104,7 +104,7 @@ void stunc_ss_cb(stunc_t *stunc,
 
   stunc->sc_flags &= ~do_secret;
   if (!stunc->sc_flags)
-    su_root_break(stun_handle_root(sh));
+    su_root_break(stun_root(sh));
 
   switch (event) {
   case stun_tls_done:
@@ -116,7 +116,7 @@ void stunc_ss_cb(stunc_t *stunc,
     
       if (err < 0) {
 	SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_bind()"));
-	su_root_break(stun_handle_root(sh));
+	su_root_break(stun_root(sh));
       }
     }
     break;
@@ -126,7 +126,7 @@ void stunc_ss_cb(stunc_t *stunc,
 		__func__));
     stunc->sc_flags &= ~do_bind;
     if (!stunc->sc_flags)
-      su_root_break(stun_handle_root(sh));
+      su_root_break(stun_root(sh));
 
     break;
 
@@ -160,7 +160,7 @@ void stunc_bind_cb(stunc_t *stunc,
   stunc->sc_flags &= ~do_bind;
 
   if (!stunc->sc_flags)
-    su_root_break(stun_handle_root(sh));
+    su_root_break(stun_root(sh));
 
   switch (event) {
   case stun_discovery_done:
@@ -210,7 +210,7 @@ void stunc_nattype_cb(stunc_t *stunc,
   stunc->sc_flags &= ~do_nat_check;
 
   if (!stunc->sc_flags)
-    su_root_break(stun_handle_root(sh));
+    su_root_break(stun_root(sh));
 
   switch (event) {
   case stun_discovery_timeout:
@@ -242,7 +242,7 @@ void stunc_lifetime_cb(stunc_t *stunc,
   stunc->sc_flags &= ~do_life_check;
 
   if (!stunc->sc_flags)
-    su_root_break(stun_handle_root(sh));
+    su_root_break(stun_root(sh));
 
   switch (event) {
   case stun_discovery_timeout:
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
     
     if (err < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_test_nattype()"));
-      su_root_break(stun_handle_root(sh));
+      su_root_break(stun_root(sh));
     }
   }
 
@@ -350,13 +350,14 @@ int main(int argc, char *argv[])
     
     if (err < 0) {
       SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_test_lifetime()"));
-      su_root_break(stun_handle_root(sh));
+      su_root_break(stun_root(sh));
     }
   }
   
   su_root_run(root);
 
   stun_handle_destroy(sh);
+  su_root_destroy(root);
 
   return 0;
 }

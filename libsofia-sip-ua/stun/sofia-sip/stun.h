@@ -27,8 +27,8 @@
 
 /**@file stun.h STUN module public interface
  *
- * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Martti Mela <Martti.Mela@nokia.com>
+ * @author Tat Chan <Tat.Chan@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  */
@@ -252,6 +252,7 @@ void stun_mini_request(stun_mini_t *server, int socket,
 			 void *msg, ssize_t msglen,
 			 void *addr, socklen_t addrlen);
 
+#if 0
 /* --------------------------------------------------------------------
  * Deprecated functions and definitions. These are supported with limited
  * compatibility. */
@@ -296,6 +297,7 @@ int stun_handle_set_uname_pwd(stun_handle_t *sh,
 			      int len_uname, 
 			      const char *pwd,
 			      int len_pwd);
+#endif
 
 SOFIA_END_DECLS
 

@@ -157,6 +157,7 @@ struct stun_discovery_s {
 };
 
 struct stun_request_s {
+  su_timer_t       *sr_timer;
   stun_request_t   *sr_next, **sr_prev; /**< Linked list */
   stun_msg_t       *sr_msg;             /**< STUN message pointer */
   stun_handle_t    *sr_handle;          /**< backpointer, STUN object */
@@ -215,8 +216,10 @@ struct stun_handle_s
   stun_msg_t      sh_tls_response;
   int             sh_nattype;       /**< NAT-type, see stun_common.h */
 
+#if 0
   stun_event_f    sh_callback;      /**< callback for calling application */ 
   stun_magic_t   *sh_context;       /**< application context */
+#endif
 
   stun_buffer_t   sh_username;
   stun_buffer_t   sh_passwd;
@@ -487,6 +490,7 @@ stun_handle_t *stun_handle_init(su_root_t *root,
 }
 
 
+#if 0
 /** 
  * Creates a STUN handle.
  *
@@ -590,6 +594,7 @@ stun_handle_t *stun_handle_create(stun_magic_t *context,
 
   return stun;
 }
+#endif
 
 
 /** 
@@ -769,8 +774,16 @@ void stun_request_destroy(stun_request_t *req)
   req->sr_discovery = NULL;
   /* memset(req->sr_destination, 0, sizeof(su_sockaddr_t)); */
 
-  if (req->sr_msg)
-    stun_free_message(req->sr_msg);
+  if (req->sr_timer) {
+    su_timer_destroy(req->sr_timer);
+    req->sr_timer = NULL;
+    SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
+  }
+
+  if (req->sr_msg) {
+    free(req->sr_msg);
+    req->sr_msg = NULL;
+  }
 
   free(req);
 
@@ -784,6 +797,7 @@ void stun_request_destroy(stun_request_t *req)
 void stun_handle_destroy(stun_handle_t *sh)
 { 
   stun_discovery_t *sd = NULL, *kill = NULL;
+  stun_request_t *a, *b;
 
   enter;
 
@@ -792,6 +806,13 @@ void stun_handle_destroy(stun_handle_t *sh)
 
   if (sh->sh_dns_pend_tags)
     su_free(sh->sh_home, sh->sh_dns_pend_tags);
+
+  for (a = sh->sh_requests; a; ) {
+    b = a->sr_next;
+    stun_request_destroy(a);
+    a = b;
+  }
+
 
   /* There can be several discoveries using the same socket. It is
      still enough to deregister the socket in first of them */
@@ -1771,7 +1792,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   int retval = -1, err = -1, dgram_len;
   char ipaddr[SU_ADDRSIZE + 2];
-  stun_msg_t binding_response;
+  stun_msg_t binding_response, *msg;
   unsigned char dgram[512] = { 0 };
   su_sockaddr_t recv;
   socklen_t recv_len;
@@ -1837,6 +1858,29 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
    * (based on TID). */
 
   do_action(self, &binding_response);
+
+  if (binding_response.enc_buf.size)
+    free(binding_response.enc_buf.data);
+
+  {
+    stun_attr_t **a, *b;
+
+    msg = &binding_response;
+    for (a = &msg->stun_attr; *a;) {
+      
+      if ((*a)->pattr)
+	free((*a)->pattr);
+      
+      if ((*a)->enc_buf.data)
+	free((*a)->enc_buf.data);
+      
+      b = *a;
+      b = b->next;
+      free(*a);
+      *a = NULL;
+      *a = b;
+    }
+  }
 
   return 0;
 }
@@ -1927,7 +1971,7 @@ static int process_binding_request(stun_request_t *req, stun_msg_t *binding_resp
       return retval;
     }
 
-    memset(clnt_addr, 0, sizeof(struct sockaddr_in));
+    memset(clnt_addr, 0, sizeof(su_sockaddr_t));
     clnt_addr_len = sizeof(su_sockaddr_t);
     mapped_addr = stun_get_attr(binding_response->stun_attr, MAPPED_ADDRESS);
 
@@ -2472,6 +2516,7 @@ static int stun_send_binding_request(stun_request_t *req,
   sendto_timer = su_timer_create(su_root_task(sh->sh_root), STUN_SENDTO_TIMEOUT);
   su_timer_set(sendto_timer, stun_sendto_timer_cb, (su_wakeup_arg_t *) req);
 
+  req->sr_timer = sendto_timer;
   req->sr_state = stun_discovery_processing;
 
   return 0;
@@ -2848,7 +2893,7 @@ int stun_add_response_address(stun_msg_t *req, struct sockaddr_in *mapped_addr)
 
   enter;
 
-  tmp = (stun_attr_t *) malloc(sizeof(stun_attr_t));
+  tmp = malloc(sizeof(stun_attr_t));
   tmp->attr_type = RESPONSE_ADDRESS;
   addr = malloc(sizeof(stun_attr_sockaddr_t));
   memcpy(addr, mapped_addr, sizeof(stun_attr_sockaddr_t));

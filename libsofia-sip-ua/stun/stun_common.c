@@ -204,28 +204,30 @@ int stun_parse_attr_address(stun_attr_t *attr,
 			    const unsigned char *p, 
 			    unsigned len)
 {
-  stun_attr_sockaddr_t *addr;
+  su_sockaddr_t *addr;
   int addrlen;
+  char ipaddr[SU_ADDRSIZE + 2];
 
   if (len != 8) {
     return -1;
   }
 
-  addrlen = sizeof(stun_attr_sockaddr_t);
-  addr = (stun_attr_sockaddr_t *)malloc(addrlen);
+  addrlen = sizeof(su_sockaddr_t);
+  addr = (su_sockaddr_t *) malloc(addrlen);
 
   if (*(p+1) == 1) { /* expected value for IPv4 */
-    addr->sin_family = AF_INET;
+    addr->su_sin.sin_family = AF_INET;
   }
   else {
     free(addr);
     return -1;
   }
-  memcpy(&addr->sin_port, p + 2, 2);
-  memcpy(&addr->sin_addr.s_addr, p + 4, 4);
+  memcpy(&addr->su_sin.sin_port, p + 2, 2);
+  memcpy(&addr->su_sin.sin_addr.s_addr, p + 4, 4);
 
   SU_DEBUG_5(("%s: address attribute: %s:%d\n", __func__,
-	      inet_ntoa(addr->sin_addr), ntohs(addr->sin_port)));
+	      inet_ntop(addr->su_family, SU_ADDR(addr), ipaddr, sizeof(ipaddr)),
+	      (unsigned) ntohs(addr->su_sin.sin_port)));
 
   attr->pattr = addr;
   stun_init_buffer(&attr->enc_buf);
@@ -372,7 +374,7 @@ int stun_encode_address(stun_attr_t *attr) {
 int stun_encode_uint32(stun_attr_t *attr) {
   uint32_t tmp;
 
-  if(stun_encode_type_len(attr, sizeof(tmp))<0) {
+  if (stun_encode_type_len(attr, sizeof(tmp)) < 0) {
     return -1;
   }
 
@@ -468,13 +470,17 @@ int stun_encode_message_integrity(stun_attr_t *attr,
 /** this function allocates the enc_buf, fills in type, length */
 int stun_encode_type_len(stun_attr_t *attr, uint16_t len) {
   uint16_t tmp;
+
   attr->enc_buf.data = (unsigned char *) malloc(len + 4);
   memset(attr->enc_buf.data, 0, len + 4);
+
   tmp = htons(attr->attr_type);
   memcpy(attr->enc_buf.data, &tmp, 2);
+
   tmp = htons(len);
   memcpy(attr->enc_buf.data + 2, &tmp, 2);
   attr->enc_buf.size = len + 4;
+
   return 0;
 }
 
@@ -595,11 +601,30 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
 {
   int err;
   char ipaddr[SU_ADDRSIZE + 2];
+  stun_attr_t **a, *b;
 
   stun_encode_message(msg, pwd);
 
   err = sendto(s, msg->enc_buf.data, msg->enc_buf.size, 
 	       0, (struct sockaddr *)to_addr, sizeof(struct sockaddr_in));
+
+  free(msg->enc_buf.data), msg->enc_buf.data = NULL;
+  msg->enc_buf.size = 0;
+
+  for (a = &msg->stun_attr; *a;) {
+
+    if ((*a)->pattr)
+      free((*a)->pattr);
+
+    if ((*a)->enc_buf.data)
+      free((*a)->enc_buf.data);
+
+    b = *a;
+    b = b->next;
+    free(*a);
+    *a = NULL;
+    *a = b;
+  }
 
   if (err > 0) {
     inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));
@@ -625,7 +650,7 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
   unsigned char *buf;
   stun_attr_t *attr, *msg_int=NULL;
 
-  if(msg->enc_buf.data == NULL) {
+  if (msg->enc_buf.data == NULL) {
     /* convert msg to binary format */
     /* convert attributes to binary format for transmission */
     attr = msg->stun_attr;
@@ -653,9 +678,10 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
       case TURN_BANDWIDTH:
 #endif
 	z = stun_encode_uint32(attr);
-	if(z < 0) return z;
+	if (z < 0) return z;
 	len += z;
 	break;
+
       case USERNAME:
       case PASSWORD:
 #ifdef USE_TURN
@@ -682,8 +708,8 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
     }
 
     msg->stun_hdr.msg_len = len;
-    buf_len = 20+msg->stun_hdr.msg_len;
-    buf = (unsigned char *)malloc(buf_len);
+    buf_len = 20 + msg->stun_hdr.msg_len;
+    buf = (unsigned char *) malloc(buf_len);
     
     /* convert to binary format for transmission */
     set16(buf, 0, msg->stun_hdr.msg_type);
