@@ -351,60 +351,6 @@ nua_event_data_t const *nua_event_data(nua_saved_event_t const saved[1]);
 /** Destroy a save nua event */
 void nua_destroy_event(nua_saved_event_t *saved);
 
-/***************************************
- * Obsolete functions (to-be-removed): *
- ***************************************/
-
-/** XXX/obsolete: Check for RTSP support. */ 
-int nua_handle_has_streaming(nua_handle_t const *nh);
-
-/** XXX/obsolete: Set media parameter. */ 
-void nua_set_media_param(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** XXX/obsolete: Get a media parameter. */ 
-void nua_get_media_param(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** XXX/obsolete: Setup a local media session. */
-void nua_media_setup(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** XXX/obsolete: Describe a media session using SDP. */
-void nua_media_describe(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/** XXX/obsolete: Send an event to media subsystem. */
-void nua_media_event(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
-
-/*# XXX/obsolete: Play. */ 
-void nua_play(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# XXX/obsolete: Setup. */ 
-void nua_setup(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# XXX/obsolete: Options2. */ 
-void nua_options2(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# XXX/obsolete: Describe. */ 
-void nua_describe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# XXX/obsolete: Announce. */ 
-void nua_announce(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# XXX/obsolete: Get RTSP parameter. */ 
-void nua_get_parameter(nua_handle_t *nh, tag_type_t tag,
-		       tag_value_t value, ...);
-
-/*# XXX/obsolete: Set RTSP parameter. */ 
-void nua_set_parameter(nua_handle_t *nh, tag_type_t tag,
-		       tag_value_t value, ...);
-
-/*# XXX/obsolete: Record. */ 
-void nua_record(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# XXX/obsolete: Pause. */ 
-void nua_pause(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
-/*# XXX/obsolete: Teardown. */ 
-void nua_teardown(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
-
 SOFIA_END_DECLS
 
 #endif
