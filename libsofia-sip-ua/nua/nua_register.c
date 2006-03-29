@@ -746,7 +746,7 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 
   if (sip) {
     int unregistering = now == 0;
-    sip_contact_t *contact, *previous;
+    sip_contact_t *contact = NULL, *previous = NULL;
 
     if (unregistering)
       unregister_expires_contacts(msg, sip);
@@ -988,7 +988,6 @@ int outbound_connect_check_for_nat(struct outbound_connect *oc,
 				   nta_outgoing_t *orq,
 				   sip_t const *sip)
 {
-  sip_via_t *v = sip->sip_via;
   int binding_changed;
   sip_contact_t *m = oc->oc_rcontact;
 
@@ -1016,7 +1015,7 @@ int outbound_connect_check_for_nat(struct outbound_connect *oc,
   }
 #endif
 
-  binding_changed = outbound_connect_nat_detect(oc, v);
+  binding_changed = outbound_connect_nat_detect(oc, sip);
 
   /* Contact was set by application, do not change it */
   if (oc->oc_by_application)
@@ -1058,8 +1057,12 @@ int outbound_connect_check_for_nat(struct outbound_connect *oc,
   return 0;
 }
 
-/** Based on "received" and possible "rport" parameters, check and update
- *  our NAT status.
+/**@internal
+ *
+ * Detect NAT.
+ *
+ * Based on "received" and possible "rport" parameters in the top-most Via,
+ * check and update our NAT status.
  *
  * @retval 2 change in public NAT binding detected
  * @retval 1 NAT binding detected
@@ -1068,8 +1071,9 @@ int outbound_connect_check_for_nat(struct outbound_connect *oc,
  */
 static
 int outbound_connect_nat_detect(outbound_connect *oc,
-				sip_via_t const *v)
+				sip_t const *response)
 {
+  sip_via_t const *v = response->sip_via;
   int one = 1;
   char const *received, *rport;
   char *nat_detected, *nat_port;
@@ -1283,7 +1287,7 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
     return 0;
   }
 
-  binding_check = outbound_connect_nat_detect(oc, sip->sip_via);
+  binding_check = outbound_connect_nat_detect(oc, sip);
 
   if (binding_check > 1) {
     /* Bindings have changed */
