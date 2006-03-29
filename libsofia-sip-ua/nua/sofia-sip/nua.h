@@ -132,39 +132,6 @@ typedef enum nua_event_e {
   nua_r_nit_respond,
   nua_r_ack,			/*#< Answer to ACK */
 
-
-  /************************************
-   * Obsolete events (to-be-removed): *
-   ************************************/
-  nua_i_media_event,		/**< Incoming media event */
-  nua_r_set_media_param,	/**< Answer to nua_set_media_param() */
-  nua_r_get_media_param,	/**< Answer to nua_get_media_param() */
-  nua_r_media_setup,		/**< Answer to nua_media_setup() */
-  nua_r_media_describe,		/**< Answer to nua_media_describe() */
-  nua_r_media_event,		/**< Answer to nua_media_event() */
-  /* RTSP methods (obsolete) */
-  nua_i_announce,               /*#< Incoming RTSP record announce */
-  nua_i_describe,               /*#< Incoming RTSP presentation description */
-  nua_i_get_parameter,          /*#< Incoming RTSP server parameter fetch */
-  nua_i_pause,                  /*#< Incoming RTSP pause  */
-  nua_i_options2,               /*#< Incoming RTSP options */
-  nua_i_play,                   /*#< Incoming RTSP play */
-  nua_i_record,                 /*#< Incoming RTSP record  */
-  nua_i_set_parameter,          /*#< Incoming RTSP server parameter setting  */
-  nua_i_setup,                  /*#< Incoming RTSP setup */
-  nua_i_teardown,               /*#< Incoming RTSP teardown the session */
-  /* RTSP responses (obsolete) */
-  nua_r_setup,                  /*#< Answer to outgoing SETUP */
-  nua_r_play,                   /*#< Answer to outgoing PLAY */
-  nua_r_record,                 /*#< Answer to outgoing RECORD */
-  nua_r_pause,                  /*#< Answer to outgoing PAUSE */
-  nua_r_describe,               /*#< Answer to outgoing DESCRIBE */
-  nua_r_teardown,               /*#< Answer to outgoing TEARDOWN */
-  nua_r_options2,               /*#< Answer to outgoing OPTIONS */
-  nua_r_announce,               /*#< Answer to outgoing ANNOUNCE */
-  nua_r_get_parameter,          /*#< Answer to outgoing GET_PARAMETER */
-  nua_r_set_parameter           /*#< Answer to outgoing SET_PARAMETER */
-
 } nua_event_t;
 
 typedef struct event_s {
