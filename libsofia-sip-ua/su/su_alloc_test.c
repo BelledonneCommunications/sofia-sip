@@ -49,12 +49,6 @@ int tstflags;
 
 char const *name = "su_alloc_test";
 
-static int test_alloc(void);
-static int test_strdupcat(void);
-static int test_strlst(void);
-static int test_vectors(void);
-static int test_auto(void);
-
 /* Type derived from home */
 typedef struct { su_home_t home[1]; int *p; } exhome_t;
 
@@ -74,15 +68,15 @@ static int test_alloc(void)
   char *c, *c0, *p0, *p1;
   int i;
   enum { destructed_once = 1 };
-  int d0, d1, d2, d3;
+  int d0, d1a, d1, d2, d3;
 
   BEGIN();
 
   TEST_1(h0 = su_home_new(sizeof(*h0)));
   TEST_1(h1 = su_home_clone(h0->home, sizeof(*h1)));
 
-  d0 = d1 = d2 = d3 = 0;
-  h0->p = &d0; h1->p = &d1;
+  d0 = d1a = d1 = d2 = d3 = 0;
+  h0->p = &d0; h1->p = &d1a;
   TEST(su_home_desctructor(h0->home, exdestructor), 0);
   TEST(su_home_desctructor(h1->home, exdestructor), 0);
 
@@ -92,6 +86,16 @@ static int test_alloc(void)
 
   for (i = 0; i < 128; i++)
     TEST_1(su_alloc(h0->home, 16));
+
+  for (i = 0; i < 128; i++)
+    TEST_1(su_alloc(h1->home, 16));
+
+  su_home_unref(h1->home);
+  TEST(d1a, destructed_once);
+
+  TEST_1(h1 = su_home_clone(h0->home, sizeof(*h1)));
+  TEST(su_home_desctructor(h1->home, exdestructor), 0);
+  h1->p = &d1;
 
   for (i = 0; i < 128; i++)
     TEST_1(su_alloc(h1->home, 16));

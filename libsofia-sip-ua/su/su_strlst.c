@@ -172,8 +172,14 @@ su_strlst_t *su_strlst_vcreate_with_by(su_home_t *home,
  */
 su_strlst_t *su_strlst_create(su_home_t *home)
 {
-  va_list va;
-  return su_strlst_vcreate_with_by(home, NULL, va, 0);
+  su_strlst_t *self;
+
+  self = su_home_clone(home, sizeof(*self) + N * sizeof(*self->sl_list));
+  if (self) {
+    self->sl_size = N;
+    self->sl_list = (char const **)(self + 1);
+  }
+  return self;
 }
 
 /** Create a string list with initial values.
