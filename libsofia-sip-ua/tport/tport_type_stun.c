@@ -162,7 +162,7 @@ void tport_stun_bind_cb(tport_primary_t *pri,
 
   mr = pri->pri_master;
 
-  if (event == stun_bind_done) {
+  if (event == stun_discovery_done) {
     tport_stun_bind_done(pri, sh, sd);
   }
 }
