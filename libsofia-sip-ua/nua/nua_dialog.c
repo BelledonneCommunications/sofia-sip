@@ -61,11 +61,13 @@ static void nua_dialog_usage_remove_at(nua_owner_t*, nua_dialog_state_t*,
 				       nua_dialog_usage_t**);
 static void nua_dialog_log_usage(nua_owner_t *, nua_dialog_state_t *);
 
-/** UAS tag and route.
+/**@internal
+ * UAS tag and route.
  *
  * Update dialog tags and route on the UAS side.
  *
  * @param own  dialog owner
+ * @param ds   dialog state
  * @param sip  SIP message containing response used to update dialog
  * @param rtag if true, set remote tag within the leg
  */
@@ -89,11 +91,13 @@ void nua_dialog_uas_route(nua_owner_t *own,
     nta_leg_rtag(ds->ds_leg, sip->sip_from->a_tag);
 }
 
-/** UAC tag and route.
+/**@internal
+ * UAC tag and route.
  *
  * Update dialog tags and route on the UAC side.
  *
  * @param own  dialog owner
+ * @param ds   dialog state
  * @param sip  SIP message containing response used to update dialog
  * @param rtag if true, set remote tag within the leg
  */
@@ -117,7 +121,7 @@ void nua_dialog_uac_route(nua_owner_t *own,
     nta_leg_rtag(ds->ds_leg, sip->sip_to->a_tag);
 }
 
-/** Store information from remote endpoint. */
+/**@internal Store information from remote endpoint. */
 void nua_dialog_store_peer_info(nua_owner_t *own, 
 				nua_dialog_state_t *ds,
 				sip_t const *sip)
@@ -177,7 +181,7 @@ void nua_dialog_store_peer_info(nua_owner_t *own,
   }
 }
 
-/** Get dialog usage slot */
+/** @internal Get dialog usage slot. */
 nua_dialog_usage_t **
 nua_dialog_usage_at(nua_dialog_state_t const *ds, 
 		    nua_usage_class const *kind,
@@ -217,7 +221,7 @@ nua_dialog_usage_at(nua_dialog_state_t const *ds,
   return &none;
 }
 
-/** Get a dialog usage */ 
+/** @internal Get a dialog usage */
 nua_dialog_usage_t *nua_dialog_usage_get(nua_dialog_state_t const *ds, 
 					 nua_usage_class const *kind,
 					 sip_event_t const *event)
@@ -225,7 +229,7 @@ nua_dialog_usage_t *nua_dialog_usage_get(nua_dialog_state_t const *ds,
   return *nua_dialog_usage_at(ds, kind, event);
 }
 
-/** Get dialog usage name */
+/** @internal Get dialog usage name */
 char const *nua_dialog_usage_name(nua_dialog_usage_t const *du)
 {
   if (du == NULL)
@@ -233,7 +237,7 @@ char const *nua_dialog_usage_name(nua_dialog_usage_t const *du)
   return du->du_class->usage_name(du);
 } 
 
-/** Add dialog usage */
+/** @internal Add dialog usage */
 nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own, 
 					 struct nua_dialog_state *ds, 
 					 nua_usage_class const *uclass,
@@ -290,7 +294,7 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
   return NULL;
 }
 
-/** Remove dialog usage. */
+/** @internal Remove dialog usage. */
 void nua_dialog_usage_remove(nua_owner_t *own, 
 			     nua_dialog_state_t *ds,
 			     nua_dialog_usage_t *du)
@@ -308,7 +312,7 @@ void nua_dialog_usage_remove(nua_owner_t *own,
   nua_dialog_usage_remove_at(own, ds, at);
 }
 
-/** Remove dialog usage.
+/** @internal Remove dialog usage. 
  *
  * Zap dialog state (leg, tag and route) if no usages remain. 
 */
@@ -382,7 +386,7 @@ void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
   }
 }
 
-/** Dialog has been terminated. */
+/** @internal Dialog has been terminated. */
 void nua_dialog_terminated(nua_owner_t *own,
 			   struct nua_dialog_state *ds,
 			   int status,
@@ -405,7 +409,8 @@ void nua_dialog_terminated(nua_owner_t *own,
 }
 
 
-/** Set refresh value suitably.
+/**@internal
+ * Set refresh value suitably. 
  *
  * The refresh time is set either at half of the @a delta interval or if @a
  * delta is less than 5 minutes, 30 seconds before end of interval. $
@@ -432,7 +437,7 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
   du->du_refresh = target;
 }
 
-/** Call the owner operation function */
+/** @internal Call the owner operation function. */
 void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now)

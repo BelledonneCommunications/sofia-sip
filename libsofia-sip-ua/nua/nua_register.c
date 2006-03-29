@@ -174,15 +174,15 @@ struct outbound_connect {
   unsigned oc_add_contact:1;
 
   /* The registration state machine. */
-  /**< Initial REGISTER containing oc_rcontact has been sent */
+  /** Initial REGISTER containing oc_rcontact has been sent */
   unsigned oc_registering:1;
-  /**< 2XX response to REGISTER containg oc_rcontact has been received */
+  /** 2XX response to REGISTER containg oc_rcontact has been received */
   unsigned oc_registered:1;
-  /**< The registration has been validated:
-   *   We have successfully sent OPTIONS to ourselves.
+  /**The registration has been validated:
+   * We have successfully sent OPTIONS to ourselves.
    */
   unsigned oc_validated:1;
-  /**< The registration has been validated once.
+  /** The registration has been validated once.
    *   We have successfully sent OPTIONS to ourselves, so do not give
    *   up if OPTIONS probe fails.
    */
@@ -246,6 +246,170 @@ outbound_owner_vtable nua_stack_register_callbacks = {
     nua_stack_register_failed,
     nua_stack_register_failed,
   };
+
+/**@fn void nua_register(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ * 
+ * Send SIP REGISTER request to the registrar. 
+ *
+ * Request status will be delivered to the application using #nua_r_register
+ * event. When successful the registration will be updated periodically.
+ *
+ * The handle used for registration cannot be used for any other purposes.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return
+ *     nothing
+ *
+ * @par Related tags:
+ *     NUTAG_REGISTRAR(), NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(),
+ *     NUTAG_OUTBOUND()
+ *
+ * @par Events:
+ *     #nua_r_register, #nua_i_outbound
+ *
+ * @par NAT, Firewall and Outbound Support
+ *
+ * If the application did not include the Contact header in the tags,
+ * nua_register() will generate one and start a protocol engine for outbound
+ * connections used for NAT and firewall traversal and connectivity checks.
+ * 
+ * First, nua_register() will first probe for NATs in between UA and
+ * registrar. It will send a REGISTER request as usual. Upon receiving the
+ * response check for the presence of "received" and "rport" parameters in
+ * the Via header returned by registrar. The presence of NAT is determined
+ * from the "received" parameter in a Via header. When a REGISTER request
+ * was sent, the stack inserted the source IP address in the Via header: if
+ * that is different from the source IP address seen by the registrar, the
+ * registrar inserts the source IP address it sees into the "received"
+ * parameter.
+ *
+ * Please note that an ALG (application-level gateway) modifying the Via
+ * headers in outbound requests and again in incoming responses will make
+ * the above-described NAT check to fail.
+ *
+ * The response to the initial REGISTER should also include feature tags
+ * indicating whether registrar supports various SIP extensions: @e
+ * outbound, @e pref, @e path, @e gruu. If the @e outbound extension is
+ * supported, and it is not explicitly disabled by application, the
+ * nua_register() will use it. Basically, @e outbound means that instead of
+ * registering its contact URI with a particular address-of-record URI, the
+ * user-agent registers a transport-level connection. Such a connection is
+ * identified on the Contact header field with a @ref NUTAG_INSTANCE()
+ * "unique string" identifying the user-agent instance and a numeric index
+ * identifying the transport-level connection.
+ *
+ * If @e outbound is not supported, nua_register() has to generate a URI
+ * that can be used to reach it from outside. It will check for public
+ * transport addresses detected by underlying stack with, e.g., STUN, UPnP
+ * or SOCKS. If there are public addresses, nua_register() will use them. If
+ * there is no public address, it will try to generate a Contact URI from
+ * the "received" and "rport" parameters found in the Via header of the
+ * response message.
+ *
+ * @par GRUU and Service-Route
+ *
+ * After a successful response to the REGISTER request has been received,
+ * nua_register() will update the information about the registration based
+ * on it. If there is a "gruu" parameter included in the response,
+ * nua_register() will save it and use the gruu URI in the Contact header
+ * fields of dialog-establishing messages, such as INVITE or SUBSCRIBE. 
+ * Also, if the registrar has included a Service-Route header in the
+ * response, and the service route feature has not been disabled using
+ * NUTAG_SERVICE_ROUTE_ENABLE(), the route URIs from the Service-Route
+ * header will be used for initial non-REGISTER requests.
+ *
+ * The #nua_r_register message will include the contact header and route
+ * used in with the registration.
+ *
+ * @par Registration Keep-Alive
+ *
+ * After the registration has successfully completed the nua_register() will
+ * validate the registration and initiate the keepalive mechanism, too. The
+ * user-agent validates the registration by sending a OPTIONS requests to
+ * itself. If there is an error, nua_register() will indicate that to the
+ * application using nua_i_outbound event, and start unregistration
+ * procedure (unless that has been explicitly disabled).
+ *
+ * The keepalive mechanism depends on the network features detected earlier. 
+ * If @a outbound extension is used, the STUN keepalives will be used. 
+ * Otherwise, NUA stack will repeatedly send OPTIONS requests to itself. In
+ * order to save bandwidth, it will include Max-Forwards: 0 in the
+ * keep-alive requests, however. The keepalive interval is determined by two
+ * parameters: NUTAG_KEEPALIVE() and NUTAG_KEEPALIVE_STREAM(). If the
+ * interval is 0, no keepalive messages is sent. The value of
+ * NUTAG_KEEPALIVE_STREAM(), if specified, is used to indicate the desired
+ * transport-layer keepalive interval for stream-based transports like TLS
+ * and TCP.
+ */
+
+/** @var nua_event_e::nua_r_register
+ *
+ * Answer to outgoing REGISTER.
+ *
+ * The REGISTER may be sent explicitly by nua_register() or implicitly by
+ * NUA state machines. The @a status may be 100 even if the real response
+ * status returned is different if the REGISTER request has been restarted.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param status registration status
+ * @param sip    response to REGISTER request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_outbound
+ *
+ * Answer to outgoing REGISTER.
+ *
+ * The REGISTER may be sent explicitly by nua_register() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to REGISTER request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/**@fn void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ * Unregister. 
+ *
+ * Send a REGISTER request with expiration time 0. This removes the 
+ * registration from the registrar. If the handle was earlier used 
+ * with nua_register() the periodic updates will be terminated. 
+ *
+ * If a SIPTAG_CONTACT_STR() with argument "*" is used, all the
+ * registrations will be removed from the registrar otherwise only the
+ * contact address belonging to the NUA stack is removed.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return
+ *     nothing
+ *
+ * @par Related tags:
+ *     NUTAG_REGISTRAR() \n
+ *     Tags in <sip_tag.h> except SIPTAG_EXPIRES() or SIPTAG_EXPIRES_STR()
+ *
+ * @par Events:
+ *     #nua_r_unregister
+ */
+
+/** @var nua_event_e::nua_r_unregister
+ *
+ * Answer to outgoing un-REGISTER.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to REGISTER request or NULL upon an error
+ *               (error code and message are in status and phrase parameters)
+ * @param tags   empty
+ */
+
 
 int
 nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
@@ -690,7 +854,7 @@ sip_contact_t const *nua_contact_by_aor(nua_t *nua,
   return outbound_connect_contact(oc);
 }
 
-/** Return a string descibing our features. */
+/** @internal Return a string descibing our features. */
 static
 char *nua_stack_register_features(nua_handle_t *nh)
 {
@@ -737,8 +901,11 @@ char *nua_stack_register_features(nua_handle_t *nh)
   return retval;
 }
 
-/** Remove (possible non-zero) "expires" parameters from contacts and extra
- *  contacts, add Expire: 0.
+/**@internal
+ * Fix contacts for un-REGISTER.
+ *
+ * Remove (possible non-zero) "expires" parameters from contacts and extra
+ * contacts, add Expire: 0.
  */
 static
 void unregister_expires_contacts(msg_t *msg, sip_t *sip)
@@ -773,7 +940,7 @@ void unregister_expires_contacts(msg_t *msg, sip_t *sip)
 }
 
 
-/** Callback from outbound_connect */
+/** @internal Callback from outbound_connect */
 static int nua_stack_register_status(nua_handle_t *nh, outbound_connect *oc,
 				     int status, char const *phrase,
 				     tag_type_t tag, tag_value_t value, ...)
@@ -791,7 +958,7 @@ static int nua_stack_register_status(nua_handle_t *nh, outbound_connect *oc,
   return 0;
 }
 
-/** Callback from outbound_connect */
+/** @internal Callback from outbound_connect */
 static int nua_stack_register_failed(nua_handle_t *nh, outbound_connect *oc,
 				     int status, char const *phrase,
 				     tag_type_t tag, tag_value_t value, ...)
@@ -812,14 +979,14 @@ static int nua_stack_register_failed(nua_handle_t *nh, outbound_connect *oc,
 /* Register-usage side */
 
 static
-int outbound_connect_nat_detect(outbound_connect *oc, sip_via_t const *v);
+int outbound_connect_nat_detect(outbound_connect *oc, sip_t const *);
 
 /* ---------------------------------------------------------------------- */
 
-/** Check if there is a NAT between us and registrar */
+/** @internal Check if there is a NAT between us and registrar */
 int outbound_connect_check_for_nat(struct outbound_connect *oc,
-				 nta_outgoing_t *orq,
-				 sip_t const *sip)
+				   nta_outgoing_t *orq,
+				   sip_t const *sip)
 {
   sip_via_t *v = sip->sip_via;
   int binding_changed;
@@ -1016,7 +1183,7 @@ void outbound_connect_stop_keepalive(struct outbound_connect *oc)
     nta_outgoing_destroy(oc->oc_kalo), oc->oc_kalo = NULL;
 }
 
-/** Create a message template for keepalive. */
+/** @internal Create a message template for keepalive. */
 static int create_keepalive_message(struct outbound_connect *oc,
 				    sip_t const *regsip)
 {
@@ -1154,7 +1321,7 @@ static void keepalive_timer(su_root_magic_t *root_magic,
 }
 
 
-/** Send a keepalive OPTIONS that probes the registration */
+/** @internal Send a keepalive OPTIONS that probes the registration */
 static int keepalive_options_with_registration_probe(outbound_connect *oc)
 {
   msg_t *req;
@@ -1201,7 +1368,7 @@ static int keepalive_options_with_registration_probe(outbound_connect *oc)
   return 0;
 }
 
-/** Check if incoming OPTIONS is a registration probe */
+/** @internal Check if incoming OPTIONS is a registration probe */
 int outbound_connect_check_accept(sip_accept_t const *accept)
 {
   return
@@ -1210,7 +1377,7 @@ int outbound_connect_check_accept(sip_accept_t const *accept)
     strcasecmp(accept->ac_type, outbound_connect_content_type) == 0;
 }
 
-/** Process incoming keepalive/validate OPTIONS */
+/** @internal Process incoming keepalive/validate OPTIONS */
 int outbound_connect_process_options(struct outbound_connect *usages,
 				   nta_incoming_t *irq,
 				   sip_t const *sip)
@@ -1236,7 +1403,8 @@ int outbound_connect_process_options(struct outbound_connect *usages,
 
 /* ---------------------------------------------------------------------- */
 
-/** Create contacts for register usage.
+/**@internal
+ * Create contacts for register usage.
  *
  * Each registration has two contacts: one suitable for registrations and
  * another that can be used in dialogs.
@@ -1323,7 +1491,7 @@ int outbound_connect_contacts_from_via(outbound_connect *oc,
   return 0;
 }
 
-/** Set contact by application */
+/** @internal Set contact by application */
 int outbound_connect_set_contact(struct outbound_connect *oc,
 			       sip_contact_t *m)
 {
@@ -1359,7 +1527,7 @@ int outbound_connect_set_contact(struct outbound_connect *oc,
   return 0;
 }
 
-/** Set contact to by using aor */
+/** @internal Set contact to by using aor */
 int outbound_connect_set_contact_by_aor(struct outbound_connect *oc,
 				      url_t const *aor,
 				      outbound_connect const *defaults)
@@ -1577,7 +1745,7 @@ void nua_outbound_connect_remove(nua_handle_t *nh,
   ds->ds_has_register = 0;	/* There can be only one */
 }
 
-/** Store information about registrar. */
+/** @internal Store information about registrar. */
 static void nua_outbound_peer_info(nua_dialog_usage_t *du,
 				   nua_dialog_state_t const *ds,
 				   sip_t const *sip)

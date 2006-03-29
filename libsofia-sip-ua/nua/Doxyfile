@@ -19,4 +19,5 @@ TAGFILES            += ../docs/doxytags_sdp=../sdp
 
 GENERATE_TAGFILE     = ../docs/doxytags_nua
 
-ALIASES             +=
+ALIASES             += CFILE="@internal @file" IFILE="@internal @file"
+VERBATIM_HEADERS     = NO

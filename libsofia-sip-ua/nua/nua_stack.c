@@ -400,7 +400,7 @@ void
 int nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
 			 tag_type_t t, tag_value_t v, ...);
 
-/** Send an event to the application. */
+/** @internal Send an event to the application. */
 int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 		    nua_event_t event, int status, char const *phrase,
 		    tag_type_t tag, tag_value_t value, ...)
@@ -603,7 +603,8 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
 
 static int nh_call_pending(nua_handle_t *nh, sip_time_t time);
 
-/** Timer routine.
+/**@internal
+ * Timer routine.
  *
  * Go through all active handles and execute pending tasks
  */
@@ -675,7 +676,7 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
 
 /* ====================================================================== */
 
-/** Shut down stack. */
+/** @internal Shut down stack. */
 void nua_stack_shutdown(nua_t *nua)
 {
   nua_handle_t *nh, *nh_next;
@@ -1238,7 +1239,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
 /* ---------------------------------------------------------------------- */
 
-/** Create a handle */
+/** @internal Create a handle */
 nua_handle_t *nh_create(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
@@ -1258,7 +1259,7 @@ nua_handle_t *nh_create(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
   return nh;
 }
 
-/** Append an handle to the list of handles */
+/** @internal Append an handle to the list of handles */
 void nh_append(nua_t *nua, nua_handle_t *nh)
 {
   nh->nh_next = NULL;
@@ -1298,7 +1299,7 @@ void nua_stack_destroy_handle(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 
 #define nh_is_inserted(nh) ((nh)->nh_prev != NULL)
 
-/** Remove a handle from list of handles */
+/** @internal Remove a handle from list of handles */
 static
 void nh_remove(nua_t *nua, nua_handle_t *nh)
 {
@@ -1368,7 +1369,8 @@ void nua_creq_deinit(struct nua_client_request *cr, nta_outgoing_t *orq)
 
 /* ======================================================================== */
 
-/** Initialize handle Allow and authentication info.
+/**@internal
+ * Initialize handle Allow and authentication info.
  *
  * @retval -1 upon an error
  * @retval 0 when successful
@@ -1438,7 +1440,7 @@ int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh,
   return 0;
 }
 
-/** Create a handle for processing incoming request */
+/** @internal Create a handle for processing incoming request */
 nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 					nta_incoming_t *irq,
 					sip_t const *sip,
@@ -1497,7 +1499,7 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 }
 
 
-/** Add authorization data */
+/** @internal Add authorization data */
 int nh_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   int retval = 0;
@@ -1526,7 +1528,8 @@ int nh_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   return retval;
 }
 
-/** Collect challenges from response.
+/**@internal
+ * Collect challenges from response.
  *
  * @return Number of updated challenges, 0 if no updates found.
  * @retval -1 upon error.
@@ -1552,19 +1555,22 @@ int nh_challenge(nua_handle_t *nh, sip_t const *sip)
   return server + proxy;
 }
 
-/** Create request message.
+/**@internal
+ * Create a request message.
  *
  * @param nua
  * @param nh
+ * @param cr
+ * @param restart
  * @param method
  * @param name
- * @param tag @a value list of tag-value pairs
+ * @param tag, value, ... list of tag-value pairs
  */
 msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
-		  struct nua_client_request *cr,
-		  int restart,
-		  sip_method_t method, char const *name,
-		  tag_type_t tag, tag_value_t value, ...)
+		    struct nua_client_request *cr,
+		    int restart,
+		    sip_method_t method, char const *name,
+		    tag_type_t tag, tag_value_t value, ...)
 {
   struct nua_dialog_state *ds = nh->nh_ds;
   msg_t *msg;
@@ -1761,14 +1767,15 @@ msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
   return msg;
 }
 
-/** Create response message.
+/**@internal
+ * Create a response message.
  *
  * @param nua
  * @param nh
  * @param irq
  * @param status
  * @param phrase
- * @param tag, @a value, ... list of tag-value pairs
+ * @param tag, value, ... list of tag-value pairs
  */
 msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
 			nta_incoming_t *irq,
@@ -1837,7 +1844,8 @@ nua_stack_method(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   return UA_EVENT1(e, SIP_501_NOT_IMPLEMENTED);
 }
 
-/**Relay response message to the application.
+/**@internal
+ * Relay response message to the application.
  *
  * If handle has already been marked as destroyed by nua_handle_destroy(),
  * release the handle with nh_destroy().
@@ -1928,7 +1936,7 @@ int nua_creq_restart_with(nua_handle_t *nh,
 }
 
 
-/** Save operation until it can be restarted */
+/** @internal Save operation until it can be restarted */
 int nua_creq_save_restart(nua_handle_t *nh,
 			  struct nua_client_request *cr,
 			  nta_outgoing_t *orq,
@@ -1953,7 +1961,8 @@ int nua_creq_save_restart(nua_handle_t *nh,
 }
 
 
-/** Check response, return true if we can restart the request.
+/**@internal
+ * Check response, return true if we can restart the request.
  *
  */
 int nua_creq_check_restart(nua_handle_t *nh,
@@ -2073,7 +2082,7 @@ int nua_creq_check_restart(nua_handle_t *nh,
   return 0;
 }
 
-/** Restart a request */
+/** @internal Restart a request */
 int nua_creq_restart(nua_handle_t *nh,
 		     struct nua_client_request *cr,
 		     nta_response_f *cb,

@@ -100,13 +100,14 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  * @retval NULL upon an error
  *
  * @par Related tags:
- *     #NUTAG_MEDIA_ENABLE     \n
- *     #NUTAG_PROXY            \n
- *     #NUTAG_SIP_PARSER       \n
- *     #NUTAG_SIPS_URL         \n
- *     #NUTAG_UICC             \n
- *     #NUTAG_CERTIFICATE_DIR  \n
- *     #NUTAG_URL              \n
+ *     NUTAG_MEDIA_ENABLE()     \n
+ *     NUTAG_SOA_NAME()         \n
+ *     NUTAG_PROXY()            \n
+ *     NUTAG_URL()              \n
+ *     NUTAG_SIPS_URL()         \n
+ *     NUTAG_SIP_PARSER()       \n
+ *     NUTAG_UICC()             \n
+ *     NUTAG_CERTIFICATE_DIR()  \n
  *     all relevant NTATAG_* are passed to NTA 
  *
  * @note
@@ -459,7 +460,7 @@ int nua_handle_has_active_call(nua_handle_t const *nh)
  *
  * @retval 0  if no call on hold in operation or operation handle is invalid 
  * @retval 1  if operation has call on hold, for example nua_invite() or 
- *            nua_update() has been called with #NUTAG_HOLD with != 0 argument.
+ *            nua_update() has been called with NUTAG_HOLD() with != 0 argument.
  *
  * @par Related tags:
  *     none
@@ -700,57 +701,12 @@ void nua_get_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_get_params, tag, value);
 }
 
-/** Send SIP REGISTER request to the registrar. 
- *
- * Request status will be delivered to the application using #nua_r_register
- * event. When successful the registration will be updated periodically. If
- * the registrar includes Service-Route header in response, and service
- * route is enabled using NUTAG_SERVICE_ROUTE_ENABLE(), the service route
- * will be used for initial non-REGISTER requests.
- *
- * The handle used for registration cannot be used for any other purposes.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_REGISTRAR
- *
- * @par Events:
- *     #nua_r_register
- */
-
+/* Documented with nua_stack_register() */
 void nua_register(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_register, tag, value);
 }
 
-/** Unregister. 
- *
- * Send a REGISTER request with expiration time 0. This removes the 
- * registration from the registrar. If the handle was earlier used 
- * with nua_register() the periodic updates will be terminated. 
- *
- * If a #SIPTAG_CONTACT_STR with argument "*" is used, the all registrations 
- * will be removed from the registrar otherwise only the contact address 
- * belonging to the NUA stack is removed.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_REGISTRAR \n
- *     Tags in <sip_tag.h> except #SIPTAG_EXPIRES or #SIPTAG_EXPIRES_STR
- *
- * @par Events:
- *     #nua_r_unregister
- */
 void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_unregister, tag, value);
@@ -766,9 +722,9 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  * hung-up with nua_bye().
  *
  * Optionally 
- * - uses early media if #NUTAG_EARLY_MEDIA tag is used with non zero value
+ * - uses early media if NUTAG_EARLY_MEDIA() tag is used with non zero value
  * - media parameters can be set by NUTAG_MEDIA_* tags
- * - if #NUTAG_MEDIA_ENABLE tag is used with value zero then the soa is 
+ * - if NUTAG_MEDIA_ENABLE() tag is used with value zero then the soa is 
  *   not used and application must create the SDP
  * - nua_invite() can be used to change call status: 
  *   - #SOATAG_HOLD tag listing the media put on hold or with value "*" sets
@@ -820,7 +776,7 @@ void nua_invite(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *
  * Acknowledge a successful response to INVITE request 
  * with SIP ACK message. This function is need only if 
- * #NUTAG_AUTOACK parameter has been cleared.
+ * NUTAG_AUTOACK() parameter has been cleared.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -966,7 +922,7 @@ void nua_chat(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_URL
+ *    NUTAG_URL()
  *    Tags in <sip_tag.h>
  *
  * @par Events:
@@ -1041,7 +997,7 @@ void nua_notify(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_URL \n
+ *    NUTAG_URL() \n
  *    #SIPTAG_EVENT or #SIPTAG_EVENT_STR \n
  *    #SIPTAG_CONTENT_TYPE or SIPTAG_CONTENT_TYPE_STR \n
  *    #SIPTAG_PAYLOAD or #SIPTAG_PAYLOAD_STR \n
@@ -1096,7 +1052,7 @@ void nua_terminate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_URL \n
+ *    NUTAG_URL() \n
  *    Tags in <sip_tag.h>
  *
  * @par Events:
@@ -1124,7 +1080,7 @@ void nua_refer(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_URL \n
+ *    NUTAG_URL() \n
  *    Tags in <sip_tag.h>
  *
  * @par Events:
@@ -1148,7 +1104,7 @@ void nua_publish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_URL \n
+ *    NUTAG_URL() \n
  *    Tags in <sip_tag.h>
  *
  * @par Events:
@@ -1236,7 +1192,7 @@ void nua_update(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *
  * - 401 / 407 response with www-authenticate header/ proxy-authenticate header
  * - application should provide stack with username&password for each realm
- * with #NUTAG_AUTH tag
+ * with NUTAG_AUTH() tag
  * - restarts operation
  *
  * @param nh              Pointer to operation handle
@@ -1246,7 +1202,7 @@ void nua_update(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_AUTH
+ *    NUTAG_AUTH()
  *
  * @par Events:
  *    (any operation events)
@@ -1262,8 +1218,8 @@ void nua_authenticate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  * incoming subscriber launches nua_i_subscription event. Subscriber
  * can be authorized in this application callback.
  *
- * #NUTAG_SUB tag
- * #NUTAG_SUBSTATE tag
+ * NUTAG_SUB() tag
+ * NUTAG_SUBSTATE() tag
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -1272,8 +1228,8 @@ void nua_authenticate(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    nothing
  *
  * @par Related Tags:
- *    #NUTAG_SUB
- *    #NUTAG_SUBSTATE
+ *    NUTAG_SUB()
+ *    NUTAG_SUBSTATE()
  *
  * @par Events:
  *    (any operation events)

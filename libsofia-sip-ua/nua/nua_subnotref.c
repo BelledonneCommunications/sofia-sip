@@ -424,7 +424,7 @@ pending_unsubscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   nua_dialog_usage_remove(nh, nh->nh_ds, du);
 }
 
-/** Process incoming SUBSCRIBE. */
+/** @internal Process incoming SUBSCRIBE. */
 int nua_stack_process_subsribe(nua_t *nua,
 			       nua_handle_t *nh,
 			       nta_incoming_t *irq,
@@ -663,7 +663,7 @@ static int process_response_to_notify(nua_handle_t *nh,
   return nua_stack_process_response(nh, nh->nh_cr, orq, sip, TAG_END());
 }
 
-/** Process incoming NOTIFY. */
+/** @internal Process incoming NOTIFY. */
 int nua_stack_process_notify(nua_t *nua,
 			     nua_handle_t *nh,
 			     nta_incoming_t *irq,
@@ -906,7 +906,7 @@ static int process_response_to_refer(nua_handle_t *nh,
   return nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 }
 
-/** Process incoming REFER. */
+/** @internal Process incoming REFER. */
 int nua_stack_process_refer(nua_t *nua,
 			    nua_handle_t *nh,
 			    nta_incoming_t *irq,

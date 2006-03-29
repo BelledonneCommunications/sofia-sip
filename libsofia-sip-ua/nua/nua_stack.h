@@ -24,7 +24,7 @@
 
 #ifndef NUA_STACK_H /** Defined when <nua_stack.h> has been included. */
 #define NUA_STACK_H
-/**@file nua_stack.h 
+/**@IFILE nua_stack.h 
  * @brief Sofia-SIP User Agent Engine - internal stack interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -87,16 +87,6 @@ enum nh_kind {
   nh_has_register,
   nh_has_streaming
 };
-
-enum nh_oa_event {
-  nua_sdp_none,
-  nua_sdp_offer_sent,		/**< O/A-1 offer sent */
-  nua_sdp_answer_recv,		/**< O/A-2 answer received */
-  nua_sdp_offer_recv,		/**< O/A-3 offer received */
-  nua_sdp_answer_sent		/**< O/A-4 answer sent */
-};
-
-typedef struct nua_chat_s nua_chat_t;
 
 typedef struct nua_client_request nua_client_request_t; 
 typedef struct nua_server_request nua_server_request_t; 

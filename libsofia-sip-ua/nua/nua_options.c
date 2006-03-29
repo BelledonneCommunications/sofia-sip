@@ -22,8 +22,8 @@
  *
  */
 
-/**@CFILE nua_message.c
- * @brief OPTIONS method
+/**@CFILE nua_options.c
+ * @brief Implementation of OPTIONS method
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *

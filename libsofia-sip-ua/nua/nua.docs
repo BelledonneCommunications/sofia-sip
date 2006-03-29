@@ -793,7 +793,7 @@ void app_i_message(int           status,
 } /* app_i_message */
 @endcode
 
-@subsection nua_notifier Creating Presence Server
+@subsection nua_notifier Creating a Presence Server
 
 @code
 
@@ -827,7 +827,7 @@ void app_i_message(int           status,
 @endcode
 
 After the nua_notifier object -- the presence server -- is created, an
-event nua_r_notifier is launched. Status and phrase values of the
+event nua_r_notifier is returned. Status and phrase values of the
 app_callback function indicate the success of the creation.
 
 Authorization of an incoming subscription (to the local presence
@@ -2386,20 +2386,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *               #NUTAG_SUBSTATE
  */
 
-/** @var nua_event_e::nua_r_register
- *
- * Answer to outgoing REGISTER.
- *
- * The REGISTER may be sent explicitly by nua_register() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to REGISTER request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
 /** @var nua_event_e::nua_r_shutdown
  *
  * Answer to nua_shutdown().
@@ -2437,17 +2423,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  * @param sip    NULL
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_r_unregister
- *
- * Answer to outgoing un-REGISTER.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to REGISTER request or NULL upon an error
- *               (error code and message are in status and phrase parameters)
  * @param tags   empty
  */
 

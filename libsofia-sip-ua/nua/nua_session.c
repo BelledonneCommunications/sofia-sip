@@ -777,7 +777,7 @@ static int
   process_cancel(nua_handle_t *, nta_incoming_t *, sip_t const *),
   process_timeout(nua_handle_t *, nta_incoming_t *);
 
-/** Process incoming INVITE. */
+/** @internal Process incoming INVITE. */
 int nua_stack_process_invite(nua_t *nua,
 			     nua_handle_t *nh0,
 			     nta_incoming_t *irq,
@@ -799,7 +799,7 @@ int nua_stack_process_invite(nua_t *nua,
   return process_invite2(nua, nh, irq, (sip_t *)sip);
 }
 
-/** Preprocess incoming invite - sure we have a valid request. */
+/** @internal Preprocess incoming invite - sure we have a valid request. */
 static
 int process_invite1(nua_t *nua,
 		    nua_handle_t **return_nh,
@@ -924,7 +924,7 @@ int process_invite1(nua_t *nua,
   return 0;
 }
 
-/** Process incoming invite - initiate media, etc. */
+/** @internal Process incoming invite - initiate media, etc. */
 static
 int process_invite2(nua_t *nua,
 		    nua_handle_t *nh,
@@ -989,11 +989,12 @@ int process_invite2(nua_t *nua,
   return 0;
 }
 
-/** Respond to an INVITE request.
+/** @internal Respond to an INVITE request.
  *
  * XXX - use tags to indicate when to use reliable responses.
  * XXX - change prototype.
  */
+static
 void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 		       int status, char const *phrase,
 		       tagi_t const *tags)
@@ -1184,7 +1185,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 }
 
 
-/** Process ACK or CANCEL or timeout (no ACK) for incoming INVITE */
+/** @internal Process ACK or CANCEL or timeout (no ACK) for incoming INVITE */
 static
 int process_ack_or_cancel(nua_handle_t *nh,
 			  nta_incoming_t *irq,
@@ -1209,7 +1210,7 @@ int process_ack_or_cancel(nua_handle_t *nh,
   return retval;
 }
 
-/** Process PRACK or (timeout from 100rel) */
+/** @internal Process PRACK or (timeout from 100rel) */
 static
 int process_prack(nua_handle_t *nh,
 		  nta_reliable_t *rel,

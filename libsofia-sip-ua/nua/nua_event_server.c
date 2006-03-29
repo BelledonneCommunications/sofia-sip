@@ -244,11 +244,12 @@ void authorize_watcher(nea_server_t *nes,
 }
 
 /* ---------------------------------------------------------------------- */
-/* Authorization by application */
+/* Authorization of watchers by application */
 
-void
-nua_stack_authorize(nua_t *nua, nua_handle_t *nh, nua_event_t e, 
-	     tagi_t const *tags)
+void nua_stack_authorize(nua_t *nua,
+			 nua_handle_t *nh,
+			 nua_event_t e,
+			 tagi_t const *tags)
 {
   nea_sub_t *sub = NULL;
   nea_state_t state = nea_extended;
@@ -268,13 +269,11 @@ nua_stack_authorize(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   return;
 }
 
-
-
-
-/** Shutdown notifier object */
-int
-nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
-		     tag_type_t t, tag_value_t v, ...)
+/** @internal Shutdown notifier object */
+int nh_notifier_shutdown(nua_handle_t *nh,
+			 nea_event_t *ev,
+			 tag_type_t t, 
+			 tag_value_t v, ...)
 {
   nea_server_t *nes = nh->nh_notifier;
   nea_subnode_t const **subs;
@@ -310,9 +309,11 @@ nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
 }
 
 
-/** Terminate notifier. */
-void
-nua_stack_terminate(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
+/** @internal Terminate notifier. */
+void nua_stack_terminate(nua_t *nua,
+			 nua_handle_t *nh,
+			 nua_event_t e,
+			 tagi_t const *tags)
 {
   sip_event_t const *event = NULL;
   sip_content_type_t const *ct = NULL;

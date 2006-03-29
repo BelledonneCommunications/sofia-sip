@@ -22,9 +22,8 @@
  *
  */
 
-/**
- * @file nua_common.c
- * @brief 
+/**@CFILE nua_common.c
+ * @brief Function common to both stack and application side.  
  * 
  * @author Pekka.Pessi@nokia.com
  * 
@@ -74,7 +73,8 @@
 
 #include "nua_stack.h"
 
-/** Create an operation handle 
+/**@internal
+ * Create an operation handle 
  *
  * Allocates a new operation handle and associated storage.
  *

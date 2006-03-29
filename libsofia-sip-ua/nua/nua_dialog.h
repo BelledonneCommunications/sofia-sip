@@ -25,7 +25,7 @@
 #ifndef NUA_DIALOG_H /** Defined when <nua_dialog.h> has been included. */
 #define NUA_DIALOG_H
 
-/**@file nua_dialog.h 
+/**@IFILE nua_dialog.h 
  * @brief Dialog and dialog usage handling
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
