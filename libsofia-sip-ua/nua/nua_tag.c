@@ -69,12 +69,12 @@ tag_typedef_t nutag_min_se = UINTTAG_TYPEDEF(min_se);
 tag_typedef_t nutag_session_refresher = INTTAG_TYPEDEF(session_refresher);
 tag_typedef_t nutag_update_refresh = BOOLTAG_TYPEDEF(update_refresh);
 tag_typedef_t nutag_refer_expires = UINTTAG_TYPEDEF(refer_expires);
-tag_typedef_t nutag_autoAlert = BOOLTAG_TYPEDEF(autoAlert);
-tag_typedef_t nutag_autoAnswer = BOOLTAG_TYPEDEF(autoAnswer);
-tag_typedef_t nutag_autoACK = BOOLTAG_TYPEDEF(autoACK);
-tag_typedef_t nutag_enableInvite = BOOLTAG_TYPEDEF(enableInvite);
-tag_typedef_t nutag_enableMessage = BOOLTAG_TYPEDEF(enableMessage);
-tag_typedef_t nutag_enableMessenger = BOOLTAG_TYPEDEF(enableMessenger);
+tag_typedef_t nutag_autoalert = BOOLTAG_TYPEDEF(autoAlert);
+tag_typedef_t nutag_autoanswer = BOOLTAG_TYPEDEF(autoAnswer);
+tag_typedef_t nutag_autoack = BOOLTAG_TYPEDEF(autoACK);
+tag_typedef_t nutag_enableinvite = BOOLTAG_TYPEDEF(enableInvite);
+tag_typedef_t nutag_enablemessage = BOOLTAG_TYPEDEF(enableMessage);
+tag_typedef_t nutag_enablemessenger = BOOLTAG_TYPEDEF(enableMessenger);
 
 
 /* Start NRC Boston */
@@ -105,6 +105,9 @@ tag_typedef_t nutag_outbound_set1 = STRTAG_TYPEDEF(outbound_set1);
 tag_typedef_t nutag_outbound_set2 = STRTAG_TYPEDEF(outbound_set2);
 tag_typedef_t nutag_outbound_set3 = STRTAG_TYPEDEF(outbound_set3);
 tag_typedef_t nutag_outbound_set4 = STRTAG_TYPEDEF(outbound_set4);
+
+tag_typedef_t nutag_keepalive = UINTTAG_TYPEDEF(keepalive);
+tag_typedef_t nutag_keepalive_stream = UINTTAG_TYPEDEF(keepalive_stream);
 
 tag_typedef_t nutag_sip_parser = PTRTAG_TYPEDEF(sip_parser);
 

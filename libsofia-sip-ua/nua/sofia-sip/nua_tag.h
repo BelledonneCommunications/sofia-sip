@@ -392,11 +392,11 @@ extern tag_typedef_t nutag_update_refresh_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_AUTOALERT_REF()
  */
-#define NUTAG_AUTOALERT(x)      nutag_autoAlert, tag_bool_v(x)
-extern tag_typedef_t nutag_autoAlert;
+#define NUTAG_AUTOALERT(x)      nutag_autoalert, tag_bool_v(x)
+extern tag_typedef_t nutag_autoalert;
 
-#define NUTAG_AUTOALERT_REF(x)  nutag_autoAlert_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_autoAlert_ref;
+#define NUTAG_AUTOALERT_REF(x)  nutag_autoalert_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_autoalert_ref;
 
 /** ACK automatically
  *
@@ -413,11 +413,11 @@ extern tag_typedef_t nutag_autoAlert_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_AUTOACK_REF()
  */
-#define NUTAG_AUTOACK(x)        nutag_autoACK, tag_bool_v(x)
-extern tag_typedef_t nutag_autoACK;
+#define NUTAG_AUTOACK(x)        nutag_autoack, tag_bool_v(x)
+extern tag_typedef_t nutag_autoack;
 
-#define NUTAG_AUTOACK_REF(x)    nutag_autoACK_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_autoACK_ref;
+#define NUTAG_AUTOACK_REF(x)    nutag_autoack_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_autoack_ref;
 
 /** Answer (200 Ok) automatically to incoming call
  *
@@ -434,11 +434,11 @@ extern tag_typedef_t nutag_autoACK_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_AUTOANSWER_REF()
  */
-#define NUTAG_AUTOANSWER(x)     nutag_autoAnswer, tag_bool_v(x)
-extern tag_typedef_t nutag_autoAnswer;
+#define NUTAG_AUTOANSWER(x)     nutag_autoanswer, tag_bool_v(x)
+extern tag_typedef_t nutag_autoanswer;
 
-#define NUTAG_AUTOANSWER_REF(x) nutag_autoAnswer_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_autoAnswer_ref;
+#define NUTAG_AUTOANSWER_REF(x) nutag_autoanswer_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_autoanswer_ref;
 
 /** Enable incoming INVITE
  *
@@ -455,11 +455,11 @@ extern tag_typedef_t nutag_autoAnswer_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_ENABLEINVITE_REF()
  */
-#define NUTAG_ENABLEINVITE(x)   nutag_enableInvite, tag_bool_v(x)
-extern tag_typedef_t nutag_enableInvite;
+#define NUTAG_ENABLEINVITE(x)   nutag_enableinvite, tag_bool_v(x)
+extern tag_typedef_t nutag_enableinvite;
 
-#define NUTAG_ENABLEINVITE_REF(x) nutag_enableInvite_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_enableInvite_ref;
+#define NUTAG_ENABLEINVITE_REF(x) nutag_enableinvite_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_enableinvite_ref;
 
 /** Enable incoming MESSAGE
  *
@@ -476,11 +476,11 @@ extern tag_typedef_t nutag_enableInvite_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_ENABLEMESSAGE_REF()
  */
-#define NUTAG_ENABLEMESSAGE(x)  nutag_enableMessage, tag_bool_v(x)
-extern tag_typedef_t nutag_enableMessage;
+#define NUTAG_ENABLEMESSAGE(x)  nutag_enablemessage, tag_bool_v(x)
+extern tag_typedef_t nutag_enablemessage;
 
-#define NUTAG_ENABLEMESSAGE_REF(x) nutag_enableMessage_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_enableMessage_ref;
+#define NUTAG_ENABLEMESSAGE_REF(x) nutag_enablemessage_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_enablemessage_ref;
 
 /** Enable incoming MESSAGE with To tag.
  *
@@ -499,12 +499,12 @@ extern tag_typedef_t nutag_enableMessage_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_ENABLEMESSENGER_REF()
  */
-#define NUTAG_ENABLEMESSENGER(x)  nutag_enableMessenger, tag_bool_v(x)
-extern tag_typedef_t nutag_enableMessenger;
+#define NUTAG_ENABLEMESSENGER(x)  nutag_enablemessenger, tag_bool_v(x)
+extern tag_typedef_t nutag_enablemessenger;
 
 #define NUTAG_ENABLEMESSENGER_REF(x) \
-  nutag_enableMessenger_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_enableMessenger_ref;
+  nutag_enablemessenger_ref, tag_bool_vr(&(x))
+extern tag_typedef_t nutag_enablemessenger_ref;
 
 /* Start NRC Boston */
 
@@ -921,6 +921,56 @@ extern tag_typedef_t nutag_auth;
 
 #define NUTAG_AUTH_REF(x)	    nutag_auth_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_auth_ref;
+
+/** Keepalive interval in seconds.
+ *
+ * @par Used with
+ *    nua_register()   \n
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *    nua_set_hparams() \n
+ *    nua_get_hparams()
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values 
+ *   - 0 - disable keepalives
+ *   - 90 - default value (90 seconds)
+ *
+ * Corresponding tag taking reference parameter is
+ * NUTAG_KEEPALIVE_REF()
+ */
+#define NUTAG_KEEPALIVE(x) nutag_keepalive, tag_uint_v(x)
+extern tag_typedef_t nutag_keepalive;
+
+#define NUTAG_KEEPALIVE_REF(x) nutag_keepalive_ref, tag_uint_vr(&(x))
+extern tag_typedef_t nutag_keepalive_ref;
+
+/** Transport-level keepalive interval for streams.
+ *
+ * @par Used with
+ *    nua_register()   \n
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *    nua_set_hparams() \n
+ *    nua_get_hparams()
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values 
+ *   Transport-level keepalive interval for streams.
+ *
+ * Corresponding tag taking reference parameter is
+ * NUTAG_KEEPALIVE_STREAM_REF()
+ */
+#define NUTAG_KEEPALIVE_STREAM(x) nutag_keepalive_stream, tag_uint_v(x)
+extern tag_typedef_t nutag_keepalive_stream;
+
+#define NUTAG_KEEPALIVE_STREAM_REF(x) \
+nutag_keepalive_stream_ref, tag_uint_vr(&(x))
+extern tag_typedef_t nutag_keepalive_stream_ref;
 
 /** Lifetime of authentication data in seconds.
  *

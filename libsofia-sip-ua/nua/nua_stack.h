@@ -75,6 +75,10 @@ SOFIA_BEGIN_DECLS
 #include <sigcomp.h>
 #endif
 
+#ifndef NUA_PARAMS_H
+#include <nua_params.h>
+#endif
+
 typedef struct event_s event_t;
 
 #define       NONE ((void *)-1)
@@ -186,131 +190,6 @@ typedef struct nua_session_state
 	 SOATAG_ACTIVE_IMAGE(soa_is_remote_image_active(soa))),		\
   TAG_IF((include) && (soa) && soa_is_remote_chat_active(soa) >= 0,	\
 	 SOATAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
-
-typedef struct nua_handle_preferences
-{
-  unsigned         nhp_retry_count;	/**< times to retry a request */
-  unsigned         nhp_max_subscriptions;
-
-  /* Session-related preferences */
-  unsigned     	   nhp_invite_enable:1;
-  unsigned     	   nhp_auto_alert:1;
-  unsigned         nhp_early_media:1;/**< Establish early media session */
-  unsigned         nhp_auto_answer:1;
-  unsigned         nhp_auto_ack:1; /**< Automatically ACK a final response */
-  unsigned         :0;
-
-  /** INVITE timeout. 
-   *
-   * If no response is received in nhp_invite_timeout seconds,
-   * INVITE client transaction times out
-   */
-  unsigned         nhp_invite_timeout;
-
-  /** Default session timer (in seconds, 0 disables) */
-  unsigned         nhp_session_timer;
-  /** Default Min-SE Delta value */
-  unsigned         nhp_min_se;
-  /** no (preference), local or remote */
-  enum nua_session_refresher nhp_refresher; 
-  unsigned         nhp_update_refresh:1; /**< Use UPDATE to refresh */
-  
-  /* Messaging preferences */
-  unsigned     	   nhp_message_enable : 1;
-  /** Be bug-compatible with Windows Messenger */
-  unsigned     	   nhp_win_messenger_enable : 1;
-  /** PIM-IW hack */
-  unsigned         nhp_message_auto_respond : 1;
-
-  /* Preferences for registration (and dialog establishment) */
-  unsigned         nhp_callee_caps:1; /**< Add callee caps to contact */
-  unsigned         nhp_media_features:1;/**< Add media features to caps*/
-  /** Enable Service-Route */
-  unsigned         nhp_service_route_enable:1;
-  /** Enable Path */
-  unsigned         nhp_path_enable:1;
-
-  unsigned:0;
-
-  /* Default lifetime for implicit subscriptions created by REFER */
-  unsigned         nhp_refer_expires;
-
-  /* Subscriber state, i.e. nua_substate_pending */
-  unsigned         nhp_substate;
-
-  sip_allow_t        *nhp_allow;
-  sip_supported_t    *nhp_supported;
-  sip_user_agent_t   *nhp_user_agent;
-  char const         *nhp_ua_name;
-  sip_organization_t *nhp_organization;
-
-  char const         *nhp_instance;
-  /**< Outbound OPTIONS */
-  char const         *nhp_outbound; 
-  
-  /* A bit for each feature set by application */
-  union {
-    uint32_t set_any;
-    struct {
-      unsigned nhp_retry_count:1;
-      unsigned nhp_max_subscriptions:1;
-      unsigned nhp_invite_enable:1;
-      unsigned nhp_auto_alert:1;
-      unsigned nhp_early_media:1;
-      unsigned nhp_auto_answer:1;
-      unsigned nhp_auto_ack:1;
-      unsigned nhp_invite_timeout:1;
-      unsigned nhp_session_timer:1;
-      unsigned nhp_min_se:1;
-      unsigned nhp_refresher:1; 
-      unsigned nhp_update_refresh:1;
-      unsigned nhp_message_enable:1;
-      unsigned nhp_win_messenger_enable:1;
-      unsigned nhp_message_auto_respond:1;
-      unsigned nhp_callee_caps:1;
-      unsigned nhp_media_features:1;
-      unsigned nhp_service_route_enable:1;
-      unsigned nhp_path_enable:1;
-      unsigned nhp_refer_expires:1;
-      unsigned nhp_substate:1;
-      unsigned nhp_allow:1;
-      unsigned nhp_supported:1;
-      unsigned nhp_user_agent:1;
-      unsigned nhp_ua_name:1;
-      unsigned nhp_organization:1;
-      unsigned nhp_instance;
-      unsigned nhp_outbound;
-      unsigned :0;
-    } set_bits;
-  } nhp_set;
-} nua_handle_preferences_t;
-
-/* Get preference from default handle */
-#define DNH_PGET(dnh, pref)						\
-  DNHP_GET((dnh)->nh_prefs, pref)
-#define DNHP_GET(dnhp, pref) ((dnhp)->nhp_##pref)
-#define DNHP_SET(dnhp, pref, value) \
-  ((dnhp)->nhp_##pref = (value), (dnhp)->nhp_set.set_bits.nhp_##pref = 1)
-
-/* Get preference from handle, if set, otherwise from default handle */
-#define NH_PGET(nh, pref)						\
-  NHP_GET((nh)->nh_prefs, (nh)->nh_nua->nua_dhandle->nh_prefs, pref)
-#define NHP_GET(nhp, dnhp, pref)					\
-  ((nhp)->nhp_set.set_bits.nhp_##pref					\
-   ? (nhp)->nhp_##pref : (dnhp)->nhp_##pref)
-
-/* Check if preference is set in the handle */
-#define NH_PISSET(nh, pref)						\
-  (NHP_ISSET((nh)->nh_prefs, pref) &&					\
-   (nh)->nh_nua->nua_dhandle->nh_prefs != (nh)->nh_prefs)
-
-/* Check if preference is set */
-#define NHP_ISSET(nhp, pref)						\
-  ((nhp)->nhp_set.set_bits.nhp_##pref)
-
-#define NHP_UNSET_ALL(nhp) ((nhp)->nhp_set.set_any = 0)
-#define NHP_SET_ALL(nhp) ((nhp)->nhp_set.set_any = 0xffffffffU)
-#define NHP_IS_ANY_SET(nhp) ((nhp)->nhp_set.set_any != 0)
 
 /** NUA handle. 
  *
@@ -533,6 +412,12 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 void nh_destroy(nua_t *nua, nua_handle_t *nh);
 
 nua_handle_t *nh_validate(nua_t *nua, nua_handle_t *maybe);
+
+int nua_stack_set_defaults(nua_handle_t *nh, nua_handle_preferences_t *nhp);
+
+void nua_stack_set_from(nua_t *, int initial, tagi_t const *tags);
+
+int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags);
 
 int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh, 
 			  enum nh_kind kind,

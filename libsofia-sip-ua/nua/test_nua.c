@@ -854,6 +854,12 @@ int test_params(struct context *ctx)
 		 NUTAG_PATH_ENABLE(0),
 		 NUTAG_SUBSTATE(nua_substate_pending),
 
+		 NUTAG_KEEPALIVE(66),
+		 NUTAG_KEEPALIVE_STREAM(33),
+
+		 NUTAG_OUTBOUND("foo"),
+		 NUTAG_INSTANCE("urn:uuid:97701ad9-39df-1229-1083-dbc0a85f029c"),
+
 		 SIPTAG_SUPPORTED(sip_supported_make(tmphome, "humppaa,kuole")),
 		 SIPTAG_ALLOW(sip_allow_make(tmphome, "OPTIONS, INFO")),
 		 SIPTAG_USER_AGENT(sip_user_agent_make(tmphome, "test_nua")),
@@ -911,6 +917,11 @@ int test_params(struct context *ctx)
     sip_organization_t const *organization = NONE;
     char const *organization_str = "NONE";
 
+    char const *outbound = "NONE";
+    char const *instance = "NONE";
+    
+    unsigned keepalive = -1, keepalive_stream = -1;
+
     url_string_t const *registrar = NONE;
 
     int n;
@@ -961,10 +972,16 @@ int test_params(struct context *ctx)
 	       	SIPTAG_ORGANIZATION_REF(organization),
 	       	SIPTAG_ORGANIZATION_STR_REF(organization_str),
 
+		NUTAG_OUTBOUND_REF(outbound),
+		NUTAG_INSTANCE_REF(instance),
+
+		NUTAG_KEEPALIVE_REF(keepalive),
+		NUTAG_KEEPALIVE_STREAM_REF(keepalive_stream),
+
 	       	NUTAG_REGISTRAR_REF(registrar),
 
 		TAG_END());
-    TEST(n, 30);
+    TEST(n, 34);
 
     TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
     TEST_S(from_str, Alice);
@@ -1003,6 +1020,12 @@ int test_params(struct context *ctx)
     TEST_S(sip_header_as_string(tmphome, (void *)organization),
 	   "Pussy Galore's Flying Circus");
     TEST_S(organization_str, "Pussy Galore's Flying Circus");
+
+    TEST(keepalive, 66);
+    TEST(keepalive_stream, 33);
+
+    TEST_S(outbound, "foo");
+    TEST_S(instance, "urn:uuid:97701ad9-39df-1229-1083-dbc0a85f029c");
 
     TEST_S(url_as_string(tmphome, registrar->us_url),
 	   "sip:sip.wonderland.org");

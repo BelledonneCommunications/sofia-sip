@@ -515,58 +515,6 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh)
   return nh ? nh->nh_ds->ds_local : NULL;
 }
 
-/** Set NUA parameters.
- *
- * @param nua             Pointer to NUA stack object
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_AUTOACK \n
- *     #NUTAG_AUTOALERT \n
- *     #NUTAG_AUTOANSWER \n
- *     #NUTAG_EARLY_MEDIA \n
- *     #NUTAG_ENABLEINVITE \n
- *     #NUTAG_ENABLEMESSAGE \n
- *     #NUTAG_ENABLEMESSENGER \n
- *     #NUTAG_INVITE_TIMER \n
- *     #NUTAG_MEDIA_FEATURES \n
- *     #NUTAG_MIN_SE \n
- *     #NUTAG_PROXY \n
- *     #NUTAG_REGISTRAR \n
- *     #NUTAG_SESSION_REFRESHER \n
- *     #NUTAG_SESSION_TIMER \n
- *     #NUTAG_URL \n
- *     #NUTAG_USER_AGENT \n
- *     #NUTAG_UPDATE_REFRESH \n
- *     #NUTAG_SUBSTATE \n
- *     #NUTAG_SMIME_ENABLE \n
- *     #NUTAG_SMIME_OPT \n
- *     #NUTAG_SMIME_PROTECTION_MODE \n
- *     #NUTAG_SMIME_MESSAGE_DIGEST \n
- *     #NUTAG_SMIME_SIGNATURE \n
- *     #NUTAG_SMIME_KEY_ENCRYPTION \n
- *     #NUTAG_SMIME_MESSAGE_ENCRYPTION \n
- *     #NUTAG_SIPS_URL \n
- *     #SIPTAG_FROM_STR \n
- *     #SIPTAG_ORGANIZATION_STR \n
- *     #SIPTAG_SUPPORTED_STR \n
- *     #SIPTAG_ALLOW_STR \n
- *     #NTATAG_DEFAULT_PROXY \n
- *     #NTATAG_SIP_T1 \n
- *     #NTATAG_SIP_T2 \n
- *     #NTATAG_SIP_T4 \n
- *     #NTATAG_SIP_T1X64 \n
- *     #NTATAG_DEBUG_DROP_PROB \n
- *     #NTATAG_SIPFLAGS
- *
- * nua_set_params() also accepts any soa tags, defined in <soa_tag.h>.
- * 
- * @par Events:
- *     none
- */
 void nua_set_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
@@ -579,23 +527,6 @@ void nua_set_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
   ta_end(ta);
 }
 
-/** Get NUA parameters.
- *
- * Get values of NUA parameters in nua_r_get_params event.
- *
- * @param nua             Pointer to NUA stack object
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #TAG_ANY \n
- *     othervise same tags as nua_set_params()
- *
- * @par Events:
- *     #nua_r_get_params
- */
 void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
@@ -620,82 +551,11 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
     SU_DEBUG_1(("nua: " #event " with invalid handle %p\n", nh));	\
   }
 
-/** Set handle-specific parameters.
- *
- * @param nh              Pointer to a NUA handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #NUTAG_AUTOACK \n
- *     #NUTAG_AUTOALERT \n
- *     #NUTAG_AUTOANSWER \n
- *     #NUTAG_EARLY_MEDIA \n
- *     #NUTAG_ENABLEINVITE \n
- *     #NUTAG_ENABLEMESSAGE \n
- *     #NUTAG_ENABLEMESSENGER \n
- *     #NUTAG_INVITE_TIMER \n
- *     #NUTAG_MEDIA_FEATURES \n
- *     #NUTAG_MIN_SE \n
- *     #NUTAG_PROXY (XXX) \n
- *     #NUTAG_REGISTRAR \n
- *     #NUTAG_SESSION_REFRESHER \n
- *     #NUTAG_SESSION_TIMER \n
- *     #NUTAG_USER_AGENT \n
- *     #NUTAG_UPDATE_REFRESH \n
- *     #NUTAG_SMIME_ENABLE \n
- *     #NUTAG_SMIME_OPT \n
- *     #NUTAG_SMIME_PROTECTION_MODE \n
- *     #NUTAG_SMIME_MESSAGE_DIGEST \n
- *     #NUTAG_SMIME_SIGNATURE \n
- *     #NUTAG_SMIME_KEY_ENCRYPTION \n
- *     #NUTAG_SMIME_MESSAGE_ENCRYPTION \n
- *     #NUTAG_SIPS_URL \n
- *     #SIPTAG_ORGANIZATION \n
- *     #SIPTAG_ORGANIZATION_STR \n
- *     #SIPTAG_SUPPORTED \n
- *     #SIPTAG_SUPPORTED_STR \n
- *     #SIPTAG_ALLOW_STR \n
- *
- * @par Events:
- *     none
- */
 void nua_set_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_set_params, tag, value);
 }
 
-/** Get values of handle-specific parameters in nua_r_get_params event.
- *
- * Application will specify either expilicit list of tags it is interested
- * in, or a filter (at the moment, TAG_ANY()). The values are returned as a
- * list of tags in the nua_r_get_params event.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * The handle-specific parameters will contain only the parameters actually
- * modified by application, either by nua_set_handle_params() or some other
- * handle-specific call. Currently, no NTA parameters are returned. They are
- * returned only when application asks for user-agent-level parameters using
- * either nua_get_params() or using default handle, eg.
- * @code
- * nua_get_handle_params(nua_default(nua), TAG_ANY())
- * @endcode
- *
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     #TAG_ANY \n
- *     othervise same tags as nua_set_handle_params()
- *
- * @par Events:
- *     #nua_r_get_params
- */
 void nua_get_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_get_params, tag, value);
