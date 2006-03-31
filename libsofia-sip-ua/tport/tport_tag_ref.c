@@ -91,3 +91,6 @@ EXPORT tag_typedef_t tptag_thrprqsize_ref =
 extern tag_typedef_t tptag_http_connect;
 EXPORT tag_typedef_t tptag_http_connect_ref = 
   REFTAG_TYPEDEF(tptag_http_connect);
+extern tag_typedef_t tptag_stun_server;
+EXPORT tag_typedef_t tptag_stun_server_ref = 
+  REFTAG_TYPEDEF(tptag_stun_server);

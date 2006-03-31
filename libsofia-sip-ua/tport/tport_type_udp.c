@@ -36,8 +36,6 @@
 
 #include "tport_internal.h"
 
-#undef HAVE_SIGCOMP
-
 #if HAVE_IP_RECVERR || HAVE_IPV6_RECVERR
 #include <linux/types.h>
 #include <linux/errqueue.h>
@@ -52,9 +50,6 @@
 
 /* ---------------------------------------------------------------------- */
 /* UDP */
-
-static int tport_recv_stun_dgram(tport_t const *self, int N);
-static int tport_recv_sigcomp_dgram(tport_t *self, int N);
 
 tport_vtable_t const tport_udp_client_vtable =
 {
@@ -149,6 +144,8 @@ int tport_udp_init_primary(tport_primary_t *pri,
 
   pri->pri_primary->tp_events = events;
 
+  tport_stun_server_add_socket(pri->pri_primary);
+
   return 0;
 }
 
@@ -191,10 +188,10 @@ int tport_recv_dgram(tport_t *self)
 		su_strerror(su_errno()), su_errno()));
 #endif
   else if ((sample[0] & 0xf8) == 0xf8) {
-    return tport_recv_sigcomp_dgram(self, N); /* SigComp */
+    return tport_recv_comp_dgram(self, N); /* SigComp */
   }
   else if (sample[0] == 0 || sample[0] == 1) {
-    return tport_recv_stun_dgram(self, N);    /* STUN */
+    return tport_recv_stun_dgram(self, N); /* STUN message */
   }
   else
     return tport_recv_dgram_r(self, &self->tp_msg, N);
@@ -242,143 +239,6 @@ int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
     tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
 
   msg_recv_commit(msg, n, 1);  /* Mark buffer as used */
-
-  return 0;
-}
-
-/** Receive data from datagram using SigComp. */
-int tport_recv_sigcomp_dgram(tport_t *self, int N)
-{
-  char dummy[1];
-  int error = EBADMSG;
-#if HAVE_SIGCOMP
-  struct sigcomp_udvm *udvm;
-
-  if (self->tp_sigcomp->sc_udvm == 0)
-    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
-
-  udvm = self->tp_sigcomp->sc_udvm;
-
-  if (udvm) {
-    retval = tport_recv_sigcomp_r(self, &self->tp_msg, udvm, N);
-    if (retval < 0)
-      sigcomp_udvm_reject(udvm);
-    return retval;
-  }
-  error = su_errno();
-#endif
-  recv(self->tp_socket, dummy, 1, 0); /* remove msg from socket */
-  /* XXX - send NACK ? */
-  return su_seterrno(error);     
-}
-
-/** Receive STUN datagram.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- */
-int tport_recv_stun_dgram(tport_t const *self, int N)
-{
-  int n;
-  su_sockaddr_t from[1];
-  socklen_t fromlen = sizeof(su_sockaddr_t);
-  int status = 600;
-  char const *error = NULL;
-  
-  unsigned char buffer[128];
-  unsigned char *dgram = buffer;
-
-  if (N > sizeof buffer)
-    dgram = malloc(N);
-
-  if (dgram == NULL)
-    dgram = buffer, N = sizeof buffer, status = 500, error = "Server Error";
-
-  memset(from, 0, sizeof(su_sockaddr_t));
-  n = recvfrom(self->tp_socket, (void *)dgram, N, MSG_TRUNC, 
-	       (void *)from, &fromlen);
-
-  if (n < 20) {
-    if (n != SOCKET_ERROR)
-      su_seterrno(EBADMSG);	/* Runt */
-    if (dgram != buffer)
-      free(dgram);
-    return -1;
-  }
-
-  if ((!error || dgram[0] == 1) && self->tp_master->mr_nat->stun) {
-#if HAVE_SOFIA_STUN
-    if (n > N) n = N;		/* Truncated? */
-    stun_process_message(self->tp_master->mr_nat->stun, self->tp_socket,
-			 from, fromlen, (void *)dgram, n);
-    if (dgram != buffer)
-      free(dgram);
-    return 0;
-#endif /* HAVE_SOFIA_STUN */
-  }
-
-  if (dgram[0] == 0 && (dgram[1] == 1 || dgram[1] == 2)) {
-    uint16_t elen;
-    if (error == NULL)
-      status = 600, error = "Not Implemented";
-    elen = strlen(error);
-
-    /*
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |      STUN Message Type        |         Message Length        |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-                             Transaction ID
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-                                                                    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    */
-
-#define set16(b, offset, value)			\
-  (((b)[(offset) + 0] = ((value) >> 8) & 255),	\
-   ((b)[(offset) + 1] = (value) & 255))
-
-    /* Respond to request */
-    dgram[0] = 1; /* Mark as response */
-    dgram[1] |= 0x10; /* Mark as error response */
-    set16(dgram, 2, elen + 4 + 4);
-    /* TransactionID is there at bytes 4..19 */
-    /*
-    TLV At 20:
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |         Type                  |            Length             |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    */
-    set16(dgram, 20, 0x0009); /* ERROR-CODE */
-    set16(dgram, 22, elen + 4);
-    /*
-    ERROR-CODE at 24:
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                   0                     |Class|     Number    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |      Reason Phrase (variable)                                ..
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     */
-    dgram[24] = 0, dgram[25] = 0;
-    dgram[26] = status / 100, dgram[27] = status % 100;
-    memcpy(dgram + 28, error, elen);
-    N = 28 + elen;
-    sendto(self->tp_socket, (void *)dgram, N, 0, (void *)from, fromlen);
-
-#undef set16
-  }
-
-  if (dgram != buffer)
-    free(dgram);
 
   return 0;
 }

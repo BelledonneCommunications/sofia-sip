@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE tport_connect.c Transport using HTTP CONNECT.
+/**@CFILE tport_type_stun.c Transport using stun.
  *
  * See tport.docs for more detailed description of tport interface.
  *
@@ -60,7 +60,6 @@ static void tport_udp_deinit_stun(tport_primary_t *pri);
 static
 void tport_stun_bind_cb(tport_primary_t *pri,
 			stun_handle_t *sh,
-			stun_request_t *req,
 			stun_discovery_t *sd,
 			stun_action_t action,
 			stun_state_t event);
@@ -71,6 +70,10 @@ void tport_stun_bind_done(tport_primary_t *pri,
 static
 int tport_stun_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 			 tagi_t const *taglist);
+
+static int tport_stun_response(tport_t const *self,
+			       void *dgram, size_t n,
+			       void *from, socklen_t fromlen);
 
 typedef struct
 {
@@ -97,6 +100,7 @@ tport_vtable_t const tport_stun_vtable =
   NULL,
   NULL,
   tport_stun_keepalive,
+  tport_stun_response
 };
 
 static int tport_udp_init_stun(tport_primary_t *pri,
@@ -140,6 +144,7 @@ static int tport_udp_init_stun(tport_primary_t *pri,
   return 0;
 }
 
+
 static void tport_udp_deinit_stun(tport_primary_t *pri)
 {
   tport_stun_t *stunpri = (tport_stun_t *)pri;
@@ -148,11 +153,23 @@ static void tport_udp_deinit_stun(tport_primary_t *pri)
 }
 
 
+static int tport_stun_response(tport_t const *self,
+			       void *dgram, size_t n,
+			       void *from, socklen_t fromlen)
+{
+  tport_stun_t *stunpri = (tport_stun_t *)self->tp_pri;
+
+  stun_process_message(stunpri->stunpri_handle, self->tp_socket,
+		       from, fromlen, (void *)dgram, n);
+
+  return 3;
+}
+
+
 /**Callback for STUN bind */
 static
 void tport_stun_bind_cb(tport_primary_t *pri,
 			stun_handle_t *sh,
-			stun_request_t *req,
 			stun_discovery_t *sd,
 			stun_action_t action,
 			stun_state_t event)
@@ -166,6 +183,7 @@ void tport_stun_bind_cb(tport_primary_t *pri,
     tport_stun_bind_done(pri, sh, sd);
   }
 }
+
 
 static
 void tport_stun_bind_done(tport_primary_t *pri,

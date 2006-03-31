@@ -169,26 +169,15 @@ typedef struct {
 
 /** Create first primary transport. */
 TPORT_DLL tport_t *tport_tcreate(tp_stack_t *stack,
-		       tport_stack_class_t const *tpac,
-		       su_root_t *root,
-		       tag_type_t tag, tag_value_t value, ...);
-
-/** Create first primary transport. @deprecated Use tport_tcreate(). */
-TPORT_DLL tport_t *tport_create(tp_stack_t *stack,
-		      tport_stack_class_t const *stack_class,
-		      su_root_t *root);
-
-/** Bind transports to network */
-TPORT_DLL int tport_bind(tport_t *self,
-	       tp_name_t const *tpn,
-	       char const * const transports[],
-	       int flags);
+				 tport_stack_class_t const *tpac,
+				 su_root_t *root,
+				 tag_type_t tag, tag_value_t value, ...);
 
 /** Bind transports to network. */
 TPORT_DLL int tport_tbind(tport_t *self,
-		tp_name_t const *tpn,
-		char const * const transports[],
-		tag_type_t tag, tag_value_t value, ...);
+			  tp_name_t const *tpn,
+			  char const * const transports[],
+			  tag_type_t tag, tag_value_t value, ...);
 
 /** Get transport parameters. */
 TPORT_DLL int tport_get_params(tport_t const *, tag_type_t tag, tag_value_t value, ...);
@@ -208,12 +197,9 @@ TPORT_DLL tport_t *tport_incref(tport_t *tp);
 /** Destroy a transport reference. */
 TPORT_DLL void tport_decref(tport_t **tp);
 
-/** Send a message using transport. @deprecated Use tport_tsend(). */
-TPORT_DLL int tport_send(tport_t *, msg_t *, tp_name_t const *);
-
 /** Send a message using transport. */
 TPORT_DLL tport_t *tport_tsend(tport_t *, msg_t *, tp_name_t const *,
-		     tag_type_t, tag_value_t, ...);
+			       tag_type_t, tag_value_t, ...);
 
 /** Queue a message to transport. */
 TPORT_DLL int tport_tqueue(tport_t *, msg_t *, tag_type_t, tag_value_t, ...);
@@ -222,7 +208,8 @@ TPORT_DLL int tport_tqueue(tport_t *, msg_t *, tag_type_t, tag_value_t, ...);
 TPORT_DLL int tport_queuelen(tport_t const *self);
 
 /** Send a queued message (and queue another, if required). */
-TPORT_DLL int tport_tqsend(tport_t *, msg_t *, msg_t *, tag_type_t, tag_value_t, ...);
+TPORT_DLL int tport_tqsend(tport_t *, msg_t *, msg_t *, 
+			   tag_type_t, tag_value_t, ...);
 
 /** Stop reading from socket until tport_continue() is called. */
 TPORT_DLL int tport_stall(tport_t *self);
@@ -349,6 +336,10 @@ int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */
 
+TPORT_DLL
+struct sigcomp_compartment *tport_init_comp(tport_t *self,
+					    char const *algorithm_name);
+
 TPORT_DLL int tport_can_send_sigcomp(tport_t const *self);
 TPORT_DLL int tport_can_recv_sigcomp(tport_t const *self);
 
@@ -356,7 +347,8 @@ TPORT_DLL int tport_has_compression(tport_t const *self, char const *comp);
 TPORT_DLL int tport_set_compression(tport_t *self, char const *comp);
 
 /** Set SigComp option. */
-TPORT_DLL int tport_sigcomp_option(tport_t const *self,
+TPORT_DLL
+int tport_sigcomp_option(tport_t const *self,
 			 struct sigcomp_compartment *cc,
 			 char const *option);
 

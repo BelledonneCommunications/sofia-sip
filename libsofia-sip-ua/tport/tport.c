@@ -311,9 +311,6 @@ int tport_has_sigcomp(tport_t const *self)
   return self->tp_name->tpn_comp != NULL;
 }
 
-int tport_master_set_compartment(tport_master_t *mr, 
-				 struct sigcomp_compartment *cc);
-
 static 
 tport_t *tport_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
 		       tp_name_t const *tpn);
@@ -367,8 +364,6 @@ static int
   tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], int iovused),
   tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error),
   tport_pending_errmsg(tport_t *self, msg_t *msg, int error);
-
-void tport_try_accept_sigcomp(tport_t *self, msg_t *msg);
 
 tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 			   su_addrinfo_t const *ai,
@@ -466,6 +461,7 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tpp->tpp_idle = UINT_MAX;
   tpp->tpp_timeout = UINT_MAX;
   tpp->tpp_sigcomp_lifetime = UINT_MAX;
+  tpp->tpp_stun_server = 1;
 
   tpn = mr->mr_master->tp_name;
   tpn->tpn_proto = "*";
@@ -485,6 +481,8 @@ tport_t *tport_tcreate(tp_stack_t *stack,
     tick = tpp->tpp_timeout / 4;
   if (tick < 200)
     tick = 200;
+
+  tport_init_stun_server(mr, ta_args(ta));
 
   mr->mr_timer = su_timer_create(su_root_task(root), tick);
   su_timer_set(mr->mr_timer, tport_tick, mr);
@@ -523,10 +521,8 @@ void tport_destroy(tport_t *self)
   while (mr->mr_primaries)
     tport_zap_primary(mr->mr_primaries);
 
-#if HAVE_SIGCOMP
-  if (mr->mr_compartment)
-    sigcomp_compartment_unref(mr->mr_compartment), mr->mr_compartment = NULL;
-#endif
+  tport_deinit_comp(mr);
+  tport_deinit_stun_server(mr);
 
   if (mr->mr_dump_file)
     fclose(mr->mr_dump_file), mr->mr_dump_file = NULL;
@@ -536,6 +532,7 @@ void tport_destroy(tport_t *self)
 
   su_home_zap(mr->mr_home);
 }
+
 
 /** Allocate a primary transport */
 static 
@@ -999,6 +996,8 @@ void tport_zap_secondary(tport_t *self)
 
   mr = self->tp_master;
 
+  tport_stun_server_remove_socket(self);
+
   if (self->tp_index)
     su_root_deregister(mr->mr_root, self->tp_index);
   self->tp_index = 0;
@@ -1085,7 +1084,7 @@ int tport_set_params(tport_t *self,
   int n;
   tport_params_t tpp[1], *tpp0;
 
-  int connect, sdwn_error, reusable, public = 0;
+  int connect, sdwn_error, reusable, stun_server;
 
   struct sigcomp_compartment *cc = NONE;
 
@@ -1097,6 +1096,7 @@ int tport_set_params(tport_t *self,
   connect = tpp->tpp_conn_orient;
   sdwn_error = tpp->tpp_sdwn_error;
   reusable = self->tp_reusable;
+  stun_server = tpp->tpp_stun_server;
 
   ta_start(ta, tag, value);
 
@@ -1113,7 +1113,7 @@ int tport_set_params(tport_t *self,
 	      TPTAG_SDWN_ERROR_REF(sdwn_error),
 	      TPTAG_REUSE_REF(reusable),
 	      TPTAG_COMPARTMENT_REF(cc),
-	      TPTAG_PUBLIC_REF(public),
+	      TPTAG_STUN_SERVER_REF(stun_server),
 	      TAG_END());
 
   ta_end(ta);
@@ -1134,22 +1134,16 @@ int tport_set_params(tport_t *self,
   if (tpp->tpp_qsize >= 1000)
     tpp->tpp_qsize = 1000;
 
-
-  tpp->tpp_sdwn_error = sdwn_error;
-
-  self->tp_reusable = reusable;
-
   /* Currently only primary UDP transport can *not* be connection oriented */ 
   tpp->tpp_conn_orient = connect 
     || !tport_is_primary(self) || !tport_is_dgram(self);
+  tpp->tpp_sdwn_error = sdwn_error;
+  self->tp_reusable = reusable;
+  tpp->tpp_stun_server = stun_server;
 
   if (tport_is_secondary(self) && 
       self->tp_params == self->tp_pri->pri_primary->tp_params) {
     tpp0 = su_zalloc(self->tp_home, sizeof *tpp0); if (!tpp0) return -1;
-  }
-
-  if (cc != NONE && tport_is_master(self)) {
-    tport_master_set_compartment(self->tp_master, cc);
   }
 
   memcpy(tpp0, tpp, sizeof *tpp);
@@ -1177,7 +1171,7 @@ tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
   &tport_tls_client_vtable,
   &tport_tls_vtable,
 #endif
-#if HAVE_SCTP
+#if HAVE_SCTP && 0		/* SCTP is broken */
   &tport_sctp_client_vtable,
   &tport_sctp_vtable,
 #endif
@@ -1190,6 +1184,22 @@ tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
   &tport_stun_vtable,
 #endif
 };
+
+/** Register new transport vtable */
+int tport_register_type(tport_vtable_t const *vtp)
+{
+  int i;
+
+  for (i = TPORT_NUMBER_OF_TYPES; i >= 0; i--) {
+    if (tport_vtables[i] == NULL) {
+      tport_vtables[i] = vtp;
+      return 0;
+    }
+  }
+
+  su_seterrno(ENOMEM);
+  return -1;
+}
 
 /**Get a vtable for given protocol */
 tport_vtable_t const *tport_vtable_by_name(char const *protoname,
@@ -1216,14 +1226,43 @@ tport_vtable_t const *tport_vtable_by_name(char const *protoname,
   return NULL;
 }
 
-char const tport_sigcomp_name[] = "sigcomp";
+#if 0
+tport_set_f const *tport_set_methods[TPORT_NUMBER_OF_TYPES + 1] = 
+  {
+    tport_server_bind_set,
+    tport_client_bind_set,
+    tport_threadpool_set,
+    tport_http_connect_set,
+#if HAVE_TLS
+    tport_tls_set,
+#endif
+    NULL
+  };
 
-char const *tport_canonize_comp(char const *comp)
+int tport_bind_set(tport_master_t *mr, 
+		   tp_name_t const *tpn,
+		   char const * const transports[],
+		   tagi_t const *taglist,
+		   tport_set_t **return_set,
+		   int set_size)
 {
-  if (comp && strcasecmp(comp, tport_sigcomp_name) == 0)
-    return tport_sigcomp_name;
-  return NULL;
+  int i;
+
+  for (i = TPORT_NUMBER_OF_TYPES; i >= 0; i--) {
+    tport_set_f const *perhaps = tport_vtables[i];
+    int result;
+
+    if (perhaps == NULL)
+      continue;
+
+    result = perhaps(mr, tpn, transports, taglist, return_set, set_size);
+    if (result != 0)
+      return result;
+  }
+
+  return 0;
 }
+#endif
 
 /** Bind transport objects.
  *
@@ -1282,6 +1321,7 @@ int tport_tbind(tport_t *self,
 
   return retval;
 }
+
 
 /** Bind primary transport objects used by a client-only application.
  * @internal
@@ -2632,11 +2672,7 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
     else
       next = NULL;
 
-#if HAVE_SIGCOMP
-    tport_deliver(self, msg, next, &self->tp_sigcomp->sc_udvm, now);
-#else
-    tport_deliver(self, msg, next, NULL, now);
-#endif
+    tport_deliver(self, msg, next, tport_get_udvm_slot(self), now);
 
     if (streaming && next == NULL)
       break;
@@ -2653,7 +2689,7 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
 
 /** Deliver message to the protocol stack */
 void tport_deliver(tport_t *self, msg_t *msg, msg_t *next, 
-		   struct sigcomp_udvm **pointer_to_udvm,
+		   struct sigcomp_udvm **in_out_udvm,
 		   su_time_t now)
 {
   tport_t *ref;
@@ -2666,7 +2702,7 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
 
   d->d_tport = self;
   d->d_msg = msg;
-  d->d_udvm = pointer_to_udvm;
+  d->d_udvm = in_out_udvm;
   *d->d_from = *self->tp_name;
 
   if (tport_is_primary(self)) {
@@ -2690,9 +2726,7 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
     d->d_from->tpn_host = ipaddr;    
   }
 
-#if HAVE_SIGCOMP
-  if (!pointer_to_udvm && !*pointer_to_udvm)
-#endif
+  if (!in_out_udvm || !*in_out_udvm)
     d->d_from->tpn_comp = NULL;
 
   error = msg_has_error(msg);
@@ -2760,20 +2794,20 @@ int tport_delivered_from(tport_t *tp, msg_t const *msg, tp_name_t name[1])
 /** Return UDVM used to decompress the message. */
 int
 tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
-			   struct sigcomp_udvm **return_pointer_to_udvm,
+			   struct sigcomp_udvm **return_udvm,
 			   int remove)
 {
   if (tp == NULL || msg == NULL || msg != tp->tp_master->mr_delivery->d_msg)
     return -1;
 
-  if (return_pointer_to_udvm) {
+  if (return_udvm) {
     if (tp->tp_master->mr_delivery->d_udvm) {
-      *return_pointer_to_udvm = *tp->tp_master->mr_delivery->d_udvm;
+      *return_udvm = *tp->tp_master->mr_delivery->d_udvm;
       if (remove)
 	tp->tp_master->mr_delivery->d_udvm = NULL;
     }
     else {
-      *return_pointer_to_udvm = NULL;
+      *return_udvm = NULL;
     }
   }
 
@@ -2992,10 +3026,8 @@ tport_t *tport_tsend(tport_t *self,
 
       tpn->tpn_proto = self->tp_protoname;
 
-#if HAVE_SIGCOMP
       if (!cc)
 	tpn->tpn_comp = NULL;
-#endif
 
       /* Create a secondary transport which is connected to the destination */
       self = tport_connect(primary, msg_addrinfo(msg), tpn);
@@ -3010,27 +3042,13 @@ tport_t *tport_tsend(tport_t *self,
 	return NULL;
       }
 
-#if HAVE_SIGCOMP
       if (cc)
 	tport_sigcomp_assign(self, cc);
-#endif
     }
   }
-#if HAVE_SIGCOMP
   else if (tport_is_secondary(self)) {
-    if (self->tp_name->tpn_comp) {
-      if (cc)
-	tport_sigcomp_assign(self, cc);
-      else if (self->tp_sigcomp->sc_cc)
-	cc = self->tp_sigcomp->sc_cc;
-      else
-	/* Use default compartment */
-	cc = self->tp_master->mr_compartment;
-    }
-    else 
-      cc = NULL;
+    cc = tport_sigcomp_assign_if_needed(self, cc);
   }
-#endif
 
   if (cc == NULL)
     tpn->tpn_comp = NULL;
@@ -3190,12 +3208,13 @@ int tport_vsend(tport_t *self,
   int n;
   su_addrinfo_t *ai = msg_addrinfo(msg);
 
-#if 0
-  n = tport_send_sigcomp(self, msg, iov, iovused, cc, self->tp_sigcomp);
-#else
-  ai->ai_flags &= ~TP_AI_COMPRESSED;
-  n = self->tp_pri->pri_vtable->vtp_send(self, msg, iov, iovused);
-#endif
+  if (cc) {
+    n = tport_send_comp(self, msg, iov, iovused, cc, self->tp_comp);
+  }
+  else {
+    ai->ai_flags &= ~TP_AI_COMPRESSED;
+    n = self->tp_pri->pri_vtable->vtp_send(self, msg, iov, iovused);
+  }
 
   if (n == 0)
     return 0;
@@ -4452,76 +4471,3 @@ char *tport_hostport(char buf[], int bufsize,
 }
 
 /* ----------------------------------------------------------------------  */
-
-int tport_master_set_compartment(tport_master_t *mr, 
-				 struct sigcomp_compartment *cc)
-{
-  return 0;
-}
-
-int tport_init_compression(tport_primary_t *pri,
-			   char const *compression,
-			   tagi_t const *tl)
-{
-  return 0;
-}
-
-int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
-{
-  return 0;
-}
-
-/** Test if tport has a SigComp compartment assigned to it. */
-int tport_has_sigcomp_assigned(tport_t const *self)
-{
-  return 0;
-}
-
-int 
-
-tport_sigcomp_accept(tport_t *self, 
-		     struct sigcomp_compartment *cc, 
-		     msg_t *msg)
-{
-  return 0;
-}
-
-
-void tport_try_accept_sigcomp(tport_t *self, 
-			      msg_t *msg)
-{
-}
-
-int tport_can_recv_sigcomp(tport_t const *self)
-{
-  return 0;
-}
-
-int tport_can_send_sigcomp(tport_t const *self)
-{
-  return 0;
-}
-
-int tport_has_compression(tport_t const *self, char const *comp)
-{
-  return 0;
-}
-
-int tport_set_compression(tport_t *self, char const *comp)
-{
-  return (self == NULL || comp) ? -1 : 0;
-}
-
-int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
-		    tag_type_t tag, tag_value_t value, ...)
-{
-  if (tp && tp->tp_pri && tp->tp_pri->pri_vtable->vtp_keepalive) {
-    int retval;
-    ta_list ta;
-    ta_start(ta, tag, value);
-    retval = tp->tp_pri->pri_vtable->vtp_keepalive(tp, ai, ta_args(ta));
-    ta_end(ta);
-    return retval;
-  }
-  return -1;
-}

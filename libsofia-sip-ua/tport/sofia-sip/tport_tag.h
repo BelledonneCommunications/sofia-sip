@@ -249,6 +249,13 @@ TPORT_DLL extern tag_typedef_t tptag_http_connect;
 TPORT_DLL extern tag_typedef_t tptag_http_connect_ref;
 #define TPTAG_HTTP_CONNECT_REF(x) tptag_http_connect_ref, tag_str_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_stun_server;
+/** Enable STUN server. */
+#define TPTAG_STUN_SERVER(x) tptag_stun_server, tag_bool_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_stun_server_ref;
+#define TPTAG_STUN_SERVER_REF(x) tptag_stun_server_ref, tag_bool_vr(&(x))
+
 SOFIA_END_DECLS
 
 #endif /* !defined TPORT_TAG_H */

@@ -28,7 +28,8 @@ TESTS =			test_tport
 # Rules for building the targets
 
 nobase_include_sofia_HEADERS = \
-			sofia-sip/tport.h sofia-sip/tport_tag.h
+			sofia-sip/tport.h sofia-sip/tport_tag.h \
+			sofia-sip/tport_plugins.h
 
 TLS_SRC =		tport_type_tls.c tport_tls.c tport_tls.h
 
@@ -37,6 +38,7 @@ USE_TLS_SRC = 		$(TLS_SRC)
 endif
 
 libtport_la_SOURCES = 	tport.c tport_logging.c \
+			tport_stub_stun.c tport_stub_sigcomp.c \
 			tport_type_udp.c tport_type_tcp.c tport_type_sctp.c \
 			tport_type_connect.c tport_type_stun.c \
 			tport_threadpool.c tport_internal.h \

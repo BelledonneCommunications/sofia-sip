@@ -34,7 +34,7 @@
 
 #include "config.h"
 
-#include "tport_internal.h"
+#include "tport.h"
 
 #include <sofia-sip/string0.h>
 #include <stdlib.h>
@@ -43,40 +43,149 @@
 #include <errno.h>
 #include <limits.h>
 
-#if HAVE_SIGCOMP
 #include <sigcomp.h>
-#endif
 
 /* ---------------------------------------------------------------------- */
 /* SigComp */
 
-typedef struct
+typedef struct tport_sigcomp_handler tport_sigcomp_handler_t;
+
+/** Per-socket SigComp data */
+struct tport_sigcomp {
+  struct sigcomp_udvm          *sc_udvm;
+  struct sigcomp_compartment   *sc_cc;
+  struct sigcomp_compressor    *sc_compressor;
+  struct sigcomp_buffer        *sc_output;
+  unsigned                      sc_compressed; 
+
+  struct sigcomp_buffer        *sc_input;
+  unsigned                      sc_copied;
+  
+  enum {
+    format_is_unknown,
+    format_is_sigcomp,
+    format_is_noncomp
+  } sc_infmt, sc_outfmt;
+};
+
+
+struct sigcomp_compartment *vsc_master_init_sigcomp(tport_master_t *mr,
+						    char const *algorithm)
 {
-  tport_primary_t tpsc_pri[1];
-  tport_sigcomp_t tpsc_sigcomp[1]
-} tport_sigcomp_primary_t;
+  struct sigcomp_compartment *cc = NULL;
+#if 0
+  struct sigcomp_algorithm const *algorithm = self->sa_algorithm;
 
-typedef struct
-{
-  tport_t tpsci_tp[1];
-  tport_sigcomp_t tpsci_sigcomp[1]
-} tport_tls_t;
+  if (algorithm == NULL)
+    algorithm = sigcomp_algorithm_by_name(getenv("SIGCOMP_ALGORITHM"));
 
-#if HAVE_SIGCOMP
+  self->sa_state_handler = sigcomp_state_handler_create();
 
-#endif  
+  if (self->sa_state_handler)
+    self->sa_compartment = 
+      sigcomp_compartment_create(algorithm, self->sa_state_handler, 0,
+				 "", 0, NULL, 0);
 
+  if (self->sa_compartment) {
+    agent_sigcomp_options(self, self->sa_compartment);
+    sigcomp_compartment_option(self->sa_compartment, "stateless");
+  }
+  else
+    SU_DEBUG_1(("nta: initializing SigComp: %s\n", strerror(errno)));
 
-
-int tport_master_set_compartment(tport_master_t *mr, 
-				 struct sigcomp_compartment *cc)
-{
   if (mr->mr_compartment)
     sigcomp_compartment_unref(mt->mr_compartment);
   mr->mr_compartment = sigcomp_compartment_ref(cc);
+#endif
+  return cc;
 }
 
-void tport_sigcomp_shutdown(tport_t *self, int how)
+
+void vsc_master_deinit_sigcomp(tport_master_t *mr)
+{
+  tport_sigcomp_vtable_t const *vsc = tport_sigcomp_vtable;
+
+  if (mr->mr_compartment)
+    sigcomp_compartment_unref(mr->mr_compartment), mr->mr_compartment = NULL;
+
+}
+
+char const *vsc_comp_name(tport_sigcomp_t const *master_sc,
+			  char const *proposed_name,
+			  tagi_t const *tags)
+{
+  if (master_sc == NULL ||
+      master_sc->sc_cc == NULL ||
+      compression == NULL || 
+      strcasecmp(compression, tport_sigcomp_name))
+    return NULL;
+
+  return tport_sigcomp_name;
+}
+
+/** Check if transport can receive compressed messages */
+int vsc_can_recv_sigcomp(tport_sigcomp_t const *sc)
+{
+  return sc && sc->sc_infmt != format_is_noncomp;
+}
+
+/** Check if transport can send compressed messages */
+int vsc_can_send_sigcomp(tport_sigcomp_t const *sc)
+{
+  return sc && sc->sc_outfmt != format_is_noncomp;
+}
+
+/** Set/reset compression */
+int vsc_set_compression(tport_t *self, 
+			tport_sigcomp_t *sc,
+			char const *comp)
+{
+  if (self == NULL)
+    ;
+  else if (comp == NULL) {
+    if (sc == NULL || sc->sc_outfmt != format_is_sigcomp) {
+      self->tp_name->tpn_comp = NULL;
+      return 0;
+    }
+  }
+  else {
+    comp = tport_canonize_comp(comp);
+
+    if (comp && sc && sc->sc_outfmt != format_is_noncomp) {
+      self->tp_name->tpn_comp = comp;
+      return 0;
+    }
+  }
+  
+  return -1;
+}
+
+
+/** Assign a SigComp compartment (to a possibly connected tport). */
+int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
+{
+  if (tport_is_connection_oriented(self) && 
+      tport_is_secondary(self) &&
+      self->tp_socket != SOCKET_ERROR) {
+
+    if (self->tp_sigcomp->sc_cc) {
+      if (cc == self->tp_sigcomp->sc_cc)
+	return 0;
+
+      /* Remove old assignment */
+      sigcomp_compartment_unref(self->tp_sigcomp->sc_cc);
+    }
+    
+    self->tp_sigcomp->sc_cc = sigcomp_compartment_ref(cc);
+
+    return 0;
+  }
+
+  return su_seterrno(EINVAL);
+}
+
+
+void vsc_sigcomp_shutdown(tport_t *self, int how)
 {
   if (self->tp_socket != -1)
     shutdown(self->tp_socket, how - 1);
@@ -87,46 +196,9 @@ void tport_sigcomp_shutdown(tport_t *self, int how)
   }  
 }
 
-static int tport_recv_sigcomp_r(tport_t*, msg_t**, struct sigcomp_udvm*, int);
-static struct sigcomp_compartment *tport_primary_compartment(tport_master_t *);
+static int vsc_recv_sigcomp_r(tport_t*, msg_t**, struct sigcomp_udvm*, int);
+static struct sigcomp_compartment *vsc_primary_compartment(tport_master_t *);
 
-static
-tport_vtable_t const tport_tcp_vtable_for_sigcomp =
-{
-  "tcp", tport_type_local,
-  sizeof (tport_primary_t),
-  tport_tcp_init_primary,
-  NULL,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_tcp_init_secondary,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_sigcomp_stream,
-  tport_send_sigcomp,
-};
-
-static
-tport_vtable_t const tport_tcp_client_vtable_for_sigcomp =
-{
-  "tcp", tport_type_client,
-  sizeof (tport_primary_t),
-  tport_tcp_init_client,
-  NULL,
-  tport_accept,
-  NULL,
-  sizeof (tport_t),
-  tport_tcp_init_secondary,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  tport_recv_sigcomp_stream,
-  tport_send_sigcomp,
-};
 
 static int tport_sigcomp_init_secondary()
 {
@@ -380,12 +452,12 @@ static int tport_recv_sigcomp_r(tport_t *self,
 }
 
 static
-int tport_send_sigcomp(tport_t const *self,
-			msg_t *msg, 
-			msg_iovec_t iov[], 
-			int iovused,
-			struct sigcomp_compartment *cc,
-			tport_sigcomp_t *sc)
+int vsc_send_sigcomp(tport_t const *self,
+		     msg_t *msg, 
+		     msg_iovec_t iov[], 
+		     int iovused,
+		     struct sigcomp_compartment *cc,
+		     tport_sigcomp_t *sc)
 {
   struct sigcomp_compressor *c = sc->sc_compressor;
   struct sigcomp_buffer *input = sc->sc_input;
@@ -400,22 +472,21 @@ int tport_send_sigcomp(tport_t const *self,
 
   int compress = (cc || (cc = sc->sc_cc)) && ai->ai_flags & TP_AI_COMPRESSED;
 
-  if (compress) {
-    if (stream)
-      sc->sc_outfmt = format_is_sigcomp;
-  }
-  else {
+  if (!compress) {
     if (stream)
       sc->sc_outfmt = format_is_noncomp;
     ai->ai_flags &= ~TP_AI_COMPRESSED;
-    return self->tp_pri->pri_vtable->vtp_send(self, msg, iov, iovused);
+    return self->tp_pri->pri_vtable->vtp_send(self, msg, iov, iovused, NULL);
   }
+
+  if (stream)
+    sc->sc_outfmt = format_is_sigcomp;
 
   assert(cc);
   
   if (c == NULL) {
     assert(input == NULL);
-    if (self->tp_addrinfo->ai_socktype == SOCK_STREAM)
+    if (stream)
       c = sigcomp_compressor_create_for_stream(cc);
     else
       c = sigcomp_compressor_create(cc);
@@ -609,37 +680,14 @@ tport_primary_compartment(tport_master_t *mr)
   return mr->mr_compartment;
 }
 
-/** Assign a SigComp compartment (to a possibly connected tport). */
-int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
-{
-  if (tport_is_connection_oriented(self) && 
-      tport_is_secondary(self) &&
-      self->tp_socket != SOCKET_ERROR) {
-
-    if (self->tp_sigcomp->sc_cc) {
-      if (cc == self->tp_sigcomp->sc_cc)
-	return 0;
-
-      /* Remove old assignment */
-      sigcomp_compartment_unref(self->tp_sigcomp->sc_cc);
-    }
-    
-    self->tp_sigcomp->sc_cc = sigcomp_compartment_ref(cc);
-
-    return 0;
-  }
-
-  return su_seterrno(EINVAL);
-}
-
 /** Test if tport has a SigComp compartment is assigned to it. */
-int tport_has_sigcomp_assigned(tport_t const *self)
+int vsc_has_sigcomp_assigned(tport_sigcomp_t const *sc)
 {
-  return self && self->tp_sigcomp->sc_udvm != NULL;
+  return sc && sc->sc_udvm != NULL;
 }
 
-static inline
-void tport_try_accept_sigcomp(tport_t *self, msg_t *msg)
+static
+void vsc_try_accept_sigcomp(tport_t *self, msg_t *msg)
 {
   struct sigcomp_udvm *udvm;
 
@@ -736,23 +784,6 @@ tport_sigcomp_deliver(tport_t *self, msg_t *msg, su_time_t now)
 
 #if HAVE_SIGCOMP && 0
 
-int tport_init_compression(tport_primary_t *pri,
-			   char const *compression,
-			   tagi_t const *tl)
-{
-  tport_master_t *mr = pri->pri_master;
-
-  if (compression == NULL || 
-      strcasecmp(compression, tport_sigcomp_name))
-    return 0;
-
-  if (mr->mr_compartment) {
-    pri->pri_primary->tp_name->tpn_comp = tport_sigcomp_name;
-  }
-
-  return 0;
-}
-
 static inline
 int msg_is_compressed(msg_t *msg)
 {
@@ -767,50 +798,62 @@ void msg_mark_as_compressed(msg_t *msg)
     msg_addrinfo(msg)->ai_flags |= TP_AI_COMPRESSED;
 }
 
-/** Check if transport can receive compressed messages */
-int tport_can_recv_sigcomp(tport_t const *self)
-{
-  return self && self->tp_sigcomp->sc_infmt != format_is_noncomp;
-}
 
-/** Check if transport can send compressed messages */
-int tport_can_send_sigcomp(tport_t const *self)
+struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self)
 {
-  return self && self->tp_sigcomp->sc_outfmt != format_is_noncomp;
-}
+  tport_sigcomp_vtable_t const *vsc = tport_sigcomp_vtable;
 
-void tport_try_accept_sigcomp(tport_t *self, msg_t *msg)
-{
-}
+  if (vsc)
 
-/** Check if transport supports named compression */
-int tport_has_compression(tport_t const *self, char const *comp)
-{
-  return
-    self && comp && 
-    self->tp_name->tpn_comp == tport_canonize_comp(comp);
-}
-
-/** Set/reset compression */
-int tport_set_compression(tport_t *self, char const *comp)
-{
-  if (self == NULL)
-    ;
-  else if (comp == NULL) {
-    if (self->tp_sigcomp->sc_outfmt != format_is_sigcomp) {
-      self->tp_name->tpn_comp = NULL;
-      return 0;
-    }
-  }
-  else {
-    comp = tport_canonize_comp(comp);
-
-    if (comp && self->tp_sigcomp->sc_outfmt != format_is_noncomp) {
-      self->tp_name->tpn_comp = comp;
-      return 0;
-    }
-  }
-  
-  return -1;
-}
+#if HAVE_SIGCOMP
+  return &self->tp_sigcomp->sc_udvm;
+#else
+  return NULL;
 #endif
+}
+
+struct sigcomp_compartment *
+tport_sigcomp_assign_if_needed(tport_t *self,
+			       struct sigcomp_compartment *cc)
+{
+  if (self->tp_name->tpn_comp) {
+    if (cc)
+      tport_sigcomp_assign(self, cc);
+    else if (self->tp_sigcomp->sc_cc)
+      cc = self->tp_sigcomp->sc_cc;
+    else
+      /* Use default compartment */
+      cc = self->tp_master->mr_compartment;
+  }
+  else 
+    cc = NULL;
+  
+  return cc;
+}			   
+
+/** Receive data from datagram using SigComp. */
+int tport_recv_sigcomp_dgram(tport_t *self, int N)
+{
+  char dummy[1];
+  int error = EBADMSG;
+#if HAVE_SIGCOMP
+  struct sigcomp_udvm *udvm;
+
+  if (self->tp_sigcomp->sc_udvm == 0)
+    self->tp_sigcomp->sc_udvm = tport_init_udvm(self);
+
+  udvm = self->tp_sigcomp->sc_udvm;
+
+  if (udvm) {
+    retval = tport_recv_sigcomp_r(self, &self->tp_msg, udvm, N);
+    if (retval < 0)
+      sigcomp_udvm_reject(udvm);
+    return retval;
+  }
+  error = su_errno();
+#endif
+  recv(self->tp_socket, dummy, 1, 0); /* remove msg from socket */
+  /* XXX - send NACK ? */
+  return su_seterrno(error);     
+}
+

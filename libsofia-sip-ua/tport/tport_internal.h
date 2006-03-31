@@ -24,6 +24,7 @@
 
 #ifndef TPORT_INTERNAL_H /** Defined when <tport.h> has been included. */
 #define TPORT_INTERNAL_H
+
 /**@file tport_internal.h
  * @brief Transport interface
  *
@@ -48,6 +49,8 @@
 #include "sofia-sip/stun.h"
 #include "sofia-sip/stun_tag.h"
 #endif
+
+#include <sofia-sip/tport_plugins.h>
 
 #ifndef SU_DEBUG
 #define SU_DEBUG 3
@@ -77,8 +80,6 @@ SOFIA_BEGIN_DECLS
 typedef struct tport_master tport_master_t;
 typedef struct tport_pending_s tport_pending_t;
 typedef struct tport_threadpool tport_threadpool_t;
-typedef struct tport_sigcomp_handler tport_sigcomp_handler_t;
-typedef struct tport_sigcomp tport_sigcomp_t;
 typedef struct tport_primary tport_primary_t;
 typedef struct tport_vtable tport_vtable_t;
 
@@ -89,28 +90,6 @@ struct sigcomp_magic;
 struct sigcomp_compartment;
 
 typedef long unsigned LU; 	/* for printf() and friends */
-
-#if HAVE_SIGCOMP
-
-/** Per-socket SigComp data */
-struct tport_sigcomp {
-  struct sigcomp_udvm          *sc_udvm;
-  struct sigcomp_compartment   *sc_cc;
-  struct sigcomp_compressor    *sc_compressor;
-  struct sigcomp_buffer        *sc_output;
-  unsigned                      sc_compressed; 
-
-  struct sigcomp_buffer        *sc_input;
-  unsigned                      sc_copied;
-  
-  enum {
-    format_is_unknown,
-    format_is_sigcomp,
-    format_is_noncomp
-  } sc_infmt, sc_outfmt;
-};
-
-#endif
 
 /** Transport parameters */
 typedef struct {
@@ -127,6 +106,8 @@ typedef struct {
 
   unsigned tpp_conn_orient:1;   /**< Connection-orienteded */
   unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
+  unsigned tpp_stun_server:1;	/**< If true, use stun server */
+
   unsigned :0;
 
 } tport_params_t;
@@ -156,7 +137,7 @@ struct tport_s {
   /** We will send FIN (1) or have sent FIN (2) */
   unsigned            tp_send_close:2; 
   unsigned            tp_has_keepalive:1;
-
+  unsigned            tp_has_stun_server:1;
   unsigned:0;
 
   tport_t *tp_left, *tp_right, *tp_dad; /**< Links in tport tree */
@@ -193,13 +174,6 @@ struct tport_s {
   su_sockaddr_t       tp_addr[1];	/**< Peer/own address */
 #define tp_addrlen tp_addrinfo->ai_addrlen
 
-#if HAVE_SOFIA_STUN
-#if 0
-  stun_socket_t      *tp_stun_socket;
-#endif
-  su_socket_t         tp_stun_socket;
-#endif
-
   /* ==== Receive queue ================================================== */
 
   msg_t   	     *tp_msg;		/**< Message being received */
@@ -222,6 +196,10 @@ struct tport_s {
 
   msg_iovec_t        *tp_iov;		/**< Iovecs allocated for sending */
   unsigned            tp_iovlen;	/**< Number of allocated iovecs */
+
+  /* ==== Extensions  ===================================================== */
+
+  tport_comp_t        *tp_comp;
 
   /* ==== Statistics  ===================================================== */
   
@@ -307,6 +285,9 @@ struct tport_master {
     struct sigcomp_udvm **d_udvm;
   } mr_delivery[1];
 
+  tport_stun_server_t *mr_stun_server;
+
+#if 0
   struct tport_nat_s {
     int initialized;
     int bound;
@@ -326,6 +307,7 @@ struct tport_master {
     su_sockaddr_t sockaddr;
 #endif
   }                   mr_nat[1];
+#endif
 };
 
 /** Virtual funtion table */
@@ -361,7 +343,12 @@ struct tport_vtable
 		     unsigned mtu);
   int (*vtp_keepalive)(tport_t *self, su_addrinfo_t const *ai,
 		       tagi_t const *taglist);
+  int (*vtp_stun_response)(tport_t const *self,
+			   void *msg, size_t msglen,
+			   void *addr, socklen_t addrlen);
 };
+
+int tport_register_type(tport_vtable_t const *vtp);
 
 /** Test if transport is needs connect() before sending. */
 static inline int tport_is_connection_oriented(tport_t const *self)
@@ -377,9 +364,9 @@ static inline int tport_is_connected(tport_t const *self)
 
 void tport_has_been_updated(tport_t *tport);
 
-int tport_init_compression(tport_primary_t *pri,
-			   char const *compression,
-			   tagi_t const *tl);
+int tport_primary_compression(tport_primary_t *pri,
+			      char const *compression,
+			      tagi_t const *tl);
 
 tport_t *tport_alloc_secondary(tport_primary_t *pri, int socket, int accepted);
 tport_t *tport_base_connect(tport_primary_t *pri, 
@@ -439,6 +426,7 @@ int tport_udp_init_primary(tport_primary_t *,
 			   su_addrinfo_t *, 
 			   tagi_t const *,
 			   char const **return_culprit);
+void tport_udp_deinit_primary(tport_primary_t *);
 int tport_recv_dgram(tport_t *self);
 int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
 int tport_send_dgram(tport_t const *self, msg_t *msg,
@@ -468,6 +456,55 @@ extern tport_vtable_t const tport_tls_client_vtable;
 extern tport_vtable_t const tport_stun_vtable;
 extern tport_vtable_t const tport_http_connect_vtable;
 extern tport_vtable_t const tport_threadpool_vtable;
+
+typedef struct tport_descriptor_s {
+  char const *tpd_name;
+  tport_vtable_t *tpd_vtable;
+  su_addrinfo_t *tpd_hints;
+  int tpd_is_client_only;
+} tport_descriptor_t;
+
+typedef int const *(tport_set_f)(tport_master_t *mr, 
+				 tp_name_t const *tpn,
+				 tagi_t const *taglist,
+				 tport_descriptor_t **return_set,
+				 int return_set_size);
+
+/* STUN plugin */
+
+extern tport_stun_server_vtable_t const *tport_stun_server_vtable;
+
+int tport_init_stun_server(tport_master_t *mr, tagi_t const *tags);
+void tport_deinit_stun_server(tport_master_t *mr);
+int tport_recv_stun_dgram(tport_t const *self, int N);
+
+int tport_stun_server_add_socket(tport_t *tp);
+int tport_stun_server_remove_socket(tport_t *tp);
+
+/* SigComp plugin */
+extern tport_comp_vtable_t const *tport_comp_vtable;
+
+char const *tport_canonize_comp(char const *comp);
+
+void tport_deinit_comp(tport_master_t *mr);
+
+
+struct sigcomp_compartment *
+tport_sigcomp_assign_if_needed(tport_t *self,
+			       struct sigcomp_compartment *cc);
+
+struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self);
+
+void tport_try_accept_sigcomp(tport_t *self, msg_t *msg);
+
+int tport_recv_comp_dgram(tport_t *self, int N);
+
+int tport_send_comp(tport_t const *self,
+		    msg_t *msg, 
+		    msg_iovec_t iov[], 
+		    int iovused,
+		    struct sigcomp_compartment *cc,
+		    tport_comp_t *sc);
 
 SOFIA_END_DECLS
 
