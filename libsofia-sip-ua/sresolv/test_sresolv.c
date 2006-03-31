@@ -1747,7 +1747,7 @@ int test_deinit(sres_context_t *ctx)
 
   su_free(ctx->home, (void *)ctx->sinkconf); ctx->sinkconf = NULL;
 
-  sres_resolver_unref(ctx->resolver);
+  sres_resolver_unref(ctx->resolver); ctx->resolver = NULL;
 
   offset = 0;
   memset(ctx, 0, sizeof ctx);
@@ -1772,6 +1772,7 @@ int test_conf_errors(sres_context_t *ctx, char const *conf_file)
   TEST(sres_resolver_sockets(res, &socket, 1), n);
 
 #if HAVE_SA_LEN			
+  /* We fail this test in BSD systems */
   /* conf_file looks like this:
 --8<--8<--8<--8<--8<--8<--8<--8<--8<--8<--8<--8<--
 nameserver 0.0.0.2
@@ -1779,16 +1780,14 @@ nameserver 1.1.1.1.1
 search example.com
 port $port
 -->8-->8-->8-->8-->8-->8-->8-->8-->8-->8-->8-->8--
-     The problem address (0.0.0.2) is valid in BSD and we fail this test.
   */
-  /* We have sa_len on BSDish systems only... */
   printf("%s:%u: %s test should be updated\n", 
 	 __FILE__, __LINE__, __func__);
 #else
   TEST(sres_query(res, test_answer, ctx, sres_type_a, "example.com"), NULL);
 #endif
     
-  sres_resolver_unref(ctx->resolver);
+  sres_resolver_unref(res);
 
   END();
 }
