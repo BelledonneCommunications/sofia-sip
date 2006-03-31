@@ -153,8 +153,10 @@ int http_add_tl(msg_t *msg, http_t *http,
   ta_list ta;
   int retval = 0;
 
-  if (msg == NULL || http == NULL)
+  if (msg == NULL)
     return -1;
+  if (http == NULL)
+    http = msg_object(msg);
 
   ta_start(ta, tag, value);
 
