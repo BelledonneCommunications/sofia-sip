@@ -442,7 +442,7 @@ if (appl->root != NULL) {
                     TAG_NULL());
 
     /* enter main loop for processing of messages */
-    su_root_run(appl->nua);
+    su_root_run(appl->root);
 
     /* destroy NUA stack */
     nua_destroy(appl->nua);
