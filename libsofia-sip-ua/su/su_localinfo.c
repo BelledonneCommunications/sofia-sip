@@ -342,7 +342,7 @@ li_scope4(uint32_t ip4)
     return LI_SCOPE_GLOBAL;
 }
 
-#if USE_LOCALINFO0
+#if SU_HAVE_IN6
 /** Return IPv6 address scope */
 static int 
 li_scope6(struct in6_addr const *ip6)
@@ -360,6 +360,23 @@ li_scope6(struct in6_addr const *ip6)
   else
     return LI_SCOPE_GLOBAL;
 }
+#endif
+
+/** Return the scope of address in the sockaddr structure */
+int su_sockaddr_scope(su_sockaddr_t const *su, socklen_t sulen)
+{
+  if (sulen >= (sizeof su->su_sin) && su->su_family == AF_INET)
+    return li_scope4(su->su_sin.sin_addr.s_addr);
+
+#if SU_HAVE_IN6
+  if (sulen >= (sizeof su->su_sin6) && su->su_family == AF_INET6)
+    return li_scope6(&su->su_sin6.sin6_addr);
+#endif
+
+  return 0;
+}
+
+#if USE_LOCALINFO0
 
 #elif HAVE_IFCONF
 /** Build a list of local IPv4 addresses and append it to *rresult. */

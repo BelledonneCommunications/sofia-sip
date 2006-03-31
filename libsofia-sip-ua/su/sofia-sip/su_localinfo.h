@@ -98,6 +98,9 @@ char const *su_gli_strerror(int error);
 /** Copy a localinfo structure */
 su_localinfo_t *su_copylocalinfo(su_localinfo_t const *li0);
 
+/** Return the scope of address in the sockaddr structure */
+int su_sockaddr_scope(su_sockaddr_t const *su, socklen_t sulen);
+
 SOFIA_END_DECLS
 
 #endif /* !defined(SU_LOCALINFO_H) */
