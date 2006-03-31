@@ -109,8 +109,6 @@ tag_typedef_t nutag_outbound_set4 = STRTAG_TYPEDEF(outbound_set4);
 tag_typedef_t nutag_keepalive = UINTTAG_TYPEDEF(keepalive);
 tag_typedef_t nutag_keepalive_stream = UINTTAG_TYPEDEF(keepalive_stream);
 
-tag_typedef_t nutag_sip_parser = PTRTAG_TYPEDEF(sip_parser);
-
 tag_typedef_t nutag_use_dialog = BOOLTAG_TYPEDEF(use_dialog);
 
 tag_typedef_t nutag_auth = STRTAG_TYPEDEF(auth);

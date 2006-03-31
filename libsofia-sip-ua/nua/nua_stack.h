@@ -362,7 +362,9 @@ int  nua_stack_init(su_root_t *root, nua_t *nua);
 void nua_stack_deinit(su_root_t *root, nua_t *nua);
 void nua_stack_signal(nua_t *nua, su_msg_r msg, event_t *e);
 
-int nua_stack_registrations_init(nua_t *nua);
+int nua_stack_init_transport(nua_t *nua, tagi_t const *tags);
+
+int nua_stack_init_registrations(nua_t *nua);
 
 int outbound_connect_check_accept(sip_accept_t const *accept);
 
@@ -415,7 +417,7 @@ nua_handle_t *nh_validate(nua_t *nua, nua_handle_t *maybe);
 
 int nua_stack_set_defaults(nua_handle_t *nh, nua_handle_preferences_t *nhp);
 
-void nua_stack_set_from(nua_t *, int initial, tagi_t const *tags);
+int nua_stack_set_from(nua_t *, int initial, tagi_t const *tags);
 
 int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags);
 

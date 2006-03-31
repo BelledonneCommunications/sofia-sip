@@ -51,6 +51,7 @@
 
 #include "nua_stack.h"
 #include <sofia-sip/nta_tport.h>
+#include <sofia-sip/tport_tag.h>
 
 #if HAVE_SIGCOMP
 #include <sigcomp.h>
@@ -786,7 +787,69 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 static void nua_stack_tport_update(nua_t *nua, nta_agent_t *nta);
 
 int
-nua_stack_registrations_init(nua_t *nua)
+nua_stack_init_transport(nua_t *nua, tagi_t const *tags)
+{
+  url_string_t const *contact1 = NULL, *contact2 = NULL;
+  char const *name1 = "sip", *name2 = "sip";
+  char const *certificate_dir = NULL;
+
+  tl_gets(tags,
+	  NUTAG_URL_REF(contact1),
+	  NUTAG_SIPS_URL_REF(contact2),
+	  NUTAG_CERTIFICATE_DIR_REF(certificate_dir),
+	  TAG_END());
+
+  if (contact1 &&
+      (url_is_string(contact1) 
+       ? strncasecmp(contact1->us_str, "sips:", 5) == 0
+       : contact1->us_url->url_type == url_sips))
+    name1 = "sips";
+
+  if (contact2 && 
+      (url_is_string(contact2) 
+       ? strncasecmp(contact2->us_str, "sips:", 5) == 0
+       : contact2->us_url->url_type == url_sips))
+    name2 = "sips";
+
+  if (!contact1 && !contact2) {
+    if (nta_agent_add_tport(nua->nua_nta, NULL,
+			    TPTAG_IDENT("sip"),
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0 &&
+	nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("*"),
+			    TPTAG_IDENT("sip"),
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0)
+      return -1;
+
+    if (nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("*"),
+			    TPTAG_IDENT("stun"),
+			    TPTAG_PUBLIC(tport_type_stun), /* use stun */
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0)
+      return -1;
+  }
+  else if ((!contact1 ||
+	    nta_agent_add_tport(nua->nua_nta, contact1,
+				TPTAG_IDENT(name1),
+				TPTAG_CERTIFICATE(certificate_dir),
+				TAG_NEXT(nua->nua_args)) < 0) &&
+	   (!contact2 ||
+	    nta_agent_add_tport(nua->nua_nta, contact2,
+				TPTAG_IDENT(name2),
+				TPTAG_CERTIFICATE(certificate_dir),
+				TAG_NEXT(nua->nua_args)) < 0)) {
+    return -1;
+  }
+
+  if (nua_stack_init_registrations(nua) < 0)
+    return -1;
+
+  return 0;
+}
+
+int
+nua_stack_init_registrations(nua_t *nua)
 {
   /* Create initial identities: peer-to-peer, public, sips */
   sip_via_t const *v;
@@ -1794,10 +1857,16 @@ int outbound_connect_init(outbound_connect *oc,
   return outbound_connect_set_options(oc, options);
 }
 
+
 int outbound_connect_set_options(outbound_connect *oc, char const *options)
 {
   struct outbound_prefs prefs[1] = {{ 0 }};
   char *s;
+
+  prefs->gruuize = 1;
+  prefs->outbound = 1;
+  prefs->natify = 1;
+  prefs->validate = 1;
 
 #define MATCH(v) (len == sizeof(#v) - 1 && strncasecmp(#v, s, len) == 0)
 

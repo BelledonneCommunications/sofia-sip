@@ -889,15 +889,14 @@ extern tag_typedef_t nutag_outbound_set4_ref;
  *    msg_mclass_t *
  *
  * @par Values
+ *    Pointer to an extended SIP parser.
  *
- * Corresponding tag taking reference parameter is NUTAG_SIP_PARSER_REF()
+ * @sa msg_mclass_clone(), msg_mclass_insert_header()
+ *
+ * Corresponding tag taking reference parameter is NUTAG_SIP_PARSER_REF().
  */
-#define NUTAG_SIP_PARSER(x)     nutag_sip_parser, tag_ptr_v(x)
-extern tag_typedef_t nutag_sip_parser;
-
-#define NUTAG_SIP_PARSER_REF(x) \
-          nutag_sip_parser_ref, tag_ptr_vr(&(x), (x))
-extern tag_typedef_t nutag_sip_parser_ref;
+#define NUTAG_SIP_PARSER(x)     NTATAG_MCLASS(x)
+#define NUTAG_SIP_PARSER_REF(x) NTATAG_MCLASS_REF(x)
 
 /** Authentication data ("scheme" "realm" "user" "password")
  *

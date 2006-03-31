@@ -120,20 +120,28 @@ int nua_stack_set_defaults(nua_handle_t *nh,
 }
 
 /** @internal Set the default from field */
-void nua_stack_set_from(nua_t *nua, int initial, tagi_t const *tags)
+int nua_stack_set_from(nua_t *nua, int initial, tagi_t const *tags)
 {
   sip_from_t const *from = NONE;
   char const *str = NONE;
   sip_from_t *f = NULL,  f0[1];
 
+  char const *uicc_name = "default";
+
   tl_gets(tags,
 	  /* By nua_stack_set_from() */
 	  SIPTAG_FROM_REF(from),
 	  SIPTAG_FROM_STR_REF(str),
+	  NUTAG_UICC_REF(uicc_name),
 	  TAG_END());
 
+#if HAVE_UICC_H
+  if (initial && uicc_name)
+    nua->nua_uicc = uicc_create(root, uicc_name);
+#endif
+
   if (!initial && from == NONE && str == NONE)
-    return;
+    return 0;
 
   sip_from_init(f0);
 
@@ -157,8 +165,11 @@ void nua_stack_set_from(nua_t *nua, int initial, tagi_t const *tags)
     }
   }
 
-  if (f)
-    *nua->nua_from = *f;
+  if (!f)
+    return -1;
+
+  *nua->nua_from = *f;
+  return 0;
 }
 
 /** @internal Initialize instance ID. */

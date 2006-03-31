@@ -112,12 +112,6 @@ char const nua_application_sdp[] = "application/sdp";
 int nua_stack_init(su_root_t *root, nua_t *nua)
 {
   su_home_t *home;
-  void *sip_parser = NULL;
-  url_string_t const *contact = NULL;
-  url_string_t const *sips_contact = NULL;
-
-  char const *certificate_dir = NULL;
-  char const *uicc_name = "default";
 
   nua_handle_t *dnh;
   int media_enable = 1;
@@ -169,59 +163,37 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 
   nua->nua_invite_accept = sip_accept_make(home, SDP_MIME_TYPE);
 
-  /* Set initial nta/soa parameters */
-  if (tl_gets(nua->nua_args,
-	      NUTAG_URL_REF(contact),
-	      NUTAG_SIPS_URL_REF(sips_contact),
-	      NUTAG_CERTIFICATE_DIR_REF(certificate_dir),
-	      NUTAG_SIP_PARSER_REF(sip_parser),
-	      NUTAG_UICC_REF(uicc_name),
-	      NUTAG_MEDIA_ENABLE_REF(media_enable),
-	      NUTAG_SOA_NAME_REF(soa_name),
-	      TAG_NULL()) < 0)
-    return -1;
-
-#if HAVE_UICC_H
-  if (uicc_name)
-    nua->nua_uicc = uicc_create(root, uicc_name);
-#endif
-
   nua->nua_nta = nta_agent_create(root, NONE, NULL, NULL,
-				  TPTAG_CERTIFICATE(certificate_dir),
 				  NTATAG_MERGE_482(1),
 				  NTATAG_CLIENT_RPORT(1),
 				  NTATAG_UA(1),
 #if HAVE_SOFIA_SMIME
 				  NTATAG_SMIME(nua->sm),
 #endif
+				  TPTAG_STUN_SERVER(1),
 				  TAG_NEXT(nua->nua_args));
-  if (!nua->nua_nta)
-    return -1;
 
-  nta_agent_set_params(nua->nua_nta, NTATAG_UA(1), TAG_END());
+  dnh->nh_ds->ds_leg = nta_leg_tcreate(nua->nua_nta,
+				       nua_stack_process_request, dnh,
+				       NTATAG_NO_DIALOG(1),
+				       TAG_END());
 
-  if (!contact && !sips_contact) {
-    if (nta_agent_add_tport(nua->nua_nta, NULL,
-			    TAG_NEXT(nua->nua_args)) < 0 &&
-	nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
-			    TAG_NEXT(nua->nua_args)) < 0 &&
-	nta_agent_add_tport(nua->nua_nta, NULL,
-			    TPTAG_PUBLIC(tport_type_stun), /* use stun */
-			    TAG_NEXT(nua->nua_args)) < 0)
-      return -1;
-  }
-  else if ((!contact ||
-	    nta_agent_add_tport(nua->nua_nta, contact,
-				TAG_NEXT(nua->nua_args)) < 0) &&
-	   (!sips_contact ||
-	    nta_agent_add_tport(nua->nua_nta, sips_contact,
-				TAG_NEXT(nua->nua_args)) < 0)) {
-    return -1;
+  if (nua->nua_nta == NULL ||
+      dnh->nh_ds->ds_leg == NULL || 
+      nta_agent_set_params(nua->nua_nta, NTATAG_UA(1), TAG_END()) < 0 ||
+      nua_stack_init_transport(nua, nua->nua_args) < 0) {
+    SU_DEBUG_1(("nua: initializing SIP stack failed\n"));
   }
 
-  if (nua_stack_registrations_init(nua) < 0)
+  if (nua_stack_set_from(nua, 1, nua->nua_args) < 0)
     return -1;
-  nua_stack_set_from(nua, 1, nua->nua_args);
+
+  /* Set initial nta/soa parameters */
+  if (tl_gets(nua->nua_args,
+	      NUTAG_MEDIA_ENABLE_REF(media_enable),
+	      NUTAG_SOA_NAME_REF(soa_name),
+	      TAG_NULL()) < 0)
+    return -1;
 
   nua->nua_media_enable = media_enable;
   
@@ -232,18 +204,10 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
     soa_set_params(soa, TAG_NEXT(nua->nua_args));
   }
 
-  dnh->nh_ds->ds_leg = nta_leg_tcreate(nua->nua_nta,
-				       nua_stack_process_request, dnh,
-				       NTATAG_NO_DIALOG(1),
-				       TAG_END());
-
   nua->nua_timer = su_timer_create(su_root_task(root),
 				   NUA_STACK_TIMER_INTERVAL);
 
-  if (!(dnh->nh_ds->ds_leg &&
-	nua->nua_registrations &&
-	nua->nua_from &&
-	nua->nua_timer))
+  if (!nua->nua_timer)
     return -1;
 
   nua_stack_timer(nua, nua->nua_timer, NULL);
