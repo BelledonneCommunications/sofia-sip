@@ -445,8 +445,6 @@ struct binding *nat_binding_new(struct nat *nat,
 
   if (binding_init(b, protoname, connected, nat->fake, from, fromlen) < 0)
     nat_binding_destroy(b), b = NULL;
-  else
-    nat_binding_insert(&nat->bindings, b);
 
   return b;
 }
@@ -524,8 +522,6 @@ static int binding_init(struct binding *b,
 	   addr->su_family == AF_INET6 ? "[%s]:%u" : "%s:%u",
 	   ipname, ntohs(addr->su_port));
 
-  nat_binding_insert(&nat->bindings, b);
-
   if (su_wait_create(wait, b->in_socket, SU_WAIT_IN) < 0) {
     su_perror("nat_binding_new: su_wait_create");
     return -1;
@@ -547,6 +543,8 @@ static int binding_init(struct binding *b,
     su_wait_destroy(wait);
     return -1;
   }
+
+  nat_binding_insert(&nat->bindings, b);
 
   printf("nat: new %s binding %s <=> %s\n",
 	 protoname, b->in_name, b->out_name);

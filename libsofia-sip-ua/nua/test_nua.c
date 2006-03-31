@@ -1355,6 +1355,7 @@ int test_init(struct context *ctx,
 			  TAG_IF(a_bind != a_bind2, NUTAG_SIPS_URL(a_bind2)),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 			  NTATAG_SIP_T1X64(4000),
+			  NUTAG_KEEPALIVE(1),
 			  TAG_END());
   TEST_1(ctx->a.nua);
 
