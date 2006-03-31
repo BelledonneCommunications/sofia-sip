@@ -367,9 +367,10 @@ static int msg_dup_or_copy_all(msg_t *msg,
  *
  * @relates msg_s
  *
- * The copied message will share all the strings with the original message. 
- * The original message is not destroyed until all the copies have been
- * destroyed.
+ * Copy a message and the header structures. The copied message will share
+ * all the strings with the original message. It will keep a reference to
+ * the original message, and the original message is not destroyed until all
+ * the copies have been destroyed.
  *
  * @param original message to be copied
  */
@@ -436,7 +437,9 @@ int msg_copy_chain(msg_t *msg, msg_t const *original)
  *
  * @relates msg_s
  *
- * The duplicated message does not share any (non-const) data with original.
+ * Copy a message, the header structures and all the related strings. The
+ * duplicated message does not share any (non-const) data with original.
+ * Note that the cached representation (in h_data) is not copied.
  *
  * @param original message to be duplicated
  */
