@@ -45,6 +45,8 @@
 
 #include "config.h"
 
+#undef HAVE_SIGCOMP		/* For now, no SigComp */
+
 /* From AM_INIT/AC_INIT in our "config.h" */
 char const nta_version[] = PACKAGE_VERSION;
 
@@ -139,11 +141,11 @@ static int complete_response(msg_t *response,
 			     int status, char const *phrase, 
 			     msg_t const *request);
 
-#if HAVE_SIGCOMP
-#include <sigcomp.h>
-
 static int agent_sigcomp_options(nta_agent_t *agent, 
 				 struct sigcomp_compartment *);
+
+#if HAVE_SIGCOMP
+#include <sigcomp.h>
 
 static
 struct sigcomp_compartment *
@@ -1106,13 +1108,10 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_SIPFLAGS(agent->sa_flags),
 	     NTATAG_RPORT(agent->sa_rport),
 	     NTATAG_PRELOAD(agent->sa_preload),
-#if HAVE_SIGCOMP
+	     NTATAG_SIGCOMP_ALGORITHM(agent->sa_algorithm),
 	     NTATAG_SIGCOMP_OPTIONS(agent->sa_sigcomp_options ?
 				    agent->sa_sigcomp_options :
 				    "sip"),
-#else
-	     NTATAG_SIGCOMP_OPTIONS(NULL),
-#endif
 	     TAG_END());
 }
 
@@ -9890,26 +9889,6 @@ int agent_sigcomp_accept(nta_agent_t *sa, tport_t *tp, msg_t *msg)
   return tport_sigcomp_accept(tp, cc, msg);
 }
 
-/** Set SigComp options.
- *
- * This is a callback invoked by tport whenever it has created a new
- * compartment.
- */
-static int agent_sigcomp_options(nta_agent_t *agent, 
-				 struct sigcomp_compartment *cc)
-{
-  char const * const * l = agent->sa_sigcomp_option_list;
-
-  if (l) {
-    for (;*l;l++)
-      sigcomp_compartment_option(cc, *l);
-    return 0;
-  } 
-  else {
-    return sigcomp_compartment_option(cc, "sip");
-  }
-}
-
 #else
 
 struct sigcomp_compartment *
@@ -9932,6 +9911,30 @@ nta_compartment_decref(struct sigcomp_compartment **pcc)
 }
 
 #endif
+
+/** Set SigComp options.
+ *
+ * This is a callback invoked by tport whenever it has created a new
+ * compartment.
+ */
+static int agent_sigcomp_options(nta_agent_t *agent, 
+				 struct sigcomp_compartment *cc)
+{
+#if 0
+  char const * const * l = agent->sa_sigcomp_option_list;
+
+  if (l) {
+    for (;*l;l++)
+      sigcomp_compartment_option(cc, *l);
+    return 0;
+  } 
+  else {
+    return sigcomp_compartment_option(cc, "sip");
+  }
+#endif
+  return 0;
+}
+
 
 /** Bind transport update callback */
 int nta_agent_bind_tport_update(nta_agent_t *agent,
