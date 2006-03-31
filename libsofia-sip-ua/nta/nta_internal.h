@@ -227,19 +227,12 @@ struct nta_agent_s
   /** Messages memory preload. */
   unsigned           sa_preload;
 
-#if HAVE_SIGCOMP
+  /** Name of SigComp algorithm */
+  char const        *sa_algorithm;
   /** Options for SigComp. */
-  struct sigcomp_state_handler   *sa_state_handler;
-  struct sigcomp_algorithm const *sa_algorithm;
-  struct sigcomp_compartment     *sa_compartment;
-
-  struct sigcomp_magic  *sa_comp_head;
-  struct sigcomp_magic **sa_comp_tail;
-  
   char const        *sa_sigcomp_options;
   char const* const *sa_sigcomp_option_list;
   char const        *sa_sigcomp_option_free;
-#endif
 
   /** Resolving order (AAAA/A) */
   enum nta_res_order_e sa_res_order;

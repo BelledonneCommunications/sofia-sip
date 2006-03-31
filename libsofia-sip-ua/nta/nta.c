@@ -545,17 +545,6 @@ void nta_agent_destroy(nta_agent_t *agent)
 
     tport_destroy(agent->sa_tports), agent->sa_tports = NULL;
 
-#if HAVE_SIGCOMP
-    if (agent->sa_compartment) {
-      sigcomp_compartment_unref(agent->sa_compartment);
-      agent->sa_compartment = NULL;
-    }
-
-    if (agent->sa_state_handler) {
-      sigcomp_state_handler_free(agent->sa_state_handler);
-    }
-#endif
-
     agent_kill_terminator(agent);
 
     su_home_unref(agent->sa_home);
@@ -836,10 +825,8 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   int tcp_rport       = agent->sa_tcp_rport;
   unsigned preload         = agent->sa_preload;
   unsigned threadpool      = agent->sa_tport_threadpool;
-#if HAVE_SIGCOMP
   char const *sigcomp = agent->sa_sigcomp_options;
   char const *algorithm = NONE;
-#endif
   msg_mclass_t *mclass = NONE;
   sip_contact_t const *aliases = NONE;
   url_string_t const *proxy = NONE;
@@ -888,10 +875,8 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      /* If threadpool is enabled, start a separate "reaper thread" */
 	      TPTAG_THRPSIZE_REF(threadpool),
 #endif
-#if HAVE_SIGCOMP
 	      NTATAG_SIGCOMP_OPTIONS_REF(sigcomp),
 	      NTATAG_SIGCOMP_ALGORITHM_REF(algorithm),
-#endif
 	      TAG_END());
 
   if (mclass != NONE)
@@ -933,9 +918,8 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
       n = -1;
   }
 
-#if HAVE_SIGCOMP
   if (algorithm != NONE)
-    agent->sa_algorithm = sigcomp_algorithm_by_name(algorithm);
+    agent->sa_algorithm = su_strdup(home, algorithm);
 
   if (str0cmp(sigcomp, agent->sa_sigcomp_options)) {
     int msg_avlist_d(su_home_t *home, char **ss, msg_param_t const **pparams);
@@ -956,7 +940,6 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
       n = -1;
     }
   }
-#endif
 
   if (maxsize == 0) maxsize = 2 * 1024 * 1024;
   if (maxsize > NTA_TIME_MAX) maxsize = NTA_TIME_MAX;
@@ -1546,37 +1529,27 @@ int nta_agent_add_tport(nta_agent_t *self,
 static
 int agent_create_master_transport(nta_agent_t *self, tagi_t *tags)
 {
-#if HAVE_SIGCOMP
-  struct sigcomp_algorithm const *algorithm = self->sa_algorithm;
-
-  if (algorithm == NULL)
-    algorithm = sigcomp_algorithm_by_name(getenv("SIGCOMP_ALGORITHM"));
-
-  self->sa_state_handler = sigcomp_state_handler_create();
-
-  if (self->sa_state_handler)
-    self->sa_compartment = 
-      sigcomp_compartment_create(algorithm, self->sa_state_handler, 0,
-				 "", 0, NULL, 0);
-
-  if (self->sa_compartment) {
-    agent_sigcomp_options(self, self->sa_compartment);
-    sigcomp_compartment_option(self->sa_compartment, "stateless");
-  }
-  else
-    SU_DEBUG_1(("nta: initializing SigComp: %s\n", strerror(errno)));
-#endif
-
+  struct sigcomp_compartment *cc;
+  char const *algorithm;
+  
   self->sa_tports = 
     tport_tcreate(self, nta_agent_class, self->sa_root,
 		  TPTAG_SDWN_ERROR(0),
 		  TPTAG_IDLE(1800000),
 		  TPTAG_DEBUG_DROP(self->sa_drop_prob),
-		  IF_SIGCOMP_TPTAG_COMPARTMENT(self->sa_compartment)
 		  TAG_NEXT(tags));
 
   if (!self->sa_tports)
     return -1;
+
+  algorithm = getenv("SIGCOMP_ALGORITHM");
+
+  if (algorithm == NULL)
+    algorithm = self->sa_algorithm;
+
+  cc = tport_init_comp(self->sa_tports, algorithm);
+  if (cc)
+    agent_sigcomp_options(self, cc);
 
   SU_DEBUG_9(("nta: master transport created\n"));
 
@@ -2061,7 +2034,6 @@ void agent_recv_request(nta_agent_t *agent,
 
   stream = tport_is_stream(tport);
 
-#if HAVE_SIGCOMP
   if (stream && 
       tport_can_send_sigcomp(tport) &&
       tport_name(tport)->tpn_comp == NULL && 
@@ -2069,7 +2041,6 @@ void agent_recv_request(nta_agent_t *agent,
       tport_has_compression(tport_parent(tport), sip->sip_via->v_comp)) {
     tport_set_compression(tport, sip->sip_via->v_comp);
   }
-#endif
 
   if (sip->sip_flags & MSG_FLG_TOOLARGE) {
     SU_DEBUG_5(("nta: %s (%u) is %s\n", 
