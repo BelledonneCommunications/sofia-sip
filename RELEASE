@@ -18,6 +18,14 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+- Revised sresolv interface and added
+    sofia-resolv/sres.h
+    sofia-resolv/sres_async.h
+    sofia-resolv/sres_cache.h
+    sofia-resolv/sres_record.h
+
+- Added <sofia-sip/tport_plugins.h>
+
 - Added string manipulation functions:
   - su_strcat_all()
   - su_strlst_create_with(), su_strlst_vcreate_with()
@@ -30,11 +38,12 @@ API/ABI changes and versioning
 
 - Added the stun_dns_lookup.*() interface to sofia-sip/stun.h.
 
-- stun_handle_() functions are now marked as 'deprecated' and replaced
-by stun_() functions in sofia-sip/stun.h.
+- stun_handle_() functions are replaced by stun_() functions in 
+  <sofia-sip/stun.h>.
 
-- Per discovery magic and callback added to stun_bind(),
-stun_get_nattype(), stun_get_lifetime()
+- Discovery context pointer and callback added to stun_bind()
+
+- Removed nutag_sip_parser (using ntatag_mclass instead)
 
 Contributors to this release
 ----------------------------
