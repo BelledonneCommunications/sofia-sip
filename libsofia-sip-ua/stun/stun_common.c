@@ -653,9 +653,8 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
   if (msg->enc_buf.data == NULL) {
     /* convert msg to binary format */
     /* convert attributes to binary format for transmission */
-    attr = msg->stun_attr;
     len = 0;
-    while(attr) {
+    for (attr = msg->stun_attr; attr ; attr = attr->next) {
       switch(attr->attr_type) {
       case RESPONSE_ADDRESS:
       case MAPPED_ADDRESS:
@@ -668,8 +667,6 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
       case TURN_SOURCE_ADDRESS:
 #endif
 	z = stun_encode_address(attr);
-	if(z < 0) return z;
-	len += z;
 	break;
       case CHANGE_REQUEST:
 #ifdef USE_TURN
@@ -678,8 +675,6 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
       case TURN_BANDWIDTH:
 #endif
 	z = stun_encode_uint32(attr);
-	if (z < 0) return z;
-	len += z;
 	break;
 
       case USERNAME:
@@ -690,21 +685,21 @@ int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
       case TURN_DATA:
 #endif
 	z = stun_encode_buffer(attr);
-	if(z < 0) return z;
-	len += z;
 	break;
       case MESSAGE_INTEGRITY:
 	msg_int = attr;
-	len += 24; /* postpone encoding to 2nd round */
+	z = 24;
 	break;
       case ERROR_CODE:
 	z = stun_encode_error_code(attr);
-	if(z < 0) return z;
-	len += z;
       default:
 	break;
+	z = 0;
       }
-      attr = attr->next;
+
+      if(z < 0) return z;
+
+      len += z;
     }
 
     msg->stun_hdr.msg_len = len;

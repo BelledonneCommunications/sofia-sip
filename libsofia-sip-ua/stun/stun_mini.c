@@ -326,11 +326,11 @@ int process_3489_request(stun_mini_t *mini,
     a->attr_type = CHANGED_ADDRESS;
     addr = malloc(sizeof *addr); if (!addr) return STUN_500_SERVER_ERROR;
     memcpy(addr, changed->ss_addr.array, sizeof *addr);
-  }
 
-  a->pattr = addr;
-  a->next = NULL;
-  *next = a; next = &(a->next);
+    a->pattr = addr;
+    a->next = NULL;
+    *next = a; next = &(a->next);
+  }
 
   stun_send_message(socket, (void *)from, response, NULL);
 

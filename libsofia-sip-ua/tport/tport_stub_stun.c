@@ -150,7 +150,7 @@ int tport_recv_stun_dgram(tport_t const *self, int N)
     status = 500, error = "Server Error";
   }
 
-  if (dgram[1] == 1) {
+  if (dgram[0] == 1) {
     /* This is a response. */
     if (self->tp_pri->pri_vtable->vtp_stun_response) {
       if (self->tp_pri->pri_vtable->vtp_stun_response(self, dgram, n, 
