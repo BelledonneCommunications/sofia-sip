@@ -148,7 +148,8 @@ static int tport_udp_init_stun(tport_primary_t *pri,
 static void tport_udp_deinit_stun(tport_primary_t *pri)
 {
   tport_stun_t *stunpri = (tport_stun_t *)pri;
-  stun_handle_destroy(stunpri->stunpri_handle); 
+  if (stunpri->stunpri_handle) 
+    stun_handle_destroy(stunpri->stunpri_handle); 
   stunpri->stunpri_handle = NULL;
 }
 
