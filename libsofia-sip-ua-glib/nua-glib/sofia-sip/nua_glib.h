@@ -1,7 +1,8 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005,2006 Nokia Corporation.
+ * Copyright (C) 2005 Collabora Ltd.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
