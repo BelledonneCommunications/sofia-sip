@@ -1730,7 +1730,7 @@ sres_send_dns_query(sres_resolver_t *res,
 		    sres_query_t *q)
 {                        
   sres_message_t m[1];
-  int i, i0;
+  int i, i0, N = res->res_n_servers;
   int s, transient, error = 0;
   unsigned size, no_edns_size, edns_size;
   uint16_t id = q->q_id;
