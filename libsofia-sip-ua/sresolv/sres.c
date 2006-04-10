@@ -112,6 +112,7 @@ struct sres_resolver_s {
   sres_qtable_t       res_queries[1];   /**< Table of active queries */
 
   char const         *res_cnffile;      /**< Configuration file name */
+  char const        **res_options;      /**< Option strings */
 
   sres_config_t      *res_config;
   time_t              res_checked;
@@ -127,6 +128,7 @@ struct sres_resolver_s {
   short               res_n_servers; /**< Number of servers */
   sres_server_t     **res_servers;
 };
+
 
 struct sres_config {
   su_home_t c_home[1];
@@ -254,6 +256,9 @@ HTABLE_PROTOS(sres_qtable, qt, sres_query_t);
    (void *)&((struct sockaddr *)ss)->sa_data)
 #endif
 
+static sres_server_t **sres_servers_new(sres_resolver_t *res,
+				       sres_config_t const *c);
+
 /** Generate new 16-bit identifier for DNS query. */
 static uint16_t
 sres_new_id(sres_resolver_t *res)
@@ -270,8 +275,16 @@ sres_has_search_domain(sres_resolver_t *res)
 
 static void sres_resolver_destructor(void *);
 
-static sres_server_t **sres_servers_new(sres_resolver_t *res,
-				       sres_config_t const *c);
+sres_resolver_t *
+sres_resolver_new_with_cache_va(char const *conf_file_path,
+				sres_cache_t *cache,
+				char const *options, 
+				va_list va);
+static
+sres_resolver_t *
+sres_resolver_new_internal(char const *conf_file_path,
+			   sres_cache_t *cache,
+			   char const **options);
 
 static void sres_servers_unref(sres_resolver_t *res,
 			       sres_server_t **servers);
@@ -432,7 +445,27 @@ enum {
 sres_resolver_t *
 sres_resolver_new(char const *conf_file_path)
 {
-  return sres_resolver_new_with_cache(conf_file_path, NULL, NULL);
+  return sres_resolver_new_internal(conf_file_path, NULL, NULL);
+}
+
+/** Copy a resolver.
+ *
+ * Make a copy of resolver with old
+ */
+sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
+{
+  char const *cnffile;
+  sres_cache_t *cache;
+  char const **options;
+
+  if (!res)
+    return NULL;
+
+  cnffile = res->res_cnffile;
+  cache = res->res_cache;
+  options = res->res_options;
+
+  return sres_resolver_new_internal(cnffile, cache, options);
 }
 
 /**Create a resolver.
@@ -462,12 +495,12 @@ sres_resolver_new(char const *conf_file_path)
 sres_resolver_t *
 sres_resolver_new_with_cache(char const *conf_file_path,
 			     sres_cache_t *cache,
-			     char const *options, ...)
+			     char const *option, ...)
 {
   sres_resolver_t *retval;
   va_list va;
-  va_start(va, options);
-  retval = sres_resolver_new_with_cache_va(conf_file_path, cache, options, va);
+  va_start(va, option);
+  retval = sres_resolver_new_with_cache_va(conf_file_path, cache, option, va);
   va_end(va);
   return retval;
 }
@@ -481,15 +514,63 @@ sres_resolver_new_with_cache(char const *conf_file_path,
 sres_resolver_t *
 sres_resolver_new_with_cache_va(char const *conf_file_path,
 				sres_cache_t *cache,
-				char const *options, 
+				char const *option,
 				va_list va)
 {
+  va_list va0;
+  size_t i;
+  char const *o, *oarray[16], **olist = oarray;
   sres_resolver_t *res;
 
-  res = su_home_new(sizeof(*res));
+  va_copy(va0, va);
+  
+  for (i = 0, o = option; o; o = va_arg(va0, char const *)) {
+    if (i < 16)
+      olist[i] = o;
+    i++;
+  }
+
+  if (i >= 16) {
+    olist = malloc((i + 1) * sizeof *olist);
+    if (!olist)
+      return NULL;
+    for (i = 0, o = option; o; o = va_arg(va, char const *)) {
+      olist[i++] = o;
+      i++;
+    }
+  }
+  olist[i] = NULL;
+  res = sres_resolver_new_internal(conf_file_path, cache, olist);
+  if (olist != oarray)
+    free(olist);
+
+  return res;
+}
+
+sres_resolver_t *
+sres_resolver_new_internal(char const *conf_file_path,
+			   sres_cache_t *cache,
+			   char const **options)
+{
+  sres_resolver_t *res;
+  size_t i, n, len;
+  char **array, *o, *end;
+ 
+  for (n = 0, len = 0; options && options[n]; n++)
+    len += strlen(options[n]) + 1;
+
+  res = su_home_new(sizeof(*res) + (n + 1) * (sizeof *options) + len);
 
   if (res == NULL)
     return NULL;
+
+  array = (void *)(res + 1);
+  o = (void *)(array + n + 1);
+  end = o + len;
+
+  for (i = 0; options && options[i]; i++)
+    o = memccpy(array[i] = o, options[i], '\0', len - (end - o));
+  assert(o == end);
 
   su_home_desctructor(res->res_home, sres_resolver_destructor);
 
@@ -1649,7 +1730,7 @@ sres_send_dns_query(sres_resolver_t *res,
 		    sres_query_t *q)
 {                        
   sres_message_t m[1];
-  int i, i0, N = res->res_n_servers;
+  int i, i0;
   int s, transient, error = 0;
   unsigned size, no_edns_size, edns_size;
   uint16_t id = q->q_id;

@@ -1427,7 +1427,7 @@ void test_answer_multi(sres_context_t *ctx,
 
 #include <sys/time.h>
 
-/* Fake time() implementation */
+/* Fake time() implementation, used by sresolv library */
 time_t time(time_t *tp)
 {
   struct timeval tv[1];

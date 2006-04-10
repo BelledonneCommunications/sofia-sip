@@ -106,6 +106,9 @@ struct sockaddr;
 /** New resolver object. */
 sres_resolver_t *sres_resolver_new(char const *resolv_conf_path);
 
+/** Copy a resolver. */
+sres_resolver_t *sres_resolver_copy(sres_resolver_t *);
+
 sres_resolver_t *
 sres_resolver_new_with_cache(char const *conf_file_path,
 			     sres_cache_t *cache,
