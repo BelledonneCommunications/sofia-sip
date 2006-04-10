@@ -1880,13 +1880,13 @@ sres_server_t *sres_next_server(sres_resolver_t *res,
   /* Retry using another server? */
   for (j = (i + 1) % N; (j != i); j = (j + 1) % N) {
     if (servers[j]->dns_icmp == 0) {
-      return *in_out_i = j, servers[i];
+      return *in_out_i = j, servers[j];
     }
   }
 
   for (j = (i + 1) % N; (j != i); j = (j + 1) % N) {
     if (servers[j]->dns_error == 0) {
-      return *in_out_i = j, servers[i];
+      return *in_out_i = j, servers[j];
     }
   }
 
