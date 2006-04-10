@@ -1688,21 +1688,55 @@ int sres_servers_count(sres_server_t *const *servers)
 static
 int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 {
+  int family = dns->dns_addr->ss_family;
   int s;
 
   if (dns->dns_socket != -1)
     return dns->dns_socket;
 
-  s = su_socket(dns->dns_addr->ss_family, SOCK_DGRAM, IPPROTO_UDP);
+  s = su_socket(family, SOCK_DGRAM, IPPROTO_UDP);
   if (s == -1) {
     SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
 		su_strerror(su_errno())));
     return s;
   }
 
+#if HAVE_IP_RECVERR
+  if (family == AF_INET || family == AF_INET6) {
+    int const one = 1;
+    if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
+      if (family == AF_INET)
+	SU_DEBUG_3(("setsockopt(IPVRECVERR): %s\n", su_strerror(su_errno())));
+    }
+  }
+#endif
+#if HAVE_IPV6_RECVERR
+  if (family == AF_INET6) {
+    int const one = 1;
+    if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
+      SU_DEBUG_3(("setsockopt(IPV6_RECVERR): %s\n", su_strerror(su_errno())));
+  }
+#endif
+
   if (connect(s, (void *)dns->dns_addr, dns->dns_addrlen) < 0) {
-    SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "connect",
-		su_strerror(su_errno())));
+    char ipaddr[64];
+
+    if (family == AF_INET) {
+      void *addr = &((struct sockaddr_in *)dns->dns_addr)->sin_addr;
+      inet_ntop(family, addr, ipaddr, sizeof ipaddr);
+    }
+#if HAVE_SIN6
+    else if (family == AF_INET6) {
+      void *addr = &((struct sockaddr_in6 *)dns->dns_addr)->sin6_addr;
+      inet_ntop(family, addr, ipaddr, sizeof ipaddr);
+    }
+#endif
+    else
+      snprintf(ipaddr, sizeof ipaddr, "<af=%u>", family);
+
+    SU_DEBUG_1(("%s: %s: %s: %s:%u\n", "sres_server_socket", "connect",
+		su_strerror(su_errno()),
+		ipaddr, ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
     su_close(s);
     return -1;
   }
