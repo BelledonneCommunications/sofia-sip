@@ -1449,8 +1449,10 @@ int outbound_connect_process_options(struct outbound_connect *usages,
 				   nta_incoming_t *irq,
 				   sip_t const *sip)
 {
-  sip_call_id_t *i = sip->sip_call_id; assert(i);
+  sip_call_id_t *i = sip->sip_call_id;
   struct outbound_connect *oc;
+
+  assert(i);
 
   for (oc = usages; oc; oc = oc->oc_next) {
     if (strcmp(i->i_id, oc->oc_cookie) == 0)
