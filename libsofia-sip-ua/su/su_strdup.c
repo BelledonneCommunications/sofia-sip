@@ -130,7 +130,7 @@ char *su_strcat_all(su_home_t *home, ...)
     va_start(va, home);
 
     for (i = 0; i < n; i++)
-      s = memccpy(s, va_arg(va, char const *), '\0', end - s) - 1;
+      s = (char *)memccpy(s, va_arg(va, char const *), '\0', end - s) - 1;
 
     va_end(va);
 
