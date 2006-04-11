@@ -109,6 +109,12 @@ static msg_header_t *auc_digest_authorization(auth_client_t *ca,
 					      url_t const *url, 
 					      msg_payload_t const *body);
 
+static msg_header_t *auc_ntlm_authorization(auth_client_t *ca, 
+					    su_home_t *h,
+					    char const *method, 
+					    url_t const *url, 
+					    msg_payload_t const *body);
+
 /** Allocate a dummy auth_client_t structure. */
 auth_client_t *ca_create(su_home_t *home)
 {
@@ -232,6 +238,9 @@ int ca_challenge(auth_client_t *ca,
   }
   else if (strcasecmp(scheme, "Digest") == 0) {
     ca->ca_authorize = auc_digest_authorization;
+  }
+  else if (strcasecmp(scheme, "NTLM") == 0) {
+    ca->ca_authorize = auc_ntlm_authorization;
   }
   else
     return -1;

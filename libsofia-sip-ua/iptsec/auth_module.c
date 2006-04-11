@@ -789,6 +789,254 @@ void auth_info_digest(auth_mod_t *am,
 }
 
 
+#if 0
+/* ====================================================================== */
+/* NTLM authentication scheme */
+
+static void auth_method_ntlm_x(auth_mod_t *am,
+			       auth_status_t *as,
+			       msg_auth_t *au,
+			       auth_challenger_t const *ach);
+
+auth_scheme_t auth_scheme_ntlm[1] =
+  {{
+      "NTLM",			/* asch_method */
+      sizeof (auth_mod_t),	/* asch_size */
+      auth_init_default,	/* asch_init */
+      auth_method_ntlm_x,	/* asch_check */
+      auth_challenge_ntlm,	/* asch_challenge */
+      auth_cancel_default,	/* asch_cancel */
+      auth_destroy_default	/* asch_destroy */
+  }};
+
+struct nonce {
+  msg_time_t issued;
+  uint32_t   count;
+  uint16_t   nextnonce;
+  uint8_t    ntlm[6];
+};
+
+#define AUTH_NTLM_NONCE_LEN (BASE64_SIZE(sizeof (struct nonce)) + 1)
+
+/** Authenticate a request with @b Ntlm authentication scheme. 
+ *
+ * This function reads user database before authentication, if needed.
+ */
+static
+void auth_method_ntlm_x(auth_mod_t *am,
+			auth_status_t *as,
+			msg_auth_t *au,
+			auth_challenger_t const *ach)
+{
+  if (am) {
+    auth_readdb_if_needed(am);
+    auth_method_ntlm(am, as, au, ach);
+  }
+}
+
+/** Authenticate a request with @b Ntlm authentication scheme. 
+ */
+void auth_method_ntlm(auth_mod_t *am,
+		      auth_status_t *as,
+		      msg_auth_t *au,
+		      auth_challenger_t const *ach)
+{
+  as->as_allow = as->as_allow || auth_allow_check(am, as) == 0;
+
+  if (as->as_realm)
+    au = auth_ntlm_credentials(au, as->as_realm, am->am_opaque,
+			       am->am_gssapi-data, am->am_targetname);
+
+  else
+    au = NULL;
+
+  if (as->as_allow) {
+    SU_DEBUG_5(("%s: allow unauthenticated %s\n", __func__, as->as_method));
+    as->as_status = 0, as->as_phrase = NULL;
+    as->as_match = (msg_header_t *)au;
+    return;
+  } 
+
+  if (au) {
+    auth_response_t ar[1] = {{ sizeof(ar) }};
+    auth_ntlm_response_get(as->as_home, ar, au->au_params);
+    as->as_match = (msg_header_t *)au;
+    auth_check_ntlm(am, as, ar, ach);
+  }
+  else {
+    /* There was no matching credentials, send challenge */
+    SU_DEBUG_5(("%s: no credentials matched\n", __func__));
+    auth_challenge_ntlm(am, as, ach);
+  }
+}
+
+/** Check ntlm authentication */
+void auth_check_ntlm(auth_mod_t *am,
+		       auth_status_t *as,
+		       auth_response_t *ar,
+		       auth_challenger_t const *ach)
+{
+  char const *a1;
+  auth_hexmd5_t a1buf, response;
+  auth_passwd_t *apw;
+  char const *phrase;
+  msg_time_t now = msg_now();
+
+  if (am == NULL || as == NULL || ar == NULL || ach == NULL) {
+    if (as) {
+      as->as_status = 500, as->as_phrase = "Internal Server Error";
+      as->as_response = NULL;
+    }
+    return;
+  }
+
+  phrase = "Bad authorization";
+
+#define PA "Authorization missing "
+
+  if ((!ar->ar_username && (phrase = PA "username")) || 
+      (!ar->ar_nonce && (phrase = PA "nonce")) || 
+      (!ar->ar_uri && (phrase = PA "URI")) || 
+      (!ar->ar_response && (phrase = PA "response")) || 
+      /* (!ar->ar_opaque && (phrase = PA "opaque")) || */
+      /* Check for qop */
+      (ar->ar_qop && 
+       ((ar->ar_auth && 
+	 strcasecmp(ar->ar_qop, "auth") &&
+	 strcasecmp(ar->ar_qop, "\"auth\"")) ||
+	(ar->ar_auth_int && 
+	 strcasecmp(ar->ar_qop, "auth-int") &&
+	 strcasecmp(ar->ar_qop, "\"auth-int\""))) 
+       && (phrase = PA "has invalid qop"))) {
+    assert(phrase);
+    SU_DEBUG_5(("auth_method_ntlm: 400 %s\n", phrase));
+    as->as_status = 400, as->as_phrase = phrase;
+    as->as_response = NULL;
+    return;
+  }
+
+  if (as->as_nonce_issued == 0 /* Already validated nonce */ && 
+      auth_validate_ntlm_nonce(am, as, ar, now) < 0) {
+    as->as_blacklist = am->am_blacklist;
+    auth_challenge_ntlm(am, as, ach);
+    return;
+  }
+
+  if (as->as_stale) {
+    auth_challenge_ntlm(am, as, ach);
+    return;
+  }
+
+  apw = auth_mod_getpass(am, ar->ar_username, ar->ar_realm);
+
+  if (apw && apw->apw_hash)
+    a1 = apw->apw_hash;
+  else if (apw && apw->apw_pass)
+    auth_ntlm_a1(ar, a1buf, apw->apw_pass), a1 = a1buf;
+  else 
+    auth_ntlm_a1(ar, a1buf, "xyzzy"), a1 = a1buf, apw = NULL;
+  
+  if (ar->ar_md5sess)
+    auth_ntlm_a1sess(ar, a1buf, a1), a1 = a1buf;
+      
+  auth_ntlm_response(ar, response, a1, 
+		       as->as_method, as->as_body, as->as_bodylen);
+
+  if (!apw || strcmp(response, ar->ar_response)) {
+    if (am->am_forbidden) {
+      as->as_status = 403, as->as_phrase = "Forbidden";
+      as->as_blacklist = am->am_blacklist;
+      as->as_response = NULL;
+    }
+    else {
+      auth_challenge_ntlm(am, as, ach);
+      as->as_blacklist = am->am_blacklist;
+    }
+    SU_DEBUG_5(("auth_method_ntlm: response did not match\n"));
+
+    return;
+  }
+
+  assert(apw);
+
+  as->as_user = apw->apw_user;
+  as->as_anonymous = apw == am->am_anon_user;
+
+  if (am->am_nextnonce || am->am_mutual)
+    auth_info_ntlm(am, as, ach);
+
+  if (am->am_challenge)
+    auth_challenge_ntlm(am, as, ach);
+
+  SU_DEBUG_7(("auth_method_ntlm: successful authentication\n"));
+
+  as->as_status = 0;	/* Successful authentication! */
+  as->as_phrase = "";
+}
+
+/** Construct a challenge header for @b Ntlm authentication scheme. */
+void auth_challenge_ntlm(auth_mod_t *am, 
+			   auth_status_t *as,
+			   auth_challenger_t const *ach)
+{
+  char const *u, *d;
+  char nonce[AUTH_NTLM_NONCE_LEN];
+
+  auth_generate_ntlm_nonce(am, nonce, sizeof nonce, 0, msg_now());
+
+  u = as->as_uri;
+  d = as->as_pdomain;
+
+  as->as_response = 
+    msg_header_format(as->as_home, ach->ach_header, 
+		      "Ntlm"
+		      " realm=\"%s\","
+		      "%s%s%s"
+		      "%s%s%s"
+		      " nonce=\"%s\","
+		      "%s%s%s"
+		      "%s"	/* stale */
+		      " algorithm=%s" 
+		      "%s%s%s",
+		      as->as_realm, 
+		      u ? " uri=\"" : "", u ? u : "", u ? "\"," : "", 
+		      d ? " domain=\"" : "", d ? d : "", d ? "\"," : "", 
+		      nonce, 
+		      am->am_opaque ? " opaque=\"" : "",
+		      am->am_opaque ? am->am_opaque : "",
+		      am->am_opaque ? "\"," : "",
+		      as->as_stale ? " stale=true," : "",
+		      am->am_algorithm,
+		      am->am_qop ? ", qop=\"" : "",
+		      am->am_qop ? am->am_qop : "",
+		      am->am_qop ? "\"" : "");
+
+  if (!as->as_response)
+    as->as_status = 500, as->as_phrase = auth_internal_server_error;
+  else
+    as->as_status = ach->ach_status, as->as_phrase = ach->ach_phrase;
+}
+
+/** Construct a info header for @b Ntlm authentication scheme. */
+void auth_info_ntlm(auth_mod_t *am, 
+		      auth_status_t *as,
+		      auth_challenger_t const *ach)
+{
+  if (!ach->ach_info)
+    return;
+
+  if (am->am_nextnonce) {
+    char nonce[AUTH_NTLM_NONCE_LEN];
+
+    auth_generate_ntlm_nonce(am, nonce, sizeof nonce, 1, msg_now());
+
+    as->as_info = 
+      msg_header_format(as->as_home, ach->ach_info, "nextnonce=\"%s\"", nonce);
+  }
+}
+#endif /* 0 NTLM */
+
+
 /* ====================================================================== */
 /* Password database */
 
@@ -1377,6 +1625,148 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 
   return 0;
 }
+
+/** Find a NTLM credential header with matching realm and opaque. */
+msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
+				  char const *realm,
+				  char const *opaque,
+				  char const *gssapi-data,
+				  char const *targetname)
+{
+  char const *arealm, *aopaque, *agssapi-data, *atargetname;
+
+  for (;auth; auth = auth->au_next) {
+    if (strcasecmp(auth->au_scheme, "NTLM"))
+      continue;
+
+    if (realm) {
+      int cmp = 1;
+
+      arealm = msg_header_find_param(auth->au_common, "realm=");
+      if (!arealm)
+	continue;
+
+      if (arealm[0] == '"') {
+	/* Compare quoted arealm with unquoted realm */
+	int i, j;
+	for (i = 1, j = 0, cmp = 1; arealm[i] != 0; i++, j++) {
+	  if (arealm[i] == '"' && realm[j] == 0) {
+	    cmp = 0;
+	    break;
+	  }
+
+	  if (arealm[i] == '\\' && arealm[i + 1] != '\0')
+	    i++;
+
+	  if (arealm[i] != realm[j])
+	    break;
+	}
+      } 
+      else {
+	cmp = strcmp(arealm, realm);
+      }
+
+      if (cmp)
+	continue;
+    }
+
+    if (opaque) {
+      int cmp = 1;
+
+      aopaque = msg_header_find_param(auth->au_common, "opaque=");
+      if (!aopaque)
+	continue;
+
+      if (aopaque[0] == '"') {
+	/* Compare quoted aopaque with unquoted opaque */
+	int i, j;
+	for (i = 1, j = 0, cmp = 1; aopaque[i] != 0; i++, j++) {
+	  if (aopaque[i] == '"' && opaque[j] == 0) {
+	    cmp = 0;
+	    break;
+	  }
+
+	  if (aopaque[i] == '\\' && aopaque[i + 1] != '\0')
+	    i++;
+
+	  if (aopaque[i] != opaque[j])
+	    break;
+	}
+      } else {
+	cmp = strcmp(aopaque, opaque);
+      }
+
+      if (cmp)
+	continue;
+    }
+
+    if (gssapi-data) {
+      int cmp = 1;
+
+      agssapi-data = msg_header_find_param(auth->au_common, "gssapi-data=");
+      if (!agssapi-data)
+	continue;
+
+      if (agssapi-data[0] == '"') {
+	/* Compare quoted agssapi-data with unquoted gssapi-data */
+	int i, j;
+	for (i = 1, j = 0, cmp = 1; agssapi-data[i] != 0; i++, j++) {
+	  if (agssapi-data[i] == '"' && gssapi-data[j] == 0) {
+	    cmp = 0;
+	    break;
+	  }
+
+	  if (agssapi-data[i] == '\\' && agssapi-data[i + 1] != '\0')
+	    i++;
+
+	  if (agssapi-data[i] != gssapi-data[j])
+	    break;
+	}
+      } else {
+	cmp = strcmp(agssapi-data, gssapi-data);
+      }
+
+      if (cmp)
+	continue;
+    }
+
+    if (targetname) {
+      int cmp = 1;
+
+      atargetname = msg_header_find_param(auth->au_common, "targetname=");
+      if (!atargetname)
+	continue;
+
+      if (atargetname[0] == '"') {
+	/* Compare quoted atargetname with unquoted targetname */
+	int i, j;
+	for (i = 1, j = 0, cmp = 1; atargetname[i] != 0; i++, j++) {
+	  if (atargetname[i] == '"' && targetname[j] == 0) {
+	    cmp = 0;
+	    break;
+	  }
+
+	  if (atargetname[i] == '\\' && atargetname[i + 1] != '\0')
+	    i++;
+
+	  if (atargetname[i] != targetname[j])
+	    break;
+	}
+      } else {
+	cmp = strcmp(atargetname, targetname);
+      }
+
+      if (cmp)
+	continue;
+    }
+
+    return auth;
+  }
+
+  return NULL;
+}
+
+
 
 /* ====================================================================== */
 /* HMAC routines */

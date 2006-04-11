@@ -235,6 +235,13 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 			       auth_response_t *ar,
 			       msg_time_t now);
 
+/** NTLM scheme */
+msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
+				  char const *realm,
+				  char const *opaque,
+				  char const *gssapi-data,
+				  char const *targetname);
+
 int auth_allow_check(auth_mod_t *am, auth_status_t *as);
 
 int auth_get_params(su_home_t *home,
