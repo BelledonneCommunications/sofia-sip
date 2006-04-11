@@ -49,6 +49,9 @@ typedef unsigned _int32 uint32_t;
 
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #endif
 
 #if HAVE_ARPA_INET_H
@@ -85,8 +88,6 @@ struct sockaddr_storage {
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-
 #include <unistd.h>
 
 #include <stdlib.h>
@@ -2333,8 +2334,6 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 {
   int errcode = 0;
   int errorlen = sizeof(errcode);
-  struct sockaddr_storage remote[1] = {{ 0 }};
-  socklen_t remotelen = sizeof remote;
 
   SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_error", res, socket));
 
