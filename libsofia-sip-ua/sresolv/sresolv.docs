@@ -21,24 +21,23 @@ The application can either explicitly poll(2) or select(2) on file
 descriptors used by resolver and call the driver functions, or it can use
 @ref su_root_t "su root" a pointer to a su_root_t object.
 
-There is an internal cache used by sresolv. The query functions add records
-to the cache: using the cache is made similar as if receiving entries from
-DNS server. 
+There is an internal cache used by sresolv. The query functions add
+records to the cache: using the cache is made similar as if receiving
+entries directly from DNS server.
 
 @code
 
-#include <stdint.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
-#include <sresolv.h>
+
+#include <sofia-resolv/sres.h>
 
 sres_resolver_t *sres_resolver_new(char const *resolv_conf_path);
 sres_resolver_t *sres_resolver_ref(sres_resolver_t *res);
 void sres_resolver_unref(sres_resolver_t *res);
 
-int sres_resolver_add_mutex(sres_resolver_t *res,
-			    void *mutex,
-			    int (*lock)(void *mutex),
-			    int (*unlock)(void *mutex));
+sres_resolver_t *sres_resolver_copy(sres_resolver_t *);
 
 void *sres_resolver_set_userdata(sres_resolver_t *res, void *userdata);
 void *sres_resolver_get_userdata(sres_resolver_t const *res);
@@ -49,19 +48,19 @@ void sres_resolver_timer(sres_resolver_t *, int socket);
 int sres_resolver_receive(sres_resolver_t *res, int socket);
 int sres_resolver_error(sres_resolver_t *res, int socket);
 
-sres_query_t *sres_query_make(sres_resolver_t *res,
-			      sres_answer_f *callback,
-			      sres_context_t *context,
-			      int socket,
-			      uint16_t type,
-			      char const *domain);
+sres_query_t *sres_query(sres_resolver_t *res,
+			 sres_answer_f *callback,
+			 sres_context_t *context,
+			 int socket,
+			 uint16_t type,
+			 char const *domain);
 
-sres_query_t *sres_query_make_sockaddr(sres_resolver_t *res,
-				       sres_answer_f *callback,
-				       sres_context_t *context,
-				       int socket,
-				       uint16_t type,
-				       struct sockaddr const *addr);
+sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
+				  sres_answer_f *callback,
+				  sres_context_t *context,
+				  int socket,
+				  uint16_t type,
+				  struct sockaddr const *addr);
 
 void sres_query_bind(sres_query_t *q,
                      sres_answer_f *callback,
@@ -85,6 +84,10 @@ void sres_free_answers(sres_resolver_t *res, sres_record_t **answers);
 void sres_free_answer(sres_resolver_t *res, sres_record_t *answer);
 
 @endcode
+
+@todo Caching polioxy and Cache Poisoning
+
+The policy for caching non-authoritave entries should be solved.
 
 */
 

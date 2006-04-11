@@ -46,11 +46,8 @@ typedef unsigned _int32 uint32_t;
 #endif
 
 #if HAVE_NETINET_IN_H
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #endif
-
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
