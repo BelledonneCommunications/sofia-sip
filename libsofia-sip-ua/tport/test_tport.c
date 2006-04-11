@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -1373,6 +1373,8 @@ int main(int argc, char *argv[])
   else
     tport_log->log_default = 1;
 
+  su_init();
+
   retval |= name_test(tt); fflush(stdout);
   retval |= filter_test(tt); fflush(stdout);
 
@@ -1388,6 +1390,8 @@ int main(int argc, char *argv[])
       retval |= stun_test(tt); fflush(stdout);
     retval |= deinit_test(tt); fflush(stdout);
   }
+
+  su_deinit();
 
   return retval;
 }
