@@ -242,6 +242,9 @@ void nua_invite(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 /** Acknowledge a succesfull response to INVITE request. */ 
 void nua_ack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 
+/** Acknowledge a reliable preliminary response to INVITE request. */
+void nua_prack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+
 /** Query capabilities from server */
 void nua_options(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 

@@ -476,6 +476,7 @@ OPERATION(CANCEL, cancel);
 OPERATION(AUTHENTICATE, authenticate);
 OPERATION(UPDATE, update);
 OPERATION(INFO, info);
+OPERATION(PRACK, prack);
 OPERATION(REFER, refer);
 OPERATION(MESSAGE, message);
 OPERATION(OPTIONS, options);
@@ -675,6 +676,7 @@ int test_api_errors(struct context *ctx)
   TEST_VOID(nua_unregister(NULL, TAG_END()));
   TEST_VOID(nua_invite(NULL, TAG_END()));
   TEST_VOID(nua_ack(NULL, TAG_END()));
+  TEST_VOID(nua_prack(NULL, TAG_END()));
   TEST_VOID(nua_options(NULL, TAG_END()));
   TEST_VOID(nua_publish(NULL, TAG_END()));
   TEST_VOID(nua_message(NULL, TAG_END()));
