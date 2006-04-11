@@ -47,6 +47,13 @@
 #define SRES_CONTEXT_T stun_dns_lookup_t
 #include <sofia-sip/sresolv.h>
 
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+static char const __func__[] = "stun_dns";
+#endif
+
 #include "stun_internal.h"
 
 struct stun_dns_lookup_s {

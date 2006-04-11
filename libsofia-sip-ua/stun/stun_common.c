@@ -47,6 +47,13 @@
 
 #include <assert.h>
 
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+#define __func__ "stun_common"
+#endif
+
 const char stun_400_Bad_request[] = "Bad Request",
   stun_401_Unauthorized[] = "Unauthorized",
   stun_420_Unknown_attribute[] = "Unknown Attribute",
