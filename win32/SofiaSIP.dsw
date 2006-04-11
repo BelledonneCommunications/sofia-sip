@@ -15,36 +15,6 @@ Package=<4>
 
 ###############################################################################
 
-Project: "test_nta"=".\tests\test_nta\test_nta.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name libsofia_sip_ua
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "test_nua"=".\tests\test_nua\test_nua.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name libsofia_sip_ua
-    End Project Dependency
-}}}
-
-###############################################################################
-
 Project: "su_alloc_test"=".\tests\su_alloc_test\su_alloc_test.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -165,6 +135,51 @@ Package=<4>
 
 ###############################################################################
 
+Project: "test_nta"=".\tests\test_nta\test_nta.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libsofia_sip_ua
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "test_nua"=".\tests\test_nua\test_nua.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libsofia_sip_ua
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "test_tport"=".\tests\test_tport\test_tport.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libsofia_sip_ua
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "torture_htable"=".\tests\torture_htable\torture_htable.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -236,3 +251,4 @@ Package=<3>
 }}}
 
 ###############################################################################
+
