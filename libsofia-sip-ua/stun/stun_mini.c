@@ -269,10 +269,10 @@ int process_3489_request(stun_mini_t *mini,
     for (changed = mini->sockets; changed; changed = changed->ss_next) {
       sin2 = changed->ss_addr.sin;
 
-      if (scope != LI_SCOPE_HOST && ss->ss_scope == LI_SCOPE_HOST)
+      if (scope != LI_SCOPE_HOST && changed->ss_scope == LI_SCOPE_HOST)
 	continue;
 
-      if (scope != LI_SCOPE_SITE && ss->ss_scope == LI_SCOPE_SITE)
+      if (scope != LI_SCOPE_SITE && changed->ss_scope == LI_SCOPE_SITE)
 	continue;
 
       if (same_scope == NULL)
