@@ -55,29 +55,11 @@ typedef struct tport_nat_s tport_nat_t;
 #include <sofia-sip/msg.h>
 #include <sofia-sip/msg_addr.h>
 
-#if HAVE_IP_RECVERR || HAVE_IPV6_RECVERR
-#include <linux/types.h>
-#include <linux/errqueue.h>
-#include <sys/uio.h>
-#endif
-
-#if HAVE_SCTP && HAVE_NETINET_SCTP_H
-#include <netinet/sctp.h>
-#endif
-
-#if HAVE_TLS
-#include "tport_tls.h"
-#else
-typedef struct _tls_t tls_t;	/* dummy */
-#endif
-
-#if HAVE_SIGCOMP
-#include <sigcomp.h>
-#endif
-
-#ifndef SOL_TCP
-#define SOL_TCP IPPROTO_TCP
-#endif
+#include <stdlib.h>
+#include <time.h>
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
 
 #ifndef IPPROTO_SCTP
 #define IPPROTO_SCTP (132)
