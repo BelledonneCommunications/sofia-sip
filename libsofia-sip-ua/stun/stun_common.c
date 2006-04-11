@@ -367,26 +367,27 @@ int stun_encode_address(stun_attr_t *attr) {
 
   a = (stun_attr_sockaddr_t *)attr->pattr;
 
-  if (stun_encode_type_len(attr, 2*sizeof(uint32_t)) < 0) {
+  if (stun_encode_type_len(attr, 8) < 0) {
     return -1;
   }
 
   tmp = htons(0x01); /* FAMILY = 0x01 */
   memcpy(attr->enc_buf.data+4, &tmp, sizeof(tmp));
-  memcpy(attr->enc_buf.data+6, &a->sin_port, sizeof(uint32_t));
-  memcpy(attr->enc_buf.data+8, &a->sin_addr.s_addr, sizeof(uint32_t));
+  memcpy(attr->enc_buf.data+6, &a->sin_port, 2);
+  memcpy(attr->enc_buf.data+8, &a->sin_addr.s_addr, 4);
+
   return attr->enc_buf.size;
 }
 
 int stun_encode_uint32(stun_attr_t *attr) {
   uint32_t tmp;
 
-  if (stun_encode_type_len(attr, sizeof(tmp)) < 0) {
+  if (stun_encode_type_len(attr, 4) < 0) {
     return -1;
   }
 
   tmp = htonl(((stun_attr_changerequest_t *) attr->pattr)->value);
-  memcpy(attr->enc_buf.data+4, &tmp, sizeof(tmp));
+  memcpy(attr->enc_buf.data+4, &tmp, 4);
   return attr->enc_buf.size;
 }
 
@@ -406,7 +407,8 @@ int stun_encode_error_code(stun_attr_t *attr) {
   memcpy(reason, error->phrase, len);
 
   attr->enc_buf.size +=4;
-  if (stun_encode_type_len(attr, attr->enc_buf.size) < 0) {
+  assert(attr->enc_buf.size < 65536);
+  if (stun_encode_type_len(attr, (uint16_t)attr->enc_buf.size) < 0) {
     return -1;
   }
   memset(attr->enc_buf.data+4, 0, 2);
@@ -421,8 +423,8 @@ int stun_encode_buffer(stun_attr_t *attr) {
   stun_buffer_t *a;
 
   a = (stun_buffer_t *)attr->pattr;
-
-  if (stun_encode_type_len(attr, a->size) < 0) {
+  assert(a->size < 65536);
+  if (stun_encode_type_len(attr, (uint16_t)a->size) < 0) {
     return -1;
   }
 
@@ -544,7 +546,7 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
 #endif /* HAVE_OPENSSL */
 
 void debug_print(stun_buffer_t *buf) {
-  int i;
+  unsigned i;
   for(i = 0; i < buf->size/4; i++) {
     SU_DEBUG_9(("%02x %02x %02x %02x\n",
 		*(buf->data + i*4),
