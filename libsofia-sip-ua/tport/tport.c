@@ -1286,11 +1286,6 @@ int tport_tbind(tport_t *self,
 
   mr = self->tp_master; assert(mr);
 
-#if HAVE_SOFIA_STUN
-  if (public == 0 && stun_is_requested(ta_tags(ta)))
-    public = tport_type_stun;
-#endif
-
   if (http_connect && public == 0)
     public = tport_type_connect;
     
