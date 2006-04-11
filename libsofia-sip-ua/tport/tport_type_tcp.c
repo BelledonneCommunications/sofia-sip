@@ -50,6 +50,13 @@
 #include <errno.h>
 #include <limits.h>
 
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+char const __func__[] = "tport_type_tcp";
+#endif
+
 /* ---------------------------------------------------------------------- */
 /* TCP */
 

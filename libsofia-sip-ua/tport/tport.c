@@ -75,7 +75,7 @@ typedef struct tport_nat_s tport_nat_t;
 #elif HAVE_FUNCTION
 #define __func__ __FUNCTION__
 #else
-char const __func__[] = "tport";
+static char const __func__[] = "tport";
 #endif
 
 #define STACK_RECV(tp, msg, now)		       \
