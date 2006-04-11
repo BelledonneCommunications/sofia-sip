@@ -343,6 +343,22 @@ li_scope4(uint32_t ip4)
 }
 
 #if SU_HAVE_IN6
+
+#if HAVE_WINSOCK2_H
+#define IN6_IS_ADDR_LOOPBACK SU_IN6_IS_ADDR_LOOPBACK
+static inline int
+IN6_IS_ADDR_LOOPBACK(void const *ip6)
+{
+  uint8_t const *u = ip6;
+
+  return 
+    u[0] == 0 && u[1] == 0 && u[2] == 0 && u[3] == 0 && 
+    u[4] == 0 && u[5] == 0 && u[6] == 0 && u[7] == 0 && 
+    u[8] == 0 && u[9] == 0 && u[10] == 0 && u[11] == 0 && 
+    u[12] == 0 && u[13] == 0 && u[14] == 0 && u[15] == 1;
+}
+#endif
+
 /** Return IPv6 address scope */
 static int 
 li_scope6(struct in6_addr const *ip6)
