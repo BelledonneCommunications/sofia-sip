@@ -81,7 +81,7 @@ TPORT_DLL extern tag_typedef_t tptag_server_ref;
  *
  * @sa TPTAG_PUBLIC(), tport_is_public().
  */
-enum tport_via {
+typedef enum tport_via {
   tport_type_local = 0,
   tport_type_server = 0,
   tport_type_client = 1,
