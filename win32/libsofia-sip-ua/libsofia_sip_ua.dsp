@@ -484,6 +484,18 @@ SOURCE="..\..\libsofia-sip-ua\nth\nth_tag_ref.c"
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\sresolv\sres.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\sresolv\sres_blocking.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\sresolv\sres_cache.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\sresolv\sresolv.c"
 # End Source File
 # End Group
@@ -564,6 +576,26 @@ SOURCE="..\..\libsofia-sip-ua\iptsec\iptsec_debug.c"
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\stun\stun.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\stun\stun_common.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\stun\stun_dns.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\stun\stun_internal.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\stun\stun_mini.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\stun\stun_tag.c"
 # End Source File
 # Begin Source File
@@ -601,6 +633,14 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_message.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\nua\nua_options.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_params.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\nua_params.h"
 # End Source File
 # Begin Source File
 
@@ -676,11 +716,43 @@ SOURCE="..\..\libsofia-sip-ua\tport\tport.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\tport\tport_internal.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_logging.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_stub_sigcomp.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_stub_stun.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\tport\tport_tag.c"
 # End Source File
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\tport\tport_tag_ref.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_threadpool.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_type_connect.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_type_tcp.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\tport_type_udp.c"
 # End Source File
 # End Group
 # Begin Group "sdp"
@@ -1096,6 +1168,22 @@ SOURCE="..\..\libsofia-sip-ua\nth\sofia-sip\nth_tag.h"
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_async.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_cache.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_record.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-sip\sresolv.h"
 # End Source File
 # End Group
@@ -1197,6 +1285,10 @@ SOURCE="..\..\libsofia-sip-ua\nta\sofia-sip\sl_utils.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\tport\sofia-sip\tport.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\tport\sofia-sip\tport_plugins.h"
 # End Source File
 # Begin Source File
 
