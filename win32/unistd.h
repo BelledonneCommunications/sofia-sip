@@ -33,6 +33,7 @@
 #define mktemp(template)    _mktemp((template))
 #define mkstemp(template)   _open(_mktemp(template), _O_RDWR|_O_CREAT, 0600)
 #define unlink(name)        _unlink((name))
+#define stat _stat
 
 #define O_RDONLY        _O_RDONLY
 #define O_WRONLY        _O_WRONLY
