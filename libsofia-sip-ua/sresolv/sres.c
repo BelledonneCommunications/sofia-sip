@@ -38,14 +38,34 @@
 #include <stdint.h>
 #elif HAVE_INTTYPES_H
 #include <inttypes.h>
+#else
+#if defined(_WIN32)
+typedef _int8 int8_t;
+typedef unsigned _int8 uint8_t;
+typedef unsigned _int16 uint16_t;
+typedef unsigned _int32 uint32_t;
 #endif
+#endif
+
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#if HAVE_SIN6
+#include <tpipv6.h>
+#else
+struct sockaddr_storage {
+    short ss_family;
+    char ss_pad[126];
+};
 #endif
+#else
+#define closesocket(s) close(s)
+#endif
+
 #include <time.h>
 
 #include "sofia-resolv/sres.h"
@@ -55,10 +75,13 @@
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
+#include <sofia-sip/su_errno.h>
 
 #include "sofia-sip/htable.h"
 
-#include <sofia-sip/su.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -70,6 +93,13 @@
 #include <limits.h>
 
 #include <assert.h>
+
+#if defined(va_copy)
+#elif defined(__va_copy)
+#define va_copy(dst, src) __va_copy((dst), (src))
+#else
+#define va_copy(dst, src) (memcpy(&(dst), &(src), sizeof (va_list)))
+#endif
 
 void sres_cache_clean(sres_cache_t *cache, time_t now);
 
@@ -1662,7 +1692,7 @@ void sres_servers_unref(sres_resolver_t *res,
     if (servers[i]->dns_socket != -1) {
       if (res->res_updcb)
 	res->res_updcb(res->res_async, -1, servers[i]->dns_socket);
-      su_close(servers[i]->dns_socket);
+      closesocket(servers[i]->dns_socket);
     }
   }
 
@@ -1694,7 +1724,7 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
   if (dns->dns_socket != -1)
     return dns->dns_socket;
 
-  s = su_socket(family, SOCK_DGRAM, IPPROTO_UDP);
+  s = socket(family, SOCK_DGRAM, IPPROTO_UDP);
   if (s == -1) {
     SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
 		su_strerror(su_errno())));
@@ -1737,7 +1767,7 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     SU_DEBUG_1(("%s: %s: %s: %s:%u\n", "sres_server_socket", "connect",
 		su_strerror(su_errno()),
 		ipaddr, ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
-    su_close(s);
+    closesocket(s);
     return -1;
   }
   
@@ -1745,7 +1775,7 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     if (res->res_updcb(res->res_async, s, -1) < 0) {
       SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "update callback",
 		  su_strerror(su_errno())));
-      su_close(s);
+      closesocket(s);
       return -1;
     }
   }

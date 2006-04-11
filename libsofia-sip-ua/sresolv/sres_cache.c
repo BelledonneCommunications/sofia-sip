@@ -38,14 +38,23 @@
 #include <stdint.h>
 #elif HAVE_INTTYPES_H
 #include <inttypes.h>
+#else 
+#if defined(_WIN32)
+typedef unsigned _int8 uint8_t;
+typedef unsigned _int16 uint16_t;
+typedef unsigned _int32 uint32_t;
+#endif
 #endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
+
+#include <time.h>
 
 #include "sofia-resolv/sres_cache.h"
 #include "sofia-resolv/sres_record.h"
@@ -62,7 +71,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include <time.h>
 #include <limits.h>
 
 #include <assert.h>

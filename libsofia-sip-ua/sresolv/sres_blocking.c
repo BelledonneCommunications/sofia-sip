@@ -35,13 +35,23 @@
 #include <stdint.h>
 #elif HAVE_INTTYPES_H
 #include <inttypes.h>
+#else
+#if defined(_WIN32)
+typedef _int8 int8_t;
+typedef unsigned _int8 uint8_t;
+typedef unsigned _int16 uint16_t;
+typedef unsigned _int32 uint32_t;
 #endif
+#endif
+
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#define HAVE_SELECT 1
 #endif
 
 typedef struct sres_blocking_s sres_blocking_t;
@@ -108,9 +118,11 @@ int sres_blocking_update(sres_blocking_t *b,
 
     N--;
     b->fds[i].fd = b->fds[N].fd;
-    b->fds[i].events = b->fds[N].events;
     b->fds[N].fd = -1;
+#if HAVE_POLL
+    b->fds[i].events = b->fds[N].events;
     b->fds[N].events = 0;
+#endif
 
     b->n_sockets = N;
   }
@@ -164,9 +176,21 @@ int sres_blocking_complete(sres_blocking_context_t *c)
 	n = c->block->fds[n].fd + 1;
     }
 
-    n = select(n, readfds, NULL, writefds, timeval);
-
-    XXX;
+    n = select(n, readfds, NULL, errorfds, timeval);
+  
+    if (n <= 0)
+      sres_resolver_timer(c->resolver, -1);
+    else for (i = 0; i < c->block->n_sockets; i++) {
+      if (c->block->fds[i].fd > n)
+	continue;
+      if (FD_ISSET(c->block->fds[i].fd, errorfds))
+        sres_resolver_error(c->resolver, c->block->fds[i].fd);
+      else if (FD_ISSET(c->block->fds[i].fd, readfds))
+	sres_resolver_receive(c->resolver, c->block->fds[i].fd);
+      else
+	continue;
+      break;
+    }
 #endif
   }
 
