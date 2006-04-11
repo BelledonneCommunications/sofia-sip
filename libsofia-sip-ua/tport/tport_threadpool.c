@@ -421,7 +421,7 @@ int thrp_udp_recv(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd)
   /* Simulate packet loss */
   if (tp->tp_params->tpp_drop && 
       su_randint(0, 1000) < tp->tp_params->tpp_drop) {
-    recv(s, &sample, 1, 0);
+    recv(s, sample, 1, 0);
     pthread_mutex_unlock(mutex);
     SU_DEBUG_3(("tport(%p): simulated packet loss!\n", tp));
     return 0;
