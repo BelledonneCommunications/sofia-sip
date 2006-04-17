@@ -1630,10 +1630,10 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
 				  char const *realm,
 				  char const *opaque,
-				  char const *gssapi-data,
+				  char const *gssapidata,
 				  char const *targetname)
 {
-  char const *arealm, *aopaque, *agssapi-data, *atargetname;
+  char const *arealm, *aopaque, *agssapidata, *atargetname;
 
   for (;auth; auth = auth->au_next) {
     if (strcasecmp(auth->au_scheme, "NTLM"))
@@ -1700,30 +1700,30 @@ msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth,
 	continue;
     }
 
-    if (gssapi-data) {
+    if (gssapidata) {
       int cmp = 1;
 
-      agssapi-data = msg_header_find_param(auth->au_common, "gssapi-data=");
-      if (!agssapi-data)
+      agssapidata = msg_header_find_param(auth->au_common, "gssapi-data=");
+      if (!agssapidata)
 	continue;
 
-      if (agssapi-data[0] == '"') {
+      if (agssapidata[0] == '"') {
 	/* Compare quoted agssapi-data with unquoted gssapi-data */
 	int i, j;
-	for (i = 1, j = 0, cmp = 1; agssapi-data[i] != 0; i++, j++) {
-	  if (agssapi-data[i] == '"' && gssapi-data[j] == 0) {
+	for (i = 1, j = 0, cmp = 1; agssapidata[i] != 0; i++, j++) {
+	  if (agssapidata[i] == '"' && gssapidata[j] == 0) {
 	    cmp = 0;
 	    break;
 	  }
 
-	  if (agssapi-data[i] == '\\' && agssapi-data[i + 1] != '\0')
+	  if (agssapidata[i] == '\\' && agssapidata[i + 1] != '\0')
 	    i++;
 
-	  if (agssapi-data[i] != gssapi-data[j])
+	  if (agssapidata[i] != gssapidata[j])
 	    break;
 	}
       } else {
-	cmp = strcmp(agssapi-data, gssapi-data);
+	cmp = strcmp(agssapidata, gssapidata);
       }
 
       if (cmp)

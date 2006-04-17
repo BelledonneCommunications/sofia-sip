@@ -239,7 +239,7 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
 				  char const *realm,
 				  char const *opaque,
-				  char const *gssapi-data,
+				  char const *gssapidata,
 				  char const *targetname);
 
 int auth_allow_check(auth_mod_t *am, auth_status_t *as);
