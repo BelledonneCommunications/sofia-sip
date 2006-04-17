@@ -27,11 +27,13 @@ fi
 AC_SYS_IP_RECVERR
 AC_SYS_IPV6_RECVERR
 
-AC_CHECK_HEADERS(netinet/tcp.h)
+AC_CHECK_HEADERS(netinet/tcp.h netinet/sctp.h)
 
-if test x$with_sctp != xno; then
-AC_CHECK_HEADERS(netinet/sctp.h, [
+AC_ARG_WITH(sctp,
+[  --enable-sctp          use LK-SCTP (not used by default)],,
+ enable_sigcomp=no)
+
+if test x$enable_sctp = xyes; then
 AC_DEFINE(HAVE_SCTP, 1, [Define this a 1 if you have SCTP])
-])
 fi
 ])

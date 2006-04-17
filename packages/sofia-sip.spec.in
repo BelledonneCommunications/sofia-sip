@@ -36,6 +36,7 @@ network elements.
 %build
 options=--with-aclocal=aclocal
 %{?_with_sigcomp:options="$options --with-sigcomp"}
+options="$options --enable-sctp"
 %configure --with-pic --enable-shared --disable-dependency-tracking $options
 make %{_smp_mflags}
 %{?_with_check:make check}
