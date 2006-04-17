@@ -48,7 +48,13 @@ typedef unsigned _int32 uint32_t;
 #endif
 
 #if HAVE_NETINET_IN_H
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
+#endif
+
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
 #endif
 
 #if HAVE_WINSOCK2_H
@@ -81,6 +87,8 @@ struct sockaddr_storage {
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+
 #include <unistd.h>
 
 #include <stdlib.h>
