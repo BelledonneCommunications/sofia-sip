@@ -79,8 +79,8 @@ nua_stack_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *ta
   url_string_t const *url = NULL;
   char const *event_s = NULL, *ct_s = NULL, *pl_s = NULL;
   nea_event_t *ev;
-  int status = 500;
-  char const *phrase = nua_500_error;
+  int status = 900;
+  char const *phrase = nua_internal_error;
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
 
@@ -106,19 +106,20 @@ nua_stack_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *ta
 			       NH_PGET(nh, max_subscriptions), 
 			       NULL, nh,
 			       TAG_NEXT(tags)))) 
-    status = 500, phrase = nua_500_error;
+    status = 900, phrase = nua_internal_error;
 
   else if (!event && !(event = sip_event_make(home, event_s)))
-    status = 500, phrase = "Could not create an event header";
+    status = 900, phrase = "Could not create an event header";
 
   else if (!(ev = nh_notifier_event(nh, home, event, tags)))
-    status = 500, phrase = "Could not create an event view";
+    status = 900, phrase = "Could not create an event view";
 
   else if (nea_server_update(nh->nh_notifier, ev,  TAG_NEXT(tags)) < 0)
-    status = 500, phrase = "No content for event";
+    status = 900, phrase = "No content for event";
 
   else if (nea_server_notify(nh->nh_notifier, ev) < 0)
-    status = 500, phrase = "Error when notifying watchers";
+    status = 900, phrase = "Error when notifying watchers";
+
   else 
     nua_stack_event(nua, nh, NULL, e, status = SIP_200_OK, 
 		    SIPTAG_EVENT(event),
@@ -264,7 +265,7 @@ void nua_stack_authorize(nua_t *nua,
     nua_stack_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
   }
   else {
-    nua_stack_event(nua, nh, NULL, e, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
+    nua_stack_event(nua, nh, NULL, e, NUA_INTERNAL_ERROR, TAG_END());
   }
   return;
 }
@@ -322,7 +323,7 @@ void nua_stack_terminate(nua_t *nua,
   nea_event_t *nev = NULL;
 
   if (nh->nh_notifier == NULL) {
-    UA_EVENT2(e, 500, "No event server to terminate");
+    UA_EVENT2(e, 900, "No event server to terminate");
     return;
   }
 

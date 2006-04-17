@@ -63,10 +63,10 @@ nua_stack_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
   sip_t *sip;
 
   if (nh_is_special(nh)) {
-    return UA_EVENT2(e, 500, "Invalid handle for MESSAGE");
+    return UA_EVENT2(e, 900, "Invalid handle for MESSAGE");
   }
   else if (cr->cr_orq) {
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
   }
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
@@ -115,7 +115,7 @@ nua_stack_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
 				      SIPTAG_END(), TAG_NEXT(tags));
   if (!cr->cr_orq) {
     msg_destroy(msg);
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
   return cr->cr_event = e;
@@ -149,7 +149,7 @@ int nua_stack_process_message(nua_t *nua,
 
   if (nh == NULL)
     if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_nothing, 0)))
-      return 500;
+      return 500;		/* respond with 500 Internal Server Error */
 
   msg = nta_incoming_getrequest(irq);
 

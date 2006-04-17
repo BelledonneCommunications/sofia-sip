@@ -273,9 +273,9 @@ int nh_has_session(nua_handle_t const *nh)
 }
 
 
-extern char const nua_500_error[];
+extern char const nua_internal_error[];
 
-#define NUA_500_ERROR 500, nua_500_error
+#define NUA_INTERNAL_ERROR 900, nua_internal_error
 
 struct nua_s {
   su_home_t            nua_home[1];

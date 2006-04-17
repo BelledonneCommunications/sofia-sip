@@ -120,10 +120,10 @@ nua_stack_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
   sip_t *sip;
 
   if (nh->nh_special && nh->nh_special != nua_r_publish) {
-    return UA_EVENT2(e, 500, "Invalid handle for PUBLISH");
+    return UA_EVENT2(e, 900, "Invalid handle for PUBLISH");
   }
   else if (cr->cr_orq) {
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
   }
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
@@ -131,7 +131,7 @@ nua_stack_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
   du = nua_dialog_usage_add(nh, nh->nh_ds, nua_publish_usage, NULL);
 
   if (!du)
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 
   pu = nua_dialog_usage_private(du);
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
@@ -156,7 +156,7 @@ nua_stack_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
     msg_destroy(msg);
     if (!du->du_ready)
       nua_dialog_usage_remove(nh, nh->nh_ds, du);
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
   nh->nh_special = nua_r_publish;
@@ -225,7 +225,7 @@ int nua_stack_process_publish(nua_t *nua,
 {
   if (nh == NULL)
     if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_nothing, 0)))
-      return 500;
+      return 500;		/* Respond with 500 Internal Server Error */
 
   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
 		  nua_i_publish, SIP_501_NOT_IMPLEMENTED, TAG_END());

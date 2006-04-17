@@ -62,10 +62,10 @@ nua_stack_options(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
   msg_t *msg;
 
   if (nh_is_special(nh)) {
-    return UA_EVENT2(e, 500, "Invalid handle for OPTIONS");
+    return UA_EVENT2(e, 900, "Invalid handle for OPTIONS");
   }
   else if (cr->cr_orq) {
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
   }
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
@@ -80,7 +80,7 @@ nua_stack_options(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
 				    SIPTAG_END(), TAG_NEXT(tags));
   if (!cr->cr_orq) {
     msg_destroy(msg);
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
   return cr->cr_event = e;

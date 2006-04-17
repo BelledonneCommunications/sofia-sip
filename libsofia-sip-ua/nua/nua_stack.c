@@ -99,7 +99,7 @@ static void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a);
 /* Constant data */
 
 /**@internal Default internal error. */
-char const nua_500_error[] = "Internal NUA Error";
+char const nua_internal_error[] = "Internal NUA Error";
 
 char const nua_application_sdp[] = "application/sdp";
 
@@ -358,7 +358,9 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
 
   if (nua->nua_shutdown && !e->e_always) {
     /* Shutting down */
-    nua_stack_event(nua, nh, NULL, e->e_event, 500, "Stack is going down", TAG_END());
+    nua_stack_event(nua, nh, NULL, e->e_event,
+		    901, "Stack is going down",
+		    TAG_END());
   }
   else switch (e->e_event) {
   case nua_r_get_params:

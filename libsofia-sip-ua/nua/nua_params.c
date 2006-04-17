@@ -632,10 +632,10 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   su_home_deinit(tmphome);
 
   if (error)
-    return UA_EVENT2(e, 500, "Error storing parameters"), -1;
+    return UA_EVENT2(e, 900, "Error storing parameters"), -1;
 
   if (nh->nh_soa && soa_set_params(nh->nh_soa, TAG_NEXT(tags)) < 0)
-    return UA_EVENT2(e, 400, "Error setting SOA parameters"), -1;
+    return UA_EVENT2(e, 900, "Error setting SOA parameters"), -1;
 
 #if 0
   reinit_contact =
@@ -647,7 +647,7 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
 
   if (nta_agent_set_params(nua->nua_nta, TAG_NEXT(tags)) < 0)
-    return UA_EVENT2(e, 400, "Error setting NTA parameters"), -1;
+    return UA_EVENT2(e, 900, "Error setting NTA parameters"), -1;
 
   /* ---------------------------------------------------------------------- */
   /* Set stack-specific things below */

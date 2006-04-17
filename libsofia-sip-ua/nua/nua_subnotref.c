@@ -230,7 +230,8 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *t
 
     msg_destroy(msg);
 
-    return UA_EVENT3(e, NUA_500_ERROR, NUTAG_SUBSTATE(substate), TAG_END());
+    return UA_EVENT3(e, NUA_INTERNAL_ERROR, 
+		     NUTAG_SUBSTATE(substate), TAG_END());
   }
 
   du->du_terminating = e != nua_r_subscribe; /* Unsubscribe or destroy */
@@ -388,7 +389,8 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
     if (du->du_terminating)
       nua_dialog_usage_remove(nh, nh->nh_ds, du);
     msg_destroy(msg);
-    UA_EVENT3(e, NUA_500_ERROR, NUTAG_SUBSTATE(eu->eu_substate), TAG_END());
+    UA_EVENT3(e, NUA_INTERNAL_ERROR, 
+	      NUTAG_SUBSTATE(eu->eu_substate), TAG_END());
     return;
   }
 
@@ -546,7 +548,7 @@ nua_stack_notify(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
 
   sip = sip_object(msg);
   if (!sip)
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 
   du = nua_dialog_usage_get(nh->nh_ds, nua_notify_usage, sip->sip_event);
   eu = nua_dialog_usage_private(du);
@@ -640,7 +642,7 @@ nua_stack_notify(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
 
   if (!cr->cr_orq) {
     msg_destroy(msg);
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
   cr->cr_usage = du;
@@ -859,7 +861,7 @@ nua_stack_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
       nua_dialog_usage_remove(nh, nh->nh_ds, du);
     su_free(nh->nh_home, event);
     msg_destroy(msg);
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
   /*

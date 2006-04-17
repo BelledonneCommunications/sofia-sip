@@ -192,9 +192,9 @@ nua_stack_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   else
     return ua_invite2(nua, nh, e, 0, tags);
 
-  UA_EVENT2(e, 500, what);
+  UA_EVENT2(e, 900, what);
 
-  signal_call_state_change(nh, 500, what, nua_callstate_init, 0, 0);
+  signal_call_state_change(nh, 900, what, nua_callstate_init, 0, 0);
 
   return e;
 }
@@ -217,7 +217,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
     ss->ss_state = nua_callstate_init;
 
   du = nua_dialog_usage_add(nh, nh->nh_ds, nua_session_usage, NULL);
-  what = nua_500_error;		/* Internal error */
+  what = nua_internal_error;		/* Internal error */
 
   msg = du ? nua_creq_msg(nua, nh, cr, restarted,
 			      SIP_METHOD_INVITE,
@@ -297,8 +297,8 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   if (du && !du->du_ready)
     nua_dialog_usage_remove(nh, nh->nh_ds, du);
 
-  UA_EVENT2(e, 500, what);
-  signal_call_state_change(nh, 500, what, nua_callstate_init, 0, 0);
+  UA_EVENT2(e, 900, what);
+  signal_call_state_change(nh, 900, what, nua_callstate_init, 0, 0);
 
   return e;
 }
@@ -390,7 +390,7 @@ static int process_response_to_invite(nua_handle_t *nh,
       return 0;
     }
 
-    status = 500, phrase = "Malformed Session in Response";
+    status = 900, phrase = "Malformed Session in Response";
 
     nua_stack_ack(nua, nh, nua_r_ack, NULL);
     gracefully = 1;
@@ -455,7 +455,7 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   char const *received = ss->ss_ack_needed;
 
   if (!ss->ss_ack_needed)
-    return UA_EVENT2(nua_i_error, 500, "No response to ACK");
+    return UA_EVENT2(nua_i_error, 900, "No response to ACK");
 
   ss->ss_ack_needed = 0;
 
@@ -481,7 +481,7 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	  session_include_description(nh->nh_soa, msg, sip) < 0) {
 	reason = soa_error_as_sip_reason(nh->nh_soa);
 	/* XXX */
-	status = 500, phrase = "Internal media error";
+	status = 900, phrase = "Internal media error";
 	reason = "SIP;cause=500;text=\"Internal media error\"";
       }
       else {
@@ -497,8 +497,8 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	/* ss->ss_offer_sent && !ss->ss_answer_recv */
 	!soa_is_complete(nh->nh_soa)) {
       /* No SDP answer in 2XX response -> terminate call */
-      status = 488, phrase = "Incomplete offer/answer";
-      reason = "SIP;cause=488;text=\"Incomplete offer/answer\"p";
+      status = 988, phrase = "Incomplete offer/answer";
+      reason = "SIP;cause=488;text=\"Incomplete offer/answer\"";
     }
   }
 
@@ -508,7 +508,7 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   if (!ack) {
     if (!reason) {
-      status = 500, phrase = "Internal Error";
+      status = 900, phrase = "Cannot send ACK";
       reason = "SIP;cause=500;text=\"Internal Error\"";
     }
     msg_destroy(msg);
@@ -615,7 +615,7 @@ process_100rel(nua_handle_t *nh,
   else {
     /* XXX - call state? */
     nua_stack_event(nh->nh_nua, nh, NULL, nua_i_error,
-		    500, "Cannot PRACK",
+		    900, "Cannot PRACK",
 		    TAG_END());
   }
 
@@ -650,7 +650,7 @@ process_response_to_prack(nua_handle_t *nh,
 
   if (status < 300) {
     if (session_process_response(nh, cr, orq, sip, &recv) < 0) {
-      status = 500, phrase = "Malformed Session in Response";
+      status = 900, phrase = "Malformed Session in Response";
       reason = "SIP;status=400;phrase=\"Malformed Session in Response\"";
     }
   }
@@ -857,7 +857,7 @@ int process_invite1(nua_t *nua,
 				  min_se,
 				  SIPTAG_USER_AGENT(user_agent),
 				  TAG_END()))
-      return 500;
+      return 500; /* respond with 500 Internal Server Error  */
   }
 
   if (!nh) {
@@ -1015,7 +1015,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   if (ss->ss_srequest->sr_irq == NULL ||
       nta_incoming_status(ss->ss_srequest->sr_irq) >= 200) {
     nua_stack_event(nh->nh_nua, nh, NULL,
-	     nua_i_error, 500, "No INVITE request to response", TAG_END());
+	     nua_i_error, 900, "No INVITE request to response", TAG_END());
     return;
   }
 
@@ -1079,7 +1079,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
     if (offer || answer) {
       if (session_include_description(nh->nh_soa, msg, sip) < 0)
-	status = 500, phrase = sip_500_Internal_server_error;
+	SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -1111,7 +1111,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
     rel = nta_reliable_mreply(ss->ss_srequest->sr_irq,
 			      process_prack, nh, msg);
     if (!rel)
-      status = 500, phrase = sip_500_Internal_server_error;
+      SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
   }
 
   if (reliable && status < 200)
@@ -1289,7 +1289,7 @@ int process_prack(nua_handle_t *nh,
 			      SIPTAG_PAYLOAD(pl),
 			      TAG_END()) < 0)
 	/* Respond with 500 if nta_incoming_treply() failed */
-	status = 500, phrase = sip_500_Internal_server_error;
+	SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
 
       su_home_deinit(home);
     }
@@ -1680,10 +1680,10 @@ nua_stack_info(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   msg_t *msg;
 
   if (nh_is_special(nh)) {
-    return UA_EVENT2(e, 500, "Invalid handle for INFO");
+    return UA_EVENT2(e, 900, "Invalid handle for INFO");
   }
   else if (cr->cr_orq) {
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
   }
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
@@ -1699,7 +1699,7 @@ nua_stack_info(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 				    SIPTAG_END(), TAG_NEXT(tags));
   if (!cr->cr_orq) {
     msg_destroy(msg);
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
   return cr->cr_event = e;
@@ -1750,9 +1750,9 @@ nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
   char const *offer_sent = 0;
 
   if (!nh_has_session(nh))
-    return UA_EVENT2(e, 500, "Invalid handle for UPDATE");
+    return UA_EVENT2(e, 900, "Invalid handle for UPDATE");
   else if (cr->cr_orq)
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
 
@@ -1777,7 +1777,7 @@ nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
 	  /* XXX */
 	}
 	msg_destroy(msg);
-	return UA_EVENT2(e, 500, "Local media failed");
+	return UA_EVENT2(e, 900, "Local media failed");
       }
 
       offer_sent = "offer";
@@ -1807,7 +1807,7 @@ nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
   }
 
   msg_destroy(msg);
-  return UA_EVENT1(e, NUA_500_ERROR);
+  return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 }
 
 void restart_update(nua_handle_t *nh, tagi_t *tags)
@@ -1948,8 +1948,9 @@ int nua_stack_process_update(nua_t *nua,
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
     }
     else if (soa_activate(nh->nh_soa, NULL) < 0) {
+      SU_DEBUG_5(("nua(%p): error activating media after %s\n",
+		  nh, "UPDATE"));
       /* XXX */
-      status = 500, phrase = sip_500_Internal_server_error;
     }
     else {
       answer_sent = "answer";
@@ -2019,11 +2020,11 @@ nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   nta_outgoing_t *orq;
 
   if (nh_is_special(nh))
-    return UA_EVENT2(e, 500, "Invalid handle for BYE");
+    return UA_EVENT2(e, 900, "Invalid handle for BYE");
 
   if (!nua_dialog_is_established(nh->nh_ds)) {
     if (cr_invite->cr_orq == NULL)
-      return UA_EVENT2(e, 400, "Internal error");
+      return UA_EVENT2(e, 900, "No session to BYE");
 
     /* No (early) dialog. BYE is invalid action, do CANCEL instead */
     orq = nta_outgoing_tcancel(cr_invite->cr_orq,
@@ -2409,7 +2410,7 @@ int session_process_response(nua_handle_t *nh,
     else {
       /* note: case 2: answer to our offer */
       if (soa_activate(nh->nh_soa, NULL) < 0) {
-	SU_DEBUG_5(("nua(%p): %s: error activating media after %u %s\n",
+	SU_DEBUG_3(("nua(%p): %s: error activating media after %u %s\n",
 		    nh, method,
 		    sip->sip_status->st_status,
 		    sip->sip_status->st_phrase));

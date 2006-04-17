@@ -424,16 +424,16 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   int terminating = e != nua_r_register;
 
   if (nh->nh_special && nh->nh_special != nua_r_register)
-    return UA_EVENT2(e, 500, "Invalid handle for REGISTER");
+    return UA_EVENT2(e, 900, "Invalid handle for REGISTER");
   if (cr->cr_orq)
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
 
   nua_stack_init_handle(nua, nh, nh_has_register, "", TAG_NEXT(tags));
   nh->nh_special = nua_r_register;
 
   du = nua_dialog_usage_add(nh, nh->nh_ds, nua_outbound_connect, NULL);
   if (!du)
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   oc = nua_dialog_usage_private(du); assert(oc);
 
   outbound_connect_init(oc, &nua_stack_register_callbacks,
@@ -494,7 +494,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (!cr->cr_orq) {
     msg_destroy(msg);
     msg_destroy(cr->cr_msg), cr->cr_msg = NULL;
-    return UA_EVENT1(e, NUA_500_ERROR);
+    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
   cr->cr_usage = du;
@@ -577,7 +577,7 @@ int process_response_to_register(nua_handle_t *nh,
     reregister = outbound_connect_check_for_nat(oc, orq, sip);
 
     if (reregister < 0)
-      SET_STATUS2(500, nua_500_error);
+      SET_STATUS1(NUA_INTERNAL_ERROR);
     else if (reregister > 0) {
       msg_t *msg = msg_ref_create(cr->cr_msg);
       if (nua_creq_check_restart(nh, cr, orq, sip, restart_register)) {
@@ -773,7 +773,7 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
       nua_dialog_usage_remove(nh, nh->nh_ds, du);
     msg_destroy(msg);
     msg_destroy(cr->cr_msg);
-    UA_EVENT2(e, NUA_500_ERROR, TAG_END());
+    UA_EVENT2(e, NUA_INTERNAL_ERROR, TAG_END());
     return;
   }
 
