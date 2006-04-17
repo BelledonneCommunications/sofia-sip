@@ -45,6 +45,9 @@ API/ABI changes and versioning
 
 - Removed nutag_sip_parser (using ntatag_mclass instead)
 
+- Now returning 9XX errors from inside NUA
+
+
 Contributors to this release
 ----------------------------
 
