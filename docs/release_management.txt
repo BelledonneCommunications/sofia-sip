@@ -3,7 +3,7 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20060210-5
+:Version: 20060411-8
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
@@ -57,7 +57,6 @@ Making the release tarball
 - calculate md5 and sha1 hashes using md5sum and sha1sum utils,
   and copy the values to the release-notes (see below)
 
-
 Creating the release notes and updating the website
 ===================================================
 
@@ -101,3 +100,21 @@ After release
   "X.Y.Zcvs" (as it is in many cases unknown what the 
   next version will be)
 - make a "tree open for development" commit
+
+Syncing CVS and darcs (or some other VCS)
+=========================================
+
+Some tips for synching from/to different version controlled
+tree.
+
+- As CVS cannot trace file addition/move/removals, you need
+  to be extra careful with these. With darcs, you can use the
+  'darcs changes' command to track down all fileops since
+  last synchronization.
+
+- Always tag the src-tree with "syncuser-fromvcs-to-tovcs-yearmmdd".
+
+- Add a top-level ChangeLog entry that documents all the 
+  changes made outside the target tree (what, who and when -
+  for example produced with the "darcs changes --summary" 
+  command).
