@@ -816,13 +816,13 @@ nua_stack_init_transport(nua_t *nua, tagi_t const *tags)
 			    TPTAG_IDENT("sip"),
 			    TPTAG_CERTIFICATE(certificate_dir),
 			    TAG_NEXT(nua->nua_args)) < 0 &&
-	nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("*"),
+	nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
 			    TPTAG_IDENT("sip"),
 			    TPTAG_CERTIFICATE(certificate_dir),
 			    TAG_NEXT(nua->nua_args)) < 0)
       return -1;
 
-    if (nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("*"),
+    if (nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
 			    TPTAG_IDENT("stun"),
 			    TPTAG_PUBLIC(tport_type_stun), /* use stun */
 			    TPTAG_CERTIFICATE(certificate_dir),
@@ -1689,7 +1689,7 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
 				      int only_default)
 {
   int secure = aor && aor->url_type == url_sips;
-  outbound_connect const *oc, *public = NULL;
+  outbound_connect const *oc, *public = NULL, *any = NULL;
 
   for (oc = usages; oc; oc = oc->oc_next) {
     if (only_default && !oc->oc_default)
@@ -1701,6 +1701,9 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
     if (public == NULL && oc->oc_public)
       public = oc;
 
+    if (any == NULL)
+      any = oc;
+
     if (secure) {
       if (oc->oc_secure)
 	return (outbound_connect *)oc;
@@ -1711,7 +1714,13 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
     }
   }
 
-  return (outbound_connect *)public;
+  if (public)
+    return (outbound_connect *)public;
+  
+  if (!aor && any)
+    return any;
+
+  return NULL;
 }
 
 sip_contact_t const *outbound_connect_contact(outbound_connect const *oc)
