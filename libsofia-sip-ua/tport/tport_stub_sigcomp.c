@@ -33,93 +33,6 @@
 
 #include "tport_internal.h"
 
-struct tport_comp_vtable_s {
-  /* NOTE: this will change! Unstable! Do not use! */
-  int vsc_size;
-  struct sigcomp_compartment *
-  (*vsc_init_comp)(tport_t *master_tport,
-		   tport_comp_t **inout_sc,
-		   char const *algorithm);
-				 
-  void (*vsc_deinit_comp)(tport_t *master_tport,
-			  tport_comp_t **in_sc);
-
-  char const *(*vsc_comp_name)(tport_comp_t const *master_sc,
-			       char const *compression,
-			       tagi_t const *tags);
-
-  /* Mapping of public tport API */
-
-  int (*vsc_can_send_comp)(tport_comp_t const *);
-  int (*vsc_can_recv_comp)(tport_comp_t const *);
-
-  int (*vsc_set_comp_name)(tport_t const *self, 
-			   tport_comp_t const *return_sc,
-			   char const *comp);
-
-  int (*vsc_sigcomp_option)(tport_t const *self,
-			    struct sigcomp_compartment *cc,
-			    char const *option);
-
-  struct sigcomp_compartment *
-  (*vsc_sigcomp_compartment)(tport_t *self,
-			     char const *name, int namelen,
-			     int create_if_needed);
-
-  struct sigcomp_compartment * 
-  (*vsc_compartment_incref)(struct sigcomp_compartment *cc);
-
-  void (*vsc_compartment_decref)(struct sigcomp_compartment **pointer_to_cc);
-
-  int (*vsc_sigcomp_assign)(tport_t *self, 
-			    tport_comp_t **,
-			    struct sigcomp_compartment *);
-
-  int (*vsc_has_sigcomp_assigned)(tport_comp_t const *comp);
-
-  int (*vsc_sigcomp_accept)(tport_t *self,
-			    tport_comp_t const *comp,
-			    struct sigcomp_compartment *cc,
-			    msg_t *msg);
-
-  int (*vsc_delivered_using_udvm)(tport_t *tp,
-				  msg_t const *msg,
-				  struct sigcomp_udvm **return_pointer_to_udvm,
-				  int remove);
-
-  int (*vsc_sigcomp_close)(tport_t *self,
-			   struct sigcomp_compartment *cc,
-			   int how);
-
-  int (*vsc_sigcomp_lifetime)(tport_t *self,
-			      struct sigcomp_compartment *,
-			      unsigned lifetime_in_ms,
-			      int only_expand);
-
-  /* Internal API */
-
-  struct sigcomp_udvm **(*vsc_get_udvm_slot)(tport_t *self);
-
-  struct sigcomp_compartment *
-  (*vsc_sigcomp_assign_if_needed)(tport_t *self,
-				  struct sigcomp_compartment *cc);
-
-  void (*vsc_try_accept_sigcomp)(tport_t const *self, 
-				 tport_comp_t *sc,
-				 msg_t *msg);
-
-  int (*vsc_recv_comp)(tport_t const *self, int N);
-
-  int (*vsc_send_comp)(tport_t const *self,
-		       msg_t *msg, 
-		       msg_iovec_t iov[], 
-		       int iovused,
-		       struct sigcomp_compartment *cc,
-		       tport_comp_t *sc);
-
-
-};
-
 tport_comp_vtable_t const *tport_comp_vtable = NULL;
 
 int tport_plug_in_compress(tport_comp_vtable_t const *vsc)
@@ -132,43 +45,66 @@ char const tport_sigcomp_name[] = "sigcomp";
 /** Canonize compression string */
 char const *tport_canonize_comp(char const *comp)
 {
-  if (comp && strcasecmp(comp, tport_sigcomp_name) == 0)
+  if (tport_comp_vtable && comp && strcasecmp(comp, tport_sigcomp_name) == 0)
     return tport_sigcomp_name;
   return NULL;
 }
 
-/** Initialize Sigcomp and the master compartment */
-struct sigcomp_compartment *
-tport_init_comp(tport_t *mr, char const *algorithm_name)
+int tport_init_compressor(tport_t *tp,
+			  char const *comp_name,
+			  tagi_t const *tags)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
+  tport_master_t *mr = tp ? tp->tp_master : NULL;
+  tport_compressor_t *tcc;
 
-  if (vsc && tport_is_master(mr))
-    return vsc->vsc_init_comp(mr, &mr->tp_comp, algorithm_name);
+  if (vsc == NULL)
+    return -1;
+  if (mr == NULL)
+    return -1;
 
-  return NULL;
+  if (tp->tp_comp)
+    return 0;
+
+  tcc = su_zalloc(tp->tp_home, vsc->vsc_sizeof_context);
+
+  if (tcc == NULL)
+    return -1;
+
+  if (vsc->vsc_init_comp(mr->mr_stack, tp, tcc, comp_name, tags) < 0) {
+    vsc->vsc_deinit_comp(mr->mr_stack, tp, tcc);
+    return -1;
+  }
+
+  tp->tp_comp = tcc;
+  return 0;
 }
 
-void tport_deinit_comp(tport_master_t *mr)
+void tport_deinit_compressor(tport_t *tp)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
+  tport_master_t *mr = tp ? tp->tp_master : NULL;
 
-  if (vsc)
-    vsc->vsc_deinit_comp(mr->mr_master, &mr->mr_master->tp_comp);
+  if (vsc && mr && tp->tp_comp) {
+    vsc->vsc_deinit_comp(mr->mr_stack, tp, tp->tp_comp);
+    su_free(tp->tp_home, tp->tp_comp), tp->tp_comp = NULL;
+  }
 }
+
 
 char const *tport_comp_name(tport_primary_t *pri,
 			    char const *name,
 			    tagi_t const *tags)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
-  tport_comp_t const *comp = pri->pri_master->mr_master->tp_comp;
+  tport_compressor_t const *comp = pri->pri_master->mr_master->tp_comp;
 
   if (vsc)
     return vsc->vsc_comp_name(comp, name, tags);
 
   return NULL;
 }
+
 
 /** Check if transport can receive compressed messages */
 int tport_can_recv_sigcomp(tport_t const *self)
@@ -238,6 +174,19 @@ int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
   return 0;
 }
 
+struct sigcomp_compartment *
+tport_sigcomp_assign_if_needed(tport_t *self,
+			       struct sigcomp_compartment *cc)
+{
+  tport_comp_vtable_t const *vsc = tport_comp_vtable;
+
+  if (vsc)
+    return vsc->vsc_sigcomp_assign_if_needed(self, cc);
+    
+  return NULL;
+}			   
+
+
 /** Test if tport has a SigComp compartment assigned to it. */
 int tport_has_sigcomp_assigned(tport_t const *self)
 {
@@ -267,12 +216,14 @@ tport_sigcomp_accept(tport_t *self,
 
 /* Internal API */
 
-void tport_try_accept_sigcomp(tport_t *self, msg_t *msg)
+/** This function is called when the application message is still incomplete
+    but a complete SigComp message could have been received */
+void tport_accept_incomplete(tport_t *self, msg_t *msg)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 
-  if (vsc)
-    vsc->vsc_try_accept_sigcomp(self, self->tp_comp, msg);
+  if (vsc && self->tp_comp)
+    vsc->vsc_accept_incomplete(self, self->tp_comp, msg);
 }
 
 struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self)
@@ -284,18 +235,6 @@ struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self)
 
   return NULL;
 }
-
-struct sigcomp_compartment *
-tport_sigcomp_assign_if_needed(tport_t *self,
-			       struct sigcomp_compartment *cc)
-{
-  tport_comp_vtable_t const *vsc = tport_comp_vtable;
-
-  if (vsc)
-    return vsc->vsc_sigcomp_assign_if_needed(self, cc);
-    
-  return NULL;
-}			   
 
 /** Receive data from datagram using SigComp. */
 int tport_recv_comp_dgram(tport_t *self, int N)
@@ -319,7 +258,7 @@ int tport_send_comp(tport_t const *self,
 		    msg_iovec_t iov[], 
 		    int iovused,
 		    struct sigcomp_compartment *cc,
-		    tport_comp_t *comp)
+		    tport_compressor_t *comp)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 

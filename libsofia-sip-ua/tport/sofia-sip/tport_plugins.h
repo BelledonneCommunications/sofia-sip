@@ -58,18 +58,105 @@ SOFIAPUBFUN int tport_plug_in_stun_server(tport_stun_server_vtable_t const *);
 
 /* -- SigComp Plugin ---------------------------------------------------- */
 
-#ifndef TPORT_COMP_T
-#define TPORT_COMP_T struct tport_compress
-#endif
-
-typedef TPORT_COMP_T tport_comp_t;
-
 /* We already use these SigComp types in applications */
 
 struct sigcomp_udvm;
 struct sigcomp_compartment;
 
 typedef struct tport_comp_vtable_s tport_comp_vtable_t;
+
+struct tport_comp_vtable_s {
+  /* NOTE: this will change! Unstable! Do not use! */
+  int vsc_size;
+
+  char const *vsc_compname;
+  size_t vsc_sizeof_context;
+
+  int (*vsc_init_comp)(tp_stack_t *,
+		       tport_t *,
+		       tport_compressor_t *,
+		       char const *comp_name,
+		       tagi_t const *tags);
+
+  void (*vsc_deinit_comp)(tp_stack_t *,
+			  tport_t *,
+			  tport_compressor_t *);
+
+  char const *(*vsc_comp_name)(tport_compressor_t const *master_sc,
+			       char const *compression,
+			       tagi_t const *tags);
+
+  /* Mapping of public tport API */
+
+  int (*vsc_can_send_comp)(tport_compressor_t const *);
+  int (*vsc_can_recv_comp)(tport_compressor_t const *);
+
+  int (*vsc_set_comp_name)(tport_t const *self, 
+			   tport_compressor_t const *return_sc,
+			   char const *comp);
+
+  int (*vsc_sigcomp_option)(tport_t const *self,
+			    struct sigcomp_compartment *cc,
+			    char const *option);
+
+  struct sigcomp_compartment *
+  (*vsc_sigcomp_compartment)(tport_t *self,
+			     char const *name, int namelen,
+			     int create_if_needed);
+
+  struct sigcomp_compartment * 
+  (*vsc_compartment_incref)(struct sigcomp_compartment *cc);
+
+  void (*vsc_compartment_decref)(struct sigcomp_compartment **pointer_to_cc);
+
+  int (*vsc_sigcomp_assign)(tport_t *self, 
+			    tport_compressor_t **,
+			    struct sigcomp_compartment *);
+
+  int (*vsc_has_sigcomp_assigned)(tport_compressor_t const *comp);
+
+  int (*vsc_sigcomp_accept)(tport_t *self,
+			    tport_compressor_t const *comp,
+			    struct sigcomp_compartment *cc,
+			    msg_t *msg);
+
+  int (*vsc_delivered_using_udvm)(tport_t *tp,
+				  msg_t const *msg,
+				  struct sigcomp_udvm **return_pointer_to_udvm,
+				  int remove);
+
+  int (*vsc_sigcomp_close)(tport_t *self,
+			   struct sigcomp_compartment *cc,
+			   int how);
+
+  int (*vsc_sigcomp_lifetime)(tport_t *self,
+			      struct sigcomp_compartment *,
+			      unsigned lifetime_in_ms,
+			      int only_expand);
+
+  /* Internal API */
+
+  struct sigcomp_udvm **(*vsc_get_udvm_slot)(tport_t *self);
+
+  struct sigcomp_compartment *
+  (*vsc_sigcomp_assign_if_needed)(tport_t *self,
+				  struct sigcomp_compartment *cc);
+
+  void (*vsc_accept_incomplete)(tport_t const *self, 
+				tport_compressor_t *sc,
+				msg_t *msg);
+
+  int (*vsc_recv_comp)(tport_t const *self, int N);
+
+  int (*vsc_send_comp)(tport_t const *self,
+		       msg_t *msg, 
+		       msg_iovec_t iov[], 
+		       int iovused,
+		       struct sigcomp_compartment *cc,
+		       tport_compressor_t *sc);
+
+
+};
 
 SOFIAPUBFUN int tport_plug_in_comp(tport_comp_vtable_t const *);
 

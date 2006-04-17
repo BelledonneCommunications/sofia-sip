@@ -99,9 +99,6 @@ typedef struct {
 		       char const [], unsigned,
 		       tport_t const *, tp_client_t *);
 
-  /** Ask stack to accept/reject early SigComp message */
-  int (*tpac_sigcomp_accept)(tp_stack_t *, tport_t *, msg_t *);
-
   /** Indicate stack that address has changed */
   void (*tpac_address)(tp_stack_t *, tport_t *);
 
@@ -336,9 +333,11 @@ int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */
 
-TPORT_DLL
-struct sigcomp_compartment *tport_init_comp(tport_t *self,
-					    char const *algorithm_name);
+#ifndef TPORT_COMPRESSOR
+#define TPORT_COMPRESSOR struct tport_compressor
+#endif
+
+typedef TPORT_COMPRESSOR tport_compressor_t;
 
 TPORT_DLL int tport_can_send_sigcomp(tport_t const *self);
 TPORT_DLL int tport_can_recv_sigcomp(tport_t const *self);
@@ -377,11 +376,10 @@ tport_sigcomp_accept(tport_t *self,
 		     struct sigcomp_compartment *cc,
 		     msg_t *msg);
 
-/** Get UDVM with which the request was delivered */
+/** Get compressor context with which the request was delivered */
 TPORT_DLL int
-tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
-			   struct sigcomp_udvm **return_pointer_to_udvm,
-			   int remove);
+tport_delivered_with_comp(tport_t *tp, msg_t const *msg,
+			  tport_compressor_t **return_compressor);
 
 /** Shutdown SigComp compartment */
 TPORT_DLL int

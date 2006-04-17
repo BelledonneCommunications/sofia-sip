@@ -86,10 +86,6 @@ static char const __func__[] = "tport";
   (tp)->tp_master->mr_tpac->tpac_error((tp)->tp_master->mr_stack, (tp), \
 				       (errcode), (dstname))
 
-#define STACK_SIGCOMP_ACCEPT(tp, msg)				  \
-  (tp)->tp_master->mr_tpac->					  \
-  tpac_sigcomp_accept((tp)->tp_master->mr_stack, (tp), (msg))
-
 #define STACK_ADDRESS(tp)		       \
   (tp)->tp_master->mr_tpac->tpac_address((tp)->tp_master->mr_stack, (tp))
 
@@ -485,7 +481,6 @@ void tport_destroy(tport_t *self)
 	/* tpac_recv */ tport_destroy_recv,
 	/* tpac_error */ tport_destroy_error,
 	/* tpac_alloc */ tport_destroy_alloc,
-	/* tpac_comp_accept */ NULL
       }};
 
   SU_DEBUG_7(("%s(%p)\n", __func__, self));
@@ -503,7 +498,6 @@ void tport_destroy(tport_t *self)
   while (mr->mr_primaries)
     tport_zap_primary(mr->mr_primaries);
 
-  tport_deinit_comp(mr);
   tport_deinit_stun_server(mr);
 
   if (mr->mr_dump_file)
@@ -2649,7 +2643,7 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
     else
       next = NULL;
 
-    tport_deliver(self, msg, next, tport_get_udvm_slot(self), now);
+    tport_deliver(self, msg, next, self->tp_comp, now);
 
     if (streaming && next == NULL)
       break;
@@ -2665,8 +2659,10 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
 }
 
 /** Deliver message to the protocol stack */
-void tport_deliver(tport_t *self, msg_t *msg, msg_t *next, 
-		   struct sigcomp_udvm **in_out_udvm,
+void tport_deliver(tport_t *self,
+		   msg_t *msg,
+		   msg_t *next,
+		   tport_compressor_t *sc,
 		   su_time_t now)
 {
   tport_t *ref;
@@ -2679,7 +2675,6 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
 
   d->d_tport = self;
   d->d_msg = msg;
-  d->d_udvm = in_out_udvm;
   *d->d_from = *self->tp_name;
 
   if (tport_is_primary(self)) {
@@ -2703,7 +2698,8 @@ void tport_deliver(tport_t *self, msg_t *msg, msg_t *next,
     d->d_from->tpn_host = ipaddr;    
   }
 
-  if (!in_out_udvm || !*in_out_udvm)
+  d->d_comp = sc;
+  if (!sc)
     d->d_from->tpn_comp = NULL;
 
   error = msg_has_error(msg);
@@ -2770,23 +2766,14 @@ int tport_delivered_from(tport_t *tp, msg_t const *msg, tp_name_t name[1])
 
 /** Return UDVM used to decompress the message. */
 int
-tport_delivered_using_udvm(tport_t *tp, msg_t const *msg,
-			   struct sigcomp_udvm **return_udvm,
-			   int remove)
+tport_delivered_with_comp(tport_t *tp, msg_t const *msg,
+			  tport_compressor_t **return_compressor)
 {
   if (tp == NULL || msg == NULL || msg != tp->tp_master->mr_delivery->d_msg)
     return -1;
 
-  if (return_udvm) {
-    if (tp->tp_master->mr_delivery->d_udvm) {
-      *return_udvm = *tp->tp_master->mr_delivery->d_udvm;
-      if (remove)
-	tp->tp_master->mr_delivery->d_udvm = NULL;
-    }
-    else {
-      *return_udvm = NULL;
-    }
-  }
+  if (return_compressor)
+    *return_compressor = tp->tp_master->mr_delivery->d_comp;
 
   return 0;
 }

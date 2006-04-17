@@ -75,8 +75,6 @@
 
 SOFIA_BEGIN_DECLS
 
-#undef HAVE_SIGCOMP
-
 typedef struct tport_master tport_master_t;
 typedef struct tport_pending_s tport_pending_t;
 typedef struct tport_threadpool tport_threadpool_t;
@@ -199,7 +197,7 @@ struct tport_s {
 
   /* ==== Extensions  ===================================================== */
 
-  tport_comp_t        *tp_comp;
+  tport_compressor_t *tp_comp;
 
   /* ==== Statistics  ===================================================== */
   
@@ -273,16 +271,12 @@ struct tport_master {
   unsigned            mr_bindv6only:1; /**< We can bind separately to IPv6/4 */
   unsigned :0;
 
-#if HAVE_SIGCOMP
-  struct sigcomp_compartment   *mr_compartment;
-#endif
-
   /* Delivery context */
   struct tport_delivery {
     tport_t              *d_tport;
     msg_t                *d_msg;
     tp_name_t             d_from[1];
-    struct sigcomp_udvm **d_udvm;
+    tport_compressor_t   *d_comp;
   } mr_delivery[1];
 
   tport_stun_server_t *mr_stun_server;
@@ -403,7 +397,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 		   struct sigcomp_compartment *cc);
 
 void tport_deliver(tport_t *self, msg_t *msg, msg_t *next, 
-		   struct sigcomp_udvm **pointer_to_udvm,
+		   tport_compressor_t *comp,
 		   su_time_t now);
 void tport_base_deliver(tport_t *self, msg_t *msg, su_time_t now);
 
@@ -472,8 +466,6 @@ typedef int const *(tport_set_f)(tport_master_t *mr,
 
 /* STUN plugin */
 
-extern tport_stun_server_vtable_t const *tport_stun_server_vtable;
-
 int tport_init_stun_server(tport_master_t *mr, tagi_t const *tags);
 void tport_deinit_stun_server(tport_master_t *mr);
 int tport_recv_stun_dgram(tport_t const *self, int N);
@@ -481,13 +473,16 @@ int tport_recv_stun_dgram(tport_t const *self, int N);
 int tport_stun_server_add_socket(tport_t *tp);
 int tport_stun_server_remove_socket(tport_t *tp);
 
-/* SigComp plugin */
+/* ---------------------------------------------------------------------- */
+/* Compressor plugin */
 extern tport_comp_vtable_t const *tport_comp_vtable;
 
 char const *tport_canonize_comp(char const *comp);
 
-void tport_deinit_comp(tport_master_t *mr);
-
+int tport_init_compressor(tport_t *,
+			  char const *comp_name,
+			  tagi_t const *tags);
+void tport_deinit_compressor(tport_t *);
 
 struct sigcomp_compartment *
 tport_sigcomp_assign_if_needed(tport_t *self,
@@ -504,7 +499,7 @@ int tport_send_comp(tport_t const *self,
 		    msg_iovec_t iov[], 
 		    int iovused,
 		    struct sigcomp_compartment *cc,
-		    tport_comp_t *sc);
+		    tport_compressor_t *sc);
 
 SOFIA_END_DECLS
 
