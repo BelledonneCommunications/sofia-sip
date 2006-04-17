@@ -45,8 +45,6 @@
 
 #include "config.h"
 
-#undef HAVE_SIGCOMP		/* For now, no SigComp */
-
 /* From AM_INIT/AC_INIT in our "config.h" */
 char const nta_version[] = PACKAGE_VERSION;
 
@@ -119,6 +117,8 @@ ntatag_incomplete_ref, tag_bool_vr(&(x))
 extern tag_typedef_t ntatag_incomplete;
 extern tag_typedef_t ntatag_incomplete_ref;
 
+nta_compressor_vtable_t *nta_compressor_vtable = NULL;
+
 /* Agent */
 static int agent_tag_init(nta_agent_t *self);
 static int agent_timer_init(nta_agent_t *agent);
@@ -141,35 +141,29 @@ static int complete_response(msg_t *response,
 			     int status, char const *phrase, 
 			     msg_t const *request);
 
-static int agent_sigcomp_options(nta_agent_t *agent, 
-				 struct sigcomp_compartment *);
-
-#if HAVE_SIGCOMP
-#include <sigcomp.h>
-
-static
-struct sigcomp_compartment *
-agent_sigcomp_compartment(nta_agent_t *sa, tport_t *tp, tp_name_t const *tpn);
-
-static
-struct sigcomp_compartment *
-agent_sigcomp_compartment_ref(nta_agent_t *sa, 
-			      tport_t *tp,
-			      tp_name_t const *tpn,
-			      int create_if_needed);
-
-static
-int agent_sigcomp_accept(nta_agent_t *sa, tport_t *tp, msg_t *msg);
-
-/* These macros are used in order to avoid #if HAVE_SIGCOMP #endif's */ 
 #define IF_SIGCOMP_TPTAG_COMPARTMENT(cc)     TAG_IF(cc, TPTAG_COMPARTMENT(cc)),
 #define IF_SIGCOMP_TPTAG_COMPARTMENT_REF(cc) TPTAG_COMPARTMENT_REF(cc),
-#else
-#define IF_SIGCOMP_TPTAG_COMPARTMENT(cc)
-#define IF_SIGCOMP_TPTAG_COMPARTMENT_REF(cc)
 
-#define agent_sigcomp_accept NULL
-#endif
+struct sigcomp_compartment;
+
+struct sigcomp_compartment *
+nta_compartment_ref(struct sigcomp_compartment *cc);
+
+static
+struct sigcomp_compartment *
+agent_compression_compartment(nta_agent_t *sa, tport_t *tp, tp_name_t const *tpn,
+			      int new_if_needed);
+
+static
+int agent_accept_compressed(nta_agent_t *sa, msg_t *msg,
+			    struct sigcomp_compartment *cc);
+
+static int agent_close_compressor(nta_agent_t *sa,
+				  struct sigcomp_compartment *cc);
+
+static int agent_zap_compressor(nta_agent_t *sa,
+				struct sigcomp_compartment *cc);
+
 
 static char const * stateful_branch(su_home_t *home, nta_agent_t *);
 static char const * stateless_branch(nta_agent_t *, msg_t *, sip_t const *,
@@ -1323,7 +1317,6 @@ static tport_stack_class_t nta_agent_class[1] =
     agent_recv_message,
     agent_tp_error,
     (void *)nta_msg_create_for_transport,
-    agent_sigcomp_accept,
     agent_update_tport,
   }};
 
@@ -1458,13 +1451,13 @@ int nta_agent_add_tport(nta_agent_t *self,
       tpn->tpn_host = maddr;
     if (url_param(url->url_params, "comp", comp, sizeof(comp)) > 0)
       tpn->tpn_comp = comp;
-#if !HAVE_SIGCOMP
-    if (str0casecmp(tpn->tpn_comp, "sigcomp") == 0) {
-      SU_DEBUG_1(("nta(%p): sigcomp not supported for UA " 
-		  URL_PRINT_FORMAT "\n",
-		  self, URL_PRINT_ARGS(url)));
+
+    if (tpn->tpn_comp && 
+	(nta_compressor_vtable == NULL || 
+	 strcasecmp(tpn->tpn_comp, nta_compressor_vtable->ncv_name) != 0)) {
+      SU_DEBUG_1(("nta(%p): comp=%s not supported for " URL_PRINT_FORMAT "\n",
+		  self, tpn->tpn_comp, URL_PRINT_ARGS(url)));
     }
-#endif
   }
 
   ta_start(ta, tag, value);
@@ -1528,9 +1521,6 @@ int nta_agent_add_tport(nta_agent_t *self,
 static
 int agent_create_master_transport(nta_agent_t *self, tagi_t *tags)
 {
-  struct sigcomp_compartment *cc;
-  char const *algorithm;
-  
   self->sa_tports = 
     tport_tcreate(self, nta_agent_class, self->sa_root,
 		  TPTAG_SDWN_ERROR(0),
@@ -1540,15 +1530,6 @@ int agent_create_master_transport(nta_agent_t *self, tagi_t *tags)
 
   if (!self->sa_tports)
     return -1;
-
-  algorithm = getenv("SIGCOMP_ALGORITHM");
-
-  if (algorithm == NULL)
-    algorithm = self->sa_algorithm;
-
-  cc = tport_init_comp(self->sa_tports, algorithm);
-  if (cc)
-    agent_sigcomp_options(self, cc);
 
   SU_DEBUG_9(("nta: master transport created\n"));
 
@@ -2033,10 +2014,11 @@ void agent_recv_request(nta_agent_t *agent,
 
   stream = tport_is_stream(tport);
 
+  /* Try to use compression on reverse direction if Via has comp=sigcomp  */
   if (stream && 
+      sip->sip_via->v_comp &&
       tport_can_send_sigcomp(tport) &&
       tport_name(tport)->tpn_comp == NULL && 
-      sip->sip_via->v_comp &&
       tport_has_compression(tport_parent(tport), sip->sip_via->v_comp)) {
     tport_set_compression(tport, sip->sip_via->v_comp);
   }
@@ -2625,10 +2607,8 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
       if (retry_without_rport)
 	tpn->tpn_port = sip_via_port(sip->sip_via, NULL);
 
-#if HAVE_SIGCOMP
       if (tport && tpn->tpn_comp && cc == NONE)
-	cc = agent_sigcomp_compartment(agent, tport, tpn);
-#endif
+	cc = agent_compression_compartment(agent, tport, tpn, -1);
 
       if (tport_tsend(tport, msg, tpn,
 		      IF_SIGCOMP_TPTAG_COMPARTMENT(cc)
@@ -2767,17 +2747,15 @@ int nta_msg_mreply(nta_agent_t *agent,
     if (retry_without_rport)
       tpn->tpn_port = sip_via_port(sip->sip_via, NULL);
 
-#if HAVE_SIGCOMP
     if (tport && tpn->tpn_comp) {
       if (cc == NONE)
-	cc = agent_sigcomp_compartment(agent, tport, tpn);
+	cc = agent_compression_compartment(agent, tport, tpn, -1);
 
-      if (cc != NULL && cc != NONE && 
-	  tport_delivered_using_udvm(tport, req_msg, NULL, 0) != -1) {
-	tport_sigcomp_accept(tport, cc, req_msg);
+      if (cc != NULL && cc != NONE &&
+	  tport_delivered_with_comp(tport, req_msg, NULL) != -1) {
+	agent_accept_compressed(agent, req_msg, cc);
       }
     }
-#endif
 
     if (tport_tsend(tport, reply, tpn, 
 		    IF_SIGCOMP_TPTAG_COMPARTMENT(cc)
@@ -4025,11 +4003,9 @@ static inline void incoming_reset_timer(nta_incoming_t *);
 static inline int incoming_mass_destroy(nta_agent_t *sa, incoming_queue_t *q);
 
 static int incoming_set_params(nta_incoming_t *irq, tagi_t const *tags);
-#if HAVE_SIGCOMP
 static inline
 int incoming_set_compartment(nta_incoming_t *irq, tport_t *tport, msg_t *msg,
 			     int create_if_needed);
-#endif
 
 static inline nta_incoming_t
   *incoming_call_callback(nta_incoming_t *, msg_t *, sip_t *);
@@ -4196,9 +4172,7 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
 	SU_DEBUG_1(("%s: bad via\n", __func__));
     }
 
-#if HAVE_SIGCOMP
     incoming_set_compartment(irq, tport, msg, 0);
-#endif
 
     if (method == sip_method_invite) {
       irq->irq_must_100rel =
@@ -4512,10 +4486,8 @@ void incoming_cut_off(nta_incoming_t *irq)
 
   incoming_htable_remove(agent->sa_incoming, irq);
 
-#if HAVE_SIGCOMP
   if (irq->irq_cc)
-    sigcomp_compartment_unref(irq->irq_cc), irq->irq_cc = NULL;
-#endif
+    nta_compartment_decref(&irq->irq_cc);
 
   if (irq->irq_tport)
     tport_decref(&irq->irq_tport);
@@ -5069,8 +5041,6 @@ int incoming_set_params(nta_incoming_t *irq, tagi_t const *tags)
 {
   int retval = 0;
 
-#if HAVE_SIGCOMP
-
   tagi_t const *t;
   char const *comp = NONE;
   struct sigcomp_compartment *cc = NONE;
@@ -5093,10 +5063,10 @@ int incoming_set_params(nta_incoming_t *irq, tagi_t const *tags)
 
   if (cc != NONE) {
     if (cc)
-      tport_sigcomp_accept(irq->irq_tport, cc, irq->irq_request);
+      agent_accept_compressed(irq->irq_agent, irq->irq_request, cc);
     if (irq->irq_cc)
-      sigcomp_compartment_unref(irq->irq_cc);
-    irq->irq_cc = sigcomp_compartment_ref(cc);
+      nta_compartment_decref(&irq->irq_cc);
+    irq->irq_cc = nta_compartment_ref(cc);
   }
   else if (comp != NULL && comp != NONE && irq->irq_cc == NULL) {
     incoming_set_compartment(irq, irq->irq_tport, irq->irq_request, 1);
@@ -5106,39 +5076,32 @@ int incoming_set_params(nta_incoming_t *irq, tagi_t const *tags)
     irq->irq_tpn->tpn_comp = NULL;
   }
 
-#endif
-
   return retval; 
 }
 
-#if HAVE_SIGCOMP
 static inline
 int incoming_set_compartment(nta_incoming_t *irq, tport_t *tport, msg_t *msg,
 			     int create_if_needed)
 {
+  if (!nta_compressor_vtable)
+    return 0;
+
   if (irq->irq_cc == NULL 
       || irq->irq_tpn->tpn_comp
-      || tport_delivered_using_udvm(tport, msg, NULL, 0) != -1) {
+      || tport_delivered_with_comp(tport, msg, NULL) != -1) {
     struct sigcomp_compartment *cc;
 
-    cc = agent_sigcomp_compartment_ref(irq->irq_agent, tport, irq->irq_tpn, 
+    cc = agent_compression_compartment(irq->irq_agent, tport, irq->irq_tpn,
 				       create_if_needed);
     
     if (cc)
-      tport_sigcomp_accept(tport, cc, msg);
+      agent_accept_compressed(irq->irq_agent, msg, cc);
     
     irq->irq_cc = cc;
   }
 
   return 0;
 }
-#else
-static inline
-int incoming_set_compartment(nta_incoming_t *irq, tport_t *tport, msg_t *msg)
-{
-  return 0;
-}
-#endif
 
 /** Complete a response message.
  *
@@ -5456,11 +5419,9 @@ int incoming_reply(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
     else {
       irq->irq_completed = 1;
 
-#if HAVE_SIGCOMP
       /* XXX - we should do this only after message has actually been sent! */
       if (irq->irq_sigcomp_zap && irq->irq_cc)
-	sigcomp_compartment_close(irq->irq_cc, SIGCOMP_CLOSE_COMP);
-#endif
+	agent_close_compressor(irq->irq_agent, irq->irq_cc);
 
       if (irq->irq_method != sip_method_invite) {
 	irq->irq_confirmed = 1;
@@ -5566,17 +5527,14 @@ void incoming_retransmit_reply(nta_incoming_t *irq, tport_t *tport)
   if (msg && tport) {
     irq->irq_retries++;
 
-#if HAVE_SIGCOMP
     if (irq->irq_retries == 2 && irq->irq_tpn->tpn_comp) {
       irq->irq_tpn->tpn_comp = NULL;
       
       if (irq->irq_cc) {
-	sigcomp_compartment_close(irq->irq_cc, SIGCOMP_CLOSE_COMP);
-	sigcomp_compartment_unref(irq->irq_cc);
-	irq->irq_cc = NULL;
+	agent_close_compressor(irq->irq_agent, irq->irq_cc);
+	nta_compartment_decref(&irq->irq_cc);
       }
     }
-#endif
 
     tport = tport_tsend(tport, msg, irq->irq_tpn, 
 			IF_SIGCOMP_TPTAG_COMPARTMENT(irq->irq_cc)
@@ -6427,12 +6385,10 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
       tp_ident = (void *)t->t_value;
     else if (ntatag_comp == tt)
       comp = (char const *)t->t_value;
-#if HAVE_SIGCOMP
     else if (ntatag_sigcomp_close == tt)
       sigcomp_zap = t->t_value != 0;
     else if (tptag_compartment == tt)
       cc = (void *)t->t_value;
-#endif
   }
 
   orq->orq_agent    = agent;
@@ -6454,12 +6410,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   orq->orq_delay     = UINT_MAX;
   orq->orq_stateless = stateless != 0;
   orq->orq_user_via  = user_via != 0 && sip->sip_via;
-#if HAVE_SIGCOMP
   if (cc)
-    orq->orq_cc = sigcomp_compartment_ref(cc);
-#else
-  (void)cc;
-#endif
+    orq->orq_cc = nta_compartment_ref(cc);
 
   /* Add supported features */
   outgoing_features(agent, orq, msg, sip, ta_args(ta));
@@ -6696,7 +6648,6 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
   }
 
   for (;;) {
-#if HAVE_SIGCOMP
     if (tpn->tpn_comp == NULL) {
       /* xyzzy */
     }
@@ -6704,10 +6655,9 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
       cc = orq->orq_cc, orq->orq_cc = NULL;
     }
     else {
-      cc = agent_sigcomp_compartment_ref(agent, orq->orq_tport, tpn, 
+      cc = agent_compression_compartment(agent, orq->orq_tport, tpn, 
 					 orq->orq_sigcomp_new);
     }
-#endif
 
     if (orq->orq_try_udp_instead)
       tag = tptag_mtu, value = 65535;
@@ -6721,10 +6671,8 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
 
     err = msg_errno(orq->orq_request);
 
-#if HAVE_SIGCOMP
     if (cc)
-      sigcomp_compartment_unref(cc), cc = NULL;
-#endif
+      nta_compartment_decref(&cc);
 
     /* RFC3261, 18.1.1 */
     if (err == EMSGSIZE && !orq->orq_try_tcp_instead) {
@@ -6769,13 +6717,10 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
 	      orq->orq_method_name, orq->orq_cseq->cs_seq,
 	      TPN_ARGS(tpn)));
 
-#if HAVE_SIGCOMP
   if (cc) {
     if (orq->orq_cc)
-      sigcomp_compartment_unref(orq->orq_cc);
-    orq->orq_cc = cc;
+      nta_compartment_decref(&orq->orq_cc);
   }
-#endif
 
   if (orq->orq_pending) {
     assert(orq->orq_tport);
@@ -7194,10 +7139,8 @@ void outgoing_cut_off(nta_outgoing_t *orq)
   }
   orq->orq_pending = 0;
 
-#if HAVE_SIGCOMP
   if (orq->orq_cc)
-    sigcomp_compartment_unref(orq->orq_cc), orq->orq_cc = NULL;
-#endif
+    nta_compartment_decref(&orq->orq_cc);
 
   if (orq->orq_tport)
     tport_decref(&orq->orq_tport);
@@ -7336,15 +7279,13 @@ void outgoing_retransmit(nta_outgoing_t *orq)
   if (orq->orq_prepared && !orq->orq_delayed) {
     orq->orq_retries++;
 
-#if HAVE_SIGCOMP
     if (orq->orq_retries >= 4 && orq->orq_cc) {
       orq->orq_tpn->tpn_comp = NULL;
       if (orq->orq_retries == 4) {
-	sigcomp_compartment_close(orq->orq_cc, SIGCOMP_CLOSE_COMP);
-	sigcomp_compartment_unref(orq->orq_cc), orq->orq_cc = NULL;
+	agent_close_compressor(orq->orq_agent, orq->orq_cc);
+	nta_compartment_decref(&orq->orq_cc);
       }
     }
-#endif
 
     outgoing_send(orq, 1);
   }
@@ -7629,10 +7570,8 @@ int outgoing_recv(nta_outgoing_t *orq,
   if (sip && orq->orq_delay == UINT_MAX)
     outgoing_estimate_delay(orq, sip);
 
-#if HAVE_SIGCOMP
   if (orq->orq_cc)
-    tport_sigcomp_accept(orq->orq_tport, orq->orq_cc, msg);
-#endif
+    agent_accept_compressed(orq->orq_agent, msg, orq->orq_cc);
 
   if (orq->orq_cancel) {
     nta_outgoing_t *cancel;
@@ -7714,10 +7653,8 @@ int outgoing_recv(nta_outgoing_t *orq,
 	  outgoing_set_timer(orq, sa->sa_t2);
       } 
       else if (!outgoing_complete(orq)) {
-#if HAVE_SIGCOMP
 	if (orq->orq_sigcomp_zap && orq->orq_tport && orq->orq_cc)
-	  sigcomp_compartment_close(orq->orq_cc, SIGCOMP_CLOSE_COMP_DECOMP);
-#endif
+	  agent_zap_compressor(orq->orq_agent, orq->orq_cc);
       } 
       else /* outgoing_complete */ {
 	msg_destroy(msg);
@@ -9558,10 +9495,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
   tagged->orq_prev = NULL, tagged->orq_next = NULL, tagged->orq_queue = NULL;
   tagged->orq_rprev = NULL, tagged->orq_rnext = NULL;
 
-#if HAVE_SIGCOMP
   if (tagged->orq_cc)
-    sigcomp_compartment_ref(tagged->orq_cc);
-#endif
+    nta_compartment_ref(tagged->orq_cc);
 
   sip_to_tag(home, to = sip_to_copy(home, orq->orq_to), to_tag);
 
@@ -9806,135 +9741,91 @@ nta_incoming_transport(nta_agent_t *agent,
 }
 
 
-#if HAVE_SIGCOMP
 struct sigcomp_compartment *
 nta_incoming_compartment(nta_incoming_t *irq)
 {
-  return irq ? sigcomp_compartment_ref(irq->irq_cc) : NULL;
+  if (nta_compressor_vtable && irq && irq->irq_cc) 
+    return nta_compressor_vtable->ncv_compartment_ref(irq->irq_cc);
+  else
+    return NULL;
 }
 
 
 struct sigcomp_compartment *
 nta_outgoing_compartment(nta_outgoing_t *orq)
 {
-  return orq ? sigcomp_compartment_ref(orq->orq_cc) : NULL;
+  if (nta_compressor_vtable && orq && orq->orq_cc) 
+    return nta_compressor_vtable->ncv_compartment_ref(orq->orq_cc);
+  else
+    return NULL;
+}
+
+
+struct sigcomp_compartment *
+nta_compartment_ref(struct sigcomp_compartment *cc)
+{
+  if (nta_compressor_vtable)
+    return nta_compressor_vtable->ncv_compartment_ref(cc);
+  else
+    return NULL;
 }
 
 void
 nta_compartment_decref(struct sigcomp_compartment **pcc)
 {
-  if (pcc && *pcc) sigcomp_compartment_unref(*pcc), *pcc = NULL;
+  if (nta_compressor_vtable && pcc && *pcc) 
+    nta_compressor_vtable->ncv_compartment_unref(*pcc), *pcc = NULL;
 }
 
+
+/** Get compartment for connection, create it when needed. */
 static
 struct sigcomp_compartment *
-agent_sigcomp_compartment(nta_agent_t *sa, 
-			  tport_t *tp,
-			  tp_name_t const *tpn)
-{
-  char name[256];
-  int namesize;
-
-  namesize = snprintf(name, sizeof name, "SIP:%s:%s",
-		      tpn->tpn_host, tpn->tpn_port);
-
-  if (namesize <= 0 || namesize >= sizeof name)
-    return NULL;
-
-  return sigcomp_compartment_access(sa->sa_state_handler, 0, 
-				    name, namesize, NULL, 0);
-}
-
-static
-struct sigcomp_compartment *
-agent_sigcomp_compartment_ref(nta_agent_t *sa, 
+agent_compression_compartment(nta_agent_t *sa, 
 			      tport_t *tp,
 			      tp_name_t const *tpn,
-			      int create_if_needed)
+			      int new_if_needed)
 {
-  struct sigcomp_compartment *cc;
-  char name[256];
-  int namesize;
-
-  namesize = snprintf(name, sizeof name, "SIP:%s:%s",
-		      tpn->tpn_host, tpn->tpn_port);
-
-  if (namesize <= 0 || namesize >= sizeof name)
+  if (nta_compressor_vtable)
+    return nta_compressor_vtable->
+      ncv_compartment(sa, tp, sa->sa_compressor, tpn, new_if_needed);
+  else
     return NULL;
-
-  cc = sigcomp_compartment_access(sa->sa_state_handler, 0, 
-				  name, namesize, NULL, 0);
-  if (cc || !create_if_needed) 
-    return sigcomp_compartment_ref(cc);
-
-  cc = sigcomp_compartment_create(sa->sa_algorithm, sa->sa_state_handler, 0, 
-				  name, namesize, NULL, 0);
-  if (cc)
-    agent_sigcomp_options(sa, cc);
-
-  return cc;
 }
 
-/** Accept/reject early SigComp message */
 static
-int agent_sigcomp_accept(nta_agent_t *sa, tport_t *tp, msg_t *msg)
+int agent_accept_compressed(nta_agent_t *sa, msg_t *msg,
+			    struct sigcomp_compartment *cc)
 {
-  struct sigcomp_compartment *cc = NULL;
-
-  cc = agent_sigcomp_compartment(sa, tp, tport_name(tp));
-
-  if (cc)
-    tport_sigcomp_assign(tp, cc);
-
-  return tport_sigcomp_accept(tp, cc, msg);
-}
-
-#else
-
-struct sigcomp_compartment *
-nta_incoming_compartment(nta_incoming_t *irq)
-{
-  return NULL;
-}
-
-
-struct sigcomp_compartment *
-nta_outgoing_compartment(nta_outgoing_t *orq)
-{
-  return NULL;
-}
-
-void
-nta_compartment_decref(struct sigcomp_compartment **pcc)
-{
-  if (pcc) *pcc = NULL;
-}
-
-#endif
-
-/** Set SigComp options.
- *
- * This is a callback invoked by tport whenever it has created a new
- * compartment.
- */
-static int agent_sigcomp_options(nta_agent_t *agent, 
-				 struct sigcomp_compartment *cc)
-{
-#if 0
-  char const * const * l = agent->sa_sigcomp_option_list;
-
-  if (l) {
-    for (;*l;l++)
-      sigcomp_compartment_option(cc, *l);
-    return 0;
-  } 
-  else {
-    return sigcomp_compartment_option(cc, "sip");
+  if (nta_compressor_vtable) {
+    tport_compressor_t *sc = NULL;
+    if (tport_delivered_with_comp(sa->sa_tports, msg, &sc) < 0)
+      return 0;
+    return nta_compressor_vtable->ncv_accept_compressed(sa, sc, msg, cc);
   }
-#endif
+  else
+    return 0;
+}
+
+/** Close compressor (lose its state). */
+static
+int agent_close_compressor(nta_agent_t *sa,
+			   struct sigcomp_compartment *cc)
+{
+  if (nta_compressor_vtable)
+    return nta_compressor_vtable->ncv_close_compressor(sa, cc);
   return 0;
 }
 
+/** Close both compressor and decompressor */
+static
+int agent_zap_compressor(nta_agent_t *sa,
+			 struct sigcomp_compartment *cc)
+{
+  if (nta_compressor_vtable)
+    return nta_compressor_vtable->ncv_zap_compressor(sa, cc);
+  return 0;
+}
 
 /** Bind transport update callback */
 int nta_agent_bind_tport_update(nta_agent_t *agent,

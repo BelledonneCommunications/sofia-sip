@@ -87,6 +87,8 @@ typedef struct incoming_queue_t {
   unsigned         q_timeout;
 } incoming_queue_t;
 
+typedef struct nta_compressor nta_compressor_t;
+
 struct nta_agent_s
 {
   su_home_t          sa_home[1];
@@ -233,6 +235,8 @@ struct nta_agent_s
   char const        *sa_sigcomp_options;
   char const* const *sa_sigcomp_option_list;
   char const        *sa_sigcomp_option_free;
+
+  nta_compressor_t  *sa_compressor;
 
   /** Resolving order (AAAA/A) */
   enum nta_res_order_e sa_res_order;
@@ -526,6 +530,35 @@ struct nta_outgoing_s
 
   nta_outgoing_t       *orq_cancel;     /**< CANCEL transaction */
 };
+
+/* Virtual function table for plugging in SigComp */
+typedef struct
+{
+  int ncv_size;
+  char const *ncv_name;
+
+  struct sigcomp_compartment *(*ncv_compartment)(nta_agent_t *sa,
+						tport_t *tport, 
+						nta_compressor_t *msc,
+						tp_name_t const *tpn,
+						int new_if_needed);
+
+  struct sigcomp_compartment *(*ncv_compartment_ref)(struct sigcomp_compartment *);
+
+  void (*ncv_compartment_unref)(struct sigcomp_compartment *);
+  
+  int (*ncv_accept_compressed)(nta_agent_t *sa,
+			       tport_compressor_t *sc,
+			       msg_t *msg, struct sigcomp_compartment *cc);
+
+  int (*ncv_close_compressor)(nta_agent_t *sa,
+			      struct sigcomp_compartment *cc);
+  int (*ncv_zap_compressor)(nta_agent_t *sa,
+			    struct sigcomp_compartment *cc);
+
+} nta_compressor_vtable_t;
+
+extern nta_compressor_vtable_t *nta_compressor_vtable;
 
 /* ====================================================================== */
 /* Debug log settings */
