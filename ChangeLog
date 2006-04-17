@@ -1,3 +1,92 @@
+2006-04-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Removed - from ntlm variable names (mp)
+
+    M ./libsofia-sip-ua/iptsec/auth_module.c -11 +11
+    M ./libsofia-sip-ua/iptsec/sofia-sip/auth_plugin.h -1 +1
+
+  * Fixed --without-sigcomp (mp)
+
+    M ./m4/sac-tport.m4 -1 +1
+
+  * iptsec: started NTLM support (mm)
+
+    M ./libsofia-sip-ua/iptsec/auth_client.c +9
+    M ./libsofia-sip-ua/iptsec/auth_module.c +390
+    M ./libsofia-sip-ua/iptsec/sofia-sip/auth_plugin.h +7
+
+  * Changed internal nua error responses to use 9XX status codes.
+
+    M ./libsofia-sip-ua/nua/nua_event_server.c -9 +10
+    M ./libsofia-sip-ua/nua/nua_message.c -4 +4
+    M ./libsofia-sip-ua/nua/nua_options.c -3 +3
+    M ./libsofia-sip-ua/nua/nua_params.c -3 +3
+    M ./libsofia-sip-ua/nua/nua_publish.c -5 +5
+    M ./libsofia-sip-ua/nua/nua_register.c -6 +6
+    M ./libsofia-sip-ua/nua/nua_session.c -29 +30
+    M ./libsofia-sip-ua/nua/nua_stack.c -2 +4
+    M ./libsofia-sip-ua/nua/nua_stack.h -2 +2
+    M ./libsofia-sip-ua/nua/nua_subnotref.c -5 +7
+
+  * Added test for some of the internal errors.
+
+    M ./libsofia-sip-ua/nua/test_nua.c +138
+
+  * Fixed NTA API test for SigComp options (they are now always processed). 
+
+    M ./libsofia-sip-ua/nta/test_nta_api.c -8 +4
+
+  * Added missing #includes to sres.c.
+
+  * Removed experimental code enabling STUN.
+
+    M ./libsofia-sip-ua/tport/tport.c -5
+
+  * Added su_init()/su_deinit() here.
+
+    M ./libsofia-sip-ua/tport/test_tport.c -1 +5
+
+  * Removed some warnings (and fixed a bug) in encoding functions ofb stun_common.c
+
+    M ./libsofia-sip-ua/stun/stun_common.c -9 +11
+
+  * Removed stupid VC98 warning from tport_threadpool.c
+
+    M ./libsofia-sip-ua/tport/tport_threadpool.c -1 +1
+
+  * Added missing __func__ to tport_type_tcp and tport_threadpool.c.
+
+    M ./libsofia-sip-ua/tport/tport.c -1 +1
+    M ./libsofia-sip-ua/tport/tport_threadpool.c +7
+    M ./libsofia-sip-ua/tport/tport_type_tcp.c +7
+
+  * Added inlined IN6_IS_ADDR_LOOPBACK() to su_localinfo.c.
+
+    M ./libsofia-sip-ua/su/su_localinfo.c +16
+
+  * Fixed pointer artithmetics by memccpy() in su_strcat_all().
+  (function in su/su_strdup.c).
+
+  * Added missing Winsock errors to <su_errno.h>
+
+  * Fixed address scoping error in stun_mini.c.
+
+  * Added missing __func__ to stun C files.
+
+  * Added things missing from win32 to new sresolv modules.
+
+    M ./libsofia-sip-ua/sresolv/sres.c -5 +35
+    M ./libsofia-sip-ua/sresolv/sres_blocking.c -4 +28
+    M ./libsofia-sip-ua/sresolv/sres_cache.c -1 +9
+
+  * Fixed C99ism in nua_register.c
+
+    M ./libsofia-sip-ua/nua/nua_register.c -1 +3
+
+  * Removed automatically generated file tport_tag_ref.c from version control system.
+
+    R ./libsofia-sip-ua/tport/tport_tag_ref.c
+
 2006-04-11  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
   Synchronizing CVS with darcs (other contributors pp = Pekka Pessi, 

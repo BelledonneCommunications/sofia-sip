@@ -1,0 +1,21 @@
+2006-04-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added test_tport.dsp to SofiaSIP.dsw
+
+  * Added source files:
+  
+  sres.c sres_blocking.c sres_cache.c stun.c stun_common.c stun_dns.c
+  stun_internal.h stun_mini.c nua_params.c nua_params.h tport_internal.h
+  tport_logging.c tport_stub_sigcomp.c tport_stub_stun.c
+  tport_threadpool.c tport_type_connect.c tport_type_tcp.c
+  tport_type_udp.c
+  
+  and
+  
+  sofia-resolv/sres.h sofia-resolv/sres_async.h
+  sofia-resolv/sres_cache.h sofia-resolv/sres_record.h
+  sofia-sip/tport_plugins.h
+  
+  to libsofia_sip_ua.dsp.
+
+  * Added stat() as well as struct stat to compatibity win32/unistd.h.
