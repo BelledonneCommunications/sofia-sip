@@ -275,8 +275,8 @@ if test "$with_glib" = no || test "$with_glib_dir" = "no" ; then
 
 elif test "$with_glib_dir" = "pkg-config" ; then 
 
-  PKG_CHECK_MODULES(GLIB, glib-$with_glib, [HAVE_GLIB=yes])
-  PKG_CHECK_MODULES(GOBJECT, gobject-$with_glib, [HAVE_GOBJECT=yes])
+  PKG_CHECK_MODULES(GLIB, glib-$with_glib, [HAVE_GLIB=yes], [HAVE_GLIB=no])
+  PKG_CHECK_MODULES(GOBJECT, gobject-$with_glib >= 2.4, [HAVE_GOBJECT=yes], [HAVE_GOBJECT=no])
 
 else # GLib path is explicitly defined 
 
@@ -317,8 +317,8 @@ else # GLib path is explicitly defined
 
 fi # GLib path is explicitly defined 
 
-AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" != x])
-AM_CONDITIONAL([HAVE_GOBJECT], [test "x$HAVE_GOBJECT" != x])
+AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" = xyes])
+AM_CONDITIONAL([HAVE_GOBJECT], [test "x$HAVE_GOBJECT" = xyes])
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_VERSION)
