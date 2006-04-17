@@ -1175,6 +1175,142 @@ int test_params(struct context *ctx)
 
 /* ======================================================================== */
 
+int test_stack_errors(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a, *b = &ctx->b;
+  struct call *a_call = a->call;
+  struct event *e;
+
+  int internal_error = 900;
+
+  if (print_headings)
+    printf("TEST NUA-1.2: Stack error handling\n");
+
+  if (print_headings)
+    printf("TEST NUA-1.2.1: CANCEL without INVITE\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  CANCEL(a, a_call, a_call->nh, TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_cancel);
+  TEST(e->data->e_status, 481);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-1.2.1: PASSED\n");
+
+  /* -BYE without INVITE--------------------------------------------------- */
+
+  if (print_headings)
+    printf("TEST NUA-1.2.2: BYE without INVITE\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  BYE(a, a_call, a_call->nh, TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_bye);
+  TEST(e->data->e_status, internal_error);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-1.2.2: PASSED\n");
+
+  /* -Un-register without REGISTER--------------------------------------- */
+
+  if (print_headings)
+    printf("TEST NUA-1.2.3: unregister without register\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  UNREGISTER(a, a_call, a_call->nh, TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_unregister);
+  TEST(e->data->e_status, 401);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-1.2.3: PASSED\n");
+
+  /* -Un-publish without publish--------------------------------------- */
+
+  if (print_headings)
+    printf("TEST NUA-1.2.4: unpublish without publish\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  UNPUBLISH(a, a_call, a_call->nh, TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_unpublish);
+  TEST(e->data->e_status, 404);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-1.2.4: PASSED\n");
+
+  /* -terminate without notifier--------------------------------------- */
+
+  if (print_headings)
+    printf("TEST NUA-1.2.5: unpublish without publish\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  TERMINATE(a, a_call, a_call->nh, TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_terminate);
+  TEST(e->data->e_status, internal_error);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+
+  AUTHORIZE(a, a_call, a_call->nh, TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_authorize);
+  TEST(e->data->e_status, internal_error);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-1.2.5: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-1.2: PASSED\n");
+
+  END();
+}
+
+/* ======================================================================== */
+
 static char passwd_name[] = "tmp_sippasswd.XXXXXX";
 
 static void remove_tmp(void)
@@ -5774,6 +5910,8 @@ int main(int argc, char *argv[])
       ctx->b.printer = print_event;
     if (o_events_c)
       ctx->c.printer = print_event;
+
+    retval |= test_stack_errors(ctx); SINGLE_FAILURE_CHECK();
 
     retval |= test_register(ctx);
 
