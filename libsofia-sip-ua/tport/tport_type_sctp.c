@@ -157,7 +157,7 @@ static
 int tport_recv_sctp(tport_t *self)
 {
   msg_t *msg;
-  int N, veclen, exact = 0, eos;
+  int N, n, veclen;
   msg_iovec_t iovec[2] = {{ 0 }};
 
   char sctp_buf[TP_SCTP_MSG_MAX];
@@ -165,11 +165,25 @@ int tport_recv_sctp(tport_t *self)
   iovec[0].mv_base = sctp_buf;
   iovec[0].mv_len = sizeof(sctp_buf);
 
+#if 0
   N = su_vrecv(self->tp_socket, iovec, 1, 0, NULL, NULL);
   if (N == SOCKET_ERROR)
     return tport_recv_error_report(self);
+#endif
+  N = su_getmsgsize(self->tp_socket);
+  if (N == SOCKET_ERROR) {
+    int err = su_errno();
+    SU_DEBUG_1(("%s(%p): su_getmsgsize(): %s (%d)\n", __func__, self,
+		su_strerror(err), err));
+    return -1;
+  }
+  if (N == 0) {
+    if (self->tp_msg)
+      msg_recv_commit(self->tp_msg, 0, 1);
+    return 0;    /* End of stream */
+  }
 
-  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, exact = 1);
+  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 0);
   if (veclen < 0)
     return -1;
 
@@ -180,14 +194,14 @@ int tport_recv_sctp(tport_t *self)
   *msg_addr(msg) = *self->tp_addr;
   *msg_addrlen(msg) = su_sockaddr_size(self->tp_addr);
 
-  memcpy(iovec[0].mv_base, sctp_buf, iovec[0].mv_len);
+  n = su_vrecv(self->tp_socket, iovec, veclen, 0, NULL, NULL);
 
   if (self->tp_master->mr_dump_file)
-    tport_dump_iovec(self, msg, N, iovec, veclen, "recv", "from");
+    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
 
-  msg_recv_commit(msg, N, eos = 1);  /* Mark buffer as used */
+  msg_recv_commit(msg, n, 0);  /* Mark buffer as used */
 
-  return 2;
+  return 1;
 }
 
 static int tport_send_sctp(tport_t const *self, msg_t *msg,

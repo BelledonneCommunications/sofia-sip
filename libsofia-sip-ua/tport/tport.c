@@ -1147,7 +1147,7 @@ tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
   &tport_tls_client_vtable,
   &tport_tls_vtable,
 #endif
-#if HAVE_SCTP && 0		/* SCTP is broken */
+#if HAVE_SCTP		/* SCTP is broken */
   &tport_sctp_client_vtable,
   &tport_sctp_vtable,
 #endif
@@ -1283,7 +1283,10 @@ int tport_tbind(tport_t *self,
   if (http_connect && public == 0)
     public = tport_type_connect;
     
-  if (server && public == 0)
+  if (public && public != tport_type_stun)
+    server = 0;
+
+  if (server)
     retval = tport_bind_server(mr, mytpn, transports, public, ta_args(ta));
   else
     retval = tport_bind_client(mr, mytpn, transports, public, ta_args(ta));
@@ -1348,8 +1351,10 @@ int tport_bind_client(tport_master_t *mr,
     pri->pri_public = tport_type_client; /* XXX */
   }
 
-  if (!pri)
+  if (!pri) {
+    SU_DEBUG_3(("tport_alloc_primary: %s failed\n", why));
     tport_zap_primary(*tbf);
+  }
 
   return pri ? 0 : -1;
 }
