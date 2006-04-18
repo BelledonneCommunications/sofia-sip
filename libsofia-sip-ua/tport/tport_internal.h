@@ -490,7 +490,7 @@ tport_sigcomp_assign_if_needed(tport_t *self,
 
 struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self);
 
-void tport_try_accept_sigcomp(tport_t *self, msg_t *msg);
+void tport_sigcomp_accept_incomplete(tport_t *self, msg_t *msg);
 
 int tport_recv_comp_dgram(tport_t *self, int N);
 

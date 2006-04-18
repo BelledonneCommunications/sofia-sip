@@ -218,7 +218,7 @@ tport_sigcomp_accept(tport_t *self,
 
 /** This function is called when the application message is still incomplete
     but a complete SigComp message could have been received */
-void tport_accept_incomplete(tport_t *self, msg_t *msg)
+void tport_sigcomp_accept_incomplete(tport_t *self, msg_t *msg)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 

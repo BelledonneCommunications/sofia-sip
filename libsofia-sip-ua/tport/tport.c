@@ -2625,7 +2625,7 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
       if (complete)
 	msg_mark_as_complete(msg, MSG_FLG_ERROR), n = -1;
       else if (!(streaming = msg_is_streaming(msg))) {
-	tport_try_accept_sigcomp(self, msg);
+	tport_sigcomp_accept_incomplete(self, msg);
 	break;
       }
     } 
