@@ -1225,7 +1225,7 @@ void outbound_connect_start_keepalive(struct outbound_connect *oc,
 
   if (interval)
     oc->oc_kalt = su_timer_create(su_root_task(oc->oc_root),
-				  /* 1000 * */ 100 * interval);
+				  /* 1000 * */ 1000 * interval);
 
   oc->oc_keepalive = interval;
 
@@ -1971,4 +1971,3 @@ int outbound_connect_set_features(outbound_connect *oc, char *features)
 
   return 0;
 }
-
