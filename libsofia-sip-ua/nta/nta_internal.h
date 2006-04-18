@@ -537,28 +537,40 @@ typedef struct
   int ncv_size;
   char const *ncv_name;
 
+  nta_compressor_t *(*ncv_init_agent)(nta_agent_t *sa, 
+				     char const * const *options);
+
+  void (*ncv_deinit_agent)(nta_agent_t *sa, nta_compressor_t *);
+
   struct sigcomp_compartment *(*ncv_compartment)(nta_agent_t *sa,
-						tport_t *tport, 
-						nta_compressor_t *msc,
-						tp_name_t const *tpn,
-						int new_if_needed);
+						 tport_t *tport, 
+						 nta_compressor_t *msc,
+						 tp_name_t const *tpn,
+						 char const * const *options,
+						 int new_if_needed);
 
-  struct sigcomp_compartment *(*ncv_compartment_ref)(struct sigcomp_compartment *);
-
-  void (*ncv_compartment_unref)(struct sigcomp_compartment *);
-  
   int (*ncv_accept_compressed)(nta_agent_t *sa,
+			       nta_compressor_t *msc,
 			       tport_compressor_t *sc,
-			       msg_t *msg, struct sigcomp_compartment *cc);
+			       msg_t *msg,
+			       struct sigcomp_compartment *cc);
 
   int (*ncv_close_compressor)(nta_agent_t *sa,
 			      struct sigcomp_compartment *cc);
   int (*ncv_zap_compressor)(nta_agent_t *sa,
 			    struct sigcomp_compartment *cc);
 
+  struct sigcomp_compartment *(*ncv_compartment_ref)
+    (struct sigcomp_compartment *);
+
+  void (*ncv_compartment_unref)(struct sigcomp_compartment *);
+ 
 } nta_compressor_vtable_t;
 
 extern nta_compressor_vtable_t *nta_compressor_vtable;
+
+SOFIAPUBFUN nta_compressor_t *nta_agent_init_sigcomp(nta_agent_t *sa);
+SOFIAPUBFUN void nta_agent_deinit_sigcomp(nta_agent_t *sa);
 
 /* ====================================================================== */
 /* Debug log settings */

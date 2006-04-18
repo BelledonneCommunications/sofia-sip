@@ -9740,6 +9740,28 @@ nta_incoming_transport(nta_agent_t *agent,
   return tport_incref(nta_transport_(agent, irq, msg));
 }
 
+nta_compressor_t *nta_agent_init_sigcomp(nta_agent_t *sa)
+{
+  if (!nta_compressor_vtable || !sa)
+    return NULL;
+
+  if (sa->sa_compressor == NULL) {
+    char const * const *l = sa->sa_sigcomp_option_list;
+    nta_compressor_t *comp;
+    comp = nta_compressor_vtable->ncv_init_agent(sa, l);
+    sa->sa_compressor = comp;
+  }
+
+  return sa->sa_compressor;
+}
+
+void nta_agent_deinit_sigcomp(nta_agent_t *sa)
+{
+  if (nta_compressor_vtable && sa && sa->sa_compressor) {
+    nta_compressor_vtable->ncv_deinit_agent(sa, sa->sa_compressor);
+    sa->sa_compressor = NULL;
+  }
+}
 
 struct sigcomp_compartment *
 nta_incoming_compartment(nta_incoming_t *irq)
@@ -9786,9 +9808,11 @@ agent_compression_compartment(nta_agent_t *sa,
 			      tp_name_t const *tpn,
 			      int new_if_needed)
 {
-  if (nta_compressor_vtable)
+  if (nta_compressor_vtable) {
+    char const * const *l = sa->sa_sigcomp_option_list;
     return nta_compressor_vtable->
-      ncv_compartment(sa, tp, sa->sa_compressor, tpn, new_if_needed);
+      ncv_compartment(sa, tp, sa->sa_compressor, tpn, l, new_if_needed);
+  }
   else
     return NULL;
 }
@@ -9798,10 +9822,11 @@ int agent_accept_compressed(nta_agent_t *sa, msg_t *msg,
 			    struct sigcomp_compartment *cc)
 {
   if (nta_compressor_vtable) {
+    nta_compressor_t *msc = sa->sa_compressor;
     tport_compressor_t *sc = NULL;
     if (tport_delivered_with_comp(sa->sa_tports, msg, &sc) < 0)
       return 0;
-    return nta_compressor_vtable->ncv_accept_compressed(sa, sc, msg, cc);
+    return nta_compressor_vtable->ncv_accept_compressed(sa, msc, sc, msg, cc);
   }
   else
     return 0;
