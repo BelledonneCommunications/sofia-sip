@@ -220,7 +220,8 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   SSL_CTX_set_verify_depth(tls->ctx, ti->verify_depth);
 
   SSL_CTX_set_verify(tls->ctx, 
-                     SSL_VERIFY_PEER  /* | SSL_VERIFY_FAIL_IF_NO_PEER_CERT */,
+                     SSL_VERIFY_NONE 
+		     /* SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT */,
                      tls_verify_cb);
 
   if (!SSL_CTX_set_cipher_list(tls->ctx, ti->cipher)) {
