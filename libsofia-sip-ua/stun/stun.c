@@ -2387,7 +2387,6 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
   enter;
 
   if (req->sr_state == stun_dispose_me) {
-    su_timer_destroy(t);
     stun_request_destroy(req);
     SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
     return;
