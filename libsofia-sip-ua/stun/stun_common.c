@@ -315,7 +315,7 @@ void stun_init_buffer(stun_buffer_t *p) {
 
 int stun_free_buffer(stun_buffer_t *p) {
   if (p->data)
-    free(p->data);
+    free(p->data), p->data = NULL;
   p->size = 0;
   return 0;
 }
