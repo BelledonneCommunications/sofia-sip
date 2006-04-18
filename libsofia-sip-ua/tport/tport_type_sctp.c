@@ -26,6 +26,8 @@
  *
  * See tport.docs for more detailed description of tport interface.
  *
+ * @RFC4168.
+ *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Martti Mela <Martti.Mela@nokia.com>
  *
@@ -54,7 +56,7 @@
 /* ---------------------------------------------------------------------- */
 /* SCTP */
 
-#define TP_SCTP_MSG_MAX (32768)
+#define TP_SCTP_MSG_MAX (65536)
 
 static int tport_sctp_init_primary(tport_primary_t *, 
 				   tp_name_t tpn[1], 
@@ -165,12 +167,10 @@ int tport_recv_sctp(tport_t *self)
   iovec[0].mv_base = sctp_buf;
   iovec[0].mv_len = sizeof(sctp_buf);
 
-#if 0
   N = su_vrecv(self->tp_socket, iovec, 1, 0, NULL, NULL);
   if (N == SOCKET_ERROR)
     return tport_recv_error_report(self);
-#endif
-  N = su_getmsgsize(self->tp_socket);
+
   if (N == SOCKET_ERROR) {
     int err = su_errno();
     SU_DEBUG_1(("%s(%p): su_getmsgsize(): %s (%d)\n", __func__, self,
@@ -194,12 +194,12 @@ int tport_recv_sctp(tport_t *self)
   *msg_addr(msg) = *self->tp_addr;
   *msg_addrlen(msg) = su_sockaddr_size(self->tp_addr);
 
-  n = su_vrecv(self->tp_socket, iovec, veclen, 0, NULL, NULL);
+  memcpy(iovec[0].mv_base, sctp_buf, iovec[0].mv_len);
 
   if (self->tp_master->mr_dump_file)
-    tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
+    tport_dump_iovec(self, msg, N, iovec, veclen, "recv", "from");
 
-  msg_recv_commit(msg, n, 0);  /* Mark buffer as used */
+  msg_recv_commit(msg, N, 0);  /* Mark buffer as used */
 
   return 1;
 }
