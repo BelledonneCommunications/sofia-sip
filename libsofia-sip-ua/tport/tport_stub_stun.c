@@ -39,6 +39,12 @@
 
 #include <assert.h>
 
+/* ---------------------------------------------------------------------- */
+/* Plugin pointer */
+
+tport_stun_server_vtable_t const *tport_stun_server_vtable = NULL;
+
+
 static
 tport_stun_server_t *vst_create(su_root_t *root, tagi_t const *tags)
 {
@@ -62,6 +68,7 @@ int tport_init_stun_server(tport_master_t *mr, tagi_t const *tags)
   tport_stun_server_vtable_t const *vst = tport_stun_server_vtable;
 
   if (vst == NULL)
+    /* Nobody has plugged better server in, use miniserver */
     tport_stun_server_vtable = vst = &stun_mini_vtable;
 
   if (!vst)
@@ -260,8 +267,6 @@ int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 
 /* ---------------------------------------------------------------------- */
 /* Plugin interface */
-
-tport_stun_server_vtable_t const *tport_stun_server_vtable = NULL;
 
 /** Plug in stun server.
  *
