@@ -1136,15 +1136,17 @@ static
 int outbound_connect_nat_detect(outbound_connect *oc,
 				sip_t const *response)
 {
-  sip_via_t const *v = response->sip_via;
+  sip_via_t const *v;
   int one = 1;
   char const *received, *rport;
   char *nat_detected, *nat_port;
   char *new_detected, *new_port;
   su_home_t *home;
 
-  if (!oc || !v)
+  if (!oc || !response || !response->sip_via)
     return -1;
+
+  v = response->sip_via;
 
   received = v->v_received;
   if (!received)
@@ -1155,9 +1157,12 @@ int outbound_connect_nat_detect(outbound_connect *oc,
   nat_detected = oc->oc_nat_detected;
   nat_port = oc->oc_nat_port;
 
-  if (nat_detected && strcasecmp(received, nat_detected) == 0 &&
-      nat_port && strcasecmp(rport, nat_port) == 0)
-    return 1;
+  if (nat_detected && strcasecmp(received, nat_detected) == 0) {
+    if (nat_port && strcasecmp(rport, nat_port) == 0)
+      return 1;
+    if (v->v_rport == NULL)
+      return 1;
+  }
 
   if (!nat_detected) {
     SU_DEBUG_1(("outbound_connect: detected NAT: %s != %s\n",
@@ -1212,8 +1217,8 @@ static void keepalive_timer(su_root_magic_t *root_magic,
 			    su_timer_arg_t *oc_as_timer_arg);
 
 void outbound_connect_start_keepalive(struct outbound_connect *oc,
-				    unsigned interval,
-				    nta_outgoing_t *register_transaction)
+				      unsigned interval,
+				      nta_outgoing_t *register_transaction)
 {
   if (oc->oc_kalt)
     su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
@@ -1225,7 +1230,7 @@ void outbound_connect_start_keepalive(struct outbound_connect *oc,
   oc->oc_keepalive = interval;
 
   if (!oc->oc_validated && oc->oc_sipstun && 0) {
-    /* XXX */
+    nta_tport_keepalive(register_transaction);
   }
   else {
     if (register_transaction) {
@@ -1344,7 +1349,7 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
     oc->oc_kalo = NULL;
   nta_outgoing_destroy(orq);
 
-  if (status == 408) {
+  if (status == 408 || sip == NULL) {
     SU_DEBUG_1(("outbound_connect(%p): keepalive timeout\n", oc));
     /* XXX - do something about it! */
     return 0;
@@ -1485,7 +1490,8 @@ int outbound_connect_contacts_from_via(outbound_connect *oc,
   su_home_t *home = (su_home_t *)oc->oc_owner;
   char *uri;
   sip_contact_t *rcontact, *dcontact;
-  sip_contact_t *previous_rcontact, *previous_dcontact;
+  int reg_id = 0;
+  sip_contact_t *previous_previous, *previous_rcontact, *previous_dcontact;
   char const *transport;
   sip_via_t *v, v0[1], *previous_via;
   int contact_uri_changed;
@@ -1504,9 +1510,11 @@ int outbound_connect_contacts_from_via(outbound_connect *oc,
   uri = sip_contact_string_from_via(NULL, via, NULL, transport);
 
   dcontact = sip_contact_make(home, uri);
-  if (oc->oc_features && oc->oc_reg_id && oc->oc_prefs.outbound)
+  if (oc->oc_features && oc->oc_reg_id && oc->oc_prefs.outbound) {
+    reg_id = oc->oc_reg_id;
     rcontact = sip_contact_format(home, "%s%s;reg-id=%u", 
 				  uri, oc->oc_features, oc->oc_reg_id);
+  }
   else if (oc->oc_features) 
     rcontact = sip_contact_format(home, "%s%s", uri, oc->oc_features);
   else
@@ -1527,16 +1535,21 @@ int outbound_connect_contacts_from_via(outbound_connect *oc,
     url_cmp_all(oc->oc_rcontact->m_url, rcontact->m_url);
 
   if (contact_uri_changed) {
-    previous_rcontact = oc->oc_previous;
+    previous_previous = oc->oc_previous;
     previous_dcontact = oc->oc_dcontact;
     previous_via = oc->oc_via;
 
-    oc->oc_previous = oc->oc_rcontact;
+    if (oc->oc_registering && reg_id == 0)
+      previous_rcontact = NULL, oc->oc_previous = oc->oc_rcontact;
+    else
+      previous_rcontact = oc->oc_rcontact, oc->oc_previous = NULL;
+
     if (oc->oc_previous)
       msg_header_replace_param(home, (void*)oc->oc_previous, "expires=0");
   }
   else {
-    previous_rcontact = oc->oc_rcontact;
+    previous_previous = oc->oc_rcontact;
+    previous_rcontact = NULL;
     previous_dcontact = oc->oc_dcontact;
     previous_via = oc->oc_via;
   }
@@ -1552,8 +1565,10 @@ int outbound_connect_contacts_from_via(outbound_connect *oc,
   }
 
   msg_header_free(home, (void *)previous_rcontact);
+  msg_header_free(home, (void *)previous_previous);
   if (previous_dcontact != oc->oc_previous &&
-      previous_dcontact != previous_rcontact)
+      previous_dcontact != previous_rcontact &&
+      previous_dcontact != previous_previous)
     msg_header_free(home, (void *)previous_dcontact);
   msg_header_free(home, (void *)previous_via);
 
@@ -1718,7 +1733,7 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
     return (outbound_connect *)public;
   
   if (!aor && any)
-    return any;
+    return (outbound_connect  *)any;
 
   return NULL;
 }
