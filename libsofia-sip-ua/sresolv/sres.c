@@ -2852,9 +2852,11 @@ sres_create_error_rr(sres_resolver_t *res,
 		     uint16_t errcode)
 {
   sres_record_t *sr;
-  char name[SRES_MAXDNAME];
+  char buf[SRES_MAXDNAME];
+  char const *name;
 
-  if (!sres_toplevel(name, sizeof name, q->q_name))
+  name = sres_toplevel(buf, sizeof buf, q->q_name);
+  if (!name)
     return NULL;
 
   sr = sres_cache_alloc_record(res->res_cache, name, strlen(name), q->q_type, 0);
