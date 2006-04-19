@@ -241,7 +241,7 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
 				  char const *realm,
 				  char const *opaque,
-				  char const *gssapi-data,
+				  char const *gssapidata,
 				  char const *targetname);
 
 void auth_challenge_ntlm(auth_mod_t *am, 
