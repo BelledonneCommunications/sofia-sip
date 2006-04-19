@@ -66,6 +66,7 @@ enum { N = 32 };
 static auth_scheme_t *schemes[N] = {
   auth_scheme_basic,
   auth_scheme_digest,
+  auth_scheme_ntlm,
   auth_scheme_delayed
 };
 
@@ -134,6 +135,8 @@ auth_mod_t *auth_mod_create(su_root_t *root,
       bscheme = auth_scheme_basic;
     else if (strcasecmp(base, "Digest") == 0) 
       bscheme = auth_scheme_digest;
+    else if (strcasecmp(base, "NTLM") == 0) 
+      bscheme = auth_scheme_ntlm;
 
     if (base == NULL || bscheme) {
       int i;

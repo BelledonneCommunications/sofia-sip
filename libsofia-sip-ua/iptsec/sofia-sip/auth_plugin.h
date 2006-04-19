@@ -136,6 +136,8 @@ struct auth_mod_t
   url_t         *am_remote;	/**< Remote authenticator */
   char const    *am_realm;	/**< Our realm */
   char const    *am_opaque;	/**< Opaque identification data */
+  char const    *am_gssapi_data; /**< NTLM data */
+  char const    *am_targetname; /**< NTLM target name */
   auth_scheme_t *am_scheme;	/**< Authentication scheme (Digest, Basic). */
   char const   **am_allow;	/**< Methods to allow without authentication */
   msg_param_t    am_algorithm;	/**< Defauilt algorithm */
@@ -239,8 +241,13 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
 				  char const *realm,
 				  char const *opaque,
-				  char const *gssapidata,
+				  char const *gssapi-data,
 				  char const *targetname);
+
+void auth_challenge_ntlm(auth_mod_t *am, 
+			 auth_status_t *as,
+			 auth_challenger_t const *ach);
+
 
 int auth_allow_check(auth_mod_t *am, auth_status_t *as);
 

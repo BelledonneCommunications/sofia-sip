@@ -789,7 +789,6 @@ void auth_info_digest(auth_mod_t *am,
 }
 
 
-#if 0
 /* ====================================================================== */
 /* NTLM authentication scheme */
 
@@ -808,13 +807,6 @@ auth_scheme_t auth_scheme_ntlm[1] =
       auth_cancel_default,	/* asch_cancel */
       auth_destroy_default	/* asch_destroy */
   }};
-
-struct nonce {
-  msg_time_t issued;
-  uint32_t   count;
-  uint16_t   nextnonce;
-  uint8_t    ntlm[6];
-};
 
 #define AUTH_NTLM_NONCE_LEN (BASE64_SIZE(sizeof (struct nonce)) + 1)
 
@@ -845,7 +837,7 @@ void auth_method_ntlm(auth_mod_t *am,
 
   if (as->as_realm)
     au = auth_ntlm_credentials(au, as->as_realm, am->am_opaque,
-			       am->am_gssapi-data, am->am_targetname);
+			       am->am_gssapi_data, am->am_targetname);
 
   else
     au = NULL;
@@ -1034,7 +1026,6 @@ void auth_info_ntlm(auth_mod_t *am,
       msg_header_format(as->as_home, ach->ach_info, "nextnonce=\"%s\"", nonce);
   }
 }
-#endif /* 0 NTLM */
 
 
 /* ====================================================================== */
@@ -1630,10 +1621,10 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
 				  char const *realm,
 				  char const *opaque,
-				  char const *gssapidata,
+				  char const *gssapi-data,
 				  char const *targetname)
 {
-  char const *arealm, *aopaque, *agssapidata, *atargetname;
+  char const *arealm, *aopaque, *agssapi-data, *atargetname;
 
   for (;auth; auth = auth->au_next) {
     if (strcasecmp(auth->au_scheme, "NTLM"))
@@ -1700,30 +1691,30 @@ msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth,
 	continue;
     }
 
-    if (gssapidata) {
+    if (gssapi-data) {
       int cmp = 1;
 
-      agssapidata = msg_header_find_param(auth->au_common, "gssapi-data=");
-      if (!agssapidata)
+      agssapi-data = msg_header_find_param(auth->au_common, "gssapi-data=");
+      if (!agssapi-data)
 	continue;
 
-      if (agssapidata[0] == '"') {
+      if (agssapi-data[0] == '"') {
 	/* Compare quoted agssapi-data with unquoted gssapi-data */
 	int i, j;
-	for (i = 1, j = 0, cmp = 1; agssapidata[i] != 0; i++, j++) {
-	  if (agssapidata[i] == '"' && gssapidata[j] == 0) {
+	for (i = 1, j = 0, cmp = 1; agssapi-data[i] != 0; i++, j++) {
+	  if (agssapi-data[i] == '"' && gssapi-data[j] == 0) {
 	    cmp = 0;
 	    break;
 	  }
 
-	  if (agssapidata[i] == '\\' && agssapidata[i + 1] != '\0')
+	  if (agssapi-data[i] == '\\' && agssapi-data[i + 1] != '\0')
 	    i++;
 
-	  if (agssapidata[i] != gssapidata[j])
+	  if (agssapi-data[i] != gssapi-data[j])
 	    break;
 	}
       } else {
-	cmp = strcmp(agssapidata, gssapidata);
+	cmp = strcmp(agssapi-data, gssapi-data);
       }
 
       if (cmp)
