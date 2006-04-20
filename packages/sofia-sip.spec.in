@@ -5,7 +5,9 @@
 # --with doxygen   - Generate documents using doxygen and dot
 # --with check     - Run tests
 # --without openssl - No OpenSSL (TLS)
+# --without glib   - no GLIB
 # --with sigcomp   - with Sofia SigComp
+# --with sctp      - with SCTP
 #
 
 Summary: Sofia SIP User-Agent library 
@@ -26,6 +28,8 @@ Packager: Pekka.Pessi@Nokia.com
 %{?_with_sigcomp:BuildRequires: sofia-sigcomp-devel >= 2.5.0}
 %{?_with_sigcomp:Requires: sofia-sigcomp >= 2.5.0}
 
+%{?!_without_glib:BuildRequires: glib2.0-devel >= 2.2}
+
 %description
 Sofia SIP is a RFC-3261-compliant library for SIP user agents and other
 network elements.
@@ -34,10 +38,13 @@ network elements.
 %setup -q -n sofia-sip-%{version}
 
 %build
-options=--with-aclocal=aclocal
+options="--with-aclocal=aclocal --disable-dependency-tracking"
+options="$options --with-pic --enable-shared"
+%{?_without_glib:options="$options --without-glib"}
 %{?_with_sigcomp:options="$options --with-sigcomp"}
-options="$options --enable-sctp"
-%configure --with-pic --enable-shared --disable-dependency-tracking $options
+%{?_with_sctp:options="$options --enable-sctp"}
+%configure $options
+
 make %{_smp_mflags}
 %{?_with_check:make check}
 %{?_with_doxygen:make doxygen}
