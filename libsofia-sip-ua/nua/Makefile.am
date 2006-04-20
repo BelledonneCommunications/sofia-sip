@@ -17,6 +17,7 @@ INCLUDES = 		-I$(srcdir)/../bnf -I../bnf \
 			-I$(srcdir)/../sip -I../sip \
 			-I$(srcdir)/../soa -I../soa \
 			-I$(srcdir)/../tport -I../tport \
+			-I$(srcdir)/../stun -I../stun \
 			-I$(srcdir)/../url -I../url \
 			-I$(srcdir)/../su -I../su
 

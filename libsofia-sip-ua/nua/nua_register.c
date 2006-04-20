@@ -795,6 +795,10 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 /* ---------------------------------------------------------------------- */
 /* Register usage interface */
 
+#if HAVE_SOFIA_STUN
+#include <sofia-sip/stun.h>
+#endif
+
 static void nua_stack_tport_update(nua_t *nua, nta_agent_t *nta);
 
 int
@@ -833,12 +837,18 @@ nua_stack_init_transport(nua_t *nua, tagi_t const *tags)
 			    TAG_NEXT(nua->nua_args)) < 0)
       return -1;
 
-    if (nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
-			    TPTAG_IDENT("stun"),
-			    TPTAG_PUBLIC(tport_type_stun), /* use stun */
-			    TPTAG_CERTIFICATE(certificate_dir),
-			    TAG_NEXT(nua->nua_args)) < 0)
-      return -1;
+#if HAVE_SOFIA_STUN
+    if (stun_is_requested(TAG_NEXT(nua->nua_args)))
+      if (nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
+			      TPTAG_IDENT("stun"),
+			      TPTAG_PUBLIC(tport_type_stun), /* use stun */
+			      TPTAG_CERTIFICATE(certificate_dir),
+			      TAG_NEXT(nua->nua_args)) < 0) {
+	SU_DEBUG_5(("nua: error initializing STUN transport\n"));
+	return -1;
+      }
+#endif
+
   }
   else if ((!contact1 ||
 	    nta_agent_add_tport(nua->nua_nta, contact1,
