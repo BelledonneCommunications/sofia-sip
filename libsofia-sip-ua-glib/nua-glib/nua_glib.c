@@ -44,7 +44,7 @@
 #include "nua_glib_marshal.h"
 
 /*=============== Class and Object init ===============*/
-G_DEFINE_TYPE(NuaGlib, nua_glib, G_TYPE_OBJECT)
+G_DEFINE_TYPE(NuaGlib, nua_glib, G_TYPE_OBJECT);
   
 /*signal enum*/
 enum
