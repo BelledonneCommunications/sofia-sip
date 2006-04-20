@@ -4451,7 +4451,7 @@ int test_refer(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-9.1.2: extend expiration time for implied subscription\n");
+    printf("TEST NUA-9.1.3: extend expiration time for implied subscription\n");
 
   SUBSCRIBE(b, b_call, b_call->nh,
 	    SIPTAG_EVENT(r_event),
@@ -4491,7 +4491,7 @@ int test_refer(struct context *ctx)
   free_events_in_list(ctx, b->events);
 
   if (print_headings)
-    printf("TEST NUA-9.1.2: PASSED\n");
+    printf("TEST NUA-9.1.3: PASSED\n");
 
   /* ---------------------------------------------------------------------- */
   /*
