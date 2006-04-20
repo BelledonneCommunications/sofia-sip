@@ -492,6 +492,12 @@ int auc_authorization(auth_client_t **auc_list, msg_t *msg, msg_pub_t *pub,
   auth_client_t *ca;
   msg_mclass_t const *mc = msg_mclass(msg);
 
+  if (auc_list == NULL || msg == NULL)
+    return -1;
+
+  if (pub == NULL)
+    pub = msg_object(msg);
+
   /* Make sure every challenge has credentials */
   for (ca = *auc_list; ca; ca = ca->ca_next) {
     if (!ca->ca_user || !ca->ca_pass || !ca->ca_authorize)

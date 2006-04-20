@@ -1369,16 +1369,17 @@ int nua_creq_check_restart(nua_handle_t *nh,
 	   ((status == 401 && sip->sip_www_authenticate) ||
 	    (status == 407 && sip->sip_proxy_authenticate)) &&
 	   nh_challenge(nh, sip) > 0) {
-    sip_t *rsip;
+    msg_t *request = nta_outgoing_getrequest(orq);
+    sip_t *rsip = sip_object(request);
     int done;
 
-    rsip = sip_object(cr->cr_msg);
-
     /* XXX - check for instant restart */
-    done = auc_authorization(&nh->nh_auth, cr->cr_msg, (msg_pub_t*)rsip,
+    done = auc_authorization(&nh->nh_auth, cr->cr_msg, (msg_pub_t*)NULL,
 			     rsip->sip_request->rq_method_name,
 			     rsip->sip_request->rq_url,
 			     rsip->sip_payload);
+
+    msg_destroy(request);
 
     if (done > 0) {
       return
