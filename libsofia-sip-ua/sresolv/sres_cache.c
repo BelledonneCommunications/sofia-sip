@@ -45,7 +45,10 @@ typedef unsigned _int16 uint16_t;
 typedef unsigned _int32 uint32_t;
 #endif
 #endif
+
 #if HAVE_NETINET_IN_H
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #endif
 
