@@ -108,6 +108,8 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
 				      url_t const *aor,
 				      int only_default);
 
+int outbound_connect_gruuize(struct outbound_connect *oc, sip_t const *sip);
+
 void outbound_connect_start_keepalive(struct outbound_connect *ru,
 				    unsigned interval,
 				    nta_outgoing_t *register_trans);
@@ -468,6 +470,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 					  nh->nh_nua->nua_registrations);
       /* Try first time without contact if we are not natifying */
       oc->oc_add_contact = !oc->oc_prefs.natify;
+      oc->oc_add_contact = 1;	/* Try always with contact */
     }
 
     if (terminating)
@@ -697,6 +700,9 @@ int process_response_to_register(nua_handle_t *nh,
   }
 
   if (!du->du_terminating && status < 300) {
+    if (sip->sip_to->a_url->url_type == url_sips)
+      oc->oc_secure = 1;
+
     if (!oc->oc_prev) {
       /* Add to the list of registrations */
       if ((oc->oc_next = nh->nh_nua->nua_registrations))
@@ -705,6 +711,11 @@ int process_response_to_register(nua_handle_t *nh,
       nh->nh_nua->nua_registrations = oc;
     }
   }
+
+  if (!du->du_terminating && status < 300 && oc->oc_prefs.gruuize) {
+    outbound_connect_gruuize(oc, sip);
+  }
+
 
   if (!du->du_terminating && status < 300 && oc->oc_nat_detected)
     outbound_connect_start_keepalive(oc, 15, orq);
@@ -1198,6 +1209,48 @@ int outbound_connect_nat_detect(outbound_connect *oc,
   su_free(home, nat_port);
 
   return 2;
+}
+
+/* ---------------------------------------------------------------------- */
+
+/** Convert "gruu" parameter returned by registrar to Contact header. */
+int outbound_connect_gruuize(struct outbound_connect *oc, sip_t const *sip)
+{
+  char *gruu;
+  sip_contact_t *m;
+
+  if (oc->oc_rcontact == NULL)
+    return -1;
+
+  for (m = sip->sip_contact; m; m = m->m_next) {
+    if (url_cmp_all(oc->oc_rcontact->m_url, m->m_url) == 0)
+      break;
+  }
+
+  if (m == NULL)
+    return -1;
+
+  gruu = (char *)msg_header_find_param(m->m_common, "gruu=");
+
+  if (gruu == NULL || gruu[0] == '\0')
+    return -1;
+
+  gruu = msg_unquote_dup(NULL, gruu);
+
+  if (!gruu)
+    return -1;
+
+  if (oc->oc_gruu)
+    msg_header_free((su_home_t *)oc->oc_owner, (void *)oc->oc_gruu);
+
+  oc->oc_gruu = sip_contact_format((su_home_t *)oc->oc_owner, "<%s>", gruu);
+
+  su_free(NULL, gruu);
+
+  if (oc->oc_gruu < 0)
+    return -1;
+
+  return 0;
 }
 
 /* ---------------------------------------------------------------------- */
