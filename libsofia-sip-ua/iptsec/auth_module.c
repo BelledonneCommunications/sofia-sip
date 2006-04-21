@@ -1621,6 +1621,7 @@ int auth_validate_digest_nonce(auth_mod_t *am,
   return 0;
 }
 
+#if HAVE_SOFIA_NTLM
 /** Find a NTLM credential header with matching realm and opaque. */
 msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
 				  char const *realm,
@@ -1760,7 +1761,7 @@ msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth,
 
   return NULL;
 }
-
+#endif /* HAVE_SOFIA_NTLM */
 
 
 /* ====================================================================== */

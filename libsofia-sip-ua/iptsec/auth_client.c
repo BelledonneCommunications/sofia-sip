@@ -108,7 +108,7 @@ static msg_header_t *auc_digest_authorization(auth_client_t *ca,
 					      char const *method, 
 					      url_t const *url, 
 					      msg_payload_t const *body);
-#if notyet
+#if HAVE_SOFIA_NTLM
 static msg_header_t *auc_ntlm_authorization(auth_client_t *ca, 
 					    su_home_t *h,
 					    char const *method, 
@@ -240,7 +240,7 @@ int ca_challenge(auth_client_t *ca,
   else if (strcasecmp(scheme, "Digest") == 0) {
     ca->ca_authorize = auc_digest_authorization;
   }
-#if notyet
+#if HAVE_SOFIA_NTLM
   else if (strcasecmp(scheme, "NTLM") == 0) {
     ca->ca_authorize = auc_ntlm_authorization;
   }
