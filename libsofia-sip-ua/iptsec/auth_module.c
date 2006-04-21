@@ -789,6 +789,8 @@ void auth_info_digest(auth_mod_t *am,
 }
 
 
+#if HAVE_SOFIA_NTLM
+
 /* ====================================================================== */
 /* NTLM authentication scheme */
 
@@ -1027,6 +1029,8 @@ void auth_info_ntlm(auth_mod_t *am,
   }
 }
 
+
+#endif /* HAVE_SOFIA_NTLM */
 
 /* ====================================================================== */
 /* Password database */

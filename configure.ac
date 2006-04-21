@@ -81,6 +81,16 @@ else
   AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
 fi
 
+dnl Disable NTLM support by default
+AC_ARG_ENABLE(ntlm,
+[  --enable-ntlm               enable NTLM support (disabled)],
+ , enable_ntlm=no)
+
+if test x$enable_ntlm != xno ; then
+  AC_DEFINE([HAVE_SOFIA_NTLM], 1, [Define as 1 if we use NTLM library])
+fi
+
+
 AC_DEFINE([HAVE_SRTP], 0, [Define as 1 if we use SRTP])
 AC_DEFINE([HAVE_UPNP], 0, [Define as 1 if we use UPnP])
 

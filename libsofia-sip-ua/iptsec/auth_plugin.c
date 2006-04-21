@@ -60,13 +60,18 @@ static char const __func__[] = __FUNCTION__;
 extern auth_scheme_t auth_scheme_basic[];
 extern auth_scheme_t auth_scheme_digest[];
 extern auth_scheme_t auth_scheme_delayed[];
+#if HAVE_SOFIA_NTLM
+extern auth_scheme_t auth_scheme_ntlm[];
+#endif
 
 enum { N = 32 };
 
 static auth_scheme_t *schemes[N] = {
   auth_scheme_basic,
   auth_scheme_digest,
+#if HAVE_SOFIA_NTLM
   auth_scheme_ntlm,
+#endif
   auth_scheme_delayed
 };
 
@@ -135,8 +140,10 @@ auth_mod_t *auth_mod_create(su_root_t *root,
       bscheme = auth_scheme_basic;
     else if (strcasecmp(base, "Digest") == 0) 
       bscheme = auth_scheme_digest;
+#if HAVE_SOFIA_NTLM
     else if (strcasecmp(base, "NTLM") == 0) 
       bscheme = auth_scheme_ntlm;
+#endif
 
     if (base == NULL || bscheme) {
       int i;
