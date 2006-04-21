@@ -58,6 +58,9 @@ tag_typedef_t srestag_any = NSTAG_TYPEDEF(*);
 tag_typedef_t srestag_resolv_conf = STRTAG_TYPEDEF(resolv_conf);
 tag_typedef_t srestag_resolv_conf_ref = REFTAG_TYPEDEF(srestag_resolv_conf);
 
+tag_typedef_t srestag_cache = PTRTAG_TYPEDEF(cache);
+tag_typedef_t srestag_cache_ref = REFTAG_TYPEDEF(srestag_cache);
+
 typedef struct sres_sofia_s sres_sofia_t;
 typedef struct sres_sofia_register_s sres_sofia_register_t;
 
@@ -98,6 +101,7 @@ sres_resolver_create(su_root_t *root,
 {
   sres_resolver_t *res;
   sres_sofia_t *srs;
+  sres_cache_t *cache = NULL;
   ta_list ta;
 
   if (root == NULL)
@@ -106,10 +110,11 @@ sres_resolver_create(su_root_t *root,
   ta_start(ta, tag, value);
   tl_gets(ta_args(ta),
 	  SRESTAG_RESOLV_CONF_REF(conf_file_path),
+	  SRESTAG_CACHE_REF(cache),
 	  TAG_END());
   ta_end(ta);
 
-  res = sres_resolver_new_with_cache(conf_file_path, NULL, NULL);
+  res = sres_resolver_new_with_cache(conf_file_path, cache, NULL);
   srs = res ? su_zalloc(0, sizeof *srs) : NULL;
 
   if (res && srs) {

@@ -130,6 +130,10 @@ HTABLE_PROTOS(sres_htable, ht, sres_rr_hash_entry_t);
 /* ---------------------------------------------------------------------- */
 /* Public functions */
 
+/** Create a resolver cache object.
+ *
+ * @param n initial size of cache
+ */
 sres_cache_t *sres_cache_new(int n)
 {
   sres_cache_t *cache = su_home_new(sizeof *cache);

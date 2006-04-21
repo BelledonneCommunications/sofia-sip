@@ -56,6 +56,11 @@ extern tag_typedef_t srestag_resolv_conf;
 extern tag_typedef_t srestag_resolv_conf_ref;
 #define SRESTAG_RESOLV_CONF_REF(x) srestag_resolv_conf_ref, tag_str_vr(&(x))
 
+extern tag_typedef_t srestag_cache;
+#define SRESTAG_CACHE(x) srestag_cache, tag_ptr_v((x))
+extern tag_typedef_t srestag_cache_ref;
+#define SRESTAG_CACHE_REF(x) srestag_cache_ref, tag_ptr_vr(&(x), (x))
+
 /** Create a resolver object using @a root reactor. */
 sres_resolver_t *sres_resolver_create(su_root_t *root, 
 				      char const *resolv_conf,
