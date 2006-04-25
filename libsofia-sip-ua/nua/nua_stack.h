@@ -473,6 +473,13 @@ sip_contact_t const *nua_contact_by_aor(nua_t *nua,
 					url_t const *aor,
 					int only_default);
 
+int nua_add_contact_by_aor(nua_handle_t *nh,
+			   url_t const *aor,
+			   msg_t *msg, 
+			   sip_t *sip,
+			   int add_contact,
+			   int add_service_route);
+
 msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh, 
 			nta_incoming_t *irq,
 			int status, char const *phrase,

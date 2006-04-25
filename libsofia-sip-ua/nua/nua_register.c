@@ -124,6 +124,8 @@ int outbound_connect_process_options(struct outbound_connect *usages,
 
 sip_contact_t const *outbound_connect_contact(outbound_connect const *ru);
 
+sip_route_t const *outbound_connect_route(outbound_connect const *ru);
+
 char const * const outbound_connect_content_type;
 nua_usage_class const *nua_outbound_connect;
 
@@ -936,6 +938,39 @@ sip_contact_t const *nua_contact_by_aor(nua_t *nua,
   oc = outbound_connect_by_aor(oc, aor, only_default);
 
   return outbound_connect_contact(oc);
+}
+
+/** Add a Contact (and Route) header to initial request */
+int nua_add_contact_by_aor(nua_handle_t *nh,
+			   url_t const *aor,
+			   msg_t *msg, 
+			   sip_t *sip,
+			   int add_contact,
+			   int add_service_route)
+{
+  outbound_connect *oc;
+
+  if (nh == NULL || msg == NULL)
+    return -1;
+
+  oc = outbound_connect_by_aor(nh->nh_nua->nua_registrations, aor, 0);
+
+  if (oc == NULL)
+    return -1;
+
+  if (add_contact) {
+    sip_contact_t const *m = outbound_connect_contact(oc);
+    if (msg_header_add_dup(msg, (msg_pub_t *)sip, (void const *)m) < 0)
+      return -1;
+  }
+
+  if (add_service_route) {
+    sip_route_t const *sr = outbound_connect_route(oc);
+    if (msg_header_add_dup(msg, (msg_pub_t *)sip, (void const *)sr) < 0)
+      return -1;
+  }
+
+  return 0;
 }
 
 /** @internal Return a string descibing our features. */
@@ -1763,8 +1798,8 @@ int outbound_connects_from_via(struct outbound_connect **list,
 }
 
 outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
-				      url_t const *aor,
-				      int only_default)
+					  url_t const *aor,
+					  int only_default)
 {
   int secure = aor && aor->url_type == url_sips;
   outbound_connect const *oc, *public = NULL, *any = NULL;
@@ -1773,7 +1808,7 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
     if (only_default && !oc->oc_default)
       continue;
 
-    if (!oc->oc_via)
+    if (!oc->oc_default && !oc->oc_registered)
       continue;
 
     if (public == NULL && oc->oc_public)
@@ -1809,6 +1844,11 @@ sip_contact_t const *outbound_connect_contact(outbound_connect const *oc)
     return oc->oc_gruu;
   else
     return oc->oc_dcontact;
+}
+
+sip_route_t const *outbound_connect_route(outbound_connect const *oc)
+{
+  return oc ? oc->oc_route : NULL;
 }
 
 /* ---------------------------------------------------------------------- */
