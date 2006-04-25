@@ -366,6 +366,13 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 
   cr->cr_msg = msg_ref_create(du->du_msg);
 
+  {
+    /* Remove initial route */
+    sip_t *sip = sip_object(cr->cr_msg);
+    if (sip->sip_route)
+      msg_header_remove(cr->cr_msg, (msg_pub_t*)sip, (void *)sip->sip_route);
+  }
+
   msg = nua_creq_msg(nua, nh, cr, 1,
 			 SIP_METHOD_SUBSCRIBE,
 			 NUTAG_USE_DIALOG(1),
