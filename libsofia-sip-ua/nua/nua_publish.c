@@ -60,10 +60,10 @@ struct publish_usage {
 };
 
 static char const *nua_publish_usage_name(nua_dialog_usage_t const *du);
-static int nua_publish_usage_add(nua_handle_t *nh, 
+static int nua_publish_usage_add(nua_handle_t *nh,
 				  nua_dialog_state_t *ds,
 				  nua_dialog_usage_t *du);
-static void nua_publish_usage_remove(nua_handle_t *nh, 
+static void nua_publish_usage_remove(nua_handle_t *nh,
 				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du);
 
@@ -82,8 +82,8 @@ char const *nua_publish_usage_name(nua_dialog_usage_t const *du)
   return "publish";
 }
 
-static 
-int nua_publish_usage_add(nua_handle_t *nh, 
+static
+int nua_publish_usage_add(nua_handle_t *nh,
 			   nua_dialog_state_t *ds,
 			   nua_dialog_usage_t *du)
 {
@@ -93,8 +93,8 @@ int nua_publish_usage_add(nua_handle_t *nh,
   return 0;
 }
 
-static 
-void nua_publish_usage_remove(nua_handle_t *nh, 
+static
+void nua_publish_usage_remove(nua_handle_t *nh,
 			       nua_dialog_state_t *ds,
 			       nua_dialog_usage_t *du)
 {
@@ -108,9 +108,8 @@ void nua_publish_usage_remove(nua_handle_t *nh,
 /* ======================================================================== */
 /* PUBLISH */
 
-int
-nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
-		   int refresh, tagi_t const *tags);
+static int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+			      int refresh, tagi_t const *tags);
 
 static int process_response_to_publish(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
@@ -206,10 +205,10 @@ int nua_stack_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   return nua_stack_publish2(nua, nh, e, 0, tags);
 }
 
-int
-nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
-		   int refresh,
-		   tagi_t const *tags)
+static
+int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+		       int refresh,
+		       tagi_t const *tags)
 {
   nua_dialog_usage_t *du;
   struct publish_usage *pu;
@@ -258,12 +257,13 @@ nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   }
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count || refresh,
-			 SIP_METHOD_PUBLISH,
-			 NUTAG_ADD_CONTACT(0),
-			 TAG_NEXT(tags));
+		     SIP_METHOD_PUBLISH,
+		     NUTAG_ADD_CONTACT(0),
+		     TAG_NEXT(tags));
+
   sip = sip_object(msg);
 
-  du->du_terminating = 
+  du->du_terminating =
     e != nua_r_publish ||
     (sip && sip->sip_expires && sip->sip_expires->ex_delta == 0);
 
@@ -280,7 +280,7 @@ nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     pu->pu_body = osip->sip_payload;
   }
 
-  cr->cr_orq = 
+  cr->cr_orq =
     nta_outgoing_mcreate(nua->nua_nta,
 			 process_response_to_publish, nh, NULL,
 			 msg,
@@ -306,14 +306,14 @@ nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 }
 
 
-static void 
+static void
 restart_publish(nua_handle_t *nh, tagi_t *tags)
 {
   nua_creq_restart(nh, nh->nh_cr, process_response_to_publish, tags);
 }
 
 
-static 
+static
 int process_response_to_publish(nua_handle_t *nh,
 				nta_outgoing_t *orq,
 				sip_t const *sip)
@@ -352,11 +352,11 @@ int process_response_to_publish(nua_handle_t *nh,
     }
     else if (retry && saved_retry_count < NH_PGET(nh, retry_count)) {
       msg_t *response = nta_outgoing_getresponse(orq);
-      nua_stack_event(nh->nh_nua, nh, response, cr->cr_event, 
+      nua_stack_event(nh->nh_nua, nh, response, cr->cr_event,
       		100, "Trying re-PUBLISH",
       		TAG_END());
       nua_creq_deinit(cr, orq);
-      nua_stack_publish2(nh->nh_nua, nh, cr->cr_event, 1, NULL); 
+      nua_stack_publish2(nh->nh_nua, nh, cr->cr_event, 1, NULL);
       cr->cr_retry_count = saved_retry_count;
       return 0;
     }
