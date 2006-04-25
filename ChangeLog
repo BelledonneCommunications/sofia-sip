@@ -1,3 +1,30 @@
+2006-04-25  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added compilation and run-time checks for MSG_TRUNC.
+
+    M ./libsofia-sip-ua/tport/tport_internal.h -2 +3
+    M ./libsofia-sip-ua/tport/tport_threadpool.c -1 +1
+    M ./libsofia-sip-ua/tport/tport_type_udp.c -4 +34
+    M ./m4/sac-su2.m4 +5
+
+  * Fixed #includes in sresolv files.
+
+    M ./libsofia-sip-ua/sresolv/sres_blocking.c +2
+    M ./libsofia-sip-ua/sresolv/sres_cache.c +3
+    M ./libsofia-sip-ua/sresolv/test_sresolv.c +9
+
+  * Fixed syntax error with G_DEFINE_TYPE(NuaGlib).
+
+    M ./libsofia-sip-ua-glib/nua-glib/nua_glib.c -1 +1
+
+  * Added --with sctp and --without glib to sofia-sip.spec.in.
+
+    M ./packages/sofia-sip.spec.in -3 +10
+
+  * Renumbered test case NUA-9.1.2 in test_nua.c
+
+    M ./libsofia-sip-ua/nua/test_nua.c -2 +2
+
 2006-04-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Not trying to set up stun transport unless we have stun server configured.
