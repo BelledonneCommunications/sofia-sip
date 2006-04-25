@@ -2360,20 +2360,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param tags   empty
  */
 
-/** @var nua_event_e::nua_r_publish
- *
- * Answer to outgoing PUBLISH.
- *
- * The PUBLISH may be sent explicitly by nua_publish() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to PUBLISH request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
 /** @var nua_event_e::nua_r_refer
  *
  * Answer to outgoing REFER.

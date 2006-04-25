@@ -118,9 +118,90 @@ static int process_response_to_publish(nua_handle_t *nh,
 
 static void refresh_publish(nua_handle_t *nh, nua_dialog_usage_t *, sip_time_t now);
 
-int
-nua_stack_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e,
-		  tagi_t const *tags)
+
+/**@fn \
+ * void nua_publish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Send PUBLISH request to publication server.
+ *
+ * Request status will be delivered to the application using #nua_r_publish
+ * event. When successful the publication will be updated periodically until
+ * nua_unpublish() is called or handle is destroyed. Note that the periodic
+ * updates and unpublish do not include the original message body nor the @b
+ * Content-Type header. Instead, the periodic update will include the @b
+ * SIP-If-Match header, which was generated from the latest @b SIP-ETag
+ * header received in response to PUBLISH request.
+ *
+ * The handle used for publication cannot be used for any other purposes.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return
+ *    nothing
+ *
+ * @par Related Tags:
+ *    NUTAG_URL() \n
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_publish
+ */
+
+/** @var nua_event_e::nua_r_publish
+ *
+ * Answer to outgoing PUBLISH.
+ *
+ * The PUBLISH may be sent explicitly by nua_publish() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to PUBLISH request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+/**@fn \
+ * void nua_unpublish(nua_handle_t *nh, \
+ *                    tag_type_t tag, tag_value_t value, ...);
+ *
+ * Send un-PUBLISH request to publication server.
+ *
+ * Request status will be delivered to the application using
+ * #nua_r_unpublish event. The handle used for un-publication
+ * cannot be used for any other purposes.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return
+ *    nothing
+ *
+ * @par Related Tags:
+ *    NUTAG_URL() \n
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_publish
+ */
+
+/** @var nua_event_e::nua_r_unpublish
+ *
+ * Answer to outgoing un-PUBLISH.
+ *
+ * The PUBLISH may be sent explicitly by nua_publish() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to PUBLISH request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
+int nua_stack_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+		      tagi_t const *tags)
 {
   return nua_stack_publish2(nua, nh, e, 0, tags);
 }
