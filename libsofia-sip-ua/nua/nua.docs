@@ -1968,6 +1968,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * #nua_i_method           \n
  * #nua_i_notify           \n
  * #nua_i_options          \n
+ * #nua_i_prack            \n
  * #nua_i_publish          \n
  * #nua_i_refer            \n
  * #nua_i_subscribe        \n
@@ -1984,16 +1985,18 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *
  * @par SIP responses:
  * #nua_r_bye         \n
- * #nua_r_chat        \n
+ * #nua_r_cancel      \n
  * #nua_r_info        \n
  * #nua_r_invite      \n
  * #nua_r_message     \n
  * #nua_r_notify      \n
  * #nua_r_options     \n
+ * #nua_r_prack       \n
  * #nua_r_publish     \n
  * #nua_r_refer       \n
  * #nua_r_register    \n
  * #nua_r_subscribe   \n
+ * #nua_r_unpublish   \n
  * #nua_r_unregister  \n
  * #nua_r_unsubscribe \n
  * #nua_r_update
