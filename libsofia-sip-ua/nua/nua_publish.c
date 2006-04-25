@@ -226,7 +226,14 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
 
-  if (!refresh)
+  if (e == nua_r_unpublish) {
+    du = nua_dialog_usage_get(nh->nh_ds, nua_publish_usage, NULL);
+    if (du)
+      refresh = 1;
+    else
+      du = nua_dialog_usage_add(nh, nh->nh_ds, nua_publish_usage, NULL);
+  }
+  else if (!refresh)
     du = nua_dialog_usage_add(nh, nh->nh_ds, nua_publish_usage, NULL);
   else
     du = nua_dialog_usage_get(nh->nh_ds, nua_publish_usage, NULL);
@@ -362,8 +369,8 @@ int process_response_to_publish(nua_handle_t *nh,
     }
     else if (invalid_expiration) {
       msg_t *response = nta_outgoing_getresponse(orq);
-      nua_stack_event(nh->nh_nua, nh, response, cr->cr_event, 
-      		500, "Invalid Expiration Time",
+      nua_stack_event(nh->nh_nua, nh, response, cr->cr_event,
+      		900, "Received Invalid Expiration Time",
       		TAG_END());
       nua_dialog_usage_remove(nh, nh->nh_ds, cr->cr_usage);
       nua_creq_deinit(cr, orq);
