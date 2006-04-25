@@ -87,6 +87,8 @@ tport_vtable_t const tport_udp_vtable =
   tport_send_dgram,
 };
 
+static void tport_check_trunc(tport_t *tp, su_addrinfo_t *ai);
+
 int tport_udp_init_primary(tport_primary_t *pri,
 			   tp_name_t tpn[1],
 			   su_addrinfo_t *ai,
@@ -144,9 +146,40 @@ int tport_udp_init_primary(tport_primary_t *pri,
 
   pri->pri_primary->tp_events = events;
 
+  tport_check_trunc(pri->pri_primary, ai);
+
   tport_stun_server_add_socket(pri->pri_primary);
 
   return 0;
+}
+
+/** Runtime test making sure MSG_TRUNC work as expected */
+static void tport_check_trunc(tport_t *tp, su_addrinfo_t *ai)
+{
+#if HAVE_MSG_TRUNC
+  int n;
+  char buffer[2];
+  su_sockaddr_t su[1];
+  socklen_t sulen = sizeof su;
+
+  n = sendto(tp->tp_socket,
+	     "TEST", 4, 0,
+	     (void *)ai->ai_addr, ai->ai_addrlen);
+
+  for (;;) {
+    n = recvfrom(tp->tp_socket, buffer, sizeof buffer, MSG_TRUNC, 
+		 (void *)&su, &sulen);
+
+    if (n > sizeof buffer) {
+      tp->tp_trunc = 1;
+      return;
+    }
+
+    /* XXX - check that su and tp->tp_addrinfo->ai_addr match */
+
+    return;
+  }
+#endif
 }
 
 /** Receive datagram.
@@ -182,11 +215,9 @@ int tport_recv_dgram(tport_t *self)
     recv(s, sample, sizeof sample, 0);
     N = 0;
   }
-#if MSG_TRUNC
-  else if ((N = su_getmsgsize(s)) < 0)
+  else if (self->tp_trunc ? 0 : (N = su_getmsgsize(s)) < 0)
     SU_DEBUG_1(("%s: su_getmsgsize(): %s (%d)\n", __func__, 
 		su_strerror(su_errno()), su_errno()));
-#endif
   else if ((sample[0] & 0xf8) == 0xf8) {
     return tport_recv_comp_dgram(self, N); /* SigComp */
   }
@@ -396,4 +427,3 @@ int tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
   return 0;
 }
 #endif
-

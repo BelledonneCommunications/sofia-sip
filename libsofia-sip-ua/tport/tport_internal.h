@@ -36,6 +36,7 @@
 #ifndef SU_H
 #include <sofia-sip/su.h>
 #endif
+
 #include <sofia-sip/su_uniqueid.h>
 
 #ifndef MSG_ADDR_H
@@ -64,8 +65,7 @@
 #define MSG_NOSIGNAL (0)
 #endif
 
-#if !defined(MSG_TRUNC) || defined(SU_HAVE_WINSOCK)
-#undef MSG_TRUNC
+#if !HAVE_MSG_TRUNC
 #define MSG_TRUNC (0)
 #endif
 
@@ -136,6 +136,7 @@ struct tport_s {
   unsigned            tp_send_close:2; 
   unsigned            tp_has_keepalive:1;
   unsigned            tp_has_stun_server:1;
+  unsigned            tp_trunc:1;
   unsigned:0;
 
   tport_t *tp_left, *tp_right, *tp_dad; /**< Links in tport tree */

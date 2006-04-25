@@ -146,6 +146,11 @@ AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
 #include <sys/types.h>
 #include <sys/socket.h>])
 
+AC_CHECK_DECL([MSG_TRUNC],
+AC_DEFINE([HAVE_MSG_TRUNC],1,[Define to 1 if you have MSG_TRUNC flag]),,[
+#include <sys/types.h>
+#include <sys/socket.h>])
+
 AC_CACHE_CHECK([for struct addrinfo],
 [ac_cv_struct_addrinfo],[
 ac_cv_struct_addrinfo=no

@@ -441,7 +441,7 @@ int thrp_udp_recv(tport_threadpool_t *thrp, thrp_udp_deliver_t *tpd)
     recv(s, sample, sizeof sample, 0);
     N = 0;
   }
-#if !MSG_TRUNC
+#if !HAVE_MSG_TRUNC
   else if ((N = su_getmsgsize(tp->tp_socket)) < 0)
     ;
 #endif
