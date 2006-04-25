@@ -1,3 +1,108 @@
+2006-04-20  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Not trying to set up stun transport unless we have stun server configured.
+  Files: nua/nua_register.c.
+
+    M ./libsofia-sip-ua/nua/Makefile.am +1
+    M ./libsofia-sip-ua/nua/nua_register.c -6 +16
+
+  * Fixed auth-int authentication for INVITE requests.
+  Files: nua/nua_stack.c, nua/nua_session.c, iptsec/auth_client.c.
+
+    M ./libsofia-sip-ua/iptsec/auth_client.c +6
+    M ./libsofia-sip-ua/nua/nua_stack.c -4 +5
+
+  * Added outbound_connect_gruuize() - generate gruu from gruu paramter in our contact.
+  File: nua/nua_register.c.
+
+    M ./libsofia-sip-ua/nua/nua_register.c +53
+
+  * Added "SSL_VERIFY_PEER" environment variable.
+
+    M ./libsofia-sip-ua/tport/tport_tls.c -2 +2
+
+  * Restored SCTP in tport_type_sctp.c. Increased maximum message size to 64 K.
+
+    M ./libsofia-sip-ua/tport/tport_type_sctp.c -7 +7
+
+  * Using SSL_VERIFY_NONE - do not ask for client certificate.
+  It looks like openssl does not allow for client not to have certificate.
+
+    M ./libsofia-sip-ua/tport/tport_tls.c -1 +2
+
+  * More memory management problems in stun.
+
+    M ./libsofia-sip-ua/stun/stun_common.c -1 +1
+
+  * Fixed memory management problems in stun.
+
+    M ./libsofia-sip-ua/stun/stun.c -1
+
+  * Fixed blunder in error record creation.
+  sres_create_error_rr() in in sres.c.
+
+    M ./libsofia-sip-ua/sresolv/sres.c -2 +4
+
+  * Using outbound keepalive interval of 15 seconds.
+  outbound_connect_start_keepalive() in nua/nua_register.c
+
+    M ./libsofia-sip-ua/nua/nua_register.c -2 +1
+
+  * Added nta_agent_init_sigcomp() and nta_agent_deinit_sigcomp().
+
+    M ./libsofia-sip-ua/nta/nta.c -3 +28
+    M ./libsofia-sip-ua/nta/nta_internal.h -9 +21
+
+  * Renamed tport_try_accept_sigcomp() as tport_sigcomp_accept_incomplete().
+
+    M ./libsofia-sip-ua/tport/tport.c -1 +1
+    M ./libsofia-sip-ua/tport/tport_internal.h -1 +1
+    M ./libsofia-sip-ua/tport/tport_stub_sigcomp.c -1 +1
+
+  * Maded tport stun plugin pointer private.
+
+    M ./libsofia-sip-ua/tport/tport_stub_stun.c -2 +7
+
+  * Updated SCTP semantics to use "TCP".
+
+    M ./libsofia-sip-ua/tport/tport.c -3 +8
+    M ./libsofia-sip-ua/tport/tport_type_sctp.c -6 +20
+
+  * Fixed C++ compilation on <sres.h>.
+
+  * Fixed outbound problems.
+  Not unregistering contacts with instance-id and reg-id.
+  Avoiding crash when processing timeout responses.
+
+    M ./libsofia-sip-ua/nua/nua_register.c -16 +31
+
+  * Addeed --enable-sctp.
+
+    M ./m4/sac-tport.m4 -4 +6
+    M ./packages/sofia-sip.spec.in +1
+
+  * Updated compression interface in tport.
+  Added tport_compressor_t type, tport_delivered_with_comp().
+  Removed tpac_sigcomp_accept() and tport_delivered_using_udvm().
+
+    M ./libsofia-sip-ua/tport/sofia-sip/tport.h -10 +8
+    M ./libsofia-sip-ua/tport/sofia-sip/tport_plugins.h -6 +93
+    M ./libsofia-sip-ua/tport/tport.c -24 +11
+    M ./libsofia-sip-ua/tport/tport_internal.h -15 +10
+    M ./libsofia-sip-ua/tport/tport_stub_sigcomp.c -114 +53
+
+  * Removed direct SigComp stuff from nta.c.
+  Added nta_compressor_vtable.
+
+    M ./libsofia-sip-ua/nta/nta.c -209 +100
+    M ./libsofia-sip-ua/nta/nta_internal.h +33
+
+  * Fixed aor/tport handling for sip/sips cases.
+
+    M ./libsofia-sip-ua/nua/nua_register.c -4 +13
+
+  * Disabled ntlm client for now.
+
 2006-04-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Removed - from ntlm variable names (mp)
