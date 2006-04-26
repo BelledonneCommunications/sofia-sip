@@ -1032,6 +1032,9 @@ void unregister_expires_contacts(msg_t *msg, sip_t *sip)
   sip_contact_t *m;
   int unregister_all;
 
+  if (msg == NULL || sip == NULL)
+    return;
+
   /* Remove payload */
   while (sip->sip_payload)
     sip_header_remove(msg, sip, (sip_header_t *)sip->sip_payload);
