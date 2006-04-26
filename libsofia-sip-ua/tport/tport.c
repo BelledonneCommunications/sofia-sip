@@ -1052,6 +1052,7 @@ int tport_get_params(tport_t const *self,
   int n;
   tport_params_t const *tpp;
   tport_primary_t const *pri = self->tp_pri;
+  int connect;
 
   if (self == NULL)
     return su_seterrno(EINVAL);
@@ -1059,10 +1060,14 @@ int tport_get_params(tport_t const *self,
   tpp = self->tp_params;
   ta_start(ta, tag, value);
 
+  connect = tpp->tpp_conn_orient 
+    /* Only dgram primary is *not* connection-oriented */
+    || !tport_is_primary(self) || !tport_is_dgram(self);
+
   n = tl_tgets(ta_args(ta),
 	       TPTAG_MTU(tpp->tpp_mtu),
 	       TPTAG_REUSE(self->tp_reusable),
-	       TPTAG_CONNECT(tpp->tpp_conn_orient),
+	       TPTAG_CONNECT(connect),
 	       TPTAG_QUEUESIZE(tpp->tpp_qsize),
 	       TPTAG_IDLE(tpp->tpp_idle),
 	       TPTAG_TIMEOUT(tpp->tpp_timeout),
@@ -1141,8 +1146,7 @@ int tport_set_params(tport_t *self,
     tpp->tpp_qsize = 1000;
 
   /* Currently only primary UDP transport can *not* be connection oriented */ 
-  tpp->tpp_conn_orient = connect 
-    || !tport_is_primary(self) || !tport_is_dgram(self);
+  tpp->tpp_conn_orient = connect; 
   tpp->tpp_sdwn_error = sdwn_error;
   self->tp_reusable = reusable;
   tpp->tpp_stun_server = stun_server;
