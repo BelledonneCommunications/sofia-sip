@@ -434,7 +434,6 @@ int tport_udp_init_primary(tport_primary_t *,
 			   char const **return_culprit);
 void tport_udp_deinit_primary(tport_primary_t *);
 int tport_recv_dgram(tport_t *self);
-int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N);
 int tport_send_dgram(tport_t const *self, msg_t *msg,
 		     msg_iovec_t iov[], int iovused);
 int tport_udp_error(tport_t const *self, su_sockaddr_t name[1]);
@@ -505,7 +504,9 @@ struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self);
 
 void tport_sigcomp_accept_incomplete(tport_t *self, msg_t *msg);
 
-int tport_recv_comp_dgram(tport_t *self, int N);
+int tport_recv_comp_dgram(tport_t const *self,
+			  tport_compressor_t *sc,
+			  msg_t **in_out_msg);
 
 int tport_send_comp(tport_t const *self,
 		    msg_t *msg, 

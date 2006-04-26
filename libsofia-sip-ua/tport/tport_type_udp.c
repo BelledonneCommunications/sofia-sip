@@ -51,11 +51,18 @@
 /* ---------------------------------------------------------------------- */
 /* UDP */
 
+static
+int tport_udp_init_client(tport_primary_t *pri,
+			  tp_name_t tpn[1],
+			  su_addrinfo_t *ai,
+			  tagi_t const *tags,
+			  char const **return_culprit);
+
 tport_vtable_t const tport_udp_client_vtable =
 {
   "udp", tport_type_client,
   sizeof (tport_primary_t),
-  NULL,
+  tport_udp_init_client,
   NULL,
   NULL,
   NULL,
@@ -146,10 +153,23 @@ int tport_udp_init_primary(tport_primary_t *pri,
 
   pri->pri_primary->tp_events = events;
 
+  tport_init_compressor(pri->pri_primary, tpn->tpn_comp, tags);
+
   tport_check_trunc(pri->pri_primary, ai);
 
   tport_stun_server_add_socket(pri->pri_primary);
 
+  return 0;
+}
+
+static
+int tport_udp_init_client(tport_primary_t *pri,
+			  tp_name_t tpn[1],
+			  su_addrinfo_t *ai,
+			  tagi_t const *tags,
+			  char const **return_culprit)
+{
+  pri->pri_primary->tp_conn_orient = 1;
   return 0;
 }
 
@@ -186,12 +206,18 @@ static void tport_check_trunc(tport_t *tp, su_addrinfo_t *ai)
  *
  * @retval -1 error
  * @retval 0  end-of-stream  
+ * @retval 1  normal receive (should never happen)
+ * @retval 2  incomplete recv, call me again (should never happen)
+ * @retval 3  STUN keepalive, ignore
  */
 int tport_recv_dgram(tport_t *self)
 {
-  int N;
-  int s = self->tp_socket;
-  unsigned char sample[2];
+  msg_t *msg;
+  int n, veclen;
+  su_sockaddr_t *from;
+  socklen_t *fromlen;
+  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
+  uint8_t sample[1];
 
   /* Simulate packet loss */
   if (self->tp_params->tpp_drop && 
@@ -201,77 +227,51 @@ int tport_recv_dgram(tport_t *self)
     return 0;
   }
 
-  /* Peek for first two bytes in message:
-     determine if this is stun, sigcomp or sip
-  */
-  N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
+  assert(self->tp_msg == NULL);
 
-  if (N < 0) {
-    if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
-      N = 0;
-  }
-  else if (N <= 1) {
-    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "tport_recv_dgram", self, N));
-    recv(s, sample, sizeof sample, 0);
-    N = 0;
-  }
-  else if (self->tp_trunc ? 0 : (N = su_getmsgsize(s)) < 0)
-    SU_DEBUG_1(("%s: su_getmsgsize(): %s (%d)\n", __func__, 
-		su_strerror(su_errno()), su_errno()));
-  else if ((sample[0] & 0xf8) == 0xf8) {
-    return tport_recv_comp_dgram(self, N); /* SigComp */
-  }
-  else if (sample[0] == 0 || sample[0] == 1) {
-    return tport_recv_stun_dgram(self, N); /* STUN message */
-  }
-  else
-    return tport_recv_dgram_r(self, &self->tp_msg, N);
-
-  return N;
-}
-
-/** Receive datagram statelessly.
- *
- * @retval -1 error
- * @retval 0  end-of-stream  
- * @retval 1  normal receive (should never happen)
- * @retval 2  incomplete recv, recv again (should never happen)
- * @retval 3  STUN keepalive, ignore
- */
-int tport_recv_dgram_r(tport_t const *self, msg_t **mmsg, int N)
-{
-  msg_t *msg;
-  int n, veclen;
-  su_sockaddr_t *from;
-  socklen_t *fromlen;
-  msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
-
-  assert(*mmsg == NULL);
-
-  veclen = tport_recv_iovec(self, mmsg, iovec, N, 1);
+  veclen = tport_recv_iovec(self, &self->tp_msg, iovec, 65536, 1);
   if (veclen < 0)
     return -1;
 
-  msg = *mmsg;
+  msg = self->tp_msg;
 
   n = su_vrecv(self->tp_socket, iovec, veclen, 0, 
 	       from = msg_addr(msg), fromlen = msg_addrlen(msg));
+
   if (n == SOCKET_ERROR) {
     int error = su_errno();
-    msg_destroy(msg); *mmsg = NULL;
+    msg_destroy(msg); self->tp_msg = NULL;
     su_seterrno(error);
-    return -1;
+
+    if (error == EAGAIN || error == EWOULDBLOCK)
+      return 0;
+    else
+      return -1;
+  }
+  else if (n <= 1) {
+    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "tport_recv_dgram", self, n));
+    msg_destroy(msg), self->tp_msg = NULL;
+    return 0;
   }
 
   SU_CANONIZE_SOCKADDR(from);
-  assert(n <= N);		/* FIONREAD tells the size of all messages.. */
 
-  if (self->tp_master->mr_dump_file && !self->tp_pri->pri_threadpool)
+  if (self->tp_master->mr_dump_file)
     tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
 
-  msg_recv_commit(msg, n, 1);  /* Mark buffer as used */
+  *sample = *((uint8_t *)iovec[0].mv_base);
 
-  return 0;
+  /* Commit received data into buffer. This may relocate iovec contents */
+  msg_recv_commit(msg, n, 1);
+
+  if ((sample[0] & 0xf8) == 0xf8)
+    /* SigComp */
+    return tport_recv_comp_dgram(self, self->tp_comp, &self->tp_msg);
+  else if (sample[0] == 0 || sample[0] == 1)
+    /* STUN request or response */
+    return tport_recv_stun_dgram(self, &self->tp_msg);
+  else
+    return 0;
 }
 
 /** Send using su_vsend(). Map IPv4 addresses as IPv6 addresses, if needed. */

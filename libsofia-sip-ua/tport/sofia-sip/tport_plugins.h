@@ -109,9 +109,13 @@ struct tport_comp_vtable_s {
 
   void (*vsc_compartment_decref)(struct sigcomp_compartment **pointer_to_cc);
 
-  int (*vsc_sigcomp_assign)(tport_t *self, 
-			    tport_compressor_t **,
-			    struct sigcomp_compartment *);
+  int (*vsc_set_compartment)(tport_t *self,
+			     tport_compressor_t *,
+			     struct sigcomp_compartment *);
+
+  struct sigcomp_compartment *
+  (*vsc_get_compartment)(tport_t const *self,
+			 tport_compressor_t const *);
 
   int (*vsc_has_sigcomp_assigned)(tport_compressor_t const *comp);
 
@@ -146,7 +150,9 @@ struct tport_comp_vtable_s {
 				tport_compressor_t *sc,
 				msg_t *msg);
 
-  int (*vsc_recv_comp)(tport_t const *self, int N);
+  int (*vsc_recv_comp)(tport_t const *self, 
+		       tport_compressor_t *sc,
+		       msg_t **in_out_msg);
 
   int (*vsc_send_comp)(tport_t const *self,
 		       msg_t *msg, 
