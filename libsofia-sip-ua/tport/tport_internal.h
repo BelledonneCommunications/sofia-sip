@@ -481,7 +481,7 @@ typedef int const *(tport_set_f)(tport_master_t *mr,
 
 int tport_init_stun_server(tport_master_t *mr, tagi_t const *tags);
 void tport_deinit_stun_server(tport_master_t *mr);
-int tport_recv_stun_dgram(tport_t const *self, int N);
+int tport_recv_stun_dgram(tport_t const *self, msg_t **in_out_msg);
 
 int tport_stun_server_add_socket(tport_t *tp);
 int tport_stun_server_remove_socket(tport_t *tp);

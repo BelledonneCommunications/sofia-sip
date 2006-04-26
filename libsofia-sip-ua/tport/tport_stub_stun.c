@@ -36,6 +36,8 @@
 
 #define TPORT_STUN_SERVER_T stun_mini_t
 #include "tport_internal.h"
+#include "sofia-sip/msg_buffer.h"
+#include "sofia-sip/msg_addr.h"
 
 #include <assert.h>
 
@@ -118,79 +120,61 @@ int tport_stun_server_remove_socket(tport_t *tp)
   return 0;
 }
 
-/** Receive STUN datagram.
+/**Process stun messagee.
  *
  * @retval -1 error
- * @retval 0  end-of-stream  
+ * @retval 3  stun message received, ignore  
  */
-int tport_recv_stun_dgram(tport_t const *self, int N)
+int tport_recv_stun_dgram(tport_t const *self,
+			  msg_t **in_out_msg)
 {
-  int n;
-  su_sockaddr_t from[1];
-  socklen_t fromlen = sizeof(su_sockaddr_t);
-  int status = 600, retval = 3;
-  char const *error = NULL;
-  
-  unsigned char buffer[128];
-  unsigned char *dgram = buffer;
+  int retval = -1;
+  msg_t *msg;
+  uint8_t *request;
+  size_t n;
+  su_sockaddr_t *from;
+  socklen_t fromlen;
 
-  if (N > sizeof buffer)
-    dgram = malloc(N);
+  assert(in_out_msg); assert(*in_out_msg);
 
-  if (dgram == NULL)
-    dgram = buffer, N = sizeof buffer, status = 500, error = "Server Error";
+  msg = *in_out_msg;
 
-  memset(from, 0, sizeof(su_sockaddr_t));
-  n = recvfrom(self->tp_socket, (void *)dgram, N, MSG_TRUNC, 
-	       (void *)from, &fromlen);
+  request = msg_buf_committed_data(msg);
+  n = msg_buf_committed(msg);
+  from = msg_addr(msg);
+  fromlen = *msg_addrlen(msg);
 
-  if (n < 20) {
-    if (n != SOCKET_ERROR)
-      su_seterrno(EBADMSG);	/* Runt */
-    if (dgram != buffer)
-      free(dgram);
-    return -1;
+  if (n < 20 || request == NULL) {
+    su_seterrno(EBADMSG);
+    retval = -1;
   }
-
-  if (n > N) { /* Truncated? */
-    n = N;		
-    status = 500, error = "Server Error";
-  }
-
-  if (dgram[0] == 1) {
+  else if (request[0] == 1) {
     /* This is a response. */
     if (self->tp_pri->pri_vtable->vtp_stun_response) {
-      if (self->tp_pri->pri_vtable->vtp_stun_response(self, dgram, n, 
+      if (self->tp_pri->pri_vtable->vtp_stun_response(self, request, n, 
 						      from, fromlen) < 0)
 	retval = -1;
-						  
     }
-    else 
+    else
       SU_DEBUG_7(("tport(%p): recv_stun_dgram(): "
 		  "ignoring request with %u bytes\n", self, n));
   }
-  else if (dgram[0] == 0 && 
-	   self->tp_has_stun_server && 
-	   error == NULL &&
-	   self->tp_master->mr_stun_server) {
+  else if (request[0] == 0 && self->tp_master->mr_stun_server) {
     tport_stun_server_vtable_t const *vst = tport_stun_server_vtable;
     vst->vst_request(self->tp_master->mr_stun_server,
-		     self->tp_socket, dgram, n, 
+		     self->tp_socket, request, n, 
 		     (void *)from, fromlen);
   }
-  else if (dgram[0] == 0) {
-    /* This is a stun request. Respond to it. */
-
-    uint16_t elen;
-    
-    if (error == NULL)
-      status = 600, error = "Not Implemented";
-    elen = strlen(error);
+  else if (request[0] == 0) {
+    /* Respond to stun request with a simple error message. */
+    int const status = 600;
+    char const *error = "Not Implemented";
+    uint16_t elen = strlen(error);
+    uint8_t dgram[128];
 
     SU_DEBUG_7(("tport(%p): recv_stun_dgram(): "
 		"responding %u %s\n", self, status, error));
-
-    /*
+  /*
      0                   1                   2                   3
      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -212,9 +196,12 @@ int tport_recv_stun_dgram(tport_t const *self, int N)
 
     /* Respond to request */
     dgram[0] = 1; /* Mark as response */
-    dgram[1] |= 0x10; /* Mark as error response */
+    dgram[1] = request[1] | 0x10; /* Mark as error response */
     set16(dgram, 2, elen + 4 + 4);
+
     /* TransactionID is there at bytes 4..19 */
+    memcpy(dgram + 4, request + 4, 16);
+
     /*
     TLV At 20:
      0                   1                   2                   3
@@ -238,17 +225,22 @@ int tport_recv_stun_dgram(tport_t const *self, int N)
     dgram[24] = 0, dgram[25] = 0;
     dgram[26] = status / 100, dgram[27] = status % 100;
     memcpy(dgram + 28, error, elen);
-    N = 28 + elen;
-    sendto(self->tp_socket, (void *)dgram, N, 0, (void *)from, fromlen);
+    n = 28 + elen;
 
+    sendto(self->tp_socket, (void *)dgram, n, 0, (void *)from, fromlen);
 #undef set16
   }
+  else {
+    SU_DEBUG_0(("tport(%p): recv_stun_dgram(): internal error\n", self));
+    su_seterrno(EBADMSG);
+    retval = -1;
+  }
 
-  if (dgram != buffer)
-    free(dgram);
+  *in_out_msg = NULL, msg_destroy(msg);
 
   return retval;
 }
+
 
 /** Activate (STUN) keepalive for transport */
 int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
