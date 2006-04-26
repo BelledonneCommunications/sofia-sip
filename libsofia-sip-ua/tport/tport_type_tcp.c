@@ -102,26 +102,36 @@ int tport_tcp_init_primary(tport_primary_t *pri,
 			   tagi_t const *tags,
 			   char const **return_culprit)
 {
-  int s;
+  int socket;
 
-  s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+  socket = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 
-  if (s == SOCKET_ERROR)
+  if (socket == SOCKET_ERROR)
     return *return_culprit = "socket", -1;
 
-  pri->pri_primary->tp_socket = s;
+  return tport_stream_init_primary(pri, socket, tpn, ai, tags, return_culprit);
+}
+
+int tport_stream_init_primary(tport_primary_t *pri, 
+			      su_socket_t socket,
+			      tp_name_t tpn[1],
+			      su_addrinfo_t *ai,
+			      tagi_t const *tags,
+			      char const **return_culprit)
+{
+  pri->pri_primary->tp_socket = socket;
 
 #if defined(__linux__)
   /* Linux does not allow reusing TCP port while this one is open,
      so we can safely call su_setreuseaddr() before bind(). */
-  su_setreuseaddr(s, 1);
+  su_setreuseaddr(socket, 1);
 #endif
 
-  if (tport_bind_socket(s, ai, return_culprit) == SOCKET_ERROR)
-    return -1;
+  if (tport_bind_socket(socket, ai, return_culprit) == SOCKET_ERROR)
+    return su_close(socket), -1;
 
-  if (listen(s, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
-    return *return_culprit = "listen", -1;
+  if (listen(socket, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
+    return *return_culprit = "listen", su_close(socket), -1;
 
 #if !defined(__linux__)
   /* Allow reusing TCP sockets
@@ -129,7 +139,7 @@ int tport_tcp_init_primary(tport_primary_t *pri,
    * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
    * binding to a port owned by an existing server.
    */
-  su_setreuseaddr(s, 1);
+  su_setreuseaddr(socket, 1);
 #endif
 
   pri->pri_primary->tp_events = SU_WAIT_ACCEPT;
@@ -149,16 +159,17 @@ int tport_tcp_init_client(tport_primary_t *pri,
   return 0;
 }
 
-int tport_tcp_init_secondary(tport_t *self, int socket, int accepted)
+int tport_tcp_init_secondary(tport_t *self, int socket, int accepted,
+			     char const **return_reason)
 {
   int one = 1;
 
   self->tp_connected = 1;
 
   if (setsockopt(socket, SOL_TCP, TCP_NODELAY, (void *)&one, sizeof one) == -1)
-    return -1;
+    return *return_reason = "TCP_NODELAY", -1;
   if (su_setblocking(socket, 0) < 0)
-    return -1;
+    return *return_reason = "su_setblocking", -1;
 
   return 0;
 }

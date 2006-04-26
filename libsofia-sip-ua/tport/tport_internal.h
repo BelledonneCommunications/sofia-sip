@@ -323,7 +323,8 @@ struct tport_vtable
 
   int vtp_secondary_size;	/* Size of secondary tport */
 
-  int (*vtp_init_secondary)(tport_t *, int socket, int accepted);
+  int (*vtp_init_secondary)(tport_t *, int socket, int accepted,
+			    char const **return_reason);
   void (*vtp_deinit_secondary)(tport_t *);
   void (*vtp_shutdown)(tport_t *, int how);
   int (*vtp_set_events)(tport_t const *self);
@@ -363,11 +364,23 @@ int tport_primary_compression(tport_primary_t *pri,
 			      char const *compression,
 			      tagi_t const *tl);
 
-tport_t *tport_alloc_secondary(tport_primary_t *pri, int socket, int accepted);
 tport_t *tport_base_connect(tport_primary_t *pri, 
 			    su_addrinfo_t *ai,
 			    su_addrinfo_t *name,
 			    tp_name_t const *tpn);
+
+int tport_stream_init_primary(tport_primary_t *pri, 
+			      su_socket_t socket,
+			      tp_name_t tpn[1],
+			      su_addrinfo_t *ai,
+			      tagi_t const *tags,
+			      char const **return_reason);
+
+tport_t *tport_alloc_secondary(tport_primary_t *pri,
+			       int socket,
+			       int accepted,
+			       char const **return_reason);
+
 int tport_accept(tport_primary_t *pri, int events);
 void tport_zap_secondary(tport_t *self);
 
@@ -439,7 +452,8 @@ int tport_tcp_init_client(tport_primary_t *,
  			 tp_name_t tpn[1], 
  			 su_addrinfo_t *, tagi_t const *,
  			 char const **return_culprit);
-int tport_tcp_init_secondary(tport_t *self, int socket, int accepted);
+int tport_tcp_init_secondary(tport_t *self, int socket, int accepted,
+			     char const **return_reason);
 int tport_recv_stream(tport_t *self);
 int tport_send_stream(tport_t const *self, msg_t *msg,
 		      msg_iovec_t iov[], int iovused);

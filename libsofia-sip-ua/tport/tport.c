@@ -760,13 +760,19 @@ int tport_set_events(tport_t *self, int set, int clear)
  * object. The new transport initally shares parameters structure with the
  * original transport.
  *
- * @param dad primary transport
+ * @param pri    primary transport
+ * @param socket socket for transport
+ * @parma accepted true if the socket was accepted from server socket
  *
  * @return
- * The function tport_alloc_seconary() returns a pointer to the newly
- * created transport, or NULL upon an error.
+ * Pointer to the newly created transport, or NULL upon an error.
+ *
+ * @note The socket is always closed upon error.
  */
-tport_t *tport_alloc_secondary(tport_primary_t *pri, int socket, int accepted)
+tport_t *tport_alloc_secondary(tport_primary_t *pri, 
+			       int socket,
+			       int accepted,
+			       char const **return_reason)
 {
   tport_master_t *mr = pri->pri_master;
   tport_t *self;
@@ -790,12 +796,17 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri, int socket, int accepted)
     self->tp_socket = socket;
     
     if (pri->pri_vtable->vtp_init_secondary &&
-	pri->pri_vtable->vtp_init_secondary(self, socket, accepted) < 0) {
+	pri->pri_vtable->vtp_init_secondary(self, socket, accepted,
+					    return_reason) < 0) {
       if (pri->pri_vtable->vtp_deinit_secondary)
 	pri->pri_vtable->vtp_deinit_secondary(self);
       su_home_zap(self->tp_home);
       return NULL;
     }
+  }
+  else {
+    su_close(socket);
+    *return_reason = "malloc";
   }
 
   return self;
@@ -817,6 +828,9 @@ tport_t *tport_connect(tport_primary_t *pri,
 		       su_addrinfo_t *ai,
 		       tp_name_t const *tpn)
 {
+  if (ai == NULL || ai->ai_addrlen > sizeof (pri->pri_primary->tp_addr))
+    return NULL;
+
   if (pri->pri_vtable->vtp_connect)
     return pri->pri_vtable->vtp_connect(pri, ai, tpn);
   else
@@ -834,7 +848,7 @@ tport_t *tport_connect(tport_primary_t *pri,
  * @param real_ai  pointer to addrinfo structure describing real target
  * @param tpn   canonical name of node
  */
-tport_t *tport_base_connect(tport_primary_t *pri, 
+tport_t *tport_base_connect(tport_primary_t *pri,
 			    su_addrinfo_t *ai,
 			    su_addrinfo_t *real_ai,
 			    tp_name_t const *tpn)
@@ -842,43 +856,49 @@ tport_t *tport_base_connect(tport_primary_t *pri,
   tport_master_t *mr = pri->pri_master;
   tport_t *self = NULL;
 
-  su_socket_t s = SOCKET_ERROR;
-  int index = 0, err;
+  su_socket_t s, server_socket;
   su_wait_t wait[1] = { SU_WAIT_INIT };
   su_wakeup_f wakeup = tport_wakeup;
+  int index = 0;
   int events = SU_WAIT_IN | SU_WAIT_ERR;
 
-  int errlevel = 3;
+  int err, errlevel = 3;
   char buf[TPORT_HOSTPORTSIZE];
+  char const *what;
 
-  if (ai == NULL || ai->ai_addrlen > sizeof (self->tp_addr))
-    return NULL;
-  
   /* Log an error, return error */
-#define TPORT_CONNECT_ERROR(errno, what)  \
+#define TPORT_CONNECT_ERROR(errno, what)			     \
   return							     \
-    ((void)(err = errno, s != SOCKET_ERROR ? su_close(s) : 0,	     \
+    ((void)(err = errno,					     \
 	    su_wait_destroy(wait),				     \
 	    (SU_LOG_LEVEL >= errlevel ?				     \
 	     su_llog(tport_log, errlevel,			     \
 		     "%s(%p): %s(pf=%d %s/%s): %s\n",		     \
 		     __func__, pri, #what, ai->ai_family,	     \
 		     tpn->tpn_proto,				     \
-		       tport_hostport(buf, sizeof(buf),		     \
-				      (void *)ai->ai_addr, 2),	     \
+		     tport_hostport(buf, sizeof(buf),		     \
+				    (void *)ai->ai_addr, 2),	     \
 		     su_strerror(err)) : (void)0),		     \
 	    tport_zap_secondary(self),				     \
 	    su_seterrno(err)),					     \
      (void *)NULL)
 
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+  if (s == SOCKET_ERROR)
+    TPORT_CONNECT_ERROR(su_errno(), "socket");
 
-  if (pri->pri_primary->tp_socket != SOCKET_ERROR) {
+  what = "tport_alloc_secondary";
+  if ((self = tport_alloc_secondary(pri, s, 0, &what)) == NULL)
+    TPORT_CONNECT_ERROR(errno, what);
+
+  self->tp_conn_orient = 1;
+
+  if ((server_socket = pri->pri_primary->tp_socket) != SOCKET_ERROR) {
     su_sockaddr_t susa;
     socklen_t susalen = sizeof(susa);
-    int pri_s = pri->pri_primary->tp_socket;
 
-    if (getsockname(pri_s, &susa.su_sa, &susalen) < 0) {
+    /* Bind this socket to same IP address as the primary server socket */
+    if (getsockname(server_socket, &susa.su_sa, &susalen) < 0) {
       SU_DEBUG_3(("tport_connect: getsockname(): %s\n", 
 		  su_strerror(su_errno())));
     }
@@ -891,13 +911,9 @@ tport_t *tport_base_connect(tport_primary_t *pri,
     }
   }
 
-#if SU_HAVE_IN6
-  if (s == SOCKET_ERROR) {
-    if (ai->ai_family == AF_INET6 && su_errno() == EAFNOSUPPORT)
-      errlevel = 7;
-    TPORT_CONNECT_ERROR(su_errno(), socket);
-  }
-#endif
+  /* Set sockname for the tport */
+  if (tport_setname(self, tpn->tpn_proto, real_ai, tpn->tpn_canon) == -1) 
+    TPORT_CONNECT_ERROR(su_errno(), tport_setname);
 
   if (connect(s, ai->ai_addr, ai->ai_addrlen) == SOCKET_ERROR) {
     err = su_errno();
@@ -905,31 +921,32 @@ tport_t *tport_base_connect(tport_primary_t *pri,
       TPORT_CONNECT_ERROR(err, connect);
     events = SU_WAIT_CONNECT | SU_WAIT_ERR;
     wakeup = tport_connected;
+    what = "connecting";
+  }
+  else {
+    what = "connected";
   }
 
-  if (su_wait_create(wait, s, events) == -1)
+  if (su_wait_create(wait, s, self->tp_events = events) == -1)
     TPORT_CONNECT_ERROR(su_errno(), su_wait_create);
-
-  if ((self = tport_alloc_secondary(pri, s, 0)) == NULL)
-    TPORT_CONNECT_ERROR(errno, tport_alloc_secondary);
 
   /* Register receiving function with events specified above */
   if ((index = su_root_register(mr->mr_root, wait, wakeup, self, 0)) == -1)
     TPORT_CONNECT_ERROR(su_errno(), su_root_register);
 
-  /* Set sockname for the tport */
-  if (tport_setname(self, tpn->tpn_proto, real_ai, tpn->tpn_canon) == -1) 
-    TPORT_CONNECT_ERROR(su_errno(), tport_setname);
+  self->tp_index = index;
 
-  self->tp_socket   = s;
-  self->tp_index    = index;
-  self->tp_events   = events;
-  self->tp_conn_orient = 1;
-
-  SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
-	      __func__, self, "connecting to",
-	      TPN_ARGS(self->tp_name)));
-
+  if (ai == real_ai) {
+    SU_DEBUG_5(("%s(%p): %s to " TPN_FORMAT "\n", 
+		__func__, self, what, TPN_ARGS(self->tp_name)));
+  }
+  else {
+    SU_DEBUG_5(("%s(%p): %s via %s to " TPN_FORMAT "\n",
+		__func__, self, what,
+		tport_hostport(buf, sizeof(buf), (void *)ai->ai_addr, 2),
+		TPN_ARGS(self->tp_name)));
+  }
+  
   tprb_append(&pri->pri_secondary, self);
 
   return self;
@@ -2313,6 +2330,7 @@ int tport_accept(tport_primary_t *pri, int events)
   su_addrinfo_t ai[1];
   su_sockaddr_t su[1]; 
   su_socket_t s = SOCKET_ERROR, l = pri->pri_primary->tp_socket;
+  char const *reason = "accept";
 
   if (events & SU_WAIT_ERR)
     tport_error_event(pri->pri_primary);
@@ -2332,10 +2350,8 @@ int tport_accept(tport_primary_t *pri, int events)
     return 0;
   }
 
-  SU_CANONIZE_SOCKADDR(su);
-
   /* Alloc a new transport object, then register socket events with it */ 
-  self = tport_alloc_secondary(pri, s, 1);
+  self = tport_alloc_secondary(pri, s, 1, &reason);
 
   if (self) {
     int i;
@@ -2343,11 +2359,10 @@ int tport_accept(tport_primary_t *pri, int events)
     su_wakeup_f wakeup = tport_wakeup;
     int events = SU_WAIT_IN|SU_WAIT_ERR|SU_WAIT_HUP;
     su_wait_t wait[1] = { SU_WAIT_INIT };
-    
-    self->tp_socket = s;
 
-    if (
-	/* Create wait object with appropriate events. */
+    SU_CANONIZE_SOCKADDR(su);
+
+    if (/* Create wait object with appropriate events. */
 	su_wait_create(wait, s, events) != -1 
 	/* Register socket to root */
 	&&
@@ -2373,9 +2388,6 @@ int tport_accept(tport_primary_t *pri, int events)
     /* Failure: shutdown socket,  */
     tport_close(self);
     tport_zap_secondary(self);
-  }
-  else {
-    su_close(s);
   }
 
   /* XXX - report error ? */

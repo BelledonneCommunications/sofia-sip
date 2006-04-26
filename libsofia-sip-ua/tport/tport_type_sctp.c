@@ -56,6 +56,24 @@
 /* ---------------------------------------------------------------------- */
 /* SCTP */
 
+#undef MAX_STREAMS
+#define MAX_STREAMS MAX_STREAMS
+
+enum { MAX_STREAMS = 1 };
+typedef struct tport_sctp_t
+{
+  tport_t sctp_base[1];
+  
+  msg_t *sctp_recv[MAX_STREAMS];
+  struct sctp_send {
+    msg_t *ss_msg;
+    msg_iovec_t *ss_unsent;	/**< Pointer to first unsent iovec */
+    unsigned     ss_unsentlen;  /**< Number of unsent iovecs */
+    msg_iovec_t *ss_iov;	/**< Iovecs allocated for sending */
+    unsigned     ss_iovlen;	/**< Number of allocated iovecs */
+  } sctp_send[MAX_STREAMS];
+} tport_sctp_t;
+
 #define TP_SCTP_MSG_MAX (65536)
 
 static int tport_sctp_init_primary(tport_primary_t *, 
@@ -66,7 +84,11 @@ static int tport_sctp_init_client(tport_primary_t *,
 				  tp_name_t tpn[1], 
 				  su_addrinfo_t *, tagi_t const *,
 				  char const **return_culprit);
-static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted);
+static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted,
+				     char const **return_reason);
+static int tport_sctp_init_socket(tport_primary_t *pri, 
+				  int socket,
+				  char const **return_reason);
 static int tport_recv_sctp(tport_t *self);
 static int tport_send_sctp(tport_t const *self, msg_t *msg,
 			   msg_iovec_t iov[], int iovused);
@@ -119,17 +141,27 @@ static int tport_sctp_init_primary(tport_primary_t *pri,
 				   tagi_t const *tags,
 				   char const **return_culprit)
 {
+  int socket;
+
   if (pri->pri_params->tpp_mtu > TP_SCTP_MSG_MAX)
     pri->pri_params->tpp_mtu = TP_SCTP_MSG_MAX;
 
-  return tport_tcp_init_primary(pri, tpn, ai, tags, return_culprit);
+  socket = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+
+  if (socket == SOCKET_ERROR)
+    return *return_culprit = "socket", -1;
+
+  if (tport_sctp_init_socket(pri, socket, return_culprit) < 0)
+    return -1;
+  
+  return tport_stream_init_primary(pri, socket, tpn, ai, tags, return_culprit);
 }
 
 static int tport_sctp_init_client(tport_primary_t *pri, 
-				   tp_name_t tpn[1],
-				   su_addrinfo_t *ai,
-				   tagi_t const *tags,
-				   char const **return_culprit)
+				  tp_name_t tpn[1],
+				  su_addrinfo_t *ai,
+				  tagi_t const *tags,
+				  char const **return_culprit)
 {
   if (pri->pri_params->tpp_mtu > TP_SCTP_MSG_MAX)
     pri->pri_params->tpp_mtu = TP_SCTP_MSG_MAX;
@@ -137,13 +169,35 @@ static int tport_sctp_init_client(tport_primary_t *pri,
   return tport_tcp_init_client(pri, tpn, ai, tags, return_culprit);
 }
 
-
-static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted)
+static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted,
+				     char const **return_reason)
 {
   self->tp_connected = 1;
 
   if (su_setblocking(socket, 0) < 0)
-    return -1;
+    return *return_reason = "su_setblocking", -1;
+
+  if (accepted) {
+    /* Accepted socket inherit the init information from listen socket */
+    return 0;
+  }
+  else {
+    return tport_sctp_init_socket(self->tp_pri, socket, return_reason);
+  }
+}
+
+/** Initialize a SCTP socket */
+static int tport_sctp_init_socket(tport_primary_t *pri, 
+				  int socket,
+				  char const **return_reason)
+{
+  struct sctp_initmsg initmsg = { 0 };
+
+  initmsg.sinit_num_ostreams = MAX_STREAMS;
+  initmsg.sinit_max_instreams = MAX_STREAMS;
+
+  if (setsockopt(socket, SOL_SCTP, SCTP_INITMSG, &initmsg, sizeof initmsg) < 0)
+    return *return_reason = "SCTP_INITMSG", -1;
 
   return 0;
 }

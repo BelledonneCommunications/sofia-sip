@@ -65,7 +65,8 @@ static int tport_tls_init_master(tport_primary_t *pri,
 				 tagi_t const *tags,
 				 char const **return_culprit);
 static void tport_tls_deinit_primary(tport_primary_t *pri);
-static int tport_tls_init_secondary(tport_t *self, int socket, int accepted);
+static int tport_tls_init_secondary(tport_t *self, int socket, int accepted,
+				    char const **return_reason);
 static void tport_tls_deinit_secondary(tport_t *self);
 static void tport_tls_shutdown(tport_t *self, int how);
 static int tport_tls_set_events(tport_t const *self);
@@ -211,23 +212,22 @@ static void tport_tls_deinit_primary(tport_primary_t *pri)
   tls_free(tlspri->tlspri_master), tlspri->tlspri_master = NULL;
 }
 
-static int tport_tls_init_secondary(tport_t *self, int socket, int accepted)
+static int tport_tls_init_secondary(tport_t *self, int socket, int accepted,
+				    char const **return_reason)
 {
   tport_tls_primary_t *tlspri = (tport_tls_primary_t *)self->tp_pri;
   tport_tls_t *tlstp = (tport_tls_t *)self;
 
   tls_t *master = tlspri->tlspri_master;
 
-  if (tport_tcp_init_secondary(self, socket, accepted) < 0)
+  if (tport_tcp_init_secondary(self, socket, accepted, return_reason) < 0)
     return -1;
 
-  if (accepted)
+  if (accepted) {
     tlstp->tlstp_context = tls_init_slave(master, socket);
-  else
-    tlstp->tlstp_context = tls_init_client(master, socket);
-
-  if (!tlstp->tlstp_context)
-    return -1;
+    if (!tlstp->tlstp_context)
+      return *return_reason = "tls_init_slave", -1;
+  }
 
   return 0;
 }
@@ -402,10 +402,18 @@ int tport_tls_send(tport_t const *self,
 		   msg_iovec_t iov[],
 		   int iovlen)
 {
+  tport_tls_primary_t *tlspri = (tport_tls_primary_t *)self->tp_pri;
   tport_tls_t *tlstp = (tport_tls_t *)self;
   enum { TLSBUFSIZE = 2048 };
   int i, j, n, m, size = 0;
   int oldmask, mask;
+
+  if (tlstp->tlstp_context == NULL) {
+    tls_t *master = tlspri->tlspri_master;
+    tlstp->tlstp_context = tls_init_client(master, self->tp_socket);
+    if (!tlstp->tlstp_context)
+      return -1;
+  }
 
   oldmask = tls_events(tlstp->tlstp_context, self->tp_events);
 
