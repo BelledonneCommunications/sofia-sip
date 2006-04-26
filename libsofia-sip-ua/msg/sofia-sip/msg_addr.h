@@ -71,7 +71,7 @@ int msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], int veclen, unsigned n,
 		   int exact);
 int msg_recv_commit(msg_t *msg, unsigned n, int eos);
 
-int msg_recv_buffer(msg_t *msg, void **buffer);
+int msg_recv_buffer(msg_t *msg, void **return_buffer);
 
 msg_t *msg_next(msg_t *msg);
 
