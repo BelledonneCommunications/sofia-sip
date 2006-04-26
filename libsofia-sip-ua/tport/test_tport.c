@@ -299,8 +299,10 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
   TEST_1(u = msg_unknown_make(home, "Foo: faa"));
   TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)u), 0);
 
-  TEST_1(cl = msg_content_location_make(home, ident));
-  TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)cl), 0);
+  if (ident) {
+    TEST_1(cl = msg_content_location_make(home, ident));
+    TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)cl), 0);
+  }
 
   msg_payload_init(payload);
 
@@ -450,7 +452,6 @@ tp_stack_class_t const tp_test_class[1] =
       /* tpac_recv */  tp_test_recv,
       /* tpac_error */ tp_test_error,
       /* tpac_alloc */ tp_test_msg,
-      /* tpac_sigcomp_accept */ test_sigcomp_accept
   }};
 
 static int init_test(tp_test_t *tt)
@@ -960,12 +961,10 @@ static int sctp_test(tp_test_t *tt)
   msg_t *msg = NULL;
   int i, n;
   tport_t *tp;
+  char buffer[32];
 
   if (!tt->tt_sctp_name->tpn_proto) 
     return 0;
-
-  if (1)
-    return 0;			/* SCTP does not work. */
 
   /* Just a small and nice message first */
   TEST_1(!new_test_msg(tt, &msg, "sctp-small", 1, 1024));
@@ -979,10 +978,14 @@ static int sctp_test(tp_test_t *tt)
   TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
   test_check_md5(tt, tt->tt_rmsg);
   msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
-  
+
+  if (1)
+    return 0;			/* SCTP does not work reliably. Really. */
+
   /* Create large messages, just to force queueing in sending end */
   for (n = 0; !tport_queuelen(tp); n++) {
-    TEST_1(!new_test_msg(tt, &msg, NULL, 1, 32000));
+    snprintf(buffer, sizeof buffer, "cid:sctp-%u", n);
+    TEST_1(!new_test_msg(tt, &msg, buffer, 1, 32000));
     test_create_md5(tt, msg);
     TEST_1(tport_tsend(tp, msg, tt->tt_sctp_name, TAG_END()));
     TEST_S(tport_name(tp)->tpn_ident, "client");
@@ -991,13 +994,15 @@ static int sctp_test(tp_test_t *tt)
   
   /* Fill up the queue */
   for (i = 1; i < TPORT_QUEUESIZE; i++) {
-    TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+    snprintf(buffer, sizeof buffer, "cid:sctp-%u", n + i);
+    TEST_1(!new_test_msg(tt, &msg, buffer, 1, 1024));
     TEST_1(tport_tsend(tp, msg, tt->tt_sctp_name, TAG_END()));
     msg_destroy(msg);
   }
 
   /* This overflows the queue */
-  TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+  snprintf(buffer, sizeof buffer, "cid:sctp-%u", n + i);
+  TEST_1(!new_test_msg(tt, &msg, buffer, 1, 1024));
   TEST_1(!tport_tsend(tt->tt_tports, msg, tt->tt_sctp_name, TAG_END()));
   msg_destroy(msg);
   
@@ -1008,25 +1013,25 @@ static int sctp_test(tp_test_t *tt)
   msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
 
   /* This uses a new connection */
-  TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+  TEST_1(!new_test_msg(tt, &msg, "cid-sctp-new", 1, 1024));
   TEST_1(tport_tsend(tt->tt_tports, msg, tt->tt_sctp_name, 
 		     TPTAG_REUSE(0), TAG_END()));
   msg_destroy(msg);
 
   /* Receive every message from queue */
-  while (tt->tt_received < TPORT_QUEUESIZE + n) {
-    TEST(tport_test_run(tt, 5), 1);
+  for (tt->tt_received = 0; tt->tt_received < TPORT_QUEUESIZE + n;) {
+    TEST(tport_test_run(tt, 10), 1);
     /* Validate message */
     TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
     msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
   }
   
   /* Try to send a single message */
-  TEST_1(!new_test_msg(tt, &msg, NULL, 1, 1024));
+  TEST_1(!new_test_msg(tt, &msg, "cid:sctp-final", 1, 1024));
   TEST_1(tport_tsend(tt->tt_tports, msg, tt->tt_sctp_name, TAG_END()));
   msg_destroy(msg);
   
-  TEST(tport_test_run(tt, 5), 1);
+  TEST(tport_test_run(tt, 10), 1);
   
   TEST_1(!check_msg(tt, tt->tt_rmsg, NULL));
   msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
