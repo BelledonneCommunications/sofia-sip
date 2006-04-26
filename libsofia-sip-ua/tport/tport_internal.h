@@ -77,7 +77,6 @@ SOFIA_BEGIN_DECLS
 
 typedef struct tport_master tport_master_t;
 typedef struct tport_pending_s tport_pending_t;
-typedef struct tport_threadpool tport_threadpool_t;
 typedef struct tport_primary tport_primary_t;
 typedef struct tport_vtable tport_vtable_t;
 
@@ -229,9 +228,6 @@ struct tport_primary {
   tport_primary_t    *pri_next;	        /**< Next primary tport */
 
   tport_t            *pri_secondary;	/**< Secondary tports */
-
-  tport_threadpool_t *pri_threadpool;   /**< Worker threads */
-  unsigned            pri_thrpsize;
 
   unsigned            pri_updating:1;   /**< Currently updating address */
   unsigned            pri_natted:1;	/**< Using natted address  */

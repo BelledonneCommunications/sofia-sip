@@ -3010,8 +3010,8 @@ tport_t *tport_tsend(tport_t *self,
       return NULL;
     }
 
-    if (tport_is_connection_oriented(self) || 
-	(!tport_is_registered(self) && !self->tp_pri->pri_threadpool)) {
+    if (tport_is_connection_oriented(self)
+	|| self->tp_params->tpp_conn_orient) {
 #if 0 && HAVE_UPNP /* We do not want to use UPnP with secondary transports! */
       if (upnp_register_upnp_client(1) != 0) { 
 	upnp_check_for_nat();
