@@ -196,23 +196,29 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 		 "tls_init_context", ti->cert);
       ERR_print_errors(tls->bio_err);
     }
+#if require_client_certificate
     errno = EIO;
     return -1;
+#endif
   }
 
   if (!SSL_CTX_use_PrivateKey_file(tls->ctx, 
                                    ti->key, 
                                    SSL_FILETYPE_PEM)) {
     ERR_print_errors(tls->bio_err);
+#if require_client_certificate
     errno = EIO;
     return -1;
+#endif
   }
 
   if (!SSL_CTX_check_private_key(tls->ctx)) {
     BIO_printf(tls->bio_err,
                "Private key does not match the certificate public key\n");
+#if require_client_certificate
     errno = EIO;
     return -1;
+#endif
   }
 
   if (!SSL_CTX_load_verify_locations(tls->ctx, 
@@ -446,7 +452,8 @@ int tls_post_connection_check(tls_t *tls)
   if (!tls) return -1;
 
   cert = SSL_get_peer_certificate(tls->con); 
-  if (!cert) return X509_V_OK;
+  if (!cert)
+    return X509_V_OK;
   
   extcount = X509_get_ext_count(cert);
 
@@ -544,10 +551,52 @@ int tls_check_hosts(tls_t *tls, char const *hosts[TLS_MAX_HOSTS])
   return 0;
 }
 
+static
+int tls_error(tls_t *tls, int ret, char const *who, char const *operation,
+	      void *buf, int size)
+{
+  char errorbuf[128];
+  int events = 0;
+  int err = SSL_get_error(tls->con, ret);
+
+  switch (err) {
+  case SSL_ERROR_WANT_WRITE:
+    events = POLLOUT;
+    break;
+
+  case SSL_ERROR_WANT_READ:
+    events = POLLIN;
+    break;
+
+  case SSL_ERROR_ZERO_RETURN:
+    return 0;
+
+  case SSL_ERROR_SYSCALL:
+    return -1;
+
+  default:
+    BIO_printf(tls->bio_err, "%s: %s failed (%d): %s\n", 
+	       who, operation, err, ERR_error_string(err, errorbuf));
+    ERR_print_errors(tls->bio_err);
+    errno = EIO;
+    return -1;
+  }
+
+  if (buf) {
+    tls->write_events = events;
+    tls->write_buffer = buf, tls->write_buffer_len = size;
+  }
+  else {
+    tls->read_events = events;
+  }
+
+  errno = EAGAIN;
+  return -1;
+}
+
 int tls_read(tls_t *tls)
 {
-  int ret, err;
-  char *what;
+  int ret;
 
   if (tls == NULL) {
     errno = EINVAL;
@@ -565,43 +614,23 @@ int tls_read(tls_t *tls)
   tls->read_events = POLLIN;
 
   ret = SSL_read(tls->con, tls->read_buffer, tls_buffer_size);
-  what = "SSL_read";
-    
+  if (ret <= 0)
+    return tls_error(tls, ret, "tls_read", "SSL_read", NULL, 0);
+
   if (!tls->verified) {
-    what = "certificate";
-    err = tls_post_connection_check(tls);
+    int err = tls_post_connection_check(tls);
+
     if (err != X509_V_OK && 
+	err != SSL_ERROR_SYSCALL &&
 	err != SSL_ERROR_WANT_WRITE &&
 	err != SSL_ERROR_WANT_READ) {
       BIO_printf(tls->bio_err, 
-		 "tls_read: server certificate doesn't verify\n");
+		 "%s: server certificate doesn't verify\n", 
+		 "tls_read");
     }
   }
 
-  if (ret > 0) {
-    tls->read_buffer_len = ret;
-    return ret;
-  }
-
-  err = SSL_get_error(tls->con, ret);
-
-  switch (err) {
-  case SSL_ERROR_WANT_WRITE:
-  case SSL_ERROR_WANT_READ:
-    tls->read_events = err == SSL_ERROR_WANT_WRITE ? POLLOUT : POLLIN;
-    errno = EAGAIN;
-    return -1;
-
-  case SSL_ERROR_ZERO_RETURN:
-    return 0;
-
-  default:
-    BIO_printf(tls->bio_err, "tls_read: %s failed: %d %s\n", 
-	       what, err, ERR_error_string(err, NULL));
-    ERR_print_errors(tls->bio_err);
-    errno = EIO;
-    return -1;
-  }
+  return tls->read_buffer_len = ret;
 }
 
 void *tls_read_buffer(tls_t *tls, int N)
@@ -634,7 +663,7 @@ int tls_want_read(tls_t *tls, int events)
 
 int tls_write(tls_t *tls, void *buf, int size)
 {
-  int ret, err;
+  int ret;
 
   if (0) 
     fprintf(stderr, "tls_write(%p) called on %s\n", tls,
@@ -678,29 +707,11 @@ int tls_write(tls_t *tls, void *buf, int size)
   }
 
   ret = SSL_write(tls->con, buf, size);
-  if (ret >= 0)
-    return ret;
+  if (ret < 0)
+    return tls_error(tls, ret, "tls_write", "SSL_write", buf, size);
 
-  err = SSL_get_error(tls->con, ret);
-
-  switch(err) {
-  case SSL_ERROR_WANT_WRITE:
-  case SSL_ERROR_WANT_READ:
-    tls->write_buffer = buf, tls->write_buffer_len = size;
-    tls->write_events = err == SSL_ERROR_WANT_WRITE ? POLLOUT : POLLIN;
-    errno = EAGAIN;
-    return -1;
-      
-  default:
-    BIO_printf(tls->bio_err, "tls_write: SSL_write failed: %d %s\n", 
-	       err,
-	       ERR_error_string(err, NULL));
-    ERR_print_errors(tls->bio_err);
-    errno = EIO;		
-    return -1;
-  }
+  return ret;
 }
-
 
 int tls_want_write(tls_t *tls, int events)
 {
@@ -710,12 +721,15 @@ int tls_want_write(tls_t *tls, int events)
     int size = tls->write_buffer_len;
 
     tls->write_events = 0;
+
+    /* remove buf */
     tls->write_buffer = NULL;
     tls->write_buffer_len = 0;
 
     ret = tls_write(tls, buf, size);
 
     if (ret >= 0)
+      /* Restore buf */
       return tls->write_buffer = buf, tls->write_buffer_len = ret;
     else if (errno == EAGAIN)
       return 0;
