@@ -213,7 +213,7 @@ static
 int tport_recv_sctp(tport_t *self)
 {
   msg_t *msg;
-  int N, n, veclen;
+  int N, veclen;
   msg_iovec_t iovec[2] = {{ 0 }};
 
   char sctp_buf[TP_SCTP_MSG_MAX];
@@ -222,8 +222,12 @@ int tport_recv_sctp(tport_t *self)
   iovec[0].mv_len = sizeof(sctp_buf);
 
   N = su_vrecv(self->tp_socket, iovec, 1, 0, NULL, NULL);
-  if (N == SOCKET_ERROR)
-    return tport_recv_error_report(self);
+  if (N == SOCKET_ERROR) {
+    int err = su_errno();
+    if (err == EAGAIN || err == EWOULDBLOCK)
+      return 1;
+    return -1;
+  }
 
   if (N == SOCKET_ERROR) {
     int err = su_errno();
@@ -255,13 +259,15 @@ int tport_recv_sctp(tport_t *self)
 
   msg_recv_commit(msg, N, 0);  /* Mark buffer as used */
 
-  return 1;
+  return 2;
 }
 
 static int tport_send_sctp(tport_t const *self, msg_t *msg,
 			   msg_iovec_t iov[], int iovused)
 {
-  return tport_send_dgram(self, msg, iov, iovused);
+  
+
+  return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
 }
 
 #endif
