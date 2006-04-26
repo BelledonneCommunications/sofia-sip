@@ -54,6 +54,7 @@ typedef struct tport_nat_s tport_nat_t;
 
 #include <sofia-sip/msg.h>
 #include <sofia-sip/msg_addr.h>
+#include <sofia-sip/hostdomain.h>
 
 #include <stdlib.h>
 #include <time.h>
@@ -4010,11 +4011,13 @@ tport_t *tport_primary_by_name(tport_t const *tp, tp_name_t const *tpn)
   if (tpn->tpn_host == NULL)
     family = 0;
 #if SU_HAVE_IN6
-  else if (strchr(tpn->tpn_host, ':'))
+  else if (host_is_ip6_address(tpn->tpn_host))
     family = AF_INET6;
 #endif
-  else if (strcmp(tpn->tpn_host, tpn_any))
+  else if (host_is_ip4_address(tpn->tpn_host))
     family = AF_INET;
+  else 
+    family = 0;
 
   if (proto && strcmp(proto, tpn_any) == 0)
     proto = NULL;
