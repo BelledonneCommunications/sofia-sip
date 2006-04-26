@@ -25,10 +25,14 @@ Packager: Pekka.Pessi@Nokia.com
 %{?_with_doxygen:BuildRequires: graphviz >= 1.9}
 %{?!_without_openssl:BuildRequires: openssl-devel >= 0.9.7}
 
+%define have_doxygen %{?_with_doxygen:1}%{?!_with_doxygen:0}
+
 %{?_with_sigcomp:BuildRequires: sofia-sigcomp-devel >= 2.5.0}
 %{?_with_sigcomp:Requires: sofia-sigcomp >= 2.5.0}
 
-%{?!_without_glib:BuildRequires: glib2.0-devel >= 2.2}
+%{?!_without_glib:BuildRequires: glib2-devel >= 2.2}
+
+%define have_glib %{?!_without_glib:1}%{?_without_glib:0}
 
 %description
 Sofia SIP is a RFC-3261-compliant library for SIP user agents and other
@@ -59,9 +63,24 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_prefix}/%{_lib}/libsofia-sip-ua*.so
-%{_prefix}/%{_lib}/libsofia-sip-ua*.so.*
+%{_prefix}/%{_lib}/libsofia-sip-ua.so.*.*
 %doc AUTHORS COPYING COPYRIGHTS README
+
+%package	glib
+Summary:        GLIB Libraries for Sofia-SIP 
+Group: System Environment/Libraries
+Requires:	sofia-sip = %{version}-%{release}
+
+%description	glib
+GLib interface to Sofia SIP User Agent library.
+
+%if %{have_glib}
+
+%files 		glib
+%defattr(-,root,root,-)
+%{_prefix}/%{_lib}/libsofia-sip-ua-glib.so.*.*
+
+%endif
 
 %package	devel
 Summary:        Sofia-SIP Development Package
@@ -72,7 +91,7 @@ Obsoletes:	sofia-devel
 Development package for Sofia SIP UA library. This package includes 
 static libraries and include files.
 
-%files devel
+%files 		devel
 %defattr(-,root,root,-)
 /usr/share/aclocal/sac-general.m4
 /usr/share/aclocal/sac-su.m4
@@ -81,21 +100,47 @@ static libraries and include files.
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h.in
 %{_prefix}/libexec/sofia/tag_dll.awk
 %{_prefix}/libexec/sofia/msg_parser.awk
-%{_prefix}/%{_lib}/libsofia-sip-ua*.la
-%{_prefix}/%{_lib}/libsofia-sip-ua*.a
-%{_prefix}/%{_lib}/pkgconfig/*.pc
+%{_prefix}/%{_lib}/libsofia-sip-ua.la
+%{_prefix}/%{_lib}/libsofia-sip-ua.a
+%{_prefix}/%{_lib}/libsofia-sip-ua.so
+%{_prefix}/%{_lib}/libsofia-sip-ua.so.?
+%{_prefix}/%{_lib}/pkgconfig/sofia-sip-ua.pc
 %doc TODO README.developers
+
+%package	glib-devel
+Summary:        GLIB Development Libraries for Sofia SIP 
+Group: 		Development/Libraries
+Requires:	sofia-sip = %{version}-%{release}
+Requires:	sofia-sip-devel = %{version}-%{release}
+
+%description	glib-devel
+Development package for Sofia SIP UA Glib library. This package includes
+pstatic libraries and include files for developing glib programs using Sofia
+SIP.
+
+%if %{have_glib}
+%files 		glib-devel
+%defattr(-,root,root,-)
+%{_prefix}/include/sofia-sip*/sofia-sip/nua_glib.h
+%{_prefix}/include/sofia-sip*/sofia-sip/su_source.h
+%{_prefix}/%{_lib}/libsofia-sip-ua-glib.la
+%{_prefix}/%{_lib}/libsofia-sip-ua-glib.a
+%{_prefix}/%{_lib}/libsofia-sip-ua-glib.so
+%{_prefix}/%{_lib}/libsofia-sip-ua-glib.so.?
+%{_prefix}/%{_lib}/pkgconfig/sofia-sip-ua-glib.pc
+%endif
+
+%package	docs
+Summary:       Sofia-SIP Development Manual Package
+Group:     	Development/Libraries
+%description	docs
+HTML reference documentation for Sofia SIP UA library.
+
+%if %{have_doxygen}
+%files docs
+%defattr(-,root,root,-)
 %{?_with_doxygen:%doc manual}
-
-#%package	docs
-#Summary:       Sofia-SIP Development Manual Package
-#Group:     	Development/Libraries
-#%description	docs
-#HTML reference documentation for Sofia SIP UA library.
-
-#%files docs
-#%defattr(-,root,root,-)
-#%{?_with_doxygen:%doc manual}
+%endif
 
 %package	utils
 Summary:        Sofia-SIP Development Package
