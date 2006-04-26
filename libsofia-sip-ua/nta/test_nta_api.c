@@ -471,7 +471,6 @@ int api_test_params(agent_t *ag)
   int use_naptr       = -1;
   int use_srv         = -1;
   unsigned preload = (unsigned)-1;
-  int have_sigcomp = sofia_sip_has_sigcomp != NULL;
   char const *s = NONE;
 
   TEST_1(nta = nta_agent_create(ag->ag_root, (url_string_t *)"sip:*:*",
@@ -536,21 +535,18 @@ int api_test_params(agent_t *ag)
 
   TEST(nta_agent_set_params(nta, 
 			    NTATAG_SIGCOMP_OPTIONS("sip"),
-			    TAG_END()), have_sigcomp);
+			    TAG_END()), 1);
   TEST(nta_agent_set_params(nta, 
 			    NTATAG_SIGCOMP_OPTIONS(","),
-			    TAG_END()), -have_sigcomp);
+			    TAG_END()), -1);
   TEST(nta_agent_set_params(nta, 
 			    NTATAG_SIGCOMP_OPTIONS("sip;dms=16384"),
-			    TAG_END()), have_sigcomp);
+			    TAG_END()), 1);
   s = NONE;
   TEST(nta_agent_get_params(nta, 
 			    NTATAG_SIGCOMP_OPTIONS_REF(s),
 			    TAG_END()), 1);
-  if (have_sigcomp)
-    TEST_S(s, "sip;dms=16384");
-  else
-    TEST(s, NULL);
+  TEST_S(s, "sip;dms=16384");
 
   TEST_VOID(nta_agent_destroy(nta));
 
