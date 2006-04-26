@@ -196,10 +196,31 @@ void *msg_buf_exact(msg_t *msg, unsigned size)
 unsigned msg_buf_commit(msg_t *msg, unsigned size, int eos)
 {
   if (msg) {
-    assert(msg->m_buffer->mb_used + msg->m_buffer->mb_commit + size <=
-	   msg->m_buffer->mb_size);
-    msg->m_buffer->mb_commit += size;
-    msg->m_buffer->mb_eos = eos;
+    struct msg_mbuffer_s *mb = msg->m_buffer;
+    assert(mb->mb_used + mb->mb_commit + size <= mb->mb_size);
+
+    mb->mb_commit += size;
+    mb->mb_eos = eos;
+
+    if (mb->mb_used == 0 && !msg->m_chunk && !msg->m_set_buffer) {
+      size_t slack = mb->mb_size - mb->mb_commit;
+
+      if (eos || slack >= msg_min_size) {
+	/* realloc and cut down buffer */
+	size_t new_size;
+	void *new_data;
+	
+	if (eos)
+	  new_size = mb->mb_commit + 1;
+	else
+	  new_size = mb->mb_commit + msg_min_size;
+
+	new_data = su_realloc(msg->m_home, mb->mb_data, new_size);
+	if (new_data) {
+	  mb->mb_data = new_data, mb->mb_size = new_size;
+	}
+      }
+    }
   }
   return 0;
 }
@@ -391,7 +412,8 @@ int msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], int veclen,
       chunk->pl_next = (msg_payload_t *)h->sh_succ;
       chunk->pl_next->pl_len = chunk->pl_len - len;
       chunk->pl_len = len;
-    } else if (len > MSG_CHUNK_AVAIL(chunk)) {
+    }
+    else if (len > MSG_CHUNK_AVAIL(chunk)) {
       len = MSG_CHUNK_AVAIL(chunk);
     }
 
@@ -462,10 +484,13 @@ int msg_recv_buffer(msg_t *msg, void **return_buffer)
   if (msg_get_flags(msg, MSG_FLG_FRAGS)) {
     /* Message is complete */
     return 0;
-  } else if ((*return_buffer = msg_buf_alloc(msg, 2))) {
+  }
+  else if ((*return_buffer = msg_buf_alloc(msg, 2))) {
     return msg_buf_size(msg) - 1;
-  } else
+  }
+  else {
     return -1;
+  }
 }
 
 
@@ -483,10 +508,11 @@ int msg_recv_buffer(msg_t *msg, void **return_buffer)
  * @param eos true if stream is complete
  *
  * @note The @a eos should be always true for message-based transports. It
- * should also be true when a TCP FIN is received, for instance.
+ * should also be true when a stram oin stream-based transport ends, for
+ * instance, when TCP FIN is received.
  *
- * @retval The function msg_recv_commit() returns 0 when successful, -1 upon
- * an error.
+ * @retval 0 when successful
+ * @retval -1 upon an error.
  */
 int msg_recv_commit(msg_t *msg, unsigned n, int eos)
 {
@@ -610,7 +636,8 @@ unsigned msg_mark_as_complete(msg_t *msg, unsigned mask)
   if (msg) {
     msg->m_streaming = 0;
     return msg->m_object->msg_flags |= mask | MSG_FLG_COMPLETE;
-  } else {
+  }
+  else {
     return 0;
   }
 }
@@ -1372,7 +1399,8 @@ int extract_incomplete_chunks(msg_t *msg, int eos)
       msg_mark_as_complete(msg, MSG_FLG_TRUNC);
       return 1;
     }
-  } else {
+  }
+  else {
     if (msg_get_flags(msg, MSG_FLG_FRAGS))
       msg_mark_as_complete(msg, 0);
   }
@@ -1568,7 +1596,8 @@ int msg_header_prepare(msg_mclass_t const *mc, int flags,
       if (bsiz <= n + m) {
 	if (!next)
 	  return n + m;
-      } else {
+      }
+      else {
 	strcpy(b + n, s);
       }
       n += m;
@@ -2364,7 +2393,8 @@ int msg_header_add_dup(msg_t *msg,
 	return -1;
 
       hh = &h->sh_next;
-    } else {
+    }
+    else {
       /* Add list items */
       msg_header_t *h = *hh;
       msg_param_t **d, **s;
