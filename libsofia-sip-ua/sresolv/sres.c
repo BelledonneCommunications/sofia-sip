@@ -119,7 +119,8 @@ typedef struct sres_nameserver sres_nameserver_t;
 enum edns { 
   edns_not_tried = -1,
   edns_not_supported = 0,
-  edns0_supported = 1
+  edns0_configured = 1,
+  edns0_supported = 2,
 };
 
 struct sres_server {
@@ -197,6 +198,7 @@ struct sres_config {
     uint16_t timeout;
     uint16_t attempts;
     uint16_t ndots;
+    enum edns edns;
     unsigned debug:1;
     unsigned rotate:1;
     unsigned check_names:1;
@@ -1572,7 +1574,9 @@ sres_parse_options(sres_config_t *c, char const *options)
     else if (MATCH("rotate")) c->c_opt.rotate = 1;
     else if (MATCH("no-check-names")) c->c_opt.check_names = 0;
     else if (MATCH("check-names")) c->c_opt.check_names = 1;
-    else if (MATCH("no-inet6")) c->c_opt.inet6 = 0;
+    else if (MATCH("no-edns0")) c->c_opt.edns = edns_not_supported;
+    else if (MATCH("edns0")) c->c_opt.edns = edns0_configured;
+    else if (MATCH("no-inet6")) c->c_opt.ip6int = 0;
     else if (MATCH("inet6")) c->c_opt.inet6 = 1;
     else if (MATCH("no-ip6-dotint")) c->c_opt.ip6int = 0;
     else if (MATCH("ip6-dotint")) c->c_opt.ip6int = 1;
@@ -1676,7 +1680,7 @@ sres_server_t **sres_servers_new(sres_resolver_t *res,
     memcpy(dns->dns_addr, ns->ns_addr, dns->dns_addrlen = ns->ns_addrlen);
     inet_ntop(dns->dns_addr->ss_family, SS_ADDR(dns->dns_addr), 
 	      dns->dns_name, sizeof dns->dns_name);
-    dns->dns_edns = edns_not_tried;
+    dns->dns_edns = c->c_opt.edns;
     servers[i] = dns++;
   }
 
@@ -2072,6 +2076,10 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
 
     if (dns) {
       res->res_i_server = q->q_i_server = i;
+
+      if (q->q_retry_count > res->res_n_servers + 1 &&
+	  dns->dns_edns == edns_not_tried)
+	q->q_edns = edns_not_supported;
       
       sres_send_dns_query(res, q);
 
