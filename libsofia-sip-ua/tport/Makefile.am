@@ -41,11 +41,14 @@ libtport_la_SOURCES = 	tport.c tport_logging.c \
 			tport_stub_stun.c tport_stub_sigcomp.c \
 			tport_type_udp.c tport_type_tcp.c tport_type_sctp.c \
 			tport_type_connect.c tport_type_stun.c \
-			tport_threadpool.c tport_internal.h \
+			tport_internal.h \
 			tport_tag.c tport_tag_ref.c $(USE_TLS_SRC)
 
 # to make sure all files end up in the dist package
-EXTRA_libtport_la_SOURCES = $(TLS_SRC) tport_sigcomp.c 
+EXTRA_libtport_la_SOURCES = $(TLS_SRC) 
+
+# Disable for now
+EXTRA_libtport_la_SOURCES += tport_sigcomp.c tport_threadpool.c
 
 BUILT_SOURCES =		tport_tag_ref.c
 

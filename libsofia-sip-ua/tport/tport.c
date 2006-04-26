@@ -1185,7 +1185,9 @@ tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
   &tport_tcp_vtable,
   &tport_udp_client_vtable,
   &tport_udp_vtable,
+#if 0
   &tport_threadpool_vtable,
+#endif
 #if HAVE_SOFIA_STUN
   &tport_stun_vtable,
 #endif
