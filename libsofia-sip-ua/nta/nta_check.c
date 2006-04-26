@@ -157,7 +157,7 @@ int nta_check_session_content(nta_incoming_t *irq,
       c_type = application_sdp;
     else
       /* No chance */
-      ab = NULL;
+      ab = NULL, c_type = NULL;
 
     for (; ab; ab = ab->ac_next) {
       if (strcasecmp(c_type, ab->ac_type) == 0)
