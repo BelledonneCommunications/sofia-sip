@@ -22,11 +22,11 @@ if test "$with_openssl" != no  ;then
     	AC_MSG_WARN(OpenSSL protocol library was not found))
 
     if test x$HAVE_OPENSSL = x1; then
-      AC_DEFINE([HAVE_OPENSSL], 1, [Define this as 1 if you have OpenSSL])
+      AC_DEFINE([HAVE_OPENSSL], 1, [Define to 1 if you have OpenSSL])
     fi
 
     if test x$HAVE_TLS = x1; then
-      AC_DEFINE([HAVE_TLS], 1, [Define this as 1 if you have TLS])
+      AC_DEFINE([HAVE_TLS], 1, [Define to 1 if you have TLS])
     fi
   ],
   AC_MSG_WARN(OpenSSL include files were not found))

@@ -165,7 +165,7 @@ AC_CACHE_CHECK([for sockaddr_in6],
   ac_cv_sin6=yes, ac_cv_sin6=no)])
 if test $ac_cv_sin6 = yes ;then
 	AC_DEFINE([HAVE_SIN6], 1, 
-		[Define this as 1 if you have IPv6 structures and constants])
+		[Define to 1 if you have IPv6 structures and constants])
 fi
 ])
 
@@ -181,7 +181,7 @@ AC_CACHE_CHECK([for sa_len],
   ac_cv_sa_len=yes,ac_cv_sa_len=no)])
 if test "$ac_cv_sa_len" = yes ;then
 	AC_DEFINE([HAVE_SA_LEN], 1, 
-		[Define this as 1 if you have sa_len in struct sockaddr])
+		[Define to 1 if you have sa_len in struct sockaddr])
 fi
 ])
 
@@ -201,7 +201,7 @@ int main() {
 ], ac_cv_flag_msg_nosignal=yes, ac_cv_flag_msg_nosignal=no)])
 if test "$ac_cv_flag_msg_nosignal" = yes ; then
 	AC_DEFINE([HAVE_MSG_NOSIGNAL], 1,
-		[Define this as 1 if you have MSG_NOSIGNAL flag for send()]) 
+		[Define to 1 if you have MSG_NOSIGNAL flag for send()]) 
 fi
 ])dnl
 
@@ -221,7 +221,7 @@ int main() {
 ], ac_cv_flag_msg_errqueue=yes, ac_cv_flag_msg_errqueue=no)])
 if test "$ac_cv_flag_msg_errqueue" = yes; then
 	AC_DEFINE([HAVE_MSG_ERRQUEUE], 1,
-		[Define this as 1 if you have MSG_ERRQUEUE flag for send()]) 
+		[Define to 1 if you have MSG_ERRQUEUE flag for send()]) 
 fi
 ])dnl
 
@@ -244,7 +244,7 @@ AC_TRY_COMPILE([
 ac_cv_sys_ip_recverr=no)])
 if test "$ac_cv_sys_ip_recverr" = yes ; then
 	AC_DEFINE([HAVE_IP_RECVERR], 1, 
-		[Define this as 1 if you have IP_RECVERR in <netinet/in.h>])
+		[Define to 1 if you have IP_RECVERR in <netinet/in.h>])
 fi
 ])dnl
 
@@ -266,7 +266,7 @@ AC_TRY_COMPILE([
 ], ac_cv_sys_ipv6_recverr=yes, ac_cv_sys_ipv6_recverr=no)])
 if test "$ac_cv_sys_ipv6_recverr" = yes ; then
 	AC_DEFINE([HAVE_IPV6_RECVERR], 1,
-		[Define this as 1 if you have IPV6_RECVERR in <netinet/in6.h>])
+		[Define to 1 if you have IPV6_RECVERR in <netinet/in6.h>])
 fi
 ])dnl
 
@@ -316,7 +316,7 @@ AC_DEFUN([AX_CHECK_HEADERS_IN],
 do
 AX_CHECK_HEADER_IN($ax_hdr, $2,
 [ ax_tr_hdr=HAVE_`echo $ax_hdr | sed 'y%abcdefghijklmnopqrstuvwxyz./-%ABCDEFGHIJKLMNOPQRSTUVWXYZ___%'`
-  AC_DEFINE_UNQUOTED($ax_tr_hdr, 1, [Define 1 if you have the <$ax_hdr> header file])
+  AC_DEFINE_UNQUOTED($ax_tr_hdr, 1, [Define to 1 if you have the <$ax_hdr> header file])
   $3], $4)dnl
 done
 ])
@@ -350,7 +350,7 @@ char *s = __func__;
 }],
 ac_cv_c_var_func=yes, ac_cv_c_var_func=no))
 if test $ac_cv_c_var_func = "yes"; then
-AC_DEFINE([HAVE_FUNC], 1, [Define as 1 if the C compiler supports __func__]) 
+AC_DEFINE([HAVE_FUNC], 1, [Define to 1 if the C compiler supports __func__]) 
 fi
 ])dnl
 
@@ -362,7 +362,7 @@ AC_TRY_COMPILE(,
 char *s = __FUNCTION__;
 }], ac_cv_c_macro_function=yes, ac_cv_c_macro_function=no))
 if test $ac_cv_c_macro_function = "yes"; then
-AC_DEFINE([HAVE_FUNCTION], 1, [Define as 1 if the C compiler supports __FUNCTION__]) 
+AC_DEFINE([HAVE_FUNCTION], 1, [Define to 1 if the C compiler supports __FUNCTION__]) 
 fi
 ])dnl
 
@@ -372,7 +372,7 @@ dnl ======================================================================
 AC_DEFUN([AC_C_INLINE_DEFINE], [
 AC_C_INLINE
 case "$ac_cv_c_inline" in *inline* | yes) 
-	AC_DEFINE([HAVE_INLINE], 1, [Define this as 1 if you have inlining compiler]) ;; 
+	AC_DEFINE([HAVE_INLINE], 1, [Define to 1 if you have inlining compiler]) ;; 
 esac
 ])
 
@@ -390,7 +390,7 @@ AC_TRY_COMPILE(,
 ac_cv_c_keyword_struct=yes, ac_cv_c_keyword_struct=no))
 if test $ac_cv_c_keyword_struct = "yes"; then
 AC_DEFINE([HAVE_STRUCT_KEYWORDS], 1, [
-Define this as 1 if your CC supports C99 struct initialization]) 
+Define to 1 if your CC supports C99 struct initialization]) 
 fi
 ])
 
@@ -456,8 +456,8 @@ LIBS="-L\$(top_srcdir)/win32/pthread -lpthread -lws2_32 \
 	-lwsock32"
 MINGW_ENVIRONMENT=1
 AC_SUBST(MINGW_ENVIRONMENT)
-AC_DEFINE([HAVE_MINGW], [1], [Define this as 1 if you are compiling in MinGW environment])
-AC_DEFINE([HAVE_WIN32], [1], [Define this as 1 if you have WIN32])
+AC_DEFINE([HAVE_MINGW], [1], [Define to 1 if you are compiling in MinGW environment])
+AC_DEFINE([HAVE_WIN32], [1], [Define to 1 if you have WIN32])
 fi
 AM_CONDITIONAL([HAVE_MINGW32], [test "x$ac_cc_environment" != x])
 ])dnl
@@ -469,7 +469,7 @@ dnl ======================================================================
 
 AC_DEFUN([AC_TYPE_LONGLONG],[dnl
 AC_CHECK_TYPE([long long],[dnl
-AC_DEFINE([longlong], [long long], [Define as at least 64-bit int type])dnl
+AC_DEFINE([longlong], [long long], [Define to a at least 64-bit int type])dnl
 ifelse([$1], ,:, [$1])],[ifelse([$2], ,:, [$2])])])
 
 dnl ======================================================================
@@ -482,8 +482,8 @@ AC_CACHE_CHECK([/dev/urandom], [ac_cv_dev_urandom],
    if test -r /dev/urandom; then ac_cv_dev_urandom=yes; fi])
 if test $ac_cv_dev_urandom = yes; then
   AC_DEFINE([HAVE_DEV_URANDOM], 1, 
-    [Define this as 1 if you have /dev/urandom.])
+    [Define to 1 if you have /dev/urandom.])
   AC_DEFINE([DEV_URANDOM], 1,
-    [Define this as the random number source name.])
+    [Define to the random number source name.])
 fi
 ])

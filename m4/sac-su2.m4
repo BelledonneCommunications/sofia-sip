@@ -20,30 +20,30 @@ dnl Define compilation options for su_configure.h
 
 case "$target" in 
 *-*-solaris?.* )
-  SAC_SU_DEFINE(__EXTENSIONS__, 1, [Define this in Solaris in order to get POSIX extensions.])
+  SAC_SU_DEFINE(__EXTENSIONS__, 1, [Define to 1 in Solaris in order to get POSIX extensions.])
 ;;
 esac
 
 case "$target" in 
 i?86-*-* )
-  SAC_SU_DEFINE(SU_HAVE_TAGSTACK, 1, [Define this as 1 if we can use tags directly from stack.])
+  SAC_SU_DEFINE(SU_HAVE_TAGSTACK, 1, [Define to 1 if we can use tags directly from stack.])
 ;;
 esac
 
 # Check includes used by su includes
 AC_CHECK_HEADER(sys/types.h, 
 	SAC_SU_DEFINE([SU_HAVE_SYS_TYPES], 1, 
-		     [Define as 1 if Sofia uses sys/types.h]))
+		     [Define to 1 if Sofia uses sys/types.h]))
 
 ax_inttypes=false
 AC_CHECK_HEADER(stdint.h, [
 	ax_inttypes=true
 	SAC_SU_DEFINE([SU_HAVE_STDINT], 1, 
-		     [Define as 1 if Sofia uses stdint.h])])
+		     [Define to 1 if Sofia uses stdint.h])])
 AC_CHECK_HEADER(inttypes.h,[
 	ax_inttypes=true
 	SAC_SU_DEFINE([SU_HAVE_INTTYPES], 1, 
-		     [Define as 1 if Sofia uses inttypes.h])])
+		     [Define to 1 if Sofia uses inttypes.h])])
 
 if $ax_inttypes; then : ; else 
 	AC_MSG_ERROR("No <stdint.h> or <inttypes.h> found.")
@@ -72,13 +72,13 @@ AC_REQUIRE([AC_C_INLINE])
 
 case "$ac_cv_c_inline" in
   yes) SAC_SU_DEFINE(su_inline, static inline, [
-		Define this as declarator for static inline functions.
+		Define to declarator for static inline functions.
 	])dnl
        SAC_SU_DEFINE(SU_INLINE, inline, [
-		Define this as declarator for inline functions.
+		Define to declarator for inline functions.
 	])dnl
        SAC_SU_DEFINE(SU_HAVE_INLINE, 1, [
-		Define this as 1 if you have inline functions.
+		Define to 1 if you have inline functions.
 	])dnl
   ;;
   no)  SAC_SU_DEFINE(su_inline, static)dnl
@@ -94,13 +94,13 @@ esac
 AC_REQUIRE([AC_SYS_SA_LEN])
 if test "$ac_cv_sa_len" = yes ;then
   SAC_SU_DEFINE([SU_HAVE_SOCKADDR_SA_LEN], 1, 
-	        [Define this as 1 if you have sa_len in struct sockaddr])
+	        [Define to 1 if you have sa_len in struct sockaddr])
 fi
 
 AC_REQUIRE([AC_STRUCT_SIN6])
 case $ac_cv_sin6 in 
 yes) SAC_SU_DEFINE(SU_HAVE_IN6, 1, [
-	Define this as 1 if you have struct sockaddr_in6]) ;;
+	Define to 1 if you have struct sockaddr_in6]) ;;
  no) ;;
   *) AC_MSG_ERROR([Inconsistent struct sockaddr_sin6 test]) ;;
 esac
@@ -108,36 +108,36 @@ esac
 AC_CHECK_HEADERS([unistd.h sys/time.h])
 
 AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
-  AC_DEFINE([HAVE_WIN32], 1, [Define as 1 you have WIN32])
-  SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define as 1 you have WinSock])
-  SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define as 1 you have WinSock2])
+  AC_DEFINE([HAVE_WIN32], 1, [Define to 1 you have WIN32])
+  SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define to 1 you have WinSock])
+  SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define to 1 you have WinSock2])
   SAC_SU_DEFINE([SU_HAVE_SOCKADDR_STORAGE], 1, 
-      [Define this as 1 if you have struct sockaddr_storage])
+      [Define to 1 if you have struct sockaddr_storage])
   AC_DEFINE([HAVE_ADDRINFO], 1,
-      [Define this as 1 if you have addrinfo structure.])
+      [Define to 1 if you have addrinfo structure.])
   AC_DEFINE([HAVE_GETADDRINFO], 1,
-      [Define this as 1 if you have addrinfo structure.])
+      [Define to 1 if you have addrinfo structure.])
   AC_DEFINE([HAVE_FREEADDRINFO], 1,
-      [Define this as 1 if you have addrinfo structure.])
+      [Define to 1 if you have addrinfo structure.])
   SAC_SU_DEFINE([SU_HAVE_ADDRINFO], 1,
-      [Define this as 1 if you have addrinfo structure.])
+      [Define to 1 if you have addrinfo structure.])
   AC_CHECK_HEADERS([windef.h])
   AC_CHECK_HEADERS([iphlpapi.h], [
     AC_DEFINE([HAVE_INTERFACE_INFO_EX], 1, [
-       Define this as 1 if you have WIN32 INTERFACE_INFO_EX type.])
+       Define to 1 if you have WIN32 INTERFACE_INFO_EX type.])
     AC_DEFINE([HAVE_SIO_ADDRESS_LIST_QUERY], 1, [
-       Define this as 1 if you have WIN32 WSAIoctl SIO_ADDRESS_LIST_QUERY.])
+       Define to 1 if you have WIN32 WSAIoctl SIO_ADDRESS_LIST_QUERY.])
   ], [], [#if HAVE_WINDEF_H
 #include <windef.h>
 #include <winbase.h>
 #endif
   ])
   AC_DEFINE([HAVE_FILETIME], 1, [
-     Define this as 1 if you have WIN32 FILETIME type and 
+     Define to 1 if you have WIN32 FILETIME type and 
      GetSystemTimeAsFileTime().])
 ],[
 dnl no winsock2
-SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define as 1 if you have BSD socket interface])
+SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define to 1 if you have BSD socket interface])
 AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h \
 		  sys/select.h])
 AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
@@ -163,7 +163,7 @@ fi])
 
 if test "$ac_cv_struct_addrinfo" = yes; then
   SAC_SU_DEFINE([SU_HAVE_ADDRINFO], 1, 
-    [Define as 1 if you have struct addrinfo.])
+    [Define to 1 if you have struct addrinfo.])
 fi
 
 AC_CACHE_CHECK([for struct sockaddr_storage],
@@ -177,7 +177,7 @@ else
 fi])
 if test "$ac_cv_struct_sockaddr_storage" = yes; then
   SAC_SU_DEFINE(SU_HAVE_SOCKADDR_STORAGE, 1, 
-    [Define this as 1 if you have struct sockaddr_storage])
+    [Define to 1 if you have struct sockaddr_storage])
 fi
 
 AC_CACHE_CHECK([for field ifr_index in struct ifreq],
@@ -197,7 +197,7 @@ fi # arpa/inet.h && netdb.h && sys/socket.h && net/if.h
 ])
 if test "$ac_cv_struct_ifreq_ifr_index" = yes ; then
   :
-  AC_DEFINE(HAVE_IFR_INDEX, 1, [Define this as 1 if you have ifr_index in <net/if.h>])
+  AC_DEFINE(HAVE_IFR_INDEX, 1, [Define to 1 if you have ifr_index in <net/if.h>])
 else
 AC_CACHE_CHECK([for field ifr_ifindex in struct ifreq],
 [ac_cv_struct_ifreq_ifr_ifindex],[
@@ -216,7 +216,7 @@ fi # arpa/inet.h && netdb.h && sys/socket.h && net/if.h
 ])
 if test "$ac_cv_struct_ifreq_ifr_ifindex" = yes; then
   :
-  AC_DEFINE(HAVE_IFR_IFINDEX, 1, [Define this as 1 if you have ifr_ifindex in <net/if.h>])
+  AC_DEFINE(HAVE_IFR_IFINDEX, 1, [Define to 1 if you have ifr_ifindex in <net/if.h>])
 fi
 
 fi # ifr_index in struct ifreq
@@ -231,7 +231,7 @@ else
   ac_cv_struct_ifconf='net/if.h missing'
 fi])
 if test "$ac_cv_struct_ifconf" = yes; then
-  AC_DEFINE(HAVE_IFCONF, 1, [Define this as 1 if you have SIOCGIFCONF])
+  AC_DEFINE(HAVE_IFCONF, 1, [Define to 1 if you have SIOCGIFCONF])
 fi
 
 AC_CACHE_CHECK([for ioctl SIOCGIFNUM],
@@ -249,7 +249,7 @@ else
 fi])
 if test "$ac_cv_ioctl_siocgifnum" = yes; then
   HAVE_IFNUM=1
-  AC_DEFINE(HAVE_IFNUM, 1, [Define this as 1 if you have SIOCGIFNUM ioctl])
+  AC_DEFINE(HAVE_IFNUM, 1, [Define to 1 if you have SIOCGIFNUM ioctl])
 else
   HAVE_IFNUM=0
 fi
@@ -349,12 +349,12 @@ AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm \
                 getline getdelim getpass])
 # getline getdelim getpass are _GNU_SOURCE stuff
 if test $ac_cv_func_poll = yes ; then
-  SAC_SU_DEFINE([SU_HAVE_POLL], 1, [Define this as 1 if you have poll().])
+  SAC_SU_DEFINE([SU_HAVE_POLL], 1, [Define to 1 if you have poll().])
 fi
 
 if test $ac_cv_func_if_nameindex = yes ; then
   SAC_SU_DEFINE([SU_HAVE_IF_NAMEINDEX], 1, 
-    [Define this as 1 if you have if_nameindex().])
+    [Define to 1 if you have if_nameindex().])
 fi
 
 AC_REQUIRE([SAC_WITH_RT])
@@ -372,7 +372,7 @@ SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull \
 
 AC_DEFUN([AC_DEFINE_HAVE_PTHREAD_RWLOCK],[dnl
 AC_DEFINE([HAVE_PTHREAD_RWLOCK], 1,[
-Define this as 1 if you have working pthread_rwlock_t implementation.
+Define to 1 if you have working pthread_rwlock_t implementation.
 
    A  thread  may hold multiple concurrent read locks on rwlock - that is,
    successfully call the pthread_rwlock_rdlock() function  n  times.  If
@@ -410,7 +410,7 @@ fi
 # ===========================================================================
 case "$target" in
  *-*-linux*) AC_DEFINE([HAVE_PROC_NET_IF_INET6], 1, 
-	[Define this as 1 if you have /proc/net/if_inet6 control file]) ;;
+	[Define to 1 if you have /proc/net/if_inet6 control file]) ;;
 esac
 
 AM_CONFIG_HEADER([libsofia-sip-ua/su/sofia-sip/su_configure.h])

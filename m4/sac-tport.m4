@@ -18,8 +18,8 @@ if test -n "${with_sigcomp}" && test "${with_sigcomp}" != no ; then
 	AC_CHECK_HEADERS(sigcomp.h,,AC_MSG_ERROR([cannot find Sofia SigComp includes]))
 
 	AC_CHECK_FUNC(sigcomp_library_2_5,
-            [AC_DEFINE([HAVE_SIGCOMP], 1, [Define this as 1 if you have Sofia sigcomp >= 2.5])
-             AC_DEFINE([HAVE_SOFIA_SIGCOMP], 1, [Define this as 1 if you have Sofia sigcomp >= 2.5])], 
+            [AC_DEFINE([HAVE_SIGCOMP], 1, [Define to 1 if you have Sofia sigcomp >= 2.5])
+             AC_DEFINE([HAVE_SOFIA_SIGCOMP], 1, [Define to 1 if you have Sofia sigcomp >= 2.5])], 
              AC_MSG_ERROR(Sofia SigComp API >= 2.5 was not found))
 fi
 
@@ -34,6 +34,6 @@ AC_ARG_WITH(sctp,
  enable_sigcomp=no)
 
 if test x$enable_sctp = xyes; then
-AC_DEFINE(HAVE_SCTP, 1, [Define this a 1 if you have SCTP])
+AC_DEFINE(HAVE_SCTP, 1, [Define to 1 if you have SCTP])
 fi
 ])

@@ -62,9 +62,9 @@ SAC_SU
 
 ### internal modules
 ### ----------------
-AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define as 1 always])
-AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define as 1 if we use DNS library])
-AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define as 1 if we use S/MIME library])
+AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define to 1 always])
+AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define to 1 if we use DNS library])
+AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define to 1 if we use S/MIME library])
 
 dnl Disable stun by default while it is broken
 AC_ARG_ENABLE(stun,
@@ -76,9 +76,9 @@ if test x$enable_stun = xno ; then
 elif test x${HAVE_OPENSSL} != x1 ; then
   dnl compile STUN only if OPENSSL is available
   AC_MSG_WARN([** TLS support for STUN disabled as OpenSSL headers and/or libraries were not found **])
-  AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
+  AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define to 1 if we use STUN library])
 else
-  AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define as 1 if we use STUN library])
+  AC_DEFINE([HAVE_SOFIA_STUN], 1, [Define to 1 if we use STUN library])
 fi
 
 dnl Disable NTLM support by default
@@ -87,13 +87,13 @@ AC_ARG_ENABLE(ntlm,
  , enable_ntlm=no)
 
 if test x$enable_ntlm = xyes ; then
-  AC_DEFINE([HAVE_SOFIA_NTLM], 1, [Define as 1 if we use NTLM library])
+  AC_DEFINE([HAVE_SOFIA_NTLM], 1, [Define to 1 if we use NTLM library])
 fi
 AM_CONDITIONAL([HAVE_NTLM], [test "x$enable_ntlm" = xyes])
 
 
-AC_DEFINE([HAVE_SRTP], 0, [Define as 1 if we use SRTP])
-AC_DEFINE([HAVE_UPNP], 0, [Define as 1 if we use UPnP])
+AC_DEFINE([HAVE_SRTP], 0, [Define to 1 if we use SRTP])
+AC_DEFINE([HAVE_UPNP], 0, [Define to 1 if we use UPnP])
 
 ### checks for header files
 ### -----------------------
@@ -102,7 +102,7 @@ AC_HEADER_STDC
 ### checks for declarations
 ### -----------------------
 AC_CHECK_DECL([SIGPIPE], [
-AC_DEFINE([HAVE_SIGPIPE], 1, [Define as 1 if you have SIGPIPE])],,[
+AC_DEFINE([HAVE_SIGPIPE], 1, [Define to 1 if you have SIGPIPE])],,[
 #include <signal.h>
 ])
 
@@ -111,9 +111,9 @@ AC_DEFINE([HAVE_SIGPIPE], 1, [Define as 1 if you have SIGPIPE])],,[
 
 AC_TYPE_SIGNAL
 AC_TYPE_LONGLONG([
-AC_DEFINE([LLU], ["%llu"], [Define as format (%llu) for unsigned long long])dnl
-AC_DEFINE([LLI], ["%lli"], [Define as format (%lli) for long long])dnl
-AC_DEFINE([LLX], ["%llx"], [Define as format (%llx) for long long hex])dnl
+AC_DEFINE([LLU], ["%llu"], [Define to format (%llu) for unsigned long long])dnl
+AC_DEFINE([LLI], ["%lli"], [Define to format (%lli) for long long])dnl
+AC_DEFINE([LLX], ["%llx"], [Define to format (%llx) for long long hex])dnl
 ])
 
 ### checks for structures
