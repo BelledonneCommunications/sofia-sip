@@ -75,16 +75,10 @@ static int tport_stun_response(tport_t const *self,
 			       void *dgram, size_t n,
 			       void *from, socklen_t fromlen);
 
-typedef struct
-{
-  tport_primary_t stunpri_primary[1];
-  stun_handle_t *stunpri_handle;
-} tport_stun_t;
-
 tport_vtable_t const tport_stun_vtable =
 {
   "UDP", tport_type_stun,
-  sizeof (tport_stun_t),
+  sizeof (tport_primary_t),
   tport_udp_init_stun,
   tport_udp_deinit_stun,
   NULL,
@@ -109,17 +103,18 @@ static int tport_udp_init_stun(tport_primary_t *pri,
 			       tagi_t const *tags,
 			       char const **return_culprit)
 {
-  tport_stun_t *stunpri = (tport_stun_t *)pri;
   stun_handle_t *sh;
 
+#if 0
   if (!stun_is_requested(TAG_NEXT(tags)))
     return -1;
+#endif
 
   sh = stun_handle_init(pri->pri_master->mr_root, TAG_NEXT(tags));
   if (!sh)
     return *return_culprit = "stun_handle_init", -1;
 
-  stunpri->stunpri_handle = sh;
+  pri->pri_stun_handle = sh;
   tpn->tpn_canon = NULL;
 
   if (tport_udp_init_primary(pri, tpn, ai, tags, return_culprit) < 0)
@@ -147,10 +142,9 @@ static int tport_udp_init_stun(tport_primary_t *pri,
 
 static void tport_udp_deinit_stun(tport_primary_t *pri)
 {
-  tport_stun_t *stunpri = (tport_stun_t *)pri;
-  if (stunpri->stunpri_handle) 
-    stun_handle_destroy(stunpri->stunpri_handle); 
-  stunpri->stunpri_handle = NULL;
+  if (pri->pri_stun_handle) 
+    stun_handle_destroy(pri->pri_stun_handle); 
+  pri->pri_stun_handle = NULL;
 }
 
 
@@ -158,9 +152,7 @@ static int tport_stun_response(tport_t const *self,
 			       void *dgram, size_t n,
 			       void *from, socklen_t fromlen)
 {
-  tport_stun_t *stunpri = (tport_stun_t *)self->tp_pri;
-
-  stun_process_message(stunpri->stunpri_handle, self->tp_socket,
+  stun_process_message(self->tp_pri->pri_stun_handle, self->tp_socket,
 		       from, fromlen, (void *)dgram, n);
 
   return 3;
@@ -226,10 +218,9 @@ int tport_stun_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 			 tagi_t const *taglist)
 {
   tport_primary_t *pri = tp->tp_pri;
-  tport_stun_t *stunpri = (tport_stun_t *)pri;
   int err;
 
-  err = stun_keepalive(stunpri->stunpri_handle, 
+  err = stun_keepalive(pri->pri_stun_handle, 
 		       (su_sockaddr_t *)ai->ai_addr,
 		       STUNTAG_SOCKET(tp->tp_socket),
 		       STUNTAG_TIMEOUT(10000),

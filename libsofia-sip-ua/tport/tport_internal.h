@@ -234,6 +234,8 @@ struct tport_primary {
   unsigned            pri_has_tls:1;	/**< Supports tls  */
   unsigned:0;
 
+  void               *pri_stun_handle;
+
   tport_params_t      pri_params[1];      /**< Transport parameters */
 
 };
