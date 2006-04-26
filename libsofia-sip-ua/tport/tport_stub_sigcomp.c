@@ -66,6 +66,10 @@ int tport_init_compressor(tport_t *tp,
   if (tp->tp_comp)
     return 0;
 
+  comp_name = tport_canonize_comp(comp_name);
+  if (comp_name == NULL)
+    return 0;
+
   tcc = su_zalloc(tp->tp_home, vsc->vsc_sizeof_context);
 
   if (tcc == NULL)
@@ -77,6 +81,7 @@ int tport_init_compressor(tport_t *tp,
   }
 
   tp->tp_comp = tcc;
+
   return 0;
 }
 
@@ -168,8 +173,14 @@ int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 
-  if (vsc)
-    return vsc->vsc_sigcomp_assign(self, &self->tp_comp, cc);
+  if (!vsc)
+    return 0;
+
+  if (tport_is_connection_oriented(self) && 
+      tport_is_secondary(self) &&
+      self->tp_socket != SOCKET_ERROR) {
+    return vsc->vsc_set_compartment(self, self->tp_comp, cc);
+  }
 
   return 0;
 }
@@ -180,10 +191,18 @@ tport_sigcomp_assign_if_needed(tport_t *self,
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 
-  if (vsc)
-    return vsc->vsc_sigcomp_assign_if_needed(self, cc);
-    
-  return NULL;
+  if (!vsc)
+    return NULL;
+
+  if (!self->tp_name->tpn_comp)
+    return NULL;
+
+  if (cc) {
+    tport_sigcomp_assign(self, cc);
+    return cc;
+  }
+
+  return vsc->vsc_get_compartment(self, self->tp_comp);
 }			   
 
 
@@ -237,19 +256,18 @@ struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self)
 }
 
 /** Receive data from datagram using SigComp. */
-int tport_recv_comp_dgram(tport_t *self, int N)
+int tport_recv_comp_dgram(tport_t const *self, 
+			  tport_compressor_t *sc,
+			  msg_t **in_out_msg)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 
-  char dummy[1];
-  int error = EBADMSG;
-
   if (vsc)
-    return vsc->vsc_recv_comp(self, N);
+    return vsc->vsc_recv_comp(self, sc, in_out_msg);
 
-  recv(self->tp_socket, dummy, 1, 0); /* remove msg from socket */
+  msg_destroy(*in_out_msg), *in_out_msg = NULL;
 
-  return su_seterrno(error);     
+  return su_seterrno(EBADMSG);     
 }
 
 

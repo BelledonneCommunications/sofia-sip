@@ -50,8 +50,14 @@
 
 typedef struct tport_sigcomp_handler tport_sigcomp_handler_t;
 
+/** Per end-point SigComp data */
+struct tport_compressor {
+  struct sigcomp_state_handler *msc_state_handler;
+  struct sigcomp_compartment *msc_compartment;
+};
+
 /** Per-socket SigComp data */
-struct tport_sigcomp {
+struct tport_comp {
   struct sigcomp_udvm          *sc_udvm;
   struct sigcomp_compartment   *sc_cc;
   struct sigcomp_compressor    *sc_compressor;
@@ -69,34 +75,56 @@ struct tport_sigcomp {
 };
 
 
-struct sigcomp_compartment *vsc_master_init_sigcomp(tport_master_t *mr,
-						    char const *algorithm)
+tport_compressor_t *vsc_master_init_sigcomp(tport_t *mr,
+					     char const *algorithm)
 {
+  tport_compressor_t *retval =  NLL;
+  stuct sigcomp_state_handler *sh = NULL;
+  struct sigcomp_algorithm *a = NULL;
   struct sigcomp_compartment *cc = NULL;
-#if 0
-  struct sigcomp_algorithm const *algorithm = self->sa_algorithm;
 
   if (algorithm == NULL)
-    algorithm = sigcomp_algorithm_by_name(getenv("SIGCOMP_ALGORITHM"));
+    algorithm = getenv("SIGCOMP_ALGORITHM");
 
-  self->sa_state_handler = sigcomp_state_handler_create();
+  retval = su_zalloc((su_home_t *)mr, sizeof *retval);
+  if (retval == NULL)
+    return retval;
 
-  if (self->sa_state_handler)
-    self->sa_compartment = 
-      sigcomp_compartment_create(algorithm, self->sa_state_handler, 0,
-				 "", 0, NULL, 0);
+  sh = sigcomp_state_handler_create();
+
+  if (sh == NULL) {
+    SU_DEBUG_1(("tport: initializing SigComp state handler: %s\n", 
+		strerror(errno)));
+    vsc_master_deinit_sigcomp(mr, retval), retval = NULL;
+    return retval;
+  }
+  retval->msc_state_handler = sh;
+
+  a = sigcomp_algorithm_by_name(algorithm);
+  cc = sigcomp_compartment_create(a, sh, 0, "", 0, NULL, 0);
+
+  if (cc == NULL) {
+    SU_DEBUG_1(("tport: initializing SigComp master compartment: %s\n", 
+		strerror(errno)));
+    vsc_master_deinit_sigcomp(mr, retval), retval = NULL;
+    return retval;
+  }
+
+  self->msc_compartment = cc;
+
+  return retval;
+}
 
   if (self->sa_compartment) {
     agent_sigcomp_options(self, self->sa_compartment);
     sigcomp_compartment_option(self->sa_compartment, "stateless");
   }
   else
-    SU_DEBUG_1(("nta: initializing SigComp: %s\n", strerror(errno)));
 
   if (mr->mr_compartment)
     sigcomp_compartment_unref(mt->mr_compartment);
   mr->mr_compartment = sigcomp_compartment_ref(cc);
-#endif
+
   return cc;
 }
 
