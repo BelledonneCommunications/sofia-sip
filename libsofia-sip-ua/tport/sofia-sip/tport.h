@@ -188,10 +188,16 @@ TPORT_DLL void tport_destroy(tport_t *tport);
 /** Shutdown a transport connection. */
 TPORT_DLL int tport_shutdown(tport_t *tport, int how);
 
-/** Create a new transport reference. */
+/** Create a new reference to a transport object. */
+TPORT_DLL tport_t *tport_ref(tport_t *tp);
+
+/** Destroy reference to a transport object. */
+TPORT_DLL void tport_unref(tport_t *tp);
+
+/** Create a new transport reference. @deprecated Use tport_ref(). */
 TPORT_DLL tport_t *tport_incref(tport_t *tp);
 
-/** Destroy a transport reference. */
+/** Destroy a transport reference. @deprecated Use tport_unref(). */
 TPORT_DLL void tport_decref(tport_t **tp);
 
 /** Send a message using transport. */

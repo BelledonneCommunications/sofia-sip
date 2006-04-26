@@ -985,8 +985,8 @@ void tport_zap_secondary(tport_t *self)
   su_home_zap(self->tp_home);
 }
 
-/** Create a new transport reference. */
-tport_t *tport_incref(tport_t *tp)
+/** Create a new reference to a transport object. */
+tport_t *tport_ref(tport_t *tp)
 {
   if (tp) {
     if (tp->tp_refs >= 0)
@@ -997,16 +997,28 @@ tport_t *tport_incref(tport_t *tp)
   return tp;
 }
 
+/** Destroy reference to a transport object. */
+void tport_unref(tport_t *tp)
+{
+  if (tp && tp->tp_refs > 0)
+    if (--tp->tp_refs == 0 && tp->tp_params->tpp_idle == 0)
+      if (!tport_is_closed(tp))
+	tport_close(tp);
+}
+
+/** Create a new reference to transport object. */
+tport_t *tport_incref(tport_t *tp)
+{
+  return tport_ref(tp);
+}
+
 /** Destroy a transport reference. */
 void tport_decref(tport_t **ttp)
 {
   assert(ttp);
 
   if (*ttp) {
-    if ((*ttp)->tp_refs > 0)
-      if (--(*ttp)->tp_refs == 0 && (*ttp)->tp_params->tpp_idle == 0)
-	if (!tport_is_closed(*ttp))
-	  tport_close(*ttp);
+    tport_unref(*ttp);
     *ttp = NULL;
   }
 }
