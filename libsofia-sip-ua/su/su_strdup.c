@@ -103,7 +103,7 @@ char *su_strcat(su_home_t *home, char const *s1, char const *s2)
  * returned.
  *
  * @param home  pointer to memory home
- * @param s,... strings to be concatenated
+ * @param ...  NULL-terminated list of strings to be concatenated
  * 
  * @return Pointer to the newly created string is returned, or @c NULL upon
  * an error.

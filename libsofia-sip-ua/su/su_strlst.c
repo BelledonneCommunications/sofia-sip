@@ -422,8 +422,8 @@ char const *su_slprintf(su_strlst_t *self, char const *fmt, ...)
  * home of the list and appended to the string list.
  *
  * @param self  pointer to a string list object
- * @param fmt format string
- * @param ... argument list (must match with the @a fmt format string)
+ * @param fmt  format string
+ * @param ap   stdarg argument list (must match with the @a fmt format string)
  *
  * @return A pointer to a fresh copy of formatting result, or NULL upon an
  * error.

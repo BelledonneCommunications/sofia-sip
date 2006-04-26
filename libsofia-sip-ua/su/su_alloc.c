@@ -903,7 +903,7 @@ void su_home_deinit(su_home_t *home)
  * error. It uses a temporary home and moves the blocks from temporary to a
  * proper home when successful, but frees the temporary home upon an error.
  *
- * If @src has destructor, it is called before starting to move.
+ * If @a src has destructor, it is called before starting to move.
  *
  * @param dst destination home
  * @param src source home
