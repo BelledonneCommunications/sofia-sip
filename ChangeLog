@@ -1,3 +1,36 @@
+2006-04-26  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added missing events to nua.docs.
+
+  * More fixes to nua/nua_publish.c.
+  - nua_unpublish uses tags from initial nua_publish()
+  - 900 status is returned when there is no Expires header in 2XX response to
+    PUBLISH.
+
+  * Re-indented nua_publish.c.
+
+  * Added better error checking to nua_creq_msg().
+  Fixed Service-Route header processing, too.
+
+  * Added nua_add_contact_by_aor() to nua_register.c.
+  The nua_add_contact_by_aor() takes care of adding other registration-related
+  headers like Service-Route, too.
+
+  * Moved nua_publish() documentation from nua.c/nua.docs to nua_publish.c.
+  Updated documentation, added nua_r_unpublish documentation.
+
+  * Improved PUBLISH handling in nua/nua_publish.c.
+  Saving the initial PUBLISH message along with message body and content type.
+  They are re-used if 412 is received or if 2XX response contains Expires: 0.
+  If 2XX response is received without Expires header, we report internal error
+  to application. 
+
+  * Fixed route handling in SUBSCRIBE in the file nua/nua_subnotref.c.
+  There was a problem using dialog route set when there was an initial route
+  original SUBSCRIBE. 
+  
+  * Added SRESTAG_CACHE() to <sofia-sip/sresolv.h>.
+
 2006-04-25  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added compilation and run-time checks for MSG_TRUNC.
