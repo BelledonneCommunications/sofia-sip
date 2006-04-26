@@ -380,6 +380,8 @@ su_timer_t *su_timer_create(su_task_r const, su_duration_t msec)
      __attribute__((__malloc__));
 void su_timer_destroy(su_timer_t *);
 int su_timer_set(su_timer_t *, su_timer_f, su_timer_arg_t *);
+int su_timer_set_interval(su_timer_t *t, su_timer_f wakeup,
+			  su_timer_arg_t *arg, su_duration_t duration);
 int su_timer_set_at(su_timer_t *, su_timer_f, su_timer_arg_t *, su_time_t);
 int su_timer_run(su_timer_t *, su_timer_f, su_timer_arg_t *);
 int su_timer_set_for_ever(su_timer_t *, su_timer_f, su_timer_arg_t *);

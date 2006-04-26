@@ -327,7 +327,8 @@ start_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 
   p->addr = *arg;
   p->id = 1;
-  su_timer_set_at(p->t, do_ping, p, su_now());
+
+  su_timer_set_interval(p->t, do_ping, p, 0);
 }
 
 void

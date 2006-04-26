@@ -192,14 +192,15 @@ su_timer_set0(su_timer_t **timers,
 	      su_timer_t *t,
 	      su_timer_f wakeup,
 	      su_wakeup_arg_t *arg,
-	      su_time_t when)
+	      su_time_t when,
+	      su_duration_t offset)
 {
   if (SU_TIMER_IS_SET(t))
     timers_remove(timers, t);
 
   t->sut_wakeup = wakeup;
   t->sut_arg = arg;
-  t->sut_when = when;
+  t->sut_when = su_time_add(when, offset);
 
   return timers_append(timers, t);
 }
@@ -267,7 +268,44 @@ void su_timer_destroy(su_timer_t *t)
   }
 }
 
-/** Set the timer for an interval.
+/** Set the timer for the default interval.
+ *
+ *  Sets (starts) the given timer to expire after the default duration.
+ *
+ *  The timer must have an default duration.
+ *
+ * @param t       pointer to the timer object
+ * @param wakeup  pointer to the wakeup function
+ * @param arg     argument given to the wakeup function
+ * @param interval duration in milliseconds before timer wakeup is called
+ *
+ * @return 0 if successful, -1 otherwise.
+ */
+int su_timer_set_interval(su_timer_t *t,
+			  su_timer_f wakeup,
+			  su_timer_arg_t *arg,
+			  su_duration_t interval)
+{
+  char const *func = "su_timer_set_interval";
+  su_timer_t **timers;
+
+  if (t == NULL) {
+    SU_DEBUG_1(("%s(%p): %s\n", func, t, "NULL argument"));
+    return -1;
+  }
+
+  timers = su_task_timers(t->sut_task);
+  if (timers == NULL) {
+    SU_DEBUG_1(("%s(%p): %s\n", func, t, "invalid timer"));
+    return -1;
+  }
+
+  su_timer_set0(timers, t, wakeup, arg, su_now(), interval);
+
+  return 0;
+}
+
+/** Set the timer for the default interval.
  *
  *  Sets (starts) the given timer to expire after the default duration.
  *
@@ -284,26 +322,17 @@ int su_timer_set(su_timer_t *t,
 		 su_timer_arg_t *arg)
 {
   char const *func = "su_timer_set";
-  su_timer_t **timers;
 
   if (t == NULL)
     return -1;
 
   assert(t->sut_duration > 0);
   if (t->sut_duration == 0) {
-    SU_DEBUG_1(("%s(%p): %s\n", func, t, "timer without default duration"));
+    SU_DEBUG_0(("%s(%p): %s\n", func, t, "timer without default duration"));
     return -1;
   }
 
-  timers = su_task_timers(t->sut_task);
-  if (timers == NULL) {
-    SU_DEBUG_1(("%s(%p): %s\n", func, t, "invalid timer"));
-    return -1;
-  }
-
-  su_timer_set0(timers, t, wakeup, arg, su_time_add(su_now(), t->sut_duration));
-
-  return 0;
+  return su_timer_set_interval(t, wakeup, arg, t->sut_duration);
 }
 
 /** Set timer at known time.
@@ -336,7 +365,7 @@ int su_timer_set_at(su_timer_t *t,
     return -1;
   }
 
-  su_timer_set0(timers, t, wakeup, arg, when);
+  su_timer_set0(timers, t, wakeup, arg, when, 0);
 
   return 0;
 }
@@ -388,7 +417,7 @@ int su_timer_run(su_timer_t *t,
   t->sut_run = now;
   t->sut_woken = 0;
 
-  su_timer_set0(timers, t, wakeup, arg, su_time_add(now, t->sut_duration));
+  su_timer_set0(timers, t, wakeup, arg, now, t->sut_duration);
 
   return 0;
 }
@@ -438,7 +467,7 @@ int su_timer_set_for_ever(su_timer_t *t,
   t->sut_run = now;
   t->sut_woken = 0;
 
-  su_timer_set0(timers, t, wakeup, arg, su_time_add(now, t->sut_duration));
+  su_timer_set0(timers, t, wakeup, arg, now, t->sut_duration);
 
   return 0;
 }
@@ -488,7 +517,6 @@ int su_timer_expire(su_timer_t ** const timers,
 {
   su_timer_t *t;
   su_timer_f f;
-  su_time_t next;
   int n = 0;
 
   if (!*timers)
@@ -522,12 +550,11 @@ int su_timer_expire(su_timer_t ** const timers,
       }
 
       if (t->sut_running == run_at_intervals) {
-	next = su_time_add(t->sut_run, (t->sut_woken + 1) * t->sut_duration);
-	su_timer_set0(timers, t, f, t->sut_arg, next);
+	su_timer_set0(timers, t, f, t->sut_arg, 
+		      t->sut_run, (t->sut_woken + 1) * t->sut_duration);
       }
       else if (t->sut_running == run_for_ever) {
-	next = su_time_add(now, t->sut_duration);
-	su_timer_set0(timers, t, f, t->sut_arg, next);
+	su_timer_set0(timers, t, f, t->sut_arg, now, t->sut_duration);
       }
     }
     else {
