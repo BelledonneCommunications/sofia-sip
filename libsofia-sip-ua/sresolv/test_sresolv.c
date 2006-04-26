@@ -1067,7 +1067,7 @@ int test_cache(sres_context_t *ctx)
       case 50:
         TEST(rr_naptr->na_record->r_type, sres_type_naptr);
         TEST(rr_naptr->na_record->r_class, sres_class_in);
-        // TEST(rr_naptr->na_record->r_ttl, 60);
+        TEST(rr_naptr->na_record->r_ttl, 60);
         TEST(rr_naptr->na_order, 50);
         TEST(rr_naptr->na_prefer, 15);
         TEST_S(rr_naptr->na_flags, "u");
@@ -1198,8 +1198,6 @@ int test_cache(sres_context_t *ctx)
   TEST(rr_cname->cname_record->r_class, sres_class_in);
   TEST(rr_cname->cname_record->r_ttl, 60);
   TEST_S(rr_cname->cn_cname, "sip00.example.com.");
-  // XXX - this also returns AAAA record for sip00
-  //TEST(result[1], NULL);
 
   sres_free_answers(res, result);
 

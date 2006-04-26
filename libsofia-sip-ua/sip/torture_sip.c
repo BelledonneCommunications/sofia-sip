@@ -1255,7 +1255,6 @@ static int parser_test(void)
   sip_via_t            sip_via[1] = { SIP_VIA_INIT() };
   sip_route_t          sip_route[1] = { SIP_ROUTE_INIT() };		
   sip_record_route_t   sip_record_route[1] = { SIP_RECORD_ROUTE_INIT() };
-  // sip_hide_t        sip_hide[1] = { SIP_HIDE_INIT() };
   sip_max_forwards_t   sip_max_forwards[1] = { SIP_MAX_FORWARDS_INIT() };
   sip_from_t           sip_from[1] = { SIP_FROM_INIT() };
   sip_to_t             sip_to[1] = { SIP_TO_INIT() };
@@ -1270,7 +1269,6 @@ static int parser_test(void)
   sip_subject_t        sip_subject[1] = { SIP_SUBJECT_INIT() };
   sip_priority_t       sip_priority[1] = { SIP_PRIORITY_INIT() };
 		           		
-  // sip_also_t        sip_also[1] = { SIP_ALSO_INIT() };
   sip_call_info_t      sip_call_info[1] = { SIP_CALL_INFO_INIT() };
   sip_organization_t   sip_organization[1] = { SIP_ORGANIZATION_INIT() };
   sip_server_t         sip_server[1] = { SIP_SERVER_INIT() };
@@ -1378,7 +1376,6 @@ static int parser_test(void)
   TEST(msg_header_offset(msg, sip, sip_via), &sip->sip_via);
   TEST(msg_header_offset(msg, sip, sip_route), &sip->sip_route);
   TEST(msg_header_offset(msg, sip, sip_record_route), &sip->sip_record_route);
-  // TEST(msg_header_offset(msg, sip, sip_hide), &sip->sip_hide);
   TEST(msg_header_offset(msg, sip, sip_max_forwards), &sip->sip_max_forwards);
   TEST(msg_header_offset(msg, sip, sip_from), &sip->sip_from);
   TEST(msg_header_offset(msg, sip, sip_to), &sip->sip_to);
@@ -1393,7 +1390,6 @@ static int parser_test(void)
   TEST(msg_header_offset(msg, sip, sip_subject), &sip->sip_subject);
   TEST(msg_header_offset(msg, sip, sip_priority), &sip->sip_priority);
 		           		
-  // TEST(msg_header_offset(msg, sip, sip_also), &sip->sip_also);
   TEST(msg_header_offset(msg, sip, sip_call_info), &sip->sip_call_info);
   TEST(msg_header_offset(msg, sip, sip_organization), &sip->sip_organization);
   TEST(msg_header_offset(msg, sip, sip_server), &sip->sip_server);
@@ -1442,7 +1438,6 @@ static int parser_test(void)
   TEST(sip_record_route_class->hc_params, 
        offsetof(sip_record_route_t, r_params));
 
-  // TEST(sip_hide_class->hc_params, 0);
   TEST(sip_max_forwards_class->hc_params, 0);
   TEST(sip_from_class->hc_params, offsetof(sip_from_t, a_params));
   TEST(sip_to_class->hc_params, offsetof(sip_to_t, a_params));
@@ -1458,7 +1453,6 @@ static int parser_test(void)
   TEST(sip_subject_class->hc_params, 0);
   TEST(sip_priority_class->hc_params, 0);
 		           		
-  // TEST(sip_also_class->hc_params, 0);
   TEST(sip_call_info_class->hc_params, 
        offsetof(sip_call_info_t, ci_params));
   TEST(sip_organization_class->hc_params, 0);
@@ -1603,7 +1597,6 @@ static int sip_header_test(void)
   TEST(count(sip->sip_content_type->c_common), 1);
   TEST(count(sip->sip_route->r_common), 0);
   TEST(count(sip->sip_record_route->r_common), 4);
-  //TEST(count(sip->sip_hide->g_common), 1);
   TEST(count(sip->sip_unknown->un_common), 2);
   TEST(count(sip->sip_error->er_common), 1);
   TEST(count(sip->sip_max_forwards->mf_common), 1);
@@ -1622,9 +1615,6 @@ static int sip_header_test(void)
   TEST_S(sip->sip_from->a_display, "h");
 
   v0 = sip->sip_via;
-
-  //TEST_1(m = sip_contact_create_from_via(home, v0, "joe"));
-  //TEST_S(m->m_url->url_user, "joe");
 
   TEST_1(v = sip_via_copy(home, v0));
   TEST(len(v->v_common), len(v0->v_common));
@@ -1911,7 +1901,6 @@ static int test_content_disposition(void)
   TEST_1(cd->cd_params && cd->cd_params[0] && cd->cd_params[1] && !cd->cd_params[2]);
   TEST_S(cd->cd_params[0], "action=store");
   TEST_S(cd->cd_params[1], "handling=required");
-  //TEST_S(cd->cd_action, "store");
   TEST_S(cd->cd_handling, "required");
   TEST_1(cd->cd_required);
   TEST_1(!cd->cd_optional);
@@ -2340,9 +2329,9 @@ static int test_route(void)
   END();
 }
 
+/* Test Request-Disposition header */
 int test_request_disposition(void)
 {
-// Test Request-Disposition header
   sip_request_disposition_t *rd;
   su_home_t *home;
 

@@ -1332,10 +1332,8 @@ void sdp_media_type(sdp_media_t *m, char const *s)
     m->m_type = sdp_media_control, m->m_type_name = "control";
   else if (strcasecmp(s, "message") == 0)
     m->m_type = sdp_media_message, m->m_type_name = "message";
-  // Addition for JPIP - START
   else if (strcasecmp(s, "image") == 0)
     m->m_type = sdp_media_image, m->m_type_name = "image";
-  // Addition for JPIP - END
   else
     m->m_type = sdp_media_x, m->m_type_name = s;
 }

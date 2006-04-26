@@ -2827,7 +2827,7 @@ int stun_test_lifetime(stun_handle_t *sh,
 
   /* If no server given, use default address from stun_handle_create() */
   if (!server) {
-    //memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t));
+    /* memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t)); */
     memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {

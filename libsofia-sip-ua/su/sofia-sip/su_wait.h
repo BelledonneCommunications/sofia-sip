@@ -44,8 +44,7 @@
 #include "sofia-sip/su_time.h"
 #endif
 #if SU_HAVE_POLL
-//#include <stropts.h>		/* stream operations */
-#include <sys/poll.h>		/* poll is part of streams  */
+#include <sys/poll.h>
 #endif
 
 SOFIA_BEGIN_DECLS

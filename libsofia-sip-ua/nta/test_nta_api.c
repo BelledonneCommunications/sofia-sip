@@ -315,7 +315,6 @@ int api_test_init(agent_t *ag)
 
   {
     /* Initialize our headers */
-    // msg_param_t from_params[2] = { "tag=fdeadbeef", NULL };
     sip_from_t from[1];
     sip_to_t to[1];
     sip_contact_t m[1];

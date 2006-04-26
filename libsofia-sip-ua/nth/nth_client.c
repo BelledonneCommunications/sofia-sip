@@ -670,16 +670,18 @@ nth_client_t *nth_client_tcreate(nth_engine_t * engine,
     if (hc)
       hc->hc_expires = expires;
 
-    if (hc == NULL);
-    else if (http_add_tl(msg, http,
-			 //HTTPTAG_CONNECTION((http_connection_t *)-1),
-			 //HTTPTAG_CONNECTION_STR("close"),
-			 ta_tags(ta)) < 0);
+    if (hc == NULL)
+      ;
+    else if (http_add_tl(msg, http, ta_tags(ta)) < 0)
+      ;
     else if (!(uri = hc_request_complete(hc, msg, http,
 					 method, name, uri, version,
-					 nth_client_url(template))));
-    else if (auc && hc_request_authenticate(hc, msg, http, uri, auc) <= 0);
-    else if (hc_resolve_and_send(hc) < 0);
+					 nth_client_url(template))))
+      ;
+    else if (auc && hc_request_authenticate(hc, msg, http, uri, auc) <= 0)
+      ;
+    else if (hc_resolve_and_send(hc) < 0)
+      ;
     else
       ok = 1;
 

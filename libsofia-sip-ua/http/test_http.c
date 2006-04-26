@@ -1339,7 +1339,6 @@ static int http_chunk_test(void)
     TEST_1(http->http_status);
     TEST_1(http->http_payload);
     TEST_1(http->http_payload->pl_next);
-    // TEST(http->http_payload->pl_next->pl_next, NULL);
     TEST_1(http->http_date);
 
     msg_destroy(msg);
@@ -1371,7 +1370,6 @@ static int http_chunk_test(void)
     TEST_1(http->http_status);
     TEST_1(http->http_payload);
     TEST_1(http->http_payload->pl_next);
-    // TEST(http->http_payload->pl_next->pl_next, NULL);
     TEST_1(http->http_date);
 
     msg_destroy(msg);
@@ -1403,7 +1401,6 @@ static int http_chunk_test(void)
     TEST_1(http->http_status);
     TEST_1(http->http_payload);
     TEST_1(http->http_payload->pl_next);
-    // TEST(http->http_payload->pl_next->pl_next, NULL);
     TEST_1(http->http_date);
 
     msg_destroy(msg);

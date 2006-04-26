@@ -132,7 +132,7 @@ enum {
 };
 
 struct tport_pending_s {
-  //  tport_pending_t       *p_left, *p_right, *p_parent;
+  /* tport_pending_t       *p_left, *p_right, *p_parent; */
   void               *p_client;
   tport_pending_error_f *p_callback;
   msg_t              *p_msg;
@@ -3536,9 +3536,7 @@ void tport_send_queue(tport_t *self)
   unsigned short qhead = self->tp_qhead, N = self->tp_params->tpp_qsize;
   su_time_t now;
 
-  //assert(self->tp_iov && self->tp_iovlen > 0);
   assert(self->tp_queue && self->tp_queue[qhead]);
-  //assert(self->tp_unsent && self->tp_unsentlen > 0);
 
   self->tp_time = su_time_ms(now = su_now());
 

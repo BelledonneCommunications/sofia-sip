@@ -189,7 +189,7 @@ struct nea_sub_s {
 
   sip_from_t       *s_from;
   sip_contact_t    *s_remote;	/**< Remote contact  */
-  // sip_accept_t  *s_accept;
+  /* sip_accept_t  *s_accept; */
   sip_event_t      *s_id;
 
   nea_event_t      *s_event;
@@ -1885,7 +1885,7 @@ int nea_sub_process_subscribe(nea_sub_t *s,
   if (s->s_subscribed == 0)
     s->s_subscribed = now;
   s->s_expires = now + delta;
-  // s->s_accept = sip_accept_dup(home, accept);
+  /* s->s_accept = sip_accept_dup(home, accept); */
   if (s->s_id == NULL)
     s->s_id = sip_event_dup(home, sip->sip_event);
   s->s_event = ev;

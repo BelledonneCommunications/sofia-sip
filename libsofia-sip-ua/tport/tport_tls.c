@@ -107,7 +107,10 @@ void tls_set_default(tls_issues_t *i)
   i->randFile = i->randFile ? i->randFile : "tls_seed.dat";
   i->CAfile = i->CAfile ? i->CAfile : "cafile.pem";
   i->cipher = i->cipher ? i->cipher : "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH";
-    //"RSA-WITH-AES-128-CBC-SHA";
+  /* Default SIP cipher */
+  /* "RSA-WITH-AES-128-CBC-SHA"; */
+  /* RFC-2543-compatibility ciphersuite */
+  /* TLS_RSA_WITH_3DES_EDE_CBC_SHA; */
 }
 
 static
@@ -118,9 +121,11 @@ int tls_verify_cb(int ok, X509_STORE_CTX *store)
   X509 *cert = X509_STORE_CTX_get_current_cert(store);
   int  depth = X509_STORE_CTX_get_error_depth(store);
   int  err = X509_STORE_CTX_get_error(store);
- 
-  //X509_NAME_oneline(X509_get_subject_name(cert), data, 256);
-  //fprintf(stderr,"depth=%d %s\n",depth,data);
+
+#if nomore 
+  509_NAME_oneline(X509_get_subject_name(cert), data, 256);
+  fprintf(stderr,"depth=%d %s\n",depth,data);
+#endif
 
   if (!ok)
   {
@@ -132,7 +137,7 @@ int tls_verify_cb(int ok, X509_STORE_CTX *store)
     fprintf(stderr, "  err %i:%s\n", err, X509_verify_cert_error_string(err));
   }
  
-  return 1;			/* Always "ok" */
+  return 1;			/* Always return "ok" */
 }
 
 static
@@ -165,8 +170,9 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 
   if (tls->ctx == NULL) {
     SSL_METHOD *meth;
-    // meth = SSLv3_method();
-    // meth = SSLv23_method();
+
+    /* meth = SSLv3_method(); */
+    /* meth = SSLv23_method(); */
 
     if (ti->version)
       meth = TLSv1_method();

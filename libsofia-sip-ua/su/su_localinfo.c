@@ -1245,7 +1245,7 @@ int win_localinfo(su_localinfo_t const hints[1], su_localinfo_t **rresult)
 
       if ((hints->li_scope && (hints->li_scope & scope) == 0) ||
 	  (hints->li_family && hints->li_family != su->su_family) ||
-	  // (hints->li_ifname && strcmp(hints->li_ifname, ifname) != 0) ||
+	  /* (hints->li_ifname && strcmp(hints->li_ifname, ifname) != 0) || */
 	  (hints->li_index && hints->li_index != if_index))
 	continue;
     

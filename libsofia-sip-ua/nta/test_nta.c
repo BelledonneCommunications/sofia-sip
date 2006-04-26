@@ -495,7 +495,6 @@ int test_init(agent_t *ag, char const *resolv_conf)
 
   {
     /* Initialize our headers */
-    // msg_param_t from_params[2] = { "tag=fdeadbeef", NULL };
     sip_from_t from[1];
     sip_to_t to[1];
     sip_contact_t m[1];
@@ -516,8 +515,6 @@ int test_init(agent_t *ag, char const *resolv_conf)
     to->a_url->url_port = NULL;
     TEST_1(ag->ag_bob = sip_to_dup(ag->ag_home, to));
 
-    // url_strip_transport(ag->ag_bob->a_url);
-
     *m->m_url = *ag->ag_contact->m_url;
     m->m_url->url_user = "alice";
     TEST_1(ag->ag_m_alice = sip_contact_dup(ag->ag_home, m));
@@ -526,10 +523,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
     *from->a_url = *ag->ag_contact->m_url;
     from->a_url->url_user = "alice";
     from->a_url->url_port = NULL;
-    // from->a_params = from_params;
     TEST_1(ag->ag_alice = sip_from_dup(ag->ag_home, from));
-
-    // url_strip_transport(ag->ag_alice->a_url);
   }
   {
     char const data[] = 

@@ -1247,8 +1247,8 @@ char const *stateless_branch(nta_agent_t *sa,
   }
   if (sip->sip_to) {
     url_update(md5, sip->sip_to->a_url);
-    // XXX - some broken implementations include To tag in CANCEL
-    // su_md5_str0update(md5, sip->sip_to->a_tag);
+    /* XXX - some broken implementations include To tag in CANCEL */
+    /* su_md5_str0update(md5, sip->sip_to->a_tag); */
   }
   if (sip->sip_cseq) {
     uint32_t cseq = htonl(sip->sip_cseq->cs_seq);

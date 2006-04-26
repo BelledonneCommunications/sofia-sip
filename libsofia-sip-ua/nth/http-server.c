@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
   int o_extra = 0;
   int o_timeout = 300;
   char *s;
-  //char const *tls_cert_path = getenv("TPORT_CERTIFICATE");
 
   c = context;
   su_init();

@@ -277,9 +277,6 @@ int http_extract_chunk(msg_t *msg, http_t *http, char b[], int bsiz, int eos)
     return b - b0;
   }
 
-  //  if (bsiz == n + crlf)
-  // return 0;
-
   b += n + crlf, bsiz -= n + crlf;
 
   /* Extract chunk */

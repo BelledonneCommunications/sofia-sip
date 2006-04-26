@@ -377,8 +377,6 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 			 SIP_METHOD_SUBSCRIBE,
 			 NUTAG_USE_DIALOG(1),
 			 NUTAG_ADD_CONTACT(1),
-			 //SIPTAG_EVENT(du->du_event),
-			 //SIPTAG_SUPPORTED(nh->nh_supported),
 			 TAG_IF(du->du_terminating, 
 				SIPTAG_EXPIRES_STR("0")),
 			 TAG_END());

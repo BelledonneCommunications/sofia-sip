@@ -381,8 +381,9 @@ void *sub_alloc(su_home_t *home,
     else
       n = 0, n2 = SUB_N, used = 0;
 
-    // assert(n2 % SUB_P != 0);
-    // printf("su_alloc(home = %p): realloc block hash of size %d\n", home, n2);
+#if 0
+    printf("su_alloc(home = %p): realloc block hash of size %d\n", home, n2);
+#endif
 
     if (!(b2 = su_hash_alloc(n2)))
       return NULL;
