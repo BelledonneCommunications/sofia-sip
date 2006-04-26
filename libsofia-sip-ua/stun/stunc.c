@@ -52,6 +52,12 @@ enum {
   do_life_check = 8,
 };
 
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+static char const __func__[] = "stun_dns";
+#endif
 
 #ifndef SU_DEBUG
 #define SU_DEBUG 0
