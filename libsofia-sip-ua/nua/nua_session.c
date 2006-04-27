@@ -1375,8 +1375,10 @@ int process_cancel(nua_handle_t *nh,
 
   signal_call_state_change(nh, 0, "Received CANCEL", nua_callstate_init, 0, 0);
 
-  if (nh->nh_soa && ss->ss_state < nua_callstate_ready)
+  if (nh->nh_soa && ss->ss_state < nua_callstate_ready) {
     soa_terminate(nh->nh_soa, NULL);
+    nsession_destroy(nh);
+  }
 
   return 0;
 }
