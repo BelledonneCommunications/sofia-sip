@@ -40,6 +40,9 @@
 #ifndef AUTH_DIGEST_H
 #include <sofia-sip/auth_digest.h>
 #endif
+#ifndef AUTH_NTLM_H
+#include <sofia-sip/auth_ntlm.h>
+#endif
 #ifndef URL_H
 #include <sofia-sip/url.h>
 #endif

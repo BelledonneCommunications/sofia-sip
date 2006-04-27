@@ -41,6 +41,10 @@
 
 #include <sofia-sip/auth_digest.h>
 
+#if HAVE_SOFIA_NTLM
+#include <sofia-sip/auth_ntlm.h>
+#endif
+
 #if !HAVE_FUNC
 #if !HAVE_FUNCTION
 #define __FUNCTION__ "auth_plugin"

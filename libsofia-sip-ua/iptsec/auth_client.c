@@ -45,6 +45,11 @@
 #include <sofia-sip/msg_header.h>
 
 #include <sofia-sip/auth_digest.h>
+
+#if HAVE_SOFIA_NTLM
+#include <sofia-sip/auth_digest.h>
+#endif
+
 #include <sofia-sip/base64.h>
 #include <sofia-sip/su_uniqueid.h>
 

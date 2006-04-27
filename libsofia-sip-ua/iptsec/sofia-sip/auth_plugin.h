@@ -42,6 +42,10 @@
 #include "sofia-sip/auth_digest.h"
 #endif
 
+#ifndef AUTH_NTLM_H
+#include "sofia-sip/auth_ntlm.h"
+#endif
+
 #ifndef MSG_DATE_H
 #include <sofia-sip/msg_date.h>
 #endif
@@ -247,6 +251,33 @@ msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth,
 void auth_challenge_ntlm(auth_mod_t *am, 
 			 auth_status_t *as,
 			 auth_challenger_t const *ach);
+
+
+void auth_method_ntlm(auth_mod_t *am,
+		      auth_status_t *as,
+		      msg_auth_t *au,
+		      auth_challenger_t const *ach);
+
+
+void auth_check_ntlm(auth_mod_t *am,
+		     auth_status_t *as,
+		     auth_response_t *ar,
+		     auth_challenger_t const *ach);
+
+int auth_generate_ntlm_nonce(auth_mod_t *am, 
+			     char buffer[],
+			     size_t buffer_len,
+			     int nextnonce,
+			     msg_time_t now);
+
+int auth_validate_ntlm_nonce(auth_mod_t *am, 
+			     auth_status_t *as,
+			     auth_response_t *ar,
+			     msg_time_t now);
+
+void auth_info_ntlm(auth_mod_t *am, 
+		    auth_status_t *as,
+		    auth_challenger_t const *ach);
 
 
 int auth_allow_check(auth_mod_t *am, auth_status_t *as);

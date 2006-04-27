@@ -47,6 +47,11 @@
 #include <unistd.h>
 
 #include <sofia-sip/auth_digest.h>
+
+#if HAVE_SOFIA_NTLM
+#include <sofia-sip/auth_digest.h>
+#endif
+
 #include "iptsec_debug.h"
 
 #if HAVE_FUNC
@@ -976,7 +981,11 @@ void auth_challenge_ntlm(auth_mod_t *am,
   char const *u, *d;
   char nonce[AUTH_NTLM_NONCE_LEN];
 
+#if 0
   auth_generate_ntlm_nonce(am, nonce, sizeof nonce, 0, msg_now());
+#else
+  auth_generate_digest_nonce(am, nonce, sizeof nonce, 0, msg_now());
+#endif
 
   u = as->as_uri;
   d = as->as_pdomain;
