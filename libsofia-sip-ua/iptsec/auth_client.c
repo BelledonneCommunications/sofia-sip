@@ -745,7 +745,10 @@ msg_header_t *auc_digest_authorization(auth_client_t *ca,
  */
 int auc_authorize(auth_client_t **auc_list, msg_t *msg, sip_t *sip)
 {
-  sip_request_t *rq = sip->sip_request;
+  sip_request_t *rq = sip ? sip->sip_request : NULL;
+
+  if (!rq)
+    return 0;
 
   return auc_authorization(auc_list, msg, (msg_pub_t *)sip, 
 			   rq->rq_method_name, 
