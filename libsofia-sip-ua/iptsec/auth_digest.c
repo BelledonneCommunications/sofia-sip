@@ -129,7 +129,6 @@ int auth_get_params(su_home_t *home,
   return n;
 }
 
-static
 int auth_struct_copy(void *dst, void const *src, int s_size)
 {
   int d_size = *(int *)dst;

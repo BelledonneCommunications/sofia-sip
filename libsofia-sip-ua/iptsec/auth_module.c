@@ -914,8 +914,14 @@ void auth_check_ntlm(auth_mod_t *am,
     return;
   }
 
+  /* XXX - replace */
+#if 0
   if (as->as_nonce_issued == 0 /* Already validated nonce */ && 
       auth_validate_ntlm_nonce(am, as, ar, now) < 0) {
+#else
+  if (as->as_nonce_issued == 0 /* Already validated nonce */ && 
+      auth_validate_digest_nonce(am, as, ar, now) < 0) {
+#endif
     as->as_blacklist = am->am_blacklist;
     auth_challenge_ntlm(am, as, ach);
     return;
@@ -928,6 +934,7 @@ void auth_check_ntlm(auth_mod_t *am,
 
   apw = auth_mod_getpass(am, ar->ar_username, ar->ar_realm);
 
+#if 0
   if (apw && apw->apw_hash)
     a1 = apw->apw_hash;
   else if (apw && apw->apw_pass)
@@ -937,9 +944,26 @@ void auth_check_ntlm(auth_mod_t *am,
   
   if (ar->ar_md5sess)
     auth_ntlm_a1sess(ar, a1buf, a1), a1 = a1buf;
-      
+#else
+  if (apw && apw->apw_hash)
+    a1 = apw->apw_hash;
+  else if (apw && apw->apw_pass)
+    auth_digest_a1(ar, a1buf, apw->apw_pass), a1 = a1buf;
+  else 
+    auth_digest_a1(ar, a1buf, "xyzzy"), a1 = a1buf, apw = NULL;
+  
+  if (ar->ar_md5sess)
+    auth_digest_a1sess(ar, a1buf, a1), a1 = a1buf;
+#endif
+
+  /* XXX - replace with auth_ntlm_response */      
+#if 0
   auth_ntlm_response(ar, response, a1, 
+		     as->as_method, as->as_body, as->as_bodylen);
+#else
+  auth_digest_response(ar, response, a1, 
 		       as->as_method, as->as_body, as->as_bodylen);
+#endif
 
   if (!apw || strcmp(response, ar->ar_response)) {
     if (am->am_forbidden) {
@@ -1031,7 +1055,12 @@ void auth_info_ntlm(auth_mod_t *am,
   if (am->am_nextnonce) {
     char nonce[AUTH_NTLM_NONCE_LEN];
 
+    /* XXX - replace */
+#if 0
     auth_generate_ntlm_nonce(am, nonce, sizeof nonce, 1, msg_now());
+#else
+    auth_generate_digest_nonce(am, nonce, sizeof nonce, 1, msg_now());
+#endif
 
     as->as_info = 
       msg_header_format(as->as_home, ach->ach_info, "nextnonce=\"%s\"", nonce);
