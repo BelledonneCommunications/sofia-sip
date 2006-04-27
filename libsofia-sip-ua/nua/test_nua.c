@@ -336,7 +336,7 @@ void ep_callback(nua_event_t event,
   if (ep->printer)
     ep->printer(event, "", status, phrase, nua, ctx, ep, nh, call, sip, tags);
 
-  if (call == NULL) {
+  if (call == NULL && nh) {
     for (call = ep->call; call; call = call->next) {
       if (!call->nh)
 	break;
@@ -357,6 +357,9 @@ void ep_callback(nua_event_t event,
     ep->running = 0;
 
   ep->last_event = event;
+
+  if (call == NULL && nh)
+    nua_handle_destroy(nh);
 }
 
 void a_callback(nua_event_t event,
@@ -1233,7 +1236,7 @@ int test_stack_errors(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-1.2.3: unregister without register\n");
 
-  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(a->to), TAG_END()));
 
   UNREGISTER(a, a_call, a_call->nh, TAG_END());
 
@@ -1979,6 +1982,7 @@ int test_unregister(struct context *ctx)
   TEST_1(!sip->sip_contact);
   TEST_1(!e->next);
   free_events_in_list(ctx, c->events);
+  nua_handle_destroy(c->call->nh), c->call->nh = NULL;
 
   if (c->reg->nh) {
     UNREGISTER(c, NULL, c->reg->nh, TAG_END());
@@ -5700,6 +5704,9 @@ int test_deinit(struct context *ctx)
   BEGIN();
 
   struct call *call;
+
+  if (!ctx->threading)
+    su_root_step(ctx->root, 100);
 
   if (ctx->a.nua) {
     for (call = ctx->a.call; call; call = call->next)
