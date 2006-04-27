@@ -5,14 +5,16 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 		-I$(srcdir)/../su -I../su
+INCLUDES = 		-I$(srcdir)/../url -I../url \
+			-I$(srcdir)/../bnf -I../bnf \
+			-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
 # Build targets
 
 noinst_LTLIBRARIES = 	libsresolv.la
 
-noinst_PROGRAMS = 	test_sresolv
+noinst_PROGRAMS = 	test_sresolv sip-dig
 
 TESTS = 		run_test_sresolv
 
@@ -21,6 +23,12 @@ TESTS_ENVIRONMENT =	$(SHELL)
 CLEANFILES =		resolv.conf error.conf named.conf.tmp \
 			.test_sresolv.api.conf.?????? \
 			named.run
+
+LDADD = 		../url/liburl.la ../bnf/libbnf.la \
+			libsresolv.la \
+			../su/libsu.la
+
+AM_LDFLAGS =	 	-static
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -35,11 +43,6 @@ nobase_include_sofia_HEADERS = \
 libsresolv_la_SOURCES =	sres.c sres_cache.c sres_blocking.c sresolv.c
 
 COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_sofia_HEADERS)
-
-LDADD = 		libsresolv.la \
-			../su/libsu.la
-
-test_sresolv_LDFLAGS = 	-static
 
 # ----------------------------------------------------------------------
 # Distribution
