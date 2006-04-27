@@ -216,6 +216,10 @@ sres_blocking_t *sres_set_blocking(sres_resolver_t *res)
   if (b)
     return b;
 
+  /* Check if resolver is already in asynchronous mode */
+  if (sres_resolver_get_async(res, NULL))
+    return NULL;
+
   /* Create a synchronous (blocking) interface towards resolver */
   b = calloc(1, sizeof *b);
 
@@ -227,6 +231,14 @@ sres_blocking_t *sres_set_blocking(sres_resolver_t *res)
   }
 
   return b;
+}
+
+/** Return true (and set it in blocking mode) if resolver can block. */
+int sres_is_blocking(sres_resolver_t *res)
+{
+  if (res == NULL)
+    return 0;
+  return sres_set_blocking(res) != NULL;
 }
 
 /** Send a DNS query, return results.

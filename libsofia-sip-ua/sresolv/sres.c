@@ -738,8 +738,12 @@ sres_async_t *
 sres_resolver_get_async(sres_resolver_t const *res,
 			sres_update_f *callback)
 {
-  if (res == NULL || res->res_updcb != callback)
+  if (res == NULL)
     return su_seterrno(EFAULT), (void *)NULL;
+  else if (callback == NULL)
+    return res->res_async ? (sres_async_t *)-1 : 0;
+  else if (res->res_updcb != callback)
+    return NULL;
   else
     return res->res_async;
 }

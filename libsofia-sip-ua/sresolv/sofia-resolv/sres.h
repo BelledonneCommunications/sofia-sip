@@ -204,6 +204,9 @@ int sres_blocking_query_sockaddr(sres_resolver_t *res,
 				 struct sockaddr const *addr,
 				 sres_record_t ***return_records);
 
+/** Return true (and set it in blocking mode) if resolver can block. */
+int sres_is_blocking(sres_resolver_t *res);
+
 /** Sort the list of records */
 int sres_sort_answers(sres_resolver_t *res, sres_record_t **answers);
 
