@@ -23,6 +23,7 @@ API/ABI changes and versioning
     sofia-resolv/sres_async.h
     sofia-resolv/sres_cache.h
     sofia-resolv/sres_record.h
+    sip-dig.c example program
 
 - Added <sofia-sip/tport_plugins.h>
 
@@ -43,10 +44,14 @@ API/ABI changes and versioning
 
 - Discovery context pointer and callback added to stun_bind()
 
+- Removed old rtsp-related nua functions and events not used anymore.
+
 - Removed nutag_sip_parser (using ntatag_mclass instead)
 
 - Now returning 9XX errors from inside NUA
 
+- Added --enable-sctp to configure; fixed some SCTP problems,
+  (but not all)
 
 Contributors to this release
 ----------------------------
@@ -66,3 +71,17 @@ Bugs fixed in this release
    sorted by closing date
  - other bugs as fixed in CVS/darcs
 />
+
+- Fixed #1468407 nua_unregister() crashing when called without preceding
+  register (and other crash-prone problems with request message in nua)
+- Fixed #1473936 - resolving SIP URIs required active IP4 transports in nta
+- Fixed #1472683 - ACK did not have rport, even if INVITE did
+- Fixed double branch problem in CANCEL
+- Fixed problem with client certificate handling in tport module
+- Fixed problem creating error record in sresolv module
+- Fixed handling route in re-SUBSCRIBE
+- Fixed handling headers in re-PUBLISH. Fixed error reporting in the case
+  ESC returns 200 OK response to PUBLISH without Expires header.
+- Problem with auth-int and nua is fixed: now the correct MD5 sum of 
+  message body is calculated.
+- Fixed #1465023 (NUTAG_CERTIFICATE_DIR() handling problem).
