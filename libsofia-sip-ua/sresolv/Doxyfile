@@ -1,9 +1,13 @@
 PROJECT_NAME         = "sresolv"
 OUTPUT_DIRECTORY     = ../docs/html/sresolv
 
-INPUT 		     = sresolv.docs . sofia-sip
+INPUT 		     =  sofia-sip sofia-resolv sresolv.docs .
 
 @INCLUDE 	     = ../docs/Doxyfile.conf
 
-TAGFILES             += ../docs/doxytags_su=../su
+ALIASES             += CFILE="@internal @file" IFILE="@internal @file"
+
+TAGFILES            += ../docs/doxytags_su=../su
 GENERATE_TAGFILE     = ../docs/doxytags_sresolv
+
+PREDEFINED          += SRES_CONTEXT_T="struct sres_context_s"

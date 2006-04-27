@@ -32,7 +32,8 @@
  *
  * @par Include Context
  * @code
- * #include <stdint.h>
+ * #include <sys/types.h>
+ * #include <sys/socket.h>
  * #include <netinet/in.h>
  * #include <sofia-resolv/sres_record.h>
  * @endcode
@@ -45,10 +46,10 @@ extern "C" {
   
 #ifndef SRES_RECORD_T
 #define SRES_RECORD_T
+/** Type representing any DNS record. */
 typedef union sres_record           sres_record_t;
 #endif
 
-typedef struct sres_common          sres_common_t;
 typedef struct sres_generic         sres_generic_t;
 typedef struct sres_soa_record      sres_soa_record_t;
 typedef struct sres_a_record        sres_a_record_t;
@@ -59,8 +60,8 @@ typedef struct sres_ptr_record      sres_ptr_record_t;
 typedef struct sres_srv_record      sres_srv_record_t;
 typedef struct sres_naptr_record    sres_naptr_record_t;   
 
-/** Common part of DNS record */
-struct sres_common
+/** Common part of all DNS records. */
+typedef struct sres_common
 {
   int               r_refcount;	/**< Number of references to this record */
   char             *r_name;	/**< Domain name */
@@ -71,7 +72,7 @@ struct sres_common
   uint32_t          r_ttl;	/**< Time-to-live */
   uint16_t          r_rdlen;	/**< Length of record data */
   uint16_t          r_parsed;	/**< Nonzero if parsed */
-};
+} sres_common_t;
 
 /** Possible values for r_status (RCODE) */
 enum {
@@ -173,7 +174,7 @@ struct sres_naptr_record
   char             *na_replace;
 };
 
-/** Union of different records */
+/** Union of different DNS records */
 union sres_record
 {
   sres_common_t       sr_record[1];

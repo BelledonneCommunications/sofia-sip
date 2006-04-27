@@ -115,7 +115,7 @@ typedef struct sres_config     sres_config_t;
 typedef struct sres_server     sres_server_t;
 typedef struct sres_nameserver sres_nameserver_t;
 
-/** EDNS0 support */
+/** EDNS0 support. @internal */
 enum edns { 
   edns_not_tried = -1,
   edns_not_supported = 0,
@@ -507,7 +507,7 @@ sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
   return sres_resolver_new_internal(cnffile, cache, options);
 }
 
-/**Create a resolver.
+/**New resolver object.
  *
  * Allocate and initialize a new sres resolver object. The resolver object
  * contains the parsed resolv.conf file, a cache object containing past
@@ -520,7 +520,8 @@ sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
  *
  * @param conf_file_path name of the resolv.conf configuration file 
  * @param cache          optional pointer to a resolver cache
- * @param options, ...   list of resolv.conf directives (overriding conf_file)
+ * @param option, ...    list of resolv.conf options directives 
+ *                       (overriding options in conf_file)
  *
  * @par Environment Variables
  * - LOCALDOMAIN overrides @c domain or @c search directives
@@ -655,7 +656,7 @@ sres_resolver_new_internal(char const *conf_file_path,
   return NULL;
 }
 
-/** Create a new reference to resolver. */
+/** Increase reference count on a resolver object. */
 sres_resolver_t *
 sres_resolver_ref(sres_resolver_t *res)
 {
@@ -915,12 +916,20 @@ sres_query_make_sockaddr(sres_resolver_t *res,
 }
 
 
-void sres_query_bind(sres_query_t *q,
+/** Bind a query with another callback and context pointer.
+ *
+ * @param query pointer to a query object to bind
+ * @param callback pointer to new callback function (may be NULL)
+ * @param context pointer to callback context (may be NULL)
+*/
+void sres_query_bind(sres_query_t *query,
                      sres_answer_f *callback,
                      sres_context_t *context)
 {
-  q->q_callback = callback;
-  q->q_context = context;
+  if (query) {
+    query->q_callback = callback;
+    query->q_context = context;
+  }
 }
 
 /**Get a list of matching (type/domain) records from cache.
@@ -1057,6 +1066,11 @@ void sres_free_answer(sres_resolver_t *res, sres_record_t *answer)
     sres_cache_free_one(res->res_cache, answer);
 }
 
+/** Free and zero an array of records.
+ * 
+ * The array of records can be returned by sres_cached_answers() or 
+ * given by callback function.
+ */
 void 
 sres_free_answers(sres_resolver_t *res,
 		  sres_record_t **answers)
@@ -2017,6 +2031,7 @@ sres_query_report_error(sres_query_t *q,
  * The function sresolver_timer() should be called in regular intervals. We
  * recommend calling it in 500 ms intervals.
  *
+ * @param res pointer to resolver object
  * @param dummy argument for compatibility 
  */
 void sres_resolver_timer(sres_resolver_t *res, int dummy)
@@ -2030,9 +2045,9 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
 
   now = time(&res->res_now);
 
-  SU_DEBUG_9(("sres_resolver_timer() called at %lu\n", (long) now));
-
   if (res->res_queries->qt_used) {
+    SU_DEBUG_9(("sres_resolver_timer() called at %lu\n", (long) now));
+
     /** Every time it is called it goes through all query structures, and
      * retransmits all the query messages, which have not been answered yet.
      */
@@ -2168,8 +2183,6 @@ int sres_no_update(sres_async_t *async, int new_socket, int old_socket)
 }
 
 /** Create connected sockets for resolver.
- *
- * @related sres_resolver_t
  */
 int sres_resolver_sockets(sres_resolver_t *res,
 			  int *return_sockets, 

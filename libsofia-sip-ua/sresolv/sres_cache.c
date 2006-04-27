@@ -94,7 +94,7 @@ struct sres_rr_hash_entry_s {
 
 #define SRES_HENTRY_HASH(e) ((e)->rr_hash_key)
 
-struct sres_cache_s
+struct sres_cache
 {
   su_home_t           cache_home[1];
   time_t              cache_cleaned;

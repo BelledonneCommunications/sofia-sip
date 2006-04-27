@@ -22,12 +22,12 @@
  *
  */
 
-#ifndef SRESOLV_SOFIA_H 
+#ifndef SRESOLV_H 
 /** Defined when <sofia-sip/sresolv.h> has been included. */
-#define SRESOLV_SOFIA_H
+#define SRESOLV_H
 
 /**
- * @file sresolv_sofia.h Easy API for Sofia DNS Resolver.
+ * @file sresolv.h Easy API for Sofia DNS Resolver.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>,
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>,
@@ -49,27 +49,30 @@ SOFIA_BEGIN_DECLS
 
 /** Filter tag matching any sresolv tag. */
 #define SRESOLVTAG_ANY()         srestag_any, ((tag_value_t)0)
-extern tag_typedef_t srestag_any;
+SOFIAPUBVAR tag_typedef_t srestag_any;
 
-extern tag_typedef_t srestag_resolv_conf;
+SOFIAPUBVAR tag_typedef_t srestag_resolv_conf;
+/** Path of resolv.conf file. */
 #define SRESTAG_RESOLV_CONF(x) srestag_resolv_conf, tag_str_v((x))
-extern tag_typedef_t srestag_resolv_conf_ref;
+SOFIAPUBVAR tag_typedef_t srestag_resolv_conf_ref;
 #define SRESTAG_RESOLV_CONF_REF(x) srestag_resolv_conf_ref, tag_str_vr(&(x))
 
-extern tag_typedef_t srestag_cache;
+SOFIAPUBVAR tag_typedef_t srestag_cache;
+/** Pointer to existing #sres_cache_t object. */
 #define SRESTAG_CACHE(x) srestag_cache, tag_ptr_v((x))
-extern tag_typedef_t srestag_cache_ref;
+SOFIAPUBVAR tag_typedef_t srestag_cache_ref;
 #define SRESTAG_CACHE_REF(x) srestag_cache_ref, tag_ptr_vr(&(x), (x))
 
 /** Create a resolver object using @a root reactor. */
-sres_resolver_t *sres_resolver_create(su_root_t *root, 
-				      char const *resolv_conf,
-				      tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN sres_resolver_t *sres_resolver_create(su_root_t *root, 
+						  char const *resolv_conf,
+				                  tag_type_t, tag_value_t,
+						  ...);
 /** Destroy a resolver object. */
-int sres_resolver_destroy(sres_resolver_t *res);
+SOFIAPUBFUN int sres_resolver_destroy(sres_resolver_t *res);
 
 /* Return socket used by root. @deprecated */
-int sres_resolver_root_socket(sres_resolver_t *res);
+SOFIAPUBFUN int sres_resolver_root_socket(sres_resolver_t *res);
 
 SOFIA_END_DECLS
 

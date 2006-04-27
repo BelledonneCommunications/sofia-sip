@@ -34,7 +34,8 @@
  *
  * @par Include Context
  * @code
- * #include <stdint.h>
+ * #include <sys/types.h>
+ * #include <sys/socket.h>
  * #include <netinet/in.h>
  * #include <sofia-resolv/sres.h>
  * @endcode
@@ -79,26 +80,26 @@ enum {
 
 #ifndef SRES_RECORD_T
 #define SRES_RECORD_T
+/** Type representing any DNS record. */
 typedef union sres_record sres_record_t;
 #endif
 
 #ifndef SRES_CACHE_T
 #define SRES_CACHE_T
-typedef struct sres_cache_s sres_cache_t;
+/** Opaque type of DNS cache object. */
+typedef struct sres_cache sres_cache_t;
 #endif
 
+/** Opaque type of DNS resolver object. */
 typedef struct sres_resolver_s sres_resolver_t;
-
-#ifndef SRES_ASYNC_T 
-#define SRES_ASYNC_T struct sres_async_s
-#endif
-typedef SRES_ASYNC_T sres_async_t;
 
 #ifndef SRES_CONTEXT_T 
 #define SRES_CONTEXT_T struct sres_context_s
 #endif
+/** Application-defined type for sres_query_t context. */
 typedef SRES_CONTEXT_T sres_context_t;
 
+/** Opaque type of DNS query object. */
 typedef struct sres_query_s         sres_query_t;
 
 struct sockaddr;
@@ -109,18 +110,22 @@ sres_resolver_t *sres_resolver_new(char const *resolv_conf_path);
 /** Copy a resolver. */
 sres_resolver_t *sres_resolver_copy(sres_resolver_t *);
 
+/** New resolver object. */
 sres_resolver_t *
 sres_resolver_new_with_cache(char const *conf_file_path,
 			     sres_cache_t *cache,
 			     char const *options, ...);
 
+/** New resolver object. */
 sres_resolver_t *
 sres_resolver_new_with_cache_va(char const *conf_file_path,
 				sres_cache_t *cache,
 				char const *options, va_list va);
 
+/** Increase reference count on a resolver object. */
 sres_resolver_t *sres_resolver_ref(sres_resolver_t *res);
 
+/** Decrease the reference count on a resolver object.  */
 void sres_resolver_unref(sres_resolver_t *res);
 
 /** Re-read resolv.conf if needed */
@@ -149,14 +154,14 @@ sres_query_t *sres_query(sres_resolver_t *res,
                          uint16_t type,
                          char const *domain);
 
-/** Make a DNS query. */
+/** Make a reverse DNS query. */
 sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
                                   sres_answer_f *callback,
                                   sres_context_t *context,
                                   uint16_t type,
 				  struct sockaddr const *addr);
 
-/** Make a DNS query with socket. */
+/** Make a DNS query with socket. @deprecated */
 sres_query_t *sres_query_make(sres_resolver_t *res,
 			      sres_answer_f *callback,
 			      sres_context_t *context,
@@ -164,7 +169,7 @@ sres_query_t *sres_query_make(sres_resolver_t *res,
 			      uint16_t type,
 			      char const *domain);
 
-/** Make a reverse DNS query with socket. */
+/** Make a reverse DNS query with socket. @deprecated */
 sres_query_t *sres_query_make_sockaddr(sres_resolver_t *res,
 				       sres_answer_f *callback,
 				       sres_context_t *context,
@@ -177,10 +182,12 @@ void sres_query_bind(sres_query_t *q,
                      sres_answer_f *callback,
                      sres_context_t *context);
 
+/**Get a list of matching (type/domain) records from cache. */
 sres_record_t **sres_cached_answers(sres_resolver_t *res,
 				    uint16_t type,
 				    char const *domain);
 
+/**Get a list of matching (type/domain) records from cache. */
 sres_record_t **sres_cached_answers_sockaddr(sres_resolver_t *res,
                                              uint16_t type,
 					     struct sockaddr const *addr);
@@ -197,7 +204,6 @@ int sres_blocking_query_sockaddr(sres_resolver_t *res,
 				 struct sockaddr const *addr,
 				 sres_record_t ***return_records);
 
-/** Get a list of matching records from cache. */
 /** Sort the list of records */
 int sres_sort_answers(sres_resolver_t *res, sres_record_t **answers);
 

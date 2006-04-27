@@ -32,8 +32,8 @@
  *
  * @par Include Context
  * @code
- * #include <stdint.h>
  * #include <sys/types.h>
+ * #include <sys/socket.h>
  * #include <netinet/in.h>
  * #include <sofia-resolv/sres_cache.h>
  * @endcode
@@ -46,11 +46,13 @@ extern "C" {
 
 #ifndef SRES_CACHE_T
 #define SRES_CACHE_T
-typedef struct sres_cache_s sres_cache_t;
+/** Opaque type of DNS cache object. */
+typedef struct sres_cache sres_cache_t;
 #endif
 
 #ifndef SRES_RECORD_T
 #define SRES_RECORD_T
+/** Type representing any DNS record. */
 typedef union sres_record sres_record_t;
 #endif
 

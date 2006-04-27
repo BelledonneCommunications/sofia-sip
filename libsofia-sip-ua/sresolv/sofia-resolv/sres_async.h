@@ -25,16 +25,18 @@
 #ifndef SOFIA_RESOLV_SRES_ASYNC_H
 /** Defined when <sofia-resolv/sres_async.h> has been included. */
 #define SOFIA_RESOLV_SRES_ASYNC_H
+
 /**
  * @file sofia-resolv/sres_async.h 
  *
  * Asynchronous interface for Sofia DNS Resolver.
  *
- * @author Pekka Pessi <Pekka.Pessi@nokia.com>,
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @par Include Context
  * @code
- * #include <stdint.h>
+ * #include <sys/types.h>
+ * #include <sys/socket.h>
  * #include <netinet/in.h>
  * #include <sofia-resolv/sres.h>
  * #include <sofia-resolv/sres_async.h>
@@ -43,8 +45,14 @@
  */
 
 #ifdef __cplusplus
-extern "C" { }
+extern "C" {
 #endif
+
+#ifndef SRES_ASYNC_T 
+#define SRES_ASYNC_T struct sres_async_s
+#endif
+/** Application-defined type for context used by asynchronous operation. */
+typedef SRES_ASYNC_T sres_async_t;
 
 /** Prototype for update function.
  *
