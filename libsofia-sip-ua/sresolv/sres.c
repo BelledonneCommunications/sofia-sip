@@ -2255,7 +2255,9 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
   n = recvmsg(socket, msg, MSG_ERRQUEUE);
 
   if (n < 0) {
-    SU_DEBUG_1(("%s: recvmsg: %s\n", __func__, su_strerror(su_errno())));
+    int error = su_errno();
+    if (error != EAGAIN && error != EWOULDBLOCK)
+      SU_DEBUG_1(("%s: recvmsg: %s\n", __func__, su_strerror(error)));
     return n;
   }
 
