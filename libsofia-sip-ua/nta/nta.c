@@ -1793,21 +1793,20 @@ int outgoing_insert_via(nta_outgoing_t *orq,
   else
     return -1;
 
-  if (orq->orq_method != sip_method_ack) {
-    if (!v->v_rport && 
-	((self->sa_rport && v->v_protocol == sip_transport_udp) ||
-	 (self->sa_tcp_rport && v->v_protocol == sip_transport_tcp)))
-      msg_header_add_param(msg_home(msg), v->v_common, "rport");
-  }
-  else {
-    /* msg_header_remove_param(v->v_common, "comp"); */
-  }
+  if (!v->v_rport && 
+      ((self->sa_rport && v->v_protocol == sip_transport_udp) ||
+       (self->sa_tcp_rport && v->v_protocol == sip_transport_tcp)))
+    msg_header_add_param(msg_home(msg), v->v_common, "rport");
 
   if (!orq->orq_tpn->tpn_comp)
     msg_header_remove_param(v->v_common, "comp");
 
-  if (branch && branch != v->v_branch)
-    msg_header_add_param(msg_home(msg), v->v_common, branch);
+  if (branch && branch != v->v_branch) {
+    char const *bvalue = branch + strcspn(branch, "=");
+    if (*bvalue) bvalue++;
+    if (!v->v_branch || strcasecmp(bvalue, v->v_branch))
+      msg_header_replace_param(msg_home(msg), v->v_common, branch);
+  }
 
   if (via->v_protocol != v->v_protocol &&
       strcasecmp(via->v_protocol, v->v_protocol))
@@ -6153,8 +6152,7 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
 
     cancel = outgoing_create(orq->orq_agent, callback, magic,
 			     NULL, orq->orq_tpn, msg,
-			     NTATAG_BRANCH_KEY(orq->orq_branch
-					       + strlen("branch=")),
+			     NTATAG_BRANCH_KEY(orq->orq_branch),
 			     NTATAG_DELAY_SENDING(delay_sending),
 			     NTATAG_USER_VIA(1),
 			     TAG_END());
