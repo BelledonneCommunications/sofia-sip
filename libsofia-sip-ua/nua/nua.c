@@ -1133,7 +1133,7 @@ void nua_handle_destroy(nua_handle_t *nh)
 {
   enter;
 
-  if (NH_IS_VALID(nh)) {
+  if (NH_IS_VALID(nh) && !NH_IS_DEFAULT(nh)) {
     nh->nh_valid = NULL;	/* Events are no more delivered to appl. */
     nua_signal(nh->nh_nua, nh, NULL, 1, nua_r_destroy, 0, NULL, TAG_END());
   }
@@ -1175,7 +1175,7 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
 
     e->e_always = always;
     e->e_event = event;
-    e->e_nh = nua_handle_ref(nh);
+    e->e_nh = event == nua_r_destroy ? nh : nua_handle_ref(nh);
     e->e_status = status;
     e->e_phrase = phrase;
 
@@ -1197,8 +1197,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
 
   enter;
 
-  
-  if (nh && !NH_IS_DEFAULT(nh)) {
+  if (nh) {
     if (!nh->nh_ref_by_user && nh->nh_valid) {
       nh->nh_ref_by_user = 1;
       nua_handle_ref(nh);
@@ -1222,7 +1221,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   if (!nua->nua_callback)
     return;
 
-  if (nh == nua->nua_handles)
+  if (NH_IS_DEFAULT(nh))
     nh = NULL;
 
   su_msg_save(nua->nua_current, sumsg);
@@ -1235,15 +1234,15 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
 		    e->e_msg ? sip_object(e->e_msg) : NULL,
 		    e->e_tags);
 
+  if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
+    SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+  }
+
   if (!su_msg_is_non_null(nua->nua_current))
     return;
 
   if (e->e_msg)
     msg_destroy(e->e_msg);
-
-  if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
-    SU_DEBUG_9(("nua(%p): freed by application\n", nh));
-  }
 
   su_msg_destroy(nua->nua_current);
 }

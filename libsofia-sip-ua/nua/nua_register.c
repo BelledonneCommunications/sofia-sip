@@ -499,6 +499,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (!cr->cr_orq) {
     msg_destroy(msg);
     msg_destroy(cr->cr_msg), cr->cr_msg = NULL;
+    nua_dialog_usage_remove(nh, nh->nh_ds, du);    
     return UA_EVENT1(e, NUA_INTERNAL_ERROR);
   }
 
@@ -574,9 +575,10 @@ int process_response_to_register(nua_handle_t *nh,
   if (status < 200 || !du)
     return nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 
-  nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
+  if (!du->du_terminating)
+    nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
 
-  if (oc->oc_prefs.natify && status >= 200) {
+  if (!du->du_terminating && oc->oc_prefs.natify && status >= 200) {
     int reregister;
 
     reregister = outbound_connect_check_for_nat(oc, orq, sip);
@@ -718,11 +720,13 @@ int process_response_to_register(nua_handle_t *nh,
     outbound_connect_gruuize(oc, sip);
   }
 
-
   if (!du->du_terminating && status < 300 && oc->oc_nat_detected)
     outbound_connect_start_keepalive(oc, 15, orq);
   else
     outbound_connect_stop_keepalive(oc);
+
+  if (du->du_terminating || status >= 300)
+    nua_dialog_usage_remove(nh, nh->nh_ds, du);
 
   return nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 }
@@ -1896,8 +1900,8 @@ char const *nua_outbound_connect_name(nua_dialog_usage_t const *du)
 
 static
 int nua_outbound_connect_add(nua_handle_t *nh,
-			   nua_dialog_state_t *ds,
-			   nua_dialog_usage_t *du)
+			     nua_dialog_state_t *ds,
+			     nua_dialog_usage_t *du)
 {
   struct outbound_connect *oc = nua_dialog_usage_private(du);
 
@@ -1931,7 +1935,6 @@ void nua_outbound_connect_remove(nua_handle_t *nh,
 #endif
 
   /* XXX - free headers, too */
-
   if (oc->oc_kalt)
     su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
 

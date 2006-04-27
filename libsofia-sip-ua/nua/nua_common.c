@@ -99,6 +99,7 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 			       tagi_t *tags)
 {
   nua_handle_t *nh;
+  static int8_t _handle_lifetime = 1;
 
   enter;
 
@@ -160,13 +161,24 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 	    SIPTAG_TO_REF(nh->nh_ds->ds_remote),
 	    TAG_END());
 
-    /* This far, we have nothing to destruct */
-    /* su_home_desctructor(nh, nh_destructor); */
-
     if (su_home_is_threadsafe(nua->nua_home)) {
       if (su_home_threadsafe(nh->nh_home) < 0) {
 	su_home_unref(nh->nh_home);
 	nh = NULL;
+      }
+    }
+
+    if (nh && _handle_lifetime) {      
+      /* This far, we have nothing real to destruct */
+      static void nh_destructor(void *arg);
+
+      if (_handle_lifetime == 1 && !getenv("_NUA_HANDLE_DEBUG")) {
+	_handle_lifetime = 0;
+      } 
+      else {
+	_handle_lifetime = 2;
+	SU_DEBUG_0(("nh_handle_create(%p)\n", nh));
+	su_home_desctructor(nh->nh_home, nh_destructor);
       }
     }
   }
@@ -174,16 +186,23 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
   return nh;
 }
 
-#if 0
+/**@var _NUA_HANDLE_DEBUG
+ *
+ * If this environment variable is set, nua stack logs a message whenever a
+ * handle is created and when it is destroyed. This is mainly useful when
+ * debugging #nua_handle_t leaks.
+ *
+ * @sa nua_handle(), nua_handle_destroy()
+ */
+extern char const NUA_DEBUG[];
+
 /* nua handle destructor. It does nothing. */
 static void nh_destructor(void *arg)
 {
   nua_handle_t *nh = arg;
 
-  /* Xyzzy */
-  (void)nh;
+  SU_DEBUG_0(("nh_destructor(%p)\n", nh));
 }
-#endif
 
 /** Make a new reference to handle.
  *
