@@ -708,7 +708,7 @@ int host_is_ip_address(char const *string)
  * toplabel         =  ALPHA / ALPHA *( alphanum / "-" ) alphanum
  * @endcode
  */
-int host_is_domain(char *string)
+int host_is_domain(char const *string)
 {
   int n = string ? span_domain(string) : 0;
   return string && n > 0 && string[n] == '\0';
