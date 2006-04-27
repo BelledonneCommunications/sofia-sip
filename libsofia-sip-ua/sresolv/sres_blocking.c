@@ -145,7 +145,7 @@ int sres_blocking_update(sres_blocking_t *b,
 static
 int sres_blocking_complete(sres_blocking_context_t *c)
 {
-  while (c->ready > 0) {
+  while (!c->ready) {
     int n, i;
 #if HAVE_POLL
     n = poll(c->block->fds, c->block->n_sockets, 500);
@@ -156,10 +156,10 @@ int sres_blocking_complete(sres_blocking_context_t *c)
       sres_resolver_timer(c->resolver, -1);
     }
     else for (i = 0; i < c->block->n_sockets; i++) {
-      if (c->block->fds[n].revents | POLLERR)
-	sres_resolver_error(c->resolver, c->block->fds[n].fd);
-      if (c->block->fds[n].revents | POLLIN)
-	sres_resolver_receive(c->resolver, c->block->fds[n].fd);
+      if (c->block->fds[i].revents | POLLERR)
+	sres_resolver_error(c->resolver, c->block->fds[i].fd);
+      if (c->block->fds[i].revents | POLLIN)
+	sres_resolver_receive(c->resolver, c->block->fds[i].fd);
     }
 #elif HAVE_SELECT
     fd_set readfds[1], errorfds[1];
@@ -172,26 +172,24 @@ int sres_blocking_complete(sres_blocking_context_t *c)
     timeval->tv_usec = 500000;
 
     for (i = 0, n = 0; i < c->block->n_sockets; i++) {
-      FD_SET(c->block->fds[n].fd, readfds);
-      FD_SET(c->block->fds[n].fd, errorfds);
-      if (c->block->fds[n].fd >= n)
-	n = c->block->fds[n].fd + 1;
+      FD_SET(c->block->fds[i].fd, readfds);
+      FD_SET(c->block->fds[i].fd, errorfds);
+      if (c->block->fds[i].fd >= n)
+	n = c->block->fds[i].fd + 1;
     }
 
     n = select(n, readfds, NULL, errorfds, timeval);
   
     if (n <= 0)
       sres_resolver_timer(c->resolver, -1);
-    else for (i = 0; i < c->block->n_sockets; i++) {
-      if (c->block->fds[i].fd > n)
-	continue;
+    else for (i = 0; n > 0 && i < c->block->n_sockets; i++) {
       if (FD_ISSET(c->block->fds[i].fd, errorfds))
         sres_resolver_error(c->resolver, c->block->fds[i].fd);
       else if (FD_ISSET(c->block->fds[i].fd, readfds))
 	sres_resolver_receive(c->resolver, c->block->fds[i].fd);
       else
 	continue;
-      break;
+      n--;
     }
 #endif
   }
@@ -231,7 +229,12 @@ sres_blocking_t *sres_set_blocking(sres_resolver_t *res)
   return b;
 }
 
-/** Send a query, return results. */
+/** Send a DNS query, return results.
+ *
+ * @retval >0 if query was responded
+ * @retval 0 if result was found from cache
+ * @retval -1 upon error
+ */
 int sres_blocking_query(sres_resolver_t *res,
 			uint16_t type,
 			char const *domain,
@@ -261,7 +264,12 @@ int sres_blocking_query(sres_resolver_t *res,
   return sres_blocking_complete(c);
 }
 
-/** Send a a reverse DNS query, return results. */
+/** Send a a reverse DNS query, return results.
+ *
+ * @retval >0 if query was responded
+ * @retval 0 if result was found from cache
+ * @retval -1 upon error
+ */
 int sres_blocking_query_sockaddr(sres_resolver_t *res,
 				 uint16_t type,
 				 struct sockaddr const *addr,
