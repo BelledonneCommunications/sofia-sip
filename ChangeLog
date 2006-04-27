@@ -1,35 +1,139 @@
-2006-04-26  Pekka Pessi  <Pekka.Pessi@nokia.com>
+2006-04-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
-  * Added missing events to nua.docs.
+  * sresolv module:
 
-  * More fixes to nua/nua_publish.c.
-  - nua_unpublish uses tags from initial nua_publish()
-  - 900 status is returned when there is no Expires header in 2XX response to
-    PUBLISH.
+  	Added SRESTAG_CACHE() to <sofia-sip/sresolv.h>.
 
-  * Re-indented nua_publish.c.
+  	Added ends0 and no-edns0 options in resolv.conf to sresolv/sres.c.
 
-  * Added better error checking to nua_creq_msg().
-  Fixed Service-Route header processing, too.
+  	Fixed sresolv #includes.
+  	Added #include <arpa/inet.h> and <fcntl.h> into sresolv/sres.c
+  	Added prerequisite #includes to sresolv files.
 
-  * Added nua_add_contact_by_aor() to nua_register.c.
-  The nua_add_contact_by_aor() takes care of adding other registration-related
-  headers like Service-Route, too.
+    	Added @todo about cache poisoning. Updated sresolv documentation.
 
-  * Moved nua_publish() documentation from nua.c/nua.docs to nua_publish.c.
-  Updated documentation, added nua_r_unpublish documentation.
+	Fixed bugs in sresolv/sres_blocking.c.
 
-  * Improved PUBLISH handling in nua/nua_publish.c.
-  Saving the initial PUBLISH message along with message body and content type.
-  They are re-used if 412 is received or if 2XX response contains Expires: 0.
-  If 2XX response is received without Expires header, we report internal error
-  to application. 
+	Silenced printing spurious network errors in sresolv/sres.c.
 
-  * Fixed route handling in SUBSCRIBE in the file nua/nua_subnotref.c.
-  There was a problem using dialog route set when there was an initial route
-  original SUBSCRIBE. 
-  
-  * Added SRESTAG_CACHE() to <sofia-sip/sresolv.h>.
+	Added sres_is_blocking() to sres_blocking.c. Updated
+	sres_resolver_get_async(), too.
+
+	Added sip-dig.c to sresolv module.
+
+  * tport module:
+
+  	Added missing "typedef" keyword to tport_pri_type_t in
+ 	sofia-sip/tport_tag.h
+
+	Fixed TPTAG_CONNECT() usage in tport/tport.c.
+
+	Now running some SCTP tests in test_tport.c
+
+ 	Updated tport_tls.c:
+	- Not requiring client certificate in tls.
+	- Tried to improve error handling, too.
+
+  	Now using stream-like sending semantics with SCTP.
+
+  	Updated datagram reception in tport_type_udp.c. We now avoid
+	peeking and fussing around with message size, and simply allocate
+	64K buffer, receive(), then reduce the buffer size.
+
+  	Updated tport_recv_stun_dgram() in tport_stub_stun.c. Now using
+	already received data within a msg_t.
+
+  	Updated SigComp interface in tport_stub_sigcomp.c and tport_sigcomp.c.
+
+  	Added a slot for stun handle to all primary transports.
+	Changed tport_primary_t in tport_internal.h, updated tport_type_stun.c.
+
+	Moved rest of the threadpool stuff into tport_threadpool.c.
+  	tport_threadpool.c does not work at the moment, disable it.
+
+  	Updated tport_connect() interface.
+
+	Calling tport_alloc_seconary() when client socket has been
+	created, making it possible to set socket options before
+	connecting the socket. Currently, this benefits SCTP and TLS. This
+	change affects tport_internal.h, tport.c, tport_type_sctp.c,
+	tport_type_tcp.c, and tport_type_tls.c.
+
+  	Added TPORT_DLL to tport_keepalive(), too.
+
+  	Added tport_ref() and tport_unref() to tport module.
+
+  	Fixed bug #1473936 in tport/tport.c. tport_primary_by_name() now
+	returns transports regardless of their protocol family if
+	tpn->tpn_host is not a literal IP address.
+
+  * msg module:
+
+	Updated msg_recv_buffer() prototype.
+
+  	Reclaiming the un-committed part of buffer in msg/msg_parser.c.
+	The allocation pattern for UDP has changed: now we allocate 64K,
+	then realloc to the actual size.
+
+  * nta module:
+
+  	Fixed bug #1472683 in nta/nta.c.
+	The rport parameter was missing from ACK.
+	The CANCEL had Via line with duplicate branch parameter.
+
+  	Fixed merge artifact in nta/test_nta_api.c.
+
+  	Always having NTATAG_SIGCOMP_OPTIONS() and storing its value.
+
+  * nua module:
+
+  	Added explicit check for NULL pointers to
+	unregister_expires_contacts().
+
+	Added missing events to nua.docs.
+
+	More fixes to nua/nua_publish.c. nua_unpublish uses tags from
+	initial nua_publish() 900 status is returned when there is no
+	Expires header in 2XX response to PUBLISH.
+
+	Re-indented nua_publish.c.
+
+	Added better error checking to nua_creq_msg().
+	Fixed Service-Route header processing, too.
+
+	Added nua_add_contact_by_aor() to nua_register.c. The
+	nua_add_contact_by_aor() takes care of adding other
+	registration-related headers like Service-Route, too.
+
+	Moved nua_publish() documentation from nua.c/nua.docs to
+	nua_publish.c. Updated documentation, added nua_r_unpublish
+	documentation.
+
+	Improved PUBLISH handling in nua/nua_publish.c. Saving the initial
+	PUBLISH message along with message body and content type. They are
+	re-used if 412 is received or if 2XX response contains Expires: 0.
+	If 2XX response is received without Expires header, we report
+	internal error to application.
+
+	Fixed route handling in SUBSCRIBE in the file nua/nua_subnotref.c.
+	There was a problem using dialog route set when there was an
+	initial route original SUBSCRIBE.
+
+  * Updated copyright year in sofia-footer.html.in.
+
+  * Fixed prototype of host_is_domain().
+
+  * Fixed doxygen warnings in su module.
+
+  * Updated sofia-sip.spec.in.
+  Separated glib library to sofia-sip-glib and sofia-sip-glib-devel packages.
+  Added sofia-sip-docs package.
+
+  * Added su_timer_set_interval() to su/su_timer.c and sofia-sip/su_wait.h.
+
+  * Defining __func__ in stun/stunc.c for the benefit of older C compilers.
+
+  * Removed // comments.
 
 2006-04-25  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
