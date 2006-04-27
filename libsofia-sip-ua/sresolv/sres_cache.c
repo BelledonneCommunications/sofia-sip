@@ -138,9 +138,11 @@ sres_cache_t *sres_cache_new(int n)
 {
   sres_cache_t *cache = su_home_new(sizeof *cache);
 
-  if (cache)
+  if (cache) {
+    su_home_threadsafe(cache->cache_home);
     if (sres_htable_resize(cache->cache_home, cache->cache_hash, n) < 0)
       su_home_unref(cache->cache_home), cache = NULL;
+  }
 
   return cache;
 }
@@ -282,10 +284,13 @@ sres_cache_store(sres_cache_t *cache, sres_record_t *rr, time_t now)
   if (rr == NULL)
     return;
 
+  hash = sres_hash_key(rr->sr_name);
+
+  if (!LOCK(cache))
+    return;
+
   if (sres_htable_is_full(cache->cache_hash))
     sres_htable_resize(cache->cache_home, cache->cache_hash, 0);
-
-  hash = sres_hash_key(rr->sr_name);
 
   for (rr_iter = sres_htable_hash(cache->cache_hash, hash);
        (rr_hash_entry = *rr_iter); 
@@ -313,6 +318,9 @@ sres_cache_store(sres_cache_t *cache, sres_record_t *rr, time_t now)
     rr->sr_refcount++;
     
     _sres_cache_free_one(cache, or);
+
+    UNLOCK(cache);
+
     return;
   }
   
@@ -327,6 +335,8 @@ sres_cache_store(sres_cache_t *cache, sres_record_t *rr, time_t now)
   }
   
   *rr_iter = rr_hash_entry;
+
+  UNLOCK(cache);
 }
 
 /** Free the list records. */
