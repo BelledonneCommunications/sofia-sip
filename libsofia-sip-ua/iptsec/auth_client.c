@@ -752,9 +752,11 @@ int auc_authorize(auth_client_t **auc_list, msg_t *msg, sip_t *sip)
 
   return auc_authorization(auc_list, msg, (msg_pub_t *)sip, 
 			   rq->rq_method_name, 
-			   /* XXX - why this was needed?
-			      rq->rq_method == sip_method_register 
-			      ? sip->sip_to->a_url : */
+			   /*
+			     RFC 3261 defines the protection domain based
+			     only on realm, so we do not bother get a
+			     correct URI to auth module.
+			   */
 			   rq->rq_url, 
 			   sip->sip_payload);
 }
