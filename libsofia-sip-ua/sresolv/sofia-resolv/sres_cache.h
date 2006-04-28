@@ -62,10 +62,13 @@ enum {
 #define SRES_CACHE_TIMER_INTERVAL (SRES_CACHE_TIMER_INTERVAL)
 };
 
+/** Create a resolver cache object. */
 sres_cache_t *sres_cache_new(int n);
 
+/** Increase reference count on a resolver cache object. */
 sres_cache_t *sres_cache_ref(sres_cache_t *);
 
+/** Decrease the reference count on a resolver cache object. */
 void sres_cache_unref(sres_cache_t *);
 
 /** Get a list of matching records from cache. */

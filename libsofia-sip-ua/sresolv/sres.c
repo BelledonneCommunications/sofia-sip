@@ -167,7 +167,7 @@ struct sres_resolver_s {
   sres_server_t     **res_servers;
 };
 
-
+/* Parsed configuration. @internal */
 struct sres_config {
   su_home_t c_home[1];
 
@@ -175,16 +175,16 @@ struct sres_config {
   time_t c_modified;
   char const *c_filename;
 
-  /** domain and search */
+  /* domain and search */
   char const *c_search[1 + SRES_MAX_SEARCH + 1];
 
-  /** nameserver */
+  /* nameserver */
   struct sres_nameserver {
     struct sockaddr_storage ns_addr[1];
     ssize_t ns_addrlen;
   } *c_nameservers[SRES_MAX_NAMESERVERS + 1];
 
-  /** sortlist */
+  /* sortlist */
   struct sres_sortlist {
     struct sockaddr_storage addr[1];
     ssize_t addrlen;
@@ -193,7 +193,7 @@ struct sres_config {
 
   uint16_t    c_port;	     /**< Server port to use */
 
-  /** options */
+  /* options */
   struct sres_options {
     uint16_t timeout;
     uint16_t attempts;
@@ -2824,7 +2824,7 @@ sres_init_rr_cname(sres_resolver_t *res,
 		   sres_cname_record_t *rr,
 		   sres_message_t *m)
 {
-  assert(rr->cname_record->r_size == sizeof(sres_cname_record_t));
+  assert(rr->cn_record->r_size == sizeof(sres_cname_record_t));
 
   sres_get_domain(res, &rr->cn_cname, m);
 }

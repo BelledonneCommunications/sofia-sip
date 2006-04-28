@@ -147,11 +147,13 @@ sres_cache_t *sres_cache_new(int n)
   return cache;
 }
 
+/** Increase reference count on a resolver cache object. */
 sres_cache_t *sres_cache_ref(sres_cache_t *cache)
 {
   return su_home_ref(cache->cache_home);
 }
 
+/** Decrease the reference count on a resolver cache object. */
 void sres_cache_unref(sres_cache_t *cache)
 {
   su_home_unref(cache->cache_home);
