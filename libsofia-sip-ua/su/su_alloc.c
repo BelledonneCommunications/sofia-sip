@@ -37,8 +37,9 @@
  * This page gives a short overview of home-based memory management used
  * with Sofia. Such home-based memory management is useful when a lot of
  * memory blocks are allocated for given task. The allocations are done via
- * the memory home, which keeps a reference to each block. When the memory
- * home is then freed, it will free all blocks to which it has reference.
+ * the @e memory @e home, which keeps a reference to each block. When the
+ * memory home is then freed, it will free all blocks to which it has
+ * reference.
  *
  * Typically, there is a @e home @e object which contains a su_home_t
  * structure in the beginning of the object (sort of inheritance from
@@ -67,9 +68,9 @@
  * tophome is freed, the @a ctx is also freed.
  * 
  * You can also create an independent home object by passing NULL as @a
- * tophome argument.
+ * tophome argument. This is identical to the call to su_home_new().
  *
- * The memory allocations using @a ctx proceed  then as follows:
+ * The memory allocations using @a ctx proceed then as follows:
  * @code
  *    zeroblock = su_zalloc(ctx->ctx_home, sizeof (*zeroblock));
  * @endcode
@@ -149,6 +150,29 @@
  *
  * The threadsafe home objects can be locked and unlocked with
  * su_home_mutex_lock() and su_home_mutex_unlock().
+ *
+ * @section su_alloc_preloading Preloading a Memory Home
+ *
+ * In some situations there is quite heavy overhead when using the global
+ * heap allocator. The overhead caused by the large number of small
+ * allocations can be reduced by using su_home_preload(): it allocates or
+ * preloads some a memory to home to be used as a kind of private heap. The
+ * preloaded memory area is then used to satisfy small enough allocations.
+ * For instance, the SIP parser typically preloads some 2K of memory when it
+ * starts to parse the message.
+ *
+ * @section su_alloc_stack Using Stack
+ *
+ * In some situation, it is sensible to use memory allocated from stack for
+ * some operations. The su_home_auto() function can be used for that
+ * purpose. The memory area from stack is used to satisfy the allocations as
+ * far as possible; if it is not enough, allocation is made from heap.
+ *
+ * The word @e auto refers to the automatic scope; however, the home object
+ * initialized with su_home_auto() must be explicitly deinitialized with
+ * su_home_deinit() when the program exits the scope where the stack frame
+ * used in su_home_auto() was allocate.
+ * 
  */
 
 #include <sofia-sip/su_config.h>
@@ -373,6 +397,7 @@ void *sub_alloc(su_home_t *home,
   assert (size >= 0);
 
   if (sub == NULL || 3 * sub->sub_used > 2 * sub->sub_n) {
+    /* Resize the hash table */
     int i, n, n2, used;
     su_block_t *b2;
 
@@ -412,9 +437,9 @@ void *sub_alloc(su_home_t *home,
     sub = b2;
   }
 
-  /* Use preloaded memory */
   if (size && sub && zero < do_clone &&
       sub->sub_preload && size <= sub->sub_prsize) {
+    /* Use preloaded memory */
     size_t prused = sub->sub_prused + size + MEMCHECK_EXTRA; 
     prused = ALIGN(prused);
     if (prused <= sub->sub_prsize) {
@@ -444,6 +469,7 @@ void *sub_alloc(su_home_t *home,
       sub->sub_auto_all = 0;
 
     if (zero == do_clone) {
+      /* Prepare cloned home */ 
       su_home_t *subhome = data;
 
       assert(preload == 0);
@@ -456,6 +482,8 @@ void *sub_alloc(su_home_t *home,
       subhome->suh_blocks->sub_parent = home;
       subhome->suh_blocks->sub_ref = 1;
     }
+
+    /* OK, add the block to the hash table. */
 
     sua = su_block_add(sub, data); assert(sua);
     sua->sua_size = size;
@@ -1002,7 +1030,7 @@ int su_home_move(su_home_t *dst, su_home_t *src)
 
 /** Preload a memory home.
  *
- * The function su_home_preload() preloads a memory home 
+ * The function su_home_preload() preloads a memory home.
  */
 void su_home_preload(su_home_t *home, int n, int isize)
 {
