@@ -265,14 +265,15 @@ sres_cache_alloc_record(sres_cache_t *cache,
   case sres_type_ptr:     size = sizeof(sres_ptr_record_t); break;
   case sres_type_srv:     size = sizeof(sres_srv_record_t); break;
   case sres_type_naptr:   size = sizeof(sres_naptr_record_t); break;
-  default:                size = sizeof(sres_common_t) + rdlen; break;
+  default:                size = sizeof(sres_common_t) + rdlen + 1; break;
   }
 
   sr = su_zalloc(cache->cache_home, size + name_length + 1);
 
   if (sr) {
     sr->sr_size = size;
-    sr->sr_name = memcpy(size + (char *)sr, name, name_length + 1);
+    sr->sr_name = memcpy(size + (char *)sr, name, name_length);
+    sr->sr_name[name_length] = '\0';
   }
     
   return sr;

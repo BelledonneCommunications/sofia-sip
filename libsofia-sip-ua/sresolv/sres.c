@@ -2959,9 +2959,10 @@ static
 sres_record_t *
 sres_create_record(sres_resolver_t *res, sres_message_t *m)
 {
+  sres_cache_t *cache = res->res_cache;
   sres_record_t *rr = NULL;
 
-  uint16_t qtype, qclass, rdlen, size_old;
+  uint16_t qtype, qclass, rdlen, m_size;
   uint32_t ttl;
   char name[1024];
   int name_length;
@@ -2973,19 +2974,35 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m)
   ttl = m_get_uint32(m);    /* TTL */
   rdlen = m_get_uint16(m);   /* rdlength */
 
+  if (m->m_error)
+    goto error;
+
   SU_DEBUG_9(("rr received %.*s %s %s %d rdlen=%d\n", name_length, name, 
 	      sres_record_type(qtype, btype), 
 	      sres_record_class(qclass, bclass), ttl, rdlen));
 
-  if (m->m_error)
-    return NULL;
+  if (m->m_offset + rdlen > m->m_size) {
+    m->m_error = "truncated message";
+    goto error;
+  }
 
-  /* temporarily adjust m_size to check if the current rr is truncated */
-  size_old = m->m_size; 
+  m_size = m->m_size;
+  /* limit m_size to indicated rdlen, check whether record is truncated */
   m->m_size = m->m_offset + rdlen;
 
-  rr = sres_cache_alloc_record(res->res_cache, name, name_length, qtype, rdlen);
-  if (rr) switch(qtype) {
+  rr = sres_cache_alloc_record(cache, name, name_length, qtype, rdlen);
+  if (rr == NULL) {
+    m->m_error = "memory exhausted";
+    goto error;
+  }
+
+  /* Fill in the common fields */
+  rr->sr_type = qtype;
+  rr->sr_class = qclass;
+  rr->sr_ttl = ttl;
+  rr->sr_rdlen = rdlen;
+
+  switch(qtype) {
   case sres_type_soa:
     sres_init_rr_soa(res, rr->sr_soa, m);
     break;
@@ -3011,34 +3028,20 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m)
     sres_init_rr_naptr(res, rr->sr_naptr, m);
     break;
   default: /* copy the raw rdata to rr->r_data */
-    if (m->m_offset + rdlen > m->m_size) {
-      m->m_error = "truncated message";
-    } else {
-      memcpy(rr->sr_rdata, m->m_data + m->m_offset, rdlen);
-      m->m_offset += rdlen;
-    }
+    memcpy(rr->sr_rdata, m->m_data + m->m_offset, rdlen);
+    m->m_offset += rdlen;
   }
-  else 
-    m->m_error = "memory exhausted";
-  
-  if (m->m_error) {
-    SU_DEBUG_5(("sres_create_rr: %s\n", m->m_error));
+
+  m->m_size = m_size;
+
+  if (!m->m_error)
+    return rr;
+
+ error:  
+  if (rr)
     su_free(res->res_home, rr);
-    return NULL;
-  }
-
-  m->m_size = size_old;
-
-  /* Fill in the common fields */
-  if (rr != NULL) {
-    rr->sr_name = su_strdup(res->res_home, name);
-    rr->sr_type = qtype;
-    rr->sr_class = qclass;
-    rr->sr_ttl = ttl;
-    rr->sr_rdlen = rdlen;
-  }
-
-  return rr;
+  SU_DEBUG_5(("%s: %s\n", "sres_create_record", m->m_error));
+  return NULL;
 }
 
 static void
