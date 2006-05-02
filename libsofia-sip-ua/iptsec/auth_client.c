@@ -138,29 +138,6 @@ void ca_destroy(su_home_t *home, auth_client_t *ca)
   su_free(home, ca);
 }
 
-/** Initialize AKA authenticator.
- *
- * The function auc_with_uicc() initializes the AKA authenticator to the
- * list of authenticators @a auc_list.
- *
- * @param auc_list [in/out] list of authenticators to be updated
- * @param home     [in/out] memory home used for allocating authenticators
- * @param uicc     [in]     UICC object
- * 
- * @retval 0 when successful
- * @retval -1 upon an error
- */
-int auc_with_uicc(auth_client_t **auc_list,
-		  su_home_t *home, 
-		  struct uicc_s *uicc)
-{
-#if HAVE_UICC_H
-  /* Xyzzy. */
-#endif
-
-  return -1;
-}
-
 /** Initialize authenticators.
  *
  * The function auc_challenge() merges the challenge @a ch to the list of

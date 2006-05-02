@@ -23,21 +23,19 @@
  */
 
 #ifndef AUTH_DIGEST_H /** Defined when <auth_digest.h> has been included. */
-#define AUTH_DIGEST_H 
+#define AUTH_DIGEST_H
 
 /**@file auth_digest.h 
  * Datatypes and functions for Digest authentication.
  *
  * The structures and functions here follow the RFC 2617.
  *
- * @sa 
- * <a href="ftp://ftp.ietf.org/rfc/rfc2617.txt">RFC 2617</a>, 
+ * @sa @RFC2617,
  * <i>"HTTP Authentication: Basic and Digest Access Authentication"</i>,
  * J. Franks et al, 
  * June 1999.
  *
- * @sa Section 19 from 
- * <a href="ftp://ftp.ietf.org/internet-drafts/draft-ietf-sip-rfc2543bis-04.txt>draft-ietf-sip-rfc2543bis-04</a>.
+ * @sa @RFC3261 section 22
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -70,6 +68,8 @@ SOFIA_BEGIN_DECLS
  *   qop-options       = "qop" "=" <"> 1#qop-value <">
  *   qop-value         = "auth" | "auth-int" | token
  * @endcode
+ *
+ * @sa @RFC2617
  */
 typedef struct {
   int         ac_size;
@@ -142,20 +142,19 @@ SOFIAPUBFUN void auth_digest_challenge_free_params(su_home_t *home,
 SOFIAPUBFUN int auth_digest_response_get(su_home_t *, auth_response_t *,
 					 char const * const params[]);
 
-int auth_digest_a1(auth_response_t *ar, 
-		   auth_hexmd5_t ha1,
-		   char const *secret);
+SOFIAPUBFUN int auth_digest_a1(auth_response_t *ar,
+			       auth_hexmd5_t ha1,
+			       char const *secret);
 
-int auth_digest_a1sess(auth_response_t *ar, 
-		       auth_hexmd5_t ha1sess,
-		       char const *ha1);
+SOFIAPUBFUN int auth_digest_a1sess(auth_response_t *ar,
+				   auth_hexmd5_t ha1sess,
+				   char const *ha1);
 
 int auth_digest_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
 			   char const *secret);
 int auth_digest_response(auth_response_t *, auth_hexmd5_t response,
 			 auth_hexmd5_t const ha1, 
 			 char const *method_name, void const *data, int dlen);
-int auth_struct_copy(void *dst, void const *src, int s_size);
 
 SOFIA_END_DECLS
 

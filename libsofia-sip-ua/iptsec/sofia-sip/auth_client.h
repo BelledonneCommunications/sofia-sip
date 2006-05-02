@@ -52,36 +52,43 @@ SOFIA_BEGIN_DECLS
 /** Authenticator object. */
 typedef struct auth_client_s auth_client_t;
 
+SOFIAPUBFUN
 int auc_challenge(auth_client_t **auc, su_home_t *home, 
 		  msg_auth_t const *auth,
 		  msg_hclass_t *crcl);
+
+SOFIAPUBFUN
 int auc_credentials(auth_client_t **auc, su_home_t *home, char const *data);
 
+SOFIAPUBFUN
 int auc_all_credentials(auth_client_t **auc_list, 
 			char const *scheme,
 			char const *realm, 
 			char const *user,
 			char const *pass);
 
+SOFIAPUBFUN
 int auc_clear_credentials(auth_client_t **auc_list, 
 			  char const *scheme,
 			  char const *realm);
 
+SOFIAPUBFUN
 int auc_authorization(auth_client_t **auc_list, msg_t *msg, msg_pub_t *pub,
 		      char const *method, 
 		      url_t const *url, 
 		      msg_payload_t const *body);
 
+SOFIAPUBFUN
 int auc_authorization_headers(auth_client_t **auc_list, 
 			      su_home_t *home,
 			      char const *method, 
 			      url_t const *url, 
 			      msg_payload_t const *body,
 			      msg_header_t **return_headers);
-struct uicc_s;
+
 struct sip_s;
 
-int auc_with_uicc(auth_client_t **auc, su_home_t *home, struct uicc_s *uicc);
+SOFIAPUBFUN
 int auc_authorize(auth_client_t **auc, msg_t *msg, struct sip_s *sip);
 
 SOFIA_END_DECLS
