@@ -150,11 +150,14 @@ SOFIAPUBFUN int auth_digest_a1sess(auth_response_t *ar,
 				   auth_hexmd5_t ha1sess,
 				   char const *ha1);
 
-int auth_digest_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
-			   char const *secret);
-int auth_digest_response(auth_response_t *, auth_hexmd5_t response,
-			 auth_hexmd5_t const ha1, 
-			 char const *method_name, void const *data, int dlen);
+SOFIAPUBFUN int auth_digest_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
+				       char const *secret);
+SOFIAPUBFUN int auth_digest_response(auth_response_t *, auth_hexmd5_t response,
+				     auth_hexmd5_t const ha1,
+				     char const *method_name,
+				     void const *data, int dlen);
+
+SOFIAPUBFUN int auth_struct_copy(void *dst, void const *src, int s_size);
 
 SOFIA_END_DECLS
 
