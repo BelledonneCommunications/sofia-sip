@@ -183,34 +183,36 @@ int auc_challenge(auth_client_t **auc_list,
   auth_client_t **cca;
   int retval = 0;
 
+  /* Go through each challenge in Authenticate or Proxy-Authenticate headers */
   for (; ch; ch = ch->au_next) {
     char const *scheme = ch->au_scheme;
     char const *realm = msg_header_find_param(ch->au_common, "realm=");
-    int updated = 0, updated0;
+    int matched = 0, updated;
 
     if (!scheme || !realm)
       continue;
 
+    /* Update matching authenticator */
     for (cca = auc_list; (*cca); cca = &(*cca)->ca_next) {
-      updated0 = ca_challenge((*cca), ch, crcl, scheme, realm);
-      if (updated0 < 0)
-	continue;
-      updated = 1;
-      retval = retval || updated0 > 0;
+      updated = ca_challenge((*cca), ch, crcl, scheme, realm);
+      if (updated < 0)
+	continue;		/* No match, next */
+      matched = 1;
+      if (updated > 0)
+	retval = 1;		/* Updated authenticator */
     }
 
-    if (!updated) {
+    if (!matched) {
+      /* There was no matching authenticator, create a new one */
       *cca = ca_create(home);
       if (ca_challenge((*cca), ch, crcl, scheme, realm) != -1) {
-	updated = 1;
-      } else {
+	retval = 1;		/* Updated authenticator */
+      }
+      else {
 	ca_destroy(home, *cca), *cca = NULL;
-	retval = -1;
-	break;
+	return -1;
       } 
     }
-
-    retval = retval || updated;
   }
 
   return retval;
@@ -270,10 +272,13 @@ int ca_challenge(auth_client_t *ca,
   ca->ca_scheme = ca->ca_challenge->au_scheme;
   ca->ca_realm = msg_header_find_param(ca->ca_challenge->au_common, "realm=");
 #else
-  ca->ca_scheme = su_strdup(home, ch->au_scheme);
-  ca->ca_realm = su_strdup(home, 
-			   msg_header_find_param(ch->au_common, "realm"));
+  if (!ca->ca_scheme[0])
+    ca->ca_scheme = su_strdup(home, scheme);
+  if (!ca->ca_realm[0])
+    ca->ca_realm = su_strdup(home, realm);
 #endif
+
+  auth_digest_challenge_free_params(home, ac);
 
   if (auth_digest_challenge_get(home, ac, ch->au_params) < 0)
     return -1;
@@ -285,16 +290,18 @@ int ca_challenge(auth_client_t *ca,
     return -1;
 
   if (ac->ac_qop && (ca->ca_cnonce == NULL || ac->ac_stale)) {
-    /* XXX - generate cnonce */
     su_guid_t guid[1];
     char *cnonce;
+    if (ca->ca_cnonce != NULL)
+      /* Free the old one if we are updating after stale=true */
+      su_free(home, (void *)ca->ca_cnonce);
     su_guid_generate(guid);
     ca->ca_cnonce = cnonce = su_alloc(home, BASE64_SIZE(sizeof(guid)) + 1);
     base64_e(cnonce, BASE64_SIZE(sizeof(guid)) + 1, guid, sizeof(guid));
     ca->ca_ncount = 0;
   }
 
-  return !existing || ac->ac_stale != NULL;
+  return !existing || ac->ac_stale;
 }
 
 /**Feed authentication data to the authenticator.

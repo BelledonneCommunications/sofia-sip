@@ -51,13 +51,13 @@ HTTPSOURCES = 		auth_module_http.c
 COVERAGE_INPUT = 	$(libiptsec_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libiptsec.la \
-			../ipt/libipt.la \
 			../http/libhttp.la \
-			../msg/libmsg.la \
 			../nta/libnta.la \
 			../sip/libsip.la \
+			../msg/libmsg.la \
 			../url/liburl.la \
 			../bnf/libbnf.la \
+			../ipt/libipt.la \
 			../su/libsu.la
 
 test_auth_digest_LDFLAGS = -static

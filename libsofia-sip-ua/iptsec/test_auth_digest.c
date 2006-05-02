@@ -38,15 +38,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#if HAVE_SOFIA_SIP && 0
+#if HAVE_SOFIA_SIP
 #define PROTOCOL "SIP/2.0"
-#define GOT_HEADERS 1
 #include <sofia-sip/sip.h>
 #include <sofia-sip/sip_header.h>
-#include <sip_hclass.h>
-#elif HAVE_SOFIA_HTTP
+#include <sofia-sip/sip_hclasses.h>
+#else
 #define PROTOCOL "HTTP/1.1"
-#define GOT_HEADERS 1
 #include <sofia-sip/http.h>
 #include <sofia-sip/http_header.h>
 #define sip_authentication_info_class   http_authentication_info_class
@@ -69,8 +67,6 @@
 #define sip_www_authenticate            http_www_authenticate
 #define sip_www_authenticate_make       http_www_authenticate_make
 #define sip_www_authenticate_t	        http_www_authenticate_t
-#else
-#undef GOT_HEADERS
 #endif
 
 #include <sofia-sip/auth_digest.h>
@@ -103,7 +99,6 @@ void su_time(su_time_t *tv)
   tv->tv_usec = 555555;
 }
 
-#if GOT_HEADERS
 int test_digest()
 {
   char challenge[] = "Digest "
@@ -195,7 +190,7 @@ int test_digest()
   TEST0(strcmp(hresponse, "dd22a698b1a9510c4237c52e0e2cbfac") == 0);
 
   TEST0(pa = sip_proxy_authenticate_make(home, proxy_authenticate));
-  TEST(auth_digest_challenge_get(home, ac, pa->au_params), 10);
+  TEST(auth_digest_challenge_get(home, ac, pa->au_params), 9);
 
   TEST_S(ac->ac_realm, "IndigoSw");
   TEST_1(ac->ac_auth);
@@ -535,6 +530,7 @@ int test_digest_client()
     
     TEST(auc_challenge(&aucs, home, sip->sip_www_authenticate, 
 		       sip_authorization_class), 1);
+    msg_destroy(m1);
     
     TEST(auc_all_credentials(&aucs, "Digest", "\"ims3.so.noklab.net\"", 
 			     "surf3.private@ims3.so.noklab.net", "1234"), 1);
@@ -656,6 +652,7 @@ int test_digest_client()
     TEST(as->as_status, 401);
     TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response, 
 		       sip_authorization_class), 1);
+    reinit_as(as);
     
     TEST(auc_all_credentials(&aucs, "Digest", "\"ims3.so.noklab.net\"", 
 			     "user1", "secret"), 1);
@@ -670,7 +667,6 @@ int test_digest_client()
     TEST_1(msg_params_find(sip->sip_authorization->au_params, "cnonce=") == 0);
     TEST_1(msg_params_find(sip->sip_authorization->au_params, "nc=") == 0);
 
-    reinit_as(as);
     auth_mod_check_client(am, as, sip->sip_authorization, ach);
     TEST(as->as_status, 0);
     TEST_1(as->as_info);	/* challenge for next round */
@@ -683,13 +679,30 @@ int test_digest_client()
 				AUTHTAG_DB(testpasswd),
 				AUTHTAG_ALGORITHM("MD5-sess"),
 				AUTHTAG_QOP("auth"),
+				AUTHTAG_OPAQUE("opaque=="),
 				TAG_END()));
 
     reinit_as(as);
     auth_mod_check_client(am, as, NULL, ach); TEST(as->as_status, 401);
 
-    TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response, 
-		       sip_authorization_class), 1);
+    {
+      msg_auth_t *au = (msg_auth_t *)as->as_response;
+      int i;
+      char *equal;
+
+      if (au->au_params)
+	for (i = 0; au->au_params[i]; i++) {
+	  if (strncasecmp(au->au_params[i], "realm=", 6) == 0)
+	    continue;
+	  equal = strchr(au->au_params[i], '=');
+	  if (equal)
+	    msg_unquote(equal + 1, equal + 1);
+	}
+
+      TEST(auc_challenge(&aucs, home, au, sip_authorization_class), 1);
+      reinit_as(as);
+    }
+
     TEST(auc_all_credentials(&aucs, "Digest", "\"ims3.so.noklab.net\"", 
 			     "user1", "secret"), 1);
     msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
@@ -698,7 +711,6 @@ int test_digest_client()
 			   sip->sip_payload), 1);
     TEST_1(sip->sip_authorization);
 
-    reinit_as(as);
     auth_mod_check_client(am, as, sip->sip_authorization, ach);
     TEST(as->as_status, 0);
     TEST_1(as->as_info == NULL);	/* No challenge for next round */
@@ -835,6 +847,8 @@ int test_digest_client()
     auth_mod_check_client(am, as, NULL, ach); TEST(as->as_status, 401);
     TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response, 
 		       sip_authorization_class), 1);
+    reinit_as(as);
+
     TEST(auc_all_credentials(&aucs, "Digest", "\"ims3.so.noklab.net\"", 
 			     "anonymous", ""), 1);
     msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
@@ -843,7 +857,6 @@ int test_digest_client()
 			   sip->sip_payload), 1);
     TEST_1(sip->sip_authorization);
 
-    reinit_as(as);
     auth_mod_check_client(am, as, sip->sip_authorization, ach);
     TEST(as->as_status, 0);
     auth_mod_destroy(am); aucs = NULL;
@@ -861,6 +874,8 @@ int test_digest_client()
     
     TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response, 
 		       sip_authorization_class), 1);
+    reinit_as(as);    
+
     TEST(auc_all_credentials(&aucs, "Basic", "\"ims3.so.noklab.net\"", 
 			     "user1", "secret"), 1);
     msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
@@ -869,7 +884,6 @@ int test_digest_client()
 			   sip->sip_payload), 1);
     TEST_1(sip->sip_authorization);
 
-    reinit_as(as);    
     auth_mod_check_client(am, as, sip->sip_authorization, ach);
     TEST(as->as_status, 0);
 
@@ -886,17 +900,21 @@ int test_digest_client()
 				AUTHTAG_REMOTE((void *)"http://localhost:9"),
 				TAG_END()));
 
-    
-    reinit_as(as);    
+    reinit_as(as);
     as->as_callback = test_callback;
     as->as_magic = root;
-    auth_mod_check_client(am, as, NULL, ach); 
+    auth_mod_check_client(am, as, NULL, ach);
     TEST(as->as_status, 100);
     su_root_run(root);
     TEST(as->as_status, 401);
     
     TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response, 
 		       sip_authorization_class), 1);
+
+    reinit_as(as);
+    as->as_callback = test_callback;
+    as->as_magic = root;
+
     TEST(auc_all_credentials(&aucs, "Digest", "\"ims3.so.noklab.net\"", 
 			     "user1", "secret"), 1);
     msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
@@ -905,9 +923,6 @@ int test_digest_client()
 			   sip->sip_payload), 1);
     TEST_1(sip->sip_authorization);
 
-    reinit_as(as);    
-    as->as_callback = test_callback;
-    as->as_magic = root;
     auth_mod_check_client(am, as, sip->sip_authorization, ach);
     TEST(as->as_status, 100);
     su_root_run(root);
@@ -916,7 +931,6 @@ int test_digest_client()
     auth_mod_destroy(am); aucs = NULL;
 
     deinit_as(as);
-    msg_destroy(m1);
     msg_destroy(m2);
 
     su_root_destroy(root);
@@ -926,7 +940,6 @@ int test_digest_client()
 
   END();
 }
-#endif
 
 #if HAVE_FLOCK
 #include <sys/file.h>
@@ -1105,10 +1118,8 @@ int main(int argc, char *argv[])
   else
     su_log_soft_set_level(iptsec_log, 0);
 
-#if GOT_HEADERS
   retval |= test_digest();
   retval |= test_digest_client();
-#endif  
 
   retval |= test_module_io();
 

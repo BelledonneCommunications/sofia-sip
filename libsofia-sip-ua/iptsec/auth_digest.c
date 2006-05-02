@@ -39,6 +39,7 @@
 
 #include <sofia-sip/su_md5.h>
 #include "sofia-sip/auth_digest.h"
+#include "sofia-sip/msg_header.h"
 
 #include "iptsec_debug.h"
 
@@ -60,12 +61,11 @@ static inline int has_token(char const *qstring, char const *token);
  */
 int auth_get_params(su_home_t *home,
 		    char const * const params[], ...
-		    /* char const * name, char const **return_value */)
+		    /* char const *fmt, char const **return_value */)
 {
-  int n, j, len, namelen, matched;
-  int value_match;
-  char const *name, *p;
-  char const *value, **return_value;
+  int n, j, len, namelen;
+  char const *fmt, *expected;
+  char const *value, *p, **return_value;
   va_list(ap);
 
   assert(params);
@@ -74,53 +74,66 @@ int auth_get_params(su_home_t *home,
 
   va_start(ap, params);
 
-  for (n = 0; (name = va_arg(ap, char const *));) {
+  for (n = 0; (fmt = va_arg(ap, char const *));) {
     return_value = va_arg(ap, char const **);
-    len = strlen(name);
+    len = strlen(fmt);
     if (!len)
       continue;
-    namelen = strcspn(name, "=");
-    value_match = len - 1 != namelen;
+    namelen = strcspn(fmt, "=");
+    expected = fmt + namelen + 1;
+    value = NULL;
 
-    for (j = 0; (p = params[j++]);) {
-      if (value_match) {
-	if (strcasecmp(p, name) == 0) {
+    if (expected[0]) {
+      /* value match: format is name=expected,
+	 if expected is found in parameter value,
+	 return non-NULL pointer in *return_value */
+      for (j = 0; (p = params[j++]);) {
+	if (strcasecmp(p, fmt) == 0) {
+	  /* Matched the whole parameter with fmt name=expected */
 	  value = p;
+	  break;
 	}
-	else if (strncasecmp(p, name, namelen) == 0) {
-	  for (matched = namelen; strchr(" \t\r\n", p[matched]); matched++)
-	    ;
-	  if (p[matched++] != '=')
-	    continue;
-	  for (; strchr(" \t\r\n", p[matched]); matched++)
-	    ;
-	  if (p[matched] == '"' && has_token(p + matched, name + namelen + 1))
-	    value = p + matched;
-	  else if (strcasecmp(p + matched, name + namelen + 1) == 0)
-	    value = p + matched;
-	  else
-	    continue;
-	}
-	else {
+	else if (strncasecmp(p, fmt, namelen) ||
+		 p[namelen] != '=')
 	  continue;
+
+	p = p + namelen + 1;
+
+	if (p[0] == '"' && has_token(p, expected)) {
+	  /* Quoted parameter value has expected value,
+	   * e.g., qop=auth matches qop="auth,auth-int" */
+	  value = p;
+	  break;
+	}
+	else if (strcasecmp(p, expected) == 0) {
+	  /* Parameter value matches with extected value
+	   * e.g., qop=auth matches qop=auth */
+	  value = p;
+	  break;
 	}
       }
-      else if (strncasecmp(p, name, len) == 0) {
-	if (home && p[len] == '"') {
-	  int quoted = strcspn(p + len + 1, "\"");
-	  value = su_strndup(home, p + len + 1, quoted);
-	}
-	else {
-	  value = p + len;
-	}
+    }
+    else {
+      /* format is name= , return unquoted parameter value after = */
+      for (j = 0; (p = params[j++]);) {
+	if (strncasecmp(p, fmt, len))
+	  continue;
+
+	if (p[len] == '"')
+	  value = msg_unquote_dup(home, p + len);
+	else
+	  value = su_strdup(home, p + len);
+
+	if (value == NULL)
+	  return -1;
+
+	break;
       }
-      else {
-	continue;
-      }
-      
+    }
+
+    if (value) {
       *return_value = value;
       n++;
-      break;
     }
   }
 
@@ -193,6 +206,7 @@ int auth_digest_challenge_get(su_home_t *home,
   int n;
   auth_challenge_t ac[1] = {{ 0 }};
   char const *md5 = NULL, *md5sess = NULL, *sha1 = NULL,
+    *stale = NULL,
     *qop_auth = NULL, *qop_auth_int = NULL;
 
   ac->ac_size = sizeof(ac);
@@ -208,21 +222,19 @@ int auth_digest_challenge_get(su_home_t *home,
 		      "domain=", &ac->ac_domain,
 		      "nonce=", &ac->ac_nonce,
 		      "opaque=", &ac->ac_opaque,
-		      "stale=", &ac->ac_stale,
 		      "algorithm=", &ac->ac_algorithm,
 		      "qop=", &ac->ac_qop,
 		      "algorithm=md5", &md5,
 		      "algorithm=md5-sess", &md5sess,
 		      "algorithm=sha1", &sha1,
+		      "stale=true", &stale,
 		      "qop=auth", &qop_auth,
 		      "qop=auth-int", &qop_auth_int,
 		      NULL);
   if (n < 0)
     return n;
 
-  if (ac->ac_stale && strcasecmp(ac->ac_stale, "true") != 0)
-    ac->ac_stale = NULL;
-
+  ac->ac_stale = stale != NULL;
   ac->ac_md5 = md5 != NULL || ac->ac_algorithm == NULL;
   ac->ac_md5sess = md5sess != NULL;
   ac->ac_sha1 = sha1 != NULL;
@@ -234,6 +246,23 @@ int auth_digest_challenge_get(su_home_t *home,
   SU_DEBUG_5(("%s(): got %d\n", "auth_digest_challenge_get", n));
   
   return n;
+}
+
+/** Free challenge parameters */
+void auth_digest_challenge_free_params(su_home_t *home, auth_challenge_t *ac)
+{
+  if (ac->ac_realm)
+    su_free(home, (void *)ac->ac_realm), ac->ac_realm = NULL;
+  if (ac->ac_domain)
+    su_free(home, (void *)ac->ac_domain), ac->ac_domain = NULL;
+  if (ac->ac_nonce)
+    su_free(home, (void *)ac->ac_nonce), ac->ac_nonce = NULL;
+  if (ac->ac_opaque)
+    su_free(home, (void *)ac->ac_opaque), ac->ac_opaque = NULL;
+  if (ac->ac_algorithm)
+    su_free(home, (void *)ac->ac_algorithm), ac->ac_algorithm = NULL;
+  if (ac->ac_qop)
+    su_free(home, (void *)ac->ac_qop), ac->ac_qop = NULL;
 }
 
 /**Get digest-response parameters.
