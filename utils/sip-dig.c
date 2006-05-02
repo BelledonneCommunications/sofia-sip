@@ -52,11 +52,11 @@
  * @section sip_dig_options Command Line Options
  * The @e sip-dig utility accepts following command line options:
  * <dl>
- * <dt>-p <e>protoname</e></dt>
- * <dd>Use named transport protocol.
- * </dd>
- * <dt>-s <e>protoname,service</e></dt>
- * <dd>Resolve named transport protocol with NAPTR @e service
+ * <dt>-p <em>protoname</em></dt>
+
+ * <dd>Use named transport protocol. The <em>protoname</em> can be either
+ * well-known, e.g., "udp", or it can specify NAPTR service and SRV
+ * identifier, e.g., "tls-udp/SIPS+D2U/_sips._udp.".
  * </dd>
  * <dt>--udp</dt>
  * <dd>Use UDP transport protocol.
@@ -101,21 +101,20 @@
  *
  * @section sip_dig_examples Examples
  *
- * Resolve sip:openlaboratory.net and sips:openlaboratory.net, prefer TLS
- * over TCP, TCP over UDP:
- * <code>
- * $ sip-dig --tls --tcp --udp sip:openlaboratory.net sips:openlaboratory.net
+ * Resolve sip:openlaboratory.net, prefer TLS over TCP, TCP over UDP:
+ * @code
+ * $ sip-dig --tls --tcp --udp sip:openlaboratory.net
  *	1 0.333 tls 5061 212.213.221.127
  *	2 0.333 tcp 5060 212.213.221.127
  *	3 0.333 udp 5060 212.213.221.127
- * </endcode>
+ * @endcode
  *
- * Resolve sips:example.net with DTLS (TLS-UDP) and TLS:
- * <code>
- * $ sip-dig -p tls-udp/SIPS+D2U --tls sips:example.net
+ * Resolve sips:example.net with TLS over SCTP (TLS-SCTP) and TLS:
+ * @code
+ * $ sip-dig -p tls-sctp --tls sips:example.net
  *	1 0.500 tls-udp 5061 172.21.55.26
  *	2 0.500 tls 5061 172.21.55.26
- * </endcode>
+ * @endcode
  *
  * @section sip_dig_environment Environment
  * #SRESOLV_DEBUG, SRESOLV_CONF
@@ -240,9 +239,10 @@ int main(int argc, char *argv[])
 	proto = argv++[2];
 
       if (proto == NULL)
-	usage(1);
+	usage(2);
 
-      prepare_transport(dig, proto);
+      if (prepare_transport(dig, proto) < 0)
+	exit(2);
     }
     else if (strcmp(argv[1], "--udp") == 0)
       prepare_transport(dig, "udp");
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
     else if (strcmp(argv++[1], "-") == 0)
       break;
     else
-      usage(1);
+      usage(2);
     argv++;
   }
 
@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
     dnsserver = argv++[1] + 1;
 
   if (!argv[1])
-    usage(1);
+    usage(2);
 
   multiple = argv[1] && argv[2];
 
@@ -381,36 +381,60 @@ int prepare_transport(struct dig *dig, char const *tport)
   if (j == N_TPORT)
     return 0;
 
-  if (strcasecmp(tport, "udp") == 0) {
+  if (strchr(tport, '/')) {
+    char *service = strchr(tport, '/');
+    char *srv = strchr(service + 1, '/');
+
+    if (!srv || srv[strlen(srv) - 1] != '.') {
+      fprintf(stderr, "%s: invalid transport specifier \"%s\"\n", name, tport);
+      fputs(
+"\tspecifier should have name/service/srv-id\n"
+"\twhere name is protocol name (e.g, \"tls-udp\")\n"
+"\t      service specifies service as per RFC 2915 (e.g., \"SIPS+D2U\")\n"
+"\t      srv-id is prefix for SRV lookup (e.g., \"_sips._udp.\")\n",
+         stderr);
+      if (srv)
+	fputs("\t      and it should end with a dot \".\"\n", stderr);
+      return -1;
+    }
+
+    *service++ = '\0', *srv++ = '\0';
+
+    tports[j].name = tport,
+    tports[j].service = service;
+    tports[j].srv = srv;
+  }
+  else if (strcasecmp(tport, "udp") == 0) {
+    tports[j].name = "udp";
     tports[j].service = "SIP+D2U";
     tports[j].srv = "_sip._udp.";
-    tports[j++].name = "udp";
   }
   else if (strcasecmp(tport, "tcp") == 0) {
+    tports[j].name = "tcp";
     tports[j].service = "SIP+D2T";
     tports[j].srv = "_sip._tcp.";
-    tports[j++].name = "tcp";
   }
   else if (strcasecmp(tport, "tls") == 0) {
+    tports[j].name = "tls";
     tports[j].service = "SIPS+D2T";
     tports[j].srv = "_sips._tcp.";
-    tports[j++].name = "tls";
   }
   else if (strcasecmp(tport, "sctp") == 0) {
+    tports[j].name = "sctp";
     tports[j].service = "SIP+D2S";
     tports[j].srv = "_sip._sctp.";
-    tports[j++].name = "sctp";
   }
   else if (strcasecmp(tport, "tls-sctp") == 0) {
+    tports[j].name = "tls-sctp";
     tports[j].service = "SIPS+D2S";
     tports[j].srv = "_sips._sctp.";
-    tports[j++].name = "tls-sctp";
   }
   else {
-    fprintf(stderr, "%s: ignoring unknown transport \"%s\" with NAPTR\n",
-	    name, tport);
-    return 0;
+    fprintf(stderr, "%s: unknown transport \"%s\"\n", name, tport);
+    return -1;
   }
+
+  j++;
 
   tports[j].service = tports[j].srv = tports[j].name = NULL;
 
