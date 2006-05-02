@@ -154,6 +154,13 @@ sres_query_t *sres_query(sres_resolver_t *res,
                          uint16_t type,
                          char const *domain);
 
+/**Search DNS. */
+sres_query_t *sres_search(sres_resolver_t *res,
+			  sres_answer_f *callback,
+			  sres_context_t *context,
+			  uint16_t type,
+			  char const *name);
+
 /** Make a reverse DNS query. */
 sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
                                   sres_answer_f *callback,
@@ -187,6 +194,11 @@ sres_record_t **sres_cached_answers(sres_resolver_t *res,
 				    uint16_t type,
 				    char const *domain);
 
+/**Search for a list of matching (type/name) records from cache. */
+sres_record_t **sres_search_cached_answers(sres_resolver_t *res,
+					   uint16_t type,
+					   char const *name);
+
 /**Get a list of matching (type/domain) records from cache. */
 sres_record_t **sres_cached_answers_sockaddr(sres_resolver_t *res,
                                              uint16_t type,
@@ -196,15 +208,24 @@ sres_record_t **sres_cached_answers_sockaddr(sres_resolver_t *res,
 int sres_blocking_query(sres_resolver_t *res,
 			uint16_t type,
 			char const *domain,
+			int ignore_cache,
 			sres_record_t ***return_records);
+
+/** Search DNS, return results. */
+int sres_blocking_search(sres_resolver_t *res,
+			 uint16_t type,
+			 char const *name,
+			 int ignore_cache,
+			 sres_record_t ***return_records);
 
 /** Send a a reverse DNS query, wait for answer, return results. */
 int sres_blocking_query_sockaddr(sres_resolver_t *res,
 				 uint16_t type,
 				 struct sockaddr const *addr,
+				 int ignore_cache,
 				 sres_record_t ***return_records);
 
-/** Return true (and set it in blocking mode) if resolver can block. */
+/** Return true (and set resolver in blocking mode) if resolver can block. */
 int sres_is_blocking(sres_resolver_t *res);
 
 /** Sort the list of records */

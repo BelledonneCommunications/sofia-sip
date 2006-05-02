@@ -156,6 +156,7 @@ Command line utilities for Sofia SIP UA library.
 %{_prefix}/bin/addrinfo
 %{_prefix}/bin/sip-options
 %{_prefix}/bin/sip-date
+%{_prefix}/bin/sip-dig
 %{_mandir}/man?/*
 
 %changelog

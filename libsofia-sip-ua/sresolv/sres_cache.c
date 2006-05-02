@@ -170,14 +170,15 @@ int sres_cache_get(sres_cache_t *cache,
   int result_size, rr_count = 0;
   unsigned hash;
   time_t now;
+  char b[8];
 
   if (!domain || !return_cached)
     return -1;
 
   *return_cached = NULL;
 
-  SU_DEBUG_9(("%s(res, %02d, \"%s\") called\n", "sres_cached_answers",
-	      type, domain));
+  SU_DEBUG_9(("%s(%p, %s, \"%s\") called\n", "sres_cache_get",
+	      cache, sres_record_type(type, b), domain));
 
   hash = sres_hash_key(domain);
 
@@ -239,7 +240,8 @@ int sres_cache_get(sres_cache_t *cache,
 
   UNLOCK(cache);
 
-  SU_DEBUG_9(("sres_cached_answers(res, %02d, %s) returned\n", type, domain));
+  SU_DEBUG_9(("%s(%p, %s, \"%s\") returned %d entries\n", "sres_cache_get", 
+	      cache, sres_record_type(type, b), domain, rr_count));
 
   *return_cached = result;
 

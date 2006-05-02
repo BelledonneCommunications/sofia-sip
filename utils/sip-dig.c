@@ -195,9 +195,11 @@ void print_result(char const *addr, char const *port, char const *tport,
 		  double weight,
 		  unsigned preference);
 
-int prepare_transport(struct transport tports[N_TPORT], char const *tport);
+int prepare_transport(struct dig *dig, char const *tport);
 
-int count_transports(struct transport const *, char const *tp1, char const *tp2);
+int count_transports(struct dig *dig,
+		     char const *tp1, 
+		     char const *tp2);
 
 void usage(int exitcode)
 {
@@ -240,20 +242,20 @@ int main(int argc, char *argv[])
       if (proto == NULL)
 	usage(1);
 
-      prepare_transport(dig->tports, proto);
+      prepare_transport(dig, proto);
     }
     else if (strcmp(argv[1], "--udp") == 0)
-      prepare_transport(dig->tports, "udp");
+      prepare_transport(dig, "udp");
     else if (strcmp(argv[1], "--tcp") == 0)
-      prepare_transport(dig->tports, "tcp");
+      prepare_transport(dig, "tcp");
     else if (strcmp(argv[1], "--tls") == 0)
-      prepare_transport(dig->tports, "tls");
+      prepare_transport(dig, "tls");
     else if (strcmp(argv[1], "--sctp") == 0)
-      prepare_transport(dig->tports, "sctp");
+      prepare_transport(dig, "sctp");
     else if (strcmp(argv[1], "--tls-sctp") == 0)
-      prepare_transport(dig->tports, "tls-sctp");
+      prepare_transport(dig, "tls-sctp");
     else if (strcmp(argv[1], "--tls-udp") == 0)
-      prepare_transport(dig->tports, "tls-udp");
+      prepare_transport(dig, "tls-udp");
     else if (strcmp(argv[1], "--no-sctp") == 0)
       o_sctp = 0, o_tls_sctp = 0;
     else if (strcmp(argv[1], "--help") == 0)
@@ -280,14 +282,14 @@ int main(int argc, char *argv[])
 
   multiple = argv[1] && argv[2];
 
-  if (!count_transports(dig->tports, NULL, NULL)) {
-    prepare_transport(dig->tports, "udp");
-    prepare_transport(dig->tports, "tcp");
+  if (!count_transports(dig, NULL, NULL)) {
+    prepare_transport(dig, "udp");
+    prepare_transport(dig, "tcp");
     if (o_sctp)
-      prepare_transport(dig->tports, "sctp");
-    prepare_transport(dig->tports, "tls");
+      prepare_transport(dig, "sctp");
+    prepare_transport(dig, "tls");
     if (o_tls_sctp)
-      prepare_transport(dig->tports, "tls-sctp");
+      prepare_transport(dig, "tls-sctp");
   }
 
   dig->sres = sres_resolver_new(getenv("SRESOLV_CONF"));
@@ -364,8 +366,9 @@ int transport_is_secure(char const *tportname)
   return tportname && strncasecmp(tportname, "tls", 3) == 0;
 }
 
-int prepare_transport(struct transport tports[N_TPORT], char const *tport)
+int prepare_transport(struct dig *dig, char const *tport)
 {
+  struct transport *tports = dig->tports;
   int j;
 
   for (j = 0; j < N_TPORT - 1; j++) {
@@ -415,13 +418,17 @@ int prepare_transport(struct transport tports[N_TPORT], char const *tport)
 }
 
 int
-count_transports(struct transport const *tports,
+count_transports(struct dig *dig,
 		 char const *tport,
 		 char const *tport2)
 {
+  
   int i, tcount = 0;
+  struct transport const *tports = dig->tports;
 
   for (i = 0; tports[i].name; i++) {
+    if (dig->sips && !transport_is_secure(tports[i].name))
+      continue;
     if (!tport || strcasecmp(tport, tports[i].name) == 0)
       tcount++;
     if (tport2 && strcasecmp(tport2, tports[i].name) == 0)
@@ -453,7 +460,7 @@ int dig_naptr(struct dig *dig,
   int i, error;
   int order = 0, count = 0, nacount = 0, scount = 0;
 
-  error = sres_blocking_query(dig->sres, sres_type_naptr, host, &answers);
+  error = sres_blocking_query(dig->sres, sres_type_naptr, host, 0, &answers);
   if (error < 0)
     return 0;
 
@@ -538,7 +545,7 @@ int dig_all_srvs(struct dig *dig,
     char const *proto; sres_record_t **answers;
   } srvs[N_TPORT + 1] = {{ NULL }};
 
-  tcount = count_transports(dig->tports, tport, NULL);
+  tcount = count_transports(dig, tport, NULL);
   if (!tcount)
     return 0;
 
@@ -546,10 +553,13 @@ int dig_all_srvs(struct dig *dig,
     if (tport && strcasecmp(dig->tports[i].name, tport))
       continue;
 
+    if (dig->sips && !transport_is_secure(dig->tports[i].name))
+      continue;
+
     domain = su_strcat(NULL, dig->tports[i].srv, host);
 
     if (domain) {
-      if (sres_blocking_query(dig->sres, sres_type_srv, domain, 
+      if (sres_blocking_query(dig->sres, sres_type_srv, domain, 0,
 			      &srvs[n].answers) >= 0) {
 	srvs[n++].proto = dig->tports[i].name;
       }
@@ -608,7 +618,7 @@ int dig_srv(struct dig *dig,
 
   assert(tport && domain);
 
-  error = sres_blocking_query(dig->sres, sres_type_srv, domain, &answers);
+  error = sres_blocking_query(dig->sres, sres_type_srv, domain, 0, &answers);
   if (error < 0)
     return 0;
 
@@ -707,12 +717,12 @@ int dig_addr(struct dig *dig,
       tport = "udp", tport2 = "tcp";
   }
 
-  tcount = count_transports(dig->tports, tport, tport2);
+  tcount = count_transports(dig, tport, tport2);
   if (!tcount)
     return 0;
 
   if (type1) {
-    error = sres_blocking_query(dig->sres, type1, host, &answers1);
+    error = sres_blocking_query(dig->sres, type1, host, 0, &answers1);
     if (error >= 0)
       for (i = 0; answers1[i]; i++) {
 	sres_common_t *r = answers1[i]->sr_record;
@@ -721,7 +731,7 @@ int dig_addr(struct dig *dig,
   }
 
   if (type2) {
-    error = sres_blocking_query(dig->sres, type2, host, &answers2);
+    error = sres_blocking_query(dig->sres, type2, host, 0, &answers2);
     if (error >= 0)
       for (i = 0; answers2[i]; i++) {
 	sres_common_t *r = answers2[i]->sr_record;

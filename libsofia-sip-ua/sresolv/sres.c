@@ -176,7 +176,7 @@ struct sres_config {
   char const *c_filename;
 
   /* domain and search */
-  char const *c_search[1 + SRES_MAX_SEARCH + 1];
+  char const *c_search[SRES_MAX_SEARCH + 1];
 
   /* nameserver */
   struct sres_nameserver {
@@ -350,7 +350,7 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res);
 
 static
 sres_server_t *sres_next_server(sres_resolver_t *res, 
-				int *in_out_i,
+				uint8_t *in_out_i,
 				int timeout);
 
 static
@@ -360,6 +360,11 @@ static
 void sres_answer_subquery(sres_context_t *context, 
 			  sres_query_t *query,
 			  sres_record_t **answers);
+
+static
+sres_record_t **
+sres_combine_results(sres_resolver_t *res,
+		     sres_record_t **search_results[SRES_MAX_SEARCH + 1]);
 
 static
 void sres_query_report_error(sres_query_t *q,
@@ -748,14 +753,19 @@ sres_resolver_get_async(sres_resolver_t const *res,
     return res->res_async;
 }
 
-/** Make a DNS query.
+/**Send a DNS query.
  *
  * Sends a DNS query with specified @a type and @a domain to the DNS server. 
  * The sres resolver takes care of retransmitting the query if
  * sres_resolver_timer() is called in regular intervals. It generates an
  * error record with nonzero status if no response is received.
  *
- * @sa sres_blocking_query(), sres_query_make()
+ * @sa sres_search(), sres_blocking_query(), sres_query_make()
+ *
+ * @ERRORS
+ * @ERROR EFAULT @a res or @a domain point outside the address space
+ * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
+ * @ERROR ENOMEM memory exhausted
  */
 sres_query_t *
 sres_query(sres_resolver_t *res,
@@ -766,9 +776,10 @@ sres_query(sres_resolver_t *res,
 {
   sres_query_t *query = NULL;
   size_t dlen;
-  int enough_dots;
-
-  SU_DEBUG_9(("sres_query() called\n"));
+  
+  char b[8];
+  SU_DEBUG_9(("sres_query(%p, %p, %p, %s, \"%s\") called\n",
+	      res, callback, context, sres_record_type(type, b), domain));
 
   if (res == NULL || domain == NULL)
     return su_seterrno(EFAULT), (void *)NULL;
@@ -780,15 +791,81 @@ sres_query(sres_resolver_t *res,
     return NULL;
   }
 
-  enough_dots = strchr(domain, '.') != NULL;
+  /* Reread resolv.conf if needed */
+  sres_resolver_update(res, 0);
+
+  query = sres_query_alloc(res, callback, context, type, domain);
+
+  if (query && sres_send_dns_query(res, query) != 0)
+    sres_free_query(res, query), query = NULL;
+
+  return query;
+}
+
+/**Search DNS.
+ *
+ * Sends DNS queries with specified @a type and @a name to the DNS server. 
+ * If the @a name does not contain enought dots, the search domains are
+ * appended to the name and resulting domain name are also queried.
+ *
+ * The sres resolver takes care of retransmitting the queries if
+ * sres_resolver_timer() is called in regular intervals. It generates an
+ * error record with nonzero status if no response is received.
+ *
+ * @param res pointer to resolver object
+ * @param callback pointer to completion function
+ * @param context argument given to the completion function
+ * @param type record type to search (or sres_qtype_any for any record)
+ * @param name host or domain name to search from DNS
+ *
+ * @ERRORS
+ * @ERROR EFAULT @a res or @a domain point outside the address space
+ * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
+ * @ERROR ENOMEM memory exhausted
+ *
+ * @sa sres_query(), sres_blocking_search()
+ */
+sres_query_t *
+sres_search(sres_resolver_t *res,
+	    sres_answer_f *callback,
+	    sres_context_t *context,
+	    uint16_t type,
+	    char const *name)
+{
+  char const *domain = name;
+  sres_query_t *query = NULL;
+  size_t dlen;
+  unsigned dots; char const *dot;
+  char b[8];
+
+  SU_DEBUG_9(("sres_search(%p, %p, %p, %s, \"%s\") called\n",
+	      res, callback, context, sres_record_type(type, b), domain));
+
+  if (res == NULL || domain == NULL)
+    return su_seterrno(EFAULT), (void *)NULL;
+
+  dlen = strlen(domain);
+  if (dlen > SRES_MAXDNAME ||
+      (dlen == SRES_MAXDNAME && domain[dlen - 1] != '.')) {
+    su_seterrno(ENAMETOOLONG);
+    return NULL;
+  }
 
   sres_resolver_update(res, 0);
+
+  if (sres_has_search_domain(res))
+    for (dots = 0, dot = strchr(domain, '.');
+	 dots < res->res_config->c_opt.ndots && dot; 
+	 dots++, dot = strchr(dot + 1, '.'))
+      ;
+  else
+    dots = 0;
 
   query = sres_query_alloc(res, callback, context, type, domain);
 
   if (query) {
     /* Create sub-query for each search domain */
-    if (sres_has_search_domain(res) && !enough_dots) {
+    if (dots < res->res_config->c_opt.ndots) {
       sres_query_t *sub;
       int i, subs, len;
       char const **domains = res->res_config->c_search;
@@ -820,7 +897,7 @@ sres_query(sres_resolver_t *res,
 	  subs += sub != NULL;
 	}
       }
-      
+
       query->q_n_subs = subs;
     }
 
@@ -965,12 +1042,89 @@ sres_cached_answers(sres_resolver_t *res,
     return NULL;
   
   if (!sres_cache_get(res->res_cache, type, domain, &result))
-    su_seterrno(ENOENT), (void *)NULL;
+    return su_seterrno(ENOENT), (void *)NULL;
 
   return result;
 }
 
-/**Get a list of matching (type/domain) records from cache.
+/**Search for a list of matching (type/name) records from cache.
+ *
+ * @return
+ * pointer to an array of pointers to cached records, or
+ * NULL if no entry was found.
+ *
+ * @ERRORS
+ * @ERROR ENAMETOOLONG @a name or resulting domain is longer than SRES_MAXDNAME
+ * @ERROR ENOENT no cached records were found
+ * @ERROR EFAULT @a res or @a domain point outside the address space
+ * @ERROR ENOMEM memory exhausted
+ *
+ * @sa sres_search(), sres_cached_answers()
+ */
+sres_record_t **
+sres_search_cached_answers(sres_resolver_t *res,
+			   uint16_t type,
+			   char const *name)
+{
+  char const *domain = name;
+  sres_record_t **search_results[SRES_MAX_SEARCH + 1] = { NULL };
+  char rooted_domain[SRES_MAXDNAME];
+  unsigned dots; char const *dot;
+  size_t found = 0;
+  int i;
+
+  SU_DEBUG_9(("sres_search_cached_answers(%p, %s, \"%s\") called\n",
+	      res, sres_record_type(type, rooted_domain), domain));
+
+  if (!res || !name)
+    return su_seterrno(EFAULT), (void *)NULL;
+
+  if (sres_has_search_domain(res))
+    for (dots = 0, dot = strchr(domain, '.');
+	 dots < res->res_config->c_opt.ndots && dot; 
+	 dots++, dot = strchr(dot + 1, '.'))
+      ;
+  else
+    dots = 0;
+
+  domain = sres_toplevel(rooted_domain, sizeof rooted_domain, domain);
+
+  if (!domain)
+    return NULL;
+
+  if (sres_cache_get(res->res_cache, type, domain, &search_results[0]))
+    found = 1;
+
+  if (dots < res->res_config->c_opt.ndots) {
+    char const **domains = res->res_config->c_search;
+    size_t dlen = strlen(domain);
+
+    for (i = 0; domains[i] && i < SRES_MAX_SEARCH; i++) {
+      size_t len = strlen(domains[i]);
+      if (dlen + len + 1 >= SRES_MAXDNAME)
+	continue;
+      if (domain != rooted_domain)
+	domain = memcpy(rooted_domain, domain, dlen);
+      memcpy(rooted_domain + dlen, domains[i], len);
+      strcpy(rooted_domain + dlen + len, ".");
+      if (sres_cache_get(res->res_cache, type, domain, search_results + i + 1))
+	found++;
+    }
+  }
+
+  if (found == 0)
+    return su_seterrno(ENOENT), (void *)NULL;
+
+  if (found == 1) {
+    for (i = 0; i <= SRES_MAX_SEARCH; i++)
+      if (search_results[i])
+	return search_results[i];
+  }
+
+  return sres_combine_results(res, search_results);
+}
+
+/**Get a list of matching (type/domain) reverse records from cache.
  *
  * 
  *
@@ -1081,6 +1235,161 @@ sres_free_answers(sres_resolver_t *res,
 {
   if (res && answers)
     sres_cache_free_answers(res->res_cache, answers);
+}
+
+/** Convert type to its name. */
+char const *sres_record_type(int type, char buffer[8])
+{
+  switch (type) {
+  case sres_type_a: return "A";
+  case sres_type_ns: return "NS";
+  case sres_type_mf: return "MF";
+  case sres_type_cname: return "CNAME";
+  case sres_type_soa: return "SOA";
+  case sres_type_mb: return "MB";
+  case sres_type_mg: return "MG";
+  case sres_type_mr: return "MR";
+  case sres_type_null: return "NULL";
+  case sres_type_wks: return "WKS";
+  case sres_type_ptr: return "PTR";
+  case sres_type_hinfo: return "HINFO";
+  case sres_type_minfo: return "MINFO";
+  case sres_type_mx: return "MX";
+  case sres_type_txt: return "TXT";
+  case sres_type_rp: return "RP";
+  case sres_type_afsdb: return "AFSDB";
+  case sres_type_x25: return "X25";
+  case sres_type_isdn: return "ISDN";
+  case sres_type_rt: return "RT";
+  case sres_type_nsap: return "NSAP";
+  case sres_type_nsap_ptr: return "NSAP_PTR";
+  case sres_type_sig: return "SIG";
+  case sres_type_key: return "KEY";
+  case sres_type_px: return "PX";
+  case sres_type_gpos: return "GPOS";
+  case sres_type_aaaa: return "AAAA";
+  case sres_type_loc: return "LOC";
+  case sres_type_nxt: return "NXT";
+  case sres_type_eid: return "EID";
+  case sres_type_nimloc: return "NIMLOC";
+  case sres_type_srv: return "SRV";
+  case sres_type_atma: return "ATMA";
+  case sres_type_naptr: return "NAPTR";
+  case sres_type_kx: return "KX";
+  case sres_type_cert: return "CERT";
+  case sres_type_a6: return "A6";
+  case sres_type_dname: return "DNAME";
+  case sres_type_sink: return "SINK";
+  case sres_type_opt: return "OPT";
+
+  case sres_qtype_tsig: return "TSIG";
+  case sres_qtype_ixfr: return "IXFR";
+  case sres_qtype_axfr: return "AXFR";
+  case sres_qtype_mailb: return "MAILB";
+  case sres_qtype_maila: return "MAILA";
+  case sres_qtype_any: return "ANY";
+    
+  default:
+    sprintf(buffer, "%u?", type & 65535);
+    return buffer;
+  }
+}
+
+/** Convert class to its name. */
+char const *sres_record_class(int rclass, char buffer[8])
+{
+  switch (rclass) {
+  case 1: return "IN";
+  case 2: return "2?";
+  case 3: return "CHAOS";
+  case 4: return "HS";
+  case 254: return "NONE";
+  case 255: return "ANY";
+
+  default:
+    sprintf(buffer, "%u?", rclass & 65535);
+    return buffer;
+  }
+}
+
+/** Compare two records. */
+int 
+sres_record_compare(sres_record_t const *aa, sres_record_t const *bb)
+{
+  int D;
+  sres_common_t const *a = aa->sr_record, *b = bb->sr_record;
+
+  D = a->r_status - b->r_status; if (D) return D;
+  D = a->r_class - b->r_class; if (D) return D;
+  D = a->r_type - b->r_type; if (D) return D;
+
+  if (a->r_status)
+    return 0;
+  
+  switch (a->r_type) {
+  case sres_type_soa: 
+    {
+      sres_soa_record_t const *A = aa->sr_soa, *B = bb->sr_soa;
+      D = A->soa_serial - B->soa_serial; if (D) return D;
+      D = strcasecmp(A->soa_mname, B->soa_mname); if (D) return D;
+      D = strcasecmp(A->soa_rname, B->soa_rname); if (D) return D;
+      D = A->soa_refresh - B->soa_refresh; if (D) return D;
+      D = A->soa_retry - B->soa_retry; if (D) return D;
+      D = A->soa_expire - B->soa_expire; if (D) return D;
+      D = A->soa_minimum - B->soa_minimum; if (D) return D;
+      return 0;
+    }
+  case sres_type_a:
+    {
+      sres_a_record_t const *A = aa->sr_a, *B = bb->sr_a;
+      return memcmp(&A->a_addr, &B->a_addr, sizeof A->a_addr);
+    }
+  case sres_type_a6:
+    {
+      sres_a6_record_t const *A = aa->sr_a6, *B = bb->sr_a6;
+      D = A->a6_prelen - B->a6_prelen; if (D) return D;
+      D = !A->a6_prename - !B->a6_prename; 
+      if (D == 0 && A->a6_prename && B->a6_prename)
+	D = strcasecmp(A->a6_prename, B->a6_prename); if (D) return D;
+      return memcmp(&A->a6_suffix, &B->a6_suffix, sizeof A->a6_suffix);
+    }
+  case sres_type_aaaa:
+    {
+      sres_aaaa_record_t const *A = aa->sr_aaaa, *B = bb->sr_aaaa;
+      return memcmp(&A->aaaa_addr, &B->aaaa_addr, sizeof A->aaaa_addr);      
+    }
+  case sres_type_cname:
+    {
+      sres_cname_record_t const *A = aa->sr_cname, *B = bb->sr_cname;
+      return strcmp(A->cn_cname, B->cn_cname);
+    }
+  case sres_type_ptr:
+    {
+      sres_ptr_record_t const *A = aa->sr_ptr, *B = bb->sr_ptr;
+      return strcmp(A->ptr_domain, B->ptr_domain);
+    }
+  case sres_type_srv:
+    {
+      sres_srv_record_t const *A = aa->sr_srv, *B = bb->sr_srv;
+      D = A->srv_priority - B->srv_priority; if (D) return D;
+      /* Record with larger weight first */
+      D = B->srv_weight - A->srv_weight; if (D) return D;
+      D = strcmp(A->srv_target, B->srv_target); if (D) return D;
+      return A->srv_port - B->srv_port;
+    }
+  case sres_type_naptr:
+    {
+      sres_naptr_record_t const *A = aa->sr_naptr, *B = bb->sr_naptr;
+      D = A->na_order - B->na_order; if (D) return D;
+      D = A->na_prefer - B->na_prefer; if (D) return D;
+      D = strcmp(A->na_flags, B->na_flags); if (D) return D;
+      D = strcmp(A->na_services, B->na_services); if (D) return D;
+      D = strcmp(A->na_regexp, B->na_regexp); if (D) return D;
+      return strcmp(A->na_replace, B->na_replace); 
+    }
+  default:
+    return 0;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1195,84 +1504,39 @@ void sres_free_query(sres_resolver_t *res, sres_query_t *q)
   su_free(res->res_home, q);
 }
 
-/** Compare two records. */
-int 
-sres_record_compare(sres_record_t const *aa, sres_record_t const *bb)
+static
+sres_record_t **
+sres_combine_results(sres_resolver_t *res,
+		     sres_record_t **search_results[SRES_MAX_SEARCH + 1])
 {
-  int D;
-  sres_common_t const *a = aa->sr_record, *b = bb->sr_record;
+  sres_record_t **combined_result;
+  int i, j, found;
 
-  D = a->r_status - b->r_status; if (D) return D;
-  D = a->r_class - b->r_class; if (D) return D;
-  D = a->r_type - b->r_type; if (D) return D;
+  /* Combine the results into a single list. */
+  for (i = 0, found = 0; i <= SRES_MAX_SEARCH; i++)
+    if (search_results[i])
+      for (j = 0; search_results[i][j]; j++)
+	found++;
 
-  if (a->r_status)
-    return 0;
-  
-  switch (a->r_type) {
-  case sres_type_soa: 
-    {
-      sres_soa_record_t const *A = aa->sr_soa, *B = bb->sr_soa;
-      D = A->soa_serial - B->soa_serial; if (D) return D;
-      D = strcasecmp(A->soa_mname, B->soa_mname); if (D) return D;
-      D = strcasecmp(A->soa_rname, B->soa_rname); if (D) return D;
-      D = A->soa_refresh - B->soa_refresh; if (D) return D;
-      D = A->soa_retry - B->soa_retry; if (D) return D;
-      D = A->soa_expire - B->soa_expire; if (D) return D;
-      D = A->soa_minimum - B->soa_minimum; if (D) return D;
-      return 0;
-    }
-  case sres_type_a:
-    {
-      sres_a_record_t const *A = aa->sr_a, *B = bb->sr_a;
-      return memcmp(&A->a_addr, &B->a_addr, sizeof A->a_addr);
-    }
-  case sres_type_a6:
-    {
-      sres_a6_record_t const *A = aa->sr_a6, *B = bb->sr_a6;
-      D = A->a6_prelen - B->a6_prelen; if (D) return D;
-      D = !A->a6_prename - !B->a6_prename; 
-      if (D == 0 && A->a6_prename && B->a6_prename)
-	D = strcasecmp(A->a6_prename, B->a6_prename); if (D) return D;
-      return memcmp(&A->a6_suffix, &B->a6_suffix, sizeof A->a6_suffix);
-    }
-  case sres_type_aaaa:
-    {
-      sres_aaaa_record_t const *A = aa->sr_aaaa, *B = bb->sr_aaaa;
-      return memcmp(&A->aaaa_addr, &B->aaaa_addr, sizeof A->aaaa_addr);      
-    }
-  case sres_type_cname:
-    {
-      sres_cname_record_t const *A = aa->sr_cname, *B = bb->sr_cname;
-      return strcmp(A->cn_cname, B->cn_cname);
-    }
-  case sres_type_ptr:
-    {
-      sres_ptr_record_t const *A = aa->sr_ptr, *B = bb->sr_ptr;
-      return strcmp(A->ptr_domain, B->ptr_domain);
-    }
-  case sres_type_srv:
-    {
-      sres_srv_record_t const *A = aa->sr_srv, *B = bb->sr_srv;
-      D = A->srv_priority - B->srv_priority; if (D) return D;
-      /* Record with larger weight first */
-      D = B->srv_weight - A->srv_weight; if (D) return D;
-      D = strcmp(A->srv_target, B->srv_target); if (D) return D;
-      return A->srv_port - B->srv_port;
-    }
-  case sres_type_naptr:
-    {
-      sres_naptr_record_t const *A = aa->sr_naptr, *B = bb->sr_naptr;
-      D = A->na_order - B->na_order; if (D) return D;
-      D = A->na_prefer - B->na_prefer; if (D) return D;
-      D = strcmp(A->na_flags, B->na_flags); if (D) return D;
-      D = strcmp(A->na_services, B->na_services); if (D) return D;
-      D = strcmp(A->na_regexp, B->na_regexp); if (D) return D;
-      return strcmp(A->na_replace, B->na_replace); 
-    }
-  default:
-    return 0;
+  combined_result = su_alloc((su_home_t *)res->res_cache, 
+			     (found + 1) * (sizeof combined_result[0]));
+  if (combined_result) {
+    for (i = 0, found = 0; i <= SRES_MAX_SEARCH; i++)
+      if (search_results[i])
+	for (j = 0; search_results[i][j]; j++) {
+	  combined_result[found++] = search_results[i][j];
+	  search_results[i][j] = NULL;
+	}
+
+    combined_result[found] = NULL;
+    sres_sort_answers(res, combined_result);
   }
+
+  for (i = 0; i <= SRES_MAX_SEARCH; i++)
+    if (search_results[i])
+      sres_free_answers(res, search_results[i]), search_results[i] = NULL;
+
+  return combined_result;
 }
 
 static
@@ -1757,6 +2021,7 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
   if (s == -1) {
     SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
 		su_strerror(su_errno())));
+    dns->dns_error = time(NULL);
     return s;
   }
 
@@ -1779,6 +2044,7 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 
   if (connect(s, (void *)dns->dns_addr, dns->dns_addrlen) < 0) {
     char ipaddr[64];
+    char const *lb = "", *rb = "";
 
     if (family == AF_INET) {
       void *addr = &((struct sockaddr_in *)dns->dns_addr)->sin_addr;
@@ -1788,15 +2054,17 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     else if (family == AF_INET6) {
       void *addr = &((struct sockaddr_in6 *)dns->dns_addr)->sin6_addr;
       inet_ntop(family, addr, ipaddr, sizeof ipaddr);
+      lb = "[", rb = "]";
     }
 #endif
     else
       snprintf(ipaddr, sizeof ipaddr, "<af=%u>", family);
 
-    SU_DEBUG_1(("%s: %s: %s: %s:%u\n", "sres_server_socket", "connect",
-		su_strerror(su_errno()),
-		ipaddr, ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
+    SU_DEBUG_1(("%s: %s: %s: %s%s%s:%u\n", "sres_server_socket", "connect",
+		su_strerror(su_errno()), lb, ipaddr, rb,
+		ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
     closesocket(s);
+    dns->dns_error = time(NULL);
     return -1;
   }
   
@@ -1805,6 +2073,7 @@ int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
       SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "update callback",
 		  su_strerror(su_errno())));
       closesocket(s);
+      dns->dns_error = time(NULL);
       return -1;
     }
   }
@@ -1823,7 +2092,7 @@ sres_send_dns_query(sres_resolver_t *res,
 		    sres_query_t *q)
 {                        
   sres_message_t m[1];
-  int i, i0, N = res->res_n_servers;
+  uint8_t i, i0, N = res->res_n_servers;
   int s, transient, error = 0;
   unsigned size, no_edns_size, edns_size;
   uint16_t id = q->q_id;
@@ -1831,6 +2100,7 @@ sres_send_dns_query(sres_resolver_t *res,
   char const *domain = q->q_name;
   time_t now = res->res_now;
   sres_server_t **servers = res->res_servers, *dns;
+  char b[8];
 
   if (now == 0) time(&now);
 
@@ -1874,9 +2144,16 @@ sres_send_dns_query(sres_resolver_t *res,
   }
 
   transient = 0;
-  i = i0 = q->q_i_server; assert(i0 < N);
 
-  for (dns = servers[i]; dns; dns = sres_next_server(res, &i, 0)) {
+  i0 = q->q_i_server; assert(i0 < N);
+
+  if (res->res_config->c_opt.rotate || 
+      servers[i0]->dns_error || servers[i0]->dns_icmp)
+    dns = sres_next_server(res, &q->q_i_server, 0), i = q->q_i_server;
+  else 
+    dns = servers[i0], i = i0;
+
+  for (; dns; dns = sres_next_server(res, &i, 0)) {
     /* If server supports EDNS, include EDNS0 record */
     q->q_edns = dns->dns_edns;
     /* 0 (no EDNS) or 1 (EDNS supported) additional data records */
@@ -1909,9 +2186,9 @@ sres_send_dns_query(sres_resolver_t *res,
 
   q->q_i_server = i;
 
-  SU_DEBUG_5(("%s(%p, %p) id=%u %u? %s (to [%s]:%u)\n", 
+  SU_DEBUG_5(("%s(%p, %p) id=%u %s %s (to [%s]:%u)\n", 
 	      "sres_send_dns_query",
-	      res, q, id, type, domain, 
+	      res, q, id, sres_record_type(type, b), domain, 
 	      dns->dns_name, 
 	      htons(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
 
@@ -1922,7 +2199,7 @@ sres_send_dns_query(sres_resolver_t *res,
 /** Select next server */
 static
 sres_server_t *sres_next_server(sres_resolver_t *res, 
-				int *in_out_i,
+				uint8_t *in_out_i,
 				int timeout)
 {
   int i, j, N;
@@ -1995,8 +2272,16 @@ void sres_answer_subquery(sres_context_t *context,
 
   top->q_subqueries[i] = NULL;
   top->q_subanswers[i] = answers;
+  top->q_n_subs--;
 
-  if (--top->q_n_subs == 0 && top->q_id == 0) {
+  if (answers && top->q_callback) {
+    sres_answer_f *callback = top->q_callback;
+
+    top->q_callback = NULL;
+    sres_remove_query(top->q_res, top, 1);
+    callback(top->q_context, top, answers);
+  }
+  else if (top->q_n_subs == 0 && top->q_id == 0) {
     sres_query_report_error(top, NULL);
   };
 }
@@ -2081,7 +2366,7 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
 static void
 sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
 {
-  int i, N;
+  uint8_t i, N;
   sres_server_t *dns;
 
   SU_DEBUG_9(("sres_resend_dns_query(%p, %p, %u) called\n",
@@ -2111,10 +2396,10 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
 
   /* report timeout/network error */
   q->q_id = 0;
-    
+
   if (q->q_n_subs)
     return;			/* let subqueries also timeout */
-  
+
   sres_query_report_error(q, NULL);
 }
 
@@ -2461,7 +2746,7 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
 		       (void *)from, &fromlen);
 
   if (num_bytes <= 0) {
-    SU_DEBUG_5(("%s: %s\n", "sres_receive_packet", su_strerror(su_errno())));
+    SU_DEBUG_5(("%s: %s\n", "sres_resolver_receive", su_strerror(su_errno())));
     return 0;
   }
 
@@ -2536,6 +2821,10 @@ void sres_log_response(sres_resolver_t const *res,
 
 /** Decode DNS message.
  *
+ *
+ * @retval 0 if successful
+ * @retval >0 if message indicated error
+ * @retval -1 if decoding error
  */
 static
 int
@@ -2583,7 +2872,7 @@ sres_decode_msg(sres_resolver_t *res,
   *qq = query = *hq;
 
   if (!query) {
-    SU_DEBUG_5(("sres_decode_msg: %u has no matching query\n", m->m_id));
+    SU_DEBUG_5(("sres_decode_msg: matching query for id=%u\n", m->m_id));
     return -1;
   }
 
@@ -2676,6 +2965,7 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m)
   uint32_t ttl;
   char name[1024];
   int name_length;
+  char btype[8], bclass[8];
 
   name_length = m_get_domain(name, sizeof(name), m, 0);	/* Name */
   qtype = m_get_uint16(m);  /* Type */
@@ -2683,8 +2973,9 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m)
   ttl = m_get_uint32(m);    /* TTL */
   rdlen = m_get_uint16(m);   /* rdlength */
 
-  SU_DEBUG_9(("rr: %.*s %d %d %d %d\n", name_length, name, 
-	      qtype, qclass, ttl, rdlen));
+  SU_DEBUG_9(("rr received %.*s %s %s %d rdlen=%d\n", name_length, name, 
+	      sres_record_type(qtype, btype), 
+	      sres_record_class(qclass, bclass), ttl, rdlen));
 
   if (m->m_error)
     return NULL;

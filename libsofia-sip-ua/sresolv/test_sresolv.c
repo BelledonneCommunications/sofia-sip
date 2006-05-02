@@ -549,7 +549,7 @@ int test_a(sres_context_t *ctx)
   sres_free_answers(res, result);
 
   /* Try sub-queries */
-  TEST_1(sres_query(res, test_answer, ctx, sres_type_a, "sip00"));
+  TEST_1(sres_search(res, test_answer, ctx, sres_type_a, "sip00"));
 
   TEST_RUN(ctx);
 
@@ -596,6 +596,20 @@ int test_a(sres_context_t *ctx)
   TEST(rr_a->a_record->r_class, sres_class_in);
   /* Error gets TTL from example.com SOA record minimum time */
   TEST(rr_a->a_record->r_ttl, 60);
+
+  /* Cached search */
+  TEST_1(result = sres_search_cached_answers(res, sres_type_a, "sip00"));
+  TEST_1(rr_a = result[0]->sr_a);
+  TEST(rr_a->a_record->r_status, 0);
+  TEST_S(rr_a->a_record->r_name, "sip00.example.com.");
+  TEST(rr_a->a_record->r_type, sres_type_a);
+  TEST(rr_a->a_record->r_class, sres_class_in);
+  TEST(rr_a->a_record->r_ttl, 60);
+  TEST_S(inet_ntoa(rr_a->a_addr), "194.2.188.133");
+
+  if (result[1]) {
+    TEST(result[1]->sr_a->a_record->r_type, sres_type_a);
+  }
 
   END();
 }
@@ -842,9 +856,9 @@ int test_cname(sres_context_t *ctx)
 
   TEST_1(result = ctx->result);
   TEST_1(rr = result[0]->sr_cname);
-  TEST(rr->cname_record->r_class, sres_class_in);
-  TEST(rr->cname_record->r_type, sres_type_cname);
-  TEST(rr->cname_record->r_ttl, 60);
+  TEST(rr->cn_record->r_class, sres_class_in);
+  TEST(rr->cn_record->r_type, sres_type_cname);
+  TEST(rr->cn_record->r_ttl, 60);
   TEST_S(rr->cn_cname, "sip00.example.com.");
 
   sres_free_answers(res, ctx->result), ctx->result = NULL;
@@ -1197,9 +1211,9 @@ int test_cache(sres_context_t *ctx)
   TEST_1(result[0] != NULL);
 
   rr_cname = result[0]->sr_cname;
-  TEST(rr_cname->cname_record->r_type, sres_type_cname);
-  TEST(rr_cname->cname_record->r_class, sres_class_in);
-  TEST(rr_cname->cname_record->r_ttl, 60);
+  TEST(rr_cname->cn_record->r_type, sres_type_cname);
+  TEST(rr_cname->cn_record->r_class, sres_class_in);
+  TEST(rr_cname->cn_record->r_ttl, 60);
   TEST_S(rr_cname->cn_cname, "sip00.example.com.");
 
   sres_free_answers(res, result);

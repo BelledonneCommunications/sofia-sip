@@ -233,7 +233,7 @@ sres_blocking_t *sres_set_blocking(sres_resolver_t *res)
   return b;
 }
 
-/** Return true (and set it in blocking mode) if resolver can block. */
+/** Return true (and set resolver in blocking mode) if resolver can block. */
 int sres_is_blocking(sres_resolver_t *res)
 {
   if (res == NULL)
@@ -241,15 +241,34 @@ int sres_is_blocking(sres_resolver_t *res)
   return sres_set_blocking(res) != NULL;
 }
 
-/** Send a DNS query, return results.
+/**Send a DNS query, wait for response, return results.
+ *
+ * Sends a DNS query with specified @a type and @a domain to the DNS server,
+ * if @a ignore_cache is not given or no records are found from cache. 
+ * Function returns an error record with nonzero status if no response is
+ * received from DNS server.
+ *
+ * @param res pointer to resolver object
+ * @param type record type to search (or sres_qtype_any for any record)
+ * @param domain domain name to query
+ * @param ignore_cache ignore cached answers if nonzero
+ * @param return_records return-value parameter for dns records
  *
  * @retval >0 if query was responded
  * @retval 0 if result was found from cache
  * @retval -1 upon error
+ *
+ * @sa sres_query(), sres_blocking_search()
+ *
+ * @note A blocking query converts a resolver object permanently into
+ * blocking mode. If you need to make blocking and non-blocking queries, use
+ * sres_resolver_copy() to make a separate resolver object for blocking
+ * queries.
  */
 int sres_blocking_query(sres_resolver_t *res,
 			uint16_t type,
 			char const *domain,
+			int ignore_cache,
 			sres_record_t ***return_records)
 {
   sres_blocking_context_t c[1];
@@ -258,14 +277,18 @@ int sres_blocking_query(sres_resolver_t *res,
   if (return_records == NULL)
     return errno = EFAULT, -1;
 
+  *return_records = NULL;
+
   c->block = sres_set_blocking(res);
   if (c->block == NULL)
-    return -1;
+    return -1;			/* Resolver in asynchronous mode */ 
 
-  cached = sres_cached_answers(res, type, domain);
-  if (cached) {
-    *return_records = cached;
-    return 0;
+  if (!ignore_cache) {
+    cached = sres_cached_answers(res, type, domain);
+    if (cached) {
+      *return_records = cached;
+      return 0;
+    }
   }
 
   c->ready = 0;
@@ -276,15 +299,85 @@ int sres_blocking_query(sres_resolver_t *res,
   return sres_blocking_complete(c);
 }
 
-/** Send a a reverse DNS query, return results.
+/** Search DNS, return results.
+ *
+ * Search for @a name with specified @a type and @a name from the DNS server. 
+ * If the @a name does not contain enought dots, the search domains are
+ * appended to the name and resulting domain name are also queried.
+ *
+ * @param res pointer to resolver object
+ * @param type record type to search (or sres_qtype_any for any record)
+ * @param name host or domain name to search from DNS
+ * @param ignore_cache ignore cached answers if nonzero
+ * @param return_records return-value parameter for dns records
  *
  * @retval >0 if query was responded
  * @retval 0 if result was found from cache
  * @retval -1 upon error
+ *
+ * @sa sres_blocking_query(), sres_search()
+ *
+ * @note A blocking query converts a resolver object permanently into
+ * blocking mode. If you need to make blocking and non-blocking queries, use
+ * sres_resolver_copy() to make a separate resolver object for blocking
+ * queries.
+ */
+int sres_blocking_search(sres_resolver_t *res,
+			 uint16_t type,
+			 char const *name,
+			 int ignore_cache,
+			 sres_record_t ***return_records)
+{
+  sres_blocking_context_t c[1];
+  sres_record_t **cached;
+
+  if (return_records == NULL)
+    return errno = EFAULT, -1;
+
+  *return_records = NULL;
+
+  c->block = sres_set_blocking(res);
+  if (c->block == NULL)
+    return -1;			/* Resolver in asynchronous mode */ 
+
+  if (!ignore_cache) {
+    cached = sres_search_cached_answers(res, type, name);
+    if (cached) {
+      *return_records = cached;
+      return 0;
+    }
+  }
+
+  c->ready = 0;
+  c->resolver = res;
+  c->return_records = return_records;
+  c->query = sres_search(res, sres_blocking_callback, c, type, name);
+
+  return sres_blocking_complete(c);
+}
+
+/** Send a a reverse DNS query, return results.
+ *
+ * Sends a reverse DNS query with specified @a type and @a domain to the DNS
+ * server if @a ignore_cache is not given or no cached records are found from
+ * the cache. Function returns an error record with nonzero status if no
+ * response is received from DNS server.
+ *
+ * @retval >0 if query was responded
+ * @retval 0 if result was found from cache
+ * @retval -1 upon error
+ *
+ * @sa sres_blocking_query(), sres_query_sockaddr()
+ *
+ * @note A blocking query converts a resolver object permanently into
+ * blocking mode. If you need to make blocking and non-blocking queries, use
+ * sres_resolver_copy() to make a separate resolver object for blocking
+ * queries.
  */
 int sres_blocking_query_sockaddr(sres_resolver_t *res,
 				 uint16_t type,
 				 struct sockaddr const *addr,
+				 int ignore_cache,
 				 sres_record_t ***return_records)
 {
   sres_blocking_context_t c[1];
@@ -292,15 +385,19 @@ int sres_blocking_query_sockaddr(sres_resolver_t *res,
 
   if (return_records == NULL)
     return errno = EFAULT, -1;
-  
+
+  *return_records = NULL;
+
   c->block = sres_set_blocking(res);
   if (c->block == NULL)
-    return -1;
+    return -1;			/* Resolver in asynchronous mode */ 
 
-  cached = sres_cached_answers_sockaddr(res, type, addr);
-  if (cached) {
-    *return_records = cached;
-    return 0;
+  if (!ignore_cache) {
+    cached = sres_cached_answers_sockaddr(res, type, addr);
+    if (cached) {
+      *return_records = cached;
+      return 0;
+    }
   }
 
   c->ready = 0;
