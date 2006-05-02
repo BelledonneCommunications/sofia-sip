@@ -1,3 +1,41 @@
+2006-05-02  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * sresolv module:
+
+	* Updated sresolv API.
+
+	Added sres_search() and sres_search_cached_answers() to the
+	sresolv API. Added sres_blocking_search(). Added ignore_cache
+	parameter to sres_blocking_query() and
+	sres_blocking_query_sockaddr() prototypes. Renumbered
+	SRES_TIMEOUT_ERR and SRES_RECORD_ERR so that they do not overlap
+	with transaction signature errors. Added sres_record_type().
+
+	* Updated sresolv documentation.
+
+	* Making cache threadsafe and locking it during sres_cache_store().
+  	Problem reported by Thomas Rosenblatt.
+
+	* Moved sip-dig from libsofia-sip-ua/sresolv/ to utils.
+
+	* Updated utils/sip-dig.c manpage and -p option handling.
+
+  * Added text about preloading and stack use to su/su_alloc.c.
+
+  * Fixed handle leaks in nua_test.c.
+  Added delay before nua_shutdown() in order to ease debugging.
+
+  * Fixed nua handle reference counting problems in nua module.
+  Problem reported by Colin Whittaker.
+
+  * Updated documentation of auc_authorize() in iptsec/auth_client.c.
+
+  * Added null pointer check to auc_authorize() in iptsec/auth_client.c.
+  Patch proposed by Colin Whittaker.
+
+  * Destroying session when initial INVITE is CANCELed.
+  Patch proposed by Colin Whittaker.
+
 2006-04-27  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * sresolv module:
