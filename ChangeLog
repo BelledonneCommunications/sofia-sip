@@ -1,5 +1,19 @@
 2006-05-02  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
+  * iptsec module:
+
+	* Updated headers in iptsec module.
+	Added SOFIAPUBFUN and SOFIAPUBVAR where needed. 
+	Removed auc_with_uicc().
+
+	* Fixed memory management problems in iptsec module.
+	The authenticator client in auth_client.c leaked memory when
+	re-challenged. The client did not duplicate strings from
+	challenge, and tried to use freed values after challenge was
+	freed.
+	Now we are actually running the tests in test_auth_digest.c, too.
+	The problem was reported and patch submitted by Colin Whittaker.
+  
   * sresolv module:
 
 	* Updated sresolv API.
