@@ -22,7 +22,7 @@
  *
  */
 
-/**@file sip-dig.c Use sresolv library to resolve a SIP or SIPS domain.
+/**@file sip-dig.c Use sresolv library to resolve a SIP or SIPS URI
  *
  * This is an example program for @b sresolv library in synchronous mode.
  *
@@ -30,6 +30,111 @@
  *
  * @date Original Created: Tue Jul 16 18:50:14 2002 ppessi
  */
+
+/**@page sip-dig Resolve SIP URIs.
+ * 
+ * @section sip_dig_synopsis Synopsis
+ * <tt>sip-dig [OPTIONS] uri...</tt>
+ *
+ * @section sip_dig_description Description
+ * The @em sip-dig utility resolves SIP URIs as described in @RFC3263. It
+ * queries NAPTR, SRV and A/AAAA records and prints out the resulting
+ * transport addresses.
+ *
+ * The default transports are: UDP, TCP, SCTP, TLS and TLS-SCTP. The SIPS
+ * URIs are resolved using only TLS transports, TLS and TLS-SCTP. If not
+ * otherwise indicated by NAPTR or SRV records, the sip-dig uses UDP and TCP
+ * as transports for SIP and TLS for SIPS URIs.
+ *
+ * The results are printed intended, with a preference followed by weight, 
+ * then protocol name, port number and IP address in numeric format.
+ *
+ * @section sip_dig_options Command Line Options
+ * The @e sip-dig utility accepts following command line options:
+ * <dl>
+ * <dt>-p <e>protoname</e></dt>
+ * <dd>Use named transport protocol.
+ * </dd>
+ * <dt>-s <e>protoname,service</e></dt>
+ * <dd>Resolve named transport protocol with NAPTR @e service
+ * </dd>
+ * <dt>--udp</dt>
+ * <dd>Use UDP transport protocol.
+ * </dd>
+ * <dt>--tcp</dt>
+ * <dd>Use TCP transport protocol.
+ * </dd>
+ * <dt>--tls</dt>
+ * <dd>Use TLS over TCP transport protocol.
+ * </dd>
+ * <dt>--sctp</dt>
+ * <dd>Use SCTP transport protocol.
+ * </dd>
+ * <dt>--tls-sctp</dt>
+ * <dd>Use TLS over SCTP transport protocol.
+ * </dd>
+ * <dt>--no-sctp</dt>
+ * <dd>Ignore SCTP or TLS-SCTP records in the list of default transports. 
+ * This option has no effect if transport protocols has been explicitly
+ * listed.
+ * </dd>
+ * <dt>-4</dt>
+ * <dd>Query IP4 addresses (A records)
+ * </dd>
+ * <dt>-6</dt>
+ * <dd>Query IP6 addresses (AAAA records).
+ * </dd>
+ * <dt>-v</dt>
+ * <dd>Be verbatim.
+ * </dd>
+ * <dt></dt>
+ * <dd>
+ * </dd>
+ * </dl>
+ *
+ * @section sip_dig_return Return Codes
+ * <table>
+ * <tr><td>0<td>when successful (a 2XX-series response is received)
+ * <tr><td>1<td>when unsuccessful (a 3XX..6XX-series response is received)
+ * <tr><td>2<td>initialization failure
+ * </table>
+ *
+ * @section sip_dig_examples Examples
+ *
+ * Resolve sip:openlaboratory.net and sips:openlaboratory.net, prefer TLS
+ * over TCP, TCP over UDP:
+ * <code>
+ * $ sip-dig --tls --tcp --udp sip:openlaboratory.net sips:openlaboratory.net
+ *	1 0.333 tls 5061 212.213.221.127
+ *	2 0.333 tcp 5060 212.213.221.127
+ *	3 0.333 udp 5060 212.213.221.127
+ * </endcode>
+ *
+ * Resolve sips:example.net with DTLS (TLS-UDP) and TLS:
+ * <code>
+ * $ sip-dig -p tls-udp/SIPS+D2U --tls sips:example.net
+ *	1 0.500 tls-udp 5061 172.21.55.26
+ *	2 0.500 tls 5061 172.21.55.26
+ * </endcode>
+ *
+ * @section sip_dig_environment Environment
+ * #SRESOLV_DEBUG, SRESOLV_CONF
+ * 
+ * @section sip_dig_bugs Reporting Bugs
+ * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
+ *
+ * @section sip_dig_author Author
+ * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
+ *
+ * @section sip_dig_copyright Copyright
+ * Copyright (C) 2006 Nokia Corporation.
+ *
+ * This program is free software; see the source for copying conditions.
+ * There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.
+ */
+
+#include "config.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -102,9 +207,9 @@ void usage(int exitcode)
 
 int main(int argc, char *argv[])
 {
-  int exitcode = 1;
+  int exitcode = 0;
   int o_sctp = 1, o_tls_sctp = 1, o_verbatim = 1;
-  int family = 0;
+  int family = 0, multiple = 0;
   char const *dnsserver = NULL;
   char const *string;
   url_t *uri = NULL;
@@ -122,6 +227,21 @@ int main(int argc, char *argv[])
       dig->ip6 = ++family;
     else if (strcmp(argv[1], "-4") == 0)
       dig->ip4 = ++family;
+    else if (strncmp(argv[1], "-p", 2) == 0) {
+      char const *proto;
+
+      if (argv[1][2] == '=')
+	proto = argv[1] + 3;
+      else if (argv[1][2])
+	proto = argv[1] + 2;
+      else
+	proto = argv++[2];
+
+      if (proto == NULL)
+	usage(1);
+
+      prepare_transport(dig->tports, proto);
+    }
     else if (strcmp(argv[1], "--udp") == 0)
       prepare_transport(dig->tports, "udp");
     else if (strcmp(argv[1], "--tcp") == 0)
@@ -155,29 +275,10 @@ int main(int argc, char *argv[])
   if (argv[1] && argv[1][0] == '@')
     dnsserver = argv++[1] + 1;
 
-  string = argv[1];
-
-  if (!string)
+  if (!argv[1])
     usage(1);
 
-  uri = url_hdup(NULL, (void *)string);
-  if (!uri)
-    usage(1);
-
-  if (uri->url_type == url_any)
-    url_sanitize(uri);
-
-  if (uri->url_type != url_sip && uri->url_type != url_sips) {
-    fprintf(stderr, "%s: invalid uri\n", string);
-    exit(1);
-  }
-
-  port = url_port(uri);
-  if (port && !port[0]) port = NULL;
-  if (url_param(uri->url_params, "transport=", tport, sizeof tport) > 0)
-    transport = tport;
-
-  host = uri->url_host;
+  multiple = argv[1] && argv[2];
 
   if (!count_transports(dig->tports, NULL, NULL)) {
     prepare_transport(dig->tports, "udp");
@@ -189,40 +290,68 @@ int main(int argc, char *argv[])
       prepare_transport(dig->tports, "tls-sctp");
   }
 
-  if (host_is_ip_address(host)) {
-    if (transport) {
-      print_result(host, port, transport, 1.0, 1);
-    }
-    else if (uri->url_type == url_sips) {
-      print_result(host, port, "tls", 1.0, 1);
-    }
-    else {
-      print_result(host, port, "udp", 1.0, 1);
-      print_result(host, port, "tcp", 1.0, 2);
-    }
-    exit(0);
-  }
-
-  if (!host_is_domain(host)) {
-    fprintf(stderr, "%s: invalid host\n", string);
-    exit(1);
-  }
-
   dig->sres = sres_resolver_new(getenv("SRESOLV_CONF"));
   if (!dig->sres)
     perror("sres_resolver_new"), exit(1);
 
-  dig->sips = uri->url_type == url_sips;
-  dig->preference = 1;
+  for (; (string = argv[1]); argv++) {
+    if (multiple)
+      puts(string);
 
-  if (!port && !transport && dig_naptr(dig, host, 1.0))
-    exitcode = 0 /* resolved naptr */;
-  else if (!port && dig_all_srvs(dig, transport, host, 1.0))
-    exitcode = 0 /* resolved srv */;
-  else if (dig_addr(dig, transport, host, port, 1.0))
-    exitcode = 0 /* resolved a/aaaa */;
-  else
+    uri = url_hdup(NULL, (void *)string);
+
+    if (uri && uri->url_type == url_unknown)
+      url_sanitize(uri);
+
+    if (uri->url_type == url_any)
+      continue;
+
+    if (!uri || (uri->url_type != url_sip && uri->url_type != url_sips)) {
+      fprintf(stderr, "%s: invalid uri\n", string);
+      exitcode = 1;
+      continue;
+    }
+
+    port = url_port(uri);
+    if (port && !port[0]) port = NULL;
+    if (url_param(uri->url_params, "transport=", tport, sizeof tport) > 0)
+      transport = tport;
+
+    host = uri->url_host;
+
+    if (host_is_ip_address(host)) {
+      if (transport) {
+	print_result(host, port, transport, 1.0, 1);
+      }
+      else if (uri->url_type == url_sips) {
+	print_result(host, port, "tls", 1.0, 1);
+      }
+      else {
+	print_result(host, port, "udp", 1.0, 1);
+	print_result(host, port, "tcp", 1.0, 2);
+      }
+      continue;
+    }
+
+    if (!host_is_domain(host)) {
+      fprintf(stderr, "%s: invalid host\n", string);
+      exitcode = 1;
+      continue;
+    }
+
+    dig->sips = uri->url_type == url_sips;
+    dig->preference = 1;
+
+    if (!port && !transport && dig_naptr(dig, host, 1.0))
+      continue /* resolved naptr */;
+    else if (!port && dig_all_srvs(dig, transport, host, 1.0))
+      continue /* resolved srv */;
+    else if (dig_addr(dig, transport, host, port, 1.0))
+      continue /* resolved a/aaaa */;
+
     fprintf(stderr, "%s: not found\n", string);
+    exitcode = 1;
+  }
 
   sres_resolver_unref(dig->sres);
 
@@ -401,27 +530,66 @@ int dig_all_srvs(struct dig *dig,
 		 char const *host,
 		 double weight)
 {
-  int i;
+  int i, j, n;
   int tcount, count = 0, scount;
   char *domain;
+
+  struct {
+    char const *proto; sres_record_t **answers;
+  } srvs[N_TPORT + 1] = {{ NULL }};
 
   tcount = count_transports(dig->tports, tport, NULL);
   if (!tcount)
     return 0;
 
-  for (i = 0; dig->tports[i].name; i++) {
+  for (i = 0, n = 0; dig->tports[i].name; i++) {
     if (tport && strcasecmp(dig->tports[i].name, tport))
       continue;
 
     domain = su_strcat(NULL, dig->tports[i].srv, host);
 
-    scount = dig_srv(dig, dig->tports[i].name, domain, weight);
-    if (scount) {
-      dig->preference++;
-      count += scount;
+    if (domain) {
+      if (sres_blocking_query(dig->sres, sres_type_srv, domain, 
+			      &srvs[n].answers) >= 0) {
+	srvs[n++].proto = dig->tports[i].name;
+      }
+      free(domain);
+    }
+  }
+
+  if (n == 0)
+    return 0;
+
+  for (i = 0; i < n; i++) {
+    unsigned priority = 0, pweight = 0, m = 0;
+    sres_record_t **answers = srvs[i].answers;
+    char const *tport = srvs[i].proto;
+
+    for (j = 0; answers[j]; j++) {
+      sres_srv_record_t const *srv = answers[j]->sr_srv;
+
+      if (srv->srv_record->r_type != sres_type_srv)
+	continue;
+      if (srv->srv_record->r_status != 0)
+	continue;
+      
+      if (srv->srv_priority != priority && pweight != 0) {
+	scount = dig_srv_at(dig, tport, answers, weight / n, pweight,
+			    priority);
+	if (scount) dig->preference++;
+	count += scount;
+	pweight = 0, m = 0;
+      }
+
+      priority = srv->srv_priority, pweight += srv->srv_weight, m++;
     }
 
-    free(domain);
+    if (m) {
+      scount = dig_srv_at(dig, tport, answers, weight / n, pweight, priority);
+      if (scount)
+	dig->preference++;
+      count += scount;
+    }
   }
 
   return count;
@@ -469,8 +637,7 @@ int dig_srv(struct dig *dig,
   }
 
   if (n) {
-    scount = dig_srv_at(dig, tport, answers, weight, pweight,
-			priority);
+    scount = dig_srv_at(dig, tport, answers, weight, pweight, priority);
     if (scount) dig->preference++;
     count += scount;
   }

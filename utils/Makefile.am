@@ -32,9 +32,8 @@ INCLUDES = 	-I$(sofiasrc)/features -I$(sofiabld)/features \
 
 noinst_HEADERS = 	apps_utils.h
 
-bin_PROGRAMS =		sip-options sip-date
+bin_PROGRAMS =		sip-options sip-date sip-dig
 
 LDADD =			../libsofia-sip-ua/libsofia-sip-ua.la $(GLIB_LIBS)
 
 EXTRA_DIST =		Doxyfile
-
