@@ -247,6 +247,9 @@ TPORT_DLL int tport_is_reliable(tport_t const *tport);
 /** Return true if transport is a stream (no message boundaries). */
 TPORT_DLL int tport_is_stream(tport_t const *tport);
 
+/** Return true if transport is dgram-based. */
+TPORT_DLL int tport_is_dgram(tport_t const *tport);
+
 /** Return true if transport supports IPv4 */
 TPORT_DLL int tport_has_ip4(tport_t const *tport);
 
