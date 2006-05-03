@@ -278,7 +278,7 @@ do_init(su_root_t *root, struct pinger *p)
   /* Create a sockets,  */
   p->s = s = udpsocket();
   if (su_wait_create(&w0, s, SU_WAIT_IN) == SOCKET_ERROR) {
-    su_perror("su_create_wait");
+    su_perror("su_wait_create");
     return SU_FAILURE;
   }
 
@@ -289,7 +289,7 @@ do_init(su_root_t *root, struct pinger *p)
   }
 
   if (su_wait_create(&w, s, SU_WAIT_IN) == SOCKET_ERROR) {
-    su_perror("su_create_wait");
+    su_perror("su_wait_create");
     return SU_FAILURE;
   }
 
