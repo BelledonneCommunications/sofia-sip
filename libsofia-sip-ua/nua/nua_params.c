@@ -105,9 +105,9 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, user_agent,
 	   sip_user_agent_make(home, PACKAGE_NAME "/" PACKAGE_VERSION));
 
-  NHP_SET(nhp, outbound, su_strdup(home, "outbound"));
+  NHP_SET(nhp, outbound, su_strdup(home, "natify"));
 
-  NHP_SET(nhp, keepalive, 90);
+  NHP_SET(nhp, keepalive, 120);
 
   if (!nhp->nhp_allow ||
       !nhp->nhp_supported ||
