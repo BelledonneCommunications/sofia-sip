@@ -4192,7 +4192,7 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
       else
 	incoming_set_timer(irq, 200); /* N1 = 200 ms */
 
-      irq->irq_tport = tport_incref(tport);
+      irq->irq_tport = tport_ref(tport);
     }
     else if (method == sip_method_ack) {
       irq->irq_status = 700;	/* Never send reply to ACK */
@@ -4223,7 +4223,7 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
       if (agent->sa_extra_100 && irq->irq_reliable_tp)
 	incoming_set_timer(irq, agent->sa_t2 / 2); /* T2 / 2 */
 
-      irq->irq_tport = tport_incref(tport);
+      irq->irq_tport = tport_ref(tport);
     }
 
     irq->irq_hash = NTA_HASH(irq->irq_call_id, irq->irq_cseq->cs_seq);
@@ -5376,7 +5376,7 @@ int incoming_reply(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
 	if (err != EPIPE && err != ECONNREFUSED)
 	  break;
 	tport_decref(&irq->irq_tport);
-	irq->irq_tport = tport_incref(tport_by_name(agent->sa_tports, tpn));
+	irq->irq_tport = tport_ref(tport_by_name(agent->sa_tports, tpn));
       }
 
       if (!tp) {
@@ -6555,7 +6555,7 @@ outgoing_prepare_send(nta_outgoing_t *orq)
     tpn->tpn_port = "";
 
   tp = tport_by_name(sa->sa_tports, tpn);
-  orq->orq_tport = tport_incref(tp);
+  orq->orq_tport = tport_ref(tp);
 
   if (tpn->tpn_port[0] == '\0') {
     if (sips || tport_has_tls(tp))
@@ -6741,7 +6741,7 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
 
   if (tp != orq->orq_tport) {
     tport_decref(&orq->orq_tport);
-    orq->orq_tport = tport_incref(tp);
+    orq->orq_tport = tport_ref(tp);
   }
 
   orq->orq_reliable = tport_is_reliable(tp);
@@ -6783,7 +6783,7 @@ outgoing_try_tcp_instead(nta_outgoing_t *orq)
 
     orq->orq_tpn->tpn_proto = "tcp";
     tport_decref(&orq->orq_tport);
-    orq->orq_tport = tport_incref(tp);
+    orq->orq_tport = tport_ref(tp);
     return;
   }
 
@@ -6796,7 +6796,7 @@ outgoing_try_tcp_instead(nta_outgoing_t *orq)
 		orq->orq_method_name, orq->orq_cseq->cs_seq));
 
     tport_decref(&orq->orq_tport);
-    orq->orq_tport = tport_incref(tp);
+    orq->orq_tport = tport_ref(tp);
   }
 }
 
@@ -6822,7 +6822,7 @@ outgoing_try_udp_instead(nta_outgoing_t *orq)
 
     orq->orq_tpn->tpn_proto = "udp";
     tport_decref(&orq->orq_tport);
-    orq->orq_tport = tport_incref(tp);
+    orq->orq_tport = tport_ref(tp);
   }
 }
 
@@ -9499,7 +9499,7 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
   sip_to_tag(home, to = sip_to_copy(home, orq->orq_to), to_tag);
 
   tagged->orq_to 	   = to;
-  tagged->orq_tport        = tport_incref(orq->orq_tport);
+  tagged->orq_tport        = tport_ref(orq->orq_tport);
   tagged->orq_request      = (msg_t *)msg_ref_create(orq->orq_request);
   tagged->orq_response     = NULL;
   tagged->orq_cancel       = NULL;
@@ -9735,7 +9735,7 @@ nta_incoming_transport(nta_agent_t *agent,
 		       nta_incoming_t *irq,
 		       msg_t *msg)
 {
-  return tport_incref(nta_transport_(agent, irq, msg));
+  return tport_ref(nta_transport_(agent, irq, msg));
 }
 
 nta_compressor_t *nta_agent_init_sigcomp(nta_agent_t *sa)
@@ -9766,6 +9766,15 @@ nta_incoming_compartment(nta_incoming_t *irq)
 {
   if (nta_compressor_vtable && irq && irq->irq_cc) 
     return nta_compressor_vtable->ncv_compartment_ref(irq->irq_cc);
+  else
+    return NULL;
+}
+
+tport_t *
+nta_outgoing_transport(nta_outgoing_t *orq)
+{
+  if (orq)
+    return tport_ref(orq->orq_tport);
   else
     return NULL;
 }

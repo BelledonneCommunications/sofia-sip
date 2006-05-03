@@ -58,11 +58,14 @@ struct sigcomp_udvm;
 
 #define nta_transport nta_incoming_transport
 
-struct tport_s *
-nta_incoming_transport(nta_agent_t *agent, nta_incoming_t *irq, msg_t *msg);
+SOFIAPUBFUN
+tport_t *nta_incoming_transport(nta_agent_t *, nta_incoming_t *, msg_t *msg);
 
 struct sigcomp_compartment *
 nta_incoming_compartment(nta_incoming_t *irq);
+
+SOFIAPUBFUN
+tport_t *nta_outgoing_transport(nta_outgoing_t *orq);
 
 struct sigcomp_compartment *
 nta_outgoing_compartment(nta_outgoing_t *orq);
@@ -72,6 +75,7 @@ nta_compartment_decref(struct sigcomp_compartment **);
 
 typedef void nta_update_tport_f(nta_update_magic_t *, nta_agent_t *);
 
+SOFIAPUBFUN
 int nta_agent_bind_tport_update(nta_agent_t *agent,
 				nta_update_magic_t *magic,
 				nta_update_tport_f *);
