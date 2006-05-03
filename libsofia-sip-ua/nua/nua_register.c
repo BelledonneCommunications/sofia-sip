@@ -755,9 +755,6 @@ int process_response_to_register(nua_handle_t *nh,
   else
     outbound_connect_stop_keepalive(oc);
 
-  if (du->du_terminating || status >= 300)
-    nua_dialog_usage_remove(nh, nh->nh_ds, du);
-
   return nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 }
 
