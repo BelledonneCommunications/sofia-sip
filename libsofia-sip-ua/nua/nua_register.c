@@ -1511,12 +1511,6 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
     oc->oc_kalo = NULL;
   nta_outgoing_destroy(orq);
 
-  if (status == 408 || sip == NULL) {
-    SU_DEBUG_1(("outbound_connect(%p): keepalive timeout\n", oc));
-    /* XXX - do something about it! */
-    return 0;
-  }
-
   binding_check = outbound_connect_nat_detect(oc, sip);
 
   if (binding_check > 1) {
@@ -1529,6 +1523,12 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
       nua_dialog_usage_refresh(oc->oc_owner, nua_dialog_usage_public(oc), 1);
       return 0;
     }
+  }
+
+  if (status == 408 || sip == NULL) {
+    SU_DEBUG_1(("outbound_connect(%p): keepalive timeout\n", oc));
+    /* XXX - do something about it! */
+    return 0;
   }
 
   if (challenged > 0 && credentials > 0) {
