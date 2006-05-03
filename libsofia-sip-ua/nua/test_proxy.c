@@ -863,8 +863,11 @@ sip_contact_t *binding_contacts(su_home_t *home, struct binding *bindings)
     if (b->expires <= now)
       continue;
     *mm = sip_contact_copy(home, b->contact);
-    expires = su_sprintf(home, "expires=%u", (unsigned)(b->expires - now));
-    msg_header_add_param(home, (*mm)->m_common, expires);
+    if (*mm) {
+      expires = su_sprintf(home, "expires=%u", (unsigned)(b->expires - now));
+      msg_header_add_param(home, (*mm)->m_common, expires);
+      mm = &(*mm)->m_next;
+    }
   }
 
   return retval;
