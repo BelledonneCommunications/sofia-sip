@@ -51,6 +51,7 @@
 
 #include "nua_stack.h"
 #include <sofia-sip/nta_tport.h>
+#include <sofia-sip/tport.h>
 #include <sofia-sip/tport_tag.h>
 
 #if HAVE_SIGCOMP
@@ -78,9 +79,14 @@ int outbound_connect_init(outbound_connect *ru,
 			  outbound_owner_vtable const *owner_methods,
 			  su_root_t *root,
 			  nta_agent_t *agent,
-			  char const *options);
+			  char const *options,
+			  unsigned dgram_interval,
+			  unsigned stream_interval);
 
-int outbound_connect_set_options(outbound_connect *oc, char const *options);
+int outbound_connect_set_options(outbound_connect *oc,
+				 char const *options,
+				 unsigned dgram_interval,
+				 unsigned stream_interval);
 
 int outbound_connect_set_features(outbound_connect *ru, char *features);
 
@@ -111,8 +117,8 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
 int outbound_connect_gruuize(struct outbound_connect *oc, sip_t const *sip);
 
 void outbound_connect_start_keepalive(struct outbound_connect *ru,
-				    unsigned interval,
-				    nta_outgoing_t *register_trans);
+				      unsigned interval,
+				      nta_outgoing_t *register_trans);
 
 void outbound_connect_stop_keepalive(struct outbound_connect *ru);
 
@@ -141,6 +147,14 @@ struct outbound_owner_vtable
   int (*oo_keepalive_error)(nua_owner_t *, outbound_connect *ru,
 			    int status, char const *phrase,
 			    tag_type_t tag, tag_value_t value, ...);
+  int (*oo_credentials)(nua_owner_t *, auth_client_t **auc);
+};
+
+enum outbound_feature {
+  outbound_feature_unsupported = 0,
+  outbound_feature_unsure = 1,
+  outbound_feature_supported = 2,
+  outbound_feature_required = 3
 };
 
 struct outbound_connect {
@@ -156,6 +170,8 @@ struct outbound_connect {
   int32_t oc_reg_id;		/**< Flow-id */
 
   struct outbound_prefs {
+    unsigned dgram_interval;	/**< Default keepalive interval for datagram */
+    unsigned stream_interval;	/**< Default keepalive interval for streams */
     unsigned gruuize:1;		/**< Establish a GRUU */
     unsigned outbound:1;	/**< Try to use outbound */
     unsigned natify:1;		/**< Try to detect NAT */
@@ -170,7 +186,8 @@ struct outbound_connect {
   } oc_prefs;
 
   struct outbound_info {
-    /* 0 do not support, 1 - perhaps supports, 2 supports, 4 requires */
+    /* See enum outbound_feature: */
+    /* 0 do not support, 1 - perhaps supports, 2 - supports, 3 - requires */
     unsigned gruu:2, outbound:2, pref:2;
   } oc_info;
 
@@ -217,6 +234,7 @@ struct outbound_connect {
   su_timer_t *oc_kalt;		/**< Keep-alive timer */
   msg_t *oc_kalmsg;		/**< Keep-alive OPTIONS message */
   nta_outgoing_t *oc_kalo;	/**< Keep-alive OPTIONS transaction */
+  auth_client_t *oc_auc[1];	/**< Authenticator for OPTIONS */
 
 #if HAVE_SIGCOMP
   struct sigcomp_compartment *oc_compartment;
@@ -245,11 +263,14 @@ static int nua_stack_register_failed(nua_handle_t *, outbound_connect *oc,
 				     int status, char const *phrase,
 				     tag_type_t tag, tag_value_t value, ...);
 
+static int nua_stack_register_credentials(nua_handle_t *, auth_client_t **auc);
+
 outbound_owner_vtable nua_stack_register_callbacks = {
     sizeof nua_stack_register_callbacks,
     nua_stack_register_status,
     nua_stack_register_failed,
     nua_stack_register_failed,
+    nua_stack_register_credentials
   };
 
 /**@fn void nua_register(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
@@ -442,7 +463,11 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   outbound_connect_init(oc, &nua_stack_register_callbacks,
 			nh->nh_nua->nua_root, nh->nh_nua->nua_nta,
-			NH_PGET(nh, outbound));
+			NH_PGET(nh, outbound),
+			NH_PGET(nh, keepalive),
+			NH_PISSET(nh, keepalive_stream) ?
+			NH_PGET(nh, keepalive_stream) : 
+			NH_PGET(nh, keepalive));
 
   outbound_connect_set_features(oc, nua_stack_register_features(nh));
 
@@ -720,8 +745,13 @@ int process_response_to_register(nua_handle_t *nh,
     outbound_connect_gruuize(oc, sip);
   }
 
-  if (!du->du_terminating && status < 300 && oc->oc_nat_detected)
-    outbound_connect_start_keepalive(oc, 15, orq);
+  if (!du->du_terminating && status < 300 && oc->oc_nat_detected) {
+    tport_t *tport = nta_outgoing_transport(orq);
+    unsigned interval = tport_is_dgram(tport) ? 
+      oc->oc_prefs.dgram_interval : oc->oc_prefs.stream_interval;
+    tport_unref(tport);
+    outbound_connect_start_keepalive(oc, 1000 * interval, orq);
+  }
   else
     outbound_connect_stop_keepalive(oc);
 
@@ -783,6 +813,9 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 				      SIPTAG_CONTACT(contact),
 				      SIPTAG_CONTACT(previous),
 				      SIPTAG_END(), TAG_NEXT(NULL));
+
+    if (cr->cr_orq)
+      oc->oc_registering = 1;
   }
 
   if (!cr->cr_orq) {
@@ -981,7 +1014,7 @@ int nua_add_contact_by_aor(nua_handle_t *nh,
 static
 char *nua_stack_register_features(nua_handle_t *nh)
 {
-  char *retval;
+  char *retval = NULL;
   su_strlst_t *l = su_strlst_create(NULL);
   su_home_t *home = su_strlst_home(l);
 
@@ -989,13 +1022,14 @@ char *nua_stack_register_features(nua_handle_t *nh)
     return NULL;
 
   if (NH_PGET(nh, instance))
-    su_slprintf(l, ";+sip.instance=\"<%s>\"", NH_PGET(nh, instance));
+    su_slprintf(l, "+sip.instance=\"<%s>\"", NH_PGET(nh, instance));
 
   if (NH_PGET(nh, callee_caps)) {
     sip_allow_t const *allow = NH_PGET(nh, allow);
 
     if (allow) {
-      su_strlst_append(l, ";methods=\"");
+      /* Skip ";" if this is first one */
+      su_strlst_append(l, ";methods=\"" + (su_strlst_len(l) == 0));
       if (allow->k_items) {
 	int i;
 	for (i = 0; allow->k_items[i]; i++) {
@@ -1011,13 +1045,15 @@ char *nua_stack_register_features(nua_handle_t *nh)
       char **media = soa_media_features(nh->nh_soa, 0, home);
 
       while (*media) {
-	su_strlst_append(l, ";");
+	if (su_strlst_len(l))
+	  su_strlst_append(l, ";");
 	su_strlst_append(l, *media++);
       }
     }
   }
 
-  retval = su_strlst_join(l, nh->nh_home, "");
+  if (su_strlst_len(l))
+    retval = su_strlst_join(l, nh->nh_home, "");
 
   su_strlst_destroy(l);
 
@@ -1099,6 +1135,13 @@ static int nua_stack_register_failed(nua_handle_t *nh, outbound_connect *oc,
   ta_end(ta);
 
   return 0;
+}
+
+/** @internal Callback for obtaining credentials for keepalive */
+static int nua_stack_register_credentials(nua_handle_t *nh, 
+					  auth_client_t **auc)
+{
+  return auc_copy_credentials(auc, nh->nh_auth);
 }
 
 /* ====================================================================== */
@@ -1329,12 +1372,11 @@ void outbound_connect_start_keepalive(struct outbound_connect *oc,
     su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
 
   if (interval)
-    oc->oc_kalt = su_timer_create(su_root_task(oc->oc_root),
-				  /* 1000 * */ 1000 * interval);
+    oc->oc_kalt = su_timer_create(su_root_task(oc->oc_root), interval);
 
   oc->oc_keepalive = interval;
 
-  if (!oc->oc_validated && oc->oc_sipstun && 0) {
+  if (!oc->oc_validated && oc->oc_sipstun && 0) { /* Disable stun now */
     nta_tport_keepalive(register_transaction);
   }
   else {
@@ -1358,6 +1400,9 @@ void outbound_connect_stop_keepalive(struct outbound_connect *oc)
 
   if (oc->oc_kalo)
     nta_outgoing_destroy(oc->oc_kalo), oc->oc_kalo = NULL;
+
+  if (oc->oc_kalmsg)
+    msg_destroy(oc->oc_kalmsg), oc->oc_kalmsg = NULL;
 }
 
 /** @internal Create a message template for keepalive. */
@@ -1384,12 +1429,13 @@ static int create_keepalive_message(struct outbound_connect *oc,
 		 SIPTAG_MAX_FORWARDS_STR("0"),
 		 SIPTAG_SUBJECT_STR("KEEPALIVE"),
 		 SIPTAG_CALL_ID_STR(oc->oc_cookie),
+		 SIPTAG_ACCEPT_STR(outbound_connect_content_type),
 		 TAG_END()) < 0 ||
       /* Create request-line, Call-ID, CSeq */
       nta_msg_request_complete(msg,
 			       nta_default_leg(oc->oc_nta),
 			       SIP_METHOD_OPTIONS,
-			       (void *)regsip->sip_request->rq_url) < 0 ||
+			       (void *)regsip->sip_to->a_url) < 0 ||
       msg_serialize(msg, (void *)osip) < 0 ||
       msg_prepare(msg) < 0)
     return msg_destroy(msg), -1;
@@ -1439,7 +1485,8 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
   outbound_connect *oc = (outbound_connect *)oc_casted_as_owner;
   int status = 408;
   int binding_check;
-
+  int challenged = 0, credentials = 0;
+  
   if (sip && sip->sip_status)
     status = sip->sip_status->st_status;
 
@@ -1449,6 +1496,19 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
 
   if (status < 200)
     return 0;
+
+  if (status == 401 || status == 407) {
+    if (sip->sip_www_authenticate)
+      challenged += auc_challenge(oc->oc_auc, (su_home_t *)oc->oc_owner,
+				  sip->sip_www_authenticate,
+				  sip_authorization_class) > 0;
+    if (sip->sip_proxy_authenticate)
+      challenged += auc_challenge(oc->oc_auc, (su_home_t *)oc->oc_owner,
+				  sip->sip_proxy_authenticate,
+				  sip_proxy_authorization_class) > 0;
+    if (oc->oc_oo->oo_credentials)
+      credentials = oc->oc_oo->oo_credentials(oc->oc_owner, oc->oc_auc);
+  }
 
   if (orq == oc->oc_kalo)
     oc->oc_kalo = NULL;
@@ -1466,10 +1526,17 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
     /* Bindings have changed */
     /* XXX - do something about it! */
     if (outbound_connect_contacts_from_via(oc, sip->sip_via, NULL) == 0) {
+      /* Destroy old keepalive template */
+      
       /* re-REGISTER */
       nua_dialog_usage_refresh(oc->oc_owner, nua_dialog_usage_public(oc), 1);
       return 0;
     }
+  }
+
+  if (challenged > 0 && credentials > 0) {
+    keepalive_options_with_registration_probe(oc);
+    return 0;
   }
 
   if (binding_check <= 1 && status < 300 && oc->oc_registered) {
@@ -1521,7 +1588,8 @@ static int keepalive_options_with_registration_probe(outbound_connect *oc)
 
   if (oc->oc_features) {
     sip_accept_contact_t *ac;
-    ac = sip_accept_contact_format(msg_home(req), "*;%s", oc->oc_features);
+    ac = sip_accept_contact_format(msg_home(req), "*;require;explicit;%s", 
+				   oc->oc_features);
     msg_header_insert(req, NULL, (void *)ac);
   }
 
@@ -1531,10 +1599,6 @@ static int keepalive_options_with_registration_probe(outbound_connect *oc)
      (nua_owner_t *)oc,
      NULL,
      req,
-     /* See RFC 3841 */
-     SIPTAG_ACCEPT_STR(outbound_connect_content_type),
-     SIPTAG_PROXY_REQUIRE_STR("pref"),
-     SIPTAG_REQUEST_DISPOSITION_STR("proxy"),
      SIPTAG_SUBJECT_STR("REGISTRATION PROBE"),
      SIPTAG_MAX_FORWARDS(NONE),	/* Remove 0 used in ordinary keepalives */
      TAG_END());
@@ -1612,16 +1676,17 @@ int outbound_connect_contacts_from_via(outbound_connect *oc,
 
   v = v0; *v0 = *via; v0->v_next = (sip_via_t *)pair;
 
+  /* uri contains < > */
   uri = sip_contact_string_from_via(NULL, via, NULL, transport);
 
   dcontact = sip_contact_make(home, uri);
   if (oc->oc_features && oc->oc_reg_id && oc->oc_prefs.outbound) {
     reg_id = oc->oc_reg_id;
-    rcontact = sip_contact_format(home, "%s%s;reg-id=%u", 
+    rcontact = sip_contact_format(home, "%s;%s;reg-id=%u", 
 				  uri, oc->oc_features, oc->oc_reg_id);
   }
   else if (oc->oc_features) 
-    rcontact = sip_contact_format(home, "%s%s", uri, oc->oc_features);
+    rcontact = sip_contact_format(home, "%s;%s", uri, oc->oc_features);
   else
     rcontact = dcontact;
   v = sip_via_dup(home, v);
@@ -1644,7 +1709,8 @@ int outbound_connect_contacts_from_via(outbound_connect *oc,
     previous_dcontact = oc->oc_dcontact;
     previous_via = oc->oc_via;
 
-    if (oc->oc_registering && reg_id == 0)
+    if (oc->oc_registering &&
+	(reg_id == 0 || oc->oc_info.outbound < outbound_feature_supported))
       previous_rcontact = NULL, oc->oc_previous = oc->oc_rcontact;
     else
       previous_rcontact = oc->oc_rcontact, oc->oc_previous = NULL;
@@ -1871,7 +1937,8 @@ static void nua_outbound_connect_remove(nua_handle_t *nh,
 static void nua_outbound_peer_info(nua_dialog_usage_t *du,
 				   nua_dialog_state_t const *ds,
 				   sip_t const *sip);
-static int feature_level(sip_t const *sip, char const *tag, int level);
+static enum outbound_feature feature_level(sip_t const *sip, 
+					   char const *tag, int level);
 
 /* ---------------------------------------------------------------------- */
 
@@ -1955,9 +2022,9 @@ static void nua_outbound_peer_info(nua_dialog_usage_t *du,
   struct outbound_connect *oc = nua_dialog_usage_private(du);
 
   if (sip == NULL) {
-    oc->oc_info.outbound = 1;
-    oc->oc_info.gruu = 1;
-    oc->oc_info.pref = 1;
+    oc->oc_info.outbound = outbound_feature_unsure;
+    oc->oc_info.gruu = outbound_feature_unsure;
+    oc->oc_info.pref = outbound_feature_unsure;
     return;
   }
 
@@ -1967,14 +2034,15 @@ static void nua_outbound_peer_info(nua_dialog_usage_t *du,
 
 }
 
-static int feature_level(sip_t const *sip, char const *tag, int level)
+static enum outbound_feature 
+feature_level(sip_t const *sip, char const *tag, int level)
 {
   if (sip_has_feature(sip->sip_require, tag))
-    return 3;
+    return outbound_feature_required;
   else if (sip_has_feature(sip->sip_supported, tag))
-    return 2;
+    return outbound_feature_supported;
   else if (sip_has_feature(sip->sip_unsupported, tag))
-    return 0;
+    return outbound_feature_unsupported;
   else
     return level;
 }
@@ -1983,25 +2051,34 @@ int outbound_connect_init(outbound_connect *oc,
 			  outbound_owner_vtable const *owner_methods,
 			  su_root_t *root,
 			  nta_agent_t *agent,
-			  char const *options)
+			  char const *options,
+			  unsigned dgram_interval,
+			  unsigned stream_interval)
 {
   oc->oc_oo = owner_methods;
   oc->oc_root = root;
   oc->oc_nta = agent;
 
-  return outbound_connect_set_options(oc, options);
+  return outbound_connect_set_options(oc, options,
+				      dgram_interval, stream_interval);
 }
 
 
-int outbound_connect_set_options(outbound_connect *oc, char const *options)
+int outbound_connect_set_options(outbound_connect *oc,
+				 char const *options,
+				 unsigned dgram_interval,
+				 unsigned stream_interval)
 {
   struct outbound_prefs prefs[1] = {{ 0 }};
   char *s;
 
+  prefs->dgram_interval = dgram_interval;
+  prefs->stream_interval = stream_interval;
   prefs->gruuize = 1;
-  prefs->outbound = 1;
+  prefs->outbound = 0;
   prefs->natify = 1;
   prefs->validate = 1;
+  prefs->use_rport = 1;
 
 #define MATCH(v) (len == sizeof(#v) - 1 && strncasecmp(#v, s, len) == 0)
 
@@ -2049,7 +2126,6 @@ int outbound_connect_set_options(outbound_connect *oc, char const *options)
 	prefs->use_stun)) {
     SU_DEBUG_1(("outbound_connect: no nat traversal method given\n"));
   }
-       
 
   oc->oc_prefs = *prefs;
 
@@ -2070,7 +2146,8 @@ int outbound_connect_set_features(outbound_connect *oc, char *features)
 
     SHA1Reset(sha1);
     su_guid_generate(guid);
-    SHA1Input(sha1, (void *)features, strlen(features));
+    if (features)
+      SHA1Input(sha1, (void *)features, strlen(features));
     SHA1Input(sha1, (void *)guid, sizeof guid);
     SHA1Result(sha1, digest);
     token64_e(oc->oc_cookie, sizeof oc->oc_cookie, digest, sizeof digest);
