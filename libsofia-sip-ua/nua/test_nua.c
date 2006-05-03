@@ -550,7 +550,7 @@ int save_event_in_list(struct context *ctx,
 
   if (action == event_is_extra)
     return 0;
-  else if (action == event_is_special)
+  else if (action == event_is_special || call == NULL)
     list = ep->specials;
   else if (call->events)
     list = call->events;
@@ -634,7 +634,7 @@ int check_set_status(int status, char const *phrase)
   return status == 200 && strcmp(phrase, sip_200_OK) == 0;
 }
 
-int test_api_errors(struct context *ctx)
+int test_nua_api_errors(struct context *ctx)
 {
   BEGIN();
 
@@ -761,7 +761,7 @@ int test_tag_filter(void)
   END();
 }
 
-int test_params(struct context *ctx)
+int test_nua_params(struct context *ctx)
 {
   BEGIN();
 
@@ -1329,10 +1329,11 @@ static char const passwd[] =
   "bob:secret:\n"
   "charlie:secret:\n";
 
-int test_init(struct context *ctx,
-	      int start_proxy,
-	      url_t const *o_proxy,
-	      int start_nat)
+int test_nua_init(struct context *ctx,
+		  int start_proxy,
+		  url_t const *o_proxy,
+		  int start_nat,
+		  tag_type_t tag, tag_value_t value, ...)
 {
   BEGIN();
   struct event *e;
@@ -1392,6 +1393,7 @@ int test_init(struct context *ctx,
     socklen_t sulen = sizeof su;
     char b[64];
     int len;
+    ta_list ta;
 
     if (print_headings)
       printf("TEST NUA-2.1.2: creating test NAT\n");
@@ -1404,7 +1406,9 @@ int test_init(struct context *ctx,
       family = AF_INET6;
 #endif
 
-    ctx->nat = test_nat_create(ctx->root, family, TAG_END());
+    ta_start(ta, tag, value);
+    ctx->nat = test_nat_create(ctx->root, family, ta_tags(ta));
+    ta_end(ta);
 
     /*
      * NAT thingy works so that we set the outgoing proxy URI to point
@@ -1533,7 +1537,7 @@ int test_init(struct context *ctx,
   if (print_headings)
     printf("TEST NUA-2.2.3: init endpoint C\n");
 
-  ctx->c.instance = nua_generate_instance_identifier(ctx->home);
+  /* ctx->c.instance = nua_generate_instance_identifier(ctx->home); */
 
   ctx->c.nua = nua_create(ctx->root, c_callback, ctx,
 			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
@@ -5775,6 +5779,8 @@ static char const options_usage[] =
   "   --attach          print pid, wait for a debugger to be attached\n"
   "   --no-proxy        do not use internal proxy\n"
   "   --no-nat          do not use internal \"nat\"\n"
+  "   --symmetric       run internal \"nat\" in symmetric mode\n"
+  "   -N                print events from internal \"nat\"\n"
   "   --no-alarm        don't ask for guard ALARM\n"
   "   -p uri            specify uri of outbound proxy (implies --no-proxy)\n"
   "   --proxy-tests     run tests involving proxy, too\n"
@@ -5792,7 +5798,8 @@ int main(int argc, char *argv[])
 {
   int retval = 0, quit_on_single_failure = 1;
   int i, o_quiet = 0, o_attach = 0, o_alarm = 1;
-  int o_events_a = 0, o_events_b = 0, o_events_c = 0, o_iproxy = 1, o_inat = 0;
+  int o_events_a = 0, o_events_b = 0, o_events_c = 0, o_iproxy = 1, o_inat = 1;
+  int o_inat_symmetric = 0, o_inat_logging = 0;
   url_t const *o_proxy = NULL;
   int level = 0;
 
@@ -5868,6 +5875,12 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[i], "--nat") == 0) {
       o_inat = 1;
     }
+    else if (strcmp(argv[i], "--symmetric") == 0) {
+      o_inat_symmetric = 1;
+    }
+    else if (strcmp(argv[i], "-N") == 0) {
+      o_inat_logging = 1;
+    }
     else if (strcmp(argv[i], "--no-alarm") == 0) {
       o_alarm = 0;
     }
@@ -5915,11 +5928,14 @@ int main(int argc, char *argv[])
     if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
   } while(0)
 
-  retval |= test_api_errors(ctx); SINGLE_FAILURE_CHECK();
+  retval |= test_nua_api_errors(ctx); SINGLE_FAILURE_CHECK();
   retval |= test_tag_filter(); SINGLE_FAILURE_CHECK();
-  retval |= test_params(ctx); SINGLE_FAILURE_CHECK();
+  retval |= test_nua_params(ctx); SINGLE_FAILURE_CHECK();
 
-  retval |= test_init(ctx, o_iproxy, o_proxy, o_inat);
+  retval |= test_nua_init(ctx, o_iproxy, o_proxy, o_inat,
+			  TESTNATTAG_SYMMETRIC(o_inat_symmetric),
+			  TESTNATTAG_LOGGING(o_inat_logging),
+			  TAG_END());
 
   if (retval == 0) {
     if (o_events_a)
