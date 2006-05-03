@@ -42,6 +42,20 @@ int test_nat_public(struct nat *nat, void const *address, int addrlen);
 
 int test_nat_flush(struct nat *nat);
 
+/* Tags */
+
+/** If true, act as symmetric nat. */
+#define TESTNATTAG_SYMMETRIC(x) testnattag_symmetric, tag_bool_v((x))
+#define TESTNATTAG_SYMMETRIC_REF(x) testnattag_symmetric_ref, tag_bool_vr(&(x))
+extern tag_typedef_t testnattag_symmetric;
+extern tag_typedef_t testnattag_symmetric_ref;
+
+/** If true, print information about connections. */
+#define TESTNATTAG_LOGGING(x) testnattag_logging, tag_bool_v((x))
+#define TESTNATTAG_LOGGING_REF(x) testnattag_logging_ref, tag_bool_vr(&(x))
+extern tag_typedef_t testnattag_logging;
+extern tag_typedef_t testnattag_logging_ref;
+
 SOFIA_END_DECLS
 
 #endif

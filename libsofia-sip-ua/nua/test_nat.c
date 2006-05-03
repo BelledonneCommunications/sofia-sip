@@ -93,6 +93,8 @@ struct nat {
 
   /* True if we act in symmetric way */
   int symmetric;
+  /* True if we do logging */
+  int logging;
 
   /* Everything sent to in_address will be forwarded to out_address */
   su_sockaddr_t in_address[1], out_address[1];
@@ -151,6 +153,11 @@ static int tcp_out_to_in(struct nat *, su_wait_t *wait, struct binding *);
 
 static int invalidate_binding(struct binding *b);
 
+tag_typedef_t testnattag_symmetric = BOOLTAG_TYPEDEF(symmetric);
+tag_typedef_t testnattag_symmetric_ref = REFTAG_TYPEDEF(testnattag_symmetric);
+tag_typedef_t testnattag_logging = BOOLTAG_TYPEDEF(symmetric);
+tag_typedef_t testnattag_logging_ref = REFTAG_TYPEDEF(testnattag_logging);
+
 /* nat entry point */
 static int
 test_nat_init(su_root_t *root, struct nat *nat)
@@ -164,6 +171,11 @@ test_nat_init(su_root_t *root, struct nat *nat)
 
   nat->root = root;
   nat->udp_socket = -1, nat->tcp_socket = -1;
+
+  tl_gets(nat->tags, 
+	  TESTNATTAG_SYMMETRIC_REF(nat->symmetric),
+	  TESTNATTAG_LOGGING_REF(nat->logging),
+	  TAG_END());
 
   hints->li_scope = LI_SCOPE_HOST | LI_SCOPE_SITE | LI_SCOPE_GLOBAL;
 
@@ -546,8 +558,9 @@ static int binding_init(struct binding *b,
 
   nat_binding_insert(&nat->bindings, b);
 
-  printf("nat: new %s binding %s <=> %s\n",
-	 protoname, b->in_name, b->out_name);
+  if (nat->logging)
+    printf("nat: new %s binding %s <=> %s\n",
+	   protoname, b->in_name, b->out_name);
 
   return 0;
 }
@@ -647,8 +660,9 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
     m = sendto(b->out_socket, nat->buffer, n, 0, 
 	       (void *)nat->out_address, nat->out_addrlen);
 
-  printf("nat: udp out %d/%d %s => %s\n",
-	 (int)m, (int)n, b->in_name, b->out_name);
+  if (nat->logging)
+    printf("nat: udp out %d/%d %s => %s\n",
+	   (int)m, (int)n, b->in_name, b->out_name);
 
   return 0;
 }
@@ -672,8 +686,9 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
     m = sendto(b->out_socket, nat->buffer, n, 0,
 	       (void *)nat->out_address, nat->out_addrlen);
 
-  printf("nat: udp out %d/%d %s => %s\n",
-	 (int)m, (int)n, b->in_name, b->out_name);
+  if (nat->logging)
+    printf("nat: udp out %d/%d %s => %s\n",
+	   (int)m, (int)n, b->in_name, b->out_name);
 
   return 0;
 }
@@ -693,8 +708,9 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   m = send(b->in_socket, nat->buffer, n, 0);
 
-  printf("nat: udp in %d/%d %s => %s\n",
-	 (int)m, (int)n, b->out_name, b->in_name);
+  if (nat->logging)
+    printf("nat: udp in %d/%d %s => %s\n",
+	   (int)m, (int)n, b->out_name, b->in_name);
 
   return 0;
 }
@@ -739,7 +755,8 @@ static int tcp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
   }
 
   if (n == 0) {
-    printf("nat: tcp out FIN %s => %s\n", b->in_name, b->out_name);
+    if (nat->logging)
+      printf("nat: tcp out FIN %s => %s\n", b->in_name, b->out_name);
     shutdown(b->out_socket, 1);
     su_root_eventmask(nat->root, b->in_register, b->in_socket, 0);
     b->in_closed = 1;
@@ -756,8 +773,9 @@ static int tcp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
     }
   }
 
-  printf("nat: tcp out %d/%d %s => %s\n",
-	 (int)m, (int)n, b->in_name, b->out_name);
+  if (nat->logging)
+    printf("nat: tcp out %d/%d %s => %s\n",
+	   (int)m, (int)n, b->in_name, b->out_name);
 
   return 0;
 }
@@ -776,7 +794,8 @@ static int tcp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
   }
 
   if (n == 0) {
-    printf("nat: tcp out FIN %s => %s\n", b->out_name, b->in_name);
+    if (nat->logging)
+      printf("nat: tcp out FIN %s => %s\n", b->out_name, b->in_name);
     shutdown(b->in_socket, 1);
     su_root_eventmask(nat->root, b->in_register, b->out_socket, 0);
     b->out_closed = 1;
@@ -788,13 +807,15 @@ static int tcp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
   for (m = 0; m < n; m += o) {
     o = send(b->in_socket, nat->buffer + m, n - m, 0);
     if (o < 0) {
-      su_perror("tcp_in_to_out: send");
+      if (su_errno() != EPIPE)
+	su_perror("tcp_in_to_out: send");
       break;
     }
   }
 
-  printf("nat: tcp in %d/%d %s => %s\n",
-	 (int)m, (int)n, b->out_name, b->in_name);
+  if (nat->logging)
+    printf("nat: tcp in %d/%d %s => %s\n",
+	   (int)m, (int)n, b->out_name, b->in_name);
 
   return 0;
 }
@@ -856,7 +877,8 @@ static int invalidate_binding(struct binding *b)
 	   addr->su_family == AF_INET6 ? "[%s]:%u" : "%s:%u",
 	   name, ntohs(addr->su_port));
 
-  printf("nat: flushed binding %s <=> %s\n", b->in_name, b->out_name);
+  if (nat->logging)
+    printf("nat: flushed binding %s <=> %s\n", b->in_name, b->out_name);
 
   return 0;
 }
