@@ -1131,7 +1131,7 @@ int hc_reply(nth_client_t * hc, int status, char const *phrase)
      * executes the su_root_t event loop.
      */
     su_root_t *root = he->he_root;
-    su_msg_r su_msg = SU_MSG_RINITIALIZER;
+    su_msg_r su_msg = SU_MSG_R_INIT;
 
     if (su_msg_create(su_msg,
 		      su_root_task(root),

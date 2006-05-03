@@ -132,7 +132,7 @@ int su_root_size_hint = 64;
  * Tasks
  */
 
-su_task_r const su_task_null = SU_TASK_INIT;
+su_task_r const su_task_null = SU_TASK_R_INIT;
 
 #define SU_TASK_ZAP(t, f) \
   while (t->sut_port) { \
@@ -358,7 +358,7 @@ int su_task_execute(su_task_r const task,
 
   if (!su_port_own_thread(task->sut_port)) {
 #if SU_HAVE_PTHREADS
-    su_msg_r m = SU_MSG_RINITIALIZER;
+    su_msg_r m = SU_MSG_R_INIT;
     struct su_task_execute *frame;
 
     if (su_msg_create(m, task, su_task_null,
@@ -857,7 +857,7 @@ _su_task_r su_root_parent(su_root_t const *self)
     return su_task_null;
 }
 
-/** Add a pre-poll callback */
+/** Add a pre-poll callback. */
 int su_root_add_prepoll(su_root_t *root, 
 			su_prepoll_f *callback, 
 			su_prepoll_magic_t *magic)
@@ -1287,7 +1287,7 @@ int su_clone_pause(su_clone_r rclone)
 {
 #if SU_HAVE_PTHREADS		/* No-op without threads */
   su_cloned_t *cloned = su_msg_data(rclone);
-  su_msg_r m = SU_MSG_RINITIALIZER;
+  su_msg_r m = SU_MSG_R_INIT;
 
   if (!cloned)
     return (errno = EFAULT), -1;

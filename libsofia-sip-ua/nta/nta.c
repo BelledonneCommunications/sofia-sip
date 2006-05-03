@@ -5781,7 +5781,7 @@ int incoming_mass_destroy(nta_agent_t *sa, incoming_queue_t *q)
   unsigned destroyed = q->q_length;
 
   if (destroyed > 2 && *sa->sa_terminator) {
-    su_msg_r m = SU_MSG_RINITIALIZER;
+    su_msg_r m = SU_MSG_R_INIT;
 
     if (su_msg_create(m,
 		      su_clone_task(sa->sa_terminator),
@@ -7428,7 +7428,7 @@ int outgoing_mass_destroy(nta_agent_t *sa, outgoing_queue_t *q)
   int destroyed = q->q_length;
 
   if (destroyed > 2 && *sa->sa_terminator) {
-    su_msg_r m = SU_MSG_RINITIALIZER;
+    su_msg_r m = SU_MSG_R_INIT;
 
     if (su_msg_create(m,
 		      su_clone_task(sa->sa_terminator),
@@ -7992,7 +7992,7 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
      */
     nta_agent_t *agent = orq->orq_agent;
     su_root_t *root = agent->sa_root;
-    su_msg_r su_msg = SU_MSG_RINITIALIZER;
+    su_msg_r su_msg = SU_MSG_R_INIT;
 
     if (su_msg_create(su_msg,
 		      su_root_task(root),
