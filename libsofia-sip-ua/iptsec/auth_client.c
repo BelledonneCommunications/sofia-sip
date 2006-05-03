@@ -67,15 +67,10 @@ struct auth_client_s {
   su_home_t     ca_home[1];
   auth_client_t*ca_next;
 
-  msg_param_t   ca_scheme;
-  msg_param_t   ca_realm;
-  msg_param_t   ca_user;
-  msg_param_t   ca_pass;
-
-#if  0
-  msg_hclass_t *ca_challenge_class;
-  msg_auth_t   *ca_challenge;
-#endif
+  char const   *ca_scheme;
+  char const   *ca_realm;
+  char         *ca_user;
+  char         *ca_pass;
 
   msg_hclass_t *ca_credential_class;
 
@@ -93,8 +88,8 @@ static auth_client_t *ca_create(su_home_t *home);
 static int ca_challenge(auth_client_t *ca, 
 			msg_auth_t const *auth, 
 			msg_hclass_t *credential_class,
-			msg_param_t scheme, 
-			msg_param_t realm);
+			char const *scheme, 
+			char const *realm);
 static int ca_credentials(auth_client_t *ca, 
 			  char const *scheme,
 			  char const *realm, 
@@ -199,8 +194,8 @@ static
 int ca_challenge(auth_client_t *ca, 
 		 msg_auth_t const *ch,
 		 msg_hclass_t *credential_class,
-		 msg_param_t scheme, 
-		 msg_param_t realm)
+		 char const *scheme, 
+		 char const *realm)
 {
   su_home_t *home = ca->ca_home;
   auth_challenge_t *ac = ca->ca_ac;
@@ -249,10 +244,16 @@ int ca_challenge(auth_client_t *ca,
   ca->ca_scheme = ca->ca_challenge->au_scheme;
   ca->ca_realm = msg_header_find_param(ca->ca_challenge->au_common, "realm=");
 #else
-  if (!ca->ca_scheme[0])
-    ca->ca_scheme = su_strdup(home, scheme);
-  if (!ca->ca_realm[0])
-    ca->ca_realm = su_strdup(home, realm);
+  if (!ca->ca_scheme[0]) {
+    char *d = su_strdup(home, scheme);
+    if (!d) return -1;
+    ca->ca_scheme = d;
+  }
+  if (!ca->ca_realm[0]) {
+    char *d = su_strdup(home, realm);
+    if (!d) return -1;
+    ca->ca_realm = d;
+  }
 #endif
 
   auth_digest_challenge_free_params(home, ac);
@@ -404,6 +405,57 @@ int ca_credentials(auth_client_t *ca,
 
   return 1;
 }
+
+
+/** Copy authentication data from @a src to @a dst.
+ *
+ * @retval >0 if credentials were copied
+ * @retval 0 if there was no credentials to copy
+ * @retval <0 if an error occurred.
+ */
+int auc_copy_credentials(auth_client_t **dst,
+			 auth_client_t const *src)
+{
+  int retval = 0;
+
+  if (!dst)
+    return -1;
+
+  for (;*dst; dst = &(*dst)->ca_next) {
+    auth_client_t *d = *dst;
+    auth_client_t const *ca;
+
+    for (ca = src; ca; ca = ca->ca_next) {
+      char *u, *p;
+      if (!ca->ca_user || !ca->ca_pass)
+	continue;
+      if (!ca->ca_scheme[0] || strcmp(ca->ca_scheme, d->ca_scheme))
+	continue;
+      if (!ca->ca_realm[0] || strcmp(ca->ca_realm, d->ca_realm))
+	continue;
+
+      if (d->ca_user && strcmp(d->ca_user, ca->ca_user) == 0 &&
+	  d->ca_pass && strcmp(d->ca_pass, ca->ca_pass) == 0) {
+	retval++;
+	break;
+      }
+
+      u = su_strdup(d->ca_home, ca->ca_user);
+      p = su_strdup(d->ca_home, ca->ca_pass);
+      if (!u || !p)
+	return -1;
+
+      if (d->ca_user) su_free(d->ca_home, (void *)d->ca_user);
+      if (d->ca_pass) su_free(d->ca_home, (void *)d->ca_pass);
+      d->ca_user = u, d->ca_pass = p;
+      retval++;
+      break;
+    }
+  }
+
+  return retval;
+}
+      	      
 
 /**Clear authentication data from the authenticator.
  *

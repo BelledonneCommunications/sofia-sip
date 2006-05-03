@@ -73,6 +73,9 @@ int auc_clear_credentials(auth_client_t **auc_list,
 			  char const *realm);
 
 SOFIAPUBFUN
+int auc_copy_credentials(auth_client_t **dst, auth_client_t const *src);
+
+SOFIAPUBFUN
 int auc_authorization(auth_client_t **auc_list, msg_t *msg, msg_pub_t *pub,
 		      char const *method, 
 		      url_t const *url, 
