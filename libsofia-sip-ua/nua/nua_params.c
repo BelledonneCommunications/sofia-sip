@@ -182,7 +182,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
 
   if (instance != NONE) {
     NHP_SET(nhp, instance, su_strdup(nh->nh_home, instance));
-    if (!instance && !nhp->nhp_instance)
+    if (instance && !nhp->nhp_instance)
       return -1;
   }
 
