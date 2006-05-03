@@ -1,5 +1,14 @@
 2006-05-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
+	* Not using SU_MSG_RINITIALIZER anymore.
+
+	Fixed nta/nta.c, nth/nth_client.c, su/su_root.c.
+
+	* Added SOFIAPUBFUN and SOFIAPUBVAR to public include files in su
+	module.
+
+	* Not compiling tport_threadpool.c in win32.
+
 	* Updated documentation in sip/sip_util.c.
 
 	Updated sip_contact_create_from_via(),
@@ -17,6 +26,21 @@
 	<sofia-sip/nta_tport.h>.
 
   * nua module:
+
+	* Improved keepalive timeout handling in nua/nua_register.c.
+
+	* Fixed double free in nua/nua_register.c.
+
+	Let nua_stack_process_response() take care of removing REGISTER
+	dialog usage.
+
+	* Checking for Max-Forwards header and its contents in
+	nua/test_proxy.c.
+
+	* Fixed STUN_ERROR() macro in <stun/stun_internal.h>.
+
+	* Fixed invalid check by nua_stack_init_instance() in
+	nua/nua_params.c.
 
 	* Updated nua/test_nua.c.
 
