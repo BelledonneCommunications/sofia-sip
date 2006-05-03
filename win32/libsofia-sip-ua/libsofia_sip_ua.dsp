@@ -740,10 +740,6 @@ SOURCE="..\..\libsofia-sip-ua\tport\tport_tag_ref.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\tport\tport_threadpool.c"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\tport\tport_type_connect.c"
 # End Source File
 # Begin Source File
@@ -1230,6 +1226,10 @@ SOURCE="..\..\libsofia-sip-ua\iptsec\iptsec_debug.h"
 # Begin Group "stun headers"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\stun\sofia-sip\stun.h"
+# End Source File
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\stun\sofia-sip\stun_common.h"
