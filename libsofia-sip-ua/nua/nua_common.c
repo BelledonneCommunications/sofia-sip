@@ -73,6 +73,8 @@
 
 #include "nua_stack.h"
 
+static void nh_destructor(void *arg);
+
 /**@internal
  * Create an operation handle 
  *
@@ -170,7 +172,6 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 
     if (nh && _handle_lifetime) {      
       /* This far, we have nothing real to destruct */
-      static void nh_destructor(void *arg);
 
       if (_handle_lifetime == 1 && !getenv("_NUA_HANDLE_DEBUG")) {
 	_handle_lifetime = 0;
