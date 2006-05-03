@@ -76,26 +76,26 @@ enum { SU_LOG_MAX = 9 };
 #define SU_LOG_INIT(name, env, level) \
   { sizeof(su_log_t), name, env, level, SU_LOG_MAX, 0, NULL, NULL, }
 
-void su_log(char const *fmt, ...)
-__attribute__ ((__format__ (printf, 1, 2)));
+SOFIAPUBFUN void su_log(char const *fmt, ...)
+  __attribute__ ((__format__ (printf, 1, 2)));
 
-void su_llog(su_log_t *log, unsigned level, char const *fmt, ...)
-__attribute__ ((__format__ (printf, 3, 4)));
-void su_vllog(su_log_t *log, unsigned level, 
- 	     char const *fmt, va_list ap);
-void su_log_redirect(su_log_t *log, su_logger_f *f, void *stream);
-void su_log_set_level(su_log_t *log, unsigned level);
-void su_log_soft_set_level(su_log_t *log, unsigned level);
-void su_log_init(su_log_t *log);
+SOFIAPUBFUN void su_llog(su_log_t *log, unsigned level, char const *fmt, ...)
+  __attribute__ ((__format__ (printf, 3, 4)));
+SOFIAPUBFUN void su_vllog(su_log_t *log, unsigned level, 
+			  char const *fmt, va_list ap);
+SOFIAPUBFUN void su_log_redirect(su_log_t *log, su_logger_f *f, void *stream);
+SOFIAPUBFUN void su_log_set_level(su_log_t *log, unsigned level);
+SOFIAPUBFUN void su_log_soft_set_level(su_log_t *log, unsigned level);
+SOFIAPUBFUN void su_log_init(su_log_t *log);
 
-extern su_log_t su_log_default[];
-extern su_log_t su_log_global[];
+SOFIAPUBVAR su_log_t su_log_default[];
+SOFIAPUBVAR su_log_t su_log_global[];
 
 /** Log the latest su error message */
-void su_perror(char const *s);
+SOFIAPUBFUN void su_perror(char const *s);
 
 /** Log the su error message. */
-void su_perror2(char const *s, int errcode);
+SOFIAPUBFUN void su_perror2(char const *s, int errcode);
 
 SOFIA_END_DECLS
 

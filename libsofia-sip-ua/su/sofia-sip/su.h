@@ -227,35 +227,37 @@ typedef struct su_iovec_s   su_iovec_t;
 /* ---------------------------------------------------------------------- */
 /* Socket compatibility functions */
 
-int su_init(void);
-void su_deinit(void);
+SOFIAPUBFUN int su_init(void);
+SOFIAPUBFUN void su_deinit(void);
 
 /** Create an endpoint for communication. */
-su_socket_t su_socket(int af, int sock, int proto);
+SOFIAPUBFUN su_socket_t su_socket(int af, int sock, int proto);
 /** Close an socket descriptor. */
-int su_close(su_socket_t s);
+SOFIAPUBFUN int su_close(su_socket_t s);
 /** Control socket. */
-int su_ioctl(su_socket_t s, int request, ...);
+SOFIAPUBFUN int su_ioctl(su_socket_t s, int request, ...);
 
 /** Checks if the previous call failed because it would have blocked. */
-int su_isblocking(void);
+SOFIAPUBFUN int su_isblocking(void);
 /** Set/reset blocking option. */ 
-int su_setblocking(su_socket_t s, int blocking);
+SOFIAPUBFUN int su_setblocking(su_socket_t s, int blocking);
 /** Set/reset address reusing option. */
-int su_setreuseaddr(su_socket_t s, int reuse);
+SOFIAPUBFUN int su_setreuseaddr(su_socket_t s, int reuse);
 /** Get the error code associated with the socket. */
-int su_soerror(su_socket_t s);
+SOFIAPUBFUN int su_soerror(su_socket_t s);
 /** Get size of message available in socket. */
-int su_getmsgsize(su_socket_t s);
+SOFIAPUBFUN int su_getmsgsize(su_socket_t s);
 
 /** Scatter-gather send. */
+SOFIAPUBFUN
 int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags, 
              su_sockaddr_t const *su, socklen_t sulen);
 /** Scatter-gather receive. */
+SOFIAPUBFUN
 int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags, 
              su_sockaddr_t *su, socklen_t *sulen);
 /** Return local IP address */
-int su_getlocalip(su_sockaddr_t *sin);
+SOFIAPUBFUN int su_getlocalip(su_sockaddr_t *sin);
 
 #include <sofia-sip/su_addrinfo.h>
 
@@ -265,8 +267,9 @@ int su_getlocalip(su_sockaddr_t *sin);
 #endif
 
 #if SU_HAVE_WINSOCK
-int inet_pton(int af, char const *src, void *dst);
-const char *inet_ntop(int af, void const *src, char *dst, size_t size);
+SOFIAPUBFUN int inet_pton(int af, char const *src, void *dst);
+SOFIAPUBFUN const char *inet_ntop(int af, void const *src,
+				  char *dst, size_t size);
 #endif
 
 /* ---------------------------------------------------------------------- */
@@ -359,9 +362,11 @@ extern const struct in_addr6 *su_in6addr_loopback(void);
 #endif
 #endif /* SU_HAVE_IN6 */
 
-int su_cmp_sockaddr(su_sockaddr_t const *a, su_sockaddr_t const *b); 
-int su_match_sockaddr(su_sockaddr_t const *a, su_sockaddr_t const *b);
-void su_canonize_sockaddr(su_sockaddr_t *su);
+SOFIAPUBFUN int su_cmp_sockaddr(su_sockaddr_t const *a,
+				su_sockaddr_t const *b);
+SOFIAPUBFUN int su_match_sockaddr(su_sockaddr_t const *a,
+				  su_sockaddr_t const *b);
+SOFIAPUBFUN void su_canonize_sockaddr(su_sockaddr_t *su);
 
 #if SU_HAVE_IN6
 #define SU_CANONIZE_SOCKADDR(su) \

@@ -41,7 +41,7 @@
 
 SOFIA_BEGIN_DECLS
 
-void tl_print(FILE *f, char const *title, tagi_t const lst[]);
+SOFIAPUBFUN void tl_print(FILE *f, char const *title, tagi_t const lst[]);
 
 SOFIA_END_DECLS
 

@@ -44,13 +44,13 @@
 SOFIA_BEGIN_DECLS
 
 /** Return string describing su error code. */
-char const *su_strerror(int e);
+SOFIAPUBFUN char const *su_strerror(int e);
 
 /** The latest su error. */
-int su_errno(void);
+SOFIAPUBFUN int su_errno(void);
 
 /** Set the su error. */
-int su_seterrno(int);
+SOFIAPUBFUN int su_seterrno(int);
 
 #if !SU_HAVE_WINSOCK
 #define su_errno() (errno)

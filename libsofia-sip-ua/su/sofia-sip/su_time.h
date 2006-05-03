@@ -80,28 +80,28 @@ typedef uint64_t su_ntp_t;
    (t1.tv_sec - t2.tv_sec) : \
      (t1.tv_usec - t2.tv_usec))
 
-su_time_t su_now(void);
-void su_time(su_time_t *tv);
-long su_time_cmp(su_time_t const t1, su_time_t const t2);
-double su_time_diff(su_time_t const t1, su_time_t const t2);
-su_duration_t su_duration(su_time_t const t1, su_time_t const t2);
+SOFIAPUBFUN su_time_t su_now(void);
+SOFIAPUBFUN void su_time(su_time_t *tv);
+SOFIAPUBFUN long su_time_cmp(su_time_t const t1, su_time_t const t2);
+SOFIAPUBFUN double su_time_diff(su_time_t const t1, su_time_t const t2);
+SOFIAPUBFUN su_duration_t su_duration(su_time_t const t1, su_time_t const t2);
 
-su_time_t su_time_add(su_time_t t, su_duration_t dur);
-su_time_t su_time_dadd(su_time_t t, double dur);
+SOFIAPUBFUN su_time_t su_time_add(su_time_t t, su_duration_t dur);
+SOFIAPUBFUN su_time_t su_time_dadd(su_time_t t, double dur);
 
-int su_time_print(char *s, int n, su_time_t const *tv);
+SOFIAPUBFUN int su_time_print(char *s, int n, su_time_t const *tv);
 
 #define SU_SEC_TO_DURATION(sec) ((su_duration_t)(1000 * (sec)))
 
-su_ntp_t su_ntp_now(void);
-uint32_t su_ntp_sec(void);
-uint32_t su_ntp_hi(su_ntp_t);
-uint32_t su_ntp_lo(su_ntp_t);
-uint32_t su_ntp_mw(su_ntp_t ntp);
+SOFIAPUBFUN su_ntp_t su_ntp_now(void);
+SOFIAPUBFUN uint32_t su_ntp_sec(void);
+SOFIAPUBFUN uint32_t su_ntp_hi(su_ntp_t);
+SOFIAPUBFUN uint32_t su_ntp_lo(su_ntp_t);
+SOFIAPUBFUN uint32_t su_ntp_mw(su_ntp_t ntp);
 
 #if !SU_HAVE_INLINE
-uint32_t su_ntp_fraq(su_time_t t);
-uint32_t su_time_ms(su_time_t t);
+SOFIAPUBFUN uint32_t su_ntp_fraq(su_time_t t);
+SOFIAPUBFUN uint32_t su_time_ms(su_time_t t);
 #else
 static SU_INLINE
 /** Middle 32 bit of NTP timestamp. */
@@ -123,13 +123,13 @@ uint32_t su_time_ms(su_time_t t)
 }
 #endif
 
-su_ntp_t su_ntp_hilo(uint32_t hi, uint32_t lo);
+SOFIAPUBFUN su_ntp_t su_ntp_hilo(uint32_t hi, uint32_t lo);
 
-uint64_t su_counter(void);
+SOFIAPUBFUN uint64_t su_counter(void);
 
-uint64_t su_nanocounter(void);
+SOFIAPUBFUN uint64_t su_nanocounter(void);
 
-uint32_t su_random();
+SOFIAPUBFUN uint32_t su_random();
 
 SOFIA_END_DECLS
 

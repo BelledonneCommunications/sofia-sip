@@ -90,16 +90,17 @@ enum {
 };
 
 /** Request local address information */
-int su_getlocalinfo(su_localinfo_t const *hints, su_localinfo_t **res);
+SOFIAPUBFUN int su_getlocalinfo(su_localinfo_t const *hints,
+				su_localinfo_t **res);
 /** Free local address information */
-void su_freelocalinfo(su_localinfo_t *);
+SOFIAPUBFUN void su_freelocalinfo(su_localinfo_t *);
 /** Describe su_localinfo errors. */
-char const *su_gli_strerror(int error);
+SOFIAPUBFUN char const *su_gli_strerror(int error);
 /** Copy a localinfo structure */
-su_localinfo_t *su_copylocalinfo(su_localinfo_t const *li0);
+SOFIAPUBFUN su_localinfo_t *su_copylocalinfo(su_localinfo_t const *li0);
 
 /** Return the scope of address in the sockaddr structure */
-int su_sockaddr_scope(su_sockaddr_t const *su, socklen_t sulen);
+SOFIAPUBFUN int su_sockaddr_scope(su_sockaddr_t const *su, socklen_t sulen);
 
 SOFIA_END_DECLS
 

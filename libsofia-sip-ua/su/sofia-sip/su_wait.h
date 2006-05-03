@@ -197,7 +197,7 @@ enum {
 struct _GSource;
 
 /** Hint for number of registered fds in su_root */
-SU_DLL extern int su_root_size_hint;
+SOFIAPUBVAR int su_root_size_hint;
 
 /* ---------------------------------------------------------------------- */
 /* Pre-poll callback */
@@ -331,12 +331,12 @@ typedef void (*su_root_deinit_f)(su_root_t *, su_root_magic_t *);
 /* Functions */
 
 /* Wait */
-void su_wait_init(su_wait_t dst[1]);
-int su_wait_create(su_wait_t *dst, su_socket_t s, int events);
-int su_wait_destroy(su_wait_t *dst);
-int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout);
-int su_wait_events(su_wait_t *wait, su_socket_t s);
-int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
+SOFIAPUBFUN void su_wait_init(su_wait_t dst[1]);
+SOFIAPUBFUN int su_wait_create(su_wait_t *dst, su_socket_t s, int events);
+SOFIAPUBFUN int su_wait_destroy(su_wait_t *dst);
+SOFIAPUBFUN int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout);
+SOFIAPUBFUN int su_wait_events(su_wait_t *wait, su_socket_t s);
+SOFIAPUBFUN int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
 
 #if SU_HAVE_BSDSOCK
 static inline
@@ -347,86 +347,89 @@ su_socket_t su_wait_socket(su_wait_t *wait)
 #endif
 
 /* Root */
-su_root_t *su_root_create(su_root_magic_t *magic)
-     __attribute__((__malloc__));
-void su_root_destroy(su_root_t*);
-int su_root_set_magic(su_root_t *self, su_root_magic_t *magic);
-su_root_magic_t *su_root_magic(su_root_t *root);
-int su_root_register(su_root_t*, su_wait_t *, 
-		     su_wakeup_f, su_wakeup_arg_t *,
-		     int priority);
-int su_root_unregister(su_root_t*, su_wait_t *, 
-		       su_wakeup_f, su_wakeup_arg_t*);
-int su_root_deregister(su_root_t*, int);
-int su_root_eventmask(su_root_t *, int index, int socket, int events);
-su_duration_t su_root_step(su_root_t *root, su_duration_t timeout);
-su_duration_t su_root_sleep(su_root_t *root, su_duration_t duration);
-int su_root_multishot(su_root_t *root, int multishot);
-void su_root_run(su_root_t *root);
-void su_root_break(su_root_t *root);
-_su_task_r su_root_task(su_root_t const *root);
-_su_task_r su_root_parent(su_root_t const *root);
+SOFIAPUBFUN su_root_t *su_root_create(su_root_magic_t *magic)
+  __attribute__((__malloc__));
+SOFIAPUBFUN void su_root_destroy(su_root_t*);
+SOFIAPUBFUN int su_root_set_magic(su_root_t *self, su_root_magic_t *magic);
+SOFIAPUBFUN su_root_magic_t *su_root_magic(su_root_t *root);
+SOFIAPUBFUN int su_root_register(su_root_t*, su_wait_t *, 
+				 su_wakeup_f, su_wakeup_arg_t *,
+				 int priority);
+SOFIAPUBFUN int su_root_unregister(su_root_t*, su_wait_t *, 
+				   su_wakeup_f, su_wakeup_arg_t*);
+SOFIAPUBFUN int su_root_deregister(su_root_t*, int);
+SOFIAPUBFUN int su_root_eventmask(su_root_t *, 
+				  int index, int socket, int events);
+SOFIAPUBFUN su_duration_t su_root_step(su_root_t *root, su_duration_t timeout);
+SOFIAPUBFUN su_duration_t su_root_sleep(su_root_t *root, su_duration_t);
+SOFIAPUBFUN int su_root_multishot(su_root_t *root, int multishot);
+SOFIAPUBFUN void su_root_run(su_root_t *root);
+SOFIAPUBFUN void su_root_break(su_root_t *root);
+SOFIAPUBFUN _su_task_r su_root_task(su_root_t const *root);
+SOFIAPUBFUN _su_task_r su_root_parent(su_root_t const *root);
 
-int su_root_add_prepoll(su_root_t *root, 
-			su_prepoll_f *, 
-			su_prepoll_magic_t *);
+SOFIAPUBFUN int su_root_add_prepoll(su_root_t *root, 
+				    su_prepoll_f *, 
+				    su_prepoll_magic_t *);
+SOFIAPUBFUN int su_root_remove_prepoll(su_root_t *root);
 
-int su_root_remove_prepoll(su_root_t *root);
-
-struct _GSource *su_root_gsource(su_root_t *self);
+SOFIAPUBFUN struct _GSource *su_root_gsource(su_root_t *self);
 
 /* Timers */
-su_timer_t *su_timer_create(su_task_r const, su_duration_t msec)
+SOFIAPUBFUN su_timer_t *su_timer_create(su_task_r const, su_duration_t msec)
      __attribute__((__malloc__));
-void su_timer_destroy(su_timer_t *);
-int su_timer_set(su_timer_t *, su_timer_f, su_timer_arg_t *);
-int su_timer_set_interval(su_timer_t *t, su_timer_f wakeup,
-			  su_timer_arg_t *arg, su_duration_t duration);
-int su_timer_set_at(su_timer_t *, su_timer_f, su_timer_arg_t *, su_time_t);
-int su_timer_run(su_timer_t *, su_timer_f, su_timer_arg_t *);
-int su_timer_set_for_ever(su_timer_t *, su_timer_f, su_timer_arg_t *);
-int su_timer_reset(su_timer_t *);
+SOFIAPUBFUN void su_timer_destroy(su_timer_t *);
+SOFIAPUBFUN int su_timer_set(su_timer_t *, su_timer_f, su_timer_arg_t *);
+SOFIAPUBFUN int su_timer_set_interval(su_timer_t *t, su_timer_f,
+				      su_timer_arg_t *, su_duration_t);
+SOFIAPUBFUN int su_timer_set_at(su_timer_t *, su_timer_f,
+				su_timer_arg_t *, su_time_t);
+SOFIAPUBFUN int su_timer_run(su_timer_t *, su_timer_f, su_timer_arg_t *);
+SOFIAPUBFUN int su_timer_set_for_ever(su_timer_t *, su_timer_f, 
+				      su_timer_arg_t *);
+SOFIAPUBFUN int su_timer_reset(su_timer_t *);
 
-su_root_t *su_timer_root(su_timer_t const *);
+SOFIAPUBFUN su_root_t *su_timer_root(su_timer_t const *);
 
-int su_timer_expire(su_timer_t ** const, 
-		    su_duration_t *tout,
-		    su_time_t now);
+SOFIAPUBFUN int su_timer_expire(su_timer_t ** const, 
+				su_duration_t *tout,
+				su_time_t now);
 
 /* Tasks */
 
 /** NULL task. */
-extern su_task_r const su_task_null;
+SOFIAPUBVAR su_task_r const su_task_null;
 
-_su_task_r su_task_init(su_task_r task);
-void su_task_deinit(su_task_r task);
+SOFIAPUBFUN _su_task_r su_task_init(su_task_r task);
+SOFIAPUBFUN void su_task_deinit(su_task_r task);
 
-void su_task_copy(su_task_r dst, su_task_r const src);
-void su_task_move(su_task_r dst, su_task_r src);
-int  su_task_cmp(su_task_r const, su_task_r const);
-int su_task_is_running(su_task_r const);
+SOFIAPUBFUN void su_task_copy(su_task_r dst, su_task_r const src);
+SOFIAPUBFUN void su_task_move(su_task_r dst, su_task_r src);
+SOFIAPUBFUN int su_task_cmp(su_task_r const, su_task_r const);
+SOFIAPUBFUN int su_task_is_running(su_task_r const);
 
-su_root_t *su_task_root(su_task_r const self);
-su_timer_t **su_task_timers(su_task_r const self);
+SOFIAPUBFUN su_root_t *su_task_root(su_task_r const self);
+SOFIAPUBFUN su_timer_t **su_task_timers(su_task_r const self);
 
-int su_task_execute(su_task_r const task,
-		    int (*function)(void *), void *arg,
-		    int *return_value);
+SOFIAPUBFUN int su_task_execute(su_task_r const task,
+				int (*function)(void *), void *arg,
+				int *return_value);
 
 /* Messages */
-int su_msg_create(su_msg_r msg, su_task_r const to, su_task_r const from, 
-		  su_msg_f wakeup, int size);
-int su_msg_report(su_msg_r msg, su_msg_f report);
-int su_msg_reply(su_msg_r reply, su_msg_r const msg,
-		  su_msg_f wakeup, int size);
-void su_msg_destroy(su_msg_r msg);
-void su_msg_save(su_msg_r msg, su_msg_r msg0);
-void su_msg_remove_refs(su_msg_cr msg);
-su_msg_arg_t *su_msg_data(su_msg_cr msg);
-int su_msg_size(su_msg_cr msg);
-_su_task_r su_msg_from(su_msg_cr msg);
-_su_task_r su_msg_to(su_msg_cr msg);
-int su_msg_send(su_msg_r msg);
+SOFIAPUBFUN int su_msg_create(su_msg_r msg,
+			      su_task_r const to, su_task_r const from, 
+			      su_msg_f wakeup, int size);
+SOFIAPUBFUN int su_msg_report(su_msg_r msg, su_msg_f report);
+SOFIAPUBFUN int su_msg_reply(su_msg_r reply, su_msg_r const msg,
+			     su_msg_f wakeup, int size);
+SOFIAPUBFUN void su_msg_destroy(su_msg_r msg);
+SOFIAPUBFUN void su_msg_save(su_msg_r msg, su_msg_r msg0);
+SOFIAPUBFUN void su_msg_remove_refs(su_msg_cr msg);
+SOFIAPUBFUN su_msg_arg_t *su_msg_data(su_msg_cr msg);
+SOFIAPUBFUN int su_msg_size(su_msg_cr msg);
+SOFIAPUBFUN _su_task_r su_msg_from(su_msg_cr msg);
+SOFIAPUBFUN _su_task_r su_msg_to(su_msg_cr msg);
+SOFIAPUBFUN int su_msg_send(su_msg_r msg);
 
 /** Does reference contain a message? */
 #if SU_HAVE_INLINE
@@ -440,41 +443,19 @@ int su_msg_is_non_null(su_msg_cr msg)
 #endif
 
 /* Clones */
-int su_root_threading(su_root_t *self, int enable);
-int su_clone_start(su_root_t *root, 
-		   su_clone_r,
-		   su_root_magic_t *magic,
-		   su_root_init_f, 
-		   su_root_deinit_f);
-_su_task_r su_clone_task(su_clone_r);
-void su_clone_forget(su_clone_r);
-void su_clone_stop(su_clone_r);
-void su_clone_wait(su_root_t *root, su_clone_r clone);
+SOFIAPUBFUN int su_root_threading(su_root_t *self, int enable);
+SOFIAPUBFUN int su_clone_start(su_root_t *root, 
+			       su_clone_r,
+			       su_root_magic_t *magic,
+			       su_root_init_f, 
+			       su_root_deinit_f);
+SOFIAPUBFUN _su_task_r su_clone_task(su_clone_r);
+SOFIAPUBFUN void su_clone_forget(su_clone_r);
+SOFIAPUBFUN void su_clone_stop(su_clone_r);
+SOFIAPUBFUN void su_clone_wait(su_root_t *root, su_clone_r clone);
 
-int su_clone_pause(su_clone_r);
-int su_clone_resume(su_clone_r);
-
-/* ---------------------------------------------------------------------- */
-/* Compatibility */
-
-#ifndef nomore
-typedef su_root_t *su_root_p;
-typedef int (*su_root_reg_f)(su_root_t*, su_wait_t *, 
-			     su_wakeup_f, su_wakeup_arg_t *,
-			     int priority);
-typedef int (*su_root_unreg_f)(su_root_t*, su_wait_t *, 
-			       su_wakeup_f, su_wakeup_arg_t *);
-
-#define su_create_wait   su_wait_create
-#define su_destroy_wait  su_wait_destroy
-#define su_create_root   su_root_create
-#define su_destroy_root  su_root_destroy
-#define su_root_free     su_root_destroy
-#define su_create_timer  su_timer_create
-#define su_destroy_timer su_timer_destroy
-#define SU_MSG_RINITIALIZER SU_MSG_R_INIT
-#define SU_TASK_INIT  SU_TASK_R_INIT
-#endif
+SOFIAPUBFUN int su_clone_pause(su_clone_r);
+SOFIAPUBFUN int su_clone_resume(su_clone_r);
 
 SOFIA_END_DECLS
 

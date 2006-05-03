@@ -57,7 +57,7 @@ typedef union GloballyUniqueIdentifier {
 } su_guid_t;
 
 /** Return node identifier */
-size_t su_node_identifier(void *address, size_t addrlen);
+SOFIAPUBFUN size_t su_node_identifier(void *address, size_t addrlen);
 
 /** Generate a GUID 
  * 
@@ -68,7 +68,7 @@ size_t su_node_identifier(void *address, size_t addrlen);
  *
  * @param guid [out] pointer to structure for new call identifier
  */
-void su_guid_generate(su_guid_t *guid);
+SOFIAPUBFUN void su_guid_generate(su_guid_t *guid);
 
 /** Print guid.
  *
@@ -86,7 +86,7 @@ void su_guid_generate(su_guid_t *guid);
  * The function guid_sprintf() returns length of the formatted
  * globally unique identifier excluding the final NUL.
  */
-int su_guid_sprintf(char* buf, size_t len, su_guid_t const *guid);
+SOFIAPUBFUN int su_guid_sprintf(char* buf, size_t len, su_guid_t const *guid);
 
 enum { 
   /** Length of guid in hex format */ 
@@ -104,7 +104,7 @@ enum {
  * @return 
 * The function randint() returns a pseudo-random integer.
  */
-int su_randint(int lb, int ub);
+SOFIAPUBFUN int su_randint(int lb, int ub);
 
 /** Fill memory with random values.
  *
@@ -113,7 +113,7 @@ int su_randint(int lb, int ub);
  * @param mem [out] pointer to the beginning of the memory area to be filled
  * @param siz [in] size fo the memory area in bytes
  */
-void *su_randmem(void *mem, size_t siz);
+SOFIAPUBFUN void *su_randmem(void *mem, size_t siz);
 
 SOFIA_END_DECLS
 

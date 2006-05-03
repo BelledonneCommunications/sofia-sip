@@ -57,20 +57,22 @@ typedef struct su_md5_t {
 
 #define SU_MD5_DIGEST_SIZE 16
 
-void su_md5_init(su_md5_t *context);
-void su_md5_deinit(su_md5_t *context);
-void su_md5_update(su_md5_t *context, void const *buf, unsigned len);
-void su_md5_strupdate(su_md5_t *ctx, char const *s);
-void su_md5_str0update(su_md5_t *ctx, char const *s);
+SOFIAPUBFUN void su_md5_init(su_md5_t *context);
+SOFIAPUBFUN void su_md5_deinit(su_md5_t *context);
+SOFIAPUBFUN void su_md5_update(su_md5_t *context,
+			       void const *buf, unsigned len);
+SOFIAPUBFUN void su_md5_strupdate(su_md5_t *ctx, char const *s);
+SOFIAPUBFUN void su_md5_str0update(su_md5_t *ctx, char const *s);
 
-void su_md5_iupdate(su_md5_t *context, void const *buf, unsigned len);
-void su_md5_striupdate(su_md5_t *ctx, char const *s);
-void su_md5_stri0update(su_md5_t *ctx, char const *s);
+SOFIAPUBFUN void su_md5_iupdate(su_md5_t *context,
+				void const *buf, unsigned len);
+SOFIAPUBFUN void su_md5_striupdate(su_md5_t *ctx, char const *s);
+SOFIAPUBFUN void su_md5_stri0update(su_md5_t *ctx, char const *s);
 
-void su_md5_digest(su_md5_t const *ctx, uint8_t digest[SU_MD5_DIGEST_SIZE]);
-
-void su_md5_hexdigest(su_md5_t const *ctx,
-		      char digest[2 * SU_MD5_DIGEST_SIZE + 1]);
+SOFIAPUBFUN void su_md5_digest(su_md5_t const *ctx,
+			       uint8_t digest[SU_MD5_DIGEST_SIZE]);
+SOFIAPUBFUN void su_md5_hexdigest(su_md5_t const *ctx,
+				  char digest[2 * SU_MD5_DIGEST_SIZE + 1]);
 
 #define SU_MD5_STRUPDATE(ctx, s) \
  ((s) ? su_md5_update(ctx, (s), strlen(s)) : (void)0)

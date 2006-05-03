@@ -76,40 +76,45 @@ struct tag_class_s {
 			   tag_value_t *return_value);
 };
 
-SU_DLL extern tag_class_t end_tag_class[];
-SU_DLL extern tag_class_t int_tag_class[];
-SU_DLL extern tag_class_t uint_tag_class[];
-SU_DLL extern tag_class_t bool_tag_class[];
-SU_DLL extern tag_class_t ptr_tag_class[];
-SU_DLL extern tag_class_t cstr_tag_class[];
-SU_DLL extern tag_class_t str_tag_class[];
-SU_DLL extern tag_class_t ns_tag_class[];
+SOFIAPUBVAR tag_class_t end_tag_class[];
+SOFIAPUBVAR tag_class_t int_tag_class[];
+SOFIAPUBVAR tag_class_t uint_tag_class[];
+SOFIAPUBVAR tag_class_t bool_tag_class[];
+SOFIAPUBVAR tag_class_t ptr_tag_class[];
+SOFIAPUBVAR tag_class_t cstr_tag_class[];
+SOFIAPUBVAR tag_class_t str_tag_class[];
+SOFIAPUBVAR tag_class_t ns_tag_class[];
 
 #define REFTAG_TYPEDEF(tag) \
   {{ TAG_NAMESPACE, #tag "_ref", ref_tag_class, (tag_value_t)tag }}
 
-SU_DLL extern tag_class_t ref_tag_class[];
+SOFIAPUBVAR tag_class_t ref_tag_class[];
 
-SU_DLL int t_ptr_snprintf(tagi_t const *t, char b[], size_t size);
-SU_DLL int t_ptr_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
-SU_DLL int t_ptr_scan(tag_type_t, su_home_t *, char const *, tag_value_t *);
+SOFIAPUBFUN int t_ptr_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN int t_ptr_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
+SOFIAPUBFUN int t_ptr_scan(tag_type_t, su_home_t *, char const *,
+			   tag_value_t *return_value);
 
-SU_DLL int t_bool_snprintf(tagi_t const *t, char b[], size_t size);
-SU_DLL int t_bool_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
-SU_DLL int t_bool_scan(tag_type_t, su_home_t *, char const *, tag_value_t *);
+SOFIAPUBFUN int t_bool_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN int t_bool_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
+SOFIAPUBFUN int t_bool_scan(tag_type_t, su_home_t *, char const *,
+			    tag_value_t *return_value);
 
-SU_DLL int t_int_snprintf(tagi_t const *t, char b[], size_t size);
-SU_DLL int t_int_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
-SU_DLL int t_int_scan(tag_type_t, su_home_t *, char const *, tag_value_t *);
+SOFIAPUBFUN int t_int_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN int t_int_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
+SOFIAPUBFUN int t_int_scan(tag_type_t, su_home_t *, char const *,
+			   tag_value_t *return_value);
 
-SU_DLL int t_uint_snprintf(tagi_t const *t, char b[], size_t size);
-SU_DLL int t_uint_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
-SU_DLL int t_uint_scan(tag_type_t, su_home_t *, char const *, tag_value_t *);
+SOFIAPUBFUN int t_uint_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN int t_uint_ref_set(tag_type_t tt, void *ref, tagi_t const value[]);
+SOFIAPUBFUN int t_uint_scan(tag_type_t, su_home_t *, char const *,
+			    tag_value_t *return_value);
 
-SU_DLL tagi_t *t_str_dup(tagi_t *dst, tagi_t const *src, void **b);
-SU_DLL size_t t_str_xtra(tagi_t const *t, size_t offset);
-SU_DLL int t_str_snprintf(tagi_t const *t, char b[], size_t size);
-SU_DLL int t_str_scan(tag_type_t, su_home_t *, char const *, tag_value_t *);
+SOFIAPUBFUN tagi_t *t_str_dup(tagi_t *dst, tagi_t const *src, void **b);
+SOFIAPUBFUN size_t t_str_xtra(tagi_t const *t, size_t offset);
+SOFIAPUBFUN int t_str_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN int t_str_scan(tag_type_t, su_home_t *, char const *,
+			   tag_value_t *return_value);
 
 SOFIA_END_DECLS
 

@@ -78,16 +78,16 @@ struct tag_type_s {
 typedef struct tag_type_s const tag_typedef_t[1];
 
 /** End of tag list */
-SU_DLL extern tag_typedef_t tag_null;
+SOFIAPUBVAR tag_typedef_t tag_null;
 
 /** Ignore tag item. */
-SU_DLL extern tag_typedef_t tag_skip;
+SOFIAPUBVAR tag_typedef_t tag_skip;
 
 /** Jump to another tag list */
-SU_DLL extern tag_typedef_t tag_next;
+SOFIAPUBVAR tag_typedef_t tag_next;
 
 /** Any tag accepted when filtering. */
-SU_DLL extern tag_typedef_t tag_any;
+SOFIAPUBVAR tag_typedef_t tag_any;
 
 /** @HI Initialize a tag item marking the end of list. */
 #define TAG_NULL()  (tag_type_t)0, (tag_value_t)0
@@ -109,43 +109,45 @@ SU_DLL extern tag_typedef_t tag_any;
 #define TAG_IF(condition, item) !(condition) ? tag_skip : item
 
 /** Convert tag item to a string  */
-int t_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN int t_snprintf(tagi_t const *t, char b[], size_t size);
 
 /** Convert string to a tag value */
-int t_scan(tag_type_t tt, su_home_t *home, char const *s, 
-	   tag_value_t *return_value);
+SOFIAPUBFUN int t_scan(tag_type_t tt, su_home_t *home, char const *s, 
+		       tag_value_t *return_value);
 
 /* Tagarg functions */
-tagi_t *tl_tlist(su_home_t *, tag_type_t tag, tag_value_t value, ...);
-size_t tl_tmove(tagi_t *dst, size_t size, tag_type_t tt, tag_value_t v, ...);
-int tl_gets(tagi_t const lst[], tag_type_t tag, tag_value_t value, ...);
-int tl_tgets(tagi_t lst[], tag_type_t tag, tag_value_t value, ...);
-tagi_t *tl_tfilter(su_home_t *, tagi_t const lst[], 
-		   tag_type_t t, tag_value_t v, ...);
-int tl_tremove(tagi_t lst[], tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN tagi_t *tl_tlist(su_home_t *, tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN size_t tl_tmove(tagi_t *dst, size_t, tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN int tl_gets(tagi_t const lst[], tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN int tl_tgets(tagi_t lst[], tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN tagi_t *tl_tfilter(su_home_t *, tagi_t const lst[], 
+			       tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN int tl_tremove(tagi_t lst[], tag_type_t, tag_value_t, ...);
 
 /* Low-level taglist manipulation functions */
-size_t tl_len(tagi_t const lst[]);
-size_t tl_xtra(tagi_t const lst[], size_t offset);
-tagi_t *tl_next(tagi_t const *lst);
-tagi_t *tl_move(tagi_t *dst, tagi_t const src[]);
-tagi_t *tl_dup(tagi_t dst[], tagi_t const lst[], void **bb);
-tagi_t *tl_adup(su_home_t *, tagi_t const lst[]);
+SOFIAPUBFUN size_t tl_len(tagi_t const lst[]);
+SOFIAPUBFUN size_t tl_xtra(tagi_t const lst[], size_t offset);
+SOFIAPUBFUN tagi_t *tl_next(tagi_t const *lst);
+SOFIAPUBFUN tagi_t *tl_move(tagi_t *dst, tagi_t const src[]);
+SOFIAPUBFUN tagi_t *tl_dup(tagi_t dst[], tagi_t const lst[], void **bb);
+SOFIAPUBFUN tagi_t *tl_adup(su_home_t *, tagi_t const lst[]);
 
-tagi_t const *tl_find(tagi_t const lst[], tag_type_t tt);
-tagi_t *tl_filter(tagi_t *, tagi_t const filter[], tagi_t const lst[], void **b);
-tagi_t *tl_afilter(su_home_t *, tagi_t const filter[], tagi_t const lst[]);
+SOFIAPUBFUN tagi_t const *tl_find(tagi_t const lst[], tag_type_t tt);
+SOFIAPUBFUN tagi_t *tl_filter(tagi_t *, tagi_t const filter[],
+			      tagi_t const lst[], void **b);
+SOFIAPUBFUN tagi_t *tl_afilter(su_home_t *, tagi_t const filter[],
+			       tagi_t const lst[]);
 
-tagi_t *tl_filtered_tlist(su_home_t *home, tagi_t const filter[], 
-			  tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN tagi_t *tl_filtered_tlist(su_home_t *home, tagi_t const filter[], 
+				      tag_type_t, tag_value_t, ...);
 
-size_t  tl_vlen(va_list ap);
-tagi_t *tl_list(tag_type_t tag, tag_value_t value, ...);
-tagi_t *tl_vlist2(tag_type_t tag, tag_value_t value, va_list ap);
-tagi_t *tl_vlist(va_list ap);
-tagi_t *tl_llist(tag_type_t tag, tag_value_t value, ...);
-tagi_t *tl_vllist(tag_type_t tag, tag_value_t value, va_list ap);
-void    tl_vfree(tagi_t *t);
+SOFIAPUBFUN size_t  tl_vlen(va_list ap);
+SOFIAPUBFUN tagi_t *tl_list(tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN tagi_t *tl_vlist2(tag_type_t tag, tag_value_t value, va_list ap);
+SOFIAPUBFUN tagi_t *tl_vlist(va_list ap);
+SOFIAPUBFUN tagi_t *tl_llist(tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN tagi_t *tl_vllist(tag_type_t tag, tag_value_t value, va_list ap);
+SOFIAPUBFUN void    tl_vfree(tagi_t *t);
 
 /** Align to pointer size */
 #define SU_ALIGN(x) \

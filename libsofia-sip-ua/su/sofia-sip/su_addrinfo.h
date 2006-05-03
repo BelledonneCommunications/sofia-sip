@@ -121,22 +121,23 @@ struct addrinfo {
 typedef struct addrinfo su_addrinfo_t;
 
 /** Translate address and service. */
+SOFIAPUBFUN
 int su_getaddrinfo(char const *node, char const *service,
 		   su_addrinfo_t const *hints,
 		   su_addrinfo_t **res);
 /** Free su_addrinfo_t structure allocated by su_getaddrinfo(). */
-void su_freeaddrinfo(su_addrinfo_t *res);
+SOFIAPUBFUN void su_freeaddrinfo(su_addrinfo_t *res);
 
 /** Return string describing address translation error. */
-char const *su_gai_strerror(int errcode);
+SOFIAPUBFUN char const *su_gai_strerror(int errcode);
 
 union su_sockaddr_u;
 
-int
-su_getnameinfo(const union su_sockaddr_u *su, size_t sulen,
-	       char *host, size_t hostlen,
-	       char *serv, size_t servlen,
-	       int flags);
+SOFIAPUBFUN
+int su_getnameinfo(const union su_sockaddr_u *su, size_t sulen,
+		   char *host, size_t hostlen,
+		   char *serv, size_t servlen,
+		   int flags);
 
 SOFIA_END_DECLS
 

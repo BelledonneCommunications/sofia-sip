@@ -70,7 +70,7 @@ SOFIA_BEGIN_DECLS
 #ifndef SU_LOG
 #define SU_LOG       (su_log_default)
 #else
-extern su_log_t SU_LOG[];
+SOFIAPUBVAR su_log_t SU_LOG[];
 #endif
 
 #define SU_DEBUG_DEF(level) \
