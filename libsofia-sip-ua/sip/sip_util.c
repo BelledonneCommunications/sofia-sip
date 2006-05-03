@@ -133,7 +133,23 @@ sip_contact_t * sip_contact_create(su_home_t *home,
   return m;
 }
 
-/** Convert a Via header to Contact header */
+/** Convert a Via header to Contact header.
+ *
+ * The Contact URI will contain the port number if needed. If transport
+ * protocol name starts with "TLS", "SIPS:" URI schema is used. Transport
+ * parameter is included in the URI unless the transport protocol is UDP.
+ *
+ * @param home      memory home
+ * @param v         Via header field structure 
+ *                  (with <sent-protocol> and <sent-by> parameters)
+ * @param user      username for Contact URI (may be NULL)
+ *
+ * @retval contact header structure
+ * @retval NULL upon an error
+ *
+ * @sa sip_contact_create_from_via_with_transport(), 
+ *     sip_contact_string_from_via()
+ */
 sip_contact_t *
 sip_contact_create_from_via(su_home_t *home,
 			    sip_via_t const *v,
@@ -152,7 +168,23 @@ sip_contact_create_from_via(su_home_t *home,
   return sip_contact_create_from_via_with_transport(home, v, user, tp);
 }
 
-/** Convert a Via header to Contact header */
+/** Convert a Via header to Contact header.
+ *
+ * The Contact URI will contain the port number and transport parameters if
+ * needed. If transport protocol name starts with "TLS", "SIPS:" URI schema
+ * is used.
+ *
+ * @param home      memory home
+ * @param v         Via header field structure
+ *                  (with <sent-by> parameter containing host and port)
+ * @param user      username for Contact URI (may be NULL)
+ * @param transport transport name for Contact URI (may be NULL)
+ *
+ * @retval contact header structure
+ * @retval NULL upon an error
+ *
+ * @sa sip_contact_create_from_via(), sip_contact_string_from_via()
+ */
 sip_contact_t *
 sip_contact_create_from_via_with_transport(su_home_t *home,
 					   sip_via_t const *v,
@@ -165,7 +197,24 @@ sip_contact_create_from_via_with_transport(su_home_t *home,
   return m;
 }
 
-/** Convert a Via header to Contact URL string */
+/** Convert a Via header to Contact URL string.
+ *
+ * The Contact URI will contain the port number and transport parameters if
+ * needed. If transport protocol name starts with "TLS", "SIPS:" URI schema
+ * is used.
+ *
+ * The contact URI string returned will always have angle brackets ("<" and
+ * ">") around it.
+ *
+ * @param home      memory home
+ * @param v         Via header field structure
+ *                  (with <sent-by> parameter containing host and port)
+ * @param user      username for Contact URI (may be NULL)
+ * @param transport transport name for Contact URI (may be NULL)
+ *
+ * @retval string containing Contact URI with angle brackets
+ * @retval NULL upon an error
+ */
 char *
 sip_contact_string_from_via(su_home_t *home,
 			    sip_via_t const *v,
@@ -238,11 +287,10 @@ int sip_transport_has_tls(char const *transport_name)
   if (transport_name == sip_transport_tls)
     return 1;
 
-  /* transport name starts with SIP/2.0/ ? */
-  if (strncasecmp(transport_name, sip_transport_tls, 8) == 0)
-    transport_name += 8;
-
-  return strncasecmp(transport_name, "tls", 3) == 0;
+  /* transport name starts with TLS or SIP/2.0/TLS */
+  return
+    strncasecmp(transport_name, "TLS", 3) == 0 ||
+    strncasecmp(transport_name, sip_transport_tls, 11) == 0;
 }
 
 /**Perform sanity check on a SIP message
