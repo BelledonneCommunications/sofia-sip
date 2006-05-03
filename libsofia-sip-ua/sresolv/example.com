@@ -38,6 +38,10 @@ _sip._tcp	SRV 2 100 5060 sip00
 		SRV 2 100 5060 sip01
 		SRV 2 50 5060 sip02
 
+_sips._udp	SRV 3 100 5061 sip00
+		SRV 4 50 5051 sip02
+		SRV 5 10 5061 sip01
+
 sip	CNAME	sip00
 
 subnet  A6	0 3ff0:00::	
