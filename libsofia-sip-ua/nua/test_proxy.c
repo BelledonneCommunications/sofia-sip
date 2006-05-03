@@ -372,6 +372,7 @@ int proxy_request(struct proxy *proxy,
   url_t const *request_uri, *target;
   struct proxy_transaction *t = NULL;
   sip_request_t *rq = NULL;
+  sip_max_forwards_t *mf;
 
   /* We don't do any route processing */
   request_uri = sip->sip_request->rq_url;
@@ -405,6 +406,16 @@ int proxy_request(struct proxy *proxy,
     }
     
     target = b->contact->m_url;
+  }
+
+  mf = sip->sip_max_forwards;
+
+  if (mf && mf->mf_count <= 1) {
+    if (sip->sip_request->rq_method == sip_method_options) {
+      return process_options(proxy, irq, sip);
+    }
+    nta_incoming_treply(irq, SIP_483_TOO_MANY_HOPS, TAG_END());
+    return 483;
   }
 
   t = proxy_transaction_new(proxy);
