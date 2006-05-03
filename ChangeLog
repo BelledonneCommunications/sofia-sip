@@ -1,3 +1,77 @@
+2006-05-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Updated documentation in sip/sip_util.c.
+
+	Updated sip_contact_create_from_via(),
+	sip_contact_string_from_via(), and
+	sip_contact_create_from_via_with_transport() documents.
+
+	* Added _sips._udp SRV records to sresolv/example.com zonefile.
+
+	Updated named.conf so it can be directly used to run bind.
+
+	* Added public prototype for tport_is_dgram() into
+	<sofia-sip/tport.h>.
+
+	* Added nta_outgoing_transport() to nta/nta.c and
+	<sofia-sip/nta_tport.h>.
+
+  * nua module:
+
+	* Updated nua/test_nua.c.
+
+	Using nat by default. Added --symmetric and -N options, enabling
+	symmetric nat and logging, respectively.
+
+	* Added tags to nua/test_nat.[hc].
+
+	TESTNATTAG_SYMMETRIC(1) enables symmetric nat.
+	TESTNATTAG_LOGGING(1) enables logging of nat binding changes.
+
+	* Updated outbound protocol engine in nua/nua_register.c
+
+	We enable rport and disable outbound by default. Fixed problem
+	when nat binding was changed. Fixed syntax error problems when
+	creating Accept-Contact header in OPTIONS request used to validate
+	registration.
+
+	* Added nua_generate_instance_identifier() to nua module.
+
+	* Changed default values in nua_params.c.
+
+	NUTAG_OUTBOUND() is "natify", and NUTAG_KEEPALIVE() is 120 seconds.
+
+	* Fixed nua/test_proxy.c.
+
+  	Registrar was not returning all contacts in 200 OK to response to
+	REGISTER.
+
+  * iptsec module:
+
+	* Added auc_copy_credentials().
+
+	Implementation in iptsec/auth_client.c, prototype in
+	<iptsec/sofia-sip/auth_client.h>. Replaced msg_param_t with char
+	const *, too.
+
+	* Added SOFIAPUBFUN to auth_struct_copy(), too.
+	
+  * iptsec module (by Martti Mela):
+
+	* ntlm support now compiles, not working.
+
+	* added auth_ntlm.[ch]
+
+	* more NTLM methods and header file auth_ntlm.h
+
+	* still more ifdefs for NTLM enabling
+
+	* added configure flag for enabling NTLM (disabled by default)
+
+	* fixed gssapidatas
+
+	* NTLM implementation continued.
+
 2006-05-02  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * iptsec module:
