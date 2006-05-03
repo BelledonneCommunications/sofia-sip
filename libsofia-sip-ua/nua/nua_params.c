@@ -35,7 +35,6 @@
 #include <sofia-sip/string0.h>
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/sha1.h>
-#include <sofia-sip/su_uniqueid.h>
 #include <sofia-sip/token64.h>
 #include <sofia-sip/su_tagarg.h>
 
@@ -181,27 +180,11 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
 
   tl_gets(tags, NUTAG_INSTANCE_REF(instance), TAG_END());
 
-  if (instance == NONE) {
-    char str[su_guid_strlen + 1];
-    su_guid_t guid[1];
-
-    su_guid_generate(guid);
-    /*
-     * Guid looks like "NNNNNNNN-NNNN-NNNN-NNNN-XXXXXXXXXXXX"
-     * where NNNNNNNN-NNNN-NNNN-NNNN is timestamp and XX is MAC address
-     * (but we use usually random ID for MAC because we do not have
-     *  guid generator available for all processes within node)
-     */
-    su_guid_sprintf(str, su_guid_strlen + 1, guid);
-
-    NHP_SET(nhp, instance, su_sprintf(nh->nh_home, "urn:uuid:%s", str));
-  }
-  else {
+  if (instance != NONE) {
     NHP_SET(nhp, instance, su_strdup(nh->nh_home, instance));
+    if (!instance && !nhp->nhp_instance)
+      return -1;
   }
-
-  if (instance && !nhp->nhp_instance)
-    return -1;
 
   return 0;
 }

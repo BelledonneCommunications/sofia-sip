@@ -159,6 +159,8 @@ struct context
 
     printer_function *printer;
 
+    char const *instance;
+
     /* Per-call stuff */
     struct call {
       struct call *next;
@@ -1472,6 +1474,8 @@ int test_init(struct context *ctx,
   if (a_uri == NULL)
     a_uri = p_uri;
 
+  ctx->a.instance = nua_generate_instance_identifier(ctx->home);
+
   ctx->a.nua = nua_create(ctx->root, a_callback, ctx,
 			  NUTAG_PROXY(a_uri ? a_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:alice@example.com"),
@@ -1479,7 +1483,7 @@ int test_init(struct context *ctx,
 			  TAG_IF(a_bind != a_bind2, NUTAG_SIPS_URL(a_bind2)),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 			  NTATAG_SIP_T1X64(4000),
-			  NUTAG_KEEPALIVE(1),
+			  NUTAG_INSTANCE(ctx->a.instance),
 			  TAG_END());
   TEST_1(ctx->a.nua);
 
@@ -1501,11 +1505,14 @@ int test_init(struct context *ctx,
   if (print_headings)
     printf("TEST NUA-2.2.2: init endpoint B\n");
 
+  ctx->b.instance = nua_generate_instance_identifier(ctx->home);
+
   ctx->b.nua = nua_create(ctx->root, b_callback, ctx,
 			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:bob@example.org"),
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
+			  NUTAG_INSTANCE(ctx->b.instance),
 			  TAG_END());
   TEST_1(ctx->b.nua);
 
@@ -1526,11 +1533,14 @@ int test_init(struct context *ctx,
   if (print_headings)
     printf("TEST NUA-2.2.3: init endpoint C\n");
 
+  ctx->c.instance = nua_generate_instance_identifier(ctx->home);
+
   ctx->c.nua = nua_create(ctx->root, c_callback, ctx,
 			  NUTAG_PROXY(p_uri ? p_uri : o_proxy),
 			  SIPTAG_FROM_STR("sip:charlie@example.net"),
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5400 RTP/AVP 8 0"),
+			  NUTAG_INSTANCE(ctx->c.instance),
 			  TAG_END());
   TEST_1(ctx->c.nua);
 
@@ -1631,7 +1641,8 @@ int test_register(struct context *ctx)
 
   TEST_1(a_reg->nh = nua_handle(a->nua, a_reg, TAG_END()));
 
-  REGISTER(a, a_reg, a_reg->nh, SIPTAG_TO(a->to), TAG_END());
+  REGISTER(a, a_reg, a_reg->nh, SIPTAG_TO(a->to), NUTAG_KEEPALIVE(1),
+	   TAG_END());
   run_a_until(ctx, -1, save_until_final_response);
 
   TEST_1(e = a->events->head);

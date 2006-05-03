@@ -42,6 +42,7 @@
 #include <sofia-sip/su_tag_class.h>
 #include <sofia-sip/su_tag_class.h>
 #include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_uniqueid.h>
 
 #include <stdio.h>
 
@@ -221,6 +222,23 @@ int nua_handle_unref(nua_handle_t *nh)
   return su_home_unref(nh->nh_home);
 }
 
+/** Generate an instance identifier */
+char const *nua_generate_instance_identifier(su_home_t *home)
+{
+  char str[su_guid_strlen + 1];
+  su_guid_t guid[1];
+
+  su_guid_generate(guid);
+  /*
+   * Guid looks like "NNNNNNNN-NNNN-NNNN-NNNN-XXXXXXXXXXXX"
+   * where NNNNNNNN-NNNN-NNNN-NNNN is timestamp and XX is MAC address
+   * (but we use usually random ID for MAC because we do not have
+   *  guid generator available for all processes within node)
+   */
+  su_guid_sprintf(str, su_guid_strlen + 1, guid);
+
+  return su_strdup(home, str);
+}
 
 /** Get name for a NUA event. */
 char const *nua_event_name(nua_event_t event)

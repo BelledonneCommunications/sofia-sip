@@ -307,6 +307,9 @@ void nua_respond(nua_handle_t *nh,
 
 #define nua_handle_home(nh) ((su_home_t *)(nh))
 
+/** Generate an instance identifier */
+char const *nua_generate_instance_identifier(su_home_t *);
+
 #ifndef NUA_SAVED_EVENT_T
 #define NUA_SAVED_EVENT_T struct nua_saved_event *
 #endif
