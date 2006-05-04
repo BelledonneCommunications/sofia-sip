@@ -18,6 +18,12 @@ AUTHORS
 	List of contributors. When contributing new code, add 
 	yourself to AUTHORS, and also remember to update the
 	per source file copyright statements.
+
+COPYRIGHTS
+	List of licenses and related copyright statements. While 
+	majority of Sofia-SIP is licensed under LGPL, there are
+	a few files with different, but LGPL compatible, licensing 
+	terms.
 	
 README.developers 
 	This file.
