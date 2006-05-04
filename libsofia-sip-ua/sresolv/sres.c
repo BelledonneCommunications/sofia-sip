@@ -2,6 +2,7 @@
  * This file is part of the Sofia-SIP package
  *
  * Copyright (C) 2006 Nokia Corporation.
+ * Copyright (C) 2006 Dimitri E. Prado.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -28,6 +29,10 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>
  * @author Mikko Haataja
+ * @author Kai Vehmanen <kai.vehmanen@nokia.com> 
+ *         (work on the win32 nameserver discovery) 
+ * @author Dimitri E. Prado 
+ *         (initial version of win32 nameserver discovery)
  *
  * @todo The resolver should allow handling arbitrary records, too.
  */
@@ -107,6 +112,11 @@ struct sockaddr_storage {
 #else
 #define va_copy(dst, src) (memcpy(&(dst), &(src), sizeof (va_list)))
 #endif
+
+/**
+ * How often to recheck nameserver information (seconds).
+ */
+#define SRES_UPDATE_INTERVAL_SECS        180
 
 void sres_cache_clean(sres_cache_t *cache, time_t now);
 
@@ -446,6 +456,10 @@ static int m_get_domain(char *d, int n, sres_message_t *m, int indirected);
 #define SU_LOG sresolv_log
 
 #include <sofia-sip/su_debug.h>
+
+#ifdef _WIN32
+#include <winreg.h>
+#endif
 
 /**@var SRESOLV_DEBUG
  *
@@ -1673,12 +1687,157 @@ int sres_resolver_update(sres_resolver_t *res, int always)
   res->res_n_servers = sres_servers_count(servers);
   res->res_servers = servers;
 
-  c->c_update = res->res_now + 5; /* Do not try to read for 5 sec?  */
+  c->c_update = res->res_now + SRES_UPDATE_INTERVAL_SECS; /* Do not try to read for 5 sec?  */
   
   sres_servers_unref(res, old_servers);
   su_home_unref(previous->c_home);
 
   return 0;
+}
+
+#if _WIN32
+
+/** Number of octets to read from a registry key at a time */
+#define QUERY_DATALEN         1024
+#define MAX_DATALEN           65535
+
+/**
+ * Parses name servers listed in registry key 'key+lpValueName'. The
+ * key is expected to contain a whitespace separate list of
+ * name server IP addresses.
+ *
+ * @return number of server addresses added
+ */ 
+static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCTSTR lpValueName)
+{
+  su_home_t *home = c->c_home;
+  su_strlst_t *reg_dns_list;
+  char *name_servers = su_alloc(home, QUERY_DATALEN);
+  int name_servers_length = QUERY_DATALEN;
+  int ret, servers_added = 0;
+
+  /* get name servers and ... */
+  while((ret = RegQueryValueEx(key, 
+			       lpValueName, 
+			       NULL, NULL, 
+			       name_servers, 
+			       &name_servers_length)) == ERROR_MORE_DATA) {
+    name_servers_length += QUERY_DATALEN;
+
+    /* sanity check, upper limit for memallocs */
+    if (name_servers_length > MAX_DATALEN) break;
+
+    name_servers = su_realloc(home, name_servers, name_servers_length);
+  }
+
+  /* if reading the key was succesful, continue */
+  if (ret == ERROR_SUCCESS) {
+    if (name_servers[0]){
+      int i;
+
+      /* add to list */
+      reg_dns_list = su_strlst_split(home, name_servers, " ");
+	    
+      for(i = 0 ; i < su_strlst_len(reg_dns_list); i++) {
+	const char *item = su_strlst_item(reg_dns_list, i);
+	SU_DEBUG_3(("Adding nameserver: %s (key=%s)\n", item, (char*)lpValueName));
+	sres_parse_nameserver(c, item);
+	++servers_added;
+      }
+	    
+      su_strlst_destroy(reg_dns_list);
+
+    }
+  }
+
+  su_free(home, name_servers);
+
+  return servers_added;
+}
+
+#endif /* _WIN32 */
+
+/**
+ * Discover system nameservers from Windows registry.
+ *
+ * Refs:
+ *  - http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sysinfo/base/regqueryvalueex.asp
+ *  - http://support.microsoft.com/default.aspx?scid=kb;en-us;120642
+ *  - http://support.microsoft.com/kb/314053/EN-US/
+ */
+static int sres_parse_win32_reg(sres_config_t *c)
+{
+  int ret = -1;
+
+#ifdef _WIN32
+
+#define MAX_KEY_LEN           255
+#define MAX_VALUE_NAME_LEN    16383
+
+  su_home_t *home = c->c_home;
+  HKEY key_handle, interface_key_handle;  
+  FILETIME ftime;
+  int index, i, found = 0;
+  char *interface_guid = su_alloc(home, MAX_VALUE_NAME_LEN);
+  int guid_size = MAX_VALUE_NAME_LEN;
+
+  /* step 1: find interface specific nameservers */
+
+  /* open the 'Interfaces' registry Key */
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
+		   "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces", 
+		   0, KEY_READ, &key_handle)) {
+    SU_DEBUG_2(("RegOpenKeyEx failed\n"));
+  } else {
+    index = 0;
+    /* for each interface listed ... */
+    while (RegEnumKeyEx(key_handle, index,
+			interface_guid, &guid_size,
+			NULL,NULL,0,&ftime) == ERROR_SUCCESS){
+      if (RegOpenKeyEx(key_handle, interface_guid,
+		       0, KEY_READ, 
+		       &interface_key_handle) == ERROR_SUCCESS) {
+
+	/* note: 'NameServer' is preferred over 'DhcpNameServer' */
+	found += sres_parse_win32_reg_parse_dnsserver(c, interface_key_handle, "NameServer");
+	if (found == 0) 
+	  found += sres_parse_win32_reg_parse_dnsserver(c, interface_key_handle, "DhcpNameServer");
+
+	RegCloseKey(interface_key_handle);
+      } else{
+	SU_DEBUG_2(("interface RegOpenKeyEx failed\n"));
+      }
+      index++;
+      guid_size = 64;
+    }
+    RegCloseKey(key_handle);
+  }
+
+  /* step 2: if no interface-specific nameservers are found, 
+   *         check for system-wide nameservers */
+  if (found == 0) {
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
+		     "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters", 
+		     0, KEY_READ, &key_handle)) {
+      SU_DEBUG_2(("RegOpenKeyEx failed (2)\n"));
+    } else {
+      found += sres_parse_win32_reg_parse_dnsserver(c, key_handle, "NameServer");
+      if (found == 0) 
+	found += sres_parse_win32_reg_parse_dnsserver(c, key_handle, "DhcpNameServer");
+      RegCloseKey(key_handle);
+    }
+  }
+
+  SU_DEBUG_3(("Total of %d name servers found from win32 registry.\n", found));
+
+  /* return success if servers found */
+  if (found) ret = 0;
+
+  su_free(home, interface_guid);
+
+#endif /* _WIN32 */
+
+  return ret;
 }
 
 /** Parse /etc/resolv.conf file.
@@ -1696,14 +1855,33 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res)
 
   if (c) {
     FILE *f;
-
+    int i, success = 0;
+    
     f = fopen(c->c_filename = res->res_cnffile, "r");
 
-    if (sres_parse_config(c, f) < 0)
-      su_home_unref((void *)c), c = NULL;
+    if (sres_parse_config(c, f) == 0)
+      ++success;
 
     if (f)
       fclose(f);
+    
+#ifndef _WIN32
+      /* note: no 127.0.0.1 on win32 systems */
+    if (c->c_nameservers[0] == NULL)
+      sres_parse_nameserver(c, "127.0.0.1");
+#endif
+
+    /* on win32, query the registry for nameservers */
+    if (sres_parse_win32_reg(c) == 0) 
+      ++success;
+      
+    for (i = 0; c->c_nameservers[i] && i < SRES_MAX_NAMESERVERS; i++) {
+      struct sockaddr_in *sin = (void *)c->c_nameservers[i]->ns_addr;
+      sin->sin_port = htons(c->c_port);
+    }
+
+    if (!success)
+      su_home_unref((void *)c), c = NULL;
   }
 
   return c;
@@ -1717,7 +1895,7 @@ int sres_parse_config(sres_config_t *c, FILE *f)
   char const *localdomain;
   char *search = NULL, *domain = NULL;
   char buf[1025];
-  int i;
+  int i = 0;
 
   localdomain = getenv("LOCALDOMAIN");
 
@@ -1808,14 +1986,6 @@ int sres_parse_config(sres_config_t *c, FILE *f)
 
   sres_parse_options(c, getenv("RES_OPTIONS"));
     
-  if (c->c_nameservers[0] == NULL)
-    sres_parse_nameserver(c, "127.0.0.1");
-
-  for (i = 0; c->c_nameservers[i] && i < SRES_MAX_NAMESERVERS; i++) {
-    struct sockaddr_in *sin = (void *)c->c_nameservers[i]->ns_addr;
-    sin->sin_port = htons(c->c_port);
-  }
-
   return i;
 }
 

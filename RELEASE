@@ -59,6 +59,9 @@ API/ABI changes and versioning
 - Added --enable-sctp to configure; fixed some SCTP problems,
   (but not all)
 
+- On win32 platform, clients need to link against the "advapi32" 
+  system library.
+
 Contributors to this release
 ----------------------------
 
@@ -68,6 +71,24 @@ Contributors to this release
  - name of the contributor should be enough
 /> 
 
+- Dimitri E. Prado: Initial patch for win32 DNS 
+  server discovery.
+
+Notes on new features
+---------------------
+A
+<information about major new features
+ - new/changed/removed functionality
+ - links to further documentation
+/> 
+
+- DNS server discovery support added for win32. Sofia-SIP is now able
+  to get a list of configured nameservers from the Windows
+  registry database (similar to /etc/resolv.conf on UNIX systems). Closes
+  sourceforge.net ticket #1445560.
+
+- The 'sip_options' tool has been added to win32 workspace 
+  as an example application for the library.  
 
 Bugs fixed in this release
 --------------------------
