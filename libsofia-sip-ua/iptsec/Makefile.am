@@ -33,8 +33,8 @@ BUILT_SOURCES = 	auth_tag_ref.c
 
 nobase_include_sofia_HEADERS = \
 			sofia-sip/auth_client.h sofia-sip/auth_digest.h \
-			sofia-sip/auth_module.h sofia-sip/auth_plugin.h $(NTLM_HDR)
-
+			sofia-sip/auth_module.h sofia-sip/auth_plugin.h \
+			$(NTLM_HEADER)
 
 libiptsec_la_SOURCES = 	iptsec_debug.h \
 			auth_client.c auth_digest.c \
@@ -47,6 +47,9 @@ if HAVE_NTLM
 NTLM_HEADER = sofia-sip/auth_ntlm.h
 NTLM_SOURCE = auth_ntlm.c
 endif
+
+EXTRA_libiptsec_la_SOURCES = \
+			sofia-sip/auth_ntlm.h auth_ntlm.c
 
 SIPSOURCES = 		auth_module_sip.c
 HTTPSOURCES = 		auth_module_http.c 
