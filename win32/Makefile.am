@@ -1,3 +1,12 @@
+#
+# Makefile.am for sofia-sip/win32
+#
+# This is used for including win32 files in dist
+#
+# Copyright (C) 2005,2006 Nokia Corporation
+# Contact: Pekka Pessi <pekka.pessi@nokia.com>
+# Licensed under LGPL. See file COPYING.
+#
 # ref: http://www.gnu.org/software/automake/manual/automake.html
 
 # ----------------------------------------------------------------------

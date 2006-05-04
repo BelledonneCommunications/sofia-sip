@@ -1,3 +1,10 @@
+#
+# Makefile.am for sofia-sip package
+#
+# Copyright (C) 2005,2006 Nokia Corporation
+# Contact: Pekka Pessi <pekka.pessi@nokia.com>
+# Licensed under LGPL. See file COPYING.
+
 AUTOMAKE_OPTIONS = foreign 1.6.1
 
 SUBDIRS = libsofia-sip-ua $(GLIB_SUBDIRS) utils packages

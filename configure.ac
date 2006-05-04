@@ -1,3 +1,7 @@
+dnl Copyright (C) 2005-2006 Nokia Corporation
+dnl Contact: Pekka Pessi <pekka.pessi@nokia.com>
+dnl Licensed under LGPL. See file COPYING.
+
 dnl 
 dnl ref: http://www.gnu.org/software/autoconf/manual/autoconf.info.gz
 dnl

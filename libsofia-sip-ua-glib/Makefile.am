@@ -1,5 +1,5 @@
 #
-# Makefile.am for libsofia-sip-ua-glib module
+# Makefile.am for sofia-sip/libsofia-sip-ua-glib
 #
 # Copyright (C) 2006 Nokia Corporation
 # Contact: Pekka Pessi <pekka.pessi@nokia.com>
