@@ -30,6 +30,7 @@ EXTRA_DIST = SofiaSIP.dsw \
 	tests/torture_rbtree/torture_rbtree.dsp \
 	tests/torture_su_bm/torture_su_bm.dsp \
 	tests/torture_su_port/torture_su_port.dsp \
+	utils/sip_options/sip_options.dsp \
 	$(PTHREAD_DIST) \
 	README.txt \
 	autogen.cmd build_sources.cmd version_files.cmd version.awk \

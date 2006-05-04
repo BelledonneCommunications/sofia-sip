@@ -1,3 +1,7 @@
+2006-05-03  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Added utils/sip_options example application to SofiaSIP.dsw.
+
 2006-04-17  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
   * Added test_tport.dsp to SofiaSIP.dsw
