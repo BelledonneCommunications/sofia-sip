@@ -664,7 +664,7 @@ sres_resolver_new_internal(char const *conf_file_path,
     perror("sres: res_qtable_resize");
   }
   else if (sres_resolver_update(res, 1) < 0) {
-    perror("sres: res_qtable_resize");
+    perror("sres: sres_resolver_update");
   }
   else {
     return res;
@@ -1859,8 +1859,7 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res)
     
     f = fopen(c->c_filename = res->res_cnffile, "r");
 
-    if (sres_parse_config(c, f) == 0)
-      ++success;
+    sres_parse_config(c, f);
 
     if (f)
       fclose(f);
@@ -1879,14 +1878,16 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res)
       struct sockaddr_in *sin = (void *)c->c_nameservers[i]->ns_addr;
       sin->sin_port = htons(c->c_port);
     }
-
-    if (!success)
-      su_home_unref((void *)c), c = NULL;
   }
 
   return c;
 }
 
+/** Parse config file. 
+ *
+ * @return Number of search domains, if successful.
+ * @retval -1 upon an error (never happens).
+ */
 static
 int sres_parse_config(sres_config_t *c, FILE *f)
 {
