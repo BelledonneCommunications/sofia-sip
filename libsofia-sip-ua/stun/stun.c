@@ -1690,7 +1690,7 @@ static void stun_tls_connect_timer_cb(su_root_magic_t *magic,
 
   enter;
 
-  su_destroy_timer(t);
+  su_timer_destroy(t);
   if (t == sd->sd_timer) {
     sd->sd_timer = NULL;
   }
