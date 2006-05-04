@@ -75,7 +75,7 @@
 typedef struct outbound_connect outbound_connect;
 typedef struct outbound_owner_vtable outbound_owner_vtable;
 
-int outbound_connect_init(outbound_connect *ru,
+int outbound_connect_init(outbound_connect *oc,
 			  outbound_owner_vtable const *owner_methods,
 			  su_root_t *root,
 			  nta_agent_t *agent,
@@ -88,17 +88,17 @@ int outbound_connect_set_options(outbound_connect *oc,
 				 unsigned dgram_interval,
 				 unsigned stream_interval);
 
-int outbound_connect_set_features(outbound_connect *ru, char *features);
+int outbound_connect_set_features(outbound_connect *oc, char *features);
 
-int outbound_connect_check_for_nat(struct outbound_connect *ru,
+int outbound_connect_check_for_nat(struct outbound_connect *oc,
 				 nta_outgoing_t *orq,
 				 sip_t const *sip);
 
-int outbound_connect_contacts_from_via(outbound_connect *ru,
+int outbound_connect_contacts_from_via(outbound_connect *oc,
 				     sip_via_t const *via,
 				     sip_via_t const *pair);
 
-int outbound_connect_set_contact(struct outbound_connect *ru,
+int outbound_connect_set_contact(struct outbound_connect *oc,
 			       sip_contact_t *m);
 
 int outbound_connects_from_via(struct outbound_connect **list,
@@ -106,7 +106,7 @@ int outbound_connects_from_via(struct outbound_connect **list,
 			     sip_via_t const *via,
 			     int public);
 
-int outbound_connect_set_contact_by_aor(struct outbound_connect *ru,
+int outbound_connect_set_contact_by_aor(struct outbound_connect *oc,
 				      url_t const *aor,
 				      outbound_connect const *defaults);
 
@@ -116,11 +116,11 @@ outbound_connect *outbound_connect_by_aor(outbound_connect const *usages,
 
 int outbound_connect_gruuize(struct outbound_connect *oc, sip_t const *sip);
 
-void outbound_connect_start_keepalive(struct outbound_connect *ru,
+void outbound_connect_start_keepalive(struct outbound_connect *oc,
 				      unsigned interval,
 				      nta_outgoing_t *register_trans);
 
-void outbound_connect_stop_keepalive(struct outbound_connect *ru);
+void outbound_connect_stop_keepalive(struct outbound_connect *oc);
 
 int outbound_connect_check_accept(sip_accept_t const *accept);
 
@@ -128,9 +128,9 @@ int outbound_connect_process_options(struct outbound_connect *usages,
 				     nta_incoming_t *irq,
 				     sip_t const *sip);
 
-sip_contact_t const *outbound_connect_contact(outbound_connect const *ru);
+sip_contact_t const *outbound_connect_contact(outbound_connect const *oc);
 
-sip_route_t const *outbound_connect_route(outbound_connect const *ru);
+sip_route_t const *outbound_connect_route(outbound_connect const *oc);
 
 char const * const outbound_connect_content_type;
 nua_usage_class const *nua_outbound_connect;
@@ -138,13 +138,13 @@ nua_usage_class const *nua_outbound_connect;
 struct outbound_owner_vtable
 {
   int oo_size;
-  int (*oo_status)(nua_owner_t *, outbound_connect *ru,
+  int (*oo_status)(nua_owner_t *, outbound_connect *oc,
 		   int status, char const *phrase,
 		   tag_type_t tag, tag_value_t value, ...);
-  int (*oo_probe_error)(nua_owner_t *, outbound_connect *ru,
+  int (*oo_probe_error)(nua_owner_t *, outbound_connect *oc,
 			int status, char const *phrase,
 			tag_type_t tag, tag_value_t value, ...);
-  int (*oo_keepalive_error)(nua_owner_t *, outbound_connect *ru,
+  int (*oo_keepalive_error)(nua_owner_t *, outbound_connect *oc,
 			    int status, char const *phrase,
 			    tag_type_t tag, tag_value_t value, ...);
   int (*oo_credentials)(nua_owner_t *, auth_client_t **auc);
@@ -209,7 +209,6 @@ struct outbound_connect {
    *   up if OPTIONS probe fails.
    */
   unsigned oc_once_validated:1;
-
   unsigned :0;
 
   tport_t *oc_tport;		/**< Transport used when registered */
@@ -229,13 +228,14 @@ struct outbound_connect {
   void *oc_stun;		/**< Stun context */
   void *oc_upnp;		/**< UPnP context  */
 
-  char *oc_sipstun;		/**< Stun server usable for keep-alives */
-  unsigned oc_keepalive;	/**< Interval. */
-  su_timer_t *oc_kalt;		/**< Keep-alive timer */
-  msg_t *oc_kalmsg;		/**< Keep-alive OPTIONS message */
-  nta_outgoing_t *oc_kalo;	/**< Keep-alive OPTIONS transaction */
-  auth_client_t *oc_auc[1];	/**< Authenticator for OPTIONS */
-
+  struct {
+    char *sipstun;		/**< Stun server usable for keep-alives */
+    unsigned interval;		/**< Interval. */
+    su_timer_t *timer;		/**< Keep-alive timer */
+    msg_t *msg;			/**< Keep-alive OPTIONS message */
+    nta_outgoing_t *orq;	/**< Keep-alive OPTIONS transaction */
+    auth_client_t *auc[1];	/**< Authenticator for OPTIONS */
+  } oc_keepalive;		/**< Keepalive informatio */
 #if HAVE_SIGCOMP
   struct sigcomp_compartment *oc_compartment;
 #endif
@@ -1365,15 +1365,17 @@ void outbound_connect_start_keepalive(struct outbound_connect *oc,
 				      unsigned interval,
 				      nta_outgoing_t *register_transaction)
 {
-  if (oc->oc_kalt)
-    su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
+  if (oc->oc_keepalive.timer)
+    su_timer_destroy(oc->oc_keepalive.timer), oc->oc_keepalive.timer = NULL;
 
   if (interval)
-    oc->oc_kalt = su_timer_create(su_root_task(oc->oc_root), interval);
+    oc->oc_keepalive.timer = 
+      su_timer_create(su_root_task(oc->oc_root), interval);
 
-  oc->oc_keepalive = interval;
+  oc->oc_keepalive.interval = interval;
 
-  if (!oc->oc_validated && oc->oc_sipstun && 0) { /* Disable stun now */
+  if (!oc->oc_validated && oc->oc_keepalive.sipstun && 0) {
+    /* Stun is disabled for now */
     nta_tport_keepalive(register_transaction);
   }
   else {
@@ -1390,16 +1392,16 @@ void outbound_connect_start_keepalive(struct outbound_connect *oc,
 
 void outbound_connect_stop_keepalive(struct outbound_connect *oc)
 {
-  oc->oc_keepalive = 0;
+  oc->oc_keepalive.interval = 0;
 
-  if (oc->oc_kalt)
-    su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
+  if (oc->oc_keepalive.timer)
+    su_timer_destroy(oc->oc_keepalive.timer), oc->oc_keepalive.timer = NULL;
 
-  if (oc->oc_kalo)
-    nta_outgoing_destroy(oc->oc_kalo), oc->oc_kalo = NULL;
+  if (oc->oc_keepalive.orq)
+    nta_outgoing_destroy(oc->oc_keepalive.orq), oc->oc_keepalive.orq = NULL;
 
-  if (oc->oc_kalmsg)
-    msg_destroy(oc->oc_kalmsg), oc->oc_kalmsg = NULL;
+  if (oc->oc_keepalive.msg)
+    msg_destroy(oc->oc_keepalive.msg), oc->oc_keepalive.msg = NULL;
 }
 
 /** @internal Create a message template for keepalive. */
@@ -1437,8 +1439,8 @@ static int create_keepalive_message(struct outbound_connect *oc,
       msg_prepare(msg) < 0)
     return msg_destroy(msg), -1;
 
-  previous = oc->oc_kalmsg;
-  oc->oc_kalmsg = msg;
+  previous = oc->oc_keepalive.msg;
+  oc->oc_keepalive.msg = msg;
   msg_destroy(previous);
 
   return 0;
@@ -1447,29 +1449,36 @@ static int create_keepalive_message(struct outbound_connect *oc,
 static int keepalive_options(outbound_connect *oc)
 {
   msg_t *req;
+  sip_t *sip;
 
-  if (oc->oc_kalo)
+  if (oc->oc_keepalive.orq)
     return 0;
 
   if (oc->oc_registered && !oc->oc_validated)
     return keepalive_options_with_registration_probe(oc);
 
-  req = msg_copy(oc->oc_kalmsg);
+  req = msg_copy(oc->oc_keepalive.msg);
   if (!req)
     return -1;
+  sip = sip_object(req); assert(sip); assert(sip->sip_request);
 
   if (nta_msg_request_complete(req, nta_default_leg(oc->oc_nta),
 			       SIP_METHOD_UNKNOWN, NULL) < 0)
     return msg_destroy(req), -1;
 
-  oc->oc_kalo = nta_outgoing_mcreate(oc->oc_nta,
-				     response_to_keepalive_options,
-				     (nua_owner_t *)oc,
-				     NULL,
-				     req,
-				     TAG_END());
+  if (oc->oc_keepalive.auc[0])
+    auc_authorization(oc->oc_keepalive.auc, req, (void *)sip,
+		      "OPTIONS", sip->sip_request->rq_url, sip->sip_payload);
 
-  if (!oc->oc_kalo)
+  oc->oc_keepalive.orq = 
+    nta_outgoing_mcreate(oc->oc_nta,
+			 response_to_keepalive_options,
+			 (nua_owner_t *)oc,
+			 NULL,
+			 req,
+			 TAG_END());
+
+  if (!oc->oc_keepalive.orq)
     return msg_destroy(req), -1;
 
   return 0;
@@ -1481,11 +1490,14 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
 {
   outbound_connect *oc = (outbound_connect *)oc_casted_as_owner;
   int status = 408;
+  char const *phrase = sip_408_Request_timeout;
   int binding_check;
   int challenged = 0, credentials = 0;
   
-  if (sip && sip->sip_status)
+  if (sip && sip->sip_status) {
     status = sip->sip_status->st_status;
+    phrase = sip->sip_status->st_phrase;
+  }
 
   if (status == 100) {
     /* This probably means that we are in trouble. whattodo, whattodo */
@@ -1496,19 +1508,22 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
 
   if (status == 401 || status == 407) {
     if (sip->sip_www_authenticate)
-      challenged += auc_challenge(oc->oc_auc, (su_home_t *)oc->oc_owner,
+      challenged += auc_challenge(oc->oc_keepalive.auc,
+				  (su_home_t *)oc->oc_owner,
 				  sip->sip_www_authenticate,
 				  sip_authorization_class) > 0;
     if (sip->sip_proxy_authenticate)
-      challenged += auc_challenge(oc->oc_auc, (su_home_t *)oc->oc_owner,
+      challenged += auc_challenge(oc->oc_keepalive.auc,
+				  (su_home_t *)oc->oc_owner,
 				  sip->sip_proxy_authenticate,
 				  sip_proxy_authorization_class) > 0;
     if (oc->oc_oo->oo_credentials)
-      credentials = oc->oc_oo->oo_credentials(oc->oc_owner, oc->oc_auc);
+      credentials = oc->oc_oo->oo_credentials(oc->oc_owner, 
+					      oc->oc_keepalive.auc);
   }
 
-  if (orq == oc->oc_kalo)
-    oc->oc_kalo = NULL;
+  if (orq == oc->oc_keepalive.orq)
+    oc->oc_keepalive.orq = NULL;
   nta_outgoing_destroy(orq);
 
   binding_check = outbound_connect_nat_detect(oc, sip);
@@ -1525,9 +1540,9 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
     }
   }
 
-  if (status == 408 || sip == NULL) {
+  if (status == 408) {
     SU_DEBUG_1(("outbound_connect(%p): keepalive timeout\n", oc));
-    /* XXX - do something about it! */
+    oc->oc_oo->oo_probe_error(oc->oc_owner, oc, status, phrase, TAG_END());
     return 0;
   }
 
@@ -1544,7 +1559,7 @@ static int response_to_keepalive_options(nua_owner_t *oc_casted_as_owner,
     oc->oc_validated = oc->oc_once_validated = 1;
   }
 
-  su_timer_set(oc->oc_kalt, keepalive_timer, oc);
+  su_timer_set(oc->oc_keepalive.timer, keepalive_timer, oc);
 
   return 0;
 }
@@ -1569,14 +1584,14 @@ static int keepalive_options_with_registration_probe(outbound_connect *oc)
   sip_t *sip;
   void *request_uri;
 
-  if (oc->oc_kalo)
+  if (oc->oc_keepalive.orq)
     return 0;
 
-  req = msg_copy(oc->oc_kalmsg);
+  req = msg_copy(oc->oc_keepalive.msg);
   if (!req)
     return -1;
 
-  sip = sip_object(req);
+  sip = sip_object(req); assert(sip);
   request_uri = sip->sip_to->a_url;
 
   if (nta_msg_request_complete(req, nta_default_leg(oc->oc_nta),
@@ -1590,17 +1605,23 @@ static int keepalive_options_with_registration_probe(outbound_connect *oc)
     msg_header_insert(req, NULL, (void *)ac);
   }
 
-  oc->oc_kalo = nta_outgoing_mcreate
-    (oc->oc_nta,
-     response_to_keepalive_options,
-     (nua_owner_t *)oc,
-     NULL,
-     req,
-     SIPTAG_SUBJECT_STR("REGISTRATION PROBE"),
-     SIPTAG_MAX_FORWARDS(NONE),	/* Remove 0 used in ordinary keepalives */
-     TAG_END());
+  if (oc->oc_keepalive.auc[0])
+    auc_authorization(oc->oc_keepalive.auc, req, (void *)sip,
+		      "OPTIONS", request_uri, sip->sip_payload);
 
-  if (!oc->oc_kalo)
+  oc->oc_keepalive.orq = 
+    nta_outgoing_mcreate(oc->oc_nta,
+			 response_to_keepalive_options,
+			 (nua_owner_t *)oc,
+			 NULL,
+			 req,
+			 SIPTAG_SUBJECT_STR("REGISTRATION PROBE"),
+			 /* NONE is used to remove 
+			    Max-Forwards: 0 found in ordinary keepalives */
+			 SIPTAG_MAX_FORWARDS(NONE),	
+			 TAG_END());
+
+  if (!oc->oc_keepalive.orq)
     return msg_destroy(req), -1;
 
   return 0;
@@ -1999,14 +2020,14 @@ void nua_outbound_connect_remove(nua_handle_t *nh,
 #endif
 
   /* XXX - free headers, too */
-  if (oc->oc_kalt)
-    su_timer_destroy(oc->oc_kalt), oc->oc_kalt = NULL;
+  if (oc->oc_keepalive.timer)
+    su_timer_destroy(oc->oc_keepalive.timer), oc->oc_keepalive.timer = NULL;
 
-  if (oc->oc_kalo)
-    nta_outgoing_destroy(oc->oc_kalo), oc->oc_kalo = NULL;
+  if (oc->oc_keepalive.orq)
+    nta_outgoing_destroy(oc->oc_keepalive.orq), oc->oc_keepalive.orq = NULL;
 
-  if (oc->oc_kalmsg)
-    msg_destroy(oc->oc_kalmsg), oc->oc_kalmsg = NULL;
+  if (oc->oc_keepalive.msg)
+    msg_destroy(oc->oc_keepalive.msg), oc->oc_keepalive.msg = NULL;
 
   ds->ds_has_register = 0;	/* There can be only one */
 }

@@ -107,7 +107,7 @@ int nua_stack_set_defaults(nua_handle_t *nh,
 
   NHP_SET(nhp, outbound, su_strdup(home, "natify"));
 
-  NHP_SET(nhp, keepalive, 120);
+  NHP_SET(nhp, keepalive, 120000);
 
   if (!nhp->nhp_allow ||
       !nhp->nhp_supported ||

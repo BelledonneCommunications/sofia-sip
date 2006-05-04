@@ -921,7 +921,7 @@ extern tag_typedef_t nutag_auth;
 #define NUTAG_AUTH_REF(x)	    nutag_auth_ref, tag_str_vr(&(x))
 extern tag_typedef_t nutag_auth_ref;
 
-/** Keepalive interval in seconds.
+/** Keepalive interval in milliseconds.
  *
  * @par Used with
  *    nua_register()   \n
@@ -935,7 +935,7 @@ extern tag_typedef_t nutag_auth_ref;
  *
  * @par Values 
  *   - 0 - disable keepalives
- *   - 90 - default value (90 seconds)
+ *   - 120000 - default value (120000 milliseconds, 120 seconds)
  *
  * Corresponding tag taking reference parameter is
  * NUTAG_KEEPALIVE_REF()
@@ -959,7 +959,10 @@ extern tag_typedef_t nutag_keepalive_ref;
  *    unsigned int
  *
  * @par Values 
- *   Transport-level keepalive interval for streams.
+ *
+ * Transport-level keepalive interval for streams in milliseconds. If this
+ * parameter specified, it takes presedence over value given in
+ * NUTAG_KEEPALIVE().
  *
  * Corresponding tag taking reference parameter is
  * NUTAG_KEEPALIVE_STREAM_REF()
