@@ -271,6 +271,7 @@ struct sres_message {
 #define sr_class    sr_record->r_class
 #define sr_ttl      sr_record->r_ttl
 #define sr_rdlen    sr_record->r_rdlen
+#define sr_parsed   sr_record->r_parsed
 #define sr_rdata    sr_generic->g_data
 
 enum {
@@ -410,32 +411,37 @@ static char const *sres_toplevel(char buf[], size_t bsize, char const *domain);
 
 static sres_record_t *sres_create_record(sres_resolver_t *, sres_message_t *m);
 
-static void sres_init_rr_soa(sres_resolver_t *res, sres_soa_record_t *rr,
-			     sres_message_t *m);
-static void sres_init_rr_a(sres_resolver_t *res, sres_a_record_t *rr,
-			   sres_message_t *m);
-static void sres_init_rr_a6(sres_resolver_t *res, sres_a6_record_t *rr,
-			    sres_message_t *m);
-static void sres_init_rr_aaaa(sres_resolver_t *res, sres_aaaa_record_t *rr,
-			      sres_message_t *m);
-static void sres_init_rr_cname(sres_resolver_t *res, sres_cname_record_t *rr,
-			       sres_message_t *m);
-static void sres_init_rr_ptr(sres_resolver_t *res, sres_ptr_record_t *rr,
-			     sres_message_t *m);
-static void sres_init_rr_srv(sres_resolver_t *res, sres_srv_record_t *rr,
-			     sres_message_t *m);
-static void sres_init_rr_naptr(sres_resolver_t *res, sres_naptr_record_t *rr,
-			       sres_message_t *m);
+static sres_record_t *sres_init_rr_soa(sres_cache_t *cache,
+				       sres_soa_record_t *,
+				       sres_message_t *m);
+static sres_record_t *sres_init_rr_a(sres_cache_t *cache,
+				     sres_a_record_t *,
+				     sres_message_t *m);
+static sres_record_t *sres_init_rr_a6(sres_cache_t *cache,
+				      sres_a6_record_t *,
+				      sres_message_t *m);
+static sres_record_t *sres_init_rr_aaaa(sres_cache_t *cache,
+					sres_aaaa_record_t *,
+					sres_message_t *m);
+static sres_record_t *sres_init_rr_cname(sres_cache_t *cache,
+					 sres_cname_record_t *,
+					 sres_message_t *m);
+static sres_record_t *sres_init_rr_ptr(sres_cache_t *cache,
+				       sres_ptr_record_t *,
+				       sres_message_t *m);
+static sres_record_t *sres_init_rr_srv(sres_cache_t *cache,
+				       sres_srv_record_t *,
+				       sres_message_t *m);
+static sres_record_t *sres_init_rr_naptr(sres_cache_t *cache,
+					 sres_naptr_record_t *,
+					 sres_message_t *m);
+static sres_record_t *sres_init_rr_unknown(sres_cache_t *cache,
+					   sres_common_t *r,
+					   sres_message_t *m);
 
-static sres_record_t *sres_create_error_rr(sres_resolver_t *res,
+static sres_record_t *sres_create_error_rr(sres_cache_t *cache,
                                            sres_query_t const *q,
                                            uint16_t errcode);
-
-static int sres_get_domain(sres_resolver_t *res, char **buf, 
-                           sres_message_t *m);
-
-static int sres_get_string(sres_resolver_t *res, char **buf, 
-                           sres_message_t *m);
 
 static void m_put_uint16(sres_message_t *m, uint16_t h);
 static void m_put_uint32(sres_message_t *m, uint32_t w);
@@ -448,8 +454,9 @@ static uint16_t m_put_domain(sres_message_t *m,
 static uint32_t m_get_uint32(sres_message_t *m);
 static uint16_t m_get_uint16(sres_message_t *m);
 static uint8_t m_get_uint8(sres_message_t *m);
-static int m_get_string(char *d, int n, sres_message_t *m);
-static int m_get_domain(char *d, int n, sres_message_t *m, int indirected);
+
+static int m_get_string(char *d, int n, sres_message_t *m, uint16_t offset);
+static int m_get_domain(char *d, int n, sres_message_t *m, uint16_t offset);
 
 /* ---------------------------------------------------------------------- */
 
@@ -3085,7 +3092,7 @@ sres_decode_msg(sres_resolver_t *res,
   /* Scan resource records */
   for (i = 0; i < total; i++) {
     if (i < errorcount)
-      rr = error = sres_create_error_rr(res, query, err);
+      rr = error = sres_create_error_rr(res->res_cache, query, err);
     else
       rr = sres_create_record(res, m);
  
@@ -3105,7 +3112,7 @@ sres_decode_msg(sres_resolver_t *res,
 
   if (i < total) {
     for (i = 0; i < total; i++)
-      su_free(chome, answers[i]);
+      sres_cache_free_record(res->res_cache, answers[i]);
     su_free(chome, answers);
     return -1;
   }
@@ -3114,9 +3121,11 @@ sres_decode_msg(sres_resolver_t *res,
     rr = answers[i];
 
     if (i < m->m_ancount + errorcount)
+      /* Increase reference count of entry passed in answers */
       rr->sr_refcount++;
     else
-      answers[i] = NULL;
+      /* Do not pass extra records to user */
+      answers[i] = NULL;	
 
     sres_cache_store(res->res_cache, rr, res->res_now);
   }
@@ -3131,284 +3140,348 @@ sres_record_t *
 sres_create_record(sres_resolver_t *res, sres_message_t *m)
 {
   sres_cache_t *cache = res->res_cache;
-  sres_record_t *rr = NULL;
+  sres_record_t *sr, sr0[1];
 
-  uint16_t qtype, qclass, rdlen, m_size;
-  uint32_t ttl;
-  char name[1024];
-  int name_length;
+  uint16_t m_size;
+  char name[1025];
+  int len;
   char btype[8], bclass[8];
 
-  name_length = m_get_domain(name, sizeof(name), m, 0);	/* Name */
-  qtype = m_get_uint16(m);  /* Type */
-  qclass = m_get_uint16(m); /* Class */
-  ttl = m_get_uint32(m);    /* TTL */
-  rdlen = m_get_uint16(m);   /* rdlength */
-
+  sr = memset(sr0, 0, sizeof sr0);
+  
+  len = m_get_domain(sr->sr_name = name, sizeof(name) - 1, m, 0); /* Name */
+  sr->sr_type = m_get_uint16(m);  /* Type */
+  sr->sr_class = m_get_uint16(m); /* Class */
+  sr->sr_ttl = m_get_uint32(m);   /* TTL */
+  sr->sr_rdlen = m_get_uint16(m); /* rdlength */
+  sr->sr_parsed = 1;		
   if (m->m_error)
     goto error;
 
-  SU_DEBUG_9(("rr received %.*s %s %s %d rdlen=%d\n", name_length, name, 
-	      sres_record_type(qtype, btype), 
-	      sres_record_class(qclass, bclass), ttl, rdlen));
+  name[len] = 0;
 
-  if (m->m_offset + rdlen > m->m_size) {
+  SU_DEBUG_9(("RR received %s %s %s %d rdlen=%d\n", name,
+	      sres_record_type(sr->sr_type, btype),
+	      sres_record_class(sr->sr_class, bclass),
+	      sr->sr_ttl, sr->sr_rdlen));
+
+  if (m->m_offset + sr->sr_rdlen > m->m_size) {
     m->m_error = "truncated message";
     goto error;
   }
 
   m_size = m->m_size;
   /* limit m_size to indicated rdlen, check whether record is truncated */
-  m->m_size = m->m_offset + rdlen;
+  m->m_size = m->m_offset + sr->sr_rdlen;
 
-  rr = sres_cache_alloc_record(cache, name, name_length, qtype, rdlen);
-  if (rr == NULL) {
+  switch (sr->sr_type) {
+  case sres_type_soa:
+    sr = sres_init_rr_soa(cache, sr->sr_soa, m);
+    break;
+  case sres_type_a:
+    sr = sres_init_rr_a(cache, sr->sr_a, m);
+    break;
+  case sres_type_a6:
+    sr = sres_init_rr_a6(cache, sr->sr_a6, m);
+    break;
+  case sres_type_aaaa:
+    sr = sres_init_rr_aaaa(cache, sr->sr_aaaa, m);
+    break;
+  case sres_type_cname:
+    sr = sres_init_rr_cname(cache, sr->sr_cname, m);
+    break;
+  case sres_type_ptr:
+    sr = sres_init_rr_ptr(cache, sr->sr_ptr, m);
+    break;
+  case sres_type_srv:
+    sr = sres_init_rr_srv(cache, sr->sr_srv, m);
+    break;
+  case sres_type_naptr:
+    sr = sres_init_rr_naptr(cache, sr->sr_naptr, m);
+    break;
+  default:
+    sr = sres_init_rr_unknown(cache, sr->sr_record, m);
+    break;
+  }
+
+  if (m->m_error)
+    goto error;
+
+  if (sr == sr0)
+    sr = sres_cache_alloc_record(cache, sr, 0);
+
+  if (sr == NULL) {
     m->m_error = "memory exhausted";
     goto error;
   }
 
   /* Fill in the common fields */
-  rr->sr_type = qtype;
-  rr->sr_class = qclass;
-  rr->sr_ttl = ttl;
-  rr->sr_rdlen = rdlen;
-
-  switch(qtype) {
-  case sres_type_soa:
-    sres_init_rr_soa(res, rr->sr_soa, m);
-    break;
-  case sres_type_a:
-    sres_init_rr_a(res, rr->sr_a, m);
-    break;
-  case sres_type_a6:
-    sres_init_rr_a6(res, rr->sr_a6, m);
-    break;
-  case sres_type_aaaa:
-    sres_init_rr_aaaa(res, rr->sr_aaaa, m);
-    break;
-  case sres_type_cname:
-    sres_init_rr_cname(res, rr->sr_cname, m);
-    break;
-  case sres_type_ptr:
-    sres_init_rr_ptr(res, rr->sr_ptr, m);
-    break;
-  case sres_type_srv:
-    sres_init_rr_srv(res, rr->sr_srv, m);
-    break;
-  case sres_type_naptr:
-    sres_init_rr_naptr(res, rr->sr_naptr, m);
-    break;
-  default: /* copy the raw rdata to rr->r_data */
-    memcpy(rr->sr_rdata, m->m_data + m->m_offset, rdlen);
-    m->m_offset += rdlen;
-  }
-
   m->m_size = m_size;
 
-  if (!m->m_error)
-    return rr;
+  return sr;
 
  error:  
-  if (rr)
-    su_free(res->res_home, rr);
+  if (sr && sr != sr0)
+    sres_cache_free_record(cache, sr);
   SU_DEBUG_5(("%s: %s\n", "sres_create_record", m->m_error));
   return NULL;
 }
 
-static void
-sres_init_rr_soa(sres_resolver_t *res, 
-		 sres_soa_record_t *rr,
-		 sres_message_t *m)
+/** Decode SOA record */
+static sres_record_t *sres_init_rr_soa(sres_cache_t *cache,
+				       sres_soa_record_t *soa,
+				       sres_message_t *m)
 {
-  assert(rr->soa_record->r_size == sizeof(sres_soa_record_t));
+  uint16_t moffset, roffset;
+  int mnamelen, rnamelen;
 
-  sres_get_domain(res, &rr->soa_mname, m);
-  sres_get_domain(res, &rr->soa_rname, m);
-  rr->soa_serial = m_get_uint32(m);
-  rr->soa_refresh = m_get_uint32(m);
-  rr->soa_retry = m_get_uint32(m);
-  rr->soa_expire = m_get_uint32(m);
-  rr->soa_minimum = m_get_uint32(m);
-}
+  soa->soa_record->r_size = sizeof *soa;
 
-static void
-sres_init_rr_a(sres_resolver_t *res, 
-	       sres_a_record_t *rr,
-	       sres_message_t *m)
-{
-  assert(rr->a_record->r_size == sizeof(sres_a_record_t));
+  moffset = m->m_offset, mnamelen = m_get_domain(NULL, 0, m, 0) + 1;
+  roffset = m->m_offset, rnamelen = m_get_domain(NULL, 0, m, 0) + 1;
 
-  rr->a_addr.s_addr = htonl(m_get_uint32(m));
-}
-
-static void
-sres_init_rr_a6(sres_resolver_t *res,
-		sres_a6_record_t *rr,
-		sres_message_t *m)
-{
-  int suffix_length, i;
-
-  assert(rr->a6_record->r_size == sizeof(sres_a6_record_t));
-
-  rr->a6_prelen = m_get_uint8(m);
-
-  suffix_length = (128 - rr->a6_prelen) / 8;
-      
-  if ((128 - rr->a6_prelen) % 8 != 0)
-    suffix_length++;
-
-  for (i = 16 - suffix_length; i < 16; i++) {
-    if (i >= 0) {
-      rr->a6_suffix.u6_addr[i] = m_get_uint8(m);
-    }
-  }
-
-  if (suffix_length < 16)
-    sres_get_domain(res, &rr->a6_prename, m);
-}
-
-static void
-sres_init_rr_aaaa(sres_resolver_t *res,
-		  sres_aaaa_record_t *rr,
-		  sres_message_t *m)
-{
-  assert(rr->aaaa_record->r_size == sizeof(sres_aaaa_record_t));
-
-  if (m->m_offset + sizeof(rr->aaaa_addr) > m->m_size) {
-    m->m_error = "truncated message";
-    return;
-  }
-
-  memcpy(&rr->aaaa_addr, m->m_data + m->m_offset, sizeof(rr->aaaa_addr));
-
-  m->m_offset += sizeof(rr->aaaa_addr);
-}
-
-static void
-sres_init_rr_cname(sres_resolver_t *res,
-		   sres_cname_record_t *rr,
-		   sres_message_t *m)
-{
-  assert(rr->cn_record->r_size == sizeof(sres_cname_record_t));
-
-  sres_get_domain(res, &rr->cn_cname, m);
-}
-
-static void
-sres_init_rr_ptr(sres_resolver_t *res,
-		 sres_ptr_record_t *rr,
-		 sres_message_t *m)
-{
-  assert(rr->ptr_record->r_size == sizeof(sres_ptr_record_t));
-
-  sres_get_domain(res, &rr->ptr_domain, m);
-}
-
-static void
-sres_init_rr_srv(sres_resolver_t *res,
-		 sres_srv_record_t *rr,
-		 sres_message_t *m)
-{
-  assert(rr->srv_record->r_size == sizeof(sres_srv_record_t));
-
-  rr->srv_priority = m_get_uint16(m);
-  rr->srv_weight = m_get_uint16(m);
-  rr->srv_port = m_get_uint16(m);
-
-  sres_get_domain(res, &rr->srv_target, m);
-}
-
-static void
-sres_init_rr_naptr(sres_resolver_t *res,
-		   sres_naptr_record_t *rr,
-		   sres_message_t *m)
-{
-  assert(rr->na_record->r_size == sizeof(sres_naptr_record_t));
-
-  rr->na_order = m_get_uint16(m);
-  rr->na_prefer = m_get_uint16(m);
-
-  sres_get_string(res, &rr->na_flags, m);
-  sres_get_string(res, &rr->na_services, m);
-  sres_get_string(res, &rr->na_regexp, m);
-  sres_get_domain(res, &rr->na_replace, m);
-}
-
-static
-sres_record_t *
-sres_create_error_rr(sres_resolver_t *res,
-		     sres_query_t const *q,
-		     uint16_t errcode)
-{
-  sres_record_t *sr;
-  char buf[SRES_MAXDNAME];
-  char const *name;
-
-  name = sres_toplevel(buf, sizeof buf, q->q_name);
-  if (!name)
+  soa->soa_serial = m_get_uint32(m);
+  soa->soa_refresh = m_get_uint32(m);
+  soa->soa_retry = m_get_uint32(m);
+  soa->soa_expire = m_get_uint32(m);
+  soa->soa_minimum = m_get_uint32(m);
+  
+  if (m->m_error)
     return NULL;
 
-  sr = sres_cache_alloc_record(res->res_cache, name, strlen(name), q->q_type, 0);
+  soa = (void *)sres_cache_alloc_record(cache, (void *)soa,
+					mnamelen + rnamelen);
+
+  if (soa) {
+    char *mname, *rname;
+
+    assert(moffset > 0 && roffset > 0 && mnamelen > 1 && rnamelen > 1);
+
+    m_get_domain(mname = (char *)(soa + 1), mnamelen, m, moffset);
+    soa->soa_mname = mname;
+
+    m_get_domain(rname = mname + mnamelen, rnamelen, m, roffset);
+    soa->soa_rname = rname;
+  }
+
+  return (sres_record_t *)soa;
+}
+
+/** Decode A record */
+static sres_record_t *sres_init_rr_a(sres_cache_t *cache,
+				     sres_a_record_t *a,
+				     sres_message_t *m)
+{
+  a->a_record->r_size = sizeof *a;
+
+  a->a_addr.s_addr = htonl(m_get_uint32(m));
+
+  return (sres_record_t *)a;
+}
+
+/** Decode A6 record. See @RFC2874 */
+static sres_record_t *sres_init_rr_a6(sres_cache_t *cache,
+				      sres_a6_record_t *a6,
+				      sres_message_t *m)
+{
+
+  int suffixlen = 0, i;
+  int prefixlen = 0;
+  uint16_t offset;
+
+  a6->a6_record->r_size = sizeof *a6;
+
+  a6->a6_prelen = m_get_uint8(m);
+
+  if (a6->a6_prelen > 128) {
+    m->m_error = "Invalid prefix length in A6 record";
+    return NULL;
+  }
+
+  suffixlen = (128 + 7 - a6->a6_prelen) / 8;
+  for (i = 16 - suffixlen; i < 16; i++)
+    a6->a6_suffix.u6_addr[i] = m_get_uint8(m);
+
+  if (a6->a6_prelen > 0) {
+    /* Zero pad bits */
+    a6->a6_suffix.u6_addr[16 - suffixlen] &= 0xff >> (a6->a6_prelen & 7);
+
+    offset = m->m_offset, prefixlen = m_get_domain(NULL, 0, m, 0) + 1;
+
+    if (m->m_error)
+      return NULL;
+
+    a6 = (void *)sres_cache_alloc_record(cache, (void *)a6, prefixlen);
+    if (a6)
+      m_get_domain(a6->a6_prename = (char *)(a6 + 1), prefixlen, m, offset);
+  }
+
+  return (sres_record_t *)a6;
+}
+
+/** Decode AAAA record */
+static sres_record_t *sres_init_rr_aaaa(sres_cache_t *cache,
+					sres_aaaa_record_t *aaaa,
+					sres_message_t *m)
+{
+  aaaa->aaaa_record->r_size = sizeof *aaaa;
+
+  if (m->m_offset + sizeof(aaaa->aaaa_addr) <= m->m_size) {
+    memcpy(&aaaa->aaaa_addr, m->m_data + m->m_offset, sizeof(aaaa->aaaa_addr));
+    m->m_offset += sizeof(aaaa->aaaa_addr);
+  }
+  else
+    m->m_error = "truncated AAAA record";
+
+  return (sres_record_t *)aaaa;
+}
+
+/** Decode CNAME record */
+static sres_record_t *sres_init_rr_cname(sres_cache_t *cache,
+					 sres_cname_record_t *cn,
+					 sres_message_t *m)
+{
+  uint16_t offset;
+  int dlen;
+
+  cn->cn_record->r_size = sizeof *cn;
+
+  offset = m->m_offset, dlen = m_get_domain(NULL, 0, m, 0) + 1;
+
+  if (m->m_error)
+    return NULL;
+
+  cn = (void *)sres_cache_alloc_record(cache, (void *)cn, dlen);
+  if (cn)
+    m_get_domain(cn->cn_cname = (char *)(cn + 1), dlen, m, offset);
+
+  return (sres_record_t *)cn;
+}
+
+/** Decode PTR record */
+static sres_record_t *sres_init_rr_ptr(sres_cache_t *cache,
+				       sres_ptr_record_t *ptr,
+				       sres_message_t *m)
+{
+  uint16_t offset;
+  int dlen;
+
+  ptr->ptr_record->r_size = sizeof *ptr;
+
+  offset = m->m_offset, dlen = m_get_domain(NULL, 0, m, 0) + 1;
+
+  if (m->m_error)
+    return NULL;
+
+  ptr = (void *)sres_cache_alloc_record(cache, (void *)ptr, dlen);
+  if (ptr)
+    m_get_domain(ptr->ptr_domain = (char *)(ptr + 1), dlen, m, offset);
+
+  return (sres_record_t *)ptr;
+}
+
+/** Decode SRV record */
+static sres_record_t *sres_init_rr_srv(sres_cache_t *cache,
+				       sres_srv_record_t *srv,
+				       sres_message_t *m)
+{
+  uint16_t offset;
+  int dlen;
+
+  srv->srv_record->r_size = sizeof *srv;
+
+  srv->srv_priority = m_get_uint16(m);
+  srv->srv_weight = m_get_uint16(m);
+  srv->srv_port = m_get_uint16(m);
+  offset = m->m_offset, dlen = m_get_domain(NULL, 0, m, 0) + 1;
+  if (m->m_error)
+    return NULL;
   
-  if (sr) {
-    sr->sr_status = errcode;
-    sr->sr_type = q->q_type;
-    sr->sr_class = q->q_class;
-    sr->sr_ttl = 10 * 60;
-    /* sr->sr_ttl = 30; */
+  srv = (void *)sres_cache_alloc_record(cache, (void *)srv, dlen);
+  if (srv)
+    m_get_domain(srv->srv_target = (char *)(srv + 1), dlen, m, offset);
+
+  return (sres_record_t *)srv;
+}
+
+/** Decode NAPTR record */
+static sres_record_t *sres_init_rr_naptr(sres_cache_t *cache,
+					 sres_naptr_record_t *na,
+					 sres_message_t *m)
+{
+  uint16_t offset[4];
+  int len[4];
+
+  na->na_record->r_size = sizeof *na;
+
+  na->na_order = m_get_uint16(m);
+  na->na_prefer = m_get_uint16(m);
+
+  offset[0] = m->m_offset, len[0] = m_get_string(NULL, 0, m, 0) + 1;
+  offset[1] = m->m_offset, len[1] = m_get_string(NULL, 0, m, 0) + 1;
+  offset[2] = m->m_offset, len[2] = m_get_string(NULL, 0, m, 0) + 1;
+  offset[3] = m->m_offset, len[3] = m_get_domain(NULL, 0, m, 0) + 1;
+
+  if (m->m_error)
+    return NULL;
+
+  na = (void *)sres_cache_alloc_record(cache, (void *)na,
+				       len[0] + len[1] + len[2] + len[3]);
+  if (na) {
+    char *s = (char *)(na + 1);
+    m_get_string(na->na_flags = s, len[0], m, offset[0]), s += len[0];
+    m_get_string(na->na_services = s, len[1], m, offset[1]), s += len[1];
+    m_get_string(na->na_regexp = s, len[2], m, offset[2]), s += len[2];
+    m_get_domain(na->na_replace = s, len[3], m, offset[3]), s += len[3];
   }
 
-  return sr;
+  return (sres_record_t *)na;
+}
+
+/** Decode unknown record */
+static sres_record_t *sres_init_rr_unknown(sres_cache_t *cache,
+					   sres_common_t *r,
+					   sres_message_t *m)
+{
+  if (m->m_offset + r->r_rdlen > m->m_size)
+    m->m_error = "truncated record";
+
+  if (m->m_error)
+    return NULL;
+
+  r->r_size = sizeof *r;
+
+  r = (void *)sres_cache_alloc_record(cache, (void *)r, r->r_rdlen + 1);
+  if (r) {
+    char *data = (char *)(r + 1);
+
+    r->r_parsed = 0;
+
+    memcpy(data, m->m_data + m->m_offset, r->r_rdlen);
+    m->m_offset += r->r_rdlen;
+    data[r->r_rdlen] = 0;
+  }
+
+  return (sres_record_t *)r;
 }
 
 static
-int
-sres_get_domain(sres_resolver_t *res,
-		char **buf,
-		sres_message_t *m)
+sres_record_t *sres_create_error_rr(sres_cache_t *cache,
+				    sres_query_t const *q,
+				    uint16_t errcode)
 {
-  char name[1024];
-  int length = 0;
+  sres_record_t *sr, r[1];
 
-  assert(buf);
+  sr = memset(r, 0, sizeof *sr);
 
-  if (buf) {
-    length = m_get_domain(name, sizeof(name), m, 0);
-    *buf = su_zalloc(res->res_home, length + 1);
+  sr->sr_name = q->q_name;
+  sr->sr_size = sizeof *sr;
+  sr->sr_status = errcode;
+  sr->sr_type = q->q_type;
+  sr->sr_class = q->q_class;
+  sr->sr_ttl = 10 * 60;
 
-    assert(*buf);
-    if (*buf) {
-      memcpy(*buf, name, length);
-      *(*buf + length) = 0;
-    }
-  }
-
-  return length;
-}
-
-static
-int 
-sres_get_string(sres_resolver_t *res,
-		char **buf,
-		sres_message_t *m)
-{
-  char name[1024];
-  int length = 0;
-
-  assert(buf);
-
-  if (buf) {
-    length = m_get_string(name, sizeof(name), m);
-    *buf = su_zalloc(res->res_home, length + 1);
-
-    assert(*buf);
-    if (*buf) {
-      memcpy(*buf, name, length);
-      *(*buf + length) = 0;
-    }
-  }
-
-  return length;
+  return sres_cache_alloc_record(cache, sr, 0);
 }
 
 /* Message processing primitives */
@@ -3578,31 +3651,39 @@ m_get_uint8(sres_message_t *m)
 /**
  * Get a string.
  */
-static
-int 
-m_get_string(char *d, 
-	     int n,
-	     sres_message_t *m)
+static int m_get_string(char *d, 
+			int n,
+			sres_message_t *m,
+			uint16_t offset)
 {
   uint8_t size;
   uint8_t *p = m->m_data;
+  int save_offset;
 
   if (m->m_error)
     return 0;
 
-  size = p[m->m_offset++];
+  if (offset == 0)
+    offset = m->m_offset, save_offset = 1;
+  else
+    save_offset = 0;
+
+  size = p[offset++];
   
-  if (size + m->m_offset >= m->m_size) {
+  if (size + offset >= m->m_size) {
     m->m_error = "truncated message";
     return size;
   }
 
-  m->m_offset += size;
+  offset += size;
+
+  if (save_offset)
+    m->m_offset = offset;
 
   if (n == 0 || d == NULL)
-    return size;
+    return size;		/* Just return the size (without NUL). */
 
-  memcpy(d, p + m->m_offset - size, size < n ? size : n);
+  memcpy(d, p + offset - size, size < n ? size : n);
 
   if (size < n)
     d[size] = '\0';		/* NUL terminate */
@@ -3612,25 +3693,30 @@ m_get_string(char *d,
 
 /**
  * Uncompress a domain.
+ *
+ * @param offset start uncompression from this point in message
  */
-static
-int 
-m_get_domain(char *d, 
-	     int n,
-	     sres_message_t *m,
-	     int indirected)
+static int m_get_domain(char *d, 
+			int n,
+			sres_message_t *m,
+			uint16_t offset)
 {
   uint8_t cnt;
   int i = 0;
   uint8_t *p = m->m_data;
-  uint16_t offset = m->m_offset;
   uint16_t new_offset;
+  int save_offset;
 
   if (m->m_error)
     return 0;
 
   if (d == NULL) 
     n = 0;
+
+  if (offset == 0)
+    offset = m->m_offset, save_offset = 1;
+  else
+    save_offset = 0;
 
   while ((cnt = p[offset++])) {
     if (cnt >= 0xc0) {
@@ -3641,7 +3727,7 @@ m_get_domain(char *d,
 
       new_offset = ((cnt & 0x3F) << 8) + p[offset++];
 
-      if (!indirected)
+      if (save_offset)
         m->m_offset = offset;
 
       if (new_offset <= 0 || new_offset >= m->m_size) {
@@ -3650,9 +3736,8 @@ m_get_domain(char *d,
       }
 
       offset = new_offset;
-      indirected = 1;
+      save_offset = 0;
     } 
-    
     else {
       if (offset + cnt >= m->m_size) {
         m->m_error = "truncated message";
@@ -3670,13 +3755,14 @@ m_get_domain(char *d,
 
   if (i == 0) { 
     if (i < n) 
-      d[i] = '.'; i++; 
+      d[i] = '.';
+    i++; 
   }
 
   if (i < n)
     d[i] = '\0';
 
-  if (!indirected)
+  if (save_offset)
     m->m_offset = offset;
 
   return i;

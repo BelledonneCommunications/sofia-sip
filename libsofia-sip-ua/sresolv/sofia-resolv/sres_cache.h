@@ -90,9 +90,12 @@ void sres_cache_free_one(sres_cache_t *cache, sres_record_t *answer);
 
 /** Allocate a cache record */
 sres_record_t *
-sres_cache_alloc_record(sres_cache_t *cache, 
-			char const *name, size_t name_length,
-			uint16_t qtype, uint16_t rdlen);
+sres_cache_alloc_record(sres_cache_t *cache,
+			sres_record_t const *template,
+			size_t extra);
+
+/** Free a record that has not been stored. */
+void sres_cache_free_record(sres_cache_t *cache, void *rr);
 
 /** Store a record to cache */
 void sres_cache_store(sres_cache_t *cache, sres_record_t *rr, time_t now);

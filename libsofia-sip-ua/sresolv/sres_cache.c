@@ -249,34 +249,44 @@ int sres_cache_get(sres_cache_t *cache,
 }
 
 sres_record_t *
-sres_cache_alloc_record(sres_cache_t *cache, 
-			char const *name, size_t name_length,
-			uint16_t qtype, uint16_t rdlen)
+sres_cache_alloc_record(sres_cache_t *cache,
+			sres_record_t const *template,
+			size_t extra)
 {
   int size;
   sres_record_t *sr;
+  size_t name_length;
 
-  switch (qtype) {
-  case sres_type_soa:     size = sizeof(sres_soa_record_t); break;
-  case sres_type_a:       size = sizeof(sres_a_record_t); break;
-  case sres_type_a6:      size = sizeof(sres_a6_record_t); break;
-  case sres_type_aaaa:    size = sizeof(sres_aaaa_record_t); break;
-  case sres_type_cname:   size = sizeof(sres_cname_record_t); break;
-  case sres_type_ptr:     size = sizeof(sres_ptr_record_t); break;
-  case sres_type_srv:     size = sizeof(sres_srv_record_t); break;
-  case sres_type_naptr:   size = sizeof(sres_naptr_record_t); break;
-  default:                size = sizeof(sres_common_t) + rdlen + 1; break;
-  }
+  size = template->sr_size;
 
-  sr = su_zalloc(cache->cache_home, size + name_length + 1);
+  assert(size >= sizeof(sres_common_t));
+  assert(template->sr_name != NULL);
+
+  name_length = strlen(template->sr_name);
+
+  sr = su_alloc(cache->cache_home, size + extra + name_length + 1);
 
   if (sr) {
-    sr->sr_size = size;
-    sr->sr_name = memcpy(size + (char *)sr, name, name_length);
+    char *s = (char *)sr + size + extra;
+    sr->sr_refcount = 0;
+    sr->sr_name = memcpy(s, template->sr_name, name_length);
     sr->sr_name[name_length] = '\0';
+    memcpy(&sr->sr_status, &template->sr_status,
+	   size - offsetof(sres_record_t, sr_status));
   }
     
   return sr;
+}
+
+/** Free a record that has not been stored. */
+void sres_cache_free_record(sres_cache_t *cache, void *rr)
+{
+  sres_record_t *sr = rr;
+
+  if (sr) {
+    assert(sr->sr_refcount == 0);
+    su_free(cache->cache_home, rr);
+  }
 }
 
 /** Store record to cache */
