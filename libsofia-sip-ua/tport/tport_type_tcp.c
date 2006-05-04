@@ -96,6 +96,8 @@ tport_vtable_t const tport_tcp_client_vtable =
   tport_send_stream,
 };
 
+static int tport_tcp_setsndbuf(int socket, int atleast);
+
 int tport_tcp_init_primary(tport_primary_t *pri, 
 			   tp_name_t tpn[1],
 			   su_addrinfo_t *ai,
@@ -108,6 +110,8 @@ int tport_tcp_init_primary(tport_primary_t *pri,
 
   if (socket == SOCKET_ERROR)
     return *return_culprit = "socket", -1;
+
+  tport_tcp_setsndbuf(socket, 64 * 1024);
 
   return tport_stream_init_primary(pri, socket, tpn, ai, tags, return_culprit);
 }
@@ -171,7 +175,32 @@ int tport_tcp_init_secondary(tport_t *self, int socket, int accepted,
   if (su_setblocking(socket, 0) < 0)
     return *return_reason = "su_setblocking", -1;
 
+  if (!accepted)
+    tport_tcp_setsndbuf(socket, 64 * 1024);
+
   return 0;
+}
+
+static int tport_tcp_setsndbuf(int socket, int atleast)
+{
+#if SU_HAVE_WINSOCK2
+  /* Set send buffer size to something reasonable on windows */
+  int size = 0;
+  socklen_t sizelen = sizeof size;
+
+  if (getsockopt(socket, SOL_SOCKET, SO_SNDBUF, &size, &sizelen) < 0)
+    return -1;
+
+  if (sizelen != sizeof size)
+    return su_seterrno(EINVAL);
+
+  if (size >= atleast)
+    return 0;			/* OK */
+
+  return setsockopt(socket, SOL_SOCKET, SO_SNDBUF, &atleast, sizeof atleast);
+#else
+  return 0;
+#endif
 }
 
 /** Receive from stream.
