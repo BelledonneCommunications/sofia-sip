@@ -273,8 +273,8 @@ do_init(su_root_t *root, struct pinger *p)
 
   /* Create a sockets,  */
   s = udpsocket();
-  if (su_create_wait(&w, s, SU_WAIT_IN) == SOCKET_ERROR)
-    su_perror("su_create_wait"), exit(1);
+  if (su_wait_create(&w, s, SU_WAIT_IN) == SOCKET_ERROR)
+    su_perror("su_wait_create"), exit(1);
 
   p->s = s;
   p->t = t = su_timer_create(su_root_task(root), interval);
@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 {
   su_root_t *root;
   su_clone_r ping = SU_CLONE_R_INIT, pong = SU_CLONE_R_INIT;
-  su_msg_r start_msg = SU_MSG_RINITIALIZER;
+  su_msg_r start_msg = SU_MSG_R_INIT;
   su_timer_t *t;
   unsigned long sleeppid = 0;
 
