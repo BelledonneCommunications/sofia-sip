@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     su_wait_t w;
     int n, err;
 
-    su_create_wait(&w, s, SU_WAIT_OUT);
+    su_wait_create(&w, s, SU_WAIT_OUT);
 
     n = su_wait(&w, 1, SU_WAIT_FOREVER);
     
