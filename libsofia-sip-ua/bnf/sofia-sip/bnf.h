@@ -156,9 +156,8 @@ enum {
   bnf_param = bnf_token | bnf_param0 /**< SIP/HTTP parameter */
 };
 
-BNF_DLL extern 
 /** Table for determining class of a character */
-unsigned char const _bnf_table[256];
+SOFIAPUBVAR unsigned char const _bnf_table[256];
 
 /** Get number of characters before CRLF */
 #define span_non_crlf(s) strcspn(s, CR LF)
@@ -300,19 +299,19 @@ static inline int span_quoted(char const *s)
 /** Get number of characters belonging to url scheme */
 #define span_url_scheme(s) strspn(s, URL_SCHEME)
 
-BNF_DLL int span_ip4_address(char const *host);
-BNF_DLL int span_ip6_address(char const *host);
-BNF_DLL int span_ip6_reference(char const *host);
-BNF_DLL int span_ip_address(char const *host);
-BNF_DLL int span_domain(char const *host);
-BNF_DLL int span_host(char const *host);
+SOFIAPUBFUN int span_ip4_address(char const *host);
+SOFIAPUBFUN int span_ip6_address(char const *host);
+SOFIAPUBFUN int span_ip6_reference(char const *host);
+SOFIAPUBFUN int span_ip_address(char const *host);
+SOFIAPUBFUN int span_domain(char const *host);
+SOFIAPUBFUN int span_host(char const *host);
 
-BNF_DLL int scan_ip4_address(char **inout_host);
-BNF_DLL int scan_ip6_address(char **inout_host);
-BNF_DLL int scan_ip6_reference(char **inout_host);
-BNF_DLL int scan_ip_address(char **inout_host);
-BNF_DLL int scan_domain(char **inout_host);
-BNF_DLL int scan_host(char **inout_host);
+SOFIAPUBFUN int scan_ip4_address(char **inout_host);
+SOFIAPUBFUN int scan_ip6_address(char **inout_host);
+SOFIAPUBFUN int scan_ip6_reference(char **inout_host);
+SOFIAPUBFUN int scan_ip_address(char **inout_host);
+SOFIAPUBFUN int scan_domain(char **inout_host);
+SOFIAPUBFUN int scan_host(char **inout_host);
 
 SOFIA_END_DECLS
 
