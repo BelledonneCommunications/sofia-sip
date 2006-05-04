@@ -3,14 +3,13 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20060411-8
+:Version: 20060504-9
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
 ============
 
-This README contains instructions for making 
-new Sofia-SIP releases.
+This README contains instructions for making new Sofia-SIP releases.
 
 Links to other resources
 ========================
@@ -20,8 +19,7 @@ sofia-sip/README.developers
 The release notes
 =================
 
-The release notes should contain the following
-sections:
+The release notes should contain the following sections:
 
 - about Sofia-SIP
     - copied verbatim from sofia-sip/README
@@ -40,19 +38,22 @@ sections:
       should list all persons/companies who have code/scripts/etc
       copyrighted to them in the sofia-sip tree)
 
+See the RELEASE.template file for a full list of release note
+sections.
+
 Making the release tarball 
 ==========================
 
 - update the version number in sofia-sip/configure.ac
 - make sure everything that is supposed to be in the
-  release is in CVS (use commands "cvs up" and "darcs w")
+  release is in the master darcs tree
 - run 'make distcheck' (requires automake-1.7 or newer)
-- tag CVS tree and darcs repo with release tag
+- tag repos (darcs and any slave trees) with release tag
   'rel-sofia-sip-x_y_z', where x_y_z is the version number (see
   README.developers):
 
-  cvs tag rel-sofia-sip-x_y_z
   darcs tag -m"rel-sofia-sip-x_y_z"
+  cvs tag rel-sofia-sip-x_y_z
 
 - calculate md5 and sha1 hashes using md5sum and sha1sum utils,
   and copy the values to the release-notes (see below)
@@ -69,7 +70,7 @@ Creating the release notes and updating the website
   see guidelines in the html comments)
 - update sfnet_www/index.html to mention the latest
   release
-- commit the change to CVS, and run the 
+- commit the change to sf.net website CVS, and run the 
   sfnet_www/put_online.sh script at the sourceforge.net
   shell server
 
@@ -95,9 +96,9 @@ After release
 =============
 
 - replace the RELEASE file with RELEASE.template, and
-  commit it to CVS/darcs.
+  commit it to master source repository (see sofia-sip/README.developers)
 - change version in configure.ac from "X.Y.Z" to 
-  "X.Y.Zcvs" (as it is in many cases unknown what the 
+  "X.Y.Zwork" (as it is in many cases unknown what the 
   next version will be)
 - make a "tree open for development" commit
 

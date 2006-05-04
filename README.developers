@@ -44,7 +44,7 @@ For development releases and snaphots the version is one of:
      vMAJOR.MINOR.REVISION.YEAR.MONTH.DAY, where minor is odd
 
 For all releases, the version should be changed in configure.ac 
-and committed to CVS before making the release package. The person 
+and committed to Darcs/CVS before making the release package. The person 
 doing the release is responsible for updating the version number.
 
 
@@ -57,10 +57,14 @@ TBD
 Version control tags
 ====================
 
-Tags at sourceforge.net CVS
----------------------------
+Tagging releases and snapshots
+------------------------------
 
-- server info: http://sourceforge.net/cvs/?group_id=143636
+- source repository (*)
+    - master Darcs tree at:
+      http://dev-126.openlaboratory.net/repos/sofia-sip
+    - CVS tree (only used to track major releases) at:
+      http://sourceforge.net/cvs/?group_id=143636
 - tags: rel-sofia-sip-x_y_z
     - stable and development releases (matches release 
       version sofia-sip-x.y.z)
@@ -68,18 +72,22 @@ Tags at sourceforge.net CVS
     - snapshot releases at
       http://sofia-sip.sourceforge.net/snapshots/
 
+Notes (*):
+    - Information about Darcs:
+      http://abridgegame.org/darcs/
+      http://lwn.net/Articles/110516/
 
 Sending patches
 ===============
 
-People without CVS-access
--------------------------
+People without Darcs access
+---------------------------
 
 Send your patches to sofia-sip-devel. Someone from the 
 development team (see AUTHORS) will handle the patch.
 
-People with CVS-access
-----------------------
+People with Darcs access
+------------------------
 
 Trivial changes can be committed without review. For non-trivial 
 changes, you should first send a proposal to sofia-sip-devel and
@@ -89,6 +97,8 @@ common sense is recommended. ;)
 Tips for making patches
 -----------------------
 
-- test your patch on a clean CVS-checkout
-- remember to run cvs update before making commits
+- test your patch on a clean checkout from version control system
+- remember to check for updates before pushing your changes
+  to the master repository
+
 
