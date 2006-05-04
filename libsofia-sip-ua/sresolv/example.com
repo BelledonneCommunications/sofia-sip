@@ -44,9 +44,13 @@ _sips._udp	SRV 3 100 5061 sip00
 
 sip	CNAME	sip00
 
-subnet  A6	0 3ff0:00::	
-labnet	A6	23 0000:0012:3012:: subnet
-a6	A6	48 ::c006:0a08:20ff:fe7d:e7ac labnet	
+subnet  A6	0 3ff0:0::
+labnet	A6	23 0:12:3012:: subnet
+sublab	A6	48 0:0:0:c006:: labnet
+mynet	A6	56 0:0:0:c006:: sublab
+a6	A6	64 ::0a08:20ff:fe7d:e7ac mynet
+alias6  A6      128 a6
+full	A6	0 3ff0:12:3012:c006:0a08:20ff:fe7d:e7ac
 
 sip00	A	194.2.188.133
 	AAAA	3ff0:0010:3012:c000:02c0:95ff:fee2:4b78 

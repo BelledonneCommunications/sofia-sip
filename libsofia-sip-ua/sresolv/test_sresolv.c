@@ -528,6 +528,7 @@ int test_a(sres_context_t *ctx)
   TEST_RUN(ctx);
 
   TEST_1(result = ctx->result);
+  TEST_1(result[0]);
   TEST(result[0]->sr_record->r_status, 0);
   TEST_1(rr_a = result[0]->sr_a);
   TEST(rr_a->a_record->r_type, sres_type_a);
@@ -679,13 +680,44 @@ int test_a6_prefix(sres_context_t *ctx)
   TEST(rr_a6->a6_record->r_type, sres_type_a6);
   TEST(rr_a6->a6_record->r_class, sres_class_in);
   TEST(rr_a6->a6_record->r_ttl, 60);
-  TEST(rr_a6->a6_prelen, 48);
+  TEST(rr_a6->a6_prelen, 64);
 
   TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), 
-	 "::c006:a08:20ff:fe7d:e7ac");
+	 "::a08:20ff:fe7d:e7ac");
 
-  TEST_S(rr_a6->a6_prename, "labnet.example.com.");
+  TEST_S(rr_a6->a6_prename, "mynet.example.com.");
 
+  sres_free_answers(res, ctx->result), ctx->result = NULL;
+
+  /* Check parsing of special case: no prefix */
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a6, "full.example.com"));
+  TEST_RUN(ctx);
+
+  TEST_1(result = ctx->result);
+  TEST_1(rr_a6 = result[0]->sr_a6);
+  TEST(rr_a6->a6_record->r_type, sres_type_a6);
+  TEST(rr_a6->a6_record->r_class, sres_class_in);
+  TEST(rr_a6->a6_record->r_ttl, 60);
+  TEST(rr_a6->a6_prelen, 0);
+  TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), 
+	 "3ff0:12:3012:c006:a08:20ff:fe7d:e7ac");
+  TEST(rr_a6->a6_prename, NULL);
+ 
+  sres_free_answers(res, ctx->result), ctx->result = NULL;
+
+  /* Check parsing of special case: no suffix */
+  TEST_1(sres_query(res, test_answer, ctx, sres_type_a6, "alias6.example.com"));
+  TEST_RUN(ctx);
+
+  TEST_1(result = ctx->result);
+  TEST_1(rr_a6 = result[0]->sr_a6);
+  TEST(rr_a6->a6_record->r_type, sres_type_a6);
+  TEST(rr_a6->a6_record->r_class, sres_class_in);
+  TEST(rr_a6->a6_record->r_ttl, 60);
+  TEST(rr_a6->a6_prelen, 128);
+  TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), "::");
+  TEST_S(rr_a6->a6_prename, "a6.example.com.");
+ 
   sres_free_answers(res, ctx->result), ctx->result = NULL;
 
   TEST_1(result = sres_cached_answers(res, sres_type_a6, domain));
@@ -694,12 +726,12 @@ int test_a6_prefix(sres_context_t *ctx)
   TEST(rr_a6->a6_record->r_type, sres_type_a6);
   TEST(rr_a6->a6_record->r_class, sres_class_in);
   TEST(rr_a6->a6_record->r_ttl, 60);
-  TEST(rr_a6->a6_prelen, 48);
+  TEST(rr_a6->a6_prelen, 64);
 
   TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), 
-	 "::c006:a08:20ff:fe7d:e7ac");
+	 "::a08:20ff:fe7d:e7ac");
 
-  TEST_S(rr_a6->a6_prename, "labnet.example.com.");
+  TEST_S(rr_a6->a6_prename, "mynet.example.com.");
 
   sres_free_answers(res, result), result = NULL;
 
