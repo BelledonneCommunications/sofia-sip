@@ -272,8 +272,10 @@ enum {
 };
 
 /** Initialize a header structure. @HIDE */
-#define MSG_HEADER_INIT(h, msg_class, size) \
-  (memset((h), 0, (size)), ((msg_common_t *)(h))->h_class = (msg_class), (h))
+#define MSG_HEADER_INIT(h, msg_class, size)			\
+  ((void)memset((h), 0, (size)),				\
+   (void)(((msg_common_t *)(h))->h_class = (msg_class)),	\
+   (h))
 
 /** No header. */
 #define MSG_HEADER_NONE ((msg_header_t *)-1)
