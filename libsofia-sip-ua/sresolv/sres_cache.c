@@ -272,7 +272,7 @@ sres_cache_alloc_record(sres_cache_t *cache,
     sr->sr_name = memcpy(s, template->sr_name, name_length);
     sr->sr_name[name_length] = '\0';
     memcpy(&sr->sr_status, &template->sr_status,
-	   size - offsetof(sres_record_t, sr_status));
+	   size - offsetof(sres_common_t, r_status));
   }
     
   return sr;
