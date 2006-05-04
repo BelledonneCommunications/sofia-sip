@@ -1,0 +1,7 @@
+2006-04-12  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Modified build system to require glib-2.4 or newer to compile libsofia-sip-ua-glib.
+
+2006-03-09  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* libsofia-sip-ua-glib created.
