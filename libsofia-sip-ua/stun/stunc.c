@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
   su_sockaddr_t sa[1];
   su_socket_t s;
 
-  if (!argv[1] || !argv[2] || inet_pton(AF_INET, argv[1], sa) < 1)
+  if (argc < 3)
     usage(argv[0]);
 
   for (i = 2; argv[i]; i++) {
@@ -289,8 +289,10 @@ int main(int argc, char *argv[])
       sflags |= do_nat_check;
     else if (strcmp(argv[i], "-l") == 0)
       sflags |= do_life_check;
-    else
+    else {
+      fprintf(stderr, "Unable to parse option %s.\n", argv[i]);
       usage(argv[0]);
+    }
   }
 
   /* Running this test requires a local STUN server on default port */
