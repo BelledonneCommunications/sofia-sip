@@ -1,3 +1,9 @@
+2006-05-05  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* sofia-sip/stun.h, stun.c: Removed various deprecated functions
+	that were already commented out from the code. Closed sf.net
+	bug #1456403.
+
 2006-03-27  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* stun.h: Added stun_server_address().

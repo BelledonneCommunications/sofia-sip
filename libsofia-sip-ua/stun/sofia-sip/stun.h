@@ -103,15 +103,6 @@ typedef enum stun_state_e {
   stun_discovery_processing,
   stun_discovery_done,
 
-#if 0
-  /* STUN bind events */
-  stun_bind_init,             /**< Initial state */
-  stun_bind_processing,       /**< Processing server reply */
-  stun_bind_done,             /**< Initial state */
-
-  stun_request_not_found,     /**< Response without matching request */
-#endif
-
   /* STUN errors */
   /* Do not change the order! Errors need to be after stun_error */
 
@@ -119,12 +110,6 @@ typedef enum stun_state_e {
   stun_tls_connection_timeout,
   stun_tls_connection_failed,
   stun_tls_ssl_connect_failed,
-
-#if 0
-  /* stun client errors */
-  stun_bind_error,
-  stun_bind_timeout,
-#endif
 
   stun_request_timeout,
   stun_discovery_error,
@@ -251,53 +236,6 @@ int stun_mini_remove_socket(stun_mini_t *server, int socket);
 void stun_mini_request(stun_mini_t *server, int socket,
 			 void *msg, ssize_t msglen,
 			 void *addr, socklen_t addrlen);
-
-#if 0
-/* --------------------------------------------------------------------
- * Deprecated functions and definitions. These are supported with limited
- * compatibility. */
-
-/* Used if no stun_discovery_f specified for a discovery  */
-typedef void (*stun_event_f)(stun_magic_t *magic,
-			     stun_handle_t *sh,
-			     stun_discovery_t *sd,
-			     stun_action_t action,
-			     stun_state_t event);
-
-stun_handle_t *stun_handle_create(stun_magic_t *context,
-				  su_root_t *root,
-				  stun_event_f cb,
-				  tag_type_t tag, tag_value_t value, ...);
-
-int stun_handle_release(stun_handle_t *sh, su_socket_t s);
-
-su_root_t *stun_handle_root(stun_handle_t *sh);
-int stun_handle_request_shared_secret(stun_handle_t *sh);
-
-/** Bind a socket using STUN.  */
-int stun_handle_bind(stun_handle_t *sh, 
-		     /* su_localinfo_t *my_addr, */
-		     tag_type_t tag, tag_value_t value,
-		     ...);
-int stun_handle_set_uname_pwd(stun_handle_t *sh,
-			      const char *uname,
-			      int len_uname, 
-			      const char *pwd,
-			      int len_pwd);
-
-int stun_handle_process_message(stun_handle_t *sh,
-				su_socket_t s,
-				su_sockaddr_t *sa,
-				socklen_t salen,
-				void *data,
-				int len);
-int stun_handle_request_shared_secret(stun_handle_t *sh);
-int stun_handle_set_uname_pwd(stun_handle_t *sh,
-			      const char *uname,
-			      int len_uname, 
-			      const char *pwd,
-			      int len_pwd);
-#endif
 
 SOFIA_END_DECLS
 

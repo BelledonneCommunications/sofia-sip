@@ -80,17 +80,6 @@ enum {
   STUN_TLS_CONNECT_TIMEOUT = 8000,
 };
 
-
-#if 0 /* XXX: not used at the moment (2006/03) */
-static int stun_change_map[4][4] = {
-  {0, 1, 2, 3}, /* no change */
-  {2, 3, 0, 1}, /* change ip */
-  {1, 0, 3, 2}, /* change port */
-  {3, 2, 1, 0}  /* change ip and port, Ca:Cp */
-};
-#endif
-
-
 /* NAT TYPES */
 typedef enum stun_nattype_e {
   stun_nat_unknown,
@@ -223,11 +212,6 @@ struct stun_handle_s
   stun_msg_t      sh_tls_response;
   int             sh_nattype;       /**< NAT-type, see stun_common.h */
 
-#if 0
-  stun_event_f    sh_callback;      /**< callback for calling application */ 
-  stun_magic_t   *sh_context;       /**< application context */
-#endif
-
   stun_buffer_t   sh_username;
   stun_buffer_t   sh_passwd;
 
@@ -251,14 +235,6 @@ char const *stun_str_state(stun_state_t state)
   STUN_STATE_STR(stun_discovery_init);
   STUN_STATE_STR(stun_discovery_processing);
   STUN_STATE_STR(stun_discovery_done);
-#if 0
-  STUN_STATE_STR(stun_bind_init);
-  STUN_STATE_STR(stun_bind_processing);
-  STUN_STATE_STR(stun_bind_done);
-  STUN_STATE_STR(stun_bind_error);
-  STUN_STATE_STR(stun_bind_timeout);
-  STUN_STATE_STR(stun_request_not_found);
-#endif
   STUN_STATE_STR(stun_tls_connection_timeout);
   STUN_STATE_STR(stun_tls_connection_failed);
   STUN_STATE_STR(stun_tls_ssl_connect_failed);
@@ -495,114 +471,6 @@ stun_handle_t *stun_handle_init(su_root_t *root,
 
   return stun;
 }
-
-
-#if 0
-/** 
- * Creates a STUN handle.
- *
- * The created handles can be used for STUN binding discovery, 
- * keepalives, and other STUN usages.
- *
- * @param context self pointer for callback 'cb'
- * @param root eventloop to used by the stun state machine
- * @param cb callback to signal state machine events
- * @param tag,value,... tag-value list 
- *
- * @TAGS
- * @TAG STUNTAG_DOMAIN() domain to use in DNS-SRV based STUN server
- * @TAG STUNTAG_SERVER() stun server hostname or dotted IPv4 address
- * @TAG STUNTAG_REQUIRE_INTEGRITY() true if msg integrity should be
- * used enforced
- *
- */
-stun_handle_t *stun_handle_create(stun_magic_t *context,
-				  su_root_t *root,
-				  stun_event_f cb,
-				  tag_type_t tag, tag_value_t value, ...)
-{
-  stun_handle_t *stun = NULL;
-  char const *server = NULL, *domain = NULL;
-  int req_msg_integrity = 1;
-  int err;
-  ta_list ta;
-  
-  enter;
-
-  ta_start(ta, tag, value);
-
-  tl_gets(ta_args(ta),
-	  STUNTAG_SERVER_REF(server),
-	  STUNTAG_DOMAIN_REF(domain),
-	  STUNTAG_REQUIRE_INTEGRITY_REF(req_msg_integrity),
-	  TAG_END());
-
-  stun = su_home_clone(NULL, sizeof(*stun));
-
-  if (!stun) {
-    SU_DEBUG_3(("%s: %s failed\n", __func__, "su_home_clone()"));
-    return NULL;
-  }
-
-  /* Enviroment overrides */
-  if (getenv("STUN_SERVER")) {
-    server = getenv("STUN_SERVER");
-    SU_DEBUG_5(("%s: using STUN_SERVER=%s\n", __func__, server));
-  }
-
-  SU_DEBUG_5(("%s(\"%s\"): called\n", 
-	      "stun_handle_tcreate", server));
-
-  /* fail, if no server or a domain for a DNS-SRV lookup is specified */
-  if (!server && !domain)
-    return NULL;
-  
-  stun->sh_pri_info.ai_addrlen = 16;
-  stun->sh_pri_info.ai_addr = &stun->sh_pri_addr->su_sa;
-
-  stun->sh_sec_info.ai_addrlen = 16;
-  stun->sh_sec_info.ai_addr = &stun->sh_sec_addr->su_sa;
-
-  stun->sh_localinfo.li_addrlen = 16;
-  stun->sh_localinfo.li_addr = stun->sh_local_addr;
-
-  stun->sh_domain = su_strdup(stun->sh_home, domain);
-  stun->sh_dns_lookup = NULL;
-  
-  if (server) {
-    err = stun_atoaddr(stun->sh_home, AF_INET, &stun->sh_pri_info, server);
-
-    if (err < 0)
-      return NULL;
-  }
-
-  stun->sh_nattype = stun_nat_unknown;
-
-  stun->sh_root     = root;
-  stun->sh_context  = context;
-  stun->sh_callback = cb;
-  /* always try TLS: */
-  stun->sh_use_msgint = 1;
-  /* whether use of shared-secret msgint is required */
-  stun->sh_req_msgint = req_msg_integrity;
-
-  stun->sh_max_retries = STUN_MAX_RETRX;
-
-  /* initialize username and password */
-  stun_init_buffer(&stun->sh_username);
-  stun_init_buffer(&stun->sh_passwd);
-  
-  stun->sh_nattype = stun_nat_unknown;
-  
-  /* initialize random number generator */
-  srand(time(NULL));
-  
-  ta_end(ta);
-
-  return stun;
-}
-#endif
-
 
 /** 
  * Performs shared secret request/response processing.
@@ -1285,7 +1153,7 @@ static int stun_discovery_destroy(stun_discovery_t *sd)
  * characteristics.
  *
  * Note: does not support STUNTAG_DOMAIN() even if specified to
- * stun_handle_create().
+ * stun_handle_init().
  *
  * @TAGS
  * @TAG STUNTAG_SOCKET Bind socket for STUN
@@ -1342,7 +1210,7 @@ int stun_test_nattype(stun_handle_t *sh,
   if ((index = assign_socket(sd, s, s_reg)) < 0)
     return errno = EFAULT, -1;
 
-  /* If no server given, use default address from stun_handle_create() */
+  /* If no server given, use default address from stun_handle_init() */
   if (!server) {
     /* memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t)); */
     memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
@@ -1446,11 +1314,6 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 
     if (sd->sd_callback)
       sd->sd_callback(sd->sd_magic, self, sd, sd->sd_action, sd->sd_state);
-#if 0
-    else
-      self->sh_callback(self->sh_context, self, sd,
-			sd->sd_action, sd->sd_state);
-#endif
 
     return 0;
   }
@@ -1524,11 +1387,6 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, self, sd, sd->sd_action, sd->sd_state);
-#if 0
-      else
-	self->sh_callback(self->sh_context, self, sd,
-			  sd->sd_action, sd->sd_state);
-#endif
 
       return -1;
     }
@@ -1604,13 +1462,6 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
     /* closed TLS connection */
     SSL_shutdown(ssl);
 
-#if 0
-    sd->sd_state = stun_tls_closing;
-    break;
-
-  case stun_tls_closing:
-#endif
-
     su_close(sd->sd_socket);
 
     SSL_free(self->sh_ssl), ssl = NULL;
@@ -1658,11 +1509,6 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 
     if (sd->sd_callback)
       sd->sd_callback(sd->sd_magic, self, sd, sd->sd_action, sd->sd_state);
-#if 0
-    else
-      self->sh_callback(self->sh_context, self, sd,
-			sd->sd_action, sd->sd_state);
-#endif
 
     break;
 
@@ -1817,10 +1663,6 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
     /* su_wait_destroy(w); */
     /* su_root_deregister(self->sh_root, self->ss_root_index); */
     /* self->sh_state = stun_bind_error; */
-#if 0
-    self->sh_callback(self->sh_context, self, NULL, 
-		      stun_action_no_action, stun_bind_error);
-#endif
     return 0;
   }
 
@@ -1934,21 +1776,13 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
 
   case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
-#if 0
-    req->sr_state = stun_request_not_found;
-    sh->sh_callback(sh->sh_context, sh, NULL,
-		    stun_action_no_action, req->sr_state);
-#endif
     req->sr_state = stun_dispose_me;
     break;
 
   default:
     SU_DEBUG_3(("%s: bad action.\n", __func__));
     req->sr_state = stun_error;
-#if 0
-    sh->sh_callback(sh->sh_context, sh, NULL,
-		    stun_action_no_action, req->sr_state);
-#endif
+
     req->sr_state = stun_dispose_me;
     break;
   }
@@ -2060,11 +1894,6 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
     if (sd->sd_callback)
       sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
-#if 0
-    else
-      sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
-
     req->sr_state = stun_dispose_me;
     return 0;
   }
@@ -2075,10 +1904,6 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
     /* Use per discovery specific callback */
     if (sd->sd_callback)
       sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-    else
-      sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
     req->sr_state = stun_dispose_me;
     return 0;
@@ -2170,10 +1995,6 @@ static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   
   if (sd->sd_callback)
     sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-  else
-    sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
   req->sr_state = stun_dispose_me;
 
@@ -2232,10 +2053,6 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	  /* Use per discovery specific callback */
 	  if (sd->sd_callback)
 	    sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-	  else
-	    sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
 	  req->sr_state = stun_dispose_me;
 	  /* stun_request_destroy(req); */
@@ -2250,10 +2067,6 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
       /* Use per discovery specific callback */
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-      else
-	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2268,10 +2081,6 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	/* Use per discovery specific callback */
 	if (sd->sd_callback)
 	  sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-	else
-	  sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
 	req->sr_state = stun_dispose_me;
 	/* stun_request_destroy(req); */
@@ -2304,10 +2113,6 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
       /* Use per discovery specific callback */
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-      else
-	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2330,10 +2135,6 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
       /* Use per discovery specific callback */
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-      else
-	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2351,10 +2152,6 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
       /* Use per discovery specific callback */
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-      else
-	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
       req->sr_state = stun_dispose_me;
       /* stun_request_destroy(req); */
@@ -2414,10 +2211,6 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
       /* Use per discovery specific callback */
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-      else
-	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
       req->sr_state = stun_dispose_me;
       break;
@@ -2436,10 +2229,6 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
       /* Use per discovery specific callback */
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-#if 0
-      else
-	sh->sh_callback(sh->sh_context, sh, sd, action, sd->sd_state);
-#endif
 
       stun_keepalive_destroy(sh, sd->sd_socket);
       
@@ -2825,7 +2614,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   if ((index = assign_socket(sd, s, s_reg)) < 0)
       return errno = EFAULT, -1;
 
-  /* If no server given, use default address from stun_handle_create() */
+  /* If no server given, use default address from stun_handle_init() */
   if (!server) {
     /* memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t)); */
     memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
