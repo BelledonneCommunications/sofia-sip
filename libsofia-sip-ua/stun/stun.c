@@ -2069,8 +2069,7 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
       req->sr_state = stun_dispose_me;
-      /* stun_request_destroy(req); */
-      /* stun_discovery_destroy(sd); */
+
       return 0;
     }
     else if (sd->sd_first && sd->sd_second) {
@@ -2083,8 +2082,7 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	  sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
 	req->sr_state = stun_dispose_me;
-	/* stun_request_destroy(req); */
-	/* stun_discovery_destroy(sd); */
+
 	return 0;
       }
       else {
@@ -2115,8 +2113,7 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
       req->sr_state = stun_dispose_me;
-      /* stun_request_destroy(req); */
-      /* stun_discovery_destroy(sd); */
+
       return 0;
     }
   }
@@ -2137,8 +2134,7 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
       req->sr_state = stun_dispose_me;
-      /* stun_request_destroy(req); */
-      /* stun_discovery_destroy(sd); */
+
       return 0;
     }
     if (sd->sd_first && sd->sd_second) {
@@ -2154,19 +2150,17 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
       req->sr_state = stun_dispose_me;
-      /* stun_request_destroy(req); */
-      /* stun_discovery_destroy(sd); */
       return 0;
     }
     else if (sd->sd_first) {
       if (memcmp(&local, li->li_addr, 8) == 0)
 	return 0;
     }
-
-
   }
+
   /* The discovery process is still ongoing, but I can be killed */
   req->sr_state = stun_dispose_me;
+
   return 0;
 }
 
