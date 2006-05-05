@@ -43,8 +43,10 @@ libiptsec_la_SOURCES = 	iptsec_debug.h \
 			$(SIPSOURCES) $(HTTPSOURCES) $(NTLM_SOURCE) \
 			iptsec_debug.c
 
-if HAVE_NTLM
+# note: auth_ntlm.h is always used by auth_client.h, so it
+#       cannot be conditionally installed
 NTLM_HEADER = sofia-sip/auth_ntlm.h
+if HAVE_NTLM
 NTLM_SOURCE = auth_ntlm.c
 endif
 
