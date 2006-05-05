@@ -655,7 +655,7 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
  */
 int stun_encode_message(stun_msg_t *msg, stun_buffer_t *pwd) {
 
-  int z, len, buf_len = 0;
+  int z = -1, len, buf_len = 0;
   unsigned char *buf;
   stun_attr_t *attr, *msg_int=NULL;
 

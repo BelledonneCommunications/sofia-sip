@@ -274,7 +274,6 @@ int main(int argc, char *argv[])
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_handle_t *sh;
-  su_sockaddr_t sa[1];
   su_socket_t s;
 
   if (argc < 3)

@@ -1275,7 +1275,7 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
   stun_discovery_t *sd = arg;
   stun_handle_t *self = sd->sd_handle;
   stun_msg_t *msg_req, *resp;
-  int z, err;
+  int z, err = -1;
   SSL_CTX* ctx;
   SSL *ssl;
   X509* server_cert;
