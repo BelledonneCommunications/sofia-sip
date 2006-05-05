@@ -26,6 +26,7 @@ INCLUDES = 		-I$(S_BASE)/bnf -I$(B_BASE)/bnf \
 			-I$(S_BASE)/nua -I$(B_BASE)/nua \
 			-I$(S_BASE)/sdp -I$(B_BASE)/sdp \
 			-I$(S_BASE)/sip -I$(B_BASE)/sip \
+			-I$(S_BASE)/stun -I$(B_BASE)/stun \
 			-I$(S_BASE)/soa -I$(B_BASE)/soa \
 			-I$(S_BASE)/tport -I$(B_BASE)/tport \
 			-I$(S_BASE)/url -I$(B_BASE)/url \

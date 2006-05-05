@@ -93,6 +93,8 @@ enum
   PROP_PROXY,
   PROP_REGISTRAR,
   PROP_AUTHINFO,
+  PROP_STUN,
+  PROP_SIP_BIND_ADDR,
   LAST_PROPERTY
 };
 
@@ -107,8 +109,8 @@ static int sof_init(NuaGlibPrivate *priv, const char *contact);
 
 static GObject *
 nua_glib_constructor (GType                  type,
-                       guint                  n_construct_properties,
-                       GObjectConstructParam *construct_properties)
+		      guint                  n_construct_properties,
+		      GObjectConstructParam *construct_properties)
 {
   GObject *obj;
   int res = 0;
@@ -139,17 +141,22 @@ nua_glib_constructor (GType                  type,
   /*check address has been set*/
   g_assert(strcmp(self->priv->address, "no-address-set")!=0);
 
-  res=sof_init(self->priv, self->priv->contact);
+  res = sof_init(self->priv, self->priv->contact);
 
   if (res != -1) {
     self->priv->nua = nua_create(self->priv->root, 
-                              sof_callback, self,
-                              NUTAG_SOA_NAME("default"),
-                              NUTAG_MEDIA_ENABLE(1),
-                              TAG_IF(self->priv->contact, NUTAG_URL(self->priv->contact)),
-/*                              NUTAG_MEDIA_ADDRESS(self->priv->media),
-                              SOATAG_USER_SDP_STR(local_caps),*/
-                              TAG_NULL());
+				 sof_callback, self,
+				 NUTAG_SOA_NAME("default"),
+				 NUTAG_MEDIA_ENABLE(1),
+				 TAG_IF(self->priv->bind_addr,
+					NUTAG_URL(self->priv->bind_addr)),
+				 TAG_IF(self->priv->stun,
+					STUNTAG_SERVER(self->priv->stun)),
+				 TAG_IF(self->priv->contact,
+					NUTAG_URL(self->priv->contact)),
+				 /* NUTAG_MEDIA_ADDRESS(self->priv->media), */
+				 /* SOATAG_USER_SDP_STR(local_caps), */
+				 TAG_NULL());
     if (self->priv->nua) {
       int min_se = 0;
       int s_e = 0;
@@ -225,18 +232,21 @@ nua_glib_finalize (GObject *obj)
   G_OBJECT_CLASS (parent_class)->finalize (obj); 
 }
 
-static void
-nua_glib_set_property (GObject      *object,
-                        guint         property_id,
-                        const GValue *value,
-                        GParamSpec   *pspec)
+static
+void nua_glib_set_property(GObject      *object,
+			   guint         property_id,
+			   const GValue *value,
+			   GParamSpec   *pspec)
 {
   NuaGlib *self = (NuaGlib*) object;
 
+#define STORE_PARAM(s, x)			\
+  g_free ((gpointer)(s)->priv->x);		\
+  (s)->priv->x = g_value_dup_string (value)
+
   switch (property_id) {
   case PROP_CONTACT: {
-    g_free ((gpointer)self->priv->contact);
-    self->priv->contact = g_value_dup_string (value);
+    STORE_PARAM(self, contact);
     break;
   }
   case PROP_ADDRESS: {
@@ -254,8 +264,7 @@ nua_glib_set_property (GObject      *object,
     break;
   }
   case PROP_PROXY: {
-    g_free ((gpointer)self->priv->proxy);
-    self->priv->proxy = g_value_dup_string (value);
+    STORE_PARAM(self, proxy);
     if (self->priv->nua)
     {
       nua_set_params(self->priv->nua,
@@ -265,8 +274,7 @@ nua_glib_set_property (GObject      *object,
     break;
   }
   case PROP_REGISTRAR: {
-    g_free ((gpointer)self->priv->registrar);
-    self->priv->registrar = g_value_dup_string (value);
+    STORE_PARAM(self, registrar);
     if (self->priv->nua)
     {
       nua_set_params(self->priv->nua,
@@ -276,8 +284,15 @@ nua_glib_set_property (GObject      *object,
     break;
   }
   case PROP_AUTHINFO: {
-    g_free ((gpointer)self->priv->authinfo);
-    self->priv->authinfo = g_value_dup_string (value);
+    STORE_PARAM(self, authinfo);
+    break;
+  }
+  case PROP_STUN: {
+    STORE_PARAM(self, stun);
+    break;
+  }
+  case PROP_SIP_BIND_ADDR: {
+    STORE_PARAM(self, bind_addr);
     break;
   }
 
@@ -383,6 +398,25 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
   g_object_class_install_property (gobject_class,
                                    PROP_AUTHINFO,
                                    param_spec);
+
+
+  param_spec = g_param_spec_string("stun",
+                                   "NuaGlib construction property",
+                                   "STUN server address",
+                                   "", /*default value*/
+                                   G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+  g_object_class_install_property (gobject_class,
+                                   PROP_STUN,
+                                   param_spec);
+
+  param_spec = g_param_spec_string("bind_address",
+                                   "NuaGlib construction property",
+                                   "Bind address (i.e. sip:[::]:*) for SIP stack",
+                                   "", /*default value*/
+                                   G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+  g_object_class_install_property(gobject_class,
+				  PROP_SIP_BIND_ADDR,
+				  param_spec);
 
 
   /**

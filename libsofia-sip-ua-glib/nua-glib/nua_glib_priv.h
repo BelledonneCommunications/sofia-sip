@@ -45,6 +45,7 @@
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/nua.h>
 #include <sofia-sip/nua_tag.h>
+#include <sofia-sip/stun_tag.h>
 #include <sofia-sip/soa.h>
 #include <sofia-sip/su_tag_io.h>
 #include <sofia-sip/su_tagarg.h>
@@ -113,20 +114,22 @@ struct _NuaGlibOp {
 struct _NuaGlibPrivate {
 
   /* private: maybe this should be really private?*/
-  su_home_t     home[1];    /**< Our memory home */
-  char const   *name;	    /**< Our name */
-  su_root_t    *root;       /**< Pointer to application root */
+  su_home_t   home[1];   /**< Our memory home */
+  char const *name;      /**< Our name */
+  su_root_t  *root;      /**< Pointer to application root */
 
-  unsigned      init : 1;   /**< True if class is inited*/
+  unsigned    init : 1;  /**< True if class is inited */
   
-  gchar *contact;	/**< contact url used by this UA*/
-  gchar *authinfo;	/**< authorization info used by this UA*/
-  char *proxy;	        /**< proxy to use,no proxy used if NULL*/
-  char *address;	/**< our SIP address-of-contact*/
-  char *registrar;	/**< registrar to use*/
+  gchar      *contact;   /**< contact url used by this UA */
+  gchar      *authinfo;	 /**< authorization info used by this UA*/
+  char       *proxy;     /**< proxy to use,no proxy used if NULL*/
+  char       *address;   /**< our SIP address-of-contact*/
+  char       *registrar; /**< registrar to use*/
+  char       *stun;      /**< STUN server address */
+  char       *bind_addr; /**< SIP stack's address, family */
 
-  nua_t        *nua;        /**< Pointer to NUA object */
-  NuaGlibOp   *operations;  /**< Remote destinations */
+  nua_t        *nua;       /**< Pointer to NUA object */
+  NuaGlibOp   *operations; /**< Remote destinations */
 };
 
 
