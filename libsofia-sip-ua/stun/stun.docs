@@ -24,10 +24,6 @@ To be written. See torture_stun.c and tport/tport.c.
 
 @section todo Todo
 
-- split stun.c into smaller files? (added 20060322)
-- stun_bind_test does not detect, if the server does
-  _not_ honor the change-{address,port} requests (i.e. that
-  response should be send from a different port/address), 
-  which leads to incorrect analysis of NAT behaviour (added 20051119)
+- none at the moment
 
 */

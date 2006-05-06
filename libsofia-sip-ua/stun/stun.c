@@ -831,7 +831,6 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int reg_socket)
 			ipaddr, sizeof(ipaddr)),
 	      (unsigned) ntohs(bind_addr.su_port)));
 
-
   return 0;
 }
 
