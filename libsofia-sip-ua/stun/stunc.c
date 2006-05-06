@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005,2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -26,6 +26,8 @@
  * @file stunc.c STUN test client
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
+ * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * 
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
  */
@@ -35,6 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef struct stunc_s stunc_t;
 #define SU_ROOT_MAGIC  stunc_t
@@ -50,13 +53,14 @@ enum {
   do_bind = 2,
   do_nat_check = 4,
   do_life_check = 8,
+  do_randomize_port = 16
 };
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
 #define __func__ __FUNCTION__
 #else
-static char const __func__[] = "stun_dns";
+static char const __func__[] = "stunc";
 #endif
 
 #ifndef SU_DEBUG
@@ -67,7 +71,14 @@ static char const __func__[] = "stun_dns";
 
 void usage(char *name)
 {
-  fprintf(stderr, "usage: %s <server> [-s] [-b] [-n] [-l]\n", name);
+  fprintf(stderr, 
+	  "usage: %s <server> [-b] [-n] [-l] [-r] [-s]\n"
+	  "  -b\tmake a binding request\n"
+	  "  -l\tperform NAT lifetime check\n"
+	  "  -n\tperform NAT type check\n"
+	  "  -s\trequest shared-secret over TLS (combined with -[bln])\n"
+	  "  -l\tperform NAT type check (combined with -[bln]\n",
+	  name);
   exit(1);
 }
 
@@ -183,14 +194,6 @@ void stunc_bind_cb(stunc_t *stunc,
 			  ipaddr, sizeof(ipaddr)),
 		(unsigned) ntohs(sa->su_port)));
 
-
-#if 0
-    if (stun_handle_test_lifetime(sh, STUNTAG_SOCKET(s), TAG_NULL()) < 0) {
-      SU_DEBUG_0(("%s: %s  failed\n", __func__, "stun_handle_test_lifetime()"));
-      su_root_break(stun_handle_root(sh));
-    }
-#endif
-
   break;
 
   case stun_discovery_timeout:
@@ -270,7 +273,7 @@ void stunc_lifetime_cb(stunc_t *stunc,
 
 int main(int argc, char *argv[])
 {
-  int err, i, sflags = 0;
+  int err = 0, i, sflags = 0;
   stunc_t stunc[1]; 
   su_root_t *root = su_root_create(stunc);
   stun_handle_t *sh;
@@ -288,6 +291,8 @@ int main(int argc, char *argv[])
       sflags |= do_nat_check;
     else if (strcmp(argv[i], "-l") == 0)
       sflags |= do_life_check;
+    else if (strcmp(argv[i], "-r") == 0)
+      sflags |= do_randomize_port;
     else {
       fprintf(stderr, "Unable to parse option %s.\n", argv[i]);
       usage(argv[0]);
@@ -314,6 +319,30 @@ int main(int argc, char *argv[])
 
   stunc->sc_socket = s;
   stunc->sc_flags = sflags;
+
+  if (sflags & do_randomize_port) {
+    su_sockaddr_t sockaddr;
+    char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+    socklen_t socklen = sizeof(sockaddr);
+
+    memset(&sockaddr, 0, sizeof(su_sockaddr_t));
+
+    srand((unsigned int)time((time_t *)NULL));
+    sockaddr.su_port = htons((rand() % (65536 - 1024)) + 1024);
+
+    SU_DEBUG_3(("stunc: Binding to local port %u.\n", ntohs(sockaddr.su_port)));
+  
+    err = bind(s, (struct sockaddr *)&sockaddr, socklen);
+    if (err) {
+      SU_DEBUG_1(("%s: Error binding to %s:%u\n", __func__, 
+		  inet_ntop(sockaddr.su_family, SU_ADDR(&sockaddr), 
+			    ipaddr, sizeof(ipaddr)),
+		  (unsigned) ntohs(sockaddr.su_port)));
+      return -1;
+    }
+
+    stunc->sc_flags &= ~do_randomize_port;
+  }
 
   if (sflags & do_secret) {
     if (stun_obtain_shared_secret(sh, stunc_ss_cb, stunc, TAG_NULL()) < 0) {
@@ -360,8 +389,9 @@ int main(int argc, char *argv[])
       su_root_break(stun_root(sh));
     }
   }
-  
-  su_root_run(root);
+ 
+  if (err == 0)
+    su_root_run(root);
 
   stun_handle_destroy(sh);
   su_root_destroy(root);
