@@ -138,11 +138,10 @@ struct stun_discovery_s {
 
   /* NAT type related */
   stun_nattype_t   sd_nattype;       /**< Determined NAT type */
-  unsigned         sd_first:1;       /**< These are the requests  */
-  unsigned         sd_second:1;
-  unsigned         sd_third:1;
-  unsigned         sd_fourth:1;
-  unsigned         :0;
+  int              sd_first;       /**< These are the requests  */
+  int              sd_second;
+  int              sd_third;
+  int              sd_fourth;
 
   /* Life time related */
   int              sd_lt_cur;
@@ -1168,8 +1167,12 @@ static int stun_discovery_destroy(stun_discovery_t *sd)
 }
 
 /**
- * Initiates STUN discovery proces to find out NAT 
- * characteristics.
+ * Initiates STUN discovery process to find out NAT 
+ * characteristics. 
+ *
+ * Process partly follows the algorithm defined in RFC3489 section 
+ * 10.1. Due the known limitations of RFC3489, some of the tests
+ * are done. 
  *
  * Note: does not support STUNTAG_DOMAIN() even if specified to
  * stun_handle_init().
@@ -2020,16 +2023,75 @@ static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   return 0;
 }
 
+/**
+ * Returns a non-zero value if some local interface address
+ * matches 'sockaddr'.
+ */
+static int priv_find_matching_localadress(su_sockaddr_t *sockaddr)
+{
+  su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
+  int i, error, found = 0;
+  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+
+  SU_DEBUG_5(("%s: checking if %s is a local address.\n",
+	      __func__, 
+	      inet_ntop(AF_INET, SU_ADDR(sockaddr),
+			ipaddr, sizeof(ipaddr))));
+
+  hints->li_family = AF_INET;
+  if ((error = su_getlocalinfo(hints, &res)) == 0) {
+    
+    /* check if any of the address match 'sockaddr'  */
+    for (i = 0, li = res; li; li = li->li_next) {
+      if (li->li_family != AF_INET)
+	continue;
+      
+      if (memcmp(SU_ADDR(sockaddr), SU_ADDR(li->li_addr), SU_ADDRLEN(sockaddr)) == 0
+) {
+	SU_DEBUG_5(("%s: found matching local address %s.\n",
+		    __func__, 
+		    inet_ntop(li->li_family, SU_ADDR(li->li_addr),
+			      ipaddr, sizeof(ipaddr))));
+	found = 1;
+	break;
+      }
+      else {
+	SU_DEBUG_9(("%s: skipping local address %s.\n",
+		    __func__, 
+		    inet_ntop(li->li_family, SU_ADDR(li->li_addr),
+			      ipaddr, sizeof(ipaddr))));
+      }
+    }
+  }  
+
+  return found;
+}
+
+static void priv_mark_discovery_done(stun_discovery_t *sd, 
+				     stun_handle_t *sh, 
+				     stun_action_t action, 
+				     stun_request_t *req)
+{
+  sd->sd_state = stun_discovery_done;
+  if (sd->sd_callback)
+    sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+  req->sr_state = stun_req_dispose_me;
+}
+
+/**
+ * Handles responses related to the NAT type discovery process.
+ *
+ * @see stun_test_nattype().
+ */
 static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 {
-  su_sockaddr_t local;
-  socklen_t locallen;
   stun_handle_t *sh = req->sr_handle;
   su_localinfo_t *li = NULL;
   stun_discovery_t *sd = req->sr_discovery;
-  su_socket_t s = sd->sd_socket;
   stun_action_t action;
   int err;
+  /* test status: 0 not received, -1 timeout, 1 response received */
+  int reply_res;
 
   enter;
 
@@ -2049,132 +2111,93 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
   /* mapped address */
   li = &req->sr_localinfo;
 
+  /* check whether the response timed out or not */
+  if (req->sr_state == stun_req_timeout) 
+    reply_res = -1;
+  else
+    reply_res = 1;
+
+  /* note: Test I completed - reply from the destination address
+   *       where we sent our packet  */
   if (req->sr_request_mask == 0) {
-    sd->sd_first = 1;
-    memcpy(sd->sd_addr_seen_outside, li->li_addr, sizeof(su_sockaddr_t));
+    sd->sd_first = reply_res;
+    if (reply_res)
+      memcpy(sd->sd_addr_seen_outside, li->li_addr, sizeof(su_sockaddr_t));
   }
-  else if (req->sr_request_mask & (CHG_IP | CHG_PORT))
-    sd->sd_second = 1;
+
+  /* note: Test II completed - reply from another address and port  */
+  else if ((req->sr_request_mask & CHG_IP) &&
+	   (req->sr_request_mask & CHG_PORT))
+    sd->sd_second = reply_res;
+
+  /* note: Test III completed -  reply from another port  */
   else if (req->sr_request_mask & CHG_PORT)
-    sd->sd_third = 1;
+    sd->sd_third = reply_res;
 
-  memset(&local, 0, sizeof(local));
-  locallen = sizeof(local);
-  err = getsockname(s, (struct sockaddr *) &local, &locallen);
-  if (err < 0)
-    STUN_ERROR(err, getsockname);
+  SU_DEBUG_9(("stun natcheck status: 1st=%d, 2nd=%d, 3rd=%d, 4th=%d, mask=%d, sr_state=%d (timeout=%d, done=%d)..\n",
+	      sd->sd_first, sd->sd_second, sd->sd_third, sd->sd_fourth, req->sr_request_mask, req->sr_state, stun_req_timeout, stun_discovery_done));
 
-  if ((req->sr_state == stun_discovery_timeout)) {
-    if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
-	  sd->sd_nattype = stun_nat_port_res_cone;
-	  sd->sd_state = stun_discovery_done;
-
-	  /* Use per discovery specific callback */
-	  if (sd->sd_callback)
-	    sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-
-	  req->sr_state = stun_dispose_me;
-	  /* stun_request_destroy(req); */
-	  /* stun_discovery_destroy(sd); */
-	  return 0;
-    }
-    else if (sd->sd_first && sd->sd_second && sd->sd_fourth) {
-      /* Sudden network problem */
-      sd->sd_nattype = stun_nat_unknown;
-      sd->sd_state = stun_discovery_done;
-
-      /* Use per discovery specific callback */
-      if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-
-      req->sr_state = stun_dispose_me;
-
-      return 0;
-    }
-    else if (sd->sd_first && sd->sd_second) {
-      if (memcmp(li->li_addr, li->li_addr, 8) == 0) {
-	sd->sd_nattype = stun_sym_udp_fw;
-	sd->sd_state = stun_discovery_done;
-
-	/* Use per discovery specific callback */
-	if (sd->sd_callback)
-	  sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-
-	req->sr_state = stun_dispose_me;
-
-	return 0;
-      }
-      else {
-	sd->sd_fourth = 1;
-
-	/* The request will be destroyed by the timer */
-	req->sr_state = stun_dispose_me;
-	req = NULL;
-
-	req = stun_request_create(sd);
-	if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
-	  return -1;
-
-	err = stun_send_binding_request(req, sd->sd_sec_addr);
-	if (err < 0) {
-	  stun_free_message(req->sr_msg);
-	  return -1;
-	}
-	return 0;
-      }
-    }
-    else if (sd->sd_first) {
-      sd->sd_nattype = stun_udp_blocked;
-      sd->sd_state = stun_discovery_done;
-
-      /* Use per discovery specific callback */
-      if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-
-      req->sr_state = stun_dispose_me;
-
-      return 0;
-    }
+  /* case 1: no response to Test-I */
+  if (sd->sd_first < 0) {
+    sd->sd_nattype = stun_udp_blocked;
+    priv_mark_discovery_done(sd, sh, action, req);
   }
-  else {
-    if (sd->sd_first && sd->sd_second && sd->sd_third && sd->sd_fourth) {
-      if (memcmp(li->li_addr, sd->sd_addr_seen_outside, 8) == 0) {
-	/* Response: Type 6 - Restricted */
-	sd->sd_nattype = stun_nat_res_cone;
-      }
-      else {
-	sd->sd_nattype = stun_nat_sym;
-      }
+  /* case 2: mapped address matches our local address */
+  else if (sd->sd_first > 0 &&
+	   sd->sd_second && 
+	   priv_find_matching_localadress(sd->sd_addr_seen_outside)) {
+    if (sd->sd_second > 0) 
+      sd->sd_nattype = stun_open_internet;
+    else
+      sd->sd_nattype = stun_sym_udp_fw;
+    priv_mark_discovery_done(sd, sh, action, req);
+  }
+  /* case 3: response ok to Test-II, and behind a NAT */
+  else if (sd->sd_first > 0 && 
+	   sd->sd_second > 0) {
+    sd->sd_nattype = stun_nat_full_cone;
+    priv_mark_discovery_done(sd, sh, action, req);
+  }
+  /* case 4: no response Test-II */
+  else if (sd->sd_first > 0 && 
+	   sd->sd_second < 0 &&
+	   sd->sd_fourth == 0) {
 
-      sd->sd_state = stun_discovery_done;
+    /* note: no response received, perform Test IV using the address
+       learnt from response to Test-I */
 
-      /* Use per discovery specific callback */
-      if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+    sd->sd_fourth = 1;
 
-      req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
+    req = NULL;
+    
+    req = stun_request_create(sd);
+    if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
+      return -1;
 
-      return 0;
+    err = stun_send_binding_request(req, sd->sd_sec_addr);
+    if (err < 0) {
+      stun_free_message(req->sr_msg);
+      return -1;
     }
-    if (sd->sd_first && sd->sd_second) {
-      if (memcmp(li->li_addr, sd->sd_addr_seen_outside, 8) == 0)
-	sd->sd_nattype = stun_open_internet;
-      else
-	sd->sd_nattype = stun_nat_full_cone;
-
-      sd->sd_state = stun_discovery_done;
-
-      /* Use per discovery specific callback */
-      if (sd->sd_callback)
-	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
-
-      req->sr_state = stun_dispose_me;
-      return 0;
-    }
-    else if (sd->sd_first) {
-      if (memcmp(&local, li->li_addr, 8) == 0)
-	return 0;
-    }
+    
+    return 0; /* we don't want to dispose this req */
+  }
+  /* case 5: no response Test-II, and success with III */
+  else if (sd->sd_first > 0 && 
+	   sd->sd_second < 0 &&
+	   sd->sd_third > 0 &&
+	   sd->sd_fourth) {
+    sd->sd_nattype = stun_nat_res_cone;
+    priv_mark_discovery_done(sd, sh, action, req);
+  }
+  /* case 6: no response to Test-II nor III */
+  else if (sd->sd_first > 0 && 
+	   sd->sd_second < 0 &&
+	   sd->sd_third < 0 &&
+	   sd->sd_fourth) {
+    sd->sd_nattype = stun_nat_port_res_cone;
+    priv_mark_discovery_done(sd, sh, action, req);
   }
 
   /* this request of the discovery process can be disposed */
@@ -2260,7 +2283,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
   else {
     SU_DEBUG_3(("%s: Timeout no. %d, retransmitting.\n",
 		__func__, req->sr_retry_count));
-    
+
     /* Use pre-defined destination address for re-sends */
     if (stun_send_message(req->sr_socket, req->sr_destination,
 			  req->sr_msg, &(sh->sh_passwd)) < 0) {
@@ -2269,6 +2292,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
       return;
     }
     timeout = req->sr_timeout *= 2;
+
   }
   
   su_timer_set_at(t, stun_sendto_timer_cb, (su_wakeup_arg_t *) req,
