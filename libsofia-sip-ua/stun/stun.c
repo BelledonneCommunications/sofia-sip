@@ -2193,8 +2193,8 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
      * Test-II by the STUN server to send us packets.
      */
 
-    req->sr_state = stun_req_dispose_me;
-    req = NULL;
+    SU_DEBUG_7(("Sending Test-IV packet to %s.\n",
+	       inet_ntoa(sd->sd_sec_addr[0].su_sin.sin_addr)));
     
     sd->sd_fourth = 2; /* request, -1, 0, 1 reserved for results */
     req->sr_state = stun_req_dispose_me;
