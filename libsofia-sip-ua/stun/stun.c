@@ -80,17 +80,19 @@ enum {
   STUN_TLS_CONNECT_TIMEOUT = 8000,
 };
 
-/* NAT TYPES */
-typedef enum stun_nattype_e {
-  stun_nat_unknown,
-  stun_open_internet,
-  stun_udp_blocked,
-  stun_sym_udp_fw,
-  stun_nat_full_cone,
-  stun_nat_sym,
-  stun_nat_res_cone,
-  stun_nat_port_res_cone,
-} stun_nattype_t;
+/**
+ * States of STUN requests. See stun_state_e for states
+ * discovery processes.
+ */ 
+typedef enum stun_req_state_e {
+  stun_req_no_assigned_event,
+  stun_req_dispose_me,            /**< request can be disposed */
+  stun_req_discovery_init,
+  stun_req_discovery_processing,
+
+  stun_req_error,
+  stun_req_timeout
+} stun_req_state_t;
 
 #define CHG_IP		0x001
 #define CHG_PORT	0x004
@@ -226,20 +228,20 @@ char const *stun_str_state(stun_state_t state)
 {
   switch (state) {
   STUN_STATE_STR(stun_no_assigned_event);
-  STUN_STATE_STR(stun_dispose_me);
+  /* STUN_STATE_STR(stun_req_dispose_me); */
   STUN_STATE_STR(stun_tls_connecting);
   STUN_STATE_STR(stun_tls_writing);
   STUN_STATE_STR(stun_tls_closing);
   STUN_STATE_STR(stun_tls_reading);
   STUN_STATE_STR(stun_tls_done);
-  STUN_STATE_STR(stun_discovery_init);
-  STUN_STATE_STR(stun_discovery_processing);
+  /* STUN_STATE_STR(stun_req_discovery_init); */
+  /* STUN_STATE_STR(stun_req_discovery_processing); */
   STUN_STATE_STR(stun_discovery_done);
   STUN_STATE_STR(stun_tls_connection_timeout);
   STUN_STATE_STR(stun_tls_connection_failed);
   STUN_STATE_STR(stun_tls_ssl_connect_failed);
   STUN_STATE_STR(stun_discovery_timeout);
-  STUN_STATE_STR(stun_request_timeout);
+  /* STUN_STATE_STR(stun_req_timeout); */
   
   case stun_error:
   default: return "stun_error";
@@ -248,8 +250,11 @@ char const *stun_str_state(stun_state_t state)
 
 /** 
  * Returns the NAT type attached to STUN discovery handle.
+ *
+ * @see stun_nattype_str().
+ * @see stun_test_nattype().
  */
-char const *stun_nattype(stun_discovery_t *sd)
+char const *stun_nattype_str(stun_discovery_t *sd)
 {
   char const *stun_nattype_str[] = {
     "NAT type undetermined",
@@ -266,6 +271,20 @@ char const *stun_nattype(stun_discovery_t *sd)
     return stun_nattype_str[sd->sd_nattype];
   else
     return stun_nattype_str[stun_nat_unknown];
+}
+
+/**
+ * Returns the detected NAT type.
+ * 
+ * @see stun_nattype_str().
+ * @see stun_test_nattype().
+ */
+stun_nattype_t stun_nattype(stun_discovery_t *sd)
+{
+  if (!sd)
+    return stun_nat_unknown;
+
+  return sd->sd_nattype;
 }
 
 su_addrinfo_t const *stun_server_address(stun_handle_t *sh)
@@ -618,7 +637,7 @@ static stun_request_t *stun_request_create(stun_discovery_t *sd)
   
   req->sr_msg = calloc(sizeof(stun_msg_t), 1);
 
-  req->sr_state = stun_discovery_init;
+  req->sr_state = stun_req_discovery_init;
   memcpy(req->sr_local_addr, sd->sd_bind_addr, sizeof(su_sockaddr_t));
 
   /* Insert this request to the request queue */
@@ -1771,19 +1790,19 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
 
   case stun_action_keepalive:
     SU_DEBUG_3(("%s: Response to keepalive received.\n", __func__));
-    req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
     break;
 
   case stun_action_no_action:
     SU_DEBUG_3(("%s: Unknown response. No matching request found.\n", __func__));
-    req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
     break;
 
   default:
     SU_DEBUG_3(("%s: bad action.\n", __func__));
-    req->sr_state = stun_error;
+    req->sr_state = stun_req_error;
 
-    req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
     break;
   }
   
@@ -1886,7 +1905,7 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
   su_sockaddr_t *destination;
 
   /* Even the first message could not be delivered */
-  if ((req->sr_state == stun_request_timeout) && (req->sr_from_y == -1)) {
+  if ((req->sr_state == stun_req_timeout) && (req->sr_from_y == -1)) {
     SU_DEBUG_0(("%s: lifetime determination failed.\n", __func__));
     sd->sd_state = stun_discovery_timeout;
 
@@ -1894,7 +1913,7 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
     if (sd->sd_callback)
       sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
-    req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
     return 0;
   }
 
@@ -1905,13 +1924,13 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
     if (sd->sd_callback)
       sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
-    req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
     return 0;
   }
 
   /* We come here as a response to a request send from the sockfdy */
   if (req->sr_from_y == 1) {
-    req->sr_state = stun_dispose_me, req = NULL;
+    req->sr_state = stun_req_dispose_me, req = NULL;
 
     new = stun_request_create(sd);
     new->sr_from_y = 0;
@@ -1953,7 +1972,7 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
   stun_free_message(binding_response);
   
   /* Destroy me with the bad mofo timer */
-  req->sr_state = stun_dispose_me, req = NULL;
+  req->sr_state = stun_req_dispose_me, req = NULL;
   
   new = stun_request_create(sd);
   /* Use sockfdy */
@@ -1996,7 +2015,7 @@ static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   if (sd->sd_callback)
     sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
-  req->sr_state = stun_dispose_me;
+  req->sr_state = stun_req_dispose_me;
 
   return 0;
 }
@@ -2018,7 +2037,7 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
   /* If the NAT type is already detected, ignore this request */
   if (!sd || (sd->sd_nattype != stun_nat_unknown)) {
-    req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
     /* stun_request_destroy(req); */
     return 0;
   }
@@ -2158,8 +2177,8 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
     }
   }
 
-  /* The discovery process is still ongoing, but I can be killed */
-  req->sr_state = stun_dispose_me;
+  /* this request of the discovery process can be disposed */
+  req->sr_state = stun_req_dispose_me;
 
   return 0;
 }
@@ -2177,7 +2196,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
   enter;
 
-  if (req->sr_state == stun_dispose_me) {
+  if (req->sr_state == stun_req_dispose_me) {
     stun_request_destroy(req);
     SU_DEBUG_7(("%s: timer destroyed.\n", __func__));
     return;
@@ -2195,7 +2214,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
     /* Either the server was dead, address wrong or STUN_UDP_BLOCKED */
     /* sd->sd_nattype = stun_udp_blocked; */
-    req->sr_state = stun_request_timeout;
+    req->sr_state = stun_req_timeout;
     /* If the action is binding request, we are done. If action was
        NAT type determination, process with the state machine. */
     switch (action) {
@@ -2206,7 +2225,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
       if (sd->sd_callback)
 	sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
 
-      req->sr_state = stun_dispose_me;
+      req->sr_state = stun_req_dispose_me;
       break;
 
     case stun_action_test_nattype:
@@ -2235,7 +2254,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     }
 
     /* Destroy me immediately */
-    req->sr_state = stun_dispose_me;
+    req->sr_state = stun_req_dispose_me;
     timeout = 0;
   }
   else {
@@ -2306,7 +2325,7 @@ static int stun_send_binding_request(stun_request_t *req,
   su_timer_set(sendto_timer, stun_sendto_timer_cb, (su_wakeup_arg_t *) req);
 
   req->sr_timer = sendto_timer;
-  req->sr_state = stun_discovery_processing;
+  req->sr_state = stun_req_discovery_processing;
 
   return 0;
 }
@@ -2906,7 +2925,7 @@ int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
    * associated with the given socket. */
   for (req = sh->sh_requests; req; req = req->sr_next) {
     if (req->sr_socket == s && req->sr_discovery->sd_action == action) {
-      req->sr_state = stun_dispose_me;
+      req->sr_state = stun_req_dispose_me;
       if (!sd)
 	sd = req->sr_discovery;
     }

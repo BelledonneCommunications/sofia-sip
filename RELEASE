@@ -44,11 +44,13 @@ API/ABI changes and versioning
 
 - Major changes in stun:
   - Added the stun_dns_lookup.*() interface to sofia-sip/stun.h.
-
   - stun_handle_() functions are replaced by stun_() functions in 
     <sofia-sip/stun.h>.
-
   - Discovery context pointer and callback added to stun_bind()
+  - Removed all request-specific states of stun_state_t from
+    the public interface.
+  - Modified signature for stun_nattype(), added stun_nattype_str().
+    The stun_nattype_t enum is now part of the public header.
 
 - Removed old rtsp-related nua functions and events not used anymore.
 

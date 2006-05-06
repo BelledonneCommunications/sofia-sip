@@ -80,40 +80,59 @@ typedef enum stun_action_s {
 } stun_action_t;
 
 /**
+ * NAT types
+ *
+ * XXX: should be extended to distinguish between filtering and
+ *      mapping allocation behaviour (see IETF BEHAVE documents)
+ *
+ * Note: the NAT type detection algorithm can fail in 
+ *       case where the NAT behaves in a nondeterministic 
+ *       fashion.
+ **/
+typedef enum stun_nattype_e {
+  stun_nat_unknown,       /**< */
+  stun_open_internet,     /**< no NAT between client and STUN server */
+  stun_udp_blocked,       /**< UDP communication blocked by FW */
+  stun_sym_udp_fw,        /**< no NAT, address and port restricted filtering */
+  stun_nat_full_cone,     /**< endpoint independent filtering */
+  stun_nat_sym,           /**< RFC3489 symmetric NAT */
+  stun_nat_res_cone,      /**< address restricted filtering */
+  stun_nat_port_res_cone, /**< address and port restricted filtering */
+} stun_nattype_t;
+
+/**
  * States of the STUN client->server query process.
+ *
+ * @see stun_bind()
+ * @see stun_obtain_shared_secret()
+ * @see stun_test_nattype()
+ * @see stun_test_lifetime()
  */ 
 typedef enum stun_state_e {
   
   stun_no_assigned_event,
-  stun_dispose_me,
 
-  /* DNS-SRV lookups */
-  stun_dns_lookup_pending,
-
-  /* TLS events */
-  stun_tls_connecting,
-  stun_tls_ssl_connecting,
-  stun_tls_writing,
-  stun_tls_closing,
-  stun_tls_reading,
-  stun_tls_done,
+  /* TLS events; see stun_obtain_shared_request() */
+  stun_tls_connecting,          /**< Connecting to TLS port */
+  stun_tls_ssl_connecting,      /**< Started the TLS/SSL handshake */
+  stun_tls_writing,             /**< Next step: send request */
+  stun_tls_closing,             /**< Closing TLS connection */
+  stun_tls_reading,             /**< Request send, waiting for response */
+  stun_tls_done,                /**< Shared-secret acquired */
 
   /* STUN discovery events */
-  stun_discovery_init,
-  stun_discovery_processing,
-  stun_discovery_done,
+  stun_discovery_done,          /**< Discovery process done */
 
   /* STUN errors */
   /* Do not change the order! Errors need to be after stun_error */
 
-  stun_error,
-  stun_tls_connection_timeout,
-  stun_tls_connection_failed,
-  stun_tls_ssl_connect_failed,
+  stun_error,                   /**< Generic error in discovery process */
+  stun_tls_connection_timeout,  /**< No response to connect attempt */
+  stun_tls_connection_failed,   /**< No response from TLS/SSL server  */
+  stun_tls_ssl_connect_failed,  /**< TLS/SSL handshake failed */
 
-  stun_request_timeout,
-  stun_discovery_error,
-  stun_discovery_timeout,
+  stun_discovery_error,         /**< Error in discovery process */
+  stun_discovery_timeout,       /**< No response to discovery request */
 
 } stun_state_t;
 
@@ -179,7 +198,8 @@ int stun_discovery_release_socket(stun_discovery_t *sd);
 int stun_test_nattype(stun_handle_t *sh,
 		       stun_discovery_f, stun_discovery_magic_t *magic,
 		       tag_type_t tag, tag_value_t value, ...);
-char const *stun_nattype(stun_discovery_t *sd);
+char const *stun_nattype_str(stun_discovery_t *sd);
+stun_nattype_t stun_nattype(stun_discovery_t *sd);
 
 int stun_test_lifetime(stun_handle_t *sh,
 			stun_discovery_f, stun_discovery_magic_t *magic,

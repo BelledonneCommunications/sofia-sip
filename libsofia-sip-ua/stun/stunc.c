@@ -224,7 +224,7 @@ void stunc_nattype_cb(stunc_t *stunc,
     break;
 
   case stun_discovery_done:
-    SU_DEBUG_3(("%s: NAT type determined to be %s.\n", __func__, stun_nattype(sd)));
+    SU_DEBUG_3(("%s: NAT type determined to be %s.\n", __func__, stun_nattype_str(sd)));
     break;
 
   case stun_error:
