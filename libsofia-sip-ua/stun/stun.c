@@ -2067,6 +2067,9 @@ static int priv_find_matching_localadress(su_sockaddr_t *sockaddr)
   return found;
 }
 
+/**
+ * Helper function for action_determine_nattype().
+ */
 static void priv_mark_discovery_done(stun_discovery_t *sd, 
 				     stun_handle_t *sh, 
 				     stun_action_t action, 
@@ -2080,6 +2083,10 @@ static void priv_mark_discovery_done(stun_discovery_t *sd,
 
 /**
  * Handles responses related to the NAT type discovery process.
+ * 
+ * The requests for Tests I-III are sent in parallel, so the
+ * callback has to keep track of which requests have been received
+ * and postpone decisions until enough responses have been processed.
  *
  * @see stun_test_nattype().
  */
@@ -2119,7 +2126,7 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
   /* note: Test I completed - reply from the destination address
    *       where we sent our packet  */
-  if (req->sr_request_mask == 0) {
+  if (req->sr_request_mask == 0 && sd->sd_first == 0) {
     sd->sd_first = reply_res;
     if (reply_res)
       memcpy(sd->sd_addr_seen_outside, li->li_addr, sizeof(su_sockaddr_t));
@@ -2134,15 +2141,22 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
   else if (req->sr_request_mask & CHG_PORT)
     sd->sd_third = reply_res;
 
+  /* note: Test IV completed - request and reply to another port */
+  else if (req->sr_request_mask == 0 && sd->sd_fourth == 2)
+    sd->sd_fourth = reply_res;
+
   SU_DEBUG_9(("stun natcheck status: 1st=%d, 2nd=%d, 3rd=%d, 4th=%d, mask=%d, sr_state=%d (timeout=%d, done=%d)..\n",
 	      sd->sd_first, sd->sd_second, sd->sd_third, sd->sd_fourth, req->sr_request_mask, req->sr_state, stun_req_timeout, stun_discovery_done));
 
-  /* case 1: no response to Test-I */
+  /* case 1: no response to Test-I (symmetric response)
+   *         a FW must be blocking us */
   if (sd->sd_first < 0) {
     sd->sd_nattype = stun_udp_blocked;
     priv_mark_discovery_done(sd, sh, action, req);
   }
-  /* case 2: mapped address matches our local address */
+  /* case 2: mapped address matches our local address 
+   *         not behind a NAT, result of test two determinces
+   *         whether we are behind a symmetric FW or not */
   else if (sd->sd_first > 0 &&
 	   sd->sd_second && 
 	   priv_find_matching_localadress(sd->sd_addr_seen_outside)) {
@@ -2152,27 +2166,43 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
       sd->sd_nattype = stun_sym_udp_fw;
     priv_mark_discovery_done(sd, sh, action, req);
   }
-  /* case 3: response ok to Test-II, and behind a NAT */
+  /* case 3: response ok to Test-II, and behind a NAT 
+   *         do not make conclusions until Test-IV has been scheduled */
   else if (sd->sd_first > 0 && 
-	   sd->sd_second > 0) {
+	   sd->sd_second > 0 &&
+	   sd->sd_fourth) {
     sd->sd_nattype = stun_nat_full_cone;
     priv_mark_discovery_done(sd, sh, action, req);
   }
-  /* case 4: no response Test-II */
+  /* case 4: tests I-III done, perform IV 
+   *         see notes below */
   else if (sd->sd_first > 0 && 
-	   sd->sd_second < 0 &&
+	   sd->sd_second &&
+	   sd->sd_third &&
 	   sd->sd_fourth == 0) {
 
-    /* note: no response received, perform Test IV using the address
-       learnt from response to Test-I */
-
-    sd->sd_fourth = 1;
+    /* 
+     * No response received, so we now perform Test IV using the address
+     * learnt from response to Test-I. 
+     * 
+     * Unfortunately running  this test will potentially affect
+     * results of a subsequent Test-II (depends on NAT binding timeout
+     * values). To get around this, the STUN server would ideally have 
+     * a dedicated IP:port for Test-IV. But within the currents specs,
+     * we need to reuse one of the IP:port addresses already used in 
+     * Test-II by the STUN server to send us packets.
+     */
 
     req->sr_state = stun_req_dispose_me;
     req = NULL;
     
+    sd->sd_fourth = 2; /* request, -1, 0, 1 reserved for results */
+    req->sr_state = stun_req_dispose_me;
     req = stun_request_create(sd);
-    if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0) 
+    if (stun_make_binding_req(sh, req, req->sr_msg, 
+			      STUNTAG_CHANGE_IP(0), 
+			      STUNTAG_CHANGE_PORT(0), 
+			      TAG_END()) < 0) 
       return -1;
 
     err = stun_send_binding_request(req, sd->sd_sec_addr);
@@ -2183,7 +2213,9 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
     
     return 0; /* we don't want to dispose this req */
   }
-  /* case 5: no response Test-II, and success with III */
+  /* case 5: no response Test-II, and success with III
+   *         the NAT is filtering packets from different IP
+   *         do not make conclusions until Test-IV has been scheduled */
   else if (sd->sd_first > 0 && 
 	   sd->sd_second < 0 &&
 	   sd->sd_third > 0 &&
@@ -2191,7 +2223,9 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
     sd->sd_nattype = stun_nat_res_cone;
     priv_mark_discovery_done(sd, sh, action, req);
   }
-  /* case 6: no response to Test-II nor III */
+  /* case 6: no response to Test-II nor III 
+   *         the NAT is filtering packets from different IP:port
+   *         do not make conclusions until Test-IV has been scheduled */
   else if (sd->sd_first > 0 && 
 	   sd->sd_second < 0 &&
 	   sd->sd_third < 0 &&
