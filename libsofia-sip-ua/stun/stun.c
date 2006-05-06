@@ -2260,8 +2260,11 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
   ++req->sr_retry_count;
 
-  /* check if max retry count has been exceeded */
-  if (req->sr_retry_count >= sh->sh_max_retries) {
+  /* check if max retry count has been exceeded; or if 
+   * action type is NAT type check (XXX: the request attributes
+   * are not passed correctly to resend function) */
+  if (req->sr_retry_count >= sh->sh_max_retries ||
+      action == stun_action_test_nattype) {
     errno = ETIMEDOUT;
     STUN_ERROR(errno, stun_sendto_timer_cb);
 
@@ -2271,6 +2274,7 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
     /* Either the server was dead, address wrong or STUN_UDP_BLOCKED */
     /* sd->sd_nattype = stun_udp_blocked; */
     req->sr_state = stun_req_timeout;
+    
     /* If the action is binding request, we are done. If action was
        NAT type determination, process with the state machine. */
     switch (action) {
