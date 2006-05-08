@@ -790,11 +790,9 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int reg_socket)
 
   SU_DEBUG_7(("%s: socket registered.\n", __func__));
 
-  bind_len = sizeof bind_addr;
-
   sa = (void *) &bind_addr;
-  bind_len = sizeof bind_addr;
-  memset(sa, 0, sizeof(bind_addr));
+  bind_len = SU_SOCKADDR_SIZE(sa);
+  memset(sa, 0, bind_len);
   /* if bound check the error */
   err = getsockname(s, (struct sockaddr *) sa, &bind_len);
   if (err < 0 && errno == SOCKET_ERROR) {
@@ -807,6 +805,8 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int reg_socket)
 #if defined (__CYGWIN__)
     get_localinfo(clientinfo);
 #endif
+
+    sa->su_family = AF_INET;
 
     if ((err = bind(s, (struct sockaddr *) sa, bind_len)) < 0) {
       STUN_ERROR(errno, bind);
@@ -2222,15 +2222,22 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
     sd->sd_fourth = 2; /* request, -1, 0, 1 reserved for results */
     req->sr_state = stun_req_dispose_me;
     req = stun_request_create(sd);
-    if (stun_make_binding_req(sh, req, req->sr_msg, 
-			      STUNTAG_CHANGE_IP(0), 
-			      STUNTAG_CHANGE_PORT(0), 
-			      TAG_END()) < 0) 
-      return -1;
+    err = stun_make_binding_req(sh, req, req->sr_msg,
+				STUNTAG_CHANGE_IP(0),
+				STUNTAG_CHANGE_PORT(0),
+				TAG_END());
 
-    err = stun_send_binding_request(req, sd->sd_sec_addr);
+    if (err == 0) {
+      err = stun_send_binding_request(req, sd->sd_sec_addr);
+    }
+
     if (err < 0) {
+      SU_DEBUG_0(("WARNING: Failure in performing STUN Test-IV check. "
+		  "The results related to mapping characteristics may be incorrect."));
       stun_free_message(req->sr_msg);
+      sd->sd_fourth = -1;
+      /* call function again, sd_fourth stops the recursion */
+      action_determine_nattype(req, binding_response);
       return -1;
     }
     

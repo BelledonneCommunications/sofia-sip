@@ -278,9 +278,14 @@ int main(int argc, char *argv[])
 {
   int err = 0, i, sflags = 0;
   stunc_t stunc[1]; 
-  su_root_t *root = su_root_create(stunc);
+  su_root_t *root;
   stun_handle_t *sh;
   su_socket_t s;
+
+  if (su_init() != 0) 
+    return -1;
+
+  root = su_root_create(stunc);
 
   if (argc < 3)
     usage(argv[0]);
@@ -313,7 +318,7 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  s = su_socket(AF_INET, SOCK_DGRAM, 0); 
+  s = su_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
   if (s == -1) {
     SU_DEBUG_0(("%s: %s  failed: %s\n", __func__,
 		"su_socket()", su_gli_strerror(errno)));
@@ -328,16 +333,17 @@ int main(int argc, char *argv[])
     char ipaddr[SU_ADDRSIZE + 2] = { 0 };
     socklen_t socklen = sizeof(sockaddr);
 
-    memset(&sockaddr, 0, sizeof(su_sockaddr_t));
-
     srand((unsigned int)time((time_t *)NULL));
+
+    memset(&sockaddr, 0, sizeof(su_sockaddr_t));
     sockaddr.su_port = htons((rand() % (65536 - 1024)) + 1024);
+    sockaddr.su_family = AF_INET;
 
     SU_DEBUG_3(("stunc: Binding to local port %u.\n", ntohs(sockaddr.su_port)));
   
     err = bind(s, (struct sockaddr *)&sockaddr, socklen);
-    if (err) {
-      SU_DEBUG_1(("%s: Error binding to %s:%u\n", __func__, 
+    if (err < 0) {
+      SU_DEBUG_1(("%s: Error %d binding to %s:%u\n", __func__, err,
 		  inet_ntop(sockaddr.su_family, SU_ADDR(&sockaddr), 
 			    ipaddr, sizeof(ipaddr)),
 		  (unsigned) ntohs(sockaddr.su_port)));
