@@ -46,6 +46,7 @@ typedef struct stunc_s stunc_t;
 
 #include "sofia-sip/stun.h"
 #include "sofia-sip/stun_tag.h"
+#include "sofia-sip/sofia_features.h"
 #include <sofia-sip/su.h>
 
 enum {
@@ -72,13 +73,14 @@ static char const __func__[] = "stunc";
 void usage(char *name)
 {
   fprintf(stderr, 
+	  "stunc (%s)\n"
 	  "usage: %s <server> [-b] [-n] [-l] [-r] [-s]\n"
 	  "  -b\tmake a binding request\n"
 	  "  -l\tperform NAT lifetime check\n"
 	  "  -n\tperform NAT type check\n"
 	  "  -s\trequest shared-secret over TLS (combined with -[bln])\n"
 	  "  -l\tperform NAT type check (combined with -[bln]\n",
-	  name);
+	  SOFIA_SIP_NAME_VERSION, name);
   exit(1);
 }
 

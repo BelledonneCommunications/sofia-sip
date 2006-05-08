@@ -13,7 +13,10 @@ AUTOMAKE_OPTIONS = 	foreign
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 		-I$(srcdir)/../su -I../su -I$(srcdir)/../sresolv
+INCLUDES = 		-I$(srcdir)/../su \
+			-I../su \
+			-I$(srcdir)/../sresolv \
+			-I$(srcdir)/../features
 
 # ----------------------------------------------------------------------
 # Build targets
