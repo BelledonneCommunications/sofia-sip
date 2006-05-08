@@ -89,8 +89,8 @@ Notes on new features
   registry database (similar to /etc/resolv.conf on UNIX systems). Closes
   sourceforge.net ticket #1445560.
 
-- The 'sip_options' tool has been added to win32 workspace 
-  as an example application for the library.  
+- The 'sip_options', 'sip_dig' and 'stunc' tools have been added to 
+  VC6/win32 workspace as an example applications for the library.  
 
 - The STUN NAT type check algorithm has been refactored. Terms used by 
   the IETF BEHAVE working group are now used to classify NAT/FW features. 
