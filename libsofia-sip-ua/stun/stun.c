@@ -161,8 +161,8 @@ struct stun_request_s {
   stun_handle_t    *sr_handle;          /**< backpointer, STUN object */
 
   su_socket_t       sr_socket;          /**< Alternative socket */
-  su_localinfo_t    sr_localinfo;       /**< NAT mapped address as localinfo */
-  su_sockaddr_t     sr_local_addr[1];   /**< NAT mapped address */
+  su_localinfo_t    sr_localinfo;       /**< local addrinfo */
+  su_sockaddr_t     sr_local_addr[1];   /**< local address */
   su_sockaddr_t     sr_destination[1];
 
   stun_state_t      sr_state;           /**< Progress states */
@@ -1816,8 +1816,7 @@ static int do_action(stun_handle_t *sh, stun_msg_t *msg)
   return 0;
 }
 
-static int process_binding_request(stun_request_t *req,
-				   stun_msg_t *binding_response)
+static int process_binding_request(stun_request_t *req, stun_msg_t *binding_response)
 {
   int retval = -1, clnt_addr_len;
   stun_attr_t *mapped_addr, *chg_addr;
@@ -2028,6 +2027,73 @@ static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
   return 0;
 }
 
+/**
+ * Returns a non-zero value if some local interface address
+ * matches 'sockaddr'.
+ */
+static int priv_find_matching_localadress(su_sockaddr_t *sockaddr)
+{
+  su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
+  int i, error, found = 0;
+  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+
+  SU_DEBUG_5(("%s: checking if %s is a local address.\n",
+	      __func__, 
+	      inet_ntop(AF_INET, SU_ADDR(sockaddr),
+			ipaddr, sizeof(ipaddr))));
+
+  hints->li_family = AF_INET;
+  if ((error = su_getlocalinfo(hints, &res)) == 0) {
+    
+    /* check if any of the address match 'sockaddr'  */
+    for (i = 0, li = res; li; li = li->li_next) {
+      if (li->li_family != AF_INET)
+	continue;
+      
+      if (memcmp(SU_ADDR(sockaddr), SU_ADDR(li->li_addr), SU_ADDRLEN(sockaddr)) == 0
+) {
+	SU_DEBUG_5(("%s: found matching local address %s.\n",
+		    __func__, 
+		    inet_ntop(li->li_family, SU_ADDR(li->li_addr),
+			      ipaddr, sizeof(ipaddr))));
+	found = 1;
+	break;
+      }
+      else {
+	SU_DEBUG_9(("%s: skipping local address %s.\n",
+		    __func__, 
+		    inet_ntop(li->li_family, SU_ADDR(li->li_addr),
+			      ipaddr, sizeof(ipaddr))));
+      }
+    }
+  }  
+
+  return found;
+}
+
+/**
+ * Helper function for action_determine_nattype().
+ */
+static void priv_mark_discovery_done(stun_discovery_t *sd, 
+				     stun_handle_t *sh, 
+				     stun_action_t action, 
+				     stun_request_t *req)
+{
+  sd->sd_state = stun_discovery_done;
+  if (sd->sd_callback)
+    sd->sd_callback(sd->sd_magic, sh, sd, action, sd->sd_state);
+  req->sr_state = stun_req_dispose_me;
+}
+
+/**
+ * Handles responses related to the NAT type discovery process.
+ * 
+ * The requests for Tests I-III are sent in parallel, so the
+ * callback has to keep track of which requests have been received
+ * and postpone decisions until enough responses have been processed.
+ *
+ * @see stun_test_nattype().
+ */
 static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_response)
 {
   stun_handle_t *sh = req->sr_handle;
@@ -2138,15 +2204,17 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	   sd->sd_third &&
 	   sd->sd_fourth == 0) {
 
-      return 0;
-    }
-    if (sd->sd_first && sd->sd_second) {
-      if (memcmp(li->li_addr, sd->sd_addr_seen_outside, 8) == 0)
-	sd->sd_nattype = stun_open_internet;
-      else
-	sd->sd_nattype = stun_nat_full_cone;
-
-    sd->sd_fourth = 1;
+    /* 
+     * No response received, so we now perform Test IV using the address
+     * learnt from response to Test-I. 
+     * 
+     * Unfortunately running  this test will potentially affect
+     * results of a subsequent Test-II (depends on NAT binding timeout
+     * values). To get around this, the STUN server would ideally have 
+     * a dedicated IP:port for Test-IV. But within the currents specs,
+     * we need to reuse one of the IP:port addresses already used in 
+     * Test-II by the STUN server to send us packets.
+     */
 
     SU_DEBUG_7(("Sending STUN NAT type Test-IV request to %s.\n",
 	       inet_ntoa(sd->sd_sec_addr[0].su_sin.sin_addr)));
@@ -2172,6 +2240,34 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
       action_determine_nattype(req, binding_response);
       return -1;
     }
+    
+    return 0; /* we don't want to dispose this req */
+  }
+  /* case 5: no response Test-II, and success with III
+   *         the NAT is filtering packets from different IP
+   *         do not make conclusions until Test-IV has been scheduled */
+  else if (sd->sd_first > 0 && 
+	   sd->sd_second < 0 &&
+	   sd->sd_third > 0 &&
+	   sd->sd_fourth) {
+    if (sd->sd_mapped_addr_match == 1)
+      sd->sd_nattype = stun_nat_res_cone;
+    else
+      sd->sd_nattype = stun_nat_ad_filt_ad_map;
+    priv_mark_discovery_done(sd, sh, action, req);
+  }
+  /* case 6: no response to Test-II nor III 
+   *         the NAT is filtering packets from different port
+   *         do not make conclusions until Test-IV has been scheduled */
+  else if (sd->sd_first > 0 && 
+	   sd->sd_second < 0 &&
+	   sd->sd_third < 0 &&
+	   sd->sd_fourth) {
+    if (sd->sd_mapped_addr_match == 1)
+      sd->sd_nattype = stun_nat_port_res_cone;
+    else
+      sd->sd_nattype = stun_nat_adp_filt_ad_map;
+    priv_mark_discovery_done(sd, sh, action, req);
   }
 
   /* this request of the discovery process can be disposed */
