@@ -136,13 +136,14 @@
  */
 
 struct su_timer_s {
+  /** Pointers within red-black tree */
   su_timer_t     *sut_left, *sut_right, *sut_parent;
   su_task_r       sut_task;	/**< Task reference */
   su_time_t       sut_when;	/**< When timer should be waken up next time */
   su_duration_t   sut_duration;	/**< Timer duration */
   su_timer_f      sut_wakeup;	/**< Function to call when waken up */
   su_timer_arg_t *sut_arg;	/**< Pointer to argument data */
-  su_time_t       sut_run;	/**< When this timer started to run */
+  su_time_t       sut_run;	/**< When this timer was last waken up */
   unsigned        sut_woken;	/**< Timer has waken up this many times */
   unsigned short  sut_running;	/**< Timer is running */
 
@@ -152,8 +153,8 @@ struct su_timer_s {
 
 enum sut_running {
   reset = 0,
-  run_at_intervals = 1,
-  run_for_ever = 2
+  run_at_intervals = 1, /**< Compensate missed wakeup calls */
+  run_for_ever = 2	/**< Do not compensate  */
 };
 
 #define SU_TIMER_IS_SET(sut) ((sut)->sut_set)
@@ -531,33 +532,29 @@ int su_timer_expire(su_timer_t ** const timers,
     timers_remove(timers, t);
 
     f = t->sut_wakeup; t->sut_wakeup = NULL;
-    t->sut_when = now;
     assert(f);
 
-    if (t->sut_running) {
-      if (t->sut_running == run_at_intervals) {
-	unsigned times = (unsigned)
-	  ((1000.0 * su_time_diff(now, t->sut_run) + t->sut_duration * 0.5) /
-	   (double)t->sut_duration);
-	while (t->sut_woken < times && t->sut_running) {
-	  t->sut_woken++;
-	  f(su_root_magic(su_task_root(t->sut_task)), t, t->sut_arg), n++;
+    if (t->sut_running == run_at_intervals) {
+      while (t->sut_running == run_at_intervals &&
+	     t->sut_duration > 0) {
+	if (su_time_diff(t->sut_when, now) > 0) {
+	  su_timer_set0(timers, t, f, t->sut_arg, t->sut_run, 0);
+	  break;
 	}
-      }
-      else {
+	t->sut_when = t->sut_run = su_time_add(t->sut_run, t->sut_duration);
 	t->sut_woken++;
 	f(su_root_magic(su_task_root(t->sut_task)), t, t->sut_arg), n++;
       }
-
-      if (t->sut_running == run_at_intervals) {
-	su_timer_set0(timers, t, f, t->sut_arg, 
-		      t->sut_run, (t->sut_woken + 1) * t->sut_duration);
-      }
-      else if (t->sut_running == run_for_ever) {
+    }
+    else if (t->sut_running == run_for_ever) {
+      t->sut_woken++;
+      t->sut_when = now;
+      f(su_root_magic(su_task_root(t->sut_task)), t, t->sut_arg), n++;
+      if (t->sut_running == run_for_ever)
 	su_timer_set0(timers, t, f, t->sut_arg, now, t->sut_duration);
-      }
     }
     else {
+      t->sut_when = now;
       f(su_root_magic(su_task_root(t->sut_task)), t, t->sut_arg); n++;
     }
   }
