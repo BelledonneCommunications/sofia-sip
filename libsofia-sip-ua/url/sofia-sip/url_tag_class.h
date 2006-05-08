@@ -44,7 +44,7 @@
 
 SOFIA_BEGIN_DECLS
 
-URL_DLL extern tag_class_t url_tag_class[1];
+SOFIAPUBVAR tag_class_t url_tag_class[1];
 
 #define URLTAG_TYPEDEF(t) TAG_TYPEDEF(t, url)
 

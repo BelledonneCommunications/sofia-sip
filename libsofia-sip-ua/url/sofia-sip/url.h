@@ -120,115 +120,91 @@ SOFIA_BEGIN_DECLS
   { "\0\0", url_##type, 0, url_##type != url_any ? #type : "*" }
 
 /** Init an url as given type */
-URL_DLL
-void url_init(url_t *url, enum url_type_e type);
+SOFIAPUBFUN void url_init(url_t *url, enum url_type_e type);
 
 /** Get URL scheme. */
-URL_DLL
-char const *url_scheme(enum url_type_e type);
+SOFIAPUBFUN char const *url_scheme(enum url_type_e type);
 
 /** Decode an URL */
-URL_DLL
-int url_d(url_t *url, char *s);
+SOFIAPUBFUN int url_d(url_t *url, char *s);
 
 /** Calculate the lengh of URL when encoded. */
-URL_DLL
-int url_len(url_t const * url);
+SOFIAPUBFUN int url_len(url_t const * url);
 
 /** Encode an URL. */
-URL_DLL
-int url_e(char buffer[], int n, url_t const *url);
+SOFIAPUBFUN int url_e(char buffer[], int n, url_t const *url);
 
 /** Encode an URL: use @a buf up to @a end. @HI */
 #define URL_E(buf, end, url) \
   (buf) += url_e((buf), (buf) < (end) ? (end) - (buf) : 0, (url))
 
 /** Calculate the size of srings attached to the url. */
-URL_DLL
-int url_xtra(url_t const * url);
+SOFIAPUBFUN int url_xtra(url_t const * url);
 
 /** Duplicate the url */ 
-URL_DLL
-int url_dup(char *buf, int bufsize, url_t *dst, url_t const *src);
+SOFIAPUBFUN int url_dup(char *buf, int bufsize, url_t *dst, url_t const *src);
 
 /** Duplicate the url: use @a buf up to @a end. @HI */ 
 #define URL_DUP(buf, end, dst, src) \
   (buf) += url_dup((buf), (buf) < (end) ? (end) - (buf) : 0, (dst), (src))
 
 /** Duplicate the url to memory allocated via home */ 
-URL_DLL
-url_t *url_hdup(su_home_t *h, url_t const *src);
+SOFIAPUBFUN url_t *url_hdup(su_home_t *h, url_t const *src);
 
 /** Convert an string to an url struct. */ 
-URL_DLL
-url_t *url_make(su_home_t *h, char const *str);
+SOFIAPUBFUN url_t *url_make(su_home_t *h, char const *str);
 
 /** Convert a string formatting result to an url struct. */
 url_t *url_format(su_home_t *h, char const *fmt, ...);
 
 /** Convert @a url to a string allocated from @a home */
-URL_DLL
-char *url_as_string(su_home_t *home, url_t const *url);
+SOFIAPUBFUN char *url_as_string(su_home_t *home, url_t const *url);
 
 /** Test if string contains url-reserved characters. */
-URL_DLL
-int url_reserved_p(char const *s);
+SOFIAPUBFUN int url_reserved_p(char const *s);
 
 /** Escape a string. */
-URL_DLL
-char *url_escape(char *d, char const *s, char const reserved[]);
+SOFIAPUBFUN char *url_escape(char *d, char const *s, char const reserved[]);
 
 /** Calculate length of string when escaped. */
-URL_DLL
-int url_esclen(char const *s, char const reserved[]);
+SOFIAPUBFUN int url_esclen(char const *s, char const reserved[]);
 
 /** Unescape an string */
-URL_DLL
-char *url_unescape(char *d, char const *s);
+SOFIAPUBFUN char *url_unescape(char *d, char const *s);
 
 /** Search for a parameter. */
-URL_DLL
-int url_param(char const *params, char const *tag, char value[], int vlen);
+SOFIAPUBFUN int url_param(char const *params, char const *tag,
+			  char value[], int vlen);
 
 /** Check for a parameter. */
-URL_DLL
-int url_has_param(url_t const *url, char const *name);
+SOFIAPUBFUN int url_has_param(url_t const *url, char const *name);
 
 /** Check a parameter. */
-URL_DLL
-int url_have_param(char const *params, char const *tag);
+SOFIAPUBFUN int url_have_param(char const *params, char const *tag);
 
 /** Add an parameter. */
-URL_DLL
-int url_param_add(su_home_t *h, url_t *url, char const *param);
+SOFIAPUBFUN int url_param_add(su_home_t *h, url_t *url, char const *param);
 
 /** Compare two URLs lazily. */
-URL_DLL
-int url_cmp(url_t const *a, url_t const *b);
+SOFIAPUBFUN int url_cmp(url_t const *a, url_t const *b);
 
 /** Compare two URLs conservatively. */
-URL_DLL
-int url_cmp_all(url_t const *a, url_t const *b);
+SOFIAPUBFUN int url_cmp_all(url_t const *a, url_t const *b);
 
 /** Strip transport-specific stuff away from URI. */
-URL_DLL
-int url_strip_transport(url_t *u);
+SOFIAPUBFUN int url_strip_transport(url_t *u);
 
 /** Test if url has any transport-specific stuff. */
-URL_DLL
-int url_have_transport(url_t const *u);
+SOFIAPUBFUN int url_have_transport(url_t const *u);
 
 /** Return default port number corresponding to the url type. */
-URL_DLL
-char const *url_port_default(enum url_type_e url_type);
+SOFIAPUBFUN char const *url_port_default(enum url_type_e url_type);
 
 /** Return default transport name corresponding to the url type */
-URL_DLL
-char const *url_tport_default(enum url_type_e url_type);
+SOFIAPUBFUN char const *url_tport_default(enum url_type_e url_type);
 
 /** Return the URL port string, using default port if not present. */
-URL_DLL
-char const *url_port(url_t const *u);
+SOFIAPUBFUN char const *url_port(url_t const *u);
 
 /** Return the URL port string, using default port if none present. */
 #define URL_PORT(u) \
@@ -245,20 +221,18 @@ char const *url_port(url_t const *u);
 
 /** Test if a pointer to #url_string_t is a string
  * (not a pointer to a #url_t structure). */
-URL_DLL
-int url_string_p(url_string_t const * url);
+SOFIAPUBFUN int url_string_p(url_string_t const * url);
 
 /** Test if a pointer to #url_string_t is a string
  * (not a pointer to a #url_t structure). */
-URL_DLL
-int url_is_string(url_string_t const * url);
+SOFIAPUBFUN int url_is_string(url_string_t const * url);
 
 /** Cast a string to a #url_string_t. @HI */
 #define URL_STRING_MAKE(s) \
   ((url_string_t *)((s) && *((char *)(s)) ? (s) : NULL))
 
 /** Sanitize a URL. */
-int url_sanitize(url_t *u);
+SOFIAPUBFUN int url_sanitize(url_t *u);
 
 /** Format string used when printing url with printf(). @HI */
 #define URL_PRINT_FORMAT "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
@@ -286,12 +260,11 @@ int url_sanitize(url_t *u);
 struct su_md5_t;
 
 /** Update MD5 sum with URL contents. */
-URL_DLL
-void url_update(struct su_md5_t *md5, url_t const *url);
+SOFIAPUBFUN void url_update(struct su_md5_t *md5, url_t const *url);
 
 /** Calculate a digest from URL contents. */
-URL_DLL
-void url_digest(void *hash, int hsize, url_t const *url, char const *key);
+SOFIAPUBFUN void url_digest(void *hash, int hsize,
+			    url_t const *, char const *key);
 
 
 SOFIA_END_DECLS

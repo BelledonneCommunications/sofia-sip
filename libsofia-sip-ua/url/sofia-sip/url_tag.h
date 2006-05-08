@@ -46,14 +46,14 @@ SOFIA_BEGIN_DECLS
 
 /** Filter tag matching any url tag. */
 #define URLTAG_ANY()         urltag_any, ((tag_value_t)0)
-URL_DLL extern tag_typedef_t urltag_any;
+SOFIAPUBVAR tag_typedef_t urltag_any;
 
-URL_DLL extern tag_typedef_t urltag_url;
+SOFIAPUBVAR tag_typedef_t urltag_url;
 
 /** Tag list item for an URL. */
 #define URLTAG_URL(u)      urltag_url, urltag_url_v(u)
 
-URL_DLL extern tag_typedef_t urltag_url_ref;
+SOFIAPUBVAR tag_typedef_t urltag_url_ref;
 
 #define URLTAG_URL_REF(u)  urltag_url_ref, urltag_url_vr(&(u))
 
