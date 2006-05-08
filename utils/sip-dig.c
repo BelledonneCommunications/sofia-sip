@@ -135,11 +135,14 @@
 
 #include "config.h"
 
+#if !defined(HAVE_WIN32)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
 #include <arpa/inet.h>
+#endif
+
+#include "sofia-sip/su.h"
 
 #include "sofia-resolv/sres.h"
 #include "sofia-resolv/sres_record.h"
@@ -220,6 +223,9 @@ int main(int argc, char *argv[])
   char *transport = NULL, tport[32];
 
   struct dig dig[1] = {{ NULL }};
+
+  if (su_init() != 0) 
+    return -1;
 
   while (argv[1] && argv[1][0] == '-') {
     if (strcmp(argv[1], "-v") == 0)
