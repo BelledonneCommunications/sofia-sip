@@ -90,14 +90,40 @@ typedef enum stun_action_s {
  *       fashion.
  **/
 typedef enum stun_nattype_e {
-  stun_nat_unknown,       /**< */
-  stun_open_internet,     /**< no NAT between client and STUN server */
-  stun_udp_blocked,       /**< UDP communication blocked by FW */
-  stun_sym_udp_fw,        /**< no NAT, address and port restricted filtering */
-  stun_nat_full_cone,     /**< endpoint independent filtering */
-  stun_nat_sym,           /**< RFC3489 symmetric NAT */
-  stun_nat_res_cone,      /**< address restricted filtering */
-  stun_nat_port_res_cone, /**< address and port restricted filtering */
+  stun_nat_unknown = 0, 
+      
+  /* no NAT between client and STUN server */
+  stun_open_internet,     
+
+  /* UDP communication blocked by FW */
+  stun_udp_blocked,       
+
+  /* No NAT, but a FW element is performing address and port
+   * restricted filtering. */
+  stun_sym_udp_fw,        
+
+  /* Endpoint independent filtering (endpoint independent mapping) 
+   * RFC3489 full cone NAT. */
+  stun_nat_full_cone,     
+
+  /* Address restricted filtering (endpoint independent mapping),
+   * RFC3489 restricted cone NAT. */
+  stun_nat_res_cone,      
+
+  /* Address and port restricted filtering (endpoint 
+   * independent mapping), RFC3489 port restricted cone */
+  stun_nat_port_res_cone, 
+
+  /* Endpoint independent filtering, endpoint dependent mapping. */
+  stun_nat_ei_filt_ad_map, 
+
+  /* Address dependent filtering, endpoint dependent mapping. */
+  stun_nat_ad_filt_ad_map, 
+
+  /* Address and port dependent filtering, endpoint dependent mapping 
+   * RFC3489 symmetric NAT). */
+  stun_nat_adp_filt_ad_map, 
+
 } stun_nattype_t;
 
 /**

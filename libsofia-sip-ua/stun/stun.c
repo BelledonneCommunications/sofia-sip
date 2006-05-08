@@ -138,7 +138,8 @@ struct stun_discovery_s {
 
   /* NAT type related */
   stun_nattype_t   sd_nattype;       /**< Determined NAT type */
-  int              sd_first;       /**< These are the requests  */
+  int              sd_mapped_addr_match; /** Mapped addresses match? */
+  int              sd_first;         /**< These are the requests  */
   int              sd_second;
   int              sd_third;
   int              sd_fourth;
@@ -260,10 +261,12 @@ char const *stun_nattype_str(stun_discovery_t *sd)
     "Open Internet",
     "UDP traffic is blocked or server unreachable",
     "Symmetric UDP Firewall",
-    "Full-Cone NAT",
-    "Symmetric NAT",
-    "Restricted Cone NAT",
-    "Port Restricted Cone NAT",
+    "Full-Cone NAT (endpoint independent filtering and mapping)",
+    "Restricted Cone NAT (endpoint independent mapping)",
+    "Port Restricted Cone NAT (endpoint independent mapping)",
+    "Endpoint independent filtering, endpoint dependent mapping",
+    "Address dependent filtering, endpoint dependent mapping",
+    "Symmetric NAT (address and port dependent filtering, endpoint dependent mapping)",
   };
 
   if (sd)
@@ -1228,6 +1231,8 @@ int stun_test_nattype(stun_handle_t *sh,
     return errno = EFAULT, -1;
 
   sd = stun_discovery_create(sh, stun_action_test_nattype, sdf, magic);
+  sd->sd_mapped_addr_match = -1;
+
   if ((index = assign_socket(sd, s, s_reg)) < 0)
     return errno = EFAULT, -1;
 
@@ -2103,18 +2108,18 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 
   action = get_action(req);
 
-  /* If the NAT type is already detected, ignore this request */
+  /* if the NAT type is already detected, ignore this request */
   if (!sd || (sd->sd_nattype != stun_nat_unknown)) {
     req->sr_state = stun_req_dispose_me;
     /* stun_request_destroy(req); */
     return 0;
   }
 
-  /* parse first the payload */
+  /* parse first the response payload */
   if (binding_response)
     process_binding_request(req, binding_response);
 
-  /* mapped address */
+  /* get pointer to MAPPED-ADDRESS of req */
   li = &req->sr_localinfo;
 
   /* check whether the response timed out or not */
@@ -2141,8 +2146,24 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
     sd->sd_third = reply_res;
 
   /* note: Test IV completed - request and reply to another port */
-  else if (req->sr_request_mask == 0 && sd->sd_fourth == 2)
+  else if (req->sr_request_mask == 0 && sd->sd_fourth == 2) {
     sd->sd_fourth = reply_res;
+
+    /* SU_DEBUG_5(("Comparing reported MAPPED ADDRESSES %s:%u vs %s:%u.\n",
+       inet_ntoa(sd->sd_addr_seen_outside[0].su_sin.sin_addr),
+       sd->sd_addr_seen_outside[0].su_port,
+       inet_ntoa(li->li_addr->su_sin.sin_addr),
+       li->li_addr->su_port)); */
+
+    /* note: check whether MAPPED-ADDRESS address has changed (when 
+     *       sending to a different IP:port -> NAT mapping behaviour) */
+    if (su_cmp_sockaddr(sd->sd_addr_seen_outside, li->li_addr) != 0) {
+      sd->sd_mapped_addr_match = 0;
+    }
+    else {
+      sd->sd_mapped_addr_match = 1;
+    }
+  }
 
   SU_DEBUG_9(("stun natcheck status: 1st=%d, 2nd=%d, 3rd=%d, 4th=%d, mask=%d, sr_state=%d (timeout=%d, done=%d)..\n",
 	      sd->sd_first, sd->sd_second, sd->sd_third, sd->sd_fourth, req->sr_request_mask, req->sr_state, stun_req_timeout, stun_discovery_done));
@@ -2170,7 +2191,10 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
   else if (sd->sd_first > 0 && 
 	   sd->sd_second > 0 &&
 	   sd->sd_fourth) {
-    sd->sd_nattype = stun_nat_full_cone;
+    if (sd->sd_mapped_addr_match == 1)
+      sd->sd_nattype = stun_nat_full_cone;
+    else
+      sd->sd_nattype = stun_nat_ei_filt_ad_map;
     priv_mark_discovery_done(sd, sh, action, req);
   }
   /* case 4: tests I-III done, perform IV 
@@ -2192,7 +2216,7 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
      * Test-II by the STUN server to send us packets.
      */
 
-    SU_DEBUG_7(("Sending Test-IV packet to %s.\n",
+    SU_DEBUG_7(("Sending STUN NAT type Test-IV request to %s.\n",
 	       inet_ntoa(sd->sd_sec_addr[0].su_sin.sin_addr)));
     
     sd->sd_fourth = 2; /* request, -1, 0, 1 reserved for results */
@@ -2219,17 +2243,23 @@ static int action_determine_nattype(stun_request_t *req, stun_msg_t *binding_res
 	   sd->sd_second < 0 &&
 	   sd->sd_third > 0 &&
 	   sd->sd_fourth) {
-    sd->sd_nattype = stun_nat_res_cone;
+    if (sd->sd_mapped_addr_match == 1)
+      sd->sd_nattype = stun_nat_res_cone;
+    else
+      sd->sd_nattype = stun_nat_ad_filt_ad_map;
     priv_mark_discovery_done(sd, sh, action, req);
   }
   /* case 6: no response to Test-II nor III 
-   *         the NAT is filtering packets from different IP:port
+   *         the NAT is filtering packets from different port
    *         do not make conclusions until Test-IV has been scheduled */
   else if (sd->sd_first > 0 && 
 	   sd->sd_second < 0 &&
 	   sd->sd_third < 0 &&
 	   sd->sd_fourth) {
-    sd->sd_nattype = stun_nat_port_res_cone;
+    if (sd->sd_mapped_addr_match == 1)
+      sd->sd_nattype = stun_nat_port_res_cone;
+    else
+      sd->sd_nattype = stun_nat_adp_filt_ad_map;
     priv_mark_discovery_done(sd, sh, action, req);
   }
 
@@ -2906,7 +2936,6 @@ int stun_keepalive(stun_handle_t *sh,
    * destroy it. */
   stun_keepalive_destroy(sh, s);
   
-  /*Ok, here we go */
   sd = stun_discovery_create(sh, action, NULL, NULL); /* XXX --
 							 specify last
 							 params if

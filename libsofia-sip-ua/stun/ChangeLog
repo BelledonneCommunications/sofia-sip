@@ -1,11 +1,17 @@
+2006-05-07  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* sofia-sip/stun.h: Added new NAT types stun_nattype_t. The
+	naming is now compliant with the terms used by IETF BEHAVE 
+	documents.
+
 2006-05-06  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
-	* stun.h (stun_nattype_str): Added a new function to the
+	* sofia-sip/stun.h (stun_nattype_str): Added a new function to the
 	public API.
 	
-	* stun.h (stun_nattype): Modified the function signature.
+	* sofia-sip/stun.h (stun_nattype): Modified the function signature.
 
-	* stun.h (stun_state_t): Moved all request-specific states
+	* sofia-sip/stun.h (stun_state_t): Moved all request-specific states
 	to private stun_req_state_t struct in stun.c.
 
 2006-05-05  Kai Vehmanen  <kai.vehmanen@nokia.com>

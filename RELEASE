@@ -78,7 +78,7 @@ Contributors to this release
 
 Notes on new features
 ---------------------
-A
+
 <information about major new features
  - new/changed/removed functionality
  - links to further documentation
@@ -91,6 +91,14 @@ A
 
 - The 'sip_options' tool has been added to win32 workspace 
   as an example application for the library.  
+
+- The STUN NAT type check algorithm has been refactored. Terms used by 
+  the IETF BEHAVE working group are now used to classify NAT/FW features. 
+  Now a distinction is made between NAT mapping (which IP:port is allocated 
+  for requests) and filtering behaviour. The 'stunc' test tool has been 
+  updated to support the changes. Note that the type check mechanism
+  is not 100% reliable -- future mappings may not be of same type, due
+  to indeterministic NAT behaviour, or network changes.
 
 Bugs fixed in this release
 --------------------------
