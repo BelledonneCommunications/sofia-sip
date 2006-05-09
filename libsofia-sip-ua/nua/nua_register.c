@@ -650,15 +650,20 @@ int process_response_to_register(nua_handle_t *nh,
 
     if (oc->oc_registered) {
       sip_time_t now = sip_now(), delta, mindelta;
-      sip_contact_t const *m, *m0;
+      sip_contact_t const *m, *m0, *sent_contact;
 
-      /** Search for lowest delta of SIP contacts in sip->sip_contact */
+      /** Search for lowest delta of SIP contacts we tried to register */
       mindelta = SIP_TIME_MAX;
 
+      sent_contact = req->sip_contact;
+      if (!sent_contact && oc->oc_add_contact)
+	sent_contact = oc->oc_rcontact;
+
       for (m = sip->sip_contact; m; m = m->m_next) {
-	if (m->m_url->url_type != url_sip)
+	if (m->m_url->url_type != url_sip && 
+	    m->m_url->url_type != url_sips)
 	  continue;
-	for (m0 = req->sip_contact; m0; m0 = m0->m_next)
+	for (m0 = sent_contact; m0; m0 = m0->m_next)
 	  if (url_cmp(m->m_url, m0->m_url) == 0) {
 	    delta = sip_contact_expires(m, sip->sip_expires, sip->sip_date,
 					3600, /* XXX */
