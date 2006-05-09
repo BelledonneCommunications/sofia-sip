@@ -116,14 +116,20 @@ struct sockaddr_storage {
 /**
  * How often to recheck nameserver information (seconds).
  */
+#ifndef _WIN32
+#define SRES_UPDATE_INTERVAL_SECS        5
+#else
 #define SRES_UPDATE_INTERVAL_SECS        180
-
+#endif
 void sres_cache_clean(sres_cache_t *cache, time_t now);
 
 typedef struct sres_message    sres_message_t;
 typedef struct sres_config     sres_config_t;
 typedef struct sres_server     sres_server_t;
 typedef struct sres_nameserver sres_nameserver_t;
+
+/** Default path to resolv.conf */
+static char const sres_conf_file_path[] = "/etc/resolv.conf";
 
 /** EDNS0 support. @internal */
 enum edns { 
@@ -162,7 +168,7 @@ struct sres_resolver_s {
   char const         *res_cnffile;      /**< Configuration file name */
   char const        **res_options;      /**< Option strings */
 
-  sres_config_t      *res_config;
+  sres_config_t const *res_config;
   time_t              res_checked;
 
   unsigned long       res_updated;
@@ -181,7 +187,6 @@ struct sres_resolver_s {
 struct sres_config {
   su_home_t c_home[1];
 
-  time_t c_update;
   time_t c_modified;
   char const *c_filename;
 
@@ -306,8 +311,10 @@ HTABLE_PROTOS(sres_qtable, qt, sres_query_t);
    (void *)&((struct sockaddr *)ss)->sa_data)
 #endif
 
+static int sres_config_changed_servers(sres_config_t const *new_c, 
+				       sres_config_t const *old_c);
 static sres_server_t **sres_servers_new(sres_resolver_t *res,
-				       sres_config_t const *c);
+					sres_config_t const *c);
 
 /** Generate new 16-bit identifier for DNS query. */
 static uint16_t
@@ -332,8 +339,9 @@ sres_resolver_new_with_cache_va(char const *conf_file_path,
 				va_list va);
 static
 sres_resolver_t *
-sres_resolver_new_internal(char const *conf_file_path,
-			   sres_cache_t *cache,
+sres_resolver_new_internal(sres_cache_t *cache,
+			   sres_config_t const *config,
+			   char const *conf_file_path,
 			   char const **options);
 
 static void sres_servers_unref(sres_resolver_t *res,
@@ -357,7 +365,8 @@ int sres_sockaddr2string(sres_resolver_t *,
 			 struct sockaddr const *);
 
 static 
-sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res);
+sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res,
+				      char const **options);
 
 static
 sres_server_t *sres_next_server(sres_resolver_t *res, 
@@ -510,7 +519,7 @@ enum {
 sres_resolver_t *
 sres_resolver_new(char const *conf_file_path)
 {
-  return sres_resolver_new_internal(conf_file_path, NULL, NULL);
+  return sres_resolver_new_internal(NULL, NULL, conf_file_path, NULL);
 }
 
 /** Copy a resolver.
@@ -520,6 +529,7 @@ sres_resolver_new(char const *conf_file_path)
 sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
 {
   char const *cnffile;
+  sres_config_t *config;
   sres_cache_t *cache;
   char const **options;
 
@@ -527,10 +537,11 @@ sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
     return NULL;
 
   cnffile = res->res_cnffile;
+  config = su_home_ref(res->res_config->c_home);
   cache = res->res_cache;
   options = res->res_options;
 
-  return sres_resolver_new_internal(cnffile, cache, options);
+  return sres_resolver_new_internal(cache, config, cnffile, options);
 }
 
 /**New resolver object.
@@ -606,7 +617,7 @@ sres_resolver_new_with_cache_va(char const *conf_file_path,
     }
   }
   olist[i] = NULL;
-  res = sres_resolver_new_internal(conf_file_path, cache, olist);
+  res = sres_resolver_new_internal(cache, NULL, conf_file_path, olist);
   if (olist != oarray)
     free(olist);
 
@@ -614,8 +625,9 @@ sres_resolver_new_with_cache_va(char const *conf_file_path,
 }
 
 sres_resolver_t *
-sres_resolver_new_internal(char const *conf_file_path,
-			   sres_cache_t *cache,
+sres_resolver_new_internal(sres_cache_t *cache,
+			   sres_config_t const *config,
+			   char const *conf_file_path,
 			   char const **options)
 {
   sres_resolver_t *res;
@@ -659,10 +671,12 @@ sres_resolver_new_internal(char const *conf_file_path,
   else
     res->res_cache = sres_cache_new(0);
 
-  if (conf_file_path)
+  res->res_config = config;
+
+  if (conf_file_path && conf_file_path != sres_conf_file_path)
     res->res_cnffile = su_strdup(res->res_home, conf_file_path);
   else
-    res->res_cnffile = conf_file_path = "/etc/resolv.conf";
+    res->res_cnffile = conf_file_path = sres_conf_file_path;
 
   if (!res->res_cache || !res->res_cnffile) {
     perror("sres: malloc");
@@ -670,7 +684,7 @@ sres_resolver_new_internal(char const *conf_file_path,
   else if (sres_qtable_resize(res->res_home, res->res_queries, 0) < 0) {
     perror("sres: res_qtable_resize");
   }
-  else if (sres_resolver_update(res, 1) < 0) {
+  else if (sres_resolver_update(res, config == NULL) < 0) {
     perror("sres: sres_resolver_update");
   }
   else {
@@ -1664,40 +1678,47 @@ static time_t sres_config_timestamp(sres_config_t const *c);
  */
 int sres_resolver_update(sres_resolver_t *res, int always)
 {
-  sres_config_t *previous, *c = NULL;
+  sres_config_t *c = NULL;
+  sres_config_t const *previous;
   sres_server_t **servers, **old_servers;
 
   previous = res->res_config;
 
   time(&res->res_now);
 
-  if (!always && previous && 
-      (res->res_now < previous->c_update ||
-       sres_config_timestamp(previous) == previous->c_modified)) {
+  if (!always && previous && res->res_now < res->res_checked)
     return 0;
-  }
 
-  c = sres_parse_resolv_conf(res);
+  /* Try avoid checking for changes too often. */
+  res->res_checked = res->res_now + SRES_UPDATE_INTERVAL_SECS; 
+  
+  if (!always && previous && 
+      sres_config_timestamp(previous) == previous->c_modified)
+    return 0;
+
+  c = sres_parse_resolv_conf(res, res->res_options);
   if (!c)
     return -1;
 
-  servers = sres_servers_new(res, c);
-  if (!servers) {
-    su_home_unref(c->c_home);
-    return -1;
+  res->res_config = c;
+
+  if (sres_config_changed_servers(c, previous)) {
+    servers = sres_servers_new(res, c);
+    if (!servers) {
+      su_home_unref((void *)c->c_home);
+      return -1;
+    }
+
+    old_servers = res->res_servers;
+
+    res->res_i_server = 0;
+    res->res_n_servers = sres_servers_count(servers);
+    res->res_servers = servers;
+
+    sres_servers_unref(res, old_servers);
   }
 
-  old_servers = res->res_servers;
-
-  res->res_config = c;
-  res->res_i_server = 0;
-  res->res_n_servers = sres_servers_count(servers);
-  res->res_servers = servers;
-
-  c->c_update = res->res_now + SRES_UPDATE_INTERVAL_SECS; /* Do not try to read for 5 sec?  */
-  
-  sres_servers_unref(res, old_servers);
-  su_home_unref(previous->c_home);
+  su_home_unref((su_home_t *)previous->c_home);
 
   return 0;
 }
@@ -1852,11 +1873,12 @@ static int sres_parse_win32_reg(sres_config_t *c)
  * @retval #sres_config_t structure when successful 
  * @retval NULL upon an error
  *
- * @todo The resolv.conf directives @b sortlist and options 
+ * @todo The resolv.conf directives @b sortlist and most of the options 
  *       are currently ignored.
  */
 static 
-sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res)
+sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res,
+				      char const **options)
 {
   sres_config_t *c = su_home_clone(res->res_home, (sizeof *c));
 
@@ -1871,20 +1893,30 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res)
     if (f)
       fclose(f);
     
-#ifndef _WIN32
-      /* note: no 127.0.0.1 on win32 systems */
-    if (c->c_nameservers[0] == NULL)
-      sres_parse_nameserver(c, "127.0.0.1");
-#endif
-
     /* on win32, query the registry for nameservers */
     if (sres_parse_win32_reg(c) == 0) 
       ++success;
+
+#ifndef _WIN32
+    /* note: no 127.0.0.1 on win32 systems */
+    if (c->c_nameservers[0] == NULL)
+      sres_parse_nameserver(c, "127.0.0.1");
+#endif
       
     for (i = 0; c->c_nameservers[i] && i < SRES_MAX_NAMESERVERS; i++) {
       struct sockaddr_in *sin = (void *)c->c_nameservers[i]->ns_addr;
       sin->sin_port = htons(c->c_port);
     }
+
+    sres_parse_options(c, getenv("RES_OPTIONS"));
+    
+    if (options)
+      for (i = 0; options[i]; i++)
+	sres_parse_options(c, options[i]);
+
+    sres_parse_options(c, getenv("SRES_OPTIONS"));
+
+    su_home_threadsafe(c->c_home);
   }
 
   return c;
@@ -1941,7 +1973,7 @@ int sres_parse_config(sres_config_t *c, FILE *f)
 	  return -1;
       }
       else if (MATCH("domain")) {
-	if (localdomain)
+	if (localdomain)	/* LOCALDOMAIN overrides */
 	  continue;
 	if (search)
 	  su_free(home, search), search = NULL;
@@ -1952,7 +1984,7 @@ int sres_parse_config(sres_config_t *c, FILE *f)
 	  return -1;
       }
       else if (MATCH("search")) {
-	if (localdomain)
+	if (localdomain)	/* LOCALDOMAIN overrides */
 	  continue;
 	if (search) su_free(home, search), search = NULL;
 	if (domain) su_free(home, domain), domain = NULL;
@@ -1971,11 +2003,8 @@ int sres_parse_config(sres_config_t *c, FILE *f)
     }
   }
 
-  if (f) {
-    struct stat st;
-    if (stat(c->c_filename, &st) == 0)
-      c->c_modified = st.st_mtime;
-  }
+  if (f)
+    c->c_modified = sres_config_timestamp(c);
 
   if (localdomain)
     c->c_search[0] = localdomain;
@@ -1992,39 +2021,38 @@ int sres_parse_config(sres_config_t *c, FILE *f)
     }
   }
 
-  sres_parse_options(c, getenv("RES_OPTIONS"));
-    
   return i;
 }
 
 static int 
-sres_parse_options(sres_config_t *c, char const *options)
+sres_parse_options(sres_config_t *c, char const *value)
 {
-  char *value = su_strdup(c->c_home, options), *value0 = value;
-
   if (!value)
     return -1;
 
   while (value[0]) {
-    int len;
-    unsigned long n = 0;
     char const *b;
+    int len, extra = 0;
+    unsigned long n = 0;
 
-    b = value; 
-    value += strcspn(value, " \t");
-    if (*value)
-      *value++ = '\0', value += strspn(value, " \t");
-    len = strcspn(b, ":");
+    b = value; len = strcspn(value, " \t:");
+    value += len;
 
-    if (b[len]) {
+    if (value[0] == ':') {
       len++;
-      n = strtoul(b + len, NULL, 10);
-      if (n > 65536) {
-	SU_DEBUG_3(("sres: %s: invalid %s\n", c->c_filename, b));
-	continue;
-      }
+      n = strtoul(++value, NULL, 10);
+      value += extra = strcspn(value, " \t");
     }
-    
+
+    if (*value)
+      value += strspn(value, " \t");
+
+    if (n > 65536) {
+      SU_DEBUG_3(("sres: %s: invalid %*.s\n", c->c_filename, len + extra, b));
+      continue;
+    }
+
+    /* Documented by BIND9 resolv.conf */
     if (MATCH("no-debug")) c->c_opt.debug = 0;
     else if (MATCH("debug")) c->c_opt.debug = 1;
     else if (MATCH("ndots:")) c->c_opt.ndots = n;
@@ -2034,20 +2062,19 @@ sres_parse_options(sres_config_t *c, char const *options)
     else if (MATCH("rotate")) c->c_opt.rotate = 1;
     else if (MATCH("no-check-names")) c->c_opt.check_names = 0;
     else if (MATCH("check-names")) c->c_opt.check_names = 1;
-    else if (MATCH("no-edns0")) c->c_opt.edns = edns_not_supported;
-    else if (MATCH("edns0")) c->c_opt.edns = edns0_configured;
     else if (MATCH("no-inet6")) c->c_opt.ip6int = 0;
     else if (MATCH("inet6")) c->c_opt.inet6 = 1;
     else if (MATCH("no-ip6-dotint")) c->c_opt.ip6int = 0;
     else if (MATCH("ip6-dotint")) c->c_opt.ip6int = 1;
     else if (MATCH("no-ip6-bytestring")) c->c_opt.ip6bytestring = 0;
     else if (MATCH("ip6-bytestring")) c->c_opt.ip6bytestring = 1;
+    /* Sofia-specific extensions: */
+    else if (MATCH("no-edns0")) c->c_opt.edns = edns_not_supported;
+    else if (MATCH("edns0")) c->c_opt.edns = edns0_configured;
     else {
-      SU_DEBUG_3(("sres: %s: unknown option %s\n", c->c_filename, b));
+      SU_DEBUG_3(("sres: %s: unknown option %*.s\n", c->c_filename, len + extra, b));
     }
   }
-
-  su_free(c->c_home, value0);
 
   return 0;
 }
@@ -2105,17 +2132,50 @@ int sres_parse_nameserver(sres_config_t *c, char const *server)
 static
 time_t sres_config_timestamp(sres_config_t const *c)
 {
+#ifndef _WIN32
   struct stat st;
 
   if (stat(c->c_filename, &st) == 0)
     return st.st_mtime;
 
-  /** If the resolv.conf file does not exists, return old timestamp */
-  return c->c_modified;		
+  /** @return If the resolv.conf file does not exists, return old timestamp. */
+  return c->c_modified;
+#else
+  /** On WIN32, return always different timestamp */
+  return c->c_modified + SRES_UPDATE_INTERVAL_SECS;
+#endif
 }
 
 
 /* ---------------------------------------------------------------------- */
+
+/** Check if the new configuration has different servers than the old */
+static 
+int sres_config_changed_servers(sres_config_t const *new_c, 
+				sres_config_t const *old_c)
+{
+  int i;
+  sres_nameserver_t const *new_ns, *old_ns;
+
+  if (old_c == NULL)
+    return 1;
+
+  for (i = 0; i < SRES_MAX_NAMESERVERS; i++) {
+    new_ns = new_c->c_nameservers[i];
+    old_ns = old_c->c_nameservers[i];
+
+    if (!new_ns != !old_ns)
+      return 1;
+    if (!new_ns)
+      return 0;
+    if (new_ns->ns_addrlen != old_ns->ns_addrlen)
+      return 1;
+    if (memcmp(new_ns->ns_addr, old_ns->ns_addr, new_ns->ns_addrlen))
+      return 1;
+  }
+
+  return 0;
+}
 
 /** Allocate new servers structure */
 static
