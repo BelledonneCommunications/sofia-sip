@@ -534,7 +534,7 @@ void *su_home_new(int size)
 }
 
 /** Create a new reference to a home object. */
-void *su_home_ref(su_home_t *home)
+void *su_home_ref(su_home_t const *home)
 {
   if (home) {
     su_block_t *sub = MEMLOCK(home);
@@ -552,7 +552,7 @@ void *su_home_ref(su_home_t *home)
   else
     su_seterrno(EFAULT);
 
-  return home;
+  return (void *)home;
 }
 
 /** Set destructor function */

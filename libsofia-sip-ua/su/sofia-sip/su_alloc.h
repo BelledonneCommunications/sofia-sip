@@ -64,7 +64,7 @@ struct su_home_s {
 
 SU_DLL void *su_home_new(int size)
      __attribute__((__malloc__));
-SU_DLL void *su_home_ref(su_home_t *);
+SU_DLL void *su_home_ref(su_home_t const *);
 SU_DLL int su_home_unref(su_home_t *);
 
 SU_DLL int su_home_desctructor(su_home_t *, void (*)(void *));
