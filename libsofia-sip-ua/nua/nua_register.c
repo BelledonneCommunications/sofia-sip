@@ -750,7 +750,7 @@ int process_response_to_register(nua_handle_t *nh,
     unsigned interval = tport_is_dgram(tport) ? 
       oc->oc_prefs.dgram_interval : oc->oc_prefs.stream_interval;
     tport_unref(tport);
-    outbound_connect_start_keepalive(oc, 1000 * interval, orq);
+    outbound_connect_start_keepalive(oc, interval, orq);
   }
   else
     outbound_connect_stop_keepalive(oc);
@@ -1252,8 +1252,15 @@ int outbound_connect_nat_detect(outbound_connect *oc,
   v = response->sip_via;
 
   received = v->v_received;
-  if (!received)
+  if (!received || !strcmp(received, v->v_host))
     return 0;
+
+  if (!host_is_ip_address(received)) {
+    if (received[0])
+      SU_DEBUG_3(("outbound_connect(%p): Via with invalid received=%s\n",
+		  oc->oc_owner, received));
+    return 0;
+  }
 
   rport = sip_via_port(v, &one); assert(rport);
 
