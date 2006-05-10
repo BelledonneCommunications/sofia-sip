@@ -61,10 +61,10 @@ LDADD =  		$(GLIB_LIBS) -lgobject-2.0 \
 
 test_nua_glib_LDFLAGS = -static
 
-%_marshal.h: %_marshal.list Makefile
+%_marshal.h: ${srcdir}/%_marshal.list ${srcdir}/Makefile.am
 	glib-genmarshal --header --prefix=$(subst -,_,$*)_marshal $< > $*_marshal.h
 
-%_marshal.c: %_marshal.list Makefile
+%_marshal.c: ${srcdir}/%_marshal.list ${srcdir}/Makefile.am
 	glib-genmarshal --body --prefix=$(subst -,_,$*)_marshal $< > $*_marshal.c
 
 # ----------------------------------------------------------------------
