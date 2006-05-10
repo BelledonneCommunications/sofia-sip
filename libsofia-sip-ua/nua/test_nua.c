@@ -142,7 +142,7 @@ struct context
   su_home_t home[1];
   su_root_t *root;
 
-  int threading, proxy_tests;
+  int threading, proxy_tests, expensive;
   char const *external_proxy;
 
   struct endpoint {
@@ -1580,6 +1580,9 @@ int test_register(struct context *ctx)
   struct event *e;
   sip_t const *sip;
 
+  if (ctx->p)
+    test_proxy_set_expiration(ctx->p, 5, 5, 10);
+
   if (print_headings)
     printf("TEST NUA-2.3.0.1: un-REGISTER a\n");
 
@@ -1709,12 +1712,17 @@ int test_register(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-2.3.2: PASSED\n");
 
+  if (ctx->p)
+    test_proxy_set_expiration(ctx->p, 30, 3600, 36000);
+
   if (print_headings)
     printf("TEST NUA-2.3.3: REGISTER c\n");
 
   TEST_1(c_reg->nh = nua_handle(c->nua, c_reg, TAG_END()));
 
-  REGISTER(c, c_reg, c_reg->nh, SIPTAG_TO(c->to), TAG_END());
+  REGISTER(c, c_reg, c_reg->nh, SIPTAG_TO(c->to), 
+	   SIPTAG_EXPIRES_STR("5"), /* Test 423 negotiation */
+	   TAG_END());
   run_c_until(ctx, -1, save_until_final_response);
 
   TEST_1(e = c->events->head);
@@ -1732,6 +1740,10 @@ int test_register(struct context *ctx)
 
   TEST_1(e = c->events->head);
   TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 100);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(sip->sip_status->st_status, 423);
+  TEST_1(e = e->next);
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_contact);
@@ -1740,6 +1752,37 @@ int test_register(struct context *ctx)
 
   if (print_headings)
     printf("TEST NUA-2.3.3: PASSED\n");
+
+  if (!ctx->p)
+    return 0;
+
+  if (print_headings)
+    printf("TEST NUA-2.3.4: refresh REGISTER\n");
+
+  /* Wait for A and B to refresh their registrations */
+  run_ab_until(ctx, -1, save_until_final_response, 
+	       -1, save_until_final_response);
+  
+  TEST_1(e = a->events->head);
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_contact);
+  TEST_S(sip->sip_contact->m_expires, "3600");
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a->events);
+
+  TEST_1(e = b->events->head);
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_contact);
+  TEST_S(sip->sip_contact->m_expires, "3600");
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b->events);
+
+  if (print_headings)
+    printf("TEST NUA-2.3.4: PASSED\n");
 
   END();
 }
@@ -5078,7 +5121,8 @@ int test_methods(struct context *ctx)
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(a->to), TAG_END()));
 
   MESSAGE(a, a_call, a_call->nh,
-	  NUTAG_URL(!ctx->proxy_tests ? a->contact->m_url : NULL),
+	  /* We cannot reach us by using our contact! */
+	  NUTAG_URL(!ctx->p && !ctx->proxy_tests ? a->contact->m_url : NULL),
 	  SIPTAG_SUBJECT_STR("NUA-11.1b"),
 	  SIPTAG_CONTENT_TYPE_STR("text/plain"),
 	  SIPTAG_PAYLOAD_STR("Hello hellO!\n"),
@@ -5799,11 +5843,14 @@ int main(int argc, char *argv[])
   int retval = 0, quit_on_single_failure = 1;
   int i, o_quiet = 0, o_attach = 0, o_alarm = 1;
   int o_events_a = 0, o_events_b = 0, o_events_c = 0, o_iproxy = 1, o_inat = 1;
-  int o_inat_symmetric = 0, o_inat_logging = 0;
+  int o_inat_symmetric = 0, o_inat_logging = 0, o_expensive = 0;
   url_t const *o_proxy = NULL;
   int level = 0;
 
   struct context ctx[1] = {{{ SU_HOME_INIT(ctx) }}};
+
+  if (getenv("EXPENSIVE_CHECKS"))
+    o_expensive = 1;
 
   ctx->threading = 1;
 
@@ -5881,6 +5928,9 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[i], "-N") == 0) {
       o_inat_logging = 1;
     }
+    else if (strcmp(argv[i], "--expensive") == 0) {
+      o_expensive = 1;
+    }
     else if (strcmp(argv[i], "--no-alarm") == 0) {
       o_alarm = 0;
     }
@@ -5902,7 +5952,7 @@ int main(int argc, char *argv[])
   }
 #if HAVE_ALARM
   else if (o_alarm) {
-    alarm(60);
+    alarm(o_expensive ? 60 : 120);
     signal(SIGALRM, sig_alarm);
   }
 #endif
@@ -5936,6 +5986,8 @@ int main(int argc, char *argv[])
 			  TESTNATTAG_SYMMETRIC(o_inat_symmetric),
 			  TESTNATTAG_LOGGING(o_inat_logging),
 			  TAG_END());
+
+  ctx->expensive = o_expensive;
 
   if (retval == 0) {
     if (o_events_a)
