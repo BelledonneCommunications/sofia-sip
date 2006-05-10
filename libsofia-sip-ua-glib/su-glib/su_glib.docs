@@ -1,0 +1,20 @@
+/**
+
+@mainpage Sofia-SIP su-glib Module
+
+@section su_glib_meta Module Meta Information
+
+The su-glib module is a low-level interface for Sofia-SIP using the glib
+primitivies.
+
+@CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
+
+@STATUS Core library
+
+@LICENSE LGPL
+
+@section todo Todo
+
+- see sourceforge.net issue tracker for sofia-sip
+
+*/

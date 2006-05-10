@@ -28,6 +28,10 @@ libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GOBJECT_TARGETS)
 
 DOXYGEN = doxygen
 
+EXTRA_DIST = docs/Doxyfile.aliases \
+	     docs/Doxyfile.conf \
+	     docs/Doxyfile.version
+
 built-sources-recursive clean-built-sources-recursive:
 	target=`echo $@ | sed s/-recursive//`; \
 	list='$(SUBDIRS)'; for subdir in $$list; do \
@@ -35,8 +39,9 @@ built-sources-recursive clean-built-sources-recursive:
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target) \
 	done;
 
-doxygen: built-sources 
+doxygen: built-sources
 	@cd ${srcdir} ;\
+	mkdir -p docs docs/html &&\
 	for d in $(DIST_SUBDIRS) $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile \
 	  && pushd $$d > /dev/null \

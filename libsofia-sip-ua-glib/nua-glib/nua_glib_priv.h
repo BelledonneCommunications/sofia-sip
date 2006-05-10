@@ -25,7 +25,7 @@
 #ifndef __NUA_GLIB_PRIVATE_H__
 #define __NUA_GLIB_PRIVATE_H__
 
-/**@file sofia_glib_private.h Private implementation header for Sofia Glib
+/**@file nua_glib_priv.h Private implementation header for Sofia Glib
  *
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * @author Rob Taylor <rob.taylor@collabora.co.uk>
