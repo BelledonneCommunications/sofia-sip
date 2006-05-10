@@ -653,26 +653,54 @@ int soa_error_as_sip_response(soa_session_t *ss,
   SU_DEBUG_9(("soa_error_as_sip_response(%s::%p, ...) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss));
 
-  if (ss == NULL) {
+  if (ss == NULL || ss->ss_status < 400 || ss->ss_status >= 700) {
     if (return_phrase)
       *return_phrase = sip_500_Internal_server_error;
     return 500;
   }
 
   if (return_phrase)
-    *return_phrase = sip_501_Not_implemented;
-
-  return 501;
+    *return_phrase = ss->ss_phrase;
+  return ss->ss_status;
 }
 
 char const *soa_error_as_sip_reason(soa_session_t *ss)
 {
+  char const *phrase;
+  int status;
+  char *reason;
+
   SU_DEBUG_9(("soa_error_as_sip_reason(%s::%p) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss));
 
-  return "SIP;cause=501;text=\"Unimplemented media\"";
+  if (ss == NULL)
+    return "SIP;cause=500;text=\"Internal Server Error\"";
+
+  status = soa_error_as_sip_response(ss, &phrase);
+
+  reason = su_sprintf(ss->ss_home, "SIP;cause=%u;text=\"%s\"", status, phrase);
+  
+  if (ss->ss_reason)
+    su_free(ss->ss_home, reason);
+
+  return ss->ss_reason = reason;
 }
 
+
+/** Return warning code and text */
+int soa_get_warning(soa_session_t *ss, char const **return_text)
+{
+  if (!ss)
+    return 0;
+
+  if (!ss->ss_wcode)
+    return 0;
+
+  if (return_text)
+    *return_text = ss->ss_warning;
+
+  return ss->ss_wcode;
+}
 
 /** Return SDP description of capabilities.
  *
@@ -1400,8 +1428,17 @@ int soa_is_remote_chat_active(soa_session_t const *ss)
 
 int soa_set_status(soa_session_t *ss, int status, char const *phrase)
 {
-  if (ss)
+  if (ss) {
     ss->ss_status = status, ss->ss_phrase = phrase;
+    ss->ss_wcode = 0, ss->ss_warning = NULL;
+  }
+  return -1;
+}
+
+int soa_set_warning(soa_session_t *ss, int code, char const *text)
+{
+  if (ss)
+    ss->ss_wcode = code, ss->ss_warning = text;
   return -1;
 }
 

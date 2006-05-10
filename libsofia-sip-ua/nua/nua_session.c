@@ -480,7 +480,6 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
 	  session_include_description(nh->nh_soa, msg, sip) < 0) {
 	reason = soa_error_as_sip_reason(nh->nh_soa);
-	/* XXX */
 	status = 900, phrase = "Internal media error";
 	reason = "SIP;cause=500;text=\"Internal media error\"";
       }
@@ -1004,12 +1003,13 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   sip_t *sip;
   int reliable;
   int original_status = status;
+  sip_warning_t *warning = NULL;
   nua_dialog_state_t *ds = nh->nh_ds;
   nua_session_state_t *ss = nh->nh_ss;
   nua_server_request_t *sr = ss->ss_srequest;
 
   int autoanswer = 0, offer = 0, answer = 0;
-
+  
   enter;
 
   if (ss->ss_srequest->sr_irq == NULL ||
@@ -1062,8 +1062,20 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 	(sr->sr_offer_sent && !sr->sr_answer_recv))
       /* Nothing to do */;
     else if (sr->sr_offer_recv && !sr->sr_answer_sent) {
-      if (soa_generate_answer(nh->nh_soa, NULL) < 0)
+      if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
+	int wcode;
+	char const *text;
+	char const *host = "invalid.";
 	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+
+	wcode = soa_get_warning(nh->nh_soa, &text);
+	if (wcode) {
+	  if (sip->sip_contact)
+	    host = sip->sip_contact->m_url->url_host;
+	  warning = sip_warning_format(home, "%u %s \"%s\"",
+				       wcode, host, text);
+	}
+      }
       else {
 	answer = 1;
 	soa_activate(nh->nh_soa, NULL);
@@ -1121,6 +1133,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
     ss->ss_srequest->sr_respond = NULL;
     nta_incoming_treply(ss->ss_srequest->sr_irq,
 			status, phrase,
+			SIPTAG_WARNING(warning),
 			TAG_END());
     msg_destroy(msg), msg = NULL;
   }

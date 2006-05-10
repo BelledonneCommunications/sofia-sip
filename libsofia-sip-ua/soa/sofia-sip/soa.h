@@ -71,6 +71,8 @@ int soa_error_as_sip_response(soa_session_t *soa,
 
 char const *soa_error_as_sip_reason(soa_session_t *soa);
 
+int soa_get_warning(soa_session_t *ss, char const **return_phrase);
+
 int soa_set_capability_sdp(soa_session_t *ss, 
 			   struct sdp_session_s const *sdp,
 			   char const *str, int len);
