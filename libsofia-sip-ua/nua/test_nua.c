@@ -1887,7 +1887,8 @@ int test_nat_timeout(struct context *ctx)
 
   test_nat_flush(ctx->nat);	/* Break our connections */
 
-  run_a_until(ctx, -1, save_until_special);
+  /* Run until we get final response to REGISTER */
+  run_a_until(ctx, -1, save_until_final_response);
 
   TEST_1(e = a->specials->head);
   TEST_E(e->data->e_event, nua_i_outbound);
@@ -1895,14 +1896,13 @@ int test_nat_timeout(struct context *ctx)
   TEST_S(e->data->e_phrase, "NAT binding changed");
   TEST_1(!e->next);
 
-  run_a_until(ctx, -1, save_until_final_response);
+  free_events_in_list(ctx, a->specials);
 
   TEST_1(e = a->events->head);
   TEST_E(e->data->e_event, nua_r_register);
   TEST(e->data->e_status, 200);
   TEST_1(!e->next);
 
-  free_events_in_list(ctx, a->specials);
   free_events_in_list(ctx, a->events);
 
   if (print_headings)
