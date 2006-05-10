@@ -45,6 +45,7 @@ nobase_include_sofia_HEADERS = \
 
 libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
 			nua_dialog.c nua_dialog.h \
+			outbound.c outbound.h \
 			nua_params.c nua_params.h \
 			nua_register.c nua_session.c nua_options.c \
 			nua_message.c nua_publish.c nua_subnotref.c \

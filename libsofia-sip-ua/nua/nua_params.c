@@ -155,7 +155,9 @@ int nua_stack_set_from(nua_t *nua, int initial, tagi_t const *tags)
       *f0 = *f, f = f0, f->a_params = NULL;
   }
   else {
-    sip_contact_t const *m = nua_contact_by_aor(nua, NULL, 0);
+    sip_contact_t const *m;
+
+    m = nua_stack_get_contact(nua->nua_registrations);
     
     if (m) {
       f0->a_display = m->m_display;
@@ -802,7 +804,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   media_params = soa_get_paramlist(nh->nh_soa, TAG_END());
 
-  m = nua_contact_by_aor(nh->nh_nua, NULL, 0);
+  m = nua_stack_get_contact(nua->nua_registrations);
 
   /* Include tag in list returned to user
    * if it has been earlier set (by user) */

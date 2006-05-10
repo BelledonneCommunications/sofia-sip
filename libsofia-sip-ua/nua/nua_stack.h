@@ -97,7 +97,7 @@ typedef struct nua_server_request nua_server_request_t;
 
 typedef void nua_creq_restart_f(nua_handle_t *, tagi_t *tags);
 
-typedef struct outbound_connect nua_registration_t;
+typedef struct register_usage nua_registration_t;
 
 struct nua_client_request
 {
@@ -366,9 +366,14 @@ int nua_stack_init_transport(nua_t *nua, tagi_t const *tags);
 
 int nua_stack_init_registrations(nua_t *nua);
 
-int outbound_connect_check_accept(sip_accept_t const *accept);
+nua_registration_t *nua_registration_by_aor(nua_registration_t const *list,
+					    sip_from_t const *aor,
+					    url_t const *remote_uri,
+					    int only_default);
 
-int outbound_connect_process_options(struct outbound_connect *usages,
+sip_contact_t const *nua_registration_contact(nua_registration_t const *nr);
+
+int nua_registration_process_request(nua_registration_t *nr,
 				     nta_incoming_t *irq,
 				     sip_t const *sip);
 
@@ -469,16 +474,13 @@ int nua_creq_restart(nua_handle_t *nh,
 
 void nua_creq_deinit(struct nua_client_request *cr, nta_outgoing_t *orq);
 
-sip_contact_t const *nua_contact_by_aor(nua_t *nua, 
-					url_t const *aor,
-					int only_default);
+sip_contact_t const *nua_stack_get_contact(nua_registration_t const *nr);
 
-int nua_add_contact_by_aor(nua_handle_t *nh,
-			   url_t const *aor,
-			   msg_t *msg, 
-			   sip_t *sip,
-			   int add_contact,
-			   int add_service_route);
+int nua_registration_add_contact(nua_handle_t *nh,
+				 msg_t *msg, 
+				 sip_t *sip,
+				 int add_contact,
+				 int add_service_route);
 
 msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh, 
 			nta_incoming_t *irq,

@@ -107,11 +107,14 @@ int nua_stack_process_options(nua_t *nua,
 {
   msg_t *msg;
 
-  int status = 200; char const *phrase = sip_200_OK;
+  int status; char const *phrase;
 
   /* Hook to outbound */
-  if (outbound_connect_check_accept(sip->sip_accept))
-    return outbound_connect_process_options(nua->nua_registrations, irq, sip);
+  status = nua_registration_process_request(nua->nua_registrations, irq, sip);
+  if (status)
+    return status;
+
+  SET_STATUS1(SIP_200_OK);
 
   if (nh == NULL)
     nh = nua->nua_dhandle;

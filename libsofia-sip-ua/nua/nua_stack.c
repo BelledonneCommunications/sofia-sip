@@ -912,7 +912,8 @@ int nh_challenge(nua_handle_t *nh, sip_t const *sip)
  * @param name
  * @param tag, value, ... list of tag-value pairs
  */
-msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
+msg_t *nua_creq_msg(nua_t *nua,
+		    nua_handle_t *nh,
 		    struct nua_client_request *cr,
 		    int restart,
 		    sip_method_t method, char const *name,
@@ -1045,9 +1046,11 @@ msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
 	tl_find(ta_args(ta), siptag_contact_str))
       add_contact = 0;
 
-    if (add_contact || add_service_route)
-      nua_add_contact_by_aor(nh, sip->sip_request->rq_url, msg, sip,
-			     add_contact, add_service_route);
+    if (add_contact || add_service_route) {
+      if (nua_registration_add_contact(nh, msg, sip, 
+				       add_contact, add_service_route) < 0)
+	goto error;
+    }
 
     if (!sip->sip_user_agent && NH_PGET(nh, user_agent))
       sip_add_dup(msg, sip, (sip_header_t *)NH_PGET(nh, user_agent));
@@ -1131,16 +1134,9 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
   ta_list ta;
   msg_t *msg = nta_msg_create(nua->nua_nta, 0);
   sip_t *sip = sip_object(msg);
-  sip_contact_t const *m;
-  int add_contact = 0;
-
-  m = nua_contact_by_aor(nua, nta_incoming_url(irq), 0);
+  tagi_t const *t;
 
   ta_start(ta, tag, value);
-
-  tl_gets(ta_args(ta),
-	  NUTAG_ADD_CONTACT_REF(add_contact),
-	  TAG_END());
 
   if (!msg)
     return NULL;
@@ -1149,9 +1145,6 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
   else if (sip_add_tl(msg, sip, ta_tags(ta)) < 0)
     msg_destroy(msg);
   else if (sip_complete_message(msg) < 0)
-    msg_destroy(msg);
-  else if (add_contact && !sip->sip_contact && 
-	   sip_add_dup(msg, sip, (sip_header_t *)m) < 0)
     msg_destroy(msg);
   else if (!sip->sip_supported && NH_PGET(nh, supported) &&
 	   sip_add_dup(msg, sip, (sip_header_t *)NH_PGET(nh, supported)) < 0)
@@ -1164,6 +1157,10 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
     msg_destroy(msg);
   else if (!sip->sip_allow && NH_PGET(nh, allow) &&
 	   sip_add_dup(msg, sip, (sip_header_t*)NH_PGET(nh, allow)) < 0)
+    msg_destroy(msg);
+  else if (!sip->sip_contact &&
+	   (t = tl_find(ta_args(ta), _nutag_add_contact)) &&
+	   nua_registration_add_contact(nh, msg, sip, t->t_value, 0) < 0)
     msg_destroy(msg);
   else
     return msg;

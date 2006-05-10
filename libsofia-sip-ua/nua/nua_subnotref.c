@@ -441,9 +441,10 @@ int nua_stack_process_subsribe(nua_t *nua,
   nua_dialog_usage_t *du = NULL;
   struct event_usage *eu;
   sip_event_t *o = sip->sip_event;
-  sip_contact_t const *m;
+  sip_contact_t const *m = NULL;
   int status; char const *phrase;
   unsigned long expires, refer_expires;
+  nua_registration_t *nr;
 
   enter;
 
@@ -499,10 +500,16 @@ int nua_stack_process_subsribe(nua_t *nua,
   else
     SET_STATUS1(SIP_200_OK);
 
-  m = nua_contact_by_aor(nua, nta_incoming_url(irq), 0);
-  if (status < 300 && m == NULL) {
-    SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR); 
-    eu->eu_substate = nua_substate_terminated;
+  if (status < 300) {
+    nr = nua_registration_by_aor(nua->nua_registrations,
+				 sip->sip_to,
+				 sip->sip_request->rq_url,
+				 0);
+    m = nua_registration_contact(nr);
+    if (m == NULL) {
+      SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR); 
+      eu->eu_substate = nua_substate_terminated;
+    }
   }
     
   nta_incoming_treply(irq, status, phrase, SIPTAG_CONTACT(m), NULL);
