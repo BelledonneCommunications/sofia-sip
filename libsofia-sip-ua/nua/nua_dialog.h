@@ -98,6 +98,8 @@ typedef struct {
   void (*usage_peer_info)(nua_dialog_usage_t *du,
 			  nua_dialog_state_t const *ds,
 			  sip_t const *sip);
+  void (*usage_refresh)(nua_owner_t *, nua_dialog_usage_t *, sip_time_t now);
+  int (*usage_shutdown)(nua_owner_t *, nua_dialog_usage_t *);
 } nua_usage_class;
 
 struct nua_dialog_usage {
@@ -106,6 +108,7 @@ struct nua_dialog_usage {
 
   unsigned     du_terminating:1;	/**< Now trying to terminate usage */
   unsigned     du_ready:1;	        /**< Established usage */
+  unsigned     du_shutdown:1;	        /**< Shutdown in progress */
   unsigned:0;
 
   /** Pending operation.

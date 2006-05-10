@@ -485,8 +485,6 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
   for (du = nh->nh_ds->ds_usage; du; du = du->du_next) {
     if (now == 0)
       break;
-    if (!du->du_pending)
-      continue;
     if (du->du_refresh && du->du_refresh < next)
       break;
   }
@@ -497,15 +495,9 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
   nua_handle_ref(nh);
 
   while (du) {
-    nh_pending_f *pending = du->du_pending;
     nua_dialog_usage_t *du_next = du->du_next;
 
-    du->du_pending = NULL;
-
-    if (pending)
-      pending(nh, du, now);
-    else
-      nua_dialog_usage_remove(nh, nh->nh_ds, du);
+    nua_dialog_usage_refresh(nh, du, now);
 
     if (du_next == NULL)
       break;
@@ -517,8 +509,6 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
     for (; du; du = du->du_next) {
       if (now == 0)
 	break;
-      if (!du->du_pending)
-	continue;
       if (du->du_refresh && du->du_refresh < next)
 	break;
     }

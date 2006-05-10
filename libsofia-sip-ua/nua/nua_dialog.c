@@ -445,7 +445,24 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
   if (du) {
     nh_pending_f *pending = du->du_pending;
 
+    du->du_refresh = 0;
+
+    if (now > 0) {
+      if (du->du_class->usage_refresh) {
+	du->du_class->usage_refresh(owner, du, now);
+	return;
+      }
+    }
+    else {
+      du->du_shutdown = 1;
+      if (du->du_class->usage_shutdown) {
+	du->du_class->usage_shutdown(owner, du);
+	return;
+      }
+    }
+
     du->du_pending = NULL;
+
     if (pending)
       pending(owner, du, now);
   }
