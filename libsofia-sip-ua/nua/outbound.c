@@ -716,8 +716,20 @@ static int create_keepalive_message(outbound_t *ob, sip_t const *regsip)
 {
   msg_t *msg = nta_msg_create(ob->ob_nta, MSG_FLG_COMPACT), *previous;
   sip_t *osip = sip_object(msg);
+  sip_accept_contact_t *ac;
 
+  char const *p1 = ob->ob_instance;
+  char const *p2 = ob->ob_features;
+  
   assert(regsip); assert(regsip->sip_request);
+
+  if (p1 || p2) {
+    ac = sip_accept_contact_format(msg_home(msg), "*;require;explicit;%s%s%s",
+				   p1 ? p1 : "",
+				   p2 && p2 ? ";" : "",
+				   p2 ? p2 : "");
+    msg_header_insert(msg, NULL, (void *)ac);
+  }
 
   if (
       sip_add_tl(msg, osip,
@@ -859,7 +871,7 @@ static int response_to_keepalive_options(outbound_t *ob,
 
   if (binding_check <= 1 && status < 300 && ob->ob_registered) {
     if (!ob->ob_validated)
-      SU_DEBUG_1(("outbound_t(%p): validated contact " URL_PRINT_FORMAT "\n",
+      SU_DEBUG_1(("outbound(%p): validated contact " URL_PRINT_FORMAT "\n",
 		  ob->ob_owner, URL_PRINT_ARGS(ob->ob_rcontact->m_url)));
     ob->ob_validated = ob->ob_once_validated = 1;
   }
@@ -903,16 +915,9 @@ static int keepalive_options_with_registration_probe(outbound_t *ob)
        			SIP_METHOD_OPTIONS, request_uri) < 0)
     return msg_destroy(req), -1;
 
-  if (ob->ob_features) {
-    sip_accept_contact_t *ac;
-    ac = sip_accept_contact_format(msg_home(req), "*;require;explicit;%s",
-       			    ob->ob_features);
-    msg_header_insert(req, NULL, (void *)ac);
-  }
-
   if (ob->ob_keepalive.auc[0])
     auc_authorization(ob->ob_keepalive.auc, req, (void *)sip,
-       	       "OPTIONS", request_uri, sip->sip_payload);
+		      "OPTIONS", request_uri, sip->sip_payload);
 
   ob->ob_keepalive.orq =
     nta_outgoing_mcreate(ob->ob_nta,
