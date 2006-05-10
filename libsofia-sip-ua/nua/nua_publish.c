@@ -66,6 +66,11 @@ static int nua_publish_usage_add(nua_handle_t *nh,
 static void nua_publish_usage_remove(nua_handle_t *nh,
 				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du);
+static void nua_publish_usage_refresh(nua_handle_t *nh,
+				      nua_dialog_usage_t *du,
+				      sip_time_t now);
+static int nua_publish_usage_shutdown(nua_handle_t *nh,
+				      nua_dialog_usage_t *du);
 
 static nua_usage_class const nua_publish_usage[1] = {
   {
@@ -74,6 +79,9 @@ static nua_usage_class const nua_publish_usage[1] = {
     nua_publish_usage_add,
     nua_publish_usage_remove,
     nua_publish_usage_name,
+    NULL,
+    nua_publish_usage_refresh,
+    nua_publish_usage_shutdown,
   }};
 
 static
@@ -114,8 +122,6 @@ static int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 static int process_response_to_publish(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip);
-
-static void refresh_publish(nua_handle_t *nh, nua_dialog_usage_t *, sip_time_t now);
 
 
 /**@fn \
@@ -354,7 +360,7 @@ int process_response_to_publish(nua_handle_t *nh,
 
     if (status < 300 && !invalid_expiration && !retry) {
       pu->pu_etag = sip_etag_dup(nh->nh_home, sip->sip_etag);
-      du->du_pending = refresh_publish;
+      du->du_ready = 1;
       nua_dialog_usage_set_refresh(du, sip->sip_expires->ex_delta);
     }
     else if (retry && saved_retry_count < NH_PGET(nh, retry_count)) {
@@ -384,16 +390,34 @@ int process_response_to_publish(nua_handle_t *nh,
 }
 
 
-static
-void refresh_publish(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
+static void nua_publish_usage_refresh(nua_handle_t *nh,
+				      nua_dialog_usage_t *du,
+				      sip_time_t now)
 {
-  if (du)
-    du->du_terminating = now == 0;
+  if (nh->nh_cr->cr_usage == du)
+    return;
+  nua_stack_publish2(nh->nh_nua, nh, nua_r_publish, 1, NULL);
+}
 
-  if (now > 0)
-    nua_stack_publish2(nh->nh_nua, nh, nua_r_publish, 1, NULL);
-  else
+/** @interal Shut down PUBLISH usage. 
+ *
+ * @retval >0  shutdown done
+ * @retval 0   shutdown in progress
+ * @retval <0  try again later
+ */
+static int nua_publish_usage_shutdown(nua_handle_t *nh,
+				      nua_dialog_usage_t *du)
+{
+  if (!nh->nh_cr->cr_usage) {
+    /* Unpublish */
     nua_stack_publish2(nh->nh_nua, nh, nua_r_destroy, 1, NULL);
+    return nh->nh_cr->cr_usage != du;
+  }
+
+  if (!du->du_ready && !nh->nh_cr->cr_orq)
+    return 1;			/* Unauthenticated initial request */
+
+  return -1;  /* Request in progress */
 }
 
 
