@@ -105,7 +105,11 @@ struct proxy {
   struct proxy_transaction *stateless;
   struct proxy_transaction *transactions;
   struct registration_entry *entries;
-};
+
+  struct {
+    sip_time_t min_expires, expires, max_expires;
+  } prefs;
+}; 
 
 LIST_PROTOS(static, registration_entry, struct registration_entry);
 static struct registration_entry *registration_entry_new(struct proxy *,
@@ -244,6 +248,10 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
 				       URLTAG_URL("sip:example.com"),
 				       TAG_END());
 
+  proxy->prefs.min_expires = 30;
+  proxy->prefs.expires = 3600;
+  proxy->prefs.max_expires = 3600;
+
   if (!proxy->defleg || 
       !proxy->example_net || !proxy->example_org || !proxy->example_com)
     return -1;
@@ -325,6 +333,30 @@ void test_proxy_destroy(struct proxy *p)
 url_t const *test_proxy_uri(struct proxy const *p)
 {
   return p ? p->uri : NULL;
+}
+
+void test_proxy_set_expiration(struct proxy *p,
+			       sip_time_t min_expires, 
+			       sip_time_t expires, 
+			       sip_time_t max_expires)
+{
+  if (p) {
+    p->prefs.min_expires = min_expires;
+    p->prefs.expires = expires;
+    p->prefs.max_expires = max_expires;
+  }
+}
+
+void test_proxy_get_expiration(struct proxy *p,
+			       sip_time_t *return_min_expires,
+			       sip_time_t *return_expires,
+			       sip_time_t *return_max_expires)
+{
+  if (p) {
+    if (return_min_expires) *return_min_expires = p->prefs.min_expires;
+    if (return_expires) *return_expires = p->prefs.expires;
+    if (return_max_expires) *return_max_expires = p->prefs.max_expires;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -562,32 +594,38 @@ int process_options(struct proxy *proxy,
 /* ---------------------------------------------------------------------- */
 
 
-static int validate_contacts(sip_t const *sip);
-static int check_out_of_order_unregister(struct registration_entry *e, sip_t const *);
+static int process_register2(struct proxy *p, auth_status_t *as,
+			      nta_incoming_t *irq, sip_t const *sip);
+
+static int set_status(auth_status_t *as, int status, char const *phrase);
+
+static int validate_contacts(struct proxy *p, auth_status_t *as,
+			     sip_t const *sip);
+static int check_out_of_order(struct proxy *p, auth_status_t *as,
+			      struct registration_entry *e, sip_t const *);
 static int binding_update(struct proxy *p,
-			  struct registration_entry *e,
-			  sip_t const *sip);
+       		   auth_status_t *as,
+       		   struct registration_entry *e,
+       		   sip_t const *sip);
 
 sip_contact_t *binding_contacts(su_home_t *home, struct binding *bindings);
 
 int process_register(struct proxy *proxy,
-		     nta_incoming_t *irq,
-		     sip_t const *sip)
+       	      nta_incoming_t *irq,
+       	      sip_t const *sip)
 {
   auth_status_t *as;
-  struct registration_entry *e;
+  msg_t *msg;
   int status;
 
-  as = su_home_clone(proxy->home, (sizeof *as));
-  as->as_status = 500, as->as_phrase = sip_500_Internal_server_error;
+  as = auth_status_new(proxy->home);
+  if (!as)
+    return 500;
 
   as->as_method = sip->sip_request->rq_method_name;
-  {
-    msg_t *msg;
-    msg = nta_incoming_getrequest(irq);
-    as->as_source = msg_addrinfo(msg);
-    msg_destroy(msg);
-  }
+  msg = nta_incoming_getrequest(irq);
+  as->as_source = msg_addrinfo(msg);
+  msg_destroy(msg);
 
   as->as_user_uri = sip->sip_from->a_url;
   as->as_display = sip->sip_from->a_display;
@@ -596,57 +634,74 @@ int process_register(struct proxy *proxy,
     as->as_body = sip->sip_payload->pl_data,
       as->as_bodylen = sip->sip_payload->pl_len;
 
-  auth_mod_check_client(proxy->auth, as, sip->sip_authorization,
-			registrar_challenger);
+  process_register2(proxy, as, irq, sip);
+  assert(as->as_status >= 200);
 
-  if (as->as_status != 0) {
-    assert(as->as_status >= 300);
-    nta_incoming_treply(irq,
-			as->as_status, as->as_phrase,
-			SIPTAG_HEADER((void *)as->as_info),
-			SIPTAG_HEADER((void *)as->as_response),
-			TAG_END());
-    return as->as_status;
-  }
+  nta_incoming_treply(irq,
+       	       as->as_status, as->as_phrase,
+       	       SIPTAG_HEADER((void *)as->as_info),
+       	       SIPTAG_HEADER((void *)as->as_response),
+       	       TAG_END());
+  status = as->as_status;
 
-  status = validate_contacts(sip);
-  if (status)
-    return status;
+  su_home_unref(as->as_home);
 
-  e = registration_entry_find(proxy, sip->sip_to->a_url);
-
-  if (!sip->sip_contact) {
-    nta_incoming_treply(irq, SIP_200_OK,
-			SIPTAG_CONTACT(e ? e->contacts : NULL),
-			TAG_END());
-    return 200;
-  }
-
-  status = check_out_of_order_unregister(e, sip);
-  if (status)
-    return status;
-
-  if (!e) 
-    e = registration_entry_new(proxy, sip->sip_to->a_url);
-
-  status = binding_update(proxy, e, sip);
-  if (status)
-    return status;
-
-  msg_header_free(proxy->home, (void *)e->contacts);
-  e->contacts = binding_contacts(proxy->home, e->bindings);
-
-  nta_incoming_treply(irq, SIP_200_OK,
-		      SIPTAG_CONTACT(e->contacts),
-		      TAG_END());
-
-  return 200;
+  return status;
 }
 
-static
-int validate_contacts(sip_t const *sip)
+static int process_register2(struct proxy *p,
+			     auth_status_t *as,
+			     nta_incoming_t *irq,
+			     sip_t const *sip)
+{
+  struct registration_entry *e = NULL;
+
+  auth_mod_check_client(p->auth, as, sip->sip_authorization,
+			registrar_challenger);
+  if (as->as_status)
+    return as->as_status;
+  assert(as->as_response == NULL);
+
+  if (validate_contacts(p, as, sip))
+    return as->as_status;
+
+  e = registration_entry_find(p, sip->sip_to->a_url);
+  if (!sip->sip_contact) {
+    as->as_response = (msg_header_t *)e->contacts;
+    return set_status(as, SIP_200_OK);
+  }
+
+  if (e && check_out_of_order(p, as, e, sip))
+    return as->as_status;
+  
+  if (!e) 
+    e = registration_entry_new(p, sip->sip_to->a_url);
+  if (!e)
+    return set_status(as, SIP_500_INTERNAL_SERVER_ERROR);
+
+  if (binding_update(p, as, e, sip))
+    return as->as_status;
+
+  msg_header_free(p->home, (void *)e->contacts);
+  e->contacts = binding_contacts(p->home, e->bindings);
+
+  as->as_response = (msg_header_t *)e->contacts;
+
+  return set_status(as, SIP_200_OK);
+}
+
+static int set_status(auth_status_t *as, int status, char const *phrase)
+{
+  return as->as_phrase = phrase, as->as_status = status;
+}
+
+static int validate_contacts(struct proxy *p,
+			     auth_status_t *as,
+			     sip_t const *sip)
 {
   sip_contact_t const *m;
+  sip_time_t expires;
+  sip_time_t now = sip_now();
 
   for (m = sip->sip_contact; m; m = m->m_next) {
     if (m->m_url->url_type == url_any) {
@@ -654,43 +709,58 @@ int validate_contacts(sip_t const *sip)
 	  sip->sip_expires->ex_delta || 
 	  sip->sip_expires->ex_time ||
 	  sip->sip_contact->m_next)
-	return 400;
+	return set_status(as, SIP_400_BAD_REQUEST);
       else
-	break;
+	return 0;
+    }
+
+    expires = sip_contact_expires(m, sip->sip_expires, sip->sip_date,
+				  p->prefs.expires, now);
+    
+    if (expires > 0 && expires < p->prefs.min_expires) {
+      as->as_response = (msg_header_t *)
+	sip_min_expires_format(as->as_home, "%u", 
+			       (unsigned)p->prefs.min_expires);
+      return set_status(as, SIP_423_INTERVAL_TOO_BRIEF);
     }
   }
 
   return 0;
 }
 
-/** Check for out-of-order un-register request */
+/** Check for out-of-order register request */
 static
-int check_out_of_order_unregister(struct registration_entry *e,
-				  sip_t const *sip)
+int check_out_of_order(struct proxy *p,
+		       auth_status_t *as,
+		       struct registration_entry *e,
+		       sip_t const *sip)
 {
   struct binding const *b;
   sip_call_id_t const *id;
+  sip_contact_t *m;
 
-  if (!sip->sip_contact || sip->sip_contact->m_url->url_type != url_any)
-    return 0;
-
-  if (e == NULL)
+  if (e == NULL || !sip->sip_contact)
     return 0;
 
   id = sip->sip_call_id;
   
-  /* RFC 3261 subsection 10.3 step 6: */
-  /* Check for reordered un-register requests */
+  /* RFC 3261 subsection 10.3 step 6 and step 7 (p. 66): */
+  /* Check for reordered register requests */
   for (b = e->bindings; b; b = b->next) {
     if (binding_is_active(b) &&
 	strcmp(sip->sip_call_id->i_id, b->call_id->i_id) == 0 &&
-        sip->sip_cseq->cs_seq <= b->cseq) {
-      return 500;
+	sip->sip_cseq->cs_seq <= b->cseq) {
+      for (m = sip->sip_contact; m; m = m->m_next) {
+	if (m->m_url->url_type == url_any ||
+	    url_cmp_all(m->m_url, b->contact->m_url) == 0)
+	  return set_status(as, SIP_500_INTERNAL_SERVER_ERROR);
+      }
     }
   }
 
   return 0;
 }
+
 
 static struct registration_entry *
 registration_entry_find(struct proxy const *proxy, url_t const *uri)
@@ -790,13 +860,13 @@ void binding_destroy(su_home_t *home, struct binding *b)
 
 static
 int binding_update(struct proxy *p,
+		   auth_status_t *as,
 		   struct registration_entry *e,
 		   sip_t const *sip)
 {
   struct binding *b, *old, *next, *last, *bindings = NULL, **bb = &bindings;
   sip_contact_t *m;
   sip_time_t expires;
-  int status = 0;
 
   sip_time_t now = sip_now();
 
@@ -808,7 +878,10 @@ int binding_update(struct proxy *p,
       break;
     
     expires = sip_contact_expires(m, sip->sip_expires, sip->sip_date,
-				  3600, now);
+				  p->prefs.expires, now);
+
+    if (expires > p->prefs.max_expires)
+      expires = p->prefs.max_expires;
 
     msg_header_remove_param(m->m_common, "expires");
 
@@ -828,7 +901,7 @@ int binding_update(struct proxy *p,
       next = old->next;
 
       for (b = bindings; b != last; b = b->next) {
-	if (url_cmp(old->contact->m_url, b->contact->m_url) != 0) 
+	if (url_cmp_all(old->contact->m_url, b->contact->m_url) != 0) 
 	  continue;
 
 	if (strcmp(old->call_id->i_id, b->call_id->i_id) == 0) {
@@ -853,14 +926,16 @@ int binding_update(struct proxy *p,
   }
   else {
     /* Infernal error */
-    status = 501;
+
     for (old = bindings; old; old = next) {
       next = old->next;
       binding_destroy(p->home, old);
     }
+
+    return set_status(as, SIP_500_INTERNAL_SERVER_ERROR);
   }
 
-  return status;
+  return 0;
 }
 
 sip_contact_t *binding_contacts(su_home_t *home, struct binding *bindings)

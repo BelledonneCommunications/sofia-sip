@@ -38,6 +38,16 @@ void test_proxy_destroy(struct proxy *);
 
 url_t const *test_proxy_uri(struct proxy const *);
 
+void test_proxy_set_expiration(struct proxy *,
+			       sip_time_t min_expires, 
+			       sip_time_t expires, 
+			       sip_time_t max_expires);
+
+void test_proxy_get_expiration(struct proxy *,
+			       sip_time_t *return_min_expires, 
+			       sip_time_t *return_expires, 
+			       sip_time_t *return_max_expires);
+
 SOFIA_END_DECLS
 
 #endif
