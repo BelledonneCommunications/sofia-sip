@@ -34,18 +34,14 @@
  */
 
 #ifndef SU_CONFIG_H
-#include <su_config.h>
+#include <sofia-sip/su_config.h>
 #endif
-
 #ifndef NTA_H
 #include <sofia-sip/nta.h>
 #endif
 #ifndef AUTH_CLIENT_H
 #include <sofia-sip/auth_client.h>
 #endif
-
-#define SU_LOG (nua_log)
-#include <sofia-sip/su_debug.h>
 
 SOFIA_BEGIN_DECLS
 

@@ -51,6 +51,9 @@
 #include <sofia-sip/su_uniqueid.h>
 #include <sofia-sip/token64.h>
 
+#define SU_LOG (nua_log)
+#include <sofia-sip/su_debug.h>
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
