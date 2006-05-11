@@ -53,7 +53,10 @@
 
 #include <assert.h>
 
-/** Copy a SIP header. */
+/** Copy a SIP header.
+ *
+ * @deprecated Use msg_header_copy() instead.
+ */
 sip_header_t *sip_header_copy(su_home_t *home, sip_header_t const *h)
 {
   if (h == NULL || h == SIP_NONE)
@@ -61,7 +64,10 @@ sip_header_t *sip_header_copy(su_home_t *home, sip_header_t const *h)
   return msg_header_copy_as(home, h->sh_class, h);
 }
 
-/** Duplicate a SIP header. */
+/** Duplicate a SIP header.
+ *
+ * @deprecated Use msg_header_dup() instead.
+ */
 sip_header_t *sip_header_dup(su_home_t *home, sip_header_t const *h)
 {
   if (h == NULL || h == SIP_NONE)
@@ -70,13 +76,19 @@ sip_header_t *sip_header_dup(su_home_t *home, sip_header_t const *h)
 
 }
 
-/** Decode a SIP header. */
+/** Decode a SIP header.
+ *
+ * @deprecated Use msg_header_d() instead.
+ */
 sip_header_t *sip_header_d(su_home_t *home, msg_t const *msg, char const *b)
 {
   return msg_header_d(home, msg, b);
 }
 
-/** Encode a SIP header. */
+/** Encode a SIP header. 
+ *
+ * @deprecated Use msg_header_e() instead.
+ */
 int sip_header_e(char b[], int bsiz, sip_header_t const *h, int flags)
 {
   return msg_header_e(b, bsiz, (msg_header_t const *)h, flags);

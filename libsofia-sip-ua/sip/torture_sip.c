@@ -369,7 +369,9 @@ int test_basic(void)
     TEST_1(sip_from_add_param(home, f, "tag=tagged") == 0);
     TEST_S(f->a_tag, "tagged");
     TEST_1(sip_from_tag(home, f, "jxahudsf") == -1);
-    f->a_params = NULL;
+    while (f->a_params && f->a_params[0])
+      msg_header_remove_param(f->a_common, f->a_params[0]);
+    TEST(f->a_tag, NULL);
     TEST_1(sip_from_add_param(home, f, "test=1") == 0);
     TEST_1(sip_from_tag(home, f, "jxahudsf") == 0);
     TEST_S(f->a_tag, "jxahudsf");

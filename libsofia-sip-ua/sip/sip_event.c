@@ -207,15 +207,20 @@ int sip_allow_events_e(char b[], int bsiz, sip_header_t const *h, int f)
   return msg_list_e(b, bsiz, h, f);
 }
 
-/** Append an event to a Allow-Events header. */
+/** Append an event to a Allow-Events header. 
+ *
+ * @note This function @b does @b duplicate @p event.
+ *
+ * @deprecated Use msg_header_replace_param() directly.
+ */
 int sip_allow_events_add(su_home_t *home, 
 			 sip_allow_events_t *ae, 
-			 char const *e)
+			 char const *event)
 {
-  e = su_strdup(home, e);
-  if (!e)
+  event = su_strdup(home, event);
+  if (!event)
     return -1;
-  return msg_params_replace(home, (msg_param_t **)&ae->k_items, e);
+  return msg_header_replace_param(home, ae->k_common, event);
 }
 
 /* ====================================================================== */

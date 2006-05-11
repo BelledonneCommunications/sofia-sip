@@ -784,7 +784,7 @@ int sip_addr_d(su_home_t *home,
 	       char *s,
 	       int slen)
 {
-  sip_addr_t *a = h->sh_addr;
+  sip_addr_t *a = (sip_addr_t *)h;
   char const *comment = NULL;
   if (sip_name_addr_d(home, 
 		      &s, 
@@ -796,13 +796,13 @@ int sip_addr_d(su_home_t *home,
     return -1;
 
   a->a_tag = msg_params_find(a->a_params, "tag=");
-  
+
   return 0;
 }
 
 static int sip_addr_e(char b[], int bsiz, sip_header_t const *h, int flags)
 {
-  sip_addr_t const *a = h->sh_addr;
+  sip_addr_t const *a = (sip_addr_t const *)h;
 
   return sip_name_addr_e(b, bsiz,
 			 flags,
@@ -827,7 +827,7 @@ static
 int sip_addr_dup_xtra(sip_header_t const *h, int offset)
 {
   int rv = offset;
-  sip_addr_t const *a = h->sh_addr;
+  sip_addr_t const *a = (sip_addr_t const *)h;
 
   MSG_PARAMS_SIZE(rv, a->a_params);
   rv += MSG_STRING_SIZE(a->a_display);
@@ -842,15 +842,13 @@ int sip_addr_dup_xtra(sip_header_t const *h, int offset)
 static char *sip_addr_dup_one(sip_header_t *dst, sip_header_t const *src,
 			      char *b, int xtra)
 {
-  sip_addr_t *a = dst->sh_addr;
-  sip_addr_t const *o = src->sh_addr;
+  sip_addr_t *a = (sip_addr_t *)dst;
+  sip_addr_t const *o = (sip_addr_t *)src;
   char *end = b + xtra;
 
   b = msg_params_dup(&a->a_params, o->a_params, b, xtra);
   MSG_STRING_DUP(b, a->a_display, o->a_display);
   URL_DUP(b, end, a->a_url, o->a_url);
-
-  a->a_tag = msg_params_find(a->a_params, "tag=");
 
   assert(b <= end);
 
@@ -897,36 +895,8 @@ sip_addr_make_url(su_home_t *home, msg_hclass_t *hc, url_string_t const *us)
   return NULL;
 }
 
-/**
- * Add a parameter to an addr object.
- *
- * The function sip_addr_add_param() adds a parameter to an sip_addr_t
- * object.
- *
- * @param home   memory home
- * @param a      sip_addr_t object
- * @param param  parameter string
- *
- * @return The function sip_addr_add_param() returns 0 when successful,
- * and -1 upon an error.  */
+/** Add a tag to address structure. */
 static
-int sip_addr_add_param(su_home_t *home,
-		       sip_addr_t *a,
-		       char const *param)
-{
-  sip_fragment_clear(a->a_common);
-
-  if (msg_params_replace(home, (msg_param_t **)&a->a_params, param) < 0)
-    return -1;
-
-  a->a_tag  = msg_params_find(a->a_params, "tag=");
-  return 0;
-}
-
-/** Add a tag to address structure. 
- *
- *
- */
 int sip_addr_tag(su_home_t *home, sip_addr_t *a, char const *tag)
 {
   if (a && tag) {
@@ -950,7 +920,8 @@ int sip_addr_tag(su_home_t *home, sip_addr_t *a, char const *tag)
       tag = su_strdup(home, tag);
 
     if (tag)
-      return sip_addr_add_param(home, a, tag);
+      if (msg_header_replace_param(home, a->a_common, tag) >= 0)
+	return 0;
   }
 
   return -1;
@@ -1005,7 +976,7 @@ int sip_call_id_d(su_home_t *home,
 {
   sip_call_id_t *i = h->sh_call_id;
   
-  i->i_id = s;
+  i->i_id = s; /* XXX - why not sip_word_at_word_d(&s); */
   i->i_hash = msg_hash_string(s);
 
   return 0;
@@ -1431,7 +1402,7 @@ static int sip_contact_update(msg_common_t *h,
  * The function sip_contact_add_param() adds a parameter to a contact
  * object. It does not copy the contents of the string @c param. 
  *
- * @note This function @b does @b not @b duplicate @p param.
+ * @note This function @b does @b not duplicate @p param.
  *
  * @param home   memory home
  * @param m      sip_contact_t object
@@ -1783,7 +1754,7 @@ int sip_from_add_param(su_home_t *home,
 		       sip_from_t *from,
 		       char const *param)
 {
-  return sip_addr_add_param(home, from, param);
+  return msg_header_replace_param(home, from->a_common, param);
 }
 
 /**@ingroup sip_from
@@ -1799,9 +1770,8 @@ int sip_from_add_param(su_home_t *home,
  * @param from @b From header to modify
  * @param tag  tag token or parameter to be added 
  *
- * @return
- * The function sip_from_tag() returns 0 when successful, or -1 upon an
- * error.
+ * @retval 0 when successful
+ * @retval -1 upon an error.
  */
 int sip_from_tag(su_home_t *home, sip_from_t *from, char const *tag)
 {
@@ -2424,18 +2394,22 @@ sip_to_create(su_home_t *home, url_string_t const *url)
  * The function sip_to_add_param() adds a parameter to an sip_to_t
  * object.
  *
+ * @note This function @b does @b not duplicate @p param.
+ *
  * @param home   memory home
  * @param to      sip_to_t object
  * @param param  parameter string
  *
  * @return The function sip_to_add_param() returns 0 when successful,
  * or -1 upon an error.
+ *
+ * @deprecated Use msg_header_replace_param() directly.
  */
 int sip_to_add_param(su_home_t *home,
 		     sip_to_t *to,
 		     char const *param)
 {
-  return sip_addr_add_param(home, to, param);
+  return msg_header_replace_param(home, to->a_common, param);
 }
 
 /* ====================================================================== */
@@ -2674,7 +2648,7 @@ static int sip_via_update(msg_common_t *h,
  *
  * Add a parameter to a via object.
  *
- * @note This function @b does @b not @b duplicate @p param.
+ * @note This function @b does @b not duplicate @p param.
  *
  * @param home   memory home
  * @param v      sip_via_t object
@@ -2682,6 +2656,8 @@ static int sip_via_update(msg_common_t *h,
  *
  * @retval 0 when successful
  * @retval -1 upon an error.
+ *
+ * @deprecated Use msg_header_replace_param() directly.
  */
 int sip_via_add_param(su_home_t *home,
 		      sip_via_t *v,

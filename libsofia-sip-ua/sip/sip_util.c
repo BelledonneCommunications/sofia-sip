@@ -347,7 +347,20 @@ sip_sanity_check(sip_t const *sip)
   return 0;
 }
 
-/** Decode the header string */
+/** Decode a string containg header field.
+ *
+ * The header object is initialized with the contents of the string. The
+ * string is modified when parsing. The home is used to allocate extra
+ * memory required when parsing, e.g., for parameter list or when there
+ * string contains multiple header fields.
+ * 
+ * @deprecated
+ * Use msg_header_make() or header-specific make functions, e.g.,
+ * sip_via_make().
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error.
+ */
 int sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 {
   assert(SIP_HDR_TEST(h));
@@ -367,12 +380,13 @@ int sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, int slen)
     return -1;
 }
 
-/** Encode a SIP header contents. */
+/** Encode a SIP header contents.
+ *
+ * @deprecated Use msg_header_field_e() instead.
+ */
 int sip_header_field_e(char *b, int bsiz, sip_header_t const *h, int flags)
 {
-  assert(h); assert(h->sh_class); 
-
-  return h->sh_class->hc_print(b, bsiz, h, flags);
+  return msg_header_field_e(b, bsiz, h, flags);
 }
 
 /** Convert the header @a h to a string allocated from @a home. */
@@ -734,11 +748,15 @@ unsigned long sip_payload_serialize(msg_t *msg, sip_payload_t *pl)
 }
 
 /** 
- * Remove extra parameters from an AOR URL. The parameters listed in the RFC
- * 3261 table 1 include port number, method, maddr, ttl, transport, lr and
- * headers.
+ * Remove extra parameters from an AOR URL.
+ *
+ * The extra parameters listed in the RFC 3261 table 1 include port number,
+ * method, maddr, ttl, transport, lr and headers.
  * 
- * @note The funtion modifies the @a url.
+ * @note The funtion modifies the @a url and the strings attached to it.
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
  */
 int sip_aor_strip(url_t *url)
 {

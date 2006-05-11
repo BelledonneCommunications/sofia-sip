@@ -494,11 +494,11 @@ char *sip_word_at_word_d(char **ss)
 /**Add message separator, then test if message is complete. 
  *
  * Add sip_content_length and sip_separator if they are missing. 
- * It then tests that all necessary message components (@b From, @b To, @b
+ * The test that all necessary message components (@b From, @b To, @b
  * CSeq, @b Call-ID, @b Content-Length and message separator are present.
  *
  * @retval 0 when successful
- * @retval -1 upon an error
+ * @retval -1 upon an error: headers are missing and they could not be added
  */
 int sip_complete_message(msg_t *msg)
 {
