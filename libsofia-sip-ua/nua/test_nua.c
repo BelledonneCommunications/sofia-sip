@@ -68,12 +68,12 @@ struct call;
 #include <fcntl.h>
 #endif
 
-extern su_log_t nua_log[];
-extern su_log_t soa_log[];
-extern su_log_t nea_log[];
-extern su_log_t nta_log[];
-extern su_log_t tport_log[];
-extern su_log_t su_log_default[];
+SOFIAPUBVAR su_log_t nua_log[];
+SOFIAPUBVAR su_log_t soa_log[];
+SOFIAPUBVAR su_log_t nea_log[];
+SOFIAPUBVAR su_log_t nta_log[];
+SOFIAPUBVAR su_log_t tport_log[];
+SOFIAPUBVAR su_log_t su_log_default[];
 
 extern void *memmem(const void *haystack, size_t haystacklen,
 		    const void *needle, size_t needlelen);

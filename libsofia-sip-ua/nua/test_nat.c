@@ -153,11 +153,6 @@ static int tcp_out_to_in(struct nat *, su_wait_t *wait, struct binding *);
 
 static int invalidate_binding(struct binding *b);
 
-tag_typedef_t testnattag_symmetric = BOOLTAG_TYPEDEF(symmetric);
-tag_typedef_t testnattag_symmetric_ref = REFTAG_TYPEDEF(testnattag_symmetric);
-tag_typedef_t testnattag_logging = BOOLTAG_TYPEDEF(symmetric);
-tag_typedef_t testnattag_logging_ref = REFTAG_TYPEDEF(testnattag_logging);
-
 /* nat entry point */
 static int
 test_nat_init(su_root_t *root, struct nat *nat)
