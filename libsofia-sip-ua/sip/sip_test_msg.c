@@ -33,11 +33,9 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
+/* Avoid casting sip_t to msg_pub_t and sip_header_t to msg_header_t */
+#define MSG_PUB_T       struct sip_s
+#define MSG_HDR_T       union sip_header_u
 
 #include "sofia-sip/sip_parser.h"
 #include "sofia-sip/msg_mclass.h"
@@ -45,6 +43,12 @@
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/msg_addr.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
 
 int diff(const char *olds, const char *news, int *linep, int *pos)
 {
