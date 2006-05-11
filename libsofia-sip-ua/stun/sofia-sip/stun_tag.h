@@ -44,57 +44,57 @@ SOFIA_BEGIN_DECLS
  *****************************************/
 
 #define STUNTAG_ANY()         stuntag_any, ((tag_value_t)0)
-extern tag_typedef_t stuntag_any;
+SOFIAPUBVAR tag_typedef_t stuntag_any;
 
 #define STUNTAG_DOMAIN(x)  stuntag_domain, tag_str_v(x)
-extern tag_typedef_t stuntag_domain;
+SOFIAPUBVAR tag_typedef_t stuntag_domain;
 #define STUNTAG_DOMAIN_REF(x) stuntag_domain_ref, tag_str_vr(&(x))
-extern tag_typedef_t stuntag_domain_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_domain_ref;
 
 #define STUNTAG_SERVER(x)  stuntag_server, tag_str_v(x)
-extern tag_typedef_t stuntag_server;
+SOFIAPUBVAR tag_typedef_t stuntag_server;
 #define STUNTAG_SERVER_REF(x) stuntag_server_ref, tag_str_vr(&(x))
-extern tag_typedef_t stuntag_server_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_server_ref;
 
 #define STUNTAG_REQUIRE_INTEGRITY(x) stuntag_require_integrity, tag_int_v(x)
-extern tag_typedef_t stuntag_require_integrity;
+SOFIAPUBVAR tag_typedef_t stuntag_require_integrity;
 #define STUNTAG_REQUIRE_INTEGRITY_REF(x) stuntag_require_integrity_ref, tag_int_vr(&(x))
-extern tag_typedef_t stuntag_require_integrity_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_require_integrity_ref;
 
 #define STUNTAG_INTEGRITY(x) stuntag_integrity, tag_int_v(x)
-extern tag_typedef_t stuntag_integrity;
+SOFIAPUBVAR tag_typedef_t stuntag_integrity;
 #define STUNTAG_INTEGRITY_REF(x) stuntag_integrity_ref, tag_int_vr(&(x))
-extern tag_typedef_t stuntag_integrity_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_integrity_ref;
 
 #define STUNTAG_SOCKET(x) stuntag_socket, tag_int_v(x)
-extern tag_typedef_t stuntag_socket;
+SOFIAPUBVAR tag_typedef_t stuntag_socket;
 #define STUNTAG_SOCKET_REF(x) stuntag_socket_ref, tag_int_vr(&(x))
-extern tag_typedef_t stuntag_socket_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_socket_ref;
 
 #define STUNTAG_REGISTER_EVENTS(x) stuntag_register_events, tag_int_v(x)
-extern tag_typedef_t stuntag_register_events;
+SOFIAPUBVAR tag_typedef_t stuntag_register_events;
 #define STUNTAG_REGISTER_EVENTS_REF(x) stuntag_register_events_ref, tag_int_vr(&(x))
-extern tag_typedef_t stuntag_register_events_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_register_events_ref;
 
 #define STUNTAG_ACTION(x) stuntag_action, tag_int_v(x)
-extern tag_typedef_t stuntag_action;
+SOFIAPUBVAR tag_typedef_t stuntag_action;
 #define STUNTAG_ACTION_REF(x) stuntag_action_ref, tag_int_vr(&(x))
-extern tag_typedef_t stuntag_action_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_action_ref;
 
 #define STUNTAG_CHANGE_IP(x) stuntag_change_ip, tag_bool_v(x)
-extern tag_typedef_t stuntag_change_ip;
+SOFIAPUBVAR tag_typedef_t stuntag_change_ip;
 #define STUNTAG_CHANGE_IP_REF(x) stuntag_change_ip_ref, tag_bool_vr(&(x))
-extern tag_typedef_t stuntag_change_ip_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_change_ip_ref;
 
 #define STUNTAG_CHANGE_PORT(x) stuntag_change_port, tag_bool_v(x)
-extern tag_typedef_t stuntag_change_port;
+SOFIAPUBVAR tag_typedef_t stuntag_change_port;
 #define STUNTAG_CHANGE_PORT_REF(x) stuntag_change_port_ref, tag_bool_vr(&(x))
-extern tag_typedef_t stuntag_change_port_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_change_port_ref;
 
 #define STUNTAG_TIMEOUT(x) stuntag_timeout, tag_uint_v((x))
-extern tag_typedef_t stuntag_timeout;
+SOFIAPUBVAR tag_typedef_t stuntag_timeout;
 #define STUNTAG_TIMEOUT_REF(x) stuntag_timeout_ref, tag_uint_vr(&(x))
-extern tag_typedef_t stuntag_timeout_ref;
+SOFIAPUBVAR tag_typedef_t stuntag_timeout_ref;
 
 
 SOFIA_END_DECLS

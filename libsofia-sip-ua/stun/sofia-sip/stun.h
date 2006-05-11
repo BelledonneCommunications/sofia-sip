@@ -65,7 +65,8 @@ typedef STUN_MAGIC_T stun_magic_t;
 /** STUN discovery_ context */
 typedef STUN_DISCOVERY_MAGIC_T stun_discovery_magic_t;
 
-extern char const stun_version[]; /**< Name and version of STUN software */
+/** Name and version of STUN software */
+SOFIAPUBVAR char const stun_version[];
 
 /**
  * STUN Action types. These define the current discovery process.
@@ -188,19 +189,21 @@ typedef void (*stun_dns_lookup_f)(stun_dns_lookup_t *self,
 /* -------------------------------------------------------------------
  * Functions for managing STUN handles. */
 
-stun_handle_t *stun_handle_init(su_root_t *root,
-				tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN stun_handle_t *stun_handle_init(su_root_t *root,
+					    tag_type_t, tag_value_t, ...);
 
-void stun_handle_destroy(stun_handle_t *sh);
+SOFIAPUBFUN void stun_handle_destroy(stun_handle_t *sh);
 
-su_root_t *stun_root(stun_handle_t *sh);
-int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
-char const *stun_str_state(stun_state_t state);
-su_addrinfo_t const *stun_server_address(stun_handle_t *sh);
+SOFIAPUBFUN su_root_t *stun_root(stun_handle_t *sh);
+SOFIAPUBFUN int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN char const *stun_str_state(stun_state_t state);
+SOFIAPUBFUN su_addrinfo_t const *stun_server_address(stun_handle_t *sh);
 
+SOFIAPUBFUN
 int stun_process_message(stun_handle_t *sh, su_socket_t s,
 			 su_sockaddr_t *sa, socklen_t salen,
 			 void *data, int len);
+SOFIAPUBFUN
 int stun_process_request(su_socket_t s, stun_msg_t *req,
 			 int sid, su_sockaddr_t *from_addr,
 			 int from_len);
@@ -208,50 +211,57 @@ int stun_process_request(su_socket_t s, stun_msg_t *req,
 /* ------------------------------------------------------------------- 
  * Functions for 'Binding Discovery' usage (RFC3489/3489bis) */
 
+SOFIAPUBFUN
 int stun_obtain_shared_secret(stun_handle_t *sh, stun_discovery_f,
 			      stun_discovery_magic_t *magic,
 			      tag_type_t tag, tag_value_t value, ...);
 
+SOFIAPUBFUN 
 int stun_bind(stun_handle_t *sh, 
 	      stun_discovery_f, stun_discovery_magic_t *magic,
 	      tag_type_t tag, tag_value_t value, ...);
 
+SOFIAPUBFUN 
 int stun_discovery_get_address(stun_discovery_t *sd,
 			       void *addr,
 			       socklen_t *return_addrlen);
-su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
-int stun_discovery_release_socket(stun_discovery_t *sd);
+SOFIAPUBFUN su_socket_t stun_discovery_get_socket(stun_discovery_t *sd);
+SOFIAPUBFUN int stun_discovery_release_socket(stun_discovery_t *sd);
 
+SOFIAPUBFUN
 int stun_test_nattype(stun_handle_t *sh,
 		       stun_discovery_f, stun_discovery_magic_t *magic,
 		       tag_type_t tag, tag_value_t value, ...);
-char const *stun_nattype_str(stun_discovery_t *sd);
-stun_nattype_t stun_nattype(stun_discovery_t *sd);
+SOFIAPUBFUN char const *stun_nattype_str(stun_discovery_t *sd);
+SOFIAPUBFUN stun_nattype_t stun_nattype(stun_discovery_t *sd);
 
+SOFIAPUBFUN
 int stun_test_lifetime(stun_handle_t *sh,
 			stun_discovery_f, stun_discovery_magic_t *magic,
 			tag_type_t tag, tag_value_t value, ...);
-int stun_lifetime(stun_discovery_t *sd);
+SOFIAPUBFUN int stun_lifetime(stun_discovery_t *sd);
 
 /* ------------------------------------------------------------------- 
  * Functions for 'Connectivity Check' and 'NAT Keepalives' usages (RFC3489bis) */
 
+SOFIAPUBFUN 
 int stun_set_uname_pwd(stun_handle_t *sh,
 		       const char *uname,
 		       int len_uname, 
 		       const char *pwd,
 		       int len_pwd);
 
-int stun_msg_is_keepalive(uint16_t data);
-int stun_message_length(void *data, int len, int end_of_message);
+SOFIAPUBFUN int stun_msg_is_keepalive(uint16_t data);
+SOFIAPUBFUN int stun_message_length(void *data, int len, int end_of_message);
 
 /* Create a keepalive dispatcher for bound SIP sockets */
 
+SOFIAPUBFUN 
 int stun_keepalive(stun_handle_t *sh,
 		   su_sockaddr_t *sa,
 		   tag_type_t tag, tag_value_t value,
 		   ...);
-int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
+SOFIAPUBFUN int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
 
 /* -------------------------------------------------------------------
  * Functions for 'Short-Term password' usage (RFC3489bis) */
@@ -261,28 +271,32 @@ int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s);
 /* -------------------------------------------------------------------
  * Functions for STUN server discovery using DNS (RFC3489/3489bis) */
 
+SOFIAPUBFUN 
 stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic, 
 				   su_root_t *root,
 				   stun_dns_lookup_f func, 
 				   const char *domain);
-void stun_dns_lookup_destroy(stun_dns_lookup_t *self);
+SOFIAPUBFUN void stun_dns_lookup_destroy(stun_dns_lookup_t *self);
 
-int stun_dns_lookup_udp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
-int stun_dns_lookup_tcp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
-int stun_dns_lookup_stp_addr(stun_dns_lookup_t *self, const char **target, uint16_t *port);
+SOFIAPUBFUN int stun_dns_lookup_udp_addr(stun_dns_lookup_t *,
+					 const char **target, uint16_t *port);
+SOFIAPUBFUN int stun_dns_lookup_tcp_addr(stun_dns_lookup_t *self,
+					 const char **target, uint16_t *port);
+SOFIAPUBFUN int stun_dns_lookup_stp_addr(stun_dns_lookup_t *self,
+					 const char **target, uint16_t *port);
 
 /* -------------------------------------------------------------------
  * Functions for minimal STUN server */
 
-stun_mini_t *stun_mini_create(void);
-void stun_mini_destroy(stun_mini_t *);
+SOFIAPUBFUN stun_mini_t *stun_mini_create(void);
+SOFIAPUBFUN void stun_mini_destroy(stun_mini_t *);
 
-int stun_mini_add_socket(stun_mini_t *server, int socket);
-int stun_mini_remove_socket(stun_mini_t *server, int socket);
+SOFIAPUBFUN int stun_mini_add_socket(stun_mini_t *server, int socket);
+SOFIAPUBFUN int stun_mini_remove_socket(stun_mini_t *server, int socket);
 
-void stun_mini_request(stun_mini_t *server, int socket,
-			 void *msg, ssize_t msglen,
-			 void *addr, socklen_t addrlen);
+SOFIAPUBFUN void stun_mini_request(stun_mini_t *server, int socket,
+				   void *msg, ssize_t msglen,
+				   void *addr, socklen_t addrlen);
 
 SOFIA_END_DECLS
 
