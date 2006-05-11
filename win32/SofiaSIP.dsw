@@ -15,6 +15,18 @@ Package=<4>
 
 ###############################################################################
 
+Project: "libsofia_sip_ua_static"=".\libsofia-sip-ua-static\libsofia_sip_ua_static.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
 Project: "sip_dig"=".\utils\sip_dig\sip_dig.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -129,7 +141,7 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name libsofia_sip_ua
+    Project_Dep_Name libsofia_sip_ua_static
     End Project Dependency
 }}}
 
@@ -174,7 +186,7 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name libsofia_sip_ua
+    Project_Dep_Name libsofia_sip_ua_static
     End Project Dependency
 }}}
 
