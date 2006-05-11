@@ -34,9 +34,6 @@
 
 #include "config.h"
 
-/* From AM_INIT/AC_INIT in our "config.h" */
-char const nua_version[] = VERSION;
-
 #include <sofia-sip/su_tag.h>
 #include <sofia-sip/su_tag_class.h>
 #include <sofia-sip/su_tagarg.h>
@@ -63,6 +60,9 @@ char const nua_version[] = VERSION;
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+
+/* From AM_INIT/AC_INIT in our "config.h" */
+char const nua_version[] = VERSION;
 
 /**@var NUA_DEBUG
  *

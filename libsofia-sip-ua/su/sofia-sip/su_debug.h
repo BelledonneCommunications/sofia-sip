@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SU_DEBUG_H /** Defined when su_debug.h has been included */
+#ifndef SU_DEBUG_H
+/** Defined when <sofia-sip/su_debug.h> has been included */
 #define SU_DEBUG_H 
 
 /**@ingroup su_log
- * @file su_debug.h
+ * @file sofia-sip/su_debug.h
  * @brief SU debugging macros
  *
  * The logging levels and macros to use are defined as follows:

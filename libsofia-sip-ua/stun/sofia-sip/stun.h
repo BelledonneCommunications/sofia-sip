@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef STUN_H /** Defined when stun.h has been included. */
+#ifndef STUN_H
+/** Defined when <sofia-sip/stun.h> has been included. */
 #define STUN_H
 
-/**@file stun.h STUN module public interface
+/**@file sofia-sip/stun.h STUN module public interface
  *
  * @author Martti Mela <Martti.Mela@nokia.com>
  * @author Tat Chan <Tat.Chan@nokia.com>

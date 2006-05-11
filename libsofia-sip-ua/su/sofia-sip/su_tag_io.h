@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SU_TAG_IO_H /** Defined when su_tag_io.h has been included */
+#ifndef SU_TAG_IO_H
+/** Defined when <sofia-sip/su_tag_io.h> has been included */
 #define SU_TAG_IO_H 
 
 /**@SU_TAG
- * @file su_tag_io.h
+ * @file sofia-sip/su_tag_io.h
  * @brief I/O interface for tag lists
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

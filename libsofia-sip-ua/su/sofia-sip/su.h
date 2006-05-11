@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SU_H /** Defined when su.h has been included. */
+#ifndef SU_H
+/** Defined when <sofia-sip/su.h> has been included. */
 #define SU_H
 /**@ingroup su_socket 
- * @file su.h Socket and network address interface
+ * @file sofia-sip/su.h Socket and network address interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
@@ -355,8 +356,8 @@ SOFIAPUBFUN const char *inet_ntop(int af, void const *src,
 #define SU_IN6ADDR_LOOPBACK_INIT IN6ADDR_LOOPBACK_INIT
 #endif
 #if SU_HAVE_WINSOCK || DOCUMENTATION_ONLY
-extern const struct in_addr6 *su_in6addr_any(void);
-extern const struct in_addr6 *su_in6addr_loopback(void);
+SOFIAPUBVAR const struct in_addr6 *su_in6addr_any(void);
+SOFIAPUBVAR const struct in_addr6 *su_in6addr_loopback(void);
 #define SU_IN6ADDR_ANY_INIT      { 0 }
 #define SU_IN6ADDR_LOOPBACK_INIT { 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1 }
 #endif

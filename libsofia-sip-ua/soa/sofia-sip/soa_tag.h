@@ -24,7 +24,7 @@
 
 #ifndef SOA_TAG_H
 #define SOA_TAG_H
-/**@file soa_tag.h  Tags for SDP Offer/Answer Application Interface.
+/**@file sofia-sip/soa_tag.h  Tags for SDP Offer/Answer Application Interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -41,11 +41,11 @@
 SOFIA_BEGIN_DECLS
 
 /** List of base SOA tags (defined in base SOA module). */
-extern tagi_t soa_tag_list[];
+SOFIAPUBVAR tagi_t soa_tag_list[];
 
 /** Filter tag matching any soa tag. */
 #define SOATAG_ANY()         soatag_any, ((tag_value_t)0)
-extern tag_typedef_t soatag_any;
+SOFIAPUBVAR tag_typedef_t soatag_any;
 
 /**
  * Media states 
@@ -73,70 +73,70 @@ enum {
  */
 
 #define SOATAG_LOCAL_SDP(x)  soatag_local_sdp, sdptag_session_v(x)
-extern tag_typedef_t soatag_local_sdp;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp;
 #define SOATAG_LOCAL_SDP_REF(x) \
   soatag_local_sdp_ref, sdptag_session_vr(&(x))
-extern tag_typedef_t soatag_local_sdp_ref;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp_ref;
 
 #define SOATAG_LOCAL_SDP_STR(x)  soatag_local_sdp_str, tag_str_v(x)
-extern tag_typedef_t soatag_local_sdp_str;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp_str;
 #define SOATAG_LOCAL_SDP_STR_REF(x) \
   soatag_local_sdp_str_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_local_sdp_str_ref;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp_str_ref;
 
 #define SOATAG_USER_SDP(x)  soatag_user_sdp, sdptag_session_v(x)
-extern tag_typedef_t soatag_user_sdp;
+SOFIAPUBVAR tag_typedef_t soatag_user_sdp;
 #define SOATAG_USER_SDP_REF(x) \
   soatag_user_sdp_ref, sdptag_session_vr(&(x))
-extern tag_typedef_t soatag_user_sdp_ref;
+SOFIAPUBVAR tag_typedef_t soatag_user_sdp_ref;
 
 #define SOATAG_USER_SDP_STR(x)  soatag_user_sdp_str, tag_str_v(x)
-extern tag_typedef_t soatag_user_sdp_str;
+SOFIAPUBVAR tag_typedef_t soatag_user_sdp_str;
 #define SOATAG_USER_SDP_STR_REF(x) \
   soatag_user_sdp_str_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_user_sdp_str_ref;
+SOFIAPUBVAR tag_typedef_t soatag_user_sdp_str_ref;
 
 #define SOATAG_CAPS_SDP(x)  soatag_caps_sdp, sdptag_session_v(x)
-extern tag_typedef_t soatag_caps_sdp;
+SOFIAPUBVAR tag_typedef_t soatag_caps_sdp;
 #define SOATAG_CAPS_SDP_REF(x) \
   soatag_caps_sdp_ref, sdptag_session_vr(&(x))
-extern tag_typedef_t soatag_caps_sdp_ref;
+SOFIAPUBVAR tag_typedef_t soatag_caps_sdp_ref;
 
 #define SOATAG_CAPS_SDP_STR(x)  soatag_caps_sdp_str, tag_str_v(x)
-extern tag_typedef_t soatag_caps_sdp_str;
+SOFIAPUBVAR tag_typedef_t soatag_caps_sdp_str;
 #define SOATAG_CAPS_SDP_STR_REF(x) \
   soatag_caps_sdp_str_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_caps_sdp_str_ref;
+SOFIAPUBVAR tag_typedef_t soatag_caps_sdp_str_ref;
 
 #define SOATAG_REMOTE_SDP(x)  soatag_remote_sdp, sdptag_session_v(x)
-extern tag_typedef_t soatag_remote_sdp;
+SOFIAPUBVAR tag_typedef_t soatag_remote_sdp;
 #define SOATAG_REMOTE_SDP_REF(x) \
   soatag_remote_sdp_ref, sdptag_session_vr(&(x))
-extern tag_typedef_t soatag_remote_sdp_ref;
+SOFIAPUBVAR tag_typedef_t soatag_remote_sdp_ref;
 
 #define SOATAG_REMOTE_SDP_STR(x)  soatag_remote_sdp_str, tag_str_v(x)
-extern tag_typedef_t soatag_remote_sdp_str;
+SOFIAPUBVAR tag_typedef_t soatag_remote_sdp_str;
 #define SOATAG_REMOTE_SDP_STR_REF(x) \
   soatag_remote_sdp_str_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_remote_sdp_str_ref;
+SOFIAPUBVAR tag_typedef_t soatag_remote_sdp_str_ref;
 
 #define SOATAG_LOCAL_SDP(x)  soatag_local_sdp, sdptag_session_v(x)
-extern tag_typedef_t soatag_local_sdp;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp;
 #define SOATAG_LOCAL_SDP_REF(x) \
   soatag_local_sdp_ref, sdptag_session_vr(&(x))
-extern tag_typedef_t soatag_local_sdp_ref;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp_ref;
 
 #define SOATAG_LOCAL_SDP_STR(x)  soatag_local_sdp_str, tag_str_v(x)
-extern tag_typedef_t soatag_local_sdp_str;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp_str;
 #define SOATAG_LOCAL_SDP_STR_REF(x) \
   soatag_local_sdp_str_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_session_sdp_str_ref;
+SOFIAPUBVAR tag_typedef_t soatag_session_sdp_str_ref;
 
 #define SOATAG_AF(x)             soatag_af, tag_int_v((x))
-extern tag_typedef_t soatag_af;
+SOFIAPUBVAR tag_typedef_t soatag_af;
 
 #define SOATAG_AF_REF(x)         soatag_af_ref, tag_int_vr(&(x))
-extern tag_typedef_t soatag_af_ref;
+SOFIAPUBVAR tag_typedef_t soatag_af_ref;
 
 enum soa_af {
   SOA_AF_ANY,
@@ -153,77 +153,77 @@ enum soa_af {
 #define SOA_AF_IP6_IP4  SOA_AF_IP6_IP4
 
 #define SOATAG_ADDRESS(x)  soatag_address, tag_str_v(x)
-extern tag_typedef_t soatag_address;
+SOFIAPUBVAR tag_typedef_t soatag_address;
 #define SOATAG_ADDRESS_REF(x) soatag_address_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_address_ref;
+SOFIAPUBVAR tag_typedef_t soatag_address_ref;
 
 #define SOATAG_RTP_SELECT(x)  soatag_rtp_select, tag_uint_v(x)
-extern tag_typedef_t soatag_rtp_select;
+SOFIAPUBVAR tag_typedef_t soatag_rtp_select;
 #define SOATAG_RTP_SELECT_REF(x)  soatag_rtp_select_ref, tag_uint_vr(&(x))
-extern tag_typedef_t soatag_rtp_select_ref;
+SOFIAPUBVAR tag_typedef_t soatag_rtp_select_ref;
 
 enum { SOA_RTP_SELECT_SINGLE, SOA_RTP_SELECT_COMMON, SOA_RTP_SELECT_ALL };
 
 #define SOATAG_RTP_SORT(x)  soatag_rtp_sort, tag_uint_v(x)
-extern tag_typedef_t soatag_rtp_sort;
+SOFIAPUBVAR tag_typedef_t soatag_rtp_sort;
 #define SOATAG_RTP_SORT_REF(x) soatag_rtp_sort_ref, tag_uint_vr(&(x))
-extern tag_typedef_t soatag_rtp_sort_ref;
+SOFIAPUBVAR tag_typedef_t soatag_rtp_sort_ref;
 
 enum { SOA_RTP_SORT_DEFAULT, SOA_RTP_SORT_LOCAL, SOA_RTP_SORT_REMOTE };
 
 #define SOATAG_RTP_MISMATCH(x) soatag_rtp_mismatch, tag_bool_v(x)
-extern tag_typedef_t soatag_rtp_mismatch;
+SOFIAPUBVAR tag_typedef_t soatag_rtp_mismatch;
 #define SOATAG_RTP_MISMATCH_REF(x) soatag_rtp_mismatch_ref, tag_bool_vr(&(x))
-extern tag_typedef_t soatag_rtp_mismatch_ref;
+SOFIAPUBVAR tag_typedef_t soatag_rtp_mismatch_ref;
 
 #define SOATAG_ACTIVE_AUDIO(x) soatag_active_audio, tag_int_v(x)
-extern tag_typedef_t soatag_active_audio;
+SOFIAPUBVAR tag_typedef_t soatag_active_audio;
 
 #define SOATAG_ACTIVE_AUDIO_REF(x) soatag_active_audio_ref, tag_int_vr(&(x))
-extern tag_typedef_t soatag_active_audio_ref;
+SOFIAPUBVAR tag_typedef_t soatag_active_audio_ref;
 
 #define SOATAG_ACTIVE_VIDEO(x) soatag_active_video, tag_int_v(x)
-extern tag_typedef_t soatag_active_video;
+SOFIAPUBVAR tag_typedef_t soatag_active_video;
 
 #define SOATAG_ACTIVE_VIDEO_REF(x) soatag_active_video_ref, tag_int_vr(&(x))
-extern tag_typedef_t soatag_active_video_ref;
+SOFIAPUBVAR tag_typedef_t soatag_active_video_ref;
 
 #define SOATAG_ACTIVE_IMAGE(x) soatag_active_image, tag_int_v(x)
-extern tag_typedef_t soatag_active_image;
+SOFIAPUBVAR tag_typedef_t soatag_active_image;
 
 #define SOATAG_ACTIVE_IMAGE_REF(x) soatag_active_image_ref, tag_int_vr(&(x))
-extern tag_typedef_t soatag_active_image_ref;
+SOFIAPUBVAR tag_typedef_t soatag_active_image_ref;
 
 #define SOATAG_ACTIVE_CHAT(x) soatag_active_chat, tag_int_v(x)
-extern tag_typedef_t soatag_active_chat;
+SOFIAPUBVAR tag_typedef_t soatag_active_chat;
 
 #define SOATAG_ACTIVE_CHAT_REF(x) soatag_active_chat_ref, tag_int_vr(&(x))
-extern tag_typedef_t soatag_active_chat_ref;
+SOFIAPUBVAR tag_typedef_t soatag_active_chat_ref;
 
 /** Enable SRTP */
 #define SOATAG_SRTP_ENABLE(x)  soatag_srtp_enable, tag_bool_v(x)
-extern tag_typedef_t soatag_srtp_enable;
+SOFIAPUBVAR tag_typedef_t soatag_srtp_enable;
 
 #define SOATAG_SRTP_ENABLE_REF(x) soatag_srtp_enable_ref, tag_bool_vr(&(x))
-extern tag_typedef_t soatag_srtp_enable_ref;
+SOFIAPUBVAR tag_typedef_t soatag_srtp_enable_ref;
 
 #define SOATAG_SRTP_CONFIDENTIALITY(x)  soatag_srtp_confidentiality, tag_bool_v(x)
-extern tag_typedef_t soatag_srtp_confidentiality;
+SOFIAPUBVAR tag_typedef_t soatag_srtp_confidentiality;
 #define SOATAG_SRTP_CONFIDENTIALITY_REF(x) soatag_srtp_confidentiality_ref, tag_bool_vr(&(x))
-extern tag_typedef_t soatag_srtp_confidentiality_ref;
+SOFIAPUBVAR tag_typedef_t soatag_srtp_confidentiality_ref;
 
 /** Enable SRTP integrity protection */
 #define SOATAG_SRTP_INTEGRITY(x)  soatag_srtp_integrity, tag_bool_v(x)
-extern tag_typedef_t soatag_srtp_integrity;
+SOFIAPUBVAR tag_typedef_t soatag_srtp_integrity;
 
 #define SOATAG_SRTP_INTEGRITY_REF(x) \
   soatag_srtp_integrity_ref, tag_bool_vr(&(x))
-extern tag_typedef_t soatag_srtp_integrity_ref;
+SOFIAPUBVAR tag_typedef_t soatag_srtp_integrity_ref;
 
 #define SOATAG_HOLD(x)           soatag_hold, tag_str_v(x)
-extern tag_typedef_t soatag_hold;
+SOFIAPUBVAR tag_typedef_t soatag_hold;
 #define SOATAG_HOLD_REF(x)       soatag_hold_ref, tag_str_vr(&(x))
-extern tag_typedef_t soatag_hold_ref;
+SOFIAPUBVAR tag_typedef_t soatag_hold_ref;
 
 SOFIA_END_DECLS
 

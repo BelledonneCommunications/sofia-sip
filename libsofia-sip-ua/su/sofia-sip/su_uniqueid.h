@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SU_UNIQUEID_H /** Defined when su_uniqueid.h has been included. */
+#ifndef SU_UNIQUEID_H
+/** Defined when <sofia-sip/su_uniqueid.h> has been included. */
 #define SU_UNIQUEID_H 
 
 
 /**@ingroup su_uniqueid
- * @file su_uniqueid.h
+ * @file sofia-sip/su_uniqueid.h
  *
  * Functions to handle GloballyUniqueIDs.
  *

@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef MSG_ADDR_H /** Defined when msg_addr.h has been included. */
+#ifndef MSG_ADDR_H
+/** Defined when <sofia-sip/msg_addr.h> has been included. */
 #define MSG_ADDR_H 
 
 
-/**@file msg_addr.h 
+/**@file sofia-sip/msg_addr.h 
  * @brief Addressing and I/O interface for messages.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -43,14 +44,14 @@
 
 SOFIA_BEGIN_DECLS
 
-void msg_addr_zero(msg_t *msg);
-su_addrinfo_t *msg_addrinfo(msg_t *msg);
-su_sockaddr_t *msg_addr(msg_t *msg);
-socklen_t *msg_addrlen(msg_t *msg);
-void msg_addr_copy(msg_t *dst, msg_t const *src);
+SOFIAPUBFUN void msg_addr_zero(msg_t *msg);
+SOFIAPUBFUN su_addrinfo_t *msg_addrinfo(msg_t *msg);
+SOFIAPUBFUN su_sockaddr_t *msg_addr(msg_t *msg);
+SOFIAPUBFUN socklen_t *msg_addrlen(msg_t *msg);
+SOFIAPUBFUN void msg_addr_copy(msg_t *dst, msg_t const *src);
 
-int msg_errno(msg_t const *msg);
-void msg_set_errno(msg_t *msg, int err);
+SOFIAPUBFUN int msg_errno(msg_t const *msg);
+SOFIAPUBFUN void msg_set_errno(msg_t *msg, int err);
 
 enum {
   /** Minimum size of a message buffer */
@@ -65,24 +66,24 @@ typedef struct su_iovec_s msg_iovec_t;
 #define mv_base siv_base
 #define mv_len  siv_len
 
-int msg_iovec(msg_t *msg, msg_iovec_t vec[], int veclen);
+SOFIAPUBFUN int msg_iovec(msg_t *msg, msg_iovec_t vec[], int veclen);
 
-int msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], int veclen, unsigned n, 
-		   int exact);
-int msg_recv_commit(msg_t *msg, unsigned n, int eos);
+SOFIAPUBFUN int msg_recv_iovec(msg_t *msg,
+			       msg_iovec_t vec[], int veclen, unsigned n,
+			       int exact);
+SOFIAPUBFUN int msg_recv_commit(msg_t *msg, unsigned n, int eos);
 
-int msg_recv_buffer(msg_t *msg, void **return_buffer);
+SOFIAPUBFUN int msg_recv_buffer(msg_t *msg, void **return_buffer);
 
-msg_t *msg_next(msg_t *msg);
+SOFIAPUBFUN msg_t *msg_next(msg_t *msg);
 
-int msg_set_next(msg_t *msg, msg_t *next);
+SOFIAPUBFUN int msg_set_next(msg_t *msg, msg_t *next);
 
-void msg_clear_committed(msg_t *msg);
+SOFIAPUBFUN void msg_clear_committed(msg_t *msg);
 
-int msg_buf_external(msg_t *msg, 
-		     unsigned N, 
-		     unsigned blocksize);
-
+SOFIAPUBFUN int msg_buf_external(msg_t *msg, 
+				 unsigned N, 
+				 unsigned blocksize);
 
 SOFIA_END_DECLS
 

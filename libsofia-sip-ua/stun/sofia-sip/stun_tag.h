@@ -24,7 +24,7 @@
 
 #ifndef STUN_TAG_H
 #define STUN_TAG_H
-/**@file stun_tag.h  Tags for STUN.
+/**@file sofia-sip/stun_tag.h  Tags for STUN.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Martti Mela <Martti.Mela@nokia.com>

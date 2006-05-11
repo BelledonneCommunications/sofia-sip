@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef RBTREE_H /** Defined when rbtree.h has been included. */
+#ifndef RBTREE_H
+/** Defined when <sofia-sip/rbtree.h> has been included. */
 #define RBTREE_H 
 
-/**@file rbtree.h
+/**@file sofia-sip/rbtree.h
  *
  * Red-black tree.
  *

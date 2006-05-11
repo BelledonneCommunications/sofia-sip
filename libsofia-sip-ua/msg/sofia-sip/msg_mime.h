@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef MSG_MIME_H /** Defined when <msg_mime.h> has been included. */
+#ifndef MSG_MIME_H
+/** Defined when <sofia-sip/msg_mime.h> has been included. */
 #define MSG_MIME_H 
 
 /**@ingroup msg_mime
- * @file msg_mime.h
+ * @file sofia-sip/msg_mime.h
  *
  * MIME headers and multipart messages (@RFC2045).
  *
@@ -202,31 +203,36 @@ struct msg_multipart_s
   msg_payload_t          *mp_close_delim;       /**< Closing delimiter */
 };
 
+SOFIAPUBFUN
 msg_multipart_t *msg_multipart_create(su_home_t *home,
 				      char const *content_type,
 				      void const *data,
 				      int dlen);
+SOFIAPUBFUN 
 msg_multipart_t *msg_multipart_parse(su_home_t *home, 
 				     msg_content_type_t const *c,
 				     msg_payload_t *pl);
+SOFIAPUBFUN
 int msg_multipart_complete(su_home_t *home, 
 			   msg_content_type_t *c,
 			   msg_multipart_t *mp);
-msg_header_t *msg_multipart_serialize(msg_header_t **head0, 
-				      msg_multipart_t *mp);
+SOFIAPUBFUN msg_header_t *msg_multipart_serialize(msg_header_t **head0,
+						  msg_multipart_t *mp);
 
-int msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags);
+SOFIAPUBFUN int msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags);
 
-int msg_accept_any_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN int msg_accept_any_dup_xtra(msg_header_t const *h, int offset);
 
-char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
-			     char *b, int xtra);
+SOFIAPUBFUN char *msg_accept_any_dup_one(msg_header_t *dst,
+					 msg_header_t const *src,
+					 char *b, int xtra);
 
+SOFIAPUBFUN
 msg_content_length_t *msg_content_length_create(su_home_t *home, uint32_t n);
 
 /** MIME multipart protocol name. @HIDE */
 #define MSG_MULTIPART_VERSION_CURRENT msg_mime_version_1_0
-extern char const msg_mime_version_1_0[];
+SOFIAPUBVAR char const msg_mime_version_1_0[];
 
 /** MIME multipart parser table identifier. @HIDE */
 #define MSG_MULTIPART_PROTOCOL_TAG   ((void *)0x4d494d45)	/* 'MIME' */

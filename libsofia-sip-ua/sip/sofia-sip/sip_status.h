@@ -22,12 +22,14 @@
  *
  */
 
-#ifndef SIP_STATUS_H /** Defined when @b <sip_status.h> has been included. */
+#ifndef SIP_STATUS_H
+/** Defined when <sofia-sip/sip_status.h> has been included. */
 #define SIP_STATUS_H 
+
 /**@addtogroup sip_status_codes
  * @{ 
  */
-/**@file sip_status.h
+/**@file sofia-sip/sip_status.h
  *
  * SIP status codes and standard phrases.
  *
@@ -40,7 +42,7 @@
 
 SOFIA_BEGIN_DECLS
 
-char const *sip_status_phrase(int status);
+SOFIAPUBFUN char const *sip_status_phrase(int status);
 
 /** 100 Trying @HIDE */
 #define SIP_100_TRYING                  100, sip_100_Trying
@@ -170,73 +172,73 @@ char const *sip_status_phrase(int status);
 /** 687 Dialog terminated @HIDE */
 #define SIP_687_DIALOG_TERMINATED       687, sip_687_Dialog_terminated
 
-SIP_DLL extern char const sip_100_Trying[];
+SOFIAPUBVAR char const sip_100_Trying[];
 
-SIP_DLL extern char const sip_180_Ringing[];
-SIP_DLL extern char const sip_181_Call_is_being_forwarded[];
-SIP_DLL extern char const sip_182_Queued[];
-SIP_DLL extern char const sip_183_Session_progress[];
+SOFIAPUBVAR char const sip_180_Ringing[];
+SOFIAPUBVAR char const sip_181_Call_is_being_forwarded[];
+SOFIAPUBVAR char const sip_182_Queued[];
+SOFIAPUBVAR char const sip_183_Session_progress[];
 
-SIP_DLL extern char const sip_200_OK[];
-SIP_DLL extern char const sip_202_Accepted[];
+SOFIAPUBVAR char const sip_200_OK[];
+SOFIAPUBVAR char const sip_202_Accepted[];
 
-SIP_DLL extern char const sip_300_Multiple_choices[];
-SIP_DLL extern char const sip_301_Moved_permanently[];
-SIP_DLL extern char const sip_302_Moved_temporarily[];
-SIP_DLL extern char const sip_305_Use_proxy[];
-SIP_DLL extern char const sip_380_Alternative_service[];
+SOFIAPUBVAR char const sip_300_Multiple_choices[];
+SOFIAPUBVAR char const sip_301_Moved_permanently[];
+SOFIAPUBVAR char const sip_302_Moved_temporarily[];
+SOFIAPUBVAR char const sip_305_Use_proxy[];
+SOFIAPUBVAR char const sip_380_Alternative_service[];
 
-SIP_DLL extern char const sip_400_Bad_request[];
-SIP_DLL extern char const sip_401_Unauthorized[];
-SIP_DLL extern char const sip_402_Payment_required[];
-SIP_DLL extern char const sip_403_Forbidden[];
-SIP_DLL extern char const sip_404_Not_found[];
-SIP_DLL extern char const sip_405_Method_not_allowed[];
-SIP_DLL extern char const sip_406_Not_acceptable[];
-SIP_DLL extern char const sip_407_Proxy_auth_required[];
-SIP_DLL extern char const sip_408_Request_timeout[];
-SIP_DLL extern char const sip_409_Conflict[];
-SIP_DLL extern char const sip_410_Gone[];
-SIP_DLL extern char const sip_411_Length_required[];
-SIP_DLL extern char const sip_412_Precondition_failed[];
-SIP_DLL extern char const sip_413_Request_too_large[];
-SIP_DLL extern char const sip_414_Request_uri_too_long[];
-SIP_DLL extern char const sip_415_Unsupported_media[];
-SIP_DLL extern char const sip_416_Unsupported_uri[];
-SIP_DLL extern char const sip_417_Resource_priority[];
-SIP_DLL extern char const sip_420_Bad_extension[];
-SIP_DLL extern char const sip_421_Extension_required[];
-SIP_DLL extern char const sip_422_Session_timer[];
-SIP_DLL extern char const sip_423_Interval_too_brief[];
-SIP_DLL extern char const sip_480_Temporarily_unavailable[];
-SIP_DLL extern char const sip_481_No_transaction[];
-SIP_DLL extern char const sip_482_Loop_detected[];
-SIP_DLL extern char const sip_483_Too_many_hops[];
-SIP_DLL extern char const sip_484_Address_incomplete[];
-SIP_DLL extern char const sip_485_Ambiguous[];
-SIP_DLL extern char const sip_486_Busy_here[];
-SIP_DLL extern char const sip_487_Request_terminated[];
-SIP_DLL extern char const sip_488_Not_acceptable[];
-SIP_DLL extern char const sip_489_Bad_event[];
-SIP_DLL extern char const sip_490_Request_updated[];
-SIP_DLL extern char const sip_491_Request_pending[];
-SIP_DLL extern char const sip_493_Undecipherable[];
-SIP_DLL extern char const sip_494_Secagree_required[];
+SOFIAPUBVAR char const sip_400_Bad_request[];
+SOFIAPUBVAR char const sip_401_Unauthorized[];
+SOFIAPUBVAR char const sip_402_Payment_required[];
+SOFIAPUBVAR char const sip_403_Forbidden[];
+SOFIAPUBVAR char const sip_404_Not_found[];
+SOFIAPUBVAR char const sip_405_Method_not_allowed[];
+SOFIAPUBVAR char const sip_406_Not_acceptable[];
+SOFIAPUBVAR char const sip_407_Proxy_auth_required[];
+SOFIAPUBVAR char const sip_408_Request_timeout[];
+SOFIAPUBVAR char const sip_409_Conflict[];
+SOFIAPUBVAR char const sip_410_Gone[];
+SOFIAPUBVAR char const sip_411_Length_required[];
+SOFIAPUBVAR char const sip_412_Precondition_failed[];
+SOFIAPUBVAR char const sip_413_Request_too_large[];
+SOFIAPUBVAR char const sip_414_Request_uri_too_long[];
+SOFIAPUBVAR char const sip_415_Unsupported_media[];
+SOFIAPUBVAR char const sip_416_Unsupported_uri[];
+SOFIAPUBVAR char const sip_417_Resource_priority[];
+SOFIAPUBVAR char const sip_420_Bad_extension[];
+SOFIAPUBVAR char const sip_421_Extension_required[];
+SOFIAPUBVAR char const sip_422_Session_timer[];
+SOFIAPUBVAR char const sip_423_Interval_too_brief[];
+SOFIAPUBVAR char const sip_480_Temporarily_unavailable[];
+SOFIAPUBVAR char const sip_481_No_transaction[];
+SOFIAPUBVAR char const sip_482_Loop_detected[];
+SOFIAPUBVAR char const sip_483_Too_many_hops[];
+SOFIAPUBVAR char const sip_484_Address_incomplete[];
+SOFIAPUBVAR char const sip_485_Ambiguous[];
+SOFIAPUBVAR char const sip_486_Busy_here[];
+SOFIAPUBVAR char const sip_487_Request_terminated[];
+SOFIAPUBVAR char const sip_488_Not_acceptable[];
+SOFIAPUBVAR char const sip_489_Bad_event[];
+SOFIAPUBVAR char const sip_490_Request_updated[];
+SOFIAPUBVAR char const sip_491_Request_pending[];
+SOFIAPUBVAR char const sip_493_Undecipherable[];
+SOFIAPUBVAR char const sip_494_Secagree_required[];
 
-SIP_DLL extern char const sip_500_Internal_server_error[];
-SIP_DLL extern char const sip_501_Not_implemented[];
-SIP_DLL extern char const sip_502_Bad_gateway[];
-SIP_DLL extern char const sip_503_Service_unavailable[];
-SIP_DLL extern char const sip_504_Gateway_time_out[];
-SIP_DLL extern char const sip_505_Version_not_supported[];
-SIP_DLL extern char const sip_513_Message_too_large[];
-SIP_DLL extern char const sip_580_Precondition[];
+SOFIAPUBVAR char const sip_500_Internal_server_error[];
+SOFIAPUBVAR char const sip_501_Not_implemented[];
+SOFIAPUBVAR char const sip_502_Bad_gateway[];
+SOFIAPUBVAR char const sip_503_Service_unavailable[];
+SOFIAPUBVAR char const sip_504_Gateway_time_out[];
+SOFIAPUBVAR char const sip_505_Version_not_supported[];
+SOFIAPUBVAR char const sip_513_Message_too_large[];
+SOFIAPUBVAR char const sip_580_Precondition[];
 
-SIP_DLL extern char const sip_600_Busy_everywhere[];
-SIP_DLL extern char const sip_603_Decline[];
-SIP_DLL extern char const sip_604_Does_not_exist_anywhere[];
-SIP_DLL extern char const sip_606_Not_acceptable[];
-SIP_DLL extern char const sip_687_Dialog_terminated[];
+SOFIAPUBVAR char const sip_600_Busy_everywhere[];
+SOFIAPUBVAR char const sip_603_Decline[];
+SOFIAPUBVAR char const sip_604_Does_not_exist_anywhere[];
+SOFIAPUBVAR char const sip_606_Not_acceptable[];
+SOFIAPUBVAR char const sip_687_Dialog_terminated[];
 
 SOFIA_END_DECLS
 

@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef MSG_TAG_CLASS_H /** Defined when msg_tag_class.h has been included */
+#ifndef MSG_TAG_CLASS_H
+/** Defined when <sofia-sip/msg_tag_class.h> has been included */
 #define MSG_TAG_CLASS_H 
 
-/**@file msg_tag_class.h
+/**@file sofia-sip/msg_tag_class.h
  * @brief Functions for constructing per-protocol tag classes.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -39,21 +40,25 @@
 
 SOFIA_BEGIN_DECLS
 
-int msghdrtag_snprintf(tagi_t const *t, char b[], size_t size);
-size_t msghdrtag_xtra(tagi_t const *t, size_t offset);
-tagi_t *msghdrtag_dup(tagi_t *dst, tagi_t const *src, void **bb);
-int msghdrtag_scan(tag_type_t tt, su_home_t *home, 
-		   char const *s, 
-		   tag_value_t *return_value);
-tagi_t *msghdrtag_filter(tagi_t *dst, tagi_t const f[], tagi_t const *src, 
-			  void **bb);
+SOFIAPUBFUN int msghdrtag_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN size_t msghdrtag_xtra(tagi_t const *t, size_t offset);
+SOFIAPUBFUN tagi_t *msghdrtag_dup(tagi_t *dst, tagi_t const *src,
+				  void **inout_buffer);
+SOFIAPUBFUN int msghdrtag_scan(tag_type_t tt, su_home_t *home, 
+			       char const *s, 
+			       tag_value_t *return_value);
+SOFIAPUBFUN tagi_t *msghdrtag_filter(tagi_t *dst, tagi_t const f[], 
+				     tagi_t const *src, 
+				     void **inout_buffer);
 
-tagi_t *msgstrtag_filter(tagi_t *dst, tagi_t const f[], tagi_t const *src, 
-			  void **bb);
+SOFIAPUBFUN tagi_t *msgstrtag_filter(tagi_t *dst, tagi_t const f[],
+				     tagi_t const *src, 
+				     void **inout_buffer);
 
-int msgobjtag_snprintf(tagi_t const *t, char b[], size_t size);
-size_t msgobjtag_xtra(tagi_t const *t, size_t offset);
-tagi_t *msgobjtag_dup(tagi_t *dst, tagi_t const *src, void **bb);
+SOFIAPUBFUN int msgobjtag_snprintf(tagi_t const *t, char b[], size_t size);
+SOFIAPUBFUN size_t msgobjtag_xtra(tagi_t const *t, size_t offset);
+SOFIAPUBFUN tagi_t *msgobjtag_dup(tagi_t *dst, tagi_t const *src,
+				  void **inout_buffer);
 
 SOFIA_END_DECLS
 

@@ -37,7 +37,7 @@
  * and MD5 can be considered as cryptographically strong.
  */
 
-/** @file su_md5.h MD5 digest interface.
+/** @file sofia-sip/su_md5.h MD5 digest interface.
  *
  * @author <Pekka.Pessi@nokia.com>
  */ 

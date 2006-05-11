@@ -1,4 +1,4 @@
-/**@file sip_tag.h.in
+/**@file sofia-sip/sip_tag.h.in
  *
  * Template for <sip_tag.h>.
  *
@@ -32,7 +32,7 @@
 #ifndef SIP_TAG_H  /** Defined when @b <sip_tag.h> has been included. */
 #define SIP_TAG_H
 
-/**@file sip_tag.h
+/**@file sofia-sip/sip_tag.h
  * @brief Tag class for SIP headers
  *
  * #AUTO#
@@ -69,22 +69,22 @@ SOFIA_BEGIN_DECLS
 #define SIPTAGI_SIP_P(t) (SIPTAG_SIP_P((t)->t_tag))
 
 /** Tag class for SIP headers */
-SIP_DLL extern tag_class_t siphdrtag_class[1];
+SOFIAPUBVAR tag_class_t siphdrtag_class[1];
 /** Tag class for string values of SIP headers */
-SIP_DLL extern tag_class_t sipstrtag_class[1];
+SOFIAPUBVAR tag_class_t sipstrtag_class[1];
 /** Tag class for SIP message */
-SIP_DLL extern tag_class_t sipmsgtag_class[1];
+SOFIAPUBVAR tag_class_t sipmsgtag_class[1];
 
 /** Lists of SIP tags. */
-SIP_DLL extern tag_type_t sip_tag_list[], sip_tag_str_list[];
+SOFIAPUBVAR tag_type_t sip_tag_list[], sip_tag_str_list[];
 
 /** Filter tag matching any sip tag. */
 #define SIPTAG_ANY()         siptag_any, ((tag_value_t)0)
-SIP_DLL extern tag_typedef_t siptag_any;
+SOFIAPUBVAR tag_typedef_t siptag_any;
 
 /** End of SIP headers */
 #define SIPTAG_END()         siptag_end, (tag_value_t)0
-SIP_DLL extern tag_typedef_t siptag_end;
+SOFIAPUBVAR tag_typedef_t siptag_end;
 
 /**Tag list item for #sip_t object.
  *
@@ -98,10 +98,10 @@ SIP_DLL extern tag_typedef_t siptag_end;
 #define SIPTAG_SIP(x)       siptag_sip, siptag_sip_v((x))
 
 /** Tag for @c sip_t */
-SIP_DLL extern tag_typedef_t siptag_sip;
+SOFIAPUBVAR tag_typedef_t siptag_sip;
 
 #define SIPTAG_SIP_REF(x)   siptag_sip_ref, siptag_sip_vr(&(x))
-SIP_DLL extern tag_typedef_t siptag_sip_ref;
+SOFIAPUBVAR tag_typedef_t siptag_sip_ref;
 
 #if HAVE_INLINE
 static inline
@@ -130,10 +130,10 @@ tag_value_t siptag_sip_vr(sip_t const **vp) { return (tag_value_t)vp; }
 #define SIPTAG_HEADER(x)       siptag_header, siptag_header_v((x))
 
 /** Tag for header string */
-SIP_DLL extern tag_typedef_t siptag_header;
+SOFIAPUBVAR tag_typedef_t siptag_header;
 
 #define SIPTAG_HEADER_REF(x)   siptag_header_ref, siptag_header_vr(&(x))
-SIP_DLL extern tag_typedef_t siptag_header_ref;
+SOFIAPUBVAR tag_typedef_t siptag_header_ref;
 
 #if HAVE_INLINE
 static inline tag_value_t
@@ -174,10 +174,10 @@ siptag_header_vr(sip_header_t const **vp)
 #define SIPTAG_HEADER_STR(s)       siptag_header_str, tag_str_v((s))
 
 /** Tag for header string */
-SIP_DLL extern tag_typedef_t siptag_header_str;
+SOFIAPUBVAR tag_typedef_t siptag_header_str;
 
 #define SIPTAG_HEADER_STR_REF(s)   siptag_header_str_ref, tag_str_vr(&(s))
-SIP_DLL extern tag_typedef_t siptag_header_str_ref;
+SOFIAPUBVAR tag_typedef_t siptag_header_str_ref;
 
 /**@ingroup sip_#xxxxxx#
  *
@@ -195,13 +195,13 @@ SIP_DLL extern tag_typedef_t siptag_header_str_ref;
  */
 #define SIPTAG_#XXXXXX#(x) siptag_#xxxxxx#, siptag_#xxxxxx#_v(x)
 
-SIP_DLL extern tag_typedef_t siptag_#xxxxxx#;
+SOFIAPUBVAR tag_typedef_t siptag_#xxxxxx#;
 
 /**@ingroup sip_#xxxxxx#
  * Tag list item for reference to a a #xxxxxxx_xxxxxxx# pointer.
  */
 #define SIPTAG_#XXXXXX#_REF(x) siptag_#xxxxxx#_ref, siptag_#xxxxxx#_vr(&(x))
-SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_ref;
+SOFIAPUBVAR tag_typedef_t siptag_#xxxxxx#_ref;
 
 /**@ingroup sip_#xxxxxx#
  *
@@ -223,13 +223,13 @@ SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_ref;
  */
 #define SIPTAG_#XXXXXX#_STR(s) siptag_#xxxxxx#_str, tag_str_v(s)
 
-SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_str;
+SOFIAPUBVAR tag_typedef_t siptag_#xxxxxx#_str;
 
 /**@ingroup sip_#xxxxxx#
  * Tag list item for reference to a a #xxxxxxx_xxxxxxx# string. 
  */
 #define SIPTAG_#XXXXXX#_STR_REF(x) siptag_#xxxxxx#_str_ref, tag_str_vr(&(x))
-SIP_DLL extern tag_typedef_t siptag_#xxxxxx#_str_ref;
+SOFIAPUBVAR tag_typedef_t siptag_#xxxxxx#_str_ref;
 
 #if HAVE_INLINE
 static inline tag_value_t

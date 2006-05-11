@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef NTA_TPORT_H /** Defined when nta_tport.h has been included. */
+#ifndef NTA_TPORT_H
+/** Defined when <sofia-sip/nta_tport.h> has been included. */
 #define NTA_TPORT_H
 
 /**
- * @file nta_tport.h
+ * @file sofia-sip/nta_tport.h
  * @brief Transport and SigComp handling
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -61,17 +62,16 @@ struct sigcomp_udvm;
 SOFIAPUBFUN
 tport_t *nta_incoming_transport(nta_agent_t *, nta_incoming_t *, msg_t *msg);
 
-struct sigcomp_compartment *
-nta_incoming_compartment(nta_incoming_t *irq);
+SOFIAPUBFUN
+struct sigcomp_compartment *nta_incoming_compartment(nta_incoming_t *irq);
+
+SOFIAPUBFUN tport_t *nta_outgoing_transport(nta_outgoing_t *orq);
 
 SOFIAPUBFUN
-tport_t *nta_outgoing_transport(nta_outgoing_t *orq);
-
 struct sigcomp_compartment *
 nta_outgoing_compartment(nta_outgoing_t *orq);
 
-void
-nta_compartment_decref(struct sigcomp_compartment **);
+SOFIAPUBFUN void nta_compartment_decref(struct sigcomp_compartment **);
 
 typedef void nta_update_tport_f(nta_update_magic_t *, nta_agent_t *);
 

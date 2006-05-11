@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef STRING0_H /** Defined when <string0.h> is included. */
+#ifndef STRING0_H
+/** Defined when <sofia-sip/string0.h> is included. */
 #define STRING0_H
 
-/**@file string0.h
+/**@file sofia-sip/string0.h
  *
  * @brief String comparison functions accepting NULL pointers
  *
@@ -44,6 +45,8 @@ SOFIA_BEGIN_DECLS
 
 #if SU_HAVE_INLINE
 su_inline
+#else
+SOFIAPUBFUN
 #endif
 int 
   str0cmp(char const *a, char const *b),
@@ -53,6 +56,8 @@ int
 
 #if SU_HAVE_INLINE
 su_inline
+#else
+SOFIAPUBFUN
 #endif
 size_t
 strnspn(char const *s, size_t size, char const *term),

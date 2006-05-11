@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SU_TAGARG_H /** Defined when su_tagarg.h has been included. */
+#ifndef SU_TAGARG_H
+/** Defined when <sofia-sip/su_tagarg.h> has been included. */
 #define SU_TAGARG_H
 
 /**@SU_TAG 
- * @file su_tagarg.h  Tagged argument lists
+ * @file sofia-sip/su_tagarg.h  Tagged argument lists
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 

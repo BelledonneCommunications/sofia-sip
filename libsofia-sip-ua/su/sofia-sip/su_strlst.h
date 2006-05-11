@@ -22,10 +22,10 @@
  *
  */
 
-#ifndef SU_STRLST_H  /** Defined when su_strlst.h has been included. */
+#ifndef SU_STRLST_H  /** Defined when <sofia-sip/su_strlst.h> has been included. */
 #define SU_STRLST_H
 /**@ingroup su_strlst
- * @file su_strlst.h String lists
+ * @file sofia-sip/su_strlst.h String lists
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
@@ -75,10 +75,10 @@ SU_DLL char *su_strlst_dup_append(su_strlst_t *, char const *str);
 SU_DLL char const *su_strlst_append(su_strlst_t *, char const *str);
 
 /** Append a formatted string to the list. */
-char const *su_slprintf(su_strlst_t *self, char const *fmt, ...);
+SU_DLL char const *su_slprintf(su_strlst_t *self, char const *fmt, ...);
 
 /** Append a formatted string to the list. */
-char const *su_slvprintf(su_strlst_t *self, char const *fmt, va_list ap);
+SU_DLL char const *su_slvprintf(su_strlst_t *self, char const *fmt, va_list ap);
 
 /** Get a numbered item from list. */
 SU_DLL char const *su_strlst_item(su_strlst_t const *, unsigned i);

@@ -27,7 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SU_ADDRINFO_H /* Defined when <su_addrinfo.h> has been included */
+#ifndef SU_ADDRINFO_H /* Defined when <sofia-sip/su_addrinfo.h> has been included */
 #define SU_ADDRINFO_H
 
 #ifndef SU_TYPES_H

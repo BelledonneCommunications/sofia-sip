@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef MSG_PARSER_H /** Defined when msg_parser.h has been included. */
+#ifndef MSG_PARSER_H
+/** Defined when <sofia-sip/msg_parser.h> has been included. */
 #define MSG_PARSER_H 
 
 /**@ingroup msg_parser
- * @file msg_parser.h
+ * @file sofia-sip/msg_parser.h
  *
  * Message parser interface.
  *
@@ -94,61 +95,66 @@ SOFIA_BEGIN_DECLS
 #define msg_kind_single_critical msg_kind_single, 1
 #define msg_kind_list_critical   msg_kind_list, 1
 
-int msg_extract_header(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos);
-int msg_extract_separator(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos);
-int msg_extract_payload(msg_t *msg, msg_pub_t *mo, 
-			msg_header_t **return_payload, unsigned body_len,
-			char b[], int bsiz, int eos);
+SOFIAPUBFUN int msg_extract_header(msg_t *msg, msg_pub_t *mo,
+				   char b[], int bsiz, int eos);
+SOFIAPUBFUN int msg_extract_separator(msg_t *msg, msg_pub_t *mo,
+				      char b[], int bsiz, int eos);
+SOFIAPUBFUN int msg_extract_payload(msg_t *msg, msg_pub_t *mo, 
+				    msg_header_t **return_payload, 
+				    unsigned body_len,
+				    char b[], int bsiz, int eos);
 
 /* ---------------------------------------------------------------------------
  * 2) Header processing methods for common headers.
  */
 
-int msg_firstline_d(char *s, char **ss2, char **ss3);
+SOFIAPUBFUN int msg_firstline_d(char *s, char **ss2, char **ss3);
 
-int msg_default_dup_xtra(msg_header_t const *header, int offset);
-char *msg_default_dup_one(msg_header_t *dst, 
-			  msg_header_t const *src,
-			  char *b, 
-			  int xtra);
+SOFIAPUBFUN int msg_default_dup_xtra(msg_header_t const *header, int offset);
+SOFIAPUBFUN char *msg_default_dup_one(msg_header_t *dst, 
+				      msg_header_t const *src,
+				      char *b, 
+				      int xtra);
 
-int msg_numeric_d(su_home_t *home, msg_header_t *h, char *s, int slen);
-int msg_numeric_e(char [], int, msg_header_t const *, int);
+SOFIAPUBFUN int msg_numeric_d(su_home_t *, msg_header_t *h, char *s, int slen);
+SOFIAPUBFUN int msg_numeric_e(char [], int, msg_header_t const *, int);
 
-int msg_list_d(su_home_t *home, msg_header_t *h, char *s, int slen);
-int msg_list_e(char [], int, msg_header_t const *, int);
-int msg_list_dup_xtra(msg_header_t const *h, int offset);
-char *msg_list_dup_one(msg_header_t *dst,
-		       msg_header_t const *src,
-		       char *b, 
-		       int xtra);
+SOFIAPUBFUN int msg_list_d(su_home_t *, msg_header_t *h, char *s, int slen);
+SOFIAPUBFUN int msg_list_e(char [], int, msg_header_t const *, int);
+SOFIAPUBFUN int msg_list_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN char *msg_list_dup_one(msg_header_t *dst,
+				   msg_header_t const *src,
+				   char *b, int xtra);
 
-int msg_generic_d(su_home_t *, msg_header_t *, char *, int n);
-int msg_generic_e(char [], int, msg_header_t const *, int);
-int msg_generic_dup_xtra(msg_header_t const *h, int offset);
-char *msg_generic_dup_one(msg_header_t *dst,
-			  msg_header_t const *src,
-			  char *b, 
-			  int xtra);
+SOFIAPUBFUN int msg_generic_d(su_home_t *, msg_header_t *, char *, int n);
+SOFIAPUBFUN int msg_generic_e(char [], int, msg_header_t const *, int);
+SOFIAPUBFUN int msg_generic_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN char *msg_generic_dup_one(msg_header_t *dst,
+				      msg_header_t const *src,
+				      char *b, 
+				      int xtra);
 
-int msg_unknown_dup_xtra(msg_header_t const *h, int offset);
-char *msg_unknown_dup_one(msg_header_t *dst, msg_header_t const *src,
-			  char *b, int xtra);
+SOFIAPUBFUN int msg_unknown_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN char *msg_unknown_dup_one(msg_header_t *dst,
+				      msg_header_t const *src,
+				      char *b, int xtra);
 
-int msg_error_dup_xtra(msg_header_t const *h, int offset);
-char *msg_error_dup_one(msg_header_t *dst, msg_header_t const *src,
-			char *b, int xtra);
+SOFIAPUBFUN int msg_error_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN char *msg_error_dup_one(msg_header_t *dst,
+				    msg_header_t const *src,
+				    char *b, int xtra);
 
-int msg_payload_d(su_home_t *home, msg_header_t *h, char *s, int slen);
-int msg_payload_e(char b[], int bsiz, msg_header_t const *h, int flags);
-int msg_payload_dup_xtra(msg_header_t const *h, int offset);
-char *msg_payload_dup_one(msg_header_t *dst, msg_header_t const *src,
-			  char *b, int xtra);
+SOFIAPUBFUN int msg_payload_d(su_home_t *, msg_header_t *h, char *s, int slen);
+SOFIAPUBFUN int msg_payload_e(char b[], int bsiz, msg_header_t const *, int f);
+SOFIAPUBFUN int msg_payload_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN char *msg_payload_dup_one(msg_header_t *dst,
+				      msg_header_t const *src,
+				      char *b, int xtra);
 
-int msg_separator_d(su_home_t *home, msg_header_t *h, char *s, int slen);
+int msg_separator_d(su_home_t *, msg_header_t *h, char *s, int slen);
 int msg_separator_e(char b[], int bsiz, msg_header_t const *h, int flags);
 
-int msg_auth_d(su_home_t *home, msg_header_t *h, char *s, int slen);
+int msg_auth_d(su_home_t *, msg_header_t *h, char *s, int slen);
 int msg_auth_e(char b[], int bsiz, msg_header_t const *h, int f);
 int msg_auth_dup_xtra(msg_header_t const *h, int offset);
 char *msg_auth_dup_one(msg_header_t *dst, msg_header_t const *src, 
@@ -162,29 +168,17 @@ char *msg_auth_dup_one(msg_header_t *dst, msg_header_t const *src,
 
 #define MSG_HEADER_TEST(h) ((h) && (h)->sh_class)
 
-static inline void *msg_header_data(msg_frg_t *h);
+su_inline void *msg_header_data(msg_frg_t *h);
 
-int msg_hostport_d(char **ss, char const **hhost, char const **pport);
+SOFIAPUBFUN int msg_hostport_d(char **ss,
+			       char const **return_host,
+			       char const **return_port);
 
-int msg_token_d(char **ss, char const **token);
-int msg_uint32_d(char **ss, uint32_t *value);
-int msg_comment_d(char **ss, char const **ccomment);
-int msg_quoted_d(char **ss, char **unquoted);
-int msg_unquoted_e(char *b, int bsiz, char const *s);
-
-int msg_name_addr_d(su_home_t *home,
-		    char **ss,
-		    char const **ddisplay,
-		    url_t *url,
-		    msg_param_t const **pparams,
-		    char const **ccomment);
-
-int msg_name_addr_e(char b[], int bsiz, 
-		    int flags, 
-		    char const *display, 
-		    int always_ltgt, url_t const url[],
-		    msg_param_t const params[], 
-		    char const *comment);
+SOFIAPUBFUN int msg_token_d(char **ss, char const **return_token);
+SOFIAPUBFUN int msg_uint32_d(char **ss, uint32_t *return_value);
+SOFIAPUBFUN int msg_comment_d(char **ss, char const **return_comment);
+SOFIAPUBFUN int msg_quoted_d(char **ss, char **return_unquoted);
+SOFIAPUBFUN int msg_unquoted_e(char *b, int bsiz, char const *s);
 
 /** Terminate encoding. @HI */
 #define MSG_TERM_E(p, e) ((p) < (e) ? (p)[0] = '\0' : '\0')
@@ -206,22 +200,15 @@ int msg_name_addr_e(char b[], int bsiz,
 /** Calculate string size. @HI */
 #define MSG_STRING_SIZE(s) ((s) ? (strlen(s) + 1) : 0)
 
-int msg_commalist_d(su_home_t *home, char **ss, 
-		    msg_param_t **pparams,
-		    int (*scanner)(char *s));
+SOFIAPUBFUN int msg_commalist_d(su_home_t *, char **ss,
+				msg_param_t **return_list,
+				int (*scanner)(char *s));
+SOFIAPUBFUN int msg_token_scan(char *start);
+SOFIAPUBFUN int msg_attribute_value_scanner(char *s);
 
-/** Token scanner for msg_commalist_d(). 
- *
- * This accepts also empty entries.
- */
-int msg_token_scan(char *start);
-
-/** Attribute-value pair scanner */
-int msg_attribute_value_scanner(char *s);
-
-int msg_any_list_d(su_home_t *home, char **ss, 
-		   msg_param_t **retval,
-		   int (*scanner)(char *s), int sep);
+SOFIAPUBFUN int msg_any_list_d(su_home_t *, char **ss, 
+			       msg_param_t **retval,
+			       int (*scanner)(char *s), int sep);
 
 /** Encode a comma-separated parameter list */
 #define MSG_COMMALIST_E(b, end, params, compact) do { \
@@ -232,7 +219,7 @@ int msg_any_list_d(su_home_t *home, char **ss,
 
 /* Parameter lists */
 
-int msg_header_update_params(msg_common_t *h, int clear);
+SOFIAPUBFUN int msg_header_update_params(msg_common_t *h, int clear);
 
 /** Match a parameter with any value. @HI */
 #define MSG_PARAM_MATCH(v, s, name) \
@@ -247,21 +234,23 @@ int msg_header_update_params(msg_common_t *h, int clear);
 /** Calculate allocated number of items in parameter list. @HI */
 #define MSG_PARAMS_NUM(n) ((((n) + MSG_N_PARAMS - 1 )&-MSG_N_PARAMS))
 
-/** Parse a semicolon-separated attribute-value list. @HI */
-int msg_avlist_d(su_home_t *home, char **ss, msg_param_t const **pparams);
+/** Parse a semicolong-separated attribute-value list. @HI */
+SOFIAPUBFUN int msg_avlist_d(su_home_t *, char **ss,
+			     msg_param_t const **return_params);
 
-/** Parse a semicolon-separated parameter list starting with semicolong. @HI */
-int msg_params_d(su_home_t *home, char **ss, msg_param_t const **pparams);
+/** Parse a semicolon-separated parameter list starting with semicolon. @HI */
+SOFIAPUBFUN int msg_params_d(su_home_t *, char **ss,
+			     msg_param_t const **return_params);
 
 /** Encode a list of parameters. */
-int msg_params_e(char b[], int bsiz, msg_param_t const pparams[]);
+SOFIAPUBFUN int msg_params_e(char b[], int bsiz, msg_param_t const pparams[]);
 
 /** Join list of parameters */
-int msg_params_join(su_home_t *home,
-		    msg_param_t **dst,
-		    msg_param_t const *src,
-		    unsigned prune,
-		    int dup);
+SOFIAPUBFUN int msg_params_join(su_home_t *,
+				msg_param_t **dst,
+				msg_param_t const *src,
+				unsigned prune,
+				int dup);
 
 /** Encode a list of parameters. @HI */
 #define MSG_PARAMS_E(b, end, params, flags) \
@@ -271,11 +260,11 @@ int msg_params_join(su_home_t *home,
 #define MSG_PARAMS_SIZE(rv, params) (rv = msg_params_dup_xtra(params, rv))
 
 /** Duplicate a parameter list */
-char *msg_params_dup(msg_param_t const **d, msg_param_t const *s, 
-		     char *b, int xtra);
+SOFIAPUBFUN char *msg_params_dup(msg_param_t const **d, msg_param_t const *s, 
+				 char *b, int xtra);
 
 /** Count number of parameters in the list */
-static inline int msg_params_count(msg_param_t const params[])
+su_inline int msg_params_count(msg_param_t const params[])
 {
   if (params) {
     int n;
@@ -289,7 +278,7 @@ static inline int msg_params_count(msg_param_t const params[])
 }
 
 /** Calculate memory size required by parameter list */
-static inline int msg_params_dup_xtra(msg_param_t const params[], int offset)
+su_inline int msg_params_dup_xtra(msg_param_t const params[], int offset)
 {
   int n = msg_params_count(params);
   if (n) {
@@ -302,7 +291,7 @@ static inline int msg_params_dup_xtra(msg_param_t const params[], int offset)
 }
 
 /** Return pointer to extra data after header structure */
-static inline void *msg_header_data(msg_frg_t *h)
+su_inline void *msg_header_data(msg_frg_t *h)
 {
   if (h)
     return (char *)h + h->h_class->hc_size;

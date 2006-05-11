@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef AUTH_DIGEST_H /** Defined when <auth_digest.h> has been included. */
+#ifndef AUTH_DIGEST_H
+/** Defined when <sofia-sip/auth_digest.h> has been included. */
 #define AUTH_DIGEST_H
 
-/**@file auth_digest.h 
+/**@file sofia-sip/auth_digest.h 
  * Datatypes and functions for Digest authentication.
  *
  * The structures and functions here follow the RFC 2617.

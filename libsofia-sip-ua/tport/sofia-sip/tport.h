@@ -22,9 +22,10 @@
  *
  */
 
-#ifndef TPORT_H /** Defined when <tport.h> has been included. */
+#ifndef TPORT_H
+/** Defined when <sofia-sip/tport.h> has been included. */
 #define TPORT_H
-/**@file tport.h
+/**@file sofia-sip/tport.h
  * @brief Transport interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

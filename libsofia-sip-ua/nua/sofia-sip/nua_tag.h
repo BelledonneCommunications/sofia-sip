@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef NUA_TAG_H /** Defined when <sofia-sip/nua_tag.h> has been included. */
+#ifndef NUA_TAG_H
+/** Defined when <sofia-sip/nua_tag.h> has been included. */
 #define NUA_TAG_H
 
-/**@file nua_tag.h
+/**@file sofia-sip/nua_tag.h
  * @brief Tags for Sofia-SIP User Agent Library
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -1277,7 +1278,7 @@ enum nua_callstate {
 };
 
 /** Get name for NUA call state */
-char const *nua_callstate_name(enum nua_callstate state);
+SOFIAPUBFUN char const *nua_callstate_name(enum nua_callstate state);
 
 /** Subscription state
  *

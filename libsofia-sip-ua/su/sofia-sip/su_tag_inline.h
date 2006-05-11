@@ -22,10 +22,12 @@
  *
  */
 
-#ifndef SU_TAG_INLINE_H /** Defined when su_tag_inline.h has been included */
+#ifndef SU_TAG_INLINE_H
+/** Defined when <sofia-sip/su_tag_inline.h> has been included */
 #define SU_TAG_INLINE_H 
 /**@SU_TAG
- * @file su_tag_inline.h  Inline functions for object tags and tag lists.
+ * @file sofia-sip/su_tag_inline.h
+ * Inline functions for object tags and tag lists.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 

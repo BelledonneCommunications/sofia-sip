@@ -22,7 +22,7 @@
  *
  */
 
-/**@file sha1.h
+/**@file sofia-sip/sha1.h
  *
  *      This is the header file for code which implements the Secure
  *      Hashing Algorithm 1 as defined in FIPS PUB 180-1 published
@@ -62,8 +62,6 @@
 
 #ifndef SU_TYPES_H
 #include <sofia-sip/su_types.h>
-#endif
-
 /*
  * If you do not have the ISO standard stdint.h header file, then you
  * must typdef the following:
@@ -73,6 +71,9 @@
  *  int_least16_t    integer of >= 16 bits
  *
  */
+#endif
+
+SOFIA_BEGIN_DECLS
 
 #ifndef _SHA_enum_
 #define _SHA_enum_
@@ -112,11 +113,13 @@ typedef struct SHA1Context
  *  Function Prototypes
  */
 
-int SHA1Reset(  SHA1Context *);
-int SHA1Input(  SHA1Context *,
-                const uint8_t *,
-                unsigned int);
-int SHA1Result( SHA1Context *,
-                uint8_t Message_Digest[SHA1HashSize]);
+
+SOFIAPUBFUN int SHA1Reset(  SHA1Context *);
+SOFIAPUBFUN int SHA1Input(  SHA1Context *,
+			    const uint8_t *,
+			    unsigned int);
+SOFIAPUBFUN int SHA1Result( SHA1Context *,
+			    uint8_t Message_Digest[SHA1HashSize]);
+SOFIA_END_DECLS
 
 #endif

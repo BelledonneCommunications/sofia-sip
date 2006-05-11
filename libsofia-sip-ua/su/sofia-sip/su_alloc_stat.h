@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SU_ALLOC_STAT_H /** Defined when su_alloc_stat.h has been included. */
+#ifndef SU_ALLOC_STAT_H
+/** Defined when <sofia-sip/su_alloc_stat.h> has been included. */
 #define SU_ALLOC_STAT_H 
 
 /**@ingroup su_alloc
  *
- * @file su_alloc_stat.h Home-based memory management statistics
+ * @file sofia-sip/su_alloc_stat.h Home-based memory management statistics
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 

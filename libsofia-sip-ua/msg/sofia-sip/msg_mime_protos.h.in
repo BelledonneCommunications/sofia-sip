@@ -1,5 +1,5 @@
 /**@ingroup msg  -*- c -*-
- * @file msg_mime_protos.h.in
+ * @file sofia-sip/msg_mime_protos.h.in
  *
  * Template for <msg_mime_protos.h>.
  */
@@ -28,11 +28,12 @@
  *
  */
 
-#ifndef MSG_MIME_PROTOS_H /** Defined when msg_mime_protos.h has been included. */
+#ifndef MSG_MIME_PROTOS_H
+/** Defined when <sofia-sip/msg_mime_protos.h> has been included. */
 #define MSG_MIME_PROTOS_H 
 
 /**@ingroup msg_mime
- * @file msg_mime_protos.h
+ * @file sofia-sip/msg_mime_protos.h
  *
  * Prototypes for MIME headers (@RFC2045).
  *

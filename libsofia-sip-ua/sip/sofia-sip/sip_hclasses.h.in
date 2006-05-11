@@ -1,6 +1,6 @@
 /** -*- C -*- 
  *
- * @file sip_hclasses.h.in
+ * @file sofia-sip/sip_hclasses.h.in
  *
  * Template for <sip_hclasses.h>.
  */
@@ -29,10 +29,11 @@
  *
  */
 
-#ifndef SIP_HCLASSES_H /** Defined when sip_hclasses.h has been included. */
+#ifndef SIP_HCLASSES_H
+/** Defined when <sofia-sip/sip_hclasses.h> has been included. */
 #define SIP_HCLASSES_H
 
-/**@file sip_hclasses.h
+/**@file sofia-sip/sip_hclasses.h
  * @brief Declarations of SIP header classes.
  * 
  * #AUTO#

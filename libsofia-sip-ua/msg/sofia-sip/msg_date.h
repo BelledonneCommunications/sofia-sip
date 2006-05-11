@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef MSG_DATE_H /** Defined when msg_date.h has been included. */
+#ifndef MSG_DATE_H
+/** Defined when <sofia-sip/msg_date.h> has been included. */
 #define MSG_DATE_H 
 
 /**@ingroup msg_parser
- * @file msg_date.h 
+ * @file sofia-sip/msg_date.h 
  * @brief Types and functions for handling dates and times.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -53,18 +54,20 @@ typedef unsigned long msg_time_t;
 #endif
 
 /* Current time. */
-msg_time_t msg_now(void);
+SOFIAPUBFUN msg_time_t msg_now(void);
 
-int msg_date_delta_d(char const **ss, msg_time_t *date, msg_time_t *delta);
+SOFIAPUBFUN int msg_date_delta_d(char const **inout_string,
+				 msg_time_t *return_date,
+				 msg_time_t *return_delta);
 
-int msg_delta_d(char const **ss, msg_time_t *delta);
-int msg_delta_e(char b[], int bsiz, msg_time_t delta);
+SOFIAPUBFUN int msg_delta_d(char const **ss, msg_time_t *return_delta);
+SOFIAPUBFUN int msg_delta_e(char b[], int bsiz, msg_time_t delta);
 
 /** Decode RFC1123-date, RFC822-date or asctime-date. */
-int msg_date_d(char const **ss, msg_time_t *date);
+SOFIAPUBFUN int msg_date_d(char const **ss, msg_time_t *date);
 
 /** Encode RFC1123-date. */
-int msg_date_e(char b[], int bsiz, msg_time_t date);
+SOFIAPUBFUN int msg_date_e(char b[], int bsiz, msg_time_t date);
 
 enum { msg_date_string_size = 29 };
 

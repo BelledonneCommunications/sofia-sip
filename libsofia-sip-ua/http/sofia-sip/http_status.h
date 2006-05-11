@@ -25,7 +25,7 @@
 #ifndef HTTP_STATUS_H 
 #define HTTP_STATUS_H 
 
-/**@file http_status.h 
+/**@file sofia-sip/http_status.h 
  *
  * HTTP status codes.
  *
@@ -38,7 +38,7 @@
 
 SOFIA_BEGIN_DECLS
 
-char const *http_status_phrase(int status);
+SOFIAPUBFUN char const *http_status_phrase(int status);
 
 #define HTTP_100_CONTINUE	       100, http_100_continue
 #define HTTP_101_SWITCHING	       101, http_101_switching
@@ -82,47 +82,47 @@ char const *http_status_phrase(int status);
 #define HTTP_504_GATEWAY_TIMEOUT       504, http_504_gateway_timeout
 #define HTTP_505_HTTP_VERSION	       505, http_505_http_version
 
-HTTP_DLL extern char const http_100_continue[];
-HTTP_DLL extern char const http_101_switching[];
-HTTP_DLL extern char const http_200_ok[];
-HTTP_DLL extern char const http_201_created[];
-HTTP_DLL extern char const http_202_accepted[];
-HTTP_DLL extern char const http_203_non_auth_info[];
-HTTP_DLL extern char const http_204_no_content[];
-HTTP_DLL extern char const http_205_reset_content[];
-HTTP_DLL extern char const http_206_partial_content[];
-HTTP_DLL extern char const http_300_multiple_choices[];
-HTTP_DLL extern char const http_301_moved_permanently[];
-HTTP_DLL extern char const http_302_found[];
-HTTP_DLL extern char const http_303_see_other[];
-HTTP_DLL extern char const http_304_not_modified[];
-HTTP_DLL extern char const http_305_use_proxy[];
-HTTP_DLL extern char const http_307_temporary_redirect[];
-HTTP_DLL extern char const http_400_bad_request[];
-HTTP_DLL extern char const http_401_unauthorized[];
-HTTP_DLL extern char const http_402_payment_required[];
-HTTP_DLL extern char const http_403_forbidden[];
-HTTP_DLL extern char const http_404_not_found[];
-HTTP_DLL extern char const http_405_not_allowed[];
-HTTP_DLL extern char const http_406_not_acceptable[];
-HTTP_DLL extern char const http_407_proxy_auth[];
-HTTP_DLL extern char const http_408_timeout[];
-HTTP_DLL extern char const http_409_conflict[];
-HTTP_DLL extern char const http_410_gone[];
-HTTP_DLL extern char const http_411_no_length[];
-HTTP_DLL extern char const http_412_precondition[];
-HTTP_DLL extern char const http_413_entity_too_large[];
-HTTP_DLL extern char const http_414_uri_too_long[];
-HTTP_DLL extern char const http_415_media_type[];
-HTTP_DLL extern char const http_416_requested_range[];
-HTTP_DLL extern char const http_417_expectation[];
-HTTP_DLL extern char const http_426_upgrade[];
-HTTP_DLL extern char const http_500_internal_server[];
-HTTP_DLL extern char const http_501_not_implemented[];
-HTTP_DLL extern char const http_502_bad_gateway[];
-HTTP_DLL extern char const http_503_no_service[];
-HTTP_DLL extern char const http_504_gateway_timeout[];
-HTTP_DLL extern char const http_505_http_version[];
+SOFIAPUBVAR char const http_100_continue[];
+SOFIAPUBVAR char const http_101_switching[];
+SOFIAPUBVAR char const http_200_ok[];
+SOFIAPUBVAR char const http_201_created[];
+SOFIAPUBVAR char const http_202_accepted[];
+SOFIAPUBVAR char const http_203_non_auth_info[];
+SOFIAPUBVAR char const http_204_no_content[];
+SOFIAPUBVAR char const http_205_reset_content[];
+SOFIAPUBVAR char const http_206_partial_content[];
+SOFIAPUBVAR char const http_300_multiple_choices[];
+SOFIAPUBVAR char const http_301_moved_permanently[];
+SOFIAPUBVAR char const http_302_found[];
+SOFIAPUBVAR char const http_303_see_other[];
+SOFIAPUBVAR char const http_304_not_modified[];
+SOFIAPUBVAR char const http_305_use_proxy[];
+SOFIAPUBVAR char const http_307_temporary_redirect[];
+SOFIAPUBVAR char const http_400_bad_request[];
+SOFIAPUBVAR char const http_401_unauthorized[];
+SOFIAPUBVAR char const http_402_payment_required[];
+SOFIAPUBVAR char const http_403_forbidden[];
+SOFIAPUBVAR char const http_404_not_found[];
+SOFIAPUBVAR char const http_405_not_allowed[];
+SOFIAPUBVAR char const http_406_not_acceptable[];
+SOFIAPUBVAR char const http_407_proxy_auth[];
+SOFIAPUBVAR char const http_408_timeout[];
+SOFIAPUBVAR char const http_409_conflict[];
+SOFIAPUBVAR char const http_410_gone[];
+SOFIAPUBVAR char const http_411_no_length[];
+SOFIAPUBVAR char const http_412_precondition[];
+SOFIAPUBVAR char const http_413_entity_too_large[];
+SOFIAPUBVAR char const http_414_uri_too_long[];
+SOFIAPUBVAR char const http_415_media_type[];
+SOFIAPUBVAR char const http_416_requested_range[];
+SOFIAPUBVAR char const http_417_expectation[];
+SOFIAPUBVAR char const http_426_upgrade[];
+SOFIAPUBVAR char const http_500_internal_server[];
+SOFIAPUBVAR char const http_501_not_implemented[];
+SOFIAPUBVAR char const http_502_bad_gateway[];
+SOFIAPUBVAR char const http_503_no_service[];
+SOFIAPUBVAR char const http_504_gateway_timeout[];
+SOFIAPUBVAR char const http_505_http_version[];
 
 SOFIA_END_DECLS
 

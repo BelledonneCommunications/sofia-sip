@@ -22,17 +22,17 @@
  *
  */
 
-#ifndef HTTP_TAG_CLASS_H /**Defined when http_tag_class.h have been included*/
+#ifndef HTTP_TAG_CLASS_H
+/**Defined when http_tag_class.h have been included*/
 #define HTTP_TAG_CLASS_H 
 
-/**@file http_tag_class.h
+/**@file sofia-sip/http_tag_class.h
  * @brief Tag classes for HTTP headers.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Wed Feb 21 11:01:45 2001 ppessi
  */
-
 
 #ifndef SU_TAG_CLASS_H
 #include <sofia-sip/su_tag_class.h>
@@ -63,11 +63,10 @@ SOFIA_BEGIN_DECLS
      (tag_value_t)HTTP_PROTOCOL_TAG }}
 
 /**@internal Filter HTTP header tag items. */ 
-tagi_t *httptag_filter(tagi_t *dst, tagi_t const f[], tagi_t const *src, 
-		      void **bb);
-
-#endif /* !defined(HTTP_TAG_CLASS_H) */
+SOFIAPUBFUN tagi_t *httptag_filter(tagi_t *dst, tagi_t const f[],
+				   tagi_t const *src, 
+				   void **bb);
 
 SOFIA_END_DECLS
 
-
+#endif /* !defined(HTTP_TAG_CLASS_H) */

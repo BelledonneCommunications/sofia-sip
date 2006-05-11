@@ -24,7 +24,9 @@
 
 #ifndef SOA_SESSION_H
 #define SOA_SESSION_H
-/**@file soa_session.h  Internal API for SDP Offer/Answer Interface.
+/**@file sofia-sip/soa_session.h
+ *
+ * Internal API for SDP Offer/Answer Interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -78,38 +80,45 @@ struct soa_session_actions
   void (*soa_terminate_session)(soa_session_t *ss, char const *option);
 };
 
-soa_session_t *soa_session_ref(soa_session_t *ss);
-void soa_session_unref(soa_session_t *ss);
+SOFIAPUBFUN soa_session_t *soa_session_ref(soa_session_t *ss);
+SOFIAPUBFUN void soa_session_unref(soa_session_t *ss);
 
-int soa_base_init(char const *name, soa_session_t *, soa_session_t *parent);
-void soa_base_deinit(soa_session_t *ss);
-int soa_base_set_params(soa_session_t *ss, tagi_t const *tags);
-int soa_base_get_params(soa_session_t const *ss, tagi_t *tags);
-tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
-			       tag_type_t, tag_value_t, ...);
-char **soa_base_media_features(soa_session_t *, int live, su_home_t *);
-char const * const * soa_base_sip_require(soa_session_t const *ss);
-char const * const * soa_base_sip_supported(soa_session_t const *ss);
+SOFIAPUBFUN int soa_base_init(char const *name, soa_session_t *,
+			      soa_session_t *parent);
+SOFIAPUBFUN void soa_base_deinit(soa_session_t *ss);
+SOFIAPUBFUN int soa_base_set_params(soa_session_t *ss, tagi_t const *tags);
+SOFIAPUBFUN int soa_base_get_params(soa_session_t const *ss, tagi_t *tags);
+SOFIAPUBFUN tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
+					   tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN char **soa_base_media_features(soa_session_t *,
+					   int live, su_home_t *);
+SOFIAPUBFUN char const * const *soa_base_sip_require(soa_session_t const *ss);
+SOFIAPUBFUN char const * const *soa_base_sip_supported(soa_session_t const *ss);
 
-int soa_base_remote_sip_features(soa_session_t *ss,
-				    char const * const * support,
-				    char const * const * required);
-int soa_base_set_capability_sdp(soa_session_t *ss, 
-				sdp_session_t *sdp, char const *, int);
-int soa_base_set_remote_sdp(soa_session_t *ss, 
-			    int new_version,
-			    sdp_session_t *sdp, char const *, int);
-int soa_base_set_user_sdp(soa_session_t *ss,
-			  sdp_session_t *sdp, char const *, int);
+SOFIAPUBFUN int soa_base_remote_sip_features(soa_session_t *ss,
+					     char const * const *support,
+					     char const * const *required);
+SOFIAPUBFUN int soa_base_set_capability_sdp(soa_session_t *ss, 
+					    sdp_session_t *sdp,
+					    char const *, int);
+SOFIAPUBFUN int soa_base_set_remote_sdp(soa_session_t *ss, 
+					int new_version,
+					sdp_session_t *sdp, char const *, int);
+SOFIAPUBFUN int soa_base_set_user_sdp(soa_session_t *ss,
+				      sdp_session_t *sdp, char const *, int);
 
-int soa_base_generate_offer(soa_session_t *ss, soa_callback_f *completed);
-int soa_base_generate_answer(soa_session_t *ss, soa_callback_f *completed);
-int soa_base_process_answer(soa_session_t *ss, soa_callback_f *completed);
-int soa_base_process_reject(soa_session_t *ss, soa_callback_f *completed);
+SOFIAPUBFUN int soa_base_generate_offer(soa_session_t *ss,
+					soa_callback_f *completed);
+SOFIAPUBFUN int soa_base_generate_answer(soa_session_t *ss,
+					 soa_callback_f *completed);
+SOFIAPUBFUN int soa_base_process_answer(soa_session_t *ss,
+					soa_callback_f *completed);
+SOFIAPUBFUN int soa_base_process_reject(soa_session_t *ss,
+					soa_callback_f *completed);
 
-int soa_base_activate(soa_session_t *ss, char const *option);
-int soa_base_deactivate(soa_session_t *ss, char const *option);
-void soa_base_terminate(soa_session_t *ss, char const *option);
+SOFIAPUBFUN int soa_base_activate(soa_session_t *ss, char const *option);
+SOFIAPUBFUN int soa_base_deactivate(soa_session_t *ss, char const *option);
+SOFIAPUBFUN void soa_base_terminate(soa_session_t *ss, char const *option);
 
 struct soa_description 
 {
@@ -218,30 +227,35 @@ struct soa_session
 
 /* ====================================================================== */
 
-int soa_has_received_sdp(soa_session_t const *ss);
+SOFIAPUBFUN int soa_has_received_sdp(soa_session_t const *ss);
 
-int soa_set_status(soa_session_t *ss, int status, char const *phrase);
+SOFIAPUBFUN int soa_set_status(soa_session_t *ss,
+			       int status, char const *phrase);
 
-void soa_set_activity(soa_session_t *ss, sdp_media_t const *m, int remote);
+SOFIAPUBFUN void soa_set_activity(soa_session_t *ss, 
+				  sdp_media_t const *m, int remote);
 
-int soa_set_user_sdp(soa_session_t *ss,
-		     struct sdp_session_s const *sdp,
-		     char const *str, int len);
+SOFIAPUBFUN int soa_set_user_sdp(soa_session_t *ss,
+				 struct sdp_session_s const *sdp,
+				 char const *str, int len);
 
-int soa_description_set(soa_session_t *ss, 
-			struct soa_description *ssd,
-			sdp_session_t *sdp,
-			char const *sdp_str,
-			int sdp_len);
+SOFIAPUBFUN int soa_description_set(soa_session_t *ss, 
+				    struct soa_description *ssd,
+				    sdp_session_t *sdp,
+				    char const *sdp_str,
+				    int sdp_len);
 
-void soa_description_free(soa_session_t *, struct soa_description *ssd);
+SOFIAPUBFUN void soa_description_free(soa_session_t *, 
+				      struct soa_description *ssd);
 
-int soa_description_dup(su_home_t *, 
-			struct soa_description *ssd,
-			struct soa_description const *ssd0);
+SOFIAPUBFUN int soa_description_dup(su_home_t *, 
+				    struct soa_description *ssd,
+				    struct soa_description const *ssd0);
 
-int soa_init_sdp_origin(soa_session_t *ss, sdp_origin_t *o, char buf[64]);
-int soa_init_sdp_connection(soa_session_t *, sdp_connection_t *, char buf[64]);
+SOFIAPUBFUN int soa_init_sdp_origin(soa_session_t *ss,
+				    sdp_origin_t *o, char buf[64]);
+SOFIAPUBFUN int soa_init_sdp_connection(soa_session_t *, 
+					sdp_connection_t *, char buf[64]);
 
 /* ====================================================================== */
 /* Debug log settings */
@@ -252,7 +266,7 @@ int soa_init_sdp_connection(soa_session_t *, sdp_connection_t *, char buf[64]);
 #error <su_debug.h> included directly.
 #endif
 #include <sofia-sip/su_debug.h>
-extern su_log_t soa_log[];
+SOFIAPUBVAR su_log_t soa_log[];
 
 SOFIA_END_DECLS
 

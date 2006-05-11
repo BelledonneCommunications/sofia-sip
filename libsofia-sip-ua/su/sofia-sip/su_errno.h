@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SU_ERRNO_H /** Defined when su_errno.h has been included. */
+#ifndef SU_ERRNO_H
+/** Defined when <sofia-sip/su_errno.h> has been included. */
 #define SU_ERRNO_H
 
-/**@file su_errno.h Errno handling
+/**@file sofia-sip/su_errno.h Errno handling
  *
  * Source-code compatibility with Windows (having separate errno for
  * socket library and C libraries).

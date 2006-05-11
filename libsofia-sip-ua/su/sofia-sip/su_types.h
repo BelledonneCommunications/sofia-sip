@@ -22,9 +22,10 @@
  *
  */
 
-#ifndef SU_TYPES_H /** Defined when su_types.h has been included */
+#ifndef SU_TYPES_H
+/** Defined when <sofia-sip/su_types.h> has been included */
 #define SU_TYPES_H
-/**@file su_types.h Basic integer types for @b su library.
+/**@file sofia-sip/su_types.h Basic integer types for @b su library.
  *
  * This include file provides <stdint.h> or <inttypes.h> types.
  *  

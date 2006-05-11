@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef AUTH_CLIENT_H /** Defined when <auth_client.h> has been included. */
+#ifndef AUTH_CLIENT_H
+/** Defined when <sofia-sip/auth_client.h> has been included. */
 #define AUTH_CLIENT_H 
 
 
-/**@file auth_client.h
+/**@file sofia-sip/auth_client.h
  * @brief Client-side authenticator library.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef STUN_COMMON_H /** Defined when stun_common.h has been included. */
+#ifndef STUN_COMMON_H
+/** Defined when <sofia-sip/stun_common.h> has been included. */
 #define STUN_COMMON_H
 
 /**
- * @file stun_common.h
+ * @file sofia-sip/stun_common.h
  * @brief 
  * 
  * @author Tat Chan <Tat.Chan@nokia.com>

@@ -24,7 +24,7 @@
 
 #ifndef SDP_H
 #define SDP_H
-/**@file sdp.h  Simple SDP (RFC 2327) Interface.
+/**@file sofia-sip/sdp.h  Simple SDP (RFC 2327) Interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
@@ -321,155 +321,179 @@ struct sdp_rtpmap_s {
   int       :0;
 };
 
-extern sdp_rtpmap_t const * const sdp_rtpmap_well_known[128];
+SOFIAPUBVAR sdp_rtpmap_t const * const sdp_rtpmap_well_known[128];
 
 /** Duplicate an SDP session description structure. */
-sdp_session_t    *sdp_session_dup(su_home_t *home, sdp_session_t const *sdp);
+SOFIAPUBFUN sdp_session_t *sdp_session_dup(su_home_t *, sdp_session_t const *);
 
 /** Duplicate an SDP origin structure. */
-sdp_origin_t     *sdp_origin_dup(su_home_t *home, sdp_origin_t const *o);
+SOFIAPUBFUN
+sdp_origin_t    *sdp_origin_dup(su_home_t *, sdp_origin_t const *);
+
 /** Duplicate an SDP connection structure. */
+SOFIAPUBFUN
 sdp_connection_t *sdp_connection_dup(su_home_t *home, sdp_connection_t const *);
+
 /** Duplicate an SDP bandwidth structure. */
+SOFIAPUBFUN
 sdp_bandwidth_t  *sdp_bandwidth_dup(su_home_t *home, sdp_bandwidth_t const *);
+
 /** Duplicate an SDP time structure. */
+SOFIAPUBFUN
 sdp_time_t       *sdp_time_dup(su_home_t *home, sdp_time_t const *);
+
 /** Duplicate an SDP repeat structure. */
+SOFIAPUBFUN
 sdp_repeat_t     *sdp_repeat_dup(su_home_t *home, sdp_repeat_t const *);
+
 /** Duplicate an SDP timezone structure. */
+SOFIAPUBFUN
 sdp_zone_t       *sdp_zone_dup(su_home_t *home, sdp_zone_t const *);
+
 /** Duplicate an SDP key structure. */
+SOFIAPUBFUN
 sdp_key_t        *sdp_key_dup(su_home_t *home, sdp_key_t const *);
+
 /** Duplicate an SDP attribute structure. */
+SOFIAPUBFUN
 sdp_attribute_t  *sdp_attribute_dup(su_home_t *home, sdp_attribute_t const *);
+
 /** Duplicate an SDP media description structure. */
-sdp_media_t      *sdp_media_dup(su_home_t *home, sdp_media_t const *, sdp_session_t *);
+SOFIAPUBFUN
+sdp_media_t *sdp_media_dup(su_home_t *, sdp_media_t const *,
+			   sdp_session_t *);
+
 /** Duplicate a list of SDP media description structures. */
-sdp_media_t      *sdp_media_dup_all(su_home_t *home, sdp_media_t const *, sdp_session_t *);
-#ifdef nomore			/* Not needed anymore? */
-/** Duplicate media description with common address. */
-sdp_media_t      *sdp_media_dup_ex(su_home_t *home, 
-				   sdp_media_t const *,
-				   sdp_session_t *,
-				   sdp_connection_t *,
-				   sdp_connection_t const *);
-#endif
+SOFIAPUBFUN
+sdp_media_t *sdp_media_dup_all(su_home_t *, sdp_media_t const *,
+			       sdp_session_t *);
+
 /** Duplicate a list structure. */
+SOFIAPUBFUN
 sdp_list_t       *sdp_list_dup(su_home_t *home, sdp_list_t const *);
+
 /** Duplicate an rtpmap structure. */
+SOFIAPUBFUN
 sdp_rtpmap_t     *sdp_rtpmap_dup(su_home_t *home, sdp_rtpmap_t const *);
 
 /** Compare two session descriptions. */
-int sdp_session_cmp(sdp_session_t const *a, sdp_session_t const *b);
+SOFIAPUBFUN int sdp_session_cmp(sdp_session_t const *a,
+				sdp_session_t const *b);
 
 /** Compare two origin fields */
-int sdp_origin_cmp(sdp_origin_t const *a, sdp_origin_t const *b);
+SOFIAPUBFUN int sdp_origin_cmp(sdp_origin_t const *a,
+			       sdp_origin_t const *b);
 
 /** Compare two connection fields */
-int sdp_connection_cmp(sdp_connection_t const *a, sdp_connection_t const *b);
+SOFIAPUBFUN int sdp_connection_cmp(sdp_connection_t const *,
+				   sdp_connection_t const *b);
 
 /** Compare two bandwidth (b=) fields */
-int sdp_bandwidth_cmp(sdp_bandwidth_t const *a, sdp_bandwidth_t const *b);
+SOFIAPUBFUN int sdp_bandwidth_cmp(sdp_bandwidth_t const *a,
+				  sdp_bandwidth_t const *b);
 
 /** Compare two time fields */
-int sdp_time_cmp(sdp_time_t const *a, sdp_time_t const *b);
+SOFIAPUBFUN int sdp_time_cmp(sdp_time_t const *a, sdp_time_t const *b);
 
 /* Compare two repeat (r=) fields */
-int sdp_repeat_cmp(sdp_repeat_t const *a, sdp_repeat_t const *b);
+SOFIAPUBFUN int sdp_repeat_cmp(sdp_repeat_t const *a, sdp_repeat_t const *b);
 
 /* Compare two zone (z=) fields */
-int sdp_zone_cmp(sdp_zone_t const *a, sdp_zone_t const *b);
+SOFIAPUBFUN int sdp_zone_cmp(sdp_zone_t const *a, sdp_zone_t const *b);
 
 /** Compare two key (k=) fields. */
-int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b);
+SOFIAPUBFUN int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b);
 
 /** Compare two attribute (a=) fields */
-int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b);
+SOFIAPUBFUN int sdp_attribute_cmp(sdp_attribute_t const *,
+				  sdp_attribute_t const *);
 
 /** Compare two media (m=) descriptions */
-int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b);
+SOFIAPUBFUN int sdp_media_cmp(sdp_media_t const *, sdp_media_t const *);
 
 /** Compare two rtpmap structures. */
-int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b);
+SOFIAPUBFUN int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b);
 
 /** Compare two text lists */
-int sdp_list_cmp(sdp_list_t const *a, sdp_list_t const *b);
+SOFIAPUBFUN int sdp_list_cmp(sdp_list_t const *a, sdp_list_t const *b);
 
 /** Get connections of a media description */
-sdp_connection_t *sdp_media_connections(sdp_media_t const *m);
+SOFIAPUBFUN sdp_connection_t *sdp_media_connections(sdp_media_t const *m);
 
 /** Check if media uses RTP as its transport protocol  */
-int sdp_media_has_rtp(sdp_media_t const *m);
+SOFIAPUBFUN int sdp_media_has_rtp(sdp_media_t const *m);
 
 /** Set media type */
-void sdp_media_type(sdp_media_t *m, char const *s);
+SOFIAPUBFUN void sdp_media_type(sdp_media_t *m, char const *s);
 
 /** Set transport protocol */
-void sdp_media_transport(sdp_media_t *m, char const *s);
+SOFIAPUBFUN void sdp_media_transport(sdp_media_t *m, char const *s);
 
 /** Find named attribute from given list. */
-sdp_attribute_t  *sdp_attribute_find(sdp_attribute_t const *a, char const *name);
+SOFIAPUBFUN sdp_attribute_t  *sdp_attribute_find(sdp_attribute_t const *a,
+						 char const *name);
 
 /** Find named attribute from given lists. */
-sdp_attribute_t  *sdp_attribute_find2(sdp_attribute_t const *a, 
-				      sdp_attribute_t const *a2, 
-				      char const *name);
+SOFIAPUBFUN sdp_attribute_t *sdp_attribute_find2(sdp_attribute_t const *a, 
+						 sdp_attribute_t const *a2, 
+						 char const *name);
 
 /** Get session mode from attribute list. */
-sdp_mode_t sdp_attribute_mode(sdp_attribute_t const *a, sdp_mode_t defmode);
+SOFIAPUBFUN sdp_mode_t sdp_attribute_mode(sdp_attribute_t const *a,
+					  sdp_mode_t defmode);
 
 /** Get session mode from attribute list. */
-sdp_attribute_t *sdp_attribute_by_mode(su_home_t *, sdp_mode_t mode);
+SOFIAPUBFUN sdp_attribute_t *sdp_attribute_by_mode(su_home_t *, 
+						   sdp_mode_t mode);
 
 /** Find a mapped attribute. */
+SOFIAPUBFUN 
 sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t const *a, 
 					   char const *name, 
 					   int pt, char **return_result);
 
-#define sdp_mapped_attribute_find sdp_attribute_mapped_find
-
 /** Append a attribute to a list of attributes. */
-void sdp_attribute_append(sdp_attribute_t **list, 
+SOFIAPUBFUN void sdp_attribute_append(sdp_attribute_t **list, 
 			  sdp_attribute_t const *a);
 
 /** Replace a attribute within a list of attributes. */
-int sdp_attribute_replace(sdp_attribute_t **list, 
-			  sdp_attribute_t *a,
-			  sdp_attribute_t **return_replaced);
+SOFIAPUBFUN int sdp_attribute_replace(sdp_attribute_t **list, 
+				      sdp_attribute_t *a,
+				      sdp_attribute_t **return_replaced);
 
 /** Remove a named attribute from a list of attributes. */
-sdp_attribute_t *sdp_attribute_remove(sdp_attribute_t **list, 
-				     char const *name);
+SOFIAPUBFUN sdp_attribute_t *sdp_attribute_remove(sdp_attribute_t **list, 
+						  char const *name);
 
 /* Return 1 if m= line struct matches with given type and name */
-unsigned sdp_media_match(sdp_media_t const *m,
-			 sdp_media_e type,
-			 sdp_text_t *type_name,
-			 sdp_proto_e proto,
-			 sdp_text_t *proto_name);
+SOFIAPUBFUN unsigned sdp_media_match(sdp_media_t const *m,
+				     sdp_media_e type,
+				     sdp_text_t *type_name,
+				     sdp_proto_e proto,
+				     sdp_text_t *proto_name);
 
-unsigned sdp_media_match_with(sdp_media_t const *a,
-			      sdp_media_t const *b);
+SOFIAPUBFUN unsigned sdp_media_match_with(sdp_media_t const *a,
+					  sdp_media_t const *b);
 
 /** Count media lines in SDP. */
-unsigned sdp_media_count(sdp_session_t const *sdp,
-			 sdp_media_e type,
-			 sdp_text_t *type_name,
-			 sdp_proto_e proto,
-			 sdp_text_t *proto_name);
+SOFIAPUBFUN unsigned sdp_media_count(sdp_session_t const *sdp,
+				     sdp_media_e type,
+				     sdp_text_t *type_name,
+				     sdp_proto_e proto,
+				     sdp_text_t *proto_name);
 
-unsigned sdp_media_count_with(sdp_session_t const *sdp,
-			      sdp_media_t const *m0);
+SOFIAPUBFUN unsigned sdp_media_count_with(sdp_session_t const *sdp,
+					  sdp_media_t const *m0);
 
 /** Return true if media uses RTP */
-int sdp_media_uses_rtp(sdp_media_t const *m);
+SOFIAPUBFUN int sdp_media_uses_rtp(sdp_media_t const *m);
 
 /** Check if payload type, rtp rate and parameters match in rtpmaps*/
-int sdp_rtpmap_match(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b);
+SOFIAPUBFUN int sdp_rtpmap_match(sdp_rtpmap_t const *, sdp_rtpmap_t const *);
 
 /** Search for matching rtpmap from list */
-sdp_rtpmap_t *sdp_rtpmap_find_matching(sdp_rtpmap_t const *list,
-				       sdp_rtpmap_t const *rm);
+SOFIAPUBFUN sdp_rtpmap_t *sdp_rtpmap_find_matching(sdp_rtpmap_t const *list,
+						   sdp_rtpmap_t const *rm);
 
 /* ======================================================================== */
 
@@ -503,14 +527,15 @@ enum sdp_parse_flags_e {
 typedef struct sdp_parser_s sdp_parser_t;
 typedef sdp_parser_t  *sdp_parser;
 
-sdp_parser_t *sdp_parse(su_home_t *, char const msg[], int msgsize, int flags);
-char const *sdp_parsing_error(sdp_parser_t *p);
-sdp_session_t *sdp_session(sdp_parser_t *p);
-void sdp_parser_free(sdp_parser_t *p);
+SOFIAPUBFUN sdp_parser_t *sdp_parse(su_home_t *,
+				    char const msg[], int msgsize, int flags);
+SOFIAPUBFUN char const *sdp_parsing_error(sdp_parser_t *p);
+SOFIAPUBFUN sdp_session_t *sdp_session(sdp_parser_t *p);
+SOFIAPUBFUN void sdp_parser_free(sdp_parser_t *p);
 
-int sdp_sanity_check(sdp_parser_t *);
+SOFIAPUBFUN int sdp_sanity_check(sdp_parser_t *);
 
-su_home_t *sdp_parser_home(sdp_parser_t *);
+SOFIAPUBFUN su_home_t *sdp_parser_home(sdp_parser_t *);
 
 /* ======================================================================== */
 
@@ -518,13 +543,14 @@ su_home_t *sdp_parser_home(sdp_parser_t *);
 typedef struct sdp_printer_s sdp_printer_t;
 typedef sdp_printer_t *sdp_printer;
 
-sdp_printer_t *sdp_print(su_home_t *, sdp_session_t const *session, 
-			 char msgbuf[], int maxmsgsize, int flags);
-char const *sdp_printing_error(sdp_printer_t *p);
-char const *sdp_message(sdp_printer_t *p);
-int   sdp_message_size(sdp_printer_t *p);
-void sdp_printer_free(sdp_printer_t *p);
+SOFIAPUBFUN sdp_printer_t *sdp_print(su_home_t *, sdp_session_t const *session, 
+				     char msgbuf[], int maxmsgsize, int flags);
+SOFIAPUBFUN char const *sdp_printing_error(sdp_printer_t *p);
+SOFIAPUBFUN char const *sdp_message(sdp_printer_t *p);
+SOFIAPUBFUN int   sdp_message_size(sdp_printer_t *p);
+SOFIAPUBFUN void sdp_printer_free(sdp_printer_t *p);
 
+#define sdp_mapped_attribute_find sdp_attribute_mapped_find
 #define sdp_free_parser  sdp_parser_free
 #define sdp_free_printer sdp_printer_free
 

@@ -22,7 +22,7 @@
  *
  */
 
-/**@file utf8.h
+/**@file sofia-sip/utf8.h
  * Encoding/Decoding Functions for UCS Transformation Format UTF-8.
  *
  * UTF-8 encoding codes the ISO 10646 (Unicode, UCS2 and UCS4) characters as
@@ -38,7 +38,8 @@
  *
  */
 
-#ifndef UTF8_H /** Defined when <utf8.h> has been included */
+#ifndef UTF8_H
+/** Defined when <sofia-sip/utf8.h> has been included */
 #define	UTF8_H
 
 #ifndef SU_TYPES_H
@@ -53,13 +54,14 @@ typedef unsigned char  ucs1;
 typedef unsigned short ucs2;
 typedef unsigned int   ucs4;
 
-size_t utf8_width(const utf8 *);
+SOFIAPUBFUN size_t utf8_width(const utf8 *);
 
 /* Latin-1 encoding/decoding */
-size_t ucs18decode(char *dst, size_t dst_size, const utf8 *s);
-size_t ucs1encode(utf8 *dst, const ucs1 *s, size_t n, const char quote[128]);
-size_t ucs1declen(const utf8 *s);
-size_t ucs1enclen(const ucs1 *s, size_t n, const char quote[128]);
+SOFIAPUBFUN size_t ucs18decode(char *dst, size_t dst_size, const utf8 *s);
+SOFIAPUBFUN size_t ucs1encode(utf8 *dst, const ucs1 *s, size_t n,
+			      const char quote[128]);
+SOFIAPUBFUN size_t ucs1declen(const utf8 *s);
+SOFIAPUBFUN size_t ucs1enclen(const ucs1 *s, size_t n, const char quote[128]);
 
 /* UCS2 (BMP) encoding/decoding */
 size_t ucs2decode(ucs2 *dst, size_t dst_size, const utf8 *s);

@@ -1,5 +1,5 @@
 /** -*- C -*-
- * @file http_protos.h.in
+ * @file sofia-sip/http_protos.h.in
  *
  * Template for <http_protos.h>.
  */
@@ -30,7 +30,7 @@
 
 #ifndef HTTP_PROTOS_H  /** Defined when http_protos.h has been included. */
 #define HTTP_PROTOS_H
-/**@file http_protos.h 
+/**@file sofia-sip/http_protos.h 
  *
  * Macros for each HTTP header.
  *
@@ -52,6 +52,7 @@
   ((http_header_t *)msg_header_make((h), (c), (s)))
 #define http_header_vformat(h, c, f, a) \
   ((http_header_t *)msg_header_vformat((h), (c), (f), (a)))
+
 SOFIA_BEGIN_DECLS
 
 /* Declare internal prototypes for #xxxxxxx_xxxxxxx# */
@@ -71,15 +72,15 @@ enum {
  * to manipulate the http_#xxxxxx#_t header structure.
  * 
  */
-HTTP_DLL extern msg_hclass_t http_#xxxxxx#_class[];
+SOFIAPUBVAR msg_hclass_t http_#xxxxxx#_class[];
 
 #ifndef HTTP_HCLASSES_ONLY
 
 /** Decode (parse) a #xxxxxxx_xxxxxxx#. @internal */
-msg_parse_f http_#xxxxxx#_d;
+SOFIAPUBFUN msg_parse_f http_#xxxxxx#_d;
 
 /** Encode (print) a #xxxxxxx_xxxxxxx#. @internal */
-msg_print_f http_#xxxxxx#_e;
+SOFIAPUBFUN msg_print_f http_#xxxxxx#_e;
 
 /**Initializer for structure http_#xxxxxx#_t.
  * 

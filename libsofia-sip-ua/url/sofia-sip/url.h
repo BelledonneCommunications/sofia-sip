@@ -22,7 +22,7 @@
  *
  */
 
-/**@file url.h
+/**@file sofia-sip/url.h
  *
  * URL struct and helper functions.
  *
@@ -99,7 +99,8 @@ typedef union {
 
 #endif
 
-#ifndef URL_H /** Defined when url.h has been included. */
+#ifndef URL_H
+/** Defined when <sofia-sip/url.h> has been included. */
 #define URL_H
 
 #ifndef SU_ALLOC_H

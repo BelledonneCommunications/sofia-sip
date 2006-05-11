@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SU_TIME_H /** Defined when su_time.h has been included. */
+#ifndef SU_TIME_H
+/** Defined when <sofia-sip/su_time.h> has been included. */
 #define SU_TIME_H
 /**@ingroup su_time
- * @file su_time.h 
+ * @file sofia-sip/su_time.h 
  * @brief Time types and functions.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

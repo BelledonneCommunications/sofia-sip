@@ -230,6 +230,9 @@ SOFIAPUBFUN sip_to_t const *nua_handle_local(nua_handle_t const *nh);
 /** Get name for NUA event. */
 SOFIAPUBFUN char const *nua_event_name(nua_event_t event);
 
+/** Get name for NUA callstate. */
+SOFIAPUBFUN char const *nua_callstate_name(enum nua_callstate state);
+
 /** Send SIP REGISTER request to the registrar. */ 
 SOFIAPUBFUN void nua_register(nua_handle_t *nh, tag_type_t, tag_value_t, ...);
 

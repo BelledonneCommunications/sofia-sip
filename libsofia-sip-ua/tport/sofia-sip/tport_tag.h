@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef TPORT_TAG_H /** Defined when <tport_tag.h> has been included. */
+#ifndef TPORT_TAG_H
+/** Defined when <sofia-sip/tport_tag.h> has been included. */
 #define TPORT_TAG_H
 
-/**@file tport_tag.h
+/**@file sofia-sip/tport_tag.h
  * @brief Tags for tport module.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

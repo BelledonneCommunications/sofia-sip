@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef AUTH_MODULE_H /** Defined when auth_module.h has been included. */
+#ifndef AUTH_MODULE_H
+/** Defined when <sofia-sip/auth_module.h> has been included. */
 #define AUTH_MODULE_H 
 
-/**@file auth_module.h  
+/**@file sofia-sip/auth_module.h  
  * @brief Authentication verification interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.

@@ -26,7 +26,7 @@
 /** Defined when <sofia-sip/tport_plugins.h> has been included. */
 #define TPORT_PLUGINS_H
 
-/**@file tport_plugins.h
+/**@file sofia-sip/tport_plugins.h
  * @brief Transport plugin interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

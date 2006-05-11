@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SU_CONFIGURE_H /** Defined when <su_configure.h> has been included. */
+#ifndef SU_CONFIGURE_H
+/** Defined when <sofia-sip/su_configure.h> has been included. */
 #define SU_CONFIGURE_H 
 
-/**@file su_configure.h
+/**@file sofia-sip/su_configure.h
  *
  * Autoconf configuration for SU library.
  *

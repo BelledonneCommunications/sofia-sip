@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef MSG_TYPES_H /** Defined when <msg_types.h> has been included. */
+#ifndef MSG_TYPES_H
+/** Defined when <sofia-sip/msg_types.h> has been included. */
 #define MSG_TYPES_H
 
-/**@file msg_types.h
+/**@file sofia-sip/msg_types.h
  * @brief Types for messages and common headers
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

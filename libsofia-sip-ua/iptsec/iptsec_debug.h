@@ -38,7 +38,7 @@
 SOFIA_BEGIN_DECLS
 
 /** Common log for application and srvlib components. */
-extern su_log_t iptsec_log[];
+SOFIAPUBVAR su_log_t iptsec_log[];
 
 SOFIA_END_DECLS
 

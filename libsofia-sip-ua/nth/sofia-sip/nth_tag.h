@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef NTH_TAG_H /** Defined when <nth_tag.h> has been included. */
+#ifndef NTH_TAG_H
+/** Defined when <sofia-sip/nth_tag.h> has been included. */
 #define NTH_TAG_H
 
-/**@file nth_tag.h
+/**@file sofia-sip/nth_tag.h
  * @brief Tags for @b nth, HTTP engine module.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

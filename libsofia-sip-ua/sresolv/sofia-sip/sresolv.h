@@ -27,7 +27,7 @@
 #define SRESOLV_H
 
 /**
- * @file sresolv.h Easy API for Sofia DNS Resolver.
+ * @file sofia-sip/sresolv.h Easy API for Sofia DNS Resolver.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>,
  * @author Teemu Jalava <Teemu.Jalava@nokia.com>,

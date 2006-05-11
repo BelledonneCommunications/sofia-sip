@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef UNIQUEID_H /** Defined when <uniqueid.h> has been included. */
+#ifndef UNIQUEID_H
+/** Defined when <sofia-sip/uniqueid.h> has been included. */
 #define UNIQUEID_H 
 
-/**@file uniqueid.h
+/**@file sofia-sip/uniqueid.h
  *
  * Compatibility functions to handle GloballyUniqueID.
  *

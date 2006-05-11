@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SU_WAIT_H /** Defined when su_wait.h has been included. */
+#ifndef SU_WAIT_H
+/** Defined when <sofia-sip/su_wait.h> has been included. */
 #define SU_WAIT_H
 
 /**@ingroup su_wait
- * @file su_wait.h Syncronization and threading interface.
+ * @file sofia-sip/su_wait.h Syncronization and threading interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 

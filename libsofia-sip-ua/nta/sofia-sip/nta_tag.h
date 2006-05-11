@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef NTA_TAG_H /** Defined when <nta_tag.h> has been included. */
+#ifndef NTA_TAG_H
+/** Defined when <sofia-sip/nta_tag.h> has been included. */
 #define NTA_TAG_H
 
-/**@file nta_tag.h   
+/**@file sofia-sip/nta_tag.h   
  * @brief NTA tags
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SL_UTILS_H /** Defined when <sl_utils.h> has been included. */
+#ifndef SL_UTILS_H
+/** Defined when <sofia-sip/sl_utils.h> has been included. */
 #define SL_UTILS_H 
 
 /**@ingroup sl_utils 
  * 
- * @file sl_utils.h @brief Prototypes for SIP helper functions.
+ * @file sofia-sip/sl_utils.h @brief Prototypes for SIP helper functions.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -53,28 +54,31 @@
 SOFIA_BEGIN_DECLS
 
 /* Read from file */
-sip_payload_t *sl_read_payload(su_home_t *home, char const *fname);
-sip_payload_t *sl_fread_payload(su_home_t *home, FILE *);
+SOFIAPUBFUN sip_payload_t *sl_read_payload(su_home_t *home, char const *fname);
+SOFIAPUBFUN sip_payload_t *sl_fread_payload(su_home_t *home, FILE *);
 
 /* Printing functions */
-void sl_message_log(FILE *, char const *prefix, sip_t const *, int details);
-int sl_header_print(FILE *, char const *fmt, sip_header_t const *h);
-int sl_from_print(FILE *, char const *fmt, sip_from_t const *from);
-int sl_to_print(FILE *, char const *fmt, sip_to_t const *to);
-int sl_contact_print(FILE *, char const *fmt, sip_contact_t const *m);
-int sl_allow_print(FILE *, char const *fmt, sip_allow_t const *g);
-int sl_payload_print(FILE *, char const *prefix, sip_payload_t const *pl);
-int sl_via_print(FILE *, char const *fmt, sip_via_t const *v);
+SOFIAPUBFUN void 
+sl_message_log(FILE *, char const *prefix, sip_t const *, int details);
+SOFIAPUBFUN int 
+sl_header_print(FILE *, char const *fmt, sip_header_t const *h),
+sl_from_print(FILE *, char const *fmt, sip_from_t const *from),
+sl_to_print(FILE *, char const *fmt, sip_to_t const *to),
+sl_contact_print(FILE *, char const *fmt, sip_contact_t const *m),
+sl_allow_print(FILE *, char const *fmt, sip_allow_t const *g),
+sl_payload_print(FILE *, char const *prefix, sip_payload_t const *pl),
+sl_via_print(FILE *, char const *fmt, sip_via_t const *v);
 
 /* Logging functions */
-void sl_sip_log(su_log_t*, int lvl, char const *, sip_t const *, int details);
-void sl_header_log(su_log_t *, char const *prefix, sip_header_t const *h);
-void sl_from_log(su_log_t *, int lvl, char const *, sip_from_t const *from);
-void sl_to_log(su_log_t *, int lvl, char const *, sip_to_t const *to);
-void sl_contact_log(su_log_t *, int lvl, char const *, sip_contact_t const *m);
-void sl_allow_log(su_log_t *, int, char const *, sip_allow_t const *g);
-void sl_via_log(su_log_t *, int, char const *, sip_via_t const *v);
-void sl_payload_log(su_log_t *, int, char const *, sip_payload_t const *pl);
+SOFIAPUBFUN void 
+sl_sip_log(su_log_t*, int lvl, char const *, sip_t const *, int details),
+sl_header_log(su_log_t *, char const *prefix, sip_header_t const *h),
+sl_from_log(su_log_t *, int lvl, char const *, sip_from_t const *from),
+sl_to_log(su_log_t *, int lvl, char const *, sip_to_t const *to),
+sl_contact_log(su_log_t *, int lvl, char const *, sip_contact_t const *m),
+sl_allow_log(su_log_t *, int, char const *, sip_allow_t const *g),
+sl_via_log(su_log_t *, int, char const *, sip_via_t const *v),
+sl_payload_log(su_log_t *, int, char const *, sip_payload_t const *pl);
 
 SOFIA_END_DECLS
 

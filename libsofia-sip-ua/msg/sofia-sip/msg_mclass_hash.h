@@ -23,11 +23,11 @@
  */
 
 #ifndef MSG_MCLASS_HASH_H
-/** Defined when msg_mclass_hash.h has been included. */
+/** Defined when <sofia-sip/msg_mclass_hash.h> has been included. */
 #define MSG_MCLASS_HASH_H 
 
 /**@ingroup msg_parser
- * @file msg_mclass_hash.h
+ * @file sofia-sip/msg_mclass_hash.h
  *
  * Hash function for header names.
  *

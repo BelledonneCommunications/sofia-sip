@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef AUTH_PLUGIN_H /** Defined when auth_plugin.h has been included. */
+#ifndef AUTH_PLUGIN_H
+/** Defined when <sofia-sip/auth_plugin.h> has been included. */
 #define AUTH_PLUGIN_H 
 
 
-/**@file auth_plugin.h
+/**@file sofia-sip/auth_plugin.h
  * @brief Plugin interface for authentication verification modules.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -161,77 +162,89 @@ struct auth_mod_t
   su_md5_t       am_hmac_opad;	/**< MD5 with outer pad */
 };
 
+SOFIAPUBFUN
 auth_passwd_t *auth_mod_getpass(auth_mod_t *am,
 				char const *user,
 				char const *realm);
 
+SOFIAPUBFUN
 auth_passwd_t *auth_mod_addpass(auth_mod_t *am,
 				char const *user,
 				char const *realm);
 
-int auth_readdb_if_needed(auth_mod_t *am);
+SOFIAPUBFUN int auth_readdb_if_needed(auth_mod_t *am);
 
-int auth_readdb(auth_mod_t *am);
+SOFIAPUBFUN int auth_readdb(auth_mod_t *am);
 
-msg_auth_t *auth_mod_credentials(msg_auth_t *auth, 
-				 char const *scheme,
-				 char const *realm);
+SOFIAPUBFUN msg_auth_t *auth_mod_credentials(msg_auth_t *auth, 
+					     char const *scheme,
+					     char const *realm);
 
-auth_mod_t *auth_mod_alloc(auth_scheme_t *scheme, 
-			   tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN auth_mod_t *auth_mod_alloc(auth_scheme_t *scheme, 
+				       tag_type_t, tag_value_t, ...);
 
 #define AUTH_PLUGIN(am) (auth_plugin_t *)((am) + 1)
 
+SOFIAPUBFUN
 int auth_init_default(auth_mod_t *am,
 		      auth_scheme_t *base,
 		      su_root_t *root,
 		      tag_type_t tag, tag_value_t value, ...);
 
 /** Default cancel method */
-void auth_cancel_default(auth_mod_t *am, auth_status_t *as);
+SOFIAPUBFUN void auth_cancel_default(auth_mod_t *am, auth_status_t *as);
 
 /** Default destroy method */
-void auth_destroy_default(auth_mod_t *am);
+SOFIAPUBFUN void auth_destroy_default(auth_mod_t *am);
 
 /** Basic scheme */
+SOFIAPUBFUN
 void auth_method_basic(auth_mod_t *am,
 		       auth_status_t *as,
 		       msg_auth_t *auth,
 		       auth_challenger_t const *ach);
 
+SOFIAPUBFUN
 void auth_challenge_basic(auth_mod_t *am, 
 			  auth_status_t *as,
 			  auth_challenger_t const *ach);
 
 /** Digest scheme */
+SOFIAPUBFUN
 msg_auth_t *auth_digest_credentials(msg_auth_t *auth, 
 				    char const *realm,
 				    char const *opaque);
 
+SOFIAPUBFUN
 void auth_method_digest(auth_mod_t *am,
 			auth_status_t *as,
 			msg_auth_t *au,
 			auth_challenger_t const *ach);
 
+SOFIAPUBFUN
 void auth_info_digest(auth_mod_t *am, 
 		      auth_status_t *as,
 		      auth_challenger_t const *ach);
 
+SOFIAPUBFUN
 void auth_check_digest(auth_mod_t *am,
 		       auth_status_t *as,
 		       auth_response_t *ar,
 		       auth_challenger_t const *ach);
 
+SOFIAPUBFUN
 void auth_challenge_digest(auth_mod_t *am, 
 			   auth_status_t *as,
 			   auth_challenger_t const *ach);
 
+SOFIAPUBFUN
 int auth_generate_digest_nonce(auth_mod_t *am, 
 			       char buffer[],
 			       size_t buffer_len,
 			       int nextnonce,
 			       msg_time_t now);
 
+SOFIAPUBFUN
 int auth_validate_digest_nonce(auth_mod_t *am, 
 			       auth_status_t *as,
 			       auth_response_t *ar,
@@ -239,14 +252,15 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 
 SOFIAPUBFUN int auth_allow_check(auth_mod_t *am, auth_status_t *as);
 
+SOFIAPUBFUN
 int auth_get_params(su_home_t *home,
 		    char const * const params[], ...
 		    /* char const * name, char const **return_value */);
 
 /** Init md5 for MD5-based HMAC */
-void auth_md5_hmac_init(auth_mod_t *am, su_md5_t *md5);
-void auth_md5_hmac_digest(auth_mod_t *am, su_md5_t *md5, 
-			  void *hmac, size_t size);
+SOFIAPUBFUN void auth_md5_hmac_init(auth_mod_t *am, su_md5_t *md5);
+SOFIAPUBFUN void auth_md5_hmac_digest(auth_mod_t *am, su_md5_t *md5, 
+				      void *hmac, size_t size);
 
 SOFIA_END_DECLS
 

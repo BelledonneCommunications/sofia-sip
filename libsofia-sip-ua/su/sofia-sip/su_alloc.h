@@ -22,12 +22,12 @@
  *
  */
 
-#ifndef SU_ALLOC_H  /** Defined when su_alloc.h has been included. */
+#ifndef SU_ALLOC_H  /** Defined when <sofia-sip/su_alloc.h> has been included. */
 #define SU_ALLOC_H
 
 /**@ingroup su_alloc
  *
- * @file su_alloc.h Home-based memory management interface
+ * @file sofia-sip/su_alloc.h Home-based memory management interface
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 

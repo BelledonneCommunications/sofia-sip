@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef RC4_H /** Defined when rc4.h has been included. */
+#ifndef RC4_H
+/** Defined when <sofia-sip/rc4.h> has been included. */
 #define RC4_H
 
-/**@file rc4.h
+/**@file sofia-sip/rc4.h
  * @brief Arcfour random number generator.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -37,8 +38,12 @@
 extern "C" {
 #endif
 
+#ifndef SU_TYPES_H
+#include <sofia-sip/su_types.h>
+#endif
+
 /** Byte. */
-typedef unsigned char rc4_u8;
+typedef uint8_t rc4_u8;
 
 /** RC4 context. 
  * 
@@ -46,16 +51,16 @@ typedef unsigned char rc4_u8;
  * functions only.
  */
 typedef struct {      
-  rc4_u8 rc4_i;        
-  rc4_u8 rc4_j;
-  rc4_u8 rc4_array[256];       
+  uint8_t rc4_i;        
+  uint8_t rc4_j;
+  uint8_t rc4_array[256];       
 } rc4_t;
 
 /** Key RC4 context. */
-void rc4_init(const void *seed, int seed_len, rc4_t *state);
+SOFIAPUBFUN void rc4_init(const void *seed, int seed_len, rc4_t *state);
 
 /** Generate RC4 stream. */ 
-void rc4(void *buffer, int len, rc4_t *state);
+SOFIAPUBFUN void rc4(void *buffer, int len, rc4_t *state);
 
 #if defined(__cplusplus)
 }

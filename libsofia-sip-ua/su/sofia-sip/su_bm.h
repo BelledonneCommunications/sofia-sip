@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SU_BM_H /** Defined when su_bm.h has been included. */
+#ifndef SU_BM_H
+/** Defined when <sofia-sip/su_bm.h> has been included. */
 #define SU_BM_H
 
 /**
- * @file su_bm.h
+ * @file sofia-sip/su_bm.h
  * @brief Boyer-Moore search algorithm
  *  
  * @author Pekka.Pessi@nokia.com

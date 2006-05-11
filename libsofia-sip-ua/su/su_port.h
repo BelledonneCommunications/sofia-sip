@@ -137,16 +137,14 @@ typedef struct {
   int (*su_port_threadsafe)(su_port_t *port);
 } su_port_vtable_t;
 
-su_port_t *su_port_create(void)
+SOFIAPUBFUN su_port_t *su_port_create(void)
      __attribute__((__malloc__));
 
-su_port_t *su_source_create(void)
-     __attribute__((__malloc__));
-
-void su_msg_delivery_report(su_msg_r msg);
-su_duration_t su_timer_next_expires(su_timer_t const * t, su_time_t now);
-su_root_t *su_root_create_with_port(su_root_magic_t *magic,
-				    su_port_t *port);
+SOFIAPUBFUN void su_msg_delivery_report(su_msg_r msg);
+SOFIAPUBFUN su_duration_t su_timer_next_expires(su_timer_t const * t,
+						su_time_t now);
+SOFIAPUBFUN su_root_t *su_root_create_with_port(su_root_magic_t *magic,
+						su_port_t *port);
 
 #if SU_PORT_IMPLEMENTATION
 

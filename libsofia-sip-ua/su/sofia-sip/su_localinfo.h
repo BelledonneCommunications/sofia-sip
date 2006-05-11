@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SU_LOCALINFO_H /** Defined when su_localinfo.h has been included. */
+#ifndef SU_LOCALINFO_H
+/** Defined when <sofia-sip/su_localinfo.h> has been included. */
 #define SU_LOCALINFO_H 
 
 
 /**@ingroup su_socket
- * @file su_localinfo.h  Interface for obtaining local addresses.
+ * @file sofia-sip/su_localinfo.h  Interface for obtaining local addresses.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 

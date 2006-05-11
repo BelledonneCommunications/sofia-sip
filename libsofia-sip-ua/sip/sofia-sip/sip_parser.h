@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SIP_PARSER_H /** Defined when <sip_parser.h> has been included.*/
+#ifndef SIP_PARSER_H
+/** Defined when <sofia-sip/sip_parser.h> has been included.*/
 #define SIP_PARSER_H 
 
 
 /**@ingroup sip_parser 
- * @file sip_parser.h 
+ * @file sofia-sip/sip_parser.h
  *
  * SIP parser provider interface.
  *
@@ -95,49 +96,49 @@ SOFIA_BEGIN_DECLS
  */
 
 /* Version string */
-int sip_version_d(char **ss, char const **ver);
-int sip_version_xtra(char const *version);
-void sip_version_dup(char **pp, char const **dd, char const *s);
+SOFIAPUBFUN int sip_version_d(char **ss, char const **ver);
+SOFIAPUBFUN int sip_version_xtra(char const *version);
+SOFIAPUBFUN void sip_version_dup(char **pp, char const **dd, char const *s);
 
 /* Transport identifiers */
 #define SIP_TRANSPORT_LEN(s) SIP_STRING_SIZE((s))
-int sip_transport_d(char **ss, char const **ttransport);
-int sip_transport_xtra(char const *transport);
-void sip_transport_dup(char **pp, char const **dd, char const *s);
+SOFIAPUBFUN int sip_transport_d(char **ss, char const **ttransport);
+SOFIAPUBFUN int sip_transport_xtra(char const *transport);
+SOFIAPUBFUN void sip_transport_dup(char **pp, char const **dd, char const *s);
 
 /* Method */
-sip_method_t sip_method_d(char **ss, char const **nname);
+SOFIAPUBFUN sip_method_t sip_method_d(char **ss, char const **nname);
 
 /* Call-ID */
-char *sip_word_at_word_d(char **ss);
+SOFIAPUBFUN char *sip_word_at_word_d(char **ss);
 
 /** Extract SIP message body, including separator line. */
-int sip_extract_body(msg_t *msg, sip_t *sip, char b[], int bsiz, int eos);
+SOFIAPUBFUN int sip_extract_body(msg_t *, sip_t *, char b[], int bsiz, int eos);
 
-int sip_any_route_d(su_home_t *home, sip_header_t *h, char *s, int slen);
-int sip_any_route_e(char b[], int bsiz, sip_header_t const *h, int flags);
-int sip_any_route_dup_xtra(sip_header_t const *h, int offset);
-char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
-			    char *b, int xtra);
+SOFIAPUBFUN int sip_any_route_d(su_home_t *, sip_header_t *, char *s, int slen);
+SOFIAPUBFUN int sip_any_route_e(char [], int, sip_header_t const *, int flags);
+SOFIAPUBFUN int sip_any_route_dup_xtra(sip_header_t const *h, int offset);
+SOFIAPUBFUN char *sip_any_route_dup_one(sip_header_t *dst,
+					sip_header_t const *src,
+					char *b, int xtra);
 #define sip_any_route_update NULL
 
-int sip_name_addr_d(su_home_t *home,
-		    char **inout_s,
-		    char const **return_display,
-		    url_t *out_url,
-		    msg_param_t const **return_params,
-		    char const **return_comment);
+SOFIAPUBFUN int sip_name_addr_d(su_home_t *home,
+				char **inout_s,
+				char const **return_display,
+				url_t *out_url,
+				msg_param_t const **return_params,
+				char const **return_comment);
 
-int sip_name_addr_e(char b[], int bsiz, 
-		    int flags, 
-		    char const *display, 
-		    int always_ltgt, url_t const url[],
-		    msg_param_t const params[], 
-		    char const *comment);
-
+SOFIAPUBFUN int sip_name_addr_e(char b[], int bsiz, 
+				int flags, 
+				char const *display, 
+				int always_ltgt, url_t const url[],
+				msg_param_t const params[], 
+				char const *comment);
 
 /* ---------------------------------------------------------------------------
- * 3) Compatibility macros
+ * 3) Compatibility macros and functions
  */
 
 #define sip_generic_d		msg_generic_d
@@ -153,6 +154,7 @@ int sip_name_addr_e(char b[], int bsiz,
 
 #define sip_generic_dup_xtra	msg_generic_dup_xtra
 #define sip_generic_dup_one	msg_generic_dup_one
+
 
 #define	sip_auth_d              msg_auth_d         
 #define	sip_auth_e              msg_auth_e
@@ -193,6 +195,16 @@ int sip_name_addr_e(char b[], int bsiz,
 #define sip_params_add      	msg_params_add
 #define sip_params_cmp      	msg_params_cmp
 #define sip_params_replace  	msg_params_replace
+
+SOFIAPUBFUN int sip_generic_xtra(sip_generic_t const *g);
+
+SOFIAPUBFUN sip_generic_t *sip_generic_dup(su_home_t *home, 
+					   msg_hclass_t *hc, 
+					   sip_generic_t const *u);
+
+SOFIAPUBFUN sip_generic_t *sip_generic_copy(su_home_t *home,
+					    msg_hclass_t *hc, 
+					    sip_generic_t const *o);
 
 SOFIA_END_DECLS
 

@@ -44,18 +44,18 @@
 extern "C" {
 #endif
 
-extern char const * const sofia_sip_name_version;
-extern char const * const sofia_sip_has_smime;
-extern char const * const sofia_sip_has_tls;
-extern char const * const sofia_sip_has_dtls;
-extern char const * const sofia_sip_has_tls_sctp;
-extern char const * const sofia_sip_has_sigcomp;
-extern char const * const sofia_sip_has_stun;
-extern char const * const sofia_sip_has_turn;
-extern char const * const sofia_sip_has_upnp;
+SOFIAPUBVAR char const * const sofia_sip_name_version;
+SOFIAPUBVAR char const * const sofia_sip_has_smime;
+SOFIAPUBVAR char const * const sofia_sip_has_tls;
+SOFIAPUBVAR char const * const sofia_sip_has_dtls;
+SOFIAPUBVAR char const * const sofia_sip_has_tls_sctp;
+SOFIAPUBVAR char const * const sofia_sip_has_sigcomp;
+SOFIAPUBVAR char const * const sofia_sip_has_stun;
+SOFIAPUBVAR char const * const sofia_sip_has_turn;
+SOFIAPUBVAR char const * const sofia_sip_has_upnp;
 
-extern char const * const sofia_sip_has_sctp;
-extern char const * const sofia_sip_has_ipv6;
+SOFIAPUBVAR char const * const sofia_sip_has_sctp;
+SOFIAPUBVAR char const * const sofia_sip_has_ipv6;
 
 #ifdef __cplusplus
 }

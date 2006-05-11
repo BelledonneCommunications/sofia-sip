@@ -22,13 +22,15 @@
  *
  */
 
-/**@file tstdef.h Macros for unit tests
+/**@file sofia-sip/tstdef.h Macros for unit tests
  *
  * The macros defined here can be used by unit test programs. When a test
  * fails, the TEST macros print the offending file name and line number. 
  * They use format that is accepted by Emacs and other fine editors so you
  * can directly go to the source code of the failed test with next-error.
  * 
+ * @note There is no protection agains multiple inclusion. 
+ *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Wed Aug 22 13:53:24 2001 ppessi
@@ -40,6 +42,9 @@
  * be set when your test program is run with @c -v or @c --verbatim command
  * line option. If the (TSTFLAGS & tst_verbatim) is true, the test macros
  * log the test before executing it and the result of successful tests, too.
+ *
+ * You should typedef longlong to integer type at least 64 bit wide before
+ * including <sofia-sip/tstdef.h>, too.
  * 
  * As an example, we provide a test program making sure that inet_ntop() and
  * inet_pton() behave as expected and that we can create UDP/IPv4 sockets

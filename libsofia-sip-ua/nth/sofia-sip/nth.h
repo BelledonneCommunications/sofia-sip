@@ -22,7 +22,7 @@
  *
  */
 
-/**@file nth.h
+/**@file sofia-sip/nth.h
  * @brief Transaction API for HTTP
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
@@ -69,7 +69,8 @@ typedef NTH_SITE_MAGIC_T   nth_site_magic_t;
 
 #endif
 
-#ifndef NTH_H /** Defined when <nth.h> has been included. */
+#ifndef NTH_H
+/** Defined when <sofia-sip/nth.h> has been included. */
 #define NTH_H
 
 /* ----------------------------------------------------------------------

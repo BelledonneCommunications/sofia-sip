@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef MSG_MCLASS_H /** Defined when msg_mclass.h has been included. */
+#ifndef MSG_MCLASS_H
+/** Defined when <sofia-sip/msg_mclass.h> has been included. */
 #define MSG_MCLASS_H
 /**@ingroup msg_parser
- * @file msg_mclass.h
+ * @file sofia-sip/msg_mclass.h
  *
  * @brief Parser table and message factory object.
  *
@@ -116,22 +117,26 @@ struct msg_mclass_s
 
 enum { msg_mclass_copy = 0, msg_mclass_empty = 1 };
 
-msg_mclass_t *msg_mclass_clone(msg_mclass_t const *, int newsize, int empty);
+SOFIAPUBFUN msg_mclass_t *msg_mclass_clone(msg_mclass_t const *old,
+					   int newsize, int empty);
 
-int msg_mclass_insert(msg_mclass_t *mc, msg_href_t const *hr);
+SOFIAPUBFUN int msg_mclass_insert(msg_mclass_t *mc, msg_href_t const *hr);
 
+SOFIAPUBFUN
 int msg_mclass_insert_header(msg_mclass_t *mc, 
 			     msg_hclass_t *hc,
 			     unsigned short offset);
 
+SOFIAPUBFUN
 int msg_mclass_insert_with_mask(msg_mclass_t *mc, 
 				msg_hclass_t *hc,
 				unsigned short offset,
 				unsigned short mask);
 
+SOFIAPUBFUN
 msg_href_t const *msg_find_hclass(msg_mclass_t const *, char const *, int *);
 
-msg_mclass_t const *msg_mclass(msg_t const *);
+SOFIAPUBFUN msg_mclass_t const *msg_mclass(msg_t const *);
 
 SOFIA_END_DECLS
 

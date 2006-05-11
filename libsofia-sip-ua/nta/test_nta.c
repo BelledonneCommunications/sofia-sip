@@ -69,8 +69,8 @@ typedef struct agent_t agent_t;
 #include <assert.h>
 #include <unistd.h>
 
-extern su_log_t nta_log[];
-extern su_log_t tport_log[];
+SOFIAPUBVAR su_log_t nta_log[];
+SOFIAPUBVAR su_log_t tport_log[];
 
 int tstflags = 0;
 #define TSTFLAGS tstflags

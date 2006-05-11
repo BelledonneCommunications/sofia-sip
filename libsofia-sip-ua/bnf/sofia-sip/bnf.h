@@ -22,10 +22,10 @@
  *
  */
 
-#ifndef BNF_H  /** Defined when bnf.h has been included. */
+#ifndef BNF_H  /** Defined when <sofia-sip/bnf.h> has been included. */
 #define BNF_H
 
-/**@file bnf.h
+/**@file sofia-sip/bnf.h
  * 
  * Parsing macros and prototypes for HTTP-like protocols.
  * 

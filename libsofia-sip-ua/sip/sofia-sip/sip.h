@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SIP_H /** Defined when <sip.h> has been included. */
+#ifndef SIP_H
+/** Defined when <sofia-sip/sip.h> has been included. */
 #define SIP_H
 
-/**@file sip/sip.h 
+/**@file sofia-sip/sip/sip.h 
  * 
  * SIP objects.
  *

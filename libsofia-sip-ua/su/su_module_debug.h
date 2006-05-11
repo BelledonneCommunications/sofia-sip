@@ -43,7 +43,7 @@
 SOFIA_BEGIN_DECLS
 
 /** Debugging log for @b su module. */
-extern su_log_t su_log_global[];
+SOFIAPUBVAR su_log_t su_log_global[];
 #define SU_LOG (su_log_global)
 #include <sofia-sip/su_debug.h>
 

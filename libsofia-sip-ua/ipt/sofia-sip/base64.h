@@ -25,7 +25,7 @@
 #ifndef BASE64_H
 #define BASE64_H
 
-/**@file base64.h
+/**@file sofia-sip/base64.h
  *
  * @brief Base64 encoding and decoding functions.
  *
@@ -48,9 +48,9 @@
 SOFIA_BEGIN_DECLS
 
 /** Decode a BASE64-encoded string. */
-int base64_d(char buf[], int bsiz, char const *b64s);
+SOFIAPUBFUN int base64_d(char buf[], int bsiz, char const *b64s);
 /** Encode data with BASE64. */
-int base64_e(char buf[], int bsiz, void *data, int dsiz);
+SOFIAPUBFUN int base64_e(char buf[], int bsiz, void *data, int dsiz);
 
 /** Calculate size of n bytes encoded in base64 */
 #define BASE64_SIZE(n) ((((n) + 2) / 3) * 4)

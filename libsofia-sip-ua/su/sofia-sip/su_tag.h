@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SU_TAG_H /** Defined when su_tag.h has been included. */
+#ifndef SU_TAG_H
+/** Defined when <sofia-sip/su_tag.h> has been included. */
 #define SU_TAG_H
 
 /**@SU_TAG
- * @file su_tag.h  Object-oriented tags and tag list interface.
+ * @file sofia-sip/su_tag.h  Object-oriented tags and tag list interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 

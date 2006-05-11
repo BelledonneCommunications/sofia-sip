@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SDP_TAG_H /** Defined when <sdp_tag.h> has been included. */
+#ifndef SDP_TAG_H
+/** Defined when <sofia-sip/sdp_tag.h> has been included. */
 #define SDP_TAG_H
 
-/**@file sdp_tag.h   
+/**@file sofia-sip/sdp_tag.h   
  * @brief SDP tags
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

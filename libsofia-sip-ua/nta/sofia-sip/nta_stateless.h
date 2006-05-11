@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef NTA_STATELESS_H /** Defined when nta_stateless.h has been included. */
+#ifndef NTA_STATELESS_H
+/** Defined when <sofia-sip/nta_stateless.h> has been included. */
 #define NTA_STATELESS_H 
 
-/**@file nta_stateless.h   
+/**@file sofia-sip/nta_stateless.h   
  * @brief NTA functions for stateless SIP processing.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -75,10 +76,12 @@ SOFIA_BEGIN_DECLS
  */
 
 /** Forward a request or response message. */
+SOFIAPUBFUN
 int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
 		  tag_type_t tag, tag_value_t value, ...);
 
 /** Reply to a request message. */
+SOFIAPUBFUN
 int nta_msg_mreply(nta_agent_t *agent,
 		   msg_t *reply, sip_t *sip,
 		   int status, char const *phrase,
@@ -86,13 +89,14 @@ int nta_msg_mreply(nta_agent_t *agent,
 		   tag_type_t tag, tag_value_t value, ...);
 
 /** Reply to a request message. */
+SOFIAPUBFUN
 int nta_msg_treply(nta_agent_t *self, 
 		   msg_t *msg,
 		   int status, char const *phrase,
 		   tag_type_t tag, tag_value_t value, ...);
 
 /** ACK and BYE an unknown 200 OK response to INVITE. */
-int nta_msg_ackbye(nta_agent_t *a, msg_t *msg);
+SOFIAPUBFUN int nta_msg_ackbye(nta_agent_t *a, msg_t *msg);
 
 SOFIA_END_DECLS
 

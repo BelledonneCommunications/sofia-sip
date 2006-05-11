@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SU_VECTOR_H /** Defined when su_vector.h has been included. */
+#ifndef SU_VECTOR_H
+/** Defined when <sofia-sip/su_vector.h> has been included. */
 #define SU_VECTOR_H
 
-/**@file su_vector.h
+/**@file sofia-sip/su_vector.h
  * @brief Vector interface
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -50,9 +51,9 @@ SU_DLL su_vector_t *su_vector_create(su_home_t *home, su_free_func_t free_f)
 SU_DLL void su_vector_destroy(su_vector_t *);
 
 /** Insert an item to vector. */
-int su_vector_insert(su_vector_t *vector, unsigned index, void *item);
+SU_DLL int su_vector_insert(su_vector_t *vector, unsigned index, void *item);
 
-int su_vector_remove(su_vector_t *vector, unsigned index);
+SU_DLL int su_vector_remove(su_vector_t *vector, unsigned index);
 
 /** Append a item to vector. */
 SU_DLL int su_vector_append(su_vector_t *, void *item);

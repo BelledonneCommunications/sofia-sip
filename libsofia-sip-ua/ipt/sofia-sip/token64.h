@@ -25,7 +25,7 @@
 #ifndef TOKEN64_H
 #define TOKEN64_H
 
-/**@file token64.h
+/**@file sofia-sip/token64.h
  *
  * @brief Token64 encoding.
  *
@@ -39,7 +39,7 @@
 
 SOFIA_BEGIN_DECLS
 
-int token64_e(char b[], int bsiz, void const *data, int dlen);
+SOFIAPUBFUN int token64_e(char b[], int bsiz, void const *data, int dlen);
 
 /** Calculate size of n bytes encoded in token-64 */
 #define TOKEN64_SIZE(n) (((n + 2) / 3) * 4)

@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef SU_TAG_CLASS_H /** Defined when su_tag_class.h has been included. */
+#ifndef SU_TAG_CLASS_H
+/** Defined when <sofia-sip/su_tag_class.h> has been included. */
 #define SU_TAG_CLASS_H 
 
 /**@SU_TAG

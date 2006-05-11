@@ -1,5 +1,5 @@
 /**@ingroup msg_headers  -*- C -*-
- * @file msg_protos.h.in
+ * @file sofia-sip/msg_protos.h.in
  *
  * Template for <msg_protos.h>.
  */
@@ -28,11 +28,12 @@
  *
  */
 
-#ifndef MSG_PROTOS_H /** Defined when msg_protos.h has been included. */
+#ifndef MSG_PROTOS_H
+/** Defined when <sofia-sip/msg_protos.h> has been included. */
 #define MSG_PROTOS_H 
 
 /**@ingroup msg_headers
- * @file msg_protos.h
+ * @file sofia-sip/msg_protos.h
  *
  * Prototypes for common headers
  *

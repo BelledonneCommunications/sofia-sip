@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef URL_TAG_CLASS_H /**Defined when url_tag_class.h has been included. */
+#ifndef URL_TAG_CLASS_H
+/**Defined when <sofia-sip/url_tag_class.h> has been included. */
 #define URL_TAG_CLASS_H 
 /**@file  url_tag_class.h
  * @brief Tag classes for URLs
@@ -48,8 +49,8 @@ SOFIAPUBVAR tag_class_t url_tag_class[1];
 
 #define URLTAG_TYPEDEF(t) TAG_TYPEDEF(t, url)
 
-#endif
-
 SOFIA_END_DECLS
+
+#endif
 
 

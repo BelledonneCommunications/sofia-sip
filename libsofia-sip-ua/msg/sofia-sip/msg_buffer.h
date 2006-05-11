@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef MSG_BUFFER_H /** Defined when msg_buffer.h has been included. */
+#ifndef MSG_BUFFER_H
+/** Defined when <sofia-sip/msg_buffer.h> has been included. */
 #define MSG_BUFFER_H
 
-/**@file msg_buffer.h
+/**@file sofia-sip/msg_buffer.h
  * @brief Internal buffer management functions. 
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -40,16 +41,16 @@
 
 SOFIA_BEGIN_DECLS
 
-void *msg_buf_alloc(msg_t *msg, unsigned size);
-void *msg_buf_exact(msg_t *msg, unsigned size);
-unsigned msg_buf_commit(msg_t *msg, unsigned size, int eos);
-unsigned msg_buf_committed(msg_t const *msg);
-void *msg_buf_committed_data(msg_t const *msg);
-unsigned msg_buf_size(msg_t const *msg);
+SOFIAPUBFUN void *msg_buf_alloc(msg_t *msg, unsigned size);
+SOFIAPUBFUN void *msg_buf_exact(msg_t *msg, unsigned size);
+SOFIAPUBFUN unsigned msg_buf_commit(msg_t *msg, unsigned size, int eos);
+SOFIAPUBFUN unsigned msg_buf_committed(msg_t const *msg);
+SOFIAPUBFUN void *msg_buf_committed_data(msg_t const *msg);
+SOFIAPUBFUN unsigned msg_buf_size(msg_t const *msg);
 
-void *msg_buf_move(msg_t *dst, msg_t const *src);
+SOFIAPUBFUN void *msg_buf_move(msg_t *dst, msg_t const *src);
 
-void msg_buf_set(msg_t *msg, void *b, unsigned size);
+SOFIAPUBFUN void msg_buf_set(msg_t *msg, void *b, unsigned size);
 
 SOFIA_END_DECLS
 

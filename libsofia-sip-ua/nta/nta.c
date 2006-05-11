@@ -45,9 +45,6 @@
 
 #include "config.h"
 
-/* From AM_INIT/AC_INIT in our "config.h" */
-char const nta_version[] = PACKAGE_VERSION;
-
 #include <sofia-sip/string0.h>
 
 /** @internal SU message argument structure type */
@@ -89,6 +86,9 @@ char const nta_version[] = PACKAGE_VERSION;
 #include <assert.h>
 #include <limits.h>
 #include <errno.h>
+
+/* From AM_INIT/AC_INIT in our "config.h" */
+char const nta_version[] = PACKAGE_VERSION;
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION

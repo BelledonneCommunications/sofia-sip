@@ -24,7 +24,7 @@
 
 #ifndef SOA_ADD_H
 #define SOA_ADD_H
-/**@file soa_add.h  Register SDP Offer/Answer Interface Instances.
+/**@file sofia-sip/soa_add.h  Register SDP Offer/Answer Interface Instances.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -37,11 +37,11 @@ SOFIA_BEGIN_DECLS
 
 struct soa_session_actions;
 
-extern struct soa_session_actions const soa_default_actions;
+SOFIAPUBVAR struct soa_session_actions const soa_default_actions;
 
-int soa_add(char const *name, struct soa_session_actions const *handler);
+SOFIAPUBFUN int soa_add(char const *name, struct soa_session_actions const *handler);
 
-struct soa_session_actions const *soa_find(char const *name);
+SOFIAPUBFUN struct soa_session_actions const *soa_find(char const *name);
 
 SOFIA_END_DECLS
 

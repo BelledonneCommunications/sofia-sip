@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SIP_UTIL_H /** Defined when <sip_util.h> has been included. */
+#ifndef SIP_UTIL_H
+/** Defined when <sofia-sip/sip_util.h> has been included. */
 #define SIP_UTIL_H 
 
-/**@file sip_util.h 
+/**@file sofia-sip/sip_util.h 
  * @brief SIP utility functions
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
@@ -43,67 +44,79 @@
 
 SOFIA_BEGIN_DECLS
 
-char const *sip_params_find(sip_param_t const pp[], char const *token);
-int sip_params_add(su_home_t *sh, sip_param_t **pparams, char const *param);
-int sip_params_cmp(sip_param_t const a[], sip_param_t const b[]);
-int sip_params_replace(su_home_t *, sip_param_t **pparams, char const *param);
+/* @deprecated
+ * These are just wrappers around msg_params_*() functions. 
+ *
+ * Use msg_header_*_param() functions instead.
+ */
+SOFIAPUBFUN char const *sip_params_find(sip_param_t const pp[],
+					char const *token);
+SOFIAPUBFUN int sip_params_add(su_home_t *sh, 
+			       sip_param_t **pparams,
+			       char const *param);
+SOFIAPUBFUN int sip_params_cmp(sip_param_t const a[], sip_param_t const b[]);
+SOFIAPUBFUN int sip_params_replace(su_home_t *,
+				   sip_param_t **pparams, char const *param);
 
+SOFIAPUBFUN
 sip_contact_t *
 sip_contact_create_from_via_with_transport(su_home_t *home, 
 					   sip_via_t const *v,
 					   char const *user,
 					   char const *transport);
 
+SOFIAPUBFUN
 sip_contact_t *sip_contact_create_from_via(su_home_t *, sip_via_t const *,
 					   char const *user);
 
+SOFIAPUBFUN
 char *
 sip_contact_string_from_via(su_home_t *home,
 			    sip_via_t const *v,
 			    char const *user,
 			    char const *transport);
 
-int sip_transport_has_tls(char const *transport_name);
+SOFIAPUBFUN int sip_transport_has_tls(char const *transport_name);
 
-int sip_response_terminates_dialog(int response_code,
-				   sip_method_t method,
-				   int *return_graceful_terminate);
+SOFIAPUBFUN int sip_response_terminates_dialog(int response_code,
+					       sip_method_t method,
+					       int *return_graceful_terminate);
 
-int sip_sanity_check(sip_t const *sip);
+SOFIAPUBFUN int sip_sanity_check(sip_t const *sip);
 
-unsigned sip_q_value(char const * q);
+SOFIAPUBFUN unsigned sip_q_value(char const * q);
 
-url_t *sip_url_dup(su_home_t *sh, url_t const *o);
+SOFIAPUBFUN url_t *sip_url_dup(su_home_t *sh, url_t const *o);
 
 /**Add optional prefix and string to argument list if @a s is non-NULL. 
  * @HIDE
  */
 #define SIP_STRLOG(prefix, s) ((s) ? (prefix) : ""), ((s) ? (s) : "")
 
-int sip_addr_match(sip_addr_t const *a, sip_addr_t const *b);
+SOFIAPUBFUN int sip_addr_match(sip_addr_t const *a, sip_addr_t const *b);
 
 /* ----------------------------------------------------------------------
  * Header-specific functions below
  */
 
-int sip_route_is_loose(sip_route_t const *r);
-sip_route_t *sip_route_remove(msg_t *msg, sip_t *sip);
-sip_route_t *sip_route_pop(msg_t *msg, sip_t *sip);
-sip_route_t *sip_route_follow(msg_t *msg, sip_t *sip);
-sip_route_t *sip_route_reverse(su_home_t *home, sip_route_t const *route);
-sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route);
-sip_route_t *sip_route_fix(sip_route_t *route);
+SOFIAPUBFUN int sip_route_is_loose(sip_route_t const *r);
+SOFIAPUBFUN sip_route_t *sip_route_remove(msg_t *msg, sip_t *sip);
+SOFIAPUBFUN sip_route_t *sip_route_pop(msg_t *msg, sip_t *sip);
+SOFIAPUBFUN sip_route_t *sip_route_follow(msg_t *msg, sip_t *sip);
+SOFIAPUBFUN sip_route_t *sip_route_reverse(su_home_t *, sip_route_t const *);
+SOFIAPUBFUN sip_route_t *sip_route_fixdup(su_home_t *, sip_route_t const *);
+SOFIAPUBFUN sip_route_t *sip_route_fix(sip_route_t *route);
 
-sip_via_t *sip_via_remove(msg_t *msg, sip_t *sip);
+SOFIAPUBFUN sip_via_t *sip_via_remove(msg_t *msg, sip_t *sip);
 
 /* ---------------------------------------------------------------------- */
 /* Caller preferences */
 
 /** Check callerprefs. */
-int sip_prefs_matching(char const *pvalue,
-		       char const *nvalue, 		       
-		       int *return_parse_error);
-int sip_is_callerpref(char const *param);
+SOFIAPUBFUN int sip_prefs_matching(char const *pvalue,
+				   char const *nvalue, 		       
+				   int *return_parse_error);
+SOFIAPUBFUN int sip_is_callerpref(char const *param);
 
 /** Type of the SIP media tag */
 enum sp_type { 
@@ -145,36 +158,47 @@ union sip_pref
 };
 
 /** Parse a single preference */
-int sip_prefs_parse(union sip_pref *sp, 
+SOFIAPUBFUN int sip_prefs_parse(union sip_pref *sp, 
 		    char const **in_out_s, 
 		    int *return_negation);
 
 /** Match preferences */
-int sip_prefs_match(union sip_pref const *a, union sip_pref const *b);
+SOFIAPUBFUN int sip_prefs_match(union sip_pref const *, union sip_pref const *);
 
-int sip_contact_immune(sip_contact_t const *m);
-sip_contact_t *sip_contact_immunize(su_home_t *home, 
-				    sip_contact_t const *m);
+SOFIAPUBFUN int sip_contact_is_immune(sip_contact_t const *m);
 
-int sip_contact_reject(sip_contact_t const *m, 
-		       sip_reject_contact_t const *rc);
+/**@internal
+ * Check if contact is immune to calleprefs.
+ * @deprecated Use sip_contact_is_immune() instead.
+ */
+#define sip_contact_immune(m) sip_contact_is_immune(m)
 
-int sip_contact_accept(sip_contact_t const *m, 
-		       sip_accept_contact_t const *cp,
-		       unsigned *return_S,
-		       unsigned *return_N,
-		       int *return_error);
+SOFIAPUBFUN sip_contact_t *sip_contact_immunize(su_home_t *home, 
+						sip_contact_t const *m);
 
-int sip_contact_score(sip_contact_t const *m,
-		      sip_accept_contact_t const *ac,
-		      sip_reject_contact_t const *rc);
+SOFIAPUBFUN int sip_contact_reject(sip_contact_t const *m, 
+				   sip_reject_contact_t const *rc);
 
-int sip_aor_strip(url_t *url);
+SOFIAPUBFUN int sip_contact_accept(sip_contact_t const *m, 
+				   sip_accept_contact_t const *cp,
+				   unsigned *return_S,
+				   unsigned *return_N,
+				   int *return_error);
 
-int sip_security_verify_compare(sip_security_server_t const *s,
-				sip_security_verify_t const *v,
-				char const **return_d_ver);
+SOFIAPUBFUN int sip_contact_score(sip_contact_t const *m,
+				  sip_accept_contact_t const *ac,
+				  sip_reject_contact_t const *rc);
 
+
+SOFIAPUBFUN int sip_aor_strip(url_t *url);
+
+/* sec-agree utility functions. */
+
+SOFIAPUBFUN int sip_security_verify_compare(sip_security_server_t const *s,
+					    sip_security_verify_t const *v,
+					    char const **return_d_ver);
+
+SOFIAPUBFUN 
 sip_security_client_t const *
 sip_security_client_select(sip_security_client_t const *client,
 			   sip_security_server_t const *server);

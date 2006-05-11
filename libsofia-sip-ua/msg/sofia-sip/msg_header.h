@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef MSG_HEADER_H /** Defined when msg_header.h has been included. */
+#ifndef MSG_HEADER_H
+/** Defined when <sofia-sip/msg_header.h> has been included. */
 #define MSG_HEADER_H
 /**@ingroup msg_headers
- * @file msg_header.h
+ * @file sofia-sip/msg_header.h
  *
  * @brief Message headers.
  *

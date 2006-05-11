@@ -22,9 +22,10 @@
  *
  */
 
-#ifndef HTTP_PARSER_H /**Defined when http_parser.h has been included.*/
+#ifndef HTTP_PARSER_H
+/**Defined when <sofia-sip/http_parser.h> has been included.*/
 #define HTTP_PARSER_H 
-/**@file http_parser.h
+/**@file sofia-sip/http_parser.h
  * @brief Typedefs and prototypes used by HTTP parser.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -78,27 +79,6 @@ SOFIA_BEGIN_DECLS
 #define HTTP_HEADER_CLASS_AUTH(c, l, kind) \
   MSG_HEADER_CLASS(http_, c, l, "", au_params, kind, msg_auth, http_no)
 
-
-/* ---------------------------------------------------------------------------
- * 2) Prototypes for HTTP-specific decoding/encoding functions
- */
-
-/* Version strings */
-int http_version_d(char **ss, char const **ver);
-int http_version_xtra(char const *version);
-void http_version_dup(char **pp, char const **dd, char const *s);
-
-/* Method */
-http_method_t http_method_d(char **ss, char const **nname);
-char const *http_method_name(http_method_t method, char const *name);
-
-/** Extract HTTP message body */
-int http_extract_body(msg_t *msg, http_t *http, char b[], int bsiz, int eos);
-
-/* ---------------------------------------------------------------------------
- * 3) Compatibility macros
- */
-
 #define http_numeric_dup_xtra msg_default_dup_xtra
 #define http_numeric_dup_one  msg_default_dup_one
 
@@ -106,6 +86,24 @@ int http_extract_body(msg_t *msg, http_t *http, char b[], int bsiz, int eos);
 #define http_default_dup_one  msg_default_dup_one
 
 #define http_no_update NULL
+
+/* ---------------------------------------------------------------------------
+ * 2) Prototypes for HTTP-specific decoding/encoding functions
+ */
+
+/* Version strings */
+SOFIAPUBFUN int http_version_d(char **ss, char const **ver);
+SOFIAPUBFUN int http_version_xtra(char const *version);
+SOFIAPUBFUN void http_version_dup(char **pp, char const **dd, char const *s);
+
+/* Method */
+SOFIAPUBFUN http_method_t http_method_d(char **ss, char const **nname);
+SOFIAPUBFUN char const *http_method_name(http_method_t method,
+					 char const *name);
+
+/** Extract HTTP message body */
+SOFIAPUBFUN int http_extract_body(msg_t *, http_t *, 
+				  char b[], int bsiz, int eos);
 
 SOFIA_END_DECLS
 

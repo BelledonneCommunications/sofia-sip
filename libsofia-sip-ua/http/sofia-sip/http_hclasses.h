@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef HTTP_HCLASSES_H /** Defined when http_hclasses.h has been included. */
+#ifndef HTTP_HCLASSES_H
+/** Defined when <sofia-sip/http_hclasses.h> has been included. */
 #define HTTP_HCLASSES_H
 
-/**@file http_hclasses.h
+/**@file sofia-sip/http_hclasses.h
  * @brief HTTP header classes.
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>

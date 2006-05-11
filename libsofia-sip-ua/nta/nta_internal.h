@@ -581,7 +581,7 @@ SOFIAPUBFUN void nta_agent_deinit_sigcomp(nta_agent_t *sa);
 #error <su_debug.h> included directly.
 #endif
 #include <sofia-sip/su_debug.h>
-extern su_log_t nta_log[];
+SOFIAPUBVAR su_log_t nta_log[];
 
 SOFIA_END_DECLS
 

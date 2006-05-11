@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef HTTP_H /** Defined when http.h has been included. */
+#ifndef HTTP_H
+/** Defined when <sofia-sip/http.h> has been included. */
 #define HTTP_H
 
-/**@file http.h 
+/**@file sofia-sip/http.h 
  * 
  * HTTP message, methods, headers.
  * 

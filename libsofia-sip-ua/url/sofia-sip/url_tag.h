@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef URL_TAG_H /** Defined when url_tag.h has been included. */
+#ifndef URL_TAG_H
+/** Defined when <sofia-sip/url_tag.h> has been included. */
 #define URL_TAG_H
 /**@file  url_tag.h
  * @brief Tags for URLs

@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SIP_TAG_CLASS_H /**Defined when <sip_tag_class.h> have been included */
+#ifndef SIP_TAG_CLASS_H
+/** Defined when <sip_tag_class.h> have been included */
 #define SIP_TAG_CLASS_H 
 
 
 /**@SIP_TAG @{ */
-/**@file sip_tag_class.h
+/**@file sofia-sip/sip_tag_class.h
  *
  * @brief Tag classes for SIP headers.
  *
@@ -65,8 +66,9 @@ SOFIA_BEGIN_DECLS
      (tag_value_t)SIP_PROTOCOL_TAG }}
 
 /**@internal Filter SIP header tag items. */ 
-tagi_t *siptag_filter(tagi_t *dst, tagi_t const f[], tagi_t const *src, 
-		      void **bb);
+SOFIAPUBFUN tagi_t *siptag_filter(tagi_t *dst, tagi_t const f[],
+				  tagi_t const *src, 
+				  void **bb);
 
 SOFIA_END_DECLS
 

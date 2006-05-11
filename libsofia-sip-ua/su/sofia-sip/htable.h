@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef HTABLE_H /** Defined when htable.h has been included. */
+#ifndef HTABLE_H
+/** Defined when <sofia-sip/htable.h> has been included. */
 #define HTABLE_H
 
 /**@ingroup su_htable
- * @file htable.h
+ * @file sofia-sip/htable.h
  *
  * Hash tables templates.
  *

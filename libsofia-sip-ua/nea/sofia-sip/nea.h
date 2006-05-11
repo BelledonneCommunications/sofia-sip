@@ -22,9 +22,10 @@
  *
  */
 
-#ifndef NEA_H /** Defined when <nea.h> has been included. */
+#ifndef NEA_H
+/** Defined when <sofia-sip/nea.h> has been included. */
 #define NEA_H
-/**@file nea.h
+/**@file sofia-sip/nea.h
  * @brief Event API for SIP
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -132,6 +133,7 @@ typedef int (nea_new_event_f)(nea_smagic_t *context,
 			      sip_t const *sip);
 
 /** Create a notifier server */
+SOFIAPUBFUN
 nea_server_t *nea_server_create(nta_agent_t *agent,
 				su_root_t *root,
 				url_t const *url,
@@ -143,15 +145,16 @@ nea_server_t *nea_server_create(nta_agent_t *agent,
 
 
 /** Shutdown an event server */
-int nea_server_shutdown(nea_server_t *nes, int retry_after);
+SOFIAPUBFUN int nea_server_shutdown(nea_server_t *nes, int retry_after);
 
 /** Destroy a server */
-void nea_server_destroy(nea_server_t *nes);
+SOFIAPUBFUN void nea_server_destroy(nea_server_t *nes);
 
 /** Zap terminated subscribtions. */
-void nea_server_flush(nea_server_t *nes, nea_event_t *event);
+SOFIAPUBFUN void nea_server_flush(nea_server_t *nes, nea_event_t *event);
 
 /** Update event information */
+SOFIAPUBFUN
 int nea_server_update(nea_server_t *nes,
 		      nea_event_t *ev,
 		      tag_type_t tag,
@@ -159,6 +162,7 @@ int nea_server_update(nea_server_t *nes,
 		      ...);
 
 /** Add a new subscriber from subscribe transaction to an existing notifier. */
+SOFIAPUBFUN
 int nea_server_add_irq(nea_server_t *nes,
 		       nta_leg_t *leg,
 		       sip_contact_t const *local_target,
@@ -181,6 +185,7 @@ typedef void (nea_watcher_f)(nea_server_t *nes,
 			     sip_t const *sip);
 
 /** Create a new event (or subevent) */
+SOFIAPUBFUN
 nea_event_t *nea_event_create(nea_server_t *nes,
 			      nea_watcher_f *callback,
 			      nea_emagic_t *context,
@@ -190,6 +195,7 @@ nea_event_t *nea_event_create(nea_server_t *nes,
 			      char const *accept);
 
 /** Create a new event (or subevent) with tags */
+SOFIAPUBFUN
 nea_event_t *nea_event_tcreate(nea_server_t *nes,
 			       nea_watcher_f *callback,
 			       nea_emagic_t *context,
@@ -198,30 +204,34 @@ nea_event_t *nea_event_tcreate(nea_server_t *nes,
 			       tag_type_t, tag_value_t, ...);
 
 /** Return magic context bind to nea_event */
-nea_emagic_t *nea_emagic_get(nea_event_t *event);
+SOFIAPUBFUN nea_emagic_t *nea_emagic_get(nea_event_t *event);
 
 /** Find a nea event object with given event name */
-nea_event_t *nea_event_get(nea_server_t const *nes, char const *name);
+SOFIAPUBFUN nea_event_t *nea_event_get(nea_server_t const *, char const *name);
 
 /** Get number of active subscribers */
-int nea_server_active(nea_server_t *nes, nea_event_t const *ev);
+SOFIAPUBFUN int nea_server_active(nea_server_t *nes, nea_event_t const *ev);
 
 /** Get number of (non-embryonic) subscribers. */
 int nea_server_non_embryonic(nea_server_t *nes, nea_event_t const *ev);
 
 /** Obtain a list of subscriptions. 
  */
+SOFIAPUBFUN
 nea_subnode_t const **nea_server_get_subscribers(nea_server_t *nes, 
 						 nea_event_t const *ev);
 
 /** Free a list of subscriptions. */
+SOFIAPUBFUN
 void nea_server_free_subscribers(nea_server_t *nes, nea_subnode_t const **);
 
 /** Notify subscribers */
+SOFIAPUBFUN
 int nea_server_notify(nea_server_t *nes, 
 		      nea_event_t *ev);
 
 /** Notify a subscriber */
+SOFIAPUBFUN
 int nea_server_notify_one(nea_server_t *nes, 
 			  nea_event_t *ev,
 			  nea_sub_t *ns);
@@ -229,19 +239,20 @@ int nea_server_notify_one(nea_server_t *nes,
 #define nea_server_auth nea_sub_auth
 
 /** Get nta_incoming_t from nea_sub_t */
-nta_incoming_t *nea_sub_get_request(nea_sub_t *sub);
+SOFIAPUBFUN nta_incoming_t *nea_sub_get_request(nea_sub_t *sub);
 
 /** Authorize a subscription */
+SOFIAPUBFUN
 int nea_sub_auth(nea_sub_t *, nea_state_t state,
 		 tag_type_t, tag_value_t, ...);
 
 /** Get nta_incoming_t from sn->sn_subscriber */
-nta_incoming_t *nea_subnode_get_incoming(nea_subnode_t *sn);
+SOFIAPUBFUN nta_incoming_t *nea_subnode_get_incoming(nea_subnode_t *sn);
 /** Set subscriber version sequence */
-int nea_sub_version(nea_sub_t *, unsigned);
+SOFIAPUBFUN int nea_sub_version(nea_sub_t *, unsigned);
 
 /** Return time until next notification can be sent */
-unsigned nea_sub_pending(nea_sub_t const *);
+SOFIAPUBFUN unsigned nea_sub_pending(nea_sub_t const *);
 
 #if 0
 /** Do a remote qauth.
@@ -256,59 +267,62 @@ void nea_server_qauth(nea_server_t *nes,
 #endif
 
 /** Get primary event view for given content type  */
+SOFIAPUBFUN
 nea_event_view_t *nea_event_view(nea_event_t *, char const *content_type);
 
 /** Get a content type for event's payload */
+SOFIAPUBFUN
 sip_content_type_t const *nea_view_content_type(nea_event_view_t const *);
 
 /** Get actual payload for an event */
-sip_payload_t const *nea_view_payload(nea_event_view_t *);
+SOFIAPUBFUN sip_payload_t const *nea_view_payload(nea_event_view_t *);
 
 /** Create a private event view */
-nea_event_view_t *nea_view_create(nea_server_t *nes,
-				  nea_event_t *ev,
-				  nea_evmagic_t *magic,
-				  tag_type_t tag,
-				  tag_value_t value,
-				  ...);
+SOFIAPUBFUN nea_event_view_t *nea_view_create(nea_server_t *nes,
+					      nea_event_t *ev,
+					      nea_evmagic_t *magic,
+					      tag_type_t tag,
+					      tag_value_t value,
+					      ...);
 
 /** Destroy a private event view */
-void nea_view_destroy(nea_server_t *nes, nea_event_view_t *ev);
+SOFIAPUBFUN void nea_view_destroy(nea_server_t *nes, nea_event_view_t *ev);
 
-nea_evmagic_t *nea_view_magic(nea_event_view_t const *);
+SOFIAPUBFUN nea_evmagic_t *nea_view_magic(nea_event_view_t const *);
 
-void nea_view_set_magic(nea_event_view_t *evv, nea_evmagic_t *magic);
+SOFIAPUBFUN void nea_view_set_magic(nea_event_view_t *, nea_evmagic_t *magic);
 
-unsigned nea_view_version(nea_event_view_t const *);
+SOFIAPUBFUN unsigned nea_view_version(nea_event_view_t const *);
 
 /** Reliable notify */
 #define NEATAG_RELIABLE(x)    neatag_reliable, tag_bool_v((x))
-NEA_DLL extern tag_typedef_t neatag_reliable;
+SOFIAPUBVAR tag_typedef_t neatag_reliable;
 
 #define NEATAG_RELIABLE_REF(x) neatag_reliable_ref, tag_bool_vr((&x))
-NEA_DLL extern tag_typedef_t neatag_reliable_ref;
+SOFIAPUBVAR tag_typedef_t neatag_reliable_ref;
 
 /** Event view handle */
 #define NEATAG_VIEW(x)     neatag_view, tag_ptr_v((x))
-NEA_DLL extern tag_typedef_t neatag_view;
+SOFIAPUBVAR tag_typedef_t neatag_view;
 
 #define NEATAG_VIEW_REF(x) neatag_view_ref, tag_ptr_vr((&x), (x))
-NEA_DLL extern tag_typedef_t neatag_view_ref;
+SOFIAPUBVAR tag_typedef_t neatag_view_ref;
 
 /** Event view magic. */
 #define NEATAG_EVMAGIC(x)     neatag_evmagic, tag_ptr_v((x))
-NEA_DLL extern tag_typedef_t neatag_evmagic;
+SOFIAPUBVAR tag_typedef_t neatag_evmagic;
 
 #define NEATAG_EVMAGIC_REF(x) neatag_evmagic_ref, tag_ptr_vr((&x), (x))
-NEA_DLL extern tag_typedef_t neatag_evmagic_ref;
-
+SOFIAPUBVAR tag_typedef_t neatag_evmagic_ref;
 
 /** tag for nea_sub_t */
 #define NEATAG_SUB(x)     neatag_sub, tag_ptr_v((x))
-NEA_DLL extern tag_typedef_t neatag_sub;
+SOFIAPUBVAR tag_typedef_t neatag_sub;
 
 #define NEATAG_SUB_REF(x) neatag_sub_ref, tag_ptr_vr((&x), (x))
-NEA_DLL extern tag_typedef_t neatag_sub_ref;
+SOFIAPUBVAR tag_typedef_t neatag_sub_ref;
+
+
 /* ====================================================================== */
 /* Watcher side */
 
@@ -335,6 +349,7 @@ typedef int (*nea_notify_f)(nea_t *nea,
 /* Client side */
 
 /** Create a subscription agent. */
+SOFIAPUBFUN
 nea_t *nea_create(nta_agent_t *agent,
 		  su_root_t *root,
 		  nea_notify_f no_callback,
@@ -344,18 +359,19 @@ nea_t *nea_create(nta_agent_t *agent,
 		  ...);
 
 /** Update SUBSCRIBE payload (filter rules) */
-extern int nea_update(nea_t *nea, 
-		      tag_type_t tag,
-		      tag_value_t value,
-		      ...);
+SOFIAPUBFUN
+int nea_update(nea_t *nea, 
+	       tag_type_t tag,
+	       tag_value_t value,
+	       ...);
 
 /** Unsubscribe agent. */
-void nea_end(nea_t *agent);
+SOFIAPUBFUN void nea_end(nea_t *agent);
 
 /** Destroy a subscription agent. */
-void nea_destroy(nea_t *agent);
+SOFIAPUBFUN void nea_destroy(nea_t *agent);
 
-char const *nea_default_content_type(char const *event);
+SOFIAPUBFUN char const *nea_default_content_type(char const *event);
 
 SOFIA_END_DECLS
 

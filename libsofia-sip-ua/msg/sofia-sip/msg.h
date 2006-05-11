@@ -22,9 +22,10 @@
  *
  */
 
-#ifndef MSG_H /** Defined when msg.h has been included */
+#ifndef MSG_H
+/** Defined when <sofia-sip/msg.h> has been included */
 #define MSG_H
-/**@file msg.h
+/**@file sofia-sip/msg.h
  *
  * Base message interface.
  *
@@ -37,34 +38,34 @@
 
 SOFIA_BEGIN_DECLS
 
-msg_t *msg_create(msg_mclass_t const *mc, int flags);
-void msg_destroy(msg_t *);
+SOFIAPUBFUN msg_t *msg_create(msg_mclass_t const *mc, int flags);
+SOFIAPUBFUN void msg_destroy(msg_t *);
 
-msg_t *msg_copy(msg_t *);
-msg_t *msg_dup(msg_t const *);
+SOFIAPUBFUN msg_t *msg_copy(msg_t *);
+SOFIAPUBFUN msg_t *msg_dup(msg_t const *);
 
-void msg_set_parent(msg_t *kid, msg_t *dad);
+SOFIAPUBFUN void msg_set_parent(msg_t *kid, msg_t *dad);
 
-msg_t *msg_ref_create(msg_t *);
-void msg_ref_destroy(msg_t *);
+SOFIAPUBFUN msg_t *msg_ref_create(msg_t *);
+SOFIAPUBFUN void msg_ref_destroy(msg_t *);
      
-msg_pub_t *msg_public(msg_t const *msg, void *tag);
-msg_pub_t *msg_object(msg_t const *msg);
-msg_mclass_t const *msg_mclass(msg_t const *msg);
+SOFIAPUBFUN msg_pub_t *msg_public(msg_t const *msg, void *tag);
+SOFIAPUBFUN msg_pub_t *msg_object(msg_t const *msg);
+SOFIAPUBFUN msg_mclass_t const *msg_mclass(msg_t const *msg);
 
-int msg_extract(msg_t *msg);
-unsigned msg_extract_errors(msg_t const *msg);
-int msg_is_complete(msg_t const *msg);
-int msg_has_error(msg_t const *msg);
-msg_header_t **msg_chain_head(msg_t const *msg);
+SOFIAPUBFUN int msg_extract(msg_t *msg);
+SOFIAPUBFUN unsigned msg_extract_errors(msg_t const *msg);
+SOFIAPUBFUN int msg_is_complete(msg_t const *msg);
+SOFIAPUBFUN int msg_has_error(msg_t const *msg);
+SOFIAPUBFUN msg_header_t **msg_chain_head(msg_t const *msg);
 
-int msg_serialize(msg_t *msg, msg_pub_t *mo);
-int msg_prepare(msg_t *msg);
-void msg_unprepare(msg_t *msg);
-int msg_is_prepared(msg_t const *msg);
+SOFIAPUBFUN int msg_serialize(msg_t *msg, msg_pub_t *mo);
+SOFIAPUBFUN int msg_prepare(msg_t *msg);
+SOFIAPUBFUN void msg_unprepare(msg_t *msg);
+SOFIAPUBFUN int msg_is_prepared(msg_t const *msg);
 
-unsigned msg_size(msg_t const *msg);
-unsigned msg_maxsize(msg_t *msg, unsigned maxsize);
+SOFIAPUBFUN unsigned msg_size(msg_t const *msg);
+SOFIAPUBFUN unsigned msg_maxsize(msg_t *msg, unsigned maxsize);
 
 #define msg_home(h) ((su_home_t*)(h))
 
@@ -75,14 +76,14 @@ enum msg_streaming_status {
   msg_start_streaming = 1
 };
 
-int msg_is_streaming(msg_t const *msg);
-void msg_set_streaming(msg_t *msg, enum msg_streaming_status what);
+SOFIAPUBFUN int msg_is_streaming(msg_t const *msg);
+SOFIAPUBFUN void msg_set_streaming(msg_t *msg, enum msg_streaming_status what);
 
-unsigned msg_mark_as_complete(msg_t *msg, unsigned mask);
+SOFIAPUBFUN unsigned msg_mark_as_complete(msg_t *msg, unsigned mask);
 
-unsigned msg_get_flags(msg_t const *msg, unsigned mask);
-unsigned msg_set_flags(msg_t *msg, unsigned mask);
-unsigned msg_zap_flags(msg_t *msg, unsigned mask);
+SOFIAPUBFUN unsigned msg_get_flags(msg_t const *msg, unsigned mask);
+SOFIAPUBFUN unsigned msg_set_flags(msg_t *msg, unsigned mask);
+SOFIAPUBFUN unsigned msg_zap_flags(msg_t *msg, unsigned mask);
 
 /** Flags controlling parser/printer. */
 enum msg_flg_user {

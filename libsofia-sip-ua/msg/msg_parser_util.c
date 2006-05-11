@@ -556,7 +556,7 @@ int msg_commalist_d(su_home_t *home,
   return msg_any_list_d(home, ss, return_list, scanner, ',');
 }
 
-/** Scan a token */
+/** Token scanner for msg_commalist_d() accepting also empty entries. */
 int msg_token_scan(char *start)
 {
   char *s = start;
@@ -829,7 +829,7 @@ int msg_header_add_param(su_home_t *home, msg_common_t *h, char const *param)
  *
  * The shortcuts to parameter values are updated accordingly.
  *
- * @note This function does not duplicate @p param.
+ * @note This function @b does @b not duplicate @p param.
  *
  * @param home      memory home
  * @param h         pointer to a header

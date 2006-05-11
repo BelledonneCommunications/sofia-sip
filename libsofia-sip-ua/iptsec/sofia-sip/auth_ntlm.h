@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef AUTH_NTLM_H /** Defined when <auth_ntlm.h> has been included. */
+#ifndef AUTH_NTLM_H
+/** Defined when <sofia-sip/auth_ntlm.h> has been included. */
 #define AUTH_NTLM_H 
 
-/**@file auth_ntlm.h 
+/**@file sofia-sip/auth_ntlm.h 
  * Datatypes and functions for Ntlm authentication.
  *
  * The structures and functions here follow the RFC 2617.
