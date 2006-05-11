@@ -6017,8 +6017,11 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
  * @param tag, value, ... tagged parameter list
  *
  * @return
- * The function nta_outgoing_mcreate() returns a pointer to newly created
- * outgoing transaction object if successful, and NULL otherwise.
+ * Returns a pointer to newly created outgoing transaction object if
+ * successful, and NULL otherwise.
+ *
+ * @note The caller is responsible for destroying the request message @a msg 
+ * upon failure.
  *
  * @note If NTATAG_STATELESS(1) tag is given and the @a callback is NULL,
  * the transaction object is marked as destroyed from the beginning. In that
@@ -6041,11 +6044,11 @@ nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
 				     msg_t *msg,
 				     tag_type_t tag, tag_value_t value, ...)
 {
-
   nta_outgoing_t *orq = NULL;
+  int cleanup = 0;
 
   if (msg == NONE)
-    msg = nta_msg_create(agent, 0);
+    msg = nta_msg_create(agent, 0), cleanup = 1;
 
   if (msg && agent) {
     ta_list ta;
@@ -6055,6 +6058,9 @@ nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
 			    ta_tags(ta));
     ta_end(ta);
   }
+
+  if (!orq && cleanup)
+    msg_destroy(msg);
 
   return orq;
 }
@@ -6293,8 +6299,8 @@ msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq)
  * @param tag, value, ... tagged arguments
  *
  * @return
- * The function nta_outgoing_mcreate() returns a pointer to newly created
- * outgoing transaction object if successful, and NULL otherwise.
+ * Returns a pointer to newly created outgoing transaction object if
+ * successful, and NULL otherwise.
  *
  * @note If NTATAG_STATELESS(1) tag is given and the @a callback is NULL,
  * the transaction object is marked as destroyed from the beginning. In that
