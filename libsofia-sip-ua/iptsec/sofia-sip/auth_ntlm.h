@@ -48,6 +48,10 @@
 #include <sofia-sip/su_alloc.h>
 #endif
 
+#ifndef AUTH_PLUGIN_H
+#include <sofia-sip/auth_plugin.h>
+#endif
+
 SOFIA_BEGIN_DECLS
 
 
@@ -69,6 +73,44 @@ int auth_ntlm_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
 int auth_ntlm_response(auth_response_t *, auth_hexmd5_t response,
 			 auth_hexmd5_t const ha1, 
 			 char const *method_name, void const *data, int dlen);
+
+/** NTLM scheme */
+msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 
+				  char const *realm,
+				  char const *opaque,
+				  char const *gssapidata,
+				  char const *targetname);
+
+void auth_challenge_ntlm(auth_mod_t *am, 
+			 auth_status_t *as,
+			 auth_challenger_t const *ach);
+
+
+void auth_method_ntlm(auth_mod_t *am,
+		      auth_status_t *as,
+		      msg_auth_t *au,
+		      auth_challenger_t const *ach);
+
+
+void auth_check_ntlm(auth_mod_t *am,
+		     auth_status_t *as,
+		     auth_response_t *ar,
+		     auth_challenger_t const *ach);
+
+int auth_generate_ntlm_nonce(auth_mod_t *am, 
+			     char buffer[],
+			     size_t buffer_len,
+			     int nextnonce,
+			     msg_time_t now);
+
+int auth_validate_ntlm_nonce(auth_mod_t *am, 
+			     auth_status_t *as,
+			     auth_response_t *ar,
+			     msg_time_t now);
+
+void auth_info_ntlm(auth_mod_t *am, 
+		    auth_status_t *as,
+		    auth_challenger_t const *ach);
 
 SOFIA_END_DECLS
 
