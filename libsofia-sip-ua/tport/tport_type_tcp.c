@@ -188,7 +188,7 @@ static int tport_tcp_setsndbuf(int socket, int atleast)
   int size = 0;
   socklen_t sizelen = sizeof size;
 
-  if (getsockopt(socket, SOL_SOCKET, SO_SNDBUF, &size, &sizelen) < 0)
+  if (getsockopt(socket, SOL_SOCKET, SO_SNDBUF, (void *)&size, &sizelen) < 0)
     return -1;
 
   if (sizelen != sizeof size)
@@ -197,7 +197,8 @@ static int tport_tcp_setsndbuf(int socket, int atleast)
   if (size >= atleast)
     return 0;			/* OK */
 
-  return setsockopt(socket, SOL_SOCKET, SO_SNDBUF, &atleast, sizeof atleast);
+  return setsockopt(socket, SOL_SOCKET, SO_SNDBUF,
+		    (void *)&atleast, sizeof atleast);
 #else
   return 0;
 #endif
