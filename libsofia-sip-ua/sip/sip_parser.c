@@ -34,18 +34,20 @@
 
 #include "config.h"
 
+/* Avoid casting sip_t to msg_pub_t and sip_header_t to msg_header_t */
+#define MSG_PUB_T       struct sip_s
+#define MSG_HDR_T       union sip_header_u
+
+#include <sofia-sip/su_tagarg.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/msg_mclass.h>
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include <limits.h>
-
-#include <stdarg.h>
-#include <sofia-sip/su_tagarg.h>
-
-#include "sofia-sip/sip_parser.h"
-#include <sofia-sip/msg_mclass.h>
 
 /** Version of the SIP module */
 char const sip_parser_version[] = VERSION;

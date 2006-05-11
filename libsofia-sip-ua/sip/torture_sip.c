@@ -39,6 +39,10 @@
 #include <string.h>
 #include <stddef.h>
 
+/* Avoid casting sip_t to msg_pub_t and sip_header_t to msg_header_t */
+#define MSG_PUB_T       struct sip_s
+#define MSG_HDR_T       union sip_header_u
+
 #include <sofia-sip/su_types.h>
 
 #include <sofia-sip/su_tag.h>

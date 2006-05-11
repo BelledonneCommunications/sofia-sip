@@ -25,24 +25,24 @@
 /**@CFILE sip_reason.c
  * @brief Reason header.
  *
- * The file @b sip_reason.c contains implementation of header classes for
+ * The file @b sip_reason.c contains implementation of header class for
  * SIP header @b Reason.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
- *
- * @date Created: Thu Sep 13 21:24:15 EEST 2001 ppessi
  */
 
 #include "config.h"
+
+/* Avoid casting sip_t to msg_pub_t and sip_header_t to msg_header_t */
+#define MSG_PUB_T       struct sip_s
+#define MSG_HDR_T       union sip_header_u
+
+#include "sofia-sip/sip_parser.h"
 
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stdio.h>
-#include <stdarg.h>
-
-#include "sofia-sip/sip_parser.h"
 
 /**@SIP_HEADER sip_reason Reason Header
  *

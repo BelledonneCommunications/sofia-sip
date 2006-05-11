@@ -33,6 +33,17 @@
 
 #include "config.h"
 
+/* Avoid casting sip_t to msg_pub_t and sip_header_t to msg_header_t */
+#define MSG_PUB_T       struct sip_s
+#define MSG_HDR_T       union sip_header_u
+
+/* Get bodies of inlined functions included in library */
+#define SIP_STATIC_INLINE
+
+#include <sofia-sip/su_alloc.h>
+#include "sofia-sip/sip_parser.h"
+#include <sofia-sip/sip_status.h>
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,13 +52,6 @@
 #include <stdarg.h>
 
 #include <assert.h>
-
-#include <sofia-sip/su_alloc.h>
-
-#define SIP_STATIC_INLINE
-
-#include "sofia-sip/sip_parser.h"
-#include <sofia-sip/sip_status.h>
 
 /** Copy a SIP header. */
 sip_header_t *sip_header_copy(su_home_t *home, sip_header_t const *h)

@@ -37,15 +37,12 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <sofia-sip/string0.h>
-#include <assert.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <limits.h>
+/* Avoid casting sip_t to msg_pub_t and sip_header_t to msg_header_t */
+#define MSG_PUB_T       struct sip_s
+#define MSG_HDR_T       union sip_header_u
 
 #include <sofia-sip/su_alloc.h>
+#include <sofia-sip/string0.h>
 
 #include "sofia-sip/sip_parser.h"
 #include <sofia-sip/sip_util.h>
@@ -54,6 +51,13 @@
 #include <sofia-sip/msg_date.h>
 
 #include <sofia-sip/su_uniqueid.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <limits.h>
 
 /* ====================================================================== */
 
