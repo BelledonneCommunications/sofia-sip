@@ -33,23 +33,26 @@
 
 #include "config.h"
 
+/* Avoid casting http_t to msg_pub_t and http_header_t to msg_header_t  */
+#define MSG_PUB_T struct http_s
+#define MSG_HDR_T union http_header_u
+
+#include <sofia-sip/su_alloc.h>
+#include "sofia-sip/http_parser.h"
+#include <sofia-sip/msg_parser.h>
+#include <sofia-sip/http_header.h>
+#include <sofia-sip/http_status.h>
+#include <sofia-sip/msg_mclass.h>
+
+#include <sofia-sip/su_tagarg.h>
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include <limits.h>
-
 #include <stdarg.h>
-#include <sofia-sip/su_tagarg.h>
-
-#include <sofia-sip/su_alloc.h>
-
-#include "sofia-sip/http_parser.h"
-#include <sofia-sip/msg_parser.h>
-#include <sofia-sip/http_header.h>
-#include <sofia-sip/http_status.h>
-#include <sofia-sip/msg_mclass.h>
 
 /** HTTP version 1.1. */
 char const http_version_1_1[] = "HTTP/1.1";

@@ -44,6 +44,9 @@
 
 #include <sofia-sip/su_alloc.h>
 
+/* Avoid casting http_t to msg_pub_t and http_header_t to msg_header_t  */
+#define MSG_PUB_T struct http_s
+#define MSG_HDR_T union http_header_u
 #define HTTP_STATIC_INLINE
 
 #include "sofia-sip/http_parser.h"

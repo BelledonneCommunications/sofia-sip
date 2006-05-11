@@ -37,11 +37,7 @@
 #endif
 
 #ifndef MSG_H
-#define MSG_PUB_T       struct http_s
-#define MSG_HDR_T       union http_header_u
 #include <sofia-sip/msg.h>
-#else
-#error "<http_parser.h> must be included before <msg.h>"
 #endif
 
 #ifndef MSG_PARSER_H

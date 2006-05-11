@@ -37,11 +37,9 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
+/* Avoid casting http_t to msg_pub_t and http_header_t to msg_header_t  */
+#define MSG_PUB_T struct http_s
+#define MSG_HDR_T union http_header_u
 
 #include <sofia-sip/su_alloc.h>
 
@@ -51,6 +49,12 @@
 
 #include <sofia-sip/msg_mime_protos.h>
 #include <sofia-sip/msg_date.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <stdio.h>
 
 /* ====================================================================== */
 

@@ -37,6 +37,10 @@
 
 #include <sofia-sip/su.h>
 
+/* Avoid casting http_t to msg_pub_t and http_header_t to msg_header_t  */
+#define MSG_PUB_T struct http_s
+#define MSG_HDR_T union http_header_u
+
 #include <sofia-sip/http_parser.h>
 
 #include <sofia-sip/http_tag.h>
@@ -111,7 +115,7 @@ tagi_t *httptag_filter(tagi_t *dst,
 
     http = (http_t const *)src->t_value;
     mc = (void *)http->http_common->h_class;
-    hh = (void *)msg_hclass_offset(mc, (http_t *)http, hc);
+    hh = (void *)msg_hclass_offset(mc, http, hc);
 
     if (http == NULL ||
 	hh >= (http_header_t const **)((char *)http + http->http_size) ||
