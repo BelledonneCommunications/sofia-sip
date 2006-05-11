@@ -16,7 +16,9 @@ noinst_HEADERS = sofia-sip/su_configure.h unistd.h config.h
 EXTRA_DIST = SofiaSIP.dsw \
 	libsofia-sip-ua/libsofia_sip_ua.dsp \
 	libsofia-sip-ua/sofia-sip-ua.def \
+	libsofia-sip-ua-static/libsofia_sip_ua_static.dsp \
 	tests/test_nua/test_nua.dsp \
+	tests/test_nua/test_nat_tags.cpp \
 	tests/test_nta/test_nta.dsp \
 	tests/su_alloc_test/su_alloc_test.dsp \
 	tests/su_root_test/su_root_test.dsp \

@@ -39,6 +39,7 @@ AM_LDFLAGS =	 	-static
 nobase_include_sofia_HEADERS = \
 			sofia-sip/sresolv.h \
 			sofia-resolv/sres.h \
+			sofia-resolv/sres_config.h \
 			sofia-resolv/sres_async.h \
 			sofia-resolv/sres_cache.h \
 			sofia-resolv/sres_record.h
