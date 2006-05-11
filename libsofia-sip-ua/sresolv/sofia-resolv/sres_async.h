@@ -44,6 +44,8 @@
  *
  */
 
+#include "sofia-resolv/sres_config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -70,26 +72,28 @@ typedef int sres_update_f(sres_async_t *async,
 			  int old_socket);
 
 /** Set asynchronous operation data. */
+SRESPUBFUN
 sres_async_t *sres_resolver_set_async(sres_resolver_t *res, 
 				      sres_update_f *update,
 				      sres_async_t *async,
 				      int update_all);
 
 /** Get async operation data. */
+SRESPUBFUN
 sres_async_t *sres_resolver_get_async(sres_resolver_t const *res,
 				      sres_update_f *update);
 
 /** Create sockets for resolver. */
-int sres_resolver_sockets(sres_resolver_t *res, int *sockets, int n);
+SRESPUBFUN int sres_resolver_sockets(sres_resolver_t *, int *sockets, int n);
 
 /** Resolver timer function. */
-void sres_resolver_timer(sres_resolver_t *res, int dummy);
+SRESPUBFUN void sres_resolver_timer(sres_resolver_t *, int dummy);
 
 /** Receive DNS response from socket. */
-int sres_resolver_receive(sres_resolver_t *res, int socket);
+SRESPUBFUN int sres_resolver_receive(sres_resolver_t *, int socket);
 
 /** Receive error message from socket. */
-int sres_resolver_error(sres_resolver_t *res, int socket);
+SRESPUBFUN int sres_resolver_error(sres_resolver_t *, int socket);
 
 #ifdef __cplusplus
 }

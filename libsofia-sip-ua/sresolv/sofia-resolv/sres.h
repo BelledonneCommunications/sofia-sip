@@ -43,6 +43,7 @@
  */
 
 #include <stdarg.h>
+#include "sofia-resolv/sres_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -105,36 +106,40 @@ typedef struct sres_query_s         sres_query_t;
 struct sockaddr;
 
 /** New resolver object. */
-sres_resolver_t *sres_resolver_new(char const *resolv_conf_path);
+SRESPUBFUN sres_resolver_t *sres_resolver_new(char const *resolv_conf_path);
 
 /** Copy a resolver. */
-sres_resolver_t *sres_resolver_copy(sres_resolver_t *);
+SRESPUBFUN sres_resolver_t *sres_resolver_copy(sres_resolver_t *);
 
 /** New resolver object. */
+SRESPUBFUN
 sres_resolver_t *
 sres_resolver_new_with_cache(char const *conf_file_path,
 			     sres_cache_t *cache,
 			     char const *options, ...);
 
 /** New resolver object. */
+SRESPUBFUN 
 sres_resolver_t *
 sres_resolver_new_with_cache_va(char const *conf_file_path,
 				sres_cache_t *cache,
 				char const *options, va_list va);
 
 /** Increase reference count on a resolver object. */
-sres_resolver_t *sres_resolver_ref(sres_resolver_t *res);
+SRESPUBFUN sres_resolver_t *sres_resolver_ref(sres_resolver_t *res);
 
 /** Decrease the reference count on a resolver object.  */
-void sres_resolver_unref(sres_resolver_t *res);
+SRESPUBFUN void sres_resolver_unref(sres_resolver_t *res);
 
 /** Re-read resolv.conf if needed */
-int sres_resolver_update(sres_resolver_t *res, int always);
+SRESPUBFUN int sres_resolver_update(sres_resolver_t *res, int always);
 
 /** Set userdata pointer. */
+SRESPUBFUN
 void *sres_resolver_set_userdata(sres_resolver_t *res, void *userdata);
 
 /** Get userdata pointer. */
+SRESPUBFUN
 void *sres_resolver_get_userdata(sres_resolver_t const *res);
 
 /** Prototype for callback function.
@@ -148,13 +153,15 @@ typedef void sres_answer_f(sres_context_t *context,
 			   sres_record_t **answers);
 
 /** Make a DNS query. */
+SRESPUBFUN 
 sres_query_t *sres_query(sres_resolver_t *res,
                          sres_answer_f *callback,
                          sres_context_t *context,
                          uint16_t type,
                          char const *domain);
 
-/**Search DNS. */
+/** Search DNS. */
+SRESPUBFUN 
 sres_query_t *sres_search(sres_resolver_t *res,
 			  sres_answer_f *callback,
 			  sres_context_t *context,
@@ -162,6 +169,7 @@ sres_query_t *sres_search(sres_resolver_t *res,
 			  char const *name);
 
 /** Make a reverse DNS query. */
+SRESPUBFUN 
 sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
                                   sres_answer_f *callback,
                                   sres_context_t *context,
@@ -169,6 +177,7 @@ sres_query_t *sres_query_sockaddr(sres_resolver_t *res,
 				  struct sockaddr const *addr);
 
 /** Make a DNS query with socket. @deprecated */
+SRESPUBFUN 
 sres_query_t *sres_query_make(sres_resolver_t *res,
 			      sres_answer_f *callback,
 			      sres_context_t *context,
@@ -177,6 +186,7 @@ sres_query_t *sres_query_make(sres_resolver_t *res,
 			      char const *domain);
 
 /** Make a reverse DNS query with socket. @deprecated */
+SRESPUBFUN 
 sres_query_t *sres_query_make_sockaddr(sres_resolver_t *res,
 				       sres_answer_f *callback,
 				       sres_context_t *context,
@@ -185,26 +195,31 @@ sres_query_t *sres_query_make_sockaddr(sres_resolver_t *res,
 				       struct sockaddr const *addr);
 
 /** Rebind a DNS query. */
+SRESPUBFUN 
 void sres_query_bind(sres_query_t *q,
                      sres_answer_f *callback,
                      sres_context_t *context);
 
 /**Get a list of matching (type/domain) records from cache. */
+SRESPUBFUN 
 sres_record_t **sres_cached_answers(sres_resolver_t *res,
 				    uint16_t type,
 				    char const *domain);
 
 /**Search for a list of matching (type/name) records from cache. */
+SRESPUBFUN 
 sres_record_t **sres_search_cached_answers(sres_resolver_t *res,
 					   uint16_t type,
 					   char const *name);
 
 /**Get a list of matching (type/domain) records from cache. */
+SRESPUBFUN 
 sres_record_t **sres_cached_answers_sockaddr(sres_resolver_t *res,
                                              uint16_t type,
 					     struct sockaddr const *addr);
 
 /** Send a query, wait for answer, return results. */
+SRESPUBFUN 
 int sres_blocking_query(sres_resolver_t *res,
 			uint16_t type,
 			char const *domain,
@@ -212,6 +227,7 @@ int sres_blocking_query(sres_resolver_t *res,
 			sres_record_t ***return_records);
 
 /** Search DNS, return results. */
+SRESPUBFUN 
 int sres_blocking_search(sres_resolver_t *res,
 			 uint16_t type,
 			 char const *name,
@@ -219,6 +235,7 @@ int sres_blocking_search(sres_resolver_t *res,
 			 sres_record_t ***return_records);
 
 /** Send a a reverse DNS query, wait for answer, return results. */
+SRESPUBFUN 
 int sres_blocking_query_sockaddr(sres_resolver_t *res,
 				 uint16_t type,
 				 struct sockaddr const *addr,
@@ -226,21 +243,22 @@ int sres_blocking_query_sockaddr(sres_resolver_t *res,
 				 sres_record_t ***return_records);
 
 /** Return true (and set resolver in blocking mode) if resolver can block. */
-int sres_is_blocking(sres_resolver_t *res);
+SRESPUBFUN int sres_is_blocking(sres_resolver_t *res);
 
 /** Sort the list of records */
-int sres_sort_answers(sres_resolver_t *res, sres_record_t **answers);
+SRESPUBFUN int sres_sort_answers(sres_resolver_t *, sres_record_t **answers);
 
 /** Filter and sort the list of records */
+SRESPUBFUN
 int sres_filter_answers(sres_resolver_t *res, 
 			sres_record_t **answers, 
 			uint16_t type);
 
 /** Free the list records. */
-void sres_free_answers(sres_resolver_t *res, sres_record_t **answers);
+SRESPUBFUN void sres_free_answers(sres_resolver_t *, sres_record_t **answers);
 
 /** Free and zero one record. */
-void sres_free_answer(sres_resolver_t *res, sres_record_t *answer);
+SRESPUBFUN void sres_free_answer(sres_resolver_t *res, sres_record_t *answer);
 
 #ifdef __cplusplus
 }

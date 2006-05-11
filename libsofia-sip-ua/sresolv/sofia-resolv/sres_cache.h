@@ -40,6 +40,8 @@
  *
  */
 
+#include "sofia-resolv/sres_config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -63,42 +65,42 @@ enum {
 };
 
 /** Create a resolver cache object. */
-sres_cache_t *sres_cache_new(int n);
+SRESPUBFUN sres_cache_t *sres_cache_new(int n);
 
 /** Increase reference count on a resolver cache object. */
-sres_cache_t *sres_cache_ref(sres_cache_t *);
+SRESPUBFUN sres_cache_t *sres_cache_ref(sres_cache_t *);
 
 /** Decrease the reference count on a resolver cache object. */
-void sres_cache_unref(sres_cache_t *);
+SRESPUBFUN void sres_cache_unref(sres_cache_t *);
 
 /** Get a list of matching records from cache. */
-int sres_cache_get(sres_cache_t *cache,
-		   uint16_t type,
-		   char const *domain,
-		   sres_record_t ***return_cached);
+SRESPUBFUN int sres_cache_get(sres_cache_t *cache,
+			      uint16_t type,
+			      char const *domain,
+			      sres_record_t ***return_cached);
 
 /** Free answers not matching with type */
-int sres_cache_filter(sres_cache_t *cache,
-		      sres_record_t **answers, 
-		      uint16_t type);
+SRESPUBFUN int sres_cache_filter(sres_cache_t *cache,
+				 sres_record_t **answers, 
+				 uint16_t type);
 
 /** Free the list records. */
-void sres_cache_free_answers(sres_cache_t *cache, sres_record_t **answers);
+SRESPUBFUN void sres_cache_free_answers(sres_cache_t *, sres_record_t **);
 
 /** Free and zero one record. */
-void sres_cache_free_one(sres_cache_t *cache, sres_record_t *answer);
+SRESPUBFUN void sres_cache_free_one(sres_cache_t *, sres_record_t *answer);
 
 /** Allocate a cache record */
-sres_record_t *
-sres_cache_alloc_record(sres_cache_t *cache,
-			sres_record_t const *template,
-			size_t extra);
+SRESPUBFUN
+sres_record_t *sres_cache_alloc_record(sres_cache_t *cache,
+				       sres_record_t const *template,
+				       size_t extra);
 
 /** Free a record that has not been stored. */
-void sres_cache_free_record(sres_cache_t *cache, void *rr);
+SRESPUBFUN void sres_cache_free_record(sres_cache_t *cache, void *rr);
 
 /** Store a record to cache */
-void sres_cache_store(sres_cache_t *cache, sres_record_t *rr, time_t now);
+SRESPUBFUN void sres_cache_store(sres_cache_t *, sres_record_t *, time_t now);
 
 #ifdef __cplusplus
 }

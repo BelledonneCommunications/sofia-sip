@@ -40,6 +40,8 @@
  *
  */
 
+#include "sofia-resolv/sres_config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -241,10 +243,11 @@ enum {
 };
 
 /** Convert type to its name. */
-char const *sres_record_type(int type, char buffer[8]);
+SRESPUBFUN char const *sres_record_type(int type, char buffer[8]);
 
 /** Compare two records. */
-int sres_record_compare(sres_record_t const *, sres_record_t const *);
+SRESPUBFUN int sres_record_compare(sres_record_t const *,
+				   sres_record_t const *);
 
 #ifdef __cplusplus
 }
