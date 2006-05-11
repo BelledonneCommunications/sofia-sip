@@ -22,7 +22,7 @@
  *
  */
 
-#ifndef NUA_TAG_H /** Defined when <nua_tag.h> has been included. */
+#ifndef NUA_TAG_H /** Defined when <sofia-sip/nua_tag.h> has been included. */
 #define NUA_TAG_H
 
 /**@file nua_tag.h
@@ -64,11 +64,11 @@ typedef struct nua_s nua_t;
 typedef struct nua_handle_s nua_handle_t;
 
 /** List of all NUA tags. */
-extern tag_type_t nua_tag_list[];
+SOFIAPUBVAR tag_type_t nua_tag_list[];
 
 /** Filter tag matching any nua tag. */
 #define NUTAG_ANY()          nutag_any, ((tag_value_t)0)
-extern tag_typedef_t nutag_any;
+SOFIAPUBVAR tag_typedef_t nutag_any;
 
 /** URL address from application to NUA
  *
@@ -89,10 +89,10 @@ extern tag_typedef_t nutag_any;
  * Corresponding tag taking reference parameter is NUTAG_URL_REF
  */
 #define NUTAG_URL(x)            nutag_url, urltag_url_v(x)
-extern tag_typedef_t nutag_url;
+SOFIAPUBVAR tag_typedef_t nutag_url;
 
 #define NUTAG_URL_REF(x)        nutag_url_ref, urltag_url_vr(&(x))
-extern tag_typedef_t nutag_url_ref;
+SOFIAPUBVAR tag_typedef_t nutag_url_ref;
 
 /** Address as a string
  *
@@ -107,10 +107,10 @@ extern tag_typedef_t nutag_url_ref;
  * Corresponding tag taking reference parameter is NUTAG_ADDRESS_REF()
  */
 #define NUTAG_ADDRESS(x)        nutag_address, tag_str_v(x)
-extern tag_typedef_t nutag_address;
+SOFIAPUBVAR tag_typedef_t nutag_address;
 
 #define NUTAG_ADDRESS_REF(x)    nutag_address_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_address_ref;
+SOFIAPUBVAR tag_typedef_t nutag_address_ref;
 
 /**Set request retry count.
  *
@@ -130,10 +130,10 @@ extern tag_typedef_t nutag_address_ref;
  * Corresponding tag taking reference parameter is NUTAG_RETRY_COUNT_REF()
  */
 #define NUTAG_RETRY_COUNT(x)      nutag_retry_count, tag_uint_v(x)
-extern tag_typedef_t nutag_retry_count;
+SOFIAPUBVAR tag_typedef_t nutag_retry_count;
 
 #define NUTAG_RETRY_COUNT_REF(x)  nutag_retry_count_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_retry_count_ref;
+SOFIAPUBVAR tag_typedef_t nutag_retry_count_ref;
 
 /**Set maximum number of simultaneous subscribers per single event server.
  *
@@ -153,18 +153,18 @@ extern tag_typedef_t nutag_retry_count_ref;
  * Corresponding tag taking reference parameter is NUTAG_MAX_SUBSCRIPTIONS_REF()
  */
 #define NUTAG_MAX_SUBSCRIPTIONS(x)      nutag_max_subscriptions, tag_uint_v(x)
-extern tag_typedef_t nutag_max_subscriptions;
+SOFIAPUBVAR tag_typedef_t nutag_max_subscriptions;
 
 #define NUTAG_MAX_SUBSCRIPTIONS_REF(x) \
 nutag_max_subscriptions_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_max_subscriptions_ref;
+SOFIAPUBVAR tag_typedef_t nutag_max_subscriptions_ref;
 
 /** Intentionally undocumented. */
 #define NUTAG_UICC(x)  nutag_uicc, tag_str_v(x)
-extern tag_typedef_t nutag_uicc;
+SOFIAPUBVAR tag_typedef_t nutag_uicc;
 
 #define NUTAG_UICC_REF(x) nutag_uicc_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_uicc_ref;
+SOFIAPUBVAR tag_typedef_t nutag_uicc_ref;
 
 /** Ask NUA to create dialog for this handle
  *
@@ -180,10 +180,10 @@ extern tag_typedef_t nutag_uicc_ref;
  * Corresponding tag taking reference parameter is NUTAG_USE_DIALOG_REF()
  */
 #define NUTAG_USE_DIALOG(x)        nutag_use_dialog, tag_bool_v(x)
-extern tag_typedef_t nutag_use_dialog;
+SOFIAPUBVAR tag_typedef_t nutag_use_dialog;
 
 #define NUTAG_USE_DIALOG_REF(x)    nutag_use_dialog_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_use_dialog_ref;
+SOFIAPUBVAR tag_typedef_t nutag_use_dialog_ref;
 
 
 /* Protocol engine parameters,
@@ -206,11 +206,11 @@ extern tag_typedef_t nutag_use_dialog_ref;
  * Corresponding tag taking reference parameter is NUTAG_SOA_SESSION_REF.
  */
 #define NUTAG_SOA_SESSION(x)  nutag_soa_session, tag_ptr_v(x)
-extern tag_typedef_t nutag_soa_session;
+SOFIAPUBVAR tag_typedef_t nutag_soa_session;
 
 #define NUTAG_SOA_SESSION_REF(x) \
  nutag_soa_session_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t nutag_soa_session_ref;
+SOFIAPUBVAR tag_typedef_t nutag_soa_session_ref;
 
 #endif
 
@@ -229,11 +229,11 @@ extern tag_typedef_t nutag_soa_session_ref;
  * Corresponding tag taking reference parameter is NUTAG_SOA_SESSION_REF.
  */
 #define NUTAG_SOA_NAME(x)  nutag_soa_name, tag_str_v(x)
-extern tag_typedef_t nutag_soa_name;
+SOFIAPUBVAR tag_typedef_t nutag_soa_name;
 
 #define NUTAG_SOA_NAME_REF(x) \
  nutag_soa_name_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_soa_name_ref;
+SOFIAPUBVAR tag_typedef_t nutag_soa_name_ref;
 
 /** Establish early media session using 183 responses and PRACK requests.
  *
@@ -251,10 +251,10 @@ extern tag_typedef_t nutag_soa_name_ref;
  * Corresponding tag taking reference parameter is NUTAG_EARLY_MEDIA_REF()
 */
 #define NUTAG_EARLY_MEDIA(x)    nutag_early_media, tag_bool_v(x)
-extern tag_typedef_t nutag_early_media;
+SOFIAPUBVAR tag_typedef_t nutag_early_media;
 
 #define NUTAG_EARLY_MEDIA_REF(x) nutag_early_media_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_early_media_ref;
+SOFIAPUBVAR tag_typedef_t nutag_early_media_ref;
 
 /** Timer for outstanding INVITE in seconds.
  *
@@ -275,10 +275,10 @@ extern tag_typedef_t nutag_early_media_ref;
  * Corresponding tag taking reference parameter is NUTAG_INVITE_TIMER_REF()
  */
 #define NUTAG_INVITE_TIMER(x)  nutag_invite_timer, tag_uint_v((x))
-extern tag_typedef_t nutag_invite_timer;
+SOFIAPUBVAR tag_typedef_t nutag_invite_timer;
 
 #define NUTAG_INVITE_TIMER_REF(x) nutag_invite_timer_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_invite_timer_ref;
+SOFIAPUBVAR tag_typedef_t nutag_invite_timer_ref;
 
 /**Default session timer in seconds.
  *
@@ -299,10 +299,10 @@ extern tag_typedef_t nutag_invite_timer_ref;
  * Corresponding tag taking reference parameter is NUTAG_SESSION_TIMER_REF()
  */
 #define NUTAG_SESSION_TIMER(x)  nutag_session_timer, tag_uint_v((x))
-extern tag_typedef_t nutag_session_timer;
+SOFIAPUBVAR tag_typedef_t nutag_session_timer;
 
 #define NUTAG_SESSION_TIMER_REF(x) nutag_session_timer_ref, tag_uint_vr((&(x)))
-extern tag_typedef_t nutag_session_timer_ref;
+SOFIAPUBVAR tag_typedef_t nutag_session_timer_ref;
 
 /** Minimum acceptable refresh interval for session.
  *
@@ -321,10 +321,10 @@ extern tag_typedef_t nutag_session_timer_ref;
  * Corresponding tag taking reference parameter is NUTAG_MIN_SE_REF()
 */
 #define NUTAG_MIN_SE(x)         nutag_min_se, tag_uint_v((x))
-extern tag_typedef_t nutag_min_se;
+SOFIAPUBVAR tag_typedef_t nutag_min_se;
 
 #define NUTAG_MIN_SE_REF(x)     nutag_min_se_ref, tag_uint_vr((&(x)))
-extern tag_typedef_t nutag_min_se_ref;
+SOFIAPUBVAR tag_typedef_t nutag_min_se_ref;
 
 enum nua_session_refresher {
   nua_no_refresher, nua_local_refresher, nua_remote_refresher, nua_any_refresher
@@ -351,10 +351,10 @@ enum nua_session_refresher {
  * Corresponding tag taking reference parameter is NUTAG_SESSION_REFRESHER_REF()
  */
 #define NUTAG_SESSION_REFRESHER(x)  nutag_session_refresher, tag_int_v((x))
-extern tag_typedef_t nutag_session_refresher;
+SOFIAPUBVAR tag_typedef_t nutag_session_refresher;
 
 #define NUTAG_SESSION_REFRESHER_REF(x) nutag_session_refresher_ref, tag_int_vr((&(x)))
-extern tag_typedef_t nutag_session_refresher_ref;
+SOFIAPUBVAR tag_typedef_t nutag_session_refresher_ref;
 
 /** Use UPDATE as refresh method.
  *
@@ -372,10 +372,10 @@ extern tag_typedef_t nutag_session_refresher_ref;
  * Corresponding tag taking reference parameter is NUTAG_UPDATE_REFRESH_REF()
  */
 #define NUTAG_UPDATE_REFRESH(x)  nutag_update_refresh, tag_bool_v((x))
-extern tag_typedef_t nutag_update_refresh;
+SOFIAPUBVAR tag_typedef_t nutag_update_refresh;
 
 #define NUTAG_UPDATE_REFRESH_REF(x) nutag_update_refresh_ref, tag_bool_vr((&(x)))
-extern tag_typedef_t nutag_update_refresh_ref;
+SOFIAPUBVAR tag_typedef_t nutag_update_refresh_ref;
 
 /** Send alerting (180 Ringing) automatically
  *
@@ -393,10 +393,10 @@ extern tag_typedef_t nutag_update_refresh_ref;
  * Corresponding tag taking reference parameter is NUTAG_AUTOALERT_REF()
  */
 #define NUTAG_AUTOALERT(x)      nutag_autoalert, tag_bool_v(x)
-extern tag_typedef_t nutag_autoalert;
+SOFIAPUBVAR tag_typedef_t nutag_autoalert;
 
 #define NUTAG_AUTOALERT_REF(x)  nutag_autoalert_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_autoalert_ref;
+SOFIAPUBVAR tag_typedef_t nutag_autoalert_ref;
 
 /** ACK automatically
  *
@@ -414,10 +414,10 @@ extern tag_typedef_t nutag_autoalert_ref;
  * Corresponding tag taking reference parameter is NUTAG_AUTOACK_REF()
  */
 #define NUTAG_AUTOACK(x)        nutag_autoack, tag_bool_v(x)
-extern tag_typedef_t nutag_autoack;
+SOFIAPUBVAR tag_typedef_t nutag_autoack;
 
 #define NUTAG_AUTOACK_REF(x)    nutag_autoack_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_autoack_ref;
+SOFIAPUBVAR tag_typedef_t nutag_autoack_ref;
 
 /** Answer (200 Ok) automatically to incoming call
  *
@@ -435,10 +435,10 @@ extern tag_typedef_t nutag_autoack_ref;
  * Corresponding tag taking reference parameter is NUTAG_AUTOANSWER_REF()
  */
 #define NUTAG_AUTOANSWER(x)     nutag_autoanswer, tag_bool_v(x)
-extern tag_typedef_t nutag_autoanswer;
+SOFIAPUBVAR tag_typedef_t nutag_autoanswer;
 
 #define NUTAG_AUTOANSWER_REF(x) nutag_autoanswer_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_autoanswer_ref;
+SOFIAPUBVAR tag_typedef_t nutag_autoanswer_ref;
 
 /** Enable incoming INVITE
  *
@@ -456,10 +456,10 @@ extern tag_typedef_t nutag_autoanswer_ref;
  * Corresponding tag taking reference parameter is NUTAG_ENABLEINVITE_REF()
  */
 #define NUTAG_ENABLEINVITE(x)   nutag_enableinvite, tag_bool_v(x)
-extern tag_typedef_t nutag_enableinvite;
+SOFIAPUBVAR tag_typedef_t nutag_enableinvite;
 
 #define NUTAG_ENABLEINVITE_REF(x) nutag_enableinvite_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_enableinvite_ref;
+SOFIAPUBVAR tag_typedef_t nutag_enableinvite_ref;
 
 /** Enable incoming MESSAGE
  *
@@ -477,10 +477,10 @@ extern tag_typedef_t nutag_enableinvite_ref;
  * Corresponding tag taking reference parameter is NUTAG_ENABLEMESSAGE_REF()
  */
 #define NUTAG_ENABLEMESSAGE(x)  nutag_enablemessage, tag_bool_v(x)
-extern tag_typedef_t nutag_enablemessage;
+SOFIAPUBVAR tag_typedef_t nutag_enablemessage;
 
 #define NUTAG_ENABLEMESSAGE_REF(x) nutag_enablemessage_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_enablemessage_ref;
+SOFIAPUBVAR tag_typedef_t nutag_enablemessage_ref;
 
 /** Enable incoming MESSAGE with To tag.
  *
@@ -500,11 +500,11 @@ extern tag_typedef_t nutag_enablemessage_ref;
  * Corresponding tag taking reference parameter is NUTAG_ENABLEMESSENGER_REF()
  */
 #define NUTAG_ENABLEMESSENGER(x)  nutag_enablemessenger, tag_bool_v(x)
-extern tag_typedef_t nutag_enablemessenger;
+SOFIAPUBVAR tag_typedef_t nutag_enablemessenger;
 
 #define NUTAG_ENABLEMESSENGER_REF(x) \
   nutag_enablemessenger_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_enablemessenger_ref;
+SOFIAPUBVAR tag_typedef_t nutag_enablemessenger_ref;
 
 /* Start NRC Boston */
 
@@ -525,10 +525,10 @@ extern tag_typedef_t nutag_enablemessenger_ref;
  * Corresponding tag taking reference parameter is NUTAG_SMIME_ENABLE_REF()
  */
 #define NUTAG_SMIME_ENABLE(x)  nutag_smime_enable, tag_bool_v(x)
-extern tag_typedef_t nutag_smime_enable;
+SOFIAPUBVAR tag_typedef_t nutag_smime_enable;
 
 #define NUTAG_SMIME_ENABLE_REF(x) nutag_smime_enable_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_smime_enable_ref;
+SOFIAPUBVAR tag_typedef_t nutag_smime_enable_ref;
 
 /** S/MIME Options
  *
@@ -552,10 +552,10 @@ extern tag_typedef_t nutag_smime_enable_ref;
  * Corresponding tag taking reference parameter is NUTAG_SMIME_OPT_REF()
  */
 #define NUTAG_SMIME_OPT(x)  nutag_smime_opt, tag_int_v(x)
-extern tag_typedef_t nutag_smime_opt;
+SOFIAPUBVAR tag_typedef_t nutag_smime_opt;
 
 #define NUTAG_SMIME_OPT_REF(x) nutag_smime_opt_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_smime_opt_ref;
+SOFIAPUBVAR tag_typedef_t nutag_smime_opt_ref;
 
 /* End NRC Boston */
 
@@ -580,11 +580,11 @@ extern tag_typedef_t nutag_smime_opt_ref;
  * Corresponding tag taking reference parameter is NUTAG_SMIME_PROTECTION_MODE_REF()
  */
 #define NUTAG_SMIME_PROTECTION_MODE(x) nutag_smime_protection_mode, tag_uint_v(x)
-extern tag_typedef_t nutag_smime_protection_mode;
+SOFIAPUBVAR tag_typedef_t nutag_smime_protection_mode;
 
 #define NUTAG_SMIME_PROTECTION_MODE_REF(x) \
            nutag_smime_protection_mode_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_smime_protection_mode_ref;
+SOFIAPUBVAR tag_typedef_t nutag_smime_protection_mode_ref;
 
 /** S/MIME digest algorithm
  *
@@ -601,11 +601,11 @@ extern tag_typedef_t nutag_smime_protection_mode_ref;
  * Corresponding tag taking reference parameter is NUTAG_SMIME_MESSAGE_DIGEST_REF()
  */
 #define NUTAG_SMIME_MESSAGE_DIGEST(x) nutag_smime_message_digest, tag_str_v(x)
-extern tag_typedef_t nutag_smime_message_digest;
+SOFIAPUBVAR tag_typedef_t nutag_smime_message_digest;
 
 #define NUTAG_SMIME_MESSAGE_DIGEST_REF(x) \
             nutag_smime_message_digest_ref, tag_str_vr((&x))
-extern tag_typedef_t nutag_smime_message_digest_ref;
+SOFIAPUBVAR tag_typedef_t nutag_smime_message_digest_ref;
 
 /** S/MIME signature algorithm
  *
@@ -622,11 +622,11 @@ extern tag_typedef_t nutag_smime_message_digest_ref;
  * Corresponding tag taking reference parameter is NUTAG_SMIME_SIGNATURE_REF()
  */
 #define NUTAG_SMIME_SIGNATURE(x) nutag_smime_signature, tag_str_v(x)
-extern tag_typedef_t nutag_smime_signature;
+SOFIAPUBVAR tag_typedef_t nutag_smime_signature;
 
 #define NUTAG_SMIME_SIGNATURE_REF(x) \
             nutag_smime_signature_ref, tag_str_vr((&x))
-extern tag_typedef_t nutag_smime_signature_ref;
+SOFIAPUBVAR tag_typedef_t nutag_smime_signature_ref;
 
 /** S/MIME key encryption algorithm
  *
@@ -643,11 +643,11 @@ extern tag_typedef_t nutag_smime_signature_ref;
  * Corresponding tag taking reference parameter is NUTAG_SMIME_KEY_ENCRYPTION_REF()
  */
 #define NUTAG_SMIME_KEY_ENCRYPTION(x) nutag_smime_key_encryption, tag_str_v(x)
-extern tag_typedef_t nutag_smime_key_encryption;
+SOFIAPUBVAR tag_typedef_t nutag_smime_key_encryption;
 
 #define NUTAG_SMIME_KEY_ENCRYPTION_REF(x) \
           nutag_smime_key_encryption_ref, tag_str_vr((&x))
-extern tag_typedef_t nutag_smime_key_encryption_ref;
+SOFIAPUBVAR tag_typedef_t nutag_smime_key_encryption_ref;
 
 /** S/MIME message encryption algorithm
  *
@@ -664,11 +664,11 @@ extern tag_typedef_t nutag_smime_key_encryption_ref;
  * Corresponding tag taking reference parameter is NUTAG_SMIME_MESSAGE_ENCRYPTION_REF()
  */
 #define NUTAG_SMIME_MESSAGE_ENCRYPTION(x) nutag_smime_message_encryption, tag_str_v(x)
-extern tag_typedef_t nutag_smime_message_encryption;
+SOFIAPUBVAR tag_typedef_t nutag_smime_message_encryption;
 
 #define NUTAG_SMIME_MESSAGE_ENCRYPTION_REF(x) \
            nutag_smime_message_encryption_ref, tag_str_vr((&x))
-extern tag_typedef_t nutag_smime_message_encryption_ref;
+SOFIAPUBVAR tag_typedef_t nutag_smime_message_encryption_ref;
 
 /** x.500 certificate directory
  *
@@ -684,11 +684,11 @@ extern tag_typedef_t nutag_smime_message_encryption_ref;
  * Corresponding tag taking reference parameter is NUTAG_CERTIFICATE_DIR_REF()
  */
 #define NUTAG_CERTIFICATE_DIR(x) nutag_certificate_dir, tag_str_v(x)
-extern tag_typedef_t nutag_certificate_dir;
+SOFIAPUBVAR tag_typedef_t nutag_certificate_dir;
 
 #define NUTAG_CERTIFICATE_DIR_REF(x) \
           nutag_certificate_dir_ref, tag_str_vr((&x))
-extern tag_typedef_t nutag_certificate_dir_ref;
+SOFIAPUBVAR tag_typedef_t nutag_certificate_dir_ref;
 
 /** Certificate phrase
  *
@@ -703,11 +703,11 @@ extern tag_typedef_t nutag_certificate_dir_ref;
  * Corresponding tag taking reference parameter is NUTAG_CERTIFICATE_PHRASE_REF()
  */
 #define NUTAG_CERTIFICATE_PHRASE(x) nutag_certificate_phrase, tag_str_v(x)
-extern tag_typedef_t nutag_certificate_phrase;
+SOFIAPUBVAR tag_typedef_t nutag_certificate_phrase;
 
 #define NUTAG_CERTIFICATE_PHRASE_REF(x) \
           nutag_certificate_phrase_ref, tag_str_vr((&x))
-extern tag_typedef_t nutag_certificate_phrase_ref;
+SOFIAPUBVAR tag_typedef_t nutag_certificate_phrase_ref;
 
 /** Local SIPS url
  *
@@ -726,10 +726,10 @@ extern tag_typedef_t nutag_certificate_phrase_ref;
  * Corresponding tag taking reference parameter is NUTAG_SIPS_URL_REF()
  */
 #define NUTAG_SIPS_URL(x)       nutag_sips_url, urltag_url_v(x)
-extern tag_typedef_t nutag_sips_url;
+SOFIAPUBVAR tag_typedef_t nutag_sips_url;
 
 #define NUTAG_SIPS_URL_REF(x)   nutag_sips_url_ref, urltag_url_vr(&(x))
-extern tag_typedef_t nutag_sips_url_ref;
+SOFIAPUBVAR tag_typedef_t nutag_sips_url_ref;
 
 /** Outbound proxy URL
  *
@@ -765,10 +765,10 @@ extern tag_typedef_t nutag_sips_url_ref;
  * Corresponding tag taking reference parameter is NUTAG_REGISTRAR_REF()
  */
 #define NUTAG_REGISTRAR(x)      nutag_registrar, urltag_url_v(x)
-extern tag_typedef_t nutag_registrar;
+SOFIAPUBVAR tag_typedef_t nutag_registrar;
 
 #define NUTAG_REGISTRAR_REF(x)  nutag_registrar_ref, urltag_url_vr(&(x))
-extern tag_typedef_t nutag_registrar_ref;
+SOFIAPUBVAR tag_typedef_t nutag_registrar_ref;
 
 /** Outbound option string.
  *
@@ -787,10 +787,10 @@ extern tag_typedef_t nutag_registrar_ref;
  * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_REF()
  */
 #define NUTAG_OUTBOUND(x)      nutag_outbound, tag_str_v(x)
-extern tag_typedef_t nutag_outbound;
+SOFIAPUBVAR tag_typedef_t nutag_outbound;
 
 #define NUTAG_OUTBOUND_REF(x)  nutag_outbound_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_outbound_ref;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_ref;
 
 /** Outbound proxy set 1.
  *
@@ -809,10 +809,10 @@ extern tag_typedef_t nutag_outbound_ref;
  * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET1_REF()
  */
 #define NUTAG_OUTBOUND_SET1(x)      nutag_outbound_set1, tag_str_v(x)
-extern tag_typedef_t nutag_outbound_set1;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set1;
 
 #define NUTAG_OUTBOUND_SET1_REF(x)  nutag_outbound_set1_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_outbound_set1_ref;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set1_ref;
 
 /** Outbound proxy set 2.
  *
@@ -831,10 +831,10 @@ extern tag_typedef_t nutag_outbound_set1_ref;
  * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET2_REF()
  */
 #define NUTAG_OUTBOUND_SET2(x)      nutag_outbound_set2, tag_str_v(x)
-extern tag_typedef_t nutag_outbound_set2;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set2;
 
 #define NUTAG_OUTBOUND_SET2_REF(x)  nutag_outbound_set2_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_outbound_set2_ref;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set2_ref;
 
 /** Outbound proxy set 3.
  *
@@ -853,10 +853,10 @@ extern tag_typedef_t nutag_outbound_set2_ref;
  * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET3_REF()
  */
 #define NUTAG_OUTBOUND_SET3(x)      nutag_outbound_set3, tag_str_v(x)
-extern tag_typedef_t nutag_outbound_set3;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set3;
 
 #define NUTAG_OUTBOUND_SET3_REF(x)  nutag_outbound_set3_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_outbound_set3_ref;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set3_ref;
 
 /** Outbound proxy set 4.
  *
@@ -875,10 +875,10 @@ extern tag_typedef_t nutag_outbound_set3_ref;
  * Corresponding tag taking reference parameter is NUTAG_OUTBOUND_SET4_REF()
  */
 #define NUTAG_OUTBOUND_SET4(x)      nutag_outbound_set4, tag_str_v(x)
-extern tag_typedef_t nutag_outbound_set4;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set4;
 
 #define NUTAG_OUTBOUND_SET4_REF(x)  nutag_outbound_set4_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_outbound_set4_ref;
+SOFIAPUBVAR tag_typedef_t nutag_outbound_set4_ref;
 
 /** Pointer to SIP parser structure
  *
@@ -916,10 +916,10 @@ extern tag_typedef_t nutag_outbound_set4_ref;
  * Corresponding tag taking reference parameter is NUTAG_AUTH_REF()
  */
 #define NUTAG_AUTH(x)		nutag_auth, tag_str_v(x)
-extern tag_typedef_t nutag_auth;
+SOFIAPUBVAR tag_typedef_t nutag_auth;
 
 #define NUTAG_AUTH_REF(x)	    nutag_auth_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_auth_ref;
+SOFIAPUBVAR tag_typedef_t nutag_auth_ref;
 
 /** Keepalive interval in milliseconds.
  *
@@ -941,10 +941,10 @@ extern tag_typedef_t nutag_auth_ref;
  * NUTAG_KEEPALIVE_REF()
  */
 #define NUTAG_KEEPALIVE(x) nutag_keepalive, tag_uint_v(x)
-extern tag_typedef_t nutag_keepalive;
+SOFIAPUBVAR tag_typedef_t nutag_keepalive;
 
 #define NUTAG_KEEPALIVE_REF(x) nutag_keepalive_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_keepalive_ref;
+SOFIAPUBVAR tag_typedef_t nutag_keepalive_ref;
 
 /** Transport-level keepalive interval for streams.
  *
@@ -968,11 +968,11 @@ extern tag_typedef_t nutag_keepalive_ref;
  * NUTAG_KEEPALIVE_STREAM_REF()
  */
 #define NUTAG_KEEPALIVE_STREAM(x) nutag_keepalive_stream, tag_uint_v(x)
-extern tag_typedef_t nutag_keepalive_stream;
+SOFIAPUBVAR tag_typedef_t nutag_keepalive_stream;
 
 #define NUTAG_KEEPALIVE_STREAM_REF(x) \
 nutag_keepalive_stream_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_keepalive_stream_ref;
+SOFIAPUBVAR tag_typedef_t nutag_keepalive_stream_ref;
 
 /** Lifetime of authentication data in seconds.
  *
@@ -989,10 +989,10 @@ extern tag_typedef_t nutag_keepalive_stream_ref;
  * Corresponding tag taking reference parameter is NUTAG_AUTHTIME_REF()
  */
 #define NUTAG_AUTHTIME(x)	nutag_authtime, tag_uint_v(x)
-extern tag_typedef_t nutag_authtime;
+SOFIAPUBVAR tag_typedef_t nutag_authtime;
 
 #define NUTAG_AUTHTIME_REF(x)	nutag_authtime_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_authtime_ref;
+SOFIAPUBVAR tag_typedef_t nutag_authtime_ref;
 
 /** Events
  *
@@ -1007,10 +1007,10 @@ extern tag_typedef_t nutag_authtime_ref;
  * Corresponding tag taking reference parameter is NUTAG_EVENT_REF()
  */
 #define NUTAG_EVENT(x)          nutag_event, tag_ptr_v(x)
-extern tag_typedef_t nutag_event;
+SOFIAPUBVAR tag_typedef_t nutag_event;
 
 #define NUTAG_EVENT_REF(x)      nutag_event_ref, tag_ptr_vr(&(x),(x))
-extern tag_typedef_t nutag_event_ref;
+SOFIAPUBVAR tag_typedef_t nutag_event_ref;
 
 /** Response status code
  *
@@ -1032,10 +1032,10 @@ extern tag_typedef_t nutag_event_ref;
  * Corresponding tag taking reference parameter is NUTAG_STATUS_REF()
  */
 #define NUTAG_STATUS(x)         nutag_status, tag_uint_v(x)
-extern tag_typedef_t nutag_status;
+SOFIAPUBVAR tag_typedef_t nutag_status;
 
 #define NUTAG_STATUS_REF(x)     nutag_status_ref, tag_uint_vr(&(x))
-extern tag_typedef_t nutag_status_ref;
+SOFIAPUBVAR tag_typedef_t nutag_status_ref;
 
 /** Response phrase
  *
@@ -1050,10 +1050,10 @@ extern tag_typedef_t nutag_status_ref;
  * Corresponding tag taking reference parameter is NUTAG_PHRASE_REF()
  */
 #define NUTAG_PHRASE(x)         nutag_phrase, tag_str_v(x)
-extern tag_typedef_t nutag_phrase;
+SOFIAPUBVAR tag_typedef_t nutag_phrase;
 
 #define NUTAG_PHRASE_REF(x)     nutag_phrase_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_phrase_ref;
+SOFIAPUBVAR tag_typedef_t nutag_phrase_ref;
 
 /** NUA Handle
  *
@@ -1068,10 +1068,10 @@ extern tag_typedef_t nutag_phrase_ref;
  * Corresponding tag taking reference parameter is NUTAG_HANDLE_REF()
  */
 #define NUTAG_HANDLE(x)         nutag_handle, nutag_handle_v(x)
-extern tag_typedef_t nutag_handle;
+SOFIAPUBVAR tag_typedef_t nutag_handle;
 
 #define NUTAG_HANDLE_REF(x)     nutag_handle_ref, nutag_handle_vr(&(x))
-extern tag_typedef_t nutag_handle_ref;
+SOFIAPUBVAR tag_typedef_t nutag_handle_ref;
 
 /** Registration handle (used with requests and nua_respond())
  *
@@ -1092,10 +1092,10 @@ extern tag_typedef_t nutag_handle_ref;
  * Corresponding tag taking reference parameter is NUTAG_IDENTITY_REF()
 */
 #define NUTAG_IDENTITY(x)   nutag_identity, nutag_handle_v(x)
-extern tag_typedef_t nutag_identity;
+SOFIAPUBVAR tag_typedef_t nutag_identity;
 
 #define NUTAG_IDENTITY_REF(x) nutag_identity_ref, nutag_handle_vr(&(x))
-extern tag_typedef_t nutag_identity_ref;
+SOFIAPUBVAR tag_typedef_t nutag_identity_ref;
 
 /**Intance identifier.
  *
@@ -1112,10 +1112,10 @@ extern tag_typedef_t nutag_identity_ref;
  * Corresponding tag taking reference parameter is NUTAG_INSTANCE_REF()
  */
 #define NUTAG_INSTANCE(x)        nutag_instance, tag_str_v(x)
-extern tag_typedef_t nutag_instance;
+SOFIAPUBVAR tag_typedef_t nutag_instance;
 
 #define NUTAG_INSTANCE_REF(x)    nutag_instance_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_instance_ref;
+SOFIAPUBVAR tag_typedef_t nutag_instance_ref;
 
 /** Refer reply handle (used with refer)
  *
@@ -1137,10 +1137,10 @@ extern tag_typedef_t nutag_instance_ref;
  * Corresponding tag taking reference parameter is NUTAG_NOTIFY_REFER_REF()
 */
 #define NUTAG_NOTIFY_REFER(x)   nutag_notify_refer, nutag_handle_v(x)
-extern tag_typedef_t nutag_notify_refer;
+SOFIAPUBVAR tag_typedef_t nutag_notify_refer;
 
 #define NUTAG_NOTIFY_REFER_REF(x) nutag_notify_refer_ref, nutag_handle_vr(&(x))
-extern tag_typedef_t nutag_notify_refer_ref;
+SOFIAPUBVAR tag_typedef_t nutag_notify_refer_ref;
 
 /** Event used with automatic refer notifications.
  *
@@ -1162,10 +1162,10 @@ extern tag_typedef_t nutag_notify_refer_ref;
  * Corresponding tag taking reference parameter is NUTAG_REFER_EVENT_REF()
  */
 #define NUTAG_REFER_EVENT(x)   nutag_refer_event, siptag_event_v(x)
-extern tag_typedef_t nutag_refer_event;
+SOFIAPUBVAR tag_typedef_t nutag_refer_event;
 
 #define NUTAG_REFER_EVENT_REF(x) nutag_refer_event_ref, siptag_event_vr(&(x))
-extern tag_typedef_t nutag_refer_event_ref;
+SOFIAPUBVAR tag_typedef_t nutag_refer_event_ref;
 
 /** Invite pauses referrer's handle.
  *
@@ -1187,10 +1187,10 @@ extern tag_typedef_t nutag_refer_event_ref;
  * Corresponding tag taking reference parameter is NUTAG_REFER_PAUSE_REF()
  */
 #define NUTAG_REFER_PAUSE(x)   nutag_refer_pause, tag_bool_v(x)
-extern tag_typedef_t nutag_refer_pause;
+SOFIAPUBVAR tag_typedef_t nutag_refer_pause;
 
 #define NUTAG_REFER_PAUSE_REF(x) nutag_refer_pause_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_refer_pause_ref;
+SOFIAPUBVAR tag_typedef_t nutag_refer_pause_ref;
 
 /** User-Agent string
  *
@@ -1209,10 +1209,10 @@ extern tag_typedef_t nutag_refer_pause_ref;
  * Corresponding tag taking reference parameter is NUTAG_USER_AGENT_REF()
  */
 #define NUTAG_USER_AGENT(x)     nutag_user_agent, tag_str_v(x)
-extern tag_typedef_t nutag_user_agent;
+SOFIAPUBVAR tag_typedef_t nutag_user_agent;
 
 #define NUTAG_USER_AGENT_REF(x) nutag_user_agent_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_user_agent_ref;
+SOFIAPUBVAR tag_typedef_t nutag_user_agent_ref;
 
 /** Allow a method (or methods).
  *
@@ -1230,10 +1230,10 @@ extern tag_typedef_t nutag_user_agent_ref;
  * Corresponding tag taking reference parameter is NUTAG_ALLOW_REF()
  */
 #define NUTAG_ALLOW(x)     nutag_allow, tag_str_v(x)
-extern tag_typedef_t nutag_allow;
+SOFIAPUBVAR tag_typedef_t nutag_allow;
 
 #define NUTAG_ALLOW_REF(x) nutag_allow_ref, tag_str_vr(&(x))
-extern tag_typedef_t nutag_allow_ref;
+SOFIAPUBVAR tag_typedef_t nutag_allow_ref;
 
 /** Call state
  *
@@ -1257,10 +1257,10 @@ extern tag_typedef_t nutag_allow_ref;
  * Corresponding tag taking reference parameter is NUTAG_CALLSTATE_REF()
  */
 #define NUTAG_CALLSTATE(x) nutag_callstate, tag_int_v(x)
-extern tag_typedef_t nutag_callstate;
+SOFIAPUBVAR tag_typedef_t nutag_callstate;
 
 #define NUTAG_CALLSTATE_REF(x) nutag_callstate_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_callstate_ref;
+SOFIAPUBVAR tag_typedef_t nutag_callstate_ref;
 
 enum nua_callstate {
   nua_callstate_init,		/**< Initial state */
@@ -1300,10 +1300,10 @@ char const *nua_callstate_name(enum nua_callstate state);
  * Corresponding tag taking reference parameter is NUTAG_SUBSTATE_REF()
 */
 #define NUTAG_SUBSTATE(x) nutag_substate, tag_int_v(x)
-extern tag_typedef_t nutag_substate;
+SOFIAPUBVAR tag_typedef_t nutag_substate;
 
 #define NUTAG_SUBSTATE_REF(x) nutag_substate_ref, tag_int_vr(&(x))
-extern tag_typedef_t nutag_substate_ref;
+SOFIAPUBVAR tag_typedef_t nutag_substate_ref;
 
 enum nua_substate {
   nua_substate_extended = nea_extended,
@@ -1334,10 +1334,10 @@ enum nua_substate {
  * Corresponding tag taking reference parameter is NUTAG_REFER_EXPIRES()
  */
 #define NUTAG_REFER_EXPIRES(x)  nutag_refer_expires, tag_uint_v((x))
-extern tag_typedef_t nutag_refer_expires;
+SOFIAPUBVAR tag_typedef_t nutag_refer_expires;
 
 #define NUTAG_REFER_EXPIRES_REF(x) nutag_refer_expires_ref, tag_uint_vr((&(x)))
-extern tag_typedef_t nutag_refer_expires_ref;
+SOFIAPUBVAR tag_typedef_t nutag_refer_expires_ref;
 
 /** Add media tags from our offer to Accept-Contact headers.
  *
@@ -1360,19 +1360,19 @@ extern tag_typedef_t nutag_refer_expires_ref;
  * Corresponding tag taking reference parameter is NUTAG_MEDIA_FEATURES_REF()
  */
 #define NUTAG_MEDIA_FEATURES(x) nutag_media_features, tag_bool_v(x)
-extern tag_typedef_t nutag_media_features;
+SOFIAPUBVAR tag_typedef_t nutag_media_features;
 
 #define NUTAG_MEDIA_FEATURES_REF(x) \
           nutag_media_features_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_media_features_ref;
+SOFIAPUBVAR tag_typedef_t nutag_media_features_ref;
 
 /** Add methods and media tags to Contact headers. */
 #define NUTAG_CALLEE_CAPS(x) nutag_callee_caps, tag_bool_v(x)
-extern tag_typedef_t nutag_callee_caps;
+SOFIAPUBVAR tag_typedef_t nutag_callee_caps;
 
 #define NUTAG_CALLEE_CAPS_REF(x) \
           nutag_callee_caps_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_callee_caps_ref;
+SOFIAPUBVAR tag_typedef_t nutag_callee_caps_ref;
 
 /** If true, add "path" to Supported in REGISTER.
  *
@@ -1382,10 +1382,10 @@ extern tag_typedef_t nutag_callee_caps_ref;
  * December 2002.
  */
 #define NUTAG_PATH_ENABLE(x)   nutag_path_enable, tag_bool_v(x)
-extern tag_typedef_t nutag_path_enable;
+SOFIAPUBVAR tag_typedef_t nutag_path_enable;
 
 #define NUTAG_PATH_ENABLE_REF(x) nutag_path_enable_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_path_enable_ref;
+SOFIAPUBVAR tag_typedef_t nutag_path_enable_ref;
 
 /** Use route from Service-Route header in response to REGISTER.
  *
@@ -1395,11 +1395,11 @@ extern tag_typedef_t nutag_path_enable_ref;
  * December 2002.
  */
 #define NUTAG_SERVICE_ROUTE_ENABLE(x) nutag_service_route_enable, tag_bool_v(x)
-extern tag_typedef_t nutag_service_route_enable;
+SOFIAPUBVAR tag_typedef_t nutag_service_route_enable;
 
 #define NUTAG_SERVICE_ROUTE_ENABLE_REF(x) \
           nutag_service_route_enable_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_service_route_enable_ref;
+SOFIAPUBVAR tag_typedef_t nutag_service_route_enable_ref;
 
 /** Enable local media (MSS)
  *
@@ -1416,11 +1416,11 @@ extern tag_typedef_t nutag_service_route_enable_ref;
  * Corresponding tag taking reference parameter is NUTAG_MEDIA_ENABLE_REF()
 */
 #define NUTAG_MEDIA_ENABLE(x) nutag_media_enable, tag_bool_v(x)
-extern tag_typedef_t nutag_media_enable;
+SOFIAPUBVAR tag_typedef_t nutag_media_enable;
 
 #define NUTAG_MEDIA_ENABLE_REF(x) \
           nutag_media_enable_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_media_enable_ref;
+SOFIAPUBVAR tag_typedef_t nutag_media_enable_ref;
 
 /** Indicate that SDP offer has been received.
  *
@@ -1433,10 +1433,10 @@ extern tag_typedef_t nutag_media_enable_ref;
  * Corresponding tag taking reference parameter is NUTAG_OFFER_RECV_REF()
  */
 #define NUTAG_OFFER_RECV(x) nutag_offer_recv, tag_bool_v(x)
-extern tag_typedef_t nutag_offer_recv;
+SOFIAPUBVAR tag_typedef_t nutag_offer_recv;
 
 #define NUTAG_OFFER_RECV_REF(x) nutag_offer_recv_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_offer_recv_ref;
+SOFIAPUBVAR tag_typedef_t nutag_offer_recv_ref;
 
 /** Indicate that SDP answer has been received.
  *
@@ -1449,10 +1449,10 @@ extern tag_typedef_t nutag_offer_recv_ref;
  * Corresponding tag taking reference parameter is NUTAG_ANSWER_RECV_REF()
  */
 #define NUTAG_ANSWER_RECV(x) nutag_answer_recv, tag_bool_v(x)
-extern tag_typedef_t nutag_answer_recv;
+SOFIAPUBVAR tag_typedef_t nutag_answer_recv;
 
 #define NUTAG_ANSWER_RECV_REF(x) nutag_answer_recv_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_answer_recv_ref;
+SOFIAPUBVAR tag_typedef_t nutag_answer_recv_ref;
 
 /** Indicate that SDP offer has been sent.
  *
@@ -1465,10 +1465,10 @@ extern tag_typedef_t nutag_answer_recv_ref;
  * Corresponding tag taking reference parameter is NUTAG_OFFER_SENT_REF()
  */
 #define NUTAG_OFFER_SENT(x) nutag_offer_sent, tag_bool_v(x)
-extern tag_typedef_t nutag_offer_sent;
+SOFIAPUBVAR tag_typedef_t nutag_offer_sent;
 
 #define NUTAG_OFFER_SENT_REF(x) nutag_offer_sent_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_offer_sent_ref;
+SOFIAPUBVAR tag_typedef_t nutag_offer_sent_ref;
 
 /** Indicate that SDP answer has been sent.
  *
@@ -1481,10 +1481,10 @@ extern tag_typedef_t nutag_offer_sent_ref;
  * Corresponding tag taking reference parameter is NUTAG_ANSWER_SENT_REF()
  */
 #define NUTAG_ANSWER_SENT(x) nutag_answer_sent, tag_bool_v(x)
-extern tag_typedef_t nutag_answer_sent;
+SOFIAPUBVAR tag_typedef_t nutag_answer_sent;
 
 #define NUTAG_ANSWER_SENT_REF(x) nutag_answer_sent_ref, tag_bool_vr(&(x))
-extern tag_typedef_t nutag_answer_sent_ref;
+SOFIAPUBVAR tag_typedef_t nutag_answer_sent_ref;
 
 #if SU_HAVE_INLINE
 su_inline tag_value_t nutag_handle_v(nua_handle_t *v) { return (tag_value_t)v; }
