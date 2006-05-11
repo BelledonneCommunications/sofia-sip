@@ -3531,10 +3531,11 @@ sres_record_t *sres_create_error_rr(sres_cache_t *cache,
 				    uint16_t errcode)
 {
   sres_record_t *sr, r[1];
+  char buf[SRES_MAXDNAME];
 
   sr = memset(r, 0, sizeof *sr);
 
-  sr->sr_name = q->q_name;
+  sr->sr_name = (char *)sres_toplevel(buf, sizeof buf, q->q_name);
   sr->sr_size = sizeof *sr;
   sr->sr_status = errcode;
   sr->sr_type = q->q_type;

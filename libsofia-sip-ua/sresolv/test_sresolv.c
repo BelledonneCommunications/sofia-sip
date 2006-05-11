@@ -583,6 +583,8 @@ int test_a(sres_context_t *ctx)
   /* Error gets TTL from example.com SOA record minimum time */
   TEST(rr_a->a_record->r_ttl, 60);
 
+  sres_free_answers(res, ctx->result), ctx->result = NULL;
+
   /* Try domain without A record => 
      we should get a record with SRES_RECORD_ERR */
   TEST_1(sres_query(res, test_answer, ctx, sres_type_a, 
@@ -598,6 +600,8 @@ int test_a(sres_context_t *ctx)
   /* Error gets TTL from example.com SOA record minimum time */
   TEST(rr_a->a_record->r_ttl, 60);
 
+  sres_free_answers(res, ctx->result), ctx->result = NULL;
+
   /* Cached search */
   TEST_1(result = sres_search_cached_answers(res, sres_type_a, "sip00"));
   TEST_1(rr_a = result[0]->sr_a);
@@ -611,6 +615,17 @@ int test_a(sres_context_t *ctx)
   if (result[1]) {
     TEST(result[1]->sr_a->a_record->r_type, sres_type_a);
   }
+
+  sres_free_answers(res, result), result = NULL;
+
+  /* Cached search */
+  TEST_1(result = sres_cached_answers(res, sres_type_a, "no-sip.example.com"));
+  TEST_1(rr_a = result[0]->sr_a);
+  TEST(rr_a->a_record->r_status, SRES_NAME_ERR);
+  TEST(rr_a->a_record->r_type, sres_type_a);
+  TEST(rr_a->a_record->r_class, sres_class_in);
+
+  sres_free_answers(res, result), result = NULL;
 
   END();
 }
