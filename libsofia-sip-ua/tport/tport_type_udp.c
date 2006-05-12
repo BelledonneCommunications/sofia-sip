@@ -214,8 +214,9 @@ int tport_recv_dgram(tport_t *self)
 {
   msg_t *msg;
   int n, veclen;
+  su_addrinfo_t *ai;
   su_sockaddr_t *from;
-  socklen_t *fromlen;
+  socklen_t fromlen;
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
   uint8_t sample[1];
 
@@ -235,9 +236,13 @@ int tport_recv_dgram(tport_t *self)
 
   msg = self->tp_msg;
 
-  n = su_vrecv(self->tp_socket, iovec, veclen, 0, 
-	       from = msg_addr(msg), fromlen = msg_addrlen(msg));
+  ai = msg_addrinfo(msg);
+  from = (su_sockaddr_t *)ai->ai_addr, fromlen = ai->ai_addrlen;
 
+  n = su_vrecv(self->tp_socket, iovec, veclen, 0, from, &fromlen);
+  
+  ai->ai_addrlen = fromlen;
+  
   if (n == SOCKET_ERROR) {
     int error = su_errno();
     msg_destroy(msg); self->tp_msg = NULL;

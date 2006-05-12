@@ -3697,7 +3697,6 @@ msg_select_addrinfo(msg_t *msg, su_addrinfo_t *res)
 {
   su_addrinfo_t *ai, *mai = msg_addrinfo(msg);
   su_sockaddr_t *su = msg_addr(msg);
-  socklen_t *sulen = msg_addrlen(msg);
 
   for (ai = res; ai; ai = ai->ai_next) {
 #if SU_HAVE_IN6
@@ -3717,9 +3716,9 @@ msg_select_addrinfo(msg_t *msg, su_addrinfo_t *res)
       memset(su, 0, sizeof(su_sockaddr_t));
     memcpy(su, ai->ai_addr, ai->ai_addrlen);
     if (su_sockaddr_size(su))
-      *sulen = su_sockaddr_size(su);
+      mai->ai_addrlen = su_sockaddr_size(su);
     else
-      *sulen = ai->ai_addrlen;
+      mai->ai_addrlen = ai->ai_addrlen;
     return 0;
   }
 
