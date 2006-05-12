@@ -5,6 +5,14 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
+Updated NAT traversal features: refactored STUN, added outbound, GRUU.
+
+Updated DNS resolver: now it works with IPv6 and on Win32.
+
+Added gobject bindings as a separate library.
+
+Building library as a DLL.
+
 <changes since last written in freshmeat.net "Changes:" style;
  and in less than 10 lines />
 
@@ -32,7 +40,7 @@ API/ABI changes and versioning
     sofia-resolv/sres_async.h
     sofia-resolv/sres_cache.h
     sofia-resolv/sres_record.h
-    sip-dig.c example program
+    utils/sip-dig.c example program
   - Removed sres_resolver_add_mutex()
   - Renamed cname_record to cn_record in sres_cname_record_t
   - Changed code of SRES_TIMEOUT_ERR and SRES_RECORD_ERR 
