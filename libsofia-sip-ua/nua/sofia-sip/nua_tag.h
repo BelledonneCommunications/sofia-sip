@@ -773,6 +773,23 @@ SOFIAPUBVAR tag_typedef_t nutag_registrar_ref;
 
 /** Outbound option string.
  *
+ * The outbound option string can specify how the NAT traversal is handled.
+ * The option tokens are as follows:
+ * - "gruuize": try to generate a GRUU
+ * - "outbound": use SIP outbound extension (off by default)
+ * - "validate": validate registration behind a NAT by sending OPTIONS to self
+ * - "natify": try to traverse NAT
+ * - "use-rport": use rport to traverse NAT
+ * - "options-keepalive": send periodic OPTIONS requests as keepalive messages
+ *
+ * An option token with "no-" or "not-" prefix turns the option off. For
+ * example, if you want to try to traverse NATs but not to use OPTIONS
+ * keepalive, use NUTAG_OUTBOUND("natify no-options-keepalive").
+ *
+ * @note
+ * Options string is used so that no new tags need to be added when the
+ * outbound functionality changes.
+ *
  * @par Used with
  *    nua_register()   \n
  *    nua_set_params() \n
@@ -792,6 +809,8 @@ SOFIAPUBVAR tag_typedef_t nutag_outbound;
 
 #define NUTAG_OUTBOUND_REF(x)  nutag_outbound_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_outbound_ref;
+
+#if notyet
 
 /** Outbound proxy set 1.
  *
@@ -881,6 +900,8 @@ SOFIAPUBVAR tag_typedef_t nutag_outbound_set4;
 #define NUTAG_OUTBOUND_SET4_REF(x)  nutag_outbound_set4_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_outbound_set4_ref;
 
+#endif	/* ...notyet */
+
 /** Pointer to SIP parser structure
  *
  * @par Used with
@@ -967,6 +988,8 @@ SOFIAPUBVAR tag_typedef_t nutag_keepalive_ref;
  *
  * Corresponding tag taking reference parameter is
  * NUTAG_KEEPALIVE_STREAM_REF()
+ *
+ * @todo Actually pass NUTAG_KEEPALIVE_STREAM() to transport layer.
  */
 #define NUTAG_KEEPALIVE_STREAM(x) nutag_keepalive_stream, tag_uint_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_keepalive_stream;

@@ -72,11 +72,12 @@ struct outbound {
   char ob_cookie[32];		/**< Our magic cookie */
 
   struct outbound_prefs {
-    unsigned dgram_interval;	/**< Default keepalive interval for datagram */
+    unsigned interval;	/**< Default keepalive interval for datagram */
     unsigned stream_interval;	/**< Default keepalive interval for streams */
     unsigned gruuize:1;		/**< Establish a GRUU */
     unsigned outbound:1;	/**< Try to use outbound */
     unsigned natify:1;		/**< Try to detect NAT */
+    unsigned okeepalive:1;	/**< Connection keepalive with OPTIONS */
     unsigned validate:1;	/**< Validate registration with OPTIONS */
     /* How to detect NAT binding or connect to outbound: */
     unsigned use_connect:1;	/**< Use HTTP connect */
@@ -138,6 +139,8 @@ struct outbound {
     msg_t *msg;			/**< Keep-alive OPTIONS message */
     nta_outgoing_t *orq;	/**< Keep-alive OPTIONS transaction */
     auth_client_t *auc[1];	/**< Authenticator for OPTIONS */
+    /** Progress of registration validation */
+    unsigned validating:1, validated:1,:0;
   } ob_keepalive;		/**< Keepalive informatio */
 };
 
@@ -241,32 +244,39 @@ void outbound_unref(outbound_t *ob)
 
 #include <sofia-sip/bnf.h>
 
+/** Set various outbound and nat-traversal related options. */
 int outbound_set_options(outbound_t *ob,
 			 char const *options,
-			 unsigned dgram_interval,
+			 unsigned interval,
 			 unsigned stream_interval)
 {
   struct outbound_prefs prefs[1] = {{ 0 }};
-  char *s;
+  char const *s;
 
-  prefs->dgram_interval = dgram_interval;
+  prefs->interval = interval;
   prefs->stream_interval = stream_interval;
+
   prefs->gruuize = 1;
   prefs->outbound = 0;
   prefs->natify = 1;
+  prefs->okeepalive = 1;
   prefs->validate = 1;
   prefs->use_rport = 1;
 
 #define MATCH(v) (len == sizeof(#v) - 1 && strncasecmp(#v, s, len) == 0)
 
-  for (s = (char *)options; s && s[0]; ) {
+  for (s = options; s && s[0]; ) {
     int len = span_token(s);
     int value = 1;
 
     if (len > 3 && strncasecmp(s, "no-", 3) == 0)
       value = 0, s += 3, len -= 3;
+    else if (len > 4 && strncasecmp(s, "not-", 4) == 0)
+      value = 0, s += 4, len -= 4;
     else if (len > 3 && strncasecmp(s, "no_", 3) == 0)
       value = 0, s += 3, len -= 3;
+    else if (len > 4 && strncasecmp(s, "not_", 4) == 0)
+      value = 0, s += 4, len -= 4;
 
     if (len == 0)
       break;
@@ -274,7 +284,10 @@ int outbound_set_options(outbound_t *ob,
     else if (MATCH(outbound)) prefs->outbound = value;
     else if (MATCH(natify)) prefs->natify = value;
     else if (MATCH(validate)) prefs->validate = value;
-    else if (MATCH(use-connect) || MATCH(use_connect)) prefs->use_connect = value;
+    else if (MATCH(options-keepalive)) prefs->okeepalive = value;
+    else if (MATCH(options_keepalive)) prefs->okeepalive = value;
+    else if (MATCH(use-connect)) prefs->use_connect = value;
+    else if (MATCH(use_connect)) prefs->use_connect = value;
     else if (MATCH(use-rport) || MATCH(use_rport)) prefs->use_rport = value;
     else if (MATCH(use-socks) || MATCH(use_socks)) prefs->use_socks = value;
     else if (MATCH(use-upnp) || MATCH(use_upnp)) prefs->use_upnp = value;
@@ -419,30 +432,6 @@ int outbound_check_for_nat(outbound_t *ob,
   int binding_changed;
   sip_contact_t *m = ob->ob_rcontact;
 
-#if 0
-  if (host_is_domain(v->v_host)) {
-    /*
-     * If we use domain name in Via, we assume that application
-     * knows something we don't.
-     * Just use ordinary contact unless domain name ends with ".invalid"
-     */
-    char const *invalid = strcasestr(v->v_host, ".invalid");
-
-    if (invalid)
-      invalid += (sizeof ".invalid") - 1;
-    if (invalid && invalid[0] == '.') /* ... or .invalid. */
-      invalid++;
-
-    if (!invalid || invalid[0] != '\0') {
-      if (!ob->ob_rcontact)
-        ...
-      if (!ob->ob_rcontact)
-        return -1;
-      return 0;
-    }
-  }
-#endif
-
   /* Update NAT information */
   binding_changed = outbound_nat_detect(ob, request, response);
 
@@ -451,6 +440,10 @@ int outbound_check_for_nat(outbound_t *ob,
 
   /* Contact was set by application, do not change it */
   if (!ob->ob_by_stack)
+    return ob_no_nat;
+
+  /* Application does not want us to do any NAT traversal */ 
+  if (!ob->ob_prefs.natify)
     return ob_no_nat;
 
   /* We have detected NAT. Now, what to do?
@@ -648,26 +641,25 @@ static void keepalive_timer(su_root_magic_t *root_magic,
 			    su_timer_t *t,
 			    su_timer_arg_t *ob_as_timer_arg);
 
+/** Start OPTIONS keepalive or contact validation process */
 void outbound_start_keepalive(outbound_t *ob,
 			      nta_outgoing_t *register_transaction)
 {
-  tport_t *tport;
-  unsigned interval;
+  unsigned interval = 0;
+  int need_to_validate;
 
   if (!ob)
     return;
 
-  if (!ob->ob_nat_detected || !register_transaction) {
+  if (ob->ob_prefs.natify && ob->ob_prefs.okeepalive)
+    interval = ob->ob_prefs.interval;
+  need_to_validate = ob->ob_prefs.validate && !ob->ob_validated;
+
+  if (!ob->ob_nat_detected || !register_transaction ||
+      !(need_to_validate || interval != 0)) {
     outbound_stop_keepalive(ob);
     return;
   }
-
-  tport = nta_outgoing_transport(register_transaction);
-  if (tport_is_dgram(tport))
-    interval = ob->ob_prefs.dgram_interval;
-  else
-    interval = ob->ob_prefs.stream_interval;
-  tport_unref(tport);
 
   if (ob->ob_keepalive.timer)
     su_timer_destroy(ob->ob_keepalive.timer), ob->ob_keepalive.timer = NULL;
@@ -720,7 +712,9 @@ static int create_keepalive_message(outbound_t *ob, sip_t const *regsip)
 
   char const *p1 = ob->ob_instance;
   char const *p2 = ob->ob_features;
-  
+
+  unsigned d = ob->ob_keepalive.interval;
+
   assert(regsip); assert(regsip->sip_request);
 
   if (p1 || p2) {
@@ -731,23 +725,22 @@ static int create_keepalive_message(outbound_t *ob, sip_t const *regsip)
     msg_header_insert(msg, NULL, (void *)ac);
   }
 
-  if (
+  if (0 >
+      /* Duplicate essential headers from REGISTER request: */
       sip_add_tl(msg, osip,
-       	  /* Duplicate essential headers from REGISTER request:
-       	     From/To, Route */
-       	  SIPTAG_TO(regsip->sip_to),
-       	  SIPTAG_FROM(regsip->sip_from),
-       	  /* XXX - we should only use loose routing here */
-       	  /* XXX - if we used strict routing,
-       	     the route header/request_uri must be restored
-       	  */
-       	  SIPTAG_ROUTE(regsip->sip_route),
-       	  /* Add Max-Forwards 0 */
-       	  SIPTAG_MAX_FORWARDS_STR("0"),
-       	  SIPTAG_SUBJECT_STR("KEEPALIVE"),
-       	  SIPTAG_CALL_ID_STR(ob->ob_cookie),
-       	  SIPTAG_ACCEPT_STR(outbound_content_type),
-       	  TAG_END()) < 0 ||
+		 SIPTAG_TO(regsip->sip_to),
+		 SIPTAG_FROM(regsip->sip_from),
+		 /* XXX - we should only use loose routing here */
+		 /* XXX - if we used strict routing,
+		    the route header/request_uri must be restored
+		 */
+		 SIPTAG_ROUTE(regsip->sip_route),
+		 /* Add Max-Forwards 0 */
+		 TAG_IF(d, SIPTAG_MAX_FORWARDS_STR("0")),
+		 TAG_IF(d, SIPTAG_SUBJECT_STR("KEEPALIVE")),
+		 SIPTAG_CALL_ID_STR(ob->ob_cookie),
+		 SIPTAG_ACCEPT_STR(outbound_content_type),
+		 TAG_END()) ||
       /* Create request-line, Call-ID, CSeq */
       nta_msg_request_complete(msg,
        			nta_default_leg(ob->ob_nta),
@@ -772,7 +765,7 @@ static int keepalive_options(outbound_t *ob)
   if (ob->ob_keepalive.orq)
     return 0;
 
-  if (ob->ob_registered && !ob->ob_validated)
+  if (ob->ob_prefs.validate && ob->ob_registered && !ob->ob_validated)
     return keepalive_options_with_registration_probe(ob);
 
   req = msg_copy(ob->ob_keepalive.msg);
@@ -858,25 +851,50 @@ static int response_to_keepalive_options(outbound_t *ob,
     }
   }
 
-  if (status == 408) {
+  if (binding_check <= 1 && ob->ob_registered && ob->ob_keepalive.validating) {
+    int failed = 0, loglevel = 3;
+
+    if (challenged > 0 && credentials > 0) {
+      keepalive_options_with_registration_probe(ob);
+      return 0;
+    }
+
+    if (status < 300 && ob->ob_keepalive.validated) {
+      loglevel = 5;
+      if (ob->ob_validated) 
+	loglevel = 99;		/* only once */
+      ob->ob_validated = ob->ob_once_validated = 1;
+    }
+    else if (status == 401 || status == 407 || status == 403) 
+      loglevel = 5, failed = 1;
+    else
+      loglevel = 3, failed = 1;
+      
+    loglevel = 1;		/* XXX ... for now */
+
+    if (loglevel >= SU_LOG->log_level) {
+      su_llog(SU_LOG, loglevel,       
+	      "outbound(%p): %s <" URL_PRINT_FORMAT ">\n",
+	      ob->ob_owner, failed ? "FAILED to validate" : "validated", 
+	      URL_PRINT_ARGS(ob->ob_rcontact->m_url));
+      if (failed)
+	su_llog(SU_LOG, loglevel, "outbound(%p): FAILED with %u %s\n", 
+		ob->ob_owner, status, phrase);
+    }
+
+    if (failed) 
+      ob->ob_oo->oo_probe_error(ob->ob_owner, ob, status, phrase, TAG_END());
+  }
+  else if (status == 408) {
     SU_DEBUG_1(("outbound(%p): keepalive timeout\n", ob->ob_owner));
-    ob->ob_oo->oo_probe_error(ob->ob_owner, ob, status, phrase, TAG_END());
+    ob->ob_oo->oo_keepalive_error(ob->ob_owner, ob, status, phrase, TAG_END());
     return 0;
   }
 
-  if (challenged > 0 && credentials > 0) {
-    keepalive_options_with_registration_probe(ob);
-    return 0;
-  }
+  ob->ob_keepalive.validating = 0;
 
-  if (binding_check <= 1 && status < 300 && ob->ob_registered) {
-    if (!ob->ob_validated)
-      SU_DEBUG_1(("outbound(%p): validated contact " URL_PRINT_FORMAT "\n",
-		  ob->ob_owner, URL_PRINT_ARGS(ob->ob_rcontact->m_url)));
-    ob->ob_validated = ob->ob_once_validated = 1;
-  }
-
-  su_timer_set(ob->ob_keepalive.timer, keepalive_timer, ob);
+  if (ob->ob_keepalive.timer)
+    su_timer_set(ob->ob_keepalive.timer, keepalive_timer, ob);
 
   return 0;
 }
@@ -934,6 +952,9 @@ static int keepalive_options_with_registration_probe(outbound_t *ob)
   if (!ob->ob_keepalive.orq)
     return msg_destroy(req), -1;
 
+  ob->ob_keepalive.validating = 1;
+  ob->ob_keepalive.validated = 0;
+
   return 0;
 }
 
@@ -956,6 +977,12 @@ int outbound_process_request(outbound_t *ob,
   /* XXX - We assume that Call-ID is not modified. */
   if (strcmp(sip->sip_call_id->i_id, ob->ob_cookie))
     return 0;
+
+  if (ob->ob_keepalive.validating) {
+    SU_DEBUG_1(("outbound(%p): registration check OPTIONS received\n", 
+		ob->ob_owner));
+    ob->ob_keepalive.validated = 1;
+  }
 
   nta_incoming_treply(irq, SIP_200_OK,
 		      SIPTAG_CONTENT_TYPE_STR(outbound_content_type),

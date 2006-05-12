@@ -261,8 +261,8 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  *     nothing
  *
  * @par Related tags:
- *     NUTAG_REGISTRAR(), NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(),
- *     NUTAG_OUTBOUND()
+ *     NUTAG_REGISTRAR(), NUTAG_INSTANCE(), NUTAG_OUTBOUND(),
+ *     NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(),
  *
  * @par Events:
  *     #nua_r_register, #nua_i_outbound
@@ -271,15 +271,15 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  *
  * If the application did not include the Contact header in the tags,
  * nua_register() will generate one and start a protocol engine for outbound
- * connections used for NAT and firewall traversal and connectivity checks.
- * 
- * First, nua_register() will probe for NATs in between UA and
- * registrar. It will send a REGISTER request as usual. Upon receiving the
- * response it checks for the presence of valid "received" and "rport" parameters in
- * the Via header returned by registrar. The presence of NAT is determined
- * from the "received" parameter in a Via header. When a REGISTER request
- * was sent, the stack inserted the source IP address in the Via header: if
- * that is different from the source IP address seen by the registrar, the
+ * connections used for NAT and firewall traversal and connectivity checks. 
+ *
+ * First, nua_register() will probe for NATs in between UA and registrar. It
+ * will send a REGISTER request as usual. Upon receiving the response it
+ * checks for the presence of valid "received" and "rport" parameters in the
+ * Via header returned by registrar. The presence of NAT is determined from
+ * the "received" parameter in a Via header. When a REGISTER request was
+ * sent, the stack inserted the source IP address in the Via header: if that
+ * is different from the source IP address seen by the registrar, the
  * registrar inserts the source IP address it sees into the "received"
  * parameter.
  *
@@ -289,14 +289,20 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  *
  * The response to the initial REGISTER should also include feature tags
  * indicating whether registrar supports various SIP extensions: @e
- * outbound, @e pref, @e path, @e gruu. If the @e outbound extension is
- * supported, and it is not explicitly disabled by application, the
- * nua_register() will use it. Basically, @e outbound means that instead of
- * registering its contact URI with a particular address-of-record URI, the
- * user-agent registers a transport-level connection. Such a connection is
- * identified on the Contact header field with a @ref NUTAG_INSTANCE()
- * "unique string" identifying the user-agent instance and a numeric index
- * identifying the transport-level connection.
+ * outbound, @e pref, @e path, @e gruu.
+ *
+ * Basically, @e outbound means that instead of registering its contact URI
+ * with a particular address-of-record URI, the user-agent registers a
+ * transport-level connection. Such a connection is identified on the
+ * Contact header field with an instance identifier, application-provided
+ * @ref NUTAG_INSTANCE() "unique string" identifying the user-agent instance
+ * and a stack-generated numeric index identifying the transport-level
+ * connection.
+ *
+ * If the @e outbound extension is supported, NUTAG_OUTBOUND() contains
+ * option string "outbound" and the application has provided an instance
+ * identifer to the stack with NUTAG_INSTANCE(), the nua_register() will try
+ * to use outbound.
  *
  * If @e outbound is not supported, nua_register() has to generate a URI
  * that can be used to reach it from outside. It will check for public
@@ -306,6 +312,11 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * the "received" and "rport" parameters found in the Via header of the
  * response message.
  *
+ * @todo Actually generate public addresses.
+ *
+ * You can disable this kind of NAT traversal by setting "no-natify" into
+ * NUTAG_OUTBOUND() options string.
+ * 
  * @par GRUU and Service-Route
  *
  * After a successful response to the REGISTER request has been received,
@@ -330,16 +341,26 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * application using nua_i_outbound event, and start unregistration
  * procedure (unless that has been explicitly disabled).
  *
+ * You can disable validation by inserting "no-validate" into
+ * NUTAG_OUTBOUND() string.
+ *
  * The keepalive mechanism depends on the network features detected earlier. 
  * If @a outbound extension is used, the STUN keepalives will be used. 
  * Otherwise, NUA stack will repeatedly send OPTIONS requests to itself. In
  * order to save bandwidth, it will include Max-Forwards: 0 in the
- * keep-alive requests, however. The keepalive interval is determined by two
- * parameters: NUTAG_KEEPALIVE() and NUTAG_KEEPALIVE_STREAM(). If the
- * interval is 0, no keepalive messages is sent. The value of
- * NUTAG_KEEPALIVE_STREAM(), if specified, is used to indicate the desired
- * transport-layer keepalive interval for stream-based transports like TLS
- * and TCP.
+ * keep-alive requests, however. The keepalive interval is determined by
+ * NUTAG_KEEPALIVE() parameter. If the interval is 0, no keepalive messages
+ * is sent.
+ *
+ * You can disable keepalive OPTIONS by inserting "no-options-keepalive"
+ * into NUTAG_OUTBOUND() string. Currently there are no other keepalive
+ * mechanisms available.
+ *
+ * The value of NUTAG_KEEPALIVE_STREAM(), if specified, is used to indicate
+ * the desired transport-layer keepalive interval for stream-based
+ * transports like TLS and TCP.
+ *
+ * @sa NUTAG_OUTBOUND() and tags.
  */
 
 /** @var nua_event_e::nua_r_register
