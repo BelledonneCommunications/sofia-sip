@@ -74,22 +74,22 @@
 #if defined(_WIN32) && \
   (defined(_MSC_VER) || defined(__BORLANDC__) ||  \
    defined(__CYGWIN__) || defined(__MINGW32__))
-  #undef SOFIAPUBFUN
-  #undef SOFIAPUBVAR
   #undef SOFIACALL
-  #if defined(IN_LIBSOFIA_SIP_UA) && !defined(LIBSOFIA_SIP_UA_STATIC)
-    #define SOFIAPUBFUN __declspec(dllexport)
-    #define SOFIAPUBVAR __declspec(dllexport)
+  #define SOFIACALL __cdecl
+
+  #if defined(LIBSOFIA_SIP_UA_STATIC)
   #else
-    #if !defined(LIBSOFIA_SIP_UA_STATIC)
+    #undef SOFIAPUBFUN
+    #undef SOFIAPUBVAR
+    #if defined(IN_LIBSOFIA_SIP_UA)
+      #define SOFIAPUBFUN __declspec(dllexport)
+      #define SOFIAPUBVAR __declspec(dllexport)
+    #else
       #define SOFIAPUBFUN __declspec(dllimport)
       #define SOFIAPUBVAR __declspec(dllimport) extern
-    #else
-      #define SOFIAPUBFUN
-      #define SOFIAPUBVAR extern
     #endif
   #endif
-  #define SOFIACALL __cdecl
+
   #if !defined _REENTRANT
     #define _REENTRANT
   #endif

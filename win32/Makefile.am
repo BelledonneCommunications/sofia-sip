@@ -21,6 +21,8 @@ EXTRA_DIST = SofiaSIP.dsw \
 	tests/test_nua/test_nat_tags.cpp \
 	tests/test_nta/test_nta.dsp \
 	tests/test_tport/test_tport.dsp \
+	tests/test_tport/test_class.cpp \
+	tests/test_tport/test_table.cpp \
 	tests/su_alloc_test/su_alloc_test.dsp \
 	tests/su_root_test/su_root_test.dsp \
 	tests/su_tag_test/su_tag_test.dsp \

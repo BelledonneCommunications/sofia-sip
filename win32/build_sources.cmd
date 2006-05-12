@@ -3,7 +3,7 @@
 ::
 
 @setlocal
-@if x%AWK%==x setlocal AWK=gawk
+@if x%AWK%==x set AWK=gawk
 @set CHECK=@IF errorlevel 1 GOTO failed
 
 :: Check that we really have awk

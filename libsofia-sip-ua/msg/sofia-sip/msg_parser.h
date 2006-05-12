@@ -151,14 +151,14 @@ SOFIAPUBFUN char *msg_payload_dup_one(msg_header_t *dst,
 				      msg_header_t const *src,
 				      char *b, int xtra);
 
-int msg_separator_d(su_home_t *, msg_header_t *h, char *s, int slen);
-int msg_separator_e(char b[], int bsiz, msg_header_t const *h, int flags);
+SOFIAPUBFUN int msg_separator_d(su_home_t *, msg_header_t *, char *, int);
+SOFIAPUBFUN int msg_separator_e(char [], int, msg_header_t const *, int);
 
-int msg_auth_d(su_home_t *, msg_header_t *h, char *s, int slen);
-int msg_auth_e(char b[], int bsiz, msg_header_t const *h, int f);
-int msg_auth_dup_xtra(msg_header_t const *h, int offset);
-char *msg_auth_dup_one(msg_header_t *dst, msg_header_t const *src, 
-		       char *b, int xtra);
+SOFIAPUBFUN int msg_auth_d(su_home_t *, msg_header_t *h, char *s, int slen);
+SOFIAPUBFUN int msg_auth_e(char b[], int bsiz, msg_header_t const *h, int f);
+SOFIAPUBFUN int msg_auth_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN char *msg_auth_dup_one(msg_header_t *dst, msg_header_t const *src, 
+				   char *b, int xtra);
 
 /* ---------------------------------------------------------------------------
  * 2) Macros and prototypes for building header decoding/encoding functions.
@@ -195,7 +195,8 @@ SOFIAPUBFUN int msg_unquoted_e(char *b, int bsiz, char const *s);
 
 /** Duplicate string. @HI */
 #define MSG_STRING_DUP(p, d, s) \
-  (void)((s)?((p)=memccpy((void *)((d)=(char*)p),(s),0,0x7fffffff)):((d)=NULL))
+  (void)((s)?((p)=(char*)memccpy((void *)((d)=(char*)p),(s),0,0x7fffffff))\
+	    :((d)=NULL))
 
 /** Calculate string size. @HI */
 #define MSG_STRING_SIZE(s) ((s) ? (strlen(s) + 1) : 0)

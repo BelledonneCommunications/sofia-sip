@@ -84,7 +84,7 @@ LINK32=link.exe
 # Name "test_tport - Win32 Debug"
 # Begin Source File
 
-SOURCE="..\..\..\libsofia-sip-ua\msg\test_class.c"
+SOURCE=.\test_class.cpp
 # End Source File
 # Begin Source File
 
@@ -96,7 +96,7 @@ SOURCE="..\..\..\libsofia-sip-ua\msg\test_protos.h"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\..\libsofia-sip-ua\msg\test_table.c"
+SOURCE=.\test_table.cpp
 # End Source File
 # Begin Source File
 

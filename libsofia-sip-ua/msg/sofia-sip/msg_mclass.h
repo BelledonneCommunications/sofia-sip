@@ -91,7 +91,8 @@ struct msg_href_s
  */
 struct msg_mclass_s
 {
-  msg_hclass_t  mc_hclass[1];	/**< Recursive header class */
+  struct msg_hclass_s
+                mc_hclass[1];	/**< Recursive header class */
   char const   *mc_name;	/**< Protocol name, e.g., "SIP/2.0" */
   void         *mc_tag;		/**< Protocol-specific tag */
   unsigned      mc_flags;	/**< Default flags */

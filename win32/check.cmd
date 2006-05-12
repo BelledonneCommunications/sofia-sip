@@ -45,6 +45,9 @@ tests\su_torture\Debug\su_torture.exe
 tests\test_memmem\Debug\test_memmem.exe
 @if errorlevel 1 ( echo test_memmem: FAIL ) else echo test_memmem: PASS
 
+tests\test_tport\Debug\test_tport.exe
+@if errorlevel 1 ( echo test_tport: FAIL ) else echo test_tport: PASS
+
 tests\test_nta\Debug\test_nta.exe
 @if errorlevel 1 ( echo test_nta: FAIL ) else echo test_nta: PASS
 

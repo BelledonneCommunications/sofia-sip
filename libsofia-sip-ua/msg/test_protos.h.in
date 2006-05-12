@@ -75,11 +75,11 @@ SOFIA_BEGIN_DECLS
 #define TSTTAGI_TST_P(t) (TSTTAG_TST_P((t)->t_tag))
 
 /** Tag class for TST headers */
-MSG_DLL extern tag_class_t tsthdrtag_class[1];
+extern tag_class_t tsthdrtag_class[1];
 /** Tag class for string values of TST headers */
-MSG_DLL extern tag_class_t tststrtag_class[1];
+extern tag_class_t tststrtag_class[1];
 /** Tag class for TST message */
-MSG_DLL extern tag_class_t tstmsgtag_class[1];
+extern tag_class_t tstmsgtag_class[1];
 
 /**Tag list item for header string.
  *
@@ -96,10 +96,10 @@ MSG_DLL extern tag_class_t tstmsgtag_class[1];
 #define TSTTAG_HEADER(x)       tsttag_header, tsttag_header_v((x))
 
 /** Tag for header string */
-MSG_DLL extern tag_typedef_t tsttag_header;
+extern tag_typedef_t tsttag_header;
 
 #define TSTTAG_HEADER_REF(x)   tsttag_header_ref, tsttag_header_vr(&(x))
-MSG_DLL extern tag_typedef_t tsttag_header_ref;
+extern tag_typedef_t tsttag_header_ref;
 
 #if HAVE_INLINE
 static inline tag_value_t
@@ -125,10 +125,10 @@ tsttag_header_vr(msg_header_t const **vp)
 #define TSTTAG_HEADER_STR(x)       tsttag_header_str, tag_str_v((x))
 
 /** Tag for header string */
-MSG_DLL extern tag_typedef_t tsttag_header_str;
+extern tag_typedef_t tsttag_header_str;
 
 #define TSTTAG_HEADER_STR_REF(x)   tsttag_header_str_ref, tag_str_vr(&(x))
-MSG_DLL extern tag_typedef_t tsttag_header_str_ref;
+extern tag_typedef_t tsttag_header_str_ref;
 
 #if HAVE_INLINE
 static inline

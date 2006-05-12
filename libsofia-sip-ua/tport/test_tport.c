@@ -110,7 +110,7 @@ int tstflags;
 
 char const name[] = "tport_test";
 
-extern su_log_t tport_log[];
+SOFIAPUBVAR su_log_t tport_log[];
 
 void usage(void)
 {
