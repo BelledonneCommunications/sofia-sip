@@ -31,7 +31,7 @@ LDADD = 		../url/liburl.la ../bnf/libbnf.la \
 			libsresolv.la \
 			../su/libsu.la
 
-AM_LDFLAGS =	 	-static
+test_sresolv_LDFLAGS =	-static
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
