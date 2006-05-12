@@ -840,6 +840,9 @@ nua_stack_init_transport(nua_t *nua, tagi_t const *tags)
           NUTAG_CERTIFICATE_DIR_REF(certificate_dir),
           TAG_END());
 
+  if (!contact1 && contact2)
+    contact1 = contact2, contact2 = NULL;
+
   if (contact1 &&
       (url_is_string(contact1) 
        ? strncasecmp(contact1->us_str, "sips:", 5) == 0
@@ -852,42 +855,42 @@ nua_stack_init_transport(nua_t *nua, tagi_t const *tags)
        : contact2->us_url->url_type == url_sips))
     name2 = "sips";
 
-  if (!contact1 && !contact2) {
+  if (!contact1 /* && !contact2 */) {
     if (nta_agent_add_tport(nua->nua_nta, NULL,
-       		     TPTAG_IDENT("sip"),
-       		     TPTAG_CERTIFICATE(certificate_dir),
-       		     TAG_NEXT(nua->nua_args)) < 0 &&
+			    TPTAG_IDENT("sip"),
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0 &&
         nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
-       		     TPTAG_IDENT("sip"),
-       		     TPTAG_CERTIFICATE(certificate_dir),
-       		     TAG_NEXT(nua->nua_args)) < 0)
+			    TPTAG_IDENT("sip"),
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0)
+      return -1;
+#if HAVE_SOFIA_STUN
+    if (stun_is_requested(TAG_NEXT(nua->nua_args)) &&
+	nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:0.0.0.0:*"),
+			    TPTAG_IDENT("stun"),
+			    TPTAG_PUBLIC(tport_type_stun), /* use stun */
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0) {
+      SU_DEBUG_0(("nua: error initializing STUN transport\n"));
+    }
+#endif
+  }
+  else {
+    if (nta_agent_add_tport(nua->nua_nta, contact1,
+			    TPTAG_IDENT(name1),
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0)
       return -1;
 
-#if HAVE_SOFIA_STUN
-    if (stun_is_requested(TAG_NEXT(nua->nua_args)))
-      if (nta_agent_add_tport(nua->nua_nta, URL_STRING_MAKE("sip:*:*"),
-       		       TPTAG_IDENT("stun"),
-       		       TPTAG_PUBLIC(tport_type_stun), /* use stun */
-       		       TPTAG_CERTIFICATE(certificate_dir),
-       		       TAG_NEXT(nua->nua_args)) < 0) {
-        SU_DEBUG_5(("nua: error initializing STUN transport\n"));
-        return -1;
-      }
-#endif
+    if (contact2 &&
+	nta_agent_add_tport(nua->nua_nta, contact2,
+			    TPTAG_IDENT(name2),
+			    TPTAG_CERTIFICATE(certificate_dir),
+			    TAG_NEXT(nua->nua_args)) < 0) 
+      return -1;
+  }
 
-  }
-  else if ((!contact1 ||
-            nta_agent_add_tport(nua->nua_nta, contact1,
-       			 TPTAG_IDENT(name1),
-       			 TPTAG_CERTIFICATE(certificate_dir),
-       			 TAG_NEXT(nua->nua_args)) < 0) &&
-           (!contact2 ||
-            nta_agent_add_tport(nua->nua_nta, contact2,
-       			 TPTAG_IDENT(name2),
-       			 TPTAG_CERTIFICATE(certificate_dir),
-       			 TAG_NEXT(nua->nua_args)) < 0)) {
-    return -1;
-  }
 
   if (nua_stack_init_registrations(nua) < 0)
     return -1;

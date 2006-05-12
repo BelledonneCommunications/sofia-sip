@@ -1415,19 +1415,23 @@ int nta_agent_add_tport(nta_agent_t *self,
     return -1;
   }
 
-  if (url->url_type == url_sip) {
-    tpn->tpn_proto = "*";
-    tports = tports_sip;
-  }
-  else {
-    assert(url->url_type == url_sips);
-    tpn->tpn_proto = "tls";
-    tports = tports_sips;
-  }
-
   tpn->tpn_canon = url->url_host;
   tpn->tpn_host = url->url_host;
   tpn->tpn_port = url_port(url);
+
+  if (url->url_type == url_sip) {
+    tpn->tpn_proto = "*";
+    tports = tports_sip;
+    if (!tpn->tpn_port || !tpn->tpn_port[0]) 
+      tpn->tpn_port = SIP_DEFAULT_SERV;
+  }
+  else {
+    assert(url->url_type == url_sips);
+    tpn->tpn_proto = "*";
+    tports = tports_sips;
+    if (!tpn->tpn_port || !tpn->tpn_port[0]) 
+      tpn->tpn_port = SIPS_DEFAULT_SERV;
+  }
 
   if (url->url_params) {
     if (url_param(url->url_params, "transport", tp, sizeof(tp)) > 0) {

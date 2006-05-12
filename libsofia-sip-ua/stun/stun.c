@@ -447,8 +447,10 @@ stun_handle_t *stun_handle_init(su_root_t *root,
 	      __func__, server));
 
   /* fail, if no server or a domain for a DNS-SRV lookup is specified */
-  if (!server && !domain)
+  if (!server && !domain) {
+    errno = ENOENT;
     return NULL;
+  }
   
   stun->sh_pri_info.ai_addrlen = 16;
   stun->sh_pri_info.ai_addr = &stun->sh_pri_addr->su_sa;
@@ -464,9 +466,10 @@ stun_handle_t *stun_handle_init(su_root_t *root,
   
   if (server) {
     err = stun_atoaddr(stun->sh_home, AF_INET, &stun->sh_pri_info, server);
-
-    if (err < 0)
+    if (err < 0) {
+      errno = ENOENT;
       return NULL;
+    }
   }
 
   stun->sh_nattype = stun_nat_unknown;
@@ -2660,7 +2663,8 @@ int stun_atoaddr(su_home_t *home,
       dstaddr->su_port = htons(STUN_DEFAULT_PORT);
   }
   else {
-    STUN_ERROR(err, su_getaddrinfo);
+    SU_DEBUG_5(("stun_atoaddr: %s(%s): %s\n", "su_getaddrinfo", in,
+		su_gai_strerror(err)));
   }
 
   if (res)

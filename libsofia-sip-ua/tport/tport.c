@@ -1457,7 +1457,7 @@ int tport_bind_server(tport_master_t *mr,
     ;
 
   port = port0 = port1 = ntohs(((su_sockaddr_t *)res->ai_addr)->su_port);
-  error = ENOENT, not_supported = 1;
+  error = EPROTONOSUPPORT;
 
   /* 
    * Loop until we can bind all the transports requested 
@@ -1534,9 +1534,6 @@ int tport_bind_server(tport_master_t *mr,
   }
 
   tport_freeaddrinfo(res);
-
-  if (res && not_supported)
-    error = EPROTONOSUPPORT;
 
   if (!*tbf) {
     su_seterrno(error);
@@ -1628,7 +1625,7 @@ int tport_server_addrinfo(tport_master_t *mr,
   }
 
   if (N == 0)
-    return su_seterrno(ENOENT);
+    return su_seterrno(EPROTONOSUPPORT);
   if (transports[i] /* Too many protocols */) 
     return su_seterrno(ENOMEM);
 
