@@ -160,7 +160,7 @@ test_nat_init(su_root_t *root, struct nat *nat)
   su_localinfo_t *li, hints[1] = {{ 0 }};
   int error;
   unsigned port = 0, port0 = 0;
-  su_sockaddr_t *su;
+  su_sockaddr_t su[1];
   socklen_t sulen;
   su_wait_t wait[1];
 
@@ -193,7 +193,8 @@ test_nat_init(su_root_t *root, struct nat *nat)
   if (li == NULL)
     li = nat->localinfo;
 
-  su = memcpy(nat->in_address, li->li_addr, sulen = li->li_addrlen);
+  memcpy(su, li->li_addr, sulen = li->li_addrlen);
+  memset(SU_ADDR(su), 0, SU_ADDRLEN(su));
 
   nat->private = li;
 
@@ -262,7 +263,8 @@ test_nat_init(su_root_t *root, struct nat *nat)
     break;
   }
 
-  nat->in_addrlen = sulen;
+  memcpy(nat->in_address, li->li_addr, nat->in_addrlen = li->li_addrlen);
+  nat->in_address->su_port = su->su_port;
 
   if (su_setreuseaddr(nat->udp_socket, 1) < 0) {
     su_perror("nat: su_setreuseaddr(udp_socket)");
