@@ -682,14 +682,17 @@ int tport_bind_socket(int socket,
 		      char const **return_culprit)
 {
   su_sockaddr_t *su = (su_sockaddr_t *)ai->ai_addr;
+  socklen_t sulen = ai->ai_addrlen;
 
   if (bind(socket, ai->ai_addr, ai->ai_addrlen) == -1) {
     return *return_culprit = "bind", -1;
   }
 
-  if (getsockname(socket, ai->ai_addr, &ai->ai_addrlen) == SOCKET_ERROR) {
+  if (getsockname(socket, &su->su_sa, &sulen) == SOCKET_ERROR) {
     return *return_culprit = "getsockname", -1;
   }
+
+  ai->ai_addrlen = sulen;
 
 #if defined (__linux__) && defined (SU_HAVE_IN6)
   if (ai->ai_family == AF_INET6) {
@@ -2335,6 +2338,7 @@ int tport_accept(tport_primary_t *pri, int events)
   tport_t *self;
   su_addrinfo_t ai[1];
   su_sockaddr_t su[1]; 
+  socklen_t sulen = sizeof su;
   su_socket_t s = SOCKET_ERROR, l = pri->pri_primary->tp_socket;
   char const *reason = "accept";
 
@@ -2347,14 +2351,14 @@ int tport_accept(tport_primary_t *pri, int events)
   memcpy(ai, pri->pri_primary->tp_addrinfo, sizeof ai);
   ai->ai_canonname = NULL;
 
-  ai->ai_addr = &su->su_sa, ai->ai_addrlen = sizeof su;
-
-  s = accept(l, ai->ai_addr, &ai->ai_addrlen);
+  s = accept(l, &su->su_sa, &sulen);
 
   if (s < 0) {
     tport_error_report(pri->pri_primary, su_errno(), NULL);
     return 0;
   }
+
+  ai->ai_addr = &su->su_sa, ai->ai_addrlen = sulen;
 
   /* Alloc a new transport object, then register socket events with it */ 
   self = tport_alloc_secondary(pri, s, 1, &reason);
@@ -3274,7 +3278,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
   else if (self->tp_addrinfo->ai_family == AF_INET6) {
     su_sockaddr_t const *su = msg_addr(msg);
     SU_DEBUG_3(("tport_vsend(%p): %s with "
-		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%d)\n", 
+		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%zd)\n", 
 		self, su_strerror(error), self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp,
 		su->su_scope_id, *msg_addrlen(msg)));
@@ -3282,7 +3286,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
 #endif
   else {
     SU_DEBUG_3(("\ttport_vsend(%p): %s with "
-		"(s=%d, AF=%u addrlen=%d)%s\n", 
+		"(s=%d, AF=%u addrlen=%zd)%s\n", 
 		self, su_strerror(error), 
 		self->tp_socket, ai->ai_family, ai->ai_addrlen, comp));
   }

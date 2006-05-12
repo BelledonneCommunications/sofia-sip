@@ -240,9 +240,9 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   assert(cr->cr_orq == NULL);
 
   if (du && sip && offer_sent >= 0) {
-    unsigned invite_timeout = NH_PGET(nh, invite_timeout);
+    sip_time_t invite_timeout = NH_PGET(nh, invite_timeout);
     if (invite_timeout == 0)
-      invite_timeout = SIP_TIME_MAX;
+      invite_timeout = UINT_MAX;
     /* Cancel if we don't get response */
     nua_dialog_usage_set_refresh(du, invite_timeout);
 
