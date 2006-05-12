@@ -1649,7 +1649,7 @@ int test_register(struct context *ctx)
   TEST_1(a_reg->nh = nua_handle(a->nua, a_reg, TAG_END()));
 
   REGISTER(a, a_reg, a_reg->nh, SIPTAG_TO(a->to),
-	   NUTAG_OUTBOUND("no-natify options-keepalive validate"),
+	   NUTAG_OUTBOUND("natify options-keepalive validate"),
 	   NUTAG_KEEPALIVE(1000),
 	   TAG_END());
   run_a_until(ctx, -1, save_until_final_response);
