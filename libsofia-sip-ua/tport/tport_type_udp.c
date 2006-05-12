@@ -271,10 +271,11 @@ int tport_recv_dgram(tport_t *self)
 
   if ((sample[0] & 0xf8) == 0xf8)
     /* SigComp */
-    return tport_recv_comp_dgram(self, self->tp_comp, &self->tp_msg);
+    return tport_recv_comp_dgram(self, self->tp_comp, &self->tp_msg, 
+				 from, fromlen);
   else if (sample[0] == 0 || sample[0] == 1)
     /* STUN request or response */
-    return tport_recv_stun_dgram(self, &self->tp_msg);
+    return tport_recv_stun_dgram(self, &self->tp_msg, from, fromlen);
   else
     return 0;
 }
@@ -284,20 +285,18 @@ int tport_send_dgram(tport_t const *self, msg_t *msg,
 		     msg_iovec_t iov[], 
 		     int iovused)
 {
-  su_sockaddr_t *su;
-  int sulen;
-#if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
-  su_sockaddr_t su0[1];
-#endif
+  su_sockaddr_t su[1];
+  socklen_t sulen = sizeof su;
 
   if (tport_is_connection_oriented(self))
     return su_vsend(self->tp_socket, iov, iovused, MSG_NOSIGNAL, NULL, 0);
 
-  su = msg_addr(msg);
-  sulen = *msg_addrlen(msg);
+  msg_get_address(msg, su, &sulen);
 
 #if SU_HAVE_IN6 && defined(IN6_INADDR_TO_V4MAPPED)
   if (su->su_family == AF_INET && self->tp_addrinfo->ai_family == AF_INET6) {
+    su_sockaddr_t su0[1];
+
     memset(su0, 0, sizeof su0);
 
     su0->su_family = self->tp_addrinfo->ai_family;
@@ -305,7 +304,7 @@ int tport_send_dgram(tport_t const *self, msg_t *msg,
 
     IN6_INADDR_TO_V4MAPPED(&su->su_sin.sin_addr, &su0->su_sin6.sin6_addr);
 
-    su = su0, sulen = sizeof(su0->su_sin6);
+    memcpy(su, su0, sulen = sizeof(su0->su_sin6));
   }
 #endif
 

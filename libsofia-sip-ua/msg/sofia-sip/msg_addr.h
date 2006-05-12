@@ -46,8 +46,13 @@ SOFIA_BEGIN_DECLS
 
 SOFIAPUBFUN void msg_addr_zero(msg_t *msg);
 SOFIAPUBFUN su_addrinfo_t *msg_addrinfo(msg_t *msg);
+
 SOFIAPUBFUN su_sockaddr_t *msg_addr(msg_t *msg);
-SOFIAPUBFUN size_t *msg_addrlen(msg_t *msg);
+SOFIAPUBFUN socklen_t *msg_addrlen(msg_t *msg);
+
+SOFIAPUBFUN int msg_get_address(msg_t *msg, su_sockaddr_t *, socklen_t *);
+SOFIAPUBFUN int msg_set_address(msg_t *msg, su_sockaddr_t const *, socklen_t);
+
 SOFIAPUBFUN void msg_addr_copy(msg_t *dst, msg_t const *src);
 
 SOFIAPUBFUN int msg_errno(msg_t const *msg);

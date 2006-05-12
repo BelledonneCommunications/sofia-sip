@@ -480,7 +480,8 @@ typedef int const *(tport_set_f)(tport_master_t *mr,
 
 int tport_init_stun_server(tport_master_t *mr, tagi_t const *tags);
 void tport_deinit_stun_server(tport_master_t *mr);
-int tport_recv_stun_dgram(tport_t const *self, msg_t **in_out_msg);
+int tport_recv_stun_dgram(tport_t const *self, msg_t **in_out_msg,
+			  su_sockaddr_t *from, socklen_t fromlen);
 
 int tport_stun_server_add_socket(tport_t *tp);
 int tport_stun_server_remove_socket(tport_t *tp);
@@ -506,7 +507,9 @@ void tport_sigcomp_accept_incomplete(tport_t *self, msg_t *msg);
 
 int tport_recv_comp_dgram(tport_t const *self,
 			  tport_compressor_t *sc,
-			  msg_t **in_out_msg);
+			  msg_t **in_out_msg,
+			  su_sockaddr_t *from,
+			  socklen_t fromlen);
 
 int tport_send_comp(tport_t const *self,
 		    msg_t *msg, 

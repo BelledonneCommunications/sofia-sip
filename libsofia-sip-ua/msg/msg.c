@@ -238,16 +238,49 @@ void msg_addr_zero(msg_t *msg)
   msg->m_addrinfo.ai_addr = &msg->m_addr->su_sa;
 }
 
-/** Get pointer to address length. */
-size_t *msg_addrlen(msg_t *msg)
+/** Get pointer to address length.
+ *
+ * @deprecated Use msg_get_address() or msg_set_address() instead.
+ */
+socklen_t *msg_addrlen(msg_t *msg)
 {
   return &msg->m_addrinfo.ai_addrlen;
 }
 
-/** Get socket address structure. */
+/** Get pointer to socket address structure. 
+ *
+ * @deprecated Use msg_get_address() or msg_set_address() instead.
+ */
 su_sockaddr_t *msg_addr(msg_t *msg)
 {
   return msg ? msg->m_addr : 0;
+}
+
+/** Get message address. */
+int msg_get_address(msg_t *msg, su_sockaddr_t *su, socklen_t *return_len)
+{
+  if (msg && return_len && *return_len >= msg->m_addrinfo.ai_addrlen) {
+    *return_len = msg->m_addrinfo.ai_addrlen;
+    if (su)
+      memcpy(su, msg->m_addr, *return_len = msg->m_addrinfo.ai_addrlen);
+    return 0;
+  }
+  if (msg)
+    msg->m_errno = EFAULT;
+  return -1;
+}
+
+/** Set message address. */
+int msg_set_address(msg_t *msg, su_sockaddr_t const *su, socklen_t sulen)
+{
+  if (sulen < (sizeof msg->m_addr) && msg && su) {
+    memcpy(msg->m_addr, su, msg->m_addrinfo.ai_addrlen = sulen);
+    msg->m_addrinfo.ai_family = su->su_family;
+    return 0;
+  }
+  if (msg)
+    msg->m_errno = EFAULT;
+  return -1;
 }
 
 /** Get addrinfo structure. */

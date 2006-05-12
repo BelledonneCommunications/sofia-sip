@@ -437,13 +437,10 @@ static int tport_recv_sigcomp_r(tport_t *self,
     
     if (msg) {
       /* Message address */
-      if (self->tp_addrinfo->ai_socktype == SOCK_STREAM) {
-	*msg_addr(msg) = *self->tp_addr;
-	*msg_addrlen(msg) = self->tp_addrlen;
-      } else {
-	*msg_addr(msg) = *su;
-	*msg_addrlen(msg) = su_size;
-      }
+      if (self->tp_addrinfo->ai_socktype == SOCK_STREAM)
+	msg_set_address(msg, self->tp_addr, self->tp_addrlen);
+      else
+	msg_set_address(msg, su, su_size);
       
       SU_DEBUG_5(("%s(%p): sigcomp recv = %u => %u %s\n", __func__, self, 
 		  N, dlen, eos ? " (complete)" : ""));

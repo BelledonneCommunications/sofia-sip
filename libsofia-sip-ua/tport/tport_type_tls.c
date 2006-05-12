@@ -374,9 +374,7 @@ int tport_tls_recv(tport_t *self)
 
   tls_buf = tls_read_buffer(tlstp->tlstp_context, N);
 
-  /* Message address */
-  *msg_addr(msg) = *self->tp_addr;
-  *msg_addrlen(msg) = self->tp_addrlen;
+  msg_set_address(msg, self->tp_addr, self->tp_addrlen);
 
   for (i = 0, n = 0; i < veclen; i++) {
     m = iovec[i].mv_len; assert(N >= n + m);

@@ -2819,11 +2819,11 @@ tport_delivered_with_comp(tport_t *tp, msg_t const *msg,
  *  return message buffer as a iovec 
  */
 int tport_recv_iovec(tport_t const *self, 
-		     msg_t **mmsg,
+		     msg_t **in_out_msg,
 		     msg_iovec_t iovec[msg_n_fragments], int N, 
 		     int exact)
 {
-  msg_t *msg = *mmsg;
+  msg_t *msg = *in_out_msg;
   int veclen, fresh;
 
   if (N == 0)
@@ -2835,7 +2835,7 @@ int tport_recv_iovec(tport_t const *self,
    * Allocate a new message if needed 
    */
   if (!msg) {
-    if (!(*mmsg = msg = tport_msg_alloc(self, N))) {
+    if (!(*in_out_msg = msg = tport_msg_alloc(self, N))) {
       SU_DEBUG_7(("%s(%p): cannot allocate msg for %u bytes "
 		  "from (%s/%s:%s)\n", 
 		  __func__, self, N, 
@@ -3273,12 +3273,12 @@ int tport_send_error(tport_t *self, msg_t *msg,
   }
 #if SU_HAVE_IN6
   else if (self->tp_addrinfo->ai_family == AF_INET6) {
-    su_sockaddr_t const *su = msg_addr(msg);
+    su_sockaddr_t const *su = (su_sockaddr_t const *)ai->ai_addr;
     SU_DEBUG_3(("tport_vsend(%p): %s with "
 		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%zd)\n", 
 		self, su_strerror(error), self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp,
-		su->su_scope_id, *msg_addrlen(msg)));
+		su->su_scope_id, ai->ai_addrlen));
   }
 #endif
   else {

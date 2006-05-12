@@ -126,14 +126,14 @@ int tport_stun_server_remove_socket(tport_t *tp)
  * @retval 3  stun message received, ignore  
  */
 int tport_recv_stun_dgram(tport_t const *self,
-			  msg_t **in_out_msg)
+			  msg_t **in_out_msg,
+			  su_sockaddr_t *from,
+			  socklen_t fromlen)
 {
   int retval = -1;
   msg_t *msg;
   uint8_t *request;
   size_t n;
-  su_sockaddr_t *from;
-  socklen_t fromlen;
 
   assert(in_out_msg); assert(*in_out_msg);
 
@@ -141,8 +141,6 @@ int tport_recv_stun_dgram(tport_t const *self,
 
   request = msg_buf_committed_data(msg);
   n = msg_buf_committed(msg);
-  from = msg_addr(msg);
-  fromlen = *msg_addrlen(msg);
 
   if (n < 20 || request == NULL) {
     su_seterrno(EBADMSG);

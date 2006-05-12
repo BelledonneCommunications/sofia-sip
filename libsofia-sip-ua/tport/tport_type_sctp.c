@@ -248,9 +248,7 @@ int tport_recv_sctp(tport_t *self)
   assert(veclen == 1); assert(iovec[0].mv_len == N);
   msg = self->tp_msg;
 
-  /* Message address */
-  *msg_addr(msg) = *self->tp_addr;
-  *msg_addrlen(msg) = su_sockaddr_size(self->tp_addr);
+  msg_set_address(msg, self->tp_addr, self->tp_addrlen);
 
   memcpy(iovec[0].mv_base, sctp_buf, iovec[0].mv_len);
 

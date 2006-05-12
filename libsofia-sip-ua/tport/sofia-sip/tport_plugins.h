@@ -152,7 +152,9 @@ struct tport_comp_vtable_s {
 
   int (*vsc_recv_comp)(tport_t const *self, 
 		       tport_compressor_t *sc,
-		       msg_t **in_out_msg);
+		       msg_t **in_out_msg,
+		       su_sockaddr_t *from,
+		       socklen_t fromlen);
 
   int (*vsc_send_comp)(tport_t const *self,
 		       msg_t *msg, 

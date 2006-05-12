@@ -258,12 +258,14 @@ struct sigcomp_udvm **tport_get_udvm_slot(tport_t *self)
 /** Receive data from datagram using SigComp. */
 int tport_recv_comp_dgram(tport_t const *self, 
 			  tport_compressor_t *sc,
-			  msg_t **in_out_msg)
+			  msg_t **in_out_msg,
+			  su_sockaddr_t *from,
+			  socklen_t fromlen)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 
   if (vsc)
-    return vsc->vsc_recv_comp(self, sc, in_out_msg);
+    return vsc->vsc_recv_comp(self, sc, in_out_msg, from, fromlen);
 
   msg_destroy(*in_out_msg), *in_out_msg = NULL;
 
