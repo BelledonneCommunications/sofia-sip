@@ -131,6 +131,7 @@ SOFIAPUBFUN char const *http_method_name(http_method_t method,
 /** Return enum corresponding to the method name */
 SOFIAPUBFUN http_method_t http_method_code(char const *name);
 
+#if !SU_HAVE_INLINE
 SOFIAPUBFUN http_t *http_object(msg_t *msg);
 SOFIAPUBFUN int http_header_insert(msg_t *msg, http_t *http, http_header_t *h);
 SOFIAPUBFUN int http_header_remove(msg_t *msg, http_t *http, http_header_t *h);
@@ -141,6 +142,7 @@ SOFIAPUBFUN http_content_length_t *http_content_length_create(su_home_t *home,
 SOFIAPUBFUN http_payload_t *http_payload_create(su_home_t *home, 
 						void const *data, int len);
 SOFIAPUBFUN http_separator_t *http_separator_create(su_home_t *home);
+#endif
 
 SOFIAPUBFUN http_header_t *http_header_format(su_home_t *home, msg_hclass_t *,
 					      char const *fmt, ...);
