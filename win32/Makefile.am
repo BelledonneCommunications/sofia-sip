@@ -20,6 +20,7 @@ EXTRA_DIST = SofiaSIP.dsw \
 	tests/test_nua/test_nua.dsp \
 	tests/test_nua/test_nat_tags.cpp \
 	tests/test_nta/test_nta.dsp \
+	tests/test_tport/test_tport.dsp \
 	tests/su_alloc_test/su_alloc_test.dsp \
 	tests/su_root_test/su_root_test.dsp \
 	tests/su_tag_test/su_tag_test.dsp \
@@ -33,6 +34,8 @@ EXTRA_DIST = SofiaSIP.dsw \
 	tests/torture_su_bm/torture_su_bm.dsp \
 	tests/torture_su_port/torture_su_port.dsp \
 	utils/sip_options/sip_options.dsp \
+	utils/sip_dig/sip_dig.dsp \
+	utils/stunc/stunc.dsp \
 	$(PTHREAD_DIST) \
 	README.txt \
 	autogen.cmd build_sources.cmd version_files.cmd version.awk \
