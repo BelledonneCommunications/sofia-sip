@@ -8,7 +8,7 @@
 AUTOMAKE_OPTIONS = foreign 1.6.1
 
 SUBDIRS = libsofia-sip-ua $(GLIB_SUBDIRS) utils packages
-DIST_SUBDIRS = $(SUBDIRS) libsofia-sip-ua-glib win32
+DIST_SUBDIRS = libsofia-sip-ua libsofia-sip-ua-glib utils packages win32
 
 if HAVE_GLIB
 GLIB_SUBDIRS = libsofia-sip-ua-glib
