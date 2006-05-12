@@ -44,7 +44,7 @@
 
 SOFIA_BEGIN_DECLS
 
-su_root_t *su_root_source_create(su_root_magic_t *);
+su_root_t *su_root_source_create(su_root_magic_t *) __attribute__((__malloc__));
 GSource *su_root_source(su_root_t *);
 
 SOFIA_END_DECLS

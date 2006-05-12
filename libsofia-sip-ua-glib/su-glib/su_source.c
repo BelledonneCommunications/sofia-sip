@@ -45,8 +45,6 @@
 #include <string.h>
 #include <limits.h>
 
-#define Xyzzy (assert(!"implemented"), 0)
-
 #include <glib.h>
 
 #define SU_PORT_IMPLEMENTATION 1
@@ -55,10 +53,13 @@
 
 #define su_port_s su_source_s
 
+#include "sofia-sip/su_source.h"
+
 #include "sofia-sip/su.h"
 #include "su_port.h"
 #include "sofia-sip/su_alloc.h"
 
+static su_port_t *su_source_create(void) __attribute__((__malloc__));
 static gboolean su_source_prepare(GSource *gs, gint *return_tout);
 static gboolean su_source_check(GSource *gs);
 static gboolean su_source_dispatch(GSource *gs,
