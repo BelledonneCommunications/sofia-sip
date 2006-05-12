@@ -64,20 +64,6 @@ void usage(void)
   fprintf(stderr, "usage: %s [-v]\n", name);
 }
 
-static int msg_time_test(void);
-static int test_header_parsing(void);
-static int hash_test(void);
-static int test_msg_parsing(void);
-static int test_warning(void);
-static int test_msg_error(void);
-static int test_mclass(void);
-static int test_copy(void);
-static int test_mime(void);
-static int test_mime2(void);
-static int test_serialize(void);
-static int random_test(void);
-
-
 static int msg_time_test(void)
 {
   char buf[32];
@@ -153,6 +139,15 @@ static int msg_time_test(void)
 
   END();
   return 0;
+}
+
+static int addr_test(void)
+{
+  BEGIN();
+  
+  TEST(sizeof(socklen_t), sizeof(size_t));
+
+  END();
 }
 
 int test_header_parsing(void)
@@ -1688,6 +1683,7 @@ int main(int argc, char *argv[])
   }
 
   retval |= msg_time_test(); fflush(stdout);
+  retval |= addr_test(); fflush(stdout);
   retval |= hash_test(); fflush(stdout);
   retval |= random_test(); fflush(stdout);
   retval |= test_header_parsing(); fflush(stdout);

@@ -239,7 +239,7 @@ void msg_addr_zero(msg_t *msg)
 }
 
 /** Get pointer to address length. */
-socklen_t *msg_addrlen(msg_t *msg)
+size_t *msg_addrlen(msg_t *msg)
 {
   return &msg->m_addrinfo.ai_addrlen;
 }
