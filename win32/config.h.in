@@ -446,6 +446,6 @@
 /* Ignore certain warnings */
 #ifdef _MSC_VER
 #pragma warning( disable : 4090 4204 4244 4018 4514 4706 4761)
+/* VC does not grok const */
+#pragma warning( disable : 4022 4028 )
 #endif
-
-
