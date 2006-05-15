@@ -253,7 +253,7 @@ void nua_glib_set_property(GObject      *object,
     if (self->priv->nua)
     {
       nua_set_params(self->priv->nua,
-                     SIPTAG_FROM_STR(g_value_get_string (value)),
+                     SIPTAG_FROM_STR(self->priv->address),
                      TAG_NULL());
       nua_get_params(self->priv->nua, TAG_ANY(), TAG_NULL());
     }
@@ -2236,6 +2236,7 @@ nua_glib_register(NuaGlib *self, const char *registrar)
   if ((op = nua_glib_op_create(self, SIP_METHOD_REGISTER, address, TAG_END()))) {
     printf("%s: REGISTER %s\n", self->priv->name, op->op_ident);
     nua_register(op->op_handle, 
+		 SIPTAG_FROM_STR(self->priv->address),
                  TAG_IF(registrar, NUTAG_REGISTRAR(registrar)), 
                  TAG_NULL());
   }
