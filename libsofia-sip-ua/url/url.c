@@ -589,7 +589,8 @@ int _url_d(url_t *url, char *s)
     if (!net_path) {
       url->url_user = host;
       host = NULL;
-    } else if ((atsign = strchr(host, '@'))) {
+    }
+    else if ((atsign = strchr(host, '@'))) {
       char *user;
 
       url->url_user = user = host;
@@ -1801,7 +1802,8 @@ void url_string_update(su_md5_t *md5, char const *s)
   n = strcspn(s, ":/?#");
   if (n >= sizeof schema) {
     su_md5_update(md5, ":", 1);
-  } else if (n && s[n] == ':' ) {
+  }
+  else if (n && s[n] == ':' ) {
     at = url_canonize(schema, s, n, "+");
 
     type = url_get_type(schema, at - schema);
@@ -1820,12 +1822,17 @@ void url_string_update(su_md5_t *md5, char const *s)
       n = 0;
     n += strcspn(s + n, "/;?#");
   }
+  else if (type == url_wv) {    /* WV URL may have / in user part */
+    n = strcspn(s, "@#?;");
+    if (s[n] == '@')
+      n += strcspn(s + n, ";?#");
+  }
   else if (!hostpart || s[0] != '/') {
     n = strcspn(s, "/;?#");	/* Opaque part */
   }
   else if (s[1] == '/') {
     s += 2;
-    n = strcspn(s, "/;?#");	/* Until path, query or fragment */
+    n = strcspn(s, "/;?#");	/* Until host, path, query or fragment */
   }
   else {
     /* foo:/bar */
@@ -1851,7 +1858,8 @@ void url_string_update(su_md5_t *md5, char const *s)
       (type == url_sip || type == url_sips) 
       ? SIP_USER_UNRESERVED
       : USER_UNRESERVED;
-    colon = memchr(s, ':', at - s);
+
+    colon = type == url_unknown ? NULL : memchr(s, ':', at - s);
 
     /* Updated only user part */
     if (colon)

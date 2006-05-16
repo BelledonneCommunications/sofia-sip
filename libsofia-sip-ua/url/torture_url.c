@@ -649,6 +649,62 @@ int test_file(void)
   END();
 }
 
+int test_ldap(void)
+{
+  /* Test a LDAP url  */
+  char ldapurl[] = "ldap://cn=Manager,o=nokia:secret@localhost:389/ou=devices,o=nokia";
+  url_t ldap[1] = { URL_INIT_AS(file) };
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+  char *tst;
+  url_t *u, url[1];
+  char buf1[sizeof(ldapurl) + 32];
+  char buf2[sizeof(ldapurl) + 32];
+
+  BEGIN();
+
+  ldap->url_type = url_unknown; 
+  ldap->url_scheme = "ldap"; 
+
+  /* TEST_S(url_scheme(url_ldap), "ldap"); */
+
+  TEST_1(tst = su_strdup(home, ldapurl));
+  TEST(url_d(url, tst), 0);
+
+  TEST_S(url->url_user, "cn=Manager,o=nokia:secret");
+  /* TEST_S(url->url_password, "secret"); */
+  TEST_S(url->url_host, "localhost");
+  TEST_S(url->url_port, "389");
+  TEST_S(url->url_path, "ou=devices,o=nokia");
+
+  ldap->url_user = "cn=Manager,o=nokia";
+  ldap->url_password = "secret";
+  ldap->url_user = "cn=Manager,o=nokia:secret", ldap->url_password = NULL;
+  ldap->url_host = "localhost";
+  ldap->url_port = "389";
+  ldap->url_path = "ou=devices,o=nokia";
+
+  TEST(url_cmp(ldap, url), 0);
+  TEST(url->url_type, url_unknown);
+  TEST_S(url->url_scheme, "ldap");
+  TEST_1(u = url_hdup(home, url));
+  TEST(u->url_type, url_unknown);
+  TEST_S(u->url_scheme, "ldap");
+  TEST(url_cmp(ldap, u), 0);
+  TEST(url_e(buf1, sizeof(buf1), u), strlen(ldapurl));
+  TEST_S(buf1, ldapurl);
+  TEST(snprintf(buf2, sizeof(buf2), URL_PRINT_FORMAT, URL_PRINT_ARGS(u)), 
+       strlen(ldapurl));
+  TEST_S(buf2, ldapurl);
+
+  url_digest(hash1, sizeof(hash1), url, NULL);
+  url_digest(hash2, sizeof(hash2), (url_t *)ldapurl, NULL);
+  TEST(memcmp(hash1, hash2, sizeof(hash1)), 0);
+
+  su_home_deinit(home);
+
+  END();
+}
+
 int test_rtsp(void)
 {
   /* RTSP urls */
@@ -969,6 +1025,7 @@ int main(int argc, char *argv[])
   retval |= test_fax(); fflush(stdout);
   retval |= test_modem(); fflush(stdout);
   retval |= test_file(); fflush(stdout);
+  retval |= test_ldap(); fflush(stdout);
   retval |= test_rtsp(); fflush(stdout);
   retval |= test_http(); fflush(stdout);
   retval |= test_sanitizing(); fflush(stdout);
