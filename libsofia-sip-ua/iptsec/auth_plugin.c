@@ -45,11 +45,11 @@
 #include <sofia-sip/auth_ntlm.h>
 #endif
 
-#if !HAVE_FUNC
-#if !HAVE_FUNCTION
-#define __FUNCTION__ "auth_plugin"
-#endif
-static char const __func__[] = __FUNCTION__;
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+static char const __func__[] = "auth_plugin";
 #endif
 
 #include <sofia-sip/su_debug.h>
