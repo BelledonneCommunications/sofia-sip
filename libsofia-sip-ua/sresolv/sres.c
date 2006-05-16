@@ -1669,6 +1669,7 @@ sres_toplevel(char buf[], size_t blen, char const *domain)
 
 /* ---------------------------------------------------------------------- */
 
+static int sres_update_config(sres_resolver_t *res, int always, time_t now);
 static int sres_parse_config(sres_config_t *, FILE *);
 static int sres_parse_options(sres_config_t *c, char const *value);
 static int sres_parse_nameserver(sres_config_t *c, char const *server);
@@ -1676,22 +1677,55 @@ static time_t sres_config_timestamp(sres_config_t const *c);
 
 /** Update configuration
  *
+ * @retval 0 when successful
+ * @retval -1 upon an error
  */
 int sres_resolver_update(sres_resolver_t *res, int always)
 {
+  sres_server_t **servers, **old_servers;
+  int updated;
+
+  updated = sres_update_config(res, always, time(&res->res_now));
+  if (updated < 0)
+    return -1;
+
+  if (!res->res_servers || always || updated) {
+    servers = sres_servers_new(res, res->res_config);
+    old_servers = res->res_servers;
+
+    res->res_i_server = 0;
+    res->res_n_servers = sres_servers_count(servers);
+    res->res_servers = servers;
+
+    sres_servers_close(res, old_servers);
+    su_free(res->res_home, old_servers);
+
+    if (!servers)
+      return -1;
+  }
+
+  return 0;
+}
+
+/** Update config file.
+ *
+ * @retval 1 if DNS server list is different from old one.
+ * @retval 0 when otherwise successful
+ * @retval -1 upon an error
+ */
+static 
+int sres_update_config(sres_resolver_t *res, int always, time_t now)
+{
   sres_config_t *c = NULL;
   sres_config_t const *previous;
-  sres_server_t **servers, **old_servers;
+  int retval;
 
   previous = res->res_config;
 
-  time(&res->res_now);
-
-  if (!always && previous && res->res_now < res->res_checked)
+  if (!always && previous && now < res->res_checked)
     return 0;
-
   /* Try avoid checking for changes too often. */
-  res->res_checked = res->res_now + SRES_UPDATE_INTERVAL_SECS; 
+  res->res_checked = now + SRES_UPDATE_INTERVAL_SECS; 
   
   if (!always && previous && 
       sres_config_timestamp(previous) == previous->c_modified)
@@ -1703,26 +1737,11 @@ int sres_resolver_update(sres_resolver_t *res, int always)
 
   res->res_config = c;
 
-  if (sres_config_changed_servers(c, previous)) {
-    servers = sres_servers_new(res, c);
-    if (!servers) {
-      su_home_unref((void *)c->c_home);
-      return -1;
-    }
-
-    old_servers = res->res_servers;
-
-    res->res_i_server = 0;
-    res->res_n_servers = sres_servers_count(servers);
-    res->res_servers = servers;
-
-    sres_servers_close(res, old_servers);
-    su_free(res->res_home, old_servers);
-  }
+  retval = sres_config_changed_servers(c, previous);
 
   su_home_unref((su_home_t *)previous->c_home);
 
-  return 0;
+  return retval;
 }
 
 #if _WIN32
