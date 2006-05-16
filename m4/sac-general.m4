@@ -442,12 +442,12 @@ AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK([for compilation environment], 
   ac_cc_environment, [
 machine=`$CC -dumpmachine`
-if test $machine == "mingw32" ; then
+if test "$machine" = mingw32 ; then
   ac_cc_environment=$machine
 fi
 ])
 
-if test X$ac_cc_environment == "Xmingw32" ; then
+if test "$ac_cc_environment" = mingw32 ; then
 CFLAGS="$CFLAGS -I\$(top_srcdir)/win32/pthread -DWINVER=0x0501 \
 	-D_WIN32_WINNT=0x0501 -DIN_LIBSOFIA_SIP_UA  -mms-bitfields \
 	-pipe -mno-cygwin -mwindows -mconsole -Wall -g -O0"
