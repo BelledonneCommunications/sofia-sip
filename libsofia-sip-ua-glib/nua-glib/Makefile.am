@@ -37,7 +37,11 @@ INCLUDES = 		-I$(S_BASE)/bnf -I$(B_BASE)/bnf \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LTLIBRARIES = 	libnua-glib.la
+noinst_LTLIBRARIES = 	
+
+if HAVE_GOBJECT
+noinst_LTLIBRARIES += 	libnua-glib.la
+endif
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

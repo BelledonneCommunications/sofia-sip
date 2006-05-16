@@ -8,18 +8,13 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-DIST_SUBDIRS=su-glib nua-glib
+SUBDIRS=su-glib nua-glib
 
-GLIB_SUBDIRS=su-glib
 GLIB_TARGETS=su-glib/libsu-glib.la
 
 if HAVE_GOBJECT
-GOBJECT_SUBDIRS=nua-glib
 GOBJECT_TARGETS=nua-glib/libnua-glib.la
 endif
-
-# note: order does matter in the subdir list
-SUBDIRS = $(GLIB_SUBDIRS) $(GOBJECT_SUBDIRS)
 
 lib_LTLIBRARIES = libsofia-sip-ua-glib.la
 
