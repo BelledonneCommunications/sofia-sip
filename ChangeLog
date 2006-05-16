@@ -1,3 +1,295 @@
+2006-05-12  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* Release 1.11.8.
+
+  * Updates for win32.
+  Added SOFIAPUBFUN to few functions in msg_parser().
+  Added new C++ wrappers for C files that need C++ linkage in tport_test.
+  Fixed setlocal braino in build_sources.cmd.
+
+  * Compiling and linking torture_su_bm and torture_su_port as static on win32.
+
+  * Added more warnings to ignore on VC to win32/config.h.in.
+
+  * Added files missing from dist to win32/Makefile.am
+
+  * Added msg_get_address() and msg_set_address() functions to <msg_addr.h>
+  Trying to solve ai_addrlen problem.
+
+  * Put last fixes into RELEASE file.
+
+  * Fixed binding problems in nua and nta.c.
+  Returning more appropriate error code from tport_tbind(), too.
+  This patch fixes tracked bugs 
+  #1485624 (nua not binding to 5060), 
+  #1485625 (nua_create() fails if STUN init fails) and 
+  #1485632 (ncorrect error message for nua bind error).
+  Nua now also binds both to NUTAG_URL and NUTAG_SIPS_URL() URIs, nua_create()
+  fails if binding either of them fails.
+
+  * Fixed msg_addrlen() usage.
+  
+  msg_addrlen() returns a pointer to ai_addrlen field of struct addrinfo
+  inside the msg_t object. ai_addrlen has type size_t. However, system calls
+  taking a return valur pointer to address length, use type socklen_t. 
+  Typically size_t is unsigned long, socklen_t is int, so casting
+  msg_addrlen() return value to (socklen_t *) will break on (high-endian)
+  64-bit platforms. svsp.
+
+  * Re-enable natify in test_nua.c.
+
+  * Updated nua_register() and NUTAG_OUTBOUND() documentation.
+  Taking NUTAG_OUTBOUND() options correctly into account in outbound.c.
+  Improved the contact validation process in outbound.c, too.
+
+  * Silenced warnings caused by mismatching integral types.
+  In nua_session, unsigned v. sip_time_t.
+  In tport.c, size_t v. socklen_t.
+
+  * Fixed socket semantics on test_nat.c for BSD, too.
+
+  * Fixed type of msg_addrlen() to size_t in msg_addr.h/msg.c.
+  POSIX socklen_t is not used in addrinfo. We use addrinfo.
+
+  * Added Changes to RELEASE.
+
+  * Fixed DIST_SUBDIRS at toplevel Makefile.am.
+
+  * Fixed AM_LDFLAGS in sresolv/Makefile.am.
+
+  * Not declaring inline functions with global scope in <sofia-sip/http_header.h>
+
+  * Added su_source_create() prototype to su-glib/so_source.c.
+
+2006-05-11  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * Added more info about outbound, gruu and win32 DLL to RELEASE.
+
+  * sres.c: storing last dot into the error record, too.
+  Bug reported by Thomas Rosenblatt.
+
+  * Added new files to dist, too.
+  - libsofia-sip-ua/sresolv/sofia-resolv/sres_config.h
+  - win32/libsofia-sip-ua-static/libsofia_sip_ua_static.dsp
+  - win32/tests/test_nua/test_nat_tags.cpp
+
+  * Now building libsofia_sip_ua.dll on win32.
+  
+  We define both IN_LIBSOFIA_SIP_UA and IN_LIBSOFIA_SRES in
+  libsofia_sip_ua.dsp.
+  
+  Because of DLL linkage, we compile tags typedefs as C++
+  (see win32/tests/test_nua/test_nat_tags.cpp).
+  
+  Removed LIBSOFIA_SIP_UA_STATIC from win32/sofia-sip/su_configure.h.
+  
+  Added libsofia_sip_ua_static.lib, too. If you want to compile against
+  that, you need define LIBSOFIA_SIP_UA_STATIC by yourself. 
+  
+  Added libsofia-sip-ua-static/libsofia_sip_ua_static.dsp.
+  
+  Using multithreaded DLL runtime for all projects.
+  
+  * Added SOFIAPUBFUN/SOFIAPUBVAR to stun module, too.
+
+  * Added test_nat_tags.c to nua module.
+
+  * Fixed a memory leak in nta_outgoing_mcreate().
+
+  * Added SRESPUBFUN and sres_config.h to sresolv module.
+
+  * Updated headers.
+  
+  Added sofia-sip/ prefix to documentation entries referring to include files.
+  
+  Added SOFIAPUBFUN and SOFIAPUBVAR to files that missed them.
+  
+  Removed some deprecated functions and macros.
+
+  * Avoid #include ordering problem with sip_parser.h in sip_test_msg.c, too.
+
+  * Silenced warnings in tport_type_tcp.c.
+
+  * Added @deprecated to deprecated sip functions.
+
+  * Moved ntlm functions to auth_ntlm.h from auth_plugin.h> in iptsec module.
+
+  * Reordered #includes in http module.
+  Avoid #include ordering problem with <sofia-sip/http_parser.h>.
+
+  * Removed utf8 and unicode-related stuff from library.
+  
+  Source files are still included in source tar.
+
+  * Reordered #includes in sip module.
+  Avoid #include ordering problem with sip_parser.h.
+
+  * Updated ADD-A-HEADER file in sip module.
+
+  * Added SOFIAPUBFUN and SOFIAPUBVAR to all public nua functions and variables.
+
+2006-05-10  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * nua/outbound.c: Adding Accept-Contact (a) to keepalive OPTIONS, too.
+  Just in case the message gets forwarded.
+
+  * Remove dependency to Makefile in targets for marshal file generation in nua_glib.
+
+  * Fixed includes in outbound.[hc].
+
+  * Added Doxyfiles to libsofia-sip-ua-glib. 
+  
+  Note that the files are not actually commented. 
+
+  * nua, soa: Adding Warnings to the response if appropriate.
+
+  * Refactored outbound code in nua module.
+  Added outbound.c, outbound.h.
+
+  * Added registration refresh tests to test_nua.c.
+  Added command line option --expensive and environment variable
+  EXPENSIVE_CHECKS, too.
+
+  * Updated refreshing of publications in nua_publish.c
+  Added nua_publish_usage_refresh(), nua_publish_usage_shutdown().
+
+  * Updated dialog usage refreshes.
+  Updated nua_dialog_usage_refresh(), nh_call_pending().
+
+  * Added expiration time settings to nua/test_proxy.[hc].
+  Added test_proxy_set_expiration() and test_proxy_get_expiration().
+
+  * Fixed timing problem when testing nat binding change.
+
+2006-05-09  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * nua_register.c: use nua-generated contact for refresh interval calculation.
+  Allow SIPS uris in contacts, too.
+
+  * nua_register.c: ignoring bad received parameters in Via header. 
+
+  * Updated config file handling in sresolv/sres.c. 
+  
+  Using reference counting with config structure when copying
+  resolver objects.
+  
+  Trying harder to avoid re-parsing resolv.conf and checking for
+  updated servers.
+  
+  Changed SRES_UPDATE_INTERVAL_SECS to 5 for non-WIN32 platforms.
+  
+  * su/su_alloc.c, su/sofia-sip/su_alloc.h: su_home_ref() takes const pointer.
+
+2006-05-08  kai.vehmanen@nokia.com
+
+  * Added sip_dig and stunc to VC6/win32 workspace file.
+
+  * Fixed sip_dig errors when building on VC6/win32.
+
+  * Fixed STUN bugs when build with VC6/win32.
+
+  * Updated STUN NAT type check interface to utilize current IETF BEHAVE terms.
+
+  * Print sofia-sip version in stunc usage.
+
+2006-05-08  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * url module: using SOFIAPUBFUN and SOFIAPUBVAR instead of URL_DLL.
+
+  * Fixed overflow problem with su_timer_run().
+  After 25 days the su_timer_run() timer started to misbehave,
+  1 < <31 milliseconds is bit more than 24 days, 20 hours, 31 minutes...
+
+2006-05-06  kai.vehmanen@nokia.com
+
+  * Pretty-print the NAT type check results with STUN stunc.
+
+  * Do not use resend when doing NAT type checking with STUN. The resends do not currently include the request attribute bytes as they should do.
+
+  * Minor mods to STUN module.
+
+  * Added optional local port randomization to stunc. Making repeated checks from the same local port will produce unreliable results.
+
+  * Fixed STUN's Test-IV.
+
+  * Added lots more documentation about the STUN nattype algorithm. Added a Test-IV step that is improved over the RFC3489 algorithm.
+
+  * Refactored the STUN nattype checks. There are still a few cases where the detection fails.
+
+  * Moved req-specific states to stun.c, moved stun_nattype_t to public header, added documentation to all stun enum fields.
+
+  * Removed deprecated STUN function definitions from stun.c.
+
+2006-05-05  kai.vehmanen@nokia.com
+
+  * Removed commented code segments.
+
+  * nua-glib: added bind URL and STUN server parameters for nua_glib_constructor()
+
+  * Fixed compiler warnings in stun.
+
+  * Removed various deprecated functions that were already commented out from the code. Closed sf.net bug #1456403.
+
+  * Fixed stunc argument parsing. It is now possible to given STUN server address as a hostname instead of requiring a dotted decimal IP-address.
+
+  * Always install auth_ntlm.h as it is needed by auth_client.h.
+
+2006-05-04  kai.vehmanen@nokia.com
+
+	* Updated developer docs w.r.t. VCS system. Darcs is now the
+	primary version control system and sf.net CVS is only used as a
+	backup.
+
+	* Fixed header paths and added missing libraries that caused
+	errors with debug/release builds.
+
+	* Added sip_options to the win32 SofiaSIP workspace.
+
+2006-05-04  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+  * sres_cache.c: fixed problem using macro as offsetof() argument.
+
+  * test_sresolv.v: added more tests for A6 record parsing.
+
+  * sres.c, sres_cache.c: records are now allocated in a single chunk.
+  
+  Bug hunted down by Thomas Rosenblatt: strings and domains belonging to
+  record were allocated from resolver home, not from cache home.
+  
+  * Fixed problem with config without search domains in sresolv/sres.c.
+
+  * Added information for COPYRIGHTS file to README.developers.
+
+  * Setting send buffer size to at least 64K in Windows in tport_type_tcp.c.
+
+  * Using SOFIAPUBFUN and SOFIAPUBVAR in bnf.h.
+
+  * Silenced sprious warnings by MSG_HEADER_INIT() in msg_header.h.
+
+  * NUTAG_KEEPALIVE() now uses milliseconds.
+  Changes in sofia-sip/nua_tag.h, nua_params.c, nua_register.c, test_nua.c.
+
+  * Renamed su_create_wait as su_wait_create in
+  libsofia-sip-ua-glib/su-glib/su_source_test.c
+
+  * stun/stun.c: s/su_destroy_timer/su_timer_destroy/.
+
+  * Added sofia-sip/auth_ntlm.h auth_ntlm.c to dist in iptsec module.
+
+  * Added license to Makefiles (kv)
+    
+  Added copyright lines and reference to LGPL license to the Makefile.am and
+  configure.ac files.
+
+  * poll_test.c: Renamed call s/su_create_wait/su_wait_create/. (kv)
+
+  * Added libsofia-sip-ua-glib/ChangeLog to darcs (kv)
+
+  * Added win32 registry name server discovery (kv)
+  
+  Based on a patch from Dimitri E. Prado.
+  Decreased update interval to 180secs (SRES_UPDATE_INTERVAL_SECS).
+
 2006-05-03  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* Not using SU_MSG_RINITIALIZER anymore.
