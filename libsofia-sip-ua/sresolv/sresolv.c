@@ -156,9 +156,8 @@ sres_resolver_destroy(sres_resolver_t *res)
     return su_seterrno(EINVAL);
 
   sres_sofia_update(srs, -1, -1); /* Remove sockets from too, zap timers. */
-  srs->srs_root = NULL;
 
-  sres_resolver_unref(srs->srs_resolver); 
+  sres_resolver_unref(res); 
 
   return 0;
 }
