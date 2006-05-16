@@ -1443,6 +1443,9 @@ sres_resolver_destructor(void *arg)
 
   sres_servers_close(res, res->res_servers);
 
+  if (res->res_config)
+    su_home_unref((su_home_t *)res->res_config->c_home);
+
   if (res->res_updcb)
     res->res_updcb(res->res_async, -1, -1);
 }
@@ -1901,7 +1904,7 @@ static
 sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res,
 				      char const **options)
 {
-  sres_config_t *c = su_home_clone(res->res_home, (sizeof *c));
+  sres_config_t *c = su_home_new(sizeof *c);
 
   if (c) {
     FILE *f;
