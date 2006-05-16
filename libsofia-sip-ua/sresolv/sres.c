@@ -344,7 +344,7 @@ sres_resolver_new_internal(sres_cache_t *cache,
 			   char const *conf_file_path,
 			   char const **options);
 
-static void sres_servers_unref(sres_resolver_t *res,
+static void sres_servers_close(sres_resolver_t *res,
 			       sres_server_t **servers);
 
 static int sres_servers_count(sres_server_t * const *servers);
@@ -1430,6 +1430,7 @@ sres_record_compare(sres_record_t const *aa, sres_record_t const *bb)
 /* ---------------------------------------------------------------------- */
 /* Private functions */
 
+/** Destruct */
 static 
 void 
 sres_resolver_destructor(void *arg)
@@ -1440,7 +1441,7 @@ sres_resolver_destructor(void *arg)
   sres_cache_unref(res->res_cache); 
   res->res_cache = NULL;
 
-  sres_servers_unref(res, res->res_servers);
+  sres_servers_close(res, res->res_servers);
 
   if (res->res_updcb)
     res->res_updcb(res->res_async, -1, -1);
@@ -1715,7 +1716,8 @@ int sres_resolver_update(sres_resolver_t *res, int always)
     res->res_n_servers = sres_servers_count(servers);
     res->res_servers = servers;
 
-    sres_servers_unref(res, old_servers);
+    sres_servers_close(res, old_servers);
+    su_free(res->res_home, old_servers);
   }
 
   su_home_unref((su_home_t *)previous->c_home);
@@ -2208,7 +2210,7 @@ sres_server_t **sres_servers_new(sres_resolver_t *res,
 }
 
 static
-void sres_servers_unref(sres_resolver_t *res,
+void sres_servers_close(sres_resolver_t *res,
 			sres_server_t **servers)
 {
   int i;
@@ -2226,8 +2228,6 @@ void sres_servers_unref(sres_resolver_t *res,
       closesocket(servers[i]->dns_socket);
     }
   }
-
-  su_free(res->res_home, servers);
 }
 
 static

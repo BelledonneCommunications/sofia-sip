@@ -1709,6 +1709,7 @@ int test_api_errors(sres_context_t *noctx)
   TEST_1(template);
   
   TEST_1(res = sres_resolver_new(NULL));
+  TEST(su_home_threadsafe((su_home_t *)res), 0);
   TEST_VOID(sres_resolver_unref(res));
 
 #ifndef _WIN32
@@ -1725,6 +1726,7 @@ int test_api_errors(sres_context_t *noctx)
   putenv("LOCALDOMAIN=localdomain");
 
   TEST_1(res = sres_resolver_new(template));
+  TEST(su_home_threadsafe((su_home_t *)res), 0);
 
   unlink(template);
   
@@ -1788,6 +1790,7 @@ int test_init(sres_context_t *ctx, char const *conf_file)
   ctx->query = NULL, ctx->result = NULL;
 
   TEST_1(ctx->resolver = res = sres_resolver_new(conf_file));
+  TEST(su_home_threadsafe((su_home_t *)ctx->resolver), 0);
   n = sres_resolver_sockets(res, NULL, 0);
   ctx->n_sockets = n;
   TEST_1(n < SRES_MAX_NAMESERVERS);
