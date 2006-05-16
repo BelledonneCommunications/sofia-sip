@@ -155,6 +155,9 @@ sres_resolver_destroy(sres_resolver_t *res)
   if (srs == NULL)
     return su_seterrno(EINVAL);
 
+  sres_sofia_update(srs, -1, -1); /* Remove sockets from too, zap timers. */
+  srs->srs_root = NULL;
+
   sres_resolver_unref(srs->srs_resolver); 
 
   return 0;
@@ -180,6 +183,9 @@ static int sres_sofia_update(sres_sofia_t *srs,
 
   if (srs == NULL)
     return 0;
+
+  if (srs->srs_root == NULL)
+    return -1;
 
   if (old_socket == new_socket) {
     if (old_socket == -1) {
