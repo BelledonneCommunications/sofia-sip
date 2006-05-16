@@ -1299,7 +1299,7 @@ int main(int argc, char *argv[])
 
   if (o_attach) {
     char line[10];
-    printf("nua_test: pid %u\n", getpid());
+    printf("nua_test: pid %lu\n", (unsigned long)getpid());
     printf("<Press RETURN to continue>\n");
     fgets(line, sizeof line, stdin);
   }
