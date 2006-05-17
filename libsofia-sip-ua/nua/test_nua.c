@@ -2943,6 +2943,7 @@ int test_reject_401(struct context *ctx)
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_subject);
   TEST_S(sip->sip_subject->g_value, "Got 407");
+  TEST_1(sip->sip_proxy_authorization);
   TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
@@ -2955,6 +2956,8 @@ int test_reject_401(struct context *ctx)
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_subject);
   TEST_S(sip->sip_subject->g_value, "Got 401");
+  TEST_1(sip->sip_authorization);
+  TEST_1(sip->sip_proxy_authorization);
   TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */

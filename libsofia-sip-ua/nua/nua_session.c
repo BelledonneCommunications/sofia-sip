@@ -257,7 +257,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
 
     if (offer_sent > 0 &&
 	session_include_description(nh->nh_soa, msg, sip) < 0)
-      sip = NULL;
+      sip = NULL, what = "Internal media error";
 
     if (sip && nh->nh_soa &&
 	NH_PGET(nh, media_features) && !nua_dialog_is_established(nh->nh_ds) &&
@@ -274,6 +274,10 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
       }
     }
 
+    if (sip && nh->nh_auth) {
+      if (auc_authorize(&nh->nh_auth, msg, sip) < 0)
+	sip = NULL, what = "Internal authentication error";
+    }
     if (sip)
       cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 					process_response_to_invite, nh, NULL,
