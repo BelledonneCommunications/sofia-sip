@@ -31,9 +31,10 @@
  *
  */
 
-#ifndef SU_LOG_T  /** Defined when su_log_t has been defined. */
+#ifndef SU_LOG_T
+/** Defined when the type #su_log_t has been defined. */
 #define SU_LOG_T
-/**Log object. */
+/** Type of log structure. */
 typedef struct su_log_s su_log_t;
 #endif
 
@@ -50,11 +51,6 @@ typedef struct su_log_s su_log_t;
 #endif
 
 SOFIA_BEGIN_DECLS
-
-/* Use __attribute__ to allow argument checking for su_log */
-#if !defined(__GNUC__) && !defined(__attribute__)
-#define __attribute__(x) 
-#endif
 
 /**Prototype for logging function */
 typedef void (su_logger_f)(void *stream, char const *fmt, va_list ap);

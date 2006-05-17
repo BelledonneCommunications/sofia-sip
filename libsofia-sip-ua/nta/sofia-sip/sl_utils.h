@@ -37,12 +37,6 @@
 
 #include <stdio.h>
 
-#ifndef SU_LOG_H
-#define SU_LOG_H_NEED_SU_LOG_T 1
-#include <sofia-sip/su_log.h>
-#undef  SU_LOG_H_NEED_SU_LOG_T
-#endif
-
 #ifndef STRING0_H
 #include <sofia-sip/string0.h>
 #endif
@@ -52,6 +46,11 @@
 #endif
 
 SOFIA_BEGIN_DECLS
+
+#ifndef SU_LOG_T
+#define SU_LOG_T
+typedef struct su_log_s su_log_t;
+#endif
 
 /* Read from file */
 SOFIAPUBFUN sip_payload_t *sl_read_payload(su_home_t *home, char const *fname);
