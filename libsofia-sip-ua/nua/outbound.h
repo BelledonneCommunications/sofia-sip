@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef OUTBOUND_H /** Defined when <outbound.h> has been included. */
+#ifndef OUTBOUND_H
+/** Defined when <outbound.h> has been included. */
 #define OUTBOUND_H
 /**@IFILE outbound.h 
  *

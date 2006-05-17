@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef NUA_STACK_H /** Defined when <nua_stack.h> has been included. */
+#ifndef NUA_STACK_H
+/** Defined when <nua_stack.h> has been included. */
 #define NUA_STACK_H
 /**@IFILE nua_stack.h 
  * @brief Sofia-SIP User Agent Engine - internal stack interface

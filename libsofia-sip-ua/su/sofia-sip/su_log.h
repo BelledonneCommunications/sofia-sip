@@ -38,7 +38,9 @@ typedef struct su_log_s su_log_t;
 #endif
 
 #ifndef SU_LOG_H_NEED_SU_LOG_T
-#ifndef SU_LOG_H  /** Defined when <sofia-sip/su_log.h> has been included. */
+
+#ifndef SU_LOG_H
+/** Defined when <sofia-sip/su_log.h> has been included. */
 #define SU_LOG_H
 
 #include <stdarg.h>

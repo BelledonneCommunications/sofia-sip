@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef URLMAP_H /** Defined when urlmap.h has been included. */
+#ifndef URLMAP_H
+/** Defined when <urlmap.h> has been included. */
 #define URLMAP_H
 
 /**

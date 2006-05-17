@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef NUA_PARAMS_H /** Defined when <nua_params.h> has been included. */
+#ifndef NUA_PARAMS_H
+/** Defined when <nua_params.h> has been included. */
 #define NUA_PARAMS_H
 
 /**@internal @file nua_params.h 

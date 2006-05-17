@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef STUN_INTERNAL_H /** Defined when stun_internal.h has been included. */
+#ifndef STUN_INTERNAL_H
+/** Defined when <stun_internal.h> has been included. */
 #define STUN_INTERNAL_H
 /**@file stun_internal.h STUN client interface
  *

@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef TPORT_TLS_H /** Defined when <tport_tls.h> has been included. */
+#ifndef TPORT_TLS_H
+/** Defined when <tport_tls.h> has been included. */
 #define TPORT_TLS_H
 /**@IFILE tport_tls.h
  * @brief TLS interface

@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef SU_PORT_H /** Defined when su_port.h has been included. */
+#ifndef SU_PORT_H
+/** Defined when <su_port.h> has been included. */
 #define SU_PORT_H
 
 /**@IFILE su_port.h 

@@ -23,8 +23,8 @@
  */
 
 #ifndef SOFIA_SIP_HOSTDOMAIN_H
-/** Defined when sofia-sip/hostdomain.h has been included. @HIDE */
-#define SOFIA_SIP_HOSTDOMAIN_H 1
+/** Defined when <sofia-sip/hostdomain.h> has been included. */
+#define SOFIA_SIP_HOSTDOMAIN_H
 
 /**@file sofia-sip/hostdomain.h
  * 
@@ -51,4 +51,4 @@ SOFIAPUBFUN int host_has_domain_invalid(char const *string);
 
 SOFIA_END_DECLS
 
-#endif /* !defined SOFIA_SIP_HOSTDOMAIN_H */
+#endif /* !defined(SOFIA_SIP_HOSTDOMAIN_H) */

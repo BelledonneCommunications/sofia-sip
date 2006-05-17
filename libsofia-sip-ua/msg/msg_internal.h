@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef MSG_INTERNAL_H /** Defined when msg_internal.h has been included. */
+#ifndef MSG_INTERNAL_H
+/** Defined when <msg_internal.h> has been included. */
 #define MSG_INTERNAL_H 
 
 /**@IFILE msg_internal.h 

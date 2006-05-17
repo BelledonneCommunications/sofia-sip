@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef NEA_DEBUG_H /** Defined when <nea_debug.h> has been included. */
+#ifndef NEA_DEBUG_H
+/** Defined when <nea_debug.h> has been included. */
 #define NEA_DEBUG_H
 
 /**@file nea_debug.h

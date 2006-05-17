@@ -29,7 +29,8 @@
  *
  */
 
-#ifndef TEST_PROTOS_H /** Defined when test_protos.h has been included. */
+#ifndef TEST_PROTOS_H
+/** Defined when <test_protos.h> has been included. */
 #define TEST_PROTOS_H 
 
 /**@ingroup test_msg

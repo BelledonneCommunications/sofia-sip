@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef SU_MODULE_DEBUG_H /** Defined when su_module_debug.h has been included. */
+#ifndef SU_MODULE_DEBUG_H
+/** Defined when <su_module_debug.h> has been included. */
 #define SU_MODULE_DEBUG_H
 
 /**@ingroup su_log

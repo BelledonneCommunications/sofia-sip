@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef IPTSEC_DEBUG_H /** Defined when <iptsec_debug.h> has been included. */
+#ifndef IPTSEC_DEBUG_H
+/** Defined when <iptsec_debug.h> has been included. */
 #define IPTSEC_DEBUG_H
 
 /**@file iptsec_debug.h

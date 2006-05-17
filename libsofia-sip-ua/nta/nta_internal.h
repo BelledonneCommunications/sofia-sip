@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef NTA_INTERNAL_H /** Defined when <nta_internal.h> has been included. */
+#ifndef NTA_INTERNAL_H
+/** Defined when <nta_internal.h> has been included. */
 #define NTA_INTERNAL_H 
 
 /**@IFILE nta_internal.h

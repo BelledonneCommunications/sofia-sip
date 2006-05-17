@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef NTA_COMPAT_H /** Defined when <nta_compat.h> has been included. */
+#ifndef NTA_COMPAT_H
+/** Defined when <nta_compat.h> has been included. */
 #define NTA_COMPAT_H;
 
 /**@file nta_compat.h   

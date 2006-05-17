@@ -22,9 +22,9 @@
  *
  */
 
-#ifndef MSG_TEST_CLASS_H
-/** Defined when test_class.h has been included. */
-#define MSG_TEST_CLASS_H 
+#ifndef TEST_CLASS_H
+/** Defined when <test_class.h> has been included. */
+#define TEST_CLASS_H 
 
 /**@ingroup test_msg
  * @file test_class.h
@@ -161,4 +161,4 @@ msg_test_t *msg_test_public(msg_t *msg)
 
 SOFIA_END_DECLS
 
-#endif
+#endif /* !defined(TEST_CLASS_H) */

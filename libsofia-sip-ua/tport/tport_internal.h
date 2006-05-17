@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef TPORT_INTERNAL_H /** Defined when <tport.h> has been included. */
+#ifndef TPORT_INTERNAL_H
+/** Defined when <tport.h> has been included. */
 #define TPORT_INTERNAL_H
 
 /**@file tport_internal.h
