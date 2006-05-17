@@ -3,9 +3,9 @@
 autoconf=${autoconf:-autoconf} autoheader=${autoheader:-autoheader}
 
 for version in 2.59 2.58 2.57 2.53 2.52; do
-  if autoconf --version 2>&1 | fgrep -q $version" ; then
+  if autoconf --version 2>&1 | fgrep -q "$version" ; then
     break
-  elif autoconf-$version --version 2>&1 | fgrep -q $version" ; then
+  elif autoconf-$version --version 2>&1 | fgrep -q "$version" ; then
     autoconf=autoconf-$version autoheader=autoheader-$version
     break
   fi
@@ -14,9 +14,9 @@ done
 aclocal=${aclocal:-aclocal} automake=${automake:-automake}
 
 for version in 1.9 1.7 1.8; do # No more 1.6
-  if automake --version 2>&1 | fgrep -q $version" ; then 
+  if automake --version 2>&1 | fgrep -q "$version" ; then 
     break
-  elif automake-$version --version 2>&1 | fgrep -q $version" ; then
+  elif automake-$version --version 2>&1 | fgrep -q "$version" ; then
     automake=automake-$version aclocal=aclocal-$version
     break
   fi
