@@ -3025,11 +3025,21 @@ int nta_msg_request_complete(msg_t *msg,
   }
   if (!request_uri)
     return -1;
+
   if (method || method_name) {
-    sip_request_t *rq =
-      sip_request_create(home, method, method_name, request_uri, NULL);
-    if (msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)rq) < 0)
-      return -1;
+    sip_request_t *rq = sip->sip_request;
+
+    if (!rq
+	|| request_uri != (url_string_t *)rq->rq_url
+	|| method != rq->rq_method
+	|| str0cmp(method_name, rq->rq_method_name))
+      rq = NULL;
+
+    if (rq == NULL) {
+      rq = sip_request_create(home, method, method_name, request_uri, NULL);
+      if (msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)rq) < 0)
+	return -1;
+    }
   }
 
   if (!sip->sip_request)
