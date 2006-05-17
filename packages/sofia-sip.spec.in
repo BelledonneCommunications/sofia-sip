@@ -63,7 +63,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_prefix}/%{_lib}/libsofia-sip-ua.so.*.*
+%{_prefix}/%{_lib}/libsofia-sip-ua.so.*
 %doc AUTHORS COPYING COPYRIGHTS README
 
 %package	glib
@@ -78,7 +78,7 @@ GLib interface to Sofia SIP User Agent library.
 
 %files 		glib
 %defattr(-,root,root,-)
-%{_prefix}/%{_lib}/libsofia-sip-ua-glib.so.*.*
+%{_prefix}/%{_lib}/libsofia-sip-ua-glib.so.*
 
 %endif
 
@@ -103,7 +103,6 @@ static libraries and include files.
 %{_prefix}/%{_lib}/libsofia-sip-ua.la
 %{_prefix}/%{_lib}/libsofia-sip-ua.a
 %{_prefix}/%{_lib}/libsofia-sip-ua.so
-%{_prefix}/%{_lib}/libsofia-sip-ua.so.?
 %{_prefix}/%{_lib}/pkgconfig/sofia-sip-ua.pc
 %doc TODO README.developers
 
@@ -126,7 +125,6 @@ SIP.
 %{_prefix}/%{_lib}/libsofia-sip-ua-glib.la
 %{_prefix}/%{_lib}/libsofia-sip-ua-glib.a
 %{_prefix}/%{_lib}/libsofia-sip-ua-glib.so
-%{_prefix}/%{_lib}/libsofia-sip-ua-glib.so.?
 %{_prefix}/%{_lib}/pkgconfig/sofia-sip-ua-glib.pc
 %endif
 
