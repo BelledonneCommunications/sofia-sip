@@ -979,7 +979,7 @@ msg_t *nua_creq_msg(nua_t *nua,
 	    NUTAG_ADD_CONTACT_REF(add_contact),
 	    TAG_END());
 
-    if (method == sip_method_register && url == NULL) {
+    if (method == sip_method_register && url == NULL && !sip->sip_request) {
       tl_gets(ta_args(ta), NUTAG_REGISTRAR_REF(url), TAG_END());
       if (url == NULL)
 	tl_gets(nh->nh_tags, NUTAG_REGISTRAR_REF(url), TAG_END());
@@ -988,8 +988,17 @@ msg_t *nua_creq_msg(nua_t *nua,
     }
 
     if (seq != -1) {
-      sip_cseq_t *cseq =
-	sip_cseq_create(msg_home(msg), seq, method, name);
+      sip_cseq_t *cseq;
+     
+      assert(method != sip_method_unknown || name || sip->sip_request);
+      
+      if (method || name)
+	cseq = sip_cseq_create(msg_home(msg), seq, method, name);
+      else 
+	cseq = sip_cseq_create(msg_home(msg), seq, 
+			       sip->sip_request->rq_method, 
+			       sip->sip_request->rq_method_name);
+
       sip_header_insert(msg, sip, (sip_header_t *)cseq);
     }
 
@@ -1355,7 +1364,7 @@ int nua_creq_check_restart(nua_handle_t *nh,
 
       return
 	nua_creq_restart_with(nh, cr, orq,
-			      100, "Re-Negotiating Subscription Expiration",
+			      100, "Re-Negotiating Expiration",
 			      restart_function, 
 			      SIPTAG_EXPIRES(ex),
 			      TAG_END());

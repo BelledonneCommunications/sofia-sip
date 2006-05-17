@@ -331,9 +331,9 @@ static int process_response_to_subscribe(nua_handle_t *nh,
     else if (gracefully && substate != nua_substate_terminated) 
       /* Post un-subscribe event */
       nua_stack_post_signal(nh, nua_r_unsubscribe, 
-		   SIPTAG_EVENT(du->du_event), 
-		   SIPTAG_EXPIRES_STR("0"),
-		   TAG_END());
+			    SIPTAG_EVENT(du->du_event), 
+			    SIPTAG_EXPIRES_STR("0"),
+			    TAG_END());
   }
 
   nua_stack_process_response(nh, cr, orq, sip, 
@@ -364,7 +364,7 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   else
     e = nua_r_destroy, du->du_terminating = 1;
 
-  cr->cr_msg = msg_ref_create(du->du_msg);
+  cr->cr_msg = msg_copy(du->du_msg);
 
   {
     /* Remove initial route */
@@ -374,12 +374,12 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   }
 
   msg = nua_creq_msg(nua, nh, cr, 1,
-			 SIP_METHOD_SUBSCRIBE,
-			 NUTAG_USE_DIALOG(1),
-			 NUTAG_ADD_CONTACT(1),
-			 TAG_IF(du->du_terminating, 
-				SIPTAG_EXPIRES_STR("0")),
-			 TAG_END());
+		     SIP_METHOD_SUBSCRIBE,
+		     NUTAG_USE_DIALOG(1),
+		     NUTAG_ADD_CONTACT(1),
+		     TAG_IF(du->du_terminating, 
+			    SIPTAG_EXPIRES_STR("0")),
+		     TAG_END());
 
   sip = sip_object(msg);
 

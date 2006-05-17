@@ -606,7 +606,7 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 
   outbound_stop_keepalive(nr->nr_ob);
 
-  cr->cr_msg = msg_ref_create(du->du_msg);
+  cr->cr_msg = msg_copy(du->du_msg);
   msg = nua_creq_msg(nua, nh, cr, 1,
 		     SIP_METHOD_REGISTER,
 		     NUTAG_USE_DIALOG(1),

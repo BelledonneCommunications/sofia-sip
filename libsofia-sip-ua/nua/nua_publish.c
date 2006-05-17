@@ -55,8 +55,6 @@
 
 struct publish_usage {
   sip_etag_t *pu_etag;
-  sip_content_type_t *pu_content_type;
-  sip_payload_t *pu_body;
 };
 
 static char const *nua_publish_usage_name(nua_dialog_usage_t const *du);
@@ -221,7 +219,7 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   struct nua_client_request *cr = nh->nh_cr;
   msg_t *msg = NULL;
   sip_t *sip;
-  int add_body = 0;
+  int remove_body = 0;
 
   if (nh->nh_special && nh->nh_special != nua_r_publish) {
     return UA_EVENT2(e, 900, "Invalid handle for PUBLISH");
@@ -250,47 +248,30 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   pu = nua_dialog_usage_private(du); assert(pu);
 
   if (refresh) {
-    msg_t *omsg;
-    sip_t *osip;
-
-    cr->cr_msg = omsg = msg_ref_create(du->du_msg);
-    osip = sip_object(omsg);
-
-    if (osip == NULL) {
-    }
-    else if (pu->pu_etag) {
-      if (osip->sip_payload)
-	msg_header_remove(omsg, (void *)osip, (void *)osip->sip_payload);
-      if (osip->sip_content_type)
-	msg_header_remove(omsg, (void *)osip, (void *)osip->sip_content_type);
-    }
-    else {
-      add_body = !du->du_terminating;
-    }
+    if (cr->cr_msg)
+      msg_destroy(cr->cr_msg);
+    cr->cr_msg = msg_copy(du->du_msg);
+    remove_body = pu->pu_etag != NULL;
   }
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count || refresh,
 		     SIP_METHOD_PUBLISH,
 		     NUTAG_ADD_CONTACT(0),
 		     TAG_NEXT(tags));
-
   sip = sip_object(msg);
+
+  if (!msg || !sip) 
+    goto error;
 
   du->du_terminating =
     e != nua_r_publish ||
-    (sip && sip->sip_expires && sip->sip_expires->ex_delta == 0);
+    (sip->sip_expires && sip->sip_expires->ex_delta == 0);
 
-  if (sip && !du->du_terminating && !refresh) {
-    sip_t *osip;
-
+  if (!du->du_terminating && !refresh) {
+    /* Save template */
     if (du->du_msg)
       msg_destroy(du->du_msg);
     du->du_msg = msg_ref_create(cr->cr_msg);
-
-    osip = sip_object(du->du_msg);
-
-    pu->pu_content_type = osip->sip_content_type;
-    pu->pu_body = osip->sip_payload;
   }
 
   cr->cr_orq =
@@ -298,24 +279,24 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 			 process_response_to_publish, nh, NULL,
 			 msg,
 			 SIPTAG_IF_MATCH(pu->pu_etag),
-			 TAG_IF(add_body, SIPTAG_PAYLOAD(pu->pu_body)),
-			 TAG_IF(add_body,
-				SIPTAG_CONTENT_TYPE(pu->pu_content_type)),
+			 TAG_IF(remove_body, SIPTAG_PAYLOAD(NONE)),
+			 TAG_IF(remove_body, SIPTAG_CONTENT_TYPE(NONE)),
 			 TAG_IF(e != nua_r_publish,
 				SIPTAG_EXPIRES_STR("0")),
 			 SIPTAG_END(), TAG_NEXT(tags));
-
-  if (!cr->cr_orq) {
-    msg_destroy(msg);
-    if (!du->du_ready)
-      nua_dialog_usage_remove(nh, nh->nh_ds, du);
-    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
-  }
+  if (!cr->cr_orq)
+    goto error;
 
   nh->nh_special = nua_r_publish;
   cr->cr_usage = du;
 
   return cr->cr_event = e;
+
+ error:
+  msg_destroy(msg);
+  if (!du->du_ready)
+    nua_dialog_usage_remove(nh, nh->nh_ds, du);
+  return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 }
 
 
