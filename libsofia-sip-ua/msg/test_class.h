@@ -66,20 +66,20 @@ typedef struct msg_status_s  msg_status_t;
 
 /** Request line. */
 struct msg_request_s { 
-  msg_common_t     rq_common[1];   /**< Common fragment info */ \
-  msg_header_t    *rq_next;	   /**< Link to next header */ \
-  char const      *rq_method_name; /**< Method name */ \
-  url_t            rq_url[1];	   /**< RequestURI */ \
-  char const      *rq_version;     /**< Protocol version */ \
+  msg_common_t     rq_common[1];   /**< Common fragment info */
+  msg_header_t    *rq_next;	   /**< Link to next header */
+  char const      *rq_method_name; /**< Method name */
+  url_t            rq_url[1];	   /**< RequestURI */
+  char const      *rq_version;     /**< Protocol version */
 }; 
 
 /** Status line. */
 struct msg_status_s { 
-  msg_common_t   st_common[1];	/**< Common fragment info */ \
-  msg_header_t *st_next;	/**< Link to next (dummy) */ \
-  char const    *st_version;	/**< Protocol version */ \
-  int            st_status;	/**< Status code */ \
-  char const    *st_phrase;	/**< Status phrase */ \
+  msg_common_t   st_common[1];	/**< Common fragment info */
+  msg_header_t *st_next;	/**< Link to next (dummy) */
+  char const    *st_version;	/**< Protocol version */
+  int            st_status;	/**< Status code */
+  char const    *st_phrase;	/**< Status phrase */
 };
 
 /** Message object for tests. */
