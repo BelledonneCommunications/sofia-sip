@@ -250,6 +250,15 @@ void prefix##_balance_delete(Type **top, Type *node)			\
 }  \
 extern int const prefix##_dummy
 
+/**@fn int rbtree_insert(Type * tree, Type *node, Type **return_old)
+ *
+ * Insert a @a node into @a tree.
+ *
+ *
+ * @retval 0 if node was inserted
+ * @retval -1 if there already was an matching node and return_old is NULL.
+ */
+
 /* Insert node into tree. */
 #define RBTREE_INSERT(SCOPE, prefix, Type, left, right, parent,		\
 		      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR,	\
@@ -276,6 +285,8 @@ int prefix ## _insert(Type **const tree,				\
   if (old == node)							\
     old = NULL;								\
   else if (old) {							\
+    if (!return_old) return -1;						\
+									\
     if ((left(node) = left(old)))					\
       parent(left(node)) = node;					\
     if ((right(node) = right(old)))					\
