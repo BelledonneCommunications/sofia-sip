@@ -1233,6 +1233,9 @@ int test_stack_errors(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-1.2.2: PASSED\n");
 
+  if (!ctx->proxy_tests)
+    goto nua_1_2_5;
+
   /* -Un-register without REGISTER--------------------------------------- */
 
   if (print_headings)
@@ -1277,8 +1280,9 @@ int test_stack_errors(struct context *ctx)
 
   /* -terminate without notifier--------------------------------------- */
 
+ nua_1_2_5:
   if (print_headings)
-    printf("TEST NUA-1.2.5: unpublish without publish\n");
+    printf("TEST NUA-1.2.5: terminate without notifier\n");
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
@@ -1301,7 +1305,6 @@ int test_stack_errors(struct context *ctx)
   TEST_1(!e->next);
 
   free_events_in_list(ctx, a->events);
-
 
   nua_handle_destroy(a_call->nh), a_call->nh = NULL;
 
@@ -1881,6 +1884,21 @@ int test_connectivity(struct context *ctx)
   OPTIONS(c, c_call, c_call->nh,
 	  TAG_IF(!ctx->proxy_tests, NUTAG_URL(a->contact->m_url)),
 	  TAG_END());
+
+  if (ctx->proxy_tests) {
+    run_abc_until(ctx, -1, NULL, -1, NULL, -1, save_until_final_response);
+
+    /* Client events: nua_options(), nua_r_options */
+    TEST_1(e = c->events->head); TEST_E(e->data->e_event, nua_r_options);
+    TEST(e->data->e_status, 407);
+    TEST_1(!e->next);
+
+    free_events_in_list(ctx, c->events);
+
+    AUTHENTICATE(c, c_call, c_call->nh,
+		 NUTAG_AUTH("Digest:\"test-proxy\":charlie:secret"),
+		 TAG_END());
+  }
 
   run_abc_until(ctx, -1, save_until_received,
 		-1, NULL,
@@ -6004,7 +6022,8 @@ int main(int argc, char *argv[])
 
     retval |= test_stack_errors(ctx); SINGLE_FAILURE_CHECK();
 
-    retval |= test_register(ctx);
+    if (ctx->proxy_tests)
+      retval |= test_register(ctx);
 
     if (retval == 0)
       retval |= test_connectivity(ctx);
@@ -6030,7 +6049,8 @@ int main(int argc, char *argv[])
       retval |= test_events(ctx); SINGLE_FAILURE_CHECK();
     }
 
-    retval |= test_unregister(ctx); SINGLE_FAILURE_CHECK();
+    if (ctx->proxy_tests)
+      retval |= test_unregister(ctx); SINGLE_FAILURE_CHECK();
   }
   retval |= test_deinit(ctx);
 

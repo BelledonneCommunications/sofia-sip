@@ -192,8 +192,8 @@ static int process_options(struct proxy *proxy,
 static struct registration_entry *
 registration_entry_find(struct proxy const *proxy, url_t const *uri);
 
-static
-auth_challenger_t registrar_challenger[1];
+static auth_challenger_t registrar_challenger[1];
+static auth_challenger_t proxy_challenger[1];
 
 /* Proxy entry point */
 static int 
@@ -201,12 +201,21 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
 {
   struct proxy_transaction *t;
 
+  auth_challenger_t _proxy_challenger[1] = 
+  {{ 
+      SIP_407_PROXY_AUTH_REQUIRED,
+      sip_proxy_authenticate_class,
+      sip_proxy_authentication_info_class
+    }};
+
   auth_challenger_t _registrar_challenger[1] = 
   {{ 
       SIP_401_UNAUTHORIZED,
       sip_www_authenticate_class,
       sip_authentication_info_class
     }};
+
+  *proxy_challenger = *_proxy_challenger;
   *registrar_challenger = *_registrar_challenger;
 
   proxy->root = root;
@@ -394,6 +403,8 @@ static sip_contact_t *create_transport_contacts(struct proxy *p)
 
 /* ---------------------------------------------------------------------- */
 
+static int challenge_request(struct proxy *, nta_incoming_t *, sip_t const *);
+
 /** Forward request */
 static
 int proxy_request(struct proxy *proxy,
@@ -405,6 +416,25 @@ int proxy_request(struct proxy *proxy,
   struct proxy_transaction *t = NULL;
   sip_request_t *rq = NULL;
   sip_max_forwards_t *mf;
+  sip_method_t method = sip->sip_request->rq_method;
+
+  mf = sip->sip_max_forwards;
+
+  if (mf && mf->mf_count <= 1) {
+    if (sip->sip_request->rq_method == sip_method_options) {
+      return process_options(proxy, irq, sip);
+    }
+    nta_incoming_treply(irq, SIP_483_TOO_MANY_HOPS, TAG_END());
+    return 483;
+  }
+
+  if (method != sip_method_ack && method != sip_method_cancel && 
+      str0casecmp(sip->sip_from->a_url->url_host, "example.net") == 0) {
+    /* Challenge everything but CANCEL and ACK coming from Mr. C */
+    int status = challenge_request(proxy, irq, sip);
+    if (status)
+      return status;
+  }
 
   /* We don't do any route processing */
   request_uri = sip->sip_request->rq_url;
@@ -438,16 +468,6 @@ int proxy_request(struct proxy *proxy,
     }
     
     target = b->contact->m_url;
-  }
-
-  mf = sip->sip_max_forwards;
-
-  if (mf && mf->mf_count <= 1) {
-    if (sip->sip_request->rq_method == sip_method_options) {
-      return process_options(proxy, irq, sip);
-    }
-    nta_incoming_treply(irq, SIP_483_TOO_MANY_HOPS, TAG_END());
-    return 483;
   }
 
   t = proxy_transaction_new(proxy);
@@ -485,6 +505,50 @@ int proxy_request(struct proxy *proxy,
 
   return 0;
 }
+
+static
+int challenge_request(struct proxy *p,
+		     nta_incoming_t *irq,
+		     sip_t const *sip)
+{
+  int status;
+  auth_status_t *as;
+  msg_t *msg;
+
+  as = auth_status_new(p->home);
+  if (!as)
+    return 500;
+
+  as->as_method = sip->sip_request->rq_method_name;
+  msg = nta_incoming_getrequest(irq);
+  as->as_source = msg_addrinfo(msg);
+
+  as->as_user_uri = sip->sip_from->a_url;
+  as->as_display = sip->sip_from->a_display;
+
+  if (sip->sip_payload)
+    as->as_body = sip->sip_payload->pl_data,
+      as->as_bodylen = sip->sip_payload->pl_len;
+
+  auth_mod_check_client(p->auth, as, sip->sip_proxy_authorization,
+			proxy_challenger);
+
+  if ((status = as->as_status)) {
+    nta_incoming_treply(irq,
+			as->as_status, as->as_phrase,
+			SIPTAG_HEADER((void *)as->as_info),
+			SIPTAG_HEADER((void *)as->as_response),
+			TAG_END());
+  }
+  else if (as->as_match) {
+    msg_header_remove(msg, NULL, as->as_match);
+  }
+
+  msg_destroy(msg);
+  su_home_unref(as->as_home);
+
+  return status;
+}		      
 
 int proxy_ack_cancel(struct proxy_transaction *t,
 		     nta_incoming_t *irq,
@@ -562,8 +626,8 @@ LIST_BODIES(static, proxy_transaction, struct proxy_transaction, next, prev);
 
 /* ---------------------------------------------------------------------- */
 
-static
 
+static
 int domain_request(struct proxy *proxy,
 		   nta_leg_t *leg,
 		   nta_incoming_t *irq,
