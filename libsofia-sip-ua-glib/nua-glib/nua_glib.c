@@ -602,8 +602,8 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
     0, NULL, NULL,
-    nua_glib_marshal_VOID__POINTER_STRING_STRING_STRING,
-    G_TYPE_NONE, 4, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+    nua_glib_marshal_VOID__POINTER_STRING_STRING_STRING_STRING,
+    G_TYPE_NONE, 5, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 
   /**
    * NuaGlib::incoming-info:
@@ -1854,7 +1854,7 @@ sof_i_message(nua_t *nua, NuaGlib *self,
 
   
   url = url_as_string(self->priv->home, to->a_url);
-  g_signal_emit(self, signals[INCOMING_MESSAGE], 0, op, to->a_display, url, subject?subject->g_value:NULL, message); 
+  g_signal_emit(self, signals[INCOMING_MESSAGE], 0, op, to->a_display, url, subject?subject->g_value:NULL, message->str); 
   su_free(self->priv->home, url);
   g_string_free(message, TRUE);
 
