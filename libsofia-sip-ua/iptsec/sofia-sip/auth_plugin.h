@@ -111,6 +111,7 @@ typedef struct
   char const     *apw_realm;	/**< Realm */
   char const   	 *apw_pass;	/**< Password */
   char const     *apw_hash;	/**< MD5 of the username, realm and pass */
+  char const     *apw_ident;	/**< Identity information */
   auth_uplugin_t *apw_extended;	/**< Method-specific extension */
 } auth_passwd_t;
 

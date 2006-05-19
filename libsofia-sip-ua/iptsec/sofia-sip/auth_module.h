@@ -101,9 +101,10 @@ struct auth_status_t
   char const   	 *as_phrase;	/**< Return response phrase [out] */
   char const   	 *as_user;	/**< Authenticated username [in/out] */
   char const   	 *as_display;	/**< Return user's real name [in/out] */
-  url_t const    *as_user_uri;	/**< Return user's identity [in/out] */
+  /* @deprecated This is unused and goes away in 1.11.10. */
+  url_t const    *as_user_uri;	/* Return user's identity [in/out] */
 
-  char const     *as_alt_uri;	/**< List of alternative identities [out] */
+  char const     *as_ident;	/**< Identities [out] */
   unsigned        as_profile;	/**< User profile (group) [out] */
   
   su_addrinfo_t  *as_source;	/**< Source address [in] */
@@ -185,7 +186,7 @@ SOFIAPUBFUN auth_status_t *auth_status_ref(auth_status_t *as);
 
 SOFIAPUBFUN void auth_status_unref(auth_status_t *as);
 
-SOFIAPUBFUN void auth_mod_method(auth_mod_t *am,
+SOFIAPUBFUN void auth_mod_verify(auth_mod_t *am,
 				 auth_status_t *as,
 				 msg_auth_t *credentials,
 				 auth_challenger_t const *ach);
@@ -251,8 +252,8 @@ static inline tag_value_t authtag_module_vr(auth_mod_t **vp) {
   return (tag_value_t)vp;
 }
 #else
-#define authtag_module_v(v)   (tag_value_t)(v)
-#define authtag_module_vr(v)  (tag_value_t)(v)
+#define authtag_module_v(v)   ((tag_value_t)(v))
+#define authtag_module_vr(v)  ((tag_value_t)(v))
 #endif
 
 /** Authentication scheme used by authentication module. */

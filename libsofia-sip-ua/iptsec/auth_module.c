@@ -372,8 +372,10 @@ void auth_status_unref(auth_status_t *as)
  * completes. Therefore, they should not be allocated from stack unless
  * application uses strictly synchronous authentication schemes only (Basic
  * and Digest).
+ *
+ * @note This function should be called auth_mod_check().
  */
-void auth_mod_method(auth_mod_t *am,
+void auth_mod_verify(auth_mod_t *am,
 		     auth_status_t *as,
 		     msg_auth_t *credentials,
 		     auth_challenger_t const *ach)
@@ -390,10 +392,12 @@ void auth_mod_method(auth_mod_t *am,
   /* Initialize per-request realm */
   if (as->as_realm)
     ;
-  else if (!wildcard && am->am_realm)
+  else if (!wildcard) {
     as->as_realm = am->am_realm;
-  else if (!host) 
-    ;
+  }
+  else if (!host) {
+    return;			/* Internal error */
+  }
   else if (strcmp(am->am_realm, "*") == 0) {
     as->as_realm = host;
   }
@@ -525,6 +529,7 @@ void auth_method_basic(auth_mod_t *am,
 
     as->as_user = apw->apw_user;
     as->as_anonymous = apw == am->am_anon_user;
+    as->as_ident = apw->apw_ident;
     as->as_match = (msg_header_t *)au;
     as->as_status = 0;	/* Successful authentication! */
 
@@ -624,7 +629,7 @@ void auth_method_digest(auth_mod_t *am,
   }
 }
 
-/** Check digest authentication */
+/** Verify digest authentication */
 void auth_check_digest(auth_mod_t *am,
 		       auth_status_t *as,
 		       auth_response_t *ar,
@@ -697,10 +702,11 @@ void auth_check_digest(auth_mod_t *am,
 		       as->as_method, as->as_body, as->as_bodylen);
 
   if (!apw || strcmp(response, ar->ar_response)) {
+
     if (am->am_forbidden) {
       as->as_status = 403, as->as_phrase = "Forbidden";
-      as->as_blacklist = am->am_blacklist;
       as->as_response = NULL;
+      as->as_blacklist = am->am_blacklist;
     }
     else {
       auth_challenge_digest(am, as, ach);
@@ -715,6 +721,7 @@ void auth_check_digest(auth_mod_t *am,
 
   as->as_user = apw->apw_user;
   as->as_anonymous = apw == am->am_anon_user;
+  as->as_ident = apw->apw_ident;
 
   if (am->am_nextnonce || am->am_mutual)
     auth_info_digest(am, as, ach);
@@ -900,7 +907,8 @@ int auth_readdb_if_needed(auth_mod_t *am)
       st->st_size == am->am_stat->st_size && 
       memcmp(&st->st_mtime, &am->am_stat->st_mtime, 
 	     (sizeof st->st_mtime)) == 0)
-    return 0;			/* Nothing has changed or passwd file is removed */
+    /* Nothing has changed or passwd file is removed */
+    return 0;
 
   return auth_readdb_internal(am, 0);
 }
@@ -946,9 +954,11 @@ int auth_readdb_internal(auth_mod_t *am, int always)
 		    am->am_scheme->asch_method, am->am_db));
 	fclose(f);
 	return always ? -1 : 0;
-      } else {
+      }
+      else {
 	SU_DEBUG_3(("auth(%s): flock(\"%s\"): %s (%u)\n", 
-		    am->am_scheme->asch_method, am->am_db, strerror(errno), errno));
+		    am->am_scheme->asch_method, am->am_db, 
+		    strerror(errno), errno));
 	fclose(f);
 	return always ? -1 : 0;
       }
@@ -1011,33 +1021,39 @@ int auth_readdb_internal(auth_mod_t *am, int always)
       auth_htable_append_local(am->am_users, apw);
     }
 
+    apw = NULL;
+
     for (data = buffer, s = data;
 	 s < data + len && i < N;
 	 s += n + strspn(s + n, "\r\n")) {
-      char *user, *pass, *realm;
+      char *user, *pass, *realm, *ident;
 
       n = strcspn(s, "\r\n");
       if (*s == '#')
 	continue;
+
       user = s;
       s[n++] = '\0';
       if (!(pass = strchr(user, ':')))
 	continue;
 
       *pass++ = '\0';
-      if (!*user)
+      if (!*pass || !*user)
 	continue;
-      if (!(realm = strchr(pass, ':')))
-	realm = "";
-      else
+
+      realm = ""; ident = "";
+
+      if ((realm = strchr(pass, ':'))) {
 	*realm++ = '\0';
-      if (!*pass)
-	continue;
+	if ((ident = strchr(realm, ':')))
+	  *ident++ = '\0';
+      }
 
       apw = fresh + i++;
 
       apw->apw_index = msg_hash_string(user);
       apw->apw_user = user;
+      apw->apw_ident = ident;
 
       /* Check for htdigest format */
       if (span_hexdigit(realm) == 32 && realm[32] == '\0') {
@@ -1100,7 +1116,8 @@ auth_htable_append_local(auth_htable_t *aht, auth_passwd_t *apw)
 	apw->apw_extended = (*slot)->apw_extended;
 	*slot = NULL;
 	break;
-      } else {
+      }
+      else {
 	/* We insert local before external entry */
 	auth_passwd_t *swap = apw;
 	apw = *slot;
@@ -1114,6 +1131,7 @@ auth_htable_append_local(auth_htable_t *aht, auth_passwd_t *apw)
   *slot = apw;
 }
 
+static
 int readfile(su_home_t *home, FILE *f, void **contents, int add_trailing_lf)
 {
   /* Read in whole (binary!) file */
@@ -1154,7 +1172,11 @@ int readfile(su_home_t *home, FILE *f, void **contents, int add_trailing_lf)
 /* ====================================================================== */
 /* Helper functions */
 
-/** Check if request method is on always-allowed list. */
+/** Check if request method is on always-allowed list. 
+ *
+ * @return 0 if allowed
+ * @return 1 otherwise
+ */
 int auth_allow_check(auth_mod_t *am, auth_status_t *as)
 {
   char const *method = as->as_method;
@@ -1165,6 +1187,9 @@ int auth_allow_check(auth_mod_t *am, auth_status_t *as)
 
   if (!method || !am->am_allow)
     return 1;
+
+  if (am->am_allow[0] && strcmp(am->am_allow[0], "*") == 0)
+    return as->as_status = 0;
 
   for (i = 0; am->am_allow[i]; i++)
     if (strcmp(am->am_allow[i], method) == 0)
@@ -1442,12 +1467,20 @@ void auth_md5_hmac_digest(auth_mod_t *am, struct su_md5_t *imd5,
 /* ====================================================================== */
 /* Compatibility interface */
 
+void auth_mod_module(auth_mod_t *am,
+		     auth_status_t *as,
+		     msg_auth_t *credentials,
+		     auth_challenger_t const *ach)
+{
+  auth_mod_verify(am, as, credentials, ach);
+}
+
 void auth_mod_check_client(auth_mod_t *am,
 			   auth_status_t *as,
 			   msg_auth_t *credentials,
 			   auth_challenger_t const *ach)
 {
-  auth_mod_method(am, as, credentials, ach);
+  auth_mod_verify(am, as, credentials, ach);
 }
 
 
