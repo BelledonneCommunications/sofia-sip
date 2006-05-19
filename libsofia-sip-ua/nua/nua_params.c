@@ -77,6 +77,7 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, invite_enable, 1);
   NHP_SET(nhp, auto_alert, 0);
   NHP_SET(nhp, early_media, 0);
+  NHP_SET(nhp, only183_100rel, 0);
   NHP_SET(nhp, auto_answer, 0);
   NHP_SET(nhp, auto_ack, 1);
   NHP_SET(nhp, invite_timeout, 120);
@@ -358,6 +359,10 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     /* NUTAG_EARLY_MEDIA(early_media) */
     else if (t->t_tag == nutag_early_media) {
       NHP_SET(nhp, early_media, t->t_value != 0);
+    }
+    /* NUTAG_ONLY183_100REL(only183_100rel) */
+    else if (t->t_tag == nutag_only183_100rel) {
+      NHP_SET(nhp, only183_100rel, t->t_value != 0);
     }
     /* NUTAG_AUTOANSWER(auto_answer) */
     else if (t->t_tag == nutag_autoanswer) {
@@ -832,6 +837,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_ENABLEINVITE, invite_enable),
      TIF(NUTAG_AUTOALERT, auto_alert),
      TIF(NUTAG_EARLY_MEDIA, early_media),
+     TIF(NUTAG_ONLY183_100REL, only183_100rel),
      TIF(NUTAG_AUTOANSWER, auto_answer),
      TIF(NUTAG_AUTOACK, auto_ack),
      TIF(NUTAG_INVITE_TIMER, invite_timeout),

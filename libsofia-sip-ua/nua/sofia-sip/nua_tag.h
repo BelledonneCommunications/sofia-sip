@@ -236,7 +236,7 @@ SOFIAPUBVAR tag_typedef_t nutag_soa_name;
  nutag_soa_name_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_soa_name_ref;
 
-/** Establish early media session using 183 responses and PRACK requests.
+/**Establish early media session using 183 responses and PRACK requests.
  *
  * @par Used with
  *    nua_set_params() \n
@@ -256,6 +256,30 @@ SOFIAPUBVAR tag_typedef_t nutag_early_media;
 
 #define NUTAG_EARLY_MEDIA_REF(x) nutag_early_media_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_early_media_ref;
+
+/**Respond only 183 with 100rel.
+ *
+ * If this parameter is set, stack uses 100rel only with 183: otherwise, all
+ * 1XX responses (except <i>100 Trying</i>) uses 100rel.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params()
+ *
+ * @par Parameter type
+ *    int (boolean)
+ *
+ * @par Values
+ *    @c 0   False \n
+ *    @c !=0 True
+ *
+ * Corresponding tag taking reference parameter is NUTAG_ONLY183_100REL_REF()
+*/
+#define NUTAG_ONLY183_100REL(x)    nutag_only183_100rel, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_only183_100rel;
+
+#define NUTAG_ONLY183_100REL_REF(x) nutag_only183_100rel_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_only183_100rel_ref;
 
 /** Timer for outstanding INVITE in seconds.
  *

@@ -44,6 +44,7 @@ typedef struct nua_handle_preferences
   unsigned     	   nhp_invite_enable:1;
   unsigned     	   nhp_auto_alert:1;
   unsigned         nhp_early_media:1;/**< Establish early media session */
+  unsigned         nhp_only183_100rel:1;/**< Only 100rel 183. */
   unsigned         nhp_auto_answer:1;
   unsigned         nhp_auto_ack:1; /**< Automatically ACK a final response */
   unsigned         :0;
@@ -108,6 +109,7 @@ typedef struct nua_handle_preferences
       unsigned nhb_invite_enable:1;
       unsigned nhb_auto_alert:1;
       unsigned nhb_early_media:1;
+      unsigned nhb_only183_100rel:1;
       unsigned nhb_auto_answer:1;
       unsigned nhb_auto_ack:1;
       unsigned nhb_invite_timeout:1;
