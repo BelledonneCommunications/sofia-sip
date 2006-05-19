@@ -33,12 +33,12 @@
  * This file contain a red-black-tree template for C. The red-black-tree is
  * a balanced binary tree containing structures as nodes. 
  *
- * The prototypes for red-black-tree functions are instantiated with macro
+ * The prototypes for red-black-tree functions are declared with macro
  * RBTREE_PROTOS(). The implementation is instantiated with macro
  * RBTREE_BODIES().
  *
  * When a entry with new identical key is added to the tree, it can be
- * either @e inserted (before any other entry with same key value) or @e
+ * either @e inserted (replacing other node with same key value) or @e
  * appended.
  * 
  * Example code can be found from <rbtree_test.c>.
@@ -49,6 +49,10 @@
  *
  */
 
+#if DOCUMENTATION_ONLY
+/** Type used for rbtree nodes. */
+typedef struct node Type;
+#endif
 
   /*               x                c
    *              / \              / \
@@ -250,14 +254,20 @@ void prefix##_balance_delete(Type **top, Type *node)			\
 }  \
 extern int const prefix##_dummy
 
-/**@fn int rbtree_insert(Type * tree, Type *node, Type **return_old)
+#if DOCUMENTATION_ONLY
+/**Insert a @a node into the @a tree.
  *
- * Insert a @a node into @a tree.
- *
+ * @param tree pointer to the root of the tree
+ * @param node pointer to node to be inserted
+ * @param return_old return value parameter for matching node 
+ *                   already in the @a tree
  *
  * @retval 0 if node was inserted
- * @retval -1 if there already was an matching node and return_old is NULL.
+ * @retval -1 if there already was an matching node 
+ *            and return_old is NULL.
  */
+int rbtree_insert(Type * tree, Type *node, Type **return_old);
+#endif
 
 /* Insert node into tree. */
 #define RBTREE_INSERT(SCOPE, prefix, Type, left, right, parent,		\
@@ -323,7 +333,19 @@ int prefix ## _insert(Type **const tree,				\
 }  \
 extern int const prefix##_dummy
 
-/* Append node into tree. */
+#if DOCUMENTATION_ONLY
+/** Append @a a node into the @a tree.
+ *
+ * @param tree pointer to the root of the tree
+ * @param node pointer to node to be appended
+ *
+ * @retval 0 when successful (always)
+ */
+int rbtree_append(Type ** tree,
+		  Type *  node);
+#endif
+
+/* Define function appending a node into the tree */
 #define RBTREE_APPEND(SCOPE, prefix, Type, left, right, parent,		\
 		      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR,	\
 		      CMP, REMOVE, INSERT)				\
@@ -359,8 +381,15 @@ int prefix ## _append(Type **const tree,				\
 }  \
 extern int const prefix##_dummy
 
+#if DOCUMENTATION_ONLY
+/** Remove a @a node from the @a tree.
+ *
+ * @param tree pointer to the root of the tree
+ * @param node pointer to node to be appended
+ */
+void rbtree_remove(Type **tree, Type *node);				
+#endif
 
-/* Remove node. */
 #define RBTREE_REMOVE(SCOPE, prefix, Type, left, right, parent,		\
 		      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR, \
 		      REMOVE, INSERT)					\
@@ -426,9 +455,17 @@ void prefix##_remove(Type **top, Type *node)				\
 } \
 extern int const prefix##_dummy
 
-/* Functions currently used only by test cases */
+#if DOCUMENTATION_ONLY
+/** Return inorder successor of node @a node.
+ *
+ * @param node pointer to node
+ *
+ * @return Pointer to successor, or NULL if @a node was last.
+ */
+Type *rbtree_succ(Type const *node);
+#endif
 
-/** Return inorder successor of node @a node. */
+/* Define function returning inorder successor of node @a node. */
 #define RBTREE_SUCC(SCOPE, prefix, Type, left, right, parent)	\
 SCOPE Type *prefix##_succ(Type const *node)				\
 {									\
@@ -447,7 +484,17 @@ SCOPE Type *prefix##_succ(Type const *node)				\
 } \
 extern int const prefix##_dummy
 
-/** Return inorder precedessor of node @a node. */
+#if DOCUMENTATION_ONLY
+/** Return inorder precedessor of node @a node.
+ *
+ * @param node pointer to node
+ *
+ * @return Pointer to precedessor, or NULL if @a node was first.
+ */
+Type *rbtree_prec(Type const *node);
+#endif
+
+/* Define function returning inorder precedessor of node @a node. */
 #define RBTREE_PREC(SCOPE, prefix, Type, left, right, parent)	\
   SCOPE Type *prefix##_prec(Type const *node)				\
 {									\
@@ -466,7 +513,17 @@ extern int const prefix##_dummy
 } \
 extern int const prefix##_dummy
 
-/** Return first node in tree @a node. */
+#if DOCUMENTATION_ONLY
+/** Return first node in the tree to which @a node belongs to.
+ *
+ * @param node pointer to node
+ *
+ * @return Pointer to first node.
+ */
+Type *rbtree_first(Type const *node);
+#endif
+
+/* Define function returning first node in tree @a node. */
 #define RBTREE_FIRST(SCOPE, prefix, Type, left, right, parent)	\
 SCOPE Type *prefix##_first(Type const *node)    \
 {						\
@@ -477,7 +534,17 @@ SCOPE Type *prefix##_first(Type const *node)    \
 } \
 extern int const prefix##_dummy
 
-/** Return last node in tree @a node. */
+#if DOCUMENTATION_ONLY
+/** Return last node in the tree to which @a node belongs to.
+ *
+ * @param node pointer to node
+ *
+ * @return Pointer to last node.
+ */
+Type *rbtree_last(Type const *node);
+#endif
+
+/* Define function returning last node in tree @a node. */
 #define RBTREE_LAST(SCOPE, prefix, Type, left, right, parent)	\
 SCOPE Type *prefix##_last(Type const *node)	\
 {						\
@@ -488,17 +555,27 @@ SCOPE Type *prefix##_last(Type const *node)	\
 } \
 extern int const prefix##_dummy
 
-/** Return height of the tree */
-#define RBTREE_HEIGHT(SCOPE, prefix, Type, left, right, parent)	\
-SCOPE int prefix##_height(Type const *tree)			\
+#if DOCUMENTATION_ONLY
+/** Return height of the tree below @a node.
+ *
+ * @param node pointer to node
+ *
+ * @return Height of the tree.
+ */
+int rbtree_height(Type const *node);
+#endif
+
+/* Define function returning height of the tree from the @a node. */
+#define RBTREE_HEIGHT(SCOPE, prefix, Type, getleft, getright, getparent)	\
+SCOPE int prefix##_height(Type const *node)			\
 {								\
   int left, right;						\
 								\
-  if (!tree)							\
+  if (!node)							\
     return 0;							\
 								\
-  left = left(tree) ? prefix##_height(left(tree)) : 0;		\
-  right = right(tree) ? prefix##_height(right(tree)) : 0;	\
+  left = getleft(node) ? prefix##_height(getleft(node)) : 0;	\
+  right = getright(node) ? prefix##_height(getright(node)) : 0;	\
 								\
   if (left > right)						\
     return left + 1;						\
@@ -507,6 +584,17 @@ SCOPE int prefix##_height(Type const *tree)			\
 } \
 extern int const prefix##_dummy
 
+/** Define prototypes for red-black tree functions. @HIDE 
+ *
+ * @param SCOPE function scope (e.g., static inline)
+ * @param prefix function prefix (e.g., rbtree)
+ * @param Type node type
+ *
+ * @par Example
+ * @code
+ * RBTREE_PROTOS(static inline, rbtree, struct node);
+ * @endcode
+ */
 #define RBTREE_PROTOS(SCOPE, prefix, Type)				\
   SCOPE int prefix ## _insert(Type **, Type *, Type **return_old);	\
   SCOPE int prefix ## _append(Type **, Type *);				\
@@ -517,6 +605,45 @@ extern int const prefix##_dummy
   SCOPE Type *prefix ## _last(Type const *);				\
   SCOPE int prefix ## _height(Type const *)
 
+/** Define bodies for red-black tree functions. @HIDE 
+ *
+ * @param SCOPE function scope (e.g., static inline)
+ * @param prefix function prefix (e.g., rbtree)
+ * @param Type node type
+ * @param left accessor of left node 
+ * @param right accessor of right node
+ * @param parent accessor of parent node
+ * @param IS_RED predicate testing if node is red
+ * @param SET_RED setter marking node as red
+ * @param IS_BLACK predicate testing if node is black
+ * @param SET_BLACK setter marking node as black
+ * @param COPY_COLOR method copying color from node to another
+ * @param CMP method comparing two nodes
+ * @param INSERT setter marking node as inserted to the tree
+ * @param REMOVE method marking node as removed and possibly deleting node
+ * 
+ * @par Example
+ *
+ * @code
+ * #define LEFT(node) ((node)->left)
+ * #define RIGHT(node) ((node)->right)
+ * #define PARENT(node) ((node)->parent)
+ * #define SET_RED(node) ((node)->black = 0)
+ * #define SET_BLACK(node) ((node)->black = 1)
+ * #define CMP(a, b) ((a)->value - (b)->value)
+ * #define IS_RED(node) ((node) && (node)->black == 0)
+ * #define IS_BLACK(node) (!(node) || (node)->black == 1)
+ * #define COPY_COLOR(dst, src) ((dst)->black = (src)->black)
+ * #define INSERT(node) ((node)->inserted = 1)
+ * #define REMOVE(node) ((node)->left = (node)->right = (node)->parent = NULL, \
+ *                       (node)->inserted = 0)
+ * 
+ * RBTREE_BODIES(static inline, rbtree, struct node,
+ *               LEFT, RIGHT, PARENT,
+ *               IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR,
+ *               CMP, INSERT, REMOVE);
+ * @endcode
+ */
 #define RBTREE_BODIES(SCOPE, prefix, Type,				\
 		      left, right, parent,				\
 		      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR, \
