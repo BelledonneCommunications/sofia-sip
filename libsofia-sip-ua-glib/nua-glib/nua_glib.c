@@ -1854,9 +1854,14 @@ sof_i_message(nua_t *nua, NuaGlib *self,
 
   
   url = url_as_string(self->priv->home, to->a_url);
-  g_signal_emit(self, signals[INCOMING_MESSAGE], 0, op, to->a_display, url, subject?subject->g_value:NULL, message->str); 
+  g_signal_emit(self, signals[INCOMING_MESSAGE], 0, op, to->a_display, url,
+		subject ? subject->g_value : NULL,
+		message ? message->str : NULL); 
+
   su_free(self->priv->home, url);
-  g_string_free(message, TRUE);
+
+  if (message)
+    g_string_free(message, TRUE);
 
   if (op == NULL)
     op = nua_glib_op_create2(self, SIP_METHOD_MESSAGE, nh, from);
