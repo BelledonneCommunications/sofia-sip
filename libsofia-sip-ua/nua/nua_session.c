@@ -552,6 +552,7 @@ process_100rel(nua_handle_t *nh,
   nta_outgoing_t *prack;
 
   char const *recv = NULL, *sent = NULL;
+  int status = 408;
   int offer_sent_in_prack = 0, answer_sent_in_prack = 0;
 
   su_home_t home[1] = { SU_HOME_INIT(home) };
@@ -561,6 +562,9 @@ process_100rel(nua_handle_t *nh,
 		nta_outgoing_method_name(cr_prack->cr_orq)));
     return 0;			/* We have to wait! */
   }
+
+  if (sip && sip->sip_status)
+    status = sip->sip_status->st_status;
 
   if (!nua_dialog_is_established(nh->nh_ds)) {
     /* Tag the INVITE request */
@@ -586,7 +590,7 @@ process_100rel(nua_handle_t *nh,
       soa_activate(nh->nh_soa, NULL);
     }
   }
-  else if (ss->ss_precondition) {
+  else if (ss->ss_precondition && status == 183) { /* XXX */
     if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
 	session_make_description(home, nh->nh_soa, &cd, &ct, &pl) < 0)
       /* XXX */;
@@ -660,8 +664,9 @@ process_response_to_prack(nua_handle_t *nh,
   else
     nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 
-  signal_call_state_change(nh, status, phrase,
-			   nua_callstate_proceeding, recv, NULL);
+  if (recv)
+    signal_call_state_change(nh, status, phrase,
+			     nua_callstate_proceeding, recv, NULL);
 
   if (status < 300 && nh->nh_ss->ss_update_needed)
     nua_stack_update(nh->nh_nua, nh, nua_r_update, NULL);
@@ -765,6 +770,9 @@ static int process_response_to_cancel(nua_handle_t *nh,
 {
   return nua_stack_process_response(nh, nh->nh_cr, orq, sip, TAG_END());
 }
+
+/* ---------------------------------------------------------------------- */
+/* UAS side of INVITE */
 
 static void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 			      int status, char const *phrase,
@@ -1033,12 +1041,16 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   reliable =
     (status >= 200)
-    || (status == 183 &&
-	ds->ds_remote_ua->nr_supported &&
-	sip_has_feature(ds->ds_remote_ua->nr_supported, "100rel"))
     || (status > 100 &&
 	ds->ds_remote_ua->nr_require &&
 	sip_has_feature(ds->ds_remote_ua->nr_require, "100rel"))
+    || (status > 100 && !NH_PGET(nh, only183_100rel) && 
+	NH_PGET(nh, early_media) && 
+	ds->ds_remote_ua->nr_supported &&
+	sip_has_feature(ds->ds_remote_ua->nr_supported, "100rel"))
+    || (status == 183 &&
+	ds->ds_remote_ua->nr_supported &&
+	sip_has_feature(ds->ds_remote_ua->nr_supported, "100rel"))
     || (status == 183 &&
 	ds->ds_remote_ua->nr_require &&
 	sip_has_feature(ds->ds_remote_ua->nr_require, "precondition"))
