@@ -26,7 +26,6 @@
 /** Defined when <sofia-sip/auth_plugin.h> has been included. */
 #define AUTH_PLUGIN_H 
 
-
 /**@file sofia-sip/auth_plugin.h
  * @brief Plugin interface for authentication verification modules.
  * 
@@ -41,6 +40,10 @@
 
 #ifndef AUTH_DIGEST_H
 #include "sofia-sip/auth_digest.h"
+#endif
+
+#ifndef AUTH_COMMON_H
+#include "sofia-sip/auth_common.h"
 #endif
 
 #ifndef MSG_DATE_H
@@ -251,11 +254,6 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 			       msg_time_t now);
 
 SOFIAPUBFUN int auth_allow_check(auth_mod_t *am, auth_status_t *as);
-
-SOFIAPUBFUN
-int auth_get_params(su_home_t *home,
-		    char const * const params[], ...
-		    /* char const * name, char const **return_value */);
 
 /** Init md5 for MD5-based HMAC */
 SOFIAPUBFUN void auth_md5_hmac_init(auth_mod_t *am, su_md5_t *md5);

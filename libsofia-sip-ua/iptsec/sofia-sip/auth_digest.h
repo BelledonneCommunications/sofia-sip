@@ -160,6 +160,8 @@ SOFIAPUBFUN int auth_digest_response(auth_response_t *, auth_hexmd5_t response,
 
 SOFIAPUBFUN int auth_struct_copy(void *dst, void const *src, int s_size);
 
+SOFIAPUBFUN int auth_strcmp(char const *quoted, char const *unquoted);
+
 SOFIA_END_DECLS
 
 #endif
