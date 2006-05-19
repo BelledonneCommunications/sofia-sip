@@ -72,38 +72,6 @@ char const *name = "torture_rbtree";
 #define INSERT(node) ((void)0)
 #define REMOVE(node) ((node)->left = (node)->right = (node)->parent = NULL)
 
-#if 0
-RBTREE_PROTOS(static, prefix, Node);
-
-RBTREE_LEFT_ROTATE(prefix, Node, LEFT, RIGHT, PARENT); 
-RBTREE_RIGHT_ROTATE(prefix, Node, LEFT, RIGHT, PARENT); 
-
-RBTREE_BALANCE_INSERT(prefix, Node, LEFT, RIGHT, PARENT, 
-		      IS_RED, SET_RED, IS_BLACK, SET_BLACK); 
-
-RBTREE_BALANCE_DELETE(prefix, Node, LEFT, RIGHT, PARENT, 
-		      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR); 
-
-RBTREE_INSERT(static, prefix, Node, LEFT, RIGHT, PARENT, 
-	      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR, 
-	      CMP, REMOVE, INSERT);				  
-
-RBTREE_REMOVE(static, prefix, Node, LEFT, RIGHT, PARENT, 
-	      IS_RED, SET_RED, IS_BLACK, SET_BLACK, COPY_COLOR, 
-	      REMOVE, INSERT); 
-
-RBTREE_SUCC(static, prefix, Node, LEFT, RIGHT, PARENT);	
-
-RBTREE_PREC(static, prefix, Node, LEFT, RIGHT, PARENT);	
-
-RBTREE_FIRST(static, prefix, Node, LEFT, RIGHT, PARENT);	
-
-RBTREE_LAST(static, prefix, Node, LEFT, RIGHT, PARENT);	
-
-RBTREE_HEIGHT(static, prefix, Node, LEFT, RIGHT, PARENT);
-
-#endif
-
 RBTREE_PROTOS(static inline, redblack, Node);
 
 RBTREE_BODIES(static inline, redblack, Node, LEFT, RIGHT, PARENT,
