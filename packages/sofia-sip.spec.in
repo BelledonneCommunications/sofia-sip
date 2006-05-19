@@ -6,14 +6,13 @@
 # --with check     - Run tests
 # --without openssl - No OpenSSL (TLS)
 # --without glib   - no GLIB
-# --with sigcomp   - with Sofia SigComp
 # --with sctp      - with SCTP
 #
 
 Summary: Sofia SIP User-Agent library 
 Name: sofia-sip
 Version: @VERSION@
-Release: 1%{?dist}%{?_with_sigcomp:.sc}
+Release: 1%{?dist}
 License: Lesser GNU Public License 2.1
 Group: System Environment/Libraries
 URL: http://sf.net/projects/sofia-sip
@@ -26,9 +25,6 @@ Packager: Pekka.Pessi@Nokia.com
 %{?!_without_openssl:BuildRequires: openssl-devel >= 0.9.7}
 
 %define have_doxygen %{?_with_doxygen:1}%{?!_with_doxygen:0}
-
-%{?_with_sigcomp:BuildRequires: sofia-sigcomp-devel >= 2.5.0}
-%{?_with_sigcomp:Requires: sofia-sigcomp >= 2.5.0}
 
 %{?!_without_glib:BuildRequires: glib2-devel >= 2.2}
 
@@ -45,7 +41,6 @@ network elements.
 options="--with-aclocal=aclocal --disable-dependency-tracking"
 options="$options --with-pic --enable-shared"
 %{?_without_glib:options="$options --without-glib"}
-%{?_with_sigcomp:options="$options --with-sigcomp"}
 %{?_with_sctp:options="$options --enable-sctp"}
 %configure $options
 
