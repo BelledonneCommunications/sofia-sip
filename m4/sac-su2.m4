@@ -418,6 +418,11 @@ AM_CONFIG_HEADER([libsofia-sip-ua/su/sofia-sip/su_configure.h])
 # End of SAC_SOFIA_SU
 ])
 
+dnl
+dnl Append a value $2 to a variable, separating values with comma
+dnl
+AC_DEFUN([SAC_COMMA_APPEND],[$1="`test -n "$$1" && echo "$$1, "`$2"])
+
 # SAC_SU_DEFINE(VARIABLE, [VALUE], [DESCRIPTION])
 # -------------------------------------------
 # Set VARIABLE to VALUE, verbatim, or 1.  Remember the value
