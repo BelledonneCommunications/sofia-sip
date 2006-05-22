@@ -68,10 +68,12 @@ typedef unsigned _int32 uint32_t;
 #if HAVE_SIN6
 #include <tpipv6.h>
 #else
+#if !defined(__MINGW32__)
 struct sockaddr_storage {
     short ss_family;
     char ss_pad[126];
 };
+#endif
 #endif
 #else
 #define closesocket(s) close(s)
@@ -1765,7 +1767,11 @@ static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCT
   su_home_t *home = c->c_home;
   su_strlst_t *reg_dns_list;
   char *name_servers = su_alloc(home, QUERY_DATALEN);
+#if __MINGW32__
+  DWORD name_servers_length = QUERY_DATALEN;
+#else
   int name_servers_length = QUERY_DATALEN;
+#endif
   int ret, servers_added = 0;
 
   /* get name servers and ... */
@@ -1831,7 +1837,11 @@ static int sres_parse_win32_reg(sres_config_t *c)
   FILETIME ftime;
   int index, i, found = 0;
   char *interface_guid = su_alloc(home, MAX_VALUE_NAME_LEN);
+#if __MINGW32__
+  DWORD guid_size = QUERY_DATALEN;
+#else
   int guid_size = MAX_VALUE_NAME_LEN;
+#endif
 
   /* step 1: find interface specific nameservers */
 

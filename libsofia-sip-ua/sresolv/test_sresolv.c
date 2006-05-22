@@ -135,6 +135,8 @@ int setblocking(int s, int blocking)
   return fcntl(s, F_SETFL, mode);
 }
 
+#if HAVE_POLL
+
 /** Test few assumptions about sockets */
 static
 int test_socket(sres_context_t *ctx)
@@ -230,6 +232,7 @@ static unsigned offset;
 #define TEST_RUN(ctx) \
   { sres_free_answers(ctx->resolver, ctx->result); ctx->result = NULL;	\
     ctx->query = NULL; run(ctx); TEST_1(ctx->query); }
+
 
 static
 int poll_sockets(sres_context_t *ctx)
@@ -1754,7 +1757,9 @@ int test_api_errors(sres_context_t *noctx)
   TEST(errno, EFAULT); errno = 0;
   TEST(sres_query_sockaddr(res, test_answer, ctx,
 				sres_qtype_any, sa), NULL);
+#if defined(EAFNOSUPPORT)
   TEST(errno, EAFNOSUPPORT); errno = 0;
+#endif
 
   TEST(sres_cached_answers(NULL, sres_qtype_any, "example.com"), NULL);
   TEST(errno, EFAULT); errno = 0;
@@ -2002,3 +2007,13 @@ int main(int argc, char **argv)
 
   return error;
 }
+
+
+#else /* HAVE_POLL */
+
+int main(int argc, char **argv)
+{
+  printf("*** Test not supported without POLL API ***\n");
+  return 0;
+}
+#endif /* HAVE_POLL */
