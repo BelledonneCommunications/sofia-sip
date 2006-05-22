@@ -1143,12 +1143,13 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
   ta_list ta;
   msg_t *msg = nta_msg_create(nua->nua_nta, 0);
   sip_t *sip = sip_object(msg);
+  msg_t *retval = NULL;
   tagi_t const *t;
 
   ta_start(ta, tag, value);
 
   if (!msg)
-    return NULL;
+    /* retval is NULL */;
   else if (nta_msg_response_complete(msg, irq, status, phrase) < 0)
     msg_destroy(msg);
   else if (sip_add_tl(msg, sip, ta_tags(ta)) < 0)
@@ -1172,9 +1173,11 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
 	   nua_registration_add_contact(nh, msg, sip, t->t_value, 0) < 0)
     msg_destroy(msg);
   else
-    return msg;
+    retval = msg;
 
-  return NULL;
+  ta_end(ta);
+
+  return retval;
 }
 
 
