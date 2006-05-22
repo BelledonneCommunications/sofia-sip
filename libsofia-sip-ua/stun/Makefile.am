@@ -19,11 +19,11 @@ INCLUDES = 		$(INTERNAL_INCLUDES)
 # Build targets
 
 stun_lib_sources = 	stun.c stun_common.c stun_dns.c stun_mini.c
-stun_prog_targets =     stunc lookup_stun_server
 
 noinst_LTLIBRARIES = 	libstun.la
 
-noinst_PROGRAMS = 	${stun_prog_targets}
+bin_PROGRAMS    =       stunc
+noinst_PROGRAMS = 	lookup_stun_server
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

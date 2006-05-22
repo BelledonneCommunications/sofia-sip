@@ -40,6 +40,7 @@ Notes on new features
 /> 
 
 - Added 'localinfo' tool to VC6/win32 build.
+- The 'stunc' STUN tester tool is now installed to '{prefix}/bin/'.
 
 Bugs fixed in this release
 --------------------------

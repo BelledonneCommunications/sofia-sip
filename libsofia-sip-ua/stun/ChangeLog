@@ -1,3 +1,7 @@
+2006-05-22  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* Makefile.am: Install the stunc tool.
+
 2006-05-07  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* sofia-sip/stun.h: Added new NAT types stun_nattype_t. The
