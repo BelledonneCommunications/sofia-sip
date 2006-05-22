@@ -118,11 +118,7 @@ void usage(int returncode)
 
 int main(int argc, char *argv[])
 {
-#if SU_HAVE_IN6
-  char buffer[INET6_ADDRSTRLEN];
-#else
-  char buffer[20];
-#endif
+  char buffer[SU_ADDRSIZE];
   su_localinfo_t hints[1] = {{ LI_CANONNAME }};
   su_localinfo_t *li, *res = NULL;
   int error;

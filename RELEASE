@@ -39,6 +39,7 @@ Notes on new features
  - links to further documentation
 /> 
 
+- Added 'localinfo' tool to VC6/win32 build.
 
 Bugs fixed in this release
 --------------------------

@@ -27,6 +27,21 @@ Package=<4>
 
 ###############################################################################
 
+Project: "localinfo"=".\utils\localinfo\localinfo.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libsofia_sip_ua
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "sip_dig"=".\utils\sip_dig\sip_dig.dsp" - Package Owner=<4>
 
 Package=<5>
