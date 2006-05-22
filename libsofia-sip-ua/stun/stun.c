@@ -728,6 +728,11 @@ void stun_handle_destroy(stun_handle_t *sh)
     stun_discovery_destroy(kill);
   }
 
+  stun_free_message(&sh->sh_tls_request);
+  stun_free_message(&sh->sh_tls_response);
+  stun_free_buffer(&sh->sh_username);
+  stun_free_buffer(&sh->sh_passwd);
+
   su_home_zap(sh->sh_home);
 }
 
@@ -2498,9 +2503,16 @@ int stun_make_binding_req(stun_handle_t *sh,
   if (sh->sh_use_msgint &&
       sh->sh_username.data && 
       sh->sh_passwd.data) {
+    stun_buffer_t *a_pattr = (stun_buffer_t*)malloc(sizeof(stun_buffer_t));
     tmp = (stun_attr_t *) malloc(sizeof(stun_attr_t));
     tmp->attr_type = USERNAME;
-    tmp->pattr = &sh->sh_username;
+
+    /* copy USERNAME from STUN handle */
+    a_pattr->data = (void*)malloc(sh->sh_username.size);
+    memcpy(a_pattr->data, sh->sh_username.data, sh->sh_username.size);
+    a_pattr->size = sh->sh_username.size;
+    tmp->pattr = a_pattr;
+
     tmp->next = NULL;
     *p = tmp; p = &(tmp->next);
 

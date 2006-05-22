@@ -623,10 +623,10 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
   for (a = &msg->stun_attr; *a;) {
 
     if ((*a)->pattr)
-      free((*a)->pattr);
+      free((*a)->pattr), (*a)->pattr = NULL;
 
     if ((*a)->enc_buf.data)
-      free((*a)->enc_buf.data);
+      free((*a)->enc_buf.data), (*a)->enc_buf.data = NULL;
 
     b = *a;
     b = b->next;
