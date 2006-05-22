@@ -430,6 +430,8 @@ stun_handle_t *stun_handle_init(su_root_t *root,
 	  STUNTAG_REQUIRE_INTEGRITY_REF(req_msg_integrity),
 	  TAG_END());
 
+  ta_end(ta);
+
   stun = su_home_clone(NULL, sizeof(*stun));
 
   if (!stun) {
@@ -490,9 +492,7 @@ stun_handle_t *stun_handle_init(su_root_t *root,
   
   /* initialize random number generator */
   srand(time(NULL));
-  
-  ta_end(ta);
-
+ 
   return stun;
 }
 
@@ -2940,6 +2940,8 @@ int stun_keepalive(stun_handle_t *sh,
 	  STUNTAG_TIMEOUT_REF(timeout),
 	  TAG_END());
 
+  ta_end(ta);
+
   if (s < 1 || !sa || timeout == 0)
     return errno = EFAULT, -1;
 
@@ -2971,8 +2973,6 @@ int stun_keepalive(stun_handle_t *sh,
   
   sd->sd_timer = su_timer_create(su_root_task(sh->sh_root), timeout);
   su_timer_set(sd->sd_timer, stun_keepalive_timer_cb, (su_wakeup_arg_t *) sd);
-
-  ta_end(ta);
 
   return 0;
 }
