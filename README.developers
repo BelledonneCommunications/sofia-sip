@@ -68,7 +68,7 @@ Tagging releases and snapshots
 
 - source repository (*)
     - master Darcs tree at:
-      http://dev-126.openlaboratory.net/repos/sofia-sip
+      http://sofia-sip.org/repos/sofia-sip
     - CVS tree (only used to track major releases) at:
       http://sourceforge.net/cvs/?group_id=143636
 - tags: rel-sofia-sip-x_y_z
