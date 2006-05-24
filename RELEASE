@@ -18,6 +18,9 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+- nua_glib.h: renamed glib property 'stun' to 'stun-server',
+  removed property 'bind-address' (same as 'contact').
+- Added sip_route_reverse_as() and sip_route_fixdup_as().
 
 Contributors to this release
 ----------------------------
