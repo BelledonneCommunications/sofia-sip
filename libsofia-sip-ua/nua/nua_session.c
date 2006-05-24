@@ -1045,7 +1045,9 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 	ds->ds_remote_ua->nr_require &&
 	sip_has_feature(ds->ds_remote_ua->nr_require, "100rel"))
     || (status > 100 && !NH_PGET(nh, only183_100rel) && 
-	NH_PGET(nh, early_media) && 
+	(NH_PGET(nh, early_media) ||
+	 (ds->ds_remote_ua->nr_require &&
+	  sip_has_feature(ds->ds_remote_ua->nr_require, "precondition"))) && 
 	ds->ds_remote_ua->nr_supported &&
 	sip_has_feature(ds->ds_remote_ua->nr_supported, "100rel"))
     || (status == 183 &&
