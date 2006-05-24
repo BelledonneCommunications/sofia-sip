@@ -101,9 +101,8 @@ struct auth_status_t
   char const   	 *as_phrase;	/**< Return response phrase [out] */
   char const   	 *as_user;	/**< Authenticated username [in/out] */
   char const   	 *as_display;	/**< Return user's real name [in/out] */
-  /* @deprecated This is unused and goes away in 1.11.10. */
-  url_t const    *as_user_uri;	/* Return user's identity [in/out] */
 
+  url_t const    *as_user_uri;	/* Return user's identity [in/out] */
   char const     *as_ident;	/**< Identities [out] */
   unsigned        as_profile;	/**< User profile (group) [out] */
   
@@ -202,14 +201,19 @@ SOFIAPUBFUN void auth_mod_authorize(auth_mod_t *am,
 SOFIAPUBFUN void auth_mod_cancel(auth_mod_t *am, auth_status_t *as);
 
 /* ====================================================================== */
-/* Compatibility interface */
+/* Deprecated functions */
 
-typedef enum { 
-  auth_server, 
-  auth_proxy, 
+typedef enum {
+  auth_server,
+  auth_proxy,
   auth_proxy_consume,
   auth_consume
 } auth_kind_t;
+
+SOFIAPUBFUN void auth_mod_method(auth_mod_t *am,
+				 auth_status_t *as,
+				 msg_auth_t *credentials,
+				 auth_challenger_t const *ach);
 
 SOFIAPUBFUN void auth_mod_check_client(auth_mod_t *am,
 				       auth_status_t *as,
@@ -220,7 +224,7 @@ SOFIAPUBFUN void auth_mod_challenge_client(auth_mod_t *am,
 					   auth_status_t *as,
 					   auth_challenger_t const *ach);
 
-#ifdef NTA_H
+#ifdef SIP_H
 SOFIAPUBFUN void auth_mod_check(auth_mod_t *am,
 				auth_status_t *as,
 				sip_t const *sip,
@@ -233,6 +237,9 @@ SOFIAPUBFUN const char *auth_mod_check_http(auth_mod_t *am,
 					    http_t const *http,
 					    auth_kind_t proxy);
 #endif
+
+/* ====================================================================== */
+/* Tags */
 
 #define AUTHTAG_ANY()         authtag_any, ((tag_value_t)0)
 SOFIAPUBVAR tag_typedef_t authtag_any;

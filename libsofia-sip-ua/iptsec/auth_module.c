@@ -1467,7 +1467,7 @@ void auth_md5_hmac_digest(auth_mod_t *am, struct su_md5_t *imd5,
 /* ====================================================================== */
 /* Compatibility interface */
 
-void auth_mod_module(auth_mod_t *am,
+void auth_mod_method(auth_mod_t *am,
 		     auth_status_t *as,
 		     msg_auth_t *credentials,
 		     auth_challenger_t const *ach)
