@@ -26,8 +26,8 @@
 /** Defined when <sofia-sip/auth_client.h> has been included. */
 #define AUTH_CLIENT_H 
 
-
 /**@file sofia-sip/auth_client.h
+ *
  * @brief Client-side authenticator library.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -38,12 +38,7 @@
 #ifndef MSG_TYPES_H
 #include <sofia-sip/msg_types.h>
 #endif
-#ifndef AUTH_DIGEST_H
-#include <sofia-sip/auth_digest.h>
-#endif
-#ifndef AUTH_NTLM_H
-#include <sofia-sip/auth_ntlm.h>
-#endif
+
 #ifndef URL_H
 #include <sofia-sip/url.h>
 #endif
@@ -94,6 +89,11 @@ struct sip_s;
 
 SOFIAPUBFUN
 int auc_authorize(auth_client_t **auc, msg_t *msg, struct sip_s *sip);
+
+typedef struct auth_client_plugin auth_client_plugin_t;
+
+SOFIAPUBFUN
+int auc_register_plugin(auth_client_plugin_t const *plugin);
 
 SOFIA_END_DECLS
 

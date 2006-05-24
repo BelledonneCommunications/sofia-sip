@@ -31,107 +31,50 @@
 
 #include "config.h"
 
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_md5.h>
+
+#include "sofia-sip/auth_client.h"
+#include "sofia-sip/auth_client_plugin.h"
+
+#include <sofia-sip/msg_header.h>
+
+#include <sofia-sip/auth_digest.h>
+
+#include <sofia-sip/base64.h>
+#include <sofia-sip/su_uniqueid.h>
+#include <sofia-sip/string0.h>
+
+#include <sofia-sip/su_debug.h>
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <assert.h>
 
-#include <sofia-sip/su.h>
-#include <sofia-sip/su_md5.h>
+static auth_client_t *ca_create(su_home_t *home, 
+				char const *scheme,
+				char const *realm);
 
-#include "sofia-sip/auth_client.h"
+static void ca_destroy(su_home_t *home, auth_client_t *ca);
 
-#include <sofia-sip/msg_header.h>
-
-#include <sofia-sip/auth_digest.h>
-
-#if HAVE_SOFIA_NTLM
-#include <sofia-sip/auth_digest.h>
-#endif
-
-#include <sofia-sip/base64.h>
-#include <sofia-sip/su_uniqueid.h>
-
-#include <sofia-sip/su_debug.h>
-
-#if HAVE_SC_CRED_H
-#include <sc_creds.h>
-#endif
-
-#if HAVE_UICC_H
-#include <uicc.h>
-#endif
-
-struct auth_client_s {
-  su_home_t     ca_home[1];
-  auth_client_t*ca_next;
-
-  char const   *ca_scheme;
-  char const   *ca_realm;
-  char         *ca_user;
-  char         *ca_pass;
-
-  msg_hclass_t *ca_credential_class;
-
-  auth_challenge_t ca_ac[1];
-  int           ca_ncount;
-  char const   *ca_cnonce;
-  msg_header_t *(*ca_authorize)(auth_client_t *ca, 
-				su_home_t *h,
-				char const *method, 
-				url_t const *url, 
-				msg_payload_t const *body);
-};
-
-static auth_client_t *ca_create(su_home_t *home);
-static int ca_challenge(auth_client_t *ca, 
+static int ca_challenge(auth_client_t *ca,
 			msg_auth_t const *auth, 
 			msg_hclass_t *credential_class,
-			char const *scheme, 
+			char const *scheme,
 			char const *realm);
+
 static int ca_credentials(auth_client_t *ca, 
 			  char const *scheme,
 			  char const *realm, 
 			  char const *user,
 			  char const *pass);
+
 static int ca_clear_credentials(auth_client_t *ca, 
 				char const *scheme,
 				char const *realm);
-static msg_header_t *auc_basic_authorization(auth_client_t *ca,
-					     su_home_t *h,
-					     char const *method, 
-					     url_t const *url, 
-					     msg_payload_t const *body);
-static msg_header_t *auc_digest_authorization(auth_client_t *ca, 
-					      su_home_t *h,
-					      char const *method, 
-					      url_t const *url, 
-					      msg_payload_t const *body);
-#if HAVE_SOFIA_NTLM
-static msg_header_t *auc_ntlm_authorization(auth_client_t *ca, 
-					    su_home_t *h,
-					    char const *method, 
-					    url_t const *url, 
-					    msg_payload_t const *body);
-#endif
 
-/** Allocate a dummy auth_client_t structure. */
-auth_client_t *ca_create(su_home_t *home)
-{
-  auth_client_t *ca;
-
-  if ((ca = su_home_clone(home, sizeof(*ca)))) {
-    ca->ca_scheme = ca->ca_realm = "";
-  }
-
-  return ca;
-}
-
-void ca_destroy(su_home_t *home, auth_client_t *ca)
-{
-  su_free(home, ca);
-}
 
 /** Initialize authenticators.
  *
@@ -168,28 +111,35 @@ int auc_challenge(auth_client_t **auc_list,
     for (cca = auc_list; (*cca); cca = &(*cca)->ca_next) {
       updated = ca_challenge((*cca), ch, crcl, scheme, realm);
       if (updated < 0)
+	return -1;
+      if (updated == 0)
 	continue;		/* No match, next */
       matched = 1;
-      if (updated > 0)
+      if (updated > 1)
 	retval = 1;		/* Updated authenticator */
     }
 
     if (!matched) {
       /* There was no matching authenticator, create a new one */
-      *cca = ca_create(home);
-      if (ca_challenge((*cca), ch, crcl, scheme, realm) != -1) {
-	retval = 1;		/* Updated authenticator */
-      }
-      else {
+      *cca = ca_create(home, scheme, realm);
+      if (ca_challenge((*cca), ch, crcl, scheme, realm) < 0) {
 	ca_destroy(home, *cca), *cca = NULL;
 	return -1;
-      } 
+      }
+      retval = 1;		/* Updated authenticator */
     }
   }
 
   return retval;
 }
 
+/** Update authentication client. 
+ *
+ * @retval -1 upon an error
+ * @retval 0 when challenge did not match
+ * @retval 1 when challenge did match but was not updated
+ * @retval 2 when challenge did match and updated client
+ */
 static
 int ca_challenge(auth_client_t *ca, 
 		 msg_auth_t const *ch,
@@ -197,89 +147,31 @@ int ca_challenge(auth_client_t *ca,
 		 char const *scheme, 
 		 char const *realm)
 {
-  su_home_t *home = ca->ca_home;
-  auth_challenge_t *ac = ca->ca_ac;
-  int existing = ca->ca_authorize != NULL;
+  int stale = 0;
 
   assert(ca); assert(ch);
 
   if (!ca || !ch)
     return -1;
 
-  ca->ca_ac->ac_size = sizeof(ca->ca_ac);
-
-  if (ca->ca_scheme[0] && strcmp(ca->ca_scheme, scheme))
-    return -1;
-  if (ca->ca_realm[0] && strcmp(ca->ca_realm, realm))
-    return -1;
-
-  if (strcasecmp(scheme, "Basic") == 0) {
-    ca->ca_authorize = auc_basic_authorization;
-  }
-  else if (strcasecmp(scheme, "Digest") == 0) {
-    ca->ca_authorize = auc_digest_authorization;
-  }
-#if HAVE_SOFIA_NTLM
-  else if (strcasecmp(scheme, "NTLM") == 0) {
-    ca->ca_authorize = auc_ntlm_authorization;
-  }
-#endif
-  else
-    return -1;
-
-#if 0
-  if (ca->ca_challenge_class && 
-      ca->ca_challenge_class != ch->au_common->h_class)
-    return -1;
-#endif
+  if (strcmp(ca->ca_scheme, scheme))
+    return 0;
+  if (strcmp(ca->ca_realm, realm))
+    return 0;
 
   if (ca->ca_credential_class && 
       ca->ca_credential_class != credential_class)
+    return 0;
+
+  if (ca->ca_auc->auc_challenge)
+    stale = ca->ca_auc->auc_challenge(ca, ch);
+  if (stale < 0)
     return -1;
 
-  ca->ca_credential_class = credential_class;
-#if 0
-  ca->ca_challenge = msg_header_dup(home, (msg_header_t *)ch)->sh_auth;
-  ca->ca_challenge_class = ca->ca_challenge->au_common->h_class;
-  ca->ca_scheme = ca->ca_challenge->au_scheme;
-  ca->ca_realm = msg_header_find_param(ca->ca_challenge->au_common, "realm=");
-#else
-  if (!ca->ca_scheme[0]) {
-    char *d = su_strdup(home, scheme);
-    if (!d) return -1;
-    ca->ca_scheme = d;
-  }
-  if (!ca->ca_realm[0]) {
-    char *d = su_strdup(home, realm);
-    if (!d) return -1;
-    ca->ca_realm = d;
-  }
-#endif
+  if (!ca->ca_credential_class)
+    stale = 1, ca->ca_credential_class = credential_class;
 
-  auth_digest_challenge_free_params(home, ac);
-
-  if (auth_digest_challenge_get(home, ac, ch->au_params) < 0)
-    return -1;
-
-  /* Check that we can handle this */
-  if (!ac->ac_md5 && !ac->ac_md5sess)
-    return -1;
-  if (ac->ac_qop && !ac->ac_auth && !ac->ac_auth_int)
-    return -1;
-
-  if (ac->ac_qop && (ca->ca_cnonce == NULL || ac->ac_stale)) {
-    su_guid_t guid[1];
-    char *cnonce;
-    if (ca->ca_cnonce != NULL)
-      /* Free the old one if we are updating after stale=true */
-      su_free(home, (void *)ca->ca_cnonce);
-    su_guid_generate(guid);
-    ca->ca_cnonce = cnonce = su_alloc(home, BASE64_SIZE(sizeof(guid)) + 1);
-    base64_e(cnonce, BASE64_SIZE(sizeof(guid)) + 1, guid, sizeof(guid));
-    ca->ca_ncount = 0;
-  }
-
-  return !existing || ac->ac_stale;
+  return stale ? 2 : 1;
 }
 
 /**Feed authentication data to the authenticator.
@@ -541,7 +433,7 @@ int auc_authorization(auth_client_t **auc_list, msg_t *msg, msg_pub_t *pub,
 
   /* Make sure every challenge has credentials */
   for (ca = *auc_list; ca; ca = ca->ca_next) {
-    if (!ca->ca_user || !ca->ca_pass || !ca->ca_authorize)
+    if (!ca->ca_user || !ca->ca_pass || !ca->ca_credential_class)
       return 0;
   }
 
@@ -555,12 +447,17 @@ int auc_authorization(auth_client_t **auc_list, msg_t *msg, msg_pub_t *pub,
 
   /* Insert new credentials */
   for (; *auc_list; auc_list = &(*auc_list)->ca_next) {
-    msg_header_t *h;
+    su_home_t *home = msg_home(msg);
+    msg_header_t *h = NULL;
 
-    h = (*auc_list)->ca_authorize(*auc_list, msg_home(msg), method, url, body);
+    ca = *auc_list;
 
-    if (!h || msg_header_insert(msg, pub, h) < 0)
-      return 0;
+    if (!ca->ca_auc)
+      continue;
+
+    if (ca->ca_auc->auc_authorize(ca, home, method, url, body, &h) < 0
+	|| msg_header_insert(msg, pub, h) < 0)
+      return -1;
   }
 
   return 1;
@@ -594,26 +491,49 @@ int auc_authorization_headers(auth_client_t **auc_list,
 
   /* Make sure every challenge has credentials */
   for (ca = *auc_list; ca; ca = ca->ca_next) {
-    if (!ca->ca_user || !ca->ca_pass || !ca->ca_authorize)
+    if (!ca->ca_user || !ca->ca_pass || !ca->ca_credential_class)
       return 0;
   }
 
   /* Insert new credentials */
   for (; *auc_list; auc_list = &(*auc_list)->ca_next) {
-    msg_header_t *h;
+    msg_header_t *h = NULL;
 
-    h = (*auc_list)->ca_authorize(*auc_list, home, method, url, body);
+    ca = *auc_list;
 
-    if (!h)
+    if (!ca->ca_auc)
+      continue;
+
+    if (ca->ca_auc->auc_authorize(ca, home, method, url, body, &h) < 0)
       return -1;
 
     *return_headers = h;
 
-    return_headers = &h->sh_next;
+    while (*return_headers)
+      return_headers = &(*return_headers)->sh_next;
   }
 
   return 1;
 }
+
+/* ---------------------------------------------------------------------- */
+/* Basic scheme */
+
+static int auc_basic_authorization(auth_client_t *ca,
+				   su_home_t *h,
+				   char const *method, 
+				   url_t const *url, 
+				   msg_payload_t const *body,
+				   msg_header_t **);
+
+const auth_client_plugin_t ca_basic_plugin = 
+{ 
+  sizeof ca_basic_plugin,
+  sizeof (auth_client_t),
+  "Basic",
+  NULL,
+  auc_basic_authorization
+};
 
 /**Create a basic authorization header.
  *
@@ -632,11 +552,12 @@ int auc_authorization_headers(auth_client_t **auc_list,
  * The function auc_basic_authorization() returns a pointer to newly created 
  * authorization header, or NULL upon an error.
  */
-msg_header_t *auc_basic_authorization(auth_client_t *ca, 
-				      su_home_t *home,
-				      char const *method, 
-				      url_t const *url, 
-				      msg_payload_t const *body)
+int auc_basic_authorization(auth_client_t *ca, 
+			    su_home_t *home,
+			    char const *method, 
+			    url_t const *url, 
+			    msg_payload_t const *body,
+			    msg_header_t **return_headers)
 {
   char userpass[49];		/* "reasonable" maximum */
   char base64[65];
@@ -654,18 +575,93 @@ msg_header_t *auc_basic_authorization(auth_client_t *ca,
   snprintf(userpass, sizeof(userpass) - 1, "%s:%s", user, pass);
   base64_e(base64, sizeof(base64), userpass, strlen(userpass));
 
-  return msg_header_format(home, hc, "Basic %s", base64);
+  if (!(*return_headers = msg_header_format(home, hc, "Basic %s", base64)))
+    return -1;
+  return 0;
 }
+
+/* ---------------------------------------------------------------------- */
+/* Digest scheme */
+
+typedef struct auth_digest_client_s
+{
+  auth_client_t cda_client;
+
+  int           cda_ncount;
+  char const   *cda_cnonce;
+  auth_challenge_t cda_ac[1];
+} auth_digest_client_t;
+
+static int auc_digest_challenge(auth_client_t *ca, 
+				msg_auth_t const *ch);
+static int auc_digest_authorization(auth_client_t *ca, 
+				    su_home_t *h,
+				    char const *method, 
+				    url_t const *url, 
+				    msg_payload_t const *body,
+				    msg_header_t **);
+
+static const auth_client_plugin_t ca_digest_plugin = 
+{ 
+  sizeof ca_digest_plugin,
+  sizeof (auth_digest_client_t),
+  "Digest", 
+  auc_digest_challenge,
+  auc_digest_authorization
+};
+
+/** Store a digest authorization challenge.
+ */
+static int auc_digest_challenge(auth_client_t *ca, msg_auth_t const *ch)
+{
+  su_home_t *home = ca->ca_home;
+  auth_digest_client_t *cda = (auth_digest_client_t *)ca;
+  auth_challenge_t ac[1] = {{ sizeof ac }};
+  int stale;
+
+  if (auth_digest_challenge_get(home, ac, ch->au_params) < 0)
+    goto error;
+
+  /* Check that we can handle the challenge */
+  if (!ac->ac_md5 && !ac->ac_md5sess)
+    goto error;
+  if (ac->ac_qop && !ac->ac_auth && !ac->ac_auth_int)
+    goto error;
+
+  stale = ac->ac_stale || str0cmp(ac->ac_nonce, cda->cda_ac->ac_nonce);
+
+  if (ac->ac_qop && (cda->cda_cnonce == NULL || ac->ac_stale)) {
+    su_guid_t guid[1];
+    char *cnonce;
+    if (cda->cda_cnonce != NULL)
+      /* Free the old one if we are updating after stale=true */
+      su_free(home, (void *)cda->cda_cnonce);
+    su_guid_generate(guid);
+    cda->cda_cnonce = cnonce = su_alloc(home, BASE64_SIZE(sizeof(guid)) + 1);
+    base64_e(cnonce, BASE64_SIZE(sizeof(guid)) + 1, guid, sizeof(guid));
+    cda->cda_ncount = 0;
+  }
+
+  auth_digest_challenge_free_params(home, cda->cda_ac);
+
+  *cda->cda_ac = *ac;
+
+  return stale ? 2 : 1;
+
+ error:
+  auth_digest_challenge_free_params(home, ac);
+  return -1;
+}
+
 
 /**Create a digest authorization header.
  *
- * The function auc_digest_authorization() creates a digest authorization
- * header from username @a user and password @a pass, client nonce @a
- * cnonce, client nonce count @a nc, request method @a method, request URI
- * @a uri and message body @a data. The authorization header type is
- * determined by @a hc - it can be either sip_authorization_class or
- * sip_proxy_authorization_class, as well as http_authorization_class or
- * http_proxy_authorization_class.
+ * Creates a digest authorization header from username @a user and password
+ * @a pass, client nonce @a cnonce, client nonce count @a nc, request method
+ * @a method, request URI @a uri and message body @a data. The authorization
+ * header type is determined by @a hc - it can be either
+ * sip_authorization_class or sip_proxy_authorization_class, as well as
+ * http_authorization_class or http_proxy_authorization_class.
  *
  * @param home 	  memory home used to allocate memory for the new header
  * @param hc   	  header class for the header to be created
@@ -680,20 +676,23 @@ msg_header_t *auc_basic_authorization(auth_client_t *ca,
  * @param dlen    length of message body
  *
  * @return
- * The function auc_digest_authorization() returns a pointer to newly created 
- * authorization header, or NULL upon an error.
+ * Returns a pointer to newly created authorization header, or NULL upon an
+ * error.
  */
-msg_header_t *auc_digest_authorization(auth_client_t *ca, 
-				       su_home_t *home,
-				       char const *method, 
-				       url_t const *url, 
-				       msg_payload_t const *body)
+int auc_digest_authorization(auth_client_t *ca, 
+			     su_home_t *home,
+			     char const *method, 
+			     url_t const *url, 
+			     msg_payload_t const *body,
+			     msg_header_t **return_headers)
 {
+  auth_digest_client_t *cda = (auth_digest_client_t *)ca;
   msg_hclass_t *hc = ca->ca_credential_class;
   char const *user = ca->ca_user;
   char const *pass = ca->ca_pass;
-  auth_challenge_t const *ac = ca->ca_ac;
-  char const *cnonce = ca->ca_cnonce;
+  auth_challenge_t const *ac = cda->cda_ac;
+  char const *cnonce = cda->cda_cnonce;
+  unsigned nc = ++cda->cda_ncount;
   char *uri = url_as_string(home, url);
   void const *data = body ? body->pl_data : "";
   int dlen = body ? body->pl_len : 0;
@@ -721,7 +720,7 @@ msg_header_t *auc_digest_authorization(auth_client_t *ca,
     cnonce = NULL;
 
   if (cnonce) {
-    snprintf(ncount, sizeof(ncount), "%08x", ++ca->ca_ncount);
+    snprintf(ncount, sizeof(ncount), "%08x", nc);
     ar->ar_cnonce = cnonce;
     ar->ar_nc = ncount;
   }
@@ -759,8 +758,96 @@ msg_header_t *auc_digest_authorization(auth_client_t *ca,
 			cnonce ? ncount : "");
 
   su_free(home, uri);
-  return h;
+
+  if (!h)
+    return -1;
+  *return_headers = h;
+  return 0;
 }
+
+
+/* ---------------------------------------------------------------------- */
+
+#define MAX_AUC 20
+
+static auth_client_plugin_t const *ca_plugins[MAX_AUC] = 
+{
+  &ca_digest_plugin, &ca_basic_plugin, NULL
+};
+
+/** Register an authentication client plugin */
+int auc_register_plugin(auth_client_plugin_t const *plugin)
+{
+  int i;
+
+  if (plugin == NULL ||
+      plugin->auc_name == NULL ||
+      plugin->auc_authorize == NULL)
+    return errno = EFAULT, -1;
+
+  if (plugin->auc_size < sizeof (auth_client_t))
+    return errno = EINVAL, -1;
+
+  for (i = 0; i < MAX_AUC; i++) {
+    if (ca_plugins[i] == NULL || 
+	strcmp(plugin->auc_name, ca_plugins[i]->auc_name) == 0) {
+      ca_plugins[i] = plugin;
+      return 0;
+    }
+  }
+
+  return errno = ENOMEM, -1;
+}
+
+/** Allocate an (possibly extended) auth_client_t structure. */
+static
+auth_client_t *ca_create(su_home_t *home,
+			 char const *scheme,
+			 char const *realm)
+{
+  auth_client_plugin_t const *auc = NULL;
+  auth_client_t *ca;
+  size_t realmlen;
+  int i;
+
+  if (scheme == NULL || realm == NULL)
+    return (void)(errno = EFAULT), NULL;
+
+  realmlen = strlen(realm) + 1;
+
+  for (i = 0; i < MAX_AUC; i++) {
+    auc = ca_plugins[i];
+    if (!auc || strcasecmp(auc->auc_name, scheme) == 0)
+      break;
+  }
+
+  if (auc) {
+    ca = su_home_clone(home, auc->auc_size + realmlen);
+    if (!ca)
+      return ca;
+    ca->ca_auc = auc;
+    ca->ca_scheme = auc->auc_name;
+    ca->ca_realm = strcpy((char *)ca + auc->auc_size, realm);
+  }
+  else {
+    size_t schemelen = strlen(scheme) + 1;
+    size_t size = sizeof (auth_client_t) + schemelen + realmlen;
+    ca = su_home_clone(home, size);
+    if (!ca)
+      return ca;
+    ca->ca_scheme = strcpy((char *)(ca + 1), scheme);
+    ca->ca_realm = strcpy((char *)(ca + 1) + schemelen, realm);
+  }
+
+
+  return ca;
+}
+
+void ca_destroy(su_home_t *home, auth_client_t *ca)
+{
+  su_free(home, ca);
+}
+
 
 #if HAVE_SOFIA_SIP
 #include <sofia-sip/sip.h>
