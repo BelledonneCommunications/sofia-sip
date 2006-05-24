@@ -107,6 +107,13 @@ SOFIAPUBFUN sip_route_t *sip_route_reverse(su_home_t *, sip_route_t const *);
 SOFIAPUBFUN sip_route_t *sip_route_fixdup(su_home_t *, sip_route_t const *);
 SOFIAPUBFUN sip_route_t *sip_route_fix(sip_route_t *route);
 
+SOFIAPUBFUN sip_route_t *sip_route_fixdup_as(su_home_t *,
+					     msg_hclass_t const *,
+					     sip_route_t const *);
+SOFIAPUBFUN sip_route_t *sip_route_reverse_as(su_home_t *,
+					     msg_hclass_t const *,
+					     sip_route_t const *);
+
 SOFIAPUBFUN sip_via_t *sip_via_remove(msg_t *msg, sip_t *sip);
 
 /* ---------------------------------------------------------------------- */

@@ -18,8 +18,6 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
-- nua_glib.h: renamed glib property 'stun' to 'stun-server',
-  removed property 'bind-address' (same as 'contact').
 
 Contributors to this release
 ----------------------------
@@ -30,6 +28,7 @@ Contributors to this release
  - name of the contributor should be enough
 /> 
 
+- Colin Whittaker <colinw@occamnetworks.com>
 - Michael Jerris <mike@jerris.com>
 - Thomas Rosenblatt <trosenblatt@cirpack.com>
 

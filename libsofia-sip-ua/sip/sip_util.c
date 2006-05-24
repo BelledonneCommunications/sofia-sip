@@ -564,16 +564,17 @@ sip_route_is_loose(sip_route_t const *r)
 
 /**@ingroup sip_route
  *
- * Reverse a route header. 
- *
- * The function sip_route_reverse() reverses a route header like @b
- * Record-Route or @b Path.
+ * Reverse a route header (Route, Record-Route, Path, Service-Route).
  */
-sip_route_t *sip_route_reverse(su_home_t *home, sip_route_t const *route)
+sip_route_t *sip_route_reverse_as(su_home_t *home, 
+				  msg_hclass_t const *hc,
+				  sip_route_t const *route)
 {
   sip_route_t *reverse = NULL;
   sip_route_t r[1], *tmp;
   sip_route_init(r);
+
+  r->r_common->h_class = hc;
 
   for (reverse = NULL; route; route = route->r_next) {
     *r->r_url = *route->r_url;
@@ -588,7 +589,7 @@ sip_route_t *sip_route_reverse(su_home_t *home, sip_route_t const *route)
 	r->r_params = route->r_params + 1;
     else
       r->r_params = route->r_params;
-    tmp = sip_route_dup(home, r);
+    tmp = (sip_route_t *)msg_header_dup_as(home, hc, (msg_header_t *)r);
     if (!tmp) 
       goto error;
     tmp->r_next = reverse;
@@ -598,25 +599,31 @@ sip_route_t *sip_route_reverse(su_home_t *home, sip_route_t const *route)
   return reverse;
 
  error:
-  while (reverse) {
-    sip_route_t *r_next = reverse->r_next;
-    su_free(home, reverse);
-    reverse = r_next;
-  }
-
+  msg_header_free_all(home, (msg_header_t *)reverse);
   return NULL;
 }
 
 
 /**@ingroup sip_route
  *
- * Fix and duplicate a route header. 
+ * Reverse a @b Route header. 
  *
- * The function sip_route_reverse() reverses a route header like @b
- * Record-Route or @b Path.
+ * Reverse A route header like @b Record-Route or @b Path.
+ */
+sip_route_t *sip_route_reverse(su_home_t *home, sip_route_t const *route)
+{
+  return sip_route_reverse_as(home, sip_route_class, route);
+}
+
+
+/**@ingroup sip_route
+ *
+ * Fix and duplicate a route header (Route, Record-Route, Path, Service-Route).
  *
  */
-sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route)
+sip_route_t *sip_route_fixdup_as(su_home_t *home,
+				 msg_hclass_t const *hc,
+				 sip_route_t const *route)
 {
   sip_route_t *copy = NULL;
   sip_route_t r[1], **rr;
@@ -636,7 +643,7 @@ sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route)
 	r->r_params = route->r_params + 1;
     else
       r->r_params = route->r_params;
-    *rr = sip_route_dup(home, r);
+    *rr = (sip_route_t *)msg_header_dup_as(home, hc, (msg_header_t *)r);
     if (!*rr) goto error;
     rr = &(*rr)->r_next;
   }
@@ -644,13 +651,21 @@ sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route)
   return copy;
 
  error:
-  while (copy) {
-    sip_route_t *r_next = copy->r_next;
-    su_free(home, copy);
-    copy = r_next;
-  }
-
+  msg_header_free_all(home, (msg_header_t *)copy);
   return NULL;
+}
+
+
+/**@ingroup sip_route
+ *
+ * Fix and duplicate a @b Route header. 
+ *
+ * Copy a route header like @b Record-Route or @b Path as @b Route.
+ *
+ */
+sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route)
+{
+  return sip_route_fixdup_as(home, sip_route_class, route);
 }
 
 static void sip_fragment_clear_chain(sip_header_t *h)
