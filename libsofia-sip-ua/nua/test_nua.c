@@ -5330,6 +5330,8 @@ int test_100rel(struct context *ctx)
    |<-------200---------|
    |			|
    |<-------180---------|
+   |-------PRACK------->|
+   |<-------200---------|
    |			|
    |<------200 OK-------|
    |--------ACK-------->|
@@ -5350,7 +5352,7 @@ int test_100rel(struct context *ctx)
   run_a_until(ctx, nua_r_set_params, until_final_response);
 
   nua_set_params(ctx->b.nua,
-		 NUTAG_EARLY_MEDIA(1),
+		 NUTAG_EARLY_MEDIA(0),
 		 SIPTAG_SUPPORTED_STR("100rel, precondition"),
 		 TAG_END());
   run_b_until(ctx, nua_r_set_params, until_final_response);
