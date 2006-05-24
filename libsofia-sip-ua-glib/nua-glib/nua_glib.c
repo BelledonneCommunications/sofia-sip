@@ -93,8 +93,7 @@ enum
   PROP_PROXY,
   PROP_REGISTRAR,
   PROP_AUTHINFO,
-  PROP_STUN,
-  PROP_SIP_BIND_ADDR,
+  PROP_STUN_SERVER,
   LAST_PROPERTY
 };
 
@@ -148,13 +147,10 @@ nua_glib_constructor (GType                  type,
 				 sof_callback, self,
 				 NUTAG_SOA_NAME("default"),
 				 NUTAG_MEDIA_ENABLE(1),
-				 TAG_IF(self->priv->bind_addr,
-					NUTAG_URL(self->priv->bind_addr)),
-				 TAG_IF(self->priv->stun,
-					STUNTAG_SERVER(self->priv->stun)),
+				 TAG_IF(self->priv->stun_server,
+					STUNTAG_SERVER(self->priv->stun_server)),
 				 TAG_IF(self->priv->contact,
 					NUTAG_URL(self->priv->contact)),
-				 /* NUTAG_MEDIA_ADDRESS(self->priv->media), */
 				 /* SOATAG_USER_SDP_STR(local_caps), */
 				 TAG_NULL());
     if (self->priv->nua) {
@@ -287,15 +283,10 @@ void nua_glib_set_property(GObject      *object,
     STORE_PARAM(self, authinfo);
     break;
   }
-  case PROP_STUN: {
-    STORE_PARAM(self, stun);
+  case PROP_STUN_SERVER: {
+    STORE_PARAM(self, stun_server);
     break;
   }
-  case PROP_SIP_BIND_ADDR: {
-    STORE_PARAM(self, bind_addr);
-    break;
-  }
-
  default:
     /* We don't have any other property... */
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object,property_id,pspec);
@@ -355,7 +346,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
   
   param_spec = g_param_spec_string("contact",
                                    "NuaGlib construction property",
-                                   "The contact url for this UA",
+                                   "local bind interface (e.g. 'sip:0.0.0.0:*') [optional]",
                                    NULL, /*default value*/
                                    G_PARAM_READWRITE );
   g_object_class_install_property (gobject_class,
@@ -364,7 +355,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
 
   param_spec = g_param_spec_string("address",
                                    "NuaGlib construction property",
-                                   "The address-of-contact for this UA",
+                                   "The address-of-record for this UA (e.g. 'sip:first.surname@myprovider.com')",
                                    "no-address-set", /*default value*/
                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
   g_object_class_install_property (gobject_class,
@@ -373,7 +364,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
 
   param_spec = g_param_spec_string("proxy",
                                    "NuaGlib construction property",
-                                   "The SIP proxy to use",
+                                   "SIP outgoing proxy URI (e.g. 'sip:sipproxy.myprovider.com') [optional]",
                                    NULL, /*default value*/
                                    G_PARAM_READWRITE );
   g_object_class_install_property (gobject_class,
@@ -382,7 +373,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
 
   param_spec = g_param_spec_string("registrar",
                                    "NuaGlib construction property",
-                                   "The SIP registrar to use",
+                                   "SIP registrar URI (e.g. 'sip:sip.myprovider.com') [optional]",
                                    NULL, /*default value*/
                                    G_PARAM_READWRITE );
   g_object_class_install_property (gobject_class,
@@ -391,8 +382,8 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
 
   param_spec = g_param_spec_string("authinfo",
                                    "NuaGlib construction property",
-                                 "Authorization info of form:"
-                                 "basic digest scheme:\"realm\":user:password ",
+				   "Authorization information for SIP network. Syntax:"
+				   "scheme:\"realm\":user:password (e.g. 'digest:myprovider.com:foo:bar') [optional]",
                                    NULL, /*default value*/
                                    G_PARAM_READWRITE );
   g_object_class_install_property (gobject_class,
@@ -400,24 +391,14 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
                                    param_spec);
 
 
-  param_spec = g_param_spec_string("stun",
+  param_spec = g_param_spec_string("stun-server",
                                    "NuaGlib construction property",
-                                   "STUN server address",
+                                   "STUN server address (FQDN or dotted-decimal) [optional]",
                                    "", /*default value*/
                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
   g_object_class_install_property (gobject_class,
-                                   PROP_STUN,
+                                   PROP_STUN_SERVER,
                                    param_spec);
-
-  param_spec = g_param_spec_string("bind_address",
-                                   "NuaGlib construction property",
-                                   "Bind address (i.e. sip:[::]:*) for SIP stack",
-                                   "", /*default value*/
-                                   G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
-  g_object_class_install_property(gobject_class,
-				  PROP_SIP_BIND_ADDR,
-				  param_spec);
-
 
   /**
    * NuaGlib::call-forked:

@@ -119,17 +119,16 @@ struct _NuaGlibPrivate {
   su_root_t  *root;      /**< Pointer to application root */
 
   unsigned    init : 1;  /**< True if class is inited */
-  
-  gchar      *contact;   /**< contact url used by this UA */
-  gchar      *authinfo;	 /**< authorization info used by this UA*/
-  char       *proxy;     /**< proxy to use,no proxy used if NULL*/
-  char       *address;   /**< our SIP address-of-contact*/
-  char       *registrar; /**< registrar to use*/
-  char       *stun;      /**< STUN server address */
-  char       *bind_addr; /**< SIP stack's address, family */
 
-  nua_t        *nua;       /**< Pointer to NUA object */
-  NuaGlibOp   *operations; /**< Remote destinations */
+  gchar      *address;     /**< our SIP address (address-of-record) */  
+  gchar      *contact;     /**< contact URI (local address) */
+  gchar      *proxy;       /**< outgoing proxy URI (optional, otherwise from DNS) */
+  gchar      *registrar;   /**< registrar URI (optional, otherwise from DNS) */
+  gchar      *stun_server; /**< STUN server URI (optional, otherwise from DNS) */
+  gchar      *authinfo;	   /**< authorization info used by this UA*/
+
+  nua_t      *nua;         /**< Pointer to NUA object */
+  NuaGlibOp  *operations;  /**< Remote destinations */
 };
 
 
