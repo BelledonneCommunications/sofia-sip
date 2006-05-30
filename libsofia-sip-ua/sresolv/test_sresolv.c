@@ -45,6 +45,10 @@ typedef unsigned _int32 uint32_t;
 #endif
 #endif
 
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
 #if HAVE_NETINET_IN_H
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -118,7 +122,7 @@ static void test_answer_multi(sres_context_t *ctx, sres_query_t *query,
 
 static int tstflags = 0;
 
-#if 0
+#if 1
 static
 int setblocking(int s, int blocking)
 {

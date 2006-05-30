@@ -107,6 +107,8 @@ esac
 
 AC_CHECK_HEADERS([unistd.h sys/time.h])
 
+AC_CHECK_HEADERS([fcntl.h])
+
 AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
   AC_DEFINE([HAVE_WIN32], 1, [Define to 1 you have WIN32])
   SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define to 1 you have WinSock])
