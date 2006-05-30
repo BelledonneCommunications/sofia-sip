@@ -6,7 +6,7 @@
 # Licensed under LGPL. See file COPYING.
 #
 
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign 1.7
 
 SUBDIRS=su-glib nua-glib
 
