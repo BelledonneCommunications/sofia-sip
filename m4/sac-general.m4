@@ -176,8 +176,8 @@ AC_DEFUN([AC_SYS_SA_LEN], [
 AC_CACHE_CHECK([for sa_len],
   ac_cv_sa_len,
 [AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/socket.h>], [int main(void) {
- struct sockaddr t;t.sa_len = 0;}],
+#include <sys/socket.h>], [
+ struct sockaddr t;t.sa_len = 0;],
   ac_cv_sa_len=yes,ac_cv_sa_len=no)])
 if test "$ac_cv_sa_len" = yes ;then
 	AC_DEFINE([HAVE_SA_LEN], 1, 
@@ -195,9 +195,7 @@ AC_CACHE_CHECK([for MSG_NOSIGNAL],
 AC_TRY_COMPILE([
 #include <sys/types.h>
 #include <sys/socket.h>], [
-int main() {
   int flags = MSG_NOSIGNAL;
-}
 ], ac_cv_flag_msg_nosignal=yes, ac_cv_flag_msg_nosignal=no)])
 if test "$ac_cv_flag_msg_nosignal" = yes ; then
 	AC_DEFINE([HAVE_MSG_NOSIGNAL], 1,
@@ -215,9 +213,7 @@ AC_CACHE_CHECK([for MSG_ERRQUEUE],
 AC_TRY_COMPILE([
 #include <sys/types.h>
 #include <sys/socket.h>], [
-int main() {
   int flags = MSG_ERRQUEUE;
-}
 ], ac_cv_flag_msg_errqueue=yes, ac_cv_flag_msg_errqueue=no)])
 if test "$ac_cv_flag_msg_errqueue" = yes; then
 	AC_DEFINE([HAVE_MSG_ERRQUEUE], 1,
@@ -357,9 +353,9 @@ AC_DEFUN([AC_C_MACRO_FUNCTION],
 [AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK(whether $CC recognizes __FUNCTION__, ac_cv_c_macro_function,
 AC_TRY_COMPILE(,
-[int main() {
+[
 char *s = __FUNCTION__;
-}], ac_cv_c_macro_function=yes, ac_cv_c_macro_function=no))
+], ac_cv_c_macro_function=yes, ac_cv_c_macro_function=no))
 if test $ac_cv_c_macro_function = "yes"; then
 AC_DEFINE([HAVE_FUNCTION], 1, [Define to 1 if the C compiler supports __FUNCTION__]) 
 fi
@@ -382,10 +378,10 @@ AC_DEFUN([AC_C_KEYWORD_STRUCT], [
 AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK(whether $CC recognizes field names in struct initialization, ac_cv_c_keyword_struct,
 AC_TRY_COMPILE(,
-[int main() {
+[
   struct { int foo; char *bar; } test = { foo: 1, bar: "bar" };
   return 0;
-}],
+],
 ac_cv_c_keyword_struct=yes, ac_cv_c_keyword_struct=no))
 if test $ac_cv_c_keyword_struct = "yes"; then
 AC_DEFINE([HAVE_STRUCT_KEYWORDS], 1, [
