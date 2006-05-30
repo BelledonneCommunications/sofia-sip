@@ -132,10 +132,10 @@ int tport_stream_init_primary(tport_primary_t *pri,
 #endif
 
   if (tport_bind_socket(socket, ai, return_culprit) == SOCKET_ERROR)
-    return su_close(socket), -1;
+    return -1;
 
   if (listen(socket, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
-    return *return_culprit = "listen", su_close(socket), -1;
+    return *return_culprit = "listen", -1;
 
 #if !defined(__linux__)
   /* Allow reusing TCP sockets
