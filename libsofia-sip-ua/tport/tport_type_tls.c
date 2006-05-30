@@ -159,6 +159,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   char const *path = NULL;
   unsigned tls_version = 1;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
+  tls_issues_t ti = {0};
 
   su_home_auto(autohome, sizeof autohome);
 
@@ -178,7 +179,6 @@ static int tport_tls_init_master(tport_primary_t *pri,
   }
   
   if (path) {
-    tls_issues_t ti = {0};
     ti.verify_depth = 2;
     ti.configured = path != tbf;
     ti.randFile = su_sprintf(autohome, "%s/%s", path, "tls_seed.dat");
@@ -197,7 +197,12 @@ static int tport_tls_init_master(tport_primary_t *pri,
   su_home_zap(autohome);
 
   if (!tlspri->tlspri_master) {
-    SU_DEBUG_3(("tls_init_master: %s\n", strerror(errno)));
+    if (!path || ti.configured) {
+      SU_DEBUG_1(("tls_init_master: %s\n", strerror(errno)));
+    }
+    else {
+      SU_DEBUG_5(("tls_init_master: %s\n", strerror(errno)));
+    }
     return *return_culprit = "tls_init_master", -1;
   }
 

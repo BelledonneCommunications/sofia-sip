@@ -195,26 +195,30 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
       BIO_printf(tls->bio_err, "%s: invalid certificate: %s\n",
 		 "tls_init_context", ti->cert);
       ERR_print_errors(tls->bio_err);
-    }
 #if require_client_certificate
-    errno = EIO;
-    return -1;
+      errno = EIO;
+      return -1;
 #endif
+    }
   }
 
   if (!SSL_CTX_use_PrivateKey_file(tls->ctx, 
                                    ti->key, 
                                    SSL_FILETYPE_PEM)) {
-    ERR_print_errors(tls->bio_err);
+    if (ti->configured > 0) {
+      ERR_print_errors(tls->bio_err);
 #if require_client_certificate
-    errno = EIO;
-    return -1;
+      errno = EIO;
+      return -1;
 #endif
+    }
   }
 
   if (!SSL_CTX_check_private_key(tls->ctx)) {
-    BIO_printf(tls->bio_err,
-               "Private key does not match the certificate public key\n");
+    if (ti->configured > 0) {
+      BIO_printf(tls->bio_err,
+		 "Private key does not match the certificate public key\n");
+    }
 #if require_client_certificate
     errno = EIO;
     return -1;
@@ -224,7 +228,8 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   if (!SSL_CTX_load_verify_locations(tls->ctx, 
                                      ti->CAfile, 
                                      ti->CApath)) {
-    ERR_print_errors(tls->bio_err);
+    if (ti->configured > 0)
+      ERR_print_errors(tls->bio_err);
     errno = EIO;
     return -1;
   }
