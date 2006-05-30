@@ -84,7 +84,6 @@ typedef enum {
                             | NUA_GLIB_MEDIA_RECVONLY
 } NuaGlibMediaActive;
 
-
 NuaGlibOp * nua_glib_invite (NuaGlib *self, const char *destination, const char *local_sdp);
 
 void nua_glib_answer (NuaGlib *self, NuaGlibOp *op, int status, const char *phrase, const char *sdp);
@@ -130,6 +129,10 @@ void nua_glib_unpublish (NuaGlib *cli, NuaGlibOp *op);
 NuaGlibOp* nua_glib_unpublish_direct (NuaGlib *self);
 
 void nua_glib_redirect(NuaGlib *self, NuaGlibOp *op, const char *contact);
+
+void nua_glib_auth_add(NuaGlib *self, NuaGlibOp *op, const char *method, const char *realm, const char *user, const char *password);
+
+void nua_glib_auth_clear(NuaGlib *self, NuaGlibOp *op);
 
 /*helper functions*/
 

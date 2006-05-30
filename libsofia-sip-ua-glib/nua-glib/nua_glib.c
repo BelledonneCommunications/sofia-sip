@@ -88,11 +88,11 @@ static guint signals[LAST_SIGNAL] = {0};
 
 enum
 {
-  PROP_CONTACT = 1,
-  PROP_ADDRESS,
+  PROP_ADDRESS = 1,
+  PROP_PASSWORD,
+  PROP_CONTACT,
   PROP_PROXY,
   PROP_REGISTRAR,
-  PROP_AUTHINFO,
   PROP_STUN_SERVER,
   LAST_PROPERTY
 };
@@ -105,6 +105,7 @@ void final_shutdown(NuaGlib *self)
 static GObjectClass *parent_class=NULL;  
 
 static int sof_init(NuaGlibPrivate *priv, const char *contact);
+static void priv_submit_authlist(NuaGlibOp *op);
 
 static GObject *
 nua_glib_constructor (GType                  type,
@@ -189,7 +190,6 @@ nua_glib_init(NuaGlib *self)
  /* initialize sofia su OS abstraction layer */
   su_init();
   su_home_init(self->priv->home);
-  self->priv->authinfo = g_strdup("");
 }
 
 static void
@@ -200,7 +200,6 @@ nua_glib_dispose(GObject *obj)
   if (self->priv->init)
   {
     g_free((gpointer)self->priv->contact);
-    g_free((gpointer)self->priv->authinfo);
 
     nua_shutdown(self->priv->nua);
 
@@ -241,10 +240,6 @@ void nua_glib_set_property(GObject      *object,
   (s)->priv->x = g_value_dup_string (value)
 
   switch (property_id) {
-  case PROP_CONTACT: {
-    STORE_PARAM(self, contact);
-    break;
-  }
   case PROP_ADDRESS: {
     if (self->priv->nua)
     {
@@ -257,6 +252,14 @@ void nua_glib_set_property(GObject      *object,
     {
       self->priv->address = su_strdup(self->priv->home, g_value_get_string (value));
     }
+    break;
+  }
+  case PROP_PASSWORD: {
+    STORE_PARAM(self, password);
+    break;
+  }
+  case PROP_CONTACT: {
+    STORE_PARAM(self, contact);
     break;
   }
   case PROP_PROXY: {
@@ -279,10 +282,6 @@ void nua_glib_set_property(GObject      *object,
     }
     break;
   }
-  case PROP_AUTHINFO: {
-    STORE_PARAM(self, authinfo);
-    break;
-  }
   case PROP_STUN_SERVER: {
     STORE_PARAM(self, stun_server);
     break;
@@ -303,12 +302,16 @@ nua_glib_get_property (GObject      *object,
   NuaGlib *self = (NuaGlib *) object;
 
   switch (property_id) {
-  case PROP_CONTACT: {
-    g_value_set_string (value, self->priv->contact);
-    break;
-  }
   case PROP_ADDRESS: {
     g_value_set_string (value, self->priv->address);
+    break;
+  }
+  case PROP_PASSWORD: {
+    g_value_set_string (value, self->priv->password);
+    break;
+  }
+  case PROP_CONTACT: {
+    g_value_set_string (value, self->priv->contact);
     break;
   }
   case PROP_PROXY: {
@@ -319,8 +322,8 @@ nua_glib_get_property (GObject      *object,
     g_value_set_string (value, self->priv->registrar);
     break;
   }
-  case PROP_AUTHINFO: {
-    g_value_set_string (value, self->priv->authinfo);
+  case PROP_STUN_SERVER: {
+    g_value_set_string (value, self->priv->stun_server);
     break;
   }
   default:
@@ -344,15 +347,6 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
   gobject_class->set_property = nua_glib_set_property;
   gobject_class->get_property = nua_glib_get_property;
   
-  param_spec = g_param_spec_string("contact",
-                                   "NuaGlib construction property",
-                                   "local bind interface (e.g. 'sip:0.0.0.0:*') [optional]",
-                                   NULL, /*default value*/
-                                   G_PARAM_READWRITE );
-  g_object_class_install_property (gobject_class,
-                                   PROP_CONTACT,
-                                   param_spec);
-
   param_spec = g_param_spec_string("address",
                                    "NuaGlib construction property",
                                    "The address-of-record for this UA (e.g. 'sip:first.surname@myprovider.com')",
@@ -360,6 +354,24 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
   g_object_class_install_property (gobject_class,
                                    PROP_ADDRESS,
+                                   param_spec);
+
+  param_spec = g_param_spec_string("password",
+                                   "NuaGlib construction property",
+                                   "SIP account password",
+                                   NULL, /*default value*/
+                                   G_PARAM_READWRITE);
+  g_object_class_install_property (gobject_class,
+                                   PROP_PASSWORD,
+                                   param_spec);
+
+  param_spec = g_param_spec_string("contact",
+                                   "NuaGlib construction property",
+                                   "local bind interface (e.g. 'sip:0.0.0.0:*') [optional]",
+                                   NULL, /*default value*/
+                                   G_PARAM_READWRITE );
+  g_object_class_install_property (gobject_class,
+                                   PROP_CONTACT,
                                    param_spec);
 
   param_spec = g_param_spec_string("proxy",
@@ -379,17 +391,6 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
   g_object_class_install_property (gobject_class,
                                    PROP_REGISTRAR,
                                    param_spec);
-
-  param_spec = g_param_spec_string("authinfo",
-                                   "NuaGlib construction property",
-				   "Authorization information for SIP network. Syntax:"
-				   "scheme:\"realm\":user:password (e.g. 'digest:myprovider.com:foo:bar') [optional]",
-                                   NULL, /*default value*/
-                                   G_PARAM_READWRITE );
-  g_object_class_install_property (gobject_class,
-                                   PROP_AUTHINFO,
-                                   param_spec);
-
 
   param_spec = g_param_spec_string("stun-server",
                                    "NuaGlib construction property",
@@ -1173,6 +1174,9 @@ nua_glib_op_destroy(NuaGlib *self, NuaGlibOp *op)
   if (*prev)
     *prev = op->op_next, op->op_next = NULL;
 
+  if (op->op_authlist)
+    nua_glib_auth_clear(self, op);
+
   if (op->op_handle)
     nua_handle_destroy(op->op_handle), op->op_handle = NULL;
 
@@ -1194,91 +1198,17 @@ oper_assign(NuaGlibOp *op, sip_method_t method, char const *name)
     method == sip_method_publish;
 }
 
-#if 0
-/** Find call operation */
-static NuaGlibOp *
-oper_find_call(NuaGlib *self)
-{
-  NuaGlibOp *op;
-
-  for (op = self->priv->operations; op; op = op->op_next)
-    if (op->op_callstate)
-      break;
-
-  return op;
-}
-
-/** Find call operation */
-static NuaGlibOp *
-oper_find_call_in_progress(NuaGlib *self)
-{
-  NuaGlibOp *op;
-
-  for (op = self->priv->operations; op; op = op->op_next)
-    if (op->op_callstate & opc_sent) /* opc_sent bit is on? */
-      break;
-
-  return op;
-}
-
-static NuaGlibOp *
-oper_find_call_embryonic(NuaGlib *self)
-{
-  NuaGlibOp *op;
-
-  for (op = self->priv->operations; op; op = op->op_next)
-    if (op->op_callstate == 0 && op->op_method == sip_method_invite)
-      break;
-
-  return op;
-}
-  
-/** Find unanswered call */
-static NuaGlibOp *
-oper_find_unanswered(NuaGlib *self)
-{
-  NuaGlibOp *op;
-
-  for (op = self->priv->operations; op; op = op->op_next)
-    if (op->op_callstate == opc_recv)
-      break;
-
-  return op;
-}
-
-/** Find operation by method */
-NuaGlibOp *oper_find_by_method(NuaGlib *self, sip_method_t method)
-{
-  NuaGlibOp *op;
-
-  for (op = self->priv->operations; op; op = op->op_next)
-    if (op->op_method == method && op->op_persistent)
-      break;
-
-  return op;
-}
-
-/** Find register operation */
-NuaGlibOp *oper_find_register(NuaGlib *self)
-{
-  NuaGlibOp *op;
-
-  for (op = self->priv->operations; op; op = op->op_next)
-    if (op->op_method == sip_method_register && op->op_persistent)
-      break;
-
-  return op;
-}
-
-#endif 
-
-/** Set operation to be authenticated */
+/**
+ * Handles authentication challenge for operation 'op'.
+ */
 static void 
 oper_set_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *sip, tagi_t *tags)
 {
   sip_www_authenticate_t const *wa = sip->sip_www_authenticate;
   sip_proxy_authenticate_t const *pa = sip->sip_proxy_authenticate;
-  
+  sip_from_t const *sipfrom = sip->sip_from;
+  const char *realm = NULL;
+
   enter;
 
   tl_gets(tags, 
@@ -1286,9 +1216,18 @@ oper_set_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *sip, tagi_t *tags)
           SIPTAG_PROXY_AUTHENTICATE_REF(pa),
           TAG_NULL());
 
-  printf("%s: %s was unauthorized\n", self->priv->name, op->op_method_name);
-  if (wa) sl_header_print(stdout, "Server auth: %s\n", (sip_header_t *)wa);
-  if (pa) sl_header_print(stdout, "Proxy auth: %s\n", (sip_header_t *)pa);
+  SU_DEBUG_3(("%s: %s was unauthorized\n", self->priv->name, op->op_method_name));
+
+  if (wa) {
+    sl_header_print(stdout, "Server auth: %s\n", (sip_header_t *)wa);
+    realm = msg_params_find(wa->au_params, "realm=");  
+    nua_glib_auth_add(self, op, wa->au_scheme, realm, sipfrom->a_url->url_user, self->priv->password);
+  }
+  if (pa) {
+    sl_header_print(stdout, "Proxy auth: %s\n", (sip_header_t *)pa);
+    realm = msg_params_find(pa->au_params, "realm=");  
+    nua_glib_auth_add(self, op, pa->au_scheme, realm, sipfrom->a_url->url_user, self->priv->password);
+  }
  
   if (op->op_tried_auth)
   {
@@ -1299,7 +1238,7 @@ oper_set_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *sip, tagi_t *tags)
     return;
   }
 
-  nua_authenticate(op->op_handle, NUTAG_AUTH(self->priv->authinfo), TAG_END());
+  priv_submit_authlist(op);
 
   op->op_tried_auth =1;
 }
@@ -2508,4 +2447,77 @@ sof_r_get_params (int status, char const *phrase,
     }      
   }
 
+}
+
+/**
+ * Submit all authentication credentials stored for
+ * operation handle 'op'
+ */
+static void priv_submit_authlist(NuaGlibOp *op)
+{
+  GSList *i = op->op_authlist;
+
+  while(i) {
+    GString *tmp = (GString*)i->data;
+    if (tmp && tmp->str) {
+      g_assert(tmp->len > 0);
+      g_debug("submitting authitem (op=%p): %s.\n", op, tmp->str);
+      nua_authenticate(op->op_handle, NUTAG_AUTH(tmp->str), TAG_END());
+    }
+    i = g_slist_next(i);
+  }
+}
+
+/**
+ * nua_glib_auth_add:
+ * @op: operation to which the auth credentials are added
+ * @method: auth method (RFC2617)
+ * @method: auth realm (RFC2617)
+ * @method: auth username (RFC2617)
+ * @method: auth passwrod (RFC2617)
+ *
+ * Attach new authentication credentials to operation 'op'.
+ *
+ * @see nua_glib_auth_clear()
+ */
+void nua_glib_auth_add(NuaGlib *self, NuaGlibOp *op, const char *method, const char *realm, const char *user, const char *password)
+{
+  GString *tmp = g_string_new(NULL);
+
+  /* XXX: we should prune the auth-cred database in case scheme, realm
+     and username match */
+  
+  if (realm[0] == '"')
+    g_string_printf(tmp, "%s:%s:%s:%s", 
+		    method, realm, user, password);
+  else
+    g_string_printf(tmp, "%s:\"%s\":%s:%s", 
+		    method, realm, user, password);
+
+  op->op_authlist = g_slist_append(op->op_authlist, tmp);
+  op->op_tried_auth = 0;
+ 
+  priv_submit_authlist(op);
+}
+
+/**
+ * nua_glib_auth_clear:
+ * @op: operation to which the auth credentials are added
+ *
+ * Clears the authentication credentials for operation 'op'.
+ *
+ * @see nua_glib_auth_add()
+ */
+void nua_glib_auth_clear(NuaGlib *self, NuaGlibOp *op)
+{
+  GSList *i = op->op_authlist;
+
+  while(i) {
+    GString *tmp = (GString*)i->data;
+    g_string_free(tmp, TRUE);
+    i = g_slist_next(i);
+  }
+
+  g_slist_free(op->op_authlist), op->op_authlist = NULL;
+  op->op_tried_auth = 0;
 }

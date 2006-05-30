@@ -107,7 +107,9 @@ struct _NuaGlibOp {
   unsigned      op_referred : 1;
   unsigned :0;
 
-  gpointer data;
+  GSList       *op_authlist; 
+
+  gpointer      data;
 };
 
 
@@ -121,11 +123,11 @@ struct _NuaGlibPrivate {
   unsigned    init : 1;  /**< True if class is inited */
 
   gchar      *address;     /**< our SIP address (address-of-record) */  
+  gchar      *password;    /**< SIP account password */  
   gchar      *contact;     /**< contact URI (local address) */
   gchar      *proxy;       /**< outgoing proxy URI (optional, otherwise from DNS) */
   gchar      *registrar;   /**< registrar URI (optional, otherwise from DNS) */
   gchar      *stun_server; /**< STUN server URI (optional, otherwise from DNS) */
-  gchar      *authinfo;	   /**< authorization info used by this UA*/
 
   nua_t      *nua;         /**< Pointer to NUA object */
   NuaGlibOp  *operations;  /**< Remote destinations */

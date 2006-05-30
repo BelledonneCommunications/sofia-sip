@@ -8,7 +8,6 @@ Changes since last release
 <changes since last written in freshmeat.net "Changes:" style;
  and in less than 10 lines />
 
-
 API/ABI changes and versioning
 ------------------------------
 
@@ -18,9 +17,18 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
-- nua_glib.h: renamed glib property 'stun' to 'stun-server',
-  removed property 'bind-address' (same as 'contact').
+[libsofia-sip-ua]
 - Added sip_route_reverse_as() and sip_route_fixdup_as().
+
+[libsofia-sip-ua-glib]
+- nua_glib: Changes in object properties.
+     - renamed 'stun' to 'stun-server'
+     - renamed 'bind-address' to 'contact'
+     - added 'proxy' and 'registrar' URI properties
+- nua_glib.h: Refactored the nua_glib authentication API.
+     - added 'auth-required' signal
+     - added 'password' property, removed 'authinfo' property.
+     - added nua_glib_auth_add() and nua_glib_auth_clear
 
 Contributors to this release
 ----------------------------
