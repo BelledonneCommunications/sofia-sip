@@ -522,6 +522,7 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 {
   tport_primary_t *pri, **next;
   tport_t *tp;
+  int save_errno;
 
   for (next = &mr->mr_primaries; *next; next = &(*next)->pri_next)
     ;
@@ -567,7 +568,9 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
   else
     return pri;			/* Success */
 
+  save_errno = su_errno();
   tport_zap_primary(pri);
+  su_seterrno(save_errno);
 
   return NULL;
 }
@@ -637,7 +640,7 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 	    err == ENOPROTOOPT ? 7 : 3) < SU_LOG_LEVEL ?	     \
 	     su_llog(tport_log, errlevel,			     \
 		     "%s(%p): %s(pf=%d %s/%s): %s\n",		     \
-		     __func__, mr, what, ai->ai_family,		     \
+		     __func__, pri ? pri : mr, what, ai->ai_family,  \
 		     protoname,					     \
 		     tport_hostport(buf, sizeof(buf), su, 2),	     \
 		     su_strerror(err)) : (void)0),		     \
