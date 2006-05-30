@@ -49,42 +49,42 @@ G_DEFINE_TYPE(NuaGlib, nua_glib, G_TYPE_OBJECT);
 /*signal enum*/
 enum
 {
-  CALL_FORKED,
-  INCOMING_INVITE,
-  INCOMING_REINVITE,
-  CALL_STATE_CHANGED,
-  INCOMING_ACTIVE,
-  CALL_TERMINATED,
-  INCOMING_PRACK,
-  INCOMING_BYE,
-  INCOMING_CANCEL,
-  INCOMING_MESSAGE,
-  INCOMING_INFO,
-  INCOMING_REFER,
-  INCOMING_NOTIFY,
+  NGSIG_CALL_FORKED = 1,
+  NGSIG_INCOMING_INVITE,
+  NGSIG_INCOMING_REINVITE,
+  NGSIG_CALL_STATE_CHANGED,
+  NGSIG_INCOMING_ACTIVE,
+  NGSIG_CALL_TERMINATED,
+  NGSIG_INCOMING_PRACK,
+  NGSIG_INCOMING_BYE,
+  NGSIG_INCOMING_CANCEL,
+  NGSIG_INCOMING_MESSAGE,
+  NGSIG_INCOMING_INFO,
+  NGSIG_INCOMING_REFER,
+  NGSIG_INCOMING_NOTIFY,
 
-  ERROR,
-  SHUTDOWN,
+  NGSIG_ERROR,
+  NGSIG_SHUTDOWN,
 
-  REGISTER_ANSWERED,
-  UNREGISTER_ANSWERED,
-  PUBLISH_ANSWERED,
-  INVITE_ANSWERED,
-  BYE_ANSWERED,
-  MESSAGE_ANSWERED,
-  INFO_ANSWERED,
-  REFER_ANSWERED,
-  SUBSCRIBE_ANSWERED,
-  UNSUBSCRIBE_ANSWERED,
-  NOTIFY_ANSWERED,
-  OPTIONS_ANSWERED,
-  MEDIA_ANSWERED,
-  GET_ANSWERED,
+  NGSIG_REGISTER_ANSWERED,
+  NGSIG_UNREGISTER_ANSWERED,
+  NGSIG_PUBLISH_ANSWERED,
+  NGSIG_INVITE_ANSWERED,
+  NGSIG_BYE_ANSWERED,
+  NGSIG_MESSAGE_ANSWERED,
+  NGSIG_INFO_ANSWERED,
+  NGSIG_REFER_ANSWERED,
+  NGSIG_SUBSCRIBE_ANSWERED,
+  NGSIG_UNSUBSCRIBE_ANSWERED,
+  NGSIG_NOTIFY_ANSWERED,
+  NGSIG_OPTIONS_ANSWERED,
 
-  LAST_SIGNAL
+  NGSIG_AUTH_REQUIRED,
+
+  NGSIG_LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = {0};
+static guint signals[NGSIG_LAST_SIGNAL] = {0};
 
 enum
 {
@@ -411,7 +411,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Emitted when an outgoing call has been forked.
    * This is when an INVITE request is answered with multiple 200 responses.
    */
-  signals[CALL_FORKED] =
+  signals[NGSIG_CALL_FORKED] =
    g_signal_new("call-forked",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -431,7 +431,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Emitted when an call invite is received
    * Should be answered with nua_glib_answer or nua_glib_decline
    */
-  signals[INCOMING_INVITE] =
+  signals[NGSIG_INCOMING_INVITE] =
    g_signal_new("incoming-invite",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -447,7 +447,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Emitted when an call invite is received for a call already in progress
    * Usually represents
    */
-  signals[INCOMING_REINVITE] =
+  signals[NGSIG_INCOMING_REINVITE] =
    g_signal_new("incoming-reinvite",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -469,7 +469,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Emitted when call state changes.
    */
  
-  signals[CALL_STATE_CHANGED] =
+  signals[NGSIG_CALL_STATE_CHANGED] =
    g_signal_new("call-state-changed",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -486,7 +486,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Emitted when a call goes active.
    */
  
-  signals[INCOMING_ACTIVE] =
+  signals[NGSIG_INCOMING_ACTIVE] =
    g_signal_new("incoming-active",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -511,7 +511,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Any references you hold to @op should be dropped at this point
    */
  
-  signals[CALL_TERMINATED] =
+  signals[NGSIG_CALL_TERMINATED] =
    g_signal_new("call-terminated",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -528,7 +528,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Emitted when a PRACK is received
    */
  
-  signals[INCOMING_PRACK] =
+  signals[NGSIG_INCOMING_PRACK] =
    g_signal_new("incoming-prack",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -542,7 +542,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @op: pointer to the operation representing the existing call
    *
    */
-  signals[INCOMING_BYE] =
+  signals[NGSIG_INCOMING_BYE] =
    g_signal_new("incoming-bye",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -561,7 +561,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * been received for an accepted call.
    */
  
-  signals[INCOMING_CANCEL] =
+  signals[NGSIG_INCOMING_CANCEL] =
    g_signal_new("incoming-cancel",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -579,7 +579,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    *
    * Emitted when a message is received
    */
-  signals[INCOMING_MESSAGE] =
+  signals[NGSIG_INCOMING_MESSAGE] =
    g_signal_new("incoming-message",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -597,7 +597,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    *
    * Emitted when an INFO message is received
    */
-  signals[INCOMING_INFO] =
+  signals[NGSIG_INCOMING_INFO] =
    g_signal_new("incoming-info",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -620,7 +620,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * #nua_glib_follow_refer, and probably close * the call that referred 
    * you to follow it.
    */
-  signals[INCOMING_REFER] =
+  signals[NGSIG_INCOMING_REFER] =
    g_signal_new("incoming-refer",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -641,7 +641,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * Emitted when an NOTIFY message is received
    */
  
-  signals[INCOMING_NOTIFY] =
+  signals[NGSIG_INCOMING_NOTIFY] =
    g_signal_new("incoming-notify",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -658,7 +658,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * If you get this, run around waving your hands and screaming.
    */
  
-  signals[ERROR] =
+  signals[NGSIG_ERROR] =
    g_signal_new("error",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -676,7 +676,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * if status >=300 and not 401 or 407, you should drop any references you hold 
    * on @op
    */
-  signals[REGISTER_ANSWERED] =
+  signals[NGSIG_REGISTER_ANSWERED] =
    g_signal_new("register-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -695,7 +695,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * on @op
    */
  
-  signals[UNREGISTER_ANSWERED] =
+  signals[NGSIG_UNREGISTER_ANSWERED] =
    g_signal_new("unregister-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -714,7 +714,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * on @op
    */
  
-  signals[PUBLISH_ANSWERED] =
+  signals[NGSIG_PUBLISH_ANSWERED] =
    g_signal_new("publish-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -730,7 +730,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for INVITE answer 
    *
    */
-  signals[INVITE_ANSWERED] =
+  signals[NGSIG_INVITE_ANSWERED] =
    g_signal_new("invite-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -746,7 +746,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for bye answer 
    *
    */
-  signals[BYE_ANSWERED] =
+  signals[NGSIG_BYE_ANSWERED] =
    g_signal_new("bye-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -762,7 +762,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for message answer
    *
    */
-  signals[MESSAGE_ANSWERED] =
+  signals[NGSIG_MESSAGE_ANSWERED] =
    g_signal_new("message-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -778,7 +778,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for INFO answer
    *
    */
-  signals[INFO_ANSWERED] =
+  signals[NGSIG_INFO_ANSWERED] =
    g_signal_new("info-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -794,7 +794,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for REFER answer 
    *
    */
-  signals[REFER_ANSWERED] =
+  signals[NGSIG_REFER_ANSWERED] =
    g_signal_new("refer-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -810,7 +810,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for SUBSCRIBE answer
    *
    */
-  signals[SUBSCRIBE_ANSWERED] =
+  signals[NGSIG_SUBSCRIBE_ANSWERED] =
    g_signal_new("subscribe-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -827,7 +827,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    *
    *You should remove any references you have to @op after receiving this signal
    */
-  signals[UNSUBSCRIBE_ANSWERED] =
+  signals[NGSIG_UNSUBSCRIBE_ANSWERED] =
    g_signal_new("unsubscribe-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -843,7 +843,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for NOTIFY answer 
    *
    */
-  signals[NOTIFY_ANSWERED] =
+  signals[NGSIG_NOTIFY_ANSWERED] =
    g_signal_new("notify-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -859,7 +859,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @phrase: Reason for options answer 
    *
    */
-  signals[OPTIONS_ANSWERED] =
+  signals[NGSIG_OPTIONS_ANSWERED] =
    g_signal_new("options-answered",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -875,7 +875,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * drop all #NuaGlibOp references you hold
    * and unref the object it was emited on
    */
- signals[SHUTDOWN] =
+ signals[NGSIG_SHUTDOWN] =
    g_signal_new("shutdown",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
@@ -883,7 +883,24 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
     g_cclosure_marshal_VOID__VOID,
     G_TYPE_NONE, 0, NULL);
 
-
+  /**
+   * NuaGlib::auth_required:
+   * @nua_glib: the object that received the signal
+   * @op: pointer to the related operation
+   * @method: string describing the method (RFC2617: "Basic", "Digest", ..)
+   * @realm: realm of the challenge (RFC2617) 
+   *
+   * The sip stack is shutting down, 
+   * drop all #NuaGlibOp references you hold
+   * and unref the object it was emited on
+   */
+ signals[NGSIG_AUTH_REQUIRED] =
+   g_signal_new("auth-required",
+    G_OBJECT_CLASS_TYPE (nua_glib_class),
+    G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
+    0, NULL, NULL,
+    nua_glib_marshal_VOID__POINTER_STRING_STRING,
+    G_TYPE_NONE, 3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
 }
 
 /* ====================================================================== */
@@ -1391,7 +1408,7 @@ sof_r_invite(int status, char const *phrase,
     if (status == 401 || status == 407)
       oper_set_auth(self, op, sip, tags);
   }
-  g_signal_emit(self, signals[INVITE_ANSWERED],0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_INVITE_ANSWERED],0, op, status, phrase);
 }
 
 /*
@@ -1407,7 +1424,7 @@ sof_i_fork(int status, char const *phrase,
 {
   nua_handle_t *nh2 = NULL;
 
-  g_signal_emit(self, signals[CALL_FORKED], 0, status, phrase, op);
+  g_signal_emit(self, signals[NGSIG_CALL_FORKED], 0, status, phrase, op);
   
   g_warning("%s: call fork: %03d %s\n", self->priv->name, status, phrase);
 
@@ -1455,11 +1472,11 @@ sof_i_invite(nua_t *nua, NuaGlib *self,
   if (op) {
     if (op->op_callstate == opc_recv) {
       url = url_as_string(self->priv->home, to->a_url);
-      g_signal_emit(self, signals[INCOMING_INVITE], 0, op, to->a_display, url, subject?subject->g_value:NULL); 
+      g_signal_emit(self, signals[NGSIG_INCOMING_INVITE], 0, op, to->a_display, url, subject?subject->g_value:NULL); 
       su_free(self->priv->home, url);
     }
     else {
-      g_signal_emit(self, signals[INCOMING_REINVITE], 0, op); 
+      g_signal_emit(self, signals[NGSIG_INCOMING_REINVITE], 0, op); 
     }
   }
 
@@ -1526,7 +1543,7 @@ sof_i_prack(nua_t *nua, NuaGlib *self,
 
   rack = sip->sip_rack;
 
-  g_signal_emit(self, signals[INCOMING_PRACK], 0, op, rack ? rack->ra_response : 0);
+  g_signal_emit(self, signals[NGSIG_INCOMING_PRACK], 0, op, rack ? rack->ra_response : 0);
 
   if (op == NULL)
     nua_handle_destroy(nh);
@@ -1579,7 +1596,7 @@ sof_i_state(int status, char const *phrase,
 
   if (op->op_prev_state != ss_state) {
     /* note: only emit if state has changed */
-    g_signal_emit(self, signals[CALL_STATE_CHANGED], 0, op, audio, video, image, chat, l_sdp, r_sdp); 
+    g_signal_emit(self, signals[NGSIG_CALL_STATE_CHANGED], 0, op, audio, video, image, chat, l_sdp, r_sdp); 
     op->op_prev_state = ss_state;
   }
 }
@@ -1592,7 +1609,7 @@ sof_i_active(nua_t *nua, NuaGlib *self,
   assert(op);
 
   op->op_callstate = opc_active;
-  g_signal_emit(self, signals[INCOMING_ACTIVE], 0, op);
+  g_signal_emit(self, signals[NGSIG_INCOMING_ACTIVE], 0, op);
 }
 
 static gboolean 
@@ -1611,7 +1628,7 @@ sof_i_terminated(int status, char const *phrase,
                  tagi_t tags[])
 {
   if (op) {
-    g_signal_emit(self, signals[CALL_TERMINATED], 0, op, status);
+    g_signal_emit(self, signals[NGSIG_CALL_TERMINATED], 0, op, status);
     op->op_callstate = 0;
     g_idle_add(idle_kill_op, op);
     
@@ -1639,7 +1656,7 @@ void sof_r_bye(int status, char const *phrase,
 {
   assert(op); assert(op->op_handle == nh);
 
-  g_signal_emit(self, signals[BYE_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_BYE_ANSWERED], 0, op, status, phrase);
 }
 
 static void 
@@ -1649,7 +1666,7 @@ sof_i_bye(nua_t *nua, NuaGlib *self,
 {
   assert(op); assert(op->op_handle == nh);
 
-  g_signal_emit(self, signals[INCOMING_BYE], 0, op);
+  g_signal_emit(self, signals[NGSIG_INCOMING_BYE], 0, op);
 }
 
 /**
@@ -1670,7 +1687,7 @@ void sof_i_cancel(nua_t *nua, NuaGlib *self,
 {
   assert(op); assert(op->op_handle == nh);
   
-  g_signal_emit(self, signals[INCOMING_CANCEL], 0, op);
+  g_signal_emit(self, signals[NGSIG_INCOMING_CANCEL], 0, op);
 }
 
 /**
@@ -1700,7 +1717,7 @@ sof_r_options(int status, char const *phrase,
               nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
               tagi_t tags[])
 {
-  g_signal_emit(self, signals[OPTIONS_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_OPTIONS_ANSWERED], 0, op, status, phrase);
 
   if (status == 401 || status == 407)
     oper_set_auth(self, op, sip, tags);
@@ -1738,7 +1755,7 @@ sof_r_message(int status, char const *phrase,
               nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
               tagi_t tags[])
 {
-  g_signal_emit(self, signals[MESSAGE_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_MESSAGE_ANSWERED], 0, op, status, phrase);
   if (status < 200)
     return;
 
@@ -1774,7 +1791,7 @@ sof_i_message(nua_t *nua, NuaGlib *self,
 
   
   url = url_as_string(self->priv->home, to->a_url);
-  g_signal_emit(self, signals[INCOMING_MESSAGE], 0, op, to->a_display, url,
+  g_signal_emit(self, signals[NGSIG_INCOMING_MESSAGE], 0, op, to->a_display, url,
 		subject ? subject->g_value : NULL,
 		message ? message->str : NULL); 
 
@@ -1813,7 +1830,7 @@ sof_r_info(int status, char const *phrase,
            nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
            tagi_t tags[])
 {
-  g_signal_emit(self, signals[INFO_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_INFO_ANSWERED], 0, op, status, phrase);
 
   if (status < 200)
     return;
@@ -1849,7 +1866,7 @@ sof_i_info(nua_t *nua, NuaGlib *self,
     message=NULL;
 
   url = url_as_string(self->priv->home, to->a_url);
-  g_signal_emit(self, signals[INCOMING_INFO], 0, op, to->a_display, url, subject?subject->g_value:NULL, message); 
+  g_signal_emit(self, signals[NGSIG_INCOMING_INFO], 0, op, to->a_display, url, subject?subject->g_value:NULL, message); 
   su_free(self->priv->home, url);
   g_string_free(message, TRUE);
 
@@ -1888,7 +1905,7 @@ sof_r_refer (int status, char const *phrase,
              tagi_t tags[])
 {
 
-  g_signal_emit(self, signals[REFER_ANSWERED], 0, op, status, phrase );
+  g_signal_emit(self, signals[NGSIG_REFER_ANSWERED], 0, op, status, phrase );
 
   if (status < 200)
     return;
@@ -1928,10 +1945,10 @@ sof_i_refer (nua_t *nua, NuaGlib *self,
                             NUTAG_NOTIFY_REFER(nh), TAG_END());
       su_free(self->priv->home, refer_to_str);
       
-      g_signal_emit(self, signals[INCOMING_REFER], 0, op, to->a_display, url,refer_url, op2);
+      g_signal_emit(self, signals[NGSIG_INCOMING_REFER], 0, op, to->a_display, url,refer_url, op2);
    }
    else {
-      g_signal_emit(self, signals[INCOMING_REFER], 0, op, to->a_display, url, refer_url, NULL);
+      g_signal_emit(self, signals[NGSIG_INCOMING_REFER], 0, op, to->a_display, url, refer_url, NULL);
    }
 
   su_free(self->priv->home, url);
@@ -2038,7 +2055,7 @@ sof_r_subscribe (int status, char const *phrase,
                  nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
                  tagi_t tags[])
 {
-  g_signal_emit(self, signals[SUBSCRIBE_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_SUBSCRIBE_ANSWERED], 0, op, status, phrase);
 
   if (status < 200)
     return;
@@ -2081,7 +2098,7 @@ sof_i_notify(nua_t *nua, NuaGlib *self,
   else
     message=NULL;
 
-  g_signal_emit(self, signals[INCOMING_NOTIFY], 0, op, (event?event->o_type:NULL), (content_type?content_type->c_type:NULL),  message); 
+  g_signal_emit(self, signals[NGSIG_INCOMING_NOTIFY], 0, op, (event?event->o_type:NULL), (content_type?content_type->c_type:NULL),  message); 
   g_string_free(message, TRUE);
 }
 /*---------------------------------------*/
@@ -2091,7 +2108,7 @@ sof_r_notify(int status, char const *phrase,
              nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
              tagi_t tags[])
 {
-  g_signal_emit(self, signals[NOTIFY_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_NOTIFY_ANSWERED], 0, op, status, phrase);
 
   if (status < 200)
     return;
@@ -2121,7 +2138,7 @@ sof_r_unsubscribe(int status, char const *phrase,
                   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
                   tagi_t tags[])
 {
-  g_signal_emit(self, signals[UNSUBSCRIBE_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_UNSUBSCRIBE_ANSWERED], 0, op, status, phrase);
 
   if (status < 200)
     return;
@@ -2175,7 +2192,9 @@ sof_r_register (int status, char const *phrase,
                 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
                 tagi_t tags[])
 {
-  g_signal_emit(self, signals[REGISTER_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_REGISTER_ANSWERED], 0, op, status, phrase);
+
+  g_debug("%s: trace", G_STRFUNC);
 
   if (status < 200)
     return;
@@ -2242,7 +2261,7 @@ sof_r_unregister (int status, char const *phrase,
 {
   sip_contact_t *m;
 
-  g_signal_emit(self, signals[UNREGISTER_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_UNREGISTER_ANSWERED], 0, op, status, phrase);
 
   if (status < 200)
     return;
@@ -2396,7 +2415,7 @@ sof_r_publish (int status, char const *phrase,
                nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
                tagi_t tags[])
 {
-  g_signal_emit(self, signals[PUBLISH_ANSWERED], 0, op, status, phrase);
+  g_signal_emit(self, signals[NGSIG_PUBLISH_ANSWERED], 0, op, status, phrase);
 
   if (status < 200)
     return;
@@ -2422,7 +2441,7 @@ sof_r_shutdown (int status, char const *phrase,
   /*drop the ref we held in dispose. 
    * needs to be done in a signal so it happens from the glib main loop*/
 
-  g_signal_emit(self, signals[SHUTDOWN],0);
+  g_signal_emit(self, signals[NGSIG_SHUTDOWN],0);
   g_warning("%s: nua_shutdown: %03d %s\n", self->priv->name, status, phrase);
   
 }
