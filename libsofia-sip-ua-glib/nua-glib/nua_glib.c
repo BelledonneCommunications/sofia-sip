@@ -147,32 +147,24 @@ nua_glib_constructor (GType                  type,
     self->priv->nua = nua_create(self->priv->root, 
 				 sof_callback, self,
 				 NUTAG_SOA_NAME("default"),
-				 NUTAG_MEDIA_ENABLE(1),
 				 TAG_IF(self->priv->stun_server,
 					STUNTAG_SERVER(self->priv->stun_server)),
 				 TAG_IF(self->priv->contact,
 					NUTAG_URL(self->priv->contact)),
-				 /* SOATAG_USER_SDP_STR(local_caps), */
+				 /* XXX: SOATAG_CAPS_SDP_STR(local_caps), */
 				 TAG_NULL());
     if (self->priv->nua) {
-      int min_se = 0;
-      int s_e = 0;
 
-      if (getenv("MIN_SE")) min_se = atoi(getenv("MIN_SE"));
-      if (getenv("SESSION_EXPIRES")) s_e = atoi(getenv("SESSION_EXPIRES"));
-      
-      /* XXX: fix getenvs */
-      
       nua_set_params(self->priv->nua,
                      TAG_IF(self->priv->proxy, NUTAG_PROXY(self->priv->proxy)),
                      TAG_IF(self->priv->registrar, NUTAG_REGISTRAR(self->priv->registrar)),
                      NUTAG_ENABLEMESSAGE(1),
                      NUTAG_ENABLEINVITE(1),
-                     NUTAG_SESSION_TIMER(s_e),
-                     NUTAG_MIN_SE(min_se),
+                     /* NUTAG_SESSION_TIMER(s_e), */
+                     /* NUTAG_MIN_SE(min_se), */
                      SOATAG_AF(SOA_AF_IP4_IP6),
                      SIPTAG_FROM_STR(self->priv->address),
-                     /*NUTAG_CERTIFICATE_DIR(getenv("SIPCERTDIR")),*/
+                     /* NUTAG_CERTIFICATE_DIR(getenv("SIPCERTDIR")),*/
                      TAG_NULL());
       nua_get_params(self->priv->nua, TAG_ANY(), TAG_NULL());
 
@@ -1165,8 +1157,8 @@ nua_glib_op_create2(NuaGlib *self,
     op->op_ident = sip_header_as_string(self->priv->home, (sip_header_t*)from);
   }
   else {
-    printf("%s: cannot create operation object for %s\n", 
-           self->priv->name, name);
+    SU_DEBUG_1(("%s: cannot create operation object for %s\n", 
+		self->priv->name, name));
   }
 
   return op;
@@ -1327,31 +1319,8 @@ sof_i_error(nua_t *nua, NuaGlib *self, nua_handle_t *nh, NuaGlibOp *op,
             int status, char const *phrase,
             tagi_t tags[])
 {
-  g_signal_emit(self, signals[ERROR], status, phrase);
+  g_signal_emit(self, signals[NGSIG_ERROR], status, phrase);
 }
-
-
-#if 0
-shouldnt be necessary in glib bindings
-/**
- *  List active calls
- *
- */
-GList*
-nua_glib_list(NuaGlib *self)
-{
-  NuaGlibOp *op;
-
-  for (op = self->priv->operations; op; op = op->op_next) {
-    if (op->op_ident) {
-
-             op->op_method, op->op_method_name, op->op_ident);
-    }
-  }
-
-}
-
-#endif
 
 /**
  * nua_glib_invite:
@@ -1379,12 +1348,6 @@ nua_glib_invite(NuaGlib *self, const char *destination, const char *local_sdp)
   if (op) {
     nua_invite(op->op_handle,
                SOATAG_USER_SDP_STR(local_sdp),
-#if 0
-               SIPTAG_SUBJECT_STR("Call!"),
-               SIPTAG_CALL_INFO_STR("<http://127.1/my_face.jpg>"
-                                    ";purpose=icon"),
-               NUTAG_MEDIA_ENABLE(0),
-#endif
                TAG_END());
 
     op->op_callstate |= opc_sent;
@@ -2077,7 +2040,7 @@ sof_r_subscribe (int status, char const *phrase,
 void
 nua_glib_notify(NuaGlib *self, NuaGlibOp* op)
 {
-  printf("%s: not follow refer, NOTIFY(503)\n", self->priv->name);
+  SU_DEBUG_1(("%s: not follow refer, NOTIFY(503)\n", self->priv->name));
 
   nua_cancel(op->op_handle, TAG_END());
   nua_glib_op_destroy(self, op);
@@ -2176,7 +2139,7 @@ nua_glib_register(NuaGlib *self, const char *registrar)
   address = su_strdup(self->priv->home, self->priv->address);
 
   if ((op = nua_glib_op_create(self, SIP_METHOD_REGISTER, address, TAG_END()))) {
-    printf("%s: REGISTER %s\n", self->priv->name, op->op_ident);
+    SU_DEBUG_3(("%s: REGISTER %s\n", self->priv->name, op->op_ident));
     nua_register(op->op_handle, 
 		 SIPTAG_FROM_STR(self->priv->address),
                  TAG_IF(registrar, NUTAG_REGISTRAR(registrar)), 
@@ -2219,8 +2182,7 @@ sof_r_register (int status, char const *phrase,
 void 
 nua_glib_unregister(NuaGlib *self, NuaGlibOp *op)
 {
-
-  printf("%s: un-REGISTER %s\n", self->priv->name, op->op_ident);
+  SU_DEBUG_3(("%s: un-REGISTER %s\n", self->priv->name, op->op_ident));
   nua_unregister(op->op_handle, TAG_NULL());
 }
 
