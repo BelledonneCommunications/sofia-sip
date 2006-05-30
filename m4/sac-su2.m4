@@ -109,7 +109,7 @@ AC_CHECK_HEADERS([unistd.h sys/time.h])
 
 AC_CHECK_HEADERS([fcntl.h])
 
-AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
+AC_CHECK_HEADERS([winsock2.h], [
   AC_DEFINE([HAVE_WIN32], 1, [Define to 1 you have WIN32])
   SAC_SU_DEFINE([SU_HAVE_WINSOCK], 1, [Define to 1 you have WinSock])
   SAC_SU_DEFINE([SU_HAVE_WINSOCK2], 1, [Define to 1 you have WinSock2])
@@ -123,7 +123,7 @@ AC_CHECK_HEADERS([winsock2.h ws2tcpip.h], [
       [Define to 1 if you have addrinfo structure.])
   SAC_SU_DEFINE([SU_HAVE_ADDRINFO], 1,
       [Define to 1 if you have addrinfo structure.])
-  AC_CHECK_HEADERS([windef.h])
+  AC_CHECK_HEADERS([windef.h ws2tcpip.h])
   AC_CHECK_HEADERS([iphlpapi.h], [
     AC_DEFINE([HAVE_INTERFACE_INFO_EX], 1, [
        Define to 1 if you have WIN32 INTERFACE_INFO_EX type.])
