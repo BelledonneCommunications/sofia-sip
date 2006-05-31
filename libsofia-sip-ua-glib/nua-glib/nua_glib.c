@@ -106,6 +106,8 @@ static GObjectClass *parent_class=NULL;
 
 static int sof_init(NuaGlibPrivate *priv, const char *contact);
 static void priv_submit_authlist(NuaGlibOp *op);
+static void priv_oper_handle_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *sip, tagi_t *tags);
+static void priv_oper_check_response_for_auth(NuaGlib *self, NuaGlibOp *op, int status, sip_t const *sip, tagi_t *tags);
 
 static GObject *
 nua_glib_constructor (GType                  type,
@@ -1208,10 +1210,29 @@ oper_assign(NuaGlibOp *op, sip_method_t method, char const *name)
 }
 
 /**
+ * Helper function called from all response callback handler.
+ * Checks whether authentication is needed, and handles it if 
+ * require. Marks succesful authentications as completed.
+ */
+static void priv_oper_check_response_for_auth(NuaGlib *self, NuaGlibOp *op, int status, sip_t const *sip, tagi_t *tags)
+{
+  if (status == 401 || status == 407) {
+    priv_oper_handle_auth(self, op, sip, tags);
+  }
+  else if (status >= 200 && status <= 299){
+    if (op->op_authstate != opa_none && 
+	op->op_authstate != opa_auth_ok) {
+      op->op_authstate = opa_auth_ok;
+      SU_DEBUG_3(("%s: authorization of %s (%p) was succesful\n", 
+		  self->priv->name, op->op_method_name, op));
+    }
+  }
+}
+
+/**
  * Handles authentication challenge for operation 'op'.
  */
-static void 
-oper_set_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *sip, tagi_t *tags)
+static void priv_oper_handle_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *sip, tagi_t *tags)
 {
   sip_www_authenticate_t const *wa = sip->sip_www_authenticate;
   sip_proxy_authenticate_t const *pa = sip->sip_proxy_authenticate;
@@ -1225,31 +1246,41 @@ oper_set_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *sip, tagi_t *tags)
           SIPTAG_PROXY_AUTHENTICATE_REF(pa),
           TAG_NULL());
 
-  SU_DEBUG_3(("%s: %s was unauthorized\n", self->priv->name, op->op_method_name));
+  SU_DEBUG_3(("%s: %s (%p) was unauthorized\n", self->priv->name, op->op_method_name, op));
 
-  if (wa) {
-    sl_header_print(stdout, "Server auth: %s\n", (sip_header_t *)wa);
-    realm = msg_params_find(wa->au_params, "realm=");  
-    nua_glib_auth_add(self, op, wa->au_scheme, realm, sipfrom->a_url->url_user, self->priv->password);
+  /* step: the initial challenge */
+  if (op->op_authstate == opa_none) {
+    if (wa) {
+      sl_header_print(stdout, "Server auth: %s\n", (sip_header_t *)wa);
+      realm = msg_params_find(wa->au_params, "realm=");  
+      nua_glib_auth_add(self, op, wa->au_scheme, realm, sipfrom->a_url->url_user, self->priv->password);
+    }
+    if (pa) {
+      sl_header_print(stdout, "Proxy auth: %s\n", (sip_header_t *)pa);
+      realm = msg_params_find(pa->au_params, "realm=");  
+      nua_glib_auth_add(self, op, pa->au_scheme, realm, sipfrom->a_url->url_user, self->priv->password);
+    }
+
+    op->op_authstate = opa_try_derived;
+    priv_submit_authlist(op);
   }
-  if (pa) {
-    sl_header_print(stdout, "Proxy auth: %s\n", (sip_header_t *)pa);
-    realm = msg_params_find(pa->au_params, "realm=");  
-    nua_glib_auth_add(self, op, pa->au_scheme, realm, sipfrom->a_url->url_user, self->priv->password);
+  /* step: a new challenge and local credentials updated since last attempt */
+  else if (op->op_authstate == opa_retry) {
+    priv_submit_authlist(op);
   }
- 
-  if (op->op_tried_auth)
-  {
+  /* step: a new challenge, ask for matching credentials */
+  else if (op->op_authstate == opa_try_derived) {
+    g_message("Requesting for additional authentication credentials %s(%s)",
+	      self->priv->name, op->op_method_name);
+    op->op_authstate = opa_auth_req;
+    g_signal_emit(self, signals[NGSIG_AUTH_REQUIRED], 0, op, op->op_method_name, realm);
+  }
+  /* step: a new challenge, ask for matching credentials */
+  else if (op->op_authstate == opa_auth_req) {
     g_message("Failed auth for %s by %s",
          op->op_method_name, self->priv->name);
-    op->op_tried_auth =0;
-    op->op_auth_failed =1;
-    return;
+    op->op_authstate = opa_failed;
   }
-
-  priv_submit_authlist(op);
-
-  op->op_tried_auth =1;
 }
 
 
@@ -1368,8 +1399,7 @@ sof_r_invite(int status, char const *phrase,
 {
   if (status >= 300) {
     op->op_callstate &= ~opc_sent;
-    if (status == 401 || status == 407)
-      oper_set_auth(self, op, sip, tags);
+    priv_oper_check_response_for_auth(self, op, status, sip, tags);
   }
   g_signal_emit(self, signals[NGSIG_INVITE_ANSWERED],0, op, status, phrase);
 }
@@ -1682,9 +1712,7 @@ sof_r_options(int status, char const *phrase,
 {
   g_signal_emit(self, signals[NGSIG_OPTIONS_ANSWERED], 0, op, status, phrase);
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
 }
 
 /**
@@ -1722,9 +1750,7 @@ sof_r_message(int status, char const *phrase,
   if (status < 200)
     return;
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
 }
 
 static void 
@@ -1798,9 +1824,7 @@ sof_r_info(int status, char const *phrase,
   if (status < 200)
     return;
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
 }
 
 static void 
@@ -1873,9 +1897,7 @@ sof_r_refer (int status, char const *phrase,
   if (status < 200)
     return;
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
 }
 
 /*---------------------------------------*/
@@ -2024,9 +2046,8 @@ sof_r_subscribe (int status, char const *phrase,
     return;
   if (status >= 300)
     op->op_persistent = 0;
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
 
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
 }
 /**
  * nua_glib_notify:
@@ -2076,10 +2097,9 @@ sof_r_notify(int status, char const *phrase,
   if (status < 200)
     return;
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
 }
+
 /*---------------------------------------*/
 
 /**
@@ -2157,20 +2177,13 @@ sof_r_register (int status, char const *phrase,
 {
   g_signal_emit(self, signals[NGSIG_REGISTER_ANSWERED], 0, op, status, phrase);
 
-  g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s: trace", G_STRFUNC);
-
   if (status < 200)
     return;
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-  else if (status >= 300)
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
+
+  if (status >= 300 && status != 401 && status != 407)
     nua_glib_op_destroy(self, op);
-  /*
-  else if (status == 200)
-    for (m = sip ? sip->sip_contact : NULL; m; m = m->m_next)
-      sl_header_print(stdout, "\tContact: %s\n", (sip_header_t *)m);
-   */
 }
 
 /**
@@ -2232,11 +2245,10 @@ sof_r_unregister (int status, char const *phrase,
     for (m = sip ? sip->sip_contact : NULL; m; m = m->m_next)
       sl_header_print(stdout, "\tContact: %s\n", (sip_header_t *)m);
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-  else
-    nua_glib_op_destroy(self, op);
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
 
+  if (status >= 300 && status != 401 && status != 407)
+    nua_glib_op_destroy(self, op);
 }
 
 /**
@@ -2382,13 +2394,12 @@ sof_r_publish (int status, char const *phrase,
   if (status < 200)
     return;
 
-  if (status == 401 || status == 407)
-    oper_set_auth(self, op, sip, tags);
-  else if (status >= 300)
+  priv_oper_check_response_for_auth(self, op, status, sip, tags);
+
+  if (status >= 300 && status != 401 && status != 407)
     nua_glib_op_destroy(self, op);
   else if (!sip->sip_expires || sip->sip_expires->ex_delta == 0)
     nua_glib_op_destroy(self, op);
-
 }
 
 static void 
@@ -2442,8 +2453,7 @@ static void priv_submit_authlist(NuaGlibOp *op)
     GString *tmp = (GString*)i->data;
     if (tmp && tmp->str) {
       g_assert(tmp->len > 0);
-      g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-	    "submitting authitem (op=%p): %s.\n", op, tmp->str);
+      SU_DEBUG_3(("submitting authitem (op=%p): %s.\n", op, tmp->str));
       nua_authenticate(op->op_handle, NUTAG_AUTH(tmp->str), TAG_END());
     }
     i = g_slist_next(i);
@@ -2477,7 +2487,7 @@ void nua_glib_auth_add(NuaGlib *self, NuaGlibOp *op, const char *method, const c
 		    method, realm, user, password);
 
   op->op_authlist = g_slist_append(op->op_authlist, tmp);
-  op->op_tried_auth = 0;
+  op->op_authstate = opa_retry;
  
   priv_submit_authlist(op);
 }
@@ -2501,5 +2511,5 @@ void nua_glib_auth_clear(NuaGlib *self, NuaGlibOp *op)
   }
 
   g_slist_free(op->op_authlist), op->op_authlist = NULL;
-  op->op_tried_auth = 0;
+  op->op_authstate = opa_none;
 }

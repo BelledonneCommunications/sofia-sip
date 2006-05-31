@@ -89,7 +89,7 @@ struct _NuaGlibOp {
    * - opc_recv2 when re-INVITE has been received
    */
   enum { 
-    opc_none, 
+    opc_none = 0, 
     opc_sent = 1, 
     opc_recv = 2, 
     opc_complete = 3, 
@@ -98,11 +98,25 @@ struct _NuaGlibOp {
     opc_recv2 = 6
   } op_callstate;
 
+  /** Authentication state.
+   *
+   * - opa_try_derived when using account password
+   * - opa_auth_req when requesting for additional credentials
+   * - opa_retry when additional credentials have been provided
+   * - opa_auth_ok if auth was succesful
+   * - opa_failed if auth failed
+   */
+  enum {
+    opa_none = 0,
+    opa_try_derived,
+    opa_auth_req,
+    opa_retry,
+    opa_auth_ok,
+    opa_failed
+  } op_authstate;
+
   int           op_prev_state;     /**< Previous call state */
 
-  unsigned      op_tried_auth: 1;  /**< we've tried to authenticate this op  */
-  unsigned      op_auth_failed: 1;  /**< we tried to authenticate this op
-                                         and it failed  */
   unsigned      op_persistent : 1; /**< Is this handle persistent? */
   unsigned      op_referred : 1;
   unsigned :0;
