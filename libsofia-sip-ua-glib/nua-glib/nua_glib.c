@@ -2157,7 +2157,7 @@ sof_r_register (int status, char const *phrase,
 {
   g_signal_emit(self, signals[NGSIG_REGISTER_ANSWERED], 0, op, status, phrase);
 
-  g_debug("%s: trace", G_STRFUNC);
+  g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s: trace", G_STRFUNC);
 
   if (status < 200)
     return;
@@ -2442,7 +2442,8 @@ static void priv_submit_authlist(NuaGlibOp *op)
     GString *tmp = (GString*)i->data;
     if (tmp && tmp->str) {
       g_assert(tmp->len > 0);
-      g_debug("submitting authitem (op=%p): %s.\n", op, tmp->str);
+      g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+	    "submitting authitem (op=%p): %s.\n", op, tmp->str);
       nua_authenticate(op->op_handle, NUTAG_AUTH(tmp->str), TAG_END());
     }
     i = g_slist_next(i);
