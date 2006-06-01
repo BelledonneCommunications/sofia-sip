@@ -35,6 +35,7 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/auth_common.h \
 			sofia-sip/auth_client.h sofia-sip/auth_digest.h \
 			sofia-sip/auth_module.h sofia-sip/auth_plugin.h \
+			sofia-sip/auth_client_plugin.h \
 			$(NTLM_HEADER)
 
 libiptsec_la_SOURCES = 	iptsec_debug.h \
