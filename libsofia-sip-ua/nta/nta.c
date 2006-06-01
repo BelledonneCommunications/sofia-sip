@@ -2775,6 +2775,8 @@ int nta_msg_mreply(nta_agent_t *agent,
   msg_destroy(reply);
   msg_destroy(req_msg);
 
+  ta_end(ta);
+
   return retval;
 }
 
