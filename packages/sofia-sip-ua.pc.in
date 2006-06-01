@@ -8,7 +8,6 @@ include_sofiadir=@include_sofiadir@
 Name: sofia-sip-ua
 Description: Sofia-SIP - a RFC3261 compliant SIP User-Agent library
 Version: @VERSION@
-Requires: @SOFIA_PKG_REQUIRES@
-Libs: -L${libdir} -lsofia-sip-ua @SOFIA_PKG_LIBS@
+Libs: -L${libdir} -lsofia-sip-ua
 Cflags: -I@include_sofiadir@
 

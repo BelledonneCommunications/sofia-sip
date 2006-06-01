@@ -327,11 +327,10 @@ fi # GLib path is explicitly defined
 
 
 if test "x$HAVE_GLIB" = xyes ; then
-  SAC_COMMA_APPEND([SOFIA_PKG_REQUIRES],[glib-2.0])
-  SOFIA_PKG_LIBS=-lsofia-sip-ua-glib
+  SAC_COMMA_APPEND([SOFIA_GLIB_PKG_REQUIRES],[glib-2.0])
 fi
 if test "x$HAVE_GLIB" = xyes ; then
-  SAC_COMMA_APPEND([SOFIA_PKG_REQUIRES],[gobject-2.0 >= 2.4])
+  SAC_COMMA_APPEND([SOFIA_GLIB_PKG_REQUIRES],[gobject-2.0 >= 2.4])
 fi
 
 AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" = xyes])
@@ -342,8 +341,7 @@ AC_SUBST([GLIB_VERSION])
 AC_SUBST([GOBJECT_LIBS])
 AC_SUBST([GOBJECT_CFLAGS])
 AC_SUBST([GOBJECT_VERSION])
-AC_SUBST([SOFIA_PKG_REQUIRES])
-AC_SUBST([SOFIA_PKG_LIBS])
+AC_SUBST([SOFIA_GLIB_PKG_REQUIRES])
 
 # ===========================================================================
 # Checks for library functions.

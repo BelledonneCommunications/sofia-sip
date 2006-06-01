@@ -28,6 +28,10 @@ Contributors to this release
  - name of the contributor should be enough
 /> 
 
+[libsofia-sip-ua-glib]
+- Applications must now separately check for libsofia-sip-ua-glib
+  with pkg-config. The pkg-config dependency 'libsofia-sip-ua ->
+  libsofia-sip-ua-glib' has been removed. See sf.net bug #1446635.
 
 Notes on new features
 ---------------------
