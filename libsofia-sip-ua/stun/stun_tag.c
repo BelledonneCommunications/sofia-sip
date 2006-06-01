@@ -106,8 +106,8 @@ tag_typedef_t stuntag_require_integrity = BOOLTAG_TYPEDEF(require_integrity);
 
 /**@def STUNTAG_INTEGRITY(x)
  *
- * Note: use of this tag is deprecated, use
- * STUNTAG_REQURIE_INTEGRITY() instead.
+ * XXX: should this tag be deprecated in favor of just supporting
+ * STUNTAG_REQURIE_INTEGRITY() instead...?
  */
 tag_typedef_t stuntag_integrity = BOOLTAG_TYPEDEF(integrity);
 
