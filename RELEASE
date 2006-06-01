@@ -5,53 +5,44 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-Minor interface changes to many modules in preparation of the upcoming
-library API/ABI freeze. The glib/gobject API has been updated. Bug fixes 
-and minor improvements have been made to SIP user-agent logic, DNS 
-resolving, URL handling and network transport code.
+<changes since last written in freshmeat.net "Changes:" style;
+ and in less than 10 lines />
+
 
 API/ABI changes and versioning
 ------------------------------
 
-[libsofia-sip-ua]
-- Added sip_route_reverse_as() and sip_route_fixdup_as().
-- sdp_rtp.h: file was removed.
-- Now not generating nua_i_state when a response to PRACK is received,
-  if the response to PRACK did not change the call state.
-- Auth plugin interface added for client side use. Added sofia-sip/auth_client_plugin.h, 
-  modified sofia-sip/auth_client.h.
+<see previous release notes at
+ http://sofia-sip.sourceforge.net/relnotes/ for examples ;
+ - should include all changes to public headers, and 
+   other important information to developers; 
+ - and should be updated _continuously_! />
 
-[libsofia-sip-ua-glib]
-- nua_glib: Changes in object properties.
-     - renamed 'stun' to 'stun-server'
-     - renamed 'bind-address' to 'contact'
-     - added 'proxy' and 'registrar' URI properties
-- nua_glib.h: Refactored the nua_glib authentication API.
-     - added 'auth-required' signal
-     - added 'password' property, removed 'authinfo' property.
-     - added nua_glib_auth_add() and nua_glib_auth_clear
 
 Contributors to this release
 ----------------------------
 
-- Colin Whittaker <colinw@occamnetworks.com>
-- Michael Jerris <mike@jerris.com>
-- Thomas Rosenblatt <trosenblatt@cirpack.com>
+<list of people who contributed to _this_ release
+ - update as people's patches are added, or when
+   you commit stuff
+ - name of the contributor should be enough
+/> 
 
-See the AUTHORS file in the distribution package, too.
 
 Notes on new features
 ---------------------
 
-- Added 'localinfo' tool to VC6/win32 build.
-- The 'stunc' STUN tester tool is now installed to '{prefix}/bin/'.
-- Lots of updates to the nua_glib module (the glib/gobject based
-  interface to Sofia-SIP).
-- Also many updates to the sresolv module (async DNS resolver).
+<information about major new features
+ - new/changed/removed functionality
+ - links to further documentation
+/> 
+
 
 Bugs fixed in this release
 --------------------------
 
-- Problems in cross-platform support: win32/mingw, win32/VC6, OSX 
-  and systems with old versions of glib.
-- Bugs in sofia-sip rpm spec file.
+< notable bugs fixed in this release
+ - check the sf.net bug tracker; see closed bugs,
+   sorted by closing date
+ - other bugs as fixed in CVS/darcs
+/>
