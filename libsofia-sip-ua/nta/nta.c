@@ -1740,7 +1740,7 @@ int agent_init_contact(nta_agent_t *self)
 
   if (v2 && 
       strcasecmp(v1->v_host, v2->v_host) == 0 &&
-      strcasecmp(v1->v_port, v2->v_port) == 0) {
+      str0casecmp(v1->v_port, v2->v_port) == 0) {
     char const *p1 = v1->v_protocol, *p2 = v2->v_protocol;
 
     if (strcasecmp(p1, sip_transport_udp))

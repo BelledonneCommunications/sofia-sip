@@ -28,6 +28,7 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  * @author Rob Taylor <rob.taylor@collabora.co.uk>
  * @author Pekka Pessi <pekka.pessi@nokia.com>
+ * @author Martti Mela <martti.mela@nokia.com>
  */
 
 #include <stddef.h>
