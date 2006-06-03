@@ -16,7 +16,10 @@ if HAVE_GOBJECT
 GOBJECT_TARGETS=nua-glib/libnua-glib.la
 endif
 
-lib_LTLIBRARIES = libsofia-sip-ua-glib.la
+lib_LTLIBRARIES =
+if HAVE_GLIB
+lib_LTLIBRARIES += libsofia-sip-ua-glib.la
+endif
 
 libsofia_sip_ua_glib_la_SOURCES = 
 libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GOBJECT_TARGETS)

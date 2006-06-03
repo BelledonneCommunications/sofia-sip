@@ -48,8 +48,11 @@ endif
 
 BUILT_SOURCES =		$(GLIB_BUILT)
 
-nobase_include_sofia_HEADERS = \
+nobase_include_sofia_HEADERS =
+if HAVE_GOBJECT
+nobase_include_sofia_HEADERS += \
 			sofia-sip/nua_glib.h
+endif
 
 noinst_HEADERS =	nua_glib_priv.h
 
