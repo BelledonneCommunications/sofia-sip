@@ -8,6 +8,6 @@ include_sofiadir=@include_sofiadir@
 Name: sofia-sip-ua-glib
 Description: Sofia-SIP library bindings for glib/gobject
 Version: @VERSION@
-Requires: @SOFIA_GLIB_PKG_REQUIRES@
-Libs: -L${libdir} -lsofia-sip-ua -lsofia-sip-ua-glib
+Requires: sofia-sip-ua, @SOFIA_GLIB_PKG_REQUIRES@
+Libs: -L${libdir} -lsofia-sip-ua-glib
 Cflags: -I@include_sofiadir@
