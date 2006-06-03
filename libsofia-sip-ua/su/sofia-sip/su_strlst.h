@@ -107,7 +107,7 @@ SU_DLL su_strlst_t *su_strlst_dup_split(su_home_t *, char const *s,
 /** Get number of items in list. */
 SU_DLL unsigned su_strlst_len(su_strlst_t const *l);
 
-#if HAVE_INLINE
+#if SU_HAVE_INLINE
 static inline
 su_home_t *su_strlst_home(su_strlst_t *s)
 {

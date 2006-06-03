@@ -67,7 +67,7 @@ SU_DLL unsigned su_vector_len(su_vector_t const *l);
 SU_DLL int su_vector_empty(su_vector_t *vector);
 SU_DLL int su_vector_is_empty(su_vector_t const *vector);
 
-#if HAVE_INLINE
+#if SU_HAVE_INLINE
 static inline
 su_home_t *su_vector_home(su_vector_t *s)
 {
