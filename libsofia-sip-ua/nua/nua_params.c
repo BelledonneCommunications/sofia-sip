@@ -419,8 +419,8 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       NHP_SET(nhp, service_route_enable, t->t_value != 0);
     }
     /* NUTAG_PATH_ENABLE(path_enable) */
-    else if (t->t_tag == nutag_path_enable != 0) {
-      NHP_SET(nhp, path_enable, t->t_value);
+    else if (t->t_tag == nutag_path_enable) {
+      NHP_SET(nhp, path_enable, t->t_value != 0);
     }
     /* NUTAG_SUBSTATE(substate) */
     else if (t->t_tag == nutag_substate) {
