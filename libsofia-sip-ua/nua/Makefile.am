@@ -29,7 +29,7 @@ INCLUDES = 		-I$(srcdir)/../bnf -I../bnf \
 
 noinst_LTLIBRARIES = 	libnua.la
 
-noinst_PROGRAMS =	test_nua
+check_PROGRAMS =	test_nua
 
 TESTS = 		test_nua
 

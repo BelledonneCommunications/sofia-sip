@@ -20,7 +20,7 @@ INCLUDES =		-I$(S_BASE)/su -I$(B_BASE)/su \
 
 noinst_LTLIBRARIES = 	libsu-glib.la
 
-noinst_PROGRAMS = 	su_source_test
+check_PROGRAMS = 	su_source_test
 
 # ----------------------------------------------------------------------
 # Tests

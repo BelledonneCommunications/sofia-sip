@@ -22,7 +22,7 @@ INCLUDES = 	-I$(srcdir)/../ipt -I../ipt \
 
 noinst_LTLIBRARIES = 	libnth.la
 
-noinst_PROGRAMS = 	nth_test http-client http-server
+check_PROGRAMS = 	nth_test http-client http-server
 
 TESTS = 		nth_test
 

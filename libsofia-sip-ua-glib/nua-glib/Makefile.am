@@ -56,7 +56,7 @@ endif
 
 noinst_HEADERS =	nua_glib_priv.h
 
-noinst_PROGRAMS =	test_nua_glib
+check_PROGRAMS =	test_nua_glib
 
 libnua_glib_la_SOURCES = nua_glib.c
 

@@ -23,7 +23,7 @@ INCLUDES = 		-I$(srcdir)/../ipt -I../ipt \
 
 noinst_LTLIBRARIES = 	libnta.la
 
-noinst_PROGRAMS = 	test_nta_api test_nta portbind
+check_PROGRAMS = 	test_nta_api test_nta portbind
 dist_noinst_SCRIPTS =	run_test_nta_api run_test_nta
 
 TESTS =			run_test_nta_api run_test_nta

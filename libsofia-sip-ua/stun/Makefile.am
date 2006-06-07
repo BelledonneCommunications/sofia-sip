@@ -23,7 +23,7 @@ stun_lib_sources = 	stun.c stun_common.c stun_dns.c stun_mini.c
 noinst_LTLIBRARIES = 	libstun.la
 
 bin_PROGRAMS    =       stunc
-noinst_PROGRAMS = 	lookup_stun_server
+check_PROGRAMS = 	lookup_stun_server
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

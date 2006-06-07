@@ -17,7 +17,7 @@ INCLUDES = 		-I$(srcdir)/../url -I../url \
 
 noinst_LTLIBRARIES = 	libsresolv.la
 
-noinst_PROGRAMS = 	test_sresolv
+check_PROGRAMS = 	test_sresolv
 
 TESTS = 		run_test_sresolv
 

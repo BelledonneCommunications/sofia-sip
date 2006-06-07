@@ -15,7 +15,7 @@ INCLUDES = 		-I$(srcdir)/../su -I../su
 
 noinst_LTLIBRARIES = 	libsdp.la
 
-noinst_PROGRAMS = 	torture_sdp test_sdp
+check_PROGRAMS = 	torture_sdp test_sdp
 
 dist_noinst_SCRIPTS =	run_test_sdp
 

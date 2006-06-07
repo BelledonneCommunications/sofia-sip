@@ -22,7 +22,7 @@ INCLUDES = 		-I$(srcdir)/../bnf -I../bnf \
 
 noinst_LTLIBRARIES = 	libiptsec.la
 
-noinst_PROGRAMS = 	test_auth_digest
+check_PROGRAMS = 	test_auth_digest
 
 TESTS = 		test_auth_digest
 

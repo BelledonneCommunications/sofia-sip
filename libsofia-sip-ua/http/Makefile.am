@@ -18,7 +18,7 @@ INCLUDES = 	-I$(srcdir)/../bnf -I../bnf \
 
 noinst_LTLIBRARIES = 	libhttp.la
 
-noinst_PROGRAMS = 	test_http
+check_PROGRAMS = 	test_http
 
 TESTS = 		test_http
 

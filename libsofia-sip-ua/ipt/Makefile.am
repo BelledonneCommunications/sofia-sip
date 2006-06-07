@@ -15,7 +15,7 @@ INCLUDES = 		-I$(srcdir)/../su -I../su
 
 noinst_LTLIBRARIES = 	libipt.la
 
-noinst_PROGRAMS = 	sha1test torture_base64
+check_PROGRAMS = 	sha1test torture_base64
 
 TESTS = 		sha1test torture_base64
 

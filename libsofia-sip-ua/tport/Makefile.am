@@ -23,7 +23,7 @@ noinst_LTLIBRARIES = 	libtport.la
 
 bin_PROGRAMS = 		
 
-noinst_PROGRAMS =	test_tport
+check_PROGRAMS =	test_tport
 
 TESTS =			test_tport
 

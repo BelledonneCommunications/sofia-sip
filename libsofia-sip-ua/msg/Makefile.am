@@ -17,7 +17,7 @@ INCLUDES = 	-I$(srcdir)/../url -I../url \
 
 noinst_LTLIBRARIES = 	libmsg.la
 noinst_LIBRARIES = 	libtest_msg.a
-noinst_PROGRAMS = 	msg_name_hash test_msg
+check_PROGRAMS = 	msg_name_hash test_msg
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

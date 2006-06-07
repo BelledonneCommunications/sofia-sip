@@ -16,7 +16,7 @@ INCLUDES = 	-I$(srcdir)/../bnf -I../bnf \
 
 noinst_LTLIBRARIES = 	liburl.la
 
-noinst_PROGRAMS = 	torture_url test_urlmap
+check_PROGRAMS = 	torture_url test_urlmap
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

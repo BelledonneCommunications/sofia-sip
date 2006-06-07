@@ -18,7 +18,7 @@ INCLUDES = 		-I$(srcdir)/../sdp -I../sdp \
 
 noinst_LTLIBRARIES = 	libsoa.la
 
-noinst_PROGRAMS =	test_soa
+check_PROGRAMS =	test_soa
 
 TESTS = 		test_soa
 

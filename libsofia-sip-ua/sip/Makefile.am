@@ -16,7 +16,7 @@ INCLUDES = 	-I$(srcdir)/../bnf -I../bnf \
 
 noinst_LTLIBRARIES = 	libsip.la
 
-noinst_PROGRAMS =       torture_sip \
+check_PROGRAMS =       torture_sip \
 			sip_test_msg validator date_test
 
 # ----------------------------------------------------------------------
