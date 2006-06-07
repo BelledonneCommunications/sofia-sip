@@ -493,10 +493,11 @@ int stun_encode_type_len(stun_attr_t *attr, uint16_t len) {
   return 0;
 }
 
-/** validate message integrity based on pwd
- *  received content is in msg->enc_buf
+/** 
+ * Validate the message integrity based on given 
+ * STUN password 'pwd'. The received content should be
+ * in msg->enc_buf.
  */
-#if defined(HAVE_OPENSSL)
 int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
 {
 
@@ -505,8 +506,14 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
   unsigned char dig[20]; /* received sha1 digest */
   unsigned char *padded_text;
 
+  /* password NULL so shared-secret not established and 
+     messege integrity checks can be skipped */
   if (pwd->data == NULL)
     return 0;
+
+  /* otherwise the check must match */
+
+#if defined(HAVE_OPENSSL)
 
   /* message integrity not received */
   if (stun_get_attr(msg->stun_attr, MESSAGE_INTEGRITY) == NULL) {
@@ -537,13 +544,10 @@ int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
   free(padded_text);
 
   return 0;
-}
-#else
-int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
-{
+#else /* HAVE_OPENSSL */
   return -1;
+#endif
 }
-#endif /* HAVE_OPENSSL */
 
 void debug_print(stun_buffer_t *buf) {
   unsigned i;
