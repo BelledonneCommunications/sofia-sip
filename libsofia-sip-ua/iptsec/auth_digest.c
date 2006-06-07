@@ -41,6 +41,7 @@
 #include "sofia-sip/auth_common.h"
 #include "sofia-sip/auth_digest.h"
 #include "sofia-sip/msg_header.h"
+#include "sofia-sip/auth_common.h"
 
 #include "iptsec_debug.h"
 
