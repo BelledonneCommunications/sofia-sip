@@ -11,7 +11,7 @@
 
 # ----------------------------------------------------------------------
 
-noinst_HEADERS = sofia-sip/su_configure.h unistd.h
+noinst_HEADERS = sofia-sip/su_configure.h unistd.h config.h
 
 EXTRA_DIST = SofiaSIP.dsw \
 	libsofia-sip-ua/libsofia_sip_ua.dsp \
