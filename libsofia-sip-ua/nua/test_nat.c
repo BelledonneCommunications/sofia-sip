@@ -357,7 +357,7 @@ void test_nat_destroy(struct nat *nat)
 }
 
 /** Get "private" address. */
-int test_nat_private(struct nat *nat, void *address, int *return_addrlen)
+int test_nat_private(struct nat *nat, void *address, socklen_t *return_addrlen)
 {
   if (nat == NULL || address == NULL || return_addrlen == NULL)
     return su_seterrno(EFAULT);

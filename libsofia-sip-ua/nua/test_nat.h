@@ -37,7 +37,7 @@ struct nat *test_nat_create(su_root_t *, int family,
 
 void test_nat_destroy(struct nat *);
 
-int test_nat_private(struct nat *nat, void *address, int *return_addrlen);
+int test_nat_private(struct nat *nat, void *address, socklen_t *return_addrlen);
 int test_nat_public(struct nat *nat, void const *address, int addrlen);
 
 int test_nat_flush(struct nat *nat);

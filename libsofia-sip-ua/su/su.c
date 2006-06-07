@@ -75,7 +75,7 @@ int su_close(su_socket_t s)
 
 int su_setblocking(int s, int blocking)
 {
-  unsigned mode = fcntl(s, F_GETFL, 0);
+  int mode = fcntl(s, F_GETFL, 0);
 
   if (mode < 0)
      return -1;

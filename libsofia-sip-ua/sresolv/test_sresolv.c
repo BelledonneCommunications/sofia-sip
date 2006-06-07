@@ -64,6 +64,7 @@ typedef unsigned _int32 uint32_t;
 #include <sofia-resolv/sres_async.h>
 #include <sofia-resolv/sres_record.h>
 
+#include <sofia-sip/su.h>
 #include <sofia-sip/su_alloc.h>
 
 #include <assert.h>
@@ -155,7 +156,7 @@ int test_socket(sres_context_t *ctx)
   struct sockaddr *sa = (void *)a;
   struct sockaddr *sa1 = (void *)a1, *sa2 = (void *)a2;
   struct sockaddr *sa3 = (void *)a3, *sa4 = (void *)a4;
-  int alen, a1len, a2len, a3len, a4len;
+  socklen_t alen, a1len, a2len, a3len, a4len;
   char buf[16];
 
   BEGIN();
