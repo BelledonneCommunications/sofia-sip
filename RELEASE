@@ -18,20 +18,28 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+[libsofia-sip-ua-glib]
+- Applications must now separately check for libsofia-sip-ua-glib
+  with pkg-config. The pkg-config dependency 'libsofia-sip-ua ->
+  libsofia-sip-ua-glib' has been removed. See sf.net bug #1446635.
 
 Contributors to this release
 ----------------------------
 
 <list of people who contributed to _this_ release
- - update as people's patches are added, or when
+ - update as people's patches are added, or when 
    you commit stuff
  - name of the contributor should be enough
+ - list also people from the core devel team
+ - roughly sorted by number of patches accepted
 /> 
 
-[libsofia-sip-ua-glib]
-- Applications must now separately check for libsofia-sip-ua-glib
-  with pkg-config. The pkg-config dependency 'libsofia-sip-ua ->
-  libsofia-sip-ua-glib' has been removed. See sf.net bug #1446635.
+- Kai Vehmanen
+- Pekka Pessi
+- Rémi Denis-Courmont
+- Martti Mela
+
+See the AUTHORS file in the distribution package.
 
 Notes on new features
 ---------------------
@@ -50,3 +58,14 @@ Bugs fixed in this release
    sorted by closing date
  - other bugs as fixed in CVS/darcs
 />
+
+- #1499652 lpthread is missing in pc file 
+  Explicitly list all dependent libs in libsofia-sip-ua.pc. Added 
+  a pkg-config dependency for sofia-sip-ua to sofia-sip-ua-glib.pc. 
+  Also do not install any libsofia-sip-ua-glib related files if built 
+  with '--with-glib=no'.
+- #1455265 Internal config.h defs in public headers
+- #1501080 Crash when some tags aren't defined
+- Do not add interface specific DNS servers to the search
+  list on win32. Problem reported by Dimitri E. Prado.
+- Fixed STUN NAT type checks if built without OpenSSL support.
