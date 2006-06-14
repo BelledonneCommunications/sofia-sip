@@ -23,11 +23,13 @@ Contributors to this release
 ----------------------------
 
 <list of people who contributed to _this_ release
- - update as people's patches are added, or when
-   you commit stuff
- - name of the contributor should be enough
+ - update as people's patches are added, or when you commit stuff
+ - current development team members (see AUTHORS) may be omitted
+ - name of the contributor should be enough (email addresses in AUTHORS)
+ - roughly sorted by number of patches accepted
 /> 
 
+See the AUTHORS file in the distribution package.
 
 Notes on new features
 ---------------------
