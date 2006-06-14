@@ -1629,7 +1629,7 @@ sres_sockaddr2string(sres_resolver_t *res,
 
     return required;
   }
-#endif
+#endif /* HAVE_SIN6 */
   else {
     su_seterrno(EAFNOSUPPORT);
     SU_DEBUG_3(("%s: %s\n", "sres_sockaddr2string", 
@@ -1843,8 +1843,11 @@ static int sres_parse_win32_reg(sres_config_t *c)
   int guid_size = MAX_VALUE_NAME_LEN;
 #endif
 
-  /* step 1: find interface specific nameservers */
-
+  /* step: find interface specific nameservers 
+   * - this is currently disabled 2006/Jun (the current check might insert
+   *   multiple unnecessary nameservers to the search list) 
+   */
+#if 0
   /* open the 'Interfaces' registry Key */
   if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
 		   "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces", 
@@ -1874,9 +1877,10 @@ static int sres_parse_win32_reg(sres_config_t *c)
     }
     RegCloseKey(key_handle);
   }
+#endif /* if 0: interface-specific nameservers */
 
-  /* step 2: if no interface-specific nameservers are found, 
-   *         check for system-wide nameservers */
+  /* step: if no interface-specific nameservers are found, 
+   *       check for system-wide nameservers */
   if (found == 0) {
     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
 		     "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters", 
