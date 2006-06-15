@@ -61,17 +61,18 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/%{_lib}/libsofia-sip-ua.so.*
 %doc AUTHORS COPYING COPYRIGHTS README
 
-%package	glib
-Summary:        GLIB Libraries for Sofia-SIP 
+%package	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
+Summary:        GLIB bindings for Sofia-SIP 
 Group: System Environment/Libraries
 Requires:	sofia-sip = %{version}-%{release}
+Provides:       sofia-sip-glib = %{version}
 
-%description	glib
+%description	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 GLib interface to Sofia SIP User Agent library.
 
 %if %{have_glib}
 
-%files 		glib
+%files 		glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 %defattr(-,root,root,-)
 %{_prefix}/%{_lib}/libsofia-sip-ua-glib.so.*
 
@@ -102,7 +103,7 @@ static libraries and include files.
 %doc TODO README.developers
 
 %package	glib-devel
-Summary:        GLIB Development Libraries for Sofia SIP 
+Summary:        GLIB bindings for Sofia SIP development files
 Group: 		Development/Libraries
 Requires:	sofia-sip = %{version}-%{release}
 Requires:	sofia-sip-devel = %{version}-%{release}
@@ -154,6 +155,9 @@ Command line utilities for Sofia SIP UA library.
 %{_mandir}/man?/*
 
 %changelog
+* Thu 15 Jun 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
+- Added library soname to sofia-sip-glib package name.
+
 * Wed Mar 08 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
 - Added libsofia-sip-ua-glib to the package.
 
