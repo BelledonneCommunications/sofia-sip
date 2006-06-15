@@ -289,17 +289,17 @@ int host_test(void)
   TEST(span_domain("a.b.-"), 0);
   TEST(span_domain("a.b-"), 0);
 
-  TEST(host_is_localhost("126.0.0.0"), 0);
-  TEST(host_is_localhost("127.0.0.0"), 1);
-  TEST(host_is_localhost("0.0.0.0"), 0);
-  TEST(host_is_localhost("::1"), 1);
-  TEST(host_is_localhost("::1"), 1);
-  TEST(host_is_localhost("::1:3fff"), 0);
-  TEST(host_is_localhost("[::1]"), 1);
-  TEST(host_is_localhost("localdomain.domain.org"), 0);
-  TEST(host_is_localhost("localhost.domain.org"), 0);
-  TEST(host_is_localhost("localhost"), 1);
-  TEST(host_is_localhost("localhost.localdomain"), 1);
+  TEST(host_is_local("126.0.0.0"), 0);
+  TEST(host_is_local("127.0.0.0"), 1);
+  TEST(host_is_local("0.0.0.0"), 0);
+  TEST(host_is_local("::1"), 1);
+  TEST(host_is_local("::1"), 1);
+  TEST(host_is_local("::1:3fff"), 0);
+  TEST(host_is_local("[::1]"), 1);
+  TEST(host_is_local("localdomain.domain.org"), 0);
+  TEST(host_is_local("localhost.domain.org"), 0);
+  TEST(host_is_local("localhost"), 1);
+  TEST(host_is_local("localhost.localdomain"), 1);
 
   TEST(host_has_domain_invalid("invalid"), 1);
   TEST(host_has_domain_invalid("invalid."), 1);
