@@ -53,11 +53,33 @@ For all releases, the version should be changed in configure.ac
 and committed to Darcs/CVS before making the release package. The person 
 doing the release is responsible for updating the version number.
 
-
 Library interface versions
 --------------------------
 
-TBD
+Sofia-SIP libraries utilize libtool interface versioning. See
+
+  - http://www.gnu.org/software/libtool/manual.html#Versioning
+  - http://www.gnu.org/software/libtool/manual.html#Using-Automake
+
+The interface versions are set in top-level 'configure.ac' file.
+Additionally, the SONAME version (CURRENT-AGE) is set in the
+same place. These version numbers are available for use as autoconf 
+variables (see the library 'Makefile.am' files and 
+'packages/sofia-sip.spec.in').
+
+All changes to the library versions should be marked to the
+appropriate library 'ChangeLog' file. The library version should
+be changed at the same time as the first interface change is 
+commmitted since the previous release. The interface version is 
+frozen (should be marked to the 'ChangeLog' file) at the time
+the next release is tagged (in other words, intra-release changes
+need not be tracked with libtool versions).
+
+The goal should always be to avoid breaking the API/ABIs until
+absolutely necessary. Interfaces clearly marked as private can
+be changed without change to library interface version, but
+otherwise all public functions, types, variables and definitions
+fall under interface change control.
 
 
 Version control tags
@@ -82,6 +104,7 @@ Notes (*):
     - Information about Darcs:
       http://abridgegame.org/darcs/
       http://lwn.net/Articles/110516/
+
 
 Sending patches
 ===============
