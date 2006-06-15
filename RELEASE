@@ -18,6 +18,10 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+[libsofia-sip-ua]
+- Added sofia-sip/hostdomain.h:host_is_local() (implemented
+  by the bnf module).
+
 [libsofia-sip-ua-glib]
 - Applications must now separately check for libsofia-sip-ua-glib
   with pkg-config. The pkg-config dependency 'libsofia-sip-ua ->

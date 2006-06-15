@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005,2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -26,6 +26,7 @@
  * @brief Character syntax table for HTTP-like protocols.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Thu Jun  8 19:28:55 2000 ppessi
  */
@@ -722,6 +723,24 @@ int host_is_valid(char const *string)
 {
   int n = span_host(string);
   return n > 0 && string[n] == '\0';
+}
+
+/** Returns true if @a string is describing a local address.
+ *
+ * Uses the definitions of local addresses found in RFC1700 and 
+ * RFC4291. 
+ */
+int host_is_local(char const *host)
+{
+  if (host_ip6_reference(host))
+    return (strcmp(host, "[::1]") == 0);
+  else if (host_is_ip6_address(host))
+    return (strcmp(host, "::1") == 0);
+  else if (host_is_ip4_address(host))
+    return (strncmp(host, "127.", 4) == 0);
+  else 
+    return (strcmp(host, "localhost") == 0 ||
+	    strcmp(host, "localhost.localdomain") == 0);
 }
 
 /** Return true if @a string has domain name in "invalid." domain.
