@@ -41,7 +41,7 @@ LDADD = 		libsoa.la \
 			../sip/libsip.la \
 			../sdp/libsdp.la \
 			../ipt/libipt.la \
-			../ipt/libbnf.la \
+			../bnf/libbnf.la \
 			../su/libsu.la
 
 test_soa_LDFLAGS = 	-static
