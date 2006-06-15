@@ -61,11 +61,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/%{_lib}/libsofia-sip-ua.so.*
 %doc AUTHORS COPYING COPYRIGHTS README
 
+# note: soname in pkgname allows install of multiple library versions
 %package	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 Summary:        GLIB bindings for Sofia-SIP 
 Group: System Environment/Libraries
 Requires:	sofia-sip = %{version}-%{release}
-Provides:       sofia-sip-glib = %{version}
+Provides:       sofia-sip-glib = @VERSION@
 
 %description	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 GLib interface to Sofia SIP User Agent library.
@@ -102,10 +103,12 @@ static libraries and include files.
 %{_prefix}/%{_lib}/pkgconfig/sofia-sip-ua.pc
 %doc TODO README.developers
 
+# note: no soname as files installed to the same place
 %package	glib-devel
 Summary:        GLIB bindings for Sofia SIP development files
 Group: 		Development/Libraries
 Requires:	sofia-sip = %{version}-%{release}
+Requires:       sofia-sip-glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 Requires:	sofia-sip-devel = %{version}-%{release}
 
 %description	glib-devel
