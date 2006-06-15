@@ -47,6 +47,7 @@
 #include "sofia-sip/soa_session.h"
 #include "sofia-sip/soa_add.h"
 
+#include <sofia-sip/hostdomain.h>
 #include <sofia-sip/su_tagarg.h>
 #include <sofia-sip/su_localinfo.h>
 #include <sofia-sip/su_uniqueid.h>
@@ -1716,12 +1717,9 @@ soa_init_sdp_origin(soa_session_t *ss, sdp_origin_t *o, char buffer[64])
   if (!c->c_nettype ||
       !c->c_address ||
       strcmp(c->c_address, "") == 0 ||
-      strcasecmp(c->c_address, "localhost") == 0 ||
-      strcasecmp(c->c_address, "localhost.localdomain") == 0 ||
       strcmp(c->c_address, "0.0.0.0") == 0 ||
-      strcmp(c->c_address, "127.0.0.1") == 0 ||
       strcmp(c->c_address, "::") == 0 ||
-      strcmp(c->c_address, "::1") == 0) {
+      !host_is_local(c->c_address)) {
     return soa_init_sdp_connection(ss, c, buffer);
   }
 

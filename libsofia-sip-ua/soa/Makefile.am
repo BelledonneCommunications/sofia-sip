@@ -11,6 +11,7 @@
 INCLUDES = 		-I$(srcdir)/../sdp -I../sdp \
 			-I$(srcdir)/../sip -I../sip \
 			-I$(srcdir)/../ipt -I../ipt \
+			-I$(srcdir)/../ipt -I../bnf \
 			-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
@@ -40,6 +41,7 @@ LDADD = 		libsoa.la \
 			../sip/libsip.la \
 			../sdp/libsdp.la \
 			../ipt/libipt.la \
+			../ipt/libbnf.la \
 			../su/libsu.la
 
 test_soa_LDFLAGS = 	-static
