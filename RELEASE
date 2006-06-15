@@ -19,10 +19,17 @@ API/ABI changes and versioning
  - and should be updated _continuously_! />
 
 [libsofia-sip-ua]
+- Library interface version 0 is now frozen. All 1.12.x releases will
+  maintain API/ABI compatibility with v0 interface. Library 
+  soname is 'libsofia-sip-ua.so.0'.
 - Added sofia-sip/hostdomain.h:host_is_local() (implemented
   by the bnf module).
 
 [libsofia-sip-ua-glib]
+- Unlike the main library, the glib bindings are not yet part of 
+  the API/ABI stable library set. For this release, the soname will be 
+  set to 'libsofia-sip-ua-glib.so.0', but interface - and the soname - 
+  may be changed in later 1.12 releases.
 - Applications must now separately check for libsofia-sip-ua-glib
   with pkg-config. The pkg-config dependency 'libsofia-sip-ua ->
   libsofia-sip-ua-glib' has been removed. See sf.net bug #1446635.
