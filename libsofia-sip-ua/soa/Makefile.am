@@ -11,7 +11,7 @@
 INCLUDES = 		-I$(srcdir)/../sdp -I../sdp \
 			-I$(srcdir)/../sip -I../sip \
 			-I$(srcdir)/../ipt -I../ipt \
-			-I$(srcdir)/../ipt -I../bnf \
+			-I$(srcdir)/../bnf -I../bnf \
 			-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
