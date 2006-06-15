@@ -47,6 +47,7 @@
 
 #include "nua_stack.h"
 
+#include <sofia-sip/hostdomain.h>
 #include <sofia-sip/nta_tport.h>
 #include <sofia-sip/tport.h>
 #include <sofia-sip/tport_tag.h>
@@ -941,11 +942,12 @@ int nua_registration_from_via(nua_registration_t **list,
   sip_via_t *v, *pair, /* v2[2], */ *vias, **vv, **prev;
   nua_registration_t *nr = NULL, **next;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
+  int nr_items = 0;
 
   vias = sip_via_copy(su_home_auto(autohome, sizeof autohome), via);
 
   for (; *list; list = &(*list)->nr_next)
-    ;
+    ++nr_items;
 
   next = list;
 
@@ -979,6 +981,13 @@ int nua_registration_from_via(nua_registration_t **list,
       }
     }
 
+    /* if more than one candidate, ignore local entries */
+    if (v && (*vv || nr_items > 0) && 
+	host_is_local(v->v_host)) {
+      SU_DEBUG_9(("nua_register: ignoring contact candidate %s.\n",  v->v_host, v->v_port));
+      continue;
+    }
+     
     nr = su_zalloc(home, sizeof *nr);
     if (!nr)
       break;
@@ -1004,6 +1013,9 @@ int nua_registration_from_via(nua_registration_t **list,
     nr->nr_contact = contact;
     /* nr->nr_via = v; */
 
+    SU_DEBUG_9(("nua_register: Adding contact URL '%s' to list.\n", contact->m_url->url_host));
+
+    ++nr_items;
     nr->nr_next = *next, nr->nr_prev = next; *next = nr, next = &nr->nr_next;
     nr->nr_list = list;
   }

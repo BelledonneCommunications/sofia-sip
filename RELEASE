@@ -38,10 +38,7 @@ Contributors to this release
  - roughly sorted by number of patches accepted
 /> 
 
-- Kai Vehmanen
-- Pekka Pessi
 - Rémi Denis-Courmont
-- Martti Mela
 
 See the AUTHORS file in the distribution package.
 
@@ -70,6 +67,7 @@ Bugs fixed in this release
   with '--with-glib=no'.
 - #1455265 Internal config.h defs in public headers
 - #1501080 Crash when some tags aren't defined
+- #1490824 loopback addr selected as contact when not registered
 - Do not add interface specific DNS servers to the search
   list on win32. Problem reported by Dimitri E. Prado.
 - Fixed STUN NAT type checks if built without OpenSSL support.
