@@ -65,7 +65,6 @@ rm -rf $RPM_BUILD_ROOT
 %package	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 Summary:        GLIB bindings for Sofia-SIP 
 Group: System Environment/Libraries
-Requires:	sofia-sip = %{version}-%{release}
 Provides:       sofia-sip-glib = @VERSION@
 
 %description	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
@@ -107,9 +106,8 @@ static libraries and include files.
 %package	glib-devel
 Summary:        GLIB bindings for Sofia SIP development files
 Group: 		Development/Libraries
-Requires:	sofia-sip = %{version}-%{release}
 Requires:       sofia-sip-glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
-Requires:	sofia-sip-devel = %{version}-%{release}
+Requires:	sofia-sip-devel >= 1.12
 
 %description	glib-devel
 Development package for Sofia SIP UA Glib library. This package includes
@@ -158,8 +156,10 @@ Command line utilities for Sofia SIP UA library.
 %{_mandir}/man?/*
 
 %changelog
-* Thu 15 Jun 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
+* Thu Jun 15 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
 - Added library soname to sofia-sip-glib package name.
+- Modified dependencies - the glib subpackages do not depend
+  on a specific version of sofia-sip anymore.
 
 * Wed Mar 08 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
 - Added libsofia-sip-ua-glib to the package.
