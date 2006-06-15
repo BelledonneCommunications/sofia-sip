@@ -5,23 +5,17 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-<changes since last written in freshmeat.net "Changes:" style;
- and in less than 10 lines />
-
+Lots of bugfixes have been made to both library code, and to 
+the build system. This is the first release with a stable 
+API/ABI for libsofia-sip-ua.
 
 API/ABI changes and versioning
 ------------------------------
 
-<see previous release notes at
- http://sofia-sip.sourceforge.net/relnotes/ for examples ;
- - should include all changes to public headers, and 
-   other important information to developers; 
- - and should be updated _continuously_! />
-
 [libsofia-sip-ua]
 - Library interface version 0 is now frozen. All 1.12.x releases will
   maintain API/ABI compatibility with v0 interface. Library 
-  soname is 'libsofia-sip-ua.so.0'.
+  soname has been set to 'libsofia-sip-ua.so.0'.
 - Added sofia-sip/hostdomain.h:host_is_local() (implemented
   by the bnf module).
 
@@ -34,16 +28,13 @@ API/ABI changes and versioning
   with pkg-config. The pkg-config dependency 'libsofia-sip-ua ->
   libsofia-sip-ua-glib' has been removed. See sf.net bug #1446635.
 
+[others]
+- RPM spec-file (packages/sofia-sip.spec): the glib subpackage has
+  been renamed to sofia-sip-glibVER, where 'VER' is the current 
+  SONAME version number (not the same as libtool interface version!).
+
 Contributors to this release
 ----------------------------
-
-<list of people who contributed to _this_ release
- - update as people's patches are added, or when 
-   you commit stuff
- - name of the contributor should be enough
- - list also people from the core devel team
- - roughly sorted by number of patches accepted
-/> 
 
 - Rémi Denis-Courmont
 
@@ -52,20 +43,12 @@ See the AUTHORS file in the distribution package.
 Notes on new features
 ---------------------
 
-<information about major new features
- - new/changed/removed functionality
- - links to further documentation
-/> 
-
+- No new features in this release. See past releases notes 
+  at http://sofia-sip.sourceforge.net/relnotes/ for a full list 
+  of changes done during the 1.11 development cycle.
 
 Bugs fixed in this release
 --------------------------
-
-< notable bugs fixed in this release
- - check the sf.net bug tracker; see closed bugs,
-   sorted by closing date
- - other bugs as fixed in CVS/darcs
-/>
 
 - #1499652 lpthread is missing in pc file 
   Explicitly list all dependent libs in libsofia-sip-ua.pc. Added 

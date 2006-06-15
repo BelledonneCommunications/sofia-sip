@@ -11,11 +11,11 @@ dnl information on the package
 dnl ---------------------------
 
 dnl update both the version for AC_INIT and the LIBSOFIA_SIP_UA_MAJOR_MINOR
-AC_INIT([sofia-sip], [1.11.9work])
+AC_INIT([sofia-sip], [1.12.0])
 AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sofia-sip/sip.h])
-AC_SUBST(VER_LIBSOFIA_SIP_UA_MAJOR_MINOR, [1.11])
+AC_SUBST(VER_LIBSOFIA_SIP_UA_MAJOR_MINOR, [1.12])
 dnl Includedir specific to this sofia version
-AC_SUBST(include_sofiadir, '${includedir}/sofia-sip-1.11')
+AC_SUBST(include_sofiadir, '${includedir}/sofia-sip-1.12')
 AC_SUBST(LIBVER_SOFIA_SIP_UA_CUR, [0])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_REV, [0])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_AGE, [0])

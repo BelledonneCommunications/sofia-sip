@@ -1822,6 +1822,8 @@ static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCT
  *  - http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sysinfo/base/regqueryvalueex.asp
  *  - http://support.microsoft.com/default.aspx?scid=kb;en-us;120642
  *  - http://support.microsoft.com/kb/314053/EN-US/
+ *  - IP Helper API (possibly better way than current registry-based impl.)
+ *    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/iphlp/iphlp/ip_helper_start_page.asp
  */
 static int sres_parse_win32_reg(sres_config_t *c)
 {

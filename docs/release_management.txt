@@ -3,7 +3,7 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20060601-10
+:Version: 20060616-11
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
@@ -45,6 +45,10 @@ Making the release tarball
 ==========================
 
 - update the version number in sofia-sip/configure.ac
+- make sure the library versions are correct, and you've
+  frozen all library interfaces (with correct entries in
+  ChangeLog files), see README.developers for more information
+  on library versioning in general
 - make sure everything that is supposed to be in the
   release is in the master darcs tree
 - run 'make distcheck' to verify everything is ready for
