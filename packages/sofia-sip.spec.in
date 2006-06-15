@@ -65,6 +65,7 @@ rm -rf $RPM_BUILD_ROOT
 %package	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 Summary:        GLIB bindings for Sofia-SIP 
 Group: System Environment/Libraries
+Requires:       sofia-sip
 Provides:       sofia-sip-glib = @VERSION@
 
 %description	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
