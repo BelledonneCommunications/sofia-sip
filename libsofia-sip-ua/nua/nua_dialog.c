@@ -412,8 +412,9 @@ void nua_dialog_terminated(nua_owner_t *own,
 /**@internal
  * Set refresh value suitably. 
  *
- * The refresh time is set either at half of the @a delta interval or if @a
- * delta is less than 5 minutes, 30 seconds before end of interval. $
+ * The refresh time is set either around half of the @a delta interval or,
+ * if @a delta is less than 5 minutes but longer than 90 seconds, 30..60
+ * seconds before end of interval.
  *
  * If @a delta is 0, the refresh time is set at the end of the world
  * (maximum time, for 32-bit systems sometimes during 2036).
@@ -422,12 +423,12 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 {
   sip_time_t target = sip_now();
 
-  if (delta > 60 && delta < 5 * 60)
-    /* refresh 30 seconds before deadline */
-    delta -= 30;
+  if (delta > 90 && delta < 5 * 60)
+    /* refresh 30..60 seconds before deadline */
+    delta -= su_randint(30, 60);
   else if (delta > 1)
-    /* refresh at half time before deadline */
-    delta /= 2;
+    /* refresh around half time before deadline */
+    delta = (delta + 3) / 4 + su_randint(0, delta / 2);
 
   if (delta != 0 && target + delta >= target)
     target = target + delta;
