@@ -47,7 +47,7 @@
 #include <sofia-sip/tport.h>
 #include <sofia-sip/nta_tport.h>
 
-#include <sofia-sip/sha1.h>
+#include <sofia-sip/su_md5.h>
 #include <sofia-sip/su_uniqueid.h>
 #include <sofia-sip/token64.h>
 
@@ -199,8 +199,8 @@ outbound_new(outbound_owner_t *owner,
   ob = su_home_clone((su_home_t *)owner, sizeof *ob);
   
   if (ob) {
-    SHA1Context sha1[1];
-    uint8_t digest[SHA1HashSize];
+    su_md5_t md5[1];
+    uint8_t digest[SU_MD5_DIGEST_SIZE];
     su_guid_t guid[1];
 
     ob->ob_owner = owner;
@@ -213,12 +213,12 @@ outbound_new(outbound_owner_t *owner,
     ob->ob_reg_id = 0;
 
     /* Generate a cookie (used as Call-ID) for us */
-    SHA1Reset(sha1);
+    su_md5_init(md5);
     su_guid_generate(guid);
     if (instance)
-      SHA1Input(sha1, (void *)instance, strlen(instance));
-    SHA1Input(sha1, (void *)guid, sizeof guid);
-    SHA1Result(sha1, digest);
+      su_md5_update(md5, (void *)instance, strlen(instance));
+    su_md5_update(md5, (void *)guid, sizeof guid);
+    su_md5_digest(md5, digest);
     token64_e(ob->ob_cookie, sizeof ob->ob_cookie, digest, sizeof digest);
     
     if (instance && !ob->ob_instance)
