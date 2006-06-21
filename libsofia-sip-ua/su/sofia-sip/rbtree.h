@@ -266,7 +266,7 @@ extern int const prefix##_dummy
  * @retval -1 if there already was an matching node 
  *            and return_old is NULL.
  */
-int rbtree_insert(Type * tree, Type *node, Type **return_old);
+int rbtree_insert(Type **tree, Type *node, Type **return_old);
 #endif
 
 /* Insert node into tree. */
