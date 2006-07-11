@@ -111,10 +111,8 @@ int stun_parse_message(stun_msg_t *msg)
   return 0;
 }
 
-
-#if 1
-int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
-
+int stun_parse_attribute(stun_msg_t *msg, unsigned char *p)
+{
   int len;
   uint16_t attr_type;
   stun_attr_t *attr, *next;
@@ -196,16 +194,6 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
   }
   return len+4;
 }
-
-#else
-int stun_parse_attribute(stun_msg_t *msg, unsigned char *p) {
-  attr = (stun_attr_t *)calloc(1, sizeof(stun_attr_t));
-  if (!attr)
-    return -1;
-  return stun_parse_attr_any(attr, type, len, p);
-}
-#endif
-
 
 int stun_parse_attr_address(stun_attr_t *attr, 
 			    const unsigned char *p, 
