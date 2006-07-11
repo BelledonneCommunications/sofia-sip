@@ -162,8 +162,8 @@ void usage(char *name)
 	  "  -b\tmake a binding request\n"
 	  "  -l\tperform NAT lifetime check\n"
 	  "  -n\tperform NAT type check\n"
+	  "  -r\trandomize the local port",
 	  "  -s\trequest shared-secret over TLS (combined with -[bln])\n"
-	  "  -l\tperform NAT type check (combined with -[bln]\n",
 	  SOFIA_SIP_NAME_VERSION, name);
   exit(1);
 }
