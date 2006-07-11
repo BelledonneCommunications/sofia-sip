@@ -23,13 +23,97 @@
  */
 
 /**
- * @file stunc.c STUN test client
+ * STUN test client
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Martti Mela <Martti.Mela@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * 
  * @date Created: Thu Jul 24 17:21:00 2003 ppessi
+ */
+
+/**@page stunc STUN test client.
+ * 
+ * @section stunc_synopsis Synopsis
+ * <tt>stunc [OPTIONS] \<stun-server-address\></tt>
+ *
+ * @section stunc_description Description
+ * The @em stunc utility can be used to gather information about possible
+ * NAT devices that are located between the client and STUN server. 
+ *
+ * @em stunc can provide the following information: the IP address and
+ * port as seen by the STUN server, detecting presence of NATs, and
+ * hints on the type of address translation done. It should be noted
+ * that the results of NAT type and life-time detection should be
+ * considered as hints. There is no guarantee that NAT(s) will handle
+ * future packets in the same way.
+ *
+ * @section stunc_options Command Line Options
+ * The @em stunc utility accepts following command line options:
+ *
+ * <dl>
+ *
+ * <dt>-b</dt>
+ * <dd>Perform a STUN binding discovery. @em stunc will report the
+ * client transport address (IP:port) as seen by the STUN server. In
+ * the presence of NATs, this address is allocated by the NAT closest
+ * to the STUN server.
+ * </dd>
+ *
+ * <dt>-l</dt>
+ * <dd>Perform a STUN binding life-time check.
+ * </dd>
+ *
+ * <dt>-n</dt>
+ * <dd>Perform a STUN binding type check. Notice that the results
+ * are only hints. Nondeterministic behaviour, resource exhaustion,
+ * or reboots of network elements can cause changes in NAT behaviour
+ * between successive runs of stunc.
+ * </dd>
+ *
+ * <dt>-r</dt>
+ * <dd>Randomize the local port. Otherwise @em stunc let's the
+ * operating system select a free port.
+ * </dd>
+ *
+ * <dt>-s</dt>
+ * <dd>Request a shared-secret over TLS. Tests whether the STUN server
+ * supports the shared-secret mechanism (needed to protect message 
+ * integrity). Can be combined with @em -b, @em -l and @em -n.
+ * </dd>
+ *
+ * </dl>
+ *
+ * @section stunc_return Return Codes
+ * <table>
+ * <tr><td>0</td><td>when successful</td></tr>
+ * <tr><td>1</td><td>when any errors detected</td></tr>
+ * </table>
+ *
+ * @section stunc_examples Examples
+ *
+ * Discover the NAT binding, use a random local port:
+ * @code
+ * $ stunc stunserver.org -b -r
+ * @endcode
+ *
+ * @section stunc_environment Environment
+ * #STUN_DEBUG
+ * 
+ * @section stunc_bugs Reporting Bugs
+ * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
+ *
+ * @section stunc_author Authors
+ * - Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
+ * - Martti Mela <martti -dot mela -at- nokia -dot- com>
+ * - Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
+ *
+ * @section stunc_copyright Copyright
+ * Copyright (C) 2005,2006 Nokia Corporation.
+ *
+ * This program is free software; see the source for copying conditions.
+ * There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.
  */
 
 #include "config.h" 

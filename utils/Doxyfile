@@ -4,6 +4,7 @@ OUTPUT_DIRECTORY     = ../man
 INPUT 		     = . 
 INPUT               += ../libsofia-sip-ua/su/localinfo.c
 INPUT               += ../libsofia-sip-ua/su/addrinfo.c
+INPUT               += ../libsofia-sip-ua/stun/stunc.c
 
 @INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.aliases
 

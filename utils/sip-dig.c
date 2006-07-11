@@ -22,8 +22,7 @@
  *
  */
 
-/**@file sip-dig.c Use sresolv library to resolve a SIP or SIPS URI
- *
+/**
  * This is an example program for @b sresolv library in synchronous mode.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
