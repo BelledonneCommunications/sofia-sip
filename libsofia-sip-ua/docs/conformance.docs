@@ -43,6 +43,7 @@ below.
 <a href="#3892">RFC 3892</a> <br>
 <a href="#3903">RFC 3903</a> <br>
 <a href="#4028">RFC 4028</a> <br>
+<a href="#4566">RFC 4566</a> <br>
 </td><td>
 <a href="#2327">RFC 2327</a> <br>
 <a href="#3264">RFC 3264</a> <br>
@@ -897,7 +898,7 @@ below.
 	draft Internet Standard for SDP in progress.
     </td>
     <td>
-	&nbsp;
+    - see also <a href="#4566">RFC 4566</a>
     </td>
 </tr>
 
@@ -924,7 +925,7 @@ below.
 	Representation of IP6 addresses within SDP message.
     </td>
     <td>
-	&nbsp;
+    - see also <a href="#4566">RFC 4566</a>
     </td>
 </tr>
 
@@ -1053,6 +1054,19 @@ below.
     </td>
 </tr>
 
+<tr valign=top>
+    <th align="left">
+	<a name="4566"></a>
+	@RFC4566: SDP: Session Description Protocol
+    </th>
+    <td>
+    Obsoletes RFC2327 and RFC3266.
+    </td>
+    <td>
+	&nbsp;
+    </td>
+</tr>
+
 </table>
 
 */
@@ -1140,6 +1154,5 @@ below.
 	- Handling of multipart bodies with early and session SDP
     </td>
 </tr>
-
 
 */
