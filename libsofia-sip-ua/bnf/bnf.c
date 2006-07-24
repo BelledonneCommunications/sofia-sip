@@ -674,12 +674,17 @@ int host_is_ip6_address(char const *string)
   return n > 0 && string[n] == '\0';
 }
 
+int host_ip6_reference(char const *string)
+{
+  return host_is_ip6_reference(string);
+}
+
 /** Return true if @a string is valid IP6 reference, 
  *  i.e. hex notation in square brackets.
  *
  * E.g., [::1] is a valid IP6 reference.
  */
-int host_ip6_reference(char const *string)
+int host_is_ip6_reference(char const *string)
 {
   int n = span_ip6_reference(string);
   return n > 0 && string[n] == '\0';
