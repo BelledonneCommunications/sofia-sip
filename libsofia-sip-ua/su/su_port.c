@@ -38,9 +38,6 @@
 
 #include "config.h"
 
-/* Use Posix stuff */
-#define _XOPEN_SOURCE  (500)
-
 /* React to multiple events per one poll() to make sure 
  * that high-priority events can never completely mask other events.
  * Enabled by default on all platforms except WIN32 */
