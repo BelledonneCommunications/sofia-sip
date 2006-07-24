@@ -934,7 +934,7 @@ static int offer_answer_step(soa_session_t *ss,
   case process_answer:
     if (soa_sdp_mode_set_is_needed(local, remote, ss->ss_hold)) {
       if (local != local0) {
-	*local = *local, local = local0;
+	*local0 = *local, local = local0;
 	DUP_LOCAL(local);
       }
 
