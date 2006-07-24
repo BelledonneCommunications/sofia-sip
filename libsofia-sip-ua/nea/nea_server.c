@@ -2347,6 +2347,7 @@ void nes_event_timer(nea_server_t *srvr,
   nea_server_t *nes = (nea_server_t *) arg;
   sip_time_t now = sip_now();
   nea_sub_t *s = NULL, *s_next = NULL;
+  su_root_t *root = su_timer_root(timer);
 
   su_timer_set(timer, nes_event_timer, nes);
 
@@ -2357,8 +2358,11 @@ void nes_event_timer(nea_server_t *srvr,
     s_next = s->s_next;
     if (s->s_state == nea_terminated)
       continue;
-    if ((int)(now - s->s_expires) >= 0)
-      nea_sub_notify(nes, s, now, TAG_END());	
+    if ((int)(now - s->s_expires) >= 0) {
+      nea_sub_notify(nes, s, now, TAG_END());
+      /* Yield so we can handle received packets */
+      su_root_yield(root);
+    }
   }
 
   if (--nes->nes_in_list == 0 && nes->nes_pending_flush)

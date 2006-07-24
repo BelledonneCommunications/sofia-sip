@@ -7264,6 +7264,8 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
       outgoing_set_timer(orq, 2 * orq->orq_interval);
     else
       outgoing_set_timer(orq, sa->sa_t2);
+
+    su_root_yield(sa->sa_root);	/* Handle received packets */
   }
 
   terminated

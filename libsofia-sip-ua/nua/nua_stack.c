@@ -461,6 +461,7 @@ void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a)
 {
   nua_handle_t *nh, *nh_next;
   sip_time_t now = sip_now();
+  su_root_t *root = su_timer_root(t);
 
   su_timer_set(t, nua_stack_timer, a);
 
@@ -472,6 +473,7 @@ void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a)
   for (nh = nua->nua_handles; nh; nh = nh_next) {
     nh_next = nh->nh_next;
     nh_call_pending(nh, now);
+    su_root_yield(root);	/* Handle received packets */
   }
 }
 
