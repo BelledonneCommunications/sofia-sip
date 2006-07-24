@@ -1594,6 +1594,7 @@ int test_register(struct context *ctx)
   struct call *a_reg = a->reg, *b_reg = b->reg, *c_reg = c->reg;
   struct event *e;
   sip_t const *sip;
+  sip_cseq_t cseq[1];
 
   if (ctx->p)
     test_proxy_set_expiration(ctx->p, 5, 5, 10);
@@ -1663,9 +1664,14 @@ int test_register(struct context *ctx)
 
   TEST_1(a_reg->nh = nua_handle(a->nua, a_reg, TAG_END()));
 
+  sip_cseq_init(cseq)->cs_seq = 12;
+  cseq->cs_method = sip_method_register;
+  cseq->cs_method_name = sip_method_name_register;
+
   REGISTER(a, a_reg, a_reg->nh, SIPTAG_TO(a->to),
 	   NUTAG_OUTBOUND("natify options-keepalive validate"),
 	   NUTAG_KEEPALIVE(1000),
+	   SIPTAG_CSEQ(cseq),
 	   TAG_END());
   run_a_until(ctx, -1, save_until_final_response);
 
@@ -1674,6 +1680,7 @@ int test_register(struct context *ctx)
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST(e->data->e_status, 401);
   TEST(sip->sip_status->st_status, 401);
+  TEST(sip->sip_cseq->cs_seq, 13);
   TEST_1(!sip->sip_contact);
   TEST_1(!e->next);
   free_events_in_list(ctx, a->events);
@@ -1687,6 +1694,7 @@ int test_register(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_contact);
+  TEST(sip->sip_cseq->cs_seq, 14);
   TEST_1(!e->next);
   free_events_in_list(ctx, a->events);
 

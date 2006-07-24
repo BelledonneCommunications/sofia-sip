@@ -1016,11 +1016,11 @@ msg_t *nua_creq_msg(nua_t *nua,
 	goto error;
     }
     else {
+      nta_leg_t *leg = nua->nua_dhandle->nh_ds->ds_leg;
+
       if (sip_add_tl(msg, sip, ta_tags(ta)) < 0
 	  || (ds->ds_remote_tag &&
 	      sip_to_tag(nh->nh_home, sip->sip_to, ds->ds_remote_tag) < 0)
-	  || nta_msg_request_complete(msg, nua->nua_dhandle->nh_ds->ds_leg,
-				      method, name, url) < 0
 	  || (sip->sip_from == NULL &&
 	      sip_add_dup(msg, sip, (sip_header_t *)nua->nua_from) < 0))
 	goto error;
@@ -1036,11 +1036,16 @@ msg_t *nua_creq_msg(nua_t *nua,
 	if (!ds->ds_leg)
 	  goto error;
 
+	leg = ds->ds_leg;
+
 	if (!sip->sip_from->a_tag &&
 	    sip_from_tag(msg_home(msg), sip->sip_from,
 			 nta_leg_tag(ds->ds_leg, NULL)) < 0)
 	  goto error;
       }
+
+      if (nta_msg_request_complete(msg, leg, method, name, url) < 0)
+	goto error;
 
       add_service_route = !restart;
     }
