@@ -1770,6 +1770,30 @@ soa_init_sdp_connection(soa_session_t *ss,
   if (ss == NULL || c == NULL)
     return su_seterrno(EFAULT), -1;
 
+  address = ss->ss_address;
+
+  if (host_is_ip_address(address)) {
+    /* Use the application-specified address -
+     * do not check that it is found from the local address list */
+    c->c_nettype = sdp_net_in;
+    
+    if (host_is_ip4_address(address))
+      c->c_addrtype = sdp_addr_ip4;
+    else
+      c->c_addrtype = sdp_addr_ip6;
+    
+    if (!host_is_ip6_reference(address)) {
+      c->c_address = strcpy(buffer, address);
+    }
+    else {
+      /* Remove brackets [] around the reference */
+      size_t len = strlen(address + 1);
+      c->c_address = memcpy(buffer, address + 1, len - 1);
+      buffer[len - 1] = '\0'; 
+    }
+    return 0;
+  }
+
   /* XXX - using LI_SCOPE_LINK requires some tweaking */
   hints->li_scope = LI_SCOPE_GLOBAL | LI_SCOPE_SITE /* | LI_SCOPE_LINK */;
 
@@ -1811,8 +1835,6 @@ soa_init_sdp_connection(soa_session_t *ss,
     ip4 = 2, ip6 = 1;
   else if (c->c_addrtype == sdp_addr_ip6)
     ip6 = 2, ip4 = 1;
-
-  address = ss->ss_address;
 
   if (address)
     SU_DEBUG_3(("%s: searching for %s from list \"%s\"\n",

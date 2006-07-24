@@ -369,6 +369,8 @@ int test_static_offer_answer(struct context *ctx)
 
   n = soa_set_params(b,
 		     SOATAG_LOCAL_SDP_STR("m=audio 5004 RTP/AVP 8"),
+		     SOATAG_AF(SOA_AF_IP4_ONLY),
+		     SOATAG_ADDRESS("1.2.3.4"),
 		     TAG_END());
   
   n = soa_generate_answer(b, test_completed); TEST(n, 0);
@@ -378,6 +380,7 @@ int test_static_offer_answer(struct context *ctx)
 
   n = soa_get_local_sdp(b, NULL, &answer, &answerlen); TEST(n, 1);
   TEST_1(answer != NULL && answer != NONE);
+  TEST_1(strstr(answer, "c=IN IP4 1.2.3.4"));
 
   n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
 
