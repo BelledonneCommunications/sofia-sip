@@ -59,9 +59,11 @@
  *  as follows:
  *   - su_timer_create(),
  *   - su_timer_destroy(),
- *   - su_timer_set(),
- *   - su_timer_run(),
+ *   - su_timer_set_interval(),
  *   - su_timer_set_at(),
+ *   - su_timer_set(),
+ *   - su_timer_set_for_ever(), 
+ *   - su_timer_run(),
  *   - su_timer_reset(), and
  *   - su_timer_root().
  *
@@ -87,25 +89,29 @@
  * The default duration is given in milliseconds.
  *
  * Usually, timer wakeup function should be called at regular intervals. In
- * such case, the timer is activated using function su_timer_run(). When the
- * timer is run it is given the wakeup function and pointer to context
- * data:
+ * such case, the timer is activated using function su_timer_set_for_ever(). 
+ * When the timer is activated it is given the wakeup function and pointer to
+ * context data:
  * @code
- *   su_timer_run(timer, timer_wakeup, args);
+ *   su_timer_set_for_ever(timer, timer_wakeup, args);
  * @endcode
  *
- * When run, the timer invokes the wakeup function approximately at the
- * intervals of the default duration given in su_timer_create(). When the
- * interval has passed, the root event loop calls the wakeup function:
+ * When the interval has passed, the root event loop calls the wakeup
+ * function:
  * @code
  *   timer_wakeup(root, timer, args);
  * @endcode
  *
- * Timer ceases running when su_timer_reset() is called.
+ * If the number of calls to callback function is important, use
+ * su_timer_run() instead. The run timer tries to compensate for missed time
+ * and invokes the callback function several times if needed. (Because the
+ * real-time clock can be adjusted or the program suspended, e.g., while
+ * debugged, the callback function can be called thousends of times in a
+ * row.) Note that while the timer tries to compensate for delays occurred
+ * before and during the callback, it cannot be used as an exact source of
+ * timing information.
  *
- * @note While the timer tries to compensate for delays occurred before and
- * during the callback, it cannot be used as an exact source of timing
- * information.
+ * Timer ceases running when su_timer_reset() is called.
  *
  * Alternatively, the timer can be @b set for one-time event invocation.
  * When the timer is set, it is given the wakeup function and pointer to
@@ -269,11 +275,9 @@ void su_timer_destroy(su_timer_t *t)
   }
 }
 
-/** Set the timer for the default interval.
+/** Set the timer for the given @a interval.
  *
- *  Sets (starts) the given timer to expire after the default duration.
- *
- *  The timer must have an default duration.
+ *  Sets (starts) the given timer to expire after the specified duration.
  *
  * @param t       pointer to the timer object
  * @param wakeup  pointer to the wakeup function
@@ -506,7 +510,7 @@ int su_timer_reset(su_timer_t *t)
  * the next timer expires.
  *
  * @param timers   pointer to the timer queue
- * @param timeout  timeout  in milliseconds [IN/OU]
+ * @param timeout  timeout in milliseconds [IN/OUT]
  * @param now      current timestamp
  *
  * @return
