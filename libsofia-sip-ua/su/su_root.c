@@ -821,6 +821,26 @@ su_duration_t su_root_sleep(su_root_t *self, su_duration_t duration)
   return retval;
 }
 
+/** Check wait events in callbacks that take lots of time
+ *
+ * This function does a 0 timeout poll() and runs wait objects
+ *
+ * @param self pointer to root object
+ */
+int su_root_yield(su_root_t *self)
+{
+  if (self && self->sur_task[0].sut_port) {
+    su_port_t *port = self->sur_task[0].sut_port;
+    /* Make sure we have su_port_yield extension */
+    if (port->sup_vtable->su_vtable_size >= 
+	offsetof(su_port_vtable_t, su_port_yield) 
+	&& port->sup_vtable->su_port_yield)
+      return port->sup_vtable->su_port_yield(port);
+  }
+  errno = EINVAL;
+  return -1;
+}
+
 /** Get task reference.
  *
  *   The function su_root_task() is used to retrieve the task reference

@@ -136,6 +136,9 @@ typedef struct {
   int (*su_port_multishot)(su_port_t *port, int multishot);
 
   int (*su_port_threadsafe)(su_port_t *port);
+  
+  /* Extension from > 1.12.0 */
+  int (*su_port_yield)(su_port_t *port);
 } su_port_vtable_t;
 
 SOFIAPUBFUN su_port_t *su_port_create(void)
@@ -295,6 +298,7 @@ su_duration_t su_port_step(su_port_t *self, su_duration_t tout)
   errno = EINVAL;
   return (su_duration_t)-1;
 }
+
 
 static inline
 int su_port_own_thread(su_port_t const *self)
