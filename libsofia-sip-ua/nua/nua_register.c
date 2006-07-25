@@ -984,7 +984,8 @@ int nua_registration_from_via(nua_registration_t **list,
     /* if more than one candidate, ignore local entries */
     if (v && (*vv || nr_items > 0) && 
 	host_is_local(v->v_host)) {
-      SU_DEBUG_9(("nua_register: ignoring contact candidate %s.\n",  v->v_host, v->v_port));
+      SU_DEBUG_9(("nua_register: ignoring contact candidate %s:%s.\n", 
+		  v->v_host, v->v_port ? v->v_port : ""));
       continue;
     }
      
@@ -1131,7 +1132,7 @@ nua_registration_for_msg(nua_registration_t const *list, sip_t const *sip)
   if (sip->sip_request) {
     aor = sip->sip_from;
     uri = sip->sip_request->rq_url;
-    }
+  }
   else {
     /* This is much hairier! */
     aor = sip->sip_to;
@@ -1183,8 +1184,11 @@ int nua_registration_add_contact(nua_handle_t *nh,
   if (!add_contact && !add_service_route)
     return 0;
 
-  if (nh == NULL)
+  if (nh == NULL || msg == NULL)
     return -1;
+
+  if (sip == NULL)
+    sip = sip_object(msg);
 
   if (nr == NULL)
     nr = nua_registration_for_msg(nh->nh_nua->nua_registrations, sip);
