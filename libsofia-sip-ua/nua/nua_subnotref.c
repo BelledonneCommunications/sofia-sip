@@ -698,12 +698,14 @@ int nua_stack_process_notify(nua_t *nua,
 
   if (nh == NULL ||
       /* XXX - support forking of subscriptions?... */
-      (ds->ds_remote_tag && sip->sip_from->a_tag &&
+      (ds->ds_remote_tag && sip && sip->sip_from->a_tag &&
        strcmp(ds->ds_remote_tag, sip->sip_from->a_tag))) {
     sip_warning_init(w);
     w->w_code = 399;
-    w->w_host = nua->nua_contact->m_url->url_host;
-    w->w_port = nua->nua_contact->m_url->url_host;
+    if (nua->nua_contact && nua->nua_contact->m_url) {
+      w->w_host = nua->nua_contact->m_url->url_host;
+      w->w_port = nua->nua_contact->m_url->url_port;
+    }
     w->w_text = "Forking SUBSCRIBEs are not supported";
 
     nta_incoming_treply(irq, 481, "Subscription Does Not Exist", 
