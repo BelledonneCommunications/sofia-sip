@@ -33,6 +33,9 @@ Contributors to this release
  - roughly sorted by number of patches accepted
 /> 
 
+- Colin Whittaker
+- Legostayev Denis
+
 See the AUTHORS file in the distribution package.
 
 Notes on new features
@@ -42,7 +45,7 @@ Notes on new features
  - new/changed/removed functionality
  - links to further documentation
 /> 
-
+- Added su_root_yield() (by Colin Whittaker)
 
 Bugs fixed in this release
 --------------------------
@@ -52,3 +55,9 @@ Bugs fixed in this release
    sorted by closing date
  - other bugs as fixed in CVS/darcs
 />
+
+- Fixed crash in soa_static.c offer_answer_step() changing only mode
+  (Legostayev Denis)
+- Fixed FreeBSD compilation problem, not defining _XOPEN_SOURCE in su/su_port.c.
+- Fixed bug #1511403: early subscription failed if the Subscription-State header
+  in NOTIFY did not contain expires parameter.
