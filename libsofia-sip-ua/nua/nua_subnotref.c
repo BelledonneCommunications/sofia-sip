@@ -685,31 +685,39 @@ int nua_stack_process_notify(nua_t *nua,
 {
   nua_dialog_state_t *ds = nh->nh_ds;
   nua_dialog_usage_t *du;
+  nua_registration_t *nr;
   struct event_usage *eu;
   sip_subscription_state_t *subs = sip ? sip->sip_subscription_state : NULL;
   sip_subscription_state_t ss0[1];
   char expires[32];
-  sip_contact_t *m = NULL, m0[1];
+  sip_contact_t *m = NULL;
   int retry = -1;
   char const *what = NULL, *why = NULL;
-  sip_warning_t w[1];
 
   enter;
 
-  if (nh == NULL ||
-      /* XXX - support forking of subscriptions?... */
-      (ds->ds_remote_tag && sip && sip->sip_from->a_tag &&
-       strcmp(ds->ds_remote_tag, sip->sip_from->a_tag))) {
-    sip_warning_init(w);
-    w->w_code = 399;
-    if (nua->nua_contact && nua->nua_contact->m_url) {
-      w->w_host = nua->nua_contact->m_url->url_host;
-      w->w_port = nua->nua_contact->m_url->url_port;
+  if (nh == NULL) {
+    nta_incoming_treply(irq, 481, "Subscription Does Not Exist", 
+			TAG_END());
+    return 481;
+  }
+
+  if (/* XXX - support forking of subscriptions?... */
+      ds->ds_remote_tag && sip && sip->sip_from->a_tag &&
+      strcmp(ds->ds_remote_tag, sip->sip_from->a_tag)) {
+    sip_warning_t *w = NULL, w0[1];
+
+    m = nua_stack_get_contact(nua->nua_registrations);
+    if (m) {
+      w = sip_warning_init(w0);
+      w->w_code = 399;
+      w->w_host = m->m_url->url_host;
+      w->w_port = m->m_url->url_port;
+      w->w_text = "Forking SUBSCRIBEs are not supported";
     }
-    w->w_text = "Forking SUBSCRIBEs are not supported";
 
     nta_incoming_treply(irq, 481, "Subscription Does Not Exist", 
-			TAG_IF(nh, SIPTAG_WARNING(w)),
+			SIPTAG_WARNING(w),
 			TAG_END());
     return 481;
   }
@@ -771,13 +779,9 @@ int nua_stack_process_notify(nua_t *nua,
     eu->eu_substate = nua_substate_active;
   }
   
+  nr = nua_registration_for_msg(nua->nua_registrations, sip);
+  m = nua_registration_contact(nr);
 
-  if (nta_incoming_url(irq)->url_type == url_sips && nua->nua_sips_contact)
-    *m0 = *nua->nua_sips_contact, m = m0;
-  else if (nua->nua_contact)
-    *m0 = *nua->nua_contact, m = m0;
-  m0->m_params = NULL;
-    
   nta_incoming_treply(irq, SIP_200_OK, SIPTAG_CONTACT(m), NULL);
 
   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
