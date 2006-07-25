@@ -41,7 +41,7 @@ libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
 # set the libtool version info version:revision:age for libsofia-sip-ua
 # - soname to 'libsofia-sip-ua.so.(CUR-AGE)'
 libsofia_sip_ua_la_LDFLAGS = \
-	-version-info $(LIBVER_SOFIA_SIP_UA_CUR):$(LIBVER_SOFIA_SIP_UA_REV):$(VER_LIBSOFIA_SIP_UA_INTERFACE_AGE)
+	-version-info $(LIBVER_SOFIA_SIP_UA_CUR):$(LIBVER_SOFIA_SIP_UA_REV):$(LIBVER_SOFIA_SIP_UA_AGE)
 
 if ENABLE_COVERAGE
 COVERAGE_RECURSIVE = coverage-recursive
