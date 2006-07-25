@@ -43,15 +43,12 @@
 #include <sofia-sip/sip_protos.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_util.h>
+#include <sofia-sip/su_uniqueid.h>
 
 #define NTA_LEG_MAGIC_T      struct nua_handle_s
 #define NTA_OUTGOING_MAGIC_T struct nua_handle_s
 
 #include "nua_stack.h"
-
-#if !defined(random) && defined(_WIN32)
-#define random rand
-#endif
 
 /* ---------------------------------------------------------------------- */
 /* Subcribe event usage */
@@ -59,6 +56,7 @@
 struct event_usage
 {
   enum nua_substate  eu_substate;	/**< Subscription state */
+  sip_time_t eu_expires;	        /**< Proposed expiration time */
 };
 
 static char const *nua_subscribe_usage_name(nua_dialog_usage_t const *du);
@@ -149,13 +147,14 @@ void nua_notify_usage_remove(nua_handle_t *nh,
 
 static void 
   refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *, sip_time_t now),
-  pending_unsubscribe(nua_handle_t *nh, nua_dialog_usage_t *, sip_time_t now);
+  terminate_subscription(nua_handle_t *nh, nua_dialog_usage_t *, sip_time_t now);
 static int process_response_to_subscribe(nua_handle_t *nh,
 					 nta_outgoing_t *orq,
 					 sip_t const *sip);
 
 int
-nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
+nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+		    tagi_t const *tags)
 {
   nua_client_request_t *cr = nh->nh_cr;
   nua_dialog_usage_t *du = NULL;
@@ -179,8 +178,6 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *t
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 		     SIP_METHOD_SUBSCRIBE,
 		     NUTAG_USE_DIALOG(1),
-		     /* Note:  this is overriden by application */
-		     /* SIPTAG_EVENT_STR("presence"), */
 		     NUTAG_ADD_CONTACT(1),
 		     TAG_NEXT(tags));
   sip = sip_object(msg);
@@ -234,7 +231,20 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *t
 		     NUTAG_SUBSTATE(substate), TAG_END());
   }
 
+  du->du_pending = NULL;
   du->du_terminating = e != nua_r_subscribe; /* Unsubscribe or destroy */
+
+  if (du->du_terminating)
+    eu->eu_expires = 0;
+  else if (sip->sip_expires)
+    eu->eu_expires = sip->sip_expires->ex_delta;
+  else
+    /* We just use common default value, but the default is actually
+       package-specific according to the RFC 3265 section 4.4.4:
+       [Event] packages MUST also define a
+       default "Expires" value to be used if none is specified. */
+    eu->eu_expires = 3600;
+    
   if (sip->sip_expires && sip->sip_expires->ex_delta == 0)
     du->du_terminating = 1;
 
@@ -266,8 +276,9 @@ static int process_response_to_subscribe(nua_handle_t *nh,
   if (status < 200)
     ;
   else if (du == NULL) {
-    /* Unsubscribe, NOTIFY removing du? */
+    /* NOTIFY already removed du */
   }
+  /* We have not received NOTIFY. */
   else if (status < 300) {
     int win_messenger_enable = NH_PGET(nh, win_messenger_enable);
     sip_time_t delta, now = sip_now();
@@ -278,14 +289,11 @@ static int process_response_to_subscribe(nua_handle_t *nh,
     if (cr->cr_event == nua_r_unsubscribe)
       delta = 0;
     else
-      /* If no expires header, use default value (0) 
-       * -> do not re-subscribe, wait for NOTIFY 
-       *    (if no NOTIFY is received, unsubscribe after 32 seconds)
-       */
+      /* If there is no expires header,
+	 use default value stored in eu_expires */
       delta = sip_contact_expires(NULL, sip->sip_expires, sip->sip_date, 
-				  0, now);
+				  eu->eu_expires, now);
 
-    /* We have not received notify. */
     if (!win_messenger_enable)
       nua_dialog_uac_route(nh, nh->nh_ds, sip, 1);
     nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
@@ -294,15 +302,14 @@ static int process_response_to_subscribe(nua_handle_t *nh,
       nua_dialog_usage_set_refresh(du, delta);
       du->du_pending = refresh_subscribe;
     }
-    else if (substate == nua_substate_embryonic || 
-	     cr->cr_event == nua_r_unsubscribe) {
+    else {
       if (win_messenger_enable)
 	/* Wait 4 minutes for NOTIFY from Messenger */
 	du->du_refresh = now + 4 * 60; 
       else
 	/* Wait 32 seconds for NOTIFY */
-	du->du_refresh = now + 64 * NTA_SIP_T1 / 1000; 
-      du->du_pending = pending_unsubscribe;
+	du->du_refresh = now + 64 * NTA_SIP_T1 / 1000;
+      du->du_pending = terminate_subscription;
     }
   }
   else /* if (status >= 300) */ {
@@ -352,9 +359,9 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   msg_t *msg;
   sip_t *sip;
 
-  if (cr->cr_msg) {
+  if (cr->cr_msg) {		/* Already doing something  */
     /* Delay of 5 .. 15 seconds */
-    nua_dialog_usage_set_refresh(du, 5 + (unsigned)random() % 11U);
+    du->du_refresh = sip_now() + su_randint(5, 15);
     du->du_pending = refresh_subscribe;
     return;
   }
@@ -404,21 +411,24 @@ refresh_subscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
 }
 
 
+/** Terminate subscription when we have not received a NOTIFY */
 static void 
-pending_unsubscribe(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
+terminate_subscription(nua_handle_t *nh,
+		       nua_dialog_usage_t *du,
+		       sip_time_t now)
 {
   sip_event_t const *o = NULL;
   char const *id;
 
   if (!du) {
-    SU_DEBUG_1(("nua(%p): pending_unsubscribe() without usage to remove\n", 
+    SU_DEBUG_1(("nua(%p): terminate_subscription() without usage to remove\n", 
 		nh));
     return;
   }
 
   o = du->du_event;
   id = o ? o->o_id : NULL;
-  SU_DEBUG_3(("nua(%p): pending_unsubscribe() with event %s%s%s\n",
+  SU_DEBUG_3(("nua(%p): terminate_subscription() with event %s%s%s\n",
 	      nh, o ? o->o_type : "(empty)",
 	      id ? "; id=" : "", id ? id : ""));
 
@@ -685,12 +695,11 @@ int nua_stack_process_notify(nua_t *nua,
 {
   nua_dialog_state_t *ds = nh->nh_ds;
   nua_dialog_usage_t *du;
-  nua_registration_t *nr;
   struct event_usage *eu;
   sip_subscription_state_t *subs = sip ? sip->sip_subscription_state : NULL;
   sip_subscription_state_t ss0[1];
+  msg_t *response;
   char expires[32];
-  sip_contact_t *m = NULL;
   int retry = -1;
   char const *what = NULL, *why = NULL;
 
@@ -701,10 +710,12 @@ int nua_stack_process_notify(nua_t *nua,
 			TAG_END());
     return 481;
   }
+  assert(nh);
 
   if (/* XXX - support forking of subscriptions?... */
       ds->ds_remote_tag && sip && sip->sip_from->a_tag &&
       strcmp(ds->ds_remote_tag, sip->sip_from->a_tag)) {
+    sip_contact_t const *m = NULL;
     sip_warning_t *w = NULL, w0[1];
 
     m = nua_stack_get_contact(nua->nua_registrations);
@@ -721,7 +732,6 @@ int nua_stack_process_notify(nua_t *nua,
 			TAG_END());
     return 481;
   }
-  assert(nh);
 
   du = nua_dialog_usage_get(nh->nh_ds, nua_subscribe_usage, sip->sip_event);
 
@@ -730,7 +740,7 @@ int nua_stack_process_notify(nua_t *nua,
     return 481;
   }
 
-  eu = nua_dialog_usage_private(du);
+  eu = nua_dialog_usage_private(du); assert(eu);
 
   if (subs == NULL) {
     /* Do some compatibility stuff here */
@@ -740,6 +750,8 @@ int nua_stack_process_notify(nua_t *nua,
 
     if (sip->sip_expires)
       delta = sip->sip_expires->ex_delta;
+    else
+      delta = eu->eu_expires;
 
     if (delta == 0)
       subs->ss_substate = "terminated";
@@ -779,10 +791,15 @@ int nua_stack_process_notify(nua_t *nua,
     eu->eu_substate = nua_substate_active;
   }
   
-  nr = nua_registration_for_msg(nua->nua_registrations, sip);
-  m = nua_registration_contact(nr);
+  response = nh_make_response(nua, nh, irq, SIP_200_OK,
+			      SIPTAG_ALLOW(NH_PGET(nh, allow)),
+			      SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
+			      TAG_END());
 
-  nta_incoming_treply(irq, SIP_200_OK, SIPTAG_CONTACT(m), NULL);
+  if (response && nua_registration_add_contact(nh, response, NULL, 1, 0) >= 0)
+    nta_incoming_mreply(irq, response);
+  else
+    nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
 
   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
 	   nua_i_notify, SIP_200_OK, 
@@ -801,6 +818,8 @@ int nua_stack_process_notify(nua_t *nua,
   }
   else if (eu->eu_substate == nua_substate_embryonic) {
     if (retry != -1 && !du->du_terminating) {
+      /* Try to subscribe again */
+      /* XXX - how to handle dialog ?? */
       nua_dialog_usage_set_refresh(du, retry);
       du->du_pending = refresh_subscribe;
     }
