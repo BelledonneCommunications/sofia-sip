@@ -18,10 +18,17 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
-- Added su_yield().
+- Added su_yield() function.
+- Removed sofia-sip/sha1.h from the library. This removal is
+  not considered as an API change, but instead a bugfix to 
+  the 1.12.0 API/ABI. We know of no applications that are using 
+  the sha1.h functionality, so applying this change as a bugfix
+  was seen as an acceptable action. If however some application
+  relying on sha1.h is found, please contact the sofia-sip team 
+  and we will reconsider the issue. See sf.net bug #1525308 for 
+  the history of this issue.
 - This release is ABI/API compatible with applications 
   linked against 1.12.0.
-
 
 Contributors to this release
 ----------------------------

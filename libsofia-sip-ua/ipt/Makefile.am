@@ -15,20 +15,20 @@ INCLUDES = 		-I$(srcdir)/../su -I../su
 
 noinst_LTLIBRARIES = 	libipt.la
 
-check_PROGRAMS = 	sha1test torture_base64
+check_PROGRAMS = 	torture_base64
 
-TESTS = 		sha1test torture_base64
+TESTS = 		torture_base64
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
 nobase_include_sofia_HEADERS = \
 			sofia-sip/rc4.h \
-			sofia-sip/sha1.h sofia-sip/base64.h \
+			sofia-sip/base64.h \
 			sofia-sip/string0.h sofia-sip/token64.h \
 			sofia-sip/uniqueid.h
 
-libipt_la_SOURCES = 	sha1.c base64.c string0.c token64.c
+libipt_la_SOURCES = 	base64.c string0.c token64.c
 
 EXTRA_DIST = 		sofia-sip/utf8.h \
 			utf8internal.h \
@@ -41,7 +41,6 @@ LDADD = 		libipt.la \
 			../sresolv/libsresolv.la \
 			../su/libsu.la
 
-sha1test_LDFLAGS = 	-static
 torture_base64_LDFLAGS = -static
 
 # ----------------------------------------------------------------------

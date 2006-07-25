@@ -34,7 +34,6 @@
 
 #include <sofia-sip/string0.h>
 #include <sofia-sip/su_strlst.h>
-#include <sofia-sip/sha1.h>
 #include <sofia-sip/token64.h>
 #include <sofia-sip/su_tagarg.h>
 
