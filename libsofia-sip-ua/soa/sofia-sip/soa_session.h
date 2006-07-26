@@ -221,6 +221,8 @@ struct soa_session
     ss_srtp_confidentiality:1,
     ss_srtp_integrity:1;
 
+  unsigned :0;			/* Pad */
+
   int             ss_wcode;	/**< Warning code from last media operation */
   char const     *ss_warning;	/**< Warnings text from last media operation */
 };
