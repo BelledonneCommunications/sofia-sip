@@ -1,3 +1,9 @@
+2006-07-11  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* sofia-sip/stun_common.h: New defines for STUN attributes defined
+	in RFC3489bis. Some old defines have been deprecated, but are still
+	supported in the API.
+
 2006-05-22  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* Makefile.am: Install the stunc tool.

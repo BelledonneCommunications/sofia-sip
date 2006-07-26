@@ -39,8 +39,8 @@
 
 #ifdef USE_TURN
 #include "../turn/turn_common.h"
-#undef LARGEST_ATTRIBUTE
-#define LARGEST_ATTRIBUTE TURN_LARGEST_ATTRIBUTE
+#undef STUN_A_LAST_MANDATORY
+#define STUN_A_LAST_MANDATORY TURN_LARGEST_ATTRIBUTE
 #endif
 
 #include "stun_internal.h"
@@ -123,7 +123,7 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p)
   SU_DEBUG_5(("%s: received attribute: Type %02X, Length %d - %s\n", 
 	      __func__, attr_type, len, stun_attr_phrase(attr_type)));
 
-  if (attr_type > LARGEST_ATTRIBUTE && attr_type < OPTIONAL_ATTRIBUTE) {
+  if (attr_type > STUN_A_LAST_MANDATORY && attr_type < STUN_A_OPTIONAL) {
     return -1;
   }
 
@@ -166,6 +166,8 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p)
     break;
   case USERNAME:
   case PASSWORD:
+  case STUN_A_REALM:
+  case STUN_A_NONCE:
 #ifdef USE_TURN
   case TURN_DATA:
   case TURN_NONCE:
@@ -794,6 +796,12 @@ const char *stun_attr_phrase(uint16_t type)
   case ERROR_CODE: return "ERROR-CODE";
   case UNKNOWN_ATTRIBUTES: return "UNKNOWN-ATTRIBUTES";
   case REFLECTED_FROM: return "REFLECTED-FROM";
+  case STUN_A_ALTERNATE_SERVER:
+  case STUN_A_ALTERNATE_SERVER_DEP: 
+    return "ALTERNATE-SERVER";
+  case STUN_A_REALM: return "REALM";
+  case STUN_A_NONCE: return "NONCE";
+  case STUN_A_XOR_MAPPED_ADDRESS: return "XOR-MAPPED-ADDRESS";
 #ifdef USE_TURN
   case TURN_REALM: return "REALM";
   case TURN_LIFETIME: return "LIFETIME";

@@ -75,9 +75,26 @@ SOFIA_BEGIN_DECLS
 #define ERROR_CODE                    0x0009
 #define UNKNOWN_ATTRIBUTES            0x000a
 #define REFLECTED_FROM                0x000b
-#define LARGEST_ATTRIBUTE             0x000b /**< largest attribute in
-						  the current spec */
-#define OPTIONAL_ATTRIBUTE            0x7fff
+#define STUN_A_REALM                  0x0014 /* XXX: check value in 3489bis-05+ */
+#define STUN_A_NONCE                  0x0015 /* XXX: check value in 3489bis-05+ */
+#define STUN_A_XOR_MAPPED_ADDRESS     0x0020
+#define STUN_A_FINGERPRINT            0x0023
+#define STUN_A_SERVER                 0x8022
+#define STUN_A_ALTERNATE_SERVER       0x8023
+#define STUN_A_REFRESH_INTERVAL       0x8024
+
+/* Defines for mandatory and optional attributes */
+#define STUN_A_LAST_MANDATORY         0x0023 /**< largest attribute in the current 
+						spec (see above for exceptions
+						for buggy servers) */
+#define STUN_A_OPTIONAL               0x7fff
+
+/* Compability attribute types */
+#define STUN_A_ALTERNATE_SERVER_DEP   0x000e /**< historic from early fc3489bis drafts */
+#define STUN_A_BUGGYSERVER_XORONLY    0x0021 /**< workaround for stund-0.94 and older */
+#define STUN_A_BUGGYSERVER_SERVER     0x0022 /**< workaround for stund-0.94 and older */
+#define LARGEST_ATTRIBUTE             STUN_A_LAST_MANDATORY /**< deprecated API */
+#define OPTIONAL_ATTRIBUTE            STUN_A_OPTIONAL /**< deprecated API */
 
 /* Stun response codes */
 #define STUN_400_BAD_REQUEST             400
