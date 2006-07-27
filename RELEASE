@@ -12,6 +12,7 @@ from RFC3174 due to licensing concerns.
 API/ABI changes and versioning
 ------------------------------
 
+libsofia-sip-ua:
 - Added su_yield() function (sofia-sip/su_wait.h). See
   http://sofia-sip.sourceforge.net/refdocs/su/su__root_8c.html
 - Added host_is_ip6_reference() (sofia-sip/hostdomain.h). See
@@ -27,6 +28,11 @@ API/ABI changes and versioning
 - This release is ABI/API compatible with applications 
   linked against 1.12.0. The ABI has been tested with the nua
   module unit test (test_nua) built against original 1.12.0 release.
+
+libsofia-sip-ua-glib:
+- No ABI/API changes, compatible with 1.12.0. Note, libsofia-sip-ua-glib
+  interface is not considered stable and may change in a future 1.12.x
+  release.
 
 Contributors to this release
 ----------------------------
