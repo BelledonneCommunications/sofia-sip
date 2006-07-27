@@ -208,10 +208,6 @@ SOURCE="..\..\libsofia-sip-ua\ipt\rc4.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\ipt\sha1.c"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\ipt\string0.c"
 # End Source File
 # Begin Source File
@@ -953,10 +949,6 @@ SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\base64.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\rc4.h"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\ipt\sofia-sip\sha1.h"
 # End Source File
 # Begin Source File
 
