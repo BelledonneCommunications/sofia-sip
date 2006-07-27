@@ -18,7 +18,7 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
-- Added su_yield() function.
+- Added su_root_yield(), host_is_ip6_reference().
 - Removed sofia-sip/sha1.h from the library. This removal is
   not considered as an API change, but instead a bugfix to 
   the 1.12.0 API/ABI. We know of no applications that are using 
