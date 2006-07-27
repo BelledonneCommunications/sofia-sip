@@ -5,20 +5,17 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-<changes since last written in freshmeat.net "Changes:" style;
- and in less than 10 lines />
-
+Bugs in highlevel user-agent logic, scheduling of stack timers, 
+and STUN client code have been fixed. Removed the SHA1 code derived
+from RFC3174 due to licensing concerns.
 
 API/ABI changes and versioning
 ------------------------------
 
-<see previous release notes at
- http://sofia-sip.sourceforge.net/relnotes/ for examples ;
- - should include all changes to public headers, and 
-   other important information to developers; 
- - and should be updated _continuously_! />
-
-- Added su_root_yield(), host_is_ip6_reference().
+- Added su_yield() function (sofia-sip/su_wait.h). See
+  http://sofia-sip.sourceforge.net/refdocs/su/su__root_8c.html
+- Added host_is_ip6_reference() (sofia-sip/hostdomain.h). See
+  http://sofia-sip.sourceforge.net/refdocs/bnf/hostdomain_8h.html  
 - Removed sofia-sip/sha1.h from the library. This removal is
   not considered as an API change, but instead a bugfix to 
   the 1.12.0 API/ABI. We know of no applications that are using 
@@ -26,45 +23,26 @@ API/ABI changes and versioning
   was seen as an acceptable action. If however some application
   relying on sha1.h is found, please contact the sofia-sip team 
   and we will reconsider the issue. See sf.net bug #1525308 for 
-  the history of this issue.
+  the whole history.
 - This release is ABI/API compatible with applications 
-  linked against 1.12.0.
+  linked against 1.12.0. The ABI has been tested with the nua
+  module unit test (test_nua) built against original 1.12.0 release.
 
 Contributors to this release
 ----------------------------
 
-<list of people who contributed to _this_ release
- - update as people's patches are added, or when you commit stuff
- - current development team members (see AUTHORS) may be omitted
- - name of the contributor should be enough (email addresses in AUTHORS)
- - roughly sorted by number of patches accepted
-/> 
-
-- Colin Whittaker
-- Legostayev Denis
+- Colin Whittaker (stack timer scheduling, cseq patch)
+- Legostayev Denis (patch to soa)
 
 See the AUTHORS file in the distribution package.
 
-Notes on new features
----------------------
-
-<information about major new features
- - new/changed/removed functionality
- - links to further documentation
-/> 
-- Added su_root_yield() (by Colin Whittaker)
-
 Bugs fixed in this release
 --------------------------
-
-< notable bugs fixed in this release
- - check the sf.net bug tracker; see closed bugs,
-   sorted by closing date
- - other bugs as fixed in CVS/darcs
-/>
 
 - Fixed crash in soa_static.c offer_answer_step() changing only mode
   (Legostayev Denis)
 - Fixed FreeBSD compilation problem, not defining _XOPEN_SOURCE in su/su_port.c.
 - Fixed bug #1511403: early subscription failed if the Subscription-State header
   in NOTIFY did not contain expires parameter.
+- #1525308 Removal of sha1.[ch] (licensing problem)
+- #1511403 Early Subscription Timeouts without NOTIFY
