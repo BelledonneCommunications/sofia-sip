@@ -1464,7 +1464,8 @@ use_session_timer(nua_handle_t *nh, int uas, msg_t *msg, sip_t *sip)
   static sip_param_t const x_params_uas[] = {"refresher=uas", NULL};
 
   /* Session-Expires timer */
-  if ((NH_PGET(nh, refresher) == 0 &&
+  if ((ss->ss_refresher == nua_no_refresher &&
+       NH_PGET(nh, refresher) == 0 &&
        NH_PGET(nh, session_timer) == 0) ||
       /* Is timer feature supported? */
       !sip_has_supported(NH_PGET(nh, supported), "timer"))
