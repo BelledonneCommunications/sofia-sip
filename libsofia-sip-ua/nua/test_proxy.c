@@ -108,6 +108,8 @@ struct proxy {
 
   struct {
     sip_time_t min_expires, expires, max_expires;
+    
+    sip_time_t session_expires, min_se;
   } prefs;
 }; 
 
@@ -260,6 +262,9 @@ test_proxy_init(su_root_t *root, struct proxy *proxy)
   proxy->prefs.min_expires = 30;
   proxy->prefs.expires = 3600;
   proxy->prefs.max_expires = 3600;
+
+  proxy->prefs.session_expires = 180;
+  proxy->prefs.min_se = 90;
 
   if (!proxy->defleg || 
       !proxy->example_net || !proxy->example_org || !proxy->example_com)
@@ -418,6 +423,9 @@ int proxy_request(struct proxy *proxy,
   sip_max_forwards_t *mf;
   sip_method_t method = sip->sip_request->rq_method;
 
+  sip_session_expires_t *x = NULL, x0[1];
+  sip_min_se_t *min_se = NULL, min_se0[1];
+
   mf = sip->sip_max_forwards;
 
   if (mf && mf->mf_count <= 1) {
@@ -434,6 +442,28 @@ int proxy_request(struct proxy *proxy,
     int status = challenge_request(proxy, irq, sip);
     if (status)
       return status;
+  }
+
+  if (method == sip_method_invite) {
+    if (!sip->sip_min_se || 
+	sip->sip_min_se->min_delta < proxy->prefs.min_se) {
+      min_se = sip_min_se_init(min_se0);
+      min_se->min_delta = proxy->prefs.min_se;
+    }
+
+    if (!sip->sip_session_expires) {
+      x = sip_session_expires_init(x0);
+      x->x_delta = proxy->prefs.session_expires;
+    }
+    else if (sip->sip_session_expires->x_delta < proxy->prefs.min_se
+	     && sip_has_supported(sip->sip_supported, "timer")) {
+      if (min_se == NULL)
+	min_se = sip->sip_min_se; assert(min_se);
+      nta_incoming_treply(irq, SIP_422_SESSION_TIMER_TOO_SMALL,
+			  SIPTAG_MIN_SE(min_se),
+			  TAG_END());
+      return 422;
+    }
   }
 
   /* We don't do any route processing */
@@ -494,6 +524,8 @@ int proxy_request(struct proxy *proxy,
 				   nta_incoming_getrequest(irq),
 				   /* rewrite request */
 				   SIPTAG_REQUEST(rq),
+				   SIPTAG_SESSION_EXPIRES(x),
+				   SIPTAG_MIN_SE(min_se),
 				   TAG_END());
   if (t->client == NULL) {
     proxy_transaction_destroy(t);

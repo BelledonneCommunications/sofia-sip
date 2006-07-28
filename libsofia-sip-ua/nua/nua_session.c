@@ -1449,7 +1449,7 @@ int process_timeout(nua_handle_t *nh,
 
 
 /* ---------------------------------------------------------------------- */
-/* Session timer */
+/* Session timer - RFC 4028 */
 
 /** Add timer featuretag and Session-Expires/Min-SE headers */
 static int
@@ -1499,13 +1499,16 @@ init_session_timer(nua_handle_t *nh, sip_t const *sip)
 
   int server;
 
-  ss->ss_refresher = nua_no_refresher;
+  /* Session timer is not needed */
+  if (!sip->sip_session_expires)
+    return 0;
 
   /* Check if we support the timer feature */
-  if (!sip->sip_session_expires ||
-      !sip_has_supported(NH_PGET(nh, supported), "timer")) {
+  if (!sip_has_supported(NH_PGET(nh, supported), "timer")) {
     return 0;
   }
+
+  ss->ss_refresher = nua_no_refresher;
 
   ss->ss_session_timer = sip->sip_session_expires->x_delta;
 
@@ -1515,7 +1518,9 @@ init_session_timer(nua_handle_t *nh, sip_t const *sip)
 
   server = sip->sip_request != NULL;
 
-  if (!str0casecmp("uac", sip->sip_session_expires->x_refresher))
+  if (!sip_has_supported(sip->sip_supported, "timer"))
+    ss->ss_refresher = nua_local_refresher;
+  else if (!str0casecmp("uac", sip->sip_session_expires->x_refresher))
     ss->ss_refresher = server ? nua_remote_refresher : nua_local_refresher;
   else if (!str0casecmp("uas", sip->sip_session_expires->x_refresher))
     ss->ss_refresher = server ? nua_local_refresher : nua_remote_refresher;
@@ -1526,6 +1531,12 @@ init_session_timer(nua_handle_t *nh, sip_t const *sip)
     ss->ss_refresher = nua_local_refresher;
   else
     ss->ss_refresher = nua_remote_refresher;
+
+  SU_DEBUG_9(("nua(%p): session expires in %u refreshed by %s (%s %s)\n",
+	      nh, ss->ss_session_timer, 
+	      ss->ss_refresher == nua_local_refresher ? "local" : "remote",
+	      server ? sip->sip_request->rq_method_name : "response to",
+	      server ? "request" : sip->sip_cseq->cs_method_name));
 
   return 0;
 }

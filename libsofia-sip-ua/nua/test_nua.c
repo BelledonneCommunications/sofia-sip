@@ -4193,7 +4193,11 @@ int test_session_timer(struct context *ctx)
 
 /* Session timer test:
 
-   A			B
+   A	      P		B
+   |--INVITE->| 	|
+   |<--422----|		|
+   |---ACK--->|		|
+   |			|
    |-------INVITE------>|
    |<-------422---------|
    |--------ACK-------->|
@@ -4229,6 +4233,9 @@ int test_session_timer(struct context *ctx)
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
      CALLING -(C6a)-> (TERMINATED/INIT): nua_r_invite
+     when testing with proxy, second 422 when call reaches UAS:
+       (INIT) -(C1)-> CALLING: nua_i_state
+       CALLING -(C6a)-> (TERMINATED/INIT): nua_r_invite
      (INIT) -(C1)-> CALLING: nua_i_state
      CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
      PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
@@ -4239,6 +4246,16 @@ int test_session_timer(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 100);
   TEST(sip_object(e->data->e_msg)->sip_status->st_status, 422);
+
+  if (ctx->proxy_tests) {
+    TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+    TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+    TEST_1(is_offer_sent(e->data->e_tags));
+    TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+    TEST(e->data->e_status, 100);
+    TEST(sip_object(e->data->e_msg)->sip_status->st_status, 422);
+  }
+
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
@@ -5044,7 +5061,7 @@ int test_100rel(struct context *ctx)
   struct endpoint *a = &ctx->a,  *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
-
+  sip_t *sip;
 
   if (print_headings)
     printf("TEST NUA-10.1: Call with 100rel and 180\n");
@@ -5361,7 +5378,7 @@ int test_100rel(struct context *ctx)
 
   nua_set_params(ctx->b.nua,
 		 NUTAG_EARLY_MEDIA(0),
-		 SIPTAG_SUPPORTED_STR("100rel, precondition"),
+		 SIPTAG_SUPPORTED_STR("100rel, precondition, timer"),
 		 TAG_END());
   run_b_until(ctx, nua_r_set_params, until_final_response);
 
@@ -5426,6 +5443,10 @@ int test_100rel(struct context *ctx)
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_session_expires);
+  TEST_S(sip->sip_session_expires->x_refresher, "uas");
+  TEST_1(!sip_has_supported(sip->sip_require, "timer"));
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
