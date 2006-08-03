@@ -765,7 +765,7 @@ unsigned long sip_payload_serialize(msg_t *msg, sip_payload_t *pl)
 /** 
  * Remove extra parameters from an AOR URL.
  *
- * The extra parameters listed in the RFC 3261 table 1 include port number,
+ * The extra parameters listed in the @RFC3261 table 1 include port number,
  * method, maddr, ttl, transport, lr and headers.
  * 
  * @note The funtion modifies the @a url and the strings attached to it.
@@ -919,7 +919,7 @@ sip_security_client_select(sip_security_client_t const *client,
  * @a *return_graceful_terminate_usage is left unmodified.
  *
  * @sa 
- * http://www.ietf.org/internet-drafts/draft-sparks-sipping-dialogusage-01.txt
+ * http://www.ietf.org/internet-drafts/draft-ietf-sipping-dialogusage-02.txt
  */
 int sip_response_terminates_dialog(int response_code,
 				   sip_method_t method,
@@ -982,7 +982,8 @@ int sip_response_terminates_dialog(int response_code,
       response to a re-INVITE, the invite usage would be terminated, but
       not the subscription.
     */
-    return terminate_usage;
+    *return_graceful_terminate_usage = 0;
+    return 0;
     
   case 404: /** @par 404 Not Found 
 
@@ -1057,6 +1058,14 @@ int sip_response_terminates_dialog(int response_code,
     */
     return terminate_dialog;
 
+  case 417:
+    /** @par 417 Uknown Resource-Priority
+      The effect of this response on usages
+      and dialogs is analgous to that for 420 and 488.  The usage is not
+      affected.  The dialog is only affected by a change in its local
+      CSeq.  No other usages of the dialog are affected.
+    */
+
   case 420: /* Bad Extension */ 
   case 421: /* Extension Required */
 
@@ -1065,6 +1074,18 @@ int sip_response_terminates_dialog(int response_code,
       These responses are objecting to the request, not the usage. The
       usage is not affected. The dialog is only affected by a change in
       its local CSeq. No other usages of the dialog are affected.
+    */
+
+  case 422: /** @par 422 Session Interval Too Small
+
+      This response will not be returned to
+      a NOTIFY in our example scenario.  This response is non-sensical
+      for any mid-usage request.  If it is received, an element in the
+      path of the request is violating protocol, and the recipient
+      should treat this as it would an unknown 4xx response.  If the
+      response came to a request that was attempting to establish a new
+      usage in an existing dialog, no new usage is created and existing
+      usages are unaffected.
     */
     *return_graceful_terminate_usage = 0;
     return 0;
@@ -1079,6 +1100,15 @@ int sip_response_terminates_dialog(int response_code,
     *return_graceful_terminate_usage = 0;
     return sip_method_subscribe == method ? terminate_usage : no_effect;
 
+  case 428: /** @par 428 Use Identity Header
+
+      This response objects to the request, not
+      the usage.  The usage is not affected.  The dialog is only
+      affected by a change in its local CSeq.  No other usages of the
+      dialog are affected. */
+    *return_graceful_terminate_usage = 0;
+    return 0;
+
   case 429: /** @par 429 Provide Referrer Identity 
 
       This response won't be returned to a NOTIFY as in our example
@@ -1088,6 +1118,16 @@ int sip_response_terminates_dialog(int response_code,
       unaffected. The dialog is only affected by a change in its local
       CSeq.
     */
+
+  case 436: case 437: case 438:
+    /** @par 436 Bad Identity-Info, 437 Unsupported Certificate, 438 Invalid \
+     *  Identity Header 
+     *
+     * These responses object to the request, not the usage.
+     * The usage is not affected.  The dialog is only affected by a
+     * change in its local CSeq.  No other usages of the dialog are
+     * affected.
+     */
     *return_graceful_terminate_usage = 0;
     return 0;
 
@@ -1109,14 +1149,25 @@ int sip_response_terminates_dialog(int response_code,
       This response indicates that the peer has lost its copy of the dialog
       state. The dialog and any usages sharing it are destroyed.
 
-      OPEN ISSUE: There has been some list discussion indicating a need
-      for a response code that only terminates the usage, but not the
-      dialog (Motivation: being able to destroy a subscription by
-      refusing a NOTIFY without destroying the dialog that that
-      subscription exists in, particularly when the susbcription exists
-      because of an in-dialog REFER).
+The dialog
+      itself should not be destroyed unless this was the last usage.
+      The effects of a 481 on a dialog and its usages are the most
+      ambiguous of any final response.  There are implementations that
+      have chosen the meaning recommended here, and others that destroy
+      the entire dialog without regard to the number of outstanding
+      usages.  Going forward with this clarification will allow those
+      deployed implementations that assumed only the usage was destroyed
+      to work with a wider number of implementations.  Those that made
+      the other choice will continue to function as they do now,
+      suffering at most the same extra messages needed for a peer to
+      discover that that other usages have gone away that they currently
+      do.  However, the necessary clarification to @RFC3261 needs to
+      make it very clear that the ability to terminate usages
+      independently from the overall dialog using a 481 is not
+      justification for designing new applications that count on
+      multiple usages in a dialog.
     */
-    return terminate_dialog;
+    return terminate_usage;
 
 
   case 482: /** @par 482 Loop Detected 
@@ -1196,7 +1247,7 @@ int sip_response_terminates_dialog(int response_code,
 
   case 489: /** @par 489 Bad Event 
 
-      In our example scenario, [3] declares that the
+      In our example scenario, @RFC3265 declares that the
       subscription usage in which the NOTIFY is sent is terminated.  The
       invite usage is unaffected and the dialog continues to exist.
       This response is only valid in the context of SUBSCRIBE and
@@ -1289,7 +1340,7 @@ int sip_response_terminates_dialog(int response_code,
 
   case 503: /** @par 503 Service Unavailable 
 
-      As per [2], the logic handling locating SIP servers for
+      As per @RFC3263, the logic handling locating SIP servers for
       transactions may handle 503 requests (effectively sequentially
       forking at the endpoint based on DNS results). If this process
       does not yield a better response, a 503 may be returned to the
@@ -1297,8 +1348,8 @@ int sip_response_terminates_dialog(int response_code,
       about this transaction, not the usage. Because this response
       occurred in the context of an established usage (hence an existing
       dialog), the route-set has already been formed and any opportunity
-      to try alternate servers (as recommended in [1] has been exhausted
-      by the RFC3263 logic. The response should be handled as described
+      to try alternate servers (as recommended in @RFC3261) has been exhausted
+      by the @RFC3263 logic. The response should be handled as described
       for 500 earlier in this memo.
     */
     /* Do not change *return_graceful_terminate_usage */
