@@ -163,7 +163,6 @@ AC_DEV_URANDOM
 AC_CONFIG_FILES([
 Makefile
 packages/Makefile
-packages/sofia-sip.spec
 packages/sofia-sip-ua.pc
 packages/sofia-sip-ua-glib.pc
 libsofia-sip-ua/Makefile
@@ -194,7 +193,6 @@ libsofia-sip-ua-glib/nua-glib/Makefile
 libsofia-sip-ua-glib/su-glib/Makefile
 utils/Makefile
 win32/Makefile
-win32/config.h
 ])
 
 AC_OUTPUT

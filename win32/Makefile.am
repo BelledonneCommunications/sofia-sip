@@ -51,3 +51,6 @@ PTHREAD_DIST = \
 	pthread/semaphore.h \
 	pthread/sched.h \
 	pthread/pthread.h
+
+%.h: %.h.in $(top_builddir)/config.status
+	cd $(top_builddir) && ${SHELL} config.status --file=$(subdir)/$@
