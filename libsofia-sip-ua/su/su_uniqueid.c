@@ -196,7 +196,7 @@ void init_node(void)
 #if HAVE_SOCKADDR_LL
       struct sockaddr_ll const *sll = (void *)ifa->ifa_addr;
 
-      if (sll->sll_family != AF_PACKET)
+      if (sll == NULL || sll->sll_family != AF_PACKET)
 	continue;
       switch (sll->sll_hatype) {
       case ARPHRD_ETHER:
