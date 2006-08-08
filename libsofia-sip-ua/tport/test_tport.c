@@ -798,7 +798,7 @@ static int tcp_test(tp_test_t *tt)
   for (i = 1; i < TPORT_QUEUESIZE; i++) {
     snprintf(ident, sizeof ident, "tcp-%u", i);
 
-    TEST(new_test_msg(tt, &msg, ident, 1, 1024), 0);
+    TEST(new_test_msg(tt, &msg, ident, 1, 64 * 1024), 0);
     TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
     TEST_S(tport_name(tp)->tpn_ident, "client");
     TEST(tport_incref(tp), tp0); tport_decref(&tp);
@@ -817,10 +817,12 @@ static int tcp_test(tp_test_t *tt)
   test_check_md5(tt, tt->tt_rmsg);
   msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
 
-  snprintf(ident, sizeof ident, "tcp-%u", tt->tt_received);
-  TEST(tport_test_run(tt, 5), 1);
-  TEST_1(!check_msg(tt, tt->tt_rmsg, ident));
-  msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  if (tt->tt_received < TPORT_QUEUESIZE) { /* We have not received it all */
+    snprintf(ident, sizeof ident, "tcp-%u", tt->tt_received);
+    TEST(tport_test_run(tt, 5), 1);
+    TEST_1(!check_msg(tt, tt->tt_rmsg, ident));
+    msg_destroy(tt->tt_rmsg), tt->tt_rmsg = NULL;
+  }
 
   /* This uses a new connection */
   TEST_1(!new_test_msg(tt, &msg, "tcp-no-reuse", 1, 1024));
