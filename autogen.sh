@@ -2,7 +2,7 @@
 
 autoconf=${autoconf:-autoconf} autoheader=${autoheader:-autoheader}
 
-for version in 2.59 2.58 2.57 2.53 2.52; do
+for version in 2.60 2.59 2.58 2.57 2.53 2.52; do
   if autoconf --version 2>&1 | fgrep -q "$version" ; then
     break
   elif autoconf-$version --version 2>&1 | fgrep -q "$version" ; then
