@@ -34,8 +34,7 @@ nobase_include_sofia_HEADERS =\
 
 libnea_la_SOURCES = 	nea.c nea_event.c \
 			nea_server.c nea_debug.h nea_debug.c \
-			nea_tag.c
-nodist_libnea_la_SOURCES = nea_tag_ref.c
+			nea_tag.c nea_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnea_la_SOURCES) $(include_sofia_HEADERS)
 

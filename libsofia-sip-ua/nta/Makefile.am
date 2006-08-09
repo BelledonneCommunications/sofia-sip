@@ -39,11 +39,10 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/nta_tport.h sofia-sip/nta_tag.h \
 			sofia-sip/sl_utils.h 
 
-libnta_la_SOURCES = 	nta.c nta_check.c nta_tag.c \
+libnta_la_SOURCES = 	nta.c nta_check.c nta_tag.c nta_tag_ref.c \
 			nta_internal.h \
 			sl_utils_print.c sl_utils_log.c \
 			sl_read_payload.c
-nodist_libnta_la_SOURCES = nta_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_sofia_HEADERS)
 

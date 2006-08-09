@@ -32,8 +32,7 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/stun.h sofia-sip/stun_common.h \
 			sofia-sip/stun_tag.h
 libstun_la_SOURCES = 	$(stun_lib_sources) \
-			stun_tag.c stun_internal.h
-nodist_libstun_la_SOURCES = stun_tag_ref.c
+			stun_tag.c stun_tag_ref.c stun_internal.h
 
 BUILT_SOURCES =		stun_tag_ref.c
 

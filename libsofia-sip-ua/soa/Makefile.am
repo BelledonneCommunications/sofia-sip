@@ -33,8 +33,7 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/soa_add.h sofia-sip/soa_tag.h
 
 libsoa_la_SOURCES = 	soa.c soa_static.c \
-			soa_tag.c
-nodist_libsoa_la_SOURCES = soa_tag_ref.c 
+			soa_tag.c soa_tag_ref.c 
 
 COVERAGE_INPUT = 	$(libsoa_la_SOURCES) $(include_sofia_HEADERS)
 

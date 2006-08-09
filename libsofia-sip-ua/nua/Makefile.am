@@ -50,8 +50,7 @@ libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
 			nua_register.c nua_session.c nua_options.c \
 			nua_message.c nua_publish.c nua_subnotref.c \
 			nua_event_server.c \
-			nua_tag.c
-nodist_libnua_la_SOURCES = nua_tag_ref.c
+			nua_tag.c nua_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_sofia_HEADERS)
 
