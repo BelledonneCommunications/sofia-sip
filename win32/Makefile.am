@@ -54,3 +54,6 @@ PTHREAD_DIST = \
 
 %.h: %.h.in $(top_builddir)/config.status
 	cd $(top_builddir) && ${SHELL} config.status --file=$(subdir)/$@
+
+mostlyclean-local:
+	test "$(top_builddir)" = "$(top_srcdir)" || rm -f config.h
