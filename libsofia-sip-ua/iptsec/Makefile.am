@@ -40,11 +40,12 @@ nobase_include_sofia_HEADERS = \
 
 libiptsec_la_SOURCES = 	iptsec_debug.h \
 			auth_client.c auth_common.c auth_digest.c \
-			auth_module.c auth_tag.c auth_tag_ref.c \
+			auth_module.c auth_tag.c \
 			auth_plugin.c auth_plugin_delayed.c \
 			auth_module_http.c auth_module_sip.c \
 			$(NTLM_SOURCE) \
 			iptsec_debug.c
+nodist_libiptsec_la_SOURCES = auth_tag_ref.c
 
 NTLM_HEADER = 		sofia-sip/auth_ntlm.h
 if HAVE_NTLM

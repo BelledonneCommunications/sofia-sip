@@ -70,8 +70,9 @@ libsu_la_SOURCES = \
 EXTRA_libsu_la_SOURCES = \
 			memmem.c strtoull.c strcasestr.c \
 			memspn.c memcspn.c memccpy.c \
-			inet_ntop.c inet_pton.c \
-			su_tag_ref.c
+			inet_ntop.c inet_pton.c
+
+nodist_libsu_la_SOURCES = su_tag_ref.c
 
 libsu_la_LIBADD = 	$(REPLACE_LIBADD)
 libsu_la_DEPENDENCIES = $(REPLACE_LIBADD)

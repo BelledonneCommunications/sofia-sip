@@ -30,7 +30,8 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/sdp.h sofia-sip/sdp_tag.h
 
 libsdp_la_SOURCES = 	sdp.c sdp_parse.c sdp_print.c \
-			sdp_tag.c sdp_tag_ref.c
+			sdp_tag.c
+nodist_libsdp_la_SOURCES = sdp_tag_ref.c
 
 COVERAGE_INPUT = 	$(libsdp_la_SOURCES) $(include_sofia_HEADERS)
 

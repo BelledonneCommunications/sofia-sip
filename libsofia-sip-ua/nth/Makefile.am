@@ -34,7 +34,8 @@ BUILT_SOURCES =		nth_tag_ref.c
 nobase_include_sofia_HEADERS = \
 			sofia-sip/nth.h sofia-sip/nth_tag.h
 
-libnth_la_SOURCES = 	nth_client.c nth_server.c nth_tag.c nth_tag_ref.c
+libnth_la_SOURCES = 	nth_client.c nth_server.c nth_tag.c
+nodist_libnth_la_SOURCES = nth_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnth_la_SOURCES) $(include_sofia_HEADERS)
 

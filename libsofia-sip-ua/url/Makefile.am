@@ -27,7 +27,8 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/url.h sofia-sip/url_tag.h \
 			sofia-sip/url_tag_class.h
 
-liburl_la_SOURCES = 	url.c url_tag.c url_tag_ref.c
+liburl_la_SOURCES = 	url.c url_tag.c
+nodist_liburl_la_SOURCES = url_tag_ref.c
 
 COVERAGE_INPUT = 	$(liburl_la_SOURCES) $(include_sofia_HEADERS)
 
