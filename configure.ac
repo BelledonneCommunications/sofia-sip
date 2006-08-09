@@ -79,9 +79,8 @@ AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define to 1 always])
 AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define to 1 if we use DNS library])
 AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define to 1 if we use S/MIME library])
 
-dnl Disable stun by default while it is broken
 AC_ARG_ENABLE(stun,
-[  --enable-stun               enable stun module (enabled)],
+[  --disable-stun              disable stun module (enabled)],
  , enable_stun=yes)
 
 if test x$enable_stun = xno ; then
