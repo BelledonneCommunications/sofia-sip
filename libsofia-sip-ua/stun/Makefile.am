@@ -54,7 +54,7 @@ lookup_stun_server_LDADD = libstun.la ../sresolv/libsresolv.la ../su/libsu.la
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST =		Doxyfile stun.docs cert.pem key.pem rfc3489.txt
+EXTRA_DIST =		Doxyfile stun.docs cert.pem key.pem
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
