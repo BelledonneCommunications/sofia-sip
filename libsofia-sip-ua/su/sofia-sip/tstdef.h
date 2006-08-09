@@ -178,8 +178,6 @@ enum {
 #define END(flags) (void) tstdef_dummy;  } END_(flags) 
 #endif
 
-typedef unsigned longlong ull;
-
 /** @HIDE */
 #define TEST_1_(flags, suite) do { \
   if (flags & tst_verbatim) { \
@@ -224,7 +222,8 @@ typedef unsigned longlong ull;
   printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or "LLU" != "LLU"\n", \
 	 __FILE__, __LINE__, TSTNAME, \
-         #suite, #expect, (ull)_value, (ull)_expect); fflush(stderr); \
+	  #suite, #expect, (unsigned longlong)_value,	\
+	 (unsigned longlong)_expect); fflush(stderr);	\
     return 1; \
   } while(0)
 
