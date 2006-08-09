@@ -3,7 +3,7 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20060616-11
+:Version: 20060809-12
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
@@ -126,3 +126,11 @@ tree.
   changes made outside the target tree (what, who and when -
   for example produced with the "darcs changes --summary" 
   command).
+
+Checking API/ABI compatibility
+==============================
+
+- Use a unit test binary built against an old library, 
+  to verify a new library version (forwards-compatibility).
+- Use the 'icheck' tool (in Debian) to make comparsion
+  with two released versions.

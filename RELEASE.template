@@ -22,9 +22,10 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - Added foobar() function (sofia-sip/foobar.h).
-- This release is ABI/API compatible with applications 
-  linked against 1.12.0. The ABI has been tested with the nua
-  module unit test (test_nua) built against original 1.12.0 release.
+- This release is ABI/API compatible with applications linked against 
+  any 1.12.x release. However, applications built against this release won't 
+  work against an older library. The ABI has been tested with the nua module 
+  unit test (test_nua) built against original 1.12.0 release.
 
 libsofia-sip-ua-glib:
 - No ABI/API changes, compatible with 1.12.0. Note, libsofia-sip-ua-glib
