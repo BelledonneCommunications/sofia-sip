@@ -640,8 +640,8 @@ tport_primary_t *tport_listen(tport_master_t *mr,
 	    err == ENOPROTOOPT ? 7 : 3) < SU_LOG_LEVEL ?	     \
 	     su_llog(tport_log, errlevel,			     \
 		     "%s(%p): %s(pf=%d %s/%s): %s\n",		     \
-		     __func__, pri ? pri : mr, what, ai->ai_family,  \
-		     protoname,					     \
+		     __func__, pri ? (void *)pri : (void *)mr, what, \
+		     what, ai->ai_family, protoname,		     \
 		     tport_hostport(buf, sizeof(buf), su, 2),	     \
 		     su_strerror(err)) : (void)0),		     \
 	    tport_zap_primary(pri),		                     \

@@ -464,7 +464,7 @@ static int init_test(tp_test_t *tt)
 #endif
   tp_name_t const *tpn;
   tport_t *tp;
-  int idle;
+  unsigned idle;
 
   BEGIN();
 
