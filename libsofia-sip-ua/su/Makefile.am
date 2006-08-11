@@ -90,9 +90,7 @@ endif
 EXTRA_DIST = 		Doxyfile su.docs \
 			run_addrinfo run_localinfo run_su_test
 
-dist_sofialibexec_SCRIPTS = tag_dll.awk
-
-sofialibexecdir = $(libexecdir)/sofia
+dist_pkgdata_SCRIPTS = 	tag_dll.awk
 
 sofia-sip/su_configure.h: sofia-sip/su_configure.h.in
 

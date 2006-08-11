@@ -4,6 +4,7 @@ libdir=@libdir@
 libexecdir=@libexecdir@
 includedir=@includedir@
 include_sofiadir=@include_sofiadir@
+sofiaawkdir=@datadir@/@PACKAGE@
 
 Name: sofia-sip-ua
 Description: Sofia-SIP - a RFC3261 compliant SIP User-Agent library

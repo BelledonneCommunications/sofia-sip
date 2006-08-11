@@ -60,9 +60,7 @@ msg_name_hash_LDFLAGS =	-static
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-sofialibexecdir =	$(libexecdir)/sofia
-
-dist_sofialibexec_SCRIPTS =	msg_parser.awk
+dist_pkgdata_SCRIPTS = 	msg_parser.awk
 
 EXTRA_DIST =		Doxyfile msg.docs \
 			sofia-sip/msg_mime_protos.h.in \

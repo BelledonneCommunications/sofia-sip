@@ -96,8 +96,8 @@ static libraries and include files.
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h
 %{_prefix}/include/sofia-sip*/sofia-resolv/*.h
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h.in
-%{_prefix}/libexec/sofia/tag_dll.awk
-%{_prefix}/libexec/sofia/msg_parser.awk
+%{_prefix}/share/sofia-sip/tag_dll.awk
+%{_prefix}/share/sofia-sip/msg_parser.awk
 %{_prefix}/%{_lib}/libsofia-sip-ua.la
 %{_prefix}/%{_lib}/libsofia-sip-ua.a
 %{_prefix}/%{_lib}/libsofia-sip-ua.so
@@ -158,6 +158,9 @@ Command line utilities for Sofia SIP UA library.
 %{_mandir}/man?/*
 
 %changelog
+* Fri Aug 11 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
+- Modified the install location of the awk scripts.
+
 * Thu Jun 15 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
 - Added library soname to sofia-sip-glib package name.
 - Modified dependencies - the glib subpackages do not depend

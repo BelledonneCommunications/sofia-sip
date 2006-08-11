@@ -21,7 +21,11 @@ API/ABI changes and versioning
  - and should be updated _continuously_! />
 
 libsofia-sip-ua:
-- Added foobar() function (sofia-sip/foobar.h).
+- template: Added foobar() function (sofia-sip/foobar.h).
+- The install location of awk scripts (msg_parser.awk and 
+  tag_dll.awk) from libexec to share/sofia-sip/. Also added 
+  a new pkg-config variable to find out the awk scripts: 
+  sh> pkg-config --variable=sofiaawkdir sofia-sip-ua
 - This release is ABI/API compatible with applications 
   linked against 1.12.0. The ABI has been tested with the nua
   module unit test (test_nua) built against original 1.12.0 release.
