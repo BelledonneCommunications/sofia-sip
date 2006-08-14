@@ -158,6 +158,7 @@ struct agent_t {
 
 static int test_init(agent_t *ag, char const *resolv_conf);
 static int test_deinit(agent_t *ag);
+static int test_bad_messages(agent_t *ag);
 static int test_routing(agent_t *ag);
 static int test_tports(agent_t *ag);
 static int test_resolv(agent_t *ag, char const *resolv_conf);
@@ -486,12 +487,6 @@ int test_init(agent_t *ag, char const *resolv_conf)
 					 NTATAG_USE_SRV(0),
 					 NTATAG_PRELOAD(2048),
 					 TAG_END()));
-  /* Create a default leg */
-  TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
-					     leg_callback_200,
-					     ag,
-					     NTATAG_NO_DIALOG(1),
-					     TAG_END()));
 
   {
     /* Initialize our headers */
@@ -620,6 +615,126 @@ int test_deinit(agent_t *ag)
   END();
 }  
 
+static
+int readfile(FILE *f, void **contents)
+{
+  /* Read in whole (binary!) file */
+  char *buffer = NULL;
+  long size;
+  int len = -1;
+  
+  /* Read whole file in */
+  if (fseek(f, 0, SEEK_END) < 0 ||
+      (size = ftell(f)) < 0 ||
+      fseek(f, 0, SEEK_SET) < 0 ||
+      (long)(len = size) != size) {
+    fprintf(stderr, "%s: unable to determine file size (%s)\n", 
+	    __func__, strerror(errno));
+    return -1;
+  }
+
+  if (!(buffer = malloc(len + 2)) ||
+      fread(buffer, 1, len, f) != len) {
+    fprintf(stderr, "%s: unable to read file (%s)\n", __func__, strerror(errno));
+    if (buffer)
+      free(buffer);
+    return -1;
+  }
+
+  buffer[len] = '\0';
+
+  *contents = buffer;
+
+  return len;
+}
+
+#include <dirent.h>
+
+static int test_bad_messages(agent_t *ag)
+{
+  DIR *dir = opendir("../sip/tests");
+  struct dirent *d;
+  char name[PATH_MAX] = "../sip/tests/";
+  size_t offset = strlen(name);
+  char const *host, *port;
+  su_addrinfo_t *ai,  hints[1];
+  su_socket_t s;
+  su_sockaddr_t su[1];
+  socklen_t sulen;
+  char via[36];
+  size_t vlen;
+  int i;
+
+  BEGIN();
+
+  TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
+					      leg_callback_500,
+					      ag,
+					      NTATAG_NO_DIALOG(1),
+					      TAG_END()));
+
+  host = ag->ag_aliases->m_url->url_host;
+  port = ag->ag_aliases->m_url->url_port;
+  memset(hints, 0, sizeof hints);
+  hints->ai_socktype = SOCK_DGRAM;
+  hints->ai_protocol = IPPROTO_UDP;
+  
+  TEST(su_getaddrinfo(host, port, hints, &ai), 0); TEST_1(ai);
+  s = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol); TEST_1(s != -1);
+  memset(su, 0, sulen = sizeof su); 
+  su->su_len = sizeof su; su->su_family = ai->ai_family;
+  TEST_1(bind(s, &su->su_sa, sulen) == 0);
+  TEST_1(getsockname(s, &su->su_sa, &sulen) == 0);
+  sprintf(via, "v: SIP/2.0/UDP is.invalid:%u\r\n", ntohs(su->su_port));
+  vlen = strlen(via);
+
+  for (d = readdir(dir); d; d = readdir(dir)) {
+    size_t len = strlen(d->d_name);
+    FILE *f;
+    int blen, n;
+    void *buffer; char *r;
+
+    if (len < strlen(".txt"))
+      continue;
+    if (strcmp(d->d_name + len - strlen(".txt"), ".txt"))
+      continue;
+    strncpy(name + offset, d->d_name, PATH_MAX - offset);
+    TEST_1(f = fopen(name, "rb"));
+    TEST_1((blen = readfile(f, &buffer)) > 0);
+    r = buffer;
+
+    if (strncmp(r, "JUNK ", 5) == 0) {
+      TEST(sendto(s, r, blen, 0, ai->ai_addr, ai->ai_addrlen), blen);
+    }
+    else if (strncmp(r, "INVITE ", 7) != 0) {
+      su_iovec_t vec[3];
+      n = strcspn(r, "\r\n"); n += strspn(r + n, "\r\n");
+      vec[0].siv_base = r, vec[0].siv_len = n;
+      vec[1].siv_base = via, vec[1].siv_len = vlen;
+      vec[2].siv_base = r + n, vec[2].siv_len = blen - n;
+      TEST(su_vsend(s, vec, 3, 0, (void *)ai->ai_addr, ai->ai_addrlen),
+	   blen + vlen);
+    }
+    free(buffer);
+    su_root_step(ag->ag_root, 1);
+  }
+
+  su_close(s);
+
+  for (i = 0; i < 20; i++)
+    su_root_step(ag->ag_root, 1);
+
+  nta_leg_destroy(ag->ag_default_leg);
+
+  /* Create a default leg */
+  TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
+					     leg_callback_200,
+					     ag,
+					     NTATAG_NO_DIALOG(1),
+					     TAG_END()));
+
+  END();
+}
 
 static unsigned char const code[] = 
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -2992,6 +3107,7 @@ int main(int argc, char *argv[])
 
   retval |= test_init(ag, argv[i]); SINGLE_FAILURE_CHECK();
   if (retval == 0) {
+    retval |= test_bad_messages(ag); SINGLE_FAILURE_CHECK();
     retval |= test_tports(ag); SINGLE_FAILURE_CHECK();
     retval |= test_resolv(ag, argv[i]); SINGLE_FAILURE_CHECK();
     retval |= test_routing(ag); SINGLE_FAILURE_CHECK();
