@@ -2901,6 +2901,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 
   if (!(ack = nta_outgoing_mcreate(agent, NULL, NULL, NULL, amsg,
 				   NTATAG_ACK_BRANCH(sip->sip_via->v_branch),
+				   NTATAG_STATELESS(1),
 				   TAG_END())))
     goto err;
   else
@@ -2918,7 +2919,9 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   else
     msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)rq);
 
-  if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg, TAG_END())))
+  if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg, 
+				   NTATAG_STATELESS(1),
+				   TAG_END())))
     goto err;
 
   msg_destroy(msg);
@@ -6339,7 +6342,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   su_home_t *home;
   char const *comp = NONE;
   char const *branch = NONE;
-  char const *ack_branch = NULL;
+  char const *ack_branch = NONE;
   char const *tp_ident;
   int delay_sending = 0, sigcomp_zap = 0;
   int pass_100 = agent->sa_pass_100, use_timestamp = agent->sa_timestamp;
@@ -6488,7 +6491,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   orq->orq_via_branch = branch;
 
   if (orq->orq_method == sip_method_ack) {
-    if (ack_branch) {
+    if (ack_branch != NULL && ack_branch != NONE) {
       orq->orq_branch = su_strdup(home, ack_branch);
     } 
     else if (!stateless && agent->sa_is_a_uas) {
