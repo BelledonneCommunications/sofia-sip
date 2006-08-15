@@ -51,10 +51,14 @@
 #define SU_MSG_ARG_T   union sm_arg_u
 /** @internal SU timer argument pointer type */
 #define SU_TIMER_ARG_T struct nta_agent_s
+/** @internal SU network changed detector argument pointer type */
+#define SU_NETWORK_CHANGED_MAGIC_T struct nta_agent_s
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_time.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/su_os_nw.h>
 #include <sofia-sip/su_tagarg.h>
 
 #include <sofia-sip/base64.h>
@@ -128,6 +132,7 @@ static void agent_kill_terminator(nta_agent_t *agent);
 static int agent_set_params(nta_agent_t *agent, tagi_t *tags);
 static void agent_set_udp_params(nta_agent_t *self, unsigned udp_mtu);
 static int agent_get_params(nta_agent_t *agent, tagi_t *tags);
+static int agent_launch_network_change_detector(nta_agent_t *agent);
 
 /* Transport interface */
 static sip_via_t const *agent_tport_via(tport_t *tport);
@@ -457,6 +462,12 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     SU_DEBUG_9(("nta_agent_create: initialized %s\n", "resolver"));
 #endif
 
+    if (agent_launch_network_change_detector(agent) < 0)
+      SU_DEBUG_9(("nta_agent_create: failure %s\n", "network change detector"));
+    else
+      SU_DEBUG_9(("nta_agent_create: initialized %s\n", "network change detector"));
+    
+
     ta_end(ta);
 
     return agent;
@@ -734,6 +745,57 @@ int agent_launch_terminator(nta_agent_t *agent)
   return -1;
 }
 
+
+static
+void agent_network_changed_cb(nta_agent_t *agent, su_root_t *root)
+{
+
+  switch (agent->sa_nw_updates) {
+  case NTA_NW_DETECT_ONLY_INFO:
+    (void)agent->sa_callback(agent->sa_magic, agent, NULL, NULL);
+    break;
+    
+  case NTA_NW_DETECT_TRY_FULL:
+    /* XXX - loop through transactions and remove tport_primaries */
+  
+    /* XXX - tport_shutdown() */
+
+    /* XXX - tport_tcreate() */
+
+    /* XXX - tport_tbind() */
+
+    (void)agent->sa_callback(agent->sa_magic, agent, NULL, NULL);
+    break;
+    
+  default:
+    break;
+  }
+
+  return;
+}
+
+static
+int agent_launch_network_change_detector(nta_agent_t *agent)
+{
+  su_network_changed_t *snc = NULL;
+  
+  if (agent->sa_nw_updates == NTA_NW_DETECT_NOTHING)
+    return 0;
+
+  /* else ... */
+  snc = su_root_add_network_changed(agent->sa_home,
+				    agent->sa_root,
+				    agent_network_changed_cb,
+				    agent);
+  
+  if (!snc)
+    return -1;
+
+  agent->sa_nw_changed = snc;
+
+  return 0;
+}
+
 /** Kill transaction terminator task */
 static
 void agent_kill_terminator(nta_agent_t *agent)
@@ -823,6 +885,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned threadpool      = agent->sa_tport_threadpool;
   char const *sigcomp = agent->sa_sigcomp_options;
   char const *algorithm = NONE;
+  unsigned nw_updates = 0;
   msg_mclass_t *mclass = NONE;
   sip_contact_t const *aliases = NONE;
   url_string_t const *proxy = NONE;
@@ -873,6 +936,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 #endif
 	      NTATAG_SIGCOMP_OPTIONS_REF(sigcomp),
 	      NTATAG_SIGCOMP_ALGORITHM_REF(algorithm),
+	      NTATAG_DETECT_NETWORK_UPDATES_REF(nw_updates),
 	      TAG_END());
 
   if (mclass != NONE)
@@ -936,6 +1000,10 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
       n = -1;
     }
   }
+
+  /* Store network detector param value */
+  if (agent->sa_nw_updates == 0)
+    agent->sa_nw_updates = nw_updates;
 
   if (maxsize == 0) maxsize = 2 * 1024 * 1024;
   if (maxsize > NTA_TIME_MAX) maxsize = NTA_TIME_MAX;

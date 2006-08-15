@@ -142,6 +142,8 @@ tag_typedef_t ntatag_s_recv_retry =       UINTTAG_TYPEDEF(s_recv_retry);
 tag_typedef_t ntatag_s_tout_request =     UINTTAG_TYPEDEF(s_tout_request);
 tag_typedef_t ntatag_s_tout_response =    UINTTAG_TYPEDEF(s_tout_response);
 
+tag_typedef_t ntatag_detect_network_updates = UINTTAG_TYPEDEF(detect_network_updates);
+
 /* Internal */
 tag_typedef_t ntatag_delay_sending = BOOLTAG_TYPEDEF(delay_sending);
 tag_typedef_t ntatag_incomplete = BOOLTAG_TYPEDEF(incomplete);
