@@ -38,6 +38,10 @@
 #include <sofia-sip/su_wait.h>
 #endif
 
+#ifndef SU_OS_NW_H
+#include <sofia-sip/su_os_nw.h>
+#endif
+
 #ifndef URL_H
 #include <sofia-sip/url.h>
 #endif
@@ -64,6 +68,13 @@ typedef NUA_MAGIC_T nua_magic_t;
 /** Application context for NUA handle. */
 typedef NUA_HMAGIC_T nua_hmagic_t;
 
+typedef enum nua_nw_detector_e{
+  NUA_NW_DETECT_NOTHING = 0,
+  NUA_NW_DETECT_ONLY_INFO,
+  NUA_NW_DETECT_TRY_FULL,
+} nua_nw_detector_t;
+
+
 /** Events */
 typedef enum nua_event_e {
   /* Indications */
@@ -77,6 +88,7 @@ typedef enum nua_event_e {
   nua_i_terminated,		/**< A call has been terminated */
   nua_i_state,		        /**< Call state has changed */
 
+  nua_i_network_changed,        /**< Our IP(v6) address has changed */
   nua_i_outbound,		/**< Status from outbound processing */
 
   nua_i_bye,			/**< Incoming call hangup */

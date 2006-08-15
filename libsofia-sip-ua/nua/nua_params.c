@@ -220,6 +220,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_MEDIA_FEATURES() \n
  *   NUTAG_MIN_SE() \n
  *   NUTAG_OUTBOUND() \n
+ *   NUTAG_DETECT_NETWORK_UPDATES() \n
  *   NUTAG_PATH_ENABLE() \n
  *   NUTAG_REGISTRAR() \n
  *   NUTAG_SERVICE_ROUTE_ENABLE() \n
@@ -486,6 +487,10 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     else if (t->t_tag == nutag_outbound) {
       outbound = (void *)t->t_value;
     }
+    /* NUTAG_DETECT_NETWORK_UPDATES_REF(detect_network_updates) */
+    else if (t->t_tag == nutag_detect_network_updates) {
+      NHP_SET(nhp, detect_network_updates, (unsigned)t->t_value);
+    }
   }
 
   /* Sanitize values */
@@ -654,6 +659,9 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   nua_stack_set_from(nua, 0, tags);
 
   nua_stack_set_smime_params(nua, tags);
+
+  if (NHP_ISSET(nhp, detect_network_updates))
+    nua_stack_launch_network_change_detector(nua);
 
   return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
 }
@@ -869,6 +877,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF_STR(SIPTAG_ORGANIZATION_STR, organization),
 
      TIF(NUTAG_OUTBOUND, outbound),
+     TIF(NUTAG_DETECT_NETWORK_UPDATES, detect_network_updates),
      TIF(NUTAG_INSTANCE, instance),
      TIF(NUTAG_KEEPALIVE, keepalive),
      TIF(NUTAG_KEEPALIVE_STREAM, keepalive_stream),

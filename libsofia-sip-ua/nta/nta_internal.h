@@ -95,7 +95,6 @@ struct nta_agent_s
   su_home_t             sa_home[1];
   su_root_t            *sa_root;
   su_timer_t           *sa_timer;
-  su_network_changed_t *sa_nw_changed;
   nta_agent_magic_t    *sa_magic;
   nta_message_f        *sa_callback;     
 

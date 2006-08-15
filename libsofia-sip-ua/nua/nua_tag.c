@@ -25,6 +25,7 @@
 /**@CFILE nua_tag.c  Tags and tag lists for NUA
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Wed Feb 21 10:13:29 2001 ppessi
  */
@@ -132,5 +133,8 @@ tag_typedef_t nutag_path_enable = BOOLTAG_TYPEDEF(path_enable);
 tag_typedef_t nutag_service_route_enable = 
   BOOLTAG_TYPEDEF(service_route_enable);
 
+tag_typedef_t nutag_detect_network_updates = UINTTAG_TYPEDEF(detect_network_updates);
+
 tag_typedef_t _nutag_add_contact = BOOLTAG_TYPEDEF(add_contact);
 tag_typedef_t _nutag_copy = BOOLTAG_TYPEDEF(copy);
+

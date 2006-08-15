@@ -47,6 +47,9 @@
 #define SU_ROOT_MAGIC_T   struct nua_s
 #define SU_MSG_ARG_T      struct event_s
 
+/** @internal SU network changed detector argument pointer type */
+#define SU_NETWORK_CHANGED_MAGIC_T struct nua_s
+
 #define NUA_SAVED_EVENT_T su_msg_t *
 
 #define NTA_AGENT_MAGIC_T    struct nua_s
@@ -1662,4 +1665,67 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
     nua_stack_event(nua, nh, NULL, nua_i_error,
 		    500, "Responding to a Non-Existing Request", TAG_END());
   }
+}
+
+#if 0
+  /* Store network detector param value */
+  if (agent->sa_nw_updates == 0)
+    agent->sa_nw_updates = nw_updates;
+ 	      NTATAG_DETECT_NETWORK_UPDATES_REF(nw_updates),
+  unsigned nw_updates = 0;
+  unsigned nw_updates = 0;
+
+  su_network_changed_t *sa_nw_changed;
+
+#endif
+
+static
+void nua_network_changed_cb(nua_t *nua, su_root_t *root)
+{
+
+  uint32_t nw_updates = NUA_NW_DETECT_ONLY_INFO;
+
+  switch (nw_updates) {
+  case NUA_NW_DETECT_ONLY_INFO:
+    nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
+		    SIP_200_OK, TAG_END());
+
+    break;
+    
+  case NUA_NW_DETECT_TRY_FULL:
+    /* XXX - loop through transactions and remove tport_primaries */
+  
+    /* XXX - tport_shutdown() */
+
+    /* XXX - tport_tcreate() */
+
+    /* XXX - tport_tbind() */
+    
+    //if (agent->sa_callback)
+    //(void)agent->sa_callback(agent->sa_magic, agent, NULL, NULL);
+
+    break;
+    
+  default:
+    break;
+  }
+
+  return;
+}
+
+int nua_stack_launch_network_change_detector(nua_t *nua)
+{
+  su_network_changed_t *snc = NULL;
+
+  snc = su_root_add_network_changed(nua->nua_home,
+				    nua->nua_api_root,
+				    nua_network_changed_cb,
+				    nua);
+  
+  if (!snc)
+    return -1;
+
+  nua->nua_nw_changed = snc;
+
+  return 0;
 }

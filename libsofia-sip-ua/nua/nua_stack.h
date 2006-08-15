@@ -285,6 +285,9 @@ struct nua_s {
   su_root_t    	      *nua_api_root;
   su_clone_r   	       nua_clone;
   su_task_r            nua_client;
+
+  su_network_changed_t *nua_nw_changed;
+
   nua_callback_f       nua_callback;
   nua_magic_t         *nua_magic;
 
@@ -439,6 +442,8 @@ int nua_stack_process_response(nua_handle_t *nh,
 			       nta_outgoing_t *orq,
 			       sip_t const *sip,
 			       tag_type_t tag, tag_value_t value, ...);
+
+int nua_stack_launch_network_change_detector(nua_t *nua);
 
 msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
 		    struct nua_client_request *cr,

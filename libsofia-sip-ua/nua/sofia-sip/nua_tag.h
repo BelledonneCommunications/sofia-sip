@@ -30,6 +30,7 @@
  * @brief Tags for Sofia-SIP User Agent Library
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Mon Feb 19 18:54:26 EET 2001 ppessi
  */
@@ -1533,6 +1534,24 @@ SOFIAPUBVAR tag_typedef_t nutag_answer_sent;
 
 #define NUTAG_ANSWER_SENT_REF(x) nutag_answer_sent_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_answer_sent_ref;
+
+/** Enable detection of local IP address updates
+ *
+ * @par Used with
+ *    #nua_i_network_updated
+ *
+ * @par Parameter type
+ *    int
+ *
+ * Corresponding tag taking reference parameter is NUTAG_DETECT_NETWORK_UPDATES_REF()
+ */
+#define NUTAG_DETECT_NETWORK_UPDATES(x) \
+          nutag_detect_network_updates, tag_uint_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_detect_network_updates;
+
+#define NUTAG_DETECT_NETWORK_UPDATES_REF(x) \
+          nutag_detect_network_updates_ref, tag_uint_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_detect_network_updates_ref;
 
 #if SU_HAVE_INLINE
 su_inline tag_value_t nutag_handle_v(nua_handle_t *v) { return (tag_value_t)v; }

@@ -44,6 +44,15 @@
 #ifndef SU_TIME_H
 #include "sofia-sip/su_time.h"
 #endif
+
+#ifndef SU_ALLOC_H
+#include "sofia-sip/su_alloc.h"
+#endif
+
+#ifndef SU_WAIT_H
+#include "sofia-sip/su_wait.h"
+#endif
+
 #if SU_HAVE_POLL
 #include <sys/poll.h>
 #endif

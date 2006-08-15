@@ -100,6 +100,9 @@ typedef struct nua_handle_preferences
   /**< Outbound OPTIONS */
   char const         *nhp_outbound; 
 
+  /**< Network detection: NONE, INFORMAL, TRY_FULL */
+  uint32_t            nhp_detect_network_updates;
+
   /* A bit for each feature set by application */
   union {
     uint32_t set_any;
@@ -135,6 +138,7 @@ typedef struct nua_handle_preferences
       unsigned nhb_organization:1;
       unsigned nhb_instance:1;
       unsigned nhb_outbound:1;
+      unsigned nhb_detect_network_updates:1;
       unsigned :0;
     } set_bits;
   } nhp_set;
