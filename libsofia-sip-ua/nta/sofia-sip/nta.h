@@ -113,6 +113,13 @@ enum {
 				/**< Maximum value for timers. */
 };
 
+typedef enum {
+  NTA_NW_DETECT_NOTHING = 0,
+  NTA_NW_DETECT_ONLY_INFO,
+  NTA_NW_DETECT_TRY_FULL,
+} nta_nw_detector_e;
+
+
 /* ----------------------------------------------------------------------
  * 3) Agent-level prototypes
  */

@@ -449,6 +449,24 @@ NTA_DLL extern tag_typedef_t ntatag_rseq;
 NTA_DLL extern tag_typedef_t ntatag_rseq_ref;
 #define NTATAG_RSEQ_REF(x) ntatag_rseq_ref, tag_uint_vr(&(x))
 
+/** Enable detection of local IP address updates
+ *
+ * @par Used with
+ *    #nua_i_network_updated
+ *
+ * @par Parameter type
+ *    int
+ *
+ * Corresponding tag taking reference parameter is NTATAG_DETECT_NETWORK_UPDATES_REF()
+ */
+#define NTATAG_DETECT_NETWORK_UPDATES(x) \
+          ntatag_detect_network_updates, tag_uint_v(x)
+NTA_DLL extern tag_typedef_t ntatag_detect_network_updates;
+
+#define NTATAG_DETECT_NETWORK_UPDATES_REF(x) \
+          ntatag_detect_network_updates_ref, tag_uint_vr(&(x))
+NTA_DLL extern tag_typedef_t ntatag_detect_network_updates_ref;
+
 /* ====================================================================== */
 /* Tags for statistics. */
 

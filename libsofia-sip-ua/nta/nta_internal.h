@@ -92,244 +92,247 @@ typedef struct nta_compressor nta_compressor_t;
 
 struct nta_agent_s
 {
-  su_home_t          sa_home[1];
-  su_root_t         *sa_root;
-  su_timer_t        *sa_timer;
-  nta_agent_magic_t *sa_magic;
-  nta_message_f     *sa_callback;     
+  su_home_t             sa_home[1];
+  su_root_t            *sa_root;
+  su_timer_t           *sa_timer;
+  su_network_changed_t *sa_nw_changed;
+  nta_agent_magic_t    *sa_magic;
+  nta_message_f        *sa_callback;     
 
-  nta_update_magic_t*sa_update_magic;
-  nta_update_tport_f*sa_update_tport;
+  uint32_t              sa_nw_updates; /* Shall we enable network detector? */
 
-  su_time_t          sa_now;	/**< Timestamp in microsecond resolution. */
-  uint32_t           sa_millisec; /**< Timestamp in milliseconds resolution. */
+  nta_update_magic_t   *sa_update_magic;
+  nta_update_tport_f   *sa_update_tport;
 
-  uint32_t           sa_flags;	/**< Message flags */
-  msg_mclass_t      *sa_mclass;
+  su_time_t             sa_now;	/**< Timestamp in microsecond resolution. */
+  uint32_t              sa_millisec; /**< Timestamp in milliseconds resolution. */
 
-  sip_contact_t     *sa_contact;
-  sip_via_t         *sa_vias;   /**< Via headers for all transports */
-  sip_via_t         *sa_public_vias;   /**< Vias for public transports */
-  sip_contact_t     *sa_aliases;/**< List of aliases for agent */
+  uint32_t              sa_flags;	/**< Message flags */
+  msg_mclass_t         *sa_mclass;
 
-  uint64_t           sa_branch; /**< Counter for generating branch parameter */
-  uint64_t           sa_tags;   /**< Counter for generating tag parameters */
+  sip_contact_t        *sa_contact;
+  sip_via_t            *sa_vias;   /**< Via headers for all transports */
+  sip_via_t            *sa_public_vias;   /**< Vias for public transports */
+  sip_contact_t        *sa_aliases;/**< List of aliases for agent */
 
-  char const        *sa_2543_tag; /**< Fixed tag added to To when responding */
+  uint64_t              sa_branch; /**< Counter for generating branch parameter */
+  uint64_t              sa_tags;   /**< Counter for generating tag parameters */
+
+  char const           *sa_2543_tag; /**< Fixed tag added to To when responding */
 
 #if HAVE_SOFIA_SRESOLV
-  sres_resolver_t   *sa_resolver; /**< DNS resolver */
+  sres_resolver_t      *sa_resolver; /**< DNS resolver */
 #endif
 
-  tport_t           *sa_tports;
+  tport_t              *sa_tports;
   
   /* Default outbound proxy */
-  url_t             *sa_default_proxy;
+  url_t                *sa_default_proxy;
 
 #if HAVE_SMIME
-  sm_object_t       *sa_smime;
+  sm_object_t          *sa_smime;
 #else
-  void              *sa_smime;
+  void                 *sa_smime;
 #endif
 
 
   /** Request error mask */
-  unsigned short     sa_bad_req_mask;
+  unsigned short        sa_bad_req_mask;
   /** Response error mask */
-  unsigned short     sa_bad_resp_mask;
+  unsigned short        sa_bad_resp_mask;
 
   /** Maximum size of incoming messages */
-  unsigned           sa_maxsize;
+  unsigned              sa_maxsize;
   
   /** Maximum size of outgoing UDP requests */
-  unsigned           sa_udp_mtu;
+  unsigned              sa_udp_mtu;
 
   /** SIP T1 - initial interval of retransmissions (500 ms) */
-  unsigned           sa_t1;
+  unsigned              sa_t1;
   /** SIP T2 - maximum interval of retransmissions (4000 ms) */
-  unsigned           sa_t2;
+  unsigned              sa_t2;
   /** SIP T4 - clear message time (5000 ms) */
-  unsigned           sa_t4;
+  unsigned              sa_t4;
 
   /** SIP T1X64 - transaction lifetime (32 s) */
-  unsigned           sa_t1x64;
+  unsigned              sa_t1x64;
 
   /** Progress timer - interval between provisional responses sent */
-  unsigned           sa_progress;
+  unsigned              sa_progress;
 
   /** Blacklisting period */
-  unsigned           sa_blacklist;
+  unsigned              sa_blacklist;
 
 #define sa_retry_timer_ini sa_t1
 #define sa_retry_timer_max sa_t2
 #define sa_linger_timer    sa_t4
 
   /** NTA is used to test packet drop */
-  unsigned           sa_drop_prob : 10;
+  unsigned              sa_drop_prob : 10;
   /** NTA is acting as an User agent server */
-  unsigned           sa_is_a_uas : 1;
+  unsigned              sa_is_a_uas : 1;
   /** Process requests outside dialog statelessly */
-  unsigned           sa_is_stateless : 1;
+  unsigned              sa_is_stateless : 1;
   /** Let application provide Via headers */
-  unsigned           sa_user_via:1;
+  unsigned              sa_user_via:1;
   /** Respond with "100 Trying" if application has not responded. */
-  unsigned           sa_extra_100:1;
+  unsigned              sa_extra_100:1;
   /** The "100 Trying" provisional answers are passed to the application */
-  unsigned           sa_pass_100:1;
+  unsigned              sa_pass_100:1;
   /** If true, a "408 Request Timeout" message is generated when outgoing
       request expires. */
-  unsigned           sa_timeout_408:1;
+  unsigned              sa_timeout_408:1;
   /** If true, a "408 Request Timeout" responses are passed to client. */
-  unsigned           sa_pass_408:1;
+  unsigned              sa_pass_408:1;
   /** If true, a "482 Request Merged" response is sent to merged requests. */
-  unsigned           sa_merge_482 : 1;
+  unsigned              sa_merge_482 : 1;
   /** If true, send a CANCEL to an INVITE without an provisional response. */
-  unsigned           sa_cancel_2543 : 1;
+  unsigned              sa_cancel_2543 : 1;
   /** If true, reply with 487 response when a CANCEL is received. */
-  unsigned           sa_cancel_487 : 1;
+  unsigned              sa_cancel_487 : 1;
   /** If true, use unique tags. */
-  unsigned           sa_tag_3261 : 1;
+  unsigned              sa_tag_3261 : 1;
   /** If true, include 100rel in INVITE requests. */
-  unsigned           sa_invite_100rel : 1;
+  unsigned              sa_invite_100rel : 1;
   /** If true, insert Timestamp in requests. */
-  unsigned           sa_timestamp : 1;
+  unsigned              sa_timestamp : 1;
 
   /** If true, transports support IPv4. */
-  unsigned           sa_tport_ip4 : 1;
+  unsigned              sa_tport_ip4 : 1;
   /** If true, transports support IPv6. */
-  unsigned           sa_tport_ip6 : 1;
+  unsigned              sa_tport_ip6 : 1;
   /** If true, transports support UDP. */
-  unsigned           sa_tport_udp : 1;
+  unsigned              sa_tport_udp : 1;
   /** If true, transports support TCP. */
-  unsigned           sa_tport_tcp : 1;
+  unsigned              sa_tport_tcp : 1;
   /** If true, transports support SCTP. */
-  unsigned           sa_tport_sctp : 1;
+  unsigned              sa_tport_sctp : 1;
   /** If true, transports support TLS. */
-  unsigned           sa_tport_tls : 1;
+  unsigned              sa_tport_tls : 1;
 
   /** If true, use NAPTR lookup */
-  unsigned           sa_use_naptr : 1;
+  unsigned              sa_use_naptr : 1;
   /** If true, use SRV lookup */
-  unsigned           sa_use_srv : 1;
+  unsigned              sa_use_srv : 1;
 
   /** If true, trasnports use threadpool */
-  unsigned           sa_tport_threadpool : 1;
+  unsigned              sa_tport_threadpool : 1;
 
   /** If true, use rport at client */
-  unsigned           sa_rport:1;
+  unsigned              sa_rport:1;
   /** If true, use rport at server */
-  unsigned           sa_server_rport:1;
+  unsigned              sa_server_rport:1;
   /** If true, use rport with tcp, too */
-  unsigned           sa_tcp_rport:1;
+  unsigned              sa_tcp_rport:1;
 
   /** If true, automatically create compartments */
-  unsigned           sa_auto_comp:1;
+  unsigned              sa_auto_comp:1;
 
-  unsigned           :0;
+  unsigned              :0;
 
   /** Messages memory preload. */
-  unsigned           sa_preload;
+  unsigned              sa_preload;
 
   /** Name of SigComp algorithm */
-  char const        *sa_algorithm;
+  char const           *sa_algorithm;
   /** Options for SigComp. */
-  char const        *sa_sigcomp_options;
-  char const* const *sa_sigcomp_option_list;
-  char const        *sa_sigcomp_option_free;
+  char const           *sa_sigcomp_options;
+  char const* const    *sa_sigcomp_option_list;
+  char const           *sa_sigcomp_option_free;
 
-  nta_compressor_t  *sa_compressor;
+  nta_compressor_t     *sa_compressor;
 
   /** Resolving order (AAAA/A) */
-  enum nta_res_order_e sa_res_order;
+  enum nta_res_order_e  sa_res_order;
 
   /** Max-Forwards */
 
-  sip_max_forwards_t  sa_max_forwards[1];
+  sip_max_forwards_t    sa_max_forwards[1];
 
   /* Statistics */
   struct {
-    uint32_t           as_recv_msg;
-    uint32_t           as_recv_request;
-    uint32_t           as_recv_response;
-    uint32_t           as_bad_message;
-    uint32_t           as_bad_request;
-    uint32_t           as_bad_response;
-    uint32_t           as_drop_request;
-    uint32_t           as_drop_response;
-    uint32_t           as_client_tr;
-    uint32_t           as_server_tr;
-    uint32_t           as_dialog_tr;
-    uint32_t           as_acked_tr;
-    uint32_t           as_canceled_tr;
-    uint32_t           as_trless_request;
-    uint32_t           as_trless_to_tr;
-    uint32_t           as_trless_response;
-    uint32_t           as_trless_200;
-    uint32_t           as_merged_request;
-    uint32_t           as_sent_msg;
-    uint32_t           as_sent_request;
-    uint32_t           as_sent_response;
-    uint32_t           as_retry_request;
-    uint32_t           as_retry_response;
-    uint32_t           as_recv_retry;
-    uint32_t           as_tout_request;
-    uint32_t           as_tout_response;
+    uint32_t            as_recv_msg;
+    uint32_t            as_recv_request;
+    uint32_t            as_recv_response;
+    uint32_t            as_bad_message;
+    uint32_t            as_bad_request;
+    uint32_t            as_bad_response;
+    uint32_t            as_drop_request;
+    uint32_t            as_drop_response;
+    uint32_t            as_client_tr;
+    uint32_t            as_server_tr;
+    uint32_t            as_dialog_tr;
+    uint32_t            as_acked_tr;
+    uint32_t            as_canceled_tr;
+    uint32_t            as_trless_request;
+    uint32_t            as_trless_to_tr;
+    uint32_t            as_trless_response;
+    uint32_t            as_trless_200;
+    uint32_t            as_merged_request;
+    uint32_t            as_sent_msg;
+    uint32_t            as_sent_request;
+    uint32_t            as_sent_response;
+    uint32_t            as_retry_request;
+    uint32_t            as_retry_response;
+    uint32_t            as_recv_retry;
+    uint32_t            as_tout_request;
+    uint32_t            as_tout_response;
   }                  sa_stats[1];
 
   /** Hash of dialogs. */
-  leg_htable_t       sa_dialogs[1];
+  leg_htable_t          sa_dialogs[1];
   /** Default leg */
-  nta_leg_t         *sa_default_leg;
+  nta_leg_t            *sa_default_leg;
   /** Hash of legs without dialogs. */
-  leg_htable_t       sa_defaults[1];
+  leg_htable_t          sa_defaults[1];
   /** Hash table for outgoing transactions */
-  outgoing_htable_t  sa_outgoing[1];
-  nta_outgoing_t    *sa_default_outgoing;
+  outgoing_htable_t     sa_outgoing[1];
+  nta_outgoing_t       *sa_default_outgoing;
   /** Hash table for incoming transactions */
-  incoming_htable_t  sa_incoming[1]; 
-  nta_incoming_t    *sa_default_incoming;
+  incoming_htable_t     sa_incoming[1]; 
+  nta_incoming_t       *sa_default_incoming;
 
   /* Queues (states) for outgoing client transactions */
   struct {
     /** List for retrying client transactions */
-    nta_outgoing_t  *re_list;
-    nta_outgoing_t **re_t1;
-    int              re_length;
+    nta_outgoing_t     *re_list;
+    nta_outgoing_t    **re_t1;
+    int                 re_length;
 
-    outgoing_queue_t delayed[1]; 
-    outgoing_queue_t resolving[1]; 
+    outgoing_queue_t    delayed[1]; 
+    outgoing_queue_t    resolving[1]; 
 
-    outgoing_queue_t trying[1];		/* Timer F/E */
-    outgoing_queue_t completed[1];	/* Timer K */
-    outgoing_queue_t terminated[1];
+    outgoing_queue_t    trying[1];		/* Timer F/E */
+    outgoing_queue_t    completed[1];	/* Timer K */
+    outgoing_queue_t    terminated[1];
 
     /* Special queues (states) for outgoing INVITE transactions */
-    outgoing_queue_t inv_calling[1];	/* Timer B/A */
-    outgoing_queue_t inv_proceeding[1];
-    outgoing_queue_t inv_completed[1];	/* Timer D */
+    outgoing_queue_t    inv_calling[1];	/* Timer B/A */
+    outgoing_queue_t    inv_proceeding[1];
+    outgoing_queue_t    inv_completed[1];	/* Timer D */
 
     /* Temporary queue for transactions waiting to be freed */
-    outgoing_queue_t *free;
+    outgoing_queue_t    *free;
   } sa_out;
 
   /* Queues (states) for incoming server transactions */
   struct {
     /** Queue for retrying server transactions */
-    nta_incoming_t  *re_list;
-    nta_incoming_t **re_t1;	        /**< Special place for T1 timer */
-    int              re_length;
+    nta_incoming_t     *re_list;
+    nta_incoming_t    **re_t1;	        /**< Special place for T1 timer */
+    int                 re_length;
 
-    incoming_queue_t proceeding[1];	/**< Request received */
-    incoming_queue_t preliminary[1];    /**< 100rel sent  */
-    incoming_queue_t completed[1];	/**< Final answer sent (non-invite). */
-    incoming_queue_t inv_completed[1];	/**< Final answer sent (INVITE). */
-    incoming_queue_t inv_confirmed[1];	/**< Final answer sent, ACK recvd. */
-    incoming_queue_t terminated[1];	/**< Terminated, ready to free. */
-    incoming_queue_t final_failed[1];   
+    incoming_queue_t    proceeding[1];	/**< Request received */
+    incoming_queue_t    preliminary[1];    /**< 100rel sent  */
+    incoming_queue_t    completed[1];	/**< Final answer sent (non-invite). */
+    incoming_queue_t    inv_completed[1];	/**< Final answer sent (INVITE). */
+    incoming_queue_t    inv_confirmed[1];	/**< Final answer sent, ACK recvd. */
+    incoming_queue_t    terminated[1];	/**< Terminated, ready to free. */
+    incoming_queue_t    final_failed[1];   
   } sa_in;
 
   /* Special task for freeing memory */
-  su_clone_r         sa_terminator;
+  su_clone_r            sa_terminator;
 };
 
 struct nta_leg_s
