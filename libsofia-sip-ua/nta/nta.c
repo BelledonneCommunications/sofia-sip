@@ -6655,6 +6655,12 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
   tag_value_t value = 0;
   struct sigcomp_compartment *cc; cc = NULL;
 
+  /* tport can be NULL if we are just switching network */
+  if (orq->orq_tport == NULL) {
+    outgoing_tport_error(agent, orq, NULL, orq->orq_request, ENETRESET);
+    return;
+  }
+
   if (!retransmit)
     orq->orq_sent = now;
 
@@ -9914,4 +9920,34 @@ int nta_tport_keepalive(nta_outgoing_t *orq)
 
   return tport_keepalive(orq->orq_tport, msg_addrinfo(orq->orq_request),
 			 TAG_END());
+}
+
+int nta_agent_close_tports(nta_agent_t *agent)
+{
+  int i;
+  outgoing_htable_t *oht = agent->sa_outgoing;
+  incoming_htable_t *iht = agent->sa_incoming;
+
+  for (i = oht->oht_size; i-- > 0;)
+    /* while */ if (oht->oht_table[i]) {
+      nta_outgoing_t *orq = oht->oht_table[i];
+      
+      if (orq->orq_pending && orq->orq_tport)
+	tport_release(orq->orq_tport, orq->orq_pending, orq->orq_request, 
+		      NULL, orq, 0);
+      
+      orq->orq_pending = 0;
+      tport_unref(orq->orq_tport), orq->orq_tport = NULL;
+    }  
+  
+  
+  for (i = iht->iht_size; i-- > 0;)
+    /* while */ if (iht->iht_table[i]) {
+      nta_incoming_t *irq = iht->iht_table[i];
+      tport_unref(irq->irq_tport), irq->irq_tport = NULL;
+    }  
+  
+  tport_destroy(agent->sa_tports), agent->sa_tports = NULL;
+  
+  return 0;
 }

@@ -33,7 +33,6 @@
  */
 
 #include "config.h"
-
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -43,6 +42,7 @@
 #include "sofia-sip/su.h"
 #include "sofia-sip/su_alloc.h"
 #include "sofia-sip/su_wait.h"
+#include "sofia-sip/su_debug.h"
 #include "sofia-sip/su_os_nw.h"
 #include "sofia-sip/su_debug.h"
 
@@ -83,7 +83,7 @@ static void su_nw_changed_msg_recv(su_root_magic_t *rm,
 
   assert(magic);
 
-  SU_DEBUG_5(("su_nw_changed_msg_recv: entering.\n"));
+  /* SU_DEBUG_5(("su_nw_changed_msg_recv: entering.\n")); */
 
   snc->su_network_changed_cb(magic, snc->su_root);
 
@@ -99,7 +99,7 @@ void nw_changed_cb(SCDynamicStoreRef store,
   su_network_changed_t *snc2;
   su_msg_r rmsg = SU_MSG_R_INIT;
 
-  SU_DEBUG_5(("nw_changed_cb: entering.\n"));
+  SU_DEBUG_7(("nw_changed_cb: entering.\n"));
 
   if (su_msg_create(rmsg,
 		    su_root_task(snc->su_root),

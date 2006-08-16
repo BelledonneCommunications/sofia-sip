@@ -32,6 +32,9 @@
 
 #include "config.h"
 
+/** @internal SU network changed detector argument pointer type */
+#define SU_NETWORK_CHANGED_MAGIC_T struct nua_s
+
 #include <sofia-sip/string0.h>
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/su_uniqueid.h>
@@ -903,6 +906,70 @@ nua_stack_init_transport(nua_t *nua, tagi_t const *tags)
 
   return 0;
 }
+
+#if 0
+  /* Store network detector param value */
+  if (agent->sa_nw_updates == 0)
+    agent->sa_nw_updates = nw_updates;
+ 	      NTATAG_DETECT_NETWORK_UPDATES_REF(nw_updates),
+  unsigned nw_updates = 0;
+  unsigned nw_updates = 0;
+
+  su_network_changed_t *sa_nw_changed;
+
+#endif
+
+static
+void nua_network_changed_cb(nua_t *nua, su_root_t *root)
+{
+
+  uint32_t nw_updates = NUA_NW_DETECT_TRY_FULL;
+
+  switch (nw_updates) {
+  case NUA_NW_DETECT_ONLY_INFO:
+    nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
+		    SIP_200_OK, TAG_END());
+
+    break;
+    
+  case NUA_NW_DETECT_TRY_FULL:
+
+    /* 1) Shutdown all tports */
+    nta_agent_close_tports(nua->nua_nta);
+
+    /* 2) */
+    if (nua_stack_init_transport(nua, nua->nua_args) < 0);
+
+
+    nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
+		    SIP_200_OK, TAG_END());
+
+    break;
+    
+  default:
+    break;
+  }
+
+  return;
+}
+
+int nua_stack_launch_network_change_detector(nua_t *nua)
+{
+  su_network_changed_t *snc = NULL;
+
+  snc = su_root_add_network_changed(nua->nua_home,
+				    nua->nua_api_root,
+				    nua_network_changed_cb,
+				    nua);
+  
+  if (!snc)
+    return -1;
+
+  nua->nua_nw_changed = snc;
+
+  return 0;
+}
+
 
 int
 nua_stack_init_registrations(nua_t *nua)

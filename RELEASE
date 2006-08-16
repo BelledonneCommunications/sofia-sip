@@ -21,6 +21,10 @@ API/ABI changes and versioning
  - and should be updated _continuously_! />
 
 libsofia-sip-ua:
+- Added network change detection logic. This extends current su API
+  with two functions defined in su_os_nw.h. Also a new event
+  nua_i_network_changed and tag NUTAG_DETECT_NETWORK_UPDATES are
+  introduced.
 - template: Added foobar() function (sofia-sip/foobar.h).
 - The install location of awk scripts (msg_parser.awk and 
   tag_dll.awk) from libexec to share/sofia-sip/. Also added 

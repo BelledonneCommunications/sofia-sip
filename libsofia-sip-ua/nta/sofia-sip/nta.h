@@ -139,6 +139,8 @@ int nta_agent_add_tport(nta_agent_t *agent,
 			url_string_t const *url,
 			tag_type_t tag, tag_value_t value, ...);
 
+SOFIAPUBFUN int nta_agent_close_tports(nta_agent_t *agent);
+
 SOFIAPUBFUN sip_contact_t *nta_agent_contact(nta_agent_t const *a);
 SOFIAPUBFUN sip_via_t *nta_agent_via(nta_agent_t const *a);
 SOFIAPUBFUN sip_via_t *nta_agent_public_via(nta_agent_t const *a);
