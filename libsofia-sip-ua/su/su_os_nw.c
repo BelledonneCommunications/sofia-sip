@@ -32,8 +32,7 @@
  *
  */
 
-/* Works only with pthreads */
-#if defined (SU_HAVE_PTHREADS)
+#include "config.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -45,10 +44,12 @@
 #include "sofia-sip/su_alloc.h"
 #include "sofia-sip/su_wait.h"
 #include "sofia-sip/su_os_nw.h"
+#include "sofia-sip/su_debug.h"
 
+/* Works only with pthreads */
 #if SU_HAVE_PTHREADS
+
 #include <pthread.h>
-#endif
 
 #if defined(__APPLE_CC__)
 #include <AvailabilityMacros.h>
@@ -274,7 +275,21 @@ su_network_changed_t
 
 int su_root_remove_network_changed(su_root_t *root)
 {
-  
+  return -1;
+}
+
+#else
+
+su_network_changed_t
+*su_root_add_network_changed(su_home_t *home, su_root_t *root,
+			     su_network_changed_f *network_changed_cb,
+			     su_network_changed_magic_t *magic)
+{
+  return NULL;
+}
+
+int su_root_remove_network_changed(su_root_t *root)
+{
   return -1;
 }
 
