@@ -32,6 +32,9 @@
  *
  */
 
+/* Works only with pthreads */
+#if defined (SU_HAVE_PTHREADS)
+
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -47,14 +50,14 @@
 #include <pthread.h>
 #endif
 
-#if defined(__APPLE_CC__) && defined (SU_HAVE_PTHREADS)
+#if defined(__APPLE_CC__)
 #include <AvailabilityMacros.h>
 #include <sys/cdefs.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <SCDynamicStore.h>
 #include <SCDynamicStoreKey.h>
 #include <SCSchemaDefinitions.h>
-#endif
+#endif /* __APPLE_CC__ */
 
 struct su_network_changed_s {
   su_root_t                  *su_root;
@@ -79,11 +82,14 @@ static void su_nw_changed_msg_recv(su_root_magic_t *rm,
 
   assert(magic);
 
+  SU_DEBUG_5(("su_nw_changed_msg_recv: entering.\n"));
+
   snc->su_network_changed_cb(magic, snc->su_root);
 
   return;
 }
 
+#if defined(__APPLE_CC__)
 void nw_changed_cb(SCDynamicStoreRef store, 
 		   CFArrayRef changedKeys, 
 		   void *info)
@@ -92,7 +98,7 @@ void nw_changed_cb(SCDynamicStoreRef store,
   su_network_changed_t *snc2;
   su_msg_r rmsg = SU_MSG_R_INIT;
 
-  printf("%s: _____ NETWORK CHANGED _____\n", __func__);
+  SU_DEBUG_5(("nw_changed_cb: entering.\n"));
 
   if (su_msg_create(rmsg,
 		    su_root_task(snc->su_root),
@@ -120,8 +126,6 @@ void nw_changed_cb(SCDynamicStoreRef store,
   return;
 }
 
-
-#if defined(__APPLE_CC__) && defined (SU_HAVE_PTHREADS)
 static OSStatus
 CreateIPAddressListChangeCallbackSCF(SCDynamicStoreCallBack callback,
 				     void *contextPtr,
@@ -213,7 +217,7 @@ CreateIPAddressListChangeCallbackSCF(SCDynamicStoreCallBack callback,
 
     return err;
 }
-#endif
+#endif /* __APPLE_CC__ */
 
 
 static void *su_start_nw_os_thread(void *ptr)
@@ -222,7 +226,7 @@ static void *su_start_nw_os_thread(void *ptr)
 
   assert(snc);
 
-#if defined(__APPLE_CC__) && defined (SU_HAVE_PTHREADS)
+#if defined(__APPLE_CC__)
   CreateIPAddressListChangeCallbackSCF(nw_changed_cb,
 				       (void *) snc,
 				       snc->su_storeRef,
@@ -244,6 +248,11 @@ su_network_changed_t
 
   assert(home && root && network_changed_cb && magic);
 
+  /* Not implemented for others than OSX */
+#if !defined (__APPLE_CC__)
+  return NULL;
+#endif
+
   snc = su_zalloc(home, sizeof *snc);
   
   if (!snc)
@@ -254,13 +263,11 @@ su_network_changed_t
   snc->su_network_changed_cb = network_changed_cb;
   snc->su_network_changed_magic = magic;
   
-#if defined (__APPLE_CC__) && defined (SU_HAVE_PTHREADS)
   if ((pthread_create(&(snc->su_os_thread), NULL,
 		      su_start_nw_os_thread,
 		      (void *) snc)) != 0) {
     return NULL;
   }
-#endif
 
   return snc;
 }
@@ -271,3 +278,4 @@ int su_root_remove_network_changed(su_root_t *root)
   return -1;
 }
 
+#endif /* SU_HAVE_PTHREADS */
