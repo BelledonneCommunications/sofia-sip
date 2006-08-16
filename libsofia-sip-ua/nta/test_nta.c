@@ -665,6 +665,9 @@ static int test_bad_messages(agent_t *ag)
   size_t vlen;
   int i;
 
+  if (dir == NULL)
+    return 0;
+
   BEGIN();
 
   TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
@@ -724,14 +727,7 @@ static int test_bad_messages(agent_t *ag)
   for (i = 0; i < 20; i++)
     su_root_step(ag->ag_root, 1);
 
-  nta_leg_destroy(ag->ag_default_leg);
-
-  /* Create a default leg */
-  TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
-					     leg_callback_200,
-					     ag,
-					     NTATAG_NO_DIALOG(1),
-					     TAG_END()));
+  nta_leg_destroy(ag->ag_default_leg), ag->ag_default_leg = NULL;
 
   END();
 }
@@ -778,6 +774,14 @@ int test_tports(agent_t *ag)
   url->url_params = "transport=tcp";
 
   url->url_params = "transport=udp";
+
+  /* Create a new default leg */
+  nta_leg_destroy(ag->ag_default_leg), ag->ag_default_leg = NULL;
+  TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
+					     leg_callback_200,
+					     ag,
+					     NTATAG_NO_DIALOG(1),
+					     TAG_END()));
 
   TEST_1(nta_agent_add_tport(ag->ag_agent, (url_string_t *)url, 
 			     TAG_END()) == 0);
