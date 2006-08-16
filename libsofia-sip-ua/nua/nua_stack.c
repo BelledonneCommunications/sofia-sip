@@ -1066,8 +1066,9 @@ msg_t *nua_creq_msg(nua_t *nua,
       add_contact = 0;
 
     if (add_contact || add_service_route) {
-      if (nua_registration_add_contact(nh, msg, sip, 
-				       add_contact, add_service_route) < 0)
+      if (nua_registration_add_contact_to_request(nh, msg, sip, 
+						  add_contact, 
+						  add_service_route) < 0)
 	goto error;
     }
 
@@ -1136,6 +1137,24 @@ msg_t *nua_creq_msg(nua_t *nua,
 }
 
 /**@internal
+ * Get remote contact header for @a irq */
+static inline
+sip_contact_t const *incoming_contact(nta_incoming_t *irq)
+{
+  sip_contact_t const *retval = NULL;
+  msg_t *request;
+  sip_t *sip;
+
+  request = nta_incoming_getrequest(irq);
+  sip = sip_object(request);
+  if (sip)
+    retval = sip->sip_contact;
+  msg_destroy(request);
+
+  return retval;
+}
+
+/**@internal
  * Create a response message.
  *
  * @param nua
@@ -1145,7 +1164,8 @@ msg_t *nua_creq_msg(nua_t *nua,
  * @param phrase
  * @param tag, value, ... list of tag-value pairs
  */
-msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
+msg_t *nh_make_response(nua_t *nua,
+			nua_handle_t *nh,
 			nta_incoming_t *irq,
 			int status, char const *phrase,
 			tag_type_t tag, tag_value_t value, ...)
@@ -1180,7 +1200,9 @@ msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh,
     msg_destroy(msg);
   else if (!sip->sip_contact &&
 	   (t = tl_find(ta_args(ta), _nutag_add_contact)) &&
-	   nua_registration_add_contact(nh, msg, sip, t->t_value, 0) < 0)
+	   t->t_value && 
+	   nua_registration_add_contact_to_response(nh, msg, sip, NULL, 
+						    incoming_contact(irq)) < 0)
     msg_destroy(msg);
   else
     retval = msg;

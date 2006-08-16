@@ -479,11 +479,17 @@ void nua_creq_deinit(struct nua_client_request *cr, nta_outgoing_t *orq);
 
 sip_contact_t const *nua_stack_get_contact(nua_registration_t const *nr);
 
-int nua_registration_add_contact(nua_handle_t *nh,
-				 msg_t *msg, 
-				 sip_t *sip,
-				 int add_contact,
-				 int add_service_route);
+int nua_registration_add_contact_to_request(nua_handle_t *nh,
+					    msg_t *msg, 
+					    sip_t *sip,
+					    int add_contact,
+					    int add_service_route);
+
+int nua_registration_add_contact_to_response(nua_handle_t *nh,
+					     msg_t *msg,
+					     sip_t *sip,
+					     sip_record_route_t const *,
+					     sip_contact_t const *remote);
 
 msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh, 
 			nta_incoming_t *irq,

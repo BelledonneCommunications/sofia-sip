@@ -796,7 +796,10 @@ int nua_stack_process_notify(nua_t *nua,
 			      SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
 			      TAG_END());
 
-  if (response && nua_registration_add_contact(nh, response, NULL, 1, 0) >= 0)
+  if (response && 
+      nua_registration_add_contact_to_response(nh, response, NULL, 
+					       sip->sip_record_route,
+					       sip->sip_contact) >= 0)
     nta_incoming_mreply(irq, response);
   else
     nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());

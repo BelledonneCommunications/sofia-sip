@@ -125,7 +125,7 @@ struct register_usage {
    *
    * If nr_public is true, transport should have public address.
    */
-  unsigned nr_default:1, nr_secure:1, nr_public:1;
+  unsigned nr_default:1, nr_secure:1, nr_public:1, nr_ip4:1, nr_ip6:1;
 
   /** Stack-generated contact */
   unsigned nr_by_stack:1, :0;
@@ -827,6 +827,11 @@ int process_response_to_register(nua_handle_t *nh,
 #endif
 
 static void nua_stack_tport_update(nua_t *nua, nta_agent_t *nta);
+static int nua_registration_add_contact_and_route(nua_registration_t *nr,
+						  msg_t *msg,
+						  sip_t *sip,
+						  int add_contact,
+						  int add_service_route);
 
 int
 nua_stack_init_transport(nua_t *nua, tagi_t const *tags)
@@ -1012,6 +1017,8 @@ int nua_registration_from_via(nua_registration_t **list,
     nr->nr_ready = 1, nr->nr_default = 1, nr->nr_public = public;
     nr->nr_secure = contact->m_url->url_type == url_sips;
     nr->nr_contact = contact;
+    nr->nr_ip4 = host_is_ip4_address(contact->m_url->url_host);
+    nr->nr_ip6 = !nr->nr_ip4 && host_is_ip6_reference(contact->m_url->url_host);
     /* nr->nr_via = v; */
 
     SU_DEBUG_9(("nua_register: Adding contact URL '%s' to list.\n", contact->m_url->url_host));
@@ -1061,6 +1068,9 @@ nua_registration_t *nua_registration_by_aor(nua_registration_t const *list,
   nua_registration_t const *nr, *public = NULL, *any = NULL;
   nua_registration_t const *namewise = NULL, *sipswise = NULL;
 
+  int ip4 = remote_uri && host_is_ip4_address(remote_uri->url_host);
+  int ip6 = remote_uri && host_is_ip6_reference(remote_uri->url_host);
+
   if (only_default || aor == NULL) {
     /* Ignore AoR, select only by remote_uri */
     for (nr = list; nr; nr = nr->nr_next) {
@@ -1094,7 +1104,7 @@ nua_registration_t *nua_registration_by_aor(nua_registration_t const *list,
       if (!namewise && alt_aor && url_cmp(nr->nr_aor->a_url, aor->a_url) == 0)
 	namewise = nr;
     }
-    if (!sipswise && (sips_aor || sips_uri) ? nr->nr_secure : !nr->nr_secure) 
+    if (!sipswise && ((sips_aor || sips_uri) ? nr->nr_secure : !nr->nr_secure))
       sipswise = nr;
     if (!public && nr->nr_public)
       public = nr;
@@ -1121,32 +1131,41 @@ nua_registration_t *nua_registration_by_aor(nua_registration_t const *list,
 
 
 nua_registration_t *
-nua_registration_for_msg(nua_registration_t const *list, sip_t const *sip)
+nua_registration_for_request(nua_registration_t const *list, sip_t const *sip)
 {
   sip_from_t const *aor;
   url_t *uri;
 
-  if (sip == NULL)
-    return NULL;
-
-  if (sip->sip_request) {
-    aor = sip->sip_from;
-    uri = sip->sip_request->rq_url;
-  }
-  else {
-    /* This is much hairier! */
-    aor = sip->sip_to;
-    if (sip->sip_record_route)
-      uri = sip->sip_record_route->r_url;
-    else if (sip->sip_contact)
-      uri = sip->sip_contact->m_url;
-    else
-      uri = sip->sip_from->a_url;
-    assert(uri != ((sip_contact_t *)NULL)->m_url);
-  }
+  aor = sip->sip_from;
+  uri = sip->sip_request->rq_url;
 
   return nua_registration_by_aor(list, aor, uri, 0);
 }
+
+nua_registration_t *
+nua_registration_for_response(nua_registration_t const *list, 
+			      sip_t const *sip,
+			      sip_record_route_t const *record_route,
+			      sip_contact_t const *remote_contact)
+{
+  sip_to_t const *aor = NULL;
+  url_t const *uri = NULL;
+
+  if (sip)
+    aor = sip->sip_to;
+  
+  if (record_route)
+    uri = record_route->r_url;
+  else if (sip && sip->sip_record_route)
+    uri = sip->sip_record_route->r_url;
+  else if (remote_contact)
+    uri = remote_contact->m_url;
+  else if (sip && sip->sip_from)
+    uri = sip->sip_from->a_url;
+
+  return nua_registration_by_aor(list, aor, uri, 0);
+}
+
 
 /** Return Contact usable in dialogs */
 sip_contact_t const *nua_registration_contact(nua_registration_t const *nr)
@@ -1172,12 +1191,12 @@ sip_contact_t const *nua_stack_get_contact(nua_registration_t const *nr)
   return nr ? nr->nr_contact : NULL;
 }
 
-/** Add a Contact (and Route) header to request (or response) */
-int nua_registration_add_contact(nua_handle_t *nh,
-				 msg_t *msg,
-				 sip_t *sip,
-				 int add_contact,
-				 int add_service_route)
+/** Add a Contact (and Route) header to request */
+int nua_registration_add_contact_to_request(nua_handle_t *nh,
+					    msg_t *msg,
+					    sip_t *sip,
+					    int add_contact,
+					    int add_service_route)
 {
   nua_registration_t *nr = NULL;
 
@@ -1191,8 +1210,49 @@ int nua_registration_add_contact(nua_handle_t *nh,
     sip = sip_object(msg);
 
   if (nr == NULL)
-    nr = nua_registration_for_msg(nh->nh_nua->nua_registrations, sip);
+    nr = nua_registration_for_request(nh->nh_nua->nua_registrations, sip);
 
+  return nua_registration_add_contact_and_route(nr, msg, sip, 
+						add_contact, add_service_route);
+}
+
+/** Add a Contact header to response.
+ *
+ * @param nh
+ * @param msg response message
+ * @param sip response headers
+ * @param record_route record-route from request
+ * @param remote_contact Contact from request
+ */
+int nua_registration_add_contact_to_response(nua_handle_t *nh,
+					     msg_t *msg,
+					     sip_t *sip,
+					     sip_record_route_t const *record_route,
+					     sip_contact_t const *remote_contact)
+{
+  nua_registration_t *nr = NULL;
+
+  if (sip == NULL)
+    sip = sip_object(msg);
+
+  if (nh == NULL || msg == NULL || sip == NULL)
+    return -1;
+
+  if (nr == NULL)
+    nr = nua_registration_for_response(nh->nh_nua->nua_registrations, sip,
+				       record_route, remote_contact);
+
+  return nua_registration_add_contact_and_route(nr, msg, sip, 1, 0);
+}
+
+/** Add a Contact (and Route) header to request */
+static 
+int nua_registration_add_contact_and_route(nua_registration_t *nr,
+					   msg_t *msg,
+					   sip_t *sip,
+					   int add_contact,
+					   int add_service_route)
+{
   if (nr == NULL)
     return -1;
 
@@ -1210,7 +1270,6 @@ int nua_registration_add_contact(nua_handle_t *nh,
 
   return 0;
 }
-
 
 
 /** Add a registration to list of contacts */
@@ -1294,6 +1353,8 @@ int nua_registration_set_contact(su_home_t *home,
     return -1;
 
   nr->nr_contact = m;
+  nr->nr_ip4 = host_is_ip4_address(m->m_url->url_host);
+  nr->nr_ip6 = !nr->nr_ip4 && host_is_ip6_reference(m->m_url->url_host);
   nr->nr_by_stack = !application_contact;
 
   msg_header_free(home, (void *)previous);
