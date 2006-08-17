@@ -576,7 +576,8 @@ int outbound_gruuize(outbound_t *ob, sip_t const *sip)
     return -1;
 
   if (!ob->ob_prefs.gruuize && ob->ob_instance) {
-    char const *my_instance, *my_reg_id;
+    char const *my_instance, *my_reg_id = NULL;
+    char const *instance, *reg_id;
 
     m = ob->ob_rcontact;
     my_instance = msg_header_find_param(m->m_common, "+sip.instance=");
@@ -585,11 +586,11 @@ int outbound_gruuize(outbound_t *ob, sip_t const *sip)
 
     for (m = sip->sip_contact; m; m = m->m_next) {
       if (my_instance) {
-	char const *instance = msg_header_find_param(m->m_common, "+sip.instance=");
+	instance = msg_header_find_param(m->m_common, "+sip.instance=");
 	if (!instance || strcmp(instance, my_instance))
 	  continue;
 	if (my_reg_id) {
-	  char const *reg_id = msg_header_find_param(m->m_common, "reg-id=");
+	  reg_id = msg_header_find_param(m->m_common, "reg-id=");
 	  if (!reg_id || strcmp(reg_id, my_reg_id))
 	    continue;
 	}
