@@ -22,7 +22,8 @@
  *
  */
 
-#ifndef NUA_DIALOG_H /** Defined when <nua_dialog.h> has been included. */
+#ifndef NUA_DIALOG_H
+/** Defined when <nua_dialog.h> has been included. */
 #define NUA_DIALOG_H
 
 /**@IFILE nua_dialog.h 
@@ -86,6 +87,7 @@ typedef void nh_pending_f(nua_owner_t *,
 			  nua_dialog_usage_t *du,
 			  sip_time_t now);
 
+/** Virtual function pointer table for dialog usage. */
 typedef struct {
   unsigned usage_size, usage_class_size;
   int (*usage_add)(nua_owner_t *, 
@@ -102,6 +104,8 @@ typedef struct {
   int (*usage_shutdown)(nua_owner_t *, nua_dialog_usage_t *);
 } nua_usage_class;
 
+
+/** Base structure for dialog usage. */
 struct nua_dialog_usage {
   nua_dialog_usage_t *du_next;
   nua_usage_class const *du_class;
@@ -122,6 +126,7 @@ struct nua_dialog_usage {
   sip_time_t      du_refresh;		/**< When execute du_pending */
 
   sip_event_t const *du_event;		/**< Event of usage */
+
   msg_t *du_msg;			/**< Template message */
 };
 
@@ -131,6 +136,9 @@ void nua_dialog_uas_route(nua_owner_t *, nua_dialog_state_t *ds,
 			  sip_t const *sip, int rtag);
 void nua_dialog_store_peer_info(nua_owner_t *, nua_dialog_state_t *ds,
 				sip_t const *sip);
+int nua_dialog_remove(nua_owner_t *own,
+		      nua_dialog_state_t *ds,
+		      nua_dialog_usage_t *usage);
 
 char const *nua_dialog_usage_name(nua_dialog_usage_t const *du);
 
@@ -154,10 +162,14 @@ void nua_dialog_terminated(nua_owner_t *,
 
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
 
+void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du, 
+				    unsigned min, unsigned max);
+
 void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now);
 
+void nua_dialog_usage_no_refresh(nua_dialog_usage_t *du);
 
 static inline
 int nua_dialog_is_established(nua_dialog_state_t const *ds)
