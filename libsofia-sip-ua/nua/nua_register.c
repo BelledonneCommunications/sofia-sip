@@ -110,6 +110,9 @@ static void nua_register_usage_remove(nua_handle_t *nh,
 static void nua_register_usage_peer_info(nua_dialog_usage_t *du,
 					 nua_dialog_state_t const *ds,
 					 sip_t const *sip);
+static void nua_register_usage_refresh(nua_handle_t *, nua_dialog_usage_t *,
+				       sip_time_t);
+static int nua_register_usage_shutdown(nua_handle_t *, nua_dialog_usage_t *);
 
 /** REGISTER usage, aka nua_registration_t */
 struct register_usage {
@@ -154,6 +157,8 @@ nua_usage_class const nua_register_usage[1] = {
     nua_register_usage_remove,
     nua_register_usage_name,
     nua_register_usage_peer_info,
+    nua_register_usage_refresh,
+    nua_register_usage_shutdown
   }};
 
 static char const *nua_register_usage_name(nua_dialog_usage_t const *du)
@@ -214,7 +219,6 @@ static void nua_register_usage_peer_info(nua_dialog_usage_t *du,
 /* REGISTER */
 
 static void restart_register(nua_handle_t *nh, tagi_t *tags);
-static void refresh_register(nua_handle_t *, nua_dialog_usage_t *, sip_time_t);
 
 static int process_response_to_register(nua_handle_t *nh,
 					nta_outgoing_t *orq,
@@ -583,30 +587,26 @@ restart_register(nua_handle_t *nh, tagi_t *tags)
     msg_destroy(msg);
 }
 
-void
-refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
+/** Refresh registration */
+static
+void nua_register_usage_refresh(nua_handle_t *nh,
+				nua_dialog_usage_t *du,
+				sip_time_t now)
 {
   nua_t *nua = nh->nh_nua;
   nua_client_request_t *cr = nh->nh_cr;
   nua_registration_t *nr = nua_dialog_usage_private(du);
-  nua_event_t e;
   msg_t *msg;
   sip_t *sip;
-  int terminating;
+
+  if (du->du_terminating || du->du_shutdown)
+    return;
 
   if (cr->cr_msg) {
-    /* Delay of 5 .. 15 seconds */
+    /* Busy, delay of 5 .. 15 seconds */
     nua_dialog_usage_set_refresh(du, 5 + (unsigned)random() % 11U);
-    du->du_pending = refresh_register;
     return;
   }
-
-  if (now > 0)
-    e = nua_r_register;
-  else
-    e = nua_r_destroy, du->du_terminating = 1;
-
-  terminating = du->du_terminating;
 
   outbound_stop_keepalive(nr->nr_ob);
 
@@ -619,33 +619,84 @@ refresh_register(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   if (!msg || !sip)
     goto error;
 
-  if (terminating)
-    unregister_expires_contacts(msg, sip);
-
   cr->cr_orq =
-    outbound_register_request(nr->nr_ob, terminating,
+    outbound_register_request(nr->nr_ob, 0,
 			      nr->nr_by_stack ? nr->nr_contact : NULL,
 			      nh->nh_nua->nua_nta,
 			      process_response_to_register, nh, NULL,
 			      msg,
 			      SIPTAG_END(), 
-			      TAG_IF(terminating, NTATAG_SIGCOMP_CLOSE(1)),
-			      TAG_IF(!terminating, NTATAG_COMP("sigcomp")),
+			      NTATAG_COMP("sigcomp"),
 			      TAG_END());
   if (!cr->cr_orq)
     goto error;
 
   cr->cr_usage = du;
-  cr->cr_event = e;
+  cr->cr_event = nua_r_register;
   return;
 
  error:
-  if (terminating)
-    nua_dialog_usage_remove(nh, nh->nh_ds, du);
   msg_destroy(msg);
   msg_destroy(cr->cr_msg);
-  UA_EVENT2(e, NUA_INTERNAL_ERROR, TAG_END());
+  UA_EVENT2(nua_r_register, NUA_INTERNAL_ERROR, TAG_END());
   return;
+}
+
+/** Shutdown register usage. 
+ *
+ * Called when stack is shut down or handle is destroyed. Unregister.
+ */
+static
+int nua_register_usage_shutdown(nua_handle_t *nh, nua_dialog_usage_t *du)
+{
+  nua_t *nua = nh->nh_nua;
+  nua_client_request_t *cr = nh->nh_cr;
+  nua_registration_t *nr = nua_dialog_usage_private(du);
+  msg_t *msg;
+  sip_t *sip;
+
+  if (du->du_terminating)	/* Already terminating? */
+    return 100;
+
+  du->du_terminating = 1;
+
+  if (cr->cr_msg)    /* Busy */
+    return 100;
+
+  outbound_stop_keepalive(nr->nr_ob);
+
+  cr->cr_msg = msg_copy(du->du_msg);
+  msg = nua_creq_msg(nua, nh, cr, 1,
+		     SIP_METHOD_REGISTER,
+		     NUTAG_USE_DIALOG(1),
+		     TAG_END());
+  sip = sip_object(msg);
+  if (!msg || !sip)
+    goto error;
+
+  unregister_expires_contacts(msg, sip);
+
+  cr->cr_orq =
+    outbound_register_request(nr->nr_ob, 1,
+			      nr->nr_by_stack ? nr->nr_contact : NULL,
+			      nh->nh_nua->nua_nta,
+			      process_response_to_register, nh, NULL,
+			      msg,
+			      SIPTAG_END(), 
+			      NTATAG_SIGCOMP_CLOSE(1),
+			      TAG_END());
+  if (!cr->cr_orq)
+    goto error;
+
+  cr->cr_usage = du;
+  cr->cr_event = nua_r_destroy;
+  return 200;
+
+ error:
+  nua_dialog_usage_remove(nh, nh->nh_ds, du);
+  msg_destroy(msg);
+  msg_destroy(cr->cr_msg);
+  return 500;
 }
 
 
@@ -749,8 +800,6 @@ int process_response_to_register(nua_handle_t *nh,
     }
 
     nua_dialog_usage_set_refresh(du, mindelta);
-    if (mindelta)
-      du->du_pending = refresh_register;
   }
 
 #if HAVE_SIGCOMP
