@@ -67,6 +67,8 @@ enum {
   LI_NAMEREQD     = 6,
   /** Instead of domain name, use numeric form */
   LI_NUMERIC      = 8,
+  /** Interfaces are down. New in 1.12.2. */
+  LI_DOWN         = 16,
   /** Get interface name */
   LI_IFNAME       = 256
 };

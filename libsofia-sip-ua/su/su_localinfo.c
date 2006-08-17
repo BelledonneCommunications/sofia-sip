@@ -585,9 +585,10 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
       error = ELI_SYSTEM;
       goto err;
     }
-    /* Do not include interfaces that are down */
-    if ((ifreq->ifr_flags & IFF_UP) == 0) {
-      SU_DEBUG_9(("su_localinfo: if %s with index %d is down\n", if_name, if_index));
+    /* Do not include interfaces that are down unless explicitly asked */
+    if ((ifreq->ifr_flags & IFF_UP) == 0 && (hints->li_flags & LI_DOWN) == 0) {
+      SU_DEBUG_9(("su_localinfo: if %s with index %d is down\n", 
+		  if_name, if_index));
       continue;
     }
 #else
@@ -1040,6 +1041,10 @@ int bsd_localinfo(su_localinfo_t const hints[1],
     int scope, flags = 0, gni_flags = 0, if_index = 0;
     char const *ifname = 0;
     size_t ifnamelen = 0;
+
+    /* no ip address from if that is down */
+    if ((ifa->ifa_flags & IFF_UP) == 0 && (hints->li_flags & LI_DOWN) == 0)
+      continue;
 
     su = (su_sockaddr_t *)ifa->ifa_addr;
 
