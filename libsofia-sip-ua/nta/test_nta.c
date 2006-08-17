@@ -58,6 +58,7 @@ typedef struct agent_t agent_t;
 #include <sofia-sip/sresolv.h>
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/sofia_features.h>
+#include <sofia-sip/hostdomain.h>
 
 #include <sofia-sip/string0.h>
 
@@ -652,21 +653,33 @@ int readfile(FILE *f, void **contents)
 
 static int test_bad_messages(agent_t *ag)
 {
-  DIR *dir = opendir("../sip/tests");
+  DIR *dir;
   struct dirent *d;
-  char name[PATH_MAX] = "../sip/tests/";
-  size_t offset = strlen(name);
+  char name[PATH_MAX + 1] = "../sip/tests/";
+  size_t offset;
   char const *host, *port;
   su_addrinfo_t *ai,  hints[1];
   su_socket_t s;
   su_sockaddr_t su[1];
   socklen_t sulen;
-  char via[36];
+  char via[64];
   size_t vlen;
   int i;
 
-  if (dir == NULL)
+  dir = opendir(name);
+  if (dir == NULL && getenv("srcdir")) {
+    strncpy(name, getenv("srcdir"), PATH_MAX);
+    strncat(name, "/../sip/tests/", PATH_MAX);
+    dir = opendir(name);
+  }
+
+  if (dir == NULL) {
+    fprintf(stderr, "test_nta: cannot find sip torture messages\n"); 
+    fprintf(stderr, "test_nta: tried %s\n", name); 
     return 0;
+  }
+
+  offset = strlen(name);
 
   BEGIN();
 
@@ -676,8 +689,13 @@ static int test_bad_messages(agent_t *ag)
 					      NTATAG_NO_DIALOG(1),
 					      TAG_END()));
 
-  host = ag->ag_aliases->m_url->url_host;
-  port = ag->ag_aliases->m_url->url_port;
+  host = ag->ag_contact->m_url->url_host;
+  if (host_is_ip6_reference(host)) {
+    host = strcpy(via, host + 1);
+    via[strlen(via) - 1] = '\0';
+  }
+  port = url_port(ag->ag_contact->m_url);
+
   memset(hints, 0, sizeof hints);
   hints->ai_socktype = SOCK_DGRAM;
   hints->ai_protocol = IPPROTO_UDP;

@@ -41,6 +41,9 @@ zonefile=.test$$.example.zone
 
 test x$s = x$0 && s=`pwd`
 
+test -z "$srcdir" && srcdir=$s
+export srcdir
+
 PATH=/usr/sbin:/usr/local/sbin:/sbin:$PATH
 
 export PATH
