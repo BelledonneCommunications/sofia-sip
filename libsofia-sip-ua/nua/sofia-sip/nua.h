@@ -88,7 +88,6 @@ typedef enum nua_event_e {
   nua_i_terminated,		/**< A call has been terminated */
   nua_i_state,		        /**< Call state has changed */
 
-  nua_i_network_changed,        /**< Our IP(v6) address has changed */
   nua_i_outbound,		/**< Status from outbound processing */
 
   nua_i_bye,			/**< Incoming call hangup */
@@ -135,7 +134,7 @@ typedef enum nua_event_e {
   nua_r_unsubscribe,		/**< Answer to outgoing un-SUBSCRIBE */
   nua_r_notify,			/**< Answer to outgoing NOTIFY */
   nua_r_method,			/**< Answer to unknown outgoing method */
-
+ 
   /* Internal events: nua hides them from application */
   nua_r_authenticate,
   nua_r_redirect,
@@ -143,6 +142,10 @@ typedef enum nua_event_e {
   nua_r_respond,
   nua_r_nit_respond,
   nua_r_ack,			/*#< Answer to ACK */
+
+  /* NOTE: Post 1.12 release events come here (below) to keep ABI
+     compatibility! */
+  nua_i_network_changed,        /**< Our IP(v6) address has changed */
 
 } nua_event_t;
 

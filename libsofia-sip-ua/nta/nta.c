@@ -9949,5 +9949,10 @@ int nta_agent_close_tports(nta_agent_t *agent)
   
   tport_destroy(agent->sa_tports), agent->sa_tports = NULL;
   
+  msg_header_free(agent->sa_home, (void *)agent->sa_vias);
+  agent->sa_vias = NULL;
+  msg_header_free(agent->sa_home, (void *)agent->sa_public_vias);
+  agent->sa_public_vias = NULL;
+
   return 0;
 }

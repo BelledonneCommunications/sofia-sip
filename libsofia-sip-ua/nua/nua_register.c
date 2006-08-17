@@ -26,6 +26,7 @@
  * @brief REGISTER and registrations
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  *
  * @date Created: Wed Mar  8 11:48:49 EET 2006 ppessi
  */
@@ -986,7 +987,7 @@ void nua_network_changed_cb(nua_t *nua, su_root_t *root)
     /* 1) Shutdown all tports */
     nta_agent_close_tports(nua->nua_nta);
 
-    /* 2) */
+    /* 2) Create new tports */
     if (nua_stack_init_transport(nua, nua->nua_args) < 0);
 
 
@@ -1024,18 +1025,32 @@ int
 nua_stack_init_registrations(nua_t *nua)
 {
   /* Create initial identities: peer-to-peer, public, sips */
-  nua_registration_t **list = &nua->nua_registrations;
+  nua_registration_t **nr_list = &nua->nua_registrations, **nr_next;
+  nua_handle_t **nh_list;
   su_home_t *home = nua->nua_dhandle->nh_home;
   sip_via_t const *v;
 
+  /* Remove existing, local address based registrations and count the
+     rest */
+  while (nr_list && *nr_list) {
+    nr_next = &(*nr_list)->nr_next;
+    if ((*nr_list)->nr_default == 1) {
+      nua_registration_remove(*nr_list);
+      /* memset(*nr_list, 170, sizeof(**nr_list)); */
+      /* XXX - free, too */
+    }
+    nr_list = nr_next;
+  }
+  nr_list = &nua->nua_registrations;
+
   v = nta_agent_public_via(nua->nua_nta);
   if (v) {
-    nua_registration_from_via(list, home, v, 1);
+    nua_registration_from_via(nr_list, home, v, 1);
   }
 
   v = nta_agent_via(nua->nua_nta);
   if (v) {
-    nua_registration_from_via(list, home, v, 0);
+    nua_registration_from_via(nr_list, home, v, 0);
   }
   else {
     sip_via_t v[2];
@@ -1047,7 +1062,23 @@ nua_stack_init_registrations(nua_t *nua)
     v[1].v_protocol = sip_transport_tcp;
     v[1].v_host = "addr.is.invalid.";
 
-    nua_registration_from_via(list, home, v, 0);
+    nua_registration_from_via(nr_list, home, v, 0);
+  }
+
+  /* Go through all the registrations and set to refresh almost
+     immediately */
+  nh_list = &nua->nua_handles;
+  for (; *nh_list; nh_list = &(*nh_list)->nh_next) {
+    nua_dialog_state_t *ds;
+    nua_dialog_usage_t *du;
+
+    ds = (*nh_list)->nh_ds;
+    du = ds->ds_usage;
+
+    if (ds->ds_has_register == 1 && du->du_class->usage_refresh) {
+      du->du_refresh = sip_now();
+      nua_dialog_usage_refresh(*nh_list, du, 1);
+    }
   }
 
   nta_agent_bind_tport_update(nua->nua_nta, nua, nua_stack_tport_update);
@@ -1068,7 +1099,7 @@ int nua_registration_from_via(nua_registration_t **list,
   vias = sip_via_copy(su_home_auto(autohome, sizeof autohome), via);
 
   for (; *list; list = &(*list)->nr_next)
-    ++nr_items;
+      ++nr_items;
 
   next = list;
 
