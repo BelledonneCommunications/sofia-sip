@@ -65,9 +65,13 @@ int bnf_test(void)
   BEGIN();
   TEST_1(IS_TOKEN('a'));
   TEST_1(IS_TOKEN('b'));
-  TEST(span_lws("  \r\n \r\nLoppuu"), 7);
-  TEST(span_lws("  \r\r\nLoppuu"), 5);
-  TEST(span_lws("  \n\r\nLoppuu"), 5);
+  /* Fixed for 1.12.2: lws = [*wsp crlf] 1*wsp */
+  TEST(span_lws("  \r\n \r\nLoppuu"), 5);
+  TEST(span_lws("  \r\r \nLoppuu"), 2);
+  TEST(span_lws("  \n\r \nLoppuu"), 2);
+  TEST(span_lws("  \r \nLoppuu"), 4);
+  TEST(span_lws("  \n\t \nLoppuu"), 5);
+  TEST(span_lws("  \r\n\t \nLoppuu"), 6);
   TEST(span_token(SIP_TOKEN), strlen(SIP_TOKEN));
   TEST(count_bnf(bnf_token), strlen(SIP_TOKEN "$"));
   #define SIP_PARAM SIP_TOKEN "[:]/"

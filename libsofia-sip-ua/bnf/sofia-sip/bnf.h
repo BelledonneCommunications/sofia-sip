@@ -171,12 +171,18 @@ SOFIAPUBVAR unsigned char const _bnf_table[256];
 /** Get number of characters before linear whitespace */
 #define span_non_lws(s) strcspn(s, LWS)
 
-/** Calculate span of a linear whitespace characters. */
+/** Calculate span of a linear whitespace. 
+ * LWS = [*WSP CRLF] 1*WSP
+ */
 static inline int span_lws(char const *s)
 {
-  char const *e = s; 
-  while (IS_LWS(*e))
-    e++; 
+  char const *e = s;
+  int i = 0;
+  e += strspn(s, WS);
+  if (e[i] == '\r') i++;
+  if (e[i] == '\n') i++;
+  if (IS_WS(e[i]))
+    e += i + strspn(e + i, WS);
   return e - s;
 }
 
