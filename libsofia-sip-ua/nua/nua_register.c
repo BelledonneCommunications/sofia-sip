@@ -1225,6 +1225,10 @@ nua_registration_t *nua_registration_by_aor(nua_registration_t const *list,
 	continue;
       if (only_default && !nr->nr_default)
 	continue;
+      if (nr->nr_ip4 && ip6)
+	continue;
+      if (nr->nr_ip6 && ip4)
+	continue;
       if (sips_uri ? nr->nr_secure : !nr->nr_secure) 
 	return (nua_registration_t *)nr;
       if (!public && nr->nr_public)
