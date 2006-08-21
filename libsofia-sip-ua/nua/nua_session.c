@@ -148,6 +148,11 @@ static int nua_session_usage_add(nua_handle_t *nh,
 static void nua_session_usage_remove(nua_handle_t *nh,
 				     nua_dialog_state_t *ds,
 				     nua_dialog_usage_t *du);
+static void nua_session_usage_refresh(nua_owner_t *,
+				      nua_dialog_usage_t *,
+				      sip_time_t now);
+static int nua_session_usage_shutdown(nua_owner_t *,
+				       nua_dialog_usage_t *);
 
 static nua_usage_class const nua_session_usage[1] = {
   {
@@ -156,6 +161,9 @@ static nua_usage_class const nua_session_usage[1] = {
     nua_session_usage_add,
     nua_session_usage_remove,
     nua_session_usage_name,
+    NULL,
+    nua_session_usage_refresh,
+    nua_session_usage_shutdown
   }};
 
 static char const *nua_session_usage_name(nua_dialog_usage_t const *du)
@@ -185,8 +193,8 @@ void nua_session_usage_remove(nua_handle_t *nh,
 /* ======================================================================== */
 /* INVITE and call (session) processing */
 
-static int ua_invite2(nua_t *, nua_handle_t *, nua_event_t e,
-		      int restarted, tagi_t const *tags);
+static int nua_stack_invite2(nua_t *, nua_handle_t *, nua_event_t e,
+			     int restarted, tagi_t const *tags);
 static int process_response_to_invite(nua_handle_t *nh,
 				      nta_outgoing_t *orq,
 				      sip_t const *sip);
@@ -194,8 +202,6 @@ static int process_100rel(nua_handle_t *nh,
 			  nta_outgoing_t *orq,
 			  sip_t const *sip);
 static void
-  cancel_invite(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now),
-  refresh_invite(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now),
   session_timeout(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now);
 
 static void restart_invite(nua_handle_t *nh, tagi_t *tags);
@@ -266,7 +272,7 @@ nua_stack_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     what = "Handle initialization failed";
   }
   else
-    return ua_invite2(nua, nh, e, 0, tags);
+    return nua_stack_invite2(nua, nh, e, 0, tags);
 
   UA_EVENT2(e, 900, what);
 
@@ -276,8 +282,9 @@ nua_stack_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 }
 
 static int
-ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
-	   tagi_t const *tags)
+nua_stack_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+		  int restarted,
+		  tagi_t const *tags)
 {
   nua_session_state_t *ss = nh->nh_ss;
   struct nua_client_request *cr = ss->ss_crequest;
@@ -285,7 +292,7 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   int offer_sent = 0;
 
   msg_t *msg = NULL;
-  sip_t *sip;
+  sip_t *sip = NULL;
 
   char const *what;
 
@@ -295,11 +302,19 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
   du = nua_dialog_usage_add(nh, nh->nh_ds, nua_session_usage, NULL);
   what = nua_internal_error;		/* Internal error */
 
-  msg = du ? nua_creq_msg(nua, nh, cr, restarted,
-			      SIP_METHOD_INVITE,
-			      NUTAG_USE_DIALOG(1),
-			      NUTAG_ADD_CONTACT(1),
-			      TAG_NEXT(tags)) : NULL;
+  if (du) {
+    if (restarted && !cr->cr_msg)
+      cr->cr_msg = msg_dup(du->du_msg);
+
+    msg = nua_creq_msg(nua, nh, cr, restarted,
+		       SIP_METHOD_INVITE,
+		       NUTAG_USE_DIALOG(1),
+		       NUTAG_ADD_CONTACT(1),
+		       TAG_NEXT(tags));
+    if (!restarted) 
+      du->du_msg = msg_dup(msg);
+  }
+
   sip = sip_object(msg);
 
   if (du && sip && nh->nh_soa) {
@@ -319,8 +334,9 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
     sip_time_t invite_timeout = NH_PGET(nh, invite_timeout);
     if (invite_timeout == 0)
       invite_timeout = UINT_MAX;
-    /* Cancel if we don't get response */
-    nua_dialog_usage_set_refresh(du, invite_timeout);
+    /* Cancel if we don't get response within timeout*/
+    nua_dialog_usage_set_expires(du, invite_timeout);
+    nua_dialog_usage_set_refresh(du, 0);
 
     /* Add session timer headers */
     use_session_timer(nh, 0, msg, sip);
@@ -364,7 +380,6 @@ ua_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e, int restarted,
     if (cr->cr_orq) {
       cr->cr_offer_sent = offer_sent;
       cr->cr_usage = du;
-      du->du_pending = cancel_invite;
       du->du_refresh = 0;
       signal_call_state_change(nh, 0, "INVITE sent",
 			       nua_callstate_calling, 0,
@@ -547,9 +562,9 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   }
 
   msg = nua_creq_msg(nua, nh, cr, 0,
-			 SIP_METHOD_ACK,
-			 /* NUTAG_COPY(0), */
-			 TAG_NEXT(tags));
+		     SIP_METHOD_ACK,
+		     /* NUTAG_COPY(0), */
+		     TAG_NEXT(tags));
   sip = sip_object(msg);
 
   if (sip && nh->nh_soa) {
@@ -750,35 +765,49 @@ process_response_to_prack(nua_handle_t *nh,
   return 0;
 }
 
+/** Refresh session usage */
+static void nua_session_usage_refresh(nua_handle_t *nh,
+				      nua_dialog_usage_t *du,
+				      sip_time_t now)
+{
+  tagi_t const timer_tags[2] = {
+    { SIPTAG_SUBJECT_STR("Session refresh") }, 
+    { TAG_END() }
+  };
+  tagi_t const refresh_tags[2] = {
+    { SIPTAG_SUBJECT_STR("Dialog refresh") }, 
+    { TAG_END() }
+  };
+  nua_session_state_t const *ss = nh->nh_ss;
+  nua_client_request_t const *cri = ss->ss_crequest, *cro = nh->nh_cr;
+  nua_server_request_t const *sri = ss->ss_srequest;
+
+  if (cri->cr_msg)	/* INVITE in progress or being authenticated */
+    return;
+  else if (ss->ss_state >= nua_callstate_terminating)
+    return;
+
+  if (!ss->ss_refresher) {
+    if (now >= du->du_expires)
+      session_timeout(nh, du, now);
+    else
+      /* Refreshing contact & route set */
+      nua_stack_invite2(nh->nh_nua, nh, nua_r_invite, 1, refresh_tags);
+  }
+  else if (NH_PGET(nh, update_refresh)) {
+    if (!cro->cr_orq)
+      nua_stack_update(nh->nh_nua, nh, nua_r_update, timer_tags);
+    else
+      nua_dialog_usage_refresh_range(du, 5, 15);
+  }
+  else {
+    if (!cri->cr_orq && !sri->sr_irq)
+      nua_stack_invite2(nh->nh_nua, nh, nua_r_invite, 1, timer_tags);
+  }
+}
+
 static
 char const reason_timeout[] = "SIP;cause=408;text=\"Session timeout\"";
-
-void cancel_invite(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
-{
-  static tagi_t const timeout_tags[] = {
-    { siptag_reason_str, (tag_value_t)reason_timeout },
-    { NULL }
-  };
-
-  signal_call_state_change(nh, 487, "Call Canceled",
-			   nua_callstate_init, NULL, NULL);
-
-  nua_stack_cancel(nh->nh_nua, nh, nua_r_destroy, timeout_tags);
-}
-
-void
-refresh_invite(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
-{
-  tagi_t tags[2] = 
-    {{ SIPTAG_SUBJECT_STR("Session refresh") }, { TAG_END() }};
-
-  if (now > 0 && NH_PGET(nh, update_refresh))
-    nua_stack_update(nh->nh_nua, nh, nua_r_update, tags);
-  else if (now > 0)
-    nua_stack_invite(nh->nh_nua, nh, nua_r_invite, tags);
-  else
-    session_timeout(nh, du, SIP_TIME_MAX);
-}
 
 static void
 session_timeout(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
@@ -792,11 +821,78 @@ session_timeout(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now)
   }
 }
 
+/** Terminate usage/dialog/handle/agent gracefully */
+static int nua_session_usage_shutdown(nua_handle_t *nh,
+				       nua_dialog_usage_t *du)
+{
+  nua_session_state_t *ss = nh->nh_ss;
+  nua_client_request_t *cr;
+  nua_server_request_t *sr;
+  int status;
+
+  /* Zap client-side invite transaction */
+  if (ss->ss_crequest->cr_orq) {
+    cr = ss->ss_crequest;
+    status = nta_outgoing_status(cr->cr_orq);
+
+    if (status < 200) 
+      nta_outgoing_tcancel(cr->cr_orq, NULL, NULL, TAG_END());
+
+    if (ss->ss_ack_needed) {
+      msg_t *ack = nua_creq_msg(nh->nh_nua, nh, cr, 0,
+				SIP_METHOD_ACK,
+				TAG_END());
+      nta_outgoing_mcreate(nh->nh_nua->nua_nta, NULL, NULL, NULL, 
+			   ack, TAG_END());
+    }
+
+    nua_creq_deinit(cr, NULL);
+  }
+
+  sr = ss->ss_srequest;
+
+  /* Zap server-side invite transaction */
+  if (sr->sr_irq) {
+    status = nta_incoming_status(sr->sr_irq);
+    if (status < 200)
+      nta_incoming_treply(sr->sr_irq,
+			  SIP_480_TEMPORARILY_UNAVAILABLE,
+			  TAG_END());
+    nta_incoming_destroy(sr->sr_irq);
+    memset(sr, 0, sizeof *sr);
+  }
+
+  switch (ss->ss_state) {
+  case nua_callstate_completing:
+  case nua_callstate_ready:
+  case nua_callstate_completed:
+    {
+      msg_t *bye;
+
+      cr = nh->nh_cr;
+      nua_creq_deinit(cr, NULL);
+      bye = nua_creq_msg(nh->nh_nua, nh, nh->nh_cr, 0, 
+			 SIP_METHOD_BYE,
+			 TAG_END());
+      cr->cr_orq = nta_outgoing_mcreate(nh->nh_nua->nua_nta,
+					NULL, NULL, NULL,
+					bye,
+					TAG_END());
+      if (cr->cr_orq)		/* Wait for BYE to complete? */
+	nua_creq_deinit(cr, NULL);
+    }
+  }
+
+  nua_dialog_usage_remove(nh, nh->nh_ds, du);
+
+  return 0;
+}
+
 /** Restart invite (e.g., after 302 or 407) */
 void
 restart_invite(nua_handle_t *nh, tagi_t *tags)
 {
-  ua_invite2(nh->nh_nua, nh, nua_r_invite, 1, tags);
+  nua_stack_invite2(nh->nh_nua, nh, nua_r_invite, 1, tags);
 }
 
 static int process_response_to_cancel(nua_handle_t *nh,
@@ -812,12 +908,8 @@ nua_stack_cancel(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   nua_client_request_t *cri = ss->ss_crequest;
   nua_client_request_t *crc = nh->nh_cr;
 
-  if (nh && cri->cr_orq && cri->cr_usage &&
-      cri->cr_usage->du_pending == cancel_invite) {
-    nua_dialog_usage_t *du = cri->cr_usage;
+  if (nh && cri->cr_orq && cri->cr_usage) {
     nta_outgoing_t *orq;
-
-    du->du_pending = NULL;
 
     /* nh_referral_respond(nh, SIP_487_REQUEST_TERMINATED); */
 
@@ -1097,7 +1189,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   nua_server_request_t *sr = ss->ss_srequest;
 
   int autoanswer = 0, offer = 0, answer = 0;
-  
+
   enter;
 
   if (ss->ss_srequest->sr_irq == NULL ||
@@ -1120,10 +1212,10 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
     || (status > 100 &&
 	ds->ds_remote_ua->nr_require &&
 	sip_has_feature(ds->ds_remote_ua->nr_require, "100rel"))
-    || (status > 100 && !NH_PGET(nh, only183_100rel) && 
+    || (status > 100 && !NH_PGET(nh, only183_100rel) &&
 	(NH_PGET(nh, early_media) ||
 	 (ds->ds_remote_ua->nr_require &&
-	  sip_has_feature(ds->ds_remote_ua->nr_require, "precondition"))) && 
+	  sip_has_feature(ds->ds_remote_ua->nr_require, "precondition"))) &&
 	ds->ds_remote_ua->nr_supported &&
 	sip_has_feature(ds->ds_remote_ua->nr_supported, "100rel"))
     || (status == 183 &&
@@ -1609,8 +1701,8 @@ init_session_timer(nua_handle_t *nh, sip_t const *sip)
   else
     ss->ss_refresher = nua_remote_refresher;
 
-  SU_DEBUG_9(("nua(%p): session expires in %u refreshed by %s (%s %s)\n",
-	      nh, ss->ss_session_timer, 
+  SU_DEBUG_7(("nua(%p): session expires in %u refreshed by %s (%s %s)\n",
+	      nh, ss->ss_session_timer,
 	      ss->ss_refresher == nua_local_refresher ? "local" : "remote",
 	      server ? sip->sip_request->rq_method_name : "response to",
 	      server ? "request" : sip->sip_cseq->cs_method_name));
@@ -1626,28 +1718,35 @@ set_session_timer(nua_handle_t *nh)
 
   assert(du);
 
-  if (du == NULL)
-    ;
+  if (du == NULL) {
+    ss->ss_timer_set = 0;
+  }
   else if (ss->ss_refresher == nua_local_refresher) {
-    nua_dialog_usage_set_refresh(du, ss->ss_session_timer);
-    du->du_pending = refresh_invite; /* Set timer */
+    ss->ss_timer_set = 1;
+    nua_dialog_usage_set_expires(du, ss->ss_session_timer);
   }
   else if (ss->ss_refresher == nua_remote_refresher) {
-    nua_dialog_usage_set_refresh(du, ss->ss_session_timer + 32);
-    du->du_pending = session_timeout; /* Set timer */
+    ss->ss_timer_set = 1;
+    nua_dialog_usage_set_expires(du, ss->ss_session_timer + 32);
+    nua_dialog_usage_no_refresh(du);
   }
   else {
-    du->du_refresh = 0;
-    du->du_pending = NULL;
+    ss->ss_timer_set = 0;
+    nua_dialog_usage_set_expires(du, SIP_TIME_MAX);
+    nua_dialog_usage_no_refresh(du);
   }
 }
 
-static int
+static inline int
 is_session_timer_set(nua_session_state_t *ss)
 {
-  return ss->ss_usage &&
-    (ss->ss_usage->du_pending == refresh_invite ||
-     ss->ss_usage->du_pending == session_timeout);
+  return ss->ss_usage && ss->ss_timer_set;
+}
+
+static inline int
+has_ongoing_invite(nua_session_state_t *ss)
+{
+  return ss->ss_crequest->cr_orq != NULL || ss->ss_srequest->sr_irq != NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1904,7 +2003,7 @@ nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
       offer_sent = "offer";
     }
 
-    if (is_session_timer_set(ss))
+    if (1 /* is_session_timer_set(ss) */)
       /* Add session timer headers */
       use_session_timer(nh, 0, msg, sip);
 
@@ -2025,7 +2124,7 @@ int nua_stack_process_update(nua_t *nua,
   char const *phrase = sip_200_OK;
 
   char const *offer_recv = NULL, *answer_sent = NULL;
-  int do_timer = 0;
+  int use_timer = 0;
 
   msg_t *rmsg;
   sip_t *rsip;
@@ -2047,9 +2146,10 @@ int nua_stack_process_update(nua_t *nua,
 
   /* Do session timer negotiation if there is no ongoing INVITE transaction */
   if (status < 300 &&
-      sip->sip_session_expires &&
-      is_session_timer_set(ss))
-    do_timer = 1, init_session_timer(nh, sip);
+      sip->sip_session_expires) {
+    use_timer = 1;
+    init_session_timer(nh, sip);
+  }
 
   if (status < 300 && nh->nh_soa &&
       session_get_description(msg, sip, &sdp, &len)) {
@@ -2091,7 +2191,7 @@ int nua_stack_process_update(nua_t *nua,
     answer_sent = NULL;
   }
 
-  if (do_timer && 200 <= status && status < 300) {
+  if (use_timer && 200 <= status && status < 300) {
     use_session_timer(nh, 1, rmsg, rsip);
     set_session_timer(nh);
   }

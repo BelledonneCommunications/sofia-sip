@@ -115,15 +115,13 @@ struct nua_dialog_usage {
   unsigned     du_shutdown:1;	        /**< Shutdown in progress */
   unsigned:0;
 
-  /** Pending operation.
-   *
-   * The du_pending() is called 
-   * a) when current time sip_now() will soon exceed du_refresh (now > 1)
-   * b) when operation is restarted (now is 1)
-   * c) when usage is destroyed (now is 0)
+  /** When usage expires.
+   * Non-zero if the usage is established, SIP_TIME_MAX if there no
+   * expiration time.
    */
-  nh_pending_f   *du_pending;
-  sip_time_t      du_refresh;		/**< When execute du_pending */
+  sip_time_t      du_expires;		
+
+  sip_time_t      du_refresh;		/**< When to refresh */
 
   sip_event_t const *du_event;		/**< Event of usage */
 
@@ -159,6 +157,8 @@ void nua_dialog_terminated(nua_owner_t *,
 			   struct nua_dialog_state *ds,
 			   int status,
 			   char const *phrase);
+
+void nua_dialog_usage_set_expires(nua_dialog_usage_t *du, unsigned delta);
 
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
 

@@ -1335,10 +1335,8 @@ int nua_creq_save_restart(nua_handle_t *nh,
 		  TAG_END());
   nta_outgoing_destroy(orq);
 
-  if (du) {
-    du->du_pending = NULL;
+  if (du)
     du->du_refresh = 0;
-  }
 
   cr->cr_restart = restart_function;
   return 1;
@@ -1455,7 +1453,6 @@ int nua_creq_check_restart(nua_handle_t *nh,
     cr->cr_orq = orq;
 
   if (du) {
-    du->du_pending = NULL;
     du->du_refresh = 0;
   }
 

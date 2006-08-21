@@ -424,6 +424,22 @@ void nua_dialog_terminated(nua_owner_t *own,
   }
 }
 
+/**@internal
+ * Set expiration time. 
+ */
+void nua_dialog_usage_set_expires(nua_dialog_usage_t *du,
+				  unsigned delta)
+{
+  if (delta) {
+    sip_time_t now = sip_now(), expires = now + delta;
+    if (expires < now)
+      expires = SIP_TIME_MAX;
+    du->du_expires = expires;
+    nua_dialog_usage_set_refresh(du, delta);
+  }
+  else
+    du->du_expires = 0, du->du_refresh = 0;
+}
 
 /**@internal
  * Set refresh value suitably. 
@@ -438,13 +454,18 @@ void nua_dialog_terminated(nua_owner_t *own,
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 {
   if (delta == 0)
-    du->du_refresh = SIP_TIME_MAX;
+    du->du_refresh = 0;
   else if (delta > 90 && delta < 5 * 60)
     /* refresh 30..60 seconds before deadline */
     nua_dialog_usage_refresh_range(du, delta - 60, delta - 30);
-  else 
-    /* refresh around half time before deadline */
-    nua_dialog_usage_refresh_range(du, delta / 4, delta / 2 + delta / 4);
+  else {
+    /* By default, refresh around half time before deadline */
+    unsigned min = (delta + 2) / 4;
+    unsigned max = (delta + 2) / 4 + (delta + 1) / 2;
+    if (min == 0)
+      min = 1;
+    nua_dialog_usage_refresh_range(du, min, max);
+  }
 }
 
 /**@internal Set refresh in range min..max seconds in the future. */
@@ -485,8 +506,6 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      sip_time_t now)
 {
   if (du) {
-    nh_pending_f *pending = du->du_pending;
-
     du->du_refresh = 0;
 
     if (now > 0) {
@@ -502,11 +521,6 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
 	return;
       }
     }
-
-    du->du_pending = NULL;
-
-    if (pending)
-      pending(owner, du, now);
   }
 }
 

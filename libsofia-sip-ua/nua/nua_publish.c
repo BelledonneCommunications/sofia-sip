@@ -166,8 +166,7 @@ static int process_response_to_publish(nua_handle_t *nh,
  */
 
 /**@fn \
- * void nua_unpublish(nua_handle_t *nh, \
- *                    tag_type_t tag, tag_value_t value, ...);
+void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
  *
  * Send un-PUBLISH request to publication server.
  *
@@ -245,6 +244,7 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (!du)
     return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 
+  nua_dialog_usage_no_refresh(du);
   pu = nua_dialog_usage_private(du); assert(pu);
 
   if (refresh) {
@@ -294,7 +294,7 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
  error:
   msg_destroy(msg);
-  if (!du->du_ready)
+  if (!du->du_ready == 0)
     nua_dialog_usage_remove(nh, nh->nh_ds, du);
   return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 }
@@ -342,7 +342,7 @@ int process_response_to_publish(nua_handle_t *nh,
     if (status < 300 && !invalid_expiration && !retry) {
       pu->pu_etag = sip_etag_dup(nh->nh_home, sip->sip_etag);
       du->du_ready = 1;
-      nua_dialog_usage_set_refresh(du, sip->sip_expires->ex_delta);
+      nua_dialog_usage_set_expires(du, sip->sip_expires->ex_delta);
     }
     else if (retry && saved_retry_count < NH_PGET(nh, retry_count)) {
       msg_t *response = nta_outgoing_getresponse(orq);
@@ -364,7 +364,6 @@ int process_response_to_publish(nua_handle_t *nh,
       cr->cr_usage = NULL;
       return 0;
     }
-
   }
 
   return nua_stack_process_response(nh, nh->nh_cr, orq, sip, TAG_END());
@@ -375,7 +374,7 @@ static void nua_publish_usage_refresh(nua_handle_t *nh,
 				      nua_dialog_usage_t *du,
 				      sip_time_t now)
 {
-  if (nh->nh_cr->cr_usage == du)
+  if (nh->nh_cr->cr_usage == du) /* Already publishing. */
     return;
   nua_stack_publish2(nh->nh_nua, nh, nua_r_publish, 1, NULL);
 }

@@ -604,8 +604,8 @@ void nua_register_usage_refresh(nua_handle_t *nh,
     return;
 
   if (cr->cr_msg) {
-    /* Busy, delay of 5 .. 15 seconds */
-    nua_dialog_usage_set_refresh(du, 5 + (unsigned)random() % 11U);
+    /* Dialog is busy, delay of 5 .. 15 seconds */
+    nua_dialog_usage_refresh_range(du, 5, 15);
     return;
   }
 
@@ -763,9 +763,8 @@ int process_response_to_register(nua_handle_t *nh,
   du->du_ready = ready;
 
   if (status < 300) {
-    sip_time_t mindelta = 0;
-
     if (!du->du_terminating) {
+      sip_time_t mindelta = 0;
       sip_time_t now = sip_now(), delta, reqdelta;
       sip_contact_t const *m, *sent;
 
@@ -798,9 +797,10 @@ int process_response_to_register(nua_handle_t *nh,
 
       if (mindelta == SIP_TIME_MAX)
         mindelta = 3600;
+      nua_dialog_usage_set_expires(du, mindelta);
     }
-
-    nua_dialog_usage_set_refresh(du, mindelta);
+    else
+      nua_dialog_usage_set_expires(du, 0);
   }
 
 #if HAVE_SIGCOMP
@@ -1076,7 +1076,6 @@ nua_stack_init_registrations(nua_t *nua)
     du = ds->ds_usage;
 
     if (ds->ds_has_register == 1 && du->du_class->usage_refresh) {
-      du->du_refresh = sip_now();
       nua_dialog_usage_refresh(*nh_list, du, 1);
     }
   }

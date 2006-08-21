@@ -132,7 +132,8 @@ typedef struct nua_session_state
   unsigned        ss_precondition:1;	/**< Precondition required */
 
   unsigned        ss_hold_remote:1;	/**< We are holding remote */
-  
+
+  unsigned        ss_timer_set:1;       /**< We have active session timer. */
   unsigned        : 0;
   
   unsigned        ss_session_timer;	/**< Value of Session-Expires (delta) */
