@@ -1293,15 +1293,17 @@ SOFIAPUBVAR tag_typedef_t nutag_allow_ref;
  *    int
  *
  * @par Values
- * - @c nua_callstate_init - Initial state
- * - @c nua_callstate_authenticating - 401/407 received
- * - @c nua_callstate_calling - INVITE sent
- * - @c nua_callstate_proceeding - 18X received
- * - @c nua_callstate_received - INVITE received
- * - @c nua_callstate_early - 18X sent (w/SDP)
- * - @c nua_callstate_ready        - 2XX received or sent
- * - @c nua_callstate_terminating - BYE sent
- * - @c nua_callstate_terminated  - BYE complete
+ * - #nua_callstate_init - Initial state
+ * - #nua_callstate_authenticating - 401/407 received
+ * - #nua_callstate_calling - INVITE sent
+ * - #nua_callstate_proceeding - 18X received
+ * - #nua_callstate_completing   - 2XX received
+ * - #nua_callstate_received - INVITE received (and 100 Trying sent)
+ * - #nua_callstate_early       - 18X sent
+ * - #nua_callstate_completed   - 2XX sent
+ * - #nua_callstate_ready       - 2XX and ACK received/sent
+ * - #nua_callstate_terminating - BYE sent
+ * - #nua_callstate_terminated  - BYE complete
  *
  * Corresponding tag taking reference parameter is NUTAG_CALLSTATE_REF()
  */

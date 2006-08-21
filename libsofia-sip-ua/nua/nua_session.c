@@ -61,6 +61,82 @@ typedef struct sdp_session_s sdp_session_t;
 #endif
 
 /* ---------------------------------------------------------------------- */
+/*  */
+/** @enum nua_callstate
+
+The states for SIP session established with INVITE.
+
+Initially the call states follow the state of the INVITE transaction. If the
+initial INVITE transaction fails, the call is terminated. The status codes
+401 and 407 are an exception: if the client (on the left side in the diagram
+below) receives them, it enters in #nua_callstate_authenticating state.
+
+If a re-INVITE transaction fails, the result depends on the status code in
+failure. The call can return to the ready state, be terminated immediately,
+or be terminated gracefully. The proper action to take is determined with
+sip_response_terminates_dialog().			   
+							   
+@par Session State Diagram				   
+							   
+@code							   
+  			 +----------+			   
+  			 |          |---------------------+
+  			 |   Init   |                     |
+  			 |          |----------+          |
+  			 +----------+          |          |
+  			  |        |           |          |
+                 --/INVITE|        |INVITE/100 |          |
+                          V        V           |          |
+     		+----------+      +----------+ |          |
+       +--------|          |      |          | |          |
+       |  18X +-| Calling  |      | Received | |INVITE/   |
+       |   /- | |          |      |          | |  /18X    |
+       |      V +----------+      +----------+ V          |
+       |   +----------+ |           |     |  +----------+ |
+       |---|          | |2XX     -/ |  -/ |  |          | |
+       |   | Proceed- | | /-     2XX|  18X|  |  Early   | |INVITE/
+       |   |   ing    | |           |     +->|          | |  /200
+       |   +----------+ V           V        +----------+ |
+       |     |  +----------+      +----------+   | -/     |
+       |  2XX|  |          |      |          |<--+ 2XX    |
+       |   /-|  | Complet- |      | Complete |<-----------+
+       |     +->|   ing    |      |          |------+
+       |        +----------+      +----------+      |
+       |                  |        |      |         |
+       |401,407/     -/ACK|        |ACK/- |timeout/ |
+       | /ACK             V        V      | /BYE    |
+       |                 +----------+     |         |
+       |                 |          |     |         |
+       |              +--|  Ready   |     |         |
+       |              |  |          |     |         |
+       |              |  +----------+     |         |
+       |              |       |           |         |
+       |         BYE/ |       |-/BYE      |         |BYE/
+       V         /200 |       V           |         |/200
+  +----------+        |  +----------+     |         |
+  |          |        |  |          |     |         |
+  |Authentic-|        |  | Terminat-|<----+         |
+  |  ating   |        |  |   ing    |               |
+  +----------+        |  +----------+               |
+                      |       |                     |
+                      |       |[23456]XX/-          |
+                      |       V                     |
+                      |  +----------+               |
+                      |  |          |               |
+                      +->|Terminated|<--------------+
+                         |          |
+                         +----------+
+                              | 
+                              V
+                         +----------+
+        		 |          |
+                         |   Init   |
+			 |          |
+@endcode		 +----------+
+			      
+*/			      
+			      
+/* ---------------------------------------------------------------------- */
 /* Session event usage */
 
 struct session_usage;

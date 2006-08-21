@@ -2183,13 +2183,12 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *
  * Call state has changed.
  *
- * This event will be sent whenever the call state changes.
- * In addition to basic changes of session status, also
+ * This event will be sent whenever the call state changes. In addition to
+ * basic changes of session status indicated with enum ::nua_callstate, also
  * SDP O/A negotiation status is included.
  *
- * Note that nua_event_e::nua_i_state also covers call
- * establisment (@see nua_event_e::nua_i_active ) and
- * termination (@see nua_event_e::nua_i_terminated ).
+ * Note that nua_event_e::nua_i_state also covers call establisment
+ * (#nua_i_active) and termination (#nua_i_terminated).
  *
  * @param status Protocol status code. \n
  *               Always present
@@ -2200,6 +2199,8 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param sip    NULL
  * @param tags   NUTAG_ACTIVE_* \n
  *               NUTAG_SOA_SESSION
+ *
+* @sa #nua_i_active, #nua_i_terminated
  */
 
 /** @var nua_event_e::nua_i_subscribe
