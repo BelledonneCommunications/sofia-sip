@@ -196,7 +196,7 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
  *
  * @sa nua_handle(), nua_handle_destroy()
  */
-extern char const NUA_DEBUG[];
+extern char const _NUA_HANDLE_DEBUG[];
 
 /* nua handle destructor. It does nothing. */
 static void nh_destructor(void *arg)
