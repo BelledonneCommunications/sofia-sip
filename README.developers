@@ -33,7 +33,8 @@ TODO
 
 <dir>/ChangeLog files
 	All non-trivial changes to the source code should
-	be documented in the ChangeLog files.
+	be documented in the ChangeLog files. See also the 
+	top-level ChangeLog.
 
 
 Version numbering 

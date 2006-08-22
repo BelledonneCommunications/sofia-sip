@@ -1,5 +1,5 @@
 ===============================================================
-README / Sofia-SIP - a RFC3261 compliant SIP User-Agent library
+README / Sofia-SIP - RFC3261 compliant SIP User-Agent library
 ===============================================================
 
 Introduction
@@ -49,15 +49,14 @@ References
 ----------
 
 Project website:
-http://sofia-sip.sourceforge.net
-http://www.sourceforge.net/projects/sofia-sip
+- http://sofia-sip.sourceforge.net
+- http://www.sourceforge.net/projects/sofia-sip
 
 Mailing list:
-http://sourceforge.net/mail/?group_id=143636
+- http://sourceforge.net/mail/?group_id=143636
 
-CVS repository:
-http://sourceforge.net/cvs/?group_id=143636
-
+Version control repositories:
+- see the project website (link above)
 
 Licensing
 ---------
