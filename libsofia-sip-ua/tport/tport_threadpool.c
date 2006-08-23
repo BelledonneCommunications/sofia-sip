@@ -802,7 +802,7 @@ void thrp_udp_send_report(su_root_magic_t *magic,
 	      thrp, tpd, 1000 * su_time_diff(su_now(), tpd->tpd_when)));
 
   if (tp->tp_master->mr_log)
-    tport_log_msg(tp, tpd->tpd_msg, "sent", "to", "   ", tpd->tpd_when);
+    tport_log_msg(tp, tpd->tpd_msg, "sent", "to", tpd->tpd_when);
 
   if (tpd->tpd_errorcode)
     tport_error_report(tp, tpd->tpd_errorcode, msg_addr(tpd->tpd_msg));

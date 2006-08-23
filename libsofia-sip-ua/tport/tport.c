@@ -2749,7 +2749,7 @@ void tport_deliver(tport_t *self,
   }
   else if (self->tp_master->mr_log && msg != self->tp_rlogged) {
     char const *via = "recv";
-    tport_log_msg(self, msg, via, "from", "   ", now);
+    tport_log_msg(self, msg, via, "from", now);
     self->tp_rlogged = msg;
   }
 
@@ -3159,7 +3159,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
   self->tp_unsent = NULL, self->tp_unsentlen = 0;
   
   if (n > 0 && self->tp_master->mr_log && self->tp_slogged != msg) {
-    tport_log_msg(self, msg, "send", "to", "   ", now);
+    tport_log_msg(self, msg, "send", "to", now);
     self->tp_slogged = msg;
   }
 
@@ -3587,7 +3587,7 @@ void tport_send_queue(tport_t *self)
       return;
 
     if (n > 0 && self->tp_master->mr_log && self->tp_slogged != msg) {
-      tport_log_msg(self, msg, "send", "to", "   ", now);
+      tport_log_msg(self, msg, "send", "to", now);
       self->tp_slogged = msg;
     }
     

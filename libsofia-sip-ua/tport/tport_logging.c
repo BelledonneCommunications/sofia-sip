@@ -178,13 +178,17 @@ void tport_dump_iovec(tport_t const *self, msg_t *msg,
 /** Log the message. */
 void tport_log_msg(tport_t *self, msg_t *msg, 
 		   char const *what, char const *via,
-		   char const *first, su_time_t now)
+		   su_time_t now)
 {
   char stamp[128];
   msg_iovec_t iov[80];
-  int i, n, iovlen = msg_iovec(msg, iov, 80);
+  int i, iovlen = msg_iovec(msg, iov, 80);
   int skip_lf = 0, linelen = 0;
-  char const *prefix = first;
+  size_t n, logged = 0, truncated = 0;
+
+#define MSG_SEPARATOR \
+  "------------------------------------------------------------------------\n"
+#define MAX_LINELEN 2047
 
   if (iovlen < 0) return;
 
@@ -193,56 +197,55 @@ void tport_log_msg(tport_t *self, msg_t *msg,
 
   tport_stamp(self, msg, stamp, what, n, via, now);
   su_log(stamp);
-
-  for (i = 0; i < iovlen && i < 80; i++) {
+  su_log("   " MSG_SEPARATOR);
+ 
+  for (i = 0; truncated == 0 && i < iovlen && i < 80; i++) {
     char *s = iov[i].mv_base, *end = s + iov[i].mv_len;
-    int n;
 
-    if (skip_lf && s < end && s[0] == '\n') { s++; skip_lf = 0; }
+    if (skip_lf && s < end && s[0] == '\n') { s++; logged++; skip_lf = 0; }
 
     while (s < end) {
       if (s[0] == '\0') {
-	int j, len = s - (char *)iov[i].mv_base;
-	for (j = 0; j < i; j++)
-	  len += iov[j].mv_len;
-	su_log("\n%s*** message truncated at %d\n", prefix, len);
-	return;
+	truncated = logged;
+	break;
       }
 
       n = strncspn(s, end - s, "\r\n");
-      if (prefix) {
-	su_log("%s", prefix); linelen = n;
-      } else {
-	linelen += n;
+
+      if (linelen + n > MAX_LINELEN) {
+	n = MAX_LINELEN - n - linelen;
+	truncated = logged + n;
       }
-      su_log("%.*s", n, s);
-      if (s + n < end) {
-	su_log("\n");
-	prefix = first;
+
+      su_log("%s%.*s", linelen > n ? "" : "   ", n, s);
+      s += n, linelen += n, logged += n;
+
+      if (truncated)
+	break;
+      if (s == end)
+	continue;
+
+      linelen = 0;
+      su_log("\n");
+
+      /* Skip eol */
+      if (s[0] == '\r') {
+	s++, logged++;
+	if (s == end) {
+	  skip_lf = 1;
+	  continue;
+	}
       }
-      else {
-	prefix = "";
-      }
-      s += n;
-      /* Skip a eol */
-      if (s < end) {
-	if (s + 1 < end && s[0] == '\r' && s[1] == '\n')
-	  s += 2;
-	else if (s[0] == '\r')
-	  s++, (skip_lf = s + 1 == end);
-	else if (s[0] == '\n')
-	  s++;
-      }
+      if (s[0] == '\n')
+	s++, logged++;
     }
   }
 
-  if (linelen) su_log("\n");
+  su_log("%s   " MSG_SEPARATOR, linelen > 0 ? "\n" : "");
 
-  if (i == 80) {
-    int j, len = 0;
-    for (j = 0; j < i; j++)
-      len += iov[j].mv_len;
-    su_log("\n%s*** message truncated at %d\n", prefix, len);
-    return;
-  }
+  if (!truncated && i == 80)
+    truncated = logged;
+
+  if (truncated)
+    su_log("   *** message truncated at %d ***\n", truncated);
 }

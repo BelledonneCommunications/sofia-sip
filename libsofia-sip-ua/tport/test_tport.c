@@ -261,6 +261,8 @@ static int test_msg_md5(tp_test_t *tt, msg_t *msg)
   END();
 }
 
+#define VERSION MSG_TEST_VERSION_CURRENT
+
 static int new_test_msg(tp_test_t *tt, msg_t **retval, 
 			char const *ident,
 			int N, int len)
@@ -290,7 +292,7 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
 
   TEST(msg_maxsize(msg, 1024 + N * len), 0);
 
-  TEST_1(rq = msg_request_make(home, "DO im:foo@faa MSG/1.0"));
+  TEST_1(rq = msg_request_make(home, "DO im:foo@faa " VERSION));
   TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)rq), 0);
 
   TEST_1(u = msg_unknown_make(home, "Foo: faa"));
@@ -723,7 +725,7 @@ static int udp_test(tp_test_t *tt)
   TEST_1(tst = msg_test_public(msg));
   TEST_1(home = msg_home(msg));
 
-  TEST_1(rq = msg_request_make(home, "DO im:foo@faa MSG/1.0"));
+  TEST_1(rq = msg_request_make(home, "DO im:foo@faa " VERSION));
   TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)rq), 0);
 
   TEST_1(u = msg_unknown_make(home, "Foo: faa"));
