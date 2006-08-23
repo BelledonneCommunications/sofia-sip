@@ -405,7 +405,7 @@ su_port_t *su_port_create(void)
 
       af = PF_INET;
 
-      self->sup_mbox[0] = mb = socket(af, SOCK_DGRAM, IPPROTO_UDP);
+      self->sup_mbox[0] = mb = su_socket(af, SOCK_DGRAM, IPPROTO_UDP);
       if (mb == INVALID_SOCKET) {
 	why = "su_port_init: socket"; goto error;
       }
