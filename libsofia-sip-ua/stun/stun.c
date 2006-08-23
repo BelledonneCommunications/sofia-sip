@@ -2760,7 +2760,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   /* get_localinfo(ci); */
 
   /* initialize socket y */
-  sockfdy = socket(AF_INET, SOCK_DGRAM, 0);
+  sockfdy = su_socket(AF_INET, SOCK_DGRAM, 0);
 
   /* set socket asynchronous */
   if (su_setblocking(sockfdy, 0) < 0) {
