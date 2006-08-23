@@ -502,10 +502,7 @@ int su_source_getmsgs(su_port_t *self)
       SU_SOURCE_UNLOCK(self, "su_source_getmsgs");
       if (f) 
 	f(su_root_magic(root), &msg, msg->sum_data);
-      if (msg && msg->sum_report)
-	su_msg_delivery_report(&msg);
-      else
-	su_msg_destroy(&msg);
+      su_msg_delivery_report(&msg);
       SU_SOURCE_LOCK(self, "su_source_getmsgs");
     }
 
