@@ -63,6 +63,12 @@ Notes on new features
  - section may be omitted for minor releases
 /> 
 
+- nua event watcher (nua_subscribe, nua_watcher) now tries to re-establish
+  subscription if the subscription was terminated with reason "deactivated" or
+  "probation". Likewise, if SUBSCRIBE was returned a suitable error response
+  with Retry-After header, nua tries to re-establish subscription after
+  given interval.
+
 Bugs fixed in this release
 --------------------------
 

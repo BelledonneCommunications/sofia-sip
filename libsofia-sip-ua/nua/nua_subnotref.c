@@ -23,7 +23,9 @@
  */
 
 /**@CFILE nua_subnotref.c
- * @brief SUBSCRIBE, NOTIFY and REFER methods
+ * @brief Subscriber (event watcher)
+ *
+ * This module implements SUBSCRIBE UAC, NOTIFY UAS, REFER UAC.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
