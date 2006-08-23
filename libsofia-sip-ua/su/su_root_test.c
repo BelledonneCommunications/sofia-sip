@@ -101,7 +101,7 @@ int init_test(root_test_t *rt)
     test_ep_t *ep = rt->rt_ep[i];
     ep->i = i;
     ep->addrlen = su_sockaddr_size(su);
-    TEST_1((ep->s = socket(su->su_family, SOCK_DGRAM, 0)) != -1);
+    TEST_1((ep->s = su_socket(su->su_family, SOCK_DGRAM, 0)) != -1);
     TEST_1(bind(ep->s, &su->su_sa, ep->addrlen) != -1);
     TEST_1(su_wait_create(ep->wait, ep->s, SU_WAIT_IN|SU_WAIT_ERR) != -1);
     TEST_1(getsockname(ep->s, &ep->addr->su_sa, &ep->addrlen) != -1);
@@ -197,7 +197,7 @@ static int register_test(root_test_t *rt)
 
   BEGIN();
 
-  TEST_1((s = socket(rt->rt_family, SOCK_DGRAM, 0)) != -1);
+  TEST_1((s = su_socket(rt->rt_family, SOCK_DGRAM, 0)) != -1);
 
   for (i = 0; i < 5; i++) {
     rt->rt_ep[i]->registered = 
