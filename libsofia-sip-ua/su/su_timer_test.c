@@ -124,7 +124,7 @@ increment(struct tester *tester, su_timer_t *t, struct timing *ti)
 void
 usage(char const *name)
 {
-  fprintf(stderr, "usage: %s [-1r] [interval]\n", name);
+  fprintf(stderr, "usage: %s [-1r] [-Nnum] [interval]\n", name);
   exit(1);
 }
 
@@ -143,22 +143,30 @@ int main(int argc, char *argv[])
   char *s;
   int use_t1 = 0;
   su_time_t now, started;
-  intptr_t i, N;
+  intptr_t i, N = 500;
 
   struct timing timing[1] = {{ 0 }};
   struct tester tester[1] = {{ 0 }};
 
   while (argv[1] && argv[1][0] == '-') {
     char *o = argv[1] + 1;
-    while (*o)
+    while (*o) {
       if (*o == '1')
 	o++, use_t1 = 1;
       else if (*o == 'r')
 	o++, timing->t_run = 1;
+      else if (*o == 'N') {
+	if (o[1])
+	  N = strtoul(o + 1, &o, 0);
+	else if (argv[2])
+	  N = strtoul(argv++[2], &o, 0);
+	break;
+      }
       else
 	break;
 
-    if (o == argv[1] + 1)
+    }
+    if (*o)
       usage(argv0);
     argv++;
   }
@@ -220,8 +228,8 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  /* Insert 500 timers in order */
-  timers = calloc(N = 500, sizeof *timers);
+  /* Insert timers in order */
+  timers = calloc(N, sizeof *timers);
   if (!timers) { perror("calloc"); exit(1); }
 
   now = started = su_now();
