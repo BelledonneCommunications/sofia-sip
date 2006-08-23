@@ -44,10 +44,22 @@
 #error Bad configuration
 #endif
 
+#ifndef FD_CLOEXEC
+#define FD_CLOEXEC (1)
+#endif
+
+int su_socket_close_on_exec = 0;
+
 /** Create an endpoint for communication. */
 su_socket_t su_socket(int af, int sock, int proto)
 {
-  return socket(af, sock, proto);
+  su_socket_t s = socket(af, sock, proto);
+#if SU_HAVE_BSDSOCK
+  if (s != SOCKET_ERROR && su_socket_close_on_exec) {
+    fcntl(s, F_SETFD, FD_CLOEXEC); /* Close on exec */
+  }
+#endif
+  return s;
 }
 
 #if SU_HAVE_BSDSOCK
