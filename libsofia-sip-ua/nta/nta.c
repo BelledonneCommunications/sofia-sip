@@ -3589,6 +3589,51 @@ int nta_leg_get_route(nta_leg_t *leg,
   return 0;
 }
 
+/** Generate Replaces header */
+SOFIAPUBFUN
+sip_replaces_t *nta_leg_make_replaces(nta_leg_t *leg,
+				      su_home_t *home,
+				      int early_only)
+{
+  char const *from_tag, *to_tag;
+
+  if (!leg)
+    return NULL;
+  if (!leg->leg_dialog || !leg->leg_local || !leg->leg_remote || !leg->leg_id)
+    return NULL;
+  
+  from_tag = leg->leg_local->a_tag; if (!from_tag) from_tag = "0";
+  to_tag = leg->leg_remote->a_tag; if (!to_tag) to_tag = "0";
+
+  return sip_replaces_format(home, "%s;from-tag=%s;to-tag=%s%s",
+			     leg->leg_id->i_id, from_tag, to_tag, 
+			     early_only ? ";early-only" : "");
+}
+
+/** Get dialog leg by Replaces header */
+SOFIAPUBFUN
+nta_leg_t *nta_leg_by_replaces(nta_agent_t *sa, sip_replaces_t const *rp)
+{
+  nta_leg_t *leg = NULL;
+
+  if (sa && rp && rp->rp_call_id && rp->rp_from_tag && rp->rp_to_tag) {
+    char const *from_tag = rp->rp_from_tag, *to_tag = rp->rp_to_tag;
+    sip_call_id_t id[1];
+    sip_call_id_init(id);
+
+    id->i_hash = msg_hash_string(id->i_id = rp->rp_call_id);
+
+    leg = leg_find(sa, NULL, NULL, id, from_tag, NULL, to_tag, NULL);
+
+    if (leg == NULL && strcmp(from_tag, "0") == 0)
+      leg = leg_find(sa, NULL, NULL, id, NULL, NULL, to_tag, NULL);
+    if (leg == NULL && strcmp(to_tag, "0") == 0)
+      leg = leg_find(sa, NULL, NULL, id, from_tag, NULL, NULL, NULL);
+  }
+
+  return leg;
+}
+
 /** Calculate a simple case-insensitive hash over a string */
 static inline
 hash_value_t hash_istring(char const *s, char const *term, hash_value_t hash)

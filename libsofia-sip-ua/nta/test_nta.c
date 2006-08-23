@@ -2409,7 +2409,8 @@ int test_call(agent_t *ag)
 {
   sip_content_type_t *c = ag->ag_content_type;
   sip_payload_t      *sdp = ag->ag_payload;
-  nta_leg_t *old_leg;
+  nta_leg_t *leg, *old_leg;
+  sip_replaces_t *r1, *r2;
 
   BEGIN();
 
@@ -2454,6 +2455,13 @@ int test_call(agent_t *ag)
   TEST(ag->ag_orq, NULL);
   TEST(ag->ag_latest_leg, ag->ag_server_leg);
   TEST_1(ag->ag_bob_leg != NULL);
+
+  TEST_1(r1 = nta_leg_make_replaces(ag->ag_alice_leg, ag->ag_home, 0));
+  TEST_1(r2 = sip_replaces_format(ag->ag_home, "%s;from-tag=%s;to-tag=%s",
+				  r1->rp_call_id, r1->rp_to_tag, r1->rp_from_tag));
+
+  TEST(ag->ag_alice_leg, nta_leg_by_replaces(ag->ag_agent, r2));
+  TEST(ag->ag_bob_leg, nta_leg_by_replaces(ag->ag_agent, r1));
 
   /* Re-INVITE from Bob to Alice.
    *

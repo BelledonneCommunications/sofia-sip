@@ -238,6 +238,14 @@ nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
 			     char const *to_tag,
 			     url_t const *to_url);
 
+/** Generate Replaces header */
+SOFIAPUBFUN sip_replaces_t *nta_leg_make_replaces(nta_leg_t *leg,
+						  su_home_t *home,
+						  int early_only);
+/** Get dialog leg by Replaces header */
+SOFIAPUBFUN
+nta_leg_t *nta_leg_by_replaces(nta_agent_t *, sip_replaces_t const *);
+
 /* ----------------------------------------------------------------------
  * 6) Prototypes for incoming transactions 
  */

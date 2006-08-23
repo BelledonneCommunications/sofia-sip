@@ -979,6 +979,9 @@ static int api_test_errors(agent_t *ag)
   TEST(nta_leg_by_dialog(NULL,  NULL, NULL, NULL, NULL, NULL, NULL), NULL);
   TEST(nta_leg_by_dialog(nta, NULL, NULL, NULL, NULL, NULL, NULL), NULL);
 
+  TEST(nta_leg_make_replaces(NULL, NULL, 1), NULL);
+  TEST(nta_leg_by_replaces(NULL, NULL), NULL);
+
   TEST(nta_incoming_create(NULL, NULL, NULL, NULL, TAG_END()), NULL);
   TEST(nta_incoming_create(nta, NULL, NULL, NULL, TAG_END()), NULL);
 
