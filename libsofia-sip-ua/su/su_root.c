@@ -1402,8 +1402,12 @@ int su_msg_create(su_msg_r        rmsg,
   return -1;
 }
 
-/** Add a report function to a message
- *
+/** Add a delivery report function to a message.
+ * 
+ * The delivery report funcgtion gets called by the sending task after the
+ * message was delivered and the message function was executed. (The
+ * su_root_t message delivery loop calls su_msg_delivery_report() 
+ * 
  */
 int su_msg_report(su_msg_r msg,
 		  su_msg_f report)
@@ -1442,11 +1446,24 @@ int su_msg_reply(su_msg_r reply, su_msg_r const msg,
 }
 
 
-/** Send a delivery report 
+/** Send a delivery report.
+ *
+ * If the sender has attached a delivery report function to message with
+ * su_msg_report(), the message is returned to the message queue of the
+ * sending task. The sending task calls the delivery report function when it
+ * has received the message.
  */
 void su_msg_delivery_report(su_msg_r msg)
 {
   su_task_r swap;
+
+  if (!msg || !msg[0])
+    return;
+
+  if (!msg[0]->sum_report) {
+    su_msg_destroy(msg);
+    return;
+  }
 
   *swap = *msg[0]->sum_from;
   *msg[0]->sum_from = *msg[0]->sum_to;
@@ -1454,11 +1471,10 @@ void su_msg_delivery_report(su_msg_r msg)
 
   msg[0]->sum_func = msg[0]->sum_report;
   msg[0]->sum_report = NULL;
-  
   su_msg_send(msg);
 }
 
-/** Save a message */
+/** Save a message. */
 void su_msg_save(su_msg_r save, su_msg_r msg)
 {
   if (save) {
