@@ -417,7 +417,7 @@ int forwarder_stream_peer(proxy_t *pr, forwarder_t *f_peer)
     goto error;
   }
 
-  f->f_socket = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+  f->f_socket = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
   if (f->f_socket == INVALID_SOCKET) {
     SU_DEBUG_1(("%s: socket: %s\n", __func__, su_strerror(su_errno())));
     goto error;
