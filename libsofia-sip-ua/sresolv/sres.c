@@ -91,6 +91,7 @@ struct sockaddr_storage {
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/su_errno.h>
+#include <sofia-sip/su.h>
 
 #include "sofia-sip/htable.h"
 
@@ -1837,9 +1838,13 @@ static int sres_parse_win32_reg(sres_config_t *c)
 #define MAX_VALUE_NAME_LEN    16383
 
   su_home_t *home = c->c_home;
-  HKEY key_handle, interface_key_handle;  
+  HKEY key_handle;  
+#if 0
+  HKEY interface_key_handle;  
   FILETIME ftime;
-  int index, i, found = 0;
+  int index, i;
+#endif
+  int found = 0;
   char *interface_guid = su_alloc(home, MAX_VALUE_NAME_LEN);
 #if __MINGW32__
   DWORD guid_size = QUERY_DATALEN;
@@ -2625,7 +2630,7 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
 	continue;
       
       /* Exponential backoff */
-      retry_time = q->q_timestamp + (1 << q->q_retry_count);
+      retry_time = q->q_timestamp + ((time_t)1 << q->q_retry_count);
       
       if (now < retry_time)
 	continue;

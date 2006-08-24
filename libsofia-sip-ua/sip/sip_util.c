@@ -567,7 +567,7 @@ sip_route_is_loose(sip_route_t const *r)
  * Reverse a route header (Route, Record-Route, Path, Service-Route).
  */
 sip_route_t *sip_route_reverse_as(su_home_t *home, 
-				  msg_hclass_t const *hc,
+				  msg_hclass_t *hc,
 				  sip_route_t const *route)
 {
   sip_route_t *reverse = NULL;
@@ -622,7 +622,7 @@ sip_route_t *sip_route_reverse(su_home_t *home, sip_route_t const *route)
  *
  */
 sip_route_t *sip_route_fixdup_as(su_home_t *home,
-				 msg_hclass_t const *hc,
+				 msg_hclass_t *hc,
 				 sip_route_t const *route)
 {
   sip_route_t *copy = NULL;

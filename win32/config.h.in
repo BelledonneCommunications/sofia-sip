@@ -448,4 +448,12 @@
 #pragma warning( disable : 4090 4204 4244 4018 4514 4706 4761)
 /* VC does not grok const */
 #pragma warning( disable : 4022 4028 )
+#if (_MSC_VER >= 1400) // VC8+
+#ifndef _CRT_SECURE_NO_DEPRECATE
+#define _CRT_SECURE_NO_DEPRECATE
+#endif
+#ifndef _CRT_NONSTDC_NO_DEPRECATE
+#define _CRT_NONSTDC_NO_DEPRECATE
+#endif
+#endif // VC8+
 #endif

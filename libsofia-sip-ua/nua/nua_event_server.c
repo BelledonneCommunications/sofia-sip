@@ -257,7 +257,7 @@ void nua_stack_authorize(nua_t *nua,
 
   tl_gets(tags,
 	  NEATAG_SUB_REF(sub),
-	  NUTAG_SUBSTATE_REF(state),
+	  NUTAG_SUBSTATE_REF((int)state),
 	  TAG_END());
 
   if (sub && state > 0) {

@@ -33,9 +33,7 @@
  * 
  */
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef USE_TURN
 #include "../turn/turn_common.h"
@@ -491,10 +489,12 @@ int stun_encode_type_len(stun_attr_t *attr, uint16_t len) {
 int stun_validate_message_integrity(stun_msg_t *msg, stun_buffer_t *pwd)
 {
 
+#if defined(HAVE_OPENSSL)
   int padded_len, len;
   unsigned int dig_len;
   unsigned char dig[20]; /* received sha1 digest */
   unsigned char *padded_text;
+#endif
 
   /* password NULL so shared-secret not established and 
      messege integrity checks can be skipped */

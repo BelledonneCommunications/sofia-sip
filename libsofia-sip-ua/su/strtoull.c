@@ -257,7 +257,7 @@ strtoull(string, endPtr, base)
      */
 
     if (negative) {
-	result = (unsigned longlong)-result;
+		result = (unsigned longlong)(-((longlong)result));
     }
 
     if (endPtr != 0) {

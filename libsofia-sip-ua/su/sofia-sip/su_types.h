@@ -68,7 +68,9 @@ SOFIA_BEGIN_DECLS
 /* Use macros defined in <su_configure_win32.h> */
 
 /** Integer large enough for pointers */
+#ifndef _INTPTR_T_DEFINED
 typedef SU_INTPTR_T intptr_t;
+#endif
 /** 64-bit unsigned integer */ 
 typedef SU_U64_T uint64_t;
 /** 64-bit signed integer */   
