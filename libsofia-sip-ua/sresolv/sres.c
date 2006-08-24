@@ -65,6 +65,7 @@ typedef unsigned _int32 uint32_t;
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#if !defined(IPPROTO_IPV6)
 #if HAVE_SIN6
 #include <tpipv6.h>
 #else
@@ -73,6 +74,7 @@ struct sockaddr_storage {
     short ss_family;
     char ss_pad[126];
 };
+#endif
 #endif
 #endif
 #else
