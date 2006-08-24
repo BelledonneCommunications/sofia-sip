@@ -206,6 +206,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_vector.c"
 
 SOURCE="..\..\libsofia-sip-ua\su\su_wait.c"
 # End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\su\su_os_nw.c"
+# End Source File
 # End Group
 # Begin Group "ipt"
 
@@ -672,6 +676,10 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_stack.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\nua\nua_notifier.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\nua\nua_stack.h"
 # End Source File
 # Begin Source File
@@ -937,6 +945,10 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_vector.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_wait.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_os_nw.h"
 # End Source File
 # Begin Source File
 
