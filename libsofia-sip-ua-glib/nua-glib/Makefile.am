@@ -6,6 +6,8 @@
 # Licensed under LGPL. See file COPYING.
 #
 
+AUTOMAKE_OPTIONS = foreign 1.7
+
 GLIB_BUILT = 	nua_glib_marshal.c \
 		nua_glib_marshal.h
 
