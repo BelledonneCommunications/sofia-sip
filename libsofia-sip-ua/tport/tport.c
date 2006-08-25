@@ -1560,8 +1560,8 @@ int bind6only_check(tport_master_t *mr)
   if (mr->mr_boundserver)
     return 0;
 
-  s4 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+  s4 = su_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  s6 = su_socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
   
   memset(su, 0, sizeof *su);
   su->su_len = sulen = (sizeof su->su_sin6);

@@ -561,7 +561,7 @@ static int init_test(tp_test_t *tt)
     *rname = *myname;
 
     memset(su, 0, sulen = sizeof(su->su_sin));
-    s = socket(su->su_family = AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
+    s = su_socket(su->su_family = AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
     TEST_1(bind(s, &su->su_sa, sulen) != -1);
     TEST_1(listen(s, 5) != -1);
     TEST_1(getsockname(s, &su->su_sa, &sulen) != -1);
