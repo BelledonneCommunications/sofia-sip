@@ -41,6 +41,8 @@
 
 #include <sofia-sip/url.h>
 
+#include <string.h>
+
 tag_typedef_t urltag_any = NSTAG_TYPEDEF(*);
 
 tag_typedef_t urltag_url = URLTAG_TYPEDEF(url);
@@ -97,6 +99,38 @@ tagi_t *urltag_dup(tagi_t *dst, tagi_t const *src, void **bb)
   return dst + 1;
 }
 
+#define IS_EXCLUDED(u)						\
+  (u <= ' '							\
+   || u >= '\177'						\
+   || (u < 64 ? (0xb400000a  & (1 << (63 - u)))			\
+       : (u < 96 ? (0x0000001e & (1 << (95 - u)))		\
+	  : /*u < 128*/ (0x8000001d & (1 << (127 - u))))))
+
+int urltag_scan(tag_type_t tt, su_home_t *home,
+		char const *str,
+		tag_value_t *return_value)
+{
+  size_t len;
+  url_t *url;
+  char *s;
+
+  for (len = 0; !IS_EXCLUDED(str[len]); len++)
+    ;
+  
+  url = su_alloc(home, (sizeof *url) + len + 1);
+  if (!url)
+    return -1;
+  s = memcpy((char *)(url + 1), str, len);
+  s[len] = 0;
+
+  if (url_d(url, s) < 0)
+    return (void)su_free(home, url), -1;
+
+  *return_value = (tag_value_t)url;
+
+  return 0;
+}
+
 tag_class_t url_tag_class[1] = 
   {{
     sizeof(url_tag_class),
@@ -110,5 +144,6 @@ tag_class_t url_tag_class[1] =
     /* tc_snprintf */ urltag_snprintf,
     /* tc_filter */   NULL,
     /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     urltag_scan,
   }};
 

@@ -870,10 +870,18 @@ int test_tags(void)
   url_string_t *us0 = NULL;
 
   tagi_t *lst, *dup;
-
+  
+  tag_value_t value;
+  char *s;
   su_home_t home[1] = { SU_HOME_INIT(home) };
 
   BEGIN();
+
+  TEST(t_scan(urltag_url, home, c0, &value), 0);
+  TEST_S(s = url_as_string(home, (url_t *)value), c0);
+
+  TEST(t_scan(urltag_url, home, c3, &value), 0);
+  TEST_S(s = url_as_string(home, (url_t *)value), c3);
 
   TEST_1(url_d(u0, c0) == 0);
 
