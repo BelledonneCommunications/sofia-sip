@@ -78,6 +78,7 @@ tag_class_t sipstrtag_class[1] =
     /* tc_snprintf */ t_str_snprintf,
     /* tc_filter */   NULL /* msgtag_str_filter */,
     /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     t_str_scan
   }};
 
 /** Tag class for SIP message tags. @HIDE */
