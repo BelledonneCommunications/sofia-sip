@@ -752,9 +752,10 @@ int t_scan(tag_type_t tt, su_home_t *home, char const *s,
 
   if (tt->tt_class->tc_scan) {
     return tt->tt_class->tc_scan(tt, home, s, return_value);
-  } else {
+  }
+  else {			/* Not implemented */
     *return_value = (tag_value_t)0;
-    return 0;
+    return -2;
   }
 }
 
