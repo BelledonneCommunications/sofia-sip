@@ -89,10 +89,18 @@
 #define SU_S8_C(i)  (SU_S8_T)(i)
 #define SU_U8_C(i)  (SU_U8_T)(i ## U)
 
+#ifndef strcasecmp
 #define strcasecmp  _stricmp
+#endif
+#ifndef strncasecmp
 #define strncasecmp _strnicmp
+#endif
+#ifndef snprintf
 #define snprintf    _snprintf
+#endif
+#ifndef vsnprintf
 #define vsnprintf   _vsnprintf
+#endif
 
 #define srandom(x)    srand((x))
 #define random()      rand()

@@ -64,11 +64,11 @@ sdptag_session_ref, sdptag_session_vr(&(x))
 /* Functions for typesafe parameter passing */
 
 #if SU_HAVE_INLINE
-static inline
+su_inline
 tag_value_t sdptag_session_v(struct sdp_session_s const *v) { 
   return (tag_value_t)v; 
 }
-static inline 
+su_inline
 tag_value_t sdptag_session_vr(struct sdp_session_s const **vp) { 
   return (tag_value_t)vp; 
 }
