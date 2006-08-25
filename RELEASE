@@ -25,6 +25,8 @@ libsofia-sip-ua:
   with two functions defined in su_os_nw.h. Also a new event
   nua_i_network_changed and tag NUTAG_DETECT_NETWORK_UPDATES are
   introduced.
+- Added nta_leg_make_replaces() and nta_leg_by_replaces() functions
+- Added urltag_scan()
 - template: Added foobar() function (sofia-sip/foobar.h).
 - The install location of awk scripts (msg_parser.awk and 
   tag_dll.awk) from libexec to share/sofia-sip/. Also added 
@@ -78,5 +80,6 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- t_scan() now returns negative value when tag does not implement scan method
 - #9499652 sf.net bug item title
 - Session timer handling by nua UAS now honors missing "timer" feature tag.
