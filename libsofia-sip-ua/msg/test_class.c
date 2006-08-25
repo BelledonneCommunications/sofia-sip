@@ -278,6 +278,7 @@ tag_class_t tsthdrtag_class[1] =
     /* tc_snprintf */ msghdrtag_snprintf,
     /* tc_filter */   tsttag_filter,
     /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     msghdrtag_scan,
   }};
 
 /** Tag class for TST header string tags. @HIDE */
@@ -294,6 +295,7 @@ tag_class_t tststrtag_class[1] =
     /* tc_snprintf */ t_str_snprintf,
     /* tc_filter */   NULL /* msgtag_str_filter */,
     /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     t_str_scan
   }};
 
 /** Tag class for TST message tags. @HIDE */
