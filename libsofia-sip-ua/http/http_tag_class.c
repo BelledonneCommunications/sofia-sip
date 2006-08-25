@@ -62,6 +62,7 @@ tag_class_t httphdrtag_class[1] =
     /* tc_snprintf */ msghdrtag_snprintf,
     /* tc_filter */   httptag_filter,
     /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     msghdrtag_scan,
   }};
 
 tag_class_t httpstrtag_class[1] = 
@@ -77,6 +78,7 @@ tag_class_t httpstrtag_class[1] =
     /* tc_snprintf */ t_str_snprintf,
     /* tc_filter */   NULL /* msgtag_str_filter */,
     /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     msghdrtag_scan,
   }};
 
 tag_class_t httpmsgtag_class[1] = 
@@ -92,6 +94,7 @@ tag_class_t httpmsgtag_class[1] =
     /* tc_snprintf */ msgobjtag_snprintf,
     /* tc_filter */   NULL /* httptag_http_filter */,
     /* tc_ref_set */  t_ptr_ref_set,
+    /* tc_scan */     t_str_scan
   }};
 
 /** Filter a HTTP header structure. */
