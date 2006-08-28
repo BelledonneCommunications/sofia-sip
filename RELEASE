@@ -52,7 +52,8 @@ Contributors to this release
  - roughly sorted by number of patches accepted
 /> 
 
-- First Surname (patch to nua/soa/msg)
+- template: First Surname (patch to nua/soa/msg)
+- Michael Jerris (patches adding MSVC2005 build support)
 
 See the AUTHORS file in the distribution package.
 
