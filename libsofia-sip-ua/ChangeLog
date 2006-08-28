@@ -1,3 +1,7 @@
+2006-08-28  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* libsofia-sip-ua interface v2 opened to development, version to 2:0:2.
+
 2006-08-23  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* nua: event watcher (nua_subscribe, nua_watcher) now tries to re-establish
@@ -8,11 +12,11 @@
 
 2006-07-27  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
-	* libsofia-sip-ua interface v1 frozen, version to 1:0:1.
+	* libsofia-sip-ua interface v1 frozen (1.12.1), version to 1:0:1.
 
 2006-06-16  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
-	* libsofia-sip-ua interface v0 frozen, version to 0:0:0.
+	* libsofia-sip-ua interface v0 frozen (1.12.0), version to 0:0:0.
 
 2005-11-28  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
