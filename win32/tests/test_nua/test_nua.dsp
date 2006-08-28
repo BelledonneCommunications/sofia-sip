@@ -88,6 +88,26 @@ SOURCE="..\..\..\libsofia-sip-ua\su\memmem.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_100rel.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_basic_call.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_call_hold.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_call_reject.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_cancel_bye.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\..\libsofia-sip-ua\nua\test_nat.c"
 # End Source File
 # Begin Source File
@@ -104,11 +124,39 @@ SOURCE="..\..\..\libsofia-sip-ua\nua\test_nua.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_nua_api.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_nua_params.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\..\libsofia-sip-ua\nua\test_proxy.c"
 # End Source File
 # Begin Source File
 
 SOURCE="..\..\..\libsofia-sip-ua\nua\test_proxy.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_refer.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_register.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_session_timer.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_simple.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_sip_events.c"
 # End Source File
 # Begin Source File
 
