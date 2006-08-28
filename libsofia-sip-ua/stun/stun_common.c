@@ -382,27 +382,37 @@ int stun_encode_uint32(stun_attr_t *attr) {
 int stun_encode_error_code(stun_attr_t *attr) {
   short int class, num;
   char *reason;
-  int len;
+  int phrase_len, result;
   stun_attr_errorcode_t *error;
 
   error = (stun_attr_errorcode_t *) attr->pattr;
   class = error->code / 100;
   num = error->code % 100;
-  len = strlen(error->phrase);
-  attr->enc_buf.size = len + (len % 4 == 0? 0 : 4 - (len % 4));
+  phrase_len = strlen(error->phrase);
+  /* note: align the phrase len (see RFC3489:11.2.9) */
+  phrase_len += (phrase_len % 4 == 0 ? 0 : 4 - (phrase_len % 4));
   reason = malloc(attr->enc_buf.size);
   memset(reason, 0, attr->enc_buf.size);
-  memcpy(reason, error->phrase, len);
+  memcpy(reason, error->phrase, phrase_len);
 
-  attr->enc_buf.size +=4;
-  assert(attr->enc_buf.size < 65536);
+  /* note: error-code has four octets of headers plus the 
+   *       reason field -> len+4 octets */
+  attr->enc_buf.size = phrase_len + 4;
+
+  assert(attr->enc_buf.size + 4 < 65536);
+
   if (stun_encode_type_len(attr, (uint16_t)attr->enc_buf.size) < 0) {
-    return -1;
+    result = -1;
   }
-  memset(attr->enc_buf.data+4, 0, 2);
-  memcpy(attr->enc_buf.data+6, &class, 1);
-  memcpy(attr->enc_buf.data+7, &num, 1);
-  memcpy(attr->enc_buf.data+8, reason, attr->enc_buf.size - 4);
+  else {
+    memset(attr->enc_buf.data+4, 0, 2);
+    memcpy(attr->enc_buf.data+6, &class, 1);
+    memcpy(attr->enc_buf.data+7, &num, 1);
+    /* note: 4 octets of TLV header and 4 octets of error-code header */
+    memcpy(attr->enc_buf.data+8, reason, attr->enc_buf.size - 8);
+  }
+
+  free(reason);
 
   return attr->enc_buf.size;
 }
