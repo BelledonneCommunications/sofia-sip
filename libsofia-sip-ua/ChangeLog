@@ -1,9 +1,19 @@
+2006-08-30  Pekka Pessi  <Pekka.Pessi@nokia.com>
+
+	* nua: added tag nutag_refer_with_id.
+
 2006-08-28  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
 	* libsofia-sip-ua interface v2 opened to development, version to 2:0:2.
 
-2006-08-23  Pekka Pessi  <Pekka.Pessi@nokia.com>
+2006-08-25  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
+	* Added urltag_scan().
+
+2006-08-23  Pekka Pessi  <Pekka.Pessi@nokia.com>
+	
+	* nta.c, nta.h: added nta_leg_make_replaces(), nta_leg_by_replaces().
+	
 	* nua: event watcher (nua_subscribe, nua_watcher) now tries to re-establish
 	  subscription if the subscription was terminated with reason "deactivated" or
 	  "probation". Likewise, if SUBSCRIBE was returned a suitable error response

@@ -21,6 +21,7 @@ API/ABI changes and versioning
  - and should be updated _continuously_! />
 
 libsofia-sip-ua:
+- Added nua tag nutag_refer_with_id.
 - Added network change detection logic. This extends current su API
   with two functions defined in su_os_nw.h. Also a new event
   nua_i_network_changed and tag NUTAG_DETECT_NETWORK_UPDATES are
@@ -82,6 +83,7 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- NOTIFY Event: refer without id is not rejected anymore
 - t_scan() now returns negative value when tag does not implement scan method
 - #9499652 sf.net bug item title
 - Session timer handling by nua UAS now honors missing "timer" feature tag.
