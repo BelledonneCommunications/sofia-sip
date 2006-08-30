@@ -128,9 +128,7 @@ int nua_stack_process_subsribe(nua_t *nua,
   if (nh == NULL || du == NULL) {
     /* Hard-coded support only for refer subscriptions */
     if (o && str0cmp(o->o_type, "refer") == 0)
-      nta_incoming_treply(irq, 
-			  SET_STATUS(481, "Subscription Does Not Exist"), 
-			  TAG_END());
+      nta_incoming_treply(irq, SET_STATUS1(SIP_403_FORBIDDEN), TAG_END());
     else
       nta_incoming_treply(irq,
 			  SET_STATUS1(SIP_489_BAD_EVENT), 
@@ -227,15 +225,15 @@ int nua_stack_notify(nua_t *nua,
   sip_time_t now;
 
   if (cr->cr_orq) {
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
   }
 
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
-			 SIP_METHOD_NOTIFY,
-			 NUTAG_ADD_CONTACT(1),
-			 TAG_NEXT(tags));
+		     SIP_METHOD_NOTIFY,
+		     NUTAG_ADD_CONTACT(1),
+		     TAG_NEXT(tags));
 
   sip = sip_object(msg);
   if (!sip)
@@ -355,6 +353,7 @@ static int process_response_to_notify(nua_handle_t *nh,
 /* ======================================================================== */
 /* REFER */
 /* RFC 3515 */
+
 /** @internal Process incoming REFER. */
 int nua_stack_process_refer(nua_t *nua,
 			    nua_handle_t *nh,
@@ -375,7 +374,11 @@ int nua_stack_process_refer(nua_t *nua,
     created = 1;
   }
 
-  event = sip_event_format(nh->nh_home, "refer;id=%u", sip->sip_cseq->cs_seq);
+  if (nh->nh_ds->ds_has_referrals || NH_PGET(nh, refer_with_id))
+    event = sip_event_format(nh->nh_home, "refer;id=%u", sip->sip_cseq->cs_seq);
+  else
+    event = sip_event_make(nh->nh_home, "refer");
+
   if (event)
     du = nua_dialog_usage_add(nh, nh->nh_ds, nua_notify_usage, event);
 
@@ -391,7 +394,8 @@ int nua_stack_process_refer(nua_t *nua,
 
   nu = nua_dialog_usage_private(du);
   du->du_ready = 1;
-  
+  nh->nh_ds->ds_has_referrals = 1;
+
   nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);	/* Set route and tags */
 
   if (!sip->sip_referred_by) {

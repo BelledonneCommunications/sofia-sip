@@ -71,6 +71,7 @@ tag_typedef_t nutag_min_se = UINTTAG_TYPEDEF(min_se);
 tag_typedef_t nutag_session_refresher = INTTAG_TYPEDEF(session_refresher);
 tag_typedef_t nutag_update_refresh = BOOLTAG_TYPEDEF(update_refresh);
 tag_typedef_t nutag_refer_expires = UINTTAG_TYPEDEF(refer_expires);
+tag_typedef_t nutag_refer_with_id = BOOLTAG_TYPEDEF(refer_with_id);
 tag_typedef_t nutag_autoalert = BOOLTAG_TYPEDEF(autoAlert);
 tag_typedef_t nutag_autoanswer = BOOLTAG_TYPEDEF(autoAnswer);
 tag_typedef_t nutag_autoack = BOOLTAG_TYPEDEF(autoACK);

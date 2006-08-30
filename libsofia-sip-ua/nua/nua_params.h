@@ -81,6 +81,8 @@ typedef struct nua_handle_preferences
   unsigned         nhp_service_route_enable:1;
   /** Enable Path */
   unsigned         nhp_path_enable:1;
+  /** Always include id with Event: refer */
+  unsigned         nhp_refer_with_id:1;
 
   unsigned:0;
 
@@ -129,6 +131,7 @@ typedef struct nua_handle_preferences
       unsigned nhb_media_features:1;
       unsigned nhb_service_route_enable:1;
       unsigned nhb_path_enable:1;
+      unsigned nhb_refer_with_id:1;
       unsigned nhb_refer_expires:1;
       unsigned nhb_substate:1;
       unsigned nhb_allow:1;

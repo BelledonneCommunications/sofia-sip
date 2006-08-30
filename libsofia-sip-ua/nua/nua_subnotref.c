@@ -60,7 +60,8 @@ struct event_usage
   enum nua_substate  eu_substate;	/**< Subscription state */
   sip_time_t eu_expires;	        /**< Proposed expiration time */
   unsigned eu_notified;		        /**< Number of NOTIFYs received */
-  unsigned eu_final_wait;	        /**< Waiting for final NOTIFY */
+  unsigned eu_final_wait:1;	        /**< Waiting for final NOTIFY */
+  unsigned eu_no_id:1;		        /**< Do not use "id" (even if we have one) */
 };
 
 static char const *nua_subscribe_usage_name(nua_dialog_usage_t const *du);
@@ -132,7 +133,7 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     return UA_EVENT3(e, 500, "Invalid handle for SUBSCRIBE", 
 		     NUTAG_SUBSTATE(nua_substate_terminated));
   else if (cr->cr_orq)
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
 
   /* Initialize allow and auth */
   nua_stack_init_handle(nua, nh, nh_has_subscribe, "NOTIFY", TAG_NEXT(tags));
@@ -151,30 +152,36 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (sip) {
     sip_event_t *o = sip->sip_event;
 
-    if (e != nua_r_subscribe) {	/* Unsubscribe */
-      du = nua_dialog_usage_get(nh->nh_ds, nua_subscribe_usage, o);
-      if (du == NULL && o == NULL) {
-	du = nua_dialog_usage_get(nh->nh_ds, nua_subscribe_usage, NONE);
-	if (du && du->du_event)
-	  sip_add_dup(msg, sip, (sip_header_t *)du->du_event);
-      }
+    du = nua_dialog_usage_get(nh->nh_ds, nua_subscribe_usage, o);
 
-      if (du) {
-	/* Embryonic subscription is just a placeholder */
-	eu = nua_dialog_usage_private(du);
-	if (eu->eu_substate == nua_substate_terminated ||
-	    eu->eu_substate == nua_substate_embryonic) {
-	  nua_dialog_usage_remove(nh, nh->nh_ds, du);
-	  msg_destroy(msg);
-	  return UA_EVENT3(e, SIP_200_OK, 
-			   NUTAG_SUBSTATE(nua_substate_terminated),
-			   TAG_END());
-	}
+    if (du == NULL && o == NULL)
+      du = nua_dialog_usage_get(nh->nh_ds, nua_subscribe_usage, NONE);
+
+    eu = nua_dialog_usage_private(du);
+
+    if (du && du->du_event && (o == NULL || (o->o_id && eu->eu_no_id))) {
+      if (eu->eu_no_id)		/* No id (XXX - nor other parameters) */
+	sip_add_make(msg, sip, sip_event_class, du->du_event->o_type);
+      else
+	sip_add_dup(msg, sip, (sip_header_t *)du->du_event);
+    }
+
+    if (e == nua_r_subscribe) {	
+      if (du == NULL)		/* Create dialog usage */
+	/* We allow here SUBSCRIBE without event */
+	du = nua_dialog_usage_add(nh, nh->nh_ds, nua_subscribe_usage, o);
+    }
+    else if (du) { /* Unsubscribe */
+      /* Embryonic subscription is just a placeholder */
+      if (eu->eu_substate == nua_substate_terminated ||
+	  eu->eu_substate == nua_substate_embryonic) {
+	nua_dialog_usage_remove(nh, nh->nh_ds, du);
+	msg_destroy(msg);
+	return UA_EVENT3(e, SIP_200_OK, 
+			 NUTAG_SUBSTATE(nua_substate_terminated),
+			 TAG_END());
       }
     }
-    else
-      /* We allow here SUBSCRIBE without event */
-      du = nua_dialog_usage_add(nh, nh->nh_ds, nua_subscribe_usage, o);
   }
 
   /* Store message template with supported features (eventlist) */
@@ -516,7 +523,9 @@ int nua_stack_process_notify(nua_t *nua,
 
   eu = nua_dialog_usage_private(du); assert(eu);
 
-  eu->eu_notified++;
+  if (!sip->sip_event->o_id) {
+    eu->eu_no_id = 1;
+  }
 
   if (subs == NULL) {
     /* Do some compatibility stuff here */
@@ -647,10 +656,10 @@ nua_stack_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   sip_event_t *event = NULL;
 
   if (nh_is_special(nh) && !nua_handle_has_subscribe(nh)) {
-    return UA_EVENT2(e, 500, "Invalid handle for REFER");
+    return UA_EVENT2(e, 900, "Invalid handle for REFER");
   }
   else if (cr->cr_orq) {
-    return UA_EVENT2(e, 500, "Request already in progress");
+    return UA_EVENT2(e, 900, "Request already in progress");
   }
 
   nua_stack_init_handle(nua, nh, nh_has_subscribe, "NOTIFY", TAG_NEXT(tags));

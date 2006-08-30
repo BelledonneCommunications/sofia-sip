@@ -160,6 +160,8 @@ int test_nua_params(struct context *ctx)
 		 NUTAG_MEDIA_FEATURES(1),
 		 NUTAG_SERVICE_ROUTE_ENABLE(0),
 		 NUTAG_PATH_ENABLE(0),
+		 NUTAG_REFER_EXPIRES(333),
+		 NUTAG_REFER_WITH_ID(0),
 		 NUTAG_SUBSTATE(nua_substate_pending),
 
 		 NUTAG_KEEPALIVE(66),
@@ -214,6 +216,8 @@ int test_nua_params(struct context *ctx)
     int media_features = -1;
     int service_route_enable = -1;
     int path_enable = -1;
+    unsigned refer_expires = -1;
+    int refer_with_id = -1;
     int substate = -1;
 
     sip_allow_t const *allow = NONE;
@@ -268,6 +272,8 @@ int test_nua_params(struct context *ctx)
 	       	NUTAG_MEDIA_FEATURES_REF(media_features),
 	       	NUTAG_SERVICE_ROUTE_ENABLE_REF(service_route_enable),
 	       	NUTAG_PATH_ENABLE_REF(path_enable),
+	       	NUTAG_REFER_EXPIRES_REF(refer_expires),
+	       	NUTAG_REFER_WITH_ID_REF(refer_with_id),
 	       	NUTAG_SUBSTATE_REF(substate),
 
 	       	SIPTAG_SUPPORTED_REF(supported),
@@ -289,7 +295,7 @@ int test_nua_params(struct context *ctx)
 	       	NUTAG_REGISTRAR_REF(registrar),
 
 		TAG_END());
-    TEST(n, 34);
+    TEST(n, 36);
 
     TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
     TEST_S(from_str, Alice);
@@ -317,6 +323,8 @@ int test_nua_params(struct context *ctx)
     TEST(media_features, 1);
     TEST(service_route_enable, 0);
     TEST(path_enable, 0);
+    TEST(refer_expires, 333);
+    TEST(refer_with_id, 0);
     TEST(substate, nua_substate_pending);
 
     TEST_S(sip_header_as_string(tmphome, (void *)allow), "OPTIONS, INFO");
@@ -370,6 +378,8 @@ int test_nua_params(struct context *ctx)
     int media_features = -1;
     int service_route_enable = -1;
     int path_enable = -1;
+    unsigned refer_expires = -1;
+    int refer_with_id = -1;
     int substate = -1;
 
     sip_allow_t const *allow = NONE;
@@ -464,6 +474,8 @@ int test_nua_params(struct context *ctx)
     TEST(media_features, -1);
     TEST(service_route_enable, -1);
     TEST(path_enable, -1);
+    TEST(refer_expires, -1);
+    TEST(refer_with_id, -1);
     TEST(substate, -1);
 
     TEST(allow, NONE);

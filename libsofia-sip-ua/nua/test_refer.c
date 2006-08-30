@@ -48,6 +48,14 @@ int accept_call_immediately(CONDITION_PARAMS);
 /* ======================================================================== */
 /* NUA-9 tests: REFER */
 
+int test_refer0(struct context *ctx, int refer_with_id, char const *tests);
+
+int test_refer(struct context *ctx)
+{
+  /* test twice, once without id and once with id */
+  return test_refer0(ctx, 0, "NUA-9.1") || test_refer0(ctx, 1, "NUA-9.2");
+}
+
 /* Referred call:
 
    A			B
@@ -91,8 +99,7 @@ int accept_call_immediately(CONDITION_PARAMS);
 
 */
 
-
-int test_refer(struct context *ctx)
+int test_refer0(struct context *ctx, int refer_with_id, char const *tests)
 {
   BEGIN();
 
@@ -101,7 +108,7 @@ int test_refer(struct context *ctx)
   struct call *a_c2;
   struct event *e;
   sip_t const *sip;
-  sip_event_t const *r_event;
+  sip_event_t const *a_event, *b_event;
   sip_refer_to_t const *refer_to;
   sip_referred_by_t const *referred_by;
 
@@ -113,7 +120,14 @@ int test_refer(struct context *ctx)
   su_home_auto(tmphome, sizeof(tmphome));
 
   if (print_headings)
-    printf("TEST NUA-9.1.1: REFER: make a call between A and B\n");
+    printf("TEST %s: REFER: refer A to C\n", tests);
+
+  if (print_headings)
+    printf("TEST %s.1: REFER: make a call between A and B\n", tests);
+
+  /* Do (not) include id with first implicit Event: refer */
+  nua_set_params(ctx->a.nua, NUTAG_REFER_WITH_ID(refer_with_id), TAG_END());
+  run_a_until(ctx, nua_r_set_params, until_final_response);
 
   TEST_1(a_c2 = calloc(1, (sizeof *a_c2) + (sizeof *a_c2->events)));
   call_init(a_c2);
@@ -177,7 +191,7 @@ int test_refer(struct context *ctx)
   free_events_in_list(ctx, b->events);
 
   if (print_headings)
-    printf("TEST NUA-9.1.1: PASSED\n");
+    printf("TEST %s.1: PASSED\n", tests);
 
   /* ---------------------------------------------------------------------- */
   /*
@@ -189,7 +203,7 @@ int test_refer(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-9.1.2: refer A to C\n");
+    printf("TEST %s.2: refer A to C\n", tests);
 
   /* XXX: check header parameters! */
   *sip_refer_to_init(r0)->r_url = *c->contact->m_url;
@@ -205,6 +219,11 @@ int test_refer(struct context *ctx)
   */
   TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_refer);
   TEST(e->data->e_status, 202);
+  a_event = NULL;
+  TEST(tl_gets(e->data->e_tags,
+	       NUTAG_REFER_EVENT_REF(a_event),
+	       TAG_END()), 1);
+  TEST_1(a_event); TEST_1(a_event = sip_event_dup(tmphome, a_event));
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_refer_to);
   TEST_1(refer_to = sip_refer_to_dup(tmphome, sip->sip_refer_to));
@@ -221,21 +240,22 @@ int test_refer(struct context *ctx)
   TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_r_refer);
   TEST(e->data->e_status, 100);
   TEST(tl_gets(e->data->e_tags,
-	       NUTAG_REFER_EVENT_REF(r_event),
+	       NUTAG_REFER_EVENT_REF(b_event),
 	       TAG_END()), 1);
-  TEST_1(r_event); TEST_1(r_event->o_id);
-  TEST_1(r_event = sip_event_dup(tmphome, r_event));
+  TEST_1(b_event); TEST_1(b_event->o_id);
+  TEST_1(b_event = sip_event_dup(tmphome, b_event));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_refer);
   TEST(e->data->e_status, 202);
   TEST_1(sip = sip_object(e->data->e_msg));
-  TEST(strtoul(r_event->o_id, NULL, 10), sip->sip_cseq->cs_seq);
+  TEST(strtoul(b_event->o_id, NULL, 10), sip->sip_cseq->cs_seq);
   if (!e->next)
     run_b_until(ctx, -1, save_until_received);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_notify);
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_event);
-  TEST_S(sip->sip_event->o_id, r_event->o_id);
+  if (refer_with_id)
+    TEST_S(sip->sip_event->o_id, b_event->o_id);
   TEST_1(sip->sip_subscription_state);
   TEST_S(sip->sip_subscription_state->ss_substate, "pending");
   TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
@@ -244,7 +264,7 @@ int test_refer(struct context *ctx)
   free_events_in_list(ctx, b->events);
 
   if (print_headings)
-    printf("TEST NUA-9.1.2: PASSED\n");
+    printf("TEST %s.2: PASSED\n", tests);
 
   /* ---------------------------------------------------------------------- */
   /*
@@ -256,10 +276,10 @@ int test_refer(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-9.1.3: extend expiration time for implied subscription\n");
+    printf("TEST %s.3: extend expiration time for implied subscription\n", tests);
 
   SUBSCRIBE(b, b_call, b_call->nh,
-	    SIPTAG_EVENT(r_event),
+	    SIPTAG_EVENT(b_event),
 	    SIPTAG_EXPIRES_STR("3600"),
 	    TAG_END());
   run_ab_until(ctx, -1, save_until_final_response,
@@ -289,14 +309,15 @@ int test_refer(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_event);
-  TEST_S(sip->sip_event->o_id, r_event->o_id);
+  if (refer_with_id)
+    TEST_S(sip->sip_event->o_id, b_event->o_id);
   TEST_1(sip->sip_subscription_state);
   TEST_S(sip->sip_subscription_state->ss_substate, "pending");
   TEST_1(!e->next);
   free_events_in_list(ctx, b->events);
 
   if (print_headings)
-    printf("TEST NUA-9.1.3: PASSED\n");
+    printf("TEST %s.3: PASSED\n", tests);
 
   /* ---------------------------------------------------------------------- */
   /*
@@ -319,7 +340,7 @@ int test_refer(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-9.1.3: A invites C\n");
+    printf("TEST %s.4: A invites C\n", tests);
 
   *sip_to_init(to)->a_url = *refer_to->r_url;
   to->a_display = refer_to->r_display;
@@ -329,7 +350,7 @@ int test_refer(struct context *ctx)
   TEST_1(a_c2->nh = nua_handle(a->nua, a_c2, SIPTAG_TO(to), TAG_END()));
 
   INVITE(a, a_c2, a_c2->nh, /* NUTAG_URL(refer_to->r_url), */
-	 NUTAG_REFER_EVENT(r_event),
+	 NUTAG_REFER_EVENT(a_event),
 	 NUTAG_NOTIFY_REFER(a_call->nh),
 	 SOATAG_USER_SDP_STR(a_c2->sdp),
 	 SIPTAG_REFERRED_BY(referred_by),
@@ -387,7 +408,8 @@ int test_refer(struct context *ctx)
   TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
   TEST_S(sip->sip_payload->pl_data, "SIP/2.0 200 OK\r\n");
   TEST_1(sip->sip_event);
-  TEST_S(sip->sip_event->o_id, r_event->o_id);
+  if (refer_with_id)
+    TEST_S(sip->sip_event->o_id, b_event->o_id);
   TEST_1(!e->next);
   free_events_in_list(ctx, b->events);
 
@@ -412,7 +434,7 @@ int test_refer(struct context *ctx)
   free_events_in_list(ctx, c->events);
 
   if (print_headings)
-    printf("TEST NUA-9.1.3: PASSED\n");
+    printf("TEST %s.4: PASSED\n", tests);
 
   /* ---------------------------------------------------------------------- */
   /*
@@ -422,7 +444,7 @@ int test_refer(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-9.1.4: terminate call between A and B\n");
+    printf("TEST %s.5.1: terminate call between A and B\n", tests);
 
   BYE(a, a_call, a_call->nh, TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, until_terminated);
@@ -449,7 +471,7 @@ int test_refer(struct context *ctx)
   free_events_in_list(ctx, b->events);
 
   if (print_headings)
-    printf("TEST NUA-9.1.4: PASSED\n");
+    printf("TEST %s.5.1: PASSED\n", tests);
 
   nua_handle_destroy(a_call->nh), a_call->nh = NULL;
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
@@ -463,7 +485,7 @@ int test_refer(struct context *ctx)
    */
 
   if (print_headings)
-    printf("TEST NUA-9.1.5: terminate call between A and C\n");
+    printf("TEST %s.5.2: terminate call between A and C\n", tests);
 
   BYE(a, a_c2, a_c2->nh, TAG_END());
   run_abc_until(ctx, -1, until_terminated, -1, NULL, -1, until_terminated);
@@ -490,7 +512,7 @@ int test_refer(struct context *ctx)
   free_events_in_list(ctx, c->events);
 
   if (print_headings)
-    printf("TEST NUA-9.1.5: PASSED\n");
+    printf("TEST %s.5.2: PASSED\n", tests);
 
   nua_handle_destroy(a_c2->nh), a_c2->nh = NULL;
   a->call->next = NULL; free(a_c2);
@@ -498,7 +520,7 @@ int test_refer(struct context *ctx)
   nua_handle_destroy(c_call->nh), c_call->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-9: PASSED\n");
+    printf("TEST %s: PASSED\n", tests);
 
   su_home_deinit(tmphome);
 
@@ -538,4 +560,3 @@ int accept_call_immediately(CONDITION_PARAMS)
     return 0;
   }
 }
-

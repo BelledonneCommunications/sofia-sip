@@ -60,6 +60,9 @@ struct nua_dialog_state
   unsigned ds_has_session:1;	/**< We have session */
   unsigned ds_has_register:1;	/**< We have registration */
   unsigned ds_has_publish:1;	/**< We have publish */
+
+  unsigned ds_has_referrals:1;	/**< We have (or have had) referrals */
+
   unsigned :0;
 
   unsigned ds_has_events;	/**< We have events */

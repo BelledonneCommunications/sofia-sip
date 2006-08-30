@@ -97,6 +97,7 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, path_enable, 1);
 
   NHP_SET(nhp, refer_expires, 300);
+  NHP_SET(nhp, refer_with_id, 1);
 
   NHP_SET(nhp, substate, nua_substate_active);
 
@@ -222,7 +223,10 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_OUTBOUND() \n
  *   NUTAG_DETECT_NETWORK_UPDATES() \n
  *   NUTAG_PATH_ENABLE() \n
+ *   NUTAG_REFER_EXPIRES() \n
+ *   NUTAG_REFER_WITH_ID() \n
  *   NUTAG_REGISTRAR() \n
+ *   NUTAG_RETRY_COUNT() \n
  *   NUTAG_SERVICE_ROUTE_ENABLE() \n
  *   NUTAG_SESSIONRESHER() \n
  *   NUTAG_SESSION_TIMER() \n
@@ -246,7 +250,6 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   SIPTAG_SUPPORTED_STR() \n
  *   SIPTAG_USER_AGENT() \n
  *   SIPTAG_USER_AGENT_STR() \n
- *   NUTAG_RETRY_COUNT() \n
  *
  * nua_set_params() also accepts any soa tags, defined in
  * <sofia-sip/soa_tag.h>, and nta tags, defined in <sofia-sip/nta_tag.h>.
@@ -281,6 +284,8 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_MEDIA_FEATURES() \n
  *   NUTAG_MIN_SE() \n
  *   NUTAG_PATH_ENABLE() \n
+ *   NUTAG_REFER_EXPIRES() \n
+ *   NUTAG_REFER_WITH_ID() \n
  *   NUTAG_RETRY_COUNT() \n
  *   NUTAG_SERVICE_ROUTE_ENABLE() \n
  *   NUTAG_SESSIONRESHER() \n
@@ -421,6 +426,14 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     /* NUTAG_PATH_ENABLE(path_enable) */
     else if (t->t_tag == nutag_path_enable) {
       NHP_SET(nhp, path_enable, t->t_value != 0);
+    }
+    /* NUTAG_REFER_EXPIRES(refer_expires) */
+    else if (t->t_tag == nutag_refer_expires) {
+      NHP_SET(nhp, refer_expires, t->t_value);
+    }
+    /* NUTAG_REFER_WITH_ID(refer_with_id) */
+    else if (t->t_tag == nutag_refer_with_id) {
+      NHP_SET(nhp, refer_with_id, t->t_value != 0);
     }
     /* NUTAG_SUBSTATE(substate) */
     else if (t->t_tag == nutag_substate) {
@@ -862,6 +875,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_MEDIA_FEATURES, media_features),
      TIF(NUTAG_SERVICE_ROUTE_ENABLE, service_route_enable),
      TIF(NUTAG_PATH_ENABLE, path_enable),
+     TIF(NUTAG_REFER_EXPIRES, refer_expires),
+     TIF(NUTAG_REFER_WITH_ID, refer_with_id),
 
      TIF(NUTAG_SUBSTATE, substate),
 

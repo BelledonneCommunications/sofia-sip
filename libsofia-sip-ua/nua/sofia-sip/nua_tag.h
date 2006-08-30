@@ -1390,6 +1390,36 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_expires;
 #define NUTAG_REFER_EXPIRES_REF(x) nutag_refer_expires_ref, tag_uint_vr((&(x)))
 SOFIAPUBVAR tag_typedef_t nutag_refer_expires_ref;
 
+/**Always use id parameter with refer event.
+ *
+ * When REFER creates an implicit subscription, the event header identifying
+ * the subscription may have an id parameter. The id parameter can be either
+ * always included (default behavior), or the parameter can be used only for
+ * the second and subsequent REFER requests received in a given dialog.
+ *
+ * Note that once the subscription is created, the event header should not
+ * be modified. Therefore this tag has no effect on already established
+ * subscriptions, and its use makes sense largely on nua_set_params() only.
+ *
+ * @par Used with
+ *    nua_set_params() (nua_set_hparams(), nua_invite(), nua_respond(),
+ *    nua_update()).
+ *
+ * @par Parameter type
+ *    int (boolean)
+ *
+ * @par Values
+ *   0 (false, do not use id with subscription created with first REFER request) \n
+ *   1 (true, use id with all subscriptions created with REFER request) \n
+ *
+ * Corresponding tag taking reference parameter is NUTAG_REFER_WITH_ID_REF()
+ */
+#define NUTAG_REFER_WITH_ID(x)   nutag_refer_with_id, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_refer_with_id;
+
+#define NUTAG_REFER_WITH_ID_REF(x) nutag_refer_with_id_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_refer_with_id_ref;
+
 /** Add media tags from our offer to Accept-Contact headers.
  *
  * Automatically generate Accept-Contact headers for caller

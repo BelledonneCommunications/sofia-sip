@@ -226,8 +226,10 @@ nua_dialog_usage_at(nua_dialog_state_t const *ds,
 	  continue;
 	if (strcmp(event->o_type, o->o_type))
 	  continue;
-	if (str0casecmp(event->o_id, o->o_id))
-	  continue;
+	if (str0casecmp(event->o_id, o->o_id)) {
+	  if (event->o_id || strcmp(event->o_type, "refer"))
+	    continue;
+	}
       }
 
       return (nua_dialog_usage_t **)prev;
