@@ -140,7 +140,7 @@ int setblocking(int s, int blocking)
   return fcntl(s, F_SETFL, mode);
 }
 
-#if HAVE_POLL
+#if HAVE_POLL && 0
 
 /** Test few assumptions about sockets */
 static
