@@ -586,19 +586,10 @@ static int test_scan(void)
   TEST(t_scan(tag_p, NULL, "  000.000  ", &v), 1);
   TEST(v, 0);
 
-  v = 1;
-  TEST(t_scan(tag_null, NULL, "NULL", &v), 0);
-  TEST(v, 0);
+  TEST(t_scan(tag_null, NULL, "NULL", &v), -2);
+  TEST(t_scan(tag_skip, NULL, "SKIP", &v), -2);
+  TEST(t_scan(tag_any, NULL, "any", &v), -2);
 
-  v = 1;
-  TEST(t_scan(tag_skip, NULL, "SKIP", &v), 0);
-  TEST(v, 0);
-
-  v = 1;
-  TEST(t_scan(tag_any, NULL, "any", &v), 0);
-  TEST(v, 0);
-
-  /* Test API checks for invalid values */
   TEST(t_scan(NULL, NULL, "-1234", &v), -1);
   TEST(t_scan(tag_a, NULL, NULL, &v), -1);
   TEST(t_scan(tag_a, NULL, "-1234", NULL), -1);
