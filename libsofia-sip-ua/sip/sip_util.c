@@ -1003,7 +1003,14 @@ int sip_response_terminates_dialog(int response_code,
       given usage affects only that usage, but does not affect other
       usages of the dialog.
     */
-    return terminate_usage;
+    switch (method) {
+    case sip_method_notify:
+    case sip_method_subscribe:
+    case sip_method_invite:
+      return terminate_usage;
+    }
+    *return_graceful_terminate_usage = 0;
+    return 0;
 
   case 406: /** @par 406 Not Acceptable 
 
