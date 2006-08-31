@@ -79,8 +79,8 @@ struct sres_sofia_s {
 };
 
 static int sres_sofia_update(sres_sofia_t *, 
-			     int new_socket,
-			     int old_socket);
+			     su_socket_t new_socket,
+			     su_socket_t old_socket);
 
 static void sres_sofia_timer(su_root_magic_t *magic, 
 			     su_timer_t *t,
@@ -168,8 +168,8 @@ sres_resolver_destroy(sres_resolver_t *res)
  * @retval -1 upon failure
  */
 static int sres_sofia_update(sres_sofia_t *srs,
-			     int new_socket,
-			     int old_socket)
+			     su_socket_t new_socket,
+			     su_socket_t old_socket)
 {
   char const *what = NULL;
   su_wait_t wait[1];
@@ -178,7 +178,8 @@ static int sres_sofia_update(sres_sofia_t *srs,
   int i, index = -1, error = 0;
   int N = SRES_MAX_NAMESERVERS;
 
-  SU_DEBUG_9(("sres_sofia_update(%p, %d, %d)\n", srs, new_socket, old_socket));
+  SU_DEBUG_9(("sres_sofia_update(%p, %d, %d)\n", srs, 
+	      (int)new_socket, (int)old_socket));
 
   if (srs == NULL)
     return 0;
@@ -269,19 +270,19 @@ static int sres_sofia_update(sres_sofia_t *srs,
 /** Return a socket registered to su_root_t object.
  *
  * @retval sockfd if succesful
- * @retval -1 upon an error
+ * @retval SOCKET_ERROR (-1) upon an error
  *
  * @ERRORS
  * @ERROR EFAULT Invalid argument passed.
  * @ERROR EINVAL Resolver is not using su_root_t.
  */
-int sres_resolver_root_socket(sres_resolver_t *res)
+su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
 {
   sres_sofia_t *srs;
   int i, N = SRES_MAX_NAMESERVERS;
 
   if (res == NULL)
-    return su_seterrno(EFAULT);
+    return (void)su_seterrno(EFAULT), SOCKET_ERROR;
 
   srs = sres_resolver_get_async(res, sres_sofia_update);
 
@@ -291,7 +292,7 @@ int sres_resolver_root_socket(sres_resolver_t *res)
   if (sres_resolver_set_async(res, sres_sofia_update, srs, 1) < 0)
     return -1;
 
-  if (srs->srs_socket != -1)
+  if (srs->srs_socket != SOCKET_ERROR)
     return srs->srs_socket;
 
   for (i = 0; i < N; i++) {
@@ -303,7 +304,7 @@ int sres_resolver_root_socket(sres_resolver_t *res)
     srs->srs_socket = srs->srs_reg[i].reg_socket;
   }
   else {
-    int socket;
+    su_socket_t socket;
     if (sres_resolver_sockets(res, &socket, 1) < 0)
       return -1;
   }

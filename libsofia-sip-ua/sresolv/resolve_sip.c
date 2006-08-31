@@ -74,7 +74,7 @@ struct context
   unsigned short       sr_port;
 
   int                  sr_n_sockets;
-  int                 *sr_sockets;
+  sres_socket_t       *sr_sockets;
   struct pollfd       *sr_pollfds;
 
 #if 0

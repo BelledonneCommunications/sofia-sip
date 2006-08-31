@@ -68,8 +68,8 @@ typedef SRES_ASYNC_T sres_async_t;
  * socket that should be added to the poll() or select() set.
  */
 typedef int sres_update_f(sres_async_t *async,
-			  int new_socket,
-			  int old_socket);
+			  sres_socket_t new_socket,
+			  sres_socket_t old_socket);
 
 /** Set asynchronous operation data. */
 SRESPUBFUN
@@ -84,7 +84,9 @@ sres_async_t *sres_resolver_get_async(sres_resolver_t const *res,
 				      sres_update_f *update);
 
 /** Create sockets for resolver. */
-SRESPUBFUN int sres_resolver_sockets(sres_resolver_t *, int *sockets, int n);
+SRESPUBFUN int sres_resolver_sockets(sres_resolver_t *, 
+				     sres_socket_t *sockets,
+				     int n);
 
 /** Resolver timer function. */
 SRESPUBFUN void sres_resolver_timer(sres_resolver_t *, int dummy);

@@ -91,7 +91,6 @@ struct sockaddr_storage {
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/su_errno.h>
-#include <sofia-sip/su.h>
 
 #include "sofia-sip/htable.h"
 
@@ -145,7 +144,7 @@ enum edns {
 };
 
 struct sres_server {
-  int                     dns_socket;
+  sres_socket_t           dns_socket;
 
   char                    dns_name[48];     /**< Server name */
   struct sockaddr_storage dns_addr[1];  /**< Server node address */
@@ -354,7 +353,8 @@ static void sres_servers_close(sres_resolver_t *res,
 
 static int sres_servers_count(sres_server_t * const *servers);
 
-static int sres_server_socket(sres_resolver_t *res, sres_server_t *dns);
+static sres_socket_t sres_server_socket(sres_resolver_t *res,
+					sres_server_t *dns);
 
 static sres_query_t * sres_query_alloc(sres_resolver_t *res,
 				       sres_answer_f *callback,
@@ -399,11 +399,12 @@ static void
 sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout);
 
 static 
-sres_server_t *sres_server_by_socket(sres_resolver_t const *ts, int socket);
+sres_server_t *sres_server_by_socket(sres_resolver_t const *ts,
+				     sres_socket_t socket);
 
 static
 int sres_resolver_report_error(sres_resolver_t *res, 
-			       int socket,
+			       sres_socket_t socket,
 			       int errcode,
 			       struct sockaddr_storage *remote,
 			       socklen_t remotelen, 
@@ -993,13 +994,10 @@ sres_query_t *
 sres_query_make(sres_resolver_t *res,
 		sres_answer_f *callback,
 		sres_context_t *context,
-		int socket,
+		int dummy,
 		uint16_t type,
 		char const *domain)
 {
-  if (socket == -1)
-    return errno = EINVAL, NULL;
-
   return sres_query(res, callback, context, type, domain);
 }
 
@@ -1018,7 +1016,7 @@ sres_query_t *
 sres_query_make_sockaddr(sres_resolver_t *res,
 			 sres_answer_f *callback,
 			 sres_context_t *context,
-			 int socket,
+			 int dummy,
 			 uint16_t type,
 			 struct sockaddr const *addr)
 {
@@ -1027,13 +1025,10 @@ sres_query_make_sockaddr(sres_resolver_t *res,
   if (!res || !addr)
     return su_seterrno(EFAULT), (void *)NULL;
 
-  if (socket == -1)
-    return errno = EINVAL, NULL;
-
   if (!sres_sockaddr2string(res, name, sizeof(name), addr))
     return NULL;
 
-  return sres_query_make(res, callback, context, socket, type, name);
+  return sres_query_make(res, callback, context, dummy, type, name);
 }
 
 
@@ -2292,10 +2287,10 @@ int sres_servers_count(sres_server_t *const *servers)
 }
 
 static
-int sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
+sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 {
   int family = dns->dns_addr->ss_family;
-  int s;
+  sres_socket_t s;
 
   if (dns->dns_socket != -1)
     return dns->dns_socket;
@@ -2376,7 +2371,8 @@ sres_send_dns_query(sres_resolver_t *res,
 {                        
   sres_message_t m[1];
   uint8_t i, i0, N = res->res_n_servers;
-  int s, transient, error = 0;
+  sres_socket_t s;
+  int transient, error = 0;
   unsigned size, no_edns_size, edns_size;
   uint16_t id = q->q_id;
   uint16_t type = q->q_type;
@@ -2690,7 +2686,7 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
 /** Get a server by socket */
 static 
 sres_server_t *
-sres_server_by_socket(sres_resolver_t const *res, int socket)
+sres_server_by_socket(sres_resolver_t const *res, sres_socket_t socket)
 {
   int i;
 
@@ -2749,7 +2745,9 @@ sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
 #endif
 
 static
-int sres_no_update(sres_async_t *async, int new_socket, int old_socket)
+int sres_no_update(sres_async_t *async,
+		   sres_socket_t new_socket,
+		   sres_socket_t old_socket)
 {
   return 0;
 }
@@ -2757,10 +2755,11 @@ int sres_no_update(sres_async_t *async, int new_socket, int old_socket)
 /** Create connected sockets for resolver.
  */
 int sres_resolver_sockets(sres_resolver_t *res,
-			  int *return_sockets, 
+			  sres_socket_t *return_sockets, 
 			  int n)
 {
-  int s = -1, i, retval;
+  sres_socket_t s = -1;
+  int i, retval;
 
   if (!sres_resolver_set_async(res, sres_no_update,
 			       (sres_async_t *)-1, 1))
@@ -2775,6 +2774,7 @@ int sres_resolver_sockets(sres_resolver_t *res,
     sres_server_t *dns = res->res_servers[i];
 
     s = sres_server_socket(res, dns);
+
     return_sockets[i++] = s;
   }
 
@@ -2943,7 +2943,7 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 static
 int 
 sres_resolver_report_error(sres_resolver_t *res,
-			   int socket,
+			   sres_socket_t socket,
 			   int errcode,
 			   struct sockaddr_storage *remote,
 			   socklen_t remotelen, 

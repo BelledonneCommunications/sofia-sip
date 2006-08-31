@@ -72,7 +72,7 @@ SOFIAPUBFUN sres_resolver_t *sres_resolver_create(su_root_t *root,
 SOFIAPUBFUN int sres_resolver_destroy(sres_resolver_t *res);
 
 /* Return socket used by root. @deprecated */
-SOFIAPUBFUN int sres_resolver_root_socket(sres_resolver_t *res);
+SOFIAPUBFUN su_socket_t sres_resolver_root_socket(sres_resolver_t *res);
 
 SOFIA_END_DECLS
 

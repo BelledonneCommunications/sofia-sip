@@ -110,7 +110,7 @@ struct sres_context_s
   
   int              ready;
   int              n_sockets;
-  int              sockets[SRES_MAX_NAMESERVERS];
+  sres_socket_t    sockets[SRES_MAX_NAMESERVERS];
 #if HAVE_POLL
   struct pollfd    fds[SRES_MAX_NAMESERVERS];
 #endif
@@ -124,8 +124,11 @@ static void test_answer_multi(sres_context_t *ctx, sres_query_t *query,
 static int tstflags = 0;
 
 #if 1
+
+#if HAVE_POLL && 0
+
 static
-int setblocking(int s, int blocking)
+int setblocking(sres_socket_t s, int blocking)
 {
   unsigned mode = fcntl(s, F_GETFL, 0);
 
@@ -140,14 +143,12 @@ int setblocking(int s, int blocking)
   return fcntl(s, F_SETFL, mode);
 }
 
-#if HAVE_POLL && 0
-
 /** Test few assumptions about sockets */
 static
 int test_socket(sres_context_t *ctx)
 {
   int af;
-  int s1, s2, s3, s4;
+  su_sockeet_t s1, s2, s3, s4;
   struct sockaddr_storage a[1];
   struct sockaddr_storage a1[1], a2[1], a3[1], a4[1];
   struct sockaddr_in *sin = (void *)a;
@@ -162,10 +163,10 @@ int test_socket(sres_context_t *ctx)
   af = AF_INET;
 
   for (;;) {
-    TEST_1((s1 = socket(af, SOCK_DGRAM, 0)) != -1);
-    TEST_1((s2 = socket(af, SOCK_DGRAM, 0)) != -1);
-    TEST_1((s3 = socket(af, SOCK_DGRAM, 0)) != -1);
-    TEST_1((s4 = socket(af, SOCK_DGRAM, 0)) != -1);
+    TEST_1((s1 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
+    TEST_1((s2 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
+    TEST_1((s3 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
+    TEST_1((s4 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
 
     TEST_1(setblocking(s1, 0) == 0);
     TEST_1(setblocking(s2, 0) == 0);
@@ -1839,7 +1840,7 @@ static
 int test_conf_errors(sres_context_t *ctx, char const *conf_file)
 {
   sres_resolver_t *res;
-  int socket;
+  sres_socket_t socket;
   int n;
 
   BEGIN();

@@ -98,8 +98,8 @@ struct sres_blocking_context_s
 
 static
 int sres_blocking_update(sres_blocking_t *b,
-			 int new_socket,
-			 int old_socket)
+			 sres_socket_t new_socket,
+			 sres_socket_t old_socket)
 {
   int i, N = b->n_sockets;
 
