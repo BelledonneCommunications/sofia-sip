@@ -151,10 +151,8 @@ int test_socket(sres_context_t *ctx)
   struct sockaddr_storage a[1];
   struct sockaddr_storage a1[1], a2[1], a3[1], a4[1];
   struct sockaddr_in *sin = (void *)a;
-  struct sockaddr_in *sin1 = (void *)a1, *sin2 = (void *)a2;
   struct sockaddr_in *sin3 = (void *)a3, *sin4 = (void *)a4;
   struct sockaddr *sa = (void *)a;
-  struct sockaddr *sa1 = (void *)a1, *sa2 = (void *)a2;
   struct sockaddr *sa3 = (void *)a3, *sa4 = (void *)a4;
   socklen_t alen, a1len, a2len, a3len, a4len;
   char buf[16];
@@ -1474,7 +1472,7 @@ int test_timeout(sres_context_t *ctx)
   END();
 }
 
-void test_answer(sres_context_t *ctx,
+static void test_answer(sres_context_t *ctx,
 		 sres_query_t *q,
 		 sres_record_t **answer)
 {
@@ -1485,7 +1483,7 @@ void test_answer(sres_context_t *ctx,
   BREAK(ctx);
 }
 
-void test_answer_multi(sres_context_t *ctx,
+static void test_answer_multi(sres_context_t *ctx,
 		       sres_query_t *q,
 		       sres_record_t **answer)
 {
