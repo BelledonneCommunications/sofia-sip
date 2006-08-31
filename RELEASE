@@ -83,7 +83,10 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
-- NOTIFY Event: refer without id is not rejected anymore
+- UPDATE was rejected if received during initial call setup. Thanks for
+  Rajeev K for reporting the bug.
+- NOTIFY Event: refer without id is not rejected anymore. Thanks for 
+  emilie for reporting this.   
 - t_scan() now returns negative value when tag does not implement scan method
 - #9499652 sf.net bug item title
 - Session timer handling by nua UAS now honors missing "timer" feature tag.
