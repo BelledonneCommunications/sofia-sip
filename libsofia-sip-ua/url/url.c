@@ -427,6 +427,7 @@ char const* url_scheme(enum url_type_e url_type)
   case url_pres:   return "pres";
   case url_cid:    return "cid";
   case url_msrp:   return "msrp";
+  case url_msrps:  return "msrps";
   case url_wv:     return "wv";
   default:       
     assert(url_type == url_unknown);
@@ -476,7 +477,7 @@ enum url_type_e url_get_type(char const *scheme, int len)
     test_scheme(im); break;
   case 'm': case 'M': 
     test_scheme(mailto); test_scheme(modem); 
-    test_scheme(msrp); break;
+    test_scheme(msrp); test_scheme(msrps); break;
   case 'p': case 'P': 
     test_scheme(pres); break;
   case 'r': case 'R': 
@@ -1651,6 +1652,7 @@ char const *url_port_default(enum url_type_e url_type)
     return "*";
 
   case url_msrp:
+  case url_msrps:
     return "9999";		/* XXXX */
 
   case url_tel:	
@@ -1689,6 +1691,8 @@ char const *url_tport_default(enum url_type_e url_type)
     return "tcp";
   case url_msrp:
     return "tcp";
+  case url_msrps:
+    return "tls";
 
   case url_any:			/* "*" */
   case url_tel:

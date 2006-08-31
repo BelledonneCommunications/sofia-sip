@@ -170,6 +170,7 @@ int test_any(void)
   TEST_S(url_scheme(url_im), "im");
   TEST_S(url_scheme(url_cid), "cid");
   TEST_S(url_scheme(url_msrp), "msrp");
+  TEST_S(url_scheme(url_msrps), "msrps");
 
   TEST_1(tst = su_strdup(home, "*"));
   TEST(url_d(url, tst), 0);
