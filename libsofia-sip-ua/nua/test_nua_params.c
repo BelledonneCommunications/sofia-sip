@@ -474,7 +474,7 @@ int test_nua_params(struct context *ctx)
     TEST(media_features, -1);
     TEST(service_route_enable, -1);
     TEST(path_enable, -1);
-    TEST(refer_expires, -1);
+    TEST(refer_expires, (unsigned)-1);
     TEST(refer_with_id, -1);
     TEST(substate, -1);
 
