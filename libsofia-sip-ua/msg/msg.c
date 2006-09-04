@@ -238,15 +238,6 @@ void msg_addr_zero(msg_t *msg)
   msg->m_addrinfo.ai_addr = &msg->m_addr->su_sa;
 }
 
-/** Get pointer to address length.
- *
- * @deprecated Use msg_get_address() or msg_set_address() instead.
- */
-socklen_t *msg_addrlen(msg_t *msg)
-{
-  return &msg->m_addrinfo.ai_addrlen;
-}
-
 /** Get pointer to socket address structure. 
  *
  * @deprecated Use msg_get_address() or msg_set_address() instead.
