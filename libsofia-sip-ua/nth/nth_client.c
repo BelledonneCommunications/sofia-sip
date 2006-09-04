@@ -240,7 +240,7 @@ static int hc_recv(nth_client_t * hc, msg_t *msg, http_t * http);
 
 HTABLE_PROTOS(hc_htable, hct, nth_client_t);
 
-#define HTABLE_HASH_CLIENT(hc) ((hash_value_t)(hc)->hc_tport)
+#define HTABLE_HASH_CLIENT(hc) ((hash_value_t)(uintptr_t)(hc)->hc_tport)
 HTABLE_BODIES(hc_htable, hct, nth_client_t, HTABLE_HASH_CLIENT);
 
 static url_string_t const *hc_request_complete(nth_client_t * hc,
@@ -506,7 +506,7 @@ void he_recv_message(nth_engine_t * he,
   nth_client_t *hc, **hcp;
   tp_name_t const *tpn;
 
-  for (hcp = hc_htable_hash(he->he_clients, (hash_value_t) tport);
+  for (hcp = hc_htable_hash(he->he_clients, (hash_value_t)(uintptr_t) tport);
        (hc = *hcp); hcp = hc_htable_next(he->he_clients, hcp)) {
     if (hc->hc_tport == tport) {
       if (hc_recv(hc, msg, http_object(msg)) < 0)
@@ -574,7 +574,7 @@ msg_t *he_msg_create(nth_engine_t * he, int flags,
 
   if (hc == NULL) {
     nth_client_t **slot;
-    for (slot = hc_htable_hash(he->he_clients, (hash_value_t) tport);
+    for (slot = hc_htable_hash(he->he_clients, (hash_value_t)(uintptr_t) tport);
 	 (hc = *slot); slot = hc_htable_next(he->he_clients, slot))
       if (hc->hc_tport == tport)
 	break;
