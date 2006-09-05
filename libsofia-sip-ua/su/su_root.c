@@ -336,7 +336,7 @@ static void _su_task_execute(su_root_magic_t *m,
 			     su_msg_r msg,
 			     su_msg_arg_t *a)
 {
-  struct su_task_execute *frame = (void *)a;
+  struct su_task_execute *frame = *(struct su_task_execute **)a;
   pthread_mutex_lock(frame->mutex);
   *frame->return_value = frame->function(frame->arg);
   pthread_cond_signal(frame->cond);
@@ -359,27 +359,33 @@ int su_task_execute(su_task_r const task,
   if (!su_port_own_thread(task->sut_port)) {
 #if SU_HAVE_PTHREADS
     su_msg_r m = SU_MSG_R_INIT;
-    struct su_task_execute *frame;
+    struct su_task_execute frame;
 
     if (su_msg_create(m, task, su_task_null,
-		      _su_task_execute, (sizeof *frame)) < 0)
+		      _su_task_execute, (sizeof &frame)) < 0)
       return -1;
 
-    frame = (void *)su_msg_data(m);
-    pthread_mutex_init(frame->mutex, NULL);
-    pthread_cond_init(frame->cond, NULL);
-    frame->function = function;
-    frame->arg = arg;
-    frame->return_value = &value;
+    *(struct su_task_execute **)su_msg_data(m) = &frame;
+    pthread_mutex_init(frame.mutex, NULL);
+    pthread_cond_init(frame.cond, NULL);
+    frame.function = function;
+    frame.arg = arg;
+    frame.return_value = &value;
 
-    pthread_mutex_lock(frame->mutex);
+    pthread_mutex_lock(frame.mutex);
 
     if (su_msg_send(m) < 0) {
       su_msg_destroy(m);
+
+      pthread_mutex_unlock(frame.mutex);
+      pthread_mutex_destroy(frame.mutex);
+      pthread_cond_destroy(frame.cond);
       return -1;
     }
 
-    pthread_cond_wait(frame->cond, frame->mutex);
+    pthread_cond_wait(frame.cond, frame.mutex);
+    pthread_mutex_destroy(frame.mutex);
+    pthread_cond_destroy(frame.cond);
 #else
     return -1;
 #endif
