@@ -948,6 +948,7 @@ static int offer_answer_step(soa_session_t *ss,
   /* Step E: Upgrade codecs */
   switch (action) {
   case process_answer:
+  case generate_answer:
     /* Upgrade local SDP based on remote SDP */
     if (ss->ss_local_remote_version == remote_version)
       break;
@@ -962,14 +963,14 @@ static int offer_answer_step(soa_session_t *ss,
     }
     break;
   case generate_offer:
-  case generate_answer:
   default:
     break;
   }
 
   soa_description_free(ss, ss->ss_previous);
 
-  if (local == local0) {
+  if (ss->ss_local->ssd_sdp != local &&
+      sdp_session_cmp(ss->ss_local->ssd_sdp, local)) {
     /* We have modfied local session: update origin-line */
     if (local->sdp_origin != o)
       *o = *local->sdp_origin, local->sdp_origin = o;

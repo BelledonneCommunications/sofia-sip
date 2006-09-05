@@ -1442,6 +1442,9 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
     if ((rv = str0cmp(a->m_proto_name, b->m_proto_name)))
       return rv;
 
+  if ((rv = a->m_mode - b->m_mode))
+    return rv;
+
   for (arm = a->m_rtpmaps, brm = b->m_rtpmaps; 
        arm || brm; 
        arm = arm->rm_next, brm = brm->rm_next)
