@@ -5995,11 +5995,11 @@ nta_outgoing_t *nta_outgoing_default(nta_agent_t *agent,
  * @param method      method type
  * @param name        method name
  * @param request_uri Request-URI
- * @param tag, value, ... list of extra arguments
+ * @param tag, value, ... list of tagged arguments
  *
  * @return
- * The function nta_outgoing_tcreate() returns a pointer to newly created
- * outgoing transaction object if successful, and NULL otherwise.
+ * A pointer to a newly created outgoing transaction object if successful,
+ * and NULL otherwise.
  *
  * @note If NTATAG_STATELESS(1) tag is given and the @a callback is NULL,
  * the transaction object is marked as destroyed from the beginning. In that
@@ -6011,7 +6011,8 @@ nta_outgoing_t *nta_outgoing_default(nta_agent_t *agent,
  *
  * @TAGS
  * NTATAG_STATELESS(), NTATAG_DELAY_SENDING(), NTATAG_BRANCH_KEY(),
- * NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(), NTATAG_USE_TIMESTAMP(). All
+ * NTATAG_ACK_BRANCH(), NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(),
+ * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(). All
  * SIP tags from <sip_tag.h> can be used to manipulate the request message. 
  * SIP tags after SIPTAG_END() are ignored, however.
  */
@@ -6098,7 +6099,8 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
  *
  * @TAGS
  * NTATAG_STATELESS(), NTATAG_DELAY_SENDING(), NTATAG_BRANCH_KEY(),
- * NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(), NTATAG_USE_TIMESTAMP(). All
+ * NTATAG_ACK_BRANCH(), NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(),
+ * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(). All
  * SIP tags from <sip_tag.h> can be used to manipulate the request message. 
  * SIP tags after SIPTAG_END() are ignored, however.
  */
@@ -6148,7 +6150,20 @@ int nta_outgoing_cancel(nta_outgoing_t *orq)
  * @param magic       application context pointer
  * @param tag, value, ... list of extra arguments
  *
- * @note The function returns NONE if callback is NULL and 
+ * @note The function may return @code (nta_outgoing_t *)-1 @endcode (NONE)
+ * if callback is NULL.
+ *
+ * @TAGS
+ * NTATAG_CANCEL_2534(), NTATAG_CANCEL_408() and all the tags that are
+ * accepted by nta_outgoing_tcreate().
+ *
+ * If NTATAG_CANCEL_408(1) or NTATAG_CANCEL_2543(1) is given, the stack
+ * generates a 487 response to the request internally. If
+ * NTATAG_CANCEL_408(1) is given, no CANCEL request is actually sent.
+ *
+ * @note
+ * nta_outgoing_tcancel() refuses to send a CANCEL request for non-INVITE
+ * requests.
  */
 nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
 				     nta_response_f *callback,

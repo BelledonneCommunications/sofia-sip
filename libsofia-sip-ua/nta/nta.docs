@@ -38,8 +38,8 @@
  * 
  * The #nta_agent_t object is created by calling nta_agent_create(). The
  * object listens for incoming connections, receives messages, parses them,
- * and pass them to the application. It also takes care of sending the
- * messages.
+ * and pass them to the application. It also takes care of resolving the
+ * domain names and sending the messages.
  * 
  * The agent needs a #su_root_t object to schedule its execution. A root
  * object is used to wait for the network events, schedule the timer
@@ -390,13 +390,36 @@
  * @note The ACK transaction should be sent to the Contact specified in the 
  * 2xx reply.  
  * 
- * @section nta_register_f Stateless Processing of SIP Messages
- * 
- * The callback function statelessly processing incoming messages is
- * provided to the NTA agent when it is created. The callback function will
- * be called to process incoming SIP messages that do not match with any
- * existing transaction or dialog. In addition to the message (@a msg) and
- * its parsed contents (@a sip) the callback function gets the
+ * <a name="nta_register_f"></a>
+ * @section nta_stateless_callback Stateless Processing of SIP Messages
+ *
+ * When an NTA agent is created, it is possible to provide it with a
+ * stateless callback function. The callback function will be called when an
+ * incoming SIP request or response message does not match with an existing
+ * transaction.
+ *
+ * Before invoking the stateless callback the agent will try to match the
+ * incoming request message with an existing dialog or dialog-less leg (or
+ * default leg). So, if you have created a default leg, all request messages
+ * are processed statefully by it instead of being passed to the stateless
+ * callback function.
+ *
+ * If you want to process request messages with stateless callback and still
+ * use dialog-less legs (for instance, in order to look up domains with
+ * nta_leg_by_uri()), you have to switch over to @em stateless @em mode by
+ * including NTATAG_STATELESS(1) in nta_agent_create() or
+ * nta_agent_set_params() arguments.
+ *
+ * Also, if a response message does not match with an existing client
+ * transaction, the agent will try to use the default outgoing (client)
+ * transaction. If you have created an default outgoing transaction, all
+ * stray response messages are passed to it instead of the stateless
+ * processing function.
+ *
+ * @section nta_message_f_example Stateless Callback Function
+ *
+ * In addition to the message (@a msg) and its
+ * parsed contents (@a sip) the callback function gets the
  * application-specific context pointer (in this case, @a registrar) and a
  * pointer to the NTA agent (@a agent) as its arguments:
  * 
@@ -408,17 +431,21 @@
  * @endcode
  * 
  * The application has three functions that can be used to process the
- * messages:
+ * messages in stateless manner:
  * @li nta_msg_discard() ignores and destroys the message,
- * @li nta_msg_tsend() forwards the message, and
- * @li nta_msg_treply() replies to the message in a stateless way.
+ * @li nta_msg_tsend() forwards a request or response message, and
+ * @li nta_msg_treply() replies to a request message in a stateless way.
  * 
- * The functionality of the callback function can vary greatly, depending
- * the purpose of the application. A proxy or registrar/redirect server 
- * have very different callback functions.
+ * Additionally, it is possible to process a request message statefully with
+ * nta_incoming_create().
+ *
+ * The functionality of the stateless callback function can vary greatly,
+ * depending the purpose of the application. An user-agent, a proxy or a
+ * registrar/redirect server each have very different callback functions.
  * 
  * A simple redirect server could have a message callback function as
  * follows.
+ *
  * @code
  * int process_message(redirect_t *r,
  * 		       nta_agent_t *agent,
@@ -430,7 +457,7 @@
  * 
  * @endcode
  *
- * The incoming status messages are simply ignored. The @b ACK requests can
+ * The incoming response messages are simply ignored. The @b ACK requests can
  * safely be discarded, too, because the redirect server keeps no state.
  * 
  * @code
@@ -463,7 +490,8 @@
  *   }
  * @endcode
  *
- *  All other requests are answered normally. The location service is
+ *  All other requests are answered normally with a 302 response. 
+ *  The location service is
  *  searched for the request uri, and if a matching address was found, a
  *  list of active bindings is returned to the client.
  * @code
@@ -485,7 +513,6 @@
  * }
  * @endcode
  * 
- * @todo Add an example.
  */
 
 /**@page internal NTA Semantics and Internal Data Flows
