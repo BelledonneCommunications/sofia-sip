@@ -235,7 +235,7 @@ tag_typedef_t soatag_af = INTTAG_TYPEDEF(af);
  *    IPv4 address, or IPv6 address.
  *
  * Corresponding tag taking reference parameter is SOATAG_ADDRESS_REF()
-*/
+ */
 tag_typedef_t soatag_address = STRTAG_TYPEDEF(address);
 
 
@@ -266,9 +266,39 @@ tag_typedef_t soatag_address = STRTAG_TYPEDEF(address);
  * line is rejected, too, unless SOATAG_RTP_MISMATCH(1) has been used.
  *
  * Corresponding tag taking a reference parameter is SOATAG_RTP_SELECT_REF()
-*/
+ */
 tag_typedef_t soatag_rtp_select = UINTTAG_TYPEDEF(rtp_select);
 
+
+/**@def SOATAG_AUDIO_AUX(x)
+ *
+ * The named audio codecs are considered auxiliary, that is, they are
+ * considered as common codec only when they are the only codec listed on
+ * the media line.
+ * 
+ * When generating answer or second offer soa includes auxiliary audio codecs in
+ * the list of codecs even if it is selecting only one codec or common
+ * codecs.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_get_params() \n
+ *    nua_invite() \n
+ *    nua_update() \n
+ *    nua_respond() \n
+ *
+ * @par Parameter type
+ *    A string with whitespace separated list of codec names.
+ *
+ * @par Values
+ *    E.g., "telephone-event cn".
+ *
+ * By default, there are no auxiliary audio codecs.
+ *
+ * Corresponding tag taking a reference parameter is
+ * SOATAG_AUDIO_AUX_REF()
+ */
+tag_typedef_t soatag_audio_aux = STRTAG_TYPEDEF(audio_aux);
 
 /**@def SOATAG_RTP_SORT(x)
  *
@@ -276,7 +306,7 @@ tag_typedef_t soatag_rtp_select = UINTTAG_TYPEDEF(rtp_select);
  * supported by remote end, or first remote codec supported by local codecs. 
  * The preference is indicated with ordering: the preferred codec is
  * first and so on.
-
+ *
  * @par Used with
  *    nua_set_params() \n
  *    nua_get_params() \n

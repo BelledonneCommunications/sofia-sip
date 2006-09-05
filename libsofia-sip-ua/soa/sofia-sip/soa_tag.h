@@ -164,6 +164,11 @@ SOFIAPUBVAR tag_typedef_t soatag_rtp_select_ref;
 
 enum { SOA_RTP_SELECT_SINGLE, SOA_RTP_SELECT_COMMON, SOA_RTP_SELECT_ALL };
 
+#define SOATAG_AUDIO_AUX(x)      soatag_audio_aux, tag_str_v(x)
+SOFIAPUBVAR tag_typedef_t soatag_audio_aux;
+#define SOATAG_AUDIO_AUX_REF(x)  soatag_audio_aux_ref, tag_str_vr(&(x))
+SOFIAPUBVAR tag_typedef_t soatag_audio_aux_ref;
+
 #define SOATAG_RTP_SORT(x)  soatag_rtp_sort, tag_uint_v(x)
 SOFIAPUBVAR tag_typedef_t soatag_rtp_sort;
 #define SOATAG_RTP_SORT_REF(x) soatag_rtp_sort_ref, tag_uint_vr(&(x))
