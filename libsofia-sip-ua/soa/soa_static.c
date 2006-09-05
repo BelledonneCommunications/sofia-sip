@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -62,6 +62,8 @@ struct soa_static_complete;
 #include <sofia-sip/su_tag_class.h>
 #include <sofia-sip/su_tagarg.h>
 #include <sofia-sip/su_strlst.h>
+#include <sofia-sip/string0.h>
+#include <sofia-sip/bnf.h>
 
 #include "sofia-sip/soa.h"
 #include <sofia-sip/sdp.h>
@@ -70,7 +72,6 @@ struct soa_static_complete;
 #define NONE ((void *)-1)
 #define XXX assert(!"implemented")
 
-#define str0cmp(a, b) strcmp(a ? a : "", b ? b : "")
 #if !HAVE_STRCASESTR
 char *strcasestr(const char *haystack, const char *needle);
 #endif
@@ -78,6 +79,7 @@ char *strcasestr(const char *haystack, const char *needle);
 typedef struct soa_static_session
 {
   soa_session_t sss_session[1];
+  char *sss_audio_aux;
 }
 soa_static_session_t;
 
@@ -148,25 +150,66 @@ static void soa_static_deinit(soa_session_t *ss)
 
 static int soa_static_set_params(soa_session_t *ss, tagi_t const *tags)
 {
-  return soa_base_set_params(ss, tags);
+  soa_static_session_t *sss = (soa_static_session_t *)ss;
+  char const *audio_aux = sss->sss_audio_aux;
+  int n, m;
+
+  n = tl_gets(tags,
+	      SOATAG_AUDIO_AUX_REF(audio_aux),
+	      TAG_END());
+  if (n < 0)
+    return n;
+
+  if (str0casecmp(audio_aux, sss->sss_audio_aux)) {
+    char *s = su_strdup(ss->ss_home, audio_aux), *tbf = sss->sss_audio_aux;
+    if (s == NULL && audio_aux != NULL)
+      return -1;
+    sss->sss_audio_aux = s;
+    if (tbf)
+      su_free(ss->ss_home, tbf);
+  }
+
+  m = soa_base_set_params(ss, tags);
+  if (m < 0)
+    return m;
+
+  return n + m;
 }
 
 static int soa_static_get_params(soa_session_t const *ss, tagi_t *tags)
 {
-  
-  return soa_base_get_params(ss, tags);
+  soa_static_session_t *sss = (soa_static_session_t *)ss;
+
+  int n, m;
+
+  n = tl_tgets(tags,
+	       SOATAG_AUDIO_AUX(sss->sss_audio_aux),
+	       TAG_END());
+  if (n < 0)
+    return n;
+
+  m = soa_base_get_params(ss, tags);
+  if (m < 0)
+    return m;
+
+  return n + m;
 }
 
 static tagi_t *soa_static_get_paramlist(soa_session_t const *ss,
 					tag_type_t tag, tag_value_t value, 
 					...)
 {
+  soa_static_session_t *sss = (soa_static_session_t *)ss;
+
   ta_list ta;
   tagi_t *tl;
 
   ta_start(ta, tag, value);
 
-  tl = soa_base_get_paramlist(ss, TAG_NEXT(ta_args(ta)));
+  tl = soa_base_get_paramlist(ss,
+			      TAG_IF(sss->sss_audio_aux,
+				     SOATAG_AUDIO_AUX(sss->sss_audio_aux)),
+			      TAG_NEXT(ta_args(ta)));
 
   ta_end(ta);
 
@@ -273,6 +316,37 @@ int soa_sdp_upgrade_is_needed(sdp_session_t const *session,
   return rm != NULL;
 }
 
+/** Check if codec is in auxiliary list */
+int soa_sdp_is_auxiliary_codec(sdp_rtpmap_t const *rm, char const *auxiliary)
+{
+  char const *codec;
+  size_t clen, alen;
+  char const *match;
+
+  if (!rm || !rm->rm_encoding || !auxiliary)
+    return 0;
+
+  codec = rm->rm_encoding;
+
+  clen = strlen(codec), alen = strlen(auxiliary);
+
+  if (clen > alen)
+    return 0;
+
+  for (match = auxiliary;
+       (match = strcasestr(match, codec));
+       match = match + 1) {
+    if (IS_ALPHANUM(match[clen]) || match[clen] == '-')
+      continue;
+    if (match != auxiliary &&
+	(IS_ALPHANUM(match[-1]) || match[-1] == '-'))
+      continue;
+    return 1;
+  }
+
+  return 0;
+}
+
 
 /** Find first matching media in table. */
 sdp_media_t *soa_sdp_matching(soa_session_t *ss, 
@@ -283,6 +357,14 @@ sdp_media_t *soa_sdp_matching(soa_session_t *ss,
   int i, j = -1;
   sdp_media_t *m;
   sdp_rtpmap_t const *rm;
+  soa_static_session_t *sss = (soa_static_session_t *)ss;
+  char const *auxiliary;
+
+  auxiliary = with->m_type == sdp_media_audio ? sss->sss_audio_aux : NULL;
+
+  /* Looking for a single codec */
+  if (with->m_rtpmaps && with->m_rtpmaps->rm_next == NULL)
+    auxiliary = NULL;
 
   for (i = 0; mm[i]; i++) {
     if (!sdp_media_match_with(mm[i], with))
@@ -296,6 +378,10 @@ sdp_media_t *soa_sdp_matching(soa_session_t *ss,
 
     /* Check also rtpmaps  */
     for (rm = mm[i]->m_rtpmaps; rm; rm = rm->rm_next) {
+      /* Ignore auxiliary codecs */
+      if (auxiliary && soa_sdp_is_auxiliary_codec(rm, auxiliary))
+	continue;
+
       if (sdp_rtpmap_find_matching(with->m_rtpmaps, rm))
 	break;
     }
@@ -426,20 +512,26 @@ int soa_sdp_set_rtpmap_pt(sdp_media_t *l_m,
 }
 
 
-/** Sort rtpmaps in @a l_m according to the values in @a r_m.
+/** Sort rtpmaps in @a inout_list according to the values in @a rrm.
  *
  * @return Number of common codecs
  */
 int soa_sdp_sort_rtpmap(sdp_rtpmap_t **inout_list, 
-			sdp_rtpmap_t const *rrm)
+			sdp_rtpmap_t const *rrm,
+			char const *auxiliary)
 {
   sdp_rtpmap_t *sorted = NULL, **next = &sorted, **left;
+  sdp_rtpmap_t *aux = NULL, **next_aux = &aux;
 
   int common_codecs = 0;
 
   assert(inout_list);
   if (!inout_list)
     return 0;
+
+  /* If remote has only single codec, ignore list of auxiliary codecs */
+  if (rrm && !rrm->rm_next)
+    auxiliary = NULL;
 
   /* Insertion sort from *inout_list to sorted */
   for (; rrm && *inout_list; rrm = rrm->rm_next) {
@@ -449,10 +541,20 @@ int soa_sdp_sort_rtpmap(sdp_rtpmap_t **inout_list,
     }
     if (!*left)
       continue;
-    common_codecs++;
-    *next = *left; next = &(*next)->rm_next;
+
+    if (auxiliary && soa_sdp_is_auxiliary_codec(rrm, auxiliary)) {
+      *next_aux = *left, next_aux = &(*next_aux)->rm_next;
+    }
+    else {
+      common_codecs++;
+      *next = *left; next = &(*next)->rm_next;
+    }
     *left = (*left)->rm_next;
   }
+
+  /* Append common auxiliary codecs */
+  if (aux)
+    *next = aux, next = next_aux;
 
   /* Append leftover codecs */
   *next = *inout_list;
@@ -463,14 +565,17 @@ int soa_sdp_sort_rtpmap(sdp_rtpmap_t **inout_list,
 }
 
 
-/** Select rtpmaps in @a l_m according to the values in @a r_m.
+/** Select rtpmaps in @a inout_list according to the values in @a rrm.
  *
  * @return Number of common codecs
  */
 int soa_sdp_select_rtpmap(sdp_rtpmap_t **inout_list, 
-			  sdp_rtpmap_t const *rrm)
+			  sdp_rtpmap_t const *rrm,
+			  char const *auxiliary,
+			  int select_single)
 {
   sdp_rtpmap_t **left;
+  sdp_rtpmap_t *aux = NULL, **next_aux = &aux;
 
   int common_codecs = 0;
 
@@ -479,13 +584,20 @@ int soa_sdp_select_rtpmap(sdp_rtpmap_t **inout_list,
     return 0;
 
   for (left = inout_list; *left; ) {
-    if (sdp_rtpmap_find_matching(rrm, (*left)))
+    if (auxiliary && soa_sdp_is_auxiliary_codec(*left, auxiliary))
+      /* Insert into list of auxiliary codecs */
+      *next_aux = *left, *left = (*left)->rm_next, 
+	next_aux = &(*next_aux)->rm_next;
+    else if (!(select_single && common_codecs > 0)
+	     && sdp_rtpmap_find_matching(rrm, (*left)))
       /* Select */
       left = &(*left)->rm_next, common_codecs++;
     else
       /* Remove */
       *left = (*left)->rm_next;
   }
+
+  *left = aux, *next_aux = NULL;
 
   return common_codecs;
 }
@@ -495,6 +607,7 @@ int soa_sdp_upgrade_rtpmaps(soa_session_t *ss,
 			    sdp_session_t *session,
 			    sdp_session_t const *remote)
 {
+  soa_static_session_t *sss = (soa_static_session_t *)ss;
   sdp_media_t *sm;
   sdp_media_t const *rm;
 
@@ -506,20 +619,22 @@ int soa_sdp_upgrade_rtpmaps(soa_session_t *ss,
     if (sdp_media_uses_rtp(sm)) {
       int common_codecs = soa_sdp_set_rtpmap_pt(sm, rm);
 
+      char const *auxiliary =
+	rm->m_type == sdp_media_audio ? sss->sss_audio_aux : NULL;
+
       if (ss->ss_rtp_sort == SOA_RTP_SORT_REMOTE || 
 	  (ss->ss_rtp_sort == SOA_RTP_SORT_DEFAULT &&
 	   rm->m_mode == sdp_recvonly)) {
-	soa_sdp_sort_rtpmap(&sm->m_rtpmaps, rm->m_rtpmaps);
+	soa_sdp_sort_rtpmap(&sm->m_rtpmaps, rm->m_rtpmaps, auxiliary);
       }
 
       if (common_codecs == 0)
 	;
       else if (ss->ss_rtp_select == SOA_RTP_SELECT_SINGLE) {
-	if (sm->m_rtpmaps)
-	  sm->m_rtpmaps->rm_next = NULL;
+	soa_sdp_select_rtpmap(&sm->m_rtpmaps, rm->m_rtpmaps, auxiliary, 1);
       }
       else if (ss->ss_rtp_select == SOA_RTP_SELECT_COMMON) {
-	soa_sdp_select_rtpmap(&sm->m_rtpmaps, rm->m_rtpmaps);
+	soa_sdp_select_rtpmap(&sm->m_rtpmaps, rm->m_rtpmaps, auxiliary, 0);
       }
     }
   }
@@ -535,6 +650,8 @@ int soa_sdp_upgrade(soa_session_t *ss,
 		    sdp_session_t const *caps,
 		    sdp_session_t const *upgrader)
 {
+  soa_static_session_t *sss = (soa_static_session_t *)ss;
+
   int Ns, Nc, Nu, size, i, j;
   sdp_media_t *m, **mm, *cm;
   sdp_media_t **s_media, **o_media, **c_media;
@@ -583,6 +700,9 @@ int soa_sdp_upgrade(soa_session_t *ss,
       }
       else if (sdp_media_uses_rtp(m)) {
 	/* Process rtpmaps */
+	char const *auxiliary =
+	  m->m_type == sdp_media_audio ? sss->sss_audio_aux : NULL;
+
 	if (!common_codecs && !ss->ss_rtp_mismatch)
 	  m = soa_sdp_make_rejected_media(home, m, session, 1);
 	soa_sdp_set_rtpmap_pt(m, u_media[i]);
@@ -590,17 +710,14 @@ int soa_sdp_upgrade(soa_session_t *ss,
 	if (ss->ss_rtp_sort == SOA_RTP_SORT_REMOTE || 
 	    (ss->ss_rtp_sort == SOA_RTP_SORT_DEFAULT &&
 	     u_media[i]->m_mode == sdp_recvonly)) {
-	  soa_sdp_sort_rtpmap(&m->m_rtpmaps, u_media[i]->m_rtpmaps);
+	  soa_sdp_sort_rtpmap(&m->m_rtpmaps, u_media[i]->m_rtpmaps, auxiliary);
 	}
 
 	if (common_codecs &&
 	    (ss->ss_rtp_select == SOA_RTP_SELECT_SINGLE ||
 	     ss->ss_rtp_select == SOA_RTP_SELECT_COMMON)) {
-	  soa_sdp_select_rtpmap(&m->m_rtpmaps, u_media[i]->m_rtpmaps);
-	  if (ss->ss_rtp_select == SOA_RTP_SELECT_SINGLE) {
-	    if (m->m_rtpmaps)
-	      m->m_rtpmaps->rm_next = NULL;
-	  }
+	  soa_sdp_select_rtpmap(&m->m_rtpmaps, u_media[i]->m_rtpmaps, auxiliary,
+				ss->ss_rtp_select == SOA_RTP_SELECT_SINGLE);
 	}
       }
 
