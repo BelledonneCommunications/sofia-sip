@@ -608,6 +608,8 @@ int test_codec_selection(struct context *ctx)
   TEST(soa_set_user_sdp(a, 0, a_caps, strlen(a_caps)), 1);
   TEST(soa_set_user_sdp(b, 0, b_caps, strlen(b_caps)), 1);
 
+  TEST(soa_set_params(a, SOATAG_AUDIO_AUX("cn telephone-event"), TAG_END()), 1);
+
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
   n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 1);
   TEST_1(offer != NULL && offer != NONE);
@@ -717,8 +719,9 @@ int test_codec_selection(struct context *ctx)
     "v=0\r\n"
     "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
     "c=IN IP4 127.0.0.2\r\n"
-    "m=audio 5008 RTP/AVP 0 8 96 3\r\n"
+    "m=audio 5008 RTP/AVP 0 8 96 3 127\r\n"
     "a=rtpmap:96 G729/8000\n"
+    "a=rtpmap:127 CN/8000\n"
     ),			
 			SOATAG_RTP_SORT(SOA_RTP_SORT_REMOTE),
 			SOATAG_RTP_SELECT(SOA_RTP_SELECT_ALL),
@@ -728,10 +731,13 @@ int test_codec_selection(struct context *ctx)
     "v=0\r\n"
     "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
     "c=IN IP4 127.0.0.2\r\n"
-    "m=audio 5004 RTP/AVP 96 3 97\r\n"
+    "m=audio 5004 RTP/AVP 96 3 97 111\r\n"
     "a=rtpmap:96 G7231/8000\n"
     "a=rtpmap:97 G729/8000\n"
+    "a=rtpmap:111 telephone-event/8000\n"
+    "a=fmtp:111 0-15\n"
     ),			
+			SOATAG_AUDIO_AUX("cn telephone-event"),
 			SOATAG_RTP_SORT(SOA_RTP_SORT_LOCAL),
 			SOATAG_RTP_SELECT(SOA_RTP_SELECT_COMMON),
 			TAG_END()));
@@ -765,6 +771,8 @@ int test_codec_selection(struct context *ctx)
   TEST_S(rm->rm_encoding, "PCMU");
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 8);
   TEST_S(rm->rm_encoding, "PCMA");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 127);
+  TEST_S(rm->rm_encoding, "CN");
   TEST_1(!rm->rm_next);
 
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
@@ -773,6 +781,8 @@ int test_codec_selection(struct context *ctx)
   /* Using payload type 96 from offer */
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 96);
   TEST_S(rm->rm_encoding, "G729");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
+  TEST_S(rm->rm_encoding, "telephone-event");
   TEST_1(!rm->rm_next);
 
   /* ---------------------------------------------------------------------- */
@@ -783,9 +793,10 @@ int test_codec_selection(struct context *ctx)
     "v=0\r\n"
     "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
     "c=IN IP4 127.0.0.2\r\n"
-    "m=audio 5008 RTP/AVP 0 8 97 96\r\n"
+    "m=audio 5008 RTP/AVP 0 8 97 96 127\r\n"
     "a=rtpmap:96 G729/8000\n"
     "a=rtpmap:97 GSM/8000\n"
+    "a=rtpmap:127 CN/8000\n"
     ),			
 			SOATAG_RTP_MISMATCH(0),
 			SOATAG_RTP_SELECT(SOA_RTP_SELECT_COMMON),
@@ -819,14 +830,18 @@ int test_codec_selection(struct context *ctx)
   TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
   TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "GSM");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 127);
+  TEST_S(rm->rm_encoding, "CN");
   TEST_1(!rm->rm_next);
 
   /* Answering end matches payload types 
      then sorts by local preference, 
-     then select best codec => GSM with pt 9 */
+     then select best codec => GSM with pt 97 */
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
   TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "GSM");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
+  TEST_S(rm->rm_encoding, "telephone-event");
   TEST_1(!rm->rm_next);
 
   /* ---------------------------------------------------------------------- */
@@ -837,6 +852,8 @@ int test_codec_selection(struct context *ctx)
   TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
   TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "GSM");
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 127);
+  TEST_S(rm->rm_encoding, "CN");
   TEST_1(!rm->rm_next);
   n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
   /* Answer from B is identical to previous one */
