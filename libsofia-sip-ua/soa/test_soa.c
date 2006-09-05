@@ -869,6 +869,151 @@ int test_codec_selection(struct context *ctx)
   TEST_1(soa_is_complete(a));
   TEST(soa_activate(a, NULL), 0);
 
+  /* ---------------------------------------------------------------------- */
+
+  /* Add new media - without common codecs */
+  TEST_1(soa_set_params(a,
+			SOATAG_RTP_MISMATCH(0),
+			SOATAG_USER_SDP_STR(
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/AVP 0 8 96 3 127\r\n"
+    "a=rtpmap:96 G729/8000\n"
+    "a=rtpmap:127 CN/8000\n"
+    "m=video 5010 RTP/AVP 31\r\n"
+    "m=audio 6008 RTP/SAVP 3\n"
+    ),
+			TAG_END()));
+  TEST_1(soa_set_params(b,
+			SOATAG_RTP_MISMATCH(0),
+			SOATAG_USER_SDP_STR(
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5004 RTP/AVP 96 3 97 111\r\n"
+    "a=rtpmap:96 G7231/8000\n"
+    "a=rtpmap:97 G729/8000\n"
+    "a=rtpmap:111 telephone-event/8000\n"
+    "a=fmtp:111 0-15\n"
+    "m=audio 6004 RTP/SAVP 96\n"
+    "a=rtpmap:96 G729/8000\n"
+    "m=video 5006 RTP/AVP 34\n"
+    ),
+			TAG_END()));
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(!m->m_next);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  /* Answer from B rejects video */
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_video_active(a), SOA_ACTIVE_REJECTED);
+  TEST(soa_is_remote_video_active(a), SOA_ACTIVE_REJECTED);
+
+  TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(m->m_rejected);
+  TEST_1(!m->m_next);
+
+  TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(m->m_rejected);
+  /* Rejected but tell what we support */
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 34);
+  TEST_S(rm->rm_encoding, "H263");
+  TEST_1(m = m->m_next); TEST_1(m->m_rejected);
+  TEST_1(!m->m_next);
+
+  /* ---------------------------------------------------------------------- */
+  /* A adds H.263 to video */
+  TEST_1(soa_set_params(a,
+			SOATAG_USER_SDP_STR(
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/AVP 0 8 96 3 127\r\n"
+    "a=rtpmap:96 G729/8000\n"
+    "a=rtpmap:127 CN/8000\n"
+    "m=video 5010 RTP/AVP 31 34\r\n"
+    "m=audio 6008 RTP/SAVP 3\n"
+    ),
+			TAG_END()));
+
+  /* B adds GSM to SRTP */
+  TEST_1(soa_set_params(b,
+			SOATAG_USER_SDP_STR(
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5004 RTP/AVP 96 3 97 111\r\n"
+    "a=rtpmap:96 G7231/8000\n"
+    "a=rtpmap:97 G729/8000\n"
+    "a=rtpmap:111 telephone-event/8000\n"
+    "a=fmtp:111 0-15\n"
+    "m=audio 6004 RTP/SAVP 96 3\n"
+    "a=rtpmap:96 G729/8000\n"
+    "m=video 5006 RTP/AVP 34\n"
+    ),
+			TAG_END()));
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+  TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(!m->m_next);
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  /* Answer from B now accepts video */
+  n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
+
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_video_active(a), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_video_active(a), SOA_ACTIVE_SENDRECV);
+
+  TEST_1(m = a_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 34);
+  TEST_S(rm->rm_encoding, "H263");
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(!m->m_next);
+
+  TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 34);
+  TEST_S(rm->rm_encoding, "H263");
+  TEST_1(m = m->m_next); TEST_1(!m->m_rejected);
+  TEST_1(!m->m_next);
 
   TEST_VOID(soa_terminate(a, NULL));
   TEST_VOID(soa_terminate(b, NULL));
