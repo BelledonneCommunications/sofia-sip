@@ -21,6 +21,7 @@ API/ABI changes and versioning
  - and should be updated _continuously_! />
 
 libsofia-sip-ua:
+- Added soa tag soatag_audio_aux.
 - Added nua tag nutag_refer_with_id.
 - Added network change detection logic. This extends current su API
   with two functions defined in su_os_nw.h. Also a new event
@@ -54,6 +55,7 @@ Contributors to this release
 /> 
 
 - template: First Surname (patch to nua/soa/msg)
+- Andrzej Ciarkowski (fix to su_task_execute() race).
 - Michael Jerris (patches adding MSVC2005 build support)
 - Mika Saari (patch to stun module)
 
@@ -83,6 +85,8 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- Updated codecs in incoming offer were ignored. Thanks for Denis Legostayev
+  for reporting the bug and sending a patch.
 - UPDATE was rejected if received during initial call setup. Thanks for
   Rajeev K for reporting the bug.
 - NOTIFY Event: refer without id is not rejected anymore. Thanks for 
