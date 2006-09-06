@@ -68,7 +68,7 @@ struct auth_scheme
   char const *asch_method;
 
   /** Size of module object */
-  unsigned asch_size;
+  usize_t asch_size;
 
   /** Initialize module. Invoked by auth_mod_create(). */
   int (*asch_init)(auth_mod_t *am,

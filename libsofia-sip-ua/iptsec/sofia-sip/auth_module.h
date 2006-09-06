@@ -115,7 +115,7 @@ struct auth_status_t
   char const   	 *as_method;	/**< Method name to authenticate [in] */
 
   void const   	 *as_body;	/**< Message body to protect [in] */
-  int          	  as_bodylen;	/**< Length of message body [in] */
+  isize_t      	  as_bodylen;	/**< Length of message body [in] */
 
   msg_time_t      as_nonce_issued; /**< Nonce issue time [out] */
   unsigned   	  as_blacklist; /**< Blacklist time [out] */
@@ -174,8 +174,8 @@ SOFIAPUBFUN void auth_mod_destroy(auth_mod_t *);
 SOFIAPUBFUN auth_mod_t *auth_mod_ref(auth_mod_t *am);
 SOFIAPUBFUN void auth_mod_unref(auth_mod_t *am);
 
-SOFIAPUBFUN auth_status_t *auth_status_init(void *, int size);
-SOFIAPUBFUN auth_status_t *auth_status_init_with(void *, int size,
+SOFIAPUBFUN auth_status_t *auth_status_init(void *, isize_t size);
+SOFIAPUBFUN auth_status_t *auth_status_init_with(void *, isize_t size,
 						 int status,
 						 char const *phrase);
 

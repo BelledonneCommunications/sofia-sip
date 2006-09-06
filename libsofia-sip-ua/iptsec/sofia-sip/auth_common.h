@@ -41,12 +41,12 @@
 
 SOFIA_BEGIN_DECLS
 
-SOFIAPUBFUN int auth_get_params(su_home_t *home,
-				char const * const params[], ...
-				/* char const * name, 
-				   char const **return_value */);
+SOFIAPUBFUN issize_t auth_get_params(su_home_t *home,
+				     char const * const params[], ...
+ 			          /* char const * name, 
+				     char const **return_value */);
 
-SOFIAPUBFUN int auth_struct_copy(void *dst, void const *src, int s_size);
+SOFIAPUBFUN int auth_struct_copy(void *dst, void const *src, isize_t s_size);
 
 SOFIAPUBFUN int auth_strcmp(char const *quoted, char const *unquoted);
 

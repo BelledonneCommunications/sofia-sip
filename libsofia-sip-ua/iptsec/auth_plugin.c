@@ -120,7 +120,7 @@ auth_mod_t *auth_mod_create(su_root_t *root,
   if (method) {
     auth_scheme_t *bscheme = NULL;
     char const *base;
-    unsigned len;
+    size_t len;
 
     base = strrchr(method, '+');
     if (base) 

@@ -645,6 +645,11 @@ int test_digest_client()
       TEST(as->as_status, 401);
     }
 
+    as->as_response = (msg_header_t *)
+      sip_www_authenticate_make(as->as_home, "Unknown realm=\"huu haa\"");
+    TEST_1(as->as_response);
+    TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response, 
+		       sip_authorization_class), 1);
     aucs = NULL;
 
     reinit_as(as);
@@ -878,6 +883,28 @@ int test_digest_client()
 
     TEST(auc_all_credentials(&aucs, "Basic", "\"ims3.so.noklab.net\"", 
 			     "user1", "secret"), 1);
+    msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
+    TEST(auc_authorization(&aucs, m2, (msg_pub_t*)sip, rq->rq_method_name, 
+			   (url_t *)"sip:surf3@ims3.so.noklab.net", 
+			   sip->sip_payload), 1);
+    TEST_1(sip->sip_authorization);
+
+    auth_mod_check_client(am, as, sip->sip_authorization, ach);
+    TEST(as->as_status, 0);
+
+    aucs = NULL;
+
+    reinit_as(as);    
+    auth_mod_check_client(am, as, NULL, ach); 
+    TEST(as->as_status, 401);
+    
+    TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response, 
+		       sip_authorization_class), 1);
+    reinit_as(as);    
+
+    TEST(auc_all_credentials(&aucs, "Basic", "\"ims3.so.noklab.net\"", 
+         "very-long-user-name-that-surely-exceeds-the-static-buffer", 
+         "at-least-when-used-with-the-even-longer-password"), 1);
     msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
     TEST(auc_authorization(&aucs, m2, (msg_pub_t*)sip, rq->rq_method_name, 
 			   (url_t *)"sip:surf3@ims3.so.noklab.net", 

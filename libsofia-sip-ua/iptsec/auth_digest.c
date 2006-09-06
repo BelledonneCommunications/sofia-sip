@@ -33,10 +33,6 @@
 
 #include "config.h"
 
-#include <string.h>
-#include <stdarg.h>
-#include <assert.h>
-
 #include <sofia-sip/su_md5.h>
 #include "sofia-sip/auth_common.h"
 #include "sofia-sip/auth_digest.h"
@@ -44,6 +40,11 @@
 #include "sofia-sip/auth_common.h"
 
 #include "iptsec_debug.h"
+
+#include <string.h>
+#include <stdarg.h>
+#include <limits.h>
+#include <assert.h>
 
 /**Get digest-challenge parameters.
  *
@@ -56,11 +57,11 @@
  * The function digest_challenge_get() returns number of parameters
  * found, or -1 upon an error.
  */
-int auth_digest_challenge_get(su_home_t *home,
-			      auth_challenge_t *ac0, 
-			      char const * const params[])
+issize_t auth_digest_challenge_get(su_home_t *home,
+				   auth_challenge_t *ac0, 
+				   char const * const params[])
 {
-  int n;
+  ssize_t n;
   auth_challenge_t ac[1] = {{ 0 }};
   char const *md5 = NULL, *md5sess = NULL, *sha1 = NULL,
     *stale = NULL,
@@ -100,7 +101,7 @@ int auth_digest_challenge_get(su_home_t *home,
 
   auth_struct_copy(ac0, ac, sizeof(ac));
 
-  SU_DEBUG_5(("%s(): got %d\n", "auth_digest_challenge_get", n));
+  SU_DEBUG_5(("%s(): got %zd\n", "auth_digest_challenge_get", n));
   
   return n;
 }
@@ -133,11 +134,11 @@ void auth_digest_challenge_free_params(su_home_t *home, auth_challenge_t *ac)
  * The function auth_response_get() returns number of parameters
  * found, or -1 upon an error.
  */
-int auth_digest_response_get(su_home_t *home,
-			     auth_response_t *ar0, 
-			     char const *const params[])
+issize_t auth_digest_response_get(su_home_t *home,
+				  auth_response_t *ar0, 
+				  char const *const params[])
 {
-  int n;
+  ssize_t n;
   auth_response_t ar[1] = {{ 0 }};
   char const *md5 = NULL, *md5sess = NULL, *sha1 = NULL,
     *qop_auth = NULL, *qop_auth_int = NULL;
@@ -177,7 +178,7 @@ int auth_digest_response_get(su_home_t *home,
 
   auth_struct_copy(ar0, ar, sizeof(ar));
 
-  SU_DEBUG_7(("%s: %d\n", "auth_digest_response_get", n));
+  SU_DEBUG_7(("%s: %zd\n", "auth_digest_response_get", n));
 
   return n;
 }
@@ -188,7 +189,7 @@ static void unquote_update(su_md5_t md5[1], char const *quoted)
     /*xyzzy*/;
   else if (quoted[0] == '"') {
     char const *q; 
-    int n;
+    size_t n;
 
     for (q = quoted + 1; *q; q += n + 2) {
       n = strcspn(q, "\"\\");
@@ -278,7 +279,7 @@ int auth_digest_response(auth_response_t *ar,
 			 auth_hexmd5_t response,
 			 auth_hexmd5_t const ha1, 
 			 char const *method_name,
-			 void const *data, int dlen)
+			 void const *data, isize_t dlen)
 {
   su_md5_t md5[1];
   auth_hexmd5_t Hentity, HA2;

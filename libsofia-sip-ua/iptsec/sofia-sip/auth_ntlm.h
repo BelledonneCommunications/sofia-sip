@@ -55,11 +55,10 @@
 
 SOFIA_BEGIN_DECLS
 
-
-int auth_ntlm_challenge_get(su_home_t *, auth_challenge_t *, 
-			      char const * const params[]);
-int auth_ntlm_response_get(su_home_t *, auth_response_t *, 
-			     char const * const params[]);
+issize_t auth_ntlm_challenge_get(su_home_t *, auth_challenge_t *, 
+				 char const * const params[]);
+issize_t auth_ntlm_response_get(su_home_t *, auth_response_t *, 
+				char const * const params[]);
 
 int auth_ntlm_a1(auth_response_t *ar, 
 		   auth_hexmd5_t ha1,
@@ -72,8 +71,8 @@ int auth_ntlm_a1sess(auth_response_t *ar,
 int auth_ntlm_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
 			   char const *secret);
 int auth_ntlm_response(auth_response_t *, auth_hexmd5_t response,
-			 auth_hexmd5_t const ha1, 
-			 char const *method_name, void const *data, int dlen);
+		       auth_hexmd5_t const ha1, 
+		       char const *method_name, void const *data, issize_t dlen);
 
 /** NTLM scheme */
 msg_auth_t *auth_ntlm_credentials(msg_auth_t *auth, 

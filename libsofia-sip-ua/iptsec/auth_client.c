@@ -163,6 +163,9 @@ int ca_challenge(auth_client_t *ca,
       ca->ca_credential_class != credential_class)
     return 0;
 
+  if (!ca->ca_auc)
+    return 1;
+
   if (ca->ca_auc->auc_challenge)
     stale = ca->ca_auc->auc_challenge(ca, ch);
   if (stale < 0)
@@ -559,25 +562,47 @@ int auc_basic_authorization(auth_client_t *ca,
 			    msg_payload_t const *body,
 			    msg_header_t **return_headers)
 {
-  char userpass[49];		/* "reasonable" maximum */
-  char base64[65];
   msg_hclass_t *hc = ca->ca_credential_class;
   char const *user = ca->ca_user;
   char const *pass = ca->ca_pass;
+  size_t ulen, plen, uplen, b64len, basiclen;
+  char *basic, *base64, *userpass;
+  char buffer[71];
 
-  userpass[sizeof(userpass) - 1] = 0;
-  base64[sizeof(base64) - 1] = 0;
-    
+  if (user == NULL || pass == NULL)
+    return -1;
+
+  ulen = strlen(user), plen = strlen(pass), uplen = ulen + 1 + plen;
+  b64len = BASE64_SIZE(uplen);
+  basiclen = strlen("Basic ") + b64len;
+
+  if (sizeof(buffer) > basiclen + 1)
+    basic = buffer;
+  else
+    basic = malloc(basiclen + 1);
+
   /*
    * Basic authentication consists of username and password separated by
    * colon and then base64 encoded.
    */
-  snprintf(userpass, sizeof(userpass) - 1, "%s:%s", user, pass);
-  base64_e(base64, sizeof(base64), userpass, strlen(userpass));
+  strcpy(basic, "Basic ");
+  base64 = basic + strlen("Basic ");
+  userpass = base64 + b64len - uplen;
+  memcpy(userpass, user, ulen);
+  userpass[ulen] = ':';
+  memcpy(userpass + ulen + 1, pass, plen);
+  userpass[uplen] = '\0';
+  
+  base64_e(base64, b64len + 1, userpass, uplen);
 
-  if (!(*return_headers = msg_header_format(home, hc, "Basic %s", base64)))
-    return -1;
-  return 0;
+  base64[b64len] = '\0';
+
+  *return_headers = msg_header_make(home, hc, basic);
+
+  if (buffer != basic)
+    free(basic);
+
+  return *return_headers ? 0 : -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -807,7 +832,8 @@ auth_client_t *ca_create(su_home_t *home,
 {
   auth_client_plugin_t const *auc = NULL;
   auth_client_t *ca;
-  size_t realmlen;
+  size_t aucsize = (sizeof *ca), realmlen, size;
+  char *s;
   int i;
 
   if (scheme == NULL || realm == NULL)
@@ -821,24 +847,19 @@ auth_client_t *ca_create(su_home_t *home,
       break;
   }
 
-  if (auc) {
-    ca = su_home_clone(home, auc->auc_size + realmlen);
-    if (!ca)
-      return ca;
-    ca->ca_auc = auc;
-    ca->ca_scheme = auc->auc_name;
-    ca->ca_realm = strcpy((char *)ca + auc->auc_size, realm);
-  }
-  else {
-    size_t schemelen = strlen(scheme) + 1;
-    size_t size = sizeof (auth_client_t) + schemelen + realmlen;
-    ca = su_home_clone(home, size);
-    if (!ca)
-      return ca;
-    ca->ca_scheme = strcpy((char *)(ca + 1), scheme);
-    ca->ca_realm = strcpy((char *)(ca + 1) + schemelen, realm);
-  }
+  aucsize = auc ? auc->auc_size : (sizeof *ca);
+  size = aucsize + realmlen;
+  if (!auc)
+    size += strlen(scheme) + 1;
 
+  ca = su_home_clone(home, (isize_t)size);
+  if (!ca)
+    return ca;
+
+  s = (char *)ca + aucsize;
+  ca->ca_auc = auc;
+  ca->ca_realm = strcpy(s, realm);
+  ca->ca_scheme = auc ? auc->auc_name : strcpy(s + realmlen, scheme);
 
   return ca;
 }

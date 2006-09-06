@@ -57,11 +57,11 @@ static inline int has_token(char const *qstring, char const *token);
  * The function ntlm_challenge_get() returns number of parameters
  * found, or -1 upon an error.
  */
-int auth_ntlm_challenge_get(su_home_t *home,
-			      auth_challenge_t *ac0, 
-			      char const * const params[])
+issize_t auth_ntlm_challenge_get(su_home_t *home,
+				auth_challenge_t *ac0, 
+				char const * const params[])
 {
-  int n;
+  ssize_t n;
   auth_challenge_t ac[1] = {{ 0 }};
   char const *md5 = NULL, *md5sess = NULL, *sha1 = NULL,
     *qop_auth = NULL, *qop_auth_int = NULL;
@@ -118,11 +118,11 @@ int auth_ntlm_challenge_get(su_home_t *home,
  * The function auth_response_get() returns number of parameters
  * found, or -1 upon an error.
  */
-int auth_ntlm_response_get(su_home_t *home,
-			     auth_response_t *ar0, 
-			     char const *const params[])
+issize_t auth_ntlm_response_get(su_home_t *home,
+				auth_response_t *ar0, 
+				char const *const params[])
 {
-  int n;
+  ssize_t n;
   auth_response_t ar[1] = {{ 0 }};
   char const *md5 = NULL, *md5sess = NULL, *sha1 = NULL,
     *qop_auth = NULL, *qop_auth_int = NULL;
@@ -250,7 +250,7 @@ int auth_digest_response(auth_response_t *ar,
 			 auth_hexmd5_t response,
 			 auth_hexmd5_t const ha1, 
 			 char const *method_name,
-			 void const *data, int dlen)
+			 void const *data, issize_t dlen)
 {
   su_md5_t md5[1];
   auth_hexmd5_t Hentity, HA2;

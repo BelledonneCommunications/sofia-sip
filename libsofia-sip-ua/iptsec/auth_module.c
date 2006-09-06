@@ -81,12 +81,12 @@ static void auth_md5_hmac_key(auth_mod_t *am);
 HTABLE_PROTOS(auth_htable, aht, auth_passwd_t);
 HTABLE_BODIES(auth_htable, aht, auth_passwd_t, APW_HASH);
 
-/**Allocate an authentication module instance. 
+/**Allocate an authentication module instance.
  *
  * The function auth_mod_alloc() allocates an authentication module object.
- * 
+ *
  */
-auth_mod_t *auth_mod_alloc(auth_scheme_t *scheme, 
+auth_mod_t *auth_mod_alloc(auth_scheme_t *scheme,
 			   tag_type_t tag, tag_value_t value, ...)
 {
   auth_mod_t *am = NULL;
@@ -99,19 +99,25 @@ auth_mod_t *auth_mod_alloc(auth_scheme_t *scheme,
   return am;
 }
 
-/**Initialize an authentication module insitance. 
+/**Initialize an authentication module instance.
  *
  * The function auth_mod_init_default() initializes an authentication module
  * object used to authenticate the requests.
- * 
+ *
  * @param am
  * @param base
  * @param root
  * @param tag,value,... tagged argument list
  *
-
  * @TAGS
- * AUTHTAG_METHOD, AUTHTAG_REALM, AUTHTAG_DB, AUTHTAG_ALLOW
+ * AUTHTAG_REALM(), AUTHTAG_OPAQUE(), AUTHTAG_DB(), AUTHTAG_QOP(),
+ * AUTHTAG_ALGORITHM(), AUTHTAG_EXPIRES(), AUTHTAG_NEXT_EXPIRES(),
+ * AUTHTAG_BLACKLIST(), AUTHTAG_FORBIDDEN(), AUTHTAG_ANONYMOUS(),
+ * AUTHTAG_FAKE(), AUTHTAG_ALLOW(), AUTHTAG_REMOTE(), and
+ * AUTHTAG_MASTER_KEY().
+ *
+ * @return 0 if successful
+ * @return -1 upon an error
  */
 int auth_init_default(auth_mod_t *am,
 		      auth_scheme_t *base,
@@ -132,7 +138,7 @@ int auth_init_default(auth_mod_t *am,
   url_string_t const *remote = NULL;
   char const *master_key = "fish";
   char *s;
-  
+
   ta_start(ta, tag, value);
 
   /* Authentication stuff */
@@ -160,7 +166,7 @@ int auth_init_default(auth_mod_t *am,
   am->am_opaque = su_strdup(am->am_home, opaque);
   am->am_db = su_strdup(am->am_home, db);
   s = su_strdup(am->am_home, allows);
-  if (s) 
+  if (s)
     msg_commalist_d(am->am_home, &s, &am->am_allow, NULL);
   am->am_expires = expires;
   am->am_next_exp = next_expires;
@@ -186,7 +192,7 @@ int auth_init_default(auth_mod_t *am,
 
   auth_md5_hmac_key(am);
 
-  /* Make sure that we have something 
+  /* Make sure that we have something
      that can be used to identify credentials */
   if (am->am_opaque && strcmp(am->am_opaque, "*") == 0) {
 #ifndef HOST_NAME_MAX
@@ -195,20 +201,20 @@ int auth_init_default(auth_mod_t *am,
     char hostname[HOST_NAME_MAX + 1];
     su_md5_t md5[1];
     uint8_t hmac[6];
-    
+
     gethostname(hostname, sizeof hostname);
-    
+
     auth_md5_hmac_init(am, md5);
-    
+
     su_md5_strupdate(md5, hostname);
     su_md5_update(md5, ":", 1);
     if (am->am_remote)
       url_update(md5, am->am_remote);
-    
+
     auth_md5_hmac_digest(am, md5, hmac, sizeof hmac);
-    
+
     base64_e(hostname, sizeof hostname, hmac, sizeof hmac);
-    
+
     am->am_opaque = su_strdup(am->am_home, hostname);
 
     if (!am->am_opaque) {
@@ -230,7 +236,7 @@ int auth_init_default(auth_mod_t *am,
   else {
     retval = auth_htable_resize(am->am_home, am->am_users, 0);
   }
-  
+
   ta_end(ta);
 
   return retval;
@@ -277,7 +283,7 @@ void auth_mod_unref(auth_mod_t *am)
  * @retval NULL upon an error
  * @relates auth_status_t
  */
-auth_status_t *auth_status_init(void *p, int size)
+auth_status_t *auth_status_init(void *p, isize_t size)
 {
   return auth_status_init_with(p, size, 500, auth_internal_server_error);
 }
@@ -288,14 +294,16 @@ auth_status_t *auth_status_init(void *p, int size)
  * @relates auth_status_t
  */
 auth_status_t *auth_status_init_with(void *p,
-				     int size,
+				     isize_t size,
 				     int status,
 				     char const *phrase)
 {
   auth_status_t *as;
-  
+
   if (!p || size < (sizeof *as))
     return NULL;
+
+  if (size > INT_MAX) size = INT_MAX;
 
   as = memset(p, 0, size);
   as->as_home->suh_size = size;
@@ -303,7 +311,7 @@ auth_status_t *auth_status_init_with(void *p,
   /* su_home_init(as->as_home); */
 
   as->as_status = status, as->as_phrase = phrase;
-  
+
   return as;
 }
 
@@ -355,9 +363,9 @@ void auth_status_unref(auth_status_t *as)
  * as follows:
  * - <i>as->as_status == 0</i> authentication is successful
  * - <i>as->as_status == 100</i> authentication is pending
- * - <i>as->as_status >= 400</i> authentication fails, 
+ * - <i>as->as_status >= 400</i> authentication fails,
  *   return as_status as an error code to client
- * 
+ *
  * When the authentication is left pending, the client must set the
  * as_callback pointer in @a as structure to an appropriate callback
  * function. The callback is invoked when the authentication is completed,
@@ -366,7 +374,7 @@ void auth_status_unref(auth_status_t *as)
  * Note that the authentication module may generate a new challenge each
  * time authentication is used (e.g., Digest using MD5 algorithm). Such a
  * challenge header is stored in the @a as->as_response return-value field.
- * 
+ *
  * @note The authentication plugin may use the given reference to @a as, @a
  * credentials and @a ach structures until the asynchronous authentication
  * completes. Therefore, they should not be allocated from stack unless
@@ -403,7 +411,7 @@ void auth_mod_verify(auth_mod_t *am,
   }
   else {
     /* Replace * with hostpart */
-    as->as_realm = su_sprintf(as->as_home, "%.*s%s%s", 
+    as->as_realm = su_sprintf(as->as_home, "%.*s%s%s",
 			      (int)(wildcard - am->am_realm), am->am_realm,
 			      host,
 			      wildcard + 1);
@@ -412,7 +420,7 @@ void auth_mod_verify(auth_mod_t *am,
   am->am_scheme->asch_check(am, as, credentials, ach);
 }
 
-/** Make a challenge header. 
+/** Make a challenge header.
  *
  * This function invokes plugin-specific member function generating a
  * challenge header. Client uses the challenge header contents when
@@ -426,7 +434,7 @@ void auth_mod_verify(auth_mod_t *am,
  * The auth_mod_challenge() returns the challenge header, appropriate
  * response code and reason phrase in the #auth_status_t structure. The
  * auth_mod_challenge() is currently always synchronous function.
- */ 
+ */
 void auth_mod_challenge(auth_mod_t *am,
 			auth_status_t *as,
 			auth_challenger_t const *ach)
@@ -437,8 +445,8 @@ void auth_mod_challenge(auth_mod_t *am,
 
 
 /** Cancel asynchronous authentication.
- * 
- * The auth_mod_cancel() function cancels a pending authentication. 
+ *
+ * The auth_mod_cancel() function cancels a pending authentication.
  * Application can reclaim the authentication status, credential and
  * challenger objects by using auth_mod_cancel().
  */
@@ -465,11 +473,11 @@ static void auth_method_basic_x(auth_mod_t *am,
 				msg_auth_t *au,
 				auth_challenger_t const *ach);
 
-auth_scheme_t auth_scheme_basic[1] = 
+auth_scheme_t auth_scheme_basic[1] =
   {{
       "Basic",			/* asch_method */
       sizeof (auth_mod_t),	/* asch_size */
-      auth_init_default,	/* asch_init */	
+      auth_init_default,	/* asch_init */
       auth_method_basic_x, 	/* asch_check */
       auth_challenge_basic,	/* asch_challenge */
       auth_cancel_default,	/* asch_cancel */
@@ -492,7 +500,7 @@ void auth_method_basic_x(auth_mod_t *am,
   }
 }
 
-/** Authenticate a request with @b Basic authentication scheme. 
+/** Authenticate a request with @b Basic authentication scheme.
  *
  */
 void auth_method_basic(auth_mod_t *am,
@@ -500,26 +508,36 @@ void auth_method_basic(auth_mod_t *am,
 		       msg_auth_t *au,
 		       auth_challenger_t const *ach)
 {
-  char userpass[80];
-  int n;
+  char *userpass, buffer[128];
+  int n, upsize;
   char *pass;
   auth_passwd_t *apw;
 
   if (!as->as_realm)
     return;
 
+  userpass = buffer, upsize = sizeof buffer;
+
   for (au = auth_mod_credentials(au, "Basic", NULL);
-       au; 
+       au;
        au = auth_mod_credentials(au->au_next, "Basic", NULL)) {
     if (!au->au_params)
       continue;
-    if ((n = base64_d(userpass, sizeof(userpass) - 1, au->au_params[0])) < 0)
+    n = base64_d(userpass, upsize - 1, au->au_params[0]);
+    if (n < 0 || n >= INT_MAX)
       continue;
+    if (n >= upsize) {
+      upsize = n + 1;
+      userpass = realloc(userpass == buffer ? NULL : userpass, upsize);
+      if (userpass == NULL)
+	continue;
+      base64_d(userpass, upsize - 1, au->au_params[0]);
+    }
     userpass[n] = 0;
     if (!(pass = strchr(userpass, ':')))
       continue;
     *pass++ = '\0';
-    SU_DEBUG_5(("auth_method_basic: %s => %s:%s\n", 
+    SU_DEBUG_5(("auth_method_basic: %s => %s:%s\n",
 		au->au_params[0], userpass, pass));
 
     if (!(apw = auth_mod_getpass(am, userpass, as->as_realm)))
@@ -533,21 +551,27 @@ void auth_method_basic(auth_mod_t *am,
     as->as_match = (msg_header_t *)au;
     as->as_status = 0;	/* Successful authentication! */
 
-    return;		
+    break;
   }
+
+  if (userpass != buffer)
+    free(userpass);
+
+  if (au)
+    return;
 
   if (auth_allow_check(am, as))
     auth_challenge_basic(am, as, ach);
 }
 
 /** Construct a challenge header for @b Basic authentication scheme. */
-void auth_challenge_basic(auth_mod_t *am, 
+void auth_challenge_basic(auth_mod_t *am,
 			  auth_status_t *as,
 			  auth_challenger_t const *ach)
 {
   as->as_status = ach->ach_status;
   as->as_phrase = ach->ach_phrase;
-  as->as_response = msg_header_format(as->as_home, ach->ach_header, 
+  as->as_response = msg_header_format(as->as_home, ach->ach_header,
 				      "Basic realm=\"%s\"", as->as_realm);
 }
 
@@ -579,7 +603,7 @@ struct nonce {
 
 #define AUTH_DIGEST_NONCE_LEN (BASE64_SIZE(sizeof (struct nonce)) + 1)
 
-/** Authenticate a request with @b Digest authentication scheme. 
+/** Authenticate a request with @b Digest authentication scheme.
  *
  * This function reads user database before authentication, if needed.
  */
@@ -595,7 +619,7 @@ void auth_method_digest_x(auth_mod_t *am,
   }
 }
 
-/** Authenticate a request with @b Digest authentication scheme. 
+/** Authenticate a request with @b Digest authentication scheme.
  */
 void auth_method_digest(auth_mod_t *am,
 			auth_status_t *as,
@@ -614,7 +638,7 @@ void auth_method_digest(auth_mod_t *am,
     as->as_status = 0, as->as_phrase = NULL;
     as->as_match = (msg_header_t *)au;
     return;
-  } 
+  }
 
   if (au) {
     auth_response_t ar[1] = {{ sizeof(ar) }};
@@ -653,19 +677,19 @@ void auth_check_digest(auth_mod_t *am,
 
 #define PA "Authorization missing "
 
-  if ((!ar->ar_username && (phrase = PA "username")) || 
-      (!ar->ar_nonce && (phrase = PA "nonce")) || 
-      (!ar->ar_uri && (phrase = PA "URI")) || 
-      (!ar->ar_response && (phrase = PA "response")) || 
+  if ((!ar->ar_username && (phrase = PA "username")) ||
+      (!ar->ar_nonce && (phrase = PA "nonce")) ||
+      (!ar->ar_uri && (phrase = PA "URI")) ||
+      (!ar->ar_response && (phrase = PA "response")) ||
       /* (!ar->ar_opaque && (phrase = PA "opaque")) || */
       /* Check for qop */
-      (ar->ar_qop && 
-       ((ar->ar_auth && 
+      (ar->ar_qop &&
+       ((ar->ar_auth &&
 	 strcasecmp(ar->ar_qop, "auth") &&
 	 strcasecmp(ar->ar_qop, "\"auth\"")) ||
-	(ar->ar_auth_int && 
+	(ar->ar_auth_int &&
 	 strcasecmp(ar->ar_qop, "auth-int") &&
-	 strcasecmp(ar->ar_qop, "\"auth-int\""))) 
+	 strcasecmp(ar->ar_qop, "\"auth-int\"")))
        && (phrase = PA "has invalid qop"))) {
     assert(phrase);
     SU_DEBUG_5(("auth_method_digest: 400 %s\n", phrase));
@@ -674,7 +698,7 @@ void auth_check_digest(auth_mod_t *am,
     return;
   }
 
-  if (as->as_nonce_issued == 0 /* Already validated nonce */ && 
+  if (as->as_nonce_issued == 0 /* Already validated nonce */ &&
       auth_validate_digest_nonce(am, as, ar, now) < 0) {
     as->as_blacklist = am->am_blacklist;
     auth_challenge_digest(am, as, ach);
@@ -692,13 +716,13 @@ void auth_check_digest(auth_mod_t *am,
     a1 = apw->apw_hash;
   else if (apw && apw->apw_pass)
     auth_digest_a1(ar, a1buf, apw->apw_pass), a1 = a1buf;
-  else 
+  else
     auth_digest_a1(ar, a1buf, "xyzzy"), a1 = a1buf, apw = NULL;
-  
+
   if (ar->ar_md5sess)
     auth_digest_a1sess(ar, a1buf, a1), a1 = a1buf;
-      
-  auth_digest_response(ar, response, a1, 
+
+  auth_digest_response(ar, response, a1,
 		       as->as_method, as->as_body, as->as_bodylen);
 
   if (!apw || strcmp(response, ar->ar_response)) {
@@ -736,7 +760,7 @@ void auth_check_digest(auth_mod_t *am,
 }
 
 /** Construct a challenge header for @b Digest authentication scheme. */
-void auth_challenge_digest(auth_mod_t *am, 
+void auth_challenge_digest(auth_mod_t *am,
 			   auth_status_t *as,
 			   auth_challenger_t const *ach)
 {
@@ -748,8 +772,8 @@ void auth_challenge_digest(auth_mod_t *am,
   u = as->as_uri;
   d = as->as_pdomain;
 
-  as->as_response = 
-    msg_header_format(as->as_home, ach->ach_header, 
+  as->as_response =
+    msg_header_format(as->as_home, ach->ach_header,
 		      "Digest"
 		      " realm=\"%s\","
 		      "%s%s%s"
@@ -757,12 +781,12 @@ void auth_challenge_digest(auth_mod_t *am,
 		      " nonce=\"%s\","
 		      "%s%s%s"
 		      "%s"	/* stale */
-		      " algorithm=%s" 
+		      " algorithm=%s"
 		      "%s%s%s",
-		      as->as_realm, 
-		      u ? " uri=\"" : "", u ? u : "", u ? "\"," : "", 
-		      d ? " domain=\"" : "", d ? d : "", d ? "\"," : "", 
-		      nonce, 
+		      as->as_realm,
+		      u ? " uri=\"" : "", u ? u : "", u ? "\"," : "",
+		      d ? " domain=\"" : "", d ? d : "", d ? "\"," : "",
+		      nonce,
 		      am->am_opaque ? " opaque=\"" : "",
 		      am->am_opaque ? am->am_opaque : "",
 		      am->am_opaque ? "\"," : "",
@@ -779,7 +803,7 @@ void auth_challenge_digest(auth_mod_t *am,
 }
 
 /** Construct a info header for @b Digest authentication scheme. */
-void auth_info_digest(auth_mod_t *am, 
+void auth_info_digest(auth_mod_t *am,
 		      auth_status_t *as,
 		      auth_challenger_t const *ach)
 {
@@ -791,7 +815,7 @@ void auth_info_digest(auth_mod_t *am,
 
     auth_generate_digest_nonce(am, nonce, sizeof nonce, 1, msg_now());
 
-    as->as_info = 
+    as->as_info =
       msg_header_format(as->as_home, ach->ach_info, "nextnonce=\"%s\"", nonce);
   }
 }
@@ -813,9 +837,9 @@ auth_passwd_t *auth_mod_getpass(auth_mod_t *am,
 
   if (am == NULL || user == NULL)
     return NULL;
-  
+
   index = msg_hash_string(user);
-  
+
   for (slot = auth_htable_hash(am->am_users, index);
        (apw = *slot);
        slot = auth_htable_next(am->am_users, slot)) {
@@ -827,7 +851,7 @@ auth_passwd_t *auth_mod_getpass(auth_mod_t *am,
       continue;
     break;			/* Found it */
   }
-    
+
   return apw;
 }
 
@@ -841,9 +865,9 @@ auth_passwd_t *auth_mod_addpass(auth_mod_t *am,
 
   if (am == NULL || user == NULL)
     return NULL;
-  
+
   index = msg_hash_string(user);
-  
+
   for (slot = auth_htable_hash(am->am_users, index);
        (apw = *slot);
        slot = auth_htable_next(am->am_users, slot)) {
@@ -858,11 +882,12 @@ auth_passwd_t *auth_mod_addpass(auth_mod_t *am,
 
   if (realm == NULL)
     realm = "";
-    
+
   if (!apw) {
     size_t ulen = strlen(user) + 1, rlen = strlen(realm) + 1;
-    
-    apw = su_alloc(am->am_home, sizeof *apw + ulen + rlen);
+    size_t size = sizeof *apw + ulen + rlen;
+
+    apw = su_alloc(am->am_home, size);
 
     if (apw) {
       memset(apw, 0, sizeof *apw);
@@ -875,7 +900,7 @@ auth_passwd_t *auth_mod_addpass(auth_mod_t *am,
       } else {
 	if (auth_htable_resize(am->am_home, am->am_users, 0) < 0)
 	  su_free(am->am_home, apw), apw = NULL;
-	else 
+	else
 	  auth_htable_append(am->am_users, apw);
       }
     }
@@ -904,8 +929,8 @@ int auth_readdb_if_needed(auth_mod_t *am)
   if (stat(am->am_db, st) != -1 &&
       st->st_dev == am->am_stat->st_dev &&
       st->st_ino == am->am_stat->st_ino &&
-      st->st_size == am->am_stat->st_size && 
-      memcmp(&st->st_mtime, &am->am_stat->st_mtime, 
+      st->st_size == am->am_stat->st_size &&
+      memcmp(&st->st_mtime, &am->am_stat->st_mtime,
 	     (sizeof st->st_mtime)) == 0)
     /* Nothing has changed or passwd file is removed */
     return 0;
@@ -956,13 +981,13 @@ int auth_readdb_internal(auth_mod_t *am, int always)
 	return always ? -1 : 0;
       }
       else {
-	SU_DEBUG_3(("auth(%s): flock(\"%s\"): %s (%u)\n", 
-		    am->am_scheme->asch_method, am->am_db, 
+	SU_DEBUG_3(("auth(%s): flock(\"%s\"): %s (%u)\n",
+		    am->am_scheme->asch_method, am->am_db,
 		    strerror(errno), errno));
 	fclose(f);
 	return always ? -1 : 0;
       }
-    } 
+    }
 #endif
     if (am->am_stat)
       stat(am->am_db, am->am_stat); /* too bad if this fails */
@@ -972,7 +997,7 @@ int auth_readdb_internal(auth_mod_t *am, int always)
 #if HAVE_FLOCK
     /* Release shared lock on the database file */
     if (locked && flock(fileno(f), LOCK_UN) == -1) {
-      SU_DEBUG_0(("auth(%s): un-flock(\"%s\"): %s (%u)\n", 
+      SU_DEBUG_0(("auth(%s): un-flock(\"%s\"): %s (%u)\n",
 		  am->am_scheme->asch_method, am->am_db, strerror(errno), errno));
       fclose(f);
       return -1;
@@ -986,7 +1011,7 @@ int auth_readdb_internal(auth_mod_t *am, int always)
 
     /* Count number of entries in new buffer */
     for (i = am->am_anonymous, s = data = buffer;
-	 s < data + len; 
+	 s < data + len;
 	 s += n + strspn(s + n, "\r\n")) {
       n = strcspn(s, "\r\n");
       if (*s != '#' && *s != '\n' && *s != '\r')
@@ -1005,7 +1030,7 @@ int auth_readdb_internal(auth_mod_t *am, int always)
 
     if (am->am_anonymous) {
       assert(i < N);
-	
+
       apw = fresh + i++;
 
       apw->apw_index = msg_hash_string("anonymous");
@@ -1099,7 +1124,7 @@ int auth_readdb_internal(auth_mod_t *am, int always)
 
 /** Append to hash, remove existing user */
 static inline void
-auth_htable_append_local(auth_htable_t *aht, auth_passwd_t *apw) 
+auth_htable_append_local(auth_htable_t *aht, auth_passwd_t *apw)
 {
   auth_passwd_t **slot;
 
@@ -1111,7 +1136,7 @@ auth_htable_append_local(auth_htable_t *aht, auth_passwd_t *apw)
        slot = auth_htable_next(aht, slot)) {
     if (strcmp((*slot)->apw_user, apw->apw_user) == 0) {
       if ((*slot)->apw_type == auth_apw_local) {
-	(*slot)->apw_type = NULL; 
+	(*slot)->apw_type = NULL;
 	assert(aht->aht_used > 0); aht->aht_used--;
 	apw->apw_extended = (*slot)->apw_extended;
 	*slot = NULL;
@@ -1127,7 +1152,7 @@ auth_htable_append_local(auth_htable_t *aht, auth_passwd_t *apw)
   }
 
   aht->aht_used++; assert(aht->aht_used <= aht->aht_size);
-      
+
   *slot = apw;
 }
 
@@ -1138,13 +1163,13 @@ int readfile(su_home_t *home, FILE *f, void **contents, int add_trailing_lf)
   char *buffer = NULL;
   long size;
   int len = -1;
-  
+
   /* Read whole file in */
   if (fseek(f, 0, SEEK_END) < 0 ||
       (size = ftell(f)) < 0 ||
       fseek(f, 0, SEEK_SET) < 0 ||
       (long)(len = size) != size) {
-    SU_DEBUG_1(("%s: unable to determine file size (%s)\n", 
+    SU_DEBUG_1(("%s: unable to determine file size (%s)\n",
 		__func__, strerror(errno)));
     return -1;
   }
@@ -1172,7 +1197,7 @@ int readfile(su_home_t *home, FILE *f, void **contents, int add_trailing_lf)
 /* ====================================================================== */
 /* Helper functions */
 
-/** Check if request method is on always-allowed list. 
+/** Check if request method is on always-allowed list.
  *
  * @return 0 if allowed
  * @return 1 otherwise
@@ -1199,7 +1224,7 @@ int auth_allow_check(auth_mod_t *am, auth_status_t *as)
 }
 
 /** Find a credential header with matching scheme and realm. */
-msg_auth_t *auth_mod_credentials(msg_auth_t *auth, 
+msg_auth_t *auth_mod_credentials(msg_auth_t *auth,
 				 char const *scheme,
 				 char const *realm)
 {
@@ -1240,7 +1265,7 @@ msg_auth_t *auth_mod_credentials(msg_auth_t *auth,
 }
 
 /** Find a Digest credential header with matching realm and opaque. */
-msg_auth_t *auth_digest_credentials(msg_auth_t *auth, 
+msg_auth_t *auth_digest_credentials(msg_auth_t *auth,
 				    char const *realm,
 				    char const *opaque)
 {
@@ -1272,7 +1297,7 @@ msg_auth_t *auth_digest_credentials(msg_auth_t *auth,
 	  if (arealm[i] != realm[j])
 	    break;
 	}
-      } 
+      }
       else {
 	cmp = strcmp(arealm, realm);
       }
@@ -1325,21 +1350,21 @@ msg_auth_t *auth_digest_credentials(msg_auth_t *auth,
  * @param nextnonce true if this is a "nextnonce" [IN]
  * @param now  current time [IN]
  */
-int auth_generate_digest_nonce(auth_mod_t *am, 
+int auth_generate_digest_nonce(auth_mod_t *am,
 			       char buffer[],
 			       size_t bsize,
 			       int nextnonce,
 			       msg_time_t now)
 {
   struct nonce nonce[1] = {{ 0 }};
-  su_md5_t md5[1]; 
+  su_md5_t md5[1];
 
   am->am_count += 3730029547U;	/* 3730029547 is a prime */
 
   nonce->issued = now;
   nonce->count = am->am_count;
   nonce->nextnonce = nextnonce != 0;
-  
+
   /* Calculate HMAC of nonce data */
   auth_md5_hmac_init(am, md5);
   su_md5_update(md5, nonce, offsetof(struct nonce, digest));
@@ -1356,13 +1381,13 @@ int auth_generate_digest_nonce(auth_mod_t *am,
  * @param ar   decoded authentication response from client [IN]
  * @param now  current time [IN]
  */
-int auth_validate_digest_nonce(auth_mod_t *am, 
+int auth_validate_digest_nonce(auth_mod_t *am,
 			       auth_status_t *as,
 			       auth_response_t *ar,
 			       msg_time_t now)
 {
   struct nonce nonce[1] = {{ 0 }};
-  su_md5_t md5[1]; 
+  su_md5_t md5[1];
   uint8_t hmac[sizeof nonce->digest];
   unsigned expires;
 
@@ -1391,7 +1416,7 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 
   expires = nonce->nextnonce ? am->am_next_exp : am->am_expires;
 
-  if (nonce->issued > now || 
+  if (nonce->issued > now ||
       (expires && nonce->issued + expires < now)) {
     SU_DEBUG_5(("auth_method_digest: nonce expired %lu seconds ago "
 		"(lifetime %u)\n",
@@ -1436,7 +1461,7 @@ void auth_md5_hmac_init(auth_mod_t *am, struct su_md5_t *imd5)
   *imd5 = am->am_hmac_ipad;
 }
 
-void auth_md5_hmac_digest(auth_mod_t *am, struct su_md5_t *imd5, 
+void auth_md5_hmac_digest(auth_mod_t *am, struct su_md5_t *imd5,
 			  void *hmac, size_t size)
 {
   uint8_t digest[SU_MD5_DIGEST_SIZE];
@@ -1450,7 +1475,7 @@ void auth_md5_hmac_digest(auth_mod_t *am, struct su_md5_t *imd5,
 
   /* outer sum */
   if (size == sizeof digest) {
-    su_md5_digest(omd5, hmac);	
+    su_md5_digest(omd5, hmac);
   }
   else {
     su_md5_digest(omd5, digest);

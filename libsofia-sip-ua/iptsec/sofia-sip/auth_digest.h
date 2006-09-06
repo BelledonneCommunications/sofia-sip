@@ -136,12 +136,12 @@ typedef struct {
 
 typedef char auth_hexmd5_t[33];
 
-SOFIAPUBFUN int auth_digest_challenge_get(su_home_t *, auth_challenge_t *,
-					  char const * const params[]);
+SOFIAPUBFUN issize_t auth_digest_challenge_get(su_home_t *, auth_challenge_t *,
+					       char const * const params[]);
 SOFIAPUBFUN void auth_digest_challenge_free_params(su_home_t *home,
 						   auth_challenge_t *ac);
-SOFIAPUBFUN int auth_digest_response_get(su_home_t *, auth_response_t *,
-					 char const * const params[]);
+SOFIAPUBFUN issize_t auth_digest_response_get(su_home_t *, auth_response_t *,
+					      char const * const params[]);
 
 SOFIAPUBFUN int auth_digest_a1(auth_response_t *ar,
 			       auth_hexmd5_t ha1,
@@ -156,9 +156,9 @@ SOFIAPUBFUN int auth_digest_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
 SOFIAPUBFUN int auth_digest_response(auth_response_t *, auth_hexmd5_t response,
 				     auth_hexmd5_t const ha1,
 				     char const *method_name,
-				     void const *data, int dlen);
+				     void const *data, isize_t dlen);
 
-SOFIAPUBFUN int auth_struct_copy(void *dst, void const *src, int s_size);
+SOFIAPUBFUN int auth_struct_copy(void *dst, void const *src, isize_t s_size);
 
 SOFIAPUBFUN int auth_strcmp(char const *quoted, char const *unquoted);
 
