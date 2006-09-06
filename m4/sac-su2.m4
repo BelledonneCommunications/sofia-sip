@@ -91,6 +91,26 @@ case "$ac_cv_c_inline" in
   ;;
 esac
 
+AC_ARG_ENABLE(size-compat,
+[  --disable-size-compat            use compatibility size_t types (enabled)],
+ , enable_size_compat=yes)
+
+if test X$enable_size_compat != Xyes; then
+       SAC_SU_DEFINE(SOFIA_ISIZE_T, size_t)dnl
+       SAC_SU_DEFINE(ISIZE_MAX, SIZE_MAX)dnl
+       SAC_SU_DEFINE(SOFIA_ISSIZE_T, ssize_t)dnl
+       SAC_SU_DEFINE(ISSIZE_MAX, SSIZE_MAX)dnl
+       SAC_SU_DEFINE(SOFIA_USIZE_T, size_t)dnl
+       SAC_SU_DEFINE(USIZE_MAX, SIZE_MAX)dnl
+else
+       SAC_SU_DEFINE(SOFIA_ISIZE_T, int)dnl
+       SAC_SU_DEFINE(ISIZE_MAX, INT_MAX)dnl
+       SAC_SU_DEFINE(SOFIA_ISSIZE_T, int)dnl
+       SAC_SU_DEFINE(ISSIZE_MAX, INT_MAX)dnl
+       SAC_SU_DEFINE(SOFIA_USIZE_T, unsigned)dnl
+       SAC_SU_DEFINE(USIZE_MAX, UINT_MAX)dnl
+fi
+
 AC_REQUIRE([AC_SYS_SA_LEN])
 if test "$ac_cv_sa_len" = yes ;then
   SAC_SU_DEFINE([SU_HAVE_SOCKADDR_SA_LEN], 1, 

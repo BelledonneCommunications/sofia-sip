@@ -93,6 +93,30 @@
 #define SU_S8_C(i)  (SU_S8_T)(i)
 #define SU_U8_C(i)  (SU_U8_T)(i ## U)
 
+/** Define this as ssize_t. */
+#undef SOFIA_SSIZE_T
+
+/** Define this as size_t
+    (int when compatible with sofia-sip-ua 1.12.0 binaries). */
+#undef SOFIA_ISIZE_T
+
+/** Maximum value of isize_t */
+#undef ISIZE_MAX
+
+/** Define this as ssize_t
+    (int when compatible with sofia-sip-ua 1.12.0 binaries). */
+#undef SOFIA_ISSIZE_T
+
+/** Maximum value of issize_t */
+#undef ISSIZE_MAX
+
+/** Define this as size_t
+    (unsigned int when compatible with sofia-sip-ua 1.12.0 binaries). */
+#undef SOFIA_USIZE_T
+
+/** Maximum value of usize_t */
+#undef USIZE_MAX
+
 /**On Solaris define this in order to get POSIX extensions. */
 #undef __EXTENSIONS__
 

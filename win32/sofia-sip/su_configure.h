@@ -65,7 +65,8 @@
 #define su_inline                  static __inline
 #define SU_HAVE_INLINE             (1)
 
-#define SU_INTPTR_T unsigned __int32
+#define SU_INTPTR_T size_t
+
 #define SU_S64_T __int64
 #define SU_U64_T unsigned __int64
 #define SU_S32_T __int32
@@ -105,4 +106,19 @@
 #define srandom(x)    srand((x))
 #define random()      rand()
 
-#define ssize_t SSIZE_T
+#ifdef _WIN64
+#define SOFIA_ISIZE_T size_t
+#define SOFIA_ISSIZE_T ssize_t
+#define SOFIA_USIZE_T size_t
+#define ISIZE_MAX SIZE_MAX
+#define ISSIZE_MAX SSIZE_MAX
+#define USIZE_MAX USIZE_MAX
+#else
+#define SOFIA_ISIZE_T int
+#define SOFIA_ISSIZE_T int
+#define SOFIA_USIZE_T unsigned
+#define SOFIA_SSIZE_T long
+#define ISIZE_MAX INT_MAX
+#define ISSIZE_MAX INT_MAX
+#define USIZE_MAX UINT_MAX
+#endif

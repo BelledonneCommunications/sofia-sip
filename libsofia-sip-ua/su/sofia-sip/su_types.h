@@ -71,6 +71,10 @@ SOFIA_BEGIN_DECLS
 #ifndef _INTPTR_T_DEFINED
 typedef SU_INTPTR_T intptr_t;
 #endif
+#ifndef _UINTPTR_T_DEFINED
+typedef unsigned SU_INTPTR_T uintptr_t;
+#endif
+
 /** 64-bit unsigned integer */ 
 typedef SU_U64_T uint64_t;
 /** 64-bit signed integer */   
@@ -98,6 +102,31 @@ typedef SU_LEAST16_T int_least16_t;
 typedef SU_LEAST8_T int_least8_t;
 #else
 #error "no integer types available."
+#endif
+
+/* ---------------------------------------------------------------------- */
+/* size_t types for binary compatibility */
+
+#ifdef SOFIA_SSIZE_T
+typedef SOFIA_SSIZE_T ssize_t;
+#endif
+
+#ifdef SOFIA_ISIZE_T
+typedef SOFIA_ISIZE_T isize_t;
+#else
+typedef size_t isize_t;
+#endif
+
+#ifdef SOFIA_ISSIZE_T
+typedef SOFIA_ISSIZE_T issize_t;
+#else
+typedef ssize_t issize_t;
+#endif
+
+#ifdef SOFIA_USIZE_T
+typedef SOFIA_USIZE_T usize_t;
+#else
+typedef size_t usize_t;
 #endif
 
 SOFIA_END_DECLS
