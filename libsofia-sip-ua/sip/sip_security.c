@@ -106,12 +106,12 @@
 msg_hclass_t sip_authorization_class[] =
 SIP_HEADER_CLASS_AUTH(authorization, "Authorization", single);
 
-int sip_authorization_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_authorization_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_auth_d(home, h, s, slen);
 }
 
-int sip_authorization_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_authorization_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_authorization(h));
   return msg_auth_e(b, bsiz, h, f);
@@ -157,13 +157,13 @@ int sip_authorization_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_proxy_authenticate_class[] =
 SIP_HEADER_CLASS_AUTH(proxy_authenticate, "Proxy-Authenticate", append);
 
-int sip_proxy_authenticate_d(su_home_t *home,
-			     sip_header_t *h, char *s, int slen)
+issize_t sip_proxy_authenticate_d(su_home_t *home, sip_header_t *h,
+				  char *s, isize_t slen)
 {
   return msg_auth_d(home, h, s, slen);
 }
 
-int sip_proxy_authenticate_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_proxy_authenticate_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_proxy_authenticate(h));
   return msg_auth_e(b, bsiz, h, f);
@@ -190,13 +190,13 @@ int sip_proxy_authenticate_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_proxy_authorization_class[] =
 SIP_HEADER_CLASS_AUTH(proxy_authorization, "Proxy-Authorization", append);
 
-int sip_proxy_authorization_d(su_home_t *home,
-			      sip_header_t *h, char *s, int slen)
+issize_t sip_proxy_authorization_d(su_home_t *home, sip_header_t *h,
+				   char *s, isize_t slen)
 {
   return msg_auth_d(home, h, s, slen);
 }
 
-int sip_proxy_authorization_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_proxy_authorization_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_proxy_authorization(h));
   return msg_auth_e(b, bsiz, h, f);
@@ -223,12 +223,12 @@ int sip_proxy_authorization_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_www_authenticate_class[] =
 SIP_HEADER_CLASS_AUTH(www_authenticate, "WWW-Authenticate", single);
 
-int sip_www_authenticate_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_www_authenticate_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_auth_d(home, h, s, slen);
 }
 
-int sip_www_authenticate_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_www_authenticate_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_www_authenticate(h));
   return msg_auth_e(b, bsiz, h, f);
@@ -261,13 +261,13 @@ msg_hclass_t sip_authentication_info_class[] =
   SIP_HEADER_CLASS(authentication_info, "Authentication-Info", "",
 		   ai_params, append, authentication_info);
 
-int sip_authentication_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_authentication_info_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_list_d(home, (msg_header_t *)h, s, slen);
 }
 
 
-int sip_authentication_info_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_authentication_info_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_authentication_info(h));
   return msg_list_e(b, bsiz, h, f);
@@ -306,14 +306,14 @@ msg_hclass_t sip_proxy_authentication_info_class[] =
   SIP_HEADER_CLASS(proxy_authentication_info, "Proxy-Authentication-Info", "",
 		   ai_params, append, proxy_authentication_info);
 
-int sip_proxy_authentication_info_d(su_home_t *home, 
-				    sip_header_t *h, char *s, int slen)
+issize_t sip_proxy_authentication_info_d(su_home_t *home, sip_header_t *h,
+					 char *s, isize_t slen)
 {
   return msg_list_d(home, (msg_header_t *)h, s, slen);
 }
 
-int sip_proxy_authentication_info_e(char b[], int bsiz, 
-				    sip_header_t const *h, int f)
+issize_t sip_proxy_authentication_info_e(char b[], isize_t bsiz, 
+					 sip_header_t const *h, int f)
 {
   assert(sip_is_authentication_info(h));
   return msg_list_e(b, bsiz, h, f);
@@ -326,12 +326,12 @@ typedef struct sip_security_agree_s sip_security_agree_t;
 #define sh_security_agree sh_security_client
 
 static 
-int sip_security_agree_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_security_agree_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_header_t **hh = &h->sh_succ, *h0 = h;
   sip_security_agree_t *sa = h->sh_security_agree;
 
-  int n;
+  isize_t n;
 
   for (;*s;) {
     /* Ignore empty entries (comma-whitespace) */
@@ -370,10 +370,10 @@ int sip_security_agree_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 }
 
 static 
-int sip_security_agree_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_security_agree_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   char *end = b + bsiz, *b0 = b;
-  sip_security_agree_t const *sa = h->sh_security_agree;
+  sip_security_agree_t const *sa = (sip_security_agree_t const *)h;
 
   MSG_STRING_E(b, end, sa->sa_mec);
   MSG_PARAMS_E(b, end, sa->sa_params, flags);
@@ -382,7 +382,7 @@ int sip_security_agree_e(char b[], int bsiz, sip_header_t const *h, int f)
 }
 
 static 
-int sip_security_agree_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_security_agree_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_security_agree_t const *sa = h->sh_security_agree;
 
@@ -395,7 +395,7 @@ int sip_security_agree_dup_xtra(sip_header_t const *h, int offset)
 /** Duplicate one sip_security_agree_t object */ 
 static 
 char *sip_security_agree_dup_one(sip_header_t *dst, sip_header_t const *src,
-			char *b, int xtra)
+				 char *b, isize_t xtra)
 {
   sip_security_agree_t *sa_dst = dst->sh_security_agree;
   sip_security_agree_t const *sa_src = src->sh_security_agree;
@@ -409,7 +409,7 @@ char *sip_security_agree_dup_one(sip_header_t *dst, sip_header_t const *src,
 }
 
 static int sip_security_agree_update(msg_common_t *h, 
-				     char const *name, int namelen,
+				     char const *name, isize_t namelen,
 				     char const *value)
 {
   sip_security_agree_t *sa = (sip_security_agree_t *)h;
@@ -474,12 +474,12 @@ msg_hclass_t sip_security_client_class[] =
 SIP_HEADER_CLASS(security_client, "Security-Client", "", 
 		 sa_params, append, security_agree);
 
-int sip_security_client_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_security_client_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_security_agree_d(home, h, s, slen);
 }
 
-int sip_security_client_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_security_client_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return sip_security_agree_e(b, bsiz, h, f);
 }
@@ -497,12 +497,12 @@ msg_hclass_t sip_security_server_class[] =
 SIP_HEADER_CLASS(security_server, "Security-Server", "", 
 		 sa_params, append, security_agree);
 
-int sip_security_server_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_security_server_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_security_agree_d(home, h, s, slen);
 }
 
-int sip_security_server_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_security_server_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return sip_security_agree_e(b, bsiz, h, f);
 }
@@ -520,12 +520,12 @@ msg_hclass_t sip_security_verify_class[] =
 SIP_HEADER_CLASS(security_verify, "Security-Verify", "", 
 		 sa_params, append, security_agree);
 
-int sip_security_verify_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_security_verify_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_security_agree_d(home, h, s, slen);
 }
 
-int sip_security_verify_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_security_verify_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return sip_security_agree_e(b, bsiz, h, f);
 }
@@ -554,7 +554,7 @@ msg_hclass_t sip_privacy_class[] =
 SIP_HEADER_CLASS(privacy, "Privacy", "", priv_values, single, privacy);
 
 static 
-int sip_privacy_token_scan(char *start)
+issize_t sip_privacy_token_scan(char *start)
 {
   char *s = start;
   skip_token(&s);
@@ -569,9 +569,9 @@ int sip_privacy_token_scan(char *start)
   return s - start;
 }
 
-int sip_privacy_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_privacy_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
-  sip_privacy_t *priv = h->sh_privacy;
+  sip_privacy_t *priv = (sip_privacy_t *)h;
 
   while (*s == ';' || *s == ',') {
     s++;
@@ -595,11 +595,11 @@ int sip_privacy_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   }
 }
 
-int sip_privacy_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_privacy_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_privacy_t const *priv = h->sh_privacy;
   char *b0 = b, *end = b + bsiz;
-  int i;
+  size_t i;
 
   if (priv->priv_values) {
     for (i = 0; priv->priv_values[i]; i++) {
@@ -613,7 +613,7 @@ int sip_privacy_e(char b[], int bsiz, sip_header_t const *h, int f)
   return b - b0;
 }
 
-int sip_privacy_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_privacy_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_privacy_t const *priv = h->sh_privacy;
 
@@ -623,9 +623,9 @@ int sip_privacy_dup_xtra(sip_header_t const *h, int offset)
 }
 
 char *sip_privacy_dup_one(sip_header_t *dst,
-			      sip_header_t const *src,
-			      char *b,
-			      int xtra)
+			  sip_header_t const *src,
+			  char *b,
+			  isize_t xtra)
 {
   sip_privacy_t *priv = dst->sh_privacy;
   sip_privacy_t const *o = src->sh_privacy;

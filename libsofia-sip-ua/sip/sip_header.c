@@ -89,7 +89,7 @@ sip_header_t *sip_header_d(su_home_t *home, msg_t const *msg, char const *b)
  *
  * @deprecated Use msg_header_e() instead.
  */
-int sip_header_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_header_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   return msg_header_e(b, bsiz, (msg_header_t const *)h, flags);
 }

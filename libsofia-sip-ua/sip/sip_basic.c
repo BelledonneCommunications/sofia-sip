@@ -126,7 +126,7 @@ SIP_HEADER_CLASS(request, NULL, "", rq_common, single_critical, request);
  * The function sip_request_d() parses the request line from a a SIP
  * message. 
  */
-int sip_request_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_request_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_request_t *rq = h->sh_request;
   char *uri, *version;
@@ -145,7 +145,7 @@ int sip_request_d(su_home_t *home, sip_header_t *h, char *s, int slen)
  *
  * The function sip_request_e() prints a SIP request line.
  */
-int sip_request_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_request_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   sip_request_t const *rq = h->sh_request;
 
@@ -155,22 +155,21 @@ int sip_request_e(char b[], int bsiz, sip_header_t const *h, int flags)
 		  rq->rq_version);
 }
 
-int sip_request_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_request_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_request_t const *rq = h->sh_request;
 
-  rv += url_xtra(rq->rq_url);
+  offset += url_xtra(rq->rq_url);
   if (!rq->rq_method)
-    rv += MSG_STRING_SIZE(rq->rq_method_name);
-  rv += sip_version_xtra(rq->rq_version);
+    offset += MSG_STRING_SIZE(rq->rq_method_name);
+  offset += sip_version_xtra(rq->rq_version);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one request header. */
 char *sip_request_dup_one(sip_header_t *dst, sip_header_t const *src,
-			  char *b, int xtra)
+			  char *b, isize_t xtra)
 {
   sip_request_t *rq = dst->sh_request;
   sip_request_t const *o = src->sh_request;
@@ -220,7 +219,7 @@ sip_request_t *sip_request_create(su_home_t *home,
 				  url_string_t const *uri,
 				  char const *version)
 {
-  int xtra; 
+  size_t xtra; 
   sip_request_t *rq;
 
   if (method)
@@ -304,7 +303,7 @@ msg_hclass_t sip_status_class[] =
 SIP_HEADER_CLASS(status, NULL, "", st_common, single_critical, status);
 
 /** Parse status line */
-int sip_status_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_status_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_status_t *st = h->sh_status;
   char *status, *phrase;
@@ -321,7 +320,7 @@ int sip_status_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_status_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_status_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   int status;
 
@@ -339,18 +338,17 @@ int sip_status_e(char b[], int bsiz, sip_header_t const *h, int flags)
 }
 
 /** Extra size of a sip_status_t object. */
-int sip_status_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_status_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_status_t const *st = h->sh_status;
-  rv += sip_version_xtra(st->st_version);
-  rv += MSG_STRING_SIZE(st->st_phrase);
-  return rv;
+  offset += sip_version_xtra(st->st_version);
+  offset += MSG_STRING_SIZE(st->st_phrase);
+  return offset;
 }
 
 /** Duplicate one status header. */
 char *sip_status_dup_one(sip_header_t *dst, sip_header_t const *src,
-			 char *b, int xtra)
+			 char *b, isize_t xtra)
 {
   sip_status_t *st = dst->sh_status;
   sip_status_t const *o = src->sh_status;
@@ -455,7 +453,7 @@ SIP_HEADER_CLASS(payload, NULL, "", pl_common, single, payload);
  * The function sip_payload_create() returns a pointer to newly creates
  * payload structure, if successful, and NULL upon an error.
  */ 
-sip_payload_t *sip_payload_create(su_home_t *home, void const *data, int len)
+sip_payload_t *sip_payload_create(su_home_t *home, void const *data, isize_t len)
 {
   msg_hclass_t *hc = sip_payload_class;
   sip_header_t *h = sip_header_alloc(home, hc, len + 1);
@@ -547,12 +545,12 @@ sip_separator_t *sip_separator_create(su_home_t *home)
 msg_hclass_t sip_unknown_class[] = 
 SIP_HEADER_CLASS(unknown, "", "", un_common, append, unknown);
 
-int sip_unknown_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_unknown_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_unknown_d(home, h, s, slen);
 }
 
-int sip_unknown_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_unknown_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   return msg_unknown_e(b, bsiz, h, flags);
 }
@@ -577,12 +575,12 @@ int sip_unknown_e(char b[], int bsiz, sip_header_t const *h, int flags)
 msg_hclass_t sip_error_class[] =
 SIP_HEADER_CLASS(error, NULL, "", er_common, append, any);
 
-int sip_error_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t sip_error_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return 0;
 }
 
-int sip_error_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t sip_error_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   /* There is no way to encode an erroneous header */
   return 0;
@@ -626,16 +624,16 @@ int sip_error_e(char b[], int bsiz, msg_header_t const *h, int flags)
  * The function @c sip_name_addr_d() returns 0 if successful, and -1 upon an
  * error.
  */
-int sip_name_addr_d(su_home_t *home,
-		    char **inout_s,
-		    char const **return_display,
-		    url_t *return_url,
-		    msg_param_t const **return_params,
-		    char const **return_comment)
+issize_t sip_name_addr_d(su_home_t *home,
+			 char **inout_s,
+			 char const **return_display,
+			 url_t *return_url,
+			 msg_param_t const **return_params,
+			 char const **return_comment)
 {
   char c, *s = *inout_s;
   char *display = NULL, *addr_spec = NULL;
-  int n;
+  size_t n;
 
   if (return_display && *s == '"') {
     /* Quoted string */
@@ -701,7 +699,6 @@ int sip_name_addr_d(su_home_t *home,
     return -1;
   *s = c;			/* return terminator */
 
-
   *inout_s = s;
 
   if (c == ';' && return_params)
@@ -737,12 +734,12 @@ int sip_name_addr_d(su_home_t *home,
  * The encoding result may be incomplete if the buffer size is not large
  * enough to store the whole encoding result.
  */
-int sip_name_addr_e(char b[], int bsiz, 
-		    int flags, 
-		    char const *display, 
-		    int brackets, url_t const url[],
-		    msg_param_t const params[], 
-		    char const *comment)
+issize_t sip_name_addr_e(char b[], isize_t bsiz, 
+			 int flags, 
+			 char const *display, 
+			 int brackets, url_t const url[],
+			 msg_param_t const params[], 
+			 char const *comment)
 {
   int const compact = MSG_IS_COMPACT(flags);
   char const *u;
@@ -779,10 +776,10 @@ int sip_name_addr_e(char b[], int bsiz,
 }
 
 /** Parse To or From headers */
-int sip_addr_d(su_home_t *home,
-	       sip_header_t *h,
-	       char *s,
-	       int slen)
+issize_t sip_addr_d(su_home_t *home,
+		    sip_header_t *h,
+		    char *s,
+		    isize_t slen)
 {
   sip_addr_t *a = (sip_addr_t *)h;
   char const *comment = NULL;
@@ -800,7 +797,7 @@ int sip_addr_d(su_home_t *home,
   return 0;
 }
 
-static int sip_addr_e(char b[], int bsiz, sip_header_t const *h, int flags)
+static int sip_addr_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   sip_addr_t const *a = (sip_addr_t const *)h;
 
@@ -824,23 +821,22 @@ static int sip_addr_e(char b[], int bsiz, sip_header_t const *h, int flags)
  *   Size of strings related to sip_addr_t object.
  */
 static
-int sip_addr_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_addr_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_addr_t const *a = (sip_addr_t const *)h;
 
-  MSG_PARAMS_SIZE(rv, a->a_params);
-  rv += MSG_STRING_SIZE(a->a_display);
-  rv += url_xtra(a->a_url);
+  MSG_PARAMS_SIZE(offset, a->a_params);
+  offset += MSG_STRING_SIZE(a->a_display);
+  offset += url_xtra(a->a_url);
     
-  return rv;
+  return offset;
 }
 
 /**@internal
  * Duplicate one sip_addr_t object.
  */
 static char *sip_addr_dup_one(sip_header_t *dst, sip_header_t const *src,
-			      char *b, int xtra)
+			      char *b, isize_t xtra)
 {
   sip_addr_t *a = (sip_addr_t *)dst;
   sip_addr_t const *o = (sip_addr_t *)src;
@@ -857,7 +853,7 @@ static char *sip_addr_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /** Update parameters in sip_addr_t object */
 static int sip_addr_update(msg_common_t *h,
-			   char const *name, int namelen,
+			   char const *name, isize_t namelen,
 			   char const *value)
 {
   sip_addr_t *a = (sip_addr_t *)h;
@@ -876,7 +872,7 @@ static int sip_addr_update(msg_common_t *h,
 static sip_addr_t *
 sip_addr_make_url(su_home_t *home, msg_hclass_t *hc, url_string_t const *us)
 {
-  int n;
+  size_t n;
   sip_header_t *h;
 
   n = url_xtra(us->us_url);
@@ -969,10 +965,10 @@ static msg_dup_f sip_call_id_dup_one;
 msg_hclass_t sip_call_id_class[] = 
 SIP_HEADER_CLASS(call_id, "Call-ID", "i", i_common, single, call_id);
 
-int sip_call_id_d(su_home_t *home,
-		  sip_header_t *h,
-		  char *s, 
-		  int slen)
+issize_t sip_call_id_d(su_home_t *home,
+		       sip_header_t *h,
+		       char *s, 
+		       isize_t slen)
 {
   sip_call_id_t *i = h->sh_call_id;
   
@@ -983,7 +979,7 @@ int sip_call_id_d(su_home_t *home,
 }
 
 
-int sip_call_id_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_call_id_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   int n = strlen(h->sh_call_id->i_id);
 
@@ -994,7 +990,7 @@ int sip_call_id_e(char b[], int bsiz, sip_header_t const *h, int flags)
 }
 
 /** Extra size of a sip_call_id_t object. */
-int sip_call_id_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_call_id_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_call_id_t const *i = h->sh_call_id;
   return offset + MSG_STRING_SIZE(i->i_id);
@@ -1015,7 +1011,7 @@ int sip_call_id_dup_xtra(sip_header_t const *h, int offset)
  * upon an error.
  */
 char *sip_call_id_dup_one(sip_header_t *dst, sip_header_t const *src,
-			  char *b, int xtra)
+			  char *b, isize_t xtra)
 {
   sip_call_id_t *i = dst->sh_call_id;
   sip_call_id_t const *o = src->sh_call_id;
@@ -1121,10 +1117,10 @@ static msg_dup_f sip_cseq_dup_one;
 msg_hclass_t sip_cseq_class[] = 
 SIP_HEADER_CLASS(cseq, "CSeq", "", cs_common, single, cseq);
 
-int sip_cseq_d(su_home_t *home,
-	       sip_header_t *h,
-	       char *s,
-	       int slen)
+issize_t sip_cseq_d(su_home_t *home,
+		    sip_header_t *h,
+		    char *s,
+		    isize_t slen)
 {
   sip_cseq_t *cs = h->sh_cseq;
 
@@ -1140,7 +1136,7 @@ int sip_cseq_d(su_home_t *home,
 }
 
 
-int sip_cseq_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_cseq_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_cseq(h));
 
@@ -1150,7 +1146,7 @@ int sip_cseq_e(char b[], int bsiz, sip_header_t const *h, int flags)
 		  h->sh_cseq->cs_method_name);
 }
 
-int sip_cseq_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_cseq_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_cseq_t const *cs = h->sh_cseq;
   if (!cs->cs_method)
@@ -1160,7 +1156,7 @@ int sip_cseq_dup_xtra(sip_header_t const *h, int offset)
 }
 
 char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
-		       char *b, int xtra)
+		       char *b, isize_t xtra)
 {
   sip_cseq_t *cs = dst->sh_cseq;
   sip_cseq_t const *o = src->sh_cseq;
@@ -1287,10 +1283,10 @@ static msg_update_f sip_contact_update;
 msg_hclass_t sip_contact_class[] = 
 SIP_HEADER_CLASS(contact, "Contact", "m", m_params, append, contact);
 
-int sip_contact_d(su_home_t *home,
-		  sip_header_t *h,
-		  char *s,
-		  int slen)
+issize_t sip_contact_d(su_home_t *home,
+		       sip_header_t *h,
+		       char *s,
+		       isize_t slen)
 {
   sip_header_t **hh = &h->sh_succ, *h0 = h;
   sip_contact_t *m = h->sh_contact;
@@ -1329,7 +1325,7 @@ int sip_contact_d(su_home_t *home,
 }
 
 
-int sip_contact_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_contact_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   sip_contact_t const *m = h->sh_contact;
   int always_lt_gt = MSG_IS_CANONIC(flags) && m->m_url->url_type != url_any;
@@ -1342,21 +1338,20 @@ int sip_contact_e(char b[], int bsiz, sip_header_t const *h, int flags)
 }
 
 
-int sip_contact_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_contact_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_contact_t const *m = h->sh_contact;
 
-  MSG_PARAMS_SIZE(rv, m->m_params);
-  rv += MSG_STRING_SIZE(m->m_display);
-  rv += url_xtra(m->m_url);
-  rv += MSG_STRING_SIZE(m->m_comment);
+  MSG_PARAMS_SIZE(offset, m->m_params);
+  offset += MSG_STRING_SIZE(m->m_display);
+  offset += url_xtra(m->m_url);
+  offset += MSG_STRING_SIZE(m->m_comment);
 
-  return rv;
+  return offset;
 }
 
 char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
-			  char *b, int xtra)
+			  char *b, isize_t xtra)
 {
   char *end = b + xtra;
   sip_contact_t *m = dst->sh_contact;
@@ -1374,7 +1369,7 @@ char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /** Update parameter in sip_contact_t */
 static int sip_contact_update(msg_common_t *h, 
-			      char const *name, int namelen,
+			      char const *name, isize_t namelen,
 			      char const *value)
 {
   sip_contact_t *m = (sip_contact_t *)h;
@@ -1453,15 +1448,15 @@ msg_hclass_t sip_content_length_class[] =
 SIP_HEADER_CLASS(content_length, "Content-Length", "l", l_common, 
 		 single_critical, any);
 
-int sip_content_length_d(su_home_t *home,
-			 sip_header_t *h,
-			 char *s,
-			 int slen)
+issize_t sip_content_length_d(su_home_t *home,
+			      sip_header_t *h,
+			      char *s,
+			      isize_t slen)
 {
   return sip_numeric_d(home, h, s, slen);
 }
 
-int sip_content_length_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_content_length_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_content_length(h));
   return sip_numeric_e(b, bsiz, h, flags);
@@ -1537,7 +1532,7 @@ sip_content_length_t *sip_content_length_create(su_home_t *home, uint32_t n)
 msg_hclass_t sip_date_class[] = 
 SIP_HEADER_CLASS(date, "Date", "", d_common, single, any);
 
-int sip_date_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_date_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_date_t *date = h->sh_date;
 
@@ -1547,7 +1542,7 @@ int sip_date_d(su_home_t *home, sip_header_t *h, char *s, int slen)
     return 0;
 }
 
-int sip_date_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_date_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_date_t const *date = h->sh_date;
 
@@ -1616,7 +1611,7 @@ sip_date_t *sip_date_create(su_home_t *home, sip_time_t date)
 msg_hclass_t sip_expires_class[] = 
 SIP_HEADER_CLASS(expires, "Expires", "", ex_common, single, any);
 
-int sip_expires_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_expires_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_expires_t *expires = h->sh_expires;
 
@@ -1628,7 +1623,7 @@ int sip_expires_d(su_home_t *home, sip_header_t *h, char *s, int slen)
     return 0;
 }
 
-int sip_expires_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_expires_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_expires_t const *expires = h->sh_expires;
 
@@ -1701,15 +1696,15 @@ sip_expires_t *sip_expires_create(su_home_t *home, sip_time_t delta)
 msg_hclass_t sip_from_class[] = 
 SIP_HEADER_CLASS(from, "From", "f", a_params, single, addr);
 
-int sip_from_d(su_home_t *home,
-	       sip_header_t *h,
-	       char *s,
-	       int slen)
+issize_t sip_from_d(su_home_t *home,
+		    sip_header_t *h,
+		    char *s,
+		    isize_t slen)
 {
   return sip_addr_d(home, h, s, slen);
 }
 
-int sip_from_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_from_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_from(h));
   return sip_addr_e(b, bsiz, h, flags);
@@ -1818,12 +1813,12 @@ msg_hclass_t sip_max_forwards_class[] =
 SIP_HEADER_CLASS(max_forwards, "Max-Forwards", "", mf_common, 
 		 single, any);
 
-int sip_max_forwards_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_max_forwards_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_numeric_d(home, h, s, slen);
 }
 
-int sip_max_forwards_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_max_forwards_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_max_forwards(h));
   return sip_numeric_e(b, bsiz, h, f);
@@ -1863,12 +1858,12 @@ msg_hclass_t sip_min_expires_class[] =
 SIP_HEADER_CLASS(min_expires, "Min-Expires", "", me_common, 
 		 single, any);
 
-int sip_min_expires_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_min_expires_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_numeric_d(home, h, s, slen);
 }
 
-int sip_min_expires_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_min_expires_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_min_expires(h));
   return sip_numeric_e(b, bsiz, h, f);
@@ -1923,7 +1918,7 @@ msg_hclass_t sip_retry_after_class[] =
 SIP_HEADER_CLASS(retry_after, "Retry-After", "", af_params, single,
 		 retry_after);
 
-int sip_retry_after_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_retry_after_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_retry_after_t *af = h->sh_retry_after;
 
@@ -1942,7 +1937,7 @@ int sip_retry_after_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_retry_after_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_retry_after_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_retry_after_t const *af = h->sh_retry_after;
   int const compact = MSG_IS_COMPACT(f);
@@ -1968,21 +1963,20 @@ int sip_retry_after_e(char b[], int bsiz, sip_header_t const *h, int f)
   return b - b0;
 }
 
-int sip_retry_after_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_retry_after_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_retry_after_t const *af = h->sh_retry_after;
 
-  MSG_PARAMS_SIZE(rv, af->af_params);
-  rv += MSG_STRING_SIZE(af->af_comment);
+  MSG_PARAMS_SIZE(offset, af->af_params);
+  offset += MSG_STRING_SIZE(af->af_comment);
 
-  return rv;
+  return offset;
 }
 
 char *sip_retry_after_dup_one(sip_header_t *dst,
 			      sip_header_t const *src,
 			      char *b,
-			      int xtra)
+			      isize_t xtra)
 {
   sip_retry_after_t *af = dst->sh_retry_after;
   sip_retry_after_t const *o = src->sh_retry_after;
@@ -1998,7 +1992,7 @@ char *sip_retry_after_dup_one(sip_header_t *dst,
 }
 
 static int sip_retry_after_update(msg_common_t *h,
-				  char const *name, int namelen,
+				  char const *name, isize_t namelen,
 				  char const *value)
 {
   sip_retry_after_t *af = (sip_retry_after_t *)h;
@@ -2025,10 +2019,10 @@ static int sip_retry_after_update(msg_common_t *h,
  * @retval 0 when successful, 
  * @retval -1 upon an error.
  */
-int sip_any_route_d(su_home_t *home,
-		    sip_header_t *h,
-		    char *s,
-		    int slen)
+issize_t sip_any_route_d(su_home_t *home,
+			 sip_header_t *h,
+			 char *s,
+			 isize_t slen)
 {
   sip_header_t **hh = &h->sh_succ, *h0 = h;
   sip_route_t *r = h->sh_route;
@@ -2065,7 +2059,7 @@ int sip_any_route_d(su_home_t *home,
   return 0;
 }
 
-int sip_any_route_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_any_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   sip_route_t const *r = h->sh_route;
 
@@ -2073,21 +2067,20 @@ int sip_any_route_e(char b[], int bsiz, sip_header_t const *h, int flags)
 			 r->r_display, 1, r->r_url, r->r_params, NULL);
 }
 
-int sip_any_route_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_any_route_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_route_t const *r = h->sh_route;
 
-  MSG_PARAMS_SIZE(rv, r->r_params);
-  rv += MSG_STRING_SIZE(r->r_display);
-  rv += url_xtra(r->r_url);
+  MSG_PARAMS_SIZE(offset, r->r_params);
+  offset += MSG_STRING_SIZE(r->r_display);
+  offset += url_xtra(r->r_url);
 
-  return rv;
+  return offset;
 }
 
 char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
 			    char *b,
-			    int xtra)
+			    isize_t xtra)
 {
   sip_route_t *r = dst->sh_route;
   sip_route_t const *o = src->sh_route;
@@ -2117,14 +2110,14 @@ char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
  *  */
 static
 sip_route_t *sip_any_route_create(su_home_t *home,
-			       msg_hclass_t *hc,
-			       url_t const *rq_url,
-			       url_t const *maddr)
+				  msg_hclass_t *hc,
+				  url_t const *rq_url,
+				  url_t const *maddr)
 {
   sip_header_t *h;
   sip_route_t *rr;
   url_t url[1]; 
-  int xtra, n, n_url, n_params, n_addr; 
+  size_t xtra, n, n_url, n_params, n_addr; 
   char *b, *param;
 
   *url = *rq_url;
@@ -2203,15 +2196,15 @@ sip_route_t *sip_any_route_create(su_home_t *home,
 msg_hclass_t sip_route_class[] = 
 SIP_HEADER_CLASS(route, "Route", "", r_params, append, any_route);
 
-int sip_route_d(su_home_t *home,
-		sip_header_t *h,
-		char *s,
-		int slen)
+issize_t sip_route_d(su_home_t *home,
+		     sip_header_t *h,
+		     char *s,
+		     isize_t slen)
 {
   return sip_any_route_d(home, h, s, slen);
 }
 
-int sip_route_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_route(h));
   return sip_any_route_e(b, bsiz, h, flags);
@@ -2276,15 +2269,15 @@ msg_hclass_t sip_record_route_class[] =
 SIP_HEADER_CLASS(record_route, "Record-Route", "",
 		 r_params, prepend, any_route);
 
-int sip_record_route_d(su_home_t *home,
-		       sip_header_t *h,
-		       char *s,
-		       int slen)
+issize_t sip_record_route_d(su_home_t *home,
+			    sip_header_t *h,
+			    char *s,
+			    isize_t slen)
 {
   return sip_any_route_d(home, h, s, slen);
 }
 
-int sip_record_route_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_record_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_record_route(h));
   return sip_any_route_e(b, bsiz, h, flags);
@@ -2352,15 +2345,12 @@ sip_record_route_t *sip_record_route_create(su_home_t *home,
 msg_hclass_t sip_to_class[] = 
 SIP_HEADER_CLASS(to, "To", "t", a_params, single, addr);
 
-int sip_to_d(su_home_t *home,
-	     sip_header_t *h,
-	     char *s,
-	     int slen)
+issize_t sip_to_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_addr_d(home, h, s, slen);
 }
 
-int sip_to_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_to_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_to(h));
 
@@ -2491,10 +2481,7 @@ static msg_update_f sip_via_update;
 msg_hclass_t sip_via_class[] = 
 SIP_HEADER_CLASS(via, "Via", "v", v_params, prepend, via);
 
-int sip_via_d(su_home_t *home,
-	      sip_header_t *h,
-	      char *s,
-	      int slen)
+issize_t sip_via_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_via_t *v = h->sh_via;
   sip_header_t *h0 = h;
@@ -2541,7 +2528,7 @@ int sip_via_d(su_home_t *home,
   return 0;
 }
 
-int sip_via_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_via_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   sip_via_t const *v = h->sh_via;
@@ -2571,23 +2558,22 @@ int sip_via_e(char b[], int bsiz, sip_header_t const *h, int flags)
   return b - b0;
 }
 
-int sip_via_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_via_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_via_t const *v = h->sh_via;
 
-  MSG_PARAMS_SIZE(rv, v->v_params);
-  rv += sip_transport_xtra(v->v_protocol);
-  rv += MSG_STRING_SIZE(v->v_host);
-  rv += MSG_STRING_SIZE(v->v_port);
-  rv += MSG_STRING_SIZE(v->v_comment);
+  MSG_PARAMS_SIZE(offset, v->v_params);
+  offset += sip_transport_xtra(v->v_protocol);
+  offset += MSG_STRING_SIZE(v->v_host);
+  offset += MSG_STRING_SIZE(v->v_port);
+  offset += MSG_STRING_SIZE(v->v_comment);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one sip_via_t object */ 
 char *sip_via_dup_one(sip_header_t *dst, sip_header_t const *src,
-		      char *b, int xtra)
+		      char *b, isize_t xtra)
 {
   sip_via_t *v = dst->sh_via;
   sip_via_t const *o = src->sh_via;
@@ -2605,7 +2591,7 @@ char *sip_via_dup_one(sip_header_t *dst, sip_header_t const *src,
 }
 
 static int sip_via_update(msg_common_t *h, 
-			  char const *name, int namelen,
+			  char const *name, isize_t namelen,
 			  char const *value)
 {
   sip_via_t *v = (sip_via_t *)h;

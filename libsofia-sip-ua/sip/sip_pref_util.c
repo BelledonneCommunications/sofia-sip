@@ -50,7 +50,7 @@ int sip_prefs_parse(union sip_pref *sp,
 		    int *return_negation)
 {
   char const *s;
-  unsigned n;
+  size_t n;
   enum sp_type old_type;
 
   assert(sp && in_out_s && *in_out_s && return_negation);
@@ -309,7 +309,7 @@ int sip_is_callerpref(char const *param)
 }
 
 /** Check if @b Contact is immune to callerprefs. */
-int sip_contact_immune(sip_contact_t const *m)
+int sip_contact_is_immune(sip_contact_t const *m)
 {
   unsigned i;
 
@@ -424,7 +424,7 @@ int sip_contact_score(sip_contact_t const *m,
   unsigned M = 0, scale = 1000;
   int error = 0;
 
-  if (sip_contact_immune(m))
+  if (sip_contact_is_immune(m))
     return 1000;		/* Immune */
 
   for (; rc; rc = rc->cp_next)

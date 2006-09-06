@@ -97,13 +97,13 @@ SOFIA_BEGIN_DECLS
 
 /* Version string */
 SOFIAPUBFUN int sip_version_d(char **ss, char const **ver);
-SOFIAPUBFUN int sip_version_xtra(char const *version);
+SOFIAPUBFUN isize_t sip_version_xtra(char const *version);
 SOFIAPUBFUN void sip_version_dup(char **pp, char const **dd, char const *s);
 
 /* Transport identifiers */
 #define SIP_TRANSPORT_LEN(s) SIP_STRING_SIZE((s))
-SOFIAPUBFUN int sip_transport_d(char **ss, char const **ttransport);
-SOFIAPUBFUN int sip_transport_xtra(char const *transport);
+SOFIAPUBFUN issize_t sip_transport_d(char **ss, char const **ttransport);
+SOFIAPUBFUN isize_t sip_transport_xtra(char const *transport);
 SOFIAPUBFUN void sip_transport_dup(char **pp, char const **dd, char const *s);
 
 /* Method */
@@ -113,29 +113,29 @@ SOFIAPUBFUN sip_method_t sip_method_d(char **ss, char const **nname);
 SOFIAPUBFUN char *sip_word_at_word_d(char **ss);
 
 /** Extract SIP message body, including separator line. */
-SOFIAPUBFUN int sip_extract_body(msg_t *, sip_t *, char b[], int bsiz, int eos);
+SOFIAPUBFUN issize_t sip_extract_body(msg_t *, sip_t *, char b[], isize_t bsiz, int eos);
 
-SOFIAPUBFUN int sip_any_route_d(su_home_t *, sip_header_t *, char *s, int slen);
-SOFIAPUBFUN int sip_any_route_e(char [], int, sip_header_t const *, int flags);
-SOFIAPUBFUN int sip_any_route_dup_xtra(sip_header_t const *h, int offset);
+SOFIAPUBFUN issize_t sip_any_route_d(su_home_t *, sip_header_t *, char *s, isize_t slen);
+SOFIAPUBFUN issize_t sip_any_route_e(char [], isize_t, sip_header_t const *, int flags);
+SOFIAPUBFUN isize_t sip_any_route_dup_xtra(sip_header_t const *h, isize_t offset);
 SOFIAPUBFUN char *sip_any_route_dup_one(sip_header_t *dst,
 					sip_header_t const *src,
-					char *b, int xtra);
+					char *b, isize_t xtra);
 #define sip_any_route_update NULL
 
-SOFIAPUBFUN int sip_name_addr_d(su_home_t *home,
-				char **inout_s,
-				char const **return_display,
-				url_t *out_url,
-				msg_param_t const **return_params,
-				char const **return_comment);
+SOFIAPUBFUN issize_t sip_name_addr_d(su_home_t *home,
+				     char **inout_s,
+				     char const **return_display,
+				     url_t *out_url,
+				     msg_param_t const **return_params,
+				     char const **return_comment);
 
-SOFIAPUBFUN int sip_name_addr_e(char b[], int bsiz, 
-				int flags, 
-				char const *display, 
-				int always_ltgt, url_t const url[],
-				msg_param_t const params[], 
-				char const *comment);
+SOFIAPUBFUN issize_t sip_name_addr_e(char b[], isize_t bsiz, 
+				     int flags, 
+				     char const *display, 
+				     int always_ltgt, url_t const url[],
+				     msg_param_t const params[], 
+				     char const *comment);
 
 /* ---------------------------------------------------------------------------
  * 3) Compatibility macros and functions

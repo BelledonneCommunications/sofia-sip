@@ -361,7 +361,7 @@ sip_sanity_check(sip_t const *sip)
  * @retval 0 when successful
  * @retval -1 upon an error.
  */
-int sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   assert(SIP_HDR_TEST(h));
 
@@ -384,7 +384,7 @@ int sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, int slen)
  *
  * @deprecated Use msg_header_field_e() instead.
  */
-int sip_header_field_e(char *b, int bsiz, sip_header_t const *h, int flags)
+issize_t sip_header_field_e(char *b, isize_t bsiz, sip_header_t const *h, int flags)
 {
   return msg_header_field_e(b, bsiz, h, flags);
 }
@@ -392,7 +392,7 @@ int sip_header_field_e(char *b, int bsiz, sip_header_t const *h, int flags)
 /** Convert the header @a h to a string allocated from @a home. */
 char *sip_header_as_string(su_home_t *home, sip_header_t *h)
 {
-  int len;
+  ssize_t len;
   char *rv, s[128];
 
   if (h == NULL)
@@ -411,7 +411,7 @@ char *sip_header_as_string(su_home_t *home, sip_header_t *h)
   for (rv = su_alloc(home, len);
        rv;
        rv = su_realloc(home, rv, len)) {
-    int n = sip_header_field_e(s, sizeof(s), h, 0);
+    ssize_t n = sip_header_field_e(s, sizeof(s), h, 0);
     if (n > -1 && n + 1 <= len)
       break;
     if (n > -1)			/* glibc >2.1 */
@@ -424,7 +424,7 @@ char *sip_header_as_string(su_home_t *home, sip_header_t *h)
 }
 
 /** Calculate size of a SIP header. */
-int sip_header_size(sip_header_t const *h)
+isize_t sip_header_size(sip_header_t const *h)
 {
   assert(h == NULL || h == SIP_NONE || h->sh_class);
   if (h == NULL || h == SIP_NONE)
@@ -694,7 +694,7 @@ sip_route_t *sip_route_fix(sip_route_t *route)
 {
   sip_route_t *r;
   sip_header_t *h = NULL;
-  int i;
+  size_t i;
 
   for (r = route; r; r = r->r_next) {
     /* Keep track of first header structure on this header line */
@@ -832,7 +832,8 @@ int sip_security_verify_compare(sip_security_server_t const *s,
 				sip_security_verify_t const *v,
 				msg_param_t *return_d_ver)
 {
-  int i, j, retval, digest;
+  size_t i, j;
+  int retval, digest;
   msg_param_t const *s_params, *v_params, empty[] = { NULL };
 
   if (return_d_ver)
@@ -1008,9 +1009,10 @@ int sip_response_terminates_dialog(int response_code,
     case sip_method_subscribe:
     case sip_method_invite:
       return terminate_usage;
+    default:
+      *return_graceful_terminate_usage = 0;
+      return 0;
     }
-    *return_graceful_terminate_usage = 0;
-    return 0;
 
   case 406: /** @par 406 Not Acceptable 
 

@@ -96,12 +96,12 @@
 msg_hclass_t sip_accept_class[] = 
 SIP_HEADER_CLASS(accept, "Accept", "", ac_params, apndlist, accept);
 
-int sip_accept_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_accept_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_accept_d(home, h, s, slen);
 }
 
-int sip_accept_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_accept_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   return msg_accept_e(b, bsiz, h, flags);
 }
@@ -126,7 +126,7 @@ msg_hclass_t sip_accept_disposition_class[] =
 SIP_HEADER_CLASS(accept_disposition, "Accept-Disposition", "", 
 		 ad_params, apndlist, accept_disposition);
 
-int sip_accept_disposition_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_accept_disposition_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_header_t **hh = &h->sh_succ, *h0 = h;
   sip_accept_disposition_t *ad = h->sh_accept_disposition;
@@ -166,7 +166,7 @@ int sip_accept_disposition_d(su_home_t *home, sip_header_t *h, char *s, int slen
   return 0;
 }
 
-int sip_accept_disposition_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_accept_disposition_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   sip_accept_disposition_t const *ad = h->sh_accept_disposition;
@@ -223,7 +223,7 @@ msg_hclass_t sip_accept_encoding_class[] =
 SIP_HEADER_CLASS(accept_encoding, "Accept-Encoding", "", 
 		 aa_params, apndlist, accept_encoding);
 
-int sip_accept_encoding_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_accept_encoding_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   int retval = msg_accept_encoding_d(home, h, s, slen);
 
@@ -236,7 +236,7 @@ int sip_accept_encoding_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return retval;
 }
 
-int sip_accept_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_accept_encoding_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return msg_accept_encoding_e(b, bsiz, h, f);
 }
@@ -285,7 +285,7 @@ msg_hclass_t sip_accept_language_class[] =
 SIP_HEADER_CLASS(accept_language, "Accept-Language", "", 
 		 aa_params, apndlist, accept_language);
 
-int sip_accept_language_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_accept_language_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   int retval = msg_accept_language_d(home, h, s, slen);
 
@@ -298,7 +298,7 @@ int sip_accept_language_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return retval;
 }
 
-int sip_accept_language_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_accept_language_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return msg_accept_language_e(b, bsiz, h, f);
 }
@@ -371,19 +371,20 @@ msg_hclass_t sip_content_disposition_class[] =
 SIP_HEADER_CLASS(content_disposition, "Content-Disposition", "", cd_params,
 		 single, content_disposition);
 
-int sip_content_disposition_d(su_home_t *home, sip_header_t *h, 
-			      char *s, int slen)
+issize_t sip_content_disposition_d(su_home_t *home, sip_header_t *h, 
+				   char *s, isize_t slen)
 {
   return msg_content_disposition_d(home, h, s, slen);
 }
 
-int sip_content_disposition_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_content_disposition_e(char b[], isize_t bsiz,
+				   sip_header_t const *h, int f)
 {
   return msg_content_disposition_e(b, bsiz, h, f);
 }
 
 static
-int sip_content_disposition_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_content_disposition_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   return msg_content_disposition_dup_xtra(h, offset);
 }
@@ -392,7 +393,7 @@ int sip_content_disposition_dup_xtra(sip_header_t const *h, int offset)
 static
 char *sip_content_disposition_dup_one(sip_header_t *dst, 
 				      sip_header_t const *src,
-				      char *b, int xtra)
+				      char *b, isize_t xtra)
 {
   return msg_content_disposition_dup_one(dst, src, b, xtra);
 }
@@ -433,12 +434,12 @@ char *sip_content_disposition_dup_one(sip_header_t *dst,
 msg_hclass_t sip_content_encoding_class[] = 
 SIP_HEADER_CLASS_LIST(content_encoding, "Content-Encoding", "e", list);
 
-int sip_content_encoding_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_content_encoding_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_list_d(home, h, s, slen);
 }
 
-int sip_content_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_content_encoding_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return msg_list_e(b, bsiz, h, f);
 }
@@ -480,12 +481,12 @@ int sip_content_encoding_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_content_language_class[] = 
 SIP_HEADER_CLASS_LIST(content_language, "Content-Language", "", list);
 
-int sip_content_language_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_content_language_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_list_d(home, h, s, slen);
 }
 
-int sip_content_language_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_content_language_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return msg_list_e(b, bsiz, h, f);
 }
@@ -544,7 +545,7 @@ msg_hclass_t sip_content_type_class[] =
 SIP_HEADER_CLASS(content_type, "Content-Type", "c", c_params, 
 		 single, content_type);
 
-int sip_content_type_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_content_type_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_content_type_t *c;
 
@@ -565,7 +566,7 @@ int sip_content_type_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_content_type_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_content_type_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   sip_content_type_t const *c = h->sh_content_type;
@@ -578,21 +579,20 @@ int sip_content_type_e(char b[], int bsiz, sip_header_t const *h, int flags)
 }
 
 static
-int sip_content_type_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_content_type_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_content_type_t const *c = h->sh_content_type;
 
-  MSG_PARAMS_SIZE(rv, c->c_params);
-  rv += MSG_STRING_SIZE(c->c_type);
+  MSG_PARAMS_SIZE(offset, c->c_params);
+  offset += MSG_STRING_SIZE(c->c_type);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one sip_content_type_t object */ 
 static
 char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
-			       char *b, int xtra)
+			       char *b, isize_t xtra)
 {
   sip_content_type_t *c = dst->sh_content_type;
   sip_content_type_t const *o = src->sh_content_type;
@@ -641,12 +641,12 @@ char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
 msg_hclass_t sip_mime_version_class[] = 
 SIP_HEADER_CLASS_G(mime_version, "MIME-Version", "", single);
 
-int sip_mime_version_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_mime_version_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_generic_d(home, h, s, slen);
 }
 
-int sip_mime_version_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_mime_version_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return sip_generic_e(b, bsiz, h, f);
 }
@@ -698,11 +698,11 @@ int sip_mime_version_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_warning_class[] = 
 SIP_HEADER_CLASS(warning, "Warning", "", w_common, append, warning);
 
-int sip_warning_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_warning_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_warning_d(home, h, s, slen);
 }
-int sip_warning_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_warning_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return msg_warning_e(b, bsiz, h, f);
 }

@@ -83,7 +83,7 @@ msg_hclass_t sip_session_expires_class[] =
 SIP_HEADER_CLASS(session_expires, "Session-Expires", "x", x_params, single, 
 		 session_expires);
 
-int sip_session_expires_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_session_expires_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_session_expires_t *x = h->sh_session_expires;
 
@@ -97,7 +97,7 @@ int sip_session_expires_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_session_expires_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_session_expires_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *end = b + bsiz, *b0 = b;
   int n = 0;
@@ -110,7 +110,7 @@ int sip_session_expires_e(char b[], int bsiz, sip_header_t const *h, int flags)
   return b - b0;
 }
 
-int sip_session_expires_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_session_expires_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_session_expires_t const *o = h->sh_session_expires;
 
@@ -121,7 +121,7 @@ int sip_session_expires_dup_xtra(sip_header_t const *h, int offset)
 
 /** Duplicate one sip_session_expires_t object */ 
 char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
-				  char *b, int xtra)
+				  char *b, isize_t xtra)
 {
   sip_session_expires_t *o_dst = dst->sh_session_expires;
   sip_session_expires_t const *o_src = src->sh_session_expires;
@@ -136,7 +136,7 @@ char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /** Update parameters in Session-Expires header. */
 static int sip_session_expires_update(msg_common_t *h, 
-				      char const *name, int namelen,
+				      char const *name, isize_t namelen,
 				      char const *value)
 {
   sip_session_expires_t *x = (sip_session_expires_t *)h;
@@ -182,7 +182,7 @@ static msg_dup_f sip_min_se_dup_one;
 msg_hclass_t sip_min_se_class[] =
 SIP_HEADER_CLASS(min_se, "Min-SE", "", min_params, single, min_se);
 
-int sip_min_se_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_min_se_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_min_se_t *min = h->sh_min_se;
 
@@ -196,7 +196,7 @@ int sip_min_se_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_min_se_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_min_se_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *end = b + bsiz, *b0 = b;
   int n = 0;
@@ -209,7 +209,7 @@ int sip_min_se_e(char b[], int bsiz, sip_header_t const *h, int flags)
   return b - b0;
 }
 
-int sip_min_se_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_min_se_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_min_se_t const *o = (sip_min_se_t *)h;
 
@@ -220,7 +220,7 @@ int sip_min_se_dup_xtra(sip_header_t const *h, int offset)
 
 /** Duplicate one sip_min_se_t object */ 
 char *sip_min_se_dup_one(sip_header_t *dst, sip_header_t const *src,
-			char *b, int xtra)
+			char *b, isize_t xtra)
 {
   sip_min_se_t *o_dst = (sip_min_se_t *)dst;
   sip_min_se_t const *o_src = (sip_min_se_t *)src;

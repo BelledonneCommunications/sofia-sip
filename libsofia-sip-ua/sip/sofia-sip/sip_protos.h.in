@@ -122,12 +122,12 @@ void *sip_header_data(sip_header_t *h);
  */
 
 /** Parse a #xxxxxxx_xxxxxxx#. @internal */
-SOFIAPUBFUN int sip_#xxxxxx#_d(su_home_t *, msg_header_t *,
-			       char *s, int slen);
+SOFIAPUBFUN issize_t sip_#xxxxxx#_d(su_home_t *, msg_header_t *,
+				       char *s, isize_t slen);
 
 /** Print a #xxxxxxx_xxxxxxx#. @internal */
-SOFIAPUBFUN int sip_#xxxxxx#_e(char b[], int bsiz,
-                               msg_header_t const *h, int flags);
+SOFIAPUBFUN issize_t sip_#xxxxxx#_e(char b[], isize_t bsiz,
+                    	            msg_header_t const *h, int flags);
 
 /**Access a sip_#xxxxxx#_t from sip_t.
  * 

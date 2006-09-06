@@ -74,7 +74,7 @@ SOFIAPUBFUN msg_mclass_t *sip_default_mclass(void);
 SOFIAPUBFUN int sip_serialize(msg_t *msg, sip_t *sip);
 
 /** Encode a SIP message. */
-SOFIAPUBFUN int sip_e(sip_t const *sip, int flags, char b[], int size);
+SOFIAPUBFUN issize_t sip_e(sip_t const *sip, int flags, char b[], isize_t size);
 
 /** Test if @a header is a pointer to a SIP header object. */
 SOFIAPUBFUN int sip_is_header(sip_header_t const *header);
@@ -87,11 +87,11 @@ SOFIAPUBFUN int sip_add_dup(msg_t *, sip_t *, sip_header_t const *);
 
 /** Add a duplicate of header object to the SIP message. */
 SOFIAPUBFUN int sip_add_dup_as(msg_t *msg, sip_t *sip,
-		   msg_hclass_t *hc, sip_header_t const *o);
+			       msg_hclass_t *hc, sip_header_t const *o);
 
 /** Add duplicates of headers to the SIP message. */
 SOFIAPUBFUN int sip_add_headers(msg_t *msg, sip_t *sip, 
-		    void const *extra, va_list headers);
+				void const *extra, va_list headers);
 
 /** Add duplicates of headers from taglist to the SIP message. */
 SOFIAPUBFUN int sip_add_tl(msg_t *msg, sip_t *sip,
@@ -273,7 +273,7 @@ char const *sip_via_transport(sip_via_t const *v);
 SOFIAPUBFUN char const *sip_via_port(sip_via_t const *v, int *using_rport);
 
 SOFIAPUBFUN
-sip_payload_t *sip_payload_create(su_home_t *, void const *data, int len);
+sip_payload_t *sip_payload_create(su_home_t *, void const *data, isize_t len);
 
 /**@ingroup sip_payload
  *
@@ -350,20 +350,20 @@ enum {
 /* Here are @deprecated functions and names for compatibility */
 
 /** Encode a SIP header field (name: contents CRLF). */
-SOFIAPUBFUN int sip_header_e(char[], int, sip_header_t const *, int);
+SOFIAPUBFUN issize_t sip_header_e(char[], isize_t, sip_header_t const *, int);
 
 /** Decode a SIP header string (name: contents CRLF?). */
 SOFIAPUBFUN
 sip_header_t *sip_header_d(su_home_t *, msg_t const *, char const *);
 
 /** Encode contents of a SIP header field. */
-SOFIAPUBFUN int sip_header_field_e(char[], int, sip_header_t const *, int);
+SOFIAPUBFUN issize_t sip_header_field_e(char[], isize_t, sip_header_t const *, int);
 
 /** Decode the string containing header field */
-SOFIAPUBFUN int sip_header_field_d(su_home_t *, sip_header_t *, char *, int);
+SOFIAPUBFUN issize_t sip_header_field_d(su_home_t *, sip_header_t *, char *, isize_t);
 
 /** Calculate the size of a SIP header and associated memory areas. */
-SOFIAPUBFUN int sip_header_size(sip_header_t const *h);
+SOFIAPUBFUN isize_t sip_header_size(sip_header_t const *h);
 
 /** Duplicate (deep copy) a SIP header or whole list. */ 
 SOFIAPUBFUN sip_header_t *sip_header_dup(su_home_t *, sip_header_t const *);

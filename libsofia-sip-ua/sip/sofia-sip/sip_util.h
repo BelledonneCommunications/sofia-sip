@@ -145,14 +145,14 @@ union sip_pref
   struct sp_literal {
     enum sp_type spl_type; 
     char const *spl_value;
-    unsigned spl_length;
+    usize_t spl_length;
   } sp_literal;
 
   /** String (tag="&lt;foo&gt;"). */
   struct sp_string {
     enum sp_type sps_type;
     char const *sps_value;
-    unsigned sps_length;
+    usize_t sps_length;
   } sp_string;
 
   /** Numeric value or range (tag="#=1"; tag="#<=3"; tag="#>=-2"; tag="#1:6").

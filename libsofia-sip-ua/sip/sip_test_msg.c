@@ -155,7 +155,8 @@ void print_via(FILE *f, sip_via_t *v)
 int main(int argc, char *argv[])
 {
   char urlbuf[1024];
-  int  n, m, tcp;
+  size_t n;
+  int m, tcp;
   sip_t *sip;
   int exitcode = 0; 
   msg_mclass_t *sip_mclass = sip_default_mclass();
@@ -197,7 +198,7 @@ int main(int argc, char *argv[])
     fprintf(stdout, "sip flags = %x\n", sip->sip_flags);
 
   if (m < 0) {
-    fprintf(stderr, "sip_test_msg: parsing error (%d)\n", n);
+    fprintf(stderr, "sip_test_msg: parsing error (%zd)\n", n);
     exit(1);
   }
 

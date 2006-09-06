@@ -87,7 +87,7 @@ static msg_dup_f sip_refer_to_dup_one;
 msg_hclass_t sip_refer_to_class[] =
 SIP_HEADER_CLASS(refer_to, "Refer-To", "r", r_params, single, refer_to);
 
-int sip_refer_to_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_refer_to_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_refer_to_t *r = h->sh_refer_to;
 
@@ -98,7 +98,7 @@ int sip_refer_to_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 			 NULL);
 }
 
-int sip_refer_to_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_refer_to_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   sip_refer_to_t const *r = h->sh_refer_to;
 
@@ -111,21 +111,20 @@ int sip_refer_to_e(char b[], int bsiz, sip_header_t const *h, int flags)
 			 NULL);
 }
 
-int sip_refer_to_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_refer_to_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_refer_to_t const *r = h->sh_refer_to;
 
-  MSG_PARAMS_SIZE(rv, r->r_params);
-  rv += MSG_STRING_SIZE(r->r_display);
-  rv += url_xtra(r->r_url);
+  MSG_PARAMS_SIZE(offset, r->r_params);
+  offset += MSG_STRING_SIZE(r->r_display);
+  offset += url_xtra(r->r_url);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one sip_refer_to_t object */
 char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
-			   char *b, int xtra)
+			   char *b, isize_t xtra)
 {
   sip_refer_to_t *r_dst = dst->sh_refer_to;
   sip_refer_to_t const *r_src = src->sh_refer_to;
@@ -196,7 +195,7 @@ msg_hclass_t sip_referred_by_class[] =
 SIP_HEADER_CLASS(referred_by, "Referred-By", "b", b_params, single,
 		 referred_by);
 
-int sip_referred_by_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_referred_by_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_referred_by_t *b = h->sh_referred_by;
 
@@ -213,7 +212,7 @@ int sip_referred_by_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_referred_by_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_referred_by_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_referred_by(h));
 
@@ -224,21 +223,20 @@ int sip_referred_by_e(char b[], int bsiz, sip_header_t const *h, int flags)
 			 NULL);
 }
 
-int sip_referred_by_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_referred_by_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_referred_by_t const *b = h->sh_referred_by;
 
-  MSG_PARAMS_SIZE(rv, b->b_params);
-  rv += MSG_STRING_SIZE(b->b_display);
-  rv += url_xtra(b->b_url);
+  MSG_PARAMS_SIZE(offset, b->b_params);
+  offset += MSG_STRING_SIZE(b->b_display);
+  offset += url_xtra(b->b_url);
 
-  return rv;
+  return offset;
 }
 
 char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
 			      char *b,
-			      int xtra)
+			      isize_t xtra)
 {
   sip_referred_by_t *nb = dst->sh_referred_by;
   sip_referred_by_t const *o = src->sh_referred_by;
@@ -256,7 +254,7 @@ char *sip_referred_by_dup_one(sip_header_t *dst, sip_header_t const *src,
 }
 
 static int sip_referred_by_update(msg_common_t *h, 
-			   char const *name, int namelen,
+			   char const *name, isize_t namelen,
 			   char const *value)
 {
   sip_referred_by_t *b = (sip_referred_by_t *)h;
@@ -326,7 +324,7 @@ msg_hclass_t sip_replaces_class[] =
 SIP_HEADER_CLASS(replaces, "Replaces", "", rp_params, single, replaces);
 
 /** Decode (parse) Replaces header */
-int sip_replaces_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_replaces_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_replaces_t *rp = h->sh_replaces;
 
@@ -343,7 +341,7 @@ int sip_replaces_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 }
 
 /** Encode (print) Replaces header */
-int sip_replaces_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_replaces_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   sip_replaces_t const *rp = h->sh_replaces;
@@ -357,20 +355,19 @@ int sip_replaces_e(char b[], int bsiz, sip_header_t const *h, int flags)
 }
 
 /** Calculate extra storage used by Replaces header field */
-int sip_replaces_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_replaces_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_replaces_t const *rp = h->sh_replaces;
 
-  MSG_PARAMS_SIZE(rv, rp->rp_params);
-  rv += MSG_STRING_SIZE(rp->rp_call_id);
+  MSG_PARAMS_SIZE(offset, rp->rp_params);
+  offset += MSG_STRING_SIZE(rp->rp_call_id);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate a Replaces header field */
 char *sip_replaces_dup_one(sip_header_t *dst, sip_header_t const *src,
-			   char *b, int xtra)
+			   char *b, isize_t xtra)
 {
   sip_replaces_t *rp_dst = dst->sh_replaces;
   sip_replaces_t const *rp_src = src->sh_replaces;
@@ -387,7 +384,7 @@ char *sip_replaces_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /** Update parameters in Replaces header. */
 static int sip_replaces_update(msg_common_t *h, 
-			       char const *name, int namelen,
+			       char const *name, isize_t namelen,
 			       char const *value)
 {
   sip_replaces_t *rp = (sip_replaces_t *)h;

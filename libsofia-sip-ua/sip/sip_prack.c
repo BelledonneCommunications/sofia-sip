@@ -70,7 +70,7 @@ static msg_dup_f sip_rack_dup_one;
 msg_hclass_t sip_rack_class[] = 
 SIP_HEADER_CLASS(rack, "RAck", "", ra_common, single, rack);
 
-int sip_rack_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_rack_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_rack_t *ra = h->sh_rack;
 
@@ -91,7 +91,7 @@ int sip_rack_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return -1;
 }
 
-int sip_rack_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_rack_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_rack_t const *ra = h->sh_rack;
 
@@ -101,7 +101,7 @@ int sip_rack_e(char b[], int bsiz, sip_header_t const *h, int f)
 		  ra->ra_response, ra->ra_cseq, ra->ra_method_name);
 }
 
-int sip_rack_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_rack_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_rack_t const *ra = h->sh_rack;
 
@@ -113,7 +113,7 @@ int sip_rack_dup_xtra(sip_header_t const *h, int offset)
 
 /** Duplicate one sip_rack_t object */ 
 char *sip_rack_dup_one(sip_header_t *dst, sip_header_t const *src,
-			char *b, int xtra)
+			char *b, isize_t xtra)
 {
   sip_rack_t *ra_dst = dst->sh_rack;
   sip_rack_t const *ra_src = src->sh_rack;
@@ -153,12 +153,12 @@ char *sip_rack_dup_one(sip_header_t *dst, sip_header_t const *src,
 msg_hclass_t sip_rseq_class[] = 
 SIP_HEADER_CLASS(rseq, "RSeq", "", rs_common, single, any);
 
-int sip_rseq_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_rseq_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_numeric_d(home, h, s, slen);
 }
 
-int sip_rseq_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_rseq_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_rseq(h));
   return msg_numeric_e(b, bsiz, h, f);

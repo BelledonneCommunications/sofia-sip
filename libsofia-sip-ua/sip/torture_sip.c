@@ -719,7 +719,8 @@ int test_sip_msg_class(msg_mclass_t const *mc)
 
 msg_t *read_message(int flags, char const buffer[])
 {
-  int n, m;
+  size_t n;
+  int m;
   msg_t *msg;
   msg_iovec_t iovec[2];
 
@@ -810,7 +811,7 @@ static int test_encoding(void)
 
   for (h = (msg_header_t *)sip->sip_request; h; h = h->sh_succ) {
     char b[80];
-    int n;
+    size_t n;
 
     if (h == (msg_header_t*)sip->sip_payload)
       break;
@@ -870,7 +871,7 @@ static int test_encoding(void)
 
   for (h = (msg_header_t *)sip->sip_status; h; h = h->sh_succ) {
     char b[80];
-    int n;
+    size_t n;
 
     if (h == (sip_header_t*)sip->sip_payload)
       break;
@@ -966,7 +967,7 @@ int tag_test(void)
     (url_t *)"sip:test:pass@example.com;baz=1?foo&bar");
 
   tagi_t *lst, *dup;
-  int xtra;
+  size_t xtra;
   tag_value_t v;
 
   BEGIN();
@@ -1029,7 +1030,7 @@ static int parser_tag_test(void)
   msg_t *msg;
   sip_t *sip;
   su_home_t *home;
-  int xtra;
+  size_t xtra;
 
   BEGIN();
 

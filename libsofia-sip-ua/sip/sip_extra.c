@@ -50,13 +50,13 @@
 
 /* ====================================================================== */
 
-static int sip_info_d(su_home_t *home, sip_header_t *h, char *s, int slen);
+static issize_t sip_info_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen);
 
-static int sip_info_dup_xtra(sip_header_t const *h, int offset);
+static isize_t sip_info_dup_xtra(sip_header_t const *h, isize_t offset);
 static char *sip_info_dup_one(sip_header_t *dst,
 			      sip_header_t const *src,
 			      char *b,
-			      int xtra);
+			      isize_t xtra);
 
 #define sip_info_update NULL
 
@@ -103,9 +103,9 @@ msg_hclass_t sip_call_info_class[] =
 SIP_HEADER_CLASS(call_info, "Call-Info", "",
 		 ci_params, append, call_info);
 
-int sip_call_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_call_info_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
-  int retval = sip_info_d(home, h, s, slen);
+  issize_t retval = sip_info_d(home, h, s, slen);
 
   if (retval == 0)
     for (;h; h = h->sh_next)
@@ -114,7 +114,7 @@ int sip_call_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return retval;
 }
 
-int sip_call_info_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_call_info_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_call_info_t *ci = (sip_call_info_t *)h;
 
@@ -129,7 +129,7 @@ int sip_call_info_e(char b[], int bsiz, sip_header_t const *h, int f)
  */
 static
 int sip_call_info_update(msg_common_t *h, 
-			  char const *name, int namelen,
+			  char const *name, isize_t namelen,
 			  char const *value)
 {
   sip_call_info_t *ci = (sip_call_info_t *)h;
@@ -181,12 +181,12 @@ msg_hclass_t sip_error_info_class[] =
 SIP_HEADER_CLASS(error_info, "Error-Info", "",
 		 ei_params, append, info);
 
-int sip_error_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_error_info_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_info_d(home, h, s, slen);
 }
 
-int sip_error_info_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_error_info_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_error_info_t const *ei = h->sh_error_info;
 
@@ -213,12 +213,12 @@ int sip_error_info_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_in_reply_to_class[] = 
 SIP_HEADER_CLASS_LIST(in_reply_to, "In-Reply-To", "", list);
 
-int sip_in_reply_to_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_in_reply_to_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return msg_list_d(home, h, s, slen);
 }
 
-int sip_in_reply_to_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_in_reply_to_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_in_reply_to_p(h));
   return msg_list_e(b, bsiz, h, f);
@@ -242,12 +242,12 @@ int sip_in_reply_to_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_organization_class[] = 
 SIP_HEADER_CLASS_G(organization, "Organization", "", single);
 
-int sip_organization_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_organization_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_generic_d(home, h, s, slen);
 }
 
-int sip_organization_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_organization_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_organization_p(h));
   return sip_generic_e(b, bsiz, h, f);
@@ -272,12 +272,12 @@ int sip_organization_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_priority_class[] = 
 SIP_HEADER_CLASS_G(priority, "Priority", "", single);
 
-int sip_priority_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_priority_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_generic_d(home, h, s, slen);
 }
 
-int sip_priority_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_priority_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_priority_p(h));
   return sip_generic_e(b, bsiz, h, f);
@@ -302,12 +302,12 @@ int sip_priority_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_server_class[] = 
 SIP_HEADER_CLASS_G(server, "Server", "", single);
 
-int sip_server_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_server_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_generic_d(home, h, s, slen);
 }
 
-int sip_server_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_server_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_server_p(h));
   return sip_generic_e(b, bsiz, h, f);
@@ -329,12 +329,12 @@ int sip_server_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_subject_class[] = 
 SIP_HEADER_CLASS_G(subject, "Subject", "s", single);
 
-int sip_subject_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_subject_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_generic_d(home, h, s, slen);
 }
 
-int sip_subject_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_subject_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_subject_p(h));
   return sip_generic_e(b, bsiz, h, f);
@@ -356,18 +356,18 @@ int sip_subject_e(char b[], int bsiz, sip_header_t const *h, int f)
  * 
  */
 
-static int sip_timestamp_dup_xtra(sip_header_t const *h, int offset);
+static isize_t sip_timestamp_dup_xtra(sip_header_t const *h, isize_t offset);
 static char *sip_timestamp_dup_one(sip_header_t *dst,
-			      sip_header_t const *src,
-			      char *b,
-			      int xtra);
+				   sip_header_t const *src,
+				   char *b,
+				   isize_t xtra);
 #define sip_timestamp_update NULL
 
 msg_hclass_t sip_timestamp_class[] = 
 SIP_HEADER_CLASS(timestamp, "Timestamp", "", ts_common, single,
 		 timestamp);
 
-int sip_timestamp_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_timestamp_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_timestamp_t *ts = (sip_timestamp_t*)h;
   
@@ -392,7 +392,7 @@ int sip_timestamp_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_timestamp_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_timestamp_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   sip_timestamp_t const *ts = h->sh_timestamp;
   char *end = b + bsiz, *b0 = b;
@@ -410,21 +410,22 @@ int sip_timestamp_e(char b[], int bsiz, sip_header_t const *h, int f)
   return b - b0;
 }
 
-int sip_timestamp_dup_xtra(sip_header_t const *h, int offset)
+static
+isize_t sip_timestamp_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_timestamp_t const *ts = h->sh_timestamp;
 
-  rv += MSG_STRING_SIZE(ts->ts_stamp);
-  rv += MSG_STRING_SIZE(ts->ts_delay);
+  offset += MSG_STRING_SIZE(ts->ts_stamp);
+  offset += MSG_STRING_SIZE(ts->ts_delay);
 
-  return rv;
+  return offset;
 }
 
+static
 char *sip_timestamp_dup_one(sip_header_t *dst,
 			    sip_header_t const *src,
 			    char *b,
-			    int xtra)
+			    isize_t xtra)
 {
   sip_timestamp_t *ts = dst->sh_timestamp;
   sip_timestamp_t const *o = src->sh_timestamp;
@@ -458,12 +459,12 @@ char *sip_timestamp_dup_one(sip_header_t *dst,
 msg_hclass_t sip_user_agent_class[] = 
 SIP_HEADER_CLASS_G(user_agent, "User-Agent", "", single);
 
-int sip_user_agent_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_user_agent_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_generic_d(home, h, s, slen);
 }
 
-int sip_user_agent_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_user_agent_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_user_agent_p(h));
   return sip_generic_e(b, bsiz, h, f);
@@ -485,14 +486,14 @@ int sip_user_agent_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_etag_class[] = 
 SIP_HEADER_CLASS_G(etag, "SIP-ETag", "", single);
 
-int sip_etag_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_etag_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_etag_t *etag = (sip_etag_t *)h;
 
   return msg_token_d(&s, &etag->g_value);
 }
 
-int sip_etag_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_etag_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return msg_generic_e(b, bsiz, h, f);
 }
@@ -514,19 +515,19 @@ int sip_etag_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_if_match_class[] = 
 SIP_HEADER_CLASS_G(if_match, "SIP-If-Match", "", single);
 
-int sip_if_match_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_if_match_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_etag_d(home, h, s, slen);
 }
 
-int sip_if_match_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_if_match_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   return sip_etag_e(b, bsiz, h, f);
 }
 
 /* ====================================================================== */
 
-int sip_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_info_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_call_info_t *ci = h->sh_call_info;
   char *end = s + slen;
@@ -558,21 +559,20 @@ int sip_info_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return sip_info_d(home, h, s, end - s);
 }
 
-int sip_info_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_info_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_call_info_t const *ci = h->sh_call_info;
 
-  MSG_PARAMS_SIZE(rv, ci->ci_params);
-  rv += url_xtra(ci->ci_url);
+  MSG_PARAMS_SIZE(offset, ci->ci_params);
+  offset += url_xtra(ci->ci_url);
 
-  return rv;
+  return offset;
 }
 
 char *sip_info_dup_one(sip_header_t *dst,
 		       sip_header_t const *src,
 		       char *b,
-		       int xtra)
+		       isize_t xtra)
 {
   sip_call_info_t *ci = dst->sh_call_info;
   sip_call_info_t const *o = src->sh_call_info;

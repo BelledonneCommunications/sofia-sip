@@ -75,10 +75,10 @@ msg_mclass_t *sip_default_mclass(void)
  * @retval 0  cannot proceed
  * @retval m 
  */
-int sip_extract_body(msg_t *msg, sip_t *sip, char b[], int bsiz, int eos)
+issize_t sip_extract_body(msg_t *msg, sip_t *sip, char b[], isize_t bsiz, int eos)
 {
-  int m = 0;
-  unsigned body_len;
+  ssize_t m = 0;
+  size_t body_len;
   
   if (!(sip->sip_flags & MSG_FLG_BODY)) {
     /* We are looking at a potential empty line */
@@ -140,7 +140,7 @@ int sip_version_d(char **ss, char const **ver)
 {
   char *s = *ss;
   char const *result;
-  int const version_size = sizeof(sip_version_2_0) - 1;
+  size_t const version_size = sizeof(sip_version_2_0) - 1;
 
   if (strncasecmp(s, sip_version_2_0, version_size) == 0 && 
       !IS_TOKEN(s[version_size])) {
@@ -149,7 +149,7 @@ int sip_version_d(char **ss, char const **ver)
   }
   else {
     /* Version consists of two tokens, separated by / */
-    int l1 = 0, l2 = 0, n;
+    size_t l1 = 0, l2 = 0, n;
 
     result = s;
 
@@ -189,7 +189,7 @@ int sip_version_d(char **ss, char const **ver)
 }
 
 /** Calculate extra space required by version string */
-int sip_version_xtra(char const *version)
+isize_t sip_version_xtra(char const *version)
 {
   if (version == SIP_VERSION_CURRENT)
     return 0;
@@ -279,7 +279,7 @@ sip_method_t sip_method_d(char **ss, char const **return_name)
   char *s = *ss, c = *s;
   char const *name;
   int code = sip_method_unknown;
-  int n = 0;
+  size_t n = 0;
 
 #define MATCH(s, m) (strncmp(s, m, n = sizeof(m) - 1) == 0)
 
@@ -362,11 +362,11 @@ char const sip_transport_sctp[] = "SIP/2.0/SCTP";
 char const sip_transport_tls[] = "SIP/2.0/TLS";
 
 /** Decode transport */
-int sip_transport_d(char **ss, char const **ttransport)
+issize_t sip_transport_d(char **ss, char const **ttransport)
 {
   char const *transport;
   char *pn, *pv, *pt;
-  int  pn_len, pv_len, pt_len;
+  size_t pn_len, pv_len, pt_len;
   char *s = *ss;
 
 #define TRANSPORT_MATCH(t)					     \
@@ -431,7 +431,7 @@ int sip_transport_d(char **ss, char const **ttransport)
 }
 
 /** Calculate extra space required by sip_transport_dup() */
-int sip_transport_xtra(char const *transport)
+isize_t sip_transport_xtra(char const *transport)
 {
   if (transport == sip_transport_udp ||
       transport == sip_transport_tcp ||

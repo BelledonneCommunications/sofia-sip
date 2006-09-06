@@ -77,13 +77,13 @@
 msg_hclass_t sip_allow_class[] = 
 SIP_HEADER_CLASS_LIST(allow, "Allow", "", list);
 
-int sip_allow_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_allow_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_allow_t *k = (sip_allow_t *)h;
   return msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
 }
 
-int sip_allow_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_allow_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_allow(h));
   return msg_list_e(b, bsiz, h, f);
@@ -123,13 +123,13 @@ int sip_allow_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_proxy_require_class[] = 
 SIP_HEADER_CLASS_LIST(proxy_require, "Proxy-Require", "", list);
 
-int sip_proxy_require_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_proxy_require_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_proxy_require_t *k = (sip_proxy_require_t *)h;
   return msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
 }
 
-int sip_proxy_require_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_proxy_require_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_proxy_require(h));
   return msg_list_e(b, bsiz, h, f);
@@ -170,13 +170,13 @@ int sip_proxy_require_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_require_class[] = 
 SIP_HEADER_CLASS_LIST(require, "Require", "", list);
 
-int sip_require_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_require_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_require_t *k = (sip_require_t *)h;
   return msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
 }
 
-int sip_require_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_require_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_require(h));
   return msg_list_e(b, bsiz, h, f);
@@ -217,13 +217,13 @@ int sip_require_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_supported_class[] = 
 SIP_HEADER_CLASS_LIST(supported, "Supported", "k", list);
 
-int sip_supported_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_supported_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_supported_t *k = (sip_supported_t *)h;
   return msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
 }
 
-int sip_supported_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_supported_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_supported(h));
   return msg_list_e(b, bsiz, h, f);
@@ -262,13 +262,13 @@ int sip_supported_e(char b[], int bsiz, sip_header_t const *h, int f)
 msg_hclass_t sip_unsupported_class[] = 
 SIP_HEADER_CLASS_LIST(unsupported, "Unsupported", "", list);
 
-int sip_unsupported_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_unsupported_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_unsupported_t *k = (sip_unsupported_t *)h;
   return msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
 }
 
-int sip_unsupported_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_unsupported_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   assert(sip_is_unsupported(h));
   return msg_list_e(b, bsiz, h, f);
@@ -338,7 +338,7 @@ sip_has_unsupported_any(su_home_t *home,
 			sip_require_t const *require2,
 			sip_require_t const *require3)
 {
-  int i, j;
+  size_t i, j;
   sip_unsupported_t *unsupported = NULL;
   msg_param_t const empty[1] = { NULL };
   msg_param_t const *slist = empty;
@@ -407,7 +407,7 @@ sip_has_unsupported_any(su_home_t *home,
 
 int sip_has_feature(msg_list_t const *supported, char const *feature)
 {
-  int i;
+  size_t i;
   
   if (!feature || !feature[0])
     return 1;			/* Empty feature is always supported */
@@ -463,15 +463,12 @@ int sip_has_supported(sip_supported_t const *supported, char const *feature)
 msg_hclass_t sip_path_class[] =
 SIP_HEADER_CLASS(path, "Path", "", r_params, prepend, any_route);
 
-int sip_path_d(su_home_t *home,
-	       sip_header_t *h,
-	       char *s,
-	       int slen)
+issize_t sip_path_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_any_route_d(home, h, s, slen);
 }
 
-int sip_path_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_path_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_path(h));
   return sip_any_route_e(b, bsiz, h, flags);
@@ -519,15 +516,12 @@ msg_hclass_t sip_service_route_class[] =
 SIP_HEADER_CLASS(service_route, "Service-Route", "", 
 		 r_params, append, any_route);
 
-int sip_service_route_d(su_home_t *home,
-	       sip_header_t *h,
-	       char *s,
-	       int slen)
+issize_t sip_service_route_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_any_route_d(home, h, s, slen);
 }
 
-int sip_service_route_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_service_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_service_route(h));
   return sip_any_route_e(b, bsiz, h, flags);

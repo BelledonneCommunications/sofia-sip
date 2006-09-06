@@ -71,12 +71,12 @@ static msg_update_f sip_reason_update;
 msg_hclass_t sip_reason_class[] = 
 SIP_HEADER_CLASS(reason, "Reason", "", re_params, append, reason);
 
-int sip_reason_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_reason_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_header_t **hh = &h->sh_succ, *h0 = h;
   sip_reason_t *re = h->sh_reason;
 
-  int n;
+  size_t n;
 
   for (;*s;) {
     /* Ignore empty entries (comma-whitespace) */
@@ -112,7 +112,7 @@ int sip_reason_d(su_home_t *home, sip_header_t *h, char *s, int slen)
   return 0;
 }
 
-int sip_reason_e(char b[], int bsiz, sip_header_t const *h, int f)
+issize_t sip_reason_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 {
   char *end = b + bsiz, *b0 = b;
   sip_reason_t const *re = h->sh_reason;
@@ -124,7 +124,7 @@ int sip_reason_e(char b[], int bsiz, sip_header_t const *h, int f)
   return b - b0;
 }
 
-int sip_reason_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_reason_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_reason_t const *re = h->sh_reason;
 
@@ -136,7 +136,7 @@ int sip_reason_dup_xtra(sip_header_t const *h, int offset)
 
 /** Duplicate one sip_reason_t object */ 
 char *sip_reason_dup_one(sip_header_t *dst, sip_header_t const *src,
-			char *b, int xtra)
+			char *b, isize_t xtra)
 {
   sip_reason_t *re_dst = dst->sh_reason;
   sip_reason_t const *re_src = src->sh_reason;
@@ -151,7 +151,7 @@ char *sip_reason_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /** Update parameter values for @b Reason header */
 static int sip_reason_update(msg_common_t *h, 
-			     char const *name, int namelen,
+			     char const *name, isize_t namelen,
 			     char const *value)
 {
   sip_reason_t *re = (sip_reason_t *)h;

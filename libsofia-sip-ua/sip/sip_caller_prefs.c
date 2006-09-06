@@ -98,8 +98,8 @@ msg_hclass_t sip_request_disposition_class[] =
 SIP_HEADER_CLASS(request_disposition, "Request-Disposition", "d", rd_items,
 		 list, request_disposition);
 
-int sip_request_disposition_d(su_home_t *home, sip_header_t *h, 
-			      char *s, int slen)
+issize_t sip_request_disposition_d(su_home_t *home, sip_header_t *h, 
+				   char *s, isize_t slen)
 {
   sip_request_disposition_t *rd = h->sh_request_disposition;
   
@@ -107,7 +107,7 @@ int sip_request_disposition_d(su_home_t *home, sip_header_t *h,
 }
 
 
-int sip_request_disposition_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_request_disposition_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *end = b + bsiz, *b0 = b;
   sip_request_disposition_t const *o = h->sh_request_disposition;
@@ -120,7 +120,7 @@ int sip_request_disposition_e(char b[], int bsiz, sip_header_t const *h, int fla
 }
 
 
-int sip_request_disposition_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_request_disposition_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_request_disposition_t const *o = h->sh_request_disposition;
 
@@ -133,7 +133,7 @@ int sip_request_disposition_dup_xtra(sip_header_t const *h, int offset)
 /** Duplicate one sip_request_disposition_t object */ 
 char *sip_request_disposition_dup_one(sip_header_t *dst,
 				      sip_header_t const *src,
-				      char *b, int xtra)
+				      char *b, isize_t xtra)
 {
   char *end = b + xtra;
   sip_request_disposition_t *o_dst = dst->sh_request_disposition;
@@ -188,7 +188,7 @@ size_t span_attribute_value(char *s)
 }
 
 static
-int sip_caller_prefs_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_caller_prefs_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_header_t **hh = &h->sh_succ, *h0 = h;
   sip_caller_prefs_t *cp = h->sh_caller_prefs;
@@ -248,7 +248,7 @@ int sip_caller_prefs_d(su_home_t *home, sip_header_t *h, char *s, int slen)
 }
 
 
-int sip_caller_prefs_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_caller_prefs_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 { 
   sip_caller_prefs_t const *cp = h->sh_caller_prefs;
   char *b0 = b, *end = b + bsiz;
@@ -261,19 +261,18 @@ int sip_caller_prefs_e(char b[], int bsiz, sip_header_t const *h, int flags)
 }
 
 
-int sip_caller_prefs_dup_xtra(sip_header_t const *h, int offset)
+isize_t sip_caller_prefs_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   sip_caller_prefs_t const *cp = h->sh_caller_prefs;
 
-  MSG_PARAMS_SIZE(rv, cp->cp_params);
+  MSG_PARAMS_SIZE(offset, cp->cp_params);
 
-  return rv;
+  return offset;
 }
 
 
 char *sip_caller_prefs_dup_one(sip_header_t *dst, sip_header_t const *src, 
-			      char *b, int xtra)
+			      char *b, isize_t xtra)
 {
   char *end = b + xtra;
   sip_caller_prefs_t *cp = dst->sh_caller_prefs;
@@ -287,7 +286,7 @@ char *sip_caller_prefs_dup_one(sip_header_t *dst, sip_header_t const *src,
 }
 
 static int sip_caller_prefs_update(msg_common_t *h, 
-				   char const *name, int namelen,
+				   char const *name, isize_t namelen,
 				   char const *value)
 {
   sip_caller_prefs_t *cp = (sip_caller_prefs_t *)h;
@@ -376,13 +375,13 @@ msg_hclass_t sip_accept_contact_class[] =
 SIP_HEADER_CLASS(accept_contact, "Accept-Contact", "a", cp_params, append, 
 		 caller_prefs);
 
-int sip_accept_contact_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_accept_contact_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_caller_prefs_d(home, h, s, slen);
 }
 
 
-int sip_accept_contact_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_accept_contact_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   return sip_caller_prefs_e(b, bsiz, h, flags);
 }
@@ -410,13 +409,13 @@ msg_hclass_t sip_reject_contact_class[] =
 SIP_HEADER_CLASS(reject_contact, "Reject-Contact", "j", cp_params, append, 
 		 caller_prefs);
 
-int sip_reject_contact_d(su_home_t *home, sip_header_t *h, char *s, int slen)
+issize_t sip_reject_contact_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   return sip_caller_prefs_d(home, h, s, slen);
 }
 
 
-int sip_reject_contact_e(char b[], int bsiz, sip_header_t const *h, int flags)
+issize_t sip_reject_contact_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   return sip_caller_prefs_e(b, bsiz, h, flags);
 }
