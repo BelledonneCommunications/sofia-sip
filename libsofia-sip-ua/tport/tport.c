@@ -110,7 +110,7 @@ static inline int tp_cmp(tport_t const *a, tport_t const *b)
     return 0;
   
   if (a->tp_addrlen != b->tp_addrlen)
-    return a->tp_addrlen - b->tp_addrlen;
+    return (int)(a->tp_addrlen - b->tp_addrlen);
 
   return memcmp(a->tp_addr, b->tp_addr, a->tp_addrlen);
 }
@@ -2102,7 +2102,7 @@ int tport_convert_addr(su_home_t *home,
   char const *host;
   char buf[TPORT_HOSTPORTSIZE];
   char port[8];
-  int canonlen = canon ? strlen(canon) : 0;
+  size_t canonlen = canon ? strlen(canon) : 0;
 
   if (su == NULL)
     host = "*";
@@ -2224,7 +2224,8 @@ static
 char *localipname(int pf, char *buf, int bufsiz)
 {
   su_localinfo_t *li = NULL, hints[1] = {{ LI_NUMERIC | LI_CANONNAME }};
-  int n, error;
+  size_t n;
+  int error;
 
   hints->li_family = pf;
 
@@ -3278,17 +3279,17 @@ int tport_send_error(tport_t *self, msg_t *msg,
   else if (self->tp_addrinfo->ai_family == AF_INET6) {
     su_sockaddr_t const *su = (su_sockaddr_t const *)ai->ai_addr;
     SU_DEBUG_3(("tport_vsend(%p): %s with "
-		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%zd)\n", 
+		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%u)\n", 
 		self, su_strerror(error), (int)self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp,
-		su->su_scope_id, ai->ai_addrlen));
+		su->su_scope_id, (unsigned)ai->ai_addrlen));
   }
 #endif
   else {
     SU_DEBUG_3(("\ttport_vsend(%p): %s with "
-		"(s=%d, AF=%u addrlen=%zd)%s\n", 
+		"(s=%d, AF=%u addrlen=%u)%s\n", 
 		self, su_strerror(error), 
-		(int)self->tp_socket, ai->ai_family, ai->ai_addrlen, comp));
+		(int)self->tp_socket, ai->ai_family, (unsigned)ai->ai_addrlen, comp));
   }
 
 #if 0
@@ -4304,7 +4305,7 @@ int tport_name_by_url(su_home_t *home,
 		      tp_name_t *tpn,
 		      url_string_t const *us)
 {
-  int n;
+  size_t n;
   url_t url[1];
   char *b;
 
@@ -4347,7 +4348,7 @@ int tport_name_by_url(su_home_t *home,
 /** Check if transport named is already resolved */
 int tport_name_is_resolved(tp_name_t const *tpn)
 {
-  int n;
+  size_t n;
 
   if (!tpn->tpn_host)
     return 0;
@@ -4386,7 +4387,7 @@ int tport_name_dup(su_home_t *home,
 		   tp_name_t *dst,
 		   tp_name_t const *src)
 {
-  int n_proto, n_host, n_port, n_canon, n_comp = 0;
+  size_t n_proto, n_host, n_port, n_canon, n_comp = 0;
   char *s;
 
   if (strcmp(src->tpn_proto, tpn_any)) 
@@ -4431,12 +4432,12 @@ int tport_name_dup(su_home_t *home,
 }
 
 /** Convert a sockaddr structure into printable form. */
-char *tport_hostport(char buf[], int bufsize, 
+char *tport_hostport(char buf[], isize_t bufsize, 
 		     su_sockaddr_t const *su,
 		     int with_port_and_brackets)
 {
   char *b = buf;
-  int n;
+  size_t n;
 
 #if SU_HAVE_IN6
   if (with_port_and_brackets > 1 || su->su_family == AF_INET6) {
@@ -4446,9 +4447,11 @@ char *tport_hostport(char buf[], int bufsize,
 
   if (inet_ntop(su->su_family, SU_ADDR(su), b, bufsize) == NULL)
     return NULL;
-  n = strlen(b); bufsize -= n; b += n;
-  if (bufsize < 2)
+  n = strlen(b); 
+  if (bufsize < n + 2)
     return NULL;
+
+  bufsize -= n; b += n;
 
 #if SU_HAVE_IN6
   if (with_port_and_brackets > 1 || su->su_family == AF_INET6) {

@@ -115,7 +115,7 @@ void tport_open_log(tport_master_t *mr, tagi_t *tags)
 /** Create log stamp */
 void tport_stamp(tport_t const *self, msg_t *msg, 
 		 char stamp[128], char const *what, 
-		 int n, char const *via,
+		 isize_t n, char const *via,
 		 su_time_t now)
 {
   char label[24] = "";
@@ -150,12 +150,12 @@ void tport_stamp(tport_t const *self, msg_t *msg,
 
 /** Dump the data from the iovec */
 void tport_dump_iovec(tport_t const *self, msg_t *msg, 
-		      int n, su_iovec_t const iov[], int iovused,
+		      isize_t n, su_iovec_t const iov[], isize_t iovused,
 		      char const *what, char const *how)
 {
   tport_master_t *mr = self->tp_master;
   char stamp[128];
-  int i;
+  size_t i;
 
   if (!mr->mr_dump_file)
     return;
@@ -182,9 +182,9 @@ void tport_log_msg(tport_t *self, msg_t *msg,
 {
   char stamp[128];
   msg_iovec_t iov[80];
-  int i, iovlen = msg_iovec(msg, iov, 80);
-  int skip_lf = 0, linelen = 0;
-  size_t n, logged = 0, truncated = 0;
+  size_t i, iovlen = msg_iovec(msg, iov, 80);
+  size_t linelen = 0, n, logged = 0, truncated = 0;
+  int skip_lf = 0;
 
 #define MSG_SEPARATOR \
   "------------------------------------------------------------------------\n"
@@ -217,7 +217,7 @@ void tport_log_msg(tport_t *self, msg_t *msg,
 	truncated = logged + n;
       }
 
-      su_log("%s%.*s", linelen > n ? "" : "   ", n, s);
+      su_log("%s%.*s", linelen > n ? "" : "   ", (int)n, s);
       s += n, linelen += n, logged += n;
 
       if (truncated)
@@ -247,5 +247,5 @@ void tport_log_msg(tport_t *self, msg_t *msg,
     truncated = logged;
 
   if (truncated)
-    su_log("   *** message truncated at %d ***\n", truncated);
+    su_log("   *** message truncated at %zu ***\n", truncated);
 }

@@ -333,7 +333,7 @@ TPORT_DLL int tport_convert_addr(su_home_t *home,
 		       su_sockaddr_t const *su);
 
 /** Print host and port separated with ':' to a string. */
-TPORT_DLL char *tport_hostport(char buf[], int bufsize,
+TPORT_DLL char *tport_hostport(char buf[], isize_t bufsize,
 		     su_sockaddr_t const *su, int with_port);
 
 /** Initialize STUN keepalives. */

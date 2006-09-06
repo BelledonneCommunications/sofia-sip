@@ -422,7 +422,7 @@ void tport_open_log(tport_master_t *mr, tagi_t *tags);
 void tport_log_msg(tport_t *tp, msg_t *msg, char const *what, 
 		   char const *via, su_time_t now);
 void tport_dump_iovec(tport_t const *self, msg_t *msg, 
-		      int n, su_iovec_t const iov[], int iovused,
+		      isize_t n, su_iovec_t const iov[], isize_t iovused,
 		      char const *what, char const *how);
 
 extern tport_vtable_t const tport_udp_vtable;

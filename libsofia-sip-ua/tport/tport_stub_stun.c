@@ -155,7 +155,7 @@ int tport_recv_stun_dgram(tport_t const *self,
     }
     else
       SU_DEBUG_7(("tport(%p): recv_stun_dgram(): "
-		  "ignoring request with %u bytes\n", self, n));
+		  "ignoring request with %zu bytes\n", self, n));
   }
   else if (request[0] == 0 && self->tp_master->mr_stun_server) {
     tport_stun_server_vtable_t const *vst = tport_stun_server_vtable;
@@ -167,8 +167,15 @@ int tport_recv_stun_dgram(tport_t const *self,
     /* Respond to stun request with a simple error message. */
     int const status = 600;
     char const *error = "Not Implemented";
-    uint16_t elen = strlen(error);
+    size_t unpadded = strlen(error);
+    uint16_t elen;
     uint8_t dgram[128];
+
+    if (unpadded > sizeof(dgram) - 28)
+      unpadded = sizeof(dgram) - 28;
+
+    elen = (uint16_t)unpadded;
+    elen = (elen + 3) & -4;	/* Round up to 4 */
 
     SU_DEBUG_7(("tport(%p): recv_stun_dgram(): "
 		"responding %u %s\n", self, status, error));
@@ -222,10 +229,11 @@ int tport_recv_stun_dgram(tport_t const *self,
      */
     dgram[24] = 0, dgram[25] = 0;
     dgram[26] = status / 100, dgram[27] = status % 100;
-    memcpy(dgram + 28, error, elen);
-    n = 28 + elen;
+    memcpy(dgram + 28, error, unpadded);
+    memset(dgram + 28 + unpadded, 0, elen - unpadded);
 
-    sendto(self->tp_socket, (void *)dgram, n, 0, (void *)from, fromlen);
+    sendto(self->tp_socket, (void *)dgram, 28 + elen, 0,
+	   (void *)from, fromlen);
 #undef set16
   }
   else {
