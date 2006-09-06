@@ -427,7 +427,7 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
 #if defined(__APPLE_CC__)
   {
     su_sockaddr_t *sa;
-    unsigned int salen = sizeof(*sa);
+    socklen_t salen = sizeof(*sa);
     int scope = 0, gni_flags = 0;
 
     li = calloc(1, sizeof(su_localinfo_t));
@@ -697,11 +697,11 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
   su_localinfo_t *li = NULL, **lli = &tbf;
   su_sockaddr_t *su;
 #if SU_HAVE_IN6
-  int su_sockaddr_size = 
+  socklen_t su_sockaddr_size = 
     (hints->li_flags & LI_V4MAPPED) ? sizeof(*su) : sizeof(struct sockaddr_in);
   flags = hints->li_flags & (LI_V4MAPPED|LI_CANONNAME|LI_NUMERIC|LI_IFNAME);
 #else
-  int su_sockaddr_size = sizeof(struct sockaddr_in);
+  socklen_t su_sockaddr_size = sizeof(struct sockaddr_in);
   flags = hints->li_flags & (LI_CANONNAME|LI_NUMERIC|LI_IFNAME);
 #endif
 

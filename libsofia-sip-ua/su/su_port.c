@@ -400,7 +400,7 @@ su_port_t *su_port_create(void)
 #else
     {
       struct sockaddr_in sin = { sizeof(struct sockaddr_in), 0 };
-      size_t sinsize = sizeof sin;
+      socklen_t sinsize = sizeof sin;
       struct sockaddr *sa = (struct sockaddr *)&sin;
 
       af = PF_INET;

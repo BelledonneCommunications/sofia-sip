@@ -338,13 +338,13 @@ SOFIAPUBFUN const char *inet_ntop(int af, void const *src,
 /**@HI Calculate correct size of su_sockaddr_t structure. */ 
 #if SU_HAVE_IN6
 #define SU_SOCKADDR_SIZE(su) \
-  ((su)->su_family == AF_INET ? sizeof((su)->su_sin) \
-   : ((su)->su_family == AF_INET6 ? sizeof((su)->su_sin6) \
-      : sizeof(*su)))
+  ((socklen_t)((su)->su_family == AF_INET ? sizeof((su)->su_sin)	  \
+	       : ((su)->su_family == AF_INET6 ? sizeof((su)->su_sin6)	\
+		  : sizeof(*su))))
 #else
 #define SU_SOCKADDR_SIZE(su) \
-  ((su)->su_family == AF_INET ? sizeof((su)->su_sin) \
-    : sizeof(*su))
+  ((socklen_t)((su)->su_family == AF_INET ? sizeof((su)->su_sin)	\
+	       : sizeof(*su)))
 #endif
 #define su_sockaddr_size SU_SOCKADDR_SIZE
 

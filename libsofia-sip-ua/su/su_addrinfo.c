@@ -935,15 +935,22 @@ char const *su_gai_strerror(int errcode)
   return gai_strerror(errcode);
 }
 
-/** Resolve socket address into hostname and service name */
+/** Resolve socket address into hostname and service name.
+ *
+ * @note
+ * This function uses now @RFC2133 prototype. The @RFC3493 redefines the
+ * prototype as well as ai_addrlen to use socklen_t instead of size_t.
+ * If your application allocates more than 2 gigabytes for resolving the
+ * hostname, you probably lose.
+ */
 int
 su_getnameinfo(const su_sockaddr_t *su, size_t sulen,
 	       char *return_host, size_t hostlen,
 	       char *return_serv, size_t servlen,
 	       int flags)
 {
-  return getnameinfo(&su->su_sa, sulen, 
-		     return_host, hostlen, 
-		     return_serv, servlen, 
+  return getnameinfo(&su->su_sa, (socklen_t)sulen,
+		     return_host, (socklen_t)hostlen, 
+		     return_serv, (socklen_t)servlen, 
 		     flags);
 }

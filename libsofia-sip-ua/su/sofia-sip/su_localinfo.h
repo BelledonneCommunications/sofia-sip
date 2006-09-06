@@ -50,7 +50,7 @@ struct su_localinfo_s {
   int li_family;		/**< Address family. */
   int li_index;			/**< Network interface index. */
   int li_scope;			/**< Address scope. */
-  int li_addrlen;		/**< Length of li_addr. */
+  socklen_t li_addrlen;		/**< Length of li_addr. */
   su_sockaddr_t *li_addr;	/**< Binary address. */
   char *li_canonname;		/**< Canonical name for address. */
   su_localinfo_t *li_next;	/**< Next structure in linked list. */
