@@ -908,7 +908,8 @@ sres_search(sres_resolver_t *res,
     /* Create sub-query for each search domain */
     if (dots < res->res_config->c_opt.ndots) {
       sres_query_t *sub;
-      int i, subs, len;
+      int i, subs;
+      size_t len;
       char const **domains = res->res_config->c_search;
       char search[SRES_MAXDNAME + 1];
 
@@ -1606,7 +1607,7 @@ sres_sockaddr2string(sres_resolver_t *res,
     else
       postfix = "ip6.arpa.";
 
-    required = addrsize * 4 + strlen(postfix);
+    required = addrsize * 4 + (int)strlen(postfix);
 
     if (namelen <= required)
       return required;
@@ -1990,7 +1991,7 @@ int sres_parse_config(sres_config_t *c, FILE *f)
 
   if (f != NULL) {  
     for (line = 1; fgets(buf, sizeof(buf), f); line++) {
-      int len;
+      size_t len;
       char *value, *b;
 
       /* Skip whitespace at the beginning ...*/
@@ -2074,7 +2075,7 @@ sres_parse_options(sres_config_t *c, char const *value)
 
   while (value[0]) {
     char const *b;
-    int len, extra = 0;
+    size_t len, extra = 0;
     unsigned long n = 0;
 
     b = value; len = strcspn(value, " \t:");
@@ -2090,7 +2091,8 @@ sres_parse_options(sres_config_t *c, char const *value)
       value += strspn(value, " \t");
 
     if (n > 65536) {
-      SU_DEBUG_3(("sres: %s: invalid %*.s\n", c->c_filename, len + extra, b));
+      SU_DEBUG_3(("sres: %s: invalid %*.s\n", c->c_filename,
+		  (int)(len + extra), b));
       continue;
     }
 
@@ -2114,7 +2116,8 @@ sres_parse_options(sres_config_t *c, char const *value)
     else if (MATCH("no-edns0")) c->c_opt.edns = edns_not_supported;
     else if (MATCH("edns0")) c->c_opt.edns = edns0_configured;
     else {
-      SU_DEBUG_3(("sres: %s: unknown option %*.s\n", c->c_filename, len + extra, b));
+      SU_DEBUG_3(("sres: %s: unknown option %*.s\n",
+		  c->c_filename, (int)(len + extra), b));
     }
   }
 
@@ -2786,7 +2789,7 @@ int sres_resolver_sockets(sres_resolver_t *res,
 static
 sres_server_t *
 sres_server_by_sockaddr(sres_resolver_t const *res, 
-			void const *from, int fromlen)
+			void const *from, socklen_t fromlen)
 {
   int i;
 
@@ -2928,7 +2931,7 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 int sres_resolver_error(sres_resolver_t *res, int socket)
 {
   int errcode = 0;
-  int errorlen = sizeof(errcode);
+  socklen_t errorlen = sizeof(errcode);
 
   SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_error", res, socket));
 
@@ -3645,7 +3648,7 @@ m_put_domain(sres_message_t *m,
 	     char const *topdomain)
 {
   char const *label;
-  uint16_t llen;
+  size_t llen;
 
   if (m->m_error)
     return top;
