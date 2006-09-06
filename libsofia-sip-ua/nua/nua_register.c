@@ -1657,7 +1657,7 @@ static char *nua_handle_features(nua_handle_t *nh)
       /* Skip ";" if this is first one */
       su_strlst_append(l, ";methods=\"" + (su_strlst_len(l) == 0));
       if (allow->k_items) {
-        int i;
+        size_t i;
         for (i = 0; allow->k_items[i]; i++) {
           su_strlst_append(l, allow->k_items[i]);
           if (allow->k_items[i + 1])

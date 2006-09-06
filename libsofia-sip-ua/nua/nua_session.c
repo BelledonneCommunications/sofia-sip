@@ -1744,7 +1744,7 @@ set_session_timer(nua_handle_t *nh)
   }
   else {
     ss->ss_timer_set = 0;
-    nua_dialog_usage_set_expires(du, SIP_TIME_MAX);
+    nua_dialog_usage_set_expires(du, UINT_MAX);
     nua_dialog_usage_no_refresh(du);
   }
 }
@@ -2572,7 +2572,7 @@ int session_make_description(su_home_t *home,
 			     sip_payload_t **return_pl)
 {
   char const *sdp;
-  int len;
+  isize_t len;
 
   if (!soa)
     return 0;
@@ -2695,7 +2695,7 @@ int session_process_request(nua_handle_t *nh,
 			    sip_t const *sip)
 {
   char const *sdp = NULL;
-  int len;
+  isize_t len;
 
   if (nh->nh_soa) {
     msg_t *msg = nta_outgoing_getresponse(irq);

@@ -253,7 +253,7 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
   su_msg_r sumsg = SU_MSG_R_INIT;
 
   ta_list ta;
-  int e_len, len, xtra, p_len;
+  size_t e_len, len, xtra, p_len;
 
   enter;
 
