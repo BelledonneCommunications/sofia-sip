@@ -86,7 +86,7 @@ static inline tagi_t *t_move(tagi_t *dst, tagi_t const *src)
   return dst + 1;
 }
 
-static inline int t_xtra(tagi_t const *t, intptr_t offset)
+static inline size_t t_xtra(tagi_t const *t, size_t offset)
 {
   tag_type_t tt = TAG_TYPE_OF(t);
 
