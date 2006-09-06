@@ -830,7 +830,7 @@ nth_client_t *hc_create(nth_engine_t * he,
   nth_client_t *hc;
   su_home_t *home = msg_home(msg);
 
-  if (!(hc = su_salloc(he->he_home, sizeof(*hc))))
+  if (!(hc = su_zalloc(he->he_home, sizeof(*hc))))
     return NULL;
 
   if (!callback)
