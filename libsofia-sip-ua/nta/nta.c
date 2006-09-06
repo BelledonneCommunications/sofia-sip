@@ -67,6 +67,7 @@
 #include <sofia-sip/sip_status.h>
 
 #include <sofia-sip/msg_addr.h>
+#include <sofia-sip/msg_parser.h>
 
 #include "nta_internal.h"
 #include "sofia-sip/nta_stateless.h"
@@ -136,7 +137,9 @@ static int outgoing_insert_via(nta_outgoing_t *orq, sip_via_t const *);
 static int nta_tpn_by_via(tp_name_t *tpn, sip_via_t const *v, int *using_rport);
 
 static msg_t *nta_msg_create_for_transport(nta_agent_t *agent, int flags,
-					   char const data[], unsigned dlen);
+					   char const data[], usize_t dlen,
+					   tport_t const *tport,
+					   tp_client_t *via);
 
 static int complete_response(msg_t *response, 
 			     int status, char const *phrase, 
@@ -617,7 +620,7 @@ sip_via_t *nta_agent_public_via(nta_agent_t const *agent)
  * The function nta_agent_name() returns a @b User-Agent information with
  * NTA version.
  *
- * @param agent NTA agent object
+ * @param agent NTA agent object (may be NULL)
  *
  * @return The function nta_agent_contact() returns a string containing the
  * @a agent version.
@@ -919,7 +922,6 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
     agent->sa_algorithm = su_strdup(home, algorithm);
 
   if (str0cmp(sigcomp, agent->sa_sigcomp_options)) {
-    int msg_avlist_d(su_home_t *home, char **ss, msg_param_t const **pparams);
     char const * const *l = NULL;
     char *s = su_strdup(home, sigcomp);
     char *s1 = su_strdup(home, s), *s2 = s1;
@@ -1317,7 +1319,7 @@ static tport_stack_class_t nta_agent_class[1] =
     sizeof(nta_agent_class),
     agent_recv_message,
     agent_tp_error,
-    (void *)nta_msg_create_for_transport,
+    nta_msg_create_for_transport,
     agent_update_tport,
   }};
 
@@ -2515,7 +2517,8 @@ msg_t *nta_msg_create(nta_agent_t *agent, int flags)
 
 /** Create a new message for transport */
 msg_t *nta_msg_create_for_transport(nta_agent_t *agent, int flags,
-				    char const data[], unsigned dlen)
+				    char const data[], usize_t dlen,
+				    tport_t const *tport, tp_client_t *via)
 {
   msg_t *msg = msg_create(agent->sa_mclass, agent->sa_flags | flags);
 
