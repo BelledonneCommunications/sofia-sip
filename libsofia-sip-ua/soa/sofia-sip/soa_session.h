@@ -66,11 +66,11 @@ struct soa_session_actions
 				 char const * const * support,
 				 char const * const * required);
   int (*soa_set_capability_sdp)(soa_session_t *, sdp_session_t *,
-				char const *, int);
+				char const *, isize_t);
   int (*soa_set_remote_sdp)(soa_session_t *, int new_version,
-			    sdp_session_t *, char const *, int);
+			    sdp_session_t *, char const *, isize_t);
   int (*soa_set_user_sdp)(soa_session_t *, sdp_session_t *,
-			  char const *, int);
+			  char const *, isize_t);
   int (*soa_generate_offer)(soa_session_t *ss, soa_callback_f *completed);
   int (*soa_generate_answer)(soa_session_t *ss, soa_callback_f *completed);
   int (*soa_process_answer)(soa_session_t *ss, soa_callback_f *completed);
@@ -100,12 +100,12 @@ SOFIAPUBFUN int soa_base_remote_sip_features(soa_session_t *ss,
 					     char const * const *required);
 SOFIAPUBFUN int soa_base_set_capability_sdp(soa_session_t *ss, 
 					    sdp_session_t *sdp,
-					    char const *, int);
+					    char const *, isize_t);
 SOFIAPUBFUN int soa_base_set_remote_sdp(soa_session_t *ss, 
 					int new_version,
-					sdp_session_t *sdp, char const *, int);
+					sdp_session_t *sdp, char const *, isize_t);
 SOFIAPUBFUN int soa_base_set_user_sdp(soa_session_t *ss,
-				      sdp_session_t *sdp, char const *, int);
+				      sdp_session_t *sdp, char const *, isize_t);
 
 SOFIAPUBFUN int soa_base_generate_offer(soa_session_t *ss,
 					soa_callback_f *completed);
@@ -237,15 +237,11 @@ SOFIAPUBFUN int soa_set_status(soa_session_t *ss,
 SOFIAPUBFUN void soa_set_activity(soa_session_t *ss, 
 				  sdp_media_t const *m, int remote);
 
-SOFIAPUBFUN int soa_set_user_sdp(soa_session_t *ss,
-				 struct sdp_session_s const *sdp,
-				 char const *str, int len);
-
 SOFIAPUBFUN int soa_description_set(soa_session_t *ss, 
 				    struct soa_description *ssd,
 				    sdp_session_t *sdp,
 				    char const *sdp_str,
-				    int sdp_len);
+				    isize_t sdp_len);
 
 SOFIAPUBFUN void soa_description_free(soa_session_t *, 
 				      struct soa_description *ssd);

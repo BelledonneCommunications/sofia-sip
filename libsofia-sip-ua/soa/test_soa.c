@@ -325,7 +325,7 @@ int test_static_offer_answer(struct context *ctx)
   soa_session_t *a, *b;
 
   char const *caps = NONE, *offer = NONE, *answer = NONE;
-  int capslen = -1, offerlen = -1, answerlen = -1;
+  isize_t capslen = -1, offerlen = -1, answerlen = -1;
 
   su_home_t home[1] = { SU_HOME_INIT(home) };
 
@@ -583,7 +583,7 @@ int test_codec_selection(struct context *ctx)
   soa_session_t *a, *b;
 
   char const *offer = NONE, *answer = NONE;
-  int offerlen = -1, answerlen = -1;
+  isize_t offerlen = -1, answerlen = -1;
 
   sdp_session_t const *a_sdp, *b_sdp;
   sdp_media_t const *m;
@@ -1117,7 +1117,7 @@ int test_asynch_offer_answer(struct context *ctx)
   int n;
   
   char const *caps = NONE, *offer = NONE, *answer = NONE;
-  int capslen = -1, offerlen = -1, answerlen = -1;
+  isize_t capslen = -1, offerlen = -1, answerlen = -1;
 
   char const a[] = 
     "v=0\r\n"

@@ -712,7 +712,7 @@ int soa_get_warning(soa_session_t *ss, char const **return_text)
 int soa_get_capability_sdp(soa_session_t const *ss,
 			   sdp_session_t const **return_sdp,
 			   char const **return_sdp_str,
-			   int *return_len)
+			   isize_t *return_len)
 {
   sdp_session_t const *sdp;
   char const *sdp_str;
@@ -742,11 +742,10 @@ int soa_get_capability_sdp(soa_session_t const *ss,
 
 int soa_set_capability_sdp(soa_session_t *ss, 
 			   sdp_session_t const *sdp,
-			   char const *str, int len)
+			   char const *str, issize_t len)
 {
-  SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %p, %d) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
-	      str && len == -1 ? (int)strlen(str) : len));
+  SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %p, %zd) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, (ssize_t)len));
 
   return soa_set_sdp(ss, soa_capability_sdp_kind, sdp, str, len);
 }
@@ -754,7 +753,7 @@ int soa_set_capability_sdp(soa_session_t *ss,
 /** Set capabilities */
 int 
 soa_base_set_capability_sdp(soa_session_t *ss, 
-			    sdp_session_t *sdp, char const *str0, int len0)
+			    sdp_session_t *sdp, char const *str0, isize_t len0)
 {
   sdp_origin_t o[1] = {{ sizeof(o) }};
   sdp_connection_t *c, c0[1] = {{ sizeof(c0) }};
@@ -803,7 +802,7 @@ soa_base_set_capability_sdp(soa_session_t *ss,
 int soa_get_user_sdp(soa_session_t const *ss,
 		     sdp_session_t const **return_sdp,
 		     char const **return_sdp_str,
-		     int *return_len)
+		     isize_t *return_len)
 {
   sdp_session_t const *sdp;
   char const *sdp_str;
@@ -843,17 +842,17 @@ int soa_get_user_version(soa_session_t const *ss)
 
 int soa_set_user_sdp(soa_session_t *ss, 
 		     sdp_session_t const *sdp,
-		     char const *str, int len)
+		     char const *str, issize_t len)
 {
-  SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %p, %d) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
-	      str && len == -1 ? (int)strlen(str) : len));
+  SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %p, %zd) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, (ssize_t)len));
+
   return soa_set_sdp(ss, soa_user_sdp_kind, sdp, str, len);
 }
 
 /** Set user SDP (base version). */
 int soa_base_set_user_sdp(soa_session_t *ss, 
-			   sdp_session_t *sdp, char const *str0, int len0)
+			  sdp_session_t *sdp, char const *str0, isize_t len0)
 {
   ++ss->ss_user_version;
   return soa_description_set(ss, ss->ss_user, sdp, str0, len0);
@@ -868,7 +867,7 @@ int soa_base_set_user_sdp(soa_session_t *ss,
 int soa_get_remote_sdp(soa_session_t const *ss,
 		       sdp_session_t const **return_sdp,
 		       char const **return_sdp_str,
-		       int *return_len)
+		       isize_t *return_len)
 {
   sdp_session_t const *sdp;
   char const *sdp_str;
@@ -909,18 +908,18 @@ int soa_get_remote_version(soa_session_t const *ss)
 /** Set remote SDP (offer or answer) */
 int soa_set_remote_sdp(soa_session_t *ss, 
 		       sdp_session_t const *sdp,
-		       char const *str, int len)
+		       char const *str, issize_t len)
 {
-  SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %p, %d) called\n",
-	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, 
-	      str && len == -1 ? (int)strlen(str) : len));
+  SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %p, %zd) called\n",
+	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, (ssize_t)len));
+
   return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);
 }
 
 /** Set remote SDP (base version). */
 int soa_base_set_remote_sdp(soa_session_t *ss,
 			    int new_version,
-			    sdp_session_t *sdp, char const *str0, int len0)
+			    sdp_session_t *sdp, char const *str0, isize_t len0)
 {
   /* This is cleared in soa_generate_answer() or soa_process_answer(). */
   ss->ss_unprocessed_remote = 1;
@@ -955,7 +954,7 @@ int soa_clear_remote_sdp(soa_session_t *ss)
 int soa_get_local_sdp(soa_session_t const *ss,
 		      sdp_session_t const **return_sdp,
 		      char const **return_sdp_str,
-		      int *return_len)
+		      isize_t *return_len)
 {
   sdp_session_t const *sdp;
   char const *sdp_str;
@@ -1609,7 +1608,7 @@ int soa_description_set(soa_session_t *ss,
 			struct soa_description *ssd,
 			sdp_session_t *sdp,
 			char const *sdp_str,
-			int str_len)
+			isize_t str_len)
 {
   int retval = -1;
 
@@ -1731,7 +1730,7 @@ static
 su_localinfo_t *li_in_list(su_localinfo_t *li0, char const **llist)
 {
   char const *list = *llist;
-  int n;
+  size_t n;
 
   if (!list)
     return NULL;
