@@ -43,14 +43,16 @@
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  */
 
-#include <sofia-sip/su_config.h>
+#ifndef SU_TYPES_H
+#include <sofia-sip/su_types.h>
+#endif
 
 SOFIA_BEGIN_DECLS
 
 /** Decode a BASE64-encoded string. */
-SOFIAPUBFUN int base64_d(char buf[], int bsiz, char const *b64s);
+SOFIAPUBFUN isize_t base64_d(char buf[], isize_t bsiz, char const *b64s);
 /** Encode data with BASE64. */
-SOFIAPUBFUN int base64_e(char buf[], int bsiz, void *data, int dsiz);
+SOFIAPUBFUN isize_t base64_e(char buf[], isize_t bsiz, void *data, isize_t dsiz);
 
 /** Calculate size of n bytes encoded in base64 */
 #define BASE64_SIZE(n) ((((n) + 2) / 3) * 4)

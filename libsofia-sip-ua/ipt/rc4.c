@@ -31,7 +31,7 @@
 
 #include "sofia-sip/rc4.h"
 
-void rc4_init(const void *vseed, int seed_len, rc4_t *state) {
+void rc4_init(const void *vseed, isize_t seed_len, rc4_t *state) {
   short i; rc4_u8 j; rc4_u8 k;
 
   const rc4_u8 *seed = (const rc4_u8 *)vseed;
@@ -45,7 +45,7 @@ void rc4_init(const void *vseed, int seed_len, rc4_t *state) {
 
   for (i = 0, j = 0, k = 0; 
        i < 256; 
-       i++, k++, k >= (unsigned)seed_len ? k = 0 : 0) {
+       i++, k++, k >= seed_len ? k = 0 : 0) {
     rc4_u8 a = array[i];
     rc4_u8 b = array[j += a + seed[k]];
 
@@ -54,7 +54,7 @@ void rc4_init(const void *vseed, int seed_len, rc4_t *state) {
   }       
 }
 
-void rc4(void *buffer, int len, rc4_t *state) { 
+void rc4(void *buffer, isize_t len, rc4_t *state) { 
   rc4_u8 *buf = (rc4_u8 *)buffer;
   rc4_u8 *array = state->rc4_array;
   rc4_u8 i = state->rc4_i;     

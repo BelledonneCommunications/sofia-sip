@@ -57,10 +57,10 @@ typedef struct {
 } rc4_t;
 
 /** Key RC4 context. */
-SOFIAPUBFUN void rc4_init(const void *seed, int seed_len, rc4_t *state);
+SOFIAPUBFUN void rc4_init(const void *seed, isize_t seed_len, rc4_t *state);
 
 /** Generate RC4 stream. */ 
-SOFIAPUBFUN void rc4(void *buffer, int len, rc4_t *state);
+SOFIAPUBFUN void rc4(void *buffer, isize_t len, rc4_t *state);
 
 #if defined(__cplusplus)
 }

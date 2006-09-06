@@ -47,9 +47,9 @@ static const char code[64] =
  * A token is case-independent, so this is really not a good idea.
  * Use msg_random_token() instead.
  */
-int token64_e(char b[], int bsiz, void const *data, int dlen)
+isize_t token64_e(char b[], isize_t bsiz, void const *data, isize_t dlen)
 {
-  int i, n, slack;
+  size_t i, n, slack;
   unsigned char const *h = data;
   char *s = b, *end = b + bsiz;
   long w;

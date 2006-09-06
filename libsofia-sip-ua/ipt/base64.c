@@ -74,13 +74,14 @@ static unsigned char const code[] =
  * }
  * @endcode
  */
-int base64_d(char buf[], int bsiz, char const *b64s) 
+isize_t base64_d(char buf[], isize_t bsiz, char const *b64s) 
 {
   static unsigned char decode[256] = "";
   unsigned char const *s = (unsigned char const *)b64s;
   unsigned char c, b1, b2 = B64EOF, b3 = B64EOF, b4 = B64EOF;
   unsigned long w;
-  int i, len = 0, total_len = 0;
+  isize_t i, len = 0, total_len = 0;
+
   if (b64s == NULL)
     return 0;
 
@@ -186,13 +187,14 @@ int base64_d(char buf[], int bsiz, char const *b64s)
  * N. Freed, N. Borenstein, November 1996.
  *
  */
-int base64_e(char buf[], int bsiz, void *data, int dsiz) 
+isize_t base64_e(char buf[], isize_t bsiz, void *data, isize_t dsiz) 
 {
   unsigned char *s = (unsigned char *)buf;
   unsigned char *b = (unsigned char *)data;
   unsigned long w;
-  size_t i, n, slack = (unsigned)dsiz % 3;
-  size_t dsize = (size_t)dsiz - slack, bsize = (size_t)bsiz;
+
+  isize_t i, n, slack = (unsigned)dsiz % 3;
+  isize_t dsize = dsiz - slack, bsize = bsiz;
 
   if (bsize == 0)
     s = NULL;

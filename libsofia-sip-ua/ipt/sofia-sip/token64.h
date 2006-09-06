@@ -35,11 +35,14 @@
  *
  */
 
-#include <sofia-sip/su_config.h>
+#ifndef SU_TYPES_H
+#include <sofia-sip/su_types.h>
+#endif
 
 SOFIA_BEGIN_DECLS
 
-SOFIAPUBFUN int token64_e(char b[], int bsiz, void const *data, int dlen);
+SOFIAPUBFUN isize_t token64_e(char b[], isize_t bsiz,
+			      void const *data, isize_t dlen);
 
 /** Calculate size of n bytes encoded in token-64 */
 #define TOKEN64_SIZE(n) (((n + 2) / 3) * 4)
