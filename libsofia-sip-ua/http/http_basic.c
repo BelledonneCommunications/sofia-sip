@@ -71,7 +71,7 @@
  * The function @c http_request_d() parses the request line from a a HTTP
  * message.
  */
-int http_request_d(su_home_t *home, http_header_t *h, char *s, int slen)
+issize_t http_request_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_request_t *rq = h->sh_request;
   char *uri, *version;
@@ -90,7 +90,7 @@ int http_request_d(su_home_t *home, http_header_t *h, char *s, int slen)
  *
  * The function @c http_request_e() prints a HTTP request line.
  */
-int http_request_e(char b[], int bsiz, http_header_t const *h, int flags)
+issize_t http_request_e(char b[], isize_t bsiz, http_header_t const *h, int flags)
 {
   http_request_t const *rq = h->sh_request;
 
@@ -101,23 +101,22 @@ int http_request_e(char b[], int bsiz, http_header_t const *h, int flags)
 		  rq->rq_version ? rq->rq_version : "");
 }
 
-int http_request_dup_xtra(http_header_t const *h, int offset)
+isize_t http_request_dup_xtra(http_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   http_request_t const *rq = h->sh_request;
 
-  rv += url_xtra(rq->rq_url);
+  offset += url_xtra(rq->rq_url);
   if (!rq->rq_method)
-    rv += MSG_STRING_SIZE(rq->rq_method_name);
+    offset += MSG_STRING_SIZE(rq->rq_method_name);
   if (rq->rq_version)
-    rv += http_version_xtra(rq->rq_version);
+    offset += http_version_xtra(rq->rq_version);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one request header. */
 char *http_request_dup_one(http_header_t *dst, http_header_t const *src,
-			   char *b, int xtra)
+			   char *b, isize_t xtra)
 {
   http_request_t *rq = dst->sh_request;
   http_request_t const *o = src->sh_request;
@@ -147,7 +146,7 @@ http_request_t *http_request_create(su_home_t *home,
 				    url_string_t const *url,
 				    char const *version)
 {
-  int xtra;
+  size_t xtra;
   http_request_t *rq;
 
   if (method)
@@ -158,7 +157,7 @@ http_request_t *http_request_create(su_home_t *home,
 
   xtra = url_xtra(url->us_url) + (method ? 0 : strlen(name) + 1);
 
-  rq = msg_header_alloc(home, http_request_class, xtra)->sh_request;
+  rq = msg_header_alloc(home, http_request_class, (isize_t)xtra)->sh_request;
 
   if (rq) {
     char *b = (char *)(rq + 1), *end = b + xtra;
@@ -189,7 +188,7 @@ HTTP_HEADER_CLASS(request, NULL, rq_common, single_critical, request);
  */
 
 /** Parse status line */
-int http_status_d(su_home_t *home, http_header_t *h, char *s, int slen)
+issize_t http_status_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_status_t *st = h->sh_status;
   char *status, *phrase;
@@ -207,7 +206,7 @@ int http_status_d(su_home_t *home, http_header_t *h, char *s, int slen)
   return 0;
 }
 
-int http_status_e(char b[], int bsiz, http_header_t const *h, int flags)
+issize_t http_status_e(char b[], isize_t bsiz, http_header_t const *h, int flags)
 {
   http_status_t const *st = h->sh_status;
   char const *phrase = st->st_phrase;
@@ -227,7 +226,7 @@ int http_status_e(char b[], int bsiz, http_header_t const *h, int flags)
 }
 
 /** Extra size of a http_status_t object. */
-int http_status_dup_xtra(http_header_t const *h, int offset)
+isize_t http_status_dup_xtra(http_header_t const *h, isize_t offset)
 {
   if (h->sh_status->st_version)
     offset += http_version_xtra(h->sh_status->st_version);
@@ -237,7 +236,7 @@ int http_status_dup_xtra(http_header_t const *h, int offset)
 
 /** Duplicate one status header. */
 char *http_status_dup_one(http_header_t *dst, http_header_t const *src,
-			  char *b, int xtra)
+			  char *b, isize_t xtra)
 {
   http_status_t *st = dst->sh_status;
   http_status_t const *o = src->sh_status;
@@ -442,7 +441,7 @@ HTTP_HEADER_CLASS_LIST(connection, "Connection", list_critical);
  * @endcode
  */
 
-int http_content_range_d(su_home_t *home, http_header_t *h, char *s, int slen)
+issize_t http_content_range_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_content_range_t *cr = h->sh_content_range;
 
@@ -477,7 +476,7 @@ int http_content_range_d(su_home_t *home, http_header_t *h, char *s, int slen)
   return s[0] ? -1 : 0;
 }
 
-int http_content_range_e(char b[], int bsiz, http_header_t const *h, int f)
+issize_t http_content_range_e(char b[], isize_t bsiz, http_header_t const *h, int f)
 {
   http_content_range_t const *cr = h->sh_content_range;
 
@@ -547,7 +546,7 @@ HTTP_HEADER_CLASS(content_range, "Content-Range", cr_common, single, default);
  * @endcode
  */
 
-int http_date_d(su_home_t *home, http_header_t *h, char *s, int slen)
+issize_t http_date_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_date_t *date = h->sh_date;
 
@@ -558,7 +557,7 @@ int http_date_d(su_home_t *home, http_header_t *h, char *s, int slen)
 }
 
 
-int http_date_e(char b[], int bsiz, http_header_t const *h, int f)
+issize_t http_date_e(char b[], isize_t bsiz, http_header_t const *h, int f)
 {
   http_date_t const *date = h->sh_date;
 
@@ -675,7 +674,7 @@ HTTP_HEADER_CLASS_G(from, "From", single);
  */
 
 /** Parse Host header */
-int http_host_d(su_home_t *home, http_header_t *h, char *s, int slen)
+issize_t http_host_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_host_t *host = h->sh_host;
 
@@ -686,7 +685,7 @@ int http_host_d(su_home_t *home, http_header_t *h, char *s, int slen)
 }
 
 /** Print Host header */
-int http_host_e(char b[], int bsiz, http_header_t const *h, int flags)
+issize_t http_host_e(char b[], isize_t bsiz, http_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
 
@@ -701,7 +700,7 @@ int http_host_e(char b[], int bsiz, http_header_t const *h, int flags)
 
 /** Extra size of a http_host_t object. */
 static
-int http_host_dup_xtra(http_header_t const *h, int offset)
+isize_t http_host_dup_xtra(http_header_t const *h, isize_t offset)
 {
   offset += MSG_STRING_SIZE(h->sh_host->h_host);
   offset += MSG_STRING_SIZE(h->sh_host->h_port);
@@ -711,7 +710,7 @@ int http_host_dup_xtra(http_header_t const *h, int offset)
 /** Duplicate one Host header. */
 static
 char *http_host_dup_one(http_header_t *dst, http_header_t const *src,
-			char *b, int xtra)
+			char *b, isize_t xtra)
 {
   http_host_t *h = dst->sh_host;
   http_host_t const *o = src->sh_host;
@@ -816,7 +815,7 @@ HTTP_HEADER_CLASS_LIST(if_none_match, "If-None-Match", list);
  */    
 
 /** Parse If-Range header */
-int http_if_range_d(su_home_t *home, http_header_t *h, char *s, int slen)
+issize_t http_if_range_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_if_range_t *ifr = (http_if_range_t *)h;
 
@@ -829,7 +828,7 @@ int http_if_range_d(su_home_t *home, http_header_t *h, char *s, int slen)
 }
 
 /** Print If-Range header */
-int http_if_range_e(char b[], int bsiz, http_header_t const *h, int flags)
+issize_t http_if_range_e(char b[], isize_t bsiz, http_header_t const *h, int flags)
 {
   http_if_range_t const *ifr = (http_if_range_t const *)h;
   char *b0 = b, *end = b + bsiz;
@@ -844,7 +843,7 @@ int http_if_range_e(char b[], int bsiz, http_header_t const *h, int flags)
 
 /** Extra size of a http_if_range_t object. */
 static
-int http_if_range_dup_xtra(http_header_t const *h, int offset)
+isize_t http_if_range_dup_xtra(http_header_t const *h, isize_t offset)
 {
   http_if_range_t const *ifr = (http_if_range_t const *)h;
   offset += MSG_STRING_SIZE(ifr->ifr_tag);
@@ -854,7 +853,7 @@ int http_if_range_dup_xtra(http_header_t const *h, int offset)
 /** Duplicate one If-Range header. */
 static
 char *http_if_range_dup_one(http_header_t *dst, http_header_t const *src,
-			char *b, int xtra)
+			    char *b, isize_t xtra)
 {
   http_if_range_t *ifr = dst->sh_if_range;
   http_if_range_t const *o = src->sh_if_range;
@@ -979,7 +978,7 @@ HTTP_HEADER_CLASS(last_modified, "Last-Modified", d_common, single, default);
  */
 
 /** Decode (parse) a Location header */
-int http_location_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t http_location_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   http_location_t *loc = (http_location_t *)h;
 
@@ -987,7 +986,7 @@ int http_location_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 }
 
 /** Encode (print) a Location header */
-int http_location_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t http_location_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   http_location_t const *loc = (http_location_t *)h;
 
@@ -995,20 +994,18 @@ int http_location_e(char b[], int bsiz, msg_header_t const *h, int flags)
 }
 
 /** Calculate extra storage used by Location header field */
-int http_location_dup_xtra(msg_header_t const *h, int offset)
+isize_t http_location_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   http_location_t const *loc = (http_location_t *)h;
 
-  rv += url_xtra(loc->loc_url);
+  offset += url_xtra(loc->loc_url);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate a Location header field */
-char *http_location_dup_one(msg_header_t *dst,
-			    msg_header_t const *src,
-			    char *b, int xtra)
+char *http_location_dup_one(msg_header_t *dst, msg_header_t const *src,
+			    char *b, isize_t xtra)
 {
   http_location_t *loc = (http_location_t *)dst;
   http_location_t const *o = (http_location_t const *)src;
@@ -1096,10 +1093,10 @@ HTTP_HEADER_CLASS_AUTH(proxy_authorization, "Proxy-Authorization", append);
  * @endcode
  */
 
-static int range_spec_scan(char *start);
+static issize_t range_spec_scan(char *start);
 
 /** Decode (parse) a Range header */
-int http_range_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t http_range_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   http_range_t *rng = (http_range_t *)h;
 
@@ -1122,9 +1119,9 @@ int http_range_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 
 /** Scan and compact a range spec. */
 static
-int range_spec_scan(char *start)
+issize_t range_spec_scan(char *start)
 {
-  int tlen;
+  size_t tlen;
   char *s, *p;
 
   s = p = start;
@@ -1167,7 +1164,7 @@ int range_spec_scan(char *start)
 
 
 /** Encode (print) a Range header */
-int http_range_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t http_range_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   http_range_t const *rng = (http_range_t *)h;
   char *b0 = b, *end = b + bsiz;
@@ -1181,21 +1178,19 @@ int http_range_e(char b[], int bsiz, msg_header_t const *h, int flags)
 }
 
 /** Calculate extra storage used by Range header field */
-int http_range_dup_xtra(msg_header_t const *h, int offset)
+isize_t http_range_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   http_range_t const *rng = (http_range_t *)h;
 
-  MSG_PARAMS_SIZE(rv, rng->rng_specs);
-  rv += MSG_STRING_SIZE(rng->rng_unit);
+  MSG_PARAMS_SIZE(offset, rng->rng_specs);
+  offset += MSG_STRING_SIZE(rng->rng_unit);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate a Range header field */
-char *http_range_dup_one(msg_header_t *dst,
-			    msg_header_t const *src,
-			    char *b, int xtra)
+char *http_range_dup_one(msg_header_t *dst, msg_header_t const *src,
+			 char *b, isize_t xtra)
 {
   http_range_t *rng = (http_range_t *)dst;
   http_range_t const *o = (http_range_t const *)src;
@@ -1292,7 +1287,7 @@ HTTP_HEADER_CLASS(referer, "Referer", loc_common, single, location);
  * @endcode
  */
 
-int http_retry_after_d(su_home_t *home, http_header_t *h, char *s, int slen)
+issize_t http_retry_after_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_retry_after_t *ra = h->sh_retry_after;
 
@@ -1304,7 +1299,7 @@ int http_retry_after_d(su_home_t *home, http_header_t *h, char *s, int slen)
     return 0;
 }
 
-int http_retry_after_e(char b[], int bsiz, http_header_t const *h, int f)
+issize_t http_retry_after_e(char b[], isize_t bsiz, http_header_t const *h, int f)
 {
   http_retry_after_t const *ra = h->sh_retry_after;
 
@@ -1361,7 +1356,7 @@ void http_te_update(http_te_t *te)
   te->te_q = msg_header_find_param(te->te_common, "q");
 }
 
-int http_te_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t http_te_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_header_t **hh = &h->sh_succ, *h0 = h;
   http_te_t *te = (http_te_t *)h;
@@ -1398,7 +1393,7 @@ int http_te_d(su_home_t *home, msg_header_t *h, char *s, int slen)
   return 0;
 }
 
-int http_te_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t http_te_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   http_te_t const *te = (http_te_t *)h;
@@ -1413,20 +1408,19 @@ int http_te_e(char b[], int bsiz, msg_header_t const *h, int flags)
   return b - b0;
 }
 
-int http_te_dup_xtra(msg_header_t const *h, int offset)
+isize_t http_te_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   http_te_t const *te = (http_te_t const *)h;
 
-  MSG_PARAMS_SIZE(rv, te->te_params);
-  rv += MSG_STRING_SIZE(te->te_extension);
+  MSG_PARAMS_SIZE(offset, te->te_params);
+  offset += MSG_STRING_SIZE(te->te_extension);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one http_te_t object */
 char *http_te_dup_one(msg_header_t *dst, msg_header_t const *src,
-		      char *b, int xtra)
+		      char *b, isize_t xtra)
 {
   http_te_t *te = (http_te_t *)dst;
   http_te_t const *o = (http_te_t const *)src;
@@ -1498,10 +1492,7 @@ HTTP_HEADER_CLASS_LIST(vary, "Vary", list);
  * @endcode
  */
 
-int http_via_d(su_home_t *home,
-	       http_header_t *h,
-	       char *s,
-	       int slen)
+issize_t http_via_d(su_home_t *home, http_header_t *h, char *s, isize_t slen)
 {
   http_header_t **hh = &h->sh_succ, *h0 = h;
   http_via_t *v = h->sh_via;
@@ -1537,7 +1528,7 @@ int http_via_d(su_home_t *home,
   return 0;
 }
 
-int http_via_e(char b[], int bsiz, http_header_t const *h, int flags)
+issize_t http_via_e(char b[], isize_t bsiz, http_header_t const *h, int flags)
 {
   int const compact = MSG_IS_COMPACT(flags);
   char *b0 = b, *end = b + bsiz;
@@ -1562,7 +1553,7 @@ int http_via_e(char b[], int bsiz, http_header_t const *h, int flags)
   return b - b0;
 }
 
-static int http_via_dup_xtra(http_header_t const *h, int offset)
+static isize_t http_via_dup_xtra(http_header_t const *h, isize_t offset)
 {
   http_via_t const *v = h->sh_via;
 
@@ -1576,7 +1567,7 @@ static int http_via_dup_xtra(http_header_t const *h, int offset)
 
 /** Duplicate one http_via_t object */
 static char *http_via_dup_one(http_header_t *dst, http_header_t const *src,
-			      char *b, int xtra)
+			      char *b, isize_t xtra)
 {
   http_via_t *v = dst->sh_via;
   http_via_t const *o = src->sh_via;

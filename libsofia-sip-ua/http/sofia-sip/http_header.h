@@ -140,7 +140,7 @@ SOFIAPUBFUN void *http_header_data(http_header_t *h);
 SOFIAPUBFUN http_content_length_t *http_content_length_create(su_home_t *home, 
 							      uint32_t n);
 SOFIAPUBFUN http_payload_t *http_payload_create(su_home_t *home, 
-						void const *data, int len);
+						void const *data, usize_t len);
 SOFIAPUBFUN http_separator_t *http_separator_create(su_home_t *home);
 #endif
 
@@ -177,9 +177,9 @@ SOFIAPUBFUN http_expires_t *http_expires_create(su_home_t *home,
 SOFIAPUBFUN int http_url_cmp(url_t const *a, url_t const *b);
 
 /** Parse query part in HTTP URL. */
-SOFIAPUBFUN int http_query_parse(char *query,
-				 /* char const *key, char **return_value, */
-				 ...);
+SOFIAPUBFUN issize_t http_query_parse(char *query,
+				      /* char const *key, char **return_value, */
+				      ...);
 
 /* ----------------------------------------------------------------------
  * 4) Inlined functions 
@@ -248,7 +248,7 @@ http_content_length_t *http_content_length_create(su_home_t *home, uint32_t n)
 }
 
 su_inline 
-http_payload_t *http_payload_create(su_home_t *home, void const *data, int len)
+http_payload_t *http_payload_create(su_home_t *home, void const *data, isize_t len)
 {
   return msg_payload_create(home, data, len);
 }

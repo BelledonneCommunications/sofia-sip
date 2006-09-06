@@ -68,8 +68,8 @@ msg_mclass_t *http_default_mclass(void)
   return http_mclass;
 }
 
-static int 
-http_extract_chunk(msg_t *msg, http_t *http, char b[], int bsiz, int eos);
+static
+issize_t http_extract_chunk(msg_t *, http_t *, char b[], isize_t bsiz, int eos);
 
 /** Calculate length of line ending (0, 1 or 2) */
 #define CRLF_TEST(s) \
@@ -81,9 +81,9 @@ http_extract_chunk(msg_t *msg, http_t *http, char b[], int bsiz, int eos);
  * @retval 0     cannot proceed
  * @retval other number of bytes extracted
  */
-int http_extract_body(msg_t *msg, http_t *http, char b[], int bsiz, int eos)
+issize_t http_extract_body(msg_t *msg, http_t *http, char b[], isize_t bsiz, int eos)
 {
-  int m = 0;
+  issize_t m = 0;
   unsigned body_len;
 
   int flags = http->http_flags;
@@ -204,16 +204,16 @@ int http_extract_body(msg_t *msg, http_t *http, char b[], int bsiz, int eos)
  * @retval 0     cannot proceed
  * @retval other number of bytes extracted
  */
-int http_extract_chunk(msg_t *msg, http_t *http, char b[], int bsiz, int eos)
+issize_t http_extract_chunk(msg_t *msg, http_t *http, char b[], isize_t bsiz, int eos)
 {
-  int crlf, n;
-  unsigned chunk_len;
+  size_t n;
+  unsigned crlf, chunk_len;
   char *b0 = b, *s;
-  int bsiz0 = bsiz;
   union {
     msg_header_t *header;  
     msg_payload_t *chunk;
   } h = { NULL };
+  size_t bsiz0 = bsiz;
 
   if (bsiz == 0)
     return 0;
@@ -279,21 +279,24 @@ int http_extract_chunk(msg_t *msg, http_t *http, char b[], int bsiz, int eos)
 
     return b - b0;
   }
+  else {
+    issize_t chunk;
 
-  b += n + crlf, bsiz -= n + crlf;
+    b += n + crlf, bsiz -= n + crlf;
 
-  /* Extract chunk */
-  bsiz = msg_extract_payload(msg, http, 
-			     &h.header, chunk_len + (b - b0),
-			     b0, bsiz0, eos);
+    /* Extract chunk */
+    chunk = msg_extract_payload(msg, http, 
+				&h.header, chunk_len + (b - b0),
+				b0, bsiz0, eos);
 
-  if (bsiz != -1 && h.header) {
-    assert(h.chunk->pl_data);
-    h.chunk->pl_data += (b - b0);
-    h.chunk->pl_len -= (b - b0);
-  }
+    if (chunk != -1 && h.header) {
+      assert(h.chunk->pl_data);
+      h.chunk->pl_data += (b - b0);
+      h.chunk->pl_len -= (b - b0);
+    }
   
-  return bsiz;
+    return chunk;
+  }
 }
 
 /** Parse HTTP version.
@@ -366,7 +369,7 @@ int http_version_d(char **ss, char const **ver)
 }
 
 /** Calculate extra space required by version string */
-int http_version_xtra(char const *version)
+isize_t http_version_xtra(char const *version)
 {
   if (version == http_version_1_1)
     return 0;
@@ -447,7 +450,7 @@ http_method_t http_method_d(char **ss, char const **nname)
   char *s = *ss, c = *s;
   char const *name;
   int code = http_method_unknown;
-  int n = 0;
+  size_t n = 0;
 
 #define MATCH(s, m) (strncasecmp(s, m, n = sizeof(m) - 1) == 0)
 
@@ -515,15 +518,16 @@ http_method_t http_method_code(char const *name)
  * The function http_query_parse() returns number keys that matched within
  * the @a query string.
  */
-int http_query_parse(char *query,
-		     /* char const *key, char **return_value, */
-		     ...)
+issize_t http_query_parse(char *query,
+			  /* char const *key, char **return_value, */
+			  ...)
 {
   va_list ap;
   char *q, *q_next;
   char *name, *value, **return_value;
   char const *key;
-  size_t namelen, valuelen, keylen, N;
+  size_t namelen, valuelen, keylen;
+  isize_t N;
   int has_value;
 
   if (!query)

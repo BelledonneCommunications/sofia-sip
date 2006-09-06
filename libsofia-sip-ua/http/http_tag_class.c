@@ -121,8 +121,8 @@ tagi_t *httptag_filter(tagi_t *dst,
     hh = (void *)msg_hclass_offset(mc, http, hc);
 
     if (http == NULL ||
-	hh >= (http_header_t const **)((char *)http + http->http_size) ||
-	hh < (http_header_t const **)&http->http_request)
+	(char *)hh >= ((char *)http + http->http_size) ||
+	(char *)hh < (char *)&http->http_request)
       return dst;
 
     h = *hh;
@@ -131,7 +131,7 @@ tagi_t *httptag_filter(tagi_t *dst,
       return dst;
 
     stub[0].t_tag = tt;
-    stub[0].t_value = (long)h;
+    stub[0].t_value = (tag_value_t)h;
     src = stub; sctt = tt;
   }
 

@@ -57,7 +57,7 @@
 /** Complete a HTTP request. */
 int http_request_complete(msg_t *msg)
 {
-  size_t len;
+  unsigned len;
   http_t *http = http_object(msg);
   su_home_t *home = msg_home(msg);
 

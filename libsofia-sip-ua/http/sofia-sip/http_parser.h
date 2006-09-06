@@ -93,7 +93,7 @@ SOFIA_BEGIN_DECLS
 
 /* Version strings */
 SOFIAPUBFUN int http_version_d(char **ss, char const **ver);
-SOFIAPUBFUN int http_version_xtra(char const *version);
+SOFIAPUBFUN isize_t http_version_xtra(char const *version);
 SOFIAPUBFUN void http_version_dup(char **pp, char const **dd, char const *s);
 
 /* Method */
@@ -102,8 +102,8 @@ SOFIAPUBFUN char const *http_method_name(http_method_t method,
 					 char const *name);
 
 /** Extract HTTP message body */
-SOFIAPUBFUN int http_extract_body(msg_t *, http_t *, 
-				  char b[], int bsiz, int eos);
+SOFIAPUBFUN issize_t http_extract_body(msg_t *, http_t *, 
+				       char b[], isize_t bsiz, int eos);
 
 SOFIA_END_DECLS
 
