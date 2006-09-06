@@ -145,7 +145,7 @@ typedef enum nua_event_e {
 
   /* NOTE: Post 1.12 release events come here (below) to keep ABI
      compatibility! */
-  nua_i_network_changed,        /**< Our IP(v6) address has changed */
+  nua_i_network_changed,        /**< Local IP(v6) address has changed */
 
 } nua_event_t;
 

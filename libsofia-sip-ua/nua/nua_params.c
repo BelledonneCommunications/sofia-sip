@@ -763,7 +763,7 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *     othervise same tags as nua_set_hparams()
  *
  * @par Events:
- *     #nua_r_get_hparams
+ *     #nua_r_get_params
  */
 
 /**@internal

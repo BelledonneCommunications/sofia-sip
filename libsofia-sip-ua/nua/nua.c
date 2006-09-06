@@ -460,7 +460,8 @@ int nua_handle_has_active_call(nua_handle_t const *nh)
  *
  * @retval 0  if no call on hold in operation or operation handle is invalid 
  * @retval 1  if operation has call on hold, for example nua_invite() or 
- *            nua_update() has been called with NUTAG_HOLD() with != 0 argument.
+ *            nua_update() has been called with SOATAG_HOLD() with non-NULL
+ *            argument.
  *
  * @par Related tags:
  *     none
@@ -1003,8 +1004,8 @@ void nua_prack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *
  * @par Events:
  *    #nua_r_update \n
+ *    #nua_i_state \n
  *    #nua_i_media_error \n
- *    #nua_i_media_update
  */
 void nua_update(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
@@ -1069,10 +1070,8 @@ void nua_redirect(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 }
 
 /** Respond with given status. 
- * 
- * The INVITE requests should be responded with 
- * #nua_intive_respond() function because there 
- * might be another request going on besides INVITE.
+ *
+ * Currently, only requests application is let to respond is INVITE.
  *
  * @param nh              Pointer to operation handle
  * @param status          SIP response status (see RFCs of SIP)

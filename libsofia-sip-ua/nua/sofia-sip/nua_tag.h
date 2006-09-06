@@ -353,7 +353,10 @@ SOFIAPUBVAR tag_typedef_t nutag_min_se;
 SOFIAPUBVAR tag_typedef_t nutag_min_se_ref;
 
 enum nua_session_refresher {
-  nua_no_refresher, nua_local_refresher, nua_remote_refresher, nua_any_refresher
+  nua_no_refresher,		/**< Disable session timer. */
+  nua_local_refresher,		/**< Session refresh by local end. */
+  nua_remote_refresher,		/**< Session refresh by remote end. */
+  nua_any_refresher		/**< No preference (default). */
 };
 
 /** Specify preferred refresher.
@@ -1570,7 +1573,7 @@ SOFIAPUBVAR tag_typedef_t nutag_answer_sent_ref;
 /** Enable detection of local IP address updates
  *
  * @par Used with
- *    #nua_i_network_updated
+ *    #nua_i_network_changed
  *
  * @par Parameter type
  *    int

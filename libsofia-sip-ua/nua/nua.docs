@@ -2099,14 +2099,15 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *
  * Media error indication.
  *
- * This may be sent after an implicit
- * media operation has failed while processing incoming or outgoing call.
+ * This may be sent after an SOA
+ * operation has failed while processing incoming or outgoing call.
+ * Currently, it is not used.
  *
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with this call
  *               (maybe NULL if call handle was created for this call)
  * @param sip    NULL
- * @param tags   #NUTAG_MEDIA_SESSION (optionally)
+ * @param tags   empty
  */
 
 /** @var nua_event_e::nua_i_message
@@ -2131,6 +2132,17 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param hmagic operation magic associated with the call
  * @param sip    incoming request with unknown method
  * @param tags   empty
+ */
+
+/** @var nua_event_e::nua_i_network_changed
+ *
+ * Local IP(v6) address has changed.
+ *
+ * @param nh     default operation handle
+ * @param hmagic operation magic associated with the default operation handle
+ * @param sip    NULL
+ * @param tags   empty
+ *
  */
 
 /** @var nua_event_e::nua_i_notify
