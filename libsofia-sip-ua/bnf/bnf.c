@@ -172,7 +172,8 @@ int span_ip4_address(char const *host)
 int scan_ip4_address(char **inout_host)
 {
   char *src = *inout_host, *dst = src;
-  int n, canonize = 0;
+  issize_t n;
+  int canonize = 0;
 
   n = span_canonic_ip4_address(src, &canonize);
   if (n == 0)
@@ -528,11 +529,11 @@ int scan_ip_address(char **inout_host)
 
 /** Return length of a valid domain label */
 static inline
-int span_domain_label(char const *label)
+size_t span_domain_label(char const *label)
 {
   /* domainlabel =  alphanum / alphanum *( alphanum / "-" ) alphanum */
   if (IS_ALPHANUM(*label)) {
-    int n;
+    size_t n;
     for (n = 1; IS_ALPHANUM(label[n]) || label[n] == '-'; n++)
       ;
     if (IS_ALPHANUM(label[n - 1]))
@@ -544,9 +545,10 @@ int span_domain_label(char const *label)
 
 /** Scan valid domain name and count number of labels in it. */
 static inline
-int span_domain_labels(char const *host, int *return_labels)
+size_t span_domain_labels(char const *host, size_t *return_labels)
 {
-  int len, n, labels, c;
+  size_t len, n, labels;
+  int c;
 
   if (!host || !host[0])
     return 0;
@@ -588,16 +590,16 @@ int span_domain_labels(char const *host, int *return_labels)
  * toplabel         =  ALPHA / ALPHA *( alphanum / "-" ) alphanum
  * @endcode
  */
-int span_domain(char const *host)
+isize_t span_domain(char const *host)
 {
   return span_domain_labels(host, NULL);
 }
 
 /** Scan valid domain name. */
-int scan_domain(char **inout_host)
+issize_t scan_domain(char **inout_host)
 {
   char *host;
-  int n, labels;
+  size_t n, labels;
 
   n = span_domain_labels(host = *inout_host, &labels);
   if (n == 0)
@@ -613,7 +615,7 @@ int scan_domain(char **inout_host)
 }
 
 /** Return length of a valid domain name or IP address. */
-int span_host(char const *host)
+isize_t span_host(char const *host)
 {
  if (!host || !host[0])
     return 0;
@@ -624,14 +626,14 @@ int span_host(char const *host)
   if (IS_DIGIT(host[0])) {
     int n = span_ip4_address(host);
     if (n)
-      return n;
+      return (isize_t)n;
   }
 
   return span_domain(host);
 }
 
 /** Scan valid domain name or IP address. */
-int scan_host(char **inout_host)
+issize_t scan_host(char **inout_host)
 {
   char *host = *inout_host;
 
@@ -645,7 +647,7 @@ int scan_host(char **inout_host)
   if (IS_DIGIT(host[0])) {
     int n = scan_ip4_address(inout_host);
     if (n > 0)
-      return n;
+      return (issize_t)n;
   }
 
   return scan_domain(inout_host);
@@ -716,7 +718,7 @@ int host_is_ip_address(char const *string)
  */
 int host_is_domain(char const *string)
 {
-  int n = string ? span_domain(string) : 0;
+  size_t n = string ? span_domain(string) : 0;
   return string && n > 0 && string[n] == '\0';
 }
 
@@ -726,7 +728,7 @@ int host_is_domain(char const *string)
  */
 int host_is_valid(char const *string)
 {
-  int n = span_host(string);
+  size_t n = span_host(string);
   return n > 0 && string[n] == '\0';
 }
 
@@ -744,8 +746,8 @@ int host_is_local(char const *host)
   else if (host_is_ip4_address(host))
     return (strncmp(host, "127.", 4) == 0);
   else 
-    return (strcmp(host, "localhost") == 0 ||
-	    strcmp(host, "localhost.localdomain") == 0);
+    return (strcasecmp(host, "localhost") == 0 ||
+	    strcasecmp(host, "localhost.localdomain") == 0);
 }
 
 /** Return true if @a string has domain name in "invalid." domain.
@@ -753,7 +755,7 @@ int host_is_local(char const *host)
  */
 int host_has_domain_invalid(char const *string)
 {
-  int n = span_domain(string);
+  size_t n = span_domain(string);
 
   if (n >= 7 && string[n] == '\0') {
     static char const invalid[] = ".invalid";
