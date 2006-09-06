@@ -38,6 +38,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #if defined(va_copy)
 /* Xyzzy */
@@ -66,19 +67,19 @@
  */
 char *su_vsprintf(su_home_t *home, char const *fmt, va_list ap)
 {
-  int n, len;
+  int n;
+  size_t len;
   char *rv, s[128];
   va_list aq;
 
   va_copy(aq, ap);
-  len = vsnprintf(s, sizeof(s), fmt, aq) + 1;
+  n = vsnprintf(s, sizeof(s), fmt, aq);
   va_end(aq);
 
-  if (len > 0 && len < sizeof(s)) 
+  if (n >= 0 && n + 1 < sizeof(s)) 
     return su_strdup(home, s);
   
-  if (len == 0)
-    len = 2 * sizeof(s);
+  len = n > 0 ? n + 1 : 2 * sizeof(s);
 
   for (rv = su_alloc(home, len);
        rv;
@@ -91,7 +92,10 @@ char *su_vsprintf(su_home_t *home, char const *fmt, va_list ap)
     if (n > -1)			/* glibc >2.1 */
       len = n + 1;		
     else			/* glibc 2.0 */
-      len *= 2;			
+      len *= 2;
+
+    if (len > INT_MAX)
+      return (void)su_free(home, rv), NULL;
   }
 
   return rv;

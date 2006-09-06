@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
   su_root_run(root);
 
   printf("Processing %u timers took %f millisec (%f expected)\n",
-	 i, su_time_diff(su_now(), started) * 1000, (double)i / 1000);
+	 (unsigned)i, su_time_diff(su_now(), started) * 1000, (double)i / 1000);
 
   for (i = 0; i < N; i++) {
     su_timer_destroy(timers[i]);

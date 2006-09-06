@@ -122,13 +122,15 @@ typedef long unsigned llu;
 int t_snprintf(tagi_t const *t, char b[], size_t size)
 {
   tag_type_t tt = TAG_TYPE_OF(t);
-  size_t n, m;
+  int n, m;
   
   n = snprintf(b, size, "%s::%s: ", 
                tt->tt_ns ? tt->tt_ns : "",
 	       tt->tt_name ? tt->tt_name : "null");
+  if (n < 0)
+    return n;
 
-  if (n > (unsigned)size)
+  if (n > size)
     size = n;
 
   if (tt->tt_snprintf)
@@ -136,7 +138,8 @@ int t_snprintf(tagi_t const *t, char b[], size_t size)
   else
     m = snprintf(b + n, size - n, "%llx", (llu)t->t_value);
 
-  assert(m != (size_t)-1);
+  if (m < 0)
+    return m;
 
   if (m == 0 && n < size)
     b[--n] = '\0';
@@ -609,7 +612,7 @@ tagi_t *tl_vlist2(tag_type_t tag, tag_value_t value, va_list ap)
 {
   tagi_t *t, *rv;
   tagi_t tagi[1];
-  int size;
+  size_t size;
 
   tagi->t_tag = tag, tagi->t_value = value;
 
@@ -689,7 +692,7 @@ tagi_t *tl_vllist(tag_type_t tag, tag_value_t value, va_list ap)
   tagi_t const *next;
   tagi_t tagi[2];
 
-  int size;
+  size_t size;
 
   va_copy(aq, ap);
   size = tl_vllen(tag, value, aq);
@@ -1322,7 +1325,7 @@ tagi_t *t_str_dup(tagi_t *dst, tagi_t const *src, void **bb)
   dst->t_tag = src->t_tag;
   if (src->t_value) {
     char const *s = (char const *)src->t_value;
-    int len = strlen(s) + 1;
+    size_t len = strlen(s) + 1;
     dst->t_value = (tag_value_t)strcpy(*bb, s); 
     *bb = (char *)*bb + len;
   }

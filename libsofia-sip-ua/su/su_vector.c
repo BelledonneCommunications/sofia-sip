@@ -60,8 +60,8 @@ struct su_vector_s
 {
   su_home_t         v_home[1];
   su_home_t        *v_parent;
-  unsigned          v_size;
-  unsigned          v_len;
+  size_t            v_size;
+  size_t            v_len;
   su_free_func_t    v_free_func;
   void              **v_list;
 };
@@ -111,19 +111,18 @@ void su_vector_destroy(su_vector_t *vector)
 static int su_vector_make_place(su_vector_t *vector, unsigned index)
 {
   if (vector->v_size <= vector->v_len + 1) {
-    unsigned n = 2 * vector->v_size;
+    size_t newsize = 2 * vector->v_size * sizeof(vector->v_list[0]);
     void **list;
 
-    if (n < vector->v_size || n * sizeof(vector->v_list[0]) < n)
+    if (newsize < vector->v_size * sizeof(vector->v_list[0])) /* overflow */
       return -1;
 
     if (vector->v_list != (void **)(vector + 1) && index == vector->v_len) {
-      if (!(list = su_realloc(vector->v_home, vector->v_list,
-			      n * sizeof(vector->v_list[0]))))
+      if (!(list = su_realloc(vector->v_home, vector->v_list, newsize)))
 	return 0;
     }
     else {
-      if (!(list = su_alloc(vector->v_home, n * sizeof(vector->v_list[0]))))
+      if (!(list = su_alloc(vector->v_home, newsize)))
 	return 0;
 
       memcpy(list, vector->v_list, index * sizeof(vector->v_list[0]));
@@ -136,7 +135,7 @@ static int su_vector_make_place(su_vector_t *vector, unsigned index)
     }
     
     vector->v_list = list;
-    vector->v_size = n;
+    vector->v_size *= 2;
   }
   else {
     memmove(vector->v_list + index + 1, vector->v_list + index, 
@@ -163,7 +162,7 @@ int su_vector_insert(su_vector_t *vector, unsigned index, void *item)
 {
   if (vector && 
       index <= vector->v_len &&
-      su_vector_make_place(vector, index)) {
+      su_vector_make_place(vector, index) > 0) {
     vector->v_list[index] = item;
     return 0;
   }
@@ -289,8 +288,10 @@ int su_vector_is_empty(su_vector_t const *vector)
 void **su_vector_get_array(su_vector_t *vector)
 {
   if (vector) {
-    void **retval = 
-      su_alloc(vector->v_home, sizeof(retval[0]) * (vector->v_len + 1));
+    void **retval;
+    size_t newsize = sizeof(retval[0]) * (vector->v_len + 1);
+
+    retval = su_alloc(vector->v_home, newsize);
     
     if (retval) {
       retval[vector->v_len] = NULL;

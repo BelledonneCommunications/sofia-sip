@@ -265,7 +265,7 @@ void su_guid_generate(su_guid_t *v)
 /*
  * Human-readable form of GloballyUniqueID
  */
-int su_guid_sprintf(char* buf, size_t len, su_guid_t const *v)
+isize_t su_guid_sprintf(char* buf, size_t len, su_guid_t const *v)
 {
   char mybuf[su_guid_strlen + 1];
   sprintf(mybuf, "%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",

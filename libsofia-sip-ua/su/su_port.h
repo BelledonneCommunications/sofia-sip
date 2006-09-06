@@ -69,7 +69,7 @@ SOFIA_BEGIN_DECLS
 
 /** Message */
 struct su_msg_s {
-  int            sum_size;
+  isize_t        sum_size;
   su_msg_t      *sum_next;
   su_task_r      sum_to;
   su_task_r      sum_from;

@@ -131,7 +131,7 @@ void su_md5_deinit(su_md5_t *context)
 void
 su_md5_update(su_md5_t *ctx,
 	      void const *b,
-	      unsigned len)
+	      usize_t len)
 {
   unsigned char const *buf = (unsigned char const *)b;
   uint32_t t;
@@ -200,7 +200,7 @@ void mem_i_cpy(unsigned char *d, unsigned char const *s, int len)
 void
 su_md5_iupdate(su_md5_t *ctx,
 	       void const *b,
-	       unsigned len)
+	       usize_t len)
 {
   unsigned char const *buf = (unsigned char const *)b;
   uint32_t t;

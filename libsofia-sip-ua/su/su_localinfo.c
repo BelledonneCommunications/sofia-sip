@@ -285,7 +285,7 @@ char const *su_gli_strerror(int error)
  */
 su_localinfo_t *su_copylocalinfo(su_localinfo_t const *li0)
 {
-  int n;
+  size_t n;
   su_localinfo_t *li, *retval = NULL, **lli = &retval;
 
 # define SLEN(s) ((s) ? strlen(s) + 1 : 0)

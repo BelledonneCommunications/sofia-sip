@@ -251,12 +251,12 @@ SOFIAPUBFUN int su_getmsgsize(su_socket_t s);
 
 /** Scatter-gather send. */
 SOFIAPUBFUN
-int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags, 
-             su_sockaddr_t const *su, socklen_t sulen);
+issize_t su_vsend(su_socket_t, su_iovec_t const iov[], isize_t len, int flags,
+		  su_sockaddr_t const *su, socklen_t sulen);
 /** Scatter-gather receive. */
 SOFIAPUBFUN
-int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags, 
-             su_sockaddr_t *su, socklen_t *sulen);
+issize_t su_vrecv(su_socket_t, su_iovec_t iov[], isize_t len, int flags,
+		  su_sockaddr_t *su, socklen_t *sulen);
 /** Return local IP address */
 SOFIAPUBFUN int su_getlocalip(su_sockaddr_t *sin);
 

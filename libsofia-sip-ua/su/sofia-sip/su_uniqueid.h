@@ -87,7 +87,7 @@ SOFIAPUBFUN void su_guid_generate(su_guid_t *guid);
  * The function guid_sprintf() returns length of the formatted
  * globally unique identifier excluding the final NUL.
  */
-SOFIAPUBFUN int su_guid_sprintf(char* buf, size_t len, su_guid_t const *guid);
+SOFIAPUBFUN isize_t su_guid_sprintf(char* buf, size_t len, su_guid_t const *guid);
 
 enum { 
   /** Length of guid in hex format */ 

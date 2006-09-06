@@ -34,8 +34,8 @@
  * @date Created: Thu Aug 19 01:12:25 1999 ppessi
  */
 
-#ifndef SU_CONFIG_H
-#include <sofia-sip/su_config.h>
+#ifndef SU_TYPES_H
+#include <sofia-sip/su_types.h>
 #endif
 
 #include <stdarg.h>
@@ -55,30 +55,30 @@ typedef struct su_alock su_alock_t;
 
 /** Memory home structure */
 struct su_home_s { 
-  int  suh_size;
+  int         suh_size;
   su_block_t *suh_blocks;
   su_alock_t *suh_lock;
 };
 
 #define SU_HOME_INIT(obj) { 0 }
 
-SU_DLL void *su_home_new(int size)
+SU_DLL void *su_home_new(isize_t size)
      __attribute__((__malloc__));
 SU_DLL void *su_home_ref(su_home_t const *);
 SU_DLL int su_home_unref(su_home_t *);
 
 SU_DLL int su_home_desctructor(su_home_t *, void (*)(void *));
 
-SU_DLL void *su_home_clone(su_home_t *parent, int size)
+SU_DLL void *su_home_clone(su_home_t *parent, isize_t size)
      __attribute__((__malloc__));
 
 SU_DLL int  su_home_init(su_home_t *h);
 
 SU_DLL void su_home_deinit(su_home_t *h);
 
-SU_DLL void su_home_preload(su_home_t *h, int n, int size);
+SU_DLL void su_home_preload(su_home_t *h, isize_t n, isize_t size);
 
-SU_DLL su_home_t *su_home_auto(void *area, int size);
+SU_DLL su_home_t *su_home_auto(void *area, isize_t size);
 
 #define SU_HOME_AUTO_SIZE(n)				\
   (((n) + ((sizeof(su_home_t) + 7) & ~8) +		\
@@ -98,20 +98,20 @@ SU_DLL int su_home_mutex_lock(su_home_t *home);
 
 SU_DLL int su_home_mutex_unlock(su_home_t *home);
 
-SU_DLL void *su_alloc(su_home_t *h, int size)
+SU_DLL void *su_alloc(su_home_t *h, isize_t size)
      __attribute__((__malloc__));
-SU_DLL void *su_zalloc(su_home_t *h, int size)
+SU_DLL void *su_zalloc(su_home_t *h, isize_t size)
      __attribute__((__malloc__));
-SU_DLL void *su_salloc(su_home_t *h, int size)
+SU_DLL void *su_salloc(su_home_t *h, isize_t size)
      __attribute__((__malloc__));
-SU_DLL void *su_realloc(su_home_t *h, void *data, int size)
+SU_DLL void *su_realloc(su_home_t *h, void *data, isize_t size)
      __attribute__((__malloc__));
 
 SU_DLL char *su_strdup(su_home_t *home, char const *s)
      __attribute__((__malloc__));
 SU_DLL char *su_strcat(su_home_t *home, char const *s1, char const *s2)
      __attribute__((__malloc__));
-SU_DLL char *su_strndup(su_home_t *home, char const *s, int n)
+SU_DLL char *su_strndup(su_home_t *home, char const *s, isize_t n)
      __attribute__((__malloc__));
 
 SU_DLL char *su_strcat_all(su_home_t *home, ...)

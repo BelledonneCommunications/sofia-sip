@@ -98,9 +98,9 @@ enum { N = 8 };
 struct su_strlst_s
 {
   su_home_t    sl_home[1];
-  unsigned     sl_size;
-  unsigned     sl_len;
-  unsigned     sl_total;
+  size_t       sl_size;
+  size_t       sl_len;
+  size_t       sl_total;
   char const **sl_list;
 };
 
@@ -112,7 +112,7 @@ su_strlst_t *su_strlst_vcreate_with_by(su_home_t *home,
 				       int deeply)
 {
   su_strlst_t *self;
-  int i, n, m;
+  size_t i, n, m;
   size_t total, size;
 
   m = 0, total = 0;
@@ -252,8 +252,7 @@ su_strlst_t *su_strlst_copy_by(su_home_t *home,
 			       int deeply)
 {
   su_strlst_t *self;
-  int N, i;
-  size_t size, deepsize = 0;
+  size_t N, i, size, deepsize = 0;
 
   if (orig == NULL)
     return NULL;
@@ -318,14 +317,13 @@ void su_strlst_destroy(su_strlst_t *self)
 static int su_strlst_increase(su_strlst_t *self)
 {
   if (self->sl_size <= self->sl_len + 1) {
-    unsigned n = 2 * self->sl_size;
+    size_t size = 2 * self->sl_size * sizeof(self->sl_list[0]);
     char const **list;
 
     if (self->sl_list != (char const **)(self + 1)) {
-      list = su_realloc(self->sl_home, (void *)self->sl_list,
-			n * sizeof(*self->sl_list));
+      list = su_realloc(self->sl_home, (void *)self->sl_list, size);
     } else {
-      list = su_alloc(self->sl_home, n * sizeof(*self->sl_list));
+      list = su_alloc(self->sl_home, size);
       if (list)
 	memcpy(list, self->sl_list, self->sl_len * sizeof(*self->sl_list));
     }
@@ -334,7 +332,7 @@ static int su_strlst_increase(su_strlst_t *self)
       return 0;
 
     self->sl_list = list;
-    self->sl_size = n;
+    self->sl_size = 2 * self->sl_size;
   }
 
   return 1;
@@ -350,11 +348,14 @@ static int su_strlst_increase(su_strlst_t *self)
  */
 char *su_strlst_dup_append(su_strlst_t *self, char const *str)
 {
+  size_t len;
+
   if (str == NULL)
     str = "";
 
-  if (self && str && su_strlst_increase(self)) {
-    int len = strlen(str);
+  len = strlen(str);
+
+  if (self && su_strlst_increase(self)) {
     char *retval = su_alloc(self->sl_home, len + 1);
     if (retval) {
       memcpy(retval, str, len);
@@ -546,13 +547,15 @@ char *su_strlst_join(su_strlst_t *self, su_home_t *home, char const *sep)
     sep = "";
 
   if (self && self->sl_len > 0) {
-    unsigned seplen = strlen(sep);
-    unsigned total = self->sl_total + seplen * (self->sl_len - 1);
-    char *retval = su_alloc(home, total + 1);
+    size_t seplen = strlen(sep);
+    size_t total = self->sl_total + seplen * (self->sl_len - 1);
+    char *retval;
+
+    retval = su_alloc(home, total + 1);
 
     if (retval) {
       char *s = retval;
-      unsigned i = 0, len;
+      size_t i = 0, len;
 
       for (;;) {
 	len = strlen(self->sl_list[i]);
@@ -676,12 +679,15 @@ unsigned su_strlst_len(su_strlst_t const *l)
 char const **su_strlst_get_array(su_strlst_t *self)
 {
   if (self) {
-    char const **retval = 
-      su_alloc(self->sl_home, sizeof(retval[0]) * (self->sl_len + 1));
+    char const **retval;
+    size_t size = sizeof(retval[0]) * (self->sl_len + 1);
+
+    retval = su_alloc(self->sl_home, size);
     
     if (retval) {
+      memcpy(retval, self->sl_list, sizeof(retval[0]) * self->sl_len);
       retval[self->sl_len] = NULL;
-      return memcpy(retval, self->sl_list, sizeof(retval[0]) * self->sl_len);
+      return retval;
     }
   }
 

@@ -60,12 +60,12 @@ typedef struct su_md5_t {
 SOFIAPUBFUN void su_md5_init(su_md5_t *context);
 SOFIAPUBFUN void su_md5_deinit(su_md5_t *context);
 SOFIAPUBFUN void su_md5_update(su_md5_t *context,
-			       void const *buf, unsigned len);
+			       void const *buf, usize_t len);
 SOFIAPUBFUN void su_md5_strupdate(su_md5_t *ctx, char const *s);
 SOFIAPUBFUN void su_md5_str0update(su_md5_t *ctx, char const *s);
 
 SOFIAPUBFUN void su_md5_iupdate(su_md5_t *context,
-				void const *buf, unsigned len);
+				void const *buf, usize_t len);
 SOFIAPUBFUN void su_md5_striupdate(su_md5_t *ctx, char const *s);
 SOFIAPUBFUN void su_md5_stri0update(su_md5_t *ctx, char const *s);
 

@@ -51,7 +51,7 @@
 char *su_strdup(su_home_t *home, char const *s)
 {
   if (s) {
-    int n = strlen(s);
+    size_t n = strlen(s);
     char *retval = su_alloc(home, n + 1);
     if (retval)
       strncpy(retval, s, n)[n] = 0;
@@ -76,14 +76,14 @@ char *su_strdup(su_home_t *home, char const *s)
  */
 char *su_strcat(su_home_t *home, char const *s1, char const *s2)
 {
-  int n1, n2;
+  size_t n1, n2;
   char *retval;
 
   if (s1 == NULL)
     return su_strdup(home, s2);
   else if (s2 == NULL)
     return su_strdup(home, s1);
-    
+
   n1 = strlen(s1); n2 = strlen(s2);
   retval = su_alloc(home, n1 + n2 + 1);
   if (retval) {
@@ -156,7 +156,7 @@ char *su_strcat_all(su_home_t *home, ...)
  * @return The function su_strndup() returns pointer to the newly created
  *         string, or @c NULL upon an error.
  */
-char *su_strndup(su_home_t *home, char const *s, int n)
+char *su_strndup(su_home_t *home, char const *s, isize_t n)
 {
   if (s) {
     char *retval = su_alloc(home, n + 1);

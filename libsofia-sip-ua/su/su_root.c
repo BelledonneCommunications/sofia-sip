@@ -1387,16 +1387,17 @@ int su_msg_create(su_msg_r        rmsg,
 		  su_task_r const to,
 		  su_task_r const from,
 		  su_msg_f        wakeup,
-		  int             size)
+		  isize_t         size)
 {
   su_port_t *port = to->sut_port;
   su_msg_t *msg;
 
   SU_PORT_LOCK(port, su_msg_create);
-  msg = su_salloc(NULL /*port->sup_home*/, sizeof(*msg) + size);
+  msg = su_zalloc(NULL /*port->sup_home*/, sizeof(*msg) + size);
   SU_PORT_UNLOCK(port, su_msg_create);
 
   if (msg) {
+    msg->sum_size = sizeof(*msg) + size;
     SU_TASK_COPY(msg->sum_to, to, su_msg_create);
     SU_TASK_COPY(msg->sum_from, from, su_msg_create);
     msg->sum_func = wakeup;
@@ -1439,7 +1440,7 @@ int su_msg_report(su_msg_r msg,
  */
 
 int su_msg_reply(su_msg_r reply, su_msg_r const msg,
-		 su_msg_f wakeup, int size)
+		 su_msg_f wakeup, isize_t size)
 {
   su_msg_r msg0;
 
@@ -1537,7 +1538,7 @@ su_msg_arg_t *su_msg_data(su_msg_cr rmsg)
 }
 
 /** Get size of message data area. */
-int su_msg_size(su_msg_cr rmsg)
+isize_t su_msg_size(su_msg_cr rmsg)
 {
   return rmsg[0] ? rmsg[0]->sum_size - sizeof(su_msg_t) : 0;
 }

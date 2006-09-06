@@ -167,7 +167,7 @@ int su_soerror(su_socket_t s)
 int su_setreuseaddr(su_socket_t s, int reuse)
 {
   return setsockopt(s, SOL_SOCKET, SO_REUSEADDR, 
-		    (void *)&reuse, sizeof(reuse));
+		    (void *)&reuse, (socklen_t)sizeof(reuse));
 }
 
 
@@ -202,15 +202,16 @@ struct in_addr6 const *su_in6addr_loopback(void)
 #if SU_HAVE_WINSOCK
 
 /** Scatter/gather send */
-int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags, 
-             su_sockaddr_t const *su, socklen_t sulen)
+issize_t su_vsend(su_socket_t s,
+		  su_iovec_t const iov[], isize_t iovlen, int flags,
+		  su_sockaddr_t const *su, socklen_t sulen)
 {
   int ret;
   DWORD bytes_sent = -1;
   
   ret =  WSASendTo(s,
 		   (LPWSABUF)iov,
-		   iovlen,
+		   (DWORD)iovlen,
 		   &bytes_sent,
 		   flags,
 		   &su->su_sa,
@@ -218,40 +219,45 @@ int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags,
 		   NULL,
 		   NULL);
   if (ret < 0)
-    return ret;
+    return (issize_t)ret;
   else
-    return bytes_sent;
+    return (issize_t)bytes_sent;
 }
 
 
 /** Scatter/gather recv */
-int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags, 
-             su_sockaddr_t *su, socklen_t *sulen)
+issize_t su_vrecv(su_socket_t s, su_iovec_t iov[], isize_t iovlen, int flags,
+		  su_sockaddr_t *su, socklen_t *sulen)
 {
   int ret;
   DWORD bytes_recv = -1;
   DWORD dflags = flags;
+  int fromlen = sulen ? *sulen : 0;
 
   ret =  WSARecvFrom(s,
 		     (LPWSABUF)iov,
-		     iovlen,
+		     (DWORD)iovlen,
 		     &bytes_recv,
 		     &dflags,
 		     &su->su_sa,
-		     sulen,
+		     sulen ? &fromlen : NULL,
 		     NULL,
 		     NULL);
+
+  if (sulen) *sulen = fromlen;
+
   if (ret < 0)
-    return ret;
+    return (issize_t)ret;
   else
-    return bytes_recv;
+    return (issize_t)bytes_recv;
 }
 
 
 #else
 
-int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags, 
-             su_sockaddr_t const *su, socklen_t sulen)
+issize_t su_vsend(su_socket_t s,
+		  su_iovec_t const iov[], isize_t iovlen, int flags,
+		  su_sockaddr_t const *su, socklen_t sulen)
 {
   struct msghdr hdr[1] = {{0}};
 
@@ -263,11 +269,11 @@ int su_vsend(su_socket_t s, su_iovec_t const iov[], int iovlen, int flags,
   return sendmsg(s, hdr, flags);
 }
 
-int su_vrecv(su_socket_t s, su_iovec_t iov[], int iovlen, int flags, 
-             su_sockaddr_t *su, socklen_t *sulen)
+issize_t su_vrecv(su_socket_t s, su_iovec_t iov[], isize_t iovlen, int flags,
+		  su_sockaddr_t *su, socklen_t *sulen)
 {
   struct msghdr hdr[1] = {{0}};
-  int retval;
+  issize_t retval;
 
   hdr->msg_name = (void *)su;
   if (su && sulen)
