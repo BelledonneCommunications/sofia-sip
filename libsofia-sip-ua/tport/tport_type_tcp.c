@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE tport_connect.c Transport using HTTP CONNECT.
+/**@CFILE tport_type_tcp.c TCP Transport
  *
  * See tport.docs for more detailed description of tport interface.
  *

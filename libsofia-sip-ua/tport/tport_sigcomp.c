@@ -22,7 +22,9 @@
  *
  */
 
-/**@CFILE tport_connect.c Transport using HTTP CONNECT.
+/**@CFILE tport_sigcomp.c Transport using SigComp.
+ *
+ * Incomplete.
  *
  * See tport.docs for more detailed description of tport interface.
  *
@@ -804,7 +806,6 @@ tport_sigcomp_deliver(tport_t *self, msg_t *msg, su_time_t now)
   if (d->d_udvm && *d->d_udvm)
     sigcomp_udvm_accept(*d->d_udvm, NULL); /* reject */
 }
-#endif
 
 
 #if HAVE_SIGCOMP && 0
@@ -881,4 +882,3 @@ int tport_recv_sigcomp_dgram(tport_t *self, int N)
   /* XXX - send NACK ? */
   return su_seterrno(error);     
 }
-

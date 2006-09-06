@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE tport_connect.c Transport using HTTP CONNECT.
+/**@CFILE tport_logging.c Logging transported messages.
  *
  * See tport.docs for more detailed description of tport interface.
  *
