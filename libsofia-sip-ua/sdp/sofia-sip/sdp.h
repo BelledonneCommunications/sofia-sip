@@ -544,10 +544,10 @@ typedef struct sdp_printer_s sdp_printer_t;
 typedef sdp_printer_t *sdp_printer;
 
 SOFIAPUBFUN sdp_printer_t *sdp_print(su_home_t *, sdp_session_t const *session, 
-				     char msgbuf[], int maxmsgsize, int flags);
+				     char msgbuf[], isize_t maxmsgsize, int flags);
 SOFIAPUBFUN char const *sdp_printing_error(sdp_printer_t *p);
 SOFIAPUBFUN char const *sdp_message(sdp_printer_t *p);
-SOFIAPUBFUN int   sdp_message_size(sdp_printer_t *p);
+SOFIAPUBFUN isize_t sdp_message_size(sdp_printer_t *p);
 SOFIAPUBFUN void sdp_printer_free(sdp_printer_t *p);
 
 #define sdp_mapped_attribute_find sdp_attribute_mapped_find

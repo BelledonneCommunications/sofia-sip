@@ -58,8 +58,8 @@ struct sdp_printer_s {
   int        pr_size;
   su_home_t *pr_home;
   char      *pr_buffer;
-  int        pr_bsiz;
-  int        pr_used;
+  size_t     pr_bsiz;
+  size_t     pr_used;
   /* various flags */
   unsigned   pr_ok : 1;
   unsigned   pr_strict : 1;
@@ -116,7 +116,7 @@ static void print_session(sdp_printer_t *p, sdp_session_t const *session);
 sdp_printer_t *sdp_print(su_home_t *home, 
 			 sdp_session_t const *session, 
 			 char msgbuf[], 
-			 int msgsize, 
+			 isize_t msgsize, 
 			 int flags)
 {
   sdp_printer_t *p = su_salloc(home, sizeof(*p));
@@ -203,7 +203,7 @@ char const *sdp_message(sdp_printer_t *p)
  * The function sdp_message_size() returns number of bytes in SDP
  * message or @c 0 upon an error.
  */
-int   sdp_message_size(sdp_printer_t *p)
+isize_t sdp_message_size(sdp_printer_t *p)
 {
   if (p && p->pr_ok)
     return p->pr_used;
