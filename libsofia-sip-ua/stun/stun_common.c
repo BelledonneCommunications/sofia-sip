@@ -241,9 +241,10 @@ int stun_parse_attr_error_code(stun_attr_t *attr, const unsigned char *p, unsign
 
   error->code = (tmp & STUN_EC_CLASS)*100 + (tmp & STUN_EC_NUM);
 
-  error->phrase = (char *) malloc(len-4);
+  error->phrase = (char *) malloc(len-3);
 
   strncpy(error->phrase, (char*)p+4, len-4);
+  error->phrase[len - 4] = '\0';
 
   attr->pattr = error;
   stun_init_buffer(&attr->enc_buf);
@@ -381,38 +382,35 @@ int stun_encode_uint32(stun_attr_t *attr) {
 
 int stun_encode_error_code(stun_attr_t *attr) {
   short int class, num;
-  char *reason;
-  int phrase_len, result;
+  size_t phrase_len, padded;
   stun_attr_errorcode_t *error;
 
   error = (stun_attr_errorcode_t *) attr->pattr;
   class = error->code / 100;
   num = error->code % 100;
+
   phrase_len = strlen(error->phrase);
+  if (phrase_len + 8 > 65536)
+    phrase_len = 65536 - 8;
+
   /* note: align the phrase len (see RFC3489:11.2.9) */
-  phrase_len += (phrase_len % 4 == 0 ? 0 : 4 - (phrase_len % 4));
-  reason = malloc(attr->enc_buf.size);
-  memset(reason, 0, attr->enc_buf.size);
-  memcpy(reason, error->phrase, phrase_len);
+  padded = phrase_len + (phrase_len % 4 == 0 ? 0 : 4 - (phrase_len % 4));
 
   /* note: error-code has four octets of headers plus the 
    *       reason field -> len+4 octets */
-  attr->enc_buf.size = phrase_len + 4;
-
-  assert(attr->enc_buf.size + 4 < 65536);
-
-  if (stun_encode_type_len(attr, (uint16_t)attr->enc_buf.size) < 0) {
-    result = -1;
+  if (stun_encode_type_len(attr, (uint16_t)(padded + 4)) < 0) {
+    return -1;
   }
   else {
+    assert(attr->enc_buf.size == padded + 8);
     memset(attr->enc_buf.data+4, 0, 2);
-    memcpy(attr->enc_buf.data+6, &class, 1);
-    memcpy(attr->enc_buf.data+7, &num, 1);
+    attr->enc_buf.data[6] = class;
+    attr->enc_buf.data[7] = num;
     /* note: 4 octets of TLV header and 4 octets of error-code header */
-    memcpy(attr->enc_buf.data+8, reason, attr->enc_buf.size - 8);
+    memcpy(attr->enc_buf.data+8, error->phrase, 
+	   phrase_len);
+    memset(attr->enc_buf.data + 8 + phrase_len, 0, padded - phrase_len);
   }
-
-  free(reason);
 
   return attr->enc_buf.size;
 }

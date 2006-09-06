@@ -2598,19 +2598,27 @@ int stun_process_error_response(stun_msg_t *msg)
  */
 int stun_set_uname_pwd(stun_handle_t *sh,
 		       const char *uname,
-		       int len_uname,
+		       isize_t len_uname,
 		       const char *pwd,
-		       int len_pwd)
+		       isize_t len_pwd)
 {
   enter;
 
-  sh->sh_username.data = (unsigned char *) malloc(len_uname);
-  memcpy(sh->sh_username.data, uname, len_uname);
-  sh->sh_username.size = len_uname;
+  sh->sh_username.data = malloc(len_uname);
+  if (sh->sh_username.data) {
+    memcpy(sh->sh_username.data, uname, len_uname);
+    sh->sh_username.size = len_uname;
+  }
+  else
+    return -1;
   
-  sh->sh_passwd.data = (unsigned char *) malloc(len_pwd);
-  memcpy(sh->sh_passwd.data, pwd, len_pwd);
-  sh->sh_passwd.size = len_pwd;
+  sh->sh_passwd.data = malloc(len_pwd);
+  if (sh->sh_passwd.data) {
+    memcpy(sh->sh_passwd.data, pwd, len_pwd);
+    sh->sh_passwd.size = len_pwd;
+  }
+  else
+    return -1;
 
   sh->sh_use_msgint = 1; /* turn on message integrity ussage */
   
@@ -2854,25 +2862,25 @@ int stun_msg_is_keepalive(uint16_t data)
 }
 
 /**
- * Determines length of STUN message (0 if not stun). 
+ * Determines length of STUN message (0 (-1?) if not stun). 
  */
-int stun_message_length(void *data, int len, int end_of_message)
+int stun_message_length(void *data, isize_t len, int end_of_message)
 {
   unsigned char *p;
-  uint16_t tmp16, msg_type;
+  uint16_t msg_type;
+
+  if (len < 4)
+    return -1;
+
   /* parse header first */
   p = data;
-  memcpy(&tmp16, p, 2);
-  msg_type = ntohs(tmp16);
+  msg_type = (p[0] << 8) | p[1];
 
   if (msg_type == BINDING_REQUEST ||
       msg_type == BINDING_RESPONSE ||
       msg_type == BINDING_ERROR_RESPONSE) {
-    p+=2;
-    memcpy(&tmp16, p, 2);
-
     /* return message length */
-    return ntohs(tmp16);
+    return (p[0] << 8) | p[1];
   }
   else
     return -1;
@@ -2881,12 +2889,15 @@ int stun_message_length(void *data, int len, int end_of_message)
 /** Process incoming message */
 int stun_process_message(stun_handle_t *sh, su_socket_t s, 
 			 su_sockaddr_t *sa, socklen_t salen,
-			 void *data, int len)
+			 void *data, isize_t len)
 {
   int retval = -1;
   stun_msg_t msg;
 
   enter;
+
+  if (len >= 65536)
+    len = 65536;
 
   /* Message received. */
   msg.enc_buf.data = data;
@@ -3059,7 +3070,7 @@ int stun_keepalive_destroy(stun_handle_t *sh, su_socket_t s)
 
 int stun_process_request(su_socket_t s, stun_msg_t *req,
 			 int sid, su_sockaddr_t *from_addr,
-			 int from_len)
+			 socklen_t from_len)
 {
   stun_msg_t resp;
   su_sockaddr_t mod_addr[1] = {{ 0 }}, src_addr[1] = {{ 0 }}, chg_addr[1] = {{ 0 }};

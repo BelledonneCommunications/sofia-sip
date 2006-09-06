@@ -92,10 +92,6 @@ extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 
-/** other functions */
-int stun_set_uname_pwd(stun_handle_t *se, const char *uname, int len_uname, 
-		       const char *pwd, int len_pwd);
-
 /* internal functions declaration */
 int stun_make_sharedsecret_req(stun_msg_t *msg);
 

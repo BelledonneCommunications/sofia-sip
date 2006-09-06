@@ -202,11 +202,11 @@ SOFIAPUBFUN su_addrinfo_t const *stun_server_address(stun_handle_t *sh);
 SOFIAPUBFUN
 int stun_process_message(stun_handle_t *sh, su_socket_t s,
 			 su_sockaddr_t *sa, socklen_t salen,
-			 void *data, int len);
+			 void *data, isize_t len);
 SOFIAPUBFUN
 int stun_process_request(su_socket_t s, stun_msg_t *req,
 			 int sid, su_sockaddr_t *from_addr,
-			 int from_len);
+			 socklen_t from_len);
 
 /* ------------------------------------------------------------------- 
  * Functions for 'Binding Discovery' usage (RFC3489/3489bis) */
@@ -237,8 +237,8 @@ SOFIAPUBFUN stun_nattype_t stun_nattype(stun_discovery_t *sd);
 
 SOFIAPUBFUN
 int stun_test_lifetime(stun_handle_t *sh,
-			stun_discovery_f, stun_discovery_magic_t *magic,
-			tag_type_t tag, tag_value_t value, ...);
+		       stun_discovery_f, stun_discovery_magic_t *magic,
+		       tag_type_t tag, tag_value_t value, ...);
 SOFIAPUBFUN int stun_lifetime(stun_discovery_t *sd);
 
 /* ------------------------------------------------------------------- 
@@ -247,12 +247,12 @@ SOFIAPUBFUN int stun_lifetime(stun_discovery_t *sd);
 SOFIAPUBFUN 
 int stun_set_uname_pwd(stun_handle_t *sh,
 		       const char *uname,
-		       int len_uname, 
+		       isize_t len_uname, 
 		       const char *pwd,
-		       int len_pwd);
+		       isize_t len_pwd);
 
 SOFIAPUBFUN int stun_msg_is_keepalive(uint16_t data);
-SOFIAPUBFUN int stun_message_length(void *data, int len, int end_of_message);
+SOFIAPUBFUN int stun_message_length(void *data, isize_t len, int end_of_message);
 
 /* Create a keepalive dispatcher for bound SIP sockets */
 
