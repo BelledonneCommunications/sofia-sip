@@ -151,7 +151,7 @@ static int site_create(tester_t *t, int status, char const *phrase,
 
 static int init_test(tester_t *t)
 {
-  int s;
+  su_socket_t s;
   char const *agent_pem;
 
   BEGIN();
@@ -161,7 +161,8 @@ static int init_test(tester_t *t)
   TEST_1(t->t_mclass);
 
   t->t_addr->su_len = (sizeof t->t_addr->su_sin);
-  s = socket(t->t_addr->su_family = AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
+  s = su_socket(t->t_addr->su_family = AF_INET, SOCK_STREAM, 0);
+  TEST_1(s != SOCKET_ERROR);
   TEST_1(inet_pton(AF_INET, "127.0.0.1", &t->t_addr->su_sin.sin_addr) >= 0);
   TEST_1(bind(s, &t->t_addr->su_sa, 
 	      t->t_addrlen = (sizeof t->t_addr->su_sin)) != -1);
@@ -449,14 +450,14 @@ static int send_request(tester_t *t, char const *req, size_t reqlen,
 			char reply[], int rlen,
 			int *return_len)
 {
-  static su_socket_t c = -1;
+  static su_socket_t c = SOCKET_ERROR;
   int m, r;
   su_wait_t w[1];
 
   BEGIN();
 
-  if (c == -1) {
-    c = socket(t->t_addr->su_family, SOCK_STREAM, 0); TEST_1(c != -1);
+  if (c == SOCKET_ERROR) {
+    c = su_socket(t->t_addr->su_family, SOCK_STREAM, 0); TEST_1(c != SOCK_STREAM);
     TEST_1(connect(c, &t->t_addr->su_sa, t->t_addrlen) != -1);
 
     while (su_root_step(t->t_root, 1) == 0);
@@ -613,7 +614,7 @@ static int test_requests(tester_t *t)
 static int init_engine(tester_t *t)
 {
   BEGIN();
-  int s;
+  su_socket_t s;
 
   t->t_engine = nth_engine_create(t->t_root, 
 				  NTHTAG_STREAMING(0),

@@ -3262,7 +3262,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
 
   if (error == EAGAIN || error == EWOULDBLOCK) {
     SU_DEBUG_5(("tport_vsend(%p): %s with (s=%d %s/%s:%s%s)\n", 
-		self, "EAGAIN", self->tp_socket, 
+		self, "EAGAIN", (int)self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp));
     return 0;
   }
@@ -3271,7 +3271,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
 
   if (self->tp_addrinfo->ai_family == AF_INET) {
     SU_DEBUG_3(("tport_vsend(%p): %s with (s=%d %s/%s:%s%s)\n", 
-		self, su_strerror(error), self->tp_socket, 
+		self, su_strerror(error), (int)self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp));
   }
 #if SU_HAVE_IN6
@@ -3279,7 +3279,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
     su_sockaddr_t const *su = (su_sockaddr_t const *)ai->ai_addr;
     SU_DEBUG_3(("tport_vsend(%p): %s with "
 		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%zd)\n", 
-		self, su_strerror(error), self->tp_socket, 
+		self, su_strerror(error), (int)self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp,
 		su->su_scope_id, ai->ai_addrlen));
   }
@@ -3288,7 +3288,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
     SU_DEBUG_3(("\ttport_vsend(%p): %s with "
 		"(s=%d, AF=%u addrlen=%zd)%s\n", 
 		self, su_strerror(error), 
-		self->tp_socket, ai->ai_family, ai->ai_addrlen, comp));
+		(int)self->tp_socket, ai->ai_family, ai->ai_addrlen, comp));
   }
 
 #if 0

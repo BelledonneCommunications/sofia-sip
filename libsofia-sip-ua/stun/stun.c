@@ -547,7 +547,7 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
   /* open tcp connection to server */
   s = su_socket(family = AF_INET, SOCK_STREAM, 0);
 
-  if (s == -1) {
+  if (s == SOCKET_ERROR) {
     STUN_ERROR(errno, socket);
     return -1;
   }
@@ -738,7 +738,8 @@ void stun_handle_destroy(stun_handle_t *sh)
 
 
 /** Create wait object and register it to the handle callback */
-int assign_socket(stun_discovery_t *sd, su_socket_t s, int reg_socket) 
+static
+int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket) 
 {
   stun_handle_t *sh = sd->sd_handle;
   int events;
@@ -754,8 +755,8 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int reg_socket)
 
   enter;
 
-  if (s == -1) {
-    SU_DEBUG_3(("%s: invalid socket.\n", __func__));
+  if (s == SOCKET_ERROR) {
+    SU_DEBUG_3(("%s: invalid socket\n", __func__));
     return errno = EINVAL, -1;
   }
 
@@ -769,7 +770,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int reg_socket)
   }
   sd->sd_socket = s;
 
-  if (reg_socket != 1)
+  if (!register_socket)
     return 0;
 
   /* set socket asynchronous */
@@ -1037,7 +1038,7 @@ int stun_bind(stun_handle_t *sh,
 	      tag_type_t tag, tag_value_t value,
 	      ...)
 {
-  su_socket_t s = -1;
+  su_socket_t s = SOCKET_ERROR;
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
@@ -1206,7 +1207,7 @@ int stun_test_nattype(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   su_sockaddr_t bind_addr;
-  su_socket_t s = -1;
+  su_socket_t s = SOCKET_ERROR;
   socklen_t bind_len;
   su_sockaddr_t *destination = NULL;
 
@@ -1496,7 +1497,7 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
     /* closed TLS connection */
     SSL_shutdown(ssl);
 
-    su_close(sd->sd_socket);
+    su_close(sd->sd_socket), sd->sd_socket = SOCKET_ERROR;
 
     SSL_free(self->sh_ssl), ssl = NULL;
     SSL_CTX_free(self->sh_ctx), ctx = NULL;
@@ -2411,7 +2412,7 @@ static int stun_send_binding_request(stun_request_t *req,
 				     su_sockaddr_t  *srvr_addr)
 {
   su_timer_t *sendto_timer = NULL;
-  int s;
+  su_socket_t s;
   stun_handle_t *sh = req->sr_handle;
   stun_msg_t *msg =  req->sr_msg;
 
@@ -2705,7 +2706,8 @@ int stun_test_lifetime(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
-  int s = -1, err, index = 0, s_reg = 0;
+  su_socket_t s = SOCKET_ERROR;
+  int err, index = 0, s_reg = 0;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   char const *server = NULL;
   su_socket_t sockfdy;
@@ -2935,7 +2937,7 @@ int stun_keepalive(stun_handle_t *sh,
 		   tag_type_t tag, tag_value_t value,
 		   ...)
 {
-  int s = -1;
+  su_socket_t s = SOCKET_ERROR;
   unsigned int timeout = 0;
   ta_list ta;
   stun_discovery_t *sd;

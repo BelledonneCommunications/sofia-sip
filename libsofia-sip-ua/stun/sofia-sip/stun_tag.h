@@ -36,6 +36,9 @@
 #ifndef SU_TAG_H
 #include <sofia-sip/su_tag.h>
 #endif
+#ifndef SU_TAG_IO_H
+#include <sofia-sip/su_tag_io.h>
+#endif
 
 SOFIA_BEGIN_DECLS
 
@@ -66,9 +69,9 @@ SOFIAPUBVAR tag_typedef_t stuntag_integrity;
 #define STUNTAG_INTEGRITY_REF(x) stuntag_integrity_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t stuntag_integrity_ref;
 
-#define STUNTAG_SOCKET(x) stuntag_socket, tag_int_v(x)
+#define STUNTAG_SOCKET(x) stuntag_socket, tag_socket_v(x)
 SOFIAPUBVAR tag_typedef_t stuntag_socket;
-#define STUNTAG_SOCKET_REF(x) stuntag_socket_ref, tag_int_vr(&(x))
+#define STUNTAG_SOCKET_REF(x) stuntag_socket_ref, tag_socket_vr(&(x))
 SOFIAPUBVAR tag_typedef_t stuntag_socket_ref;
 
 #define STUNTAG_REGISTER_EVENTS(x) stuntag_register_events, tag_int_v(x)

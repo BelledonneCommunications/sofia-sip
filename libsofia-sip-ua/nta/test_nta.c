@@ -153,8 +153,7 @@ struct agent_t {
 
   /* Dummy servers */
   char const     *ag_sink_port;
-  int             ag_sink_socket;
-  int             ag_down_socket;
+  su_socket_t     ag_sink_socket, ag_down_socket;
 };
 
 static int test_init(agent_t *ag, char const *resolv_conf);
@@ -425,8 +424,9 @@ int test_init(agent_t *ag, char const *resolv_conf)
 {
   char const *contact = "sip:*:*;comp=sigcomp";
   su_sockaddr_t su;
-  socklen_t sulen;
-  int s, af, sulen0;
+  socklen_t sulen, sulen0;
+  su_socket_t s; 
+  int af;
 
   BEGIN();
 
@@ -454,7 +454,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
     contact = getenv("SIPCONTACT");
 
   /* Sink server */
-  s = socket(af, SOCK_DGRAM, 0); TEST_1(s != -1);
+  s = socket(af, SOCK_DGRAM, 0); TEST_1(s != SOCKET_ERROR);
   memset(&su, 0, sulen = sulen0);
   su.su_family = af;
   if (getenv("sink")) {
@@ -467,7 +467,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
   ag->ag_sink_socket = s;
 
   /* Down server */
-  s = socket(af, SOCK_STREAM, 0); TEST_1(s != -1);
+  s = socket(af, SOCK_STREAM, 0); TEST_1(s != SOCKET_ERROR);
   memset(&su, 0, sulen = sulen0);
   su.su_family = af;
   if (getenv("down")) {
@@ -701,7 +701,7 @@ static int test_bad_messages(agent_t *ag)
   hints->ai_protocol = IPPROTO_UDP;
   
   TEST(su_getaddrinfo(host, port, hints, &ai), 0); TEST_1(ai);
-  s = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol); TEST_1(s != -1);
+  s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol); TEST_1(s != -1);
   memset(su, 0, sulen = sizeof su); 
   su->su_len = sizeof su; su->su_family = ai->ai_family;
   TEST_1(bind(s, &su->su_sa, sulen) == 0);
@@ -2409,7 +2409,7 @@ int test_call(agent_t *ag)
 {
   sip_content_type_t *c = ag->ag_content_type;
   sip_payload_t      *sdp = ag->ag_payload;
-  nta_leg_t *leg, *old_leg;
+  nta_leg_t *old_leg;
   sip_replaces_t *r1, *r2;
 
   BEGIN();

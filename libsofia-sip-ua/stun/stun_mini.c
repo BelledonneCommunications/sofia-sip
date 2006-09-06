@@ -45,7 +45,7 @@ typedef struct stun_socket_s stun_socket_t;
 struct stun_socket_s
 {
   stun_socket_t *ss_next;
-  int ss_socket;
+  su_socket_t ss_socket;
   int ss_scope;			/* LI_SCOPE */
   socklen_t ss_addrlen;
   union {
@@ -96,7 +96,7 @@ void stun_mini_destroy(stun_mini_t *mini)
 }
 
 /** Add a socket to stun miniserver. */
-int stun_mini_add_socket(stun_mini_t *mini, int socket)
+int stun_mini_add_socket(stun_mini_t *mini, su_socket_t socket)
 {
   stun_socket_t *ss, **next;
   struct sockaddr_storage addr[1];
@@ -128,7 +128,7 @@ int stun_mini_add_socket(stun_mini_t *mini, int socket)
 }
 
 /** Remove socket from stun miniserver */
-int stun_mini_remove_socket(stun_mini_t *mini, int socket)
+int stun_mini_remove_socket(stun_mini_t *mini, su_socket_t socket)
 {
   stun_socket_t *ss, **next;
 
@@ -147,7 +147,7 @@ int stun_mini_remove_socket(stun_mini_t *mini, int socket)
 }
 
 void stun_mini_request(stun_mini_t *mini,
-		       int socket,
+		       su_socket_t socket,
 		       void *msg, ssize_t msglen,
 		       void *from, socklen_t fromlen)
 {

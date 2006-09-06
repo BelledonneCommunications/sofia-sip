@@ -105,7 +105,7 @@ struct nat {
   /* ...but source address will be "fake" */
   su_localinfo_t *localinfo, *private, *fake;
 
-  int udp_socket, tcp_socket;
+  su_socket_t udp_socket, tcp_socket;
   int udp_register, tcp_register;
 
   char buffer[65536];
@@ -118,7 +118,7 @@ struct binding
   struct binding *next, **prev;
   struct nat *nat;		/* backpointer */
   int socktype, protocol;
-  int in_socket, out_socket;
+  su_socket_t in_socket, out_socket;
   int in_register, out_register;
   int in_closed, out_closed;
   char in_name[64], out_name[64];
@@ -128,7 +128,7 @@ static struct binding *nat_binding_new(struct nat *nat,
 				       char const *protoname,
 				       int socktype, int protocol, 
 				       int connected,
-				       int in_socket,
+				       su_socket_t in_socket,
 				       su_sockaddr_t *from,
 				       socklen_t fromlen);
 static void nat_binding_destroy(struct binding *);
@@ -165,7 +165,7 @@ test_nat_init(su_root_t *root, struct nat *nat)
   su_wait_t wait[1];
 
   nat->root = root;
-  nat->udp_socket = -1, nat->tcp_socket = -1;
+  nat->udp_socket = SOCKET_ERROR, nat->tcp_socket = SOCKET_ERROR;
 
   tl_gets(nat->tags, 
 	  TESTNATTAG_SYMMETRIC_REF(nat->symmetric),
@@ -201,7 +201,7 @@ test_nat_init(su_root_t *root, struct nat *nat)
   /* Bind TCP and UDP to same port */
   for (;;) {
     nat->udp_socket = su_socket(li->li_family, SOCK_DGRAM, IPPROTO_UDP);
-    if (nat->udp_socket == -1)
+    if (nat->udp_socket == SOCKET_ERROR)
       return -1;
 
     if (bind(nat->udp_socket, (void *)su, sulen) < 0) {
@@ -212,9 +212,9 @@ test_nat_init(su_root_t *root, struct nat *nat)
 
       fprintf(stderr, "test_nat: port %u: %s\n",
 	      port, su_strerror(su_errno()));
-
       su_close(nat->udp_socket);
-      nat->udp_socket = -1;
+
+      nat->udp_socket = SOCKET_ERROR;
 
       if (++port > 65535)
 	port = 1024;
@@ -240,12 +240,12 @@ test_nat_init(su_root_t *root, struct nat *nat)
     }
 
     nat->tcp_socket = su_socket(li->li_family, SOCK_STREAM, IPPROTO_TCP);
-    if (nat->tcp_socket == -1)
+    if (nat->tcp_socket == SOCKET_ERROR)
       return -1;
 
     if (bind(nat->tcp_socket, (void *)su, sulen) < 0) {
       su_close(nat->tcp_socket);
-      nat->tcp_socket = -1;
+      nat->tcp_socket = SOCKET_ERROR;
 
       fprintf(stderr, "test_nat: port %u: %s\n",
 	      port, su_strerror(su_errno()));
@@ -311,9 +311,9 @@ test_nat_deinit(su_root_t *root, struct nat *nat)
   if (nat->udp_register)
     su_root_deregister(root, nat->udp_register);
 
-  if (nat->udp_socket != -1)
+  if (nat->udp_socket != SOCKET_ERROR)
     su_close(nat->udp_socket);
-  if (nat->tcp_socket != -1)
+  if (nat->tcp_socket != SOCKET_ERROR)
     su_close(nat->tcp_socket);
 
   su_freelocalinfo(nat->localinfo);
@@ -427,7 +427,7 @@ struct binding *nat_binding_new(struct nat *nat,
 				int socktype,
 				int protocol,
 				int connected,
-				int in_socket,
+				su_socket_t in_socket,
 				su_sockaddr_t *from,
 				socklen_t fromlen)
 {
@@ -466,7 +466,7 @@ static int binding_init(struct binding *b,
 			socklen_t fromlen)
 {
   struct nat *nat = b->nat;
-  int out_socket;
+  su_socket_t out_socket;
   su_sockaddr_t addr[1];
   socklen_t addrlen = (sizeof addr);
   char ipname[64];
@@ -478,11 +478,11 @@ static int binding_init(struct binding *b,
   else
     in_to_out = udp_in_to_out, out_to_in = udp_out_to_in;    
   
-  if (b->in_socket == -1) {
+  if (b->in_socket == SOCKET_ERROR) {
     int in_socket;
 
     in_socket = su_socket(from->su_family, b->socktype, b->protocol);
-    if (in_socket < 0) {
+    if (in_socket == SOCKET_ERROR) {
       su_perror("nat_binding_new: socket");
       return -1;
     }
@@ -502,7 +502,7 @@ static int binding_init(struct binding *b,
   }
 
   out_socket = su_socket(li->li_family, b->socktype, b->protocol);
-  if (out_socket < 0) {
+  if (out_socket == SOCKET_ERROR) {
     su_perror("nat_binding_new: socket");
     return -1;
   }
@@ -717,7 +717,7 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 static int new_tcp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
 {
   int events;
-  int in_socket;
+  su_socket_t in_socket;
   su_sockaddr_t from[1];
   socklen_t fromlen = (sizeof from);
   struct binding *b;
@@ -725,7 +725,7 @@ static int new_tcp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
   events = su_wait_events(wait, nat->tcp_socket);
 
   in_socket = accept(nat->tcp_socket, (void *)from, &fromlen);
-  if (in_socket < 0) {
+  if (in_socket == SOCKET_ERROR) {
     su_perror("new_tcp: accept");
     return 0;
   }
@@ -822,12 +822,13 @@ static int invalidate_binding(struct binding *b)
   struct nat *nat = b->nat;
   su_sockaddr_t addr[1];
   socklen_t addrlen = (sizeof addr);
-  int out, out_register;
+  su_socket_t out;
+  int out_register;
   su_wait_t wout[1];
   char name[64];
 
   out = su_socket(nat->fake->li_family, b->socktype, 0);
-  if (out < 0) {
+  if (out == SOCKET_ERROR) {
     su_perror("new_udp: socket");
     return -1;
   }

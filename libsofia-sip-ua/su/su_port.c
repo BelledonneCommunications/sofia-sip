@@ -461,13 +461,13 @@ void su_port_destroy(su_port_t *self)
   SU_DEBUG_9(("su_port_destroy() called\n"));
 
 #if SU_HAVE_MBOX
-  if (self->sup_mbox[0] != INVALID_SOCKET) {
+  if (self->sup_mbox[0] != SOCKET_ERROR) {
     su_port_unregister(self, NULL, &self->sup_mbox_wait, NULL, 
 		       (su_wakeup_arg_t *)self->sup_mbox);
     su_wait_destroy(&self->sup_mbox_wait);
-    su_close(self->sup_mbox[0]); self->sup_mbox[0] = INVALID_SOCKET;
+    su_close(self->sup_mbox[0]); self->sup_mbox[0] = SOCKET_ERROR;
 #if HAVE_SOCKETPAIR
-    su_close(self->sup_mbox[1]); self->sup_mbox[1] = INVALID_SOCKET;
+    su_close(self->sup_mbox[1]); self->sup_mbox[1] = SOCKET_ERROR;
 #endif
     SU_DEBUG_9(("su_port_destroy() close mailbox\n"));
   }
@@ -552,7 +552,7 @@ int su_port_send(su_port_t *self, su_msg_r rmsg)
     /* if (!pthread_equal(pthread_self(), self->sup_tid)) */
     if (wakeup)
     {
-      assert(self->sup_mbox[MBOX_SEND] != INVALID_SOCKET);
+      assert(self->sup_mbox[MBOX_SEND] != SOCKET_ERROR);
 
       if (send(self->sup_mbox[MBOX_SEND], "X", 1, 0) == -1) {
 #if HAVE_SOCKETPAIR

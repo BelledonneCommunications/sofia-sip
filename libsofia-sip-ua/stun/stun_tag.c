@@ -126,7 +126,7 @@ tag_typedef_t stuntag_integrity = BOOLTAG_TYPEDEF(integrity);
  *
  * Corresponding tag taking reference parameter is STUNTAG_SOCKET_REF()
  */
-tag_typedef_t stuntag_socket = INTTAG_TYPEDEF(socket);
+tag_typedef_t stuntag_socket = SOCKETTAG_TYPEDEF(socket);
 
 /**@def STUNTAG_REGISTER_EVENTS(x)
  *  
@@ -139,14 +139,14 @@ tag_typedef_t stuntag_socket = INTTAG_TYPEDEF(socket);
  *    stun_keepalive() \n
  *
  * @par Parameter type
- *    int (su_register_socket_t)
+ *    bool
  *
  * @par Values
- *    IPv4 (AF_INET) register_events
+ *    false (0) or true (nonzero)
  *
  * Corresponding tag taking reference parameter is STUNTAG_REGISTER_EVENTS_REF()
  */
-tag_typedef_t stuntag_register_events = INTTAG_TYPEDEF(register_events);
+tag_typedef_t stuntag_register_events = BOOLTAG_TYPEDEF(register_events);
 
 /**@def STUNTAG_ACTION(x)
  *  

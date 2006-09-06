@@ -51,9 +51,9 @@
 int su_socket_close_on_exec = 0;
 
 /** Create an endpoint for communication. */
-su_socket_t su_socket(int af, int sock, int proto)
+su_socket_t su_socket(int af, int socktype, int proto)
 {
-  su_socket_t s = socket(af, sock, proto);
+  su_socket_t s = socket(af, socktype, proto);
 #if SU_HAVE_BSDSOCK
   if (s != SOCKET_ERROR && su_socket_close_on_exec) {
     fcntl(s, F_SETFD, FD_CLOEXEC); /* Close on exec */
@@ -85,7 +85,7 @@ int su_close(su_socket_t s)
   return close(s);
 }
 
-int su_setblocking(int s, int blocking)
+int su_setblocking(su_socket_t s, int blocking)
 {
   int mode = fcntl(s, F_GETFL, 0);
 

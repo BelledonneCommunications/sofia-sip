@@ -61,7 +61,7 @@ struct stun_dns_lookup_s {
   su_root_t         *stun_root;
   stun_magic_t      *stun_magic;
   sres_resolver_t   *stun_sres;
-  int                stun_socket;
+  su_socket_t        stun_socket;
   stun_dns_lookup_f  stun_cb;
   char              *stun_tcp_target;
   char              *stun_udp_target;
@@ -138,7 +138,7 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
 {
   stun_dns_lookup_t *self = su_zalloc(NULL, sizeof(stun_dns_lookup_t));
   sres_query_t *query;
-  int socket;
+  su_socket_t socket;
   
   /* see nta.c:outgoing_answer_srv() */
 
@@ -149,7 +149,7 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
   self->stun_sres = sres_resolver_create(root, NULL, TAG_END());
   if (self->stun_sres) {
     socket = sres_resolver_root_socket(self->stun_sres);
-    if (socket >= 0) {
+    if (socket != SOCKET_ERROR) {
       char *query_udp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_UDP, domain);
       char *query_tcp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_TCP, domain);
       
@@ -160,7 +160,7 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
     }
     else {
       sres_resolver_destroy(self->stun_sres);
-      self->stun_socket = -1;
+      self->stun_socket = SOCKET_ERROR;
       su_free(NULL, self), self = NULL;
     }
   }

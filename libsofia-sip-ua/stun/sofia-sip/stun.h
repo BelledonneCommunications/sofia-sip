@@ -291,10 +291,12 @@ SOFIAPUBFUN int stun_dns_lookup_stp_addr(stun_dns_lookup_t *self,
 SOFIAPUBFUN stun_mini_t *stun_mini_create(void);
 SOFIAPUBFUN void stun_mini_destroy(stun_mini_t *);
 
-SOFIAPUBFUN int stun_mini_add_socket(stun_mini_t *server, int socket);
-SOFIAPUBFUN int stun_mini_remove_socket(stun_mini_t *server, int socket);
+SOFIAPUBFUN int stun_mini_add_socket(stun_mini_t *server,
+				     su_socket_t socket);
+SOFIAPUBFUN int stun_mini_remove_socket(stun_mini_t *server,
+					su_socket_t socket);
 
-SOFIAPUBFUN void stun_mini_request(stun_mini_t *server, int socket,
+SOFIAPUBFUN void stun_mini_request(stun_mini_t *server, su_socket_t socket,
 				   void *msg, ssize_t msglen,
 				   void *addr, socklen_t addrlen);
 

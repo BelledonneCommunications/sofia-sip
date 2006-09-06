@@ -1257,6 +1257,40 @@ tag_class_t ptr_tag_class[1] =
   }};
 
 /* ====================================================================== */
+/* socket tag - pass socket */
+
+#include <sofia-sip/su.h>
+
+int t_socket_snprintf(tagi_t const *t, char b[], size_t size)
+{
+  /* socket can be int or DWORD (or QWORD on win64?) */
+  return snprintf(b, size, LLI, (longlong)t->t_value);
+}
+
+int t_socket_ref_set(tag_type_t tt, void *ref, tagi_t const value[])
+{
+  *(su_socket_t *)ref = (su_socket_t)value->t_value;
+
+  return 1;
+}
+
+tag_class_t socket_tag_class[1] = 
+  {{
+    sizeof(socket_tag_class),
+    /* tc_next */     NULL,
+    /* tc_len */      NULL,
+    /* tc_move */     NULL,
+    /* tc_xtra */     NULL,
+    /* tc_dup */      NULL,
+    /* tc_free */     NULL,
+    /* tc_find */     NULL,
+    /* tc_snprintf */ t_socket_snprintf,
+    /* tc_filter */   NULL,
+    /* tc_ref_set */  t_socket_ref_set,
+    /* tc_scan */     NULL,
+  }};
+
+/* ====================================================================== */
 /* str tag - pass string value */
 
 int t_str_snprintf(tagi_t const *t, char b[], size_t size)

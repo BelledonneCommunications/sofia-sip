@@ -90,7 +90,8 @@ int main(int argc, char *argv[])
   int n, N = 0;
   unsigned long portno;
   unsigned short port;
-  int af, s;
+  int af;
+  su_socket_t s;
   socklen_t salen;
   struct sockaddr_storage ss[1];
   struct sockaddr *sa = (void *)ss;
@@ -177,14 +178,14 @@ int main(int argc, char *argv[])
   port = portno;
 
   for (n = 0; n < N;) {
-    s = socket(sa->sa_family = af, types[n], protos[n]);
+    s = su_socket(sa->sa_family = af, types[n], protos[n]);
 
 #if HAVE_SIN6
-    if (s == -1 && af == AF_INET6 && !o_ip6)
-      s = socket(sa->sa_family = af = AF_INET, types[n], protos[n]);
+    if (s == SOCKET_ERROR && af == AF_INET6 && !o_ip6)
+      s = su_socket(sa->sa_family = af = AF_INET, types[n], protos[n]);
 #endif
 
-    if (s == -1) {
+    if (s == SOCKET_ERROR) {
       fprintf(stderr, "%s: socket(AF_INET%s, 0, %s): %s\n", 
 	      name, af == AF_INET ? "" : "6", names[n], strerror(errno));
       exit(1);

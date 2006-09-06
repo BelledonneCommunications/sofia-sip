@@ -38,11 +38,27 @@
 #ifndef SU_TAG_H
 #include <sofia-sip/su_tag.h>
 #endif
+#ifndef SU_H
+#include <sofia-sip/su.h>
+#endif
+
 #include <stdio.h>
 
 SOFIA_BEGIN_DECLS
 
 SOFIAPUBFUN void tl_print(FILE *f, char const *title, tagi_t const lst[]);
+
+#if SU_HAVE_INLINE
+su_inline tag_value_t tag_socket_v(su_socket_t v) {
+  return (tag_value_t)v;
+}
+su_inline tag_value_t tag_socket_vr(su_socket_t *vp) { 
+  return (tag_value_t)vp; 
+}
+#else
+#define tag_socket_v(v)   (tag_value_t)(v)
+#define tag_socket_vr(v)  (tag_value_t)(v)
+#endif
 
 SOFIA_END_DECLS
 
