@@ -96,10 +96,10 @@ struct msg_mclass_s
   char const   *mc_name;	/**< Protocol name, e.g., "SIP/2.0" */
   void         *mc_tag;		/**< Protocol-specific tag */
   unsigned      mc_flags;	/**< Default flags */
-  int           mc_msize;	/**< Size of public message structure */
+  unsigned      mc_msize;	/**< Size of public message structure */
   /** Function extracting the message contents. */
-  int         (*mc_extract_body)(msg_t *msg, msg_pub_t *pub, 
-				 char b[], int bsiz, int eos);
+  issize_t    (*mc_extract_body)(msg_t *msg, msg_pub_t *pub, 
+				 char b[], isize_t bsiz, int eos);
 
   msg_href_t    mc_request[1];	/**< Request line reference */
   msg_href_t    mc_status[1];	/**< Status line reference */
@@ -135,7 +135,7 @@ int msg_mclass_insert_with_mask(msg_mclass_t *mc,
 				unsigned short mask);
 
 SOFIAPUBFUN
-msg_href_t const *msg_find_hclass(msg_mclass_t const *, char const *, int *);
+msg_href_t const *msg_find_hclass(msg_mclass_t const *, char const *, isize_t *);
 
 SOFIAPUBFUN msg_mclass_t const *msg_mclass(msg_t const *);
 

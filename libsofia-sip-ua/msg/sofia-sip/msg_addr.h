@@ -70,14 +70,14 @@ typedef struct su_iovec_s msg_iovec_t;
 #define mv_base siv_base
 #define mv_len  siv_len
 
-SOFIAPUBFUN int msg_iovec(msg_t *msg, msg_iovec_t vec[], int veclen);
+SOFIAPUBFUN isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen);
 
-SOFIAPUBFUN int msg_recv_iovec(msg_t *msg,
-			       msg_iovec_t vec[], int veclen, unsigned n,
+SOFIAPUBFUN issize_t msg_recv_iovec(msg_t *msg,
+			       msg_iovec_t vec[], isize_t veclen, usize_t n,
 			       int exact);
-SOFIAPUBFUN int msg_recv_commit(msg_t *msg, unsigned n, int eos);
+SOFIAPUBFUN isize_t msg_recv_commit(msg_t *msg, usize_t n, int eos);
 
-SOFIAPUBFUN int msg_recv_buffer(msg_t *msg, void **return_buffer);
+SOFIAPUBFUN issize_t msg_recv_buffer(msg_t *msg, void **return_buffer);
 
 SOFIAPUBFUN msg_t *msg_next(msg_t *msg);
 
@@ -85,9 +85,9 @@ SOFIAPUBFUN int msg_set_next(msg_t *msg, msg_t *next);
 
 SOFIAPUBFUN void msg_clear_committed(msg_t *msg);
 
-SOFIAPUBFUN int msg_buf_external(msg_t *msg, 
-				 unsigned N, 
-				 unsigned blocksize);
+SOFIAPUBFUN issize_t msg_buf_external(msg_t *msg, 
+				      usize_t N, 
+				      usize_t blocksize);
 
 SOFIA_END_DECLS
 

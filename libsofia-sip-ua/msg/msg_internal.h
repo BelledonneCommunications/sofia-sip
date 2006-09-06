@@ -49,6 +49,13 @@
 
 SOFIA_BEGIN_DECLS
 
+/* ---------------------------------------------------------------------- */
+/* Types used when handling streaming */
+
+typedef struct msg_buffer_s msg_buffer_t;
+
+/* ---------------------------------------------------------------------- */
+
 struct msg_s {
   su_home_t           m_home[1]; /**< Memory home */
 
@@ -57,8 +64,8 @@ struct msg_s {
 
   msg_pub_t          *m_object;	/**< Public view to parsed message */
 
-  unsigned            m_maxsize;/**< Maximum size */
-  unsigned            m_size;	/**< Total size of fragments */
+  size_t              m_maxsize;/**< Maximum size */
+  size_t              m_size;	/**< Total size of fragments */
 
   msg_header_t       *m_chain;	/**< Fragment chain */
   msg_header_t      **m_tail;	/**< Tail of fragment chain */
@@ -68,15 +75,15 @@ struct msg_s {
   /* Parsing/printing buffer */
   struct msg_mbuffer_s {
     char     *mb_data;		/**< Pointer to data */
-    unsigned  mb_size;		/**< Size of buffer */
-    unsigned  mb_used;		/**< Used data */
-    unsigned  mb_commit;	/**< Data committed to msg */
+    usize_t   mb_size;		/**< Size of buffer */
+    usize_t   mb_used;		/**< Used data */
+    usize_t   mb_commit;	/**< Data committed to msg */
     unsigned  mb_eos:1;		/**< End-of-stream flag */
     unsigned :0;
   } m_buffer[1];
 
   msg_buffer_t  *m_stream;	/**< User-provided buffers */
-  unsigned       m_ssize;	/**< Stream size */
+  size_t         m_ssize;	/**< Stream size */
 
   unsigned short m_extract_err; /**< Bitmask of erroneous headers */
   /* Internal flags */
@@ -96,6 +103,22 @@ struct msg_s {
   int          	 m_errno;	/**< Errno */
 };
 
+/** Buffer for message body. */
+struct msg_buffer_s {
+  char           *b_data;	    /**< Data - may contain NUL */
+  size_t          b_size;	    /**< Length of message payload */
+  size_t          b_used;	    /**< Used data */
+  size_t          b_avail;	    /**< Available data */
+  int             b_complete;	    /**< This buffer completes the message */
+  msg_buffer_t   *b_next;	    /**< Next buffer */
+  msg_payload_t  *b_chunks;	    /**< List of body chunks */
+};
+
+/** Maximum size when streaming. */
+#define MSG_SSIZE_MAX (USIZE_MAX)
+
+/* ---------------------------------------------------------------------- */
+/* Header-kind predicate functions. */
 static inline int msg_is_single(msg_header_t const *h)
 {
   return h->sh_class->hc_kind == msg_kind_single;

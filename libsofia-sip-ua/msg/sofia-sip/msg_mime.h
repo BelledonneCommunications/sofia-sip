@@ -163,7 +163,7 @@ struct msg_multipart_s
   msg_multipart_t        *mp_next;      /**< Next part in multipart body */
   /* Preamble for this part */
   char                   *mp_data;	/**< Boundary string. */
-  unsigned                mp_len;	/**< Length of boundary (mp_data).*/
+  usize_t                 mp_len;	/**< Length of boundary (mp_data).*/
   unsigned                mp_flags;
   msg_error_t            *mp_error;
 
@@ -207,7 +207,7 @@ SOFIAPUBFUN
 msg_multipart_t *msg_multipart_create(su_home_t *home,
 				      char const *content_type,
 				      void const *data,
-				      int dlen);
+				      isize_t dlen);
 SOFIAPUBFUN 
 msg_multipart_t *msg_multipart_parse(su_home_t *home, 
 				     msg_content_type_t const *c,
@@ -219,13 +219,13 @@ int msg_multipart_complete(su_home_t *home,
 SOFIAPUBFUN msg_header_t *msg_multipart_serialize(msg_header_t **head0,
 						  msg_multipart_t *mp);
 
-SOFIAPUBFUN int msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags);
+SOFIAPUBFUN issize_t msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags);
 
-SOFIAPUBFUN int msg_accept_any_dup_xtra(msg_header_t const *h, int offset);
+SOFIAPUBFUN isize_t msg_accept_any_dup_xtra(msg_header_t const *h, isize_t offset);
 
 SOFIAPUBFUN char *msg_accept_any_dup_one(msg_header_t *dst,
 					 msg_header_t const *src,
-					 char *b, int xtra);
+					 char *b, isize_t xtra);
 
 SOFIAPUBFUN
 msg_content_length_t *msg_content_length_create(su_home_t *home, uint32_t n);

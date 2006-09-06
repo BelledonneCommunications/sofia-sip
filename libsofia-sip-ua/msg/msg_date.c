@@ -175,7 +175,7 @@ int time_d(char const **ss,
  *              | "Sep" | "Oct" | "Nov" | "Dec"
  * @endverbatim
  */
-int msg_date_d(char const **ss, msg_time_t *date)
+issize_t msg_date_d(char const **ss, msg_time_t *date)
 {
   char const *s = *ss;
   char const *wkday;
@@ -321,7 +321,7 @@ int msg_date_d(char const **ss, msg_time_t *date)
  * 
  * @return The function msg_date_e() returns the size of the formatted date.
  */
-int msg_date_e(char b[], int bsiz, msg_time_t http_date)
+issize_t msg_date_e(char b[], isize_t bsiz, msg_time_t http_date)
 {
   msg_time_t sec, min, hour, wkday, day, month, year;
   msg_time_t days_per_month, leap_year;
@@ -363,19 +363,22 @@ int msg_date_e(char b[], int bsiz, msg_time_t http_date)
  * 
  * The function msg_delta_d() decodes a http-delta field.
  */
-int msg_delta_d(char const **ss, msg_time_t *delta)
+issize_t msg_delta_d(char const **ss, msg_time_t *delta)
 {
-  if (!is_digit(**ss))
+  char const *s = *ss;
+
+  if (!is_digit(*s))
     return -1;
 
   *delta = strtoul(*ss, (char **)ss, 10);
   skip_lws(ss);
-  return 0;
+
+  return *ss - s;
 }
 
 /**Encode http-delta
  */
-int msg_delta_e(char b[], int bsiz, msg_time_t delta)
+issize_t msg_delta_e(char b[], isize_t bsiz, msg_time_t delta)
 {
   return snprintf(b, bsiz, "%lu", (unsigned long)delta);
 }
@@ -384,7 +387,7 @@ int msg_delta_e(char b[], int bsiz, msg_time_t delta)
  * 
  * The function msg_date_delta_d() decodes a http-date or http-delta field.
  */
-int msg_date_delta_d(char const **ss,
+issize_t msg_date_delta_d(char const **ss,
 		     msg_time_t *date,
 		     msg_time_t *delta)
 {

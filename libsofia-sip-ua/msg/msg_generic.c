@@ -34,19 +34,20 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <stdarg.h>
-
 #include <sofia-sip/su_alloc.h>
 
 #include "sofia-sip/msg.h"
 #include "sofia-sip/bnf.h"
 #include "sofia-sip/msg_parser.h"
 #include "sofia-sip/msg_header.h"
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <limits.h>
 
 /**
  * Parse a generic header.
@@ -61,10 +62,10 @@
  * @retval 0 when successful, 
  * @retval -1 upon an error.
  */
-int msg_generic_d(su_home_t *home,
-		  msg_header_t *h,
-		  char *s, 
-		  int slen)
+issize_t msg_generic_d(su_home_t *home,
+		       msg_header_t *h,
+		       char *s, 
+		       isize_t slen)
 {
   h->sh_generic->g_string = s;
   return 0;
@@ -76,19 +77,19 @@ int msg_generic_d(su_home_t *home,
  * The function @c msg_generic_e encodes a generic header.
  *
  */
-int msg_generic_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_generic_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   msg_generic_t const *g = h->sh_generic;  
-  int n = strlen(g->g_string);
+  size_t n = strlen(g->g_string);
   
   if (bsiz > n)
     strcpy(b, g->g_string);
 
-  return n;
+  return (issize_t)n;
 }
 
 /** Calculate the size of strings associated with a @c msg_generic_t object. */
-int msg_generic_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_generic_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   msg_generic_t const *g = h->sh_generic;
   return offset + MSG_STRING_SIZE(g->g_string);
@@ -98,7 +99,7 @@ int msg_generic_dup_xtra(msg_header_t const *h, int offset)
 char *msg_generic_dup_one(msg_header_t *dst,
 			  msg_header_t const *src,
 			  char *b,
-			  int xtra)
+			  isize_t xtra)
 {
   char *end = b + xtra;
   MSG_STRING_DUP(b, dst->sh_generic->g_string, src->sh_generic->g_string);
@@ -106,14 +107,15 @@ char *msg_generic_dup_one(msg_header_t *dst,
   return b;
 }
 
-int msg_numeric_d(su_home_t *home,
-		  msg_header_t *h,
-		  char *s,
-		  int slen)
+issize_t msg_numeric_d(su_home_t *home,
+		      msg_header_t *h,
+		      char *s,
+		      isize_t slen)
 {
-  int retval;
+  uint32_t value = 0;
+  issize_t retval = msg_uint32_d(&s, &value);
 
-  retval = msg_uint32_d(&s, (uint32_t *)&h->sh_numeric->x_value);
+  h->sh_numeric->x_value = value;
 
   if (*s)
     return -1;
@@ -121,20 +123,25 @@ int msg_numeric_d(su_home_t *home,
   return retval;
 }
 
-int msg_numeric_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_numeric_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
-  return snprintf(b, bsiz, "%lu", h->sh_numeric->x_value);
+  uint32_t value = h->sh_numeric->x_value;
+
+  if (h->sh_numeric->x_value > 0xffffffff)
+    return -1;
+
+  return snprintf(b, bsiz, "%lu", (unsigned long)value);
 }
 
 /* ====================================================================== */
 /* Comma-separated list */
 
-int msg_list_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_list_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return msg_commalist_d(home, &s, &h->sh_list->k_items, NULL);
 }
 
-int msg_list_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_list_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   int compact = MSG_IS_COMPACT(flags);
   char *b0 = b, *end = b + bsiz;
@@ -155,7 +162,7 @@ int msg_list_e(char b[], int bsiz, msg_header_t const *h, int flags)
  * @return
  *   Size of strings related to msg_auth_t object.
  */
-int msg_list_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_list_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   MSG_PARAMS_SIZE(offset, h->sh_list->k_items);
   return offset;
@@ -164,7 +171,7 @@ int msg_list_dup_xtra(msg_header_t const *h, int offset)
 char *msg_list_dup_one(msg_header_t *dst,
 		       msg_header_t const *src,
 		       char *b, 
-		       int xtra)
+		       isize_t xtra)
 {
   char *end = b + xtra;
   msg_param_t const ** items = (msg_param_t const **)&dst->sh_list->k_items;
@@ -176,7 +183,11 @@ char *msg_list_dup_one(msg_header_t *dst,
   return b;
 }
 
-/** Append a list of constant items to a list. */
+/** Append a list of constant items to a list.
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ */
 int msg_list_append_items(su_home_t *home, 
 			  msg_list_t *k, 
 			  msg_param_t const items[])
@@ -197,7 +208,11 @@ int msg_list_append_items(su_home_t *home,
   return 0;
 }
 
-/** Replace a list of constant items */
+/** Replace a list of constant items.
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ */
 int msg_list_replace_items(su_home_t *home, msg_list_t *k, 
 			   msg_param_t const items[])
 {

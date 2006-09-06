@@ -88,10 +88,10 @@ static int msg_auth_item_scan(char *start)
  */
 
 /** Parse security headers. */
-int msg_auth_d(su_home_t *home,
-	       msg_header_t *h,
-	       char *s,
-	       int slen)
+issize_t msg_auth_d(su_home_t *home,
+		    msg_header_t *h,
+		    char *s,
+		    isize_t slen)
 {
   msg_auth_t *au = (msg_auth_t *)h;
 
@@ -105,7 +105,7 @@ int msg_auth_d(su_home_t *home,
 			 NULL /* msg_auth_item_scan */);
 }
 
-int msg_auth_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_auth_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   msg_auth_t const *au = (msg_auth_t *)h;
   int compact = MSG_IS_COMPACT(f);
@@ -131,22 +131,21 @@ int msg_auth_e(char b[], int bsiz, msg_header_t const *h, int f)
  * @return
  *   Size of strings related to msg_auth_t object.
  */
-int msg_auth_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_auth_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   msg_auth_t const *au = h->sh_auth;
 
-  MSG_PARAMS_SIZE(rv, au->au_params);
-  rv += MSG_STRING_SIZE(au->au_scheme);
+  MSG_PARAMS_SIZE(offset, au->au_params);
+  offset += MSG_STRING_SIZE(au->au_scheme);
     
-  return rv;
+  return offset;
 }
 
 /**Duplicate one msg_auth_t object. */
 char *msg_auth_dup_one(msg_header_t *dst,
 		       msg_header_t const *src,
 		       char *b,
-		       int xtra)
+		       isize_t xtra)
 {
   msg_auth_t *au = dst->sh_auth;
   msg_auth_t const *o = src->sh_auth;

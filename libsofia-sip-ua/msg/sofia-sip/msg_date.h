@@ -36,8 +36,8 @@
  * 
  */
 
-#ifndef SU_CONFIG_H
-#include <sofia-sip/su_config.h>
+#ifndef SU_TYPES_H
+#include <sofia-sip/su_types.h>
 #endif
 
 SOFIA_BEGIN_DECLS
@@ -56,18 +56,18 @@ typedef unsigned long msg_time_t;
 /* Current time. */
 SOFIAPUBFUN msg_time_t msg_now(void);
 
-SOFIAPUBFUN int msg_date_delta_d(char const **inout_string,
-				 msg_time_t *return_date,
-				 msg_time_t *return_delta);
+SOFIAPUBFUN issize_t msg_date_delta_d(char const **inout_string,
+				      msg_time_t *return_date,
+				      msg_time_t *return_delta);
 
-SOFIAPUBFUN int msg_delta_d(char const **ss, msg_time_t *return_delta);
-SOFIAPUBFUN int msg_delta_e(char b[], int bsiz, msg_time_t delta);
+SOFIAPUBFUN issize_t msg_delta_d(char const **ss, msg_time_t *return_delta);
+SOFIAPUBFUN issize_t msg_delta_e(char b[], isize_t bsiz, msg_time_t delta);
 
 /** Decode RFC1123-date, RFC822-date or asctime-date. */
-SOFIAPUBFUN int msg_date_d(char const **ss, msg_time_t *date);
+SOFIAPUBFUN issize_t msg_date_d(char const **ss, msg_time_t *date);
 
 /** Encode RFC1123-date. */
-SOFIAPUBFUN int msg_date_e(char b[], int bsiz, msg_time_t date);
+SOFIAPUBFUN issize_t msg_date_e(char b[], isize_t bsiz, msg_time_t date);
 
 enum { msg_date_string_size = 29 };
 

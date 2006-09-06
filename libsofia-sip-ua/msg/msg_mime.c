@@ -273,7 +273,7 @@ union msg_mime_u
 msg_multipart_t *msg_multipart_create(su_home_t *home,
 				      char const *content_type,
 				      void const *data,
-				      int dlen)
+				      isize_t dlen)
 {
   msg_multipart_t *mp;
 
@@ -335,7 +335,8 @@ static char const bchars[] =
 static char *
 msg_multipart_search_boundary(su_home_t *home, char const *p, size_t len)
 {
-  int m, crlf;
+  size_t m;
+  unsigned crlf;
   char const *end = p + len;
   char *boundary;
 
@@ -409,7 +410,7 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
   msg_multipart_t *mp = NULL, *all = NULL, **mmp = &all;
   /* Dummy msg object */
   msg_t msg[1] = {{{ SU_HOME_INIT(msg) }}};
-  unsigned len, m, blen;
+  size_t len, m, blen;
   char *boundary, *p, *next, save;
   char const *b, *end;
   msg_param_t param;
@@ -604,7 +605,7 @@ int msg_multipart_complete(su_home_t *home,
 {
   char *boundary;
   char const *b;
-  int blen, m;
+  size_t blen, m;
 
   if (c == NULL || mp == NULL)
     return (errno = EINVAL), -1;
@@ -625,11 +626,11 @@ int msg_multipart_complete(su_home_t *home,
       else
 	return (errno = EBADMSG), -1;
       /* XXX - quoting? */
-      b = su_sprintf(home, "boundary=\"%.*s\"", m, b);
+      b = su_sprintf(home, "boundary=\"%.*s\"", (int)m, b);
     }
     else {
       strcpy(token, "boundary=");
-      msg_random_token(token + strlen("boundary="), tlen, NULL, 0);
+      msg_random_token(token + strlen("boundary="), (size_t)tlen, NULL, 0);
       b = su_strdup(home, token);
     }
 
@@ -667,7 +668,7 @@ int msg_multipart_complete(su_home_t *home,
     if (mp->mp_next == NULL) {
       if (!mp->mp_close_delim)
 	mp->mp_close_delim = msg_payload_format(home, "%.*s--" CR LF, 
-						m, boundary);
+						(int)m, boundary);
       if (!mp->mp_close_delim)
 	return -1;
     }
@@ -764,7 +765,7 @@ msg_header_t *msg_multipart_serialize(msg_header_t **head0,
 
     /* Serialize headers */
     for (hh = (msg_header_t **)&mp->mp_content_type;
-	 hh < (msg_header_t **)&mp->mp_separator;
+	 (char *)hh < (char *)&mp->mp_separator;
 	 hh++) {
       h = *hh; if (!h) continue;
       for (h = *hh; h; h = h->sh_next) {
@@ -839,7 +840,7 @@ msg_header_t *msg_multipart_serialize(msg_header_t **head0,
  *
  * @return The size of multipart in bytes, or -1 upon an error.
  */
-int msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags)
+issize_t msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags)
 {
   if (!mp || !mp->mp_data)
     return -1;
@@ -855,7 +856,7 @@ int msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags)
 }
 
 /** Decode a multipart. */
-int msg_multipart_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_multipart_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   su_home_t tmphome[1] = { SU_HOME_INIT(tmphome) };
   msg_payload_t pl[1];
@@ -894,13 +895,13 @@ int msg_multipart_d(su_home_t *home, msg_header_t *h, char *s, int slen)
  * Please note that here we just encode a element, the msg_multipart_t
  * itself.
  */
-int msg_multipart_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_multipart_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   return msg_payload_e(b, bsiz, h, flags);
 }
 
 /** Calculate extra size of a multipart */
-int msg_multipart_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_multipart_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   msg_multipart_t const *mp = (msg_multipart_t *)h;
   msg_header_t const **hh;
@@ -908,7 +909,7 @@ int msg_multipart_dup_xtra(msg_header_t const *h, int offset)
   offset = msg_payload_dup_xtra(h, offset);
 
   for (hh = (msg_header_t const **)&mp->mp_content_type; 
-       hh <= (msg_header_t const **)&mp->mp_close_delim; 
+       (char *)hh <= (char *)&mp->mp_close_delim; 
        hh++) {
     for (h = *hh; h; h = h->sh_next) {
       MSG_STRUCT_SIZE_ALIGN(offset);
@@ -921,7 +922,7 @@ int msg_multipart_dup_xtra(msg_header_t const *h, int offset)
 
 /** Duplicate one msg_multipart_t object */
 char *msg_multipart_dup_one(msg_header_t *dst, msg_header_t const *src,
-			    char *b, int xtra)
+			    char *b, isize_t xtra)
 {
   msg_multipart_t const *mp = (msg_multipart_t *)src;
   msg_header_t *h, **hh;
@@ -930,7 +931,7 @@ char *msg_multipart_dup_one(msg_header_t *dst, msg_header_t const *src,
   b = msg_payload_dup_one(dst, src, b, xtra);
 
   for (hh = (msg_header_t **)&mp->mp_content_type; 
-       hh <= (msg_header_t **)&mp->mp_close_delim; 
+       (char *)hh <= (char *)&mp->mp_close_delim; 
        hh++) {
     for (h = *hh; h; h = h->sh_next) {
       MSG_STRUCT_ALIGN(b);
@@ -1009,11 +1010,11 @@ unsigned msg_q_value(char const *q)
  * @retval 0 when successful,
  * @retval -1 upon an error.
  */
-int msg_mediatype_d(char **ss, char const **type)
+issize_t msg_mediatype_d(char **ss, char const **type)
 {
   char *s = *ss;
   char const *result = s;
-  int l1 = 0, l2 = 0, n;
+  size_t l1 = 0, l2 = 0, n;
 
   /* Media type consists of two tokens, separated by / */
 
@@ -1093,7 +1094,7 @@ msg_hclass_t msg_accept_class[] =
 MSG_HEADER_CLASS(msg_, accept, "Accept", "", ac_params, apndlist, 
 		 msg_accept, msg_accept);
 
-int msg_accept_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_accept_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_header_t **hh = &h->sh_succ, *h0 = h;
   msg_accept_t *ac = (msg_accept_t *)h;
@@ -1139,7 +1140,7 @@ int msg_accept_d(su_home_t *home, msg_header_t *h, char *s, int slen)
   return 0;
 }
 
-int msg_accept_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_accept_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   msg_accept_t const *ac = (msg_accept_t *)h;
@@ -1155,22 +1156,21 @@ int msg_accept_e(char b[], int bsiz, msg_header_t const *h, int flags)
   return b - b0;
 }
 
-int msg_accept_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_accept_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   msg_accept_t const *ac = (msg_accept_t *)h;
 
   if (ac->ac_type) {
-    MSG_PARAMS_SIZE(rv, ac->ac_params);
-    rv += MSG_STRING_SIZE(ac->ac_type);
+    MSG_PARAMS_SIZE(offset, ac->ac_params);
+    offset += MSG_STRING_SIZE(ac->ac_type);
   }
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one msg_accept_t object */
 char *msg_accept_dup_one(msg_header_t *dst, msg_header_t const *src,
-		      char *b, int xtra)
+		      char *b, isize_t xtra)
 {
   msg_accept_t *ac = (msg_accept_t *)dst;
   msg_accept_t const *o = (msg_accept_t *)src;
@@ -1190,7 +1190,7 @@ char *msg_accept_dup_one(msg_header_t *dst, msg_header_t const *src,
 
 /** Update parameter(s) for Accept header. */ 
 int msg_accept_update(msg_common_t *h, 
-		      char const *name, int namelen,
+		      char const *name, isize_t namelen,
 		      char const *value)
 {
   msg_accept_t *ac = (msg_accept_t *)h;
@@ -1209,9 +1209,9 @@ int msg_accept_update(msg_common_t *h,
 /* ====================================================================== */
 
 /** Decode an Accept-* header. */
-int msg_accept_any_d(su_home_t *home,
-		     msg_header_t *h,
-		     char *s, int slen)
+issize_t msg_accept_any_d(su_home_t *home,
+			  msg_header_t *h,
+			  char *s, isize_t slen)
 {
   /** @relates msg_accept_any_s */
   msg_header_t **hh = &h->sh_succ, *h0 = h;
@@ -1254,7 +1254,7 @@ int msg_accept_any_d(su_home_t *home,
 }
 
 /** Encode an Accept-* header. */
-int msg_accept_any_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_accept_any_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   /** @relates msg_accept_any_s */
   char *b0 = b, *end = b + bsiz;
@@ -1268,21 +1268,20 @@ int msg_accept_any_e(char b[], int bsiz, msg_header_t const *h, int f)
 }
 
 /** Calculate extra memory used by accept-* headers. */
-int msg_accept_any_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_accept_any_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   /** @relates msg_accept_any_s */
-  int rv = offset;
   msg_accept_any_t const *aa = (msg_accept_any_t *)h;
 
-  MSG_PARAMS_SIZE(rv, aa->aa_params);
-  rv += MSG_STRING_SIZE(aa->aa_value);
+  MSG_PARAMS_SIZE(offset, aa->aa_params);
+  offset += MSG_STRING_SIZE(aa->aa_value);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one msg_accept_any_t object. */
 char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
-			     char *b, int xtra)
+			     char *b, isize_t xtra)
 {
   /** @relates msg_accept_any_s */
   msg_accept_any_t *aa = (msg_accept_any_t *)dst;
@@ -1299,7 +1298,7 @@ char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
 
 /** Update parameter(s) for Accept-* header. */ 
 int msg_accept_any_update(msg_common_t *h, 
-			  char const *name, int namelen,
+			  char const *name, isize_t namelen,
 			  char const *value)
 {
   msg_accept_any_t *aa = (msg_accept_any_t *)h;
@@ -1352,12 +1351,12 @@ msg_hclass_t msg_accept_charset_class[1] =
  MSG_HEADER_CLASS(msg_, accept_charset, "Accept-Charset", "",
 		  aa_params, apndlist, msg_accept_any, msg_accept_any);
 
-int msg_accept_charset_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_accept_charset_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return msg_accept_any_d(home, h, s, slen);
 }
 
-int msg_accept_charset_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_accept_charset_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   assert(msg_is_accept_charset(h));
   return msg_accept_any_e(b, bsiz, h, f);
@@ -1403,12 +1402,12 @@ msg_hclass_t msg_accept_encoding_class[1] =
  MSG_HEADER_CLASS(msg_, accept_encoding, "Accept-Encoding", "",
 		  aa_params, apndlist, msg_accept_any, msg_accept_any);
 
-int msg_accept_encoding_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_accept_encoding_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return msg_accept_any_d(home, h, s, slen);
 }
 
-int msg_accept_encoding_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_accept_encoding_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   return msg_accept_any_e(b, bsiz, h, f);
 }
@@ -1454,12 +1453,12 @@ msg_hclass_t msg_accept_language_class[1] =
  MSG_HEADER_CLASS(msg_, accept_language, "Accept-Language", "",
 		  aa_params, apndlist, msg_accept_any, msg_accept_any);
 
-int msg_accept_language_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_accept_language_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return msg_accept_any_d(home, h, s, slen);
 }
 
-int msg_accept_language_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_accept_language_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   assert(msg_is_accept_language(h));
   return msg_accept_any_e(b, bsiz, h, f);
@@ -1530,7 +1529,7 @@ MSG_HEADER_CLASS(msg_, content_disposition, "Content-Disposition", "",
 		 cd_params, single, msg_content_disposition,
 		 msg_content_disposition);
 
-int msg_content_disposition_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_content_disposition_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_content_disposition_t *cd = (msg_content_disposition_t *)h;
 
@@ -1544,7 +1543,7 @@ int msg_content_disposition_d(su_home_t *home, msg_header_t *h, char *s, int sle
   return 0;
 }
 
-int msg_content_disposition_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_content_disposition_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   char *b0 = b, *end = b + bsiz;
   msg_content_disposition_t const *cd = (msg_content_disposition_t *)h;
@@ -1559,21 +1558,20 @@ int msg_content_disposition_e(char b[], int bsiz, msg_header_t const *h, int f)
   return b - b0;
 }
 
-int msg_content_disposition_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_content_disposition_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   msg_content_disposition_t const *cd = (msg_content_disposition_t *)h;
 
-  MSG_PARAMS_SIZE(rv, cd->cd_params);
-  rv += MSG_STRING_SIZE(cd->cd_type);
+  MSG_PARAMS_SIZE(offset, cd->cd_params);
+  offset += MSG_STRING_SIZE(cd->cd_type);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one msg_content_disposition_t object */
 char *msg_content_disposition_dup_one(msg_header_t *dst,
 				     msg_header_t const *src,
-				     char *b, int xtra)
+				     char *b, isize_t xtra)
 {
   msg_content_disposition_t *cd = (msg_content_disposition_t *)dst;
   msg_content_disposition_t const *o = (msg_content_disposition_t *)src;
@@ -1589,7 +1587,7 @@ char *msg_content_disposition_dup_one(msg_header_t *dst,
 
 /** Update Content-Disposition parameters */
 int msg_content_disposition_update(msg_common_t *h,
-				   char const *name, int namelen,
+				   char const *name, isize_t namelen,
 				   char const *value)
 {
   msg_content_disposition_t *cd = (msg_content_disposition_t *)h;
@@ -1642,13 +1640,13 @@ int msg_content_disposition_update(msg_common_t *h,
 msg_hclass_t msg_content_encoding_class[] =
   MSG_HEADER_CLASS_LIST(content_encoding, "Content-Encoding", "e", list);
 
-int msg_content_encoding_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_content_encoding_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_content_encoding_t *e = (msg_content_encoding_t *)h;
   return msg_commalist_d(home, &s, &e->k_items, msg_token_scan);
 }
 
-int msg_content_encoding_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_content_encoding_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   assert(msg_is_content_encoding(h));
   return msg_list_e(b, bsiz, h, f);
@@ -1697,13 +1695,13 @@ int msg_content_encoding_e(char b[], int bsiz, msg_header_t const *h, int f)
 msg_hclass_t msg_content_language_class[] =
 MSG_HEADER_CLASS_LIST(content_language, "Content-Language", "", list);
 
-int msg_content_language_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_content_language_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_content_language_t *k = (msg_content_language_t *)h;
   return msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
 }
 
-int msg_content_language_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_content_language_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   assert(msg_is_content_language(h));
   return msg_list_e(b, bsiz, h, f);
@@ -1892,7 +1890,7 @@ msg_hclass_t msg_content_type_class[] =
 MSG_HEADER_CLASS(msg_, content_type, "Content-Type", "c", c_params,
 		 single, msg_content_type, msg_content_type);
 
-int msg_content_type_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_content_type_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_content_type_t *c;
 
@@ -1912,7 +1910,7 @@ int msg_content_type_d(su_home_t *home, msg_header_t *h, char *s, int slen)
   return 0;
 }
 
-int msg_content_type_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_content_type_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   msg_content_type_t const *c = (msg_content_type_t *)h;
@@ -1926,20 +1924,19 @@ int msg_content_type_e(char b[], int bsiz, msg_header_t const *h, int flags)
   return b - b0;
 }
 
-int msg_content_type_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_content_type_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   msg_content_type_t const *c = (msg_content_type_t *)h;
 
-  MSG_PARAMS_SIZE(rv, c->c_params);
-  rv += MSG_STRING_SIZE(c->c_type);
+  MSG_PARAMS_SIZE(offset, c->c_params);
+  offset += MSG_STRING_SIZE(c->c_type);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate one msg_content_type_t object */
 char *msg_content_type_dup_one(msg_header_t *dst, msg_header_t const *src,
-			       char *b, int xtra)
+			       char *b, isize_t xtra)
 {
   msg_content_type_t *c = (msg_content_type_t *)dst;
   msg_content_type_t const *o = (msg_content_type_t *)src;
@@ -1989,12 +1986,12 @@ char *msg_content_type_dup_one(msg_header_t *dst, msg_header_t const *src,
 msg_hclass_t msg_mime_version_class[] =
 MSG_HEADER_CLASS_G(mime_version, "MIME-Version", "", single);
 
-int msg_mime_version_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_mime_version_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return msg_generic_d(home, h, s, slen);
 }
 
-int msg_mime_version_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_mime_version_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   assert(msg_is_mime_version(h));
   return msg_generic_e(b, bsiz, h, f);
@@ -2138,7 +2135,7 @@ MSG_HEADER_CLASS_G(content_transfer_encoding, "Content-Transfer-Encoding",
  * @endcode
  */
 
-int msg_warning_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_warning_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_warning_t *w = (msg_warning_t *)h;
   msg_header_t *h0 = h;
@@ -2185,40 +2182,41 @@ int msg_warning_d(su_home_t *home, msg_header_t *h, char *s, int slen)
   return 0;
 }
 
-int msg_warning_e(char b[], int bsiz, msg_header_t const *h, int f)
+issize_t msg_warning_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
   msg_warning_t const *w = (msg_warning_t *)h;
   char const *port = w->w_port;
   int n;
+  size_t m;
 
   n = snprintf(b, bsiz, "%03u %s%s%s ", 
 	       w->w_code, w->w_host, port ? ":" : "", port ? port : "");
+  if (n < 0)
+    return n;
 
-  if (n >= 0) {
-    n += msg_unquoted_e(n < bsiz ? b + n : NULL, bsiz - n, w->w_text);
-    if (b && n < bsiz)
-      b[n] = '\0';
-  }
+  m = msg_unquoted_e((size_t)n < bsiz ? b + n : NULL, bsiz - n, w->w_text);
 
-  return n;
+  if (b && n + m < bsiz)
+    b[n + m] = '\0';
+
+  return n + m;
 }
 
-int msg_warning_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_warning_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
   msg_warning_t const *w = (msg_warning_t *)h;
 
-  rv += MSG_STRING_SIZE(w->w_host);
-  rv += MSG_STRING_SIZE(w->w_port);
-  rv += MSG_STRING_SIZE(w->w_text);
+  offset += MSG_STRING_SIZE(w->w_host);
+  offset += MSG_STRING_SIZE(w->w_port);
+  offset += MSG_STRING_SIZE(w->w_text);
 
-  return rv;
+  return offset;
 }
 
 char *msg_warning_dup_one(msg_header_t *dst, 
 			  msg_header_t const *src, 
 			  char *b, 
-			  int xtra)
+			  isize_t xtra)
 {
   msg_warning_t *w = (msg_warning_t *)dst;
   msg_warning_t const *o = (msg_warning_t *)src;

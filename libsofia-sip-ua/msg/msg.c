@@ -251,9 +251,9 @@ su_sockaddr_t *msg_addr(msg_t *msg)
 int msg_get_address(msg_t *msg, su_sockaddr_t *su, socklen_t *return_len)
 {
   if (msg && return_len && *return_len >= msg->m_addrinfo.ai_addrlen) {
-    *return_len = msg->m_addrinfo.ai_addrlen;
+    *return_len = (socklen_t)msg->m_addrinfo.ai_addrlen;
     if (su)
-      memcpy(su, msg->m_addr, *return_len = msg->m_addrinfo.ai_addrlen);
+      memcpy(su, msg->m_addr, msg->m_addrinfo.ai_addrlen);
     return 0;
   }
   if (msg)

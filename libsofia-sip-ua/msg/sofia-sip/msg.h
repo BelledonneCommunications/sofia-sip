@@ -64,8 +64,8 @@ SOFIAPUBFUN int msg_prepare(msg_t *msg);
 SOFIAPUBFUN void msg_unprepare(msg_t *msg);
 SOFIAPUBFUN int msg_is_prepared(msg_t const *msg);
 
-SOFIAPUBFUN unsigned msg_size(msg_t const *msg);
-SOFIAPUBFUN unsigned msg_maxsize(msg_t *msg, unsigned maxsize);
+SOFIAPUBFUN usize_t msg_size(msg_t const *msg);
+SOFIAPUBFUN usize_t msg_maxsize(msg_t *msg, usize_t maxsize);
 
 #define msg_home(h) ((su_home_t*)(h))
 

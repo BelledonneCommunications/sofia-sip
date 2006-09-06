@@ -38,19 +38,20 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <stdarg.h>
-
 #include <sofia-sip/su_alloc.h>
 
 #include <sofia-sip/msg.h>
 #include <sofia-sip/bnf.h>
 #include <sofia-sip/msg_parser.h>
 #include <sofia-sip/msg_header.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <limits.h>
 
 #define msg_generic_update NULL
 
@@ -72,32 +73,32 @@
  * Type for erroneous headers.
  */
 
-int msg_error_dup_xtra(msg_header_t const *h, int offset);
+isize_t msg_error_dup_xtra(msg_header_t const *h, isize_t offset);
 char *msg_error_dup_one(msg_header_t *dst, msg_header_t const *src,
-			  char *b, int xtra);
+			  char *b, isize_t xtra);
 
 msg_hclass_t msg_error_class[] =
 MSG_HEADER_CLASS(msg_, error, "", "", er_common, append,
                  msg_error, msg_generic);
 
-int msg_error_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_error_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return 0;
 }
 
-int msg_error_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_error_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   /* There is no way to encode an erroneous header */
   return 0;
 }
 
-int msg_error_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_error_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   return msg_default_dup_xtra(h, offset);
 }
 
 char *msg_error_dup_one(msg_header_t *dst, msg_header_t const *src,
-			  char *b, int xtra)
+			  char *b, isize_t xtra)
 {
   return msg_default_dup_one(dst, src, b, xtra);
 }
@@ -127,7 +128,7 @@ msg_hclass_t msg_unknown_class[] =
 MSG_HEADER_CLASS(msg_, unknown, "", "", un_common, append,
                  msg_unknown, msg_generic);
 
-int msg_unknown_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_unknown_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_unknown_t *un = (msg_unknown_t *)h;
 
@@ -142,7 +143,7 @@ int msg_unknown_d(su_home_t *home, msg_header_t *h, char *s, int slen)
   return 0;
 }
 
-int msg_unknown_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_unknown_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   msg_unknown_t *un = (msg_unknown_t *)h;
@@ -156,14 +157,14 @@ int msg_unknown_e(char b[], int bsiz, msg_header_t const *h, int flags)
   return b - b0;
 }
 
-int msg_unknown_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_unknown_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   msg_unknown_t const *un = (msg_unknown_t *)h;
   return offset + MSG_STRING_SIZE(un->un_name) + MSG_STRING_SIZE(un->un_value);
 }
 
 char *msg_unknown_dup_one(msg_header_t *dst, msg_header_t const *src,
-			  char *b, int xtra)
+			  char *b, isize_t xtra)
 {
   msg_unknown_t *un = (msg_unknown_t *)dst;
   msg_unknown_t const *o = (msg_unknown_t *)src;
@@ -208,7 +209,7 @@ MSG_HEADER_CLASS(msg_, payload, NULL, "", pl_common, append,
 		 msg_payload, msg_generic);
 
 /** Create a MIME payload */
-msg_payload_t *msg_payload_create(su_home_t *home, void const *data, int len)
+msg_payload_t *msg_payload_create(su_home_t *home, void const *data, usize_t len)
 {
   msg_header_t *h = msg_header_alloc(home, msg_payload_class, len + 1);
   msg_payload_t *pl = h->sh_payload;
@@ -230,7 +231,7 @@ msg_payload_t *msg_payload_create(su_home_t *home, void const *data, int len)
 }
 
 /** Parse payload. */
-int msg_payload_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_payload_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   h->sh_payload->pl_len = slen;
   h->sh_payload->pl_data = s;
@@ -241,9 +242,9 @@ int msg_payload_d(su_home_t *home, msg_header_t *h, char *s, int slen)
   return 0;
 }
 
-int msg_payload_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_payload_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
-  int len = h->sh_payload->pl_len;
+  size_t len = h->sh_payload->pl_len;
 
   if (bsiz > 0) {
     memcpy(b, h->sh_payload->pl_data, bsiz > len ? len : bsiz);
@@ -253,7 +254,7 @@ int msg_payload_e(char b[], int bsiz, msg_header_t const *h, int flags)
   return len;
 }
 
-int msg_payload_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_payload_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   return offset + h->sh_payload->pl_len + 1;
 }
@@ -261,7 +262,7 @@ int msg_payload_dup_xtra(msg_header_t const *h, int offset)
 char *msg_payload_dup_one(msg_header_t *dst,
 			  msg_header_t const *src,
 			  char *b, 
-			  int xtra)
+			  isize_t xtra)
 {
   msg_payload_t *pl = dst->sh_payload;
   msg_payload_t const *o = src->sh_payload;
@@ -316,7 +317,7 @@ MSG_HEADER_CLASS(msg_, separator, NULL, "", sep_common, single,
 #define CRLF_TEST(s) ((s[0]) == '\r' ? ((s[1]) == '\n') + 1 : (s[0])=='\n')
 
 /** Parse a separator line. */
-int msg_separator_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_separator_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   int len = CRLF_TEST(s);
 
@@ -330,14 +331,14 @@ int msg_separator_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 }
 
 /** Encode a separator line. */
-int msg_separator_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_separator_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
-  int n = strlen(h->sh_separator->sep_data);
+  size_t n = strlen(h->sh_separator->sep_data);
 
   if (bsiz > n)
     strcpy(b, h->sh_separator->sep_data);
 
-  return n;
+  return (issize_t)n;
 }
 
 msg_separator_t *msg_separator_create(su_home_t *home)

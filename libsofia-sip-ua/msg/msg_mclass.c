@@ -311,11 +311,11 @@ int msg_mclass_insert(msg_mclass_t *mc, msg_href_t const *hr)
  */
 msg_href_t const *msg_find_hclass(msg_mclass_t const *mc, 
 				  char const *s, 
-				  int *return_start_of_content)
+				  isize_t *return_start_of_content)
 {
   msg_href_t const *hr;
   short i, N;
-  int m;
+  isize_t m;
 
   assert(mc);
 

@@ -151,7 +151,8 @@ union msg_test_u
   msg_unknown_t   sh_unknown[1];
 };
 
-int msg_test_extract_body(msg_t *, msg_pub_t *, char b[], int bsiz, int eos);
+issize_t msg_test_extract_body(msg_t *, msg_pub_t *,
+			       char b[], isize_t bsiz, int eos);
 
 static inline
 msg_test_t *msg_test_public(msg_t *msg)

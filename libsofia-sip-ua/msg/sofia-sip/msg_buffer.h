@@ -41,16 +41,16 @@
 
 SOFIA_BEGIN_DECLS
 
-SOFIAPUBFUN void *msg_buf_alloc(msg_t *msg, unsigned size);
-SOFIAPUBFUN void *msg_buf_exact(msg_t *msg, unsigned size);
-SOFIAPUBFUN unsigned msg_buf_commit(msg_t *msg, unsigned size, int eos);
-SOFIAPUBFUN unsigned msg_buf_committed(msg_t const *msg);
+SOFIAPUBFUN void *msg_buf_alloc(msg_t *msg, usize_t size);
+SOFIAPUBFUN void *msg_buf_exact(msg_t *msg, usize_t size);
+SOFIAPUBFUN usize_t msg_buf_commit(msg_t *msg, usize_t size, int eos);
+SOFIAPUBFUN usize_t msg_buf_committed(msg_t const *msg);
 SOFIAPUBFUN void *msg_buf_committed_data(msg_t const *msg);
-SOFIAPUBFUN unsigned msg_buf_size(msg_t const *msg);
+SOFIAPUBFUN usize_t msg_buf_size(msg_t const *msg);
 
 SOFIAPUBFUN void *msg_buf_move(msg_t *dst, msg_t const *src);
 
-SOFIAPUBFUN void msg_buf_set(msg_t *msg, void *b, unsigned size);
+SOFIAPUBFUN void msg_buf_set(msg_t *msg, void *b, usize_t size);
 
 SOFIA_END_DECLS
 

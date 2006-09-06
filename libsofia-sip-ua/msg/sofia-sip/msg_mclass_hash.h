@@ -50,10 +50,10 @@ SOFIA_BEGIN_DECLS
 
 /** Hash header name */
 static inline 
-unsigned short msg_header_name_hash(char const *s, int *llen)
+unsigned short msg_header_name_hash(char const *s, isize_t *llen)
 {
   unsigned short hash = 0;
-  int i;
+  size_t i;
 
   for (i = 0; s[i]; i++) {
     unsigned char c = s[i];

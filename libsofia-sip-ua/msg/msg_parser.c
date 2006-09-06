@@ -136,11 +136,11 @@ static inline int msg_is_status(msg_header_t const *h)
 /* Message buffer management */
 
 /** Allocate a buffer of @a size octets, with slack of #msg_min_size. */
-void *msg_buf_alloc(msg_t *msg, unsigned size)
+void *msg_buf_alloc(msg_t *msg, usize_t size)
 {
   struct msg_mbuffer_s *mb = msg->m_buffer;
-  unsigned room = mb->mb_size - mb->mb_commit - mb->mb_used;
-  int target_size;
+  size_t room = mb->mb_size - mb->mb_commit - mb->mb_used;
+  size_t target_size;
 
   if (mb->mb_data && room >= (unsigned)size)
     return mb->mb_data + mb->mb_used + mb->mb_commit;
@@ -152,10 +152,10 @@ void *msg_buf_alloc(msg_t *msg, unsigned size)
 }
 
 /** Allocate a buffer exactly of @a size octets, without any slack. */
-void *msg_buf_exact(msg_t *msg, unsigned size)
+void *msg_buf_exact(msg_t *msg, usize_t size)
 {
   struct msg_mbuffer_s *mb = msg->m_buffer;
-  unsigned room = mb->mb_size - mb->mb_commit - mb->mb_used;
+  size_t room = mb->mb_size - mb->mb_commit - mb->mb_used;
   char *buffer;
   int realloc;
 
@@ -193,7 +193,7 @@ void *msg_buf_exact(msg_t *msg, unsigned size)
 }
 
 /** Commit data into buffer. */
-unsigned msg_buf_commit(msg_t *msg, unsigned size, int eos)
+usize_t msg_buf_commit(msg_t *msg, usize_t size, int eos)
 {
   if (msg) {
     struct msg_mbuffer_s *mb = msg->m_buffer;
@@ -226,7 +226,7 @@ unsigned msg_buf_commit(msg_t *msg, unsigned size, int eos)
 }
 
 /** Get length of committed data */
-unsigned msg_buf_committed(msg_t const *msg)
+usize_t msg_buf_committed(msg_t const *msg)
 {
   if (msg)
     return msg->m_buffer->mb_commit;
@@ -242,7 +242,7 @@ void *msg_buf_committed_data(msg_t const *msg)
     : NULL;
 }
 
-unsigned msg_buf_size(msg_t const *msg)
+usize_t msg_buf_size(msg_t const *msg)
 {
   assert(msg);
   if (msg) {
@@ -254,7 +254,7 @@ unsigned msg_buf_size(msg_t const *msg)
 }
 
 static inline
-void msg_buf_used(msg_t *msg, unsigned used)
+void msg_buf_used(msg_t *msg, usize_t used)
 {
   msg->m_size += used;
   msg->m_buffer->mb_used += used;
@@ -265,7 +265,7 @@ void msg_buf_used(msg_t *msg, unsigned used)
 }
 
 /** Set buffer. */
-void msg_buf_set(msg_t *msg, void *b, unsigned size)
+void msg_buf_set(msg_t *msg, void *b, usize_t size)
 {
   if (msg) {
     struct msg_mbuffer_s *mb = msg->m_buffer;
@@ -334,12 +334,12 @@ void *msg_buf_move(msg_t *dst, msg_t const *src)
  * The function msg_recv_iovec() returns the length of I/O vector to
  * receive data, 0 if there are not enough buffers, or -1 upon an error.
  */
-int msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], int veclen,
-		   unsigned n, int exact)
+issize_t msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen,
+			usize_t n, int exact)
 {
-  int i = 0;
+  size_t i = 0;
+  size_t len = 0;
   msg_payload_t *chunk;
-  unsigned len = 0;
   char *buf;
 
   if (n == 0)
@@ -457,7 +457,7 @@ int msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], int veclen,
 
 
 /** Obtain a buffer for receiving data */
-int msg_recv_buffer(msg_t *msg, void **return_buffer)
+issize_t msg_recv_buffer(msg_t *msg, void **return_buffer)
 {
   void *buffer;
 
@@ -514,7 +514,7 @@ int msg_recv_buffer(msg_t *msg, void **return_buffer)
  * @retval 0 when successful
  * @retval -1 upon an error.
  */
-int msg_recv_commit(msg_t *msg, unsigned n, int eos)
+isize_t msg_recv_commit(msg_t *msg, usize_t n, int eos)
 {
   msg_payload_t *pl;
 
@@ -522,7 +522,7 @@ int msg_recv_commit(msg_t *msg, unsigned n, int eos)
     msg->m_buffer->mb_eos = 1;
 
   for (pl = msg->m_chunk; pl; pl = pl->pl_next) {
-    unsigned len = MSG_CHUNK_AVAIL(pl);
+    size_t len = MSG_CHUNK_AVAIL(pl);
 
     if (n <= len)
       len = n;
@@ -592,7 +592,7 @@ int msg_set_next(msg_t *msg, msg_t *next)
 void msg_clear_committed(msg_t *msg)
 {
   if (msg) {
-    unsigned n = msg_buf_committed(msg);
+    usize_t n = msg_buf_committed(msg);
 
     if (n)
       msg_buf_used(msg, n);
@@ -664,7 +664,7 @@ int msg_has_error(msg_t const *msg)
  *
  * @relates msg_s
  */
-unsigned msg_size(msg_t const *msg)
+usize_t msg_size(msg_t const *msg)
 {
   return msg ? msg->m_size : 0;
 }
@@ -680,9 +680,9 @@ unsigned msg_size(msg_t const *msg)
  * If the message size exceeds maxsize, msg_errno() returns ENOBUFS,
  * MSG_FLG_TOOLARGE and MSG_FLG_ERROR flags are set.
  */
-unsigned msg_maxsize(msg_t *msg, unsigned maxsize)
+usize_t msg_maxsize(msg_t *msg, usize_t maxsize)
 {
-  unsigned retval = 0;
+  usize_t retval = 0;
 
   if (msg) {
     retval = msg->m_maxsize;
@@ -700,7 +700,7 @@ unsigned msg_maxsize(msg_t *msg, unsigned maxsize)
  * The function msg_streaming_size() sets the size of the message body for
  * streaming.
  */
-unsigned msg_streaming_size(msg_t *msg, unsigned ssize)
+int msg_streaming_size(msg_t *msg, usize_t ssize)
 {
   if (!msg)
     return -1;
@@ -720,12 +720,12 @@ unsigned msg_streaming_size(msg_t *msg, unsigned ssize)
  * @return The function msg_buf_external() returns number of allocated
  * buffers, or -1 upon an error.
  */
-int msg_buf_external(msg_t *msg,
-		     unsigned N,
-		     unsigned blocksize)
+issize_t msg_buf_external(msg_t *msg,
+			  usize_t N,
+			  usize_t blocksize)
 {
   msg_buffer_t *ext, *b, **bb;
-  int i, I;
+  size_t i, I;
 
   assert(N <= 128 * 1024);
 
@@ -781,7 +781,6 @@ int msg_buf_external(msg_t *msg,
   }
 
   return -1;
-
 }
 
 int msg_unref_external(msg_t *msg, msg_buffer_t *b)
@@ -799,15 +798,17 @@ int msg_unref_external(msg_t *msg, msg_buffer_t *b)
 /* Parsing messages */
 
 static inline int extract_incomplete_chunks(msg_t *, int eos);
-static int extract_first(msg_t *, msg_pub_t *, char b[], int bsiz, int eos);
-static inline int extract_next(msg_t *, msg_pub_t *, char *, int, int, int);
-static int extract_header(msg_t *, msg_pub_t*,
-			  char b[], int bsiz, int eos, int copy);
+static issize_t extract_first(msg_t *, msg_pub_t *,
+			    char b[], isize_t bsiz, int eos);
+static inline issize_t extract_next(msg_t *, msg_pub_t *, char *, isize_t bsiz, 
+				  int eos, int copy);
+static issize_t extract_header(msg_t *, msg_pub_t*,
+			     char b[], isize_t bsiz, int eos, int copy);
 static msg_header_t *header_parse(msg_t *, msg_pub_t *, msg_href_t const *,
-				  char s[], int slen, int copy_buffer);
-static inline int
+				  char s[], isize_t slen, int copy_buffer);
+static inline issize_t
 extract_trailers(msg_t *msg, msg_pub_t *mo,
-		 char *b, int bsiz, int eos, int copy);
+		 char *b, isize_t bsiz, int eos, int copy);
 
 /** Calculate length of line ending (0, 1 or 2) */
 #define CRLF_TEST(b) ((b)[0] == '\r' ? ((b)[1] == '\n') + 1 : (b)[0] =='\n')
@@ -834,7 +835,9 @@ int msg_extract(msg_t *msg)
   msg_pub_t *mo = msg_object(msg);
   msg_mclass_t const *mc;
   char *b;
-  int m, bsiz, eos;
+  ssize_t m;
+  size_t bsiz;
+  int eos;
 
   if (!msg || !msg->m_buffer->mb_data)
     return -1;
@@ -846,9 +849,9 @@ int msg_extract(msg_t *msg)
   eos = msg->m_buffer->mb_eos;
 
   if (msg->m_chunk) {
-    m = extract_incomplete_chunks(msg, eos);
-    if (m < 1 || MSG_IS_COMPLETE(mo))
-      return m;
+    int incomplete = extract_incomplete_chunks(msg, eos);
+    if (incomplete < 1 || MSG_IS_COMPLETE(mo))
+      return incomplete;
   }
 
   if (mo->msg_flags & MSG_FLG_TRAILERS)
@@ -890,7 +893,7 @@ int msg_extract(msg_t *msg)
     b += m;
     bsiz -= m;
 
-    msg_buf_used(msg, m);
+    msg_buf_used(msg, (size_t)m);
   }
 
   if (eos && bsiz == 0)
@@ -911,10 +914,11 @@ int msg_extract(msg_t *msg)
 }
 
 static
-int extract_first(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos)
+issize_t extract_first(msg_t *msg, msg_pub_t *mo, char b[], isize_t bsiz, int eos)
 {
   /* First line */
-  int k, l, m, n, crlf, xtra;
+  size_t k, l, m, n, xtra;
+  int crlf;
   msg_header_t *h, **hh;
   msg_href_t const *hr;
   msg_mclass_t const *mc = msg->m_class;
@@ -972,8 +976,9 @@ int extract_first(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos)
 }
 
 /* Extract header or message body */
-static inline int
-extract_next(msg_t *msg, msg_pub_t *mo, char *b, int bsiz, int eos, int copy)
+static inline issize_t
+extract_next(msg_t *msg, msg_pub_t *mo, char *b, isize_t bsiz, 
+	     int eos, int copy)
 {
   if (IS_CRLF(b[0]))
     return msg->m_class->mc_extract_body(msg, mo, b, bsiz, eos);
@@ -982,7 +987,8 @@ extract_next(msg_t *msg, msg_pub_t *mo, char *b, int bsiz, int eos, int copy)
 }
 
 /** Extract a header. */
-int msg_extract_header(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos)
+issize_t msg_extract_header(msg_t *msg, msg_pub_t *mo, 
+			   char b[], isize_t bsiz, int eos)
 {
   return extract_header(msg, mo, b, bsiz, eos, 0);
 }
@@ -990,13 +996,15 @@ int msg_extract_header(msg_t *msg, msg_pub_t *mo, char b[], int bsiz, int eos)
 /** Extract a header from buffer @a b.
  */
 static
-int
-extract_header(msg_t *msg, msg_pub_t *mo, char *b, int bsiz, int eos,
+issize_t
+extract_header(msg_t *msg, msg_pub_t *mo, char *b, isize_t bsiz, int eos,
 	       int copy_buffer)
 {
-  int len, n = 0, m, crlf = 0;
-  int name_len = 0, name_len_set = 0;
-  int error = 0, xtra;
+  size_t len, m;
+  size_t name_len = 0, xtra;
+  isize_t n = 0;
+  int crlf = 0, name_len_set = 0;
+  int error = 0;
   msg_header_t *h;
   msg_href_t const *hr;
   msg_mclass_t const *mc = msg->m_class;
@@ -1072,7 +1080,7 @@ extract_header(msg_t *msg, msg_pub_t *mo, char *b, int bsiz, int eos,
 static
 msg_header_t *header_parse(msg_t *msg, msg_pub_t *mo,
 			   msg_href_t const *hr,
-			   char s[], int slen,
+			   char s[], isize_t slen,
 			   int copy_buffer)
 {
   su_home_t *home = msg_home(msg);
@@ -1155,8 +1163,8 @@ msg_header_t *msg_header_d(su_home_t *home, msg_t const *msg, char const *b)
 {
   msg_mclass_t const *mc = msg->m_class;
   msg_href_t const *hr = mc->mc_unknown;
-  int n;			/* Length of header contents */
-  int name_len, xtra;
+  isize_t n;			/* Length of header contents */
+  isize_t name_len, xtra;
   msg_header_t *h;
   char *bb;
 
@@ -1192,8 +1200,8 @@ msg_header_t *msg_header_d(su_home_t *home, msg_t const *msg, char const *b)
 }
 
 /** Extract a separator line */
-int msg_extract_separator(msg_t *msg, msg_pub_t *mo,
-			  char b[], int bsiz, int eos)
+issize_t msg_extract_separator(msg_t *msg, msg_pub_t *mo,
+			       char b[], isize_t bsiz, int eos)
 {
   msg_mclass_t const *mc = msg->m_class;
   msg_href_t const *hr = mc->mc_separator;
@@ -1223,11 +1231,11 @@ static inline msg_header_t **msg_chain_tail(msg_t const *msg);
 
 /** Extract a message body of @a body_len bytes.
   */
-int msg_extract_payload(msg_t *msg, msg_pub_t *mo,
-			msg_header_t **return_payload,
-			unsigned body_len,
-			char b[], int bsiz,
-			int eos)
+issize_t msg_extract_payload(msg_t *msg, msg_pub_t *mo,
+			     msg_header_t **return_payload,
+			     usize_t body_len,
+			     char b[], isize_t bsiz,
+			     int eos)
 {
   msg_mclass_t const *mc = msg->m_class;
   msg_href_t const *hr = mc->mc_payload;
@@ -1413,9 +1421,9 @@ int extract_incomplete_chunks(msg_t *msg, int eos)
 }
 
 /* Extract trailers */
-static inline int
+static inline issize_t
 extract_trailers(msg_t *msg, msg_pub_t *mo,
-		 char *b, int bsiz, int eos, int copy)
+		 char *b, isize_t bsiz, int eos, int copy)
 {
   if (IS_CRLF(b[0])) {
     msg_mark_as_complete(msg, MSG_FLG_COMPLETE);
@@ -1429,10 +1437,10 @@ extract_trailers(msg_t *msg, msg_pub_t *mo,
 /* Preparing (printing/encoding) a message structure for sending */
 
 /* Internal prototypes */
-static inline int
-msg_header_name_e(char b[], int bsiz, msg_header_t const *h, int flags);
-static int msg_header_prepare(msg_mclass_t const *, int flags,
-			      msg_header_t *h, char *b, int bsiz);
+static inline size_t
+msg_header_name_e(char b[], size_t bsiz, msg_header_t const *h, int flags);
+static size_t msg_header_prepare(msg_mclass_t const *, int flags,
+				 msg_header_t *h, char *b, size_t bsiz);
 
 /**Encode all message fragments.
  *
@@ -1498,13 +1506,14 @@ int msg_is_prepared(msg_t const *msg)
  * @return
  * The size of all the headers in chain, or -1 upon an error.
  */
-int msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
+issize_t msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
 {
   msg_mclass_t const *mc = msg->m_class;
   msg_header_t *h;
-  int n = 0, bsiz = 0, used = 0;
+  ssize_t n = 0;
+  size_t bsiz = 0, used = 0;
   char *b;
-  unsigned total = 0;
+  size_t total = 0;
 
   b = msg_buf_alloc(msg, msg_min_size);
   bsiz = msg_buf_size(msg);
@@ -1521,7 +1530,7 @@ int msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
 
     n = msg_header_prepare(mc, flags, h, b, bsiz - used);
 
-    if (n < 0) {
+    if (n == (ssize_t)-1) {
       errno = EINVAL;
       return -1;
     }
@@ -1547,14 +1556,14 @@ int msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
 
 /** Encode a header or a list of headers */
 static
-int msg_header_prepare(msg_mclass_t const *mc, int flags,
-		       msg_header_t *h, char *b, int bsiz)
+size_t msg_header_prepare(msg_mclass_t const *mc, int flags,
+			  msg_header_t *h, char *b, size_t bsiz)
 {
   msg_header_t *h0, *next;
   msg_hclass_t *hc;
   char const *s;
-  int n, m, middle = 0;
-  int compact, one_line_list, comma_list;
+  size_t n, m;
+  int middle = 0, compact, one_line_list, comma_list;
 
   assert(h); assert(h->sh_class);
 
@@ -1633,9 +1642,9 @@ int msg_header_prepare(msg_mclass_t const *mc, int flags,
  * specify @c MSG_DO_COMPACT, the encoding is compact (short form with
  * minimal whitespace).
  */
-int msg_header_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_header_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
-  int n, m;
+  size_t n, m;
 
   assert(h); assert(h->sh_class);
 
@@ -1656,12 +1665,12 @@ int msg_header_e(char b[], int bsiz, msg_header_t const *h, int flags)
 
 /** Encode header name */
 static inline
-int
-msg_header_name_e(char b[], int bsiz, msg_header_t const *h, int flags)
+size_t
+msg_header_name_e(char b[], size_t bsiz, msg_header_t const *h, int flags)
 {
   int compact = MSG_IS_COMPACT(flags);
   char const *name;
-  int n, n2;
+  size_t n, n2;
 
   if (compact && h->sh_class->hc_short[0])
     name = h->sh_class->hc_short, n = 1;
@@ -1881,13 +1890,13 @@ msg_header_t **serialize_one(msg_t *msg, msg_header_t *h, msg_header_t **prev)
  * entries. If the @a vec is too short, it should allocate big enough
  * vector and re-invoke msg_iovec().
  */
-int msg_iovec(msg_t *msg, msg_iovec_t vec[], int veclen)
+isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen)
 {
-  int len = 0, n = 0;
+  size_t len = 0, n = 0;
   char const *p = NULL;
   msg_header_t *h;
 
-  unsigned total = 0;
+  size_t total = 0;
 
   if (veclen <= 0)
     veclen = 0;
@@ -2122,9 +2131,9 @@ int msg_chain_errors(msg_header_t const *h)
  */
 msg_header_t *msg_header_alloc(su_home_t *home,
 			       msg_hclass_t *hc,
-			       int extra)
+			       isize_t extra)
 {
-  int size = hc->hc_size;
+  isize_t size = hc->hc_size;
   msg_header_t *h = su_alloc(home, size + extra);
 
   if (h) {
@@ -2375,7 +2384,7 @@ int msg_header_add_dup(msg_t *msg,
 
     if (!*hh || hc->hc_kind != msg_kind_list) {
       int size = hc->hc_size;
-      int xtra = hc->hc_dxtra(src, size) - size;
+      isize_t xtra = hc->hc_dxtra(src, size) - size;
       char *end;
 
       if (!(h = msg_header_alloc(msg_home(msg), hc, xtra)))
@@ -2566,7 +2575,8 @@ int msg_header_add_str(msg_t *msg,
   s = su_strdup(msg_home(msg), str);
 
   if (s) {
-    int ssiz = strlen(s), used = 0, n = 1;
+    size_t ssiz = strlen(s), used = 0;
+    ssize_t n = 1;
 
     while (ssiz > used) {
       if (IS_CRLF(s[used]))

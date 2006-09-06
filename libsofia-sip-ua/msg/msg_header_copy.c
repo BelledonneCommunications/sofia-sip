@@ -52,7 +52,7 @@
 
 /** Calculate size of a parameter vector */
 static inline
-int msg_params_copy_xtra(msg_param_t const pp[], int offset)
+size_t msg_params_copy_xtra(msg_param_t const pp[], size_t offset)
 {
   int n = msg_params_count(pp);
   if (n) {
@@ -64,7 +64,7 @@ int msg_params_copy_xtra(msg_param_t const pp[], int offset)
 
 /** Copy a vector of parameters */
 static inline
-char *msg_params_copy(char *b, int size,
+char *msg_params_copy(char *b, size_t size,
 		      msg_param_t **dst, 
 		      msg_param_t const src[])
 {
@@ -99,7 +99,7 @@ static msg_header_t *msg_header_copy_one_as(su_home_t *home,
 					    msg_header_t const *src)
 {
   msg_header_t *h;
-  int size = hc->hc_size, xtra;
+  size_t size = hc->hc_size, xtra;
   msg_param_t const *params;
   char *end;
 
@@ -112,7 +112,7 @@ static msg_header_t *msg_header_copy_one_as(su_home_t *home,
     xtra = 0;
   }
 
-  if (!(h = msg_header_alloc(home, hc, xtra)))
+  if (!(h = msg_header_alloc(home, hc, (isize_t)xtra)))
     return NULL;			/* error */
 
   memcpy(&h->sh_data, &src->sh_data, size - offsetof(msg_common_t, h_data));
@@ -214,7 +214,7 @@ msg_header_t *msg_header_dup_one(su_home_t *home,
 				 msg_header_t const *src)
 {
   msg_hclass_t *hc;
-  int size, xtra;
+  size_t size, xtra;
   msg_header_t *h;
   char *end;
 
@@ -270,11 +270,11 @@ msg_header_t *msg_header_dup_as(su_home_t *home, msg_hclass_t *hc,
   assert(hc);
 
   for (prev = &rv; src; src = src->sh_next, prev = &h->sh_next) {
-    int size = hc->hc_size;
-    int xtra = hc->hc_dxtra(src, size) - size;
+    size_t size = hc->hc_size;
+    size_t xtra = hc->hc_dxtra(src, size) - size;
     char *end;
 
-    if (!(h = msg_header_alloc(home, hc, xtra)))
+    if (!(h = msg_header_alloc(home, hc, (isize_t)xtra)))
       break;			/* error */
 
     if (!rv) 
@@ -322,7 +322,7 @@ msg_header_t *msg_header_dup(su_home_t *home, msg_header_t const *h)
 }
 
 /** Calculate extra size of a plain header. */
-int msg_default_dup_xtra(msg_header_t const *header, int offset)
+isize_t msg_default_dup_xtra(msg_header_t const *header, isize_t offset)
 {
   return offset;
 }
@@ -344,7 +344,7 @@ int msg_default_dup_xtra(msg_header_t const *header, int offset)
 char *msg_default_dup_one(msg_header_t *h,
 			  msg_header_t const *src,
 			  char *b, 
-			  int xtra)
+			  isize_t xtra)
 {
   memcpy(&h->sh_header_next[1],
 	 &src->sh_header_next[1],

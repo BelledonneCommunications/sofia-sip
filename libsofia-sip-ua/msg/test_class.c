@@ -69,7 +69,7 @@ MSG_HEADER_CLASS(msg_, request, NULL, "", rq_common,
 		 single_critical, msg_request, msg_generic);
 
 /** Decode a request line */
-int msg_request_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_request_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_request_t *rq = (msg_request_t *)h;
   char *uri, *version;
@@ -85,7 +85,7 @@ int msg_request_d(su_home_t *home, msg_header_t *h, char *s, int slen)
 }
 
 /**Encode a request line. */
-int msg_request_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_request_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   msg_request_t const *rq = (msg_request_t const *)h;
 
@@ -95,7 +95,7 @@ int msg_request_e(char b[], int bsiz, msg_header_t const *h, int flags)
 		  rq->rq_version);
 }
 
-int msg_request_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_request_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   int rv = offset;
   msg_request_t const *rq = (msg_request_t const *)h;
@@ -109,7 +109,7 @@ int msg_request_dup_xtra(msg_header_t const *h, int offset)
 
 /** Duplicate one request header. */
 char *msg_request_dup_one(msg_header_t *dst, msg_header_t const *src,
-			  char *b, int xtra)
+			  char *b, isize_t xtra)
 {
   msg_request_t *rq = (msg_request_t *)dst;
   msg_request_t const *o = (msg_request_t const *)src;
@@ -137,7 +137,7 @@ MSG_HEADER_CLASS(msg_, status, NULL, "", st_common,
 		 single_critical, msg_status, msg_generic);
 
 /** Parse status line */
-int msg_status_d(su_home_t *home, msg_header_t *h, char *s, int slen)
+issize_t msg_status_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   msg_status_t *st = (msg_status_t *)h;
   char *status, *phrase;
@@ -154,7 +154,7 @@ int msg_status_d(su_home_t *home, msg_header_t *h, char *s, int slen)
   return 0;
 }
 
-int msg_status_e(char b[], int bsiz, msg_header_t const *h, int flags)
+issize_t msg_status_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   msg_status_t const *st = (msg_status_t const *)h;
   int status = st->st_status;
@@ -167,7 +167,7 @@ int msg_status_e(char b[], int bsiz, msg_header_t const *h, int flags)
 }
 
 /** Extra size of a msg_status_t object. */
-int msg_status_dup_xtra(msg_header_t const *h, int offset)
+isize_t msg_status_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   int rv = offset;
   msg_status_t const *st = (msg_status_t const *)h;
@@ -178,7 +178,7 @@ int msg_status_dup_xtra(msg_header_t const *h, int offset)
 
 /** Duplicate one status header. */
 char *msg_status_dup_one(msg_header_t *dst, msg_header_t const *src,
-			 char *b, int xtra)
+			 char *b, isize_t xtra)
 {
   msg_status_t *st = (msg_status_t *)dst;
   msg_status_t const *o = (msg_status_t const *)src;
@@ -205,12 +205,12 @@ char *msg_status_dup_one(msg_header_t *dst, msg_header_t const *src,
  * @retval 0       message is incomplete
  * @retval other   number of bytes extracted
  */
-int msg_test_extract_body(msg_t *msg, msg_pub_t *pub, 
-			  char b[], int bsiz, int eos)
+issize_t msg_test_extract_body(msg_t *msg, msg_pub_t *pub, 
+			       char b[], isize_t bsiz, int eos)
 {
   msg_test_t *tst = (msg_test_t *)pub;
-  int m = 0;
-  unsigned body_len;
+  ssize_t m = 0;
+  size_t body_len;
 
   if (!(tst->msg_flags & MSG_FLG_BODY)) {
     /* We are looking at a potential empty line */
@@ -341,8 +341,8 @@ tagi_t *tsttag_filter(tagi_t *dst,
     msg_header_t const *h;
 
     if (tst == NULL || 
-	hh >= (msg_header_t const **)((char *)tst + tst->msg_size) ||
-	hh < (msg_header_t const **)&tst->msg_request)
+	(char *)hh >= ((char *)tst + tst->msg_size) ||
+	(char *)hh < (char const *)&tst->msg_request)
       return dst;
 
     h = *hh;

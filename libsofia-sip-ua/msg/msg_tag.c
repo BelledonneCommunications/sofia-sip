@@ -98,9 +98,10 @@ size_t msghdrtag_xtra(tagi_t const *t, size_t offset)
 tagi_t *msghdrtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
 {
   msg_header_t const *o;
-  msg_header_t *h, **hh;
+  msg_header_t *h, *h0 = NULL, **hh;
   msg_hclass_t *hc, *hc0 = (msg_hclass_t *)src->t_tag->tt_magic;
   char *b;
+  size_t size;
 
   assert(src); assert(*bb); 
 
@@ -108,7 +109,7 @@ tagi_t *msghdrtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
   dst->t_value = 0L;
 
   b = *bb;
-  hh = (msg_header_t **)&dst->t_value;
+  hh = &h0;
 
   for (o = (msg_header_t const *)src->t_value;
        o != NULL;
@@ -125,9 +126,12 @@ tagi_t *msghdrtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
     hc = hc0 ? hc0 : o->sh_class;
     b += hc->hc_size;
     memset(h, 0, hc->hc_size);
-
     h->sh_class = hc;
-    b = hc->hc_dup_one(h, o, b, 65535); /* XXX */
+
+    size = SIZE_MAX - (uintptr_t)b;
+    if (size > ISSIZE_MAX)
+      size = ISSIZE_MAX;
+    b = hc->hc_dup_one(h, o, b, size);
 
     if (hc->hc_update)
       msg_header_update_params(h->sh_common, 0);
@@ -137,6 +141,8 @@ tagi_t *msghdrtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
     assert(b != NULL);
   }
   *bb = b;
+
+  dst->t_value = (tag_value_t)h0;
 
   return dst + 1;
 }
@@ -180,7 +186,7 @@ int msgobjtag_snprintf(tagi_t const *t, char b[], size_t size)
 
   mo = (msg_pub_t *)t->t_value;
 
-  return msg_object_e(b, size, mo, MSG_DO_CANONIC);
+  return (int)msg_object_e(b, size, mo, MSG_DO_CANONIC);
 }
 
 
@@ -251,12 +257,16 @@ tagi_t *msgobjtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
     o = mo->msg_status;
 
   for (; o; o = o->sh_succ) {
+    size_t size;
     MSG_STRUCT_ALIGN(b);
     h = (msg_header_t *)b;
     b += o->sh_class->hc_size;
     memset(h, 0, o->sh_class->hc_size);
     h->sh_class = o->sh_class;
-    b = o->sh_class->hc_dup_one(h, o, b, 65535); /* XXX */
+    size = SIZE_MAX - (uintptr_t)b;
+    if (size > ISSIZE_MAX)
+      size = ISSIZE_MAX;
+    b = o->sh_class->hc_dup_one(h, o, b, size);
     if (o->sh_class->hc_update)
       msg_header_update_params(h->sh_common, 0);
     assert(b != NULL);
@@ -337,12 +347,16 @@ tagi_t *msgtag_multipart_dup(tagi_t *dst, tagi_t const *src, void **bb)
     o = mo->msg_status;
 
   for (; o; o = o->sh_succ) {
+    size_t size;
     MSG_STRUCT_ALIGN(b);
     h = (msg_header_t *)b;
     b += o->sh_class->hc_size;
     memset(h, 0, o->sh_class->hc_size);
     h->sh_class = o->sh_class;
-    b = o->sh_class->hc_dup_one(h, o, b, 65535); /* XXX */
+    size = SIZE_MAX - (uintptr_t)b;
+    if (size > ISSIZE_MAX)
+      size = ISSIZE_MAX;
+    b = o->sh_class->hc_dup_one(h, o, b, size);
     if (o->sh_class->hc_update)
       msg_header_update_params(h->sh_common, 0);
     assert(b != NULL);

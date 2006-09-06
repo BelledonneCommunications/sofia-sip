@@ -35,11 +35,20 @@
 
 #include "config.h"
 
+#include <sofia-sip/su_alloc.h>
+
+#include "sofia-sip/msg.h"
+#include "sofia-sip/bnf.h"
+#include "sofia-sip/msg_parser.h"
+#include "sofia-sip/msg_header.h"
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <limits.h>
+#include <errno.h>
 
 #if defined(va_copy)
 /* Xyzzy */
@@ -51,19 +60,12 @@
 
 #include <assert.h>
 
-#include <sofia-sip/su_alloc.h>
-
-#include "sofia-sip/msg.h"
-#include "sofia-sip/bnf.h"
-#include "sofia-sip/msg_parser.h"
-#include "sofia-sip/msg_header.h"
-
 /** Make a header from a value string. */
 msg_header_t *msg_header_make(su_home_t *home, 
 			      msg_hclass_t *hc,
 			      char const *s)
 {
-  int xtra;
+  size_t xtra;
   msg_header_t *h;
   int normal = hc->hc_name ||
     (hc->hc_hash != msg_payload_hash && 
@@ -107,8 +109,8 @@ msg_header_t *msg_header_vformat(su_home_t *home,
 {
   msg_header_t *h;
   
-  int n, xtra = 64;		/* reasonable default */
-
+  int n;
+  size_t xtra = 64;		/* reasonable default */
 
   /* Quick path */
   if (!fmt || !strchr(fmt, '%'))
@@ -130,22 +132,28 @@ msg_header_t *msg_header_vformat(su_home_t *home,
     n = vsnprintf(MSG_HEADER_DATA(h), xtra, fmt, aq);
     va_end(aq);
     
-    if (n >= 0 && n < xtra)
+    if (n >= 0 && (size_t)n < xtra)
       break;
 
     /* Try again with more space */
     su_free(home, h);
 
+    if (xtra >= INT_MAX)
+      return NULL;
+
     if (n >= 0)
       xtra = n + 1; /* precisely what is needed */
     else
       xtra *= 2;    /* glibc 2.0 - twice the old size */
+
+    if (xtra > INT_MAX)
+      xtra = INT_MAX;
     
     if (!(h = msg_header_alloc(home, hc, xtra)))
       return NULL;
   }
   
-  if (hc->hc_parse(home, h, MSG_HEADER_DATA(h), n) == -1) {
+  if (hc->hc_parse(home, h, MSG_HEADER_DATA(h), (size_t)n) == -1) {
     /* Note: parsing function is responsible to free 
        everything it has allocated (like parameter lists) */
     su_free(home, h), h = NULL;

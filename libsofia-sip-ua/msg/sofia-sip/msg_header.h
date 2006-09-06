@@ -56,10 +56,10 @@ SOFIA_BEGIN_DECLS
 
 SOFIAPUBFUN msg_header_t *msg_header_alloc(su_home_t *,
 					   msg_hclass_t *hc,
-					   int extra)
+					   isize_t extra)
   __attribute__((__malloc__));
 
-SOFIAPUBFUN int msg_header_size(msg_header_t const *h);
+SOFIAPUBFUN isize_t msg_header_size(msg_header_t const *h);
 
 SOFIAPUBFUN msg_header_t **msg_header_offset(msg_t const *,
 					 msg_pub_t const *,
@@ -94,24 +94,21 @@ SOFIAPUBFUN msg_header_t *msg_header_dup_one(su_home_t *home,
 SOFIAPUBFUN msg_header_t *msg_header_d(su_home_t *home,
 				       msg_t const *msg,
 				       char const *b);
-SOFIAPUBFUN int msg_header_e(char b[], int bsiz,
-			     msg_header_t const *h,
-			     int flags);
-SOFIAPUBFUN int msg_object_e(char b[], int size,
-			     msg_pub_t const *mo,
-			     int flags);
+SOFIAPUBFUN issize_t msg_header_e(char b[], isize_t bsiz,
+				  msg_header_t const *h,
+				  int flags);
+SOFIAPUBFUN issize_t msg_object_e(char b[], isize_t size,
+				  msg_pub_t const *mo,
+				  int flags);
 
-SOFIAPUBFUN int msg_header_field_e(char b[], int bsiz,
-				   msg_header_t const *h,
-				   int flags);
-
-SOFIAPUBFUN int msg_copy_all(msg_t *msg,
-			     msg_pub_t *dst,
-			     msg_pub_t const *src);
+SOFIAPUBFUN issize_t msg_header_field_e(char b[], isize_t bsiz,
+					msg_header_t const *h,
+					int flags);
 
 SOFIAPUBFUN int msg_header_remove(msg_t *msg,
 				  msg_pub_t *mo,
 				  msg_header_t *h);
+
 SOFIAPUBFUN int msg_header_remove_all(msg_t *msg,
 				      msg_pub_t *mo,
 				      msg_header_t *h);
@@ -171,7 +168,7 @@ SOFIAPUBFUN void msg_header_free_all(su_home_t *home,
 
 SOFIAPUBFUN msg_payload_t *msg_payload_create(su_home_t *home,
 					      void const *data,
-					      int len)
+					      usize_t len)
      __attribute__((__malloc__));
 
 SOFIAPUBFUN msg_separator_t *msg_separator_create(su_home_t *home)
@@ -190,9 +187,9 @@ SOFIAPUBFUN msg_separator_t *msg_separator_create(su_home_t *home)
 #define MSG_CHUNK_NEXT(pl) \
   ((pl)->pl_next)
 
-SOFIAPUBFUN int msg_headers_prepare(msg_t *,
-				    msg_header_t *headers,
-				    int flags);
+SOFIAPUBFUN issize_t msg_headers_prepare(msg_t *,
+					 msg_header_t *headers,
+					 int flags);
 
 #ifdef SU_HAVE_INLINE
 /** Clear encoded data from header structure. */
@@ -234,8 +231,8 @@ SOFIAPUBFUN int msg_list_replace_items(su_home_t *home,
 				       msg_list_t *k,
 				       msg_param_t const items[]);
 
-SOFIAPUBFUN int msg_random_token(char token[], int tlen,
-				 void const *d, int dlen);
+SOFIAPUBFUN issize_t msg_random_token(char token[], isize_t tlen,
+				      void const *d, isize_t dlen);
 
 SOFIAPUBFUN msg_param_t msg_params_find(msg_param_t const pp[],
 					char const *name);
@@ -263,9 +260,9 @@ SOFIAPUBFUN char *msg_unquote(char *dst, char const *s);
 SOFIAPUBFUN unsigned long msg_hash_string(char const *id);
 
 /* Align pointer p for multiple of t (which must be a power of 2) */
-#define MSG_ALIGN(p, t) (((t) - 1 + (long)(p))&-(long)(t))
-#define MSG_STRUCT_SIZE_ALIGN(rv) ((rv) = MSG_ALIGN(rv, (int)sizeof(void *)))
-#define MSG_STRUCT_ALIGN(p) ((p) = (void*)MSG_ALIGN(p, (int)sizeof(void *)))
+#define MSG_ALIGN(p, t) (((uintptr_t)(p) + (t) - 1) & (0 - (uintptr_t)(t)))
+#define MSG_STRUCT_SIZE_ALIGN(rv) ((rv) = MSG_ALIGN(rv, sizeof(void *)))
+#define MSG_STRUCT_ALIGN(p) ((p) = (void*)MSG_ALIGN(p, sizeof(void *)))
 
 enum {
  msg_n_params = 8,	/* allocation size of parameter string list */
