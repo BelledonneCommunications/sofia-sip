@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <ctype.h>
+#include <limits.h>
 
 /**@def URL_PRINT_FORMAT
  * Format string used when printing url with printf().
@@ -137,8 +138,9 @@
 #define IS_EXCLUDED_MASK(u, m) IS_EXCLUDED(u, m)
 
 /* Internal prototypes */
-static char *url_canonize(char *d, char const *s, int n, char const allowed[]);
-static char *url_canonize2(char *d, char const *s, int n, 
+static char *url_canonize(char *d, char const *s, size_t n,
+			  char const allowed[]);
+static char *url_canonize2(char *d, char const *s, size_t n, 
 			   unsigned m32, unsigned m64, unsigned m96);
 static int url_tel_cmp_numbers(char const *A, char const *B);
 
@@ -289,7 +291,7 @@ char *url_unescape(char *d, char const *s)
 
 /** Canonize a URL component */
 static
-char *url_canonize(char *d, char const *s, int n, char const allowed[])
+char *url_canonize(char *d, char const *s, size_t n, char const allowed[])
 {
   unsigned mask32 = 0xbe19003f, mask64 = 0x8000001e, mask96 = 0x8000001d;
 
@@ -300,17 +302,17 @@ char *url_canonize(char *d, char const *s, int n, char const allowed[])
 
 /** Canonize a URL component (with precomputed mask) */
 static
-char *url_canonize2(char *d, char const *s, int n, 
+char *url_canonize2(char *d, char const *s, size_t n, 
 		    unsigned m32, unsigned m64, unsigned m96)
 {
   char const *s0 = s;
 
   if (d == s)
-    for (;*s && s - s0 < (unsigned)n; d++, s++) 
+    for (;*s && s - s0 < n; d++, s++) 
       if (*s == '%')
 	break;
 
-  for (;*s && s - s0 < (unsigned)n; d++, s++) {
+  for (;*s && s - s0 < n; d++, s++) {
     unsigned char c = *s, h1, h2;
 
     if (c != '%') {
@@ -355,7 +357,7 @@ char *url_canonize2(char *d, char const *s, int n,
 
 /** Canonize a URL component (with precomputed mask) */
 static
-char *url_canonize3(char *d, char const *s, int n, 
+char *url_canonize3(char *d, char const *s, size_t n, 
 		    unsigned m32, unsigned m64, unsigned m96)
 {
   char const *s0 = s;
@@ -460,7 +462,7 @@ void url_init(url_t *url, enum url_type_e type)
 
 /** Get url type */
 static inline
-enum url_type_e url_get_type(char const *scheme, int len)
+enum url_type_e url_get_type(char const *scheme, size_t len)
 {
 #define test_scheme(s) \
    if (len == strlen(#s) && !strncasecmp(scheme, #s, len)) return url_##s
@@ -517,7 +519,7 @@ enum url_type_e url_get_type(char const *scheme, int len)
 static
 int _url_d(url_t *url, char *s)
 {
-  int n;
+  size_t n;
   char *s0, rest_c, *host;
   int net_path = 1;
 
@@ -537,7 +539,7 @@ int _url_d(url_t *url, char *s)
     char *scheme;
     url->url_scheme = scheme = s; s[n] = '\0'; s = s + n + 1;
 
-    if (!(scheme = url_canonize(scheme, scheme, -1, "+")))
+    if (!(scheme = url_canonize(scheme, scheme, SIZE_MAX, "+")))
       return -1;
 
     n = scheme - url->url_scheme;
@@ -633,7 +635,7 @@ int _url_d(url_t *url, char *s)
 	case url_rtsp:
 	case url_rtspu:
 	  
-	  if (!url_canonize2(port, port, -1, RESERVED_MASK))
+	  if (!url_canonize2(port, port, SIZE_MAX, RESERVED_MASK))
 	    return -1;
 
 	  /* Check that port is really numeric or wildcard */
@@ -698,24 +700,24 @@ int url_d(url_t *url, char *s)
 
 #   define SIP_USER_UNRESERVED "&=+$,;?/"
     s = (char *)url->url_user;
-    if (s && !url_canonize(s, s, -1, SIP_USER_UNRESERVED))
+    if (s && !url_canonize(s, s, SIZE_MAX, SIP_USER_UNRESERVED))
       return -1;
 
 #   define SIP_PASS_UNRESERVED "&=+$,"
     s = (char *)url->url_password;
-    if (s && !url_canonize(s, s, -1, SIP_PASS_UNRESERVED))
+    if (s && !url_canonize(s, s, SIZE_MAX, SIP_PASS_UNRESERVED))
       return -1;
 
   } else {
 
 #   define USER_UNRESERVED "&=+$,;"
     s = (char *)url->url_user;
-    if (s && !url_canonize(s, s, -1, USER_UNRESERVED))
+    if (s && !url_canonize(s, s, SIZE_MAX, USER_UNRESERVED))
       return -1;
 
 #   define PASS_UNRESERVED "&=+$,;:"
     s = (char *)url->url_password;
-    if (s && !url_canonize(s, s, -1, PASS_UNRESERVED))
+    if (s && !url_canonize(s, s, SIZE_MAX, PASS_UNRESERVED))
       return -1;
   }
 
@@ -728,13 +730,13 @@ int url_d(url_t *url, char *s)
   /* Allow all URI characters but ? and ; */
 # define PATH_UNRESERVED "/:@&=+$,"
   s = (char *)url->url_path;
-  if (s && !url_canonize(s, s, -1, PATH_UNRESERVED))
+  if (s && !url_canonize(s, s, SIZE_MAX, PATH_UNRESERVED))
     return -1;
 
   /* Allow all URI characters but ? */
 # define PARAMS_UNRESERVED ";" PATH_UNRESERVED
   s = (char *)url->url_params;
-  if (s && !url_canonize(s, s, -1, PARAMS_UNRESERVED))
+  if (s && !url_canonize(s, s, SIZE_MAX, PARAMS_UNRESERVED))
     return -1;
   
   /* Unhex alphanumeric and unreserved URI characters */
@@ -761,17 +763,17 @@ int url_d(url_t *url, char *s)
  * @param url    URL to be encoded.
  *
  * @return 
- * The function url_e() returns the number of bytes in the encoding.  
+ * Return the number of bytes in the encoding.  
  *
  * @note The function follows the convention set by C99 snprintf().  Even if
  * the result does not fit into the @a buffer and it is truncated, the
  * function returns the number of bytes in an untruncated encoding.
  */
-int url_e(char buffer[], int n, url_t const *url)
+issize_t url_e(char buffer[], isize_t n, url_t const *url)
 {
-  int i;
+  size_t i;
   char *b = buffer;
-  int m = n;
+  size_t m = n;
   int do_copy = n > 0;
 
   if (url == NULL)
@@ -870,7 +872,7 @@ int url_e(char buffer[], int n, url_t const *url)
   {
     static char const sep[] = ";?#";
     char const *pp[3];
-    int j;
+    size_t j;
 
     pp[0] = url->url_params;
     pp[1] = url->url_headers;
@@ -905,9 +907,9 @@ int url_e(char buffer[], int n, url_t const *url)
 /** Calculate the lengh of URL when encoded. 
  *
  */
-int url_len(url_t const * url)
+isize_t url_len(url_t const * url)
 {
-  int rv = 0;
+  size_t rv = 0;
 
   if (url->url_scheme) rv += strlen(url->url_scheme) + 1; /* plus ':' */
   if (url->url_user) {
@@ -937,13 +939,15 @@ int url_len(url_t const * url)
  * @param url pointer to a #url_t structure or string
  * @return Number of bytes for URL
  */
-int url_xtra(url_t const *url)
+isize_t url_xtra(url_t const *url)
 {
+  size_t xtra;
+
   if (URL_STRING_P(url)) {
-    return strlen((char const *)url) + 1;
+    xtra = strlen((char const *)url) + 1;
   }
   else {
-    unsigned len_scheme, len_user, len_password,
+    size_t len_scheme, len_user, len_password,
       len_host, len_port, len_path, len_params, 
       len_headers, len_fragment;
 
@@ -958,10 +962,12 @@ int url_xtra(url_t const *url)
     len_headers = url->url_headers ? strlen(url->url_headers) + 1 : 0;
     len_fragment = url->url_fragment ? strlen(url->url_fragment) + 1 : 0;
 
-    return 
+    xtra =
       len_scheme + len_user + len_password + len_host + len_port +
       len_path + len_params + len_headers + len_fragment;
   }
+
+  return xtra;
 }
 
 static inline
@@ -1001,16 +1007,16 @@ char *copy(char *buf, char *end, char const *src)
  * @param dst     Destination URL structure.
  * @param src     Source URL structure.
  *
- * @return The function url_dup() returns number of characters required for
+ * @return Number of characters required for
  * duplicating the strings in @a str, or -1 if an error
  * occurred.
  */
-int url_dup(char *buf, int bufsize, url_t *dst, url_t const *src)
+issize_t url_dup(char *buf, isize_t bufsize, url_t *dst, url_t const *src)
 {
   if (!src && !dst)
     return -1;
   else if (URL_STRING_P(src)) {
-    int n = strlen((char *)src) + 1;
+    size_t n = strlen((char *)src) + 1;
     if (n > bufsize || dst == NULL)
       return n;
 
@@ -1194,9 +1200,9 @@ char *url_as_string(su_home_t *home, url_t const *url)
  * @retval positive length of parameter value (including final NUL) if found
  * @retval zero     if not found.
  */
-int url_param(char const *params, 
-	      char const *tag, 
-	      char value[], int vlen)
+isize_t url_param(char const *params, 
+		  char const *tag, 
+		  char value[], isize_t vlen)
 {
   size_t n, tlen, flen;
   char *p;
@@ -1240,7 +1246,7 @@ int url_param(char const *params,
  * @deprecated 
  * Bad grammar. Use url_has_param().
  */
-int url_have_param(char const *params, char const *tag)
+isize_t url_have_param(char const *params, char const *tag)
 {
   return url_param(params, tag, NULL, 0);
 }
@@ -1255,8 +1261,8 @@ int url_has_param(url_t const *url, char const *tag)
 int url_param_add(su_home_t *h, url_t *url, char const *param)
 {
   /* XXX - should remove existing parameters with same name? */
-  int n = url->url_params ? strlen(url->url_params) + 1: 0;
-  int nn = strlen(param) + 1;
+  size_t n = url->url_params ? strlen(url->url_params) + 1: 0;
+  size_t nn = strlen(param) + 1;
   char *s = su_alloc(h, n + nn);
 
   if (!s)
@@ -1792,7 +1798,7 @@ void canon_update(su_md5_t *md5, char const *s, int n, char const *allow)
 static
 void url_string_update(su_md5_t *md5, char const *s)
 {
-  int n;
+  size_t n;
   int hostpart = 1;
   enum url_type_e type = url_any;
   char const *at, *colon;

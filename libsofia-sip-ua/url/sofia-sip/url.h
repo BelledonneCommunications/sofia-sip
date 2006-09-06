@@ -131,24 +131,24 @@ SOFIAPUBFUN char const *url_scheme(enum url_type_e type);
 SOFIAPUBFUN int url_d(url_t *url, char *s);
 
 /** Calculate the lengh of URL when encoded. */
-SOFIAPUBFUN int url_len(url_t const * url);
+SOFIAPUBFUN isize_t url_len(url_t const * url);
 
 /** Encode an URL. */
-SOFIAPUBFUN int url_e(char buffer[], int n, url_t const *url);
+SOFIAPUBFUN issize_t url_e(char buffer[], isize_t n, url_t const *url);
 
 /** Encode an URL: use @a buf up to @a end. @HI */
 #define URL_E(buf, end, url) \
   (buf) += url_e((buf), (buf) < (end) ? (end) - (buf) : 0, (url))
 
 /** Calculate the size of srings attached to the url. */
-SOFIAPUBFUN int url_xtra(url_t const * url);
+SOFIAPUBFUN isize_t url_xtra(url_t const * url);
 
 /** Duplicate the url */ 
-SOFIAPUBFUN int url_dup(char *buf, int bufsize, url_t *dst, url_t const *src);
+SOFIAPUBFUN issize_t url_dup(char *, isize_t , url_t *dst, url_t const *src);
 
 /** Duplicate the url: use @a buf up to @a end. @HI */ 
 #define URL_DUP(buf, end, dst, src) \
-  (buf) += url_dup((buf), (buf) < (end) ? (end) - (buf) : 0, (dst), (src))
+  (buf) += url_dup((buf), (isize_t)((buf) < (end) ? (end) - (buf) : 0), (dst), (src))
 
 /** Duplicate the url to memory allocated via home */ 
 SOFIAPUBFUN url_t *url_hdup(su_home_t *h, url_t const *src);
@@ -175,14 +175,14 @@ SOFIAPUBFUN int url_esclen(char const *s, char const reserved[]);
 SOFIAPUBFUN char *url_unescape(char *d, char const *s);
 
 /** Search for a parameter. */
-SOFIAPUBFUN int url_param(char const *params, char const *tag,
-			  char value[], int vlen);
+SOFIAPUBFUN isize_t url_param(char const *params, char const *tag,
+			      char value[], isize_t vlen);
 
 /** Check for a parameter. */
 SOFIAPUBFUN int url_has_param(url_t const *url, char const *name);
 
 /** Check a parameter. */
-SOFIAPUBFUN int url_have_param(char const *params, char const *tag);
+SOFIAPUBFUN isize_t url_have_param(char const *params, char const *tag);
 
 /** Add an parameter. */
 SOFIAPUBFUN int url_param_add(su_home_t *h, url_t *url, char const *param);
