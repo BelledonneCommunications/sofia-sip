@@ -1057,7 +1057,7 @@ static nth_client_t *hc_send(nth_client_t * hc)
 void hc_tport_error(nth_engine_t * he, nth_client_t * hc,
 		    tport_t * tp, msg_t *msg, int error)
 {
-  su_sockaddr_t *su = msg_addr(msg);
+  su_sockaddr_t const *su = msg_addr(msg);
   tp_name_t const *tpn = tp ? tport_name(tp) : hc->hc_tpn;
   char addr[SU_ADDRSIZE];
   char const *errmsg;

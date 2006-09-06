@@ -2719,7 +2719,7 @@ void tport_deliver(tport_t *self,
 
   if (tport_is_primary(self)) {
     char ipaddr[SU_ADDRSIZE + 2];
-    su_sockaddr_t *su = msg_addr(msg);
+    su_sockaddr_t const *su = msg_addr(msg);
 
 #if SU_HAVE_IN6
     if (su->su_family == AF_INET6) {
@@ -3696,7 +3696,7 @@ static int
 msg_select_addrinfo(msg_t *msg, su_addrinfo_t *res)
 {
   su_addrinfo_t *ai, *mai = msg_addrinfo(msg);
-  su_sockaddr_t *su = msg_addr(msg);
+  su_sockaddr_t *su = (su_sockaddr_t *)mai->ai_addr;
 
   for (ai = res; ai; ai = ai->ai_next) {
 #if SU_HAVE_IN6
@@ -3867,6 +3867,7 @@ tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error)
   unsigned i, reported, callbacks;
   tport_pending_t *pending;
   msg_t *msg;
+  su_addrinfo_t const *ai;
 
   assert(self); assert(dst);
 
@@ -3886,8 +3887,9 @@ tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error)
       continue;
 
     msg = pending->p_msg;
-    
-    if (su_cmp_sockaddr(dst, msg_addr(msg)) != 0)
+    ai = msg_addrinfo(msg);
+
+    if (su_cmp_sockaddr(dst, (su_sockaddr_t *)ai->ai_addr) != 0)
       continue;
 
     pending->p_reported = reported;

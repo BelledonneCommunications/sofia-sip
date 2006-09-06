@@ -2225,13 +2225,13 @@ int agent_check_request_via(nta_agent_t *agent,
   char received[receivedlen + TPORT_HOSTPORTSIZE];
   char *hostport = received + receivedlen;
   char const *rport;
-  su_sockaddr_t *from;
+  su_sockaddr_t const *from;
   sip_via_t const *tpv = agent_tport_via(tport);
 
   assert(tport); assert(msg); assert(sip);
   assert(sip->sip_request); assert(tpv);
 
-  from = (su_sockaddr_t *)msg_addr(msg);
+  from = msg_addr(msg);
 
   if (v == NULL) {
     /* Make up a via line */
@@ -6969,7 +6969,7 @@ void
 outgoing_print_tport_error(nta_outgoing_t *orq, int level, char *todo,
 			   tp_name_t const *tpn, msg_t *msg, int error)
 {
-  su_sockaddr_t *su = msg_addr(msg);
+  su_sockaddr_t const *su = msg_addr(msg);
   char addr[SU_ADDRSIZE];
 
   su_llog(nta_log, level, 
