@@ -141,11 +141,10 @@ void tport_stamp(tport_t const *self, msg_t *msg,
   inet_ntop(su->su_family, SU_ADDR(su), name, sizeof(name));
 
   snprintf(stamp, 128,
-	   "%s %d bytes %s %s/[%s]:%u%s%s at %02u:%02u:%02u.%06lu:\n",
-	   what, n, via, self->tp_name->tpn_proto,
+	   "%s %zd bytes %s %s/[%s]:%u%s%s at %02u:%02u:%02u.%06lu:\n",
+	   what, (size_t)n, via, self->tp_name->tpn_proto,
 	   name, ntohs(su->su_port), label[0] ? label : "", comp,
 	   hour, minute, second, now.tv_usec);
-
 }
 
 /** Dump the data from the iovec */

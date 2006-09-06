@@ -2754,9 +2754,10 @@ void tport_deliver(tport_t *self,
     self->tp_rlogged = msg;
   }
 
-  SU_DEBUG_7(("%s(%p): %smsg %p (%u bytes)"
+  SU_DEBUG_7(("%s(%p): %smsg %p (%zu bytes)"
 	      " from " TPN_FORMAT " next=%p\n", 
-	      __func__, self, error ? "bad " : "", msg, msg_size(msg),
+	      __func__, self, error ? "bad " : "",
+	      msg, (size_t)msg_size(msg),
 	      TPN_ARGS(d->d_from), next));
 
   ref = tport_incref(self);
