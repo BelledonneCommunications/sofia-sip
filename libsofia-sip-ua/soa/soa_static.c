@@ -999,8 +999,7 @@ static int offer_answer_step(soa_session_t *ss,
     if (ss->ss_local_user_version == user_version &&
 	ss->ss_local_remote_version == remote_version)
       break;
-    if (ss->ss_local_user_version != user_version ||
-	soa_sdp_upgrade_is_needed(local, remote)) {
+    if (1) {
       if (local != local0)
 	*local0 = *local, local = local0;
       SU_DEBUG_7(("soa_static(%p, %s): %s\n", ss, by,
@@ -1062,10 +1061,9 @@ static int offer_answer_step(soa_session_t *ss,
     break;
   }
 
-  /* Step E: Upgrade codecs */
+  /* Step E: Upgrade codecs by answer. */
   switch (action) {
   case process_answer:
-  case generate_answer:
     /* Upgrade local SDP based on remote SDP */
     if (ss->ss_local_remote_version == remote_version)
       break;
@@ -1080,6 +1078,7 @@ static int offer_answer_step(soa_session_t *ss,
     }
     break;
   case generate_offer:
+  case generate_answer:
   default:
     break;
   }
