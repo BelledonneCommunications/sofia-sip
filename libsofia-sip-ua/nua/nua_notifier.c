@@ -105,10 +105,10 @@ void nua_notify_usage_remove(nua_handle_t *nh,
 /* SUBSCRIBE server */
 
 /** @internal Process incoming SUBSCRIBE. */
-int nua_stack_process_subsribe(nua_t *nua,
-			       nua_handle_t *nh,
-			       nta_incoming_t *irq,
-			       sip_t const *sip)
+int nua_stack_process_subscribe(nua_t *nua,
+				nua_handle_t *nh,
+				nta_incoming_t *irq,
+				sip_t const *sip)
 {
   nua_dialog_state_t *ds;
   nua_dialog_usage_t *du = NULL;
