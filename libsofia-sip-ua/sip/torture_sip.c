@@ -67,106 +67,9 @@ int tstflags;
 
 char const *name = "torture_sip.c";
 
-static int test_methods(void);
-static int test_basic(void);
-static int test_sip_msg_class(msg_mclass_t const *mc);
-static int test_encoding(void);
-static int tag_test(void);
-static int parser_tag_test(void);
-static int response_phrase_test(void);
-static int parser_test(void);
-static int sip_header_test(void);
-static int test_bad_packet(void);
-static int test_sip_list_header(void);
-static int test_prack(void);
-static int test_accept(void);
-static int test_content_disposition(void);
-static int test_features(void);
-static int test_retry_after(void);
-static int test_session_expires(void);
-static int test_min_se(void);
-static int test_refer(void);
-static int test_events(void);
-static int test_reason(void);
-static int test_warning(void);
-static int test_route(void);
-
-static int test_request_disposition(void);
-static int test_caller_prefs(void);
-static int test_callerpref_scoring(void);
-static int test_sec_ext(void);
-static int test_utils(void);
-
-
 msg_mclass_t *test_mclass = NULL;
 
 static msg_t *read_message(int flags, char const string[]);
-
-void usage(void)
-{
-  fprintf(stderr, 
-	  "usage: %s [-v]\n", 
-	  name);
-}
-
-char *lastpart(char *path)
-{
-  if (strchr(path, '/')) 
-    return strrchr(path, '/') + 1;
-  else
-    return path;
-}
-
-int main(int argc, char *argv[])
-{
-  int retval = 0;
-  int i;
-
-  name = lastpart(argv[0]);  /* Set our name */
-
-  for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
-      tstflags |= tst_verbatim;
-    else
-      usage();
-  }
-
-  if (!test_mclass)
-    test_mclass = msg_mclass_clone(sip_default_mclass(), 0, 0);
-  
-  retval |= test_methods(); fflush(stdout);
-  retval |= test_basic(); fflush(stdout);
-  retval |= test_sip_msg_class(test_mclass); fflush(stdout);
-  retval |= test_encoding(); fflush(stdout);
-  retval |= test_events(); fflush(stdout);
-  retval |= test_reason(); fflush(stdout);
-  retval |= tag_test(); fflush(stdout);
-  retval |= parser_tag_test(); fflush(stdout);
-  retval |= response_phrase_test(); fflush(stdout);
-  retval |= parser_test(); fflush(stdout);
-  retval |= sip_header_test(); fflush(stdout);
-  retval |= test_bad_packet(); fflush(stdout);
-  retval |= test_sip_list_header(); fflush(stdout);
-  retval |= test_prack(); fflush(stdout);
-  retval |= test_accept(); fflush(stdout);
-  retval |= test_content_disposition(); fflush(stdout);
-  retval |= test_features(); fflush(stdout);
-  retval |= test_retry_after(); fflush(stdout);
-  retval |= test_session_expires(); fflush(stdout);
-  retval |= test_min_se(); fflush(stdout);
-  retval |= test_refer(); fflush(stdout);
-  retval |= test_route(); fflush(stdout);
-  retval |= test_request_disposition(); fflush(stdout);
-  retval |= test_caller_prefs(); fflush(stdout);
-  retval |= test_callerpref_scoring(); fflush(stdout);
-  retval |= test_warning(); fflush(stdout);
-
-  retval |= test_sec_ext(); fflush(stdout);
-
-  retval |= test_utils(); fflush(stdout);
-
-  return retval;
-}
 
 int test_methods(void)
 {
@@ -3035,3 +2938,70 @@ static int test_utils(void)
 
   END();
 }
+
+void usage(void)
+{
+  fprintf(stderr, 
+	  "usage: %s [-v]\n", 
+	  name);
+}
+
+char *lastpart(char *path)
+{
+  if (strchr(path, '/')) 
+    return strrchr(path, '/') + 1;
+  else
+    return path;
+}
+
+int main(int argc, char *argv[])
+{
+  int retval = 0;
+  int i;
+
+  name = lastpart(argv[0]);  /* Set our name */
+
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      tstflags |= tst_verbatim;
+    else
+      usage();
+  }
+
+  if (!test_mclass)
+    test_mclass = msg_mclass_clone(sip_default_mclass(), 0, 0);
+  
+  retval |= test_methods(); fflush(stdout);
+  retval |= test_basic(); fflush(stdout);
+  retval |= test_sip_msg_class(test_mclass); fflush(stdout);
+  retval |= test_encoding(); fflush(stdout);
+  retval |= test_events(); fflush(stdout);
+  retval |= test_reason(); fflush(stdout);
+  retval |= tag_test(); fflush(stdout);
+  retval |= parser_tag_test(); fflush(stdout);
+  retval |= response_phrase_test(); fflush(stdout);
+  retval |= parser_test(); fflush(stdout);
+  retval |= sip_header_test(); fflush(stdout);
+  retval |= test_bad_packet(); fflush(stdout);
+  retval |= test_sip_list_header(); fflush(stdout);
+  retval |= test_prack(); fflush(stdout);
+  retval |= test_accept(); fflush(stdout);
+  retval |= test_content_disposition(); fflush(stdout);
+  retval |= test_features(); fflush(stdout);
+  retval |= test_retry_after(); fflush(stdout);
+  retval |= test_session_expires(); fflush(stdout);
+  retval |= test_min_se(); fflush(stdout);
+  retval |= test_refer(); fflush(stdout);
+  retval |= test_route(); fflush(stdout);
+  retval |= test_request_disposition(); fflush(stdout);
+  retval |= test_caller_prefs(); fflush(stdout);
+  retval |= test_callerpref_scoring(); fflush(stdout);
+  retval |= test_warning(); fflush(stdout);
+
+  retval |= test_sec_ext(); fflush(stdout);
+
+  retval |= test_utils(); fflush(stdout);
+
+  return retval;
+}
+
