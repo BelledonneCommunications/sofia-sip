@@ -6015,7 +6015,7 @@ nta_outgoing_t *nta_outgoing_default(nta_agent_t *agent,
  * @TAGS
  * NTATAG_STATELESS(), NTATAG_DELAY_SENDING(), NTATAG_BRANCH_KEY(),
  * NTATAG_ACK_BRANCH(), NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(),
- * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(). All
+ * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(), NTATAG_TPORT(). All
  * SIP tags from <sip_tag.h> can be used to manipulate the request message. 
  * SIP tags after SIPTAG_END() are ignored, however.
  */
@@ -6103,7 +6103,7 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
  * @TAGS
  * NTATAG_STATELESS(), NTATAG_DELAY_SENDING(), NTATAG_BRANCH_KEY(),
  * NTATAG_ACK_BRANCH(), NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(),
- * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(). All
+ * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(), NTATAG_TPORT(). All
  * SIP tags from <sip_tag.h> can be used to manipulate the request message. 
  * SIP tags after SIPTAG_END() are ignored, however.
  */
@@ -6390,6 +6390,9 @@ msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq)
  * case, the function may return @code (nta_outgoing_t *)-1 @endcode if the
  * transaction is freed before returning from the function.
  *
+ * @TAG NTATAG_TPORT must point to an existing transport object for
+ *      'agent' (the passed tport is otherwise ignored).
+ *
  * @sa
  * nta_outgoing_tcreate(), nta_outgoing_tcancel(), nta_outgoing_destroy().
  */
@@ -6417,6 +6420,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   char const *port = NULL;
   int invalid, resolved, stateless = 0, user_via = agent->sa_user_via;
   tagi_t const *t;
+  tport_t const *override_tport = NULL;
 
   if (!agent->sa_tport_ip6)
     res_order = nta_res_ip4_only;
@@ -6476,6 +6480,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
       sigcomp_zap = t->t_value != 0;
     else if (tptag_compartment == tt)
       cc = (void *)t->t_value;
+    else if (ntatag_tport == tt) {
+      override_tport = (tport_t *)t->t_value;
+    }
   }
 
   orq->orq_agent    = agent;
@@ -6504,6 +6511,12 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   outgoing_features(agent, orq, msg, sip, ta_args(ta));
 
   ta_end(ta);
+
+  /* select the tport to use for the outgoing message  */
+  if (override_tport) {
+    /* note: no ref taken to the tport as its only used once here */
+    tpn = tport_name(override_tport);
+  }
 
   if (route_url) {
     invalid = nta_tpn_by_url(home, orq->orq_tpn, &scheme, &port, route_url);
