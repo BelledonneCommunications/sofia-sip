@@ -809,7 +809,7 @@ int sip_aor_strip(url_t *url)
 	if (d != url->url_params)
 	  d++;
 	if (s != d)
-	  memcpy(d, s, n + 1);
+	  memmove(d, s, n + 1);
       }
       d += n;
     }
