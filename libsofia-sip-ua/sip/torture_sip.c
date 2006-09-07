@@ -71,6 +71,45 @@ msg_mclass_t *test_mclass = NULL;
 
 static msg_t *read_message(int flags, char const string[]);
 
+int test_manipulation(void)
+{
+  BEGIN();
+
+  sip_content_length_t *l;
+  sip_payload_t *pl;
+  sip_t *sip;
+  msg_t *msg = read_message(MSG_DO_EXTRACT_COPY, 
+    "MESSAGE sip:foo@bar SIP/2.0\r\n"
+    "To: Joe User <sip:foo@bar>\r\n"
+    "From: \"Bar Owner\" <sip:bar@foo>;tag=foobar\r\n"
+    "Call-ID: 0ha0isndaksdj@10.1.2.3\r\n"
+    "CSeq: 8 MESSAGE\r\n"
+    "Via: SIP/2.0/UDP 135.180.130.133\r\n"
+    "Content-Length: 7\r\n"
+    "Content-Type: text/plain\r\n"
+    "\r\n"
+    "Heippa!");
+  TEST_1(msg);
+  TEST_1(sip = sip_object(msg));
+
+  TEST_1(l = sip_content_length_make(msg_home(msg), "6"));
+  TEST_1(pl = sip_payload_make(msg_home(msg), "hello!"));
+
+  TEST_1(msg_header_replace(msg, NULL, 
+			    (void *)sip->sip_content_length, 
+			    (void *)l) >= 0);
+  TEST_1(msg_header_replace(msg, NULL, 
+			    (void *)sip->sip_payload, 
+			    (void *)pl) >= 0);
+
+  TEST(msg_serialize(msg, NULL), 0);
+  TEST_1(msg_prepare(msg) > 0);
+
+  msg_destroy(msg);
+
+  END();
+}
+
 int test_methods(void)
 {
   int i;
@@ -2971,6 +3010,7 @@ int main(int argc, char *argv[])
   if (!test_mclass)
     test_mclass = msg_mclass_clone(sip_default_mclass(), 0, 0);
   
+  retval |= test_manipulation(); fflush(stdout);
   retval |= test_methods(); fflush(stdout);
   retval |= test_basic(); fflush(stdout);
   retval |= test_sip_msg_class(test_mclass); fflush(stdout);
