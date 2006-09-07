@@ -575,23 +575,19 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 
 /** Place a call using SIP INVITE method. 
  *
- * By default creates a media session, includes its description as 
- * SDP and send the request to the recipient. Upon receiving the 
- * response it will active the media session and establish the call. 
+ * By default creates a SOA session, includes its description as SDP and
+ * sends the request to the recipient. Upon receiving the response nua will
+ * activate the media session and establish the call.
  * 
- * Incomplete call can be hung-up with nua_cancel(). Completed call can be
- * hung-up with nua_bye().
+ * Incomplete call can be hung-up with nua_cancel(). Complete or incomplete
+ * calls can be hung-up with nua_bye().
  *
  * Optionally 
  * - uses early media if NUTAG_EARLY_MEDIA() tag is used with non zero value
- * - media parameters can be set by NUTAG_MEDIA_* tags
- * - if NUTAG_MEDIA_ENABLE() tag is used with value zero then the soa is 
- *   not used and application must create the SDP
- * - nua_invite() can be used to change call status: 
+ * - media parameters can be set by SOA tags
+ * - nua_invite() can be used to change status of an existing call: 
  *   - #SOATAG_HOLD tag listing the media put on hold or with value "*" sets
  *     the call on hold
- *   - if new media path is given either new media parameters are taken in 
- *     use or new media is added to session.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -606,7 +602,6 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    NUTAG_REFER_PAUSE() \n
  *    NUTAG_INVITE_TIMER() \n
  *    NUTAG_MEDIA_FEATURES() \n
- *    NUTAG_MEDIA_ENABLE() \n
  *    SOATAG_HOLD() \n
  *    SOATAG_AF() \n
  *    SOATAG_ADDRESS() \n
@@ -618,11 +613,13 @@ void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  *    #nua_i_state \n
  *    #nua_i_active \n
  *    #nua_i_media_error \n
+ *    #nua_i_terminated \n
  *    #nua_i_fork \n
  *
  * \sa nua_handle_has_active_call() \n
  *     nua_handle_has_call_on_hold()\n
  *     nua_handle_has_invite() \n
+ *     nua_prack() \n
  *     nua_update() \n
  *     nua_info() \n 
  *     nua_cancel() \n

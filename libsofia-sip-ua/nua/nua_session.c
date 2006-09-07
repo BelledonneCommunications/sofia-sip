@@ -911,6 +911,9 @@ nua_stack_cancel(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   nua_client_request_t *cri = ss->ss_crequest;
   nua_client_request_t *crc = nh->nh_cr;
 
+  if (tags)
+    nua_stack_set_params(nua, nh, nua_r_cancel, tags);
+
   if (nh && cri->cr_orq && cri->cr_usage) {
     nta_outgoing_t *orq;
 
@@ -1191,7 +1194,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   nua_session_state_t *ss = nh->nh_ss;
   nua_server_request_t *sr = ss->ss_srequest;
 
-  int autoanswer = 0, offer = 0, answer = 0;
+  int autoanswer = 0, offer = 0, answer = 0, early_answer = 0;
 
   enter;
 
@@ -1207,8 +1210,24 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   assert(ss->ss_usage);
 
-  if (nh->nh_soa)
-    soa_set_params(nh->nh_soa, TAG_NEXT(tags));
+  if (tags) {
+    nua_stack_set_params(nua, nh, nua_i_invite, tags);
+
+    if (status < 200) {
+      early_answer = -1;
+      tl_gets(tags, NUTAG_EARLY_ANSWER_REF(early_answer), TAG_END());
+
+      if (early_answer == -1) {
+	sdp_session_t const *user_sdp = NULL;
+	char const *user_sdp_str = NULL;
+	tl_gets(tags,
+		SOATAG_USER_SDP_REF(user_sdp),
+		SOATAG_USER_SDP_STR_REF(user_sdp_str),
+		TAG_END());
+	early_answer = user_sdp || user_sdp_str;
+      }
+    }
+  }
 
   msg = nh_make_response(nua, nh, ss->ss_srequest->sr_irq,
 			 status, phrase,
@@ -1248,8 +1267,9 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   else if (status >= 300) {
     soa_clear_remote_sdp(nh->nh_soa);
   }
-  else if (status >= 200 || ss->ss_100rel) {
-    if ((sr->sr_offer_recv && sr->sr_answer_sent) ||
+  else if (status >= 200 || ss->ss_100rel ||
+	   (sr->sr_offer_recv && !sr->sr_answer_sent && early_answer)) {
+    if ((sr->sr_offer_recv && sr->sr_answer_sent > 1) ||
 	(sr->sr_offer_sent && !sr->sr_answer_recv))
       /* Nothing to do */;
     else if (sr->sr_offer_recv && !sr->sr_answer_sent) {
@@ -1273,6 +1293,8 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 	/* signal that O/A answer sent (answer to invite) */
       }
     }
+    else if (sr->sr_offer_recv && sr->sr_answer_sent == 1)
+      answer = 1;
     else if (!sr->sr_offer_recv && !sr->sr_offer_sent) {
       if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0)
 	status = soa_error_as_sip_response(nh->nh_soa, &phrase);

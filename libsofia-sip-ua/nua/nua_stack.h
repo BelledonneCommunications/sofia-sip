@@ -109,7 +109,9 @@ struct nua_client_request
   nua_dialog_usage_t *cr_usage;
   unsigned short      cr_retry_count;   /**< Retry count for this request */
 
-  unsigned short      cr_answer_recv;   /**< Recv answer in response */
+  unsigned short      cr_answer_recv;   /**< Recv answer in response 
+					 *  with this status.
+					 */
   unsigned            cr_offer_sent:1;  /**< Sent offer in this request */
 
   unsigned            cr_offer_recv:1;  /**< Recv offer in a response */

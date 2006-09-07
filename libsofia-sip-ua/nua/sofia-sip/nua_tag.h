@@ -237,21 +237,27 @@ SOFIAPUBVAR tag_typedef_t nutag_soa_name;
  nutag_soa_name_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_soa_name_ref;
 
-/**Establish early media session using 183 responses and PRACK requests.
+/**Establish early media session using 100rel, 183 responses and PRACK.
  *
  * @par Used with
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
+ *    nua_set_hparams() \n
+ *    nua_get_hparams() \n
+ *    nua_invite() \n
+ *    nua_respond() \n
  *
  * @par Parameter type
- *    int
+ *    int (boolean)
  *
  * @par Values
  *    @c 0   False \n
  *    @c !=0 True
  *
+ * @sa NUTAG_EARLY_ANWER()
+ *
  * Corresponding tag taking reference parameter is NUTAG_EARLY_MEDIA_REF()
-*/
+ */
 #define NUTAG_EARLY_MEDIA(x)    nutag_early_media, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_early_media;
 
@@ -265,7 +271,11 @@ SOFIAPUBVAR tag_typedef_t nutag_early_media_ref;
  *
  * @par Used with
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
+ *    nua_set_hparams() \n
+ *    nua_get_hparams() \n
+ *    nua_invite() \n
+ *    nua_respond()
  *
  * @par Parameter type
  *    int (boolean)
@@ -281,6 +291,28 @@ SOFIAPUBVAR tag_typedef_t nutag_only183_100rel;
 
 #define NUTAG_ONLY183_100REL_REF(x) nutag_only183_100rel_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_only183_100rel_ref;
+
+/**Establish early media session by including SDP answer in 1XX response.
+ *
+ * @par Used with
+ *    nua_respond() \n
+ *
+ * @par Parameter type
+ *    int (boolean)
+ *
+ * @par Values
+ *    @c 0   False \n
+ *    @c !=0 True
+ *
+ * @sa NUTAG_EARLY_MEDIA_REF()
+ *
+ * Corresponding tag taking reference parameter is NUTAG_EARLY_ANSWER_REF()
+ */
+#define NUTAG_EARLY_ANSWER(x)    nutag_early_answer, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_early_answer;
+
+#define NUTAG_EARLY_ANSWER_REF(x) nutag_early_answer_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_early_answer_ref;
 
 /** Timer for outstanding INVITE in seconds.
  *

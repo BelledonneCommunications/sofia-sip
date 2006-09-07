@@ -218,6 +218,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_KEEPALIVE() \n
  *   NUTAG_KEEPALIVE_STREAM() \n
  *   NUTAG_MAX_SUBSCRIPTIONS() \n
+ *   NUTAG_MEDIA_ENABLE() \n
  *   NUTAG_MEDIA_FEATURES() \n
  *   NUTAG_MIN_SE() \n
  *   NUTAG_OUTBOUND() \n
@@ -308,7 +309,6 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  * @par Events:
  *     none
  */
-
 
 int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 			 tagi_t const *tags)
