@@ -21,6 +21,14 @@ API/ABI changes and versioning
  - and should be updated _continuously_! />
 
 libsofia-sip-ua:
+- Added nutag_early_answer. Optionally including SDP answer already in 1XX
+  response.
+- Done some 64-bit cleanup. Added typedefs isize_t, usize_t and issize_t. By
+  default isize_t is int, usize_t is unsigned and issize_t is int and there
+  is no change in API. If ./configure option --disable-size-compat is given,
+  API uses size_t or ssize_t instead of int/unsigned int.
+- Changed argument and return type of inline function t_xtra() to size_t.
+- Using socklen_t as li_addrlen.
 - Added soa tag soatag_audio_aux.
 - Added nua tag nutag_refer_with_id.
 - Added network change detection logic. This extends current su API
@@ -56,7 +64,7 @@ Contributors to this release
 
 - template: First Surname (patch to nua/soa/msg)
 - Andrzej Ciarkowski (fix to su_task_execute() race).
-- Michael Jerris (patches adding MSVC2005 build support)
+- Michael Jerris (patches adding MSVC2005 build support, 64-bit patches)
 - Mika Saari (patch to stun module)
 
 See the AUTHORS file in the distribution package.
