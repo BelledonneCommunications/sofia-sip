@@ -1157,7 +1157,7 @@ SOFIAPUBVAR tag_typedef_t nutag_handle;
 #define NUTAG_HANDLE_REF(x)     nutag_handle_ref, nutag_handle_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_handle_ref;
 
-/** Registration handle (used with requests and nua_respond())
+/** Registration handle (used with requests and nua_respond()) (NOT YET IMPLEMENTED)
  *
  * When a new request is made or new call is responded, a new identity can
  * be selected with NUTAG_IDENTITY(). The identity comprises of @b From
