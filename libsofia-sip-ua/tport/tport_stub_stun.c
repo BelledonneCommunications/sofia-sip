@@ -155,7 +155,7 @@ int tport_recv_stun_dgram(tport_t const *self,
     }
     else
       SU_DEBUG_7(("tport(%p): recv_stun_dgram(): "
-		  "ignoring request with %zu bytes\n", self, n));
+		  "ignoring request with "MOD_ZU" bytes\n", self, n));
   }
   else if (request[0] == 0 && self->tp_master->mr_stun_server) {
     tport_stun_server_vtable_t const *vst = tport_stun_server_vtable;

@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
     fprintf(stdout, "sip flags = %x\n", sip->sip_flags);
 
   if (m < 0) {
-    fprintf(stderr, "sip_test_msg: parsing error (%zd)\n", n);
+    fprintf(stderr, "sip_test_msg: parsing error ("MOD_ZD")\n", n);
     exit(1);
   }
 

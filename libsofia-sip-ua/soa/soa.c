@@ -744,7 +744,7 @@ int soa_set_capability_sdp(soa_session_t *ss,
 			   sdp_session_t const *sdp,
 			   char const *str, issize_t len)
 {
-  SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %p, %zd) called\n",
+  SU_DEBUG_9(("soa_set_capability_sdp(%s::%p, %p, %p, "MOD_ZD") called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, (ssize_t)len));
 
   return soa_set_sdp(ss, soa_capability_sdp_kind, sdp, str, len);
@@ -844,7 +844,7 @@ int soa_set_user_sdp(soa_session_t *ss,
 		     sdp_session_t const *sdp,
 		     char const *str, issize_t len)
 {
-  SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %p, %zd) called\n",
+  SU_DEBUG_9(("soa_set_user_sdp(%s::%p, %p, %p, "MOD_ZD") called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, (ssize_t)len));
 
   return soa_set_sdp(ss, soa_user_sdp_kind, sdp, str, len);
@@ -910,7 +910,7 @@ int soa_set_remote_sdp(soa_session_t *ss,
 		       sdp_session_t const *sdp,
 		       char const *str, issize_t len)
 {
-  SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %p, %zd) called\n",
+  SU_DEBUG_9(("soa_set_remote_sdp(%s::%p, %p, %p, "MOD_ZD") called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss, sdp, str, (ssize_t)len));
 
   return soa_set_sdp(ss, soa_remote_sdp_kind, sdp, str, len);

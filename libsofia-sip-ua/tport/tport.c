@@ -2754,7 +2754,7 @@ void tport_deliver(tport_t *self,
     self->tp_rlogged = msg;
   }
 
-  SU_DEBUG_7(("%s(%p): %smsg %p (%zu bytes)"
+  SU_DEBUG_7(("%s(%p): %smsg %p ("MOD_ZU" bytes)"
 	      " from " TPN_FORMAT " next=%p\n", 
 	      __func__, self, error ? "bad " : "",
 	      msg, (size_t)msg_size(msg),

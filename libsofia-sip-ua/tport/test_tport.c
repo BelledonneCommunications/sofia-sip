@@ -324,7 +324,7 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
     su_md5_update(md5sum, payload->pl_data, payload->pl_len);
   }
 
-  TEST_1(l = msg_content_length_format(home, "%zu", (size_t)(N * payload->pl_len)));
+  TEST_1(l = msg_content_length_format(home, MOD_ZU, (size_t)(N * payload->pl_len)));
   TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)l), 0);
 
   su_md5_digest(md5sum, digest);
@@ -734,7 +734,7 @@ static int udp_test(tp_test_t *tt)
   TEST_1(pl = msg_payload_make(home, payload));
   TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)pl), 0);
 
-  TEST_1(l = msg_content_length_format(home, "%zu", (size_t)pl->pl_len));
+  TEST_1(l = msg_content_length_format(home, MOD_ZU, (size_t)pl->pl_len));
   TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)l), 0);
 
   TEST_1(md5 = msg_content_md5_make(home, "R6nitdrtJFpxYzrPaSXfrA=="));

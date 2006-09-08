@@ -127,6 +127,8 @@ AC_DEFINE([LLU], ["%llu"], [Define to format (%llu) for unsigned long long])dnl
 AC_DEFINE([LLI], ["%lli"], [Define to format (%lli) for long long])dnl
 AC_DEFINE([LLX], ["%llx"], [Define to format (%llx) for long long hex])dnl
 ])
+AC_DEFINE([MOD_ZD], ["%zd"], [Define printf() modifier for ssize_t])
+AC_DEFINE([MOD_ZU], ["%zu"], [Define printf() modifier for size_t])
 
 ### checks for structures
 ### ---------------------
