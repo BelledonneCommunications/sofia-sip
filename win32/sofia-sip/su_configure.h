@@ -107,11 +107,21 @@
 #include <basetsd.h>
 
 #define SOFIA_ISIZE_T size_t
-#define SOFIA_ISSIZE_T ssize_t
 #define SOFIA_USIZE_T size_t
 
-#define SU_INTPTR_T INTPTR_T
-#define SU_INTPTR_T SOFIA_SSIZE_T
+#ifdef _WIN64
+#define SOFIA_SSIZE_T __in64
+#define SOFIA_ISSIZE_T __int64
+#define SU_INTPTR_T __int64
+#elif _MSC_VER >= 1400
+#define SOFIA_SSIZE_T __int32 __w64
+#define SOFIA_ISSIZE_T __int32 __w64
+#define SU_INTPTR_T __int32 __w64
+#else
+#define SOFIA_SSIZE_T __int32
+#define SOFIA_ISSIZE_T __int32
+#define SU_INTPTR_T __int32
+#endif
 
 #ifndef SIZE_MAX
 #define SIZE_MAX MAXINT_PTR
