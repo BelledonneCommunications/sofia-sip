@@ -649,10 +649,13 @@ int readfile(FILE *f, void **contents)
   return len;
 }
 
+#if HAVE_DIRENT_H
 #include <dirent.h>
+#endif 
 
 static int test_bad_messages(agent_t *ag)
 {
+#if HAVE_DIRENT_H
   DIR *dir;
   struct dirent *d;
   char name[PATH_MAX + 1] = "../sip/tests/";
@@ -748,6 +751,9 @@ static int test_bad_messages(agent_t *ag)
   nta_leg_destroy(ag->ag_default_leg), ag->ag_default_leg = NULL;
 
   END();
+#else
+  return 0;
+#endif /* HAVE_DIRENT_H */
 }
 
 static unsigned char const code[] = 

@@ -127,7 +127,7 @@ esac
 
 AC_CHECK_HEADERS([unistd.h sys/time.h])
 
-AC_CHECK_HEADERS([fcntl.h])
+AC_CHECK_HEADERS([fcntl.h dirent.h])
 
 AC_CHECK_HEADERS([winsock2.h], [
   AC_DEFINE([HAVE_WIN32], 1, [Define to 1 you have WIN32])
