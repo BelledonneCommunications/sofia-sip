@@ -1126,7 +1126,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
   su_alloc_t *sua;
   su_block_t *sub;
   size_t p;
-  int term = -size;
+  int term = -((int)size);
 
   if (!home) 
     return realloc(data, size);

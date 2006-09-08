@@ -88,6 +88,7 @@ struct sockaddr_storage {
 #include "sofia-resolv/sres_record.h"
 #include "sofia-resolv/sres_async.h"
 
+#include <sofia-sip/su.h>
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/su_errno.h>
