@@ -108,22 +108,42 @@ typedef SU_LEAST8_T int_least8_t;
 /* size_t types for binary compatibility */
 
 #ifdef SOFIA_SSIZE_T
+/** POSIX type used for a count of bytes or an error indication. */
 typedef SOFIA_SSIZE_T ssize_t;
 #endif
 
 #ifdef SOFIA_ISIZE_T
+/** Compatibility type. 
+ *
+ * sofia-sip <= 1.12.1 often used int for count of bytes. 
+ * When configured for compatibility with sofia-sip 1.12.0, this is defined
+ * as int, otherwise as size_t. Note that int is signed and size_t is
+ * unsigned.
+ */
 typedef SOFIA_ISIZE_T isize_t;
 #else
 typedef size_t isize_t;
 #endif
 
 #ifdef SOFIA_ISSIZE_T
+/**Compatibility type. 
+ *
+ * sofia-sip <= 1.12.1 used int for count of bytes. 
+ * When configured for compatibility with sofia-sip 1.12.0, this is defined
+ * as int, otherwise as ssize_t. (-1 is used for error indication).
+ */
 typedef SOFIA_ISSIZE_T issize_t;
 #else
 typedef ssize_t issize_t;
 #endif
 
 #ifdef SOFIA_USIZE_T
+/**Compatibility type. 
+ *
+ * sofia-sip <= 1.12.1 sometimes used unsigned int for count of bytes. 
+ * When configured for compatibility with sofia-sip 1.12.0, this is defined
+ * as unsigned int, otherwise as size_t.
+ */
 typedef SOFIA_USIZE_T usize_t;
 #else
 typedef size_t usize_t;
