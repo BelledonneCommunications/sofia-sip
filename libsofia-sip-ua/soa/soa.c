@@ -85,7 +85,7 @@ enum soa_sdp_kind {
 static int soa_set_sdp(soa_session_t *ss, 
 		       enum soa_sdp_kind what,
 		       sdp_session_t const *sdp0,
-		       char const *sdp_str, int str_len);
+		       char const *sdp_str, issize_t str_len);
 
 /* ======================================================================== */
 
@@ -1521,7 +1521,7 @@ static
 int soa_set_sdp(soa_session_t *ss, 
 		enum soa_sdp_kind what,
 		sdp_session_t const *sdp0,
-		char const *sdp_str, int str_len)
+		char const *sdp_str, issize_t str_len)
 {
   struct soa_description *ssd;
   int flags, new_version, retval;
@@ -1545,15 +1545,17 @@ int soa_set_sdp(soa_session_t *ss,
     return -1;
   }
 
+  if (sdp_str && str_len == -1)
+    str_len = strlen(sdp_str);
+
   if (sdp0)
     new_version = sdp_session_cmp(sdp0, ssd->ssd_sdp) != 0;
   else if (sdp_str)
-    new_version = str0cmp(sdp_str, ssd->ssd_unparsed) != 0;
+    new_version = !ssd->ssd_unparsed ||
+      str0ncmp(sdp_str, ssd->ssd_unparsed, str_len) != 0 ||
+      ssd->ssd_unparsed[str_len] != '\0';
   else
     return (void)su_seterrno(EINVAL), -1;
-
-  if (sdp_str && str_len == -1)
-    str_len = strlen(sdp_str);
 
   if (!new_version) {
     if (what == soa_remote_sdp_kind) {
