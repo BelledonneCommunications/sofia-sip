@@ -509,7 +509,7 @@ void auth_method_basic(auth_mod_t *am,
 		       auth_challenger_t const *ach)
 {
   char *userpass, buffer[128];
-  int n, upsize;
+  size_t n, upsize;
   char *pass;
   auth_passwd_t *apw;
 

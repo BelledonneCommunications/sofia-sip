@@ -685,9 +685,9 @@ int tport_bind_socket(int socket,
 		      char const **return_culprit)
 {
   su_sockaddr_t *su = (su_sockaddr_t *)ai->ai_addr;
-  socklen_t sulen = ai->ai_addrlen;
+  socklen_t sulen = (socklen_t)(ai->ai_addrlen);
 
-  if (bind(socket, ai->ai_addr, ai->ai_addrlen) == -1) {
+  if (bind(socket, ai->ai_addr, sulen) == -1) {
     return *return_culprit = "bind", -1;
   }
 
@@ -921,7 +921,7 @@ tport_t *tport_base_connect(tport_primary_t *pri,
   if (tport_setname(self, tpn->tpn_proto, real_ai, tpn->tpn_canon) == -1) 
     TPORT_CONNECT_ERROR(su_errno(), tport_setname);
 
-  if (connect(s, ai->ai_addr, ai->ai_addrlen) == SOCKET_ERROR) {
+  if (connect(s, ai->ai_addr, (socklen_t)(ai->ai_addrlen)) == SOCKET_ERROR) {
     err = su_errno();
     if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK)
       TPORT_CONNECT_ERROR(err, connect);

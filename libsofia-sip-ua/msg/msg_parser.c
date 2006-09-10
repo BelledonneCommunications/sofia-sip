@@ -471,7 +471,7 @@ issize_t msg_recv_buffer(msg_t *msg, void **return_buffer)
     msg_payload_t *pl;
 
     for (pl = msg->m_chunk; pl; pl = pl->pl_next) {
-      unsigned n = MSG_CHUNK_AVAIL(pl);
+      size_t n = MSG_CHUNK_AVAIL(pl);
       if (n) {
 	*return_buffer = MSG_CHUNK_BUFFER(pl);
 	return n;
@@ -554,7 +554,7 @@ isize_t msg_recv_commit(msg_t *msg, usize_t n, int eos)
 msg_t *msg_next(msg_t *msg)
 {
   msg_t *next;
-  unsigned n;
+  usize_t n;
 
   if (msg && msg->m_next) {
     next = msg->m_next;
@@ -1300,7 +1300,7 @@ issize_t msg_extract_payload(msg_t *msg, msg_pub_t *mo,
 
   if (msg_get_flags(msg, MSG_FLG_CHUNKING)) {
     /* Application supports chunking, use multiple chunks for payload */
-    unsigned current, rest;
+    usize_t current, rest;
 
     current = msg->m_buffer->mb_size - msg->m_buffer->mb_used;
     rest = body_len - current;

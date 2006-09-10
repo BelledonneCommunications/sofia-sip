@@ -141,7 +141,7 @@ su_md5_update(su_md5_t *ctx,
   t = ctx->bits[0];
   if ((ctx->bits[0] = (t + ((uint32_t)len << 3)) & 0xffffffff) < t)
     ctx->bits[1]++;	/* Carry from low to high */
-  ctx->bits[1] += len >> 29;
+  ctx->bits[1] += (uint32_t)(len >> 29);
   
   t = (t >> 3) & 0x3f;	/* Bytes already in shsInfo->data */
   
@@ -210,7 +210,7 @@ su_md5_iupdate(su_md5_t *ctx,
   t = ctx->bits[0];
   if ((ctx->bits[0] = (t + ((uint32_t)len << 3)) & 0xffffffff) < t)
     ctx->bits[1]++;	/* Carry from low to high */
-  ctx->bits[1] += len >> 29;
+  ctx->bits[1] += (uint32_t)(len >> 29);
   
   t = (t >> 3) & 0x3f;	/* Bytes already in shsInfo->data */
   
@@ -222,7 +222,7 @@ su_md5_iupdate(su_md5_t *ctx,
     t = sizeof(ctx->in) - t;
 
     if (len < t) {
-      mem_i_cpy(p, buf, len);
+      mem_i_cpy(p, buf, (uint32_t)len);
       return;
     }
     mem_i_cpy(p, buf, t);
@@ -240,7 +240,7 @@ su_md5_iupdate(su_md5_t *ctx,
   }
 
   /* Handle any remaining bytes of data. */
-  mem_i_cpy(ctx->in, buf, len);
+  mem_i_cpy(ctx->in, buf, (uint32_t)len);
 }
 
 /** Update MD5 context with contents of string.

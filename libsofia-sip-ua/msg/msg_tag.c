@@ -194,7 +194,7 @@ size_t msgobjtag_xtra(tagi_t const *t, size_t offset)
 {
   msg_header_t const *h;
   msg_pub_t const *mo;
-  int rv;
+  size_t rv;
 
   assert(t);
 

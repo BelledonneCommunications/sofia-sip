@@ -54,7 +54,7 @@
 static inline
 size_t msg_params_copy_xtra(msg_param_t const pp[], size_t offset)
 {
-  int n = msg_params_count(pp);
+  size_t n = msg_params_count(pp);
   if (n) {
     MSG_STRUCT_SIZE_ALIGN(offset);
     offset += MSG_PARAMS_NUM(n + 1) * sizeof(pp[0]);
@@ -68,7 +68,7 @@ char *msg_params_copy(char *b, size_t size,
 		      msg_param_t **dst, 
 		      msg_param_t const src[])
 {
-  int n = msg_params_count(src);
+  size_t n = msg_params_count(src);
 
   if (n) {
     MSG_STRUCT_ALIGN(b);

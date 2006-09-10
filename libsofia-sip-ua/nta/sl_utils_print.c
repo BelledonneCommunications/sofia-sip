@@ -228,7 +228,7 @@ int sl_allow_print(FILE *stream, char const *fmt, sip_allow_t const *allow)
 int sl_payload_print(FILE *stream, char const *prefix, sip_payload_t const *pl)
 {
   char *s = pl->pl_data, *end = pl->pl_data + pl->pl_len;
-  int n, crlf = 1, total = 0;
+  size_t n, total = 0, crlf = 1; 
 
   while (s < end && *s != '\0') {
     n = strncspn(s, end - s, "\r\n");

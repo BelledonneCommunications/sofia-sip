@@ -84,7 +84,7 @@ issize_t http_extract_chunk(msg_t *, http_t *, char b[], isize_t bsiz, int eos);
 issize_t http_extract_body(msg_t *msg, http_t *http, char b[], isize_t bsiz, int eos)
 {
   issize_t m = 0;
-  unsigned body_len;
+  size_t body_len;
 
   int flags = http->http_flags;
 
@@ -326,7 +326,7 @@ int http_version_d(char **ss, char const **ver)
     result = http_version_0_9;
   } else {
     /* Version consists of one or two tokens, separated by / */
-    int l1 = 0, l2 = 0, n;
+    size_t l1 = 0, l2 = 0, n;
 
     result = s;
 

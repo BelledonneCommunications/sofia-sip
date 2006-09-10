@@ -92,7 +92,7 @@ tagi_t *urltag_dup(tagi_t *dst, tagi_t const *src, void **bb)
     url_dup(b + sizeof(*d), xtra, d, url);
 
     dst->t_tag = src->t_tag;
-    dst->t_value = (long)d;
+    dst->t_value = (tag_value_t)d;
     *bb = b + sizeof(*d) + xtra;
   }
   

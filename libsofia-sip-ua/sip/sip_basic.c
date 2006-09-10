@@ -981,7 +981,7 @@ issize_t sip_call_id_d(su_home_t *home,
 
 issize_t sip_call_id_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
-  int n = strlen(h->sh_call_id->i_id);
+  issize_t n = strlen(h->sh_call_id->i_id);
 
   if (bsiz > n)
     strcpy(b, h->sh_call_id->i_id);
@@ -1044,7 +1044,7 @@ char *sip_call_id_dup_one(sip_header_t *dst, sip_header_t const *src,
 sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
 {
   sip_call_id_t *i;
-  int xtra = su_guid_strlen + 1 + (domain ? strlen(domain) + 1 : 0);
+  size_t xtra = su_guid_strlen + 1 + (domain ? strlen(domain) + 1 : 0);
 
   i = sip_header_alloc(home, sip_call_id_class, xtra)->sh_call_id;
   

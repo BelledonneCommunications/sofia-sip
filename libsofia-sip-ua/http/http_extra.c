@@ -154,7 +154,7 @@ static issize_t cookie_scanner(char *s)
 
     /* get value */
     if (*s == '"') {
-      int qlen = span_quoted(s);
+      isize_t qlen = span_quoted(s);
       if (!qlen)
 	return -1;
       s += qlen;
@@ -226,7 +226,7 @@ issize_t http_cookie_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 /** Calculate extra storage used by Cookie header field */
 isize_t http_cookie_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
+  isize_t rv = offset;
   http_cookie_t const *c = (http_cookie_t *)h;
 
   MSG_PARAMS_SIZE(rv, c->c_params);
@@ -443,7 +443,7 @@ issize_t http_set_cookie_e(char b[], isize_t bsiz, msg_header_t const *h, int fl
 /** Calculate extra storage used by Set-Cookie header field */
 isize_t http_set_cookie_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
+  isize_t rv = offset;
   http_set_cookie_t const *sc = (http_set_cookie_t *)h;
 
   MSG_PARAMS_SIZE(rv, sc->sc_params);

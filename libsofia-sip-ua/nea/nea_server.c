@@ -1216,7 +1216,7 @@ nea_event_t *nea_event_tcreate(nea_server_t *nes,
 			       tag_type_t tag, tag_value_t value, ...)
 {
   nea_event_t *ev, **pev;
-  int len = strlen(name);
+  size_t len = strlen(name);
   ta_list ta;
 
   /* Find a matching event */

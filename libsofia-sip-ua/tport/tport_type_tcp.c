@@ -237,7 +237,7 @@ int tport_recv_stream(tport_t *self)
 
   msg = self->tp_msg;
 
-  msg_set_address(msg, self->tp_addr, self->tp_addrlen);
+  msg_set_address(msg, self->tp_addr, (socklen_t)(self->tp_addrlen));
 
   n = su_vrecv(self->tp_socket, iovec, veclen, 0, NULL, NULL);
   if (n == SOCKET_ERROR)

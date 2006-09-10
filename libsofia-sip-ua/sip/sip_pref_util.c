@@ -336,7 +336,8 @@ int sip_contact_accept(sip_contact_t const *m,
 		       int *return_error)
 {
   char const *cap, *acc;
-  unsigned i, S, N, eq;
+  unsigned i, S, N;
+  size_t eq;
 
   if (!return_N) return_N = &N;
   if (!return_S) return_S = &S;

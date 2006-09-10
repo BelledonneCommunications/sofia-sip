@@ -578,7 +578,7 @@ static inline
 su_strlst_t *
 su_strlst_split0(su_strlst_t *l, char *str, char const *sep)
 {
-  int n = sep ? strlen(sep) : 0;
+  size_t n = sep ? strlen(sep) : 0;
   char *s;
 
   if (n > 0) {

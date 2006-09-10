@@ -91,7 +91,7 @@ isize_t base64_d(char buf[], isize_t bsiz, char const *b64s)
       decode[i] = B64NOP; 
 
     for (i = 0; i < 64; i++) {
-      decode[code[i]] = i;
+      decode[code[i]] = (unsigned char)i;
     }
     decode['='] = B64EOF;
     decode['\0'] = B64EOF;

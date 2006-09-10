@@ -901,7 +901,7 @@ int nth_request_treply(nth_request_t *req,
   if (http->http_payload && !http->http_content_length) {
     http_content_length_t *l;
     http_payload_t *pl;
-    unsigned len = 0;
+    usize_t len = 0;
     
     for (pl = http->http_payload; pl; pl = pl->pl_next)
       len += pl->pl_len;

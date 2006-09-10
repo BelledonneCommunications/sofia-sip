@@ -231,7 +231,7 @@ int su_vector_empty(su_vector_t *vector)
  */
 int su_vector_append(su_vector_t *vector, void *item)
 {
-  unsigned index = vector->v_len;
+  size_t index = vector->v_len;
 
   if (vector && su_vector_make_place(vector, index)) {
     vector->v_list[index] = item;

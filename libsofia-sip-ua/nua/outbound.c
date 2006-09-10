@@ -266,7 +266,7 @@ int outbound_set_options(outbound_t *ob,
 #define MATCH(v) (len == sizeof(#v) - 1 && strncasecmp(#v, s, len) == 0)
 
   for (s = options; s && s[0]; ) {
-    int len = span_token(s);
+    size_t len = span_token(s);
     int value = 1;
 
     if (len > 3 && strncasecmp(s, "no-", 3) == 0)

@@ -720,7 +720,7 @@ int auc_digest_authorization(auth_client_t *ca,
   unsigned nc = ++cda->cda_ncount;
   char *uri = url_as_string(home, url);
   void const *data = body ? body->pl_data : "";
-  int dlen = body ? body->pl_len : 0;
+  usize_t dlen = body ? body->pl_len : 0;
 
   msg_header_t *h;
   auth_hexmd5_t sessionkey, response;

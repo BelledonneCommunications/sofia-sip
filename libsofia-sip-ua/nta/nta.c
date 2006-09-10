@@ -1871,7 +1871,7 @@ int nta_tpn_by_url(su_home_t *home,
 		   url_string_t const *us)
 {
   url_t url[1];
-  int n;
+  isize_t n;
   char *b;
 
   n = url_xtra(us->us_url);
@@ -2264,7 +2264,7 @@ int agent_check_request_via(nta_agent_t *agent,
     return -1;
 
   if (strcasecmp(hostport, v->v_host)) {
-    int rlen;
+    size_t rlen;
     /* Add the "received" field */
     memcpy(received, "received=", receivedlen);
 
@@ -8476,7 +8476,8 @@ int outgoing_make_srv_query(nta_outgoing_t *orq)
   su_home_t *home = msg_home(orq->orq_request);
   struct sipdns_query *sq;
   char const *host; 
-  int i, hlen;
+  int i;
+  size_t hlen;
  
   sr->sr_use_srv = 0;
 
@@ -8485,7 +8486,7 @@ int outgoing_make_srv_query(nta_outgoing_t *orq)
 
   for (i = 0; sr->sr_tports[i]; i++) {
     char const *prefix = sr->sr_tports[i]->prefix;
-    int plen = strlen(prefix);
+    size_t plen = strlen(prefix);
 
     sq = su_zalloc(home, (sizeof *sq) + plen + hlen);
     if (sq) {
@@ -8598,7 +8599,8 @@ void outgoing_answer_naptr(sres_context_t *orq,
 			   sres_query_t *q,
 			   sres_record_t *answers[])
 {
-  int i, j, order = -1, rlen;
+  int i, j, order = -1;
+  size_t rlen;
   su_home_t *home = msg_home(orq->orq_request);
   nta_agent_t *agent = orq->orq_agent;
   struct sipdns_resolver *sr = orq->orq_resolver;
@@ -8763,7 +8765,8 @@ outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
   struct sipdns_resolver *sr = orq->orq_resolver;
   su_home_t *home = msg_home(orq->orq_request);
   struct sipdns_query *sq0, *sq, *selected = NULL, **tail = &selected, **at;
-  int i, tlen;
+  int i;
+  size_t tlen;
 
   sr->sr_query = NULL;
 

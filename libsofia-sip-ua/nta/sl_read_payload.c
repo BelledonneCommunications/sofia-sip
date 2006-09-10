@@ -72,7 +72,7 @@ sip_payload_t *sl_read_payload(su_home_t *home, char const *fname)
 sip_payload_t *sl_fread_payload(su_home_t *home, FILE *f)
 {
   sip_payload_t *pl;
-  int n;
+  size_t n;
   char *buf;
   char const *who;
   size_t used, size;

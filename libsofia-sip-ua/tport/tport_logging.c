@@ -163,7 +163,7 @@ void tport_dump_iovec(tport_t const *self, msg_t *msg,
   fputs(stamp, mr->mr_dump_file);
 
   for (i = 0; i < iovused && n > 0; i++) {
-    int len = iov[i].mv_len;
+    size_t len = iov[i].mv_len;
     if (len > n)
       len = n;
     fwrite(iov[i].mv_base, len, 1, mr->mr_dump_file);

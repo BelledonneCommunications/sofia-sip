@@ -764,7 +764,8 @@ char *stun_determine_ip_address(int family)
 
   char *local_ip_address;
   su_localinfo_t *li = NULL, hints[1] = {{ LI_CANONNAME|LI_NUMERIC }};
-  int error, address_size;
+  int error;
+  size_t address_size;
   struct sockaddr_in *sa = NULL;
   su_sockaddr_t *temp;
 

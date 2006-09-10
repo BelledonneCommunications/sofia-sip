@@ -132,7 +132,7 @@ tagi_t *siptag_filter(tagi_t *dst,
       return dst;
 
     stub[0].t_tag = tt;
-    stub[0].t_value = (long)h;
+    stub[0].t_value = (tag_value_t)h;
     src = stub; sctt = tt;
   }
 

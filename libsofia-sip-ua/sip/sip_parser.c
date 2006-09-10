@@ -504,7 +504,7 @@ int sip_complete_message(msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
   su_home_t *home = msg_home(msg);
-  unsigned len = 0;
+  usize_t len = 0;
 
   if (sip == NULL)
     return -1;

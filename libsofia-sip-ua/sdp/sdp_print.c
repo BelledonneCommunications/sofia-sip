@@ -705,7 +705,7 @@ static void sdp_printf(sdp_printer_t *p, const char *fmt, ...)
       }
       else if (p->pr_may_realloc) {	
 	char *buffer;
-	int size;
+	size_t size;
 	if (p->pr_bsiz < SDP_BLOCK)
 	  size = SDP_BLOCK;
 	else
