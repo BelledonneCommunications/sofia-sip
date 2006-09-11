@@ -232,9 +232,9 @@ struct su_block_s {
   char       *sub_preload;	/**< Preload area */
   su_home_stat_t *sub_stats;	/**< Statistics.. */
   void      (*sub_destructor)(void *); /**< Destructor function */
-  unsigned    sub_ref;		/**< Reference count */
-  unsigned    sub_used;		/**< Number of blocks allocated */
-  unsigned    sub_n;		/**< Size of hash table  */
+  size_t      sub_ref;		/**< Reference count */
+  size_t      sub_used;		/**< Number of blocks allocated */
+  size_t      sub_n;		/**< Size of hash table  */
 
   unsigned    sub_prsize:16;	/**< Preload size */
   unsigned    sub_prused:16;	/**< Used from preload */
@@ -258,19 +258,19 @@ static void _su_home_deinit(su_home_t *home);
 #define SU_ALLOC_STATS 1
 
 #if SU_ALLOC_STATS
-unsigned count_su_block_find, count_su_block_find_loop;
-unsigned size_su_block_find, used_su_block_find;
-unsigned max_size_su_block_find, max_used_su_block_find;
-unsigned su_block_find_collision, su_block_find_collision_used, 
+size_t count_su_block_find, count_su_block_find_loop;
+size_t size_su_block_find, used_su_block_find;
+size_t max_size_su_block_find, max_used_su_block_find;
+size_t su_block_find_collision, su_block_find_collision_used, 
   su_block_find_collision_size;
 #endif
 
 static inline su_alloc_t *su_block_find(su_block_t *b, void *p)
 {
-  unsigned h, h0, probe;
+  size_t h, h0, probe;
 
 #if SU_ALLOC_STATS  
-  unsigned collision = 0;
+  size_t collision = 0;
 
   count_su_block_find++;
   size_su_block_find += b->sub_n;
@@ -283,7 +283,7 @@ static inline su_alloc_t *su_block_find(su_block_t *b, void *p)
 
   assert(p != NULL);
 
-  h = h0 = (unsigned)(uintptr_t)p % b->sub_n;
+  h = h0 = (size_t)((uintptr_t)p % b->sub_n);
 
   probe = (b->sub_n > SUB_P) ? SUB_P : 1;
 
@@ -307,11 +307,11 @@ static inline su_alloc_t *su_block_find(su_block_t *b, void *p)
 
 static inline su_alloc_t *su_block_add(su_block_t *b, void *p)
 {
-  unsigned h, probe;
+  size_t h, probe;
 
   assert(p != NULL);
 
-  h = (unsigned)(uintptr_t)p % b->sub_n;
+  h = (size_t)((uintptr_t)p % b->sub_n);
 
   probe = (b->sub_n > SUB_P) ? SUB_P : 1;
 
@@ -364,7 +364,7 @@ static inline int su_alloc_check(su_block_t const *sub, su_alloc_t const *sua)
  *   This function returns a pointer to the allocated hash table or
  *   NULL if an error occurred.
  */
-static inline su_block_t *su_hash_alloc(int n)
+static inline su_block_t *su_hash_alloc(size_t n)
 {
   su_block_t *b = calloc(1, offsetof(su_block_t, sub_nodes[n]));
 
@@ -399,7 +399,7 @@ void *sub_alloc(su_home_t *home,
 
   if (sub == NULL || 3 * sub->sub_used > 2 * sub->sub_n) {
     /* Resize the hash table */
-    int i, n, n2, used;
+    size_t i, n, n2, used;
     su_block_t *b2;
 
     if (sub)
@@ -462,7 +462,7 @@ void *sub_alloc(su_home_t *home,
     su_alloc_t *sua;
 
 #if MEMCHECK_EXTRA
-    int term = -(int)size;
+    size_t term = 0 - size;
     memcpy((char *)data + size, &term, sizeof (term));
 #endif
 
@@ -548,7 +548,7 @@ void *su_home_ref(su_home_t const *home)
       return NULL;
     }
     
-    if (sub->sub_ref != UINT_MAX)
+    if (sub->sub_ref != REF_MAX)
       sub->sub_ref++;
     UNLOCK(home);
   }
@@ -603,7 +603,7 @@ int su_home_unref(su_home_t *home)
     /* Xyzzy */
     return 0;
   }
-  else if (sub->sub_ref == UINT_MAX) {
+  else if (sub->sub_ref == REF_MAX) {
     UNLOCK(home);
     return 0;
   }
@@ -735,7 +735,7 @@ void su_free(su_home_t *home, void *data)
 	su_home_t *subhome = data;
 	su_block_t *sub = MEMLOCK(subhome);
 
-	assert(sub->sub_ref != UINT_MAX);
+	assert(sub->sub_ref != REF_MAX);
 	/* assert(sub->sub_ref > 0); */
 
 	sub->sub_ref = 0;	/* Zap all references */
@@ -785,7 +785,7 @@ void su_home_check_blocks(su_block_t const *b)
 {
 #if MEMCHECK != 0
   if (b) {
-    unsigned i, used;
+    size_t i, used;
     assert(b->sub_used <= b->sub_n);
 
     for (i = 0, used = 0; i < b->sub_n; i++)
@@ -865,7 +865,7 @@ static
 void _su_home_deinit(su_home_t *home)
 {
   if (home->suh_blocks) {
-    unsigned i;
+    size_t i;
     su_block_t *b;
 
      if (home->suh_blocks->sub_destructor) {
@@ -946,7 +946,7 @@ void su_home_deinit(su_home_t *home)
  */
 int su_home_move(su_home_t *dst, su_home_t *src)
 {
-  unsigned i, n, n2, used;
+  size_t i, n, n2, used;
   su_block_t *s, *d, *d2;
 
   if (src == NULL || dst == src)
@@ -1059,7 +1059,7 @@ void su_home_preload(su_home_t *home, isize_t n, isize_t isize)
     preload = malloc(size);
 
     home->suh_blocks->sub_preload = preload;
-    home->suh_blocks->sub_prsize = (unsigned short)size;
+    home->suh_blocks->sub_prsize = (unsigned)size;
   }
   UNLOCK(home);
 }
@@ -1095,7 +1095,7 @@ su_home_t *su_home_auto(void *area, isize_t size)
 
   sub->sub_n = SUB_N_AUTO;
   sub->sub_preload = p + prepsize;
-  sub->sub_prsize = (unsigned short)(size - prepsize);
+  sub->sub_prsize = (unsigned)(size - prepsize);
   sub->sub_preauto = 1;
   sub->sub_auto = 1;
   sub->sub_auto_all = 1;
@@ -1126,7 +1126,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
   su_alloc_t *sua;
   su_block_t *sub;
   size_t p;
-  int term = -((int)size);
+  size_t term = 0 - size;
 
   if (!home) 
     return realloc(data, size);
@@ -1180,7 +1180,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
   p = ALIGN(p);
 
   if (p == sub->sub_prused) {
-    int p2 = (char *)data - sub->sub_preload + size + MEMCHECK_EXTRA;
+    size_t p2 = (char *)data - sub->sub_preload + size + MEMCHECK_EXTRA;
     p2 = ALIGN(p2);
     if (p2 <= sub->sub_prsize) {
       /* Extend/reduce existing preload */
@@ -1373,7 +1373,7 @@ int su_home_mutex_unlock(su_home_t *home)
 void su_home_init_stats(su_home_t *home)
 {
   su_block_t *sub;
-  int size;
+  size_t size;
 
   if (home == NULL)
     return;
@@ -1403,7 +1403,7 @@ void su_home_init_stats(su_home_t *home)
  */
 void su_home_get_stats(su_home_t *home, int include_clones, 
 		       su_home_stat_t hs[1],
-		       int size)
+		       isize_t size)
 {
   su_block_t *sub;
 
@@ -1415,8 +1415,8 @@ void su_home_get_stats(su_home_t *home, int include_clones,
   sub = MEMLOCK(home);
 
   if (sub && sub->sub_stats) {
-    int sub_size = sub->sub_stats->hs_size;
-    if (sub_size > size)
+    size_t sub_size = sub->sub_stats->hs_size;
+    if (sub_size > (size_t)size)
       sub_size = size;
     sub->sub_stats->hs_preload.hsp_size = sub->sub_prsize;
     sub->sub_stats->hs_preload.hsp_used = sub->sub_prused;

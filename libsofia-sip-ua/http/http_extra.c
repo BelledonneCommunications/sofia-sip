@@ -100,7 +100,7 @@ HTTP_HEADER_CLASS_LIST(proxy_connection, "Proxy-Connection", list);
 static inline
 void http_cookie_update(http_cookie_t *c)
 {
-  int i;
+  size_t i;
 
   c->c_name = NULL;
   c->c_version = NULL, c->c_domain = NULL, c->c_path = NULL;
@@ -154,7 +154,7 @@ static issize_t cookie_scanner(char *s)
 
     /* get value */
     if (*s == '"') {
-      isize_t qlen = span_quoted(s);
+      size_t qlen = span_quoted(s);
       if (!qlen)
 	return -1;
       s += qlen;
@@ -209,7 +209,7 @@ issize_t http_cookie_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
   http_cookie_t const *c = (http_cookie_t *)h;
-  int i;
+  size_t i;
 
   if (c->c_params) {
     for (i = 0; c->c_params[i]; i++) {
@@ -226,12 +226,11 @@ issize_t http_cookie_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 /** Calculate extra storage used by Cookie header field */
 isize_t http_cookie_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  isize_t rv = offset;
   http_cookie_t const *c = (http_cookie_t *)h;
 
-  MSG_PARAMS_SIZE(rv, c->c_params);
+  MSG_PARAMS_SIZE(offset, c->c_params);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate a Cookie header field */
@@ -303,7 +302,7 @@ HTTP_HEADER_CLASS(cookie, "Cookie", c_params, append, cookie);
 static inline
 void http_set_cookie_update(http_set_cookie_t *sc)
 {
-  int i;
+  size_t i;
 
   sc->sc_name = NULL;
   sc->sc_version = NULL, sc->sc_domain = NULL, sc->sc_path = NULL;
@@ -426,7 +425,7 @@ issize_t http_set_cookie_e(char b[], isize_t bsiz, msg_header_t const *h, int fl
 {
   char *b0 = b, *end = b + bsiz;
   http_set_cookie_t const *sc = (http_set_cookie_t *)h;
-  int i;
+  size_t i;
 
   if (sc->sc_params) {
     for (i = 0; sc->sc_params[i]; i++) {
@@ -443,12 +442,11 @@ issize_t http_set_cookie_e(char b[], isize_t bsiz, msg_header_t const *h, int fl
 /** Calculate extra storage used by Set-Cookie header field */
 isize_t http_set_cookie_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  isize_t rv = offset;
   http_set_cookie_t const *sc = (http_set_cookie_t *)h;
 
-  MSG_PARAMS_SIZE(rv, sc->sc_params);
+  MSG_PARAMS_SIZE(offset, sc->sc_params);
 
-  return rv;
+  return offset;
 }
 
 /** Duplicate a Set-Cookie header field */

@@ -94,7 +94,7 @@ su_vector_t *su_vector_create(su_home_t *home, su_free_func_t free_func)
  */
 void su_vector_destroy(su_vector_t *vector)
 {
-  int i;
+  size_t i;
 
   if (vector) {
     if (vector->v_free_func != NULL) {
@@ -108,7 +108,7 @@ void su_vector_destroy(su_vector_t *vector)
 }
 
 /** Increase the list size for next item, if necessary. */
-static int su_vector_make_place(su_vector_t *vector, unsigned index)
+static int su_vector_make_place(su_vector_t *vector, usize_t index)
 {
   if (vector->v_size <= vector->v_len + 1) {
     size_t newsize = 2 * vector->v_size * sizeof(vector->v_list[0]);
@@ -155,10 +155,11 @@ static int su_vector_make_place(su_vector_t *vector, unsigned index)
  * @param vector pointer to a vector object
  * @param item   item to be appended
  * @param index  index for the new item
- * @return
- * Pointer to string, if successful, or NULL upon an error.
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
  */
-int su_vector_insert(su_vector_t *vector, unsigned index, void *item)
+int su_vector_insert(su_vector_t *vector, usize_t index, void *item)
 {
   if (vector && 
       index <= vector->v_len &&
@@ -176,10 +177,11 @@ int su_vector_insert(su_vector_t *vector, unsigned index, void *item)
  *
  * @param vector pointer to a vector object
  * @param index  index for the removed item
- * @return
- * Pointer to string, if successful, or NULL upon an error.
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
  */
-int su_vector_remove(su_vector_t *vector, unsigned index)
+int su_vector_remove(su_vector_t *vector, usize_t index)
 {
   if (vector && index < vector->v_len) {
     if (vector->v_free_func)
@@ -200,10 +202,13 @@ int su_vector_remove(su_vector_t *vector, unsigned index)
  * The function su_vector_empty() removes all items from the @a vector.
  *
  * @param vector pointer to a vector object
+ *
+ * @retval 0 if successful
+ * @retval -1 upon an error
  */
 int su_vector_empty(su_vector_t *vector)
 {
-  int i;
+  size_t i;
 
   if (vector) {
     if (vector->v_free_func != NULL) {
@@ -251,7 +256,7 @@ int su_vector_append(su_vector_t *vector, void *item)
  * @return
  * Pointer, if item exists, or NULL upon an error.
  */
-void *su_vector_item(su_vector_t const *vector, unsigned i)
+void *su_vector_item(su_vector_t const *vector, usize_t i)
 {
   if (vector && i < vector->v_len)
     return vector->v_list[i];

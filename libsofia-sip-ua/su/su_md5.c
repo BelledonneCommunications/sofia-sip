@@ -177,9 +177,9 @@ su_md5_update(su_md5_t *ctx,
 
 /** Copy memory, fix case to lower. */
 static 
-void mem_i_cpy(unsigned char *d, unsigned char const *s, int len)
+void mem_i_cpy(unsigned char *d, unsigned char const *s, size_t len)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < len; i++)
     if (s[i] >= 'A' && s[i] <= 'Z')
@@ -222,7 +222,7 @@ su_md5_iupdate(su_md5_t *ctx,
     t = sizeof(ctx->in) - t;
 
     if (len < t) {
-      mem_i_cpy(p, buf, (uint32_t)len);
+      mem_i_cpy(p, buf, len);
       return;
     }
     mem_i_cpy(p, buf, t);
@@ -240,7 +240,7 @@ su_md5_iupdate(su_md5_t *ctx,
   }
 
   /* Handle any remaining bytes of data. */
-  mem_i_cpy(ctx->in, buf, (uint32_t)len);
+  mem_i_cpy(ctx->in, buf, len);
 }
 
 /** Update MD5 context with contents of string.

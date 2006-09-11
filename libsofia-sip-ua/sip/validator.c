@@ -24,7 +24,7 @@
 
 /**@IFILE validator.c  
  *
- * SIP parser tester.
+ * SIP parser tester. This uses output
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *

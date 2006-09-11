@@ -366,7 +366,7 @@ issize_t sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, isize_t s
   assert(SIP_HDR_TEST(h));
 
   if (h && s && s[slen] == '\0') {
-    isize_t n = span_lws(s);
+    size_t n = span_lws(s);
     s += n; slen -= n;
     
     for (n = slen - 1; n >= 0 && IS_LWS(s[n]); n--)

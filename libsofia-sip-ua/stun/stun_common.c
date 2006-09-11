@@ -782,7 +782,7 @@ char *stun_determine_ip_address(int family)
 
   address_size = strlen(inet_ntoa(sa->sin_addr));
   
-  local_ip_address = malloc(address_size);
+  local_ip_address = malloc(address_size + 1);
   strcpy(local_ip_address, (char *) inet_ntoa(sa->sin_addr)); /* otherwise? */
     
   su_freelocalinfo(li);

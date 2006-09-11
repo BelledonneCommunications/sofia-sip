@@ -1116,7 +1116,7 @@ issize_t url_dup(char *buf, isize_t bufsize, url_t *dst, url_t const *src)
 url_t *url_hdup(su_home_t *home, url_t const *src)
 {
   if (src) {
-    isize_t len = sizeof(*src) + url_xtra(src), actual;
+    size_t len = sizeof(*src) + url_xtra(src), actual;
     url_t *dst = su_alloc(home, len);
     if (dst) {
       actual = url_dup((char *)(dst + 1), len - sizeof(*src), dst, src);
