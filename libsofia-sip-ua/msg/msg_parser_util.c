@@ -496,7 +496,8 @@ char *msg_params_dup(msg_param_t const **d, msg_param_t const s[],
 {
   char *end = b + xtra;
   char **pp;
-  int i, n;
+  int i;
+  isize_t n;
 
   n = msg_params_count(s);
 
@@ -736,7 +737,7 @@ int msg_hostport_d(char **ss,
   }
   else {
     /* IPv6 */
-    int n = strspn(++s, HEX ":.");
+    size_t n = strspn(++s, HEX ":.");
     if (s[n] != ']') return -1;
     s += n + 1;
   }
@@ -999,7 +1000,8 @@ msg_param_t msg_params_find(msg_param_t const params[], msg_param_t token)
 msg_param_t *msg_params_find_slot(msg_param_t params[], msg_param_t token)
 {
   if (params && token) {
-    int i, n = strlen(token);
+    int i;
+	size_t n = strlen(token);
 
     assert(n > 0);
 

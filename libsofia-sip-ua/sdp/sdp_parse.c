@@ -962,7 +962,8 @@ static void parse_repeat(sdp_parser_t *p, char *d, sdp_repeat_t **result)
    */
 
   unsigned long tt, *interval;
-  int i, n, N;
+  size_t i;
+  int n, N;
   char *s;
   sdp_repeat_t *r;
 
@@ -1029,7 +1030,8 @@ static void parse_repeat(sdp_parser_t *p, char *d, sdp_repeat_t **result)
 static void parse_zone(sdp_parser_t *p, char *r, sdp_zone_t **result)
 {
   char *s;
-  int i, n, N;
+  size_t i;
+  int n, N;
   sdp_zone_t *z;
 
   /*

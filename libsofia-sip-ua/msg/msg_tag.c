@@ -272,7 +272,7 @@ tagi_t *msgobjtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
     assert(b != NULL);
   }
 
-  dst->t_value = (long)mo;
+  dst->t_value = (tag_value_t)mo;
   *bb = b;
 
   return dst + 1;

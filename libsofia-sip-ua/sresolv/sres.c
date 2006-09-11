@@ -65,6 +65,9 @@ typedef unsigned _int32 uint32_t;
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
+extern int inet_pton(int af, char const *src, void *dst);
+extern const char *inet_ntop(int af, void const *src,
+				  char *dst, size_t size);
 #if !defined(IPPROTO_IPV6)
 #if HAVE_SIN6
 #include <tpipv6.h>

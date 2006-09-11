@@ -57,7 +57,7 @@
 /** Complete a HTTP request. */
 int http_request_complete(msg_t *msg)
 {
-  unsigned len;
+  usize_t len;
   http_t *http = http_object(msg);
   su_home_t *home = msg_home(msg);
 
@@ -117,7 +117,7 @@ int http_message_complete(msg_t *msg, http_t *http)
   if (!http->http_content_length) {
     http_content_length_t *l;
     http_payload_t *pl;
-    unsigned len = 0;
+    usize_t len = 0;
     
     for (pl = http->http_payload; pl; pl = pl->pl_next)
       len += pl->pl_len;
