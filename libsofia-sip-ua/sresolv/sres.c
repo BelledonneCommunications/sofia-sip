@@ -88,7 +88,6 @@ struct sockaddr_storage {
 #include "sofia-resolv/sres_record.h"
 #include "sofia-resolv/sres_async.h"
 
-#include <sofia-sip/su.h>
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/su_errno.h>
@@ -2377,7 +2376,7 @@ sres_send_dns_query(sres_resolver_t *res,
   uint8_t i, i0, N = res->res_n_servers;
   sres_socket_t s;
   int transient, error = 0;
-  unsigned size, no_edns_size, edns_size;
+  size_t size, no_edns_size, edns_size;
   uint16_t id = q->q_id;
   uint16_t type = q->q_type;
   char const *domain = q->q_name;
@@ -2725,7 +2724,7 @@ sres_canonize_sockaddr(struct sockaddr_storage *from, socklen_t *fromlen)
       memcpy(&sin->sin_addr, ip6->s6_addr + 12, sizeof sin->sin_addr);
       sin->sin_family = AF_INET;
       *fromlen = sizeof (*sin);
-#if SA_LEN
+#if HAVE_SA_LEN
       sin->sin_len = sizeof (*sin);
 #endif
     }
@@ -3015,7 +3014,8 @@ sres_resolver_report_error(sres_resolver_t *res,
 int 
 sres_resolver_receive(sres_resolver_t *res, int socket)
 {
-  int num_bytes, error;
+  ssize_t num_bytes;
+  int error;
   sres_message_t m[1];
 
   sres_query_t *query = NULL;
@@ -3037,11 +3037,14 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
     return 0;
   }
 
+  if (num_bytes > 65535)
+    num_bytes = 65535;
+
   dns = sres_server_by_socket(res, socket);
   if (!dns)
     return 0;
 
-  m->m_size = num_bytes;
+  m->m_size = (uint16_t)num_bytes;
 
   /* Decode the received message and get the matching query object */
   error = sres_decode_msg(res, m, &query, &reply);
