@@ -50,8 +50,7 @@
 /**
  * Scan and compact an authentication parameter.
  *
- * The function msg_auth_item_scan() is used to scan an authentication
- * parameter, which has syntax as follows:
+ * Scan an authentication parameter, which has syntax as follows:
  * @code
  * auth-item = auth-param | base64-string
  * auth-param = token [ "=" (token | quoted-string)]
@@ -60,9 +59,7 @@
  * Parameters:
  * @param s      pointer to string to scan
  *
- * @return 
- * The function msg_auth_item_scan() returns number of characters scanned,
- * or zero upon an error.
+ * @return Number of characters scanned, or zero upon an error.
  */
 static int msg_auth_item_scan(char *start)
 {

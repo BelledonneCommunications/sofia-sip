@@ -373,6 +373,9 @@ static int msg_dup_or_copy_all(msg_t *msg,
  * the copies have been destroyed.
  *
  * @param original message to be copied
+ *
+ * @retval pointer to newly copied message object when successful
+ * @retval NULL upon an error
  */
 msg_t *msg_copy(msg_t *original)
 {
@@ -385,8 +388,7 @@ msg_t *msg_copy(msg_t *original)
 	  : msg_dup_or_copy_all(copy, original, msg_header_copy_one) < 0) {
 	msg_destroy(copy), copy = NULL;
       }
-
-      if (copy)
+      else
 	msg_set_parent(copy, original);
 
       return copy;
@@ -396,6 +398,11 @@ msg_t *msg_copy(msg_t *original)
   return NULL;
 }
 
+/** Copy header chain.
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ */
 static
 int msg_copy_chain(msg_t *msg, msg_t const *original)
 {
@@ -442,6 +449,9 @@ int msg_copy_chain(msg_t *msg, msg_t const *original)
  * Note that the cached representation (in h_data) is not copied.
  *
  * @param original message to be duplicated
+ *
+ * @retval pointer to newly duplicated message object when successful
+ * @retval NULL upon an error
  */
 msg_t *msg_dup(msg_t const *original)
 {
@@ -458,7 +468,11 @@ msg_t *msg_dup(msg_t const *original)
   return NULL;
 }
 
-/** Copy a complete message, not keeping the header chain structure. */
+/** Copy a complete message, not keeping the header chain structure. 
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ */
 static
 int msg_dup_or_copy_all(msg_t *msg, 
 			msg_t const *original,

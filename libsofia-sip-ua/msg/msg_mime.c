@@ -223,7 +223,7 @@ union msg_mime_u
  *   msg_multipart_t *mp = NULL;
  *   msg_header_t *h = NULL;
  *   char *b;
- *   int len, offset;
+ *   size_t len, offset;
  * 
  *   mp = msg_multipart_create(home, "text/html;level=3", html, strlen(html));
  *   mp->mp_next = msg_multipart_create(home, "image/gif", gif, giflen);
@@ -577,18 +577,16 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
 
 /**Add all missing parts to the multipart.
  * 
- * The function msg_multipart_complete() adds missing components to the
- * multipart message. The missing components may include boundaries between
- * body parts, separators between body-part headers and data, and
- * close-delimiter after last body-part.
+ * Add missing components such as boundaries between body parts, separators
+ * between body-part headers and data, and close-delimiter after last
+ * body-part to the multipart message.
  * 
  * @param home home for allocating structures [IN/OUT]
  * @param c    content-type header for multipart [IN/OUT]
  * @param mp   pointer to first multipart structure [IN/OUT]
  *
- * @return
- * The function msg_multipart_complete() returns 0 when successful,
- * -1 upon an error.
+ * @retval 0 when successful
+ * @retval -1 upon an error
  *
  * @ERRORS 
  * @ERROR EBADMSG
