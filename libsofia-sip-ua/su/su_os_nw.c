@@ -245,14 +245,16 @@ su_network_changed_t
 			     su_network_changed_f *network_changed_cb,
 			     su_network_changed_magic_t *magic)
 {
+#if defined (__APPLE_CC__)
   su_network_changed_t *snc = NULL;
+#endif
 
   assert(home && root && network_changed_cb && magic);
 
   /* Not implemented for others than OSX */
 #if !defined (__APPLE_CC__)
   return NULL;
-#endif
+#else
 
   snc = su_zalloc(home, sizeof *snc);
   
@@ -271,6 +273,7 @@ su_network_changed_t
   }
 
   return snc;
+#endif
 }
 
 int su_root_remove_network_changed(su_root_t *root)

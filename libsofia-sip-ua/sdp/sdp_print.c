@@ -636,7 +636,7 @@ static void print_media(sdp_printer_t *p,
     }
 
     if (!p->pr_mode_manual && !m->m_rejected &&
-	(m->m_mode != session_mode || p->pr_mode_always)) {
+	(m->m_mode != (unsigned int)session_mode || p->pr_mode_always)) {
       switch (m->m_mode) {
       case sdp_inactive:
 	sdp_printf(p, "a=inactive" CRLF);

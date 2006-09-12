@@ -1326,7 +1326,7 @@ int localinfo0(su_localinfo_t const *hints, su_localinfo_t **rresult)
 #endif
     char buffer[2048];
   } b = {{ 1 }};
-  socklen_t salen = sizeof(b);
+  DWORD salen = sizeof(b);
   int i, error = -1;
 #if SU_HAVE_IN6
   int v4_mapped = (hints->li_flags & LI_V4MAPPED) != 0;

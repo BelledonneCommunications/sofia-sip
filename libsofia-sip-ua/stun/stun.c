@@ -1050,7 +1050,7 @@ int stun_bind(stun_handle_t *sh,
 	      tag_type_t tag, tag_value_t value,
 	      ...)
 {
-  su_socket_t s = SOCKET_ERROR;
+  su_socket_t s = (su_socket_t)SOCKET_ERROR;
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
@@ -1219,7 +1219,7 @@ int stun_test_nattype(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   su_sockaddr_t bind_addr;
-  su_socket_t s = SOCKET_ERROR;
+  su_socket_t s = (su_socket_t)SOCKET_ERROR;
   socklen_t bind_len;
   su_sockaddr_t *destination = NULL;
 
@@ -1715,7 +1715,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   /* receive response */
   recv_len = sizeof(recv);
-  dgram_len = recvfrom(s, dgram, sizeof(dgram), 0, (struct sockaddr *) &recv,
+  dgram_len = recvfrom(s, (void *)dgram, sizeof(dgram), 0, (struct sockaddr *) &recv,
 		 &recv_len);
   err = errno;
   if ((dgram_len < 0) && (err != EAGAIN)) {
@@ -2726,7 +2726,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
-  su_socket_t s = SOCKET_ERROR;
+  su_socket_t s = (su_socket_t)SOCKET_ERROR;
   int err, index = 0, s_reg = 0;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   char const *server = NULL;
@@ -2960,7 +2960,7 @@ int stun_keepalive(stun_handle_t *sh,
 		   tag_type_t tag, tag_value_t value,
 		   ...)
 {
-  su_socket_t s = SOCKET_ERROR;
+  su_socket_t s = (su_socket_t)SOCKET_ERROR;
   unsigned int timeout = 0;
   ta_list ta;
   stun_discovery_t *sd;

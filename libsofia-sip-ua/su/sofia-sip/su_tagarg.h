@@ -117,7 +117,7 @@ typedef struct {
       (ta).tl[1].t_tag = tag_next;					\
       (ta).tl[1].t_value = (tag_value_t)(&(v) + 1);			\
     } else {								\
-      (ta).tl[1].t_value = 0; (ta).tl[1].t_value = (tag_value_t)0;	\
+      (ta).tl[1].t_tag = 0; (ta).tl[1].t_value = (tag_value_t)0;	\
     }									\
   } while(0)
 #else

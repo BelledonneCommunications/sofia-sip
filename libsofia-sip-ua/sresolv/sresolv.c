@@ -155,7 +155,7 @@ sres_resolver_destroy(sres_resolver_t *res)
   if (srs == NULL)
     return su_seterrno(EINVAL);
 
-  sres_sofia_update(srs, -1, -1); /* Remove sockets from too, zap timers. */
+  sres_sofia_update(srs, (su_socket_t)-1, (su_socket_t)-1); /* Remove sockets from too, zap timers. */
 
   sres_resolver_unref(res); 
 
@@ -205,7 +205,7 @@ static int sres_sofia_update(sres_sofia_t *srs,
 
   if (old_socket != -1)
     for (i = 0; i < N; i++)
-      if ((srs->srs_reg + i)->reg_socket == old_socket) {
+      if ((su_socket_t)((srs->srs_reg + i)->reg_socket) == old_socket) {
 	old_reg = srs->srs_reg + i;
 	break;
       }
@@ -244,7 +244,7 @@ static int sres_sofia_update(sres_sofia_t *srs,
   }
 
   if (old_reg) {
-    if (old_socket == srs->srs_socket)
+    if (old_socket == (su_socket_t)(srs->srs_socket))
       srs->srs_socket = -1;
     su_root_deregister(srs->srs_root, old_reg->reg_index);
     memset(old_reg, 0, sizeof *old_reg);
@@ -290,7 +290,7 @@ su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
     return su_seterrno(EINVAL);
 
   if (sres_resolver_set_async(res, sres_sofia_update, srs, 1) < 0)
-    return -1;
+    return (su_socket_t)-1;
 
   if (srs->srs_socket != SOCKET_ERROR)
     return srs->srs_socket;
@@ -306,7 +306,7 @@ su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
   else {
     su_socket_t socket;
     if (sres_resolver_sockets(res, &socket, 1) < 0)
-      return -1;
+      return (su_socket_t)-1;
   }
 
   return srs->srs_socket; 

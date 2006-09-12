@@ -448,6 +448,8 @@
 #pragma warning( disable : 4090 4204 4244 4018 4514 4706 4761)
 /* VC does not grok const */
 #pragma warning( disable : 4022 4028 )
+/* Temorarily disable high frequency, low value warnings.  We may still want to re-enable and fix these */
+#pragma warning( disable : 4132 4100 4127 4295 4152 )
 #if (_MSC_VER >= 1400) // VC8+
 #ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE

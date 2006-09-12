@@ -485,11 +485,11 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   change_session |= rtp_select != ss->ss_rtp_select;
   change_session |= rtp_sort != ss->ss_rtp_sort;
-  change_session |= rtp_mismatch != ss->ss_rtp_mismatch;
+  change_session |= (unsigned)rtp_mismatch != ss->ss_rtp_mismatch;
 
-  change_session |= srtp_enable != ss->ss_srtp_enable;
-  change_session |= srtp_confidentiality != ss->ss_srtp_confidentiality;
-  change_session |= srtp_integrity != ss->ss_srtp_integrity;
+  change_session |= (unsigned)srtp_enable != ss->ss_srtp_enable;
+  change_session |= (unsigned)srtp_confidentiality != ss->ss_srtp_confidentiality;
+  change_session |= (unsigned)srtp_integrity != ss->ss_srtp_integrity;
 
   ss->ss_af = af;
 

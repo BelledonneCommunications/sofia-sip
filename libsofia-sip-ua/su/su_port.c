@@ -465,9 +465,9 @@ void su_port_destroy(su_port_t *self)
     su_port_unregister(self, NULL, &self->sup_mbox_wait, NULL, 
 		       (su_wakeup_arg_t *)self->sup_mbox);
     su_wait_destroy(&self->sup_mbox_wait);
-    su_close(self->sup_mbox[0]); self->sup_mbox[0] = SOCKET_ERROR;
+    su_close(self->sup_mbox[0]); self->sup_mbox[0] = (su_socket_t)SOCKET_ERROR;
 #if HAVE_SOCKETPAIR
-    su_close(self->sup_mbox[1]); self->sup_mbox[1] = SOCKET_ERROR;
+    su_close(self->sup_mbox[1]); self->sup_mbox[1] = (su_socket_t)SOCKET_ERROR;
 #endif
     SU_DEBUG_9(("su_port_destroy() close mailbox\n"));
   }
@@ -1159,7 +1159,9 @@ int su_port_wait_events(su_port_t *self, su_duration_t tout)
   int i, events = 0;
   su_wait_t *waits = self->sup_waits;
   unsigned n = self->sup_n_waits;
+#if HAVE_POLL
   unsigned version = self->sup_registers;
+#endif
   su_root_t *root;
 
   i = su_wait(waits, n, tout);

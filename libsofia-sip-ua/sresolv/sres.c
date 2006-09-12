@@ -1480,7 +1480,7 @@ sres_resolver_destructor(void *arg)
     su_home_unref((su_home_t *)res->res_config->c_home);
 
   if (res->res_updcb)
-    res->res_updcb(res->res_async, -1, -1);
+    res->res_updcb(res->res_async, (sres_socket_t)-1, (sres_socket_t)-1);
 }
 
 /*
@@ -1801,7 +1801,7 @@ static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCT
 #if __MINGW32__
   DWORD name_servers_length = QUERY_DATALEN;
 #else
-  int name_servers_length = QUERY_DATALEN;
+  DWORD name_servers_length = QUERY_DATALEN;
 #endif
   int ret, servers_added = 0;
 
@@ -1809,7 +1809,7 @@ static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCT
   while((ret = RegQueryValueEx(key, 
 			       lpValueName, 
 			       NULL, NULL, 
-			       name_servers, 
+			       (LPBYTE)name_servers, 
 			       &name_servers_length)) == ERROR_MORE_DATA) {
     name_servers_length += QUERY_DATALEN;
 
@@ -1874,6 +1874,7 @@ static int sres_parse_win32_reg(sres_config_t *c)
 #endif
   int found = 0;
   char *interface_guid = su_alloc(home, MAX_VALUE_NAME_LEN);
+#if 0
 #if __MINGW32__
   DWORD guid_size = QUERY_DATALEN;
 #else
@@ -1884,7 +1885,6 @@ static int sres_parse_win32_reg(sres_config_t *c)
    * - this is currently disabled 2006/Jun (the current check might insert
    *   multiple unnecessary nameservers to the search list) 
    */
-#if 0
   /* open the 'Interfaces' registry Key */
   if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
 		   "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces", 
@@ -2272,7 +2272,7 @@ sres_server_t **sres_servers_new(sres_resolver_t *res,
   servers = su_zalloc(res->res_home, size); if (!servers) return servers;
   dns = (void *)(servers + N + 1);
   for (i = 0; i < N; i++) {
-    dns->dns_socket = -1;
+    dns->dns_socket = (sres_socket_t)-1;
     ns = c->c_nameservers[i];
     memcpy(dns->dns_addr, ns->ns_addr, dns->dns_addrlen = ns->ns_addrlen);
     inet_ntop(dns->dns_addr->ss_family, SS_ADDR(dns->dns_addr), 
@@ -2299,7 +2299,7 @@ void sres_servers_close(sres_resolver_t *res,
 
     if (servers[i]->dns_socket != -1) {
       if (res->res_updcb)
-	res->res_updcb(res->res_async, -1, servers[i]->dns_socket);
+	res->res_updcb(res->res_async, (sres_socket_t)-1, servers[i]->dns_socket);
       closesocket(servers[i]->dns_socket);
     }
   }
@@ -2378,16 +2378,16 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 		ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
     closesocket(s);
     dns->dns_error = time(NULL);
-    return -1;
+    return (sres_socket_t)-1;
   }
   
   if (res->res_updcb) {
-    if (res->res_updcb(res->res_async, s, -1) < 0) {
+    if (res->res_updcb(res->res_async, s, (sres_socket_t)-1) < 0) {
       SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "update callback",
 		  su_strerror(su_errno())));
       closesocket(s);
       dns->dns_error = time(NULL);
-      return -1;
+      return (sres_socket_t)-1;
     }
   }
 
@@ -2478,7 +2478,7 @@ sres_send_dns_query(sres_resolver_t *res,
     s = sres_server_socket(res, dns);
 
     /* Send the DNS message via the UDP socket */
-    if (s != -1 && send(s, m->m_data, size, 0) == size)
+    if (s != -1 && send(s, (void *)(m->m_data), size, 0) == (int)size)
       break;
 
     error = su_errno();
@@ -2793,7 +2793,7 @@ int sres_resolver_sockets(sres_resolver_t *res,
 			  sres_socket_t *return_sockets, 
 			  int n)
 {
-  sres_socket_t s = -1;
+  sres_socket_t s = (sres_socket_t)-1;
   int i, retval;
 
   if (!sres_resolver_set_async(res, sres_no_update,
@@ -3061,7 +3061,7 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
 
   memset(m, 0, offsetof(sres_message_t, m_data)); 
   
-  num_bytes = recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
+  num_bytes = recvfrom(socket, (void *)(m->m_data), sizeof (m->m_data), 0,
 		       (void *)from, &fromlen);
 
   if (num_bytes <= 0) {

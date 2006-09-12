@@ -92,8 +92,8 @@ int su_home_threadsafe(su_home_t *home)
     /* Avoid linking pthread library just for memory management */
     su_home_mutex_locker = mutex_locker;
     su_home_mutex_unlocker = mutex_unlocker;
-    su_home_locker = (void *)pthread_mutex_lock;
-    su_home_unlocker = (void *)pthread_mutex_unlock;
+    su_home_locker = (void (*)(void *))pthread_mutex_lock;
+    su_home_unlocker = (void (*)(void *))pthread_mutex_unlock;
   }
 
   mutex = su_alloc(home, 2 * sizeof (pthread_mutex_t));

@@ -344,7 +344,7 @@ msg_href_t const *msg_find_hclass(msg_mclass_t const *mc,
 
     for (hr = NULL; (hc = mc->mc_hash[i].hr_class); i = (i + 1) % N) {
       /* long form */
-      if (m == hc->hc_len && strncasecmp(s, hc->hc_name, m) == 0) {
+      if (m == (isize_t)(hc->hc_len) && strncasecmp(s, hc->hc_name, m) == 0) {
 	hr = &mc->mc_hash[i];
 	break;
       }

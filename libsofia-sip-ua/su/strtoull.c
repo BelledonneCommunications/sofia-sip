@@ -95,15 +95,15 @@ static char cvtIn[] = {
  */
 
 unsigned longlong
-strtoull(string, endPtr, base)
-    const char *string;		/* String of ASCII digits, possibly
+strtoull(const char *string, char **endPtr, int base)
+  /*  const char *string;		 String of ASCII digits, possibly
 				 * preceded by white space.  For bases
 				 * greater than 10, either lower- or
 				 * upper-case digits may be used.
 				 */
-    char **endPtr;		/* Where to store address of terminating
+  /*  char **endPtr;		 Where to store address of terminating
 				 * character, or NULL. */
-    int base;			/* Base for conversion.  Must be less
+  /*  int base;			 Base for conversion.  Must be less
 				 * than 37.  If 0, then the base is chosen
 				 * from the leading characters of string:
 				 * "0x" means hex, "0" means octal, anything

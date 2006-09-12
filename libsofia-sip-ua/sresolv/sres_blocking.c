@@ -112,7 +112,7 @@ int sres_blocking_update(sres_blocking_t *b,
 
   if (old_socket != -1) {
     for (i = 0; i < N; i++) {
-      if (b->fds[i].fd == old_socket)
+      if (b->fds[i].fd == (int)old_socket)
 	break;
     }
     if (i == N)
@@ -172,8 +172,8 @@ int sres_blocking_complete(sres_blocking_context_t *c)
     timeval->tv_usec = 500000;
 
     for (i = 0, n = 0; i < c->block->n_sockets; i++) {
-      FD_SET(c->block->fds[i].fd, readfds);
-      FD_SET(c->block->fds[i].fd, errorfds);
+      FD_SET((sres_socket_t)(c->block->fds[i].fd), readfds);
+      FD_SET((sres_socket_t)(c->block->fds[i].fd), errorfds);
       if (c->block->fds[i].fd >= n)
 	n = c->block->fds[i].fd + 1;
     }

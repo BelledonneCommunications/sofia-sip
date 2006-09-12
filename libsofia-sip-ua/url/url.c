@@ -140,7 +140,7 @@
 /* Internal prototypes */
 static char *url_canonize(char *d, char const *s, size_t n,
 			  char const allowed[]);
-static char *url_canonize2(char *d, char const *s, size_t n, 
+static char *url_canonize2(char *d, char const *s, issize_t n, 
 			   unsigned m32, unsigned m64, unsigned m96);
 static int url_tel_cmp_numbers(char const *A, char const *B);
 
@@ -302,7 +302,7 @@ char *url_canonize(char *d, char const *s, size_t n, char const allowed[])
 
 /** Canonize a URL component (with precomputed mask) */
 static
-char *url_canonize2(char *d, char const *s, size_t n, 
+char *url_canonize2(char *d, char const *s, issize_t n, 
 		    unsigned m32, unsigned m64, unsigned m96)
 {
   char const *s0 = s;
@@ -361,17 +361,17 @@ char *url_canonize2(char *d, char const *s, size_t n,
  * be escaped.
  */
 static
-char *url_canonize3(char *d, char const *s, size_t n, 
+char *url_canonize3(char *d, char const *s, issize_t n, 
 		    unsigned m32, unsigned m64, unsigned m96)
 {
   char const *s0 = s;
 
   if (d == s)
-    for (;*s && s - s0 < (unsigned)n; d++, s++) 
+    for (;*s && s - s0 < n; d++, s++) 
       if (*s == '%')
 	break;
 
-  for (;*s && s - s0 < (unsigned)n; d++, s++) {
+  for (;*s && s - s0 < n; d++, s++) {
     unsigned char c = *s, h1, h2;
 
     if (c != '%') {
@@ -899,7 +899,7 @@ issize_t url_e(char buffer[], isize_t n, url_t const *url)
   else if (buffer && m > 0)
     buffer[m - 1] = '\0';
 
-  assert(b - buffer == m - n);
+  assert((size_t)(b - buffer) == (size_t)(m - n));
   
   /* This follows the snprintf(C99) return value, 
    * Number of characters written (excluding NUL)

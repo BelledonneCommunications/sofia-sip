@@ -8808,7 +8808,8 @@ outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
   /* Insert sorted by priority, randomly select by weigth */
   while (selected) {
     unsigned long weight = 0;
-    unsigned N = 0, priority = selected->sq_priority;
+    unsigned N = 0;
+	int32_t priority = selected->sq_priority;
 
     /* Total weight of entries with same priority */
     for (sq = selected; sq && priority == sq->sq_priority; sq = sq->sq_next) {

@@ -1175,7 +1175,7 @@ int readfile(su_home_t *home, FILE *f, void **contents, int add_trailing_lf)
   }
 
   if (!(buffer = su_alloc(home, len + 2)) ||
-      fread(buffer, 1, len, f) != len) {
+      fread(buffer, 1, len, f) != (unsigned)len) {
     SU_DEBUG_1(("%s: unable to read file (%s)\n", __func__, strerror(errno)));
     if (buffer)
       su_free(home, buffer);

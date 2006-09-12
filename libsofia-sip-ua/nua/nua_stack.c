@@ -921,7 +921,7 @@ msg_t *nua_creq_msg(nua_t *nua,
 		    tag_type_t tag, tag_value_t value, ...)
 {
   struct nua_dialog_state *ds = nh->nh_ds;
-  msg_t *msg;
+  msg_t *msg = NULL;
   sip_t *sip;
   ta_list ta;
   url_string_t const *url = NULL;

@@ -160,7 +160,7 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
     }
     else {
       sres_resolver_destroy(self->stun_sres);
-      self->stun_socket = SOCKET_ERROR;
+      self->stun_socket = (su_socket_t)SOCKET_ERROR;
       su_free(NULL, self), self = NULL;
     }
   }

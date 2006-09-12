@@ -447,7 +447,7 @@ sdp_origin_t *origin_dup(char **pp, sdp_origin_t const *src)
   STR_DUP(p, o, src, o_username);
   PTR_DUP(p, o, src, o_address, connection_dup);
 
-  assert(p - *pp == origin_xtra(src));
+  assert((size_t)(p - *pp) == origin_xtra(src));
   *pp = p;
   return o;
 }
@@ -470,7 +470,7 @@ sdp_connection_t *connection_dup(char **pp, sdp_connection_t const *src)
   c->c_next = NULL;
   STR_DUP(p, c, src, c_address);
 
-  assert(p - *pp == connection_xtra(src));
+  assert((size_t)(p - *pp) == connection_xtra(src));
   *pp = p;
   return c;
 }
@@ -493,7 +493,7 @@ sdp_bandwidth_t *bandwidth_dup(char **pp, sdp_bandwidth_t const *src)
   b->b_next = NULL;
   STR_DUP(p, b, src, b_modifier_name);
 
-  assert(p - *pp == bandwidth_xtra(src));
+  assert((size_t)(p - *pp) == bandwidth_xtra(src));
   *pp = p;
   return b;
 }
@@ -519,7 +519,7 @@ sdp_time_t *time_dup(char **pp, sdp_time_t const *src)
   PTR_DUP(p, t, src, t_repeat, repeat_dup);
   PTR_DUP(p, t, src, t_zone, zone_dup);
 
-  assert(p - *pp == time_xtra(src));
+  assert((size_t)(p - *pp) == time_xtra(src));
   *pp = p;
   return t;
 }
@@ -539,7 +539,7 @@ sdp_repeat_t *repeat_dup(char **pp, sdp_repeat_t const *src)
   p = *pp;
   STRUCT_DUP2(p, r, src);
 
-  assert(p - *pp == repeat_xtra(src));
+  assert((size_t)(p - *pp) == repeat_xtra(src));
   *pp = p;
   return r;
 }
@@ -559,7 +559,7 @@ sdp_zone_t *zone_dup(char **pp, sdp_zone_t const *src)
   p = *pp;
   STRUCT_DUP2(p, z, src);
 
-  assert(p - *pp == zone_xtra(src));
+  assert((size_t)(p - *pp) == zone_xtra(src));
   *pp = p;
   return z;
 }
@@ -584,7 +584,7 @@ sdp_key_t *key_dup(char **pp, sdp_key_t const *src)
   STR_DUP(p, k, src, k_method_name);
   STR_DUP(p, k, src, k_material);
 
-  assert(p - *pp == key_xtra(src));
+  assert((size_t)(p - *pp) == key_xtra(src));
   *pp = p;
   return k;
 }
@@ -610,7 +610,7 @@ sdp_attribute_t *attribute_dup(char **pp, sdp_attribute_t const *src)
   STR_DUP(p, a, src, a_name);
   STR_DUP(p, a, src, a_value);
 
-  assert(p - *pp == attribute_xtra(src));
+  assert((size_t)(p - *pp) == attribute_xtra(src));
   *pp = p;
   return a;
 }
@@ -662,7 +662,7 @@ sdp_media_t *media_dup(char **pp,
   m->m_rejected = src->m_rejected; 
   m->m_mode = src->m_mode;
 
-  assert(p - *pp == media_xtra(src));
+  assert((size_t)(p - *pp) == media_xtra(src));
   *pp = p;
   return m;
 }
@@ -795,7 +795,7 @@ sdp_list_t *list_dup(char **pp, sdp_list_t const *src)
   l->l_next = NULL;
   STR_DUP(p, l, src, l_text);
 
-  assert(p - *pp == list_xtra(src));
+  assert((size_t)(p - *pp) == list_xtra(src));
   *pp = p;
   return l;
 }
@@ -823,7 +823,7 @@ sdp_rtpmap_t *rtpmap_dup(char **pp, sdp_rtpmap_t const *src)
   STR_DUP(p, rm, src, rm_params);
   STR_DUP(p, rm, src, rm_fmtp);
 
-  assert(p - *pp == rtpmap_xtra(src));
+  assert((size_t)(p - *pp) == rtpmap_xtra(src));
   *pp = p;
   return rm;
 }
@@ -935,7 +935,7 @@ sdp_session_t *session_dup(char **pp, sdp_session_t const *src)
   STR_DUP(p, sdp, src, sdp_charset);
   MED_DUP_ALL(p, sdp, src, sdp_media);
 
-  assert(p - *pp == session_xtra(src));
+  assert((size_t)(p - *pp) == session_xtra(src));
   *pp = p;
   return sdp;
 }
@@ -1005,7 +1005,7 @@ sdp_session_t *session_without_media_dup(char **pp, sdp_session_t const *src)
 
   sdp->sdp_media = NULL;
   
-  assert(p - *pp == session_without_media_xtra(src));
+  assert((size_t)(p - *pp) == session_without_media_xtra(src));
   *pp = p;
   return sdp;
 }

@@ -892,7 +892,7 @@ static int sip_addr_update(msg_common_t *h,
 static sip_addr_t *
 sip_addr_make_url(su_home_t *home, msg_hclass_t *hc, url_string_t const *us)
 {
-  size_t n;
+  issize_t n;
   sip_header_t *h;
 
   n = url_xtra(us->us_url);

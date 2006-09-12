@@ -536,7 +536,7 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 
     tp->tp_master = mr;
     tp->tp_pri = pri;
-    tp->tp_socket = SOCKET_ERROR;
+    tp->tp_socket = (su_socket_t)SOCKET_ERROR;
 
     tp->tp_magic = mr->mr_master->tp_magic;
 
@@ -1003,7 +1003,7 @@ void tport_zap_secondary(tport_t *self)
   self->tp_index = 0;
   if (self->tp_socket != -1)
     su_close(self->tp_socket);
-  self->tp_socket = -1;
+  self->tp_socket = (su_socket_t)-1;
 
   su_home_zap(self->tp_home);
 }
@@ -2340,7 +2340,7 @@ int tport_accept(tport_primary_t *pri, int events)
   su_addrinfo_t ai[1];
   su_sockaddr_t su[1]; 
   socklen_t sulen = sizeof su;
-  su_socket_t s = SOCKET_ERROR, l = pri->pri_primary->tp_socket;
+  su_socket_t s = (su_socket_t)SOCKET_ERROR, l = pri->pri_primary->tp_socket;
   char const *reason = "accept";
 
   if (events & SU_WAIT_ERR)
@@ -3866,7 +3866,8 @@ int tport_release(tport_t *self,
 int
 tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error)
 {
-  unsigned i, reported, callbacks;
+  unsigned i, callbacks;
+  int reported;
   tport_pending_t *pending;
   msg_t *msg;
   su_addrinfo_t const *ai;
@@ -3911,7 +3912,8 @@ tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error)
 int
 tport_pending_errmsg(tport_t *self, msg_t *msg, int error)
 {
-  unsigned i, reported, callbacks;
+  unsigned i, callbacks;
+  int reported;
   tport_pending_t *pending;
 
   assert(self); assert(msg);
@@ -4116,7 +4118,8 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
   comp = tport_canonize_comp(tpn->tpn_comp);
 
   if (self && host && port) {
-    int resolved = 0, sulen, cmp;
+    int resolved = 0, cmp;
+	unsigned sulen;
     su_sockaddr_t su[1];
 
     sub = self->tp_pri->pri_secondary;
@@ -4227,7 +4230,8 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 {
   tport_t const *sub, *maybe;
   struct sockaddr const *sa;
-  int salen, cmp;
+  int cmp;
+  unsigned salen;
   char const *comp;
 
   assert(pri); assert(ai);

@@ -299,7 +299,7 @@ int process_3489_request(stun_mini_t *mini,
   }
 
   for (ss = mini->sockets; ss; ss = ss->ss_next)
-    if (socket == ss->ss_socket)
+    if ((su_socket_t)socket == ss->ss_socket)
       break;
 
   if (ss == NULL) {

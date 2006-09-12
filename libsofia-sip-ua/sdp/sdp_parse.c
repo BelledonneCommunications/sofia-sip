@@ -134,11 +134,16 @@ sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
 {
   sdp_parser_t *p;
   char *b;
+  size_t len;
 
-  if (msgsize == -1 && msg)
-    msgsize = strlen(msg);
+  if (msgsize == -1 && msg) {
+	  if ((len = strlen(msg)) > ISSIZE_MAX)
+		len = ISSIZE_MAX;
+  } else {
+	  len = msgsize;
+  }
 
-  if (msgsize < 0 || msg == NULL) {
+  if (len < 0 || msg == NULL) {
     p = su_home_clone(home, sizeof(*p));
     if (p) 
       parsing_error(p, "invalid input message");
@@ -147,10 +152,10 @@ sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
     return p;
   }
 
-  p = su_home_clone(home, sizeof(*p) + msgsize + 1);
+  p = su_home_clone(home, sizeof(*p) + len + 1);
 
   if (p) {
-    b = strncpy((void *)(p + 1), msg, msgsize);
+    b = strncpy((void *)(p + 1), msg, len);
     b[msgsize] = 0;
 
     p->pr_message = b;
