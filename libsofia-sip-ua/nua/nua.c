@@ -64,14 +64,12 @@
 /* From AM_INIT/AC_INIT in our "config.h" */
 char const nua_version[] = VERSION;
 
-/**@var NUA_DEBUG
- *
- * Environment variable determining the debug log level for @b nua module.
+/**Environment variable determining the debug log level for @b nua module.
  *
  * The NUA_DEBUG environment variable is used to determine the debug logging
  * level for @b nua module. The default level is 3.
  * 
- * @sa <su_debug.h>, nua_log, SOFIA_DEBUG
+ * @sa <sofia-sip/su_debug.h>, nua_log, SOFIA_DEBUG
  */
 extern char const NUA_DEBUG[];
 

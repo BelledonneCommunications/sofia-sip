@@ -440,9 +440,11 @@ tag_typedef_t soatag_active_image = INTTAG_TYPEDEF(active_image);
 
 /**@def SOATAG_ACTIVE_CHAT(x)
  * 
- *  Active chat session status
+ * Active chat session status.
  *
  * @par Used with
+ *    #nua_i_active \n
+ *    #nua_i_state \n
  *
  * @par Parameter type
  *    enum { #SOA_ACTIVE_DISABLED, #SOA_ACTIVE_REJECTED, 

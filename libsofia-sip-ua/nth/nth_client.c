@@ -170,7 +170,7 @@ struct nth_client_s {
  * module.
  *
  * The NTH_DEBUG environment variable is used to determine the debug
- * logging level for @b nth module. The default level is 3.
+ * logging level for @b nth module. The default level is 1.
  *
  * @sa <su_debug.h>, nth_client_log, #SOFIA_DEBUG
  */

@@ -153,9 +153,7 @@ struct nth_request_s
 #endif
 #include <sofia-sip/su_debug.h>
 
-/**@var NTH_DEBUG
- *
- * Environment variable determining the debug log level for @b nth
+/**Environment variable determining the debug log level for @b nth
  * module.
  *
  * The NTH_DEBUG environment variable is used to determine the debug

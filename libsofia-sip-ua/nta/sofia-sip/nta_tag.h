@@ -286,7 +286,7 @@ NTA_DLL extern tag_typedef_t ntatag_ua_ref;
 #define NTATAG_UA_REF(x) ntatag_ua_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_stateless;
-/** If true, application processes requests statelessly by default. @HI */
+/** If true, agent processes incoming requests statelessly by default. @HI */
 #define NTATAG_STATELESS(x) ntatag_stateless, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_stateless_ref;

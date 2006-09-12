@@ -73,7 +73,18 @@ static char const __func__[] = "stun";
 #endif
 
 /** STUN log. */
-su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", SU_DEBUG) }; 
+su_log_t stun_log[] = { SU_LOG_INIT("stun", "STUN_DEBUG", 3) }; 
+
+/**@var STUN_DEBUG
+ *
+ * Environment variable determining the debug log level for @b stun module.
+ *
+ * The STUN_DEBUG environment variable is used to determine the debug logging
+ * level for @b stun module. The default level is 3.
+ * 
+ * @sa <sofia-sip/su_debug.h>, stun_log, SOFIA_DEBUG
+ */
+extern char const STUN__DEBUG[];
 
 enum {
   STUN_SENDTO_TIMEOUT = 1000,
@@ -1012,11 +1023,12 @@ static int priv_stun_bind_send(stun_handle_t *sh, stun_request_t *req, stun_disc
  * @param sh       pointer to valid stun handle
  * @param sdf      callback to signal process progress
  * @param magic    context pointer attached to 'sdf'
+ * @param tag, value, ... list of tagged parameters.
  *
  * @TAGS
- * @TAG STUNTAG_SOCKET Bind socket for STUN (socket handle).
- * @TAG STUNTAG_REGISTER_SOCKET Register socket for eventloop owned by STUN (boolean)
-
+ * @TAG STUNTAG_SOCKET() Bind socket handle to STUN (socket handle).
+ * @TAG STUNTAG_REGISTER_SOCKET() Register socket for eventloop owned by STUN (boolean)
+ *
  * @return
  * On success, zero is returned.  Upon error, -1 is returned, and @e errno is
  * set appropriately.
