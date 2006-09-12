@@ -219,7 +219,6 @@ enum {
 #define ALIGNMENT (8)
 #define ALIGN(n) (size_t)(((n) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 #define SIZEBITS (sizeof (size_t) * 8 - 1)
-#define REF_MAX SIZE_MAX
 
 typedef struct {
   size_t   sua_size:SIZEBITS;	/**< Size of the block */
