@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE auth_plugin_delayed.c
+/**@CFILE auth_plugin_ntlm.c
  *
  * @brief Plugin for delayed authentication. 
  *

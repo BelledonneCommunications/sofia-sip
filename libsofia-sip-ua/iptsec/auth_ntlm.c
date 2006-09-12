@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE auth_digest.c
+/**@CFILE auth_ntlm.c
  *
  * Implementation for digest authentication.
  *

@@ -359,7 +359,7 @@ void auth_status_unref(auth_status_t *as)
  * header template in the @a ach structure.
  *
  * The auth_mod_method() returns the authentication result in the
- * #auth_module_t @a as structure. The @a as->as_status describes the result
+ * #auth_mod_t @a as structure. The @a as->as_status describes the result
  * as follows:
  * - <i>as->as_status == 0</i> authentication is successful
  * - <i>as->as_status == 100</i> authentication is pending
