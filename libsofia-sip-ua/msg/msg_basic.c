@@ -199,7 +199,7 @@ char *msg_unknown_dup_one(msg_header_t *dst, msg_header_t const *src,
  *   msg_common_t    pl_common[1];      // Common fragment info
  *   msg_header_t   *pl_next;           // Next payload object 
  *   char           *pl_data;           // Data - may contain zero bytes
- *   unsigned        pl_len;            // Length of message payload
+ *   usize_t         pl_len;            // Length of message payload
  * } msg_payload_t;
  * @endcode
  */
@@ -277,7 +277,7 @@ char *msg_payload_dup_one(msg_header_t *dst,
   return b + pl->pl_len + 1;
 }
 
-int msg_payload_length(msg_payload_t const *pl)
+usize_t msg_payload_length(msg_payload_t const *pl)
 {
   /* XXX */
   return 0;

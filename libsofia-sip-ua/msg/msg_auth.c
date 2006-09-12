@@ -61,9 +61,8 @@
  *
  * @return Number of characters scanned, or zero upon an error.
  */
-static int msg_auth_item_scan(char *start)
+static size_t msg_auth_item_scan(char *start)
 {
-  int tlen;
   char *p, *s;
 
   p = s = start;

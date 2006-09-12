@@ -192,7 +192,7 @@ int msg_list_append_items(su_home_t *home,
 			  msg_list_t *k, 
 			  msg_param_t const items[])
 {
-  int i;
+  size_t i;
 
   if (k == NULL) return -1;
   if (items == NULL) return 0;
@@ -216,7 +216,7 @@ int msg_list_append_items(su_home_t *home,
 int msg_list_replace_items(su_home_t *home, msg_list_t *k, 
 			   msg_param_t const items[])
 {
-  int i;
+  size_t i;
 
   if (k == NULL) return -1;
   if (items == NULL) return 0;
