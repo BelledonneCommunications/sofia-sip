@@ -234,6 +234,7 @@ struct su_block_s {
   su_home_stat_t *sub_stats;	/**< Statistics.. */
   void      (*sub_destructor)(void *); /**< Destructor function */
   size_t      sub_ref;		/**< Reference count */
+#define REF_MAX SIZE_MAX
   size_t      sub_used;		/**< Number of blocks allocated */
   size_t      sub_n;		/**< Size of hash table  */
 
