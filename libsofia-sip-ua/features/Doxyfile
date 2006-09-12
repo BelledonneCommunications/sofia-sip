@@ -1,7 +1,7 @@
 PROJECT_NAME         = "features"
 OUTPUT_DIRECTORY     = ../docs/html/features
 
-INPUT 		     = features.docs . sofia-sip
+INPUT 		     = features.docs sofia-sip .
 
 @INCLUDE             = ../docs/Doxyfile.conf
 

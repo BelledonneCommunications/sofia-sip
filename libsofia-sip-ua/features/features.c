@@ -38,13 +38,15 @@
 #include <tport_tls.h>
 #include "sofia-sip/sofia_features.h"
 
-/** The name and version of software package providing Sofia-SIP-UA library. */
+/** The name and version of software package providing Sofia-SIP-UA library.
+ * @showinitializer
+ */
 char const * const sofia_sip_name_version = SOFIA_SIP_NAME_VERSION;
 
 /** The name and version of software package providing S/MIME functionality, 
  *  NULL if none.
  */
-char const * const sofia_sip_has_smime = NULL;
+char const * sofia_sip_has_smime;
 
 
 /** The name and version of software package providing TLS functionality, 
@@ -54,9 +56,9 @@ char const * const sofia_sip_has_smime = NULL;
  * scheme. Using TLS over TCP with SIP is described in @RFC3261.
  */
 #if HAVE_OPENSSL
-char const * const sofia_sip_has_tls = tls_version;
+char const * sofia_sip_has_tls = tls_version;
 #else
-char const * const sofia_sip_has_tls;
+char const * sofia_sip_has_tls;
 #endif
 
 /** The name and version of software package providing DTLS functionality, 
@@ -65,14 +67,14 @@ char const * const sofia_sip_has_tls;
  * DTLS or TLS over datagram transport (UDP) can be used as transport for
  * SIP messages.
  */
-char const * const sofia_sip_has_dtls;
+char const * sofia_sip_has_dtls;
 
 /** The name and version of software package providing TLS over SCTP functionality, 
  *  NULL if none. 
  *
  * TLS over SCTP can be used as transport for SIP messages.
  */
-char const * const sofia_sip_has_tls_sctp;
+char const * sofia_sip_has_tls_sctp;
 
 #if HAVE_SOFIA_SIGCOMP
 #include <sigcomp.h>
@@ -84,9 +86,9 @@ char const * const sofia_sip_has_tls_sctp;
  * SigComp can be used to compress SIP messages.
  */
 #if HAVE_SOFIA_SIGCOMP
-char const * const sofia_sip_has_sigcomp = sigcomp_package_version;
+char const * sofia_sip_has_sigcomp = sigcomp_package_version;
 #else
-char const * const sofia_sip_has_sigcomp;
+char const * sofia_sip_has_sigcomp;
 #endif
 
 /** The name and version of software package providing STUN functionality, 
@@ -96,9 +98,9 @@ char const * const sofia_sip_has_sigcomp;
  */
 #if HAVE_SOFIA_STUN
 extern char const stun_version[];
-char const * const sofia_sip_has_stun = stun_version;
+char const * sofia_sip_has_stun = stun_version;
 #else
-char const * const sofia_sip_has_stun;
+char const * sofia_sip_has_stun;
 #endif
 
 /** The name and version of software package providing TURN functionality, 
@@ -106,14 +108,14 @@ char const * const sofia_sip_has_stun;
  *
  * TURN is a protocol used to traverse NATs or firewalls with TCP or UDP.
  */
-char const * const sofia_sip_has_turn;
+char const * sofia_sip_has_turn;
 
 /** The name and version of software package providing UPnP functionality, 
  *  NULL if none. 
  *
  * UPnP (Universal Plug and Play) can be used to traverse NATs or firewalls.
  */
-char const * const sofia_sip_has_upnp;
+char const * sofia_sip_has_upnp;
 
 /** The name and version of software package providing SCTP functionality, 
  *  NULL if none.
@@ -121,7 +123,7 @@ char const * const sofia_sip_has_upnp;
  * SCTP can be used as transport for SIP messages. The software providing it
  * can be, for example, LKSCTP (Linux kernel SCTP) for Linux.
  */
-char const * const sofia_sip_has_sctp;
+char const * sofia_sip_has_sctp;
 /* We don't have viable SCTP transport interface */
 
 /** The name and version of software package providing IPv6 functionality, 
@@ -130,7 +132,7 @@ char const * const sofia_sip_has_sctp;
  * IPv6 can be used to send SIP messages.
  */
 #if SU_HAVE_IN6
-char const * const sofia_sip_has_ipv6 = "IPv6";
+char const * sofia_sip_has_ipv6 = "IPv6";
 #else
-char const * const sofia_sip_has_ipv6;
+char const * sofia_sip_has_ipv6;
 #endif
