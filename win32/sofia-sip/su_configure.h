@@ -65,6 +65,9 @@
 #define su_inline                  static __inline
 #define SU_HAVE_INLINE             (1)
 
+/** Define this as 1 if we can use tags directly from stack. */
+#define SU_HAVE_TAGSTACK (1)
+
 #define SU_S64_T __int64
 #define SU_U64_T unsigned __int64
 #define SU_S32_T __int32

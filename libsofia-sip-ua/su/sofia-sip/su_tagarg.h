@@ -94,28 +94,59 @@ typedef struct {
  * @hideinitializer
  */
 #if SU_HAVE_TAGSTACK
-#define ta_start(ta, t, v) \
-  do { \
-  va_start((ta).ap, v); \
-  (ta).tl->t_tag = (t); (ta).tl->t_value = (v); \
-  if ((t) && (t) != tag_null && (t) != tag_next) { \
-    (ta).tl[1].t_tag = tag_next; \
-    (ta).tl[1].t_value = (tag_value_t)(&(v) + 1); } } while(0)
+/* All arguments are saved into stack (left-to-right) */
+#define ta_start(ta, t, v)						\
+   do {									\
+    tag_type_t ta_start__tag = (t); tag_value_t ta_start__value = (v);	\
+    va_start((ta).ap, (v));						\
+    while ((ta_start__tag) == tag_next && (ta_start__value) != 0) {	\
+      ta_start__tag = ((tagi_t *)ta_start__value)->t_tag;		\
+      if (ta_start__tag == tag_null || ta_start__tag == NULL)		\
+	break;								\
+      if (ta_start__tag == tag_next) {					\
+	ta_start__value = ((tagi_t *)ta_start__value)->t_value; }	\
+      else {								\
+	ta_start__tag = tag_next;					\
+	break;								\
+      }									\
+    }									\
+    (ta).tl->t_tag = ta_start__tag; (ta).tl->t_value = ta_start__value;	\
+    if (ta_start__tag != NULL &&					\
+	ta_start__tag != tag_null &&					\
+	ta_start__tag != tag_next) {					\
+      (ta).tl[1].t_tag = tag_next;					\
+      (ta).tl[1].t_value = (tag_value_t)(&(v) + 1);			\
+    } else {								\
+      (ta).tl[1].t_value = 0; (ta).tl[1].t_value = (tag_value_t)0;	\
+    }									\
+  } while(0)
 #else
-#define ta_start(ta, t, v) \
-  do { \
-  va_start((ta).ap, (v)); \
-  while ((t) == tag_next && (v)) { \
-    (t) = ((tagi_t *)(v))->t_tag; \
-    if ((t) == tag_null || (t) == NULL) break; \
-    if ((t) == tag_next) { (v) = ((tagi_t *)(v))->t_value; } \
-    else { (t) = tag_next; break; } \
-   } \
-   (ta).tl->t_tag = (t); (ta).tl->t_value = (v); \
-   ((t) == NULL || (t) == tag_null || (t) == tag_next ? \
-    ((ta).tl[1].t_value = 0) : \
-    ((ta).tl[1].t_tag = tag_next, \
-     (ta).tl[1].t_value = (tag_value_t)tl_vlist((ta).ap))); } while(0)
+/* Tagged arguments are in registers - copy all of them. */
+#define ta_start(ta, t, v)						\
+   do {									\
+    tag_type_t ta_start__tag = (t); tag_value_t ta_start__value = (v);	\
+    va_start((ta).ap, (v));						\
+    while ((ta_start__tag) == tag_next && (ta_start__value) != 0) {	\
+      ta_start__tag = ((tagi_t *)ta_start__value)->t_tag;		\
+      if (ta_start__tag == tag_null || ta_start__tag == NULL)		\
+	break;								\
+      if (ta_start__tag == tag_next) {					\
+	ta_start__value = ((tagi_t *)ta_start__value)->t_value;		\
+      } else {								\
+	ta_start__tag = tag_next;					\
+	break;								\
+      }									\
+    }									\
+    (ta).tl->t_tag = ta_start__tag; (ta).tl->t_value = ta_start__value;	\
+    if (ta_start__tag != NULL &&					\
+	ta_start__tag != tag_null &&					\
+	ta_start__tag != tag_next) {					\
+      (ta).tl[1].t_tag = tag_next;					\
+      (ta).tl[1].t_value = (tag_value_t)tl_vlist((ta).ap);		\
+    } else {								\
+      (ta).tl[1].t_value = 0; (ta).tl[1].t_value = (tag_value_t)0;	\
+    }									\
+  } while(0)
 #endif
 
 /**Macro accessing tagged argument list.
@@ -148,8 +179,8 @@ typedef struct {
 #if SU_HAVE_TAGSTACK
 #define ta_end(ta) (va_end((ta).ap), (ta).tl->t_tag = NULL, 0)
 #else
-#define ta_end(ta) \
-  ((((ta).tl[1].t_value) ? \
+#define ta_end(ta)					   \
+  ((((ta).tl[1].t_value) ?				   \
     (tl_vfree((tagi_t *)((ta).tl[1].t_value))) : (void)0), \
    (ta).tl[1].t_value = 0, va_end((ta).ap), 0)
 #endif

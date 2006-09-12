@@ -210,6 +210,8 @@ struct nua_handle_s
 
   tagi_t         *nh_tags;	/**< Default tags */
 
+  nua_handle_t   *nh_identity;	/**< Identity */
+
 #if HAVE_PTHREAD_H
 #if __CYGWIN__
   pthread_mutex_t  sup_reflock[1];
