@@ -32,7 +32,7 @@
 
 G_BEGIN_DECLS
 
-/**@file nua_glib.h Glib Interface Sofia-SIP 'nua'
+/**@file nua_glib.h Glib Interface for Sofia-SIP User-Agent API (NUA)
  *
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * @author Rob Taylor <rob.taylor@collabora.co.uk>
@@ -92,9 +92,9 @@ void nua_glib_bye (NuaGlib *cli, NuaGlibOp *op);
 
 void nua_glib_cancel (NuaGlib *cli, NuaGlibOp *op);
 
-NuaGlibOp* nua_glib_options (NuaGlib *self, const char *destination);
+NuaGlibOp* nua_glib_options (NuaGlib *self, const char *destination_uri);
 
-NuaGlibOp* nua_glib_message (NuaGlib *self, const char *destination, const char *message);
+NuaGlibOp* nua_glib_message (NuaGlib *self, const char *destination_uri, const char *message);
 
 void nua_glib_info (NuaGlib *self, NuaGlibOp *op, const char *content_type, const char *message);
 

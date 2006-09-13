@@ -56,11 +56,14 @@ nobase_include_sofia_HEADERS += \
 			sofia-sip/nua_glib.h
 endif
 
-noinst_HEADERS =	nua_glib_priv.h
+noinst_HEADERS =	nua_glib_priv.h \
+			nua_glib_op.h
 
 check_PROGRAMS =	test_nua_glib
 
-libnua_glib_la_SOURCES = nua_glib.c
+libnua_glib_la_SOURCES = \
+			nua_glib.c \
+			nua_glib_op.c
 
 libnua_glib_la_LIBADD =  nua_glib_marshal.lo
 

@@ -77,7 +77,6 @@ struct _NuaGlibOp {
 
   /** How this handle was used initially */
   sip_method_t  op_method;	/**< REGISTER, INVITE, MESSAGE, or SUBSCRIBE */
-  char const   *op_method_name;
 
   /** Call state. 
    *
@@ -85,17 +84,17 @@ struct _NuaGlibOp {
    * - opc_recv when initial INVITE has been received
    * - opc_complate when 200 Ok has been sent/received
    * - opc_active when media is used
-   * - opc_sent2 when re-INVITE has been sent
-   * - opc_recv2 when re-INVITE has been received
+   * - opc_sent when re-INVITE has been sent
+   * - opc_recv when re-INVITE has been received
    */
   enum { 
-    opc_none = 0, 
+    opc_none, 
     opc_sent = 1, 
     opc_recv = 2, 
     opc_complete = 3, 
     opc_active = 4,
-    opc_sent2 = 5,
-    opc_recv2 = 6
+    opc_sent_hold = 8,             /**< Call put on hold */
+    opc_pending = 16               /**< Waiting for local resources */
   } op_callstate;
 
   /** Authentication state.
@@ -148,134 +147,5 @@ struct _NuaGlibPrivate {
 };
 
 
-static void sof_callback(nua_event_t event,
-		  int status, char const *phrase,
-		  nua_t *nua, NuaGlib *self,
-		  nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		  tagi_t tags[]);
-
-static void sof_r_register(int status, char const *phrase,
-		      nua_t *nua, NuaGlib *self,
-		      nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		      tagi_t tags[]);
-
-static void sof_r_unregister(int status, char const *phrase,
-		      nua_t *nua, NuaGlib *self,
-		      nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		      tagi_t tags[]);
-
-static void sof_r_publish(int status, char const *phrase,
-		   nua_t *nua, NuaGlib *self,
-		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		   tagi_t tags[]);
-
-static void sof_r_invite(int status, char const *phrase,
-		  nua_t *nua, NuaGlib *self,
-		  nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		  tagi_t tags[]);
-static void sof_i_fork(int status, char const *phrase,
-		nua_t *nua, NuaGlib *self,
-		nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		tagi_t tags[]);
-
-static void sof_i_invite(nua_t *nua, NuaGlib *self,
-		  nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		  tagi_t tags[]);
-
-static void sof_i_state(int status, char const *phrase, 
-		 nua_t *nua, NuaGlib *self,
-		 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		 tagi_t tags[]);
-
-static void sof_i_active(nua_t *nua, NuaGlib *self,
-		    nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		    tagi_t tags[]);
-
-static void sof_i_terminated(int status, char const *phrase, 
-		      nua_t *nua, NuaGlib *self,
-		      nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		      tagi_t tags[]);
-
-static void sof_i_prack(nua_t *nua, NuaGlib *self,
-		 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		 tagi_t tags[]);
-
-static void sof_r_bye(int status, char const *phrase, 
-	       nua_t *nua, NuaGlib *self,
-	       nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-	       tagi_t tags[]);
-
-static void sof_i_bye(nua_t *nua, NuaGlib *self,
-		 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		 tagi_t tags[]);
-
-static void sof_i_cancel(nua_t *nua, NuaGlib *self,
-		    nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		    tagi_t tags[]);
-
-static void sof_r_message(int status, char const *phrase,
-		   nua_t *nua, NuaGlib *self,
-		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		   tagi_t tags[]);
-
-static void sof_i_message(nua_t *nua, NuaGlib *self,
-		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		   tagi_t tags[]);
-
-static void sof_r_info(int status, char const *phrase,
-		nua_t *nua, NuaGlib *self,
-		nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		tagi_t tags[]);
-
-static void sof_i_info(nua_t *nua, NuaGlib *self,
-		nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		tagi_t tags[]);
-
-static void sof_r_refer(int status, char const *phrase,
-		   nua_t *nua, NuaGlib *self,
-		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		   tagi_t tags[]);
-
-static void sof_i_refer(nua_t *nua, NuaGlib *self,
-		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		   tagi_t tags[]);
-
-static void sof_r_subscribe(int status, char const *phrase,
-		     nua_t *nua, NuaGlib *self,
-		     nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		     tagi_t tags[]);
-
-static void sof_r_unsubscribe(int status, char const *phrase,
-		       nua_t *nua, NuaGlib *self,
-		       nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		       tagi_t tags[]);
-
-static void sof_r_notify(int status, char const *phrase,
-		   nua_t *nua, NuaGlib *self,
-		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		   tagi_t tags[]);
-
-static void sof_i_notify(nua_t *nua, NuaGlib *self,
-		    nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		    tagi_t tags[]);
-
-static void sof_r_options(int status, char const *phrase,
-		   nua_t *nua, NuaGlib *self,
-		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		   tagi_t tags[]);
-
-static void sof_r_shutdown(int status, char const *phrase, 
-		    nua_t *nua, NuaGlib *self,
-		    nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		    tagi_t tags[]);
-
-static void sof_r_get_params(int status, char const *phrase,
-		      nua_t *nua, NuaGlib *self,
-		      nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		      tagi_t tags[]);
-
-static void sof_i_error(nua_t *nua, NuaGlib *self, nua_handle_t *nh, NuaGlibOp *op, 
-		 int status, char const *phrase,
-		 tagi_t tags[]);
 
 #endif /* __NUA_GLIB_PRIVATE_H__ */
