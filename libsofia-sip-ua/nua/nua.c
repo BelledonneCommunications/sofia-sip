@@ -138,7 +138,7 @@ nua_t *nua_create(su_root_t *root,
 
     ta_start(ta, tag, value);
 
-    nua->nua_args = ta_args(ta);
+    nua->nua_args = tl_adup(nua->nua_home, ta_args(ta));
 
     su_task_copy(nua->nua_client, su_root_task(root));
 

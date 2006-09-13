@@ -212,8 +212,6 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 
   nua_stack_timer(nua, nua->nua_timer, NULL);
 
-  nua->nua_args = NULL;
-
   return 0;
 }
 
@@ -364,6 +362,7 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
 		    901, "Stack is going down",
 		    TAG_END());
   }
+
   else switch (e->e_event) {
   case nua_r_get_params:
     nua_stack_get_params(nua, nh ? nh : nua->nua_dhandle, e->e_event, tags);
