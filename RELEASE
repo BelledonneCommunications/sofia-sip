@@ -104,5 +104,5 @@ Bugs fixed in this release
 - NOTIFY Event: refer without id is not rejected anymore. Thanks for 
   emilie for reporting this.   
 - t_scan() now returns negative value when tag does not implement scan method
-- #9499652 sf.net bug item title
+- #1485968 doxygen docs for libsofia-sip-ua-glib are broken
 - Session timer handling by nua UAS now honors missing "timer" feature tag.
