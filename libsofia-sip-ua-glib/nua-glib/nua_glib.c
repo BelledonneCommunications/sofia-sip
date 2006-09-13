@@ -141,13 +141,13 @@ static void sof_i_fork(int status, char const *phrase,
 		tagi_t tags[]);
 
 static void sof_i_invite(nua_t *nua, NuaGlib *self,
-		  nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		  tagi_t tags[]);
+			 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
+			 tagi_t tags[]);
 
 static void sof_i_state(int status, char const *phrase, 
-		 nua_t *nua, NuaGlib *self,
-		 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-		 tagi_t tags[]);
+			nua_t *nua, NuaGlib *self,
+			nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
+			tagi_t tags[]);
 
 static void sof_i_active(nua_t *nua, NuaGlib *self,
 		    nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
@@ -561,13 +561,17 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
   /**
    * NuaGlib::incoming-invite:
    * @nua_glib: the object that received the signal
-   * @op: pointer to the operation created to represent this call
+   * @op: pointer to the operation created to represent this 
+   *      call (also contains the sender information)
    * @display: the display name of the invite recipient
    * @url: the url of the invite recipient
    * @subject: the subject of the invite (can be NULL)
    *
    * Emitted when an call invite is received
    * Should be answered with nua_glib_answer or nua_glib_decline
+   *
+   * XXX: a bit ugly that sender information is carried in 'op', while
+   *      recipient display name and URI are as arguments
    */
   signals[NGSIG_INCOMING_INVITE] =
    g_signal_new("incoming-invite",
@@ -710,12 +714,16 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
   /**
    * NuaGlib::incoming-message:
    * @nua_glib: the object that received the signal
-   * @op: pointer to the operation created to represent this call
+   * @op: pointer to the operation created to represent this 
+   *      call (also contains the sender information)
    * @display: the display name of the invite recipient
    * @url: the url of the invite recipient
    * @subject: the subject of the invite (can be NULL)
    *
    * Emitted when a message is received
+   *
+   * XXX: a bit ugly that sender information is carried in 'op', while
+   *      recipient display name and URI are as arguments
    */
   signals[NGSIG_INCOMING_MESSAGE] =
    g_signal_new("incoming-message",
@@ -728,12 +736,16 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
   /**
    * NuaGlib::incoming-info:
    * @nua_glib: the object that received the signal
-   * @op: pointer to the operation created to represent this call
+   * @op: pointer to the operation created to represent this 
+   *      call (also contains the sender information)
    * @display_name: the display name of the info sender
    * @address: the address of the info sender
    * @subject: the subject of the invite (can be NULL)
    *
    * Emitted when an INFO message is received
+   *
+   * XXX: a bit ugly that sender information is carried in 'op', while
+   *      recipient display name and URI are as arguments
    */
   signals[NGSIG_INCOMING_INFO] =
    g_signal_new("incoming-info",
@@ -1449,15 +1461,15 @@ sof_i_invite(nua_t *nua, NuaGlib *self,
   sip_from_t const *from;
   sip_to_t const *to;
   sip_subject_t const *subject;
+  char *to_url;
 
-  g_return_if_fail(sip);
+  g_assert(sip);
 
   from = sip->sip_from;
   to = sip->sip_to;
   subject = sip->sip_subject;
-  char *url;
 
-  g_return_if_fail(from && to);
+  g_assert(from); g_assert(to);
 
   if (op) {
     op->op_callstate |= opc_recv;
@@ -1472,9 +1484,9 @@ sof_i_invite(nua_t *nua, NuaGlib *self,
 
   if (op) {
     if (op->op_callstate == opc_recv) {
-      url = url_as_string(self->priv->home, to->a_url);
-      g_signal_emit(self, signals[NGSIG_INCOMING_INVITE], 0, op, to->a_display, url, subject?subject->g_value:NULL); 
-      su_free(self->priv->home, url);
+      to_url = url_as_string(self->priv->home, to->a_url);
+      g_signal_emit(self, signals[NGSIG_INCOMING_INVITE], 0, op, to->a_display, to_url, subject?subject->g_value:NULL); 
+      su_free(self->priv->home, to_url);
     }
     else {
       g_signal_emit(self, signals[NGSIG_INCOMING_REINVITE], 0, op); 
@@ -1794,9 +1806,9 @@ sof_i_message(nua_t *nua, NuaGlib *self,
   sip_to_t const *to;
   sip_subject_t const *subject;
   GString *message;
-  char *url;
+  char *to_url;
 
-  assert(sip);
+  g_assert(sip);
 
   from = sip->sip_from;
   to = sip->sip_to;
@@ -1804,27 +1816,27 @@ sof_i_message(nua_t *nua, NuaGlib *self,
 
   assert(from && to);
 
-  if (sip->sip_payload)
-    message=g_string_new_len(sip->sip_payload->pl_data, sip->sip_payload->pl_len);
+  if (sip->sip_payload && sip->sip_payload->pl_len > 0)
+    message = g_string_new_len(sip->sip_payload->pl_data, sip->sip_payload->pl_len);
   else
-    message=NULL;
-
+    message = NULL;
   
-  url = url_as_string(self->priv->home, to->a_url);
-  g_signal_emit(self, signals[NGSIG_INCOMING_MESSAGE], 0, op, to->a_display, url,
+  to_url = url_as_string(self->priv->home, to->a_url);
+
+  if (op == NULL)
+    op = nua_glib_op_create_with_handle(self, sip_method_message, nh, from);
+
+  g_signal_emit(self, signals[NGSIG_INCOMING_MESSAGE], 0, op, from->a_display, to_url,
 		subject ? subject->g_value : NULL,
 		message ? message->str : NULL); 
 
-  su_free(self->priv->home, url);
+  su_free(self->priv->home, to_url);
 
   if (message)
     g_string_free(message, TRUE);
 
   if (op == NULL)
-    op = nua_glib_op_create_with_handle(self, sip_method_message, nh, from);
-  if (op == NULL)
     nua_handle_destroy(nh);
-
 }
 
 /**
@@ -1871,7 +1883,7 @@ sof_i_info(nua_t *nua, NuaGlib *self,
   sip_to_t const *to;
   sip_subject_t const *subject;
   GString *message;
-  char *url;
+  char *to_url;
 
   assert(sip);
 
@@ -1886,9 +1898,9 @@ sof_i_info(nua_t *nua, NuaGlib *self,
   else
     message=NULL;
 
-  url = url_as_string(self->priv->home, to->a_url);
-  g_signal_emit(self, signals[NGSIG_INCOMING_INFO], 0, op, to->a_display, url, subject?subject->g_value:NULL, message); 
-  su_free(self->priv->home, url);
+  to_url = url_as_string(self->priv->home, to->a_url);
+  g_signal_emit(self, signals[NGSIG_INCOMING_INFO], 0, op, to->a_display, to_url, subject?subject->g_value:NULL, message); 
+  su_free(self->priv->home, to_url);
   g_string_free(message, TRUE);
 
   if (op == NULL)
@@ -1958,7 +1970,7 @@ sof_i_refer (nua_t *nua, NuaGlib *self,
 
   assert(from && to);
 
-  char *url = url_as_string(self->priv->home, to->a_url);
+  char *to_url = url_as_string(self->priv->home, to->a_url);
   char *refer_url = url_as_string(self->priv->home, refer_to->r_url);
 
    if(refer_to->r_url->url_type == url_sip) {
@@ -1967,13 +1979,13 @@ sof_i_refer (nua_t *nua, NuaGlib *self,
 			       NUTAG_NOTIFY_REFER(nh), TAG_END());
       su_free(self->priv->home, refer_to_str);
       
-      g_signal_emit(self, signals[NGSIG_INCOMING_REFER], 0, op, to->a_display, url,refer_url, op2);
+      g_signal_emit(self, signals[NGSIG_INCOMING_REFER], 0, op, to->a_display, to_url, refer_url, op2);
    }
    else {
-      g_signal_emit(self, signals[NGSIG_INCOMING_REFER], 0, op, to->a_display, url, refer_url, NULL);
+      g_signal_emit(self, signals[NGSIG_INCOMING_REFER], 0, op, to->a_display, to_url, refer_url, NULL);
    }
 
-  su_free(self->priv->home, url);
+  su_free(self->priv->home, to_url);
   su_free(self->priv->home, refer_url);
  }
 
