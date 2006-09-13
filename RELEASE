@@ -50,7 +50,7 @@ libsofia-sip-ua-glib:
 - Added sofia-sip/su_glib.h. The old sofia-sip/su_source.h is 
   deprecated, but still present. Similarly the functions su_root_source()
   and su_root_source_create() have been deprecated and replaced with
-  su_glib_root_create() and su_glib_root_source().
+  su_glib_root_create() and su_glib_root_gsource().
 - Added nua_glib::cancel-answered signal - emitted when the stack
   receives an answer to previously sent CANCEL.
 - This release is ABI/API compatible with libsofia-sip-ua-glib of 1.12.0. Note, 

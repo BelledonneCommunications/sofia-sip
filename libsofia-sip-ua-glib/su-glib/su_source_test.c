@@ -52,7 +52,7 @@ struct pinger;
 #include "sofia-sip/su_wait.h"
 #include "sofia-sip/su_log.h"
 
-#include "sofia-sip/su_source.h"
+#include "sofia-sip/su_glib.h"
 
 struct pinger {
   enum { PINGER = 1, PONGER = 2 } const sort;
@@ -73,6 +73,7 @@ struct pinger {
 short opt_family = AF_INET;
 short opt_verbatim = 0;
 short opt_singlethread = 0;
+GMainLoop *global_gmainloop = NULL;
 
 static su_socket_t udpsocket(void) 
 {
@@ -249,9 +250,10 @@ do_recv(struct pinger *p, su_wait_t *w, void *p0)
 void
 do_exit(struct pinger *x, su_timer_t *t, void *x0)
 {
+  g_assert(global_gmainloop);
   if (opt_verbatim)
     printf("do_exit at %s\n", snow(su_now()));
-  su_root_break(su_timer_root(t));
+  g_main_loop_quit(global_gmainloop);
 }
 
 int
@@ -461,11 +463,14 @@ int main(int argc, char *argv[])
 
   time_test();
 
-  root = su_root_source_create(NULL); 
+  global_gmainloop = g_main_loop_new(NULL, FALSE);
+  g_assert(global_gmainloop);
+  
+  root = su_glib_root_create(NULL); 
 
   if (!root) perror("su_root_glib_create"), exit(1);
   
-  if (!g_source_attach(su_root_gsource(root), NULL)) 
+  if (!g_source_attach(su_glib_root_gsource(root), g_main_loop_get_context(global_gmainloop))) 
     perror("g_source_attach"), exit(1);
   
   su_root_threading(root, 0 && !opt_singlethread);
@@ -485,7 +490,7 @@ int main(int argc, char *argv[])
 		init_ping, 0);
   su_msg_send(start_msg);
 
-  su_root_run(root);
+  g_main_loop_run(global_gmainloop);
 
   su_clone_wait(root, ping);
   su_clone_wait(root, pong);
@@ -497,6 +502,8 @@ int main(int argc, char *argv[])
 	   pinger.rtt_n, pinger.rtt_total, pinger.rtt_total / pinger.rtt_n);
   }
   su_root_destroy(root);
+
+  g_main_loop_unref(global_gmainloop), global_gmainloop = NULL;
 
   if (opt_verbatim)
     printf("%s exiting\n", argv0); 

@@ -227,11 +227,27 @@ typedef struct _SuSource
 #define enter (void)0
 #endif
 
+/*=============== Public function definitions ===============*/
+
 /** Create a root that uses GSource as reactor */
-su_root_t *su_root_source_create(su_root_magic_t *magic)
+su_root_t *su_glib_root_create(su_root_magic_t *magic)
 {
   return su_root_create_with_port(magic, su_source_create());
 }
+
+/** Deprecated */
+su_root_t *su_root_source_create(su_root_magic_t *magic)
+{
+  return su_glib_root_create(magic);
+}
+
+GSource *su_glib_root_gsource(su_root_t *root)
+{
+  g_assert(root);
+  return su_root_gsource(root);
+}
+
+/*=============== Private function definitions ===============*/
 
 /**@internal
  *

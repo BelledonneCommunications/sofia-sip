@@ -42,7 +42,7 @@
 SOFIA_BEGIN_DECLS
 
 SOFIAPUBFUN su_root_t *su_glib_root_create(su_root_magic_t *) __attribute__((__malloc__));
-SOFIAPUBFUN GSource *su_glib_root_source(su_root_t *);
+SOFIAPUBFUN GSource *su_glib_root_gsource(su_root_t *);
 
 SOFIA_END_DECLS
 
