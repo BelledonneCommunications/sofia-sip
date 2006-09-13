@@ -54,6 +54,7 @@
 #define su_port_s su_source_s
 
 #include "sofia-sip/su_source.h"
+#include "sofia-sip/su_glib.h"
 
 #include "sofia-sip/su.h"
 #include "su_port.h"

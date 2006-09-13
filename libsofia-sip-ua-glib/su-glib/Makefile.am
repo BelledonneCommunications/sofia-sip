@@ -33,7 +33,8 @@ TESTS = 		su_source_test
 nobase_include_sofia_HEADERS =
 if HAVE_GLIB
 nobase_include_sofia_HEADERS += \
-			sofia-sip/su_source.h
+			sofia-sip/su_source.h \
+			sofia-sip/su_glib.h
 endif
 
 libsu_glib_la_SOURCES = su_source.c

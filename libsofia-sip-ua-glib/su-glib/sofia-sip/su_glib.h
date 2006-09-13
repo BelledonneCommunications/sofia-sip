@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -22,21 +22,14 @@
  *
  */
 
-#ifndef SU_SOURCE_H /** Defined when su_source.h has been included. */
-#define SU_SOURCE_H
+#ifndef SU_GLIB_SOURCE_H
+#define SU_GLIB_SOURCE_H
 
 /**
- * @file su_source.h
- * @brief 
- *
- * NOTE: This file (su_source.h) is DEPRECATED as of 1.12.2 release. 
- *       Please use su_glib.h instead.
+ * @file su_glib.h
  * 
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <first.surname@nokia.com>
- *  
- * @date Created: Thu Mar  4 19:58:50 2004 ppessi
- * 
  */
 
 #ifndef SU_WAIT_H
@@ -48,9 +41,9 @@
 
 SOFIA_BEGIN_DECLS
 
-SOFIAPUBFUN su_root_t *su_root_source_create(su_root_magic_t *) __attribute__((__malloc__));
-SOFIAPUBFUN GSource *su_root_source(su_root_t *);
+SOFIAPUBFUN su_root_t *su_glib_root_create(su_root_magic_t *) __attribute__((__malloc__));
+SOFIAPUBFUN GSource *su_glib_root_source(su_root_t *);
 
 SOFIA_END_DECLS
 
-#endif /* !defined SU_SOURCE_H */
+#endif /* !defined SU_GLIB_SOURCE_H */
