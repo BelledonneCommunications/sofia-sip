@@ -1,10 +1,10 @@
 PROJECT_NAME         = "stun"
 OUTPUT_DIRECTORY     = ../docs/html/stun
 
-INPUT 		     = stun.docs . sofia-sip
+INPUT 		     = stun.docs sofia-sip .
 
 @INCLUDE 	     = ../docs/Doxyfile.conf
 
-TAGFILES            += ../docs/doxytags_su=../su
+TAGFILES            += ../docs/su.doxytags=../su
 
-GENERATE_TAGFILE     = ../docs/doxytags_stun
+GENERATE_TAGFILE     = ../docs/stun.doxytags

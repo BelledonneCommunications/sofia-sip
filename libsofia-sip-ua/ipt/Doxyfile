@@ -1,12 +1,12 @@
 PROJECT_NAME         = "ipt"
 OUTPUT_DIRECTORY     = ../docs/html/ips
 
-INPUT 		     = ipt.docs . sofia-sip
+INPUT 		     = ipt.docs sofia-sip . 
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES            += ../docs/doxytags_su=../su
-GENERATE_TAGFILE     = ../docs/doxytags_ipt
+TAGFILES            += ../docs/su.doxytags=../su
+GENERATE_TAGFILE     = ../docs/ipt.doxytags
 
 ALIASES +=
 

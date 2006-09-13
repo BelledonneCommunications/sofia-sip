@@ -5,7 +5,7 @@ INPUT 		     = sdp.docs .  sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES             += ../docs/doxytags_su=../su
-GENERATE_TAGFILE     = ../docs/doxytags_sdp
+TAGFILES             += ../docs/su.doxytags=../su
+GENERATE_TAGFILE     = ../docs/sdp.doxytags
 
 ALIASES             +=

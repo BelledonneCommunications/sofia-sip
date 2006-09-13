@@ -5,13 +5,13 @@ INPUT 		     = msg.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES             += ../docs/doxytags_ipt=../ipt  \
-			../docs/doxytags_su=../su    \
-			../docs/doxytags_sip=../sip  \
-			../docs/doxytags_nta=../nta  \
-			../docs/doxytags_http=../http
+TAGFILES             += ../docs/ipt.doxytags=../ipt  \
+			../docs/su.doxytags=../su    \
+			../docs/sip.doxytags=../sip  \
+			../docs/nta.doxytags=../nta  \
+			../docs/http.doxytags=../http
 
-GENERATE_TAGFILE     = ../docs/doxytags_msg
+GENERATE_TAGFILE     = ../docs/msg.doxytags
 
 PREDEFINED += "MSG_HDR_T=union msg_header_u"
 

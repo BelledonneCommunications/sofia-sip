@@ -1,11 +1,11 @@
 PROJECT_NAME         = "su"
 OUTPUT_DIRECTORY     = ../docs/html/su
 
-INPUT 		     = su.docs . sofia-sip
+INPUT 		     = su.docs sofia-sip . 
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-GENERATE_TAGFILE     = ../docs/doxytags_su
+GENERATE_TAGFILE     = ../docs/su.doxytags
 
 ALIASES +=  "SU_TAG=@ingroup su_tag\n"
 

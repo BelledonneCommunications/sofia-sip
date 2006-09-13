@@ -1,20 +1,20 @@
 PROJECT_NAME         = "iptsec"
 OUTPUT_DIRECTORY     = ../docs/html/iptsec
 
-INPUT 		     = iptsec.docs . sofia-sip
+INPUT 		     = iptsec.docs sofia-sip . 
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES           += ../docs/doxytags_su=../su
-TAGFILES           += ../docs/doxytags_ipt=../ipt
-TAGFILES           += ../docs/doxytags_bnf=../bnf
-TAGFILES           += ../docs/doxytags_url=../url
-TAGFILES           += ../docs/doxytags_msg=../msg
-TAGFILES           += ../docs/doxytags_sip=../sip
-TAGFILES           += ../docs/doxytags_sresolv=../sresolv
-TAGFILES           += ../docs/doxytags_tport=../tport
-TAGFILES           += ../docs/doxytags_nta=../nta
+TAGFILES           += ../docs/su.doxytags=../su
+TAGFILES           += ../docs/ipt.doxytags=../ipt
+TAGFILES           += ../docs/bnf.doxytags=../bnf
+TAGFILES           += ../docs/url.doxytags=../url
+TAGFILES           += ../docs/msg.doxytags=../msg
+TAGFILES           += ../docs/sip.doxytags=../sip
+TAGFILES           += ../docs/sresolv.doxytags=../sresolv
+TAGFILES           += ../docs/tport.doxytags=../tport
+TAGFILES           += ../docs/nta.doxytags=../nta
 
-GENERATE_TAGFILE    = ../docs/doxytags_iptsec
+GENERATE_TAGFILE    = ../docs/iptsec.doxytags
 
 ALIASES 	   += 

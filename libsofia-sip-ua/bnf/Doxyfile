@@ -1,13 +1,13 @@
 PROJECT_NAME         = "bnf"
 OUTPUT_DIRECTORY     = ../docs/html/bnf
 
-INPUT 		     = bnf.docs . sofia-sip
+INPUT 		     = bnf.docs sofia-sip . 
 
 @INCLUDE = ../docs/Doxyfile.conf
 
-TAGFILES            += ../docs/doxytags_su=../su
+TAGFILES            += ../docs/su.doxytags=../su
 
-GENERATE_TAGFILE     = ../docs/doxytags_bnf
+GENERATE_TAGFILE     = ../docs/bnf.doxytags
 
 PREDEFINED += "static="
 

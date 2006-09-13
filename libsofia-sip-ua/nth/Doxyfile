@@ -1,18 +1,18 @@
 PROJECT_NAME         = "nth"
 OUTPUT_DIRECTORY     = ../docs/html/nth
 
-INPUT 		     = nth.docs . sofia-sip
+INPUT 		     = nth.docs sofia-sip . 
 
 @INCLUDE = ../docs/Doxyfile.conf
 
 TAGFILES            += \
-	"../docs/doxytags_su=../su" \
-	"../docs/doxytags_ipt=../ipt" \
-	"../docs/doxytags_bnf=../bnf" \
-	"../docs/doxytags_url=../url" \
-	"../docs/doxytags_msg=../msg" \
-	"../docs/doxytags_http=../http" \
+	"../docs/su.doxytags=../su" \
+	"../docs/ipt.doxytags=../ipt" \
+	"../docs/bnf.doxytags=../bnf" \
+	"../docs/url.doxytags=../url" \
+	"../docs/msg.doxytags=../msg" \
+	"../docs/http.doxytags=../http" \
 
-GENERATE_TAGFILE    = ../docs/doxytags_nth
+GENERATE_TAGFILE    = ../docs/nth.doxytags
 
 ALIASES +=
