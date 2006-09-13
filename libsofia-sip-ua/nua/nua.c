@@ -275,6 +275,8 @@ nua_handle_t *nua_default(nua_t *nua)
  * @par Events:
  *     none
  *
+ * @sa nua_handle_bind(), nua_handle_destroy(), nua_handle_ref(),
+ * nua_handle_unref().
  */
 nua_handle_t *nua_handle(nua_t *nua, nua_hmagic_t *hmagic,
 			 tag_type_t tag, tag_value_t value, ...)
@@ -514,6 +516,7 @@ sip_to_t const *nua_handle_local(nua_handle_t const *nh)
   return nh ? nh->nh_ds->ds_local : NULL;
 }
 
+/* Documented with nua_stack_set_params() */
 void nua_set_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
@@ -526,6 +529,7 @@ void nua_set_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
   ta_end(ta);
 }
 
+/* Documented with nua_stack_get_params() */
 void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
@@ -550,11 +554,13 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
     SU_DEBUG_1(("nua: " #event " with invalid handle %p\n", nh));	\
   }
 
+/* Documented with nua_stack_set_params() */
 void nua_set_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_set_params, tag, value);
 }
 
+/* Documented with nua_stack_get_params() */
 void nua_get_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_get_params, tag, value);
@@ -1108,9 +1114,15 @@ void nua_respond(nua_handle_t *nh,
 
 /** Destroy a handle 
  *
- * Destroy an operation handle and asks stack to discard resources 
- * and ongoing sessions and transactions associated with this handle. 
- * For example calls are terminated with BYE request.
+ * Terminate the protocol state associated with an operation handle. The
+ * stack discards resources and terminates the ongoing dialog usage,
+ * sessions and transactions associated with this handle. For example, calls
+ * are terminated with BYE request. Also, the reference count for the handle
+ * is also decremented.
+ *
+ * The handles use reference counting for memory management. In order to
+ * make it more convenient for programmer, nua_handle_destroy() decreases
+ * the reference count, too.
  *
  * @param nh              Pointer to operation handle
  *
@@ -1122,6 +1134,8 @@ void nua_respond(nua_handle_t *nh,
  *
  * @par Events:
  *    none
+ *
+ * @sa nua_handle(), nua_handle_bind(), nua_handle_ref(), nua_handle_unref().
  */
 void nua_handle_destroy(nua_handle_t *nh)
 {

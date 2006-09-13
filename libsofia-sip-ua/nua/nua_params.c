@@ -54,6 +54,65 @@
 #include <assert.h>
 
 /* ====================================================================== */
+/* Helper macros and functions for handling #nua_handle_preferences_t. */
+
+#define NHP_IS_ANY_SET(nhp) nhp_is_any_set((nhp))
+
+/** Check if any preference is set in @a nhp. */
+su_inline int nhp_is_any_set(nua_handle_preferences_t const *nhp)
+{
+  char nhp_zero[sizeof nhp->nhp_set] = { 0 };
+  return memcmp(&nhp->nhp_set, nhp_zero, sizeof nhp->nhp_set);
+}
+
+/** If preference is set in @a b, mark it set also in @a a. */
+su_inline void nhp_or_set(nua_handle_preferences_t *a,
+			  nua_handle_preferences_t const *b)
+{
+  unsigned *ap = (unsigned *)&a->nhp_set;
+  unsigned const *bp = (unsigned const *)&b->nhp_set;
+  int i;
+
+  for (i = 0; i < (sizeof a->nhp_set); i += (sizeof *ap))
+    *ap++ |= *bp++;
+}
+
+/* Set string in handle pref structure */
+#define NHP_SET_STR(nhp, name, str)				 \
+  if (str != NONE) {						 \
+    char *new_str = su_strdup(tmphome, str);			 \
+    NHP_SET(nhp, name, new_str);				 \
+    error |= (new_str != NULL && str == NULL);			 \
+  }
+
+/* Set header in handle pref structure */
+#define NHP_SET_HEADER(nhp, name, header, str)			 \
+  if (header != NONE || str != NONE) {				 \
+    sip_##name##_t *new_header;					 \
+    if (header != NONE)						 \
+      new_header = sip_##name##_dup(tmphome, header);		 \
+    else							 \
+      new_header = sip_##name##_make(tmphome, str);		 \
+    if (new_header != NULL || (header == NULL || str == NULL)) { \
+      NHP_SET(nhp, name, new_header);				 \
+    }								 \
+    else {							 \
+      error = 1;						 \
+    }								 \
+  }
+
+/* Zap pointers which are not set */
+#define NHP_ZAP_UNSET_PTR(nhp, pref)					\
+	(!(nhp)->nhp_set.nhb_##pref ? (nhp)->nhp_##pref = NULL : NULL)
+
+/* Free changed items */
+#define NHP_ZAP_OVERRIDEN(tbf, nhp, pref)				\
+  ((tbf)->nhp_set.nhb_##pref						\
+   && (tbf)->nhp_##pref != (nhp)->nhp_##pref				\
+       ? su_free(nh->nh_home, (void *)(tbf)->nhp_##pref) : (void)0)
+
+
+/* ====================================================================== */
 /* Stack and handle parameters */
 
 static int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags);
@@ -334,6 +393,10 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   url_string_t const *registrar = NONE;
 
   char const *instance = NONE;
+  char const *m_display = NONE;
+  char const *m_username = NONE;
+  char const *m_params = NONE;
+  char const *m_features = NONE;
   char const *outbound = NONE;
   
   int error = 0;
@@ -496,6 +559,22 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     else if (t->t_tag == nutag_instance) {
       instance = (void *)t->t_value;
     }
+    /* NUTAG_M_DISPLAY_REF(m_display) */
+    else if (t->t_tag == nutag_m_display) {
+      m_display = (void *)t->t_value;
+    }
+    /* NUTAG_M_USERNAME_REF(m_username) */
+    else if (t->t_tag == nutag_m_username) {
+      m_username = (void *)t->t_value;
+    }
+    /* NUTAG_M_PARAMS_REF(m_params) */
+    else if (t->t_tag == nutag_m_params) {
+      m_params = (void *)t->t_value;
+    }
+    /* NUTAG_M_FEATURES_REF(m_features) */
+    else if (t->t_tag == nutag_m_features) {
+      m_features = (void *)t->t_value;
+    }
     /* NUTAG_OUTBOUND_REF(outbound) */
     else if (t->t_tag == nutag_outbound) {
       outbound = (void *)t->t_value;
@@ -528,30 +607,6 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       nhp->nhp_refresher = nua_no_refresher;
   }
 
-  /* Set string in handle pref structure */
-#define NHP_SET_STR(nhp, name, str)				 \
-  if (str != NONE) {						 \
-    char *new_str = su_strdup(tmphome, str);			 \
-    NHP_SET(nhp, name, new_str);				 \
-    error |= (new_str != NULL && str == NULL);			 \
-  }
-
-  /* Set header in handle pref structure */
-#define NHP_SET_HEADER(nhp, name, header, str)			 \
-  if (header != NONE || str != NONE) {				 \
-    sip_##name##_t *new_header;					 \
-    if (header != NONE)						 \
-      new_header = sip_##name##_dup(tmphome, header);		 \
-    else							 \
-      new_header = sip_##name##_make(tmphome, str);		 \
-    if (new_header != NULL || (header == NULL || str == NULL)) { \
-      NHP_SET(nhp, name, new_header);				 \
-    }								 \
-    else {							 \
-      error = 1;						 \
-    }								 \
-  }
-
   /* Add contents of NUTAG_ALLOW() to list of currently allowed methods */
   if (allow == NONE && allow_str == NONE && allowing != NULL) {
     sip_allow_t *methods = sip_allow_make(tmphome, allowing);
@@ -581,6 +636,10 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   NHP_SET_HEADER(nhp, organization, organization, organization_str);
 
   NHP_SET_STR(nhp, instance, instance);
+  NHP_SET_STR(nhp, m_display, m_display);
+  NHP_SET_STR(nhp, m_username, m_username);
+  NHP_SET_STR(nhp, m_params, m_params);
+  NHP_SET_STR(nhp, m_features, m_features);
   NHP_SET_STR(nhp, outbound, outbound);
 
   if (!error && NHP_IS_ANY_SET(nhp)) {
@@ -592,16 +651,16 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       if (ahp && su_home_move(nh->nh_home, tmphome) >= 0) {
 	memcpy(ahp, nhp, sizeof *ahp);
 
-	/* Zap pointers which are not set */
-#define NHP_ZAP_UNSET_PTR(nhp, pref) \
-	(!(nhp)->nhp_set.set_bits.nhb_##pref ? (nhp)->nhp_##pref = NULL : NULL)
-
 	NHP_ZAP_UNSET_PTR(ahp, supported);
 	NHP_ZAP_UNSET_PTR(ahp, allow);
 	NHP_ZAP_UNSET_PTR(ahp, user_agent);
 	NHP_ZAP_UNSET_PTR(ahp, ua_name);
 	NHP_ZAP_UNSET_PTR(ahp, organization);
 	NHP_ZAP_UNSET_PTR(ahp, instance);
+	NHP_ZAP_UNSET_PTR(ahp, m_display);
+	NHP_ZAP_UNSET_PTR(ahp, m_username);
+	NHP_ZAP_UNSET_PTR(ahp, m_params);
+	NHP_ZAP_UNSET_PTR(ahp, m_features);
 	NHP_ZAP_UNSET_PTR(ahp, outbound);
 
 	nh->nh_prefs = ahp;
@@ -613,14 +672,10 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     else if (su_home_move(nh->nh_home, tmphome) >= 0) {
       /* Update prefs structure */
       nua_handle_preferences_t tbf[1];
-      nhp->nhp_set.set_any |= ohp->nhp_set.set_any;
-      *tbf = *ohp; *ohp = *nhp;
 
-      /* Free changed items */
-#define NHP_ZAP_OVERRIDEN(tbf, nhp, pref)			\
-      ((tbf)->nhp_set.set_bits.nhb_##pref			\
-       && (tbf)->nhp_##pref != (nhp)->nhp_##pref		\
-       ? su_free(nh->nh_home, (void *)(tbf)->nhp_##pref) : (void)0)
+      nhp_or_set(nhp, ohp);
+
+      *tbf = *ohp; *ohp = *nhp;
 
       NHP_ZAP_OVERRIDEN(tbf, nhp, supported);
       NHP_ZAP_OVERRIDEN(tbf, nhp, allow);
@@ -628,8 +683,11 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       NHP_ZAP_OVERRIDEN(tbf, nhp, ua_name);
       NHP_ZAP_OVERRIDEN(tbf, nhp, organization);
       NHP_ZAP_OVERRIDEN(tbf, nhp, instance);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, m_display);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, m_username);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, m_params);
+      NHP_ZAP_OVERRIDEN(tbf, nhp, m_features);
       NHP_ZAP_OVERRIDEN(tbf, nhp, outbound);
-
     }
     else
       /* Fail miserably with ENOMEM */
@@ -650,6 +708,7 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     media_path != NONE || allow != NONE || allow_str != NONE;
 #endif
 
+  /* Return when called in handle-specific way */
   if (nh != dnh)
     return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
 
@@ -834,13 +893,13 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   /* Include tag in list returned to user
    * if it has been earlier set (by user) */
 #define TIF(TAG, pref) \
-  TAG_IF(nhp->nhp_set.set_bits.nhb_##pref, TAG(nhp->nhp_##pref))
+  TAG_IF(nhp->nhp_set.nhb_##pref, TAG(nhp->nhp_##pref))
 
   /* Include string tag made out of SIP header
    * if it has been earlier set (by user) */
 #define TIF_STR(TAG, pref)						\
-  TAG_IF(nhp->nhp_set.set_bits.nhb_##pref,				\
-	 TAG(nhp->nhp_set.set_bits.nhb_##pref && nhp->nhp_##pref	\
+  TAG_IF(nhp->nhp_set.nhb_##pref,				\
+	 TAG(nhp->nhp_set.nhb_##pref && nhp->nhp_##pref	\
 	     ? sip_header_as_string(tmphome, (void *)nhp->nhp_##pref) : NULL))
 
   lst = tl_filtered_tlist
@@ -891,9 +950,13 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(SIPTAG_ORGANIZATION, organization),
      TIF_STR(SIPTAG_ORGANIZATION_STR, organization),
 
+     TIF(NUTAG_INSTANCE, instance),
+     TIF(NUTAG_M_DISPLAY, m_display),
+     TIF(NUTAG_M_USERNAME, m_username),
+     TIF(NUTAG_M_PARAMS, m_params),
+     TIF(NUTAG_M_FEATURES, m_features),
      TIF(NUTAG_OUTBOUND, outbound),
      TIF(NUTAG_DETECT_NETWORK_UPDATES, detect_network_updates),
-     TIF(NUTAG_INSTANCE, instance),
      TIF(NUTAG_KEEPALIVE, keepalive),
      TIF(NUTAG_KEEPALIVE_STREAM, keepalive_stream),
 

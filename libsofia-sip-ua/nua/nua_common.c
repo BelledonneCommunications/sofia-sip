@@ -208,7 +208,15 @@ static void nh_destructor(void *arg)
 
 /** Make a new reference to handle.
  *
+ * The handles use reference counting for memory management. In addition to
+ * the memory management, there is protocol state associated with the
+ * handles. The protocol state is terminated with nua_handle_destroy(). In
+ * order to make it more convenient for programmer, nua_handle_destroy()
+ * decreases the reference count, too.
+ *
  * @note All handle references are destroyed when the nua object is destroyed.
+ *
+ * @sa nua_handle_unref(), nua_handle(), nua_handle_destroy().
  */
 nua_handle_t *nua_handle_ref(nua_handle_t *nh)
 {
@@ -216,13 +224,22 @@ nua_handle_t *nua_handle_ref(nua_handle_t *nh)
 }
 
 
-/** Destroy reference to handle. */
+/** Destroy reference to handle. 
+ *
+ * The handles use reference counting for memory management. In addition to
+ * the memory management, there is protocol state associated with the
+ * handles. The protocol state is terminated with nua_handle_destroy(). In
+ * order to make it more convenient for programmer, nua_handle_destroy()
+ * decreases the reference count, too.
+ *
+ * @sa nua_handle_ref(), nua_handle(), nua_handle_destroy().
+ */
 int nua_handle_unref(nua_handle_t *nh)
 {
   return su_home_unref(nh->nh_home);
 }
 
-/** Generate an instance identifier */
+/** Generate an instance identifier. */
 char const *nua_generate_instance_identifier(su_home_t *home)
 {
   char str[su_guid_strlen + 1];

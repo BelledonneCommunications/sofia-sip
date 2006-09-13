@@ -134,6 +134,8 @@ int test_register(struct context *ctx)
   REGISTER(a, a_reg, a_reg->nh, SIPTAG_TO(a->to),
 	   NUTAG_OUTBOUND("natify options-keepalive validate"),
 	   NUTAG_KEEPALIVE(1000),
+	   NUTAG_M_DISPLAY("A&A"),
+	   NUTAG_M_USERNAME("a"),
 	   SIPTAG_CSEQ(cseq),
 	   TAG_END());
   run_a_until(ctx, -1, save_until_final_response);
@@ -157,6 +159,8 @@ int test_register(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_contact);
+  TEST_S(sip->sip_contact->m_display, "\"A&A\"");
+  TEST_S(sip->sip_contact->m_url->url_user, "a");
   TEST(sip->sip_cseq->cs_seq, 14);
 
   if (ctx->nat) {
@@ -171,7 +175,10 @@ int test_register(struct context *ctx)
 
   TEST_1(b_reg->nh = nua_handle(b->nua, b_reg, TAG_END()));
 
-  REGISTER(b, b_reg, b_reg->nh, SIPTAG_TO(b->to), TAG_END());
+  REGISTER(b, b_reg, b_reg->nh, SIPTAG_TO(b->to), 
+	   NUTAG_M_DISPLAY("B"),
+	   NUTAG_M_USERNAME("b"),
+	   TAG_END());
   run_ab_until(ctx, -1, save_events, -1, save_until_final_response);
 
   TEST_1(e = b->events->head);
@@ -192,6 +199,8 @@ int test_register(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_contact);
+  TEST_S(sip->sip_contact->m_display, "B");
+  TEST_S(sip->sip_contact->m_url->url_user, "b");
 
   if (print_headings)
     printf("TEST NUA-2.3.2: PASSED\n");
@@ -205,6 +214,8 @@ int test_register(struct context *ctx)
   TEST_1(c_reg->nh = nua_handle(c->nua, c_reg, TAG_END()));
 
   REGISTER(c, c_reg, c_reg->nh, SIPTAG_TO(c->to), 
+	   NUTAG_M_DISPLAY("C"),
+	   NUTAG_M_USERNAME("c"),
 	   SIPTAG_EXPIRES_STR("5"), /* Test 423 negotiation */
 	   TAG_END());
   run_abc_until(ctx, -1, save_events, -1, save_events, 
@@ -233,6 +244,8 @@ int test_register(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_contact);
+  TEST_S(sip->sip_contact->m_display, "C");
+  TEST_S(sip->sip_contact->m_url->url_user, "c");
   TEST_1(!e->next);
   free_events_in_list(ctx, c->events);
 
@@ -553,7 +566,10 @@ int test_unregister(struct context *ctx)
   /* Unregister using another handle */
   free_events_in_list(ctx, c->events);
   TEST_1(c->call->nh = nua_handle(c->nua, c->call, TAG_END()));
-  UNREGISTER(c, c->call, c->call->nh, SIPTAG_TO(c->to), TAG_END());
+  UNREGISTER(c, c->call, c->call->nh, SIPTAG_TO(c->to), 
+	     NUTAG_M_DISPLAY("C"),
+	     NUTAG_M_USERNAME("c"),
+	     TAG_END());
   run_c_until(ctx, -1, save_until_final_response);
 
   TEST_1(e = c->events->head);

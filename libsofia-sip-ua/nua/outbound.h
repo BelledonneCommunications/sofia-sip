@@ -97,7 +97,7 @@ enum {
 
 int outbound_set_contact(outbound_t *ob,
 			 sip_contact_t const *application_contact,
-			 sip_contact_t const *stack_contact,
+			 sip_via_t const *v,
 			 int terminating);
 
 sip_contact_t const *outbound_dialog_contact(outbound_t const *ob);
@@ -120,6 +120,13 @@ void outbound_peer_info(outbound_t *ob, sip_t const *sip);
 struct outbound_owner_vtable
 {
   int oo_size;
+  sip_contact_t *(*oo_contact)(outbound_owner_t *,
+			       su_home_t *home,
+			       char const *extra_username,
+			       sip_via_t const *v,
+			       char const *transport,
+			       char const *m_param,
+			       ...);
   int (*oo_refresh)(outbound_owner_t *, outbound_t *ob);
   int (*oo_status)(outbound_owner_t *, outbound_t *ob,
 		   int status, char const *phrase,

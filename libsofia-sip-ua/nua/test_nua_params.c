@@ -167,9 +167,12 @@ int test_nua_params(struct context *ctx)
 		 NUTAG_KEEPALIVE(66),
 		 NUTAG_KEEPALIVE_STREAM(33),
 
-		 NUTAG_OUTBOUND("foo"),
 		 NUTAG_INSTANCE("urn:uuid:97701ad9-39df-1229-1083-dbc0a85f029c"),
-
+		 NUTAG_M_DISPLAY("Joe"),
+		 NUTAG_M_USERNAME("joe"),
+		 NUTAG_M_PARAMS("user=phone"),
+		 NUTAG_M_FEATURES("language=\"en\""),
+		 NUTAG_OUTBOUND("foo"),
 		 SIPTAG_SUPPORTED(sip_supported_make(tmphome, "humppaa,kuole")),
 		 SIPTAG_ALLOW(sip_allow_make(tmphome, "OPTIONS, INFO")),
 		 SIPTAG_USER_AGENT(sip_user_agent_make(tmphome, "test_nua")),
@@ -230,6 +233,10 @@ int test_nua_params(struct context *ctx)
     char const *organization_str = "NONE";
 
     char const *outbound = "NONE";
+    char const *m_display = "NONE";
+    char const *m_username = "NONE";
+    char const *m_params = "NONE";
+    char const *m_features = "NONE";
     char const *instance = "NONE";
     
     unsigned keepalive = -1, keepalive_stream = -1;
@@ -287,6 +294,10 @@ int test_nua_params(struct context *ctx)
 	       	SIPTAG_ORGANIZATION_STR_REF(organization_str),
 
 		NUTAG_OUTBOUND_REF(outbound),
+		NUTAG_M_DISPLAY_REF(m_display),
+		NUTAG_M_USERNAME_REF(m_username),
+		NUTAG_M_PARAMS_REF(m_params),
+		NUTAG_M_FEATURES_REF(m_features),
 		NUTAG_INSTANCE_REF(instance),
 
 		NUTAG_KEEPALIVE_REF(keepalive),
@@ -295,7 +306,7 @@ int test_nua_params(struct context *ctx)
 	       	NUTAG_REGISTRAR_REF(registrar),
 
 		TAG_END());
-    TEST(n, 36);
+    TEST(n, 40);
 
     TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
     TEST_S(from_str, Alice);
@@ -340,8 +351,12 @@ int test_nua_params(struct context *ctx)
     TEST(keepalive, 66);
     TEST(keepalive_stream, 33);
 
-    TEST_S(outbound, "foo");
     TEST_S(instance, "urn:uuid:97701ad9-39df-1229-1083-dbc0a85f029c");
+    TEST_S(m_display, "Joe");
+    TEST_S(m_username, "joe");
+    TEST_S(m_params, "user=phone");
+    TEST_S(m_features, "language=\"en\"");
+    TEST_S(outbound, "foo");
 
     TEST_S(url_as_string(tmphome, registrar->us_url),
 	   "sip:sip.wonderland.org");
@@ -393,6 +408,13 @@ int test_nua_params(struct context *ctx)
 
     url_string_t const *registrar = NONE;
 
+    char const *outbound = "NONE";
+    char const *m_display = "NONE";
+    char const *m_username = "NONE";
+    char const *m_params = "NONE";
+    char const *m_features = "NONE";
+    char const *instance = "NONE";
+
     int n;
     struct event *e;
 
@@ -441,6 +463,13 @@ int test_nua_params(struct context *ctx)
 	       	SIPTAG_ORGANIZATION_REF(organization),
 	       	SIPTAG_ORGANIZATION_STR_REF(organization_str),
 
+		NUTAG_OUTBOUND_REF(outbound),
+		NUTAG_M_DISPLAY_REF(m_display),
+		NUTAG_M_USERNAME_REF(m_username),
+		NUTAG_M_PARAMS_REF(m_params),
+		NUTAG_M_FEATURES_REF(m_features),
+		NUTAG_INSTANCE_REF(instance),
+
 	       	NUTAG_REGISTRAR_REF(registrar),
 
 		TAG_END());
@@ -486,6 +515,13 @@ int test_nua_params(struct context *ctx)
     TEST_S(user_agent_str, "NONE");
     TEST(organization, NONE);
     TEST_S(organization_str, "NONE");
+
+    TEST_S(outbound, "NONE");
+    TEST_S(m_display, "NONE");
+    TEST_S(m_username, "NONE");
+    TEST_S(m_params, "NONE");
+    TEST_S(m_features, "NONE");
+    TEST_S(instance, "NONE");
 
     TEST(registrar->us_url, NONE);
 

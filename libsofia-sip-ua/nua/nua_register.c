@@ -79,7 +79,7 @@
 /* Registrations and contacts */
 
 int nua_registration_from_via(nua_registration_t **list,
-			      su_home_t *home,
+			      nua_handle_t *nh, 
 			      sip_via_t const *via,
 			      int public);
 
@@ -90,7 +90,7 @@ void nua_registration_remove(nua_registration_t *nr);
 int nua_registration_set_aor(su_home_t *, nua_registration_t *nr,
 			     sip_from_t const *aor);
 
-int nua_registration_set_contact(su_home_t *,
+int nua_registration_set_contact(nua_handle_t *,
 				 nua_registration_t *nr,
 				 sip_contact_t const *m,
 				 int terminating);
@@ -120,6 +120,7 @@ struct register_usage {
   nua_registration_t *nr_next, **nr_prev, **nr_list; /* Doubly linked list and its head */
   sip_from_t *nr_aor;		/**< AoR for this registration, NULL if none */
   sip_contact_t *nr_contact;	/**< Our Contact */
+  sip_via_t *nr_via;		/**< Corresponding Via headers */
 
   /** Status of registration */
   unsigned nr_ready:1;
@@ -228,6 +229,14 @@ static int process_response_to_register(nua_handle_t *nh,
 static void unregister_expires_contacts(msg_t *msg, sip_t *sip);
 
 /* Interface towards outbound_t */
+sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
+					 su_home_t *home,
+					 char const *extra_username,
+					 sip_via_t const *v,
+					 char const *transport,
+					 char const *m_param,
+					 ...);
+
 static int nua_stack_outbound_features(nua_handle_t *nh, outbound_t *ob);
 
 static int nua_stack_outbound_refresh(nua_handle_t *,
@@ -247,6 +256,7 @@ static int nua_stack_outbound_credentials(nua_handle_t *, auth_client_t **auc);
 
 outbound_owner_vtable nua_stack_outbound_callbacks = {
     sizeof nua_stack_outbound_callbacks,
+    nua_handle_contact_by_via,
     nua_stack_outbound_refresh,
     nua_stack_outbound_status,
     nua_stack_outbound_failed,
@@ -271,24 +281,85 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  *
  * @par Related tags:
  *     NUTAG_REGISTRAR(), NUTAG_INSTANCE(), NUTAG_OUTBOUND(),
- *     NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(),
+ *     NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(), NUTAG_M_USERNAME(),
+ *     NUTAG_M_PARAMS(), NUTAG_M_FEATURES()
  *
  * @par Events:
  *     #nua_r_register, #nua_i_outbound
+ * 
+ * @par Generating Contact Header
+ *
+ * If the application did not specify the Contact header in the tags,
+ * nua_register() will generate one. It will obtain the schema, IP address
+ * for the host and port number for the Contact URI from the transport
+ * socket. The diplay name is taken from NUTAG_M_DISPLAY(), URL username
+ * part is taken from NUTAG_M_USERNAME(), URI parameters from
+ * NUTAG_M_PARAMS(), and Contact header parameters from NUTAG_M_FEATURES(). 
+ * If NUTAG_CALLEE_CAPS(1) is specified, additional Contact header
+ * parameters are generated based on SDP capabilities and SIP @Allow header.
+ * 
+ * Note that @b nua may append a identifier of its own to the @Contact URI
+ * username. Such nua-generated identifier trailer always starts with "="
+ * (equal sign), rest of the nua-generated identifier may contain any
+ * url-unreserved characters except "=".
+ *
+ * Likewise, nua may add transport parameters (such as "transport=tcp" or
+ * "maddr") to the @Contact URI. It can add addtional header parameters, like
+ * "+sip.instance" or "reg-id", too.
+ *
+ * For instance, if application uses tags like
+ * @code
+ *   nua_register(nh,
+ *                NUTAG_M_DISPLAY("1"),
+ *                NUTAG_M_USERNAME("line-1"),
+ *                NUTAG_M_PARAMS("user=phone"),
+ *                NUTAG_M_FEATURES("audio"),
+ *                NUTAG_CALLEE_CAPS(0),
+ *                TAG_END())
+ * @endcode
+ * @b nua can generate a Contact header like
+ * @code
+ * Contact: 1 <sip:line-1=SSQAIbjv@192.168.1.200;transport=tcp;user=phone>
+ *   ;audio;reg-id=1
+ *   ;+sip.instance=urn:uuid:97701ad9-39df-1229-1083-dbc0a85f029c
+ * @endcode
+ *
+ * The incoming request from the proxy should contain the registered contact
+ * URI as the request URI. The application can use the username prefix set
+ * by NUTAG_M_USERNAME() and the non-transport parameters of the request URI
+ * set by NUTAG_M_PARAMS() when determining to which registration the
+ * incoming request belongs.
+ * 
+ * For example, a request line correspoding to the @Contact in above example
+ * may look like:
+ * @code
+ * INVITE sip:line-1=SSQAIbjv@192.168.1.200;user=phone SIP/2.0
+ * @endcode
+ *
+ * @sa NUTAG_M_DISPLAY(), NUTAG_M_USERNAME(), NUTAG_M_PARAMS(),
+ * NUTAG_M_FEATURES(), NUTAG_CALLEE_CAPS().
  *
  * @par NAT, Firewall and Outbound Support
  *
- * If the application did not include the Contact header in the tags,
- * nua_register() will generate one and start a protocol engine for outbound
- * connections used for NAT and firewall traversal and connectivity checks. 
+ * Normally, @b nua will start start a protocol engine for outbound
+ * connections used for NAT and firewall traversal and connectivity checks
+ * when registering. 
  *
- * First, nua_register() will probe for NATs in between UA and registrar. It
- * will send a REGISTER request as usual. Upon receiving the response it
- * checks for the presence of valid "received" and "rport" parameters in the
- * Via header returned by registrar. The presence of NAT is determined from
- * the "received" parameter in a Via header. When a REGISTER request was
- * sent, the stack inserted the source IP address in the Via header: if that
- * is different from the source IP address seen by the registrar, the
+ * @note If the application provides @b nua with a
+ * @Contact header of its own (or includes a SIPTAG_CONTACT(NULL) tag in
+ * nua_register() tags), the outbound protocol engine is not started. It is
+ * assumed that the application knows better what it is doing when it sets
+ * the @Contact, or it is using experimental CPL upload as specified in 
+ * <a href="http://www.ietf.org/internet-drafts/draft-lennox-sip-reg-payload-01.txt">
+ * draft-lennox-sip-reg-payload-01.txt</a>.
+ *
+ * First, outbound engine will probe for NATs in between UA and registrar. 
+ * It will send a REGISTER request as usual. Upon receiving the response it
+ * checks for the presence of "received" and "rport" parameters in the Via
+ * header returned by registrar. The presence of NAT is determined from the
+ * "received" parameter in a Via header. When a REGISTER request was sent,
+ * the stack inserted the actual source IP address in the Via header: if
+ * that is different from the source IP address seen by the registrar, the
  * registrar inserts the source IP address it sees into the "received"
  * parameter.
  *
@@ -296,8 +367,8 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * headers in outbound requests and again in incoming responses will make
  * the above-described NAT check to fail.
  *
- * The response to the initial REGISTER should also include feature tags
- * indicating whether registrar supports various SIP extensions: @e
+ * The response to the initial REGISTER should also include option tags
+ * indicating whether registrar supports various SIP extension options: @e
  * outbound, @e pref, @e path, @e gruu.
  *
  * Basically, @e outbound means that instead of registering its contact URI
@@ -438,7 +509,6 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * @param tags   empty
  */
 
-
 int
 nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		   tagi_t const *tags)
@@ -495,7 +565,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     /* Add Expires: 0 and remove the expire parameters from contacts */
     unregister_expires_contacts(msg, sip);
 
-  if (nua_registration_set_contact(nh->nh_home, nr, sip->sip_contact, terminating) < 0)
+  if (nua_registration_set_contact(nh, nr, sip->sip_contact, terminating) < 0)
     goto error;
   
   ob = nr->nr_ob;
@@ -519,7 +589,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     nua_stack_outbound_features(nh, ob);
     outbound_stop_keepalive(ob);
 
-    if (outbound_set_contact(ob, sip->sip_contact, nr->nr_contact, terminating) < 0)
+    if (outbound_set_contact(ob, sip->sip_contact, nr->nr_via, terminating) < 0)
       goto error;
   }
 
@@ -1027,7 +1097,7 @@ nua_stack_init_registrations(nua_t *nua)
   /* Create initial identities: peer-to-peer, public, sips */
   nua_registration_t **nr_list = &nua->nua_registrations, **nr_next;
   nua_handle_t **nh_list;
-  su_home_t *home = nua->nua_dhandle->nh_home;
+  nua_handle_t *dnh = nua->nua_dhandle;
   sip_via_t const *v;
 
   /* Remove existing, local address based registrations and count the
@@ -1045,12 +1115,12 @@ nua_stack_init_registrations(nua_t *nua)
 
   v = nta_agent_public_via(nua->nua_nta);
   if (v) {
-    nua_registration_from_via(nr_list, home, v, 1);
+    nua_registration_from_via(nr_list, dnh, v, 1);
   }
 
   v = nta_agent_via(nua->nua_nta);
   if (v) {
-    nua_registration_from_via(nr_list, home, v, 0);
+    nua_registration_from_via(nr_list, dnh, v, 0);
   }
   else {
     sip_via_t v[2];
@@ -1062,7 +1132,7 @@ nua_stack_init_registrations(nua_t *nua)
     v[1].v_protocol = sip_transport_tcp;
     v[1].v_host = "addr.is.invalid.";
 
-    nua_registration_from_via(nr_list, home, v, 0);
+    nua_registration_from_via(nr_list, dnh, v, 0);
   }
 
   /* Go through all the registrations and set to refresh almost
@@ -1086,10 +1156,11 @@ nua_stack_init_registrations(nua_t *nua)
 }
 
 int nua_registration_from_via(nua_registration_t **list,
-			      su_home_t *home,
+			      nua_handle_t *nh,
 			      sip_via_t const *via,
 			      int public)
 {
+  su_home_t *home = nh->nh_home;
   sip_via_t *v, *pair, /* v2[2], */ *vias, **vv, **prev;
   nua_registration_t *nr = NULL, **next;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
@@ -1098,13 +1169,14 @@ int nua_registration_from_via(nua_registration_t **list,
   vias = sip_via_copy(su_home_auto(autohome, sizeof autohome), via);
 
   for (; *list; list = &(*list)->nr_next)
-      ++nr_items;
+    ++nr_items;
 
   next = list;
 
   for (vv = &vias; (v = *vv);) {
     char const *protocol;
     sip_contact_t *contact;
+    sip_via_t v2[2];
 
     *vv = v->v_next, v->v_next = NULL, pair = NULL;
 
@@ -1144,18 +1216,24 @@ int nua_registration_from_via(nua_registration_t **list,
     if (!nr)
       break;
 
-    /* v2[0] = *v; */
+    v2[0] = *v;
 
     if (pair)
       /* Don't use protocol if we have both udp and tcp */
-      protocol = NULL /*, v2[0].v_next = &v2[1], v2[1] = *pair */;
+      protocol = NULL, v2[0].v_next = &v2[1], v2[1] = *pair;
     else
-      protocol = via->v_protocol /*, v2[0].v_next = NULL */;
+      protocol = via->v_protocol, v2[0].v_next = NULL;
 
-    contact = sip_contact_create_from_via_with_transport(home, v, NULL, protocol);
-    /* v = sip_via_dup(home, v2); */
+    v2[1].v_next = NULL;
 
-    if (!contact) {
+#if 1
+    contact = nua_handle_contact_by_via(nh, home, NULL, v2, protocol, NULL);
+#else
+    contact = sip_contact_create_from_via_with_transport(home, v2, NULL, protocol);
+#endif
+    v = sip_via_dup(home, v2);
+
+    if (!contact || !v) {
       su_free(home, nr);
       break;
     }
@@ -1163,9 +1241,9 @@ int nua_registration_from_via(nua_registration_t **list,
     nr->nr_ready = 1, nr->nr_default = 1, nr->nr_public = public;
     nr->nr_secure = contact->m_url->url_type == url_sips;
     nr->nr_contact = contact;
+    nr->nr_via = v;
     nr->nr_ip4 = host_is_ip4_address(contact->m_url->url_host);
     nr->nr_ip6 = !nr->nr_ip4 && host_is_ip6_reference(contact->m_url->url_host);
-    /* nr->nr_via = v; */
 
     SU_DEBUG_9(("nua_register: Adding contact URL '%s' to list.\n", contact->m_url->url_host));
 
@@ -1469,7 +1547,7 @@ int nua_registration_set_aor(su_home_t *home,
 }
 
 /** Set contact. */
-int nua_registration_set_contact(su_home_t *home,
+int nua_registration_set_contact(nua_handle_t *nh,
 				 nua_registration_t *nr,
 				 sip_contact_t const *application_contact,
 				 int terminating)
@@ -1477,7 +1555,7 @@ int nua_registration_set_contact(su_home_t *home,
   sip_contact_t *m = NULL, *previous;
   url_t *uri;
 
-  if (!home || !nr)
+  if (!nh || !nr)
     return -1;
 
   uri = nr->nr_aor ? nr->nr_aor->a_url : NULL;
@@ -1485,7 +1563,7 @@ int nua_registration_set_contact(su_home_t *home,
   previous = nr->nr_contact;
 
   if (application_contact) {
-    m = sip_contact_dup(home, application_contact);
+    m = sip_contact_dup(nh->nh_home, application_contact);
   }
   else if (terminating && nr->nr_contact) {
     return 0;
@@ -1495,8 +1573,11 @@ int nua_registration_set_contact(su_home_t *home,
     
     nr0 = nua_registration_by_aor(*nr->nr_list, NULL, uri, 1);
 
-    if (nr0)
-      m = sip_contact_dup(home, nr0->nr_contact);
+    if (nr0 && nr0->nr_via) {
+      char const *tport = nr0->nr_via->v_next ? NULL : nr0->nr_via->v_protocol;
+      m = nua_handle_contact_by_via(nh, nh->nh_home,
+				    NULL, nr0->nr_via, tport, NULL);
+    }
   }
 
   if (!m)
@@ -1507,7 +1588,7 @@ int nua_registration_set_contact(su_home_t *home,
   nr->nr_ip6 = !nr->nr_ip4 && host_is_ip6_reference(m->m_url->url_host);
   nr->nr_by_stack = !application_contact;
 
-  msg_header_free(home, (void *)previous);
+  msg_header_free(nh->nh_home, (void *)previous);
 
   return 0;
 }
@@ -1640,6 +1721,116 @@ static int nua_stack_outbound_credentials(nua_handle_t *nh,
   return auc_copy_credentials(auc, nh->nh_auth);
 }
 
+#include <ctype.h>
+#include <sofia-sip/bnf.h>
+
+/** @internal Generate a @Contact header. */
+sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
+					 su_home_t *home,
+					 char const *extra_username,
+					 sip_via_t const *v,
+					 char const *transport,
+					 char const *m_param,
+					 ...)
+{
+  su_strlst_t *l;
+  char const *s;
+  char const *scheme = "sip:", *host, *port, *maddr, *comp;
+  int one = 1;
+  char _transport[16];
+  va_list va;
+  sip_contact_t *m;
+
+  if (!v) return NULL;
+
+  host = v->v_host;
+  if (v->v_received)
+    host = v->v_received;
+  port = sip_via_port(v, &one);
+  maddr = v->v_maddr;
+  comp = v->v_comp;
+
+  if (host == NULL)
+    return NULL;
+
+  if (sip_transport_has_tls(v->v_protocol) ||
+      sip_transport_has_tls(transport)) {
+    scheme = "sips:";
+    if (port && strcmp(port, SIPS_DEFAULT_SERV) == 0)
+      port = NULL;
+    if (port || host_is_ip_address(host))
+      transport = NULL;
+  }
+  else if (port && host_is_ip_address(host) &&
+	   strcmp(port, SIP_DEFAULT_SERV) == 0) {
+    port = NULL;
+  }
+
+  if (transport) {
+    if (strncasecmp(transport, "SIP/2.0/", 8) == 0)
+      transport += 8;
+
+    /* Make transport parameter lowercase */
+    if (strlen(transport) < (sizeof _transport)) {
+      char *s = strcpy(_transport, transport);
+
+      for (s = _transport; *s && *s != ';'; s++)
+	if (isupper(*s))
+	  *s = tolower(*s);
+
+      transport = _transport;
+    }
+  }
+
+  l = su_strlst_create(NULL);
+
+  s = NH_PGET(nh, m_display);
+  if (s) {
+    int quote = s[span_token_lws(s)] != '\0';
+
+    su_strlst_append(l, quote ? "\"" : "");
+    su_strlst_append(l, s);
+    su_strlst_append(l, quote ? "\" " : " ");
+  }
+  su_strlst_append(l, "<");
+  su_strlst_append(l, scheme);
+  s = NH_PGET(nh, m_username);
+  if (s) su_strlst_append(l, s);
+  if (extra_username) su_strlst_append(l, s);
+  if (s || extra_username)
+    su_strlst_append(l, "@");
+  su_strlst_append(l, host);
+  if (port)
+    su_strlst_append(l, ":"), su_strlst_append(l, port);
+  if (transport)
+    su_strlst_append(l, ";transport="), su_strlst_append(l, transport);
+  if (maddr)
+    su_strlst_append(l, ";maddr="), su_strlst_append(l, maddr);
+  if (comp)
+    su_strlst_append(l, ";comp="), su_strlst_append(l, comp);
+  s = NH_PGET(nh, m_params);
+  if (s) 
+    su_strlst_append(l, s[0] == ';' ? "" : ";"), su_strlst_append(l, s);
+  su_strlst_append(l, ">");
+
+  va_start(va, m_param);
+
+  for (s = m_param; s; s = va_arg(va, char *)) {
+    if (strlen(s) == 0)
+      continue;
+    su_strlst_append(l, s[0] == ';' ? "" : ";");
+    su_strlst_append(l, s);
+  }
+  
+  va_end(va);
+
+  m = sip_contact_make(home, su_strlst_join(l, su_strlst_home(l), ""));
+  
+  su_strlst_destroy(l);
+  
+  return m;
+}
+
 /** @internal Return a string describing our features. */
 static char *nua_handle_features(nua_handle_t *nh)
 {
@@ -1649,6 +1840,15 @@ static char *nua_handle_features(nua_handle_t *nh)
 
   if (!l)
     return NULL;
+
+  if (NH_PGET(nh, m_features)) {
+    char const *m_features = NH_PGET(nh, m_features);
+
+    if (m_features[0] != ';')
+      su_strlst_append(l, ";");
+
+    su_strlst_append(l, m_features);
+  }
 
   if (NH_PGET(nh, callee_caps)) {
     sip_allow_t const *allow = NH_PGET(nh, allow);
