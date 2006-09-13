@@ -845,7 +845,8 @@ int main(int argc, char *argv[])
 {
   int retval = 0, quit_on_single_failure = 1;
   int i, o_quiet = 0, o_attach = 0, o_alarm = 1;
-  int o_events_a = 0, o_events_b = 0, o_events_c = 0, o_iproxy = 1, o_inat = 1;
+  int o_events_init = 0, o_events_a = 0, o_events_b = 0, o_events_c = 0;
+  int o_iproxy = 1, o_inat = 1;
   int o_inat_symmetric = 0, o_inat_logging = 0, o_expensive = 0;
   url_t const *o_proxy = NULL;
   int level = 0;
@@ -888,7 +889,10 @@ int main(int argc, char *argv[])
       su_log_soft_set_level(tport_log, level);
     }
     else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--events") == 0) {
-      o_events_a = o_events_b = o_events_c = 1;
+      o_events_init = o_events_a = o_events_b = o_events_c = 1;
+    }
+    else if (strcmp(argv[i], "-I") == 0) {
+      o_events_init = 1;
     }
     else if (strcmp(argv[i], "-A") == 0) {
       o_events_a = 1;
@@ -981,6 +985,8 @@ int main(int argc, char *argv[])
     if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
   } while(0)
 
+  ctx->a.printer = o_events_init ? print_event : NULL;
+
   retval |= test_nua_api_errors(ctx); SINGLE_FAILURE_CHECK();
   retval |= test_tag_filter(); SINGLE_FAILURE_CHECK();
   retval |= test_nua_params(ctx); SINGLE_FAILURE_CHECK();
@@ -993,8 +999,7 @@ int main(int argc, char *argv[])
   ctx->expensive = o_expensive;
 
   if (retval == 0) {
-    if (o_events_a)
-      ctx->a.printer = print_event;
+    ctx->a.printer = o_events_a ? print_event : NULL;
     if (o_events_b)
       ctx->b.printer = print_event;
     if (o_events_c)
