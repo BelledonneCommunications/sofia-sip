@@ -1014,6 +1014,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * @status: SIP status of options answer (see SIP RFC)
    * @phrase: Reason for options answer 
    *
+   * XXX: not OPTIONS response payload is not delivered to the application
    */
   signals[NGSIG_OPTIONS_ANSWERED] =
    g_signal_new("options-answered",
@@ -1291,12 +1292,14 @@ static void priv_oper_handle_auth (NuaGlib *self, NuaGlibOp *op, sip_t const *si
 NuaGlib* 
 nua_glib_op_owner(NuaGlibOp *op)
 {
+  g_assert(op);
   return op->op_parent;
 }
 
 sip_method_t
 nua_glib_op_method_type(NuaGlibOp *op)
 {
+  g_assert(op);
   return op->op_method;
 }
 /**
@@ -1313,6 +1316,7 @@ nua_glib_op_method_type(NuaGlibOp *op)
 void
 nua_glib_op_set_data(NuaGlibOp *op, gpointer data)
 {
+  g_assert(op);
   op->data = data;
 }
 
@@ -1326,6 +1330,7 @@ nua_glib_op_set_data(NuaGlibOp *op, gpointer data)
 gpointer
 nua_glib_op_get_data(NuaGlibOp *op)
 {
+  g_assert(op);
   return op->data ;
 }
 
@@ -1340,6 +1345,7 @@ nua_glib_op_get_data(NuaGlibOp *op)
 const gchar *
 nua_glib_op_get_identity(NuaGlibOp *op)
 {
+  g_assert(op);
   return op->op_ident;
 }
 
@@ -1489,6 +1495,8 @@ nua_glib_redirect(NuaGlib *self,
                     const char *contact)
 
 {
+  g_assert(nua_glib_op_check(self, op));
+
   nua_respond(op->op_handle, SIP_302_MOVED_TEMPORARILY, 
               SIPTAG_CONTACT_STR(contact),
               TAG_END());
@@ -1517,8 +1525,7 @@ void nua_glib_answer(NuaGlib *self,
    *  - see also: sof_i_state() and nua_glib_invite()
    */ 
   
-  g_assert(self);
-  g_assert(op);
+  g_assert(self); g_assert(op);
   g_assert(op->op_method == sip_method_invite);
 
   if (status >= 200 && status < 300)
@@ -1684,6 +1691,7 @@ sof_i_bye(nua_t *nua, NuaGlib *self,
  */
 void nua_glib_cancel(NuaGlib *self, NuaGlibOp *op)
 {
+  g_assert(nua_glib_op_check(self, op));
   nua_cancel(op->op_handle, TAG_END());
 }
 
@@ -1710,7 +1718,8 @@ void sof_r_cancel(int status, char const *phrase,
 /**
  * nua_glib_options:
  * @destination: URI to set options for
- * make an options request to the destination
+ * Makes a SIP OPTIONS request to the destination to query
+ * capabilities. The results are delivered with the 'options-answered' signal.
  *
  * Return value: operation created for request
  */
@@ -1831,6 +1840,7 @@ void
 nua_glib_info (NuaGlib *self, NuaGlibOp *op, const char *content_type,
                  const char *message)
 {
+  g_assert(nua_glib_op_check(self, op));
   nua_info(op->op_handle,
            SIPTAG_CONTENT_TYPE_STR(content_type),
            SIPTAG_PAYLOAD_STR(message),
@@ -1904,11 +1914,11 @@ sof_i_info(nua_t *nua, NuaGlib *self,
  */
 void nua_glib_refer (NuaGlib *self, NuaGlibOp *op, const char* destination)
 {
-  if (op) {
-    nua_refer(op->op_handle,
-	      SIPTAG_REFER_TO_STR(destination),
-	      TAG_END());
-  }
+  g_assert(nua_glib_op_check(self, op));
+  
+  nua_refer(op->op_handle,
+	    SIPTAG_REFER_TO_STR(destination),
+	    TAG_END());
 }
 
 
@@ -1976,7 +1986,7 @@ sof_i_refer (nua_t *nua, NuaGlib *self,
 void 
 nua_glib_follow_refer(NuaGlib *self, NuaGlibOp *op)
 {
-
+  g_assert(nua_glib_op_check(self, op));
 }
 
 
@@ -1990,6 +2000,8 @@ nua_glib_follow_refer(NuaGlib *self, NuaGlibOp *op)
 void 
 nua_glib_hold(NuaGlib *self, NuaGlibOp *op, int hold)
 {
+  g_assert(nua_glib_op_check(self, op));
+
   nua_invite(op->op_handle, NUTAG_HOLD(hold), TAG_END());
       
   op->op_callstate = opc_sent_hold;
@@ -2036,7 +2048,7 @@ nua_glib_subscribe(NuaGlib *self, const char *uri, gboolean eventlist)
 /**
  * nua_glib_watch:
  * @event string descriptor of event to watch for
- * TODO: needs some funky signal registering, i *think*
+ * XXX: needs some funky signal registering, i *think*
  *
  * Subscribe to watch
  * Returns: Operation representing this watch, NULL if failure
@@ -2089,6 +2101,8 @@ void
 nua_glib_notify(NuaGlib *self, NuaGlibOp* op)
 {
   SU_DEBUG_1(("%s: not follow refer, NOTIFY(503)\n", self->priv->name));
+
+  g_assert(nua_glib_op_check(self, op));
 
   nua_cancel(op->op_handle, TAG_END());
   nua_glib_op_destroy(self, op);
