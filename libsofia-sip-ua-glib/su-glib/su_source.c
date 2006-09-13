@@ -25,7 +25,7 @@
 /**
  * @file su_source.c
  * @brief Wrapper for glib GSource.
- *  
+ * *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  * 
  * @date Created: Thu Mar  4 15:15:15 2004 ppessi
