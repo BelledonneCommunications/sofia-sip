@@ -15,6 +15,12 @@ the Sofia-SIP event loop.
 
 @LICENSE LGPL
 
+@section su_glib_contents Contents of su-glib Module
+
+The su-glib module contains the public header files as follows:
+- <su_glib.h>    the public API of the module
+- <su_source.h>  deprecated API (1.12.1 and earlier)
+
 @section su_glib_examples Examples of use
 
 Below is a simple example of how to use su-glib:

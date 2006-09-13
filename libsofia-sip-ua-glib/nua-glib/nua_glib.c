@@ -162,9 +162,9 @@ static void sof_i_prack(nua_t *nua, NuaGlib *self,
 		 tagi_t tags[]);
 
 static void sof_r_bye(int status, char const *phrase, 
-	       nua_t *nua, NuaGlib *self,
-	       nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-	       tagi_t tags[]);
+		      nua_t *nua, NuaGlib *self,
+		      nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
+		      tagi_t tags[]);
 
 static void sof_i_bye(nua_t *nua, NuaGlib *self,
 		 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
@@ -173,6 +173,11 @@ static void sof_i_bye(nua_t *nua, NuaGlib *self,
 static void sof_i_cancel(nua_t *nua, NuaGlib *self,
 		    nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
 		    tagi_t tags[]);
+
+static void sof_r_cancel(int status, char const *phrase, 
+			 nua_t *nua, NuaGlib *self,
+			 nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
+			 tagi_t tags[]);
 
 static void sof_r_message(int status, char const *phrase,
 		   nua_t *nua, NuaGlib *self,
@@ -887,6 +892,22 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
     G_TYPE_NONE, 3, G_TYPE_POINTER, G_TYPE_INT, G_TYPE_STRING);
 
   /**
+   * NuaGlib::cancel-answered:
+   * @nua_glib: the object that received the signal
+   * @op: pointer to the operation representing the existing call
+   * @status: SIP status of CANCEL answer (see SIP RFC)
+   * @phrase: Reason for CANCEL answer 
+   *
+   */
+  signals[NGSIG_CANCEL_ANSWERED] =
+   g_signal_new("cancel-answered",
+    G_OBJECT_CLASS_TYPE (nua_glib_class),
+    G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
+    0, NULL, NULL,
+    nua_glib_marshal_VOID__POINTER_INT_STRING,
+    G_TYPE_NONE, 3, G_TYPE_POINTER, G_TYPE_INT, G_TYPE_STRING);
+
+  /**
    * NuaGlib::message-answered:
    * @nua_glib: the object that received the signal
    * @op: pointer to the operation representing the existing call
@@ -1113,6 +1134,10 @@ sof_callback(nua_event_t event,
 
   case nua_i_bye:
     sof_i_bye(nua, self, nh, op, sip, tags);
+    return;
+
+  case nua_r_cancel:
+    sof_r_cancel(status, phrase, nua, self, nh, op, sip, tags);
     return;
 
   case nua_r_message:
@@ -1650,8 +1675,11 @@ sof_i_bye(nua_t *nua, NuaGlib *self,
  * nua_glib_cancel:
  * @op the call to cancel
  *
- * Cancel a call
- * A cancel-received signal will be emitted with the response to the cancel 
+ * Cancel a request.
+ * A 'cancel-answered' signal will be emitted with the response to the
+ * cancel.
+ * 
+ * @see nua_cancel() (libsofia-sip-ua/nua) 
  */
 void nua_glib_cancel(NuaGlib *self, NuaGlibOp *op)
 {
@@ -1666,6 +1694,17 @@ void sof_i_cancel(nua_t *nua, NuaGlib *self,
   
   g_signal_emit(self, signals[NGSIG_INCOMING_CANCEL], 0, op);
 }
+
+void sof_r_cancel(int status, char const *phrase, 
+		  nua_t *nua, NuaGlib *self,
+		  nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
+		  tagi_t tags[])
+{
+  g_assert(op); g_assert(op->op_handle == nh);
+
+  g_signal_emit(self, signals[NGSIG_CANCEL_ANSWERED], 0, op, status, phrase);
+}
+
 
 /**
  * nua_glib_options:
