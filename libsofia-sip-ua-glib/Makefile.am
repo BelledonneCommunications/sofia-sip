@@ -52,6 +52,6 @@ doxygen: built-sources
           && ${DOXYGEN} \
           && popd > /dev/null ; \
 	done
-#	cd ${srcdir}/docs/html && ../hide_emails.sh
+	cd ${srcdir}/docs/html && ../../${top_srcdir}/libsofia-sip-ua/docs/hide_emails.sh
 
 .PHONY: built-sources built-sources-am doxygen 
