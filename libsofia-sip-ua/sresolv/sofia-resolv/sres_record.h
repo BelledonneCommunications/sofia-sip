@@ -60,8 +60,8 @@ typedef struct sres_common
   uint16_t          r_parsed;	/**< Nonzero if parsed */
 } sres_common_t;
 
-/** Possible values for r_status (RCODE) */
-enum {
+/** Possible values for r_status (RCODE) in #sres_common */
+enum sres_status {
   SRES_OK = 0,			/**< No error condition. */
   SRES_FORMAT_ERR = 1,		/**< Server could not interpret query. */
   SRES_SERVER_ERR = 2,		/**< Server error. */
@@ -107,7 +107,7 @@ typedef struct sres_a_record
  */
 typedef struct
 {
-  uint8_t u6_addr[16];		/**< 16 byte array */
+  uint8_t u6_addr[16];		/**< Array of 16 octets. */
 } sres_in6_t;
 
 /** Aggregated address record for IPv6 (@RFC2874, deprecated). */
@@ -186,60 +186,61 @@ union sres_record
   sres_naptr_record_t sr_naptr[1];	/**< NAPTR record */
 };
 
-/** Record classes */
-enum {
-  sres_class_in = 1,
-  sres_class_any = 255
+enum sres_class {
+  sres_class_in = 1,		        /**< Internet (@b IN) */
+  sres_class_any = 255		        /**< Any class */
 };
 
-enum {
-  sres_type_a = 1,		/**< IPv4 address. */
-  sres_type_ns = 2,		/**< Authoritative server. */
-  sres_type_mf = 4,		/**< Mail forwarder. */
-  sres_type_cname = 5,		/**< Canonical name. */
-  sres_type_soa = 6,		/**< Start of authority zone. */
-  sres_type_mb = 7,		/**< Mailbox domain name. */
-  sres_type_mg = 8,		/**< Mail group member. */
-  sres_type_mr = 9,		/**< Mail rename name. */
-  sres_type_null = 10,		/**< Null resource record. */
-  sres_type_wks = 11,		/**< Well known service. */
-  sres_type_ptr = 12,		/**< Domain name pointer. */
-  sres_type_hinfo = 13,		/**< Host information. */
-  sres_type_minfo = 14,		/**< Mailbox information. */
-  sres_type_mx = 15,		/**< Mail routing information. */
-  sres_type_txt = 16,		/**< Text strings. */
-  sres_type_rp = 17,		/**< Responsible person. */
-  sres_type_afsdb = 18,		/**< AFS cell database. */
-  sres_type_x25 = 19,		/**< X_25 calling address. */
-  sres_type_isdn = 20,		/**< ISDN calling address. */
-  sres_type_rt = 21,		/**< Router. */
-  sres_type_nsap = 22,		/**< NSAP address. */
-  sres_type_nsap_ptr = 23,	/**< Reverse NSAP lookup. */
-  sres_type_sig = 24,		/**< Security signature. */
-  sres_type_key = 25,		/**< Security key. */
-  sres_type_px = 26,		/**< X.400 mail mapping. */
-  sres_type_gpos = 27,		/**< ICBM record. */
-  sres_type_aaaa = 28,		/**< IPv6 Address. */
-  sres_type_loc = 29,		/**< Location Information. */
-  sres_type_nxt = 30,		/**< Next domain. */
-  sres_type_eid = 31,		/**< Endpoint identifier. */
-  sres_type_nimloc = 32,	/**< Nimrod Locator. */
-  sres_type_srv = 33,		/**< Server Selection. */
-  sres_type_atma = 34,		/**< ATM Address */
-  sres_type_naptr = 35,		/**< Naming Authority PoinTeR (@RFC2915) */
-  sres_type_kx = 36,		/**< Key Exchange */
-  sres_type_cert = 37,		/**< Certification record */
-  sres_type_a6 = 38,		/**< IPv6 address (deprecates AAAA) */
-  sres_type_dname = 39,		/**< Non-terminal DNAME (for IPv6) */
-  sres_type_sink = 40,		/**< Kitchen sink (experimental) */
-  sres_type_opt = 41,		/**< EDNS 0 option (@RFC2671) */
+enum sres_qtypes {
+  sres_type_a = 1,	    /**< IPv4 address (#sres_a_record). */
+  sres_type_ns = 2,	    /**< Authoritative server. */
+  sres_type_mf = 4,	    /**< Mail forwarder. */
+  sres_type_cname = 5,	    /**< Canonical name (#sres_cname_record). */
+  sres_type_soa = 6,	    /**< Start of authority zone (#sres_soa_record). */
+  sres_type_mb = 7,	    /**< Mailbox domain name. */
+  sres_type_mg = 8,	    /**< Mail group member. */
+  sres_type_mr = 9,	    /**< Mail rename name. */
+  sres_type_null = 10,	    /**< Null resource record. */
+  sres_type_wks = 11,	    /**< Well known service. */
+  sres_type_ptr = 12,	    /**< Domain name pointer (#sres_ptr_record). */
+  sres_type_hinfo = 13,	    /**< Host information. */
+  sres_type_minfo = 14,	    /**< Mailbox information. */
+  sres_type_mx = 15,	    /**< Mail routing information. */
+  sres_type_txt = 16,	    /**< Text strings. */
+  sres_type_rp = 17,	    /**< Responsible person. */
+  sres_type_afsdb = 18,	    /**< AFS cell database. */
+  sres_type_x25 = 19,	    /**< X_25 calling address. */
+  sres_type_isdn = 20,	    /**< ISDN calling address. */
+  sres_type_rt = 21,	    /**< Router. */
+  sres_type_nsap = 22,	    /**< NSAP address. */
+  sres_type_nsap_ptr = 23,  /**< Reverse NSAP lookup. */
+  sres_type_sig = 24,	    /**< Security signature. */
+  sres_type_key = 25,	    /**< Security key. */
+  sres_type_px = 26,	    /**< X.400 mail mapping. */
+  sres_type_gpos = 27,	    /**< ICBM record. */
+  sres_type_aaaa = 28,	    /**< IPv6 Address (#sres_aaaa_record). */
+  sres_type_loc = 29,	    /**< Location Information. */
+  sres_type_nxt = 30,	    /**< Next domain. */
+  sres_type_eid = 31,	    /**< Endpoint identifier. */
+  sres_type_nimloc = 32,    /**< Nimrod Locator. */
+  sres_type_srv = 33,	    /**< Server Selection (@RFC2782, 
+			         #sres_srv_record). */
+  sres_type_atma = 34,	    /**< ATM Address */
+  sres_type_naptr = 35,	    /**< Naming Authority PoinTeR (@RFC2915, 
+                                 #sres_naptr_record) */
+  sres_type_kx = 36,	    /**< Key Exchange */
+  sres_type_cert = 37,	    /**< Certification record */
+  sres_type_a6 = 38,	    /**< IPv6 address (deprecates AAAA) */
+  sres_type_dname = 39,	    /**< Non-terminal DNAME (for IPv6) */
+  sres_type_sink = 40,	    /**< Kitchen sink (experimental) */
+  sres_type_opt = 41,	    /**< EDNS 0 option (@RFC2671) */
 
-  sres_qtype_tsig = 250,	/**< Transaction signature. */
-  sres_qtype_ixfr = 251,	/**< Incremental zone transfer. */
-  sres_qtype_axfr = 252,	/**< Transfer zone of authority. */
-  sres_qtype_mailb = 253,	/**< Transfer mailbox records. */
-  sres_qtype_maila = 254,	/**< Transfer mail agent records. */
-  sres_qtype_any = 255		/**< Wildcard match. */
+  sres_qtype_tsig = 250,    /**< Transaction signature. */
+  sres_qtype_ixfr = 251,    /**< Incremental zone transfer. */
+  sres_qtype_axfr = 252,    /**< Transfer zone of authority. */
+  sres_qtype_mailb = 253,   /**< Transfer mailbox records. */
+  sres_qtype_maila = 254,   /**< Transfer mail agent records. */
+  sres_qtype_any = 255	    /**< Wildcard match. */
 };
 
 /** Convert type to its name. */

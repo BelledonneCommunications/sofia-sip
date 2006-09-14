@@ -799,12 +799,40 @@ sres_resolver_get_async(sres_resolver_t const *res,
 
 /**Send a DNS query.
  *
- * Sends a DNS query with specified @a type and @a domain to the DNS server. 
- * The sres resolver takes care of retransmitting the query if
- * sres_resolver_timer() is called in regular intervals. It generates an
- * error record with nonzero status if no response is received.
+ * Sends a DNS query with specified @a type and @a domain to the DNS server.
+ * When an answer is received, the @a callback function is called with
+ * @a context and returned records as arguments.
  *
- * @sa sres_search(), sres_blocking_query(), sres_query_make()
+ * The sres resolver takes care of retransmitting the query if a root object
+ * is associate with the resolver or if sres_resolver_timer() is called in
+ * regular intervals. It generates an error record with nonzero status if no
+ * response is received.
+ *
+ * @param res pointer to resolver
+ * @param callback function called when query is answered or times out
+ * @param context pointer given as an extra argument to @a callback function
+ * @param type record type to query (see #sres_qtypes)
+ * @param domain name to query
+ *
+ * Query types also indicate the record type of the result.
+ * Any record can be queried with #sres_qtype_any.
+ * Well-known query types understood and decoded by @b sres include
+ * #sres_type_a, 
+ * #sres_type_aaaa,
+ * #sres_type_cname,
+ * #sres_type_ptr 
+ * #sres_type_soa, 
+ * #sres_type_aaaa, 
+ * #sres_type_srv, and
+ * #sres_type_naptr.
+ *
+ * Deprecated query type sres_type_a6 is also decoded.
+ *
+ * @note The domain name is not concatenated with the domains from seach
+ * path or with the local domain Use sres_search() in order to try domains
+ * in search path.
+ *
+ * @sa sres_search(), sres_blocking_query(), sres_cached_answers()
  *
  * @ERRORS
  * @ERROR EFAULT @a res or @a domain point outside the address space
@@ -850,11 +878,14 @@ sres_query(sres_resolver_t *res,
  *
  * Sends DNS queries with specified @a type and @a name to the DNS server. 
  * If the @a name does not contain enought dots, the search domains are
- * appended to the name and resulting domain name are also queried.
- *
- * The sres resolver takes care of retransmitting the queries if
- * sres_resolver_timer() is called in regular intervals. It generates an
- * error record with nonzero status if no response is received.
+ * appended to the name and resulting domain name are also queried. When
+ * answer to all the search domains is received, the @a callback function
+ * is called with @a context and combined records from answers as arguments.
+ * 
+ * The sres resolver takes care of retransmitting the queries if a root
+ * object is associate with the resolver or if sres_resolver_timer() is
+ * called in regular intervals. It generates an error record with nonzero
+ * status if no response is received.
  *
  * @param res pointer to resolver object
  * @param callback pointer to completion function
@@ -867,7 +898,7 @@ sres_query(sres_resolver_t *res,
  * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
  * @ERROR ENOMEM memory exhausted
  *
- * @sa sres_query(), sres_blocking_search()
+ * @sa sres_query(), sres_blocking_search(), sres_search_cached_answers().
  */
 sres_query_t *
 sres_search(sres_resolver_t *res,
@@ -961,9 +992,20 @@ sres_search(sres_resolver_t *res,
  *
  * Send a query to DNS server with specified @a type and domain name formed
  * from the socket address @a addr. The sres resolver takes care of
- * retransmitting the query if sres_resolver_timer() is called in regular
- * intervals. It generates an error record with nonzero status if no
- * response is received.
+ * retransmitting the query if a root object is associate with the resolver or
+ * if sres_resolver_timer() is called in regular intervals. It generates an
+ * error record with nonzero status if no response is received.
+ *
+ * @param res pointer to resolver
+ * @param callback function called when query is answered or times out
+ * @param context pointer given as an extra argument to @a callback function
+ * @param type record type to query (or sres_qtype_any for any record)
+ * @param addr socket address structure
+ * 
+ * The @a type should be #sres_type_ptr. The @a addr should contain either
+ * IPv4 (AF_INET) or IPv6 (AF_INET6) address.
+ *
+ * If the "options"
  */
 sres_query_t *
 sres_query_sockaddr(sres_resolver_t *res,
@@ -986,13 +1028,7 @@ sres_query_sockaddr(sres_resolver_t *res,
 
 /** Make a DNS query.
  *
- * Sends a DNS query with specified @a type and @a domain to the DNS server. 
- * The sres resolver takes care of retransmitting the query if
- * sres_resolver_timer() is called in regular intervals. It generates an
- * error record with nonzero status if no response is received.
- *
- * This function just makes sure that we have the @a socket is valid,
- * otherwise it behaves exactly like sres_query().
+ * @deprecated Use sres_query() instead.
  */
 sres_query_t *
 sres_query_make(sres_resolver_t *res,
@@ -1007,14 +1043,7 @@ sres_query_make(sres_resolver_t *res,
 
 /** Make a reverse DNS query.
  *
- * Send a query to DNS server with specified @a type and domain name formed
- * from the socket address @a addr. The sres resolver takes care of
- * retransmitting the query if sres_resolver_timer() is called in regular
- * intervals. It generates an error record with nonzero status if no
- * response is received.
- *
- * This function just makes sure that we have the @a socket is valid,
- * otherwise it behaves exactly like sres_query_sockaddr().
+ * @deprecated Use sres_query_sockaddr() instead.
  */
 sres_query_t *
 sres_query_make_sockaddr(sres_resolver_t *res,
