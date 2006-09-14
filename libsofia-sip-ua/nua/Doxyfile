@@ -23,3 +23,5 @@ GENERATE_TAGFILE     = ../docs/nua.doxytags
 
 ALIASES             += CFILE="@internal @file" IFILE="@internal @file"
 VERBATIM_HEADERS     = NO
+
+@INCLUDE             = ../sip/sip.doxyaliases

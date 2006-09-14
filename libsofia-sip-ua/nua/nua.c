@@ -22,14 +22,13 @@
  *
  */
 
-/**@CFILE nua.c Sofia-SIP User Agent Library API Implementation.
+/**@file nua.c High-Level User Agent Library - "nua" Implementation.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  * @author Pasi Rinne-Rahkola
  *
  * @date Created: Wed Feb 14 18:32:58 2001 ppessi
- *
  */
 
 #include "config.h"
