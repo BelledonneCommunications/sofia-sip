@@ -1,21 +1,18 @@
 /* -*- c -*- */
 
-/**@mainpage Sofia Transaction API for SIP - "nta"
+/**@MODULEPAGE "nta" - SIP Transactions Module
  *
  * @section nta_meta Module Meta Information
  *
  * Sofia SIP Transaction API (nta) provides simple interface to the SIP
  * transaction, transport and message handling. The @b nta interface is
- * intended for both network and user elements. The public interface for 
- * @b nta is mostly defined in <nta.h>, but tag parameters are defined in
- * <nta_tag.h>.
+ * intended for both network and user elements. The public interface for @b
+ * nta is mostly defined in <sofia-sip/nta.h>, but tag parameters are
+ * defined in <sofia-sip/nta_tag.h>.
  *
- * Functions and datatypes providing compatibility for old sources are in
- * <nta_compat.h>
- * 
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  *
@@ -94,8 +91,8 @@
  * Other, ordinary legs can be used to match incoming requests with existing
  * dialogs, calls or transaction contexts, or to provide outgoing requests
  * with consistent headers. When a call leg is created, it is provided with
- * @b From and @b To headers, and optionally with other headers like @b
- * Call-ID, @b Route, or @b CSeq.
+ * @From and @To headers, and optionally with other headers like
+ * @CallID, @Route, or @CSeq.
  * 
  * A new call leg can be created as follows:
  * @code
@@ -107,9 +104,9 @@
  *                            TAG_END());
  * @endcode
  *
- * @note In the example above, the @b From and @b To are reversed. This
- * happens if the headers are taken from an incoming request; the @b From
- * and @b To headers change direction when an outgoing request is initiated.
+ * @note In the example above, the @From and @To are reversed. This
+ * happens if the headers are taken from an incoming request; the @From
+ * and @To headers change direction when an outgoing request is initiated.
  *
  * @note An existing leg can be used in any direction, however.  If the leg
  * was created for an incoming INVITE transaction, it is also possible to
@@ -117,10 +114,17 @@
  * 
  * @subsection nta_leg_tag Tagging the Call Leg
  * 
- * All the SIP UAS elements (however, not proxy servers) are required to tag
- * the @b To header in their final responses. The function nta_leg_tag()
- * adds a tag to the leg's local address. Local address is used as the @b To
- * header in the reply messages, and as the @b From header in the requests.
+ * All the SIP UAS elements are required to tag the @To header in their
+ * final responses. The function nta_leg_tag() adds a tag to the leg's local
+ * address. Local address is used as the @To header in the reply messages,
+ * and as the @From header in the requests. The function nta_incoming_tag()
+ * adds a tag to a incoming transaction. They are usually used in together,
+ * using the tag from initial response to the dialog, too:
+ * e.g.,
+ * @code
+ *   if (!nta_leg_tag(leg, nta_incoming_tag(irq, NULL)))
+ *    nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
+ * @endcode
  * 
  * @subsection nta_incoming_t Incoming Transactions
  * 
@@ -184,7 +188,7 @@
  * @endcode
  * 
  * The default reply message will contain the status line with default
- * phrase, then Via, To, From, Call-ID, CSeq, and Content-Length headers.
+ * phrase, then @Via, @To, @From, @CallID, @CSeq, and @ContentLength headers.
  * If a more complex response message is required, the application should
  * respond using the function nta_incoming_treply(): 
  * @code
@@ -210,18 +214,18 @@
  * provides reliable provisional responses, provisional responses that are
  * retransmitted until a special acknowledgement request, PRACK, is
  * received. In addition the PRACK method, the extension defines two
- * headers, @b RSeq and @b RAck, that are used to identify different
+ * headers, @RSeq and @RAck, that are used to identify different
  * response messages. PRACK method is usable on INVITE requests only.
  * 
  * Using reliable responses is negotiated using the "100rel" option tag. The
- * UAC (party sending the INVITE) can include the option tag to the @b
- * Supported or @b Required header. In the first case, the UAC just
+ * UAC (party sending the INVITE) can include the option tag to the
+ * @Supported or @Require header. In the first case, the UAC just
  * announces support for reliable responses, in the second case, the UAC
  * requires that the UAS (party responding to the call) always sends
  * provisional responses in reliable manner.
  *
  * When reliable responses are enabled with NTATAG_REL100() tag, the @b nta
- * engine automatically inserts the "100rel" option tag to the @b Supported
+ * engine automatically inserts the "100rel" option tag to the @Supported
  * header in the INVITE requests.
  *
  * @subsection nta_reliable_t Responding Reliably
@@ -241,9 +245,9 @@
  *
  * The @b nta takes care of assigning a serial number to each reliable
  * response and resending them if no PRACK request is received. It also
- * automatically adds the 100rel option tag to the @b Require header.
+ * automatically adds the 100rel option tag to the @Require header.
  *
- * Also, if a request with 100rel in Require header is responded with usual
+ * Also, if a request with 100rel in @Require header is responded with usual
  * nta_incoming_treply()/nta_incoming_mreply() functions, the @b nta creates
  * a reliable response object for each provisional response in behalf of
  * application. As the application can not provide a PRACK callback function
@@ -251,7 +255,7 @@
  *
  * @subsection early_dialog UAC Receives a Reliable Response
  *
- * When a UAC receives a provisional response with a @b RSeq header, it is
+ * When a UAC receives a provisional response with a @RSeq header, it is
  * required to acknowledge it. In order to do that, it must establish an @e
  * early @e dialog with the UAS. In another view, a reliable response is
  * used to establish the early dialog. UAC establishes a leg object for the
@@ -332,7 +336,7 @@
  * used to select which incoming messages belong to this leg.
  *
  * The initial sequence number can be supplied with SIPTAG_CSEQ() (taking a
- * CSeq structure as parameter).
+ * @CSeq structure as parameter).
  *
  * The additional parameters (after @a to) are included in outgoing messages
  * using this leg. Currently, only @c SIPTAG_ROUTE() is supported.
@@ -387,7 +391,7 @@
  *                             TAG_END());
  * @endcode
  * 
- * @note The ACK transaction should be sent to the Contact specified in the 
+ * @note The ACK transaction should be sent to the @Contact specified in the 
  * 2xx reply.  
  * 
  * <a name="nta_register_f"></a>

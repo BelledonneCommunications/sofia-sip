@@ -46,7 +46,7 @@
  * The list of supported features is compared with the list of features
  * required by the UAC. If some features are not listed as supported, return
  * 420. If @a irq is non-NULL, the 420 response message is sent to the
- * client along with list of unsupported features in the @b Unsupported
+ * client along with list of unsupported features in the @Unsupported
  * header, too.
  *
  * @param   irq incoming transaction object (may be NULL).
@@ -187,18 +187,18 @@ static char const application_sdp[] = "application/sdp";
 
 /** Check that we understand session content in the request.
  *
- * If there is no Content-Disposition header or the Content-Disposition
+ * If there is no @ContentDisposition header or the @ContentDisposition
  * header indicated "session", the message body and content-type is compared
  * with the acceptable session content-types listed in @a session_accepts.
  * (typically, @c "application/sdp"). If no match is found, a 415 is
  * returned. If @a irq is non-NULL, the 415 response message is sent to the
  * client, too.
  *
- * If the Content-Disposition header indicates something else but "session",
+ * If the @ContentDisposition header indicates something else but "session",
  * and it does not contain "handling=optional" parameter, a 415 response is
  * returned, too.
  *
- * Also, the Content-Encoding header is checked. If it is not empty
+ * Also, the @ContentEncoding header is checked. If it is not empty
  * (indicating no content-encoding), a 415 response is returned, too.
  *
  * @param irq 	incoming (server) transaction object (may be NULL).
@@ -343,11 +343,11 @@ int nta_check_accept(nta_incoming_t *irq,
   return 406;
 }
 
-/**Check Session-Expires header.
+/**Check @SessionExpires header.
  *
- * If the proposed session-expiration time is smaller than Min-SE or our
+ * If the proposed session-expiration time is smaller than @MinSE or our
  * minimal session expiration time, respond with 422 containing our minimal
- * session expiration time in Min-SE header.
+ * session expiration time in @MinSE header.
  *
  * @param irq 	incoming transaction object (may be NULL).
  * @param sip 	contents of the SIP message

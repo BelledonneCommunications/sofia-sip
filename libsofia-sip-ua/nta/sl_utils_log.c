@@ -49,7 +49,7 @@
  * The function sl_message_log() logs shorthand information identifying
  * the SIP message to the given @a log at level @a level.  The shorthand
  * information include the method and URL by default.  If @a details is
- * nonzero, topmost @b Via, @b CSeq, @b To @b and @From is included, too.
+ * nonzero, topmost @Via, @CSeq, @To @b and @@From is included, too.
  *
  * @param log      output log (if @c NULL, su_default_log() is used).
  * @param level    log level
@@ -113,7 +113,7 @@ void sl_sip_log(su_log_t *log,
     sl_to_log(log, level, "\tTo: %s\n", sip->sip_to);
 }
 
-/**Log a @b From header. 
+/**Log a @From header. 
  *
  * The function sl_from_log() logs the contents of @a from header to
  * the output @a log.  The @a fmt specifies the output format, where %s
@@ -143,7 +143,7 @@ void sl_from_log(su_log_t *log, int level,
   su_llog(log, level, fmt, s);
 }
 
-/**Log a @b To header.
+/**Log a @To header.
  *
  * The function sl_to_log() logs the contents of @a to header to the
  * log @a log with given @a level.  The @a fmt specifies the output format,
@@ -160,7 +160,7 @@ void sl_to_log(su_log_t *log, int level, char const *fmt, sip_to_t const *to)
   sl_from_log(log, level, fmt, (sip_from_t const *)to);
 }
 
-/**Log a @b Contact header. 
+/**Log a @Contact header. 
  *
  * The function sl_contact_log() logs the contents of @a contact header
  * to the log @a log with given @a level.  The @a fmt specifies the output
@@ -178,7 +178,7 @@ void sl_contact_log(su_log_t *log, int level,
   sl_from_log(log, level, fmt, (sip_from_t const *)m);
 }
 
-/**Log an @b Allow header(s). 
+/**Log an @Allow header(s). 
  *
  * The function sl_allow_log() logs the contents of @a allow header to
  * the log @a log with given @a level.  The @a fmt specifies the output
@@ -214,7 +214,7 @@ void sl_allow_log(su_log_t *log, int level,
 }
 
 
-/**Log a @b Via header. 
+/**Log a @Via header. 
  *
  * The function sl_via_log() logs the contents of @a via header to
  * the @a log.  The @a fmt specifies the output format, where %s

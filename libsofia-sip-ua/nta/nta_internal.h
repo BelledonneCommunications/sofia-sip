@@ -110,14 +110,14 @@ struct nta_agent_s
   msg_mclass_t         *sa_mclass;
 
   sip_contact_t        *sa_contact;
-  sip_via_t            *sa_vias;   /**< Via headers for all transports */
-  sip_via_t            *sa_public_vias;   /**< Vias for public transports */
+  sip_via_t            *sa_vias;   /**< @Via headers for all transports */
+  sip_via_t            *sa_public_vias;   /**< @Vias for public transports */
   sip_contact_t        *sa_aliases;/**< List of aliases for agent */
 
   uint64_t              sa_branch; /**< Counter for generating branch parameter */
   uint64_t              sa_tags;   /**< Counter for generating tag parameters */
 
-  char const           *sa_2543_tag; /**< Fixed tag added to To when responding */
+  char const           *sa_2543_tag; /**< Fixed tag added to @To when responding */
 
 #if HAVE_SOFIA_SRESOLV
   sres_resolver_t      *sa_resolver; /**< DNS resolver */
@@ -168,11 +168,11 @@ struct nta_agent_s
 
   /** NTA is used to test packet drop */
   unsigned              sa_drop_prob : 10;
-  /** NTA is acting as an User agent server */
+  /** NTA is acting as an User Agent server */
   unsigned              sa_is_a_uas : 1;
   /** Process requests outside dialog statelessly */
   unsigned              sa_is_stateless : 1;
-  /** Let application provide Via headers */
+  /** Let application provide @Via headers */
   unsigned              sa_user_via:1;
   /** Respond with "100 Trying" if application has not responded. */
   unsigned              sa_extra_100:1;
@@ -193,7 +193,7 @@ struct nta_agent_s
   unsigned              sa_tag_3261 : 1;
   /** If true, include 100rel in INVITE requests. */
   unsigned              sa_invite_100rel : 1;
-  /** If true, insert Timestamp in requests. */
+  /** If true, insert @Timestamp in requests. */
   unsigned              sa_timestamp : 1;
 
   /** If true, transports support IPv4. */
@@ -214,7 +214,7 @@ struct nta_agent_s
   /** If true, use SRV lookup */
   unsigned              sa_use_srv : 1;
 
-  /** If true, trasnports use threadpool */
+  /** If true, transports use threadpool */
   unsigned              sa_tport_threadpool : 1;
 
   /** If true, use rport at client */
@@ -244,7 +244,7 @@ struct nta_agent_s
   /** Resolving order (AAAA/A) */
   enum nta_res_order_e  sa_res_order;
 
-  /** Max-Forwards */
+  /** @MaxForwards */
 
   sip_max_forwards_t    sa_max_forwards[1];
 
@@ -360,11 +360,11 @@ struct nta_leg_s
   uint32_t	    leg_seq;    /**< Sequence number for next transaction */
   uint32_t	    leg_rseq;   /**< Remote sequence number */
   sip_call_id_t	   *leg_id;	/**< Call ID */
-  sip_from_t   	   *leg_remote;	/**< Remote address (To/From) */
-  sip_to_t     	   *leg_local;	/**< Local address (From/To) */
+  sip_from_t   	   *leg_remote;	/**< Remote address (@To/@From) */
+  sip_to_t     	   *leg_local;	/**< Local address (@From/@To) */
 
-  sip_route_t      *leg_route;  /**< Route for outgoing requests. */
-  sip_contact_t    *leg_target; /**< Remote destination (from Contact). */
+  sip_route_t      *leg_route;  /**< @Route for outgoing requests. */
+  sip_contact_t    *leg_target; /**< Remote destination (from @Contact). */
 };
 
 #define leg_has_id(leg) ((leg)->leg_id != NULL)
@@ -505,7 +505,7 @@ struct nta_outgoing_s
   unsigned orq_sigcomp_new:1;	/**< Create compartment if needed */
   unsigned orq_sigcomp_zap:1;	/**< Reset SigComp after completing */
   unsigned orq_must_100rel : 1;
-  unsigned orq_timestamp : 1;	/**< insert Timestamp header. */
+  unsigned orq_timestamp : 1;	/**< insert @Timestamp header. */
   unsigned : 0;	/* pad */
 
   uint32_t              orq_rseq;       /**< Latest incoming rseq */
@@ -525,7 +525,7 @@ struct nta_outgoing_s
   int                   orq_pending;    /**< Request is pending in tport */
 
   char const           *orq_branch;	/**< Transaction branch */
-  char const           *orq_via_branch;	/**< Via branch */
+  char const           *orq_via_branch;	/**< @Via branch */
   url_t const          *orq_url;        /**< Original RequestURI */
 
   msg_t		       *orq_request;

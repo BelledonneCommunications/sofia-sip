@@ -46,7 +46,7 @@
  * The function sl_message_log() prints shorthand information identifying
  * the SIP message to the given output @a stream.  The shorthand information
  * include the method and URL by default.  If @a details is nonzero, topmost
- * @b Via, @b CSeq, @b To @b and @From is included, too.
+ * @Via, @CSeq, @To and @From is included, too.
  *
  * @param stream   output stream (if @c NULL, @c stdout is used).
  * @param prefix   string printed before the first line.
@@ -99,7 +99,7 @@ void sl_message_log(FILE *stream,
     sl_to_print(stream, "\tTo: %s\n", sip->sip_to);
 }
 
-/** Print @b From header. 
+/** Print @From header. 
  *
  * The function sl_from_print() prints the contents of @a from header to
  * the output @a stream.  The @a fmt specifies the output format, where %s
@@ -131,7 +131,7 @@ int sl_from_print(FILE *stream, char const *fmt, sip_from_t const *from)
   return -1;
 }
 
-/** Print @b To header.
+/** Print @To header.
  *
  * The function sl_to_print() prints the contents of @a to header to
  * the output @a stream.  The @a fmt specifies the output format, where %s
@@ -151,7 +151,7 @@ int sl_to_print(FILE *stream, char const *fmt, sip_to_t const *to)
   return sl_from_print(stream, fmt, (sip_from_t const *)to);
 }
 
-/** Print @b Contact header. 
+/** Print @Contact header. 
  *
  * The function sl_contact_print() prints the contents of @a contact
  * header to the output @a stream.  The @a fmt specifies the output format,
@@ -171,7 +171,7 @@ int sl_contact_print(FILE *stream, char const *fmt, sip_contact_t const *m)
   return sl_from_print(stream, fmt, (sip_from_t const *)m);
 }
 
-/** Print @b Allow header(s). 
+/** Print @Allow header(s). 
  *
  * The function sl_allow_print() prints the contents of @a allow header to
  * the output @a stream.  The @a fmt specifies the output format, where %s
@@ -245,7 +245,7 @@ int sl_payload_print(FILE *stream, char const *prefix, sip_payload_t const *pl)
   return total;
 }
 
-/** Print @b Via header. 
+/** Print @Via header. 
  *
  * The function sl_via_print() prints the contents of @a via header to
  * the output @a stream.  The @a fmt specifies the output format, where %s
