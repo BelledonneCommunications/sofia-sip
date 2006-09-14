@@ -282,16 +282,6 @@ struct msg_hclass_s
   unsigned          /*pad*/:0;
 };
 
-/* ====================================================================== */
-/* Deprecated types */
-
-/** Reference to message object. @deprecated Use msg_t. */
-typedef struct msg_s msg_ref_t;
-/** Alternative name for msg_pub_t. @deprecated Use msg_pub_t. */
-typedef msg_pub_t msg_obj_t;	
-/** Alternative name for msg_header_t. @deprecated Use msg_header_t. */
-typedef MSG_HDR_T msg_hdr_t;
-
 SOFIA_END_DECLS
 
 #endif /* !defined MSG_TYPES_H */

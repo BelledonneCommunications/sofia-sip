@@ -4585,7 +4585,7 @@ void incoming_reclaim(nta_incoming_t *irq)
 
   su_free(home, irq);
 
-  msg_ref_destroy((msg_ref_t *)home); 
+  msg_destroy((msg_t *)home); 
 }
 
 /** Queue request to be freed */

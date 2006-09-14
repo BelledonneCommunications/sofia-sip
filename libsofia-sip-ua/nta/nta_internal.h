@@ -443,7 +443,7 @@ struct nta_reliable_s
   unsigned short        rel_status;
   unsigned              rel_pracked : 1;
   unsigned              rel_precious : 1;
-  msg_ref_t            *rel_response;
+  msg_t                *rel_response;
   msg_t                *rel_unsent;
 };
 
