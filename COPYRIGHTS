@@ -17,28 +17,6 @@ Lesser General Public License (LICENSE) for more details.
 
 ----------------------------------------------------------------------------
 
-libsofia-sip-ua/ipt/sha1.h
-libsofia-sip-ua/ipt/sha1.c
-
-The package also contains code derived from RFC 3174 (SHA1). The code is
-distributed with the following copyright notice by the Internet Society:
-
-Partly copyright (C) The Internet Society (2001).  All Rights Reserved.
-
-This document [RFC3174] and translations of it may be copied and furnished
-to others, and derivative works that comment on or otherwise explain it or
-assist in its implementation may be prepared, copied, published and
-distributed, in whole or in part, without restriction of any kind, provided
-that the above copyright notice and this paragraph are included on all such
-copies and derivative works. However, this document itself may not be
-modified in any way, such as by removing the copyright notice or references
-to the Internet Society or other Internet organizations, except as needed
-for the purpose of developing Internet standards in which case the
-procedures for copyrights defined in the Internet Standards process must be
-followed, or as required to translate it into languages other than English.
-
-----------------------------------------------------------------------------
-
 libsofia-sip-ua/su/inet_ntop.c
 
 The package also contains files licensed by Internet Software Consortium.
@@ -84,7 +62,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ----------------------------------------------------------------------------
 
-libsofia-sip-ua/su/su_addrinfo.h
+libsofia-sip-ua/su/sofia-sip/su_addrinfo.h
 libsofia-sip-ua/su/su_addrinfo.c
 
 The package also contains files licensed by WIDE Project. These files are
