@@ -1,6 +1,6 @@
 /* -*- text -*- */
 
-/**@mainpage Sofia User Agent Library - nua
+/**@MODULEPAGE "nua" - High-Level User Agent Module
 
 @section nua_meta Module Meta Information
 
@@ -10,7 +10,7 @@ messaging and event retrieval.
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
-@STATUS Core library
+@STATUS @SofiaSIP Core library
 
 @LICENSE LGPL
 

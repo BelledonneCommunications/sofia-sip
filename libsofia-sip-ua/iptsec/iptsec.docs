@@ -1,10 +1,10 @@
 /* -*- C -*- */
 
-/**@mainpage IP Telephony Security Library
+/**@MODULEPAGE "iptsec" - Authentication Module
  *
  * @section iptsec_meta Module Meta Information
  *
- * The IP Telephony Security module currently provides interfaces to HTTP
+ * The iptsec module currently provides interfaces to HTTP
  * Basic and Digest authentication, used by HTTP and SIP protocol elements. 
  * There are both 
  * @ref auth_client "client-side" and 
@@ -13,7 +13,7 @@
  *
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  *

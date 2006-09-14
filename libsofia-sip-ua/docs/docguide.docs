@@ -91,7 +91,7 @@ contents of file @e ipt.docs:
 
 @verbatim
 /**
-@mainpage IPT Library
+@MODULEPAGE "ipt" - Utility Module
 
 @section ipt_meta Module Meta Information
 
@@ -99,7 +99,7 @@ Utility library for IP Telephony applications.
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
-@STATUS Core library
+@STATUS @SofiaSIP Core library
 
 @LICENSE LGPL
 

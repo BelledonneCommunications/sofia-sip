@@ -26,3 +26,5 @@ TAGFILES            += soa.doxytags=soa
 TAGFILES            += nea.doxytags=nea
 TAGFILES            += nua.doxytags=nua
 TAGFILES            += features.doxytags=features
+
+EXAMPLE_PATH = ../sip

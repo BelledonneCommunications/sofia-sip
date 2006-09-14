@@ -1,4 +1,4 @@
-/**@mainpage Sofia STUN Module
+/**@MODULEPAGE "stun" - STUN Client and Server Module
 
 @section stun_meta Module Meta Information
 
@@ -7,7 +7,7 @@ client library.
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
-@STATUS Core library
+@STATUS @SofiaSIP Core library
 
 @LICENSE LGPL
 

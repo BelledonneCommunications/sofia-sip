@@ -1,6 +1,6 @@
 /* -*- c -*- */
 
-/**@mainpage HTTP Parser - "http"
+/**@MODULEPAGE "http" - HTTP Parser Module
  *
  * @section http_meta Module Meta Information
  *
@@ -9,7 +9,7 @@
  *
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  *

@@ -1,6 +1,6 @@
 /* -*- c -*- */
 
-/**@mainpage Sofia Event API - "nea"
+/**@MODULEPAGE "nea" - SIP Events Module
  * 
  * @section nea_meta Module Meta Information
  *
@@ -10,7 +10,7 @@
  *
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  *

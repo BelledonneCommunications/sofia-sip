@@ -1,20 +1,20 @@
-/**@mainpage Sofia URL Module
+/**@MODULEPAGE "url" - URL Module
 
 @section url_meta Module Meta Information
 
 The Sofia @b url module contains macros and functions for using URL
-datatype, parsing and printing URLs. 
+datatype #url_t, parsing and printing URLs. 
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
-@STATUS Core library
+@STATUS @SofiaSIP Core library
 
 @LICENSE LGPL
 
 @section url_syntax Using URL Library
 
 The URL library provides URL datatype and helper functions related to it. 
-There is URL parser, which separates the URL components to the url_t
+There is URL parser, which separates the URL components to the #url_t
 structure.
 
 @note 
@@ -61,10 +61,10 @@ sip:user:pass\@example.com;user=ip
 tel:+358718008000
 @endcode
 
-@subsection url_parsing Converting a String to url_t
+@subsection url_parsing Converting a String to #url_t
 
 The decoding function url_d() takes a string and splits it into parts as
-shown above. The substrings are stored into the #url_t structure. When
+shown above. The substrings are stored into the ##url_t structure. When
 decoding, the hex encoding using \% is removed if the encoded character can
 syntactically be part of the field. For instance, "%41" is decoded as
 "A" in the user part, but "%40" (@) is left as is. (This is called
@@ -93,7 +93,7 @@ as follows:
 Other functions parsing URLs are as follows:
 - url_hdup() (it takes a string as @a url parameter)
 
-@subsection url_parsing Converting a url_t structure to string
+@subsection url_parsing Converting a #url_t structure to string
 
 The url_e() encodes the url, in other words, it joins the substrings in
 #url_t to the provided buffer.
@@ -124,7 +124,7 @@ the url.h include file:
 - url_update()
 - url_digest()
 
-In addition to the basic URL structure, url_t, the library interface
+In addition to the basic URL structure, #url_t, the library interface
 provides an union type #url_string_t for passing unparsed strings instead
 of parsed URLs as function arguments:
 - url_string_p()

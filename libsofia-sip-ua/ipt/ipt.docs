@@ -1,6 +1,6 @@
 /* -*- c -*- */
 
-/**@mainpage IPT Library
+/**@MODULEPAGE "ipt" - Utility Module
  * 
  * @section ipt_meta Module Meta Information
  *
@@ -8,7 +8,7 @@
  *
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  *

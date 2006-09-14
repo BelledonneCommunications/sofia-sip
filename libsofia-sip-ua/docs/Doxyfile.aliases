@@ -5,14 +5,18 @@ PREDEFINED = DOX \
  DOXYGEN_ONLY=1 \
  DOCUMENTATION_ONLY=1 \
  SU_HAVE_INLINE=1 su_inline=inline \
+ SOFIA_BEGIN_DECLS SOFIA_END_DECLS SOFIAPUBFUN SOFIACALL \
+ SOFIAPUBVAR=extern \
  SU_DLL SIP_DLL RTSP_DLL SU_DLL NTA_DLL NUA_DLL MSG_DLL AUTH_DLL \
  NTH_DLL HTTP_DLL \
  __attribute__()=
 
 ALIASES = \
+ "MODULEPAGE=\mainpage Sofia SIP User Agent Library - " \
  "CONTACT=\par Contact:\n" \
  "STATUS=\par Status:\n" \
  "LICENSE=\par License:\n" \
+ "SofiaSIP=<a href=\"../index.html\">Sofia SIP</a>" \
  "DEF=\def" \
  "TAGS=\par Related Tags:" \
  "TAG=\par \n" \

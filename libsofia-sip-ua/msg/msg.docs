@@ -1,17 +1,17 @@
 /* -*- text -*- */
 
-/**@mainpage Sofia SIP Stack: Message Parser, Message and Header Objects 
+/**@MODULEPAGE "msg" - Message Parser Module
 
 @section msg_meta Module Meta Information
 
 This module contains parser and functions for manipulating messages and
-headers for text-based protocols like SIP, RTSP and HTTP. It also
+headers for text-based protocols like SIP, HTTP and RTSP. It also
 provides parsing of MIME headers and MIME multipart messages common to
 these protocols.
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
-@STATUS Core library
+@STATUS @SofiaSIP Core library
 
 @LICENSE LGPL
 

@@ -1,6 +1,6 @@
 /* -*- c -*- */
 
-/**@mainpage Sofia HTTP Transaction Engine - "nth"
+/**@MODULEPAGE "nth" - HTTP Transactions Module
  * 
  * @section nth_meta Module Meta Information
  *
@@ -11,7 +11,7 @@
  *
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  *

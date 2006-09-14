@@ -1,16 +1,17 @@
 /* -*- c -*- */
 
-/**@mainpage SDP Module
+/**@MODULEPAGE "sdp" - SDP Module
 
 @section sdp_meta Module Meta Information
 
-The @b sdp module provides a simple "C" parser interface for SDP 
-[<a href="ftp://ftp.funet.fi/rfc/rfc2327.txt">RFC2327</a>], <em>Session
-Description Protocol</em>.
+The @b sdp module provides a simple "C" parser interface for SDP [@RFC2327],
+<em>Session Description Protocol</em>. The parser also implements support
+for IPv6 addresses as per @RFC3266. The @RFC4566 should be supported, but we
+have not checked since draft-eitf-mmusic-sdp-new-17 or so.
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
-@STATUS Core library
+@STATUS @SofiaSIP Core library
 
 @LICENSE LGPL
 

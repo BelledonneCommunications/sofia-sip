@@ -1,6 +1,10 @@
 /* -*- text -*- */
 
-/**@mainpage
+/**@mainpage Sofia SIP User Agent Library - sofia-sip-ua
+
+.
+
+@section Introduction
 
 This document contains automatically generated reference documentation
 for Sofia-SIP components. Some introductory material and
@@ -28,6 +32,10 @@ For a list of module specific pages, see @ref subdirs
 <a href="ipt/index.html">ipt</a> 
 
 @section who Contact Information
+
+You can download latest Sofia SIP from the project 
+<a href="http://sofia-sip.sf.net">home page</a> at 
+<a href="sf.net">Sourceforge.net</a>.
 
 Please contact us if you have questions regarding this software:
 
@@ -101,18 +109,17 @@ Please note that C style is always a matter of taste.
 @section naming Naming Conventions
 
 Generally, identifiers within each module are prefixed with the name of
-that module. For instance, the functions within audio codec module @b ac
-have prefix @c ac_. Identifiers composed of multiple words have an
+that module. For instance, the functions within http parser module @b http
+have prefix @c http_. Identifiers composed of multiple words have an
 underscore "_" between the words, the words themselves are in lower
-case. For instance, @c ac_signaling_packet.
+case. For instance, http_request_create().
 
 Macros should be in upper case. File names should be in lower case using
 underscore as delimiter if needed.
 
-Normal typedefs have suffix @c _t, however, function types have suffix
-@c _f. The enum names have @c _e, struct names have @c _s and union names
-@c _u. (Because Doxygen does not fully grok typedefs in C, some struct
-names have @c _t suffix, too).
+Normal typedefs have suffix @c _t, however, function types have suffix @c
+_f. The enum names also sometimes have @c _e, struct names have @c _s and
+union names @c _u.
 
 It is recommended that type itself is typedef'ed, not a pointer to the
 type. It should be clear from variable declaration if the variable is a
@@ -147,7 +154,8 @@ void kluge(int foo)
 {
   if (foo) {
     bar();
-  } else {
+  }
+  else {
     switch (baz()) {
     case a:
       eeny();
@@ -213,9 +221,7 @@ separate C files and isolated from the rest of the software with a
 wrapper interface.
 
 SU module handles abstraction to OS specific functionality such as
-memory management, sockets, threads and time functions. In the
-media side, AD module abstracts audio device driver
-implementations.
+memory management, sockets, threads and time functions. 
 
 @subsection ansi_99 ANSI C 99 features
 
@@ -229,13 +235,12 @@ The following ANSI C 99 features shall not be used in Sofia-SIP software:
 
 @subsection port_ints Integer Types
 
-As you should know, the length of native storage size depends on
-hardware, OS and compiler. This means in practice that the length
-of int is not necessarily 32 bits. As a consequence, you need to
-make sure that the value you intend to store in the int, can
-actually fit oin int on different platforms. As a rule of thumb, if the
-integer value can exceed 8 bits, you should use types that have a
-defined length.
+As you should know, the length of native storage size depends on hardware,
+OS and compiler. This means in practice that the length of int or long is
+not necessarily 32 bits. As a consequence, you need to make sure that the
+value you intend to store in the int, can actually fit in int on different
+platforms. As a rule of thumb, if the integer value can exceed 8 bits, you
+should use types that have a defined length.
 
 Nevertheless its OK to use native integer types if you bear in mind
 what was said above. The original reason for having only native
@@ -266,8 +271,6 @@ use them:
 #include <stdint.h>
 #elif HAVE_INTTYPES_H
 #include <inttypes.h>
-#elif SU_HAVE_WIN32
-#include <su_types.h>
 #else
 #error Define HAVE_STDINT_H as 1 if you have <stdint.h>, \
  or HAVE_INTTYPES_H if you have <inttypes.h>
@@ -389,24 +392,35 @@ using function calls.
 
 How to implement data hiding in C? Easiest answer is to only declare data
 structures in the header files, not to define them. We have a typedef #msg_t
-for @link msg_s struct msg_s @endlink in <msg.h>, but the actual structure
-is defined in <msg_internal.h>. Programs outside @b msg module does not have
-access to the @link msg_s struct msg_s @endlink, but they have to to access
-the #msg_t object through method functions provided in <msg.h>. The @b msg
-implementation is also free to change the internal layout of the structure,
-only keeping the function interface unmodified.
+for @link msg_s struct msg_s @endlink in <sofia-sip/msg.h>, but the actual
+structure is defined in "msg_internal.h". Programs outside @b msg module
+does not have access to the @link msg_s struct msg_s @endlink, but they have
+to to access the #msg_t object through method functions provided in
+<sofia-sip/msg.h>. The @b msg implementation is also free to change the
+internal layout of the structure, only keeping the function interface
+unmodified.
 
 @subsection oo_interface Interfaces
 
-Abstract interface is another object-oriented practice used in Sofia. Best
-example of that would be audio codec interface in @b ac module. The
-interface defined in <ac.h> is shared with all different audio codecs, be
-they simple as G.711 or complex as AMR-WB.
+Abstract interface is another object-oriented practice used in Sofia. Parser
+headers, defined in <sofia-sip/msg_types.h>, is a good example of abstract
+interface. The type for message headers, #msg_header_t, is defined using two
+C structures @link msg_common_s struct msg_common_s @endlink
+(#msg_common_t), and @link msg_hclass_s struct msg_hclass_s @endlink
+(#msg_hclass_t).
 
-Abstract interface is achieved using virtual function table, just as C++
-typically implements abstract classes and virtual functions. Each codec
-defines a structure containing functions implementing the interface, and
-returns a pointer to the structure within a codec instance.
+Abstract interface is achieved using virtual function table in #msg_hclass_t
+structure, bit like C++ typically implements abstract classes and virtual
+functions. For implemenation of each header, the function table is
+initialized with functions responsible for decoding, encoding and
+manipulating the header structure. Unlike C++, the class of the object
+(#msg_hclass_t) is represented by a real data structure which also contains
+header-specific data, like header name.
+
+@dontinclude sip_basic.c
+@skipline msg_hclass_t sip_contact_class
+@skip {
+@until };
 
 @subsection oo_derived Inheritance and Derived Objects
 
@@ -440,8 +454,9 @@ The third alternative works because base was used as a 1-element array.
 @subsection oo_templates Templates
 
 There are a few template types implemented as macros in Sofia libraries. 
-Most typical example is hash table in <htable.h>, which can be used to
-define hash tables types and accessor functions for different objects.
+They include hash table, defined in <sofia-sip/htable.h>, which can be used
+to define hash tables types and accessor functions for different object, and
+red-black tree, defined in <sofia-sip/rbtree.h>.
 
 @section memory Memory Management
 
@@ -459,7 +474,7 @@ for more information of memory management services.
 @subsection contextdata Memory management of context data
 
 A typical example of use of a memory home is to have a memory home structure
-(su_home_t) as part of operation context information structure.
+(#su_home_t) as part of operation context information structure.
 
 @code
   /* context info structure */
@@ -530,7 +545,8 @@ Here are some ideas of what you should test:
 - Aim for 100% line coverage\n
   (If there is a line of code that you have not tested, you don't know 
   if its working.) \n
-  For selected part of code you should also aim for 100% brach/path coverage.\n
+  For selected part of code you should also aim for 
+  100% branch/path coverage.\n
   But be anyway reasonable with these because in practise complete
   coverage is next to impossible to achive (so 80% is ok in practise).
 - Create test to check assumptions and/or tricks used in code.\n
@@ -539,21 +555,21 @@ Here are some ideas of what you should test:
 
 @subsection check Running Module Tests
 
-Automake, which is now used to build most of Sofia modules, has builtin
+Automake, which is used to build Sofia SIP, has builtin
 support for unit tests. To add an automatically run test to your module,
 you just have to add the following few lines to your module's Makefile.am
 (of course, you have to write the test programs, too):
 
 @code
-TESTS = my_test_foo my_test_bar
+TESTS = test_foo test_bar
 
-check_PROGRAMS = my_test_foo my_test_bar
+check_PROGRAMS = test_foo test_bar
 
-my_test_foo_SOURCES = foo.c foo.h
-my_test_foo_LDADD = -L. -lmy
+test_foo_SOURCES = foo.c foo.h
+test_foo_LDADD = -L. -lmy
 
-my_test_bar_SOURCES = bar.c bar.h
-my_test_foo_LDADD = -L. -lmy
+test_bar_SOURCES = bar.c bar.h
+test_foo_LDADD = -L. -lmy
 @endcode
 
 Each test program should either return zero for success or a non-zero
@@ -562,18 +578,17 @@ error code in its main function. Now when you run "make check",
 Make will print a
 summary of how the tests went. As these tests are run from the build 
 system, the tests must be non-interactive (no questions asked) and not 
-rely on any files that are not in CVS.
+rely on any files that are not in version control system.
 
-Sofia-SIP's top-level makefile contains a recursive check target, so 
-you can use "cd sofia ; make check" to run all the existing tests
+Sofia SIP's top-level makefile contains a recursive check target, so 
+you can use "cd sofia-sip ; make check" to run all the existing tests
 with a single command.
 
 @section build Dealing with GNU Autotools
 
-Sofia-SIP build system is based on the GNU tools make, 
-autoconf and automake. This toolset has become 
-the de-facto way of building Linux software. Because 
-of this there is a lot of publicly available documentation
+Sofia-SIP build system is based on the GNU tools automake, autoconf and
+libtool. This toolset has become the de-facto way of building Linux
+software. Because of this there is a lot of publicly available documentation
 about these tools, and of course, lots and lots of examples.
 
 A good introduction to these tools is available at
@@ -583,25 +598,31 @@ provides more detailed documentation for autoconf and automake.
 The <a href="http://www.gnu.org/manual/make/">GNU make manual</a> 
 is also a good source of information.
 
-@subsection autotools_diagram Autotools workflow
+@subsection autogen_sh autogen.sh
 
-@image latex autotools.eps
+At top-level there is a shell script called @b autogen.sh. It calls a
+convenient tool called @b autoreconf which will generate configure script
+for you. It also fixes the mode bits: the mode bits are not stored in
+<a href="http://darcs.net">darcs</a> version control system.
 
-@image html autotools.gif
+@code
+$ sh autogen.sh
+$ ./configure ... with your configure options ...
+@endcode
 
-@subsection configure_in configure.in
+@subsection configure_ac configure.ac
 
-The @b configure.in file (newer autoconf versions use also @b configure.ac)
-contains the primary configuration for autoconf. Configure.in contains
+The @b configure.ac file (older autoconf versions used also @b configure.in)
+contains the primary configuration for autoconf. configure.ac contains
 checks for all external libraries, non-standard language and compiler
-features, that are needed to build the target module.
+features that are needed to build the target module.
 
 This file is created by the developer of the module.
 
 @subsection sofia_m4 m4 files
 
 Sofia-SIP's own autoconf macros are stored in the top-level direcry called @b
-m4. These macros, along with all other macros used by @b configure.in, are
+m4. These macros, along with all other macros used by @b configure.ac, are
 copied into the module-specific @b aclocal.m4 file by an utility called
 aclocal.
 
@@ -610,7 +631,7 @@ Contact Sofia-SIP development team, if you need changes to these files.
 @subsection aclocal_m4 aclocal.m4
 
 The aclocal.m4 contains the definitions of the autoconf macros used in 
-@b configure.in.
+@b configure.ac.
 
 This file is generated by aclocal command.
 
@@ -625,7 +646,7 @@ This file is created by the developer of the module.
 @subsection configure configure
 
 When you run configure script, it performs all the checks defined in 
-@b configure.in and then replaces all @b xxx.in files with equivalent 
+@b configure.ac and then replaces all @b xxx.in files with equivalent 
 @b xxx files. All @c @@FOO@@ variables in the source @b *.in files are 
 replaced with values found during the configuration process. For instance
 the variable @c @@srcdir@@ in @b Makefile.in is replaced in @b Makefile 
@@ -637,19 +658,19 @@ This file is generated by autoconf command.
 @subsection config_status config.status
 
 This script stores the last parameters given to configre command.
-If necessary you can rerun the last given configure command (with given
-parameters) by using command "config.status -r" or 
-"config.status --reschedule".
+If necessary you can rerun the last given configure script (with given
+parameters) by using command "./config.status -r" or 
+"./config.status --recheck".
 
-This file is generated by configure command.
+This file is generated by configure script.
 
 @subsection config_cache config.cache
 
-This file contains results of the various checks that configure command 
-performed. In case the configure command didn't work, you might try to
-delete this file and run the configure command again.
+This file contains results of the various checks that configure script 
+performed. In case the configure script failed, you might try to
+delete this file and run the configure script again.
 
-This file is generated by configure command.
+This file is generated by configure script.
 
 @subsection Makefile Makefile
 
@@ -658,13 +679,20 @@ libraries and program. It is used by the @c make program. @b Makefile
 is generated from @b Makefile.in when you run @c autoconf command.
 Ensure that "make dist" and "make install" targets work.
 
-This file is generated by configure command (via config.status).
+This file is generated by config.status and configure scripts.
 
 @subsection config_h config.h
 
 This file contains C language defines of various confurable issues.
 
-This file is generated by configure command.
+This file is generated by config.status and configure script.
+
+@subsection sofia_sip_configure_h sofia-sip/su_configure.h
+
+This file contains C language defines describing how the Sofia SIP UA
+library is configured.
+
+This file is generated by config.status and configure script.
 
 */
 

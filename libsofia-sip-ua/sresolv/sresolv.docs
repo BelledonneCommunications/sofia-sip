@@ -1,4 +1,4 @@
-/**@mainpage Sofia Asynchronous DNS Resolver
+/**@MODULEPAGE "sresolv" - Asynchronous DNS Resolver
 
 @section sresolv_meta Module Information
 
@@ -11,7 +11,7 @@ An alternative interface is defined by <sofia-resolv/sres.h>,
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
-@STATUS Core library
+@STATUS @SofiaSIP Core library
 
 @LICENSE LGPL
 
