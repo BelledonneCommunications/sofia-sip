@@ -49,6 +49,7 @@
 #define smtok bnf_mark|bnf_token0|bnf_safe
 #define safe  bnf_safe
 
+/** Table for determining class of a character */
 unsigned char const _bnf_table[256] = {
   0,     0,     0,     0,     0,     0,     0,     0,
   0,     ws,    crlf,  0,     0,     crlf,  0,     0,

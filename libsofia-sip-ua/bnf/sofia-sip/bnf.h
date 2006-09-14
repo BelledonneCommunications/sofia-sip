@@ -156,7 +156,7 @@ enum {
   bnf_param = bnf_token | bnf_param0 /**< SIP/HTTP parameter */
 };
 
-/** Table for determining class of a character */
+/** Table for determining class of a character. */
 SOFIAPUBVAR unsigned char const _bnf_table[256];
 
 /** Get number of characters before CRLF */

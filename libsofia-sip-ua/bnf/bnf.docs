@@ -1,6 +1,6 @@
 /* -*- C -*- */
 
-/**@mainpage Sofia BNF Module
+/**@MODULEPAGE "bnf" - String Parser Module
  *
  * @section bnf_meta Module Meta Information
  *
@@ -11,7 +11,7 @@
  * 
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  */
