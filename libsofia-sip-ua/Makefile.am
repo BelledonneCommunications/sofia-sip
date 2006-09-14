@@ -65,9 +65,8 @@ empty-doxytags:
 	mkdir -p docs/html ; \
 	for d in $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile || continue ; \
-	  if ! test -r docs/doxytags_$$d ; then \
-		echo '<?xml version="1.0"?>' > docs/doxytags_$$d ; \
-		echo '<tagfile />' >>  docs/doxytags_$$d ; \
+	  if ! test -r docs/$$d.doxytags ; then \
+	    echo '<?xml version="1.0"?><tagfile/>' > docs/$$d.doxytags ; \
           fi ; \
 	done
 
