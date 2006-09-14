@@ -47,10 +47,10 @@
 #endif
 
 struct bw_fwd_table { 
-  unsigned char table[UCHAR_MAX];
+  unsigned char table[UCHAR_MAX + 1];
 };
 
-/** Build forward skip table for Boyer-Moore algorithm */
+/** Build forward skip table #bm_fwd_table_t for Boyer-Moore algorithm. */
 static
 bm_fwd_table_t *
 bm_memmem_study0(char const *needle, size_t nlen, bm_fwd_table_t *fwd)
@@ -62,17 +62,37 @@ bm_memmem_study0(char const *needle, size_t nlen, bm_fwd_table_t *fwd)
     nlen = UCHAR_MAX;
   }
 
-  for (i = 0; i < UCHAR_MAX; i++)
-    fwd->table[i] = (unsigned char)nlen;
+  memset(fwd->table[i], (unsigned char)nlen, sizeof fwd->table);
 
   for (i = 0; i < nlen; i++) {
-    fwd->table[(unsigned int)needle[i]] = (unsigned char)(nlen - i - 1);
+    fwd->table[(unsigned short)needle[i]] = (unsigned char)(nlen - i - 1);
   }
 
   return fwd;
 }
 
-/** Build forward skip table for Boyer-Moore algorithm */
+/** @defgroup su_bm Fast string searching with Boyer-Moore algorithm
+ *
+ * The Boyer-Moore algorithm is used to implement fast substring search. The
+ * algorithm has some overhead caused by filling a table. Substring search
+ * then requires at most 1 / substring-length less string comparisons. On
+ * modern desktop hardware, Boyer-Moore algorithm is seldom faster than the
+ * naive implementation if the searched substring is shorter than the cache
+ * line.
+ *
+ */ 
+
+/**@ingroup su_bm
+ * @typedef struct bw_fwd_table bm_fwd_table_t;
+ *
+ * Forward skip table for Boyer-Moore algorithm.
+ *
+ */
+
+/** Build case-sensitive forward skip table #bm_fwd_table_t 
+ *  for Boyer-Moore algorithm.
+ * @ingroup su_bm
+ */
 bm_fwd_table_t *
 bm_memmem_study(char const *needle, size_t nlen)
 {
@@ -84,7 +104,9 @@ bm_memmem_study(char const *needle, size_t nlen)
   return fwd;
 }
 
-/** Search for a substring using Boyer-Moore algorithm. */
+/** Search for a substring using Boyer-Moore algorithm.
+ * @ingroup su_bm
+ */
 char const*
 bm_memmem(char const *haystack, size_t hlen,
 	  char const *needle, size_t nlen,
@@ -167,7 +189,9 @@ bm_memcasemem_study0(char const *needle, size_t nlen, bm_fwd_table_t *fwd)
   return fwd;
 }
 
-/** Build forward skip table for Boyer-Moore algorithm */
+/** Build case-insensitive forward skip table for Boyer-Moore algorithm.
+ * @ingroup su_bm
+ */
 bm_fwd_table_t *
 bm_memcasemem_study(char const *needle, size_t nlen)
 {
@@ -179,11 +203,13 @@ bm_memcasemem_study(char const *needle, size_t nlen)
   return fwd;
 }
 
-/** Search for substring using Boyer-Moore algorithm. */
+/** Search for substring using Boyer-Moore algorithm.
+ * @ingroup su_bm
+ */
 char const*
 bm_memcasemem(char const *haystack, size_t hlen,
-	  char const *needle, size_t nlen,
-	  bm_fwd_table_t *fwd)
+	      char const *needle, size_t nlen,
+	      bm_fwd_table_t *fwd)
 {
   size_t i, j;
   bm_fwd_table_t fwd0[1];

@@ -139,7 +139,7 @@ typedef struct su_root_s su_root_t;
 /**Default type of application context for <a href="#su_root_t">su_root_t</a>.
  *
  * Application may define the typedef ::su_root_magic_t to appropriate type
- * by defining macro #SU_ROOT_MAGIC_T before including <su_wait.h>, for
+ * by defining macro SU_ROOT_MAGIC_T before including <su_wait.h>, for
  * example,
  * @code
  * #define SU_ROOT_MAGIC_T struct context
@@ -152,7 +152,7 @@ typedef struct su_root_s su_root_t;
 /** <a href="#su_root_t">Root context</a> pointer type.
  *
  * Application may define the typedef ::su_root_magic_t to appropriate type
- * by defining macro #SU_ROOT_MAGIC_T before including <su_wait.h>, for
+ * by defining macro SU_ROOT_MAGIC_T () before including <su_wait.h>, for
  * example,
  * @code
  * #define SU_ROOT_MAGIC_T struct context
@@ -166,7 +166,7 @@ typedef SU_ROOT_MAGIC_T su_root_magic_t;
  * @link ::su_wakeup_arg_t argument type @endlink.  
  *
  * The application can define the typedef ::su_wakeup_arg_t by defining
- * the #SU_WAKEUP_ARG_T before including <su_wait.h>, for example,
+ * the SU_WAKEUP_ARG_T () before including <su_wait.h>, for example,
  * @code
  * #define SU_WAKEUP_ARG_T struct transport
  * #include <su_wait.h>
@@ -178,7 +178,7 @@ typedef SU_ROOT_MAGIC_T su_root_magic_t;
 /** @link ::su_wakeup_f Wakeup callback @endlink argument type. 
  *
  * The application can define the typedef ::su_wakeup_arg_t by defining
- * the #SU_WAKEUP_ARG_T before including <su_wait.h>, for example,
+ * the SU_WAKEUP_ARG_T () before including <su_wait.h>, for example,
  * @code
  * #define SU_WAKEUP_ARG_T struct transport
  * #include <su_wait.h>

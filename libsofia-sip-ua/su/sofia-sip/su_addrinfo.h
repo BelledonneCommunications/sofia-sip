@@ -30,6 +30,14 @@
 #ifndef SU_ADDRINFO_H
 /* Defined when <sofia-sip/su_addrinfo.h> has been included */
 #define SU_ADDRINFO_H
+/**@ingroup su_socket 
+ *
+ * @file sofia-sip/su_addrinfo.h Network address and service translation.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * 
+ * @date Created: Wed Nov 30 17:07:04 EET 2005 ppessi
+ */
 
 #ifndef SU_TYPES_H
 #include <sofia-sip/su_types.h>
