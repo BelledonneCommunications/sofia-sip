@@ -64,9 +64,9 @@
  * headers. This is useful if more fine-grained control of parsing process
  * is required, for instance.
  * 
- * @param old      pointer to the message class object to be copied [IN]
- * @param newsize  size of hash table in the copied object [IN]
- * @param empty    if true, resulting copy does not contain any headers [IN]
+ * @param[in] old      pointer to the message class object to be copied 
+ * @param[in] newsize  size of hash table in the copied object 
+ * @param[in] empty    if true, resulting copy does not contain any headers 
  * 
  * @return 
  * The function msg_mclass_clone() returns a pointer to a newly
@@ -148,17 +148,17 @@ msg_mclass_t *msg_mclass_clone(msg_mclass_t const *old, int newsize, int empty)
  * structure" is zero, the function extends the public message structure in
  * order to store newly inserted header there.
  *
- * @param mc       pointer to a message class object [IN/OUT]
- * @param hc       pointer to a header class object [IN]
- * @param offset   offset of the header in 
- *                 @ref msg_pub_t "public message structure" [IN]
+ * @param[in,out] mc       pointer to a message class object 
+ * @param[in]     hc       pointer to a header class object 
+ * @param[in]     offset   offset of the header in
+ *                         @ref msg_pub_t "public message structure"
  *
  * If the @a offset is 0, the msg_mclass_insert_header() increases size of
  * the public message structure and places the header at the end of message.
  *
  * @return Number of collisions in hash table, or -1 upon an error.
  * 
- * @deprecated Use msg_mclass_insert_header_flags() instead.
+ * @deprecated Use msg_mclass_insert_with_mask() instead.
  */
 int msg_mclass_insert_header(msg_mclass_t *mc, 
 			     msg_hclass_t *hc,
@@ -186,19 +186,16 @@ int msg_mclass_insert_header(msg_mclass_t *mc,
  *
  * @relates msg_mclass_s
  *
- * Insert a header class @a hc to the message class object @a mc. If the
- * given @a offset of the header in @ref msg_pub_t "public message
- * structure" is zero, the function extends the public message structure in
- * order to store headers.
+ * Insert a header class @a hc to the message class @a mc. If the given @a
+ * offset of the header in @ref msg_pub_t "public message structure" is
+ * zero, extend the size of the public message structure in order to store
+ * headers at the end of structure.
  *
- * @param mc       pointer to a message class object [IN/OUT]
- * @param hc       pointer to a header class object [IN]
- * @param offset   offset of the header in 
- *                 @ref msg_pub_t "public message structure" [IN]
- * @param flags    classification flags for the header [IN]
- *
- * If the @a offset is 0, the msg_mclass_insert_header() increases size of
- * the public message structure and places the header at the end of message.
+ * @param[in,out] mc       pointer to a message class
+ * @param[in]     hc       pointer to a header class
+ * @param[in]     offset   offset of the header in 
+ *                         @ref msg_pub_t "public message structure" 
+ * @param[in]     flags    classification flags for the header 
  *
  * @return Number of collisions in hash table, or -1 upon an error.
  */
@@ -230,8 +227,8 @@ int msg_mclass_insert_with_mask(msg_mclass_t *mc,
  *
  * @relates msg_mclass_s
  *
- * @param mc       pointer to a message class object [IN/OUT]
- * @param hr       header reference object [IN]
+ * @param[in,out] mc       pointer to a message class object 
+ * @param[in]     hr       header reference object 
  *
  * @return Number of collisions in hash table, or -1 upon an error.
  */
@@ -294,10 +291,9 @@ int msg_mclass_insert(msg_mclass_t *mc, msg_href_t const *hr)
  * class based on the contents of the header to be parsed. The buffer @a s
  * should point to the first character in the header name.
  *
- * @param mc   message class object [IN]
- * @param s    header contents [IN]
- * @param return_start_of_content start of header content [OUT]
- *                       (may be NULL)
+ * @param[in]  mc   message class object 
+ * @param[in]  s    header contents 
+ * @param[out] return_start_of_content start of header content (may be NULL)
  *
  * @return The function msg_find_hclass() returns a pointer to a header
  * reference structure. A pointer to a header reference for unknown headers

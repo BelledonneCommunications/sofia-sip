@@ -324,11 +324,11 @@ void *msg_buf_move(msg_t *dst, msg_t const *src)
  * so the caller should allocate at least two elements for the I/O vector @a
  * vec.
  *
- * @param msg     message object [IN]
- * @param vec     I/O vector [OUT]
- * @param veclen  available length of @a vec [IN]
- * @param n       number of available bytes [IN]
- * @param exact   true if data ends at message boundary [IN]
+ * @param[in]  msg     message object 
+ * @param[out] vec     I/O vector 
+ * @param[in]  veclen  available length of @a vec 
+ * @param[in]  n       number of available bytes 
+ * @param[in]  exact   true if data ends at message boundary 
  *
  * @return
  * The function msg_recv_iovec() returns the length of I/O vector to
@@ -1939,8 +1939,8 @@ isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen)
  * Headers are either inserted just before the payload, or after the first
  * line, depending on their type.
  *
- * @param msg  message object [IN]
- * @param pub  public message structure [IN/OUT]
+ * @param[in]     msg  message object 
+ * @param[in,out] pub  public message structure 
  * @param prepend if true, add before same type of headers (instead after them)
  * @param head head of chain
  * @param h    header to insert

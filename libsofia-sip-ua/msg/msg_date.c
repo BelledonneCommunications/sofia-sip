@@ -150,30 +150,33 @@ int time_d(char const **ss,
 
 /**Decode RFC1123-date, RFC822-date or asctime-date.
  * 
- * The function msg_date_d() decodes @e HTTP-date, which may have 
+ * The function msg_date_d() decodes <HTTP-date>, which may have 
  * different formats.
  * 
- * @verbatim
- * HTTP-date    = rfc1123-date | rfc850-date | asctime-date
+ * @code
+ * HTTP-date    = rfc1123-date / rfc850-date / asctime-date
+ *
  * rfc1123-date = wkday "," SP date1 SP time SP "GMT"
- * rfc850-date  = weekday "," SP date2 SP time SP "GMT"
- * asctime-date = wkday SP date3 SP time SP 4DIGIT
  * date1        = 2DIGIT SP month SP 4DIGIT
  *                ; day month year (e.g., 02 Jun 1982)
+ *
+ * rfc850-date  = weekday "," SP date2 SP time SP "GMT"
  * date2        = 2DIGIT "-" month "-" 2DIGIT
  *                ; day-month-year (e.g., 02-Jun-82)
- * date3        = month SP ( 2DIGIT | ( SP 1DIGIT ))
+ *
+ * asctime-date = wkday SP date3 SP time SP 4DIGIT
+ * date3        = month SP ( 2DIGIT / ( SP 1DIGIT ))
  *                ; month day (e.g., Jun  2)
+ *
  * time         = 2DIGIT ":" 2DIGIT ":" 2DIGIT
  *                ; 00:00:00 - 23:59:59
- * wkday        = "Mon" | "Tue" | "Wed"
- *              | "Thu" | "Fri" | "Sat" | "Sun"
- * weekday      = "Monday" | "Tuesday" | "Wednesday"
- *              | "Thursday" | "Friday" | "Saturday" | "Sunday"
- * month        = "Jan" | "Feb" | "Mar" | "Apr"
- *              | "May" | "Jun" | "Jul" | "Aug"
- *              | "Sep" | "Oct" | "Nov" | "Dec"
- * @endverbatim
+ *
+ * wkday        = "Mon" / "Tue" / "Wed" / "Thu" / "Fri" / "Sat" / "Sun"
+ * weekday      = "Monday" / "Tuesday" / "Wednesday"
+ *              / "Thursday" / "Friday" / "Saturday" / "Sunday"
+ * month        = "Jan" / "Feb" / "Mar" / "Apr" / "May" / "Jun" 
+ *              / "Jul" / "Aug" / "Sep" / "Oct" / "Nov" / "Dec"
+ * @endcode
  */
 issize_t msg_date_d(char const **ss, msg_time_t *date)
 {
@@ -299,21 +302,21 @@ issize_t msg_date_d(char const **ss, msg_time_t *date)
 
 /**Encode RFC1123-date.
  * 
- * The function msg_date_e() prints @e http-date in the @e rfc1123-date
+ * The function msg_date_e() prints @e http-date in the <rfc1123-date>
  * format. The format is as follows:
  * 
- * @verbatim
- *     rfc1123-date = wkday "," SP date SP time SP "GMT"
- *     wkday        = "Mon" | "Tue" | "Wed"
- *                  | "Thu" | "Fri" | "Sat" | "Sun"
- *     date         = 2DIGIT SP month SP 4DIGIT
- *                    ; day month year (e.g., 02 Jun 1982)
- *     month        = "Jan" | "Feb" | "Mar" | "Apr"
- *                  | "May" | "Jun" | "Jul" | "Aug"
- *                  | "Sep" | "Oct" | "Nov" | "Dec"
- *     time         = 2DIGIT ":" 2DIGIT ":" 2DIGIT
- *                    ; 00:00:00 - 23:59:59
- * @endverbatim
+ * @code
+ * rfc1123-date = wkday "," SP date SP time SP "GMT"
+ * wkday        = "Mon" | "Tue" | "Wed"
+ *              | "Thu" | "Fri" | "Sat" | "Sun"
+ * date         = 2DIGIT SP month SP 4DIGIT
+ *                ; day month year (e.g., 02 Jun 1982)
+ * month        = "Jan" | "Feb" | "Mar" | "Apr"
+ *              | "May" | "Jun" | "Jul" | "Aug"
+ *              | "Sep" | "Oct" | "Nov" | "Dec"
+ * time         = 2DIGIT ":" 2DIGIT ":" 2DIGIT
+ *                ; 00:00:00 - 23:59:59
+ * @endcode
  * 
  * @param b         buffer to print the date
  * @param bsiz      size of the buffer
@@ -359,9 +362,16 @@ issize_t msg_date_e(char b[], isize_t bsiz, msg_time_t http_date)
 }
 
 
-/**Decode a http-delta.
+/**Decode a delta-seconds.
  * 
- * The function msg_delta_d() decodes a http-delta field.
+ * The function msg_delta_d() decodes a <delta-seconds> field.
+ *
+ * The <delta-seconds> is defined as follows:
+ * @code
+ * delta-seconds  = 1*DIGIT
+ * @endcode
+ *
+ * Note, however, that <delta-seconds> may not be larger than #MSG_TIME_MAX.
  */
 issize_t msg_delta_d(char const **ss, msg_time_t *delta)
 {
@@ -376,20 +386,21 @@ issize_t msg_delta_d(char const **ss, msg_time_t *delta)
   return *ss - s;
 }
 
-/**Encode http-delta
+/**Encode @ref msg_delta_d() "<delta-seconds>" field.
  */
 issize_t msg_delta_e(char b[], isize_t bsiz, msg_time_t delta)
 {
   return snprintf(b, bsiz, "%lu", (unsigned long)delta);
 }
 
-/** Decode a date or delta 
+/** Decode a HTTP date or delta 
  * 
- * The function msg_date_delta_d() decodes a http-date or http-delta field.
+ * Decode a @ref msg_date_d() "<http-date>" or 
+ * @ref msg_delta_d() "<delta-seconds>" field.
  */
 issize_t msg_date_delta_d(char const **ss,
-		     msg_time_t *date,
-		     msg_time_t *delta)
+			  msg_time_t *date,
+			  msg_time_t *delta)
 {
   if (delta && is_digit(**ss)) {
     return msg_delta_d(ss, delta);

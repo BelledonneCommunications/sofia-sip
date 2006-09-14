@@ -54,10 +54,10 @@
  *
  * The function msg_generic_d() parses a generic header structure.
  *
- * @param home memory home [IN]
- * @param h    header structure [IN/OUT]
- * @param s    string to be parsed [IN]
- * @param slen length of the string [IN]
+ * @param[in]     home memory home 
+ * @param[in,out] h    header structure 
+ * @param[in]     s    string to be parsed 
+ * @param[in]     slen length of the string 
  *
  * @retval 0 when successful, 
  * @retval -1 upon an error.

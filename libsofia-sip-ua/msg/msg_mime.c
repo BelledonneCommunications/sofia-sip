@@ -392,9 +392,9 @@ msg_multipart_search_boundary(su_home_t *home, char const *p, size_t len)
  * The function msg_multipart_parse() parses a MIME multipart message. The
  * common syntax of multiparts is described in @RFC2046 (section 7).
  *
- * @param home home for allocating structures [IN/OUT]
- * @param c    content-type header for multipart [IN]
- * @param pl   payload structure for multipart [IN]
+ * @param[in,out] home home for allocating structures 
+ * @param[in]     c    content-type header for multipart 
+ * @param[in]     pl   payload structure for multipart 
  *
  * After parsing, the @a pl will contain the plain-text preamble (if any).
  *
@@ -581,9 +581,9 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
  * between body-part headers and data, and close-delimiter after last
  * body-part to the multipart message.
  * 
- * @param home home for allocating structures [IN/OUT]
- * @param c    content-type header for multipart [IN/OUT]
- * @param mp   pointer to first multipart structure [IN/OUT]
+ * @param[in,out] home home for allocating structures 
+ * @param[in,out] c    content-type header for multipart 
+ * @param[in,out] mp   pointer to first multipart structure 
  *
  * @retval 0 when successful
  * @retval -1 upon an error
@@ -1002,8 +1002,8 @@ unsigned msg_q_value(char const *q)
  *
  * The function msg_mediatype_d() parses a mediatype string.
  *
- * @param ss   string to be parsed [IN/OUT]
- * @param type value result for media type [OUT]
+ * @param[in,out] ss    string to be parsed 
+ * @param[out]    type  value result for media type 
  *
  * @retval 0 when successful,
  * @retval -1 upon an error.

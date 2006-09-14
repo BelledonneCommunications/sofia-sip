@@ -163,29 +163,31 @@ issize_t msg_uint32_d(char **ss, uint32_t *return_value)
  * character after the list. The function modifies the string as it parses
  * it.
  *
- * A pointer to the resulting list is returned in the return-value parameter
- * @a return_list. If there already is a list in @a return_list, new items
- * are appended. Empty list items are ignored, and are not included in the
+ * The parsed items are appended to the list @a *append_list. If there the
+ * list in @a *append_list is NULL, allocate a new list and return it in @a
+ * *append_list. Empty list items are ignored, and are not appended to the
  * list.
  *
- * The function must be passed a scanning function @a scanner. The scanning
- * function scans for a legitimate list item, for example, a token. It
- * should also compact the list item, for instance, if the item consists of
- * @c name=value parameter definitions. The scanning function returns the
- * length of the scanned item, including any linear whitespace after it.
+ * The function @b must be passed a scanning function @a scanner. The
+ * scanning function scans for a legitimate list item, for example, a token. 
+ * It should also compact the list item, for instance, if the item consists
+ * of @c name=value parameter definitions it should remove whitespace around
+ * "=" sign. The scanning function returns the length of the scanned item,
+ * including any linear whitespace after it.
  *
- * @param home    memory home used to allocate memory for list pointers [IN]
- * @param ss      pointer to pointer to string to be parsed [IN/OUT]
- * @param return_list  return-value parameter for parsed list [IN/OUT]
- * @param sep     separator character [IN]
- * @param scanner pointer to function scanning a single item (optional) [IN]
+ * @param[in]     home    memory home for allocating list pointers 
+ * @param[in,out] ss      pointer to pointer to string to be parsed 
+ * @param[in,out] append_list  pointer to list
+ *                             where parsed list items are appended
+ * @param[in]     sep     separator character 
+ * @param[in]     scanner pointer to function for scanning a single item
  * 
  * @retval 0  if successful.
  * @retval -1 upon an error.
  */
 issize_t msg_any_list_d(su_home_t *home, 
 			char **ss, 
-			msg_param_t **return_list,
+			msg_param_t **append_list,
 			issize_t (*scanner)(char *s), 
 			int sep)
 {
@@ -199,8 +201,8 @@ issize_t msg_any_list_d(su_home_t *home,
   if (!scanner)
     return -1;
 
-  if (*return_list) {
-    list = *return_list;
+  if (*append_list) {
+    list = *append_list;
     while (list[n])
       n++;
     N = MSG_PARAMS_NUM(n + 1);
@@ -219,7 +221,7 @@ issize_t msg_any_list_d(su_home_t *home,
     if (tlen > 0) {
       if (n + 1 == N) {		/* Reallocate list? */
 	N = MSG_PARAMS_NUM(N + 1);
-	if (list == auto_list || list == *return_list) {
+	if (list == auto_list || list == *append_list) {
 	  re_list = su_alloc(home, N * sizeof(*list));
 	  if (re_list)
 	    memcpy(re_list, list, n * sizeof(*list));
@@ -256,17 +258,32 @@ issize_t msg_any_list_d(su_home_t *home,
   if (n == 0)
     list = NULL;
 
-  *return_list = list;
+  *append_list = list;
   return 0;
 
  error:
   *start = NULL;
-  if (list != auto_list && list != *return_list)
+  if (list != auto_list && list != *append_list)
     su_free(home, list);
   return -1;
 }
 
-/** Scan an attribute [= value] pair  */
+/** Scan an attribute (name [= value]) pair.
+ *
+ * The attribute consists of name (a token) and optional value, separated by
+ * equal sign. The value can be a token or quoted string.
+ *
+ * This function compacts the scanned value. It removes the
+ * whitespace around equal sign "=" by moving the equal sign character and
+ * value towards name.
+ * 
+ * If there is whitespace within the scanned value or after it, 
+ * NUL-terminates the scanned attribute.
+ *
+ * @retval > 0 number of characters scanned, 
+ *             including the whitespace within the value
+ * @retval -1 upon an error
+ */
 issize_t msg_attribute_value_scanner(char *s)
 {
   char *p = s;
@@ -320,16 +337,17 @@ issize_t msg_attribute_value_scanner(char *s)
  *  av-pair = token ["=" ( value / quoted-string) ]        ; optional value
  * @endcode
  *
- * @param home      pointer to a memory home [IN]
- * @param ss        pointer to string at the start of parameter list [IN/OUT]
- * @param return_list return-value parameter for parsed list [IN/OUT]
+ * @param[in]     home      pointer to a memory home 
+ * @param[in,out] ss        pointer to string at the start of parameter list 
+ * @param[in,out] append_list  pointer to list
+ *                             where parsed list items are appended
  *
  * @retval >= 0 if successful
  * @retval -1 upon an error
  */
 issize_t msg_avlist_d(su_home_t *home, 
 		      char **ss, 
-		      msg_param_t const **return_list)
+		      msg_param_t const **append_list)
 {
   char const *stack[MSG_N_PARAMS];
   char const **params;
@@ -339,8 +357,8 @@ issize_t msg_avlist_d(su_home_t *home,
   if (!*s)
     return -1;
 
-  if (*return_list) {
-    params = (char const **)*return_list;
+  if (*append_list) {
+    params = (char const **)*append_list;
     for (n = 0; params[n]; n++)
       ;
     N = MSG_PARAMS_NUM(n + 1);
@@ -429,7 +447,7 @@ issize_t msg_avlist_d(su_home_t *home,
 
   params[n] = NULL;
 
-  *return_list = params;
+  *append_list = params;
 
   return 0;
 
@@ -446,9 +464,10 @@ issize_t msg_avlist_d(su_home_t *home,
  *  *(";" token [ "=" (token | quoted-string)]).
  * @endcode
  *
- * @param home      pointer to a memory home [IN]
- * @param ss        pointer to string at the start of parameter list [IN/OUT]
- * @param return_list   return-value parameter for the parsed list [IN/OUT]
+ * @param[in]     home      pointer to a memory home 
+ * @param[in,out] ss        pointer to string at the start of parameter list 
+ * @param[in,out] append_list  pointer to list
+ *                             where parsed list items are appended
  *
  * @retval >= 0 if successful
  * @retval -1 upon an error
@@ -457,12 +476,12 @@ issize_t msg_avlist_d(su_home_t *home,
  */
 issize_t msg_params_d(su_home_t *home, 
 		      char **ss, 
-		      msg_param_t const **return_list)
+		      msg_param_t const **append_list)
 {
   if (**ss == ';') {
     *(*ss)++ = '\0';
-    *return_list = NULL;
-    return msg_avlist_d(home, ss, return_list);
+    *append_list = NULL;
+    return msg_avlist_d(home, ss, append_list);
   }
 
   if (IS_LWS(**ss)) { 
@@ -543,21 +562,23 @@ char *msg_params_dup(msg_param_t const **d, msg_param_t const s[],
  * By default, the scanning function accepts tokens, quoted strings or
  * separators (except comma, of course).
  *
- * @param home    memory home used to allocate memory for list pointers [in]
- * @param ss      pointer to pointer to string to be parsed [in/out]
- * @param return_list  return-value parameter for parsed list [in/out]
- * @param scanner pointer to function scanning a single item (optional) [in]
+ * @param[in]     home    memory home for allocating list pointers 
+ * @param[in,out] ss      pointer to pointer to string to be parsed 
+ * @param[in,out] append_list  pointer to list
+ *                             where parsed list items are appended
+ * @param[in]     scanner pointer to function scanning a single item 
+ *                        (optional)
  * 
  * @retval 0  if successful.
  * @retval -1 upon an error.
  */
 issize_t msg_commalist_d(su_home_t *home, 
 			 char **ss, 
-			 msg_param_t **return_list,
+			 msg_param_t **append_list,
 			 issize_t (*scanner)(char *s))
 {
   scanner = scanner ? scanner : msg_comma_scanner;
-  return msg_any_list_d(home, ss, return_list, scanner, ',');
+  return msg_any_list_d(home, ss, append_list, scanner, ',');
 }
 
 /** Token scanner for msg_commalist_d() accepting also empty entries. */

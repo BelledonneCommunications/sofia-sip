@@ -202,14 +202,15 @@ SOFIAPUBFUN issize_t msg_unquoted_e(char *b, isize_t bsiz, char const *s);
 #define MSG_STRING_SIZE(s) ((s) ? (strlen(s) + 1) : 0)
 
 SOFIAPUBFUN issize_t msg_commalist_d(su_home_t *, char **ss,
-				     msg_param_t **return_list,
+				     msg_param_t **append_list,
 				     issize_t (*scanner)(char *s));
 SOFIAPUBFUN issize_t msg_token_scan(char *start);
 SOFIAPUBFUN issize_t msg_attribute_value_scanner(char *s);
 
 SOFIAPUBFUN issize_t msg_any_list_d(su_home_t *, char **ss, 
-				    msg_param_t **retval,
-				    issize_t (*scanner)(char *s), int sep);
+				    msg_param_t **append_list,
+				    issize_t (*scanner)(char *s),
+				    int sep);
 
 /** Encode a comma-separated parameter list */
 #define MSG_COMMALIST_E(b, end, params, compact) do { \

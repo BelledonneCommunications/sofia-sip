@@ -275,8 +275,7 @@ struct msg_hclass_s
   char              hc_short[2];/**< Short name, if any. */
   unsigned char     hc_size;	/**< Size of header structure. */
   unsigned char     hc_params;	/**< Offset of parameters */
-  unsigned /* msg_header_kind_t */
-                    hc_kind:3;	/**< Kind of header:
+  unsigned          hc_kind:3;	/**< Kind of header (#msg_header_kind_t):
 				 * single, append, list, apndlist, prepend. */
   unsigned          hc_critical:1; /**< True if header is critical */
   unsigned          /*pad*/:0;

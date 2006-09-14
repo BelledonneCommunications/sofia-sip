@@ -242,8 +242,9 @@ typedef struct sip_s {
   msg_common_t        sip_common[1];    // Used with recursive inclusion
   msg_pub_t          *sip_next;         // Ditto
   void               *sip_user;	        // Application data
-  unsigned            sip_size;
-  int                 sip_flags;
+  unsigned            sip_size;         // Size of the structure with
+                                        // extension headers
+  int                 sip_flags;        // Parser flags
 
   sip_error_t        *sip_error;	// Erroneous headers
 
@@ -450,7 +451,16 @@ encountered.
  * Message object. 
  *
  * The @a msg_t is the type of a message object used by Sofia signaling
- * protocols and parsers.
+ * protocols and parsers. Its contents are not directly accessible.
+ */
+
+/**@typedef typedef struct msg_common_s msg_common_t;
+ *
+ * Common part of header. 
+ *
+ * The @a msg_common_t is the base type of a message headers used by
+ * protocol parsers. Instead of #msg_common_t, most interfaces use
+ * #msg_header_t, which is supposed to be a union of all possible headers.
  */
 
 

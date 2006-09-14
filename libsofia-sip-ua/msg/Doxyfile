@@ -13,6 +13,4 @@ TAGFILES             += ../docs/ipt.doxytags=../ipt  \
 
 GENERATE_TAGFILE     = ../docs/msg.doxytags
 
-PREDEFINED += "MSG_HDR_T=union msg_header_u"
-
 IMAGE_PATH           += ../sip/images
