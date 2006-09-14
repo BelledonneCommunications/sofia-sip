@@ -1217,6 +1217,12 @@ sof_callback(nua_event_t event,
     g_warning("%s: unknown event %d\n", self->priv->name, event);
 
   tl_print(stderr, "", tags);
+
+  if (nua_glib_op_find_by_handle(self, nh) == NULL) {
+    /* note: unknown handle, not associated to any existing call,
+     *       message, registration, etc, so it can be safely destroyed */
+    nua_handle_destroy(nh);
+  }
 }
 
 /* ====================================================================== */

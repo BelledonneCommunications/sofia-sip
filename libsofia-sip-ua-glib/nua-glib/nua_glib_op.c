@@ -196,6 +196,20 @@ void nua_glib_op_destroy(NuaGlib *self, NuaGlibOp *op)
 }
 
 /**
+ * Finds an operation by nua handle.
+ */
+NuaGlibOp *nua_glib_op_find_by_handle(NuaGlib *self, nua_handle_t *handle)
+{
+  NuaGlibOp *op;
+
+  for (op = self->priv->operations; op; op = op->op_next)
+    if (op->op_handle == handle)
+      break;
+
+  return op;
+}
+
+/**
  * Finds a call/session operation (an operation that has non-zero
  * op_callstate).
  */
@@ -209,6 +223,7 @@ NuaGlibOp *nua_glib_op_find_session(NuaGlib *self)
 
   return op;
 }
+
 
 /**
  * Checks whether 'op' is a valid handle or not.

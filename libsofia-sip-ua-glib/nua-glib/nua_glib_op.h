@@ -39,6 +39,7 @@ NuaGlibOp *nua_glib_op_create_with_handle(NuaGlib *self,
 			       nua_handle_t *nh,
 			       sip_from_t const *from);
 void nua_glib_op_destroy(NuaGlib *self, NuaGlibOp *op);
+NuaGlibOp *nua_glib_op_find_by_handle(NuaGlib *self, nua_handle_t *handle);
 NuaGlibOp *nua_glib_op_find_session(NuaGlib *self);
 NuaGlibOp *nua_glib_op_check(NuaGlib *self, NuaGlibOp *op);
 
