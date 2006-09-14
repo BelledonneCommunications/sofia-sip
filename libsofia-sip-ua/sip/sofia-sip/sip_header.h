@@ -192,58 +192,58 @@ sip_status_t *sip_status_create(su_home_t *home,
 				char const *phrase,
 				char const *version);
 
-/** Create a @b Call-ID header object. */
+/** Create a @CallID header object. */
 SOFIAPUBFUN sip_call_id_t *sip_call_id_create(su_home_t *home,
 					      char const *domain);
 
-/** Create a @b CSeq header object.  */
+/** Create a @CSeq header object.  */
 SOFIAPUBFUN sip_cseq_t *sip_cseq_create(su_home_t *, uint32_t seq, 
 					unsigned method, char const *name);
 
-/** Create a @b Contact header object. */
+/** Create a @Contact header object. */
 SOFIAPUBFUN sip_contact_t * sip_contact_create(su_home_t *, 
 					       url_string_t const *url, 
 					       char const *param,
 					       /* char const *params, */
 					       ...);
 
-/** Calculate expiration time of a Contact header. */
+/** Calculate expiration time of a @Contact header. */
 SOFIAPUBFUN sip_time_t sip_contact_expires(sip_contact_t const *m,
 					   sip_expires_t const *ex,
 					   sip_date_t const *date,
 					   sip_time_t def,
 					   sip_time_t now);
 
-/** Create a @b Content-Length header object. */
+/** Create a @ContentLength header object. */
 SOFIAPUBFUN
 sip_content_length_t *sip_content_length_create(su_home_t *, uint32_t n);
 
-/** Create an @b Date header object. */
+/** Create an @Date header object. */
 SOFIAPUBFUN sip_date_t *sip_date_create(su_home_t *, sip_time_t t);
 
-/** Create an @b Expires header object. */
+/** Create an @Expires header object. */
 SOFIAPUBFUN sip_expires_t *sip_expires_create(su_home_t *, sip_time_t delta);
 
-/** Create a @b Route header object. */
+/** Create a @Route header object. */
 SOFIAPUBFUN sip_route_t *sip_route_create(su_home_t *home, url_t const *url, 
 					  url_t const *maddr);
 
-/** Create a @b Record-Route header object. */
+/** Create a @RecordRoute header object. */
 SOFIAPUBFUN sip_record_route_t *sip_record_route_create(su_home_t *,
 							url_t const *rq_url,
 							url_t const *m_url);
 
-/** Create a @b From header object. */
+/** Create a @From header object. */
 SOFIAPUBFUN sip_from_t *sip_from_create(su_home_t *, url_string_t const *url);
 
 SOFIAPUBFUN int sip_from_tag(su_home_t *, sip_from_t *from, char const *tag);
 
-/** Create a @b To header object. */
+/** Create a @To header object. */
 SOFIAPUBFUN sip_to_t *sip_to_create(su_home_t *, url_string_t const *url);
 
 SOFIAPUBFUN int sip_to_tag(su_home_t *, sip_to_t *to, char const *tag);
 
-/** Create a Via object. */ 
+/** Create a @Via object. */ 
 SOFIAPUBFUN sip_via_t *sip_via_create(su_home_t *h,
 				      char const *host,
 				      char const *port, 
@@ -279,7 +279,7 @@ sip_payload_t *sip_payload_create(su_home_t *, void const *data, isize_t len);
  *
  * Initialize a SIP payload structure with pointer to data and its length. 
  *
- * The SIP_PAYLOAD_INIT2() macro initializes a sip_payload_t header
+ * The SIP_PAYLOAD_INIT2() macro initializes a #sip_payload_t header
  * structure with a pointer to data and its length in octets. For
  * instance,
  * @code 
@@ -371,12 +371,12 @@ SOFIAPUBFUN sip_header_t *sip_header_dup(su_home_t *, sip_header_t const *);
 /** Copy a SIP header or whole list. */
 SOFIAPUBFUN sip_header_t *sip_header_copy(su_home_t *, sip_header_t const *o);
 
-/** Add an event to Allow-Events header. */
+/** Add an event to @AllowEvents header. */
 SOFIAPUBFUN int sip_allow_events_add(su_home_t *, 
 				     sip_allow_events_t *ae, 
 				     char const *e);
 
-/** Add a parameter to a @b Contact header object. */
+/** Add a parameter to a @Contact header object. */
 SOFIAPUBFUN int sip_contact_add_param(su_home_t *, sip_contact_t *,
 				      char const *param);
 
@@ -384,7 +384,7 @@ SOFIAPUBFUN int sip_to_add_param(su_home_t *, sip_to_t *, char const *);
 
 SOFIAPUBFUN int sip_from_add_param(su_home_t *, sip_from_t *, char const *);
 
-/** Add a parameter to a @b Via header object. */ 
+/** Add a parameter to a @Via header object. */ 
 SOFIAPUBFUN int sip_via_add_param(su_home_t *, sip_via_t *, char const *);
 
 #define sip_from_make_url     sip_from_create

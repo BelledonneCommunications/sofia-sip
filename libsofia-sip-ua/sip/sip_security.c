@@ -69,7 +69,7 @@
  *
  * The Authorization header consists of credentials containing the
  * authentication information of the user agent for the realm of the
- * resource being requested.  Its syntax is defined in [RFC2617, S19]
+ * resource being requested. Its syntax is defined in @RFC2617 and @RFC3261
  * as follows:
  *
  * @code
@@ -99,6 +99,29 @@
  *    other-response    =  auth-scheme LWS auth-param
  *                         *(COMMA auth-param)
  *    auth-scheme       =  token
+ * @endcode
+ *
+ * The parsed Authorization header
+ * is stored in #sip_authorization_t structure.
+ *
+ * @sa @RFC2617, auth_mod_verify(), auth_mod_check(), auth_get_params(),
+ * auth_digest_response_get().
+ */
+
+/**@ingroup sip_authorization
+ * @typedef typedef struct sip_authorization_s sip_authorization_t;
+ *
+ * The structure #sip_authorization_t contains representation of SIP
+ * @Authorization header.
+ *
+ * The #sip_authorization_t is defined as follows:
+ * @code
+ * typedef struct msg_auth_s {
+ *   msg_common_t       au_common[1];  // Common fragment info 
+ *   msg_auth_t        *au_next;       // Link to next header 
+ *   char const        *au_scheme;     // Auth-scheme like "Basic" or "Digest" 
+ *   msg_param_t const *au_params;     // Comma-separated parameters
+ * } sip_authorization_t;
  * @endcode
  *
  */
@@ -150,8 +173,27 @@ issize_t sip_authorization_e(char b[], isize_t bsiz, sip_header_t const *h, int 
  *    qop-value           =  "auth" / "auth-int" / token
  * @endcode
  *
- * @todo Currently the parser fails if several challenges are included in
- * one header.
+ *
+ * The parsed Proxy-Authenticate header
+ * is stored in #sip_proxy_authenticate_t structure.
+ */
+
+/**@ingroup sip_proxy_authenticate
+ * @typedef typedef struct sip_proxy_authenticate_s sip_proxy_authenticate_t;
+ *
+ * The structure #sip_proxy_authenticate_t contains representation of SIP
+ * @ProxyAuthenticate header.
+ *
+ * The #sip_proxy_authenticate_t is defined as follows:
+ * @code
+ * typedef struct msg_auth_s {
+ *   msg_common_t       au_common[1];  // Common fragment info 
+ *   msg_auth_t        *au_next;       // Link to next header 
+ *   char const        *au_scheme;     // Auth-scheme like "Basic" or "Digest" 
+ *   msg_param_t const *au_params;     // Comma-separated parameters
+ * } sip_proxy_authenticate_t;
+ * @endcode
+ *
  */
 
 msg_hclass_t sip_proxy_authenticate_class[] =
@@ -183,6 +225,29 @@ issize_t sip_proxy_authenticate_e(char b[], isize_t bsiz, sip_header_t const *h,
  *    Proxy-Authorization  = "Proxy-Authorization" ":" credentials
  *    credentials          =  ("Digest" LWS digest-response)
  *                            / other-response
+ * @endcode
+ *
+ * @sa auth_mod_verify(), auth_mod_check(), auth_get_params(),
+ * auth_digest_response_get().
+ *
+ * The parsed Proxy-Authorization header
+ * is stored in #sip_proxy_authorization_t structure.
+ */
+
+/**@ingroup sip_proxy_authorization
+ * @typedef typedef struct sip_proxy_authorization_s sip_proxy_authorization_t;
+ *
+ * The structure #sip_proxy_authorization_t contains representation of SIP
+ * @ProxyAuthorization header.
+ *
+ * The #sip_proxy_authorization_t is defined as follows:
+ * @code
+ * typedef struct msg_auth_s {
+ *   msg_common_t       au_common[1];  // Common fragment info 
+ *   msg_auth_t        *au_next;       // Link to next header 
+ *   char const        *au_scheme;     // Auth-scheme like "Basic" or "Digest" 
+ *   msg_param_t const *au_params;     // Comma-separated parameters
+ * } sip_proxy_authorization_t;
  * @endcode
  *
  */
@@ -218,6 +283,27 @@ issize_t sip_proxy_authorization_e(char b[], isize_t bsiz, sip_header_t const *h
  *
  * @todo Currently the parser fails if several challenges are included one
  * header.
+ *
+ * The parsed WWW-Authenticate header
+ * is stored in #sip_www_authenticate_t structure.
+ */
+
+/**@ingroup sip_www_authenticate
+ * @typedef typedef struct sip_www_authenticate_s sip_www_authenticate_t;
+ *
+ * The structure #sip_www_authenticate_t contains representation of SIP
+ * @WWWAuthenticate header.
+ *
+ * The #sip_www_authenticate_t is defined as follows:
+ * @code
+ * typedef struct msg_auth_s {
+ *   msg_common_t       au_common[1];  // Common fragment info 
+ *   msg_auth_t        *au_next;       // Link to next header 
+ *   char const        *au_scheme;     // Auth-scheme like "Basic" or "Digest" 
+ *   msg_param_t const *au_params;     // Comma-separated parameters
+ * } sip_www_authenticate_t;
+ * @endcode
+ *
  */
 
 msg_hclass_t sip_www_authenticate_class[] =
@@ -239,7 +325,7 @@ issize_t sip_www_authenticate_e(char b[], isize_t bsiz, sip_header_t const *h, i
  * The @b Authentication-Info header contains either a next-nonce used by
  * next request and/or authentication from server used in mutual
  * authentication. The syntax of @b Authentication-Info header is defined in
- * @RFC2617 and [S20.6] as follows:
+ * @RFC2617 and @RFC3261 as follows:
  *
  * @code
  *   Authentication-Info  = "Authentication-Info" HCOLON ainfo
@@ -250,6 +336,26 @@ issize_t sip_www_authenticate_e(char b[], isize_t bsiz, sip_header_t const *h, i
  *   nextnonce            =  "nextnonce" EQUAL nonce-value
  *   response-auth        =  "rspauth" EQUAL response-digest
  *   response-digest      =  LDQUOT *LHEX RDQUOT
+ * @endcode
+ *
+ * The parsed Authentication-Info header
+ * is stored in #sip_authentication_info_t structure.
+ */
+
+/**@ingroup sip_authentication_info
+ * @typedef typedef struct sip_authentication_info_s sip_authentication_info_t;
+ *
+ * The structure #sip_authentication_info_t contains representation of SIP
+ * @AuthenticationInfo header.
+ *
+ * The #sip_authentication_info_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Dummy link to next header
+ *   msg_param_t       *k_items;      // List of ainfo
+ * } sip_authentication_info_t;
  * @endcode
  */
 
@@ -296,6 +402,27 @@ issize_t sip_authentication_info_e(char b[], isize_t bsiz, sip_header_t const *h
  *
  * @note @b Proxy-Authentication-Info is not specified @RFC3261 and it is
  * mentioned by @RFC2617 but in passage.
+ *
+ * The parsed Proxy-Authentication-Info header
+ * is stored in #sip_proxy_authentication_info_t structure.
+ */
+
+/**@ingroup sip_proxy_authentication_info
+ * @typedef typedef struct sip_proxy_authentication_info_s sip_proxy_authentication_info_t;
+ *
+ * The structure #sip_proxy_authentication_info_t contains representation of SIP
+ * @ProxyAuthenticationInfo header.
+ *
+ * The #sip_proxy_authentication_info_t is defined as follows:
+ * @code
+ * typedef struct msg_list_s
+ * {
+ *   msg_common_t       k_common[1];  // Common fragment info
+ *   msg_list_t        *k_next;	      // Dummy link to next header
+ *   msg_param_t       *k_items;      // List of ainfo
+ * } sip_proxy_authentication_info_t;
+ * @endcode
+ *
  */
 
 #define sip_proxy_authentication_info_dup_xtra msg_list_dup_xtra
@@ -318,6 +445,7 @@ issize_t sip_proxy_authentication_info_e(char b[], isize_t bsiz,
   assert(sip_is_authentication_info(h));
   return msg_list_e(b, bsiz, h, f);
 }
+
 /* ====================================================================== */
 
 /* Functions parsing @RFC3329 SIP Security Agreement headers */
@@ -467,7 +595,33 @@ static int sip_security_agree_update(msg_common_t *h,
  *    extension        = generic-param
  * @endcode
  *
- * @sa sip_security_server, sip_security_verify
+ * @sa @SecurityServer, @SecurityVerify, sip_security_verify_compare(),
+ * sip_security_client_select(), @RFC3329
+ *
+ * The parsed Security-Client header
+ * is stored in #sip_security_client_t structure.
+ */
+
+/**@ingroup sip_security_client
+ * @typedef typedef struct sip_security_client_s sip_security_client_t;
+ *
+ * The structure #sip_security_client_t contains representation of SIP
+ * @SecurityClient header.
+ *
+ * The #sip_security_client_t is defined as follows:
+ * @code
+ * typedef struct sip_security_agree_s
+ * {
+ *   sip_common_t        sa_common[1]; // Common fragment info 
+ *   sip_security_client_t *sa_next;   // Link to next mechanism 
+ *   char const         *sa_mec;       // Security mechanism
+ *   msg_param_t const  *sa_params;    // List of mechanism parameters
+ *   char const         *sa_q;         // Value of q (preference) parameter
+ *   char const         *sa_d_alg;     // Value of d-alg parameter
+ *   char const         *sa_d_qop;     // Value of d-qop parameter
+ *   char const         *sa_d_ver;     // Value of d-ver parameter
+ * } sip_security_client_t;
+ * @endcode
  */
 
 msg_hclass_t sip_security_client_class[] = 
@@ -490,7 +644,33 @@ issize_t sip_security_client_e(char b[], isize_t bsiz, sip_header_t const *h, in
  * The Security-Server header is defined by @RFC3329, "Security Mechanism
  * Agreement for the Session Initiation Protocol (SIP)".
  *
- * @sa sip_security_client, sip_security_verify
+ * @sa @SecurityClient, @SecurityVerify, sip_security_verify_compare(),
+ * sip_security_client_select(), @RFC3329.
+ *
+ * The parsed Security-Server header
+ * is stored in #sip_security_server_t structure.
+ */
+
+/**@ingroup sip_security_server
+ * @typedef typedef struct sip_security_server_s sip_security_server_t;
+ *
+ * The structure #sip_security_server_t contains representation of SIP
+ * @SecurityServer header.
+ *
+ * The #sip_security_server_t is defined as follows:
+ * @code
+ * typedef struct sip_security_agree_s
+ * {
+ *   sip_common_t        sa_common[1]; // Common fragment info 
+ *   sip_security_server_t *sa_next;   // Link to next mechanism 
+ *   char const         *sa_mec;       // Security mechanism
+ *   msg_param_t const  *sa_params;    // List of mechanism parameters
+ *   char const         *sa_q;         // Value of q (preference) parameter
+ *   char const         *sa_d_alg;     // Value of d-alg parameter
+ *   char const         *sa_d_qop;     // Value of d-qop parameter
+ *   char const         *sa_d_ver;     // Value of d-ver parameter
+ * } sip_security_server_t;
+ * @endcode
  */
 
 msg_hclass_t sip_security_server_class[] = 
@@ -513,8 +693,35 @@ issize_t sip_security_server_e(char b[], isize_t bsiz, sip_header_t const *h, in
  * The Security-Verify header is defined by @RFC3329, "Security Mechanism
  * Agreement for the Session Initiation Protocol (SIP)".
  *
- * @sa sip_security_client, sip_security_server
+ * @sa @SecurityClient, @SecurityServer, sip_security_verify_compare(),
+ * sip_security_client_select(), @RFC3329.
+ *
+ * The parsed Security-Verify header
+ * is stored in #sip_security_verify_t structure.
  */
+
+/**@ingroup sip_security_verify
+ * @typedef typedef struct sip_security_verify_s sip_security_verify_t;
+ *
+ * The structure #sip_security_verify_t contains representation of SIP
+ * @SecurityVerify header.
+ *
+ * The #sip_security_verify_t is defined as follows:
+ * @code
+ * typedef struct sip_security_agree_s
+ * {
+ *   sip_common_t        sa_common[1]; // Common fragment info 
+ *   sip_security_verify_t *sa_next;   // Link to next mechanism 
+ *   char const         *sa_mec;       // Security mechanism
+ *   msg_param_t const  *sa_params;    // List of mechanism parameters
+ *   char const         *sa_q;         // Value of q (preference) parameter
+ *   char const         *sa_d_alg;     // Value of d-alg parameter
+ *   char const         *sa_d_qop;     // Value of d-qop parameter
+ *   char const         *sa_d_ver;     // Value of d-ver parameter
+ * } sip_security_verify_t;
+ * @endcode
+ */
+
 
 msg_hclass_t sip_security_verify_class[] = 
 SIP_HEADER_CLASS(security_verify, "Security-Verify", "", 
@@ -536,12 +743,30 @@ issize_t sip_security_verify_e(char b[], isize_t bsiz, sip_header_t const *h, in
 /**@SIP_HEADER sip_privacy Privacy Header
  * 
  * The Privacy header is used by User-Agent to request privacy services from
- * the network. Its syntax is defined in [RFC3323] as follows:
+ * the network. Its syntax is defined in @RFC3323 as follows:
  * 
  * @code
  *    Privacy-hdr  =  "Privacy" HCOLON priv-value *(";" priv-value)
  *    priv-value   =   "header" / "session" / "user" / "none" / "critical"
  *                     / token
+ * @endcode
+ *
+ * The parsed Privacy header is stored in #sip_privacy_t structure.
+ */
+
+/**@ingroup sip_privacy
+ * @typedef typedef struct sip_privacy_s sip_privacy_t;
+ *
+ * The structure #sip_privacy_t contains representation of a SIP @Privacy
+ * header.
+ *
+ * The #sip_privacy_t is defined as follows:
+ * @code
+ * typedef struct sip_privacy_s {
+ *   sip_common_t       priv_common[1];	// Common fragment info 
+ *   sip_error_t       *priv_next;     	// Dummy link 
+ *   msg_param_t const *priv_values;   	// List of privacy values 
+ * } sip_privacy_t;
  * @endcode
  */
 

@@ -25,9 +25,8 @@
 /**@CFILE sip_event.c
  * @brief Event SIP headers.
  *
- * The file @b sip_event.c contains implementation of header classes for
- * event-related SIP headers @b Event, @b Allow-Events, and 
- * @b Subscription-State.
+ * Implementation of header classes for event-related SIP headers @Event,
+ * @AllowEvents, and @SubscriptionState.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
@@ -65,14 +64,16 @@
  *                             / "_" / "+" / "`" / "'" / "~" )
  *   event-param      =  generic-param / ( "id" EQUAL token )
  * @endcode
+ *
+ * The parsed Event header is stored in #sip_event_t structure.
  */
 
 /**@ingroup sip_event
  * @typedef struct sip_event_s sip_event_t; 
  *
- * The structure sip_event_t contains representation of an @b Event header.
+ * The structure #sip_event_t contains representation of an @Event header.
  *
- * The sip_event_t is defined as follows:
+ * The #sip_event_t is defined as follows:
  * @code
  * typedef struct sip_event_s
  * {
@@ -80,7 +81,7 @@
  *   sip_error_t        *o_next;	    // Link to next (dummy)
  *   char const *        o_type;	    // Event type
  *   msg_param_t const  *o_params;	    // List of parameters
- *   msg_param_t         o_id;	    	    // Event ID
+ *   char const         *o_id;	    	    // Event ID
  * } sip_event_t;
  * @endcode
  */
@@ -130,7 +131,7 @@ isize_t sip_event_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_event_t object */ 
+/** Duplicate one #sip_event_t object */ 
 char *sip_event_dup_one(sip_header_t *dst, sip_header_t const *src,
 			char *b, isize_t xtra)
 {
@@ -145,7 +146,7 @@ char *sip_event_dup_one(sip_header_t *dst, sip_header_t const *src,
   return b;
 }
 
-/** Update parameters in Event header. */
+/** Update parameters in @Event header. */
 static int sip_event_update(msg_common_t *h, 
 			   char const *name, isize_t namelen,
 			   char const *value)
@@ -164,9 +165,9 @@ static int sip_event_update(msg_common_t *h,
 
 /* ====================================================================== */
 
-/**@SIP_HEADER sip_allow_events Allow-Event Header
+/**@SIP_HEADER sip_allow_events Allow-Events Header
  *
- * The Allow-Event header is used to indicate which events or classes of
+ * The Allow-Events header is used to indicate which events or classes of
  * events the notifier supports. Its syntax is defined in @RFC3265 as
  * follows:
  * 
@@ -174,15 +175,17 @@ static int sip_event_update(msg_common_t *h,
  *    Allow-Events = ( "Allow-Events" | "u" ) ":" 1#event-type
  * @endcode
  *
+ *
+ * The parsed Allow-Events header is stored in #sip_allow_events_t structure.
  */
 
 /**@ingroup sip_allow_events
  * @typedef struct msg_list_s sip_allow_events_t; 
  *
- * The structure sip_allow_events_t contains representation of an @b
- * Allow-Events header.
+ * The structure #sip_allow_events_t contains representation of an 
+ * @AllowEvents header.
  *
- * The sip_allow_events_t is defined as follows:
+ * The #sip_allow_events_t is defined as follows:
  * @code
  * typedef struct msg_list_s
  * {
@@ -207,7 +210,7 @@ issize_t sip_allow_events_e(char b[], isize_t bsiz, sip_header_t const *h, int f
   return msg_list_e(b, bsiz, h, f);
 }
 
-/** Append an event to a Allow-Events header. 
+/** Append an event to a @AllowEvents header. 
  *
  * @note This function @b does @b duplicate @p event.
  *
@@ -250,15 +253,18 @@ int sip_allow_events_add(su_home_t *home,
  *                           / event-reason-extension
  *    event-reason-extension = token
  * @endcode
+ *
+ * The parsed Subscription-State header
+ * is stored in #sip_subscription_state_t structure.
  */
 
 /**@ingroup sip_subscription_state
  * @typedef struct sip_subscription_state_s sip_subscription_state_t;
  *
- * The structure sip_subscription_state_t contains representation of an @b
- * Subscription-State header.
+ * The structure #sip_subscription_state_t contains representation of an 
+ * @SubscriptionState header.
  *
- * The sip_subscription_state_t is defined as follows:
+ * The #sip_subscription_state_t is defined as follows:
  * @code
  * typedef struct sip_subscription_state_s
  * {
@@ -267,9 +273,9 @@ int sip_allow_events_add(su_home_t *home,
  *   // Subscription state: "pending", "active" or "terminated"
  *   char const        *ss_substate;        
  *   msg_param_t const *ss_params;      // List of parameters
- *   msg_param_t        ss_reason;      // Reason of terminating 
- *   msg_param_t        ss_expires;     // Subscription lifetime in seconds
- *   msg_param_t        ss_retry_after; // Value of retry-after parameter
+ *   char const        *ss_reason;      // Reason of terminating 
+ *   char const        *ss_expires;     // Subscription lifetime in seconds
+ *   char const        *ss_retry_after; // Value of retry-after parameter
  * } sip_subscription_state_t;
  * @endcode
  */
@@ -331,7 +337,7 @@ isize_t sip_subscription_state_dup_xtra(sip_header_t const *h, isize_t offset)
    return offset;   
 }
 
-/** Duplicate one sip_subscription_state_t object */ 
+/** Duplicate one #sip_subscription_state_t object */ 
 char *sip_subscription_state_dup_one(sip_header_t *dst, sip_header_t const *src,
 				     char *b, isize_t xtra)
 {
@@ -395,6 +401,8 @@ static int sip_subscription_state_update(msg_common_t *h,
  *   ptype                = "type" EQUAL token
  * @endcode
  *
+ *
+ * The parsed Publication header is stored in #sip_publication_t structure.
  */
 
 /**@ingroup sip_publication
@@ -457,7 +465,7 @@ isize_t sip_publication_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_publication_t object */ 
+/** Duplicate one #sip_publication_t object */ 
 char *sip_publication_dup_one(sip_header_t *dst, sip_header_t const *src,
 			char *b, isize_t xtra)
 {
@@ -500,6 +508,9 @@ static inline void sip_publication_update(sip_publication_t *pub)
  *                          * ( COMMA publish-type )
  * @endcode
  *
+ *
+ * The parsed Allow-Publication Header
+ * is stored in #sip_allow_publications_t structure.
  */
 
 msg_hclass_t sip_allow_publications_class[] = 

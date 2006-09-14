@@ -53,22 +53,21 @@ sip_time_t sip_now(void)
 
 /**@ingroup sip_expires
  *
- * Calculate the expiration time. 
+ * Calculate the expiration time for a SIP @Contact. 
  *
- * @param m     Contact header
- * @param ex    Expires header
- * @param date  Date header
- * @param def   Default expiration time
- * @param now   Current time.
+ * @param m     @Contact header
+ * @param ex    @Expires header
+ * @param date  @Date header
+ * @param def   default expiration time
+ * @param now   current time.
  *
  * @note If @a m is NULL, the function calculates the expiration time
- *       based on the Expires and Date headers.
+ *       based on the @Expires and @Date headers.
  *
  * @note If @a now is 0, the function gets the current time using sip_now().
  *
  * @return 
- *   The function sip_contact_expires() returns the expiration
- *   time in seconds. 
+ *   The expiration time in seconds. 
  */
 sip_time_t sip_contact_expires(sip_contact_t const *m,
 			       sip_expires_t const *ex,
@@ -88,7 +87,7 @@ sip_time_t sip_contact_expires(sip_contact_t const *m,
       return def;
   }
   else if (ex) {
-    time = ex->ex_time;
+    time = ex->ex_date;
     delta = ex->ex_delta;
   }
 

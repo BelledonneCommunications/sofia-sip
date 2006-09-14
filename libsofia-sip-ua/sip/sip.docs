@@ -1,6 +1,6 @@
 /* -*- c -*- */
 
-/**@mainpage SIP Parser, Messages and Headers
+/**@MODULEPAGE "sip" - SIP Parser Module
  *
  * @section sip_meta Module Meta Information
  *
@@ -9,7 +9,7 @@
  *
  * @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @STATUS Core library
+ * @STATUS @SofiaSIP Core library
  *
  * @LICENSE LGPL
  *
@@ -18,21 +18,11 @@
  * The structure of each header is defined in @b <sip.h>. In addition to the
  * header structure, there is defined a @em header @em class structure and
  * some standard functions for each header in the include file @b
- * <sip_header.h>.  For header @c X, there are types, functions, macros and
- * header class as follows:
+ * <sofia-sip/sip_header.h>. For header @c X, there are types, functions,
+ * macros and header class declared in <sofia-sip/sip_protos.h> and
+ * <sofia-sip/sip_hclass.h>. See @ref sip_header_x for detailed description
+ * of these header-specific boilerplate declarations.
  *
- *  - @c sip_X_t is the structure used to store parsed header,
- *  - @c SIP_X_INIT() initializes a static instance of sip_X_t,
- *  - @c sip_X_init() initializes a dynamic instance of sip_X_t,
- *  - @c sip_is_X() tests if header object is instance of header X,
- *  - @c sip_X_make() creates a header X object by decoding given string,
- *  - @c sip_X_format() creates a header X object by decoding given 
- *    printf() list,
- *  - @c sip_X_dup() duplicates (deeply copies) the header X, 
- *  - @c sip_X_copy() copies the header X,
- *  - @c sip_hclass_t @c sip_X_class[] contains the @em header @em class 
- *    for header X.
- * 
  * In addition to this interface, the @ref sip_parser "SIP parser documentation"
  * contains description of the functionality required when a parser is
  * extended by a new header. It is possible to add new headers to the SIP
@@ -103,7 +93,7 @@
  * key. There is also a special header class for @e unknown headers, headers
  * with a name that is not regocnized by the parser.
  *
- * For instance, the From header has following syntax:
+ * For instance, the @From header has following syntax:
  *
  * @code
  * from           = ("From" | "f") ":" 
@@ -115,7 +105,7 @@
  * tag-param      = "tag" "=" ( token | quoted-string )
  * @endcode
  *
- * When a From header is parsed, the header parser function sip_from_d()
+ * When a @From header is parsed, the header parser function sip_from_d()
  * separates the @e display-name, @e addr-spec and each parameter in the @e
  * addr-params list. The parsing result is assigned to a #sip_from_t
  * structure, which is defined as follows:
@@ -142,13 +132,14 @@
  * It is not enough to represent a SIP message as a collection of headers
  * following each other. The programmer also needs a convenient way to
  * access certain headers at the SIP message level, for example, accessing
- * directly the @b From header instead of going through all headers and
+ * directly the @From header instead of going through all headers and
  * examining their name. The structured view to the SIP message is provided
  * via a C struct with type #sip_t. 
  *
  * In other words, a single message is represented by two types, first type
  * (#msg_t) is private to the msg module and inaccessable by an application
- * programmer, second (#sip_t) is a public structure.
+ * programmer, second (#sip_t) is a public structure containing the parsed
+ * headers.
  *
  * The #sip_t structure is defined as follows:
  * @code
@@ -164,10 +155,10 @@
  *   sip_request_t      *sip_request;      // Request line
  *   sip_status_t       *sip_status;       // Status line
  *
- *   sip_via_t          *sip_via;          // Via (v)
- *   sip_route_t        *sip_route;        // Route
- *   sip_record_route_t *sip_record_route; // Record-Route
- *   sip_max_forwards_t *sip_max_forwards; // Max-Forwards
+ *   sip_via_t          *sip_via;          // @Via (v)
+ *   sip_route_t        *sip_route;        // @Route
+ *   sip_record_route_t *sip_record_route; // @RecordRoute
+ *   sip_max_forwards_t *sip_max_forwards; // @MaxForwards
  *   ...
  * } sip_t;
  * @endcode
@@ -215,31 +206,25 @@
  *
  * The message object has link to the public message structure (@a
  * m_object), to the dual-linked fragment chain (@a m_frags) and to the I/O
- * buffer (@a m_buffer).  The public message structure contains pointers to
- * the headers according to their type.  If there are multiple headers of
- * the same type (like there are two Via headers in the above message), the
- * headers are put into a single-linked list.
+ * buffer (@a m_buffer). The public message header structure contains
+ * pointers to the headers according to their type. If there are multiple
+ * headers of the same type (like there are two @Via headers in the above
+ * message), the headers are put into a single-linked list.
  * 
  * Each fragment has pointers to successing and preceding fragment. It also
  * contains pointer to the corresponding data within the I/O buffer and its
  * length.
  * 
  * The main purpose of the fragment chain is to preserve the original order
- * of the headers.  If there were an third Via header after CSeq in the
- * message, the fragment representing it would be after the CSeq header in
- * the fragment chain but after second Via in the header list.
+ * of the headers.  If there were an third @Via header after @CSeq in the
+ * message, the fragment representing it would be after the @CSeq header in
+ * the fragment chain but after the second @Via in the header list.
  *
- * @}
  */
 
 /**@defgroup sip_headers SIP Headers
  *
  * SIP headers and other SIP message elements.
- *
- * @{
- */
-
-/**@page sip_header_x SIP Header Structure Conventions
  *
  * For each SIP header recognized by the SIP module, there is a header
  * structure containing the parsed value.  The header structure name is
@@ -248,36 +233,89 @@
  * characters, and then adding prefix @c sip_ and suffix @c _t.  For
  * instance, the contents of header "MIME-Version" is stored in a structure
  * called sip_mime_version_t.
-
- * All header structures contain the common part, a sip_common_t structure
- * (@c X_common[]), a link to the next header in list (@c X_next), and a
- * various fields describing the header value (in this case, @c X_value).
  *
+ * @{
+ */
+
+/**
+ * @page sip_header_x SIP Header X - Conventions
+ * 
+ * For a SIP header X, there types, functions, macros and global data
+ * declared in <sofia-sip/sip_protos.h> and <sofia-sip/sip_hclass.h> as
+ * follows:
+ *  - #sip_X_t is the structure used to store parsed header,
+ *  - SIP_X_INIT() initializes a static instance of #sip_X_t,
+ *  - sip_X_init() initializes a dynamic instance of #sip_X_t,
+ *  - sip_is_X() tests if header object is instance of header X,
+ *  - sip_X_make() creates a header X object by decoding given string,
+ *  - sip_X_format() creates a header X object by decoding given 
+ *    printf() list,
+ *  - sip_X_dup() duplicates (deeply copies) the header X, 
+ *  - sip_X_copy() copies the header X,
+ *  - #msg_hclass_t #sip_X_class[] contains the @em header @em class 
+ *    for header X.
+ * 
+ * All header structures contain the common part, a #sip_common_t structure
+ * (@a X_common[]), a link to the next header in list (@a X_next), and
+ * various fields describing the header value (in this case, @a X_value).
+ * The header structure looks like this:
  * @code
  * typedef struct sip_X_s
  * {
- *  sip_common_t    X_common[1];
- *  sip_X_t        *X_next;
- *  unsigned long   X_value; 
+ *   struct msg_common_s {
+ *     msg_header_t       *h_succ;   // Pointer to succeeding fragment
+ *     msg_header_t      **h_prev;   // Pointer to preceeding fragment
+ *     msg_hclass_t       *h_class;  // Header class 
+ *     void const         *h_data;   // Encoded data
+ *     usize_t             h_len;    // Encoding length (including CRLF)
+ *   } X_common[1];
+ *   sip_X_t        *X_next;	     // Link to next X header field
+ *   uint32_t       X_value;         // Value of X
+ *   msg_param_t   *X_param;         // List of parameters
  * } sip_X_t;
  * @endcode
  *
- * The @c X_common is a structure sip_common_t (aka msg_common_t), which is
- * common to each fragment and can be considered as a base class for all
- * headers. The structure sip_common_t contains the pointers for dual-linked
+ * The common structure #msg_common_t (aka #sip_common_t)
+ * can be considered as a base class for all
+ * headers. The structure contains the pointers for dual-linked
  * fragment chain (@a h_succ, @a h_prev), a pointer to header class (@a
  * h_class), a pointer to the text encoding of header contents (@a h_data)
- * and the length of the encoding (@a h_len). (X_common is an array of size
+ * and the length of the encoding (@a h_len). (@a X_common is an array of size
  * 1, as it makes it easy to cast a header pointer to a pointer to
- * sip_common_t.)
+ * msg_common_t.)
  *
- * The @c X_next is a pointer to another header (usually a pointer to
+ * The @a X_next is a pointer to another header (usually a pointer to
  * structure of same type). If there are multiple headers with same name,
- * like the two "Via" headers in the example above, the @c X_next is used to
+ * like the two "Via" headers in the example above, the @a X_next is used to
  * link the second header to the first. The fragment chain cannot be used
  * for this purpose as the headers with same name are not necessarily
- * adjacent.
+ * adjacent in the parsed message.
+ *
+ * The rest of the fields contain the parsed or decoded representation of
+ * the header. In this case, it is a 32-bit integer followed by a list of
+ * parameters. The content of parameters is not parsed, they are just
+ * separated from each other and then stored in an dynamically allocated
+ * array of string pointers. Pointer to the array is stored to @a X_params.
+ * 
+ * For more complex header structures, see #sip_contact_t or #sip_rack_t.
  */
+
+/**@ingroup sip_X
+ *
+ * The structure #sip_X_t contains representation of a SIP
+ * @ref sip_header_x "X" header.
+ *
+ * The #sip_X_t is defined as follows:
+ * @code
+ * typedef struct sip_X_s {
+ *   msg_common_t   X_common[1];        // Common fragment info
+ *   sip_X_t       *X_next;             // Link to next X header field
+ *   uint32_t       X_value;            // Value of X
+ *   msg_param_t   *X_param;            // List of parameters
+ * } sip_X_t;
+ * @endcode
+ */
+typedef struct sip_X_s sip_X_t;
 
 /**@ingroup sip_X
  * @var msg_hclass_t sip_X_class[];
@@ -529,10 +567,12 @@ int sip_X_d(su_home_t *home, sip_header_t *h, char *s, int bsiz);
  * @return
  * The function sip_X_e() returns the number of characters required for the
  * encoding.
+ * 
+ * @}
  */
 int sip_X_e(char buf[], int bsiz, sip_header_t const *h, int flags);
 
-/**@}*/
+/** @} */
 
 /**@nodefgroup sip SIP Headers and Messages - "sip"
  *
@@ -552,7 +592,7 @@ int sip_X_e(char buf[], int bsiz, sip_header_t const *h, int flags);
  * The include file <sip_tag.h> defines tags and tag items for including SIP
  * headers in tag item lists or tagged argument lists. For each header,
  * there is a tag for pointer to header object and an another tag for string
- * containing header value. For example, @b From header has tags
+ * containing header value. For example, @From header has tags
  * SIPTAG_FROM() and SIPTAG_FROM_STR().
  *
  * It is also possible to include user-defined headers or non-standard
@@ -571,8 +611,8 @@ int sip_X_e(char buf[], int bsiz, sip_header_t const *h, int flags);
  * ...
  * @endcode
  *
- * In the above fragment, the function sip_add_tl() will add @b Content-Type
- * and @b User-Agent headers along with message payload to the SIP message.
- * The @b Content-Type header is made with value "text/plain".
+ * In the above fragment, the function sip_add_tl() will add @ContentType
+ * and @UserAgent headers along with message payload to the SIP message.
+ * The @ContentType header is made with value "text/plain".
  *
  */

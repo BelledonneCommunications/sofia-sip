@@ -186,20 +186,19 @@ int sip_prefs_match(union sip_pref const *a,
 
 /**Find a matching parameter-value pair from a parameter list.
  *
- * The function sip_prefs_matching() checks if the given feature values match
- * with each other.
+ * Check if the given feature values match with each other.
  *
  * @param pvalue first feature parameter
  * @param nvalue second feature parameter
  * @param return_parse_error return-value parameter for error (may be NULL)
  *
- * @return
- * The function sip_prefs_match() returns 1, if given feature parameters
- * match. The function sip_prefs_match() returns 0, if there is no match or
- * a parse or type error occurred.
+ * @retval 1 if given feature parameters match
+ * @retval 0 if there is no match or a parse or type error occurred.
  *
  * If there is a parsing or type error, 0 is returned and @a
- * return_parse_error is set to -1.
+ * *return_parse_error is set to -1.
+ *
+ * @sa sip_prefs_parse(), sip_prefs_match(), union #sip_pref.
  */
 int sip_prefs_matching(char const *pvalue,
 		       char const *nvalue,
@@ -249,7 +248,19 @@ int sip_prefs_matching(char const *pvalue,
   return 0;
 }
 
-/** Check if the parameter is a valid feature tag. */
+/** Check if the parameter is a valid feature tag. 
+ *
+ * A feature tag is a parameter starting with a single plus, or a well-known
+ * feature tag listed in @RFC3841: "audio", "automata", "application",
+ * "class", "control", "duplex", "data", "description", "events", "isfocus",
+ * "language", "mobility", "methods", "priority", "schemes", "type", or
+ * "video". However, well-known feature tag can not start with plus. So,
+ * "+alarm" or "audio" is a feature tag, "alarm", "++alarm", or "+audio" are
+ * not.
+ *
+ * @retval 1 if string is a feature tag parameter
+ * @retval 0 otherwise
+ */
 int sip_is_callerpref(char const *param)
 {
 #define MATCH(s) \
@@ -308,7 +319,7 @@ int sip_is_callerpref(char const *param)
   return base ^ xor;
 }
 
-/** Check if @b Contact is immune to callerprefs. */
+/** Check if @Contact is immune to callerprefs. */
 int sip_contact_is_immune(sip_contact_t const *m)
 {
   unsigned i;
@@ -322,12 +333,57 @@ int sip_contact_is_immune(sip_contact_t const *m)
   return 1;
 }
 
-/** Check if @b Contact matches by @b Accept-Contact.
- *
+/**Check if @Contact matches by @AcceptContact.
  * 
+ * Matching @AcceptContact and @Contact headers is done as explained in
+ * @RFC3841 section 7.2.4. The caller score can be calculated from the
+ * returned S and N values.
  *
- * @retval 1 if successful
- * @retval 0 if an error occurs
+ * @par Matching
+ * The @AcceptContact header contains number of feature tag parameters. The
+ * count of feature tags is returned in @a return_N. For each feature tag in
+ * @AcceptContact, the feature tag with same name is searched from the
+ * @Contact header. If both headers contain the feature tag with same name,
+ * their values are compared. If the value in @AcceptContact does not match
+ * with the value in @Contact, there is mismatch and 0 is returned. If they
+ * match, S is increased by 1.
+ *
+ * @param m   pointer to @Contact header structure
+ * @param cp   pointer to @AcceptContact header structure
+ * @param return_N   return-value parameter for number of 
+ *                   feature tags in @AcceptContact
+ * @param return_S   return-value parameter for number of 
+ *                   matching feature tags
+ * @param return_error   return-value parameter for parsing error
+ *
+ * For example,
+ * @code
+ * if (sip_contact_accept(contact, accept_contact, &S, &N, &error)) {
+ *   if (N == 0)
+ *     score == 1.0;
+ *   else
+ *     score = (double)S / (double)N;
+ *   if (accept_contact->cp_explicit) {
+ *     if (accept_contact->cp_require)
+ *       goto drop;
+ *     else
+ *       score = 0.0;
+ *   }
+ * }
+ * else if (!error) {
+ *   score = 0.0;
+ * }
+ * @endcode
+ *
+ * @retval 1 if @Contact matches
+ * @return @a return_S contains number of matching feature tags
+ * @return @a return_N contains number of feature tags in @AcceptContact
+ * @retval 0 if @Contact does not match
+ * @return @a return_error contains -1 if feature tag value was malformed
+ *
+ * @sa @RFC3841 section 7.2.4, sip_contact_score(), sip_contact_reject(),
+ * sip_contact_is_immune(), sip_contact_immunize(), sip_is_callerpref(),
+ * sip_prefs_matching().
  */
 int sip_contact_accept(sip_contact_t const *m, 
 		       sip_accept_contact_t const *cp,
@@ -368,13 +424,23 @@ int sip_contact_accept(sip_contact_t const *m,
   }
 
   *return_S = S; /* Matched feature tags */
-  *return_N = N; /* Number of feature tags in Accept-Contact */
+  *return_N = N; /* Number of feature tags in @AcceptContact */
 
   return 1; 
 }
 
 
-/** Check if Contact can be rejected by Reject-Contact. */
+/** Check if @Contact is rejected by @RejectContact.
+ *
+ * @param m pointer to @Contact header
+ * @param reject pointer to @RejectContact header
+ *
+ * @retval 1 when rejecting
+ * @retval 0 when @Contact does not match with @RejectContact
+ *
+ * @sa sip_contact_score(), sip_contact_accept(), sip_contact_immunize(),
+ * sip_contact_is_immune(), @RFC3841, @RejectContact, @Contact
+ */
 int sip_contact_reject(sip_contact_t const *m, 
 		       sip_reject_contact_t const *reject)
 {
@@ -387,7 +453,20 @@ int sip_contact_reject(sip_contact_t const *m,
   return sip_contact_accept(m, reject, &S, &N, &error) && S == N && N > 0;
 }
 
-/** Immunize Contact is to callerprefs. */
+/**Immunize @Contact to callerprefs.
+ *
+ * Make a copy of @Contact header @a m and remove all parameters which
+ * affect caller preferences.
+ *
+ * @param home   home object used when allocating copy
+ * @param m   pointer to @Contact header structure to immunize
+ *
+ * @retval pointer to immunized copy if successful
+ * @retval NULL upon an error
+ * 
+ * @sa @RFC3841, sip_is_callerpref(), sip_contact_score(),
+ * sip_contact_accept(), sip_contact_reject(), @Contact
+ */
 sip_contact_t *sip_contact_immunize(su_home_t *home, sip_contact_t const *m)
 {
   unsigned i, j;
@@ -416,7 +495,19 @@ sip_contact_t *sip_contact_immunize(su_home_t *home, sip_contact_t const *m)
   return m1;
 }
 
-/** Calculate score for contact */
+/** Calculate score for contact.
+ *
+ * The caller preference score is an integer in range of 0 to 1000.
+ * 
+ * @retval -1 if the contact is rejected
+ * @retval 1000 if contact is immune to caller preferences
+ * @retval 0..1000 reflecting @RFC3481 score in 0.000 - 1.000.
+ *
+ * @sa sip_q_value(),
+ * sip_contact_accept(), sip_contact_reject(), sip_contact_is_immune(),
+ * sip_contact_immunize(), sip_is_callerpref(), sip_prefs_matching(),
+ * @RFC3481, @AcceptContact, @RejectContact, @Contact
+ */
 int sip_contact_score(sip_contact_t const *m,
 		      sip_accept_contact_t const *ac,
 		      sip_reject_contact_t const *rc)

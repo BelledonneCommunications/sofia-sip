@@ -127,7 +127,7 @@ issize_t sip_extract_body(msg_t *msg, sip_t *sip, char b[], isize_t bsiz, int eo
 
 /** Parse SIP version.
  *
- * The function sip_version_d() parses a SIP version string. It updates the 
+ * Parse a SIP version string. Update the 
  * pointer at @a ss to first non-LWS character after the version string.
  *
  * @param ss   string to be parsed [IN/OUT]
@@ -255,24 +255,24 @@ char const *sip_method_name(sip_method_t method, char const *name)
 
 /**Parse a SIP method name.
  *
- * The function sip_method_d() parses a SIP method, and returns a code
- * corresponding to the method.  It stores the address of the first non-LWS
- * character after method name in @a *ss.
+ * Parse a SIP method name and return a code corresponding to the method. 
+ * The address of the first non-LWS character after method name is stored in
+ * @a *ss.
  *
  * @param ss    pointer to pointer to string to be parsed
  * @param return_name  value-result parameter for method name
  *
  * @note
- * If there is no whitespace after method name, the value in @a *nname
+ * If there is no whitespace after method name, the value in @a *return_name
  * may not be NUL-terminated.  The calling function @b must NUL terminate
  * the value by setting the @a **ss to NUL after first examining its value.
  *
- * @return The function  sip_method_d returns the method code if method
+ * @return The method code if method
  * was identified, 0 (sip_method_unknown()) if method is not known, or @c -1
  * (sip_method_invalid()) if an error occurred.
  *
- * If the value-result argument @a nname is not @c NULL, sip_method_d()
- * stores a pointer to the method name to it.
+ * If the value-result argument @a return_name is not @c NULL,
+ * a pointer to the method name is stored to it.
  */
 sip_method_t sip_method_d(char **ss, char const **return_name)
 {
@@ -494,8 +494,8 @@ char *sip_word_at_word_d(char **ss)
 /**Add message separator, then test if message is complete. 
  *
  * Add sip_content_length and sip_separator if they are missing. 
- * The test that all necessary message components (@b From, @b To, @b
- * CSeq, @b Call-ID, @b Content-Length and message separator are present.
+ * The test that all necessary message components ( @From, @To,
+ * @CSeq, @CallID, @ContentLength and message separator are present.
  *
  * @retval 0 when successful
  * @retval -1 upon an error: headers are missing and they could not be added

@@ -23,10 +23,10 @@
  */
 
 /**@CFILE sip_reason.c
- * @brief Reason header.
+ * @brief @Reason header.
  *
  * The file @b sip_reason.c contains implementation of header class for
- * SIP header @b Reason.
+ * SIP header @Reason.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  */
@@ -62,6 +62,26 @@
  *   reason-extension  =  generic-param
  * @endcode
  * 
+ * The parsed Reason header is stored in #sip_reason_t structure.
+ */
+
+/**@ingroup sip_reason
+ * @typedef typedef struct sip_reason_s sip_reason_t;
+ *
+ * The structure #sip_reason_t contains representation of SIP @Reason header.
+ *
+ * The #sip_reason_t is defined as follows:
+ * @code
+ * typedef struct sip_reason_s
+ * {
+ *   sip_common_t        re_common[1]; // Common fragment info 
+ *   sip_reason_t       *re_next;      // Link to next <reason-value> 
+ *   char const         *re_protocol;  // Protocol 
+ *   msg_param_t const  *re_params;    // List of reason parameters 
+ *   char const         *re_cause;     // Value of cause parameter 
+ *   char const         *re_text;      // Value of text parameter 
+ * } sip_reason_t;
+ * @endcode
  */
 
 static msg_xtra_f sip_reason_dup_xtra;
@@ -134,7 +154,7 @@ isize_t sip_reason_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_reason_t object */ 
+/** Duplicate one #sip_reason_t object */ 
 char *sip_reason_dup_one(sip_header_t *dst, sip_header_t const *src,
 			char *b, isize_t xtra)
 {
@@ -149,7 +169,7 @@ char *sip_reason_dup_one(sip_header_t *dst, sip_header_t const *src,
   return b;
 }
 
-/** Update parameter values for @b Reason header */
+/** Update parameter values for @Reason header */
 static int sip_reason_update(msg_common_t *h, 
 			     char const *name, isize_t namelen,
 			     char const *value)

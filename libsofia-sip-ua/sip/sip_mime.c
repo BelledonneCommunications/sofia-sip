@@ -68,23 +68,25 @@
  *    gen-value      =  token / host / quoted-string
  * @endcode
  *
+ *
+ * The parsed Accept header is stored in #sip_accept_t structure.
  */
 
 /**@ingroup sip_accept
  * @typedef typedef struct sip_accept_s sip_accept_t;
  *
- * The structure #sip_accept_t contains representation of SIP @b
- * Accept header.
+ * The structure #sip_accept_t contains representation of SIP
+ * @Accept header.
  *
  * The #sip_accept_t is defined as follows:
  * @code
  * typedef struct sip_accept_s {
  *   sip_common_t        ac_common[1]; // Common fragment info
- *   sip_accept_t       *ac_next;      // Pointer to next Accept header
+ *   sip_accept_t       *ac_next;      // Pointer to next @Acceptheader
  *   char const         *ac_type;      // Pointer to type/subtype
  *   char const         *ac_subtype;   // Points after first slash in type
  *   msg_param_t const  *ac_params;    // List of parameters
- *   msg_param_t         ac_q;         // Value of q parameter
+ *   char const         *ac_q;         // Value of q parameter
  * } sip_accept_t;
  * @endcode
  */
@@ -120,6 +122,9 @@ issize_t sip_accept_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
  *                         #( (disposition-type | "*") *( ";" generic-param ) )
  * @endcode
  *
+ *
+ * The parsed Accept-Disposition header
+ * is stored in #sip_accept_disposition_t structure.
  */
 
 msg_hclass_t sip_accept_disposition_class[] = 
@@ -195,19 +200,22 @@ issize_t sip_accept_disposition_e(char b[], isize_t bsiz, sip_header_t const *h,
  *    content-coding   =  token
  * @endcode
  *
+ *
+ * The parsed Accept-Encoding header
+ * is stored in #sip_accept_encoding_t structure.
  */
 
 /**@ingroup sip_accept_encoding
  * @typedef typedef struct msg_accept_any_s sip_accept_encoding_t;
  *
- * The structure #sip_accept_encoding_t contains representation of SIP @b
- * Accept-Encoding header.
+ * The structure #sip_accept_encoding_t contains representation of SIP
+ * @AcceptEncoding header.
  *
  * The #sip_accept_encoding_t is defined as follows:
  * @code
  * typedef struct {
  *   msg_common_t        aa_common[1]; // Common fragment info
- *   sip_accept_encoding_t *aa_next;   // Pointer to next Accept-Encoding header
+ *   sip_accept_encoding_t *aa_next;   // Pointer to next @AcceptEncoding header
  *   char const            *aa_value;  // Encoding token
  *   msg_param_t const     *aa_params; // List of parameters
  *   char const            *aa_q;      // Value of q parameter 
@@ -257,19 +265,22 @@ issize_t sip_accept_encoding_e(char b[], isize_t bsiz, sip_header_t const *h, in
  *    language-range   =  ( ( 1*8ALPHA *( "-" 1*8ALPHA ) ) / "*" )
  * @endcode
  *
+ *
+ * The parsed Accept-Language header
+ * is stored in #sip_accept_language_t structure.
  */
 
 /**@ingroup sip_accept_language
  * @typedef typedef struct msg_accept_any_s sip_accept_language_t;
  *
- * The structure #sip_accept_language_t contains representation of SIP @b
- * Accept-Language header.
+ * The structure #sip_accept_language_t contains representation of SIP
+ * @AcceptLanguage header.
  *
  * The #sip_accept_language_t is defined as follows:
  * @code
  * typedef struct {
  *   msg_common_t        aa_common[1]; // Common fragment info
- *   sip_accept_language_t *aa_next;   // Pointer to next Accept-Language header
+ *   sip_accept_language_t *aa_next;   // Pointer to next <language>
  *   char const            *aa_value;  // Language-range
  *   msg_param_t const     *aa_params; // List of accept-parameters
  *   char const            *aa_q;      // Value of q parameter 
@@ -309,7 +320,7 @@ issize_t sip_accept_language_e(char b[], isize_t bsiz, sip_header_t const *h, in
  *
  * The Content-Disposition header field describes how the message body or,
  * in the case of multipart messages, a message body part is to be
- * interpreted by the UAC or UAS.  Its syntax is defined in [S10.15]
+ * interpreted by the UAC or UAS.  Its syntax is defined in @RFC3261
  * as follows:
  * 
  * @code
@@ -340,15 +351,18 @@ issize_t sip_accept_language_e(char b[], isize_t bsiz, sip_header_t const *h, in
  *    modification-date-param  =  "modification-date" "=" quoted-date-time
  *    quoted-date-time         =  <"> SIP-date <">
  * @endcode
+ *
+ * The parsed Content-Disposition header
+ * is stored in #sip_content_disposition_t structure.
  */
 
 /**@ingroup sip_content_disposition
  * @typedef struct msg_content_disposition_s sip_content_disposition_t; 
  *
- * The structure sip_content_disposition_t contains representation of an @b
- * Content-Disposition header.
+ * The structure #sip_content_disposition_t contains representation of an
+ * @ContentDisposition header.
  *
- * The sip_content_disposition_t is defined as follows:
+ * The #sip_content_disposition_t is defined as follows:
  * @code
  * typedef struct msg_content_disposition_s
  * {
@@ -356,7 +370,7 @@ issize_t sip_accept_language_e(char b[], isize_t bsiz, sip_header_t const *h, in
  *   msg_error_t       *cd_next;       // Link to next (dummy)
  *   char const        *cd_type;       // Disposition type
  *   msg_param_t const *cd_params;     // List of parameters
- *   msg_param_t        cd_handling;   // Value of @b handling parameter
+ *   char const        *cd_handling;   // Value of @b handling parameter
  *   unsigned           cd_required:1; // True if handling=required
  *   unsigned           cd_optional:1; // True if handling=optional
  * } sip_content_disposition_t;
@@ -389,7 +403,7 @@ isize_t sip_content_disposition_dup_xtra(sip_header_t const *h, isize_t offset)
   return msg_content_disposition_dup_xtra(h, offset);
 }
 
-/** Duplicate one sip_content_disposition_t object */ 
+/** Duplicate one #sip_content_disposition_t object */ 
 static
 char *sip_content_disposition_dup_one(sip_header_t *dst, 
 				      sip_header_t const *src,
@@ -404,7 +418,7 @@ char *sip_content_disposition_dup_one(sip_header_t *dst,
 /**@SIP_HEADER sip_content_encoding Content-Encoding Header
  *
  * The Content-Encoding header indicates what additional content codings
- * have been applied to the entity-body.  Its syntax is defined in [S20.12]
+ * have been applied to the entity-body.  Its syntax is defined in @RFC3261
  * as follows:
  * 
  * @code
@@ -412,15 +426,18 @@ char *sip_content_disposition_dup_one(sip_header_t *dst,
  *                      content-coding *(COMMA content-coding)
  * content-coding    =  token
  * @endcode
+ *
+ * The parsed Content-Encoding header
+ * is stored in #sip_content_encoding_t structure.
  */
 
 /**@ingroup sip_content_encoding
  * @typedef struct msg_list_s sip_content_encoding_t; 
  *
- * The structure sip_content_encoding_t contains representation of an @b
- * Content-Encoding header.
+ * The structure #sip_content_encoding_t contains representation of an
+ * @ContentEncoding header.
  *
- * The sip_content_encoding_t is defined as follows:
+ * The #sip_content_encoding_t is defined as follows:
  * @code
  * typedef struct msg_list_s
  * {
@@ -448,7 +465,7 @@ issize_t sip_content_encoding_e(char b[], isize_t bsiz, sip_header_t const *h, i
 
 /**@SIP_HEADER sip_content_language Content-Language Header
  *
- * The Content-Language header [H14.12] describes the natural language(s) of
+ * The Content-Language header @RFC2616 section 14.12 describes the natural language(s) of
  * the intended audience for the enclosed entity. Note that this might not
  * be equivalent to all the languages used within the entity-body. Its
  * syntax is defined in @RFC3261 as follows:
@@ -460,15 +477,18 @@ issize_t sip_content_encoding_e(char b[], isize_t bsiz, sip_header_t const *h, i
  *    primary-tag       =  1*8ALPHA
  *    subtag            =  1*8ALPHA
  * @endcode
+ *
+ * The parsed Content-Language header
+ * is stored in #sip_content_language_t structure.
  */
 
 /**@ingroup sip_content_language
  * @typedef typedef struct msg_content_language_s sip_content_language_t;
  *
- * The structure sip_content_language_t contains representation of @b
- * Content-Language header.
+ * The structure #sip_content_language_t contains representation of
+ * @ContentLanguage header.
  *
- * The sip_content_language_t is defined as follows:
+ * The #sip_content_language_t is defined as follows:
  * @code
  * typedef struct {
  *   msg_common_t            k_common[1]; // Common fragment info
@@ -515,13 +535,15 @@ issize_t sip_content_language_e(char b[], isize_t bsiz, sip_header_t const *h, i
  * m-attribute      =  token
  * m-value          =  token / quoted-string
  * @endcode
+ *
+ * The parsed Content-Type header is stored in #sip_content_type_t structure.
  */
 
 /**@ingroup sip_content_type
  * @typedef typedef struct sip_content_type_s sip_content_type_t;
  *
- * The structure #sip_content_type_t contains representation of SIP @b
- * Content-Type header.
+ * The structure #sip_content_type_t contains representation of SIP
+ * @ContentType header.
  *
  * The #sip_content_type_t is defined as follows:
  * @code
@@ -589,7 +611,7 @@ isize_t sip_content_type_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_content_type_t object */ 
+/** Duplicate one #sip_content_type_t object */ 
 static
 char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
 			       char *b, isize_t xtra)
@@ -619,15 +641,17 @@ char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
  * @code
  *    MIME-Version  =  "MIME-Version" HCOLON 1*DIGIT "." 1*DIGIT
  * @endcode
+ *
+ * The parsed MIME-Version header is stored in #sip_mime_version_t structure.
  */
 
 /**@ingroup sip_mime_version
  * @typedef struct msg_generic_s sip_mime_version_t; 
  *
- * The structure sip_mime_version_t contains representation of an @b
- * MIME-Version header.
+ * The structure #sip_mime_version_t contains representation of an
+ * @MIMEVersion header.
  *
- * The sip_mime_version_t is defined as follows:
+ * The #sip_mime_version_t is defined as follows:
  * @code
  * typedef struct msg_generic_s
  * {
@@ -656,7 +680,7 @@ issize_t sip_mime_version_e(char b[], isize_t bsiz, sip_header_t const *h, int f
 /**@SIP_HEADER sip_warning Warning Header
  * 
  * The Warning response-header field is used to carry additional information
- * about the status of a response. Its syntax is defined in [S20.43] as
+ * about the status of a response. Its syntax is defined in @RFC3261 as
  * follows:
  * 
  * @code
@@ -669,20 +693,22 @@ issize_t sip_mime_version_e(char b[], isize_t bsiz, sip_header_t const *h, int f
  *    warn-text      =  quoted-string
  *    pseudonym      =  token
  * @endcode
+ *
+ * The parsed Warning header is stored in #sip_warning_t structure.
  */
 
 /**@ingroup sip_warning
  * @typedef struct msg_warning_s sip_warning_t; 
  *
- * The structure sip_warning_t contains representation of an @b
- * Warning header.
+ * The structure #sip_warning_t contains representation of an
+ * @Warning header.
  *
- * The sip_warning_t is defined as follows:
+ * The #sip_warning_t is defined as follows:
  * @code
  * typedef struct msg_warning_s
  * {
  *   msg_common_t        w_common[1];  // Common fragment info
- *   msg_warning_t      *w_next;       // Link to next Warning header
+ *   msg_warning_t      *w_next;       // Link to next @Warning header
  *   unsigned            w_code;       // Warning code
  *   char const         *w_host;       // Hostname or pseudonym
  *   char const         *w_port;       // Port number

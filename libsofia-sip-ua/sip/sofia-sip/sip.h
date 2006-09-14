@@ -26,7 +26,7 @@
 /** Defined when <sofia-sip/sip.h> has been included. */
 #define SIP_H
 
-/**@file sofia-sip/sip/sip.h 
+/**@file sofia-sip/sip.h 
  * 
  * SIP objects.
  *
@@ -101,10 +101,10 @@ enum {
 #define SIPS_DEFAULT_SERV "5061"
 };
 
-/** Time in seconds */
+/** Time in seconds since Jan 01 1900.  */
 typedef msg_time_t sip_time_t;
 
-/** Latest time that can be expressed with sip_time_t. @HIDE */
+/** Latest time that can be expressed with #sip_time_t. @HIDE */
 #define SIP_TIME_MAX ((sip_time_t)MSG_TIME_MAX)
 
 /** SIP message object. */
@@ -118,31 +118,23 @@ typedef struct msg_generic_s        sip_generic_t;
 #define g_value g_string
 
 /** Common part of all the header structures. */
-typedef msg_common_t sip_common_t;
+typedef msg_common_t                sip_common_t;
 
 /** SIP parameter string. */
 typedef msg_param_t                 sip_param_t;
 
-/** To or From header. */
+/** @To or @From header. */
 typedef struct sip_addr_s           sip_addr_t;
 
-/** Authorization, Proxy-Authenticate, WWW-Authenticate */
+/** @Authorization, @ProxyAuthenticate, @WWWAuthenticate */
 typedef msg_auth_t                  sip_auth_t;
 
-/** Request line. */
 typedef struct sip_request_s 	    sip_request_t;
-/** Status line. */
 typedef struct sip_status_s  	    sip_status_t;
-/** Erroneous headers. */
 typedef msg_error_t                 sip_error_t;
-
-/** Unkown headers. */
 typedef msg_unknown_t               sip_unknown_t;
-/** Separator line between payload and headers */
 typedef msg_separator_t             sip_separator_t;
-/** SIP payload */
 typedef msg_payload_t               sip_payload_t;
-
 
 typedef struct sip_accept_s  	    sip_accept_t;
 typedef msg_accept_any_t      	    sip_accept_encoding_t;
@@ -150,19 +142,19 @@ typedef msg_accept_any_t      	    sip_accept_language_t;
 typedef msg_list_t	      	    sip_allow_t;
 typedef struct sip_authentication_info_s
                                     sip_authentication_info_t;
-typedef sip_auth_t        	    sip_authorization_t;
+typedef struct msg_auth_s 	    sip_authorization_t;
 typedef struct sip_call_id_s 	    sip_call_id_t;
 typedef struct sip_call_info_s      sip_call_info_t;
 typedef struct sip_contact_s 	    sip_contact_t;
 typedef struct sip_cseq_s    	    sip_cseq_t;
-typedef sip_generic_t	      	    sip_etag_t;
-typedef sip_generic_t	      	    sip_if_match_t;
+typedef struct msg_generic_s        sip_etag_t;
+typedef struct msg_generic_s        sip_if_match_t;
 typedef msg_content_disposition_t   sip_content_disposition_t;
 typedef msg_list_t	      	    sip_content_encoding_t;
 typedef msg_list_t	      	    sip_content_language_t;
 typedef struct sip_content_length_s sip_content_length_t;
 typedef struct msg_content_type_s   sip_content_type_t;
-typedef sip_generic_t	     	    sip_mime_version_t;
+typedef struct msg_generic_s        sip_mime_version_t;
 typedef struct sip_date_s	    sip_date_t;
 typedef struct sip_error_info_s     sip_error_info_t;
 typedef struct sip_expires_s        sip_expires_t;
@@ -171,12 +163,12 @@ typedef msg_list_t                  sip_in_reply_to_t;
 typedef struct sip_max_forwards_s   sip_max_forwards_t;
 typedef struct sip_min_expires_s    sip_min_expires_t;
 typedef struct sip_min_se_s         sip_min_se_t;
-typedef sip_generic_t	     	    sip_organization_t;
-typedef sip_generic_t	     	    sip_priority_t;
-typedef sip_auth_t        	    sip_proxy_authenticate_t;
+typedef struct msg_generic_s        sip_organization_t;
+typedef struct msg_generic_s        sip_priority_t;
+typedef struct msg_auth_s 	    sip_proxy_authenticate_t;
 typedef struct sip_authentication_info_s
                                     sip_proxy_authentication_info_t;
-typedef sip_auth_t	     	    sip_proxy_authorization_t;
+typedef struct msg_auth_s     	    sip_proxy_authorization_t;
 typedef msg_list_t	     	    sip_proxy_require_t;
 typedef struct sip_rack_s           sip_rack_t;
 typedef struct sip_reason_s         sip_reason_t;
@@ -188,36 +180,36 @@ typedef struct sip_replaces_s       sip_replaces_t;
 
 typedef struct sip_request_disposition_s sip_request_disposition_t;
 
-typedef struct sip_caller_prefs_s sip_caller_prefs_t;
-typedef struct sip_caller_prefs_s sip_accept_contact_t;
-typedef struct sip_caller_prefs_s sip_reject_contact_t;
+typedef struct sip_caller_prefs_s   sip_caller_prefs_t;
+typedef struct sip_caller_prefs_s   sip_accept_contact_t;
+typedef struct sip_caller_prefs_s   sip_reject_contact_t;
 
 typedef msg_list_t	     	    sip_require_t;
 typedef struct sip_retry_after_s    sip_retry_after_t;
 typedef struct sip_route_s     	    sip_route_t;
 typedef struct sip_rseq_s           sip_rseq_t;     
-typedef sip_generic_t	     	    sip_server_t;
+typedef struct msg_generic_s        sip_server_t;
 typedef struct sip_session_expires_s
                                     sip_session_expires_t;
-typedef sip_generic_t	     	    sip_subject_t;
+typedef struct msg_generic_s        sip_subject_t;
 typedef struct sip_subscription_state_s
                                     sip_subscription_state_t;
 typedef msg_list_t	     	    sip_supported_t;
 typedef struct sip_timestamp_s 	    sip_timestamp_t;
 typedef struct sip_addr_s           sip_to_t;
 typedef msg_list_t	     	    sip_unsupported_t;
-typedef sip_generic_t	     	    sip_user_agent_t;
+typedef struct msg_generic_s        sip_user_agent_t;
 typedef struct sip_via_s 	    sip_via_t;
 typedef msg_warning_t	            sip_warning_t;
-typedef sip_auth_t        	    sip_www_authenticate_t;
+typedef struct msg_auth_s 	    sip_www_authenticate_t;
 
 typedef struct sip_event_s          sip_event_t;
 typedef msg_list_t                  sip_allow_events_t;
 
-/* RFC 3323 - Privacy */
+/* RFC 3323 - @Privacy */
 typedef struct sip_privacy_s sip_privacy_t;
 
-/* RFC 3327 - Path */
+/* RFC 3327 - @Path */
 typedef struct sip_route_s     	    sip_path_t;
 
 /* RFC 3329 - Security Mechanism Agreement */
@@ -231,17 +223,18 @@ typedef struct sip_route_s     	    sip_service_route_t;
 
 /**SIP message object.
  *
- * This structure contains a SIP message object.  It is used to access the
- * headers and payload within the message.  The generic transport aspects of
- * the message, like network address, is accessed using a @b msg_t object
+ * This structure contains a parsed SIP message The struct is usually
+ * referred with typedef #sip_t. It is used to access the headers and
+ * payload within the SIP message. The generic transport aspects of the
+ * message, like network address, is accessed using a #msg_t object
  * directly.
  */
 struct sip_s {
-  msg_common_t               sip_common[1]; /**< For recursive inclusion */
-  msg_pub_t                 *sip_next;
+  msg_common_t               sip_common[1];     /**< For recursive inclusion */
+  msg_pub_t                 *sip_next;          /**< Dummy link to msgfrag */
   void                      *sip_user;	        /**< Application data */
-  unsigned                   sip_size;
-  int                        sip_flags;
+  unsigned                   sip_size;          /**< Size of structure */
+  int                        sip_flags;	        /**< Parser flags */
 
   sip_error_t               *sip_error;	        /**< Erroneous headers */
 
@@ -360,7 +353,7 @@ struct sip_s {
 
 
 /** @ingroup sip_request
- * @brief Structure for SIP request line.
+ * @brief Structure for @ref sip_request "SIP request line".
  */
 struct sip_request_s
 {
@@ -373,7 +366,7 @@ struct sip_request_s
 };
 
 /**@ingroup sip_status
- * @brief Structure for SIP status line.
+ * @brief Structure for @ref sip_status "SIP status line".
  */
 struct sip_status_s
 {
@@ -385,7 +378,7 @@ struct sip_status_s
 };
 
 /**@ingroup sip_from
- * @brief Structure for @b From and @b To headers.
+ * @brief Structure for @From and @To headers.
  */
 struct sip_addr_s
 {
@@ -403,12 +396,12 @@ struct sip_addr_s
 #define a_host a_url->url_host
 
 /**@ingroup sip_accept
- * @brief Structure for @b Accept header.
+ * @brief Structure for @Accept header field.
  */
 struct sip_accept_s
 {
   sip_common_t        ac_common[1]; /**< Common fragment info */
-  sip_accept_t       *ac_next;	    /**< Pointer to next Accept header */
+  sip_accept_t       *ac_next;	    /**< Pointer to next @Accept value */
   char const         *ac_type;	    /**< Pointer to type/subtype */
   char const         *ac_subtype;   /**< Points after first slash in type */
   msg_param_t const  *ac_params;    /**< List of parameters */
@@ -416,17 +409,17 @@ struct sip_accept_s
 };
 
 /**@ingroup sip_authentication_info
- * @brief Structure for @b Authentication-Info header.
+ * @brief Structure for @AuthenticationInfo header.
  */
 struct sip_authentication_info_s
 {
   sip_common_t        ai_common[1]; /**< Common fragment info */
   sip_error_t        *ai_next;	    /**< Dummy link to next */
-  msg_param_t const  *ai_params;    /**< List authentication info */
+  msg_param_t const  *ai_params;    /**< List of authentication info */
 };
 
 /**@ingroup sip_call_id 
- * @brief Structure for @b Call-ID (and In-Reply-To) headers.
+ * @brief Structure for @CallID (and @InReplyTo) header fields.
  */
 struct sip_call_id_s {		
   sip_common_t   i_common[1];	    /**< Common fragment info */
@@ -436,19 +429,19 @@ struct sip_call_id_s {
 };
 
 /**@ingroup sip_call_info
- * @brief Structure for @b Call-Info header.
+ * @brief Structure for @CallInfo header.
  */
 struct sip_call_info_s
 {
   sip_common_t        ci_common[1]; /**< Common fragment info */
-  sip_call_info_t    *ci_next;	    /**< Link to next Call-Info */
+  sip_call_info_t    *ci_next;	    /**< Link to next @CallInfo */
   url_t               ci_url[1];    /**< URI to call info  */
   msg_param_t const  *ci_params;    /**< List of parameters */
   char const         *ci_purpose;   /**< Value of @b purpose parameter */
 };
 
 /**@ingroup sip_cseq
- * @brief Structure for @b CSeq header.
+ * @brief Structure for @CSeq header.
  */
 struct sip_cseq_s
 {
@@ -460,35 +453,35 @@ struct sip_cseq_s
 };
 
 /**@ingroup sip_contact
- * @brief Structure for @b Contact header.
+ * @brief Structure for @Contact header field.
  */
 struct sip_contact_s
 {
   sip_common_t        m_common[1];  /**< Common fragment info */
-  sip_contact_t      *m_next;	    /**< Link to next Contact header */
+  sip_contact_t      *m_next;	    /**< Link to next @Contact header */
   char const         *m_display;    /**< Display name */
   url_t               m_url[1];	    /**< SIP URL */
   msg_param_t const  *m_params;	    /**< List of contact-params */
   char const         *m_comment;    /**< Comment */
 
-  char const         *m_q;	    /**< Priority */
+  char const         *m_q;	    /**< @Priority */
   char const         *m_expires;    /**< Expiration time */
 };
 
 /**@ingroup sip_content_length
- * @brief Structure for @b Content-Length header.
+ * @brief Structure for @ContentLength header.
  */
 struct sip_content_length_s
 {
   sip_common_t   l_common[1];	    /**< Common fragment info */
   sip_error_t   *l_next;	    /**< Link to next (dummy) */
-  uint32_t       l_length;	    /**< Digits */
+  uint32_t       l_length;	    /**< Length in bytes */
 };
 
 #if DOCUMENTATION_ONLY
 /**@ingroup sip_content_type
  *
- * @brief Structure for @b Content-Type header.
+ * @brief Structure for @ContentType header.
  */
 struct sip_content_type_s
 {
@@ -501,7 +494,7 @@ struct sip_content_type_s
 #endif
 
 /**@ingroup sip_date
- * @brief Structure for @b Date header.
+ * @brief Structure for @Date header.
  */
 struct sip_date_s
 {
@@ -511,30 +504,30 @@ struct sip_date_s
 };
 
 /**@ingroup sip_error_info
- * @brief Structure for @b Error-Info header.
+ * @brief Structure for @ErrorInfo header.
  */
 struct sip_error_info_s
 {
   sip_common_t        ei_common[1]; /**< Common fragment info */
-  sip_call_info_t    *ei_next;	    /**< Link to next Error-Info */
+  sip_call_info_t    *ei_next;	    /**< Link to next @ErrorInfo */
   url_t               ei_url[1];    /**< URI to error description */
   msg_param_t const  *ei_params;    /**< List of parameters */
 };
 
 /**@ingroup sip_event
- * @brief Structure for @b Event header.
+ * @brief Structure for @Event header.
  */
 struct sip_event_s 
 {
   sip_common_t        o_common[1];  /**< Common fragment info */
   sip_error_t        *o_next;	    /**< Link to next (dummy) */
-  char const *        o_type;	    /**< Event type */
+  char const *        o_type;	    /**< @Event type */
   msg_param_t const  *o_params;	    /**< List of parameters */
-  char const         *o_id;	    /**< Event ID */
+  char const         *o_id;	    /**< @Event ID */
 };
 
 /**@ingroup sip_expires
- * @brief Structure for @b Expires header.
+ * @brief Structure for @Expires header.
  */
 struct sip_expires_s
 {
@@ -546,7 +539,7 @@ struct sip_expires_s
 };
 
 /**@ingroup sip_max_forwards
- * @brief Structure for @b Max-Forwards header.
+ * @brief Structure for @MaxForwards header.
  */
 struct sip_max_forwards_s
 {
@@ -556,7 +549,7 @@ struct sip_max_forwards_s
 };
 
 /**@ingroup sip_min_expires
- * @brief Structure for @b Min-Expires header.
+ * @brief Structure for @MinExpires header.
  */
 struct sip_min_expires_s
 {
@@ -570,16 +563,16 @@ struct sip_min_expires_s
  */
 struct sip_rack_s
 {
-  sip_common_t        ra_common;
-  sip_error_t        *ra_next;
-  uint32_t            ra_response;
-  uint32_t            ra_cseq;
-  sip_method_t        ra_method;
-  char const         *ra_method_name;
+  sip_common_t        ra_common;        /**< Common fragment info */
+  sip_error_t        *ra_next;		/**< Dummy link to next */
+  uint32_t            ra_response;	/**< Sequence number of response */
+  uint32_t            ra_cseq;		/**< Sequence number of request  */
+  sip_method_t        ra_method;	/**< Original request method */
+  char const         *ra_method_name;	/**< Original request method name */
 };
 
 /**@ingroup sip_refer_to
- * @brief Structure for @b Refer-To header.
+ * @brief Structure for @ReferTo header.
  */
 struct sip_refer_to_s
 {
@@ -591,7 +584,7 @@ struct sip_refer_to_s
 };
 
 /**@ingroup sip_referred_by
- * @brief Structure for @b Referred-By header.
+ * @brief Structure for @ReferredBy header.
  */
 struct sip_referred_by_s
 {
@@ -605,22 +598,22 @@ struct sip_referred_by_s
 
 
 /**@ingroup sip_replaces
- * @brief Structure for @b Replaces header.
+ * @brief Structure for @Replaces header.
  */
 struct sip_replaces_s
 {
   sip_common_t        rp_common[1];   /**< Common fragment info */
   sip_error_t        *rp_next;	      /**< Link to next (dummy) */
-  char const         *rp_call_id;     /**< Call-ID */
+  char const         *rp_call_id;     /**< @CallID of dialog to replace */
   msg_param_t const  *rp_params;      /**< List of parameters */
-  char const         *rp_to_tag;      /**< to-tag parameter */
-  char const         *rp_from_tag;    /**< from-tag parameter */
+  char const         *rp_to_tag;      /**< Value of "to-tag" parameter */
+  char const         *rp_from_tag;    /**< Value of "from-tag" parameter */
   unsigned            rp_early_only;  /**< early-only parameter */
 };
 
 
 /**@ingroup sip_retry_after
- * @brief Structure for @b Retry-After header.
+ * @brief Structure for @RetryAfter header.
  */
 struct sip_retry_after_s {
   sip_common_t        af_common[1]; /**< Common fragment info */
@@ -628,34 +621,34 @@ struct sip_retry_after_s {
   sip_time_t          af_delta;	    /**< Seconds to before retry */
   char const         *af_comment;   /**< Comment string */
   msg_param_t const  *af_params;    /**< List of parameters */
-  char const         *af_duration;  /**< Duration parameter */
+  char const         *af_duration;  /**< Value of "duration" parameter */
 };
 
 /**@ingroup sip_request_disposition
- * @brief Structure for @b Request-Disposition header.
+ * @brief Structure for @RequestDisposition header.
  */
 struct sip_request_disposition_s
 {
   sip_common_t        rd_common[1]; /**< Common fragment info */
-  sip_unknown_t      *rd_next;	    /**< Link to next (dummy) */
-  char const        **rd_items;     /**< List of directives */
+  sip_error_t        *rd_next;	    /**< Link to next (dummy) */
+  msg_param_t        *rd_items;     /**< List of directives */
 };
 
 /**@ingroup sip_caller_preferences
- * @brief Structure for @b Accept-Contact and @b Reject-Contact headers.
+ * @brief Structure for @AcceptContact and @RejectContact header fields.
  */
 struct sip_caller_prefs_s
 {
   sip_common_t        cp_common[1];   /**< Common fragment info */
   sip_caller_prefs_t *cp_next;	      /**< Link to next (dummy) */
-  msg_param_t const  *cp_params;      
-  char const         *cp_q;           /**< Priority */
-  unsigned            cp_require : 1;
-  unsigned            cp_explicit : 1;
+  msg_param_t const  *cp_params;      /**< List of parameters */
+  char const         *cp_q;           /**< @Priority */
+  unsigned            cp_require :1;  /**< Value of "require" parameter */
+  unsigned            cp_explicit :1; /**< Value of "explicit" parameter */
 };
 
 /**@ingroup sip_reason
- * @brief Structure for @b Reason header.
+ * @brief Structure for @Reason header field.
  */
 struct sip_reason_s
 {
@@ -663,88 +656,89 @@ struct sip_reason_s
   sip_reason_t       *re_next;	    /**< Link to next */
   char const         *re_protocol;  /**< Protocol */
   msg_param_t const  *re_params;    /**< List of reason parameters */
-  char const         *re_cause;	    /**< Shortcut to cause parameter */
-  char const         *re_text;	    /**< Shortcut to text parameter */
+  char const         *re_cause;	    /**< Value of cause parameter */
+  char const         *re_text;	    /**< Value of text parameter */
 };
 
 /**@ingroup sip_route
- * @brief Structure for @b Route and @b Record-Route headers.
+ * @brief Structure for @Route and @RecordRoute header fields.
  */
 struct sip_route_s
 {
   sip_common_t        r_common[1];  /**< Common fragment info */
   sip_route_t        *r_next;	    /**< Link to next */
   char const         *r_display;    /**< Display name */
-  url_t               r_url[1];	    /**< Route URL */
+  url_t               r_url[1];	    /**< @Route URL */
   msg_param_t const  *r_params;	    /**< List of route parameters */
 };
 
 /**@ingroup sip_rseq 
- * @brief Structure for @b RSeq header.
+ * @brief Structure for @RSeq header.
  */
 struct sip_rseq_s
 {
-  sip_common_t        rs_common;
-  sip_error_t        *rs_next;
-  unsigned long       rs_response;
+  sip_common_t        rs_common[1];	/**< Common fragment info */
+  sip_error_t        *rs_next;		/**< Dummy link to next */
+  unsigned long       rs_response;	/**< Sequence number of response */
 };
 
 /**@ingroup sip_session_expires 
- * @brief Structure for @b Session-Expires header.
+ * @brief Structure for @SessionExpires header.
  */
 struct sip_session_expires_s
 {
-  sip_common_t        x_common[1];
-  sip_error_t        *x_next;
-  unsigned long       x_delta; /**< Delta-seconds */
-  msg_param_t const  *x_params;
-  char const         *x_refresher; /**< UAS or UAC */
+  sip_common_t        x_common[1];	/**< Common fragment info */
+  sip_error_t        *x_next;		/**< Dummy link to next */
+  unsigned long       x_delta;		/**< Delta-seconds */
+  msg_param_t const  *x_params;		/**< List of parameters */
+  char const         *x_refresher;	/**< Value of "refresher"
+					 * parameter: UAS or UAC */
 };
 
 /**@ingroup sip_min_se 
- * @brief Structure for @b Min-SE header.
+ * @brief Structure for @MinSE header.
  */
 struct sip_min_se_s
 {
-  sip_common_t        min_common[1];
-  sip_error_t        *min_next;
-  unsigned long       min_delta; /**< Delta-seconds */
-  msg_param_t const  *min_params; /**< List of extension parameters */
+  sip_common_t        min_common[1];	/**< Common fragment info */
+  sip_error_t        *min_next;		/**< Dummy link to next */
+  unsigned long       min_delta;	/**< Delta-seconds */
+  msg_param_t const  *min_params;	/**< List of extension parameters */
 };
 
 /**@ingroup sip_subscription_state 
- * @brief Structure for @b Subscription-State header.
+ * @brief Structure for @SubscriptionState header.
  */
 struct sip_subscription_state_s
 {
-  sip_common_t        ss_common[1]; /**< Common fragment info */
-  sip_error_t        *ss_next;
-  /**< Subscription state: "pending", "active" or "terminated" */
+  sip_common_t        ss_common[1];   /**< Common fragment info */
+  sip_error_t        *ss_next;	      /**< Dummy link to next */
+  /** Subscription state: "pending", "active" or "terminated" */
   char const         *ss_substate; 
-  msg_param_t const  *ss_params;   /**< List of parameters */
-  char const         *ss_reason;   /**< Reason for termination  */
-  char const         *ss_expires;  /**< Subscription lifetime */
+  msg_param_t const  *ss_params;      /**< List of parameters */
+  char const         *ss_reason;      /**< Reason for termination  */
+  char const         *ss_expires;     /**< Subscription lifetime */
   char const         *ss_retry_after; /**< Value of retry-after parameter */
 };
 
 /**@ingroup sip_timestamp
- * @brief Structure for @b Timestamp header.
+ * @brief Structure for @Timestamp header.
  */
 struct sip_timestamp_s 
 {
   sip_common_t        ts_common[1]; /**< Common fragment info */
-  sip_error_t        *ts_next;
+  sip_error_t        *ts_next;	    /**< Dummy link to next */
   char const         *ts_stamp;	    /**< Original timestamp */
   char const         *ts_delay;	    /**< Delay at UAS */
 };
 
 /**@ingroup sip_via
- * @brief Structure for @b Via header.
+ * @brief Structure for @Via header field.
  */
 struct sip_via_s
 {
   sip_common_t        v_common[1];  /**< Common fragment info */
-  sip_via_t          *v_next;	    /**< Link to next Via header */
+  sip_via_t          *v_next;	    /**< Link to next @Via header */
   char const         *v_protocol;   /**< Application and transport protocol */
   char const         *v_host;	    /**< Hostname */
   char const         *v_port;	    /**< Port number */
@@ -759,12 +753,12 @@ struct sip_via_s
 };
 
 /**@ingroup sip_security_client
- * @brief Structure for @b Security-Client, @b Security-Server, and
- * @b Security-Verify headers.
+ * @brief Structure for @SecurityClient, @SecurityServer, and
+ * @SecurityVerify headers.
  */
 struct sip_security_agree_s
 {
-  sip_common_t        sa_common[1];/**< Common fragment info */
+  sip_common_t        sa_common[1]; /**< Common fragment info */
   struct sip_security_agree_s 
                      *sa_next;	    /**< Link to next mechanism */
   char const         *sa_mec;	    /**< Security mechanism */
@@ -776,13 +770,13 @@ struct sip_security_agree_s
 };
 
 /**@ingroup sip_privacy
- * @brief Structure for @b Privacy header.
+ * @brief Structure for @Privacy header.
  */
 struct sip_privacy_s
 {
   sip_common_t       priv_common[1];/**< Common fragment info */
   sip_error_t       *priv_next;	    /**< Dummy link */
-  msg_param_t const *priv_values;   /**< Privacy values */
+  msg_param_t const *priv_values;   /**< @Privacy values */
 };
 
 /* union representing any SIP header

@@ -25,10 +25,9 @@
 /**@CFILE sip_basic.c
  * @brief Basic SIP headers.
  *
- * The file @b sip_basic.c contains implementation of header classes for
- * basic SIP headers, like request and status lines, payload, @b Call-ID, @b
- * CSeq, @b Contact, @b Content-Length, @b Date, @b Expires, @b From, @b
- * Route, @b Record-Route, @b To, and @b Via.
+ * Implementation of header classes for basic SIP headers, like request and
+ * status lines, payload, @CallID, @CSeq, @Contact, @ContentLength, @Date,
+ * @Expires, @From, @Route, @RecordRoute, @To, and @Via.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
@@ -63,8 +62,8 @@
 
 /**@SIP_HEADER sip_request Request Line
  *
- * The request line is first line in a SIP request message.  It is defined
- * in [S4.1] as follows:
+ * The request line is first line in a SIP request message.  Its syntax defined
+ * in @RFC3261 as follows:
  * 
  * @code
  *    Request-Line   =  Method SP Request-URI SP SIP-Version CRLF
@@ -91,14 +90,15 @@
  *    SIP-Version    =  "SIP" "/" 1*DIGIT "." 1*DIGIT
  * @endcode
  *
+ * The parsed request-line is stored in #sip_request_t structure.
  */
 
 /**@ingroup sip_request
  * @typedef typedef struct sip_request_s sip_request_t;
  *
- * The structure sip_request_t contains representation of SIP request line.
+ * The structure #sip_request_t contains representation of SIP request line.
  *
- * The sip_request_t is defined as follows:
+ * The #sip_request_t is defined as follows:
  * @code
  * typedef struct sip_request_s {
  *   sip_common_t     rq_common[1];     // Common fragment info
@@ -120,12 +120,7 @@ static msg_dup_f sip_request_dup_one;
 msg_hclass_t sip_request_class[] = 
 SIP_HEADER_CLASS(request, NULL, "", rq_common, single_critical, request);
 
-/**
- * Parse request line.
- *
- * The function sip_request_d() parses the request line from a a SIP
- * message. 
- */
+/**Parse @ref sip_request "request line" from a a SIP message. */
 issize_t sip_request_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_request_t *rq = h->sh_request;
@@ -140,11 +135,7 @@ issize_t sip_request_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
   return 0;
 }
 
-/**
- * Encode a SIP request line.
- *
- * The function sip_request_e() prints a SIP request line.
- */
+/**Encode @ref sip_request "request line" of a a SIP message. */
 issize_t sip_request_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   sip_request_t const *rq = h->sh_request;
@@ -190,14 +181,14 @@ char *sip_request_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /**@ingroup sip_request
  *
- * Create a request line object. 
+ * Create a @ref sip_request "request line" object. 
  *
- * The function sip_request_create() creates a request line object with
+ * Create a request line object with
  * method enum @a method, method name @a name, request URI @a uri, and
  * protocol version @a version.  The memory for the header object is
  * allocated from the memory home @a home.
  *
- * @param home     memory home used to allocate sip_status_t object
+ * @param home     memory home used to allocate #sip_request_t object
  * @param method   method enum
  * @param name     method name (required if method is not well-known)
  * @param uri      request URI
@@ -212,7 +203,7 @@ char *sip_request_dup_one(sip_header_t *dst, sip_header_t const *src,
 
  * @note 
  * If you provide an non-NULL @a version string, it is not copied. The
- * string @b MUST remain constant.
+ * version string @b MUST remain constant.
  */
 sip_request_t *sip_request_create(su_home_t *home,
 				  sip_method_t method, char const *name,
@@ -257,7 +248,7 @@ sip_request_t *sip_request_create(su_home_t *home,
 /**@SIP_HEADER sip_status Status Line
  *
  * The status line is first line in a response message.  It is defined in
- * [S9.1] as follows:
+ * @RFC3261 as follows:
  * 
  * @code
  *    Status-Line     =  SIP-Version SP Status-Code SP Reason-Phrase CRLF
@@ -273,14 +264,16 @@ sip_request_t *sip_request_create(su_home_t *home,
  *                       / UTF8-NONASCII / UTF8-CONT / SP / HTAB)
  * @endcode
  *
+ * The parsed status line is stored in #sip_status_t structure.
  */
 
 /**@ingroup sip_status
  * @typedef typedef struct sip_status_s sip_status_t;
  *
- * The structure sip_status_t contains representation of SIP status line.
+ * The structure #sip_status_t contains representation of SIP 
+ * @ref sip_status "status line".
  *
- * The sip_status_t is defined as follows:
+ * The #sip_status_t is defined as follows:
  * @code
  * typedef struct sip_status_s {
  *   sip_common_t   st_common[1];       // Common fragment info
@@ -337,7 +330,7 @@ issize_t sip_status_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 		  h->sh_status->st_phrase);
 }
 
-/** Extra size of a sip_status_t object. */
+/** Extra size of a #sip_status_t object. */
 isize_t sip_status_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_status_t const *st = h->sh_status;
@@ -365,9 +358,9 @@ char *sip_status_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /**@ingroup sip_status
  *
- * Create a status line object.
+ * Create a @ref sip_status "status line" object.
  *
- * @param home    memory home used to allocate sip_status_t object
+ * @param home    memory home used to allocate #sip_status_t object
  * @param status  status code (in range 100 - 699)
  * @param phrase  status phrase (may be NULL)
  * @param version version string (defaults to "SIP/2.0" if NULL)
@@ -377,8 +370,8 @@ char *sip_status_dup_one(sip_header_t *dst, sip_header_t const *src,
  * string @b MUST remain constant.
  *
  * @return
- * The function sip_status_create() returns a pointer to newly created
- * status line structure when successful, or NULL upon an error.
+ * A pointer to newly created @ref sip_status "status line"
+ * structure when successful, or NULL upon an error.
  */
 sip_status_t *sip_status_create(su_home_t *home,
 				unsigned status,
@@ -404,12 +397,14 @@ sip_status_t *sip_status_create(su_home_t *home,
 
 /* ====================================================================== */
 
-/**@SIP_HEADER sip_payload Message Payload
+/**@SIP_HEADER sip_payload Message Body
  *
- * The payload object contains the optional message body. The message body
- * stored in the #sip_payload_t structure has no internal structure, but it
- * is accessed as a byte array. Use @ref sdp_parser "SDP parser" to parse
- * SDP content, for instance.
+ * The payload structure contains the optional message body. The message
+ * body stored in the #sip_payload_t structure has no internal structure,
+ * but it is accessed as a byte array. Use @ref sdp_parser "SDP parser" to
+ * parse SDP content, for instance.
+ *
+ * The message body is stored in a #sip_payload_t structure.
  */
 
 /**@ingroup sip_payload
@@ -439,9 +434,9 @@ SIP_HEADER_CLASS(payload, NULL, "", pl_common, single, payload);
 
 /**@ingroup sip_payload
  *
- * Create a SIP payload structure. 
+ * Create a @ref sip_payload "SIP payload" structure. 
  *
- * The function sip_payload_create() creates a new SIP payload structure. it
+ * Create a new SIP payload structure. it
  * copies the given data to the the payload data, and NUL terminates it (it
  * allocates one extra byte for NUL).  If a NULL pointer is given as @a data,
  * sip_payload_create() allocates and zeroes a data buffer of @a len bytes.
@@ -450,7 +445,7 @@ SIP_HEADER_CLASS(payload, NULL, "", pl_common, single, payload);
  * @param data payload data 
  * @param len  payload length
  *
- * The function sip_payload_create() returns a pointer to newly creates
+ * @return A pointer to newly created
  * payload structure, if successful, and NULL upon an error.
  */ 
 sip_payload_t *sip_payload_create(su_home_t *home, void const *data, isize_t len)
@@ -483,16 +478,18 @@ sip_payload_t *sip_payload_create(su_home_t *home, void const *data, isize_t len
  * An empty line separates message headers from the message body (payload).
  * In order to avoid modifying messages with integrity protection, the
  * separator line has its own header structure which is included in the
- * sip_t structure.
+ * #sip_t structure.
+ *
+ * The parsed separator line is stored in #sip_separator_t structure.
  */
 
 /**@ingroup sip_separator
  * @typedef typedef struct sip_separator_s sip_separator_t;
  *
- * The structure sip_separator_t contains representation of separator line
+ * The structure #sip_separator_t contains representation of separator line
  * between message headers and body.
  *
- * The sip_separator_t is defined as follows:
+ * The #sip_separator_t is defined as follows:
  * @code
  * typedef struct sip_separator_s {
  *   msg_common_t    sep_common[1];     // Common fragment info
@@ -511,7 +508,7 @@ SIP_HEADER_CLASS(separator, NULL, "", sep_common, single, any);
 
 /**@ingroup sip_separator
  * 
- * Create a SIP separator line structure.
+ * Create a @ref sip_separator "SIP separator line" structure.
  */
 sip_separator_t *sip_separator_create(su_home_t *home)
 {
@@ -528,14 +525,30 @@ sip_separator_t *sip_separator_create(su_home_t *home)
 
 /**@SIP_HEADER sip_unknown Unknown Headers
  *
- * The unknown headers are handled with sip_unknown_t structure.  The whole
- * unknown header including its name is included in the header value string
- * @a g_value.
+ * The unknown headers are handled with #sip_unknown_t structure. The
+ * unknown header name is stored in @a un_name field and the header field
+ * following the colon is stored in @a un_value field.
  * 
  * @note It is possible to speed up parsing process by creating a parser
  * which does understand only a minimum number of headers. If such a parser
  * is used, some well-known headers are regarded as unknown and put into
  * list of unknown headers.
+ */
+
+/**@ingroup sip_unknown
+ * @typedef typedef struct sip_unknown_s sip_unknown_t;
+ *
+ * The structure #sip_unknown_t contains representation of unknown headers.
+ *
+ * The #sip_unknown_t is defined as follows:
+ * @code
+ * typedef struct msg_unknown_s {
+ *   msg_common_t    un_common[1];  // Common fragment info 
+ *   msg_unknown_t  *un_next;       // Link to next unknown header 
+ *   char const     *un_name;       // Header name 
+ *   char const     *un_value;      // Header field value 
+ * } sip_unknown_t;
+ * @endcode
  */
 
 #define sip_unknown_dup_xtra msg_unknown_dup_xtra 
@@ -561,7 +574,7 @@ issize_t sip_unknown_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
  *
  * The erroneous headers are stored in #sip_error_t structure.
  * 
- * @note Other headers (like duplicate @b Content-Length headers) may be put
+ * @note Other headers (like duplicate @ContentLength headers) may be put
  * into the list of erroneous headers (@c sip->sip_error). If the list of
  * erroneous headers is processed, the header type must be validated first
  * by calling sip_is_error() (or by other relevant tests).
@@ -569,7 +582,16 @@ issize_t sip_unknown_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 
 /**@ingroup sip_error
  * @typedef typedef msg_error_t sip_error_t;
- * Type for erroneous headers.
+ * The structure #sip_error_t contains representation of error headers.
+ *
+ * The #sip_error_t is defined as follows:
+ * @code
+ * typedef struct msg_error_s {
+ *   msg_common_t    er_common[1];  // Common fragment info 
+ *   msg_error_t    *er_next;       // Link to next header 
+ *   char const     *er_name;       // Name of bad header (if any)
+ * } sip_error_t;
+ * @endcode
  */
 
 msg_hclass_t sip_error_class[] =
@@ -597,8 +619,8 @@ issize_t sip_error_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 
 /**Parse @e name-addr.
  *
- * Parses <i>( name-addr | addr-spec )</i> construct on @b Contact, @b From,
- * @b To, and other compatible headers. It splits the argument string in
+ * Parses <i>( name-addr | addr-spec )</i> construct on @Contact, @From,
+ * @To, and other compatible headers. It splits the argument string in
  * four parts:
  *
  * @par
@@ -613,16 +635,14 @@ issize_t sip_error_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
  *
  * @note After succesful call to the function @c sip_name_addr_d(), *ss
  * contains pointer to the first character not beloging to @e name-addr,
- * most probably comma. If that character is a separator, the last parameter
+ * most probably a comma. If that character is a separator, the last parameter
  * may not be NUL (zero) terminated. So, after examining value of @a **ss,
- * tohe calling function @b MUST set it to NUL.
+ * the calling function @b MUST set it to NUL.
  *
- * @note
- * Other header like @b Route or @b Route-Record may require some tweaking.
+ * @retval 0 if successful
+ * @retval -1 upon an error
  *
- * @return 
- * The function @c sip_name_addr_d() returns 0 if successful, and -1 upon an
- * error.
+ * @sa @From, @To, @Contact
  */
 issize_t sip_name_addr_d(su_home_t *home,
 			 char **inout_s,
@@ -714,8 +734,8 @@ issize_t sip_name_addr_d(su_home_t *home,
 
 /**Encode @e name-addr and parameter list.
  *
- * Encodes @e name-addr headers, like From, To, Call-Info, Error-Info,
- * Route, and Record-Route.
+ * Encodes @e name-addr headers, like @From, @To, @CallInfo, @ErrorInfo,
+ * @Route, and @RecordRoute.
  *
  * @param b        buffer to store the encoding result
  * @param bsiz     size of the buffer @a b
@@ -775,7 +795,7 @@ issize_t sip_name_addr_e(char b[], isize_t bsiz,
   return b - b0;
 }
 
-/** Parse To or From headers */
+/** Parse @To or @From headers */
 issize_t sip_addr_d(su_home_t *home,
 		    sip_header_t *h,
 		    char *s,
@@ -928,7 +948,7 @@ int sip_addr_tag(su_home_t *home, sip_addr_t *a, char const *tag)
 /**@SIP_HEADER sip_call_id Call-ID Header
  *
  * The @b Call-ID header uniquely identifies a particular invitation or all
- * registrations of a particular client. It is defined in [S10.12] as
+ * registrations of a particular client. It is defined in @RFC3261 as
  * follows:
  * 
  * @code
@@ -939,12 +959,13 @@ int sip_addr_tag(su_home_t *home, sip_addr_t *a, char const *tag)
  *                   ":" / "\" / DQUOTE / "/" / "[" / "]" / "?" / "{" / "}" )
  * @endcode
  *
+ * The parsed Call-ID Header is stored in #sip_call_id_t structure.
  */
 
 /**@ingroup sip_call_id
  * @typedef typedef struct sip_call_id_s sip_call_id_t;
  *
- * The structure #sip_call_id_t contains representation of SIP @b Call-ID
+ * The structure #sip_call_id_t contains representation of SIP @CallID
  * header.
  *
  * The #sip_call_id_t is defined as follows:
@@ -989,25 +1010,23 @@ issize_t sip_call_id_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
   return n;
 }
 
-/** Extra size of a sip_call_id_t object. */
+/** Extra size of a #sip_call_id_t object. */
 isize_t sip_call_id_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_call_id_t const *i = h->sh_call_id;
   return offset + MSG_STRING_SIZE(i->i_id);
 }
 
-/**
- * Duplicate a sip_call_id object.
+/**Duplicate a sip_call_id object.
  *
- * The function sip_call_id_dup_one() duplicates (deep copies) 
- * a #sip_call_id header object.
+ * Duplicate (copy deeply) a single #sip_call_id_t header object.
  *
  * @param dst   pointer to newly allocated header object
  * @param src   pointer to a header object to be duplicated
  * @param b     memory buffer used to copy external references
  * @param xtra  number bytes in buffer @a b
  *
- * @return Pointer to the new copy of @c sip_call_id_t object, or @c NULL
+ * @return Pointer to the new copy of #sip_call_id_t object, or @c NULL
  * upon an error.
  */
 char *sip_call_id_dup_one(sip_header_t *dst, sip_header_t const *src,
@@ -1027,19 +1046,20 @@ char *sip_call_id_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /**@ingroup sip_call_id
  *
- * Create a @b Call-ID header object. 
+ * Create a @CallID header object. 
  *
- * The function sip_call_id_create() creates a Call-ID header object with a
- * new unique value. It uses su_guid_generate() function to generate the
- * value. If the local host name @a domain is specified, it is prepended to
- * the generated value instead of local MAC address.
+ * Create a Call-ID header object with a new unique value. It uses
+ * su_guid_generate() function to generate the value. If the local host name
+ * @a domain is specified, it is prepended to the generated value instead of
+ * local MAC address.
 
  * @param home        memory home
  * @param domain      local domain name
  *
- * @return
- * The function sip_call_id_create() returns a pointer to newly created @b
- * Call-ID header object when successful or NULL upon an error.
+ * @return A pointer to newly created @CallID header object when
+ * successful or NULL upon an error.
+ *
+ * @sa su_guid_generate(), su_guid_sprintf()
  */
 sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
 {
@@ -1091,18 +1111,19 @@ sip_call_id_t *sip_call_id_create(su_home_t *home, char const *domain)
  *    extension-method  =  token
  * @endcode
  *
+ * The parsed CSeq header is stored in #sip_cseq_t structure.
  */
 
 /**@ingroup sip_cseq
  * @typedef typedef struct sip_cseq_s sip_cseq_t;
  *
- * The structure #sip_cseq_t contains representation of SIP @b CSeq header.
+ * The structure #sip_cseq_t contains representation of SIP @CSeq header.
  *
- * The sip_cseq_t is defined as follows:
+ * The #sip_cseq_t is defined as follows:
  * @code
  * typedef struct sip_cseq_s {
  *   sip_common_t   cs_common[1];       // Common fragment info
- *   sip_unknown_t *cs_next;            // Link to next (dummy)
+ *   sip_error_t   *cs_next;            // Link to next (dummy)
  *   uint32_t       cs_seq;             // Sequence number
  *   sip_method_t   cs_method;          // Method enum
  *   char const    *cs_method_name;     // Method name
@@ -1175,9 +1196,9 @@ char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /**@ingroup sip_cseq 
  *
- * Create a @b CSeq header object. 
+ * Create a @CSeq header object. 
  *
- * The function sip_cseq_create() creates a CSeq header object with the
+ * Create a @CSeq header object with the
  * sequence number @a seq, method enum @a method and method name @a
  * method_name.  The memory for the header object is allocated from the
  * memory home @a home.
@@ -1195,7 +1216,7 @@ char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
  * @endcode
  *
  * @return
- * The function sip_cseq_create() returns a pointer to newly created @b CSeq
+ * A pointer to newly created @CSeq
  * header object when successful or NULL upon an error.
  */
 sip_cseq_t *sip_cseq_create(su_home_t *home,
@@ -1231,7 +1252,7 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
 /**@SIP_HEADER sip_contact Contact Header
  *
  * The Contact header contain a list of URLs used to redirect future
- * requests.  Its syntax is defined in [S10.14] as follows:
+ * requests.  Its syntax is defined in @RFC3261 as follows:
  * 
  * @code
  *    Contact            =  ("Contact" / "m" ) HCOLON
@@ -1250,12 +1271,14 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
  *
  * @note
  * The @RFC2543 syntax allowed <comment>. We accept it, but don't encode it.
+ *
+ * Each parsed Contact header field is stored in #sip_contact_t structure.
  */
 
 /**@ingroup sip_contact
  * @typedef typedef struct sip_contact_s sip_contact_t;
  *
- * The structure #sip_contact_t contains representation of SIP @b Contact
+ * The structure #sip_contact_t contains representation of SIP @Contact
  * header.
  *
  * The #sip_contact_t is defined as follows:
@@ -1268,20 +1291,41 @@ sip_cseq_t *sip_cseq_create(su_home_t *home,
  *   msg_param_t const  *m_params;      // List of contact-params
  *   char const         *m_comment;     // Comment
  *
- *   msg_param_t         m_q;           // Priority
- *   msg_param_t         m_expires;     // Expiration time 
+ *   char const         *m_q;           // Priority
+ *   char const         *m_expires;     // Expiration time 
  * } sip_contact_t;
  * @endcode
  * 
- * @note: The field @ref sip_contact_s::m_comment m_comment is deprecated.
+ * @note The <comment> field @ref sip_contact_s::m_comment "m_comment" is
+ * deprecated: it is parsed but not included in encoding.
  */
 
 static msg_xtra_f sip_contact_dup_xtra;
 static msg_dup_f sip_contact_dup_one;
 static msg_update_f sip_contact_update;
 
-msg_hclass_t sip_contact_class[] = 
-SIP_HEADER_CLASS(contact, "Contact", "m", m_params, append, contact);
+/** @showinitializer */
+msg_hclass_t sip_contact_class[] =
+  /*
+   * Cut through the fog of macros
+   * SIP_HEADER_CLASS(contact, "Contact", "m", m_params, append, contact);
+   * and show here how the msg_hclass_t is initialized
+   */
+  {
+    /* hc_hash: */     sip_contact_hash,
+    /* hc_parse: */    sip_contact_d,
+    /* hc_print: */    sip_contact_e,
+    /* hc_dxtra: */    sip_contact_dup_xtra,
+    /* hc_dup_one: */  sip_contact_dup_one,
+    /* hc_update: */   sip_contact_update,
+    /* hc_name: */     "Contact",
+    /* hc_len: */      sizeof("Contact") - 1,
+    /* hc_short: */    "m",
+    /* hc_size: */     MSG_ALIGN(sizeof(sip_contact_t), sizeof(void*)),
+    /* hc_params: */   offsetof(sip_contact_t, m_params),
+    /* hc_kind:	*/     msg_kind_append,
+    /* hc_critical: */ 0
+  };
 
 issize_t sip_contact_d(su_home_t *home,
 		       sip_header_t *h,
@@ -1367,7 +1411,7 @@ char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
   return b;
 }
 
-/** Update parameter in sip_contact_t */
+/** Update parameter in #sip_contact_t */
 static int sip_contact_update(msg_common_t *h, 
 			      char const *name, isize_t namelen,
 			      char const *value)
@@ -1392,15 +1436,15 @@ static int sip_contact_update(msg_common_t *h,
 
 /**@ingroup sip_contact 
  *
- * Add a parameter to a @b Contact header object
+ * Add a parameter to a @Contact header object
  *
- * The function sip_contact_add_param() adds a parameter to a contact
- * object. It does not copy the contents of the string @c param. 
+ * Add a parameter to a @Contact
+ * object. It does not copy the contents of the string @c param.
  *
  * @note This function @b does @b not duplicate @p param.
  *
  * @param home   memory home
- * @param m      sip_contact_t object
+ * @param m      #sip_contact_t object
  * @param param  parameter string
  *
  * @return 0 when successful, and -1 upon an error.
@@ -1419,27 +1463,29 @@ int sip_contact_add_param(su_home_t *home,
 /**@SIP_HEADER sip_content_length Content-Length Header
  *
  * The Content-Length header indicates the size of the message-body in
- * decimal number of octets.  Its syntax is defined in [S10.18] as
+ * decimal number of octets.  Its syntax is defined in @RFC3261 as
  * follows:
  *
  * @code
  *    Content-Length  =  ( "Content-Length" / "l" ) HCOLON 1*DIGIT
  * @endcode
  *
+ * The parsed Content-Length header is stored in #sip_content_length_t
+ * structure.
  */
 
 /**@ingroup sip_content_length
  * @typedef typedef struct sip_content_length_s sip_content_length_t;
  *
  * The structure #sip_content_length_t contains representation of SIP
- * @b Content-Length header.
+ * @ContentLength header.
  *
  * The #sip_content_length_t is defined as follows:
  * @code
  * typedef struct sip_content_length_s {
  *   sip_common_t   l_common[1];        // Common fragment info
- *   sip_unknown_t *l_next;             // Link to next (dummy)
- *   unsigned long  l_length;           // Digits
+ *   sip_error_t   *l_next;             // Dummy link to next
+ *   uint32_t       l_length;           // Message body length in bytes
  * } sip_content_length_t;
  * @endcode
  */
@@ -1464,9 +1510,9 @@ issize_t sip_content_length_e(char b[], isize_t bsiz, sip_header_t const *h, int
 
 /**@ingroup sip_content_length 
  *
- * Create a @b Content-Length header object. 
+ * Create a @ContentLength header object. 
  *
- * The function sip_content_length_create() creates a Content-Length
+ * Create a @ContentLength
  * header object with the value @a n.  The memory for the header is
  * allocated from the memory home @a home.
  *
@@ -1474,9 +1520,8 @@ issize_t sip_content_length_e(char b[], isize_t bsiz, sip_header_t const *h, int
  * @param n     payload size in bytes
  *
  * @return
- * The function sip_content_length_create() returns a pointer to newly
- * created @b Content-Length header object when successful or NULL upon
- * an error.
+ * A pointer to newly created @ContentLength header object when successful
+ * or NULL upon an error.
  */
 sip_content_length_t *sip_content_length_create(su_home_t *home, uint32_t n)
 {
@@ -1494,7 +1539,7 @@ sip_content_length_t *sip_content_length_create(su_home_t *home, uint32_t n)
 /**@SIP_HEADER sip_date Date Header
  *
  * The Date header field reflects the time when the request or response was
- * first sent.  Its syntax is defined in [S10.21] and [H14.18] as
+ * first sent.  Its syntax is defined in @RFC3261 and @RFC2616 section 14.18 as
  * follows:
  * 
  * @code
@@ -1512,12 +1557,13 @@ sip_content_length_t *sip_content_length_create(su_home_t *home, uint32_t n)
  *                     / "Sep" / "Oct" / "Nov" / "Dec"
  * @endcode
  *
+ * The parsed Date header is stored in #sip_date_t structure.
  */
 
 /**@ingroup sip_date
  * @typedef typedef struct sip_date_s sip_date_t;
  *
- * The structure #sip_date_t contains representation of SIP @b Date header.
+ * The structure #sip_date_t contains representation of SIP @Date header.
  *
  * The #sip_date_t is defined as follows:
  * @code
@@ -1550,9 +1596,9 @@ issize_t sip_date_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 }
 
 /**@ingroup sip_date
- * @brief Create an @b Date header object. 
+ * @brief Create an @Date header object. 
  *
- * The function sip_date_create() creates a Date header object with
+ * Create a @Date header object with
  * the date @a date.  If @date is 0, current time (as returned by sip_now())
  * is used.
  *
@@ -1560,8 +1606,8 @@ issize_t sip_date_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
  * @param date   date expressed as seconds since Mon, 01 Jan 1900 00:00:00
  *
  * @return
- * The function sip_date_create() returns a pointer to newly created
- * @b Date header object when successful, or NULL upon an error.
+ * A pointer to newly created @Date header object when successful, or NULL
+ * upon an error.
  */
 sip_date_t *sip_date_create(su_home_t *home, sip_time_t date)
 {
@@ -1581,7 +1627,7 @@ sip_date_t *sip_date_create(su_home_t *home, sip_time_t date)
 /**@SIP_HEADER sip_expires Expires Header
  *
  * The Expires header field gives the date and time after which the message
- * content expires.  Its syntax is defined in [S10.24] as follows:
+ * content expires.  Its syntax is defined in @RFC3261 as follows:
  * 
  * @code
  *    Expires     =  "Expires" HCOLON delta-seconds
@@ -1589,19 +1635,21 @@ sip_date_t *sip_date_create(su_home_t *home, sip_time_t date)
  * 
  * Note that the first SIP revision (@RFC2543) also allowed absolute time in
  * Expires.
+ *
+ * The parsed Expires header is stored in #sip_expires_t structure.
  */
 
 /**@ingroup sip_expires
  * @typedef typedef struct sip_expires_s sip_expires_t;
  *
- * The structure #sip_expires_t contains representation of SIP @b Expires
+ * The structure #sip_expires_t contains representation of SIP @Expires
  * header.
  *
  * The #sip_expires_t is defined as follows:
  * @code
  * typedef struct sip_expires_s {
  *   sip_common_t        ex_common[1];  // Common fragment info
- *   sip_unknown_t      *ex_next;       // Link to next (dummy)
+ *   sip_error_t        *ex_next;       // Link to next (dummy)
  *   sip_time_t          ex_date;       // Seconds since Jan 1, 1900
  *   sip_time_t          ex_delta;      // ...or delta seconds
  * } sip_expires_t;
@@ -1634,17 +1682,16 @@ issize_t sip_expires_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 }
 
 /**@ingroup sip_expires
- * @brief Create an @b Expires header object. 
+ * @brief Create an @Expires header object. 
  *
- * The function sip_expires_create() creates an Expires header object
- * with the expiration time @a delta.
+ * Create an @Expires header object with the expiration time @a delta.
  *
- * @param home   memory home
+ * @param home   memory home used to allocate #sip_expires_t structure
  * @param delta  relative expiration time in seconds
  *
  * @return
- * The function sip_expires_create() returns a pointer to newly created
- * @b Expires header object when successful or NULL upon an error.
+ * A pointer to newly created @Expires header object when successful or NULL
+ * upon an error.
  */
 sip_expires_t *sip_expires_create(su_home_t *home, sip_time_t delta)
 {
@@ -1661,7 +1708,7 @@ sip_expires_t *sip_expires_create(su_home_t *home, sip_time_t delta)
 /**@SIP_HEADER sip_from From Header
  *
  * The From header indicates the initiator of the request.  It is defined in
- * [S10.25] as follows:
+ * @RFC3261 as follows:
  * 
  * @code
  *    From        =  ( "From" / "f" ) HCOLON from-spec
@@ -1671,18 +1718,20 @@ sip_expires_t *sip_expires_create(su_home_t *home, sip_time_t delta)
  *    tag-param   =  "tag" EQUAL token
  * @endcode
  *
+ *
+ * The parsed From header is stored in #sip_from_t structure.
  */
 
 /**@ingroup sip_from
  * @typedef typedef struct sip_addr_s sip_from_t;
  *
- * The structure sip_from_t contains representation of @b From header.
+ * The structure #sip_from_t contains representation of @From header.
  *
- * The sip_from_t is defined as follows:
+ * The #sip_from_t is defined as follows:
  * @code
  * typedef struct sip_addr_s {
  *   sip_common_t       a_common[1];    // Common fragment info
- *   sip_unknown_t     *a_next;         // Link to next
+ *   sip_error_t       *a_next;         // Link to next
  *   char const        *a_display;      // Display name
  *   url_t              a_url[1];       // URL
  *   msg_param_t const *a_params;       // List of from-param
@@ -1712,17 +1761,14 @@ issize_t sip_from_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 
 /**@ingroup sip_from
  *
- * Create a @b From header object with URL.
+ * Create a @From header object with URL.
  *
- * The function sip_from_create() creates a From header object with
- * the given URL.  
- *
- * @param home      memory home
+ * @param home      memory home used to allocate #sip_from_t structure
  * @param s         pointer to the URL or a string
  *
  * @return
- * The function sip_from_create() returns a pointer to newly created @b
- * From header object when successful or NULL upon an error.
+ * A pointer to newly created @From header object when successful or NULL
+ * upon an error.
  */
 sip_from_t *
 sip_from_create(su_home_t *home, url_string_t const *s)
@@ -1732,18 +1778,16 @@ sip_from_create(su_home_t *home, url_string_t const *s)
 
 /**@ingroup sip_from
  *
- * Add a parameter to an sip_from_t object.
- *
- * The function sip_from_add_param() adds a parameter to an sip_from_t
- * object.
+ * Add a parameter to an #sip_from_t object.
  *
  * @param home   memory home
- * @param from   a pointer to sip_from_t object
+ * @param from   a pointer to #sip_from_t object
  * @param param  parameter string
  *
- * @return 
- * The function sip_from_add_param() returns 0 when successful, or -1 upon
- * an error.
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ *
+ * @deprecated Use msg_header_replace_param() directly.
  */
 int sip_from_add_param(su_home_t *home,
 		       sip_from_t *from,
@@ -1754,7 +1798,7 @@ int sip_from_add_param(su_home_t *home,
 
 /**@ingroup sip_from
  *
- * The function sip_from_tag() adds a tag to a @b From header. If @a tag is
+ * Add a tag to a @From header. If @a tag is
  * identical with the existing one, nothing will be done. An error is
  * returned, if the header already contains a different tag. The @a tag can
  * be provided either as a single token ("deadbeer") or as in parameter form
@@ -1762,7 +1806,7 @@ int sip_from_add_param(su_home_t *home,
  * home @a home.
  * 
  * @param home memory home used to allocate new tag 
- * @param from @b From header to modify
+ * @param from @From header to modify
  * @param tag  tag token or parameter to be added 
  *
  * @retval 0 when successful
@@ -1785,25 +1829,27 @@ int sip_to_tag(su_home_t *home, sip_to_t *to, char const *tag)
  *
  * The Max-Forwards header is used to limit the number of proxies or
  * gateways that can forward the request.  The Max-Forwards syntax is
- * defined in [S10.27] as follows:
+ * defined in @RFC3261 as follows:
  * 
  * @code
  *    Max-Forwards  =  "Max-Forwards" HCOLON 1*DIGIT
  * @endcode
  *
+ *
+ * The parsed Max-Forwards header is stored in #sip_max_forwards_t structure.
  */
 
 /**@ingroup sip_max_forwards
  * @typedef typedef struct sip_max_forwards_s sip_max_forwards_t;
  *
  * The structure #sip_max_forwards_t contains representation of SIP
- * @b Max-Forwards header.
+ * @MaxForwards header.
  *
  * The #sip_max_forwards_t is defined as follows:
  * @code
  * typedef struct sip_max_forwards_s {
  *   sip_common_t        mf_common[1];  // Common fragment info
- *   sip_unknown_t      *mf_next;       // Link to next (dummy)
+ *   sip_error_t        *mf_next;       // Link to next (dummy)
  *   unsigned long       mf_count;      // Digits
  * } sip_max_forwards_t;
  * @endcode
@@ -1830,25 +1876,26 @@ issize_t sip_max_forwards_e(char b[], isize_t bsiz, sip_header_t const *h, int f
  *
  * The Min-Expires header is used to limit the number of proxies or
  * gateways that can forward the request.  The Min-Expires syntax is
- * defined in [S20.23] as follows:
+ * defined in @RFC3261 as follows:
  * 
  * @code
  *    Min-Expires  =  "Min-Expires" HCOLON delta-seconds
  * @endcode
  *
+ * The parsed Min-Expires header is stored in #sip_min_expires_t structure.
  */
 
 /**@ingroup sip_min_expires
  * @typedef typedef struct sip_min_expires_s sip_min_expires_t;
  *
  * The structure #sip_min_expires_t contains representation of SIP
- * @b Min-Expires header.
+ * @MinExpires header.
  *
  * The #sip_min_expires_t is defined as follows:
  * @code
  * typedef struct sip_min_expires_s {
  *   sip_common_t        me_common[1];  // Common fragment info
- *   sip_unknown_t      *me_next;       // Link to next (dummy)
+ *   sip_error_t        *me_next;       // Link to next (dummy)
  *   unsigned long       me_delta;      // Seconds
  * } sip_min_expires_t;
  * @endcode
@@ -1874,10 +1921,10 @@ issize_t sip_min_expires_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
 
 /**@SIP_HEADER sip_retry_after Retry-After Header
  * 
- * The Retry-After response-header field [RFC3261/20.33] can be used to
+ * The Retry-After response-header field @RFC3261 section 20.33 can be used to
  * indicate how long the service is expected to be unavailable or when the
  * called party anticipates being available again. Its syntax is defined in
- * [RFC3261] as follows:
+ * @RFC3261 as follows:
  * 
  * @code
  *      Retry-After  =  "Retry-After" HCOLON delta-seconds
@@ -1885,29 +1932,27 @@ issize_t sip_min_expires_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
  *      retry-param  =  ("duration" EQUAL delta-seconds)
  *                      / generic-param
  * @endcode
+ *
+ * The parsed Retry-After header is stored in #sip_retry_after_t structure.
  */
 
 /**@ingroup sip_retry_after
  * @typedef struct sip_retry_after_s sip_retry_after_t; 
  *
- * The structure sip_retry_after_t contains representation of an @b
- * Retry-After header.
+ * The structure #sip_retry_after_t contains representation of an 
+ * @RetryAfter header.
  *
- * The sip_retry_after_t is defined as follows:
+ * The #sip_retry_after_t is defined as follows:
  * @code
  * typedef struct sip_retry_after_s {
  *   sip_common_t        af_common[1]; // Common fragment info
  *   sip_error_t        *af_next;      // Link to next (dummy)
  *   sip_time_t          af_delta;     // Seconds to before retry
- *   msg_param_t         af_comment;   // Comment string
+ *   char const         *af_comment;   // Comment string
  *   msg_param_t const  *af_params;    // List of parameters
- *   msg_param_t         af_duration;  // Duration parameter
+ *   char const         *af_duration;  // Duration parameter
  * } sip_retry_after_t;
  * @endcode
- */
-
-/**@ingroup sip_retry_after
- * @brief Structure for @b Retry-After header.
  */
 
 static msg_xtra_f sip_retry_after_dup_xtra;
@@ -2011,10 +2056,7 @@ static int sip_retry_after_update(msg_common_t *h,
 
 /* ====================================================================== */
 
-/** 
- * Parse a Route/Record-Route header
- *
- * The function sip_route_d() parses a Route or a Record-Route header.
+/**Parse a @Route or a @RecordRoute header.
  *
  * @retval 0 when successful, 
  * @retval -1 upon an error.
@@ -2100,7 +2142,7 @@ char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /** Create a route. 
  *
- * The function sip_any_route_create() creates a route or record-route entry
+ * Create a route or record-route entry
  * from two URLs; first one provides the URL, second maddr parameter and
  * port.
  *
@@ -2167,27 +2209,28 @@ sip_route_t *sip_any_route_create(su_home_t *home,
 /**@SIP_HEADER sip_route Route Header
  *
  * The Route headers is used to store the route set of a transaction.  
- * The Route header is defined in [S10.38] as follows:
+ * The Route header is defined in @RFC3261 as follows:
  * 
  * @code
  *    Route        =  "Route" HCOLON route-param *(COMMA route-param)
  *    route-param  =  name-addr *( SEMI rr-param )
  * @endcode
  *
+ * The parsed Route header is stored in #sip_route_t structure.
  */
 
 /**@ingroup sip_route
  * @typedef typedef struct sip_route_s sip_route_t;
  *
- * The structure #sip_route_t contains representation of SIP @b Route header.
+ * The structure #sip_route_t contains representation of SIP @Route header.
  *
  * The #sip_route_t is defined as follows:
  * @code
  * typedef struct sip_route_s {
  *   sip_common_t        r_common[1];   // Common fragment info
- *   sip_route_t        *r_next;        // Link to next Route
+ *   sip_route_t        *r_next;        // Link to next @Route
  *   char const         *r_display;     // Display name
- *   url_t               r_url[1];      // Route URL
+ *   url_t               r_url[1];      // @Route URL
  *   msg_param_t const  *r_params;      // List of route parameters
  * } sip_route_t;
  * @endcode
@@ -2211,18 +2254,18 @@ issize_t sip_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 }
 
 /**@ingroup sip_route 
- * @brief Create a @b Route header object.
+ * @brief Create a @Route header object.
  *
- * The function sip_route_create() creates a route entry from two URLs;
- * first one provides the URL, second maddr parameter and port.
+ * Creates a route entry from two URLs; first one provides the URL, second
+ * maddr parameter and port.
  *
  * @param home   memory home
  * @param url    route URL
  * @param maddr  optional route address and port
  *
  * @return
- * The function sip_route_create() returns a pointer to newly created
- * @b Route header object when successful, or NULL upon an error.
+ * Returns a pointer to newly created @Route header object when successful,
+ * or NULL upon an error.
  */
 sip_route_t *sip_route_create(su_home_t *home, 
 			      url_t const *url, 
@@ -2236,7 +2279,7 @@ sip_route_t *sip_route_create(su_home_t *home,
 /**@SIP_HEADER sip_record_route Record-Route Header
  *
  * The Record-Route headers are used to establish a route for transactions
- * belonging to a session.  The Record-Route header is defined in [S10.34]
+ * belonging to a session.  The Record-Route header is defined in @RFC3261
  * as follows: 
  * 
  * @code
@@ -2245,21 +2288,22 @@ sip_route_t *sip_route_create(su_home_t *home,
  *    rr-param      =  generic-param
  * @endcode
  *
+ * The parsed Record-Route header is stored in #sip_record_route_t structure.
  */
 
 /**@ingroup sip_record_route
  * @typedef typedef struct sip_record_route_s sip_record_route_t;
  *
  * The structure #sip_record_route_t contains representation of SIP
- * @b Record-Route header.
+ * @RecordRoute header.
  *
  * The #sip_record_route_t is defined as follows:
  * @code
- * typedef struct sip_record_route_s {
+ * typedef struct sip_route_s {
  *   sip_common_t        r_common[1];   // Common fragment info
- *   sip_route_t        *r_next;        // Link to next Record-Route
+ *   sip_record_route_t *r_next;        // Link to next <rec-route>
  *   char const         *r_display;     // Display name
- *   url_t               r_url[1];      // Route URL
+ *   url_t               r_url[1];      // @RecordRoute URL
  *   msg_param_t const  *r_params;      // List of route parameters
  * } sip_record_route_t;
  * @endcode
@@ -2287,18 +2331,16 @@ issize_t sip_record_route_e(char b[], isize_t bsiz, sip_header_t const *h, int f
  *
  * Create a record-route. 
  *
- * The function sip_record_route_create() creates a record-route entry
- * from two URLs; first one provides the URL, second maddr parameter and
- * port.
+ * Create a record-route entry from two URLs; first one provides the URL,
+ * second maddr parameter and port.
  *
  * @param home   memory home
  * @param rq_url route URL
  * @param maddr  optional route address and port
  *
  * @return
- * The function sip_record_route_create() returns a pointer to newly
- * created Record-Route header object when successful or NULL upon an
- * error.
+ * A pointer to newly created @RecordRoute header object when successful or
+ * NULL upon an error.
  */
 sip_record_route_t *sip_record_route_create(su_home_t *home,
 					    url_t const *rq_url,
@@ -2312,7 +2354,7 @@ sip_record_route_t *sip_record_route_create(su_home_t *home,
 /**@SIP_HEADER sip_to To Header
  *
  * The To header field specifies the "logical" recipient of the
- * request.  It is defined in [S10.43] as follows:
+ * request.  It is defined in @RFC3261 as follows:
  * 
  * @code
  *    To        =  ( "To" / "t" ) HCOLON ( name-addr
@@ -2320,18 +2362,19 @@ sip_record_route_t *sip_record_route_create(su_home_t *home,
  *    to-param  =  tag-param / generic-param
  * @endcode
  *
+ * The parsed To header is stored in #sip_to_t structure.
  */
 
 /**@ingroup sip_to
  * @typedef typedef struct sip_addr_s sip_to_t;
  *
- * The structure sip_to_t contains representation of @b To header.
+ * The structure #sip_to_t contains representation of @To header.
  *
- * The sip_to_t is defined as follows:
+ * The #sip_to_t is defined as follows:
  * @code
  * typedef struct {
  *   sip_common_t       a_common[1];    // Common fragment info
- *   sip_unknown_t     *a_next;         // Link to next (dummy)
+ *   sip_error_t       *a_next;         // Link to next (dummy)
  *   char const        *a_display;      // Display name
  *   url_t              a_url[1];       // URL
  *   msg_param_t const *a_params;       // List of to-params
@@ -2359,17 +2402,14 @@ issize_t sip_to_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 
 /**@ingroup sip_to
  *
- * Create a @b To header object with URL.
- *
- * The function sip_to_create() creates a To header object with
- * the given URL.  
+ * Create a @To header object with URL.
  *
  * @param home      memory home
  * @param url       URL (string or pointer to url_t)
  *
  * @return
- * The function sip_to_create() returns a pointer to newly created @b
- * To header object when successful or NULL upon an error.
+ * A pointer to newly created @To header object when successful or NULL upon
+ * an error.
  */
 sip_to_t *
 sip_to_create(su_home_t *home, url_string_t const *url)
@@ -2379,19 +2419,16 @@ sip_to_create(su_home_t *home, url_string_t const *url)
 
 /**@ingroup sip_to
  *
- * Add a parameter to an sip_to_t object.
- *
- * The function sip_to_add_param() adds a parameter to an sip_to_t
- * object.
+ * Add a parameter to a #sip_to_t object.
  *
  * @note This function @b does @b not duplicate @p param.
  *
  * @param home   memory home
- * @param to      sip_to_t object
+ * @param to     #sip_to_t structure
  * @param param  parameter string
  *
- * @return The function sip_to_add_param() returns 0 when successful,
- * or -1 upon an error.
+ * @retval 0 when successful
+ * @retval -1 upon an error
  *
  * @deprecated Use msg_header_replace_param() directly.
  */
@@ -2446,18 +2483,20 @@ int sip_to_add_param(su_home_t *home,
  *    response-port  =  "rport" [EQUAL 1*DIGIT]
  *    via-params    /=  response-port
  * @endcode
+ *
+ * The parsed Via header is stored in #sip_via_t structure.
  */
 
 /**@ingroup sip_via
  * @typedef typedef struct sip_via_s sip_via_t;
  *
- * The structure #sip_via_t contains representation of SIP @b Via header.
+ * The structure #sip_via_t contains representation of SIP @Via header.
  *
  * The #sip_via_t is defined as follows:
  * @code
  * typedef struct sip_via_s {
  *   sip_common_t        v_common[1];   // Common fragment info
- *   sip_via_t          *v_next;        // Link to next Via header
+ *   sip_via_t          *v_next;        // Link to next @Via header
  *   char const         *v_protocol;    // Application and transport protocol
  *   char const         *v_host;        // Hostname
  *   char const         *v_port;        // Port number
@@ -2571,7 +2610,7 @@ isize_t sip_via_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_via_t object */ 
+/** Duplicate one #sip_via_t object */ 
 char *sip_via_dup_one(sip_header_t *dst, sip_header_t const *src,
 		      char *b, isize_t xtra)
 {
@@ -2632,12 +2671,12 @@ static int sip_via_update(msg_common_t *h,
 
 /**@ingroup sip_via
  *
- * Add a parameter to a via object.
+ * Add a parameter to a @Via object.
  *
  * @note This function @b does @b not duplicate @p param.
  *
  * @param home   memory home
- * @param v      sip_via_t object
+ * @param v      #sip_via_t object
  * @param param  parameter string
  *
  * @retval 0 when successful
@@ -2654,9 +2693,9 @@ int sip_via_add_param(su_home_t *home,
 
 /**@ingroup sip_via
  *
- * Create a Via object. 
+ * Create a @Via object. 
  *
- * The function sip_via_create() creates a new @b Via header object with
+ * Create a new @Via header object with
  * given parameters.  If @a transport is NULL, the default transport
  * "SIP/2.0/UDP" is used.  A NULL-terminated list of parameters can be
  * specified after transport.
@@ -2668,8 +2707,8 @@ int sip_via_add_param(su_home_t *home,
  * @param ...       NULL-terminated list of parameters
  *
  * @return
- * The function sip_via_create() returns a pointer to newly created
- * @b Via header object when successful or NULL upon an error.
+ * A pointer to newly created
+ * @Via header object when successful or NULL upon an error.
  */ 
 sip_via_t *sip_via_create(su_home_t *home,
                           char const *host,
@@ -2714,7 +2753,7 @@ sip_via_t *sip_via_create(su_home_t *home,
 
 /**@ingroup sip_via
  *
- * Get port number corresponding to a Via line.
+ * Get port number corresponding to a @Via line.
  * 
  * If @a using_rport is non-null, try rport.
  * If *using_rport is non-zero, try rport even if <protocol> is not UDP.

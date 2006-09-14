@@ -26,7 +26,7 @@
  * @brief SIP REFER-related headers.
  *
  * The file @b sip_refer.c contains implementation of header classes for
- * REFER-related SIP headers @b Refer-To and @b Referred-By.
+ * REFER-related SIP headers @ReferTo and @ReferredBy.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -58,16 +58,18 @@
  *            *(SEMI generic-param)
  * @endcode
  *
+ *
+ * The parsed Refer-To header is stored in #sip_refer_to_t structure.
  */
 
 /**@ingroup sip_refer_to
  *
  * @typedef typedef struct sip_refer_to_s sip_refer_to_t;
  *
- * The structure sip_refer_to_t contains representation of @b Refer-To
+ * The structure #sip_refer_to_t contains representation of @ReferTo
  * header.
  *
- * The sip_refer_to_t is defined as follows:
+ * The #sip_refer_to_t is defined as follows:
  * @code
  * typedef struct sip_refer_to_s
  * {
@@ -122,7 +124,7 @@ isize_t sip_refer_to_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_refer_to_t object */
+/** Duplicate one #sip_refer_to_t object */
 char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
 			   char *b, isize_t xtra)
 {
@@ -146,7 +148,7 @@ char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
  *
  * The Referred-By header conveys the identity of the original referrer to
  * the referred-to party. Its syntax is defined in
- * draft-ietf-sip-referredby-03 section 3 as follows:
+ * @RFC3892 section 3 as follows:
  *
  * @code
  *    Referred-By  =  ("Referred-By" / "b") HCOLON referrer-uri
@@ -164,16 +166,18 @@ char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
  *                        "_" / "+" / "'" / "`" / "~"   )
  * @endcode
  *
+ *
+ * The parsed Referred-By header is stored in #sip_referred_by_t structure.
  */
 
 /**@ingroup sip_referred_by
  *
  * @typedef typedef struct sip_referred_by_s sip_referred_by_t;
  *
- * The structure sip_referred_by_t contains representation of @b Referred-By
+ * The structure #sip_referred_by_t contains representation of @ReferredBy
  * header.
  *
- * The sip_referred_by_t is defined as follows:
+ * The #sip_referred_by_t is defined as follows:
  * @code
  * typedef struct sip_referred_by_s
  * {
@@ -182,7 +186,7 @@ char *sip_refer_to_dup_one(sip_header_t *dst, sip_header_t const *src,
  *   char const          b_display,
  *   url_t               b_url[1];	// Referrer-URI
  *   msg_param_t const  *b_params;      // List of parameters
- *   msg_param_t         b_cid;
+ *   char const         *b_cid;
  * } sip_referred_by_t;
  * @endcode
  */
@@ -287,31 +291,35 @@ static int sip_referred_by_update(msg_common_t *h,
  *    early-flag      = "early-only"
  * @endcode
  *
- * A Replaces header field MUST contain exactly one to-tag and exactly
- * one from-tag, as they are required for unique dialog matching.  For
+ * A Replaces header field MUST contain exactly one <to-tag> and exactly
+ * one <from-tag>, as they are required for unique dialog matching.  For
  * compatibility with dialogs initiated by @RFC2543 compliant UAs, a
- * tag of zero matches both tags of zero and null.  A Replaces header
- * field MAY contain the early-flag.
+ * tag of zero ("0") matches both tags of zero and null.  A Replaces header
+ * field MAY contain the <early-only> flag.
+ *
+ * The parsed Replaces header is stored in #sip_replaces_t structure.
+ *
+ * @sa @RFC3891, nta_leg_by_replaces(), nta_leg_make_replaces()
  */
 
 /**@ingroup sip_replaces
  *
  * @typedef typedef struct sip_replaces_s sip_replaces_t;
  *
- * The structure sip_replaces_t contains representation of @b Replaces
+ * The structure #sip_replaces_t contains representation of @Replaces
  * header.
  *
- * The sip_replaces_t is defined as follows:
+ * The #sip_replaces_t is defined as follows:
  * @code
  * typedef struct sip_replaces_s
  * {
  *   sip_common_t        rp_common[1];   // Common fragment info
- *   sip_error_t        *rp_next;	 // Link to next (dummy)
- *   char const         *rp_call_id;     // Call-ID
- *   msg_param_t const  *rp_params;      // List of parameters
- *   msg_param_t         rp_to_tag;      // to-tag parameter
- *   msg_param_t         rp_from_tag;    // from-tag parameter
- *   int                 rp_early_only;  // early-only parameter
+ *   sip_error_t        *rp_next;	 // Dummy link to next
+ *   char const         *rp_call_id;     // @CallID of dialog to replace 
+ *   msg_param_t const  *rp_params;      // List of parameters 
+ *   char const         *rp_to_tag;      // Value of "to-tag" parameter 
+ *   char const         *rp_from_tag;    // Value of "from-tag" parameter 
+ *   unsigned            rp_early_only;  // early-only parameter
  * } sip_replaces_t;
  * @endcode
  */
@@ -323,7 +331,7 @@ static msg_update_f sip_replaces_update;
 msg_hclass_t sip_replaces_class[] =
 SIP_HEADER_CLASS(replaces, "Replaces", "", rp_params, single, replaces);
 
-/** Decode (parse) Replaces header */
+/** Decode (parse) @Replaces header */
 issize_t sip_replaces_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_replaces_t *rp = h->sh_replaces;
@@ -340,7 +348,7 @@ issize_t sip_replaces_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
   return s - rp->rp_call_id;
 }
 
-/** Encode (print) Replaces header */
+/** Encode (print) @Replaces header */
 issize_t sip_replaces_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   char *b0 = b, *end = b + bsiz;
@@ -354,7 +362,7 @@ issize_t sip_replaces_e(char b[], isize_t bsiz, sip_header_t const *h, int flags
   return b - b0;
 }
 
-/** Calculate extra storage used by Replaces header field */
+/** Calculate extra storage used by @Replaces header field */
 isize_t sip_replaces_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_replaces_t const *rp = h->sh_replaces;
@@ -365,7 +373,7 @@ isize_t sip_replaces_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate a Replaces header field */
+/** Duplicate a @Replaces header field */
 char *sip_replaces_dup_one(sip_header_t *dst, sip_header_t const *src,
 			   char *b, isize_t xtra)
 {
@@ -382,7 +390,7 @@ char *sip_replaces_dup_one(sip_header_t *dst, sip_header_t const *src,
   return b;
 }
 
-/** Update parameters in Replaces header. */
+/** Update parameters in @Replaces header. */
 static int sip_replaces_update(msg_common_t *h, 
 			       char const *name, isize_t namelen,
 			       char const *value)

@@ -109,15 +109,14 @@ char const
 
 /** Convert a SIP status code to a status phrase.
  *
- * The function sip_status_phrase() converts a SIP status code to a status
- * phrase.  If the status code is not in the range 100..699, NULL is
- * returned.  If the status code is not known, "Response" is returned.
+ * Convert a SIP status code to a status phrase. If the status code is not
+ * in the range 100..699, NULL is returned. If the status code is not known,
+ * empty string "" is returned.
  *
  * @param status well-known status code in range 100..699
  * 
  * @return
- * The function sip_status_phrase() returns a response message, or NULL
- * upon an error.
+ * A response message corresponding to status code, or NULL upon an error.
  */
 char const *sip_status_phrase(int status)
 {

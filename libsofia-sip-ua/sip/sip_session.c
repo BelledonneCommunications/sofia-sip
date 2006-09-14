@@ -26,7 +26,7 @@
  * @brief Session Timer SIP headers.
  *
  * The file @b sip_session.c contains implementation of header classes for
- * session-timer-related SIP headers @b Session-Expires and @b Min-SE.
+ * session-timer-related SIP headers @SessionExpires and @MinSE.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
@@ -61,8 +61,17 @@
  *      se-params        = refresher-param / generic-param
  *      refresher-param  = "refresher" EQUAL  ("uas" / "uac")
  * @endcode
- * 
- * The sip_session_expires_t is defined as follows:
+ *
+ * The parsed Session-Expires header is stored in #sip_session_expires_t structure.
+ */
+
+/**@ingroup sip_session_expires
+ * @typedef typedef struct sip_session_expires_s sip_session_expires_t;
+ *
+ * The structure #sip_session_expires_t contains representation of the SIP
+ * @SessionExpires header.
+ *
+ * The #sip_session_expires_t is defined as follows:
  * @code
  * typedef struct sip_session_expires_s
  * {
@@ -119,7 +128,7 @@ isize_t sip_session_expires_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_session_expires_t object */ 
+/** Duplicate one #sip_session_expires_t object */ 
 char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
 				  char *b, isize_t xtra)
 {
@@ -134,7 +143,7 @@ char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
   return b;
 }
 
-/** Update parameters in Session-Expires header. */
+/** Update parameters in @SessionExpires header. */
 static int sip_session_expires_update(msg_common_t *h, 
 				      char const *name, isize_t namelen,
 				      char const *value)
@@ -162,8 +171,17 @@ static int sip_session_expires_update(msg_common_t *h,
  * @code
  *      MMin-SE  =  "Min-SE" HCOLON delta-seconds *(SEMI generic-param)
  * @endcode
- * 
- * The sip_min_se_t is defined as follows:
+ *
+ * The parsed Min-SE header is stored in #sip_min_se_t structure.
+ */
+
+/**@ingroup sip_min_se
+ * @typedef typedef struct sip_min_se_s sip_min_se_t;
+ *
+ * The structure #sip_min_se_t contains representation of the SIP
+ * @MinSE header.
+ *
+ * The #sip_min_se_t is defined as follows:
  * @code
  * typedef struct sip_min_se_s
  * {
@@ -218,7 +236,7 @@ isize_t sip_min_se_dup_xtra(sip_header_t const *h, isize_t offset)
   return offset;
 }
 
-/** Duplicate one sip_min_se_t object */ 
+/** Duplicate one #sip_min_se_t object */ 
 char *sip_min_se_dup_one(sip_header_t *dst, sip_header_t const *src,
 			char *b, isize_t xtra)
 {

@@ -53,17 +53,17 @@ SOFIA_BEGIN_DECLS
 enum { 
   /**@ingroup sip_#xxxxxx# @internal 
    *
-   * Hash of #xxxxxxx_xxxxxxx#. 
+   * Hash of @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#".
    */
   sip_#xxxxxx#_hash = #hash# 
 };
 
-/**Header class for SIP #xxxxxxx_xxxxxxx#.
+/**Header class for @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#".
  * 
  * The header class sip_#xxxxxx#_class defines how a SIP
- * #xxxxxxx_xxxxxxx# is parsed and printed.  It also
- * contains methods used by SIP parser and other functions
- * to manipulate the sip_#xxxxxx#_t header structure.
+ * @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#" is parsed and printed.
+ * It also contains methods used by SIP parser and other functions to
+ * manipulate the #sip_#xxxxxx#_t header structure.
  *
  * @ingroup sip_#xxxxxx#
  */

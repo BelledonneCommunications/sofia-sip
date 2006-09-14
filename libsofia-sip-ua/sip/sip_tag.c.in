@@ -69,11 +69,11 @@ tag_typedef_t siptag_end = TAG_TYPEDEF(tag_end, end);
 
 
 /**@ingroup sip_#xxxxxx#
- * Tag for #xxxxxxx_xxxxxxx# object.
+ * Tag for @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#" object.
  */
 tag_typedef_t siptag_#xxxxxx# = SIPHDRTAG_TYPEDEF(#xxxxxx#);
 /**@ingroup sip_#xxxxxx#
- * Tag for string with #xxxxxxx_xxxxxxx# value.
+ * Tag for string with @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#" value.
  */
 tag_typedef_t siptag_#xxxxxx#_str = SIPSTRTAG_TYPEDEF(#xxxxxx#);
 

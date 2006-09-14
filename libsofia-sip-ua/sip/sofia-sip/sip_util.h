@@ -166,8 +166,8 @@ union sip_pref
 
 /** Parse a single preference */
 SOFIAPUBFUN int sip_prefs_parse(union sip_pref *sp, 
-		    char const **in_out_s, 
-		    int *return_negation);
+				char const **in_out_s, 
+				int *return_negation);
 
 /** Match preferences */
 SOFIAPUBFUN int sip_prefs_match(union sip_pref const *, union sip_pref const *);
