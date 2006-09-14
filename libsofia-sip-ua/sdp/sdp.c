@@ -1537,7 +1537,7 @@ sdp_mode_t sdp_attribute_mode(sdp_attribute_t const *a, sdp_mode_t defmode)
   return defmode;
 }
 
-/** Get session mode from attribute list. */
+/** Convert session mode as #sdp_attribute_t structure. */
 sdp_attribute_t *sdp_attribute_by_mode(su_home_t *home, sdp_mode_t mode)
 {
   sdp_attribute_t *a;
@@ -1563,12 +1563,20 @@ sdp_attribute_t *sdp_attribute_by_mode(su_home_t *home, sdp_mode_t mode)
 
 /** Find a mapped attribute. 
  *
- * A mapped attribute has form 'a=<name>:<pt> <value>' where pt is a RTP payload type, 
- * integer in range 0..127.
+ * A mapped attribute has form 'a=<name>:<pt> <value>' where pt is a RTP
+ * payload type, integer in range 0..127. For example, "a=atmmap" [@RFC3108]
+ * is a mapped attribute. Note that common mapped attributes, "a=rtpmap" and
+ * "a=fmtp" are already parsed as list of #sdp_rtpmap_t in #sdp_media_t.
  *
- * @return Pointer to a matching attribute structure, or NULL. If a matching
- * attribute is found, @a return_result will point to part of the attribute
- * after the payload type and whitespace.
+ * @param a pointer to first attribute in the list
+ * @param name name of the attribute
+ * @param pt payload type number (must be 0..127)
+ * @param return_result return value parameter for mapped attribute value
+ *
+ * @return Pointer to a matching attribute structure, or NULL. 
+ *
+ * If a matching attribute is found, @a return_result will point to part of
+ * the attribute after the payload type and whitespace.
  */
 sdp_attribute_t *sdp_attribute_mapped_find(sdp_attribute_t const *a,
 					   char const *name,

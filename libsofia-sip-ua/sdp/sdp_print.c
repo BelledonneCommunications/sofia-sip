@@ -54,6 +54,14 @@
 
 typedef unsigned longlong ull;
 
+/** @typedef struct sdp_printer_s sdp_printer_t
+ *
+ * SDP printer handle.
+ *
+ * @sa #sdp_session_t, sdp_print(), sdp_printing_error(),
+ * sdp_message(), sdp_message_size(), sdp_printer_free()
+ */
+
 struct sdp_printer_s {
   int        pr_size;
   su_home_t *pr_home;
@@ -82,8 +90,8 @@ static void print_session(sdp_printer_t *p, sdp_session_t const *session);
 
 /** Print a SDP description.
  *
- * The function sdp_print() encodes the contents of the SDP session
- * structure to the @a msgbuf. The @a msgbuf has size @a msgsize
+ * Encode the contents of the SDP session structure #sdp_session_t 
+ * to the @a msgbuf. The @a msgbuf has size @a msgsize
  * bytes. If @a msgbuf is @c NULL, the sdp_print() function allocates the
  * required buffer from the @a home heap.
  *
@@ -102,16 +110,19 @@ static void print_session(sdp_printer_t *p, sdp_session_t const *session);
  * small for the resulting SDP message, @c sdp_print() may allocate a new
  * buffer for it from the heap.
  *
- * @li #sdp_f_prefix - The buffer provided by caller already contains valid 
- * data. The function sdp_print() will concatenate its result to the buffer.
+ * @li #sdp_f_print_prefix - The buffer provided by caller already contains
+ * valid data. The result will concatenated to the string in the buffer.
  *
  * @li #sdp_f_mode_always - Always add mode attributes to media
  *
  * @li #sdp_f_mode_manual - Do not generate mode attributes
  *
  * @return 
- * The function sdp_print() always returns a handle to an sdp_printer_t
- * object.
+ * Always return a handle to an #sdp_printer_t object.
+ *
+ * @sa #sdp_printer_t, #sdp_session_t, sdp_printing_error(),
+ * sdp_message(), sdp_message_size(), sdp_printer_free(),
+ * sdp_parse().
  */
 sdp_printer_t *sdp_print(su_home_t *home, 
 			 sdp_session_t const *session, 
@@ -153,15 +164,14 @@ sdp_printer_t *sdp_print(su_home_t *home,
 
 /** @brief Get encoding error.
  *
- * The function sdp_printing_error() returns a message describing
- * encoding error.
+ * Return a message describing the encoding error.
  *
- * @param p Pointer to an @c sdp_printer_t object.
+ * @param p Pointer to an #sdp_printer_t object.
  *
  * @return
- * The function sdp_printing_error() returns a pointer to C string
- * descibing printing errors, or @c NULL if no error were
- * encountered.  */
+ * Return a pointer to C string describing printing errors, or NULL if no
+ * error was encountered.
+ */
 char const *sdp_printing_error(sdp_printer_t *p)
 {
   if (p)
@@ -175,14 +185,13 @@ char const *sdp_printing_error(sdp_printer_t *p)
 
 /** @brief Get encoded SDP message.
  *
- * The function sdp_message() returns a pointer to a C string containing
- * the SDP message 
+ * Return a pointer to a C string containing the SDP message.
  * 
- * @param p Pointer to an @c sdp_printer_t object.
+ * @param p Pointer to an #sdp_printer_t object.
  *
  * @return 
- * The function sdp_message() returns a pointer to a C string
- * containing the emitted SDP message, or @c NULL upon an error.
+ * Return a pointer to a C string containing the encoded SDP message, or
+ * NULL upon an error.
  */
 char const *sdp_message(sdp_printer_t *p)
 {
@@ -194,14 +203,12 @@ char const *sdp_message(sdp_printer_t *p)
 
 /** @brief Get size of encoded SDP message.
  *
- * The function sdp_message_size() returns the size of the emitted SDP
- * message.
+ * Return the size of the encoded SDP message.
  *
- * @param p Pointer to an @c sdp_printer_t object.
+ * @param p Pointer to an #sdp_printer_t object.
  *
  * @return 
- * The function sdp_message_size() returns number of bytes in SDP
- * message or @c 0 upon an error.
+ * Number of bytes in SDP message excluding final NUL or 0 upon an error.
  */
 isize_t sdp_message_size(sdp_printer_t *p)
 {
@@ -213,10 +220,10 @@ isize_t sdp_message_size(sdp_printer_t *p)
 
 /** Free a SDP printer.
  *
- * The function sdp_printer_free() frees the printer object @a p and the
- * message buffer possibly associated with it.
+ * Free the printer object @a p and the message buffer possibly associated
+ * with it.
  *
- * @param p Pointer to an @c sdp_printer_t object.
+ * @param p Pointer to an #sdp_printer_t object.
  */
 void sdp_printer_free(sdp_printer_t *p)
 {
