@@ -334,6 +334,9 @@ char *sip_caller_prefs_dup_one(sip_header_t *dst, sip_header_t const *src,
  * @endcode
  */
 
+#define sip_accept_contact_dup_xtra sip_caller_prefs_dup_xtra
+#define sip_accept_contact_dup_one  sip_caller_prefs_dup_one
+
 static int sip_accept_contact_update(msg_common_t *h,
 				     char const *name, isize_t namelen,
 				     char const *value);
@@ -425,7 +428,9 @@ static int sip_accept_contact_update(msg_common_t *h,
  * @RejectContact header.
  */
 
-#define sip_reject_contact_update NULL
+#define sip_reject_contact_dup_xtra sip_caller_prefs_dup_xtra
+#define sip_reject_contact_dup_one  sip_caller_prefs_dup_one
+#define sip_reject_contact_update   NULL
 
 msg_hclass_t sip_reject_contact_class[] =
 SIP_HEADER_CLASS(reject_contact, "Reject-Contact", "j", cp_params, append,
