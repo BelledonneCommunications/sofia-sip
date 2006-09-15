@@ -1138,8 +1138,12 @@ int process_invite2(nua_t *nua,
 #define AUTOANSWER ((void*)-1)
 
   if (NH_PGET(nh, auto_answer) ||
-      /* Auto-answert to re-INVITE unless auto_answer is set to 0 */
+      /* Auto-answer to re-INVITE unless auto_answer is set to 0 on handle */
       (ss->ss_state == nua_callstate_ready &&
+       /* Auto-answer requires enabled media (soa). 
+	* XXX - if the re-INVITE modifies the media we should not auto-answer.
+	*/
+       nh->nh_soa &&
        !NH_PISSET(nh, auto_answer))) {
     respond_to_invite(nua, nh, SIP_200_OK, AUTOANSWER);
     return 0;

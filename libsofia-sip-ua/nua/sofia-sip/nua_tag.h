@@ -462,8 +462,10 @@ SOFIAPUBVAR tag_typedef_t nutag_autoalert_ref;
 /** ACK automatically
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_set_params(), nua_set_hparams() \n
+ *    nua_get_params(), nua_get_hparams() \n
+ *    nua_invite() \n
+ *    nua_respond()
  *
  * @par Parameter type
  *    int
@@ -480,18 +482,35 @@ SOFIAPUBVAR tag_typedef_t nutag_autoack;
 #define NUTAG_AUTOACK_REF(x)    nutag_autoack_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_autoack_ref;
 
-/** Answer (200 Ok) automatically to incoming call
+/** Answer (with 200 Ok) automatically to incoming call.
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_set_params(), nua_set_hparams() \n
+ *    nua_get_params(), nua_get_hparams() \n
+ *    nua_invite() \n
+ *    nua_respond()
  *
  * @par Parameter type
- *    int
+ *    int (boolean)
  *
  * @par Values
  *    @c 0    No automatic sending of "200 Ok" \n
  *    @c !=0 "200 Ok" sent automatically
+ *
+ * @par Auto-Answer to Re-INVITE requests By default, NUA tries to auto
+ * answer the re-INVITEs used to refresh the session when the media is
+ * enabled. Set NUTAG_AUTOANSWER(0) on the call handle (e.g., include the
+ * tag with nua_invite(), nua_respond()) in order to disable the auto answer
+ * on re-INVITEs.
+ *
+ * @sa NUTAG_MEDIA_ENABLE(), NUTAG_AUTOALERT(), NUTAG_AUTOACK().
+ * 
+ * @bug If the re-INVITE modifies the session (e.g., SDP contains offer that
+ * adds video stream to the session), NUA auto-answers it if
+ * NUTAG_AUTOANSWER(0) has not been set on the handle. It accepts or rejects
+ * media based on the existing user SDP (set with SOATAG_USER_SDP(), for
+ * example). It should auto-answer only session refresh request and let
+ * application decide how to handle requests to modify the session.
  *
  * Corresponding tag taking reference parameter is NUTAG_AUTOANSWER_REF()
  */
