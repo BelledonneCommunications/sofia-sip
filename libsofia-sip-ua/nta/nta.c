@@ -2022,7 +2022,7 @@ void agent_recv_request(nta_agent_t *agent,
 
   /* Try to use compression on reverse direction if @Via has comp=sigcomp  */
   if (stream && 
-      sip->sip_via->v_comp &&
+      sip->sip_via && sip->sip_via->v_comp &&
       tport_can_send_sigcomp(tport) &&
       tport_name(tport)->tpn_comp == NULL && 
       tport_has_compression(tport_parent(tport), sip->sip_via->v_comp)) {
