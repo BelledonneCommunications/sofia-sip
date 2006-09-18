@@ -110,6 +110,73 @@ typedef union {
 
 SOFIA_BEGIN_DECLS
 
+/** Convert a string to a url struct. */ 
+SOFIAPUBFUN url_t *url_make(su_home_t *h, char const *str);
+
+/** Convert a string formatting result to a url struct. */
+SOFIAPUBFUN url_t *url_format(su_home_t *h, char const *fmt, ...);
+
+/** Convert #url_t to a string allocated from @a home */
+SOFIAPUBFUN char *url_as_string(su_home_t *home, url_t const *url);
+
+/** Duplicate the url to memory allocated via home */ 
+SOFIAPUBFUN url_t *url_hdup(su_home_t *h, url_t const *src);
+
+/** Sanitize a URL. */
+SOFIAPUBFUN int url_sanitize(url_t *u);
+
+/** Get URL scheme by type. */
+SOFIAPUBFUN char const *url_scheme(enum url_type_e type);
+
+/* ---------------------------------------------------------------------- */
+/* URL comparison */
+
+/** Compare two URLs lazily. */
+SOFIAPUBFUN int url_cmp(url_t const *a, url_t const *b);
+
+/** Compare two URLs conservatively. */
+SOFIAPUBFUN int url_cmp_all(url_t const *a, url_t const *b);
+
+/* ---------------------------------------------------------------------- */
+/* Parameter handling */
+
+/** Search for a parameter. */
+SOFIAPUBFUN isize_t url_param(char const *params, char const *tag,
+			      char value[], isize_t vlen);
+
+/** Check for a parameter. */
+SOFIAPUBFUN int url_has_param(url_t const *url, char const *name);
+
+/** Check for a presence of a parameter. */
+SOFIAPUBFUN isize_t url_have_param(char const *params, char const *tag);
+
+/** Add a parameter. */
+SOFIAPUBFUN int url_param_add(su_home_t *h, url_t *url, char const *param);
+
+/** Strip transport-specific stuff away from URI. */
+SOFIAPUBFUN int url_strip_transport(url_t *u);
+
+/** Test if url has any transport-specific stuff. */
+SOFIAPUBFUN int url_have_transport(url_t const *u);
+
+/* ---------------------------------------------------------------------- */
+/* Handling url-escque strings */
+
+/** Test if string contains url-reserved characters. */
+SOFIAPUBFUN int url_reserved_p(char const *s);
+
+/** Escape a string. */
+SOFIAPUBFUN char *url_escape(char *d, char const *s, char const reserved[]);
+
+/** Calculate length of string when escaped. */
+SOFIAPUBFUN int url_esclen(char const *s, char const reserved[]);
+
+/** Unescape a string */
+SOFIAPUBFUN char *url_unescape(char *d, char const *s);
+
+/* ---------------------------------------------------------------------- */
+/* Initializing */
+
 /** Initializer for an #url_t structure. @HI 
  * 
  * The macro URL_INIT_AS() is used to initialize a #url_t structure with a
@@ -121,83 +188,11 @@ SOFIA_BEGIN_DECLS
 #define URL_INIT_AS(type)  \
   { "\0\0", url_##type, 0, url_##type != url_any ? #type : "*" }
 
-/** Init an url as given type */
+/** Init a url structure as given type */
 SOFIAPUBFUN void url_init(url_t *url, enum url_type_e type);
 
-/** Get URL scheme. */
-SOFIAPUBFUN char const *url_scheme(enum url_type_e type);
-
-/** Decode an URL */
-SOFIAPUBFUN int url_d(url_t *url, char *s);
-
-/** Calculate the lengh of URL when encoded. */
-SOFIAPUBFUN isize_t url_len(url_t const * url);
-
-/** Encode an URL. */
-SOFIAPUBFUN issize_t url_e(char buffer[], isize_t n, url_t const *url);
-
-/** Encode an URL: use @a buf up to @a end. @HI */
-#define URL_E(buf, end, url) \
-  (buf) += url_e((buf), (buf) < (end) ? (end) - (buf) : 0, (url))
-
-/** Calculate the size of srings attached to the url. */
-SOFIAPUBFUN isize_t url_xtra(url_t const * url);
-
-/** Duplicate the url */ 
-SOFIAPUBFUN issize_t url_dup(char *, isize_t , url_t *dst, url_t const *src);
-
-/** Duplicate the url: use @a buf up to @a end. @HI */ 
-#define URL_DUP(buf, end, dst, src) \
-  (buf) += url_dup((buf), (isize_t)((buf) < (end) ? (end) - (buf) : 0), (dst), (src))
-
-/** Duplicate the url to memory allocated via home */ 
-SOFIAPUBFUN url_t *url_hdup(su_home_t *h, url_t const *src);
-
-/** Convert an string to an url struct. */ 
-SOFIAPUBFUN url_t *url_make(su_home_t *h, char const *str);
-
-/** Convert a string formatting result to an url struct. */
-url_t *url_format(su_home_t *h, char const *fmt, ...);
-
-/** Convert @a url to a string allocated from @a home */
-SOFIAPUBFUN char *url_as_string(su_home_t *home, url_t const *url);
-
-/** Test if string contains url-reserved characters. */
-SOFIAPUBFUN int url_reserved_p(char const *s);
-
-/** Escape a string. */
-SOFIAPUBFUN char *url_escape(char *d, char const *s, char const reserved[]);
-
-/** Calculate length of string when escaped. */
-SOFIAPUBFUN int url_esclen(char const *s, char const reserved[]);
-
-/** Unescape an string */
-SOFIAPUBFUN char *url_unescape(char *d, char const *s);
-
-/** Search for a parameter. */
-SOFIAPUBFUN isize_t url_param(char const *params, char const *tag,
-			      char value[], isize_t vlen);
-
-/** Check for a parameter. */
-SOFIAPUBFUN int url_has_param(url_t const *url, char const *name);
-
-/** Check a parameter. */
-SOFIAPUBFUN isize_t url_have_param(char const *params, char const *tag);
-
-/** Add an parameter. */
-SOFIAPUBFUN int url_param_add(su_home_t *h, url_t *url, char const *param);
-
-/** Compare two URLs lazily. */
-SOFIAPUBFUN int url_cmp(url_t const *a, url_t const *b);
-
-/** Compare two URLs conservatively. */
-SOFIAPUBFUN int url_cmp_all(url_t const *a, url_t const *b);
-
-/** Strip transport-specific stuff away from URI. */
-SOFIAPUBFUN int url_strip_transport(url_t *u);
-
-/** Test if url has any transport-specific stuff. */
-SOFIAPUBFUN int url_have_transport(url_t const *u);
+/* ---------------------------------------------------------------------- */
+/* Resolving helpers */
 
 /** Return default port number corresponding to the url type. */
 SOFIAPUBFUN char const *url_port_default(enum url_type_e url_type);
@@ -212,6 +207,9 @@ SOFIAPUBFUN char const *url_port(url_t const *u);
 #define URL_PORT(u) \
   ((u) && (u)->url_port ? (u)->url_port : \
   url_port_default((u) ? (u)->url_type : url_any))
+
+/* ---------------------------------------------------------------------- */
+/* url_string_t handling */
 
 /** Test if a pointer to #url_string_t is a string 
  * (not a pointer to a #url_t structure). */
@@ -233,8 +231,8 @@ SOFIAPUBFUN int url_is_string(url_string_t const * url);
 #define URL_STRING_MAKE(s) \
   ((url_string_t *)((s) && *((char *)(s)) ? (s) : NULL))
 
-/** Sanitize a URL. */
-SOFIAPUBFUN int url_sanitize(url_t *u);
+/* ---------------------------------------------------------------------- */
+/* Printing URL */
 
 /** Format string used when printing url with printf(). @HI */
 #define URL_PRINT_FORMAT "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
@@ -259,6 +257,9 @@ SOFIAPUBFUN int url_sanitize(url_t *u);
   (u)->url_headers ? "?" : "", (u)->url_headers ? (u)->url_headers : "", \
   (u)->url_fragment ? "#" : "", (u)->url_fragment ? (u)->url_fragment : ""
 
+/* ---------------------------------------------------------------------- */
+/* URL digests */
+
 struct su_md5_t;
 
 /** Update MD5 sum with URL contents. */
@@ -268,6 +269,31 @@ SOFIAPUBFUN void url_update(struct su_md5_t *md5, url_t const *url);
 SOFIAPUBFUN void url_digest(void *hash, int hsize,
 			    url_t const *, char const *key);
 
+/* ---------------------------------------------------------------------- */
+/* Parsing and manipulating URLs */
+
+/** Decode a URL. */
+SOFIAPUBFUN int url_d(url_t *url, char *s);
+
+/** Calculate the encoding length of URL. */
+SOFIAPUBFUN isize_t url_len(url_t const * url);
+
+/** Encode a URL. */
+SOFIAPUBFUN issize_t url_e(char buffer[], isize_t n, url_t const *url);
+
+/** Encode a URL: use @a buf up to @a end. @HI */
+#define URL_E(buf, end, url) \
+  (buf) += url_e((buf), (buf) < (end) ? (end) - (buf) : 0, (url))
+
+/** Calculate the size of srings attached to the url. */
+SOFIAPUBFUN isize_t url_xtra(url_t const * url);
+
+/** Duplicate the url in the provided memory area. */ 
+SOFIAPUBFUN issize_t url_dup(char *, isize_t , url_t *dst, url_t const *src);
+
+/** Duplicate the url: use @a buf up to @a end. @HI */ 
+#define URL_DUP(buf, end, dst, src) \
+  (buf) += url_dup((buf), (isize_t)((buf) < (end) ? (end) - (buf) : 0), (dst), (src))
 
 SOFIA_END_DECLS
 #endif

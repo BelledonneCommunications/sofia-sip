@@ -146,6 +146,8 @@ static int url_tel_cmp_numbers(char const *A, char const *B);
 
 /**Test if string contains excluded or url-reserved characters. 
  *
+ * 
+ *
  * @param s  string to be searched
  *
  * @retval 0 if no reserved characters were found.
@@ -164,17 +166,16 @@ int url_reserved_p(char const *s)
   return 0;
 }
 
-/** Calculate length of string escaped.
+/** Calculate length of string when escaped with %-notation.
  *
- * The function url_esclen() calculates the length of string @a s when
- * the excluded or reserved characters in it have been escaped.
+ * Calculate the length of string @a s when the excluded or reserved
+ * characters in it have been escaped.
  * 
  * @param s         String with reserved URL characters. [IN
  * @param reserved  Optional array of reserved characters [IN]
  *
  * @return 
- * The function url_esclen() returns the number of characters in
- * corresponding but escaped string.
+ * The number of characters in corresponding but escaped string.
  *
  * You can handle a part of URL with reserved characters like this:
  * @code
@@ -186,7 +187,6 @@ int url_reserved_p(char const *s)
  *   if (n) strcpy(n, s);
  * }
  * @endcode
- * 
  */
 int url_esclen(char const *s, char const reserved[])
 {
@@ -260,7 +260,7 @@ char *url_escape(char *d, char const *s, char const reserved[])
  * @param d  destination buffer
  * @param s  string to be copied
  *
- * @return Pointer to the destination array.
+ * @return Pointer to the destination buffer.
  */
 char *url_unescape(char *d, char const *s)
 {
@@ -355,7 +355,11 @@ char *url_canonize2(char *d, char const *s, size_t n,
 }
 
 
-/** Canonize a URL component (with precomputed mask) */
+/** Canonize a URL component (with precomputed mask).
+ *
+ * This version does not flag error if *s contains character that should 
+ * be escaped.
+ */
 static
 char *url_canonize3(char *d, char const *s, size_t n, 
 		    unsigned m32, unsigned m64, unsigned m96)
@@ -1359,7 +1363,7 @@ int url_strip_transport2(url_t *url, int modify)
  * - "method=" parameter
  *
  * @note
- * The @a url must be a pointer to a URL structure.
+ * The @a url must be a pointer to a URL structure. It is stripped in-place.
  *
  * @note
  * If the parameter string contains empty parameters, they are stripped, too.

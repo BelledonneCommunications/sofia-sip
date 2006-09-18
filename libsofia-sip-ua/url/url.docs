@@ -63,14 +63,17 @@ tel:+358718008000
 
 @subsection url_parsing Converting a String to #url_t
 
-The decoding function url_d() takes a string and splits it into parts as
-shown above. The substrings are stored into the ##url_t structure. When
-decoding, the hex encoding using \% is removed if the encoded character can
+The function url_make() converts a string to a freshly allocated #url_t
+structure. The URL components are split into parts as shown above.
+The hex encoding using \% is removed if the encoded character can
 syntactically be part of the field. For instance, "%41" is decoded as
 "A" in the user part, but "%40" (@) is left as is. (This is called
 canonization of the URL fields.)
 
-For example, when we parse the url below
+The function url_format() is provided for generating the URL with
+printf()-like formatting.
+
+For example, when we make the url from the string below
 @code
 sip:joe%2Euser@example%2Ecom;method=%4D%45%53%53%41%47%45?body=CANNED%20MSG
 @endcode
@@ -90,47 +93,97 @@ as follows:
  url_fragment = NULL
 @endcode
 
-Other functions parsing URLs are as follows:
-- url_hdup() (it takes a string as @a url parameter)
+You can use the function url_param() and url_have_param() to access
+particular parameters from @ref url_t::url_params "url->url_params" string.
 
 @subsection url_parsing Converting a #url_t structure to string
 
-The url_e() encodes the url, in other words, it joins the substrings in
-#url_t to the provided buffer.
+The function url_as_string() converts contents of #url_t structure to a
+newly allocated string.
 
 @subsection url_reference Functions and Macros in URL Module
 
-The @b url parsing, printing, copying and access functions are defined in
-the url.h include file:
+The include file <url.h> contains the types, function and macros of URL
+module. The functions and macros are listed here for the reference, too.
+The most important functions and macros for manipulating URLs are here:
+@code
+url_t *url_make(su_home_t *h, char const *str);
+url_t *url_format(su_home_t *h, char const *fmt, ...);
+char *url_as_string(su_home_t *home, url_t const *url);
+url_t *url_hdup(su_home_t *h, url_t const *src);
+int url_sanitize(url_t *u);
+char const *url_scheme(enum url_type_e type);
 
-- url_d()
-- url_len()
-- url_e()
-- url_xtra()
-- url_dup()
-- url_hdup()
-- url_as_string()
-- url_reserved_p()
-- url_esclen()
-- url_escape()
-- url_unescape()
-- url_param()
-- url_param_add()
-- url_cmp()
-- url_strip_transport()
-- url_have_transport()
-- url_port()
-- url_sanitize()
-- url_update()
-- url_digest()
+#define URL_INIT_AS(type) 
+void url_init(url_t *url, enum url_type_e type);
+
+int url_cmp(url_t const *a, url_t const *b);
+int url_cmp_all(url_t const *a, url_t const *b);
+
+isize_t url_param(char const *params, char const *tag,
+		  char value[], isize_t vlen);
+int url_has_param(url_t const *url, char const *name);
+isize_t url_have_param(char const *params, char const *tag);
+int url_param_add(su_home_t *h, url_t *url, char const *param);
+@endcode
+
+There are functions for handling %-encoding used in URLs:
+@code
+int url_reserved_p(char const *s);
+char *url_escape(char *d, char const *s, char const reserved[]);
+int url_esclen(char const *s, char const reserved[]);
+char *url_unescape(char *d, char const *s);
+@endcode
+
+There are a few function and macros helping resolving URLs:
+@code
+char const *url_port_default(enum url_type_e url_type);
+char const *url_tport_default(enum url_type_e url_type);
+char const *url_port(url_t const *u);
+#define URL_PORT(u) 
+@endcode
 
 In addition to the basic URL structure, #url_t, the library interface
 provides an union type #url_string_t for passing unparsed strings instead
 of parsed URLs as function arguments:
-- url_string_p()
-- URL_STRING_P()
-- URL_STRING_MAKE()
+@code
+#define URL_STRING_P(u) ((u) && *((url_string_t*)(u))->us_str != 0)
+#define URL_IS_STRING(u) ((u) && *((url_string_t*)(u))->us_str != 0)
+int url_string_p(url_string_t const * url);
+int url_is_string(url_string_t const * url);
+#define URL_STRING_MAKE(s) 
+@endcode
 
-For printf()-style formatting, macros #URL_PRINT_FORMAT and
-URL_PRINT_ARGS() are provided.
- */
+There are a macros for printf()-like formatting of URLs:
+@code
+#define URL_PRINT_FORMAT
+#define URL_PRINT_ARGS(u) 
+@endcode
+
+These functions calculate MD5 digest of URL or contribute contents of the
+URL to MD5 sum:
+@code
+void url_update(struct su_md5_t *md5, url_t const *url);
+void url_digest(void *hash, int hsize, url_t const *, char const *key);
+@endcode
+
+SIP or SIPS URIs have some parameters that control transport of the request. 
+In some cases, they should be detected and removed:
+@code
+int url_have_transport(url_t const *u);
+int url_strip_transport(url_t *u);
+@endcode
+
+Finally, there are functions used as building blocks for protocol parsers
+using URLs:
+@code
+int url_d(url_t *url, char *s);
+isize_t url_len(url_t const * url);
+issize_t url_e(char buffer[], isize_t n, url_t const *url);
+#define URL_E(buf, end, url)
+isize_t url_xtra(url_t const * url);
+issize_t url_dup(char *, isize_t , url_t *dst, url_t const *src);
+#define URL_DUP(buf, end, dst, src) 
+@endcode
+
+*/
