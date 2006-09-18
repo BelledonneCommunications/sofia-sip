@@ -54,7 +54,7 @@ clean-built-sources: clean-built-sources-recursive
 
 built-sources-recursive clean-built-sources-recursive $(COVERAGE_RECURSIVE):
 	target=`echo $@ | sed s/-recursive//`; \
-	list='$(SUBDIRS)'; for subdir in $$list; do \
+	list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
 	  echo "Making $@ in $$subdir"; \
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target) \
 	done;
