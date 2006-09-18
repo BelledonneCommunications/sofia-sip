@@ -20,6 +20,9 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+general:
+- The Sofia-SIP m4 macros are no longer installed to /usr/share/aclocal/.
+
 libsofia-sip-ua:
 - Added nutag_early_answer. Optionally including SDP answer already in 1XX
   response.

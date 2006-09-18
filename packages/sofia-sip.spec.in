@@ -91,8 +91,6 @@ static libraries and include files.
 
 %files 		devel
 %defattr(-,root,root,-)
-/usr/share/aclocal/sac-general.m4
-/usr/share/aclocal/sac-su.m4
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h
 %{_prefix}/include/sofia-sip*/sofia-resolv/*.h
 %{_prefix}/include/sofia-sip*/sofia-sip/*.h.in
@@ -158,6 +156,9 @@ Command line utilities for Sofia SIP UA library.
 %{_mandir}/man?/*
 
 %changelog
+* Mon Sep 18 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
+- Removed *.m4 files from the distribution package.
+
 * Fri Aug 11 2006 Kai Vehmanen <kai.vehmanen@nokia.com>
 - Modified the install location of the awk scripts.
 
