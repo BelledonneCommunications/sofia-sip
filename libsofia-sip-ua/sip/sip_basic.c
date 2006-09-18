@@ -1311,7 +1311,7 @@ msg_hclass_t sip_contact_class[] =
    * SIP_HEADER_CLASS(contact, "Contact", "m", m_params, append, contact);
    * and show here how the msg_hclass_t is initialized
    */
-  {
+  {{
     /* hc_hash: */     sip_contact_hash,
     /* hc_parse: */    sip_contact_d,
     /* hc_print: */    sip_contact_e,
@@ -1325,7 +1325,7 @@ msg_hclass_t sip_contact_class[] =
     /* hc_params: */   offsetof(sip_contact_t, m_params),
     /* hc_kind:	*/     msg_kind_append,
     /* hc_critical: */ 0
-  };
+   }};
 
 issize_t sip_contact_d(su_home_t *home,
 		       sip_header_t *h,

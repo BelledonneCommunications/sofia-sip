@@ -419,8 +419,8 @@ header-specific data, like header name.
 
 @dontinclude sip_basic.c
 @skipline msg_hclass_t sip_contact_class
-@skip {
-@until };
+@skip {{
+@until }};
 
 @subsection oo_derived Inheritance and Derived Objects
 
