@@ -62,7 +62,7 @@ bm_memmem_study0(char const *needle, size_t nlen, bm_fwd_table_t *fwd)
     nlen = UCHAR_MAX;
   }
 
-  memset(fwd->table[i], (unsigned char)nlen, sizeof fwd->table);
+  memset(&fwd->table, (unsigned char)nlen, sizeof fwd->table);
 
   for (i = 0; i < nlen; i++) {
     fwd->table[(unsigned short)needle[i]] = (unsigned char)(nlen - i - 1);
