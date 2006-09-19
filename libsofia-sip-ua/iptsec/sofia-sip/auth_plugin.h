@@ -116,7 +116,7 @@ typedef struct
 } auth_passwd_t;
 
 
-HTABLE_DECLARE(auth_htable, aht, auth_passwd_t);
+HTABLE_DECLARE_WITH(auth_htable, aht, auth_passwd_t, usize_t, unsigned);
 
 struct stat;
 
@@ -242,11 +242,11 @@ void auth_challenge_digest(auth_mod_t *am,
 			   auth_challenger_t const *ach);
 
 SOFIAPUBFUN
-int auth_generate_digest_nonce(auth_mod_t *am, 
-			       char buffer[],
-			       size_t buffer_len,
-			       int nextnonce,
-			       msg_time_t now);
+isize_t auth_generate_digest_nonce(auth_mod_t *am, 
+				   char buffer[],
+				   size_t buffer_len,
+				   int nextnonce,
+				   msg_time_t now);
 
 SOFIAPUBFUN
 int auth_validate_digest_nonce(auth_mod_t *am, 

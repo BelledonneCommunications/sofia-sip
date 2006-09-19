@@ -59,7 +59,7 @@ SOFIAPUBFUN sip_payload_t *sl_fread_payload(su_home_t *home, FILE *);
 /* Printing functions */
 SOFIAPUBFUN void 
 sl_message_log(FILE *, char const *prefix, sip_t const *, int details);
-SOFIAPUBFUN int 
+SOFIAPUBFUN issize_t
 sl_header_print(FILE *, char const *fmt, sip_header_t const *h),
 sl_from_print(FILE *, char const *fmt, sip_from_t const *from),
 sl_to_print(FILE *, char const *fmt, sip_to_t const *to),

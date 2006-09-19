@@ -283,7 +283,7 @@ struct sdp_media_s
   sdp_attribute_t  *m_attributes;	/**< Media attributes */
 
   void             *m_user;	        /**< User data. */
-
+  
   /** Rejected media */
   unsigned          m_rejected : 1;     
   /** Inactive, recvonly, sendonly, sendrecv */
@@ -528,7 +528,8 @@ typedef struct sdp_parser_s sdp_parser_t;
 typedef sdp_parser_t  *sdp_parser;
 
 SOFIAPUBFUN sdp_parser_t *sdp_parse(su_home_t *,
-				    char const msg[], int msgsize, int flags);
+				    char const msg[], issize_t msgsize,
+				    int flags);
 SOFIAPUBFUN char const *sdp_parsing_error(sdp_parser_t *p);
 SOFIAPUBFUN sdp_session_t *sdp_session(sdp_parser_t *p);
 SOFIAPUBFUN void sdp_parser_free(sdp_parser_t *p);

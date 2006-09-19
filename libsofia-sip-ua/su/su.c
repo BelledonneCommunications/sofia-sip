@@ -55,7 +55,7 @@ su_socket_t su_socket(int af, int socktype, int proto)
 {
   su_socket_t s = socket(af, socktype, proto);
 #if SU_HAVE_BSDSOCK
-  if (s != SOCKET_ERROR && su_socket_close_on_exec) {
+  if (s != INVALID_SOCKET && su_socket_close_on_exec) {
     fcntl(s, F_SETFD, FD_CLOEXEC); /* Close on exec */
   }
 #endif
@@ -175,13 +175,23 @@ int su_setreuseaddr(su_socket_t s, int reuse)
 #include <sys/filio.h>
 #endif
 
-int su_getmsgsize(su_socket_t s)
+#if SU_HAVE_WINSOCK
+issize_t su_getmsgsize(su_socket_t s)
+{
+  unsigned long n = (unsigned long)-1;
+  if (ioctlsocket(s, FIONREAD, &n) == -1)
+    return -1;
+  return (issize_t)n;
+}
+#else
+issize_t su_getmsgsize(su_socket_t s)
 {
   int n = -1;
   if (su_ioctl(s, FIONREAD, &n) == -1)
     return -1;
-  return n;
+  return (issize_t)n;
 }
+#endif
 
 #if SU_HAVE_WINSOCK && SU_HAVE_IN6
 /** Return a pointer to the in6addr_any. */
@@ -201,23 +211,67 @@ struct in_addr6 const *su_in6addr_loopback(void)
 
 #if SU_HAVE_WINSOCK
 
+ssize_t su_send(su_socket_t s, void *buffer, size_t length, int flags)
+{
+  if (length > INT_MAX)
+    length = INT_MAX;
+  return (ssize_t)send(s, buffer, (int)length, flags);
+}
+
+ssize_t su_sendto(su_socket_t s, void *buffer, size_t length, int flags,
+		   su_sockaddr_t const *to, socklen_t tolen)
+{
+  if (length > INT_MAX)
+    length = INT_MAX;
+  return (ssize_t)sendto(s, buffer, (int)length, flags,
+			 (void *)to, (int) tolen);
+}
+
+ssize_t su_recv(sres_socket_t s, void *buffer, size_t length, int flags)
+{
+  if (length > INT_MAX)
+    length = INT_MAX;
+
+  return (ssize_t)recv(s, buffer, (int)length, flags);
+}
+
+ssize_t su_recvfrom(sres_socket_t s, void *buffer, size_t length, int flags,
+		    struct sockaddr *from, socklen_t *fromlen)
+{
+  int retval, ilen;
+
+  if (fromlen)
+    ilen = *fromlen;
+
+  if (length > INT_MAX)
+    length = INT_MAX;
+
+  retval = recvfrom(s, buffer, (int)length, flags, 
+		    from, fromlen ? &ilen : NULL);
+
+  if (fromlen)
+    *fromlen = ilen;
+
+  return (ssize_t)retval;
+}
+
 /** Scatter/gather send */
 issize_t su_vsend(su_socket_t s,
 		  su_iovec_t const iov[], isize_t iovlen, int flags,
 		  su_sockaddr_t const *su, socklen_t sulen)
 {
   int ret;
-  DWORD bytes_sent = 0;
+  DWORD bytes_sent = su_failure;
   
-  ret =  WSASendTo(s,
-		   (LPWSABUF)iov,
-		   (DWORD)iovlen,
-		   &bytes_sent,
-		   flags,
-		   &su->su_sa,
-		   sulen,
-		   NULL,
-		   NULL);
+  ret = WSASendTo(s,
+		  (LPWSABUF)iov,
+		  (DWORD)iovlen,
+		  &bytes_sent,
+		  flags,
+		  &su->su_sa,
+		  sulen,
+		  NULL,
+		  NULL);
   if (ret < 0)
     return (issize_t)ret;
   else
@@ -230,7 +284,7 @@ issize_t su_vrecv(su_socket_t s, su_iovec_t iov[], isize_t iovlen, int flags,
 		  su_sockaddr_t *su, socklen_t *sulen)
 {
   int ret;
-  DWORD bytes_recv = 0;
+  DWORD bytes_recv = su_failure;
   DWORD dflags = flags;
   int fromlen = sulen ? *sulen : 0;
 

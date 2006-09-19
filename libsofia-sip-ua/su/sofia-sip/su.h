@@ -104,11 +104,12 @@ uint32_t su_ntohl(uint32_t l)
 
 #if SU_HAVE_BSDSOCK || DOCUMENTATION_ONLY
 enum {
-  /** Invalid socket descriptor */ 
+  /** Invalid socket descriptor, error from socket() or accept() */ 
   INVALID_SOCKET = -1,
-  /** Error from su_socket() call */
+#define INVALID_SOCKET ((su_socket_t)INVALID_SOCKET)
+  /** Error from other socket calls */
   SOCKET_ERROR = -1,
-
+#define SOCKET_ERROR SOCKET_ERROR
   /** Return code for a successful call */
   su_success = 0, 
   /** Return code for an unsuccessful call */
@@ -213,13 +214,18 @@ struct su_iovec_s {
   void  *siv_base;		/**< Pointer to buffer. */
   size_t siv_len;		/**< Size of buffer.  */
 };
+typedef size_t su_ioveclen_t;
+#define SU_IOVECLEN_MAX SIZE_MAX
 #endif
 
 #if SU_HAVE_WINSOCK
+/* WSABUF */
 struct su_iovec_s {
-  long  siv_len;
-  void *siv_base;
+  u_long siv_len;
+  void   *siv_base;
 };
+typedef u_long su_ioveclen_t;
+#define SU_IOVECLEN_MAX ULONG_MAX
 #endif
 
 /** I/O vector for scatter-gather I/O. */
@@ -247,7 +253,7 @@ SOFIAPUBFUN int su_setreuseaddr(su_socket_t s, int reuse);
 /** Get the error code associated with the socket. */
 SOFIAPUBFUN int su_soerror(su_socket_t s);
 /** Get size of message available in socket. */
-SOFIAPUBFUN int su_getmsgsize(su_socket_t s);
+SOFIAPUBFUN issize_t su_getmsgsize(su_socket_t s);
 
 /** Scatter-gather send. */
 SOFIAPUBFUN
@@ -271,6 +277,18 @@ SOFIAPUBFUN int su_getlocalip(su_sockaddr_t *sin);
 SOFIAPUBFUN int inet_pton(int af, char const *src, void *dst);
 SOFIAPUBFUN const char *inet_ntop(int af, void const *src,
 				  char *dst, size_t size);
+SOFIAPUBFUN ssize_t 
+  su_send(su_socket_t s, void *buffer, size_t length, int flags),
+  su_sendto(su_socket_t s, void *buffer, size_t length, int flags,
+	    su_sockaddr_t const *to, socklen_t tolen),
+  su_recv(sres_socket_t s, void *buffer, size_t length, int flags),
+  su_recvfrom(sres_socket_t s, void *buffer, size_t length, int flags,
+	      struct sockaddr *from, socklen_t *fromlen);
+#else
+#define su_send(s,b,l,f) send((s),(b),(l),(f))
+#define su_sendto(s,b,l,f,a,L) sendto((s),(b),(l),(f),(void const*)(a),(L))
+#define su_recv(s,b,l,f) recv((s),(b),(l),(f))
+#define su_recvfrom(s,b,l,f,a,L) recvfrom((s),(b),(l),(f),(void *)(a),(L))
 #endif
 
 /* ---------------------------------------------------------------------- */
@@ -309,14 +327,17 @@ SOFIAPUBFUN const char *inet_ntop(int af, void const *src,
  * sin_addr or sin_addr6, depending on the address family).
  */
 #if SU_HAVE_IN6
-#define SU_ADDRLEN(su) \
-  ((su)->su_family == AF_INET ? sizeof((su)->su_sin.sin_addr) :	    \
-   ((su)->su_family == AF_INET6 ? sizeof((su)->su_sin6.sin6_addr) : \
-    sizeof((su)->su_sa.sa_data)))
+#define SU_ADDRLEN(su)					\
+  ((su)->su_family == AF_INET				\
+   ? (socklen_t)sizeof((su)->su_sin.sin_addr) :		\
+   ((su)->su_family == AF_INET6				\
+    ? (socklen_t)sizeof((su)->su_sin6.sin6_addr)	\
+    : (socklen_t)sizeof((su)->su_sa.sa_data)))
 #else
-#define SU_ADDRLEN(su) \
-  ((su)->su_family == AF_INET ? sizeof((su)->su_sin.sin_addr) :	    \
-   sizeof((su)->su_sa.sa_data))
+#define SU_ADDRLEN(su)					\
+  ((su)->su_family == AF_INET				\
+   ? (socklen_t)sizeof((su)->su_sin.sin_addr)		\
+   : (socklen_t)sizeof((su)->su_sa.sa_data))
 #endif
 
 /**@HI Test if su_sockaddr_t is INADDR_ANY or IN6ADDR_ANY. */

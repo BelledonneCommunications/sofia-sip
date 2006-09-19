@@ -936,6 +936,10 @@ int localinfo6(su_localinfo_t const *hints, su_localinfo_t **rresult)
 	li = calloc(1, sizeof(su_localinfo_t));
 	sa = calloc(1, sizeof(su_sockaddr_t));
 
+	sa->su_family = AF_INET6;
+	if (inet_pton(AF_INET6, addr, &sa->su_sin6.sin6_addr) <= 0)
+	  goto err;
+	
 	s = su_socket(AF_INET6, SOCK_DGRAM, 0);
 	if (s == -1) {
 	  SU_DEBUG_1(("su_localinfo: su_socket failed: %s\n", 
@@ -1337,7 +1341,7 @@ int localinfo0(su_localinfo_t const *hints, su_localinfo_t **rresult)
   *rresult = NULL;
 
   s = su_socket(family, SOCK_DGRAM, 0);
-  if (s == SOCKET_ERROR) {
+  if (s == INVALID_SOCKET) {
     SU_DEBUG_1(("su_getlocalinfo: %s: %s\n", "su_socket",
 		            su_strerror(su_errno())));
     return -1;

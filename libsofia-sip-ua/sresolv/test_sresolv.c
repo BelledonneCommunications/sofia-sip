@@ -163,10 +163,10 @@ int test_socket(sres_context_t *ctx)
   af = AF_INET;
 
   for (;;) {
-    TEST_1((s1 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
-    TEST_1((s2 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
-    TEST_1((s3 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
-    TEST_1((s4 = su_socket(af, SOCK_DGRAM, 0)) != SOCKET_ERROR);
+    TEST_1((s1 = su_socket(af, SOCK_DGRAM, 0)) != INVALID_SOCKET);
+    TEST_1((s2 = su_socket(af, SOCK_DGRAM, 0)) != INVALID_SOCKET);
+    TEST_1((s3 = su_socket(af, SOCK_DGRAM, 0)) != INVALID_SOCKET);
+    TEST_1((s4 = su_socket(af, SOCK_DGRAM, 0)) != INVALID_SOCKET);
 
     TEST_1(setblocking(s1, 0) == 0);
     TEST_1(setblocking(s2, 0) == 0);

@@ -65,9 +65,30 @@ typedef unsigned _int32 uint32_t;
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
-extern int inet_pton(int af, char const *src, void *dst);
-extern const char *inet_ntop(int af, void const *src,
-				  char *dst, size_t size);
+
+/* Posix send() */
+static inline 
+ssize_t sres_send(sres_socket_t s, void *b, size_t len, int flags)
+{
+  return (ssize_t)send(s, b, (int)len, flags);
+}
+
+/* Posix recvfrom() */
+static inline 
+ssize_t sres_recvfrom(sres_socket_t s, void *b, size_t len, int flags,
+		      struct sockaddr *from, socklen_t *fromlen)
+{
+  int ilen;
+  if (fromlen)
+    ilen = *fromlen;
+  int retval = recvfrom(s, b, len, flags, from, fromlen ? &ilen : NULL);
+  if (fromlen)
+    *fromlen = ilen;
+  return (ssize_t)retval;
+}
+
+#define close(s) closesocket(s)
+
 #if !defined(IPPROTO_IPV6)
 #if HAVE_SIN6
 #include <tpipv6.h>
@@ -81,7 +102,20 @@ struct sockaddr_storage {
 #endif
 #endif
 #else
-#define closesocket(s) close(s)
+
+#define sres_send(s,b,len,flags) send((s),(b),(len),(flags))
+#define sres_recvfrom(s,b,len,flags,a,alen) \
+  recvfrom((s),(b),(len),(flags),(a),(alen))
+#define SOCKET_ERROR   (-1)
+#define INVALID_SOCKET ((sres_socket_t)-1)
+#endif
+
+
+#if !HAVE_INET_PTON
+int inet_pton(int af, char const *src, void *dst);
+#endif
+#if !HAVE_INET_NTOP
+const char *inet_ntop(int af, void const *src, char *dst, size_t size);
 #endif
 
 #include <time.h>
@@ -1480,7 +1514,7 @@ sres_resolver_destructor(void *arg)
     su_home_unref((su_home_t *)res->res_config->c_home);
 
   if (res->res_updcb)
-    res->res_updcb(res->res_async, (sres_socket_t)-1, (sres_socket_t)-1);
+    res->res_updcb(res->res_async, INVALID_SOCKET, INVALID_SOCKET);
 }
 
 /*
@@ -1797,19 +1831,15 @@ static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCT
 {
   su_home_t *home = c->c_home;
   su_strlst_t *reg_dns_list;
-  char *name_servers = su_alloc(home, QUERY_DATALEN);
-#if __MINGW32__
+  BYTE *name_servers = su_alloc(home, QUERY_DATALEN);
   DWORD name_servers_length = QUERY_DATALEN;
-#else
-  DWORD name_servers_length = QUERY_DATALEN;
-#endif
   int ret, servers_added = 0;
 
   /* get name servers and ... */
   while((ret = RegQueryValueEx(key, 
 			       lpValueName, 
 			       NULL, NULL, 
-			       (LPBYTE)name_servers, 
+			       name_servers, 
 			       &name_servers_length)) == ERROR_MORE_DATA) {
     name_servers_length += QUERY_DATALEN;
 
@@ -1825,7 +1855,7 @@ static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCT
       int i;
 
       /* add to list */
-      reg_dns_list = su_strlst_split(home, name_servers, " ");
+      reg_dns_list = su_strlst_split(home, (char *)name_servers, " ");
 	    
       for(i = 0 ; i < su_strlst_len(reg_dns_list); i++) {
 	const char *item = su_strlst_item(reg_dns_list, i);
@@ -1844,8 +1874,6 @@ static int sres_parse_win32_reg_parse_dnsserver(sres_config_t *c, HKEY key, LPCT
   return servers_added;
 }
 
-#endif /* _WIN32 */
-
 /**
  * Discover system nameservers from Windows registry.
  *
@@ -1860,8 +1888,6 @@ static int sres_parse_win32_reg(sres_config_t *c)
 {
   int ret = -1;
 
-#ifdef _WIN32
-
 #define MAX_KEY_LEN           255
 #define MAX_VALUE_NAME_LEN    16383
 
@@ -1874,6 +1900,7 @@ static int sres_parse_win32_reg(sres_config_t *c)
 #endif
   int found = 0;
   char *interface_guid = su_alloc(home, MAX_VALUE_NAME_LEN);
+
 #if 0
 #if __MINGW32__
   DWORD guid_size = QUERY_DATALEN;
@@ -1914,7 +1941,7 @@ static int sres_parse_win32_reg(sres_config_t *c)
     }
     RegCloseKey(key_handle);
   }
-#endif /* if 0: interface-specific nameservers */
+#endif /* #if 0: interface-specific nameservers */
 
   /* step: if no interface-specific nameservers are found, 
    *       check for system-wide nameservers */
@@ -1938,10 +1965,10 @@ static int sres_parse_win32_reg(sres_config_t *c)
 
   su_free(home, interface_guid);
 
-#endif /* _WIN32 */
-
   return ret;
 }
+
+#endif /* _WIN32 */
 
 /** Parse /etc/resolv.conf file.
  *
@@ -1959,7 +1986,7 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res,
 
   if (c) {
     FILE *f;
-    int i, success = 0;
+    int i;
     
     f = fopen(c->c_filename = res->res_cnffile, "r");
 
@@ -1967,13 +1994,16 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res,
 
     if (f)
       fclose(f);
-    
+
+#if _WIN32    
+    /* note: no 127.0.0.1 on win32 systems */
     /* on win32, query the registry for nameservers */
     if (sres_parse_win32_reg(c) == 0) 
-      ++success;
-
-#ifndef _WIN32
-    /* note: no 127.0.0.1 on win32 systems */
+      /* success */;
+    else
+      /* now what? */;
+#else
+    /* Use local nameserver by default */
     if (c->c_nameservers[0] == NULL)
       sres_parse_nameserver(c, "127.0.0.1");
 #endif
@@ -2272,7 +2302,7 @@ sres_server_t **sres_servers_new(sres_resolver_t *res,
   servers = su_zalloc(res->res_home, size); if (!servers) return servers;
   dns = (void *)(servers + N + 1);
   for (i = 0; i < N; i++) {
-    dns->dns_socket = (sres_socket_t)-1;
+    dns->dns_socket = INVALID_SOCKET;
     ns = c->c_nameservers[i];
     memcpy(dns->dns_addr, ns->ns_addr, dns->dns_addrlen = ns->ns_addrlen);
     inet_ntop(dns->dns_addr->ss_family, SS_ADDR(dns->dns_addr), 
@@ -2299,8 +2329,8 @@ void sres_servers_close(sres_resolver_t *res,
 
     if (servers[i]->dns_socket != -1) {
       if (res->res_updcb)
-	res->res_updcb(res->res_async, (sres_socket_t)-1, servers[i]->dns_socket);
-      closesocket(servers[i]->dns_socket);
+	res->res_updcb(res->res_async, INVALID_SOCKET, servers[i]->dns_socket);
+      close(servers[i]->dns_socket);
     }
   }
 }
@@ -2376,18 +2406,18 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     SU_DEBUG_1(("%s: %s: %s: %s%s%s:%u\n", "sres_server_socket", "connect",
 		su_strerror(su_errno()), lb, ipaddr, rb,
 		ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
-    closesocket(s);
+    close(s);
     dns->dns_error = time(NULL);
-    return (sres_socket_t)-1;
+    return INVALID_SOCKET;
   }
   
   if (res->res_updcb) {
-    if (res->res_updcb(res->res_async, s, (sres_socket_t)-1) < 0) {
+    if (res->res_updcb(res->res_async, s, INVALID_SOCKET) < 0) {
       SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "update callback",
 		  su_strerror(su_errno())));
-      closesocket(s);
+      close(s);
       dns->dns_error = time(NULL);
-      return (sres_socket_t)-1;
+      return INVALID_SOCKET;
     }
   }
 
@@ -2428,8 +2458,9 @@ sres_send_dns_query(sres_resolver_t *res,
   memset(m, 0, offsetof(sres_message_t, m_data[sizeof m->m_packet.mp_header]));
 
   /* Create a DNS message */
-  m->m_size = sizeof(m->m_data);
-  m->m_offset = size = sizeof(m->m_packet.mp_header);
+  size = sizeof(m->m_packet.mp_header);
+  m->m_size = (uint16_t)sizeof(m->m_data);
+  m->m_offset = (uint16_t)size;
   
   m->m_id = id;
   m->m_flags = htons(SRES_HDR_QUERY | SRES_HDR_RD);
@@ -2478,7 +2509,7 @@ sres_send_dns_query(sres_resolver_t *res,
     s = sres_server_socket(res, dns);
 
     /* Send the DNS message via the UDP socket */
-    if (s != -1 && send(s, (void *)(m->m_data), size, 0) == (int)size)
+    if (s != INVALID_SOCKET && sres_send(s, m->m_data, size, 0) == size)
       break;
 
     error = su_errno();
@@ -2793,7 +2824,7 @@ int sres_resolver_sockets(sres_resolver_t *res,
 			  sres_socket_t *return_sockets, 
 			  int n)
 {
-  sres_socket_t s = (sres_socket_t)-1;
+  sres_socket_t s = INVALID_SOCKET;
   int i, retval;
 
   if (!sres_resolver_set_async(res, sres_no_update,
@@ -3061,8 +3092,8 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
 
   memset(m, 0, offsetof(sres_message_t, m_data)); 
   
-  num_bytes = recvfrom(socket, (void *)(m->m_data), sizeof (m->m_data), 0,
-		       (void *)from, &fromlen);
+  num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
+			    (void *)from, &fromlen);
 
   if (num_bytes <= 0) {
     SU_DEBUG_5(("%s: %s\n", "sres_resolver_receive", su_strerror(su_errno())));
@@ -3707,9 +3738,9 @@ m_put_domain(sres_message_t *m,
       return 0;
     }
 
-    m->m_data[m->m_offset++] = llen;
+    m->m_data[m->m_offset++] = (uint8_t)llen;
     memcpy(m->m_data + m->m_offset, label, llen);
-    m->m_offset += llen;
+    m->m_offset += (uint8_t)llen;
 
     if (label[llen] == '\0')
       break;

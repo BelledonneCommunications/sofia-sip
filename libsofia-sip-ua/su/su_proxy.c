@@ -369,7 +369,7 @@ int forwarder_accept(proxy_t *pr, su_wait_t *w, forwarder_t *f0)
     sulen = sizeof(f->f_dest);
     f->f_socket = accept(f0->f_socket, &su->su_sa, &sulen);
     f->f_upstream = 1;
-    if (f->f_socket != SOCKET_ERROR) {
+    if (f->f_socket != INVALID_SOCKET) {
       char buf[SU_ADDRSIZE];
       
       SU_DEBUG_3(("accept: connection from %s:%u\n",
@@ -441,7 +441,7 @@ int forwarder_stream_peer(proxy_t *pr, forwarder_t *f_peer)
   }
 
   if (su_root_register(pr->pr_root, f->f_wait + 1, 
-		       forwarder_connected, f, 0) == SOCKET_ERROR) {
+		       forwarder_connected, f, 0) == -1) {
     SU_DEBUG_1(("%s: cannot register\n", __func__));
     goto error;
   }

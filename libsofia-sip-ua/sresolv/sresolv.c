@@ -66,7 +66,7 @@ typedef struct sres_sofia_register_s sres_sofia_register_t;
 
 struct sres_sofia_register_s {
   sres_sofia_t *reg_ptr;
-  int reg_socket;
+  su_socket_t reg_socket;
   int reg_index;		/**< Registration index */
 };
 
@@ -74,7 +74,7 @@ struct sres_sofia_s {
   sres_resolver_t *srs_resolver;
   su_root_t  	  *srs_root;
   su_timer_t 	  *srs_timer;
-  int              srs_socket;
+  su_socket_t      srs_socket;
   sres_sofia_register_t srs_reg[SRES_MAX_NAMESERVERS];
 };
 
@@ -122,7 +122,7 @@ sres_resolver_create(su_root_t *root,
 
     srs->srs_resolver = res;
     srs->srs_root = root;
-    srs->srs_socket = -1;
+    srs->srs_socket = INVALID_SOCKET;
 
     sres_resolver_set_async(res, sres_sofia_update, srs, 0);
     
@@ -155,7 +155,8 @@ sres_resolver_destroy(sres_resolver_t *res)
   if (srs == NULL)
     return su_seterrno(EINVAL);
 
-  sres_sofia_update(srs, (su_socket_t)-1, (su_socket_t)-1); /* Remove sockets from too, zap timers. */
+  /* Remove sockets from too, zap timers. */
+  sres_sofia_update(srs, INVALID_SOCKET, INVALID_SOCKET); 
 
   sres_resolver_unref(res); 
 
@@ -188,7 +189,7 @@ static int sres_sofia_update(sres_sofia_t *srs,
     return -1;
 
   if (old_socket == new_socket) {
-    if (old_socket == -1) {
+    if (old_socket == INVALID_SOCKET) {
       sres_resolver_set_async(srs->srs_resolver, sres_sofia_update, NULL, 0);
       /* Destroy srs */
       for (i = 0; i < N; i++) {
@@ -203,14 +204,14 @@ static int sres_sofia_update(sres_sofia_t *srs,
     return 0;
   }
 
-  if (old_socket != -1)
+  if (old_socket != INVALID_SOCKET)
     for (i = 0; i < N; i++)
-      if ((su_socket_t)((srs->srs_reg + i)->reg_socket) == old_socket) {
+      if ((srs->srs_reg + i)->reg_socket == old_socket) {
 	old_reg = srs->srs_reg + i;
 	break;
       }
 
-  if (new_socket != -1) {
+  if (new_socket != INVALID_SOCKET) {
     if (old_reg == NULL) {
       for (i = 0; i < N; i++) {
 	if (!(srs->srs_reg + i)->reg_ptr)
@@ -244,8 +245,8 @@ static int sres_sofia_update(sres_sofia_t *srs,
   }
 
   if (old_reg) {
-    if (old_socket == (su_socket_t)(srs->srs_socket))
-      srs->srs_socket = -1;
+    if (old_socket == srs->srs_socket)
+      srs->srs_socket = INVALID_SOCKET;
     su_root_deregister(srs->srs_root, old_reg->reg_index);
     memset(old_reg, 0, sizeof *old_reg);
   }
@@ -270,7 +271,7 @@ static int sres_sofia_update(sres_sofia_t *srs,
 /** Return a socket registered to su_root_t object.
  *
  * @retval sockfd if succesful
- * @retval SOCKET_ERROR (-1) upon an error
+ * @retval INVALID_SOCKET (-1) upon an error
  *
  * @ERRORS
  * @ERROR EFAULT Invalid argument passed.
@@ -282,7 +283,7 @@ su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
   int i, N = SRES_MAX_NAMESERVERS;
 
   if (res == NULL)
-    return (void)su_seterrno(EFAULT), SOCKET_ERROR;
+    return (void)su_seterrno(EFAULT), INVALID_SOCKET;
 
   srs = sres_resolver_get_async(res, sres_sofia_update);
 
@@ -290,9 +291,9 @@ su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
     return su_seterrno(EINVAL);
 
   if (sres_resolver_set_async(res, sres_sofia_update, srs, 1) < 0)
-    return (su_socket_t)-1;
+    return INVALID_SOCKET;
 
-  if (srs->srs_socket != SOCKET_ERROR)
+  if (srs->srs_socket != INVALID_SOCKET)
     return srs->srs_socket;
 
   for (i = 0; i < N; i++) {
@@ -306,7 +307,7 @@ su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
   else {
     su_socket_t socket;
     if (sres_resolver_sockets(res, &socket, 1) < 0)
-      return (su_socket_t)-1;
+      return INVALID_SOCKET;
   }
 
   return srs->srs_socket; 
@@ -331,7 +332,7 @@ sres_sofia_poll(su_root_magic_t *magic,
 {
   sres_sofia_t *srs = reg->reg_ptr;
   int retval = 0;
-  int socket = reg->reg_socket;
+  su_socket_t socket = reg->reg_socket;
   int events = su_wait_events(w, socket);
 
   if (events & SU_WAIT_ERR)

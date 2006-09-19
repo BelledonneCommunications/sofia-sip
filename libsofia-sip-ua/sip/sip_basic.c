@@ -892,7 +892,7 @@ static int sip_addr_update(msg_common_t *h,
 static sip_addr_t *
 sip_addr_make_url(su_home_t *home, msg_hclass_t *hc, url_string_t const *us)
 {
-  issize_t n;
+  size_t n;
   sip_header_t *h;
 
   n = url_xtra(us->us_url);
@@ -902,7 +902,7 @@ sip_addr_make_url(su_home_t *home, msg_hclass_t *hc, url_string_t const *us)
     sip_addr_t *a = h->sh_to;
     char *s2 = sip_header_data(h);
 
-    if (url_dup(s2, n, a->a_url, us->us_url) == n)
+    if ((size_t)url_dup(s2, n, a->a_url, us->us_url) == n)
       return a;
 
     su_free(home, h);

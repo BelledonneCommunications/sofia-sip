@@ -4018,7 +4018,7 @@ int leg_route(nta_leg_t *leg,
 
 #else
   if (r && r->r_url->url_params)
-    leg->leg_loose_route = url_param(r->r_url->url_params, "lr", NULL, 0);
+    leg->leg_loose_route = url_has_param(r->r_url->url_params, "lr");
 
   if (contact) {
     sip_contact_t m[1], *m0;
@@ -8177,14 +8177,13 @@ struct sipdns_query
 {
   struct sipdns_query *sq_next;
 
-  int32_t  sq_priority;		/* priority or preference  */
-  uint16_t sq_weight;		/* preference or weight */
-  uint16_t sq_type;
-
   char const *sq_proto;
   char const *sq_domain;
   char     sq_port[6];		/* port number */
 
+  uint16_t sq_type;
+  uint16_t sq_priority;		/* priority or preference  */
+  uint16_t sq_weight;		/* preference or weight */
 };
 
 static int outgoing_resolve_next(nta_outgoing_t *orq);
@@ -8809,7 +8808,7 @@ outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
   while (selected) {
     unsigned long weight = 0;
     unsigned N = 0;
-	int32_t priority = selected->sq_priority;
+    uint16_t priority = selected->sq_priority;
 
     /* Total weight of entries with same priority */
     for (sq = selected; sq && priority == sq->sq_priority; sq = sq->sq_next) {
@@ -8823,7 +8822,7 @@ outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
     if (N > 1 && weight > 0) {
       unsigned rand = su_randint(0,  weight - 1);
 
-      while (weight > 0 && rand >= (*tail)->sq_weight) {
+      while (rand >= (*tail)->sq_weight) {
 	rand -= (*tail)->sq_weight;
 	tail = &(*tail)->sq_next;
       }
@@ -8837,7 +8836,7 @@ outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
 
     SU_DEBUG_5(("nta: %s IN SRV %u %u  %s %s (%s)\n",
 		sq0->sq_domain,
-		sq->sq_priority, sq->sq_weight,
+		(unsigned)sq->sq_priority, (unsigned)sq->sq_weight,
 		sq->sq_port, sq->sq_domain, sq->sq_proto));
   }
 
@@ -9638,7 +9637,7 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
  * The function nta_outgoing_prack() creates and sends a PRACK request used
  * to acknowledge a provisional response. 
  *
- * The request is sent using the route of the original request @a orq.
+ * The request is sent using the route of the original request @a oorq.
  *
  * When NTA receives response to the prack request, it invokes the @a
  * callback function.

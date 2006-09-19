@@ -137,7 +137,7 @@ struct tport_pending_s {
   void               *p_client;
   tport_pending_error_f *p_callback;
   msg_t              *p_msg;
-  int                 p_reported;
+  unsigned            p_reported;
 };
 
 /** Return true if transport is master. */
@@ -536,7 +536,7 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 
     tp->tp_master = mr;
     tp->tp_pri = pri;
-    tp->tp_socket = (su_socket_t)SOCKET_ERROR;
+    tp->tp_socket = INVALID_SOCKET;
 
     tp->tp_magic = mr->mr_master->tp_magic;
 
@@ -653,7 +653,7 @@ tport_primary_t *tport_listen(tport_master_t *mr,
   if (pri == NULL)
     return TPORT_LISTEN_ERROR(errno, culprit);
 
-  if (pri->pri_primary->tp_socket != SOCKET_ERROR) {
+  if (pri->pri_primary->tp_socket != INVALID_SOCKET) {
     int index = 0;
     tport_t *tp = pri->pri_primary;
     su_wait_t wait[1] = { SU_WAIT_INIT };
@@ -890,7 +890,7 @@ tport_t *tport_base_connect(tport_primary_t *pri,
      (void *)NULL)
 
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-  if (s == SOCKET_ERROR)
+  if (s == INVALID_SOCKET)
     TPORT_CONNECT_ERROR(su_errno(), "socket");
 
   what = "tport_alloc_secondary";
@@ -899,7 +899,7 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 
   self->tp_conn_orient = 1;
 
-  if ((server_socket = pri->pri_primary->tp_socket) != SOCKET_ERROR) {
+  if ((server_socket = pri->pri_primary->tp_socket) != INVALID_SOCKET) {
     su_sockaddr_t susa;
     socklen_t susalen = sizeof(susa);
 
@@ -1001,9 +1001,9 @@ void tport_zap_secondary(tport_t *self)
   if (self->tp_index)
     su_root_deregister(mr->mr_root, self->tp_index);
   self->tp_index = 0;
-  if (self->tp_socket != -1)
+  if (self->tp_socket != INVALID_SOCKET)
     su_close(self->tp_socket);
-  self->tp_socket = (su_socket_t)-1;
+  self->tp_socket = INVALID_SOCKET;
 
   su_home_zap(self->tp_home);
 }
@@ -2340,7 +2340,7 @@ int tport_accept(tport_primary_t *pri, int events)
   su_addrinfo_t ai[1];
   su_sockaddr_t su[1]; 
   socklen_t sulen = sizeof su;
-  su_socket_t s = (su_socket_t)SOCKET_ERROR, l = pri->pri_primary->tp_socket;
+  su_socket_t s = INVALID_SOCKET, l = pri->pri_primary->tp_socket;
   char const *reason = "accept";
 
   if (events & SU_WAIT_ERR)
@@ -2823,13 +2823,14 @@ tport_delivered_with_comp(tport_t *tp, msg_t const *msg,
 /** Allocate message for N bytes,
  *  return message buffer as a iovec 
  */
-int tport_recv_iovec(tport_t const *self, 
-		     msg_t **in_out_msg,
-		     msg_iovec_t iovec[msg_n_fragments], int N, 
-		     int exact)
+ssize_t tport_recv_iovec(tport_t const *self, 
+			 msg_t **in_out_msg,
+			 msg_iovec_t iovec[msg_n_fragments], int N, 
+			 int exact)
 {
   msg_t *msg = *in_out_msg;
-  int veclen, fresh;
+  ssize_t veclen;
+  int fresh;
 
   if (N == 0)
     return 0;
@@ -3117,7 +3118,9 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 		   struct sigcomp_compartment *cc)
 {
   msg_iovec_t *iov, auto_iov[40];
-  int iovlen, iovused, n, i, total, sdwn_after, close_after;
+  size_t iovlen, iovused, i, total;
+  ssize_t n;
+  int sdwn_after, close_after;
   su_time_t now;
   su_addrinfo_t *ai;
 
@@ -3866,8 +3869,7 @@ int tport_release(tport_t *self,
 int
 tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error)
 {
-  unsigned i, callbacks;
-  int reported;
+  unsigned i, reported, callbacks;
   tport_pending_t *pending;
   msg_t *msg;
   su_addrinfo_t const *ai;
@@ -3912,8 +3914,7 @@ tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error)
 int
 tport_pending_errmsg(tport_t *self, msg_t *msg, int error)
 {
-  unsigned i, callbacks;
-  int reported;
+  unsigned i, reported, callbacks;
   tport_pending_t *pending;
 
   assert(self); assert(msg);
@@ -4119,7 +4120,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
 
   if (self && host && port) {
     int resolved = 0, cmp;
-	unsigned sulen;
+    socklen_t sulen;
     su_sockaddr_t su[1];
 
     sub = self->tp_pri->pri_secondary;
@@ -4139,13 +4140,13 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
 	  *end = 0;
       }
 
-      su->su_len = sulen = sizeof (struct sockaddr_in6);
+      su->su_len = sulen = (socklen_t) sizeof (struct sockaddr_in6);
       su->su_family = AF_INET6;
     }
     else
 #endif
     {
-      su->su_len = sulen = sizeof (struct sockaddr_in);
+      su->su_len = sulen = (socklen_t) sizeof (struct sockaddr_in);
       su->su_family = AF_INET;
     }
 
@@ -4157,7 +4158,8 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
 
       /* Depth-first search */
       while (sub) {
-	cmp = sub->tp_addrlen - sulen; 
+	cmp = (int)((size_t)sub->tp_addrlen - (size_t)sulen);
+
 	if (cmp == 0)
 	  cmp = memcmp(sub->tp_addr, su, sulen);
 
@@ -4231,22 +4233,21 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
   tport_t const *sub, *maybe;
   struct sockaddr const *sa;
   int cmp;
-  unsigned salen;
   char const *comp;
 
   assert(pri); assert(ai);
 
-  sa = ai->ai_addr, salen = ai->ai_addrlen;
+  sa = ai->ai_addr;
 
   sub = pri->pri_secondary, maybe = NULL;
 
   comp = tport_canonize_comp(tpn->tpn_comp);
 
-  /* Depth-first search */
+  /* Find leftmost (prevmost) matching tport */
   while (sub) {
-    cmp = sub->tp_addrlen - salen; 
+    cmp = (int)(sub->tp_addrlen - ai->ai_addrlen); 
     if (cmp == 0)
-      cmp = memcmp(sub->tp_addr, sa, salen);
+      cmp = memcmp(sub->tp_addr, sa, ai->ai_addrlen);
 
     if (cmp == 0) {
       if (sub->tp_left) {
@@ -4270,8 +4271,6 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
     }
   }
 
-  maybe = NULL;
-
   for (; sub; sub = tprb_succ(sub)) {
     if (!sub->tp_reusable)
       continue;
@@ -4283,16 +4282,13 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
     if (comp != sub->tp_name->tpn_comp)
       continue;
     
-    if (sub->tp_addrlen != salen || memcmp(sub->tp_addr, sa, salen)) {
+    if (sub->tp_addrlen != ai->ai_addrlen 
+	|| memcmp(sub->tp_addr, sa, ai->ai_addrlen)) {
       sub = NULL;
       break;
     }
-
     break;
   }
-
-  if (sub == NULL)
-    sub = maybe;
 
   if (sub)
     SU_DEBUG_7(("%s(%p): found %p by name " TPN_FORMAT "\n",

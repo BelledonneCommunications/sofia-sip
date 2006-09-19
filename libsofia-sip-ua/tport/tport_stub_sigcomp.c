@@ -178,7 +178,7 @@ int tport_sigcomp_assign(tport_t *self, struct sigcomp_compartment *cc)
 
   if (tport_is_connection_oriented(self) && 
       tport_is_secondary(self) &&
-      self->tp_socket != SOCKET_ERROR) {
+      self->tp_socket != INVALID_SOCKET) {
     return vsc->vsc_set_compartment(self, self->tp_comp, cc);
   }
 

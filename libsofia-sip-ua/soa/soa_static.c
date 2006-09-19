@@ -765,8 +765,9 @@ int soa_sdp_reject_is_needed(sdp_session_t const *session,
 	return 1;
     }
     else {
-      sdp_mode_t send_mode = (rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0;
-      if ((unsigned int)send_mode != (sm->m_mode & sdp_sendonly))
+      /* Mode bits do not match */
+      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0)
+	  != (sm->m_mode & sdp_sendonly))
 	return 1;
     }
   }
@@ -823,7 +824,7 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
 {
   sdp_media_t const *sm, *rm, *rm_next;
   int hold_all;
-  sdp_mode_t send_mode, recv_mode;
+  sdp_mode_t recv_mode;
 
   SU_DEBUG_7(("soa_sdp_mode_set_is_needed(%p, %p, \"%s\"): called\n",
 	      session, remote, hold ? hold : ""));
@@ -842,8 +843,9 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
       continue;
 
     if (rm) {
-      send_mode = (rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0;
-      if ((unsigned int)send_mode != (sm->m_mode & sdp_sendonly))
+      /* Mode bits do not match */
+      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0)
+	  != (sm->m_mode & sdp_sendonly))
 	return 1;
     }
 

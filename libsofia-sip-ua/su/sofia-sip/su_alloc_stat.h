@@ -57,9 +57,9 @@ SU_DLL void su_home_stat_add(su_home_stat_t *total,
 struct su_home_stat_t
 {
   int      hs_size;
-  unsigned hs_clones;		/**< Number of clones */
-  unsigned hs_rehash;		/**< Number of (re)allocations of hash table. */
-  unsigned hs_blocksize;	/**< Current size of hash table */
+  usize_t hs_clones;		/**< Number of clones */
+  usize_t hs_rehash;		/**< Number of (re)allocations of hash table. */
+  usize_t hs_blocksize; 	/**< Current size of hash table */
 
   struct {
     unsigned hsp_size;		/**< Size of preload area */

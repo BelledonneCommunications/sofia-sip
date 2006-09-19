@@ -57,8 +57,9 @@
 /** Complete a HTTP request. */
 int http_request_complete(msg_t *msg)
 {
-  usize_t len;
+  size_t len = 0;
   http_t *http = http_object(msg);
+  http_payload_t const *pl;
   su_home_t *home = msg_home(msg);
 
   if (!http)
@@ -68,17 +69,18 @@ int http_request_complete(msg_t *msg)
   if (!http->http_host)
     return -1;
 
-  if (http->http_payload)
-    len = http->http_payload->pl_len;
-  else
-    len = 0;
+    for (pl = http->http_payload; pl; pl = pl->pl_next)
+      len += pl->pl_len;
+
+  if (len > UINT32_MAX)
+    return -1;
 
   if (!http->http_content_length) {
-    http->http_content_length = http_content_length_create(home, len);
+    http->http_content_length = http_content_length_create(home, (uint32_t)len);
   }
   else {
     if (http->http_content_length->l_length != len) {
-      http->http_content_length->l_length = len;
+      http->http_content_length->l_length = (uint32_t)len;
       msg_fragment_clear(http->http_content_length->l_common);
     }
   }
@@ -117,12 +119,15 @@ int http_message_complete(msg_t *msg, http_t *http)
   if (!http->http_content_length) {
     http_content_length_t *l;
     http_payload_t *pl;
-    usize_t len = 0;
+    size_t len = 0;
     
     for (pl = http->http_payload; pl; pl = pl->pl_next)
       len += pl->pl_len;
 
-    l = http_content_length_create(msg_home(msg), len);
+    if (len > UINT32_MAX)
+      return -1;
+
+    l = http_content_length_create(msg_home(msg), (uint32_t)len);
 
     if (msg_header_insert(msg, http, (http_header_t *)l) < 0)
       return -1;

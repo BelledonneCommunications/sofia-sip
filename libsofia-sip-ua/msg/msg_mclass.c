@@ -312,20 +312,22 @@ msg_href_t const *msg_find_hclass(msg_mclass_t const *mc,
 				  isize_t *return_start_of_content)
 {
   msg_href_t const *hr;
-  short i, N;
-  isize_t m;
+  short i, N, m;
+  isize_t len;
 
   assert(mc);
 
   N = mc->mc_hash_size;
 
-  i = msg_header_name_hash(s, &m) % N;
+  i = msg_header_name_hash(s, &len) % N;
 
-  if (m == 0) {
+  if (len == 0 || len > HC_LEN_MAX) {
     if (return_start_of_content)
       *return_start_of_content = 0;
     return mc->mc_error;
   }
+
+  m = (short)len;
 
   if (m == 1 && mc->mc_short) {
     short c = s[0];
@@ -342,9 +344,9 @@ msg_href_t const *msg_find_hclass(msg_mclass_t const *mc,
   else {
     msg_hclass_t *hc;
 
+    /* long form */
     for (hr = NULL; (hc = mc->mc_hash[i].hr_class); i = (i + 1) % N) {
-      /* long form */
-      if (m == (isize_t)(hc->hc_len) && strncasecmp(s, hc->hc_name, m) == 0) {
+      if (m == hc->hc_len && strncasecmp(s, hc->hc_name, m) == 0) {
 	hr = &mc->mc_hash[i];
 	break;
       }
@@ -357,24 +359,24 @@ msg_href_t const *msg_find_hclass(msg_mclass_t const *mc,
   if (!return_start_of_content)	/* Just header name */
     return hr;
 
-  if (s[m] == ':') {		/* Fast path */
-    *return_start_of_content = ++m;
+  if (s[len] == ':') {		/* Fast path */
+    *return_start_of_content = ++len;
     return hr;
   }
 
-  if (IS_LWS(s[m])) {
+  if (IS_LWS(s[len])) {
     int crlf = 0;
     do {
-      m += span_ws(s + m + crlf) + crlf; /* Skip lws before colon */
-      crlf = CRLF_TEST(s[m], s[m + 1]);
+      len += span_ws(s + len + crlf) + crlf; /* Skip lws before colon */
+      crlf = CRLF_TEST(s[len], s[len + 1]);
     }
-    while (IS_WS(s[m + crlf]));
+    while (IS_WS(s[len + crlf]));
   }
 
-  if (s[m++] != ':')		/* Colon is required in header */
-    m = 0;
+  if (s[len++] != ':')		/* Colon is required in header */
+    len = 0;
 
-  *return_start_of_content = m;
+  *return_start_of_content = len;
 
   return hr;
 }

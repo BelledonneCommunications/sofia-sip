@@ -40,11 +40,11 @@
 
 #include <assert.h>
 
-typedef struct stun_socket_s stun_socket_t;
+typedef struct stun_bound_s stun_bound_t;
 
-struct stun_socket_s
+struct stun_bound_s
 {
-  stun_socket_t *ss_next;
+  stun_bound_t *ss_next;
   su_socket_t ss_socket;
   int ss_scope;			/* LI_SCOPE */
   socklen_t ss_addrlen;
@@ -57,16 +57,16 @@ struct stun_socket_s
 
 struct stun_mini_s
 {
-  stun_socket_t *sockets;
+  stun_bound_t *sockets;
 };
 
 static int process_3489_request(stun_mini_t *mini, 
 				stun_msg_t *request, stun_msg_t *response,
-				int socket, void *, socklen_t);
+				su_socket_t socket, void *, socklen_t);
 
 static int process_bis_request(stun_mini_t *mini, 
 			       stun_msg_t *request, stun_msg_t *response,
-			       int socket, void *, socklen_t);
+			       su_socket_t socket, void *, socklen_t);
 
 int send_stun_error(stun_msg_t *response,
 		    int error,
@@ -85,7 +85,7 @@ stun_mini_t *stun_mini_create(void)
 void stun_mini_destroy(stun_mini_t *mini)
 {
   if (mini) {
-    stun_socket_t *ss, **next;
+    stun_bound_t *ss, **next;
     for (next = &mini->sockets; *next; ) {
       ss = *next;
       *next = ss->ss_next;
@@ -98,7 +98,7 @@ void stun_mini_destroy(stun_mini_t *mini)
 /** Add a socket to stun miniserver. */
 int stun_mini_add_socket(stun_mini_t *mini, su_socket_t socket)
 {
-  stun_socket_t *ss, **next;
+  stun_bound_t *ss, **next;
   struct sockaddr_storage addr[1];
   socklen_t addrlen = sizeof addr;
 
@@ -115,7 +115,7 @@ int stun_mini_add_socket(stun_mini_t *mini, su_socket_t socket)
   if (addr->ss_family != AF_INET)
     return su_seterrno(EAFNOSUPPORT);
 
-  ss = calloc(1, offsetof(stun_socket_t, ss_addr.array[addrlen]));
+  ss = calloc(1, offsetof(stun_bound_t, ss_addr.array[addrlen]));
   
   ss->ss_socket = socket;
   ss->ss_scope = su_sockaddr_scope((void *)addr, addrlen);
@@ -130,7 +130,7 @@ int stun_mini_add_socket(stun_mini_t *mini, su_socket_t socket)
 /** Remove socket from stun miniserver */
 int stun_mini_remove_socket(stun_mini_t *mini, su_socket_t socket)
 {
-  stun_socket_t *ss, **next;
+  stun_bound_t *ss, **next;
 
   if (mini == NULL)
     return errno = EFAULT, -1;
@@ -215,11 +215,11 @@ static
 int process_3489_request(stun_mini_t *mini,
 			 stun_msg_t *request,
 			 stun_msg_t *response,
-			 int socket,
+			 su_socket_t socket,
 			 void *from, 
 			 socklen_t fromlen)
 {
-  stun_socket_t *ss, *changed = NULL, ss0[1];
+  stun_bound_t *ss, *changed = NULL, ss0[1];
   stun_attr_t *a, **next;
   stun_attr_sockaddr_t *addr;
   int change_address = 0;
@@ -262,7 +262,7 @@ int process_3489_request(stun_mini_t *mini,
   if (change_address) {
     struct sockaddr_in const *sin, *sin2;
     int scope = su_sockaddr_scope(from, fromlen);
-    stun_socket_t *changed_ip = NULL, *same_scope = NULL;
+    stun_bound_t *changed_ip = NULL, *same_scope = NULL;
     
     sin = from;
 
@@ -299,7 +299,7 @@ int process_3489_request(stun_mini_t *mini,
   }
 
   for (ss = mini->sockets; ss; ss = ss->ss_next)
-    if ((su_socket_t)socket == ss->ss_socket)
+    if (socket == ss->ss_socket)
       break;
 
   if (ss == NULL) {
@@ -339,7 +339,7 @@ int process_3489_request(stun_mini_t *mini,
 
 static int process_bis_request(stun_mini_t *mini, 
 			       stun_msg_t *request, stun_msg_t *response,
-			       int socket, 
+			       su_socket_t socket, 
 			       void *from, socklen_t fromlen)
 {
   return process_3489_request(mini, request, response, socket, from, fromlen);

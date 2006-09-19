@@ -107,7 +107,7 @@ int tport_udp_init_primary(tport_primary_t *pri,
   int s;
 
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-  if (s == SOCKET_ERROR)
+  if (s == INVALID_SOCKET)
     return *return_culprit = "socket", -1;
 
   pri->pri_primary->tp_socket = s;
@@ -223,7 +223,7 @@ int tport_recv_dgram(tport_t *self)
   /* Simulate packet loss */
   if (self->tp_params->tpp_drop && 
       su_randint(0, 1000) < self->tp_params->tpp_drop) {
-    recv(self->tp_socket, (void *)sample, 1, 0);
+    su_recv(self->tp_socket, sample, 1, 0);
     SU_DEBUG_3(("tport(%p): simulated packet loss!\n", self));
     return 0;
   }

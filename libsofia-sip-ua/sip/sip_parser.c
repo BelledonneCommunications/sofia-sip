@@ -469,7 +469,7 @@ void sip_transport_dup(char **pp, char const **dd, char const *s)
     MSG_STRING_DUP(*pp, *dd, s);
 }
 
-/** Parse SIP <word "@" word> construct. */
+/** Parse SIP <word "@" word> construct used in @CallID. */
 char *sip_word_at_word_d(char **ss)
 {
   char *rv = *ss, *s0 = *ss;
@@ -504,7 +504,8 @@ int sip_complete_message(msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
   su_home_t *home = msg_home(msg);
-  usize_t len = 0;
+  size_t len = 0;
+  ssize_t mplen;
 
   if (sip == NULL)
     return -1;
@@ -528,21 +529,25 @@ int sip_complete_message(msg_t *msg)
     if (!head || !msg_multipart_serialize(&head->h_succ, mp))
       return -1;
 
-    len = (unsigned)msg_multipart_prepare(msg, mp, sip->sip_flags);
-    if (len == (unsigned)-1)
+    mplen = msg_multipart_prepare(msg, mp, sip->sip_flags);
+    if (mplen == -1)
       return -1;
+    len = (size_t)mplen;
   } 
 
   if (sip->sip_payload)
     len += sip->sip_payload->pl_len;
 
+  if (len > UINT32_MAX)
+    return -1;
+
   if (!sip->sip_content_length) {
     msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t*)
-		      sip_content_length_create(home, len));
+		      sip_content_length_create(home, (uint32_t)len));
   }
   else {
     if (sip->sip_content_length->l_length != len) {
-      sip->sip_content_length->l_length = len;
+      sip->sip_content_length->l_length = (uint32_t)len;
       sip_fragment_clear(sip->sip_content_length->l_common);
     }
   }

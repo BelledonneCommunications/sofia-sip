@@ -357,10 +357,15 @@ issize_t msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen,
     if (!buf)
       break;
 
+#if SU_HAVE_WINSOCK
+    /* WSABUF has u_long */
+    if (len > SU_IOVECLEN_MAX)
+      len = SU_IOVECLEN_MAX;
+#endif
     if (len > n)
       len = n;
     if (vec)
-      vec[i].mv_base = buf, vec[i].mv_len = len;
+      vec[i].mv_base = buf, vec[i].mv_len = (su_ioveclen_t)len;
     i++;
     if (len == n)
       return i;
@@ -396,7 +401,7 @@ issize_t msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen,
     return -1;
 
   if (vec)
-    vec[i].mv_base = buf, vec[i].mv_len = n;
+    vec[i].mv_base = buf, vec[i].mv_len = (su_ioveclen_t)n;
 
   if (chunk) {
     assert(chunk->pl_data == NULL); assert(chunk->pl_common->h_len == 0);
@@ -1910,7 +1915,7 @@ isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen)
 
       if (vec && n != veclen)
 	/* new iovec entry */
-	vec[n].mv_base = (void *)p, vec[n].mv_len  = len;
+	vec[n].mv_base = (void *)p, vec[n].mv_len = (su_ioveclen_t)len;
       else
 	vec = NULL;
 
@@ -2613,7 +2618,8 @@ int msg_header_add_str(msg_t *msg,
  * inserted first and replaces the existing request (or status).  Other
  * headers are inserted after the request or status.
  *
- * If the header is a singleton, existing headers with the same class are
+ * If there can be only one header field of this type (hc_kind is
+ * msg_kind_single), existing header objects with the same class are
  * removed.
  *
  * @param msg message object owning the fragment chain

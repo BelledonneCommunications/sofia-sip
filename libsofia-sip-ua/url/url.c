@@ -140,7 +140,7 @@
 /* Internal prototypes */
 static char *url_canonize(char *d, char const *s, size_t n,
 			  char const allowed[]);
-static char *url_canonize2(char *d, char const *s, issize_t n, 
+static char *url_canonize2(char *d, char const *s, size_t n, 
 			   unsigned m32, unsigned m64, unsigned m96);
 static int url_tel_cmp_numbers(char const *A, char const *B);
 
@@ -302,18 +302,18 @@ char *url_canonize(char *d, char const *s, size_t n, char const allowed[])
 
 /** Canonize a URL component (with precomputed mask) */
 static
-char *url_canonize2(char *d, char const *s, issize_t n, 
+char *url_canonize2(char *d, char const * const s, size_t n, 
 		    unsigned m32, unsigned m64, unsigned m96)
 {
-  char const *s0 = s;
+  size_t i = 0;
 
   if (d == s)
-    for (;*s && s - s0 < n; d++, s++) 
-      if (*s == '%')
+    for (;s[i] && i < n; d++, i++) 
+      if (s[i] == '%')
 	break;
 
-  for (;*s && s - s0 < n; d++, s++) {
-    unsigned char c = *s, h1, h2;
+  for (;s[i] && i < n; d++, i++) {
+    unsigned char c = s[i], h1, h2;
 
     if (c != '%') {
       if (IS_EXCLUDED(c, m32, m64, m96))
@@ -322,7 +322,7 @@ char *url_canonize2(char *d, char const *s, issize_t n,
       continue;
     }
 
-    h1 = s[1], h2 = s[2];
+    h1 = s[i + 1], h2 = s[i + 2];
     
     if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
@@ -333,7 +333,8 @@ char *url_canonize2(char *d, char const *s, issize_t n,
     c = (UNHEX(h1) << 4) | UNHEX(h2);
 
     if (!IS_EXCLUDED(c, m32, m64, m96)) {
-      *d = c, s += 2;
+      /* Convert hex to normal character */
+      *d = c, i += 2;
       continue;
     }
 
@@ -345,7 +346,7 @@ char *url_canonize2(char *d, char const *s, issize_t n,
 
     d[0] = '%', d[1] = h1, d[2] = h2;
 
-    d +=2, s += 2;
+    d +=2, i += 2;
 #undef    UNHEX
   }
   
@@ -361,25 +362,25 @@ char *url_canonize2(char *d, char const *s, issize_t n,
  * be escaped.
  */
 static
-char *url_canonize3(char *d, char const *s, issize_t n, 
+char *url_canonize3(char *d, char const * const s, size_t n, 
 		    unsigned m32, unsigned m64, unsigned m96)
 {
-  char const *s0 = s;
+  size_t i = 0;
 
   if (d == s)
-    for (;*s && s - s0 < n; d++, s++) 
-      if (*s == '%')
+    for (;s[i] && i < n; d++, i++) 
+      if (s[i] == '%')
 	break;
 
-  for (;*s && s - s0 < n; d++, s++) {
-    unsigned char c = *s, h1, h2;
+  for (;s[i] && i < n; d++, i++) {
+    unsigned char c = s[i], h1, h2;
 
     if (c != '%') {
       *d = c;
       continue;
     }
 
-    h1 = s[1], h2 = s[2];
+    h1 = s[i + 1], h2 = s[i + 2];
     
     if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
@@ -390,7 +391,7 @@ char *url_canonize3(char *d, char const *s, issize_t n,
     c = (UNHEX(h1) << 4) | UNHEX(h2);
 
     if (!IS_EXCLUDED(c, m32, m64, m96)) {
-      *d = c, s += 2;
+      *d = c, i += 2;
       continue;
     }
 
@@ -402,7 +403,7 @@ char *url_canonize3(char *d, char const *s, issize_t n,
 
     d[0] = '%', d[1] = h1, d[2] = h2;
 
-    d +=2, s += 2;
+    d +=2, i += 2;
 #undef    UNHEX
   }
   
@@ -726,7 +727,7 @@ int url_d(url_t *url, char *s)
   }
 
   s = (char *)url->url_host;
-  if (s && !url_canonize2(s, s, -1, RESERVED_MASK))
+  if (s && !url_canonize2(s, s, SIZE_MAX, RESERVED_MASK))
     return -1;
 
   /* port is canonized by _url_d() */
@@ -745,12 +746,12 @@ int url_d(url_t *url, char *s)
   
   /* Unhex alphanumeric and unreserved URI characters */
   s = (char *)url->url_headers;
-  if (s && !url_canonize3(s, s, -1, RESERVED_MASK))
+  if (s && !url_canonize3(s, s, SIZE_MAX, RESERVED_MASK))
     return -1;
 
   /* Allow all URI characters (including reserved ones) */
   s = (char *)url->url_fragment;
-  if (s && !url_canonize2(s, s, -1, URIC_MASK))
+  if (s && !url_canonize2(s, s, SIZE_MAX, URIC_MASK))
     return -1;
 
   return 0;
@@ -1120,9 +1121,10 @@ issize_t url_dup(char *buf, isize_t bufsize, url_t *dst, url_t const *src)
 url_t *url_hdup(su_home_t *home, url_t const *src)
 {
   if (src) {
-    size_t len = sizeof(*src) + url_xtra(src), actual;
+    size_t len = sizeof(*src) + url_xtra(src);
     url_t *dst = su_alloc(home, len);
     if (dst) {
+      ssize_t actual;
       actual = url_dup((char *)(dst + 1), len - sizeof(*src), dst, src);
       if (actual < 0)
 	su_free(home, dst), dst = NULL;
@@ -1773,7 +1775,7 @@ int url_sanitize(url_t *url)
 #include <sofia-sip/su_md5.h>
 
 static
-void canon_update(su_md5_t *md5, char const *s, int n, char const *allow)
+void canon_update(su_md5_t *md5, char const *s, size_t n, char const *allow)
 {
   char const *s0 = s, *b = s;
 

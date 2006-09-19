@@ -614,10 +614,11 @@ int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
   char ipaddr[SU_ADDRSIZE + 2];
   stun_attr_t **a, *b;
 
+  socklen_t tolen = SU_ADDRLEN(to_addr);
+
   stun_encode_message(msg, pwd);
 
-  err = sendto(s, (const void *)(msg->enc_buf.data), msg->enc_buf.size, 
-	       0, (struct sockaddr *)to_addr, sizeof(struct sockaddr_in));
+  err = su_sendto(s, msg->enc_buf.data, msg->enc_buf.size, 0, to_addr, tolen);
 
   free(msg->enc_buf.data), msg->enc_buf.data = NULL;
   msg->enc_buf.size = 0;

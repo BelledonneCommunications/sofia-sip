@@ -117,8 +117,7 @@ static void priv_sres_cb(stun_dns_lookup_t *self,
   if (self->stun_state == stun_dns_done) {
     self->stun_cb(self, self->stun_magic);
 
-    if (self->stun_socket >= 0) 
-      sres_resolver_timer(self->stun_sres, self->stun_socket);
+    sres_resolver_timer(self->stun_sres, -1);
   }
 
   sres_free_answers(self->stun_sres, answer);
@@ -148,21 +147,11 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
   self->stun_root = root;
   self->stun_sres = sres_resolver_create(root, NULL, TAG_END());
   if (self->stun_sres) {
-    socket = sres_resolver_root_socket(self->stun_sres);
-    if (socket != SOCKET_ERROR) {
-      char *query_udp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_UDP, domain);
-      char *query_tcp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_TCP, domain);
+    char *query_udp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_UDP, domain);
+    char *query_tcp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_TCP, domain);
       
-      self->stun_socket = socket;
-
-      query = sres_query_make(self->stun_sres, priv_sres_cb, self, socket, sres_type_srv, query_udp);
-      query = sres_query_make(self->stun_sres, priv_sres_cb, self, socket, sres_type_srv, query_tcp);
-    }
-    else {
-      sres_resolver_destroy(self->stun_sres);
-      self->stun_socket = (su_socket_t)SOCKET_ERROR;
-      su_free(NULL, self), self = NULL;
-    }
+    query = sres_query(self->stun_sres, priv_sres_cb, self, sres_type_srv, query_udp);
+    query = sres_query(self->stun_sres, priv_sres_cb, self, sres_type_srv, query_tcp);
   }
   else {
     su_free(NULL, self), self = NULL;

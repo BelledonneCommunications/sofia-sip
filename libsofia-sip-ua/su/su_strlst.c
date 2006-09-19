@@ -660,7 +660,7 @@ su_strlst_t *su_strlst_dup_split(su_home_t *home,
  * string list.
  * 
  */
-unsigned su_strlst_len(su_strlst_t const *l)
+usize_t su_strlst_len(su_strlst_t const *l)
 {
   return l ? l->sl_len : 0;
 }

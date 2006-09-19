@@ -51,18 +51,18 @@ SU_DLL su_vector_t *su_vector_create(su_home_t *home, su_free_func_t free_f)
 SU_DLL void su_vector_destroy(su_vector_t *);
 
 /** Insert an item to vector. */
-SU_DLL int su_vector_insert(su_vector_t *vector, unsigned index, void *item);
+SU_DLL int su_vector_insert(su_vector_t *vector, usize_t index, void *item);
 
-SU_DLL int su_vector_remove(su_vector_t *vector, unsigned index);
+SU_DLL int su_vector_remove(su_vector_t *vector, usize_t index);
 
 /** Append a item to vector. */
 SU_DLL int su_vector_append(su_vector_t *, void *item);
 
 /** Get a numbered item from vector. */
-SU_DLL void *su_vector_item(su_vector_t const *, unsigned i);
+SU_DLL void *su_vector_item(su_vector_t const *, usize_t i);
 
 /** Get number of items in vector. */
-SU_DLL unsigned su_vector_len(su_vector_t const *l);
+SU_DLL usize_t su_vector_len(su_vector_t const *l);
 
 SU_DLL int su_vector_empty(su_vector_t *vector);
 SU_DLL int su_vector_is_empty(su_vector_t const *vector);

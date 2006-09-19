@@ -521,7 +521,7 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
   int events = -1;
   int one, err = -1;
   su_wait_t wait[1] = { SU_WAIT_INIT };
-  su_socket_t s = SOCKET_ERROR;
+  su_socket_t s = INVALID_SOCKET;
   int family;
   su_addrinfo_t *ai = NULL;
   stun_discovery_t *sd;
@@ -558,7 +558,7 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
   /* open tcp connection to server */
   s = su_socket(family = AF_INET, SOCK_STREAM, 0);
 
-  if (s == SOCKET_ERROR) {
+  if (s == INVALID_SOCKET) {
     STUN_ERROR(errno, socket);
     return -1;
   }
@@ -766,7 +766,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
 
   enter;
 
-  if (s == SOCKET_ERROR) {
+  if (s == INVALID_SOCKET) {
     SU_DEBUG_3(("%s: invalid socket\n", __func__));
     return errno = EINVAL, -1;
   }
@@ -815,7 +815,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   memset(sa, 0, bind_len);
   /* if bound check the error */
   err = getsockname(s, (struct sockaddr *) sa, &bind_len);
-  if (err < 0 && errno == SOCKET_ERROR) {
+  if (err < 0) {
     STUN_ERROR(errno, getsockname);
     return -1;
   }
@@ -1050,7 +1050,7 @@ int stun_bind(stun_handle_t *sh,
 	      tag_type_t tag, tag_value_t value,
 	      ...)
 {
-  su_socket_t s = (su_socket_t)SOCKET_ERROR;
+  su_socket_t s = INVALID_SOCKET;
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
@@ -1219,7 +1219,7 @@ int stun_test_nattype(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   su_sockaddr_t bind_addr;
-  su_socket_t s = (su_socket_t)SOCKET_ERROR;
+  su_socket_t s = INVALID_SOCKET;
   socklen_t bind_len;
   su_sockaddr_t *destination = NULL;
 
@@ -1509,7 +1509,7 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
     /* closed TLS connection */
     SSL_shutdown(ssl);
 
-    su_close(sd->sd_socket), sd->sd_socket = SOCKET_ERROR;
+    su_close(sd->sd_socket), sd->sd_socket = INVALID_SOCKET;
 
     SSL_free(self->sh_ssl), ssl = NULL;
     SSL_CTX_free(self->sh_ctx), ctx = NULL;
@@ -1715,8 +1715,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   /* receive response */
   recv_len = sizeof(recv);
-  dgram_len = recvfrom(s, (void *)dgram, sizeof(dgram), 0, (struct sockaddr *) &recv,
-		 &recv_len);
+  dgram_len = su_recvfrom(s, dgram, sizeof(dgram), 0, &recv, &recv_len);
   err = errno;
   if ((dgram_len < 0) && (err != EAGAIN)) {
     /* su_wait_destroy(w); */
@@ -2619,7 +2618,7 @@ int stun_set_uname_pwd(stun_handle_t *sh,
   sh->sh_username.data = malloc(len_uname);
   if (sh->sh_username.data) {
     memcpy(sh->sh_username.data, uname, len_uname);
-    sh->sh_username.size = len_uname;
+    sh->sh_username.size = (unsigned)len_uname;
   }
   else
     return -1;
@@ -2627,7 +2626,7 @@ int stun_set_uname_pwd(stun_handle_t *sh,
   sh->sh_passwd.data = malloc(len_pwd);
   if (sh->sh_passwd.data) {
     memcpy(sh->sh_passwd.data, pwd, len_pwd);
-    sh->sh_passwd.size = len_pwd;
+    sh->sh_passwd.size = (unsigned)len_pwd;
   }
   else
     return -1;
@@ -2726,7 +2725,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
-  su_socket_t s = (su_socket_t)SOCKET_ERROR;
+  su_socket_t s = INVALID_SOCKET;
   int err, index = 0, s_reg = 0;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   char const *server = NULL;
@@ -2913,7 +2912,7 @@ int stun_process_message(stun_handle_t *sh, su_socket_t s,
 
   /* Message received. */
   msg.enc_buf.data = data;
-  msg.enc_buf.size = len;
+  msg.enc_buf.size = (unsigned)len;
  
   debug_print(&msg.enc_buf);      
 
@@ -2960,7 +2959,7 @@ int stun_keepalive(stun_handle_t *sh,
 		   tag_type_t tag, tag_value_t value,
 		   ...)
 {
-  su_socket_t s = (su_socket_t)SOCKET_ERROR;
+  su_socket_t s = INVALID_SOCKET;
   unsigned int timeout = 0;
   ta_list ta;
   stun_discovery_t *sd;

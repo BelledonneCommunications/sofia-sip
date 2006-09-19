@@ -446,7 +446,7 @@ void *sub_alloc(su_home_t *home,
     prused = ALIGN(prused);
     if (prused <= sub->sub_prsize) {
       preload = (char *)sub->sub_preload + sub->sub_prused;
-      sub->sub_prused = prused;
+      sub->sub_prused = (unsigned)prused;
     }
   }
 
@@ -526,7 +526,7 @@ void *su_home_new(isize_t size)
 
   home = calloc(1, size);
   if (home) {
-    home->suh_size = size;
+    home->suh_size = (int)size;
     home->suh_blocks = su_hash_alloc(SUB_N);
     if (home->suh_blocks)
       home->suh_blocks->sub_ref = 1;
@@ -1085,8 +1085,11 @@ su_home_t *su_home_auto(void *area, isize_t size)
   if (area == NULL || size < prepsize)
     return NULL;
 
+  if (size > INT_MAX)
+    size = INT_MAX;
+
   home = memset(p, 0, homesize);
-  home->suh_size = size;
+  home->suh_size = (int)size;
 
   sub = memset(p + homesize, 0, subsize);
   home->suh_blocks = sub;
@@ -1190,7 +1193,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
 	su_home_stats_alloc(sub, data, data, size, 0);
       }
 
-      sub->sub_prused = p2;
+      sub->sub_prused = (unsigned)p2;
       sua->sua_size = size;
 
 #if MEMCHECK_EXTRA
@@ -1323,7 +1326,7 @@ void *su_salloc(su_home_t *home, isize_t size)
     retval = calloc(1, size);
 
   if (retval)
-    retval->size = size;
+    retval->size = (int)size;
 
   return retval;
 }
@@ -1396,7 +1399,7 @@ void su_home_init_stats(su_home_t *home)
     size = sub->sub_stats->hs_size;
   
   memset(sub->sub_stats, 0, size);
-  sub->sub_stats->hs_size = size;
+  sub->sub_stats->hs_size = (int)size;
   sub->sub_stats->hs_blocksize = sub->sub_n;
 }
 
@@ -1416,13 +1419,13 @@ void su_home_get_stats(su_home_t *home, int include_clones,
   sub = MEMLOCK(home);
 
   if (sub && sub->sub_stats) {
-    size_t sub_size = sub->sub_stats->hs_size;
-    if (sub_size > (size_t)size)
-      sub_size = size;
+    int sub_size = sub->sub_stats->hs_size;
+    if (sub_size > (int)size)
+      sub_size = (int)size;
     sub->sub_stats->hs_preload.hsp_size = sub->sub_prsize;
     sub->sub_stats->hs_preload.hsp_used = sub->sub_prused;
     memcpy(hs, sub->sub_stats, sub_size);
-    hs->hs_size = size;
+    hs->hs_size = sub_size;
   }
 
   UNLOCK(home);

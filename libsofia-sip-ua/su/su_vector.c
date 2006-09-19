@@ -269,7 +269,7 @@ void *su_vector_item(su_vector_t const *vector, usize_t i)
  * The function su_vector_len() returns the number of items in the 
  * vector.
  */
-unsigned su_vector_len(su_vector_t const *l)
+usize_t su_vector_len(su_vector_t const *l)
 {
   return l ? l->v_len : 0;
 }

@@ -78,8 +78,9 @@ char const auth_internal_server_error[] = "Internal server error";
 
 static void auth_md5_hmac_key(auth_mod_t *am);
 
-HTABLE_PROTOS(auth_htable, aht, auth_passwd_t);
-HTABLE_BODIES(auth_htable, aht, auth_passwd_t, APW_HASH);
+HTABLE_PROTOS_WITH(auth_htable, aht, auth_passwd_t, usize_t, unsigned);
+HTABLE_BODIES_WITH(auth_htable, aht, auth_passwd_t, APW_HASH, 
+		   usize_t, unsigned);
 
 /**Allocate an authentication module instance.
  *
@@ -306,7 +307,7 @@ auth_status_t *auth_status_init_with(void *p,
   if (size > INT_MAX) size = INT_MAX;
 
   as = memset(p, 0, size);
-  as->as_home->suh_size = size;
+  as->as_home->suh_size = (int)size;
 
   /* su_home_init(as->as_home); */
 
@@ -833,17 +834,17 @@ auth_passwd_t *auth_mod_getpass(auth_mod_t *am,
 				char const *realm)
 {
   auth_passwd_t *apw, **slot;
-  unsigned index;
+  unsigned hash;
 
   if (am == NULL || user == NULL)
     return NULL;
 
-  index = msg_hash_string(user);
+  hash = msg_hash_string(user);
 
-  for (slot = auth_htable_hash(am->am_users, index);
+  for (slot = auth_htable_hash(am->am_users, hash);
        (apw = *slot);
        slot = auth_htable_next(am->am_users, slot)) {
-    if (index != apw->apw_index)
+    if (hash != apw->apw_index)
       continue;
     if (strcmp(user, apw->apw_user))
       continue;
@@ -909,7 +910,8 @@ auth_passwd_t *auth_mod_addpass(auth_mod_t *am,
   return apw;
 }
 
-static int readfile(su_home_t *, FILE *, void **contents, int add_trailing_lf);
+static ssize_t readfile(su_home_t *, FILE *,
+			void **contents, int add_trailing_lf);
 static int auth_readdb_internal(auth_mod_t *am, int always);
 
 /** Read authentication database */
@@ -1157,25 +1159,29 @@ auth_htable_append_local(auth_htable_t *aht, auth_passwd_t *apw)
 }
 
 static
-int readfile(su_home_t *home, FILE *f, void **contents, int add_trailing_lf)
+ssize_t readfile(su_home_t *home,
+		 FILE *f,
+		 void **contents,
+		 int add_trailing_lf)
 {
   /* Read in whole (binary!) file */
   char *buffer = NULL;
   long size;
-  int len = -1;
+  size_t len;
 
   /* Read whole file in */
   if (fseek(f, 0, SEEK_END) < 0 ||
       (size = ftell(f)) < 0 ||
       fseek(f, 0, SEEK_SET) < 0 ||
-      (long)(len = size) != size) {
+      (long)(len = (size_t)size) != size ||
+      size + 2 > SSIZE_MAX) {
     SU_DEBUG_1(("%s: unable to determine file size (%s)\n",
 		__func__, strerror(errno)));
     return -1;
   }
 
   if (!(buffer = su_alloc(home, len + 2)) ||
-      fread(buffer, 1, len, f) != (unsigned)len) {
+      fread(buffer, 1, len, f) != len) {
     SU_DEBUG_1(("%s: unable to read file (%s)\n", __func__, strerror(errno)));
     if (buffer)
       su_free(home, buffer);
@@ -1350,11 +1356,11 @@ msg_auth_t *auth_digest_credentials(msg_auth_t *auth,
  * @param nextnonce true if this is a "nextnonce" [IN]
  * @param now  current time [IN]
  */
-int auth_generate_digest_nonce(auth_mod_t *am,
-			       char buffer[],
-			       size_t bsize,
-			       int nextnonce,
-			       msg_time_t now)
+isize_t auth_generate_digest_nonce(auth_mod_t *am,
+				   char buffer[],
+				   size_t bsize,
+				   int nextnonce,
+				   msg_time_t now)
 {
   struct nonce nonce[1] = {{ 0 }};
   su_md5_t md5[1];

@@ -899,12 +899,15 @@ int nth_request_treply(nth_request_t *req,
   if (http->http_payload && !http->http_content_length) {
     http_content_length_t *l;
     http_payload_t *pl;
-    usize_t len = 0;
+    size_t len = 0;
     
     for (pl = http->http_payload; pl; pl = pl->pl_next)
       len += pl->pl_len;
 
-    l = http_content_length_create(msg_home(response), len);
+    if (len > UINT32_MAX)
+      goto fail;
+
+    l = http_content_length_create(msg_home(response), (uint32_t)len);
 
     msg_header_insert(response, (msg_pub_t *)http, (msg_header_t *)l);
   }
@@ -947,6 +950,7 @@ int nth_request_treply(nth_request_t *req,
 			TAG_IF(close, TPTAG_CLOSE_AFTER(1)),
 			ta_tags(ta));
 
+ fail:
   ta_end(ta);
   
   if (retval == 0)

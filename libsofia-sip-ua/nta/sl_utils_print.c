@@ -114,7 +114,7 @@ void sl_message_log(FILE *stream,
  * The function sl_from_print() returns number of bytes printed,
  * or -1 upon an error.
  */
-int sl_from_print(FILE *stream, char const *fmt, sip_from_t const *from)
+issize_t sl_from_print(FILE *stream, char const *fmt, sip_from_t const *from)
 {
   char s[1024];
 
@@ -127,7 +127,7 @@ int sl_from_print(FILE *stream, char const *fmt, sip_from_t const *from)
   if (fmt && strcmp(fmt, "%s"))
     return fprintf(stream, fmt, s);
   if (fputs(s, stream) >= 0)
-    return strlen(s);
+    return (issize_t)strlen(s);
   return -1;
 }
 
@@ -146,7 +146,7 @@ int sl_from_print(FILE *stream, char const *fmt, sip_from_t const *from)
  * The function sl_to_print() returns number of bytes printed,
  * or -1 upon an error.
  */
-int sl_to_print(FILE *stream, char const *fmt, sip_to_t const *to)
+issize_t sl_to_print(FILE *stream, char const *fmt, sip_to_t const *to)
 {
   return sl_from_print(stream, fmt, (sip_from_t const *)to);
 }
@@ -166,7 +166,7 @@ int sl_to_print(FILE *stream, char const *fmt, sip_to_t const *to)
  * The function sl_contact_print() returns number of bytes printed,
  * or -1 upon an error.
 */
-int sl_contact_print(FILE *stream, char const *fmt, sip_contact_t const *m)
+issize_t sl_contact_print(FILE *stream, char const *fmt, sip_contact_t const *m)
 {
   return sl_from_print(stream, fmt, (sip_from_t const *)m);
 }
@@ -186,7 +186,7 @@ int sl_contact_print(FILE *stream, char const *fmt, sip_contact_t const *m)
  * The function sl_allow_print() returns number of bytes printed,
  * or -1 upon an error.
 */
-int sl_allow_print(FILE *stream, char const *fmt, sip_allow_t const *allow)
+issize_t sl_allow_print(FILE *stream, char const *fmt, sip_allow_t const *allow)
 {
   char *s, b[1024], *end = b + sizeof(b) - 1;
   msg_param_t const *p;
@@ -205,7 +205,7 @@ int sl_allow_print(FILE *stream, char const *fmt, sip_allow_t const *allow)
   if (fmt && strcmp(fmt, "%s"))
     return fprintf(stream, fmt, b);
   if (fputs(b, stream) >= 0)
-    return strlen(b);
+    return (issize_t)strlen(b);
   return -1;
 }
 
@@ -225,7 +225,7 @@ int sl_allow_print(FILE *stream, char const *fmt, sip_allow_t const *allow)
  * The function sl_payload_print() returns number of bytes printed,
  * or -1 upon an error.
 */
-int sl_payload_print(FILE *stream, char const *prefix, sip_payload_t const *pl)
+issize_t sl_payload_print(FILE *stream, char const *prefix, sip_payload_t const *pl)
 {
   char *s = pl->pl_data, *end = pl->pl_data + pl->pl_len;
   size_t n, total = 0, crlf = 1; 
@@ -242,7 +242,7 @@ int sl_payload_print(FILE *stream, char const *prefix, sip_payload_t const *pl)
   if (crlf == 0)
     fputs("\n", stream), total++;
 
-  return total;
+  return (issize_t)total;
 }
 
 /** Print @Via header. 
@@ -260,7 +260,7 @@ int sl_payload_print(FILE *stream, char const *prefix, sip_payload_t const *pl)
  * The function sl_via_print() returns number of bytes printed,
  * or -1 upon an error.
  */
-int sl_via_print(FILE *stream, char const *fmt, sip_via_t const *v)
+issize_t sl_via_print(FILE *stream, char const *fmt, sip_via_t const *v)
 {
   char s[1024];
 
@@ -270,7 +270,7 @@ int sl_via_print(FILE *stream, char const *fmt, sip_via_t const *v)
   if (fmt && strcmp(fmt, "%s"))
     return fprintf(stream, fmt, s);
   if (fputs(s, stream) >= 0)
-    return strlen(s);
+    return (issize_t)strlen(s);
   return -1;
 }
 
@@ -289,7 +289,7 @@ int sl_via_print(FILE *stream, char const *fmt, sip_via_t const *v)
  * The function sl_header_print() returns number of bytes printed,
  * or -1 upon an error.
  */
-int sl_header_print(FILE *stream, char const *fmt, sip_header_t const *h)
+issize_t sl_header_print(FILE *stream, char const *fmt, sip_header_t const *h)
 {
   char s[1024];
 
@@ -299,6 +299,6 @@ int sl_header_print(FILE *stream, char const *fmt, sip_header_t const *h)
   if (fmt && strcmp(fmt, "%s"))
     return fprintf(stream, fmt, s);
   if (fputs(s, stream) >= 0)
-    return strlen(s);
+    return (issize_t)strlen(s);
   return -1;
 }

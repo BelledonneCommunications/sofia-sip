@@ -181,11 +181,11 @@ int main(int argc, char *argv[])
     s = su_socket(sa->sa_family = af, types[n], protos[n]);
 
 #if HAVE_SIN6
-    if (s == SOCKET_ERROR && af == AF_INET6 && !o_ip6)
+    if (s == INVALID_SOCKET && af == AF_INET6 && !o_ip6)
       s = su_socket(sa->sa_family = af = AF_INET, types[n], protos[n]);
 #endif
 
-    if (s == SOCKET_ERROR) {
+    if (s == INVALID_SOCKET) {
       fprintf(stderr, "%s: socket(AF_INET%s, 0, %s): %s\n", 
 	      name, af == AF_INET ? "" : "6", names[n], strerror(errno));
       exit(1);

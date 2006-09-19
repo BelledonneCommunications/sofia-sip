@@ -124,7 +124,7 @@ int su_wait_create(su_wait_t *newwait, su_socket_t socket, int events)
 #if SU_HAVE_WINSOCK
   HANDLE h = WSACreateEvent();
 
-  if (newwait == NULL || events == 0 || socket == SOCKET_ERROR) {
+  if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
     su_seterrno(WSAEINVAL);
     return -1;
   }
@@ -142,7 +142,7 @@ int su_wait_create(su_wait_t *newwait, su_socket_t socket, int events)
 
 #elif SU_HAVE_POLL
 
-  if (newwait == NULL || events == 0 || socket == SOCKET_ERROR) {
+  if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
     su_seterrno(EINVAL);
     return -1;
   }

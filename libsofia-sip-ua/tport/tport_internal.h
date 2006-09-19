@@ -394,10 +394,10 @@ void tport_recv_event(tport_t *self);
 void tport_send_event(tport_t *self);
 void tport_hup_event(tport_t *self);
 
-int tport_recv_iovec(tport_t const *self, 
-		     msg_t **mmsg,
-		     msg_iovec_t iovec[msg_n_fragments], int N, 
-		     int exact);
+ssize_t tport_recv_iovec(tport_t const *self, 
+			 msg_t **mmsg,
+			 msg_iovec_t iovec[msg_n_fragments], int N, 
+			 int exact);
 
 msg_t *tport_msg_alloc(tport_t const *self, unsigned size);
 

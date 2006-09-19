@@ -34,16 +34,17 @@
 
 #include "config.h"
 
+#include <sofia-sip/su_alloc.h>
+
+#include "sofia-sip/sdp.h"
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <limits.h>
 #include <assert.h>
-
-#include <sofia-sip/su_alloc.h>
-
-#include "sofia-sip/sdp.h"
 
 /** @typedef struct sdp_parser_s sdp_parser_t; 
  *
@@ -130,20 +131,13 @@ static void parsing_error(sdp_parser_t *p, char const *fmt, ...);
  * @todo Parser accepts some non-conforming SDP even with #sdp_f_strict.
  */
 sdp_parser_t *
-sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
+sdp_parse(su_home_t *home, char const msg[], issize_t msgsize, int flags)
 {
   sdp_parser_t *p;
   char *b;
   size_t len;
 
-  if (msgsize == -1 && msg) {
-	  if ((len = strlen(msg)) > ISSIZE_MAX)
-		len = ISSIZE_MAX;
-  } else {
-	  len = msgsize;
-  }
-
-  if (len < 0 || msg == NULL) {
+  if (msgsize == -1 || msg == NULL) {
     p = su_home_clone(home, sizeof(*p));
     if (p) 
       parsing_error(p, "invalid input message");
@@ -152,11 +146,19 @@ sdp_parse(su_home_t *home, char const msg[], int msgsize, int flags)
     return p;
   }
 
+  if (msgsize == -1 && msg)
+    len = strlen(msg);
+  else
+    len = msgsize;
+
+  if (len > ISSIZE_MAX)
+    len = ISSIZE_MAX;
+
   p = su_home_clone(home, sizeof(*p) + len + 1);
 
   if (p) {
     b = strncpy((void *)(p + 1), msg, len);
-    b[msgsize] = 0;
+    b[len] = 0;
 
     p->pr_message = b;
     p->pr_strict = (flags & sdp_f_strict) != 0;

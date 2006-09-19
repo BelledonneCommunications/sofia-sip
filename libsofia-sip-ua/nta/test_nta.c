@@ -454,7 +454,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
     contact = getenv("SIPCONTACT");
 
   /* Sink server */
-  s = socket(af, SOCK_DGRAM, 0); TEST_1(s != SOCKET_ERROR);
+  s = socket(af, SOCK_DGRAM, 0); TEST_1(s != INVALID_SOCKET);
   memset(&su, 0, sulen = sulen0);
   su.su_family = af;
   if (getenv("sink")) {
@@ -467,7 +467,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
   ag->ag_sink_socket = s;
 
   /* Down server */
-  s = socket(af, SOCK_STREAM, 0); TEST_1(s != SOCKET_ERROR);
+  s = socket(af, SOCK_STREAM, 0); TEST_1(s != INVALID_SOCKET);
   memset(&su, 0, sulen = sulen0);
   su.su_family = af;
   if (getenv("down")) {

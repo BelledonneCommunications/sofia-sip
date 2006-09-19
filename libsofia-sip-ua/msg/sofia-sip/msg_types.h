@@ -281,6 +281,8 @@ struct msg_hclass_s
   unsigned          /*pad*/:0;
 };
 
+#define HC_LEN_MAX SHRT_MAX
+
 SOFIA_END_DECLS
 
 #endif /* !defined MSG_TYPES_H */
