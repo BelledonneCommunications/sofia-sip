@@ -221,7 +221,7 @@ typedef size_t su_ioveclen_t;
 #if SU_HAVE_WINSOCK
 /* WSABUF */
 struct su_iovec_s {
-  u_long siv_len;
+  usize_t siv_len;
   void   *siv_base;
 };
 typedef u_long su_ioveclen_t;

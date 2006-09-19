@@ -3155,7 +3155,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 
   self->tp_time = su_time_ms(now = su_now());
 
-  n = tport_vsend(self, msg, tpn, iov, iovused, cc);
+  n = tport_vsend(self, msg, tpn, iov, (int)iovused, cc);
   SU_DEBUG_9(("tport_vsend returned %d\n", n));
 
   if (n < 0)
@@ -3173,7 +3173,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
       if (tport_is_connection_oriented(self)) {
 	iov[i].mv_len -= n - total;
 	iov[i].mv_base = (char *)iov[i].mv_base + (n - total);
-	if (tport_queue_rest(self, msg, &iov[i], iovused - i) >= 0)
+	if (tport_queue_rest(self, msg, &iov[i], (int)(iovused - i)) >= 0)
 	  return n;
       }
       else {
@@ -3237,7 +3237,8 @@ int tport_vsend(tport_t *self,
     tport_dump_iovec(self, msg, n, iov, iovused, "sent", "to");
     
   if (tport_log->log_level >= 7) {
-    int i, m = 0;
+    int i;
+	size_t m = 0;
     for (i = 0; i < iovused; i++)
       m += iov[i].mv_len;
 
@@ -3319,7 +3320,7 @@ int tport_queue_rest(tport_t *self,
 		     msg_iovec_t iov[], 
 		     int iovused)
 {
-  int iovlen = self->tp_iovlen;
+  usize_t iovlen = self->tp_iovlen;
 
   assert(tport_is_connection_oriented(self));
   assert(self->tp_queue == NULL || 
@@ -3569,7 +3570,8 @@ void tport_send_event(tport_t *self)
 static
 void tport_send_queue(tport_t *self)
 {
-  int n, i, total;
+  int n, i;
+  size_t total;
   msg_t *msg;
   msg_iovec_t *iov;
   int iovused;

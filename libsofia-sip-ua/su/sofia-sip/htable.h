@@ -128,11 +128,11 @@ HTABLE_SCOPE void prefix##_remove(prefix##_t *, entry_t const *e)
 HTABLE_SCOPE \
 int prefix##_resize(su_home_t *home, \
                     prefix##_t pr[], \
-		    unsigned new_size) \
+		    size_t new_size) \
 { \
   entry_t **new_hash; \
   entry_t **old_hash = pr->pr##_table; \
-  unsigned old_size; \
+  usize_t old_size; \
   unsigned i, j, i0; \
   unsigned again = 0, used = 0, collisions = 0; \
 \
@@ -221,7 +221,8 @@ void prefix##_insert(prefix##_t *pr, entry_t const *e) \
 HTABLE_SCOPE \
 void prefix##_remove(prefix##_t *pr, entry_t const *e) \
 { \
-  unsigned i, j, k, size = pr->pr##_size; \
+  unsigned i, j, k; \
+  usize_t size = pr->pr##_size; \
   entry_t **htable = pr->pr##_table; \
 \
   /* Search for entry */ \

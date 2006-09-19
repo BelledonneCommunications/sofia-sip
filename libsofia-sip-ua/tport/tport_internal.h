@@ -194,7 +194,7 @@ struct tport_s {
   unsigned            tp_unsentlen;	/**< Number of unsent iovecs */
 
   msg_iovec_t        *tp_iov;		/**< Iovecs allocated for sending */
-  unsigned            tp_iovlen;	/**< Number of allocated iovecs */
+  usize_t            tp_iovlen;	/**< Number of allocated iovecs */
 
   /* ==== Extensions  ===================================================== */
 

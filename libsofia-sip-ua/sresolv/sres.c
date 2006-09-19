@@ -113,7 +113,7 @@ ssize_t sres_recvfrom(sres_socket_t s, void *b, size_t len, int flags,
   int retval;
   if (fromlen)
     ilen = *fromlen;
-  retval = recvfrom(s, b, len, flags, from, fromlen ? &ilen : NULL);
+  retval = recvfrom(s, b, (int)len, flags, from, fromlen ? &ilen : NULL);
   if (fromlen)
     *fromlen = ilen;
   return (ssize_t)retval;
