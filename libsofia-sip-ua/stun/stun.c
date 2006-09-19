@@ -52,6 +52,11 @@
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_localinfo.h>
 
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
+
 #if defined(HAVE_OPENSSL)
 #include <openssl/opensslv.h>
 #endif
@@ -1715,7 +1720,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   /* receive response */
   recv_len = sizeof(recv);
-  dgram_len = su_recvfrom(s, dgram, sizeof(dgram), 0, &recv, &recv_len);
+  dgram_len = su_recvfrom(s, dgram, sizeof(dgram), 0, (struct sockaddr *)(&recv), &recv_len);
   err = errno;
   if ((dgram_len < 0) && (err != EAGAIN)) {
     /* su_wait_destroy(w); */

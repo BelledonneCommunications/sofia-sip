@@ -137,7 +137,6 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
 {
   stun_dns_lookup_t *self = su_zalloc(NULL, sizeof(stun_dns_lookup_t));
   sres_query_t *query;
-  su_socket_t socket;
   
   /* see nta.c:outgoing_answer_srv() */
 

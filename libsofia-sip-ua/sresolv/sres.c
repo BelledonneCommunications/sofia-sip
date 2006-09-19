@@ -65,57 +65,6 @@ typedef unsigned _int32 uint32_t;
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
-/* Posix send() */
-static inline 
-ssize_t sres_send(sres_socket_t s, void *b, size_t len, int flags)
-{
-  return (ssize_t)send(s, b, (int)len, flags);
-}
-
-/* Posix recvfrom() */
-static inline 
-ssize_t sres_recvfrom(sres_socket_t s, void *b, size_t len, int flags,
-		      struct sockaddr *from, socklen_t *fromlen)
-{
-  int ilen;
-  if (fromlen)
-    ilen = *fromlen;
-  int retval = recvfrom(s, b, len, flags, from, fromlen ? &ilen : NULL);
-  if (fromlen)
-    *fromlen = ilen;
-  return (ssize_t)retval;
-}
-
-#define close(s) closesocket(s)
-
-#if !defined(IPPROTO_IPV6)
-#if HAVE_SIN6
-#include <tpipv6.h>
-#else
-#if !defined(__MINGW32__)
-struct sockaddr_storage {
-    short ss_family;
-    char ss_pad[126];
-};
-#endif
-#endif
-#endif
-#else
-
-#define sres_send(s,b,len,flags) send((s),(b),(len),(flags))
-#define sres_recvfrom(s,b,len,flags,a,alen) \
-  recvfrom((s),(b),(len),(flags),(a),(alen))
-#define SOCKET_ERROR   (-1)
-#define INVALID_SOCKET ((sres_socket_t)-1)
-#endif
-
-
-#if !HAVE_INET_PTON
-int inet_pton(int af, char const *src, void *dst);
-#endif
-#if !HAVE_INET_NTOP
-const char *inet_ntop(int af, void const *src, char *dst, size_t size);
 #endif
 
 #include <time.h>
@@ -146,6 +95,58 @@ const char *inet_ntop(int af, void const *src, char *dst, size_t size);
 #include <limits.h>
 
 #include <assert.h>
+
+#if HAVE_WINSOCK2_H
+/* Posix send() */
+static inline 
+ssize_t sres_send(sres_socket_t s, void *b, size_t len, int flags)
+{
+  return (ssize_t)send(s, b, (int)len, flags);
+}
+
+/* Posix recvfrom() */
+static inline 
+ssize_t sres_recvfrom(sres_socket_t s, void *b, size_t len, int flags,
+		      struct sockaddr *from, socklen_t *fromlen)
+{
+  int ilen;
+  int retval;
+  if (fromlen)
+    ilen = *fromlen;
+  retval = recvfrom(s, b, len, flags, from, fromlen ? &ilen : NULL);
+  if (fromlen)
+    *fromlen = ilen;
+  return (ssize_t)retval;
+}
+
+#if !defined(IPPROTO_IPV6)
+#if HAVE_SIN6
+#include <tpipv6.h>
+#else
+#if !defined(__MINGW32__)
+struct sockaddr_storage {
+    short ss_family;
+    char ss_pad[126];
+};
+#endif
+#endif
+#endif
+#else
+
+#define sres_send(s,b,len,flags) send((s),(b),(len),(flags))
+#define sres_recvfrom(s,b,len,flags,a,alen) \
+  recvfrom((s),(b),(len),(flags),(a),(alen))
+#define SOCKET_ERROR   (-1)
+#define INVALID_SOCKET ((sres_socket_t)-1)
+#endif
+
+
+#if !HAVE_INET_PTON
+int inet_pton(int af, char const *src, void *dst);
+#endif
+#if !HAVE_INET_NTOP
+const char *inet_ntop(int af, void const *src, char *dst, size_t size);
+#endif
 
 #if defined(va_copy)
 #elif defined(__va_copy)

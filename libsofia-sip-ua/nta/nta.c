@@ -4018,7 +4018,7 @@ int leg_route(nta_leg_t *leg,
 
 #else
   if (r && r->r_url->url_params)
-    leg->leg_loose_route = url_has_param(r->r_url->url_params, "lr");
+    leg->leg_loose_route = url_has_param(r->r_url, "lr");
 
   if (contact) {
     sip_contact_t m[1], *m0;

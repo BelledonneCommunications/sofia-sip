@@ -281,8 +281,8 @@ SOFIAPUBFUN ssize_t
   su_send(su_socket_t s, void *buffer, size_t length, int flags),
   su_sendto(su_socket_t s, void *buffer, size_t length, int flags,
 	    su_sockaddr_t const *to, socklen_t tolen),
-  su_recv(sres_socket_t s, void *buffer, size_t length, int flags),
-  su_recvfrom(sres_socket_t s, void *buffer, size_t length, int flags,
+  su_recv(su_socket_t s, void *buffer, size_t length, int flags),
+  su_recvfrom(su_socket_t s, void *buffer, size_t length, int flags,
 	      struct sockaddr *from, socklen_t *fromlen);
 #else
 #define su_send(s,b,l,f) send((s),(b),(l),(f))
