@@ -77,8 +77,10 @@ int test_manipulation(void)
 
   sip_content_length_t *l;
   sip_payload_t *pl;
+  msg_t *msg, *msg0;
   sip_t *sip;
-  msg_t *msg = read_message(MSG_DO_EXTRACT_COPY, 
+
+  msg0 = read_message(MSG_DO_EXTRACT_COPY, 
     "MESSAGE sip:foo@bar SIP/2.0\r\n"
     "To: Joe User <sip:foo@bar>\r\n"
     "From: \"Bar Owner\" <sip:bar@foo>;tag=foobar\r\n"
@@ -89,7 +91,8 @@ int test_manipulation(void)
     "Content-Type: text/plain\r\n"
     "\r\n"
     "Heippa!");
-  TEST_1(msg);
+  TEST_1(msg0);
+  TEST_1(msg = msg_copy(msg0));
   TEST_1(sip = sip_object(msg));
 
   TEST_1(l = sip_content_length_make(msg_home(msg), "6"));
@@ -105,6 +108,7 @@ int test_manipulation(void)
   TEST(msg_serialize(msg, NULL), 0);
   TEST_1(msg_prepare(msg) > 0);
 
+  msg_destroy(msg);
   msg_destroy(msg);
 
   END();
