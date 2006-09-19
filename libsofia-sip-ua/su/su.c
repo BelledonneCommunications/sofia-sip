@@ -261,7 +261,7 @@ issize_t su_vsend(su_socket_t s,
 		  su_sockaddr_t const *su, socklen_t sulen)
 {
   int ret;
-  DWORD bytes_sent = su_failure;
+  DWORD bytes_sent = (DWORD)su_failure;
   
   ret = WSASendTo(s,
 		  (LPWSABUF)iov,
@@ -284,7 +284,7 @@ issize_t su_vrecv(su_socket_t s, su_iovec_t iov[], isize_t iovlen, int flags,
 		  su_sockaddr_t *su, socklen_t *sulen)
 {
   int ret;
-  DWORD bytes_recv = su_failure;
+  DWORD bytes_recv = (DWORD)su_failure;
   DWORD dflags = flags;
   int fromlen = sulen ? *sulen : 0;
 

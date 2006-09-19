@@ -33,9 +33,7 @@
  * @author Kai Vehmanen <kai.vehmanen@nokia.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define STUN_SRV_SERVICE_TCP "_stun._tcp"
 #define STUN_SRV_SERVICE_UDP "_stun._udp"

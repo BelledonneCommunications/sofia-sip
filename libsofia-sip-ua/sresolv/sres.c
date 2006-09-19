@@ -2439,7 +2439,7 @@ sres_send_dns_query(sres_resolver_t *res,
   uint8_t i, i0, N = res->res_n_servers;
   sres_socket_t s;
   int transient, error = 0;
-  size_t size, no_edns_size, edns_size;
+  ssize_t size, no_edns_size, edns_size;
   uint16_t id = q->q_id;
   uint16_t type = q->q_type;
   char const *domain = q->q_name;

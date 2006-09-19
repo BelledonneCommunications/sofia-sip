@@ -766,7 +766,7 @@ int soa_sdp_reject_is_needed(sdp_session_t const *session,
     }
     else {
       /* Mode bits do not match */
-      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0)
+      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : (unsigned)0)
 	  != (sm->m_mode & sdp_sendonly))
 	return 1;
     }
@@ -844,7 +844,7 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
 
     if (rm) {
       /* Mode bits do not match */
-      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0)
+      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : (unsigned)0)
 	  != (sm->m_mode & sdp_sendonly))
 	return 1;
     }

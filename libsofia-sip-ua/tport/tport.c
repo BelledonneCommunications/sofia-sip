@@ -3570,8 +3570,8 @@ void tport_send_event(tport_t *self)
 static
 void tport_send_queue(tport_t *self)
 {
-  int n, i;
-  size_t total;
+  int i;
+  size_t n, total;
   msg_t *msg;
   msg_iovec_t *iov;
   int iovused;
@@ -4206,7 +4206,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
 	continue;
 
       if (resolved) {
-	if (sub->tp_addrlen != sulen ||
+	if (sub->tp_addrlen != (size_t)sulen ||
 	    memcmp(sub->tp_addr, su, sulen)) {
 	  SU_DEBUG_7(("tport(%p): not found by name " TPN_FORMAT "\n",
 		      self, TPN_ARGS(tpn)));
