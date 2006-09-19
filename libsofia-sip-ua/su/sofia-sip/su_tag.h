@@ -90,10 +90,10 @@ SOFIAPUBVAR tag_typedef_t tag_next;
 /** Any tag accepted when filtering. */
 SOFIAPUBVAR tag_typedef_t tag_any;
 
-/** @HI Initialize a tag item marking the end of list. */
+/** @HI Initialize a tag item marking the end of list. Equivalent to TAG_END(). */
 #define TAG_NULL()  (tag_type_t)0, (tag_value_t)0
 
-/** @HI Initialize a tag item marking the end of list. */
+/** @HI Initialize a tag item marking the end of list. Equivalent to TAG_NULL(). */
 #define TAG_END()   (tag_type_t)0, (tag_value_t)0
 
 /** @HI Initialize an empty tag item. */
