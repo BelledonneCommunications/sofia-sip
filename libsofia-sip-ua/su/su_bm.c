@@ -41,6 +41,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef TORTURELOG
 #define TORTURELOG(x) (void)0
