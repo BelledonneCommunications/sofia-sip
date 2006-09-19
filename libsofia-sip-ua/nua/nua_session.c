@@ -198,13 +198,17 @@ static int nua_stack_invite2(nua_t *, nua_handle_t *, nua_event_t e,
 static int process_response_to_invite(nua_handle_t *nh,
 				      nta_outgoing_t *orq,
 				      sip_t const *sip);
-static int process_100rel(nua_handle_t *nh,
-			  nta_outgoing_t *orq,
-			  sip_t const *sip);
 static void
   session_timeout(nua_handle_t *nh, nua_dialog_usage_t *du, sip_time_t now);
 
 static void restart_invite(nua_handle_t *nh, tagi_t *tags);
+
+static int process_100rel(nua_handle_t *nh,
+			  nta_outgoing_t *orq,
+			  sip_t const *sip);
+
+int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+		    tagi_t const *tags);
 
 static int process_response_to_prack(nua_handle_t *nh,
 				     nta_outgoing_t *orq,
@@ -488,7 +492,7 @@ static int process_response_to_invite(nua_handle_t *nh,
       return 0;
     }
 
-    status = 900, phrase = "Malformed Session in Response";
+    status = 500, phrase = "Malformed Session in Response";
 
     nua_stack_ack(nua, nh, nua_r_ack, NULL);
     gracefully = 1;
@@ -525,7 +529,8 @@ static int process_response_to_invite(nua_handle_t *nh,
   }
   else if (gracefully) {
     char *reason =
-      su_sprintf(NULL, "SIP;cause=%u;text=\"%s\"", status, phrase);
+      su_sprintf(NULL, "SIP;cause=%u;text=\"%s\"", 
+		 status > 699 ? 500 : status, phrase);
 
     signal_call_state_change(nh, status, phrase,
 			     nua_callstate_terminating, 0, 0);
@@ -629,6 +634,7 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   return 0;
 }
 
+/* Process reliable provisional response */
 static int
 process_100rel(nua_handle_t *nh,
 	       nta_outgoing_t *orq,
@@ -637,93 +643,203 @@ process_100rel(nua_handle_t *nh,
   struct nua_session_state *ss = nh->nh_ss;
   struct nua_client_request *cr_invite = ss->ss_crequest;
   struct nua_client_request *cr_prack = nh->nh_cr;
-
-  /* Reliable provisional response */
-  sip_content_disposition_t *cd = NULL;
-  sip_content_type_t *ct = NULL;
-  sip_payload_t *pl = NULL;
-
-  nta_outgoing_t *prack;
-
-  char const *recv = NULL, *sent = NULL;
-  int status = 408;
-  int offer_sent_in_prack = 0, answer_sent_in_prack = 0;
-
-  su_home_t home[1] = { SU_HOME_INIT(home) };
+  
+  sip_rseq_t *rseq;
+  char const *recv = NULL;
+  int status; char const *phrase;
 
   if (cr_prack->cr_orq) {
+    /* XXX - better luck next time */
     SU_DEBUG_3(("nua(%p): cannot send PRACK because %s is pending\n", nh,
 		nta_outgoing_method_name(cr_prack->cr_orq)));
-    return 0;			/* We have to wait! */
+    return 0; /* Wait until this response is re-transmitted */
   }
 
-  if (sip && sip->sip_status)
-    status = sip->sip_status->st_status;
-
   if (!nua_dialog_is_established(nh->nh_ds)) {
-    /* Tag the INVITE request */
+    /* Establish early dialog */
     nua_dialog_uac_route(nh, nh->nh_ds, sip, 1);
     nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
-
+    
+    /* Tag the INVITE request */
     cr_invite->cr_orq =
       nta_outgoing_tagged(orq, process_response_to_invite, nh,
 			  sip->sip_to->a_tag, sip->sip_rseq);
     nta_outgoing_destroy(orq);
     orq = cr_invite->cr_orq;
   }
+  
+  assert(sip);
 
-  if (session_process_response(nh, cr_invite, orq, sip, &recv) < 0) {
-    /* XXX */
-  }
-  else if (cr_invite->cr_offer_recv && !cr_invite->cr_answer_sent) {
-    if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
-	session_make_description(home, nh->nh_soa, &cd, &ct, &pl) < 0)
-      /* XXX */;
-    else {
-      answer_sent_in_prack = 1, sent = "answer";
-      soa_activate(nh->nh_soa, NULL);
-    }
-  }
-  else if (ss->ss_precondition && status == 183) { /* XXX */
-    if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
-	session_make_description(home, nh->nh_soa, &cd, &ct, &pl) < 0)
-      /* XXX */;
-    else
-      offer_sent_in_prack = 1, sent = "offer";
-  }
+  status = sip->sip_status->st_status, phrase = sip->sip_status->st_phrase;
+  rseq = sip->sip_rseq;
 
-  prack = nta_outgoing_prack(nh->nh_ds->ds_leg, orq,
-			     process_response_to_prack, nh, NULL,
-			     sip,
-			     SIPTAG_CONTENT_DISPOSITION(cd),
-			     SIPTAG_CONTENT_TYPE(ct),
-			     SIPTAG_PAYLOAD(pl),
-			     TAG_END());
-
-  if (prack) {
-    cr_prack->cr_event = nua_r_prack;
-    cr_prack->cr_orq = prack;
-    if (answer_sent_in_prack)
-      cr_invite->cr_answer_sent = 1;
-    else if (offer_sent_in_prack)
-      cr_prack->cr_offer_sent = 1;
-
-    signal_call_state_change(nh,
-			     sip->sip_status->st_status,
-			     sip->sip_status->st_phrase,
-			     nua_callstate_proceeding, recv, sent);
+  if (!rseq) {
+    SU_DEBUG_5(("nua(%p): 100rel missing RSeq\n", nh));
   }
+  else if (rseq->rs_response <= nta_outgoing_rseq(orq)) {
+    SU_DEBUG_5(("nua(%p): 100rel bad RSeq %u (got %u)\n", nh, 
+		(unsigned)rseq->rs_response,
+		nta_outgoing_rseq(orq)));
+    /* XXX - send nua_r_invite event or not? */
+    return 0;
+  }
+  else if (nta_outgoing_setrseq(orq, rseq->rs_response) < 0) {
+    SU_DEBUG_1(("nua(%p): cannot set RSeq %u\n", nh, 
+		(unsigned)rseq->rs_response));
+  }
+  else if (session_process_response(nh, cr_invite, orq, sip, &recv) < 0) {
+    assert(nh->nh_soa);
+    status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+    nua_stack_event(nh->nh_nua, nh, NULL,
+		    nua_i_media_error, status, phrase, TAG_END());
+  }
+  /* Here we could let application PRACK and just send state event */
   else {
-    /* XXX - call state? */
-    nua_stack_event(nh->nh_nua, nh, NULL, nua_i_error,
-		    900, "Cannot PRACK",
-		    TAG_END());
+    sip_rack_t rack[1];
+    tagi_t tags[] = {
+      { TAG_SKIP(nua_stack_prack) }, /* this is autoprack */
+      { NUTAG_STATUS(status), },
+      { NUTAG_PHRASE(phrase), },
+      { NUTAG_PHRASE(recv), },
+      { SIPTAG_RACK(rack) }, 
+      { TAG_END() }
+    };
+
+    sip_rack_init(rack);
+
+    rack->ra_response    = sip->sip_rseq->rs_response;
+    rack->ra_cseq        = sip->sip_cseq->cs_seq;
+    rack->ra_method      = sip->sip_cseq->cs_method;
+    rack->ra_method_name = sip->sip_cseq->cs_method_name;
+
+    nua_stack_prack(nh->nh_nua, nh, nua_r_prack, tags);
+
+    return 0;
   }
 
-  su_home_deinit(home);
+  /* XXX - CANCEL INVITE or BYE this session? */
+  /* Because we don't do forking very well we just cancel INVITE */
+  nua_stack_cancel(nh->nh_nua, nh, nua_r_cancel, NULL);
 
   return 0;
 }
+
+int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+		    tagi_t const *tags)
+{
+  struct nua_session_state *ss = nh->nh_ss;
+  struct nua_client_request *cr = nh->nh_cr;
+  struct nua_client_request *cri = ss->ss_crequest;
+  msg_t *msg;
+  sip_t *sip;
+  int offer_sent_in_prack = 0, answer_sent_in_prack = 0;
+
+  int autoprack =		/* XXX - should have common indication */
+    tags && tags->t_tag == tag_skip && 
+    tags->t_value == (tag_value_t)nua_stack_prack;
+  int status = 0; char const *phrase = "PRACK sent";
+  char const *recv = NULL, *sent = NULL;
+
+  if (autoprack) {
+    status = (int)tags[1].t_value; 
+    phrase = (char const *)tags[2].t_value;
+    recv = (char const *)tags[3].t_value;
+    tags += 4;
+  }
+
+  if (!nh_has_session(nh) || !cri->cr_orq || !nta_outgoing_rseq(cri->cr_orq))
+    return UA_EVENT2(e, 900, "Nothing to PRACK");
+  else if (cr->cr_orq)
+    return UA_EVENT2(e, 900, "Request already in progress");
+
+  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+
+  msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
+		     SIP_METHOD_PRACK,
+		     NUTAG_USE_DIALOG(1),
+		     NUTAG_ADD_CONTACT(1),
+		     TAG_NEXT(tags));
+
+  sip = sip_object(msg);
+
+  if (sip) {
+    if (nh->nh_soa == NULL)
+      /* It is up to application to handle SDP */;
+    else if (sip->sip_payload)
+      /* XXX - we should just do MIME in session_include_description() */;
+    else if (cri->cr_offer_recv && !cri->cr_answer_sent) {
+
+      if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
+	  session_include_description(nh->nh_soa, msg, sip) < 0) {
+
+	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+	SU_DEBUG_3(("nua(%p): PRACK answer: %d %s\n", nh, status, phrase));
+	nua_stack_event(nh->nh_nua, nh, NULL,
+			nua_i_media_error, status, phrase, TAG_END());
+
+	goto error;
+      }
+      else {
+	answer_sent_in_prack = 1, sent = "answer";
+	soa_activate(nh->nh_soa, NULL);
+      }
+    }
+    /* When 100rel response status was 183 fake support for preconditions */
+    else if (autoprack && status == 183 && ss->ss_precondition) {
+
+      if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
+	  session_include_description(nh->nh_soa, msg, sip) < 0) {
+
+	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
+	SU_DEBUG_3(("nua(%p): PRACK offer: %d %s\n", nh, status, phrase));
+	nua_stack_event(nh->nh_nua, nh, NULL,
+			nua_i_media_error, status, phrase, TAG_END());
+	goto error;
+      }
+      else {
+	offer_sent_in_prack = 1, sent = "offer";
+      }
+    }
+
+    if (nh->nh_auth) {
+      if (auc_authorize(&nh->nh_auth, msg, sip) < 0)
+	/* xyzzy */;
+    }
+
+    cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
+				      process_response_to_prack, nh, NULL,
+				      msg,
+				      SIPTAG_END(), TAG_NEXT(tags));
+    if (cr->cr_orq) {
+      cr->cr_event = nua_r_prack;
+
+      if (answer_sent_in_prack)
+	cri->cr_answer_sent = 1;
+      else if (offer_sent_in_prack)
+	cr->cr_offer_sent = 1;
+
+      if (autoprack) 
+	signal_call_state_change(nh, status, phrase,
+				 nua_callstate_proceeding, recv, sent);
+      else
+	signal_call_state_change(nh, 0, "PRACK sent",
+				 nua_callstate_proceeding, NULL, sent);
+	
+
+      return cr->cr_event = e;
+    }
+  }
+
+ error:
+  msg_destroy(msg);
+  return UA_EVENT1(e, NUA_INTERNAL_ERROR);
+}
+
+void restart_prack(nua_handle_t *nh, tagi_t *tags)
+{
+  nua_creq_restart(nh, nh->nh_cr, process_response_to_prack, tags);
+}
+
 
 static int
 process_response_to_prack(nua_handle_t *nh,
@@ -741,10 +857,8 @@ process_response_to_prack(nua_handle_t *nh,
 
   SU_DEBUG_5(("nua: process_response_to_prack: %u %s\n", status, phrase));
 
-#if 0
   if (nua_creq_check_restart(nh, cr, orq, sip, restart_prack))
     return 0;
-#endif
 
   if (status < 200)
     return 0;

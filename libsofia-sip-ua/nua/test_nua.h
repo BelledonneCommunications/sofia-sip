@@ -119,7 +119,7 @@ struct context
   su_home_t home[1];
   su_root_t *root;
 
-  int threading, proxy_tests, expensive;
+  int threading, proxy_tests, expensive, quit_on_single_failure;
   char const *external_proxy;
 
   struct endpoint {
@@ -167,6 +167,13 @@ struct context
   struct proxy *p;
   struct nat *nat;
 };
+
+#define RETURN_ON_SINGLE_FAILURE(retval)			  \
+  do {								  \
+    fflush(stdout);						  \
+    if (retval && ctx->quit_on_single_failure) { return retval; } \
+  } while(0)
+
 
 int save_event_in_list(struct context *,
 		       nua_event_t nevent,
@@ -221,6 +228,11 @@ void run_abc_until(struct context *ctx,
 void run_ab_until(struct context *ctx,
 		  nua_event_t a_event, condition_function *a_condition,
 		  nua_event_t b_event, condition_function *b_condition);
+
+void run_bc_until(struct context *ctx,
+		  nua_event_t b_event, condition_function *b_condition,
+		  nua_event_t c_event, condition_function *c_condition);
+
 int run_a_until(struct context *, nua_event_t, condition_function *);
 int run_b_until(struct context *, nua_event_t, condition_function *);
 int run_c_until(struct context *, nua_event_t, condition_function *);

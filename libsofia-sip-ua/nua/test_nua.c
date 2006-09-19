@@ -307,6 +307,13 @@ void run_ab_until(struct context *ctx,
   run_abc_until(ctx, a_event, a_condition, b_event, b_condition, -1, NULL);
 }
 
+void run_bc_until(struct context *ctx,
+		  nua_event_t b_event, condition_function *b_condition,
+		  nua_event_t c_event, condition_function *c_condition)
+{
+  run_abc_until(ctx, -1, NULL, b_event, b_condition, c_event, c_condition);
+}
+
 int run_a_until(struct context *ctx,
 		nua_event_t a_event,
 		condition_function *a_condition)
@@ -843,7 +850,7 @@ void usage(int exitcode)
 
 int main(int argc, char *argv[])
 {
-  int retval = 0, quit_on_single_failure = 1;
+  int retval = 0;
   int i, o_quiet = 0, o_attach = 0, o_alarm = 1;
   int o_events_init = 0, o_events_a = 0, o_events_b = 0, o_events_c = 0;
   int o_iproxy = 1, o_inat = 1;
@@ -857,6 +864,7 @@ int main(int argc, char *argv[])
     o_expensive = 1;
 
   ctx->threading = 1;
+  ctx->quit_on_single_failure = 1;
 
   endpoint_init(ctx, &ctx->a, 'a');
   endpoint_init(ctx, &ctx->b, 'b');
@@ -868,7 +876,7 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
       tstflags &= ~tst_verbatim, o_quiet = 1;
     else if (strcmp(argv[i], "-k") == 0)
-      quit_on_single_failure = 0;
+      ctx->quit_on_single_failure = 0;
     else if (strncmp(argv[i], "-l", 2) == 0) {
       char *rest = NULL;
 
@@ -982,7 +990,8 @@ int main(int argc, char *argv[])
 
 #define SINGLE_FAILURE_CHECK()						\
   do { fflush(stdout);							\
-    if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
+    if (retval && ctx->quit_on_single_failure) {			\
+      su_deinit(); return retval; }					\
   } while(0)
 
   ctx->a.printer = o_events_init ? print_event : NULL;
@@ -1017,6 +1026,7 @@ int main(int argc, char *argv[])
       retval |= test_nat_timeout(ctx);
 
     if (retval == 0) {
+#if 0
       retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
@@ -1030,6 +1040,7 @@ int main(int argc, char *argv[])
       retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_refer(ctx); SINGLE_FAILURE_CHECK();
+#endif
       retval |= test_100rel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_simple(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_events(ctx); SINGLE_FAILURE_CHECK();
