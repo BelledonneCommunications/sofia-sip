@@ -253,6 +253,9 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
   ta_list ta;
   size_t e_len, len, xtra, p_len;
 
+  if (event == nua_r_ack)
+    return event;
+
   enter;
 
   if (nua_log->log_level >= 5) {
@@ -274,8 +277,9 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
     return event;
   }
 
-  if (event > nua_r_method || (nh && !nh->nh_valid) ||
-      (nua->nua_shutdown && event != nua_r_shutdown)) {
+  if ((event > nua_r_method && event <= nua_r_ack) 
+      || (nh && !nh->nh_valid)
+      || (nua->nua_shutdown && event != nua_r_shutdown)) {
     if (msg)
       msg_destroy(msg);
     return event;
