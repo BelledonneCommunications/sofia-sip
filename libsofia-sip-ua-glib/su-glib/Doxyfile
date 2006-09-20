@@ -6,6 +6,6 @@ INPUT 		     = su_glib.docs . sofia-sip
 
 @INCLUDE             = ../docs/Doxyfile.conf
 
-GENERATE_TAGFILE     = ../docs/doxytags_su_glib
+GENERATE_TAGFILE     = ../docs/su_glib.doxytags
 
 ALIASES             +=

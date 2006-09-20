@@ -6,6 +6,6 @@ INPUT 		     = nua_glib.docs . sofia-sip
 
 @INCLUDE             = ../docs/Doxyfile.conf
 
-GENERATE_TAGFILE     = ../docs/doxytags_nua_glib
+GENERATE_TAGFILE     = ../docs/nua_glib.doxytags
 
 ALIASES             +=
