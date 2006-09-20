@@ -115,7 +115,7 @@ void tport_open_log(tport_master_t *mr, tagi_t *tags)
 /** Create log stamp */
 void tport_stamp(tport_t const *self, msg_t *msg, 
 		 char stamp[128], char const *what, 
-		 isize_t n, char const *via,
+		 size_t n, char const *via,
 		 su_time_t now)
 {
   char label[24] = "";
@@ -149,7 +149,7 @@ void tport_stamp(tport_t const *self, msg_t *msg,
 
 /** Dump the data from the iovec */
 void tport_dump_iovec(tport_t const *self, msg_t *msg, 
-		      isize_t n, su_iovec_t const iov[], isize_t iovused,
+		      size_t n, su_iovec_t const iov[], size_t iovused,
 		      char const *what, char const *how)
 {
   tport_master_t *mr = self->tp_master;

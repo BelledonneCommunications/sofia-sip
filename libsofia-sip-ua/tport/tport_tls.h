@@ -33,8 +33,8 @@
  * Copyright 2001, 2002 Nokia Research Center.  All rights reserved.
  */
 
-#ifndef SU_CONFIG_H
-#include <sofia-sip/su_config.h>
+#ifndef SU_TYPES_H
+#include <sofia-sip/su_types.h>
 #endif
 
 SOFIA_BEGIN_DECLS
@@ -65,12 +65,12 @@ tls_t *tls_init_slave(tls_t *tls_master, int sock);
 tls_t *tls_init_client(tls_t *tls_master, int sock);
 void tls_free(tls_t *tls);
 int tls_get_socket(tls_t *tls);
-int tls_read(tls_t *tls);
-void *tls_read_buffer(tls_t *tls, int N);
+ssize_t tls_read(tls_t *tls);
+void *tls_read_buffer(tls_t *tls, size_t N);
 int tls_want_read(tls_t *tls, int events);
 int tls_pending(tls_t const *tls);
 
-int tls_write(tls_t *tls, void *buf, int size);
+ssize_t tls_write(tls_t *tls, void *buf, size_t size);
 int tls_want_write(tls_t *tls, int events);
 
 int tls_check_hosts(tls_t *tls, char const *hosts[TLS_MAX_HOSTS]);

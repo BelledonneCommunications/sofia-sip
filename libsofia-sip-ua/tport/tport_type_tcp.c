@@ -256,11 +256,11 @@ int tport_recv_stream(tport_t *self)
   return 1;
 }
 
-int tport_send_stream(tport_t const *self, msg_t *msg, 
-		      msg_iovec_t iov[], 
-		      int iovused)
+ssize_t tport_send_stream(tport_t const *self, msg_t *msg, 
+			  msg_iovec_t iov[], 
+			  size_t iovused)
 {
-#if __sun__			/* XXX - there must be better way... */
+#if __sun__			/* XXX - there must be a better way... */
   if (iovused > 16)
     iovused = 16;
 #endif

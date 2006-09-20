@@ -191,10 +191,10 @@ struct tport_s {
   unsigned short      tp_qhead;		/**< Head of queue */
 
   msg_iovec_t        *tp_unsent;	/**< Pointer to first unsent iovec */
-  unsigned            tp_unsentlen;	/**< Number of unsent iovecs */
+  size_t              tp_unsentlen;	/**< Number of unsent iovecs */
 
   msg_iovec_t        *tp_iov;		/**< Iovecs allocated for sending */
-  usize_t            tp_iovlen;	/**< Number of allocated iovecs */
+  size_t              tp_iovlen;	/**< Number of allocated iovecs */
 
   /* ==== Extensions  ===================================================== */
 
@@ -211,7 +211,7 @@ struct tport_s {
 /** Primary structure */
 struct tport_primary {
   tport_t             pri_primary[1];   /**< Transport part */
-#if DOX
+#if DOXYGEN_ONLY
   su_home_t           pri_home[1];
 #else
 #define pri_home      pri_primary->tp_home
@@ -244,7 +244,7 @@ struct tport_primary {
 /** Master structure */
 struct tport_master {
   tport_t             mr_master[1];
-#if DOX
+#if DOXYGEN_ONLY
   su_home_t           mr_home[1];
 #else
 #define mr_home mr_master->tp_home
@@ -304,7 +304,7 @@ struct tport_master {
 #endif
 };
 
-/** Virtual funtion table */
+/** Virtual funtion table for transports */
 struct tport_vtable
 {
   char const *vtp_name;
@@ -329,8 +329,8 @@ struct tport_vtable
   int (*vtp_set_events)(tport_t const *self);
   int (*vtp_wakeup)(tport_t *self, int events);
   int (*vtp_recv)(tport_t *self);
-  int (*vtp_send)(tport_t const *self, msg_t *msg,
-		  msg_iovec_t iov[], int iovused);
+  ssize_t (*vtp_send)(tport_t const *self, msg_t *msg,
+		      msg_iovec_t iov[], size_t iovused);
   void (*vtp_deliver)(tport_t *self,  msg_t *msg, su_time_t now);
   int (*vtp_prepare)(tport_t *self, msg_t *msg, 
 		     tp_name_t const *tpn, 
@@ -422,7 +422,7 @@ void tport_open_log(tport_master_t *mr, tagi_t *tags);
 void tport_log_msg(tport_t *tp, msg_t *msg, char const *what, 
 		   char const *via, su_time_t now);
 void tport_dump_iovec(tport_t const *self, msg_t *msg, 
-		      isize_t n, su_iovec_t const iov[], isize_t iovused,
+		      size_t n, su_iovec_t const iov[], size_t iovused,
 		      char const *what, char const *how);
 
 extern tport_vtable_t const tport_udp_vtable;
@@ -435,8 +435,8 @@ int tport_udp_init_primary(tport_primary_t *,
 			   char const **return_culprit);
 void tport_udp_deinit_primary(tport_primary_t *);
 int tport_recv_dgram(tport_t *self);
-int tport_send_dgram(tport_t const *self, msg_t *msg,
-		     msg_iovec_t iov[], int iovused);
+ssize_t tport_send_dgram(tport_t const *self, msg_t *msg,
+			 msg_iovec_t iov[], size_t iovused);
 int tport_udp_error(tport_t const *self, su_sockaddr_t name[1]);
 
 extern tport_vtable_t const tport_tcp_vtable;
@@ -453,8 +453,8 @@ int tport_tcp_init_client(tport_primary_t *,
 int tport_tcp_init_secondary(tport_t *self, int socket, int accepted,
 			     char const **return_reason);
 int tport_recv_stream(tport_t *self);
-int tport_send_stream(tport_t const *self, msg_t *msg,
-		      msg_iovec_t iov[], int iovused);
+ssize_t tport_send_stream(tport_t const *self, msg_t *msg,
+			  msg_iovec_t iov[], size_t iovused);
 
 extern tport_vtable_t const tport_sctp_vtable;
 extern tport_vtable_t const tport_sctp_client_vtable;
@@ -512,10 +512,10 @@ int tport_recv_comp_dgram(tport_t const *self,
 			  su_sockaddr_t *from,
 			  socklen_t fromlen);
 
-int tport_send_comp(tport_t const *self,
+ssize_t tport_send_comp(tport_t const *self,
 		    msg_t *msg, 
 		    msg_iovec_t iov[], 
-		    int iovused,
+		    size_t iovused,
 		    struct sigcomp_compartment *cc,
 		    tport_compressor_t *sc);
 

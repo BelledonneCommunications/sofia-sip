@@ -71,9 +71,9 @@ static void tport_tls_deinit_secondary(tport_t *self);
 static void tport_tls_shutdown(tport_t *self, int how);
 static int tport_tls_set_events(tport_t const *self);
 static int tport_tls_events(tport_t *self, int events);
-static int tport_tls_recv(tport_t *self);
-static int tport_tls_send(tport_t const *self, msg_t *msg,
-			  msg_iovec_t iov[], int iovused);
+static ssize_t tport_tls_recv(tport_t *self);
+static ssize_t tport_tls_send(tport_t const *self, msg_t *msg,
+			      msg_iovec_t iov[], size_t iovused);
 
 typedef struct
 {
@@ -400,15 +400,16 @@ int tport_tls_recv(tport_t *self)
 }
 
 static
-int tport_tls_send(tport_t const *self,
-		   msg_t *msg,
-		   msg_iovec_t iov[],
-		   int iovlen)
+ssize_t tport_tls_send(tport_t const *self,
+		       msg_t *msg,
+		       msg_iovec_t iov[],
+		       size_t iovlen)
 {
   tport_tls_primary_t *tlspri = (tport_tls_primary_t *)self->tp_pri;
   tport_tls_t *tlstp = (tport_tls_t *)self;
   enum { TLSBUFSIZE = 2048 };
-  int i, j, n, m, size = 0;
+  size_t i, j, m, size = 0;
+  ssize_t n;
   int oldmask, mask;
 
   if (tlstp->tlstp_context == NULL) {

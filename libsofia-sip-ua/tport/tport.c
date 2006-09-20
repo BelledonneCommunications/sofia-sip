@@ -336,7 +336,7 @@ static int
   tport_connected(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_resolve(tport_t *self, msg_t *msg, tp_name_t const *tpn),
   tport_vsend(tport_t *self, msg_t *msg, tp_name_t const *tpn,
-	      msg_iovec_t iov[], int iovused,
+	      msg_iovec_t iov[], size_t iovused,
 	      struct sigcomp_compartment *cc),
   tport_send_error(tport_t *, msg_t *, tp_name_t const *),
   tport_queue(tport_t *self, msg_t *msg),
@@ -482,6 +482,7 @@ void tport_destroy(tport_t *self)
 	/* tpac_recv */ tport_destroy_recv,
 	/* tpac_error */ tport_destroy_error,
 	/* tpac_alloc */ tport_destroy_alloc,
+	/* tpac_address */ NULL
       }};
 
   SU_DEBUG_7(("%s(%p)\n", __func__, self));
@@ -1997,7 +1998,7 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
   tport_primary_t *dad;
   tport_t *tp, *tp_next;
   su_time_t now = su_now();
-  int ts = su_time_ms(now);
+  int ts = (int)su_time_ms(now);
 
   /* Go through all primary transports */
   for (dad = mr->mr_primaries; dad; dad = dad->pri_next) {
@@ -2022,7 +2023,7 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
       int closed;
 
       if (msg &&
-	  tp->tp_params->tpp_timeout != UINT_MAX && 
+	  tp->tp_params->tpp_timeout < INT_MAX && 
 	  tp->tp_params->tpp_timeout < ts - (int)tp->tp_time &&
 	  !msg_is_streaming(msg)) {
 	SU_DEBUG_5(("tport_tick(%p): incomplete message idle for %d ms\n",
@@ -3155,7 +3156,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 
   self->tp_time = su_time_ms(now = su_now());
 
-  n = tport_vsend(self, msg, tpn, iov, (int)iovused, cc);
+  n = tport_vsend(self, msg, tpn, iov, iovused, cc);
   SU_DEBUG_9(("tport_vsend returned %d\n", n));
 
   if (n < 0)
@@ -3173,7 +3174,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
       if (tport_is_connection_oriented(self)) {
 	iov[i].mv_len -= n - total;
 	iov[i].mv_base = (char *)iov[i].mv_base + (n - total);
-	if (tport_queue_rest(self, msg, &iov[i], (int)(iovused - i)) >= 0)
+	if (tport_queue_rest(self, msg, &iov[i], iovused - i) >= 0)
 	  return n;
       }
       else {
@@ -3211,10 +3212,10 @@ int tport_vsend(tport_t *self,
 		msg_t *msg, 
 		tp_name_t const *tpn,
 		msg_iovec_t iov[], 
-		int iovused,
+		size_t iovused,
 		struct sigcomp_compartment *cc)
 { 
-  int n;
+  ssize_t n;
   su_addrinfo_t *ai = msg_addrinfo(msg);
 
   if (cc) {
@@ -3237,8 +3238,8 @@ int tport_vsend(tport_t *self,
     tport_dump_iovec(self, msg, n, iov, iovused, "sent", "to");
     
   if (tport_log->log_level >= 7) {
-    int i;
-	size_t m = 0;
+    size_t i, m = 0;
+
     for (i = 0; i < iovused; i++)
       m += iov[i].mv_len;
 
@@ -3318,9 +3319,9 @@ static
 int tport_queue_rest(tport_t *self, 
 		     msg_t *msg, 
 		     msg_iovec_t iov[], 
-		     int iovused)
+		     ssize_t iovused)
 {
-  usize_t iovlen = self->tp_iovlen;
+  size_t iovlen = self->tp_iovlen;
 
   assert(tport_is_connection_oriented(self));
   assert(self->tp_queue == NULL || 
@@ -3570,8 +3571,7 @@ void tport_send_event(tport_t *self)
 static
 void tport_send_queue(tport_t *self)
 {
-  int i;
-  size_t n, total;
+  size_t i, n, total;
   msg_t *msg;
   msg_iovec_t *iov;
   int iovused;
@@ -4106,6 +4106,9 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
 {
   tport_t const *sub, *next;
   char const *canon, *host, *port, *comp;
+#if SU_HAVE_IN6
+  char *end, ipaddr[TPORT_HOSTPORTSIZE];
+#endif
 
   assert(self); assert(tpn);
 
@@ -4130,18 +4133,16 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
     memset(su, 0, sizeof su);
 
 #if SU_HAVE_IN6
-    if (strchr(host, ':')) {
-      char *end, ipaddr[TPORT_HOSTPORTSIZE];
-      
-      if (host[0] == '[') {
-	/* Remove [] around IPv6 address */
-	host = strncpy(ipaddr, host +  1, sizeof(ipaddr) - 1);
-	ipaddr[sizeof(ipaddr) - 1] = '\0';
-
-	if ((end = strchr(host, ']')))
-	  *end = 0;
-      }
-
+    if (host_is_ip6_reference(host)) {
+      /* Remove [] around IPv6 address */
+      host = strncpy(ipaddr, host +  1, sizeof(ipaddr) - 1);
+      ipaddr[sizeof(ipaddr) - 1] = '\0';
+      if ((end = strchr(host, ']')))
+	*end = 0;
+      su->su_len = sulen = (socklen_t) sizeof (struct sockaddr_in6);
+      su->su_family = AF_INET6;
+    }
+    else if (host_is_ip_address(host)) {
       su->su_len = sulen = (socklen_t) sizeof (struct sockaddr_in6);
       su->su_family = AF_INET6;
     }
@@ -4206,7 +4207,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
 	continue;
 
       if (resolved) {
-	if (sub->tp_addrlen != (size_t)sulen ||
+	if ((socklen_t)sub->tp_addrlen != sulen ||
 	    memcmp(sub->tp_addr, su, sulen)) {
 	  SU_DEBUG_7(("tport(%p): not found by name " TPN_FORMAT "\n",
 		      self, TPN_ARGS(tpn)));

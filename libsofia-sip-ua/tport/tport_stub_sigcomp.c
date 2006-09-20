@@ -273,12 +273,12 @@ int tport_recv_comp_dgram(tport_t const *self,
 }
 
 
-int tport_send_comp(tport_t const *self,
-		    msg_t *msg, 
-		    msg_iovec_t iov[], 
-		    int iovused,
-		    struct sigcomp_compartment *cc,
-		    tport_compressor_t *comp)
+ssize_t tport_send_comp(tport_t const *self,
+			msg_t *msg, 
+			msg_iovec_t iov[], 
+			size_t iovused,
+			struct sigcomp_compartment *cc,
+			tport_compressor_t *comp)
 {
   tport_comp_vtable_t const *vsc = tport_comp_vtable;
 

@@ -281,9 +281,9 @@ int tport_recv_dgram(tport_t *self)
 }
 
 /** Send using su_vsend(). Map IPv4 addresses as IPv6 addresses, if needed. */
-int tport_send_dgram(tport_t const *self, msg_t *msg, 
-		     msg_iovec_t iov[], 
-		     int iovused)
+ssize_t tport_send_dgram(tport_t const *self, msg_t *msg, 
+			 msg_iovec_t iov[], 
+			 size_t iovused)
 {
   su_sockaddr_t su[1];
   socklen_t sulen = sizeof su;

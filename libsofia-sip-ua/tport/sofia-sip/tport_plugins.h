@@ -156,10 +156,10 @@ struct tport_comp_vtable_s {
 		       su_sockaddr_t *from,
 		       socklen_t fromlen);
 
-  int (*vsc_send_comp)(tport_t const *self,
+  ssize_t (*vsc_send_comp)(tport_t const *self,
 		       msg_t *msg, 
 		       msg_iovec_t iov[], 
-		       int iovused,
+		       size_t iovused,
 		       struct sigcomp_compartment *cc,
 		       tport_compressor_t *sc);
 
