@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
+# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "HAVE_CONFIG_H" /YX /FD /c
 # ADD CPP /nologo /MD /W3 /GX /O2 /I ".." /I "..\.." /I "..\..\..\libsofia-sip-ua\su" /I "..\..\..\libsofia-sip-ua\tport" /I "..\..\..\libsofia-sip-ua\bnf" /I "..\..\..\libsofia-sip-ua\sresolv" /I "..\..\..\libsofia-sip-ua\iptsec" /I "..\..\..\libsofia-sip-ua\ipt" /I "..\..\..\libsofia-sip-ua\url" /I "..\..\..\libsofia-sip-ua\nta" /I "..\..\..\libsofia-sip-ua\msg" /I "..\..\..\libsofia-sip-ua\sip" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Intermediate_Dir "Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
+# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "HAVE_CONFIG_H" /YX /FD /GZ /c
 # ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I ".." /I "..\.." /I "..\..\..\libsofia-sip-ua\su" /I "..\..\..\libsofia-sip-ua\tport" /I "..\..\..\libsofia-sip-ua\iptsec" /I "..\..\..\libsofia-sip-ua\ipt" /I "..\..\..\libsofia-sip-ua\url" /I "..\..\..\libsofia-sip-ua\sresolv" /I "..\..\..\libsofia-sip-ua\bnf" /I "..\..\..\libsofia-sip-ua\nta" /I "..\..\..\libsofia-sip-ua\msg" /I "..\..\..\libsofia-sip-ua\sip" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
