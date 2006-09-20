@@ -24,27 +24,32 @@ general:
 - The Sofia-SIP m4 macros are no longer installed to /usr/share/aclocal/.
 
 libsofia-sip-ua:
-- Added nutag_early_answer. Optionally including SDP answer already in 1XX
-  response.
+- Added soa tag SOATAG_AUDIO_AUX()
+- Added nua tags NUTAG_M_DISPLAY(), NUTAG_M_USERNAME(), NUTAG_M_PARAMS(), and
+  NUTAG_M_FEATURES().
+- Added nua tag NUTAG_EARLY_ANSWER. Optionally include SDP answer already
+  in a 1XX response.
+- Added nua tag NUTAG_REFER_WITH_ID.
+- Added network change detection logic. This extends current su API
+  with two functions defined in su_os_nw.h and nta API with
+  nta_agent_close_tports(). Also a new nua event nua_i_network_changed and
+  tag NUTAG_DETECT_NETWORK_UPDATES are introduced.
+- Added nta_leg_make_replaces() and nta_leg_by_replaces() functions
+- Added su_isblocking(errcode) 
+- Added urltag_scan()
+- template: Added foobar() function (sofia-sip/foobar.h).
 - Done some 64-bit cleanup. Added typedefs isize_t, usize_t and issize_t. By
   default isize_t is int, usize_t is unsigned and issize_t is int and there
   is no change in API. If ./configure option --disable-size-compat is given,
   API uses size_t or ssize_t instead of int/unsigned int.
-- Changed argument and return type of inline function t_xtra() to size_t.
-- Using socklen_t as li_addrlen.
-- Added soa tag soatag_audio_aux.
-- Added nua tag nutag_refer_with_id.
-- Added network change detection logic. This extends current su API
-  with two functions defined in su_os_nw.h. Also a new event
-  nua_i_network_changed and tag NUTAG_DETECT_NETWORK_UPDATES are
-  introduced.
-- Added nta_leg_make_replaces() and nta_leg_by_replaces() functions
-- Added urltag_scan()
-- template: Added foobar() function (sofia-sip/foobar.h).
+  - Changed argument and return type of inline function t_xtra() to size_t.
+  - Using socklen_t as li_addrlen.
 - The install location of awk scripts (msg_parser.awk and 
   tag_dll.awk) from libexec to share/sofia-sip/. Also added 
   a new pkg-config variable to find out the awk scripts: 
   sh> pkg-config --variable=sofiaawkdir sofia-sip-ua
+- Removed deprecated function msg_addrlen(), deprecated types
+  msg_ref_t, msg_obj_t and msg_hdr_t.
 - This release is ABI/API compatible with applications 
   linked against 1.12.0. The ABI has been tested with the nua
   module unit test (test_nua) built against original 1.12.0 release.
@@ -63,7 +68,7 @@ libsofia-sip-ua-glib:
 Contributors to this release
 ----------------------------
 
-<list of people who contributed to _this_ release
+<list of people who contributed to _this_ releaseFC 
  - update as people's patches are added, or when you commit stuff
  - current development team members (see AUTHORS) may be omitted
  - name of the contributor should be enough (email addresses in AUTHORS),
@@ -102,9 +107,14 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- "explicit" and "required" parameters are ignored with Reject-Contact header,
+  "q" parameter with both Reject-Contact and Accept-Contact
+- PRACK is now handled like any other request, it can be challenged and nua
+  authenticates it
+- span_lws() now returns length of real linear whitespace as defined in RFC 3261
 - Updated codecs in incoming offer were ignored. Thanks for Denis Legostayev
   for reporting the bug and sending a patch.
-- UPDATE was rejected if received during initial call setup. Thanks for
+- UPDATE was rejected by nua if received during initial call setup. Thanks for
   Rajeev K for reporting the bug.
 - NOTIFY Event: refer without id is not rejected anymore. Thanks for 
   emilie for reporting this.   
