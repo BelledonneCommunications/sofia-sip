@@ -258,23 +258,26 @@ size_t tl_xtra(tagi_t const lst[], size_t offset)
 }
 
 /** Duplicate a tag list.
- * 
- * The function tl_dup() deep copies the tag list @a src to the buffer @a
- * dst.  Memory areas associated with @a src are copied to buffer at @a **bb.
+ *
+ * Deep copy the tag list @a src to the buffer @a dst. Memory areas
+ * associated with @a src are copied to buffer at @a **bb.
+ *
+ * This is a rather low-level function. See tl_adup() for a more convenient
+ * functionality.
  *
  * The size of the @a dst buffer must be at least @c tl_len(src) bytes.  The
  * size of buffer @a **bb must be at least @c tl_dup_xtra(src) bytes. 
  * 
- * @param dst pointer to the destination buffer
- * @param src tag list to be duplicated
- * @param bb  pointer to pointer to buffer
+ * @param[out] dst pointer to the destination buffer
+ * @param[in] src tag list to be duplicated
+ * @param[in,out] bb  pointer to pointer to buffer
  *
  * @return
- * The function tl_dup() returns a pointer to the @a dst list after last
+ * A pointer to the @a dst list after last
  * duplicated taglist element.  
  *
- * The function tl_dup updates the pointer at @a *bb to the byte after 
- * last duplicated memory area.
+ * The pointer at @a *bb is updated to the byte after last duplicated memory
+ * area.
  */
 tagi_t *tl_dup(tagi_t dst[], tagi_t const src[], void **bb)
 {
@@ -286,7 +289,19 @@ tagi_t *tl_dup(tagi_t dst[], tagi_t const src[], void **bb)
 }
 	       
 
-/** Allocate and duplicate a tag list. */
+/** Free a tag list.
+ *
+ * The function tl_free() frees resources associated with a tag list.
+ * In other words, it calls t_free on each tag item on the list. 
+ *
+ */
+void tl_free(tagi_t list[])
+{
+  while (list)
+    list = t_free(list);
+}
+
+/** Allocate and duplicate a tag list using memory home. */
 tagi_t *tl_adup(su_home_t *home, tagi_t const lst[])
 {
   size_t len = tl_len(lst);
@@ -306,7 +321,7 @@ tagi_t *tl_adup(su_home_t *home, tagi_t const lst[])
   return newlst;
 }
 
-
+/** Allocate and duplicate tagged arguments as a tag list using memory home. */
 tagi_t *tl_tlist(su_home_t *home, tag_type_t tag, tag_value_t value, ...)
 {
   tagi_t *tl;
@@ -319,14 +334,21 @@ tagi_t *tl_tlist(su_home_t *home, tag_type_t tag, tag_value_t value, ...)
   return tl;
 }
 
-
-/** Find a tag from given list. */
-tagi_t const *tl_find(tagi_t const lst[], tag_type_t tt)
+/** Find first tag item with type @a tt from list. */
+tagi_t *tl_find(tagi_t const lst[], tag_type_t tt)
 {
-  if (tt)
-    return t_find(tt, lst);
+  return (tagi_t *)t_find(tt, lst);
+}
 
-  return NULL;
+/** Find last tag item with type @a tt from list. */
+tagi_t *tl_find_last(tagi_t const lst[], tag_type_t tt)
+{
+  tagi_t const *last, *next;
+  
+  for (next = last = t_find(tt, lst); next; next = t_find(tt, last))
+    last = next;
+
+  return (tagi_t *)last;
 }
 
 static inline

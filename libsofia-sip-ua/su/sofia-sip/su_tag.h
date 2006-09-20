@@ -147,8 +147,10 @@ SOFIAPUBFUN tagi_t *tl_next(tagi_t const *lst);
 SOFIAPUBFUN tagi_t *tl_move(tagi_t *dst, tagi_t const src[]);
 SOFIAPUBFUN tagi_t *tl_dup(tagi_t dst[], tagi_t const lst[], void **bb);
 SOFIAPUBFUN tagi_t *tl_adup(su_home_t *, tagi_t const lst[]);
+SOFIAPUBFUN void tl_free(tagi_t list[]);
 
-SOFIAPUBFUN tagi_t const *tl_find(tagi_t const lst[], tag_type_t tt);
+SOFIAPUBFUN tagi_t *tl_find(tagi_t const lst[], tag_type_t tt);
+SOFIAPUBFUN tagi_t *tl_find_last(tagi_t const lst[], tag_type_t tt);
 SOFIAPUBFUN tagi_t *tl_filter(tagi_t *, tagi_t const filter[],
 			      tagi_t const lst[], void **b);
 SOFIAPUBFUN tagi_t *tl_afilter(su_home_t *, tagi_t const filter[],
