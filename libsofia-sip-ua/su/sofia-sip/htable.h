@@ -123,7 +123,7 @@ HTABLE_SCOPE void prefix##_remove(prefix##_t *, entry_t const *e)
 #define HTABLE_BODIES(prefix, pr, entry_t, hfun) \
   HTABLE_BODIES_WITH(prefix, pr, entry_t, hfun, unsigned, hash_value_t)
 
-#define HTABLE_BODIES_WITH(prefix, pr, entry_t, hfun, size_t, hash_value_t)	\
+#define HTABLE_BODIES_WITH(prefix, pr, entry_t, hfun, size_t, hash_value_t) \
 /** Reallocate new hash table */ \
 HTABLE_SCOPE \
 int prefix##_resize(su_home_t *home, \
@@ -132,9 +132,10 @@ int prefix##_resize(su_home_t *home, \
 { \
   entry_t **new_hash; \
   entry_t **old_hash = pr->pr##_table; \
-  usize_t old_size; \
-  unsigned i, j, i0; \
-  unsigned again = 0, used = 0, collisions = 0; \
+  size_t old_size; \
+  size_t i, j, i0; \
+  unsigned again = 0; \
+  size_t used = 0, collisions = 0; \
 \
   if (new_size == 0) \
     new_size = 2 * pr->pr##_size + 1; \
@@ -167,7 +168,7 @@ int prefix##_resize(su_home_t *home, \
 \
   pr->pr##_table = new_hash, pr->pr##_size = new_size; \
 \
-  assert(pr->pr##_used == used);\
+  assert(pr->pr##_used == used); \
 \
   return 0; \
 } \
@@ -221,8 +222,8 @@ void prefix##_insert(prefix##_t *pr, entry_t const *e) \
 HTABLE_SCOPE \
 void prefix##_remove(prefix##_t *pr, entry_t const *e) \
 { \
-  unsigned i, j, k; \
-  usize_t size = pr->pr##_size; \
+  size_t i, j, k; \
+  size_t size = pr->pr##_size; \
   entry_t **htable = pr->pr##_table; \
 \
   /* Search for entry */ \
