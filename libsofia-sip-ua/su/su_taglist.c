@@ -112,6 +112,15 @@
  *
  */
 
+/**@class tag_class_s sofia-sip/su_tag_class.h <sofia-sip/su_tag_class.h>
+ *
+ * @brief Virtual function table for @ref su_tag "tags".
+ *
+ * The struct tag_class_s contains virtual function table for tags,
+ * specifying non-default behaviour of different tags. It provides functions
+ * for copying, matching, printing and converting the tagged values.
+ */
+
 #ifdef longlong
 typedef longlong unsigned llu;
 #else
@@ -460,10 +469,22 @@ tagi_t *t_filter(tagi_t *dst,
   return dst;
 }
 
+/** Make filtered copy of a tag list @a src with @a filter to @a dst.
+ *
+ * Each tag in @a src is checked against tags in list @a filter. If the tag
+ * is in the @a filter list, or there is a special filter tag in the list
+ * which matches with the tag in @a src, the tag is duplicated to @a dst using 
+ * memory buffer in @a b.
+ *
+ * When @a dst is NULL, this function calculates the size of the filtered list.
+ *
+ * @sa tl_afilter(), tl_tfilter(), tl_filtered_tlist(),
+ * TAG_FILTER(), TAG_ANY(), #ns_tag_class
+ */
 tagi_t *tl_filter(tagi_t dst[], 
-		 tagi_t const filter[], 
-		 tagi_t const src[], 
-		 void **b)
+		  tagi_t const filter[], 
+		  tagi_t const src[], 
+		  void **b)
 {
   tagi_t const *s;
   tagi_t *d;
@@ -493,6 +514,9 @@ tagi_t *tl_filter(tagi_t dst[],
  * The function tl_afilter() will build a tag list containing tags specified
  * in @a filter and extracted from @a src.  It will allocate the memory used by
  * tag list via the specified memory @a home, which may be also @c NULL.
+ *
+ * @sa tl_afilter(), tl_tfilter(), tl_filtered_tlist(), 
+ * TAG_FILTER(), TAG_ANY(), #ns_tag_class
  */
 tagi_t *tl_afilter(su_home_t *home, tagi_t const filter[], tagi_t const src[])
 {
@@ -522,6 +546,10 @@ tagi_t *tl_afilter(su_home_t *home, tagi_t const filter[], tagi_t const src[])
   return dst;
 }
 
+/** Filter tag list @a src with given tags.
+ * 
+ * @sa tl_afilter(), tl_filtered_tlist(), TAG_FILTER(), TAG_ANY(), #ns_tag_class
+ */
 tagi_t *tl_tfilter(su_home_t *home, tagi_t const src[], 
 		   tag_type_t tag, tag_value_t value, ...)
 {
@@ -534,6 +562,8 @@ tagi_t *tl_tfilter(su_home_t *home, tagi_t const src[],
 }
 
 /** Create a filtered tag list.
+ *
+ * @sa tl_afilter(), tl_tfilter(), TAG_FILTER(), TAG_ANY(), #ns_tag_class
  */
 tagi_t *tl_filtered_tlist(su_home_t *home, tagi_t const filter[], 
 			  tag_type_t tag, tag_value_t value, ...)
@@ -726,7 +756,9 @@ tagi_t *tl_vllist(tag_type_t tag, tag_value_t value, va_list ap)
 
   return rv;
 }
-/** Make a linear tag list until TAG_END() */
+/** Make a linear tag list until TAG_END().
+ *
+ */
 tagi_t *tl_llist(tag_type_t tag, tag_value_t value, ...)
 {
   va_list ap;  
@@ -959,6 +991,53 @@ tag_class_t next_tag_class[1] =
 tag_typedef_t tag_next = TAG_TYPEDEF(tag_next, next);
 
 /* ====================================================================== */
+/* filter tag  - use function to filter tag */
+
+tagi_t *t_filter_with(tagi_t *dst,
+		      tagi_t const *t, 
+		      tagi_t const *src, 
+		      void **bb)
+{
+  tag_filter_f *function;
+
+  if (!src || !t)
+    return dst;
+
+  function = (tag_filter_f *)t->t_value;
+
+  if (!function || !function(t, src))
+    return dst;
+
+  if (dst) {
+    return t_dup(dst, src, bb); 
+  }
+  else {
+    dst = (tagi_t *)((char *)dst + t_len(src));
+    *bb = (char *)*bb + t_xtra(src, (size_t)*bb);
+    return dst;
+  }
+}
+		   
+tag_class_t filter_tag_class[1] = 
+  {{
+    sizeof(filter_tag_class),
+    /* tc_next */     NULL,
+    /* tc_len */      NULL,
+    /* tc_move */     NULL,
+    /* tc_xtra */     NULL,
+    /* tc_dup */      NULL,
+    /* tc_free */     NULL,
+    /* tc_find */     NULL,
+    /* tc_snprintf */ NULL,
+    /* tc_filter */   t_filter_with,
+    /* tc_ref_set */  NULL,
+    /* tc_scan */     NULL,
+  }};
+
+/** Filter tag - apply function in order to filter tag. */
+tag_typedef_t tag_filter = TAG_TYPEDEF(tag_filter, filter);
+
+/* ====================================================================== */
 /* any tag - match to any tag when filtering */
 
 tagi_t *t_any_filter(tagi_t *dst,
@@ -994,6 +1073,7 @@ tag_class_t any_tag_class[1] =
     /* tc_scan */     NULL,
   }};
 
+/** Any tag - match any tag when filtering. */
 tag_typedef_t tag_any = TAG_TYPEDEF(tag_any, any);
 
 /* ====================================================================== */
@@ -1038,7 +1118,7 @@ tagi_t *t_ns_filter(tagi_t *dst,
 		   
 tag_class_t ns_tag_class[1] = 
   {{
-    sizeof(any_tag_class),
+    sizeof(ns_tag_class),
     /* tc_next */     NULL,
     /* tc_len */      NULL,
     /* tc_move */     NULL,

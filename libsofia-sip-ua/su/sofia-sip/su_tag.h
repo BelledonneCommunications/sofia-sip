@@ -90,6 +90,16 @@ SOFIAPUBVAR tag_typedef_t tag_next;
 /** Any tag accepted when filtering. */
 SOFIAPUBVAR tag_typedef_t tag_any;
 
+/** Filter tag using function as argument. 
+ * @since New in @VERSION_1_12_2.
+ */
+SOFIAPUBVAR tag_typedef_t tag_filter;
+
+/** Prototype for filtering function used with TAG_FILTER(). 
+ * @since New in @VERSION_1_12_2.
+ */
+typedef int tag_filter_f(tagi_t const *filter, tagi_t const *dest);
+
 /** @HI Initialize a tag item marking the end of list. Equivalent to TAG_END(). */
 #define TAG_NULL()  (tag_type_t)0, (tag_value_t)0
 
@@ -108,6 +118,11 @@ SOFIAPUBVAR tag_typedef_t tag_any;
 /** @HI Initialize a @a item if condition is true; 
  * otherwise, initialize an empty tag item. */
 #define TAG_IF(condition, item) !(condition) ? tag_skip : item
+
+/** @HI Initialize a filter tag item accepting any item. 
+ * @since New in @VERSION_1_12_2.
+ */
+#define TAG_FILTER(function)  tag_filter, tag_filter_v(function)
 
 /** Convert tag item to a string  */
 SOFIAPUBFUN int t_snprintf(tagi_t const *t, char b[], size_t size);
@@ -181,6 +196,7 @@ extern "C++" {
   static inline tag_value_t tag_str_vr(char **vp) {return(tag_value_t)vp;}
 }
 #endif
+su_inline tag_value_t tag_filter_v(tag_filter_f *v) {return(tag_value_t)v;}
 #else
 #define tag_int_v(v)   (tag_value_t)(v)
 #define tag_int_vr(v)  (tag_value_t)(v)
@@ -194,6 +210,7 @@ extern "C++" {
 #define tag_cstr_vr(v) (tag_value_t)(v)
 #define tag_str_v(v)   (tag_value_t)(v)
 #define tag_str_vr(v)  (tag_value_t)(v)
+#define tag_filter_v(v) (tag_value_t)(v)
 #endif
 
 SOFIA_END_DECLS

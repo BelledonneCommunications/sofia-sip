@@ -64,14 +64,18 @@ SOFIA_BEGIN_DECLS
 #define SU_LEAST32_T int_least32_t
 #define SU_LEAST16_T int_least16_t
 #define SU_LEAST8_T int_least8_t
-#elif SU_HAVE_WIN32 || DOCUMENTATION_ONLY
+#endif
+
+#if DOXYGEN_ONLY || (!SU_HAVE_STDINT && !SU_HAVE_INTTYPES && SU_HAVE_WIN32)
+
 /* Use macros defined in <su_configure_win32.h> */
 
-/** Integer large enough for pointers */
 #ifndef _INTPTR_T_DEFINED
+/** Integer type large enough to store pointers */
 typedef SU_INTPTR_T intptr_t;
 #endif
 #ifndef _UINTPTR_T_DEFINED
+/** Unsigned integer type large enough to store pointers */
 typedef unsigned SU_INTPTR_T uintptr_t;
 #endif
 
@@ -100,7 +104,9 @@ typedef SU_LEAST32_T int_least32_t;
 typedef SU_LEAST16_T int_least16_t;
 /** At least 8-bit integer */
 typedef SU_LEAST8_T int_least8_t;
-#else
+#endif
+
+#if !SU_HAVE_STDINT && !SU_HAVE_INTTYPES && !SU_HAVE_WIN32
 #error "no integer types available."
 #endif
 

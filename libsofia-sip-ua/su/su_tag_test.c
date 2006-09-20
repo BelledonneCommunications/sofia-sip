@@ -358,20 +358,51 @@ static int test_dup(void)
   END();
 }
 
+/* filtering function */
+int filter(tagi_t const *filter, tagi_t const *t)
+{
+  if (!t)
+    return 0;
+
+  /* Accept even TAG_I() */
+  if (t->t_tag == tag_i)
+    return (t->t_value & 1) == 0;
+
+  /* TAG_Q(true) */
+  if (t->t_tag == tag_q)
+    return t->t_value != 0;
+
+  /* TAG_P(false) */
+  if (t->t_tag == tag_p)
+    return t->t_value == 0;
+
+  if (t->t_tag == tag_a) {
+    char const *s = (char *)t->t_value;
+    if (s && 'A' <= *s && *s <= 'Z')
+      return 1;
+  }
+
+  return 0;
+}
+
 /* Test tl_afilter() */
 static int test_filters(void)
 {
-  tagi_t *lst, *filter1, *filter2, *filter3, *filter4, *b1, *b2, *b3, *b4;
+  tagi_t *lst, *filter1, *filter2, *filter3, *filter4, *filter5;
+  tagi_t *b1, *b2, *b3, *b4;
 
   tagi_t *nsfilter, *b5;
+  su_home_t *home;
 
   BEGIN();
+
+  home = su_home_new(sizeof *home); TEST_1(home);
 
   lst = tl_list(TAG_A("Moro"), 
 		TAG_I(2),
 		TAG_Q(3),
 		TAG_SKIP(2), 
-		TAG_A("Vaan"), 
+		TAG_A("vaan"), 
 		TAG_I(1), 
 		TAG_P(2),
 		TAG_NULL());
@@ -380,13 +411,14 @@ static int test_filters(void)
   filter2 = tl_list(TAG_I(0), TAG_NULL());
   filter3 = tl_list(TAG_A(""), TAG_I(0), TAG_NULL());
   filter4 = tl_list(TAG_ANY(), TAG_NULL());
+  filter5 = tl_list(TAG_FILTER(filter), TAG_NULL());
 
-  TEST0(lst && filter1 && filter2 && filter3);
+  TEST0(lst && filter1 && filter2 && filter3 && filter4 && filter5);
 
   b1 = tl_afilter(NULL, filter1, lst);
 
   TEST(tl_len(b1), 3 * sizeof(tagi_t));
-  TEST(tl_xtra(b1, 0), strlen("Moro" "Vaan") + 2);
+  TEST(tl_xtra(b1, 0), strlen("Moro" "vaan") + 2);
 
   b2 = tl_afilter(NULL, filter2, lst);
 
@@ -396,12 +428,12 @@ static int test_filters(void)
   b3 = tl_afilter(NULL, filter3, lst);
 
   TEST(tl_len(b3), 5 * sizeof(tagi_t));
-  TEST(tl_xtra(b3, 0), strlen("Moro" "Vaan") + 2);
+  TEST(tl_xtra(b3, 0), strlen("Moro" "vaan") + 2);
 
   b4 = tl_afilter(NULL, filter4, lst);
 
   TEST(tl_len(b4), 7 * sizeof(tagi_t));
-  TEST(tl_xtra(b4, 0), strlen("Moro" "Vaan") + 2);
+  TEST(tl_xtra(b4, 0), strlen("Moro" "vaan") + 2);
 
   su_free(NULL, b1); su_free(NULL, b2); su_free(NULL, b3); su_free(NULL, b4);
 
@@ -414,8 +446,18 @@ static int test_filters(void)
   TEST(b5[0].t_tag, tag_q);
   TEST(b5[1].t_tag, tag_p);
 
-  tl_vfree(filter1); tl_vfree(filter2); tl_vfree(filter3); tl_vfree(filter4);
+  b5 = tl_afilter(home, filter5, lst); TEST_1(b5);
+  TEST(b5[0].t_tag, tag_a);
+  TEST(b5[1].t_tag, tag_i);
+  TEST(b5[2].t_tag, tag_q);
+  TEST(b5[3].t_tag, 0);
+
+  tl_vfree(filter1); tl_vfree(filter2); tl_vfree(filter3); 
+  tl_vfree(filter4); tl_vfree(filter5);
+
   tl_vfree(lst);
+
+  su_home_unref(home);
 
   END();
 }
