@@ -365,7 +365,7 @@ static int msg_dup_or_copy_all(msg_t *msg,
 
 /**Copy a message shallowly.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Copy a message and the header structures. The copied message will share
  * all the strings with the original message. It will keep a reference to
@@ -442,7 +442,7 @@ int msg_copy_chain(msg_t *msg, msg_t const *original)
 
 /**Deep copy a message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Copy a message, the header structures and all the related strings. The
  * duplicated message does not share any (non-const) data with original.

@@ -55,7 +55,7 @@
 
 /** Clone a message class.
  *
- * @relates msg_mclass_s
+ * @relatesalso msg_mclass_s
  *
  * The function msg_mclass_clone() makes a copy of message class object @a
  * old. It is possible to resize the hash table by giving a non-zero @a
@@ -141,7 +141,7 @@ msg_mclass_t *msg_mclass_clone(msg_mclass_t const *old, int newsize, int empty)
 
 /**Add a new header to the message class.
  *
- * @relates msg_mclass_s
+ * @relatesalso msg_mclass_s
  *
  * Insert a header class @a hc to the message class object @a mc. If the
  * given @a offset of the header in @ref msg_pub_t "public message
@@ -184,7 +184,7 @@ int msg_mclass_insert_header(msg_mclass_t *mc,
 
 /**Add a new header to the message class.
  *
- * @relates msg_mclass_s
+ * @relatesalso msg_mclass_s
  *
  * Insert a header class @a hc to the message class @a mc. If the given @a
  * offset of the header in @ref msg_pub_t "public message structure" is
@@ -225,7 +225,7 @@ int msg_mclass_insert_with_mask(msg_mclass_t *mc,
 
 /** Add a header reference to the message class.
  *
- * @relates msg_mclass_s
+ * @relatesalso msg_mclass_s
  *
  * @param[in,out] mc       pointer to a message class object 
  * @param[in]     hr       header reference object 
@@ -280,12 +280,12 @@ int msg_mclass_insert(msg_mclass_t *mc, msg_href_t const *hr)
   return collisions;
 }
 
-/** Calculate length of line ending (0, 1 or 2) */
+/** Calculate length of line ending (0, 1 or 2). @internal */
 #define CRLF_TEST(cr, lf) ((cr) == '\r' ? ((lf) == '\n') + 1 : (cr)=='\n')
 
 /**Search for a header class.
  *
- * @relates msg_mclass_s
+ * @relatesalso msg_mclass_s
  *
  * The function msg_find_hclass() searches for a header class from a message
  * class based on the contents of the header to be parsed. The buffer @a s

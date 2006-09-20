@@ -55,14 +55,14 @@ msg_time_t msg_now(void)
 
 #define is_digit(c) ((c) >= '0' && (c) <= '9')
 
-/**Epoch year.
+/**Epoch year. @internal
  *
  * First day of the epoch year should be Monday.
  */
 #define EPOCH 1900		
-/** Is this year a leap year? */
+/** Is this year a leap year? @internal */
 #define LEAP_YEAR(y) ((y) % 4 == 0 && ((y) % 100 != 0 || (y) % 400 == 0))
-/** Day number of New Year Day of given year */
+/** Day number of New Year Day of given year. @internal */
 #define YEAR_DAYS(y) \
   (((y)-1) * 365 + ((y)-1) / 4 - ((y)-1) / 100 + ((y)-1) / 400)
 

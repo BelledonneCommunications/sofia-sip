@@ -114,7 +114,7 @@ union msg_mime_u
 
 /* ====================================================================== */
 
-/** Calculate length of line ending (0, 1 or 2) */
+/** Calculate length of line ending (0, 1 or 2). @internal */
 #define CRLF_TEST(b) ((b)[0] == '\r' ? ((b)[1] == '\n') + 1 : (b)[0] =='\n')
 
 /**@ingroup msg_mime
@@ -1211,7 +1211,7 @@ issize_t msg_accept_any_d(su_home_t *home,
 			  msg_header_t *h,
 			  char *s, isize_t slen)
 {
-  /** @relates msg_accept_any_s */
+  /** @relatesalso msg_accept_any_s */
   msg_header_t **hh = &h->sh_succ, *h0 = h;
   msg_accept_any_t *aa = (msg_accept_any_t *)h;
 
@@ -1254,7 +1254,7 @@ issize_t msg_accept_any_d(su_home_t *home,
 /** Encode an Accept-* header. */
 issize_t msg_accept_any_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 {
-  /** @relates msg_accept_any_s */
+  /** @relatesalso msg_accept_any_s */
   char *b0 = b, *end = b + bsiz;
   msg_accept_any_t const *aa = (msg_accept_any_t *)h;
 
@@ -1268,7 +1268,7 @@ issize_t msg_accept_any_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
 /** Calculate extra memory used by accept-* headers. */
 isize_t msg_accept_any_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  /** @relates msg_accept_any_s */
+  /** @relatesalso msg_accept_any_s */
   msg_accept_any_t const *aa = (msg_accept_any_t *)h;
 
   MSG_PARAMS_SIZE(offset, aa->aa_params);
@@ -1281,7 +1281,7 @@ isize_t msg_accept_any_dup_xtra(msg_header_t const *h, isize_t offset)
 char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
 			     char *b, isize_t xtra)
 {
-  /** @relates msg_accept_any_s */
+  /** @relatesalso msg_accept_any_s */
   msg_accept_any_t *aa = (msg_accept_any_t *)dst;
   msg_accept_any_t const *o = (msg_accept_any_t *)src;
   char *end = b + xtra;

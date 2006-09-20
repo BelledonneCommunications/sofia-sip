@@ -66,6 +66,9 @@ enum {
   msg_n_fragments = 8
 };
 
+/** I/O vector type. 
+ * @sa msg_recv_iovec(), msg_iovec(), #su_iovec_s, su_vsend(), su_vrecv(). 
+ */
 typedef struct su_iovec_s msg_iovec_t;
 #define mv_base siv_base
 #define mv_len  siv_len
@@ -73,8 +76,8 @@ typedef struct su_iovec_s msg_iovec_t;
 SOFIAPUBFUN isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen);
 
 SOFIAPUBFUN issize_t msg_recv_iovec(msg_t *msg,
-			       msg_iovec_t vec[], isize_t veclen, usize_t n,
-			       int exact);
+				    msg_iovec_t vec[], isize_t veclen, usize_t n,
+				    int exact);
 SOFIAPUBFUN isize_t msg_recv_commit(msg_t *msg, usize_t n, int eos);
 
 SOFIAPUBFUN issize_t msg_recv_buffer(msg_t *msg, void **return_buffer);

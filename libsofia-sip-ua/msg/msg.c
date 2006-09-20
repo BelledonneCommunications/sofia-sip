@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE msg.c Message object implementation.
+/**@file msg.c Message object implementation.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -51,7 +51,7 @@
 /**
  * Create a message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * @param mc    message class
  * @param flags message control flags
@@ -88,7 +88,7 @@ msg_t *msg_create(msg_mclass_t const *mc, int flags)
 
 /**Increment a message reference count.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Creates a reference to a message.  The
  * referenced message is not freed until all the references have been
@@ -111,7 +111,7 @@ msg_t *msg_ref_create(msg_t *msg)
 
 /**Set a message parent.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Set a parent for a message. The parent message is not destroyed until all
  * its kids have been destroyed - each kid keeps a reference to its parent
@@ -134,7 +134,7 @@ void msg_set_parent(msg_t *kid, msg_t *dad)
 
 /** Destroy a reference to a message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * @param ref pointer to msg object
  * 
@@ -147,7 +147,7 @@ void msg_ref_destroy(msg_t *ref)
 
 /**Deinitialize and free a message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * @param msg  message to be destroyed
  */
@@ -190,7 +190,7 @@ msg_pub_t *msg_object(msg_t const *msg)
 
 /**Retrieve public message structure of given type.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Get a pointer to the public message structure of the
  * given protocol.
@@ -212,7 +212,7 @@ msg_pub_t *msg_public(msg_t const *msg, void *tag)
 
 /**Retrieve message class.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Get a pointer to the message class object
  * (factory object for the message).
@@ -234,7 +234,7 @@ msg_mclass_t const *msg_mclass(msg_t const *msg)
 
 /** Zero the message address.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Zero the address and addressinfo structures associated with the message.
  *
@@ -251,7 +251,7 @@ void msg_addr_zero(msg_t *msg)
 
 /** Get pointer to socket address structure. 
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * @deprecated Use msg_get_address() or msg_set_address() instead.
  */
@@ -262,7 +262,7 @@ su_sockaddr_t *msg_addr(msg_t *msg)
 
 /** Get message address.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Copy the socket address associated with the message to the supplied
  * socket address struture.
@@ -289,7 +289,7 @@ int msg_get_address(msg_t *msg, su_sockaddr_t *su, socklen_t *return_len)
 
 /** Set message address. 
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Copy the supplied socket address to the socket address structure
  * associated with the message.
@@ -314,7 +314,7 @@ int msg_set_address(msg_t *msg, su_sockaddr_t const *su, socklen_t sulen)
 
 /** Get addrinfo structure.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Get pointer to the addrinfo structure associated with the message.
  *
@@ -332,7 +332,7 @@ su_addrinfo_t *msg_addrinfo(msg_t *msg)
 
 /**Copy message address.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * Copy the addrinfo and socket address structures from @a src to the @a dst
  * message object.
@@ -357,7 +357,7 @@ void msg_addr_copy(msg_t *dst, msg_t const *src)
 
 /** Get error classification flags.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * If the message parser fails to parse certain headers in the message, it
  * sets the corresponding extract error flags. The flags corresponding to
@@ -384,7 +384,7 @@ unsigned msg_extract_errors(msg_t const *msg)
 
 /** Get error number associated with message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * @param msg pointer to msg object
  *
@@ -396,7 +396,7 @@ int msg_errno(msg_t const *msg)
 
 /** Set error number associated with message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * @param msg pointer to msg object
  * @param err error value (as defined in <sofia-sip/su_errno.h>).

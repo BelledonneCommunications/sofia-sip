@@ -308,31 +308,33 @@ void *msg_buf_move(msg_t *dst, msg_t const *src)
   return retval;
 }
 
-/** Obtain iovec for receiving the data.
+/**Obtain I/O vector for receiving the data.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
- * The function msg_recv_iovec() allocates buffers for receiving @a n bytes
- * of data available from network. It returns the buffers in the I/O vector
+ * Allocate buffers for receiving @a n bytes
+ * of data available from network. Function returns the buffers in the I/O vector
  * @a vec. The @a vec is allocated by the caller, the available length is
  * given as @a veclen. If the protocol is message-oriented like UDP or SCTP
  * and the available data ends at message boundary, the caller should set
  * the @a exact as 1. Otherwise some extra buffer (known as @em slack) is
  * allocated).
  *
- * Currently, the msg_recv_iovec() allocates buffers in at most two blocks,
- * so the caller should allocate at least two elements for the I/O vector @a
- * vec.
+ * Currently, the msg_recv_iovec() allocates receive buffers in at most two
+ * blocks, so the caller should allocate at least two elements for the I/O
+ * vector @a vec.
  *
  * @param[in]  msg     message object 
  * @param[out] vec     I/O vector 
  * @param[in]  veclen  available length of @a vec 
- * @param[in]  n       number of available bytes 
+ * @param[in]  n       number of possibly available bytes 
  * @param[in]  exact   true if data ends at message boundary 
  *
  * @return
- * The function msg_recv_iovec() returns the length of I/O vector to
+ * The length of I/O vector to
  * receive data, 0 if there are not enough buffers, or -1 upon an error.
+ *
+ * @sa msg_iovec(), su_vrecv()
  */
 issize_t msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen,
 			usize_t n, int exact)
@@ -461,7 +463,10 @@ issize_t msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen,
 }
 
 
-/** Obtain a buffer for receiving data */
+/** Obtain a buffer for receiving data.
+ *
+ * @relatesalso msg_s
+ */
 issize_t msg_recv_buffer(msg_t *msg, void **return_buffer)
 {
   void *buffer;
@@ -502,7 +507,7 @@ issize_t msg_recv_buffer(msg_t *msg, void **return_buffer)
 
 /**Commit @a n bytes of buffers.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * The function msg_recv_commit() is called after @a n bytes of data has
  * been received to the message buffers and the parser can extract the
@@ -548,7 +553,7 @@ isize_t msg_recv_commit(msg_t *msg, usize_t n, int eos)
 
 /**Get a next message of the stream.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * When parsing a transport stream, only the first message in the stream is
  * created with msg_create(). The rest of the messages should be created
@@ -579,7 +584,10 @@ msg_t *msg_next(msg_t *msg)
   return NULL;
 }
 
-/** Set next message of the stream */
+/** Set next message of the stream.
+ *
+ * @relatesalso msg_s
+ */
 int msg_set_next(msg_t *msg, msg_t *next)
 {
   if (!msg || (next && next->m_next))
@@ -593,7 +601,10 @@ int msg_set_next(msg_t *msg, msg_t *next)
   return 0;
 }
 
-/** Clear committed data */
+/** Clear committed data.
+ *
+ * @relatesalso msg_s
+ */
 void msg_clear_committed(msg_t *msg)
 {
   if (msg) {
@@ -633,7 +644,7 @@ struct sigcomp_udvm *msg_get_udvm(msg_t *msg)
 
 /** Mark message as complete.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  */
 inline
 unsigned msg_mark_as_complete(msg_t *msg, unsigned mask)
@@ -649,7 +660,7 @@ unsigned msg_mark_as_complete(msg_t *msg, unsigned mask)
 
 /** Return true if message is complete.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  */
 int msg_is_complete(msg_t const *msg)
 {
@@ -658,7 +669,7 @@ int msg_is_complete(msg_t const *msg)
 
 /** Return true if message has parsing errors.
  *
- * @relates msg_s
+ * @relatesalso msg_s
 */
 int msg_has_error(msg_t const *msg)
 {
@@ -667,7 +678,7 @@ int msg_has_error(msg_t const *msg)
 
 /**Total size of message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  */
 usize_t msg_size(msg_t const *msg)
 {
@@ -676,7 +687,7 @@ usize_t msg_size(msg_t const *msg)
 
 /** Set the maximum size of a message.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * The function msg_maxsize() sets the maximum buffer size of a message. It
  * returns the previous maximum size. If the @a maxsize is 0, maximum size
@@ -700,7 +711,7 @@ usize_t msg_maxsize(msg_t *msg, usize_t maxsize)
 
 /**Set the size of next fragment.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * The function msg_streaming_size() sets the size of the message body for
  * streaming.
@@ -717,7 +728,7 @@ int msg_streaming_size(msg_t *msg, usize_t ssize)
 
 /**Allocate a list of external buffers.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * The function msg_buf_external() allocates at most msg_n_fragments
  * external buffers for the message body.
@@ -815,7 +826,7 @@ static inline issize_t
 extract_trailers(msg_t *msg, msg_pub_t *mo,
 		 char *b, isize_t bsiz, int eos, int copy);
 
-/** Calculate length of line ending (0, 1 or 2) */
+/** Calculate length of line ending (0, 1 or 2). @internal */
 #define CRLF_TEST(b) ((b)[0] == '\r' ? ((b)[1] == '\n') + 1 : (b)[0] =='\n')
 
 static inline void
@@ -824,7 +835,7 @@ append_parsed(msg_t *msg, msg_pub_t *mo, msg_header_t **hh, msg_header_t *h,
 
 /**Extract and parse a message from internal buffer.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * This function parses the internal buffer and adds the parsed fragments to
  * the message object. It marks the successfully parsed data as extracted.
@@ -1449,7 +1460,7 @@ static size_t msg_header_prepare(msg_mclass_t const *, int flags,
 
 /**Encode all message fragments.
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * The function msg_prepare() prepares a message for sending. It encodes all
  * serialized fragments in the message. You have to call msg_serialize()
@@ -1727,7 +1738,7 @@ static inline msg_header_t **msg_chain_tail(msg_t const *msg)
  * The msg_serialize() collects the headers and other message components in
  * the fragment chain. It should be called before msg_prepare().
  *
- * @relates msg_s
+ * @relatesalso msg_s
  *
  * @param msg pointer to message object
  * @param pub public message structure
@@ -1879,21 +1890,25 @@ msg_header_t **serialize_one(msg_t *msg, msg_header_t *h, msg_header_t **prev)
 
 /**Fill an I/O vector with message contents.
  *
- * The function msg_iovec() calculates number of entries in the I/O vector
+ * @relatesalso msg_s
+ *
+ * Calculate number of entries in the I/O vector
  * required to send a message @a msg. It also fills in the I/O vector array,
  * if it is provided by the caller and it is large enough.
  *
- * @param msg
- * @param vec
- * @param veclen
+ * @param msg   pointer to message object
+ * @param vec   I/O vector (may be NULL)
+ * @param veclen length of I/O vector in @a vec
  *
  * @return
- * The function msg_iovec() returns the number of entries in I/O
+ * Number of entries of I/O
  * vector required by @a msg, or 0 upon an error.
  *
  * @note The caller should check that the I/O vector @a vec has enough
  * entries. If the @a vec is too short, it should allocate big enough
  * vector and re-invoke msg_iovec().
+ *
+ * @sa msg_recv_iovec(), su_vsend()
  */
 isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen)
 {

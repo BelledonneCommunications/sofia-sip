@@ -313,7 +313,7 @@ msg_hclass_t msg_separator_class[] =
 MSG_HEADER_CLASS(msg_, separator, NULL, "", sep_common, single,
 		 msg_default, msg_generic);
 
-/** Calculate length of line ending (0, 1 or 2) */
+/** Calculate length of line ending (0, 1 or 2). @internal */
 #define CRLF_TEST(s) ((s[0]) == '\r' ? ((s[1]) == '\n') + 1 : (s[0])=='\n')
 
 /** Parse a separator line. */
