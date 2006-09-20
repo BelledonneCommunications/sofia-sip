@@ -1940,7 +1940,7 @@ isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen)
       /* extend old entry */
       len = h->sh_len;
       if (vec)
-	vec[n-1].mv_len += len;
+	vec[n-1].mv_len += (u_long)len;
       p += len;
     }
 
