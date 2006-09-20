@@ -19,6 +19,7 @@
  *
  * - su_types.h - integral types
  * - su.h - @ref su_socket 
+ *   - su_localinfo.h - get list of local IP addresses
  * - su_wait.h - @ref su_wait 
  * - su_time.h - @ref su_time
  * - su_alloc.h - @ref su_alloc

@@ -152,9 +152,10 @@ TPORT_DLL extern tag_typedef_t tptag_idle_ref;
 #define TPTAG_IDLE_REF(x) tptag_idle_ref, tag_uint_vr(&(x))
 
 TPORT_DLL extern tag_typedef_t tptag_timeout;
-/**Keeps incoming message on idle connection (value in milliseconds).
+/**Timeout for incomplete incoming message  (value in milliseconds).
  *
- * if UINT_MAX, leave them there (default value for now).
+ * If UINT_MAX, leave the incomplete messages there for ever.
+ * Default value for now is UINT_MAX.
  */
 #define TPTAG_TIMEOUT(x) tptag_timeout, tag_uint_v((x))
 

@@ -45,7 +45,9 @@ typedef struct su_localinfo_s su_localinfo_t;
 
 /** Local address info structure. */
 struct su_localinfo_s {
-  /** Flags: LI_V4MAPPED, LI_CANONNAME, LI_NAMEREQD, LI_NUMERIC, LI_IFNAME */
+  /**Bitwise or of flags: 
+   * #LI_V4MAPPED, #LI_CANONNAME, #LI_NAMEREQD, 
+   * #LI_NUMERIC, #LI_DOWN, #LI_IFNAME */
   int li_flags;
   int li_family;		/**< Address family. */
   int li_index;			/**< Network interface index. */
@@ -57,7 +59,7 @@ struct su_localinfo_s {
   char *li_ifname;		/**< Network interface name. */
 };
 
-/** Localinfo flags - li_flags */
+/** Flags for su_getlocalinfo() - li_flags */
 enum {
   /** IPv4 addresses will be mapped as IPv6 */
   LI_V4MAPPED     = 1,
@@ -67,7 +69,7 @@ enum {
   LI_NAMEREQD     = 6,
   /** Instead of domain name, use numeric form */
   LI_NUMERIC      = 8,
-  /** Interfaces are down. New in 1.12.2. */
+  /** Include interfaces even if they are down (new in @VERSION_1_12_2). */
   LI_DOWN         = 16,
   /** Get interface name */
   LI_IFNAME       = 256
@@ -81,7 +83,7 @@ enum {
   LI_SCOPE_GLOBAL = 0x80	/**< Global address. */
 };
 
-/** Localinfo error codes */
+/** Localinfo error codes. */
 enum {
   ELI_NOADDRESS  = -1,		/**< No matching address. */
   ELI_MEMORY     = -2,		/**< Memory allocation error. */

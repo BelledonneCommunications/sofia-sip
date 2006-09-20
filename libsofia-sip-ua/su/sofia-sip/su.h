@@ -207,29 +207,58 @@ union su_sockaddr_u {
 typedef union su_sockaddr_u su_sockaddr_t;
 
 #if SU_HAVE_BSDSOCK || DOCUMENTATION_ONLY
-/** IO vector for su_vsend() and su_vrecv(). 
- * @note Ordering of the fields is reversed on Windows.
+/** I/O vector for scatter-gather I/O.
+ *
+ * This is the I/O vector element used with su_vsend() and su_vrecv(). It is
+ * defined like struct iovec with POSIX sockets, and as 
+ * <a href="http://msdn.microsoft.com/library/en-us/winsock/winsock/wsabuf_2.asp">
+ * WSABUF</a> with WINSOCK sockets. For historical reasons, it is known as #msg_iovec_t 
+ * in @msg module.
+ *
+ * @note Ordering of the fields is reversed on Windows. Do not initialize this
+ * structure with static initializer, but assign both fields separately.
+ *
+ * @sa #su_iovec_t, #su_ioveclen_t, SU_IOVECLEN_MAX, su_vsend(), su_vrecv(), 
+ * #msg_iovec_t, msg_iovec(), msg_recv_iovec(), 
+ * @c struct @c iovec defined in <sys/uio.h>, writev(2), readv(2),
+ * <a href="http://msdn.microsoft.com/library/en-us/winsock/winsock/wsabuf_2.asp">
+ * WSABUF of WinSock2</a>
  */
-struct su_iovec_s {
+typedef struct su_iovec_s {
   void  *siv_base;		/**< Pointer to buffer. */
   size_t siv_len;		/**< Size of buffer.  */
-};
+} su_iovec_t;
+
+/**Type of @a siv_len field in #su_iovec_t.
+ *
+ * The @a siv_len field in #su_iovec_t has different types in with POSIX and
+ * WINSOCK2. Please truncate the iovec element size to #SU_IOVECLEN_MAX, if
+ * needed, and cast using #su_ioveclen_t.
+ *
+ * @sa #su_iovec_t, #SU_IOVECLEN_MAX
+ *
+ * @since New in @VERSION_1_12_2.
+ */
 typedef size_t su_ioveclen_t;
+
+/** Maximum size of buffer in a single su_iovec_t element. 
+ * @sa #su_ioveclen_t, #su_iovec_t
+ *
+ * @since New in @VERSION_1_12_2.
+ * @HIDE
+ */
 #define SU_IOVECLEN_MAX SIZE_MAX
 #endif
 
 #if SU_HAVE_WINSOCK
 /* This is same as WSABUF */
-struct su_iovec_s {
+typedef struct su_iovec_s {
   u_long  siv_len;
   void   *siv_base;
-};
+} su_iovec_s;
 typedef u_long su_ioveclen_t;
 #define SU_IOVECLEN_MAX ULONG_MAX
 #endif
-
-/** I/O vector for scatter-gather I/O. */
-typedef struct su_iovec_s   su_iovec_t;
 
 /* ---------------------------------------------------------------------- */
 /* Socket compatibility functions */
@@ -247,7 +276,9 @@ SOFIAPUBFUN int su_ioctl(su_socket_t s, int request, ...);
 /** Checks if the @a errcode indicates that the socket call failed because
  * it would have blocked.
  *
- * New in @VERSION_1_12_2. Defined as macro with POSIX sockets.
+ * Defined as macro with POSIX sockets.
+ *
+ * @since New in @VERSION_1_12_2.
  */
 SOFIAPUBFUN int su_is_blocking(int errcode);
 

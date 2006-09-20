@@ -5,7 +5,7 @@
 @section msg_meta Module Meta Information
 
 This module contains parser and functions for manipulating messages and
-headers for text-based protocols like SIP, HTTP and RTSP. It also
+headers for text-based protocols like SIP, HTTP or RTSP. It also
 provides parsing of MIME headers and MIME multipart messages common to
 these protocols.
 
@@ -271,8 +271,8 @@ elements and headers.
 @section msg_parsing_example Result of Parsing Process
 
 Let us now show how a simple message is parsed and presented to the
-applications. As an exampe, we choose a BYE message with only the
-mandatory fields included:
+applications. As an exampe, we choose a SIP request message with method BYE,
+including only the mandatory fields:
 @code
 BYE sip:joe@example.com SIP/2.0
 Via: SIP/2.0/UDP sip.example.edu;branch=d7f2e89c.74a72681

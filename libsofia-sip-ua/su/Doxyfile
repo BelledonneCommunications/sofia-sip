@@ -5,6 +5,9 @@ INPUT 		     = su.docs sofia-sip .
 
 @INCLUDE = ../docs/Doxyfile.conf
 
+TAGFILES           += ../docs/msg.doxytags=../msg
+TAGFILES           += ../docs/sip.doxytags=../sip
+
 GENERATE_TAGFILE     = ../docs/su.doxytags
 
 ALIASES +=  "SU_TAG=@ingroup su_tag\n"

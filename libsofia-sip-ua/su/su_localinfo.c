@@ -94,15 +94,15 @@ static int li_scope4(uint32_t ip4);
 
 /** @brief Request local address information.
  *
- * The function su_getlocalinfo() gathers the network interfaces and the
- * addresses corresponding to them, checks if they match to the search
- * criteria specifed by @a hints and returns a list of matching local
- * address information in the @a res. The local address information may
- * include IPv4/IPv6 addresses, interface name, interface index, address
- * scope, and domain names corresponding to the local addresses.
+ * Gather the network interfaces and the addresses corresponding to them,
+ * check if they match to the search criteria specifed by @a hints and
+ * return a list of matching local address information in the @a
+ * return_localinfo. The local address information may include IPv4/IPv6
+ * addresses, interface name, interface index, address scope, and domain
+ * names corresponding to the local addresses.
  *
- * @param hints specifies selection criteria
- * @param return_localinfo   return list of local addresses
+ * @param[in] hints specifies selection criteria
+ * @param[out] return_localinfo   return list of local addresses
  *
  * @par Selection criteria - hints
  *
@@ -114,15 +114,17 @@ static int li_scope4(uint32_t ip4);
  * The @a hints->li_flags contain flags, which can be combined with bit-wise
  * or.  The currently defined flags are as follows:
  *
- * - @c LI_V4MAPPED: when returning IPv4 addresses, map them as IPv6
+ * - #LI_V4MAPPED: when returning IPv4 addresses, map them as IPv6
  *   addresses.  If this flag is specified, IPv4 addresses are returned even
  *   if @a hints->li_family is set to @c AF_INET6.
- * - @c LI_CANONNAME: return the domain name (DNS PTR) corresponding to the 
+ * - #LI_CANONNAME: return the domain name (DNS PTR) corresponding to the 
  *   local address in @a li_canonname.
- * - @c LI_NAMEREQD: Do not return addresses not in DNS. 
- * - @c LI_NUMERIC: instead of domain name, return the text presentation of
+ * - #LI_NAMEREQD: Do not return addresses not in DNS. 
+ * - #LI_NUMERIC: instead of domain name, return the text presentation of
  *   the addresss in @a li_canonname.
- * - @c LI_IFNAME: return the interface name in @a li_ifname.
+ * - #LI_DOWN: include interfaces and their addresses even if the interfaces
+ *   are down. New in @VERSION_1_12_2.
+ * - #LI_IFNAME: return the interface name in @a li_ifname.
  *
  * @par Selection by address family - hints->li_family
  *
@@ -145,27 +147,35 @@ static int li_scope4(uint32_t ip4);
  * @par Selection by address scope - hints->li_scope
  *
  * If the field @a hints->li_scope is nonzero, only the addresses with
- * matching scope are returned.  The address scopes can be combined with
- * bitwise or. For instance, setting @a hints->li_scope to @c
- * LI_SCOPE_GLOBAL | @c LI_SCOPE_SITE, both the @e global and @e site-local
- * addresses are returned.
+ * matching scope are returned. The different address scopes can be combined
+ * with bitwise or. They are defined as follows
+ * - #LI_SCOPE_HOST: host-local address, valid within host (::1, 127.0.0.1/8)
+ * - #LI_SCOPE_LINK: link-local address, valid within link 
+ *   (IP6 addresses with prefix fe80::/10, 
+ *    IP4 addresses in net 169.254.0.0/16).
+ * - #LI_SCOPE_SITE: site-local address, addresses valid within organization
+ *   (IPv6 addresses with prefix  fec::/10,
+ *    private IPv4 addresses in nets 10.0.0.0/8, 172.16.0.0/12, 
+ *    and 192.168.0.0/16 as defined in @RFC1918)
+ * - #LI_SCOPE_GLOBAL: global address.
  *
- * @par 
- * For IPv4, the loopback addresses (addresses in the net 127) are currently
- * considered @e host-local, other addresses are @e global.
+ * For instance, setting @a hints->li_scope to @c LI_SCOPE_GLOBAL | @c
+ * LI_SCOPE_SITE, both the @e global and @e site-local addresses are
+ * returned.
+ *
+ * @sa @RFC1918, @RFC4291, su_sockaddr_scope()
  *
  * @par Selection by domain name - hints->li_canonname
  *
  * If this field is non-null, the domain name (DNS PTR) corresponding to
  * local IP addresses should match to the name given in this field.
  *
- * @return 
- * The function su_getlocalinfo() returns zero when successful, or
- * negative error code when failed.
+ * @return Zero (#ELI_NOERROR) when successful, or negative error code when
+ * failed.
  * 
- * @par diagnostics
- * The function su_gli_strerror() returns a string describing the error code
- * returned by su_getlocalinfo().
+ * @par Diagnostics
+ * Use su_gli_strerror() in order to obtain a string describing the error
+ * code returned by su_getlocalinfo().
  *
  */
 int su_getlocalinfo(su_localinfo_t const *hints, 
@@ -243,7 +253,14 @@ int su_getlocalinfo(su_localinfo_t const *hints,
   return error;
 }
 
-/** Free local address information. */
+/** Free local address information. 
+ *
+ * Free a list of su_localinfo_t structures obtained with su_getlocalinfo()
+ * or su_copylocalinfo() along with socket addresses and strings associated
+ * with them.
+ *
+ * @sa su_getlocalinfo(), su_copylocalinfo(), #su_localinfo_t
+ */
 void su_freelocalinfo(su_localinfo_t *tbf)
 {
   su_localinfo_t *li;
@@ -1502,7 +1519,7 @@ void li_sort(su_localinfo_t *i, su_localinfo_t **rresult)
 /**Get local IP address.
  *
  * @deprecated
- * Use su_localinfo() instead.
+ * Use su_getlocalinfo() instead.
  */
 int su_getlocalip(su_sockaddr_t *sa)
 {

@@ -106,6 +106,18 @@ tagi_t *urltag_dup(tagi_t *dst, tagi_t const *src, void **bb)
        : (u < 96 ? (0x0000001e & (1 << (95 - u)))		\
 	  : /*u < 128*/ (0x8000001d & (1 << (127 - u))))))
 
+/** Tag function used to convert a string to a URL tag value.
+ *
+ * @param tt tag type
+ * @param home memory home used to allocate new #url_t structure
+ * @param str string to convert 
+ * @param return_value return-value parameter for converted url
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ *
+ * @since New in @VERSION_1_12_2.
+ */
 int urltag_scan(tag_type_t tt, su_home_t *home,
 		char const *str,
 		tag_value_t *return_value)

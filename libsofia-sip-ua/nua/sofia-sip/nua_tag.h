@@ -306,7 +306,9 @@ SOFIAPUBVAR tag_typedef_t nutag_only183_100rel_ref;
  *
  * @sa NUTAG_EARLY_MEDIA_REF()
  *
- * Corresponding tag taking reference parameter is NUTAG_EARLY_ANSWER_REF()
+ * Corresponding tag taking reference parameter is NUTAG_EARLY_ANSWER_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_EARLY_ANSWER(x)    nutag_early_answer, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_early_answer;
@@ -497,11 +499,11 @@ SOFIAPUBVAR tag_typedef_t nutag_autoack_ref;
  *    @c 0    No automatic sending of "200 Ok" \n
  *    @c !=0 "200 Ok" sent automatically
  *
- * @par Auto-Answer to Re-INVITE requests By default, NUA tries to auto
- * answer the re-INVITEs used to refresh the session when the media is
- * enabled. Set NUTAG_AUTOANSWER(0) on the call handle (e.g., include the
- * tag with nua_invite(), nua_respond()) in order to disable the auto answer
- * on re-INVITEs.
+ * @par Auto-Answer to Re-INVITE requests
+ * By default, NUA tries to auto answer the re-INVITEs used to refresh the
+ * session when the media is enabled. Set NUTAG_AUTOANSWER(0) on the call
+ * handle (e.g., include the tag with nua_invite(), nua_respond()) in order
+ * to disable the auto answer on re-INVITEs.
  *
  * @sa NUTAG_MEDIA_ENABLE(), NUTAG_AUTOALERT(), NUTAG_AUTOACK().
  * 
@@ -1117,7 +1119,9 @@ SOFIAPUBVAR tag_typedef_t nutag_authtime_ref;
  * @sa NUTAG_M_USERNAME(), NUTAG_M_PARAMS(), NUTAG_M_FEATURES(),
  * NUTAG_CALLEE_CAPS().
  *
- * Corresponding tag taking reference parameter is NUTAG_M_DISPLAY_REF()
+ * Corresponding tag taking reference parameter is NUTAG_M_DISPLAY_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_M_DISPLAY(x)   nutag_m_display, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_m_display;
@@ -1146,7 +1150,9 @@ SOFIAPUBVAR tag_typedef_t nutag_m_display_ref;
  * @sa NUTAG_M_DISPLAY(), NUTAG_M_PARAMS(), NUTAG_M_FEATURES(),
  * NUTAG_CALLEE_CAPS().
  *
- * Corresponding tag taking reference parameter is NUTAG_M_USERNAME_REF()
+ * Corresponding tag taking reference parameter is NUTAG_M_USERNAME_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_M_USERNAME(x)   nutag_m_username, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_m_username;
@@ -1175,7 +1181,9 @@ SOFIAPUBVAR tag_typedef_t nutag_m_username_ref;
  * @sa NUTAG_M_DISPLAY(), NUTAG_M_USERNAME(), NUTAG_M_FEATURES(),
  * NUTAG_CALLEE_CAPS().
  *
- * Corresponding tag taking reference parameter is NUTAG_M_PARAMS_REF()
+ * Corresponding tag taking reference parameter is NUTAG_M_PARAMS_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_M_PARAMS(x)   nutag_m_params, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_m_params;
@@ -1209,7 +1217,9 @@ SOFIAPUBVAR tag_typedef_t nutag_m_params_ref;
  * @sa NUTAG_M_DISPLAY(), NUTAG_M_USERNAME(), NUTAG_M_PARAMS(),
  * NUTAG_CALLEE_CAPS(), NUTAG_IDENTITY().
  *
- * Corresponding tag taking reference parameter is NUTAG_M_FEATURES_REF()
+ * Corresponding tag taking reference parameter is NUTAG_M_FEATURES_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_M_FEATURES(x)   nutag_m_features, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_m_features;
@@ -1563,10 +1573,11 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_expires_ref;
 
 /**Always use id parameter with refer event.
  *
- * When REFER creates an implicit subscription, the event header identifying
- * the subscription may have an id parameter. The id parameter can be either
- * always included (default behavior), or the parameter can be used only for
- * the second and subsequent REFER requests received in a given dialog.
+ * When an incoming REFER creates an implicit subscription, the event header
+ * in the NOTIFY request may have an id parameter. The id parameter can be
+ * either always included (default behavior), or the parameter can be used
+ * only for the second and subsequent REFER requests received in a given
+ * dialog.
  *
  * Note that once the subscription is created, the event header should not
  * be modified. Therefore this tag has no effect on already established
@@ -1583,7 +1594,9 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_expires_ref;
  *   0 (false, do not use id with subscription created with first REFER request) \n
  *   1 (true, use id with all subscriptions created with REFER request) \n
  *
- * Corresponding tag taking reference parameter is NUTAG_REFER_WITH_ID_REF()
+ * Corresponding tag taking reference parameter is NUTAG_REFER_WITH_ID_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_REFER_WITH_ID(x)   nutag_refer_with_id, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_refer_with_id;
@@ -1746,7 +1759,10 @@ SOFIAPUBVAR tag_typedef_t nutag_answer_sent_ref;
  * @par Parameter type
  *    int
  *
- * Corresponding tag taking reference parameter is NUTAG_DETECT_NETWORK_UPDATES_REF()
+ * Corresponding tag taking reference parameter is
+ * NUTAG_DETECT_NETWORK_UPDATES_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_DETECT_NETWORK_UPDATES(x) \
           nutag_detect_network_updates, tag_uint_v(x)

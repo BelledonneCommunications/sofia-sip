@@ -3592,7 +3592,10 @@ int nta_leg_get_route(nta_leg_t *leg,
   return 0;
 }
 
-/** Generate @Replaces header. */
+/** Generate @Replaces header.
+ *
+ * @since New in @VERSION_1_12_2.
+ */
 SOFIAPUBFUN
 sip_replaces_t *nta_leg_make_replaces(nta_leg_t *leg,
 				      su_home_t *home,
@@ -3613,7 +3616,10 @@ sip_replaces_t *nta_leg_make_replaces(nta_leg_t *leg,
 			     early_only ? ";early-only" : "");
 }
 
-/** Get dialog leg by @Replaces header. */
+/** Get dialog leg by @Replaces header.
+ *
+ * @since New in @VERSION_1_12_2.
+ */
 SOFIAPUBFUN
 nta_leg_t *nta_leg_by_replaces(nta_agent_t *sa, sip_replaces_t const *rp)
 {
@@ -10001,6 +10007,7 @@ int nta_tport_keepalive(nta_outgoing_t *orq)
 			 TAG_END());
 }
 
+/** Close all transports. @since Experimental in @VERSION_1_12_2. */
 int nta_agent_close_tports(nta_agent_t *agent)
 {
   int i;

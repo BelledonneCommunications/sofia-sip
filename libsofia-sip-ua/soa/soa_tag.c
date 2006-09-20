@@ -296,7 +296,9 @@ tag_typedef_t soatag_rtp_select = UINTTAG_TYPEDEF(rtp_select);
  * By default, there are no auxiliary audio codecs.
  *
  * Corresponding tag taking a reference parameter is
- * SOATAG_AUDIO_AUX_REF()
+ * SOATAG_AUDIO_AUX_REF().
+ *
+ * @since New in @VERSION_1_12_2.
  */
 tag_typedef_t soatag_audio_aux = STRTAG_TYPEDEF(audio_aux);
 

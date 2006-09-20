@@ -169,7 +169,7 @@ int span_ip4_address(char const *host)
   return span_canonic_ip4_address(host, NULL);
 }
 
-/** Scan valid IP4 address */
+/** Scan and canonize a valid IP4 address. */
 int scan_ip4_address(char **inout_host)
 {
   char *src = *inout_host, *dst = src;
@@ -419,7 +419,7 @@ int span_ip6_address(char const *host)
  *
  * @retval Length of valid IP6 address or -1 upon an error.
  *
- * @note Scanned IP6 is not NUL-terminated.
+ * @note Scanned IP6 is not always NUL-terminated.
  */
 int scan_ip6_address(char **inout_host)
 {

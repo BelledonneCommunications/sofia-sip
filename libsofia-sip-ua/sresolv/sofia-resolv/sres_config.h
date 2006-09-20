@@ -59,6 +59,7 @@
 #if defined(_WIN32)
 typedef SOCKET sres_socket_t;
 #else
+/** Socket descriptor. @since New in @VERSION_1_12_2. */
 typedef int sres_socket_t;
 #endif
 

@@ -119,6 +119,8 @@ typedef SOFIA_SSIZE_T ssize_t;
  * When configured for compatibility with sofia-sip 1.12.0, this is defined
  * as int, otherwise as size_t. Note that int is signed and size_t is
  * unsigned.
+ *
+ * @since New in @VERSION_1_12_2.
  */
 typedef SOFIA_ISIZE_T isize_t;
 #else
@@ -131,6 +133,8 @@ typedef size_t isize_t;
  * sofia-sip <= 1.12.1 used int for count of bytes. 
  * When configured for compatibility with sofia-sip 1.12.0, this is defined
  * as int, otherwise as ssize_t. (-1 is used for error indication).
+ *
+ * @since New in @VERSION_1_12_2.
  */
 typedef SOFIA_ISSIZE_T issize_t;
 #else
@@ -143,6 +147,8 @@ typedef ssize_t issize_t;
  * sofia-sip <= 1.12.1 sometimes used unsigned int for count of bytes. 
  * When configured for compatibility with sofia-sip 1.12.0, this is defined
  * as unsigned int, otherwise as size_t.
+ *
+ * @since New in @VERSION_1_12_2.
  */
 typedef SOFIA_USIZE_T usize_t;
 #else

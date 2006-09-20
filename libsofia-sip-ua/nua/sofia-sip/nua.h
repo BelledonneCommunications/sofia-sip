@@ -68,12 +68,17 @@ typedef NUA_MAGIC_T nua_magic_t;
 /** Application context for NUA handle. */
 typedef NUA_HMAGIC_T nua_hmagic_t;
 
-typedef enum nua_nw_detector_e{
+/**Network change event levels given to NUTAG_DETECT_NETWORK_UPDATES().
+ *
+ * @sa NUTAG_DETECT_NETWORK_UPDATES(), #nua_i_network_changed
+ *
+ * @since New in @VERSION_1_12_2.
+ */
+typedef enum nua_nw_detector_e {
   NUA_NW_DETECT_NOTHING = 0,
   NUA_NW_DETECT_ONLY_INFO,
   NUA_NW_DETECT_TRY_FULL,
 } nua_nw_detector_t;
-
 
 /** Events */
 typedef enum nua_event_e {
