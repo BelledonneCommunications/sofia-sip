@@ -99,23 +99,32 @@ typedef unsigned _int32 uint32_t;
 #if HAVE_WINSOCK2_H
 /* Posix send() */
 static inline 
-ssize_t sres_send(sres_socket_t s, void *b, size_t len, int flags)
+ssize_t sres_send(sres_socket_t s, void *b, size_t length, int flags)
 {
-  return (ssize_t)send(s, b, (int)len, flags);
+  if (length > INT_MAX)
+    length = INT_MAX;
+  return (ssize_t)send(s, b, (int)length, flags);
 }
 
 /* Posix recvfrom() */
 static inline 
-ssize_t sres_recvfrom(sres_socket_t s, void *b, size_t len, int flags,
+ssize_t sres_recvfrom(sres_socket_t s, void *buffer, size_t length, int flags,
 		      struct sockaddr *from, socklen_t *fromlen)
 {
-  int ilen;
-  int retval;
+  int retval, ilen;
+
   if (fromlen)
     ilen = *fromlen;
-  retval = recvfrom(s, b, (int)len, flags, from, fromlen ? &ilen : NULL);
+
+  if (length > INT_MAX)
+    length = INT_MAX;
+
+  retval = recvfrom(s, buffer, (int)length, flags, 
+		    (void *)from, fromlen ? &ilen : NULL);
+
   if (fromlen)
     *fromlen = ilen;
+
   return (ssize_t)retval;
 }
 
