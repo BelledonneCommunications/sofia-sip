@@ -240,6 +240,10 @@ static void *su_start_nw_os_thread(void *ptr)
 }
 
 
+/** Register a callback for the network change event.
+ *
+ * @since New in @VERSION_1_12_2.
+ */
 su_network_changed_t
 *su_root_add_network_changed(su_home_t *home, su_root_t *root,
 			     su_network_changed_f *network_changed_cb,
@@ -276,7 +280,12 @@ su_network_changed_t
 #endif
 }
 
-int su_root_remove_network_changed(su_root_t *root)
+/** Remove a callback registered for the network change event.
+ *
+ * @since New in @VERSION_1_12_2.
+ */
+int su_root_remove_network_changed(su_root_t *root,
+				   su_network_changed_t *snc)
 {
   return -1;
 }
@@ -291,7 +300,8 @@ su_network_changed_t
   return NULL;
 }
 
-int su_root_remove_network_changed(su_root_t *root)
+int su_root_remove_network_changed(su_root_t *root,
+				   su_network_changed_t *snc)
 {
   return -1;
 }

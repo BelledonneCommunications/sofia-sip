@@ -27,11 +27,14 @@
 #define SU_OS_NW_H
 
 /**@ingroup su_os_nw
- * @file sofia-sip/su_os_nw.h Syncronization and threading interface.
+ * @file sofia-sip/su_os_nw.h Network change events.
  *
+ * @author Martti Mela <Martti.Mela@nokia.com>
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
- * 
- * @date Created: Tue Sep 14 15:51:04 1999 ppessi
+ *
+ * @date Created: Tue Aug 15 09:05:18 EEST 2006  martti.mela@nokia.com
+ *
+ * @since Experimental in @VERSION_1_12_2.
  */
 
 /* ---------------------------------------------------------------------- */
@@ -72,6 +75,8 @@ SOFIA_BEGIN_DECLS
  * #define SU_NETWORK_CHANGED_MAGIC_T struct context
  * #include <su_os_nw.h>
  * @endcode
+ *
+ * @since New in @VERSION_1_12_2.
  */
 #define SU_NETWORK_CHANGED_MAGIC_T void
 #endif
@@ -85,14 +90,17 @@ SOFIA_BEGIN_DECLS
  * #define SU_NETWORK_CHANGED_MAGIC_T struct context
  * #include <su_os_nw.h>
  * @endcode
+ *
+ * @since New in @VERSION_1_12_2.
  */
 typedef SU_NETWORK_CHANGED_MAGIC_T su_network_changed_magic_t;
 
 typedef struct su_network_changed_s su_network_changed_t;
 
-/** network-changed callback function prototype. 
+/** Function prototype for network-changed callback . 
  *
  * 
+ * @since New in @VERSION_1_12_2.
  */
 typedef void (su_network_changed_f)(su_network_changed_magic_t *, su_root_t *);
 
@@ -106,7 +114,8 @@ su_root_add_network_changed(su_home_t *home,
 			    su_root_t *root, 
 			    su_network_changed_f *, 
 			    su_network_changed_magic_t *);
-SOFIAPUBFUN int su_root_remove_network_changed(su_root_t *root);
+SOFIAPUBFUN int su_root_remove_network_changed(su_root_t *root,
+					       su_network_changed_t *);
 
 SOFIA_END_DECLS
 
