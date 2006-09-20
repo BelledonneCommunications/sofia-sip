@@ -109,7 +109,7 @@ int test_manipulation(void)
   TEST_1(msg_prepare(msg) > 0);
 
   msg_destroy(msg);
-  msg_destroy(msg);
+  msg_destroy(msg0);
 
   END();
 }
