@@ -255,7 +255,7 @@ typedef size_t su_ioveclen_t;
 typedef struct su_iovec_s {
   u_long  siv_len;
   void   *siv_base;
-} su_iovec_s;
+} su_iovec_t;
 typedef u_long su_ioveclen_t;
 #define SU_IOVECLEN_MAX ULONG_MAX
 #endif
