@@ -236,7 +236,7 @@ ssize_t su_recv(su_socket_t s, void *buffer, size_t length, int flags)
 }
 
 ssize_t su_recvfrom(su_socket_t s, void *buffer, size_t length, int flags,
-		    struct sockaddr *from, socklen_t *fromlen)
+		    su_sockaddr_t *from, socklen_t *fromlen)
 {
   int retval, ilen;
 
@@ -247,7 +247,7 @@ ssize_t su_recvfrom(su_socket_t s, void *buffer, size_t length, int flags,
     length = INT_MAX;
 
   retval = recvfrom(s, buffer, (int)length, flags, 
-		    from, fromlen ? &ilen : NULL);
+		    (void *)from, fromlen ? &ilen : NULL);
 
   if (fromlen)
     *fromlen = ilen;

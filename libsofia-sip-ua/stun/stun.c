@@ -1720,7 +1720,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   /* receive response */
   recv_len = sizeof(recv);
-  dgram_len = su_recvfrom(s, dgram, sizeof(dgram), 0, (struct sockaddr *)(&recv), &recv_len);
+  dgram_len = su_recvfrom(s, dgram, sizeof(dgram), 0, &recv, &recv_len);
   err = errno;
   if ((dgram_len < 0) && (err != EAGAIN)) {
     /* su_wait_destroy(w); */

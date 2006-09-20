@@ -219,9 +219,9 @@ typedef size_t su_ioveclen_t;
 #endif
 
 #if SU_HAVE_WINSOCK
-/* WSABUF */
+/* This is same as WSABUF */
 struct su_iovec_s {
-  usize_t siv_len;
+  u_long  siv_len;
   void   *siv_base;
 };
 typedef u_long su_ioveclen_t;
@@ -283,7 +283,7 @@ SOFIAPUBFUN ssize_t
 	    su_sockaddr_t const *to, socklen_t tolen),
   su_recv(su_socket_t s, void *buffer, size_t length, int flags),
   su_recvfrom(su_socket_t s, void *buffer, size_t length, int flags,
-	      struct sockaddr *from, socklen_t *fromlen);
+	      su_sockaddr_t *from, socklen_t *fromlen);
 #else
 #define su_send(s,b,l,f) send((s),(b),(l),(f))
 #define su_sendto(s,b,l,f,a,L) sendto((s),(b),(l),(f),(void const*)(a),(L))
