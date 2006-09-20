@@ -140,6 +140,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_md5.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\su_os_nw.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\su_port.c"
 # End Source File
 # Begin Source File
@@ -632,6 +636,10 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_message.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\nua\nua_notifier.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\nua\nua_options.c"
 # End Source File
 # Begin Source File
@@ -673,6 +681,14 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_tag.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\nua\nua_tag_ref.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\outbound.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\nua\outbound.h"
 # End Source File
 # End Group
 # Begin Group "nta"
@@ -865,6 +881,10 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_md5.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\su_module_debug.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_os_nw.h"
 # End Source File
 # Begin Source File
 
@@ -1172,6 +1192,10 @@ SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_cache.h"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_config.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_record.h"
 # End Source File
 # Begin Source File
@@ -1201,6 +1225,14 @@ SOURCE="..\..\libsofia-sip-ua\nea\sofia-sip\nea_tag.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_client.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_client_plugin.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_common.h"
 # End Source File
 # Begin Source File
 

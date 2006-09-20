@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "HAVE_CONFIG_H" /D "_USRDLL" /D "LIBSOFIA_SIP_UA_EXPORTS" /D "HAVE_CONFIG_H" /YX /FD /c
+# ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "HAVE_CONFIG_H" /D "_USRDLL" /D "LIBSOFIA_SIP_UA_EXPORTS" /YX /FD /c
 # ADD CPP /nologo /MD /W3 /GX /O2 /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\..\libsofia-sip-ua\features" /I "..\pthread" /I "." /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBSOFIA_SIP_UA_EXPORTS" /D IN_LIBSOFIA_SIP_UA=1 /D IN_LIBSOFIA_SRES=1 /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -152,6 +152,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_md5.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\su_os_nw.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\su_port.c"
 # End Source File
 # Begin Source File
@@ -205,10 +209,6 @@ SOURCE="..\..\libsofia-sip-ua\su\su_vector.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\su_wait.c"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\su\su_os_nw.c"
 # End Source File
 # End Group
 # Begin Group "ipt"
@@ -648,6 +648,10 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_message.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\nua\nua_notifier.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\nua\nua_options.c"
 # End Source File
 # Begin Source File
@@ -673,10 +677,6 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_session.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\nua\nua_stack.c"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\nua\nua_notifier.c"
 # End Source File
 # Begin Source File
 
@@ -896,6 +896,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_module_debug.h"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_os_nw.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\su_port.h"
 # End Source File
 # Begin Source File
@@ -945,10 +949,6 @@ SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_vector.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_wait.h"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_os_nw.h"
 # End Source File
 # Begin Source File
 
@@ -1204,6 +1204,10 @@ SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_cache.h"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_config.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\sresolv\sofia-resolv\sres_record.h"
 # End Source File
 # Begin Source File
@@ -1233,6 +1237,14 @@ SOURCE="..\..\libsofia-sip-ua\nea\sofia-sip\nea_tag.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_client.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_client_plugin.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\iptsec\sofia-sip\auth_common.h"
 # End Source File
 # Begin Source File
 
