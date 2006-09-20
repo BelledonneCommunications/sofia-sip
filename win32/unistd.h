@@ -26,6 +26,7 @@
 
 #include <io.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 #define write(fd, buf, len) _write((fd), (buf), (len))
 #define read(fd, buf, len)  _read((fd), (buf), (len))

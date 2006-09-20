@@ -65,6 +65,9 @@ typedef unsigned _int32 uint32_t;
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#ifndef IPPROTO_IPV6		/* socklen_t is used with @RFC2133 API */
+typedef int socklen_t;
+#endif
 #endif
 
 #include <time.h>

@@ -37,6 +37,11 @@
 #include <sofia-sip/su_tag_class.h>
 #include <sofia-sip/nea.h>
 
+#if !HAVE_MEMMEM
+void *memmem(const void *haystack, size_t haystacklen,
+	     const void *needle, size_t needlelen);
+#endif
+
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
 #define __func__ __FUNCTION__

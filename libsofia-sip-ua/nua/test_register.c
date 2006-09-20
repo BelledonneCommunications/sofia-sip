@@ -159,7 +159,9 @@ int test_register(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_contact);
-  TEST_S(sip->sip_contact->m_display, "\"A&A\"");
+  { char const *expect_m_display = "\"A&A\"";
+    /* VC does not dig \" with TEST_S() */
+  TEST_S(sip->sip_contact->m_display, expect_m_display); }
   TEST_S(sip->sip_contact->m_url->url_user, "a");
   TEST(sip->sip_cseq->cs_seq, 14);
 

@@ -355,7 +355,8 @@ int test_nua_params(struct context *ctx)
     TEST_S(m_display, "Joe");
     TEST_S(m_username, "joe");
     TEST_S(m_params, "user=phone");
-    TEST_S(m_features, "language=\"en\"");
+    { char const *expect_m_features = "language=\"en\"";
+    TEST_S(m_features, expect_m_features); }
     TEST_S(outbound, "foo");
 
     TEST_S(url_as_string(tmphome, registrar->us_url),
