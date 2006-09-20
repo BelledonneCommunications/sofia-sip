@@ -54,6 +54,10 @@
 #include <sofia-sip/http_header.h>
 #include <sofia-sip/http_status.h>
 
+#ifndef UINT32_MAX
+#define UINT32_MAX (0xffffffffU)
+#endif
+
 /** Complete a HTTP request. */
 int http_request_complete(msg_t *msg)
 {

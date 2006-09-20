@@ -460,12 +460,6 @@
 #endif // VC8+
 #endif
 
-#ifdef WIN32
-#ifndef UINT32_MAX
-#define UINT32_MAX 0xffffffff
-#endif
-#endif
-
 /* size_t/ssize_t modifiers 
  * ref: http://msdn2.microsoft.com/en-us/library/tcxf1dw6.aspx */
 #define MOD_ZD "%ld"

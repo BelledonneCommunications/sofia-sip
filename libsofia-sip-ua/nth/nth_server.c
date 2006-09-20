@@ -69,6 +69,10 @@ typedef struct server_s server_t;
 #endif
 #include <sofia-sip/htable.h>
 
+#ifndef UINT32_MAX
+#define UINT32_MAX (0xffffffffU)
+#endif
+
 enum { SERVER_TICK = 1000 };
 
 #define SERVER_VERSION "nth/" NTH_VERSION

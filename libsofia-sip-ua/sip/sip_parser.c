@@ -49,6 +49,10 @@
 #include <assert.h>
 #include <limits.h>
 
+#ifndef UINT32_MAX
+#define UINT32_MAX (0xffffffffU)
+#endif
+
 /** Version of the SIP module */
 char const sip_parser_version[] = VERSION;
 
