@@ -924,7 +924,7 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 
   if (connect(s, ai->ai_addr, (socklen_t)(ai->ai_addrlen)) == SOCKET_ERROR) {
     err = su_errno();
-    if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK)
+    if (!su_is_blocking(err))
       TPORT_CONNECT_ERROR(err, connect);
     events = SU_WAIT_CONNECT | SU_WAIT_ERR;
     wakeup = tport_connected;
@@ -2618,7 +2618,7 @@ void tport_recv_event(tport_t *self)
     if (again < 0) {
       int error = su_errno();
 
-      if (error != EAGAIN && error != EWOULDBLOCK) {
+      if (!su_is_blocking(error)) {
 	tport_error_report(self, error, NULL);
 	/* Failure: shutdown socket */
 	if (tport_is_connected(self))
@@ -2886,7 +2886,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
 
 int tport_recv_error_report(tport_t *self)
 {
-  if (su_errno() == EAGAIN && su_errno() != EWOULDBLOCK)
+  if (su_is_blocking(su_errno()))
     return 1;
 
   /* Report error */
@@ -3267,7 +3267,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
     /*Xyzzy*/
   }
 
-  if (error == EAGAIN || error == EWOULDBLOCK) {
+  if (su_is_blocking(error)) {
     SU_DEBUG_5(("tport_vsend(%p): %s with (s=%d %s/%s:%s%s)\n", 
 		self, "EAGAIN", (int)self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp));

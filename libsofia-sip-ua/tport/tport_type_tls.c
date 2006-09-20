@@ -363,8 +363,7 @@ int tport_tls_recv(tport_t *self)
   if (N == 0) /* End-of-stream */
     return 0;
   else if (N == -1) {
-    int err = su_errno();
-    if (err == EAGAIN || err == EWOULDBLOCK) {
+    if (su_is_blocking(su_errno()) {
       tport_tls_set_events(self);
       return 1;
     }
@@ -467,9 +466,9 @@ ssize_t tport_tls_send(tport_t const *self,
 
     if (n < 0) {
       int err = su_errno();
-      if (err == EAGAIN || err == EWOULDBLOCK)
+      if (su_is_blocking(err))
 	break;
-      SU_DEBUG_3(("tls_write: %s\n", strerror(errno)));
+      SU_DEBUG_3(("tls_write: %s\n", strerror(err)));
       return -1;
     }
 

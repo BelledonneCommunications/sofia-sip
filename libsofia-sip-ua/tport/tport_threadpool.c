@@ -376,7 +376,7 @@ static int thrp_udp_recv_deliver(threadpool_t *thrp,
     if (thrp_udp_recv(thrp, tpd) < 0) {
       tpd->tpd_errorcode = su_errno();
       assert(tpd->tpd_errorcode);
-      if (tpd->tpd_errorcode == EAGAIN || tpd->tpd_errorcode == EWOULDBLOCK)
+      if (su_is_blocking(tpd->tpd_errorcode))
 	return 0;
     } 
     else if (tpd->tpd_msg) {
@@ -443,7 +443,7 @@ int thrp_udp_recv(threadpool_t *thrp, thrp_udp_deliver_t *tpd)
   N = recv(s, sample, sizeof sample, MSG_PEEK | MSG_TRUNC);
 
   if (N < 0) {
-    if (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
+    if (su_is_blocking(su_errno()))
       N = 0;
   }
   else if (N <= 1) {

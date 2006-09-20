@@ -387,7 +387,7 @@ static int tport_recv_sigcomp_r(tport_t *self,
       char const *pn = self->tp_protoname;
       int err = su_errno();
     
-      if (err == EAGAIN || err == EWOULDBLOCK) {
+      if (su_is_blocking(err)) {
 	SU_DEBUG_7(("%s(%p): recv from %s: EAGAIN\n", __func__, self, pn));
 	return 1;
       }
@@ -639,7 +639,7 @@ int vsc_send_sigcomp(tport_t const *self,
   if (m == -1) {
     int error = su_errno();
 
-    if (error != EAGAIN && error != EWOULDBLOCK) {
+    if (su_is_blocking(error)) {
       sigcomp_compressor_free(c);
       sc->sc_compressor = NULL;
       sc->sc_output = NULL; sc->sc_input = NULL;

@@ -244,8 +244,13 @@ SOFIAPUBFUN int su_close(su_socket_t s);
 /** Control socket. */
 SOFIAPUBFUN int su_ioctl(su_socket_t s, int request, ...);
 
-/** Checks if the previous call failed because it would have blocked. */
-SOFIAPUBFUN int su_isblocking(void);
+/** Checks if the @a errcode indicates that the socket call failed because
+ * it would have blocked.
+ *
+ * New in @VERSION_1_12_2. Defined as macro with POSIX sockets.
+ */
+SOFIAPUBFUN int su_is_blocking(int errcode);
+
 /** Set/reset blocking option. */ 
 SOFIAPUBFUN int su_setblocking(su_socket_t s, int blocking);
 /** Set/reset address reusing option. */
@@ -270,7 +275,12 @@ SOFIAPUBFUN int su_getlocalip(su_sockaddr_t *sin);
 
 #if SU_HAVE_BSDSOCK
 #define su_ioctl  ioctl
-#define su_isblocking() (su_errno() == EAGAIN || su_errno() == EWOULDBLOCK)
+/*
+ * Note: before 1.12.2, there was su_isblocking() which did not take argument
+ * and which was missing from WINSOCK 
+ */
+#define su_is_blocking(e) \
+  ((e) == EINPROGRESS || (e) == EAGAIN || (e) == EWOULDBLOCK)
 #endif
 
 #if SU_HAVE_WINSOCK

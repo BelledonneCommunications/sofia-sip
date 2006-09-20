@@ -144,6 +144,11 @@ int su_ioctl(su_socket_t s, int request, ...)
   return retval;
 }
 
+int su_is_blocking(int errcode)
+{
+  return errcode == EAGAIN || errcode == EWOULDBLOCK || errcode == EINPROGRESS;
+}
+
 int su_setblocking(su_socket_t s, int blocking)
 {
   unsigned long nonBlock = !blocking;

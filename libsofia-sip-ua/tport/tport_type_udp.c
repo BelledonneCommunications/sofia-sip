@@ -248,7 +248,7 @@ int tport_recv_dgram(tport_t *self)
     msg_destroy(msg); self->tp_msg = NULL;
     su_seterrno(error);
 
-    if (error == EAGAIN || error == EWOULDBLOCK)
+    if (su_is_blocking(error))
       return 0;
     else
       return -1;
@@ -347,7 +347,7 @@ int tport_udp_error(tport_t const *self, su_sockaddr_t name[1])
 
   if (n < 0) {
     int err = su_errno();
-    if (err != EAGAIN && err != EWOULDBLOCK)
+    if (!su_is_blocking(err))
       SU_DEBUG_1(("%s: recvmsg: %s\n", __func__, su_strerror(err)));
     return 0;
   }

@@ -223,10 +223,7 @@ int tport_recv_sctp(tport_t *self)
 
   N = su_vrecv(self->tp_socket, iovec, 1, 0, NULL, NULL);
   if (N == SOCKET_ERROR) {
-    int err = su_errno();
-    if (err == EAGAIN || err == EWOULDBLOCK)
-      return 1;
-    return -1;
+    return su_is_blocking(su_errno()) ? 1 : -1;
   }
 
   if (N == 0) {
