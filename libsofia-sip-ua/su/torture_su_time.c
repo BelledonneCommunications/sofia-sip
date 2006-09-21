@@ -24,7 +24,7 @@
 
 /**@ingroup su_time
  * 
- * @IFILE su_time_test.c  
+ * @IFILE torture_su_time.c  
  *
  * Tests for su_time functions.
  *
@@ -45,7 +45,7 @@
 
 #include <sofia-sip/tstdef.h>
 
-char const *name = "su_time_test.c";
+char const *name = "torture_su_time.c";
 
 static int test1(int flags);
 static int test2(int flags);

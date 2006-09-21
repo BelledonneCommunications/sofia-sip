@@ -21,26 +21,26 @@
 :: Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 :: 02110-1301 USA
 ::
-tests\su_alloc_test\Debug\su_alloc_test.exe
-@if errorlevel 1 ( echo su_alloc_test: FAIL ) else echo su_alloc_test: PASS
+tests\torture_su_alloc\Debug\torture_su_alloc.exe
+@if errorlevel 1 ( echo torture_su_alloc: FAIL ) else echo torture_su_alloc: PASS
 
-tests\su_root_test\Debug\su_root_test.exe
-@if errorlevel 1 ( echo su_root_test: FAIL ) else echo su_root_test: PASS
+tests\torture_su_root\Debug\torture_su_root.exe
+@if errorlevel 1 ( echo torture_su_root: FAIL ) else echo torture_su_root: PASS
 
-tests\su_tag_test\Debug\su_tag_test.exe
-@if errorlevel 1 ( echo su_tag_test: FAIL ) else echo su_tag_test: PASS
+tests\torture_su_tag\Debug\torture_su_tag.exe
+@if errorlevel 1 ( echo torture_su_tag: FAIL ) else echo torture_su_tag: PASS
 
-tests\su_test\Debug\su_test.exe
-@if errorlevel 1 ( echo su_test: FAIL ) else echo su_test: PASS
+tests\test_su\Debug\test_su.exe
+@if errorlevel 1 ( echo test_su: FAIL ) else echo test_su: PASS
 
-tests\su_time_test\Debug\su_time_test.exe
-@if errorlevel 1 ( echo su_time_test: FAIL ) else echo su_time_test: PASS
+tests\torture_su_time\Debug\torture_su_time.exe
+@if errorlevel 1 ( echo torture_su_time: FAIL ) else echo torture_su_time: PASS
 
-tests\su_timer_test\Debug\su_timer_test.exe
-@if errorlevel 1 ( echo su_timer_test: FAIL ) else echo su_timer_test: PASS
+tests\torture_su_timer\Debug\torture_su_timer.exe
+@if errorlevel 1 ( echo torture_su_timer: FAIL ) else echo torture_su_timer: PASS
 
-tests\su_torture\Debug\su_torture.exe
-@if errorlevel 1 ( echo su_torture: FAIL ) else echo su_torture: PASS
+tests\torture_su\Debug\torture_su.exe
+@if errorlevel 1 ( echo torture_su: FAIL ) else echo torture_su: PASS
 
 tests\test_memmem\Debug\test_memmem.exe
 @if errorlevel 1 ( echo test_memmem: FAIL ) else echo test_memmem: PASS

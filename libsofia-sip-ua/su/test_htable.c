@@ -24,7 +24,7 @@
 
 /**@ingroup su_htable
  *
- * @CFILE htable_test.c
+ * @CFILE test_htable.c
  *
  * Test functions for the @b su library hash table implementation.
  *

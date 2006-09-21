@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="su_timer_test" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="torture_su_root" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=su_timer_test - Win32 Debug
+CFG=torture_su_root - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "su_timer_test.mak".
+!MESSAGE NMAKE /f "torture_su_root.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "su_timer_test.mak" CFG="su_timer_test - Win32 Debug"
+!MESSAGE NMAKE /f "torture_su_root.mak" CFG="torture_su_root - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "su_timer_test - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "su_timer_test - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "torture_su_root - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "torture_su_root - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=su_timer_test - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "su_timer_test - Win32 Release"
+!IF  "$(CFG)" == "torture_su_root - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -52,7 +52,7 @@ LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
 # ADD LINK32 kernel32.lib user32.lib ws2_32.lib /nologo /subsystem:console /machine:I386
 
-!ELSEIF  "$(CFG)" == "su_timer_test - Win32 Debug"
+!ELSEIF  "$(CFG)" == "torture_su_root - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -80,11 +80,11 @@ LINK32=link.exe
 
 # Begin Target
 
-# Name "su_timer_test - Win32 Release"
-# Name "su_timer_test - Win32 Debug"
+# Name "torture_su_root - Win32 Release"
+# Name "torture_su_root - Win32 Debug"
 # Begin Source File
 
-SOURCE="..\..\..\libsofia-sip-ua\su\su_timer_test.c"
+SOURCE="..\..\..\libsofia-sip-ua\su\torture_su_root.c"
 # End Source File
 # Begin Source File
 

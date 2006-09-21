@@ -23,7 +23,7 @@
  */
 
 /**@ingroup su_root_ex
- * @CFILE su_test.c
+ * @CFILE test_su.c
  *
  * @brief Test program for su wait objects, root, timers, clones, and messages.
  *

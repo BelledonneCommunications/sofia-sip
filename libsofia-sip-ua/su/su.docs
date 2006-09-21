@@ -112,8 +112,9 @@
  *
  * Hash tables.
  *
- * The hash table interface and implementation is defined in htable.h.
- * Example code and tests for the implementation is in htable_test.c.
+ * The hash table interface and implementation is defined in
+ * <sofia-sip/htable.h>. Example code and tests for the implementation is in
+ * test_htable.c.
  */
 
 

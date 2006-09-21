@@ -24,7 +24,7 @@
 
 /**@ingroup su_root_ex
  * 
- * @file su_root_test.c
+ * @file torture_su_root.c
  *
  * Test su_root_register functionality.
  *

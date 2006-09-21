@@ -23,7 +23,7 @@
  */
 
 /**@ingroup su_root_ex
- * @file poll_test.c
+ * @file test_poll.c
  * Example code for su_wait.h.
  *
  * This file illustrates how the asynchronous connect can be used with @b su.

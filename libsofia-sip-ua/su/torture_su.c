@@ -24,7 +24,7 @@
 
 /**@ingroup su
  * 
- * @file su_torture.c
+ * @file torture_su.c
  *
  * Testing functions for su socket functions.
  *

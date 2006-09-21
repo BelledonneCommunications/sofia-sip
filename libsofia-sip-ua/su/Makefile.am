@@ -16,22 +16,22 @@ noinst_LTLIBRARIES = 	libsu.la
 
 bin_PROGRAMS = 		addrinfo localinfo 
 
-check_PROGRAMS = 	su_torture torture_su_port \
-			su_alloc_test su_time_test su_tag_test \
-			htable_test torture_rbtree \
+check_PROGRAMS = 	torture_su torture_su_port \
+			torture_su_alloc torture_su_time torture_su_tag \
+			test_htable torture_rbtree \
 			test_memmem torture_su_bm \
-			su_root_test su_timer_test \
-			su_test su_proxy poll_test
+			torture_su_root torture_su_timer \
+			test_su su_proxy test_poll
 
 # ----------------------------------------------------------------------
 # Tests
 
-TESTS = 		su_torture torture_su_port \
-			su_alloc_test su_time_test su_tag_test \
-			htable_test torture_rbtree \
+TESTS = 		torture_su torture_su_port \
+			torture_su_alloc torture_su_time torture_su_tag \
+			test_htable torture_rbtree \
 			test_memmem torture_su_bm \
-			su_root_test su_timer_test \
-			run_addrinfo run_localinfo run_su_test
+			torture_su_root torture_su_timer \
+			run_addrinfo run_localinfo run_test_su
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -88,7 +88,7 @@ endif
 # Install and distribution rules
 
 EXTRA_DIST = 		Doxyfile su.docs \
-			run_addrinfo run_localinfo run_su_test
+			run_addrinfo run_localinfo run_test_su
 
 dist_pkgdata_SCRIPTS = 	tag_dll.awk
 

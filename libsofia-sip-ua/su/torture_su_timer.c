@@ -23,7 +23,7 @@
  */
 
 /**@ingroup su_root_ex
- * @CFILE su_timer_test.c
+ * @CFILE torture_su_timer.c
  *
  * @brief Test program for su timers
  *
