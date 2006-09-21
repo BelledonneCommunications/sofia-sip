@@ -363,7 +363,7 @@ int tport_tls_recv(tport_t *self)
   if (N == 0) /* End-of-stream */
     return 0;
   else if (N == -1) {
-    if (su_is_blocking(su_errno()) {
+    if (su_is_blocking(su_errno())) {
       tport_tls_set_events(self);
       return 1;
     }
