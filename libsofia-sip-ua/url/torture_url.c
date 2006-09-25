@@ -81,6 +81,9 @@ int test_quote(void)
   
   BEGIN();
 
+  d = url_as_string(home, (url_t *)"sip:joe@example.com");
+  TEST_S(d, "sip:joe@example.com");
+
   TEST(strlen(EXCLUDED), 23);
   TEST(strlen(UNRESERVED), 71);
 

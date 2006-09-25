@@ -1168,7 +1168,15 @@ url_t *url_format(su_home_t *h, char const *fmt, ...)
 }
 
 
-/** Convert @a url to a string allocated from @a home */
+/** Convert @a url to a string allocated from @a home.
+ *
+ * @param home memory home to allocate the new string
+ * @param url  url to convert to string
+ *
+ * The @a url can be a string, too.
+ *
+ * @return Newly allocated conversion result, or NULL upon an error.
+ */
 char *url_as_string(su_home_t *home, url_t const *url)
 {
   if (url) {
