@@ -135,6 +135,7 @@ tag_typedef_t nutag_refer_event = SIPHDRTAG_NAMED_TYPEDEF(refer_event, event);
 tag_typedef_t nutag_refer_pause = BOOLTAG_TYPEDEF(refer_pause);
 tag_typedef_t nutag_user_agent = STRTAG_TYPEDEF(user_agent);
 tag_typedef_t nutag_allow = STRTAG_TYPEDEF(allow);
+tag_typedef_t nutag_supported = STRTAG_TYPEDEF(supported);
 tag_typedef_t nutag_path_enable = BOOLTAG_TYPEDEF(path_enable);
 tag_typedef_t nutag_service_route_enable = 
   BOOLTAG_TYPEDEF(service_route_enable);
@@ -143,4 +144,3 @@ tag_typedef_t nutag_detect_network_updates = UINTTAG_TYPEDEF(detect_network_upda
 
 tag_typedef_t _nutag_add_contact = BOOLTAG_TYPEDEF(add_contact);
 tag_typedef_t _nutag_copy = BOOLTAG_TYPEDEF(copy);
-

@@ -1465,6 +1465,38 @@ SOFIAPUBVAR tag_typedef_t nutag_allow;
 #define NUTAG_ALLOW_REF(x) nutag_allow_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_allow_ref;
 
+/** Support a feature.
+ *
+ * This tag is used to add a new feature to the existing set of supported
+ * SIP features. If you want to ignore the existing set of supported
+ * features, use SIPTAG_SUPPORTED_STR() or SIPTAG_SUPPORTED().
+ *
+ * The set of supported features is added to the @Supported header in the
+ * response or request messages. For incoming requests, an error response
+ * <i>420 Bad Extension </i> is automatically returned if the request
+ * requires features that are not included in the supported feature set.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_set_hparams() \n
+ *    any handle-specific nua call
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    Feature name, or comma-separated list of them.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_SUPPORTED_REF()
+ *
+ * @since New in @VERSION_1_12_2.
+ */
+#define NUTAG_SUPPORTED(x)     nutag_supported, tag_str_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_supported;
+
+#define NUTAG_SUPPORTED_REF(x) nutag_supported_ref, tag_str_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_supported_ref;
+
 /** Call state
  *
  * @par Used with
