@@ -118,7 +118,7 @@ tag_typedef_t tag_q_ref = REFTAG_TYPEDEF(tag_q);
 
 #endif
 
-static int init_tags(void)
+static void init_tags(void)
 {
 #if HAVE_WIN32
   /* Automatic initialization with pointers from DLL does not work in WIN32 */
