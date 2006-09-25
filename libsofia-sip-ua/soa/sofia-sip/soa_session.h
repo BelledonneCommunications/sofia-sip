@@ -55,8 +55,8 @@ struct soa_session_actions
   char const *soa_name;
   int (*soa_init)(char const *name, soa_session_t *ss, soa_session_t *parent);
   void (*soa_deinit)(soa_session_t *ss);
-  int (*soa_set_params)(soa_session_t *ss, tagi_t const *tags);
-  int (*soa_get_params)(soa_session_t const *ss, tagi_t *tags);
+  issize_t (*soa_set_params)(soa_session_t *ss, tagi_t const *tags);
+  issize_t (*soa_get_params)(soa_session_t const *ss, tagi_t *tags);
   tagi_t *(*soa_get_paramlist)(soa_session_t const *ss, 
 			       tag_type_t, tag_value_t, ...);
   char **(*soa_media_features)(soa_session_t *, int live, su_home_t *);

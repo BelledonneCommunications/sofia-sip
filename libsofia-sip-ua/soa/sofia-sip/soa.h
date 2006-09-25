@@ -60,9 +60,9 @@ SOFIAPUBFUN soa_session_t *soa_clone(soa_session_t *, su_root_t *, soa_magic_t *
 
 SOFIAPUBFUN void soa_destroy(soa_session_t *);
 
-SOFIAPUBFUN int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...);
-SOFIAPUBFUN int soa_get_params(soa_session_t const *ss, 
-			       tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN issize_t soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...);
+SOFIAPUBFUN issize_t soa_get_params(soa_session_t const *ss, 
+				    tag_type_t tag, tag_value_t value, ...);
 
 SOFIAPUBFUN tagi_t *soa_get_paramlist(soa_session_t const *ss,
 				      tag_type_t tag, tag_value_t value, ...);

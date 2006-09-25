@@ -363,7 +363,13 @@ void soa_base_deinit(soa_session_t *ss)
   (void)ss;
 }
 
-/** Set tagged parameters */
+/** Set parameters.
+ *
+ * @param ss soa session object
+ * @param tag, value, ... tagged parameter list
+ *
+ * @return Number of parameters set, or -1 upon an error.
+ */
 int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
@@ -384,6 +390,13 @@ int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
   return n;
 }
 
+/**Base method for setting parameters.
+ *
+ * @param ss   soa session object
+ * @param tags  tag item list
+ *
+ * @return Number of parameters set, or -1 upon an error.
+ */
 int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 {
   int n, change_session = 0;
@@ -522,12 +535,18 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   return n;
 }
 
-/** Get tagged parameters */
-int soa_get_params(soa_session_t const *ss,
-		   tag_type_t tag, tag_value_t value, ...)
+/** Get tagged parameters.
+ *
+ * @param ss soa session object
+ * @param tag, value, ... tagged parameter list
+ *
+ * @return Number of parameters get, or -1 upon an error.
+ */
+issize_t soa_get_params(soa_session_t const *ss,
+			tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
-  int n;
+  isize_t n;
 
   SU_DEBUG_9(("soa_get_params(%s::%p, ...) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss));
@@ -541,12 +560,19 @@ int soa_get_params(soa_session_t const *ss,
 
   ta_end(ta);
 
-  return n;
+  return (issize_t)n;
 }
 
-int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
+/**Base method for getting tagged parameters.
+ *
+ * @param ss soa session object
+ * @param tags   tag item list
+ *
+ * @return Number of parameters get, or -1 upon an error.
+ */
+isize_t soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 {
-  int n;
+  isize_t n;
 
   n = tl_tgets(tags,
 	       SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp),
@@ -578,7 +604,7 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
   return n;
 }
 
-/** Return a list of parameters */
+/** Return a list of parameters. */
 tagi_t *soa_get_paramlist(soa_session_t const *ss,
 			  tag_type_t tag, tag_value_t value, ...)
 {
@@ -598,6 +624,7 @@ tagi_t *soa_get_paramlist(soa_session_t const *ss,
 }
 
 
+/** Base bethod for getting list of parameters. */
 tagi_t *soa_base_get_paramlist(soa_session_t const *ss, 
 			       tag_type_t tag, tag_value_t value, 
 			       ...)
@@ -648,6 +675,7 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
 
 #include <sofia-sip/sip_status.h>
 
+/** Convert @soa error to a SIP response code and phrase. */ 
 int soa_error_as_sip_response(soa_session_t *ss,
 			      char const **return_phrase)
 {
@@ -665,6 +693,7 @@ int soa_error_as_sip_response(soa_session_t *ss,
   return ss->ss_status;
 }
 
+/** Convert @soa error to a SIP @Reason header. */ 
 char const *soa_error_as_sip_reason(soa_session_t *ss)
 {
   char const *phrase;
@@ -688,7 +717,7 @@ char const *soa_error_as_sip_reason(soa_session_t *ss)
 }
 
 
-/** Return warning code and text */
+/** Return SIP @Warning code and text. */
 int soa_get_warning(soa_session_t *ss, char const **return_text)
 {
   if (!ss)

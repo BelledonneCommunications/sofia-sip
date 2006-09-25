@@ -85,8 +85,8 @@ soa_static_session_t;
 
 static int soa_static_init(char const *, soa_session_t *, soa_session_t *);
 static void soa_static_deinit(soa_session_t *);
-static int soa_static_set_params(soa_session_t *ss, tagi_t const *tags);
-static int soa_static_get_params(soa_session_t const *ss, tagi_t *tags);
+static issize_t soa_static_set_params(soa_session_t *ss, tagi_t const *tags);
+static issize_t soa_static_get_params(soa_session_t const *ss, tagi_t *tags);
 static tagi_t *soa_static_get_paramlist(soa_session_t const *ss,
 					tag_type_t tag, tag_value_t value, 
 					...);
@@ -176,18 +176,15 @@ static int soa_static_set_params(soa_session_t *ss, tagi_t const *tags)
   return n + m;
 }
 
-static int soa_static_get_params(soa_session_t const *ss, tagi_t *tags)
+static issize_t soa_static_get_params(soa_session_t const *ss, tagi_t *tags)
 {
   soa_static_session_t *sss = (soa_static_session_t *)ss;
 
-  int n, m;
+  issize_t n, m;
 
   n = tl_tgets(tags,
 	       SOATAG_AUDIO_AUX(sss->sss_audio_aux),
 	       TAG_END());
-  if (n < 0)
-    return n;
-
   m = soa_base_get_params(ss, tags);
   if (m < 0)
     return m;
