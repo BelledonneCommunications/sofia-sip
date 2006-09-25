@@ -30,6 +30,8 @@
  *
  */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <string.h>
 #include "sofia-sip/base64.h"
