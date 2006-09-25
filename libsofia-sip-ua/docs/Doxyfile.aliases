@@ -17,6 +17,12 @@ ALIASES = \
  "STATUS=\par Status:\n" \
  "LICENSE=\par License:\n" \
  "SofiaSIP=<a href=\"../index.html\">Sofia SIP</a>" \
+ "SU=@ref su_index \"SU\"" "su=@ref su_index \"su\"" \
+ "msg=@ref msg_index \"msg\"" \
+ "sip=@ref sip_index \"sip\"" \
+ "nua=@ref nua_index \"nua\"" \
+ "nta=@ref nta_index \"nta\"" \
+ "soa=@ref soa_index \"soa\"" \
  "DEF=\def" \
  "TAGS=\par Related Tags:" \
  "TAG=\par \n" \

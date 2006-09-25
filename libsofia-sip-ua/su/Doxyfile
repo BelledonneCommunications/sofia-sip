@@ -20,5 +20,4 @@ PREDEFINED += \
 
 EXCLUDE_PATTERNS      += localinfo.c addrinfo.c
 
-TAGFILES +=		../docs/sip.doxytags=../sip
 @INCLUDE =		../sip/sip.doxyaliases

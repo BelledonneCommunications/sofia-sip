@@ -21,4 +21,8 @@ TAGFILES            += ../docs/nua.doxytags=../nua
 
 GENERATE_TAGFILE     = ../docs/soa.doxytags
 
-ALIASES             +=
+ALIASES 	    += soa="@ref index \"soa\""
+# When GENERATE_TAGFILE=YES, we should use \ref main
+#ALIASES 	    += soa="@ref main \"soa\""
+
+@INCLUDE = ../sip/sip.doxyaliases

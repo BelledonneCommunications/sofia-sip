@@ -72,13 +72,26 @@ empty-doxytags:
 
 doxygen: built-sources empty-doxytags 
 	@cd ${srcdir} ;\
-	for d in $(DIST_SUBDIRS) $(DIST_SUBDIRS); do \
+	for d in $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile \
 	  && pushd $$d > /dev/null \
 	  && echo running ${DOXYGEN} in $$d \
           && ${DOXYGEN} \
           && popd > /dev/null ; \
+	done 
+	for f in docs/*.doxytags; do \
+	  m=$${f#docs/} m=$${m%%.doxytags} ; \
+	  sed '2,10s!<name>index</name>!<name>'$$m'_index</name>!' \
+	  $$f > $$f.tmp && mv -f $$f.tmp $$f ; \
 	done
+	@cd ${srcdir} ;\
+	for d in $(DIST_SUBDIRS); do \
+	  test -r $$d/Doxyfile \
+	  && pushd $$d > /dev/null \
+	  && echo running ${DOXYGEN} in $$d \
+          && ${DOXYGEN} \
+          && popd > /dev/null ; \
+	done 
 	cd ${srcdir}/docs/html && ../hide_emails.sh
 
 .PHONY: built-sources built-sources-am empty-doxytags doxygen 
