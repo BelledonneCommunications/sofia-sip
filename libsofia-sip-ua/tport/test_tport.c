@@ -389,7 +389,7 @@ static void tp_test_error(tp_test_t *tt,
 }
 
 msg_t *tp_test_msg(tp_test_t *tt, int flags,
-		   char const data[], unsigned size,
+		   char const data[], usize_t size,
 		   tport_t const *tp, 
 		   tp_client_t *tpc)
 {

@@ -232,7 +232,7 @@ static uint32_t he_now(nth_engine_t const *he);
 static void he_recv_message(nth_engine_t * he, tport_t * tport,
 			    msg_t *msg, void *arg, su_time_t now);
 static msg_t *he_msg_create(nth_engine_t * he, int flags,
-			    char const data[], unsigned dlen,
+			    char const data[], usize_t dlen,
 			    tport_t const *tport, nth_client_t * hc);
 static void he_tp_error(nth_engine_t * he,
 			tport_t * tport, int errcode, char const *remote);
@@ -561,7 +561,7 @@ msg_t *nth_engine_msg_create(nth_engine_t * he, int flags)
 /** Create a new message for transport */
 static
 msg_t *he_msg_create(nth_engine_t * he, int flags,
-		     char const data[], unsigned dlen,
+		     char const data[], usize_t dlen,
 		     tport_t const *tport, nth_client_t * hc)
 {
 

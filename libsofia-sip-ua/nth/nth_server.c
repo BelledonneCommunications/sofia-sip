@@ -202,7 +202,7 @@ static nth_site_t **site_get_directory(nth_site_t **list, char const *path,
 static void server_tport_error(server_t *srv, tport_t *tport,
 			       int errcode, char const *remote);
 static msg_t *server_msg_create(server_t *srv, int flags, 
-				char const data[], unsigned dlen,
+				char const data[], usize_t dlen,
 				tport_t const *tp, tp_client_t *tpc);
 
 static void server_reply(server_t *srv, tport_t *tport, 
@@ -771,7 +771,7 @@ static void server_reply(server_t *srv, tport_t *tport,
 /** Create a new message for transport */
 static
 msg_t *server_msg_create(server_t *srv, int flags, 
-			 char const data[], unsigned dlen,
+			 char const data[], usize_t dlen,
 			 tport_t const *tp, tp_client_t *tpc)
 {
   msg_t *msg = msg_create(srv->srv_mclass, srv->srv_mflags | flags);

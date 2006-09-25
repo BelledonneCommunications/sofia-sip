@@ -392,7 +392,7 @@ void tport_destroy_error(tp_stack_t *stack, tport_t *tp,
 
 static
 msg_t *tport_destroy_alloc(tp_stack_t *stack, int flags, 
-			   char const data[], unsigned len,
+			   char const data[], usize_t len,
 			   tport_t const *tp,
 			   tp_client_t *tpc)
 {
