@@ -19,3 +19,6 @@ PREDEFINED += \
  _su_task_r=su_task_r
 
 EXCLUDE_PATTERNS      += localinfo.c addrinfo.c
+
+TAGFILES +=		../docs/sip.doxytags=../sip
+@INCLUDE =		../sip/sip.doxyaliases
