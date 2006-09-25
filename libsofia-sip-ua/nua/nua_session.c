@@ -2134,8 +2134,8 @@ static int process_response_to_update(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip);
 
-int
-nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
+int nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e,
+		     tagi_t const *tags)
 {
   struct nua_session_state *ss = nh->nh_ss;
   struct nua_client_request *cr = nh->nh_cr;
@@ -2153,10 +2153,11 @@ nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
   nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
-			 SIP_METHOD_UPDATE,
-			 NUTAG_USE_DIALOG(1),
-			 NUTAG_ADD_CONTACT(1),
-			 TAG_NEXT(tags));
+		     SIP_METHOD_UPDATE,
+		     NUTAG_USE_DIALOG(1),
+		     NUTAG_ADD_CONTACT(1),
+		     TAG_NEXT(tags));
+
   sip = sip_object(msg);
 
   if (sip) {
@@ -2179,9 +2180,8 @@ nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
       offer_sent = "offer";
     }
 
-    if (1 /* is_session_timer_set(ss) */)
-      /* Add session timer headers */
-      use_session_timer(nh, 0, msg, sip);
+    /* Always add session timer headers */
+    use_session_timer(nh, 0, msg, sip);
 
     if (nh->nh_auth) {
       if (auc_authorize(&nh->nh_auth, msg, sip) < 0)
