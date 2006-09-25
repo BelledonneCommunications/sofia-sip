@@ -527,9 +527,10 @@ int thrp_udvm_decompress(threadpool_t *thrp, thrp_udp_deliver_t *tpd)
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
   su_addrinfo_t *ai;
   tport_t *tp = thrp->thrp_tport->pri_primary;
-  unsigned n, m, i, eos, dlen;
+  size_t n, m, i, dlen;
+  int eos;
   void *data;
-  int veclen;
+  ssize_t veclen;
 
   output = sigcomp_udvm_output_buffer(udvm, -1);
   

@@ -71,7 +71,7 @@ static void tport_tls_deinit_secondary(tport_t *self);
 static void tport_tls_shutdown(tport_t *self, int how);
 static int tport_tls_set_events(tport_t const *self);
 static int tport_tls_events(tport_t *self, int events);
-static ssize_t tport_tls_recv(tport_t *self);
+static int tport_tls_recv(tport_t *self);
 static ssize_t tport_tls_send(tport_t const *self, msg_t *msg,
 			      msg_iovec_t iov[], size_t iovused);
 
@@ -352,13 +352,13 @@ int tport_tls_recv(tport_t *self)
 {
   tport_tls_t *tlstp = (tport_tls_t *)self;
   msg_t *msg;
-  int n, N, veclen, i, m;
+  ssize_t n, N, veclen, i, m;
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
   char *tls_buf;
 
   N = tls_read(tlstp->tlstp_context);
 
-  SU_DEBUG_7(("%s(%p): tls_read() returned %d\n", __func__, self, N));
+  SU_DEBUG_7(("%s(%p): tls_read() returned "MOD_ZD"\n", __func__, self, N));
 
   if (N == 0) /* End-of-stream */
     return 0;
@@ -461,7 +461,7 @@ ssize_t tport_tls_send(tport_t const *self,
     n = tls_write(tlstp->tlstp_context, buf, m);
 #endif
 
-    SU_DEBUG_9(("tport_tls_writevec: vec %p %p %lu (%d)\n",  
+    SU_DEBUG_9(("tport_tls_writevec: vec %p %p %lu ("MOD_ZD")\n",  
 		tlstp->tlstp_context, iov[i].siv_base, (LU)iov[i].siv_len, n));
 
     if (n < 0) {

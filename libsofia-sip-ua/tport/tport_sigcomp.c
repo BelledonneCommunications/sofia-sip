@@ -337,14 +337,15 @@ static int tport_recv_sigcomp_r(tport_t *self,
 				int N)
 {
   msg_t *msg;
-  unsigned n, m, i, eos, complete;
-  int veclen;
+  size_t n, m, i;
+  int eos, complete;
+  ssize_t veclen;
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
   su_sockaddr_t su[1];
   socklen_t su_size = sizeof(su);
   struct sigcomp_buffer *input, *output;
   void *data;
-  unsigned dlen;
+  size_t dlen;
 
   SU_DEBUG_7(("%s(%p)\n", __func__, self));
 

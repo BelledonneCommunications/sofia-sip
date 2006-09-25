@@ -396,7 +396,7 @@ void tport_hup_event(tport_t *self);
 
 ssize_t tport_recv_iovec(tport_t const *self, 
 			 msg_t **mmsg,
-			 msg_iovec_t iovec[msg_n_fragments], int N, 
+			 msg_iovec_t iovec[msg_n_fragments], size_t N, 
 			 int exact);
 
 msg_t *tport_msg_alloc(tport_t const *self, unsigned size);

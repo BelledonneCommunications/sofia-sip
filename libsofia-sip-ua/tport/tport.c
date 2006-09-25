@@ -340,7 +340,7 @@ static int
 	      struct sigcomp_compartment *cc),
   tport_send_error(tport_t *, msg_t *, tp_name_t const *),
   tport_queue(tport_t *self, msg_t *msg),
-  tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], int iovused),
+  tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], ssize_t iovused),
   tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error),
   tport_pending_errmsg(tport_t *self, msg_t *msg, int error);
 
@@ -2826,7 +2826,8 @@ tport_delivered_with_comp(tport_t *tp, msg_t const *msg,
  */
 ssize_t tport_recv_iovec(tport_t const *self, 
 			 msg_t **in_out_msg,
-			 msg_iovec_t iovec[msg_n_fragments], int N, 
+			 msg_iovec_t iovec[msg_n_fragments],
+			 size_t N, 
 			 int exact)
 {
   msg_t *msg = *in_out_msg;
@@ -2843,7 +2844,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
    */
   if (!msg) {
     if (!(*in_out_msg = msg = tport_msg_alloc(self, N))) {
-      SU_DEBUG_7(("%s(%p): cannot allocate msg for %u bytes "
+      SU_DEBUG_7(("%s(%p): cannot allocate msg for "MOD_ZU" bytes "
 		  "from (%s/%s:%s)\n", 
 		  __func__, self, N, 
 		  self->tp_protoname, self->tp_host, self->tp_port));
@@ -2862,7 +2863,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
   }
   if (veclen < 0) {
     int err = su_errno();
-    SU_DEBUG_7(("%s(%p): cannot get msg %p buffer for %u bytes "
+    SU_DEBUG_7(("%s(%p): cannot get msg %p buffer for "MOD_ZU" bytes "
 		"from (%s/%s:%s): %s\n", 
 		__func__, self, msg, N, 
 		self->tp_protoname, self->tp_host, self->tp_port,
@@ -2873,12 +2874,13 @@ ssize_t tport_recv_iovec(tport_t const *self,
 
   assert(veclen <= msg_n_fragments);
 
-  SU_DEBUG_7(("%s(%p) msg %p from (%s/%s:%s) has %u bytes, veclen = %d\n",
+  SU_DEBUG_7(("%s(%p) msg %p from (%s/%s:%s) has "MOD_ZU" bytes, "
+	      "veclen = "MOD_ZD"\n",
               __func__, self, 
 	      msg, self->tp_protoname, self->tp_host, self->tp_port, 
 	      N, veclen));
   for (N = 0; veclen > 1 && N < veclen; N++) {
-    SU_DEBUG_7(("\tiovec[%u] = %lu bytes\n", N, (LU)iovec[N].mv_len));
+    SU_DEBUG_7(("\tiovec["MOD_ZU"] = %lu bytes\n", N, (LU)iovec[N].mv_len));
   }
 
   return veclen;
@@ -3157,7 +3159,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
   self->tp_time = su_time_ms(now = su_now());
 
   n = tport_vsend(self, msg, tpn, iov, iovused, cc);
-  SU_DEBUG_9(("tport_vsend returned %d\n", n));
+  SU_DEBUG_9(("tport_vsend returned "MOD_ZD"\n", n));
 
   if (n < 0)
     return n;
@@ -3246,7 +3248,7 @@ int tport_vsend(tport_t *self,
     if (tpn == NULL || tport_is_connection_oriented(self))
       tpn = self->tp_name;
 
-    SU_DEBUG_7(("tport_vsend(%p): %d bytes of %u to %s/%s:%s%s\n", 
+    SU_DEBUG_7(("tport_vsend(%p): "MOD_ZU" bytes of "MOD_ZU" to %s/%s:%s%s\n", 
 		self, n, m, tpn->tpn_proto, tpn->tpn_host, 
 		tpn->tpn_port, 
 		(ai->ai_flags & TP_AI_COMPRESSED) ? ";comp=sigcomp" : ""));

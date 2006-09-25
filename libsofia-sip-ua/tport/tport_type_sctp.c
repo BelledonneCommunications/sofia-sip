@@ -213,7 +213,7 @@ static
 int tport_recv_sctp(tport_t *self)
 {
   msg_t *msg;
-  int N, veclen;
+  ssize_t N, veclen;
   msg_iovec_t iovec[2] = {{ 0 }};
 
   char sctp_buf[TP_SCTP_MSG_MAX];
