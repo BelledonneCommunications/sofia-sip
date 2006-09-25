@@ -124,6 +124,18 @@ SOURCE="..\..\..\libsofia-sip-ua\nua\test_nua.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_nua.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_init.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\..\libsofia-sip-ua\nua\test_ops.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\..\libsofia-sip-ua\nua\test_nua_api.c"
 # End Source File
 # Begin Source File

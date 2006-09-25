@@ -74,7 +74,8 @@ LDADD = 		libnua.la \
 
 test_nua_LDFLAGS = 	-static
 
-test_nua_SOURCES = 	test_nua.c test_nua.h \
+test_nua_SOURCES = 	test_nua.c test_nua.h test_ops.c \
+			test_init.c \
 			test_nua_api.c test_nua_params.c \
 			test_register.c test_basic_call.c \
 			test_call_reject.c test_cancel_bye.c \

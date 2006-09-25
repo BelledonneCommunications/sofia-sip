@@ -271,6 +271,15 @@ int is_offer_answer_done(tagi_t const *tags);
 int audio_activity(tagi_t const *tags);
 int video_activity(tagi_t const *tags);
 
+void print_event(nua_event_t event,
+		 char const *operation,
+		 int status, char const *phrase,
+		 nua_t *nua, struct context *ctx,
+		 struct endpoint *ep,
+		 nua_handle_t *nh, struct call *call,
+		 sip_t const *sip,
+		 tagi_t tags[]);
+
 static inline
 void eventlist_init(struct eventlist *list)
 {
@@ -283,6 +292,14 @@ void call_init(struct call *call)
 }
 
 void endpoint_init(struct context *ctx, struct endpoint *e, char id);
+
+int test_nua_init(struct context *ctx,
+		  int start_proxy,
+		  url_t const *o_proxy,
+		  int start_nat,
+		  tag_type_t tag, tag_value_t value, ...);
+
+int test_deinit(struct context *ctx);
 
 int test_nua_api_errors(struct context *ctx);
 int test_stack_errors(struct context *ctx);
