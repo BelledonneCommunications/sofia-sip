@@ -84,6 +84,10 @@ typedef struct event_s event_t;
 
 #define       NONE ((void *)-1)
 
+enum {
+  nua_i_none = -1		/** Event never sent to application */
+};
+
 enum nh_kind {
   nh_has_nothing,
   nh_has_invite,
@@ -208,20 +212,10 @@ struct nua_handle_s
   void           *nh_valid;
   nua_hmagic_t 	 *nh_magic;	/**< Application context */
 
-  tagi_t         *nh_tags;	/**< Default tags */
+  tagi_t         *nh_tags;	/**< Initial tags */
+  tagi_t         *nh_ptags;	/**< Initial parameters */
 
   nua_handle_t   *nh_identity;	/**< Identity */
-
-#if HAVE_PTHREAD_H
-#if __CYGWIN__
-  pthread_mutex_t  sup_reflock[1];
-  int              sup_ref;
-#else
-  pthread_rwlock_t nh_refcount[1];  
-#endif
-#else
-  unsigned        nh_refcount;
-#endif
 
   nua_handle_preferences_t *nh_prefs; /**< Preferences */
 
@@ -230,7 +224,8 @@ struct nua_handle_s
 
   unsigned        nh_ref_by_stack:1;	/**< Has stack used the handle? */
   unsigned        nh_ref_by_user:1;	/**< Has user used the handle? */
-  unsigned        nh_init:1;
+  unsigned        nh_init:1;	        /**< Handle has been initialized */
+  unsigned        nh_used_ptags:1;	/**< Ptags has been used */
 
   unsigned        nh_has_invite:1;     /**< Has call */
   unsigned        nh_has_subscribe:1;  /**< Has watcher */
@@ -317,16 +312,10 @@ struct nua_s {
   /* Constants */
   sip_accept_t       *nua_invite_accept; /* What we accept for invite */
 
-  url_t        	     *nua_registrar;
-
   su_root_t          *nua_root;
   su_task_r           nua_server;
   nta_agent_t        *nua_nta;
   su_timer_t         *nua_timer;
-
-#if HAVE_UICC_H
-  uicc_t             *nua_uicc;
-#endif
 
   void         	      *nua_sip_parser;
 
@@ -421,6 +410,8 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 					sip_t const *sip,
 					enum nh_kind kind,
 					int create_dialog);
+
+int nua_handle_save_tags(nua_handle_t *h, tagi_t *tags);
 
 void nh_destroy(nua_t *nua, nua_handle_t *nh);
 

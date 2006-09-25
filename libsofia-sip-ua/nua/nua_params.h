@@ -35,12 +35,29 @@
  * @date Created: Wed Mar  8 11:38:18 EET 2006  ppessi
  */
 
+/** NUA preferences.
+ *
+ * This structure contains values for various preferences and a separate
+ * bitmap (nhp_set) for each preference. Preferences are set using
+ * nua_set_params() or nua_set_hparams() or a handle-specific operation
+ * setting the preferences, including nua_invite(), nua_respond(),
+ * nua_ack(), nua_prack(), nua_update(), nua_info(), nua_bye(),
+ * nua_options(), nua_message(), nua_register(), nua_publish(), nua_refer(),
+ * nua_subscribe(), nua_notify(), nua_refer(), and nua_notifier().
+ *
+ * The stack uses preference value if corresponding bit in bitmap is set,
+ * otherwise it uses preference value from default handle.
+ *
+ * @see NHP_GET(), NH_PGET(), NHP_ISSET(), NH_PISSET()
+ */
 typedef struct nua_handle_preferences
 {
   unsigned         nhp_retry_count;	/**< times to retry a request */
   unsigned         nhp_max_subscriptions;
 
   /* Session-related preferences */
+  char const      *nhp_soa_name;
+  unsigned         nhp_media_enable:1;
   unsigned     	   nhp_invite_enable:1;
   unsigned     	   nhp_auto_alert:1;
   unsigned         nhp_early_media:1;/**< Establish early media session */
@@ -55,10 +72,6 @@ typedef struct nua_handle_preferences
    * INVITE client transaction times out
    */
   unsigned         nhp_invite_timeout;
-
-  /* REGISTER Keepalive intervals */
-  unsigned         nhp_keepalive, nhp_keepalive_stream;
-  
   /** Default session timer (in seconds, 0 disables) */
   unsigned         nhp_session_timer;
   /** Default Min-SE Delta value */
@@ -92,11 +105,14 @@ typedef struct nua_handle_preferences
   /* Subscriber state, i.e. nua_substate_pending */
   unsigned         nhp_substate;
 
+  /* REGISTER Keepalive intervals */
+  unsigned         nhp_keepalive, nhp_keepalive_stream;
+  char const      *nhp_registrar;
+
   sip_allow_t        *nhp_allow;
   sip_supported_t    *nhp_supported;
-  sip_user_agent_t   *nhp_user_agent;
-  char const         *nhp_ua_name;
-  sip_organization_t *nhp_organization;
+  char const         *nhp_user_agent;
+  char const         *nhp_organization;
 
   char const         *nhp_m_display;
   char const         *nhp_m_username;
@@ -106,14 +122,17 @@ typedef struct nua_handle_preferences
 
   /**< Outbound OPTIONS */
   char const         *nhp_outbound; 
-
+  
   /**< Network detection: NONE, INFORMAL, TRY_FULL */
-  uint32_t            nhp_detect_network_updates;
+  int                 nhp_detect_network_updates;
 
   /* A bit for each feature set by application */
   struct {
     unsigned nhb_retry_count:1;
     unsigned nhb_max_subscriptions:1;
+
+    unsigned nhb_soa_name:1;
+    unsigned nhb_media_enable:1;
     unsigned nhb_invite_enable:1;
     unsigned nhb_auto_alert:1;
     unsigned nhb_early_media:1;
@@ -121,8 +140,7 @@ typedef struct nua_handle_preferences
     unsigned nhb_auto_answer:1;
     unsigned nhb_auto_ack:1;
     unsigned nhb_invite_timeout:1;
-    unsigned nhb_keepalive:1;
-    unsigned nhb_keepalive_stream:1;
+
     unsigned nhb_session_timer:1;
     unsigned nhb_min_se:1;
     unsigned nhb_refresher:1; 
@@ -137,14 +155,18 @@ typedef struct nua_handle_preferences
     unsigned nhb_refer_with_id:1;
     unsigned nhb_refer_expires:1;
     unsigned nhb_substate:1;
+    unsigned nhb_keepalive:1;
+    unsigned nhb_keepalive_stream:1;
+    unsigned nhb_registrar:1;
+
     unsigned nhb_allow:1;
     unsigned nhb_supported:1;
     unsigned nhb_user_agent:1;
-    unsigned nhb_ua_name:1;
     unsigned nhb_organization:1;
+    unsigned :0;		/* at most 32 bits ... */
+
     unsigned nhb_m_display:1;
     unsigned nhb_m_username:1;
-    unsigned :0;
     unsigned nhb_m_params:1;
     unsigned nhb_m_features:1;
     unsigned nhb_instance:1;

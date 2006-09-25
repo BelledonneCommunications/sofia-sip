@@ -702,7 +702,7 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     received = NULL;
 
   if (tags) {
-    nua_stack_set_params(nua, nh, nua_r_ack, tags);
+    nua_stack_set_params(nua, nh, nua_i_error, tags);
   }
 
   msg = nua_creq_msg(nua, nh, cr, 0,
@@ -1172,7 +1172,7 @@ nua_stack_cancel(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   nua_client_request_t *crc = nh->nh_cr;
 
   if (tags)
-    nua_stack_set_params(nua, nh, nua_r_cancel, tags);
+    nua_stack_set_params(nua, nh, nua_i_error, tags);
 
   if (nh && cri->cr_orq && cri->cr_usage) {
     nta_outgoing_t *orq;
@@ -1258,7 +1258,7 @@ int process_invite1(nua_t *nua,
   int have_sdp;
   char const *sdp;
   size_t len;
-  sip_user_agent_t const *user_agent = NH_PGET(nh0, user_agent);
+  char const *user_agent = NH_PGET(nh0, user_agent);
 
 #if HAVE_SOFIA_SMIME
   int sm_status;
@@ -1281,7 +1281,7 @@ int process_invite1(nua_t *nua,
     /* Make sure caller uses application/sdp without compression */
     if (nta_check_session_content(irq, sip,
 				  nua->nua_invite_accept,
-				  SIPTAG_USER_AGENT(user_agent),
+				  SIPTAG_USER_AGENT_STR(user_agent),
 				  SIPTAG_ACCEPT_ENCODING_STR(""),
 				  TAG_END()))
       return 415;
@@ -1290,7 +1290,7 @@ int process_invite1(nua_t *nua,
     if (nta_check_accept(irq, sip,
 			 nua->nua_invite_accept,
 			 NULL,
-			 SIPTAG_USER_AGENT(user_agent),
+			 SIPTAG_USER_AGENT_STR(user_agent),
 			 SIPTAG_ACCEPT_ENCODING_STR(""),
 			 TAG_END()))
       return 406;
@@ -1300,7 +1300,7 @@ int process_invite1(nua_t *nua,
     unsigned min_se = nh ? nh->nh_ss->ss_min_se : DNH_PGET(dnh, min_se);
     if (nta_check_session_expires(irq, sip,
 				  min_se,
-				  SIPTAG_USER_AGENT(user_agent),
+				  SIPTAG_USER_AGENT_STR(user_agent),
 				  TAG_END()))
       return 500; /* respond with 500 Internal Server Error  */
   }
@@ -1475,7 +1475,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   assert(ss->ss_usage);
 
   if (tags) {
-    nua_stack_set_params(nua, nh, nua_i_invite, tags);
+    nua_stack_set_params(nua, nh, nua_i_error, tags);
 
     if (status < 200) {
       early_answer = -1;

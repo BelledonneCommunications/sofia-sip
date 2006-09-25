@@ -36,6 +36,7 @@
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/token64.h>
 #include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_tag_inline.h>
 
 #include <sofia-sip/bnf.h>
 
@@ -62,10 +63,13 @@
 su_inline int nhp_is_any_set(nua_handle_preferences_t const *nhp)
 {
   char nhp_zero[sizeof nhp->nhp_set] = { 0 };
-  return memcmp(&nhp->nhp_set, nhp_zero, sizeof nhp->nhp_set);
+  return memcmp(&nhp->nhp_set, nhp_zero, sizeof nhp->nhp_set) != 0;
 }
 
-/** If preference is set in @a b, mark it set also in @a a. */
+/** Copy set parameters from @a b to @a a.
+ *
+ * If preference is set in @a b, mark it set also in @a a.
+ */
 su_inline void nhp_or_set(nua_handle_preferences_t *a,
 			  nua_handle_preferences_t const *b)
 {
@@ -73,44 +77,45 @@ su_inline void nhp_or_set(nua_handle_preferences_t *a,
   unsigned const *bp = (unsigned const *)&b->nhp_set;
   int i;
 
+  memcpy(a, b, offsetof(nua_handle_preferences_t, nhp_set));
+
   for (i = 0; i < (sizeof a->nhp_set); i += (sizeof *ap))
     *ap++ |= *bp++;
 }
 
-/* Set string in handle pref structure */
-#define NHP_SET_STR(nhp, name, str)				 \
-  if (str != NONE) {						 \
-    char *new_str = su_strdup(tmphome, str);			 \
-    NHP_SET(nhp, name, new_str);				 \
-    error |= (new_str != NULL && str == NULL);			 \
-  }
+static int nhp_set_tags(su_home_t *home, 
+			nua_handle_preferences_t *nhp,
+			int global,
+			tagi_t const *tags);
 
-/* Set header in handle pref structure */
-#define NHP_SET_HEADER(nhp, name, header, str)			 \
-  if (header != NONE || str != NONE) {				 \
-    sip_##name##_t *new_header;					 \
-    if (header != NONE)						 \
-      new_header = sip_##name##_dup(tmphome, header);		 \
-    else							 \
-      new_header = sip_##name##_make(tmphome, str);		 \
-    if (new_header != NULL || (header == NULL || str == NULL)) { \
-      NHP_SET(nhp, name, new_header);				 \
-    }								 \
-    else {							 \
-      error = 1;						 \
-    }								 \
-  }
+static int nhp_merge_lists(su_home_t *home,
+			   msg_hclass_t *hc,
+			   msg_list_t **return_new_list,
+			   msg_list_t const *old_list,
+			   int already_set,
+			   int already_parsed,
+			   int always_merge,
+			   tag_value_t value);
 
-/* Zap pointers which are not set */
-#define NHP_ZAP_UNSET_PTR(nhp, pref)					\
-	(!(nhp)->nhp_set.nhb_##pref ? (nhp)->nhp_##pref = NULL : NULL)
+static
+nua_handle_preferences_t *nhp_move_params(su_home_t *home,
+					  nua_handle_preferences_t *dst,
+					  su_home_t *tmphome,
+					  nua_handle_preferences_t const *src);
 
-/* Free changed items */
-#define NHP_ZAP_OVERRIDEN(tbf, nhp, pref)				\
-  ((tbf)->nhp_set.nhb_##pref						\
-   && (tbf)->nhp_##pref != (nhp)->nhp_##pref				\
-       ? su_free(nh->nh_home, (void *)(tbf)->nhp_##pref) : (void)0)
+/* ====================================================================== */
+/* Magical NUTAG_USER_AGENT() - add NHP_USER_AGENT there if it is not there */
 
+#define NHP_USER_AGENT PACKAGE_NAME "/" PACKAGE_VERSION
+
+static
+int already_contains_package_name(char const *s)
+{
+  char const pn[] = " " PACKAGE_NAME "/";
+  size_t pnlen = strlen(pn + 1);
+
+  return strncasecmp(s, pn + 1, pnlen) == 0 || strcasestr(s, pn);
+}
 
 /* ====================================================================== */
 /* Stack and handle parameters */
@@ -132,6 +137,7 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, retry_count, 3);
   NHP_SET(nhp, max_subscriptions, 20);
 
+  NHP_SET(nhp, media_enable, 1);
   NHP_SET(nhp, invite_enable, 1);
   NHP_SET(nhp, auto_alert, 0);
   NHP_SET(nhp, early_media, 0);
@@ -162,8 +168,7 @@ int nua_stack_set_defaults(nua_handle_t *nh,
 
   NHP_SET(nhp, allow, sip_allow_make(home, nua_allow_str));
   NHP_SET(nhp, supported, sip_supported_make(home, "timer, 100rel"));
-  NHP_SET(nhp, user_agent,
-	   sip_user_agent_make(home, PACKAGE_NAME "/" PACKAGE_VERSION));
+  NHP_SET(nhp, user_agent, su_strdup(home, NHP_USER_AGENT));
 
   NHP_SET(nhp, outbound, su_strdup(home, "natify"));
 
@@ -253,7 +258,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
 
 /**@fn void nua_set_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
  *
- * Set NUA parameters.
+ * Set @nua parameters, shared by all handles.
  *
  * @param nua             Pointer to NUA stack object
  * @param tag, value, ... List of tagged parameters
@@ -267,7 +272,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
  *   NUTAG_CALLEE_CAPS() \n
- *   NUTAG_CERTIFICATE_DIR() \n
+ *   NUTAG_DETECT_NETWORK_UPDATES() \n
  *   NUTAG_EARLY_MEDIA() \n
  *   NUTAG_ENABLEINVITE() \n
  *   NUTAG_ENABLEMESSAGE() \n
@@ -280,15 +285,19 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_MEDIA_ENABLE() \n
  *   NUTAG_MEDIA_FEATURES() \n
  *   NUTAG_MIN_SE() \n
+ *   NUTAG_M_DISPLAY() \n
+ *   NUTAG_M_FEATURES() \n
+ *   NUTAG_M_PARAMS() \n
+ *   NUTAG_M_USERNAME() \n
+ *   NUTAG_ONLY183_100REL() \n
  *   NUTAG_OUTBOUND() \n
- *   NUTAG_DETECT_NETWORK_UPDATES() \n
  *   NUTAG_PATH_ENABLE() \n
  *   NUTAG_REFER_EXPIRES() \n
  *   NUTAG_REFER_WITH_ID() \n
  *   NUTAG_REGISTRAR() \n
  *   NUTAG_RETRY_COUNT() \n
  *   NUTAG_SERVICE_ROUTE_ENABLE() \n
- *   NUTAG_SESSIONRESHER() \n
+ *   NUTAG_SESSION_REFRESHER() \n
  *   NUTAG_SESSION_TIMER() \n
  *   NUTAG_SMIME_ENABLE() \n
  *   NUTAG_SMIME_KEY_ENCRYPTION() \n
@@ -297,8 +306,10 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_SMIME_OPT() \n
  *   NUTAG_SMIME_PROTECTION_MODE() \n
  *   NUTAG_SMIME_SIGNATURE() \n
+ *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
- *   NUTAG_UPDATERESH() \n
+ *   NUTAG_SUPPORTED() \n
+ *   NUTAG_UPDATE_REFRESH() \n
  *   NUTAG_USER_AGENT() \n
  *   SIPTAG_ALLOW() \n
  *   SIPTAG_ALLOW_STR() \n
@@ -316,10 +327,61 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  * 
  * @par Events:
  *     nua_r_set_params
+ *
+ * @par SIP Header as NUA Parameters
+ * The @nua parameters include SIP headers @Allow, @Supported, @Organization,
+ * @UserAgent and @From. They are included in most of the SIP messages sent
+ * by @nua. They are set in the same way as the tagged arguments are
+ * used to populate a SIP message.
+ * @par
+ * When multiple tags for the same header are specified, the behaviour
+ * depends on the header type. If only a single header field can be included
+ * in a SIP message, the latest non-NULL value is used, e.g., @Organization. 
+ * However, if the SIP header can consist of multiple lines or header fields
+ * separated by comma, in this case, @Allow and @Supported, all the tagged
+ * values are concatenated.
+ * @par
+ * However, if the tag value is #SIP_NONE (-1 casted as a void pointer), the
+ * values from previous tags are ignored.
+ *
+ * For example, the nua_set_params() call like this:
+ * @code
+ * nua_set_params(nua,
+ *                SIPTAG_USER_AGENT_STR("tester/1.0"),
+ *                SIPTAG_ALLOW_STR("INVITE,CANCEL,BYE,ACK"),
+ *                SIPTAG_ORGANIZATION(NULL),
+ *                SIPTAG_USER_AGENT(NULL),
+ *                SIPTAG_ALLOW(SIP_NONE),
+ *                TAG_END());
+ * @endcode
+ * will leave @Allow and @Organization headers empty. The @UserAgent header
+ * will contain value "tester/1.0".
+ * @code
+ * nua_set_params(nua,
+ *                SIPTAG_ORGANIZATION_STR("Malevolent Microwavers"),
+ *                SIPTAG_ALLOW_STR("OPTIONS"),
+ *                SIPTAG_ALLOW(SIP_NONE),
+ *                SIPTAG_ORGANIZATION_STR("The Phone Company"),
+ *                SIPTAG_ALLOW_STR("SUBSCRIBE"),
+ *                SIPTAG_ALLOW(NULL),
+ *                SIPTAG_ORGANIZATION_STR(NULL),
+ *                TAG_END());
+ * @endcode
+ * sets the header @Allow with value <code>SUBSCRIBE</code> and the
+ * header @Organization will have value <code>The Phone Company</code>.
+ *
  */
 
 /**@fn void nua_set_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
- * Set handle-specific parameters.
+ *
+ * Set the handle-specific parameters.
+ *
+ * The handle-specific parameters override default or global parameters set
+ * by nua_set_params(). The handle-specific parameters are set by several
+ * other operations: nua_invite(), nua_respond(), nua_ack(),
+ * nua_prack(), nua_update(), nua_info(), nua_bye(), nua_options(),
+ * nua_message(), nua_register(), nua_publish(), nua_refer(),
+ * nua_subscribe(), nua_notify(), nua_refer(), and nua_notifier().
  *
  * @param nh              Pointer to a NUA handle
  * @param tag, value, ... List of tagged parameters
@@ -327,7 +389,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  * @return
  *     nothing
  *
- * @par Related tags:
+ * @par Tags Used to Set Handle-Specific Parameters:
  *   NUTAG_ALLOW() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
@@ -337,21 +399,32 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_ENABLEINVITE() \n
  *   NUTAG_ENABLEMESSAGE() \n
  *   NUTAG_ENABLEMESSENGER() \n
+ *   NUTAG_INSTANCE() \n
  *   NUTAG_INVITE_TIMER() \n
  *   NUTAG_KEEPALIVE() \n
  *   NUTAG_KEEPALIVE_STREAM() \n
  *   NUTAG_MAX_SUBSCRIPTIONS() \n
+ *   NUTAG_MEDIA_ENABLE() \n
  *   NUTAG_MEDIA_FEATURES() \n
  *   NUTAG_MIN_SE() \n
+ *   NUTAG_M_DISPLAY() \n
+ *   NUTAG_M_FEATURES() \n
+ *   NUTAG_M_PARAMS() \n
+ *   NUTAG_M_USERNAME() \n
+ *   NUTAG_ONLY183_100REL() \n
+ *   NUTAG_OUTBOUND() \n
  *   NUTAG_PATH_ENABLE() \n
  *   NUTAG_REFER_EXPIRES() \n
  *   NUTAG_REFER_WITH_ID() \n
+ *   NUTAG_REGISTRAR() \n
  *   NUTAG_RETRY_COUNT() \n
  *   NUTAG_SERVICE_ROUTE_ENABLE() \n
- *   NUTAG_SESSIONRESHER() \n
+ *   NUTAG_SESSION_REFRESHER() \n
  *   NUTAG_SESSION_TIMER() \n
+ *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
- *   NUTAG_UPDATERESH() \n
+ *   NUTAG_SUPPORTED() \n
+ *   NUTAG_UPDATE_REFRESH() \n
  *   NUTAG_USER_AGENT() \n
  *   SIPTAG_ALLOW() \n
  *   SIPTAG_ALLOW_STR() \n
@@ -361,381 +434,753 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   SIPTAG_SUPPORTED_STR() \n
  *   SIPTAG_USER_AGENT() \n
  *   SIPTAG_USER_AGENT_STR() \n
+ * Any soa tags are also considered as handle-specific parameters. They are
+ * defined in <sofia-sip/soa_tag.h>.
  *
- * nua_set_hparams() also accepts any soa tags, defined in
- * <sofia-sip/soa_tag.h>.
- *
+ * The global parameters that can not be set by nua_set_hparams() include 
+ * NUTAG_DETECT_NETWORK_UPDATES(), NUTAG_SMIME_* tags, and all NTA tags.
+ * 
  * @par Events:
- *     none
+ *     nua_r_set_params
  */
 
 int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 			 tagi_t const *tags)
 {
   nua_handle_t *dnh = nua->nua_dhandle;
-  nua_handle_preferences_t nhp[1], *ohp = nh->nh_prefs;
+  nua_handle_preferences_t tmp[1], *nhp = nh->nh_prefs;
   nua_handle_preferences_t const *dnhp = dnh->nh_prefs;
 
   su_home_t tmphome[1] = { SU_HOME_INIT(tmphome) };
 
-  tagi_t const *t;
+  tagi_t const *ptags;
 
-  sip_allow_t const *allow = NONE;
-  char const   *allow_str = NONE;
-  char const   *allowing = NULL;
-  sip_supported_t const *supported = NONE;
-  char const *supported_str = NONE;
-  sip_user_agent_t const *user_agent = NONE;
-  char const *user_agent_str = NONE, *ua_name = NONE;
-  sip_organization_t const *organization = NONE;
-  char const *organization_str = NONE;
-
-  url_string_t const *registrar = NONE;
-
-  char const *instance = NONE;
-  char const *m_display = NONE;
-  char const *m_username = NONE;
-  char const *m_params = NONE;
-  char const *m_features = NONE;
-  char const *outbound = NONE;
-  
-  int error = 0;
+  int error, global;
+  int status = 900;
+  char const *phrase = "Error storing parameters";
+  sip_supported_t const *supported = NULL;
+  sip_allow_t const *allow = NULL;
 
   enter;
 
-  *nhp = *ohp; NHP_UNSET_ALL(nhp);
+  ptags = !nh->nh_used_ptags ? nh->nh_ptags : NULL;
 
-  for (t = tags; t; t = tl_next(t)) {
-    if (t->t_tag == NULL)
-      break;
-    /* NUTAG_RETRY_COUNT(retry_count) */
-    else if (t->t_tag == nutag_retry_count) {
-      NHP_SET(nhp, retry_count, (unsigned)t->t_value);
-    }
-    /* NUTAG_MAX_SUBSCRIPTIONS(max_subscriptions) */
-    else if (t->t_tag == nutag_max_subscriptions) {
-      NHP_SET(nhp, max_subscriptions, (unsigned)t->t_value);
-    }
-    /* NUTAG_ENABLEINVITE(invite_enable) */
-    else if (t->t_tag == nutag_enableinvite) {
-      NHP_SET(nhp, invite_enable, t->t_value != 0);
-    }
-    /* NUTAG_AUTOALERT(auto_alert) */
-    else if (t->t_tag == nutag_autoalert) {
-      NHP_SET(nhp, auto_alert, t->t_value != 0);
-    }
-    /* NUTAG_EARLY_MEDIA(early_media) */
-    else if (t->t_tag == nutag_early_media) {
-      NHP_SET(nhp, early_media, t->t_value != 0);
-    }
-    /* NUTAG_ONLY183_100REL(only183_100rel) */
-    else if (t->t_tag == nutag_only183_100rel) {
-      NHP_SET(nhp, only183_100rel, t->t_value != 0);
-    }
-    /* NUTAG_AUTOANSWER(auto_answer) */
-    else if (t->t_tag == nutag_autoanswer) {
-      NHP_SET(nhp, auto_answer, t->t_value != 0);
-    }
-    /* NUTAG_AUTOACK(auto_ack) */
-    else if (t->t_tag == nutag_autoack) {
-      NHP_SET(nhp, auto_ack, t->t_value != 0);
-    }
-    /* NUTAG_INVITE_TIMER(invite_timeout) */
-    else if (t->t_tag == nutag_invite_timer) {
-      NHP_SET(nhp, invite_timeout, (unsigned)t->t_value);
-    }
-    /* NUTAG_SESSION_TIMER(session_timer) */
-    else if (t->t_tag == nutag_session_timer) {
-      NHP_SET(nhp, session_timer, (unsigned)t->t_value);
-    }
-    /* NUTAG_MIN_SE(min_se) */
-    else if (t->t_tag == nutag_min_se) {
-      NHP_SET(nhp, min_se, (unsigned)t->t_value);
-    }
-    /* NUTAG_SESSION_REFRESHER(refresher) */
-    else if (t->t_tag == nutag_session_refresher) {
-      NHP_SET(nhp, refresher, (int)t->t_value);
-    }
-    /* NUTAG_UPDATE_REFRESH(update_refresh) */
-    else if (t->t_tag == nutag_update_refresh) {
-      NHP_SET(nhp, update_refresh, t->t_value != 0);
-    }
-    /* NUTAG_ENABLEMESSAGE(message_enable) */
-    else if (t->t_tag == nutag_enablemessage) {
-      NHP_SET(nhp, message_enable, t->t_value != 0);
-    }
-    /* NUTAG_ENABLEMESSENGER(win_messenger_enable) */
-    else if (t->t_tag == nutag_enablemessenger) {
-      NHP_SET(nhp, win_messenger_enable, t->t_value != 0);
-    }
-#if 0
-    /* NUTAG_MESSAGE_AUTOANSWER(message_auto_respond) */
-    else if (t->t_tag == nutag_message_autoanwer) {
-      NHP_SET(nhp, message_auto_respond, t->t_value);
-    }
-#endif
-    /* NUTAG_CALLEE_CAPS(callee_caps) */
-    else if (t->t_tag == nutag_callee_caps) {
-      NHP_SET(nhp, callee_caps, t->t_value != 0);
-    }
-    /* NUTAG_MEDIA_FEATURES(media_features) */
-    else if (t->t_tag == nutag_media_features) {
-      NHP_SET(nhp, media_features, t->t_value != 0);
-    }
-    /* NUTAG_SERVICE_ROUTE_ENABLE(service_route_enable) */
-    else if (t->t_tag == nutag_service_route_enable) {
-      NHP_SET(nhp, service_route_enable, t->t_value != 0);
-    }
-    /* NUTAG_PATH_ENABLE(path_enable) */
-    else if (t->t_tag == nutag_path_enable) {
-      NHP_SET(nhp, path_enable, t->t_value != 0);
-    }
-    /* NUTAG_REFER_EXPIRES(refer_expires) */
-    else if (t->t_tag == nutag_refer_expires) {
-      NHP_SET(nhp, refer_expires, t->t_value);
-    }
-    /* NUTAG_REFER_WITH_ID(refer_with_id) */
-    else if (t->t_tag == nutag_refer_with_id) {
-      NHP_SET(nhp, refer_with_id, t->t_value != 0);
-    }
-    /* NUTAG_SUBSTATE(substate) */
-    else if (t->t_tag == nutag_substate) {
-      NHP_SET(nhp, substate, (int)t->t_value);
-    }
-    /* NUTAG_KEEPALIVE(keepalive) */
-    else if (t->t_tag == nutag_keepalive) {
-      NHP_SET(nhp, keepalive, (unsigned)t->t_value);
-    }
-    /* NUTAG_KEEPALIVE_STREAM(keepalive_stream) */
-    else if (t->t_tag == nutag_keepalive_stream) {
-      NHP_SET(nhp, keepalive_stream, (unsigned)t->t_value);
+  *tmp = *nhp; NHP_UNSET_ALL(tmp);
+
+  /* Supported features and allowed methods can be merged with previous ones */
+  if (!NHP_ISSET(nhp, supported)) 
+    supported = tmp->nhp_supported = dnhp->nhp_supported;
+  if (!NHP_ISSET(nhp, allow)) 
+    allow = tmp->nhp_allow = dnhp->nhp_allow;
+
+  error = 0;
+  global = nh == dnh;			/* save also stack-specific params */
+    
+  /* Set and save parameters to tmp */
+  if (nhp_set_tags(tmphome, tmp, global, ptags) < 0)
+    error = 1, phrase = "Error storing default handle parameters";
+  else if (nhp_set_tags(tmphome, tmp, global, tags) < 0)
+    error = 1, phrase = "Error storing parameters";
+  else {
+    if (NHP_IS_ANY_SET(tmp)) {
+      if (tmp->nhp_supported == supported)
+	tmp->nhp_supported = NULL;
+      if (tmp->nhp_allow == allow)
+	tmp->nhp_allow = NULL;
+
+      /* Move parameters from tmp to nhp (or allocate new nhp) */
+      if (nh != dnh && nhp == dnh->nh_prefs)
+	nhp = NULL;
+      nhp = nhp_move_params(nh->nh_home, nhp, tmphome, tmp);
+
+      if (nhp)
+	nh->nh_prefs = nhp;
+      else
+	/* Fail miserably with ENOMEM */
+	error = 1, status = 900, phrase = su_strerror(ENOMEM);
     }
 
-    /* SIPTAG_SUPPORTED_REF(supported) */
-    else if (t->t_tag == siptag_supported) {
-      supported = (void *)t->t_value;
-    }
-    /* SIPTAG_SUPPORTED_STR_REF(supported_str) */
-    else if (t->t_tag == siptag_supported_str) {
-      supported_str = (void *)t->t_value;
-    }
-    /* SIPTAG_ALLOW_REF(allow) */
-    else if (t->t_tag == siptag_allow) {
-      allow = (void *)t->t_value;
-    }
-    /* SIPTAG_ALLOW_STR_REF(allow_str) */
-    else if (t->t_tag == siptag_allow_str) {
-      allow_str = (void *)t->t_value;
-    }
-    /* NUTAG_ALLOW_REF(allowing) */
-    else if (t->t_tag == nutag_allow) {
-      allowing = (void *)t->t_value;
-    }
-    /* SIPTAG_USER_AGENT_REF(user_agent) */
-    else if (t->t_tag == siptag_user_agent) {
-      user_agent = (void *)t->t_value;
-    }
-    /* SIPTAG_USER_AGENT_STR_REF(user_agent_str) */
-    else if (t->t_tag == siptag_user_agent_str) {
-      user_agent_str = (void *)t->t_value;
-    }
-    /* NUTAG_USER_AGENT_REF(ua_name) */
-    else if (t->t_tag == nutag_user_agent) {
-      ua_name = (void *)t->t_value;
-    }
-    /* SIPTAG_ORGANIZATION_REF(organization) */
-    else if (t->t_tag == siptag_organization) {
-      organization = (void *)t->t_value;
-    }
-    /* SIPTAG_ORGANIZATION_STR_REF(organization_str) */
-    else if (t->t_tag == siptag_organization_str) {
-      organization_str = (void *)t->t_value;
-    }
-    /* NUTAG_REGISTRAR_REF(registrar) */
-    else if (t->t_tag == nutag_registrar) {
-      registrar = (void *)t->t_value;
-    }
-    /* NUTAG_INSTANCE_REF(instance) */
-    else if (t->t_tag == nutag_instance) {
-      instance = (void *)t->t_value;
-    }
-    /* NUTAG_M_DISPLAY_REF(m_display) */
-    else if (t->t_tag == nutag_m_display) {
-      m_display = (void *)t->t_value;
-    }
-    /* NUTAG_M_USERNAME_REF(m_username) */
-    else if (t->t_tag == nutag_m_username) {
-      m_username = (void *)t->t_value;
-    }
-    /* NUTAG_M_PARAMS_REF(m_params) */
-    else if (t->t_tag == nutag_m_params) {
-      m_params = (void *)t->t_value;
-    }
-    /* NUTAG_M_FEATURES_REF(m_features) */
-    else if (t->t_tag == nutag_m_features) {
-      m_features = (void *)t->t_value;
-    }
-    /* NUTAG_OUTBOUND_REF(outbound) */
-    else if (t->t_tag == nutag_outbound) {
-      outbound = (void *)t->t_value;
-    }
-    /* NUTAG_DETECT_NETWORK_UPDATES_REF(detect_network_updates) */
-    else if (t->t_tag == nutag_detect_network_updates) {
-      NHP_SET(nhp, detect_network_updates, (unsigned)t->t_value);
-    }
-  }
-
-  /* Sanitize values */
-#if 0				/* OK, trust application... */
-  if (invite_timeout > 0 && invite_timeout < 30)
-    invite_timeout = 30;
-
-  if (min_se > 0 && min_se < 30)
-    min_se = 30;
-  if (session_timer > 0) {
-    if (session_timer < 30)
-      session_timer = 30;
-    if (session_timer < min_se)
-      session_timer = min_se;
-  }
-#endif
-
-  if (NHP_ISSET(nhp, refresher)) {
-    if (nhp->nhp_refresher >= nua_remote_refresher)
-      nhp->nhp_refresher = nua_remote_refresher;
-    else if (nhp->nhp_refresher <= nua_no_refresher)
-      nhp->nhp_refresher = nua_no_refresher;
-  }
-
-  /* Add contents of NUTAG_ALLOW() to list of currently allowed methods */
-  if (allow == NONE && allow_str == NONE && allowing != NULL) {
-    sip_allow_t *methods = sip_allow_make(tmphome, allowing);
-
-    if (methods)
-      allow = sip_allow_dup(tmphome, NHP_GET(ohp, dnhp, allow));
-
-    if (allow == NULL)
-      allow = NONE;
-
-    if (allow != NONE)
-      if (msg_params_join(tmphome,
-			  (msg_param_t **)&allow->k_items, methods->k_items,
-			  1 /* prune */, 0 /* don't dup */) < 0)
-	error = 1, allow = NONE;
-  }
-
-  NHP_SET_HEADER(nhp, supported, supported, supported_str);
-  NHP_SET_HEADER(nhp, allow, allow, allow_str);
-  /* Add contents of NUTAG_USER_AGENT() to our distribution name */
-  if (ua_name != NONE && user_agent_str == NONE && user_agent == NONE)
-    user_agent_str = ua_name
-      ? su_sprintf(tmphome, "%s %s", ua_name, PACKAGE_NAME "/" PACKAGE_VERSION)
-      : PACKAGE_NAME "/" PACKAGE_VERSION;
-  NHP_SET_HEADER(nhp, user_agent, user_agent, user_agent_str);
-  NHP_SET_STR(nhp, ua_name, ua_name);
-  NHP_SET_HEADER(nhp, organization, organization, organization_str);
-
-  NHP_SET_STR(nhp, instance, instance);
-  NHP_SET_STR(nhp, m_display, m_display);
-  NHP_SET_STR(nhp, m_username, m_username);
-  NHP_SET_STR(nhp, m_params, m_params);
-  NHP_SET_STR(nhp, m_features, m_features);
-  NHP_SET_STR(nhp, outbound, outbound);
-
-  if (!error && NHP_IS_ANY_SET(nhp)) {
-    /* Move allocations from tmphome to handle's home */
-    if (nh != dnh && nh->nh_prefs == dnh->nh_prefs) {
-      /* We have made changes to handle-specific settings
-       * but we don't have a prefs structure owned by handle yet */
-      nua_handle_preferences_t *ahp = su_alloc(nh->nh_home, sizeof *ahp);
-      if (ahp && su_home_move(nh->nh_home, tmphome) >= 0) {
-	memcpy(ahp, nhp, sizeof *ahp);
-
-	NHP_ZAP_UNSET_PTR(ahp, supported);
-	NHP_ZAP_UNSET_PTR(ahp, allow);
-	NHP_ZAP_UNSET_PTR(ahp, user_agent);
-	NHP_ZAP_UNSET_PTR(ahp, ua_name);
-	NHP_ZAP_UNSET_PTR(ahp, organization);
-	NHP_ZAP_UNSET_PTR(ahp, instance);
-	NHP_ZAP_UNSET_PTR(ahp, m_display);
-	NHP_ZAP_UNSET_PTR(ahp, m_username);
-	NHP_ZAP_UNSET_PTR(ahp, m_params);
-	NHP_ZAP_UNSET_PTR(ahp, m_features);
-	NHP_ZAP_UNSET_PTR(ahp, outbound);
-
-	nh->nh_prefs = ahp;
-      }
-      else {
-	error = 1;
-      }
-    }
-    else if (su_home_move(nh->nh_home, tmphome) >= 0) {
-      /* Update prefs structure */
-      nua_handle_preferences_t tbf[1];
-
-      nhp_or_set(nhp, ohp);
-
-      *tbf = *ohp; *ohp = *nhp;
-
-      NHP_ZAP_OVERRIDEN(tbf, nhp, supported);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, allow);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, user_agent);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, ua_name);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, organization);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, instance);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, m_display);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, m_username);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, m_params);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, m_features);
-      NHP_ZAP_OVERRIDEN(tbf, nhp, outbound);
-    }
-    else
-      /* Fail miserably with ENOMEM */
-      error = 1;
+    if (!error)
+      nh->nh_used_ptags = 1;
   }
 
   su_home_deinit(tmphome);
 
   if (error)
-    return UA_EVENT2(e, 900, "Error storing parameters"), -1;
+    ;
+  else if (!nh->nh_soa && NHP_GET(nhp, dnhp, media_enable)) {
+    /* Create soa when needed */
+    char const *soa_name = NHP_GET(nhp, dnhp, soa_name);
 
-  if (nh->nh_soa && soa_set_params(nh->nh_soa, TAG_NEXT(tags)) < 0)
-    return UA_EVENT2(e, 900, "Error setting SOA parameters"), -1;
+    if (dnh->nh_soa)
+      nh->nh_soa = soa_clone(dnh->nh_soa, nua->nua_root, nh);
+    else  
+      nh->nh_soa = soa_create(soa_name, nua->nua_root, nh);
 
-#if 0
-  reinit_contact =
-    nua->nua_dhandle->nh_callee_caps != callee_caps ||
-    media_path != NONE || allow != NONE || allow_str != NONE;
-#endif
+    ptags = nh->nh_ptags;
 
-  /* Return when called in handle-specific way */
-  if (nh != dnh)
-    return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
-
-  if (nta_agent_set_params(nua->nua_nta, TAG_NEXT(tags)) < 0)
-    return UA_EVENT2(e, 900, "Error setting NTA parameters"), -1;
-
-  /* ---------------------------------------------------------------------- */
-  /* Set stack-specific things below */
-
-  if (registrar != NONE) {
-    if (registrar &&
-	(url_string_p(registrar) ?
-	 strcmp(registrar->us_str, "*") == 0 :
-	 registrar->us_url->url_type == url_any))
-      registrar = NULL;
-    su_free(nua->nua_home, nua->nua_registrar);
-    nua->nua_registrar = url_hdup(nua->nua_home, registrar->us_url);
+    if (!nh->nh_soa)
+      error = 1, status = 900, phrase = "Error Creating SOA Object";
+  }
+  else if (nh->nh_soa && !NHP_GET(nhp, dnhp, media_enable)) {
+    /* ... destroy soa when not needed */
+    soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
   }
 
-  nua_stack_set_from(nua, 0, tags);
+  if (!error && nh->nh_soa) {
+    if ((ptags && soa_set_params(nh->nh_soa, TAG_NEXT(ptags)) < 0) ||
+	(tags && soa_set_params(nh->nh_soa, TAG_NEXT(tags)) < 0))
+      error = 1, status = 900, phrase = "Error Setting SOA Parameters";
+  }
 
-  nua_stack_set_smime_params(nua, tags);
+  if (error || nh != dnh) {
+    ;
+  }
+  else if (nua_stack_set_smime_params(nua, tags) < 0) {
+    error = 1, status = 900, phrase = "Error setting S/MIME parameters";
+  }
+  else if (!nua->nua_nta) {
+  }
+  /* Set stack-specific things below */
+  else if (nta_agent_set_params(nua->nua_nta, TAG_NEXT(tags)) < 0) {
+    status = 900, phrase = "Error setting NTA parameters";
+    error = 1;
+  }
+  else {
+    nua_stack_set_from(nua, 0, tags);
+    if (NHP_ISSET(nhp, detect_network_updates))
+      nua_stack_launch_network_change_detector(nua);
+  }
 
-  if (NHP_ISSET(nhp, detect_network_updates))
-    nua_stack_launch_network_change_detector(nua);
+  if (error) {
+    if (e == nua_i_none)
+      SU_DEBUG_1(("nua_set_params(): failed: %s\n", phrase));
+    return UA_EVENT2(e, status, phrase), -1;
+  }
 
-  return e == nua_r_set_params ? UA_EVENT2(e, 200, "OK") : 0;
+  if (e == nua_r_set_params)
+    UA_EVENT2(e, 200, "OK");
+
+  return 0;
+}
+
+/** Parse parameters from tags to @a nhp.
+ *
+ * @param home allocate new values from @a home
+ * @param nhp  structure to store handle preferences
+ * @param global  if true, save also global parameters
+ * @param tags list of tags to parse
+ */
+static int 
+nhp_set_tags(su_home_t *home, 
+	     nua_handle_preferences_t *nhp,
+	     int global,
+	     tagi_t const *tags)
+{
+
+/* Set copy of string to handle pref structure */
+#define NHP_SET_STR(nhp, name, v)				 \
+  if ((v) != (tag_value_t)0) {					 \
+    char const *_value = (char const *)v;			 \
+    char *_new = _value ? su_strdup(home, _value) : NULL;	 \
+    if (NHP_ISSET(nhp, name))					 \
+      su_free(home, (void *)nhp->nhp_##name);			 \
+    NHP_SET(nhp, name, _new);					 \
+    if (_new == NULL && _value != NULL)				 \
+      return -1;						 \
+  }
+
+/* Set copy of string from url to handle pref structure */
+#define NHP_SET_STR_BY_URL(nhp, name, v)			 \
+  if ((v) != (tag_value_t)-1) {					 \
+    url_t const *_value = (url_t const *)(v);			 \
+    char *_new;							 \
+    _new = url_as_string(home, (void *)_value);			 \
+    if (NHP_ISSET(nhp, name))					 \
+      su_free(home, (void *)nhp->nhp_##name);			 \
+    NHP_SET(nhp, name, _new);					 \
+    if (_new == NULL && _value != NULL)				 \
+      return -1;						 \
+  }
+
+/* Set copy of header to handle pref structure */
+#define NHP_SET_HEADER(nhp, name, v)				 \
+  if ((v) != 0) {						 \
+    sip_##name##_t const *_value = (sip_##name##_t const *)(v);	 \
+    sip_##name##_t *_new = NULL;				 \
+    if (_value != SIP_NONE)					 \
+      _new = sip_##name##_dup(home, _value);			 \
+    if (NHP_ISSET(nhp, name))					 \
+      msg_header_free_all(home, (void *)nhp->nhp_##name);	 \
+    NHP_SET(nhp, name, _new);					 \
+    if (_new == NULL && _value != SIP_NONE)			 \
+      return -1;						 \
+  }
+
+/* Set header made of string to handle pref structure */
+#define NHP_SET_HEADER_STR(nhp, name, v)			 \
+  if ((v) != 0) {						 \
+    char const *_value = (char const *)(v);			 \
+    sip_##name##_t *_new = NULL;				 \
+    if (_value != SIP_NONE)					 \
+      _new = sip_##name##_make(home, _value);			 \
+    if (NHP_ISSET(nhp, name))					 \
+      msg_header_free_all(home, (void *)nhp->nhp_##name);	 \
+    NHP_SET(nhp, name, _new);					 \
+    if (_new == NULL && _value != SIP_NONE)			 \
+      return -1;						 \
+  }
+
+/* Set copy of string from header to handle pref structure */
+#define NHP_SET_STR_BY_HEADER(nhp, name, v)			 \
+  if ((v) != 0) {					 \
+    sip_##name##_t const *_value = (sip_##name##_t const *)(v);	 \
+    char *_new = NULL;						 \
+    if (_value != SIP_NONE)					 \
+      _new = sip_header_as_string(home, (void *)_value);	 \
+    if (NHP_ISSET(nhp, name))					 \
+      su_free(home, (void *)nhp->nhp_##name);			 \
+    NHP_SET(nhp, name, _new);					 \
+    if (_new == NULL && _value != SIP_NONE)			 \
+      return -1;						 \
+  }
+
+
+  tagi_t const *t;
+
+  for (t = tags; t; t = tl_next(t)) {
+    tag_type_t tag = t->t_tag;
+    tag_value_t value = t->t_value;
+
+    if (tag == NULL)
+      break;
+    /* NUTAG_RETRY_COUNT(retry_count) */
+    else if (tag == nutag_retry_count) {
+      NHP_SET(nhp, retry_count, (unsigned)value);
+    }
+    /* NUTAG_MAX_SUBSCRIPTIONS(max_subscriptions) */
+    else if (tag == nutag_max_subscriptions) {
+      NHP_SET(nhp, max_subscriptions, (unsigned)value);
+    }
+    /* NUTAG_SOA_NAME(soa_name) */
+    else if (tag == nutag_soa_name) {
+      NHP_SET_STR(nhp, soa_name, value);
+    }
+    /* NUTAG_MEDIA_ENABLE(media_enable) */
+    else if (tag == nutag_media_enable) {
+      NHP_SET(nhp, media_enable, value != 0);
+    }
+    /* NUTAG_ENABLEINVITE(invite_enable) */
+    else if (tag == nutag_enableinvite) {
+      NHP_SET(nhp, invite_enable, value != 0);
+    }
+    /* NUTAG_AUTOALERT(auto_alert) */
+    else if (tag == nutag_autoalert) {
+      NHP_SET(nhp, auto_alert, value != 0);
+    }
+    /* NUTAG_EARLY_MEDIA(early_media) */
+    else if (tag == nutag_early_media) {
+      NHP_SET(nhp, early_media, value != 0);
+    }
+    /* NUTAG_ONLY183_100REL(only183_100rel) */
+    else if (tag == nutag_only183_100rel) {
+      NHP_SET(nhp, only183_100rel, value != 0);
+    }
+    /* NUTAG_AUTOANSWER(auto_answer) */
+    else if (tag == nutag_autoanswer) {
+      NHP_SET(nhp, auto_answer, value != 0);
+    }
+    /* NUTAG_AUTOACK(auto_ack) */
+    else if (tag == nutag_autoack) {
+      NHP_SET(nhp, auto_ack, value != 0);
+    }
+    /* NUTAG_INVITE_TIMER(invite_timeout) */
+    else if (tag == nutag_invite_timer) {
+      NHP_SET(nhp, invite_timeout, (unsigned)value);
+    }
+    /* NUTAG_SESSION_TIMER(session_timer) */
+    else if (tag == nutag_session_timer) {
+      NHP_SET(nhp, session_timer, (unsigned)value);
+    }
+    /* NUTAG_MIN_SE(min_se) */
+    else if (tag == nutag_min_se) {
+      NHP_SET(nhp, min_se, (unsigned)value);
+    }
+    /* NUTAG_SESSION_REFRESHER(refresher) */
+    else if (tag == nutag_session_refresher) {
+      int refresher = value;
+
+      if (refresher >= nua_remote_refresher)
+	refresher = nua_remote_refresher;
+      else if (refresher <= nua_no_refresher)
+	refresher = nua_no_refresher;
+
+      NHP_SET(nhp, refresher, refresher);
+    }
+    /* NUTAG_UPDATE_REFRESH(update_refresh) */
+    else if (tag == nutag_update_refresh) {
+      NHP_SET(nhp, update_refresh, value != 0);
+    }
+    /* NUTAG_ENABLEMESSAGE(message_enable) */
+    else if (tag == nutag_enablemessage) {
+      NHP_SET(nhp, message_enable, value != 0);
+    }
+    /* NUTAG_ENABLEMESSENGER(win_messenger_enable) */
+    else if (tag == nutag_enablemessenger) {
+      NHP_SET(nhp, win_messenger_enable, value != 0);
+    }
+#if 0
+    /* NUTAG_MESSAGE_AUTOANSWER(message_auto_respond) */
+    else if (tag == nutag_message_autoanwer) {
+      NHP_SET(nhp, message_auto_respond, value);
+    }
+#endif
+    /* NUTAG_CALLEE_CAPS(callee_caps) */
+    else if (tag == nutag_callee_caps) {
+      NHP_SET(nhp, callee_caps, value != 0);
+    }
+    /* NUTAG_MEDIA_FEATURES(media_features) */
+    else if (tag == nutag_media_features) {
+      NHP_SET(nhp, media_features, value != 0);
+    }
+    /* NUTAG_SERVICE_ROUTE_ENABLE(service_route_enable) */
+    else if (tag == nutag_service_route_enable) {
+      NHP_SET(nhp, service_route_enable, value != 0);
+    }
+    /* NUTAG_PATH_ENABLE(path_enable) */
+    else if (tag == nutag_path_enable) {
+      NHP_SET(nhp, path_enable, value != 0);
+    }
+    /* NUTAG_REFER_EXPIRES(refer_expires) */
+    else if (tag == nutag_refer_expires) {
+      NHP_SET(nhp, refer_expires, value);
+    }
+    /* NUTAG_REFER_WITH_ID(refer_with_id) */
+    else if (tag == nutag_refer_with_id) {
+      NHP_SET(nhp, refer_with_id, value != 0);
+    }
+    /* NUTAG_SUBSTATE(substate) */
+    else if (tag == nutag_substate) {
+      NHP_SET(nhp, substate, (int)value);
+    }
+    /* NUTAG_KEEPALIVE(keepalive) */
+    else if (tag == nutag_keepalive) {
+      NHP_SET(nhp, keepalive, (unsigned)value);
+    }
+    /* NUTAG_KEEPALIVE_STREAM(keepalive_stream) */
+    else if (tag == nutag_keepalive_stream) {
+      NHP_SET(nhp, keepalive_stream, (unsigned)value);
+    }
+
+    /* NUTAG_SUPPORTED(feature) */
+    /* SIPTAG_SUPPORTED_STR(supported_str) */
+    /* SIPTAG_SUPPORTED(supported) */
+    else if (tag == nutag_supported ||
+	     tag == siptag_supported || 
+	     tag == siptag_supported_str) {
+      int ok;
+      sip_supported_t *supported = NULL;
+
+      ok = nhp_merge_lists(home, 
+			   sip_supported_class, &supported, nhp->nhp_supported,
+			   NHP_ISSET(nhp, supported), /* already set by tags */
+			   tag == siptag_supported, /* dup it, don't make */
+			   tag == nutag_supported, /* merge with old value */
+			   t->t_value);
+      if (ok < 0)
+	return -1;
+      else if (ok)
+	NHP_SET(nhp, supported, supported);
+    }
+    /* NUTAG_ALLOW(allowing) */
+    /* SIPTAG_ALLOW_STR(allow_str) */
+    /* SIPTAG_ALLOW(allow) */
+    else if (tag == nutag_allow ||
+	     tag == siptag_allow_str ||
+	     tag == siptag_allow) {
+      int ok;
+      sip_allow_t *allow = NULL;
+
+      ok = nhp_merge_lists(home, 
+			   sip_allow_class, &allow, nhp->nhp_allow,
+			   NHP_ISSET(nhp, allow), /* already set by tags */
+			   tag == siptag_allow, /* dup it, don't make */
+			   tag == nutag_allow, /* merge with old value */
+			   t->t_value);
+      if (ok < 0)
+	return -1;
+      else if (ok)
+	NHP_SET(nhp, allow, allow);
+    }
+    /* SIPTAG_USER_AGENT(user_agent) */
+    else if (tag == siptag_user_agent) {
+      NHP_SET_STR_BY_HEADER(nhp, user_agent, value);
+    }
+    /* SIPTAG_USER_AGENT_STR(user_agent_str) */
+    else if (tag == siptag_user_agent_str && value != 0) {
+      if (value == -1)
+	value = 0;
+      NHP_SET_STR(nhp, user_agent, value);
+    }
+    /* NUTAG_USER_AGENT(ua_name) */
+    else if (tag == nutag_user_agent) {
+      /* Add contents of NUTAG_USER_AGENT() to our distribution name */
+      char const *value = (void *)value, *ua;
+
+      if (value && !already_contains_package_name(value))
+	ua = su_sprintf(home, "%s %s", value, NHP_USER_AGENT);
+      else if (value)
+	ua = su_strdup(home, value);
+      else
+	ua = su_strdup(home, NHP_USER_AGENT);
+
+      NHP_SET(nhp, user_agent, ua);
+    }
+    /* SIPTAG_ORGANIZATION(organization) */
+    else if (tag == siptag_organization) {
+      NHP_SET_STR_BY_HEADER(nhp, organization, value);
+    }
+    /* SIPTAG_ORGANIZATION_STR(organization_str) */
+    else if (tag == siptag_organization_str) {
+      if (value == -1)
+	value = 0;
+      NHP_SET_STR(nhp, organization, value);
+    }
+    /* NUTAG_REGISTRAR(registrar) */
+    else if (tag == nutag_registrar) {
+      NHP_SET_STR_BY_URL(nhp, registrar, value);
+      if (NHP_ISSET(nhp, registrar) && !str0cmp(nhp->nhp_registrar, "*"))
+	NHP_SET_STR(nhp, registrar, 0);
+    }
+    /* NUTAG_INSTANCE(instance) */
+    else if (tag == nutag_instance) {
+      NHP_SET_STR(nhp, instance, value);
+    }
+    /* NUTAG_M_DISPLAY(m_display) */
+    else if (tag == nutag_m_display) {
+      NHP_SET_STR(nhp, m_display, value);
+    }
+    /* NUTAG_M_USERNAME(m_username) */
+    else if (tag == nutag_m_username) {
+      NHP_SET_STR(nhp, m_username, value);
+    }
+    /* NUTAG_M_PARAMS(m_params) */
+    else if (tag == nutag_m_params) {
+      NHP_SET_STR(nhp, m_params, value);
+    }
+    /* NUTAG_M_FEATURES(m_features) */
+    else if (tag == nutag_m_features) {
+      NHP_SET_STR(nhp, m_features, value);
+    }
+    /* NUTAG_OUTBOUND(outbound) */
+    else if (tag == nutag_outbound) {
+      NHP_SET_STR(nhp, outbound, value);
+    }
+    /* NUTAG_DETECT_NETWORK_UPDATES(detect_network_updates) */
+    else if (global && tag == nutag_detect_network_updates) {
+      int detector = (int)value;
+
+      if (detector < NUA_NW_DETECT_NOTHING)
+	detector = NUA_NW_DETECT_NOTHING;
+      else if (detector > NUA_NW_DETECT_TRY_FULL)
+	detector = NUA_NW_DETECT_TRY_FULL;
+
+      NHP_SET(nhp, detect_network_updates, detector);
+    }
+  }
+
+  return 0;
+}
+
+/** Merge (when needed) new values with old values. */
+static int nhp_merge_lists(su_home_t *home,
+			   msg_hclass_t *hc,
+			   msg_list_t **return_new_list,
+			   msg_list_t const *old_list,
+			   int already_set,
+			   int already_parsed,
+			   int always_merge,
+			   tag_value_t value)
+{
+  msg_list_t *list, *elems;
+
+  if (value == -1) {
+    *return_new_list = NULL;
+    return 1;
+  }
+
+  if (value == 0) {
+    if (!already_set && !always_merge) {
+      *return_new_list = NULL;
+      return 1;
+    }
+    return 0;
+  }
+
+  if (already_parsed) 
+    elems = (void *)msg_header_dup_as(home, hc, (msg_header_t *)value);
+  else
+    elems = (void *)msg_header_make(home, hc, (char const *)value);
+
+  if (!elems)
+    return -1;
+
+  list = (msg_list_t *)old_list;
+
+  if (!already_set) {
+    if (always_merge && list) {
+      list = (void *)msg_header_dup_as(home, hc, (void *)old_list);
+      if (!list)
+	return -1;
+    }
+    else
+      list = NULL;
+  }
+
+  if (!list) {
+    *return_new_list = elems;
+    return 1;
+  }
+
+  /* Add contents to the new list to the old list */
+  if (msg_params_join(home, (msg_param_t **)&list->k_items, elems->k_items,
+		      2 /* prune */, 0 /* don't dup */) < 0)
+    return -1;
+  
+  *return_new_list = 
+    (msg_list_t *)msg_header_dup_as(home, hc, (msg_header_t *)list);
+  if (!*return_new_list)
+    return -1;
+
+  msg_header_free(home, (msg_header_t *)list);
+  msg_header_free(home, (msg_header_t *)elems);
+
+  return 1;
+}
+
+static
+nua_handle_preferences_t *
+nhp_move_params(su_home_t *home,
+		nua_handle_preferences_t *dst,
+		su_home_t *tmphome,
+		nua_handle_preferences_t const *src)
+{
+  /* Update prefs structure */
+  nua_handle_preferences_t tbf[1];
+
+  if (dst == NULL)
+    dst = su_zalloc(home, sizeof *dst);
+  if (dst == NULL)
+    return NULL;
+  if (su_home_move(home, tmphome) < 0)
+    return NULL;
+
+  *tbf = *dst;
+  nhp_or_set(dst, src);
+
+  /* Handle pointer items. Free changed ones and zap unset ones. */
+#define NHP_ZAP_OVERRIDEN(tbf, nhp, pref)				\
+  (((tbf)->nhp_set.nhb_##pref						\
+    && (tbf)->nhp_##pref != (nhp)->nhp_##pref				\
+    ? su_free(home, (void *)(tbf)->nhp_##pref) : (void)0),		\
+   (void)(!(nhp)->nhp_set.nhb_##pref ? (nhp)->nhp_##pref = NULL : NULL))
+
+  NHP_ZAP_OVERRIDEN(tbf, dst, soa_name);
+  NHP_ZAP_OVERRIDEN(tbf, dst, registrar);
+  NHP_ZAP_OVERRIDEN(tbf, dst, supported);
+  NHP_ZAP_OVERRIDEN(tbf, dst, allow);
+  NHP_ZAP_OVERRIDEN(tbf, dst, user_agent);
+  NHP_ZAP_OVERRIDEN(tbf, dst, organization);
+  NHP_ZAP_OVERRIDEN(tbf, dst, instance);
+  NHP_ZAP_OVERRIDEN(tbf, dst, m_display);
+  NHP_ZAP_OVERRIDEN(tbf, dst, m_username);
+  NHP_ZAP_OVERRIDEN(tbf, dst, m_params);
+  NHP_ZAP_OVERRIDEN(tbf, dst, m_features);
+  NHP_ZAP_OVERRIDEN(tbf, dst, outbound);
+
+  return dst;
+}
+
+static int nua_handle_tags_filter(tagi_t const *f, tagi_t const *t);
+static int nua_handle_param_filter(tagi_t const *f, tagi_t const *t);
+
+/** Save taglist to a handle */
+int
+nua_handle_save_tags(nua_handle_t *nh, tagi_t *tags)
+{
+  tagi_t const tagfilter[] = {
+    { TAG_FILTER(nua_handle_tags_filter) },
+    { TAG_NULL() }
+  };
+  tagi_t const paramfilter[] = {
+    { TAG_FILTER(nua_handle_param_filter) },
+    { TAG_NULL() }
+  };
+
+  /* Initialization parameters */
+  url_string_t const *url = NULL;
+  sip_to_t const *p_to = NULL;
+  char const *to_str = NULL;
+  sip_from_t from[1];
+  sip_from_t const *p_from = NULL;
+  char const *from_str = NULL;
+  nua_handle_t *identity = NULL;
+
+  tagi_t const *t;
+
+  su_home_t tmphome[SU_HOME_AUTO_SIZE(1024)];
+
+  int error;
+
+  for (t = tags; t; t = tl_next(t)) {
+    if (t->t_tag == NULL)
+      break;
+    /* SIPTAG_FROM_REF(p_from) */
+    else if (t->t_tag == siptag_from) {
+      p_from = (sip_from_t *)t->t_value, from_str = NULL;
+    }
+    /* SIPTAG_FROM_STR_REF(from_str) */
+    else if (t->t_tag == siptag_from_str) {
+      from_str = (char const *)t->t_value, p_from = NULL;
+    }
+    /* SIPTAG_TO_REF(p_to) */
+    else if (t->t_tag == siptag_to) {
+      p_to = (sip_to_t *)t->t_value, to_str = NULL;
+    }
+    /* SIPTAG_TO_STR_REF(to_str) */
+    else if (t->t_tag == siptag_to_str) {
+      to_str = (char const *)t->t_value, p_to = NULL;
+    }
+    /* NUTAG_IDENTITY_REF(identity) */
+    else if (t->t_tag == nutag_identity) {
+      identity = (nua_handle_t *)t->t_value;
+    }
+    /* NUTAG_URL_REF(url) */
+    else if (t->t_tag == nutag_url) {
+      url = (url_string_t *)t->t_value;
+    }
+    /* NUTAG_SIPS_URL_REF(url) */
+    else if (t->t_tag == nutag_url) {
+      url = (url_string_t *)t->t_value;
+    }
+  }
+
+  su_home_auto(tmphome, sizeof tmphome);
+
+  if (p_from)
+    ;
+  else if (from_str)
+    p_from = sip_from_make(tmphome, from_str);
+  else if (!p_from && nh->nh_nua->nua_from)
+    *from = *nh->nh_nua->nua_from, from->a_params = NULL, p_from = from;
+  else
+    p_from = SIP_NONE;    /* XXX - why? */
+
+  if (p_to)
+    ;
+  else if (to_str)
+    p_to = sip_to_make(tmphome, to_str);
+  else if (url) 
+    p_to = sip_to_create(tmphome, url);
+  else
+    p_to = SIP_NONE;
+  
+  if (p_to == NULL || p_from == NULL) {
+    su_home_deinit(tmphome);
+    return -1;
+  }
+
+  nh->nh_tags = 
+    tl_filtered_tlist(nh->nh_home, tagfilter,
+		      SIPTAG_FROM(p_from),
+		      TAG_FILTER(nua_handle_tags_filter),
+		      SIPTAG_TO(p_to),
+		      TAG_FILTER(nua_handle_tags_filter),
+		      TAG_NEXT(tags));
+
+  nh->nh_ptags = 
+    tl_filtered_tlist(nh->nh_home, paramfilter, TAG_NEXT(tags));
+
+  error = nh->nh_tags == NULL || nh->nh_ptags == NULL;
+
+  if (!error)
+    tl_gets(nh->nh_tags,	/* These does not change while nh lives */
+	    SIPTAG_FROM_REF(nh->nh_ds->ds_local),
+	    SIPTAG_TO_REF(nh->nh_ds->ds_remote),
+	    TAG_END());
+
+  if (nh->nh_ptags && nh->nh_ptags->t_tag == NULL)
+    su_free(nh->nh_home, nh->nh_ptags), nh->nh_ptags = NULL;
+    
+  if (identity)
+    nh->nh_identity = nua_handle_ref(identity);
+
+  su_home_deinit(tmphome);
+
+  return -error;
+}
+
+/** Filter tags used for settings. */
+static int nua_handle_param_filter(tagi_t const *f, tagi_t const *t)
+{
+  char const *ns;
+
+  if (!t || !t->t_tag)
+    return 0;
+
+  if (t->t_tag == nutag_url || 
+      t->t_tag == nutag_sips_url ||
+      t->t_tag == nutag_identity)
+    return 0;
+
+  ns = t->t_tag->tt_ns; 
+  if (!ns)
+    return 0;
+
+  return strcmp(ns, "nua") == 0 && strcmp(ns, "soa") == 0;
+}
+
+/** Filter tags stored permanently as taglist. */
+static int nua_handle_tags_filter(tagi_t const *f, tagi_t const *t)
+{
+  tag_type_t tag;
+
+  if (!t || !t->t_tag)
+    return 0;
+
+  tag = t->t_tag;
+
+  if (tag == tag_filter)
+    return 0;
+  
+  /* Accept @From or @To only when they are followed by
+     TAG_FILTER(nua_handle_tags_filter) */
+  if (tag == siptag_from || tag == siptag_to) {
+    t = tl_next(t);
+    return t && t->t_tag == tag_filter && 
+      t->t_value == (tag_value_t)nua_handle_tags_filter;
+  }
+
+  if (tag == nutag_identity)
+    return 0;
+  if (tag == siptag_from_str)
+    return 0;
+  if (tag == siptag_to_str)
+    return 0;
+
+  /** Ignore @CSeq, @RSeq, @RAck, @Timestamp, and @ContentLength */
+  if (tag == siptag_cseq || tag == siptag_cseq_str)
+    return 0;
+  if (tag == siptag_rseq || tag == siptag_rseq_str)
+    return 0;
+  if (tag == siptag_rack || tag == siptag_rack_str)
+    return 0;
+  if (tag == siptag_timestamp || tag == siptag_timestamp_str)
+    return 0;
+  if (tag == siptag_content_length || tag == siptag_content_length_str)
+    return 0;
+
+  return ! nua_handle_param_filter(f, t);
 }
 
 static
@@ -776,9 +1221,8 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
 
 /**@fn void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
  *
- * Get NUA parameters.
- *
- * Get values of NUA parameters in #nua_r_get_params event.
+ * Get NUA parameters matching with the given filter.
+ * The values of NUA parameters is returned in #nua_r_get_params event.
  *
  * @param nua             Pointer to NUA stack object
  * @param tag, value, ... List of tagged parameters
@@ -787,11 +1231,17 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *     nothing
  *
  * @par Related tags:
- *     #TAG_ANY \n
- *     othervise same tags as nua_set_params()
+ *     TAG_ANY() \n
+ *     otherwise same tags as nua_set_params()
  *
  * @par Events:
  *     #nua_r_get_params
+ *
+ * @par Examples
+ * Find out default values of all parameters:
+ * @code
+ *    nua_get_params(nua, TAG_ANY(), TAG_END());
+ * @endcode
  */
 
 /**@fn void nua_get_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
@@ -890,7 +1340,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   m = nua_stack_get_contact(nua->nua_registrations);
 
-  /* Include tag in list returned to user
+  /* Include tag in the list returned to user
    * if it has been earlier set (by user) */
 #define TIF(TAG, pref) \
   TAG_IF(nhp->nhp_set.nhb_##pref, TAG(nhp->nhp_##pref))
@@ -901,6 +1351,14 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   TAG_IF(nhp->nhp_set.nhb_##pref,				\
 	 TAG(nhp->nhp_set.nhb_##pref && nhp->nhp_##pref	\
 	     ? sip_header_as_string(tmphome, (void *)nhp->nhp_##pref) : NULL))
+
+  /* Include header tag made out of string
+   * if it has been earlier set (by user) */
+#define TIF_SIP(TAG, pref)						\
+  TAG_IF(nhp->nhp_set.nhb_##pref,					\
+	 TAG(nhp->nhp_set.nhb_##pref && nhp->nhp_##pref			\
+	     ? sip_##pref##_make(tmphome, (char *)nhp->nhp_##pref)	\
+	     : NULL))
 
   lst = tl_filtered_tlist
     (tmphome, tags,
@@ -913,6 +1371,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_RETRY_COUNT, retry_count),
      TIF(NUTAG_MAX_SUBSCRIPTIONS, max_subscriptions),
 
+     TIF(NUTAG_SOA_NAME, soa_name),
+     TIF(NUTAG_MEDIA_ENABLE, media_enable),
      TIF(NUTAG_ENABLEINVITE, invite_enable),
      TIF(NUTAG_AUTOALERT, auto_alert),
      TIF(NUTAG_EARLY_MEDIA, early_media),
@@ -943,12 +1403,16 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF_STR(SIPTAG_SUPPORTED_STR, supported),
      TIF(SIPTAG_ALLOW, allow),
      TIF_STR(SIPTAG_ALLOW_STR, allow),
-     TIF(SIPTAG_USER_AGENT, user_agent),
-     TIF_STR(SIPTAG_USER_AGENT_STR, user_agent),
-     TIF(NUTAG_USER_AGENT, ua_name),
+     TIF_SIP(SIPTAG_USER_AGENT, user_agent),
+     TIF(SIPTAG_USER_AGENT_STR, user_agent),
+     TIF(NUTAG_USER_AGENT, user_agent),
 
-     TIF(SIPTAG_ORGANIZATION, organization),
-     TIF_STR(SIPTAG_ORGANIZATION_STR, organization),
+     TIF_SIP(SIPTAG_ORGANIZATION, organization),
+     TIF(SIPTAG_ORGANIZATION_STR, organization),
+
+     TIF(NUTAG_REGISTRAR, registrar),
+     TIF(NUTAG_KEEPALIVE, keepalive),
+     TIF(NUTAG_KEEPALIVE_STREAM, keepalive_stream),
 
      TIF(NUTAG_INSTANCE, instance),
      TIF(NUTAG_M_DISPLAY, m_display),
@@ -957,14 +1421,9 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_M_FEATURES, m_features),
      TIF(NUTAG_OUTBOUND, outbound),
      TIF(NUTAG_DETECT_NETWORK_UPDATES, detect_network_updates),
-     TIF(NUTAG_KEEPALIVE, keepalive),
-     TIF(NUTAG_KEEPALIVE_STREAM, keepalive_stream),
 
      /* Skip user-agent-level parameters if parameters are for handle only */
      TAG_IF(nh != dnh, TAG_NEXT(media_params)),
-
-     NUTAG_MEDIA_ENABLE(nua->nua_media_enable),
-     NUTAG_REGISTRAR(nua->nua_registrar),
 
      NTATAG_CONTACT(m),
 

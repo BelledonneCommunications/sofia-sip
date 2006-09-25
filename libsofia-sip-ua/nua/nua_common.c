@@ -89,7 +89,7 @@ static void nh_destructor(void *arg);
  * @retval NULL    Creation failed
  *
  * @par Related tags:
- *     Creates a copy of provided tags and they will 
+ *     Creates a copy of the provided tags which will 
  *     be used with every operation.
  *
  * @par Events:
@@ -98,7 +98,8 @@ static void nh_destructor(void *arg);
  * @note
  * This function is called by both stack and application sides.
  */
-nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
+nua_handle_t *nh_create_handle(nua_t *nua,
+			       nua_hmagic_t *hmagic,
 			       tagi_t *tags)
 {
   nua_handle_t *nh;
@@ -109,62 +110,17 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
   assert(nua->nua_home);
 
   if ((nh = su_home_clone(nua->nua_home, sizeof(*nh)))) {
-    url_string_t const *url = NULL;
-    sip_to_t to[1];
-    sip_to_t const *p_to = NULL;
-    sip_from_t from[1];
-    sip_from_t const *p_from = NULL;
-
-    tl_gets(tags,	/* These does not change while nh lives */
-	    SIPTAG_FROM_REF(p_from),
-	    SIPTAG_TO_REF(p_to),
-	    NUTAG_URL_REF(url),
-	    TAG_END());
-
-    if (!p_from && nua->nua_from) {
-      *from = *nua->nua_from;
-      from->a_params = NULL;
-    }
-    else {
-      p_from = (void *)-1;
-    }
-
-    nh->nh_prefs = nua->nua_dhandle->nh_prefs;
-
-    if (!p_to && url) {
-      void *tbf = NULL;
-
-      if (url_is_string(url))
-	url = tbf = url_hdup(nh->nh_home, url->us_url);
-
-      *sip_to_init(to)->a_url = *url->us_url;
-
-      to->a_url->url_params = NULL;
-      to->a_url->url_headers = NULL;
-
-      nh->nh_ds->ds_remote = sip_to_dup(nh->nh_home, to);
-      
-      if (tbf)
-	su_free(nh->nh_home, tbf);
-    }
-    else {
-      p_to = (void *)-1;
-    }
-
     nh->nh_valid = nua_handle;
     nh->nh_nua = nua;
     nh->nh_magic = hmagic;
-    nh->nh_tags = tl_tlist(nh->nh_home, 
-			   TAG_IF(!p_from, SIPTAG_FROM(from)),
-			   TAG_IF(!p_to, SIPTAG_TO(to)),
-			   TAG_NEXT(tags));
+    nh->nh_prefs = nua->nua_dhandle->nh_prefs;
 
-    tl_gets(nh->nh_tags,	/* These does not change while nh lives */
-	    SIPTAG_FROM_REF(nh->nh_ds->ds_local),
-	    SIPTAG_TO_REF(nh->nh_ds->ds_remote),
-	    TAG_END());
-
-    if (su_home_is_threadsafe(nua->nua_home)) {
+    if (nua_handle_save_tags(nh, tags) < 0) {
+      SU_DEBUG_5(("nua(%p): creating handle %p failed\n", nua, nh));
+      su_home_unref(nh->nh_home), nh = NULL;
+    }
+    
+    if (nh && su_home_is_threadsafe(nua->nua_home)) {
       if (su_home_threadsafe(nh->nh_home) < 0) {
 	su_home_unref(nh->nh_home);
 	nh = NULL;
@@ -172,8 +128,9 @@ nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
     }
 
     if (nh && _handle_lifetime) {      
-      /* This far, we have nothing real to destruct */
-
+      /* This far, we have nothing real to destruct but
+       * when _NUA_HANDLE_DEBUG is set, we add destructor 
+       * and get more entertaining debugging output */
       if (_handle_lifetime == 1 && !getenv("_NUA_HANDLE_DEBUG")) {
 	_handle_lifetime = 0;
       } 
