@@ -148,17 +148,15 @@ static void soa_static_deinit(soa_session_t *ss)
   soa_base_deinit(ss);
 }
 
-static int soa_static_set_params(soa_session_t *ss, tagi_t const *tags)
+static issize_t soa_static_set_params(soa_session_t *ss, tagi_t const *tags)
 {
   soa_static_session_t *sss = (soa_static_session_t *)ss;
   char const *audio_aux = sss->sss_audio_aux;
-  int n, m;
+  issize_t n, m;
 
   n = tl_gets(tags,
 	      SOATAG_AUDIO_AUX_REF(audio_aux),
 	      TAG_END());
-  if (n < 0)
-    return n;
 
   if (str0casecmp(audio_aux, sss->sss_audio_aux)) {
     char *s = su_strdup(ss->ss_home, audio_aux), *tbf = sss->sss_audio_aux;

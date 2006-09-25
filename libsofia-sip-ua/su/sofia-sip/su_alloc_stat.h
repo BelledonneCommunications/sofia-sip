@@ -49,7 +49,7 @@ typedef struct su_home_stat_t su_home_stat_t;
 
 SU_DLL void su_home_init_stats(su_home_t *h);
 SU_DLL void su_home_get_stats(su_home_t *, int include_clones, 
-			      su_home_stat_t *stats, int statssize);
+			      su_home_stat_t *stats, isize_t statssize);
 
 SU_DLL void su_home_stat_add(su_home_stat_t *total, 
 			     su_home_stat_t const *hs);
