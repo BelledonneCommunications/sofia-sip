@@ -292,7 +292,7 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
   xtra = tl_xtra(ta_args(ta), len);
   p_len = phrase ? strlen(phrase) + 1 : 1;
 
-  if (su_msg_create(sumsg, nua->nua_client, nua->nua_server,
+  if (su_msg_create(sumsg, nua->nua_client, su_task_null,
 		    nua_event, e_len + len + xtra + p_len) == 0) {
     event_t *e = su_msg_data(sumsg);
 

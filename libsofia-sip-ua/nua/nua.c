@@ -1166,7 +1166,7 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
   len = tl_len(ta_args(ta));
   xtra = tl_xtra(ta_args(ta), len);
 
-  if (su_msg_create(sumsg, nua->nua_server, nua->nua_client,
+  if (su_msg_create(sumsg, nua->nua_server, su_task_null,
 		    nua_stack_signal,
 		    e_len + len + l_len + xtra + l_xtra) == 0) {
     event_t *e = su_msg_data(sumsg);
@@ -1190,7 +1190,8 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
       nua_handle_unref(nh);
   } 
   else {
-    assert(0);
+    /* XXX  - we should return error code to application */
+    assert(ENOMEM == 0);
   }
 
   ta_end(ta);
