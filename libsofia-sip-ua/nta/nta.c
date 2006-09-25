@@ -390,7 +390,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_server_rport    = 1;
 
     /* RFC 3261 section 8.1.1.6 */
-    sip_max_forwards_init(agent->sa_max_forwards)->mf_count = 70;
+    sip_max_forwards_init(agent->sa_max_forwards);
 
     if (getenv("SIPCOMPACT"))
       agent->sa_flags |= MSG_DO_COMPACT;
@@ -762,6 +762,7 @@ void agent_kill_terminator(nta_agent_t *agent)
  * NTATAG_ALIASES(), NTATAG_BAD_REQ_MASK(), NTATAG_BAD_RESP_MASK(),
  * NTATAG_CANCEL_2543(), NTATAG_CANCEL_487(), NTATAG_DEBUG_DROP_PROB(),
  * NTATAG_DEFAULT_PROXY(), NTATAG_EXTRA_100(), NTATAG_MAXSIZE(),
+ * NTATAG_MAX_FORWARDS(),
  * NTATAG_UDP_MTU(), NTATAG_MERGE_482(), NTATAG_PASS_100(),
  * NTATAG_PRELOAD(), NTATAG_REL100(), NTATAG_RPORT(), NTATAG_SERVER_RPORT(),
  * NTATAG_TCP_RPORT(),
@@ -796,6 +797,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned bad_req_mask = agent->sa_bad_req_mask;
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
   unsigned maxsize    = agent->sa_maxsize;
+  unsigned max_forwards = agent->sa_max_forwards->mf_count;
   unsigned udp_mtu    = agent->sa_udp_mtu;
   unsigned sip_t1     = agent->sa_t1;
   unsigned sip_t2     = agent->sa_t2;
@@ -842,6 +844,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      NTATAG_UA_REF(ua),
 	      NTATAG_STATELESS_REF(stateless),
 	      NTATAG_MAXSIZE_REF(maxsize),
+	      NTATAG_MAX_FORWARDS_REF(max_forwards),
 	      NTATAG_UDP_MTU_REF(udp_mtu),
 	      NTATAG_SIP_T1_REF(sip_t1),
 	      NTATAG_SIP_T2_REF(sip_t2),
@@ -944,6 +947,9 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   if (maxsize > NTA_TIME_MAX) maxsize = NTA_TIME_MAX;
   agent->sa_maxsize = maxsize;
 
+  if (max_forwards == 0) max_forwards = 70; /* Default value */
+  agent->sa_max_forwards->mf_count = max_forwards;
+
   if (udp_mtu == 0) udp_mtu = 1300;
   if (udp_mtu > 65535) udp_mtu = 65535;
   if (agent->sa_udp_mtu != udp_mtu)
@@ -1038,6 +1044,7 @@ void agent_set_udp_params(nta_agent_t *self, unsigned udp_mtu)
  * NTATAG_ALIASES_REF(), NTATAG_CANCEL_2543_REF(), NTATAG_CANCEL_487_REF(),
  * NTATAG_CONTACT_REF(), NTATAG_DEBUG_DROP_PROB_REF(),
  * NTATAG_DEFAULT_PROXY_REF(), NTATAG_EXTRA_100_REF(), NTATAG_MAXSIZE_REF(),
+ * NTATAG_MAX_FORWARDS_REF(),
  * NTATAG_MERGE_482_REF(), NTATAG_PASS_100_REF(), NTATAG_PRELOAD_REF(),
  * NTATAG_REL100_REF(), NTATAG_RPORT_REF(), NTATAG_SIPFLAGS_REF(),
  * NTATAG_SIP_T1X64_REF(), NTATAG_SIP_T1_REF(), NTATAG_SIP_T2_REF(),
@@ -1076,6 +1083,7 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_UA(agent->sa_is_a_uas),
 	     NTATAG_STATELESS(agent->sa_is_stateless),
 	     NTATAG_MAXSIZE(agent->sa_maxsize),
+	     NTATAG_MAX_FORWARDS(agent->sa_max_forwards->mf_count),
 	     NTATAG_UDP_MTU(agent->sa_udp_mtu),
 	     NTATAG_SIP_T1(agent->sa_t1),
 	     NTATAG_SIP_T2(agent->sa_t2),

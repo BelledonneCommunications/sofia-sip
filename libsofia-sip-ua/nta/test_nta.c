@@ -557,8 +557,9 @@ int test_init(agent_t *ag, char const *resolv_conf)
 			      NTATAG_UA(1), 
 			      NTATAG_USE_NAPTR(1),
 			      NTATAG_USE_SRV(1),
+			      NTATAG_MAX_FORWARDS(20),
 			      TAG_END()),
-	 5);
+	 6);
 
     TEST(nta_agent_set_params(ag->ag_agent, 
 			      NTATAG_ALIASES(ag->ag_aliases),

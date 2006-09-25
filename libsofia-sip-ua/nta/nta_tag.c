@@ -70,6 +70,7 @@ tag_typedef_t ntatag_remote_cseq = UINTTAG_TYPEDEF(remote_cseq);
 
 tag_typedef_t ntatag_maxsize = UINTTAG_TYPEDEF(maxsize);
 tag_typedef_t ntatag_udp_mtu = UINTTAG_TYPEDEF(udp_mtu);
+tag_typedef_t ntatag_max_forwards = UINTTAG_TYPEDEF(max_forwards);
 tag_typedef_t ntatag_sip_t1 = UINTTAG_TYPEDEF(sip_t1);
 tag_typedef_t ntatag_sip_t1x64 = UINTTAG_TYPEDEF(sip_t1x64);
 tag_typedef_t ntatag_sip_t2 = UINTTAG_TYPEDEF(sip_t2);
