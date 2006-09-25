@@ -87,6 +87,9 @@ int test_nua_params(struct context *ctx)
   sip_from_t const *from;
   su_home_t tmphome[SU_HOME_AUTO_SIZE(16384)];
   nua_handle_t *nh;
+  struct event *e;
+  tagi_t const *t;
+  isize_t n;
 
   su_home_auto(tmphome, sizeof(tmphome));
 
@@ -105,6 +108,16 @@ int test_nua_params(struct context *ctx)
 
   TEST_1(ctx->a.nua);
 
+  nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
+  run_a_until(ctx, nua_r_get_params, save_until_final_response);
+
+  TEST_1(e = ctx->a.events->head);
+  TEST_E(e->data->e_event, nua_r_get_params);
+  for (n = 0, t = e->data->e_tags; t; n++, t = tl_next(t))
+    ;
+  TEST_1(n > 32);
+  free_events_in_list(ctx, ctx->a.events);
+
   nh = nua_handle(ctx->a.nua, NULL, TAG_END()); TEST_1(nh);
   nua_handle_unref(nh);
 
@@ -122,13 +135,23 @@ int test_nua_params(struct context *ctx)
   nua_set_params(ctx->a.nua,
 		 SIPTAG_FROM_STR(Alice),
 
+		 NUTAG_MEDIA_ENABLE(0),
+		 NUTAG_SOA_NAME("test"),
+
+		 NUTAG_REGISTRAR("sip:openlaboratory.net"),
+
 		 SIPTAG_SUPPORTED_STR("test"),
 		 SIPTAG_ALLOW_STR("DWIM, OPTIONS, INFO"),
 		 SIPTAG_USER_AGENT_STR("test_nua/1.0"),
 
-		 SIPTAG_ORGANIZATION_STR("Te-Ras y.r."),
-
-		 NUTAG_REGISTRAR("sip:openlaboratory.net"),
+		 SIPTAG_ORGANIZATION_STR("Open Laboratory"),
+		 
+		 NUTAG_M_DISPLAY("XXX"),
+		 NUTAG_M_USERNAME("xxx"),
+		 NUTAG_M_PARAMS("user=ip"),
+		 NUTAG_M_FEATURES("language=\"fi\""),
+		 NUTAG_INSTANCE("urn:uuid:3eb007b1-6d7f-472e-8b64-29e482795da8"),
+		 NUTAG_OUTBOUND("bar"),
 
 		 TAG_END());
 
@@ -173,8 +196,12 @@ int test_nua_params(struct context *ctx)
 		 NUTAG_M_PARAMS("user=phone"),
 		 NUTAG_M_FEATURES("language=\"en\""),
 		 NUTAG_OUTBOUND("foo"),
-		 SIPTAG_SUPPORTED(sip_supported_make(tmphome, "humppaa,kuole")),
-		 SIPTAG_ALLOW(sip_allow_make(tmphome, "OPTIONS, INFO")),
+		 SIPTAG_SUPPORTED(sip_supported_make(tmphome, "foo")),
+		 NUTAG_SUPPORTED("foo, bar"),
+		 SIPTAG_SUPPORTED_STR(",baz,"),
+		 SIPTAG_ALLOW_STR("OPTIONS"),
+		 SIPTAG_ALLOW(sip_allow_make(tmphome, "INFO")),
+		 NUTAG_ALLOW("ACK, INFO"),
 		 SIPTAG_USER_AGENT(sip_user_agent_make(tmphome, "test_nua")),
 
 		 SIPTAG_ORGANIZATION(sip_organization_make(tmphome, "Pussy Galore's Flying Circus")),
@@ -199,9 +226,12 @@ int test_nua_params(struct context *ctx)
     unsigned retry_count = -1;
     unsigned max_subscriptions = -1;
 
+    char const *soa_name = "NONE";
+    int media_enable = -1;
     int invite_enable = -1;
     int auto_alert = -1;
     int early_media = -1;
+    int only183_100rel = -1;
     int auto_answer = -1;
     int auto_ack = -1;
     unsigned invite_timeout = -1;
@@ -229,6 +259,7 @@ int test_nua_params(struct context *ctx)
     char const *supported_str = "NONE";
     sip_user_agent_t const *user_agent = NONE;
     char const *user_agent_str = "NONE";
+    char const *ua_name = "NONE";
     sip_organization_t const *organization = NONE;
     char const *organization_str = "NONE";
 
@@ -239,12 +270,8 @@ int test_nua_params(struct context *ctx)
     char const *m_features = "NONE";
     char const *instance = "NONE";
     
-    unsigned keepalive = -1, keepalive_stream = -1;
-
     url_string_t const *registrar = NONE;
-
-    int n;
-    struct event *e;
+    unsigned keepalive = -1, keepalive_stream = -1;
 
     nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
     run_a_until(ctx, nua_r_get_params, save_until_final_response);
@@ -259,9 +286,12 @@ int test_nua_params(struct context *ctx)
 	       	NUTAG_RETRY_COUNT_REF(retry_count),
 	       	NUTAG_MAX_SUBSCRIPTIONS_REF(max_subscriptions),
 
+		NUTAG_SOA_NAME_REF(soa_name),
+		NUTAG_MEDIA_ENABLE_REF(media_enable),
 	       	NUTAG_ENABLEINVITE_REF(invite_enable),
 	       	NUTAG_AUTOALERT_REF(auto_alert),
 	       	NUTAG_EARLY_MEDIA_REF(early_media),
+		NUTAG_ONLY183_100REL_REF(only183_100rel),
 	       	NUTAG_AUTOANSWER_REF(auto_answer),
 	       	NUTAG_AUTOACK_REF(auto_ack),
 	       	NUTAG_INVITE_TIMER_REF(invite_timeout),
@@ -289,9 +319,14 @@ int test_nua_params(struct context *ctx)
 	       	SIPTAG_ALLOW_STR_REF(allow_str),
 	       	SIPTAG_USER_AGENT_REF(user_agent),
 	       	SIPTAG_USER_AGENT_STR_REF(user_agent_str),
+		NUTAG_USER_AGENT_REF(ua_name),
 
 	       	SIPTAG_ORGANIZATION_REF(organization),
 	       	SIPTAG_ORGANIZATION_STR_REF(organization_str),
+
+	       	NUTAG_REGISTRAR_REF(registrar),
+		NUTAG_KEEPALIVE_REF(keepalive),
+		NUTAG_KEEPALIVE_STREAM_REF(keepalive_stream),
 
 		NUTAG_OUTBOUND_REF(outbound),
 		NUTAG_M_DISPLAY_REF(m_display),
@@ -300,13 +335,8 @@ int test_nua_params(struct context *ctx)
 		NUTAG_M_FEATURES_REF(m_features),
 		NUTAG_INSTANCE_REF(instance),
 
-		NUTAG_KEEPALIVE_REF(keepalive),
-		NUTAG_KEEPALIVE_STREAM_REF(keepalive_stream),
-
-	       	NUTAG_REGISTRAR_REF(registrar),
-
 		TAG_END());
-    TEST(n, 40);
+    TEST(n, 44);
 
     TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
     TEST_S(from_str, Alice);
@@ -314,6 +344,8 @@ int test_nua_params(struct context *ctx)
     TEST(retry_count, 5);
     TEST(max_subscriptions, 6);
 
+    TEST_S(soa_name, "test");
+    TEST(media_enable, 0);
     TEST(invite_enable, 0);
     TEST(auto_alert, 1);
     TEST(early_media, 1);
@@ -338,16 +370,19 @@ int test_nua_params(struct context *ctx)
     TEST(refer_with_id, 0);
     TEST(substate, nua_substate_pending);
 
-    TEST_S(sip_header_as_string(tmphome, (void *)allow), "OPTIONS, INFO");
-    TEST_S(allow_str, "OPTIONS, INFO");
-    TEST_S(sip_header_as_string(tmphome, (void *)supported), "humppaa, kuole");
-    TEST_S(supported_str, "humppaa, kuole");
+    TEST_S(sip_header_as_string(tmphome, (void *)allow), "OPTIONS, INFO, ACK");
+    TEST_S(allow_str, "OPTIONS, INFO, ACK");
+    TEST_S(sip_header_as_string(tmphome, (void *)supported), 
+	   "foo, bar, baz");
+    TEST_S(supported_str, "foo, bar, baz");
     TEST_S(sip_header_as_string(tmphome, (void *)user_agent), "test_nua");
     TEST_S(user_agent_str, "test_nua");
     TEST_S(sip_header_as_string(tmphome, (void *)organization),
 	   "Pussy Galore's Flying Circus");
     TEST_S(organization_str, "Pussy Galore's Flying Circus");
 
+    TEST_S(url_as_string(tmphome, registrar->us_url),
+	   "sip:sip.wonderland.org");
     TEST(keepalive, 66);
     TEST(keepalive_stream, 33);
 
@@ -358,9 +393,6 @@ int test_nua_params(struct context *ctx)
     { char const *expect_m_features = "language=\"en\"";
     TEST_S(m_features, expect_m_features); }
     TEST_S(outbound, "foo");
-
-    TEST_S(url_as_string(tmphome, registrar->us_url),
-	   "sip:sip.wonderland.org");
 
     free_events_in_list(ctx, ctx->a.events);
   }

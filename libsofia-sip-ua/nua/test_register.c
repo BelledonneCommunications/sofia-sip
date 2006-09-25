@@ -341,6 +341,7 @@ int test_connectivity(struct context *ctx)
 
   OPTIONS(a, a_call, a_call->nh,
 	  TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	  NUTAG_ALLOW("OPTIONS"),
 	  TAG_END());
 
   run_ab_until(ctx, -1, save_until_final_response, -1, save_until_received);
