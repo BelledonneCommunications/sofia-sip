@@ -520,8 +520,10 @@ void he_recv_message(nth_engine_t * he,
   tpn = tport_name(tport);
 
   if (msg_size(msg))
-    SU_DEBUG_3(("nth client: received extra data (%u bytes) from %s/%s:%s\n",
-		msg_size(msg), tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port));
+    SU_DEBUG_3(("nth client: received extra data ("MOD_ZU" bytes) "
+		"from %s/%s:%s\n",
+		(size_t)msg_size(msg), 
+		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port));
   else
     SU_DEBUG_3(("nth client: received extra data from %s/%s:%s\n",
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port));

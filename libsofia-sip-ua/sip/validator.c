@@ -469,7 +469,8 @@ void report_memstats(char const *title, su_home_stat_t const hs[1])
 	   (ull)hs->hs_frees.hsf_number, (ull)hs->hs_frees.hsf_bytes,
 	   (ull)hs->hs_frees.hsf_rbytes);
   if (hs->hs_rehash || hs->hs_clones)
-    printf("\t%d rehashes, %d clones\n", hs->hs_rehash, hs->hs_clones);
+    printf("\t"LLU" rehashes, "LLU" clones\n", 
+	   (ull)hs->hs_rehash, (ull)hs->hs_clones);
 }
 
 void memstats(msg_t *msg, uint32_t msize, context_t *ctx)

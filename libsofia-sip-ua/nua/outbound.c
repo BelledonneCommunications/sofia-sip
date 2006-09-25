@@ -294,7 +294,7 @@ int outbound_set_options(outbound_t *ob,
     else if (MATCH(use-upnp) || MATCH(use_upnp)) prefs->use_upnp = value;
     else if (MATCH(use-stun) || MATCH(use_stun)) prefs->use_stun = value;
     else
-      SU_DEBUG_1(("outbound_t: unknown option \"%.*s\"\n", len, s));
+      SU_DEBUG_1(("outbound_t: unknown option \"%.*s\"\n", (int)len, s));
 
     s += len;
     len = strspn(s, " \t\n\r,;");
