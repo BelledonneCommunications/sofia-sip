@@ -3174,7 +3174,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
   for (i = 0, total = 0; i < iovused; i++) {
     if (total + iov[i].mv_len > n) {
       if (tport_is_connection_oriented(self)) {
-	iov[i].mv_len -= (u_long)(n - total);
+	iov[i].mv_len -= (su_ioveclen_t)(n - total);
 	iov[i].mv_base = (char *)iov[i].mv_base + (n - total);
 	if (tport_queue_rest(self, msg, &iov[i], (ssize_t)(iovused - i)) >= 0)
 	  return n;
@@ -3602,7 +3602,7 @@ void tport_send_queue(tport_t *self)
     
     for (i = 0, total = 0; i < iovused; i++) {
       if (total + iov[i].mv_len > n) {
-	iov[i].mv_len -= (u_long)(n - total);
+	iov[i].mv_len -= (su_ioveclen_t)(n - total);
 	iov[i].mv_base = (char *)iov[i].mv_base + (n - total);
 
 	self->tp_unsent = iov + i;

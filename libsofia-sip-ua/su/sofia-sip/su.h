@@ -207,39 +207,56 @@ union su_sockaddr_u {
 typedef union su_sockaddr_u su_sockaddr_t;
 
 #if SU_HAVE_BSDSOCK || DOCUMENTATION_ONLY
-/** I/O vector for scatter-gather I/O.
- *
- * This is the I/O vector element used with su_vsend() and su_vrecv(). It is
- * defined like struct iovec with POSIX sockets, and as 
- * <a href="http://msdn.microsoft.com/library/en-us/winsock/winsock/wsabuf_2.asp">
- * WSABUF</a> with WINSOCK sockets. For historical reasons, it is known as #msg_iovec_t 
- * in @msg module.
- *
- * @note Ordering of the fields is reversed on Windows. Do not initialize this
- * structure with static initializer, but assign both fields separately.
- *
- * @sa #su_iovec_t, #su_ioveclen_t, SU_IOVECLEN_MAX, su_vsend(), su_vrecv(), 
- * #msg_iovec_t, msg_iovec(), msg_recv_iovec(), 
- * @c struct @c iovec defined in <sys/uio.h>, writev(2), readv(2),
- * <a href="http://msdn.microsoft.com/library/en-us/winsock/winsock/wsabuf_2.asp">
- * WSABUF of WinSock2</a>
- */
-typedef struct su_iovec_s {
-  void  *siv_base;		/**< Pointer to buffer. */
-  size_t siv_len;		/**< Size of buffer.  */
-} su_iovec_t;
-
 /**Type of @a siv_len field in #su_iovec_t.
  *
- * The @a siv_len field in #su_iovec_t has different types in with POSIX and
- * WINSOCK2. Please truncate the iovec element size to #SU_IOVECLEN_MAX, if
- * needed, and cast using #su_ioveclen_t.
+ * The @a siv_len field in #su_iovec_t has different types in with POSIX
+ * (size_t) and WINSOCK2 (u_long). Truncate the iovec element size to
+ * #SU_IOVECLEN_MAX, if needed, and cast using #su_ioveclen_t.
  *
  * @sa #su_iovec_t, #SU_IOVECLEN_MAX
  *
  * @since New in @VERSION_1_12_2.
  */
 typedef size_t su_ioveclen_t;
+
+/** I/O vector for scatter-gather I/O.
+ *
+ * This is the I/O vector element used with su_vsend() and su_vrecv(). It is
+ * defined like struct iovec with POSIX sockets:
+ * @code
+ * struct iovec {
+ *    void *iov_base;	// Pointer to data.
+ *    size_t iov_len;	// Length of data.
+ * };
+ * @endcode
+ *
+ * When using WINSOCK sockets it is defined as
+ * <a href="http://msdn.microsoft.com/library/en-us/winsock/winsock/wsabuf_2.asp">
+ * WSABUF</a>:
+ * @code
+ * typedef struct __WSABUF {
+ *   u_long len;
+ *   char FAR* buf;
+ * } WSABUF, *LPWSABUF;
+ * @endcode
+ *
+ * @note Ordering of the fields is reversed on Windows. Do not initialize this
+ * structure with static initializer, but assign both fields separately.
+ *
+ * For historical reasons, the structure is known as #msg_iovec_t in @msg
+ * module.
+ *
+ * @sa #su_iovec_t, #su_ioveclen_t, SU_IOVECLEN_MAX, su_vsend(), su_vrecv(), 
+ * #msg_iovec_t, msg_iovec(), msg_recv_iovec(), 
+ * @c struct @c iovec defined in <sys/uio.h>, writev(2), readv(2),
+ * sendmsg(), recvmsg(),
+ * <a href="http://msdn.microsoft.com/library/en-us/winsock/winsock/wsabuf_2.asp">
+ * WSABUF of WinSock2</a>
+ */
+typedef struct su_iovec_s {
+  void  *siv_base;		/**< Pointer to buffer. */
+  su_ioveclen_t siv_len;		/**< Size of buffer.  */
+} su_iovec_t;
 
 /** Maximum size of buffer in a single su_iovec_t element. 
  * @sa #su_ioveclen_t, #su_iovec_t
@@ -251,12 +268,14 @@ typedef size_t su_ioveclen_t;
 #endif
 
 #if SU_HAVE_WINSOCK
+typedef u_long su_ioveclen_t;
+
 /* This is same as WSABUF */
 typedef struct su_iovec_s {
-  u_long  siv_len;
+  su_ioveclen_t  siv_len;
   void   *siv_base;
 } su_iovec_t;
-typedef u_long su_ioveclen_t;
+
 #define SU_IOVECLEN_MAX ULONG_MAX
 #endif
 
