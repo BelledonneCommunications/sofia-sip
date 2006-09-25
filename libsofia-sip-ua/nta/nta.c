@@ -6594,7 +6594,19 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
       nta_outgoing_t *invite = outgoing_find(agent, msg, sip, NULL);
       
       if (invite) {
+	sip_t const *inv = sip_object(invite->orq_request);
+
 	orq->orq_branch = su_strdup(home, invite->orq_branch);
+
+	/* @RFC3261 section 13.2.2.4 -
+	 * The ACK MUST contain the same credentials as the INVITE. 
+	 */
+	if (!sip->sip_proxy_authorization && !sip->sip_authorization) {
+	  if (inv->sip_proxy_authorization)
+	    sip_add_dup(msg, sip, (void *)inv->sip_proxy_authorization);
+	  if (inv->sip_authorization)
+	    sip_add_dup(msg, sip, (void *)inv->sip_authorization);
+	}
       }
       else {
 	SU_DEBUG_1(("outgoing_create: ACK without INVITE\n"));
