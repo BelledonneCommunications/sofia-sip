@@ -111,6 +111,64 @@ else
        SAC_SU_DEFINE(USIZE_MAX, UINT_MAX)dnl
 fi
 
+AC_CACHE_CHECK([for stack suitable for tags],[ac_cv_tagstack],[
+### ======================================================================
+### Test if we have stack suitable for handling tags directly
+###
+ac_cv_tagstack=no
+
+AC_TRY_RUN([
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+#if HAVE_STDINT_H
+#include <stdint.h>
+#endif
+#include <stdarg.h>
+
+typedef void *tp;
+typedef intptr_t tv;
+
+int test1(tv l, tv h, ...)
+{
+  va_list ap;
+  tv i, *p = &l;
+
+  va_start(ap, h);
+
+  if (*p++ != l || *p++ != h) return 1;
+
+  for (i = l; i <= h; i++) {
+    if (*p++ != i)
+      return 1;
+  }
+
+  for (i = l; i <= h; i++) {
+    if (va_arg(ap, tv) != i)
+      return 1;
+  }
+
+  va_end(ap);
+
+  return 0;
+}
+
+int main(int avc, char **av)
+{
+  return test1((tv)1, (tv)10,
+	       (tv)1, (tv)2, (tv)3, (tv)4, (tv)5,
+	       (tv)6, (tv)7, (tv)8, (tv)9, (tv)10);
+}
+],[ac_cv_tagstack=yes])])
+
+if test $ac_cv_tagstack = yes ; then
+SAC_SU_DEFINE([SU_HAVE_TAGSTACK], 1, [
+Define this as 1 if your compiler puts the variable argument list nicely in memory])
+fi
+
+dnl ======================================================================
+dnl Socket features
+
 AC_REQUIRE([AC_SYS_SA_LEN])
 if test "$ac_cv_sa_len" = yes ;then
   SAC_SU_DEFINE([SU_HAVE_SOCKADDR_SA_LEN], 1, 
@@ -277,6 +335,7 @@ else
 fi
 
 ]) dnl AC_CHECK_HEADERS([winsock2.h ... ])
+
 
 # ===========================================================================
 # Checks for libraries
