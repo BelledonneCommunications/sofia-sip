@@ -22,6 +22,11 @@ TAGFILES            += ../docs/sdp.doxytags=../sdp
 GENERATE_TAGFILE     = ../docs/nua.doxytags
 
 ALIASES             += CFILE="@internal @file" IFILE="@internal @file"
+
+ALIASES 	    += nua="@ref index \"nua\""
+# When GENERATE_TAGFILE=YES, we should use \ref main
+#ALIASES 	    += nua="@ref main \"nua\""
+
 VERBATIM_HEADERS     = NO
 
 @INCLUDE             = ../sip/sip.doxyaliases
