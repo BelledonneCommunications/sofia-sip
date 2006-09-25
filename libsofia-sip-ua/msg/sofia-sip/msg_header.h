@@ -278,10 +278,10 @@ enum {
 /** No header. */
 #define MSG_HEADER_NONE ((msg_header_t *)-1)
 
+SOFIA_END_DECLS
+
 #ifndef MSG_PROTOS_H
 #include <sofia-sip/msg_protos.h>
 #endif
-
-SOFIA_END_DECLS
 
 #endif /** !defined(MSG_HEADER_H) */

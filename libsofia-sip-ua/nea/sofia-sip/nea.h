@@ -44,16 +44,16 @@
 #include <sofia-sip/nta.h>
 #endif
 
+#ifndef NEA_TAG_H
+#include <sofia-sip/nea_tag.h>
+#endif
+
 SOFIA_BEGIN_DECLS
 
 #define NEA_VERSION      3.0
 #define NEA_VERSION_STR "3.0"
 
 #define NEA_DEFAULT_EXPIRES 3600
-
-#ifndef NEA_TAG_H
-#include <sofia-sip/nea_tag.h>
-#endif
 
 /** Event notifier object. */
 typedef struct nea_server_s     nea_server_t;

@@ -100,7 +100,7 @@ SOFIAPUBFUN int sip_add_tl(msg_t *msg, sip_t *sip,
 /** Add duplicates of headers from taglist to the SIP message. */
 SOFIAPUBFUN int sip_add_tagis(msg_t *, sip_t *, tagi_t const **inout_list);
 
-/** Add a header to the SIP message. */
+/** Parse a string as a header and add it to the SIP message. */
 SOFIAPUBFUN int sip_add_make(msg_t *, sip_t *, msg_hclass_t *hc, char const *s);
 
 /** Complete SIP message. */
@@ -176,7 +176,11 @@ SOFIAPUBVAR char const * const sip_method_names[];
 #define sip_header_vformat(h, c, f, a) \
   ((sip_header_t *)msg_header_vformat((h), (c), (f), (a)))
 
+SOFIA_END_DECLS
+#ifndef SIP_PROTOS_H
 #include <sofia-sip/sip_protos.h>
+#endif
+SOFIA_BEGIN_DECLS
 
 /** Create a request line object. */
 SOFIAPUBFUN

@@ -59,12 +59,12 @@ SOFIA_BEGIN_DECLS
 #define http_separator_class           msg_separator_class
 #define http_payload_class             msg_payload_class
 
+SOFIA_END_DECLS
+
 #ifndef HTTP_PROTOS_H
 #define HTTP_HCLASSES_ONLY
 #include <sofia-sip/http_protos.h>
 #undef HTTP_HCLASSES_ONLY
 #endif
-
-SOFIA_END_DECLS
 
 #endif /* !defined HTTP_HCLASSES_H */

@@ -63,10 +63,6 @@ SOFIA_BEGIN_DECLS
 ((SU_LOG != NULL && SU_LOG->log_init > 1) ? \
   SU_LOG->log_level : su_log_default->log_level))
 
-#ifndef SU_CONFIG_H
-#include <sofia-sip/su_config.h>
-#endif
-
 #if SU_DEBUG_MAX >= 0
 #ifndef SU_LOG
 #define SU_LOG       (su_log_default)

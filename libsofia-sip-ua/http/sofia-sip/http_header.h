@@ -260,10 +260,10 @@ http_separator_t *http_separator_create(su_home_t *home)
 }
 #endif
 
+SOFIA_END_DECLS
+
 #ifndef HTTP_PROTOS_H
 #include <sofia-sip/http_protos.h>
 #endif
-
-SOFIA_END_DECLS
 
 #endif /* !defined(HTTP_HEADER_H) */

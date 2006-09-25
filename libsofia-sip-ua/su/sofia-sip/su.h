@@ -301,8 +301,6 @@ issize_t su_vrecv(su_socket_t, su_iovec_t iov[], isize_t len, int flags,
 /** Return local IP address */
 SOFIAPUBFUN int su_getlocalip(su_sockaddr_t *sin);
 
-#include <sofia-sip/su_addrinfo.h>
-
 #if SU_HAVE_BSDSOCK
 #define su_ioctl  ioctl
 /*
@@ -458,5 +456,9 @@ SOFIAPUBFUN void su_canonize_sockaddr(su_sockaddr_t *su);
 #endif
 
 SOFIA_END_DECLS
+
+#ifndef SU_ADDRINFO_H
+#include <sofia-sip/su_addrinfo.h>
+#endif
 
 #endif /* !defined(SU_H) */

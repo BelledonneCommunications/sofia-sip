@@ -45,6 +45,9 @@
 #ifndef URL_H
 #include <sofia-sip/url.h>
 #endif
+#ifndef TPORT_TAG_H
+#include <sofia-sip/tport_tag.h>
+#endif
 
 SOFIA_BEGIN_DECLS
 
@@ -162,8 +165,6 @@ typedef struct {
   (n)->tpn_proto, (n)->tpn_host, (n)->tpn_port,				\
   (n)->tpn_comp ? ";comp=" : "", (n)->tpn_comp ? (n)->tpn_comp : "",    \
   (n)->tpn_ident ? "/" : "", (n)->tpn_ident ? (n)->tpn_ident : ""
-
-#include <sofia-sip/tport_tag.h>
 
 /** Create first primary transport. */
 TPORT_DLL tport_t *tport_tcreate(tp_stack_t *stack,
