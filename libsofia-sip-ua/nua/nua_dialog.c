@@ -404,7 +404,17 @@ void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
   }
 }
 
-/** @internal Dialog has been terminated. */
+/** Deinitialize dialog and its usage. @internal */
+void nua_dialog_deinit(nua_owner_t *own,
+		       nua_dialog_state_t *ds)
+{
+  while (ds->ds_usage) {
+    nua_dialog_usage_remove_at(own, ds, &ds->ds_usage);
+  }
+}
+
+
+/** @internal Dialog has been terminated. Remove all usages. */
 void nua_dialog_terminated(nua_owner_t *own,
 			   struct nua_dialog_state *ds,
 			   int status,

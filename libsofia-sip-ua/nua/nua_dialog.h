@@ -156,6 +156,9 @@ void nua_dialog_usage_remove(nua_owner_t *,
 			     nua_dialog_state_t *ds,
 			     nua_dialog_usage_t *du);
 
+void nua_dialog_deinit(nua_owner_t *own,
+		       nua_dialog_state_t *ds);
+
 void nua_dialog_terminated(nua_owner_t *,
 			   struct nua_dialog_state *ds,
 			   int status,

@@ -678,20 +678,19 @@ void nh_destroy(nua_t *nua, nua_handle_t *nh)
     nea_server_destroy(nh->nh_notifier), nh->nh_notifier = NULL;
 
   nua_creq_deinit(nh->nh_cr, NULL);
-  if (nh->nh_ss)
+
+  if (nh->nh_ss) {
     nua_creq_deinit(nh->nh_ss->ss_crequest, NULL);
-
-  if (nh->nh_ds->ds_leg) {
-    nta_leg_destroy(nh->nh_ds->ds_leg), nh->nh_ds->ds_leg = NULL;
-  }
-
-  if (nh->nh_ss->ss_srequest->sr_irq) {
-    nta_incoming_destroy(nh->nh_ss->ss_srequest->sr_irq);
-    nh->nh_ss->ss_srequest->sr_irq = NULL;
+    if (nh->nh_ss->ss_srequest->sr_irq) {
+      nta_incoming_destroy(nh->nh_ss->ss_srequest->sr_irq);
+      nh->nh_ss->ss_srequest->sr_irq = NULL;
+    }
   }
 
   if (nh->nh_soa)
     soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
+
+  nua_dialog_deinit(nh, nh->nh_ds);
 
   if (nh_is_inserted(nh))
     nh_remove(nua, nh);
