@@ -77,22 +77,6 @@ int tstflags = 0;
 
 char const *name = "su_tag_test";
 
-static int test_assumptions();
-static int test_stackargs(int i, ...);
-static int test_dup(void);
-static int test_filters(void);
-static int test_print(void);
-static int test_tagargs(void);
-static int test_gets(void);
-static int test_scan(void);
-
-void usage(void)
-{
-  fprintf(stderr, 
-	  "usage: %s [-v]\n", 
-	  name);
-}
-
 #if HAVE_WIN32
 typedef struct tag_type_s tag_typedef_win_t[1];
 
@@ -134,12 +118,11 @@ tag_typedef_t tag_q_ref = REFTAG_TYPEDEF(tag_q);
 
 #endif
 
-int main(int argc, char *argv[])
+static int init_tags(void)
 {
-  int retval = 0;
-  int i;
-
 #if HAVE_WIN32
+  /* Automatic initialization with pointers from DLL does not work in WIN32 */
+
   tag_typedef_t _tag_a = STRTAG_TYPEDEF(a);
   tag_typedef_t _tag_a_ref = REFTAG_TYPEDEF(tag_a);
 
@@ -187,24 +170,6 @@ int main(int argc, char *argv[])
   *(struct tag_type_s *)tag_q = *_tag_q;
   *(struct tag_type_s *)tag_q_ref = *_tag_q_ref;
 #endif
-
-  for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
-      tstflags |= tst_verbatim;
-    else
-      usage();
-  }
-
-  retval |= test_assumptions();
-  retval |= test_stackargs(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-  retval |= test_dup();
-  retval |= test_filters();
-  retval |= test_print();
-  retval |= test_tagargs();
-  retval |= test_gets();
-  retval |= test_scan();
-
-  return retval;
 }
 
 static int test_assumptions(void)
@@ -232,12 +197,21 @@ static int test_assumptions(void)
 ### Test if we have stack suitable for handling tags directly
 ###
 AC_TRY_RUN( [
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+#if HAVE_STDINT_H
+#include <stdint.h>
+#endif
 #include <stdarg.h>
 
-int test1(int l, int h, ...)
+typedef void *tp;
+typedef intptr_t tv;
+
+int test1(tv l, tv h, ...)
 {
   va_list ap;
-  int i, *p = &l;
+  tv i, *p = &l;
 
   va_start(ap, h);
 
@@ -249,7 +223,7 @@ int test1(int l, int h, ...)
   }
 
   for (i = l; i <= h; i++) {
-    if (va_arg(ap, int) != i)
+    if (va_arg(ap, tv) != i)
       return 1;
   }
 
@@ -260,13 +234,13 @@ int test1(int l, int h, ...)
 
 int main(int avc, char *av[])
 {
-  return test1(1, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  return test1((tv)1, (tv)10,
+	       (tv)1, (tv)2, (tv)3, (tv)4, (tv)5,
+	       (tv)6, (tv)7, (tv)8, (tv)9, (tv)10);
 }
 ], 
-AC_SU_DEFINE(SU_HAVE_TAGSTACK, 1, [
+SAC_SU_DEFINE(SU_HAVE_TAGSTACK, 1, [
 Define this as 1 if your compiler puts the variable argument list nicely in memory]), 
-dnl SU_HAVE_TAGSTACK=0 
-dnl SU_HAVE_TAGSTACK=0
 )
 
 */
@@ -388,8 +362,8 @@ int filter(tagi_t const *filter, tagi_t const *t)
 /* Test tl_afilter() */
 static int test_filters(void)
 {
-  tagi_t *lst, *filter1, *filter2, *filter3, *filter4, *filter5;
-  tagi_t *b1, *b2, *b3, *b4;
+  tagi_t *lst, *filter1, *filter2, *filter3, *filter4, *filter5, *filter6;
+  tagi_t *b, *b1, *b2, *b3, *b4;
 
   tagi_t *nsfilter, *b5;
   su_home_t *home;
@@ -412,6 +386,7 @@ static int test_filters(void)
   filter3 = tl_list(TAG_A(""), TAG_I(0), TAG_NULL());
   filter4 = tl_list(TAG_ANY(), TAG_NULL());
   filter5 = tl_list(TAG_FILTER(filter), TAG_NULL());
+  filter6 = tl_list(TAG_NULL());
 
   TEST0(lst && filter1 && filter2 && filter3 && filter4 && filter5);
 
@@ -446,14 +421,17 @@ static int test_filters(void)
   TEST(b5[0].t_tag, tag_q);
   TEST(b5[1].t_tag, tag_p);
 
-  b5 = tl_afilter(home, filter5, lst); TEST_1(b5);
-  TEST(b5[0].t_tag, tag_a);
-  TEST(b5[1].t_tag, tag_i);
-  TEST(b5[2].t_tag, tag_q);
-  TEST(b5[3].t_tag, 0);
+  b = tl_afilter(home, filter5, lst); TEST_1(b);
+  TEST(b[0].t_tag, tag_a);
+  TEST(b[1].t_tag, tag_i);
+  TEST(b[2].t_tag, tag_q);
+  TEST(b[3].t_tag, 0);
+
+  b = tl_afilter(home, filter6, lst); TEST_1(b);
+  TEST(b[0].t_tag, 0);
 
   tl_vfree(filter1); tl_vfree(filter2); tl_vfree(filter3); 
-  tl_vfree(filter4); tl_vfree(filter5);
+  tl_vfree(filter4); tl_vfree(filter5); tl_vfree(filter6);
 
   tl_vfree(lst);
 
@@ -639,3 +617,35 @@ static int test_scan(void)
   END();
 }
 
+void usage(void)
+{
+  fprintf(stderr, 
+	  "usage: %s [-v]\n", 
+	  name);
+}
+
+int main(int argc, char *argv[])
+{
+  int retval = 0;
+  int i;
+
+  init_tags();
+
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      tstflags |= tst_verbatim;
+    else
+      usage();
+  }
+
+  retval |= test_assumptions();
+  retval |= test_stackargs(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  retval |= test_dup();
+  retval |= test_filters();
+  retval |= test_print();
+  retval |= test_tagargs();
+  retval |= test_gets();
+  retval |= test_scan();
+
+  return retval;
+}
