@@ -604,6 +604,16 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     }
   }
 
+  if (sip) {
+    msg_t *imsg = nta_outgoing_getrequest(cr->cr_orq);
+    sip_t const *isip = sip_object(imsg);
+    if (isip->sip_proxy_authorization)
+      sip_add_dup(msg, sip, (void *)isip->sip_proxy_authorization);
+    if (isip->sip_authorization)
+      sip_add_dup(msg, sip, (void *)isip->sip_authorization);
+    msg_destroy(imsg);
+  }
+
   if (sip)
     ack = nta_outgoing_mcreate(nua->nua_nta, NULL, NULL, NULL, msg,
 			       SIPTAG_END(), TAG_NEXT(tags));
