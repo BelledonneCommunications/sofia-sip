@@ -47,13 +47,11 @@
 #endif
 
 #include <stdio.h>
-
-SOFIA_BEGIN_DECLS
+#include <limits.h>
 
 #if SU_HAVE_BSDSOCK		/* Unix-compatible includes */
 #include <errno.h>
 #include <unistd.h>
-#include <limits.h>
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -69,24 +67,6 @@ SOFIA_BEGIN_DECLS
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 
-static __inline
-uint16_t su_ntohs(uint16_t s)
-{
-  return (uint16_t)(((s & 255) << 8) | ((s & 0xff00) >> 8));
-}
-
-static __inline
-uint32_t su_ntohl(uint32_t l)
-{
-  return ((l & 0xff) << 24) | ((l & 0xff00) << 8)
-       | ((l & 0xff0000) >> 8) | ((l & 0xff000000U) >> 24);
-}
-
-#define ntohs su_ntohs
-#define htons su_ntohs
-#define ntohl su_ntohl
-#define htonl su_ntohl
-
 #  if defined(IPPROTO_IPV6)
 /* IPv6 defined in ws2tcpip.h */
 #  elif SU_HAVE_IN6 
@@ -95,9 +75,9 @@ uint32_t su_ntohl(uint32_t l)
 #    error Winsock with IPv6 support required
 #  endif
 
-#include <limits.h>
-
 #endif
+
+SOFIA_BEGIN_DECLS
 
 /* ---------------------------------------------------------------------- */
 /* Constant definitions */
@@ -344,6 +324,25 @@ SOFIAPUBFUN ssize_t
   su_recv(su_socket_t s, void *buffer, size_t length, int flags),
   su_recvfrom(su_socket_t s, void *buffer, size_t length, int flags,
 	      su_sockaddr_t *from, socklen_t *fromlen);
+
+static __inline
+uint16_t su_ntohs(uint16_t s)
+{
+  return (uint16_t)(((s & 255) << 8) | ((s & 0xff00) >> 8));
+}
+
+static __inline
+uint32_t su_ntohl(uint32_t l)
+{
+  return ((l & 0xff) << 24) | ((l & 0xff00) << 8)
+       | ((l & 0xff0000) >> 8) | ((l & 0xff000000U) >> 24);
+}
+
+#define ntohs su_ntohs
+#define htons su_ntohs
+#define ntohl su_ntohl
+#define htonl su_ntohl
+
 #else
 #define su_send(s,b,l,f) send((s),(b),(l),(f))
 #define su_sendto(s,b,l,f,a,L) sendto((s),(b),(l),(f),(void const*)(a),(L))
