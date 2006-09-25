@@ -762,7 +762,7 @@ msg_header_t *msg_multipart_serialize(msg_header_t **head0,
     h_succ = *head;
 
     /* Serialize headers */
-    for (hh = (msg_header_t **)&mp->mp_content_type;
+    for (hh = &((msg_pub_t*)mp)->msg_request;
 	 (char *)hh < (char *)&mp->mp_separator;
 	 hh++) {
       h = *hh; if (!h) continue;
@@ -902,11 +902,11 @@ issize_t msg_multipart_e(char b[], isize_t bsiz, msg_header_t const *h, int flag
 isize_t msg_multipart_dup_xtra(msg_header_t const *h, isize_t offset)
 {
   msg_multipart_t const *mp = (msg_multipart_t *)h;
-  msg_header_t const **hh;
+  msg_header_t const * const *hh;
 
   offset = msg_payload_dup_xtra(h, offset);
 
-  for (hh = (msg_header_t const **)&mp->mp_content_type; 
+  for (hh = (msg_header_t const **)&((msg_pub_t *)mp)->msg_request;
        (char *)hh <= (char *)&mp->mp_close_delim; 
        hh++) {
     for (h = *hh; h; h = h->sh_next) {
@@ -928,7 +928,7 @@ char *msg_multipart_dup_one(msg_header_t *dst, msg_header_t const *src,
 
   b = msg_payload_dup_one(dst, src, b, xtra);
 
-  for (hh = (msg_header_t **)&mp->mp_content_type; 
+  for (hh = &((msg_pub_t*)mp)->msg_request;
        (char *)hh <= (char *)&mp->mp_close_delim; 
        hh++) {
     for (h = *hh; h; h = h->sh_next) {

@@ -511,8 +511,13 @@ int msg_dup_or_copy_all(msg_t *msg,
       if (*hh) {
 	/* If there is multiple instances of single headers,
 	   put the extra headers into the list of erroneous headers */
-	if (msg_is_single(h))
-	  hh = (msg_header_t**)&dst->msg_error;
+	if (msg_is_single(h)) {
+	  msg_error_t **e;
+	  for (e = &dst->msg_error; *e; e = &(*e)->er_next)
+	    ;
+	  *e = (msg_error_t *)h;
+	  continue;
+	}
 
 	while (*hh)
 	  hh = &(*hh)->sh_next;

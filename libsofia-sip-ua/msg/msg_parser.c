@@ -830,7 +830,7 @@ extract_trailers(msg_t *msg, msg_pub_t *mo,
 #define CRLF_TEST(b) ((b)[0] == '\r' ? ((b)[1] == '\n') + 1 : (b)[0] =='\n')
 
 static inline void
-append_parsed(msg_t *msg, msg_pub_t *mo, msg_header_t **hh, msg_header_t *h,
+append_parsed(msg_t *msg, msg_pub_t *mo, msg_href_t const *hr, msg_header_t *h,
 	      int always_into_chain);
 
 /**Extract and parse a message from internal buffer.
@@ -935,7 +935,7 @@ issize_t extract_first(msg_t *msg, msg_pub_t *mo, char b[], isize_t bsiz, int eo
   /* First line */
   size_t k, l, m, n, xtra;
   int crlf;
-  msg_header_t *h, **hh;
+  msg_header_t *h;
   msg_href_t const *hr;
   msg_mclass_t const *mc = msg->m_class;
 
@@ -982,9 +982,7 @@ issize_t extract_first(msg_t *msg, msg_pub_t *mo, char b[], isize_t bsiz, int eo
 
   assert(hr->hr_offset);
 
-  hh = (msg_header_t**)((char *)mo + hr->hr_offset);
-
-  append_parsed(msg, mo, hh, h, 1);
+  append_parsed(msg, mo, hr, h, 1);
 
   mo->msg_flags |= MSG_FLG_HEADERS;
 
@@ -1169,7 +1167,7 @@ msg_header_t *header_parse(msg_t *msg, msg_pub_t *mo,
     for (hh = &(*hh)->sh_next; *hh; *hh = (*hh)->sh_next)
       msg_chain_remove(msg, *hh);
   else if (h != *hh)
-    append_parsed(msg, mo, hh, h, 0);
+    append_parsed(msg, mo, hr, h, 0);
 
   return h;
 }
@@ -1222,7 +1220,7 @@ issize_t msg_extract_separator(msg_t *msg, msg_pub_t *mo,
   msg_mclass_t const *mc = msg->m_class;
   msg_href_t const *hr = mc->mc_separator;
   int l = CRLF_TEST(b);  /* Separator length */
-  msg_header_t *h, **hh;
+  msg_header_t *h;
 
   /* Even if a single CR *may* be a payload separator we cannot be sure */
   if (l == 0 || (!eos && bsiz == 1 && b[0] == '\r'))
@@ -1236,9 +1234,7 @@ issize_t msg_extract_separator(msg_t *msg, msg_pub_t *mo,
 
   h->sh_data = b, h->sh_len  = l;
 
-  hh = (msg_header_t **)((char *)mo + hr->hr_offset);
-
-  append_parsed(msg, mo, hh, h, 0);
+  append_parsed(msg, mo, hr, h, 0);
 
   return l;
 }
@@ -1255,7 +1251,7 @@ issize_t msg_extract_payload(msg_t *msg, msg_pub_t *mo,
 {
   msg_mclass_t const *mc = msg->m_class;
   msg_href_t const *hr = mc->mc_payload;
-  msg_header_t *h, **hh, *h0;
+  msg_header_t *h, *h0;
   msg_payload_t *pl;
   char *x;
 
@@ -1274,8 +1270,7 @@ issize_t msg_extract_payload(msg_t *msg, msg_pub_t *mo,
   if (!(h = msg_header_alloc(msg_home(msg), hr->hr_class, 0)))
     return -1;
 
-  hh = (msg_header_t **)((char *)mo + hr->hr_offset);
-  append_parsed(msg, mo, hh, h, 0);
+  append_parsed(msg, mo, hr, h, 0);
   pl = h->sh_payload;
   *return_payload = h;
 
@@ -2338,10 +2333,14 @@ msg_hclass_offset(msg_mclass_t const *mc, msg_pub_t const *mo, msg_hclass_t *hc)
 
 /** Append a parsed header object into the message structure */
 static inline void
-append_parsed(msg_t *msg, msg_pub_t *mo, msg_header_t **hh, msg_header_t *h,
+append_parsed(msg_t *msg, msg_pub_t *mo, msg_href_t const *hr, msg_header_t *h,
 	      int always_into_chain)
 {
-  assert(msg); assert(hh); assert(hh != (void *)mo);
+  msg_header_t **hh;
+
+  assert(msg); assert(hr->hr_offset);
+
+  hh = (msg_header_t **)((char *)mo + hr->hr_offset);
 
   if (msg->m_chain || always_into_chain)
     msg_insert_here_in_chain(msg, msg_chain_tail(msg), h);
@@ -2349,14 +2348,21 @@ append_parsed(msg_t *msg, msg_pub_t *mo, msg_header_t **hh, msg_header_t *h,
   if (*hh && msg_is_single(h)) {
     /* If there is multiple instances of single headers,
        put the extra headers into the list of erroneous headers */
-    hh = (msg_header_t**)&mo->msg_error;
-    /* Flag this as fatal error */
-    mo->msg_flags |= MSG_FLG_ERROR;
+    msg_error_t **e;
+
+    for (e = &mo->msg_error; *e; e = &(*e)->er_next)
+      ;
+    *e = (msg_error_t *)h;
+
+    msg->m_extract_err |= hr->hr_flags;
+    if (hr->hr_class->hc_critical)
+      mo->msg_flags |= MSG_FLG_ERROR;
+
+    return;
   }
 
   while (*hh)
     hh = &(*hh)->sh_next;
-
   *hh = h;
 }
 
