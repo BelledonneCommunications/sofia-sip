@@ -233,7 +233,7 @@ tagi_t *tl_move(tagi_t *dst, tagi_t const src[])
   return dst;
 }
 
-/** Calculate effective length of a tag list. */
+/** Calculate effective length of a tag list as bytes. */
 size_t tl_len(tagi_t const lst[])
 {
   size_t len = 0;
@@ -384,9 +384,9 @@ static int tl_get(tag_type_t tt, void *p, tagi_t const lst[])
 }
 
 /** Find tags from given list. */
-int tl_gets(tagi_t const lst[], tag_type_t tag, tag_value_t value, ...)
+isize_t tl_gets(tagi_t const lst[], tag_type_t tag, tag_value_t value, ...)
 {
-  int n = 0;
+  isize_t n = 0;
   tagi_t *t;
   ta_list ta;
 
@@ -423,9 +423,9 @@ int tl_gets(tagi_t const lst[], tag_type_t tag, tag_value_t value, ...)
  *
  * @sa tl_gets()
  */
-int tl_tgets(tagi_t lst[], tag_type_t tag, tag_value_t value, ...)
+isize_t tl_tgets(tagi_t lst[], tag_type_t tag, tag_value_t value, ...)
 {
-  int n = 0;
+  isize_t n = 0;
   tagi_t *t;
 
   ta_list ta;
@@ -778,6 +778,7 @@ tagi_t *tl_vllist(tag_type_t tag, tag_value_t value, va_list ap)
 
   return rv;
 }
+
 /** Make a linear tag list until TAG_END().
  *
  */

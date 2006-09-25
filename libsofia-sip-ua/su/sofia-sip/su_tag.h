@@ -134,8 +134,8 @@ SOFIAPUBFUN int t_scan(tag_type_t tt, su_home_t *home, char const *s,
 /* Tagarg functions */
 SOFIAPUBFUN tagi_t *tl_tlist(su_home_t *, tag_type_t, tag_value_t, ...);
 SOFIAPUBFUN size_t tl_tmove(tagi_t *dst, size_t, tag_type_t, tag_value_t, ...);
-SOFIAPUBFUN int tl_gets(tagi_t const lst[], tag_type_t, tag_value_t, ...);
-SOFIAPUBFUN int tl_tgets(tagi_t lst[], tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN isize_t tl_gets(tagi_t const lst[], tag_type_t, tag_value_t, ...);
+SOFIAPUBFUN isize_t tl_tgets(tagi_t lst[], tag_type_t, tag_value_t, ...);
 SOFIAPUBFUN tagi_t *tl_tfilter(su_home_t *, tagi_t const lst[], 
 			       tag_type_t, tag_value_t, ...);
 SOFIAPUBFUN int tl_tremove(tagi_t lst[], tag_type_t, tag_value_t, ...);
