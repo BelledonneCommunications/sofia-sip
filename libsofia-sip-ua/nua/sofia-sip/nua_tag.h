@@ -75,20 +75,27 @@ SOFIAPUBVAR tag_typedef_t nutag_any;
 /** URL address from application to NUA
  *
  * @par Used with
+ *    any function that create SIP request or nua_handle() \n
  *    nua_create() \n
  *    nua_set_params() \n
  *    nua_get_params() \n
- *    other calls that create SIP request
  *
  * @par Parameter type
  *    char const *
  *
  * @par Values
- *    NULL terminated character string \n
- *    Own address for nua_create(), nua_set_params() and nua_get_params(). \n
- *    Target address for other calls.
+ *    #url_string_t, which is either a pointer to #url_t or NULL terminated
+ *    character string representing URL \n
  *
- * Corresponding tag taking reference parameter is NUTAG_URL_REF
+ * For normal nua calls, this tag is used as request target, which is usually
+ * stored as request-URI.
+ *
+ * It is used to set stack's own address with nua_create(), nua_set_params()
+ * and nua_get_params().
+ *
+ * @sa SIPTAG_TO()
+ *
+ * Corresponding tag taking reference parameter is NUTAG_URL_REF()
  */
 #define NUTAG_URL(x)            nutag_url, urltag_url_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_url;
@@ -98,7 +105,7 @@ SOFIAPUBVAR tag_typedef_t nutag_url_ref;
 
 /** Address as a string
  *
- * @par Used with
+ * @deprecated Not used.
  *
  * @par Parameter type
  *    char const *
@@ -106,7 +113,8 @@ SOFIAPUBVAR tag_typedef_t nutag_url_ref;
  * @par Values
  *    String in form "name <url>"
  *
- * Corresponding tag taking reference parameter is NUTAG_ADDRESS_REF()
+ * Corresponding tag taking reference parameter is
+ * NUTAG_ADDRESS_REF()
  */
 #define NUTAG_ADDRESS(x)        nutag_address, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_address;
@@ -120,8 +128,9 @@ SOFIAPUBVAR tag_typedef_t nutag_address_ref;
  * after an recoverable error response, like 302, 401 or 407.
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_set_params(), nua_set_hparams() \n
+ *    nua_get_params(), nua_get_hparams() \n
+ *    nua_invite(), nua_ack()
  *
  * @par Parameter type
  *    unsigned
@@ -152,7 +161,8 @@ SOFIAPUBVAR tag_typedef_t nutag_retry_count_ref;
  * @par Values
  *    @c 0   Do not allow any subscriptions \n
  *
- * Corresponding tag taking reference parameter is NUTAG_MAX_SUBSCRIPTIONS_REF()
+ * Corresponding tag taking reference parameter is 
+ * NUTAG_MAX_SUBSCRIPTIONS_REF()
  */
 #define NUTAG_MAX_SUBSCRIPTIONS(x)      nutag_max_subscriptions, tag_uint_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_max_subscriptions;
@@ -295,7 +305,7 @@ SOFIAPUBVAR tag_typedef_t nutag_only183_100rel_ref;
 /**Establish early media session by including SDP answer in 1XX response.
  *
  * @par Used with
- *    nua_respond() \n
+ *    nua_respond(), nua_set_params(), nua_set_hparams()
  *
  * @par Parameter type
  *    int (boolean)
@@ -304,10 +314,12 @@ SOFIAPUBVAR tag_typedef_t nutag_only183_100rel_ref;
  *    @c 0   False \n
  *    @c !=0 True
  *
- * @sa NUTAG_EARLY_MEDIA_REF()
- *
  * Corresponding tag taking reference parameter is NUTAG_EARLY_ANSWER_REF().
  *
+ * @note Requires that @soa is enabled with NUTAG_MEDIA_ENABLE(1).
+ *
+ * @sa NUTAG_EARLY_MEDIA(), NUTAG_AUTOALERT(), NUTAG_MEDIA_ENABLE()
+ * 
  * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_EARLY_ANSWER(x)    nutag_early_answer, tag_bool_v(x)
@@ -463,10 +475,15 @@ SOFIAPUBVAR tag_typedef_t nutag_autoalert_ref;
 
 /** ACK automatically
  *
+ * If this parameter is true, ACK is sent automatically after receiving 2XX
+ * series response to INVITE. Note that ACK is always sent automatically by
+ * lower layers of the stack after receiving an error response 3XX, 4XX, 5XX
+ * or 6XX.
+ *
  * @par Used with
- *    nua_set_params(), nua_set_hparams() \n
- *    nua_get_params(), nua_get_hparams() \n
- *    nua_invite() \n
+ *    nua_set_params(), nua_set_hparams(), \n
+ *    nua_get_params(), nua_get_hparams(), \n
+ *    nua_invite(), nua_ack(), nua_respond(), nua_update() \n
  *    nua_respond()
  *
  * @par Parameter type
@@ -476,6 +493,8 @@ SOFIAPUBVAR tag_typedef_t nutag_autoalert_ref;
  *    @c 0    No automatic sending of ACK \n
  *    @c !=0 ACK sent automatically
  *
+ * Default value is NUTAG_AUTOACK(1).
+ * 
  * Corresponding tag taking reference parameter is NUTAG_AUTOACK_REF()
  */
 #define NUTAG_AUTOACK(x)        nutag_autoack, tag_bool_v(x)
@@ -499,14 +518,16 @@ SOFIAPUBVAR tag_typedef_t nutag_autoack_ref;
  *    @c 0    No automatic sending of "200 Ok" \n
  *    @c !=0 "200 Ok" sent automatically
  *
+ * Corresponding tag taking reference parameter is NUTAG_AUTOANSWER_REF()
+ *
+ * @note Requires that @soa is enabled with NUTAG_MEDIA_ENABLE(1).
+ * 
  * @par Auto-Answer to Re-INVITE requests
  * By default, NUA tries to auto answer the re-INVITEs used to refresh the
  * session when the media is enabled. Set NUTAG_AUTOANSWER(0) on the call
  * handle (e.g., include the tag with nua_invite(), nua_respond()) in order
  * to disable the auto answer on re-INVITEs.
  *
- * @sa NUTAG_MEDIA_ENABLE(), NUTAG_AUTOALERT(), NUTAG_AUTOACK().
- * 
  * @bug If the re-INVITE modifies the session (e.g., SDP contains offer that
  * adds video stream to the session), NUA auto-answers it if
  * NUTAG_AUTOANSWER(0) has not been set on the handle. It accepts or rejects
@@ -514,7 +535,7 @@ SOFIAPUBVAR tag_typedef_t nutag_autoack_ref;
  * example). It should auto-answer only session refresh request and let
  * application decide how to handle requests to modify the session.
  *
- * Corresponding tag taking reference parameter is NUTAG_AUTOANSWER_REF()
+ * @sa NUTAG_MEDIA_ENABLE(), NUTAG_AUTOALERT(), NUTAG_AUTOACK().
  */
 #define NUTAG_AUTOANSWER(x)     nutag_autoanswer, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_autoanswer;
@@ -815,7 +836,8 @@ SOFIAPUBVAR tag_typedef_t nutag_sips_url_ref;
 
 /** Outbound proxy URL
  *
- * Same tag as NTATAG_DEFAULT_PROXY
+ * Same tag as NTATAG_DEFAULT_PROXY()
+ *
  * @par Used with
  *    nua_set_params() \n
  *    nua_get_params() \n
@@ -1411,7 +1433,7 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_event_ref;
  *    int
  *
  * @par Values
- *    @c 0   False
+ *    @c 0   False \n
  *    @c !=0 True
  *
  * Corresponding tag taking reference parameter is NUTAG_REFER_PAUSE_REF()
@@ -1422,19 +1444,29 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_pause;
 #define NUTAG_REFER_PAUSE_REF(x) nutag_refer_pause_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_refer_pause_ref;
 
-/** User-Agent string
+/**User-Agent string.
+ *
+ * Indicate the User-Agent header used by the stack. The value set with this
+ * tag is concatenated with the value indicating the stack name and version,
+ * e.g., "sofia-sip/1.12.1" unless the stack name "sofia-sip" followed by
+ * slash is already included in the string. The concatenated value is
+ * returned in SIPTAG_USER_AGENT_STR() and NUTAG_USER_AGENT() when
+ * nua_get_params() is called.
+ *
+ * If you want to set the complete string, use SIPTAG_USER_AGENT_STR() or
+ * SIPTAG_USER_AGENT().
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_set_params(), nua_set_hparams() \n
+ *    nua_get_params(), nua_get_hparams(), #nua_r_get_params \n
+ *    any handle-specific nua call
  *
  * @par Parameter type
  *    char const *
  *
  * @par Values
- *    see
- *    <a href="http://www.ietf.org/rfc/rfc3261.txt">RFC 3261</a> \n
- *    default string is of format "nua/2.0"
+ *    See @RFC3261 \n
+ *    If NULL, stack uses default string which of format "sofia-sip/1.12".
  *
  * Corresponding tag taking reference parameter is NUTAG_USER_AGENT_REF()
  */
@@ -1445,6 +1477,15 @@ SOFIAPUBVAR tag_typedef_t nutag_user_agent;
 SOFIAPUBVAR tag_typedef_t nutag_user_agent_ref;
 
 /** Allow a method (or methods).
+ *
+ * This tag is used to add a new method to the already existing set of
+ * allowed methods. If you want to ignore the existing set of allowed
+ * methods, use SIPTAG_ALLOW_STR() or SIPTAG_ALLOW().
+ *
+ * The set of allowed methods is added to the @Allow header in the response
+ * or request messages. For incoming request, an error response <i>405
+ * Method Not Allowed</i> is automatically returned if the incoming method
+ * is not included in the set.
  *
  * @par Used with
  *    nua_set_params() \n
@@ -1773,7 +1814,7 @@ SOFIAPUBVAR tag_typedef_t nutag_offer_sent_ref;
  *    #nua_i_state
  *
  * @par Parameter type
- *    boolean
+ *    int (boolean: nonzero is true, zero is false)
  *
  * Corresponding tag taking reference parameter is NUTAG_ANSWER_SENT_REF()
  */
@@ -1783,13 +1824,17 @@ SOFIAPUBVAR tag_typedef_t nutag_answer_sent;
 #define NUTAG_ANSWER_SENT_REF(x) nutag_answer_sent_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_answer_sent_ref;
 
-/** Enable detection of local IP address updates
+/**Enable detection of local IP address updates.
  *
  * @par Used with
- *    #nua_i_network_changed
+ *    nua_create() \n
+ *    nua_set_params() \n
+ *    nua_get_params()
  *
  * @par Parameter type
- *    int
+ *    int (enum nua_nw_detector_e aka #nua_nw_detector_t)
+ *
+ * @sa #nua_i_network_changed, #nua_nw_detector_t
  *
  * Corresponding tag taking reference parameter is
  * NUTAG_DETECT_NETWORK_UPDATES_REF().
@@ -1797,11 +1842,11 @@ SOFIAPUBVAR tag_typedef_t nutag_answer_sent_ref;
  * @since New in @VERSION_1_12_2.
  */
 #define NUTAG_DETECT_NETWORK_UPDATES(x) \
-          nutag_detect_network_updates, tag_uint_v(x)
+          nutag_detect_network_updates, tag_int_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_detect_network_updates;
 
 #define NUTAG_DETECT_NETWORK_UPDATES_REF(x) \
-          nutag_detect_network_updates_ref, tag_uint_vr(&(x))
+          nutag_detect_network_updates_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_detect_network_updates_ref;
 
 /* Pass nua handle as tagged argument */

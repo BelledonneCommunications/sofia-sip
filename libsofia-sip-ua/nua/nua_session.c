@@ -255,6 +255,142 @@ int session_process_response(nua_handle_t *nh,
 			     sip_t const *sip,
 			     char const **return_received);
 
+/**@fun void nua_invite(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Place a call using SIP INVITE method. 
+ *
+ * Incomplete call can be hung-up with nua_cancel(). Complete or incomplete
+ * calls can be hung-up with nua_bye().
+ *
+ * Optionally 
+ * - uses early media if NUTAG_EARLY_MEDIA() tag is used with non zero value
+ * - media parameters can be set by SOA tags
+ * - nua_invite() can be used to change status of an existing call: 
+ *   - #SOATAG_HOLD tag can be used to list the media that will be put on hold,
+ *     the value "*" sets all the media beloginging to the session on hold
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    NUTAG_URL() \n
+ *    NUTAG_HOLD() \n
+ *    NUTAG_NOTIFY_REFER() \n
+ *    NUTAG_REFER_PAUSE() \n
+ *    NUTAG_INVITE_TIMER() \n
+ *    NUTAG_MEDIA_FEATURES() \n
+ *    SOATAG_HOLD() \n
+ *    SOATAG_AF() \n
+ *    SOATAG_ADDRESS() \n
+ *    SOATAG_USER_SDP() or SOATAG_USER_SDP_STR() \n
+ *    tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_invite \n
+ *    #nua_i_state \n
+ *    #nua_i_active \n
+ *    #nua_i_media_error \n
+ *    #nua_i_terminated \n
+ *    #nua_i_fork \n
+ *
+ * @par Populating SIP Request Message with Tagged Arguments
+ * The tagged arguments can be used to pass values for any SIP headers to
+ * the stack. When the INVITE message (or any other SIP message) is created,
+ * the tagged values saved with nua_handle() are used first, next the tagged
+ * values given with the operation (nua_invite()) are added.
+ * 
+ * When multiple tags for the same header are specified, the behaviour
+ * depends on the header type. If only a single header field can be included
+ * in a SIP message, the latest non-NULL value is used, e.g., @Subject. 
+ * However, if the SIP header can consist of multiple lines or header fields
+ * separated by comma, e.g., @Accept, all the tagged
+ * values are concatenated.
+ * 
+ * However, if a tag value is #SIP_NONE (-1 casted as a void pointer), the
+ * values from previous tags are ignored.
+ *
+ * Next, values previously set with nua_set_params() or nua_set_hparams()
+ * are used: @Allow, @Supported, @Organization, and @UserAgent headers are
+ * added to the request if they are not already set.
+ *
+ * Now, the target URI for the request needs to be determined.
+ *
+ * For initial INVITE requests, values from tags are used. If NUTAG_URL() is
+ * given, it is used as target URI. Otherwise, if SIPTAG_TO() is given, it
+ * is used as target URI. If neither is given, the complete request line
+ * already specified using SIPTAG_REQUEST() or SIPTAG_REQUEST_STR() is used. 
+ * If none of the tags above are given, an internal error is returned to the
+ * application. At this point, the target URI is stored in the request line,
+ * together with method name ("INVITE") and protocol version ("SIP/2.0"). 
+ * The initial dialog information is also created: @CallID, @CSeq headers
+ * are generated, if they do not exist, and tag is added to @From header.
+ *
+ * For in-dialog INVITE (re-INVITE), the request URI is taken from the
+ * @Contact header received from the remote party during the dialog
+ * establishment. Also, the @CallID and @CSeq headers and @From and @To tags
+ * are generated based on the dialog information and added to the request. 
+ * If the dialog has a route (set by @RecordRoute headers), it is added to
+ * the request, too.
+ *
+ * @MaxForwards header (with default value set by NTATAG_MAX_FORWARDS()) is
+ * also added now, if it does not exist.
+ * 
+ * Next, the stack generates a @Contact header for the request (Unless the
+ * application already gave a @Contact header or it does not want to use
+ * @Contact and indicates that by including SIPTAG_CONTACT(NULL) or
+ * SIPTAG_CONTACT(SIP_NONE) in the tagged parameters.) If the application
+ * has registered the URI in @From header, the @Contact header used with
+ * registration is used. Otherwise, the @Contact header is generated from the
+ * local IP address and port number.
+ *
+ * For the initial INVITE requests, @ServiceRoute set received from
+ * the registrar is also added to the request message.
+ *
+ * The INVITE request message created by nua_invite() operation is saved as
+ * a template for automatic re-INVITE requests sent by the session timer
+ * ("timer") feature. Please note that the template message is not used when
+ * ACK, PRACK, UPDATE or INFO requests are created (however, these requests
+ * will include dialog-specific headers like @To, @From, and @CallID as well
+ * as preference headers @Allow, @Supported, @UserAgent, @Organization).
+ *
+ * @par SDP Handling
+
+ * The initial nua_invite() creates a @ref soa_session_t "soa media session"
+ * unless NUTAG_MEDIA_ENABLE(0) has been given. The SDP description of the
+ * @ref soa_session_t "soa media session" is included in the INVITE request
+ * as message body. 
+ *
+ * The SDP in a 1XX or 2XX response message is interpreted as an answer,
+ * given to the @ref soa_session_t "soa media session" object for
+ * processing.
+ *
+ * @bug If the INVITE request already contains a message body, SDP is not
+ * added. Also, if the response contains a multipart body, it is not parsed.
+ *
+ * @par Authentication
+ * The INVITE request may need authentication. Each proxy or server
+ * requiring authentication can respond with 401 or 407 response. The
+ * nua_authenticate() operation stores authentication information (username
+ * and password) to the handle, and stack tries to authenticate all the rest
+ * of the requests (e.g., PRACK, ACK, UPDATE, re-INVITE, BYE) using same
+ * username and password.
+ *
+ * \sa @ref nua_call_model \n
+ *     nua_nua_handle_has_active_call() \n
+ *     nua_handle_has_call_on_hold()\n
+ *     nua_handle_has_invite() \n
+ *     nua_authenticate() \n
+ *     nua_prack() \n
+ *     nua_update() \n
+ *     nua_info() \n 
+ *     nua_cancel() \n
+ *     nua_bye() \n
+ *     nua_respond()
+ */
+
 int
 nua_stack_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		 tagi_t const *tags)

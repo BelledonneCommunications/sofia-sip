@@ -319,7 +319,7 @@ SOFIAPUBFUN void nua_authenticate(nua_handle_t *, tag_type_t, tag_value_t, ...);
 /** Authorize a subscriber. */
 SOFIAPUBFUN void nua_authorize(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
-/** Redirect an operation. */
+/*# Redirect an operation. @deprecated */
 SOFIAPUBFUN void nua_redirect(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
 /** Respond with given status. */
