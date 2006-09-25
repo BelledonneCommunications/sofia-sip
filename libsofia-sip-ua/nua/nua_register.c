@@ -1058,11 +1058,13 @@ void nua_network_changed_cb(nua_t *nua, su_root_t *root)
     nta_agent_close_tports(nua->nua_nta);
 
     /* 2) Create new tports */
-    if (nua_stack_init_transport(nua, nua->nua_args) < 0);
-
-
-    nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
-		    SIP_200_OK, TAG_END());
+    if (nua_stack_init_transport(nua, nua->nua_args) < 0)
+      /* We are hosed */
+      nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
+		      900, "Internal Error", TAG_END());
+    else
+      nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
+		      SIP_200_OK, TAG_END());
 
     break;
     
