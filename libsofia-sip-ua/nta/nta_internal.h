@@ -162,10 +162,6 @@ struct nta_agent_s
   /** Blacklisting period */
   unsigned              sa_blacklist;
 
-#define sa_retry_timer_ini sa_t1
-#define sa_retry_timer_max sa_t2
-#define sa_linger_timer    sa_t4
-
   /** NTA is used to test packet drop */
   unsigned              sa_drop_prob : 10;
   /** NTA is acting as an User Agent server */
