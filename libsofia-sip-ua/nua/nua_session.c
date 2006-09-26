@@ -2245,8 +2245,9 @@ int nua_stack_process_register(nua_t *nua,
     if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_nothing, 0)))
       return 500;		/* Respond with 500 Internal Server Error */
 
+   nh->nh_registrar = irq;
 	nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-	   nua_i_register, SIP_200_OK, TAG_END());
+	   nua_i_register, SIP_100_TRYING, TAG_END());
 
   return 0;	
 }

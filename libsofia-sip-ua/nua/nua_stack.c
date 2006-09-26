@@ -1706,6 +1706,12 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
     nua_stack_event(nua, nh, NULL, nua_i_error,
 		    500, "Already Sent Final Response", TAG_END());
   }
+  else if (nh->nh_registrar) {
+    nta_incoming_treply(nh->nh_registrar, status, phrase,
+			TAG_NEXT(tags));
+    if (status >= 200)
+      nta_incoming_destroy(nh->nh_registrar), nh->nh_registrar = NULL;
+  }
   else {
     nua_stack_event(nua, nh, NULL, nua_i_error,
 		    500, "Responding to a Non-Existing Request", TAG_END());

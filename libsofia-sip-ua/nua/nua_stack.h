@@ -247,6 +247,7 @@ struct nua_handle_s
   } nh_referral[1];
 
   nea_server_t   *nh_notifier;	/**< SIP notifier */
+  nta_incoming_t * nh_registrar;		
 };
 
 #define NH_IS_VALID(nh) ((nh) && (nh)->nh_valid)
