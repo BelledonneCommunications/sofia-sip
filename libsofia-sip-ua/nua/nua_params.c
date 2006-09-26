@@ -112,8 +112,7 @@ nua_handle_preferences_t *nhp_move_params(su_home_t *home,
 
 #define NHP_USER_AGENT PACKAGE_NAME "/" PACKAGE_VERSION
 
-static
-int already_contains_package_name(char const *s)
+static int already_contains_package_name(char const *s)
 {
   char const pn[] = " " PACKAGE_NAME "/";
   size_t pnlen = strlen(pn + 1);
@@ -575,11 +574,10 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
  * @param global  if true, save also global parameters
  * @param tags list of tags to parse
  */
-static int 
-nhp_set_tags(su_home_t *home, 
-	     nua_handle_preferences_t *nhp,
-	     int global,
-	     tagi_t const *tags)
+static int nhp_set_tags(su_home_t *home, 
+			nua_handle_preferences_t *nhp,
+			int global,
+			tagi_t const *tags)
 {
 
 /* Set copy of string to handle pref structure */
@@ -829,12 +827,12 @@ nhp_set_tags(su_home_t *home,
     /* NUTAG_USER_AGENT(ua_name) */
     else if (tag == nutag_user_agent) {
       /* Add contents of NUTAG_USER_AGENT() to our distribution name */
-      char const *value = (void *)value, *ua;
+      char const *str = (void *)value, *ua;
 
-      if (value && !already_contains_package_name(value))
-	ua = su_sprintf(home, "%s %s", value, NHP_USER_AGENT);
-      else if (value)
-	ua = su_strdup(home, value);
+      if (str && !already_contains_package_name(str))
+	ua = su_sprintf(home, "%s %s", str, NHP_USER_AGENT);
+      else if (str)
+	ua = su_strdup(home, str);
       else
 	ua = su_strdup(home, NHP_USER_AGENT);
 
@@ -963,11 +961,10 @@ static int nhp_merge_lists(su_home_t *home,
 }
 
 static
-nua_handle_preferences_t *
-nhp_move_params(su_home_t *home,
-		nua_handle_preferences_t *dst,
-		su_home_t *tmphome,
-		nua_handle_preferences_t const *src)
+nua_handle_preferences_t *nhp_move_params(su_home_t *home,
+					  nua_handle_preferences_t *dst,
+					  su_home_t *tmphome,
+					  nua_handle_preferences_t const *src)
 {
   /* Update prefs structure */
   nua_handle_preferences_t tbf[1];
@@ -1009,8 +1006,7 @@ static int nua_handle_tags_filter(tagi_t const *f, tagi_t const *t);
 static int nua_handle_param_filter(tagi_t const *f, tagi_t const *t);
 
 /** Save taglist to a handle */
-int
-nua_handle_save_tags(nua_handle_t *nh, tagi_t *tags)
+int nua_handle_save_tags(nua_handle_t *nh, tagi_t *tags)
 {
   tagi_t const tagfilter[] = {
     { TAG_FILTER(nua_handle_tags_filter) },
