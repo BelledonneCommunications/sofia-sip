@@ -943,7 +943,7 @@ tagi_t *t_skip_filter(tagi_t *dst,
 tag_class_t skip_tag_class[1] = 
   {{
     sizeof(skip_tag_class),
-    /* tc_next */     t_skip_next,
+    /* tc_next */     NULL,
     /* tc_len */      t_skip_len,
     /* tc_move */     t_skip_move,
     /* tc_xtra */     NULL,
