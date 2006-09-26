@@ -1171,7 +1171,7 @@ int su_port_wait_events(su_port_t *self, su_duration_t tout)
     /* poll() can return events for multiple wait objects */
     if (self->sup_multishot) {
       unsigned j;
-      for (j = (unsigned)i; j < n; i++) {
+      for (j = (unsigned)i; j < n; j++) {
         if (waits[j].revents) {
           root = self->sup_wait_roots[j];
           self->sup_wait_cbs[j](root ? su_root_magic(root) : NULL,
