@@ -1652,7 +1652,6 @@ sof_i_terminated(int status, char const *phrase,
                  nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
                  tagi_t tags[])
 {
-  g_debug("%s: KVDEBUG\n", G_STRFUNC);
   if (op) {
     g_signal_emit(self, signals[NGSIG_CALL_TERMINATED], 0, op, status);
     op->op_callstate = 0;
