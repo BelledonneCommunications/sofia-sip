@@ -267,7 +267,7 @@ tag_typedef_t soatag_address = STRTAG_TYPEDEF(address);
  *
  * Corresponding tag taking a reference parameter is SOATAG_RTP_SELECT_REF()
  */
-tag_typedef_t soatag_rtp_select = UINTTAG_TYPEDEF(rtp_select);
+tag_typedef_t soatag_rtp_select = INTTAG_TYPEDEF(rtp_select);
 
 
 /**@def SOATAG_AUDIO_AUX(x)
@@ -329,7 +329,7 @@ tag_typedef_t soatag_audio_aux = STRTAG_TYPEDEF(audio_aux);
  *
  * Corresponding tag taking reference parameter is SOATAG_RTP_SORT_REF()
 */
-tag_typedef_t soatag_rtp_sort = UINTTAG_TYPEDEF(rtp_sort);
+tag_typedef_t soatag_rtp_sort = INTTAG_TYPEDEF(rtp_sort);
 
 
 /**@def SOATAG_RTP_MISMATCH(x)
