@@ -444,10 +444,11 @@ fi
 
 if test "$ac_cc_environment" = mingw32 ; then
 CFLAGS="$CFLAGS -I\$(top_srcdir)/win32/pthread -DWINVER=0x0501 \
-	-D_WIN32_WINNT=0x0501 -DIN_LIBSOFIA_SIP_UA  -mms-bitfields \
+	-D_WIN32_WINNT=0x0501 -DIN_LIBSOFIA_SIP_UA -DIN_LIBSOFIA_SRES \
+	-mms-bitfields \
 	-pipe -mno-cygwin -mwindows -mconsole -Wall -g -O0"
 LDFLAGS="$LDFLAGS -Wl,--enable-auto-image-base"
-LIBS="-L\$(top_srcdir)/win32/pthread -lpthread -lws2_32 \
+LIBS="-L\$(top_srcdir)/win32/pthread -lpthreadVC2 -lws2_32 \
 	-lwsock32"
 MINGW_ENVIRONMENT=1
 AC_SUBST(MINGW_ENVIRONMENT)
