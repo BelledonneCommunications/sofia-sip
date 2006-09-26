@@ -260,6 +260,7 @@ nua_glib_constructor (GType                  type,
   GObject *obj;
   int res = 0;
   GSource *gsource;
+  NuaGlib *self;
 
   {
     /* Invoke parent constructor.
@@ -274,7 +275,7 @@ nua_glib_constructor (GType                  type,
                                      construct_properties);
   }
   
-  NuaGlib *self = NUA_GLIB(obj);
+  self = NUA_GLIB(obj);
 
   /* create a su event loop and connect it to glib */
   self->priv->root = su_root_source_create(self);
@@ -1966,6 +1967,8 @@ sof_i_refer (nua_t *nua, NuaGlib *self,
   sip_refer_to_t const *refer_to;
   NuaGlibOp *op2;
   char *refer_to_str;
+  char *to_url;
+  char *refer_url;
 
   assert(sip);
 
@@ -1975,10 +1978,10 @@ sof_i_refer (nua_t *nua, NuaGlib *self,
 
   assert(from && to);
 
-  char *to_url = url_as_string(self->priv->home, to->a_url);
-  char *refer_url = url_as_string(self->priv->home, refer_to->r_url);
+  to_url = url_as_string(self->priv->home, to->a_url);
+  refer_url = url_as_string(self->priv->home, refer_to->r_url);
 
-   if(refer_to->r_url->url_type == url_sip) {
+   if (refer_to->r_url->url_type == url_sip) {
       refer_to_str = sip_header_as_string(self->priv->home, (sip_header_t*)refer_to);
       op2 = nua_glib_op_create(self, sip_method_invite, refer_to_str,
 			       NUTAG_NOTIFY_REFER(nh), TAG_END());
