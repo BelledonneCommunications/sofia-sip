@@ -264,6 +264,7 @@ typedef int msg_update_f(msg_common_t *, char const *name, isize_t namelen,
  */
 struct msg_hclass_s
 {
+  /* XXX size of header class missing. Someone has saved bits in wrong place. */
   int               hc_hash;	/**< Header name hash or ID */
   msg_parse_f      *hc_parse;	/**< Parse header. */
   msg_print_f      *hc_print;	/**< Print header. */
@@ -274,7 +275,7 @@ struct msg_hclass_s
   short             hc_len;	/**< Length of hc_name. */
   char              hc_short[2];/**< Short name, if any. */
   unsigned char     hc_size;	/**< Size of header structure. */
-  unsigned char     hc_params;	/**< Offset of parameters */
+  unsigned char     hc_params;	/**< Offset of parameter list */
   unsigned          hc_kind:3;	/**< Kind of header (#msg_header_kind_t):
 				 * single, append, list, apndlist, prepend. */
   unsigned          hc_critical:1; /**< True if header is critical */

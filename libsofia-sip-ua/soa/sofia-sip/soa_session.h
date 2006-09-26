@@ -143,6 +143,8 @@ struct soa_session
   /** Incremented once each time session is terminated */
   unsigned  ss_terminated;
 
+  /* XXX - this is part of public API. we should have no bitfields here */
+
   unsigned  ss_active:1;	/**< Session has been activated */
 
   /* Current Offer-Answer status */
@@ -211,6 +213,8 @@ struct soa_session
   char const     *ss_hold;	/**< Media on hold locally */
 
   char const     *ss_cname;
+
+  /* XXX - this is part of public API. we should have no bitfields here */
 
   /* Codec handling during negotiation */
   unsigned  ss_rtp_select:2;
