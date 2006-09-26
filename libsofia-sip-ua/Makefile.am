@@ -59,7 +59,7 @@ built-sources-recursive clean-built-sources-recursive $(COVERAGE_RECURSIVE):
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target) \
 	done;
 
-empty-doxytags:
+doxygen: built-sources
 	@echo Generating empty doxytags
 	cd ${srcdir}; \
 	mkdir -p docs/html ; \
@@ -67,30 +67,36 @@ empty-doxytags:
 	  test -r $$d/Doxyfile || continue ; \
 	  if ! test -r docs/$$d.doxytags ; then \
 	    echo '<?xml version="1.0"?><tagfile/>' > docs/$$d.doxytags ; \
+	  else \
+	    sed '2,10s!<name>index</name>!<name>'$$d'_index</name>!' \
+	    docs/$$d.doxytags > docs/$$d.doxytags.tmp && \
+	    mv -f docs/$$d.doxytags.tmp docs/$$d.doxytags ; \
           fi ; \
 	done
-
-doxygen: built-sources empty-doxytags 
 	@cd ${srcdir} ;\
 	for d in $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile \
 	  && pushd $$d > /dev/null \
 	  && echo running ${DOXYGEN} in $$d \
-          && ${DOXYGEN} \
-          && popd > /dev/null ; \
+          && ${DOXYGEN} | fgrep -v -e resolve \
+	  | fgrep -v -e 'Warning: Unsupported xml/html tag' \
+          ; popd > /dev/null ; \
+	  test -r docs/$$d.doxytags && \
+	  sed '2,10s!<name>index</name>!<name>'$$d'_index</name>!' \
+	    docs/$$d.doxytags > docs/$$d.doxytags.tmp && \
+	  mv -f docs/$$d.doxytags.tmp docs/$$d.doxytags ; \
 	done 
-	for f in docs/*.doxytags; do \
-	  m=$${f#docs/} m=$${m%%.doxytags} ; \
-	  sed '2,10s!<name>index</name>!<name>'$$m'_index</name>!' \
-	  $$f > $$f.tmp && mv -f $$f.tmp $$f ; \
-	done
 	@cd ${srcdir} ;\
 	for d in $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile \
 	  && pushd $$d > /dev/null \
 	  && echo running ${DOXYGEN} in $$d \
-          && ${DOXYGEN} \
-          && popd > /dev/null ; \
+          && ${DOXYGEN} | fgrep -v -e 'Warning: Unsupported xml/html tag' \
+          ; popd > /dev/null ; \
+	  test -r docs/$$d.doxytags && \
+	  sed '2,10s!<name>index</name>!<name>'$$d'_index</name>!' \
+	    docs/$$d.doxytags > docs/$$d.doxytags.tmp && \
+	  mv -f docs/$$d.doxytags.tmp docs/$$d.doxytags ; \
 	done 
 	cd ${srcdir}/docs/html && ../hide_emails.sh
 
