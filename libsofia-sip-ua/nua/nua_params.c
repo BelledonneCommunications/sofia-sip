@@ -54,6 +54,10 @@
 
 #include <assert.h>
 
+#if !HAVE_STRCASESTR
+char *strcasestr(char const *haystack, char const *needle);
+#endif
+
 /* ====================================================================== */
 /* Helper macros and functions for handling #nua_handle_preferences_t. */
 

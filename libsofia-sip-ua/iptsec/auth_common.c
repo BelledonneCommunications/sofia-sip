@@ -34,12 +34,16 @@
 
 #include "config.h"
 
+#include "sofia-sip/auth_common.h"
+#include "sofia-sip/msg_header.h"
+
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
 
-#include "sofia-sip/auth_common.h"
-#include "sofia-sip/msg_header.h"
+#if !HAVE_STRCASESTR
+char *strcasestr(char const *haystack, char const *needle);
+#endif
 
 static inline int has_token(char const *qstring, char const *token);
 
@@ -158,25 +162,6 @@ int auth_struct_copy(void *dst, void const *src, isize_t s_size)
   }
   return 0;
 }
-
-#if !HAVE_STRCASESTR
-static inline char const *strcasestr(char const *haystack, char const *pin)
-{
-  size_t i, m, n;
-
-  m = strlen(haystack);
-  n = strlen(pin);
-
-  for (i = 0; i + n <= m; i++)
-    if (strncasecmp(haystack + i, pin, n) == 0)
-      break;
-
-  if (i + n <= m)
-    return haystack + i;
-  else
-    return NULL;
-}
-#endif
 
 static inline int has_token(char const *qstring, char const *token)
 {
