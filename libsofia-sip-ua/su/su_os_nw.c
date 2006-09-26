@@ -75,6 +75,7 @@ struct su_network_changed_s {
   su_network_changed_magic_t *su_network_changed_magic;
 };
 
+#if defined(__APPLE_CC__)
 static void su_nw_changed_msg_recv(su_root_magic_t *rm,
 				   su_msg_r msg,
 				   su_network_changed_t *snc)
@@ -90,7 +91,7 @@ static void su_nw_changed_msg_recv(su_root_magic_t *rm,
   return;
 }
 
-#if defined(__APPLE_CC__)
+
 void nw_changed_cb(SCDynamicStoreRef store, 
 		   CFArrayRef changedKeys, 
 		   void *info)
@@ -221,24 +222,23 @@ CreateIPAddressListChangeCallbackSCF(SCDynamicStoreCallBack callback,
 #endif /* __APPLE_CC__ */
 
 
+#if defined(__APPLE_CC__)
 static void *su_start_nw_os_thread(void *ptr)
 {
   su_network_changed_t *snc = (su_network_changed_t *) ptr;
 
   assert(snc);
 
-#if defined(__APPLE_CC__)
   CreateIPAddressListChangeCallbackSCF(nw_changed_cb,
 				       (void *) snc,
 				       snc->su_storeRef,
 				       snc->su_sourceRef);
 
   CFRunLoopRun();
-#endif
 
   return NULL;
 }
-
+#endif
 
 /** Register a callback for the network change event.
  *

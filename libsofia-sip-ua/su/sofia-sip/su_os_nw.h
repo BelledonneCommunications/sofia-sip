@@ -35,6 +35,7 @@
  * @date Created: Tue Aug 15 09:05:18 EEST 2006  martti.mela@nokia.com
  *
  * @since Experimental in @VERSION_1_12_2.
+ * Note that this is expected to change in future releases.
  */
 
 /* ---------------------------------------------------------------------- */
