@@ -310,7 +310,7 @@ struct tport_vtable
   char const *vtp_name;
   enum tport_via vtp_public;
 
-  int vtp_pri_size;		/* Size of primary tport */
+  size_t vtp_pri_size;		/* Size of primary tport */
   int (*vtp_init_primary)(tport_primary_t *pri,
 			  tp_name_t tpn[1],
 			  su_addrinfo_t *ai, tagi_t const *,
@@ -320,7 +320,7 @@ struct tport_vtable
   tport_t *(*vtp_connect)(tport_primary_t *pri, su_addrinfo_t *ai, 
 			  tp_name_t const *tpn);
 
-  int vtp_secondary_size;	/* Size of secondary tport */
+  size_t vtp_secondary_size;	/* Size of secondary tport */
 
   int (*vtp_init_secondary)(tport_t *, int socket, int accepted,
 			    char const **return_reason);

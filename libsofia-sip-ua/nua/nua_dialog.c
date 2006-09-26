@@ -377,7 +377,8 @@ void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
 
   if (SU_LOG->log_level >= 3) {
     char buffer[160];
-    int l = 0, n, N = sizeof buffer;
+    size_t l = 0, N = sizeof buffer;
+    ssize_t n;
     
     buffer[0] = '\0';
 
@@ -390,7 +391,7 @@ void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
       n = sip_event_e(buffer + l, N - l, h, 0);
       if (n == -1)
 	break;
-      l += n;
+      l += (size_t)n;
       if (du->du_next && l + 2 < sizeof(buffer)) {
 	strcpy(buffer + l, ", ");
 	l += 2;

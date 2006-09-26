@@ -440,10 +440,10 @@ tls_t *tls_init_client(tls_t *master, int sock)
 static char *tls_strdup(char const *s)
 {
   if (s) {
-    int len = strlen(s);
-    char *d = malloc(len + 1);
+    size_t len = strlen(s) + 1;
+    char *d = malloc(len);
     if (d)
-      memcpy(d, s, len + 1);
+      memcpy(d, s, len);
     return d;
   }
   return NULL;
@@ -726,7 +726,7 @@ int tls_want_write(tls_t *tls, int events)
   if (tls && (events & tls->write_events)) {
     int ret;
     void *buf = tls->write_buffer;
-    int size = tls->write_buffer_len;
+    size_t size = tls->write_buffer_len;
 
     tls->write_events = 0;
 

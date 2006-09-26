@@ -761,8 +761,8 @@ int soa_sdp_reject_is_needed(sdp_session_t const *session,
     }
     else {
       /* Mode bits do not match */
-      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0)
-	  != (sdp_mode_t)(sm->m_mode & sdp_sendonly))
+      if (((rm->m_mode & sdp_recvonly) == sdp_recvonly)
+	  != ((sm->m_mode & sdp_sendonly) == sdp_sendonly))
 	return 1;
     }
   }
@@ -839,8 +839,8 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
 
     if (rm) {
       /* Mode bits do not match */
-      if (((rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0)
-	  != (sdp_mode_t)(sm->m_mode & sdp_sendonly))
+      if (((rm->m_mode & sdp_recvonly) == sdp_recvonly)
+	  != ((sm->m_mode & sdp_sendonly) == sdp_sendonly))
 	return 1;
     }
 

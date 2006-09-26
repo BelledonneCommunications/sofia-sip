@@ -70,7 +70,7 @@ issize_t auth_digest_challenge_get(su_home_t *home,
   ac->ac_size = sizeof(ac);
 
   assert(ac0); 
-  assert(ac0->ac_size >= sizeof(*ac));
+  assert(ac0->ac_size >= (int) sizeof(*ac));
 
   if (ac0 == NULL || params == NULL)
     return -1;
@@ -145,7 +145,7 @@ issize_t auth_digest_response_get(su_home_t *home,
 
   ar->ar_size = sizeof(ar);
 
-  assert(ar0); assert(params); assert(ar0->ar_size >= sizeof(ar));
+  assert(ar0); assert(params); assert(ar0->ar_size >= (int) sizeof(ar));
 
   if (ar0 == NULL || params == NULL)
     return -1;

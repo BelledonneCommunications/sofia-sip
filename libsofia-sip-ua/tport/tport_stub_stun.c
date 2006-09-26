@@ -275,7 +275,7 @@ int tport_plug_in_stun_server(tport_stun_server_vtable_t const *vtable)
   if (!vtable)
     return 0;
 
-  if (vtable->vst_size <= sizeof *vtable)
+  if (vtable->vst_size <= (int)sizeof *vtable)
     return su_seterrno(EINVAL);
 
   if (!vtable->vst_create || 

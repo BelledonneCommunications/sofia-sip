@@ -212,7 +212,7 @@ int test_params(struct context *ctx)
   int af;
   char const *address;
   char const *hold;
-  unsigned rtp_select, rtp_sort;
+  int rtp_select, rtp_sort;
   int rtp_mismatch;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
   soa_session_t *a = ctx->a, *b = ctx->b;

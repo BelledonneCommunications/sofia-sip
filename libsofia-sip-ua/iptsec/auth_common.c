@@ -152,7 +152,7 @@ int auth_struct_copy(void *dst, void const *src, isize_t s_size)
   if (d_size < 0)
     return -1;
 
-  if (d_size > s_size) {
+  if ((size_t)d_size > s_size) {
     memcpy(dst, src, s_size);
     memset((char *)dst + s_size, 0, d_size - s_size);
   }

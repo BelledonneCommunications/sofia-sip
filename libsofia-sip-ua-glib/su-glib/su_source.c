@@ -570,7 +570,7 @@ int su_source_register(su_port_t *self,
 
   if (n >= self->sup_size_waits) {
     /* Reallocate size arrays */
-    int size;
+    unsigned size;
     unsigned *indices;
     su_wait_t *waits;
     su_wakeup_f *wait_cbs;
@@ -777,7 +777,7 @@ int su_source_deregister(su_port_t *self, int i)
   I = self->sup_max_index;
   indices = self->sup_indices;
 
-  assert(i < I + 1);
+  assert((unsigned)i < I + 1);
 
   n = indices[i - 1];
 
@@ -807,7 +807,7 @@ int su_source_deregister(su_port_t *self, int i)
 
   indices[i - 1] = UINT_MAX;
 
-  if (i == I)
+  if ((unsigned)i == I)
     self->sup_max_index--;
 
   su_wait_destroy(wait);
@@ -893,9 +893,9 @@ int su_source_eventmask(su_port_t *self, int index, int socket, int events)
   
   assert(self);
   assert(SU_SOURCE_OWN_THREAD(self));
-  assert(index <= self->sup_max_index);
+  assert(0 < index && (unsigned)index <= self->sup_max_index);
 
-  if (index <= 0 || index > self->sup_max_index)
+  if (index <= 0 || (unsigned)index > self->sup_max_index)
     return -1;
 
   n = self->sup_indices[index - 1];

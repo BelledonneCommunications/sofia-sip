@@ -190,7 +190,7 @@ static void tport_check_trunc(tport_t *tp, su_addrinfo_t *ai)
     n = su_recvfrom(tp->tp_socket, buffer, sizeof buffer, MSG_TRUNC, 
 		    (void *)&su, &sulen);
 
-    if (n > sizeof buffer) {
+    if (n > (ssize_t)sizeof buffer) {
       tp->tp_trunc = 1;
       return;
     }
@@ -213,7 +213,7 @@ static void tport_check_trunc(tport_t *tp, su_addrinfo_t *ai)
 int tport_recv_dgram(tport_t *self)
 {
   msg_t *msg;
-  int n, veclen;
+  ssize_t n, veclen;
   su_addrinfo_t *ai;
   su_sockaddr_t *from;
   socklen_t fromlen;
@@ -222,7 +222,7 @@ int tport_recv_dgram(tport_t *self)
 
   /* Simulate packet loss */
   if (self->tp_params->tpp_drop && 
-      su_randint(0, 1000) < self->tp_params->tpp_drop) {
+      (unsigned)su_randint(0, 1000) < self->tp_params->tpp_drop) {
     su_recv(self->tp_socket, sample, 1, 0);
     SU_DEBUG_3(("tport(%p): simulated packet loss!\n", self));
     return 0;

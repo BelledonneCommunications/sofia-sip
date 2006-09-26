@@ -2670,7 +2670,7 @@ int stun_atoaddr(su_home_t *home,
     host = in;
   }
   else {
-    assert(port - in < strlen(in) + 1);
+    assert((size_t)(port - in) < strlen(in) + 1);
     memcpy(tmp, in, port - in);
     tmp[port - in] = 0;
     host = tmp;

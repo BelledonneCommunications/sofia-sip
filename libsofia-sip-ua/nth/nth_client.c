@@ -82,7 +82,7 @@ enum { HE_TIMER = 1000 };
 /** @c http_flag telling that this message is internally generated. */
 #define NTH_INTERNAL_MSG (1<<16)
 
-HTABLE_DECLARE(hc_htable, hct, nth_client_t);
+HTABLE_DECLARE_WITH(hc_htable, hct, nth_client_t, uintptr_t, size_t);
 
 struct nth_engine_s {
   su_home_t he_home[1];
@@ -238,10 +238,11 @@ static void he_tp_error(nth_engine_t * he,
 			tport_t * tport, int errcode, char const *remote);
 static int hc_recv(nth_client_t * hc, msg_t *msg, http_t * http);
 
-HTABLE_PROTOS(hc_htable, hct, nth_client_t);
+HTABLE_PROTOS_WITH(hc_htable, hct, nth_client_t, uintptr_t, size_t);
 
-#define HTABLE_HASH_CLIENT(hc) ((hash_value_t)(uintptr_t)(hc)->hc_tport)
-HTABLE_BODIES(hc_htable, hct, nth_client_t, HTABLE_HASH_CLIENT);
+#define HTABLE_HASH_CLIENT(hc) ((uintptr_t)(hc)->hc_tport)
+HTABLE_BODIES_WITH(hc_htable, hct, nth_client_t, HTABLE_HASH_CLIENT,
+		   uintptr_t, size_t);
 
 static url_string_t const *hc_request_complete(nth_client_t * hc,
 					       msg_t *msg, http_t * http,
@@ -307,7 +308,7 @@ nth_engine_t *nth_engine_create(su_root_t *root,
 void nth_engine_destroy(nth_engine_t * he)
 {
   if (he) {
-    int i;
+    size_t i;
     hc_htable_t *hct = he->he_clients;
 
     for (i = 0; i < hct->hct_size; i++)

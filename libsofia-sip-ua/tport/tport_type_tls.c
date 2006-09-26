@@ -407,8 +407,8 @@ ssize_t tport_tls_send(tport_t const *self,
   tport_tls_primary_t *tlspri = (tport_tls_primary_t *)self->tp_pri;
   tport_tls_t *tlstp = (tport_tls_t *)self;
   enum { TLSBUFSIZE = 2048 };
-  size_t i, j, m, size = 0;
-  ssize_t n;
+  size_t i, j, n, m, size = 0;
+  ssize_t nerror;
   int oldmask, mask;
 
   if (tlstp->tlstp_context == NULL) {
@@ -427,7 +427,7 @@ ssize_t tport_tls_send(tport_t const *self,
 
   for (i = 0; i < iovlen; i = j) {
 #if 0
-    n = tls_write(tlstp->tlstp_context, 
+    nerror = tls_write(tlstp->tlstp_context, 
 		  iov[i].siv_base,
 		  m = iov[i].siv_len);
     j = i + 1;
@@ -458,13 +458,14 @@ ssize_t tport_tls_send(tport_t const *self,
     else
       iov[j].siv_base = buf, iov[j].siv_len = m;
 
-    n = tls_write(tlstp->tlstp_context, buf, m);
+    nerror = tls_write(tlstp->tlstp_context, buf, m);
 #endif
 
     SU_DEBUG_9(("tport_tls_writevec: vec %p %p %lu ("MOD_ZD")\n",  
-		tlstp->tlstp_context, iov[i].siv_base, (LU)iov[i].siv_len, n));
+		tlstp->tlstp_context, iov[i].siv_base, (LU)iov[i].siv_len, 
+		nerror));
 
-    if (n < 0) {
+    if (nerror == -1) {
       int err = su_errno();
       if (su_is_blocking(err))
 	break;
@@ -472,6 +473,7 @@ ssize_t tport_tls_send(tport_t const *self,
       return -1;
     }
 
+    n = (size_t)nerror;
     size += n;
 
     /* Return if the write buffer is full for now */

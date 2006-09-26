@@ -416,7 +416,7 @@ char const http_method_name_connect[] = "CONNECT";
 
 char const *http_method_name(http_method_t method, char const *name)
 {
-  if (method > 0 && method < sizeof(methods)/sizeof(methods[0]))
+  if (method > 0 && (size_t)method < sizeof(methods)/sizeof(methods[0]))
     return methods[method];
   else if (method == 0)
     return name;

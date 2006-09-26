@@ -337,7 +337,7 @@ static int
   tport_resolve(tport_t *self, msg_t *msg, tp_name_t const *tpn),
   tport_send_error(tport_t *, msg_t *, tp_name_t const *),
   tport_queue(tport_t *self, msg_t *msg),
-  tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], ssize_t iovused),
+  tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], size_t iovused),
   tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error),
   tport_pending_errmsg(tport_t *self, msg_t *msg, int error);
 
@@ -370,7 +370,7 @@ static tport_primary_t *tport_listen(tport_master_t *mr,
 				     tagi_t *tags);
 static void tport_zap_primary(tport_primary_t *);
 
-static char *localipname(int pf, char *buf, int bufsiz);
+static char *localipname(int pf, char *buf, size_t bufsiz);
 static int getprotohints(su_addrinfo_t *hints,
 			 char const *proto, int flags);
 static void tport_send_queue(tport_t *self);
@@ -870,7 +870,8 @@ tport_t *tport_base_connect(tport_primary_t *pri,
   int index = 0;
   int events = SU_WAIT_IN | SU_WAIT_ERR;
 
-  int err, errlevel = 3;
+  int err;
+  unsigned errlevel = 3;
   char buf[TPORT_HOSTPORTSIZE];
   char const *what;
 
@@ -1894,8 +1895,6 @@ int tport_addrinfo_copy(su_addrinfo_t *dst, void *addr, socklen_t addrlen,
  */
 void tport_close(tport_t *self)
 {
-  int i;
-
   SU_DEBUG_5(("%s(%p): " TPN_FORMAT "\n", "tport_close", self,
 	      TPN_ARGS(self->tp_name)));
 
@@ -1922,7 +1921,7 @@ void tport_close(tport_t *self)
 
   /* Zap the queued messages */
   if (self->tp_queue) {
-    int N = self->tp_params->tpp_qsize;
+    unsigned short i, N = self->tp_params->tpp_qsize;
     for (i = 0; i < N; i++) {
       if (self->tp_queue[i])
 	msg_ref_destroy(self->tp_queue[i]), self->tp_queue[i] = NULL;
@@ -1972,7 +1971,7 @@ int tport_shutdown(tport_t *self, int how)
     self->tp_send_close = 2;
     tport_set_events(self, 0, SU_WAIT_OUT);
     if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
-      int i, N = self->tp_params->tpp_qsize;
+      unsigned short i, N = self->tp_params->tpp_qsize;
       for (i = 0; i < N; i++) {
 	if (self->tp_queue[i]) {
 	  tport_pending_errmsg(self, self->tp_queue[i], EPIPE);
@@ -2025,7 +2024,7 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
 
       if (msg &&
 	  tp->tp_params->tpp_timeout < INT_MAX && 
-	  tp->tp_params->tpp_timeout < ts - (int)tp->tp_time &&
+	  (int)tp->tp_params->tpp_timeout < ts - (int)tp->tp_time &&
 	  !msg_is_streaming(msg)) {
 	SU_DEBUG_5(("tport_tick(%p): incomplete message idle for %d ms\n",
 		    tp, ts - (int)tp->tp_time));
@@ -2044,7 +2043,7 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
 
       if (!closed &&
 	  !(tp->tp_params->tpp_idle > 0 
-	    && tp->tp_params->tpp_idle < ts - (int)tp->tp_time)) {
+	    && (int)tp->tp_params->tpp_idle < ts - (int)tp->tp_time)) {
 	continue;
       }
 
@@ -2223,7 +2222,7 @@ int getprotohints(su_addrinfo_t *hints,
  * []-quoted).
  */
 static
-char *localipname(int pf, char *buf, int bufsiz)
+char *localipname(int pf, char *buf, size_t bufsiz)
 {
   su_localinfo_t *li = NULL, hints[1] = {{ LI_NUMERIC | LI_CANONNAME }};
   size_t n;
@@ -2832,7 +2831,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
 			 int exact)
 {
   msg_t *msg = *in_out_msg;
-  ssize_t veclen;
+  ssize_t i, veclen;
   int fresh;
 
   if (N == 0)
@@ -2880,8 +2879,9 @@ ssize_t tport_recv_iovec(tport_t const *self,
               __func__, self, 
 	      msg, self->tp_protoname, self->tp_host, self->tp_port, 
 	      N, veclen));
-  for (N = 0; veclen > 1 && N < veclen; N++) {
-    SU_DEBUG_7(("\tiovec["MOD_ZU"] = %lu bytes\n", N, (LU)iovec[N].mv_len));
+
+  for (i = 0; veclen > 1 && i < veclen; i++) {
+    SU_DEBUG_7(("\tiovec[%lu] = %lu bytes\n", (LU)i, (LU)iovec[i].mv_len));
   }
 
   return veclen;
@@ -3122,8 +3122,8 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 		   struct sigcomp_compartment *cc)
 {
   msg_iovec_t *iov, auto_iov[40];
-  size_t iovlen, iovused, i, total;
-  ssize_t n;
+  size_t iovlen, iovused, i, total, n;
+  ssize_t nerror;
   int sdwn_after, close_after;
   su_time_t now;
   su_addrinfo_t *ai;
@@ -3159,11 +3159,13 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 
   self->tp_time = su_time_ms(now = su_now());
 
-  n = tport_vsend(self, msg, tpn, iov, iovused, cc);
-  SU_DEBUG_9(("tport_vsend returned "MOD_ZD"\n", n));
+  nerror = tport_vsend(self, msg, tpn, iov, iovused, cc);
+  SU_DEBUG_9(("tport_vsend returned "MOD_ZD"\n", nerror));
 
-  if (n < 0)
-    return n;
+  if (nerror == -1)
+    return -1;
+
+  n = (size_t)nerror;
 
   self->tp_unsent = NULL, self->tp_unsentlen = 0;
   
@@ -3173,11 +3175,11 @@ int tport_send_msg(tport_t *self, msg_t *msg,
   }
 
   for (i = 0, total = 0; i < iovused; i++) {
-    if (total + iov[i].mv_len > n) {
+    if (total + (size_t)iov[i].mv_len > n) {
       if (tport_is_connection_oriented(self)) {
 	iov[i].mv_len -= (su_ioveclen_t)(n - total);
 	iov[i].mv_base = (char *)iov[i].mv_base + (n - total);
-	if (tport_queue_rest(self, msg, &iov[i], (ssize_t)(iovused - i)) >= 0)
+	if (tport_queue_rest(self, msg, &iov[i], iovused - i) >= 0)
 	  return n;
       }
       else {
@@ -3322,7 +3324,7 @@ static
 int tport_queue_rest(tport_t *self, 
 		     msg_t *msg, 
 		     msg_iovec_t iov[], 
-		     ssize_t iovused)
+		     size_t iovused)
 {
   size_t iovlen = self->tp_iovlen;
 
@@ -3407,13 +3409,12 @@ int tport_tqueue(tport_t *self, msg_t *msg,
 }
 
 /** Return number of queued messages. */
-int tport_queuelen(tport_t const *self)
+isize_t tport_queuelen(tport_t const *self)
 {
-  int retval = 0;
+  isize_t retval = 0;
 
   if (self && self->tp_queue) {
-    unsigned short i;
-    unsigned short N = self->tp_params->tpp_qsize;
+    unsigned short i, N = self->tp_params->tpp_qsize;
 
     for (i = self->tp_qhead; self->tp_queue[i]; i = (i + 1) % N)
       retval++;
@@ -3466,7 +3467,7 @@ int tport_queue(tport_t *self, msg_t *msg)
 int tport_tqsend(tport_t *self, msg_t *msg, msg_t *next,
 		 tag_type_t tag, tag_value_t value, ...)
 {
-  unsigned short qhead = self->tp_qhead;
+  unsigned short qhead;
   ta_list ta;
   int reuse, sdwn_after, close_after;
   unsigned short N;
@@ -3475,6 +3476,7 @@ int tport_tqsend(tport_t *self, msg_t *msg, msg_t *next,
   if (self == NULL)
     return -1;
 
+  qhead = self->tp_qhead;
   N = self->tp_params->tpp_qsize;
   reuse = self->tp_reusable;
   sdwn_after = 0;
@@ -3576,8 +3578,7 @@ void tport_send_queue(tport_t *self)
 {
   msg_t *msg;
   msg_iovec_t *iov;
-  size_t i, iovused;
-  ssize_t n, total;
+  size_t i, iovused, n, total;
   unsigned short qhead = self->tp_qhead, N = self->tp_params->tpp_qsize;
   su_time_t now;
 
@@ -3591,10 +3592,13 @@ void tport_send_queue(tport_t *self)
   iovused = self->tp_unsentlen, self->tp_unsentlen = 0;
 
   if (iov && iovused) {
-    n = tport_vsend(self, msg, self->tp_name, iov, iovused, NULL);
+    ssize_t e;
+    e = tport_vsend(self, msg, self->tp_name, iov, iovused, NULL);
 
-    if (n < 0)				/* XXX */
+    if (e == -1)				/* XXX */
       return;
+
+    n = (size_t)e;
 
     if (n > 0 && self->tp_master->mr_log && self->tp_slogged != msg) {
       tport_log_msg(self, msg, "send", "to", now);
@@ -3602,7 +3606,7 @@ void tport_send_queue(tport_t *self)
     }
     
     for (i = 0, total = 0; i < iovused; i++) {
-      if (total + iov[i].mv_len > n) {
+      if (total + (size_t)iov[i].mv_len > n) {
 	iov[i].mv_len -= (su_ioveclen_t)(n - total);
 	iov[i].mv_base = (char *)iov[i].mv_base + (n - total);
 
@@ -3841,7 +3845,7 @@ int tport_release(tport_t *self,
 {
   tport_pending_t *pending;
 
-  if (self == NULL || msg == NULL || pendd <= 0 || pendd > self->tp_plen)
+  if (self == NULL || msg == NULL || pendd <= 0 || pendd > (int)self->tp_plen)
     return su_seterrno(EINVAL), -1;
 
   pending = self->tp_pending + (pendd - 1);

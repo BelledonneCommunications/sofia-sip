@@ -4943,7 +4943,7 @@ incoming_recv(nta_incoming_t *irq, msg_t *msg, sip_t *sip, tport_t *tport)
 	 * Send 100 trying to non-invite if at least half of T2 has expired
 	 * since the transaction was created.
 	 */
-	su_duration(agent_now(irq->irq_agent), irq->irq_received) * 2 >
+	su_duration(agent_now(irq->irq_agent), irq->irq_received) * 2U >
 	irq->irq_agent->sa_t2) {
       SU_DEBUG_5(("nta: re-received %s request, sending 100 Trying\n",
 		  sip->sip_request->rq_method_name));
@@ -5683,8 +5683,8 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
 
       incoming_retransmit_reply(irq, irq->irq_tport);
 
-      if (2 * irq->irq_interval < sa->sa_t2)
-	incoming_set_timer(irq, 2 * irq->irq_interval); /* G */
+      if (2U * irq->irq_interval < sa->sa_t2)
+	incoming_set_timer(irq, 2U * irq->irq_interval); /* G */
       else
 	incoming_set_timer(irq, sa->sa_t2); /* G */
     } 
@@ -7371,9 +7371,9 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
 
     outgoing_retransmit(orq);
 
-    if (2 * orq->orq_interval < sa->sa_t2 ||
-	orq->orq_method == sip_method_invite)
-      outgoing_set_timer(orq, 2 * orq->orq_interval);
+    if (orq->orq_method == sip_method_invite ||
+	2U * orq->orq_interval < sa->sa_t2)
+      outgoing_set_timer(orq, 2U * orq->orq_interval);
     else
       outgoing_set_timer(orq, sa->sa_t2);
 

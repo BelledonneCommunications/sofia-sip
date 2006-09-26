@@ -84,10 +84,6 @@ typedef struct event_s event_t;
 
 #define       NONE ((void *)-1)
 
-enum {
-  nua_i_none = -1		/** Event never sent to application */
-};
-
 enum nh_kind {
   nh_has_nothing,
   nh_has_invite,

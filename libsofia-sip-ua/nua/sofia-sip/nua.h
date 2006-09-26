@@ -152,6 +152,10 @@ typedef enum nua_event_e {
      compatibility! */
   nua_i_network_changed,        /**< Local IP(v6) address has changed */
 
+  
+  /* Event used by stack internally */
+  nua_i_none
+
 } nua_event_t;
 
 typedef struct event_s {

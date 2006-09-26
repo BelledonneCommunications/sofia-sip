@@ -1441,7 +1441,7 @@ int auth_validate_digest_nonce(auth_mod_t *am,
 static
 void auth_md5_hmac_key(auth_mod_t *am)
 {
-  int i;
+  size_t i;
   uint8_t ipad[SU_MD5_DIGEST_SIZE];
   uint8_t opad[SU_MD5_DIGEST_SIZE];
 

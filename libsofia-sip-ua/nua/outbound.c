@@ -853,7 +853,8 @@ static int response_to_keepalive_options(outbound_t *ob,
   }
 
   if (binding_check <= 1 && ob->ob_registered && ob->ob_keepalive.validating) {
-    int failed = 0, loglevel = 3;
+    int failed = 0;
+    unsigned loglevel = 3;
 
     if (challenged > 0 && credentials > 0) {
       keepalive_options_with_registration_probe(ob);
