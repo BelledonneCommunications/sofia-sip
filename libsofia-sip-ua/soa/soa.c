@@ -531,7 +531,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   srtp_integrity = srtp_integrity != 0;
 
   change_session 
-    =  af != ss->ss_af
+    =  af != (int)ss->ss_af
     || rtp_select != (int)ss->ss_rtp_select
     || rtp_sort != (int)ss->ss_rtp_sort
     || rtp_mismatch != (int)ss->ss_rtp_mismatch
