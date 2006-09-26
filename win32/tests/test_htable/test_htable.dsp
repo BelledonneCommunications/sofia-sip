@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="torture_htable" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="test_htable" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=torture_htable - Win32 Debug
+CFG=test_htable - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "torture_htable.mak".
+!MESSAGE NMAKE /f "test_htable.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "torture_htable.mak" CFG="torture_htable - Win32 Debug"
+!MESSAGE NMAKE /f "test_htable.mak" CFG="test_htable - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "torture_htable - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "torture_htable - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "test_htable - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "test_htable - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=torture_htable - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "torture_htable - Win32 Release"
+!IF  "$(CFG)" == "test_htable - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -52,7 +52,7 @@ LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
 # ADD LINK32 kernel32.lib user32.lib ws2_32.lib /nologo /subsystem:console /machine:I386
 
-!ELSEIF  "$(CFG)" == "torture_htable - Win32 Debug"
+!ELSEIF  "$(CFG)" == "test_htable - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -80,11 +80,11 @@ LINK32=link.exe
 
 # Begin Target
 
-# Name "torture_htable - Win32 Release"
-# Name "torture_htable - Win32 Debug"
+# Name "test_htable - Win32 Release"
+# Name "test_htable - Win32 Debug"
 # Begin Source File
 
-SOURCE="..\..\..\libsofia-sip-ua\su\htable_test.c"
+SOURCE="..\..\..\libsofia-sip-ua\su\test_htable.c"
 # End Source File
 # Begin Source File
 

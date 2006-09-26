@@ -31,7 +31,7 @@ EXTRA_DIST = SofiaSIP.dsw \
 	tests/torture_su_timer/torture_su_timer.dsp \
 	tests/torture_su/torture_su.dsp \
 	tests/test_memmem/test_memmem.dsp \
-	tests/torture_htable/torture_htable.dsp \
+	tests/test_htable/test_htable.dsp \
 	tests/torture_rbtree/torture_rbtree.dsp \
 	tests/torture_su_bm/torture_su_bm.dsp \
 	tests/torture_su_port/torture_su_port.dsp \

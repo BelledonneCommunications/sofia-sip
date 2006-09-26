@@ -252,7 +252,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "torture_htable"=".\tests\torture_htable\torture_htable.dsp" - Package Owner=<4>
+Project: "test_htable"=".\tests\test_htable\test_htable.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
