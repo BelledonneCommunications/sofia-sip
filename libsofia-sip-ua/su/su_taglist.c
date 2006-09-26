@@ -384,9 +384,9 @@ static int tl_get(tag_type_t tt, void *p, tagi_t const lst[])
 }
 
 /** Find tags from given list. */
-isize_t tl_gets(tagi_t const lst[], tag_type_t tag, tag_value_t value, ...)
+int tl_gets(tagi_t const lst[], tag_type_t tag, tag_value_t value, ...)
 {
-  isize_t n = 0;
+  int n = 0;
   tagi_t *t;
   ta_list ta;
 
@@ -418,14 +418,14 @@ isize_t tl_gets(tagi_t const lst[], tag_type_t tag, tag_value_t value, ...)
 
 /** Find tags from given list. 
  *
- * The function tl_tgets() copies values of argument tag list into the tag
+ * Copies values of argument tag list into the reference tags in the tag
  * list @a lst.
  *
  * @sa tl_gets()
  */
-isize_t tl_tgets(tagi_t lst[], tag_type_t tag, tag_value_t value, ...)
+int tl_tgets(tagi_t lst[], tag_type_t tag, tag_value_t value, ...)
 {
-  isize_t n = 0;
+  int n = 0;
   tagi_t *t;
 
   ta_list ta;

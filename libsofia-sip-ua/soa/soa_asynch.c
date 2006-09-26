@@ -71,8 +71,8 @@ struct soa_asynch_completed
 
 static int soa_asynch_init(char const *, soa_session_t *, soa_session_t *);
 static void soa_asynch_deinit(soa_session_t *);
-static issize_t soa_asynch_set_params(soa_session_t *ss, tagi_t const *tags);
-static issize_t soa_asynch_get_params(soa_session_t const *ss, tagi_t *tags);
+static int soa_asynch_set_params(soa_session_t *ss, tagi_t const *tags);
+static int soa_asynch_get_params(soa_session_t const *ss, tagi_t *tags);
 static tagi_t *soa_asynch_get_paramlist(soa_session_t const *ss);
 static int soa_asynch_generate_offer(soa_session_t *ss,
 				    soa_callback_f *completed);
@@ -121,12 +121,12 @@ static void soa_asynch_deinit(soa_session_t *ss)
   soa_base_deinit(ss);
 }
 
-static issize_t soa_asynch_set_params(soa_session_t *ss, tagi_t const *tags)
+static int soa_asynch_set_params(soa_session_t *ss, tagi_t const *tags)
 {
   return soa_base_set_params(ss, tags);
 }
 
-static issize_t soa_asynch_get_params(soa_session_t const *ss, tagi_t *tags)
+static int soa_asynch_get_params(soa_session_t const *ss, tagi_t *tags)
 {
   return soa_base_get_params(ss, tags);
 }

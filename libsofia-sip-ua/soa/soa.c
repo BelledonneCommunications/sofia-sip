@@ -370,10 +370,10 @@ void soa_base_deinit(soa_session_t *ss)
  *
  * @return Number of parameters set, or -1 upon an error.
  */
-issize_t soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
+int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
-  isize_t n;
+  int n;
 
   SU_DEBUG_9(("soa_set_params(%s::%p, ...) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss));
@@ -387,7 +387,7 @@ issize_t soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ..
 
   ta_end(ta);
 
-  return (issize_t)n;
+  return n;
 }
 
 /**Base method for setting parameters.
@@ -397,9 +397,9 @@ issize_t soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ..
  *
  * @return Number of parameters set, or -1 upon an error.
  */
-issize_t soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
+int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 {
-  isize_t n, change_session = 0;
+  int n, change_session = 0;
 
   sdp_session_t const *caps_sdp, *user_sdp;
   char const *caps_sdp_str, *user_sdp_str;
@@ -532,7 +532,7 @@ issize_t soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   if (change_session)
     ss->ss_user_version++;
 
-  return (issize_t)n;
+  return n;
 }
 
 /** Get tagged parameters.
@@ -542,11 +542,11 @@ issize_t soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
  *
  * @return Number of parameters get, or -1 upon an error.
  */
-issize_t soa_get_params(soa_session_t const *ss,
-			tag_type_t tag, tag_value_t value, ...)
+int soa_get_params(soa_session_t const *ss,
+		   tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
-  isize_t n;
+  int n;
 
   SU_DEBUG_9(("soa_get_params(%s::%p, ...) called\n",
 	      ss ? ss->ss_actions->soa_name : "", ss));
@@ -560,7 +560,7 @@ issize_t soa_get_params(soa_session_t const *ss,
 
   ta_end(ta);
 
-  return (issize_t)n;
+  return n;
 }
 
 /**Base method for getting tagged parameters.
@@ -570,9 +570,9 @@ issize_t soa_get_params(soa_session_t const *ss,
  *
  * @return Number of parameters get, or -1 upon an error.
  */
-issize_t soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
+int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 {
-  isize_t n;
+  int n;
 
   n = tl_tgets(tags,
 	       SOATAG_CAPS_SDP(ss->ss_caps->ssd_sdp),

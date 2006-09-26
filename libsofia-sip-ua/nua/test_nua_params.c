@@ -89,7 +89,7 @@ int test_nua_params(struct context *ctx)
   nua_handle_t *nh;
   struct event *e;
   tagi_t const *t;
-  isize_t n;
+  int n;
 
   su_home_auto(tmphome, sizeof(tmphome));
 

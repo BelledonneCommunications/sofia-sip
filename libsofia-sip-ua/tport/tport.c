@@ -2408,7 +2408,7 @@ int tport_accept(tport_primary_t *pri, int events)
 }
 
 /** Allocate a new message object */
-msg_t *tport_msg_alloc(tport_t const *self, unsigned size)
+msg_t *tport_msg_alloc(tport_t const *self, usize_t size)
 {
   if (self) {
     tport_master_t *mr = self->tp_master;

@@ -399,7 +399,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
 			 msg_iovec_t iovec[msg_n_fragments], size_t N, 
 			 int exact);
 
-msg_t *tport_msg_alloc(tport_t const *self, unsigned size);
+msg_t *tport_msg_alloc(tport_t const *self, usize_t size);
 
 int tport_prepare_and_send(tport_t *self, msg_t *msg, 
 			   tp_name_t const *tpn, 
