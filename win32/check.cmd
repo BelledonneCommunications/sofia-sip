@@ -54,8 +54,8 @@ tests\test_nta\Debug\test_nta.exe
 tests\test_nua\Debug\test_nua.exe
 @if errorlevel 1 ( echo test_nua: FAIL ) else echo test_nua: PASS
 
-tests\torture_htable\Debug\torture_htable.exe
-@if errorlevel 1 ( echo torture_htable: FAIL ) else echo torture_htable: PASS
+tests\test_htable\Debug\test_htable.exe
+@if errorlevel 1 ( echo test_htable: FAIL ) else echo test_htable: PASS
 
 tests\torture_rbtree\Debug\torture_rbtree.exe
 @if errorlevel 1 ( echo torture_rbtree: FAIL ) else echo torture_rbtree: PASS
