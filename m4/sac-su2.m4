@@ -24,12 +24,6 @@ case "$target" in
 ;;
 esac
 
-case "$target" in 
-i?86-*-* )
-  SAC_SU_DEFINE(SU_HAVE_TAGSTACK, 1, [Define to 1 if we can use tags directly from stack.])
-;;
-esac
-
 # Check includes used by su includes
 AC_CHECK_HEADER(sys/types.h, 
 	SAC_SU_DEFINE([SU_HAVE_SYS_TYPES], 1, 
@@ -111,13 +105,20 @@ else
        SAC_SU_DEFINE(USIZE_MAX, UINT_MAX)dnl
 fi
 
-AC_CACHE_CHECK([for stack suitable for tags],[ac_cv_tagstack],[
+
 ### ======================================================================
 ### Test if we have stack suitable for handling tags directly
 ###
+
+test -z "$ac_cv_tagstack" && 
+case "$target" in 
+i?86-*-* ) ac_cv_tagstack=yes ;;
+esac
+
+AC_CACHE_CHECK([for stack suitable for tags],[ac_cv_tagstack],[
 ac_cv_tagstack=no
 
-AC_TRY_RUN([
+AC_RUN_IFELSE([
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
@@ -159,7 +160,7 @@ int main(int avc, char **av)
 	       (tv)1, (tv)2, (tv)3, (tv)4, (tv)5,
 	       (tv)6, (tv)7, (tv)8, (tv)9, (tv)10);
 }
-],[ac_cv_tagstack=yes])])
+],[ac_cv_tagstack=yes],[ac_cv_tagstack=no],[ac_cv_tagstack=no])])
 
 if test $ac_cv_tagstack = yes ; then
 SAC_SU_DEFINE([SU_HAVE_TAGSTACK], 1, [
