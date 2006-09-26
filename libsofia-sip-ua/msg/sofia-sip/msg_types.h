@@ -74,9 +74,9 @@ typedef unsigned long msg_time_t;
 
 /**Public protocol-specific message structure for accessing the message. 
  * 
- * This type can be either #sip_t, #rtsp_t or #http_t, depending on the
- * message. The base structure used by msg module is defined in struct
- * #msg_pub_s.
+ * This type can be either #sip_t, #http_t, or #msg_multipart_t, depending
+ * on the message. The base structure used by msg module is defined in
+ * struct #msg_pub_s.
  */
 typedef MSG_PUB_T msg_pub_t;
 
@@ -105,7 +105,7 @@ typedef struct msg_auth_s     	    msg_auth_t;
 
 /** Common part of the header objects (or message fragments). 
  *
- * This structure is also known as #sip_common_t or #rtsp_common_t.
+ * This structure is also known as #msg_common_t or #sip_common_t.
  */
 struct msg_common_s {
   msg_header_t       *h_succ;	/**< Pointer to succeeding fragment. */

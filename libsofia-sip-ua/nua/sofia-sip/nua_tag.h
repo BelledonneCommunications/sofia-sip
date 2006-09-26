@@ -1610,12 +1610,15 @@ SOFIAPUBVAR tag_typedef_t nutag_substate;
 #define NUTAG_SUBSTATE_REF(x) nutag_substate_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_substate_ref;
 
+/** Parameter type of NUTAG_SUBSTATE() */
 enum nua_substate {
+  /** Extended state, considered as active. */
   nua_substate_extended = nea_extended,
+  /** Embryonic subscription: SUBSCRIBE sent */
   nua_substate_embryonic = nea_embryonic,
-  nua_substate_pending = nea_pending,
-  nua_substate_active = nea_active,
-  nua_substate_terminated = nea_terminated
+  nua_substate_pending = nea_pending,   /**< Pending subscription */
+  nua_substate_active = nea_active,	/**< Active subscription */
+  nua_substate_terminated = nea_terminated /**< Terminated subscription */
 };
 
 /**Default lifetime for implicit subscriptions created by REFER.

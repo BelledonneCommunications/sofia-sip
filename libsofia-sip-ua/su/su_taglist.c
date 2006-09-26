@@ -1138,7 +1138,8 @@ tagi_t *t_ns_filter(tagi_t *dst,
     return dst;
   }
 }
-		   
+
+/** Namespace filtering class */		   
 tag_class_t ns_tag_class[1] = 
   {{
     sizeof(ns_tag_class),

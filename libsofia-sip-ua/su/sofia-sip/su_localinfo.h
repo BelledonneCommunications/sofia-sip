@@ -41,6 +41,7 @@
 
 SOFIA_BEGIN_DECLS
 
+/** Local address info structure. */
 typedef struct su_localinfo_s su_localinfo_t;
 
 /** Local address info structure. */
