@@ -138,12 +138,13 @@ SOFIAPUBVAR tag_typedef_t soatag_af;
 #define SOATAG_AF_REF(x)         soatag_af_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t soatag_af_ref;
 
+/** SOATAG_AF() parameter type */
 enum soa_af {
-  SOA_AF_ANY,
-  SOA_AF_IP4_ONLY,
-  SOA_AF_IP6_ONLY,
-  SOA_AF_IP4_IP6,
-  SOA_AF_IP6_IP4
+  SOA_AF_ANY,			/**< Use any address family. */
+  SOA_AF_IP4_ONLY,		/**< Use IP version 4 only */
+  SOA_AF_IP6_ONLY,		/**< Use IP version 6 only */
+  SOA_AF_IP4_IP6,		/**< Prefer IP4 to IP6 */
+  SOA_AF_IP6_IP4		/**< Prefer IP6 to IP4 */
 };
 
 #define SOA_AF_ANY      SOA_AF_ANY
@@ -162,7 +163,12 @@ SOFIAPUBVAR tag_typedef_t soatag_rtp_select;
 #define SOATAG_RTP_SELECT_REF(x)  soatag_rtp_select_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t soatag_rtp_select_ref;
 
-enum { SOA_RTP_SELECT_SINGLE, SOA_RTP_SELECT_COMMON, SOA_RTP_SELECT_ALL };
+/** Parameter type for SOATAG_RTP_SELECT() */
+enum { 
+  SOA_RTP_SELECT_SINGLE,	/**< Select the best common codec */
+  SOA_RTP_SELECT_COMMON,	/**< Select all common codecs */
+  SOA_RTP_SELECT_ALL		/**< Select all local codecs */
+ };
 
 #define SOATAG_AUDIO_AUX(x)      soatag_audio_aux, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t soatag_audio_aux;
@@ -174,7 +180,15 @@ SOFIAPUBVAR tag_typedef_t soatag_rtp_sort;
 #define SOATAG_RTP_SORT_REF(x) soatag_rtp_sort_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t soatag_rtp_sort_ref;
 
-enum { SOA_RTP_SORT_DEFAULT, SOA_RTP_SORT_LOCAL, SOA_RTP_SORT_REMOTE };
+/** Parameter type for SOATAG_RTP_SORT() */
+enum {
+  SOA_RTP_SORT_DEFAULT,		/**< Select codecs by local preference
+				 *  when media is recvonly, 
+				 * remote preference othewise.
+				 */
+  SOA_RTP_SORT_LOCAL,		/**< Select codecs by local preference. */
+  SOA_RTP_SORT_REMOTE		/**< Select codecs by remote preference. */
+ };
 
 #define SOATAG_RTP_MISMATCH(x) soatag_rtp_mismatch, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t soatag_rtp_mismatch;

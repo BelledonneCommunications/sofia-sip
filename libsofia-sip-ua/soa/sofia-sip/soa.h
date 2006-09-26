@@ -122,13 +122,9 @@ SOFIAPUBFUN int soa_remote_sip_features(soa_session_t *ss,
 
 SOFIAPUBFUN char **soa_media_features(soa_session_t *ss, int live, su_home_t *home);
 
-/* Generate offer */
 SOFIAPUBFUN int soa_generate_offer(soa_session_t *, int always, soa_callback_f *);
-/* Process offer, generate answer */
 SOFIAPUBFUN int soa_generate_answer(soa_session_t *, soa_callback_f *);
-/* Process answer */
 SOFIAPUBFUN int soa_process_answer(soa_session_t *, soa_callback_f *);
-/* Process rejected offer */
 SOFIAPUBFUN int soa_process_reject(soa_session_t *, soa_callback_f *);
 
 SOFIAPUBFUN int soa_activate(soa_session_t *, char const *option);
