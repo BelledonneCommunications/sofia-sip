@@ -3122,7 +3122,8 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 		   struct sigcomp_compartment *cc)
 {
   msg_iovec_t *iov, auto_iov[40];
-  size_t iovlen, iovused, i, total, n;
+  size_t iovlen, iovused, i, total;
+  ssize_t n;
   ssize_t nerror;
   int sdwn_after, close_after;
   su_time_t now;
