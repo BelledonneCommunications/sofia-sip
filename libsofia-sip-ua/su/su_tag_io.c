@@ -58,7 +58,7 @@ void tl_print(FILE *f, char const *title, tagi_t const lst[])
 
     n = t_snprintf(lst, buffer, sizeof(buffer));
 
-    if (n + 1 < sizeof(buffer)) {
+    if (n + 1 < (int)sizeof(buffer)) {
       if (n > 0 && buffer[n - 1] == '\n')
 	fmt = "   %s";
     }

@@ -102,9 +102,9 @@ tagi_t *urltag_dup(tagi_t *dst, tagi_t const *src, void **bb)
 #define IS_EXCLUDED(u)						\
   (u <= ' '							\
    || u >= '\177'						\
-   || (u < 64 ? (0xb400000a  & (1 << (63 - u)))			\
-       : (u < 96 ? (0x0000001e & (1 << (95 - u)))		\
-	  : /*u < 128*/ (0x8000001d & (1 << (127 - u))))))
+   || (u < 64 ? (0xb400000aU  & (1 << (63 - u)))			\
+       : (u < 96 ? (0x0000001eU & (1 << (95 - u)))		\
+	  : /*u < 128*/ (0x8000001dU & (1 << (127 - u))))) != 0)
 
 /** Tag function used to convert a string to a URL tag value.
  *

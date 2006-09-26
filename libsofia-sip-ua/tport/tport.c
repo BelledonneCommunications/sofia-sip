@@ -3576,8 +3576,8 @@ void tport_send_queue(tport_t *self)
 {
   msg_t *msg;
   msg_iovec_t *iov;
-  size_t i, total, iovused;
-  ssize_t n;
+  size_t i, iovused;
+  ssize_t n, total;
   unsigned short qhead = self->tp_qhead, N = self->tp_params->tpp_qsize;
   su_time_t now;
 

@@ -83,7 +83,7 @@
    || u >= '\177'					\
    || (u < 64 ? (m32 & (1 << (63 - u)))			\
        : (u < 96 ? (m64 & (1 << (95 - u)))		\
-	  : /*u < 128*/ (m96 & (1 << (127 - u))))))
+	  : /*u < 128*/ (m96 & (1 << (127 - u))))) != 0)
 
 #define MASKS_WITH_RESERVED(reserved, m32, m64, m96)		\
   if (reserved == NULL) {					\
@@ -1785,27 +1785,28 @@ int url_sanitize(url_t *url)
 static
 void canon_update(su_md5_t *md5, char const *s, size_t n, char const *allow)
 {
-  char const *s0 = s, *b = s;
+  size_t i, j;
 
-  for (;*s && s - s0 < n; s++) {
+  for (i = 0, j = 0; i < n && s[i]; i++) {
     char c;
 
-    if (*s == '%' && IS_HEX(s[1]) && IS_HEX(s[2]) && s - s0 + 2 < n) {
+    if (s[i] == '%' && i + 2 < n && IS_HEX(s[i+1]) && IS_HEX(s[i+2])) {
 #define   UNHEX(a) (a - (a >= 'a' ? 'a' - 10 : (a >= 'A' ? 'A' - 10 : '0')))
-      c = (UNHEX(s[1]) << 4) | UNHEX(s[2]);
+      c = (UNHEX(s[i+1]) << 4) | UNHEX(s[i+2]);
 #undef    UNHEX
       if (c != '%' && c > ' ' && c < '\177' && 
 	  (!strchr(EXCLUDED, c) || strchr(allow, c))) {
-	if (b != s)
-	  su_md5_iupdate(md5, b, s - b);
+	if (i != j)
+	  su_md5_iupdate(md5, s + j, i - j);
 	su_md5_iupdate(md5, &c, 1);
-	b = s + 3;
+	j = i + 3;
       }
-      s += 2;
+      i += 2;
     }
   }
-  if (b != s)
-    su_md5_iupdate(md5, b, s - b);
+
+  if (i != j)
+    su_md5_iupdate(md5, s + j, i - j);
 }
 
 /** Update MD5 sum with url-string contents */

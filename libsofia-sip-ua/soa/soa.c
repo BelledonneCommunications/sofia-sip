@@ -90,8 +90,8 @@ static int soa_set_sdp(soa_session_t *ss,
 /* ======================================================================== */
 
 #define SOA_VALID_ACTIONS(a)					\
-  ((a)->sizeof_soa_session_actions >= sizeof (*actions) &&	\
-   (a)->sizeof_soa_session >= sizeof(soa_session_t) &&		\
+  ((a)->sizeof_soa_session_actions >= (int)sizeof (*actions) && \
+   (a)->sizeof_soa_session >= (int)sizeof(soa_session_t) &&     \
    (a)->soa_name != NULL &&					\
    (a)->soa_init != NULL &&					\
    (a)->soa_deinit != NULL &&					\
@@ -415,8 +415,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   hold = ss->ss_hold;
   media_address = ss->ss_address;
 
-  rtp_select = ss->ss_rtp_select;
-  rtp_sort = ss->ss_rtp_sort;
+  rtp_select = (int)ss->ss_rtp_select;
+  rtp_sort = (int)ss->ss_rtp_sort;
   rtp_mismatch = ss->ss_rtp_mismatch;
 
   srtp_enable = ss->ss_srtp_enable;
@@ -485,9 +485,9 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     af = ss->ss_af;
 
   if (rtp_select < SOA_RTP_SELECT_SINGLE || rtp_select > SOA_RTP_SELECT_ALL)
-    rtp_select = ss->ss_rtp_select;
+    rtp_select = (int)ss->ss_rtp_select;
   if (rtp_sort < SOA_RTP_SORT_DEFAULT || rtp_sort > SOA_RTP_SORT_REMOTE)
-    rtp_select = ss->ss_rtp_select;
+    rtp_sort = (int)ss->ss_rtp_sort;
   rtp_mismatch = rtp_mismatch != 0;
 
   srtp_enable = srtp_enable != 0;
@@ -496,8 +496,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   change_session 
     =  af != ss->ss_af
-    || rtp_select != ss->ss_rtp_select
-    || rtp_sort != ss->ss_rtp_sort
+    || rtp_select != (int)ss->ss_rtp_select
+    || rtp_sort != (int)ss->ss_rtp_sort
     || rtp_mismatch != (int)ss->ss_rtp_mismatch
     || srtp_enable != (int)ss->ss_srtp_enable
     || srtp_confidentiality != (int)ss->ss_srtp_confidentiality
@@ -591,8 +591,8 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 	       SOATAG_ADDRESS(ss->ss_address),
 	       SOATAG_HOLD(ss->ss_hold),
 
-	       SOATAG_RTP_SELECT(ss->ss_rtp_select),
-	       SOATAG_RTP_SORT(ss->ss_rtp_sort),
+	       SOATAG_RTP_SELECT((int)ss->ss_rtp_select),
+	       SOATAG_RTP_SORT((int)ss->ss_rtp_sort),
 	       SOATAG_RTP_MISMATCH(ss->ss_rtp_mismatch),
 
 	       SOATAG_SRTP_ENABLE(ss->ss_srtp_enable),
@@ -866,7 +866,7 @@ int soa_get_user_sdp(soa_session_t const *ss,
 int soa_get_user_version(soa_session_t const *ss)
 {
   assert(ss != NULL);
-  return ss ? ss->ss_user_version : -1;
+  return ss ? (int)ss->ss_user_version : -1;
 } 
 
 int soa_set_user_sdp(soa_session_t *ss, 

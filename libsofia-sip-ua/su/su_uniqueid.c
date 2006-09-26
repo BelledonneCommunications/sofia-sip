@@ -186,7 +186,7 @@ static void init(void)
 static
 void init_node(void)
 {
-  int i;
+  size_t i;
 
 #if HAVE_GETIFADDRS && HAVE_SOCKADDR_LL
   struct ifaddrs *ifa, *results;

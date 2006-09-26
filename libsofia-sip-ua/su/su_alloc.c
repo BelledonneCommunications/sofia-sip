@@ -396,7 +396,7 @@ void *sub_alloc(su_home_t *home,
 {
   void *data, *preload = NULL;
   
-  assert (size < (1L << SIZEBITS));
+  assert (size < (1UL << SIZEBITS));
 
   if (sub == NULL || 3 * sub->sub_used > 2 * sub->sub_n) {
     /* Resize the hash table */

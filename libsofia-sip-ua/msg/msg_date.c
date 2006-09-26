@@ -69,13 +69,13 @@ msg_time_t msg_now(void)
 
 /* ====================================================================== */
 
-static char const days_per_months[12] = 
+static unsigned char const days_per_months[12] = 
   {
     31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
   };
 
 /** Offset of first day of the month with formula day = 30 * month + offset. */
-static char const first_day_offset[12] = 
+static signed char const first_day_offset[12] = 
   {
     0, 1, -1, 0, 0, 1, 1, 2, 3, 3, 4, 4
   };

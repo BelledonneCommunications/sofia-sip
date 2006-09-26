@@ -399,7 +399,7 @@ char *sip_header_as_string(su_home_t *home, sip_header_t *h)
 
   len = sip_header_field_e(s, sizeof(s), h, 0);
 
-  if (len >= 0 && len < sizeof(s))
+  if (len >= 0 && (size_t)len < sizeof(s))
     return su_strdup(home, s);
 
   if (len == -1)

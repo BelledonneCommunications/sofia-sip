@@ -218,22 +218,23 @@ int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout)
 
 #elif SU_HAVE_POLL
   for (;;) {
+    unsigned j;
     int i = poll(waits, n, timeout);
 
     if (i == 0)
       return SU_WAIT_TIMEOUT;
 
     if (i > 0) {
-      for (i = 0; i < n; i++) {
-	if (waits[i].revents)
-	  return i;
+      for (j = 0; j < n; i++) {
+	if (waits[j].revents)
+	  return (int)j;
       }
     }
   
     if (errno == EINTR)
       continue;
 
-    return i;
+    return -1;
   }  
 #endif
 }

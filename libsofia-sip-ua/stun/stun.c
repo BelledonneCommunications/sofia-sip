@@ -1116,7 +1116,7 @@ int stun_discovery_get_address(stun_discovery_t *sd,
 			       void *addr,
 			       socklen_t *return_addrlen)
 {
-  int siz;
+  socklen_t siz;
   
   enter;
 

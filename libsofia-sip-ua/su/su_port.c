@@ -1170,14 +1170,15 @@ int su_port_wait_events(su_port_t *self, su_duration_t tout)
 #if HAVE_POLL			
     /* poll() can return events for multiple wait objects */
     if (self->sup_multishot) {
-      for (; i < n; i++) {
-        if (waits[i].revents) {
-          root = self->sup_wait_roots[i];
-          self->sup_wait_cbs[i](root ? su_root_magic(root) : NULL,
-                                &waits[i],
-                                self->sup_wait_args[i]);
+      unsigned j;
+      for (j = (unsigned)i; j < n; i++) {
+        if (waits[j].revents) {
+          root = self->sup_wait_roots[j];
+          self->sup_wait_cbs[j](root ? su_root_magic(root) : NULL,
+                                &waits[j],
+                                self->sup_wait_args[j]);
           events++;
-          /* Callback function used su_register()/su_unregister() */
+          /* Callback function used su_register()/su_deregister() */
           if (version != self->sup_registers)
             break;
         }

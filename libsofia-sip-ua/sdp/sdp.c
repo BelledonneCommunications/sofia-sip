@@ -62,14 +62,15 @@ const unsigned sdp_struct_align_ = sizeof(void *) - STRUCT_ALIGN_;
 
 
 #define STRUCT_DUP(p, dst, src) \
- ASSERT_STRUCT_ALIGN(p); assert(*(int*)(src) >= sizeof(*src)); \
- ((*(int*)(src) >= sizeof(*src) ? (dst = memcpy((p), (src), sizeof(*src))) : \
-   (dst = memcpy((p), (src), *(int*)(src))), \
+  ASSERT_STRUCT_ALIGN(p); assert(*(int*)(src) >= (int)sizeof(*src));	\
+  ((*(int*)(src) >= (int)sizeof(*src)					\
+    ? (dst = memcpy((p), (src), sizeof(*src)))				\
+    : (dst = memcpy((p), (src), *(int*)(src))),				\
     memset((p)+*(int*)(src), 0, sizeof(*src) - *(int*)(src))), \
   ((p) += sizeof(*src)))
 
 #define STRUCT_DUP2(p, dst, src) \
- ASSERT_STRUCT_ALIGN(p); assert(*(int*)(src) >= sizeof(*src)); \
+  ASSERT_STRUCT_ALIGN(p); assert(*(int*)(src) >= (int)sizeof(*src));	\
   (dst = memcpy((p), (src), *(int*)(src)), ((p) += *(int*)(src)))
 
 #define STR_DUP(p, dst, src, m) \

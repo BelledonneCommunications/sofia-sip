@@ -76,10 +76,10 @@ char *su_vsprintf(su_home_t *home, char const *fmt, va_list ap)
   n = vsnprintf(s, sizeof(s), fmt, aq);
   va_end(aq);
 
-  if (n >= 0 && n + 1 < sizeof(s)) 
+  if (n >= 0 && (size_t)n + 1 < sizeof(s)) 
     return su_strdup(home, s);
   
-  len = n > 0 ? n + 1 : 2 * sizeof(s);
+  len = n > 0 ? (size_t)n + 1 : 2 * sizeof(s);
 
   for (rv = su_alloc(home, len);
        rv;
@@ -87,10 +87,10 @@ char *su_vsprintf(su_home_t *home, char const *fmt, va_list ap)
     va_copy(aq, ap);
     n = vsnprintf(rv, len, fmt, aq);
     va_end(aq);
-    if (n > -1 && n < len)
+    if (n > -1 && (size_t)n < len)
       break;
     if (n > -1)			/* glibc >2.1 */
-      len = n + 1;		
+      len = (size_t)n + 1;		
     else			/* glibc 2.0 */
       len *= 2;
 

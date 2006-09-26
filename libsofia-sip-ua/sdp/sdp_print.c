@@ -697,7 +697,7 @@ static void sdp_printf(sdp_printer_t *p, const char *fmt, ...)
     n = vsnprintf(p->pr_buffer + p->pr_used, p->pr_bsiz - p->pr_used, fmt, ap);
     va_end(ap);
     
-    if (n > -1 && n < p->pr_bsiz - p->pr_used) {
+    if (n > -1 && (size_t)n < p->pr_bsiz - p->pr_used) {
       p->pr_used += n;
       break;
     }

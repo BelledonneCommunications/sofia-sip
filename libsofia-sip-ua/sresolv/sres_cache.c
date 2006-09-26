@@ -434,7 +434,7 @@ void sres_cache_clean(sres_cache_t *cache, time_t now)
     sres_rr_hash_entry_t *e;
       
     while ((e = cache->cache_hash->ht_table[i]) != NULL) {
-      if (now - e->rr_received <= e->rr->sr_ttl)
+      if ((uint32_t)(now - e->rr_received) <= e->rr->sr_ttl)
 	break;
 	
       sres_htable_remove(cache->cache_hash, e);

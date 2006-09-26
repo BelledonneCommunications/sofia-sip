@@ -1490,7 +1490,7 @@ issize_t msg_object_e(char b[], isize_t size, msg_pub_t const *mo, int flags)
     n = msg_header_e(b, size, h, flags);
     if (n < 0)
       return -1;
-    if (n < size)
+    if ((size_t)n < size)
       b += n, size -= n;
     else
       b = NULL, size = 0;
@@ -1552,7 +1552,8 @@ issize_t msg_random_token(char token[], isize_t tlen,
   uint32_t random = 0, rword;
   uint8_t rbyte;
   uint8_t const *rmem = rmemp;
-  ssize_t i, n;
+  size_t i;
+  ssize_t n;
 
   static char const token_chars[32] = 
     /* Create aesthetically pleasing raNDom capS LooK */

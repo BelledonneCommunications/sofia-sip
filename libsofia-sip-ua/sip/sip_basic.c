@@ -1002,12 +1002,12 @@ issize_t sip_call_id_d(su_home_t *home,
 
 issize_t sip_call_id_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
-  issize_t n = strlen(h->sh_call_id->i_id);
+  size_t n = strlen(h->sh_call_id->i_id);
 
   if (bsiz > n)
     strcpy(b, h->sh_call_id->i_id);
 
-  return n;
+  return (issize_t)n;
 }
 
 /** Extra size of a #sip_call_id_t object. */

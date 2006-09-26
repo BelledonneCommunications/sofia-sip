@@ -98,8 +98,7 @@ msg_mclass_t *msg_mclass_clone(msg_mclass_t const *old, int newsize, int empty)
     newsize = old->mc_hash_size;
 
   if (newsize < old->mc_hash_used ||
-      newsize > USHRT_MAX / sizeof(msg_header_t *)) {
-
+      (unsigned)newsize > USHRT_MAX / sizeof(msg_header_t *)) {
     errno = EINVAL;
     return NULL;
   }

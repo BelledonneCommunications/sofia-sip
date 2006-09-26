@@ -139,7 +139,7 @@ int t_snprintf(tagi_t const *t, char b[], size_t size)
   if (n < 0)
     return n;
 
-  if (n > size)
+  if ((size_t)n > size)
     size = n;
 
   if (tt->tt_snprintf)
@@ -150,7 +150,7 @@ int t_snprintf(tagi_t const *t, char b[], size_t size)
   if (m < 0)
     return m;
 
-  if (m == 0 && n < size)
+  if (m == 0 && (size_t)n < size)
     b[--n] = '\0';
 
   return n + m;
@@ -195,7 +195,7 @@ size_t tl_tmove(tagi_t *dst, size_t size,
   tagi->t_tag = t_tag, tagi->t_value = t_value;
 
   for (;;) {
-    assert((char *)&dst[n] - (char *)dst < size);
+    assert((size_t)((char *)&dst[n] - (char *)dst) < size);
     if (n < N)
       dst[n] = *tagi;
     n++;
