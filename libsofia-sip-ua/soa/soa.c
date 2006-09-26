@@ -406,7 +406,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   int af;
   char const *media_address, *hold;
-  unsigned rtp_select, rtp_sort;
+  int rtp_select, rtp_sort;
   int rtp_mismatch;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
 

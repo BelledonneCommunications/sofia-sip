@@ -189,8 +189,6 @@ void tport_log_msg(tport_t *self, msg_t *msg,
   "------------------------------------------------------------------------\n"
 #define MAX_LINELEN 2047
 
-  if (iovlen < 0) return;
-
   for (i = n = 0; i < iovlen && i < 80; i++)
     n += iov[i].mv_len;
 

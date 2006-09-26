@@ -581,7 +581,7 @@ static int test_vectors(void)
 }
 
 #define ALIGNMENT (8)
-#define ALIGN(n)  (((n) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
+#define ALIGN(n)  ((size_t)((n) + (ALIGNMENT - 1)) & (size_t)~(ALIGNMENT - 1))
 
 static int test_auto(void)
 {

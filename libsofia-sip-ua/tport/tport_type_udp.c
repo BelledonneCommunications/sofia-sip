@@ -177,18 +177,18 @@ int tport_udp_init_client(tport_primary_t *pri,
 static void tport_check_trunc(tport_t *tp, su_addrinfo_t *ai)
 {
 #if HAVE_MSG_TRUNC
-  int n;
+  ssize_t n;
   char buffer[2];
   su_sockaddr_t su[1];
   socklen_t sulen = sizeof su;
 
-  n = sendto(tp->tp_socket,
-	     "TEST", 4, 0,
-	     (void *)ai->ai_addr, ai->ai_addrlen);
+  n = su_sendto(tp->tp_socket,
+		"TEST", 4, 0,
+		(void *)ai->ai_addr, ai->ai_addrlen);
 
   for (;;) {
-    n = recvfrom(tp->tp_socket, buffer, sizeof buffer, MSG_TRUNC, 
-		 (void *)&su, &sulen);
+    n = su_recvfrom(tp->tp_socket, buffer, sizeof buffer, MSG_TRUNC, 
+		    (void *)&su, &sulen);
 
     if (n > sizeof buffer) {
       tp->tp_trunc = 1;

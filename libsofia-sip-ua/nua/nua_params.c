@@ -79,7 +79,7 @@ su_inline void nhp_or_set(nua_handle_preferences_t *a,
 {
   unsigned *ap = (unsigned *)&a->nhp_set;
   unsigned const *bp = (unsigned const *)&b->nhp_set;
-  int i;
+  size_t i;
 
   memcpy(a, b, offsetof(nua_handle_preferences_t, nhp_set));
 

@@ -208,7 +208,7 @@ struct sres_server {
   time_t                  dns_error;
 };
 
-HTABLE_DECLARE(sres_qtable, qt, sres_query_t);
+HTABLE_DECLARE_WITH(sres_qtable, qt, sres_query_t, unsigned, size_t);
 
 struct sres_resolver_s {
   su_home_t           res_home[1];
@@ -278,7 +278,7 @@ struct sres_config {
 };
 
 struct sres_query_s {
-  hash_value_t    q_hash;
+  unsigned        q_hash;
   sres_resolver_t*q_res;
   sres_answer_f  *q_callback;
   sres_context_t *q_context;
@@ -346,7 +346,7 @@ enum {
   SRES_HDR_RCODE = (15 << 0)	/* mask of return code */
 };
 
-HTABLE_PROTOS(sres_qtable, qt, sres_query_t);
+HTABLE_PROTOS_WITH(sres_qtable, qt, sres_query_t, unsigned, size_t);
 
 #define CHOME(cache) ((su_home_t *)(cache))
 
@@ -1537,7 +1537,8 @@ sres_resolver_destructor(void *arg)
 #define Q_PRIME 3571
 #define SRES_QUERY_HASH(q) ((q)->q_hash)
 
-HTABLE_BODIES(sres_qtable, qt, sres_query_t, SRES_QUERY_HASH);
+HTABLE_BODIES_WITH(sres_qtable, qt, sres_query_t, SRES_QUERY_HASH,
+		   unsigned, size_t);
 
 /** Allocate a query structure */
 static
@@ -1676,20 +1677,20 @@ sres_sockaddr2string(sres_resolver_t *res,
 #if HAVE_SIN6
   else if (addr->sa_family == AF_INET6) {
     struct sockaddr_in6 const *sin6 = (struct sockaddr_in6 *)addr;
-    int addrsize = sizeof(sin6->sin6_addr.s6_addr);
+    size_t addrsize = sizeof(sin6->sin6_addr.s6_addr);
     char *postfix;
-    int required;
-    int i;
+    size_t required;
+    size_t i;
 
     if (res->res_config->c_opt.ip6int)
       postfix = "ip6.int.";
     else
       postfix = "ip6.arpa.";
 
-    required = addrsize * 4 + (int)strlen(postfix);
+    required = addrsize * 4 + strlen(postfix);
 
     if (namelen <= required)
-      return required;
+      return (int)required;
 
     for (i = 0; i < addrsize; i++) {
       uint8_t byte = sin6->sin6_addr.s6_addr[addrsize - i - 1];
@@ -1705,7 +1706,7 @@ sres_sockaddr2string(sres_resolver_t *res,
     
     strcpy(name + 4 * i, postfix);
 
-    return required;
+    return (int)required;
   }
 #endif /* HAVE_SIN6 */
   else {
@@ -2683,7 +2684,7 @@ sres_query_report_error(sres_query_t *q,
  */
 void sres_resolver_timer(sres_resolver_t *res, int dummy)
 {
-  int i;
+  size_t i;
   sres_query_t *q;
   time_t now, retry_time;
 
@@ -3059,7 +3060,7 @@ sres_resolver_report_error(sres_resolver_t *res,
     /* Report error to queries */
     sres_server_t *dns;
     sres_query_t *q;
-    int i;
+    size_t i;
 
     dns = sres_server_by_socket(res, socket);
 
@@ -3203,8 +3204,8 @@ sres_decode_msg(sres_resolver_t *res,
   sres_query_t *query = NULL, **hq;
   su_home_t *chome = CHOME(res->res_cache);
   hash_value_t hash;
-  int i, err;
-  unsigned total, errorcount = 0;
+  int err;
+  unsigned i, total, errorcount = 0;
 
   assert(res && m && return_answers);
 

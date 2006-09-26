@@ -217,7 +217,7 @@ enum {
 };		
 
 #define ALIGNMENT (8)
-#define ALIGN(n) (size_t)(((n) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
+#define ALIGN(n) (size_t)(((n) + (ALIGNMENT - 1)) & (size_t)~(ALIGNMENT - 1))
 #define SIZEBITS (sizeof (size_t) * 8 - 1)
 
 typedef struct {
@@ -396,7 +396,7 @@ void *sub_alloc(su_home_t *home,
 {
   void *data, *preload = NULL;
   
-  assert (size >= 0 && size < (1 << 31));
+  assert (size < (1L << SIZEBITS));
 
   if (sub == NULL || 3 * sub->sub_used > 2 * sub->sub_n) {
     /* Resize the hash table */

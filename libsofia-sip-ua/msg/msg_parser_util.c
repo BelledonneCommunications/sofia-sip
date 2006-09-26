@@ -1583,7 +1583,7 @@ issize_t msg_random_token(char token[], isize_t tlen,
 	random = random | (rbyte << n);
 	n += 8;
       } else {
-	rword = (uint32_t)su_randint(INT_MIN, INT_MAX);
+	rword = su_random();
 	random = (rword >> 13) & 31;
 	n = 6;
       }

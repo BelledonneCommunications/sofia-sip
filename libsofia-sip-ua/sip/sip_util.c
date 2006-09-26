@@ -368,10 +368,10 @@ issize_t sip_header_field_d(su_home_t *home, sip_header_t *h, char *s, isize_t s
     size_t n = span_lws(s);
     s += n; slen -= n;
     
-    for (n = slen - 1; n >= 0 && IS_LWS(s[n]); n--)
+    for (n = slen; n >= 1 && IS_LWS(s[n - 1]); n--)
       ;
     
-    s[n + 1] = '\0';
+    s[n] = '\0';
     
     return h->sh_class->hc_parse(home, h, s, slen);
   }

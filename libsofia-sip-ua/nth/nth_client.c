@@ -144,7 +144,7 @@ struct nth_client_s {
   url_string_t const *hc_route_url;
   tp_name_t hc_tpn[1];			/**< Where to send requests */
   tport_t *hc_tport;
-  unsigned hc_pending;			/**< Request is pending in tport */
+  int hc_pending;			/**< Request is pending in tport */
   tagi_t *hc_tags;			/**< Transport tags */
 
   auth_client_t **hc_auc;		/**< List of authenticators */
@@ -1043,7 +1043,7 @@ static nth_client_t *hc_send(nth_client_t * hc)
   hc->hc_tport = tport_incref(tp);
 
   hc->hc_pending = tport_pend(tp, hc->hc_request, hc_tport_error, hc);
-  if (hc->hc_pending < 0)
+  if (hc->hc_pending == -1)
     hc->hc_pending = 0;
 
   if (hc->hc_expires) {

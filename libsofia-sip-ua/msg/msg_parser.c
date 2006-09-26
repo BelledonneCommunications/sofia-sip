@@ -1573,7 +1573,7 @@ size_t msg_header_prepare(msg_mclass_t const *mc, int flags,
   msg_header_t *h0, *next;
   msg_hclass_t *hc;
   char const *s;
-  size_t n, m;
+  size_t n; ssize_t m;
   int middle = 0, compact, one_line_list, comma_list;
 
   assert(h); assert(h->sh_class);
@@ -1943,8 +1943,6 @@ isize_t msg_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen)
   }
 
   msg->m_size = total;
-
-  assert(n > 0);
 
   return n;
 }

@@ -316,7 +316,7 @@ int process_response_to_publish(nua_handle_t *nh,
   struct nua_client_request *cr = nh->nh_cr;
   nua_dialog_usage_t *du = cr->cr_usage;
   struct publish_usage *pu = nua_dialog_usage_private(du);
-  int saved_retry_count = cr->cr_retry_count + 1;
+  unsigned saved_retry_count = cr->cr_retry_count + 1;
 
   if (nua_creq_check_restart(nh, cr, orq, sip, restart_publish))
     return 0;

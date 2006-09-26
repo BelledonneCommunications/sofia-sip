@@ -84,7 +84,7 @@ typedef unsigned _int32 uint32_t;
 
 typedef struct sres_rr_hash_entry_s sres_rr_hash_entry_t;
 
-HTABLE_DECLARE(sres_htable, ht, sres_rr_hash_entry_t);
+HTABLE_DECLARE_WITH(sres_htable, ht, sres_rr_hash_entry_t, unsigned, size_t);
 
 struct sres_rr_hash_entry_s {
   unsigned int   rr_hash_key;
@@ -124,7 +124,7 @@ void _sres_cache_free_answers(sres_cache_t *cache, sres_record_t **answers);
 
 static unsigned sres_hash_key(const char *string);
 
-HTABLE_PROTOS(sres_htable, ht, sres_rr_hash_entry_t);
+HTABLE_PROTOS_WITH(sres_htable, ht, sres_rr_hash_entry_t, unsigned, size_t);
 
 
 /* ---------------------------------------------------------------------- */
@@ -197,7 +197,7 @@ int sres_cache_get(sres_cache_t *cache,
     rr = (*rr_iter)->rr;
 
     if (rr != NULL &&
-	now - (*rr_iter)->rr_received <= rr->sr_ttl &&
+	(uint32_t)(now - (*rr_iter)->rr_received) <= rr->sr_ttl &&
         (type == sres_qtype_any || rr->sr_type == type) &&
         rr->sr_name != NULL &&
         strcasecmp(rr->sr_name, domain) == 0) 
@@ -224,7 +224,7 @@ int sres_cache_get(sres_cache_t *cache,
     rr = (*rr_iter)->rr;
 
     if (rr != NULL &&
-	now - (*rr_iter)->rr_received <= rr->sr_ttl &&
+	(uint32_t)(now - (*rr_iter)->rr_received) <= rr->sr_ttl &&
         (type == sres_qtype_any || rr->sr_type == type) &&
         rr->sr_name != NULL &&
         strcasecmp(rr->sr_name, domain) == 0) {
@@ -253,9 +253,8 @@ sres_cache_alloc_record(sres_cache_t *cache,
 			sres_record_t const *template,
 			size_t extra)
 {
-  int size;
   sres_record_t *sr;
-  size_t name_length;
+  size_t size, name_length;
 
   size = template->sr_size;
 
@@ -420,7 +419,7 @@ sres_hash_key(const char *string)
 
 void sres_cache_clean(sres_cache_t *cache, time_t now)
 {
-  int i;
+  size_t i;
 
   if (now < cache->cache_cleaned + SRES_CACHE_TIMER_INTERVAL)
     return;
@@ -447,4 +446,5 @@ void sres_cache_clean(sres_cache_t *cache, time_t now)
   UNLOCK(cache);
 }
 
-HTABLE_BODIES(sres_htable, ht, sres_rr_hash_entry_t, SRES_HENTRY_HASH);
+HTABLE_BODIES_WITH(sres_htable, ht, sres_rr_hash_entry_t, SRES_HENTRY_HASH,
+		   unsigned, size_t);

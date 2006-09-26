@@ -335,14 +335,15 @@ static int
   tport_base_wakeup(tport_t *self, int events),
   tport_connected(su_root_magic_t *m, su_wait_t *w, tport_t *self),
   tport_resolve(tport_t *self, msg_t *msg, tp_name_t const *tpn),
-  tport_vsend(tport_t *self, msg_t *msg, tp_name_t const *tpn,
-	      msg_iovec_t iov[], size_t iovused,
-	      struct sigcomp_compartment *cc),
   tport_send_error(tport_t *, msg_t *, tp_name_t const *),
   tport_queue(tport_t *self, msg_t *msg),
   tport_queue_rest(tport_t *self, msg_t *msg, msg_iovec_t iov[], ssize_t iovused),
   tport_pending_error(tport_t *self, su_sockaddr_t const *dst, int error),
   tport_pending_errmsg(tport_t *self, msg_t *msg, int error);
+
+static ssize_t tport_vsend(tport_t *self, msg_t *msg, tp_name_t const *tpn,
+			   msg_iovec_t iov[], size_t iovused,
+			   struct sigcomp_compartment *cc);
 
 tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 			   su_addrinfo_t const *ai,
@@ -3210,12 +3211,12 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 }
 
 static 
-int tport_vsend(tport_t *self, 
-		msg_t *msg, 
-		tp_name_t const *tpn,
-		msg_iovec_t iov[], 
-		size_t iovused,
-		struct sigcomp_compartment *cc)
+ssize_t tport_vsend(tport_t *self, 
+		    msg_t *msg, 
+		    tp_name_t const *tpn,
+		    msg_iovec_t iov[], 
+		    size_t iovused,
+		    struct sigcomp_compartment *cc)
 { 
   ssize_t n;
   su_addrinfo_t *ai = msg_addrinfo(msg);
@@ -3573,10 +3574,10 @@ void tport_send_event(tport_t *self)
 static
 void tport_send_queue(tport_t *self)
 {
-  size_t i, n, total;
   msg_t *msg;
   msg_iovec_t *iov;
-  size_t iovused;
+  size_t i, total, iovused;
+  ssize_t n;
   unsigned short qhead = self->tp_qhead, N = self->tp_params->tpp_qsize;
   su_time_t now;
 

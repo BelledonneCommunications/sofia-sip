@@ -965,7 +965,7 @@ int su_port_unregister_all(su_port_t *self,
  */
 int su_port_eventmask(su_port_t *self, int index, int socket, int events)
 {
-  unsigned n;
+  int n;
 
   assert(self);
   assert(SU_PORT_OWN_THREAD(self));
