@@ -508,6 +508,7 @@ nua_stack_process_request_t nua_stack_process_subscribe;
 nua_stack_process_request_t nua_stack_process_notify;
 nua_stack_process_request_t nua_stack_process_refer;
 nua_stack_process_request_t nua_stack_process_unknown;
+nua_stack_process_request_t nua_stack_process_register;
 
 #ifndef SDP_MIME_TYPE
 #define SDP_MIME_TYPE nua_application_sdp

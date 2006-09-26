@@ -297,6 +297,7 @@ char const *nua_callstate_name(enum nua_callstate state)
   case nua_callstate_ready: return "ready";
   case nua_callstate_terminating: return "terminating";
   case nua_callstate_terminated: return "terminated";
+  case nua_i_register: return "nua_i_register";
   default: return "UNKNOWN";
   }
 }

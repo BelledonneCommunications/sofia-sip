@@ -1645,6 +1645,9 @@ int nua_stack_process_request(nua_handle_t *nh,
   case sip_method_subscribe:
     return nua_stack_process_subscribe(nua, nh, irq, sip);
 
+  case sip_method_register:
+    return nua_stack_process_register(nua, nh, irq, sip);
+
   case sip_method_options:
     return nua_stack_process_options(nua, nh, irq, sip);
 
