@@ -38,9 +38,6 @@
 #include <sofia-sip/su_wait.h>
 #endif
 
-#ifndef SU_OS_NW_H
-#include <sofia-sip/su_os_nw.h>
-#endif
 
 #ifndef URL_H
 #include <sofia-sip/url.h>

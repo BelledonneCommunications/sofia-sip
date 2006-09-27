@@ -46,6 +46,9 @@
 #include <pthread.h>
 #endif
 
+#ifndef SU_OS_NW_H
+#include <sofia-sip/su_os_nw.h>
+#endif
 #ifndef SOA_H
 #include "sofia-sip/soa.h"
 #endif
