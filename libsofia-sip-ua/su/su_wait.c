@@ -140,7 +140,7 @@ int su_wait_create(su_wait_t *newwait, su_socket_t socket, int events)
 
   *newwait = h;
 
-#elif SU_USE_OSX_CF_API
+#elif SU_HAVE_OSX_CF_API
   CFSocketRef cf_socket;
   CFRunLoopRef rl = CFRunLoopGetCurrent();
 
@@ -194,7 +194,7 @@ int su_wait_destroy(su_wait_t *waitobj)
   su_wait_t w0 = NULL;
   if (*waitobj)
     WSACloseEvent(*waitobj);
-#elif SU_USE_OSX_CF_API
+#elif SU_HAVE_OSX_CF_API
   su_wait_t w0 = { INVALID_SOCKET, 0, 0, NULL };
   CFRunLoopRef rl = CFRunLoopGetCurrent();
   if (waitobj && waitobj->w_source) {

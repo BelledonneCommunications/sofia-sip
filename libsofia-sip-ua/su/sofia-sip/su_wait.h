@@ -47,7 +47,7 @@
 #if SU_HAVE_POLL
 #include <sys/poll.h>
 #endif
-#if SU_USE_OSX_CF_API
+#if SU_HAVE_OSX_CF_API
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
@@ -56,7 +56,7 @@ SOFIA_BEGIN_DECLS
 /* ---------------------------------------------------------------------- */
 /* Constants */
 
-#if SU_USE_OSX_CF_API
+#if SU_HAVE_OSX_CF_API
 #define SU_WAIT_CMP(x, y) \
  (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
 
@@ -146,7 +146,7 @@ typedef struct _pollfd {
   short events;     /* requested events */
   short revents;    /* returned events */
 } su_wait_t;
-#elif SU_USE_OSX_CF_API
+#elif SU_HAVE_OSX_CF_API
 /* Use container for both pollfds and CoreFoundation sources */
 /* NOTE! The order is crucial! */
 typedef struct {

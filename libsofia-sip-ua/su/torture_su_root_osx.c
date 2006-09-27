@@ -50,7 +50,7 @@ struct pinger;
 #define SU_INTERNAL_P   su_root_t *
 #define SU_MSG_ARG_T    su_sockaddr_t
 
-#define SU_USE_OSX_CF_API 1
+#define SU_HAVE_OSX_CF_API 1
 
 #include "sofia-sip/su.h"
 #include "sofia-sip/su_wait.h"
