@@ -20,6 +20,8 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
+template: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
+
 libsofia-sip-ua:
 - template: Added foobar() function (sofia-sip/foobar.h).
 - This release is ABI/API compatible with applications linked against 
