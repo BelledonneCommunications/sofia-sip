@@ -1,3 +1,7 @@
+2006-09-26  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* libsofia-sip-ua interface v2 frozen (2:0:2) for the 1.12.2 release
+
 2006-08-30  Pekka Pessi  <Pekka.Pessi@nokia.com>
 
 	* nua: added tag nutag_refer_with_id.

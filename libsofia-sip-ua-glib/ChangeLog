@@ -1,6 +1,10 @@
+2006-07-25  Kai Vehmanen  <kai.vehmanen@nokia.com>
+
+	* libsofia-sip-ua-glib interface v1 frozen, version to 1:0:1 (for 1.12.2 release).
+
 2006-06-16  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
-	* libsofia-sip-ua interface v0 frozen, version to 0:0:0.
+	* libsofia-sip-ua-glib interface v0 frozen, version to 0:0:0.
 
 2006-04-12  Kai Vehmanen  <kai.vehmanen@nokia.com>
 
