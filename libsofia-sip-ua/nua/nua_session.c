@@ -263,7 +263,7 @@ int session_process_response(nua_handle_t *nh,
  * calls can be hung-up with nua_bye().
  *
  * Optionally 
- * - uses early media if NUTAG_EARLY_MEDIA() tag is used with non zero value
+ * - uses early media if NUTAG_EARLY_MEDIA() tag is used with non zero-value
  * - media parameters can be set by SOA tags
  * - nua_invite() can be used to change status of an existing call: 
  *   - #SOATAG_HOLD tag can be used to list the media that will be put on hold,
@@ -276,17 +276,35 @@ int session_process_response(nua_handle_t *nh,
  *    nothing
  *
  * @par Related Tags:
- *    NUTAG_URL() \n
- *    NUTAG_HOLD() \n
- *    NUTAG_NOTIFY_REFER() \n
- *    NUTAG_REFER_PAUSE() \n
- *    NUTAG_INVITE_TIMER() \n
- *    NUTAG_MEDIA_FEATURES() \n
- *    SOATAG_HOLD() \n
- *    SOATAG_AF() \n
- *    SOATAG_ADDRESS() \n
+ *    NUTAG_URL(),
+ *    NUTAG_NOTIFY_REFER(), 
+ *    NUTAG_ALLOW(),
+ *    NUTAG_AUTOACK(),
+ *    NUTAG_AUTOALERT(),
+ *    NUTAG_AUTOANSWER(),
+ *    NUTAG_CALLEE_CAPS(),
+ *    NUTAG_EARLY_MEDIA(),
+ *    NUTAG_ENABLEINVITE(),
+ *    NUTAG_ENABLEMESSAGE(),
+ *    NUTAG_ENABLEMESSENGER(),
+ *    NUTAG_INVITE_TIMER(),
+ *    NUTAG_MEDIA_ENABLE(),
+ *    NUTAG_MIN_SE(),
+ *    NUTAG_ONLY183_100REL(),
+ *    NUTAG_REFER_EXPIRES(),
+ *    NUTAG_RETRY_COUNT(),
+ *    NUTAG_SERVICE_ROUTE_ENABLE(),
+ *    NUTAG_SESSION_REFRESHER(),
+ *    NUTAG_SESSION_TIMER(),
+ *    NUTAG_SOA_NAME(),
+ *    NUTAG_SUPPORTED(),
+ *    NUTAG_UPDATE_REFRESH(),
+ *    NUTAG_USER_AGENT() \n
+ *    SOATAG_HOLD(), SOATAG_AF(), SOATAG_ADDRESS(),
+ *    SOATAG_RTP_SELECT(), SOATAG_RTP_SORT(), SOATAG_RTP_MISMATCH(), 
+ *    SOATAG_AUDIO_AUX(), \n
  *    SOATAG_USER_SDP() or SOATAG_USER_SDP_STR() \n
- *    tags in <sip_tag.h>
+ *    See use of tags in <sip_tag.h> below
  *
  * @par Events:
  *    #nua_r_invite \n
@@ -301,7 +319,8 @@ int session_process_response(nua_handle_t *nh,
  * the stack. When the INVITE message (or any other SIP message) is created,
  * the tagged values saved with nua_handle() are used first, next the tagged
  * values given with the operation (nua_invite()) are added.
- * 
+ *
+ * @par
  * When multiple tags for the same header are specified, the behaviour
  * depends on the header type. If only a single header field can be included
  * in a SIP message, the latest non-NULL value is used, e.g., @Subject. 
@@ -309,15 +328,19 @@ int session_process_response(nua_handle_t *nh,
  * separated by comma, e.g., @Accept, all the tagged
  * values are concatenated.
  * 
+ * @par
  * However, if a tag value is #SIP_NONE (-1 casted as a void pointer), the
  * values from previous tags are ignored.
  *
+ * @par
  * Next, values previously set with nua_set_params() or nua_set_hparams()
  * are used: @Allow, @Supported, @Organization, and @UserAgent headers are
  * added to the request if they are not already set.
  *
+ * @par
  * Now, the target URI for the request needs to be determined.
  *
+ * @par
  * For initial INVITE requests, values from tags are used. If NUTAG_URL() is
  * given, it is used as target URI. Otherwise, if SIPTAG_TO() is given, it
  * is used as target URI. If neither is given, the complete request line
@@ -328,6 +351,7 @@ int session_process_response(nua_handle_t *nh,
  * The initial dialog information is also created: @CallID, @CSeq headers
  * are generated, if they do not exist, and tag is added to @From header.
  *
+ * @par
  * For in-dialog INVITE (re-INVITE), the request URI is taken from the
  * @Contact header received from the remote party during the dialog
  * establishment. Also, the @CallID and @CSeq headers and @From and @To tags
@@ -335,9 +359,11 @@ int session_process_response(nua_handle_t *nh,
  * If the dialog has a route (set by @RecordRoute headers), it is added to
  * the request, too.
  *
+ * @par
  * @MaxForwards header (with default value set by NTATAG_MAX_FORWARDS()) is
  * also added now, if it does not exist.
  * 
+ * @par
  * Next, the stack generates a @Contact header for the request (Unless the
  * application already gave a @Contact header or it does not want to use
  * @Contact and indicates that by including SIPTAG_CONTACT(NULL) or
@@ -346,9 +372,11 @@ int session_process_response(nua_handle_t *nh,
  * registration is used. Otherwise, the @Contact header is generated from the
  * local IP address and port number.
  *
+ * @par
  * For the initial INVITE requests, @ServiceRoute set received from
  * the registrar is also added to the request message.
  *
+ * @par
  * The INVITE request message created by nua_invite() operation is saved as
  * a template for automatic re-INVITE requests sent by the session timer
  * ("timer") feature. Please note that the template message is not used when
@@ -357,12 +385,12 @@ int session_process_response(nua_handle_t *nh,
  * as preference headers @Allow, @Supported, @UserAgent, @Organization).
  *
  * @par SDP Handling
-
  * The initial nua_invite() creates a @ref soa_session_t "soa media session"
  * unless NUTAG_MEDIA_ENABLE(0) has been given. The SDP description of the
  * @ref soa_session_t "soa media session" is included in the INVITE request
  * as message body. 
  *
+ * @par
  * The SDP in a 1XX or 2XX response message is interpreted as an answer,
  * given to the @ref soa_session_t "soa media session" object for
  * processing.
@@ -391,6 +419,9 @@ int session_process_response(nua_handle_t *nh,
  *     nua_respond()
  */
 
+/* Tags not implemented
+ *    NUTAG_REFER_PAUSE() \n
+ */
 int
 nua_stack_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		 tagi_t const *tags)

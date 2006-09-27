@@ -1437,6 +1437,8 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_event_ref;
  *    @c !=0 True
  *
  * Corresponding tag taking reference parameter is NUTAG_REFER_PAUSE_REF()
+ *
+ * @todo Not implemented.
  */
 #define NUTAG_REFER_PAUSE(x)   nutag_refer_pause, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_refer_pause;
@@ -1680,10 +1682,10 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_with_id;
 #define NUTAG_REFER_WITH_ID_REF(x) nutag_refer_with_id_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_refer_with_id_ref;
 
-/** Add media tags from our offer to Accept-Contact headers.
+/**Add media tags from our offer to Accept-Contact headers.
  *
- * Automatically generate Accept-Contact headers for caller
- * preference processing according to our current media capabilities.
+ * Automatically generate @AcceptContact headers for caller
+ * preference processing according to our the media capabilities in @a soa.
  *
  * @par Used with
  *    nua_invite()  \n
@@ -1699,6 +1701,9 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_with_id_ref;
  *    @c !=0 Add media tags
  *
  * Corresponding tag taking reference parameter is NUTAG_MEDIA_FEATURES_REF()
+ *
+ * @sa nua_invite(), SOATAG_USER_SDP(), SIPTAG_ACCEPT_CONTACT(),
+ *     NUTAG_CALLEE_CAPS()
  */
 #define NUTAG_MEDIA_FEATURES(x) nutag_media_features, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_media_features;
