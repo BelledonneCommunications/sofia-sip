@@ -18,7 +18,8 @@ noinst_LTLIBRARIES = 	libfeatures.la
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
-nobase_nodist_include_sofia_HEADERS = sofia-sip/sofia_features.h
+# This is used by platforms not supporting autoconf
+nobase_include_sofia_HEADERS = sofia-sip/sofia_features.h
 
 libfeatures_la_SOURCES = features.c
 
