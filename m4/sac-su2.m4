@@ -106,6 +106,21 @@ else
 fi
 
 
+dnl ======================================================================
+dnl SAC_ENABLE_COREFOUNDATION
+dnl ======================================================================
+AC_ARG_ENABLE(corefoundation,
+[  --enable-corefoundation     compile with OSX COREFOUNDATION (disabled)],
+ , enable_corefoundation=no)
+AM_CONDITIONAL(COREFOUNDATION, test $enable_corefoundation = yes)
+
+if test $enable_corefoundation = yes ; then
+   SAC_SU_DEFINE([SU_HAVE_OSX_CF_API], 1, [
+Define as 1 if you have OSX CoreFoundation interface])
+   LIBS="-framework CoreFoundation -framework SystemConfiguration $LIBS"
+fi
+
+
 ### ======================================================================
 ### Test if we have stack suitable for handling tags directly
 ###
