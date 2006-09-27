@@ -72,6 +72,9 @@
 /** Define as 1 if you have Winsock2 interface */
 #undef SU_HAVE_WINSOCK2     	
 
+/** Define as 1 if you have OSX CoreFoundation interface */
+#undef SU_USE_OSX_CF_API
+
 /** Define as 1 if you have inline functions */
 #undef SU_HAVE_INLINE
 /** Define as suitable declarator inline functions */
