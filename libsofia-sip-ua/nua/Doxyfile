@@ -21,7 +21,9 @@ TAGFILES            += ../docs/sdp.doxytags=../sdp
 
 GENERATE_TAGFILE     = ../docs/nua.doxytags
 
-ALIASES             += CFILE="@internal @file" IFILE="@internal @file"
+# note: CFILEs contain internal code but public documentation, so 
+#       they cannot be part of the internal set
+ALIASES             += IFILE="@internal @file"
 
 ALIASES 	    += nua="@ref index \"nua\""
 # When GENERATE_TAGFILE=YES, we should use \ref main
