@@ -932,7 +932,7 @@ void su_freeaddrinfo(su_addrinfo_t *res)
 /** Return string describing address translation error. */
 char const *su_gai_strerror(int errcode)
 {
-  return gai_strerror(errcode);
+	return (char const *)gai_strerror(errcode);
 }
 
 /** Resolve socket address into hostname and service name.

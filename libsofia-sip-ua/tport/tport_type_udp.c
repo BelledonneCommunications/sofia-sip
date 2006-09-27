@@ -254,7 +254,7 @@ int tport_recv_dgram(tport_t *self)
       return -1;
   }
   else if (n <= 1) {
-    SU_DEBUG_1(("%s(%p): runt of %u bytes\n", "tport_recv_dgram", self, n));
+    SU_DEBUG_1(("%s(%p): runt of "MOD_ZD" bytes\n", "tport_recv_dgram", self, n));
     msg_destroy(msg), self->tp_msg = NULL;
     return 0;
   }
