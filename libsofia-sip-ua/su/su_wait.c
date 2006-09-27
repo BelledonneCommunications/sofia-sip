@@ -35,8 +35,6 @@
  *
  */
 
-#include "config.h"
-
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -142,6 +140,30 @@ int su_wait_create(su_wait_t *newwait, su_socket_t socket, int events)
 
   *newwait = h;
 
+#elif SU_USE_OSX_CF_API
+  CFSocketRef cf_socket;
+  CFRunLoopRef rl = CFRunLoopGetCurrent();
+
+  if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
+    su_seterrno(EINVAL);
+    return -1;
+  }
+
+  newwait->fd = socket;
+  newwait->events = events;
+  newwait->revents = 0;
+
+  cf_socket = CFSocketCreateWithNative(kCFAllocatorDefault,
+				       (CFSocketNativeHandle) socket,
+				       events,
+				       NULL, NULL);
+
+  newwait->w_source =
+    CFSocketCreateRunLoopSource(kCFAllocatorDefault, cf_socket, 0);
+
+  /* XXX -- mela: shall we do this already here? */
+  CFRunLoopAddSource(rl, newwait->w_source, kCFRunLoopDefaultMode);
+
 #elif SU_HAVE_POLL
 
   if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
@@ -172,6 +194,14 @@ int su_wait_destroy(su_wait_t *waitobj)
   su_wait_t w0 = NULL;
   if (*waitobj)
     WSACloseEvent(*waitobj);
+#elif SU_USE_OSX_CF_API
+  su_wait_t w0 = { INVALID_SOCKET, 0, 0, NULL };
+  CFRunLoopRef rl = CFRunLoopGetCurrent();
+  if (waitobj && waitobj->w_source) {
+    CFRunLoopRemoveSource(rl, waitobj->w_source, kCFRunLoopDefaultMode);
+    CFRunLoopSourceInvalidate(waitobj->w_source);
+  }
+  /* XXX -- mela: should we also remove from RunLoop? */
 #elif SU_HAVE_POLL
   su_wait_t w0 = { INVALID_SOCKET, 0, 0 };
 #endif
@@ -183,7 +213,7 @@ int su_wait_destroy(su_wait_t *waitobj)
 
 /**Wait for multiple events.
  *
- * The function su_wait() blocks until a event specified by wait objects in
+ * The function su_wait() blocks until an event specified by wait objects in
  * @a wait array.  If @a timeout is not SU_WAIT_FOREVER, a timeout occurs
  * after @a timeout milliseconds.
  * 
@@ -224,17 +254,16 @@ int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout)
       return SU_WAIT_TIMEOUT;
 
     if (i > 0) {
-      unsigned j;
-      for (j = 0; j < n; j++) {
-	if (waits[j].revents)
-	  return (int)j;
+      for (i = 0; i < n; i++) {
+	if (waits[i].revents)
+	  return i;
       }
     }
   
     if (errno == EINTR)
       continue;
 
-    return -1;
+    return i;
   }  
 #endif
 }
