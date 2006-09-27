@@ -55,9 +55,9 @@
 #include <AvailabilityMacros.h>
 #include <sys/cdefs.h>
 #include <CoreFoundation/CoreFoundation.h>
-#include <SCDynamicStore.h>
-#include <SCDynamicStoreKey.h>
-#include <SCSchemaDefinitions.h>
+#include <SystemConfiguration/SCDynamicStore.h>
+#include <SystemConfiguration/SCDynamicStoreKey.h>
+#include <SystemConfiguration/SCSchemaDefinitions.h>
 #endif /* __APPLE_CC__ */
 
 struct su_network_changed_s {
