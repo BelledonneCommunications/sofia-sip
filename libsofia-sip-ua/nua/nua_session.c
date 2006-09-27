@@ -255,7 +255,7 @@ int session_process_response(nua_handle_t *nh,
 			     sip_t const *sip,
 			     char const **return_received);
 
-/**@fun void nua_invite(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+/**@fn void nua_invite(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
  *
  * Place a call using SIP INVITE method. 
  *
