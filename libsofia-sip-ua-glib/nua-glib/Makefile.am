@@ -79,11 +79,13 @@ test_nua_glib_LDFLAGS = -static
 %_marshal.c: ${srcdir}/%_marshal.list ${srcdir}/Makefile.am
 	glib-genmarshal --body --prefix=$(subst -,_,$*)_marshal $< > $*_marshal.c
 
+# Correctly clean the generated headers, but keep the xml description
+CLEANFILES = 		$(BUILT_SOURCES)
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST =		Doxyfile nua_glib.docs $(BUILT_SOURCES) \
-			nua_glib_marshal.list
+EXTRA_DIST =		Doxyfile nua_glib.docs nua_glib_marshal.list
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
