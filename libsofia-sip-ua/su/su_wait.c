@@ -140,30 +140,6 @@ int su_wait_create(su_wait_t *newwait, su_socket_t socket, int events)
 
   *newwait = h;
 
-#elif SU_HAVE_OSX_CF_API
-  CFSocketRef cf_socket;
-  CFRunLoopRef rl = CFRunLoopGetCurrent();
-
-  if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
-    su_seterrno(EINVAL);
-    return -1;
-  }
-
-  newwait->fd = socket;
-  newwait->events = events;
-  newwait->revents = 0;
-
-  cf_socket = CFSocketCreateWithNative(kCFAllocatorDefault,
-				       (CFSocketNativeHandle) socket,
-				       events,
-				       NULL, NULL);
-
-  newwait->w_source =
-    CFSocketCreateRunLoopSource(kCFAllocatorDefault, cf_socket, 0);
-
-  /* XXX -- mela: shall we do this already here? */
-  CFRunLoopAddSource(rl, newwait->w_source, kCFRunLoopDefaultMode);
-
 #elif SU_HAVE_POLL
 
   if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
@@ -194,14 +170,6 @@ int su_wait_destroy(su_wait_t *waitobj)
   su_wait_t w0 = NULL;
   if (*waitobj)
     WSACloseEvent(*waitobj);
-#elif SU_HAVE_OSX_CF_API
-  su_wait_t w0 = { INVALID_SOCKET, 0, 0, NULL };
-  CFRunLoopRef rl = CFRunLoopGetCurrent();
-  if (waitobj && waitobj->w_source) {
-    CFRunLoopRemoveSource(rl, waitobj->w_source, kCFRunLoopDefaultMode);
-    CFRunLoopSourceInvalidate(waitobj->w_source);
-  }
-  /* XXX -- mela: should we also remove from RunLoop? */
 #elif SU_HAVE_POLL
   su_wait_t w0 = { INVALID_SOCKET, 0, 0 };
 #endif
