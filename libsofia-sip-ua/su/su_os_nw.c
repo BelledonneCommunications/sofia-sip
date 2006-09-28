@@ -284,8 +284,7 @@ su_network_changed_t
  *
  * @since New in @VERSION_1_12_2.
  */
-int su_root_remove_network_changed(su_root_t *root,
-				   su_network_changed_t *snc)
+int su_root_remove_network_changed(su_network_changed_t *snc)
 {
   return -1;
 }

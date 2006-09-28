@@ -115,8 +115,7 @@ su_root_add_network_changed(su_home_t *home,
 			    su_root_t *root, 
 			    su_network_changed_f *, 
 			    su_network_changed_magic_t *);
-SOFIAPUBFUN int su_root_remove_network_changed(su_root_t *root,
-					       su_network_changed_t *);
+SOFIAPUBFUN int su_root_remove_network_changed(su_network_changed_t *);
 
 SOFIA_END_DECLS
 
