@@ -47,41 +47,13 @@
 #if SU_HAVE_POLL
 #include <sys/poll.h>
 #endif
-#if SU_HAVE_OSX_CF_API
-#include <CoreFoundation/CoreFoundation.h>
-#endif
 
 SOFIA_BEGIN_DECLS
 
 /* ---------------------------------------------------------------------- */
 /* Constants */
 
-#if SU_HAVE_OSX_CF_API
-#define SU_WAIT_CMP(x, y) \
- (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
-
-/** Incoming data is available on socket. @HI */
-#define SU_WAIT_IN      (POLLIN)
-/** Data can be sent on socket. @HI */
-#define SU_WAIT_OUT     (POLLOUT)
-/** Socket is connected. @HI */
-#define SU_WAIT_CONNECT (POLLOUT)
-/** An error occurred on socket. @HI */
-#define SU_WAIT_ERR     (POLLERR)
-/** The socket connection was closed. @HI */
-#define SU_WAIT_HUP     (POLLHUP)
-/** A listening socket accepted a new connection. @HI */
-#define SU_WAIT_ACCEPT  (POLLIN)
-
-/** No timeout for su_wait(). */
-#define SU_WAIT_FOREVER (-1)
-/** The return value of su_wait() if timeout occurred. */
-#define SU_WAIT_TIMEOUT (-2)
-
-/** Initializer for a wait object. @HI */
-#define SU_WAIT_INIT    { INVALID_SOCKET, 0, 0, NULL }
-
-#elif SU_HAVE_POLL || DOCUMENTATION_ONLY
+#if SU_HAVE_POLL || DOCUMENTATION_ONLY
 /** Compare wait object */
 #define SU_WAIT_CMP(x, y) \
  (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
@@ -145,17 +117,6 @@ typedef struct _pollfd {
   su_socket_t fd;           /* file descriptor */
   short events;     /* requested events */
   short revents;    /* returned events */
-} su_wait_t;
-#elif SU_HAVE_OSX_CF_API
-/* Use container for both pollfds and CoreFoundation sources */
-/* NOTE! The order is crucial! */
-typedef struct {
-  /* struct pollfd      w_fd[1]; */
-  int fd;
-  short events;
-  short revents;
-
-  CFRunLoopSourceRef w_source;
 } su_wait_t;
 #elif SU_HAVE_BSDSOCK
 typedef struct pollfd su_wait_t;
