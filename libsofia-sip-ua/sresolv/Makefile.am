@@ -54,6 +54,7 @@ COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_sofia_HEADERS)
 EXTRA_DIST =		Doxyfile sresolv.docs
 
 dist_noinst_DATA = run_test_sresolv \
+	root.zone rndc.conf \
 	127.zone 194.2.188 3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0 example.com \
 	3.f.f.e.1.2.0.0.3.0.1.2.c.0.0.0.arpa
 

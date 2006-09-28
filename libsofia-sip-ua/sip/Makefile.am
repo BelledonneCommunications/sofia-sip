@@ -74,7 +74,7 @@ EXTRA_DIST =		Doxyfile sip.docs sip_parser.docs sip.doxyaliases \
 	images/sip-parser3.eps images/sip-parser3.gif \
 	images/sip-parser4.eps images/sip-parser4.gif \
 	tests/own0.txt tests/own1.txt tests/own2.txt tests/own3.txt \
-	tests/own4.txt tests/own5.txt tests/own6.txt \
+	tests/own4.txt tests/own5.txt tests/own6.txt tests/own8.txt \
 	tests/test1.txt tests/test-ack-1.txt tests/test2.txt tests/test3.txt \
 	tests/test4.txt tests/test5.txt tests/test6.txt tests/test7.txt	     \
 	tests/test8.txt tests/test9.txt tests/test10.txt tests/test10b.txt   \

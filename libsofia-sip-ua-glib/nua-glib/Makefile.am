@@ -82,7 +82,8 @@ test_nua_glib_LDFLAGS = -static
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST =		Doxyfile nua_glib.docs $(BUILT_SOURCES)
+EXTRA_DIST =		Doxyfile nua_glib.docs $(BUILT_SOURCES) \
+			nua_glib_marshal.list
 
 # ----------------------------------------------------------------------
 # Sofia specific rules

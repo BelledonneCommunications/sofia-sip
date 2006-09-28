@@ -54,6 +54,8 @@ endif
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
+EXTRA_DIST =		Doxygile su_glib.docs
+
 # ----------------------------------------------------------------------
 # Automake options
 

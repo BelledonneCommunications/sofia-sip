@@ -35,6 +35,7 @@ EXTRA_DIST = SofiaSIP.dsw \
 	tests/torture_rbtree/torture_rbtree.dsp \
 	tests/torture_su_bm/torture_su_bm.dsp \
 	tests/torture_su_port/torture_su_port.dsp \
+	utils/localinfo/localinfo.dsp \
 	utils/sip_options/sip_options.dsp \
 	utils/sip_dig/sip_dig.dsp \
 	utils/stunc/stunc.dsp \
