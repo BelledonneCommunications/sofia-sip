@@ -55,17 +55,9 @@
 
 #include <assert.h>
 
+#define SU_WAIT_MIN    (16)
+
 SOFIA_BEGIN_DECLS
-
-/* Minimum array size (size of su_waits, sur_wait_cbs, sur_wait_args) */
-#define SU_MIN_WAITS    (16)
-
-#if SU_HAVE_WINSOCK
-#define SU_MAX_WAITS    (64)	
-#elif SU_HAVE_POLL
-/* This may be even bigger on some OSs */
-#define SU_MAX_WAITS    (1024)	
-#endif
 
 /** Message */
 struct su_msg_s {

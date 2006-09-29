@@ -451,12 +451,17 @@ AC_SEARCH_LIBS(getaddrinfo, xnet socket nsl)
 
 AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm \
                 socketpair gethostname gethostbyname getipnodebyname \
-                poll epoll select if_nameindex \
+                poll epoll_create select if_nameindex \
 	        getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs \
                 getline getdelim getpass])
 # getline getdelim getpass are _GNU_SOURCE stuff
+
 if test $ac_cv_func_poll = yes ; then
   SAC_SU_DEFINE([SU_HAVE_POLL], 1, [Define to 1 if you have poll().])
+fi
+
+if test $ac_cv_func_epoll_create = yes ; then
+  AC_DEFINE([HAVE_EPOLL], 1, [Define to 1 if you have epoll interface.])
 fi
 
 if test $ac_cv_func_if_nameindex = yes ; then

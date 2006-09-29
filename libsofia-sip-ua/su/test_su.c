@@ -255,12 +255,16 @@ do_exit(struct pinger *x, su_timer_t *t, void *x0)
 int
 do_init(su_root_t *root, struct pinger *p)
 {
-  su_wait_t w, w0;
+  su_wait_t w;
   su_socket_t s;
   long interval;
   su_timer_t *t;
   su_wakeup_f f;
-  int index, index0;
+  int index;
+#if nomore
+  su_wait_t w0;
+  int index0
+#endif
 
   switch (p->sort) {
   case PINGER: f = do_rtt;  interval = 200; break;
@@ -277,6 +281,8 @@ do_init(su_root_t *root, struct pinger *p)
 
   /* Create a sockets,  */
   p->s = s = udpsocket();
+
+#if nomore
   if (su_wait_create(&w0, s, SU_WAIT_IN) == SOCKET_ERROR) {
     su_perror("su_wait_create");
     return SU_FAILURE;
@@ -287,6 +293,7 @@ do_init(su_root_t *root, struct pinger *p)
     su_perror("su_root_register");
     return SU_FAILURE;
   }
+#endif
 
   if (su_wait_create(&w, s, SU_WAIT_IN) == SOCKET_ERROR) {
     su_perror("su_wait_create");
@@ -299,8 +306,9 @@ do_init(su_root_t *root, struct pinger *p)
     return SU_FAILURE;
   }
 
+#if nomore
   su_root_deregister(root, index0);
-
+#endif
   p->rindex = index;
 
   return 0;

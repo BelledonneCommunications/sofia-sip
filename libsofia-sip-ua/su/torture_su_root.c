@@ -203,7 +203,7 @@ static int register_test(root_test_t *rt)
     rt->rt_ep[i]->registered = 
       su_root_register(rt->rt_root, rt->rt_ep[i]->wait, 
 		       wakeups[i], rt->rt_ep[i], 0);
-    TEST(rt->rt_ep[i]->registered, i + 1);
+    TEST(rt->rt_ep[i]->registered, i + 1 + SU_HAVE_PTHREADS);
   }
 
   for (i = 0; i < 5; i++) {
@@ -217,7 +217,8 @@ static int register_test(root_test_t *rt)
 
   for (i = 0; i < 5; i++) {
     TEST(su_root_unregister(rt->rt_root, rt->rt_ep[i]->wait, 
-			    wakeups[i], rt->rt_ep[i]), i + 1);
+			    wakeups[i], rt->rt_ep[i]), 
+	 rt->rt_ep[i]->registered);
   }
 
 

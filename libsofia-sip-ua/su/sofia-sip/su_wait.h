@@ -79,6 +79,9 @@ SOFIA_BEGIN_DECLS
 /** Initializer for a wait object. @HI */
 #define SU_WAIT_INIT    { INVALID_SOCKET, 0, 0 }
 
+/** Maximum number of sources supported by su_wait() */
+#define SU_WAIT_MAX    (0x7fffffff)
+
 #elif SU_HAVE_WINSOCK
 
 #define SU_WAIT_CMP(x, y) ((intptr_t)(x) - (intptr_t)(y))
@@ -94,6 +97,8 @@ SOFIA_BEGIN_DECLS
 #define SU_WAIT_TIMEOUT (WSA_WAIT_TIMEOUT)
 
 #define SU_WAIT_INIT    NULL
+
+#define SU_WAIT_MAX    (64)
 
 #else
 #define SU_WAIT_CMP(x, y) 
@@ -362,6 +367,7 @@ SOFIAPUBFUN su_root_magic_t *su_root_magic(su_root_t *root);
 SOFIAPUBFUN int su_root_register(su_root_t*, su_wait_t *, 
 				 su_wakeup_f, su_wakeup_arg_t *,
 				 int priority);
+/* This is slow. Deprecated. */
 SOFIAPUBFUN int su_root_unregister(su_root_t*, su_wait_t *, 
 				   su_wakeup_f, su_wakeup_arg_t*);
 SOFIAPUBFUN int su_root_deregister(su_root_t*, int);

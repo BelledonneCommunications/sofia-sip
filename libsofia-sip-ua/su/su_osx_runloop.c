@@ -815,8 +815,8 @@ int su_port_osx_register(su_port_t *self,
     else 
       size = 2 * self->sup_size_waits;
 
-    if (size < SU_MIN_WAITS)
-      size = SU_MIN_WAITS;
+    if (size < SU_WAIT_MIN)
+      size = SU_WAIT_MIN;
 
     /* Too large */
     if (-3 - size > 0)
