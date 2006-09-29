@@ -74,41 +74,31 @@ static char cvtIn[] = {
     30, 31, 32, 33, 34, 35};
 
 
-/*
- *----------------------------------------------------------------------
+/**Convert an ASCII string into an unsigned long long integer.
  *
- * strtoull --
+ * @param[in]  string  String of ASCII digits, possibly preceded by white
+ *                     space. For bases greater than 10, either lower- or
+ *                     upper-case digits may be used.
  *
- *	Convert an ASCII string into an integer.
+ * @param[out] endPtr  Where to store address of terminating character, or
+ *                     NULL.
  *
- * Results:
- *	The return value is the integer equivalent of string.  If endPtr
- *	is non-NULL, then *endPtr is filled in with the character
- *	after the last one that was part of the integer.  If string
- *	doesn't contain a valid integer value, then zero is returned
- *	and *endPtr is set to string.
+ * @param[in] base     Base for conversion. Must be less than 37. If 0, then
+ *                     the base is chosen from the leading characters of
+ *                     string: "0x" means hex, "0" means octal, anything
+ *                     else means decimal.
  *
- * Side effects:
- *	None.
+ * @return
+ * The integer equivalent of string. If @a endPtr is non-NULL, then pointer
+ * to the character after the last one that was part of the integer is
+ * stored to @a *endPtr.
  *
- *----------------------------------------------------------------------
+ * If string doesn't contain a valid integer value, then zero is
+ * returned and *endPtr is set to original value of @a string.
  */
 
 unsigned longlong
 strtoull(const char *string, char **endPtr, int base)
-  /*  const char *string;		 String of ASCII digits, possibly
-				 * preceded by white space.  For bases
-				 * greater than 10, either lower- or
-				 * upper-case digits may be used.
-				 */
-  /*  char **endPtr;		 Where to store address of terminating
-				 * character, or NULL. */
-  /*  int base;			 Base for conversion.  Must be less
-				 * than 37.  If 0, then the base is chosen
-				 * from the leading characters of string:
-				 * "0x" means hex, "0" means octal, anything
-				 * else means decimal.
-				 */
 {
     register const char *p;
     register unsigned longlong result = 0;
