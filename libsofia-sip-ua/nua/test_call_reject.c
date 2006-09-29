@@ -81,6 +81,7 @@ int test_reject_a(struct context *ctx)
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
+  sip_t const *sip;
 
   if (print_headings)
     printf("TEST NUA-4.1: reject before ringing\n");
@@ -102,6 +103,7 @@ int test_reject_a(struct context *ctx)
   INVITE(a, a_call, a_call->nh,
 	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
 	 SIPTAG_SUBJECT_STR("reject-1"),
+	 SIPTAG_CONTACT_STR("sip:a@127.0.0.1"),
 	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, reject_1);
@@ -125,6 +127,8 @@ int test_reject_a(struct context *ctx)
   */
   TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_invite);
   TEST(e->data->e_status, 100);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_contact); TEST_1(!sip->sip_contact->m_next); 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));

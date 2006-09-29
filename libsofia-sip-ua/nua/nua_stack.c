@@ -1033,11 +1033,11 @@ msg_t *nua_creq_msg(nua_t *nua,
     if (!ds->ds_leg) {
       nta_leg_t *leg = nua->nua_dhandle->nh_ds->ds_leg;
 
-      if (sip_add_tl(msg, sip, ta_tags(ta)) < 0
-	  || (ds->ds_remote_tag && ds->ds_remote_tag[0] && 
-	      sip_to_tag(nh->nh_home, sip->sip_to, ds->ds_remote_tag) < 0)
-	  || (sip->sip_from == NULL &&
-	      sip_add_dup(msg, sip, (sip_header_t *)nua->nua_from) < 0))
+      if ((ds->ds_remote_tag && ds->ds_remote_tag[0] && 
+	   sip_to_tag(nh->nh_home, sip->sip_to, ds->ds_remote_tag) < 0)
+	  || 
+	  (sip->sip_from == NULL &&
+	   sip_add_dup(msg, sip, (sip_header_t *)nua->nua_from) < 0))
 	goto error;
 
       if (use_dialog) {
