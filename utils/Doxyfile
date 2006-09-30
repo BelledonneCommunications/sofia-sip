@@ -1,4 +1,4 @@
-PROJECT_NAME         = "libsofia-sip-ua"
+PROJECT_NAME         = "sofia-sip"
 OUTPUT_DIRECTORY     = ../man
 
 INPUT 		     = . 
@@ -7,6 +7,7 @@ INPUT               += ../libsofia-sip-ua/su/addrinfo.c
 INPUT               += ../libsofia-sip-ua/stun/stunc.c
 
 @INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.aliases
+@INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.version
 @INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.rfc
 
 FILE_PATTERNS        = *.h *.c 
@@ -16,22 +17,6 @@ EXCLUDE_PATTERNS     = acconfig.h config.h confdefs.h \
 			*_tag_dll.c *_tag_ref.c
 
 TAGFILES            = 
-TAGFILES            += ../libsofia-sip-ua/docs/su.doxytags=su
-TAGFILES            += ../libsofia-sip-ua/docs/ipt.doxytags=ipt
-TAGFILES            += ../libsofia-sip-ua/docs/bnf.doxytags=bnf
-TAGFILES            += ../libsofia-sip-ua/docs/url.doxytags=url
-TAGFILES            += ../libsofia-sip-ua/docs/msg.doxytags=msg
-TAGFILES            += ../libsofia-sip-ua/docs/sip.doxytags=sip
-TAGFILES            += ../libsofia-sip-ua/docs/sresolv.doxytags=sresolv
-TAGFILES            += ../libsofia-sip-ua/docs/stun.doxytags=stun
-TAGFILES            += ../libsofia-sip-ua/docs/tport.doxytags=tport
-TAGFILES            += ../libsofia-sip-ua/docs/nta.doxytags=nta
-TAGFILES            += ../libsofia-sip-ua/docs/iptsec.doxytags=iptsec
-TAGFILES            += ../libsofia-sip-ua/docs/sdp.doxytags=sdp
-TAGFILES            += ../libsofia-sip-ua/docs/soa.doxytags=soa
-TAGFILES            += ../libsofia-sip-ua/docs/nea.doxytags=nea
-TAGFILES            += ../libsofia-sip-ua/docs/nua.doxytags=nua
-TAGFILES            += ../libsofia-sip-ua/docs/features.doxytags=features
 
 OUTPUT_LANGUAGE      = English
 

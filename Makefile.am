@@ -29,21 +29,16 @@ dist_man_MANS = man/man1/sip-date.1 man/man1/sip-options.1 \
 		man/man1/localinfo.1 man/man1/addrinfo.1 \
 		man/man1/stunc.1 man/man1/sip-dig.1
 
-manpages $(MANS):
+manpages $(dist_man_MANS): built-sources
 	-mkdir -p $(srcdir)/man $(srcdir)/man/man1 2> /dev/null
+if HAVE_DOXYGEN
 	cd $(srcdir)/utils; $(DOXYGEN)
-if !HAVE_DOXYGEN
+else
 	-touch $(MANS)
 endif
 
-coverage built-sources clean-built-sources:
+coverage built-sources clean-built-sources doxygen:
 	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
 	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua-glib $@
 
-doxygen:
-if HAVE_DOXYGEN
-	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
-endif
-
-.PHONY: coverage built-sources clean-built-sources doxygen
-.PHONY: manpages doxygen-manpages
+.PHONY: coverage built-sources clean-built-sources doxygen manpages
