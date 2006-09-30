@@ -29,8 +29,6 @@ EXTRA_DIST = 	Doxyfile Doxyfile.aliases Doxyfile.conf \
 
 BUILT_SOURCES = Doxyfile.rfc
 
-built-sources: $(BUILT_SOURCES)
-
 EXTRA_DIST += $(BUILT_SOURCES)
 
 Doxyfile.rfc:
@@ -44,3 +42,8 @@ Doxyfile.rfc:
 	  i=`expr $$i + 1` ;\
 	done ;\
 	} > $@
+
+# ----------------------------------------------------------------------
+# Sofia specific rules
+
+include ../sofia.am

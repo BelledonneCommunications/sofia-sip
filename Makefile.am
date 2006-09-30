@@ -38,6 +38,7 @@ endif
 
 coverage built-sources clean-built-sources:
 	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
+	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua-glib $@
 
 doxygen:
 if HAVE_DOXYGEN

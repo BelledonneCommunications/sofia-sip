@@ -35,6 +35,9 @@ EXTRA_DIST = docs/Doxyfile.aliases \
 	     docs/Doxyfile.conf \
 	     docs/Doxyfile.version
 
+built-sources: built-sources-recursive 
+clean-built-sources: clean-built-sources-recursive
+
 built-sources-recursive clean-built-sources-recursive:
 	target=`echo $@ | sed s/-recursive//`; \
 	list='$(SUBDIRS)'; for subdir in $$list; do \
