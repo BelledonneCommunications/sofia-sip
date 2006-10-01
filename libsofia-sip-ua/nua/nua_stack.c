@@ -1461,11 +1461,8 @@ int nua_creq_check_restart(nua_handle_t *nh,
       SU_DEBUG_5(("nua(%p): auc_authorization failed\n", nh));
     }
   }
-#if HAVE_SOFIA_SMIME
-  else if (status == 493)     /* try detached signature */
-    ;
-#endif
-  else if (status == 422 && method == sip_method_invite) {
+
+  if (status == 422 && method == sip_method_invite) {
     if (sip->sip_min_se && nh->nh_ss->ss_min_se < sip->sip_min_se->min_delta)
       nh->nh_ss->ss_min_se = sip->sip_min_se->min_delta;
     if (nh->nh_ss->ss_min_se > nh->nh_ss->ss_session_timer)

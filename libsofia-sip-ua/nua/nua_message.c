@@ -77,37 +77,6 @@ nua_stack_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
 			 TAG_NEXT(tags));
   sip = sip_object(msg);
 
-#if HAVE_SOFIA_SMIME_OLD 
-  if (sip) {
-    int status, bOverride;
-    sm_option_t sm_opt; 
-
-    tl_gets(tags, 
-	    NUTAG_SMIME_ENABLE_REF(bOverride),
-	    NUTAG_SMIME_OPT_REF(sm_opt),
-	    TAG_END());
-  
-    if (nua->sm->sm_enable && sm_opt != SM_ID_NULL) {
-      status = sm_adapt_message(nua->sm, msg, sip, 
-				bOverride? sm_opt : SM_ID_NULL);
-      switch(status)
-	{
-	case SM_SUCCESS:
-	  break;
-	case SM_ERROR:
-	  return UA_EVENT2(e, SIP_500_INTERNAL_SERVER_ERROR);
-	case SM_CERT_NOTFOUND:
-	case SM_CERTFILE_NOTFOUND:
-  	  /* currently just sent a sending fail signal, later on,
-	     should trigger the options message to ask for
-	     certificate. */ 
-	  msg_destroy(msg);
-	  return UA_EVENT2(e, SIP_500_INTERNAL_SERVER_ERROR);
-	}
-    } 
-  }
-#endif                   
-
   if (sip)
     cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
 				      process_response_to_message, nh, NULL,
@@ -152,25 +121,6 @@ int nua_stack_process_message(nua_t *nua,
       return 500;		/* respond with 500 Internal Server Error */
 
   msg = nta_incoming_getrequest(irq);
-
-#if HAVE_SOFIA_SMIME
-  if (nua->sm->sm_enable) {
-    int sm_status = sm_decode_message(nua->sm, msg, sip);
-
-    switch (sm_status) {
-    case SM_SMIME_DISABLED:
-      msg_destroy(msg);
-      return 493;
-    case SM_SUCCESS:
-      break;
-    case SM_ERROR:
-      msg_destroy(msg);
-      return 493;
-    default:
-      break;
-    }
-  }
-#endif
 
   nua_stack_event(nh->nh_nua, nh, msg, nua_i_message, SIP_200_OK, TAG_END());
 

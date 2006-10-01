@@ -585,30 +585,6 @@ static int process_response_to_invite(nua_handle_t *nh,
 
   assert(du);
 
-#if HAVE_SOFIA_SMIME
-  if (status < 300) {
-    int sm_status;
-    msg_t *response;
-
-    /* decrypt sdp payload if it's S/MIME */
-    /* XXX msg had a problem!!?? */
-    response = nta_outgoing_getresponse(orq);
-
-    sm_status = sm_decode_message(nua->sm, response, sip);
-
-    switch (sm_status) {
-    case SM_SMIME_DISABLED:
-    case SM_ERROR:
-      status = 493, phrase = "Undecipherable";
-      break;
-    case SM_SUCCESS:
-      break;
-    default:
-      break;
-    }
-  }
-#endif
-
   if (status < 300 && !ss->ss_usage) /* Usage is now established */
     ss->ss_usage = du;
 
@@ -1291,23 +1267,6 @@ int process_invite1(nua_t *nua,
   size_t len;
   char const *user_agent = NH_PGET(nh0, user_agent);
 
-#if HAVE_SOFIA_SMIME
-  int sm_status;
-
-  sm_status = sm_decode_message(nua->sm, msg, sip);
-  switch(sm_status) {
-  case SM_SMIME_DISABLED:
-  case SM_ERROR:
-    nta_incoming_treply(irq, 493, "Undecipherable", TAG_END());
-    return 493;
-
-  case SM_SUCCESS:
-    break;
-  default:
-    break;
-  }
-#endif
-
   if (nh0->nh_soa) {
     /* Make sure caller uses application/sdp without compression */
     if (nta_check_session_content(irq, sip,
@@ -1605,26 +1564,6 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 
   if (ss->ss_refresher && 200 <= status && status < 300)
     use_session_timer(nh, 1, msg, sip);
-
-#if HAVE_SOFIA_SMIME
-  if (nua->sm->sm_enable && sdp) {
-    int sm_status;
-
-    sm_status = sm_encode_message(nua->sm, msg, sip, SM_ID_NULL);
-
-    switch (sm_status) {
-    case SM_SUCCESS:
-      break;
-    case SM_ERROR:
-      status = 500, phrase = "S/MIME processing error";
-      break;
-    case SM_CERT_NOTFOUND:
-    case SM_CERTFILE_NOTFOUND:
-      status = 500, phrase = "S/MIME certificate error";
-      break;
-    }
-  }
-#endif
 
   if (reliable && status < 200) {
     nta_reliable_t *rel;
