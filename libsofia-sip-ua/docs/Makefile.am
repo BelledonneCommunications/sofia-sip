@@ -29,7 +29,7 @@ EXTRA_DIST = 	Doxyfile Doxyfile.aliases Doxyfile.conf \
 
 BUILT_SOURCES = Doxyfile.rfc
 
-EXTRA_DIST += $(BUILT_SOURCES)
+# Including Doxyfile.rfc in dist breaks make manpages
 
 Doxyfile.rfc:
 	$(AWK) 'END { b="\\"; q="\\\""; \
@@ -41,6 +41,8 @@ Doxyfile.rfc:
 	site=http://www.faqs.org/rfcs/rfc type=.html \
 	from=700 to=4800 \
 	/dev/null > $@
+
+CLEANFILES = Doxyfile.rfc
 
 # ----------------------------------------------------------------------
 # Sofia specific rules

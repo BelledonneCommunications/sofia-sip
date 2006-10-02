@@ -193,6 +193,7 @@ libsofia-sip-ua-glib/Makefile
 libsofia-sip-ua-glib/nua-glib/Makefile
 libsofia-sip-ua-glib/su-glib/Makefile
 utils/Makefile
+utils/Doxyfile.build
 win32/Makefile
 win32/config.h
 ])

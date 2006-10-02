@@ -30,12 +30,15 @@ dist_man_MANS = man/man1/sip-date.1 man/man1/sip-options.1 \
 		man/man1/stunc.1 man/man1/sip-dig.1
 
 manpages $(dist_man_MANS): built-sources
-	-mkdir -p $(srcdir)/man $(srcdir)/man/man1 2> /dev/null
+	-mkdir -p man man/man1 2> /dev/null
 if HAVE_DOXYGEN
-	cd $(srcdir)/utils; $(DOXYGEN)
+	cd utils && $(DOXYGEN) Doxyfile.build
+	-@rm man/man1/_*.1
 else
 	-touch $(MANS)
 endif
+
+CLEANFILES = $(dist_man_MANS)
 
 coverage built-sources clean-built-sources doxygen:
 	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@

@@ -1,14 +1,4 @@
 PROJECT_NAME         = "sofia-sip"
-OUTPUT_DIRECTORY     = ../man
-
-INPUT 		     = . 
-INPUT               += ../libsofia-sip-ua/su/localinfo.c
-INPUT               += ../libsofia-sip-ua/su/addrinfo.c
-INPUT               += ../libsofia-sip-ua/stun/stunc.c
-
-@INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.aliases
-@INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.version
-@INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.rfc
 
 FILE_PATTERNS        = *.h *.c 
 
