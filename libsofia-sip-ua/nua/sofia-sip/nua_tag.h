@@ -122,6 +122,21 @@ SOFIAPUBVAR tag_typedef_t nutag_address;
 #define NUTAG_ADDRESS_REF(x)    nutag_address_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_address_ref;
 
+/**Specify request to respond to.
+ *
+ * @par Parameter type
+ *    msg_t *
+ *
+ * @par Values
+ *   Pointer to a request message.
+ */
+#define NUTAG_WITH(x)         NUTAG_WITH, tag_ptr_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_with;
+
+#define NUTAG_WITH_THIS(nua) NUTAG_WITH, tag_ptr_v(nua_current_request((nua)))
+
+#define NUTAG_WITH_SAVED(e) NUTAG_WITH, tag_ptr_v(nua_saved_event_request((e)))
+
 /**Set request retry count.
  *
  * Retry count determines how many times stack will automatically retry

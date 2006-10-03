@@ -1226,6 +1226,18 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   su_msg_destroy(nua->nua_current);
 }
 
+/** Get current request message. */
+msg_t *nua_current_request(nua_t const *nua)
+{
+  return nua && nua->nua_current ? su_msg_data(nua->nua_current)->e_msg : NULL;
+}
+
+/** Get request message from saved nua event. */
+msg_t *nua_saved_event_request(nua_saved_event_t const *saved)
+{
+  return saved ? su_msg_data(saved)->e_msg : NULL;
+}
+
 /** Save nua event and its arguments */
 int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1])
 {

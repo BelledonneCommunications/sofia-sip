@@ -142,5 +142,7 @@ tag_typedef_t nutag_service_route_enable =
 
 tag_typedef_t nutag_detect_network_updates = UINTTAG_TYPEDEF(detect_network_updates);
 
+tag_typedef_t nutag_with = PTRTAG_TYPEDEF(with);
+
 tag_typedef_t _nutag_add_contact = BOOLTAG_TYPEDEF(add_contact);
 tag_typedef_t _nutag_copy = BOOLTAG_TYPEDEF(copy);
