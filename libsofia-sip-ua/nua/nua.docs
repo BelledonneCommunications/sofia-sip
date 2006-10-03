@@ -1964,6 +1964,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * The events can be divided into the following categories: \n
  * @par Indications:
  * #nua_i_active           \n
+ * #nua_i_ack              \n
  * #nua_i_bye              \n
  * #nua_i_cancel           \n
  * #nua_i_chat             \n
@@ -1979,6 +1980,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * #nua_i_prack            \n
  * #nua_i_publish          \n
  * #nua_i_refer            \n
+ * #nua_i_register         \n
  * #nua_i_subscribe        \n
  * #nua_i_subscription     \n
  * #nua_i_state            \n
@@ -2066,6 +2068,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  *               (maybe NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
  * @param sip    incoming MESSAGE request
  * @param tags   empty
  */
@@ -2079,6 +2082,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
+ * @param status statuscode of response sent automatically by stack
  * @param sip    incoming request with unknown method
  * @param tags   empty
  */
@@ -2101,6 +2105,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
+ * @param status statuscode of response sent automatically by stack
  * @param sip    incoming NOTIFY request
  * @param tags   #NUTAG_SUBSTATE indicating the subscription state
  */
@@ -2113,6 +2118,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *               (default operation handle if outside session)
  * @param hmagic operation magic associated with the call
  *               (NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
  * @param sip    incoming OPTIONS request
  * @param tags   empty
  */
@@ -2125,6 +2131,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  *               (NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
  * @param sip    incoming PUBLISH request
  * @param tags   empty
  */
@@ -2136,6 +2143,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  *               (NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
  * @param sip    incoming REFER request
  * @param tags   NUTAG_REFER_EVENT() \n
  *               SIPTAG_REFERRED_BY()
@@ -2154,6 +2162,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *
  * @param nh
  * @param hmagic
+ * @param status statuscode of response sent automatically by stack
  * @param sip
  * @param tags
  */
@@ -2170,6 +2179,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  *
  * @param nh     operation handle associated with the nua_notifier
  * @param hmagic operation magic
+ * @param status statuscode of response sent automatically by stack
  * @param sip    incoming SUBSCRIBE request
  * @param tags   NEATAG_SUB(), 
  *               NUTAG_SUBSTATE()
