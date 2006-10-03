@@ -2010,48 +2010,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * #nua_r_update
  */
 
-/** @var nua_event_e::nua_i_active
- *
- * A call has been activated.
- *
- * This event will be sent after a succesful response to the initial
- * INVITE has been received and the media has been activated.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    NULL
- * @param tags   SOATAG_ACTIVE_AUDIO(), SOATAG_ACTIVE_VIDEO(),
- *               SOATAG_ACTIVE_IMAGE(), SOATAG_ACTIVE_CHAT().
- *
- * @deprecated Use #nua_i_state instead.
- *
- * @sa @ref nua_call_model, #nua_i_state, #nua_i_terminated, 
- * #nua_i_invite
- */
-
-/** @var nua_event_e::nua_i_bye
- *
- * Incoming call hangup.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    pointer to BYE request
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_i_cancel
- *
- * Incoming INVITE has been cancelled
- *
- * Incoming INVITE has been cancelled or
- * no ACK has been received for an accepted call.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    incoming CANCEL request or NULL if time-out occured
- * @param tags   empty
- */
-
 /** @var nua_event_e::nua_i_chat
  *
  * Incoming chat MESSAGE
@@ -2085,28 +2043,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param hmagic operation magic associated with the original call
  * @param sip    200 series response to INVITE
  * @param tags   #NUTAG_HANDLE of the new forked call
- */
-
-/** @var nua_event_e::nua_i_info
- *
- * Incoming session INFO
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    incoming INFO request
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_i_invite
- *
- * Incoming call
- *
- * @param nh     operation handle associated with this call
- *               (maybe created for this call)
- * @param hmagic operation magic associated with this call
- *               (maybe NULL if call handle was created for this call)
- * @param sip    incoming INVITE request
- * @param tags   NUTAG_ACTIVE_*
  */
 
 /** @var nua_event_e::nua_i_media_error
@@ -2208,43 +2144,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * NUTAG_REFER_WITH_ID().
  */
 
-/** @var nua_event_e::nua_i_state
- *
- * Call state has changed.
- *
- * This event will be sent whenever the call state changes. In addition to
- * basic changes of session status indicated with enum ::nua_callstate, the
- * @RFC3264 SDP Offer/Answer negotiation status is also included. The
- * negotiation status includes the local SDP (in SOATAG_LOCAL_SDP()) sent
- * and flags indicating whether the local SDP was an offer or answer
- * (NUTAG_OFFER_SENT(), NUTAG_ANSWER_SENT()). Likewise, the received remote
- * SDP is included in tag SOATAG_REMOTE_SDP() and flags indicating whether
- * the remote SDP was an offer or an answer in tags NUTAG_OFFER_RECV() or
- * NUTAG_ANSWER_RECV(). SOATAG_ACTIVE_AUDIO() and SOATAG_ACTIVE_VIDEO() are
- * informational tags used to indicate what is the status of these media.
- *
- * Note that nua_event_e::nua_i_state also covers call establisment events
- * (#nua_i_active) and termination (#nua_i_terminated).
- *
- * @param status Protocol status code. \n
- *               Always present
- * @param phrase Text corresponding to status code. \n
- *               Always present
- * @param nh     Operation handle associated with the call
- * @param hmagic Operation magic associated with the call
- * @param sip    NULL
- * @param tags   NUTAG_CALLSTATE(), 
- *               SOATAG_LOCAL_SDP(), SOATAG_LOCAL_SDP_STR(),
- *               NUTAG_OFFER_SENT(), NUTAG_ANSWER_SENT(),
- *               SOATAG_REMOTE_SDP(), SOATAG_REMOTE_SDP_STR(),
- *               NUTAG_OFFER_RECV(), NUTAG_ANSWER_RECV(),
- *               SOATAG_ACTIVE_AUDIO(), SOATAG_ACTIVE_VIDEO(),
- *               SOATAG_ACTIVE_IMAGE(), SOATAG_ACTIVE_CHAT().
- *
- * @sa @ref nua_call_model, nua_invite(), #nua_i_active, #nua_i_terminated,
- * #nua_r_invite
- */
-
 /** @var nua_event_e::nua_i_subscribe
  *
  * Incoming subscription request.
@@ -2278,54 +2177,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @sa nua_notifier(), #nua_i_subscribe, nua_authorize(), nua_terminate()
  */
 
-/** @var nua_event_e::nua_i_terminated
- *
- * A call has been terminated.
- *
- * This event will be sent after a call has been terminated. A call is
- * terminated, when
- * 1) an error response (300..599) is sent to an incoming initial INVITE
- * 2) a reliable response (200..299 or reliable preliminary response) to
- *    an incoming initial INVITE is not acknowledged with ACK or PRACK
- * 3) BYE is received or sent
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    NULL
- * @param tags   empty
- *
- * @deprecated Use #nua_i_state instead.
- *
- * @sa @ref nua_call_model, #nua_i_state, #nua_i_active, #nua_i_bye,
- * #nua_i_invite
- */
-
-/** @var nua_event_e::nua_i_update
- *
- * Incoming session UPDATE request.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    incoming UPDATE request
- * @param tags   empty
- *
- * @sa nua_update(), #nua_r_update, #nua_i_state
- */
-
-/** @var nua_event_e::nua_r_bye
- *
- * Answer to outgoing BYE.
- *
- * The BYE may be sent explicitly by nua_bye() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to BYE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
 /** @var nua_event_e::nua_r_chat
  *
  * Answer to outgoing chat MESSAGE.
@@ -2333,43 +2184,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  * @param sip    response to MESSAGE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_r_get_params
- *
- * Answer to nua_get_params().
- *
- * @param nh     NULL
- * @param hmagic NULL
- * @param sip    NULL
- * @param tags   NUTAG_* \n
- *               SIPTAG_* \n
- *               NTATAG_*
- */
-
-/** @var nua_event_e::nua_r_info
- *
- * Answer to outgoing INFO.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to INFO or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_r_invite
- *
- * Answer to outgoing INVITE.
- *
- * The INVITE may be sent explicitly by nua_invite() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to INFO or NULL upon an error
  *               (error code and message are in status an phrase parameters)
  * @param tags   empty
  */
@@ -2480,20 +2294,6 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  * @param sip    response to SUBSCRIBE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_r_update
- *
- * Answer to outgoing UPDATE.
- *
- * The UPDATE may be sent explicitly by nua_update() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to UPDATE request or NULL upon an error
  *               (error code and message are in status an phrase parameters)
  * @param tags   empty
  */

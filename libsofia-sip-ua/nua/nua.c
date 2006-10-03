@@ -596,67 +596,19 @@ void nua_invite(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_invite, tag, value);
 }
 
-/** Acknowledge a succesfull response to INVITE request.
- *
- * Acknowledge a successful response to INVITE request 
- * with SIP ACK message. This function is need only if 
- * NUTAG_AUTOACK() parameter has been cleared.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    Tags in <sip_tag.h>
- *
- * @par Events:
- *    #nua_i_media_error \n
- *    #nua_i_active
- */
+/* Documented with nua_stack_ack() */
 void nua_ack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_ack, tag, value);
 }
 
-/** Hangdown a call.
- *
- * Hangdown a call using SIP BYE method. Also the media session 
- * associated with the call is terminated. 
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    none
- *
- * @par Events:
- *    #nua_r_bye \n
- *    #nua_i_media_error
- */
+/* Documented with nua_stack_bye() */
 void nua_bye(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_bye, tag, value);
 }
 
-/** Cancel an INVITE operation 
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    Tags in <sip_tag.h>
- *
- * @par Events:
- *    #nua_r_cancel
- */
+/* Documented with nua_stack_cancel() */
 void nua_cancel(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_cancel, tag, value);
@@ -904,74 +856,19 @@ void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_unpublish, tag, value);
 }
 
-/** Send an INFO request. 
- *
- * INFO is used to send call related information like DTMF 
- * digit input events. See @RFC2976.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    Tags in <sip_tag.h>.
- *
- * @par Events:
- *    #nua_r_info
- */
+/* Documented with nua_stack_info() */
 void nua_info(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_info, tag, value);
 }
 
-
-/** Send a PRACK request. 
- *
- * PRACK is used to acknowledge receipt of 100rel responses. See @RFC3262.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    Tags in <sofia-sip/soa_tag.h>, <sofia-sip/sip_tag.h>.
- *
- * @par Events:
- *    #nua_r_prack
- */
+/* Documented with nua_stack_prack() */
 void nua_prack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_prack, tag, value);
 }
 
-
-/** Update a session. 
- * 
- * Update a session using SIP UPDATE method. See @RFC3311.
- *
- * Update method can be used when the session has been established with
- * INVITE. It's mainly used during the session establishment when
- * preconditions are used (@RFC3312). It can be also used during the call if
- * no user input is needed for offer/answer negotiation.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    same as nua_invite()
- *
- * @par Events:
- *    #nua_r_update \n
- *    #nua_i_state \n
- *    #nua_i_media_error \n
- */
+/* Documented with nua_stack_update() */
 void nua_update(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_update, tag, value);

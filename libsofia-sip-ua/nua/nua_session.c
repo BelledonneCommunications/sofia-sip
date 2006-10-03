@@ -567,6 +567,20 @@ nua_stack_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   return e;
 }
 
+/** @var nua_event_e::nua_r_invite
+ *
+ * Answer to outgoing INVITE.
+ *
+ * The INVITE may be sent explicitly by nua_invite() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to INFO or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
+
 static int process_response_to_invite(nua_handle_t *nh,
 				      nta_outgoing_t *orq,
 				      sip_t const *sip)
@@ -685,6 +699,28 @@ static int process_response_to_invite(nua_handle_t *nh,
 
   return 0;
 }
+
+/**@fn void nua_ack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Acknowledge a succesful response to INVITE request.
+ *
+ * Acknowledge a successful response (200..299) to INVITE request with the
+ * SIP ACK request message. This function is need only if NUTAG_AUTOACK()
+ * parameter has been cleared.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_i_media_error \n
+ *    #nua_i_state
+ */
 
 int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		  tagi_t const *tags)
@@ -874,6 +910,24 @@ process_100rel(nua_handle_t *nh,
 
   return 0;
 }
+
+/**@fn void nua_prack(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ * Send a PRACK request. 
+ *
+ * PRACK is used to acknowledge receipt of 100rel responses. See @RFC3262.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    Tags in <sofia-sip/soa_tag.h>, <sofia-sip/sip_tag.h>.
+ *
+ * @par Events:
+ *    #nua_r_prack
+ */
 
 int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		    tagi_t const *tags)
@@ -1167,7 +1221,25 @@ static int process_response_to_cancel(nua_handle_t *nh,
 				      nta_outgoing_t *orq,
 				      sip_t const *sip);
 
-/* CANCEL */
+/**@fn void nua_cancel(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Cancel an INVITE operation 
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_cancel, #nua_i_state
+ *
+ * @sa @ref nua_call_model, nua_invite(), #nua_i_cancel
+ */
+
 int
 nua_stack_cancel(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		 tagi_t const *tags)
@@ -1226,6 +1298,21 @@ static int
   process_ack(nua_handle_t *, nta_incoming_t *, sip_t const *),
   process_cancel(nua_handle_t *, nta_incoming_t *, sip_t const *),
   process_timeout(nua_handle_t *, nta_incoming_t *);
+
+/** @var nua_event_e::nua_i_invite
+ *
+ * Incoming call
+ *
+ * @param nh     operation handle associated with this call
+ *               (maybe created for this call)
+ * @param hmagic operation magic associated with this call
+ *               (maybe NULL if call handle was created for this call)
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming INVITE request
+ * @param tags   SOATAG_ACTIVE_AUDIO(), SOATAG_ACTIVE_VIDEO()
+ *
+ * @sa @ref nua_call_model, nua_invite(), #nua_i_state
+ */
 
 /** @internal Process incoming INVITE. */
 int nua_stack_process_invite(nua_t *nua,
@@ -1764,6 +1851,18 @@ int process_prack(nua_handle_t *nh,
   return status;
 }
 
+/** @var nua_event_e::nua_i_ack
+ *
+ * Final response to INVITE has been acknowledged by UAC with ACK. 
+ * 
+ * @note This event is only sent after 2XX response.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    incoming ACK request
+ * @param tags   empty
+ */
+
 int process_ack(nua_handle_t *nh,
 		nta_incoming_t *irq,
 		sip_t const *sip)
@@ -1816,6 +1915,20 @@ int process_ack(nua_handle_t *nh,
 
   return 0;
 }
+
+/** @var nua_event_e::nua_i_cancel
+ *
+ * Incoming INVITE has been cancelled
+ *
+ * Incoming INVITE has been cancelled or
+ * no ACK has been received for an accepted call.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming CANCEL request or NULL if time-out occured
+ * @param tags   empty
+ */
 
 /* CANCEL  */
 static
@@ -2175,6 +2288,28 @@ static int process_response_to_info(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip);
 
+/**@fn void nua_info(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Send an INFO request. 
+ *
+ * INFO is used to send call related information like DTMF 
+ * digit input events. See @RFC2976.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    Tags in <sip_tag.h>.
+ *
+ * @par Events:
+ *    #nua_r_info
+ *
+ * @sa #nua_i_info
+ */
+
 int
 nua_stack_info(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
@@ -2212,6 +2347,19 @@ void restart_info(nua_handle_t *nh, tagi_t *tags)
   nua_creq_restart(nh, nh->nh_cr, process_response_to_info, tags);
 }
 
+/** @var nua_event_e::nua_r_info
+ *
+ * Answer to outgoing INFO.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to INFO or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ *
+ * @sa nua_info(), #nua_i_info, @RFC2976
+ */
+
 static int process_response_to_info(nua_handle_t *nh,
 				    nta_outgoing_t *orq,
 				    sip_t const *sip)
@@ -2220,6 +2368,19 @@ static int process_response_to_info(nua_handle_t *nh,
     return 0;
   return nua_stack_process_response(nh, nh->nh_cr, orq, sip, TAG_END());
 }
+
+/** @var nua_event_e::nua_i_info
+ *
+ * Incoming session INFO
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming INFO request
+ * @param tags   empty
+ *
+ * @sa nua_info(), #nua_r_info, @RFC2976
+ */
 
 int nua_stack_process_info(nua_t *nua,
 			   nua_handle_t *nh,
@@ -2239,6 +2400,32 @@ int nua_stack_process_info(nua_t *nua,
 static int process_response_to_update(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip);
+
+/**@fn void nua_update(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Update a session. 
+ * 
+ * Update a session using SIP UPDATE method. See @RFC3311.
+ *
+ * Update method can be used when the session has been established with
+ * INVITE. It's mainly used during the session establishment when
+ * preconditions are used (@RFC3312). It can be also used during the call if
+ * no user input is needed for offer/answer negotiation.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    same as nua_invite()
+ *
+ * @par Events:
+ *    #nua_r_update \n
+ *    #nua_i_state \n
+ *    #nua_i_media_error \n
+ */
 
 int nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		     tagi_t const *tags)
@@ -2316,6 +2503,20 @@ void restart_update(nua_handle_t *nh, tagi_t *tags)
 {
   nua_creq_restart(nh, nh->nh_cr, process_response_to_update, tags);
 }
+
+/** @var nua_event_e::nua_r_update
+ *
+ * Answer to outgoing UPDATE.
+ *
+ * The UPDATE may be sent explicitly by nua_update() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to UPDATE request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ */
 
 static int process_response_to_update(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
@@ -2493,6 +2694,19 @@ int nua_stack_process_update(nua_t *nua,
     msg_destroy(rmsg), rmsg = NULL;
   }
 
+/** @var nua_event_e::nua_i_update
+ *
+ * Incoming session UPDATE request.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming UPDATE request
+ * @param tags   empty
+ *
+ * @sa nua_update(), #nua_r_update, #nua_i_state
+ */
+
   nua_stack_event(nh->nh_nua, nh, msg, nua_i_update, status, phrase, TAG_END());
 
   if (offer_recv || answer_sent)
@@ -2516,6 +2730,27 @@ int nua_stack_process_update(nua_t *nua,
 static int process_response_to_bye(nua_handle_t *nh,
 				   nta_outgoing_t *orq,
 				   sip_t const *sip);
+
+/**@fn void nua_bye(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Hangdown a call.
+ *
+ * Hangdown a call using SIP BYE method. Also the media session 
+ * associated with the call is terminated. 
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    none
+ *
+ * @par Events:
+ *    #nua_r_bye \n
+ *    #nua_i_media_error
+ */
 
 int
 nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
@@ -2578,6 +2813,21 @@ void restart_bye(nua_handle_t *nh, tagi_t *tags)
   nua_creq_restart(nh, nh->nh_cr, process_response_to_bye, tags);
 }
 
+/** @var nua_event_e::nua_r_bye
+ *
+ * Answer to outgoing BYE.
+ *
+ * The BYE may be sent explicitly by nua_bye() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to BYE request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ *
+ * @sa @ref nua_call_model, #nua_i_state
+ */
 
 static int process_response_to_bye(nua_handle_t *nh,
 				   nta_outgoing_t *orq,
@@ -2603,6 +2853,16 @@ static int process_response_to_bye(nua_handle_t *nh,
 }
 
 
+/** @var nua_event_e::nua_i_bye
+ *
+ * Incoming call hangup.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    pointer to BYE request
+ * @param tags   empty
+ */
 
 int nua_stack_process_bye(nua_t *nua,
 			  nua_handle_t *nh,
@@ -2719,6 +2979,43 @@ static void signal_call_state_change(nua_handle_t *nh,
   if (phrase == NULL)
     phrase = "Call state";
 
+/** @var nua_event_e::nua_i_state
+ *
+ * Call state has changed.
+ *
+ * This event will be sent whenever the call state changes. In addition to
+ * basic changes of session status indicated with enum ::nua_callstate, the
+ * @RFC3264 SDP Offer/Answer negotiation status is also included. The
+ * negotiation status includes the local SDP (in SOATAG_LOCAL_SDP()) sent
+ * and flags indicating whether the local SDP was an offer or answer
+ * (NUTAG_OFFER_SENT(), NUTAG_ANSWER_SENT()). Likewise, the received remote
+ * SDP is included in tag SOATAG_REMOTE_SDP() and flags indicating whether
+ * the remote SDP was an offer or an answer in tags NUTAG_OFFER_RECV() or
+ * NUTAG_ANSWER_RECV(). SOATAG_ACTIVE_AUDIO() and SOATAG_ACTIVE_VIDEO() are
+ * informational tags used to indicate what is the status of these media.
+ *
+ * Note that nua_event_e::nua_i_state also covers call establisment events
+ * (#nua_i_active) and termination (#nua_i_terminated).
+ *
+ * @param status Protocol status code. \n
+ *               Always present
+ * @param phrase Text corresponding to status code. \n
+ *               Always present
+ * @param nh     Operation handle associated with the call
+ * @param hmagic Operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   NUTAG_CALLSTATE(), 
+ *               SOATAG_LOCAL_SDP(), SOATAG_LOCAL_SDP_STR(),
+ *               NUTAG_OFFER_SENT(), NUTAG_ANSWER_SENT(),
+ *               SOATAG_REMOTE_SDP(), SOATAG_REMOTE_SDP_STR(),
+ *               NUTAG_OFFER_RECV(), NUTAG_ANSWER_RECV(),
+ *               SOATAG_ACTIVE_AUDIO(), SOATAG_ACTIVE_VIDEO(),
+ *               SOATAG_ACTIVE_IMAGE(), SOATAG_ACTIVE_CHAT().
+ *
+ * @sa @ref nua_call_model, nua_invite(), #nua_i_active, #nua_i_terminated,
+ * #nua_r_invite
+ */
+
   nua_stack_event(nh->nh_nua, nh, NULL, nua_i_state,
 	   status, phrase,
 	   NUTAG_CALLSTATE(next_state),
@@ -2734,12 +3031,54 @@ static void signal_call_state_change(nua_handle_t *nh,
 	   TAG_IF(oa_sent, SOATAG_LOCAL_SDP_STR(local_sdp_str)),
 	   TAG_END());
 
+/** @var nua_event_e::nua_i_active
+ *
+ * A call has been activated.
+ *
+ * This event will be sent after a succesful response to the initial
+ * INVITE has been received and the media has been activated.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   SOATAG_ACTIVE_AUDIO(), SOATAG_ACTIVE_VIDEO(),
+ *               SOATAG_ACTIVE_IMAGE(), SOATAG_ACTIVE_CHAT().
+ *
+ * @deprecated Use #nua_i_state instead.
+ *
+ * @sa @ref nua_call_model, #nua_i_state, #nua_i_terminated, 
+ * #nua_i_invite
+ */
+
   if (next_state == nua_callstate_ready && ss_state <= nua_callstate_ready) {
     nua_stack_event(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active",
 	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 	     /* NUTAG_SOA_SESSION(nh->nh_soa), */
 	     TAG_END());
   }
+
+/** @var nua_event_e::nua_i_terminated
+ *
+ * A call has been terminated.
+ *
+ * This event will be sent after a call has been terminated. A call is
+ * terminated, when
+ * 1) an error response (300..599) is sent to an incoming initial INVITE
+ * 2) a reliable response (200..299 or reliable preliminary response) to
+ *    an incoming initial INVITE is not acknowledged with ACK or PRACK
+ * 3) BYE is received or sent
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL
+ * @param tags   empty
+ *
+ * @deprecated Use #nua_i_state instead.
+ *
+ * @sa @ref nua_call_model, #nua_i_state, #nua_i_active, #nua_i_bye,
+ * #nua_i_invite
+ */
+
   else if (next_state == nua_callstate_terminated) {
     nua_stack_event(nh->nh_nua, nh, NULL, nua_i_terminated, status, phrase,
 	     TAG_END());

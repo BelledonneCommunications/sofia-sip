@@ -1275,6 +1275,72 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *     #nua_r_get_params
  */
 
+/** @var nua_event_e::nua_r_get_params
+ *
+ * Answer to nua_get_params() or nua_get_hparams().
+ *
+ * @param nh     NULL
+ * @param hmagic NULL
+ * @param sip    NULL
+ * @param tags   
+ *   NUTAG_ALLOW() \n
+ *   NUTAG_AUTOACK() \n
+ *   NUTAG_AUTOALERT() \n
+ *   NUTAG_AUTOANSWER() \n
+ *   NUTAG_CALLEE_CAPS() \n
+ *   NUTAG_DETECT_NETWORK_UPDATES() \n
+ *   NUTAG_EARLY_ANSWER() \n
+ *   NUTAG_EARLY_MEDIA() \n
+ *   NUTAG_ENABLEINVITE() \n
+ *   NUTAG_ENABLEMESSAGE() \n
+ *   NUTAG_ENABLEMESSENGER() \n
+ *   NUTAG_INSTANCE() \n
+ *   NUTAG_INVITE_TIMER() \n
+ *   NUTAG_KEEPALIVE() \n
+ *   NUTAG_KEEPALIVE_STREAM() \n
+ *   NUTAG_MAX_SUBSCRIPTIONS() \n
+ *   NUTAG_MEDIA_ENABLE() \n
+ *   NUTAG_MEDIA_FEATURES() \n
+ *   NUTAG_MIN_SE() \n
+ *   NUTAG_M_DISPLAY() \n
+ *   NUTAG_M_FEATURES() \n
+ *   NUTAG_M_PARAMS() \n
+ *   NUTAG_M_USERNAME() \n
+ *   NUTAG_ONLY183_100REL() \n
+ *   NUTAG_OUTBOUND() \n
+ *   NUTAG_PATH_ENABLE() \n
+ *   NUTAG_REFER_EXPIRES() \n
+ *   NUTAG_REFER_WITH_ID() \n
+ *   NUTAG_REGISTRAR() \n
+ *   NUTAG_RETRY_COUNT() \n
+ *   NUTAG_SERVICE_ROUTE_ENABLE() \n
+ *   NUTAG_SESSION_REFRESHER() \n
+ *   NUTAG_SESSION_TIMER() \n
+ *   NUTAG_SMIME_ENABLE() \n
+ *   NUTAG_SMIME_KEY_ENCRYPTION() \n
+ *   NUTAG_SMIME_MESSAGE_DIGEST() \n
+ *   NUTAG_SMIME_MESSAGE_ENCRYPTION() \n
+ *   NUTAG_SMIME_OPT() \n
+ *   NUTAG_SMIME_PROTECTION_MODE() \n
+ *   NUTAG_SMIME_SIGNATURE() \n
+ *   NUTAG_SOA_NAME() \n
+ *   NUTAG_SUBSTATE() \n
+ *   NUTAG_SUPPORTED() \n
+ *   NUTAG_UPDATE_REFRESH() \n
+ *   NUTAG_USER_AGENT() \n
+ *   SIPTAG_ALLOW() \n
+ *   SIPTAG_ALLOW_STR() \n
+ *   SIPTAG_FROM() \n
+ *   SIPTAG_FROM_STR() \n
+ *   SIPTAG_ORGANIZATION() \n
+ *   SIPTAG_ORGANIZATION_STR() \n
+ *   SIPTAG_SUPPORTED() \n
+ *   SIPTAG_SUPPORTED_STR() \n
+ *   SIPTAG_USER_AGENT() \n
+ *   SIPTAG_USER_AGENT_STR() \n
+ *               
+ */
+
 /**@internal
  * Send a list of NUA parameters to the application.
  *
