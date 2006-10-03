@@ -79,6 +79,9 @@ typedef enum nua_nw_detector_e {
 
 /** Events */
 typedef enum nua_event_e {
+  /* Event used by stack internally */
+  nua_i_none = -1,
+
   /* Indications */
   nua_i_error,			/**< Error indication */
 
@@ -148,7 +151,7 @@ typedef enum nua_event_e {
   /* NOTE: Post 1.12 release events come here (below) to keep ABI
      compatibility! */
   nua_i_network_changed,        /**< Local IP(v6) address has changed */
-
+  nua_i_register,		/**< Incoming REGISTER */
 } nua_event_t;
 
 typedef struct event_s {
