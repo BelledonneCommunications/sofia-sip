@@ -660,6 +660,10 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_register.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\nua\nua_registrar.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\nua\nua_session.c"
 # End Source File
 # Begin Source File
