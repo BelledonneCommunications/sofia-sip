@@ -1679,6 +1679,7 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
 
   if (sr->sr_respond) {
     sr->sr_respond(nua, nh, status, phrase, tags);
+    return;
   }
 #if 0
   else if (nta_incoming_status(nh->nh_irq) < 200) {
@@ -1701,19 +1702,27 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
       nta_incoming_destroy(nh->nh_irq), nh->nh_irq = NULL;
   }
 #endif
-
   else if (ss->ss_srequest->sr_irq) {
     nua_stack_event(nua, nh, NULL, nua_i_error,
 		    500, "Already Sent Final Response", TAG_END());
+    return;
   }
-  else if (nh->nh_registrar) {
-    nta_incoming_treply(nh->nh_registrar, status, phrase,
-			TAG_NEXT(tags));
-    if (status >= 200)
-      nta_incoming_destroy(nh->nh_registrar), nh->nh_registrar = NULL;
+
+  if (nh->nh_registrar) {
+    tagi_t const *t = tl_find_last(tags, nutag_with);
+
+    if (t) {
+      msg_t *req = nta_incoming_getrequest(nh->nh_registrar);
+
+      if ((msg_t *)t->t_value == req) {
+	msg_destroy(req);	/* remove reference created by getrequest() */
+	nta_incoming_treply(nh->nh_registrar, status, phrase,
+			    TAG_NEXT(tags));
+	return;
+      }
+    }
   }
-  else {
-    nua_stack_event(nua, nh, NULL, nua_i_error,
-		    500, "Responding to a Non-Existing Request", TAG_END());
-  }
+
+  nua_stack_event(nua, nh, NULL, nua_i_error,
+		  500, "Responding to a Non-Existing Request", TAG_END());
 }
