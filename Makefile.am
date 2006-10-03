@@ -33,7 +33,7 @@ manpages $(dist_man_MANS): built-sources
 	-mkdir -p man man/man1 2> /dev/null
 if HAVE_DOXYGEN
 	cd utils && $(DOXYGEN) Doxyfile.build
-	-@rm man/man1/_*.1
+	@rm -f man/man1/_*.1
 else
 	-touch $(MANS)
 endif
