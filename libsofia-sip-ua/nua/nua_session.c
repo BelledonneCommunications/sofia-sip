@@ -43,6 +43,7 @@
 #include <sofia-sip/sip_protos.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_util.h>
+#include <sofia-sip/su_uniqueid.h>
 
 #define NTA_LEG_MAGIC_T      struct nua_handle_s
 #define NTA_OUTGOING_MAGIC_T struct nua_handle_s
@@ -52,16 +53,12 @@
 #include "nua_stack.h"
 #include <sofia-sip/soa.h>
 
-#if !defined(random) && defined(_WIN32)
-#define random rand
-#endif
-
 #ifndef SDP_H
 typedef struct sdp_session_s sdp_session_t;
 #endif
 
 /* ---------------------------------------------------------------------- */
-/*  */
+
 /** @enum nua_callstate
 
 The states for SIP session established with INVITE.
@@ -75,6 +72,8 @@ If a re-INVITE transaction fails, the result depends on the status code in
 failure. The call can return to the ready state, be terminated immediately,
 or be terminated gracefully. The proper action to take is determined with
 sip_response_terminates_dialog().			   
+
+@sa @ref nua_call_model, #nua_i_state, nua_invite(), #nua_i_invite
 							   
 @par Session State Diagram				   
 							   
@@ -1311,7 +1310,7 @@ int process_invite1(nua_t *nua,
     sip_retry_after_t af[1];
 
     /* Random delay of 0..10 seconds */
-    sip_retry_after_init(af)->af_delta = (unsigned)random() % 11U;
+    sip_retry_after_init(af)->af_delta = (unsigned)su_randint(0, 10);
     af->af_comment = "Overlapping INVITE Request";
 
     nta_incoming_treply(irq, 500, af->af_comment,
@@ -2231,28 +2230,6 @@ int nua_stack_process_info(nua_t *nua,
 
   return 200;		/* Respond automatically with 200 Ok */
 }
-
-
-/* ======================================================================== */
-/* REGISTER */
-
-int nua_stack_process_register(nua_t *nua,
-			   nua_handle_t *nh,
-			   nta_incoming_t *irq,
-			   sip_t const *sip)
-{
-  if (nh == NULL)
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_nothing, 0)))
-      return 500;		/* Respond with 500 Internal Server Error */
-
-   nh->nh_registrar = irq;
-	nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-	   nua_i_register, SIP_100_TRYING, TAG_END());
-
-  return 0;	
-}
-
-
 
 
 /* ======================================================================== */
