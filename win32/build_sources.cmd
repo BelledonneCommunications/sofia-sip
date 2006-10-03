@@ -13,8 +13,8 @@
 @goto failed
 :have_awk
 
-:: in Win32 exit 0; from awk gets converted to errorlevel 1
-@set MSG_AWK=gawk -v BINMODE=rw -f ../libsofia-sip-ua/msg/msg_parser.awk success=-1
+:: note: tested with gawk 3.1.3 and 3.1.5
+@set MSG_AWK=gawk -v BINMODE=rw -f ../libsofia-sip-ua/msg/msg_parser.awk success=0
 @set TAG_AWK=gawk -f ../libsofia-sip-ua/su/tag_dll.awk BINMODE=rw
 
 @set IN=../libsofia-sip-ua/msg/test_class.h
