@@ -58,7 +58,7 @@ SOFIAPUBFUN int su_seterrno(int);
 #define su_seterrno(n) ((errno = (n)), -1)
 #endif
 
-#if defined(__APPLE_CC__)
+#if defined(__APPLE_CC__) || defined(__OpenBSD__) || defined(__NetBSD__)
 #ifndef EBADMSG
 #define EBADMSG EFAULT
 #endif
