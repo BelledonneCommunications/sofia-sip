@@ -3,6 +3,8 @@
 
 built-sources: $(BUILT_SOURCES)
 
+DISTCLEANFILES = $(BUILT_SOURCES)
+
 clean-built-sources:
 	-rm -rf $(BUILT_SOURCES) $(BUILT_SOURCES:%=$(srcdir)/%)
 

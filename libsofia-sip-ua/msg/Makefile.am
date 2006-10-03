@@ -35,7 +35,7 @@ INTERNAL_H = msg_internal.h test_class.h
 nobase_include_sofia_HEADERS = \
 			$(GENERATED_H) $(PUBLIC_H) 
 
-BUILT_SOURCES = $(GENERATED_H) test_table.c test_protos.h
+BUILT_SOURCES = $(GENERATED_H) msg_mime_table.c test_table.c test_protos.h
 
 libmsg_la_SOURCES = $(INTERNAL_H) \
 	msg.c msg_tag.c \
