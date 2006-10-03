@@ -54,7 +54,7 @@ SOFIA_BEGIN_DECLS
 /* Constants */
 
 #if SU_HAVE_POLL || DOCUMENTATION_ONLY
-/** Compare wait object */
+/** Compare wait object. @HI */
 #define SU_WAIT_CMP(x, y) \
  (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
 
@@ -123,7 +123,7 @@ typedef struct _pollfd {
   short events;     /* requested events */
   short revents;    /* returned events */
 } su_wait_t;
-#elif SU_HAVE_BSDSOCK
+#elif SU_HAVE_POLL
 typedef struct pollfd su_wait_t;
 #elif SU_HAVE_WINSOCK
 typedef HANDLE su_wait_t;
@@ -350,7 +350,7 @@ SOFIAPUBFUN int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout);
 SOFIAPUBFUN int su_wait_events(su_wait_t *wait, su_socket_t s);
 SOFIAPUBFUN int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
 
-#if SU_HAVE_BSDSOCK
+#if SU_HAVE_POLL
 static inline
 su_socket_t su_wait_socket(su_wait_t *wait)
 {
