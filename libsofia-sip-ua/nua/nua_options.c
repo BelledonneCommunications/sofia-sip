@@ -68,7 +68,7 @@ nua_stack_options(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
     return UA_EVENT2(e, 900, "Request already in progress");
   }
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_OPTIONS, 

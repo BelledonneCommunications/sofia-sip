@@ -218,19 +218,18 @@ struct nua_handle_s
 
   nua_handle_preferences_t *nh_prefs; /**< Preferences */
 
-  /* Handle state */
+  /* Handle type is determined by special event and flags. */
   nua_event_t     nh_special;	/**< Special event */
-
-  unsigned        nh_ref_by_stack:1;	/**< Has stack used the handle? */
-  unsigned        nh_ref_by_user:1;	/**< Has user used the handle? */
-  unsigned        nh_init:1;	        /**< Handle has been initialized */
-  unsigned        nh_used_ptags:1;	/**< Ptags has been used */
-
   unsigned        nh_has_invite:1;     /**< Has call */
   unsigned        nh_has_subscribe:1;  /**< Has watcher */
   unsigned        nh_has_notify:1;     /**< Has notifier */
   unsigned        nh_has_register:1;   /**< Has registration */
   unsigned        nh_has_streaming:1;  /**< Has RTSP-related session */
+
+  unsigned        nh_ref_by_stack:1;	/**< Has stack used the handle? */
+  unsigned        nh_ref_by_user:1;	/**< Has user used the handle? */
+  unsigned        nh_init:1;	        /**< Handle has been initialized */
+  unsigned        nh_used_ptags:1;	/**< Ptags has been used */
 
   struct nua_client_request nh_cr[1];
 
@@ -405,11 +404,17 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
 			       tagi_t *tags);
 
-nua_handle_t *nua_stack_incoming_handle(nua_t *nua, 
+nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 					nta_incoming_t *irq,
 					sip_t const *sip,
-					enum nh_kind kind,
 					int create_dialog);
+
+int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh, 
+			  tag_type_t tag, tag_value_t value, ...);
+
+int nua_stack_set_handle_special(nua_handle_t *nh,
+				 enum nh_kind kind,
+				 nua_event_t special);
 
 int nua_handle_save_tags(nua_handle_t *h, tagi_t *tags);
 
@@ -422,11 +427,6 @@ int nua_stack_set_defaults(nua_handle_t *nh, nua_handle_preferences_t *nhp);
 int nua_stack_set_from(nua_t *, int initial, tagi_t const *tags);
 
 int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags);
-
-int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh, 
-			  enum nh_kind kind,
-			  char const *default_allow,
-			  tag_type_t tag, tag_value_t value, ...);
 
 int nua_stack_process_request(nua_handle_t *nh,
 			      nta_leg_t *leg,

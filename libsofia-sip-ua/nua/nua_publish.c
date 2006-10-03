@@ -220,14 +220,14 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sip_t *sip;
   int remove_body = 0;
 
-  if (nh->nh_special && nh->nh_special != nua_r_publish) {
+  if (nua_stack_set_handle_special(nh, nh_has_nothing, nua_r_publish) < 0)
     return UA_EVENT2(e, 900, "Invalid handle for PUBLISH");
-  }
-  else if (cr->cr_orq) {
+
+  if (cr->cr_orq) {
     return UA_EVENT2(e, 900, "Request already in progress");
   }
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   if (e == nua_r_unpublish) {
     du = nua_dialog_usage_get(nh->nh_ds, nua_publish_usage, NULL);
@@ -287,7 +287,6 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (!cr->cr_orq)
     goto error;
 
-  nh->nh_special = nua_r_publish;
   cr->cr_usage = du;
 
   return cr->cr_event = e;
@@ -407,7 +406,7 @@ int nua_stack_process_publish(nua_t *nua,
 			      sip_t const *sip)
 {
   if (nh == NULL)
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_nothing, 0)))
+    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 0)))
       return 500;		/* Respond with 500 Internal Server Error */
 
   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),

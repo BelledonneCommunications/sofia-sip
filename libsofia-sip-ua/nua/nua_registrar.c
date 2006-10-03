@@ -60,7 +60,7 @@ int nua_stack_process_register(nua_t *nua,
 			       sip_t const *sip)
 {
   if (nh == NULL)
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_nothing, 0)))
+    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 0)))
       return 500;		/* Respond with 500 Internal Server Error */
 
    nh->nh_registrar = irq;

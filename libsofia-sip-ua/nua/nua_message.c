@@ -69,7 +69,7 @@ nua_stack_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
     return UA_EVENT2(e, 900, "Request already in progress");
   }
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_MESSAGE,
@@ -117,7 +117,7 @@ int nua_stack_process_message(nua_t *nua,
     return 403;
 
   if (nh == NULL)
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_nothing, 0)))
+    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 0)))
       return 500;		/* respond with 500 Internal Server Error */
 
   msg = nta_incoming_getrequest(irq);

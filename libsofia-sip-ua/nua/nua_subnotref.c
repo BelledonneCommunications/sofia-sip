@@ -129,18 +129,14 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   msg_t *msg;
   sip_t *sip;
 
-  if (nh->nh_special && nh->nh_special != nua_r_subscribe)
+  if (nua_stack_set_handle_special(nh, nh_has_subscribe, nua_r_subscribe) < 0)
     return UA_EVENT3(e, 500, "Invalid handle for SUBSCRIBE", 
 		     NUTAG_SUBSTATE(nua_substate_terminated));
   else if (cr->cr_orq)
     return UA_EVENT2(e, 900, "Request already in progress");
 
   /* Initialize allow and auth */
-  nua_stack_init_handle(nua, nh, nh_has_subscribe, "NOTIFY", TAG_NEXT(tags));
-
-  if (nh->nh_has_subscribe)
-    /* We can re-use existing INVITE handle */
-    nh->nh_special = nua_r_subscribe;
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, 0,
 		     SIP_METHOD_SUBSCRIBE,
@@ -655,16 +651,12 @@ nua_stack_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   sip_referred_by_t by[1];
   sip_event_t *event = NULL;
 
-  if (nh_is_special(nh) && !nua_handle_has_subscribe(nh)) {
+  if (nua_stack_set_handle_special(nh, nh_has_subscribe, nua_r_subscribe) < 0)
     return UA_EVENT2(e, 900, "Invalid handle for REFER");
-  }
-  else if (cr->cr_orq) {
+  else if (cr->cr_orq)
     return UA_EVENT2(e, 900, "Request already in progress");
-  }
 
-  nua_stack_init_handle(nua, nh, nh_has_subscribe, "NOTIFY", TAG_NEXT(tags));
-  if (nh->nh_has_subscribe)
-    nh->nh_special = nua_r_subscribe;
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   sip_referred_by_init(by);
   by->b_display = nua->nua_from->a_display;

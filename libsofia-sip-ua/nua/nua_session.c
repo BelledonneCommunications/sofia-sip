@@ -437,8 +437,7 @@ nua_stack_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   else if (nh_referral_check(nh, tags) < 0) {
     what = "Invalid referral";
   }
-  else if (nua_stack_init_handle(nua, nh, nh_has_invite, NULL,
-				 TAG_NEXT(tags)) < 0) {
+  else if (nua_stack_init_handle(nua, nh, TAG_NEXT(tags)) < 0) {
     what = "Handle initialization failed";
   }
   else
@@ -904,7 +903,7 @@ int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   else if (cr->cr_orq)
     return UA_EVENT2(e, 900, "Request already in progress");
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 		     SIP_METHOD_PRACK,
@@ -1298,8 +1297,10 @@ int process_invite1(nua_t *nua,
     if (!DNH_PGET(dnh, invite_enable))
       return 403;
 
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_invite, 1)))
+    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 1)))
       return 500;
+
+    nua_stack_set_handle_special(nh, nh_has_invite, nua_i_error);
   }
 
   have_sdp = session_get_description(msg, sip, &sdp, &len);
@@ -2187,7 +2188,7 @@ nua_stack_info(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     return UA_EVENT2(e, 900, "Request already in progress");
   }
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_INFO ,
@@ -2255,7 +2256,7 @@ int nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   else if (cr->cr_orq)
     return UA_EVENT2(e, 900, "Request already in progress");
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 		     SIP_METHOD_UPDATE,
@@ -2542,7 +2543,7 @@ nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     return 0;
   }
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 			 SIP_METHOD_BYE,

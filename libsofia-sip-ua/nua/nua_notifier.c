@@ -228,7 +228,7 @@ int nua_stack_notify(nua_t *nua,
     return UA_EVENT2(e, 900, "Request already in progress");
   }
 
-  nua_stack_init_handle(nua, nh, nh_has_nothing, NULL, TAG_NEXT(tags));
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
 		     SIP_METHOD_NOTIFY,
@@ -369,7 +369,7 @@ int nua_stack_process_refer(nua_t *nua,
   int created = 0;
 
   if (nh == NULL) {
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, nh_has_notify, 1)))
+    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 1)))
       return 500;
     created = 1;
   }

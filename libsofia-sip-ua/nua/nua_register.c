@@ -521,13 +521,12 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sip_t *sip;
   int terminating = e != nua_r_register;
 
-  if (nh->nh_special && nh->nh_special != nua_r_register)
+  if (nua_stack_set_handle_special(nh, nh_has_register, nua_r_register) < 0)
     return UA_EVENT2(e, 900, "Invalid handle for REGISTER");
   if (cr->cr_orq)
     return UA_EVENT2(e, 900, "Request already in progress");
 
-  nua_stack_init_handle(nua, nh, nh_has_register, "", TAG_NEXT(tags));
-  nh->nh_special = nua_r_register;
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   du = nua_dialog_usage_add(nh, nh->nh_ds, nua_register_usage, NULL);
   if (!du)

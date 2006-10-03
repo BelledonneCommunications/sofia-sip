@@ -710,8 +710,6 @@ void nua_creq_deinit(struct nua_client_request *cr, nta_outgoing_t *orq)
  * @retval 0 when successful
  */
 int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh,
-			  enum nh_kind kind,
-			  char const *default_allow,
 			  tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
@@ -719,19 +717,6 @@ int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh,
 
   if (nh == NULL)
     return -1;
-
-  if (kind && !nh_is_special(nh) && !nh->nh_has_invite) {
-    switch (kind) {
-    case nh_has_invite:    nh->nh_has_invite = 1;    break;
-    case nh_has_subscribe: nh->nh_has_subscribe = 1; break;
-    case nh_has_notify:    nh->nh_has_notify = 1;    break;
-    case nh_has_register:  nh->nh_has_register = 1;  break;
-    case nh_has_streaming: nh->nh_has_streaming = 1; break;
-    case nh_has_nothing:
-    default:
-      break;
-    }
-  }
 
   assert(nh != nua->nua_dhandle);
 
@@ -765,12 +750,10 @@ int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh,
 nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 					nta_incoming_t *irq,
 					sip_t const *sip,
-					enum nh_kind kind,
 					int create_dialog)
 {
   nua_handle_t *nh;
   url_t const *url;
-  char const *default_allow = NULL; /* XXX - should be argument? */
   sip_to_t to[1];
   sip_from_t from[1];
 
@@ -794,8 +777,7 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 		 SIPTAG_FROM(from), /* Remote AoR */
 		 TAG_END());
 
-  if (nua_stack_init_handle(nh->nh_nua, nh, kind, default_allow,
-			    TAG_END()) < 0)
+  if (nua_stack_init_handle(nh->nh_nua, nh, TAG_END()) < 0)
     nh_destroy(nua, nh), nh = NULL;
 
   if (nh && create_dialog) {
@@ -820,6 +802,35 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
   return nh;
 }
 
+
+int nua_stack_set_handle_special(nua_handle_t *nh,
+				 enum nh_kind kind,
+				 nua_event_t special)
+{
+  if (nh == NULL)
+    return -1;
+
+  if (special && nh->nh_special && nh->nh_special != special)
+    return -1;
+
+  if (!nh_is_special(nh) && !nh->nh_has_invite) {
+    switch (kind) {
+    case nh_has_invite:    nh->nh_has_invite = 1;    break;
+    case nh_has_subscribe: nh->nh_has_subscribe = 1; break;
+    case nh_has_notify:    nh->nh_has_notify = 1;    break;
+    case nh_has_register:  nh->nh_has_register = 1;  break;
+    case nh_has_streaming: nh->nh_has_streaming = 1; break;
+    case nh_has_nothing:
+    default:
+      break;
+    }
+
+    if (special)
+      nh->nh_special = special;
+  }
+
+  return 0;
+}
 
 /** @internal Add authorization data */
 int nh_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
