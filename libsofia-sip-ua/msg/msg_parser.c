@@ -646,7 +646,6 @@ struct sigcomp_udvm *msg_get_udvm(msg_t *msg)
  *
  * @relatesalso msg_s
  */
-inline
 unsigned msg_mark_as_complete(msg_t *msg, unsigned mask)
 {
   if (msg) {

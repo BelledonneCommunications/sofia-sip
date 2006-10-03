@@ -141,7 +141,7 @@ struct tport_pending_s {
 };
 
 /** Return true if transport is master. */
-inline int tport_is_master(tport_t const *self)
+int tport_is_master(tport_t const *self)
 {
   return 
     self && 
@@ -149,7 +149,7 @@ inline int tport_is_master(tport_t const *self)
 }
 
 /** Return true if transport is primary. */
-inline int tport_is_primary(tport_t const *self)
+int tport_is_primary(tport_t const *self)
 {
   return 
     self && 
@@ -157,7 +157,7 @@ inline int tport_is_primary(tport_t const *self)
 }
 
 /** Return true if transport is secondary. */
-inline int tport_is_secondary(tport_t const *self)
+int tport_is_secondary(tport_t const *self)
 {
   return 
     self && 
@@ -166,31 +166,31 @@ inline int tport_is_secondary(tport_t const *self)
 }
 
 /** Test if transport has been registered */
-inline int tport_is_registered(tport_t const *self)
+int tport_is_registered(tport_t const *self)
 {
   return self->tp_index != 0;
 }
 
 /** Test if transport is stream. */
-inline int tport_is_stream(tport_t const *self)
+int tport_is_stream(tport_t const *self)
 {
   return self->tp_addrinfo->ai_socktype == SOCK_STREAM;
 }
  
 /** Test if transport is dgram. */
-inline int tport_is_dgram(tport_t const *self)
+int tport_is_dgram(tport_t const *self)
 {
   return self->tp_addrinfo->ai_socktype == SOCK_DGRAM;
 }
  
 /** Test if transport is udp. */
-inline int tport_is_udp(tport_t const *self)
+int tport_is_udp(tport_t const *self)
 {
   return self->tp_addrinfo->ai_protocol == IPPROTO_UDP;
 }
  
 /** Test if transport is tcp. */
-inline int tport_is_tcp(tport_t const *self)
+int tport_is_tcp(tport_t const *self)
 {
   return self->tp_addrinfo->ai_protocol == IPPROTO_TCP;
 }
