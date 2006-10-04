@@ -1977,13 +1977,18 @@ int test_refer(void)
     "Content-Length: 0\r\n"
     "\r\n";
   msg_t *msg;
+  sip_t *sip;
   msg_iovec_t *iovec;
   isize_t veclen, i, size;
   char *back;
 
   TEST_1(home = su_home_create());
 
-  msg = read_message(0, m); TEST_1(msg);
+  msg = read_message(0, m); TEST_1(msg); TEST_1(sip = sip_object(msg));
+  TEST_1(sip->sip_refer_to);
+  TEST_S(sip->sip_refer_to->r_url->url_headers,
+	 "Replaces=7d84c014-321368da-efa90f41%40"
+	 "10.3.3.8%3Bto-tag%3DpaNKgBB9vQe3D%3Bfrom-tag%3D93AC8D50-7CF6DAAF");
   TEST(msg_prepare(msg), strlen(m));
   TEST_1(veclen = msg_iovec(msg, NULL, ISIZE_MAX));
   TEST_1(iovec = su_zalloc(msg_home(home), veclen * (sizeof iovec[0])));
@@ -2034,17 +2039,21 @@ int test_refer(void)
   TEST_S(r->r_params[0], "foo=bar");
   TEST(r->r_params[1], NULL);
 
-  /* XXX */
+  /* Test bad replaces without <> */
   {
     char const s[] =
-      "<sip:2000@10.3.3.104?Replaces=7d84c014-321368da-efa90f41%4010.3.3.8"
-      "%3Bto-tag%3DpaNKgBB9vQe3D%3Bfrom-tag%3D93AC8D50-7CF6DAAF>";
+      "sip:2000@10.3.3.104?Replaces=7d84c014-321368da-efa90f41%4010.3.3.8"
+      "%3Bto-tag%3DpaNKgBB9vQe3D%3Bfrom-tag%3D93AC8D50-7CF6DAAF" "\r\n";
     char *str;
 
     TEST_1(r = r0 = sip_refer_to_make(home, s));
     msg_fragment_clear(r->r_common);
     TEST_1(str = sip_header_as_string(home, (void *)r));
-    TEST_S(str, s);
+    TEST_S(str, 
+	   "<"
+	   "sip:2000@10.3.3.104?Replaces=7d84c014-321368da-efa90f41%4010.3.3.8"
+	   "%3Bto-tag%3DpaNKgBB9vQe3D%3Bfrom-tag%3D93AC8D50-7CF6DAAF"
+	   ">");
   }
 
   su_home_destroy(home), su_free(NULL, home);

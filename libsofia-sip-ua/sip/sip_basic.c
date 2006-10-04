@@ -696,7 +696,7 @@ issize_t sip_name_addr_d(su_home_t *home,
        * @RFC3261 section 20.10.
        */
       if (return_params)
-	n = strcspn(s, " ,;?");	/* DO NOT accept ,;? in URL */
+	n = strcspn(s, " \t,;?");	/* DO NOT accept ,;? in URL */
       else
 	/* P-Asserted-Identity and friends */
 	n = strcspn(s, " ,"); /* DO NOT accept , in URL */

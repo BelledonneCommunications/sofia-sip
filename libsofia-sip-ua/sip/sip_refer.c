@@ -91,13 +91,32 @@ SIP_HEADER_CLASS(refer_to, "Refer-To", "r", r_params, single, refer_to);
 
 issize_t sip_refer_to_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
-  sip_refer_to_t *r = h->sh_refer_to;
+  issize_t retval;
+  sip_refer_to_t *r = (sip_refer_to_t *)h;
 
-  return sip_name_addr_d(home, &s,
-			 &r->r_display,
-			 r->r_url,
-			 &r->r_params,
-			 NULL);
+  retval = sip_name_addr_d(home, &s,
+			   &r->r_display,
+			   r->r_url,
+			   &r->r_params,
+			   NULL);
+  if (retval < 0)
+    return retval;
+
+  if (*s == '?' && !r->r_display && !r->r_url->url_headers) {
+    /* Missing <> around URL */
+    *s++ = '\0';
+    r->r_url->url_headers = s;
+    s += strcspn(s, " \t;,");
+    if (IS_LWS(*s))
+      *s++ = '\0', skip_lws(&s);
+    if (*s)
+      return -1;
+    r->r_display = s;	/* Put empty string in display so that we encode using <> */
+  }
+  else if (*s)
+    return -1;
+
+  return retval;
 }
 
 issize_t sip_refer_to_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
