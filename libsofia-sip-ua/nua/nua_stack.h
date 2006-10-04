@@ -121,10 +121,9 @@ struct nua_client_request
   unsigned            cr_answer_sent:1; /**< Sent answer in (PR)ACK */
 };
 
+/** Session-related state */
 typedef struct nua_session_state
 {
-  /** Session-related state */
-  unsigned        ss_active:1;		/**< Session is currently active. */
   
   /* enum nua_callstate */
   unsigned        ss_state:4;		/**< Session status (enum nua_callstate) */
@@ -135,8 +134,6 @@ typedef struct nua_session_state
   unsigned        ss_update_needed:2;	/**< Send an UPDATE (do O/A if > 1) */
 
   unsigned        ss_precondition:1;	/**< Precondition required */
-
-  unsigned        ss_hold_remote:1;	/**< We are holding remote */
 
   unsigned        ss_timer_set:1;       /**< We have active session timer. */
   unsigned        : 0;
@@ -224,12 +221,16 @@ struct nua_handle_s
   unsigned        nh_has_subscribe:1;  /**< Has watcher */
   unsigned        nh_has_notify:1;     /**< Has notifier */
   unsigned        nh_has_register:1;   /**< Has registration */
-  unsigned        nh_has_streaming:1;  /**< Has RTSP-related session */
+
+  /* Call status */
+  unsigned        nh_active_call:1;
+  unsigned        nh_hold_remote:1;
 
   unsigned        nh_ref_by_stack:1;	/**< Has stack used the handle? */
   unsigned        nh_ref_by_user:1;	/**< Has user used the handle? */
   unsigned        nh_init:1;	        /**< Handle has been initialized */
   unsigned        nh_used_ptags:1;	/**< Ptags has been used */
+  unsigned :0;
 
   struct nua_client_request nh_cr[1];
 

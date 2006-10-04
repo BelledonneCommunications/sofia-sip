@@ -432,16 +432,10 @@ int nua_handle_has_subscribe(nua_handle_t const *nh)
  *
  * @par Events:
  *     none
-
  */
 int nua_handle_has_register(nua_handle_t const *nh)
 {
   return nh ? nh->nh_has_register : 0;
-}
-
-int nua_handle_has_streaming(nua_handle_t const *nh)
-{
-  return nh ? nh->nh_has_streaming : 0;
 }
 
 /** Check if operation handle has an active call 
@@ -459,7 +453,7 @@ int nua_handle_has_streaming(nua_handle_t const *nh)
  */
 int nua_handle_has_active_call(nua_handle_t const *nh)
 {
-  return nh ? nh->nh_ss->ss_active : 0;
+  return nh ? nh->nh_active_call : 0;
 }
 
 /** Check if operation handle has a call on hold 
@@ -484,7 +478,7 @@ int nua_handle_has_active_call(nua_handle_t const *nh)
  */
 int nua_handle_has_call_on_hold(nua_handle_t const *nh)
 {
-  return nh ? nh->nh_ss->ss_hold_remote : 0;
+  return nh ? nh->nh_hold_remote : 0;
 }
 
 /** Get the remote address (From/To header) of operation handle

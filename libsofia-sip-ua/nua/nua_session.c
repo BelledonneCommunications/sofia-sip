@@ -2249,7 +2249,6 @@ void nsession_destroy(nua_handle_t *nh)
   struct nua_session_state *ss = nh->nh_ss;
   nta_incoming_t *irq = ss->ss_srequest->sr_irq;
 
-  ss->ss_active = 0;
   ss->ss_state = nua_callstate_init;
 
   /* Remove usage */
@@ -2258,6 +2257,8 @@ void nsession_destroy(nua_handle_t *nh)
   ss->ss_usage = 0;
 
   nh->nh_has_invite = 0;
+  nh->nh_active_call = 0;
+  nh->nh_hold_remote = 0;
 
   if (nh->nh_soa)
     soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
@@ -2953,13 +2954,13 @@ static void signal_call_state_change(nua_handle_t *nh,
   }
 
   if (answer_recv || answer_sent) {
-    /* Update ss->ss_hold_remote */
+    /* Update nh_hold_remote */
 
     char const *held;
 
     soa_get_params(nh->nh_soa, SOATAG_HOLD_REF(held), TAG_END());
 
-    ss->ss_hold_remote = held && strlen(held) > 0;
+    nh->nh_hold_remote = held && strlen(held) > 0;
   }
 
   (void)sr;
@@ -2971,9 +2972,9 @@ static void signal_call_state_change(nua_handle_t *nh,
     ss->ss_state = nua_callstate_init, next_state = nua_callstate_terminated;
 
   if (next_state == nua_callstate_ready)
-    ss->ss_active = 1;
+    nh->nh_active_call = 1;
   else if (next_state == nua_callstate_terminated)
-    ss->ss_active = 0;
+    nh->nh_active_call = 0;
 
   /* Send events */
   if (phrase == NULL)

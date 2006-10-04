@@ -819,7 +819,6 @@ int nua_stack_set_handle_special(nua_handle_t *nh,
     case nh_has_subscribe: nh->nh_has_subscribe = 1; break;
     case nh_has_notify:    nh->nh_has_notify = 1;    break;
     case nh_has_register:  nh->nh_has_register = 1;  break;
-    case nh_has_streaming: nh->nh_has_streaming = 1; break;
     case nh_has_nothing:
     default:
       break;
