@@ -226,7 +226,7 @@ issize_t sip_referred_by_d(su_home_t *home, sip_header_t *h, char *s, isize_t sl
 		      &b->b_display,
 		      b->b_url,
 		      &b->b_params,
-		      NULL) < 0)
+		      NULL) < 0 || *s /* Extra stuff? */)
     return -1;
 
   if (b->b_params)
