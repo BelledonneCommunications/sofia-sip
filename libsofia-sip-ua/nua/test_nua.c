@@ -264,8 +264,7 @@ int main(int argc, char *argv[])
 
     retval |= test_stack_errors(ctx); SINGLE_FAILURE_CHECK();
 
-    if (ctx->proxy_tests)
-      retval |= test_register(ctx);
+    retval |= test_register(ctx);
 
     if (retval == 0)
       retval |= test_connectivity(ctx);

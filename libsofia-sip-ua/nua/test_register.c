@@ -46,11 +46,8 @@
 /* ======================================================================== */
 /* Test REGISTER */
 
-int test_register(struct context *ctx)
+int test_register_to_proxy(struct context *ctx)
 {
-  if (!ctx->proxy_tests)
-    return 0;			/* No proxy */
-
   BEGIN();
 
   struct endpoint *a = &ctx->a,  *b = &ctx->b, *c = &ctx->c, *x;
@@ -319,6 +316,81 @@ int test_register(struct context *ctx)
 
   END();
 }
+
+int registrar_299(CONDITION_PARAMS)
+{
+  msg_t *request = nua_current_request(nua);
+
+  save_event_in_list(ctx, event, ep, ep->call);
+
+  if (event == nua_i_register) {
+    RESPOND(ep, call, nh, 299, "YES", NUTAG_WITH(request), TAG_END());
+    return 1;
+  }
+
+  return 0;
+}
+
+int test_register_to_c(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *b = &ctx->b, *c = &ctx->c;
+  struct call *b_call = b->call, *c_call = c->call;
+  struct event *e;
+  sip_t const *sip;
+
+  if (print_headings)
+    printf("TEST NUA-2.3.2: REGISTER b to c\n");
+
+  nua_set_params(ctx->c.nua,
+		 NUTAG_ALLOW("REGISTER"),
+		 TAG_END());
+  run_c_until(ctx, nua_r_set_params, until_final_response);
+
+  TEST_1(b_call->nh = nua_handle(b->nua, b_call, TAG_END()));
+
+  REGISTER(b, b_call, b_call->nh, 
+	   NUTAG_REGISTRAR((url_string_t *)c->contact->m_url),
+	   SIPTAG_TO(b->to),
+	   NUTAG_OUTBOUND(NULL),
+	   SIPTAG_CONTACT_STR(NULL),
+	   TAG_END());
+  run_bc_until(ctx, -1, save_until_final_response, -1, registrar_299);
+
+  TEST_1(e = b->events->head);
+  TEST_E(e->data->e_event, nua_r_register);
+  TEST(e->data->e_status, 299);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(!sip->sip_contact);
+
+  if (print_headings)
+    printf("TEST NUA-2.6.1: PASSED\n");
+
+  free_events_in_list(ctx, b->events);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  free_events_in_list(ctx, c->events);
+  nua_handle_destroy(c_call->nh), c_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-2.3.4: PASSED\n");
+
+  END();
+}
+
+
+int test_register(struct context *ctx)
+{
+  if (test_register_to_c(ctx))
+    return 1;
+
+  if (ctx->proxy_tests)
+    if (test_register_to_proxy(ctx)) return 1;
+
+  return 0;
+}
+
 
 int test_connectivity(struct context *ctx)
 {
