@@ -511,7 +511,7 @@ static int test_tagargs(void)
 /* Test tl_tgets() and tl_gets() */
 static int test_gets(void)
 {
-  tagi_t *lst;
+  tagi_t *lst, *t;
   char const *a = "B", *b = "A";
   int i = 1, j = 0, k = 0, p = -1;
 
@@ -529,6 +529,9 @@ static int test_gets(void)
 		TAG_NULL());
 
   TEST_1(lst);
+
+  TEST_1(t = tl_find(lst, tag_i)); TEST(t->t_value, 2);
+  TEST_1(t = tl_find_last(lst, tag_i)); TEST(t->t_value, 1);
 
   TEST(tl_gets(lst, 
 	       TAG_A_REF(a),
