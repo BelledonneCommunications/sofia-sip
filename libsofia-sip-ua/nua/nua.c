@@ -328,6 +328,30 @@ void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *hmagic)
     nh->nh_magic = hmagic;
 }
 
+/** Fetch a callback context from an operation handle. 
+ *
+ * @param nh          Pointer to operation handle
+ *
+ * @return
+ *     Pointer to callback context
+ *
+ * @par Related tags:
+ *     none
+ *
+ * @par Events:
+ *     none
+ */
+nua_hmagic_t *nua_handle_fetch(nua_handle_t *nh)
+{
+  nua_hmagic_t *magic = NULL;
+  enter;
+
+  if (NH_IS_VALID(nh))
+    magic = nh->nh_magic;
+  
+  return magic;
+}
+
 /* ---------------------------------------------------------------------- */
 
 /** Check if operation handle is used for INVITE

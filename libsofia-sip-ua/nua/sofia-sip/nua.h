@@ -214,6 +214,9 @@ SOFIAPUBFUN int nua_handle_unref(nua_handle_t *);
 /** Bind a callback context to an operation handle. */
 SOFIAPUBFUN void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *magic);
 
+/** Fetch a callback context from an operation handle. */
+SOFIAPUBFUN nua_hmagic_t *nua_handle_fetch(nua_handle_t *nh);
+
 /** Set handle parameters. */
 SOFIAPUBFUN void nua_set_hparams(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
