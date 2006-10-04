@@ -280,6 +280,9 @@ int authenticate_until_ready(CONDITION_PARAMS)
 /** Test authentication for PRACK */
 int test_prack_auth(struct context *ctx)
 {
+  if (!ctx->proxy_tests)
+    return 0;
+
   BEGIN();
 
   struct endpoint *c = &ctx->c,  *b = &ctx->b;
@@ -295,15 +298,15 @@ int test_prack_auth(struct context *ctx)
 /* Test for authentication during 100rel
 
    C			B
-   |-------INVITE------>|
-   |<-------407---------|
+   |-------INVITE--\    |
+   |<-------407----/    |
    |			|
    |-------INVITE------>|
    |<----100 Trying-----|
    |			|
    |<-------180---------|
-   |-------PRACK------->|
-   |<-------407---------|
+   |-------PRACK---\    |
+   |<-------407----/    |
    |-------PRACK------->|
    |<-------200---------|
    |			|
