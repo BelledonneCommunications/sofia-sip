@@ -71,10 +71,6 @@
 
 #include <assert.h>
 
-#if !defined(random) && defined(_WIN32)
-#define random rand
-#endif
-
 /* ======================================================================== */
 /* Registrations and contacts */
 
