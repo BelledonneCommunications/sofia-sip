@@ -348,6 +348,12 @@ SOFIAPUBFUN nua_event_data_t const *nua_event_data(nua_saved_event_t const saved
 /** Destroy a save nua event */
 SOFIAPUBFUN void nua_destroy_event(nua_saved_event_t *saved);
 
+/** Get request message from saved nua event. */
+SOFIAPUBFUN msg_t *nua_saved_event_request(nua_saved_event_t const *saved);
+
+/** Get current request message. */
+SOFIAPUBFUN  msg_t *nua_current_request(nua_t const *nua);
+
 SOFIA_END_DECLS
 
 #endif
