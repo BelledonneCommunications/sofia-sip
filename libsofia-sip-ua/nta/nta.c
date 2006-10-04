@@ -2349,7 +2349,7 @@ int agent_check_request_via(nta_agent_t *agent,
   if (!agent->sa_server_rport) {
     /*Xyzzy*/;
   }
-  else if (v->v_rport || (v->v_received && tport_is_udp(tport))) {
+  else if (v->v_rport) {
     rport = su_sprintf(msg_home(msg), "rport=%u", ntohs(from->su_port));
     msg_header_replace_param(msg_home(msg), v->v_common, rport);
   } 
