@@ -156,6 +156,9 @@ int test_basic_call_1(struct context *ctx)
   struct endpoint *a = &ctx->a,  *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
+  sip_t *sip;
+  sip_replaces_t *repa, *repb;
+  nua_handle_t *nh;
 
   if (print_headings)
     printf("TEST NUA-3.1: Basic call\n");
@@ -175,6 +178,22 @@ int test_basic_call_1(struct context *ctx)
 
   run_ab_until(ctx, -1, until_ready, -1, accept_call);
 
+  TEST_1(repa = nua_handle_make_replaces(a_call->nh, nua_handle_home(a_call->nh), 0));
+  TEST_1(repb = nua_handle_make_replaces(b_call->nh, nua_handle_home(b_call->nh), 0));
+
+  TEST_S(repa->rp_call_id, repb->rp_call_id);
+
+  TEST_1(!nua_handle_by_replaces(a->nua, repa));
+  TEST_1(!nua_handle_by_replaces(b->nua, repb));
+
+  TEST_1(nh = nua_handle_by_replaces(a->nua, repb));
+  TEST(nh, a_call->nh);
+  nua_handle_unref(nh);
+
+  TEST_1(nh = nua_handle_by_replaces(b->nua, repa));
+  TEST(nh, b_call->nh);
+  nua_handle_unref(nh);
+
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
      CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
@@ -185,6 +204,10 @@ int test_basic_call_1(struct context *ctx)
   TEST_1(is_offer_sent(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 180);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_S(sip->sip_call_id->i_id, repb->rp_call_id);
+  TEST_S(sip->sip_from->a_tag, repb->rp_to_tag);
+  TEST_S(sip->sip_to->a_tag, repb->rp_from_tag);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
@@ -216,6 +239,10 @@ int test_basic_call_1(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
   TEST_1(is_answer_sent(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_ack);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_S(sip->sip_call_id->i_id, repa->rp_call_id);
+  TEST_S(sip->sip_from->a_tag, repa->rp_from_tag);
+  TEST_S(sip->sip_to->a_tag, repa->rp_to_tag);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
   TEST_1(!e->next);

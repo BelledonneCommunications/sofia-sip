@@ -354,6 +354,14 @@ SOFIAPUBFUN msg_t *nua_saved_event_request(nua_saved_event_t const *saved);
 /** Get current request message. */
 SOFIAPUBFUN  msg_t *nua_current_request(nua_t const *nua);
 
+SOFIAPUBFUN sip_replaces_t *nua_handle_make_replaces(nua_handle_t *nh, 
+						     su_home_t *home,
+						     int early_only);
+
+SOFIAPUBFUN nua_handle_t *nua_handle_by_replaces(nua_t *nua,
+						 sip_replaces_t const *rp);
+
+
 SOFIA_END_DECLS
 
 #endif

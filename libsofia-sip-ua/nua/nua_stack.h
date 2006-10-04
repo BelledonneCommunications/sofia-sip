@@ -423,6 +423,15 @@ void nh_destroy(nua_t *nua, nua_handle_t *nh);
 
 nua_handle_t *nh_validate(nua_t *nua, nua_handle_t *maybe);
 
+sip_replaces_t *nua_stack_handle_make_replaces(nua_handle_t *handle, 
+					       su_home_t *home,
+					       int early_only);
+
+nua_handle_t *nua_stack_handle_by_replaces(nua_t *nua,
+					   sip_replaces_t const *r);
+
+/* ---------------------------------------------------------------------- */
+
 int nua_stack_set_defaults(nua_handle_t *nh, nua_handle_preferences_t *nhp);
 
 int nua_stack_set_from(nua_t *, int initial, tagi_t const *tags);

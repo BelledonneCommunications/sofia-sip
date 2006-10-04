@@ -831,6 +831,28 @@ int nua_stack_set_handle_special(nua_handle_t *nh,
   return 0;
 }
 
+sip_replaces_t *nua_stack_handle_make_replaces(nua_handle_t *nh, 
+					       su_home_t *home,
+					       int early_only)
+{
+  if (nh && nh->nh_ds && nh->nh_ds->ds_leg)
+    return nta_leg_make_replaces(nh->nh_ds->ds_leg, home, early_only);
+  else
+    return NULL;
+}
+
+nua_handle_t *nua_stack_handle_by_replaces(nua_t *nua,
+					   sip_replaces_t const *r)
+{
+  if (nua) {
+    nta_leg_t *leg = nta_leg_by_replaces(nua->nua_nta, r);
+    if (leg)
+      return nta_leg_magic(leg, nua_stack_process_request);
+  }
+  return NULL;
+}
+
+
 /** @internal Add authorization data */
 int nh_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
