@@ -276,6 +276,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_AUTOANSWER() \n
  *   NUTAG_CALLEE_CAPS() \n
  *   NUTAG_DETECT_NETWORK_UPDATES() \n
+ *   NUTAG_EARLY_ANSWER() \n
  *   NUTAG_EARLY_MEDIA() \n
  *   NUTAG_ENABLEINVITE() \n
  *   NUTAG_ENABLEMESSAGE() \n
@@ -398,6 +399,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
  *   NUTAG_CALLEE_CAPS() \n
+ *   NUTAG_EARLY_ANSWER() \n
  *   NUTAG_EARLY_MEDIA() \n
  *   NUTAG_ENABLEINVITE() \n
  *   NUTAG_ENABLEMESSAGE() \n
@@ -679,6 +681,10 @@ static int nhp_set_tags(su_home_t *home,
     /* NUTAG_AUTOALERT(auto_alert) */
     else if (tag == nutag_autoalert) {
       NHP_SET(nhp, auto_alert, value != 0);
+    }
+    /* NUTAG_EARLY_ANSWER(early_answer) */
+    else if (tag == nutag_early_answer) {
+      NHP_SET(nhp, early_answer, value != 0);
     }
     /* NUTAG_EARLY_MEDIA(early_media) */
     else if (tag == nutag_early_media) {
@@ -1442,6 +1448,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_MEDIA_ENABLE, media_enable),
      TIF(NUTAG_ENABLEINVITE, invite_enable),
      TIF(NUTAG_AUTOALERT, auto_alert),
+     TIF(NUTAG_EARLY_ANSWER, early_answer),
      TIF(NUTAG_EARLY_MEDIA, early_media),
      TIF(NUTAG_ONLY183_100REL, only183_100rel),
      TIF(NUTAG_AUTOANSWER, auto_answer),
