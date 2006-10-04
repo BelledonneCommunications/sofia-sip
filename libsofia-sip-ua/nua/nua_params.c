@@ -156,7 +156,8 @@ int nua_stack_set_defaults(nua_handle_t *nh,
 
   NHP_SET(nhp, message_enable, 1);
   NHP_SET(nhp, win_messenger_enable, 0);
-  NHP_SET(nhp, autorespond, 1);
+  if (getenv("PIMIW_HACK") != 0)
+    NHP_SET(nhp, message_auto_respond, 1);
 
   NHP_SET(nhp, media_features,  0);
   NHP_SET(nhp, callee_caps, 0);
