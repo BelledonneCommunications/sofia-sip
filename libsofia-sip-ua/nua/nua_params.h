@@ -85,8 +85,9 @@ typedef struct nua_handle_preferences
   unsigned     	   nhp_message_enable : 1;
   /** Be bug-compatible with Windows Messenger */
   unsigned     	   nhp_win_messenger_enable : 1;
-  /** PIM-IW hack */
-  unsigned         nhp_message_auto_respond : 1;
+
+  /** Autorespond to all requests */
+  unsigned         nhp_autorespond : 1;
 
   /* Preferences for registration (and dialog establishment) */
   unsigned         nhp_callee_caps:1; /**< Add callee caps to contact */
@@ -152,7 +153,7 @@ typedef struct nua_handle_preferences
     unsigned nhb_update_refresh:1;
     unsigned nhb_message_enable:1;
     unsigned nhb_win_messenger_enable:1;
-    unsigned nhb_message_auto_respond:1;
+    unsigned nhb_autorespond:1;
     unsigned nhb_callee_caps:1;
     unsigned nhb_media_features:1;
     unsigned nhb_service_route_enable:1;
