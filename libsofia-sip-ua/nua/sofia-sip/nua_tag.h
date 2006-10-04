@@ -130,12 +130,12 @@ SOFIAPUBVAR tag_typedef_t nutag_address_ref;
  * @par Values
  *   Pointer to a request message.
  */
-#define NUTAG_WITH(x)         NUTAG_WITH, tag_ptr_v(x)
+#define NUTAG_WITH(x)         nutag_with, tag_ptr_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_with;
 
-#define NUTAG_WITH_THIS(nua) NUTAG_WITH, tag_ptr_v(nua_current_request((nua)))
+#define NUTAG_WITH_THIS(nua) nutag_with, tag_ptr_v(nua_current_request((nua)))
 
-#define NUTAG_WITH_SAVED(e) NUTAG_WITH, tag_ptr_v(nua_saved_event_request((e)))
+#define NUTAG_WITH_SAVED(e) nutag_with, tag_ptr_v(nua_saved_event_request((e)))
 
 /**Set request retry count.
  *
