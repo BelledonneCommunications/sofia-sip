@@ -104,6 +104,11 @@ SOFIAPUBFUN int sip_add_tagis(msg_t *, sip_t *, tagi_t const **inout_list);
 /** Parse a string as a header and add it to the SIP message. */
 SOFIAPUBFUN int sip_add_make(msg_t *, sip_t *, msg_hclass_t *hc, char const *s);
 
+/** Convert headers from taglist as URL query. */
+SOFIAPUBFUN char *sip_headers_as_url_query(su_home_t *home,
+					   tag_type_t tag, tag_value_t value,
+					   ...);
+
 /** Complete SIP message. */
 SOFIAPUBFUN int sip_complete_message(msg_t *msg);
 

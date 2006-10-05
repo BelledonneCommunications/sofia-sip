@@ -71,6 +71,39 @@ msg_mclass_t *test_mclass = NULL;
 
 static msg_t *read_message(int flags, char const string[]);
 
+int test_url_headers(void)
+{
+  BEGIN();
+  su_home_t *home;
+  char *s;
+
+  TEST_1(home = su_home_new(sizeof *home));
+
+  s = sip_headers_as_url_query
+    (home,
+     SIPTAG_TO_STR("\"Joe\" <sip:joe@example.com>;tag=foofaa"),
+     SIPTAG_SUBJECT_STR("foo"),
+     TAG_END());
+
+  TEST_1(s);
+  TEST_S(s, "to=%22Joe%22%20%3Csip%3Ajoe%40example.com%3E%3Btag%3Dfoofaa"
+	 "&subject=foo");
+
+  s = sip_headers_as_url_query
+    (home,
+     SIPTAG_FROM_STR("<sip:joe@example.com>"),
+     SIPTAG_PAYLOAD_STR("hello"),
+     TAG_END());
+
+  TEST_S(s, "from=%3Csip%3Ajoe%40example.com%3E&body=hello");
+
+  TEST_1(!sip_headers_as_url_query(home, SIPTAG_SEPARATOR_STR(""), TAG_END()));
+
+  TEST_VOID(su_home_unref(home));
+
+  END();
+}
+
 int test_manipulation(void)
 {
   BEGIN();
@@ -3073,7 +3106,8 @@ int main(int argc, char *argv[])
 
   if (!test_mclass)
     test_mclass = msg_mclass_clone(sip_default_mclass(), 0, 0);
-  
+
+  retval |= test_url_headers(); fflush(stdout);
   retval |= test_manipulation(); fflush(stdout);
   retval |= test_methods(); fflush(stdout);
   retval |= test_basic(); fflush(stdout);

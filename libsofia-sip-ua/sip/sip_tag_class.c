@@ -33,12 +33,6 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stddef.h>
-#include <string.h>
-
-#include <sofia-sip/su.h>
-
 #include "sofia-sip/sip_parser.h"
 
 #include <sofia-sip/su_tag_class.h>
@@ -46,6 +40,12 @@
 #include <sofia-sip/sip_tag_class.h>
 #include <sofia-sip/sip_tag.h>
 #include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_strlst.h>
+
+#include <ctype.h>
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
 
 /** Tag class for SIP header tags. @HIDE */
 tag_class_t siphdrtag_class[1] = 
@@ -190,11 +190,11 @@ int sip_add_tagis(msg_t *msg, sip_t *sip, tagi_t const **inout_list)
   if (!msg || !inout_list)
     return -1;
 
-  for (t = *inout_list; t; t = tl_next(t)) {
+  for (t = *inout_list; t; t = t_next(t)) {
     tag = t->t_tag, value = t->t_value;
 
     if (tag == NULL || tag == siptag_end) {
-      t = tl_next(t);
+      t = t_next(t);
       break;
     }
 
@@ -233,4 +233,112 @@ int sip_add_tagis(msg_t *msg, sip_t *sip, tagi_t const **inout_list)
   *inout_list = t;
 
   return 0;
+}
+
+static char const *append_escaped(su_strlst_t *l,
+				  msg_hclass_t const *hc,
+				  char const *s);
+
+/** Convert SIP headers to a URL-encoded headers list.
+ *
+ * @par Example
+ * @code
+ * url->url_headers = 
+ *   sip_headers_as_url_query(home, SIPTAG_REPLACES(replaces), TAG_END());
+ *               
+ * @endcode
+ * 
+ */
+char *sip_headers_as_url_query(su_home_t *home,
+			       tag_type_t tag, tag_value_t value,
+			       ...)
+{
+  ta_list ta;
+  tagi_t const *t;
+  su_strlst_t *l = su_strlst_create(home);
+  su_home_t *lhome = su_strlst_home(l);
+  char const *retval = "";
+
+  if (!l)
+    return NULL;
+
+  ta_start(ta, tag, value);
+
+  for (t = ta_args(ta); t && retval; t = t_next(t)) {
+    msg_hclass_t const *hc;
+
+    if (t->t_value == 0 || t->t_value == -1)
+      continue;
+
+    hc = (msg_hclass_t *)t->t_tag->tt_magic;
+
+    if (SIPTAG_P(t->t_tag)) {
+      sip_header_t const *h = (sip_header_t const *)t->t_value;
+      char *s = sip_header_as_string(lhome, h);
+
+      retval = append_escaped(l, hc, s);
+
+      if (retval != s)
+	su_free(lhome, s);
+    }
+    else if (SIPTAG_STR_P(t->t_tag)) {
+      retval = append_escaped(l, hc, (char const *)t->t_value);
+    }
+  }
+
+  ta_end(ta);
+
+  if (retval)
+    retval = su_strlst_join(l, home, "");
+
+  su_strlst_destroy(l);
+
+  return (char *)retval;
+}
+
+/** Append a string to list and url-escape it if needed */
+static
+char const *append_escaped(su_strlst_t *l,
+			   msg_hclass_t const *hc,
+			   char const *s)
+{
+  char const *name;
+
+  if (hc == NULL)
+    return NULL;
+
+  if (hc->hc_hash == sip_payload_hash)
+    name = "body";
+  else				/* XXX - could we use short form? */
+    name = hc->hc_name;
+
+  if (name == NULL)
+    return NULL;
+
+  if (s) {
+    su_home_t *lhome = su_strlst_home(l);
+    size_t slen;
+    isize_t elen;
+    char *n, *escaped;
+    char *sep = su_strlst_len(l) > 0 ? "&" : "";
+
+    n = su_sprintf(lhome, "%s%s=", sep, name);
+    if (!su_strlst_append(l, n))
+      return NULL;
+
+    for (;*n; n++)
+      if (isupper(*n))
+	*n = tolower(*n);
+    
+    slen = strlen(s); elen = url_esclen(s, NULL);
+
+    if ((size_t)elen == slen)
+      return su_strlst_append(l, s);
+    
+    escaped = su_alloc(lhome, elen + 1);
+    if (escaped)
+      return su_strlst_append(l, url_escape(escaped, s, NULL));
+  }
+
+  return NULL;
 }
