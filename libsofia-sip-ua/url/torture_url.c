@@ -342,6 +342,11 @@ int test_sip(void)
     TEST_S(pu, s);
   }
 
+  s = su_strdup(home, "ttl;transport=tcp;ttl=15;ttl=;method=INVITE;ttl");
+  TEST_1(s);
+  s = url_strip_param_string(s, "ttl");
+  TEST_S(s, "transport=tcp;method=INVITE");
+
   u = url_hdup(home, (void*)"sip:u:p@host:5060;maddr=127.0.0.1;transport=tcp");
   TEST_1(u);
   TEST_1(url_have_transport(u));

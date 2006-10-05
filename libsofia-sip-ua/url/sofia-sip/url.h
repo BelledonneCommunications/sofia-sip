@@ -147,7 +147,7 @@ SOFIAPUBFUN isize_t url_param(char const *params, char const *tag,
 /** Check for a parameter. */
 SOFIAPUBFUN int url_has_param(url_t const *url, char const *name);
 
-/** Check for a presence of a parameter. */
+/** Check for a presence of a parameter in string. */
 SOFIAPUBFUN isize_t url_have_param(char const *params, char const *tag);
 
 /** Add a parameter. */
@@ -155,6 +155,9 @@ SOFIAPUBFUN int url_param_add(su_home_t *h, url_t *url, char const *param);
 
 /** Strip transport-specific stuff away from URI. */
 SOFIAPUBFUN int url_strip_transport(url_t *u);
+
+/** Strip parameter away from URI. */
+SOFIAPUBFUN char *url_strip_param_string(char *params, char const *name);
 
 /** Test if url has any transport-specific stuff. */
 SOFIAPUBFUN int url_have_transport(url_t const *u);

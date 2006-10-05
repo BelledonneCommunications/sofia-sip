@@ -1290,6 +1290,52 @@ int url_param_add(su_home_t *h, url_t *url, char const *param)
   return 0;
 }
 
+/** Remove a named parameter from url_param string.
+ *
+ * Remove a named parameter and its possible value from the URL parameter
+ * string (url_s##url_param).
+ *
+ * @return Pointer to modified string, or NULL if nothing is left in there.
+ */
+char *url_strip_param_string(char *params, char const *name)
+{
+  if (params && name) {
+    size_t i, n = strlen(name), remove, rest;
+    
+    for (i = 0; params[i];) {
+      if (strncasecmp(params + i, name, n) ||
+	  (params[i + n] != '=' && params[i + n] != ';' && params[i + n])) {
+	i = i + strcspn(params + i, ";");
+	if (!params[i++])
+	  break;
+	continue;
+      }
+      remove = n + strcspn(params + i + n, ";");
+      if (params[i + remove] == ';')
+	remove++;
+
+      if (i == 0) {
+	params += remove;
+	continue;
+      }
+
+      rest = strlen(params + i + remove);
+      if (!rest) {
+	if (i == 0)
+	  return NULL;		/* removed everything */
+	params[i - 1] = '\0';
+	break;
+      }
+      memmove(params + i, params + i + remove, rest + 1);
+    }
+
+    if (!params[0])
+      return NULL;
+  }
+
+  return params;
+}
+
 int url_string_p(url_string_t const *url)
 {
   return URL_STRING_P(url);
@@ -1341,7 +1387,7 @@ int url_strip_transport2(url_t *url, int modify)
       if (p != d) {
 	if (!modify)
 	  return 1;
-	memcpy(d, p, n + 1);
+	memmove(d, p, n + 1);
       }
     }
     d += n;
