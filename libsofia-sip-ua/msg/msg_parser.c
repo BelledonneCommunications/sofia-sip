@@ -2577,10 +2577,18 @@ int msg_header_add_make(msg_t *msg,
   return msg_header_add(msg, pub, hh, h);
 }
 
-/** Parse a string and add resulting headers to the message.
+/**Add string contents to message.
  *
- * The function @a msg_header_add_str() parses a string and adds resulting
- * header objects to the message object.
+ * Duplicate a string containing headers (or a message body, if the string
+ * starts with linefeed), parse it and add resulting header objects to the
+ * message object.
+ *
+ * @param msg  message object
+ * @param pub  message header structure where heades are added (may be NULL)
+ * @param s    string to be copied and parsed (not modified, may be NULL)
+ *
+ * @retval 0 when succesful
+ * @retval -1 upon an error
  */
 int msg_header_add_str(msg_t *msg,
 		       msg_pub_t *pub,
@@ -2590,12 +2598,43 @@ int msg_header_add_str(msg_t *msg,
 
   if (!msg)
     return -1;
-  if (pub == NULL)
-    pub = msg->m_object;
   if (!str)
     return 0;
 
   s = su_strdup(msg_home(msg), str);
+
+  if (s == NULL)
+    return -1;
+
+  return msg_header_parse_str(msg, pub, s);
+}
+  
+/**Add string to message.
+ *
+ * Parse a string containing headers (or a message body, if the string
+ * starts with linefeed) and add resulting header objects to the message
+ * object. 
+ *
+ * @param msg  message object
+ * @param pub  message header structure where heades are added (may be NULL)
+ * @param s    string to be parsed (and modified)
+ *
+ * @retval 0 when succesful
+ * @retval -1 upon an error
+ *
+ * @sa msg_header_add_str(), url_headers_as_string()
+ * 
+ * @since New in @VERSION_1_12_4
+ */
+int msg_header_parse_str(msg_t *msg,
+			 msg_pub_t *pub,
+			 char *s)
+{
+  if (!msg)
+    return -1;
+
+  if (pub == NULL)
+    pub = msg->m_object;
 
   if (s) {
     size_t ssiz = strlen(s), used = 0;
@@ -2619,11 +2658,9 @@ int msg_header_add_str(msg_t *msg,
 
     if (n <= 0)
       return -1;
-
-    return 0;
   }
 
-  return -1;
+  return 0;
 }
 
 /** Insert a (list of) header(s) to the fragment chain.

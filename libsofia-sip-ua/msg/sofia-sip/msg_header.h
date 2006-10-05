@@ -128,6 +128,10 @@ SOFIAPUBFUN int msg_header_add_str(msg_t *msg,
 				   msg_pub_t *pub,
 				   char const *str);
 
+SOFIAPUBFUN int msg_header_parse_str(msg_t *msg,
+				     msg_pub_t *pub,
+				     char *s);
+
 SOFIAPUBFUN int msg_header_add_dup_as(msg_t *msg,
 				      msg_pub_t *pub,
 				      msg_hclass_t *hc,
