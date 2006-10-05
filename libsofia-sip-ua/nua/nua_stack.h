@@ -457,6 +457,8 @@ msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
 		    sip_method_t method, char const *name,
 		    tag_type_t tag, tag_value_t value, ...);
 
+int nua_tagis_have_contact_tag(tagi_t const *t);
+
 int nua_creq_check_restart(nua_handle_t *nh,
 			   struct nua_client_request *cr,
 			   nta_outgoing_t *orq,

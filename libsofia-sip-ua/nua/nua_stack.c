@@ -909,6 +909,18 @@ int nh_challenge(nua_handle_t *nh, sip_t const *sip)
   return server + proxy;
 }
 
+#include <sofia-sip/su_tag_inline.h>
+
+/** Check if tag list has contact */
+int nua_tagis_have_contact_tag(tagi_t const *t)
+{
+  for (; t && t->t_tag; t = t_next(t))
+    if (t->t_tag == siptag_contact ||
+	t->t_tag == siptag_contact_str)
+      return 1;
+  return 0;
+}
+
 /**@internal
  * Create a request message.
  *
@@ -933,7 +945,7 @@ msg_t *nua_creq_msg(nua_t *nua,
   ta_list ta;
   url_string_t const *url = NULL;
   long seq = -1;
-  int copy = 1, use_dialog = 0, add_contact = 0, add_service_route;
+  int copy = 1;
 
   /* If restarting, use existing message */
   if (restart) {
@@ -1025,11 +1037,22 @@ msg_t *nua_creq_msg(nua_t *nua,
   }
 	  
   {
-    tl_gets(ta_args(ta),
-	    NUTAG_URL_REF(url),
-	    NUTAG_USE_DIALOG_REF(use_dialog),
-	    NUTAG_ADD_CONTACT_REF(add_contact),
-	    TAG_END());
+    int add_contact = 0, use_dialog = 0, add_service_route, has_contact = 0;
+    tagi_t const *t;
+
+    for (t = ta_args(ta); t; t = t_next(t)) {
+      if (t->t_tag == siptag_contact ||
+	  t->t_tag == siptag_contact_str)
+	has_contact = 1;
+      else if (t->t_tag == nutag_url)
+	url = (url_string_t const *)t->t_value;
+      else if (t->t_tag == nutag_use_dialog)
+	use_dialog = t->t_value != 0;
+      else if (t->t_tag == _nutag_add_contact)
+	add_contact = t->t_value != 0;
+    }
+
+    if (has_contact) add_contact = 0;
 
     if (method == sip_method_register && url == NULL)
       url = (url_string_t const *)NH_PGET(nh, registrar);
@@ -1129,10 +1152,8 @@ msg_t *nua_creq_msg(nua_t *nua,
      */
     if (!add_contact ||
 	sip->sip_contact ||
-	tl_find(nh->nh_tags, siptag_contact) ||
-	tl_find(nh->nh_tags, siptag_contact_str) ||
-	tl_find(ta_args(ta), siptag_contact) ||
-	tl_find(ta_args(ta), siptag_contact_str))
+	nua_tagis_have_contact_tag(nh->nh_tags) ||
+	nua_tagis_have_contact_tag(ta_args(ta)))
       add_contact = 0;
 
     /**For the initial requests, @ServiceRoute set received from the registrar

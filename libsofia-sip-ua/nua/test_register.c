@@ -370,6 +370,12 @@ int test_register_to_c(struct context *ctx)
   free_events_in_list(ctx, b->events);
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
+  TEST_1(e = c->events->head);
+  TEST_E(e->data->e_event, nua_i_register);
+  TEST(e->data->e_status, 100);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(!sip->sip_contact);
+
   free_events_in_list(ctx, c->events);
   nua_handle_destroy(c_call->nh), c_call->nh = NULL;
 

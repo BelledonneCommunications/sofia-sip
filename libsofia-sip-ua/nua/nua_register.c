@@ -551,8 +551,6 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       goto error;
   }
 
-  du->du_terminating = terminating;
-
   if (du->du_msg == NULL)
     du->du_msg = msg_ref_create(cr->cr_msg); /* Save original message */
 
@@ -560,9 +558,17 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     /* Add Expires: 0 and remove the expire parameters from contacts */
     unregister_expires_contacts(msg, sip);
 
-  if (nua_registration_set_contact(nh, nr, sip->sip_contact, terminating) < 0)
+  if (nua_tagis_have_contact_tag(tags) ||
+      nua_tagis_have_contact_tag(nh->nh_tags)) {
+    if (!sip->sip_contact)
+      terminating = 1;
+  }
+  else if (nua_registration_set_contact(nh, nr, sip->sip_contact, terminating)
+	   < 0)
     goto error;
-  
+
+  du->du_terminating = terminating;
+
   ob = nr->nr_ob;
   
   if (!ob && (NH_PGET(nh, outbound) || NH_PGET(nh, instance))) {
