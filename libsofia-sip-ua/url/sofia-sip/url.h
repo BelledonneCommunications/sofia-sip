@@ -163,6 +163,13 @@ SOFIAPUBFUN char *url_strip_param_string(char *params, char const *name);
 SOFIAPUBFUN int url_have_transport(url_t const *u);
 
 /* ---------------------------------------------------------------------- */
+/* Query handling */
+
+/** Convert a URL query to a header string. */
+SOFIAPUBFUN char *url_query_as_header_string(su_home_t *home, 
+					     char const *query);
+
+/* ---------------------------------------------------------------------- */
 /* Handling url-escque strings */
 
 /** Test if string contains url-reserved characters. */
@@ -172,10 +179,15 @@ SOFIAPUBFUN int url_reserved_p(char const *s);
 SOFIAPUBFUN char *url_escape(char *d, char const *s, char const reserved[]);
 
 /** Calculate length of string when escaped. */
-SOFIAPUBFUN int url_esclen(char const *s, char const reserved[]);
+SOFIAPUBFUN isize_t url_esclen(char const *s, char const reserved[]);
+
+/** Unescape characters from string */
+SOFIAPUBFUN size_t url_unescape_to(char *d, char const *s, size_t n);
 
 /** Unescape a string */
 SOFIAPUBFUN char *url_unescape(char *d, char const *s);
+
+#define URL_RESERVED_CHARS ";/?:@&=+$,"
 
 /* ---------------------------------------------------------------------- */
 /* Initializing */

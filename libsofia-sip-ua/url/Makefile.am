@@ -9,6 +9,7 @@
 # Header paths
 
 INCLUDES = 	-I$(srcdir)/../bnf -I../bnf \
+		-I$(srcdir)/../ipt -I../ipt \
 		-I$(srcdir)/../su -I../su
 
 # ----------------------------------------------------------------------
