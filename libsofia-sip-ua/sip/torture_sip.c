@@ -75,9 +75,22 @@ int test_url_headers(void)
 {
   BEGIN();
   su_home_t *home;
-  char *s;
+  char *s, *d;
+  tagi_t *t;
+  url_t *url;
+  sip_from_t const *f;
+  sip_accept_t const *ac;
+  sip_payload_t const *body;
 
   TEST_1(home = su_home_new(sizeof *home));
+
+  s = sip_headers_as_url_query
+    (home,
+     SIPTAG_SUBJECT_STR(";"),
+     TAG_END());
+
+  TEST_1(s);
+  TEST_S(s, "subject=;");
 
   s = sip_headers_as_url_query
     (home,
@@ -86,16 +99,47 @@ int test_url_headers(void)
      TAG_END());
 
   TEST_1(s);
-  TEST_S(s, "to=%22Joe%22%20%3Csip%3Ajoe%40example.com%3E%3Btag%3Dfoofaa"
+  TEST_S(s, "to=%22Joe%22%20%3Csip%3Ajoe@example.com%3E;tag%3Dfoofaa"
 	 "&subject=foo");
+
+  url = url_format(home, "sip:test@example.net?%s", s); TEST_1(url);
+
+  TEST_S(url->url_headers, s);
 
   s = sip_headers_as_url_query
     (home,
      SIPTAG_FROM_STR("<sip:joe@example.com>"),
+     SIPTAG_ACCEPT_STR(""),
      SIPTAG_PAYLOAD_STR("hello"),
+     SIPTAG_ACCEPT_STR(""),
      TAG_END());
 
-  TEST_S(s, "from=%3Csip%3Ajoe%40example.com%3E&body=hello");
+  TEST_S(s, "from=%3Csip%3Ajoe@example.com%3E"
+	 "&accept="
+	 "&body=hello"
+	 "&accept=");
+
+  d = url_query_as_header_string(home, s);
+  TEST_S(d, "from:<sip:joe@example.com>\n"
+	 "accept:\n"
+	 "accept:\n"
+	 "\n"
+	 "hello");
+
+  t = sip_url_query_as_taglist(home, s, NULL); TEST_1(t);
+
+  TEST(t[0].t_tag, siptag_from);    TEST_1(f = (void *)t[0].t_value);
+  TEST(t[1].t_tag, siptag_accept);  TEST_1(ac = (void *)t[1].t_value);
+  TEST(t[2].t_tag, siptag_payload); TEST_1(body = (void *)t[2].t_value);
+  TEST(t[3].t_tag, siptag_accept); 
+
+  s = "xyzzy=foo";
+
+  t = sip_url_query_as_taglist(home, s, NULL); TEST_1(t);
+
+  TEST(t[0].t_tag, siptag_header_str);
+  TEST_1(d = (void *)t[0].t_value);
+  TEST_S(d, "foo");
 
   TEST_1(!sip_headers_as_url_query(home, SIPTAG_SEPARATOR_STR(""), TAG_END()));
 

@@ -109,6 +109,11 @@ SOFIAPUBFUN char *sip_headers_as_url_query(su_home_t *home,
 					   tag_type_t tag, tag_value_t value,
 					   ...);
 
+/** Convert URL query to a tag list. */
+SOFIAPUBFUN tagi_t *sip_url_query_as_taglist(su_home_t *home,
+					     char const *query,
+					     msg_mclass_t const *parser);
+
 /** Complete SIP message. */
 SOFIAPUBFUN int sip_complete_message(msg_t *msg);
 
