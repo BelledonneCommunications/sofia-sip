@@ -193,6 +193,8 @@ SOFIAPUBVAR tag_typedef_t siptag_header_str_ref;
  * The corresponding tag taking reference parameter is 
  * SIPTAG_#XXXXXX#_REF().
  *
+ * @since New in #version#.
+ *
  * @HIDE
  */
 #define SIPTAG_#XXXXXX#(x) siptag_#xxxxxx#, siptag_#xxxxxx#_v(x)
@@ -222,6 +224,8 @@ SOFIAPUBVAR tag_typedef_t siptag_#xxxxxx#_ref;
  *
  * The corresponding tag taking reference parameter is 
  * SIPTAG_#XXXXXX#_STR_REF().
+ *
+ * @since New in #version#.
  *
  * @HIDE
  */

@@ -23,9 +23,11 @@ check_PROGRAMS =       torture_sip \
 # Rules for building the targets
 
 GENERATED_H = 		sofia-sip/sip_hclasses.h \
-			sofia-sip/sip_protos.h sofia-sip/sip_tag.h
+			sofia-sip/sip_protos.h sofia-sip/sip_tag.h \
+			sofia-sip/sip_extra.h
 H_IN = 			sofia-sip/sip_hclasses.h.in \
-			sofia-sip/sip_protos.h.in sofia-sip/sip_tag.h.in
+			sofia-sip/sip_protos.h.in sofia-sip/sip_tag.h.in \
+			sofia-sip/sip_extra.h.in
 
 PUBLIC_H = sofia-sip/sip.h sofia-sip/sip_util.h \
            sofia-sip/sip_header.h sofia-sip/sip_parser.h \
@@ -68,7 +70,7 @@ date_test_LDFLAGS = 	-static
 EXTRA_DIST =		Doxyfile sip.docs sip_parser.docs sip.doxyaliases \
 			ADD-A-HEADER GRAMMAR sip_bad_mask \
 			sip_parser_table.c.in sip_tag.c.in \
-			sip_bad_mask \
+			sip_extra_headers.txt \
 	images/sip-parser.eps images/sip-parser.gif \
 	images/sip-parser2.eps images/sip-parser2.gif \
 	images/sip-parser3.eps images/sip-parser3.gif \
@@ -130,10 +132,20 @@ sofia-sip/sip_tag.h: sofia-sip/sip.h
 	@-mkdir sofia-sip 2>/dev/null || true
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_tag.h.in $<
 
-sip_tag.c: sofia-sip/sip.h
-	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sip_tag.c.in $<
+sip_tag.c: sofia-sip/sip.h sip_extra_headers.txt
+	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sip_tag.c.in $< \
+		sip_extra_headers.txt
 
 sip_parser_table.c: sofia-sip/sip.h
 	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/sip_parser_table.c.in \
 		FLAGFILE=$(srcdir)/sip_bad_mask \
 		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
+
+sofia-sip/sip_extra.h: sofia-sip/sip_extra.h.in sip_extra_headers.txt
+	@-mkdir -p sofia-sip 2>/dev/null
+	${AWK_SIP_AWK} PR=$@ NO_FIRST=1 NO_LAST=1 \
+		PACKAGE_NAME="${PACKAGE_NAME}" \
+		PACKAGE_VERSION="${PACKAGE_VERSION}" \
+		TEMPLATE1=${srcdir}/sofia-sip/sip_hclasses.h.in \
+		TEMPLATE2=${srcdir}/sofia-sip/sip_protos.h.in \
+		TEMPLATE=$< sip_extra_headers.txt

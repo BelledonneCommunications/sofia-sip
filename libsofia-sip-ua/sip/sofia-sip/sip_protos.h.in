@@ -132,6 +132,7 @@ SOFIAPUBFUN issize_t sip_#xxxxxx#_e(char b[], isize_t bsiz,
 /**Access a SIP @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#"
  * structure #sip_#xxxxxx#_t from #sip_t.
  * 
+ * @since New in #version#.
  */
 #define sip_#xxxxxx#(sip) \
   ((sip_#xxxxxx#_t *)msg_header_access((msg_pub_t*)(sip), sip_#xxxxxx#_class))
@@ -148,6 +149,8 @@ SOFIAPUBFUN issize_t sip_#xxxxxx#_e(char b[], isize_t bsiz,
  * 
  * @endcode
  * @HI
+ *
+ * @since New in #version#.
  */
 #define SIP_#XXXXXX#_INIT() SIP_HDR_INIT(#xxxxxx#)
 
@@ -164,6 +167,8 @@ SOFIAPUBFUN issize_t sip_#xxxxxx#_e(char b[], isize_t bsiz,
  * 
  * @endcode
  * @HI
+ *
+ * @since New in #version#.
  */
 #if SU_HAVE_INLINE
 su_inline sip_#xxxxxx#_t *sip_#xxxxxx#_init(sip_#xxxxxx#_t x[1])
@@ -185,6 +190,8 @@ su_inline sip_#xxxxxx#_t *sip_#xxxxxx#_init(sip_#xxxxxx#_t x[1])
  * 
  * @retval 1 (true) if the @a header is an instance of header #xxxxxx# 
  * @retval 0 (false) otherwise
+ *
+ * @since New in #version#.
  */
 #if SU_HAVE_INLINE
 su_inline int sip_is_#xxxxxx#(sip_header_t const *header)
@@ -224,6 +231,8 @@ int sip_is_#xxxxxx#(sip_header_t const *header);
  * A pointer to the
  * newly duplicated #sip_#xxxxxx#_t header structure, or NULL
  * upon an error.
+ *
+ * @since New in #version#.
  */
 #if SU_HAVE_INLINE
 su_inline
@@ -266,6 +275,8 @@ sip_#xxxxxx#_t *sip_#xxxxxx#_dup(su_home_t *home, sip_#xxxxxx#_t const *hdr)
  * 
  * @return
  * A pointer to newly copied header structure, or NULL upon an error.
+ *
+ * @since New in #version#.
  */
 #if SU_HAVE_INLINE
 su_inline
@@ -295,6 +306,8 @@ sip_#xxxxxx#_t *sip_#xxxxxx#_copy(su_home_t *home, sip_#xxxxxx#_t const *hdr)
  * @return
  * A pointer to newly maked #sip_#xxxxxx#_t header structure, or NULL upon an
  * error.
+ *
+ * @since New in #version#.
  */
 #if SU_HAVE_INLINE
 su_inline 
@@ -325,6 +338,8 @@ su_inline sip_#xxxxxx#_t *sip_#xxxxxx#_make(su_home_t *home, char const *s)
  * makes header structure, or NULL upon an error.
  * 
  * @HIDE
+ *
+ * @since New in #version#.
  */
 #if SU_HAVE_INLINE
 su_inline

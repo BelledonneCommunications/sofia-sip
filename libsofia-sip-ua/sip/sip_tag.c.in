@@ -68,6 +68,8 @@ tag_typedef_t siptag_header_str = STRTAG_TYPEDEF(header_str);
 tag_typedef_t siptag_end = TAG_TYPEDEF(tag_end, end);
 
 
+extern msg_hclass_t sip_#xxxxxx#_class[];
+
 /**@ingroup sip_#xxxxxx#
  * Tag for @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#" object.
  */

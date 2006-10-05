@@ -60,6 +60,8 @@
 #include <sofia-sip/msg_mclass.h>
 #include <sofia-sip/msg_mclass_hash.h>
 
+#include <sofia-sip/sip_extra.h>
+
 int tstflags;
 
 #define TSTFLAGS tstflags
@@ -2067,6 +2069,7 @@ int test_refer(void)
     "Refer-To: <sip:2000@10.3.3.104?Replaces=7d84c014-321368da-efa90f41%40"
       "10.3.3.8%3Bto-tag%3DpaNKgBB9vQe3D%3Bfrom-tag%3D93AC8D50-7CF6DAAF>\r\n"
     "Referred-By: \"Anthony Minessale\" <sip:polycom500@10.3.3.104>\r\n"
+    "Refer-Sub: true\r\n"
     "Max-Forwards: 70\r\n"
     "Content-Length: 0\r\n"
     "\r\n";
@@ -2075,15 +2078,20 @@ int test_refer(void)
   msg_iovec_t *iovec;
   isize_t veclen, i, size;
   char *back;
+  sip_refer_sub_t *rs;
 
   TEST_1(home = su_home_create());
 
+  /* Add Refer-Sub to our parser */
+  TEST_1(msg_mclass_insert_with_mask(test_mclass, sip_refer_sub_class, 
+				     0, 0) >= 0);
+  
   msg = read_message(0, m); TEST_1(msg); TEST_1(sip = sip_object(msg));
   TEST_1(sip->sip_refer_to);
   TEST_S(sip->sip_refer_to->r_url->url_headers,
 	 "Replaces=7d84c014-321368da-efa90f41%40"
 	 "10.3.3.8%3Bto-tag%3DpaNKgBB9vQe3D%3Bfrom-tag%3D93AC8D50-7CF6DAAF");
-  TEST_SIZE(msg_prepare(msg), strlen(m));
+  TEST(msg_prepare(msg), strlen(m));
   TEST_1(veclen = msg_iovec(msg, NULL, ISIZE_MAX));
   TEST_1(iovec = su_zalloc(msg_home(home), veclen * (sizeof iovec[0])));
   TEST_SIZE(msg_iovec(msg, iovec, veclen), veclen);

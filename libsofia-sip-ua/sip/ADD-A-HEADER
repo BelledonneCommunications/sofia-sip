@@ -1,11 +1,13 @@
 Description of Adding a SIP Header to Sofia SIP
 ===============================================
 
-by Pekka Pessi (2002-08-16, updated 2006-05-11)
+by Pekka Pessi (2002-08-16, updated 2006-10-03)
 
-There are two ways to extend the Sofia SIP parser, either including a
-standard header in normal distribution or putting the non-standar extension
-headers into a separate library.
+There are three ways to extend the Sofia SIP parser, including a standard
+header in sip_t structure, including a standard header in extra headers or
+putting the extension headers into a separate library.
+
+Probalem with extending #sip_t is that it breaks binary compatibility.
 
 In the text below, we use "Example" header as our example with following
 ABNF:

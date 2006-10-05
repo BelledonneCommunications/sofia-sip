@@ -1,0 +1,12 @@
+#
+# This file specifies extra SIP headers not included in default parser table
+# (nor in sip_t structure)
+#
+# The file format is: 
+# C-name @SINCE sip_t-like-comment
+#
+#### EXTRA HEADER LIST STARTS HERE ####
+
+refer_sub @VERSION_1_12_4 /**< Refer-Sub header */
+
+#### EXTRA HEADER LIST ENDS HERE ####

@@ -54,6 +54,8 @@ enum {
   /**@ingroup sip_#xxxxxx# @internal 
    *
    * Hash of @ref sip_#xxxxxx# "#xxxxxxx_xxxxxxx#".
+   *
+   * @since New in #version#.
    */
   sip_#xxxxxx#_hash = #hash# 
 };
@@ -66,6 +68,8 @@ enum {
  * manipulate the #sip_#xxxxxx#_t header structure.
  *
  * @ingroup sip_#xxxxxx#
+ *
+ * @since New in #version#.
  */
 SIP_DLL extern msg_hclass_t sip_#xxxxxx#_class[];
 

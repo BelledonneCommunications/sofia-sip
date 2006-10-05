@@ -40,6 +40,7 @@
 #define MSG_HDR_T       union sip_header_u
 
 #include "sofia-sip/sip_parser.h"
+#include "sofia-sip/sip_extra.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -436,4 +437,118 @@ static int sip_replaces_update(msg_common_t *h,
 #undef MATCH
 
   return 0;
+}
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_refer_sub Refer-Sub Header
+ *
+ * SIP header field @b Refer-Sub is meaningful and MAY be used with a REFER
+ * request and the corresponding 2XX response only. This header field set to
+ * "false" specifies that a REFER-Issuer requests that the REFER-Recipient
+ * doesn't establish an implicit subscription and the resultant dialog.
+ *
+ *  Refer-Sub       = "Refer-Sub" HCOLON refer-sub-value *(SEMI exten)
+ *  refer-sub-value = "true" / "false"
+ *  exten           = generic-param
+ *
+ * The parsed Refer-Sub header is stored in #sip_refer_sub_t structure.
+ * 
+ * @since New in @VERSION_1_12_4. Note that #sip_t does not contain @c
+ * sip_refer_sub field, but use sip_refer_sub() accessor function.
+ *
+ * @sa @RFC4488, nua_refer(), #nua_i_refer
+ */
+
+/**@ingroup sip_refer_sub
+ *
+ * @typedef typedef struct sip_refer_sub_s sip_refer_sub_t;
+ *
+ * The structure #sip_refer_sub_t contains representation of @ReferSub
+ * header.
+ *
+ * The #sip_refer_sub_t is defined as follows:
+ * @code
+ * typedef struct sip_refer_sub_s
+ * {
+ *   sip_common_t        rs_common[1];   // Common fragment info
+ *   sip_error_t        *rs_next;	 // Dummy link to next
+ *   char const         *rs_value;       // "true" or "false"
+ *   msg_param_t const  *rs_params;      // List of extension parameters 
+ * } sip_refer_sub_t;
+ * @endcode
+ * 
+ * @since New in @VERSION_1_12_4.
+ */
+
+static msg_xtra_f sip_refer_sub_dup_xtra;
+static msg_dup_f sip_refer_sub_dup_one;
+#define sip_refer_sub_update NULL
+
+msg_hclass_t sip_refer_sub_class[] =
+SIP_HEADER_CLASS(refer_sub, "Refer-Sub", "", rs_params, single, refer_sub);
+
+/** Decode (parse) @ReferSub header */
+issize_t sip_refer_sub_d(su_home_t *home,
+			 sip_header_t *h,
+			 char *s, isize_t slen)
+{
+  sip_refer_sub_t *rs = (sip_refer_sub_t *)h;
+
+  if (msg_token_d(&s, &rs->rs_value) < 0)
+    return -1;
+
+  if (strcasecmp(rs->rs_value, "false") && 
+      strcasecmp(rs->rs_value, "true"))
+    return -1;
+
+  if (*s)
+    if (msg_params_d(home, &s, &rs->rs_params) == -1)
+      return -1;
+
+  return s - rs->rs_value;
+}
+
+/** Encode (print) @ReferSub header */
+issize_t sip_refer_sub_e(char b[], isize_t bsiz,
+			 sip_header_t const *h,
+			 int flags)
+{
+  char *b0 = b, *end = b + bsiz;
+  sip_refer_sub_t const *rs = (sip_refer_sub_t *)h;
+
+  assert(sip_is_refer_sub(h));
+  MSG_STRING_E(b, end, rs->rs_value);
+  MSG_PARAMS_E(b, end, rs->rs_params, flags);
+  MSG_TERM_E(b, end);
+
+  return b - b0;
+}
+
+/** Calculate extra storage used by @ReferSub header field */
+isize_t sip_refer_sub_dup_xtra(sip_header_t const *h, isize_t offset)
+{
+  sip_refer_sub_t const *rs = (sip_refer_sub_t *)h;
+
+  MSG_PARAMS_SIZE(offset, rs->rs_params);
+  offset += MSG_STRING_SIZE(rs->rs_value);
+
+  return offset;
+}
+
+/** Duplicate a @ReferSub header field */
+char *sip_refer_sub_dup_one(sip_header_t *dst, sip_header_t const *src,
+			   char *b, isize_t xtra)
+{
+  sip_refer_sub_t *rs_dst = (sip_refer_sub_t *)dst;
+  sip_refer_sub_t const *rs_src = (sip_refer_sub_t *)src;
+
+  char *end = b + xtra;
+
+  b = msg_params_dup(&rs_dst->rs_params, rs_src->rs_params, b, xtra);
+  MSG_STRING_DUP(b, rs_dst->rs_value, rs_src->rs_value);
+
+  assert(b <= end);
+
+  return b;
 }
