@@ -80,7 +80,8 @@ SOFIAPUBFUN issize_t sip_e(sip_t const *sip, int flags, char b[], isize_t size);
 SOFIAPUBFUN int sip_is_header(sip_header_t const *header);
 
 /** Convert the header @a h to a string allocated from @a home. */
-SOFIAPUBFUN char *sip_header_as_string(su_home_t *home, sip_header_t *h);
+SOFIAPUBFUN char *sip_header_as_string(su_home_t *home,
+				       sip_header_t const *h);
 
 /** Add a duplicate of header object to a SIP message. */
 SOFIAPUBFUN int sip_add_dup(msg_t *, sip_t *, sip_header_t const *);

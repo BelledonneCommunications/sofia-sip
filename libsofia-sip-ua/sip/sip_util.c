@@ -389,7 +389,7 @@ issize_t sip_header_field_e(char *b, isize_t bsiz, sip_header_t const *h, int fl
 }
 
 /** Convert the header @a h to a string allocated from @a home. */
-char *sip_header_as_string(su_home_t *home, sip_header_t *h)
+char *sip_header_as_string(su_home_t *home, sip_header_t const *h)
 {
   ssize_t len;
   char *rv, s[128];
