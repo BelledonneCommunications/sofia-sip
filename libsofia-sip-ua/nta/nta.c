@@ -2959,8 +2959,13 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
  * @param method_name  method name (if @a method == #sip_method_unknown)
  * @param request_uri  request URI
  *
+ * If @a request_uri contains query part, the query part is converted as SIP
+ * headers and added to the request.
+ *
  * @retval 0  when successful
  * @retval -1 upon an error
+ *
+ * @sa nta_outgoing_mcreate(), nta_outgoing_tcreate()
  */
 int nta_msg_request_complete(msg_t *msg,
 			     nta_leg_t *leg,
@@ -2970,11 +2975,96 @@ int nta_msg_request_complete(msg_t *msg,
 {
   su_home_t *home = msg_home(msg);
   sip_t *sip = sip_object(msg);
+  sip_to_t const *to;
   sip_cseq_t *cseq;
   uint32_t seq;
   url_t reg_url[1];
+  url_string_t const *original = request_uri;
 
   if (!leg || !msg)
+    return -1;
+
+  if (!sip->sip_route && leg->leg_route) {
+    if (leg->leg_loose_route) {
+      if (leg->leg_target) {
+	request_uri = (url_string_t *)leg->leg_target->m_url;
+      }
+      sip->sip_route = sip_route_dup(home, leg->leg_route);
+    }
+    else {
+      sip_route_t **rr;
+
+      request_uri = (url_string_t *)leg->leg_route->r_url;
+      sip->sip_route = sip_route_dup(home, leg->leg_route->r_next);
+
+      for (rr = &sip->sip_route; *rr; rr = &(*rr)->r_next)
+	;
+
+      if (leg->leg_target)
+	*rr = sip_route_dup(home, (sip_route_t *)leg->leg_target);
+    }
+  }
+  else if (leg->leg_target)
+    request_uri = (url_string_t *)leg->leg_target->m_url;
+
+  if (!request_uri && sip->sip_request)
+    request_uri = (url_string_t *)sip->sip_request->rq_url;
+
+  to = sip->sip_to ? sip->sip_to : leg->leg_remote;
+  
+  if (!request_uri && to) {
+    if (method != sip_method_register)
+      request_uri = (url_string_t *)to->a_url;
+    else {
+      /* Remove user part from REGISTER requests */
+      *reg_url = *to->a_url;
+      reg_url->url_user = reg_url->url_password = NULL;
+      request_uri = (url_string_t *)reg_url;
+    }
+  }
+
+  if (!request_uri)
+    return -1;
+
+  if (method || method_name) {
+    sip_request_t *rq = sip->sip_request;
+    int use_headers = 
+      request_uri == original || (url_t *)request_uri == rq->rq_url;
+
+    if (!rq
+	|| request_uri != (url_string_t *)rq->rq_url
+	|| method != rq->rq_method
+	|| str0cmp(method_name, rq->rq_method_name))
+      rq = NULL;
+
+    if (rq == NULL) {
+      rq = sip_request_create(home, method, method_name, request_uri, NULL);
+      if (msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)rq) < 0)
+	return -1;
+    }
+
+    /* @RFC3261 table 1 (page 152): 
+     * Req-URI cannot contain method parameter or headers 
+     */
+    if (rq->rq_url->url_params) {
+      rq->rq_url->url_params = 
+	url_strip_param_string((char *)rq->rq_url->url_params, "method");
+      sip_fragment_clear(rq->rq_common);
+    }
+
+    if (rq->rq_url->url_headers) {
+      if (use_headers) {
+	char *s = url_query_as_header_string(msg_home(msg),
+					     rq->rq_url->url_headers);
+	if (!s)
+	  return -1;
+	msg_header_parse_str(msg, (msg_pub_t*)sip, s);
+      }
+      rq->rq_url->url_headers = NULL, sip_fragment_clear(rq->rq_common);
+    }
+  }
+
+  if (!sip->sip_request)
     return -1;
 
   if (!sip->sip_max_forwards)
@@ -3004,63 +3094,6 @@ int nta_msg_request_complete(msg_t *msg,
     sip->sip_to = sip_to_dup(home, leg->leg_remote);
   else if (leg->leg_remote && leg->leg_remote->a_tag)
     sip_to_tag(home, sip->sip_to, leg->leg_remote->a_tag);
-
-  if (!sip->sip_route && leg->leg_route) {
-    if (leg->leg_loose_route) {
-      if (leg->leg_target) {
-	request_uri = (url_string_t *)leg->leg_target->m_url;
-      }
-      sip->sip_route = sip_route_dup(home, leg->leg_route);
-    }
-    else {
-      sip_route_t **rr;
-
-      request_uri = (url_string_t *)leg->leg_route->r_url;
-      sip->sip_route = sip_route_dup(home, leg->leg_route->r_next);
-
-      for (rr = &sip->sip_route; *rr; rr = &(*rr)->r_next)
-	;
-
-      if (leg->leg_target)
-	*rr = sip_route_dup(home, (sip_route_t *)leg->leg_target);
-    }
-  }
-  else if (leg->leg_target)
-    request_uri = (url_string_t *)leg->leg_target->m_url;
-
-  if (!request_uri && sip->sip_request)
-    request_uri = (url_string_t *)sip->sip_request->rq_url;
-  if (!request_uri && sip->sip_to) {
-    if (method != sip_method_register)
-      request_uri = (url_string_t *)sip->sip_to->a_url;
-    else {
-      /* Remove user part from REGISTER requests */
-      *reg_url = *sip->sip_to->a_url;
-      reg_url->url_user = reg_url->url_password = NULL;
-      request_uri = (url_string_t *)reg_url;
-    }
-  }
-  if (!request_uri)
-    return -1;
-
-  if (method || method_name) {
-    sip_request_t *rq = sip->sip_request;
-
-    if (!rq
-	|| request_uri != (url_string_t *)rq->rq_url
-	|| method != rq->rq_method
-	|| str0cmp(method_name, rq->rq_method_name))
-      rq = NULL;
-
-    if (rq == NULL) {
-      rq = sip_request_create(home, method, method_name, request_uri, NULL);
-      if (msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)rq) < 0)
-	return -1;
-    }
-  }
-
-  if (!sip->sip_request)
-    return -1;
 
   method = sip->sip_request->rq_method;
   method_name = sip->sip_request->rq_method_name;
@@ -3254,6 +3287,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
     sip_contact_t m[1];
     sip_contact_init(m);
     *m->m_url = *contact->m_url;
+    m->m_url->url_headers = NULL;
     leg->leg_target = sip_contact_dup(home, m);
   }
 
@@ -4035,13 +4069,22 @@ int leg_route(nta_leg_t *leg,
     leg->leg_loose_route = url_has_param(r->r_url, "lr");
 
   if (contact) {
-    sip_contact_t m[1], *m0;
-
-    m0 = leg->leg_target;
+    sip_contact_t *target, m[1], *m0;
 
     sip_contact_init(m);
     *m->m_url = *contact->m_url;
-    leg->leg_target = sip_contact_dup(leg->leg_home, m);
+    m->m_url->url_headers = NULL;
+    target = sip_contact_dup(leg->leg_home, m);
+
+    if (target && target->m_url->url_params) {
+      /* Remove ttl, method. @RFC3261 table 1, page 152 */
+      char *p = (char *)target->m_url->url_params;
+      p = url_strip_param_string(p, "method");
+      p = url_strip_param_string(p, "ttl");
+      target->m_url->url_params = p;
+    }
+
+    m0 = leg->leg_target, leg->leg_target = target;
 
     if (m0)
       su_free(leg->leg_home, m0);

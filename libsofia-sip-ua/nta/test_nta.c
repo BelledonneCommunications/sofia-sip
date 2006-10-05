@@ -871,12 +871,57 @@ int test_tports(agent_t *ag)
     TEST(ag->ag_latest_leg, ag->ag_default_leg);
     TEST_1(ag->ag_request);
 
+    msg_destroy(ag->ag_request), ag->ag_request = NULL;
+
     TEST_1(ag->ag_out_via->v_comp == NULL);
 
     nta_leg_bind(ag->ag_default_leg, leg_callback_200, ag);
   }
 
-  /* Test 0.1.1
+  {
+    /* Test 0.1.2: test url_headers
+     *
+     * Send a message from default leg to default leg.
+     */
+    url_t url[1];
+    sip_t *sip;
+    
+    *url = *ag->ag_contact->m_url;
+    /* Test that method parameter is stripped and headers in query are used */
+    url->url_params = "method=MESSAGE;user=IP";
+    url->url_headers = "organization=United%20Testers";
+    ag->ag_expect_leg = ag->ag_default_leg;
+    su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
+
+    TEST_1(ag->ag_orq = 
+	  nta_outgoing_tcreate(ag->ag_default_leg, 
+			       outgoing_callback, ag,
+			       ag->ag_obp,
+			       SIP_METHOD_MESSAGE,
+			       (url_string_t *)url,
+			       SIPTAG_SUBJECT_STR("Test 0.1.2"),
+			       SIPTAG_FROM(ag->ag_alice),
+			       SIPTAG_TO(ag->ag_bob),
+			       SIPTAG_CONTACT(ag->ag_m_alice),
+			       TAG_END()));
+
+    nta_test_run(ag);
+    TEST(ag->ag_status, 200);
+    TEST(ag->ag_orq, NULL);
+    TEST(ag->ag_latest_leg, ag->ag_default_leg);
+    TEST_1(ag->ag_request);
+    TEST_1(sip = sip_object(ag->ag_request));
+
+    TEST_1(sip->sip_organization);
+    TEST_S(sip->sip_organization->g_string, "United Testers");
+    TEST_S(sip->sip_request->rq_url->url_params, "user=IP");
+    
+    TEST_1(ag->ag_out_via->v_comp == NULL);
+
+    nta_leg_bind(ag->ag_default_leg, leg_callback_200, ag);
+  }
+
+  /* Test 0.1.3
    * Send a message from Bob to Alice using SIGCOMP and TCP
    */
   if (tcp_comp) {
@@ -902,7 +947,7 @@ int test_tports(agent_t *ag)
 				SIP_METHOD_MESSAGE,
 				(url_string_t *)url,
 				NTATAG_COMP("sigcomp"),
-				SIPTAG_SUBJECT_STR("Test 0.1.1"),
+				SIPTAG_SUBJECT_STR("Test 0.1.3"),
 				SIPTAG_FROM(ag->ag_bob),
 				SIPTAG_TO(ag->ag_alice),
 				SIPTAG_CONTACT(ag->ag_m_bob),
