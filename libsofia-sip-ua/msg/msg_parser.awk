@@ -63,6 +63,8 @@ BEGIN {
   tprefix="";
   failed=0;
   success=0;
+
+  ERRNO="error";
 }
 
 function name_hash (name)
@@ -92,7 +94,7 @@ function name_hash (name)
 #
 # Replace magic patterns in template p with header-specific values
 #
-function protos (name, comment, hash)
+function protos (name, comment, hash, since)
 {
   NAME=toupper(name);
   sub(/.*[\/][*][*][<][ 	]*/, "", comment); 
@@ -143,15 +145,18 @@ function protos (name, comment, hash)
   symbols[name] = comment;
 
   if (PR) {
-    replace(template, hash, name, NAME, comment, Comment, COMMENT);
-    replace(template1, hash, name, NAME, comment, Comment, COMMENT);
-    replace(template2, hash, name, NAME, comment, Comment, COMMENT);
-    replace(template3, hash, name, NAME, comment, Comment, COMMENT);
+    replace(template, hash, name, NAME, comment, Comment, COMMENT, since);
+    replace(template1, hash, name, NAME, comment, Comment, COMMENT, since);
+    replace(template2, hash, name, NAME, comment, Comment, COMMENT, since);
+    replace(template3, hash, name, NAME, comment, Comment, COMMENT, since);
   }
 }
 
-function replace (p, hash, name, NAME, comment, Comment, COMMENT)
+function replace (p, hash, name, NAME, comment, Comment, COMMENT, since)
 {
+  #
+  # Replace various forms of header name in template, print it out
+  #
   if (p) {
     gsub(/#hash#/, hash, p);
     gsub(/#xxxxxx#/, name, p); 
@@ -159,6 +164,14 @@ function replace (p, hash, name, NAME, comment, Comment, COMMENT)
     gsub(/#xxxxxxx_xxxxxxx#/, comment, p);
     gsub(/#Xxxxxxx_Xxxxxxx#/, Comment, p);
     gsub(/#XXXXXXX_XXXXXXX#/, COMMENT, p);
+
+    if (since) {
+      gsub(/#version#/, since, p);
+    }
+    else {
+      # Remove line with #version#
+      gsub(/\n[^\n]*#version#[^\n]*\n/, "\n", p);
+    }
     	    
     print p > PR;
   }
@@ -232,10 +245,11 @@ function read_header_flags (flagfile,    line, tokens, name, value)
   close(flagfile);
 }
 
-/^ *\/\* === Headers start here \*\// { 
-
-  in_header_list=1; 
-
+#
+# Read in templates
+#
+function templates ()
+{
   if (!auto) {
     auto = FILENAME; 
 
@@ -248,27 +262,43 @@ function read_header_flags (flagfile,    line, tokens, name, value)
     if (PR) {
       if (TEMPLATE == "") { TEMPLATE = PR ".in"; }
       RS0=RS; RS="\f\n";
-      getline theader < TEMPLATE;
+      if ((getline theader < TEMPLATE) < 0) {
+	print ( TEMPLATE ": " ERRNO );
+	failed=1;
+        exit(1);
+      }
       getline header < TEMPLATE;
       getline template < TEMPLATE;
       getline footer < TEMPLATE;
 
       if (TEMPLATE1) {
-	getline dummy < TEMPLATE1;
+	if ((getline dummy < TEMPLATE1) < 0) {
+	  print(TEMPLATE1 ": " ERRNO);
+	  failed=1;
+          exit(1);
+        }
 	getline dummy < TEMPLATE1;
 	getline template1 < TEMPLATE1;
 	getline dummy < TEMPLATE1;
       }
 
       if (TEMPLATE2) {
-	getline dummy < TEMPLATE2;
+	if ((getline dummy < TEMPLATE2) < 0) {
+	  print( TEMPLATE2 ": " ERRNO );
+	  failed=1;
+	  exit(1);
+	}
 	getline dummy < TEMPLATE2;
 	getline template2 < TEMPLATE2;
 	getline dummy < TEMPLATE2;
       }
 
       if (TEMPLATE3) {
-	getline dummy < TEMPLATE3;
+	if ((getline dummy < TEMPLATE3) < 0) {
+	  print( TEMPLATE3 ": " ERRNO );
+	  failed=1;
+	  exit(1);
+	}
 	getline dummy < TEMPLATE3;
 	getline template3 < TEMPLATE3;
 	getline dummy < TEMPLATE3;
@@ -291,9 +321,15 @@ function read_header_flags (flagfile,    line, tokens, name, value)
   }
 }
 
-in_header_list && /^ *\/\* === Headers end here \*\// { in_header_list=0;}
+/^#### EXTRA HEADER LIST STARTS HERE ####$/ { HLIST=1; templates(); }
+HLIST && /^[a-z]/ { protos($1, $0, 0, $2); }
+/^#### EXTRA HEADER LIST ENDS HERE ####$/ { HLIST=0;  }
 
-in_header_list && PT && /^ *\/\* === Hash headers end here \*\// { in_header_list=0;}
+
+/^ *\/\* === Headers start here \*\// { in_header_list=1;  templates(); }
+/^ *\/\* === Headers end here \*\// { in_header_list=0; }
+
+PT && /^ *\/\* === Hash headers end here \*\// { in_header_list=0;}
 
 in_header_list && /^  (sip|rtsp|http|msg|mp)_[a-z_0-9]+_t/ { 
   n=$0
