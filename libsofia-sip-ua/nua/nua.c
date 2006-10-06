@@ -238,6 +238,17 @@ void nua_destroy(nua_t *nua)
   }
 }
 
+/** Fetch callback context from nua.
+ *
+ * @param nua         Pointer to @nua stack object
+ *
+ * @return Callback context pointer.
+ */
+nua_magic_t *nua_magic(nua_t *nua)
+{
+  reutrn nua ? nua->nua_magic : NULL;
+}
+
 /** Obtain default operation handle of the @nua stack object.
  *
  * A default operation can be used for operations where the 
@@ -341,7 +352,7 @@ void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *hmagic)
  * @par Events:
  *     none
  */
-nua_hmagic_t *nua_handle_fetch(nua_handle_t *nh)
+nua_hmagic_t *nua_handle_magic(nua_handle_t *nh)
 {
   nua_hmagic_t *magic = NULL;
   enter;

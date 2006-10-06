@@ -189,6 +189,9 @@ SOFIAPUBFUN void nua_shutdown(nua_t *nua);
 /** Destroy the NUA stack. */
 SOFIAPUBFUN void nua_destroy(nua_t *nua);
 
+/** Fetch callback context from nua. */
+SOFIAPUBFUN nua_magic_t *nua_magic(nua_t *nua);
+
 /** Set NUA parameters. */
 SOFIAPUBFUN void nua_set_params(nua_t *, tag_type_t, tag_value_t, ...);
 
@@ -215,7 +218,7 @@ SOFIAPUBFUN int nua_handle_unref(nua_handle_t *);
 SOFIAPUBFUN void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *magic);
 
 /** Fetch a callback context from an operation handle. */
-SOFIAPUBFUN nua_hmagic_t *nua_handle_fetch(nua_handle_t *nh);
+SOFIAPUBFUN nua_hmagic_t *nua_handle_magic(nua_handle_t *nh);
 
 /** Set handle parameters. */
 SOFIAPUBFUN void nua_set_hparams(nua_handle_t *, tag_type_t, tag_value_t, ...);
