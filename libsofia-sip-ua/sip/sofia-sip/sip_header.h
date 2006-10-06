@@ -67,8 +67,10 @@ SOFIAPUBFUN msg_mclass_t *sip_default_mclass(void);
 #define SIP_HDR_INIT(name) {{{ 0, 0, sip_##name##_class }}}
 
 /** Initialize a SIP header structure. @HIDE */
-#define SIP_HEADER_INIT(h, sip_class, size) \
-  (memset((h), 0, (size)), ((sip_common_t *)(h))->h_class = (sip_class), (h))
+#define SIP_HEADER_INIT(h, sip_class, size)	       \
+  ((void)memset((h), 0, (size)),		       \
+   (void)(((sip_common_t *)(h))->h_class = (sip_class)),	\
+   (h))
 
 /** Serialize headers into the fragment chain. */
 SOFIAPUBFUN int sip_serialize(msg_t *msg, sip_t *sip);
