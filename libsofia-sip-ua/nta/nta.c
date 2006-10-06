@@ -3090,10 +3090,21 @@ int nta_msg_request_complete(msg_t *msg,
 		       nta_agent_newtag(home, "tag=%s", leg->leg_agent));
   }
 
-  if (!sip->sip_to)
+  if (sip->sip_to) {
+    if (leg->leg_remote && leg->leg_remote->a_tag)
+      sip_to_tag(home, sip->sip_to, leg->leg_remote->a_tag);
+  }
+  else if (leg->leg_remote) {
     sip->sip_to = sip_to_dup(home, leg->leg_remote);
-  else if (leg->leg_remote && leg->leg_remote->a_tag)
-    sip_to_tag(home, sip->sip_to, leg->leg_remote->a_tag);
+  }
+  else {
+    sip_to_t *to = sip_to_create(home, request_uri);
+    if (to) sip_aor_strip(to->a_url);
+    sip->sip_to = to;
+  }
+
+  if (!sip->sip_from || !sip->sip_from || !sip->sip_to)
+    return -1;
 
   method = sip->sip_request->rq_method;
   method_name = sip->sip_request->rq_method_name;
