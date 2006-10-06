@@ -29,13 +29,15 @@ dist_man_MANS = man/man1/sip-date.1 man/man1/sip-options.1 \
 		man/man1/localinfo.1 man/man1/addrinfo.1 \
 		man/man1/stunc.1 man/man1/sip-dig.1
 
-manpages $(dist_man_MANS): built-sources
+$(dist_man_MANS): manpages
+
+manpages: built-sources
 	-mkdir -p man man/man1 2> /dev/null
 if HAVE_DOXYGEN
 	cd utils && $(DOXYGEN) Doxyfile.build
 	@rm -f man/man1/_*.1
 else
-	-touch $(MANS)
+	-touch $(dist_man_MANS)
 endif
 
 CLEANFILES = $(dist_man_MANS)
