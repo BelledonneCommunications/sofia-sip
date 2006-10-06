@@ -198,4 +198,7 @@ win32/Makefile
 win32/config.h
 ])
 
+AC_CONFIG_COMMANDS([version],,[PACKAGE_VERSION=${PACKAGE_VERSION}])
+AC_CONFIG_FILES([packages/sofia-sip-${PACKAGE_VERSION}.spec:packages/sofia-sip.spec.in])
+
 AC_OUTPUT
