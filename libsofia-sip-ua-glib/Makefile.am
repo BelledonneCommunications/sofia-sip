@@ -22,7 +22,8 @@ lib_LTLIBRARIES += libsofia-sip-ua-glib.la
 endif
 
 libsofia_sip_ua_glib_la_SOURCES = 
-libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GOBJECT_TARGETS)
+libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GOBJECT_TARGETS) \
+	$(GOBJECT_LIBS) $(GLIB_LIBS)
 
 # set the libtool version info version:revision:age for libsofia-sip-ua-glib
 # - soname to 'libsofia-sip-ua-glib.so.(CUR-AGE)'
