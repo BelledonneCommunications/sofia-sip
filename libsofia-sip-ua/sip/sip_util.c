@@ -779,48 +779,12 @@ int sip_aor_strip(url_t *url)
   url->url_port = NULL;
   url->url_headers = NULL;
 
-  if (url->url_params) {
-    char *d, *s;
-    size_t n;
-    int semi;
-
-#   define PARAM_MATCH(s, tag)						\
-    (strncasecmp(s, tag, strlen(tag)) == 0 &&				\
-     (s[strlen(tag)] == '\0' ||						\
-      s[strlen(tag)] == ';' ||						\
-      s[strlen(tag)] == '='))
-
-    for (d = s = (char *)url->url_params; *s; s += n + semi) {
-      n = strcspn(s, ";");
-      semi = s[n] != '\0';
+  if (url->url_params)
+    url_strip_transport(url);
     
-      if (PARAM_MATCH(s, "method"))
-	continue;
-      if (PARAM_MATCH(s, "maddr"))
-	continue;
-      if (PARAM_MATCH(s, "ttl"))
-	continue;
-      if (PARAM_MATCH(s, "transport"))
-	continue;
-      if (PARAM_MATCH(s, "lr"))
-	continue;
-
-      if (s != d) {
-	if (d != url->url_params)
-	  d++;
-	if (s != d)
-	  memmove(d, s, n + 1);
-      }
-      d += n;
-    }
-
-    if (d == url->url_params)
-      url->url_params = NULL;
-    else if (d != s)
-      *d = '\0';
-
-#   undef PARAM_MATCH
-  }
+  if (url->url_params)
+    url->url_params = 
+      url_strip_param_string((char *)url->url_params, "method");
 
   return 0;
 }
