@@ -246,7 +246,7 @@ void nua_destroy(nua_t *nua)
  */
 nua_magic_t *nua_magic(nua_t *nua)
 {
-  reutrn nua ? nua->nua_magic : NULL;
+  return nua ? nua->nua_magic : NULL;
 }
 
 /** Obtain default operation handle of the @nua stack object.
