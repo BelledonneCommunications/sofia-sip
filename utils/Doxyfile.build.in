@@ -15,7 +15,8 @@ INPUT                += @top_srcdir@/libsofia-sip-ua/stun/stunc.c
 
 OUTPUT_DIRECTORY     = ../man
 
-@INCLUDE = @top_srcdir@/libsofia-sip-ua/docs/Doxyfile.aliases
-@INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.rfc
+@INCLUDE_PATH = . @srcdir@
 
-@INCLUDE = 	     @srcdir@/Doxyfile
+@INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.aliases
+@INCLUDE = ../libsofia-sip-ua/docs/Doxyfile.rfc
+@INCLUDE = Doxyfile
