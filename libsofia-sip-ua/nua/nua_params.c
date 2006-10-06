@@ -1080,8 +1080,9 @@ int nua_handle_save_tags(nua_handle_t *nh, tagi_t *tags)
     ;
   else if (to_str)
     p_to = sip_to_make(tmphome, to_str);
-  else if (url) 
-    p_to = sip_to_create(tmphome, url);
+  else if (url)
+    p_to = sip_to_create(tmphome, url), 
+      p_to ? sip_aor_strip((url_t*)p_to->a_url) : 0;
   else
     p_to = SIP_NONE;
   

@@ -54,6 +54,7 @@ int test_simple(struct context *ctx)
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
   sip_t const *sip;
+  url_t url[1];
 
 /* Message test
 
@@ -66,10 +67,18 @@ int test_simple(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-11.1: MESSAGE\n");
 
-  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+  if (ctx->proxy_tests)
+    *url = *b->to->a_url;
+  else
+    *url = *b->contact->m_url;
+
+  /* Test that query part is included in request sent to B */
+  url->url_headers = "organization=United%20Testers";
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, TAG_END()));
 
   MESSAGE(a, a_call, a_call->nh,
-	  TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	  NUTAG_URL(url),
 	  SIPTAG_SUBJECT_STR("NUA-11.1"),
 	  SIPTAG_CONTENT_TYPE_STR("text/plain"),
 	  SIPTAG_PAYLOAD_STR("Hello hellO!\n"),
@@ -93,6 +102,8 @@ int test_simple(struct context *ctx)
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_subject && sip->sip_subject->g_string);
   TEST_S(sip->sip_subject->g_string, "NUA-11.1");
+  TEST_1(sip->sip_organization);
+  TEST_S(sip->sip_organization->g_string, "United Testers");
   TEST_1(!e->next);
 
   free_events_in_list(ctx, a->events);
