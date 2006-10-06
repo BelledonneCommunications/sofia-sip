@@ -63,7 +63,7 @@ AC_DEFUN([SAC_CANONICAL_SYSTEM_CACHE_CHECK], [
 
 dnl Get host, target and build variables filled with appropriate info.
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET([])
 
 dnl Check to assure the cached information is valid.
 
@@ -175,10 +175,9 @@ dnl ======================================================================
 AC_DEFUN([AC_SYS_SA_LEN], [
 AC_CACHE_CHECK([for sa_len],
   ac_cv_sa_len,
-[AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/socket.h>], [
- struct sockaddr t;t.sa_len = 0;],
-  ac_cv_sa_len=yes,ac_cv_sa_len=no)])
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/types.h>
+#include <sys/socket.h>]], [[
+ struct sockaddr t;t.sa_len = 0;]])],[ac_cv_sa_len=yes],[ac_cv_sa_len=no])])
 if test "$ac_cv_sa_len" = yes ;then
 	AC_DEFINE([HAVE_SA_LEN], 1, 
 		[Define to 1 if you have sa_len in struct sockaddr])
@@ -192,11 +191,11 @@ AC_DEFUN([AC_FLAG_MSG_NOSIGNAL], [
 AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK([for MSG_NOSIGNAL], 
   ac_cv_flag_msg_nosignal, [
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
-#include <sys/socket.h>], [
+#include <sys/socket.h>]], [[
   int flags = MSG_NOSIGNAL;
-], ac_cv_flag_msg_nosignal=yes, ac_cv_flag_msg_nosignal=no)])
+]])],[ac_cv_flag_msg_nosignal=yes],[ac_cv_flag_msg_nosignal=no])])
 if test "$ac_cv_flag_msg_nosignal" = yes ; then
 	AC_DEFINE([HAVE_MSG_NOSIGNAL], 1,
 		[Define to 1 if you have MSG_NOSIGNAL flag for send()]) 
@@ -210,11 +209,11 @@ AC_DEFUN([AC_SYS_MSG_ERRQUEUE], [
 AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK([for MSG_ERRQUEUE], 
   ac_cv_flag_msg_errqueue, [
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
-#include <sys/socket.h>], [
+#include <sys/socket.h>]], [[
   int flags = MSG_ERRQUEUE;
-], ac_cv_flag_msg_errqueue=yes, ac_cv_flag_msg_errqueue=no)])
+]])],[ac_cv_flag_msg_errqueue=yes],[ac_cv_flag_msg_errqueue=no])])
 if test "$ac_cv_flag_msg_errqueue" = yes; then
 	AC_DEFINE([HAVE_MSG_ERRQUEUE], 1,
 		[Define to 1 if you have MSG_ERRQUEUE flag for send()]) 
@@ -228,16 +227,15 @@ AC_DEFUN([AC_SYS_IP_RECVERR], [
 AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK([for IP_RECVERR], 
   ac_cv_sys_ip_recverr, [
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-], [
+]], [[
   int one = 1;
   int s = 0;
   setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one));
-], ac_cv_sys_ip_recverr=yes,
-ac_cv_sys_ip_recverr=no)])
+]])],[ac_cv_sys_ip_recverr=yes],[ac_cv_sys_ip_recverr=no])])
 if test "$ac_cv_sys_ip_recverr" = yes ; then
 	AC_DEFINE([HAVE_IP_RECVERR], 1, 
 		[Define to 1 if you have IP_RECVERR in <netinet/in.h>])
@@ -251,15 +249,15 @@ AC_DEFUN([AC_SYS_IPV6_RECVERR], [
 AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK([for IPV6_RECVERR], 
   ac_cv_sys_ipv6_recverr, [
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-], [
+]], [[
   int one = 1;
   int s = 0;
   setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one));
-], ac_cv_sys_ipv6_recverr=yes, ac_cv_sys_ipv6_recverr=no)])
+]])],[ac_cv_sys_ipv6_recverr=yes],[ac_cv_sys_ipv6_recverr=no])])
 if test "$ac_cv_sys_ipv6_recverr" = yes ; then
 	AC_DEFINE([HAVE_IPV6_RECVERR], 1,
 		[Define to 1 if you have IPV6_RECVERR in <netinet/in6.h>])
@@ -280,12 +278,10 @@ AC_CACHE_VAL(ax_cv_header_$ax_safe,
     do
 	old_CPPFLAGS="$CPPFLAGS"
        	test "$ax_path" != "yes" && CPPFLAGS="-I$ax_path $CPPFLAGS"
-      	AC_TRY_CPP([#include <$1>], 
-	 [eval ax_cv_header_$ax_safe="$ax_path";
+      	AC_PREPROC_IFELSE([AC_LANG_SOURCE([[#include <$1>]])],[eval ax_cv_header_$ax_safe="$ax_path";
 	  CPPFLAGS="$old_CPPFLAGS";
-          break],
-	 CPPFLAGS="$old_CPPFLAGS"
-	 )
+          break],[CPPFLAGS="$old_CPPFLAGS"
+	 ])
    done
 ])
 
@@ -340,10 +336,8 @@ dnl ======================================================================
 AC_DEFUN([AC_C_VAR_FUNC],
 [AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK(whether $CC recognizes __func__, ac_cv_c_var_func,
-AC_TRY_COMPILE(,
-[char *s = __func__;
-],
-ac_cv_c_var_func=yes, ac_cv_c_var_func=no))
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[char *s = __func__;
+]])],[ac_cv_c_var_func=yes],[ac_cv_c_var_func=no]))
 if test $ac_cv_c_var_func = "yes"; then
 AC_DEFINE([HAVE_FUNC], 1, [Define to 1 if the C compiler supports __func__]) 
 fi
@@ -352,10 +346,9 @@ fi
 AC_DEFUN([AC_C_MACRO_FUNCTION],
 [AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK(whether $CC recognizes __FUNCTION__, ac_cv_c_macro_function,
-AC_TRY_COMPILE(,
-[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 char *s = __FUNCTION__;
-], ac_cv_c_macro_function=yes, ac_cv_c_macro_function=no))
+]])],[ac_cv_c_macro_function=yes],[ac_cv_c_macro_function=no]))
 if test $ac_cv_c_macro_function = "yes"; then
 AC_DEFINE([HAVE_FUNCTION], 1, [Define to 1 if the C compiler supports __FUNCTION__]) 
 fi
@@ -377,12 +370,10 @@ dnl ======================================================================
 AC_DEFUN([AC_C_KEYWORD_STRUCT], [
 AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK(whether $CC recognizes field names in struct initialization, ac_cv_c_keyword_struct,
-AC_TRY_COMPILE(,
-[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
   struct { int foo; char *bar; } test = { foo: 1, bar: "bar" };
   return 0;
-],
-ac_cv_c_keyword_struct=yes, ac_cv_c_keyword_struct=no))
+]])],[ac_cv_c_keyword_struct=yes],[ac_cv_c_keyword_struct=no]))
 if test $ac_cv_c_keyword_struct = "yes"; then
 AC_DEFINE([HAVE_STRUCT_KEYWORDS], 1, [
 Define to 1 if your CC supports C99 struct initialization]) 
