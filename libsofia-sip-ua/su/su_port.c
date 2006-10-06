@@ -749,18 +749,13 @@ int su_port_register(su_port_t *self,
   if (priority > 0) {
     /* Insert */
     for (n = self->sup_n_waits; n > 0; n--) {
-      self->sup_reverses[n] = self->sup_reverses[n-1];
+      j = self->sup_reverses[n-1]; assert(self->sup_indices[j] == n - 1);
+      self->sup_indices[j] = n;
+      self->sup_reverses[n] = j;
       self->sup_waits[n] = self->sup_waits[n-1];
       self->sup_wait_cbs[n] = self->sup_wait_cbs[n-1];
       self->sup_wait_args[n] = self->sup_wait_args[n-1];
       self->sup_wait_roots[n] = self->sup_wait_roots[n-1];	
-    }
-
-    if (self->sup_n_waits > 1) {
-      for (j = 0; j < self->sup_size_waits; j++) {
-	if (self->sup_indices[j] >= 0)
-	  self->sup_indices[j]++;
-      }
     }
 
     self->sup_pri_offset++;
