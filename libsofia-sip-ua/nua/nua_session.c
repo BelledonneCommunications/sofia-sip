@@ -1609,7 +1609,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
     soa_clear_remote_sdp(nh->nh_soa);
   }
   else if (status >= 200 || ss->ss_100rel ||
-	   (sr->sr_offer_recv && !sr->sr_answer_sent && early_answer)) {
+	   (sr->sr_offer_recv && sr->sr_answer_sent <= 1 && early_answer)) {
     if ((sr->sr_offer_recv && sr->sr_answer_sent > 1) ||
 	(sr->sr_offer_sent && !sr->sr_answer_recv))
       /* Nothing to do */;
