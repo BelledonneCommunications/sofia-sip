@@ -55,8 +55,22 @@ struct pinger;
 #include "sofia-sip/su.h"
 #include "sofia-sip/su_wait.h"
 #include "sofia-sip/su_log.h"
+#include "sofia-sip/su_debug.h"
 
 #include "sofia-sip/su_osx_runloop.h"
+
+#if HAVE_FUNC
+#define enter (void)SU_DEBUG_9(("torture_su_root_osx: %s: entering\n", __func__))
+#define nh_enter (void)SU_DEBUG_9(("torture_su_root_osx %s(%p): entering\n", __func__, nh))
+#elif HAVE_FUNCTION
+#define enter (void)SU_DEBUG_9(("torture_su_root_osx: %s: entering\n", __FUNCTION__))
+#define nh_enter (void)SU_DEBUG_9(("torture_su_root_osx %s(%p): entering\n", __FUNCTION__, nh))
+#define __func__ __FUNCTION__
+#else
+#define enter ((void)0)
+#define nh_enter ((void)0)
+#define __func__ "torture_su_root_osx"
+#endif
 
 struct pinger {
   enum { PINGER = 1, PONGER = 2 } const sort;
@@ -84,6 +98,8 @@ static su_socket_t udpsocket(void)
   su_sockaddr_t su = { 0 };
   socklen_t sulen = sizeof(su);
   char nbuf[64];
+  
+  enter;
 
   su.su_family = opt_family;
 
@@ -117,6 +133,8 @@ static char *snow(su_time_t now)
 {
   static char buf[24];
 
+  enter;
+
   su_time_print(buf, sizeof(buf), &now);
 
   return buf;
@@ -126,6 +144,10 @@ void
 do_ping(struct pinger *p, su_timer_t *t, void *p0)
 {
   char buf[1024];
+
+  enter;
+
+  printf("%s: pinger p == %x\n", __func__, (unsigned int) p);
 
   assert(p == su_root_magic(su_timer_root(t)));
   assert(p->sort == PINGER);
@@ -155,6 +177,8 @@ do_rtt(struct pinger *p, su_wait_t *w, void *p0)
   int n;
   su_time_t now = su_now();
   double rtt;
+
+  enter;
 
   assert(p0 == p);
   assert(p->sort == PINGER);
@@ -187,6 +211,8 @@ do_pong(struct pinger *p, su_timer_t *t, void *p0)
 {
   char buf[1024];
 
+  enter;
+
   assert(p == su_root_magic(su_timer_root(t)));
   assert(p->sort == PONGER);
 
@@ -213,6 +239,8 @@ do_recv(struct pinger *p, su_wait_t *w, void *p0)
   char nbuf[1024];
   int n;
   su_time_t now = su_now();
+
+  enter;
 
   assert(p0 == p);
   assert(p->sort == PONGER);
@@ -253,6 +281,8 @@ do_recv(struct pinger *p, su_wait_t *w, void *p0)
 void
 do_exit(struct pinger *x, su_timer_t *t, void *x0)
 {
+  enter;
+
   if (opt_verbatim)
     printf("do_exit at %s\n", snow(su_now()));
   su_root_break(su_timer_root(t));
@@ -268,6 +298,8 @@ do_init(su_root_t *root, struct pinger *p)
   su_wakeup_f f;
   int index, index0;
 
+  enter;
+
   switch (p->sort) {
   case PINGER: f = do_rtt;  interval = 200; break;
   case PONGER: f = do_recv; interval = 40;  break;
@@ -279,6 +311,8 @@ do_init(su_root_t *root, struct pinger *p)
   s = udpsocket();
   if (su_wait_create(&w, s, SU_WAIT_IN) == SOCKET_ERROR)
     su_perror("su_wait_create"), exit(1);
+
+  /* CFSocketEnableCallbacks(s, map_poll_revent_to_cf_event(su_wait_events(&w, s))); */
 
   p->s = s;
   p->t = t = su_timer_create(su_root_task(root), interval);
@@ -309,16 +343,22 @@ do_init(su_root_t *root, struct pinger *p)
 void
 do_destroy(su_root_t *root, struct pinger *p)
 {
+  enter;
+
   if (opt_verbatim)
     printf("do_destroy %s at %s\n", p->name, snow(su_now()));
+
   su_root_deregister(root, p->rindex);
   su_timer_destroy(p->t), p->t = NULL;
+
   p->running = 0;
 }
 
 void
 start_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 {
+  enter;
+
   if (!p->running)
     return;
 
@@ -334,6 +374,8 @@ void
 start_pong(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 {
   su_msg_r reply;
+
+  enter;
 
   if (!p->running)
     return;
@@ -360,6 +402,8 @@ init_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 {
   su_msg_r reply;
 
+  enter;
+
   if (opt_verbatim)
     printf("init_ping: %s\n", p->name);
 
@@ -378,6 +422,8 @@ init_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 static
 RETSIGTYPE term(int n)
 {
+  enter;
+
   exit(1);
 }
 
@@ -387,6 +433,8 @@ time_test(void)
   su_time_t now = su_now(), then = now;
   su_duration_t t1, t2;
   su_duration_t us;
+
+  enter;
 
   for (us = 0; us < 1000000; us += 300) {
     then.tv_sec = now.tv_sec;
@@ -435,6 +483,8 @@ int main(int argc, char *argv[])
 
   char *argv0 = argv[0];
 
+  enter;
+
   while (argv[1]) {
     if (strcmp(argv[1], "-v") == 0) {
       opt_verbatim = 1;
@@ -469,11 +519,6 @@ int main(int argc, char *argv[])
 
   if (!root) perror("su_root_osx_runloop_create"), exit(1);
   
-#if 0
-  if (!g_source_attach(su_root_gsource(root), NULL)) 
-    perror("g_source_attach"), exit(1);
-  #endif
-
   su_root_threading(root, 0 && !opt_singlethread);
 
   if (su_clone_start(root, ping, &pinger, do_init, do_destroy) != 0)
@@ -491,7 +536,13 @@ int main(int argc, char *argv[])
 		init_ping, 0);
   su_msg_send(start_msg);
 
+#if 1
+  while (1) {
+    su_root_step(root, 20);
+  }
+#else
   su_root_run(root);
+#endif
 
   su_clone_wait(root, ping);
   su_clone_wait(root, pong);
