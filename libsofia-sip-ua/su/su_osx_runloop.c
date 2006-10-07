@@ -22,50 +22,55 @@
  *
  */
 
-/**
- * @file su_osx_runloop.c
- * @brief Wrapper for OS X Core Foundation Run Loop.
- *  
- * @author Martti Mela <Martti.Mela@nokia.com>.
- * 
- * @date Created: Tue Sep 19 17:16:00 EEST 2006 mela
- * 
+/**@ingroup su_wait
+ * @CFILE su_osx_runloop.c
+ *
+ * OS-Independent Socket Syncronization Interface.
+ *
+ * This looks like nth reincarnation of "reactor".  It implements the
+ * poll/select/WaitForMultipleObjects and message passing functionality.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Kai Vehmanen <kai.vehmanen@nokia.com>
+ *
+ * @date Created: Tue Sep 14 15:51:04 1999 ppessi
  */
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-/* Use Posix stuff */
-#define _XOPEN_SOURCE  (500)
+/* React to multiple events per one poll() to make sure 
+ * that high-priority events can never completely mask other events.
+ * Enabled by default on all platforms except WIN32 */
+#ifndef WIN32
+#define SU_ENABLE_MULTISHOT_POLL 1
+#else
+#define SU_ENABLE_MULTISHOT_POLL 0
+#endif
 
 #include <stdlib.h>
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
-
-#include <AvailabilityMacros.h>
-#include <sys/cdefs.h>
-#include <CoreFoundation/CoreFoundation.h>
-
-#if HAVE_GETTIMEOFDAY
-#include <sys/time.h>
-#else
-#error "You need sys/time.h header installed"
-#endif
+#include <errno.h>
 
 #define SU_PORT_IMPLEMENTATION 1
 
-#define SU_MSG_ARG_T union { char anoymous[4]; }
-
-#define su_port_s su_port_osx_s
-
-#include "sofia-sip/su_osx_runloop.h"
-
 #include "sofia-sip/su.h"
 #include "su_port.h"
+#include "sofia-sip/su_osx_runloop.h"
 #include "sofia-sip/su_alloc.h"
+#include "sofia-sip/su_debug.h"
+
+#if HAVE_FUNC
+#define enter (void)SU_DEBUG_9(("%s: entering\n", __func__))
+#elif HAVE_FUNCTION
+#define enter (void)SU_DEBUG_9(("%s: entering\n", __FUNCTION__))
+#else
+#define enter (void)0
+#endif
+
 
 #if SU_HAVE_PTHREADS
 /* Pthread implementation */
@@ -83,17 +88,6 @@
 
 static su_port_t *su_osx_runloop_create(void) __attribute__((__malloc__));
 
-#if 0
-static gboolean su_source_prepare(GSource *gs, gint *return_tout);
-static gboolean su_source_check(GSource *gs);
-static gboolean su_source_dispatch(GSource *gs,
-			    GSourceFunc callback,
-			    gpointer user_data);
-static void su_source_finalize(GSource *source);
-#endif
-
-static int su_port_osx_getmsgs(su_port_t *self);
-
 /* Callback for CFSocket */
 static void su_port_osx_socket_cb(CFSocketRef s, 
 				  CFSocketCallBackType callbackType, 
@@ -101,40 +95,10 @@ static void su_port_osx_socket_cb(CFSocketRef s,
 				  const void *data, 
 				  void *info);
 
-#if 0
-/* Callbacks of Source Context */
-/* static const void *su_port_osx_retain(const void *info); */
-static void        su_port_osx_release(const void *info);
-//static const void *su_port_osx_copy_description(const void *info);
-//static CFHashCode  su_port_osx_hash(const void *info);
-static void        su_port_osx_schedule(void *info, CFRunLoopRef rl, CFStringRef mode);
-static void        su_port_osx_cancel(void *info, CFRunLoopRef rl, CFStringRef mode);
-#endif
-static void        su_port_osx_perform(const void *info);
-
-
-#if 0
-static
-CFRunLoopSourceContext su_port_osx_funcs[1] = {{
-    0, /* type */
-    NULL, /* context */
-    NULL, /* su_port_osx_retain, */ /* CFAllocatorRetainCallBack */
-    su_port_osx_release, /* CFAllocatorReleaseCallBack */
-    NULL, /* su_port_osx_copyDescription, */ /* CFAllocatorCopyDescriptionCallBack */
-    NULL, /* su_port_osx_equal, */ /* CFRunLoopEqualCallBack */
-    NULL, /* su_port_osx_hash, */ /* CFRunLoopHashCallBack */
-    su_port_osx_schedule, /* CFRunLoopScheduleCallBack */
-    su_port_osx_cancel, /* CFRunLoopCancelCallBack */
-    su_port_osx_perform /* CFRunLoopPerformCallBack */
-}};
-#endif
-
 static void su_port_osx_lock(su_port_t *self, char const *who);
 static void su_port_osx_unlock(su_port_t *self, char const *who);
 static void su_port_osx_incref(su_port_t *self, char const *who);
 static void su_port_osx_decref(su_port_t *self, int blocking, char const *who);
-
-static CFRunLoopRef su_port_osx_runloop(su_port_t *port);
 
 static int su_port_osx_send(su_port_t *self, su_msg_r rmsg);
 
@@ -149,26 +113,52 @@ static int su_port_osx_unregister(su_port_t *port,
 			      su_wait_t *wait,	
 			      su_wakeup_f callback, 
 			      su_wakeup_arg_t *arg);
+
 static int su_port_osx_deregister(su_port_t *self, int i);
+
 static int su_port_osx_unregister_all(su_port_t *self,
-				  su_root_t *root);
-static int su_port_osx_eventmask(su_port_t *self, 
-			     int index, int socket, int events);
-static void su_port_osx_run(su_port_t *self);
-static void su_port_osx_break(su_port_t *self);
-static su_duration_t su_port_osx_step(su_port_t *self, su_duration_t tout);
-static int su_port_osx_own_thread(su_port_t const *port);
-static int su_port_osx_add_prepoll(su_port_t *port,
-			       su_root_t *root, 
-			       su_prepoll_f *, 
-			       su_prepoll_magic_t *);
-static int su_port_osx_remove_prepoll(su_port_t *port,
-				  su_root_t *root);
-static su_timer_t **su_port_osx_timers(su_port_t *port);
-static int su_port_osx_multishot(su_port_t *self, int multishot);
-static int su_port_osx_threadsafe(su_port_t *port);
+			   su_root_t *root);
+
+static int su_port_osx_getmsgs(su_port_t *self);
+static
+int su_port_osx_eventmask(su_port_t *self, int index, int socket, int events);
+static
+void su_port_osx_run(su_port_t *self);
+static
+void su_port_osx_break(su_port_t *self);
+static
+su_duration_t su_port_osx_step(su_port_t *self, su_duration_t tout);
+
+#if 0
+unsigned su_port_query(su_port_t *, su_wait_t *, unsigned n_waits);
+void su_port_event(su_port_t *, su_wait_t *waitobj);
+#endif
 
 static
+int su_port_osx_own_thread(su_port_t const *port);
+
+static
+int su_port_osx_add_prepoll(su_port_t *port,
+			su_root_t *root, 
+			su_prepoll_f *, 
+			su_prepoll_magic_t *);
+
+static
+int su_port_osx_remove_prepoll(su_port_t *port,
+			   su_root_t *root);
+
+static
+su_timer_t **su_port_osx_timers(su_port_t *port);
+
+static
+int su_port_osx_multishot(su_port_t *port, int multishot);
+
+static
+int su_port_osx_threadsafe(su_port_t *port);
+
+static
+int su_port_osx_yield(su_port_t *port);
+
 su_port_vtable_t const su_port_osx_vtable[1] =
   {{
       /* su_vtable_size: */ sizeof su_port_osx_vtable,
@@ -176,9 +166,7 @@ su_port_vtable_t const su_port_osx_vtable[1] =
       su_port_osx_unlock,
       su_port_osx_incref,
       su_port_osx_decref,
-
-      su_port_osx_runloop, /* XXX - was: gsource, */
-
+      NULL /* su_port_osx_runloop */, /* XXX - was: gsource, */
       su_port_osx_send,
       su_port_osx_register,
       su_port_osx_unregister,
@@ -193,23 +181,38 @@ su_port_vtable_t const su_port_osx_vtable[1] =
       su_port_osx_remove_prepoll,
       su_port_osx_timers,
       su_port_osx_multishot,
-      su_port_osx_threadsafe
-
+      su_port_osx_threadsafe,
+      su_port_osx_yield
     }};
+
+static int su_port_osx_wait_events(su_port_t *self, su_duration_t tout);
+
 
 /** 
  * Port is a per-thread reactor.  
  *
  * Multiple root objects executed by single thread share a su_port_t object. 
  */
-struct su_port_osx_s {
+struct su_port_s {
   su_home_t        sup_home[1];
+
   su_port_vtable_t const *sup_vtable;
+  
+  unsigned         sup_running;
+  unsigned         sup_source_fired;
+
 
 #if SU_HAVE_PTHREADS
   pthread_t        sup_tid;
   pthread_mutex_t  sup_mutex[1];
+#if __CYGWIN__
+  pthread_mutex_t  sup_reflock[1];
+  int              sup_ref;
+#else
   pthread_rwlock_t sup_ref[1];
+#endif
+#else
+  int              sup_ref;
 #endif
 
 #if SU_HAVE_MBOX
@@ -217,47 +220,115 @@ struct su_port_osx_s {
   su_wait_t        sup_mbox_wait;
 #endif
 
-  CFRunLoopSourceRef sup_source;
-  CFRunLoopRef       sup_main_loop;
+  CFRunLoopRef        sup_main_loop;
+  CFRunLoopSourceRef *sup_sources;
+  CFSocketRef        *sup_sockets;
   
+  unsigned         sup_multishot; /**< Multishot operation? */
+
+  unsigned         sup_registers; /** Counter incremented by 
+				      su_port_register() or 
+				      su_port_unregister()
+				   */
+  int              sup_n_waits; /**< Active su_wait_t in su_waits */
+  int              sup_size_waits; /**< Size of allocate su_waits */
+
+  int              sup_pri_offset; /**< Offset to prioritized waits */
+
+#define INDEX_MAX (0x7fffffff)
+
+  /** Indices from index returned by su_root_register() to tables below. 
+   *
+   * Free elements are negative. Free elements form a list, value of free
+   * element is (0 - index of next free element).
+   *
+   * First element sup_indices[0] points to first free element. 
+   */
+  int             *sup_indices;
+
+  int             *sup_reverses; /** Reverse index */
+  su_wakeup_f     *sup_wait_cbs; 
+  su_wakeup_arg_t**sup_wait_args; 
+  su_root_t      **sup_wait_roots; 
+
+  su_wait_t       *sup_waits; 
+
+  /* Pre-poll callback */
+  su_prepoll_f    *sup_prepoll; 
+  su_prepoll_magic_t *sup_pp_magic;
+  su_root_t       *sup_pp_root;
+
+  /* Timer list */
+  su_timer_t      *sup_timers;
+
   /* Message list - this is protected by lock  */
   su_msg_t        *sup_head;
   su_msg_t       **sup_tail;
 
-  /* Waits */
-  unsigned         sup_registers; /** Counter incremented by 
-				      su_port_register() or 
-				      su_port_unregister()
-				  */
-  unsigned            sup_n_waits; 
-  unsigned            sup_size_waits; 
+#if 0
+  int              sup_free_index;   /**< Number of first free index */
+  int             *sup_indices; /** Indices to registrations */
 
-  int                 sup_pri_offset; /**< Offset to prioritized waits */
+  int             *sup_reverses; /** Reverse index */
+  su_wakeup_f     *sup_wait_cbs; 
+  su_wakeup_arg_t**sup_wait_args; 
+  su_root_t      **sup_wait_roots; 
 
-  unsigned            sup_max_index;
-  int                 sup_free_index;   /**< Number of first free index */
-  int                *sup_indices; 
-  su_wait_t          *sup_waits; 
-  CFRunLoopSourceRef *sup_sources;
-  int                *sup_reverses; /** Reverse index */
-  su_wakeup_f        *sup_wait_cbs; 
-  su_wakeup_arg_t   **sup_wait_args; 
-  su_root_t         **sup_wait_roots; 
+  su_wait_t       *sup_waits; 
+
+  /* Pre-poll callback */
+  su_prepoll_f    *sup_prepoll; 
+  su_prepoll_magic_t *sup_pp_magic;
+  su_root_t       *sup_pp_root;
 
   /* Timer list */
   su_timer_t      *sup_timers;
+
+  /* Message list - this is protected by lock  */
+  su_msg_t        *sup_head;
+  su_msg_t       **sup_tail;
+#endif
 };
 
-typedef struct _SuSource
-{
-  su_port_t          ss_port[1];
-} SuSource;
+
+/* Struct for CFSocket callbacks; contains current CFSource index */
+typedef struct {
+  su_port_t *o_port;
+  int        o_current;
+  int        o_count;
+} osx_magic_t;
 
 
 #if SU_HAVE_PTHREADS
-
 #define SU_PORT_OSX_OWN_THREAD(p)   (pthread_equal((p)->sup_tid, pthread_self()))
 
+#if __CYGWIN__
+
+/* Debugging versions */
+#define SU_PORT_OSX_INITREF(p)      (pthread_mutex_init((p)->sup_reflock, NULL), printf("initref(%p)\n", (p)))
+#define SU_PORT_OSX_INCREF(p, f)    (pthread_mutex_lock(p->sup_reflock), p->sup_ref++, pthread_mutex_unlock(p->sup_reflock), printf("incref(%p) by %s\n", (p), f))
+#define SU_PORT_OSX_DECREF(p, f)    do {					\
+    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
+    if ((p->sup_ref) == 0) {			\
+      printf("decref(%p) to 0 by %s\n", (p), f); su_port_osx_destroy(p); }	\
+    else { printf("decref(%p) to %u by %s\n", (p), p->sup_ref, f); }  } while(0)
+
+#define SU_PORT_OSX_ZAPREF(p, f)    do { printf("zapref(%p) by %s\n", (p), f), \
+    pthread_mutex_lock(p->sup_reflock);	p->sup_ref--; pthread_mutex_unlock(p->sup_reflock); \
+  if ((p->sup_ref) != 0) { \
+    assert(!"SU_PORT_OSX_ZAPREF"); } \
+  su_port_osx_destroy(p); } while(0)
+
+#define SU_PORT_OSX_INITLOCK(p) \
+   (pthread_mutex_init((p)->sup_mutex, NULL), printf("init_lock(%p)\n", p))
+
+#define SU_PORT_OSX_LOCK(p, f)    \
+   (printf("%ld at %s locking(%p)...", pthread_self(), f, p), pthread_mutex_lock((p)->sup_mutex), printf(" ...%ld at %s locked(%p)...", pthread_self(), f, p))
+
+#define SU_PORT_OSX_UNLOCK(p, f)  \
+  (pthread_mutex_unlock((p)->sup_mutex), printf(" ...%ld at %s unlocked(%p)\n", pthread_self(), f, p))
+
+#elif 1
 #define SU_PORT_OSX_INITREF(p)      (pthread_rwlock_init(p->sup_ref, NULL))
 #define SU_PORT_OSX_INCREF(p, f)    (pthread_rwlock_rdlock(p->sup_ref))
 #define SU_PORT_OSX_DECREF(p, f)    do { pthread_rwlock_unlock(p->sup_ref); \
@@ -272,33 +343,76 @@ typedef struct _SuSource
 #define SU_PORT_OSX_LOCK(p, f)      (pthread_mutex_lock((p)->sup_mutex))
 #define SU_PORT_OSX_UNLOCK(p, f)    (pthread_mutex_unlock((p)->sup_mutex))
 
-#endif /* !SU_HAVE_PTHREADS */
-
-#if HAVE_FUNC
-#define enter (void)SU_DEBUG_9(("%s: entering\n", __func__))
-#elif HAVE_FUNCTION
-#define enter (void)SU_DEBUG_9(("%s: entering\n", __FUNCTION__))
 #else
-#define enter (void)0
+
+/* Debugging versions */
+#define SU_PORT_OSX_INITREF(p)      (pthread_rwlock_init((p)->sup_ref, NULL), printf("initref(%p)\n", (p)))
+#define SU_PORT_OSX_INCREF(p, f)    (pthread_rwlock_rdlock(p->sup_ref), printf("incref(%p) by %s\n", (p), f))
+#define SU_PORT_OSX_DECREF(p, f)    do {					\
+    pthread_rwlock_unlock(p->sup_ref);					\
+    if (pthread_rwlock_trywrlock(p->sup_ref) == 0) {			\
+      printf("decref(%p) to 0 by %s\n", (p), f); su_port_osx_destroy(p); }	\
+    else { printf("decref(%p) by %s\n", (p), f); }  } while(0)
+
+#define SU_PORT_OSX_ZAPREF(p, f)    do { printf("zapref(%p) by %s\n", (p), f), \
+  pthread_rwlock_unlock(p->sup_ref); \
+  if (pthread_rwlock_trywrlock(p->sup_ref) != 0) { \
+    assert(!"SU_PORT_OSX_ZAPREF"); pthread_rwlock_wrlock(p->sup_ref); } \
+  su_port_osx_destroy(p); } while(0)
+
+#define SU_PORT_OSX_INITLOCK(p) \
+   (pthread_mutex_init((p)->sup_mutex, NULL), printf("init_lock(%p)\n", p))
+
+#define SU_PORT_OSX_LOCK(p, f)    \
+   (printf("%ld at %s locking(%p)...", pthread_self(), f, p), pthread_mutex_lock((p)->sup_mutex), printf(" ...%ld at %s locked(%p)...", pthread_self(), f, p))
+
+#define SU_PORT_OSX_UNLOCK(p, f)  \
+  (pthread_mutex_unlock((p)->sup_mutex), printf(" ...%ld at %s unlocked(%p)\n", pthread_self(), f, p))
+
+#endif
+
+#else /* !SU_HAVE_PTHREADS */
+
+#define SU_PORT_OSX_OWN_THREAD(p)  1
+#define SU_PORT_OSX_INITLOCK(p)    (void)(p)
+#define SU_PORT_OSX_LOCK(p, f)      (void)(p)
+#define SU_PORT_OSX_UNLOCK(p, f)    (void)(p)
+#define SU_PORT_OSX_ZAPREF(p, f)    ((p)->sup_ref--)
+
+#define SU_PORT_OSX_INITREF(p)      ((p)->sup_ref = 1)
+#define SU_PORT_OSX_INCREF(p, f)    ((p)->sup_ref++)
+#define SU_PORT_OSX_DECREF(p, f) \
+do { if (--((p)->sup_ref) == 0) su_port_osx_destroy(p); } while (0);
+
 #endif
 
 #if SU_HAVE_MBOX
 static int su_port_osx_wakeup(su_root_magic_t *magic, 
-			      su_wait_t *w,
-			      su_wakeup_arg_t *arg);
+			  su_wait_t *w,
+			  su_wakeup_arg_t *arg);
 #endif
 
 static void su_port_osx_destroy(su_port_t *self);
 
-/** Create a root that uses GSource as reactor */
+/** Create a reactor object.
+ *
+ * Allocate and initialize the instance of su_root_t.
+ *
+ * @param magic     pointer to user data
+ *
+ * @return A pointer to allocated su_root_t instance, NULL on error.
+ */
 su_root_t *su_root_osx_runloop_create(su_root_magic_t *magic)
 {
   return su_root_create_with_port(magic, su_osx_runloop_create());
 }
 
+
 /**@internal
  *
- * Allocates and initializes a reactor and message port object.
+ * Allocates and initializes a message port. It creates a mailbox used to.
+ * wake up the tasks waiting on the port if needed.  Currently, the
+ * mailbox is simply an UDP socket connected to itself.
  *
  * @return
  *   If successful a pointer to the new message port is returned, otherwise
@@ -306,9 +420,11 @@ su_root_t *su_root_osx_runloop_create(su_root_magic_t *magic)
  */
 su_port_t *su_osx_runloop_create(void)
 {
-  su_port_t *self = su_home_clone(NULL, sizeof(*self));
+  su_port_t *self;
 
   SU_DEBUG_9(("su_osx_runloop_create() called\n"));
+
+  self = su_home_clone(NULL, sizeof(*self));
 
   if (self) {
 #if SU_HAVE_MBOX
@@ -321,19 +437,14 @@ su_port_t *su_osx_runloop_create(void)
     
     SU_PORT_OSX_INITREF(self);
     SU_PORT_OSX_INITLOCK(self);
-
     self->sup_tail = &self->sup_head;
 
-    self->sup_free_index = -1;
-
-    //self->sup_multishot = (SU_ENABLE_MULTISHOT_POLL) != 0;
+    self->sup_multishot = (SU_ENABLE_MULTISHOT_POLL) != 0;
 
 #if SU_HAVE_PTHREADS
     self->sup_tid = pthread_self();
 #endif
-
-    SU_DEBUG_9(("su_port_osx_with_main_context() returns %p\n", self));
-
+  
 #if SU_HAVE_MBOX
 #if HAVE_SOCKETPAIR
 #if defined(AF_LOCAL)
@@ -342,7 +453,7 @@ su_port_t *su_osx_runloop_create(void)
     af = AF_UNIX;
 #endif
     if (socketpair(af, SOCK_STREAM, 0, self->sup_mbox) == -1) {
-      why = "su_port_init: socketpair"; goto error;
+      why = "su_port_osx_init: socketpair"; goto error;
     }
 
     mb = self->sup_mbox[0];
@@ -358,7 +469,7 @@ su_port_t *su_osx_runloop_create(void)
 
       self->sup_mbox[0] = mb = su_socket(af, SOCK_DGRAM, IPPROTO_UDP);
       if (mb == INVALID_SOCKET) {
-	why = "su_port_init: socket"; goto error;
+	why = "su_port_osx_init: socket"; goto error;
       }
   
       sin.sin_family = AF_INET;
@@ -366,30 +477,31 @@ su_port_t *su_osx_runloop_create(void)
       
       /* Get a port for us */
       if (bind(mb, sa, sizeof sin) == -1) {
-	why = "su_port_init: bind"; goto error;
+	why = "su_port_osx_init: bind"; goto error;
       }
 
       if (getsockname(mb, sa, &sinsize) == -1) {
-	why = "su_port_init: getsockname"; goto error;
+	why = "su_port_osx_init: getsockname"; goto error;
       }
     
       if (connect(mb, sa, sinsize) == -1) {
-	why = "su_port_init: connect"; goto error;
+	why = "su_port_osx_init: connect"; goto error;
       }
     }
 #endif    
 
     if (su_wait_create(&self->sup_mbox_wait, mb, SU_WAIT_IN) == -1) {
-      why = "su_port_init: su_wait_create"; goto error;
+      why = "su_port_osx_init: su_wait_create"; goto error;
     }
 
-    if (su_port_osx_register(self, NULL, &self->sup_mbox_wait, su_port_osx_wakeup, 
-			 (su_wakeup_arg_t *)self->sup_mbox, 0)
+    if (su_port_osx_register(self, NULL, &self->sup_mbox_wait,
+			     su_port_osx_wakeup, 
+			     (su_wakeup_arg_t *)self->sup_mbox, 0)
 	== -1) {
-      why = "su_port_create: su_port_register"; goto error;
+      why = "su_port_osx_create: su_port_osx_register"; goto error;
     }
 
-    SU_DEBUG_9(("su_port_create() returns %p\n", self));
+    SU_DEBUG_9(("su_port_osx_create() returns %p\n", self));
 
     return self;
 
@@ -399,193 +511,9 @@ su_port_t *su_osx_runloop_create(void)
 #endif
   }
 
-  SU_DEBUG_9(("su_port_create() returns %p\n", self));
+  SU_DEBUG_9(("su_port_osx_create() returns %p\n", self));
 
   return self;
-}
-
-#if 0
-/** @internal Destroy a port. */
-/* XXX -- static void su_port_osx_finalize(GSource *gs) */
-static void su_port_osx_release(const void *info)
-
-{
-  SuSource *ss = (SuSource *) info;
-  su_port_t *self = ss->ss_port;
-
-  assert(ss);
-
-  SU_DEBUG_9(("su_port_osx_release() called\n"));
-
-  if (self->sup_waits) 
-    free(self->sup_waits), self->sup_waits = NULL;
-  if (self->sup_sources) 
-    free(self->sup_sources), self->sup_sources = NULL;
-  if (self->sup_wait_cbs)
-    free(self->sup_wait_cbs), self->sup_wait_cbs = NULL;
-  if (self->sup_wait_args)
-    free(self->sup_wait_args), self->sup_wait_args = NULL;
-  if (self->sup_wait_roots)
-    free(self->sup_wait_roots), self->sup_wait_roots = NULL;
-  if (self->sup_reverses)
-    free(self->sup_reverses), self->sup_reverses = NULL;
-  if (self->sup_indices)
-    free(self->sup_indices), self->sup_indices = NULL;
-
-  su_home_deinit(self->sup_home);
-}
-#endif
-
-/* Seconds from 1.1.1900 to 1.1.1970 */
-#define NTP_EPOCH 2208988800UL 
-
-#if 0
-/* gboolean su_port_osx_prepare(void *info, int *return_tout); */
-static
-void su_port_osx_schedule(void *info, CFRunLoopRef rl, CFStringRef mode)
-{
-  SuSource *ss = (SuSource *) info; /* XXX -- was: gs */
-  su_port_t *self = ss->ss_port;
-
-  enter;
-  
-  if (self->sup_head)
-    return;
-
-  /* *return_tout = -1; */
-
-  if (self->sup_timers) {
-    su_time_t now;
-    struct timeval tval;
-    su_duration_t tout;
-
-    tout = SU_DURATION_MAX;
-
-#if 1 /* XXX -- mela: add header + ifdefs */
-    gettimeofday(&tval, NULL);
-#endif
-
-    now.tv_sec = tval.tv_sec + 2208988800UL;
-    now.tv_usec = tval.tv_usec;
-
-    tout = su_timer_next_expires(self->sup_timers, now);
-#if 0
-    if (tout == 0)
-      return TRUE;
-
-    if ((int)tout < 0 || tout > (su_duration_t)G_MAXINT)
-      tout = -1;
-
-    *return_tout = (int)tout;
-#endif
-  }
-  
-  return;
-}
-
-
-static
-void su_port_osx_cancel(void *info, CFRunLoopRef rl, CFStringRef mode)
-{
-  
-  su_port_osx_release(info);
-
-  return;
-}
-#endif
-
-#if 0
-static
-gboolean su_port_osx_check(GSource *gs)
-{
-  SuSource *ss = (SuSource *)gs;
-  su_port_t *self = ss->ss_port;
-  gint tout;
-  unsigned i, I;
-
-  enter;
-
-  I = self->sup_n_waits;
-
-#if 0
-#if SU_HAVE_POLL
-  for (i = 0; i < I; i++) {
-    if (self->sup_waits[i].revents)
-      return TRUE;
-  }
-#endif
-#endif
-
-  return su_port_osx_prepare(gs, &tout);
-}
-#endif
-
-#if 0
-static 
-gboolean su_port_osx_dispatch(GSource *gs,
-			      GSourceFunc callback,
-			      gpointer user_data);
-#endif
-
-static
-void su_port_osx_socket_cb(CFSocketRef s, 
-			   CFSocketCallBackType callbackType, 
-			   CFDataRef address, 
-			   const void *data, 
-			   void *info)
-{
-  enter;
-
-  su_port_osx_perform(info);
-}
-static void su_port_osx_perform(const void *info)
-{
-  SuSource *ss = (SuSource *) info; /* gs; */
-  su_port_t *self = ss->ss_port;
-
-  enter;
-
-  if (self->sup_head)
-    su_port_osx_getmsgs(self);
-
-  if (self->sup_timers) {
-    su_time_t now;
-    struct timeval tval;
-    su_duration_t tout;
-    int timers = 0;
-
-    tout = SU_DURATION_MAX;
-
-    gettimeofday(&tval, NULL);
-
-    now.tv_sec = tval.tv_sec + 2208988800UL;
-    now.tv_usec = tval.tv_usec;
-
-    timers = su_timer_expire(&self->sup_timers, &tout, now);
-  }
-
-#if SU_HAVE_POLL
-  {
-    su_root_t *root;
-    su_wait_t *waits = self->sup_waits;
-    unsigned i, n = self->sup_n_waits;
-    unsigned version = self->sup_registers;
-
-    for (i = 0; i < n; i++) {
-      if (waits[i].revents) {
-	root = self->sup_wait_roots[i];
-	self->sup_wait_cbs[i](root ? su_root_magic(root) : NULL, 
-			      &waits[i], 
-			      self->sup_wait_args[i]);
-	/* Callback used su_register()/su_unregister() */
-	if (version != self->sup_registers)
-	  break;
-      }
-    }
-  }
-#endif
-
-  return;
 }
 
 /** @internal Destroy a port. */
@@ -607,20 +535,20 @@ void su_port_osx_destroy(su_port_t *self)
     SU_DEBUG_9(("su_port_osx_destroy() close mailbox\n"));
   }
 #endif
-  if (self->sup_waits) 
-    free(self->sup_waits), self->sup_waits = NULL;
   if (self->sup_sources) 
     free(self->sup_sources), self->sup_sources = NULL;
+  if (self->sup_sockets) 
+    free(self->sup_sockets), self->sup_sockets = NULL;
+  if (self->sup_waits) 
+    free(self->sup_waits), self->sup_waits = NULL;
   if (self->sup_wait_cbs)
     free(self->sup_wait_cbs), self->sup_wait_cbs = NULL;
   if (self->sup_wait_args)
     free(self->sup_wait_args), self->sup_wait_args = NULL;
   if (self->sup_wait_roots)
     free(self->sup_wait_roots), self->sup_wait_roots = NULL;
-#if 0
   if (self->sup_reverses)
     free(self->sup_reverses), self->sup_reverses = NULL;
-#endif
   if (self->sup_indices)
     free(self->sup_indices), self->sup_indices = NULL;
 
@@ -649,13 +577,94 @@ static void su_port_osx_incref(su_port_t *self, char const *who)
 
 static void su_port_osx_decref(su_port_t *self, int blocking, char const *who)
 {
-  /* XXX - blocking? */
-  SU_PORT_OSX_DECREF(self, who);
+  if (blocking)
+    SU_PORT_OSX_ZAPREF(self, who);
+  else
+    SU_PORT_OSX_DECREF(self, who);
 }
 
-CFRunLoopRef su_port_osx_runloop(su_port_t *self)
+#if 0
+static int map_cf_event_to_poll_event(CFSocketCallBackType type)
 {
-  return self->sup_main_loop;
+  int revent = 0;
+  
+  if (type & kCFSocketReadCallBack)
+    revent |= SU_WAIT_IN;
+    
+  if (type &kCFSocketWriteCallBack)
+    revent |= SU_WAIT_OUT;
+
+  if (type &kCFSocketConnectCallBack)
+    revent |= SU_WAIT_CONNECT;
+
+  if (type &kCFSocketAcceptCallBack)
+    revent |= SU_WAIT_ACCEPT;
+
+  return revent;
+}
+#endif
+
+static CFSocketCallBackType map_poll_event_to_cf_event(int events)
+{
+  CFSocketCallBackType type = 0;
+
+  if (events & SU_WAIT_IN)
+    type |= kCFSocketReadCallBack;
+  
+  if (events & SU_WAIT_OUT)
+    type |= kCFSocketWriteCallBack;
+  
+#if 0
+  if (events & SU_WAIT_CONNECT)
+    type |= kCFSocketConnectCallBack;
+  
+  if (events & SU_WAIT_ACCEPT)
+    type |= kCFSocketAcceptCallBack;
+#endif
+
+  return type;
+}
+
+
+static
+void su_port_osx_socket_cb(CFSocketRef s, 
+			   CFSocketCallBackType type, 
+			   CFDataRef address, 
+			   const void *data, 
+			   void *info)
+{
+  osx_magic_t       *magic = (osx_magic_t *) info;
+  su_port_t         *self = magic->o_port;
+  int                curr = magic->o_current;
+  su_duration_t tout = 2000;
+
+#if SU_HAVE_POLL
+  {
+    su_root_t *root;
+    su_wait_t *waits = self->sup_waits;
+    int n = self->sup_indices[curr];
+
+    assert(self->sup_reverses[n] == curr);
+
+  SU_DEBUG_9(("socket_cb(%p): count %u index %d\n", self->sup_sources[n], magic->o_count, curr));
+
+    root = self->sup_wait_roots[n];
+    self->sup_wait_cbs[n](root ? su_root_magic(root) : NULL, 
+			  &waits[n], 
+			  self->sup_wait_args[n]);
+
+    if (self->sup_running) {
+      su_port_osx_getmsgs(self);
+
+      if (self->sup_timers)
+	su_timer_expire(&self->sup_timers, &tout, su_now());
+    }
+
+    /* Tell to run loop an su socket fired */
+    self->sup_source_fired = 1;
+  }
+#endif
+
 }
 
 #if SU_HAVE_MBOX
@@ -675,31 +684,37 @@ static int su_port_osx_wakeup(su_root_magic_t *magic, /* NULL */
 /** @internal Send a message to the port. */
 int su_port_osx_send(su_port_t *self, su_msg_r rmsg)
 {
-  enter;
-  
+  CFRunLoopRef rl;
+
   if (self) {
-    su_msg_t *msg;
-    CFRunLoopRef rl;
-    /* CFRunLoopSourceContext rlsc[1]; */
-    /* GMainContext *gmc; */
+    int wakeup;
 
     SU_PORT_OSX_LOCK(self, "su_port_osx_send");
+    
+    wakeup = self->sup_head == NULL;
 
-    msg = rmsg[0]; rmsg[0] = NULL;
-    *self->sup_tail = msg;
-    self->sup_tail = &msg->sum_next;
+    *self->sup_tail = rmsg[0]; rmsg[0] = NULL;
+    self->sup_tail = &(*self->sup_tail)->sum_next;
+
+#if SU_HAVE_MBOX
+    /* if (!pthread_equal(pthread_self(), self->sup_tid)) */
+    if (wakeup)
+    {
+      assert(self->sup_mbox[MBOX_SEND] != INVALID_SOCKET);
+
+      if (send(self->sup_mbox[MBOX_SEND], "X", 1, 0) == -1) {
+#if HAVE_SOCKETPAIR
+	if (su_errno() != EWOULDBLOCK)
+#endif
+	  su_perror("su_msg_send: send()");
+      }
+    }
+#endif
 
     SU_PORT_OSX_UNLOCK(self, "su_port_osx_send");
 
-    /* CFRunLoopSourceGetContext(self->sup_source, rlsc); */
-    
-    /* gmc = g_source_get_context(self->sup_source); */
-
     rl = CFRunLoopGetCurrent();
-    if (rl)
-      CFRunLoopWakeUp(rl);
-
-    /* g_main_context_wakeup(gmc); */
+    CFRunLoopWakeUp(rl);
 
     return 0;
   }
@@ -714,48 +729,43 @@ int su_port_osx_send(su_port_t *self, su_msg_r rmsg)
  *
  * @param self - pointer to a port object
  *
- * @retval 0 if there was a signal to handle, 
- * @retval -1 otherwise.
+ * @retval Number of messages sent
  */
-static
 int su_port_osx_getmsgs(su_port_t *self)
 {
-  enter;
-  
-  if (self && self->sup_head) {
-    su_root_t *root;
+  int n = 0;
+
+  if (self->sup_head) {
     su_msg_f f;
+    su_msg_t *msg, *queue;
 
-    SU_PORT_OSX_INCREF(self, "su_port_osx_getmsgs");
-    SU_PORT_OSX_LOCK(self, "su_port_osx_getmsgs");
+    SU_PORT_OSX_LOCK(self, "su_port_getmsgs");
 
-    while (self->sup_head) {
-      su_msg_t *msg = self->sup_head;
-      self->sup_head = msg->sum_next;
-      if (!self->sup_head) {
-	assert(self->sup_tail == &msg->sum_next);
-	self->sup_tail = &self->sup_head;
-      }
-      root = msg->sum_to->sut_root;
-      f = msg->sum_func;
-      SU_PORT_OSX_UNLOCK(self, "su_port_osx_getmsgs");
-      if (f) 
-	f(su_root_magic(root), &msg, msg->sum_data);
-      if (msg && msg->sum_report)
-	su_msg_delivery_report(&msg);
-      else
-	su_msg_destroy(&msg);
-      SU_PORT_OSX_LOCK(self, "su_port_osx_getmsgs");
-    }
+    queue = self->sup_head;
+    self->sup_tail = &self->sup_head;
+    self->sup_head = NULL;
 
     SU_PORT_OSX_UNLOCK(self, "su_port_osx_getmsgs");
-    SU_PORT_OSX_DECREF(self, "su_port_osx_getmsgs");
 
-    return 0;
+    for (msg = queue; msg; msg = queue) {
+      queue = msg->sum_next;
+      msg->sum_next = NULL;
+
+      f = msg->sum_func;
+      if (f) 
+	f(SU_ROOT_MAGIC(msg->sum_to->sut_root), &msg, msg->sum_data);
+      su_msg_delivery_report(&msg);
+      n++;
+    }
+
+    /* Check for wait events that may have been generated by messages */
+    su_port_osx_wait_events(self, 0);
   }
-  else
-    return -1;
+
+  return n;
 }
+
+static int o_count;
 
 /** @internal
  *
@@ -778,26 +788,27 @@ int su_port_osx_getmsgs(su_port_t *self)
  *   The function @su_port_osx_register returns nonzero index of the wait object, 
  *   or -1 upon an error.  */
 int su_port_osx_register(su_port_t *self,
-		       su_root_t *root, 
-		       su_wait_t *wait, 
-		       su_wakeup_f callback,
-		       su_wakeup_arg_t *arg,
-		       int priority)
+			 su_root_t *root, 
+			 su_wait_t *wait, 
+			 su_wakeup_f callback,
+			 su_wakeup_arg_t *arg,
+			 int priority)
 {
-  unsigned i, j;
-  unsigned n;
+  int i, j, n;
   CFRunLoopRef rl;
-  CFRunLoopSourceRef *sources;
-  CFRunLoopSourceRef source;
-  CFSocketRef cf_socket;
+  CFRunLoopSourceRef *sources, source;
+  CFSocketRef cf_socket, *sockets;
   int events = 0;
-  CFSocketContext cf_socket_cntx[1] = {{0, self, NULL, NULL, NULL}};
+  osx_magic_t *osx_magic = NULL;
+  CFSocketContext cf_socket_cntx[1] = {{0, NULL, NULL, NULL, NULL}};
+  CFOptionFlags flags = 0;
 
-  enter;
-  
   assert(SU_PORT_OSX_OWN_THREAD(self));
 
   n = self->sup_n_waits;
+
+  if (n >= SU_WAIT_MAX)
+    return su_seterrno(ENOMEM);
 
   if (n >= self->sup_size_waits) {
     /* Reallocate size arrays */
@@ -808,7 +819,6 @@ int su_port_osx_register(su_port_t *self,
     su_wakeup_f *wait_cbs;
     su_wakeup_arg_t **wait_args;
     su_root_t **wait_tasks;
-    assert(self->sup_free_index == -1);
 
     if (self->sup_size_waits == 0)
       size = su_root_size_hint;
@@ -822,17 +832,12 @@ int su_port_osx_register(su_port_t *self,
     if (-3 - size > 0)
       return (errno = ENOMEM), -1;
 
-    indices = realloc(self->sup_indices, size * sizeof(*indices));
+    indices = realloc(self->sup_indices, (size + 1) * sizeof(*indices));
     if (indices) {
       self->sup_indices = indices;
 
-      for (i = self->sup_size_waits; i < size - 1; i++)
-	indices[i] = -3 - i;
-
-      if (self->sup_size_waits < size) {
-	indices[i] = -1;
-	self->sup_free_index = -2 - self->sup_size_waits;
-      }
+      for (i = self->sup_size_waits; i <= size; i++)
+	indices[i] = -1 - i;
     }
 
     reverses = realloc(self->sup_reverses, size * sizeof(*waits));
@@ -842,13 +847,17 @@ int su_port_osx_register(su_port_t *self,
       self->sup_reverses = reverses;
     }
       
-    waits = realloc(self->sup_waits, size * sizeof(*waits));
-    if (waits)
-      self->sup_waits = waits;
-
     sources = realloc(self->sup_sources, size * sizeof(*sources));
     if (sources)
       self->sup_sources = sources;
+
+    sockets = realloc(self->sup_sockets, size * sizeof(*sockets));
+    if (sockets)
+      self->sup_sockets = sockets;
+
+    waits = realloc(self->sup_waits, size * sizeof(*waits));
+    if (waits)
+      self->sup_waits = waits;
 
     wait_cbs = realloc(self->sup_wait_cbs, size * sizeof(*wait_cbs));
     if (wait_cbs)
@@ -864,133 +873,160 @@ int su_port_osx_register(su_port_t *self,
       self->sup_wait_roots = wait_tasks;
 
     if (!(indices && 
-	  reverses && waits && wait_cbs && wait_args && wait_tasks)) {
+	  reverses && sources && sockets && waits && wait_cbs && wait_args && wait_tasks)) {
       return -1;
     }
 
     self->sup_size_waits = size;
   }
 
-  self->sup_n_waits++;
-
-  events = kCFSocketReadCallBack | kCFSocketAcceptCallBack |
-    kCFSocketDataCallBack | kCFSocketConnectCallBack |
-    kCFSocketWriteCallBack;
-
-
-  cf_socket = CFSocketCreateWithNative(kCFAllocatorDefault,
-				       (CFSocketNativeHandle) su_wait_socket(wait),
-				       events, su_port_osx_socket_cb, cf_socket_cntx);
-
-  source = CFSocketCreateRunLoopSource(kCFAllocatorDefault, cf_socket, 0);
-
-  rl = CFRunLoopGetCurrent();
-  CFRunLoopAddSource(rl, source, kCFRunLoopDefaultMode);
+  i = -self->sup_indices[0]; assert(i <= self->sup_size_waits);
 
   if (priority > 0) {
     /* Insert */
-    for (; n > 0; n--) {
+    for (n = self->sup_n_waits; n > 0; n--) {
+      j = self->sup_reverses[n-1]; assert(self->sup_indices[j] == n - 1);
+      self->sup_indices[j] = n;
       self->sup_reverses[n] = self->sup_reverses[n-1];
-      self->sup_waits[n] = self->sup_waits[n-1];
       self->sup_sources[n] = self->sup_sources[n-1];
+      self->sup_sockets[n] = self->sup_sockets[n-1];
+      self->sup_waits[n] = self->sup_waits[n-1];
       self->sup_wait_cbs[n] = self->sup_wait_cbs[n-1];
       self->sup_wait_args[n] = self->sup_wait_args[n-1];
       self->sup_wait_roots[n] = self->sup_wait_roots[n-1];	
     }
+
     self->sup_pri_offset++;
   }
   else {
     /* Append - no need to move anything */
+    n = self->sup_n_waits;
   }
 
-  i = -2 - self->sup_free_index; assert(i < self->sup_size_waits);
-  self->sup_free_index = self->sup_indices[i];
+  self->sup_n_waits++;
+
+  self->sup_indices[0] = self->sup_indices[i];  /* Free index */
+  self->sup_indices[i] = n;
 
   self->sup_reverses[n] = i;
   self->sup_waits[n] = *wait;
   self->sup_wait_cbs[n] = callback;
-  self->sup_sources[n] = source;
   self->sup_wait_args[n] = arg;
   self->sup_wait_roots[n] = root;
 
-  if (n == 0 && self->sup_n_waits > 1) {
-    for (j = 0; j < self->sup_size_waits; j++) {
-      if (self->sup_indices[j] >= 0)
-	self->sup_indices[j]++;
-    }
-  }
-
-  self->sup_indices[i] = n;
   self->sup_registers++;
 
-  return i + !SU_HAVE_MBOX;	/* Mailbox has index 0 */
+  /* XXX -- mela: leak, leak -- free() somewheeeere */
+  osx_magic = calloc(1, sizeof(*osx_magic));
+  osx_magic->o_port = self;
+  osx_magic->o_current = i;
+  osx_magic->o_count = ++o_count;
+  cf_socket_cntx->info = osx_magic;
+
+  events = map_poll_event_to_cf_event(wait->events);
+
+  cf_socket = CFSocketCreateWithNative(NULL,
+				       (CFSocketNativeHandle) su_wait_socket(wait),
+				       events, su_port_osx_socket_cb, cf_socket_cntx);
+
+  flags = CFSocketGetSocketFlags(cf_socket);
+  flags &= ~kCFSocketCloseOnInvalidate;
+
+  CFSocketSetSocketFlags(cf_socket, flags);
+
+  CFRetain(cf_socket);
+  source = CFSocketCreateRunLoopSource(NULL, cf_socket, 0);
+
+  SU_DEBUG_9(("source(%p): count %u index %d\n", source, o_count, i));
+
+  rl = CFRunLoopGetCurrent();
+
+  CFRunLoopAddSource(rl, source, kCFRunLoopDefaultMode);
+
+  CFRetain(source);
+  self->sup_sources[n] = source;
+  self->sup_sockets[n] = cf_socket;
+
+  CFRunLoopWakeUp(rl);
+
+  /* Just like epoll, we return -1 or positive integer */
+
+  return i;
 }
 
 /** Deregister a su_wait_t object. */
 static
-int su_port_osx_deregister0(su_port_t *self, int i, su_wait_t wait[1])
+int su_port_osx_deregister0(su_port_t *self, int i)
 {
-  int n, j, N, *indices, *reverses;
   CFRunLoopRef rl;
+  int n, N, *indices, *reverses;
 
-  i -= !SU_HAVE_MBOX;
-
-  N = self->sup_n_waits;
   indices = self->sup_indices;
   reverses = self->sup_reverses;
 
-  n = indices[i];
+  n = indices[i]; assert(n >= 0); assert(i == reverses[n]);
 
-  if (n < 0)
-    return -1;
-
-  assert(i == self->sup_reverses[n]);
-
-  self->sup_n_waits = N = N - 1;
-
-  wait[0] = self->sup_waits[n];
+  N = --self->sup_n_waits;
   
   rl = CFRunLoopGetCurrent();
+  CFSocketInvalidate(self->sup_sockets[n]);
+  CFRelease(self->sup_sockets[n]);
+  CFRunLoopRemoveSource(rl, self->sup_sources[n], kCFRunLoopDefaultMode);
+  CFRelease(self->sup_sources[n]);
 
-  if (N > 0) {
-    if (n < self->sup_pri_offset) {
-      j = self->sup_pri_offset - 1;
-      if (n != j) {
-	assert(reverses[j] >= 0);
-	indices[reverses[j]] = n;
-	self->sup_reverses[n] = self->sup_reverses[j];
-	self->sup_waits[n] = self->sup_waits[j];
-	self->sup_wait_cbs[n] = self->sup_wait_cbs[j];
-	/* XXX -- mela: really? */
-	CFRunLoopRemoveSource(rl, self->sup_sources[n], kCFRunLoopDefaultMode);
-	self->sup_sources[n] = self->sup_sources[j];
-	self->sup_wait_args[n] = self->sup_wait_args[j];
-	self->sup_wait_roots[n] = self->sup_wait_roots[j];
-	n = j;
-      }
-      self->sup_pri_offset = j;
-    }
-    if (n < N) {
-      assert(reverses[N] >= 0);
-      indices[reverses[N]] = n;
-      self->sup_reverses[n] = self->sup_reverses[N];
-      self->sup_waits[n] = self->sup_waits[N];
-      self->sup_wait_cbs[n] = self->sup_wait_cbs[N];
-	/* XXX -- mela: really? */
-      CFRunLoopRemoveSource(rl, self->sup_sources[n], kCFRunLoopDefaultMode);
-      self->sup_sources[n] = self->sup_sources[N];
-      self->sup_wait_args[n] = self->sup_wait_args[N];
-      self->sup_wait_roots[n] = self->sup_wait_roots[N];
+  /* CFRunLoopWakeUp(rl); */
+
+  if (n < self->sup_pri_offset) {
+    int j = --self->sup_pri_offset;
+    if (n != j) {
+      assert(reverses[j] > 0);
+      assert(indices[reverses[j]] == j);
+      indices[reverses[j]] = n;
+      reverses[n] = reverses[j];
+
+      self->sup_sources[n] = self->sup_sources[j];
+      self->sup_sockets[n] = self->sup_sockets[j];
+      self->sup_waits[n] = self->sup_waits[j];
+      self->sup_wait_cbs[n] = self->sup_wait_cbs[j];
+      self->sup_wait_args[n] = self->sup_wait_args[j];
+      self->sup_wait_roots[n] = self->sup_wait_roots[j];
+      n = j;
     }
   }
 
-  indices[i] = self->sup_free_index;
-  self->sup_free_index = -2 - i;
+  if (n < N) {
+    assert(reverses[N] > 0);
+    assert(indices[reverses[N]] == N);
+
+    indices[reverses[N]] = n;
+    reverses[n] = reverses[N];
+
+    self->sup_sources[n] = self->sup_sources[N];
+    self->sup_sockets[n] = self->sup_sockets[N];
+    self->sup_waits[n] = self->sup_waits[N];
+    self->sup_wait_cbs[n] = self->sup_wait_cbs[N];
+    self->sup_wait_args[n] = self->sup_wait_args[N];
+    self->sup_wait_roots[n] = self->sup_wait_roots[N];
+    n = N;
+  }
+
+
+  reverses[n] = -1;
+  memset(&self->sup_waits[n], 0, sizeof self->sup_waits[n]);
+  self->sup_sources[n] = NULL;
+  self->sup_sockets[n] = NULL;
+  self->sup_wait_cbs[n] = NULL;
+  self->sup_wait_args[n] = NULL;
+  self->sup_wait_roots[n] = NULL;
+  
+  indices[i] = indices[0];
+  indices[0] = -i;
 
   self->sup_registers++;
 
-  return (int)i + !SU_HAVE_MBOX;
+  return i;
 }
+
 
 /** Unregister a su_wait_t object.
  *  
@@ -1008,31 +1044,21 @@ int su_port_osx_deregister0(su_port_t *self, int i, su_wait_t wait[1])
  * @return Nonzero index of the wait object, or -1 upon an error.
  */
 int su_port_osx_unregister(su_port_t *self,
-			   su_root_t *root, 
-			   su_wait_t *wait,	
-			   su_wakeup_f callback, /* XXX - ignored */
-			   su_wakeup_arg_t *arg)
+		       su_root_t *root, 
+		       su_wait_t *wait,	
+		       su_wakeup_f callback, /* XXX - ignored */
+		       su_wakeup_arg_t *arg)
 {
   int n, N;
-  int i, *indices;
-  su_wait_t dummy[1];
 
   assert(self);
   assert(SU_PORT_OSX_OWN_THREAD(self));
 
-  i = (unsigned)-1;
   N = self->sup_n_waits;
-  indices = self->sup_indices;
 
   for (n = 0; n < N; n++) {
     if (SU_WAIT_CMP(wait[0], self->sup_waits[n]) == 0) {
-      /* Found - delete it */
-      if (indices[n] == n)
-	i = n;
-      else for (i = 0; i < self->sup_size_waits; i++)
-	if (indices[i] == n)
-	  break;
-      return su_port_osx_deregister0(self, i, dummy);
+      return su_port_osx_deregister0(self, self->sup_reverses[n]);
     }
   }
 
@@ -1040,7 +1066,6 @@ int su_port_osx_unregister(su_port_t *self,
 
   return -1;
 }
-
 
 /** Deregister a su_wait_t object.
  *  
@@ -1061,23 +1086,25 @@ int su_port_osx_deregister(su_port_t *self, int i)
   assert(self);
   assert(SU_PORT_OSX_OWN_THREAD(self));
 
-  if (i <= 0 || i - !SU_HAVE_MBOX >= self->sup_size_waits)
-    return -1;
+  if (i <= 0 || i > self->sup_size_waits)
+    return su_seterrno(EBADF);
 
-  assert(i - !SU_HAVE_MBOX < self->sup_size_waits);
-
-  retval = su_port_osx_deregister0(self, i, wait);
+  if (self->sup_indices[i] < 0)
+    return su_seterrno(EBADF);
+    
+  retval = su_port_osx_deregister0(self, i);
 
   su_wait_destroy(wait);
 
   return retval;
 }
 
+
 /** @internal
  * Unregister all su_wait_t objects.
  *
  * The function su_port_osx_unregister_all() unregisters all su_wait_t objects
- * associated with given root object destroys all queued timers.
+ * and destroys all queued timers associated with given root object.
  * 
  * @param  self     - pointer to port object
  * @param  root     - pointer to root object
@@ -1087,51 +1114,86 @@ int su_port_osx_deregister(su_port_t *self, int i)
 int su_port_osx_unregister_all(su_port_t *self, 
 			   su_root_t *root)
 {
-  unsigned           i, j;
-  unsigned           n_waits;
-  int               *indices, *reverses;
-  su_wait_t         *waits;
-  su_wakeup_f       *wait_cbs;
-  su_wakeup_arg_t  **wait_args;
-  su_root_t        **wait_roots;
+  int i, j, index, N;
+  int                *indices, *reverses;
+  su_wait_t          *waits;
+  su_wakeup_f        *wait_cbs;
+  su_wakeup_arg_t   **wait_args;
+  su_root_t         **wait_roots;
+  CFRunLoopRef        rl;
   CFRunLoopSourceRef *sources;
+  CFSocketRef        *sockets;
 
-  enter;
-  
   assert(SU_PORT_OSX_OWN_THREAD(self));
 
-  n_waits    = self->sup_n_waits;
+  N          = self->sup_n_waits;
   indices    = self->sup_indices;
   reverses   = self->sup_reverses;
   sources    = self->sup_sources; 
+  sockets    = self->sup_sockets; 
   waits      = self->sup_waits; 
   wait_cbs   = self->sup_wait_cbs; 
   wait_args  = self->sup_wait_args;
   wait_roots = self->sup_wait_roots; 
   
-  for (i = j = 0; (unsigned)i < n_waits; i++) {
+  rl = CFRunLoopGetCurrent();
+
+  for (i = j = 0; i < N; i++) {
+    index = reverses[i]; assert(index > 0 && indices[index] == i);
+
     if (wait_roots[i] == root) {
-      /* XXX - we should free all resources associated with this */
-      indices[reverses[i]] = self->sup_free_index;
-      self->sup_free_index = -2 - reverses[i];
+      if (i < self->sup_pri_offset)
+	self->sup_pri_offset--;
+
+      indices[index] = indices[0];
+      indices[0] = -index;
       continue;
     }
 
-    indices[reverses[i]] = j;
-    reverses[j]   = reverses[i];
-    sources[j]    = sources[i];
-    waits[j]      = waits[i];
-    wait_cbs[j]   = wait_cbs[i];
-    wait_args[j]  = wait_args[i];
-    wait_roots[j] = wait_roots[i];
+    if (i != j) {
+      indices[index] = j;
+
+      CFSocketInvalidate(self->sup_sockets[j]);
+      CFRelease(self->sup_sockets[j]);
+      CFRunLoopRemoveSource(rl, sources[j], kCFRunLoopDefaultMode);
+      CFRelease(sources[j]);
+
+      reverses[j]   = reverses[i];
+      sources[j]    = sources[i];
+      sockets[j]    = sockets[i];
+      waits[j]      = waits[i];
+      wait_cbs[j]   = wait_cbs[i];
+      wait_args[j]  = wait_args[i];
+      wait_roots[j] = wait_roots[i];
+    }
     
     j++;
   }
-  
+
+  /* Prepare for removing CFSources */
+  for (i = j; i < N; i++) {
+    reverses[i] = -1;
+
+    CFSocketInvalidate(self->sup_sockets[i]);
+    CFRelease(self->sup_sockets[i]);
+    CFRunLoopRemoveSource(rl, sources[i], kCFRunLoopDefaultMode);
+    CFRunLoopSourceInvalidate(sources[i]);
+
+    sources[i] = NULL;
+    sockets[i] = NULL;
+    wait_cbs[i] = NULL;
+    wait_args[i] = NULL;
+    wait_roots[i] = NULL;
+  }
+  memset(&waits[j], 0, (char *)&waits[N] - (char *)&waits[j]);
+
+  /* Tell run loop things have changed */
+  CFRunLoopWakeUp(rl);
+
   self->sup_n_waits = j;
   self->sup_registers++;
 
-  return n_waits - j;
+  return N - j;
 }
 
 /**Set mask for a registered event. @internal
@@ -1155,23 +1217,66 @@ int su_port_osx_eventmask(su_port_t *self, int index, int socket, int events)
   assert(SU_PORT_OSX_OWN_THREAD(self));
 
   if (index <= 0 || index > self->sup_size_waits)
-    return -1;
-
-  n = self->sup_indices[index - !SU_HAVE_MBOX];
-
+    return su_seterrno(EBADF);
+  n = self->sup_indices[index];
   if (n < 0)
-    return -1;
+    return su_seterrno(EBADF);
 
   return su_wait_mask(&self->sup_waits[n], socket, events);
 }
 
-static
+/** @internal
+ *
+ *  Copies the su_wait_t objects from the port. The number of wait objects
+ *  can be found out by calling su_port_osx_query() with @a n_waits as zero.
+ * 
+ * @note This function is called only by friends.
+ *
+ * @param self     - pointer to port object
+ * @param waits    - pointer to array to which wait objects are copied
+ * @param n_waits  - number of wait objects fitting in array waits
+ *
+ * @return Number of wait objects, or 0 upon an error.
+ */
+unsigned su_port_osx_query(su_port_t *self, su_wait_t *waits, unsigned n_waits)
+{
+  unsigned n;
+
+  assert(SU_PORT_OSX_OWN_THREAD(self));
+
+  n = self->sup_n_waits;
+
+  if (n_waits != 0) {
+    if (waits && n_waits >= n)
+      memcpy(waits, self->sup_waits, n * sizeof(*waits));
+    else
+      n = 0;
+  }
+
+  return n;
+}
+
+/** @internal Enable multishot mode.
+ *
+ * The function su_port_osx_multishot() enables, disables or queries the
+ * multishot mode for the port. The multishot mode determines how the events
+ * are scheduled by port. If multishot mode is enabled, port serves all the
+ * sockets that have received network events. If it is disables, only first
+ * socket event is served.
+ *
+ * @param self      pointer to port object
+ * @param multishot multishot mode (0 => disables, 1 => enables, -1 => query)
+ * 
+ * @retval 0 multishot mode is disabled
+ * @retval 1 multishot mode is enabled
+ * @retval -1 an error occurred
+ */
 int su_port_osx_multishot(su_port_t *self, int multishot)
 {
-  if (multishot == -1)
-    return 1;
+  if (multishot < 0)
+    return self->sup_multishot;
   else if (multishot == 0 || multishot == 1)
-    return 1;			/* Always enabled */
+    return self->sup_multishot = multishot;
   else 
     return (errno = EINVAL), -1;
 }
@@ -1183,29 +1288,118 @@ int su_port_osx_threadsafe(su_port_t *port)
   return su_home_threadsafe(port->sup_home);
 }
 
-
 /** @internal Main loop.
  * 
- * The function @c su_port_osx_run() runs the main loop
+ * The function @c su_port_osx_run() waits for wait objects and the timers
+ * associated with the port object.  When any wait object is signaled or
+ * timer is expired, it invokes the callbacks, and returns waiting.
  * 
  * The function @c su_port_osx_run() runs until @c su_port_osx_break() is called
  * from a callback.
  * 
- * @param self     pointer to root object
- * */
+ * @param self     pointer to port object
+ * 
+ */
 void su_port_osx_run(su_port_t *self)
 {
-  CFRunLoopRef rl;
+  su_duration_t tout = 0;
+
+  assert(SU_PORT_OSX_OWN_THREAD(self));
 
   enter;
 
-  rl = CFRunLoopGetCurrent();
+  self->sup_running = 1;
 
-  self->sup_main_loop = rl;
+  if (self->sup_prepoll)
+    self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
+
+  if (self->sup_head)
+    su_port_osx_getmsgs(self);
+  
+  if (self->sup_timers)
+    su_timer_expire(&self->sup_timers, &tout, su_now());
+
+  if (!self->sup_running)
+    return;
+
+  self->sup_main_loop = CFRunLoopGetCurrent();
   CFRunLoopRun();
 
   self->sup_main_loop = NULL;
+
+#if 0
+  for (self->sup_running = 1; self->sup_running;) {
+    tout = 2000;
+
+    if (self->sup_prepoll)
+      self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
+
+    if (self->sup_head)
+      su_port_osx_getmsgs(self);
+
+    if (self->sup_timers)
+      su_timer_expire(&self->sup_timers, &tout, su_now());
+
+    if (!self->sup_running)
+      break;
+
+    if (self->sup_head)      /* if there are messages do a quick wait */
+      tout = 0;
+
+    su_port_osx_wait_events(self, tout);
+  }
+#endif
+
 }
+
+#if tuning
+/* This version can help tuning... */
+void su_port_osx_run_tune(su_port_t *self)
+{
+  int i;
+  int timers = 0, messages = 0, events = 0;
+  su_duration_t tout = 0, tout0;
+  su_time_t started = su_now(), woken = started, bedtime = woken;
+
+  assert(SU_PORT_OSX_OWN_THREAD(self));
+
+  for (self->sup_running = 1; self->sup_running;) {
+    tout0 = tout, tout = 2000;
+
+    timers = 0, messages = 0;
+
+    if (self->sup_prepoll)
+      self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
+
+    if (self->sup_head)
+      messages = su_port_osx_getmsgs(self);
+
+    if (self->sup_timers)
+      timers = su_timer_expire(&self->sup_timers, &tout, su_now());
+
+    if (!self->sup_running)
+      break;
+
+    if (self->sup_head)      /* if there are messages do a quick wait */
+      tout = 0;
+
+    bedtime = su_now();
+
+    events = su_port_osx_wait_events(self, tout);
+
+    woken = su_now();
+
+    if (messages || timers || events)
+      SU_DEBUG_1(("su_port_osx_run(%p): %.6f: %u messages %u timers %u "
+		  "events slept %.6f/%.3f\n",
+		  self, su_time_diff(woken, started), messages, timers, events,
+		  su_time_diff(woken, bedtime), tout0 * 1e-3));
+
+    if (!self->sup_running)
+      break;
+  }
+}
+#endif
 
 /** @internal
  * The function @c su_port_osx_break() is used to terminate execution of @c
@@ -1216,10 +1410,79 @@ void su_port_osx_run(su_port_t *self)
  */
 void su_port_osx_break(su_port_t *self)
 {
-  enter;
-  
   if (self->sup_main_loop)
     CFRunLoopStop(self->sup_main_loop);
+
+  self->sup_running = 0; 
+}
+
+/** @internal
+ * The function @c su_port_osx_wait_events() is used to poll() for wait objects
+ *
+ * @param self     pointer to port
+ * @param tout     timeout in milliseconds
+ *
+ * @return number of events handled
+ */
+static
+int su_port_osx_wait_events(su_port_t *self, su_duration_t tout)
+{
+  int i, events = 0;
+  su_wait_t *waits = self->sup_waits;
+  unsigned n = self->sup_n_waits;
+#if HAVE_POLL
+  unsigned version = self->sup_registers;
+#endif
+  su_root_t *root;
+
+  i = su_wait(waits, n, tout);
+
+  if (i >= 0 && (unsigned)i < n) {
+#if HAVE_POLL			
+    /* poll() can return events for multiple wait objects */
+    if (self->sup_multishot) {
+      for (; i < n; i++) {
+        if (waits[i].revents) {
+          root = self->sup_wait_roots[i];
+          self->sup_wait_cbs[i](root ? su_root_magic(root) : NULL,
+                                &waits[i],
+                                self->sup_wait_args[i]);
+          events++;
+          /* Callback function used su_register()/su_deregister() */
+          if (version != self->sup_registers)
+            break;
+        }
+      }
+    }
+#else /* !HAVE_POLL */
+    if (0) {
+    }
+#endif
+    else {
+      root = self->sup_wait_roots[i];
+      self->sup_wait_cbs[i](root ? su_root_magic(root) : NULL,
+                            &self->sup_waits[i],
+                            self->sup_wait_args[i]);
+      events++;
+    }
+  }
+
+  return events;
+}
+
+/** @internal 
+ * Used to check wait events in callbacks that take lots of time
+ *
+ * This function does a timeout 0 poll() and runs wait objects.
+ *
+ * @param port     pointer to port
+ *
+ * @return number of events handled
+ */
+static
+int su_port_osx_yield(su_port_t *port)
+{
+  return su_port_osx_wait_events(port, 0);
 }
 
 /** @internal Block until wait object is signaled or timeout.
@@ -1234,48 +1497,71 @@ void su_port_osx_break(su_port_t *self)
  * @param self     pointer to port
  * @param tout     timeout in milliseconds
  * 
- * @Return
+ * @return
  *   Milliseconds to the next invocation of timer, or @c SU_WAIT_FOREVER if
  *   there are no active timers.
  */
 su_duration_t su_port_osx_step(su_port_t *self, su_duration_t tout)
 {
-  /* GMainContext *gmc; */
   CFRunLoopRef rl;
+  su_time_t now = su_now();
+  CFAbsoluteTime start;
   int ret, timeout = tout > INT32_MAX ? INT32_MAX : tout;
-  CFAbsoluteTime start, soon, next;
 
-  enter;
+  assert(SU_PORT_OSX_OWN_THREAD(self));
 
   rl = CFRunLoopGetCurrent();
 
   if (!rl)
     return -1;
 
-  if (CFRunLoopIsWaiting(rl) == FALSE)
+  if (CFRunLoopIsWaiting(rl) == TRUE)
     CFRunLoopWakeUp(rl);
 
   if (tout < timeout)
     timeout = tout;
 
+  if (self->sup_prepoll)
+    self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
+
+  if (self->sup_head)
+    su_port_osx_getmsgs(self);
+
+  if (self->sup_timers)
+    su_timer_expire(&self->sup_timers, &tout, now);
+
+  /* if there are messages do a quick wait */
+  if (self->sup_head)
+    tout = 0;
+
   start = CFAbsoluteTimeGetCurrent();
   for (;;) {
-    /* Check how long to run this loop */
-    if (CFAbsoluteTimeGetCurrent() >= start + timeout)
-      return SU_WAIT_TIMEOUT;
-    
     /* Run loop with only one pass, indicate if a source was processed */
     ret = CFRunLoopRunInMode(kCFRunLoopDefaultMode,
 			     0,
 			     TRUE);
 
-    if (ret == kCFRunLoopRunHandledSource)
+    /* Ok, one of our sources was fired */
+    if (self->sup_source_fired == 1) {
+      self->sup_source_fired = 0;
+      break;
+    }
+
+    /* Check how long to run this loop */
+    if (CFAbsoluteTimeGetCurrent() >= start + timeout / 1000)
       break;
   }
+  
+  if (self->sup_head)
+    su_port_osx_getmsgs(self);
 
-  soon = CFRunLoopGetNextTimerFireDate(rl, kCFRunLoopDefaultMode);
+  if (self->sup_timers)
+    su_timer_expire(&self->sup_timers, &tout, su_now());
 
-  return (next = soon - CFAbsoluteTimeGetCurrent()) > 0 ? next : SU_WAIT_FOREVER;
+  if (self->sup_head)
+    tout = 0;
+
+  return tout;
 }
 
 
@@ -1309,9 +1595,17 @@ void su_port_osx_dump(su_port_t const *self, FILE *f)
   if (f == NULL)
     f = stdout;
 
-  fprintf(f, "su_port_t at %p:\n", self);
+  fprintf(f, "su_port_osx_t at %p:\n", self);
   fprintf(f, "\tport is%s running\n", self->sup_running ? "" : "not ");
+#if SU_HAVE_PTHREADS
   fprintf(f, "\tport tid %p\n", (void *)self->sup_tid);
+#endif
+#if SU_HAVE_MBOX
+  fprintf(f, "\tport mbox %d (%s%s%s)\n", self->sup_mbox[0],
+	  IS_WAIT_IN(&self->sup_mbox_wait),
+	  IS_WAIT_OUT(&self->sup_mbox_wait),
+	  IS_WAIT_ACCEPT(&self->sup_mbox_wait));
+#endif
   fprintf(f, "\t%d wait objects\n", self->sup_n_waits);
   for (i = 0; i < self->sup_n_waits; i++) {
     
@@ -1329,7 +1623,6 @@ int su_port_osx_add_prepoll(su_port_t *port,
 			su_prepoll_f *callback, 
 			su_prepoll_magic_t *magic)
 {
-#if 0
   if (port->sup_prepoll)
     return -1;
 
@@ -1338,15 +1631,11 @@ int su_port_osx_add_prepoll(su_port_t *port,
   port->sup_pp_root = root;
 
   return 0;
-#else
-  return -1;
-#endif
 }
 
 int su_port_osx_remove_prepoll(su_port_t *port,
 			   su_root_t *root)
 {
-#if 0
   if (port->sup_pp_root != root)
     return -1;
 
@@ -1355,9 +1644,6 @@ int su_port_osx_remove_prepoll(su_port_t *port,
   port->sup_pp_root = NULL;
 
   return 0;
-#else
-  return -1;
-#endif
 }
 
 /* =========================================================================
@@ -1369,3 +1655,4 @@ su_timer_t **su_port_osx_timers(su_port_t *self)
 {
   return &self->sup_timers;
 }
+
