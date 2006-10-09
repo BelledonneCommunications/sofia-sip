@@ -1608,17 +1608,20 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   else if (status >= 300) {
     soa_clear_remote_sdp(nh->nh_soa);
   }
-  else if (status >= 200 || ss->ss_100rel ||
-	   (sr->sr_offer_recv && sr->sr_answer_sent <= 1 && early_answer)) {
+  else {
     int extra = 0;
 
     if (sr->sr_offer_sent && !sr->sr_answer_recv)
       /* Wait for answer */;
     else if (sr->sr_offer_recv && sr->sr_answer_sent > 1) {
+      /* We have sent answer */
+      /* ...  but we may want to send it again */
       tagi_t const *t = tl_find_last(tags, nutag_include_extra_sdp);
       extra = t && t->t_value;
     }
-    else if (sr->sr_offer_recv && !sr->sr_answer_sent) {
+    else if (sr->sr_offer_recv && !sr->sr_answer_sent && 
+	     (reliable || early_answer)) {
+      /* Generate answer */ 
       if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
 	int wcode;
 	char const *text;
@@ -1639,9 +1642,13 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 	/* signal that O/A answer sent (answer to invite) */
       }
     }
-    else if (sr->sr_offer_recv && sr->sr_answer_sent == 1)
+    else if (sr->sr_offer_recv && sr->sr_answer_sent == 1 && 
+	     (reliable || early_answer)) {
+      /* The answer was sent unreliably, keep sending it */
       answer = 1;
-    else if (!sr->sr_offer_recv && !sr->sr_offer_sent) {
+    }
+    else if (!sr->sr_offer_recv && !sr->sr_offer_sent && reliable) {
+      /* Generate offer */
       if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0)
 	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
       else
