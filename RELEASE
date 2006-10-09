@@ -23,8 +23,19 @@ API/ABI changes and versioning
 template: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
 
 libsofia-sip-ua:
-- template: Added foobar() function (sofia-sip/foobar.h).
-- This release is ABI/API compatible with applications linked against 
+- Added functions for handling SIP headers encoded in SIP URL:
+  sip_headers_as_url_query(), sip_url_query_as_taglist(),
+  url_query_as_header_string(), url_unescape_to(),
+  msg_header_parse_str()
+- Added NUTAG_INCLUDE_EXTRA_SDP()
+- Added nua_handle_by_replaces(), nua_handle_make_replaces(),
+  nua_handle_magic() and nua_magic() functions
+- Added Refer-Sub header 
+- Added nua_i_register event for incoming REGISTER requests (nua.h)
+- Added NUTAG_WITH(), nutag_with, NUTAG_WITH_CURRENT(),
+  nua_current_request(), NUTAG_WITH_SAVED(), nua_saved_event_request()
+  (nua_tag.h, nua.h)
+- This release is ABI/API compatible with applications linked against
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 
   unit test (test_nua) built against original 1.12.0 release.
@@ -36,6 +47,9 @@ libsofia-sip-ua-glib:
 
 Contributors to this release
 ----------------------------
+
+- Michael Jerris contributed nua_i_register code along with number of 
+  platform-specific fixes 
 
 <list of people who contributed to _this_ release
  - update as people's patches are added, or when you commit stuff
@@ -52,6 +66,12 @@ See the AUTHORS file in the distribution package.
 Notes on new features
 ---------------------
 
+Query part in SIP URIs is now handled by nta and nua. The SIP URI can
+contain a query part separated with the "?", which specifies SIP headers
+that are included in the request constructed from the URI. For example,
+using URI <sip:example.com?subject=test> would include Subject header
+with value "test" in the request.
+
 <information about major new features
  - new/changed/removed functionality
  - links to further documentation
@@ -67,4 +87,8 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- With NUTAG_EARLY_ANSWER(), include answer in 200 OK, too.
+- Fixed tl_find_last().
+- Fixed bug parsing malformed Refer-To or Referred-By headers. Thanks for
+  Anthony Minessale for reporting this.
 - template: #9499652 sf.net bug item title
