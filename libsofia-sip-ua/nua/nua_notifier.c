@@ -421,13 +421,14 @@ int nua_stack_process_refer(nua_t *nua,
   nu->nu_substate = nua_substate_pending;
   nu->nu_expires = sip_now() + expires;
 
-  /* Immediate notify */
-  nua_stack_post_signal(nh,
-			nua_r_notify,
-			SIPTAG_EVENT(event),
-			SIPTAG_CONTENT_TYPE_STR("message/sipfrag"),
-			SIPTAG_PAYLOAD_STR("SIP/2.0 100 Trying\r\n"),
-			TAG_END());
+  /* Immediate notify in order to establish the dialog */
+  if (!sip->sip_to->a_tag)
+    nua_stack_post_signal(nh,
+			  nua_r_notify,
+			  SIPTAG_EVENT(event),
+			  SIPTAG_CONTENT_TYPE_STR("message/sipfrag"),
+			  SIPTAG_PAYLOAD_STR("SIP/2.0 100 Trying\r\n"),
+			  TAG_END());
   
   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
 		  nua_i_refer, SIP_202_ACCEPTED, 
