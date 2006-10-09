@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005-2006 Nokia Corporation.
+ * Copyright (C) 2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -23,545 +23,341 @@
  */
 
 /**@ingroup su_root_ex
- * @CFILE torture_su_root_osx.c
- *
- * @brief Test program for OSX Core Foundation Run Loop and su root
- * event loop integration.
- *
- * @author Martti Mela <Martti.Mela@nokia.com>
- * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
- * @date Created: Tue Sep 26 17:16:02 EEST 2006 mela
+ * @file torture_su_root_osx.c
+ *
+ * Test su_root_register functionality.
+ *
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
+ *
+ * Copyright (c) 2006 Nokia Research Center.  All rights reserved.
+ *
+ * @date Created: Mon Oct  9 13:25:10 EEST 2006 mela
  */
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <stdlib.h>
-#include <string.h>
+char const *name = "torture_su_root_osx";
+
 #include <stdio.h>
-#include <signal.h>
+#include <string.h>
 
-#include <assert.h>
+#define TSTFLAGS rt->rt_flags
+#include <sofia-sip/tstdef.h>
 
-struct pinger;
-#define SU_ROOT_MAGIC_T struct pinger
-#define SU_INTERNAL_P   su_root_t *
-#define SU_MSG_ARG_T    su_sockaddr_t
+typedef struct root_test_s root_test_t;
+typedef struct test_ep_s   test_ep_t;
 
-#define SU_HAVE_OSX_CF_API 1
+#define SU_ROOT_MAGIC_T  root_test_t
+#define SU_WAKEUP_ARG_T  test_ep_t
 
-#include "sofia-sip/su.h"
-#include "sofia-sip/su_wait.h"
-#include "sofia-sip/su_log.h"
-#include "sofia-sip/su_debug.h"
+#include <sofia-sip/su_osx_runloop.h>
+#include <sofia-sip/su_wait.h>
+#include <sofia-sip/su_alloc.h>
 
-#include "sofia-sip/su_osx_runloop.h"
+typedef struct test_ep_s {
+  int           i;
+  int           s;
+  su_wait_t     wait[1];
+  int           registered;
+  socklen_t     addrlen;
+  su_sockaddr_t addr[1];
+} test_ep_at[1];
 
-#if HAVE_FUNC
-#define enter (void)SU_DEBUG_9(("torture_su_root_osx: %s: entering\n", __func__))
-#define nh_enter (void)SU_DEBUG_9(("torture_su_root_osx %s(%p): entering\n", __func__, nh))
-#elif HAVE_FUNCTION
-#define enter (void)SU_DEBUG_9(("torture_su_root_osx: %s: entering\n", __FUNCTION__))
-#define nh_enter (void)SU_DEBUG_9(("torture_su_root_osx %s(%p): entering\n", __FUNCTION__, nh))
-#define __func__ __FUNCTION__
-#else
-#define enter ((void)0)
-#define nh_enter ((void)0)
-#define __func__ "torture_su_root_osx"
-#endif
+struct root_test_s {
+  su_home_t  rt_home[1];
+  int        rt_flags;
 
-struct pinger {
-  enum { PINGER = 1, PONGER = 2 } const sort;
-  char const *  name;
-  unsigned      running : 1;
-  unsigned      : 0;
-  su_root_t    *root;
-  su_socket_t   s;
-  su_timer_t   *t;
-  int           id;
-  int           rindex;
-  su_time_t     when;
-  su_sockaddr_t addr;
-  double        rtt_total;
-  int           rtt_n;
+  su_root_t *rt_root;
+  short      rt_family;
+  int        rt_status;
+  int        rt_received;
+  int        rt_wakeup;
+
+  su_clone_r rt_clone;
+
+  unsigned   rt_fail_init:1;
+  unsigned   rt_fail_deinit:1;
+  unsigned   rt_success_init:1;
+  unsigned   rt_success_deinit:1;
+
+  test_ep_at rt_ep[5];
 };
 
-short opt_family = AF_INET;
-short opt_verbatim = 0;
-short opt_singlethread = 0;
-
-static su_socket_t udpsocket(void) 
+/** Test root initialization */
+int init_test(root_test_t *rt)
 {
-  su_socket_t s;
-  su_sockaddr_t su = { 0 };
-  socklen_t sulen = sizeof(su);
-  char nbuf[64];
-  
-  enter;
+  su_sockaddr_t su[1] = {{ 0 }};
+  int i;
 
-  su.su_family = opt_family;
+  BEGIN();
 
-  su_getlocalip(&su);
+  su_init();
 
-  s = su_socket(su.su_family, SOCK_DGRAM, 0);
-  if (s == INVALID_SOCKET) {
-    su_perror("udpsocket: socket");
-    exit(1);
+  su->su_family = rt->rt_family;
+
+  TEST_1(rt->rt_root = su_root_osx_runloop_create(rt));
+
+  for (i = 0; i < 5; i++) {
+    test_ep_t *ep = rt->rt_ep[i];
+    ep->i = i;
+    ep->addrlen = su_sockaddr_size(su);
+    TEST_1((ep->s = su_socket(su->su_family, SOCK_DGRAM, 0)) != -1);
+    TEST_1(bind(ep->s, &su->su_sa, ep->addrlen) != -1);
+    TEST_1(su_wait_create(ep->wait, ep->s, SU_WAIT_IN|SU_WAIT_ERR) != -1);
+    TEST_1(getsockname(ep->s, &ep->addr->su_sa, &ep->addrlen) != -1);
+    if (SU_HAS_INADDR_ANY(ep->addr)) {
+      inet_pton(su->su_family, 
+	        su->su_family == AF_INET ? "127.0.0.1" : "::1",
+		SU_ADDR(ep->addr));
+    }
   }
 
-  if (bind(s, &su.su_sa, su_sockaddr_size(&su)) == SOCKET_ERROR) {
-    su_perror("udpsocket: bind");
-    exit(1);
-  }
-
-  if (getsockname(s, &su.su_sa, &sulen) == SOCKET_ERROR) {
-    su_perror("udpsocket: getsockname");
-    exit(1); 
-  }
-
-  if (opt_verbatim)
-    printf("udpsocket: using address [%s]:%u\n",
-	   inet_ntop(su.su_family, SU_ADDR(&su), nbuf, sizeof(nbuf)),
-	   ntohs(su.su_sin.sin_port));
-
-  return s;
+  END();
 }
 
-static char *snow(su_time_t now)
+static int deinit_test(root_test_t *rt)
 {
-  static char buf[24];
+  BEGIN();
 
-  enter;
+  TEST_VOID(su_root_destroy(rt->rt_root)); rt->rt_root = NULL;
+  TEST_VOID(su_root_destroy(NULL));
 
-  su_time_print(buf, sizeof(buf), &now);
+  su_deinit();
 
-  return buf;
+  END();
 }
 
-void 
-do_ping(struct pinger *p, su_timer_t *t, void *p0)
+int wakeup(root_test_t *rt,
+	   su_wait_t *w,
+	   test_ep_t *ep)
 {
-  char buf[1024];
+  char buffer[64];
+  int n, error;
+ 
+  su_wait_events(w, ep->s);
 
-  enter;
+  n = recv(ep->s, buffer, sizeof(buffer), 0);
+  error = su_errno();
+ 
+  if (n < 0)
+    fprintf(stderr, "%s: %s\n", "recv", su_strerror(error));
 
-  printf("%s: pinger p == %x\n", __func__, (unsigned int) p);
+  TEST_1(n > 0);
 
-  assert(p == su_root_magic(su_timer_root(t)));
-  assert(p->sort == PINGER);
-
-  p->when = su_now();
-
-  snprintf(buf, sizeof(buf), "Ping %d at %s", p->id++, snow(p->when));
-  if (sendto(p->s, buf, strlen(buf), 0, 
-	     &p->addr.su_sa, su_sockaddr_size(&p->addr)) == -1) {
-    su_perror("do_ping: send");
-  }
-
-  if (opt_verbatim) {
-    puts(buf);
-    fflush(stdout);
-  }
-}
-
-int
-do_rtt(struct pinger *p, su_wait_t *w, void *p0)
-{
-  su_sockaddr_t su;
-  struct sockaddr * const susa = &su.su_sa;
-  socklen_t susize[] = { sizeof(su)};
-  char buf[1024];
-  char nbuf[1024];
-  int n;
-  su_time_t now = su_now();
-  double rtt;
-
-  enter;
-
-  assert(p0 == p);
-  assert(p->sort == PINGER);
-
-  rtt = su_time_diff(now, p->when);
-
-  p->rtt_total += rtt, p->rtt_n++;
-
-  su_wait_events(w, p->s);
-
-  n = recvfrom(p->s, buf, sizeof(buf) - 1, 0, susa, susize);
-  if (n < 0) {
-	  su_perror("do_rtt: recvfrom");
-	  return 0;
-  }
-  buf[n] = 0;
-
-  if (opt_verbatim)
-    printf("do_rtt: %d bytes from [%s]:%u: \"%s\", rtt = %lg ms\n",
-	   n, inet_ntop(su.su_family, SU_ADDR(&su), nbuf, sizeof(nbuf)),
-	   ntohs(su.su_sin.sin_port), buf, rtt / 1000);
-
-  do_ping(p, p->t, NULL);
-
+  rt->rt_received = ep->i;
+	   
   return 0;
 }
 
-void
-do_pong(struct pinger *p, su_timer_t *t, void *p0)
+static int wakeup0(root_test_t *rt, su_wait_t *w, test_ep_t *ep)
 {
-  char buf[1024];
-
-  enter;
-
-  assert(p == su_root_magic(su_timer_root(t)));
-  assert(p->sort == PONGER);
-
-  p->id = 0;
-
-  snprintf(buf, sizeof(buf), "Pong at %s", snow(su_now()));
-  if (sendto(p->s, buf, strlen(buf), 0, 
-	     &p->addr.su_sa, su_sockaddr_size(&p->addr)) == -1) {
-    su_perror("do_pong: send");
-  }
-
-  if (opt_verbatim) {
-    puts(buf);
-    fflush(stdout);
-  }
+  rt->rt_wakeup = 0;
+  return wakeup(rt, w, ep);
 }
-
-int
-do_recv(struct pinger *p, su_wait_t *w, void *p0)
+static int wakeup1(root_test_t *rt, su_wait_t *w, test_ep_t *ep)
 {
-  su_sockaddr_t su;
-  socklen_t susize[] = { sizeof(su)};
-  char buf[1024];
-  char nbuf[1024];
-  int n;
-  su_time_t now = su_now();
-
-  enter;
-
-  assert(p0 == p);
-  assert(p->sort == PONGER);
-
-  su_wait_events(w, p->s);
-
-  n = recvfrom(p->s, buf, sizeof(buf) - 1, 0, &su.su_sa, susize);
-  if (n < 0) {
-	  su_perror("do_recv: recvfrom");
-	  return 0;
-  }
-  buf[n] = 0;
-
-  if (opt_verbatim)
-    printf("do_recv: %d bytes from [%s]:%u: \"%s\" at %s\n",
-	   n, inet_ntop(su.su_family, SU_ADDR(&su), nbuf, sizeof(nbuf)),
-	   ntohs(su.su_sin.sin_port), buf, snow(now));
-
-  fflush(stdout);
-
-#if 0
-  if (p->id)
-    puts("do_recv: already a pending reply");
-
-  if (su_timer_set(p->t, do_pong, p) < 0) {
-    fprintf(stderr, "do_recv: su_timer_set() error\n");
-    return 0;
-  }
-
-  p->id = 1;
-#else
-  do_pong(p, p->t, NULL);
-#endif
-
-  return 0;
+  rt->rt_wakeup = 1;
+  return wakeup(rt, w, ep);
 }
-
-void
-do_exit(struct pinger *x, su_timer_t *t, void *x0)
+static int wakeup2(root_test_t *rt, su_wait_t *w, test_ep_t *ep)
 {
-  enter;
-
-  if (opt_verbatim)
-    printf("do_exit at %s\n", snow(su_now()));
-  su_root_break(su_timer_root(t));
+  rt->rt_wakeup = 2;
+  return wakeup(rt, w, ep);
 }
-
-int
-do_init(su_root_t *root, struct pinger *p)
+static int wakeup3(root_test_t *rt, su_wait_t *w, test_ep_t *ep)
 {
-  su_wait_t w;
-  su_socket_t s;
-  long interval;
-  su_timer_t *t;
-  su_wakeup_f f;
-  int index, index0;
-
-  enter;
-
-  switch (p->sort) {
-  case PINGER: f = do_rtt;  interval = 200; break;
-  case PONGER: f = do_recv; interval = 40;  break;
-  default:
-    return SU_FAILURE;
-  }
-
-  /* Create a sockets,  */
-  s = udpsocket();
-  if (su_wait_create(&w, s, SU_WAIT_IN) == SOCKET_ERROR)
-    su_perror("su_wait_create"), exit(1);
-
-  /* CFSocketEnableCallbacks(s, map_poll_revent_to_cf_event(su_wait_events(&w, s))); */
-
-  p->s = s;
-  p->t = t = su_timer_create(su_root_task(root), interval);
-  if (t == NULL) {
-    su_perror("su_timer_create");
-    return SU_FAILURE;
-  }
-
-  index0 = su_root_register(root, &w, f, p, 0);
-  if (index0 == SOCKET_ERROR) {
-    su_perror("su_root_register");
-    return SU_FAILURE;
-  }
-
-  index = su_root_register(root, &w, f, p, 0);
-  if (index == SOCKET_ERROR) {
-    su_perror("su_root_register");
-    return SU_FAILURE;
-  }
-
-  su_root_deregister(root, index0);
-
-  p->rindex = index;
-
-  return 0;
+  rt->rt_wakeup = 3;
+  return wakeup(rt, w, ep);
 }
-
-void
-do_destroy(su_root_t *root, struct pinger *p)
+static int wakeup4(root_test_t *rt, su_wait_t *w, test_ep_t *ep)
 {
-  enter;
-
-  if (opt_verbatim)
-    printf("do_destroy %s at %s\n", p->name, snow(su_now()));
-
-  su_root_deregister(root, p->rindex);
-  su_timer_destroy(p->t), p->t = NULL;
-
-  p->running = 0;
-}
-
-void
-start_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
-{
-  enter;
-
-  if (!p->running)
-    return;
-
-  if (opt_verbatim)
-    printf("start_ping: %s\n", p->name);
-
-  p->addr = *arg;
-  p->id = 1;
-  su_timer_set_at(p->t, do_ping, p, su_now());
-}
-
-void
-start_pong(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
-{
-  su_msg_r reply;
-
-  enter;
-
-  if (!p->running)
-    return;
-
-  if (opt_verbatim)
-    printf("start_pong: %s\n", p->name);
-
-  p->addr = *arg;
-
-  if (su_msg_reply(reply, msg, start_ping, sizeof(p->addr)) == 0) {
-    socklen_t sinsize[1] = { sizeof(p->addr) };
-    if (getsockname(p->s, (struct sockaddr*)su_msg_data(reply), sinsize)
-	== SOCKET_ERROR)
-      su_perror("start_pong: getsockname()"), exit(1);
-    su_msg_send(reply);
-  }
-  else {
-    fprintf(stderr, "su_msg_create failed!\n");
-  }
-}
-
-void
-init_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
-{
-  su_msg_r reply;
-
-  enter;
-
-  if (opt_verbatim)
-    printf("init_ping: %s\n", p->name);
-
-  if (su_msg_reply(reply, msg, start_pong, sizeof(p->addr)) == 0) {
-    socklen_t sinsize[1] = { sizeof(p->addr) };
-    if (getsockname(p->s, (struct sockaddr*)su_msg_data(reply), sinsize)
-	== SOCKET_ERROR)
-      su_perror("start_pong: getsockname()"), exit(1);
-    su_msg_send(reply);
-  }
-  else {
-    fprintf(stderr, "su_msg_reply failed!\n");
-  }
+  rt->rt_wakeup = 4;
+  return wakeup(rt, w, ep);
 }
 
 static
-RETSIGTYPE term(int n)
-{
-  enter;
+su_wakeup_f wakeups[5] = { wakeup0, wakeup1, wakeup2, wakeup3, wakeup4 };
 
-  exit(1);
+
+static
+void test_run(root_test_t *rt)
+{
+  rt->rt_received = -1;
+
+  while (rt->rt_received == -1) {
+    su_root_step(rt->rt_root, 200);
+  }
 }
 
-void
-time_test(void)
+static int register_test(root_test_t *rt)
 {
-  su_time_t now = su_now(), then = now;
-  su_duration_t t1, t2;
-  su_duration_t us;
+  int i;
+  int s;
+  char msg[3] = "foo";
 
-  enter;
+  BEGIN();
 
-  for (us = 0; us < 1000000; us += 300) {
-    then.tv_sec = now.tv_sec;
-    if ((then.tv_usec = now.tv_usec + us) >= 1000000)
-      then.tv_usec -= 1000000, then.tv_sec++;
-    t1 = su_duration(now, then);
-    t2 = su_duration(then, now);
-    assert(t1 == -t2);
+  TEST_1((s = su_socket(rt->rt_family, SOCK_DGRAM, 0)) != -1);
+
+  for (i = 0; i < 5; i++) {
+    rt->rt_ep[i]->registered = 
+      su_root_register(rt->rt_root, rt->rt_ep[i]->wait, 
+		       wakeups[i], rt->rt_ep[i], 0);
+    TEST(rt->rt_ep[i]->registered, i + 1 + SU_HAVE_PTHREADS);
   }
 
-  if (opt_verbatim)
-    printf("time_test: passed\n");
+  for (i = 0; i < 5; i++) {
+    test_ep_t *ep = rt->rt_ep[i];
+    TEST(sendto(s, msg, sizeof(msg), 0, &ep->addr->su_sa, ep->addrlen), 
+	 sizeof(msg));
+    test_run(rt);
+    TEST(rt->rt_received, i);
+    TEST(rt->rt_wakeup, i);
+  }
+
+  for (i = 0; i < 5; i++) {
+    TEST(su_root_unregister(rt->rt_root, rt->rt_ep[i]->wait, 
+			    wakeups[i], rt->rt_ep[i]), 
+	 rt->rt_ep[i]->registered);
+  }
+
+
+  for (i = 0; i < 5; i++) {
+    rt->rt_ep[i]->registered = 
+      su_root_register(rt->rt_root, rt->rt_ep[i]->wait, 
+		       wakeups[i], rt->rt_ep[i], 1);
+    TEST_1(rt->rt_ep[i]->registered > 0);
+  }
+
+  for (i = 0; i < 5; i++) {
+    test_ep_t *ep = rt->rt_ep[i];
+    TEST(sendto(s, msg, sizeof(msg), 0, &ep->addr->su_sa, ep->addrlen), 
+	 sizeof(msg));
+    test_run(rt);
+    TEST(rt->rt_received, i);
+    TEST(rt->rt_wakeup, i);
+  }
+
+  for (i = 0; i < 5; i++) {
+    TEST(su_root_deregister(rt->rt_root, rt->rt_ep[i]->registered), 
+	 rt->rt_ep[i]->registered);
+  }
+
+  for (i = 0; i < 5; i++) {
+    test_ep_t *ep = rt->rt_ep[i];
+    TEST_1(su_wait_create(ep->wait, ep->s, SU_WAIT_IN|SU_WAIT_ERR) != -1);
+    ep->registered = 
+      su_root_register(rt->rt_root, ep->wait, 
+		       wakeups[i], ep, 1);
+    TEST_1(ep->registered > 0);
+  }
+
+  for (i = 0; i < 5; i++) {
+    test_ep_t *ep = rt->rt_ep[i];
+    TEST(sendto(s, msg, sizeof(msg), 0, &ep->addr->su_sa, ep->addrlen), 
+	 sizeof(msg));
+    test_run(rt);
+    TEST(rt->rt_received, i);
+    TEST(rt->rt_wakeup, i);
+  }
+
+  for (i = 0; i < 5; i++) {
+    TEST(su_root_unregister(rt->rt_root, rt->rt_ep[i]->wait, 
+			    wakeups[i], rt->rt_ep[i]), 
+	 rt->rt_ep[i]->registered);
+  }
+
+  END();
 }
 
-char const name[] = "torture_su_root_osx";
-
-void
-usage(int exitcode)
+int fail_init(su_root_t *root, root_test_t *rt)
 {
-  fprintf(stderr, "usage: %s [-6vs] [pid]\n", name);
-  exit(exitcode);
+  rt->rt_fail_init = 1;
+  return -1;
 }
 
-/*
- * test su_wait functionality:
- *
- * Create a ponger, waking up do_recv() when data arrives, 
- *                  then scheduling do_pong() by timer
- *
- * Create a pinger, executed from timer, scheduling do_ping(),
- *                  waking up do_rtt() when data arrives
- *
- * Create a timer, executing do_exit() after 10 seconds
- */
+void fail_deinit(su_root_t *root, root_test_t *rt)
+{
+  rt->rt_fail_deinit = 1;
+}
+
+int success_init(su_root_t *root, root_test_t *rt)
+{
+  rt->rt_success_init = 1;
+  return 0;
+}
+
+void success_deinit(su_root_t *root, root_test_t *rt)
+{
+  rt->rt_success_deinit = 1;
+}
+
+static int clone_test(root_test_t rt[1])
+{
+  BEGIN();
+
+  rt->rt_fail_init = 0;
+  rt->rt_fail_deinit = 0;
+  rt->rt_success_init = 0;
+  rt->rt_success_deinit = 0;
+
+  TEST(su_clone_start(rt->rt_root,
+		      rt->rt_clone,
+		      rt,
+		      fail_init,
+		      fail_deinit), SU_FAILURE);
+  TEST_1(rt->rt_fail_init);
+  TEST_1(rt->rt_fail_deinit);
+
+  TEST(su_clone_start(rt->rt_root,
+		      rt->rt_clone,
+		      rt,
+		      success_init,
+		      success_deinit), SU_SUCCESS);
+  TEST_1(rt->rt_success_init);
+  TEST_1(!rt->rt_success_deinit);
+
+  TEST_VOID(su_clone_wait(rt->rt_root, rt->rt_clone));
+
+  TEST_1(rt->rt_success_deinit);
+  
+  END();
+}
+
+void usage(void)
+{
+  fprintf(stderr, 
+	  "usage: %s [-v]\n", 
+	  name);
+}
+
 int main(int argc, char *argv[])
 {
-  su_root_t *root;
-  su_clone_r ping = SU_CLONE_R_INIT, pong = SU_CLONE_R_INIT;
-  su_msg_r start_msg = SU_MSG_R_INIT;
-  su_timer_t *t;
-  unsigned long sleeppid = 0;
+  root_test_t rt[1] = {{{ SU_HOME_INIT(rt) }}};
+  int retval = 0;
+  int i;
 
-  struct pinger 
-    pinger = { PINGER, "ping", 1 }, 
-    ponger = { PONGER, "pong", 1 };
+  rt->rt_family = AF_INET;
 
-  char *argv0 = argv[0];
-
-  enter;
-
-  while (argv[1]) {
-    if (strcmp(argv[1], "-v") == 0) {
-      opt_verbatim = 1;
-      argv++;
-    }
+  for (i = 1; argv[i]; i++) {
+    if (strcmp(argv[i], "-v") == 0)
+      rt->rt_flags |= tst_verbatim;
 #if SU_HAVE_IN6
-    else if (strcmp(argv[1], "-6") == 0) {
-      opt_family = AF_INET6;
-      argv++;
-    }
+    else if (strcmp(argv[i], "-6") == 0)
+      rt->rt_family = AF_INET6;
 #endif
-    else if (strcmp(argv[1], "-s") == 0) {
-      opt_singlethread = 1;
-      argv++;
-    }
-    else if (strlen(argv[1]) == strspn(argv[1], "0123456789")) {
-      sleeppid = strtoul(argv[1], NULL, 10);
-      argv++;
-    }
-    else {
-      usage(1);
-    }
+    else
+      usage();
   }
 
-  signal(SIGTERM, term);
+  retval |= init_test(rt);
+  retval |= register_test(rt);
+  retval |= clone_test(rt);
+  su_root_threading(rt->rt_root, 0);
+  retval |= clone_test(rt);
+  retval |= deinit_test(rt);
 
-  su_init(); atexit(su_deinit);
-
-  time_test();
-
-  root = su_root_osx_runloop_create(NULL); 
-
-  if (!root) perror("su_root_osx_runloop_create"), exit(1);
-  
-  su_root_threading(root, 0 && !opt_singlethread);
-
-  if (su_clone_start(root, ping, &pinger, do_init, do_destroy) != 0)
-    perror("su_clone_start"), exit(1);
-  if (su_clone_start(root, pong, &ponger, do_init, do_destroy) != 0)
-    perror("su_clone_start"), exit(1); 
-
-  /* Test timer, exiting after 200 milliseconds */
-  t = su_timer_create(su_root_task(root), 200L);
-  if (t == NULL)
-    su_perror("su_timer_create"), exit(1);
-  su_timer_set(t, (su_timer_f)do_exit, NULL);
-
-  su_msg_create(start_msg, su_clone_task(ping), su_clone_task(pong), 
-		init_ping, 0);
-  su_msg_send(start_msg);
-
-#if 1
-  while (1) {
-    su_root_step(root, 20);
-  }
-#else
-  su_root_run(root);
-#endif
-
-  su_clone_wait(root, ping);
-  su_clone_wait(root, pong);
-
-  su_timer_destroy(t);
-
-  if (pinger.rtt_n) {
-    printf("%s executed %u pings in %g, mean rtt=%g sec\n", name, 
-	   pinger.rtt_n, pinger.rtt_total, pinger.rtt_total / pinger.rtt_n);
-  }
-  su_root_destroy(root);
-
-  if (opt_verbatim)
-    printf("%s exiting\n", argv0); 
-
-#ifndef HAVE_WIN32
-   if (sleeppid)
-     kill(sleeppid, SIGTERM);
-#endif
-
-  return 0;
+  return retval;
 }
