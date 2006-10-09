@@ -21,8 +21,10 @@ OSXSOURCES = \
 	su_osx_runloop.c
 OSXHEADERS = \
 	sofia-sip/su_osx_runloop.h
+OSXPROGS = \
+	torture_su_root_osx test_su_osx
 OSXTESTS = \
-	torture_su_root_osx
+	torture_su_root_osx run_test_su_osx
 else
 OSXSOURCES =
 OSXHEADERS =
@@ -32,8 +34,8 @@ check_PROGRAMS = 	torture_su torture_su_port \
 			torture_su_alloc torture_su_time torture_su_tag \
 			test_htable torture_rbtree \
 			test_memmem torture_su_bm \
-			torture_su_root $(OSXTESTS) \
-			torture_su_timer test_su su_proxy test_poll
+			torture_su_root torture_su_timer \
+			test_su su_proxy test_poll $(OSXPROGS)
 
 # ----------------------------------------------------------------------
 # Tests
@@ -43,7 +45,8 @@ TESTS = 		torture_su torture_su_port \
 			test_htable torture_rbtree \
 			test_memmem torture_su_bm \
 			torture_su_root torture_su_timer \
-			run_addrinfo run_localinfo run_test_su
+			run_addrinfo run_localinfo run_test_su \
+			$(OSXTESTS)
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
