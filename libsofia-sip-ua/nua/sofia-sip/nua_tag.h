@@ -343,6 +343,42 @@ SOFIAPUBVAR tag_typedef_t nutag_early_answer;
 #define NUTAG_EARLY_ANSWER_REF(x) nutag_early_answer_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_early_answer_ref;
 
+/**Include an extra copy of SDP answer in the response.
+ *
+ * When NUTAG_INCLUDE_EXTRA_SDP(1) is included in nua_respond() tags, stack
+ * will include in the response a copy of the SDP offer/answer that was last
+ * sent to the client. This tag should be used only when you know that the
+ * remote end requires the extra SDP, for example, some versions of Cisco
+ * SIPGateway need a copy of answer in 200 OK even when they indicate
+ * support for 100rel.
+ *
+ * @par Used with
+ *    nua_respond()
+ *
+ * @par Parameter type
+ *    int (boolean)
+ *
+ * @par Values
+ *    @c 0   False \n
+ *    @c !=0 True
+ *
+ * Corresponding tag taking reference parameter is
+ * NUTAG_INCLUDE_EXTRA_SDP_REF().
+ *
+ * @note Requires that @soa is enabled with NUTAG_MEDIA_ENABLE(1).
+ *
+ * @sa NUTAG_EARLY_ANSWER(), NUTAG_EARLY_MEDIA(), NUTAG_AUTOALERT(),
+ * NUTAG_MEDIA_ENABLE(), @RFC3264, @RFC3264
+ * 
+ * @since New in @VERSION_1_12_4.
+ */
+#define NUTAG_INCLUDE_EXTRA_SDP(x)    nutag_include_extra_sdp, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_include_extra_sdp;
+
+#define NUTAG_INCLUDE_EXTRA_SDP_REF(x) \
+   nutag_include_extra_sdp_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_include_extra_sdp_ref;
+
 /** Timer for outstanding INVITE in seconds.
  *
  * INVITE will be canceled if no answer is received before timer expires.

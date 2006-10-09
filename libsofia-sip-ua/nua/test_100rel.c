@@ -94,6 +94,41 @@ int accept_pracked(CONDITION_PARAMS)
   }
 }
 
+int accept_pracked2(CONDITION_PARAMS)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (event) {
+  case nua_i_prack:
+    if (200 <= status && status < 300) {
+      RESPOND(ep, call, nh, SIP_200_OK, 
+	      NUTAG_INCLUDE_EXTRA_SDP(1),
+	      TAG_END());
+      ep->next_condition = until_ready;
+    }
+  default:
+    break;
+  }
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    RESPOND(ep, call, nh, SIP_180_RINGING,
+	    TAG_IF(call->sdp, SOATAG_USER_SDP_STR(call->sdp)),
+	    TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+
 int test_180rel(struct context *ctx)
 {
   BEGIN();
@@ -101,6 +136,7 @@ int test_180rel(struct context *ctx)
   struct endpoint *a = &ctx->a,  *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
+  sip_t *sip;
 
   if (print_headings)
     printf("TEST NUA-10.1.1: Call with 100rel and 180\n");
@@ -144,7 +180,7 @@ int test_180rel(struct context *ctx)
 	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
-  run_ab_until(ctx, -1, until_ready, -1, accept_pracked);
+  run_ab_until(ctx, -1, until_ready, -1, accept_pracked2);
 
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
@@ -168,6 +204,10 @@ int test_180rel(struct context *ctx)
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_content_type);
+  TEST_S(sip->sip_content_type->c_type, "application/sdp");
+  TEST_1(sip->sip_payload);
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */

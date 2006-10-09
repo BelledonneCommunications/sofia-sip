@@ -52,6 +52,7 @@ tag_typedef_t nutag_callee_caps = BOOLTAG_TYPEDEF(callee_caps);
 tag_typedef_t nutag_early_media = BOOLTAG_TYPEDEF(early_media);
 tag_typedef_t nutag_only183_100rel = BOOLTAG_TYPEDEF(only183_100rel);
 tag_typedef_t nutag_early_answer = BOOLTAG_TYPEDEF(early_answer);
+tag_typedef_t nutag_include_extra_sdp = BOOLTAG_TYPEDEF(include_extra_sdp);
 tag_typedef_t nutag_media_enable = BOOLTAG_TYPEDEF(media_enable);
 
 tag_typedef_t nutag_soa_session = PTRTAG_TYPEDEF(soa_session);

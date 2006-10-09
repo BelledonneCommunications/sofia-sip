@@ -1610,9 +1610,14 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
   }
   else if (status >= 200 || ss->ss_100rel ||
 	   (sr->sr_offer_recv && sr->sr_answer_sent <= 1 && early_answer)) {
-    if ((sr->sr_offer_recv && sr->sr_answer_sent > 1) ||
-	(sr->sr_offer_sent && !sr->sr_answer_recv))
-      /* Nothing to do */;
+    int extra = 0;
+
+    if (sr->sr_offer_sent && !sr->sr_answer_recv)
+      /* Wait for answer */;
+    else if (sr->sr_offer_recv && sr->sr_answer_sent > 1) {
+      tagi_t const *t = tl_find_last(tags, nutag_include_extra_sdp);
+      extra = t && t->t_value;
+    }
     else if (sr->sr_offer_recv && !sr->sr_answer_sent) {
       if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
 	int wcode;
@@ -1643,7 +1648,7 @@ void respond_to_invite(nua_t *nua, nua_handle_t *nh,
 	offer = 1;
     }
 
-    if (offer || answer) {
+    if (offer || answer || extra) {
       if (session_include_description(nh->nh_soa, msg, sip) < 0)
 	SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
     }
