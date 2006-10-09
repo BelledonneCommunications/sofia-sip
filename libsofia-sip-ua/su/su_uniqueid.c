@@ -60,6 +60,10 @@ int _getpid(void);
 #include <stdlib.h>
 #include <time.h>
 
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #if HAVE_UNISTD_H
 #include <sys/types.h>
 #include <unistd.h>
