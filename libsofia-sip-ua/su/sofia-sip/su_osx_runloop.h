@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SU_OSX_RUNLOOP_H /** Defined when su_source.h has been included. */
+#ifndef SU_OSX_RUNLOOP_H
+/** Defined when <sofia-sip/su_osx_runloop.h> has been included. */
 #define SU_OSX_RUNLOOP_H
 
 /**
- * @file su_source.h
+ * @file sofia-sip/su_osx_runloop.h
  * @brief 
  * 
  * @author Martti Mela <Martti.Mela@nokia.com>
@@ -43,8 +44,8 @@
 
 SOFIA_BEGIN_DECLS
 
-su_root_t *su_root_osx_runloop_create(su_root_magic_t *) __attribute__((__malloc__));
-/* GSource *su_root_source(su_root_t *); */
+su_root_t *su_root_osx_runloop_create(su_root_magic_t *)
+  __attribute__((__malloc__));
 
 SOFIA_END_DECLS
 

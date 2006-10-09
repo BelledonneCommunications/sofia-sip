@@ -31,20 +31,23 @@
  * @brief SU debugging macros
  *
  * The logging levels and macros to use are defined as follows:
- *  - su_log()      fatal errors, panic 
- *  - SU_DEBUG_0()  critical errors, minimal progress at subsystem level
- *  - SU_DEBUG_1()  non-critical errors
+ *  - SU_DEBUG_0()  fatal errors, panic 
+ *  - SU_DEBUG_1()  critical errors, minimal progress at subsystem level
+ *  - SU_DEBUG_2()  non-critical errors
  *  - SU_DEBUG_3()  warnings, progress messages
  *  - SU_DEBUG_5()  signaling protocol actions (incoming packets, etc.)
  *  - SU_DEBUG_7()  media protocol actions (incoming packets, etc.)
  *  - SU_DEBUG_9()  entering/exiting functions, very verbatim progress
  *
- * Module-specific logging requires redefining SU_LOG macro with a pointer
- * to a su_log_t variable.
+ * These macros are used to log with module-specific levels. The SU_LOG
+ * macro is redefined with a pointer to a module-specific #su_log_t
+ * structure, e.g., "iptsec_debug.h".
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * 
  * @date Created: Tue Feb  8 10:06:33 2000 ppessi
+ *
+ * @sa @ref debug_logs, su_llog(), su_vllog(), #su_log_t, 
  */
 
 #ifndef SU_LOG_H
@@ -77,7 +80,12 @@ SOFIAPUBVAR su_log_t SU_LOG[];
     { va_list ap; va_start(ap, fmt); su_vllog(SU_LOG, level, fmt, ap); va_end(ap); }
 
 SU_DEBUG_DEF(0)
-/** Log critical errors, minimal progress at subsystem level. */
+/** Log messages at level 0.
+ *
+ * Fatal errors and panic messages should be logged at level 0. 
+ *
+ * @sa su_llog(), su_vllog(), #su_log_t, @ref debug_logs
+ */
 #define SU_DEBUG_0(x) (SU_LOG_LEVEL >= 0 ? (su_debug_0 x) : (void)0)
 
 /** Log C library errors. */
@@ -93,7 +101,13 @@ SU_DEBUG_DEF(0)
 
 #if SU_DEBUG_MAX >= 1
 SU_DEBUG_DEF(1)
-/** Log non-critical errors. */
+/**Log messages at level 1.
+ *
+ * Critical errors and minimal progress at subsystem level should be logged
+ * at level 1.
+ *
+ * @sa su_llog(), su_vllog(), #su_log_t, @ref debug_logs
+ */
 #define SU_DEBUG_1(x) (SU_LOG_LEVEL >= 1 ? (su_debug_1 x) : (void)0)
 #else
 #define SU_DEBUG_1(x) (void)1
@@ -101,7 +115,12 @@ SU_DEBUG_DEF(1)
 
 #if SU_DEBUG_MAX >= 2
 SU_DEBUG_DEF(2)
-/** Log messages at level 2. */
+/**Log messages at level 2. 
+ *
+ * Non-critical errors should be logged at level 2.
+ *
+ * @sa su_llog(), su_vllog(), #su_log_t, @ref debug_logs
+ */
 #define SU_DEBUG_2(x) (SU_LOG_LEVEL >= 2 ? (su_debug_2 x) : (void)0)
 #else
 #define SU_DEBUG_2(x) (void)2
@@ -109,7 +128,12 @@ SU_DEBUG_DEF(2)
 
 #if SU_DEBUG_MAX >= 3
 SU_DEBUG_DEF(3)
-/** Log warnings, progress messages. */
+/** Log messages at level 3.
+ *
+ * Warnings and progress messages should be logged at level 3.
+ *
+ * @sa su_llog(), su_vllog(), #su_log_t, @ref debug_logs
+ */
 #define SU_DEBUG_3(x) (SU_LOG_LEVEL >= 3 ? (su_debug_3 x) : (void)0)
 #else
 #define SU_DEBUG_3(x) (void)3
@@ -125,7 +149,13 @@ SU_DEBUG_DEF(4)
 
 #if SU_DEBUG_MAX >= 5
 SU_DEBUG_DEF(5)
-/** Log signaling protocol actions (incoming packets, etc.). */
+/** Log messages at level 5.
+ *
+ * Signaling protocol actions (incoming packets, etc.) should be logged
+ * at level 5.
+ *
+ * @sa su_llog(), su_vllog(), #su_log_t, @ref debug_logs
+ */
 #define SU_DEBUG_5(x) (SU_LOG_LEVEL >= 5 ? (su_debug_5 x) : (void)0)
 #else
 #define SU_DEBUG_5(x) (void)5
@@ -141,7 +171,12 @@ SU_DEBUG_DEF(6)
 
 #if SU_DEBUG_MAX >= 7
 SU_DEBUG_DEF(7)
-/** Log media protocol actions (incoming packets, etc.). */
+/** Log messages at level 7.
+ *
+ * Media protocol actions (incoming packets, etc) should be logged at level 7. 
+ *
+ * @sa su_llog(), su_vllog(), #su_log_t, @ref debug_logs
+ */
 #define SU_DEBUG_7(x) (SU_LOG_LEVEL >= 7 ? (su_debug_7 x) : (void)0)
 #else
 #define SU_DEBUG_7(x) (void)7
@@ -157,7 +192,13 @@ SU_DEBUG_DEF(8)
 
 #if SU_DEBUG_MAX >= 9
 SU_DEBUG_DEF(9)
-/** Log entering/exiting functions, very verbatim progress. */
+/** Log messages at level 9.
+ *
+ * Entering/exiting functions, very verbatim progress should be logged at
+ * level 9.
+ *
+ * @sa su_llog(), su_vllog(), #su_log_t, @ref debug_logs
+ */
 #define SU_DEBUG_9(x) (SU_LOG_LEVEL >= 9 ? (su_debug_9 x) : (void)0)
 #else
 #define SU_DEBUG_9(x) (void)9

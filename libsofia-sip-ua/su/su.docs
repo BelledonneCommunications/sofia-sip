@@ -99,15 +99,6 @@
  *    - #su_iovec_t: structure holding scatter-gather IO vector
  */
 
-/**@defgroup su_log Logging Interface
- *
- * Generic logging interface.
- *
- * The @b su_log submodule contains a generic logging interface. The
- * interface provides means for redirecting the log and filtering log
- * messages based on message priority.
- */
-
 /**@defgroup su_htable Hash tables
  *
  * Hash tables.

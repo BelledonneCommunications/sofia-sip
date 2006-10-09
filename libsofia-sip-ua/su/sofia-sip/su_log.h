@@ -52,7 +52,7 @@ typedef struct su_log_s su_log_t;
 
 SOFIA_BEGIN_DECLS
 
-/**Prototype for logging function */
+/** Prototype for logging function */
 typedef void (su_logger_f)(void *stream, char const *fmt, va_list ap);
 
 /** Log object. */

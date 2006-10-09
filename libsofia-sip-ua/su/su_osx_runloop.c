@@ -188,7 +188,7 @@ su_port_vtable_t const su_port_osx_vtable[1] =
 static int su_port_osx_wait_events(su_port_t *self, su_duration_t tout);
 
 
-/** 
+/* *
  * Port is a per-thread reactor.  
  *
  * Multiple root objects executed by single thread share a su_port_t object. 

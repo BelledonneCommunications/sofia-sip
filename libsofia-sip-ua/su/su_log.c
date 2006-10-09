@@ -54,11 +54,27 @@
 #define SU_LOG_UNLOCK(log)
 #endif
 
+/**@defgroup su_log Logging Interface
+ *
+ * Generic logging interface.
+ *
+ * The @b su_log submodule contains a generic logging interface. The
+ * interface provides means for redirecting the log and filtering log
+ * messages based on message priority.
+ *
+ * @sa @ref debug_logs, <sofia-sip/su_log.h>, 
+ * su_llog(), su_vllog(), #su_log_t, #SU_LOG,
+ * SU_DEBUG_0(), SU_DEBUG_1(), SU_DEBUG_2(), SU_DEBUG_3(), SU_DEBUG_5(), 
+ * SU_DEBUG_7(), SU_DEBUG_9()
+ */
+
+/** Log message of socket error @errcode at level 0. */
 void su_perror2(const char *s, int errcode)
 {
   su_log("%s: %s\n", s, su_strerror(errcode));
 }
 
+/** Log socket error message at level 0. */
 void su_perror(const char *s)
 {
   su_perror2(s, su_errno());

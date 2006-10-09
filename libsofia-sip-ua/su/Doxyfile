@@ -7,6 +7,7 @@ INPUT 		     = su.docs sofia-sip .
 
 TAGFILES           += ../docs/msg.doxytags=../msg
 TAGFILES           += ../docs/sip.doxytags=../sip
+TAGFILES           += ../docs/docs.doxytags=..
 
 GENERATE_TAGFILE     = ../docs/su.doxytags
 
