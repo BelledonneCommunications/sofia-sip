@@ -247,8 +247,6 @@ do_recv(struct pinger *p, su_wait_t *w, void *p0)
 void
 do_exit(struct pinger *x, su_timer_t *t, void *x0)
 {
-  enter;
-
   if (opt_verbatim)
     printf("do_exit at %s\n", snow(su_now()));
   su_root_break(su_timer_root(t));
