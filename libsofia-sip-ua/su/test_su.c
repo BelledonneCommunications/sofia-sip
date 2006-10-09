@@ -51,6 +51,22 @@ struct pinger;
 #include "sofia-sip/su.h"
 #include "sofia-sip/su_wait.h"
 #include "sofia-sip/su_log.h"
+#include "sofia-sip/su_debug.h"
+
+char const name[] = "su_test";
+
+#if HAVE_FUNC
+#define enter (void)SU_DEBUG_9(("%s: %s: entering\n", name, __func__))
+#define nh_enter (void)SU_DEBUG_9(("%s %s(%p): entering\n", name, __func__, nh))
+#elif HAVE_FUNCTION
+#define enter (void)SU_DEBUG_9(("%s: %s: entering\n", name, __FUNCTION__))
+#define nh_enter (void)SU_DEBUG_9(("%s %s(%p): entering\n", name, __FUNCTION__, nh))
+#define __func__ __FUNCTION__
+#else
+#define enter ((void)0)
+#define nh_enter ((void)0)
+#define __func__ "su_test"
+#endif
 
 struct pinger {
   enum { PINGER = 1, PONGER = 2 } const sort;
@@ -266,6 +282,8 @@ do_init(su_root_t *root, struct pinger *p)
   int index0
 #endif
 
+  enter;
+
   switch (p->sort) {
   case PINGER: f = do_rtt;  interval = 200; break;
   case PONGER: f = do_recv; interval = 40;  break;
@@ -317,6 +335,8 @@ do_init(su_root_t *root, struct pinger *p)
 void
 do_destroy(su_root_t *root, struct pinger *p)
 {
+  enter;
+
   if (opt_verbatim)
     printf("do_destroy %s at %s\n", p->name, snow(su_now()));
   su_root_deregister(root, p->rindex);
@@ -327,6 +347,8 @@ do_destroy(su_root_t *root, struct pinger *p)
 void
 start_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 {
+  enter;
+
   if (!p->running)
     return;
 
@@ -343,6 +365,8 @@ void
 start_pong(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 {
   su_msg_r reply;
+
+  enter;
 
   if (!p->running)
     return;
@@ -369,6 +393,8 @@ init_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 {
   su_msg_r reply;
 
+  enter;
+
   if (opt_verbatim)
     printf("init_ping: %s\n", p->name);
 
@@ -387,6 +413,8 @@ init_ping(struct pinger *p, su_msg_r msg, su_sockaddr_t *arg)
 static
 RETSIGTYPE term(int n)
 {
+  enter;
+
   exit(1);
 }
 
@@ -396,6 +424,8 @@ time_test(void)
   su_time_t now = su_now(), then = now;
   su_duration_t t1, t2;
   su_duration_t us;
+
+  enter;
 
   for (us = 0; us < 1000000; us += 300) {
     then.tv_sec = now.tv_sec;
@@ -410,14 +440,14 @@ time_test(void)
     printf("time_test: passed\n");
 }
 
-char const name[] = "su_test";
-
 #if HAVE_ALARM
 #include <unistd.h>
 #include <signal.h>
 
 static RETSIGTYPE sig_alarm(int s)
 {
+  enter;
+
   fprintf(stderr, "%s: FAIL! test timeout!\n", name);
   exit(1);
 }
@@ -458,6 +488,8 @@ int main(int argc, char *argv[])
     ponger = { PONGER, "pong", 1 };
 
   char *argv0 = argv[0];
+
+  enter;
 
   while (argv[1]) {
     if (strcmp(argv[1], "-v") == 0) {
