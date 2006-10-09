@@ -453,7 +453,7 @@ char const *su_slvprintf(su_strlst_t *self, char const *fmt, va_list ap)
  * Pointer to string, if item exists, or NULL if index is out of bounds or
  * list does not exist.
  */
-char const *su_strlst_item(su_strlst_t const *self, unsigned i)
+char const *su_strlst_item(su_strlst_t const *self, usize_t i)
 {
   if (self && i < self->sl_len)
     return self->sl_list[i];

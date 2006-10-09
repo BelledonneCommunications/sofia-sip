@@ -422,7 +422,7 @@ tagi_t *sip_url_query_as_taglist(su_home_t *home, char const *query,
       hc = (msg_hclass_t *)sip_tag_list[j]->tt_magic;
       if (n == 1 && strncasecmp(hnv, hc->hc_short, 1) == 0)
 	break;
-      else if (n == hc->hc_len && strncasecmp(hnv, hc->hc_name, n) == 0)
+      else if (n == (size_t)hc->hc_len && strncasecmp(hnv, hc->hc_name, n) == 0)
 	break;
     }
 
