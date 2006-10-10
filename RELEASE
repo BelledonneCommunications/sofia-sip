@@ -8,8 +8,7 @@ Changes since last release
 <changes since last written in freshmeat.net "Changes:" style;
  and in less than 10 lines />
 
-Bugs in blaa and foo have been fixed. The stack now supports
-use of foobar...
+Severe bug in STUN functionality was fixed.
 
 API/ABI changes and versioning
 ------------------------------
@@ -20,9 +19,10 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
-template: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
+**template**: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
 
 libsofia-sip-ua:
+- **template**: Added foobar() function (sofia-sip/foobar.h).
 - Added functions for handling SIP headers encoded in SIP URL:
   sip_headers_as_url_query(), sip_url_query_as_taglist(),
   url_query_as_header_string(), url_unescape_to(),
@@ -59,7 +59,7 @@ Contributors to this release
  - roughly sorted by number of patches accepted
 /> 
 
-- template: First Surname (patch to nua/soa/msg)
+- **template**: First Surname (patch to nua/soa/msg)
 
 See the AUTHORS file in the distribution package.
 
@@ -87,8 +87,9 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- #1574342: stunc tool broken in 1.12.3
 - With NUTAG_EARLY_ANSWER(), include answer in 200 OK, too.
 - Fixed tl_find_last().
 - Fixed bug parsing malformed Refer-To or Referred-By headers. Thanks for
   Anthony Minessale for reporting this.
-- template: #9499652 sf.net bug item title
+
