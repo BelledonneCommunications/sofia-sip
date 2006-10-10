@@ -20,10 +20,10 @@ API/ABI changes and versioning
    other important information to developers; 
  - and should be updated _continuously_! />
 
-template: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
+**template**: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
 
 libsofia-sip-ua:
-- template: Added foobar() function (sofia-sip/foobar.h).
+- **template**: Added foobar() function (sofia-sip/foobar.h).
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 
@@ -45,7 +45,7 @@ Contributors to this release
  - roughly sorted by number of patches accepted
 /> 
 
-- template: First Surname (patch to nua/soa/msg)
+- **template**: First Surname (patch to nua/soa/msg)
 
 See the AUTHORS file in the distribution package.
 
@@ -67,4 +67,4 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
-- template: #9499652 sf.net bug item title
+- **template**: #9499652 sf.net bug item title
