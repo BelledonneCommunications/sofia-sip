@@ -88,12 +88,17 @@
 
 static su_port_t *su_osx_runloop_create(void) __attribute__((__malloc__));
 
-/* Callback for CFSocket */
+/* Callback for CFObserver and CFSocket */
+static
+void cf_observer_cb(CFRunLoopObserverRef observer, 
+		    CFRunLoopActivity activity, 
+		    void *info);
 static void su_port_osx_socket_cb(CFSocketRef s, 
 				  CFSocketCallBackType callbackType, 
 				  CFDataRef address, 
 				  const void *data, 
 				  void *info);
+static CFSocketCallBackType map_poll_event_to_cf_event(int events);
 
 static void su_port_osx_lock(su_port_t *self, char const *who);
 static void su_port_osx_unlock(su_port_t *self, char const *who);
@@ -408,6 +413,37 @@ su_root_t *su_root_osx_runloop_create(su_root_magic_t *magic)
 }
 
 
+void osx_enabler_cb(CFSocketRef s, 
+		    CFSocketCallBackType type, 
+		    CFDataRef address, 
+		    const void *data, 
+		    void *info)
+{
+  CFRunLoopRef  rl;
+  osx_magic_t  *magic = (osx_magic_t *) info;
+  su_port_t    *self = magic->o_port;
+  su_duration_t tout = 0;
+  su_time_t     now = su_now();
+  
+  rl = CFRunLoopGetCurrent();
+
+  if (self->sup_running) {
+    
+    if (self->sup_prepoll)
+      self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
+    
+    if (self->sup_head)
+      su_port_osx_getmsgs(self);
+    
+    if (self->sup_timers)
+      su_timer_expire(&self->sup_timers, &tout, now);
+  }
+  
+  CFRunLoopWakeUp(rl);
+  
+}
+
+
 /**@internal
  *
  * Allocates and initializes a message port. It creates a mailbox used to.
@@ -432,6 +468,10 @@ su_port_t *su_osx_runloop_create(void)
     su_socket_t mb = INVALID_SOCKET;
     char const *why;
 #endif
+    CFRunLoopObserverRef cf_observer; 
+    osx_magic_t *osx_magic = NULL;
+    CFRunLoopObserverContext cf_observer_cntx[1] = {{0, NULL, NULL,
+						     NULL, NULL}};
 
     self->sup_vtable = su_port_osx_vtable;
     
@@ -439,7 +479,7 @@ su_port_t *su_osx_runloop_create(void)
     SU_PORT_OSX_INITLOCK(self);
     self->sup_tail = &self->sup_head;
 
-    self->sup_multishot = (SU_ENABLE_MULTISHOT_POLL) != 0;
+    self->sup_multishot = 0; /* XXX (SU_ENABLE_MULTISHOT_POLL) != 0; */
 
 #if SU_HAVE_PTHREADS
     self->sup_tid = pthread_self();
@@ -501,19 +541,63 @@ su_port_t *su_osx_runloop_create(void)
       why = "su_port_osx_create: su_port_osx_register"; goto error;
     }
 
+    osx_magic = calloc(1, sizeof(*osx_magic));
+    osx_magic->o_port = self;
+    cf_observer_cntx->info = osx_magic;
+    
+    cf_observer =
+      CFRunLoopObserverCreate(NULL, kCFRunLoopAfterWaiting | kCFRunLoopBeforeWaiting,
+			      TRUE, 0, cf_observer_cb, cf_observer_cntx);
+    
+    CFRunLoopAddObserver(CFRunLoopGetCurrent(),
+			 cf_observer,
+			 kCFRunLoopDefaultMode);
+    
     SU_DEBUG_9(("su_port_osx_create() returns %p\n", self));
-
+    
     return self;
-
+    
   error:
     su_perror(why);
     su_port_osx_destroy(self), self = NULL;
 #endif
   }
-
+  
   SU_DEBUG_9(("su_port_osx_create() returns %p\n", self));
-
+  
   return self;
+}
+
+
+static
+void cf_observer_cb(CFRunLoopObserverRef observer, 
+		    CFRunLoopActivity activity, 
+		    void *info)
+{
+  CFRunLoopRef  rl;
+  osx_magic_t  *magic = (osx_magic_t *) info;
+  su_port_t    *self = magic->o_port;
+  su_duration_t tout = 0;
+  su_time_t     now = su_now();
+
+  rl = CFRunLoopGetCurrent();
+
+  if (self->sup_running) {
+
+    if (self->sup_prepoll)
+      self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
+    
+    if (self->sup_head)
+      su_port_osx_getmsgs(self);
+    
+    if (self->sup_timers)
+      su_timer_expire(&self->sup_timers, &tout, now);
+  } else
+    SU_DEBUG_9(("cf_observer_cb(): PORT IS NOT RUNNING!\n"));
+
+  CFRunLoopWakeUp(rl);
+  
+  return;
 }
 
 /** @internal Destroy a port. */
@@ -583,28 +667,8 @@ static void su_port_osx_decref(su_port_t *self, int blocking, char const *who)
     SU_PORT_OSX_DECREF(self, who);
 }
 
-#if 0
-static int map_cf_event_to_poll_event(CFSocketCallBackType type)
-{
-  int revent = 0;
-  
-  if (type & kCFSocketReadCallBack)
-    revent |= SU_WAIT_IN;
-    
-  if (type &kCFSocketWriteCallBack)
-    revent |= SU_WAIT_OUT;
-
-  if (type &kCFSocketConnectCallBack)
-    revent |= SU_WAIT_CONNECT;
-
-  if (type &kCFSocketAcceptCallBack)
-    revent |= SU_WAIT_ACCEPT;
-
-  return revent;
-}
-#endif
-
-static CFSocketCallBackType map_poll_event_to_cf_event(int events)
+static
+CFSocketCallBackType map_poll_event_to_cf_event(int events)
 {
   CFSocketCallBackType type = 0;
 
@@ -636,35 +700,40 @@ void su_port_osx_socket_cb(CFSocketRef s,
   osx_magic_t       *magic = (osx_magic_t *) info;
   su_port_t         *self = magic->o_port;
   int                curr = magic->o_current;
-  su_duration_t tout = 2000;
-
+  su_duration_t tout = 0;
+  
 #if SU_HAVE_POLL
   {
     su_root_t *root;
     su_wait_t *waits = self->sup_waits;
     int n = self->sup_indices[curr];
-
+    
     assert(self->sup_reverses[n] == curr);
-
-  SU_DEBUG_9(("socket_cb(%p): count %u index %d\n", self->sup_sources[n], magic->o_count, curr));
-
+    
+    SU_DEBUG_9(("socket_cb(%p): count %u index %d\n", self->sup_sources[n], magic->o_count, curr));
+    
     root = self->sup_wait_roots[n];
     self->sup_wait_cbs[n](root ? su_root_magic(root) : NULL, 
 			  &waits[n], 
 			  self->sup_wait_args[n]);
-
+    
     if (self->sup_running) {
       su_port_osx_getmsgs(self);
-
+      
       if (self->sup_timers)
 	su_timer_expire(&self->sup_timers, &tout, su_now());
-    }
 
+      if (self->sup_head)
+	tout = 0;
+
+      CFRunLoopWakeUp(CFRunLoopGetCurrent());
+    }
+    
     /* Tell to run loop an su socket fired */
     self->sup_source_fired = 1;
   }
 #endif
-
+  
 }
 
 #if SU_HAVE_MBOX
@@ -677,6 +746,9 @@ static int su_port_osx_wakeup(su_root_magic_t *magic, /* NULL */
   su_socket_t s = *(su_socket_t *)arg;
   su_wait_events(w, s);
   recv(s, buf, sizeof(buf), 0);
+
+  CFRunLoopWakeUp(CFRunLoopGetCurrent());
+
   return 0;
 }
 #endif
@@ -1288,6 +1360,47 @@ int su_port_osx_threadsafe(su_port_t *port)
   return su_home_threadsafe(port->sup_home);
 }
 
+/** Prepare root to be run on OSX Run Loop.
+ * The function @c su_root_osx_prepare_run() sets @c su_root_t
+ * object to be callable by the application's run loop. This
+ * function is to be used instead of @c su_root_run() for OSX
+ * applications using Core Foundation's Run Loop.
+ * The function @c su_root_osx_prepare_run() returns immmediately.
+ * 
+ * @param self     pointer to root object
+ * 
+ */
+void su_root_osx_prepare_run(su_root_t *root)
+{
+  su_port_t *self = root->sur_task->sut_port;
+  CFRunLoopRef rl;
+  su_duration_t tout = 0;
+
+  assert(SU_PORT_OSX_OWN_THREAD(self));
+
+  enter;
+
+  self->sup_running = 1;
+  rl = CFRunLoopGetCurrent();
+
+  if (self->sup_prepoll)
+    self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
+
+  if (self->sup_head)
+    su_port_osx_getmsgs(self);
+  
+  if (self->sup_timers)
+    su_timer_expire(&self->sup_timers, &tout, su_now());
+
+  if (!self->sup_running)
+    return;
+
+  CFRetain(rl);
+  self->sup_main_loop = rl;
+
+  return;
+}
+
 /** @internal Main loop.
  * 
  * The function @c su_port_osx_run() waits for wait objects and the timers
@@ -1302,6 +1415,7 @@ int su_port_osx_threadsafe(su_port_t *port)
  */
 void su_port_osx_run(su_port_t *self)
 {
+  CFRunLoopRef rl;
   su_duration_t tout = 0;
 
   assert(SU_PORT_OSX_OWN_THREAD(self));
@@ -1309,6 +1423,7 @@ void su_port_osx_run(su_port_t *self)
   enter;
 
   self->sup_running = 1;
+  rl = CFRunLoopGetCurrent();
 
   if (self->sup_prepoll)
     self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
@@ -1322,33 +1437,16 @@ void su_port_osx_run(su_port_t *self)
   if (!self->sup_running)
     return;
 
-  self->sup_main_loop = CFRunLoopGetCurrent();
+  CFRetain(rl);
+  self->sup_main_loop = rl;
+
+  /* if there are messages do a quick wait */
+  if (self->sup_head)
+    tout = 0;
+
   CFRunLoopRun();
 
   self->sup_main_loop = NULL;
-
-#if 0
-  for (self->sup_running = 1; self->sup_running;) {
-    tout = 2000;
-
-    if (self->sup_prepoll)
-      self->sup_prepoll(self->sup_pp_magic, self->sup_pp_root);
-
-    if (self->sup_head)
-      su_port_osx_getmsgs(self);
-
-    if (self->sup_timers)
-      su_timer_expire(&self->sup_timers, &tout, su_now());
-
-    if (!self->sup_running)
-      break;
-
-    if (self->sup_head)      /* if there are messages do a quick wait */
-      tout = 0;
-
-    su_port_osx_wait_events(self, tout);
-  }
-#endif
 
 }
 
@@ -1515,8 +1613,7 @@ su_duration_t su_port_osx_step(su_port_t *self, su_duration_t tout)
   if (!rl)
     return -1;
 
-  if (CFRunLoopIsWaiting(rl) == TRUE)
-    CFRunLoopWakeUp(rl);
+  CFRunLoopWakeUp(rl);
 
   if (tout < timeout)
     timeout = tout;
