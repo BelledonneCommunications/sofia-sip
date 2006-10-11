@@ -44,8 +44,8 @@
 
 SOFIA_BEGIN_DECLS
 
-su_root_t *su_root_osx_runloop_create(su_root_magic_t *)
-  __attribute__((__malloc__));
+su_root_t *su_root_osx_runloop_create(su_root_magic_t *) __attribute__((__malloc__));
+void       su_root_osx_prepare_run(su_root_t *);
 
 SOFIA_END_DECLS
 
