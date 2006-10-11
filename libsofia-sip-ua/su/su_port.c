@@ -692,7 +692,10 @@ int su_port_register(su_port_t *self,
     if (indices) {
       self->sup_indices = indices;
 
-      for (i = self->sup_size_waits; i <= size; i++)
+      if (self->sup_size_waits == 0)
+	indices[0] = -1;
+
+      for (i = self->sup_size_waits + 1; i <= size; i++)
 	indices[i] = -1 - i;
     }
 
