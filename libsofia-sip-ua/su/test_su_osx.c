@@ -91,6 +91,7 @@ struct pinger {
 short opt_family = AF_INET;
 short opt_verbatim = 0;
 short opt_singlethread = 0;
+short opt_root_run = 0;
 
 /* For run loop */
 int running = 0;
@@ -508,6 +509,10 @@ int main(int argc, char *argv[])
       opt_singlethread = 1;
       argv++;
     }
+    else if (strcmp(argv[1], "-r") == 0) {
+      opt_root_run = 1;
+      argv++;
+    }
     else if (strlen(argv[1]) == strspn(argv[1], "0123456789")) {
       sleeppid = strtoul(argv[1], NULL, 10);
       argv++;
@@ -544,14 +549,15 @@ int main(int argc, char *argv[])
 		init_ping, 0);
   su_msg_send(start_msg);
 
-#if 1
-  while (running == 1) {
-    su_root_step(root, 20);
+  if (opt_root_run) {
+    su_root_osx_prepare_run(root);
+    CFRunLoopRun();
   }
-#else
-  su_root_run(root);
-#endif
-
+  else
+    while (running == 1) {
+      su_root_step(root, 20);
+    }
+  
   su_clone_wait(root, ping);
   su_clone_wait(root, pong);
 
