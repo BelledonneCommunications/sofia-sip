@@ -784,7 +784,7 @@ int sip_aor_strip(url_t *url)
     
   if (url->url_params)
     url->url_params = 
-      url_strip_param_string((char *)url->url_params, "method");
+      url_strip_param_string((char *)url->url_params, "lr");
 
   return 0;
 }
