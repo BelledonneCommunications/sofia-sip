@@ -198,6 +198,14 @@ typedef struct nua_handle_preferences
 /* Get preference from handle, if set, otherwise from default handle */
 #define NH_PGET(nh, pref)						\
   NHP_GET((nh)->nh_prefs, (nh)->nh_nua->nua_dhandle->nh_prefs, pref)
+
+/* Get preference from handle, if exists and set, 
+   otherwise from default handle */
+#define NUA_PGET(nua, nh, pref)						\
+  NHP_GET((nh) ? (nh)->nh_prefs : (nua)->nua_dhandle->nh_prefs,		\
+	  (nua)->nua_dhandle->nh_prefs,					\
+	  pref)
+
 /* Get preference from default handle */
 #define DNH_PGET(dnh, pref)						\
   DNHP_GET((dnh)->nh_prefs, pref)
