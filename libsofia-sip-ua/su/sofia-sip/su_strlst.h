@@ -84,11 +84,11 @@ SU_DLL char const *su_slvprintf(su_strlst_t *self, char const *fmt, va_list ap);
 SU_DLL char const *su_strlst_item(su_strlst_t const *, usize_t i);
 
 /** Set a numbered item to list */
-SU_DLL char const *su_strlst_set_item(su_strlst_t *self, unsigned i, 
+SU_DLL char const *su_strlst_set_item(su_strlst_t *self, usize_t i, 
 				      char const *s);
 
 /** Remove a numbered item from list. */
-SU_DLL char const *su_strlst_remove(su_strlst_t *, unsigned i);
+SU_DLL char const *su_strlst_remove(su_strlst_t *, usize_t i);
 
 /** Concatenate list of strings to one string. */
 SU_DLL char *su_strlst_join(su_strlst_t *s, su_home_t *home, 

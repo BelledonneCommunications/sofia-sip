@@ -53,12 +53,14 @@
  * Another example, splitting a string into lines and counting the number of
  * non-empty ones:
  * @code
- * unsigned i, n;
+ * usize_t i, n;
  * su_strlst_t *l;
  * 
  * l = su_strlst_split(NULL, buf, "\n");
  * 
- * for (i = 0, nonempty = 0; i < su_strlst_len(l); i++) {
+ * nonempty = 0;
+ * 
+ * for (i = 0; i < su_strlst_len(l); i++) {
  *   n = strcspn(su_strlst_item(l, i), " \t");
  *   if (su_strlst_item(l, i)[n])
  *     nonempty++;
@@ -473,7 +475,7 @@ char const *su_strlst_item(su_strlst_t const *self, usize_t i)
  * Pointer to string, if item exists, or NULL if index is out of bounds or
  * list does not exist.
  */
-char const *su_strlst_set_item(su_strlst_t *self, unsigned i, char const *s)
+char const *su_strlst_set_item(su_strlst_t *self, usize_t i, char const *s)
 {
   char const *old = NULL;
 
@@ -504,7 +506,7 @@ char const *su_strlst_set_item(su_strlst_t *self, unsigned i, char const *s)
  * Pointer to string, if item exists, or NULL if index is out of bounds or
  * list does not exist.
  */
-SU_DLL char const *su_strlst_remove(su_strlst_t *self, unsigned i)
+SU_DLL char const *su_strlst_remove(su_strlst_t *self, usize_t i)
 {
   if (self && i < self->sl_len) {
     char const *s = self->sl_list[i];
