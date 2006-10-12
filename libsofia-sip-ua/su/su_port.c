@@ -392,9 +392,9 @@ su_port_t *su_port_create(void)
 #if HAVE_EPOLL
     self->sup_epoll = epoll_create(su_root_size_hint);
     if (self->sup_epoll == -1)
-      SU_DEBUG_3(("su_port(%p): epoll_create(): %s\n", self, strerror(errno)));
+      SU_DEBUG_9(("su_port(%p): epoll_create(): %s\n", self, strerror(errno)));
     else
-      SU_DEBUG_0(("su_port(%p): epoll_create() => %u: OK\n",
+      SU_DEBUG_3(("su_port(%p): epoll_create() => %u: OK\n",
 		  self, self->sup_epoll));
 #endif
   
