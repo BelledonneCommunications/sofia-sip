@@ -96,7 +96,13 @@ int test_nua_params(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-1.1: PARAMETERS\n");
 
-  ctx->root = su_root_create(NULL); TEST_1(ctx->root);
+#if SU_HAVE_OSX_CF_API
+  if (ctx->osx_runloop)
+    ctx->root = su_root_osx_runloop_create(NULL);
+  else
+#endif
+  ctx->root = su_root_create(NULL);
+  TEST_1(ctx->root);
 
   /* Disable threading by command line switch? */
   su_root_threading(ctx->root, ctx->threading);

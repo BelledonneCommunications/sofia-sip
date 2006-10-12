@@ -70,7 +70,13 @@ int test_nua_init(struct context *ctx,
 
   a_bind = a_bind2 = "sip:0.0.0.0:*";
 
-  ctx->root = su_root_create(NULL); TEST_1(ctx->root);
+#if SU_HAVE_OSX_CF_API
+  if (ctx->osx_runloop)
+    ctx->root = su_root_osx_runloop_create(NULL);
+  else
+#endif
+  ctx->root = su_root_create(NULL);
+  TEST_1(ctx->root);
 
   /* Disable threading by command line switch? */
   su_root_threading(ctx->root, ctx->threading);

@@ -197,6 +197,11 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[i], "--no-alarm") == 0) {
       o_alarm = 0;
     }
+#if SU_HAVE_OSX_CF_API /* If compiled with CoreFoundation events */
+    else if (strcmp(argv[i], "--osx-runloop") == 0) {
+      ctx->osx_runloop = 1;
+    }
+#endif
     else if (strcmp(argv[i], "-") == 0) {
       i++; break;
     }
