@@ -67,6 +67,8 @@ SU_DLL void *su_home_new(isize_t size)
 SU_DLL void *su_home_ref(su_home_t const *);
 SU_DLL int su_home_unref(su_home_t *);
 
+SU_DLL size_t su_home_refcount(su_home_t *home);
+
 SU_DLL int su_home_destructor(su_home_t *, void (*)(void *));
 
 SU_DLL int su_home_desctructor(su_home_t *, void (*)(void *));

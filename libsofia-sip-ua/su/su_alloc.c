@@ -652,6 +652,22 @@ int su_home_unref(su_home_t *home)
   }
 }
 
+/** Return reference count of home. */
+size_t su_home_refcount(su_home_t *home)
+{
+  size_t count = 0;
+
+  if (home) {
+    su_block_t *sub = MEMLOCK(home);
+
+    if (sub)
+      count = sub->sub_ref;
+
+    UNLOCK(home);
+  }
+
+  return count;
+}
 
 /**Clone a su_home_t object.
  *
