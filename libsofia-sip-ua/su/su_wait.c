@@ -113,6 +113,13 @@ void su_wait_init(su_wait_t dst[1])
  * The function su_wait_create() creates a new su_wait_t object for an @a
  * socket, with given @a events.  The new wait object is assigned to the @a
  * newwait parameter.
+ *
+ * There can be only one wait object per socket. (This is a limitation or
+ * feature of WinSock interface; the limitation is not enforced on other
+ * platforms).
+ *
+ * As a side-effect the socket is put into non-blocking mode when wait
+ * object is created.
  * 
  * @param newwait  the newly created wait object (output)
  * @param socket   socket
@@ -143,12 +150,20 @@ int su_wait_create(su_wait_t *newwait, su_socket_t socket, int events)
   *newwait = h;
 
 #elif SU_HAVE_POLL
+  int mode;
 
   if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
     su_seterrno(EINVAL);
     return -1;
   }
 
+  mode = fcntl(socket, F_GETFL, 0);
+  if (mode < 0)
+     return -1;
+  mode |= O_NDELAY | O_NONBLOCK;
+  if (fcntl(socket, F_SETFL, mode) < 0)
+    return -1;
+  
   newwait->fd = socket;
   newwait->events = events;
   newwait->revents = 0;
