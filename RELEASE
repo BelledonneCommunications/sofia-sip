@@ -27,6 +27,8 @@ libsofia-sip-ua:
   sip_headers_as_url_query(), sip_url_query_as_taglist(),
   url_query_as_header_string(), url_unescape_to(),
   msg_header_parse_str()
+- Added su_home_destructor(), deprecated su_home_desctructor(). See
+  documentation of su_home_desctructor() for more information.
 - Added NUTAG_INCLUDE_EXTRA_SDP()
 - Added nua_handle_by_replaces(), nua_handle_make_replaces(),
   nua_handle_magic() and nua_magic() functions

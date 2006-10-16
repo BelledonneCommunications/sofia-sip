@@ -706,7 +706,7 @@ sres_resolver_new_internal(sres_cache_t *cache,
     o = memccpy(array[i] = o, options[i], '\0', len - (end - o));
   assert(o == end);
 
-  su_home_desctructor(res->res_home, sres_resolver_destructor);
+  su_home_destructor(res->res_home, sres_resolver_destructor);
 
   while (res->res_id == 0) {
 #if HAVE_DEV_URANDOM

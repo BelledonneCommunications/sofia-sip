@@ -137,7 +137,7 @@ nua_handle_t *nh_create_handle(nua_t *nua,
       else {
 	_handle_lifetime = 2;
 	SU_DEBUG_0(("nh_handle_create(%p)\n", nh));
-	su_home_desctructor(nh->nh_home, nh_destructor);
+	su_home_destructor(nh->nh_home, nh_destructor);
       }
     }
   }

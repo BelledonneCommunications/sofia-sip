@@ -106,7 +106,7 @@
  * function su_home_create() creates a home object with infinite reference
  * count. Likewise, su_home_init() does the same.
  *
- * @section su_home_desctructor_usage Destructors
+ * @section su_home_destructor_usage Destructors
  *
  * It is possible to give a destructor function to a home object. The
  * destructor releases other resources associated with the home object
@@ -559,8 +559,16 @@ void *su_home_ref(su_home_t const *home)
   return (void *)home;
 }
 
-/** Set destructor function */
-SU_DLL int su_home_desctructor(su_home_t *home, void (*destructor)(void *))
+/** Set destructor function.
+ *
+ * The destructor function is called after the reference count of a
+ * #su_home_t object reaches zero or a home object is deinitialized, but
+ * before any of the memory areas within the home object are freed.
+ *
+ * @since New in @VERSION_1_12_4.
+ * Earlier versions had su_home_desctructor() (spelling).
+ */
+int su_home_destructor(su_home_t *home, void (*destructor)(void *))
 {
   int retval = -1;
 
@@ -578,6 +586,24 @@ SU_DLL int su_home_desctructor(su_home_t *home, void (*destructor)(void *))
   return retval;
 }
 
+#undef su_home_desctructor
+
+/** Set destructor function.
+ *
+ * @deprecated The su_home_destructor() was added in @VERSION_1_12_4. The
+ * su_home_desctructor() is now defined as a macro expanding as
+ * su_home_destructor(). If you want to compile an application as binary
+ * compatible with earlier versions, you have to define su_home_desctructor
+ * as itself, e.g.,
+ * @code
+ * #define su_home_desctructor su_home_desctructor
+ * #include <sofia-sip/su_alloc.h>
+ * @endcode
+ */
+int su_home_desctructor(su_home_t *home, void (*destructor)(void *))
+{
+  return su_home_destructor(home, destructor);
+}
 
 /**Unreference a su_home_t object.
  *

@@ -67,7 +67,14 @@ SU_DLL void *su_home_new(isize_t size)
 SU_DLL void *su_home_ref(su_home_t const *);
 SU_DLL int su_home_unref(su_home_t *);
 
+SU_DLL int su_home_destructor(su_home_t *, void (*)(void *));
+
 SU_DLL int su_home_desctructor(su_home_t *, void (*)(void *));
+#ifndef su_home_desctructor
+/* This has typo in before 1.12.4 */
+#define su_home_desctructor(home, destructor) \
+        su_home_destructor((home), (destructor))
+#endif
 
 SU_DLL void *su_home_clone(su_home_t *parent, isize_t size)
      __attribute__((__malloc__));
