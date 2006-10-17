@@ -1762,9 +1762,16 @@ nua_server_request_t *nua_server_request(nua_t *nua,
     SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
 
   /* Create handle if request does not fail */
-  if (initial && sr->sr_status < 300)
+  if (sr->sr_status >= 300)
+    ;
+  else if (initial) {
     if (!(nh = nua_stack_incoming_handle(nua, irq, sip, create_dialog)))
       SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
+  }
+  else if (create_dialog) {
+    nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
+    nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);
+  }
 
   if (nh == NULL)
     nh = nua->nua_dhandle;
@@ -1856,7 +1863,7 @@ int nua_stack_server_event(nua_t *nua,
 
     nua_server_request_destroy(sr);
 
-    if (nh)
+    if (nh && nh != nua->nua_dhandle)
       nh_destroy(nua, nh);
   }
 
