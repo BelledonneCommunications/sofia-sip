@@ -764,28 +764,13 @@ void nua_unsubscribe(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_unsubscribe, tag, value);
 }
 
-/** Send a SIP NOTIFY request message. 
- *
- * This function is used when the application implements itself 
- * the subscription state machine. The application must provide 
- * valid @b Subscription-State and @b Event headers using SIP tags.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    Tags in <sip_tag.h>
- *
- * @par Events:
- *    #nua_r_notify
- */
+/* Documented with nua_stack_notify() */
 void nua_notify(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_notify, tag, value);
 }
+
+/* nua_r_notify is documented with process_response_to_notify() */
 
 /** Create an event server. 
  *
