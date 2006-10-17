@@ -691,6 +691,27 @@ CFSocketCallBackType map_poll_event_to_cf_event(int events)
 
 
 static
+int map_cf_event_to_poll_event(CFSocketCallBackType type)
+{
+  int event = 0;
+
+  if (type & kCFSocketReadCallBack)
+    event |= SU_WAIT_IN;
+  
+  if (type & kCFSocketWriteCallBack)
+    event |= SU_WAIT_OUT;
+  
+  if (type & kCFSocketConnectCallBack)
+    event |= SU_WAIT_CONNECT;
+  
+  if (type & kCFSocketAcceptCallBack)
+    event |= SU_WAIT_ACCEPT;
+
+  return event;
+}
+
+
+static
 void su_port_osx_socket_cb(CFSocketRef s, 
 			   CFSocketCallBackType type, 
 			   CFDataRef address, 
@@ -712,6 +733,8 @@ void su_port_osx_socket_cb(CFSocketRef s,
     
     SU_DEBUG_9(("socket_cb(%p): count %u index %d\n", self->sup_sources[n], magic->o_count, curr));
     
+    waits[n].revents = map_poll_event_to_cf_event(type);
+
     root = self->sup_wait_roots[n];
     self->sup_wait_cbs[n](root ? su_root_magic(root) : NULL, 
 			  &waits[n], 
