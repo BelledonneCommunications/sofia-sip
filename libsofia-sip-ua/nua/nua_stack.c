@@ -1304,6 +1304,13 @@ msg_t *nh_make_response(nua_t *nua,
   else if (!sip->sip_allow && NH_PGET(nh, allow) &&
 	   sip_add_dup(msg, sip, (sip_header_t*)NH_PGET(nh, allow)) < 0)
     msg_destroy(msg);
+  else if (!sip->sip_allow_events && 
+	   (sip->sip_cseq && 
+	    (sip->sip_cseq->cs_method == sip_method_publish ||
+	     sip->sip_cseq->cs_method == sip_method_subscribe)) &&
+	   NH_PGET(nh, allow_events) &&
+	   sip_add_dup(msg, sip, (sip_header_t*)NH_PGET(nh, allow_events)) < 0)
+    msg_destroy(msg);
   else if (!sip->sip_contact &&
 	   (t = tl_find(ta_args(ta), _nutag_add_contact)) &&
 	   t->t_value && 
