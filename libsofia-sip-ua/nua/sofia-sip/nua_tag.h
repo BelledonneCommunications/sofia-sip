@@ -1591,6 +1591,41 @@ SOFIAPUBVAR tag_typedef_t nutag_supported;
 #define NUTAG_SUPPORTED_REF(x) nutag_supported_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_supported_ref;
 
+/** Allow an event or events.
+ *
+ * This tag is used to add a new event to the already existing set of
+ * allowed events. If you want to ignore the existing set of allowed events,
+ * set the allowed event set with SIPTAG_ALLOW_EVENTS_STR() or
+ * SIPTAG_ALLOW_EVENTS().
+ *
+ * The set of allowed methods is added to the @AllowEvents header in the
+ * response to the SUBSCRIBE or PUBLISH requests. For incoming SUBSCRIBE or
+ * PUBLISH request, an error response <i>489 Bad Event</i> is automatically
+ * returned if the incoming method is not included in the set.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_set_hparams() \n
+ *    any handle-specific nua call
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    Valid event name, or comma-separated list of them.
+ *
+ * @sa @AllowEvents, @RFC3265, @RFC3903, #nua_i_subscribe, #nua_i_publish,
+ * nua_subscribe(), nua_publish(), SIPTAG_ALLOW_EVENTS(),
+ * SIPTAG_ALLOW_EVENTS_STR()
+ *
+ * Corresponding tag taking reference parameter is NUTAG_ALLOW_EVENTS_REF()
+ */
+#define NUTAG_ALLOW_EVENTS(x)     nutag_allow_events, tag_str_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_allow_events;
+
+#define NUTAG_ALLOW_EVENTS_REF(x) nutag_allow_events_ref, tag_str_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_allow_events_ref;
+
 /** Call state
  *
  * @par Used with

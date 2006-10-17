@@ -112,6 +112,7 @@ typedef struct nua_handle_preferences
 
   sip_allow_t        *nhp_allow;
   sip_supported_t    *nhp_supported;
+  sip_allow_events_t *nhp_allow_events;
   char const         *nhp_user_agent;
   char const         *nhp_organization;
 
@@ -163,8 +164,9 @@ typedef struct nua_handle_preferences
 
     unsigned nhb_allow:1;
     unsigned nhb_supported:1;
-    unsigned nhb_user_agent:1;
+    unsigned nhb_allow_events:1;
     unsigned :0;		/* at most 32 bits ... */
+    unsigned nhb_user_agent:1;
     unsigned nhb_organization:1;
 
     unsigned nhb_m_display:1;

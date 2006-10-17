@@ -148,6 +148,7 @@ int test_nua_params(struct context *ctx)
 
 		 SIPTAG_SUPPORTED_STR("test"),
 		 SIPTAG_ALLOW_STR("DWIM, OPTIONS, INFO"),
+		 SIPTAG_ALLOW_EVENTS_STR("reg"),
 		 SIPTAG_USER_AGENT_STR("test_nua/1.0"),
 
 		 SIPTAG_ORGANIZATION_STR("Open Laboratory"),
@@ -205,9 +206,15 @@ int test_nua_params(struct context *ctx)
 		 SIPTAG_SUPPORTED(sip_supported_make(tmphome, "foo")),
 		 NUTAG_SUPPORTED("foo, bar"),
 		 SIPTAG_SUPPORTED_STR(",baz,"),
+
 		 SIPTAG_ALLOW_STR("OPTIONS"),
 		 SIPTAG_ALLOW(sip_allow_make(tmphome, "INFO")),
 		 NUTAG_ALLOW("ACK, INFO"),
+
+		 SIPTAG_ALLOW_EVENTS_STR("reg"),
+		 SIPTAG_ALLOW_EVENTS(sip_allow_make(tmphome, "presence")),
+		 NUTAG_ALLOW_EVENTS("presence.winfo"),
+
 		 SIPTAG_USER_AGENT(sip_user_agent_make(tmphome, "test_nua")),
 
 		 SIPTAG_ORGANIZATION(sip_organization_make(tmphome, "Pussy Galore's Flying Circus")),
@@ -261,6 +268,8 @@ int test_nua_params(struct context *ctx)
 
     sip_allow_t const *allow = NONE;
     char const *allow_str = "NONE";
+    sip_allow_events_t const *allow_events = NONE;
+    char const *allow_events_str = "NONE";
     sip_supported_t const *supported = NONE;
     char const *supported_str = "NONE";
     sip_user_agent_t const *user_agent = NONE;
@@ -323,6 +332,8 @@ int test_nua_params(struct context *ctx)
 	       	SIPTAG_SUPPORTED_STR_REF(supported_str),
 	       	SIPTAG_ALLOW_REF(allow),
 	       	SIPTAG_ALLOW_STR_REF(allow_str),
+		SIPTAG_ALLOW_EVENTS_REF(allow_events),
+		SIPTAG_ALLOW_EVENTS_STR_REF(allow_events_str),
 	       	SIPTAG_USER_AGENT_REF(user_agent),
 	       	SIPTAG_USER_AGENT_STR_REF(user_agent_str),
 		NUTAG_USER_AGENT_REF(ua_name),
@@ -342,7 +353,7 @@ int test_nua_params(struct context *ctx)
 		NUTAG_INSTANCE_REF(instance),
 
 		TAG_END());
-    TEST(n, 44);
+    TEST(n, 46);
 
     TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
     TEST_S(from_str, Alice);
@@ -378,6 +389,9 @@ int test_nua_params(struct context *ctx)
 
     TEST_S(sip_header_as_string(tmphome, (void *)allow), "OPTIONS, INFO, ACK");
     TEST_S(allow_str, "OPTIONS, INFO, ACK");
+    TEST_S(sip_header_as_string(tmphome, (void *)allow_events), 
+	   "reg, presence, presence.winfo");
+    TEST_S(allow_events_str, "reg, presence, presence.winfo");
     TEST_S(sip_header_as_string(tmphome, (void *)supported), 
 	   "foo, bar, baz");
     TEST_S(supported_str, "foo, bar, baz");

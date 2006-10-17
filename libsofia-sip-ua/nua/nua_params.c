@@ -271,6 +271,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *
  * @par Related tags:
  *   NUTAG_ALLOW() \n
+ *   NUTAG_ALLOW_EVENTS() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -317,6 +318,8 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_USER_AGENT() \n
  *   SIPTAG_ALLOW() \n
  *   SIPTAG_ALLOW_STR() \n
+ *   SIPTAG_ALLOW_EVENTS() \n
+ *   SIPTAG_ALLOW_EVENTS_STR() \n
  *   SIPTAG_FROM() \n
  *   SIPTAG_FROM_STR() \n
  *   SIPTAG_ORGANIZATION() \n
@@ -395,6 +398,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *
  * @par Tags Used to Set Handle-Specific Parameters:
  *   NUTAG_ALLOW() \n
+ *   NUTAG_ALLOW_EVENTS() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -433,6 +437,8 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_USER_AGENT() \n
  *   SIPTAG_ALLOW() \n
  *   SIPTAG_ALLOW_STR() \n
+ *   SIPTAG_ALLOW_EVENTS() \n
+ *   SIPTAG_ALLOW_EVENTS_STR() \n
  *   SIPTAG_ORGANIZATION() \n
  *   SIPTAG_ORGANIZATION_STR() \n
  *   SIPTAG_SUPPORTED() \n
@@ -465,6 +471,7 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   char const *phrase = "Error storing parameters";
   sip_supported_t const *supported = NULL;
   sip_allow_t const *allow = NULL;
+  sip_allow_events_t const *allow_events = NULL;
 
   enter;
 
@@ -477,6 +484,8 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     supported = tmp->nhp_supported = dnhp->nhp_supported;
   if (!NHP_ISSET(nhp, allow)) 
     allow = tmp->nhp_allow = dnhp->nhp_allow;
+  if (!NHP_ISSET(nhp, allow_events)) 
+    allow_events = tmp->nhp_allow_events = dnhp->nhp_allow_events;
 
   error = 0;
   global = nh == dnh;			/* save also stack-specific params */
@@ -492,6 +501,8 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 	tmp->nhp_supported = NULL;
       if (tmp->nhp_allow == allow)
 	tmp->nhp_allow = NULL;
+      if (tmp->nhp_allow_events == allow_events)
+	tmp->nhp_allow_events = NULL;
 
       /* Move parameters from tmp to nhp (or allocate new nhp) */
       if (nh != dnh && nhp == dnh->nh_prefs)
@@ -738,9 +749,9 @@ static int nhp_set_tags(su_home_t *home,
       NHP_SET(nhp, win_messenger_enable, value != 0);
     }
 #if 0
-    /* NUTAG_MESSAGE_AUTOANSWER(message_auto_respond) */
-    else if (tag == nutag_message_autoanwer) {
-      NHP_SET(nhp, message_auto_respond, value);
+    /* NUTAG_AUTORESPOND(autorespond) */
+    else if (tag == nutag_autorespond) {
+      NHP_SET(nhp, autorespond, value);
     }
 #endif
     /* NUTAG_CALLEE_CAPS(callee_caps) */
@@ -819,6 +830,27 @@ static int nhp_set_tags(su_home_t *home,
 	return -1;
       else if (ok)
 	NHP_SET(nhp, allow, allow);
+    }
+    /* NUTAG_ALLOW_EVENTS(allow_events) */
+    /* SIPTAG_ALLOW_EVENTS_STR(allow_events) */
+    /* SIPTAG_ALLOW_EVENTS(allow_events) */
+    else if (tag == nutag_allow_events ||
+	     tag == siptag_allow_events_str ||
+	     tag == siptag_allow_events) {
+      int ok;
+      sip_allow_events_t *allow_events = NULL;
+
+      ok = nhp_merge_lists(home, 
+			   sip_allow_events_class, &allow_events, 
+			   nhp->nhp_allow_events,
+			   NHP_ISSET(nhp, allow_events), /* already set */
+			   tag == siptag_allow_events, /* dup it, don't make */
+			   tag == nutag_allow_events, /* merge with old value */
+			   t->t_value);
+      if (ok < 0)
+	return -1;
+      else if (ok)
+	NHP_SET(nhp, allow_events, allow_events);
     }
     /* SIPTAG_USER_AGENT(user_agent) */
     else if (tag == siptag_user_agent) {
@@ -1290,7 +1322,6 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  * @param hmagic NULL
  * @param sip    NULL
  * @param tags   
- *   NUTAG_ALLOW() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -1332,11 +1363,12 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *   NUTAG_SMIME_SIGNATURE() \n
  *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
- *   NUTAG_SUPPORTED() \n
  *   NUTAG_UPDATE_REFRESH() \n
  *   NUTAG_USER_AGENT() \n
  *   SIPTAG_ALLOW() \n
  *   SIPTAG_ALLOW_STR() \n
+ *   SIPTAG_ALLOW_EVENTS() \n
+ *   SIPTAG_ALLOW_EVENTS_STR() \n
  *   SIPTAG_FROM() \n
  *   SIPTAG_FROM_STR() \n
  *   SIPTAG_ORGANIZATION() \n
@@ -1462,7 +1494,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
      TIF(NUTAG_ENABLEMESSAGE, message_enable),
      TIF(NUTAG_ENABLEMESSENGER, win_messenger_enable),
-     /* TIF(NUTAG_MESSAGE_AUTOANSWER, message_auto_respond), */
+     /* TIF(NUTAG_AUTORESPOND, autorespond), */
 
      TIF(NUTAG_CALLEE_CAPS, callee_caps),
      TIF(NUTAG_MEDIA_FEATURES, media_features),
@@ -1477,6 +1509,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF_STR(SIPTAG_SUPPORTED_STR, supported),
      TIF(SIPTAG_ALLOW, allow),
      TIF_STR(SIPTAG_ALLOW_STR, allow),
+     TIF(SIPTAG_ALLOW_EVENTS, allow_events),
+     TIF_STR(SIPTAG_ALLOW_EVENTS_STR, allow_events),
      TIF_SIP(SIPTAG_USER_AGENT, user_agent),
      TIF(SIPTAG_USER_AGENT_STR, user_agent),
      TIF(NUTAG_USER_AGENT, user_agent),
