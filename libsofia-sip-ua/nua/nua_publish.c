@@ -399,18 +399,80 @@ static int nua_publish_usage_shutdown(nua_handle_t *nh,
   return -1;  /* Request in progress */
 }
 
+/* ---------------------------------------------------------------------- */
+/* Server side */
+
+static
+int respond_to_publish(nua_server_request_t *sr, tagi_t const *tags);
+
+/** @var nua_event_e::nua_i_publish
+ *
+ * Incoming PUBLISH request.
+ *
+ * In order to receive #nua_i_publish events, the application must enable
+ * both the PUBLISH method with NUTAG_ALLOW() tag and the acceptable SIP
+ * events with nua_set_params() tag NUTAG_ALLOW_EVENTS(). 
+ *
+ * The nua_response() call responding to a PUBLISH request must have
+ * NUTAG_WITH() (or NUTAG_WITH_CURRENT()/NUTAG_WITH_SAVED()) tag. Note that
+ * a successful response to PUBLISH @b MUST include @Expires and @SIPETag
+ * headers.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ *               (NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming PUBLISH request
+ * @param tags   empty
+ *
+ * @sa @RFC3903, nua_respond(),
+ * @Expires, @SIPETag, @SIPIfMatch, @Event, 
+ * nua_subscribe(), #nua_i_subscribe, 
+ * nua_notifier(), #nua_i_subscription,
+ */
 
 int nua_stack_process_publish(nua_t *nua,
 			      nua_handle_t *nh,
 			      nta_incoming_t *irq,
 			      sip_t const *sip)
 {
-  if (nh == NULL)
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 0)))
-      return 500;		/* Respond with 500 Internal Server Error */
+  nua_server_request_t *sr, sr0[1];
+  sip_allow_events_t *allow_events = NUA_PGET(nua, nh, allow_events);
+  sip_event_t *o = sip->sip_event;
+  char const *event = o ? o->o_type : NULL;
+  
+  sr = SR_INIT(sr0);
+  
+  if (!allow_events)
+    SR_STATUS1(sr, SIP_501_NOT_IMPLEMENTED);
+  else if (!event || !msg_header_find_param(allow_events->k_common, event))
+    SR_STATUS1(sr, SIP_489_BAD_EVENT);
 
-  nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-		  nua_i_publish, SIP_501_NOT_IMPLEMENTED, TAG_END());
+  sr = nua_server_request(nua, nh, irq, sip, sr, sizeof *sr,
+			  respond_to_publish, nua_i_publish, 0);
 
-  return 501; /* Respond automatically with 501 Not Implemented */
+  return nua_stack_server_event(nua, sr, TAG_END());
+}
+
+static
+int respond_to_publish(nua_server_request_t *sr, tagi_t const *tags)
+{
+  nua_handle_t *nh = sr->sr_owner;
+  nua_t *nua = nh->nh_nua;
+  msg_t *msg;
+
+  msg = nua_server_response(sr, sr->sr_status, sr->sr_phrase, TAG_NEXT(tags));
+
+  if (msg) {
+    nta_incoming_mreply(sr->sr_irq, msg);
+  }
+  else {
+    SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
+    nta_incoming_treply(sr->sr_irq, sr->sr_status, sr->sr_phrase, TAG_END());
+    nua_stack_event(nua, nh, NULL,
+		    nua_i_error, 900, "PUBLISH Response Fails",
+		    TAG_END());
+  }
+  
+  return sr->sr_status >= 200 ? sr->sr_status : 0;
 }

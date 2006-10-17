@@ -2123,18 +2123,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param tags   empty
  */
 
-
-/** @var nua_event_e::nua_i_publish
- *
- * Incoming PUBLISH.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- *               (NULL if outside session)
- * @param status statuscode of response sent automatically by stack
- * @param sip    incoming PUBLISH request
- * @param tags   empty
- */
+/* nua_i_publish documented with nua_stack_process_publish() */
 
 /** @var nua_event_e::nua_i_refer
  *

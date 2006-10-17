@@ -126,6 +126,9 @@ int test_events(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-12.1: SUBSCRIBE without notifier\n");
 
+  nua_set_params(b->nua, SIPTAG_ALLOW_EVENTS(NULL), TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   SUBSCRIBE(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
