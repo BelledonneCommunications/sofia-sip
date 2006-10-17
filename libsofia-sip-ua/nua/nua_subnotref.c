@@ -25,7 +25,10 @@
 /**@CFILE nua_subnotref.c
  * @brief Subscriber (event watcher)
  *
- * This module implements SUBSCRIBE UAC, NOTIFY UAS, REFER UAC.
+ * This file contains implementation SUBSCRIBE UAC, NOTIFY UAS, REFER UAC.
+ * The implementation of SUBSCRIBE UAS, NOTIFY UAC and REFER UAS is in
+ * nua_notifier.c.
+ * Alternative implementation using nea is in nua_event_server.c.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -270,7 +273,7 @@ static int process_response_to_subscribe(nua_handle_t *nh,
     du->du_ready = 1;
     substate = eu->eu_substate;
     
-    if (cr->cr_event == nua_r_unsubscribe)
+    if (du->du_terminating)
       delta = 0;
     else
       /* If there is no expires header,
@@ -299,7 +302,13 @@ static int process_response_to_subscribe(nua_handle_t *nh,
 
       eu->eu_final_wait = 1;
 
+      /* Do not remove usage in nua_stack_process_response  */
+      cr->cr_usage = NULL;	
+
       nua_dialog_usage_refresh_range(du, delta, delta);
+    }
+    else {
+      eu->eu_substate = substate = nua_substate_terminated;
     }
   }
   else /* if (status >= 300) */ {
@@ -518,6 +527,7 @@ int nua_stack_process_notify(nua_t *nua,
   }
 
   eu = nua_dialog_usage_private(du); assert(eu);
+  eu->eu_notified++;
 
   if (!sip->sip_event->o_id) {
     eu->eu_no_id = 1;
