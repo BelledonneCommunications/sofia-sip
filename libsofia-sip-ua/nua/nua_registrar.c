@@ -59,14 +59,10 @@ int nua_stack_process_register(nua_t *nua,
 			       nta_incoming_t *irq,
 			       sip_t const *sip)
 {
-  if (nh == NULL)
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 0)))
-      return 500;		/* Respond with 500 Internal Server Error */
+  nua_server_request_t *sr, sr0[1];
 
-   nh->nh_registrar = irq;
+  sr = nua_server_request(nua, nh, irq, sip, SR_INIT(sr0), sizeof *sr,
+			  nua_default_respond, nua_i_register, 0);
 
-   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-		   nua_i_register, SIP_100_TRYING, TAG_END());
-
-   return 0;	
+  return nua_stack_server_event(nua, sr, TAG_END());
 }
