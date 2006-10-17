@@ -749,7 +749,7 @@ void su_port_osx_socket_cb(CFSocketRef s,
       if (self->sup_head)
 	tout = 0;
 
-      CFRunLoopWakeUp(CFRunLoopGetCurrent());
+      /* CFRunLoopWakeUp(CFRunLoopGetCurrent()); */
     }
     
     /* Tell to run loop an su socket fired */
@@ -770,7 +770,7 @@ static int su_port_osx_wakeup(su_root_magic_t *magic, /* NULL */
   su_wait_events(w, s);
   recv(s, buf, sizeof(buf), 0);
 
-  CFRunLoopWakeUp(CFRunLoopGetCurrent());
+  /* CFRunLoopWakeUp(CFRunLoopGetCurrent()); */
 
   return 0;
 }
@@ -1069,7 +1069,7 @@ int su_port_osx_deregister0(su_port_t *self, int i)
   CFRunLoopRemoveSource(rl, self->sup_sources[n], kCFRunLoopDefaultMode);
   CFRelease(self->sup_sources[n]);
 
-  /* CFRunLoopWakeUp(rl); */
+  CFRunLoopWakeUp(rl);
 
   if (n < self->sup_pri_offset) {
     int j = --self->sup_pri_offset;
