@@ -1306,7 +1306,7 @@ int su_port_osx_unregister_all(su_port_t *self,
  */
 int su_port_osx_eventmask(su_port_t *self, int index, int socket, int events)
 {
-  int n;
+  int n, ret;
 
   assert(self);
   assert(SU_PORT_OSX_OWN_THREAD(self));
@@ -1317,7 +1317,12 @@ int su_port_osx_eventmask(su_port_t *self, int index, int socket, int events)
   if (n < 0)
     return su_seterrno(EBADF);
 
-  return su_wait_mask(&self->sup_waits[n], socket, events);
+  ret = su_wait_mask(&self->sup_waits[n], socket, events);
+
+  CFSocketSetSocketFlags(self->sup_sockets[n],
+			 map_poll_event_to_cf_event(events));
+  
+  return ret;
 }
 
 /** @internal
