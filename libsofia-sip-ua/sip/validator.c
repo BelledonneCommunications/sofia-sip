@@ -587,7 +587,7 @@ void report_histogram(char const *title, histogram_t const *h)
 
 int report(context_t const *ctx)
 {
-  options_t *o = ctx->options;
+  const options_t *o = ctx->options;
   uint64_t n = ctx->messages;
 
   if (!n)
@@ -604,7 +604,7 @@ int report(context_t const *ctx)
 	   (ull)n, ctx->time, (double)n / ctx->time);
 
   if (o->o_sipstats) {
-    sipstats_t *ss = ctx->sipstats;
+    const sipstats_t *ss = ctx->sipstats;
     report_sipstat("requests", &ss->req);
     report_sipstat("responses", &ss->resp);
 
