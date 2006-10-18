@@ -991,7 +991,7 @@ sres_search(sres_resolver_t *res,
       sres_query_t *sub;
       int i, subs;
       size_t len;
-      char const **domains = res->res_config->c_search;
+      char const *const *domains = res->res_config->c_search;
       char search[SRES_MAXDNAME + 1];
 
       memcpy(search, domain, dlen);
@@ -1211,7 +1211,7 @@ sres_search_cached_answers(sres_resolver_t *res,
     found = 1;
 
   if (dots < res->res_config->c_opt.ndots) {
-    char const **domains = res->res_config->c_search;
+    char const *const *domains = res->res_config->c_search;
     size_t dlen = strlen(domain);
 
     for (i = 0; domains[i] && i < SRES_MAX_SEARCH; i++) {

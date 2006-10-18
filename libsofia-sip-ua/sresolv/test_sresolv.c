@@ -1107,7 +1107,7 @@ int test_cache(sres_context_t *ctx)
     rr = result[i];
 
     if (rr->sr_record->r_type == sres_type_naptr) {
-      sres_naptr_record_t *rr_naptr = rr->sr_naptr;
+      const sres_naptr_record_t *rr_naptr = rr->sr_naptr;
       switch(rr_naptr->na_order) {
       case 20:
         TEST(rr_naptr->na_record->r_type, sres_type_naptr);
