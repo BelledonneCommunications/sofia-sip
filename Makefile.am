@@ -10,6 +10,8 @@ AUTOMAKE_OPTIONS = foreign 1.7
 SUBDIRS = libsofia-sip-ua $(GLIB_SUBDIRS) utils packages
 DIST_SUBDIRS = libsofia-sip-ua libsofia-sip-ua-glib utils packages win32
 
+# note: when glib devel files are not available, make should not
+#       enter the libsofia-sip-ua-glib subdir at all
 if HAVE_GLIB
 GLIB_SUBDIRS = libsofia-sip-ua-glib
 endif
@@ -43,7 +45,6 @@ endif
 CLEANFILES = $(dist_man_MANS)
 
 coverage built-sources clean-built-sources doxygen:
-	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua $@
-	@$(MAKE) $(AM_MAKEFLAGS) -C libsofia-sip-ua-glib $@
+	for i in libsofia-sip-ua $(GLIB_SUBDIRS) ; do $(MAKE) $(AM_MAKEFLAGS) -C $$i $@ ; done
 
 .PHONY: coverage built-sources clean-built-sources doxygen manpages
