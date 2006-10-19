@@ -37,6 +37,7 @@ libsofia-sip-ua:
 - Added NUTAG_WITH(), nutag_with, NUTAG_WITH_CURRENT(),
   nua_current_request(), NUTAG_WITH_SAVED(), nua_saved_event_request()
   (nua_tag.h, nua.h)
+- Added tport_is_closed() and tport_is_shutdown() to the public API.
 - This release is ABI/API compatible with applications linked against
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 
