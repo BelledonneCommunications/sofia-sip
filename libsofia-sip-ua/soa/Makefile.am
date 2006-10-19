@@ -10,6 +10,8 @@
 
 INCLUDES = 		-I$(srcdir)/../sdp -I../sdp \
 			-I$(srcdir)/../sip -I../sip \
+			-I$(srcdir)/../msg -I../msg \
+			-I$(srcdir)/../url -I../url \
 			-I$(srcdir)/../ipt -I../ipt \
 			-I$(srcdir)/../bnf -I../bnf \
 			-I$(srcdir)/../su -I../su
@@ -39,6 +41,8 @@ COVERAGE_INPUT = 	$(libsoa_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libsoa.la \
 			../sip/libsip.la \
+			../msg/libmsg.la \
+			../url/liburl.la \
 			../sdp/libsdp.la \
 			../ipt/libipt.la \
 			../bnf/libbnf.la \

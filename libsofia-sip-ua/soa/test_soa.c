@@ -53,6 +53,7 @@ struct context;
 #include <sofia-sip/sdp.h>
 
 #include <sofia-sip/su_log.h>
+#include <sofia-sip/sip_tag.h>
 
 extern su_log_t soa_log[];
 
@@ -154,6 +155,33 @@ int test_api_errors(struct context *ctx)
   TEST(soa_is_remote_video_active(NULL), SOA_ACTIVE_DISABLED);
   TEST(soa_is_remote_image_active(NULL), SOA_ACTIVE_DISABLED);
   TEST(soa_is_remote_chat_active(NULL), SOA_ACTIVE_DISABLED);
+
+  END();
+}
+
+int test_soa_tags(struct context *ctx)
+{
+  BEGIN();
+  
+  su_home_t home[1] = { SU_HOME_INIT(home) };
+  tagi_t *t;
+
+  tagi_t const soafilter[] = {
+    { TAG_FILTER(soa_tag_filter) },
+    { TAG_NULL() }
+  };
+
+  t = tl_filtered_tlist(home, soafilter,
+			SIPTAG_FROM_STR("sip:my.domain"),
+			SOATAG_USER_SDP_STR("v=0"),
+			SOATAG_HOLD("*"),
+			TAG_END());
+  TEST_1(t);
+  TEST(t[0].t_tag, soatag_user_sdp_str);
+  TEST(t[1].t_tag, soatag_hold);
+  TEST_1(t[2].t_tag == NULL || t[2].t_tag == tag_null);
+
+  su_home_deinit(home);
 
   END();
 }
@@ -1291,6 +1319,7 @@ int main(int argc, char *argv[])
   } while(0)
 
   retval |= test_api_errors(ctx); SINGLE_FAILURE_CHECK();
+  retval |= test_soa_tags(ctx); SINGLE_FAILURE_CHECK();
   retval |= test_init(ctx, argv + i); SINGLE_FAILURE_CHECK();
   if (retval == 0) {
     retval |= test_params(ctx); SINGLE_FAILURE_CHECK();

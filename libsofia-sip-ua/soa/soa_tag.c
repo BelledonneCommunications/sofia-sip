@@ -33,11 +33,35 @@
 
 #include <sofia-sip/su.h>
 
+#if 1
+#define TAG_NAMESPACE soa_tag_namespace
+#else
+/* Definition used by tag_dll.awk */
 #define TAG_NAMESPACE "soa"
+#endif
 
 #include <sofia-sip/soa.h>
 #include <sofia-sip/su_tag_class.h>
 #include <sofia-sip/sdp_tag.h>
+
+#include <string.h>
+
+char const soa_tag_namespace[] = "soa";
+
+/** Filter soa tags. */
+int soa_tag_filter(tagi_t const *f, tagi_t const *t)
+{
+  char const *ns;
+
+  if (!t || !t->t_tag)
+    return 0;
+
+  ns = t->t_tag->tt_ns; 
+  if (!ns)
+    return 0;
+
+  return ns == soa_tag_namespace || strcmp(ns, soa_tag_namespace) == 0;
+}
 
 /**@def SOATAG_ANY()
  * 
