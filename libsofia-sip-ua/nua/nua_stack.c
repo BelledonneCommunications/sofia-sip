@@ -260,7 +260,7 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
     return event;
   }
 
-  if ((event > nua_r_method && event <= nua_r_ack) 
+  if ((event > nua_r_authenticate && event <= nua_r_ack) 
       || (nh && !nh->nh_valid)
       || (nua->nua_shutdown && event != nua_r_shutdown)) {
     if (msg)
@@ -1605,21 +1605,26 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     nua_client_request_t *cr;
     nua_creq_restart_f *restart = NULL;
 
-    nua_stack_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
-
     cr = nua_client_request_restarting(nh->nh_cr);
 
     if (cr) 
       restart = cr->cr_restart, cr->cr_restart = NULL;
 
-    if (restart)
+    if (restart) {
+      /* nua_stack_event(nua, nh, NULL, e, SIP_200_OK, TAG_END()); */
       restart(nh, (tagi_t *)tags);	/* Restart operation */
+    }
+    else {
+      nua_stack_event(nua, nh, NULL, e, 
+		      202, "No operation to restart",
+		      TAG_END());
+    }
   }
   else if (status < 0) {
-    nua_stack_event(nua, nh, NULL, e, 500, "Cannot add credentials", TAG_END());
+    nua_stack_event(nua, nh, NULL, e, 900, "Cannot add credentials", TAG_END());
   }
   else {
-    nua_stack_event(nua, nh, NULL, e, 404, "No matching challenge", TAG_END());
+    nua_stack_event(nua, nh, NULL, e, 904, "No matching challenge", TAG_END());
   }
 }
 
