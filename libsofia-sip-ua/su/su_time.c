@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005,2006 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -29,6 +29,7 @@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Jari Selin <Jari.Selin@nokia.com>
+ * @author Kai Vehmanen <first.surname@nokia.com>
  * 
  * @date Created: Thu Mar 18 19:40:51 1999 pessi
  */
@@ -77,11 +78,19 @@
  */
 long su_time_cmp(su_time_t const t1, su_time_t const t2)
 {
-  long retval = t1.tv_sec - t2.tv_sec;
+  long retval = 0;
 
-  if (retval == 0)
-    retval = t1.tv_usec - t2.tv_usec;
-  
+  if (t1.tv_sec > t2.tv_sec) 
+    retval = 1;
+  else if (t1.tv_sec < t2.tv_sec) 
+    retval = -1;
+  else {
+    if (t1.tv_usec > t2.tv_usec) 
+      retval = 1;
+    else if (t1.tv_usec < t2.tv_usec) 
+      retval = -1;
+  }
+
   return retval;
 }
 
