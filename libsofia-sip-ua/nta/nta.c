@@ -4431,8 +4431,9 @@ void nta_incoming_destroy(nta_incoming_t *irq)
     irq->irq_callback = NULL;
     irq->irq_magic = NULL;
     irq->irq_destroyed = 1;
-    if ((irq->irq_terminated && !irq->irq_in_callback) || irq->irq_default)
-      incoming_free(irq);
+    if (!irq->irq_in_callback)
+      if (irq->irq_terminated || irq->irq_default)
+	incoming_free(irq);
   }
 }
 
@@ -8118,9 +8119,13 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
     return 0;
   }
 
-  if (orq->orq_queue == NULL ||
-      orq->orq_queue == orq->orq_agent->sa_out.resolving ||
-      orq->orq_queue == orq->orq_agent->sa_out.delayed) 
+  if (orq->orq_stateless) {
+    if (outgoing_terminate(orq))
+      return 0;
+  }
+  else if (orq->orq_queue == NULL ||
+	   orq->orq_queue == orq->orq_agent->sa_out.resolving ||
+	   orq->orq_queue == orq->orq_agent->sa_out.delayed) 
     outgoing_trying(orq);
 
   /** Insert a dummy Via header */
@@ -8169,7 +8174,8 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
     /* Xyzzy */
     orq->orq_status = status;
     orq->orq_completed = 1;
-  } else {
+  }
+  else {
     /*
      * The thread creating outgoing transaction must return to application
      * before transaction callback can be invoked. Therefore processing an
@@ -9342,7 +9348,7 @@ static
 int reliable_final(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
 {
   nta_reliable_t *r;
-
+  unsigned already_in_callback;
   /*
    * We delay sending final response if it's 2XX and
    * an unpracked reliable response contains session description
@@ -9357,11 +9363,12 @@ int reliable_final(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
       }
 
   /* Flush unsent responses. */
+  already_in_callback = irq->irq_in_callback;
   irq->irq_in_callback = 1;
   reliable_flush(irq);
-  irq->irq_in_callback = 0;
+  irq->irq_in_callback = already_in_callback;
 
-  if (irq->irq_completed && irq->irq_destroyed) {
+  if (!already_in_callback && irq->irq_terminated && irq->irq_destroyed) {
     incoming_free(irq);
     msg_destroy(msg);
     return 0;

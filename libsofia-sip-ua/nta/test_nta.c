@@ -594,6 +594,19 @@ int test_init(agent_t *ag, char const *resolv_conf)
   END();
 }  
 
+int test_reinit(agent_t *ag)
+{
+  BEGIN();
+  /* Create a new default leg */
+  nta_leg_destroy(ag->ag_default_leg), ag->ag_default_leg = NULL;
+  TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
+					     leg_callback_200,
+					     ag,
+					     NTATAG_NO_DIALOG(1),
+					     TAG_END()));
+  END();
+}
+
 int test_deinit(agent_t *ag)
 {
   BEGIN();
@@ -799,14 +812,6 @@ int test_tports(agent_t *ag)
   url->url_params = "transport=tcp";
 
   url->url_params = "transport=udp";
-
-  /* Create a new default leg */
-  nta_leg_destroy(ag->ag_default_leg), ag->ag_default_leg = NULL;
-  TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
-					     leg_callback_200,
-					     ag,
-					     NTATAG_NO_DIALOG(1),
-					     TAG_END()));
 
   TEST_1(nta_agent_add_tport(ag->ag_agent, (url_string_t *)url, 
 			     TAG_END()) == 0);
@@ -2581,20 +2586,24 @@ int test_for_ack_or_timeout(agent_t *ag,
 
   sip_method_t method = sip ? sip->sip_request->rq_method : sip_method_unknown;
 
-  nta_incoming_destroy(irq);
-  TEST(irq, ag->ag_irq);
-  ag->ag_irq = NULL;
-
-  if (sip) {
+  if (method == sip_method_ack) {
     TEST(method, sip_method_ack);
   
     ag->ag_status = 200;
+  }
+  else if (method == sip_method_cancel) {
+    nta_incoming_treply(irq, SIP_487_REQUEST_CANCELLED, TAG_END());
   }
   else {
     if (ag->ag_bob_leg) {
       nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
     }
   }
+
+  nta_incoming_destroy(irq);
+  TEST(irq, ag->ag_irq);
+  ag->ag_irq = NULL;
+
   return 0;
 
   END();
@@ -2671,6 +2680,7 @@ int bob_leg_callback2(agent_t *ag,
 
   END();
 }
+
 
 int invite_prack_callback(agent_t *ag,
 			  nta_outgoing_t *orq,
@@ -2761,6 +2771,144 @@ int invite_prack_callback(agent_t *ag,
   END();
 }
 
+static int process_prack(nta_reliable_magic_t *arg,
+			 nta_reliable_t *rel,
+			 nta_incoming_t *irq,
+			 sip_t const *sip)
+{
+  agent_t *ag = (agent_t *)arg;
+  if (ag->ag_irq) {
+    nta_incoming_treply(ag->ag_irq, 
+			504, "Reliable Response Timeout",
+			TAG_END());
+    nta_incoming_destroy(ag->ag_irq);
+  }
+  return 504;
+}
+
+/* send invite, wait for 183, send CANCEL */
+int bob_leg_callback3(agent_t *ag,
+		      nta_leg_t *leg,
+		      nta_incoming_t *irq,
+		      sip_t const *sip)
+{
+  BEGIN();
+
+  if (tstflags & tst_verbatim) {
+    printf("%s: %s: %s " URL_PRINT_FORMAT " %s\n",
+	   name, __func__, sip->sip_request->rq_method_name, 
+	   URL_PRINT_ARGS(sip->sip_request->rq_url),
+	   sip->sip_request->rq_version);
+  }
+
+  TEST_1(sip->sip_content_length);
+  TEST_1(sip->sip_via);
+  TEST_1(sip->sip_from && sip->sip_from->a_tag);
+
+  ag->ag_latest_leg = leg;
+
+  if (ag->ag_bob_leg && leg != ag->ag_bob_leg) {
+    leg_match(ag, leg, 1, __func__);
+    return 500;
+  }
+
+  if (ag->ag_bob_leg == NULL) {
+    nta_leg_bind(leg, leg_callback_500, ag);
+    ag->ag_bob_leg = nta_leg_tcreate(ag->ag_agent,
+				     bob_leg_callback,
+				     ag,
+				     SIPTAG_CALL_ID(sip->sip_call_id),
+				     SIPTAG_FROM(sip->sip_to),
+				     SIPTAG_TO(sip->sip_from),
+				     TAG_END());
+    TEST_1(ag->ag_bob_leg);
+    TEST_1(nta_leg_tag(ag->ag_bob_leg, NULL));
+    TEST_1(nta_leg_get_tag(ag->ag_bob_leg));
+    TEST_1(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)));
+    TEST(nta_leg_server_route(ag->ag_bob_leg, 
+			      sip->sip_record_route, 
+			      sip->sip_contact), 0);
+  }
+
+  if (sip->sip_request->rq_method == sip_method_invite) {
+    nta_reliable_t *rel;
+    nta_incoming_bind(irq, test_for_ack_or_timeout, ag);
+    rel = nta_reliable_treply(irq, process_prack, ag,
+			      SIP_183_SESSION_PROGRESS,
+			      SIPTAG_CONTENT_TYPE(ag->ag_content_type),
+			      SIPTAG_PAYLOAD(ag->ag_payload),
+			      SIPTAG_CONTACT(ag->ag_m_bob),
+			      TAG_END());
+    ag->ag_irq = irq;
+    return 0;
+  } else {
+    return 200;
+  }
+
+  END();
+}
+
+
+int invite_183_cancel_callback(agent_t *ag,
+			       nta_outgoing_t *orq,
+			       sip_t const *sip)
+{
+  BEGIN();
+
+  int status = sip->sip_status->st_status;
+
+  if (tstflags & tst_verbatim) {
+    printf("%s: %s: %s %03d %s\n", name, __func__, 
+	   sip->sip_status->st_version, 
+	   sip->sip_status->st_status, 
+	   sip->sip_status->st_phrase);
+  }
+
+  if (status > 100 && status < 200) {
+    nta_outgoing_cancel(orq);
+    return 0;
+  }
+
+  if (status < 200)
+    return 0;
+
+  if (status < 300) {
+    nta_outgoing_t *ack;
+    msg_t *msg;
+    sip_t *osip;
+
+    TEST_1(msg = nta_outgoing_getrequest(orq));
+    TEST_1(osip = sip_object(msg));
+
+    TEST_1(nta_leg_rtag(ag->ag_call_leg, sip->sip_to->a_tag));
+    
+    TEST(nta_leg_client_route(ag->ag_call_leg, 
+			      sip->sip_record_route,
+			      sip->sip_contact), 0);
+
+    ack = nta_outgoing_tcreate(ag->ag_call_leg, NULL, NULL,
+			       NULL,
+			       SIP_METHOD_ACK,
+			       NULL,
+			       SIPTAG_CSEQ(sip->sip_cseq),
+			       NTATAG_ACK_BRANCH(osip->sip_via->v_branch),
+			       TAG_END());
+    TEST_1(ack);
+    nta_outgoing_destroy(ack);
+    msg_destroy(msg);
+  }
+  else {
+    ag->ag_status = status;
+  }
+
+  TEST_1(sip->sip_to && sip->sip_to->a_tag);
+
+  nta_outgoing_destroy(orq);
+  ag->ag_orq = NULL;
+  ag->ag_call_leg = NULL;
+
+  END();
+}
 
 /*
  * Test establishing a call with an early dialog / 100 rel / timeout
@@ -2804,7 +2952,6 @@ int test_prack(agent_t *ag)
     TEST(ag->ag_latest_leg, NULL);
   }
 
-  {
   TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
 					   alice_leg_callback,
 					   ag,
@@ -2859,9 +3006,42 @@ int test_prack(agent_t *ag)
   nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
   ag->ag_latest_leg = NULL;
   ag->ag_call_leg = NULL;
-  }
 
-  if (0) {
+  /* Test CANCELing a call after received PRACK */
+  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+					   alice_leg_callback,
+					   ag,
+					   SIPTAG_FROM(ag->ag_alice),
+					   SIPTAG_TO(ag->ag_bob),
+					   TAG_END()));
+  TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
+
+  /* Send INVITE */
+  nta_leg_bind(ag->ag_server_leg, bob_leg_callback3, ag);
+  ag->ag_expect_leg = ag->ag_server_leg;
+  TEST_1(ag->ag_orq = 
+	 nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_alice_leg, 
+			      invite_183_cancel_callback, ag,
+			      ag->ag_obp,
+			      SIP_METHOD_INVITE,
+			      (url_string_t *)ag->ag_m_bob->m_url,
+			      SIPTAG_SUBJECT_STR("Call 2b"),
+			      SIPTAG_CONTACT(ag->ag_m_alice),
+			      SIPTAG_REQUIRE_STR("100rel"),
+			      SIPTAG_CONTENT_TYPE(c),
+			      SIPTAG_PAYLOAD(sdp),
+			      TAG_END()));
+  nta_test_run(ag);
+  TEST_1(ag->ag_status == 487 || ag->ag_status == 504);
+  TEST(ag->ag_orq, NULL);
+  TEST(ag->ag_latest_leg, ag->ag_server_leg);
+  TEST_1(ag->ag_bob_leg != NULL);
+
+  nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
+  ag->ag_latest_leg = NULL;
+  ag->ag_call_leg = NULL;
+
+  if (getenv("EXPENSIVE_CHECKS")) {
   printf("%s: starting 100rel timeout test, test will complete in 4 seconds\n",
 	 name);
   
@@ -3190,7 +3370,8 @@ int main(int argc, char *argv[])
   retval |= test_init(ag, argv[i]); SINGLE_FAILURE_CHECK();
   if (retval == 0) {
     retval |= test_bad_messages(ag); SINGLE_FAILURE_CHECK();
-    retval |= test_tports(ag); SINGLE_FAILURE_CHECK();
+    retval |= test_reinit(ag); SINGLE_FAILURE_CHECK();
+    /* retval |= test_tports(ag); SINGLE_FAILURE_CHECK(); */
     retval |= test_resolv(ag, argv[i]); SINGLE_FAILURE_CHECK();
     retval |= test_routing(ag); SINGLE_FAILURE_CHECK();
     retval |= test_dialog(ag); SINGLE_FAILURE_CHECK();
