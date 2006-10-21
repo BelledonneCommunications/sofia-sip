@@ -90,6 +90,7 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- Fixed crash when CANCEL was received but PRACK was expected
 - #1574342: stunc tool broken in 1.12.3
 - With NUTAG_EARLY_ANSWER(), include answer in 200 OK, too.
 - Fixed tl_find_last().
