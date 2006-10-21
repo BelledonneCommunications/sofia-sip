@@ -1701,7 +1701,8 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
   if (tags) {
     nua_stack_set_params(nua, nh, nua_i_error, tags);
 
-    if (status < 200 && !NHP_ISSET(nh->nh_prefs, early_answer)) {
+    if (!NHP_ISSET(nh->nh_prefs, early_answer)
+	&& 100 < status && status < 200) {
       sdp_session_t const *user_sdp = NULL;
       char const *user_sdp_str = NULL;
 
@@ -1939,7 +1940,7 @@ int process_prack(nua_handle_t *nh,
 
   if (sip)
     /* received PRACK */;
-  else if (!sri) { /* Final response interrupted 100rel */
+  else if (!sri || irq == NULL) { /* Final response interrupted 100rel */
     /* Ignore */
     return 200;
   }
