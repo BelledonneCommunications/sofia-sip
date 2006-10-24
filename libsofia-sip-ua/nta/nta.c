@@ -4725,8 +4725,13 @@ char const *nta_incoming_tag(nta_incoming_t *irq, char const *tag)
     return NULL;
 
   if (!irq->irq_tag) {
-    if (tag == NULL)
+    if (tag)
+      tag = su_strdup(irq->irq_home, tag);
+    else
       tag = nta_agent_newtag(irq->irq_home, NULL, irq->irq_agent);
+
+    if (!tag)
+      return tag;
 
     irq->irq_tag = tag;
     irq->irq_tag_set = 1;
