@@ -8124,10 +8124,8 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
     return 0;
   }
 
-  if (orq->orq_stateless) {
-    if (outgoing_terminate(orq))
-      return 0;
-  }
+  if (orq->orq_stateless)
+    ;
   else if (orq->orq_queue == NULL ||
 	   orq->orq_queue == orq->orq_agent->sa_out.resolving ||
 	   orq->orq_queue == orq->orq_agent->sa_out.delayed) 
@@ -8178,7 +8176,7 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
   else if (orq->orq_stateless && orq->orq_callback == outgoing_default_cb) {
     /* Xyzzy */
     orq->orq_status = status;
-    orq->orq_completed = 1;
+    outgoing_complete(orq);
   }
   else {
     /*
