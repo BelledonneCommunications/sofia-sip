@@ -342,6 +342,20 @@ void nua_dialog_usage_remove_at(nua_owner_t *own,
   if (*at) {
     nua_dialog_usage_t *du = *at;
     sip_event_t const *o = NULL;
+    nua_client_request_t *cr, *cr_next;
+    nua_server_request_t *sr, *sr_next;
+
+    for (cr = ds->ds_cr; cr; cr = cr_next) {
+      cr_next = cr->cr_next;
+      if (cr->cr_usage == du)
+	cr->cr_usage = NULL;
+    }
+
+    for (sr = ds->ds_sr; sr; sr = sr_next) {
+      sr_next = sr->sr_next;
+      if (sr->sr_usage == du)
+	nua_server_request_destroy(sr);
+    }
 
     *at = du->du_next;
 
@@ -508,13 +522,14 @@ void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du,
 }
 
 /**@internal Do not refresh. */
-void nua_dialog_usage_no_refresh(nua_dialog_usage_t *du)
+void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
 {
   du->du_refresh = 0;
 }
 
 /** @internal Refresh usage or shutdown usage if @a now is 0. */
 void nua_dialog_usage_refresh(nua_owner_t *owner,
+			      nua_dialog_state_t *ds,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now)
 {
@@ -523,14 +538,14 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
 
     if (now > 0) {
       if (du->du_class->usage_refresh) {
-	du->du_class->usage_refresh(owner, du, now);
+	du->du_class->usage_refresh(owner, ds, du, now);
 	return;
       }
     }
     else {
       du->du_shutdown = 1;
       if (du->du_class->usage_shutdown) {
-	du->du_class->usage_shutdown(owner, du);
+	du->du_class->usage_shutdown(owner, ds, du);
 	return;
       }
     }

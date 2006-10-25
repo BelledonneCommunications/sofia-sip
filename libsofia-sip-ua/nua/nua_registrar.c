@@ -62,7 +62,7 @@ int nua_stack_process_register(nua_t *nua,
   nua_server_request_t *sr, sr0[1];
 
   sr = nua_server_request(nua, nh, irq, sip, SR_INIT(sr0), sizeof *sr,
-			  nua_default_respond, nua_i_register, 0);
+			  nua_default_respond, 0);
 
-  return nua_stack_server_event(nua, sr, TAG_END());
+  return nua_stack_server_event(nua, sr, nua_i_register, TAG_END());
 }

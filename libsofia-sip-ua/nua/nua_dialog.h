@@ -48,8 +48,86 @@ typedef NUA_OWNER_T nua_owner_t;
 #include <sofia-sip/nta.h>
 #endif
 
+typedef struct nua_server_request nua_server_request_t; 
+typedef struct nua_client_request nua_client_request_t; 
+
+/** Respond to an incoming request. */
+typedef int nua_server_respond_f(nua_server_request_t *, tagi_t const *);
+
+/** Restart an outgoing request. */
+typedef void nua_creq_restart_f(nua_owner_t *, tagi_t *tags);
+
+/** Server side transaction */
+struct nua_server_request {
+  struct nua_server_request *sr_next, **sr_prev;
+
+  nua_owner_t *sr_owner;	/**< Backpointer to handle */
+  nua_dialog_usage_t *sr_usage;	/**< Backpointer to usage */
+
+  /** When the application responds to an request with
+   * nua_respond(), the sr_respond() is called
+   */
+  nua_server_respond_f *sr_respond;
+  
+  nta_incoming_t *sr_irq;	/**< Server transaction object */
+  msg_t *sr_msg;		/**< Request message */
+
+  sip_method_t sr_method;	/**< Request method */
+  int sr_status;		/**< Status code */
+  char const *sr_phrase;	/**< Status phrase */
+
+  unsigned sr_auto:1;		/**< Autoresponse - no event has been sent */
+  unsigned sr_initial:1;	/**< Handle was created by this request */
+
+  /* Flags used with offer-answer */
+  unsigned sr_offer_recv:1;	/**< We have received an offer */
+  unsigned sr_answer_sent:2;	/**< We have answered (reliably, if >1) */
+
+  unsigned sr_offer_sent:1;	/**< We have offered SDP */
+  unsigned sr_answer_recv:1;	/**< We have received SDP answer */
+};
+
+#define SR_INIT(sr) \
+  (memset((sr), 0, sizeof (sr)[0]), SR_STATUS1((sr), SIP_100_TRYING), sr)
+
+#define SR_STATUS(sr, status, phrase) \
+  ((sr)->sr_phrase = (phrase), (sr)->sr_status = (status))
+
+#define SR_STATUS1(sr, statusphrase)					\
+  sr_status(sr, statusphrase)
+
+su_inline 
+int sr_status(nua_server_request_t *sr, int status, char const *phrase)
+{
+  return (void)(sr->sr_phrase = phrase), (sr->sr_status = status);
+}
+
+struct nua_client_request
+{
+  nua_client_request_t *cr_next;        /**< Linked list of requests */
+  /*nua_event_t*/ int cr_event;		/**< Request event */
+  nua_creq_restart_f *cr_restart;
+  nta_outgoing_t     *cr_orq;
+  msg_t              *cr_msg;
+  nua_dialog_usage_t *cr_usage;
+  unsigned short      cr_retry_count;   /**< Retry count for this request */
+
+  /* Flags used with offer-answer */
+  unsigned short      cr_answer_recv;   /**< Recv answer in response 
+					 *  with this status.
+					 */
+  unsigned            cr_offer_sent:1;  /**< Sent offer in this request */
+
+  unsigned            cr_offer_recv:1;  /**< Recv offer in a response */
+  unsigned            cr_answer_sent:1; /**< Sent answer in (PR)ACK */
+};
+
+
 struct nua_dialog_state
 {
+  nua_client_request_t ds_cr[1];
+  nua_server_request_t *ds_sr;
+
   /** Dialog usages. */
   nua_dialog_usage_t     *ds_usage;
 
@@ -103,8 +181,10 @@ typedef struct {
   void (*usage_peer_info)(nua_dialog_usage_t *du,
 			  nua_dialog_state_t const *ds,
 			  sip_t const *sip);
-  void (*usage_refresh)(nua_owner_t *, nua_dialog_usage_t *, sip_time_t now);
-  int (*usage_shutdown)(nua_owner_t *, nua_dialog_usage_t *);
+  void (*usage_refresh)(nua_owner_t *, nua_dialog_state_t *ds,
+			nua_dialog_usage_t *, sip_time_t now);
+  int (*usage_shutdown)(nua_owner_t *, nua_dialog_state_t *ds, 
+			nua_dialog_usage_t *);
 } nua_usage_class;
 
 
@@ -171,11 +251,12 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
 void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du, 
 				    unsigned min, unsigned max);
 
+void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du);
+
 void nua_dialog_usage_refresh(nua_owner_t *owner,
+			      nua_dialog_state_t *ds,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now);
-
-void nua_dialog_usage_no_refresh(nua_dialog_usage_t *du);
 
 static inline
 int nua_dialog_is_established(nua_dialog_state_t const *ds)
@@ -199,5 +280,21 @@ nua_dialog_usage_t *nua_dialog_usage_public(void const *p)
 #define nua_dialog_usage_private(du) ((du) ? (void*)((du) + 1) : NULL)
 #define nua_dialog_usage_public(p) ((p) ? (nua_dialog_usage_t*)(p) - 1 : NULL)
 #endif
+
+/* ---------------------------------------------------------------------- */
+
+void nua_server_request_destroy(nua_server_request_t *sr);
+
+int nua_server_respond(nua_server_request_t *sr,
+		       int status, char const *phrase,
+		       tag_type_t tag, tag_value_t value, ...);
+
+msg_t *nua_server_response(nua_server_request_t *sr,
+			   int status, char const *phrase,
+			   tag_type_t tag, tag_value_t value, ...);
+
+int nua_default_respond(nua_server_request_t *sr,
+			tagi_t const *tags);
+
 
 #endif /* NUA_DIALOG_H */

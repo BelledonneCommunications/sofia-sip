@@ -87,80 +87,7 @@ typedef struct event_s event_t;
 
 #define       NONE ((void *)-1)
 
-typedef struct nua_server_request nua_server_request_t; 
-
-/** Respond to an incoming request. */
-typedef int nua_server_respond_f(nua_server_request_t *, tagi_t const *);
-
-/** Server side transaction */
-struct nua_server_request {
-  struct nua_server_request *sr_next, **sr_prev;
-
-  nua_owner_t *sr_owner;	/**< Backpointer to handle */
-  nua_dialog_usage_t *sr_usage;	/**< Backpointer to usage */
-
-  /** When the application responds to an request with
-   * nua_respond(), the sr_respond() is called
-   */
-  nua_server_respond_f *sr_respond;
-  
-  nta_incoming_t *sr_irq;	/**< Server transaction object */
-  msg_t *sr_msg;		/**< Request message */
-
-  nua_event_t sr_event;		/**< Request event */
-  int sr_status;		/**< Status code */
-  char const *sr_phrase;	/**< Status phrase */
-
-  unsigned sr_auto:1;		/**< Autoresponse - no event has been sent */
-  unsigned sr_initial:1;	/**< Handle was created by this request */
-
-  /* Flags used with offer-answer */
-  unsigned sr_offer_recv:1;	/**< We have received an offer */
-  unsigned sr_answer_sent:2;	/**< We have answered (reliably, if >1) */
-
-  unsigned sr_offer_sent:1;	/**< We have offered SDP */
-  unsigned sr_answer_recv:1;	/**< We have received SDP answer */
-};
-
-#define SR_INIT(sr) \
-  (memset((sr), 0, sizeof (sr)[0]), SR_STATUS1((sr), SIP_100_TRYING), sr)
-
-#define SR_STATUS(sr, status, phrase) \
-  ((sr)->sr_phrase = (phrase), (sr)->sr_status = (status))
-
-#define SR_STATUS1(sr, statusphrase)					\
-  sr_status(sr, statusphrase)
-
-su_inline int sr_status(nua_server_request_t *sr, int status, char const *phrase)
-{
-  return (void)(sr->sr_phrase = phrase), (sr->sr_status = status);
-}
-
-typedef struct nua_client_request nua_client_request_t; 
-
-typedef void nua_creq_restart_f(nua_handle_t *, tagi_t *tags);
-
 typedef struct register_usage nua_registration_t;
-
-struct nua_client_request
-{
-  nua_client_request_t *cr_next;        /**< Linked list of requests */
-  nua_event_t         cr_event;		/**< Request event */
-  nua_creq_restart_f *cr_restart;
-  nta_outgoing_t     *cr_orq;
-  msg_t              *cr_msg;
-  nua_dialog_usage_t *cr_usage;
-  unsigned short      cr_retry_count;   /**< Retry count for this request */
-
-  /* Flags used with offer-answer */
-  unsigned short      cr_answer_recv;   /**< Recv answer in response 
-					 *  with this status.
-					 */
-  unsigned            cr_offer_sent:1;  /**< Sent offer in this request */
-
-  unsigned            cr_offer_recv:1;  /**< Recv offer in a response */
-  unsigned            cr_answer_sent:1; /**< Sent answer in (PR)ACK */
-};
 
 #define \
   NH_ACTIVE_MEDIA_TAGS(include, soa)					\
@@ -221,9 +148,6 @@ struct nua_handle_s
   unsigned        nh_used_ptags:1;	/**< Ptags has been used */
   unsigned :0;
 
-  nua_client_request_t nh_cr[1];
-  nua_server_request_t *nh_sr;
-
   nua_dialog_state_t nh_ds[1];
 
   auth_client_t  *nh_auth;	/**< Authorization objects */
@@ -236,7 +160,6 @@ struct nua_handle_s
   } nh_referral[1];
 
   nea_server_t   *nh_notifier;	/**< SIP notifier */
-  nta_incoming_t * nh_registrar;		
 };
 
 #define NH_IS_VALID(nh) ((nh) && (nh)->nh_valid)
@@ -435,7 +358,7 @@ int nua_stack_process_request(nua_handle_t *nh,
 			      sip_t const *sip);
 
 int nua_stack_process_response(nua_handle_t *nh,
-			       struct nua_client_request *cr,
+			       nua_client_request_t *cr,
 			       nta_outgoing_t *orq,
 			       sip_t const *sip,
 			       tag_type_t tag, tag_value_t value, ...);
@@ -443,7 +366,7 @@ int nua_stack_process_response(nua_handle_t *nh,
 int nua_stack_launch_network_change_detector(nua_t *nua);
 
 msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
-		    struct nua_client_request *cr,
+		    nua_client_request_t *cr,
 		    int restart, 
 		    sip_method_t method, char const *name,
 		    tag_type_t tag, tag_value_t value, ...);
@@ -451,30 +374,30 @@ msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
 int nua_tagis_have_contact_tag(tagi_t const *t);
 
 int nua_creq_check_restart(nua_handle_t *nh,
-			   struct nua_client_request *cr,
+			   nua_client_request_t *cr,
 			   nta_outgoing_t *orq,
 			   sip_t const *sip,
 			   nua_creq_restart_f *f);
 
 int nua_creq_restart_with(nua_handle_t *nh,
-			  struct nua_client_request *cr,
+			  nua_client_request_t *cr,
 			  nta_outgoing_t *orq,
 			  int status, char const *phrase,
 			  nua_creq_restart_f *f, 
 			  tag_type_t tag, tag_value_t value, ...);
 
 int nua_creq_save_restart(nua_handle_t *nh,
-			  struct nua_client_request *cr,
+			  nua_client_request_t *cr,
 			  nta_outgoing_t *orq,
 			  int status, char const *phrase,
 			  nua_creq_restart_f *f);
 
 int nua_creq_restart(nua_handle_t *nh,
-		     struct nua_client_request *cr,
+		     nua_client_request_t *cr,
 		     nta_response_f *cb,
 		     tagi_t *tags);
 
-void nua_creq_deinit(struct nua_client_request *cr, nta_outgoing_t *orq);
+void nua_creq_deinit(nua_client_request_t *cr, nta_outgoing_t *orq);
 
 sip_contact_t const *nua_stack_get_contact(nua_registration_t const *nr);
 
@@ -527,34 +450,11 @@ nua_server_request_t *nua_server_request(nua_t *nua,
 					 nua_server_request_t *sr,
 					 size_t size,
 					 nua_server_respond_f *respond,
-					 nua_event_t event, 
 					 int create_dialog);
 
-void nua_server_request_destroy(nua_server_request_t *sr);
-
-int nua_server_respond(nua_server_request_t *sr,
-		       int status, char const *phrase,
-		       tag_type_t tag, tag_value_t value, ...);
-
-msg_t *nua_server_response(nua_server_request_t *sr,
-			   int status, char const *phrase,
-			   tag_type_t tag, tag_value_t value, ...);
-
-int nua_default_respond(nua_server_request_t *sr,
-			tagi_t const *tags);
-
-su_inline
-nua_server_request_t *
-nua_server_request_with_offer(nua_server_request_t const *sr)
-{
-  for (; sr; sr = sr->sr_next)
-    if (sr->sr_offer_recv && sr->sr_respond)
-      return (nua_server_request_t *)sr;
-  return NULL;
-}
-
 int nua_stack_server_event(nua_t *nua,
-			   nua_server_request_t *sr, 
+			   nua_server_request_t *sr,
+			   nua_event_t event,
 			   tag_type_t tag, tag_value_t value, ...);
 
 /* ---------------------------------------------------------------------- */

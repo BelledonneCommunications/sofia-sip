@@ -75,9 +75,11 @@ static void nua_subscribe_usage_remove(nua_handle_t *nh,
 				       nua_dialog_state_t *ds,
 				       nua_dialog_usage_t *du);
 static void nua_subscribe_usage_refresh(nua_handle_t *,
+					nua_dialog_state_t *,
 					nua_dialog_usage_t *,
 					sip_time_t);
 static int nua_subscribe_usage_shutdown(nua_handle_t *,
+					nua_dialog_state_t *,
 					nua_dialog_usage_t *);
 
 static nua_usage_class const nua_subscribe_usage[1] = {
@@ -174,7 +176,7 @@ int
 nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		    tagi_t const *tags)
 {
-  nua_client_request_t *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   nua_dialog_usage_t *du = NULL;
   struct event_usage *eu;
   msg_t *msg;
@@ -264,7 +266,7 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		     NUTAG_SUBSTATE(substate), TAG_END());
   }
 
-  nua_dialog_usage_no_refresh(du); /* during SUBSCRIBE transaction */
+  nua_dialog_usage_reset_refresh(du); /* during SUBSCRIBE transaction */
   du->du_terminating = e != nua_r_subscribe; /* Unsubscribe or destroy */
 
   if (du->du_terminating)
@@ -292,7 +294,7 @@ nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
 static void restart_subscribe(nua_handle_t *nh, tagi_t *tags)
 {
-  nua_creq_restart(nh, nh->nh_cr, process_response_to_subscribe, tags);
+  nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_subscribe, tags);
 }
 
 /** @var nua_event_e::nua_r_subscribe
@@ -328,7 +330,7 @@ static int process_response_to_subscribe(nua_handle_t *nh,
 					 nta_outgoing_t *orq,
 					 sip_t const *sip)
 {
-  nua_client_request_t *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   nua_dialog_usage_t *du = cr->cr_usage; 
   struct event_usage *eu = nua_dialog_usage_private(du);
   int status = sip ? sip->sip_status->st_status : 408;
@@ -427,11 +429,12 @@ static int process_response_to_subscribe(nua_handle_t *nh,
 
 /** Refresh subscription */
 static void nua_subscribe_usage_refresh(nua_handle_t *nh,
+					nua_dialog_state_t *ds,
 					nua_dialog_usage_t *du,
 					sip_time_t now)
 {
   nua_t *nua = nh->nh_nua;
-  nua_client_request_t *cr = nh->nh_cr;
+  nua_client_request_t *cr = ds->ds_cr;
   struct event_usage *eu = nua_dialog_usage_private(du);
   msg_t *msg;
 
@@ -452,7 +455,7 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
 		    SIPTAG_EVENT(o),
 		    TAG_END());
 
-    nua_dialog_usage_remove(nh, nh->nh_ds, du);
+    nua_dialog_usage_remove(nh, ds, du);
 
     return;
   }
@@ -502,14 +505,15 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
 
 /** Terminate subscription */
 static int nua_subscribe_usage_shutdown(nua_handle_t *nh,
+					nua_dialog_state_t *ds,
 					nua_dialog_usage_t *du)
 {
   nua_t *nua = nh->nh_nua;
-  nua_client_request_t *cr = nh->nh_cr;
+  nua_client_request_t *cr = ds->ds_cr;
   struct event_usage *eu = nua_dialog_usage_private(du);
   msg_t *msg;
 
-  assert(eu);
+  assert(eu); (void)eu;
 
   if (du->du_terminating)
     return 100;			/* ...in progress */
@@ -541,7 +545,7 @@ static int nua_subscribe_usage_shutdown(nua_handle_t *nh,
   }
 
   /* Too bad. */
-  nua_dialog_usage_remove(nh, nh->nh_ds, du);
+  nua_dialog_usage_remove(nh, ds, du);
   msg_destroy(msg);
   return 200;
 }
@@ -701,10 +705,10 @@ int nua_stack_process_notify(nua_t *nua,
 	      nh, what, why ? why : ""));
 
   if (eu->eu_substate == nua_substate_terminated) {
-    if (du != nh->nh_cr->cr_usage)
+    if (du != nh->nh_ds->ds_cr->cr_usage)
       nua_dialog_usage_remove(nh, nh->nh_ds, du);
     else
-      nua_dialog_usage_no_refresh(du);
+      nua_dialog_usage_reset_refresh(du);
   }
   else if (eu->eu_substate == nua_substate_embryonic) {
     if (retry >= 0) {
@@ -712,13 +716,13 @@ int nua_stack_process_notify(nua_t *nua,
       nua_dialog_remove(nh, nh->nh_ds, du); /* tear down */
       nua_dialog_usage_refresh_range(du, retry, retry + 5);
     }
-    else if (du != nh->nh_cr->cr_usage)
+    else if (du != nh->nh_ds->ds_cr->cr_usage)
       nua_dialog_usage_remove(nh, nh->nh_ds, du);
     else
-      nua_dialog_usage_no_refresh(du);
+      nua_dialog_usage_reset_refresh(du);
   }
   else if (du->du_terminating) {
-    nua_dialog_usage_no_refresh(du);
+    nua_dialog_usage_reset_refresh(du);
   }
   else {
     sip_time_t delta;
@@ -778,7 +782,7 @@ int
 nua_stack_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
   nua_dialog_usage_t *du = NULL;
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   msg_t *msg;
   sip_t *sip;
   sip_referred_by_t by[1];
@@ -842,7 +846,7 @@ nua_stack_refer(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
 void restart_refer(nua_handle_t *nh, tagi_t *tags)
 {
-  nua_stack_refer(nh->nh_nua, nh, nh->nh_cr->cr_event, tags);
+  nua_stack_refer(nh->nh_nua, nh, nh->nh_ds->ds_cr->cr_event, tags);
 }
 
 /** @var nua_event_e::nua_r_refer
@@ -861,7 +865,7 @@ static int process_response_to_refer(nua_handle_t *nh,
 				     nta_outgoing_t *orq,
 				     sip_t const *sip)
 {
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   int status = sip ? sip->sip_status->st_status : 408;
 
   if (status < 200)

@@ -65,9 +65,11 @@ static void nua_publish_usage_remove(nua_handle_t *nh,
 				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du);
 static void nua_publish_usage_refresh(nua_handle_t *nh,
+				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du,
 				      sip_time_t now);
 static int nua_publish_usage_shutdown(nua_handle_t *nh,
+				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du);
 
 static nua_usage_class const nua_publish_usage[1] = {
@@ -217,7 +219,7 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 {
   nua_dialog_usage_t *du;
   struct publish_usage *pu;
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   msg_t *msg = NULL;
   sip_t *sip;
   int remove_body = 0;
@@ -246,7 +248,7 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (!du)
     return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 
-  nua_dialog_usage_no_refresh(du);
+  nua_dialog_usage_reset_refresh(du);
   pu = nua_dialog_usage_private(du); assert(pu);
 
   if (refresh) {
@@ -304,7 +306,7 @@ int nua_stack_publish2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 static void
 restart_publish(nua_handle_t *nh, tagi_t *tags)
 {
-  nua_creq_restart(nh, nh->nh_cr, process_response_to_publish, tags);
+  nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_publish, tags);
 }
 
 
@@ -314,7 +316,7 @@ int process_response_to_publish(nua_handle_t *nh,
 				sip_t const *sip)
 {
   int status = sip->sip_status->st_status;
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   nua_dialog_usage_t *du = cr->cr_usage;
   struct publish_usage *pu = nua_dialog_usage_private(du);
   unsigned saved_retry_count = cr->cr_retry_count + 1;
@@ -323,7 +325,7 @@ int process_response_to_publish(nua_handle_t *nh,
     return 0;
 
   if (status < 200 || pu == NULL)
-    return nua_stack_process_response(nh, nh->nh_cr, orq, sip, TAG_END());
+    return nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 
   if (pu->pu_etag)
     su_free(nh->nh_home, pu->pu_etag), pu->pu_etag = NULL;
@@ -367,15 +369,16 @@ int process_response_to_publish(nua_handle_t *nh,
     }
   }
 
-  return nua_stack_process_response(nh, nh->nh_cr, orq, sip, TAG_END());
+  return nua_stack_process_response(nh, cr, orq, sip, TAG_END());
 }
 
 
 static void nua_publish_usage_refresh(nua_handle_t *nh,
+				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du,
 				      sip_time_t now)
 {
-  if (nh->nh_cr->cr_usage == du) /* Already publishing. */
+  if (ds->ds_cr->cr_usage == du) /* Already publishing. */
     return;
   nua_stack_publish2(nh->nh_nua, nh, nua_r_publish, 1, NULL);
 }
@@ -387,16 +390,19 @@ static void nua_publish_usage_refresh(nua_handle_t *nh,
  * @retval <0  try again later
  */
 static int nua_publish_usage_shutdown(nua_handle_t *nh,
+				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du)
 {
-  if (!nh->nh_cr->cr_usage) {
+  nua_client_request_t *cr = ds->ds_cr;
+
+  if (!cr->cr_usage) {
     /* Unpublish */
     nua_stack_publish2(nh->nh_nua, nh, nua_r_destroy, 1, NULL);
-    return nh->nh_cr->cr_usage != du;
+    return cr->cr_usage != du;
   }
 
-  if (!du->du_ready && !nh->nh_cr->cr_orq)
-    return 1;			/* Unauthenticated initial request */
+  if (!du->du_ready && !cr->cr_orq)
+    return 1;			/* had unauthenticated initial request */
 
   return -1;  /* Request in progress */
 }
@@ -451,9 +457,9 @@ int nua_stack_process_publish(nua_t *nua,
     SR_STATUS1(sr, SIP_489_BAD_EVENT);
 
   sr = nua_server_request(nua, nh, irq, sip, sr, sizeof *sr,
-			  respond_to_publish, nua_i_publish, 0);
+			  respond_to_publish, 0);
 
-  return nua_stack_server_event(nua, sr, TAG_END());
+  return nua_stack_server_event(nua, sr, nua_i_publish, TAG_END());
 }
 
 static

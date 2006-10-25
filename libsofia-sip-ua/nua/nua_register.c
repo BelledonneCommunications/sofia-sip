@@ -107,9 +107,13 @@ static void nua_register_usage_remove(nua_handle_t *nh,
 static void nua_register_usage_peer_info(nua_dialog_usage_t *du,
 					 nua_dialog_state_t const *ds,
 					 sip_t const *sip);
-static void nua_register_usage_refresh(nua_handle_t *, nua_dialog_usage_t *,
+static void nua_register_usage_refresh(nua_handle_t *,
+				       nua_dialog_state_t *,
+				       nua_dialog_usage_t *,
 				       sip_time_t);
-static int nua_register_usage_shutdown(nua_handle_t *, nua_dialog_usage_t *);
+static int nua_register_usage_shutdown(nua_handle_t *,
+				       nua_dialog_state_t *,
+				       nua_dialog_usage_t *);
 
 /** REGISTER usage, aka nua_registration_t */
 struct register_usage {
@@ -512,7 +516,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   nua_dialog_usage_t *du;
   nua_registration_t *nr = NULL;
   outbound_t *ob = NULL;
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   msg_t *msg = NULL;
   sip_t *sip;
   int terminating = e != nua_r_register;
@@ -622,7 +626,7 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 static void
 restart_register(nua_handle_t *nh, tagi_t *tags)
 {
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   msg_t *msg;
   nua_dialog_usage_t *du = cr->cr_usage;
   nua_registration_t *nr = nua_dialog_usage_private(du);
@@ -662,11 +666,12 @@ restart_register(nua_handle_t *nh, tagi_t *tags)
 /** Refresh registration */
 static
 void nua_register_usage_refresh(nua_handle_t *nh,
+				nua_dialog_state_t *ds,
 				nua_dialog_usage_t *du,
 				sip_time_t now)
 {
   nua_t *nua = nh->nh_nua;
-  nua_client_request_t *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   nua_registration_t *nr = nua_dialog_usage_private(du);
   msg_t *msg;
   sip_t *sip;
@@ -719,10 +724,12 @@ void nua_register_usage_refresh(nua_handle_t *nh,
  * Called when stack is shut down or handle is destroyed. Unregister.
  */
 static
-int nua_register_usage_shutdown(nua_handle_t *nh, nua_dialog_usage_t *du)
+int nua_register_usage_shutdown(nua_handle_t *nh, 
+				nua_dialog_state_t *ds,
+				nua_dialog_usage_t *du)
 {
   nua_t *nua = nh->nh_nua;
-  nua_client_request_t *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   nua_registration_t *nr = nua_dialog_usage_private(du);
   msg_t *msg;
   sip_t *sip;
@@ -777,7 +784,7 @@ int process_response_to_register(nua_handle_t *nh,
 				 nta_outgoing_t *orq,
 				 sip_t const *sip)
 {
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   nua_dialog_usage_t *du = cr->cr_usage;
   nua_registration_t *nr = nua_dialog_usage_private(du);
   int status, ready, reregister, terminating;
@@ -1149,7 +1156,7 @@ nua_stack_init_registrations(nua_t *nua)
     du = ds->ds_usage;
 
     if (ds->ds_has_register == 1 && du->du_class->usage_refresh) {
-      nua_dialog_usage_refresh(*nh_list, du, 1);
+      nua_dialog_usage_refresh(*nh_list, ds, du, 1);
     }
   }
 
@@ -1671,13 +1678,18 @@ void unregister_expires_contacts(msg_t *msg, sip_t *sip)
 }
 
 
-/** Outbound requests us to refres registration */
+/** Outbound requests us to refresh registration */
 static int nua_stack_outbound_refresh(nua_handle_t *nh,
 				      outbound_t *ob)
 {
-  nua_dialog_usage_t *du = nua_dialog_usage_get(nh->nh_ds, nua_register_usage, NULL);
+  nua_dialog_state_t *ds = nh->nh_ds;
+  nua_dialog_usage_t *du;
+
+  du = nua_dialog_usage_get(ds, nua_register_usage, NULL);
+
   if (du)
-    nua_dialog_usage_refresh(nh, du, 1);
+    nua_dialog_usage_refresh(nh, ds, du, 1);
+
   return 0;
 }
 

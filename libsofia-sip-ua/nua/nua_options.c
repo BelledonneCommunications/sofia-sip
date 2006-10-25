@@ -58,7 +58,7 @@ static int process_response_to_options(nua_handle_t *nh,
 int
 nua_stack_options(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   msg_t *msg;
 
   if (nh_is_special(nh)) {
@@ -88,16 +88,16 @@ nua_stack_options(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tag
 
 void restart_options(nua_handle_t *nh, tagi_t *tags)
 {
-  nua_creq_restart(nh, nh->nh_cr, process_response_to_options, tags);
+  nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_options, tags);
 }
 
 static int process_response_to_options(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip)
 {
-  if (nua_creq_check_restart(nh, nh->nh_cr, orq, sip, restart_options))
+  if (nua_creq_check_restart(nh, nh->nh_ds->ds_cr, orq, sip, restart_options))
     return 0;
-  return nua_stack_process_response(nh, nh->nh_cr, orq, sip, TAG_END());
+  return nua_stack_process_response(nh, nh->nh_ds->ds_cr, orq, sip, TAG_END());
 }
 
 int nua_stack_process_options(nua_t *nua,

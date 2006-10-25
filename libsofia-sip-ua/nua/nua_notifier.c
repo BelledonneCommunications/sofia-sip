@@ -70,9 +70,11 @@ static void nua_notify_usage_remove(nua_handle_t *nh,
 				       nua_dialog_state_t *ds,
 				       nua_dialog_usage_t *du);
 static void nua_notify_usage_refresh(nua_handle_t *nh,
+				     nua_dialog_state_t *ds,
 				     nua_dialog_usage_t *du,
 				     sip_time_t now);
 static int nua_notify_usage_shutdown(nua_handle_t *nh,
+				     nua_dialog_state_t *ds,
 				     nua_dialog_usage_t *du);
 
 static nua_usage_class const nua_notify_usage[1] = {
@@ -206,7 +208,7 @@ int nua_stack_process_subscribe(nua_t *nua,
   }
 
   sr = nua_server_request(nua, nh, irq, sip, sr, sizeof *sr,
-			  respond_to_subscribe, nua_i_subscribe, 1);
+			  respond_to_subscribe, 1);
 
   if (!du && substate == nua_substate_embryonic && sr->sr_status < 300) {
     nh = sr->sr_owner; assert(nh && nh != nua->nua_dhandle);
@@ -230,7 +232,8 @@ int nua_stack_process_subscribe(nua_t *nua,
 
   sr->sr_usage = du;
 
-  return nua_stack_server_event(nua, sr, NUTAG_SUBSTATE(substate), TAG_END());
+  return nua_stack_server_event(nua, sr, nua_i_subscribe,
+				NUTAG_SUBSTATE(substate), TAG_END());
 }
 
 /** @internal Respond to an SUBSCRIBE request.
@@ -240,6 +243,7 @@ static
 int respond_to_subscribe(nua_server_request_t *sr, tagi_t const *tags)
 {
   nua_handle_t *nh = sr->sr_owner;
+  nua_dialog_state_t *ds = nh->nh_ds;
   nua_t *nua = nh->nh_nua;
   struct notifier_usage *nu;
   sip_allow_events_t *allow_events = NUA_PGET(nua, nh, allow_events);
@@ -271,7 +275,7 @@ int respond_to_subscribe(nua_server_request_t *sr, tagi_t const *tags)
 
     if (nu && nu->nu_substate != nua_substate_embryonic)
       /* Send NOTIFY (and terminate subscription, when needed) */
-      nua_dialog_usage_refresh(nh, sr->sr_usage, sip_now());
+      nua_dialog_usage_refresh(nh, ds, sr->sr_usage, sip_now());
   }
   else {
     /* XXX - send nua_i_error */
@@ -339,7 +343,7 @@ int nua_stack_notify2(nua_t *nua,
 		      nua_dialog_usage_t *du,
 		      tagi_t const *tags)
 {
-  struct nua_client_request *cr = nh->nh_cr;
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   struct notifier_usage *nu;
   msg_t *msg;
   sip_t *sip;
@@ -485,7 +489,7 @@ int nua_stack_notify2(nua_t *nua,
 static
 void restart_notify(nua_handle_t *nh, tagi_t *tags)
 {
-  nua_creq_restart(nh, nh->nh_cr, process_response_to_notify, tags);
+  nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_notify, tags);
 }
 
 /** @var nua_event_e::nua_r_notify
@@ -512,28 +516,29 @@ static int process_response_to_notify(nua_handle_t *nh,
 {
   enum nua_substate substate = nua_substate_terminated;
 
-  if (nua_creq_check_restart(nh, nh->nh_cr, orq, sip, restart_notify))
+  if (nua_creq_check_restart(nh, nh->nh_ds->ds_cr, orq, sip, restart_notify))
     return 0;
 
-  if (nh->nh_cr->cr_usage) {
-    struct notifier_usage *nu = nua_dialog_usage_private(nh->nh_cr->cr_usage);
+  if (nh->nh_ds->ds_cr->cr_usage) {
+    struct notifier_usage *nu = nua_dialog_usage_private(nh->nh_ds->ds_cr->cr_usage);
     substate = nu->nu_substate;
     assert(substate != nua_substate_embryonic);
   }
 
-  return nua_stack_process_response(nh, nh->nh_cr, orq, sip, 
+  return nua_stack_process_response(nh, nh->nh_ds->ds_cr, orq, sip, 
 				    NUTAG_SUBSTATE(substate),
 				    TAG_END());
 }
 
 
 static void nua_notify_usage_refresh(nua_handle_t *nh,
+				     nua_dialog_state_t *ds,
 				     nua_dialog_usage_t *du,
 				     sip_time_t now)
 {
   struct notifier_usage *nu = nua_dialog_usage_private(du);
 
-  if (nh->nh_cr->cr_usage == du) /* Already notifying. */
+  if (nh->nh_ds->ds_cr->cr_usage == du) /* Already notifying. */
     return;
 
   if (now >= nu->nu_expires) {
@@ -564,15 +569,18 @@ static void nua_notify_usage_refresh(nua_handle_t *nh,
  * @retval <0  try again later
  */
 static int nua_notify_usage_shutdown(nua_handle_t *nh,
+				     nua_dialog_state_t *ds,
 				     nua_dialog_usage_t *du)
 {
-  if (!nh->nh_cr->cr_usage) {
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
+
+  if (!cr->cr_usage) {
     /* Unnotify */
     nua_stack_notify2(nh->nh_nua, nh, nua_r_destroy, du, NULL);
-    return nh->nh_cr->cr_usage != du;
+    return cr->cr_usage != du;
   }
 
-  if (!du->du_ready && !nh->nh_cr->cr_orq)
+  if (!du->du_ready && !cr->cr_orq)
     return 1;			/* Unauthenticated NOTIFY? */
 
   return -1;  /* Request in progress */
