@@ -2986,7 +2986,7 @@ nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
     /* No (early) dialog. BYE is invalid action, do CANCEL instead */
     orq = nta_outgoing_tcancel(cri->cr_orq,
-			       process_response_to_bye, nh,
+			       process_response_to_cancel, nh,
 			       TAG_NEXT(tags));
     if (!cr->cr_orq)
       cr->cr_orq = orq, cr->cr_event = e;
