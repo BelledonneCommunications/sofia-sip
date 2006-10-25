@@ -313,8 +313,9 @@ static int nua_stack_notify2(nua_t *, nua_handle_t *, nua_event_t,
  *    nothing
  *
  * @par Related Tags:
+ *    NUTAG_SUBSTATE() \n
+ *    Tags of nua_set_hparams() \n
  *    Tags in <sip_tag.h>
- *    NUTAG_SUBSTATE()
  *
  * @par Events:
  *    #nua_r_notify

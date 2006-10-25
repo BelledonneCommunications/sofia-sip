@@ -351,30 +351,9 @@ int respond_with_retry_after(nua_handle_t *nh, nta_incoming_t *irq,
  *    nothing
  *
  * @par Related Tags:
- *    NUTAG_URL(),
- *    NUTAG_NOTIFY_REFER(), 
- *    NUTAG_ALLOW(),
- *    NUTAG_AUTOACK(),
- *    NUTAG_AUTOALERT(),
- *    NUTAG_AUTOANSWER(),
- *    NUTAG_CALLEE_CAPS(),
- *    NUTAG_EARLY_MEDIA(),
- *    NUTAG_ENABLEINVITE(),
- *    NUTAG_ENABLEMESSAGE(),
- *    NUTAG_ENABLEMESSENGER(),
- *    NUTAG_INVITE_TIMER(),
- *    NUTAG_MEDIA_ENABLE(),
- *    NUTAG_MIN_SE(),
- *    NUTAG_ONLY183_100REL(),
- *    NUTAG_REFER_EXPIRES(),
- *    NUTAG_RETRY_COUNT(),
- *    NUTAG_SERVICE_ROUTE_ENABLE(),
- *    NUTAG_SESSION_REFRESHER(),
- *    NUTAG_SESSION_TIMER(),
- *    NUTAG_SOA_NAME(),
- *    NUTAG_SUPPORTED(),
- *    NUTAG_UPDATE_REFRESH(),
- *    NUTAG_USER_AGENT() \n
+ *    NUTAG_URL() \n
+ *    Tags of nua_set_hparams() \n
+ *    NUTAG_INCLUDE_EXTRA_SDP() \n
  *    SOATAG_HOLD(), SOATAG_AF(), SOATAG_ADDRESS(),
  *    SOATAG_RTP_SELECT(), SOATAG_RTP_SORT(), SOATAG_RTP_MISMATCH(), 
  *    SOATAG_AUDIO_AUX(), \n
@@ -3222,7 +3201,7 @@ static void signal_call_state_change(nua_handle_t *nh,
  * NUTAG_ANSWER_RECV(). SOATAG_ACTIVE_AUDIO() and SOATAG_ACTIVE_VIDEO() are
  * informational tags used to indicate what is the status of these media.
  *
- * Note that nua_event_e::nua_i_state also covers call establisment events
+ * Note that #nua_i_state also covers call establisment events
  * (#nua_i_active) and termination (#nua_i_terminated).
  *
  * @param status Protocol status code. \n

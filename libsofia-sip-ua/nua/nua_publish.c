@@ -145,6 +145,7 @@ static int process_response_to_publish(nua_handle_t *nh,
  *
  * @par Related Tags:
  *    NUTAG_URL() \n
+ *    Tags of nua_set_hparams() \n
  *    Tags in <sip_tag.h>
  *
  * @par Events:
@@ -182,6 +183,7 @@ void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
  *
  * @par Related Tags:
  *    NUTAG_URL() \n
+ *    Tags of nua_set_hparams() \n
  *    Tags in <sip_tag.h>
  *
  * @par Events:

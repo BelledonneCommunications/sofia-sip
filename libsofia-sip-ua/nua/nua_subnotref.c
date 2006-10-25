@@ -118,9 +118,57 @@ void nua_subscribe_usage_remove(nua_handle_t *nh,
 /* ====================================================================== */
 /* SUBSCRIBE */
 
+/** Subscribe to a SIP event. 
+ *
+ * Subscribe a SIP event using the SIP SUBSCRIBE request. If the 
+ * SUBSCRBE is successful a subscription state is established and 
+ * the subscription is refreshed regularly. The refresh requests will
+ * generate #nua_r_subscribe events.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    NUTAG_URL()
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_subscribe \n
+ *    #nua_i_notify
+ *
+ * @sa NUTAG_SUBSTATE(), @RFC3265
+ */
+
+/** Unsubscribe an event. 
+ *
+ * Unsubscribe an active or pending subscription with SUBSCRIBE request 
+ * containing Expires: header with value 0. The dialog associated with 
+ * subscription will be destroyed if there is no other subscriptions or 
+ * call using this dialog.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    SIPTAG_EVENT() or SIPTAG_EVENT_STR() \n
+ *    Tags in <sip_tag.h> except SIPTAG_EXPIRES() or SIPTAG_EXPIRES_STR()
+ *
+ * @par Events:
+ *    #nua_r_unsubscribe 
+ *
+ * @sa NUTAG_SUBSTATE(), @RFC3265
+ */
+
 static int process_response_to_subscribe(nua_handle_t *nh,
 					 nta_outgoing_t *orq,
 					 sip_t const *sip);
+
 
 int
 nua_stack_subscribe(nua_t *nua, nua_handle_t *nh, nua_event_t e,
@@ -246,6 +294,35 @@ static void restart_subscribe(nua_handle_t *nh, tagi_t *tags)
 {
   nua_creq_restart(nh, nh->nh_cr, process_response_to_subscribe, tags);
 }
+
+/** @var nua_event_e::nua_r_subscribe
+ *
+ * Response to an outgoing SUBSCRIBE.
+ *
+ * The SUBSCRIBE request may have been sent explicitly by nua_subscribe() or
+ * implicitly by NUA state machine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to SUBSCRIBE request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   NUTAG_SUBSTATE()
+ *
+ * @sa nua_subscribe(), @RFC3265
+ */
+
+/** @var nua_event_e::nua_r_unsubscribe
+ *
+ * Response to an outgoing un-SUBSCRIBE.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to SUBSCRIBE request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   NUTAG_SUBSTATE()
+ *
+ * @sa nua_unsubscribe(), @RFC3265
+ */
 
 static int process_response_to_subscribe(nua_handle_t *nh,
 					 nta_outgoing_t *orq,
@@ -472,6 +549,19 @@ static int nua_subscribe_usage_shutdown(nua_handle_t *nh,
 /* ======================================================================== */
 /* NOTIFY server */
 
+/** @var nua_event_e::nua_i_notify
+ *
+ * Event for incoming NOTIFY request.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming NOTIFY request
+ * @param tags   NUTAG_SUBSTATE() indicating the subscription state
+ *
+ * @sa nua_subscribe(), nua_unsubscribe(), @RFC3265, #nua_i_subscribe
+ */
+
 /** @internal Process incoming NOTIFY. */
 int nua_stack_process_notify(nua_t *nua,
 			     nua_handle_t *nh,
@@ -647,6 +737,39 @@ int nua_stack_process_notify(nua_t *nua,
 /* ======================================================================== */
 /* REFER */
 
+/** Transfer a call. 
+ * 
+ * Send a REFER request asking the recipient to transfer the call. The REFER
+ * request also establishes an implied subscription to the "refer" event. 
+ * The "refer" event can have an "id" parameter, which has the value of
+ * CSeq number in the REFER request. After initiating the REFER request, the
+ * nua engine sends application a #nua_r_refer event with status 100 and tag
+ * NUTAG_REFER_EVENT() containing a matching event header.
+ *
+ * Note that the event header in #nua_r_refer event contains an @a id
+ * parameter. The recipient of the REFER request may or may not use the @a
+ * id parameter in the NOTIFY messages it sends to the sender of the REFER
+ * request. Therefore the application may not modify the state of the
+ * implied subscription before receiving the first NOTIFY request.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    NUTAG_URL() \n
+ *    Tags of nua_set_hparams() \n
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_refer \n
+ *    #nua_i_notify
+ *
+ * @sa NUTAG_SUBSTATE(), @RFC3515,
+ */
+
 static int process_response_to_refer(nua_handle_t *nh,
 				     nta_outgoing_t *orq,
 				     sip_t const *sip);
@@ -721,6 +844,18 @@ void restart_refer(nua_handle_t *nh, tagi_t *tags)
 {
   nua_stack_refer(nh->nh_nua, nh, nh->nh_cr->cr_event, tags);
 }
+
+/** @var nua_event_e::nua_r_refer
+ *
+ * Answer to outgoing REFER.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to REFER request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   NUTAG_REFER_EVENT() \n
+ *               NUTAG_SUBSTATE()
+ */
 
 static int process_response_to_refer(nua_handle_t *nh,
 				     nta_outgoing_t *orq,

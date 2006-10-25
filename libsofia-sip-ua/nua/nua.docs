@@ -2044,7 +2044,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the original call
  * @param hmagic operation magic associated with the original call
  * @param sip    200 series response to INVITE
- * @param tags   #NUTAG_HANDLE of the new forked call
+ * @param tags   NUTAG_HANDLE() of the new forked call
  */
 
 /** @var nua_event_e::nua_i_media_error
@@ -2099,16 +2099,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @since Experimental in @VERSION_1_12_2.
  */
 
-/** @var nua_event_e::nua_i_notify
- *
- * Incoming event.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param status statuscode of response sent automatically by stack
- * @param sip    incoming NOTIFY request
- * @param tags   #NUTAG_SUBSTATE indicating the subscription state
- */
+/* nua_i_notify is documented with nua_stack_process_notify() */
 
 /** @var nua_event_e::nua_i_options
  *
@@ -2192,8 +2183,8 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  * @param sip    NULL
- * @param tags   #SIPTAG_EVENT \n
- *               #SIPTAG_CONTENT_TYPE
+ * @param tags   SIPTAG_EVENT() \n
+ *               SIPTAG_CONTENT_TYPE()
  */
 
 /* nua_r_notify is documented with process_response_to_notify() */
@@ -2209,17 +2200,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param tags   empty
  */
 
-/** @var nua_event_e::nua_r_refer
- *
- * Answer to outgoing REFER.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to REFER request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   #NUTAG_REFER_EVENT \n
- *               #NUTAG_SUBSTATE
- */
+/* nua_r_refer is documented with process_response_to_refer() */
 
 /** @var nua_event_e::nua_r_shutdown
  *
@@ -2237,19 +2218,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param tags   empty
  */
 
-/** @var nua_event_e::nua_r_subscribe
- *
- * Answer to outgoing SUBSCRIBE.
- *
- * The SUBSCRIBE may be sent explicitly by nua_subscribe() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to SUBSCRIBE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   #NUTAG_SUBSTATE
- */
+/* nua_r_subscribe is documented with process_response_to_subscribe() */
 
 /** @var nua_event_e::nua_r_terminate
  *
@@ -2261,13 +2230,4 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param tags   empty
  */
 
-/** @var nua_event_e::nua_r_unsubscribe
- *
- * Answer to outgoing un-SUBSCRIBE.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to SUBSCRIBE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
+/* nua_r_unsubscribe is documented with process_response_to_subscribe() */

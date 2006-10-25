@@ -414,7 +414,7 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * validate the registration and initiate the keepalive mechanism, too. The
  * user-agent validates the registration by sending a OPTIONS requests to
  * itself. If there is an error, nua_register() will indicate that to the
- * application using nua_i_outbound event, and start unregistration
+ * application using #nua_i_outbound event, and start unregistration
  * procedure (unless that has been explicitly disabled).
  *
  * You can disable validation by inserting "no-validate" into

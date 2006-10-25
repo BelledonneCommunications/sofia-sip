@@ -409,8 +409,12 @@ SOFIAPUBVAR tag_typedef_t nutag_invite_timer_ref;
  * Re-INVITE will be sent in given intervals.
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_invite(), nua_update(), nua_respond() \n
+ *    nua_set_params() or nua_set_hparams() \n
+ *    nua_get_params() or nua_get_hparams()
+ *
+ * See nua_set_hparams() for a complete list of the the nua operations that
+ * accept this tag.
  *
  * @par Parameter type
  *    unsigned int
@@ -420,6 +424,9 @@ SOFIAPUBVAR tag_typedef_t nutag_invite_timer_ref;
  *    @c >0 interval in seconds
  *
  * Corresponding tag taking reference parameter is NUTAG_SESSION_TIMER_REF()
+ *
+ * @sa NUTAG_MIN_SE(), NUTAG_SESSION_REFRESHER(),
+ * NUTAG_UPDATE_REFRESH(), @RFC4028, @SessionExpires, @MinSE
  */
 #define NUTAG_SESSION_TIMER(x)  nutag_session_timer, tag_uint_v((x))
 SOFIAPUBVAR tag_typedef_t nutag_session_timer;
@@ -429,11 +436,17 @@ SOFIAPUBVAR tag_typedef_t nutag_session_timer_ref;
 
 /** Minimum acceptable refresh interval for session.
  *
- * Specifies the value of Min-SE header in seconds.
+ * Specifies the value of @MinSE header in seconds. The @b Min-SE header is
+ * used to specify minimum acceptable refresh interval for session timer
+ * extension.
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_handle(), nua_invite(), nua_update(), nua_respond() \n
+ *    nua_set_params() or nua_set_hparams() \n
+ *    nua_get_params() or nua_get_hparams()
+ *
+ * See nua_set_hparams() for a complete list of the nua operations that
+ * accept this tag.
  *
  * @par Parameter type
  *    unsigned int
@@ -442,7 +455,10 @@ SOFIAPUBVAR tag_typedef_t nutag_session_timer_ref;
  *    interval in seconds.
  *
  * Corresponding tag taking reference parameter is NUTAG_MIN_SE_REF()
-*/
+ *
+ * @sa NUTAG_SESSION_TIMER(), NUTAG_SESSION_REFRESHER(),
+ * NUTAG_UPDATE_REFRESH(), @RFC4028, @MinSE, @SessionExpires
+ */
 #define NUTAG_MIN_SE(x)         nutag_min_se, tag_uint_v((x))
 SOFIAPUBVAR tag_typedef_t nutag_min_se;
 
@@ -456,13 +472,17 @@ enum nua_session_refresher {
   nua_any_refresher		/**< No preference (default). */
 };
 
-/** Specify preferred refresher.
+/**Specify the preferred refresher.
  *
  * Specify for session timer extension which party is the preferred refresher.
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_handle(), nua_invite(), nua_update(), nua_respond() \n
+ *    nua_set_params() or nua_set_hparams() \n
+ *    nua_get_params() or nua_get_hparams()
+ *
+ * See nua_set_hparams() for a complete list of all the nua operations that
+ * accept this tag.
  *
  * @par Parameter type
  *   enum { #nua_no_refresher,  #nua_local_refresher, #nua_remote_refresher,
@@ -474,7 +494,11 @@ enum nua_session_refresher {
  *    @c nua_remote_refresher \n
  *    @c nua_any_refresher (default) \n
  *
- * Corresponding tag taking reference parameter is NUTAG_SESSION_REFRESHER_REF()
+ * Corresponding tag taking reference parameter is
+ * NUTAG_SESSION_REFRESHER_REF()
+ *
+ * @sa NUTAG_SESSION_TIMER(), NUTAG_MIN_SE_REF(),
+ * NUTAG_UPDATE_REFRESH(), @RFC4028, @SessionExpires, @MinSE
  */
 #define NUTAG_SESSION_REFRESHER(x)  nutag_session_refresher, tag_int_v((x))
 SOFIAPUBVAR tag_typedef_t nutag_session_refresher;
@@ -484,9 +508,21 @@ SOFIAPUBVAR tag_typedef_t nutag_session_refresher_ref;
 
 /** Use UPDATE as refresh method.
  *
+ * If this parameter is true and the remote endpoint has included UPDATE in
+ * Allow header, the nua stack uses UPDATE instead of INVITE to refresh the 
+ * session when using the session timer extension.
+ *
+ * Note that the session timer headers @SessionExpires and @MinSE are always
+ * included in the UPDATE request and responses regardless of the value of
+ * this tag.
+ *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_handle(), nua_invite(), nua_update(), nua_respond() \n
+ *    nua_set_params() or nua_set_hparams() \n
+ *    nua_get_params() or nua_get_hparams()
+ *
+ * See nua_set_hparams() for a complete list of all the nua operations that
+ * accept this tag.
  *
  * @par Parameter type
  *    boolean
@@ -496,6 +532,9 @@ SOFIAPUBVAR tag_typedef_t nutag_session_refresher_ref;
  *    @c 0 Use INVITE
  *
  * Corresponding tag taking reference parameter is NUTAG_UPDATE_REFRESH_REF()
+ *
+ * @sa #nua_r_update, NUTAG_SESSION_TIMER(), NUTAG_MIN_SE_REF(),
+ * NUTAG_UPDATE_REFRESH(), @RFC4028, @SessionExpires, @MinSE
  */
 #define NUTAG_UPDATE_REFRESH(x)  nutag_update_refresh, tag_bool_v((x))
 SOFIAPUBVAR tag_typedef_t nutag_update_refresh;

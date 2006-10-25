@@ -270,8 +270,9 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *     nothing
  *
  * @par Related tags:
- *   NUTAG_ALLOW() \n
- *   NUTAG_ALLOW_EVENTS() \n
+ *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
+ *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and 
+ *                         SIPTAG_ALLOW_EVENTS_STR() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -313,27 +314,16 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_SMIME_SIGNATURE() \n
  *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
- *   NUTAG_SUPPORTED() \n
+ *   NUTAG_SUPPORTED(), SIPTAG_SUPPORTED(), and SIPTAG_SUPPORTED_STR() \n
  *   NUTAG_UPDATE_REFRESH() \n
- *   NUTAG_USER_AGENT() \n
- *   SIPTAG_ALLOW() \n
- *   SIPTAG_ALLOW_STR() \n
- *   SIPTAG_ALLOW_EVENTS() \n
- *   SIPTAG_ALLOW_EVENTS_STR() \n
- *   SIPTAG_FROM() \n
- *   SIPTAG_FROM_STR() \n
- *   SIPTAG_ORGANIZATION() \n
- *   SIPTAG_ORGANIZATION_STR() \n
- *   SIPTAG_SUPPORTED() \n
- *   SIPTAG_SUPPORTED_STR() \n
- *   SIPTAG_USER_AGENT() \n
- *   SIPTAG_USER_AGENT_STR() \n
+ *   NUTAG_USER_AGENT(), SIPTAG_USER_AGENT() and SIPTAG_USER_AGENT_STR() \n
+ *   SIPTAG_ORGANIZATION() and SIPTAG_ORGANIZATION_STR() \n
  *
  * nua_set_params() also accepts any soa tags, defined in
  * <sofia-sip/soa_tag.h>, and nta tags, defined in <sofia-sip/nta_tag.h>.
  * 
  * @par Events:
- *     nua_r_set_params
+ *     #nua_r_set_params
  *
  * @par SIP Header as NUA Parameters
  * The @nua parameters include SIP headers @Allow, @Supported, @Organization,
@@ -397,8 +387,9 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *     nothing
  *
  * @par Tags Used to Set Handle-Specific Parameters:
- *   NUTAG_ALLOW() \n
- *   NUTAG_ALLOW_EVENTS() \n
+ *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
+ *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and 
+ *                         SIPTAG_ALLOW_EVENTS_STR() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -432,19 +423,10 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_SESSION_TIMER() \n
  *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
- *   NUTAG_SUPPORTED() \n
+ *   NUTAG_SUPPORTED(), SIPTAG_SUPPORTED(), and SIPTAG_SUPPORTED_STR() \n
  *   NUTAG_UPDATE_REFRESH() \n
- *   NUTAG_USER_AGENT() \n
- *   SIPTAG_ALLOW() \n
- *   SIPTAG_ALLOW_STR() \n
- *   SIPTAG_ALLOW_EVENTS() \n
- *   SIPTAG_ALLOW_EVENTS_STR() \n
- *   SIPTAG_ORGANIZATION() \n
- *   SIPTAG_ORGANIZATION_STR() \n
- *   SIPTAG_SUPPORTED() \n
- *   SIPTAG_SUPPORTED_STR() \n
- *   SIPTAG_USER_AGENT() \n
- *   SIPTAG_USER_AGENT_STR() \n
+ *   NUTAG_USER_AGENT(), SIPTAG_USER_AGENT() and SIPTAG_USER_AGENT_STR() \n
+ *   SIPTAG_ORGANIZATION() and SIPTAG_ORGANIZATION_STR() \n
  * Any soa tags are also considered as handle-specific parameters. They are
  * defined in <sofia-sip/soa_tag.h>.
  *
@@ -452,7 +434,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  * NUTAG_DETECT_NETWORK_UPDATES(), NUTAG_SMIME_* tags, and all NTA tags.
  * 
  * @par Events:
- *     nua_r_set_params
+ *     #nua_r_set_params
  */
 
 int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
@@ -1285,11 +1267,11 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
 
 /**@fn void nua_get_hparams(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
  * 
- * Get values of handle-specific parameters in nua_r_get_params event.
+ * Get values of handle-specific parameters in #nua_r_get_params event.
  *
  * Application will specify either expilicit list of tags it is interested
  * in, or a filter (at the moment, TAG_ANY()). The values are returned as a
- * list of tags in the nua_r_get_params event.
+ * list of tags in the #nua_r_get_params event.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters

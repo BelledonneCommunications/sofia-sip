@@ -1950,7 +1950,57 @@ int nua_default_respond(nua_server_request_t *sr,
   
   return sr->sr_status >= 200 ? sr->sr_status : 0;
 }
-			   
+
+/** Respond to an request with given status. 
+ *
+ * When nua protocol engine receives an incoming SIP request, it can either
+ * respond to the request automatically or let it up to application to
+ * respond to the request. The automatic answer is sent if the request fails
+ * because of method, SIP extension or, in some times, MIME content
+ * negotiation fails.
+ *
+ * When responding to an incoming INVITE request, the nua_respond() can be
+ * called without NUTAG_WITH() (or NUTAG_WITH_CURRENT() or
+ * NUTAG_WITH_SAVED()). Otherwise, NUTAG_WITH() will contain an indication
+ * of the request being responded.
+ *
+ * In order to simplify the application, most requests are responded
+ * automatically. The set of requests always responded by the stack include
+ * BYE, CANCEL and NOTIFY. The application can add methods that it likes to
+ * handle by itself with NUTAG_APPL_METHOD(). The default set of
+ * NUTAG_APPL_METHOD() include INVITE, PUBLISH, REGISTER and SUBSCRIBE. Note
+ * that unless the method is also added to the set of allowed methods with
+ * NUTAG_ALLOW(), the stack will respond to the incoming methods with <i>405
+ * Not Allowed</i>.
+ *
+ * Note that certain methods are rejected outside a SIP session (created
+ * with INVITE transaction). They include BYE, UPDATE, PRACK and INFO.
+ *
+ * @param nh              Pointer to operation handle
+ * @param status          SIP response status (see RFCs of SIP)
+ * @param phrase          free text (default response phrase used if NULL)
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    NUTAG_WITH(), NUTAG_WITH_CURRENT(), NUTAG_WITH_SAVED() \n
+ *    NUTAG_EARLY_ANSWER() \n
+ *    SOATAG_ADDRESS() \n
+ *    SOATAG_AF() \n
+ *    SOATAG_HOLD() \n
+ *    Tags in <sip_tag.h>.
+ *
+ * @par Events:
+ *    #nua_i_state \n
+ *    #nua_i_media_error \n
+ *    #nua_i_error \n
+ *    #nua_i_active \n
+ *    #nua_i_terminated \n
+ *
+ * @sa #nua_i_invite, #nua_i_register, #nua_i_subscribe, #nua_i_publish
+ */
 void
 nua_stack_respond(nua_t *nua, nua_handle_t *nh,
 		  int status, char const *phrase, tagi_t const *tags)
