@@ -260,7 +260,8 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
     return event;
   }
 
-  if ((event > nua_r_authenticate && event <= nua_r_ack) 
+  if ((event > nua_r_authenticate && event <= nua_r_ack)
+      || event < nua_i_error
       || (nh && !nh->nh_valid)
       || (nua->nua_shutdown && event != nua_r_shutdown)) {
     if (msg)
@@ -289,7 +290,8 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
     e->e_nh = nh ? nua_handle_ref(nh) : nua->nua_dhandle;
     e->e_status = status;
     e->e_phrase = strcpy(end, phrase ? phrase : "");
-    e->e_msg = msg;
+    if (msg)
+      e->e_msg = msg, su_home_threadsafe(msg_home(msg));
 
     if (su_msg_send(sumsg) != 0)
       nua_handle_unref(nh);
