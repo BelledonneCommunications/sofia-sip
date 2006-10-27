@@ -764,6 +764,8 @@ static int test_bad_messages(agent_t *ag)
 
   nta_leg_destroy(ag->ag_default_leg), ag->ag_default_leg = NULL;
 
+  closedir(dir);
+
   END();
 #else
   return 0;
