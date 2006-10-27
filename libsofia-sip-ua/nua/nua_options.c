@@ -23,7 +23,9 @@
  */
 
 /**@CFILE nua_options.c
- * @brief Implementation of OPTIONS method
+ * @brief Implementation of OPTIONS client.
+ *
+ * OPTIONS server is in nua_session.c.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
@@ -114,56 +116,4 @@ static int process_response_to_options(nua_handle_t *nh,
   if (nua_creq_check_restart(nh, nh->nh_ds->ds_cr, orq, sip, restart_options))
     return 0;
   return nua_stack_process_response(nh, nh->nh_ds->ds_cr, orq, sip, TAG_END());
-}
-
-int nua_stack_process_options(nua_t *nua,
-			      nua_handle_t *nh,
-			      nta_incoming_t *irq,
-			      sip_t const *sip)
-{
-  msg_t *msg;
-
-  int status; char const *phrase;
-
-  /* Hook to outbound */
-  status = nua_registration_process_request(nua->nua_registrations, irq, sip);
-  if (status)
-    return status;
-
-  SET_STATUS1(SIP_200_OK);
-
-  if (nh == NULL)
-    nh = nua->nua_dhandle;
-
-  msg = nh_make_response(nua, nh, irq, status, phrase,
-			 SIPTAG_ALLOW(NH_PGET(nh, allow)),
-			 SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
-			 TAG_IF(NH_PGET(nh, path_enable),
-				SIPTAG_SUPPORTED_STR("path")),
-			 SIPTAG_ACCEPT_STR(SDP_MIME_TYPE),
-			 TAG_END());
-
-  if (msg) {
-    su_home_t home[1] = { SU_HOME_INIT(home) };
-#if 0				/* XXX */
-    sdp_session_t *sdp;
-    sip_t *sip = sip_object(msg);
-
-    if ((sdp = nmedia_describe(nua, nh->nh_nm, nh, home))) {
-      nh_sdp_insert(nh, home, msg, sip, sdp);
-    }
-#endif
-
-    nta_incoming_mreply(irq, msg);
-
-    su_home_deinit(home);
-  }
-  else
-    SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
-
-  msg = nta_incoming_getrequest(irq);
-
-  nua_stack_event(nh->nh_nua, nh, msg, nua_i_options, status, phrase, TAG_END());
-
-  return status;
 }

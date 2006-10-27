@@ -296,19 +296,20 @@ static void signal_call_state_change(nua_handle_t *nh,
 				     char const *oa_sent);
 
 static
-int session_get_description(msg_t *msg,
-			    sip_t const *sip,
+int session_get_description(sip_t const *sip,
 			    char const **return_sdp,
 			    size_t *return_len);
 
 static
 int session_include_description(soa_session_t *soa,
+				int session,
 				msg_t *msg,
 				sip_t *sip);
 
 static
 int session_make_description(su_home_t *home,
 			     soa_session_t *soa,
+			     int session,
 			     sip_content_disposition_t **return_cd,
 			     sip_content_type_t **return_ct,
 			     sip_payload_t **return_pl);
@@ -575,7 +576,7 @@ nua_stack_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       ss->ss_update_needed = ss->ss_100rel = 1;
 
     if (offer_sent > 0 &&
-	session_include_description(nh->nh_soa, msg, sip) < 0) {
+	session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
       what = "Internal media error"; goto failure;
     }
 
@@ -821,7 +822,7 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
     if (cr->cr_offer_recv && !cr->cr_answer_sent) {
       if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
-	  session_include_description(nh->nh_soa, msg, sip) < 0) {
+	  session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
 	reason = soa_error_as_sip_reason(nh->nh_soa);
 	status = 900, phrase = "Internal media error";
 	reason = "SIP;cause=500;text=\"Internal media error\"";
@@ -1044,7 +1045,7 @@ int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     else if (cri->cr_offer_recv && !cri->cr_answer_sent) {
 
       if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
-	  session_include_description(nh->nh_soa, msg, sip) < 0) {
+	  session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
 
 	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
 	SU_DEBUG_3(("nua(%p): PRACK answer: %d %s\n", nh, status, phrase));
@@ -1062,7 +1063,7 @@ int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     else if (autoprack && status == 183 && ss->ss_precondition) {
 
       if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
-	  session_include_description(nh->nh_soa, msg, sip) < 0) {
+	  session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
 
 	status = soa_error_as_sip_response(nh->nh_soa, &phrase);
 	SU_DEBUG_3(("nua(%p): PRACK offer: %d %s\n", nh, status, phrase));
@@ -1507,7 +1508,7 @@ int preprocess_invite(nua_t *nua,
       return 422;
   }
 
-  have_sdp = session_get_description(sr->sr_msg, sip, &sdp, &len);
+  have_sdp = session_get_description(sip, &sdp, &len);
 
   if (ss) {
     /* Existing session */ 
@@ -1787,7 +1788,7 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
     }
 
     if (offer || answer || extra) {
-      if (session_include_description(nh->nh_soa, msg, sip) < 0)
+      if (session_include_description(nh->nh_soa, 1, msg, sip) < 0)
 	SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
     }
   }
@@ -1948,7 +1949,7 @@ int process_prack(nua_handle_t *nh,
     char const *sdp;
     size_t len;
 
-    if (session_get_description(msg, sip, &sdp, &len)) {
+    if (session_get_description(sip, &sdp, &len)) {
       su_home_t home[1] = { SU_HOME_INIT(home) };
 
       sip_content_disposition_t *cd = NULL;
@@ -1977,8 +1978,8 @@ int process_prack(nua_handle_t *nh,
 	  status = soa_error_as_sip_response(nh->nh_soa, &phrase);
 	}
 	else {
-	  session_make_description(home, nh->nh_soa, &cd, &ct, &pl);
-	  sent = "answer";
+	  if (session_make_description(home, nh->nh_soa, 1, &cd, &ct, &pl) > 0)
+	    sent = "answer";
 	}
       }
 
@@ -2042,7 +2043,7 @@ int process_ack(nua_server_request_t *sr,
     char const *sdp;
     size_t len;
 
-    if (!session_get_description(msg, sip, &sdp, &len) ||
+    if (!session_get_description(sip, &sdp, &len) ||
 	!(recv = "answer") ||
 	soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0 ||
 	soa_process_answer(nh->nh_soa, NULL) < 0 ||
@@ -2624,7 +2625,7 @@ int nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       soa_init_offer_answer(nh->nh_soa);
 
       if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
-	  session_include_description(nh->nh_soa, msg, sip) < 0) {
+	  session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
 	if (ss->ss_state < nua_callstate_ready) {
 	  /* XXX */
 	}
@@ -2805,7 +2806,7 @@ int nua_stack_process_update(nua_t *nua,
   }
 
   if (status < 300 && nh->nh_soa &&
-      session_get_description(msg, sip, &sdp, &len)) {
+      session_get_description(sip, &sdp, &len)) {
     nua_client_request_t *cr;
     nua_server_request_t *sr;
     int overlap = 0;
@@ -2868,7 +2869,8 @@ int nua_stack_process_update(nua_t *nua,
   rsip = sip_object(rmsg);
   assert(sip);			/* XXX */
 
-  if (answer_sent && session_include_description(nh->nh_soa, rmsg, rsip) < 0) {
+  if (answer_sent && 
+      session_include_description(nh->nh_soa, 1, rmsg, rsip) < 0) {
     status = 500, phrase = sip_500_Internal_server_error;
     answer_sent = NULL;
   }
@@ -3127,6 +3129,7 @@ int nua_stack_process_bye(nua_t *nua,
  * @param oa_recv Received SDP
  * @param oa_sent Sent SDP
  */
+
 static void signal_call_state_change(nua_handle_t *nh,
 				     nua_session_usage_t *ss,
 				     int status, char const *phrase,
@@ -3329,8 +3332,7 @@ int respond_with_retry_after(nua_handle_t *nh, nta_incoming_t *irq,
 
 /** Get SDP from a SIP message */
 static
-int session_get_description(msg_t *msg,
-			    sip_t const *sip,
+int session_get_description(sip_t const *sip,
 			    char const **return_sdp,
 			    size_t *return_len)
 {
@@ -3374,6 +3376,7 @@ int session_get_description(msg_t *msg,
 /** Insert SDP into SIP message */
 static
 int session_include_description(soa_session_t *soa,
+				int session,
 				msg_t *msg,
 				sip_t *sip)
 {
@@ -3383,43 +3386,59 @@ int session_include_description(soa_session_t *soa,
   sip_content_type_t *ct;
   sip_payload_t *pl;
 
+  int retval;
+
   if (!soa)
     return 0;
 
-  if (session_make_description(home, soa, &cd, &ct, &pl) < 0)
-    return -1;
+  retval = session_make_description(home, soa, session, &cd, &ct, &pl);
 
-  if (pl == NULL || ct == NULL || cd == NULL ||
-      sip_header_insert(msg, sip, (sip_header_t *)cd) < 0 ||
+  if (retval <= 0)
+    return retval;
+
+  if ((cd && sip_header_insert(msg, sip, (sip_header_t *)cd) < 0) ||
       sip_header_insert(msg, sip, (sip_header_t *)ct) < 0 ||
       sip_header_insert(msg, sip, (sip_header_t *)pl) < 0)
     return -1;
 
-  return 0;
+  return retval;
 }
 
 /** Generate SDP headers */
 static
 int session_make_description(su_home_t *home,
 			     soa_session_t *soa,
+			     int session,
 			     sip_content_disposition_t **return_cd,
 			     sip_content_type_t **return_ct,
 			     sip_payload_t **return_pl)
 {
   char const *sdp;
   isize_t len;
+  int retval;
 
   if (!soa)
     return 0;
 
-  if (soa_get_local_sdp(soa, 0, &sdp, &len) < 0)
-    return -1;
+  if (session)
+    retval = soa_get_local_sdp(soa, 0, &sdp, &len);
+  else
+    retval = soa_get_capability_sdp(soa, 0, &sdp, &len);
 
-  *return_pl = sip_payload_create(home, sdp, len);
-  *return_ct = sip_content_type_make(home, SDP_MIME_TYPE);
-  *return_cd = sip_content_disposition_make(home, "session");
+  if (retval > 0) {
+    *return_pl = sip_payload_create(home, sdp, len);
+    *return_ct = sip_content_type_make(home, SDP_MIME_TYPE);
+    if (session)
+      *return_cd = sip_content_disposition_make(home, "session");
 
-  return 0;
+    if (!*return_pl || !*return_cd)
+      return -1;
+
+    if (session && !*return_cd)
+      return -1;
+  }
+
+  return retval;
 }
 
 /**
@@ -3443,7 +3462,7 @@ int session_process_response(nua_handle_t *nh,
 
   if (nh->nh_soa == NULL)
     /* Xyzzy */;
-  else if (!session_get_description(msg, sip, &sdp, &len))
+  else if (!session_get_description(sip, &sdp, &len))
     /* No SDP */;
   else if (cr->cr_answer_recv) {
     /* Ignore spurious answers after completing O/A */
@@ -3559,3 +3578,92 @@ int session_process_request(nua_handle_t *nh,
 			       TAG_END());
 }
 #endif
+
+static int respond_to_options(nua_server_request_t *sr, tagi_t const *tags);
+
+/** @var nua_event_e::nua_i_options
+ *
+ * Incoming OPTIONS request. The user-agent should respond to an OPTIONS
+ * request with the same statuscode as it would respond to an INVITE
+ * request.
+ *
+ * Stack responds automatically to OPTIONS request unless OPTIONS is
+ * included in the set of application methods, set by NUTAG_APPL_METHOD().
+ *
+ * The OPTIONS request does not create a dialog. Currently the processing
+ * of incoming OPTIONS creates a new handle for each incoming request which
+ * is not assiciated with an existing dialog. If the handle @a nh is not
+ * bound, you should probably destroy it after responding to the OPTIONS
+ * request.
+ *
+ * @param nh     operation handle associated with the call
+ *               (default operation handle if outside session)
+ * @param hmagic operation magic associated with the call
+ *               (NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming OPTIONS request
+ * @param tags   empty
+ *
+ * @sa nua_respond(), nua_options(), nua_r_options(), @RFC3261 section 11.2
+ */
+
+int nua_stack_process_options(nua_t *nua,
+			      nua_handle_t *nh,
+			      nta_incoming_t *irq,
+			      sip_t const *sip)
+{
+  nua_server_request_t *sr, sr0[1];
+  int done;
+
+  /* Hook to outbound */
+  done = nua_registration_process_request(nua->nua_registrations, irq, sip);
+  if (done)
+    return done;
+
+  sr = nua_server_request(nua, nh, irq, sip, SR_INIT(sr0), sizeof *sr,
+			  respond_to_options, 0);
+
+  SR_STATUS1(sr, SIP_200_OK);
+
+  return nua_stack_server_event(nua, sr, nua_i_options, TAG_END());
+}
+
+/** @internal Respond to an OPTIONS request.
+ *
+ */
+static int respond_to_options(nua_server_request_t *sr, tagi_t const *tags)
+{
+  nua_handle_t *nh = sr->sr_owner;
+  nua_t *nua = nh->nh_nua;
+  msg_t *msg;
+  int final;
+
+  msg = nua_server_response(sr,
+			    sr->sr_status, sr->sr_phrase,
+			    SIPTAG_ALLOW(NH_PGET(nh, allow)),
+			    SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
+			    TAG_IF(NH_PGET(nh, path_enable),
+				   SIPTAG_SUPPORTED_STR("path")),
+			    SIPTAG_ACCEPT_STR(SDP_MIME_TYPE),
+			    TAG_NEXT(tags));
+
+  final = sr->sr_status >= 200;
+
+  if (msg) {
+    sip_t *sip = sip_object(msg);
+
+    if (!sip->sip_payload) {	/* XXX - do MIME multipart? */
+      soa_session_t *soa = nh->nh_soa;
+
+      if (soa == NULL)
+	soa = nua->nua_dhandle->nh_soa;
+
+      session_include_description(soa, 0, msg, sip);
+    }
+
+    if (nta_incoming_mreply(sr->sr_irq, msg) < 0)
+      final = 1;
+  }
+
+  return final;
+}
