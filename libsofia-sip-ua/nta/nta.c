@@ -4117,7 +4117,7 @@ leg_callback_default(nta_leg_magic_t *magic,
   nta_incoming_treply(irq,
 		      SIP_501_NOT_IMPLEMENTED,
 		      TAG_END());
-  return 0;
+  return 501;
 }
 
 /* ====================================================================== */
@@ -5382,6 +5382,9 @@ int nta_incoming_treply(nta_incoming_t *irq,
  * @note
  * The ownership of @a msg is taken over by the function even if the
  * function fails.
+ *
+ * @retval 0 when succesful
+ * @retval -1 upon an error
  */
 int nta_incoming_mreply(nta_incoming_t *irq, msg_t *msg) 
 {
@@ -6250,6 +6253,7 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
   msg_t *msg;
   int cancel_2543, cancel_408;
   ta_list ta;
+  int delay_sending;
 
   if (orq == NULL || orq == NONE)
     return NULL;
@@ -6284,6 +6288,8 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
 
   cancel_408 = 0;		/* Don't really CANCEL, this is timeout. */
   cancel_2543 = orq->orq_agent->sa_cancel_2543;
+  /* CANCEL may be sent only after a provisional response has been received. */
+  delay_sending = orq->orq_status < 100;
 
   ta_start(ta, tag, value);
 
@@ -6292,9 +6298,6 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
 	  NTATAG_CANCEL_2543_REF(cancel_2543),
 	  TAG_END());
 
-  if (cancel_2543 || cancel_408)
-    outgoing_reply(orq, SIP_487_REQUEST_CANCELLED, 1);
-
   if (!cancel_408)
     msg = outgoing_ackmsg(orq, SIP_METHOD_CANCEL, ta_args(ta));
   else
@@ -6302,14 +6305,12 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
 
   ta_end(ta);
 
+  if ((cancel_2543 || cancel_408) && 
+      !orq->orq_stateless && !orq->orq_destroyed)
+    outgoing_reply(orq, SIP_487_REQUEST_CANCELLED, 1);
+
   if (msg) {
     nta_outgoing_t *cancel;
-    /*
-     * CANCEL may be sent only after a provisional response has been
-     * received.
-     */
-    int delay_sending = orq->orq_status < 100;
-
     if (cancel_2543)		/* Follow RFC 2543 semantics for CANCEL */
       delay_sending = 0;
 
@@ -7840,7 +7841,7 @@ int outgoing_recv(nta_outgoing_t *orq,
   else if (orq->orq_method != sip_method_ack) {
     /* Non-INVITE */
     if (orq->orq_queue == sa->sa_out.trying) {
-      assert(orq_status < 200);
+      assert(orq_status < 200); (void)orq_status;
 
       if (status < 200) {
 	if (!orq->orq_reliable)
