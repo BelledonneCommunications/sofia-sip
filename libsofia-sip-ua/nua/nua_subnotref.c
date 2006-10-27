@@ -748,11 +748,15 @@ int nua_stack_process_notify(nua_t *nua,
  * The "refer" event can have an "id" parameter, which has the value of
  * CSeq number in the REFER request. After initiating the REFER request, the
  * nua engine sends application a #nua_r_refer event with status 100 and tag
- * NUTAG_REFER_EVENT() containing a matching event header.
+ * NUTAG_REFER_EVENT() containing a matching event header with id parameter.
  *
  * Note that the event header in #nua_r_refer event contains an @a id
- * parameter. The recipient of the REFER request may or may not use the @a
- * id parameter in the NOTIFY messages it sends to the sender of the REFER
+ * parameter. The @a id parameter contains the @CSeq number of the REFER
+ * request, and it get incremented if the request is retried because it gets
+ * challenged or redirected. In that case, the application gets a new
+ * @nua_r_refer event with status 100 and tag NUTAG_REFER_EVENT(). Also the
+ * recipient of the REFER request may or may not use the @a id parameter in
+ * the NOTIFY requests messages which it sends to the sender of the REFER
  * request. Therefore the application may not modify the state of the
  * implied subscription before receiving the first NOTIFY request.
  *
@@ -771,7 +775,7 @@ int nua_stack_process_notify(nua_t *nua,
  *    #nua_r_refer \n
  *    #nua_i_notify
  *
- * @sa NUTAG_SUBSTATE(), @RFC3515,
+ * @sa NUTAG_SUBSTATE(), @RFC3515, @ReferTo, @RFC3892, @ReferredBy
  */
 
 static int process_response_to_refer(nua_handle_t *nh,

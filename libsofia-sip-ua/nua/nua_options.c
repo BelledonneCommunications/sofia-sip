@@ -48,8 +48,24 @@
 
 #include "nua_stack.h"
 
-/* ======================================================================== */
-/* OPTIONS */
+/**@fn void nua_options(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
+ *
+ * Query capabilities from server with OPTIONS request.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_options
+ *
+ * @sa #nua_i_options, @RFC3261 section 10
+ */
 
 static int process_response_to_options(nua_handle_t *nh,
 				       nta_outgoing_t *orq,

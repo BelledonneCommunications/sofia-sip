@@ -156,7 +156,7 @@ static int process_response_to_publish(nua_handle_t *nh,
 
 /** @var nua_event_e::nua_r_publish
  *
- * Answer to outgoing PUBLISH.
+ * Response to an outgoing PUBLISH.
  *
  * The PUBLISH may be sent explicitly by nua_publish() or
  * implicitly by NUA state machine.
@@ -194,7 +194,7 @@ void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
 
 /** @var nua_event_e::nua_r_unpublish
  *
- * Answer to outgoing un-PUBLISH.
+ * Response to an outgoing un-PUBLISH.
  *
  * The PUBLISH may be sent explicitly by nua_publish() or
  * implicitly by NUA state machine.
@@ -426,6 +426,12 @@ int respond_to_publish(nua_server_request_t *sr, tagi_t const *tags);
  * a successful response to PUBLISH @b MUST include @Expires and @SIPETag
  * headers.
  *
+ * The PUBLISH request does not create a dialog. Currently the processing
+ * of incoming PUBLISH creates a new handle for each incoming request which
+ * is not assiciated with an existing dialog. If the handle @a nh is not
+ * bound, you should probably destroy it after responding to the PUBLISH
+ * request.
+ *
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  *               (NULL if outside session)
@@ -437,6 +443,8 @@ int respond_to_publish(nua_server_request_t *sr, tagi_t const *tags);
  * @Expires, @SIPETag, @SIPIfMatch, @Event, 
  * nua_subscribe(), #nua_i_subscribe, 
  * nua_notifier(), #nua_i_subscription,
+ *
+ * @since First used in @VERSION_1_12_4
  */
 
 int nua_stack_process_publish(nua_t *nua,

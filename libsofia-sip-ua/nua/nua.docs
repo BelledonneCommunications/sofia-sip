@@ -2061,17 +2061,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param tags   empty
  */
 
-/** @var nua_event_e::nua_i_message
- *
- * Incoming MESSAGE.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- *               (maybe NULL if outside session)
- * @param status statuscode of response sent automatically by stack
- * @param sip    incoming MESSAGE request
- * @param tags   empty
- */
+/* nua_r_message is documented with nua_stack_process_message() */
 
 /** @var nua_event_e::nua_i_method
  *
@@ -2101,36 +2091,11 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
 
 /* nua_i_notify is documented with nua_stack_process_notify() */
 
-/** @var nua_event_e::nua_i_options
- *
- * Incoming options.
- *
- * @param nh     operation handle associated with the call
- *               (default operation handle if outside session)
- * @param hmagic operation magic associated with the call
- *               (NULL if outside session)
- * @param status statuscode of response sent automatically by stack
- * @param sip    incoming OPTIONS request
- * @param tags   empty
- */
+/* nua_i_options is documented with nua_stack_process_options() */
 
-/* nua_i_publish documented with nua_stack_process_publish() */
+/* nua_i_publish is documented with nua_stack_process_publish() */
 
-/** @var nua_event_e::nua_i_refer
- *
- * Incoming call transfer request.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- *               (NULL if outside session)
- * @param status statuscode of response sent automatically by stack
- * @param sip    incoming REFER request
- * @param tags   NUTAG_REFER_EVENT() \n
- *               SIPTAG_REFERRED_BY()
- * 
- * @sa nua_refer(), #nua_r_refer, NUTAG_NOTIFY_REFER(),
- * NUTAG_REFER_WITH_ID().
- */
+/* nua_i_refer is documented with nua_stack_process_refer() */
 
 /* nua_i_subscribe is documented with nua_stack_process_subscribe() */
 
@@ -2165,16 +2130,7 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @param tags   empty
  */
 
-/** @var nua_event_e::nua_r_message
- *
- * Answer to outgoing MESSAGE
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to MESSAGE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
+/* nua_r_message is documented with process_response_to_message() */
 
 /** @var nua_event_e::nua_r_notifier
  *

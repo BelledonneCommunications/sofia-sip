@@ -414,8 +414,8 @@ int nua_handle_has_events(nua_handle_t const *nh)
 
 /** Check if operation handle has active registrations
  *
- * A registrtion is active when either when a REGISTER operation going on
- * when it has successfully completed so that @nua stack is expected to
+ * A registration is active when either when a REGISTER operation is going
+ * on or when it has successfully completed so that @nua stack is expected to
  * refresh the registration in the future. Normally, a handle has active
  * registration after nua_register() until nua_unregister() completes,
  * unless the initial nua_register() had either expiration time of 0 or it
@@ -647,44 +647,13 @@ void nua_cancel(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_cancel, tag, value);
 }
 
-/** Query capabilities from server 
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    Tags in <sip_tag.h>
- *
- * @par Events:
- *    #nua_r_options
- *
- */
+/* Documented with nua_stack_options() */
 void nua_options(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_options, tag, value);
 }
 
-/** Send an instant message. 
- *
- * Send an instant message using SIP MESSAGE method.
- *
- * @param nh              Pointer to operation handle
- * @param tag, value, ... List of tagged parameters
- *
- * @return 
- *    nothing
- *
- * @par Related Tags:
- *    NUTAG_URL() \n
- *    Tags of nua_set_hparams() \n
- *    Tags in <sip_tag.h>
- *
- * @par Events:
- *    #nua_r_message
- */
+/* Documented with nua_stack_message() */
 void nua_message(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
   NUA_SIGNAL(nh, nua_r_message, tag, value);

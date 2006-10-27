@@ -51,6 +51,27 @@
 /* ======================================================================== */
 /* MESSAGE */
 
+/** Send an instant message. 
+ *
+ * Send an instant message using SIP MESSAGE method.
+ *
+ * @param nh              Pointer to operation handle
+ * @param tag, value, ... List of tagged parameters
+ *
+ * @return 
+ *    nothing
+ *
+ * @par Related Tags:
+ *    NUTAG_URL() \n
+ *    Tags of nua_set_hparams() \n
+ *    Tags in <sip_tag.h>
+ *
+ * @par Events:
+ *    #nua_r_message
+ *
+ * @sa nua_i_message, @RFC3428
+ */
+
 static int process_response_to_message(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip);
@@ -95,6 +116,19 @@ void restart_message(nua_handle_t *nh, tagi_t *tags)
   nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_message, tags);
 }
 
+/** @var nua_event_e::nua_r_message
+ *
+ * Response to an outgoing MESSAGE.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    response to MESSAGE request or NULL upon an error
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ *
+ * @sa nua_message(), #nua_i_message, @RFC3428
+ */
+
 static int process_response_to_message(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip)
@@ -103,6 +137,26 @@ static int process_response_to_message(nua_handle_t *nh,
     return 0;
   return nua_stack_process_response(nh, nh->nh_ds->ds_cr, orq, sip, TAG_END());
 }
+
+/** @var nua_event_e::nua_i_message
+ *
+ * Incoming MESSAGE.
+ *
+ * The MESSAGE request does not create a dialog. Currently the processing
+ * of incoming MESSAGE creates a new handle for each incoming request which
+ * is not assiciated with an existing dialog. If the handle @a nh is not
+ * bound, you should probably destroy it after responding to the MESSAGE
+ * request.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ *               (maybe NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming MESSAGE request
+ * @param tags   empty
+ *
+ * @sa nua_message(), #nua_r_message, @RFC3428
+ */
 
 int nua_stack_process_message(nua_t *nua,
 			      nua_handle_t *nh,

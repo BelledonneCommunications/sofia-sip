@@ -445,31 +445,19 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
 
 /** @var nua_event_e::nua_r_register
  *
- * Answer to outgoing REGISTER.
+ * Response to an outgoing REGISTER.
  *
  * The REGISTER may be sent explicitly by nua_register() or implicitly by
  * NUA state machines. The @a status may be 100 even if the real response
  * status returned is different if the REGISTER request has been restarted.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param status registration status
- * @param sip    response to REGISTER request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   empty
- */
-
-/** @var nua_event_e::nua_i_outbound
- *
- * Answer to outgoing REGISTER.
- *
- * The REGISTER may be sent explicitly by nua_register() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to REGISTER request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
+ * @param nh     operation handle associated with the registration
+ * @param hmagic operation magic associated with the registration
+ * @param status status code
+ *               (from the response message or internally generated)
+ * @param phrase response phrase
+ * @param sip    response message to REGISTER request or NULL upon an error
+ *               (error code and message are in status and phrase parameters)
  * @param tags   empty
  */
 
@@ -502,9 +490,12 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  *
  * Answer to outgoing un-REGISTER.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip    response to REGISTER request or NULL upon an error
+ * @param nh     operation handle associated with the registration
+ * @param hmagic operation magic associated with the registration
+ * @param status status code
+ *               (from the response message or internally generated)
+ * @param phrase response phrase
+ * @param sip    response message to REGISTER request or NULL upon an error
  *               (error code and message are in status and phrase parameters)
  * @param tags   empty
  */
@@ -1692,6 +1683,21 @@ static int nua_stack_outbound_refresh(nua_handle_t *nh,
 
   return 0;
 }
+
+/** @var nua_event_e::nua_i_outbound
+ *
+ * Status from outbound engine.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ * @param sip    NULL or response message to an keepalive message or 
+ *               registration probe
+ *               (error code and message are in status an phrase parameters)
+ * @param tags   empty
+ *
+ * @sa nua_register(), #nua_r_register, nua_unregister(), #nua_r_unregister,
+ * @RFC3261 section 10
+ */
 
 
 /** @internal Callback from outbound_t */

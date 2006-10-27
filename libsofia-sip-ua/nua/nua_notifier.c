@@ -591,6 +591,22 @@ static int nua_notify_usage_shutdown(nua_handle_t *nh,
 /* REFER */
 /* RFC 3515 */
 
+/** @var nua_event_e::nua_i_refer
+ *
+ * Incoming call transfer request.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ *               (NULL if outside session)
+ * @param status statuscode of response sent automatically by stack
+ * @param sip    incoming REFER request
+ * @param tags   NUTAG_REFER_EVENT() \n
+ *               SIPTAG_REFERRED_BY()
+ * 
+ * @sa nua_refer(), #nua_r_refer, NUTAG_NOTIFY_REFER(),
+ * NUTAG_REFER_WITH_ID(), @RFC3515.
+ */
+
 /** @internal Process incoming REFER. */
 int nua_stack_process_refer(nua_t *nua,
 			    nua_handle_t *nh,

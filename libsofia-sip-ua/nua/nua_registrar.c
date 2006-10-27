@@ -54,6 +54,39 @@
 /* ======================================================================== */
 /* REGISTER */
 
+/** @var nua_event_e::nua_i_register
+ *
+ * Incoming REGISTER request.
+ *
+ * In order to receive #nua_i_register events, the application must enable
+ * the REGISTER method with NUTAG_ALLOW() tag.
+ *
+ * The nua_response() call responding to a REGISTER request must have
+ * NUTAG_WITH() (or NUTAG_WITH_CURRENT()/NUTAG_WITH_SAVED()) tag. Note that
+ * a successful response to REGISTER @b MUST include the @Contact header
+ * bound to the the AoR URI (in @To header).
+ *
+ * The REGISTER request does not create a dialog. Currently the processing
+ * of incoming REGISTER creates a new handle for each incoming request which
+ * is not assiciated with an existing dialog. If the handle @a nh is not
+ * bound, you should probably destroy it after responding to the REGISTER
+ * request.
+ *
+ * @param nh     operation handle associated with the call
+ * @param hmagic operation magic associated with the call
+ *               (NULL if outside session)
+ * @param status status code of response sent automatically by stack
+ * @param sip    incoming REGISTER request
+ * @param tags   empty
+ *
+ * @sa nua_respond(), @RFC3261 section 10.3, 
+ * @Expires, @Contact, @CallID, @CSeq,
+ * @Path, @RFC3327, @ServiceRoute, @RFC3608, @RFC3680,
+ * nua_register(), #nua_i_register, nua_unregister(), #nua_i_unregister
+ *
+ * @since New in @VERSION_1_12_4
+ */
+
 int nua_stack_process_register(nua_t *nua,
 			       nua_handle_t *nh,
 			       nta_incoming_t *irq,
