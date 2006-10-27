@@ -3382,9 +3382,9 @@ int session_include_description(soa_session_t *soa,
 {
   su_home_t *home = msg_home(msg);
 
-  sip_content_disposition_t *cd;
-  sip_content_type_t *ct;
-  sip_payload_t *pl;
+  sip_content_disposition_t *cd = NULL;
+  sip_content_type_t *ct = NULL;
+  sip_payload_t *pl = NULL;
 
   int retval;
 
@@ -3430,6 +3430,8 @@ int session_make_description(su_home_t *home,
     *return_ct = sip_content_type_make(home, SDP_MIME_TYPE);
     if (session)
       *return_cd = sip_content_disposition_make(home, "session");
+    else
+      *return_cd = NULL;
 
     if (!*return_pl || !*return_cd)
       return -1;
