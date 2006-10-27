@@ -365,7 +365,7 @@ void nua_dialog_usage_remove_at(nua_owner_t *own,
 		own, nua_dialog_usage_name(du), 
 		o ? " with event " : "", o ? o->o_type :""));
     du->du_class->usage_remove(own, ds, du);
-    msg_destroy(du->du_msg);
+    msg_destroy(du->du_msg), du->du_msg = NULL;
     su_home_unref(own);
     su_free(own, du);
   }

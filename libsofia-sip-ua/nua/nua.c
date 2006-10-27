@@ -985,7 +985,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
       SU_DEBUG_9(("nua(%p): freed by application\n", nh));
     }
     if (e->e_msg)
-      msg_destroy(e->e_msg);
+      msg_destroy(e->e_msg), e->e_msg = NULL;
     return;
   }
 
@@ -1018,7 +1018,7 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
     return;
 
   if (e->e_msg)
-    msg_destroy(e->e_msg);
+    msg_destroy(e->e_msg), e->e_msg = NULL;
 
   su_msg_destroy(nua->nua_current);
 }
@@ -1063,7 +1063,7 @@ void nua_destroy_event(nua_saved_event_t saved[1])
     nua_handle_t *nh = e->e_nh;
 
     if (e->e_msg)
-      msg_destroy(e->e_msg);
+      msg_destroy(e->e_msg), e->e_msg = NULL;
 
     if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
       SU_DEBUG_9(("nua(%p): freed by application\n", nh));

@@ -1769,11 +1769,6 @@ nua_server_request_t *nua_server_request(nua_t *nua,
   if (sip->sip_request->rq_method == sip_method_invite)
     final = 300;
 
-  msg = nta_incoming_getrequest(irq); assert(msg);
-
-  if (!msg)
-    SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
-
   /* Create handle if request does not fail */
   if (sr->sr_status >= 300)
     ;
@@ -1826,6 +1821,8 @@ void nua_server_request_destroy(nua_server_request_t *sr)
   if (sr->sr_irq)
     nta_incoming_destroy(sr->sr_irq), sr->sr_irq = NULL;
 
+  sr->sr_msg = NULL;
+
   if (sr->sr_prev) {
     if ((*sr->sr_prev = sr->sr_next))
       sr->sr_next->sr_prev = sr->sr_prev;
@@ -1852,28 +1849,29 @@ int nua_stack_server_event(nua_t *nua,
 
   status = sr->sr_status;
 
-  if (200 <= status)
+  if (status >= 200)
     sr->sr_respond = NULL;
   
   if (status < 300 || !sr->sr_initial) {
     ta_list ta;
+    msg_t *request;
 
     ta_start(ta, tag, value);
 
     assert(sr->sr_owner);
-    nua_stack_event(nua, sr->sr_owner, sr->sr_msg, event, 
+    request = nta_incoming_getrequest(sr->sr_irq);
+    nua_stack_event(nua, sr->sr_owner, request, event, 
 		    sr->sr_status, sr->sr_phrase, 
 		    ta_tags(ta));
     ta_end(ta);
 
     if (final)
       nua_server_request_destroy(sr);
+    else if (sr->sr_status < 200)
+      sr->sr_msg = request;
   }
   else {
     nh = sr->sr_owner;
-
-    if (sr->sr_msg)
-      msg_destroy(sr->sr_msg), sr->sr_msg = NULL;
 
     nua_server_request_destroy(sr);
 
@@ -1881,7 +1879,7 @@ int nua_stack_server_event(nua_t *nua,
       nh_destroy(nua, nh);
   }
 
-  return final;
+  return 0;
 }
 
 /** Respond to a request. */
@@ -1943,11 +1941,8 @@ int nua_default_respond(nua_server_request_t *sr,
 		       TAG_NEXT(tags));
 
   if (m) {
-    nta_incoming_mreply(sr->sr_irq, m);
-  }
-  else {
-    SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
-    nta_incoming_treply(sr->sr_irq, sr->sr_status, sr->sr_phrase, TAG_END());
+    if (nta_incoming_mreply(sr->sr_irq, m) < 0)
+      SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);      
   }
   
   return sr->sr_status >= 200 ? sr->sr_status : 0;

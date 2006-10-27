@@ -1639,7 +1639,8 @@ int process_invite(nua_t *nua,
 		      SIPTAG_USER_AGENT_STR(NUA_PGET(nua, nh, user_agent)),
 		      TAG_END());
 
-  nua_stack_event(nh->nh_nua, nh, sr->sr_msg,
+  nua_stack_event(nh->nh_nua, nh, 
+		  sr->sr_msg = nta_incoming_getrequest(sr->sr_irq),
 		  nua_i_invite, SIP_100_TRYING,
 		  NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 		  TAG_END());
@@ -1822,11 +1823,13 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
   }
 
   if (sr->sr_auto) {
-    nua_stack_event(nh->nh_nua, nh, sr->sr_msg,
-	     nua_i_invite, status, phrase,
-	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-	     TAG_END());
-    sr->sr_msg = NULL;
+    msg_t *request = nta_incoming_getrequest(sr->sr_irq);
+    if (status < 200)
+      sr->sr_msg = request;
+    nua_stack_event(nh->nh_nua, nh, request,
+		    nua_i_invite, status, phrase,
+		    NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		    TAG_END());
   }
   else if (status != sr->sr_status)
     nua_stack_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
