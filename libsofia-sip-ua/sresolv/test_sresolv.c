@@ -71,7 +71,6 @@ typedef unsigned _int32 uint32_t;
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <pthread.h>
 #include <errno.h>
 
 #define TSTFLAGS tstflags
@@ -100,8 +99,6 @@ struct sres_context_s
   sres_resolver_t *resolver;
   sres_query_t    *query;
   sres_record_t  **result;
-
-  pthread_mutex_t  mutex[1];
 
   int              timeout;
   int              sink;

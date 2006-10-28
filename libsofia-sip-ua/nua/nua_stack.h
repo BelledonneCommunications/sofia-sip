@@ -38,14 +38,6 @@
 #include <su_config.h>
 #endif
 
-#if HAVE_UICC_H
-#include <uicc.h>
-#endif
-
-#if SU_HAVE_PTHREADS
-#include <pthread.h>
-#endif
-
 #ifndef SU_OS_NW_H
 #include <sofia-sip/su_os_nw.h>
 #endif
