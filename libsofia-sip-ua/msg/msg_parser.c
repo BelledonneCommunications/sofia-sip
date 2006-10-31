@@ -821,6 +821,8 @@ static issize_t extract_header(msg_t *, msg_pub_t*,
 			     char b[], isize_t bsiz, int eos, int copy);
 static msg_header_t *header_parse(msg_t *, msg_pub_t *, msg_href_t const *,
 				  char s[], isize_t slen, int copy_buffer);
+static msg_header_t *error_header_parse(msg_t *msg, msg_pub_t *mo,
+					msg_href_t const *hr);
 static inline issize_t
 extract_trailers(msg_t *msg, msg_pub_t *mo,
 		 char *b, isize_t bsiz, int eos, int copy);
@@ -1055,7 +1057,7 @@ extract_header(msg_t *msg, msg_pub_t *mo, char *b, isize_t bsiz, int eos,
       mo->msg_flags |= MSG_FLG_ERROR;
     hr = mc->mc_error;
     copy_buffer = 1;
-    h = header_parse(msg, mo, hr, NULL, 0, 0);
+    h = error_header_parse(msg, mo, hr);
   }
   else {
     if (!name_len_set)
@@ -1098,7 +1100,6 @@ msg_header_t *header_parse(msg_t *msg, msg_pub_t *mo,
 {
   su_home_t *home = msg_home(msg);
   msg_header_t *h, **hh;
-  msg_header_t *h0, *h_next;
   msg_hclass_t *hc = hr->hr_class;
   int n;
   int add_to_list, clear = 0;
@@ -1115,50 +1116,52 @@ msg_header_t *header_parse(msg_t *msg, msg_pub_t *mo,
   if (!h)
     return NULL;
 
-  if (s) {
-    if (copy_buffer)
-      s = memcpy(MSG_HEADER_DATA(h), s, slen);
+  if (copy_buffer)
+    s = memcpy(MSG_HEADER_DATA(h), s, slen);
 
-    s[slen] = '\0';
+  s[slen] = '\0';
 
-    if (hc->hc_kind == msg_kind_list && *hh) {
-      n = hc->hc_parse(home, *hh, s, slen);
-      /* Clear if adding new header disturbs existing headers */
-      clear = *hh != h && !copy_buffer;
-      if (clear)
-	msg_fragment_clear((*hh)->sh_common);
-    }
-    else
-      n = hc->hc_parse(home, h, s, slen);
+  if (hc->hc_kind == msg_kind_list && *hh) {
+    n = hc->hc_parse(home, *hh, s, slen);
+    /* Clear if adding new header disturbs existing headers */
+    clear = *hh != h && !copy_buffer;
+    if (clear)
+      msg_fragment_clear((*hh)->sh_common);
+  }
+  else
+    n = hc->hc_parse(home, h, s, slen);
 
-    if (n < 0) {
-      msg->m_extract_err |= hr->hr_flags;
+  if (n < 0) {
+    msg->m_extract_err |= hr->hr_flags;
 
-      if (hc->hc_critical)
-	mo->msg_flags |= MSG_FLG_ERROR;
+    if (hc->hc_critical)
+      mo->msg_flags |= MSG_FLG_ERROR;
 
-      clear = 0;
+    clear = 0;
 
-      if (!add_to_list) {
-	/* Try to free memory allocated by hc->hc_parse() */
-	for (h0 = h; h0; h0 = h_next) {
-	  h_next = h0->sh_next;
-	  if (hc->hc_params) {
-	    msg_param_t *params = *(msg_param_t **)
-	      ((char *)h0 + hc->hc_params);
-	    if (params)
-	      su_free(home, params);
-	  }
-	  if (h0 != h)
-	    su_free(home, h0);
+    if (!add_to_list) {
+      /* XXX - This should be done by msg_header_free_all() */
+      msg_header_t *h_next;
+      msg_param_t *h_params;
+
+      while (h) {
+	h_next = h->sh_next;
+	if (hc->hc_params) {
+	  h_params = *(msg_param_t **)((char *)h + hc->hc_params);
+	  if (h_params)
+	    su_free(home, h_params);
 	}
-
-	memset(h, 0, hc->hc_size);
-	h->sh_error->er_name = hc->hc_name;
-	hr = msg->m_class->mc_error;
-	h->sh_class = hr->hr_class;
-	hh = (msg_header_t **)((char *)mo + hr->hr_offset);
+	su_free(home, h);
+	h = h_next;
       }
+      /* XXX - This should be done by msg_header_free_all() */
+      hr = msg->m_class->mc_error;
+      h = msg_header_alloc(home, hr->hr_class, 0);
+      if (!h)
+	return h;
+
+      h->sh_error->er_name = hc->hc_name;
+      hh = (msg_header_t **)((char *)mo + hr->hr_offset);
     }
   }
 
@@ -1169,6 +1172,61 @@ msg_header_t *header_parse(msg_t *msg, msg_pub_t *mo,
     append_parsed(msg, mo, hr, h, 0);
 
   return h;
+}
+
+static
+msg_header_t *error_header_parse(msg_t *msg, msg_pub_t *mo,
+				 msg_href_t const *hr)
+{
+  msg_header_t *h;
+
+  h = msg_header_alloc(msg_home(msg), hr->hr_class, 0);
+  if (h)
+    append_parsed(msg, mo, hr, h, 0);
+
+  return h;
+}
+
+/** Complete this header field and parse next header field. */
+issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev, 
+			      char *s, isize_t slen)
+{
+  msg_hclass_t const *hc = prev->sh_class;
+  msg_header_t *h;
+  char *end = s + slen;
+
+  if (hc->hc_update && hc->hc_params) {
+    /* Update shortcuts to parameters */
+    msg_param_t p, v, *params;
+
+    params = *(msg_param_t **)((char *)prev + hc->hc_params);
+    if (params) {
+      for (p = *params; p; p = *++params) {
+	size_t n = strcspn(p, "=");
+	v = p + n + (p[n] == '=');
+	if (hc->hc_update(prev->sh_common, p, n, v) < 0)
+	  return -1;
+      }
+    }
+  }
+
+  if (*s && *s != ',')
+    return -1;
+
+  while (*s == ',') /* Skip comma and following whitespace */
+    *s = '\0', s += span_lws(s + 1) + 1;
+
+  if (*s == 0)
+    return 0;
+  
+  h = msg_header_alloc(home, prev->sh_class, 0);
+  if (!h)
+    return -1;
+
+  prev->sh_succ = h, h->sh_prev = &prev->sh_succ;
+  prev->sh_next = h;
+
+  return prev->sh_class->hc_parse(home, h, s, end - s);
 }
 
 /** Decode a message header. */
@@ -1198,16 +1256,16 @@ msg_header_t *msg_header_d(su_home_t *home, msg_t const *msg, char const *b)
 
   bb = memcpy(MSG_HEADER_DATA(h), b + name_len, xtra), bb[xtra] = 0;
 
-  if (hr->hr_class->hc_parse(home, h, bb, xtra) < 0) {
-    hr = mc->mc_unknown;
-    su_free(home, h);
-    if (!(h = msg_header_alloc(home, hr->hr_class, n + 1)))
-      return NULL;
-    bb = memcpy(MSG_HEADER_DATA(h), b, n), bb[n] = 0;
-    if (hr->hr_class->hc_parse(home, h, bb, n) < 0) {
-      su_free(home, h), h = NULL;
-    }
-  }
+  if (hr->hr_class->hc_parse(home, h, bb, xtra) >= 0)
+    return h;
+
+  hr = mc->mc_unknown;
+  su_free(home, h);
+  if (!(h = msg_header_alloc(home, hr->hr_class, n + 1)))
+    return NULL;
+  bb = memcpy(MSG_HEADER_DATA(h), b, n), bb[n] = 0;
+  if (hr->hr_class->hc_parse(home, h, bb, n) < 0)
+    su_free(home, h), h = NULL;
 
   return h;
 }
@@ -2897,5 +2955,3 @@ void msg_header_free_all(su_home_t *home, msg_header_t *h)
     h = h_next;
   }
 }
-
-

@@ -180,6 +180,9 @@ SOFIAPUBFUN issize_t msg_comment_d(char **ss, char const **return_comment);
 SOFIAPUBFUN issize_t msg_quoted_d(char **ss, char **return_unquoted);
 SOFIAPUBFUN issize_t msg_unquoted_e(char *b, isize_t bsiz, char const *s);
 
+SOFIAPUBFUN issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev,
+					  char *s, isize_t slen);
+
 /** Terminate encoding. @HI */
 #define MSG_TERM_E(p, e) ((p) < (e) ? (p)[0] = '\0' : '\0')
 
