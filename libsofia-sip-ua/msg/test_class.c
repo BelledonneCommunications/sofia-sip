@@ -188,7 +188,7 @@ char *msg_status_dup_one(msg_header_t *dst, msg_header_t const *src,
   st->st_status = o->st_status;
   MSG_STRING_DUP(b, st->st_phrase, o->st_phrase);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

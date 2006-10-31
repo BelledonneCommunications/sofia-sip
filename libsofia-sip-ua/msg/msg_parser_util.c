@@ -535,7 +535,7 @@ char *msg_params_dup(msg_param_t const **d, msg_param_t const s[],
   }
   pp[i] = NULL;
  
-  assert(b <= end);
+  assert(b <= end); (void)end;
  
   *d = (msg_param_t const *)pp;
 

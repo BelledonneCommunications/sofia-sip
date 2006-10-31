@@ -103,7 +103,7 @@ char *msg_generic_dup_one(msg_header_t *dst,
 {
   char *end = b + xtra;
   MSG_STRING_DUP(b, dst->sh_generic->g_string, src->sh_generic->g_string);
-  assert(b <= end);
+  assert(b <= end); (void)end;
   return b;
 }
 
@@ -178,7 +178,7 @@ char *msg_list_dup_one(msg_header_t *dst,
 
   b = msg_params_dup(items, src->sh_list->k_items, b, xtra);
     
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

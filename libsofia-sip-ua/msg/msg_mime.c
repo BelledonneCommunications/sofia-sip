@@ -1161,7 +1161,7 @@ char *msg_accept_dup_one(msg_header_t *dst, msg_header_t const *src,
       ac->ac_subtype++;
   }
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1248,7 +1248,7 @@ char *msg_accept_any_dup_one(msg_header_t *dst, msg_header_t const *src,
   b = msg_params_dup(&aa->aa_params, o->aa_params, b, xtra);
   MSG_STRING_DUP(b, aa->aa_value, o->aa_value);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1537,7 +1537,7 @@ char *msg_content_disposition_dup_one(msg_header_t *dst,
   b = msg_params_dup(&cd->cd_params, o->cd_params, b, xtra);
   MSG_STRING_DUP(b, cd->cd_type, o->cd_type);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1904,7 +1904,7 @@ char *msg_content_type_dup_one(msg_header_t *dst, msg_header_t const *src,
   c->c_subtype = strchr(c->c_type, '/');
   c->c_subtype++;
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -2164,7 +2164,7 @@ char *msg_warning_dup_one(msg_header_t *dst,
   MSG_STRING_DUP(b, w->w_port, o->w_port);
   MSG_STRING_DUP(b, w->w_text, o->w_text);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

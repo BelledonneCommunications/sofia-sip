@@ -150,7 +150,7 @@ char *msg_auth_dup_one(msg_header_t *dst,
   b = msg_params_dup(&au->au_params, o->au_params, b, xtra);
   MSG_STRING_DUP(b, au->au_scheme, o->au_scheme);
     
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

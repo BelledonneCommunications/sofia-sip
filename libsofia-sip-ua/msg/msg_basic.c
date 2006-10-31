@@ -173,7 +173,7 @@ char *msg_unknown_dup_one(msg_header_t *dst, msg_header_t const *src,
   MSG_STRING_DUP(b, un->un_name, o->un_name);
   MSG_STRING_DUP(b, un->un_value, o->un_value);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
