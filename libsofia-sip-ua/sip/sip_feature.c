@@ -57,6 +57,12 @@
  * @endcode
  *
  * The parsed Allow header is stored in #sip_allow_t structure.
+ *
+ * Note that SIP methods are case-sensitive: "INVITE" method is different from
+ * "Invite".
+ *
+ * @sa msg_header_find_item(), msg_header_replace_item(),
+ * msg_header_remove_item()
  */
 
 /**@ingroup sip_allow

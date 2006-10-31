@@ -23,6 +23,8 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added functions msg_header_replace_item(), msg_header_remove_item()
+  (handling Allow and Allow-Events headers)
 - Added functions for handling SIP headers encoded in SIP URL:
   sip_headers_as_url_query(), sip_url_query_as_taglist(),
   url_query_as_header_string(), url_unescape_to(),

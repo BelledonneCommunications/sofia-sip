@@ -53,7 +53,7 @@ options="$options --with-pic --enable-shared"
 options="$options --without-glib"
 %endif
 %{?_with_sctp:options="$options --enable-sctp"}
-%configure $options
+%configure $options CFLAGS="-Os -DNDEBUG -g"
 
 make %{_smp_mflags}
 %{?_with_check:make check}

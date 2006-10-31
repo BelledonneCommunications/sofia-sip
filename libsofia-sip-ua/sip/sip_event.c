@@ -176,6 +176,13 @@ static int sip_event_update(msg_common_t *h,
  * @endcode
  *
  * The parsed Allow-Events header is stored in #sip_allow_events_t structure.
+ *
+ * Note that the event name is case-sensitive. The event "Presence" is
+ * different from "presence". However, it is very unwise to use such event
+ * names.
+ *
+ * @sa @Event, @RFC3265, msg_header_find_item(), msg_header_replace_item(),
+ * msg_header_remove_item()
  */
 
 /**@ingroup sip_allow_events
@@ -213,7 +220,7 @@ issize_t sip_allow_events_e(char b[], isize_t bsiz, sip_header_t const *h, int f
  *
  * @note This function @b does @b duplicate @p event.
  *
- * @deprecated Use msg_header_replace_param() directly.
+ * @deprecated Use msg_header_replace_item() directly.
  */
 int sip_allow_events_add(su_home_t *home, 
 			 sip_allow_events_t *ae, 
@@ -222,7 +229,7 @@ int sip_allow_events_add(su_home_t *home,
   event = su_strdup(home, event);
   if (!event)
     return -1;
-  return msg_header_replace_param(home, ae->k_common, event);
+  return msg_header_replace_item(home, ae->k_common, event);
 }
 
 /* ====================================================================== */
