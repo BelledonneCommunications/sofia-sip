@@ -1760,7 +1760,6 @@ nua_server_request_t *nua_server_request(nua_t *nua,
 					 nua_server_respond_f *respond,
 					 int create_dialog)
 {
-  msg_t *msg;
   int initial = 1, final = 200;
 
   assert(nua && irq && sip && sr);
@@ -1812,7 +1811,6 @@ nua_server_request_t *nua_server_request(nua_t *nua,
   sr->sr_method = sip->sip_request->rq_method;
   sr->sr_respond = respond;
   sr->sr_irq = irq;
-  sr->sr_msg = msg;
   sr->sr_initial = initial;
 
   return sr;
