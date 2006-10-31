@@ -1754,7 +1754,12 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
     else if (sr->sr_offer_recv && !sr->sr_answer_sent && 
 	     (reliable || early_answer)) {
       /* Generate answer */ 
-      if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
+      if (soa_generate_answer(nh->nh_soa, NULL) >= 0) {
+	answer = 1;
+	soa_activate(nh->nh_soa, NULL);
+	/* signal that O/A answer sent (answer to invite) */
+      }
+      else (if status >= 200) {
 	int wcode;
 	char const *text;
 	char const *host = "invalid.";
@@ -1769,9 +1774,7 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
 	}
       }
       else {
-	answer = 1;
-	soa_activate(nh->nh_soa, NULL);
-	/* signal that O/A answer sent (answer to invite) */
+	/* 1xx - we don't have to send answer */
       }
     }
     else if (sr->sr_offer_recv && sr->sr_answer_sent == 1 && 
