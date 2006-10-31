@@ -1192,16 +1192,16 @@ int sdp_session_cmp(sdp_session_t const *a, sdp_session_t const *b)
  */
 int sdp_origin_cmp(sdp_origin_t const *a, sdp_origin_t const *b)
 {
-  int rv; int64_t rv64;
+  int rv;
 
   if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
   if (a == b)
     return 0;
-  if ((rv64 = ((int64_t)a->o_version - (int64_t)b->o_version)))
-    return rv64 < 0 ? -1 : 1;
-  if ((rv64 = ((int64_t)a->o_id - (int64_t)b->o_id)))
-    return rv64 < 0 ? -1 : 1;
+  if (a->o_version != b->o_version)
+    return a->o_version < b->o_version ? -1 : 1;
+  if (a->o_id != b->o_id)
+    return a->o_id < b->o_id ? -1 : 1;
   if ((rv = strcasecmp(a->o_username, b->o_username)))
     return rv;
   if ((rv = strcasecmp(a->o_address->c_address, b->o_address->c_address)))
@@ -1214,22 +1214,21 @@ int sdp_origin_cmp(sdp_origin_t const *a, sdp_origin_t const *b)
  */
 int sdp_connection_cmp(sdp_connection_t const *a, sdp_connection_t const *b)
 {
-  int rv;
-
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
   if (a == b)
     return 0;
-  if ((rv = a->c_nettype - b->c_nettype))
-    return rv;
-  if ((rv = a->c_addrtype - b->c_addrtype))
-    return rv;
-  if ((rv = a->c_ttl - b->c_ttl))
-    return rv;
-  if ((rv = a->c_groups - b->c_groups))
-    return rv;
+  if ((a != NULL) != (b != NULL))
+    return (a != NULL) < (b != NULL) ? -1 : 1;
 
-  return 0;
+  if (a->c_nettype != b->c_nettype)
+    return a->c_nettype < b->c_nettype ? -1 : 1;
+  if (a->c_addrtype != b->c_addrtype)
+    return a->c_addrtype < b->c_addrtype ? -1 : 1;
+  if (a->c_ttl != b->c_ttl)
+    return a->c_ttl < b->c_ttl ? -1 : 1;
+  if (a->c_groups != b->c_groups)
+    return a->c_groups < b->c_groups ? -1 : 1;
+
+  return strcmp(a->c_address, b->c_address);
 }
 
 /** Compare two bandwidth (b=) fields */
@@ -1237,16 +1236,21 @@ int sdp_bandwidth_cmp(sdp_bandwidth_t const *a, sdp_bandwidth_t const *b)
 {
   int rv;
 
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
   if (a == b)
     return 0;
-  if ((rv = a->b_modifier - b->b_modifier))
-    return rv;
+  if ((a != NULL) != (b != NULL))
+    return (a != NULL) < (b != NULL) ? -1 : 1;
+
+  if (a->b_modifier != b->b_modifier)
+    return a->b_modifier < b->b_modifier ? -1 : 1;
   if (a->b_modifier == sdp_bw_x && 
-      (rv = a->b_modifier_name - b->b_modifier_name))
+      (rv = strcmp(a->b_modifier_name, b->b_modifier_name)))
     return rv;
-  return a->b_value - b->b_value;
+
+  if (a->b_value != b->b_value)
+    return a->b_value < b->b_value ? -1 : 1;
+
+  return 0;
 }
 
 /** Compare two time fields */
@@ -1258,10 +1262,10 @@ int sdp_time_cmp(sdp_time_t const *a, sdp_time_t const *b)
     return rv;
   if (a == b)
     return 0;
-  if ((rv = a->t_start - b->t_start))
-    return rv;
-  if ((rv = a->t_stop - b->t_stop))
-    return rv;
+  if (a->t_start != b->t_start)
+    return a->t_start < b->t_start ? -1 : 1;
+  if (a->t_stop != b->t_stop)
+    return a->t_stop < b->t_stop ? -1 : 1;
   if ((rv = sdp_zone_cmp(a->t_zone, b->t_zone)))
     return rv;
   if ((rv = sdp_repeat_cmp(a->t_repeat, b->t_repeat)))
@@ -1272,24 +1276,25 @@ int sdp_time_cmp(sdp_time_t const *a, sdp_time_t const *b)
 /** Compare two repeat (r=) fields */
 int sdp_repeat_cmp(sdp_repeat_t const *a, sdp_repeat_t const *b)
 {
-  int rv, i, n;
+  int i, n;
   
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
   if (a == b)
     return 0;
-  if ((rv = a->r_interval - b->r_interval))
-    return rv;
-  if ((rv = a->r_duration - b->r_duration))
-    return rv;
+  if ((a != NULL) != (b != NULL))
+    return (a != NULL) < (b != NULL) ? -1 : 1;
+
+  if (a->r_interval != b->r_interval)
+    return a->r_interval < b->r_interval ? -1 : 1;
+  if (a->r_duration != b->r_duration)
+    return a->r_duration < b->r_duration ? -1 : 1;
   n = a->r_number_of_offsets < b->r_number_of_offsets 
     ? a->r_number_of_offsets : b->r_number_of_offsets;
   for (i = 0; i < n; i++)
-    if ((rv = a->r_offsets[i] - b->r_offsets[i]))
-      return rv;
+    if (a->r_offsets[i] != b->r_offsets[i])
+      return a->r_offsets[i] < b->r_offsets[i] ? -1 : 1;
   
-  if ((rv = a->r_number_of_offsets - b->r_number_of_offsets))
-    return rv;
+  if (a->r_number_of_offsets != b->r_number_of_offsets)
+    return a->r_number_of_offsets < b->r_number_of_offsets ? -1 : 1;
 
   return 0;
  }
@@ -1297,24 +1302,25 @@ int sdp_repeat_cmp(sdp_repeat_t const *a, sdp_repeat_t const *b)
 /** Compare two zone (z=) fields */
 int sdp_zone_cmp(sdp_zone_t const *a, sdp_zone_t const *b)
 {
-  int rv, i, n;
+  int i, n;
   
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
   if (a == b)
     return 0;
+  if ((a != NULL) != (b != NULL))
+    return (a != NULL) < (b != NULL) ? -1 : 1;
 
   n = a->z_number_of_adjustments < b->z_number_of_adjustments
     ? a->z_number_of_adjustments : b->z_number_of_adjustments;
   for (i = 0; i < n; i++) {
-    if ((rv = a->z_adjustments[i].z_at - b->z_adjustments[i].z_at))
-      return rv;
-    if ((rv = a->z_adjustments[i].z_offset - b->z_adjustments[i].z_offset))
-      return rv;
+    if (a->z_adjustments[i].z_at != b->z_adjustments[i].z_at)
+      return a->z_adjustments[i].z_at < b->z_adjustments[i].z_at ? -1 : 1;
+    if (a->z_adjustments[i].z_offset != b->z_adjustments[i].z_offset)
+      return a->z_adjustments[i].z_offset < b->z_adjustments[i].z_offset
+	? -1 : 1;
   }
 
-  if ((rv = a->z_number_of_adjustments - b->z_number_of_adjustments))
-    return rv;
+  if (a->z_number_of_adjustments != b->z_number_of_adjustments)
+    return a->z_number_of_adjustments < b->z_number_of_adjustments ? -1 : 1;
 
   return 0;
 }
@@ -1326,10 +1332,11 @@ int sdp_key_cmp(sdp_key_t const *a, sdp_key_t const *b)
 
   if (a == b)
     return 0;
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
-  if ((rv = a->k_method - b->k_method))
-    return rv;
+  if ((a != NULL) != (b != NULL))
+    return (a != NULL) < (b != NULL) ? -1 : 1;
+
+  if (a->k_method != b->k_method)
+    return a->k_method < b->k_method ? -1 : 1;
   if (a->k_method == sdp_key_x && 
       (rv = str0cmp(a->k_method_name, b->k_method_name)))
     return rv;
@@ -1343,8 +1350,9 @@ int sdp_attribute_cmp(sdp_attribute_t const *a, sdp_attribute_t const *b)
 
   if (a == b)
     return 0;
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
+  if ((a != NULL) != (b != NULL))
+    return (a != NULL) < (b != NULL) ? -1 : 1;
+
   if ((rv = str0cmp(a->a_name, b->a_name)))
     return rv;
   return str0cmp(a->a_value, b->a_value);
@@ -1357,17 +1365,18 @@ int sdp_rtpmap_cmp(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b)
 
   if (a == b)
     return 0;
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
-  if ((rv = a->rm_pt - b->rm_pt))
-    return rv;
+  if ((a != NULL) != (b != NULL))
+    return (a != NULL) < (b != NULL) ? -1 : 1;
+
+  if (a->rm_pt != b->rm_pt)
+    return a->rm_pt < b->rm_pt ? -1 : 1;
 
   /* Case insensitive encoding */
   if ((rv = str0cmp(a->rm_encoding, b->rm_encoding)))
     return rv;
   /* Rate */
-  if ((rv = (a->rm_rate - b->rm_rate)))
-    return rv;
+  if (a->rm_rate != b->rm_rate)
+    return a->rm_rate < b->rm_rate ? -1 : 1;
 
   {
     char const *a_param = "1", *b_param = "1";
@@ -1394,8 +1403,8 @@ int sdp_list_cmp(sdp_list_t const *a, sdp_list_t const *b)
   for (;a || b; a = a->l_next, b = b->l_next) {
     if (a == b)
       return 0;
-    if ((rv = (a != NULL) - (b != NULL))) 
-      return rv;
+    if ((a != NULL) != (b != NULL))
+      return (a != NULL) < (b != NULL) ? -1 : 1;
     if ((rv = str0cmp(a->l_text, b->l_text)))
       return rv;
   }
@@ -1413,32 +1422,34 @@ int sdp_media_cmp(sdp_media_t const *a, sdp_media_t const *b)
   sdp_rtpmap_t const *arm, *brm;
   sdp_attribute_t const *aa, *ba;
 
-  if ((rv = (a != NULL) - (b != NULL))) 
-    return rv;
   if (a == b)
     return 0;
-  if ((rv = a->m_type - b->m_type))
+  if ((rv = (a != NULL) - (b != NULL))) 
     return rv;
+
+  if (a->m_type != b->m_type)
+    return a->m_type < b->m_type ? -1 : 1;
   if (a->m_type == sdp_media_x)
     if ((rv = str0cmp(a->m_type_name, b->m_type_name)))
       return rv;
-  if ((rv = a->m_port - b->m_port))
-    return rv;
+  if (a->m_port != b->m_port)
+    return a->m_port < b->m_port ? -1 : 1;
 
   if (a->m_port == 0 /* && b->m_port == 0 */)
     /* Ignore transport protocol and media list if media has been rejected */
     return 0;
 
-  if ((rv = a->m_number_of_ports - b->m_number_of_ports))
-    return rv;
-  if ((rv = a->m_proto - b->m_proto))
-    return rv;
+  if (a->m_number_of_ports != b->m_number_of_ports)
+    return a->m_number_of_ports < b->m_number_of_ports ? -1 : 1;
+
+  if (a->m_proto != b->m_proto)
+    return a->m_proto < b->m_proto ? -1 : 1;
   if (a->m_proto == sdp_media_x)
     if ((rv = str0cmp(a->m_proto_name, b->m_proto_name)))
       return rv;
 
-  if ((rv = a->m_mode - b->m_mode))
-    return rv;
+  if (a->m_mode != b->m_mode)
+    return a->m_mode < b->m_mode ? -1 : 1;
 
   for (arm = a->m_rtpmaps, brm = b->m_rtpmaps; 
        arm || brm; 
