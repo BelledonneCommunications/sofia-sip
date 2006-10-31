@@ -23,7 +23,8 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
-- Added functions msg_header_replace_item(), msg_header_remove_item()
+- Added functions msg_header_find_item(), msg_header_replace_item(),
+  msg_header_remove_item()
   (handling Allow and Allow-Events headers)
 - Added functions for handling SIP headers encoded in SIP URL:
   sip_headers_as_url_query(), sip_url_query_as_taglist(),
@@ -92,6 +93,10 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- SOA now updates c= line if it is changed in user SDP.
+  Thanks for Anthony Minessale for reporting this bug.
+- NUA call model does not require SDP answer before 200 OK anymore.
+  Thanks for Anthony Minessale for reporting this.
 - Fixed crash when CANCEL was received but PRACK was expected
 - #1574342: stunc tool broken in 1.12.3
 - With NUTAG_EARLY_ANSWER(), include answer in 200 OK, too.
