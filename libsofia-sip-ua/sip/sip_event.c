@@ -141,7 +141,7 @@ char *sip_event_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&o_dst->o_params, o_src->o_params, b, xtra);
   MSG_STRING_DUP(b, o_dst->o_type, o_src->o_type);
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -353,7 +353,7 @@ char *sip_subscription_state_dup_one(sip_header_t *dst, sip_header_t const *src,
    
   b = msg_params_dup(&ss_dst->ss_params, ss_src->ss_params, b, xtra);
   MSG_STRING_DUP(b, ss_dst->ss_substate, ss_src->ss_substate);
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

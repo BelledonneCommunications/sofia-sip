@@ -351,7 +351,7 @@ char *sip_status_dup_one(sip_header_t *dst, sip_header_t const *src,
   st->st_status = o->st_status;
   MSG_STRING_DUP(b, st->st_phrase, o->st_phrase);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1042,7 +1042,7 @@ char *sip_call_id_dup_one(sip_header_t *dst, sip_header_t const *src,
   MSG_STRING_DUP(b, i->i_id, o->i_id);
   if (!(i->i_hash = o->i_hash))
     i->i_hash = msg_hash_string(i->i_id);
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1192,7 +1192,7 @@ char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
     cs->cs_method_name = o->cs_method_name;
   cs->cs_seq = o->cs_seq;
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -2013,7 +2013,7 @@ char *sip_retry_after_dup_one(sip_header_t *dst,
   MSG_STRING_DUP(b, af->af_comment, o->af_comment);
   af->af_delta = o->af_delta;
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -2565,7 +2565,7 @@ char *sip_via_dup_one(sip_header_t *dst, sip_header_t const *src,
   MSG_STRING_DUP(b, v->v_port, o->v_port);
   MSG_STRING_DUP(b, v->v_comment, o->v_comment);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

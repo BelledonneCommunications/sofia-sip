@@ -138,7 +138,7 @@ char *sip_session_expires_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&o_dst->x_params, o_src->x_params, b, xtra);
   o_dst->x_delta = o_src->x_delta;
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -246,7 +246,7 @@ char *sip_min_se_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&o_dst->min_params, o_src->min_params, b, xtra);
   o_dst->min_delta = o_src->min_delta;
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

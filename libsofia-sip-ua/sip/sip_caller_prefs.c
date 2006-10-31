@@ -143,7 +143,7 @@ char *sip_request_disposition_dup_one(sip_header_t *dst,
 
   b = msg_params_dup(dst_items, o_src->rd_items, b, xtra);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -263,7 +263,7 @@ char *sip_caller_prefs_dup_one(sip_header_t *dst, sip_header_t const *src,
 
   b = msg_params_dup(&cp->cp_params, o->cp_params, b, xtra);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

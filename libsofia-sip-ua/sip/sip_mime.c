@@ -608,7 +608,7 @@ char *sip_content_type_dup_one(sip_header_t *dst, sip_header_t const *src,
   c->c_subtype = strchr(c->c_type, '/');
   c->c_subtype++;
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

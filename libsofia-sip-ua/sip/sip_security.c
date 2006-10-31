@@ -506,7 +506,7 @@ char *sip_security_agree_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&sa_dst->sa_params, sa_src->sa_params, b, xtra);
   MSG_STRING_DUP(b, sa_dst->sa_mec, sa_src->sa_mec);
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -833,7 +833,7 @@ char *sip_privacy_dup_one(sip_header_t *dst,
 
   b = msg_params_dup(&priv->priv_values, o->priv_values, b, xtra);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

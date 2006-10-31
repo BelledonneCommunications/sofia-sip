@@ -559,7 +559,7 @@ char *sip_timestamp_dup_one(sip_header_t *dst,
   MSG_STRING_DUP(b, ts->ts_stamp, o->ts_stamp);
   MSG_STRING_DUP(b, ts->ts_delay, o->ts_delay);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

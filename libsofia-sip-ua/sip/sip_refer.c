@@ -404,7 +404,7 @@ char *sip_replaces_dup_one(sip_header_t *dst, sip_header_t const *src,
   b = msg_params_dup(&rp_dst->rp_params, rp_src->rp_params, b, xtra);
   MSG_STRING_DUP(b, rp_dst->rp_call_id, rp_src->rp_call_id);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

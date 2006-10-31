@@ -152,7 +152,7 @@ char *sip_rack_dup_one(sip_header_t *dst, sip_header_t const *src,
   else
     ra_dst->ra_method_name = ra_src->ra_method_name;
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

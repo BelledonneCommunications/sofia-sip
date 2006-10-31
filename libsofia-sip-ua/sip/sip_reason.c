@@ -141,7 +141,7 @@ char *sip_reason_dup_one(sip_header_t *dst, sip_header_t const *src,
   char *end = b + xtra;
   b = msg_params_dup(&re_dst->re_params, re_src->re_params, b, xtra);
   MSG_STRING_DUP(b, re_dst->re_protocol, re_src->re_protocol);
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
