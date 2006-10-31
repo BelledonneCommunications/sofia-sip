@@ -773,7 +773,7 @@ int soa_sdp_reject_is_needed(sdp_session_t const *session,
   return 0;
 }
 
-/** If m= line is rejected by, remote mark m= line rejected within session */ 
+/** If m= line is rejected by remote mark m= line rejected within session */ 
 int soa_sdp_reject(su_home_t *home,
 		   sdp_session_t *session,
 		   sdp_session_t const *remote)
@@ -1080,6 +1080,46 @@ static int offer_answer_step(soa_session_t *ss,
     break;
   }
 
+  /* Step F: Update c= line */ 
+  switch (action) {
+  case generate_offer:
+  case generate_answer:
+    /* Upgrade local SDP based of user SDP */
+    if (ss->ss_local_user_version == user_version &&
+	local->sdp_connection)
+      break;
+
+    if (local->sdp_connection == NULL || 
+	(user->sdp_connection != NULL && 
+	 sdp_connection_cmp(local->sdp_connection, user->sdp_connection))) {
+      sdp_media_t *m;
+
+      /* Every m= line (even rejected one) must have a c= line 
+       * or there must be a c= line at session level
+       */
+      if (user->sdp_connection)
+	c = user->sdp_connection;
+      else
+	c = local->sdp_origin->o_address;
+
+      for (m = local->sdp_media; m; m = m->m_next)
+	if (m->m_connections == NULL)
+	  break;
+
+      if (m) {
+	if (local != local0) {
+	  *local0 = *local, local = local0; 
+	  DUP_LOCAL(local);
+	}
+	local->sdp_connection = c;
+      }
+    }
+    break;
+
+  default:
+    break;
+  }
+
   soa_description_free(ss, ss->ss_previous);
 
   if (ss->ss_local->ssd_sdp != local &&
@@ -1094,21 +1134,6 @@ static int offer_answer_step(soa_session_t *ss,
       local->sdp_subject = "-";
     if (!local->sdp_time)	/* t= is mandatory */
       local->sdp_time = t;
-
-    /* Every m= line (even rejected one) must have a c= line 
-     * or there must be a c= line at session level
-     */
-    c = local->sdp_origin->o_address;
-
-    if (local->sdp_connection == NULL) {
-      sdp_media_t *m;
-
-      for (m = local->sdp_media; m; m = m->m_next)
-	if (m->m_connections == NULL)
-	  break;
-      if (m)
-	local->sdp_connection = c;
-    }
 
     if (action == generate_offer) {
       /* Keep a copy of previous session state */

@@ -1059,12 +1059,12 @@ int test_codec_selection(struct context *ctx)
     ),
 			TAG_END()));
 
-  /* B adds GSM to SRTP */
+  /* B adds GSM to SRTP, changes IP address */
   TEST_1(soa_set_params(b,
 			SOATAG_USER_SDP_STR(
     "v=0\r\n"
     "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
-    "c=IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.3\r\n"
     "m=audio 5004 RTP/AVP 96 3 97 111\r\n"
     "a=rtpmap:96 G7231/8000\n"
     "a=rtpmap:97 G729/8000\n"
@@ -1088,6 +1088,9 @@ int test_codec_selection(struct context *ctx)
   /* Answer from B now accepts video */
   n = soa_get_local_sdp(b, &b_sdp, &answer, &answerlen); TEST(n, 1);
   TEST_1(answer != NULL && answer != NONE);
+  /* Check that updated c= line is propagated */
+  TEST_1(b_sdp->sdp_connection);
+  TEST_S(b_sdp->sdp_connection->c_address, "127.0.0.3");
   n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
   n = soa_process_answer(a, test_completed); TEST(n, 0);
   n = soa_get_local_sdp(a, &a_sdp, &offer, &offerlen); TEST(n, 1);
