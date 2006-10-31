@@ -468,6 +468,7 @@ int test_header_parsing(void)
     ce = msg_content_encoding_make(home, "zip, zap, zup, lz, zl, zz, ll");
     TEST_1(ce);
     TEST_S(msg_header_find_param(ce->k_common, "zz"), "");
+    TEST_S(msg_header_find_item(ce->k_common, "zz"), "zz");
     TEST(msg_header_find_param(ce->k_common, "k"), NULL);
     TEST(msg_header_add_param(home, ce->k_common, "zip"), 0);
     TEST(msg_header_remove_param(ce->k_common, "zip"), 1);

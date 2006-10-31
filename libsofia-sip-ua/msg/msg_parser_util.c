@@ -1104,14 +1104,16 @@ int msg_header_update_params(msg_common_t *h, int clear)
 char const *msg_header_find_item(msg_common_t const *h, char const *item)
 {
   if (h && h->h_class->hc_params) {
-    msg_param_t const **params = (msg_param_t const **)
+    char const * const * items = 
+      *(char const * const * const *)
       ((char *)h + h->h_class->hc_params);
 
-    for (; *params; params++) {
-      if (strcmp(item, *params) == 0) {
-	return *params;
+    if (items)
+      for (; *items; items++) {
+	if (strcmp(item, *items) == 0) {
+	  return *items;
+	}
       }
-    }
   }
 
   return NULL;
