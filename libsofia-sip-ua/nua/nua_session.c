@@ -1759,7 +1759,7 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
 	soa_activate(nh->nh_soa, NULL);
 	/* signal that O/A answer sent (answer to invite) */
       }
-      else (if status >= 200) {
+      else if (status >= 200) {
 	int wcode;
 	char const *text;
 	char const *host = "invalid.";
