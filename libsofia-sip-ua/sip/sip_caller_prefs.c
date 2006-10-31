@@ -191,63 +191,42 @@ size_t span_attribute_value(char *s)
 }
 
 static
-issize_t sip_caller_prefs_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
+issize_t sip_caller_prefs_d(su_home_t *home, sip_header_t *h,
+			    char *s, isize_t slen)
 {
-  sip_header_t **hh = &h->sh_succ, *h0 = h;
-  sip_caller_prefs_t *cp = h->sh_caller_prefs;
+  sip_caller_prefs_t *cp = (sip_caller_prefs_t *)h;
   url_t url[1];
   char const *ignore = NULL;
-  int kludge;
+  int kludge = 0;
 
   assert(h);
 
-  for (;*s;) {
-    /* Ignore empty entries (comma-whitespace) */
-    if (*s == ',') { *s++ = '\0'; skip_lws(&s); continue; }
+  while (*s == ',')   /* Ignore empty entries (comma-whitespace) */
+    *s = '\0', s += span_lws(s + 1) + 1;
 
-    if (!h) {
-      if (!(h = sip_header_alloc(home, h0->sh_class, 0)))
-	return -1;
-      *hh = h; h->sh_prev = hh; hh = &h->sh_succ;
-      cp = cp->cp_next = h->sh_caller_prefs;
-    }
-
-    kludge = 0;
-
-    /* Kludge: support PoC IS spec with a typo... */
-    if (strncasecmp(s, "*,", 2) == 0)
-      s[1] = ';';
-    else if (s[0] != '*' && s[0] != '<') {
-      /* Kludge: missing URL -  */
-      size_t n = span_attribute_value(s);
-      kludge = n > 0 && (s[n] == '\0' || s[n] == ',' || s[n] == ';');
-    }
-
-    if (kludge) {
-      if (msg_any_list_d(home, &s, (msg_param_t **)&cp->cp_params,
-			 msg_attribute_value_scanner, ';') == -1)
-	return -1;
-    }
-    /* Parse params (and ignore display name and url) */
-    else if (sip_name_addr_d(home, &s, &ignore, url, &cp->cp_params, NULL)
-	     == -1)
-      return -1;
-    /* Be liberal... */
-    /* if (url->url_type != url_any)
-       return -1; */
-    if (*s != '\0' && *s != ',')
-      return -1;
-
-    if (cp->cp_params)
-      msg_header_update_params(cp->cp_common, 0);
-
-    h = NULL;
+  /* Kludge: support PoC IS spec with a typo... */
+  if (strncasecmp(s, "*,", 2) == 0)
+    s[1] = ';',  kludge = 0;
+  else if (s[0] != '*' && s[0] != '<') {
+    /* Kludge: missing URL -  */
+    size_t n = span_attribute_value(s);
+    kludge = n > 0 && (s[n] == '\0' || s[n] == ',' || s[n] == ';');
   }
 
-  if (h) /* Empty list is an error */
+  if (kludge) {
+    if (msg_any_list_d(home, &s, (msg_param_t **)&cp->cp_params,
+		       msg_attribute_value_scanner, ';') == -1)
+      return -1;
+  }
+  /* Parse params (and ignore display name and url) */
+  else if (sip_name_addr_d(home, &s, &ignore, url, &cp->cp_params, NULL)
+	   == -1)
     return -1;
+  /* Be liberal... */
+  /* if (url->url_type != url_any)
+     return -1; */
 
-  return 0;
+  return msg_parse_next_field(home, h, s, slen);
 }
 
 static

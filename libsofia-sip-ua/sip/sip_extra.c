@@ -495,18 +495,18 @@ SIP_HEADER_CLASS(timestamp, "Timestamp", "", ts_common, single,
 issize_t sip_timestamp_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_timestamp_t *ts = (sip_timestamp_t*)h;
-  
+
   ts->ts_stamp = s;
-  skip_digit(&s); 
+  s += span_digit(s); 
   if (s == ts->ts_stamp)
     return -1;
-  if (*s == '.') { s++; skip_digit(&s); }
+  if (*s == '.') { s += span_digit(s + 1) + 1; }
 
   if (IS_LWS(*s)) {
-    *s++ = '\0';
-    skip_lws(&s);
+    *s = '\0';
+    s += span_lws(s + 1) + 1;
     ts->ts_delay = s;
-    skip_digit(&s); if (*s == '.') { s++; skip_digit(&s); }
+    s += span_digit(s); if (*s == '.') { s += span_digit(s + 1) + 1; }
   }
 
   if (!*s || IS_LWS(*s))
@@ -718,28 +718,13 @@ issize_t sip_info_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
   assert(h);
 
   while (*s == ',')
-    s++, skip_lws(&s);
+    s += span_lws(s + 1) + 1;
 
-  if (sip_name_addr_d(home, &s,
-		      NULL,
-		      ci->ci_url,
-		      &ci->ci_params,
-		      NULL) < 0)
+  if (sip_name_addr_d(home, &s, NULL, ci->ci_url, &ci->ci_params, NULL) < 0)
     return -1;
 
-  if (*s && *s != ',')
-    return -1;
-
-  while (*s == ',')
-    *s++ = '\0', skip_lws(&s);    /* Skip comma and following whitespace */
-
-  if (*s == 0)
-    return 0;
-
-  if (!(h = sip_header_alloc(home, h->sh_class, 0)))
-    return -1;
-
-  return sip_info_d(home, h, s, end - s);
+  /* Recurse */
+  return msg_parse_next_field(home, h, s, end - s);
 }
 
 isize_t sip_info_dup_xtra(sip_header_t const *h, isize_t offset)

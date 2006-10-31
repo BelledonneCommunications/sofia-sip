@@ -175,7 +175,6 @@ static int sip_event_update(msg_common_t *h,
  *    Allow-Events = ( "Allow-Events" | "u" ) ":" 1#event-type
  * @endcode
  *
- *
  * The parsed Allow-Events header is stored in #sip_allow_events_t structure.
  */
 
@@ -295,12 +294,12 @@ issize_t sip_subscription_state_d(su_home_t *home, sip_header_t *h,
    sip_subscription_state_t *ss = h->sh_subscription_state;
    ss->ss_substate = s;
    
-   skip_token(&s); /* forwards the pointer to the end of substate-value */
+   s += span_token(s); /* forwards the pointer to the end of substate-value */
    if (s == ss->ss_substate)
      return -1;
-   if (IS_LWS(*s))		
-     *s++ = '\0';/* NUL-terminate substate */
-   skip_lws(&s); /* Skip any extra white space (advance pointer) */
+   if (IS_LWS(*s)) { 
+     *s = '\0'; s += span_lws(s + 1) + 1;
+   }
    
    /* check if parameters are present and if so parse them */
    if (*s  == ';') {

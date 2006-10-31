@@ -133,42 +133,24 @@ SIP_HEADER_CLASS(accept_disposition, "Accept-Disposition", "",
 
 issize_t sip_accept_disposition_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
-  sip_header_t **hh = &h->sh_succ, *h0 = h;
-  sip_accept_disposition_t *ad = h->sh_accept_disposition;
+  sip_accept_disposition_t *ad = (sip_accept_disposition_t *)h;
 
   assert(h);
 
-  for (;*s;) {
-    /* Ignore empty entries (comma-whitespace) */
-    if (*s == ',') { *s++ = '\0'; skip_lws(&s); continue; }
+  /* Ignore empty entries (comma-whitespace) */
+  while (*s == ',')
+    s += span_lws(s + 1) + 1;
 
-    if (!h) {      /* Allocate next header structure */
-      if (!(h = sip_header_alloc(home, sip_accept_disposition_class, 0)))
-	return -1;
-      *hh = h, hh = &h->sh_succ;
-      m = ad->ad_next = h->sh_accept_disposition;
-    }
-    
-    /* "Accept:" #(type/subtyp ; *(parameters))) */
-    if (/* Parse protocol */
-	sip_version_d(&s, &ad->ad_type) == -1 ||
-	(ad->ad_subtype = strchr(ad->ad_type, '/')) == NULL ||
-	(*s == ';' && msg_params_d(home, &s, &ad->ad_params) == -1) ||
-	(*s != '\0' && *s != ','))
-      goto error;
-
-    if (ad->ad_subtype) ad->ad_subtype++;
-
-    if (ad->ad_params)
-      sip_accept_disposition_update(ad);
-
-    h = NULL;
-  }
-
-  if (h)
+  /* "Accept:" #(type/subtyp ; *(parameters))) */
+  if (/* Parse protocol */
+      sip_version_d(&s, &ad->ad_type) == -1 ||
+      (ad->ad_subtype = strchr(ad->ad_type, '/')) == NULL ||
+      (*s == ';' && msg_params_d(home, &s, &ad->ad_params) == -1))
     return -1;
 
-  return 0;
+  if (ad->ad_subtype) ad->ad_subtype++;
+
+  return msg_parse_next_field(home, h, s, slen);
 }
 
 issize_t sip_accept_disposition_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
@@ -233,11 +215,12 @@ SIP_HEADER_CLASS(accept_encoding, "Accept-Encoding", "",
 
 issize_t sip_accept_encoding_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
-  int retval = msg_accept_encoding_d(home, h, s, slen);
+  issize_t retval = msg_accept_encoding_d(home, h, s, slen);
 
   if (retval == -2) {
     /* Empty Accept-Encoding list is not an error */
-    ((sip_accept_encoding_t *)h)->aa_value = "";
+    sip_accept_encoding_t *aa = (sip_accept_encoding_t *)h;
+    aa->aa_value = "";
     retval = 0;
   }
 

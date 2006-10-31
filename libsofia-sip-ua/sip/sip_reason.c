@@ -93,43 +93,20 @@ SIP_HEADER_CLASS(reason, "Reason", "", re_params, append, reason);
 
 issize_t sip_reason_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
-  sip_header_t **hh = &h->sh_succ, *h0 = h;
-  sip_reason_t *re = h->sh_reason;
-
+  sip_reason_t *re = (sip_reason_t *)h;
   size_t n;
 
-  for (;*s;) {
-    /* Ignore empty entries (comma-whitespace) */
-    if (*s == ',') { 
-      *s++ = '\0'; skip_lws(&s); 
-      continue; 
-    }
+  while (*s == ',')   /* Ignore empty entries (comma-whitespace) */
+    *s = '\0', s += span_lws(s + 1) + 1;
 
-    if (!h) {      /* Allocate next header structure */
-      if (!(h = sip_header_alloc(home, h0->sh_class, 0)))
-	return -1;
-      *hh = h; h->sh_prev = hh; hh = &h->sh_succ;
-      re = re->re_next = h->sh_reason;
-    }
+  re->re_protocol = s;
+  if ((n = span_token(s)) == 0) 
+    return -1;
+  s += n; while (IS_LWS(*s)) *s++ = '\0'; 
+  if (*s == ';' && msg_params_d(home, &s, &re->re_params) < 0)
+    return -1;
 
-    if ((n = span_token(s)) == 0) 
-      return -1;
-    re->re_protocol = s; s += n; while (IS_LWS(*s)) *s++ = '\0'; 
-    if (*s == ';' && msg_params_d(home, &s, &re->re_params) < 0)
-      return -1;
-    if (*s != '\0' && *s != ',')
-      return -1;
-
-    if (re->re_params)
-      msg_header_update_params(re->re_common, 0);
-
-    h = NULL;
-  }
-
-  if (h)			/* Empty list -> error */
-     return -1;
-
-  return 0;
+  return msg_parse_next_field(home, h, s, slen);
 }
 
 issize_t sip_reason_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
