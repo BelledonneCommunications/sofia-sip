@@ -946,7 +946,7 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
 
     t = tl_dup(t, ta_args(ta), &b);
 
-    assert(tend == t); assert(b == bend);
+    assert(tend == t); (void)tend; assert(b == bend); (void)bend;
 
     e->e_always = always;
     e->e_event = event;
