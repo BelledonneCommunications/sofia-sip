@@ -1187,7 +1187,26 @@ msg_header_t *error_header_parse(msg_t *msg, msg_pub_t *mo,
   return h;
 }
 
-/** Complete this header field and parse next header field. */
+/** Complete this header field and parse next header field. 
+ *
+ * This function completes parsing a multi-field header like @Accept,
+ * @Contact, @Via or @Warning. It updates the shortcuts to header parameters
+ * (see msg_header_update_params()) and then scans for the next header field.
+ * If one is found, it calls the parsing function recursively.
+ *
+ * @param home 	 memory home used ot allocate 
+ *             	 new header structures and parameter lists
+ * @param prev 	 pointer to header structure already parsed
+ * @param s    	 header content to parse; should point to the area after 
+ *             	 current header field (either end of line or to a comma
+ *             	 separating header fields)
+ * @param slen 	 ignored
+ *
+ * @since New in @VERSION_1_12_4
+ *
+ * @retval >= 0 when successful
+ * @retval -1 upon an error
+ */
 issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev, 
 			      char *s, isize_t slen)
 {
