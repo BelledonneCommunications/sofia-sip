@@ -1158,7 +1158,7 @@ static int nua_handle_param_filter(tagi_t const *f, tagi_t const *t)
   if (!ns)
     return 0;
 
-  return strcmp(ns, "nua") == 0 && strcmp(ns, "soa") == 0;
+  return strcmp(ns, "nua") == 0 || strcmp(ns, "soa") == 0;
 }
 
 /** Filter tags stored permanently as taglist. */
