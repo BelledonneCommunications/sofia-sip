@@ -664,7 +664,14 @@ static int process_response_to_invite(nua_handle_t *nh,
   
   assert(cr && du && ss);
 
-  if (status >= 300) {
+  if (ss->ss_state == nua_callstate_terminating && 200 <= status) {
+    /*
+     * If the call is being terminated but re-INVITE was responded with 2XX
+     * re-send the BYE, otherwise terminate the call.
+     */
+    gracefully = status < 300, terminated = !gracefully;
+  }
+  else if (status >= 300) {
     if (sip->sip_retry_after)
       gracefully = 0;
 
@@ -3037,7 +3044,7 @@ void restart_bye(nua_handle_t *nh, tagi_t *tags)
  *               (error code and message are in status an phrase parameters)
  * @param tags   empty
  *
- * @sa @ref nua_call_model, #nua_i_state
+ * @sa nua_bye(), @ref nua_call_model, #nua_i_state, #nua_r_invite()
  */
 
 static int process_response_to_bye(nua_handle_t *nh,
@@ -3056,10 +3063,14 @@ static int process_response_to_bye(nua_handle_t *nh,
 
   ss = nua_session_usage_get(nh->nh_ds);
 
-  if (status >= 200 && ss && ss->ss_crequest->cr_orq == NULL) {
-    signal_call_state_change(nh, ss, status, "to BYE",
-			     nua_callstate_terminated, 0, 0);
-    nua_session_usage_destroy(nh, ss);
+  if (status >= 200 && ss) {
+    if (ss->ss_crequest->cr_orq) {
+      /* Do not destroy usage while INVITE is alive */
+    } else {
+      signal_call_state_change(nh, ss, status, "to BYE",
+			       nua_callstate_terminated, 0, 0);
+      nua_session_usage_destroy(nh, ss);
+    }
   }
 
   return 0;
@@ -3068,13 +3079,15 @@ static int process_response_to_bye(nua_handle_t *nh,
 
 /** @var nua_event_e::nua_i_bye
  *
- * Incoming call hangup.
+ * Incoming BYE request, call hangup.
  *
  * @param nh     operation handle associated with the call
  * @param hmagic operation magic associated with the call
  * @param status statuscode of response sent automatically by stack
  * @param sip    pointer to BYE request
  * @param tags   empty
+ *
+ * @sa @ref nua_call_model, #nua_i_state, nua_bye(), nua_r_bye(), #nua_r_cancel
  */
 
 int nua_stack_process_bye(nua_t *nua,
@@ -3151,7 +3164,7 @@ static void signal_call_state_change(nua_handle_t *nh,
 
   ss_state = ss ? ss->ss_state : nua_callstate_init;
 
-  if (ss_state != nua_callstate_ready || next_state > nua_callstate_ready)
+  if (ss_state < nua_callstate_ready || next_state > nua_callstate_ready)
     SU_DEBUG_5(("nua(%p): call state changed: %s -> %s%s%s%s%s\n",
 		nh, nua_callstate_name(ss_state),
 		nua_callstate_name(next_state),
@@ -3195,7 +3208,7 @@ static void signal_call_state_change(nua_handle_t *nh,
       ss->ss_state = nua_callstate_init, next_state = nua_callstate_terminated;
   }
 
-  if (next_state == nua_callstate_ready)
+  if (ss->ss_state == nua_callstate_ready)
     nh->nh_active_call = 1;
   else if (next_state == nua_callstate_terminated)
     nh->nh_active_call = 0;
