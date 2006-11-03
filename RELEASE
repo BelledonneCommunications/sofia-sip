@@ -47,9 +47,10 @@ libsofia-sip-ua:
   unit test (test_nua) built against original 1.12.0 release.
 
 libsofia-sip-ua-glib:
-- No ABI/API changes, compatible with 1.12.0. Note, libsofia-sip-ua-glib
-  interface is not considered stable and may change in a future 1.12.x
-  release.
+- ABI changed. This was caused by adding a new signal (enum)
+NGSIG_INCOMING_SUBSCRIBE for local presence support. Note,
+libsofia-sip-ua-glib interface is still not considered stable and may
+change in future 1.12.x releases.
 
 Contributors to this release
 ----------------------------
