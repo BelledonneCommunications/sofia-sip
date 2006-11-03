@@ -64,6 +64,7 @@ enum
   NGSIG_INCOMING_INFO,
   NGSIG_INCOMING_REFER,
   NGSIG_INCOMING_NOTIFY,
+  NGSIG_INCOMING_SUBSCRIBE,
 
   NGSIG_ERROR,
   NGSIG_SHUTDOWN,
@@ -207,6 +208,15 @@ static void sof_i_refer(nua_t *nua, NuaGlib *self,
 		   nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
 		   tagi_t tags[]);
 
+static void sof_r_notifier(nua_event_t event, int status,
+			   char const *phrase, nua_t *nua,
+			   NuaGlib *self, nua_handle_t *nh,
+			   NuaGlibOp *op, sip_t const *sip,
+			   tagi_t tags[]);
+
+static void sof_i_subscribe(nua_t *nua, NuaGlib *self, nua_handle_t *nh,
+			    NuaGlibOp *op, sip_t const *sip, tagi_t tags[]);
+
 static void sof_r_subscribe(int status, char const *phrase,
 		     nua_t *nua, NuaGlib *self,
 		     nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
@@ -279,9 +289,9 @@ nua_glib_constructor (GType                  type,
 
   /* create a su event loop and connect it to glib */
   self->priv->root = su_root_source_create(self);
-  assert(self->priv->root);
+  g_assert(self->priv->root);
   gsource = su_root_gsource(self->priv->root);
-  assert(gsource);
+  g_assert(gsource);
   g_source_attach(gsource, NULL);
 
   /*check address has been set*/
@@ -551,7 +561,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
    * This is when an INVITE request is answered with multiple 200 responses.
    */
   signals[NGSIG_CALL_FORKED] =
-   g_signal_new("call-forked",
+    g_signal_new("call-forked",
     G_OBJECT_CLASS_TYPE (nua_glib_class),
     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
     0, NULL, NULL,
@@ -581,7 +591,7 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
     0, NULL, NULL,
     nua_glib_marshal_VOID__POINTER_STRING_STRING_STRING,
     G_TYPE_NONE, 4, G_TYPE_POINTER , G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-
+  
   /**
    * NuaGlib::incoming-reinvite:
    * @nua_glib: the object that received the signal
@@ -597,6 +607,31 @@ nua_glib_class_init (NuaGlibClass *nua_glib_class)
     0, NULL, NULL,
     g_cclosure_marshal_VOID__POINTER,
     G_TYPE_NONE, 1, G_TYPE_POINTER);
+
+  /**
+   * NuaGlib::incoming-subscribe:
+   * @nua_glib: the object that received the signal
+   * @op: pointer to the operation created to represent this 
+   *      dialog (also contains the sender information)
+   * @display: the display name of the subscribing recipient
+   * @url: the url of the subscribing recipient
+   * @event: the event to be subscribed to
+   * @content_type: the payload content type of the subscription
+   *
+   * Emitted when a subscribtion is received
+   * Should be answered with nua_glib_subscribe_respond
+   *
+   * XXX: a bit ugly that sender information is carried in 'op', while
+   *      recipient display name and URI are as arguments
+   */
+  signals[NGSIG_INCOMING_SUBSCRIBE] =
+   g_signal_new("incoming-subscribe",
+    G_OBJECT_CLASS_TYPE (nua_glib_class),
+    G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
+    0, NULL, NULL,
+    nua_glib_marshal_VOID__POINTER_STRING_STRING_STRING_STRING,
+    G_TYPE_NONE, 5, G_TYPE_POINTER , G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+    G_TYPE_STRING);
 
   /**
    * NuaGlib::call-state-changed:
@@ -1087,10 +1122,10 @@ int sof_init(NuaGlibPrivate *priv, const char *contact)
 
 static void 
 sof_callback(nua_event_t event,
-                    int status, char const *phrase,
-                    nua_t *nua, NuaGlib *self,
-                    nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
-                    tagi_t tags[])
+	     int status, char const *phrase,
+	     nua_t *nua, NuaGlib *self,
+	     nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
+	     tagi_t tags[])
 {
   g_return_if_fail(self);
 
@@ -1179,8 +1214,16 @@ sof_callback(nua_event_t event,
     sof_i_refer(nua, self, nh, op, sip, tags);
     return;
      
+  case nua_r_notifier:
+    sof_r_notifier(event, status, phrase, nua, self, nh, op, sip, tags);
+    break;
+
   case nua_r_subscribe:
     sof_r_subscribe(status, phrase, nua, self, nh, op, sip, tags);
+    return;
+
+  case nua_i_subscribe:
+    sof_i_subscribe(nua, self, nh, op, sip, tags);
     return;
 
   case nua_r_unsubscribe:
@@ -1632,7 +1675,7 @@ sof_i_active(nua_t *nua, NuaGlib *self,
              nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
              tagi_t tags[])
 {
-  assert(op);
+  g_assert(op);
 
   op->op_callstate = opc_active;
   g_signal_emit(self, signals[NGSIG_INCOMING_ACTIVE], 0, op);
@@ -1682,7 +1725,7 @@ void sof_r_bye(int status, char const *phrase,
                nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
                tagi_t tags[])
 {
-  assert(op); assert(op->op_handle == nh);
+  g_assert(op); g_assert(op->op_handle == nh);
 
   g_signal_emit(self, signals[NGSIG_BYE_ANSWERED], 0, op, status, phrase);
 }
@@ -1692,7 +1735,7 @@ sof_i_bye(nua_t *nua, NuaGlib *self,
           nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
           tagi_t tags[])
 {
-  assert(op); assert(op->op_handle == nh);
+  g_assert(op); g_assert(op->op_handle == nh);
 
   g_signal_emit(self, signals[NGSIG_INCOMING_BYE], 0, op);
 }
@@ -1717,7 +1760,7 @@ void sof_i_cancel(nua_t *nua, NuaGlib *self,
                     nua_handle_t *nh, NuaGlibOp *op, sip_t const *sip,
                     tagi_t tags[])
 {
-  assert(op); assert(op->op_handle == nh);
+  g_assert(op); g_assert(op->op_handle == nh);
   
   g_signal_emit(self, signals[NGSIG_INCOMING_CANCEL], 0, op);
 }
@@ -1820,7 +1863,7 @@ sof_i_message(nua_t *nua, NuaGlib *self,
   to = sip->sip_to;
   subject = sip->sip_subject;
 
-  assert(from && to);
+  g_assert(from && to);
 
   if (sip->sip_payload && sip->sip_payload->pl_len > 0)
     message = g_string_new_len(sip->sip_payload->pl_data, sip->sip_payload->pl_len);
@@ -1891,13 +1934,13 @@ sof_i_info(nua_t *nua, NuaGlib *self,
   GString *message;
   char *to_url;
 
-  assert(sip);
+  g_assert(sip);
 
   from = sip->sip_from;
   to = sip->sip_to;
   subject = sip->sip_subject;
 
-  assert(from && to);
+  g_assert(from && to);
 
   if (sip->sip_payload)
     message=g_string_new_len(sip->sip_payload->pl_data, sip->sip_payload->pl_len);
@@ -1970,13 +2013,13 @@ sof_i_refer (nua_t *nua, NuaGlib *self,
   char *to_url;
   char *refer_url;
 
-  assert(sip);
+  g_assert(sip);
 
   from = sip->sip_from;
   to = sip->sip_to;
   refer_to = sip->sip_refer_to;
 
-  assert(from && to);
+  g_assert(from && to);
 
   to_url = url_as_string(self->priv->home, to->a_url);
   refer_url = url_as_string(self->priv->home, refer_to->r_url);
@@ -2066,6 +2109,50 @@ nua_glib_subscribe(NuaGlib *self, const char *uri, gboolean eventlist)
 }
 
 /**
+ * nua_glib_notifier:
+ * @uri: URI to notifier to
+ * @eventlist: request eventlists
+ *
+ * Notifier to presence notifications for a given URI
+ * Return value: operation representing this presence notifcation channel
+ */
+
+NuaGlibOp *
+nua_glib_notifier (NuaGlib *self, const char *from, const char *event,
+		   const char *content_type, const char *expires)
+{
+  NuaGlibOp *op;
+
+  g_assert(self && op && from && event && content_type && expires);
+
+  op = nua_glib_op_create(self, sip_method_subscribe, from, TAG_END());
+
+  if (op) {
+    nua_notifier(op->op_handle, 
+		 TAG_IF(self->priv->contact,
+			NUTAG_URL(self->priv->contact)),
+		 SIPTAG_FROM_STR(from),
+		 SIPTAG_EVENT_STR(event),
+		 SIPTAG_CONTENT_TYPE_STR(content_type),
+		 SIPTAG_EXPIRES_STR(expires),
+		 NUTAG_SUBSTATE(nua_substate_pending),
+		 TAG_END());
+  }
+
+  return op;
+}
+
+static void
+sof_r_notifier(nua_event_t event, int status,
+	       char const *phrase, nua_t *nua,
+	       NuaGlib *self, nua_handle_t *nh,
+	       NuaGlibOp *op, sip_t const *sip,
+	       tagi_t tags[])
+{
+    nua_respond(nh, SIP_200_OK, TAG_END());
+}
+
+/**
  * nua_glib_watch:
  * @event string descriptor of event to watch for
  * XXX: needs some funky signal registering, i *think*
@@ -2108,6 +2195,54 @@ sof_r_subscribe (int status, char const *phrase,
 
   priv_oper_check_response_for_auth(self, op, status, sip, tags);
 }
+
+static void 
+sof_i_subscribe(nua_t *nua, NuaGlib *self, nua_handle_t *nh,
+		NuaGlibOp *op, sip_t const *sip, tagi_t tags[])
+{
+  sip_event_t const *event = sip->sip_event;
+  sip_content_type_t const *content_type = sip->sip_content_type;
+  GString *from = NULL;
+
+  char *addr = 
+    sip_header_as_string(self->priv->home, (sip_header_t *)sip->sip_from);
+  
+  if (!addr)
+    return;
+
+  from = g_string_new(NULL);
+  g_string_printf(from, "%s", addr);
+  su_free(self->priv->home, addr);
+
+  /* XXX: check if content type and event are supported */
+
+  g_signal_emit(self, signals[NGSIG_INCOMING_SUBSCRIBE], 0, op,
+		NULL, /* display */
+		from, /* url */
+		(event ? event->o_type : NULL),
+		(content_type ? content_type->c_type : NULL)); 
+}
+
+/** 
+ * nua_glib_subscribe_respond:
+ * @op: operation returned from the incoming-subscrive signal
+ * @status: SIP response status (see RFCs of SIP)
+ * @phrase: Reponse text (default response phrase used if NULL)
+ *
+ * Answer a incoming subscripion.
+ * 
+ * @see nua_respond() (libsofia-sip-ua/nua)
+ */
+void nua_glib_subscribe_respond (NuaGlib *self, NuaGlibOp *op,
+				 int status, const char *phrase)
+{
+  g_assert(nua_glib_op_check(self, op));
+
+  nua_respond(op->op_handle, status, phrase, TAG_END());
+
+}
+
+
 /**
  * nua_glib_notify:
  * @op: operation returned in refer-incoming signal
@@ -2136,7 +2271,7 @@ sof_i_notify(nua_t *nua, NuaGlib *self,
   sip_event_t const *event = sip->sip_event;
   sip_content_type_t const *content_type = sip->sip_content_type;
   GString *message;
-  assert(sip);
+  g_assert(sip);
 
   if (sip->sip_payload)
     message=g_string_new_len(sip->sip_payload->pl_data, sip->sip_payload->pl_len);

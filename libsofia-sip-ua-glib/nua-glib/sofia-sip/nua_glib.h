@@ -112,6 +112,13 @@ NuaGlibOp* nua_glib_subscribe (NuaGlib *self, const char *uri, gboolean eventlis
 
 void nua_glib_unsubscribe (NuaGlib *self, NuaGlibOp *op);
 
+void nua_glib_subscribe_respond (NuaGlib *self, NuaGlibOp *op,
+				 int status, const char *phrase);
+
+NuaGlibOp* nua_glib_notifier (NuaGlib *self, const char *from,
+			      const char *event, const char *content_type,
+			      const char *expires);
+
 void nua_glib_reregister (NuaGlib *self, NuaGlibOp *op);
 
 NuaGlibOp* nua_glib_register (NuaGlib *self, const char *registrar);
