@@ -740,15 +740,25 @@ int host_is_valid(char const *string)
  */
 int host_is_local(char const *host)
 {
-  if (host_ip6_reference(host))
+  size_t n;
+
+  if (host_is_ip6_reference(host))
     return (strcmp(host, "[::1]") == 0);
   else if (host_is_ip6_address(host))
     return (strcmp(host, "::1") == 0);
   else if (host_is_ip4_address(host))
     return (strncmp(host, "127.", 4) == 0);
-  else 
-    return (strcasecmp(host, "localhost") == 0 ||
-	    strcasecmp(host, "localhost.localdomain") == 0);
+
+  n = span_domain(host);
+
+  return 
+    n >= 9 /* strlen("localhost") */ &&
+    strncasecmp(host, "localhost", 9) == 0 &&
+    (n == 9 || 
+     ((n == 10 || /* localhost. */
+       n == 21 || /* strlen("localhost.localdomain") */
+       n == 22) && /* strlen("localhost.localdomain.") */
+      strncasecmp(host + 9, ".localdomain.", n - 9) == 0));
 }
 
 /** Return true if @a string has domain name in "invalid." domain.

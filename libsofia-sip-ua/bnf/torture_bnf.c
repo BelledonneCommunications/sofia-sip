@@ -295,6 +295,7 @@ int host_test(void)
 
   TEST(host_is_local("126.0.0.0"), 0);
   TEST(host_is_local("127.0.0.0"), 1);
+  TEST(host_is_local("127.0.0.2"), 1);
   TEST(host_is_local("0.0.0.0"), 0);
   TEST(host_is_local("::1"), 1);
   TEST(host_is_local("::1"), 1);
@@ -304,6 +305,9 @@ int host_test(void)
   TEST(host_is_local("localhost.domain.org"), 0);
   TEST(host_is_local("localhost"), 1);
   TEST(host_is_local("localhost.localdomain"), 1);
+  TEST(host_is_local("localhost."), 1);
+  TEST(host_is_local("localhost.localdomain."), 1);
+  TEST(host_is_local("localhost.localdomain.org"), 0);
 
   TEST(host_has_domain_invalid("invalid"), 1);
   TEST(host_has_domain_invalid("invalid."), 1);
