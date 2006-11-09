@@ -884,6 +884,7 @@ sres_resolver_get_async(sres_resolver_t const *res,
  * @ERRORS
  * @ERROR EFAULT @a res or @a domain point outside the address space
  * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
+ * @ERROR ENETDOWN no DNS servers configured
  * @ERROR ENOMEM memory exhausted
  */
 sres_query_t *
@@ -912,6 +913,9 @@ sres_query(sres_resolver_t *res,
 
   /* Reread resolv.conf if needed */
   sres_resolver_update(res, 0);
+
+  if (res->res_n_servers == 0)
+    return (void)su_seterrno(ENETDOWN), (sres_query_t *)NULL;
 
   query = sres_query_alloc(res, callback, context, type, domain);
 
@@ -943,6 +947,7 @@ sres_query(sres_resolver_t *res,
  * @ERRORS
  * @ERROR EFAULT @a res or @a domain point outside the address space
  * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
+ * @ERROR ENETDOWN no DNS servers configured
  * @ERROR ENOMEM memory exhausted
  *
  * @sa sres_query(), sres_blocking_search(), sres_search_cached_answers().
@@ -974,6 +979,9 @@ sres_search(sres_resolver_t *res,
   }
 
   sres_resolver_update(res, 0);
+
+  if (res->res_n_servers == 0)
+    return (void)su_seterrno(ENETDOWN), (sres_query_t *)NULL;
 
   if (sres_has_search_domain(res))
     for (dots = 0, dot = strchr(domain, '.');
@@ -2468,6 +2476,8 @@ sres_send_dns_query(sres_resolver_t *res,
     return -1;
   if (servers == NULL)
     return -1;
+  if (N == 0) 
+    return -1;
 
   memset(m, 0, offsetof(sres_message_t, m_data[sizeof m->m_packet.mp_header]));
 
@@ -2504,7 +2514,7 @@ sres_send_dns_query(sres_resolver_t *res,
 
   transient = 0;
 
-  i0 = q->q_i_server; assert(i0 < N);
+  i0 = q->q_i_server; if (i0 > N) i0 = 0; /* Number of DNS servers reduced */
 
   if (res->res_config->c_opt.rotate || 
       servers[i0]->dns_error || servers[i0]->dns_icmp)
@@ -2733,7 +2743,7 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
   
   N = res->res_n_servers;
 
-  if (N && q->q_retry_count < SRES_MAX_RETRY_COUNT) {
+  if (N > 0 && q->q_retry_count < SRES_MAX_RETRY_COUNT) {
     i = q->q_i_server;
     dns = sres_next_server(res, &i, timeout);
 
