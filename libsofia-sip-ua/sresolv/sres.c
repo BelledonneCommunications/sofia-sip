@@ -580,7 +580,8 @@ sres_resolver_new(char const *conf_file_path)
 
 /** Copy a resolver.
  *
- * Make a copy of resolver with old
+ * Make a copy of resolver sharing the configuration and cache with old
+ * resolver.
  */
 sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
 {
@@ -612,7 +613,7 @@ sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
  * RES_OPTIONS by giving the directives in the NULL-terminated list.
  *
  * @param conf_file_path name of the resolv.conf configuration file 
- * @param cache          optional pointer to a resolver cache
+ * @param cache          optional pointer to a resolver cache (may be NULL)
  * @param option, ...    list of resolv.conf options directives 
  *                       (overriding options in conf_file)
  *
@@ -873,13 +874,14 @@ sres_resolver_get_async(sres_resolver_t const *res,
  * #sres_type_srv, and
  * #sres_type_naptr.
  *
- * Deprecated query type sres_type_a6 is also decoded.
+ * Deprecated query type #sres_type_a6 is also decoded.
  *
- * @note The domain name is not concatenated with the domains from seach
- * path or with the local domain Use sres_search() in order to try domains
+ * @note The domain name is @b not concatenated with the domains from seach
+ * path or with the local domain. Use sres_search() in order to try domains
  * in search path.
  *
- * @sa sres_search(), sres_blocking_query(), sres_cached_answers()
+ * @sa sres_search(), sres_blocking_query(), sres_cached_answers(),
+ * sres_query_sockaddr()
  *
  * @ERRORS
  * @ERROR EFAULT @a res or @a domain point outside the address space
@@ -1060,7 +1062,20 @@ sres_search(sres_resolver_t *res,
  * The @a type should be #sres_type_ptr. The @a addr should contain either
  * IPv4 (AF_INET) or IPv6 (AF_INET6) address.
  *
- * If the "options"
+ * If the #SRES_OPTIONS environment variable, #RES_OPTIONS environment
+ * variable or an "options" entry in resolv.conf file contains an option
+ * "ip6-dotint", the IPv6 addresses are resolved using suffix ".ip6.int"
+ * instead of the standard ".ip6.arpa" suffix.
+ *
+ * @ERRORS
+ * @ERROR EAFNOSUPPORT address family specified in @a addr is not supported
+ * @ERROR ENETDOWN no DNS servers configured
+ * @ERROR EFAULT @a res or @a addr point outside the address space
+ * @ERROR ENOMEM memory exhausted
+ *
+ * @sa sres_query(), sres_blocking_query_sockaddr(),
+ * sres_cached_answers_sockaddr()
+ *
  */
 sres_query_t *
 sres_query_sockaddr(sres_resolver_t *res,
@@ -1249,7 +1264,17 @@ sres_search_cached_answers(sres_resolver_t *res,
 
 /**Get a list of matching (type/domain) reverse records from cache.
  *
+ * @param res pointer to resolver
+ * @param type record type to query (or sres_qtype_any for any record)
+ * @param addr socket address structure
  * 
+ * The @a type should be #sres_type_ptr. The @a addr should contain either
+ * IPv4 (AF_INET) or IPv6 (AF_INET6) address.
+ *
+ * If the #SRES_OPTIONS environment variable, #RES_OPTIONS environment
+ * variable or an "options" entry in resolv.conf file contains an option
+ * "ip6-dotint", the IPv6 addresses are resolved using suffix ".ip6.int"
+ * instead of default ".ip6.arpa".
  *
  * @retval 
  * pointer to an array of pointers to cached records, or

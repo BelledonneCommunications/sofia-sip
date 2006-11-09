@@ -67,6 +67,7 @@ typedef struct sres_blocking_context_s sres_blocking_context_t;
 
 #include "sofia-resolv/sres.h"
 #include "sofia-resolv/sres_async.h"
+#include <sofia-sip/su_errno.h>
 
 #if HAVE_POLL
 #include <poll.h>
@@ -261,6 +262,13 @@ int sres_is_blocking(sres_resolver_t *res)
  * @retval 0 if result was found from cache
  * @retval -1 upon error
  *
+ * @ERRORS
+ * @ERROR EFAULT @a res or @a domain point outside the address space
+ * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
+ * @ERROR ENETDOWN no DNS servers configured
+ * @ERROR ENOMEM memory exhausted
+ * @ERROR EOPNOTSUPP  resolver @ares is in asynchronous mode 
+ *
  * @sa sres_query(), sres_blocking_search()
  *
  * @note A blocking query converts a resolver object permanently into
@@ -278,13 +286,13 @@ int sres_blocking_query(sres_resolver_t *res,
   sres_record_t **cached;
 
   if (return_records == NULL)
-    return errno = EFAULT, -1;
+    return su_seterrno(EFAULT);
 
   *return_records = NULL;
 
   c->block = sres_set_blocking(res);
   if (c->block == NULL)
-    return -1;			/* Resolver in asynchronous mode */ 
+    return su_seterrno(EOPNOTSUPP); /* Resolver in asynchronous mode */ 
 
   if (!ignore_cache) {
     cached = sres_cached_answers(res, type, domain);
@@ -318,6 +326,13 @@ int sres_blocking_query(sres_resolver_t *res,
  * @retval 0 if result was found from cache
  * @retval -1 upon error
  *
+ * @ERRORS
+ * @ERROR EFAULT @a res or @a domain point outside the address space
+ * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
+ * @ERROR ENETDOWN no DNS servers configured
+ * @ERROR ENOMEM memory exhausted
+ * @ERROR EOPNOTSUPP  resolver @ares is in asynchronous mode 
+ *
  * @sa sres_blocking_query(), sres_search()
  *
  * @note A blocking query converts a resolver object permanently into
@@ -335,13 +350,13 @@ int sres_blocking_search(sres_resolver_t *res,
   sres_record_t **cached;
 
   if (return_records == NULL)
-    return errno = EFAULT, -1;
+    return su_seterrno(EFAULT);
 
   *return_records = NULL;
 
   c->block = sres_set_blocking(res);
   if (c->block == NULL)
-    return -1;			/* Resolver in asynchronous mode */ 
+    return su_seterrno(EOPNOTSUPP); /* Resolver in asynchronous mode */ 
 
   if (!ignore_cache) {
     cached = sres_search_cached_answers(res, type, name);
@@ -370,7 +385,13 @@ int sres_blocking_search(sres_resolver_t *res,
  * @retval 0 if result was found from cache
  * @retval -1 upon error
  *
- * @sa sres_blocking_query(), sres_query_sockaddr()
+ * @ERRORS
+ * @ERROR EFAULT @a res or @a addr point outside the address space
+ * @ERROR ENOMEM memory exhausted
+ * @ERROR ENETDOWN no DNS servers configured
+ * @ERROR EOPNOTSUPP  resolver @ares is in asynchronous mode 
+ *
+ * @sa sres_blocking_query(), sres_query_sockaddr(), sres_cached_answers_sockaddr()
  *
  * @note A blocking query converts a resolver object permanently into
  * blocking mode. If you need to make blocking and non-blocking queries, use
@@ -393,7 +414,7 @@ int sres_blocking_query_sockaddr(sres_resolver_t *res,
 
   c->block = sres_set_blocking(res);
   if (c->block == NULL)
-    return -1;			/* Resolver in asynchronous mode */ 
+    return su_seterrno(EOPNOTSUPP); /* Resolver in asynchronous mode */ 
 
   if (!ignore_cache) {
     cached = sres_cached_answers_sockaddr(res, type, addr);
