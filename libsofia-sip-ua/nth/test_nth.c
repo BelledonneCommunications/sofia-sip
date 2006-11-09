@@ -22,7 +22,7 @@
  *
  */
 
-/**@file nth_test.c
+/**@file test_nth.c
  * @brief Tests for nth module
  *  
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
@@ -74,7 +74,7 @@ int tstflags = 0;
 #define __func__ name
 #endif
 
-char const name[] = "nth_test";
+char const name[] = "test_nth";
 
 static int init_test(tester_t *t);
 static int deinit_test(tester_t *t);
