@@ -66,6 +66,8 @@ typedef SRES_ASYNC_T sres_async_t;
  *
  * If the new_socket is not -1, it indicates that resolver has created new
  * socket that should be added to the poll() or select() set.
+ *
+ * @sa sres_resolver_set_async(), sres_resolver_get_async()
  */
 typedef int sres_update_f(sres_async_t *async,
 			  sres_socket_t new_socket,
@@ -90,6 +92,23 @@ SRESPUBFUN int sres_resolver_sockets(sres_resolver_t *,
 
 /** Resolver timer function. */
 SRESPUBFUN void sres_resolver_timer(sres_resolver_t *, int dummy);
+
+/** Prototype for scheduler function.
+ *
+ * This function is called when a timer callback is to be scheduled.
+ *
+ * @param async asynchronous object (registered with sres_resolver_set_async())
+ * @param interval interval in milliseconds
+ *
+ * @retval 0 when successful
+ * @retval -1 upon an error
+ */
+ typedef int sres_schedule_f(sres_async_t *async, unsigned long interval);
+
+/** Register resolver timer callback. */
+SRESPUBFUN int sres_resolver_set_timer_cb(sres_resolver_t *res,
+					  sres_schedule_f *callback,
+					  sres_async_t *async);
 
 /** Receive DNS response from socket. */
 SRESPUBFUN int sres_resolver_receive(sres_resolver_t *, int socket);

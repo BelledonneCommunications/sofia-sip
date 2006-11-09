@@ -228,6 +228,7 @@ struct sres_resolver_s {
   unsigned long       res_updated;
   sres_update_f      *res_updcb;
   sres_async_t       *res_async;
+  sres_schedule_f    *res_schedulecb;
   short               res_update_all;
 
   uint16_t            res_id;
@@ -831,6 +832,7 @@ sres_resolver_set_async(sres_resolver_t *res,
   return async;
 }
 
+/** Get async object */
 sres_async_t *
 sres_resolver_get_async(sres_resolver_t const *res,
 			sres_update_f *callback)
@@ -843,6 +845,20 @@ sres_resolver_get_async(sres_resolver_t const *res,
     return NULL;
   else
     return res->res_async;
+}
+
+/** Register resolver timer callback. */
+int sres_resolver_set_timer_cb(sres_resolver_t *res,
+			       sres_schedule_f *callback,
+			       sres_async_t *async)
+{
+  if (res == NULL)
+    return su_seterrno(EFAULT);
+  if (res->res_async != async)
+    return su_seterrno(EALREADY);
+
+  res->res_schedulecb = callback;
+  return 0;
 }
 
 /**Send a DNS query.
@@ -1605,7 +1621,11 @@ sres_query_alloc(sres_resolver_t *res,
     query->q_i_server = res->res_i_server;
     query->q_n_servers = res->res_n_servers;
     query->q_hash = query->q_id * Q_PRIME /* + query->q_i_server */;
+    
     sres_qtable_append(res->res_queries, query);
+
+    if (res->res_schedulecb && res->res_queries->qt_used == 1)
+      res->res_schedulecb(res->res_async, 2 * SRES_RETRANSMIT_INTERVAL); 
   }
 
   return query;
@@ -2751,6 +2771,9 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
       if (q != res->res_queries->qt_table[i])
 	i--;
     }
+
+    if (res->res_schedulecb && res->res_queries->qt_used)
+      res->res_schedulecb(res->res_async, SRES_RETRANSMIT_INTERVAL); 
   }
 
   sres_cache_clean(res->res_cache, res->res_now);

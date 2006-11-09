@@ -86,6 +86,8 @@ static void sres_sofia_timer(su_root_magic_t *magic,
 			     su_timer_t *t,
 			     sres_sofia_t *arg);
 
+static int sres_sofia_set_timer(sres_sofia_t *srs, unsigned long interval);
+
 static int sres_sofia_poll(su_root_magic_t *, su_wait_t *, 
 			   sres_sofia_register_t *);
 
@@ -131,8 +133,13 @@ sres_resolver_create(su_root_t *root,
 
     if (!srs->srs_timer)
       SU_DEBUG_3(("sres: cannot create timer\n"));
+#if nomore
     else if (su_timer_set_for_ever(t, sres_sofia_timer, srs) < 0)
       SU_DEBUG_3(("sres: cannot set timer\n"));
+#else
+    else if (sres_resolver_set_timer_cb(res, sres_sofia_set_timer, srs) < 0)
+      SU_DEBUG_3(("sres: cannot set timer cb\n"));
+#endif
     else
       return res;		/* Success! */
 
@@ -320,6 +327,17 @@ void
 sres_sofia_timer(su_root_magic_t *magic, su_timer_t *t, sres_sofia_t *srs)
 {
   sres_resolver_timer(srs->srs_resolver, -1);
+}
+
+/** Sofia timer set wrapper. */
+static 
+int
+sres_sofia_set_timer(sres_sofia_t *srs, unsigned long interval)
+{
+  if (interval > SU_DURATION_MAX)
+    interval = SU_DURATION_MAX;
+  return su_timer_set_interval(srs->srs_timer, sres_sofia_timer, srs,
+			       (su_duration_t)interval);
 }
 
 
