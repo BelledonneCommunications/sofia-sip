@@ -40,6 +40,7 @@
 #include <assert.h>
 
 #include <sofia-sip/string0.h>
+#include <sofia-sip/hostdomain.h>
 
 #if !defined(EALREADY) && defined(_WIN32)
 #define EALREADY WSAEALREADY
@@ -112,8 +113,8 @@ struct server_s
 
 struct nth_site_s 
 {
-  nth_site_t          *site_next;
-  nth_site_t         **site_prev;
+  nth_site_t          *site_next, **site_prev;
+
   nth_site_t          *site_kids;
 
   server_t            *site_server;
@@ -125,7 +126,12 @@ struct nth_site_s
   nth_request_f       *site_callback;
   nth_site_magic_t    *site_magic;
 
+  /** Host header must match with server name */
   unsigned             site_strict : 1;
+  /** Site can have kids */
+  unsigned             site_isdir : 1;
+  /** Site does not have domain name */
+  unsigned             site_wildcard : 1;
 };
 
 struct nth_request_s
@@ -197,8 +203,9 @@ static inline uint32_t server_now(server_t const *srv);
 static void server_request(server_t *srv, tport_t *tport, msg_t *msg,
 				    void *arg, su_time_t now);
 static nth_site_t **site_get_host(nth_site_t **, char const *host, char const *port);
-static nth_site_t **site_get_directory(nth_site_t **list, char const *path,
-				       char const **res);
+static nth_site_t **site_get_rslot(nth_site_t *parent, char *path,
+				   char **return_rest);
+static nth_site_t *site_get_subdir(nth_site_t *parent, char const *path, char const **res);
 static void server_tport_error(server_t *srv, tport_t *tport,
 			       int errcode, char const *remote);
 static msg_t *server_msg_create(server_t *srv, int flags, 
@@ -225,8 +232,28 @@ void nth_site_request(server_t *srv,
 /** Create a http site object. 
  *
  * The function nth_site_create() allocates and initializes a web site
- * object. A web site object can be either a primary http server, a virtual
- * http server or a site within a server 
+ * object. A web site object can be either 
+ * - a primary http server (@a parent is NULL),
+ * - a virtual http server (@a address contains hostpart), or 
+ * - a site within a server 
+ *   (@a address does not have hostpart, only path part).
+ *
+ * @param parent pointer to parent site
+ *               (NULL when creating a primary server object)
+ * @param callback pointer to callback function called when
+ *                 a request is received
+ * @param magic    application context included in callback parameters
+ * @param address  absolute or relative URI specifying the address of
+ *                 site
+ * @param tag, value, ... list of tagged parameters
+ *
+ * @TAGS
+ * If the @a parent is NULL, the list of tagged parameters must contain
+ * NTHTAG_ROOT() used to create the server engine. Tags supported when @a
+ * parent is NULL are NTHTAG_ROOT(), NTHTAG_MCLASS(), TPTAG_REUSE(),
+ * HTTPTAG_SERVER(), and HTTPTAG_SERVER_STR(). All the tags are passed to
+ * tport_tcreate() and tport_tbind(), too.
+ *
  */
 nth_site_t *nth_site_create(nth_site_t *parent,  
 			    nth_request_f *callback,
@@ -235,92 +262,164 @@ nth_site_t *nth_site_create(nth_site_t *parent,
 			    tag_type_t tag, tag_value_t value,
 			    ...)
 {
-  nth_site_t *site = NULL, **prev;
-  url_t *url;
-  server_t *srv;
+  nth_site_t *site = NULL, **prev = NULL;
+  su_home_t home[SU_HOME_AUTO_SIZE(256)];
+  url_t *url, url0[1];
+  server_t *srv = NULL;
   ta_list ta;
-  su_home_t temphome[1] = { SU_HOME_INIT(temphome) };
-  char const *path = NULL;
-  size_t len = 0;
+  char *path = NULL;
+  size_t usize;
+  int is_host, is_path;
 
-  url = url_hdup(temphome, address->us_url);
+  su_home_auto(home, sizeof home);
+
+  if (parent && url_is_string(address)) {
+    char const *s = (char const *)address;
+    size_t sep = strcspn(s, "/:");
+    if (s[sep] == ':')
+      /* absolute URL with scheme */;
+    else if (s[sep] == '\0' && strchr(s, '.') && host_is_valid(s)) {
+      /* looks like a domain name */;
+      url_init(url0, parent->site_url->url_type);
+      url0->url_host = s;
+      address = (url_string_t*)url0;
+    }
+    else {
+      /* looks like a path */
+      url_init(url0, parent->site_url->url_type);
+      url0->url_path = s;
+      address = (url_string_t*)url0;
+    }
+  }
+
+  url = url_hdup(home, address->us_url);
 
   if (!url || !callback)
     return NULL;
+  
+  is_host = url->url_host != NULL;
+  is_path = url->url_path != NULL;
 
-  if (url->url_host && url->url_path) {
+  if (is_host && is_path) {
     SU_DEBUG_3(("nth_site_create(): virtual host and path simultanously\n"));
-    su_home_deinit(temphome);
     errno = EINVAL;
-    return NULL;
+    goto error;
   }
 
-  if (!parent && url->url_path) {
-    SU_DEBUG_3(("nth_site_create(): no virtual host\n"));
-    su_home_deinit(temphome);
+  if (!parent && !is_host) {
+    SU_DEBUG_3(("nth_site_create(): host is required\n"));
     errno = EINVAL;
-    return NULL;
+    goto error;
   }
+
+  if (parent) {
+    if (!parent->site_isdir) {
+      SU_DEBUG_3(("nth_site_create(): invalid parent resource \n"));
+      errno = EINVAL;
+      goto error;
+    }
+      
+    srv = parent->site_server; assert(srv);
+    if (is_host) {
+      prev = site_get_host(&srv->srv_sites, url->url_host, url->url_port);
+
+      if (prev == NULL) {
+	SU_DEBUG_3(("nth_site_create(): host %s:%s already exists\n",
+		    url->url_host, url->url_port ? url->url_port : ""));
+	errno = EEXIST;
+	goto error;
+      }
+    } 
+    else {
+      size_t i, j;
+
+      path = (char *)url->url_path;
+      while (path[0] == '/')
+	path++;
+
+      /* Remove duplicate // */
+      for (i = j = 0; path[i];) {
+	while (path[i] == '/' && path[i + 1] == '/')
+	  i++;
+	path[j++] = path[i++];
+      }
+      path[j] = path[i];
+
+      url = url0, *url = *parent->site_url;
+
+      if (url->url_path) {
+	url->url_path = su_strcat(home, url->url_path, path);
+	if (!url->url_path)
+	  goto error;
+	path = (char *)url->url_path + strlen(parent->site_url->url_path);
+      }
+      else
+	url->url_path = path;
+
+      prev = site_get_rslot(parent, path, &path);
+
+      if (!prev || path[0] == '\0') {
+	SU_DEBUG_3(("nth_site_create(): directory \"%s\" already exists\n", 
+		    url->url_path));
+	errno = EEXIST;
+	goto error;
+      }
+    }
+  }
+
+  if (!parent) {
+    if (strcmp(url->url_host, "*") == 0 ||
+	strcmp(url->url_host, "0.0.0.0") == 0 ||
+	strcmp(url->url_host, "[::]") == 0 ||
+	strcmp(url->url_host, "::") == 0)
+      site->site_wildcard = 1, url->url_host = "*";
+  }
+
+  usize = sizeof(*url) + url_xtra(url);
 
   ta_start(ta, tag, value);
 
-  if (parent) {
-    srv = parent->site_server; assert(srv);
-    if (url->url_host)
-      prev = site_get_host(&srv->srv_sites, url->url_host, url->url_port);
-    else {
-      len = strlen(url->url_path);
-      if (len > 1 && url->url_path[len - 1] == '/')
-	((char *)url->url_path)[len - 1] = '\0';
-      prev = site_get_directory(&parent, url->url_path, &path);
-    }
-  }
-  else {
+  if (!parent) {
     srv = server_create(url, ta_tags(ta));
     prev = &srv->srv_sites;
   }
 
-  if (url->url_path) {
-    assert(path);
+  if (srv && (site = su_zalloc(srv->srv_home, (sizeof *site) + usize))) {
+    site->site_url = (url_t *)(site + 1);
+    url_dup((void *)(site->site_url + 1), usize - sizeof(*url), 
+	    site->site_url, url);
 
-    len = strlen(path);
-    if (len == 0) {
-      SU_DEBUG_3(("nth_site_create(): directory \"%s\" already exists\n", 
-		  url->url_path));
-      su_home_deinit(temphome);
-      ta_end(ta);
-      errno = EALREADY;
-      return NULL;
-    }
-  }
-
-  if (srv && (site = su_zalloc(srv->srv_home, sizeof *site))) {
-    if (*prev) {
-      /* The existing node should will be kid */
-      site->site_next = (*prev)->site_next;
+    assert(prev);
+    if ((site->site_next = *prev))
       site->site_next->site_prev = &site->site_next;
-      site->site_kids = *prev;
-      (*prev)->site_prev = NULL;
-      (*prev)->site_next = NULL;
-    }
     *prev = site, site->site_prev = prev;
     site->site_server = srv;
-    site->site_url = url_hdup(srv->srv_home, url);
+
+
     if (path) {
+      size_t path_len;
+
       site->site_path = site->site_url->url_path + (path - url->url_path);
-      site->site_path_len = len;
-    } else {
+      path_len = strlen(site->site_path); assert(path_len > 0);
+      if (path_len > 0 && site->site_path[path_len - 1] == '/')
+	path_len--, site->site_isdir = 1;
+      site->site_path_len = path_len;
+    }
+    else {
+      site->site_isdir = is_host;
       site->site_path = "";
       site->site_path_len = 0;
     }
+
     site->site_callback = callback;
     site->site_magic = magic;
     nth_site_set_params(site, ta_tags(ta));
   }
 
-  su_home_deinit(temphome);
   ta_end(ta);
 
+ error:
+  su_home_deinit(home);
   return site;
 }
 
@@ -462,29 +561,82 @@ nth_site_t **site_get_host(nth_site_t **list, char const *host, char const *port
   return list;
 }
 
+/** Find a place to insert site from the hierarchy.
+ *
+ * A resource can be either a 'dir' (name ends with '/') or 'file'.
+ * When a resource
+ */
 static
-nth_site_t **site_get_directory(nth_site_t **list, char const *path, char const **res)
+nth_site_t **site_get_rslot(nth_site_t *parent, char *path, 
+			    char **return_rest)
 {
   nth_site_t *site, **prev;
+  size_t len;
+  int cmp;
 
   assert(path);
 
-  if (path[0] == '/')
-    while (path[1] == '/')
-      path++;
+  if (path[0] == '\0')
+    return errno = EEXIST, NULL;
 
-  if (path[0] && (path[0] != '/' || path[1]))
-    for (prev = &(*list)->site_kids; (site = *prev); prev = &site->site_next) {
-      size_t len = site->site_path_len;
-      if (strncmp(path, site->site_path, len) == 0) {
-	return site_get_directory(prev, path + len, res);
-      }
+  for (prev = &parent->site_kids; (site = *prev); prev = &site->site_next) {
+    cmp = strncmp(path, site->site_path, len = site->site_path_len);
+    if (cmp > 0)
+      break;
+    if (cmp < 0)
+      continue;
+    if (path[len] == '\0') {
+      if (site->site_isdir)
+	return *return_rest = path, prev; 
+      return errno = EEXIST, NULL;
     }
+    if (path[len] != '/' || site->site_path[len] != '/')
+      continue;
 
-  if (res)
-    *res = path;
+    while (path[++len] == '/')
+      ;
 
-  return list;
+    return site_get_rslot(site, path + len, return_rest);
+  }
+
+  *return_rest = path;
+
+  return prev;
+}
+
+static char const site_nodir_match[] = "";
+
+/** Find a subdir from site hierarchy */
+static
+nth_site_t *site_get_subdir(nth_site_t *parent,
+			    char const *path,
+			    char const **return_rest)
+{
+  nth_site_t *site;
+  size_t len;
+  int cmp;
+
+  assert(path);
+
+  while (path[0] == '/')	/* Skip multiple slashes */
+    path++;
+
+  if (path[0] == '\0')
+    return *return_rest = path, parent;
+  
+  for (site = parent->site_kids; site; site = site->site_next) {
+    cmp = strncmp(path, site->site_path, len = site->site_path_len);
+    if (cmp > 0)
+      break;
+    if (cmp < 0)
+      continue;
+    if (path[len] == '\0')
+      return *return_rest = site_nodir_match, site;
+    if (site->site_path[len] == '/' && path[len] == '/')
+      return site_get_subdir(site, path + len + 1, return_rest);
+  }
+
+  return *return_rest = path, parent;
 }
 
 
@@ -624,11 +776,11 @@ void server_request(server_t *srv,
 		    void *arg,
 		    su_time_t now)
 {
-  nth_site_t *site = NULL;
+  nth_site_t *site = NULL, *subsite = NULL;
   msg_t *response;
   http_t *http = http_object(request);
   http_host_t *h;
-  char const *host, *port, *path;
+  char const *host, *port, *path, *subpath = NULL;
 
   /* Disable streaming */
   if (msg_is_streaming(request)) {
@@ -681,7 +833,39 @@ void server_request(server_t *srv,
   if (path == NULL)
     path = "";
 
-  if (site)
+  if (path[0])
+    subsite = site_get_subdir(site, path, &subpath);
+
+  if (subsite && subsite->site_isdir && subpath == site_nodir_match) {
+    /* Answer with 301 */
+    http_location_t loc[1];
+    http_location_init(loc);
+
+    *loc->loc_url = *site->site_url;
+
+    if (site->site_wildcard) {
+      if (http->http_host) {
+	loc->loc_url->url_host = http->http_host->h_host;
+	loc->loc_url->url_port = http->http_host->h_port;
+      }
+      else {
+	tp_name_t const *tpn = tport_name(tport); assert(tpn);
+	loc->loc_url->url_host = tpn->tpn_canon;
+	if (strcmp(url_port_default(loc->loc_url->url_type), tpn->tpn_port))
+	  loc->loc_url->url_port = tpn->tpn_port;
+      }
+    }
+
+    loc->loc_url->url_root = 1;
+    loc->loc_url->url_path = subsite->site_url->url_path;
+
+    msg_header_add_dup(response, NULL, (msg_header_t *)loc);
+      
+    server_reply(srv, tport, request, response, HTTP_301_MOVED_PERMANENTLY);
+  }
+  else if (subsite)
+    nth_site_request(srv, subsite, tport, request, http, subpath, response);
+  else if (site)
     nth_site_request(srv, site, tport, request, http, path, response);
   else
     /* Answer with 404 */

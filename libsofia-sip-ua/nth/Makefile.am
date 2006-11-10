@@ -11,6 +11,7 @@
 INCLUDES = 	-I$(srcdir)/../ipt -I../ipt \
 		-I$(srcdir)/../iptsec -I../iptsec \
 		-I$(srcdir)/../msg -I../msg \
+		-I$(srcdir)/../bnf -I../bnf \
 		-I$(srcdir)/../http -I../http \
 		-I$(srcdir)/../sresolv -I../sresolv \
 		-I$(srcdir)/../tport -I../tport \
