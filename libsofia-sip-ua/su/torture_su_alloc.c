@@ -122,6 +122,13 @@ static int test_alloc(void)
 
   TEST_1(m = su_zalloc(h2->home, 20));
 
+  TEST_1(su_in_home(h2->home, m));
+  TEST_1(!su_in_home(h2->home, (char *)m + 1));
+  TEST_1(!su_in_home(h2->home, su_in_home));
+  TEST_1(!su_in_home(h3->home, m));
+  TEST_1(!su_in_home(NULL, m));
+  TEST_1(!su_in_home(h3->home, NULL));
+
   TEST(su_home_move(home, NULL), 0);
   TEST(su_home_move(NULL, home), 0);
   TEST(su_home_move(home, h3->home), 0);

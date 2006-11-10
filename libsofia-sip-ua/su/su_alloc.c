@@ -266,7 +266,7 @@ size_t su_block_find_collision, su_block_find_collision_used,
   su_block_find_collision_size;
 #endif
 
-static inline su_alloc_t *su_block_find(su_block_t *b, void *p)
+static inline su_alloc_t *su_block_find(su_block_t *b, void const *p)
 {
   size_t h, h0, probe;
 
@@ -854,7 +854,7 @@ void su_home_check_blocks(su_block_t const *b)
  * NULL upon an error. 
  *
  * @deprecated
- * Use su_home_clone() instead of su_home_create().
+ * Use su_home_new() or su_home_clone() instead of su_home_create().
  */
 su_home_t *su_home_create(void)
 {
@@ -1285,6 +1285,39 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
   UNLOCK(home);
 
   return ndata;
+}
+
+
+/**Check if a memory block has been allocated from the @a home.
+ *
+ * Check if the given memory block has been allocated from the home.
+ *
+ * @param home pointer to memory pool object
+ * @param memory ponter to memory block
+ *
+ * @retval 1 if @a memory has been allocated from @a home.
+ * @retval 0 otherwise
+ */
+int su_in_home(su_home_t *home, void const *memory)
+{
+  su_alloc_t *sua;
+  su_block_t *sub;
+  int retval = 0;
+
+  if (!home || !memory)
+    return 0;
+
+  sub = MEMLOCK(home);
+
+  if (sub) {
+    sua = su_block_find(sub, memory);
+
+    retval = su_alloc_check(sub, sua);
+
+    UNLOCK(home);
+  }
+  
+  return retval;
 }
 
 
