@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
       retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_destroy(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_call_hold(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_reinvites(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_refer(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_100rel(ctx); SINGLE_FAILURE_CHECK();

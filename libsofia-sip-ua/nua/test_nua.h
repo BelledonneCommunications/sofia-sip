@@ -326,6 +326,7 @@ int test_call_cancel(struct context *ctx);
 int test_call_destroy(struct context *ctx);
 int test_early_bye(struct context *ctx);
 int test_call_hold(struct context *ctx);
+int test_reinvites(struct context *ctx);
 int test_session_timer(struct context *ctx);
 int test_refer(struct context *ctx);
 int test_100rel(struct context *ctx);
