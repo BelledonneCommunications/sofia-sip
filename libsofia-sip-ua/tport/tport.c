@@ -260,13 +260,19 @@ int tport_is_updating(tport_t const *self)
   return 0;
 }
 
-/** Test if transport has been closed */
+/** Test if transport has been closed.
+ *
+ * @since New in @VERSION_1_12_4
+ */
 inline int tport_is_closed(tport_t const *self)
 {
   return self->tp_closed;
 }
 
-/** Test if transport has been shut down */
+/** Test if transport has been shut down.
+ *
+ * @since New in @VERSION_1_12_4
+ */
 inline int tport_is_shutdown(tport_t const *self)
 {
   return self->tp_closed || self->tp_send_close || self->tp_recv_close;
