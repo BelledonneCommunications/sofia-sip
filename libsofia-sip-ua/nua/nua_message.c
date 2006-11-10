@@ -116,17 +116,25 @@ void restart_message(nua_handle_t *nh, tagi_t *tags)
   nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_message, tags);
 }
 
-/** @var nua_event_e::nua_r_message
+/** @NUA_EVENT nua_r_message
  *
- * Response to an outgoing MESSAGE.
+ * Response to an outgoing @b MESSAGE request.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the message
+ * @param hmagic application context associated with the handle
  * @param sip    response to MESSAGE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
  * @param tags   empty
  *
  * @sa nua_message(), #nua_i_message, @RFC3428
+ *
+ * @END_NUA_EVENT
  */
 
 static int process_response_to_message(nua_handle_t *nh,
@@ -138,24 +146,26 @@ static int process_response_to_message(nua_handle_t *nh,
   return nua_stack_process_response(nh, nh->nh_ds->ds_cr, orq, sip, TAG_END());
 }
 
-/** @var nua_event_e::nua_i_message
+/** @NUA_EVENT nua_i_message
  *
- * Incoming MESSAGE.
+ * @brief Incoming @b MESSAGE request.
  *
- * The MESSAGE request does not create a dialog. Currently the processing
- * of incoming MESSAGE creates a new handle for each incoming request which
- * is not assiciated with an existing dialog. If the handle @a nh is not
- * bound, you should probably destroy it after responding to the MESSAGE
- * request.
+ * The @b MESSAGE request does not create a dialog. If the incoming @b
+ * MESSAGE request is not assiciated with an existing dialog the stack
+ * creates a new handle for it. If the handle @a nh is not bound, you should
+ * probably destroy it after responding to the MESSAGE request.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status status code of response sent automatically by stack
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the message
+ * @param hmagic application context associated with the handle
  *               (maybe NULL if outside session)
- * @param status statuscode of response sent automatically by stack
  * @param sip    incoming MESSAGE request
  * @param tags   empty
  *
- * @sa nua_message(), #nua_r_message, @RFC3428
+ * @sa nua_message(), #nua_r_message, @RFC3428, @RFC3862
+ *
+ * @END_NUA_EVENT
  */
 
 int nua_stack_process_message(nua_t *nua,

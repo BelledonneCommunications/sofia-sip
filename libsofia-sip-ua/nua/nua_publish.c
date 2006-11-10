@@ -133,9 +133,9 @@ static int process_response_to_publish(nua_handle_t *nh,
  * event. When successful the publication will be updated periodically until
  * nua_unpublish() is called or handle is destroyed. Note that the periodic
  * updates and unpublish do not include the original message body nor the @b
- * Content-Type header. Instead, the periodic update will include the @b
- * SIP-If-Match header, which was generated from the latest @b SIP-ETag
- * header received in response to PUBLISH request.
+ * Content-Type header. Instead, the periodic update will include the
+ * @SIPIfMatch header, which was generated from the latest @SIPETag
+ * header received in response to @b PUBLISH request.
  *
  * The handle used for publication cannot be used for any other purposes.
  *
@@ -152,30 +152,48 @@ static int process_response_to_publish(nua_handle_t *nh,
  *
  * @par Events:
  *    #nua_r_publish
+ *
+ * @sa #nua_r_publish, @RFC3903, @SIPIfMatch,
+ * nua_unpublish(), #nua_r_unpublish, #nua_i_publish
  */
 
-/** @var nua_event_e::nua_r_publish
+/** @NUA_EVENT nua_r_publish
  *
  * Response to an outgoing PUBLISH.
  *
- * The PUBLISH may be sent explicitly by nua_publish() or
- * implicitly by NUA state machine.
+ * The PUBLISH request may be sent explicitly by nua_publish() or implicitly
+ * by NUA state machine.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status status code of PUBLISH request
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the publication
+ * @param hmagic application context associated with the handle
  * @param sip    response to PUBLISH request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
  * @param tags   empty
+ *
+ * @sa nua_publish(), @RFC3903, @SIPETag, @Expires,
+ * nua_unpublish(), #nua_r_unpublish, #nua_i_publish
+ *
+ * @END_NUA_EVENT
  */
 
 /**@fn \
 void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
  *
- * Send un-PUBLISH request to publication server.
+ * Send un-PUBLISH request to publication server. Un-PUBLISH request is just
+ * a PUBLISH request with @Expires set to 0. It is possible to un-publish a
+ * publication not associated with the handle by providing correct ETag in
+ * SIPTAG_IF_MATCH() or SIPTAG_IF_MATCH_STR() tags.
  *
- * Request status will be delivered to the application using
- * #nua_r_unpublish event. The handle used for un-publication
- * cannot be used for any other purposes.
+ * Response to the un-PUBLISH request will be delivered to the application
+ * using #nua_r_unpublish event.
+ *
+ * The handle used for publication cannot be used for any other purposes.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -185,25 +203,38 @@ void nua_unpublish(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
  *
  * @par Related Tags:
  *    NUTAG_URL() \n
+ *    SIPTAG_IF_MATCH(), SIPTAG_IF_MATCH_STR() \n
+ *    SIPTAG_EVENT(), SIPTAG_EVENT_STR() \n
  *    Tags of nua_set_hparams() \n
  *    Tags in <sip_tag.h>
  *
  * @par Events:
- *    #nua_r_publish
+ *    #nua_r_unpublish
+ * 
+ * @sa #nua_r_unpublish, @RFC3903, @SIPIfMatch, 
+ * #nua_i_publish, nua_publish(), #nua_r_publish
  */
 
-/** @var nua_event_e::nua_r_unpublish
+/** @NUA_EVENT nua_r_unpublish
  *
  * Response to an outgoing un-PUBLISH.
  *
- * The PUBLISH may be sent explicitly by nua_publish() or
- * implicitly by NUA state machine.
- *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the publication
+ * @param hmagic application context associated with the handle
  * @param sip    response to PUBLISH request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
  * @param tags   empty
+ *
+ * @sa nua_unpublish(), @RFC3903, @SIPETag, @Expires,
+ * nua_publish(), #nua_r_publish, #nua_i_publish
+ *
+ * @END_NUA_EVENT
  */
 
 int nua_stack_publish(nua_t *nua, nua_handle_t *nh, nua_event_t e,
@@ -413,7 +444,7 @@ static int nua_publish_usage_shutdown(nua_handle_t *nh,
 static
 int respond_to_publish(nua_server_request_t *sr, tagi_t const *tags);
 
-/** @var nua_event_e::nua_i_publish
+/** @NUA_EVENT nua_i_publish
  *
  * Incoming PUBLISH request.
  *
@@ -432,10 +463,11 @@ int respond_to_publish(nua_server_request_t *sr, tagi_t const *tags);
  * bound, you should probably destroy it after responding to the PUBLISH
  * request.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- *               (NULL if outside session)
- * @param status statuscode of response sent automatically by stack
+ * @param status status code of response sent automatically by stack
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the incoming request
+ * @param hmagic application context associated with the call
+ *               (usually NULL)
  * @param sip    incoming PUBLISH request
  * @param tags   empty
  *
@@ -445,6 +477,8 @@ int respond_to_publish(nua_server_request_t *sr, tagi_t const *tags);
  * nua_notifier(), #nua_i_subscription,
  *
  * @since First used in @VERSION_1_12_4
+ *
+ * @END_NUA_EVENT
  */
 
 int nua_stack_process_publish(nua_t *nua,

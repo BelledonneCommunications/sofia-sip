@@ -109,6 +109,27 @@ void restart_options(nua_handle_t *nh, tagi_t *tags)
   nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_options, tags);
 }
 
+/** @NUA_EVENT nua_r_options
+ *
+ * Answer to outgoing OPTIONS.
+ *
+ * @param status response status code
+ *               (if the request is retried the @a status is 100 and the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the incoming OPTIONS request
+ * @param hmagic application context associated with the handle
+ * @param sip    response to OPTIONS request or NULL upon an error
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
+ * @param tags   empty
+ *
+ * @sa nua_options(), @RFC3261 section 11, #nua_i_options
+ *
+ * @END_NUA_EVENT
+ */
+
 static int process_response_to_options(nua_handle_t *nh,
 				       nta_outgoing_t *orq,
 				       sip_t const *sip)

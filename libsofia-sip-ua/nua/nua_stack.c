@@ -514,6 +514,50 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
 
 /* ====================================================================== */
 
+/**Shutdown a @nua stack.
+ *
+ * When the @nua stack is shutdown, ongoing calls are released,
+ * registrations unregistered, publications un-PUBLISHed and subscriptions
+ * terminated. If the stack cannot terminate everything within 30 seconds,
+ * it sends the #nua_r_shutdown event with status 500.
+ *
+ * @param nua         Pointer to @nua stack object
+ *
+ * @return
+ *     nothing
+ *
+ * @par Related tags:
+ *     none
+ *
+ * @par Events:
+ *     #nua_r_shutdown
+ *
+ * @sa #nua_r_shutdown, nua_destroy(), nua_create(), nua_bye(),
+ * nua_unregister(), nua_unpublish(), nua_unsubscribe(), nua_notify(),
+ * nua_handle_destroy(), nua_handle_unref()
+ */
+
+/** @NUA_EVENT nua_r_shutdown
+ *
+ * Answer to nua_shutdown().
+ *
+ * Status codes
+ * - 100 shutdown started
+ * - 101 shutdown in progress (sent when shutdown has been progressed)
+ * - 200 shutdown was successful
+ * - 500 shutdown timeout after 30 sec
+ *
+ * @param status shutdown status code
+ * @param nh     NULL
+ * @param hmagic NULL
+ * @param sip    NULL
+ * @param tags   empty
+ *
+ * @sa nua_shutdown(), nua_destroy()
+ *
+ * @END_NUA_EVENT
+ */
+
 /** @internal Shut down stack. */
 void nua_stack_shutdown(nua_t *nua)
 {
@@ -1598,6 +1642,35 @@ int nua_creq_restart(nua_handle_t *nh,
 
 /* ======================================================================== */
 /* Authentication */
+
+/** @NUA_EVENT nua_r_authenticate
+ *
+ * Response to nua_authenticate(). Under normal operation, this event is
+ * never sent but rather the unauthenticated operation is completed. 
+ * However, if there is no operation to authentication or if there is an
+ * authentication error the #nua_r_authenticate event is sent to the
+ * application with the status code as follows:
+ * - <i>202 No operation to restart</i>:\n
+ *   The authenticator associated with the handle was updated, but there was
+ *   no operation to retry with the new credentials.
+ * - <i>900 Cannot add credentials</i>:\n
+ *   There was internal problem updating authenticator.
+ * - <i>904 No matching challenge</i>:\n
+ *   There was no challenge matching with the credentials provided by
+ *   nua_authenticate(), e.g., their realm did not match with the one 
+ *   received with the challenge.
+ * 
+ * @param status status code from authentication 
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle authenticated
+ * @param hmagic application context associated with the handle
+ * @param sip    NULL
+ * @param tags   empty
+ * 
+ * @sa nua_terminate(), nua_handle_destroy()
+ *
+ * @END_NUA_EVENT
+ */
 
 void
 nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,

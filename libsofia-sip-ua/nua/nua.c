@@ -117,6 +117,8 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  *
  * @par Events:
  *     none
+ *
+ * @sa nua_shutdown(), nua_destroy(), nua_handle()
  */
 nua_t *nua_create(su_root_t *root,
 		  nua_callback_f callback,
@@ -172,23 +174,8 @@ nua_t *nua_create(su_root_t *root,
   return nua;
 }
 
-/**Shutdown a @nua stack.
- *
- * Ongoing calls are released, registrations unregistered, and 
- * subscriptions terminated.  If the stack cannot terminate within 
- * 30 seconds, it sends the #nua_r_shutdown event with status 500.
- *
- * @param nua         Pointer to @nua stack object
- *
- * @return
- *     nothing
- *
- * @par Related tags:
- *     none
- *
- * @par Events:
- *     #nua_r_shutdown
- */
+/* nua_shutdown() is documented with nua_stack_shutdown() */
+
 void nua_shutdown(nua_t *nua)
 {
   enter;
@@ -215,6 +202,8 @@ void nua_shutdown(nua_t *nua)
  *
  * @par Events:
  *     none
+ *
+ * @sa nua_shutdown(), nua_create(), nua_handle_destroy(), nua_handle_unref()
  */
 void nua_destroy(nua_t *nua)
 {
@@ -903,7 +892,8 @@ void nua_respond(nua_handle_t *nh,
  * @par Events:
  *    none
  *
- * @sa nua_handle(), nua_handle_bind(), nua_handle_ref(), nua_handle_unref().
+ * @sa nua_handle(), nua_handle_bind(), nua_handle_ref(), nua_handle_unref(),
+ * nua_unregister(), nua_unpublish(), nua_unsubscribe(), nua_bye().
  */
 void nua_handle_destroy(nua_handle_t *nh)
 {

@@ -54,7 +54,7 @@
 /* ======================================================================== */
 /* REGISTER */
 
-/** @var nua_event_e::nua_i_register
+/** @NUA_EVENT nua_i_register
  *
  * Incoming REGISTER request.
  *
@@ -72,19 +72,21 @@
  * bound, you should probably destroy it after responding to the REGISTER
  * request.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- *               (NULL if outside session)
  * @param status status code of response sent automatically by stack
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the request
+ * @param hmagic application context associated with the handle
+ *               (usually NULL)
  * @param sip    incoming REGISTER request
  * @param tags   empty
  *
- * @sa nua_respond(), @RFC3261 section 10.3, 
+ * @sa nua_respond(), @RFC3261 section 10.3,
  * @Expires, @Contact, @CallID, @CSeq,
  * @Path, @RFC3327, @ServiceRoute, @RFC3608, @RFC3680,
  * nua_register(), #nua_i_register, nua_unregister(), #nua_i_unregister
  *
  * @since New in @VERSION_1_12_4
+ * @END_NUA_EVENT
  */
 
 int nua_stack_process_register(nua_t *nua,

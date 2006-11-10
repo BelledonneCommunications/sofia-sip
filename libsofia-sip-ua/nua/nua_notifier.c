@@ -117,9 +117,12 @@ void nua_notify_usage_remove(nua_handle_t *nh,
 
 static int respond_to_subscribe(nua_server_request_t *sr, tagi_t const *tags);
 
-/** @var nua_event_e::nua_i_subscribe
+/** @NUA_EVENT nua_i_subscribe
  *
- * Incoming subscription request. 
+ * Incoming @b SUBSCRIBE request.
+ *
+ * @b SUBSCRIBE request is used to query SIP event state or establish a SIP
+ * event subscription.
  *
  * Initial SUBSCRIBE requests are dropped with <i>489 Bad Event</i>
  * response, unless the application has explicitly included the @Event in
@@ -143,12 +146,18 @@ static int respond_to_subscribe(nua_server_request_t *sr, tagi_t const *tags);
  * implicitly by REFER request. See #nua_i_refer how the application must
  * handle the REFER requests.
  *
- * @param nh      
- * @param hmagic
  * @param status status code of response sent automatically by stack
  * @param phrase response phrase sent automatically by stack
+ * @param nh     operation handle associated with the incoming request
+ * @param hmagic application context associated with the handle
+ *               (NULL when handle is created by the stack)
  * @param sip    SUBSCRIBE request headers
  * @param tags   NUTAG_SUBSTATE()
+ *
+ * @sa @RFC3265, nua_notify(), NUTAG_SUBSTATE(), @SubscriptionState,
+ * @Event, nua_subscribe(), #nua_r_subscribe, #nua_i_refer, nua_refer()
+ *
+ * @END_NUA_EVENT
  */
 
 
@@ -492,22 +501,30 @@ void restart_notify(nua_handle_t *nh, tagi_t *tags)
   nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_notify, tags);
 }
 
-/** @var nua_event_e::nua_r_notify
+/** @NUA_EVENT nua_r_notify
  *
- * Response to an outgoing NOTIFY request.
+ * Response to an outgoing @b NOTIFY request.
  *
- * The NOTIFY may be sent explicitly by nua_notify() or implicitly by NUA
- * state machine. Implicit NOTIFY is sent when an established dialog is
+ * The @b NOTIFY may be sent explicitly by nua_notify() or implicitly by NUA
+ * state machine. Implicit @b NOTIFY is sent when an established dialog is
  * refreshed by client or it is terminated (either by client or because of a
  * timeout)
  *
- * @param nh operation handle associated with the call
- * @param hmagic operation magic associated with the call
- * @param sip response to NOTIFY request or NULL upon an error 
- *            (error code and message are in status an phrase parameters)
- * @param tags NUTAG_SUBSTATE() indicating subscription state
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the subscription
+ * @param hmagic application context associated with the handle
+ * @param sip    response to @b NOTIFY request or NULL upon an error 
+ *               (status code is in @a status and 
+ *               descriptive message in @a phrase parameters)
+ * @param tags   NUTAG_SUBSTATE() indicating subscription state
  *
- * @sa @RFC3265, #nua_i_subscribe, #nua_i_refer
+ * @sa nua_notify(), @RFC3265, #nua_i_subscribe, #nua_i_refer
+ *
+ * @END_NUA_EVENT
  */
 
 static int process_response_to_notify(nua_handle_t *nh,
@@ -591,20 +608,24 @@ static int nua_notify_usage_shutdown(nua_handle_t *nh,
 /* REFER */
 /* RFC 3515 */
 
-/** @var nua_event_e::nua_i_refer
+/** @NUA_EVENT nua_i_refer
  *
- * Incoming call transfer request.
+ * Incoming @b REFER request used to transfer calls.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
- *               (NULL if outside session)
- * @param status statuscode of response sent automatically by stack
+ * @param status status code of response sent automatically by stack
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the incoming request
+ * @param hmagic application context associated with the handle
+ *               (NULL if outside of an already established session)
  * @param sip    incoming REFER request
  * @param tags   NUTAG_REFER_EVENT() \n
  *               SIPTAG_REFERRED_BY()
- * 
- * @sa nua_refer(), #nua_r_refer, NUTAG_NOTIFY_REFER(),
+ *  
+ * @sa nua_refer(), #nua_r_refer, @ReferTo, NUTAG_REFER_EVENT(), 
+ * SIPTAG_REFERRED_BY(), @ReferredBy, NUTAG_NOTIFY_REFER(),
  * NUTAG_REFER_WITH_ID(), @RFC3515.
+ *
+ * @END_NUA_EVENT
  */
 
 /** @internal Process incoming REFER. */

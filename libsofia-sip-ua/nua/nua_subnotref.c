@@ -297,33 +297,49 @@ static void restart_subscribe(nua_handle_t *nh, tagi_t *tags)
   nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_subscribe, tags);
 }
 
-/** @var nua_event_e::nua_r_subscribe
+/** @NUA_EVENT nua_r_subscribe
  *
- * Response to an outgoing SUBSCRIBE.
+ * Response to an outgoing SUBSCRIBE request.
  *
  * The SUBSCRIBE request may have been sent explicitly by nua_subscribe() or
  * implicitly by NUA state machine.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the subscription
+ * @param hmagic application context associated with the handle
  * @param sip    response to SUBSCRIBE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
  * @param tags   NUTAG_SUBSTATE()
  *
  * @sa nua_subscribe(), @RFC3265
+ *
+ * @END_NUA_EVENT
  */
 
-/** @var nua_event_e::nua_r_unsubscribe
+/** @NUA_EVENT nua_r_unsubscribe
  *
  * Response to an outgoing un-SUBSCRIBE.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the subscription
+ * @param hmagic application context associated with the handle
  * @param sip    response to SUBSCRIBE request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
  * @param tags   NUTAG_SUBSTATE()
  *
  * @sa nua_unsubscribe(), @RFC3265
+ *
+ * @END_NUA_EVENT
  */
 
 static int process_response_to_subscribe(nua_handle_t *nh,
@@ -553,17 +569,20 @@ static int nua_subscribe_usage_shutdown(nua_handle_t *nh,
 /* ======================================================================== */
 /* NOTIFY server */
 
-/** @var nua_event_e::nua_i_notify
+/** @NUA_EVENT nua_i_notify
  *
  * Event for incoming NOTIFY request.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
  * @param status statuscode of response sent automatically by stack
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the subscription
+ * @param hmagic application context associated with the handle
  * @param sip    incoming NOTIFY request
  * @param tags   NUTAG_SUBSTATE() indicating the subscription state
  *
  * @sa nua_subscribe(), nua_unsubscribe(), @RFC3265, #nua_i_subscribe
+ * 
+ * @END_NUA_EVENT
  */
 
 /** @internal Process incoming NOTIFY. */
@@ -743,22 +762,26 @@ int nua_stack_process_notify(nua_t *nua,
 
 /** Transfer a call. 
  * 
- * Send a REFER request asking the recipient to transfer the call. The REFER
- * request also establishes an implied subscription to the "refer" event. 
- * The "refer" event can have an "id" parameter, which has the value of
- * CSeq number in the REFER request. After initiating the REFER request, the
- * nua engine sends application a #nua_r_refer event with status 100 and tag
- * NUTAG_REFER_EVENT() containing a matching event header with id parameter.
+ * Send a REFER request asking the recipient to transfer the call. 
  *
- * Note that the event header in #nua_r_refer event contains an @a id
- * parameter. The @a id parameter contains the @CSeq number of the REFER
- * request, and it get incremented if the request is retried because it gets
- * challenged or redirected. In that case, the application gets a new
- * @nua_r_refer event with status 100 and tag NUTAG_REFER_EVENT(). Also the
- * recipient of the REFER request may or may not use the @a id parameter in
- * the NOTIFY requests messages which it sends to the sender of the REFER
- * request. Therefore the application may not modify the state of the
- * implied subscription before receiving the first NOTIFY request.
+ * The REFER request also establishes an implied subscription to the "refer"
+ * event. The "refer" event can have an "id" parameter, which has the value
+ * of CSeq number in the REFER request. After initiating the REFER request,
+ * the nua engine sends application a #nua_r_refer event with status 100 and
+ * tag NUTAG_REFER_EVENT() containing a matching event header with id
+ * parameter.
+ *
+ * Note that the @Event header in the locally generated #nua_r_refer event
+ * contains the @a id parameter. The @a id parameter contains the @CSeq
+ * number of the REFER request, and it may get incremented if the request is
+ * retried because it got challenged or redirected. In that case, the
+ * application gets a new #nua_r_refer event with status 100 and tag
+ * NUTAG_REFER_EVENT(). Also the recipient of the REFER request may or may
+ * not include the @a id parameter with the @Event header in the NOTIFY
+ * requests messages which it sends to the sender of the REFER request.
+ *
+ * Therefore the application is not able to modify the state of the implied
+ * subscription before receiving the first NOTIFY request.
  *
  * @param nh              Pointer to operation handle
  * @param tag, value, ... List of tagged parameters
@@ -775,7 +798,8 @@ int nua_stack_process_notify(nua_t *nua,
  *    #nua_r_refer \n
  *    #nua_i_notify
  *
- * @sa NUTAG_SUBSTATE(), @RFC3515, @ReferTo, @RFC3892, @ReferredBy
+ * @sa #nua_r_refer, NUTAG_SUBSTATE(), NUTAG_REFER_EVENT(),#nua_i_refer,
+ * @RFC3515, @ReferTo, @RFC3892, @ReferredBy
  */
 
 static int process_response_to_refer(nua_handle_t *nh,
@@ -853,16 +877,27 @@ void restart_refer(nua_handle_t *nh, tagi_t *tags)
   nua_stack_refer(nh->nh_nua, nh, nh->nh_ds->ds_cr->cr_event, tags);
 }
 
-/** @var nua_event_e::nua_r_refer
+/**@NUA_EVENT nua_r_refer
  *
- * Answer to outgoing REFER.
+ * @brief Response to outgoing REFER.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the REFER request
+ * @param hmagic application context associated with the handle
  * @param sip    response to REFER request or NULL upon an error
- *               (error code and message are in status an phrase parameters)
- * @param tags   NUTAG_REFER_EVENT() \n
- *               NUTAG_SUBSTATE()
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
+ * @param tags    NUTAG_REFER_EVENT() \n
+ *                NUTAG_SUBSTATE()
+ *
+ * @sa nua_refer(), NUTAG_SUBSTATE(), #nua_i_refer,
+ * @RFC3515, @ReferTo, @RFC3892, @ReferredBy
+ *
+ * @END_NUA_EVENT
  */
 
 static int process_response_to_refer(nua_handle_t *nh,

@@ -27,6 +27,9 @@ ALIASES 	    += nua="@ref index \"nua\""
 # When GENERATE_TAGFILE=YES, we should use \ref main
 #ALIASES 	    += nua="@ref main \"nua\""
 
+ALIASES		    += NUA_EVENT="@var nua_event_e::"
+ALIASES		    += END_NUA_EVENT="@par &nbsp;"
+
 VERBATIM_HEADERS     = NO
 
 @INCLUDE             = ../sip/sip.doxyaliases

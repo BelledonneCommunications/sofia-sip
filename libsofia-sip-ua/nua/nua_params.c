@@ -437,6 +437,26 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *     #nua_r_set_params
  */
 
+/** @NUA_EVENT nua_r_set_params
+ *
+ * Response to nua_set_params() or nua_set_hparams().
+ *
+ * @param status 200 when successful, error code otherwise
+ * @param phrase a short textual description of @a status code
+ * @param nh     NULL when responding to nua_set_params(),
+ *               operation handle when responding to nua_set_hparams()
+ * @param hmagic NULL when responding to nua_set_params(),
+ *               application contact associated with the operation handle 
+ *               when responding to nua_set_hparams()
+ * @param sip    NULL
+ * @param tags   None
+ *
+ * @sa nua_set_params(), nua_set_hparams(), 
+ * #nua_r_get_params, nua_get_params(), nua_get_hparams()
+ *
+ * @END_NUA_EVENT
+ */
+
 int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 			 tagi_t const *tags)
 {
@@ -1296,12 +1316,17 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *     #nua_r_get_params
  */
 
-/** @var nua_event_e::nua_r_get_params
+/** @NUA_EVENT nua_r_get_params
  *
  * Answer to nua_get_params() or nua_get_hparams().
  *
- * @param nh     NULL
- * @param hmagic NULL
+ * @param status 200 when succesful, error code otherwise
+ * @param phrase a short textual description of @a status code
+ * @param nh     NULL when responding to nua_get_params(),
+ *               operation handle when responding to nua_get_hparams()
+ * @param hmagic NULL when responding to nua_get_params(),
+ *               application contact associated with the operation handle 
+ *               when responding to nua_get_hparams()
  * @param sip    NULL
  * @param tags   
  *   NUTAG_AUTOACK() \n
@@ -1359,7 +1384,11 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *   SIPTAG_SUPPORTED_STR() \n
  *   SIPTAG_USER_AGENT() \n
  *   SIPTAG_USER_AGENT_STR() \n
- *               
+ *
+ * @sa nua_get_params(), nua_get_hparams(),
+ * nua_set_params(), nua_set_hparams(), #nua_r_set_params
+ *
+ * @END_NUA_EVENT
  */
 
 /**@internal

@@ -282,7 +282,7 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * @par Related tags:
  *     NUTAG_REGISTRAR(), NUTAG_INSTANCE(), NUTAG_OUTBOUND(),
  *     NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(), NUTAG_M_USERNAME(),
- *     NUTAG_M_PARAMS(), NUTAG_M_FEATURES()
+ *     NUTAG_M_DISPLAY(), NUTAG_M_PARAMS(), NUTAG_M_FEATURES(), 
  *
  * @par Events:
  *     #nua_r_register, #nua_i_outbound
@@ -440,25 +440,44 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * the desired transport-layer keepalive interval for stream-based
  * transports like TLS and TCP.
  *
- * @sa NUTAG_OUTBOUND() and tags.
+ * @sa #nua_r_register, nua_unregister(), #nua_r_unregister, 
+ * #nua_i_register,
+ * @RFC3261 section 10,
+ * @Expires, @Contact, @CallID, @CSeq,
+ * @Path, @RFC3327, @ServiceRoute, @RFC3608, @RFC3680,
+ *     NUTAG_REGISTRAR(), NUTAG_INSTANCE(), NUTAG_OUTBOUND(),
+ *     NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(), 
+ *     SIPTAG_CONTACT(), SIPTAG_CONTACT_STR(), NUTAG_M_USERNAME(),
+ *     NUTAG_M_DISPLAY(), NUTAG_M_PARAMS(), NUTAG_M_FEATURES(), 
  */
 
-/** @var nua_event_e::nua_r_register
+/** @NUA_EVENT nua_r_register
  *
  * Response to an outgoing REGISTER.
  *
  * The REGISTER may be sent explicitly by nua_register() or implicitly by
- * NUA state machines. The @a status may be 100 even if the real response
- * status returned is different if the REGISTER request has been restarted.
+ * NUA state machines. 
+ * 
+ * When REGISTER request has been restarted the @a status may be 100 even
+ * while the real response status returned is different.
  *
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
  * @param nh     operation handle associated with the registration
- * @param hmagic operation magic associated with the registration
- * @param status status code
- *               (from the response message or internally generated)
- * @param phrase response phrase
+ * @param hmagic application context associated with the registration
  * @param sip    response message to REGISTER request or NULL upon an error
- *               (error code and message are in status and phrase parameters)
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
  * @param tags   empty
+ *
+ * @sa nua_register(), nua_unregister(), #nua_r_unregister,
+ * @Contact, @CallID, @CSeq, @RFC3261 section 10,
+ * @Path, @RFC3327, @ServiceRoute, @RFC3608, @RFC3680
+ * 
+ * @END_NUA_EVENT
  */
 
 /**@fn void nua_unregister(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
@@ -484,20 +503,38 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  *
  * @par Events:
  *     #nua_r_unregister
+ *
+ * @sa nua_register(), #nua_r_register, nua_handle_destroy(), nua_shutdown(),
+ * #nua_i_register,
+ * @Expires, @Contact, @CallID, @CSeq, @RFC3261 section 10,
+ * @Path, @RFC3327, @ServiceRoute, @RFC3608, @RFC3680,
+ *     NUTAG_REGISTRAR(), NUTAG_INSTANCE(), NUTAG_OUTBOUND(),
+ *     NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(), 
+ *     SIPTAG_CONTACT(), SIPTAG_CONTACT_STR(), NUTAG_M_USERNAME(),
+ *     NUTAG_M_DISPLAY(), NUTAG_M_PARAMS(), NUTAG_M_FEATURES(), 
  */
 
-/** @var nua_event_e::nua_r_unregister
+/** @NUA_EVENT nua_r_unregister
  *
  * Answer to outgoing un-REGISTER.
  *
+ * @param status response status code
+ *               (if the request is retried, @a status is 100, the @a
+ *               sip->sip_status->st_status contain the real status code
+ *               from the response message, e.g., 302, 401, or 407)
+ * @param phrase a short textual description of @a status code
  * @param nh     operation handle associated with the registration
- * @param hmagic operation magic associated with the registration
- * @param status status code
- *               (from the response message or internally generated)
- * @param phrase response phrase
+ * @param hmagic application context associated with the registration
  * @param sip    response message to REGISTER request or NULL upon an error
- *               (error code and message are in status and phrase parameters)
+ *               (status code is in @a status and 
+ *                descriptive message in @a phrase parameters)
  * @param tags   empty
+ *
+ * @sa nua_unregister(), nua_register(), #nua_r_register,
+ * @Contact, @CallID, @CSeq, @RFC3261 section 10,
+ * @Path, @RFC3327, @ServiceRoute, @RFC3608, @RFC3680
+ * 
+ * @END_NUA_EVENT
  */
 
 int
@@ -1684,21 +1721,25 @@ static int nua_stack_outbound_refresh(nua_handle_t *nh,
   return 0;
 }
 
-/** @var nua_event_e::nua_i_outbound
+/** @NUA_EVENT nua_i_outbound
  *
  * Status from outbound engine.
  *
- * @param nh     operation handle associated with the call
- * @param hmagic operation magic associated with the call
+ * @param status SIP status code or NUA status code (>= 900)
+ *               describing the outbound state
+ * @param phrase a short textual description of @a status code
+ * @param nh     operation handle associated with the outbound engine
+ * @param hmagic application context associated with the handle
  * @param sip    NULL or response message to an keepalive message or 
  *               registration probe
  *               (error code and message are in status an phrase parameters)
  * @param tags   empty
  *
- * @sa nua_register(), #nua_r_register, nua_unregister(), #nua_r_unregister,
- * @RFC3261 section 10
+ * @sa NUTAG_OUTBOUND(), NUTAG_KEEPALIVE(), NUTAG_KEEPALIVE_STREAM(), 
+ * nua_register(), #nua_r_register, nua_unregister(), #nua_r_unregister
+ *
+ * @END_NUA_EVENT
  */
-
 
 /** @internal Callback from outbound_t */
 static int nua_stack_outbound_status(nua_handle_t *nh, outbound_t *ob,
