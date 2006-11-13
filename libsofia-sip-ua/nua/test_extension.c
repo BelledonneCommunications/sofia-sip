@@ -104,7 +104,7 @@ int test_extension(struct context *ctx)
   */
   TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_method);
   TEST(e->data->e_status, 900);	/* Internal error */
-  TEST_1(!e->e_msg);
+  TEST_1(!e->data->e_msg);
   TEST_1(!e->next);
 
   free_events_in_list(ctx, a->events);
