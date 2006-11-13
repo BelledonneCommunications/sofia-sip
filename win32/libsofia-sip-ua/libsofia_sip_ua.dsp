@@ -644,6 +644,10 @@ SOURCE="..\..\libsofia-sip-ua\nua\nua_event_server.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\nua\nua_extension.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\nua\nua_message.c"
 # End Source File
 # Begin Source File
