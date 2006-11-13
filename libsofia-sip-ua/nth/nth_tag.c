@@ -65,3 +65,4 @@ tag_typedef_t nthtag_authentication = PTRTAG_TYPEDEF(authentication);
 /* Server */
 tag_typedef_t nthtag_root = PTRTAG_TYPEDEF(root);
 tag_typedef_t nthtag_strict_host = BOOLTAG_TYPEDEF(scrict_host);
+tag_typedef_t nthtag_auth_module = PTRTAG_TYPEDEF(auth_module);

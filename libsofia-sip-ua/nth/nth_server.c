@@ -65,10 +65,10 @@ typedef struct server_s server_t;
 #define TP_STACK_T   server_t
 #define TP_MAGIC_T   void
                                      
-#ifndef TPORT_H                 
 #include <sofia-sip/tport.h>
-#endif
 #include <sofia-sip/htable.h>
+
+#include <sofia-sip/auth_module.h>
 
 #ifndef UINT32_MAX
 #define UINT32_MAX (0xffffffffU)
@@ -118,6 +118,7 @@ struct nth_site_s
   nth_site_t          *site_kids;
 
   server_t            *site_server;
+  auth_mod_t          *site_auth;
 
   url_t               *site_url;
   char const          *site_path;
@@ -146,6 +147,8 @@ struct nth_request_s
   tport_t              *req_tport;
   msg_t		       *req_request;
   msg_t                *req_response;
+
+  auth_status_t        *req_as;
 
   unsigned short      	req_status;
   unsigned              req_close : 1; /**< Client asked for close */
@@ -413,6 +416,10 @@ nth_site_t *nth_site_create(nth_site_t *parent,
 
     site->site_callback = callback;
     site->site_magic = magic;
+    
+    if (parent)
+      site->site_auth = parent->site_auth;
+
     nth_site_set_params(site, ta_tags(ta));
   }
 
@@ -425,17 +432,23 @@ nth_site_t *nth_site_create(nth_site_t *parent,
 
 void nth_site_destroy(nth_site_t *site)
 {
-  if (site == NULL) {
-  }
-  else if (site->site_server->srv_sites == site) {
+  if (site == NULL)
+    return;
+
+  if (site->site_auth)
+    auth_mod_unref(site->site_auth), site->site_auth = NULL;
+
+  if (site->site_server->srv_sites == site) {
     server_destroy(site->site_server);
   }
 }
+
 
 nth_site_magic_t *nth_site_magic(nth_site_t const *site)
 {
   return site ? site->site_magic : NULL;
 }
+
 
 void nth_site_bind(nth_site_t *site, 
 		   nth_request_f *callback, 
@@ -445,8 +458,8 @@ void nth_site_bind(nth_site_t *site,
     site->site_callback = callback;
     site->site_magic = magic;
   }
-
 }
+
 
 char const *nth_site_server_version(void)
 {
@@ -463,12 +476,14 @@ int nth_site_set_params(nth_site_t *site,
   int master;
   msg_mclass_t const *mclass;
   int mflags;
+  auth_mod_t *am;
 
   if (site == NULL)
     return (errno = EINVAL), -1;
 
   server = site->site_server;
   master = site == server->srv_sites;
+  am = site->site_auth;
 
   mclass = server->srv_mclass;
   mflags = server->srv_mflags;
@@ -478,6 +493,7 @@ int nth_site_set_params(nth_site_t *site,
   n = tl_gets(ta_args(ta),
 	      TAG_IF(master, NTHTAG_MCLASS_REF(mclass)),
 	      TAG_IF(master, NTHTAG_MFLAGS_REF(mflags)),
+	      NTHTAG_AUTH_MODULE_REF(am),
 	      TAG_END());
   
   if (n > 0) {
@@ -486,6 +502,7 @@ int nth_site_set_params(nth_site_t *site,
     else
       server->srv_mclass = http_default_mclass();
     server->srv_mflags = mflags;
+    auth_mod_ref(am), auth_mod_unref(site->site_auth), site->site_auth = am;
   }
 
   ta_end(ta);
@@ -967,6 +984,16 @@ msg_t *server_msg_create(server_t *srv, int flags,
  * 6) Server transactions 
  */
 
+struct auth_info
+{
+  nth_site_t *site;
+  nth_request_t *req;
+  http_t const *http;
+  char const *path;
+};
+
+static void nth_authentication_result(void *ai0, auth_status_t *as);
+
 static
 void nth_site_request(server_t *srv,
 		      nth_site_t *site,
@@ -976,14 +1003,25 @@ void nth_site_request(server_t *srv,
 		      char const *path,
 		      msg_t *response)
 {
-  nth_request_t *req = su_zalloc(srv->srv_home, sizeof *req);
+  auth_mod_t *am = site->site_auth;
+  nth_request_t *req;
+  auth_status_t *as;
+  struct auth_info *ai;
+  size_t size = (am ? (sizeof *as) + (sizeof *ai) : 0) + (sizeof *req);
   int status;
 
+  req = su_zalloc(srv->srv_home, size);
+  
   if (req == NULL) {
     server_reply(srv, tport, request, response, HTTP_500_INTERNAL_SERVER);
     return;
   }
   
+  if (am)
+    as = auth_status_init(req + 1, sizeof *as), ai = (void *)(as + 1);
+  else
+    as = NULL, ai = NULL;
+
   req->req_server = srv;
   req->req_method = http->http_request->rq_method;
   req->req_method_name = http->http_request->rq_method_name;
@@ -1000,6 +1038,48 @@ void nth_site_request(server_t *srv,
     || http->http_request->rq_version != http_version_1_1
     || (http->http_connection && 
 	msg_params_find(http->http_connection->k_items, "close"));
+
+  if (am) {
+    static auth_challenger_t const http_server_challenger[] = 
+      {{ HTTP_401_UNAUTHORIZED, http_www_authenticate_class }};
+
+    req->req_as = as;
+
+    as->as_method = http->http_request->rq_method_name;
+    as->as_uri = path;
+    
+    if (http->http_payload) {
+      as->as_body = http->http_payload->pl_data;
+      as->as_bodylen = http->http_payload->pl_len;
+    }
+
+    auth_mod_check_client(am, as, 
+			  http->http_authorization,
+			  http_server_challenger);
+
+    if (as->as_status == 100) {
+      /* Stall transport - do not read more requests */
+      if (tport_queuelen(tport) * 2 >= srv->srv_queuesize)
+	tport_stall(tport);
+
+      as->as_callback = nth_authentication_result;
+      as->as_magic = ai;
+      ai->site = site;
+      ai->req = req;
+      ai->http = http;
+      ai->path = path;
+      return;
+    }
+    else if (as->as_status) {
+      assert(as->as_status >= 200);
+      nth_request_treply(req, as->as_status, as->as_phrase,
+			 HTTPTAG_HEADER((http_header_t *)as->as_response),
+			 HTTPTAG_HEADER((http_header_t *)as->as_info),
+			 TAG_END());
+      nth_request_destroy(req);
+      return;
+    }
+  }
 
   req->req_in_callback = 1;
   status = site->site_callback(site->site_magic, site, req, http, path);
@@ -1022,6 +1102,39 @@ void nth_site_request(server_t *srv,
     nth_request_destroy(req);
 }
 
+static void nth_authentication_result(void *ai0, auth_status_t *as)
+{
+  struct auth_info *ai = ai0;
+  nth_request_t *req = ai->req;
+  int status;
+
+  if (as->as_status != 0) {
+    assert(retval >= 300);
+    nth_request_treply(req, status = as->as_status, as->as_phrase, 
+		       HTTPTAG_HEADER((http_header_t *)as->as_response), 
+		       TAG_END());
+  }
+  else {
+    req->req_in_callback = 1;
+    status = ai->site->site_callback(ai->site->site_magic, 
+				     ai->site,
+				     ai->req,
+				     ai->http,
+				     ai->path);
+    req->req_in_callback = 0;
+
+    if (status != 0 && (status < 100 || status >= 600))
+      status = 500;
+
+    if (status != 0 && req->req_status < 200) {
+      nth_request_treply(req, status, NULL, TAG_END());
+    }
+  }
+
+  if (status >= 200 || req->req_destroyed)
+    nth_request_destroy(req);
+}
+
 void nth_request_destroy(nth_request_t *req)
 {
   if (req == NULL)
@@ -1035,7 +1148,10 @@ void nth_request_destroy(nth_request_t *req)
   if (req->req_in_callback) 
     return;
 
-  tport_decref(&req->req_tport);
+  if (req->req_as)
+    su_home_deinit(req->req_as->as_home);
+
+  tport_decref(&req->req_tport), req->req_tport = NULL;
   msg_destroy(req->req_request), req->req_request = NULL;
   msg_destroy(req->req_response), req->req_response = NULL;
   su_free(req->req_server->srv_home, req);
@@ -1044,6 +1160,11 @@ void nth_request_destroy(nth_request_t *req)
 int nth_request_status(nth_request_t const *req)
 {
   return req ? req->req_status : 400;
+}
+
+auth_status_t *nth_request_auth(nth_request_t const *req)
+{
+  return req ? req->req_as : NULL;
 }
 
 http_method_t nth_request_method(nth_request_t const *req)
@@ -1070,7 +1191,8 @@ int nth_request_treply(nth_request_t *req,
   int retval = -1;
   int req_close, close;
   ta_list ta;
-  
+  http_header_t const *as_info = NULL;
+
   if (req == NULL || status < 100 || status >= 600) {
     return -1;
   }
@@ -1078,10 +1200,14 @@ int nth_request_treply(nth_request_t *req,
   response = req->req_response;
   http = http_object(response);
 
+  if (status >= 200 && req->req_as)
+    as_info = (http_header_t const *)req->req_as->as_info;
+
   ta_start(ta, tag, value);
 
   http_add_tl(response, http,
 	      HTTPTAG_SERVER(req->req_server->srv_server),
+	      HTTPTAG_HEADER(as_info), 
 	      ta_tags(ta));
 
   if (http->http_payload && !http->http_content_length) {

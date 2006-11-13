@@ -192,6 +192,8 @@ NTH_DLL int nth_request_treply(nth_request_t *ireq,
 
 NTH_DLL void nth_request_destroy(nth_request_t *req);
 
+NTH_DLL struct auth_status_t *nth_request_auth(nth_request_t const *req);
+
 SOFIA_END_DECLS
 
 #endif

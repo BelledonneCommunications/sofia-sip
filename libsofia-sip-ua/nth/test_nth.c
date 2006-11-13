@@ -60,6 +60,7 @@ typedef struct client client_t;
 #include <sofia-sip/http_header.h>
 #include <sofia-sip/msg_mclass.h>
 #include <sofia-sip/tport_tag.h>
+#include <sofia-sip/auth_module.h>
 
 int tstflags = 0;
 
@@ -153,21 +154,21 @@ static site_t *site_create(tester_t *t, site_t *parent,
   s->s_phrase = phrase;
 
   ta_start(ta, tag, value);
+
   s->s_tags = tl_adup(t->t_home, ta_args(ta)); 
+  if (s->s_tags)
+    s->s_ns = nth_site_create(pns, test_site, s,
+			      (url_string_t *)s->s_url, 
+			      NTHTAG_ROOT(t->t_root),
+			      ta_tags(ta));
+
   ta_end(ta);
   
-  if (!s->s_tags)
-    return NULL;
-
-  s->s_ns = nth_site_create(pns, test_site, s,
-			    (url_string_t *)s->s_url, 
-			    NTHTAG_ROOT(t->t_root),
-			    TAG_END());
-
   if (s->s_ns == NULL)
     return NULL;
 
   t->t_sites = s;
+
   return s;
 }
 
@@ -211,6 +212,10 @@ static int deinit_test(tester_t *t)
   }
 
   su_root_destroy(t->t_root);
+
+  su_home_deinit(t->t_home);
+
+  memset(t, 0, sizeof t);
 
   END();
 }
@@ -413,6 +418,7 @@ static int site_check_all(site_t *s,
 			  char const *path)
 {
   msg_t *msg;
+  auth_status_t *as;
 
   TEST_1(s); TEST_1(ns); TEST_1(req); TEST_1(http); TEST_1(path);
 
@@ -425,6 +431,8 @@ static int site_check_all(site_t *s,
 
   msg_destroy(msg);
 
+  as = nth_request_auth(req);
+
   TEST_1(nth_request_treply(req, s->s_status, s->s_phrase,
 			    TAG_NEXT(s->s_tags)) != -1);
 
@@ -433,11 +441,26 @@ static int site_check_all(site_t *s,
   return s->s_status;
 }
 
+static char passwd_name[] = "tmp_sippasswd.XXXXXX";
+
+static void remove_tmp(void)
+{
+  if (passwd_name[0])
+    unlink(passwd_name);
+}
+
+static char const passwd[] =
+  "alice:secret:\n"
+  "bob:secret:\n"
+  "charlie:secret:\n";
+
 static int init_server(tester_t *t)
 {
-  site_t *m = t->t_master, *sub2;
-
   BEGIN();
+
+  site_t *m = t->t_master, *sub2;
+  auth_mod_t *am;
+  int temp;
 
   TEST_1(t->t_master = m = 
 	 site_create(t, NULL,
@@ -482,6 +505,54 @@ static int init_server(tester_t *t)
 		     HTTPTAG_PAYLOAD_STR
 		     ("<html><body>sub2/sub/</body></html>\n"),
 		     TAG_END()));
+
+
+#ifndef _WIN32
+  temp = mkstemp(passwd_name);
+#else
+  temp = open(passwd_name, O_WRONLY|O_CREAT|O_TRUNC, 666);
+#endif
+  TEST_1(temp != -1);
+  atexit(remove_tmp);		/* Make sure temp file is unlinked */
+
+  TEST(write(temp, passwd, strlen(passwd)), strlen(passwd));
+
+  TEST_1(close(temp) == 0);
+
+  am = auth_mod_create(t->t_root, 
+		       AUTHTAG_METHOD("Digest"), 
+		       AUTHTAG_REALM("auth"),
+		       AUTHTAG_DB(passwd_name),
+		       TAG_END());
+  TEST_1(am);
+
+  TEST_1(site_create(t, m, "auth/",
+		     HTTP_200_OK, 
+		     HTTPTAG_CONTENT_TYPE_STR("text/html"),
+		     HTTPTAG_PAYLOAD_STR
+		     ("<html><body>auth/</body></html>\n"),
+		     NTHTAG_AUTH_MODULE(am),
+		     TAG_END()));
+
+  auth_mod_unref(am);
+
+
+  am = auth_mod_create(t->t_root, 
+		       AUTHTAG_METHOD("Delayed+Basic"), 
+		       AUTHTAG_REALM("auth2"),
+		       AUTHTAG_DB(passwd_name),
+		       TAG_END());
+  TEST_1(am);
+
+  TEST_1(site_create(t, m, "auth2/",
+		     HTTP_200_OK, 
+		     HTTPTAG_CONTENT_TYPE_STR("text/html"),
+		     HTTPTAG_PAYLOAD_STR
+		     ("<html><body>auth/</body></html>\n"),
+		     NTHTAG_AUTH_MODULE(am),
+		     TAG_END()));
+
+  auth_mod_unref(am);
 
   END();
 }
@@ -637,6 +708,33 @@ static int test_requests(tester_t *t)
     TEST_S(buffer, "HTTP/1.1 200 OK");
     TEST_1(strstr(buffer + m, "<body>sub/sub</body>"));
     free(get);
+
+    get = su_sprintf(NULL, request, "/auth/");
+    TEST(send_request(t, get, -1, 0, buffer, sizeof(buffer), &m), 0);
+    m = sspace(buffer); buffer[m++] = '\0';
+    TEST_S(buffer, "HTTP/1.1 401");
+    free(get);
+
+    get = su_sprintf(NULL, request, "/auth2/");
+    TEST(send_request(t, get, -1, 0, buffer, sizeof(buffer), &m), 0);
+    m = sspace(buffer); buffer[m++] = '\0';
+    TEST_S(buffer, "HTTP/1.1 401");
+    free(get);
+  }
+
+  {
+    static char const get[] = 
+      "GET /auth2/ HTTP/1.1" CRLF
+      "Host: 127.0.0.1" CRLF
+      "User-Agent: Test-Tool" CRLF
+      "Connection: close" CRLF
+      /* alice:secret in base64 */
+      "Authorization: Basic YWxpY2U6c2VjcmV0" CRLF
+      CRLF;
+
+    TEST(send_request(t, get, -1, 0, buffer, sizeof(buffer), &m), 0);
+    m = sspace(buffer); buffer[m++] = '\0';
+    TEST_S(buffer, "HTTP/1.1 200");
   }
 
   {
