@@ -23,6 +23,8 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added nua_method() and NUTAG_METHOD()
+- Added nth_request_auth() and NTHTAG_AUTH_MODULE()
 - Added functions msg_header_find_item(), msg_header_replace_item(),
   msg_header_remove_item()
   (handling Allow and Allow-Events headers)
