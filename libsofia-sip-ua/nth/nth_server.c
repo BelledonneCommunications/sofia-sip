@@ -257,6 +257,7 @@ void nth_site_request(server_t *srv,
  * HTTPTAG_SERVER(), and HTTPTAG_SERVER_STR(). All the tags are passed to
  * tport_tcreate() and tport_tbind(), too.
  *
+ * @since Support for multiple sites was added to @VERSION_1_12_4
  */
 nth_site_t *nth_site_create(nth_site_t *parent,  
 			    nth_request_f *callback,
@@ -1109,7 +1110,7 @@ static void nth_authentication_result(void *ai0, auth_status_t *as)
   int status;
 
   if (as->as_status != 0) {
-    assert(retval >= 300);
+    assert(as->as_status >= 300);
     nth_request_treply(req, status = as->as_status, as->as_phrase, 
 		       HTTPTAG_HEADER((http_header_t *)as->as_response), 
 		       TAG_END());
@@ -1157,11 +1158,32 @@ void nth_request_destroy(nth_request_t *req)
   su_free(req->req_server->srv_home, req);
 }
 
+/** Return request authentication status.
+ *
+ * @param req pointer to HTTP request object
+ * 
+ * @retval Status code
+ *
+ * @since New in @VERSION_1_12_4
+ */
 int nth_request_status(nth_request_t const *req)
 {
   return req ? req->req_status : 400;
 }
 
+/** Return request authentication status.
+ *
+ * @param req pointer to HTTP request object
+ * 
+ * @retval Pointer to authentication status struct
+ *
+ * @note The authentication status struct is freed when the #nth_request_t
+ * object is destroyed.
+ *
+ * @since New in @VERSION_1_12_4
+ *
+ * @sa AUTH
+ */
 auth_status_t *nth_request_auth(nth_request_t const *req)
 {
   return req ? req->req_as : NULL;

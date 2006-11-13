@@ -65,4 +65,18 @@ tag_typedef_t nthtag_authentication = PTRTAG_TYPEDEF(authentication);
 /* Server */
 tag_typedef_t nthtag_root = PTRTAG_TYPEDEF(root);
 tag_typedef_t nthtag_strict_host = BOOLTAG_TYPEDEF(scrict_host);
+
+/**@def NTHTAG_AUTH_MODULE()
+ *
+ * Pointer to authentication module.
+ *
+ * A site requires authentication from the clients if passed an
+ * authentication module pointer with NTHTAG_AUTH_MODULE(). Incoming client
+ * request is challenged with 401, upon successful authentication the
+ * authenticated username is stored in the #auth_status_t structure
+ * associated with the #nth_request_t object. It is up to application to
+ * authorize the user.
+ *
+ * @sa nth_site_create(), nth_site_set_params(), nth_request_auth().
+ */
 tag_typedef_t nthtag_auth_module = PTRTAG_TYPEDEF(auth_module);
