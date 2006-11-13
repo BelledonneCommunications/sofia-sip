@@ -648,6 +648,12 @@ void nua_message(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   NUA_SIGNAL(nh, nua_r_message, tag, value);
 }
 
+/* Documented with nua_stack_method() */
+void nua_method(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
+{
+  NUA_SIGNAL(nh, nua_r_method, tag, value);
+}
+
 /** Send a chat message. 
  *
  * A chat channel can be established during call setup using "message" media. 

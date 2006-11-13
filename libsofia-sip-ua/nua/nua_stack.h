@@ -436,6 +436,7 @@ nua_stack_process_request_t nua_stack_process_notify;
 nua_stack_process_request_t nua_stack_process_refer;
 nua_stack_process_request_t nua_stack_process_unknown;
 nua_stack_process_request_t nua_stack_process_register;
+nua_stack_process_request_t nua_stack_process_method;
 
 nua_client_request_t
   *nua_client_request_pending(nua_client_request_t const *),

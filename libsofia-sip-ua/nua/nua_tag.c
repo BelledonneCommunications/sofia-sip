@@ -46,6 +46,7 @@ tag_typedef_t nutag_any = NSTAG_TYPEDEF(*);
 
 tag_typedef_t nutag_url = URLTAG_TYPEDEF(url);
 tag_typedef_t nutag_address = STRTAG_TYPEDEF(address);
+tag_typedef_t nutag_method = STRTAG_TYPEDEF(method);
 tag_typedef_t nutag_uicc = STRTAG_TYPEDEF(uicc);
 tag_typedef_t nutag_media_features = BOOLTAG_TYPEDEF(media_features);
 tag_typedef_t nutag_callee_caps = BOOLTAG_TYPEDEF(callee_caps);

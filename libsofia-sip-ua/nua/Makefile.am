@@ -44,6 +44,7 @@ nobase_include_sofia_HEADERS = \
 			sofia-sip/nua.h sofia-sip/nua_tag.h
 
 libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
+			nua_extension.c \
 			nua_dialog.c nua_dialog.h \
 			outbound.c outbound.h \
 			nua_params.c nua_params.h \
@@ -83,6 +84,7 @@ test_nua_SOURCES = 	test_nua.c test_nua.h test_ops.c \
 			test_call_hold.c test_session_timer.c \
 			test_refer.c test_100rel.c \
 			test_simple.c test_sip_events.c \
+			test_extension.c \
 			test_proxy.h test_proxy.c \
 			test_nat.h test_nat.c test_nat_tags.c
 

@@ -246,7 +246,7 @@ typedef int operation_f(struct endpoint *ep, struct call *call,
 			...);
 
 operation_f INVITE, ACK, BYE, CANCEL, AUTHENTICATE, UPDATE, INFO, PRACK,
-  REFER, MESSAGE, OPTIONS, PUBLISH, UNPUBLISH, REGISTER, UNREGISTER,
+  REFER, MESSAGE, METHOD, OPTIONS, PUBLISH, UNPUBLISH, REGISTER, UNREGISTER,
   SUBSCRIBE, UNSUBSCRIBE, NOTIFY, NOTIFIER, TERMINATE, AUTHORIZE;
 
 int RESPOND(struct endpoint *ep,
@@ -332,5 +332,7 @@ int test_refer(struct context *ctx);
 int test_100rel(struct context *ctx);
 int test_simple(struct context *ctx);
 int test_events(struct context *ctx);
+
+int test_extension(struct context *ctx);
 
 #endif

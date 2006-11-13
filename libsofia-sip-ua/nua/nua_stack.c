@@ -1076,6 +1076,8 @@ msg_t *nua_creq_msg(nua_t *nua,
 	has_contact = 1;
       else if (t->t_tag == nutag_url)
 	url = (url_string_t const *)t->t_value;
+      else if (t->t_tag == nutag_method && method == sip_method_unknown)
+	name = (char const *)t->t_value;
       else if (t->t_tag == nutag_use_dialog)
 	use_dialog = t->t_value != 0;
       else if (t->t_tag == _nutag_add_contact)
@@ -1383,13 +1385,6 @@ int nua_stack_process_unknown(nua_t *nua,
 			      sip_t const *sip)
 {
   return 501;
-}
-
-int
-nua_stack_method(nua_t *nua, nua_handle_t *nh, nua_event_t e,
-		 tagi_t const *tags)
-{
-  return UA_EVENT1(e, SIP_501_NOT_IMPLEMENTED);
 }
 
 /**@internal
@@ -1818,6 +1813,9 @@ int nua_stack_process_request(nua_handle_t *nh,
 		URL_PRINT_ARGS(sip->sip_from->a_url)));
     /* Send nua_i_error ? */
     return 481;
+
+  case sip_method_unknown:
+    return nua_stack_process_method(nua, nh, irq, sip);
 
   default:
     return nua_stack_process_unknown(nua, nh, irq, sip);

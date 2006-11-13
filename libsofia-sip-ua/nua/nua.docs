@@ -2145,23 +2145,9 @@ NUTAG_AUTOANSWER(0) on B side, NUTAG_AUTOACK(0) on A side.
  * @END_NUA_EVENT
  */
 
-/* nua_r_message is documented with nua_stack_process_message() */
+/* nua_i_message is documented with nua_stack_process_message() */
 
-/** @NUA_EVENT nua_i_method
- *
- * Unknown incoming request method.
- *
- * The extension method must be listed using NUTAG_ALLOW() or SIPTAG_ALLOW()
- * tag in nua_set_params().
- *
- * @param nh     operation handle associated with the request
- * @param hmagic operation magic associated with the handle
- * @param status statuscode of response sent automatically by stack
- * @param sip    incoming request with unknown method
- * @param tags   empty
- *
- * @END_NUA_EVENT
- */
+/* nua_i_method is documented with nua_stack_process_method() */
 
 /** @NUA_EVENT nua_i_network_changed
  *

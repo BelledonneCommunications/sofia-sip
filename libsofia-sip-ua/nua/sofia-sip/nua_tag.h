@@ -161,6 +161,31 @@ SOFIAPUBVAR tag_typedef_t nutag_retry_count;
 #define NUTAG_RETRY_COUNT_REF(x)  nutag_retry_count_ref, tag_uint_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_retry_count_ref;
 
+/** Extension method name.
+ *
+ * Specify extension method name with nua_method() function.
+ *
+ * @par Used with
+ *    nua_method() \n
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    Extension method name (e.g., "SERVICE")
+ *
+ * Corresponding tag taking reference parameter is NUTAG_METHOD_REF()
+ *
+ * @sa nua_method(), SIP_METHOD_UNKNOWN()
+ *
+ * @since New in @VERSION_1_12_4.
+ */
+#define NUTAG_METHOD(x)            nutag_method, tag_str_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_method;
+
+#define NUTAG_METHOD_REF(x)        nutag_method_ref, tag_str_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_method_ref;
+
 /**Set maximum number of simultaneous subscribers per single event server.
  *
  * Determines how many subscribers can simultaneously subscribe to a single

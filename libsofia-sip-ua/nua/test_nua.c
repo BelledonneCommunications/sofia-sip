@@ -278,6 +278,7 @@ int main(int argc, char *argv[])
       retval |= test_nat_timeout(ctx);
 
     if (retval == 0) {
+      retval |= test_extension(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
