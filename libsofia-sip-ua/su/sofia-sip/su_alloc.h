@@ -115,7 +115,7 @@ SU_DLL void *su_salloc(su_home_t *h, isize_t size)
      __attribute__((__malloc__));
 SU_DLL void *su_realloc(su_home_t *h, void *data, isize_t size)
      __attribute__((__malloc__));
-SU_DLL int su_in_home(su_home_t *h, void const *data)
+SU_DLL int su_in_home(su_home_t *h, void const *data);
 
 SU_DLL char *su_strdup(su_home_t *home, char const *s)
      __attribute__((__malloc__));
