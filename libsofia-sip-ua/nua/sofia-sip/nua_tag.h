@@ -201,6 +201,8 @@ SOFIAPUBVAR tag_typedef_t nutag_method_ref;
  * @par Values
  *    @c 0   Do not allow any subscriptions \n
  *
+ * @sa nua_notifier(), nua_authorize()
+ *
  * Corresponding tag taking reference parameter is 
  * NUTAG_MAX_SUBSCRIPTIONS_REF()
  */
@@ -430,8 +432,46 @@ SOFIAPUBVAR tag_typedef_t nutag_invite_timer_ref;
 
 /**Default session timer in seconds.
  *
- * Set default session timer in seconds when using session timer extension.
- * Re-INVITE will be sent in given intervals.
+ * Set default session timer in seconds when using session timer extension. 
+ * The value given here is the proposed session expiration time in seconds.
+ * Note that the session timer extension is ponly used 
+ *
+ * @par Sending INVITE and UPDATE Requests 
+ *
+ * If NUTAG_SESSION_TIMER() is used with non-zero value, the value is
+ * used in the @SessionExpires header included in the INVITE or UPDATE
+ * requests. The intermediate proxies or the ultimate destination can lower
+ * the interval in @SessionExpires header. If the value is too low, they can
+ * reject the request with the status code <i>422 Session Timer Too
+ * Small</i>. When Re-INVITE will be sent in given intervals. In that case,
+ * @b nua retries the request automatically.
+ * 
+ * @par Returning Response to the INVITE and UPDATE Requests 
+ *
+ * The NUTAG_SESSION_TIMER() value is also used when sending the final
+ * response to the INVITE or UPDATE requests. If the NUTAG_SESSION_TIMER()
+ * value is 0 or the value in the @SessionExpires header of the requeast is
+ * lower than the value in NUTAG_SESSION_TIMER(), the value from the
+ * incoming @SessionExpires header is used. However, if the value in
+ * @SessionExpires is lower than the minimal acceptable session expiration
+ * interval specified with the tag NUTAG_MIN_SE() the request is
+ * automatically rejected with <i>422 Session Timer Too Small</i>.
+ *
+ * @par When to Use NUTAG_SESSION_TIMER()?
+ *
+ * The session time extension is enabled ("timer" feature tag is included in
+ * @Supported header) but not activated by default (no @SessionExpires
+ * header is included in the requests or responses by default). Using
+ * non-zero value with NUTAG_SESSION_TIMER() activates it. When the
+ * extension is activated, @nua refreshes the call state by sending periodic
+ * re-INVITE or UPDATE requests unless the remote end indicated that it will
+ * take care of refreshes.
+ *
+ * The session timer extension is mainly useful for proxies or back-to-back
+ * user agents that keep call state. The call state is "soft" meaning that
+ * if no call-related SIP messages are processed for certain time the state
+ * will be destroyed. An ordinary user-agent can also make use of session
+ * timer if it cannot get any activity feedback from RTP or other media.
  *
  * @par Used with
  *    nua_invite(), nua_update(), nua_respond() \n
@@ -450,7 +490,9 @@ SOFIAPUBVAR tag_typedef_t nutag_invite_timer_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_SESSION_TIMER_REF()
  *
- * @sa NUTAG_MIN_SE(), NUTAG_SESSION_REFRESHER(),
+ * @sa NUTAG_SUPPORTED(), NUTAG_MIN_SE(), NUTAG_SESSION_REFRESHER(),
+ * nua_invite(), #nua_r_invite, #nua_i_invite, nua_update(), #nua_r_update,
+ * #nua_i_update, 
  * NUTAG_UPDATE_REFRESH(), @RFC4028, @SessionExpires, @MinSE
  */
 #define NUTAG_SESSION_TIMER(x)  nutag_session_timer, tag_uint_v((x))
@@ -1553,7 +1595,7 @@ SOFIAPUBVAR tag_typedef_t nutag_refer_event_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_REFER_PAUSE_REF()
  *
- * @todo Not implemented.
+ * @deprecated Not implemented.
  */
 #define NUTAG_REFER_PAUSE(x)   nutag_refer_pause, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_refer_pause;
@@ -1622,6 +1664,44 @@ SOFIAPUBVAR tag_typedef_t nutag_allow;
 
 #define NUTAG_ALLOW_REF(x) nutag_allow_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_allow_ref;
+
+
+/** Indicate that a method (or methods) are handled by application.
+ *
+ * This tag is used to add a new method to the already existing set of
+ * methods handled by application, or clear the set. If you want to
+ * determine the set explicitly, include NUTAG_APPL_METHOD() twice,
+ * first with NULL and then with your supported set.
+ *
+ * The default set of application methods now include INVITE, REGISTER,
+ * PUBLISH and SUBSCRIBE.
+ *
+ * If the request method is in the set of methods handled by application,
+ * the nua stack does not automatically respond to the incoming request nor
+ * it will automatically send such a request. Note if the application adds
+ * the PRACK and UPDATE requests to the set of application methods it must
+ * also take care for sending the PRACK and UPDATE requests during the call
+ * setup when necessary.
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_set_hparams() \n
+ *    any handle-specific nua call
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    Valid method name, or comma-separated list of them.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_APPL_METHOD_REF()
+ */
+#define NUTAG_APPL_METHOD(x)     nutag_appl_method, tag_str_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_appl_method;
+
+#define NUTAG_APPL_METHOD_REF(x) nutag_appl_method_ref, tag_str_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_appl_method_ref;
+
 
 /** Support a feature.
  *
@@ -1897,7 +1977,10 @@ SOFIAPUBVAR tag_typedef_t nutag_service_route_enable;
           nutag_service_route_enable_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_service_route_enable_ref;
 
-/** Enable local media (MSS)
+/** Enable built-in media session handling
+ *
+ * The built-in media session object @soa takes care of most details
+ * of offer-answer negotiation. 
  *
  * @par Used with
  *    nua_create()

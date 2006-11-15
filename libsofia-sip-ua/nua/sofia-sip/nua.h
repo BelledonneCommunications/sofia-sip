@@ -85,7 +85,7 @@ typedef enum nua_event_e {
   /* Indications */
   nua_i_error,			/**< Error indication */
 
-  nua_i_invite,			/**< Incoming call */
+  nua_i_invite,			/**< Incoming call INVITE */
   nua_i_cancel,			/**< Incoming INVITE has been cancelled */
   nua_i_ack,			/**< Final response to INVITE has been ACKed */
   nua_i_fork,			/**< Outgoing call has been forked */
@@ -95,24 +95,25 @@ typedef enum nua_event_e {
 
   nua_i_outbound,		/**< Status from outbound processing */
 
-  nua_i_bye,			/**< Incoming call hangup */
-  nua_i_options,		/**< Incoming options */
-  nua_i_refer,			/**< Incoming call transfer */
+  nua_i_bye,			/**< Incoming BYE call hangup */
+  nua_i_options,		/**< Incoming OPTIONS */
+  nua_i_refer,			/**< Incoming REFER call transfer */
   nua_i_publish,		/**< Incoming PUBLISH */
   nua_i_prack,			/**< Incoming PRACK */
   nua_i_info,			/**< Incoming session INFO */
   nua_i_update,			/**< Incoming session UPDATE */
   nua_i_message,		/**< Incoming MESSAGE */
   nua_i_chat,			/**< Incoming chat MESSAGE  */
-  nua_i_subscribe,		/**< Incoming subscription */
+  nua_i_subscribe,		/**< Incoming SUBSCRIBE  */
   nua_i_subscription,		/**< Incoming subscription to be authorized */
-  nua_i_notify,			/**< Incoming event */
+  nua_i_notify,			/**< Incoming event NOTIFY */
   nua_i_method,			/**< Incoming, unknown method */
 
   nua_i_media_error,		/**< Offer-answer error indication */
 
   /* Responses */
-  nua_r_set_params,		/**< Answer to nua_set_params() */
+  nua_r_set_params,		/**< Answer to nua_set_params() or 
+				 * nua_get_hparams(). */
   nua_r_get_params,		/**< Answer to nua_get_params() or 
 				 * nua_get_hparams(). */
   nua_r_shutdown,		/**< Answer to nua_shutdown() */
@@ -140,8 +141,9 @@ typedef enum nua_event_e {
   nua_r_notify,			/**< Answer to outgoing NOTIFY */
   nua_r_method,			/**< Answer to unknown outgoing method */
  
+  nua_r_authenticate,		/**< Answer to nua_authenticate() */
+
   /* Internal events: nua hides them from application */
-  nua_r_authenticate,
   nua_r_redirect,
   nua_r_destroy,
   nua_r_respond,
@@ -318,7 +320,7 @@ SOFIAPUBFUN void nua_bye(nua_handle_t *, tag_type_t, tag_value_t, ...);
 
 /** Cancel an INVITE operation */
 SOFIAPUBFUN void nua_cancel(nua_handle_t *, tag_type_t, tag_value_t, ...);
- 
+
 /** Authenticate an operation. */
 SOFIAPUBFUN void nua_authenticate(nua_handle_t *, tag_type_t, tag_value_t, ...);
 

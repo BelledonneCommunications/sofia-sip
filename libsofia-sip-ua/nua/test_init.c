@@ -78,7 +78,7 @@ int test_nua_init(struct context *ctx,
   ctx->root = su_root_create(NULL);
   TEST_1(ctx->root);
 
-  /* Disable threading by command line switch? */
+  /* Disable threading by command line switch -s */
   su_root_threading(ctx->root, ctx->threading);
 
   if (start_proxy && !o_proxy) {

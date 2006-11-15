@@ -427,10 +427,11 @@ int respond_with_retry_after(nua_handle_t *nh, nta_incoming_t *irq,
  * @par
  * The INVITE request message created by nua_invite() operation is saved as
  * a template for automatic re-INVITE requests sent by the session timer
- * ("timer") feature. Please note that the template message is not used when
- * ACK, PRACK, UPDATE or INFO requests are created (however, these requests
- * will include dialog-specific headers like @To, @From, and @CallID as well
- * as preference headers @Allow, @Supported, @UserAgent, @Organization).
+ * ("timer") feature (see NUTAG_SESSION_TIMER() for more details). Please
+ * note that the template message is not used when ACK, PRACK, UPDATE or
+ * INFO requests are created (however, these requests will include
+ * dialog-specific headers like @To, @From, and @CallID as well as
+ * preference headers @Allow, @Supported, @UserAgent, @Organization).
  *
  * @par SDP Handling
  * The initial nua_invite() creates a @ref soa_session_t "soa media session"
@@ -3285,7 +3286,7 @@ static int process_response_to_bye(nua_handle_t *nh,
  * @param sip    pointer to BYE request
  * @param tags   empty
  *
- * @sa @ref nua_call_model, #nua_i_state, nua_bye(), nua_r_bye(), #nua_r_cancel
+ * @sa @ref nua_call_model, #nua_i_state, nua_bye(), nua_bye(), #nua_r_cancel
  *
  * @END_NUA_EVENT
  */
@@ -3421,16 +3422,20 @@ static void signal_call_state_change(nua_handle_t *nh,
  *
  * @brief Call state has changed.
  *
- * This event will be sent whenever the call state changes. In addition to
- * basic changes of session status indicated with enum ::nua_callstate, the
- * @RFC3264 SDP Offer/Answer negotiation status is also included. The
- * negotiation status includes the local SDP (in SOATAG_LOCAL_SDP()) sent
- * and flags indicating whether the local SDP was an offer or answer
- * (NUTAG_OFFER_SENT(), NUTAG_ANSWER_SENT()). Likewise, the received remote
- * SDP is included in tag SOATAG_REMOTE_SDP() and flags indicating whether
- * the remote SDP was an offer or an answer in tags NUTAG_OFFER_RECV() or
- * NUTAG_ANSWER_RECV(). SOATAG_ACTIVE_AUDIO() and SOATAG_ACTIVE_VIDEO() are
- * informational tags used to indicate what is the status of these media.
+ * This event will be sent whenever the call state changes. 
+ *
+ * In addition to basic changes of session status indicated with enum
+ * ::nua_callstate, the @RFC3264 SDP Offer/Answer negotiation status is also
+ * included if it is enabled (by default or with NUTAG_MEDIA_ENABLE(1)). The
+ * received remote SDP is included in tag SOATAG_REMOTE_SDP(). The tags
+ * NUTAG_OFFER_RECV() or NUTAG_ANSWER_RECV() indicate whether the remote SDP
+ * was an offer or an answer. The SDP negotiation result is included in the
+ * tags SOATAG_LOCAL_SDP() and SOATAG_LOCAL_SDP_STR() and tags
+ * NUTAG_OFFER_SENT() or NUTAG_ANSWER_SENT() indicate whether the local SDP
+ * was an offer or answer.
+ *
+ * SOATAG_ACTIVE_AUDIO() and SOATAG_ACTIVE_VIDEO() are informational tags
+ * used to indicate what is the status of audio or video.
  *
  * Note that #nua_i_state also covers call establisment events
  * (#nua_i_active) and termination (#nua_i_terminated).
@@ -3834,7 +3839,7 @@ static int respond_to_options(nua_server_request_t *sr, tagi_t const *tags);
  * @param sip    incoming OPTIONS request
  * @param tags   empty
  *
- * @sa nua_respond(), nua_options(), nua_r_options(), @RFC3261 section 11.2
+ * @sa nua_respond(), nua_options(), #nua_r_options, @RFC3261 section 11.2
  *
  * @END_NUA_EVENT
  */

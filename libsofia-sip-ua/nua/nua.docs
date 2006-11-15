@@ -571,22 +571,32 @@ void app_r_invite(int           status,
 } /* app_r_invite */
 @endcode
 
-The app_i_state() function is called by callback function when call has
-been successfully set up and the media has been activated.
+The nua_i_state event is sent (and app_i_state() function called by callback
+function) when the call state changes (see @ref nua_uac_call_model
+"client-side call model").
 
 @code
-void app_i_active(int           status,
-                  char const   *phrase,
-                  nua_t        *nua,
-                  nua_magic_t  *magic,
-                  nua_handle_t *nh,
-                  nua_hmagic_t *hmagic,
-                  sip_t const  *sip,
-                  tagi_t        tags[])
+void app_i_state(int           status,
+		 char const   *phrase,
+		 nua_t        *nua,
+		 nua_magic_t  *magic,
+		 nua_handle_t *nh,
+		 nua_hmagic_t *hmagic,
+		 sip_t const  *sip,
+		 tagi_t        tags[])
 {
-  printf("call active\n");
+  nua_callstate_t state = nua_callstate_init;
 
-} /* app_i_active */
+  tl_gets(tags,
+          NUTAG_CALLSTATE_REF(state),
+          NUTAG__REF(state),
+
+  
+    state = (nua_callstate_t)t->t_value;
+
+  printf("call %s\n", nua_callstate_name(state));
+
+} /* app_i_state */
 @endcode
 
 @subsection nua_receiveacall Receive a call
@@ -607,12 +617,12 @@ void app_i_invite(int           status,
 {
   printf("incoming call\n");
 
-  nua_respond(nh, 200, "OK", TAG_END());
+  nua_respond(nh, 200, "OK", SOA_USER_SDP(magic->sdp), TAG_END());
 
 } /* app_i_invite */
 @endcode
 
-The app_i_active() function is called by the callback function when call has
+The app_i_state() function is called by the callback function when call has
 been successfully set up and the media has been activated.
 
 @code

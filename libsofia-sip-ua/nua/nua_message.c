@@ -69,7 +69,7 @@
  * @par Events:
  *    #nua_r_message
  *
- * @sa nua_i_message, @RFC3428
+ * @sa #nua_i_message, @RFC3428
  */
 
 static int process_response_to_message(nua_handle_t *nh,
