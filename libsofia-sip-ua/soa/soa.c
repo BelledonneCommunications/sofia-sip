@@ -266,6 +266,7 @@ soa_session_t *soa_create(char const *name,
   return ss;
 }
 
+/** Create a copy of a @soa session object. */
 soa_session_t *soa_clone(soa_session_t *parent_ss,
 			 su_root_t *root,
 			 soa_magic_t *magic)
@@ -809,9 +810,18 @@ int soa_get_warning(soa_session_t *ss, char const **return_text)
 
 /** Return SDP description of capabilities.
  *
+ * @param ss  pointer to @soa session
+ * @param return_sdp      return value for capability SDP structure 
+ * @param return_sdp_str  return value for capability SDP string
+ * @param return_len  return value for length of capability SDP string
+ *
  * @retval 0 if there is no description to return
  * @retval 1 if description is returned
  * @retval -1 upon an error
+ *
+ * @sa @RFC3261 section 11, soa_set_capability_sdp(), 
+ * SOATAG_CAPS_SDP(), SOATAG_CAPS_SDP_STR(), 
+ * nua_options(), #nua_i_options()
  */
 int soa_get_capability_sdp(soa_session_t const *ss,
 			   sdp_session_t const **return_sdp,
@@ -844,6 +854,25 @@ int soa_get_capability_sdp(soa_session_t const *ss,
 }
 
 
+/** Set capability SDP. 
+ *
+ * Capability SDP is used instead of user SDP when generating OPTIONS
+ * responses describing media capabilities. 
+ *
+ * @param ss  pointer to @soa session
+ * @param sdp pointer to SDP session structure
+ * @param str pointer to string containing SDP session description
+ * @param len lenght of string @a str
+ *
+ * @retval 1 when SDP is stored and it differs from previously stored
+ * @retval 0 when SDP is identical to previously stored one (and user version
+ *           returned by soa_get_user_version() is not incremented)
+ * @retval -1 upon an error
+ *
+ * @sa @RFC3261 section 11, soa_get_capability_sdp(),
+ * SOATAG_CAPS_SDP(), SOATAG_CAPS_SDP_STR(), 
+ * nua_options(), #nua_i_options()
+ */
 int soa_set_capability_sdp(soa_session_t *ss, 
 			   sdp_session_t const *sdp,
 			   char const *str, issize_t len)
@@ -912,7 +941,7 @@ soa_base_set_capability_sdp(soa_session_t *ss,
  * @param return_sdp SDP  session structure return value
  * @param return_sdp_str  return value for pointer to string 
  *                        containing the user SDP session description
- * @param return_len  return value for user SDP session descrioption string
+ * @param return_len  return value for user SDP session description string
  *                    length 
  *
  * Any of the parameters @a return_sdp, @a return_sdp_str, or @a return_len 
@@ -1758,46 +1787,58 @@ void soa_base_terminate(soa_session_t *ss, char const *option)
   soa_set_activity(ss, NULL, 1);
 }
 
+/** Return true if the SDP Offer/Answer negotation is complete.
+ *
+ * The soa_init_offer_answer() clears the completion flag.
+ */
 int soa_is_complete(soa_session_t const *ss)
 {
   return ss && ss->ss_complete;
 }
 
+/** Return true if audio has been activated. */
 int soa_is_audio_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_local_activity->ma_audio : SOA_ACTIVE_DISABLED;
 }
 
+/** Return true if video has been activated. */
 int soa_is_video_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_local_activity->ma_video : SOA_ACTIVE_DISABLED;
 }
 
+/** Return true if image sharing has been activated. */
 int soa_is_image_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_local_activity->ma_image : SOA_ACTIVE_DISABLED;
 }
 
+/** Return true if messaging session has been activated. */
 int soa_is_chat_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_local_activity->ma_chat : SOA_ACTIVE_DISABLED;
 }
 
+/** Return true if remote audio is active (not on hold). */
 int soa_is_remote_audio_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_remote_activity->ma_audio : SOA_ACTIVE_DISABLED;
 }
 
+/** Return true if remote video is active (not on hold). */
 int soa_is_remote_video_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_remote_activity->ma_video : SOA_ACTIVE_DISABLED;
 }
 
+/** Return true if image sharing is active (not on hold). */
 int soa_is_remote_image_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_remote_activity->ma_image : SOA_ACTIVE_DISABLED;
 }
 
+/** Return true if chat session is active (not on hold). */
 int soa_is_remote_chat_active(soa_session_t const *ss)
 {
   return ss ? ss->ss_remote_activity->ma_chat : SOA_ACTIVE_DISABLED;
