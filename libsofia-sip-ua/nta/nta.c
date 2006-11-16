@@ -3109,16 +3109,22 @@ int nta_msg_request_complete(msg_t *msg,
   method = sip->sip_request->rq_method;
   method_name = sip->sip_request->rq_method_name;
 
-  if (sip->sip_cseq &&
-      (method == sip_method_ack || method == sip_method_cancel))
-    seq = sip->sip_cseq->cs_seq;
-  else if (method == sip_method_ack || method == sip_method_cancel)
-    seq = leg->leg_seq;
-  else
+  if (method == sip_method_ack || method == sip_method_cancel)
+    seq = sip->sip_cseq ? sip->sip_cseq->cs_seq : leg->leg_seq; 
+  else if (leg->leg_seq)
     seq = ++leg->leg_seq;
+  else if (sip->sip_cseq) /* Obtain initial value from existing CSeq header */
+    seq = leg->leg_seq = sip->sip_cseq->cs_seq;
+  else
+    seq = leg->leg_seq = (sip_now() >> 1) & 0x7ffffff;
 
-  if (!(cseq = sip_cseq_create(home, seq, method, method_name)) ||
-      msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)cseq) < 0)
+  if ((!sip->sip_cseq || 
+       seq != sip->sip_cseq->cs_seq ||
+       method != sip->sip_cseq->cs_method ||
+       (method == sip_method_unknown && 
+	strcmp(method_name, sip->sip_cseq->cs_method_name) != 0)) &&
+      (!(cseq = sip_cseq_create(home, seq, method, method_name)) ||
+       msg_header_insert(msg, (msg_pub_t *)sip, (msg_header_t *)cseq) < 0))
     return -1;
 
   return 0;
@@ -3228,7 +3234,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   int no_dialog = 0;
   unsigned rseq = 0;
   /* RFC 3261 section 12.2.1.1 */
-  uint32_t seq = (sip_now() >> 1) & 0x7ffffff;
+  uint32_t seq = 0;
   ta_list ta;
   nta_leg_t *leg;
   su_home_t *home;
