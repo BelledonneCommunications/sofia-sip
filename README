@@ -1,6 +1,6 @@
-===============================================================
+=============================================================
 README / Sofia-SIP - RFC3261 compliant SIP User-Agent library
-===============================================================
+=============================================================
 
 Introduction
 ------------
@@ -20,7 +20,7 @@ Quick start
 Sofia-SIP uses the GNU autotools, so building procedure
 is the usual:
 
-sh> ./autogen.sh (if building from CVS)
+sh> sh autogen.sh (if building from darcs)
 sh> ./configure
 sh> make
 sh> make install
