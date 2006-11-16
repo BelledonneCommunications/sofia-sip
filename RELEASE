@@ -98,6 +98,8 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- Session timers in nua did not work if UAS had to do refreshing with INVITEs
+  Thanks for Chung Pak Lai for reporting this bug.
 - sres_query() failed assert or crashed if there was no DNS servers configured.
   Thanks for Roman Filonenko for reporting this bug.
 - nua_bye() did not terminate the call if re-INVITE going on at the same time.
