@@ -137,7 +137,8 @@ struct tport_pending_s {
   void               *p_client;
   tport_pending_error_f *p_callback;
   msg_t              *p_msg;
-  unsigned            p_reported;
+  unsigned short      p_reported;
+  unsigned short      p_on_success;
 };
 
 /** Return true if transport is master. */

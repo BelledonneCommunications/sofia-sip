@@ -783,7 +783,7 @@ defined in @RFC3264. The session object is used to
 store the SDP template from user, remote SDP received from the network and
 the negotiation result, local SDP.
 
-@par Functions used to create, copy and destroy @soa session objects:
+@par Functions used to create, copy and destroy "soa" session objects:
 @code
 soa_session_t *soa_create(char const *name, su_root_t *, soa_magic_t *);
 
@@ -814,7 +814,7 @@ int soa_get_warning(soa_session_t *ss, char const **return_phrase);
 @endcode
 
 
-@par Functions Used to Store and Retrieve SDP Descriptions: 
+@par Functions used to store and retrieve SDP descriptions: 
 @code
 int soa_set_capability_sdp(soa_session_t *ss, 
                            struct sdp_session_s const *sdp,
@@ -856,7 +856,7 @@ int soa_get_local_sdp(soa_session_t const *ss,
 @endcode
 
 
-@par Functions for Executing Offer/Answer Negotiation Steps:
+@par Functions for executing Offer/Answer negotiation steps:
 @code
 int soa_init_offer_answer(soa_session_t *ss);
 int soa_generate_offer(soa_session_t *, int always, soa_callback_f *);
@@ -866,12 +866,14 @@ int soa_process_reject(soa_session_t *, soa_callback_f *);
 int soa_is_complete(soa_session_t const *ss);
 @endcode
 
-@par Functions for Signaling Completion of Session Signaling:
+@par Functions for signaling events of session signaling:
 @code
 int soa_activate(soa_session_t *, char const *option);
 int soa_deactivate(soa_session_t *, char const *option);
 void soa_terminate(soa_session_t *, char const *option);
 @endcode
+These functions are used to activate actions taken by @soa, for instance,
+a COMEDIA connection is established with soa_activate().
 
 @par Functions for Checking Activated Media:
 @code

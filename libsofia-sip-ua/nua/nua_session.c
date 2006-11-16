@@ -268,12 +268,16 @@ static int process_response_to_prack(nua_handle_t *nh,
 
 static void nua_session_usage_destroy(nua_handle_t *, nua_session_usage_t *);
 
+static void session_timer_preferences(nua_session_usage_t *ss,
+				      unsigned expires,
+				      unsigned min_se,
+				      enum nua_session_refresher refresher);
 static int session_timer_is_supported(nua_handle_t const *nh);
 static int prefer_session_timer(nua_handle_t const *nh);
 
 static int use_session_timer(nua_session_usage_t *ss, int uas, int always,
 			     msg_t *msg, sip_t *);
-static int  init_session_timer(nua_session_usage_t *ss, sip_t const *, int refresher);
+static int init_session_timer(nua_session_usage_t *ss, sip_t const *, int refresher);
 static void set_session_timer(nua_session_usage_t *ss);
 
 static int
@@ -527,8 +531,19 @@ nua_stack_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (ss->ss_state == nua_callstate_terminated)
     ss->ss_state = nua_callstate_init;
 
-  if (restarted && !cr->cr_msg)
-    cr->cr_msg = msg_dup(du->du_msg);
+  if (!restarted) {
+    session_timer_preferences(ss, 
+			      NH_PGET(nh, session_timer),
+			      NH_PGET(nh, min_se),
+			      NH_PGET(nh, refresher));
+  }
+
+  if (restarted && !cr->cr_msg) {
+    if (du->du_msg)
+      cr->cr_msg = msg_dup(du->du_msg);
+    else
+      restarted = 0;
+  }
 
   msg = nua_creq_msg(nua, nh, cr, restarted,
 		     SIP_METHOD_INVITE,
@@ -537,14 +552,13 @@ nua_stack_invite2(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		     TAG_NEXT(tags));
   sip = sip_object(msg);
 
-  if (!sip)
+  if (!sip) {
+    what = "Cannot Initialize Request";
     goto failure;
+  }
 
   if (!restarted) {
     msg_destroy(du->du_msg), du->du_msg = msg_dup(msg);
-    ss->ss_min_se = NH_PGET(nh, min_se);
-    ss->ss_session_timer = NH_PGET(nh, session_timer);
-    ss->ss_refresher = NH_PGET(nh, refresher);
   }
 
   if (nh->nh_soa) {
@@ -1455,6 +1469,10 @@ static int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags);
 
 static int
   preprocess_invite(nua_t *, nua_handle_t *, nua_server_request_t **, sip_t *),
+  session_check_request(nua_t *nua,
+			nua_handle_t *nh,
+			nta_incoming_t *irq,
+			sip_t const *sip),
   process_invite(nua_t *, nua_handle_t *, nua_server_request_t *, sip_t *),
   process_prack(nua_handle_t *, nta_reliable_t *, nta_incoming_t *,
 		sip_t const *);
@@ -1612,7 +1630,6 @@ int preprocess_invite(nua_t *nua,
   int have_sdp;
   char const *sdp;
   size_t len;
-  char const *user_agent;
 
   if (nh) {
     ds = nh->nh_ds;
@@ -1625,38 +1642,11 @@ int preprocess_invite(nua_t *nua,
 
   sr->sr_usage = du;
 
-  user_agent = NUA_PGET(nua, nh, user_agent);
-
   if (!NUA_PGET(nua, nh, invite_enable))
     return SR_STATUS1(sr, SIP_403_FORBIDDEN);
 
-  if (nh->nh_soa) {
-    /* Make sure caller uses application/sdp without compression */
-    if (nta_check_session_content(sr->sr_irq, sip,
-				  nua->nua_invite_accept,
-				  SIPTAG_USER_AGENT_STR(user_agent),
-				  SIPTAG_ACCEPT_ENCODING_STR(""),
-				  TAG_END()))
-      return 415;
-
-    /* Make sure caller accepts application/sdp */
-    if (nta_check_accept(sr->sr_irq, sip,
-			 nua->nua_invite_accept,
-			 NULL,
-			 SIPTAG_USER_AGENT_STR(user_agent),
-			 SIPTAG_ACCEPT_ENCODING_STR(""),
-			 TAG_END()))
-      return 406;
-  }
-
-  if (sip->sip_session_expires) {
-    unsigned min_se = ss ? ss->ss_min_se : NH_PGET(nh, min_se);
-    if (nta_check_session_expires(sr->sr_irq, sip,
-				  min_se,
-				  SIPTAG_USER_AGENT_STR(user_agent),
-				  TAG_END()))
-      return 422;
-  }
+  if (session_check_request(nua, nh, sr->sr_irq, sip))
+    return 500;
 
   have_sdp = session_get_description(sip, &sdp, &len);
 
@@ -1724,6 +1714,47 @@ int preprocess_invite(nua_t *nua,
   return 0;
 }
 
+static int
+session_check_request(nua_t *nua,
+		      nua_handle_t *nh,
+		      nta_incoming_t *irq,
+		      sip_t const *sip)
+{
+  char const *user_agent = NUA_PGET(nua, nh, user_agent);
+
+  if (nh->nh_soa) {
+    /* Make sure caller uses application/sdp without compression */
+    if (nta_check_session_content(irq, sip,
+				  nua->nua_invite_accept,
+				  SIPTAG_USER_AGENT_STR(user_agent),
+				  SIPTAG_ACCEPT_ENCODING_STR(""),
+				  TAG_END()))
+      return 415;
+
+    /* Make sure caller accepts application/sdp */
+    if (nta_check_accept(irq, sip,
+			 nua->nua_invite_accept,
+			 NULL,
+			 SIPTAG_USER_AGENT_STR(user_agent),
+			 SIPTAG_ACCEPT_ENCODING_STR(""),
+			 TAG_END()))
+      return 406;
+  }
+
+  if (sip->sip_session_expires) {
+    unsigned min_se = NH_PGET(nh, min_se);
+    if (sip->sip_min_se && min_se < sip->sip_min_se->min_delta)
+      min_se = sip->sip_min_se->min_delta;
+    if (nta_check_session_expires(irq, sip,
+				  min_se,
+				  SIPTAG_USER_AGENT_STR(user_agent),
+				  TAG_END()))
+      return 422;
+  }
+
+  return 0;
+}
+
 /** @internal Process incoming invite - initiate media, etc. */
 static
 int process_invite(nua_t *nua,
@@ -1740,9 +1771,11 @@ int process_invite(nua_t *nua,
   ss->ss_precondition = sip_has_feature(sip->sip_require, "precondition");
   if (ss->ss_precondition)
     ss->ss_100rel = 1;
-  ss->ss_min_se = NH_PGET(nh, min_se);
-  ss->ss_session_timer = NH_PGET(nh, session_timer);
-  ss->ss_refresher = NH_PGET(nh, refresher);
+
+  session_timer_preferences(ss, 
+			    NH_PGET(nh, session_timer),
+			    NH_PGET(nh, min_se),
+			    NH_PGET(nh, refresher));
 
   /* Session Timer negotiation */
   if (sip_has_supported(NH_PGET(nh, supported), "timer"))
@@ -2345,6 +2378,24 @@ static int prefer_session_timer(nua_handle_t const *nh)
     NH_PGET(nh, session_timer) != 0;
 }
 
+/* Initialize session timer */ 
+static
+void session_timer_preferences(nua_session_usage_t *ss,
+			       unsigned expires,
+			       unsigned min_se,
+			       enum nua_session_refresher refresher)
+{
+  if (expires < min_se)
+    expires = min_se;
+  if (refresher && expires == 0)
+    expires = 3600;
+
+  ss->ss_min_se = min_se;
+  ss->ss_session_timer = expires;
+  ss->ss_refresher = refresher;
+}
+
+
 /** Add timer featuretag and Session-Expires/Min-SE headers */
 static int
 use_session_timer(nua_session_usage_t *ss, int uas, int always,
@@ -2390,8 +2441,11 @@ init_session_timer(nua_session_usage_t *ss,
   int server;
 
   /* Session timer is not needed */
-  if (!sip->sip_session_expires)
+  if (!sip->sip_session_expires) {
+    if (!sip_has_supported(sip->sip_supported, "timer"))
+      ss->ss_refresher = nua_local_refresher;
     return 0;
+  }
 
   ss->ss_refresher = nua_no_refresher;
   ss->ss_session_timer = sip->sip_session_expires->x_delta;
@@ -2422,7 +2476,7 @@ init_session_timer(nua_session_usage_t *ss,
 	      server ? sip->sip_request->rq_method_name : "response to",
 	      server ? "request" : sip->sip_cseq->cs_method_name));
 
-  return 0;
+  return 1;
 }
 
 static void
@@ -2996,8 +3050,11 @@ int nua_stack_process_update(nua_t *nua,
     return 481;
   }
 
+  if (session_check_request(nua, nh, irq, sip))
+    return 501;
+
   /* Do session timer negotiation */
-  if (status < 300 && sip->sip_session_expires) {
+  if (sip->sip_session_expires) {
     use_timer = 1;
     init_session_timer(ss, sip, NH_PGET(nh, refresher));
   }

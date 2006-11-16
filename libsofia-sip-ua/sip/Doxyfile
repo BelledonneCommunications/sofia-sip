@@ -13,7 +13,8 @@ TAGFILES            += \
 	../docs/msg.doxytags=../msg \
 	../docs/sdp.doxytags=../sdp \
 	../docs/iptsec.doxytags=../iptsec \
-	../docs/nta.doxytags=../nta
+	../docs/nta.doxytags=../nta \
+	../docs/nua.doxytags=../nua
 
 GENERATE_TAGFILE    = ../docs/sip.doxytags
 

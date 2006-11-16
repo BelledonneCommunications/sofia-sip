@@ -54,12 +54,18 @@ int test_session_timer(struct context *ctx)
   struct event *e;
   sip_t const *sip;
 
-  if (print_headings)
-    printf("TEST NUA-8.1: Session timers\n");
-
 /* Session timer test:
 
    A	      P		B
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |			|
+   |<----180 Ringing----|
+   |			|
+   |<------200 OK-------|
+   |------------------->|
+   |			|
+   |			|
    |--INVITE->| 	|
    |<--422----|		|
    |---ACK--->|		|
@@ -82,14 +88,92 @@ int test_session_timer(struct context *ctx)
 
 */
 
+  if (print_headings)
+    printf("TEST NUA-8.1.1: Session timers\n");
+
   a_call->sdp = "m=audio 5008 RTP/AVP 8";
   b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
+
+  nua_set_params(ctx->b.nua,
+		 NUTAG_SESSION_REFRESHER(nua_any_refresher),
+		 TAG_END());
+
+  run_b_until(ctx, nua_r_set_params, until_final_response);
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   INVITE(a, a_call, a_call->nh,
 	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
 	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 SIPTAG_SUPPORTED_STR("100rel"),
+	 TAG_END());
+
+  run_ab_until(ctx, -1, until_ready, -1, accept_call);
+
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_i_state
+     CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
+     PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
+  */
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_session_expires);
+  TEST_S(sip->sip_session_expires->x_refresher, "uas");
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(is_answer_recv(e->data->e_tags));
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a->events);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S2a)-> EARLY: nua_respond(), nua_i_state
+   EARLY -(S3b)-> COMPLETED: nua_respond(), nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_ack);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b->events);
+
+  if (print_headings)
+    printf("TEST NUA-8.1.1: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-8.1.2: Session timers negotiation\n");
+
+  nua_set_hparams(b_call->nh,
+		  NUTAG_AUTOANSWER(0),
+		  NUTAG_MIN_SE(120),
+		  TAG_END());
+
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+
+  INVITE(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 SIPTAG_SUPPORTED_STR("100rel, timer"),
 	 NUTAG_SESSION_TIMER(15),
 	 NUTAG_MIN_SE(5),
 	 TAG_END());

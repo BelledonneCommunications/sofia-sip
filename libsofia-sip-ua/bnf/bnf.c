@@ -69,6 +69,42 @@ unsigned char const _bnf_table[256] = {
   alpha, alpha, alpha, sep,   0,     sep,   mtok,  0,     /* xyz{|}~  */
 };
 
+
+#define BM(c, m00, m32, m64, m96)			   \
+  ((c < 64)						   \
+   ? ((c < 32)						   \
+      ? (m00 & (1 << (31 - c)))				   \
+      : (m32 & (1 << (63 - c))))			   \
+   : ((c < 96)						   \
+      ? (m64 & (1 << (95 - c)))				   \
+      : (m96 & (1 << (127 - c)))))
+
+/** Span of a token */
+size_t bnf_span_token(char const *s)
+{
+  char const *e = s;
+  unsigned const m32 = 0x4536FFC0U, m64 = 0x7FFFFFE1U, m96 = 0xFFFFFFE2U;
+
+  while (BM(*e, 0, m32, m64, m96))
+    e++;
+
+  return e - s;
+}
+
+/** Span of a token */
+size_t bnf_span_token4(char const *s)
+{
+  char const *e = s; 
+  while (_bnf_table[(unsigned char)(*e)] & bnf_token)
+    e++; 
+  return e - s; 
+}
+
+char * bnf_span_token_end(char const *s)
+{
+  return (char *)s;
+}
+
 /** Return length of decimal-octet */
 static inline int span_ip4_octet(char const *host)
 {

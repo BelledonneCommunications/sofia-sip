@@ -316,7 +316,7 @@ tagi_t *tl_adup(su_home_t *home, tagi_t const lst[])
 
   d = tl_dup(newlst, lst, &b);
 
-  assert(b == end); assert(tend == d);
+  assert(b == end); assert(tend == d); (void)end; (void)tend;
 
   return newlst;
 }

@@ -184,6 +184,7 @@ int ip_test(void)
     TEST_S(ip4b, "::");
     s = ip4c; TEST(scan_ip6_address(&s), 19); TEST_S(s, ",");
     TEST_S(ip4c, "::1");
+    TEST_S(ip5, "dead:beef:feed::0ded:0:1:2:3");
     s = ip5; TEST(scan_ip6_address(&s), 28); TEST_S(s, "");
     TEST_S(ip5, "dead:beef:feed:ded::1:2:3");
     s = ip6; TEST(scan_ip6_address(&s), 40); TEST_S(s, "+");

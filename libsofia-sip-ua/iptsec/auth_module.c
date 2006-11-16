@@ -317,6 +317,7 @@ auth_status_t *auth_status_init_with(void *p,
 }
 
 /** Allocate a new auth_status_t structure. @relates auth_status_t */
+
 auth_status_t *auth_status_new(su_home_t *home)
 {
   auth_status_t *as = su_home_clone(home, (sizeof *as));

@@ -183,7 +183,8 @@ struct tport_s {
   tport_pending_t    *tp_released;      /**< Released pends */
   unsigned            tp_plen;          /**< Size of tp_pending */
   unsigned            tp_pused;         /**< Used pends */
-  unsigned            tp_reported;      /**< Report counter */
+  unsigned short      tp_reported;      /**< Report counter */
+  unsigned short      tp_pad;
 
   /* ==== Send queue ===================================================== */
 

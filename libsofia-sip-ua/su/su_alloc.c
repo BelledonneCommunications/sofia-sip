@@ -1297,6 +1297,8 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
  *
  * @retval 1 if @a memory has been allocated from @a home.
  * @retval 0 otherwise
+ *
+ * @since New in @VERSION_1_12_4.
  */
 int su_in_home(su_home_t *home, void const *memory)
 {

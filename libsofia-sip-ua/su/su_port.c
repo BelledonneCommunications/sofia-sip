@@ -1478,4 +1478,3 @@ su_timer_t **su_port_timers(su_port_t *self)
 {
   return &self->sup_timers;
 }
-
