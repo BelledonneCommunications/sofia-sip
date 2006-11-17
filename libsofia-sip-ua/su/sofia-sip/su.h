@@ -441,6 +441,18 @@ SOFIAPUBVAR const struct in_addr6 *su_in6addr_loopback(void);
 #endif
 #endif /* SU_HAVE_IN6 */
 
+#define SU_IN6_IS_ADDR_V4MAPPED(a) \
+  (((uint32_t const *) (a))[0] == 0 &&			      \
+   ((uint32_t const *) (a))[1] == 0 &&			      \
+   ((uint32_t const *) (a))[2] == htonl(0xffff))
+
+#define SU_IN6_IS_ADDR_V4COMPAT(a)			      \
+  (((uint32_t const *)(a))[0] == 0 &&			      \
+   ((uint32_t const *)(a))[1] == 0 &&			      \
+   ((uint32_t const *)(a))[2] == 0 &&			      \
+   ((uint32_t const *)(a))[3] != htonl(1) &&		      \
+   ((uint32_t const *)(a))[3] != htonl(0))
+
 SOFIAPUBFUN int su_cmp_sockaddr(su_sockaddr_t const *a,
 				su_sockaddr_t const *b);
 SOFIAPUBFUN int su_match_sockaddr(su_sockaddr_t const *a,
