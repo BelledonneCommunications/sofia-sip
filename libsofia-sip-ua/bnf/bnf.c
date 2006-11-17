@@ -816,3 +816,89 @@ int host_has_domain_invalid(char const *string)
 
   return 0;
 }
+
+#include <sofia-sip/su.h>
+
+static size_t convert_ip_address(char const *s,
+				 uint8_t addr[16],
+				 size_t *return_addrlen)
+{
+  size_t len;
+
+#if SU_HAVE_IN6
+  char buf[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"];
+
+  len = span_ip6_reference(s);
+  if (len) {
+    assert(len - 2 < sizeof buf); assert(len > 2);
+
+    if (s[len])
+      return 0;
+
+    len = len - 2;
+    s = memcpy(buf, s + 1, len), buf[len] = '\0';
+  }
+  else
+    len = span_ip6_address(s);
+
+  if (len) {
+    if (s[len] == '\0' && inet_pton(AF_INET6, s, addr) == 1) {
+      if (SU_IN6_IS_ADDR_V4MAPPED(addr) ||
+	  SU_IN6_IS_ADDR_V4COMPAT(addr)) {
+	memcpy(addr, addr + 12, 4);
+	return (void)(*return_addrlen = 4), len;
+      }
+      return (void)(*return_addrlen = 16), len;
+    }
+    else
+      return 0;
+  }
+#endif
+
+  len = span_ip4_address(s);
+  if (len) {
+    if (s[len] == '\0' && inet_pton(AF_INET, s, addr) == 1)
+      return (void)(*return_addrlen = 4), len;
+    else
+      return 0;
+  }
+
+  return 0;
+}
+
+/** Compare two host names or IP addresses
+ *
+ * Converts valid IP addresses to the binary format before comparing them. 
+ * Note that IP6-mapped IP4 addresses and IP6-compatible IP4 addresses are
+ * compared as IP4 addresses; that is, ::ffff:127.0.0.1, ::127.0.0.1 and
+ * 127.0.0.1 all are all equal.
+ *
+ * @param a IP address or domain name
+ * @param b IP address or domain name
+ * 
+ * @retval -1 if a < b
+ * @retval 0 if a == b
+ * @retval 1 if a > b
+ *
+ * @since New in @VERSION_1_12_4.
+ */
+int host_cmp(char const *a, char const *b)
+{
+  uint8_t a6[16], b6[16];
+  size_t alen, blen, asize = 0, bsize = 0;
+
+  if (a == NULL || b == NULL)
+    return (a != NULL) - (b != NULL);
+
+  alen = convert_ip_address(a, a6, &asize);
+  blen = convert_ip_address(b, b6, &bsize);
+
+  if (alen > 0 && blen > 0) {
+    if (asize != bsize)
+      return asize - bsize;
+    return memcmp(a6, b6, asize);
+  }
+  else {
+    return strcasecmp(a, b);
+  }
+}

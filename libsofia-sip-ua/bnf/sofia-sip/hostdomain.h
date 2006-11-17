@@ -49,9 +49,11 @@ SOFIAPUBFUN int host_is_domain(char const *string);
 SOFIAPUBFUN int host_is_valid(char const *string);
 SOFIAPUBFUN int host_is_local(char const *string);
 SOFIAPUBFUN int host_has_domain_invalid(char const *string);
+SOFIAPUBFUN int host_cmp(char const *a, char const *b);
 
 /** This is typo. @deprecated Use host_is_ip6_reference() instead. */ 
 SOFIAPUBFUN int host_ip6_reference(char const *string);
+
 
 SOFIA_END_DECLS
 
