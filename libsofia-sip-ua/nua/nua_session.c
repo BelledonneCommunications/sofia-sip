@@ -1591,7 +1591,6 @@ int nua_stack_process_invite(nua_t *nua,
   
   sr = SR_INIT(sr0);
   sr->sr_irq = irq;
-  sr->sr_msg = nta_incoming_getrequest(irq);
 
   status = preprocess_invite(nua, nh, &sr, (sip_t *)sip);
 
@@ -1600,7 +1599,6 @@ int nua_stack_process_invite(nua_t *nua,
       nta_incoming_treply(irq, sr->sr_status, sr->sr_phrase,
 			  SIPTAG_USER_AGENT_STR(NUA_PGET(nua, nh, user_agent)),
 			  TAG_END());
-    msg_destroy(sr->sr_msg);
     nua_server_request_destroy(sr);
     /* if something has failed, respond with 500 Internal Server Error */
     return 500; 
