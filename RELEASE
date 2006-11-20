@@ -83,6 +83,11 @@ that are included in the request constructed from the URI. For example,
 using URI <sip:example.com?subject=test> would include Subject header
 with value "test" in the request.
 
+There is now also reactive mode of handing subscriptions in nua, using
+nua_i_subscribe()/nua_respond()/nua_notify()/nua_i_publish().
+
+The nua can be used as a registrar with nua_i_register/nua_respond().
+
 <information about major new features
  - new/changed/removed functionality
  - links to further documentation
@@ -98,6 +103,9 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
+- Subsite handling in nth was fixed.
+- Outbound was confused by IPv6 addresses in the Via header.
+  Thanks for Marc Blanchet from Viagenie for reporting the bug.
 - Session timers in nua did not work if UAS had to do refreshing with INVITEs
   Thanks for Chung Pak Lai for reporting this bug.
 - sres_query() failed assert or crashed if there was no DNS servers configured.
