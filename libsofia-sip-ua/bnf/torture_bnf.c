@@ -319,7 +319,7 @@ int host_test(void)
   TEST(host_has_domain_invalid("1-.invalid."), 0);
 
   /* Invalid IP4 addresses (extra leading zeros) */
-  TEST_1(host_cmp("127.0.0.1", "127.0.0.01"));
+  TEST_1(!host_cmp("127.0.0.1", "127.0.0.01"));
   TEST_1(!host_cmp("[ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]", 
 		  "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"));
   /* Invalid reference (extra leading zeros) */

@@ -824,6 +824,7 @@ static size_t convert_ip_address(char const *s,
 				 size_t *return_addrlen)
 {
   size_t len;
+  int canonize;
 
 #if SU_HAVE_IN6
   char buf[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"];
@@ -855,8 +856,13 @@ static size_t convert_ip_address(char const *s,
   }
 #endif
 
-  len = span_ip4_address(s);
+  len = span_canonic_ip4_address(s, &canonize);
   if (len) {
+    if (canonize) {
+      char *tmp = buf;
+      s = memcpy(tmp, s, len + 1);
+      scan_ip4_address(&tmp);      
+    }
     if (s[len] == '\0' && inet_pton(AF_INET, s, addr) == 1)
       return (void)(*return_addrlen = 4), len;
     else
