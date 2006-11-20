@@ -900,9 +900,12 @@ int host_cmp(char const *a, char const *b)
   blen = convert_ip_address(b, b6, &bsize);
 
   if (alen > 0 && blen > 0) {
-    if (asize != bsize)
-      return asize - bsize;
-    return memcmp(a6, b6, asize);
+    if (asize < bsize)
+      return -1;
+    else if (asize > bsize)
+      return 1;
+    else
+      return memcmp(a6, b6, asize);
   }
   else {
     return strcasecmp(a, b);
