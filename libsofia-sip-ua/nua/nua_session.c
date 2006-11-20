@@ -3387,7 +3387,7 @@ int nua_stack_process_bye(nua_t *nua,
 
   nua_session_usage_destroy(nh, ss);
 
-  return 200;			/* Respond automatically with 200 Ok */
+  return 0;
 }
 
 /* ---------------------------------------------------------------------- */
