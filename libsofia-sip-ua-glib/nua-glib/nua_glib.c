@@ -2123,7 +2123,7 @@ nua_glib_notifier (NuaGlib *self, const char *from, const char *event,
 {
   NuaGlibOp *op;
 
-  g_assert(self && op && from && event && content_type && expires);
+  g_assert(self && from && event && content_type && expires);
 
   op = nua_glib_op_create(self, sip_method_subscribe, from, TAG_END());
 
