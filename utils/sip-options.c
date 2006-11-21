@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
       if (o_method) {
 	method = sip_method_code(o_method); 
       } else {
-	int len;
+	isize_t len;
 	char const *params = to->a_url->url_params;
 
 	len = url_param(params, "method", NULL, 0);
@@ -378,7 +378,7 @@ char *readfile(FILE *f)
 {
   char *buffer = NULL;
   long size;
-  int len;
+  size_t len;
 
   if (f == NULL)
     return NULL;
