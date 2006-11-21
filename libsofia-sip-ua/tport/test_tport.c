@@ -290,7 +290,7 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
   TEST_1(tst = msg_test_public(msg));
   TEST_1(home = msg_home(msg));
 
-  TEST(msg_maxsize(msg, 1024 + N * len), 0);
+  TEST_SIZE(msg_maxsize(msg, 1024 + N * len), 0);
 
   TEST_1(rq = msg_request_make(home, "DO im:foo@faa " TPORT_TEST_VERSION));
   TEST(msg_header_insert(msg, (void *)tst, (msg_header_t *)rq), 0);
@@ -803,7 +803,7 @@ static int tcp_test(tp_test_t *tt)
     TEST(new_test_msg(tt, &msg, ident, 1, 64 * 1024), 0);
     TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
     TEST_S(tport_name(tp)->tpn_ident, "client");
-    TEST(tport_incref(tp), tp0); tport_decref(&tp);
+    TEST_P(tport_incref(tp), tp0); tport_decref(&tp);
     msg_destroy(msg);
   }
 
@@ -854,7 +854,7 @@ static int tcp_test(tp_test_t *tt)
   TEST_1(!new_test_msg(tt, &msg, "tcp-last", 1, 1024));
   TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
   TEST_S(tport_name(tp)->tpn_ident, "client");
-  TEST(tport_incref(tp), tp0); tport_decref(&tp);
+  TEST_P(tport_incref(tp), tp0); tport_decref(&tp);
   msg_destroy(msg);
 
   TEST(tport_test_run(tt, 5), 1);
@@ -1353,8 +1353,8 @@ static int filter_test(tp_test_t *tt)
   result = tl_afilter(home, tport_tags, lst);
 
   TEST_1(result);
-  TEST(result[0].t_tag, tptag_ident);
-  TEST(result[1].t_tag, tptag_ident);
+  TEST_P(result[0].t_tag, tptag_ident);
+  TEST_P(result[1].t_tag, tptag_ident);
 
   free(lst);
   su_home_deinit(home);
