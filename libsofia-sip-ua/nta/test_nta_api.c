@@ -186,8 +186,8 @@ int leg_callback(agent_t *ag,
   TEST_1(sip->sip_from && sip->sip_from->a_tag);
 
   TEST_VOID(nta_incoming_bind(irq, incoming_callback_1, ag));
-  TEST(nta_incoming_magic(irq, incoming_callback_1), ag);
-  TEST(nta_incoming_magic(irq, incoming_callback_2), 0);
+  TEST_P(nta_incoming_magic(irq, incoming_callback_1), ag);
+  TEST_P(nta_incoming_magic(irq, incoming_callback_2), 0);
   
   TEST_1(tag = nta_incoming_tag(irq, "tag=foofaa"));
   TEST_S(nta_incoming_gettag(irq), tag);
@@ -203,8 +203,8 @@ int leg_callback(agent_t *ag,
   TEST(nta_incoming_set_params(irq, TAG_END()), 0);
   
   TEST_1(msg = nta_incoming_getrequest(irq)); msg_destroy(msg);
-  TEST(nta_incoming_getrequest_ackcancel(irq), NULL);
-  TEST(nta_incoming_getresponse(irq), NULL);
+  TEST_P(nta_incoming_getrequest_ackcancel(irq), NULL);
+  TEST_P(nta_incoming_getresponse(irq), NULL);
 
   TEST(nta_incoming_treply(irq, SIP_100_TRYING, TAG_END()), 0);
   TEST_1(msg = nta_incoming_getresponse(irq)); msg_destroy(msg);
@@ -371,7 +371,7 @@ int api_test_init(agent_t *ag)
     TEST_1(ag->ag_aliases);
     TEST_1(ag->ag_aliases->m_next);
     TEST_1(ag->ag_aliases->m_next->m_next);
-    TEST(ag->ag_aliases->m_next->m_next->m_next, NULL);
+    TEST_P(ag->ag_aliases->m_next->m_next->m_next, NULL);
 
     for (m = ag->ag_aliases; m; m = m->m_next)
       m->m_url->url_port = ag->ag_contact->m_url->url_port;
@@ -498,8 +498,8 @@ int api_test_params(agent_t *ag)
 			    TAG_END()), 
        /* Number of parameters */ 19);
   
-  TEST(mclass, sip_default_mclass());
-  TEST(aliases, NULL);
+  TEST_P(mclass, sip_default_mclass());
+  TEST_P(aliases, NULL);
   TEST(sip_t1, NTA_SIP_T1);
   TEST(sip_t2, NTA_SIP_T2);
   TEST(sip_t4, NTA_SIP_T4);
@@ -820,23 +820,23 @@ static int api_test_default(agent_t *ag)
   TEST_1(irq = nta_incoming_default(nta));
 
   TEST_VOID(nta_incoming_bind(irq, incoming_callback_1, ag));
-  TEST(nta_incoming_magic(irq, incoming_callback_1), ag);
-  TEST(nta_incoming_magic(irq, incoming_callback_2), 0);
+  TEST_P(nta_incoming_magic(irq, incoming_callback_1), ag);
+  TEST_P(nta_incoming_magic(irq, incoming_callback_2), 0);
   
-  TEST(nta_incoming_tag(irq, NULL), NULL);
-  TEST(nta_incoming_gettag(irq), NULL);
+  TEST_P(nta_incoming_tag(irq, NULL), NULL);
+  TEST_P(nta_incoming_gettag(irq), NULL);
 
   TEST(nta_incoming_status(irq), 0);
   TEST(nta_incoming_method(irq), sip_method_invalid);
   TEST_S(nta_incoming_method_name(irq), "*");
-  TEST(nta_incoming_url(irq), NULL);
+  TEST_P(nta_incoming_url(irq), NULL);
   TEST(nta_incoming_cseq(irq), 0);
   
   TEST(nta_incoming_set_params(irq, TAG_END()), 0);
   
-  TEST(nta_incoming_getrequest(irq), NULL);
-  TEST(nta_incoming_getrequest_ackcancel(irq), NULL);
-  TEST(nta_incoming_getresponse(irq), NULL);
+  TEST_P(nta_incoming_getrequest(irq), NULL);
+  TEST_P(nta_incoming_getrequest_ackcancel(irq), NULL);
+  TEST_P(nta_incoming_getresponse(irq), NULL);
   
   TEST(nta_incoming_complete_response(irq, NULL, SIP_200_OK, TAG_END()), -1);
 
@@ -853,15 +853,15 @@ static int api_test_default(agent_t *ag)
   TEST(nta_outgoing_cseq(orq), 0);
 
   TEST(nta_outgoing_delay(orq), UINT_MAX);
-  TEST(nta_outgoing_request_uri(orq), NULL);
-  TEST(nta_outgoing_route_uri(orq), NULL);
+  TEST_P(nta_outgoing_request_uri(orq), NULL);
+  TEST_P(nta_outgoing_route_uri(orq), NULL);
 
-  TEST(nta_outgoing_getresponse(orq), NULL);
-  TEST(nta_outgoing_getrequest(orq), NULL);
+  TEST_P(nta_outgoing_getresponse(orq), NULL);
+  TEST_P(nta_outgoing_getrequest(orq), NULL);
 
-  TEST(nta_outgoing_tagged(orq, NULL, NULL, NULL, NULL), NULL);
+  TEST_P(nta_outgoing_tagged(orq, NULL, NULL, NULL, NULL), NULL);
   TEST(nta_outgoing_cancel(orq), -1);
-  TEST(nta_outgoing_tcancel(orq, NULL, NULL, TAG_END()), NULL);
+  TEST_P(nta_outgoing_tcancel(orq, NULL, NULL, TAG_END()), NULL);
 
   TEST_VOID(nta_outgoing_destroy(orq));
   
@@ -906,25 +906,25 @@ static int api_test_errors(agent_t *ag)
   home->suh_size = sizeof home;
   su_home_init(home);
 
-  TEST(nta_agent_create(NULL,
-			(url_string_t *)"sip:*:*",
-			NULL,
-			NULL,
-			TAG_END()), NULL);
+  TEST_P(nta_agent_create(NULL,
+			  (url_string_t *)"sip:*:*",
+			  NULL,
+			  NULL,
+			  TAG_END()), NULL);
 
   TEST_1(root = su_root_create(NULL));
 
-  TEST(nta_agent_create(root,
-			(url_string_t *)"http://localhost:*/invalid/bind/url",
-			NULL,
-			NULL,
-			TAG_END()), NULL);
+  TEST_P(nta_agent_create(root,
+			  (url_string_t *)"http://localhost:*/invalid/bind/url",
+			  NULL,
+			  NULL,
+			  TAG_END()), NULL);
 
-  TEST(nta_agent_create(root,
-			(url_string_t *)"sip:*:*;transport=XXX",
-			NULL,
-			NULL,
-			TAG_END()), NULL);
+  TEST_P(nta_agent_create(root,
+			  (url_string_t *)"sip:*:*;transport=XXX",
+			  NULL,
+			  NULL,
+			  TAG_END()), NULL);
 
   TEST_1(nta = nta_agent_create(root,
 				(url_string_t *)"sip:*:*",
@@ -941,13 +941,13 @@ static int api_test_errors(agent_t *ag)
 				ag,
 				TAG_END()));
 
-  TEST(nta_agent_contact(NULL), NULL);
-  TEST(nta_agent_via(NULL), NULL);
+  TEST_P(nta_agent_contact(NULL), NULL);
+  TEST_P(nta_agent_via(NULL), NULL);
   TEST_S(nta_agent_version(nta), nta_agent_version(NULL));
-  TEST(nta_agent_magic(NULL), NULL);
-  TEST(nta_agent_magic(nta), (void *)ag);
+  TEST_P(nta_agent_magic(NULL), NULL);
+  TEST_P(nta_agent_magic(nta), (void *)ag);
   TEST(nta_agent_add_tport(NULL, NULL, TAG_END()), -1);
-  TEST(nta_agent_newtag(home, "tag=%s", NULL), NULL);
+  TEST_P(nta_agent_newtag(home, "tag=%s", NULL), NULL);
   TEST_1(nta_agent_newtag(home, "tag=%s", nta));
 
   {
@@ -966,45 +966,45 @@ static int api_test_errors(agent_t *ag)
     TEST_VOID(msg_destroy(msg));
   }
 
-  TEST(nta_leg_tcreate(NULL, NULL, NULL, TAG_END()), NULL);
+  TEST_P(nta_leg_tcreate(NULL, NULL, NULL, TAG_END()), NULL);
   TEST_VOID(nta_leg_destroy(NULL));
-  TEST(nta_leg_magic(NULL, NULL), NULL);
+  TEST_P(nta_leg_magic(NULL, NULL), NULL);
   TEST_VOID(nta_leg_bind(NULL, NULL, NULL));
-  TEST(nta_leg_tag(NULL, "fidsafsa"), NULL);
-  TEST(nta_leg_rtag(NULL, "fidsafsa"), NULL);
-  TEST(nta_leg_get_tag(NULL), NULL);
+  TEST_P(nta_leg_tag(NULL, "fidsafsa"), NULL);
+  TEST_P(nta_leg_rtag(NULL, "fidsafsa"), NULL);
+  TEST_P(nta_leg_get_tag(NULL), NULL);
   TEST(nta_leg_client_route(NULL, NULL, NULL), -1);
   TEST(nta_leg_server_route(NULL, NULL, NULL), -1);
-  TEST(nta_leg_by_uri(NULL, NULL), NULL);
-  TEST(nta_leg_by_dialog(NULL,  NULL, NULL, NULL, NULL, NULL, NULL), NULL);
-  TEST(nta_leg_by_dialog(nta, NULL, NULL, NULL, NULL, NULL, NULL), NULL);
+  TEST_P(nta_leg_by_uri(NULL, NULL), NULL);
+  TEST_P(nta_leg_by_dialog(NULL,  NULL, NULL, NULL, NULL, NULL, NULL), NULL);
+  TEST_P(nta_leg_by_dialog(nta, NULL, NULL, NULL, NULL, NULL, NULL), NULL);
 
-  TEST(nta_leg_make_replaces(NULL, NULL, 1), NULL);
-  TEST(nta_leg_by_replaces(NULL, NULL), NULL);
+  TEST_P(nta_leg_make_replaces(NULL, NULL, 1), NULL);
+  TEST_P(nta_leg_by_replaces(NULL, NULL), NULL);
 
-  TEST(nta_incoming_create(NULL, NULL, NULL, NULL, TAG_END()), NULL);
-  TEST(nta_incoming_create(nta, NULL, NULL, NULL, TAG_END()), NULL);
+  TEST_P(nta_incoming_create(NULL, NULL, NULL, NULL, TAG_END()), NULL);
+  TEST_P(nta_incoming_create(nta, NULL, NULL, NULL, TAG_END()), NULL);
 
   TEST_VOID(nta_incoming_bind(NULL, NULL, NULL));
-  TEST(nta_incoming_magic(NULL, NULL), NULL);
+  TEST_P(nta_incoming_magic(NULL, NULL), NULL);
   
-  TEST(nta_incoming_find(NULL, NULL, NULL), NULL);
-  TEST(nta_incoming_find(nta, NULL, NULL), NULL);
+  TEST_P(nta_incoming_find(NULL, NULL, NULL), NULL);
+  TEST_P(nta_incoming_find(nta, NULL, NULL), NULL);
 
-  TEST(nta_incoming_tag(NULL, NULL), NULL);
-  TEST(nta_incoming_gettag(NULL), NULL);
+  TEST_P(nta_incoming_tag(NULL, NULL), NULL);
+  TEST_P(nta_incoming_gettag(NULL), NULL);
 
   TEST(nta_incoming_status(NULL), 400);
   TEST(nta_incoming_method(NULL), sip_method_invalid);
-  TEST(nta_incoming_method_name(NULL), NULL);
-  TEST(nta_incoming_url(NULL), NULL);
+  TEST_P(nta_incoming_method_name(NULL), NULL);
+  TEST_P(nta_incoming_url(NULL), NULL);
   TEST(nta_incoming_cseq(NULL), 0);
 
   TEST(nta_incoming_set_params(NULL, TAG_END()), -1);
 
-  TEST(nta_incoming_getrequest(NULL), NULL);
-  TEST(nta_incoming_getrequest_ackcancel(NULL), NULL);
-  TEST(nta_incoming_getresponse(NULL), NULL);
+  TEST_P(nta_incoming_getrequest(NULL), NULL);
+  TEST_P(nta_incoming_getrequest_ackcancel(NULL), NULL);
+  TEST_P(nta_incoming_getresponse(NULL), NULL);
 
   TEST(nta_incoming_complete_response(NULL, NULL, 800, "foo", TAG_END()), -1);
 
@@ -1013,54 +1013,54 @@ static int api_test_errors(agent_t *ag)
 
   TEST_VOID(nta_incoming_destroy(NULL));
   
-  TEST(nta_outgoing_tcreate(NULL, outgoing_callback, ag, 
+  TEST_P(nta_outgoing_tcreate(NULL, outgoing_callback, ag, 
 			    URL_STRING_MAKE("sip:localhost"),
 			    SIP_METHOD_MESSAGE,
 			    URL_STRING_MAKE("sip:localhost"),
 			    TAG_END()), NULL);
 
-  TEST(nta_outgoing_mcreate(NULL, outgoing_callback, ag, 
+  TEST_P(nta_outgoing_mcreate(NULL, outgoing_callback, ag, 
 			    URL_STRING_MAKE("sip:localhost"),
 			    NULL,
 			    TAG_END()), NULL);
 
-  TEST(nta_outgoing_default(NULL, NULL, NULL), NULL);
+  TEST_P(nta_outgoing_default(NULL, NULL, NULL), NULL);
 
   TEST(nta_outgoing_status(NULL), 500);
   TEST(nta_outgoing_method(NULL), sip_method_invalid);
-  TEST(nta_outgoing_method_name(NULL), NULL);
+  TEST_P(nta_outgoing_method_name(NULL), NULL);
   TEST(nta_outgoing_cseq(NULL), 0);
 
   TEST(nta_outgoing_delay(NULL), UINT_MAX);
-  TEST(nta_outgoing_request_uri(NULL), NULL);
-  TEST(nta_outgoing_route_uri(NULL), NULL);
+  TEST_P(nta_outgoing_request_uri(NULL), NULL);
+  TEST_P(nta_outgoing_route_uri(NULL), NULL);
 
-  TEST(nta_outgoing_getresponse(NULL), NULL);
-  TEST(nta_outgoing_getrequest(NULL), NULL);
+  TEST_P(nta_outgoing_getresponse(NULL), NULL);
+  TEST_P(nta_outgoing_getrequest(NULL), NULL);
 
-  TEST(nta_outgoing_tagged(NULL, NULL, NULL, NULL, NULL), NULL);
+  TEST_P(nta_outgoing_tagged(NULL, NULL, NULL, NULL, NULL), NULL);
   TEST(nta_outgoing_cancel(NULL), -1);
-  TEST(nta_outgoing_tcancel(NULL, NULL, NULL, TAG_END()), NULL);
+  TEST_P(nta_outgoing_tcancel(NULL, NULL, NULL, TAG_END()), NULL);
   TEST_VOID(nta_outgoing_destroy(NULL));
 
-  TEST(nta_outgoing_find(NULL, NULL, NULL, NULL), NULL);
-  TEST(nta_outgoing_find(nta, NULL, NULL, NULL), NULL);
+  TEST_P(nta_outgoing_find(NULL, NULL, NULL, NULL), NULL);
+  TEST_P(nta_outgoing_find(nta, NULL, NULL, NULL), NULL);
 
   TEST(nta_outgoing_status(NONE), 500);
   TEST(nta_outgoing_method(NONE), sip_method_invalid);
-  TEST(nta_outgoing_method_name(NONE), NULL);
+  TEST_P(nta_outgoing_method_name(NONE), NULL);
   TEST(nta_outgoing_cseq(NONE), 0);
 
   TEST(nta_outgoing_delay(NONE), UINT_MAX);
-  TEST(nta_outgoing_request_uri(NONE), NULL);
-  TEST(nta_outgoing_route_uri(NONE), NULL);
+  TEST_P(nta_outgoing_request_uri(NONE), NULL);
+  TEST_P(nta_outgoing_route_uri(NONE), NULL);
 
-  TEST(nta_outgoing_getresponse(NONE), NULL);
-  TEST(nta_outgoing_getrequest(NONE), NULL);
+  TEST_P(nta_outgoing_getresponse(NONE), NULL);
+  TEST_P(nta_outgoing_getrequest(NONE), NULL);
 
-  TEST(nta_outgoing_tagged(NONE, NULL, NULL, NULL, NULL), NULL);
+  TEST_P(nta_outgoing_tagged(NONE, NULL, NULL, NULL, NULL), NULL);
   TEST(nta_outgoing_cancel(NONE), -1);
-  TEST(nta_outgoing_tcancel(NONE, NULL, NULL, TAG_END()), NULL);
+  TEST_P(nta_outgoing_tcancel(NONE, NULL, NULL, TAG_END()), NULL);
   TEST_VOID(nta_outgoing_destroy(NONE));
 
 #if 0
@@ -1151,63 +1151,63 @@ static int api_test_dialog_matching(agent_t *ag)
   TEST_1(!nta_leg_by_dialog(nta, a2->a_url, i, 
 			    a2->a_tag, a2->a_url, a1->a_tag, a1->a_url));
 
-  TEST(leg = nta_leg_by_dialog(nta, NULL, i, 
-			       /* local */ a1->a_tag, a1->a_url, 
-			       /* remote */ a2->a_tag, a2->a_url),
-       dialog2);
-  TEST(leg = nta_leg_by_dialog(nta, (void *)"sip:no.such.url", i, 
-			       /* local */ a1->a_tag, a1->a_url, 
-			       /* remote */ a2->a_tag, a2->a_url),
-       dialog2);
-  TEST(leg = nta_leg_by_dialog(nta, a2->a_url, i, 
-			       a1->a_tag, a1->a_url, a2->a_tag, a2->a_url),
-       dialog2);
+  TEST_P(leg = nta_leg_by_dialog(nta, NULL, i, 
+				 /* local */ a1->a_tag, a1->a_url, 
+				 /* remote */ a2->a_tag, a2->a_url),
+	 dialog2);
+  TEST_P(leg = nta_leg_by_dialog(nta, (void *)"sip:no.such.url", i, 
+				 /* local */ a1->a_tag, a1->a_url, 
+				 /* remote */ a2->a_tag, a2->a_url),
+	 dialog2);
+  TEST_P(leg = nta_leg_by_dialog(nta, a2->a_url, i, 
+				 a1->a_tag, a1->a_url, a2->a_tag, a2->a_url),
+	 dialog2);
 
-  TEST(leg = nta_leg_by_dialog(nta, NULL, i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
+  TEST_P(leg = nta_leg_by_dialog(nta, NULL, i, 
+				 a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
+	 dialog1);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
+	 dialog1);
   /* local tag is required because there is tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, "xyzzy", a1->a_url),
-       NULL);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, "xyzzy", a1->a_url),
+	 NULL);
   /* local URI is ignored because we have tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a2->a_url),
-       dialog1);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, a1->a_tag, a2->a_url),
+	 dialog1);
 
   /* remote tag is ignored because there is no tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       "xyzzy", a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 "xyzzy", a2->a_url, a1->a_tag, a1->a_url),
+	 dialog1);
   /* remote url is required */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a1->a_url, a1->a_tag, a1->a_url),
-       NULL);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, NULL, a1->a_tag, a1->a_url),
-       dialog1);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a1->a_url, a1->a_tag, a1->a_url),
+	 NULL);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, NULL, a1->a_tag, a1->a_url),
+	 dialog1);
 
   /* local url is used if there is no local tag */
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, NULL, NULL),
-       NULL);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, NULL, NULL),
+	 NULL);
 
   nta_leg_tag(dialog1, "al");
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, "xyzzy", a1->a_url),
-       NULL);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
-       dialog1);
-  TEST(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
-			       a2->a_tag, a2->a_url, NULL, a1->a_url),
-       NULL);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
+	 dialog1);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, "xyzzy", a1->a_url),
+	 NULL);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, a1->a_tag, a1->a_url),
+	 dialog1);
+  TEST_P(leg = nta_leg_by_dialog(nta, (url_t *)"sip:pc.al.us", i, 
+				 a2->a_tag, a2->a_url, NULL, a1->a_url),
+	 NULL);
 		
   nta_leg_destroy(defdst);
   nta_leg_destroy(dst);
