@@ -34,16 +34,6 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <signal.h>
-
 #define OPENSSL_NO_KRB5 oh-no
 
 #include <openssl/lhash.h>
@@ -57,7 +47,15 @@
 #include <openssl/bio.h>
 #include <openssl/opensslv.h>
 
-#include <poll.h>
+#include <sofia-sip/su_types.h>
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_wait.h>
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
 
 #include "tport_tls.h"
 
@@ -339,6 +337,8 @@ tls_t *tls_init_master(tls_issues_t *ti)
 }
 
 #if 0
+#include <poll.h>
+
 static 
 int tls_accept(tls_t *tls)
 {
@@ -349,9 +349,9 @@ int tls_accept(tls_t *tls)
     int err = SSL_get_error(tls->con, ret);
     switch(err) {
     case SSL_ERROR_WANT_READ:
-      return errno = EAGAIN, tls->read_events = POLLIN, 0;
+      return errno = EAGAIN, tls->read_events = SU_WAIT_IN, 0;
     case SSL_ERROR_WANT_WRITE:
-      return errno = EAGAIN, tls->read_events = POLLOUT, 0;
+      return errno = EAGAIN, tls->read_events = SU_WAIT_OUT, 0;
 
     default:    
       BIO_printf(tls->bio_err, "SSL_connect failed: %d %s\n", 
@@ -568,11 +568,11 @@ int tls_error(tls_t *tls, int ret, char const *who, char const *operation,
 
   switch (err) {
   case SSL_ERROR_WANT_WRITE:
-    events = POLLOUT;
+    events = SU_WAIT_OUT;
     break;
 
   case SSL_ERROR_WANT_READ:
-    events = POLLIN;
+    events = SU_WAIT_IN;
     break;
 
   case SSL_ERROR_ZERO_RETURN:
@@ -618,7 +618,7 @@ ssize_t tls_read(tls_t *tls)
   if (tls->read_buffer_len)
     return (ssize_t)tls->read_buffer_len;
 
-  tls->read_events = POLLIN;
+  tls->read_events = SU_WAIT_IN;
 
   ret = SSL_read(tls->con, tls->read_buffer, tls_buffer_size);
   if (ret <= 0)
@@ -757,7 +757,7 @@ int tls_events(tls_t const *tls, int mask)
     return mask;
   
   return
-    (mask & ~(POLLIN|POLLOUT)) |
-    ((mask & POLLIN) ? tls->read_events : 0) | 
-    ((mask & POLLOUT) ? tls->write_events : 0);
+    (mask & ~(SU_WAIT_IN|SU_WAIT_OUT)) |
+    ((mask & SU_WAIT_IN) ? tls->read_events : 0) | 
+    ((mask & SU_WAIT_OUT) ? tls->write_events : 0);
 }
