@@ -624,7 +624,6 @@ int test_reinvite(struct context *ctx)
 
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
-  struct event *e;
 
   if (print_headings)
     printf("TEST NUA-7.7: Test re-INVITE and BYE\n");
@@ -670,6 +669,8 @@ int test_reinvite(struct context *ctx)
   run_ab_until(ctx, -1, ringing_until_terminated, -1, bye_when_ringing);
   
 #if notyet
+  struct event *e;
+
   /* XXX - check events later - now we are happy that calls get terminated  */
   /* Client events:
    READY -(C1)-> CALLING: nua_invite(), nua_i_state
