@@ -133,22 +133,34 @@ stun_dns_lookup_t *stun_dns_lookup(stun_magic_t *magic,
 				   stun_dns_lookup_f func, 
 				   const char *domain)
 {
-  stun_dns_lookup_t *self = su_zalloc(NULL, sizeof(stun_dns_lookup_t));
+  stun_dns_lookup_t *self;
   sres_query_t *query;
-  
-  /* see nta.c:outgoing_answer_srv() */
 
-  su_home_init(self->stun_home);
+  if (!domain || 
+      strlen(domain) + strlen(STUN_SRV_SERVICE_UDP ".") + 1>= SRES_MAXDNAME)
+    return NULL;
+  
+  self = su_home_new(sizeof(stun_dns_lookup_t));
+
+  /* see nta.c:outgoing_answer_srv() */
   self->stun_magic = magic;
   self->stun_cb = func;
   self->stun_root = root;
   self->stun_sres = sres_resolver_create(root, NULL, TAG_END());
   if (self->stun_sres) {
-    char *query_udp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_UDP, domain);
-    char *query_tcp = su_sprintf(self->stun_home, "%s.%s", STUN_SRV_SERVICE_TCP, domain);
-      
-    query = sres_query(self->stun_sres, priv_sres_cb, self, sres_type_srv, query_udp);
-    query = sres_query(self->stun_sres, priv_sres_cb, self, sres_type_srv, query_tcp);
+    char srvname[SRES_MAXDNAME + 1];
+
+    snprintf(srvname, sizeof srvname, "%s.%s", STUN_SRV_SERVICE_UDP, domain);
+
+    query = sres_query(self->stun_sres, priv_sres_cb, self,
+		       sres_type_srv,
+		       srvname);
+
+    snprintf(srvname, sizeof srvname, "%s.%s", STUN_SRV_SERVICE_TCP, domain);
+
+    query = sres_query(self->stun_sres, priv_sres_cb, self,
+		       sres_type_srv,
+		       srvname);
   }
   else {
     su_free(NULL, self), self = NULL;
@@ -165,8 +177,7 @@ void stun_dns_lookup_destroy(stun_dns_lookup_t *self)
   if (self->stun_sres)
     sres_resolver_destroy(self->stun_sres);
 
-  su_home_destroy(self->stun_home);
-  su_free(NULL, self);
+  su_home_unref(self->stun_home);
 }
 
 /**

@@ -271,8 +271,8 @@ void stunc_bind_cb(stunc_t *stunc,
     memset(sa, 0, addrlen);
     
     if (stun_discovery_get_address(sd, sa, &addrlen) < 0) {
-      return;
       SU_DEBUG_0(("%s: stun_discovery_get_address() failed", __func__));
+      return;
     }
 
     SU_DEBUG_0(("%s: local address NATed as %s:%u\n", __func__,
