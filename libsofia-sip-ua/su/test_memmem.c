@@ -58,6 +58,10 @@ static int test_flags = 0;
 
 char const name[] = "test_memmem";
 
+#ifdef _MSC_VER
+#pragma warning(disable:4295) /* disable C4295: array is too small to include a terminating null character*/
+#endif
+
 void usage(void)
 {
   fprintf(stderr, "usage: %s [-v]\n", name);
