@@ -236,7 +236,7 @@ int sip_add_tagis(msg_t *msg, sip_t *sip, tagi_t const **inout_list)
 }
 
 static char const *append_escaped(su_strlst_t *l,
-				  msg_hclass_t const *hc,
+				  msg_hclass_t *hc,
 				  char const *s);
 
 /** Convert tagged SIP headers to a URL-encoded headers list.
@@ -283,7 +283,7 @@ char *sip_headers_as_url_query(su_home_t *home,
   ta_start(ta, tag, value);
 
   for (t = ta_args(ta); t && retval; t = t_next(t)) {
-    msg_hclass_t const *hc;
+    msg_hclass_t *hc;
 
     if (t->t_value == 0 || t->t_value == -1)
       continue;
@@ -321,7 +321,7 @@ char *sip_headers_as_url_query(su_home_t *home,
 /* Append a string to list and url-escape it if needed */
 static
 char const *append_escaped(su_strlst_t *l,
-			   msg_hclass_t const *hc,
+			   msg_hclass_t *hc,
 			   char const *s)
 {
   char const *name;
@@ -409,7 +409,7 @@ tagi_t *sip_url_query_as_taglist(su_home_t *home, char const *query,
     char *value;
     tag_type_t t;
     tag_value_t v;
-    msg_hclass_t const *hc = NULL;
+    msg_hclass_t *hc = NULL;
 
     hnv = su_strlst_item(l, i);
     n = strcspn(hnv, "=");

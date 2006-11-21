@@ -1210,7 +1210,7 @@ msg_header_t *error_header_parse(msg_t *msg, msg_pub_t *mo,
 issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev, 
 			      char *s, isize_t slen)
 {
-  msg_hclass_t const *hc = prev->sh_class;
+  msg_hclass_t *hc = prev->sh_class;
   msg_header_t *h;
   char *end = s + slen;
 
