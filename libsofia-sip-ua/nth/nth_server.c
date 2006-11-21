@@ -273,7 +273,7 @@ nth_site_t *nth_site_create(nth_site_t *parent,
   ta_list ta;
   char *path = NULL;
   size_t usize;
-  int is_host, is_path;
+  int is_host, is_path, wildcard = 0;
 
   su_home_auto(home, sizeof home);
 
@@ -373,10 +373,9 @@ nth_site_t *nth_site_create(nth_site_t *parent,
 
   if (!parent) {
     if (strcmp(url->url_host, "*") == 0 ||
-	strcmp(url->url_host, "0.0.0.0") == 0 ||
-	strcmp(url->url_host, "[::]") == 0 ||
-	strcmp(url->url_host, "::") == 0)
-      site->site_wildcard = 1, url->url_host = "*";
+	host_cmp(url->url_host, "0.0.0.0") == 0 ||
+	host_cmp(url->url_host, "::") == 0)
+      wildcard = 1, url->url_host = "*";
   }
 
   usize = sizeof(*url) + url_xtra(url);
@@ -399,7 +398,6 @@ nth_site_t *nth_site_create(nth_site_t *parent,
     *prev = site, site->site_prev = prev;
     site->site_server = srv;
 
-
     if (path) {
       size_t path_len;
 
@@ -415,6 +413,7 @@ nth_site_t *nth_site_create(nth_site_t *parent,
       site->site_path_len = 0;
     }
 
+    site->site_wildcard = wildcard;
     site->site_callback = callback;
     site->site_magic = magic;
     
