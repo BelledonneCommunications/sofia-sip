@@ -159,7 +159,7 @@ int test_digest()
   BEGIN();
 
   TEST0(wa = sip_www_authenticate_make(home, challenge));
-  TEST(auth_digest_challenge_get(home, ac, wa->au_params), 6);
+  TEST_SIZE(auth_digest_challenge_get(home, ac, wa->au_params), 6);
   TEST_S(ac->ac_realm, "garage.sr.ntc.nokia.com");
   TEST_S(ac->ac_nonce, "MjAwMS0wMS0yMSAxNTowODo1OA==");
   TEST_S(ac->ac_algorithm, "MD5");
@@ -168,10 +168,10 @@ int test_digest()
   TEST_1(ac->ac_auth); TEST_1(!ac->ac_auth_int);
 
   TEST0(au = sip_authorization_make(home, response));
-  TEST(auth_digest_response_get(home, ar, au->au_params), 5);
+  TEST_SIZE(auth_digest_response_get(home, ar, au->au_params), 5);
 
   TEST0(au = sip_authorization_make(home, rfc2617));
-  TEST(auth_digest_response_get(home, ar, au->au_params), 10);
+  TEST_SIZE(auth_digest_response_get(home, ar, au->au_params), 10);
 
   TEST0(auth_digest_sessionkey(ar, sessionkey, "Circle Of Life") == 0);
   if (tstflags & tst_verbatim) 
@@ -184,13 +184,13 @@ int test_digest()
   TEST0(strcmp(hresponse, "6629fae49393a05397450978507c4ef1") == 0);
 
   TEST0(au = sip_authorization_make(home, indigo));
-  TEST(auth_digest_response_get(home, ar, au->au_params), 12);
+  TEST_SIZE(auth_digest_response_get(home, ar, au->au_params), 12);
   TEST0(auth_digest_sessionkey(ar, sessionkey, "secret") == 0);
   TEST0(auth_digest_response(ar, hresponse, sessionkey, "BYE", NULL, 0) == 0);
   TEST0(strcmp(hresponse, "dd22a698b1a9510c4237c52e0e2cbfac") == 0);
 
   TEST0(pa = sip_proxy_authenticate_make(home, proxy_authenticate));
-  TEST(auth_digest_challenge_get(home, ac, pa->au_params), 9);
+  TEST_SIZE(auth_digest_challenge_get(home, ac, pa->au_params), 9);
 
   TEST_S(ac->ac_realm, "IndigoSw");
   TEST_1(ac->ac_auth);
@@ -211,10 +211,10 @@ int test_digest()
     memset(ar, 0, sizeof(ar)); ar->ar_size = sizeof(ar);
 
     TEST0(pa = sip_www_authenticate_make(home, challenge));
-    TEST(auth_digest_challenge_get(home, ac, pa->au_params), 2);
+    TEST_SIZE(auth_digest_challenge_get(home, ac, pa->au_params), 2);
 
     TEST0(pz = sip_proxy_authorization_make(home, credentials));
-    TEST(auth_digest_response_get(home, ar, pz->au_params), 7);
+    TEST_SIZE(auth_digest_response_get(home, ar, pz->au_params), 7);
 
     ar->ar_md5 = ac->ac_md5 || ac->ac_algorithm == NULL;
 
@@ -266,10 +266,10 @@ Authorization: Digest       username="Mufasa",
     memset(ar, 0, sizeof(ar)); ar->ar_size = sizeof(ar);
 
     TEST0(pa = sip_www_authenticate_make(home, challenge));
-    TEST(auth_digest_challenge_get(home, ac, pa->au_params), 3);
+    TEST_SIZE(auth_digest_challenge_get(home, ac, pa->au_params), 3);
 
     TEST0(pz = sip_proxy_authorization_make(home, rfc2069_cred));
-    TEST(auth_digest_response_get(home, ar, pz->au_params), 6);
+    TEST_SIZE(auth_digest_response_get(home, ar, pz->au_params), 6);
 
     ar->ar_md5 = ac->ac_md5 || ac->ac_algorithm == NULL;
 
@@ -293,10 +293,10 @@ Authorization: Digest       username="Mufasa",
     memset(ar, 0, sizeof(ar)); ar->ar_size = sizeof(ar);
 
     TEST0(pa = sip_proxy_authenticate_make(home, worldcom_chal));
-    TEST(auth_digest_challenge_get(home, ac, pa->au_params), 2);
+    TEST_SIZE(auth_digest_challenge_get(home, ac, pa->au_params), 2);
 
     TEST0(pz = sip_proxy_authorization_make(home, worldcom_cred));
-    TEST(auth_digest_response_get(home, ar, pz->au_params), 5);
+    TEST_SIZE(auth_digest_response_get(home, ar, pz->au_params), 5);
 
     ar->ar_md5 = ac->ac_md5 || ac->ac_algorithm == NULL;
 
@@ -321,10 +321,10 @@ Authorization: Digest       username="Mufasa",
     memset(ar, 0, sizeof(ar)); ar->ar_size = sizeof(ar);
     
     TEST0(pa = sip_proxy_authenticate_make(home, etri_chal));
-    TEST(auth_digest_challenge_get(home, ac, pa->au_params), 8);
+    TEST_SIZE(auth_digest_challenge_get(home, ac, pa->au_params), 8);
 
     TEST0(pz = sip_proxy_authorization_make(home, etri_cred));
-    TEST(auth_digest_response_get(home, ar, pz->au_params), 6 /* 8 */);
+    TEST_SIZE(auth_digest_response_get(home, ar, pz->au_params), 6 /* 8 */);
     
     ar->ar_md5 = ac->ac_md5 || ac->ac_algorithm == NULL;
 
@@ -348,10 +348,10 @@ Authorization: Digest       username="Mufasa",
     memset(ar, 0, sizeof(ar)); ar->ar_size = sizeof(ar);
     
     TEST0(pa = sip_proxy_authenticate_make(home, chal));
-    TEST(auth_digest_challenge_get(home, ac, pa->au_params), 6);
+    TEST_SIZE(auth_digest_challenge_get(home, ac, pa->au_params), 6);
 
     TEST0(pz = sip_proxy_authorization_make(home, cred));
-    TEST(auth_digest_response_get(home, ar, pz->au_params), 8);
+    TEST_SIZE(auth_digest_response_get(home, ar, pz->au_params), 8);
     
     ar->ar_md5 = ac->ac_md5 || ac->ac_algorithm == NULL;
 
@@ -393,10 +393,10 @@ Authorization: Digest       username="Mufasa",
     memset(ar, 0, sizeof(ar)); ar->ar_size = sizeof(ar);
     
     TEST0(pa = sip_proxy_authenticate_make(home, challenge));
-    TEST(auth_digest_challenge_get(home, ac, pa->au_params), 8);
+    TEST_SIZE(auth_digest_challenge_get(home, ac, pa->au_params), 8);
 
     TEST0(pz = sip_proxy_authorization_make(home, credentials));
-    TEST(auth_digest_response_get(home, ar, pz->au_params), 12);
+    TEST_SIZE(auth_digest_response_get(home, ar, pz->au_params), 12);
     
     ar->ar_md5 = ac->ac_md5 || ac->ac_algorithm == NULL;
 
@@ -537,7 +537,7 @@ int test_digest_client()
 
     TEST_1(m2 = read_message(MSG_DO_EXTRACT_COPY, request));
     TEST_1(sip = sip_object(m2));
-    TEST(sip->sip_authorization, NULL);
+    TEST_P(sip->sip_authorization, NULL);
     TEST_1(rq = sip->sip_request);
     TEST(auc_authorization(&aucs, m2, (msg_pub_t*)sip, rq->rq_method_name, 
 			   rq->rq_url, sip->sip_payload), 1);
@@ -1011,7 +1011,7 @@ int test_module_io()
 #endif
   atexit(rmtmp);		/* Make sure temp file is unlinked */
 
-  TEST(write(tmpfd, passwd, strlen(passwd)), strlen(passwd));
+  TEST_SIZE(write(tmpfd, passwd, strlen(passwd)), strlen(passwd));
   TEST(close(tmpfd), 0);
 
   /* Test file reading operation */
@@ -1036,7 +1036,7 @@ int test_module_io()
   TEST_1(auth_readdb_if_needed(am) == 0);
 
   apw = auth_mod_getpass(am, "user2", NULL); TEST_1(apw);
-  TEST(apw, apw2);
+  TEST_P(apw, apw2);
 
   apw = auth_mod_addpass(am, "user3", "realm"); TEST_1(apw);
   /* user3 with password fisu */
@@ -1046,7 +1046,7 @@ int test_module_io()
     char const user3[] = "user3:realm:7df96b4718bd933af4883c8b73c96318\n";
     tmpfd = open(tmppasswd, O_WRONLY|O_APPEND, 0); TEST_1(tmpfd != -1);
     /* user3 with password fish */
-    TEST(write(tmpfd, user3, strlen(user3)), strlen(user3));
+    TEST_SIZE(write(tmpfd, user3, strlen(user3)), strlen(user3));
     TEST_1(close(tmpfd) == 0);
   }
 
@@ -1060,7 +1060,7 @@ int test_module_io()
 
   /* there should be no changes in user table */
   apw = auth_mod_getpass(am, "user2", NULL); TEST_1(apw);
-  TEST(apw, apw2);
+  TEST_P(apw, apw2);
 
   TEST_1(flock(tmpfd, LOCK_UN) != -1);
 #endif
@@ -1078,7 +1078,7 @@ int test_module_io()
   {
     char const user1[] = "user1:secret:\n";
     tmpfd = open(tmppasswd, O_WRONLY|O_TRUNC, 0); TEST_1(tmpfd != -1);
-    TEST(write(tmpfd, user1, strlen(user1)), strlen(user1));
+    TEST_SIZE(write(tmpfd, user1, strlen(user1)), strlen(user1));
     TEST_1(close(tmpfd) == 0);
   }
 
