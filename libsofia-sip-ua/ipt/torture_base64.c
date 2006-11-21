@@ -57,81 +57,81 @@ int test_encoding(void)
 
   BEGIN();
 
-  TEST(base64_e(buffer, sizeof buffer, "\0\020\203", 3), 4);
+  TEST_SIZE(base64_e(buffer, sizeof buffer, "\0\020\203", 3), 4);
   TEST_S(buffer, "ABCD");
 
   strcpy(buffer + 5, "not changed");
-  TEST(base64_e(buffer, 5, "\0\020\203", 3), 4);
+  TEST_SIZE(base64_e(buffer, 5, "\0\020\203", 3), 4);
   TEST_S(buffer + 5, "not changed");
   TEST_S(buffer, "ABCD");
 
   strcpy(buffer + 4, "not changed");
-  TEST(base64_e(buffer, 4, "\0\020\203", 3), 4);
+  TEST_SIZE(base64_e(buffer, 4, "\0\020\203", 3), 4);
   TEST_S(buffer + 4, "not changed");
   TEST_S(buffer, "ABC");
 
   strcpy(buffer + 3, "not changed");
-  TEST(base64_e(buffer, 3, "\0\020\203", 3), 4);
+  TEST_SIZE(base64_e(buffer, 3, "\0\020\203", 3), 4);
   TEST_S(buffer + 3, "not changed");
   TEST_S(buffer, "AB");
 
   strcpy(buffer + 2, "not changed");
-  TEST(base64_e(buffer, 2, "\0\020\203", 3), 4);
+  TEST_SIZE(base64_e(buffer, 2, "\0\020\203", 3), 4);
   TEST_S(buffer + 2, "not changed");
   TEST_S(buffer, "A");
 
   strcpy(buffer + 1, "not changed");
-  TEST(base64_e(buffer, 1, "\0\020\203", 3), 4);
+  TEST_SIZE(base64_e(buffer, 1, "\0\020\203", 3), 4);
   TEST_S(buffer + 1, "not changed");
   TEST_S(buffer, "");
 
   strcpy(buffer + 5, "not changed");
-  TEST(base64_e(buffer, 5, "\0\020", 2), 4);
+  TEST_SIZE(base64_e(buffer, 5, "\0\020", 2), 4);
   TEST_S(buffer + 5, "not changed");
   TEST_S(buffer, "ABA=");
 
   strcpy(buffer + 4, "not changed");
-  TEST(base64_e(buffer, 4, "\0\020", 2), 4);
+  TEST_SIZE(base64_e(buffer, 4, "\0\020", 2), 4);
   TEST_S(buffer + 4, "not changed");
   TEST_S(buffer, "ABA");
 
   strcpy(buffer + 3, "not changed");
-  TEST(base64_e(buffer, 3, "\0\020", 2), 4);
+  TEST_SIZE(base64_e(buffer, 3, "\0\020", 2), 4);
   TEST_S(buffer + 3, "not changed");
   TEST_S(buffer, "AB");
 
   strcpy(buffer + 2, "not changed");
-  TEST(base64_e(buffer, 2, "\0\020", 2), 4);
+  TEST_SIZE(base64_e(buffer, 2, "\0\020", 2), 4);
   TEST_S(buffer + 2, "not changed");
   TEST_S(buffer, "A");
 
   strcpy(buffer + 1, "not changed");
-  TEST(base64_e(buffer, 1, "\0\020", 2), 4);
+  TEST_SIZE(base64_e(buffer, 1, "\0\020", 2), 4);
   TEST_S(buffer + 1, "not changed");
   TEST_S(buffer, "");
 
   strcpy(buffer + 5, "not changed");
-  TEST(base64_e(buffer, 5, "\0", 1), 4);
+  TEST_SIZE(base64_e(buffer, 5, "\0", 1), 4);
   TEST_S(buffer + 5, "not changed");
   TEST_S(buffer, "AA==");
 
   strcpy(buffer + 4, "not changed");
-  TEST(base64_e(buffer, 4, "\0", 1), 4);
+  TEST_SIZE(base64_e(buffer, 4, "\0", 1), 4);
   TEST_S(buffer + 4, "not changed");
   TEST_S(buffer, "AA=");
 
   strcpy(buffer + 3, "not changed");
-  TEST(base64_e(buffer, 3, "\0", 1), 4);
+  TEST_SIZE(base64_e(buffer, 3, "\0", 1), 4);
   TEST_S(buffer + 3, "not changed");
   TEST_S(buffer, "AA");
 
   strcpy(buffer + 2, "not changed");
-  TEST(base64_e(buffer, 2, "\0", 1), 4);
+  TEST_SIZE(base64_e(buffer, 2, "\0", 1), 4);
   TEST_S(buffer + 2, "not changed");
   TEST_S(buffer, "A");
 
   strcpy(buffer + 1, "not changed");
-  TEST(base64_e(buffer, 1, "\0", 1), 4);
+  TEST_SIZE(base64_e(buffer, 1, "\0", 1), 4);
   TEST_S(buffer + 1, "not changed");
   TEST_S(buffer, "");
 
@@ -145,15 +145,15 @@ int test_decoding(void)
   BEGIN();
 
   strcpy(buffer + 0, "not changed");
-  TEST(base64_d((void *)buffer, 0, "ABCD"), 3);
+  TEST_SIZE(base64_d((void *)buffer, 0, "ABCD"), 3);
   TEST_S(buffer + 0, "not changed");
 
-  TEST(base64_d((void *)buffer, 3, "ABCD"), 3);
+  TEST_SIZE(base64_d((void *)buffer, 3, "ABCD"), 3);
   TEST_M(buffer, "\0\020\203", 3);
 
-  TEST(base64_d(NULL, 3, "ABCD"), 3);
+  TEST_SIZE(base64_d(NULL, 3, "ABCD"), 3);
 
-  TEST(base64_d((void *)buffer, 3, "A B C D !!"), 3);
+  TEST_SIZE(base64_d((void *)buffer, 3, "A B C D !!"), 3);
   TEST_M(buffer, "\0\020\203", 3);
 
   END();
