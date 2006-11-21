@@ -34,6 +34,8 @@ INCLUDES = 	-I$(sofiasrc)/features -I$(sofiabld)/features \
 		-I$(sofiasrc)/su -I$(sofiabld)/su
 
 
+AM_CFLAGS =		$(SOFIA_CFLAGS)
+
 # ----------------------------------------------------------------------
 # Build targets
 

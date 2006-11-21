@@ -12,8 +12,7 @@
 S_BASE = $(top_srcdir)/libsofia-sip-ua
 B_BASE = $(top_builddir)/libsofia-sip-ua
 
-INCLUDES =		-I$(S_BASE)/su -I$(B_BASE)/su \
-			$(GLIB_CFLAGS)
+INCLUDES =		-I$(S_BASE)/su -I$(B_BASE)/su $(GLIB_CFLAGS)
 
 # ----------------------------------------------------------------------
 # Build targets
@@ -45,11 +44,6 @@ libsu_glib_la_DEPENDENCIES = \
 LDADD = 		libsu-glib.la \
 			../../libsofia-sip-ua/libsofia-sip-ua.la \
 			$(GLIB_LIBS)
-
-
-if NDEBUG
-AM_CFLAGS = -DNDEBUG
-endif
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

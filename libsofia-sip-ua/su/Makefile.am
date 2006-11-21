@@ -98,10 +98,6 @@ COVERAGE_INPUT = 	$(libsu_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libsu.la
 
-if NDEBUG
-AM_CFLAGS = -DNDEBUG
-endif
-
 # ----------------------------------------------------------------------
 # Install and distribution rules
 

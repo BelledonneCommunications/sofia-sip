@@ -1,6 +1,8 @@
 # common Makefile targets for libsofia-sip-ua modules
 # ---------------------------------------------------
 
+AM_CFLAGS = $(SOFIA_CFLAGS)
+
 built-sources: $(BUILT_SOURCES)
 
 DISTCLEANFILES = $(BUILT_SOURCES)

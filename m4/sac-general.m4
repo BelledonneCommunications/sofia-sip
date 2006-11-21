@@ -131,8 +131,9 @@ AC_CACHE_CHECK([for maximum warnings compiler flag],
 		esac 
   ;;
 esac])
-CFLAGS="$CFLAGS $ac_cv_cwflag"
 AC_SUBST([CWFLAG], [$ac_cv_cwflag])
+SOFIA_CFLAGS="$SOFIA_CFLAGS $ac_cv_cwflag"
+AC_SUBST([SOFIA_CFLAGS])
 
 #
 # GCoverage
@@ -144,7 +145,7 @@ AC_ARG_ENABLE(coverage,
 if test X$enable_coverage != Xno ; then
 case "${CC-cc}" in
   *gcc*) 
-	CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage" 
+	SOFIA_CFLAGS="$SOFIA_CFLAGS -fprofile-arcs -ftest-coverage" 
 	;;
   *) AC_MSG_ERROR([--enable-coverage requires gcc])
 esac
@@ -399,10 +400,12 @@ dnl ======================================================================
 dnl SAC_ENABLE_NDEBUG
 dnl ======================================================================
 AC_DEFUN([SAC_ENABLE_NDEBUG],[
+AC_REQUIRE([AX_TOOL_CC])
 AC_ARG_ENABLE(ndebug,
 [  --enable-ndebug             compile with NDEBUG (disabled)],
  , enable_ndebug=no)
 AM_CONDITIONAL(NDEBUG, test x$enable_ndebug = yes)
+SOFIA_CFLAGS="$SOFIA_CFLAGS -DNDEBUG"
 ])
 
 dnl ======================================================================
