@@ -426,8 +426,8 @@ tagi_t *sip_url_query_as_taglist(su_home_t *home, char const *query,
 	break;
     }
 
-    value = (char *)hnv + n + 1;
-    value[n] = ':';
+    value = (char *)hnv + n;
+    *value++ = ':';
     n = url_unescape_to(value, value, SIZE_MAX);
     value[n] = '\0';
 
