@@ -244,8 +244,6 @@ int leg_callback_200(agent_t *ag,
 		     nta_incoming_t *irq,
 		     sip_t const *sip)
 {
-  BEGIN();
-
   if (tstflags & tst_verbatim) {
     printf("%s: %s: %s " URL_PRINT_FORMAT " %s\n",
 	   name, __func__, sip->sip_request->rq_method_name, 
@@ -253,9 +251,10 @@ int leg_callback_200(agent_t *ag,
 	   sip->sip_request->rq_version);
   }
 
-  TEST_1(sip->sip_content_length);
-  TEST_1(sip->sip_via);
-  TEST_1(sip->sip_from && sip->sip_from->a_tag);
+  if (!sip->sip_content_length ||
+      !sip->sip_via ||
+      !sip->sip_from || !sip->sip_from->a_tag)
+    return 500;
 
   if (ag->ag_in_via == NULL)
     ag->ag_in_via = sip_via_dup(ag->ag_home, sip->sip_via);
@@ -276,8 +275,6 @@ int leg_callback_200(agent_t *ag,
   }
 
   return 200;
-
-  END();
 }
 
 int leg_callback_500(agent_t *ag,
@@ -300,8 +297,6 @@ int new_leg_callback_200(agent_t *ag,
 			 nta_incoming_t *irq,
 			 sip_t const *sip)
 {
-  BEGIN();
-
   if (tstflags & tst_verbatim) {
     printf("%s: %s: %s " URL_PRINT_FORMAT " %s\n",
 	   name, __func__, sip->sip_request->rq_method_name, 
@@ -309,9 +304,10 @@ int new_leg_callback_200(agent_t *ag,
 	   sip->sip_request->rq_version);
   }
 
-  TEST_1(sip->sip_content_length);
-  TEST_1(sip->sip_via);
-  TEST_1(sip->sip_from && sip->sip_from->a_tag);
+  if (!sip->sip_content_length ||
+      !sip->sip_via ||
+      !sip->sip_from || !sip->sip_from->a_tag)
+    return 500;
 
   ag->ag_latest_leg = leg;
 
@@ -329,14 +325,13 @@ int new_leg_callback_200(agent_t *ag,
 				   SIPTAG_FROM(sip->sip_to),
 				   SIPTAG_TO(sip->sip_from),
 				   TAG_END());
-  TEST_1(ag->ag_bob_leg);
-  TEST_1(nta_leg_tag(ag->ag_bob_leg, NULL));
-  TEST_1(nta_leg_get_tag(ag->ag_bob_leg));
-  TEST_1(nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)));
+  if (!ag->ag_bob_leg ||
+      !nta_leg_tag(ag->ag_bob_leg, NULL) ||
+      !nta_leg_get_tag(ag->ag_bob_leg) ||
+      !nta_incoming_tag(irq, nta_leg_get_tag(ag->ag_bob_leg)))
+    return 500;
 
   return 200;
-
-  END();
 }
 
 
@@ -380,7 +375,6 @@ int outgoing_callback(agent_t *ag,
 
   nta_outgoing_destroy(orq);
   ag->ag_orq = NULL;
-  return 0;
 
   END();
 }
@@ -3373,7 +3367,7 @@ int main(int argc, char *argv[])
   if (retval == 0) {
     retval |= test_bad_messages(ag); SINGLE_FAILURE_CHECK();
     retval |= test_reinit(ag); SINGLE_FAILURE_CHECK();
-    /* retval |= test_tports(ag); SINGLE_FAILURE_CHECK(); */
+    retval |= test_tports(ag); SINGLE_FAILURE_CHECK();
     retval |= test_resolv(ag, argv[i]); SINGLE_FAILURE_CHECK();
     retval |= test_routing(ag); SINGLE_FAILURE_CHECK();
     retval |= test_dialog(ag); SINGLE_FAILURE_CHECK();
