@@ -1223,9 +1223,7 @@ int stun_test_nattype(stun_handle_t *sh,
   char const *server = NULL;
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
-  su_sockaddr_t bind_addr;
   su_socket_t s = INVALID_SOCKET;
-  socklen_t bind_len;
   su_sockaddr_t *destination = NULL;
 
   enter;
@@ -1250,8 +1248,6 @@ int stun_test_nattype(stun_handle_t *sh,
 	  TAG_END());
 
   ta_end(ta);
-
-  bind_len = sizeof bind_addr;
 
   if (s < 0)
     return errno = EFAULT, -1;
