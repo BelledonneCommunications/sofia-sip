@@ -66,27 +66,27 @@ int bnf_test(void)
   TEST_1(IS_TOKEN('a'));
   TEST_1(IS_TOKEN('b'));
   /* Fixed for 1.12.2: lws = [*wsp crlf] 1*wsp */
-  TEST(span_lws("  \r\n \r\nLoppuu"), 5);
-  TEST(span_lws("  \r\r \nLoppuu"), 2);
-  TEST(span_lws("  \n\r \nLoppuu"), 2);
-  TEST(span_lws("  \r \nLoppuu"), 4);
-  TEST(span_lws("  \n\t \nLoppuu"), 5);
-  TEST(span_lws("  \r\n\t \nLoppuu"), 6);
-  TEST(span_token(SIP_TOKEN), strlen(SIP_TOKEN));
-  TEST(count_bnf(bnf_token), strlen(SIP_TOKEN "$"));
+  TEST_SIZE(span_lws("  \r\n \r\nLoppuu"), 5);
+  TEST_SIZE(span_lws("  \r\r \nLoppuu"), 2);
+  TEST_SIZE(span_lws("  \n\r \nLoppuu"), 2);
+  TEST_SIZE(span_lws("  \r \nLoppuu"), 4);
+  TEST_SIZE(span_lws("  \n\t \nLoppuu"), 5);
+  TEST_SIZE(span_lws("  \r\n\t \nLoppuu"), 6);
+  TEST_SIZE(span_token(SIP_TOKEN), strlen(SIP_TOKEN));
+  TEST_SIZE(count_bnf(bnf_token), strlen(SIP_TOKEN "$"));
   #define SIP_PARAM SIP_TOKEN "[:]/"
-  TEST(span_param(SIP_PARAM), strlen(SIP_PARAM));
-  TEST(count_bnf(bnf_param), strlen(SIP_PARAM "$"));
+  TEST_SIZE(span_param(SIP_PARAM), strlen(SIP_PARAM));
+  TEST_SIZE(count_bnf(bnf_param), strlen(SIP_PARAM "$"));
 
-  TEST(span_unreserved(URL_UNRESERVED URL_ESCAPED),
-       strlen(URL_UNRESERVED URL_ESCAPED));
+  TEST_SIZE(span_unreserved(URL_UNRESERVED URL_ESCAPED),
+	    strlen(URL_UNRESERVED URL_ESCAPED));
 
-  TEST(count_bnf(bnf_unreserved),
-       strlen(URL_UNRESERVED URL_ESCAPED));
+  TEST_SIZE(count_bnf(bnf_unreserved),
+	    strlen(URL_UNRESERVED URL_ESCAPED));
 
   {
     char word[] = ALPHA DIGIT "-.!%*_+`'~()<>:\\\"/[]?{}";
-    TEST(span_word(word), strlen(word));
+    TEST_SIZE(span_word(word), strlen(word));
   }
 
   END();
@@ -242,8 +242,10 @@ int ip_test(void)
 
 #define TEST_SCAN(scanner, input, canonic, output)			\
   do { char s0[] = input; char *s = s0;					\
-    int n = sizeof(input) - sizeof(output);				\
-    TEST(scanner(&s), n); TEST_S(s, output); TEST_S(s0, canonic); } while(0)
+    size_t n = sizeof(input) - sizeof(output);				\
+    TEST_SIZE(scanner(&s), n);						\
+    TEST_S(s, output);							\
+    TEST_S(s0, canonic); } while(0)
 
 #include <sofia-sip/hostdomain.h>
 
@@ -259,16 +261,16 @@ int host_test(void)
   TEST(host_is_valid(NULL), 0);
   TEST(host_has_domain_invalid(NULL), 0);
 
-  TEST(span_host("rama"), 4);
-  TEST(span_host("ra-ma.1-2.3-4.a4-9."), 19);
-  TEST(span_host("a.1.b"), 5);
-  TEST(span_host("127.255.249.000.a,"), 17);
-  TEST(span_host("127.255.249.000,"), 15);
-  TEST(span_host("0.00.000.000:,"), 12);
-  TEST(span_host("127.255.249.000,"), 15);
-  TEST(span_host("[dead:beef:feed:ded:0:1:2:3]:1"), 28);
-  TEST(span_host("[dead:beef:feed:ded::1:2:3]:1"), 27);
-  TEST(span_host("[::127.0.0.1]:1"), 13);
+  TEST_SIZE(span_host("rama"), 4);
+  TEST_SIZE(span_host("ra-ma.1-2.3-4.a4-9."), 19);
+  TEST_SIZE(span_host("a.1.b"), 5);
+  TEST_SIZE(span_host("127.255.249.000.a,"), 17);
+  TEST_SIZE(span_host("127.255.249.000,"), 15);
+  TEST_SIZE(span_host("0.00.000.000:,"), 12);
+  TEST_SIZE(span_host("127.255.249.000,"), 15);
+  TEST_SIZE(span_host("[dead:beef:feed:ded:0:1:2:3]:1"), 28);
+  TEST_SIZE(span_host("[dead:beef:feed:ded::1:2:3]:1"), 27);
+  TEST_SIZE(span_host("[::127.0.0.1]:1"), 13);
 
   TEST_SCAN(scan_host, "rama", "rama", "");
   TEST_SCAN(scan_host, "rama.", "rama.", "");
@@ -284,15 +286,15 @@ int host_test(void)
   TEST_SCAN(scan_host, "[::127.0.0.1]:1", "[::127.0.0.1]:1", ":1");
 
   /* Test error detection */
-  TEST(span_host("256.00.000.000:,"), 0);
-  TEST(span_host("255.00.000.0000,"), 0);
-  TEST(span_host("255.00.000.199."), 0);
-  TEST(span_host("[127.0.0.1]:1"), 0);
-  TEST(span_domain("rama.1"), 0);
-  TEST(span_domain("-ma.1-2.3-4.a4-9."), 0);
-  TEST(span_domain("a..b"), 0);
-  TEST(span_domain("a.b.-"), 0);
-  TEST(span_domain("a.b-"), 0);
+  TEST_SIZE(span_host("256.00.000.000:,"), 0);
+  TEST_SIZE(span_host("255.00.000.0000,"), 0);
+  TEST_SIZE(span_host("255.00.000.199."), 0);
+  TEST_SIZE(span_host("[127.0.0.1]:1"), 0);
+  TEST_SIZE(span_domain("rama.1"), 0);
+  TEST_SIZE(span_domain("-ma.1-2.3-4.a4-9."), 0);
+  TEST_SIZE(span_domain("a..b"), 0);
+  TEST_SIZE(span_domain("a.b.-"), 0);
+  TEST_SIZE(span_domain("a.b-"), 0);
 
   TEST(host_is_local("126.0.0.0"), 0);
   TEST(host_is_local("127.0.0.0"), 1);
