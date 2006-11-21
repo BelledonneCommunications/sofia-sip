@@ -177,8 +177,8 @@ int test_soa_tags(struct context *ctx)
 			SOATAG_HOLD("*"),
 			TAG_END());
   TEST_1(t);
-  TEST(t[0].t_tag, soatag_user_sdp_str);
-  TEST(t[1].t_tag, soatag_hold);
+  TEST_P(t[0].t_tag, soatag_user_sdp_str);
+  TEST_P(t[1].t_tag, soatag_hold);
   TEST_1(t[2].t_tag == NULL || t[2].t_tag == tag_null);
 
   su_home_deinit(home);
@@ -270,8 +270,8 @@ int test_params(struct context *ctx)
 		      TAG_END()),
        9);
   TEST(af, SOA_AF_ANY);
-  TEST(address, 0);
-  TEST(hold, 0);
+  TEST_P(address, 0);
+  TEST_P(hold, 0);
   TEST(rtp_select, SOA_RTP_SELECT_SINGLE);
   TEST(rtp_sort, SOA_RTP_SORT_DEFAULT);
   TEST(rtp_mismatch, 0);
