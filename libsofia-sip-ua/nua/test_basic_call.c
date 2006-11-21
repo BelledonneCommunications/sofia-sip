@@ -230,11 +230,11 @@ int test_basic_call_1(struct context *ctx)
   TEST_1(!nua_handle_by_replaces(b->nua, repb));
 
   TEST_1(nh = nua_handle_by_replaces(a->nua, repb));
-  TEST(nh, a_call->nh);
+  TEST_P(nh, a_call->nh);
   nua_handle_unref(nh);
 
   TEST_1(nh = nua_handle_by_replaces(b->nua, repa));
-  TEST(nh, b_call->nh);
+  TEST_P(nh, b_call->nh);
   nua_handle_unref(nh);
 
   /* Client transitions:

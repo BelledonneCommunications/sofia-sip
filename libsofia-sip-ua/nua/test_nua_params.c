@@ -70,8 +70,8 @@ int test_tag_filter(void)
   result = tl_afilter(NULL, filter, lst);
 
   TEST_1(result);
-  TEST(result[0].t_tag, nutag_url);
-  TEST(result[1].t_tag, nutag_url);
+  TEST_P(result[0].t_tag, nutag_url);
+  TEST_P(result[1].t_tag, nutag_url);
 
   tl_vfree(lst);
   free(result);
@@ -560,13 +560,13 @@ int test_nua_params(struct context *ctx)
     TEST(refer_with_id, -1);
     TEST(substate, -1);
 
-    TEST(allow, NONE);
+    TEST_P(allow, NONE);
     TEST_S(allow_str, "NONE");
-    TEST(supported, NONE);
+    TEST_P(supported, NONE);
     TEST_S(supported_str, "NONE");
-    TEST(user_agent, NONE);
+    TEST_P(user_agent, NONE);
     TEST_S(user_agent_str, "NONE");
-    TEST(organization, NONE);
+    TEST_P(organization, NONE);
     TEST_S(organization_str, "NONE");
 
     TEST_S(outbound, "NONE");
@@ -576,7 +576,7 @@ int test_nua_params(struct context *ctx)
     TEST_S(m_features, "NONE");
     TEST_S(instance, "NONE");
 
-    TEST(registrar->us_url, NONE);
+    TEST_P(registrar->us_url, NONE);
 
     free_events_in_list(ctx, ctx->a.events);
   }

@@ -95,7 +95,7 @@ int test_nua_init(struct context *ctx,
     TEST_1(temp != -1);
     atexit(remove_tmp);		/* Make sure temp file is unlinked */
 
-    TEST(write(temp, passwd, strlen(passwd)), strlen(passwd));
+    TEST_SIZE(write(temp, passwd, strlen(passwd)), strlen(passwd));
 
     TEST_1(close(temp) == 0);
 

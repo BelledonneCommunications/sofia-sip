@@ -249,7 +249,7 @@ int test_refer0(struct context *ctx, int refer_with_id, char const *tests)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_refer);
   TEST(e->data->e_status, 202);
   TEST_1(sip = sip_object(e->data->e_msg));
-  TEST(strtoul(b_event->o_id, NULL, 10), sip->sip_cseq->cs_seq);
+  TEST_SIZE(strtoul(b_event->o_id, NULL, 10), sip->sip_cseq->cs_seq);
 #if 0
   if (!e->next)
     run_b_until(ctx, -1, save_until_received);
