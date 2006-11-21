@@ -118,8 +118,6 @@ int main(int argc, char *argv[])
       sdp_parser_free(p);
       exit(1);
     }
-
-    su_home_destroy(home);
   }
   else {
     if (ferror(f)) {
@@ -131,6 +129,8 @@ int main(int argc, char *argv[])
     }
     exit(1);
   }
+
+  su_home_unref(home);
 
   return exitcode;
 }

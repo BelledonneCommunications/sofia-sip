@@ -140,7 +140,7 @@ static int test_session(void)
   TEST_1((sdp_src = sdp_session(parser)));
   TEST_1(sdp_src->sdp_media);
   TEST_1(sdp_src->sdp_media->m_session);
-  TEST(sdp_src->sdp_media->m_session, sdp_src);
+  TEST_P(sdp_src->sdp_media->m_session, sdp_src);
 
   /* clone the session using 'home2' */
   TEST_1((sdp_target = sdp_session_dup(home2, sdp_src)));
@@ -161,8 +161,7 @@ static int test_session(void)
   TEST_S(sdp_src->sdp_origin->o_username, "sdp_torture");
 
   TEST_1(m = sdp_target->sdp_media);
-  TEST_1(m->m_session);
-  TEST(m->m_session, sdp_target);
+  TEST_P(m->m_session, sdp_target);
   TEST_1(sdp_src->sdp_media->m_session != sdp_target->sdp_media->m_session);
 
   TEST(m->m_type, sdp_media_audio);
@@ -178,7 +177,7 @@ static int test_session(void)
 
   /* destroy the first home instance */
   su_home_check(home);
-  su_home_destroy(home);
+  su_home_unref(home);
     
   /* access all cloned data by printing it */
   printer = sdp_print(home2, sdp_target, buffer, sizeof(buffer), 0);
@@ -219,7 +218,7 @@ static int test_session(void)
 
   /* destroy the second home object */
   su_home_check(home2);
-  su_home_destroy(home2);
+  su_home_unref(home2);
 
   END();
 }
@@ -272,8 +271,7 @@ static int test_session2(void)
   TEST_1((sdp = sdp_session(parser)));
   TEST_1(m = sdp->sdp_media);
   TEST(m->m_mode, sdp_sendonly);
-  TEST_1(m->m_session);
-  TEST(m->m_session, sdp);
+  TEST_P(m->m_session, sdp);
   TEST_1(rm = m->m_rtpmaps);
   TEST(rm->rm_pt, 96);
   TEST_S(rm->rm_encoding, "H263-1998");
@@ -297,26 +295,25 @@ static int test_session2(void)
     TEST_1(rm = rm->rm_next);
     TEST_S(rm->rm_encoding, ""); TEST(rm->rm_rate, 0);
     TEST_1(rm = rm->rm_next);
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_celb, rm), &sdp_rtpmap_celb);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_celb, rm), &sdp_rtpmap_celb);
     TEST_1(rm = rm->rm_next);
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_jpeg, rm), &sdp_rtpmap_jpeg);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_jpeg, rm), &sdp_rtpmap_jpeg);
     TEST_1(rm = rm->rm_next);
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_nv, rm), &sdp_rtpmap_nv);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_nv, rm), &sdp_rtpmap_nv);
     TEST_1(rm = rm->rm_next);
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_h261, rm), &sdp_rtpmap_h261);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_h261, rm), &sdp_rtpmap_h261);
     TEST_1(rm = rm->rm_next);
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_mpv, rm), &sdp_rtpmap_mpv);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_mpv, rm), &sdp_rtpmap_mpv);
     TEST_1(rm = rm->rm_next);
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_mp2t, rm), &sdp_rtpmap_mp2t);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_mp2t, rm), &sdp_rtpmap_mp2t);
     TEST_1(rm = rm->rm_next);
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_h263, rm), &sdp_rtpmap_h263);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_h263, rm), &sdp_rtpmap_h263);
     TEST_1(!rm->rm_next);
   }
 
   TEST_1(m = m->m_next);
   TEST(m->m_mode, sdp_sendonly);
-  TEST_1(m->m_session);
-  TEST(m->m_session, sdp);
+  TEST_P(m->m_session, sdp);
   TEST_1(rm = m->m_rtpmaps);
   TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "AMR");
@@ -349,70 +346,70 @@ static int test_session2(void)
 
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_pcmu, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_pcmu, rm), &sdp_rtpmap_pcmu);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_pcmu, rm), &sdp_rtpmap_pcmu);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_1016, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_1016, rm), &sdp_rtpmap_1016);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_1016, rm), &sdp_rtpmap_1016);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g721, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g721, rm), &sdp_rtpmap_g721);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_g721, rm), &sdp_rtpmap_g721);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_gsm, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_gsm, rm), &sdp_rtpmap_gsm);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_gsm, rm), &sdp_rtpmap_gsm);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g723, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g723, rm), &sdp_rtpmap_g723);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_g723, rm), &sdp_rtpmap_g723);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_8000, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_8000, rm),
-	 &sdp_rtpmap_dvi4_8000);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_8000, rm),
+	   &sdp_rtpmap_dvi4_8000);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_16000, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_16000, rm),
-	 &sdp_rtpmap_dvi4_16000);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_16000, rm),
+	   &sdp_rtpmap_dvi4_16000);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_lpc, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_lpc, rm), &sdp_rtpmap_lpc);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_lpc, rm), &sdp_rtpmap_lpc);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_pcma, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_pcma, rm), &sdp_rtpmap_pcma);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_pcma, rm), &sdp_rtpmap_pcma);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g722, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g722, rm), &sdp_rtpmap_g722);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_g722, rm), &sdp_rtpmap_g722);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_l16, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_l16, rm), &sdp_rtpmap_l16);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_l16, rm), &sdp_rtpmap_l16);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_l16_stereo, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_l16_stereo, rm),
-	 &sdp_rtpmap_l16_stereo);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_l16_stereo, rm),
+	   &sdp_rtpmap_l16_stereo);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_qcelp, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_qcelp, rm), &sdp_rtpmap_qcelp);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_qcelp, rm), &sdp_rtpmap_qcelp);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_cn, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_cn, rm), &sdp_rtpmap_cn);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_cn, rm), &sdp_rtpmap_cn);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_mpa, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_mpa, rm), &sdp_rtpmap_mpa);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_mpa, rm), &sdp_rtpmap_mpa);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g728, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g728, rm), &sdp_rtpmap_g728);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_g728, rm), &sdp_rtpmap_g728);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_11025, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_11025, rm),
-	 &sdp_rtpmap_dvi4_11025);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_11025, rm),
+	   &sdp_rtpmap_dvi4_11025);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_dvi4_22050, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_22050, rm),
-	 &sdp_rtpmap_dvi4_22050);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_dvi4_22050, rm),
+	   &sdp_rtpmap_dvi4_22050);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_g729, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_g729, rm), &sdp_rtpmap_g729);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_g729, rm), &sdp_rtpmap_g729);
     TEST_1(rm = rm->rm_next);
     TEST_1(sdp_rtpmap_match(&sdp_rtpmap_cn_reserved, rm));
-    TEST(sdp_rtpmap_find_matching(&sdp_rtpmap_cn_reserved, rm),
-	 &sdp_rtpmap_cn_reserved);
+    TEST_P(sdp_rtpmap_find_matching(&sdp_rtpmap_cn_reserved, rm),
+	   &sdp_rtpmap_cn_reserved);
     TEST_1(!rm->rm_next);
   }
   
@@ -420,8 +417,7 @@ static int test_session2(void)
   TEST_1((sdp = sdp_session(parser)));
   TEST_1(m = sdp->sdp_media);
   TEST(m->m_mode, sdp_recvonly);
-  TEST_1(m->m_session);
-  TEST(m->m_session, sdp);
+  TEST_P(m->m_session, sdp);
   TEST_1(m->m_rtpmaps);
   TEST(m->m_rtpmaps->rm_pt, 96);
   TEST_S(m->m_rtpmaps->rm_encoding, "H263-1998");
@@ -429,15 +425,14 @@ static int test_session2(void)
   TEST_S(m->m_rtpmaps->rm_fmtp, "QCIF=4");
   TEST_1(m = sdp->sdp_media->m_next);
   TEST(m->m_mode, sdp_recvonly);
-  TEST_1(m->m_session);
-  TEST(m->m_session, sdp);
+  TEST_P(m->m_session, sdp);
   TEST_1(m->m_rtpmaps);
   TEST(m->m_rtpmaps->rm_pt, 97);
   TEST_S(m->m_rtpmaps->rm_encoding, "AMR");
   TEST(m->m_rtpmaps->rm_rate, 8000);
   TEST_S(m->m_rtpmaps->rm_fmtp, "mode-set=\"0\"");
 
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }
@@ -468,7 +463,7 @@ static int test_sanity(void)
   
   TEST_1(sdp_sanity_check(parser) == 0);
 
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }
@@ -489,7 +484,7 @@ int test_list(void)
   TEST_1(home);
 
   TEST_1((l = sdp_list_dup(home, l0)));
-  TEST(l->l_next, NULL);
+  TEST_P(l->l_next, NULL);
   TEST_S(l->l_text, "foo");
 
   TEST_1((l = sdp_list_dup(home, l1)));
@@ -500,7 +495,7 @@ int test_list(void)
 
   su_home_check(home);
 
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }
@@ -534,7 +529,7 @@ int test_rtpmap(void)
   TEST_1(home);
 
   TEST_1((rm = sdp_rtpmap_dup(home, rm0)));
-  TEST(rm->rm_next, NULL);
+  TEST_P(rm->rm_next, NULL);
   TEST_S(rm->rm_encoding, "AMR");
   TEST_S(rm->rm_params, "1");
   TEST(rm->rm_pt, 96);
@@ -549,7 +544,7 @@ int test_rtpmap(void)
 
   su_home_check(home);
 
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }
@@ -571,7 +566,7 @@ static int test_attribute(void)
   TEST_1(home);
 
   TEST_1((a = sdp_attribute_dup(home, a0)));
-  TEST(a->a_next, NULL);
+  TEST_P(a->a_next, NULL);
   TEST_S(a->a_name, "foo");
   TEST_S(a->a_value, "2");
 
@@ -591,28 +586,28 @@ static int test_attribute(void)
 
   list = a;
 
-  TEST(sdp_attribute_remove(&list, NULL), NULL);
-  TEST(sdp_attribute_remove(&list, "kuik"), NULL);
-  TEST(sdp_attribute_remove(&list, "barf"), NULL);
-  TEST(sdp_attribute_remove(&list, "bar"), a);
+  TEST_P(sdp_attribute_remove(&list, NULL), NULL);
+  TEST_P(sdp_attribute_remove(&list, "kuik"), NULL);
+  TEST_P(sdp_attribute_remove(&list, "barf"), NULL);
+  TEST_P(sdp_attribute_remove(&list, "bar"), a);
   TEST_1(a_new = sdp_attribute_dup(home, a));
   replaced = (void *)-1;
   TEST(sdp_attribute_replace(&list, NULL, &replaced), -1);
-  TEST(replaced, NULL);
+  TEST_P(replaced, NULL);
   TEST(sdp_attribute_replace(&list, a, &replaced), 0); 
-  TEST(replaced, NULL);
+  TEST_P(replaced, NULL);
   TEST(sdp_attribute_replace(&list, a_new, &replaced), 1); 
-  TEST(replaced, a);
+  TEST_P(replaced, a);
 
   TEST_VOID(sdp_attribute_append(&list, a)); 
 
-  TEST(sdp_attribute_remove(&list, "bAr"), a_new);
-  TEST(sdp_attribute_remove(&list, "BAR"), a);
-  TEST(sdp_attribute_remove(&list, "bar"), NULL);
+  TEST_P(sdp_attribute_remove(&list, "bAr"), a_new);
+  TEST_P(sdp_attribute_remove(&list, "BAR"), a);
+  TEST_P(sdp_attribute_remove(&list, "bar"), NULL);
 
   su_home_check(home);
 
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }
@@ -672,21 +667,21 @@ static int test_media(void)
   TEST(media->m_type, sdp_media_audio);
   TEST(media->m_port, 1234);
   TEST(media->m_number_of_ports, 5);
-  TEST(media->m_session, sdp);
+  TEST_P(media->m_session, sdp);
   /* FIXME: add more tests */
 
   media->m_next = (sdp_media_t *)m0;
   TEST_1((media = sdp_media_dup_all(home, media, sdp)));
-  TEST(media->m_connections, NULL);
+  TEST_P(media->m_connections, NULL);
   TEST_1(media->m_next);
-  TEST(media->m_next->m_connections, NULL);
-  TEST(sdp_media_connections(media), sdp->sdp_connection);
-  TEST(sdp_media_connections(media->m_next), sdp->sdp_connection);
+  TEST_P(media->m_next->m_connections, NULL);
+  TEST_P(sdp_media_connections(media), sdp->sdp_connection);
+  TEST_P(sdp_media_connections(media->m_next), sdp->sdp_connection);
 
   sdp_parser_free(parser);
 
   su_home_check(home);
-  su_home_destroy(home);
+  su_home_unref(home);
 
   END();
 }
