@@ -254,14 +254,14 @@ static int tag_test(void)
   xtra += XTRA(xtra, mf);
   xtra += SU_ALIGN(xtra) + sizeof(*url) + url_xtra(url);
 
-  TEST(tl_xtra(lst, 0), xtra);
-  TEST(tl_len(lst), 6 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(lst, 0), xtra);
+  TEST_SIZE(tl_len(lst), 6 * sizeof(tagi_t));
 
   dup = tl_adup(NULL, lst);
 
-  TEST(dup != NULL, 1);
-  TEST(tl_len(dup), 6 * sizeof(tagi_t));
-  TEST(tl_xtra(dup, 0), xtra);
+  TEST_1(dup != NULL);
+  TEST_SIZE(tl_len(dup), 6 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(dup, 0), xtra);
 
   if (tstflags & tst_verbatim)
     tl_print(stdout, "dup:\n", dup);
@@ -601,220 +601,221 @@ static int http_header_handling_test(void)
   TEST_1(http->http_content_range);
 
   /* Quiet lots of warnings */
-  #define _msg_header_offset msg_header_offset
-  #define msg_header_offset(msg, http, h) \
-    _msg_header_offset(msg, http, (http_header_t *)h)
+#define _msg_header_offset msg_header_offset
+#define msg_header_offset(msg, http, h)			\
+  _msg_header_offset(msg, http, (http_header_t *)h)
 
-  TEST(msg_header_offset(msg, http, http_request), &http->http_request);
-  TEST(msg_header_offset(msg, http, http_status), &http->http_status);
-  TEST(msg_header_offset(msg, http, http_unknown), &http->http_unknown);
-  TEST(msg_header_offset(msg, http, http_separator), &http->http_separator);
-  TEST(msg_header_offset(msg, http, http_payload), &http->http_payload);
-  TEST(msg_header_offset(msg, http, http_via), &http->http_via);
+  TEST_P(msg_header_offset(msg, http, http_request), &http->http_request);
+  TEST_P(msg_header_offset(msg, http, http_status), &http->http_status);
+  TEST_P(msg_header_offset(msg, http, http_unknown), &http->http_unknown);
+  TEST_P(msg_header_offset(msg, http, http_separator), &http->http_separator);
+  TEST_P(msg_header_offset(msg, http, http_payload), &http->http_payload);
+  TEST_P(msg_header_offset(msg, http, http_via), &http->http_via);
 
-  TEST(msg_header_offset(msg, http, http_via), &http->http_via);
-  TEST(msg_header_offset(msg, http, http_host), &http->http_host);
-  TEST(msg_header_offset(msg, http, http_from), &http->http_from);
-  TEST(msg_header_offset(msg, http, http_referer), &http->http_referer);
-  TEST(msg_header_offset(msg, http, http_connection), &http->http_connection);
+  TEST_P(msg_header_offset(msg, http, http_via), &http->http_via);
+  TEST_P(msg_header_offset(msg, http, http_host), &http->http_host);
+  TEST_P(msg_header_offset(msg, http, http_from), &http->http_from);
+  TEST_P(msg_header_offset(msg, http, http_referer), &http->http_referer);
+  TEST_P(msg_header_offset(msg, http, http_connection),
+	 &http->http_connection);
 
-  TEST(msg_header_offset(msg, http, http_accept), &http->http_accept);
-  TEST(msg_header_offset(msg, http, http_accept_charset),
-       &http->http_accept_charset);
-  TEST(msg_header_offset(msg, http, http_accept_encoding),
-       &http->http_accept_encoding);
-  TEST(msg_header_offset(msg, http, http_accept_language),
-       &http->http_accept_language);
-  TEST(msg_header_offset(msg, http, http_accept_ranges),
-       &http->http_accept_ranges);
-  TEST(msg_header_offset(msg, http, http_allow),
-       &http->http_allow);
-  TEST(msg_header_offset(msg, http, http_te),
-       &http->http_te);
+  TEST_P(msg_header_offset(msg, http, http_accept), &http->http_accept);
+  TEST_P(msg_header_offset(msg, http, http_accept_charset),
+	 &http->http_accept_charset);
+  TEST_P(msg_header_offset(msg, http, http_accept_encoding),
+	 &http->http_accept_encoding);
+  TEST_P(msg_header_offset(msg, http, http_accept_language),
+	 &http->http_accept_language);
+  TEST_P(msg_header_offset(msg, http, http_accept_ranges),
+	 &http->http_accept_ranges);
+  TEST_P(msg_header_offset(msg, http, http_allow),
+	 &http->http_allow);
+  TEST_P(msg_header_offset(msg, http, http_te),
+	 &http->http_te);
 
-  TEST(msg_header_offset(msg, http, http_authorization),
-       &http->http_authorization);
-  TEST(msg_header_offset(msg, http, http_www_authenticate),
-       &http->http_www_authenticate);
-  TEST(msg_header_offset(msg, http, http_proxy_authenticate),
-       &http->http_proxy_authenticate);
-  TEST(msg_header_offset(msg, http, http_proxy_authorization),
-       &http->http_proxy_authorization);
+  TEST_P(msg_header_offset(msg, http, http_authorization),
+	 &http->http_authorization);
+  TEST_P(msg_header_offset(msg, http, http_www_authenticate),
+	 &http->http_www_authenticate);
+  TEST_P(msg_header_offset(msg, http, http_proxy_authenticate),
+	 &http->http_proxy_authenticate);
+  TEST_P(msg_header_offset(msg, http, http_proxy_authorization),
+	 &http->http_proxy_authorization);
 
-  TEST(msg_header_offset(msg, http, http_age),
-       &http->http_age);
-  TEST(msg_header_offset(msg, http, http_cache_control),
-       &http->http_cache_control);
-  TEST(msg_header_offset(msg, http, http_date),
-       &http->http_date);
-  TEST(msg_header_offset(msg, http, http_expires),
-       &http->http_expires);
-  TEST(msg_header_offset(msg, http, http_if_match),
-       &http->http_if_match);
-  TEST(msg_header_offset(msg, http, http_if_modified_since),
-       &http->http_if_modified_since);
-  TEST(msg_header_offset(msg, http, http_if_none_match),
-       &http->http_if_none_match);
-  TEST(msg_header_offset(msg, http, http_if_range),
-       &http->http_if_range);
-  TEST(msg_header_offset(msg, http, http_if_unmodified_since),
-       &http->http_if_unmodified_since);
+  TEST_P(msg_header_offset(msg, http, http_age),
+	 &http->http_age);
+  TEST_P(msg_header_offset(msg, http, http_cache_control),
+	 &http->http_cache_control);
+  TEST_P(msg_header_offset(msg, http, http_date),
+	 &http->http_date);
+  TEST_P(msg_header_offset(msg, http, http_expires),
+	 &http->http_expires);
+  TEST_P(msg_header_offset(msg, http, http_if_match),
+	 &http->http_if_match);
+  TEST_P(msg_header_offset(msg, http, http_if_modified_since),
+	 &http->http_if_modified_since);
+  TEST_P(msg_header_offset(msg, http, http_if_none_match),
+	 &http->http_if_none_match);
+  TEST_P(msg_header_offset(msg, http, http_if_range),
+	 &http->http_if_range);
+  TEST_P(msg_header_offset(msg, http, http_if_unmodified_since),
+	 &http->http_if_unmodified_since);
 
-  TEST(msg_header_offset(msg, http, http_etag),
-       &http->http_etag);
-  TEST(msg_header_offset(msg, http, http_expect),
-       &http->http_expect);
-  TEST(msg_header_offset(msg, http, http_last_modified),
-       &http->http_last_modified);
-  TEST(msg_header_offset(msg, http, http_location),
-       &http->http_location);
-  TEST(msg_header_offset(msg, http, http_max_forwards),
-       &http->http_max_forwards);
-  TEST(msg_header_offset(msg, http, http_pragma),
-       &http->http_pragma);
-  TEST(msg_header_offset(msg, http, http_range),
-       &http->http_range);
-  TEST(msg_header_offset(msg, http, http_retry_after),
-       &http->http_retry_after);
-  TEST(msg_header_offset(msg, http, http_trailer),
-       &http->http_trailer);
-  TEST(msg_header_offset(msg, http, http_upgrade),
-       &http->http_upgrade);
-  TEST(msg_header_offset(msg, http, http_vary),
-       &http->http_vary);
-  TEST(msg_header_offset(msg, http, http_warning),
-       &http->http_warning);
+  TEST_P(msg_header_offset(msg, http, http_etag),
+	 &http->http_etag);
+  TEST_P(msg_header_offset(msg, http, http_expect),
+	 &http->http_expect);
+  TEST_P(msg_header_offset(msg, http, http_last_modified),
+	 &http->http_last_modified);
+  TEST_P(msg_header_offset(msg, http, http_location),
+	 &http->http_location);
+  TEST_P(msg_header_offset(msg, http, http_max_forwards),
+	 &http->http_max_forwards);
+  TEST_P(msg_header_offset(msg, http, http_pragma),
+	 &http->http_pragma);
+  TEST_P(msg_header_offset(msg, http, http_range),
+	 &http->http_range);
+  TEST_P(msg_header_offset(msg, http, http_retry_after),
+	 &http->http_retry_after);
+  TEST_P(msg_header_offset(msg, http, http_trailer),
+	 &http->http_trailer);
+  TEST_P(msg_header_offset(msg, http, http_upgrade),
+	 &http->http_upgrade);
+  TEST_P(msg_header_offset(msg, http, http_vary),
+	 &http->http_vary);
+  TEST_P(msg_header_offset(msg, http, http_warning),
+	 &http->http_warning);
 
-  TEST(msg_header_offset(msg, http, http_user_agent),
-       &http->http_user_agent);
-  TEST(msg_header_offset(msg, http, http_server),
-       &http->http_server);
+  TEST_P(msg_header_offset(msg, http, http_user_agent),
+	 &http->http_user_agent);
+  TEST_P(msg_header_offset(msg, http, http_server),
+	 &http->http_server);
 
-  TEST(msg_header_offset(msg, http, http_mime_version),
-       &http->http_mime_version);
-  TEST(msg_header_offset(msg, http, http_content_language),
-       &http->http_content_language);
-  TEST(msg_header_offset(msg, http, http_content_location),
-       &http->http_content_location);
-  TEST(msg_header_offset(msg, http, http_content_md5),
-       &http->http_content_md5);
-  TEST(msg_header_offset(msg, http, http_content_range),
-       &http->http_content_range);
+  TEST_P(msg_header_offset(msg, http, http_mime_version),
+	 &http->http_mime_version);
+  TEST_P(msg_header_offset(msg, http, http_content_language),
+	 &http->http_content_language);
+  TEST_P(msg_header_offset(msg, http, http_content_location),
+	 &http->http_content_location);
+  TEST_P(msg_header_offset(msg, http, http_content_md5),
+	 &http->http_content_md5);
+  TEST_P(msg_header_offset(msg, http, http_content_range),
+	 &http->http_content_range);
 
-  TEST(msg_header_offset(msg, http, http_content_encoding),
-       &http->http_content_encoding);
-  TEST(msg_header_offset(msg, http, http_transfer_encoding),
-       &http->http_transfer_encoding);
+  TEST_P(msg_header_offset(msg, http, http_content_encoding),
+	 &http->http_content_encoding);
+  TEST_P(msg_header_offset(msg, http, http_transfer_encoding),
+	 &http->http_transfer_encoding);
 
-  TEST(msg_header_offset(msg, http, http_content_type),
-       &http->http_content_type);
-  TEST(msg_header_offset(msg, http, http_content_length),
-       &http->http_content_length);
+  TEST_P(msg_header_offset(msg, http, http_content_type),
+	 &http->http_content_type);
+  TEST_P(msg_header_offset(msg, http, http_content_length),
+	 &http->http_content_length);
 
-  TEST(http_via_class->hc_params,
-       offsetof(http_via_t, v_common));
-  TEST(http_host_class->hc_params,
-       offsetof(http_host_t, h_common));
-  TEST(http_from_class->hc_params,
-       offsetof(http_from_t, g_common));
-  TEST(http_referer_class->hc_params,
-       offsetof(http_referer_t, loc_common));
-  TEST(http_connection_class->hc_params,
-       offsetof(http_connection_t, k_items));
+  TEST_SIZE(http_via_class->hc_params,
+	    offsetof(http_via_t, v_common));
+  TEST_SIZE(http_host_class->hc_params,
+	    offsetof(http_host_t, h_common));
+  TEST_SIZE(http_from_class->hc_params,
+	    offsetof(http_from_t, g_common));
+  TEST_SIZE(http_referer_class->hc_params,
+	    offsetof(http_referer_t, loc_common));
+  TEST_SIZE(http_connection_class->hc_params,
+	    offsetof(http_connection_t, k_items));
 
-  TEST(http_accept_class->hc_params,
-       offsetof(http_accept_t, ac_params));
-  TEST(http_accept_charset_class->hc_params,
-       offsetof(http_accept_charset_t, aa_params));
-  TEST(http_accept_encoding_class->hc_params,
-       offsetof(http_accept_encoding_t, aa_params));
-  TEST(http_accept_language_class->hc_params,
-       offsetof(http_accept_language_t, aa_params));
-  TEST(http_accept_ranges_class->hc_params,
-       offsetof(http_accept_ranges_t, k_items));
-  TEST(http_allow_class->hc_params,
-       offsetof(http_allow_t, k_items));
-  TEST(http_te_class->hc_params,
-       offsetof(http_te_t, te_params));
+  TEST_SIZE(http_accept_class->hc_params,
+	    offsetof(http_accept_t, ac_params));
+  TEST_SIZE(http_accept_charset_class->hc_params,
+	    offsetof(http_accept_charset_t, aa_params));
+  TEST_SIZE(http_accept_encoding_class->hc_params,
+	    offsetof(http_accept_encoding_t, aa_params));
+  TEST_SIZE(http_accept_language_class->hc_params,
+	    offsetof(http_accept_language_t, aa_params));
+  TEST_SIZE(http_accept_ranges_class->hc_params,
+	    offsetof(http_accept_ranges_t, k_items));
+  TEST_SIZE(http_allow_class->hc_params,
+	    offsetof(http_allow_t, k_items));
+  TEST_SIZE(http_te_class->hc_params,
+	    offsetof(http_te_t, te_params));
 
-  TEST(http_authorization_class->hc_params,
-       offsetof(http_authorization_t, au_params));
-  TEST(http_www_authenticate_class->hc_params,
-       offsetof(http_www_authenticate_t, au_params));
-  TEST(http_proxy_authenticate_class->hc_params,
-       offsetof(http_proxy_authenticate_t, au_params));
-  TEST(http_proxy_authorization_class->hc_params,
-       offsetof(http_proxy_authorization_t, au_params));
+  TEST_SIZE(http_authorization_class->hc_params,
+	    offsetof(http_authorization_t, au_params));
+  TEST_SIZE(http_www_authenticate_class->hc_params,
+	    offsetof(http_www_authenticate_t, au_params));
+  TEST_SIZE(http_proxy_authenticate_class->hc_params,
+	    offsetof(http_proxy_authenticate_t, au_params));
+  TEST_SIZE(http_proxy_authorization_class->hc_params,
+	    offsetof(http_proxy_authorization_t, au_params));
 
-  TEST(http_age_class->hc_params,
-       offsetof(http_age_t, x_common));
-  TEST(http_cache_control_class->hc_params,
-       offsetof(http_cache_control_t, k_items));
-  TEST(http_date_class->hc_params,
-       offsetof(http_date_t, d_common));
-  TEST(http_expires_class->hc_params,
-       offsetof(http_expires_t, d_common));
-  TEST(http_if_match_class->hc_params,
-       offsetof(http_if_match_t, k_items));
-  TEST(http_if_modified_since_class->hc_params,
-       offsetof(http_if_modified_since_t, d_common));
-  TEST(http_if_none_match_class->hc_params,
-       offsetof(http_if_none_match_t, k_items));
-  TEST(http_if_range_class->hc_params,
-       offsetof(http_if_range_t, ifr_common));
-  TEST(http_if_unmodified_since_class->hc_params,
-       offsetof(http_if_unmodified_since_t, d_common));
+  TEST_SIZE(http_age_class->hc_params,
+	    offsetof(http_age_t, x_common));
+  TEST_SIZE(http_cache_control_class->hc_params,
+	    offsetof(http_cache_control_t, k_items));
+  TEST_SIZE(http_date_class->hc_params,
+	    offsetof(http_date_t, d_common));
+  TEST_SIZE(http_expires_class->hc_params,
+	    offsetof(http_expires_t, d_common));
+  TEST_SIZE(http_if_match_class->hc_params,
+	    offsetof(http_if_match_t, k_items));
+  TEST_SIZE(http_if_modified_since_class->hc_params,
+	    offsetof(http_if_modified_since_t, d_common));
+  TEST_SIZE(http_if_none_match_class->hc_params,
+	    offsetof(http_if_none_match_t, k_items));
+  TEST_SIZE(http_if_range_class->hc_params,
+	    offsetof(http_if_range_t, ifr_common));
+  TEST_SIZE(http_if_unmodified_since_class->hc_params,
+	    offsetof(http_if_unmodified_since_t, d_common));
 
-  TEST(http_etag_class->hc_params,
-       offsetof(http_etag_t, g_common));
-  TEST(http_expect_class->hc_params,
-       offsetof(http_expect_t, g_common));
-  TEST(http_last_modified_class->hc_params,
-       offsetof(http_last_modified_t, d_common));
-  TEST(http_location_class->hc_params,
-       offsetof(http_location_t, loc_common));
-  TEST(http_max_forwards_class->hc_params,
-       offsetof(http_max_forwards_t, mf_common));
-  TEST(http_pragma_class->hc_params,
-       offsetof(http_pragma_t, k_items));
-  TEST(http_range_class->hc_params,
-       offsetof(http_range_t, rng_specs));
-  TEST(http_retry_after_class->hc_params,
-       offsetof(http_retry_after_t, ra_common));
-  TEST(http_trailer_class->hc_params,
-       offsetof(http_trailer_t, k_items));
-  TEST(http_upgrade_class->hc_params,
-       offsetof(http_upgrade_t, k_items));
-  TEST(http_vary_class->hc_params,
-       offsetof(http_vary_t, k_items));
-  TEST(http_warning_class->hc_params,
-       offsetof(http_warning_t, w_common));
+  TEST_SIZE(http_etag_class->hc_params,
+	    offsetof(http_etag_t, g_common));
+  TEST_SIZE(http_expect_class->hc_params,
+	    offsetof(http_expect_t, g_common));
+  TEST_SIZE(http_last_modified_class->hc_params,
+	    offsetof(http_last_modified_t, d_common));
+  TEST_SIZE(http_location_class->hc_params,
+	    offsetof(http_location_t, loc_common));
+  TEST_SIZE(http_max_forwards_class->hc_params,
+	    offsetof(http_max_forwards_t, mf_common));
+  TEST_SIZE(http_pragma_class->hc_params,
+	    offsetof(http_pragma_t, k_items));
+  TEST_SIZE(http_range_class->hc_params,
+	    offsetof(http_range_t, rng_specs));
+  TEST_SIZE(http_retry_after_class->hc_params,
+	    offsetof(http_retry_after_t, ra_common));
+  TEST_SIZE(http_trailer_class->hc_params,
+	    offsetof(http_trailer_t, k_items));
+  TEST_SIZE(http_upgrade_class->hc_params,
+	    offsetof(http_upgrade_t, k_items));
+  TEST_SIZE(http_vary_class->hc_params,
+	    offsetof(http_vary_t, k_items));
+  TEST_SIZE(http_warning_class->hc_params,
+	    offsetof(http_warning_t, w_common));
 
-  TEST(http_user_agent_class->hc_params,
-       offsetof(http_user_agent_t, g_common));
-  TEST(http_server_class->hc_params,
-       offsetof(http_server_t, g_common));
+  TEST_SIZE(http_user_agent_class->hc_params,
+	    offsetof(http_user_agent_t, g_common));
+  TEST_SIZE(http_server_class->hc_params,
+	    offsetof(http_server_t, g_common));
 
-  TEST(http_mime_version_class->hc_params,
-       offsetof(http_mime_version_t, g_common));
-  TEST(http_content_language_class->hc_params,
-       offsetof(http_content_language_t, k_items));
-  TEST(http_content_location_class->hc_params,
-       offsetof(http_content_location_t, g_common));
-  TEST(http_content_md5_class->hc_params,
-       offsetof(http_content_md5_t, g_common));
-  TEST(http_content_range_class->hc_params,
-       offsetof(http_content_range_t, cr_common));
+  TEST_SIZE(http_mime_version_class->hc_params,
+	    offsetof(http_mime_version_t, g_common));
+  TEST_SIZE(http_content_language_class->hc_params,
+	    offsetof(http_content_language_t, k_items));
+  TEST_SIZE(http_content_location_class->hc_params,
+	    offsetof(http_content_location_t, g_common));
+  TEST_SIZE(http_content_md5_class->hc_params,
+	    offsetof(http_content_md5_t, g_common));
+  TEST_SIZE(http_content_range_class->hc_params,
+	    offsetof(http_content_range_t, cr_common));
 
-  TEST(http_content_encoding_class->hc_params,
-       offsetof(http_content_encoding_t, k_items));
-  TEST(http_transfer_encoding_class->hc_params,
-       offsetof(http_transfer_encoding_t, k_items));
+  TEST_SIZE(http_content_encoding_class->hc_params,
+	    offsetof(http_content_encoding_t, k_items));
+  TEST_SIZE(http_transfer_encoding_class->hc_params,
+	    offsetof(http_transfer_encoding_t, k_items));
 
-  TEST(http_content_type_class->hc_params,
-       offsetof(http_content_type_t, c_params));
-  TEST(http_content_length_class->hc_params,
-       offsetof(http_content_length_t, l_common));
+  TEST_SIZE(http_content_type_class->hc_params,
+	    offsetof(http_content_type_t, c_params));
+  TEST_SIZE(http_content_length_class->hc_params,
+	    offsetof(http_content_length_t, l_common));
 
   su_home_unref(home);
 
@@ -861,7 +862,7 @@ static int http_header_test(void)
     TEST_S(rq->rq_url->url_path, "");
     TEST_1(rq->rq_url->url_root);
     TEST_S(url_as_string(home, rq->rq_url), "/");
-    TEST(rq->rq_version, http_version_1_0);
+    TEST_P(rq->rq_version, http_version_1_0);
 
     TEST_1(rq = http_request_make(home, "GET / HTTP/1.2"));
 
@@ -879,7 +880,7 @@ static int http_header_test(void)
     TEST_1(rq->rq_url->url_root);
     TEST_S(url_as_string(home, rq->rq_url), "/foo");
     TEST_S(rq->rq_version, "");
-    TEST(rq->rq_version, http_version_0_9);
+    TEST_P(rq->rq_version, http_version_0_9);
   }
 
   {
@@ -887,7 +888,7 @@ static int http_header_test(void)
 
     st = http_status_make(home, "HTTP/1.0 100 Continue"); TEST_1(st);
     TEST_S(st->st_version, "HTTP/1.0");
-    TEST(st->st_version, http_version_1_0);
+    TEST_P(st->st_version, http_version_1_0);
     TEST(st->st_status, 100);
     TEST_S(st->st_phrase, "Continue");
 
@@ -898,7 +899,7 @@ static int http_header_test(void)
 
     st = http_status_make(home, "HTTP/1.1  200  Ok"); TEST_1(st);
     TEST_S(st->st_version, "HTTP/1.1");
-    TEST(st->st_version, http_version_1_1);
+    TEST_P(st->st_version, http_version_1_1);
     TEST(st->st_status, 200);
     TEST_S(st->st_phrase, "Ok");
 
@@ -917,14 +918,14 @@ static int http_header_test(void)
     http_content_range_t *cr;
 
     cr = http_content_range_make(home, "bytes 0 - 499 / *"); TEST_1(cr);
-    TEST(cr->cr_first, 0);
-    TEST(cr->cr_last, 499);
-    TEST(cr->cr_length, (off_t)-1);
+    TEST64(cr->cr_first, 0);
+    TEST64(cr->cr_last, 499);
+    TEST64(cr->cr_length, (http_off_t)-1);
 
     cr = http_content_range_make(home, "bytes 500-999/9913133"); TEST_1(cr);
-    TEST(cr->cr_first, 500);
-    TEST(cr->cr_last, 999);
-    TEST(cr->cr_length, 9913133);
+    TEST64(cr->cr_first, 500);
+    TEST64(cr->cr_last, 999);
+    TEST64(cr->cr_length, 9913133);
 
     TEST_1(!http_content_range_make(home, "bytes = 0 - 499 / *,"));
   }
@@ -985,7 +986,7 @@ static int http_header_test(void)
     TEST_S(sc->sc_name, "foo=bar");
     TEST_S(sc->sc_version, "1");
     TEST_S(sc->sc_domain, ".nokia.com");
-    TEST(sc->sc_max_age, NULL);
+    TEST_P(sc->sc_max_age, NULL);
     TEST_S(sc->sc_path, "\"\"");
     TEST_S(sc->sc_comment, NULL);
     TEST(sc->sc_secure, 0);
@@ -1014,46 +1015,46 @@ static int http_header_test(void)
     TEST_S(rng->rng_unit, "bytes");
     TEST_1(rng->rng_specs);
     TEST_S(rng->rng_specs[0], "0-499");
-    TEST(rng->rng_specs[1], NULL);
+    TEST_P(rng->rng_specs[1], NULL);
 
     rng = http_range_make(home, "bytes=,500 - 999"); TEST_1(rng);
     TEST_S(rng->rng_unit, "bytes");
     TEST_1(rng->rng_specs);
     TEST_S(rng->rng_specs[0], "500-999");
-    TEST(rng->rng_specs[1], NULL);
+    TEST_P(rng->rng_specs[1], NULL);
 
     rng = http_range_make(home, "bytes= - 500"); TEST_1(rng);
     TEST_S(rng->rng_unit, "bytes");
     TEST_1(rng->rng_specs);
     TEST_S(rng->rng_specs[0], "-500");
-    TEST(rng->rng_specs[1], NULL);
+    TEST_P(rng->rng_specs[1], NULL);
 
     rng = http_range_make(home, "bytes=9500-"); TEST_1(rng);
     TEST_S(rng->rng_unit, "bytes");
     TEST_1(rng->rng_specs);
     TEST_S(rng->rng_specs[0], "9500-");
-    TEST(rng->rng_specs[1], NULL);
+    TEST_P(rng->rng_specs[1], NULL);
 
     rng = http_range_make(home, "bytes=0- 0 , -  1"); TEST_1(rng);
     TEST_S(rng->rng_unit, "bytes");
     TEST_1(rng->rng_specs);
     TEST_S(rng->rng_specs[0], "0-0");
     TEST_S(rng->rng_specs[1], "-1");
-    TEST(rng->rng_specs[2], NULL);
+    TEST_P(rng->rng_specs[2], NULL);
 
     rng = http_range_make(home, "bytes=500-600 , 601 - 999 ,,"); TEST_1(rng);
     TEST_S(rng->rng_unit, "bytes");
     TEST_1(rng->rng_specs);
     TEST_S(rng->rng_specs[0], "500-600");
     TEST_S(rng->rng_specs[1], "601-999");
-    TEST(rng->rng_specs[2], NULL);
+    TEST_P(rng->rng_specs[2], NULL);
 
     rng = http_range_make(home, "bytes=500-700,601-999"); TEST_1(rng);
     TEST_S(rng->rng_unit, "bytes");
     TEST_1(rng->rng_specs);
     TEST_S(rng->rng_specs[0], "500-700");
     TEST_S(rng->rng_specs[1], "601-999");
-    TEST(rng->rng_specs[2], NULL);
+    TEST_P(rng->rng_specs[2], NULL);
   }
 
   {
@@ -1179,7 +1180,7 @@ static int http_parser_test(void)
     TEST_S(http->http_content_encoding->k_items[0], "identity");
     TEST_S(http->http_content_encoding->k_items[1], "gzip");
     TEST_S(http->http_content_encoding->k_items[2], "deflate");
-    TEST(http->http_content_encoding->k_items[3], NULL);
+    TEST_P(http->http_content_encoding->k_items[3], NULL);
     TEST_1(http->http_set_cookie);
     TEST_1(http->http_set_cookie->sc_next);
 
@@ -1252,7 +1253,7 @@ static int test_http_encoding(void)
     TEST_1(h1 = msg_header_dup(home, h));
     n = msg_header_e(b, sizeof b, h1, 0);
     if (n != h->sh_len)
-      TEST(n, h->sh_len);
+      TEST_SIZE(n, h->sh_len);
     TEST_M(b, h->sh_data, n);
     su_free(home, h1);
   }
@@ -1297,7 +1298,7 @@ static int test_http_encoding(void)
 
     TEST_1(h1 = msg_header_dup(home, h));
     n = msg_header_e(b, sizeof b, h1, 0);
-    TEST(n, h->sh_len);
+    TEST_SIZE(n, h->sh_len);
     TEST_M(b, h->sh_data, n);
     su_free(home, h1);
   }
@@ -1455,7 +1456,7 @@ static int http_tag_test(void)
 		     TAG_END()),
 	 5);
 
-    TEST(http->http_server, NULL);
+    TEST_P(http->http_server, NULL);
     TEST_1(http->http_referer);
     TEST_1(http->http_max_forwards);
     TEST_1(http->http_upgrade);
@@ -1477,13 +1478,13 @@ int test_query_parser(void)
     char query[] = "foo=bar&bar=baz";
     char *foo = NULL, *bar = NULL, *baz = "default";
 
-    TEST(http_query_parse(NULL, NULL), -1);
+    TEST_SIZE(http_query_parse(NULL, NULL), -1);
 
-    TEST(http_query_parse(query,
-			  "foo=", &foo,
-			  "bar=", &bar,
-			  "baz=", &baz,
-			  NULL), 2);
+    TEST_SIZE(http_query_parse(query,
+			       "foo=", &foo,
+			       "bar=", &bar,
+			       "baz=", &baz,
+			       NULL), 2);
     TEST_S(foo, "bar");
     TEST_S(bar, "baz");
     TEST_S(baz, "default");
@@ -1494,8 +1495,12 @@ int test_query_parser(void)
 
     char *foo = NULL, *bar = NULL, *baz = NULL;
 
-    TEST(http_query_parse(q2, "foo=", &foo, "bar=", &bar, "baz", &baz, NULL),
-	 3);
+    TEST_SIZE(http_query_parse(q2,
+			       "foo=", &foo,
+			       "bar=", &bar,
+			       "baz", &baz,
+			       NULL),
+	      3);
 
     TEST_S(foo, "bar");
     TEST_S(bar, "baz");
