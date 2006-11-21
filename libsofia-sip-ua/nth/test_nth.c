@@ -242,9 +242,9 @@ static int test_nth_client_api(tester_t *t)
   TEST(nth_client_status(NULL), 400);
   TEST(nth_client_method(NULL), http_method_invalid);
   TEST(nth_client_is_streaming(NULL), 0);
-  TEST(nth_client_url(NULL), NULL);
-  TEST(nth_client_request(NULL), NULL);
-  TEST(nth_client_response(NULL), NULL);
+  TEST_P(nth_client_url(NULL), NULL);
+  TEST_P(nth_client_request(NULL), NULL);
+  TEST_P(nth_client_response(NULL), NULL);
   TEST_VOID(nth_client_destroy(NULL));
 
   t->t_engine = nth_engine_create(t->t_root, 
@@ -277,7 +277,7 @@ static int test_nth_client_api(tester_t *t)
 	 6);
 
     TEST(error_msg, 1);
-    TEST(mclass, t->t_mclass);
+    TEST_P(mclass, t->t_mclass);
     TEST(mflags, MSG_DO_CANONIC|MSG_DO_COMPACT);
     TEST(expires, 32000);
     TEST(streaming, 0);
@@ -315,7 +315,7 @@ static int test_nth_client_api(tester_t *t)
 	 6);
 
     TEST(error_msg, 0);
-    TEST(mclass, NULL);
+    TEST_P(mclass, NULL);
     TEST(mflags, 0);
     TEST(expires, 10000);
     TEST(streaming, 1);
@@ -379,14 +379,14 @@ static int test_nth_server_api(tester_t *t)
 			  NTHTAG_ROOT(t->t_root), TAG_END()));
 
   TEST_VOID(nth_site_destroy(NULL));
-  TEST(nth_site_magic(NULL), NULL);
+  TEST_P(nth_site_magic(NULL), NULL);
   TEST_VOID(nth_site_bind(NULL, test_site, s));
   TEST_1(nth_site_set_params(NULL, TAG_END()) == -1);
   TEST_1(nth_site_get_params(NULL, TAG_END()) == -1);
   TEST_1(nth_site_get_stats(NULL, TAG_END()) == -1);
   TEST(nth_request_status(NULL), 400);
   TEST(nth_request_method(NULL), http_method_invalid);
-  TEST(nth_request_message(NULL), NULL);
+  TEST_P(nth_request_message(NULL), NULL);
   TEST_1(nth_request_treply(NULL, HTTP_200_OK, TAG_END()) == -1);
   TEST_VOID(nth_request_destroy(NULL));
 
@@ -515,7 +515,7 @@ static int init_server(tester_t *t)
   TEST_1(temp != -1);
   atexit(remove_tmp);		/* Make sure temp file is unlinked */
 
-  TEST(write(temp, passwd, strlen(passwd)), strlen(passwd));
+  TEST_SIZE(write(temp, passwd, strlen(passwd)), strlen(passwd));
 
   TEST_1(close(temp) == 0);
 
@@ -578,7 +578,7 @@ static int send_request(tester_t *t, char const *req, size_t reqlen,
   if (reqlen == (size_t)-1)
     reqlen = strlen(req);
 
-  TEST(send(c, req, reqlen, 0), reqlen);
+  TEST_SIZE(su_send(c, req, reqlen, 0), reqlen);
 
   if (close_socket == 1)
     shutdown(c, 1);
