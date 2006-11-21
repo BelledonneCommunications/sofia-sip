@@ -244,7 +244,7 @@ char *http_cookie_dup_one(msg_header_t *dst, msg_header_t const *src,
   b = msg_params_dup(&c->c_params, o->c_params, b, xtra);
   http_cookie_update(c);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -460,7 +460,7 @@ char *http_set_cookie_dup_one(msg_header_t *dst, msg_header_t const *src,
   b = msg_params_dup(&sc->sc_params, o->sc_params, b, xtra);
   http_set_cookie_update(sc);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

@@ -247,7 +247,7 @@ char *http_status_dup_one(http_header_t *dst, http_header_t const *src,
   st->st_status = o->st_status;
   MSG_STRING_DUP(b, st->st_phrase, o->st_phrase);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -719,7 +719,7 @@ char *http_host_dup_one(http_header_t *dst, http_header_t const *src,
   MSG_STRING_DUP(b, h->h_host, o->h_host);
   MSG_STRING_DUP(b, h->h_port, o->h_port);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -863,7 +863,7 @@ char *http_if_range_dup_one(http_header_t *dst, http_header_t const *src,
 
   ifr->ifr_time = o->ifr_time;
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1200,7 +1200,7 @@ char *http_range_dup_one(msg_header_t *dst, msg_header_t const *src,
 		     o->rng_specs, b, xtra);
   MSG_STRING_DUP(b, rng->rng_unit, o->rng_unit);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1430,7 +1430,7 @@ char *http_te_dup_one(msg_header_t *dst, msg_header_t const *src,
   MSG_STRING_DUP(b, te->te_extension, o->te_extension);
   if (te->te_params) http_te_update(te);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -1578,7 +1578,7 @@ static char *http_via_dup_one(http_header_t *dst, http_header_t const *src,
   MSG_STRING_DUP(b, v->v_port, o->v_port);
   MSG_STRING_DUP(b, v->v_comment, o->v_comment);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

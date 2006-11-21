@@ -80,7 +80,7 @@ inet_ntop4(const unsigned char *src, char *dst, size_t size)
 	char tmp[sizeof "255.255.255.255"];
 
 	if (snprintf(tmp, sizeof tmp, fmt,
-		     src[0], src[1], src[2], src[3]) > size) {
+		     src[0], src[1], src[2], src[3]) >= size) {
 		su_seterrno(ENOSPC);
 		return NULL;
 	}
@@ -106,7 +106,7 @@ inet_ntop6(unsigned char const *src, char *dst, size_t size)
 	 * to use pointer overlays.  All the world's not a VAX.
 	 */
 	char tmp[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"], *tp;
-	struct { int base, len; } best, cur;
+	struct { int base, len; } best = { -1 , 0 }, cur = { -1, 0 };
 	unsigned int words[8];
 	int i;
 
@@ -173,7 +173,7 @@ inet_ntop6(unsigned char const *src, char *dst, size_t size)
 	/*
 	 * Check for overflow, copy, and we're done.
 	 */
-	if ((size_t)(tp - tmp) > size) {
+	if ((size_t)(tp - tmp) >= size) {
 		su_seterrno(ENOSPC);
 		return NULL;
 	}
