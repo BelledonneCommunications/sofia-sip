@@ -1890,7 +1890,10 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
 			    TAG_NEXT(tags));
   sip = sip_object(msg);
 
-  assert(sip);			/* XXX */
+  if (!sip) {
+    SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR), reliable = 0;
+    goto send_response;
+  }
 
   reliable =
     (status >= 200)
@@ -1988,6 +1991,8 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
     if (!rel)
       SET_STATUS1(SIP_500_INTERNAL_SERVER_ERROR);
   }
+
+ send_response:
 
   if (reliable && status < 200)
     /* we are done */;
