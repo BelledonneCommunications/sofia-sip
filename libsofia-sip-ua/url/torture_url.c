@@ -91,12 +91,12 @@ int test_quote(void)
   TEST_1(!url_reserved_p(""));
   TEST_1(url_reserved_p("foobar:bar"));
 
-  TEST(url_esclen("a" EXCLUDED, ""), 
-       1 + strlen(RESERVED) + 3 * strlen(DELIMS UNWISE));
-  TEST(url_esclen("a" EXCLUDED, DELIMS UNWISE), 
-       1 + strlen(RESERVED) + 3 * strlen(DELIMS UNWISE));
-  TEST(url_esclen("a" EXCLUDED, EXCLUDED), 1 + 3 * strlen(EXCLUDED));
-  TEST(url_esclen("a" EXCLUDED, NULL), 1 + 3 * strlen(EXCLUDED));
+  TEST_SIZE(url_esclen("a" EXCLUDED, ""), 
+	    1 + strlen(RESERVED) + 3 * strlen(DELIMS UNWISE));
+  TEST_SIZE(url_esclen("a" EXCLUDED, DELIMS UNWISE), 
+	    1 + strlen(RESERVED) + 3 * strlen(DELIMS UNWISE));
+  TEST_SIZE(url_esclen("a" EXCLUDED, EXCLUDED), 1 + 3 * strlen(EXCLUDED));
+  TEST_SIZE(url_esclen("a" EXCLUDED, NULL), 1 + 3 * strlen(EXCLUDED));
 
   TEST_S(url_escape(escaped, "a" EXCLUDED, NULL),
 	 "a%3B%2F%3F%3A%40%26%3D%2B%24%2C"
@@ -104,7 +104,7 @@ int test_quote(void)
 	 "%7B%7D%7C%5C%5E%5B%5D%60");
   TEST_S(url_unescape(escaped, escaped), "a" EXCLUDED);
 
-  TEST(url_esclen(UNRESERVED, NULL), strlen(UNRESERVED));
+  TEST_SIZE(url_esclen(UNRESERVED, NULL), strlen(UNRESERVED));
   TEST_S(url_escape(unreserved, UNRESERVED, NULL), UNRESERVED);
   TEST_S(url_unescape(unreserved, UNRESERVED), UNRESERVED);
 
@@ -191,8 +191,8 @@ int test_any(void)
     char buf[6];
     
     TEST_1(u = url_hdup(home, (void *)"error"));
-    TEST(url_xtra(u), 6);
-    TEST(url_dup(buf, 6, url, u), 6);
+    TEST_SIZE(url_xtra(u), 6);
+    TEST_SIZE(url_dup(buf, 6, url, u), 6);
     TEST_S(buf, "error");
   }
 
@@ -256,13 +256,13 @@ int test_sip(void)
   TEST(url->url_root, 0);
   TEST_S(url->url_scheme, "sip");
   TEST_S(url->url_user, "pekka.pessi");
-  TEST(url->url_password, NULL);
+  TEST_P(url->url_password, NULL);
   TEST_S(url->url_host, "nokia.com");
-  TEST(url->url_port, NULL);
-  TEST(url->url_path, NULL);
+  TEST_P(url->url_port, NULL);
+  TEST_P(url->url_path, NULL);
   TEST_S(url->url_params, "method=MESSAGE");
   TEST_S(url->url_headers, "body=CANNED%20MSG");
-  TEST(url->url_fragment, NULL);
+  TEST_P(url->url_fragment, NULL);
   
   sip->url_user = "user";
   sip->url_password = "pass";
@@ -283,8 +283,8 @@ int test_sip(void)
   TEST_1(url_cmp(sip, u) == 0);
   TEST_1(url_e(sip2, sizeof(sip2), u) == strlen(sipurl));
   TEST_1(strcmp(sip2, sipurl) == 0);
-  TEST(snprintf(sip2, sizeof(sip2), URL_PRINT_FORMAT, 
-		URL_PRINT_ARGS(sip)), strlen(sipurl));
+  TEST_SIZE(snprintf(sip2, sizeof(sip2), URL_PRINT_FORMAT, 
+		     URL_PRINT_ARGS(sip)), strlen(sipurl));
   TEST_1(strcmp(sip2, sipurl) == 0);
 
   url_digest(hash1, sizeof(hash1), url, NULL);
@@ -312,7 +312,7 @@ int test_sip(void)
     url_t dst[1];
 
     buf[i] = '\377';
-    TEST(url_dup(buf, i, dst, url), sizeof(sipsurl) - 1 - strlen("sips"));
+    TEST_SIZE(url_dup(buf, i, dst, url), sizeof(sipsurl) - 1 - strlen("sips"));
     TEST(buf[i], '\377');
   }
 
@@ -323,9 +323,9 @@ int test_sip(void)
   u = url_hdup(home, (url_t*)"SIP:test@127.0.0.1:55"); TEST_1(u);
   TEST(u->url_type, url_sip);
 
-  TEST(url_hdup(home, (url_t*)"sip:test@127.0.0.1::55"), NULL);
-  TEST(url_hdup(home, (url_t*)"sip:test@127.0.0.1:55:"), NULL);
-  TEST(url_hdup(home, (url_t*)"sip:test@127.0.0.1:sip"), NULL);
+  TEST_P(url_hdup(home, (url_t*)"sip:test@127.0.0.1::55"), NULL);
+  TEST_P(url_hdup(home, (url_t*)"sip:test@127.0.0.1:55:"), NULL);
+  TEST_P(url_hdup(home, (url_t*)"sip:test@127.0.0.1:sip"), NULL);
 
   for (i = 32; i <= 256; i++) {
     char pu[512];
@@ -351,7 +351,7 @@ int test_sip(void)
   TEST_1(u);
   TEST_1(url_have_transport(u));
   TEST_1(url_strip_transport(u));
-  TEST(u->url_params, NULL);
+  TEST_P(u->url_params, NULL);
   TEST_1(!url_have_transport(u));
 
   u = url_hdup(home, (void*)"sip:u:p@host:5060;user=phone;ttl=1;isfocus");
@@ -457,10 +457,10 @@ int test_wv(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_wv);
   TEST_1(url_cmp(wv, u) == 0);
-  TEST(url_e(wv2, sizeof(wv2), u), strlen(wvurl));
+  TEST_SIZE(url_e(wv2, sizeof(wv2), u), strlen(wvurl));
   TEST_1(strcmp(wv2, wvurl) == 0);
-  TEST(snprintf(wv2, sizeof(wv2), URL_PRINT_FORMAT, 
-		URL_PRINT_ARGS(wv)), strlen(wvurl));
+  TEST_SIZE(snprintf(wv2, sizeof(wv2), URL_PRINT_FORMAT, 
+		     URL_PRINT_ARGS(wv)), strlen(wvurl));
   TEST_1(strcmp(wv2, wvurl) == 0);
 
   url_digest(hash1, sizeof(hash1), url, NULL);
@@ -509,10 +509,10 @@ int test_tel(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_tel);
   TEST_1(url_cmp(tel, u) == 0);
-  TEST(url_e(tel2, sizeof(tel2), u), strlen(telurl));
+  TEST_SIZE(url_e(tel2, sizeof(tel2), u), strlen(telurl));
   TEST_1(strcmp(tel2, telurl) == 0);
-  TEST(snprintf(tel2, sizeof(tel2), URL_PRINT_FORMAT, 
-		URL_PRINT_ARGS(tel)), strlen(telurl));
+  TEST_SIZE(snprintf(tel2, sizeof(tel2), URL_PRINT_FORMAT, 
+		     URL_PRINT_ARGS(tel)), strlen(telurl));
   TEST_1(strcmp(tel2, telurl) == 0);
 
   url_digest(hash1, sizeof(hash1), url, NULL);
@@ -559,10 +559,10 @@ int test_fax(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_fax);
   TEST_1(url_cmp(fax, u) == 0);
-  TEST(url_e(fax2, sizeof(fax2), u), strlen(faxurl));
+  TEST_SIZE(url_e(fax2, sizeof(fax2), u), strlen(faxurl));
   TEST_1(strcmp(fax2, faxurl) == 0);
-  TEST(snprintf(fax2, sizeof(fax2), URL_PRINT_FORMAT, 
-		URL_PRINT_ARGS(fax)), strlen(faxurl));
+  TEST_SIZE(snprintf(fax2, sizeof(fax2), URL_PRINT_FORMAT, 
+		     URL_PRINT_ARGS(fax)), strlen(faxurl));
   TEST_1(strcmp(fax2, faxurl) == 0);
 
 
@@ -604,10 +604,10 @@ int test_modem(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_modem);
   TEST_1(url_cmp(modem, u) == 0);
-  TEST(url_e(modem2, sizeof(modem2), u), strlen(modemurl));
+  TEST_SIZE(url_e(modem2, sizeof(modem2), u), strlen(modemurl));
   TEST_1(strcmp(modem2, modemurl) == 0);
-  TEST(snprintf(modem2, sizeof(modem2), URL_PRINT_FORMAT, 
-		URL_PRINT_ARGS(modem)), strlen(modemurl));
+  TEST_SIZE(snprintf(modem2, sizeof(modem2), URL_PRINT_FORMAT, 
+		     URL_PRINT_ARGS(modem)), strlen(modemurl));
   TEST_1(strcmp(modem2, modemurl) == 0);
 
   url_digest(hash1, sizeof(hash1), url, NULL);
@@ -643,10 +643,10 @@ int test_file(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_file);
   TEST(url_cmp(file, u), 0);
-  TEST(url_e(buf1, sizeof(buf1), u), strlen(fileurl));
+  TEST_SIZE(url_e(buf1, sizeof(buf1), u), strlen(fileurl));
   TEST_S(buf1, fileurl);
-  TEST(snprintf(buf2, sizeof(buf2), URL_PRINT_FORMAT, URL_PRINT_ARGS(u)), 
-       strlen(fileurl));
+  TEST_SIZE(snprintf(buf2, sizeof(buf2), URL_PRINT_FORMAT, URL_PRINT_ARGS(u)), 
+	    strlen(fileurl));
   TEST_S(buf2, fileurl);
 
   url_digest(hash1, sizeof(hash1), url, NULL);
@@ -699,10 +699,10 @@ int test_ldap(void)
   TEST(u->url_type, url_unknown);
   TEST_S(u->url_scheme, "ldap");
   TEST(url_cmp(ldap, u), 0);
-  TEST(url_e(buf1, sizeof(buf1), u), strlen(ldapurl));
+  TEST_SIZE(url_e(buf1, sizeof(buf1), u), strlen(ldapurl));
   TEST_S(buf1, ldapurl);
-  TEST(snprintf(buf2, sizeof(buf2), URL_PRINT_FORMAT, URL_PRINT_ARGS(u)), 
-       strlen(ldapurl));
+  TEST_SIZE(snprintf(buf2, sizeof(buf2), URL_PRINT_FORMAT, URL_PRINT_ARGS(u)), 
+	    strlen(ldapurl));
   TEST_S(buf2, ldapurl);
 
   url_digest(hash1, sizeof(hash1), url, NULL);
@@ -744,8 +744,8 @@ int test_rtsp(void)
   TEST_1(url_cmp(rtsp, u) == 0);
   TEST_1(url_e(rtsp2, sizeof(rtsp2), u) == strlen(rtspurl));
   TEST_1(strcmp(rtsp2, rtspurl) == 0);
-  TEST(snprintf(rtsp2, sizeof(rtsp2), URL_PRINT_FORMAT, 
-		URL_PRINT_ARGS(rtsp)), strlen(rtspurl));
+  TEST_SIZE(snprintf(rtsp2, sizeof(rtsp2), URL_PRINT_FORMAT, 
+		     URL_PRINT_ARGS(rtsp)), strlen(rtspurl));
   TEST_1(strcmp(rtsp2, rtspurl) == 0);
 
   url_digest(hash1, sizeof(hash1), url, NULL);
@@ -805,10 +805,10 @@ int test_http(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_http);
   TEST_1(url_cmp(http, u) == 0);
-  TEST(url_e(http2, sizeof(http2), u), strlen(httpurl));
+  TEST_SIZE(url_e(http2, sizeof(http2), u), strlen(httpurl));
   TEST_1(strcmp(http2, httpurl) == 0);
-  TEST(snprintf(http2, sizeof(http2), URL_PRINT_FORMAT, 
-		URL_PRINT_ARGS(http)), strlen(httpurl));
+  TEST_SIZE(snprintf(http2, sizeof(http2), URL_PRINT_FORMAT, 
+		     URL_PRINT_ARGS(http)), strlen(httpurl));
   TEST_1(strcmp(http2, httpurl) == 0);
 
   url_digest(hash1, sizeof(hash1), http, NULL);
@@ -947,8 +947,8 @@ int test_tag_filter(void)
   result = tl_afilter(NULL, filter, lst);
 
   TEST_1(result);
-  TEST(result[0].t_tag, urltag_url);
-  TEST(result[1].t_tag, urltag_url);
+  TEST_P(result[0].t_tag, urltag_url);
+  TEST_P(result[1].t_tag, urltag_url);
 
   tl_vfree(lst);
   free(result);
