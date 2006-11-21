@@ -660,7 +660,7 @@ int test_a6(sres_context_t *ctx)
   TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), 
 	 "3ffe:1200:3012:c000:210:a4ff:fe8d:6a46");
 
-  TEST(rr_a6->a6_prename, NULL);
+  TEST_P(rr_a6->a6_prename, NULL);
 
   sres_free_answers(res, ctx->result), ctx->result = NULL;
 
@@ -674,7 +674,7 @@ int test_a6(sres_context_t *ctx)
   TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), 
 	 "3ffe:1200:3012:c000:210:a4ff:fe8d:6a46");
 
-  TEST(rr_a6->a6_prename, NULL);
+  TEST_P(rr_a6->a6_prename, NULL);
 
   sres_free_answers(res, result), result = NULL;
 
@@ -720,7 +720,7 @@ int test_a6_prefix(sres_context_t *ctx)
   TEST(rr_a6->a6_prelen, 0);
   TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), 
 	 "3ff0:12:3012:c006:a08:20ff:fe7d:e7ac");
-  TEST(rr_a6->a6_prename, NULL);
+  TEST_P(rr_a6->a6_prename, NULL);
  
   sres_free_answers(res, ctx->result), ctx->result = NULL;
 
@@ -1286,7 +1286,7 @@ int test_cache(sres_context_t *ctx)
 
   TEST_S(inet_ntop(AF_INET6, &rr_a6->a6_suffix, buf, sizeof(buf)), "3ff0::");
 
-  TEST(rr_a6->a6_prename, NULL);
+  TEST_P(rr_a6->a6_prename, NULL);
 
   sres_free_answers(res, result);
 
@@ -1342,7 +1342,7 @@ int test_query_one_type(sres_context_t *ctx)
   TEST_S(inet_ntop(AF_INET6, &rr_aaaa->aaaa_addr, buf, sizeof(buf)), 
 	 "3ffe:1200:3012:c000:206:5bff:fe55:462f");
 
-  TEST(result[1], NULL);
+  TEST_P(result[1], NULL);
 
   END();
 }
@@ -1448,7 +1448,7 @@ int test_timeout(sres_context_t *ctx)
   TEST_RUN(ctx);
   ctx->timeout = 0;
 
-  TEST(ctx->result, NULL);
+  TEST_P(ctx->result, NULL);
 
   result = sres_cached_answers(res, sres_type_a, domain);
 
@@ -1530,7 +1530,7 @@ int test_expiration(sres_context_t *ctx)
 
   result = sres_cached_answers(res, sres_qtype_any, domain);
 
-  TEST(result, NULL);  /* the cache should be empty after 15 secs */
+  TEST_P(result, NULL);  /* the cache should be empty after 15 secs */
 
   END();
 }
@@ -1736,39 +1736,39 @@ int test_api_errors(sres_context_t *noctx)
   
   s = sockets[0];
   
-  TEST(sres_resolver_ref(NULL), NULL);
+  TEST_P(sres_resolver_ref(NULL), NULL);
   TEST(errno, EFAULT);
   sres_resolver_unref(NULL);
 
-  TEST(sres_resolver_set_userdata(NULL, NULL), NULL);
+  TEST_P(sres_resolver_set_userdata(NULL, NULL), NULL);
   TEST(errno, EFAULT);
 
-  TEST(sres_resolver_get_userdata(NULL), NULL);
+  TEST_P(sres_resolver_get_userdata(NULL), NULL);
 
-  TEST(sres_resolver_get_userdata(res), NULL);
-  TEST(sres_resolver_set_userdata(res, sa), NULL);
-  TEST(sres_resolver_get_userdata(res), sa);
-  TEST(sres_resolver_set_userdata(res, NULL), sa); 
-  TEST(sres_resolver_get_userdata(res), NULL);
+  TEST_P(sres_resolver_get_userdata(res), NULL);
+  TEST_P(sres_resolver_set_userdata(res, sa), NULL);
+  TEST_P(sres_resolver_get_userdata(res), sa);
+  TEST_P(sres_resolver_set_userdata(res, NULL), sa); 
+  TEST_P(sres_resolver_get_userdata(res), NULL);
 
   errno = 0;
-  TEST(sres_query(NULL, test_answer, ctx, sres_type_a, "com"), NULL);
+  TEST_P(sres_query(NULL, test_answer, ctx, sres_type_a, "com"), NULL);
   TEST(errno, EFAULT); errno = 0;
-  TEST(sres_query(res, test_answer, ctx, sres_type_a, NULL), NULL);
+  TEST_P(sres_query(res, test_answer, ctx, sres_type_a, NULL), NULL);
   TEST(errno, EFAULT); errno = 0;
-  TEST(sres_query_sockaddr(res, test_answer, ctx,
-				sres_qtype_any, sa), NULL);
+  TEST_P(sres_query_sockaddr(res, test_answer, ctx,
+			     sres_qtype_any, sa), NULL);
 #if defined(EAFNOSUPPORT)
   TEST(errno, EAFNOSUPPORT); errno = 0;
 #endif
 
-  TEST(sres_cached_answers(NULL, sres_qtype_any, "example.com"), NULL);
+  TEST_P(sres_cached_answers(NULL, sres_qtype_any, "example.com"), NULL);
   TEST(errno, EFAULT); errno = 0;
-  TEST(sres_cached_answers(res, sres_qtype_any, NULL), NULL);
+  TEST_P(sres_cached_answers(res, sres_qtype_any, NULL), NULL);
   TEST(errno, EFAULT); errno = 0;
-  TEST(sres_cached_answers(res, sres_qtype_any, name2048), NULL);
+  TEST_P(sres_cached_answers(res, sres_qtype_any, name2048), NULL);
   TEST(errno, ENAMETOOLONG); errno = 0;
-  TEST(sres_cached_answers_sockaddr(res, sres_qtype_any, sa), NULL);
+  TEST_P(sres_cached_answers_sockaddr(res, sres_qtype_any, sa), NULL);
   TEST(errno, EAFNOSUPPORT); errno = 0;
 
   sres_free_answer(res, NULL);
@@ -1807,7 +1807,7 @@ int test_init(sres_context_t *ctx, char const *conf_file)
     ctx->fds[i].events = POLLIN | POLLERR;
   }
   
-  TEST(sres_resolver_ref(ctx->resolver), ctx->resolver);
+  TEST_P(sres_resolver_ref(ctx->resolver), ctx->resolver);
   sres_resolver_unref(ctx->resolver);
 
   END();
@@ -1861,7 +1861,7 @@ port $port
   printf("%s:%u: %s test should be updated\n", 
 	 __FILE__, __LINE__, __func__);
 #else
-  TEST(sres_query(res, test_answer, ctx, sres_type_a, "example.com"), NULL);
+  TEST_P(sres_query(res, test_answer, ctx, sres_type_a, "example.com"), NULL);
 #endif
     
   sres_resolver_unref(res);
