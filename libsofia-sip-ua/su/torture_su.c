@@ -234,7 +234,7 @@ int test_sendrecv(void)
     TEST(su_wait(w, 1, 500), 0);
     TEST(su_wait_events(w, s), SU_WAIT_IN);
 
-    TEST(su_getmsgsize(s), 8 + 8 + 6);
+    TEST_SIZE(su_getmsgsize(s), 8 + 8 + 6);
     n = su_vrecv(s, rv, 3, 0, NULL, NULL); TEST(n, 8 + 8 + 6);
 
     TEST(su_wait(w, 1, 100), SU_WAIT_TIMEOUT);

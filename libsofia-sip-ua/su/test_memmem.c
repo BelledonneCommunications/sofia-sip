@@ -58,10 +58,6 @@ static int test_flags = 0;
 
 char const name[] = "test_memmem";
 
-#ifdef _MSC_VER
-#pragma warning(disable:4295) /* disable C4295: array is too small to include a terminating null character*/
-#endif
-
 void usage(void)
 {
   fprintf(stderr, "usage: %s [-v]\n", name);
@@ -74,20 +70,21 @@ char const *null = NULL;
 
 static int test_notfound(void)
 {
-  char const haystack[12] = "abcabcabcabc";
-  char const needle[3] = "cab";
+  char const haystack[] = "abcabcabcabc";
+  char const needle[] = "cab";
   char const *a;
   BEGIN();
 
-  TEST(memmem(haystack, sizeof haystack, needle, sizeof needle), haystack + 2);
-  TEST(memmem(needle, sizeof needle, haystack, sizeof haystack), NULL);
-  TEST(memmem(haystack, sizeof haystack, "", 0), haystack);
-  TEST(memmem(haystack, sizeof haystack, null, 0), haystack);
-  TEST(memmem(haystack, 0, "", 0), haystack);
-  TEST(memmem(haystack, 0, null, 0), haystack);
+  TEST_P(memmem(haystack, 12, needle, 3), haystack + 2);
+  TEST_P(memmem(needle, 3, haystack, 12), NULL);
+  TEST_P(memmem(haystack, 12, "", 0), haystack);
+  TEST_P(memmem(haystack, 12, null, 0), haystack);
+  TEST_P(memmem(haystack, 0, "", 0), haystack);
+  TEST_P(memmem(haystack, 0, null, 0), haystack);
 
-  TEST(memmem(haystack + 2, 3, needle, 3), haystack + 2);
-  TEST(memmem(a = "a\0bc", 4, "a\0bc", 4), a);
+  TEST_P(memmem(haystack + 2, 3, needle, 3), haystack + 2);
+  TEST_P(memmem(haystack + 2, 2, needle, 3), NULL);
+  TEST_P(memmem(a = "a\0bc", 4, "a\0bc", 4), a);
 
   END();
 }

@@ -167,7 +167,7 @@ int test2(int flags)
   TEST(g1->s.clock_seq_hi_and_reserved & 0xc0, 0x80);
 
   TEST(i = su_guid_sprintf(buf, sizeof(buf), g1), su_guid_strlen);
-  TEST(strlen(buf), i);
+  TEST_SIZE(strlen(buf), i);
 
   tv0.tv_usec++;
   su_guid_generate(g1);

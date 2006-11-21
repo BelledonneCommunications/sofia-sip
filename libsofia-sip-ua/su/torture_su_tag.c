@@ -182,9 +182,9 @@ static int test_assumptions(void)
 
   /* First some pointer arithmetics - this is always true, right? */
   tagi = tags;
-  TEST(tagi + 1, tags + 1);
+  TEST_P(tagi + 1, tags + 1);
   tagi = (tagi_t *)(sizeof(tagi_t) + (char *)tagi);
-  TEST(tagi, tags + 1);
+  TEST_P(tagi, tags + 1);
 
   END();
 }
@@ -286,45 +286,45 @@ static int test_dup(void)
 		TAG_SKIP(2), 
 		TAG_NEXT(rest));
 
-  TEST(lst[0].t_tag, tag_a);
-  TEST(lst[1].t_tag, tag_a);
-  TEST(lst[2].t_tag, tag_i);
-  TEST(lst[3].t_tag, tag_skip);
-  TEST(lst[4].t_tag, tag_next);
+  TEST_P(lst[0].t_tag, tag_a);
+  TEST_P(lst[1].t_tag, tag_a);
+  TEST_P(lst[2].t_tag, tag_i);
+  TEST_P(lst[3].t_tag, tag_skip);
+  TEST_P(lst[4].t_tag, tag_next);
 
-  TEST(tl_len(lst), 5 * sizeof(tagi_t));
-  TEST(tl_xtra(lst, 0), strlen("Moro" "Vaan" "Foo") + 3);
+  TEST_SIZE(tl_len(lst), 5 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(lst, 0), strlen("Moro" "Vaan" "Foo") + 3);
 
   dup = tl_adup(NULL, lst);
 
-  TEST0(dup != NULL);
-  TEST(tl_len(dup), 5 * sizeof(tagi_t));
-  TEST(tl_xtra(dup, 0), strlen("Moro" "Vaan" "Foo") + 3);
+  TEST_1(dup != NULL);
+  TEST_SIZE(tl_len(dup), 5 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(dup, 0), strlen("Moro" "Vaan" "Foo") + 3);
 
   su_free(NULL, dup);
 
   dup = tl_llist(TAG_B("Moi"), TAG_NEXT(lst));
 
-  TEST(dup[0].t_tag, tag_b);
-  TEST(dup[1].t_tag, tag_a);
-  TEST(dup[2].t_tag, tag_a);
-  TEST(dup[3].t_tag, tag_i);
-  TEST(dup[4].t_tag, tag_a);
-  TEST(dup[5].t_tag, NULL);
+  TEST_P(dup[0].t_tag, tag_b);
+  TEST_P(dup[1].t_tag, tag_a);
+  TEST_P(dup[2].t_tag, tag_a);
+  TEST_P(dup[3].t_tag, tag_i);
+  TEST_P(dup[4].t_tag, tag_a);
+  TEST_P(dup[5].t_tag, NULL);
 
   su_free(NULL, dup);
 
   dup = tl_llist(TAG_NEXT(NULL));
-  TEST(dup[0].t_tag, 0);
+  TEST_P(dup[0].t_tag, 0);
   su_free(NULL, dup);
 
   dup = tl_llist(TAG_END());
-  TEST(dup[0].t_tag, 0);
+  TEST_P(dup[0].t_tag, 0);
   su_free(NULL, dup);
 
   dup = tl_llist(TAG_SKIP(1), TAG_NEXT(lst + 4));
-  TEST(dup[0].t_tag, tag_a);
-  TEST(dup[1].t_tag, 0);
+  TEST_P(dup[0].t_tag, tag_a);
+  TEST_P(dup[1].t_tag, 0);
   su_free(NULL, dup);
 
   tl_vfree(lst);
@@ -392,43 +392,43 @@ static int test_filters(void)
 
   b1 = tl_afilter(NULL, filter1, lst);
 
-  TEST(tl_len(b1), 3 * sizeof(tagi_t));
-  TEST(tl_xtra(b1, 0), strlen("Moro" "vaan") + 2);
+  TEST_SIZE(tl_len(b1), 3 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(b1, 0), strlen("Moro" "vaan") + 2);
 
   b2 = tl_afilter(NULL, filter2, lst);
 
-  TEST(tl_len(b2), 3 * sizeof(tagi_t));
-  TEST(tl_xtra(b2, 0), 0);
+  TEST_SIZE(tl_len(b2), 3 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(b2, 0), 0);
 
   b3 = tl_afilter(NULL, filter3, lst);
 
-  TEST(tl_len(b3), 5 * sizeof(tagi_t));
-  TEST(tl_xtra(b3, 0), strlen("Moro" "vaan") + 2);
+  TEST_SIZE(tl_len(b3), 5 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(b3, 0), strlen("Moro" "vaan") + 2);
 
   b4 = tl_afilter(NULL, filter4, lst);
 
-  TEST(tl_len(b4), 7 * sizeof(tagi_t));
-  TEST(tl_xtra(b4, 0), strlen("Moro" "vaan") + 2);
+  TEST_SIZE(tl_len(b4), 7 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(b4, 0), strlen("Moro" "vaan") + 2);
 
   su_free(NULL, b1); su_free(NULL, b2); su_free(NULL, b3); su_free(NULL, b4);
 
   nsfilter = tl_list(TAG_ANY_PQ(), TAG_END());
   
   b5 = tl_afilter(NULL, nsfilter, lst);
-  TEST(tl_len(b5), 3 * sizeof(tagi_t));
-  TEST(tl_xtra(b5, 0), 0);
+  TEST_SIZE(tl_len(b5), 3 * sizeof(tagi_t));
+  TEST_SIZE(tl_xtra(b5, 0), 0);
 
-  TEST(b5[0].t_tag, tag_q);
-  TEST(b5[1].t_tag, tag_p);
+  TEST_P(b5[0].t_tag, tag_q);
+  TEST_P(b5[1].t_tag, tag_p);
 
   b = tl_afilter(home, filter5, lst); TEST_1(b);
-  TEST(b[0].t_tag, tag_a);
-  TEST(b[1].t_tag, tag_i);
-  TEST(b[2].t_tag, tag_q);
-  TEST(b[3].t_tag, 0);
+  TEST_P(b[0].t_tag, tag_a);
+  TEST_P(b[1].t_tag, tag_i);
+  TEST_P(b[2].t_tag, tag_q);
+  TEST_P(b[3].t_tag, 0);
 
   b = tl_afilter(home, filter6, lst); TEST_1(b);
-  TEST(b[0].t_tag, 0);
+  TEST_P(b[0].t_tag, 0);
 
   tl_vfree(filter1); tl_vfree(filter2); tl_vfree(filter3); 
   tl_vfree(filter4); tl_vfree(filter5); tl_vfree(filter6);
@@ -483,11 +483,11 @@ static int test_tagargs2(tag_type_t tag, tag_value_t value, ...)
   ta_start(ta, tag, value);
 
   t = ta_args(ta);
-  TEST(t->t_tag, tag_a);
+  TEST_P(t->t_tag, tag_a);
   TEST_S((char *)t->t_value, "a");
 
   t = tl_next(t);
-  TEST(t->t_tag, tag_b);
+  TEST_P(t->t_tag, tag_b);
   TEST_S((char *)t->t_value, "b");
 
   ta_end(ta);

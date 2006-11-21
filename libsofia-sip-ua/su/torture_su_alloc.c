@@ -138,19 +138,19 @@ static int test_alloc(void)
   su_home_preload(home, 1, 1024 + 2 * 8);
 
   TEST_1(c = su_zalloc(home, 64)); p0 = c; p1 = c + 1024;
-  TEST(c = su_realloc(home, c0 = c, 127), c0);
+  TEST_P(c = su_realloc(home, c0 = c, 127), c0);
 
   TEST_1(c = c0 = su_zalloc(home, 1024 - 128));
   TEST_1(p0 <= c); TEST_1(c < p1);
-  TEST(c = su_realloc(home, c, 128), c0);
-  TEST(c = su_realloc(home, c, 1023 - 128), c0);
-  TEST(c = su_realloc(home, c, 1024 - 128), c0);
+  TEST_P(c = su_realloc(home, c, 128), c0);
+  TEST_P(c = su_realloc(home, c, 1023 - 128), c0);
+  TEST_P(c = su_realloc(home, c, 1024 - 128), c0);
   TEST_1(c = su_realloc(home, c, 1024));
   TEST_1(c = su_realloc(home, c, 2 * 1024));
 
-  TEST(c = su_realloc(home, p0, 126), p0);
+  TEST_P(c = su_realloc(home, p0, 126), p0);
   TEST_1(c = su_realloc(home, p0, 1024));
-  TEST(c = su_realloc(home, c, 0), NULL);
+  TEST_P(c = su_realloc(home, c, 0), NULL);
 
   su_home_check(home);
   su_home_deinit(home);
@@ -260,7 +260,7 @@ static int test_strlst(void)
   TEST_S(su_strlst_item(l1, 0), "aaa");
   TEST_VOID(su_strlst_destroy(l1));
 
-  TEST(su_strlst_len(NULL), 0);
+  TEST_SIZE(su_strlst_len(NULL), 0);
   TEST_1(!su_strlst_get_array(NULL));
   TEST_VOID(su_strlst_free_array(NULL, NULL));
 
@@ -284,8 +284,8 @@ static int test_strlst(void)
   TEST_S(su_strlst_item(l, 0), foo);
   TEST_S(su_strlst_item(l, 1), bar);
   TEST_S(su_strlst_item(l, 2), baz);
-  TEST(su_strlst_item(l, 3), NULL);
-  TEST(su_strlst_item(l, (unsigned)-1), NULL);
+  TEST_P(su_strlst_item(l, 3), NULL);
+  TEST_P(su_strlst_item(l, (unsigned)-1), NULL);
 
   TEST_1(l1 = su_strlst_copy(su_strlst_home(l), l));
   TEST_1(l2 = su_strlst_dup(su_strlst_home(l), l));
@@ -303,9 +303,9 @@ static int test_strlst(void)
 
   su_home_get_stats(su_strlst_home(l), 0, kids, sizeof kids);
 
-  TEST(kids->hs_clones, 2);
-  TEST(kids->hs_allocs.hsa_number, 3);
-  TEST(kids->hs_frees.hsf_number, 1);
+  TEST_SIZE(kids->hs_clones, 2);
+  TEST64(kids->hs_allocs.hsa_number, 3);
+  TEST64(kids->hs_frees.hsf_number, 1);
 
   su_strlst_destroy(l);
 
@@ -356,7 +356,7 @@ static int test_strlst(void)
   {
     char s[] = "foo\nfaa\n";
     TEST_1((l = su_strlst_split(home, s, "\n")));
-    TEST(su_strlst_len(l), 3);
+    TEST_SIZE(su_strlst_len(l), 3);
     TEST_1(su_strlst_append(l, "bar"));
     TEST_S(su_strlst_join(l, home, "\n"), "foo\nfaa\n\nbar");
   }
@@ -364,19 +364,19 @@ static int test_strlst(void)
   {
     char s[] = "foo";
     TEST_1((l = su_strlst_split(home, s, "\n")));
-    TEST(su_strlst_len(l), 1);
+    TEST_SIZE(su_strlst_len(l), 1);
   }
 
   {
     char s[] = "\n\n";
     TEST_1((l = su_strlst_split(home, s, "\n")));
-    TEST(su_strlst_len(l), 3);
+    TEST_SIZE(su_strlst_len(l), 3);
   }
 
   {
     char s[] = "";
     TEST_1((l = su_strlst_split(home, s, "\n")));
-    TEST(su_strlst_len(l), 1);
+    TEST_SIZE(su_strlst_len(l), 1);
   }
 
   {
@@ -391,7 +391,7 @@ static int test_strlst(void)
     char s[] = S;
 
     TEST_1((l = su_strlst_split(home, s, "\n")));
-    TEST(su_strlst_len(l), 53);
+    TEST_SIZE(su_strlst_len(l), 53);
     TEST_1(su_strlst_append(l, "bar"));
     TEST_S(su_strlst_join(l, home, "\n"), S "\nbar");
 
@@ -400,11 +400,11 @@ static int test_strlst(void)
     for (i = 0; i < 54; i++) {
       TEST_1(su_strlst_remove(l, 0));
       TEST_1(!su_strlst_remove(l, 53 - i));
-      TEST(su_strlst_len(l), 53 - i);
+      TEST_SIZE(su_strlst_len(l), 53 - i);
     }
 
     TEST_1(!su_strlst_remove(l, 0));
-    TEST(su_strlst_len(l), 0);
+    TEST_SIZE(su_strlst_len(l), 0);
   }
 
   {
@@ -482,11 +482,11 @@ static int test_vectors(void)
   TEST(su_vector_append(v, bar), 0);
   TEST(su_vector_insert(v, 0, baz), 0);
 
-  TEST(su_vector_item(v, 0), baz);
-  TEST(su_vector_item(v, 1), foo);
-  TEST(su_vector_item(v, 2), bar);
-  TEST(su_vector_item(v, 3), NULL);
-  TEST(su_vector_item(v, (unsigned)-1), NULL);
+  TEST_P(su_vector_item(v, 0), baz);
+  TEST_P(su_vector_item(v, 1), foo);
+  TEST_P(su_vector_item(v, 2), bar);
+  TEST_P(su_vector_item(v, 3), NULL);
+  TEST_P(su_vector_item(v, (unsigned)-1), NULL);
   TEST_1(!su_vector_is_empty(v));
 
   su_vector_destroy(v);
@@ -503,15 +503,15 @@ static int test_vectors(void)
   TEST(su_vector_insert(v, 0, "b"), 0);
   TEST(su_vector_insert(v, 0, "a"), 0);
 
-  TEST(su_vector_len(v), 10);
+  TEST_SIZE(su_vector_len(v), 10);
   TEST_1(a = su_vector_get_array(v));
 
   for (i = 0; i < 10; i++) {
     TEST_S(su_vector_item(v, i), a[i]);
   }
 
-  TEST(su_vector_item(v, 10), NULL);
-  TEST(a[10], NULL);
+  TEST_P(su_vector_item(v, 10), NULL);
+  TEST_P(a[10], NULL);
 
   TEST_1(w = su_vector_create(home, NULL));
   TEST(su_vector_append(w, "a"), 0);
@@ -525,7 +525,7 @@ static int test_vectors(void)
   TEST(su_vector_append(w, "i"), 0);
   TEST(su_vector_append(w, "j"), 0);
 
-  TEST(su_vector_len(w), 10);
+  TEST_SIZE(su_vector_len(w), 10);
 
   for (i = 0; i < 10; i++) {
     TEST_S(su_vector_item(v, i), a[i]);
@@ -555,12 +555,12 @@ static int test_vectors(void)
   TEST(su_vector_append(v, data3), 0);
   TEST(su_vector_append(v, data4), 0);
 
-  TEST(su_vector_len(v), 4);
+  TEST_SIZE(su_vector_len(v), 4);
 
-  TEST(su_vector_item(v, 0), data1);
-  TEST(su_vector_item(v, 1), data2);
-  TEST(su_vector_item(v, 2), data3);
-  TEST(su_vector_item(v, 3), data4);
+  TEST_P(su_vector_item(v, 0), data1);
+  TEST_P(su_vector_item(v, 1), data2);
+  TEST_P(su_vector_item(v, 2), data3);
+  TEST_P(su_vector_item(v, 3), data4);
 
   TEST(data1->data, 1);
   TEST(data2->data, 2);
@@ -569,11 +569,11 @@ static int test_vectors(void)
 
   TEST(su_vector_remove(v, 2), 0);
 
-  TEST(su_vector_len(v), 3);
+  TEST_SIZE(su_vector_len(v), 3);
 
-  TEST(su_vector_item(v, 0), data1);
-  TEST(su_vector_item(v, 1), data2);
-  TEST(su_vector_item(v, 2), data4);
+  TEST_P(su_vector_item(v, 0), data1);
+  TEST_P(su_vector_item(v, 1), data2);
+  TEST_P(su_vector_item(v, 2), data4);
 
   TEST(data1->data, 1);
   TEST(data2->data, 2);
@@ -621,8 +621,10 @@ static int test_auto(void)
 
   su_home_get_stats(tmphome, 0, hs, sizeof *hs);
 
-  TEST(hs->hs_allocs.hsa_preload + hs->hs_allocs.hsa_number, 8191 + 8191 / 32);
-  TEST(hs->hs_frees.hsf_preload + hs->hs_frees.hsf_number, 8191 + 8191 / 32 - 1);
+  TEST64(hs->hs_allocs.hsa_preload + hs->hs_allocs.hsa_number, 
+	  8191 + 8191 / 32);
+  TEST64(hs->hs_frees.hsf_preload + hs->hs_frees.hsf_number,
+	 8191 + 8191 / 32 - 1);
   /*
     This test depends on macro SU_HOME_AUTO_SIZE() calculating
     offsetof(su_block_t, sub_nodes[7]) correctly with

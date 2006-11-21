@@ -108,7 +108,7 @@ static int callback(su_root_magic_t *magic,
 		    su_wait_t *w,
 		    su_wakeup_arg_t *arg)
 {
-  int i = (int)arg;
+  intptr_t i = (intptr_t)arg;
 
   assert(magic);
   
@@ -158,7 +158,7 @@ int test_register(void)
 {
   su_port_t *port;
   su_sockaddr_t su[1];
-  int i;
+  intptr_t i;
   int sockets[256] = { 0 };
   int reg[256] = { 0 };
   int wakeups[256] = { 0 };
