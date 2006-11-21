@@ -38,7 +38,7 @@
 
 #include "sofia-sip/token64.h"
 
-static const char code[64] = 
+static const char code[65] = 
 "0123456789-abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /** Encode data as an http token. 

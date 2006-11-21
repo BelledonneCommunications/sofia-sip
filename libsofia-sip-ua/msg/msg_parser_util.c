@@ -1766,7 +1766,7 @@ issize_t msg_random_token(char token[], isize_t tlen,
   size_t i;
   ssize_t n;
 
-  static char const token_chars[32] = 
+  static char const token_chars[33] = 
     /* Create aesthetically pleasing raNDom capS LooK */
     "aBcDeFgHjKmNpQrStUvXyZ0123456789";
 
