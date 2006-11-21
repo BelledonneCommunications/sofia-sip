@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#define write(fd, buf, len) _write((fd), (buf), (len))
+#define write(fd, buf, len) _write((fd), (buf), (unsigned int)(len))
 #define read(fd, buf, len)  _read((fd), (buf), (len))
 #define close(fd)           _close((fd))
 #define mktemp(template)    _mktemp((template))

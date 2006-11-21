@@ -417,7 +417,7 @@ int test_nat_flush(struct nat *nat)
     return su_seterrno(EFAULT);
 
   return su_task_execute(su_clone_task(nat->clone), 
-			 (void *)invalidate_bindings, nat, NULL);
+			 (int (*)(void *))invalidate_bindings, nat, NULL);
 }
 
 /* ====================================================================== */
@@ -449,7 +449,7 @@ struct binding *nat_binding_new(struct nat *nat,
   b->nat = nat;
   b->socktype = socktype;
   b->protocol = protocol;
-  b->in_socket = in_socket, b->out_socket = -1;
+  b->in_socket = in_socket, b->out_socket = (unsigned)-1;
   b->in_register = -1, b->out_register = -1;
 
   if (binding_init(b, protoname, connected, nat->fake, from, fromlen) < 0)
@@ -647,7 +647,7 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
   }
 
   b = nat_binding_new(nat, "UDP", SOCK_DGRAM, IPPROTO_UDP, nat->symmetric, 
-		      -1, from, fromlen);
+		      (unsigned)-1, from, fromlen);
   if (b == NULL)
     return 0;
 

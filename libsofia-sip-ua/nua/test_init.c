@@ -124,7 +124,7 @@ int test_nua_init(struct context *ctx,
     su_sockaddr_t su[1];
     socklen_t sulen = sizeof su;
     char b[64];
-    int len;
+    size_t len;
     ta_list ta;
 
     if (print_headings)

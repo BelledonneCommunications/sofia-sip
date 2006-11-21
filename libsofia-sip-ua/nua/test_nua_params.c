@@ -236,8 +236,8 @@ int test_nua_params(struct context *ctx)
     sip_from_t const *from = NONE;
     char const *from_str = "NONE";
 
-    unsigned retry_count = -1;
-    unsigned max_subscriptions = -1;
+    unsigned retry_count = (unsigned)-1;
+    unsigned max_subscriptions = (unsigned)-1;
 
     char const *soa_name = "NONE";
     int media_enable = -1;
@@ -247,10 +247,10 @@ int test_nua_params(struct context *ctx)
     int only183_100rel = -1;
     int auto_answer = -1;
     int auto_ack = -1;
-    unsigned invite_timeout = -1;
+    unsigned invite_timeout = (unsigned)-1;
 
-    unsigned session_timer = -1;
-    unsigned min_se = -1;
+    unsigned session_timer = (unsigned)-1;
+    unsigned min_se = (unsigned)-1;
     int refresher = -1;
     int update_refresh = -1;
 
@@ -262,7 +262,7 @@ int test_nua_params(struct context *ctx)
     int media_features = -1;
     int service_route_enable = -1;
     int path_enable = -1;
-    unsigned refer_expires = -1;
+    unsigned refer_expires = (unsigned)-1;
     int refer_with_id = -1;
     int substate = -1;
 
@@ -286,7 +286,7 @@ int test_nua_params(struct context *ctx)
     char const *instance = "NONE";
     
     url_string_t const *registrar = NONE;
-    unsigned keepalive = -1, keepalive_stream = -1;
+    unsigned keepalive = (unsigned)-1, keepalive_stream = (unsigned)-1;
 
     nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
     run_a_until(ctx, nua_r_get_params, save_until_final_response);
@@ -423,18 +423,18 @@ int test_nua_params(struct context *ctx)
     sip_from_t const *from = NONE;
     char const *from_str = "NONE";
 
-    unsigned retry_count = -1;
-    unsigned max_subscriptions = -1;
+    unsigned retry_count = (unsigned)-1;
+    unsigned max_subscriptions = (unsigned)-1;
 
     int invite_enable = -1;
     int auto_alert = -1;
     int early_media = -1;
     int auto_answer = -1;
     int auto_ack = -1;
-    unsigned invite_timeout = -1;
+    unsigned invite_timeout = (unsigned)-1;
 
-    unsigned session_timer = -1;
-    unsigned min_se = -1;
+    unsigned session_timer = (unsigned)-1;
+    unsigned min_se = (unsigned)-1;
     int refresher = -1;
     int update_refresh = -1;
 
@@ -446,7 +446,7 @@ int test_nua_params(struct context *ctx)
     int media_features = -1;
     int service_route_enable = -1;
     int path_enable = -1;
-    unsigned refer_expires = -1;
+    unsigned refer_expires = (unsigned)-1;
     int refer_with_id = -1;
     int substate = -1;
 
