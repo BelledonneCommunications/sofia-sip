@@ -259,6 +259,7 @@ static void sof_i_error(nua_t *nua, NuaGlib *self, nua_handle_t *nh, NuaGlibOp *
 
 void final_shutdown(NuaGlib *self)
 {
+  g_warning("%s: final_shutdown\n", self->priv->name);
   g_object_unref(self);
 }
 
@@ -345,15 +346,19 @@ nua_glib_dispose(GObject *obj)
 {
   NuaGlib *self = NUA_GLIB(obj);
 
+  enter;
+
   if (self->priv->init)
   {
     g_free((gpointer)self->priv->contact);
 
-    nua_shutdown(self->priv->nua);
-
     self->priv->init = FALSE;
-    /*now hold a ref to ourselves that we drop when distruction is complete*/
+
+    /* now hold a ref to ourselves that we drop when distruction is complete */
     g_object_ref (obj);
+
+    g_message("Calling nua_shutdown()\n");
+    nua_shutdown(self->priv->nua);
 
     /* XXX: some start/stop nua funtions to do su_init/de_init?  su_deinit();*/
   }
@@ -366,6 +371,9 @@ static void
 nua_glib_finalize (GObject *obj)
 {
   NuaGlib *self = NUA_GLIB(obj);
+
+  enter;
+
   su_root_break(self->priv->root);
   nua_destroy(self->priv->nua);
   su_root_destroy(self->priv->root), self->priv->root = NULL;
@@ -2432,6 +2440,7 @@ sof_r_unregister (int status, char const *phrase,
 {
   sip_contact_t *m;
 
+  SU_DEBUG_3(("%s: emitting un-REGISTER signal for %s\n", self->priv->name, op->op_ident));
   g_signal_emit(self, signals[NGSIG_UNREGISTER_ANSWERED], 0, op, status, phrase);
 
   if (status < 200)
