@@ -5,8 +5,13 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-<changes since last written in freshmeat.net "Changes:" style;
- and in less than 10 lines />
+The nua API now supports arbitratry SIP methods.
+
+There is now also reactive mode of handing subscriptions in nua, using
+nua_i_subscribe()/nua_respond()/nua_notify()/nua_i_publish().
+
+On Linux systems, the sockets are handled with epoll allowing large number
+of concurrent connections, like 100 000 or more.
 
 Severe bug in STUN functionality was fixed.
 
@@ -88,21 +93,14 @@ nua_i_subscribe()/nua_respond()/nua_notify()/nua_i_publish().
 
 The nua can be used as a registrar with nua_i_register/nua_respond().
 
-<information about major new features
- - new/changed/removed functionality
- - links to further documentation
- - section may be omitted for minor releases
-/> 
+The nua allows handling of SIP extension methods using
+nua_method()/nua_r_method/nua_i_method and NUTAG_ALLOW().
 
 Bugs fixed in this release
 --------------------------
 
-< notable bugs fixed in this release
- - check the sf.net bug tracker; see closed bugs,
-   sorted by closing date
- - other bugs as fixed in CVS/darcs
-/>
-
+- Outbound now ignores Via rport parameter without value.
+  Thanks for Anthony Minessale for reporting this bug.
 - Subsite handling in nth was fixed.
 - Outbound was confused by IPv6 addresses in the Via header.
   Thanks for Marc Blanchet from Viagenie for reporting the bug.
@@ -123,4 +121,3 @@ Bugs fixed in this release
 - Fixed tl_find_last().
 - Fixed bug parsing malformed Refer-To or Referred-By headers. Thanks for
   Anthony Minessale for reporting this.
-
