@@ -99,7 +99,7 @@ dnl ======================================================================
 dnl Find C compiler
 dnl ======================================================================
 
-AC_DEFUN([AX_TOOL_CC], [
+AC_DEFUN([SAC_TOOL_CC], [
 AC_REQUIRE([SAC_CANONICAL_SYSTEM_CACHE_CHECK])
 AC_BEFORE([$0], [AC_PROG_CPP])dnl
 
@@ -400,7 +400,7 @@ dnl ======================================================================
 dnl SAC_ENABLE_NDEBUG
 dnl ======================================================================
 AC_DEFUN([SAC_ENABLE_NDEBUG],[
-AC_REQUIRE([AX_TOOL_CC])
+AC_REQUIRE([SAC_TOOL_CC])
 AC_ARG_ENABLE(ndebug,
 [  --enable-ndebug             compile with NDEBUG (disabled)],
  , enable_ndebug=no)
