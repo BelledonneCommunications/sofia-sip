@@ -229,7 +229,7 @@ ssize_t su_sendto(su_socket_t s, void *buffer, size_t length, int flags,
   if (length > INT_MAX)
     length = INT_MAX;
   return (ssize_t)sendto(s, buffer, (int)length, flags,
-			 (void *)to, (int) tolen);
+			 &to->su_sa, (int) tolen);
 }
 
 ssize_t su_recv(su_socket_t s, void *buffer, size_t length, int flags)
@@ -252,7 +252,7 @@ ssize_t su_recvfrom(su_socket_t s, void *buffer, size_t length, int flags,
     length = INT_MAX;
 
   retval = recvfrom(s, buffer, (int)length, flags, 
-		    (void *)from, fromlen ? &ilen : NULL);
+		    &from->su_sa, fromlen ? &ilen : NULL);
 
   if (fromlen)
     *fromlen = ilen;
