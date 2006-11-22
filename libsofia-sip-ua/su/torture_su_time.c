@@ -149,7 +149,7 @@ int test2(int flags)
   const uint64_t granularity = 10000000U;
   const uint64_t ntp_epoch = 
     (uint64_t)(141427) * (24 * 60 * 60L) * granularity;
-  int i;
+  isize_t i;
 
   BEGIN();
 

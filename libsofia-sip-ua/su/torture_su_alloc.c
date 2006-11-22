@@ -613,7 +613,16 @@ static int test_auto(void)
 
   for (i = 1; i < 8192; i++) {
     TEST_1(b = su_realloc(tmphome, b, i));
-    b[i - 1] = (char)0xaa;
+    b[i - 1] = '\125';
+  }
+
+  for (i = 1; i < 8192; i++) {
+    TEST(b[i - 1], '\125');
+  }
+
+  for (i = 1; i < 8192; i++) {
+    TEST_1(b = su_realloc(tmphome, b, i));
+    b[i - 1] = '\125';
 
     if ((i % 32) == 0)
       TEST_1(b = su_realloc(tmphome, b, 1));
@@ -622,9 +631,9 @@ static int test_auto(void)
   su_home_get_stats(tmphome, 0, hs, sizeof *hs);
 
   TEST64(hs->hs_allocs.hsa_preload + hs->hs_allocs.hsa_number, 
-	  8191 + 8191 / 32);
+	  8191 + 8191 + 8191 / 32);
   TEST64(hs->hs_frees.hsf_preload + hs->hs_frees.hsf_number,
-	 8191 + 8191 / 32 - 1);
+	 8191 + 8191 + 8191 / 32 - 1);
   /*
     This test depends on macro SU_HOME_AUTO_SIZE() calculating
     offsetof(su_block_t, sub_nodes[7]) correctly with

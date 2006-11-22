@@ -481,7 +481,9 @@ int main(int argc, char *argv[])
   su_clone_r ping = SU_CLONE_R_INIT, pong = SU_CLONE_R_INIT;
   su_msg_r start_msg = SU_MSG_R_INIT;
   su_timer_t *t;
+#if HAVE_ALARM
   int opt_alarm = 1;
+#endif
 
   struct pinger 
     pinger = { PINGER, "ping", 1 }, 

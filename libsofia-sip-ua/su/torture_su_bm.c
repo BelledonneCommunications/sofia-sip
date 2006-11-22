@@ -176,7 +176,7 @@ char const Needle[] =
 "ULLAMCORPER PRETIUM LOREM. VESTIBULUM ANTE IPSUM PRIMIS IN FAUCIBUS ORCI "
 "LUCTUS ET ULTRICES POSUERE CUBILIA CURAE;\n";
 
-    int nlen = strlen(needle);
+    size_t nlen = strlen(needle);
 
     bm_fwd_table_t *fwd;
 
