@@ -54,7 +54,7 @@ int tstflags;
 
 char const *name = "torture_su_port";
 
-int const N0 = SU_HAVE_MBOX, N = 128, I = 129;
+int N0 = SU_HAVE_MBOX, N = 128, I = 128 + 1;
 
 int test_sup_indices(su_port_t const *port)
 {
@@ -111,9 +111,11 @@ static int callback(su_root_magic_t *magic,
   intptr_t i = (intptr_t)arg;
 
   assert(magic);
-  
+ 
   if (i <= 0 || i > I)
     return ++magic->error;
+
+  su_wait_events(w, magic->sockets[i]);
 
   magic->wakeups[i]++;
 
@@ -138,7 +140,7 @@ int test_wakeup(su_port_t *port, su_root_magic_t *magic)
 
     if (getsockname(magic->sockets[i], &su->su_sa, &sulen) < 0)
       su_perror("getsockname"), exit(1);
-    if (su_sendto(magic->sockets[1], "X", 1, 0, &su->su_sa, sulen) < 0)
+    if (su_sendto(magic->sockets[1], "X", 1, 0, su, sulen) < 0)
       su_perror("su_sendto"), exit(1);
     n = su_port_wait_events(port, 100);
     if (n != 1)
@@ -162,6 +164,7 @@ int test_register(void)
   int sockets[256] = { 0 };
   int reg[256] = { 0 };
   int wakeups[256] = { 0 };
+  int prioritized;
   su_wait_t wait[256];
   su_root_magic_t magic[1] = {{ 0, sockets, reg, wakeups }};
   su_root_t root[1] = {{ sizeof root, magic }};
@@ -171,6 +174,7 @@ int test_register(void)
   memset(su, 0, sizeof su);
   su->su_len = sizeof su->su_sin;
   su->su_family = AF_INET;
+  su->su_sin.sin_addr.s_addr = htonl(0x7f000001); /* 127.0.0.1 */
 
   memset(wait, 0, sizeof wait);
 
@@ -210,10 +214,13 @@ int test_register(void)
 
   TEST_1(test_sup_indices(port));
 
+  prioritized = 0;
+
   for (i = N - 1; i >= N0; i -= 2) {
     TEST(su_wait_create(wait + i, sockets[i], SU_WAIT_IN), 0);
     reg[i] = su_port_register(port, root, wait + i, callback, (void *)i, 1);
     TEST_1(reg[i] > 0);
+    prioritized++;		/* Count number of prioritized registrations */
 #if HAVE_EPOLL
     /* With epoll we do not bother to prioritize the wait list */
     if (port->sup_epoll != -1) {
@@ -259,13 +266,15 @@ int test_register(void)
 
   for (i = 1; i <= 8; i++) {
     TEST(su_port_deregister(port, reg[i]), reg[i]); reg[i] = 0;
+    if (i % 2 == (N - 1) % 2)
+      prioritized--;		/* Count number of prioritized registrations */
   }
 
 #if HAVE_EPOLL
   /* With epoll we do not bother to prioritize the wait list */
   if (port->sup_epoll == -1) 
 #endif
-    TEST(port->sup_pri_offset, 4);
+    TEST(port->sup_pri_offset, prioritized);
 
   TEST_1(test_sup_indices(port));
 
@@ -295,6 +304,11 @@ int main(int argc, char *argv[])
 {
   int retval = 0;
   int i;
+
+  if (N > SU_WAIT_MAX)
+    N = SU_WAIT_MAX;
+  if (I > SU_WAIT_MAX + 1)
+    I = SU_WAIT_MAX + 1;
 
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
