@@ -141,7 +141,7 @@ static int binding_init(struct binding *b,
 			socklen_t fromlen);
 
 static void flush_bindings(struct nat *nat);
-static void invalidate_bindings(struct nat *nat);
+static int invalidate_bindings(void *nat);
 
 static int new_udp(struct nat *, su_wait_t *wait, struct binding *dummy);
 static int udp_in_to_out(struct nat *, su_wait_t *wait, struct binding *);
@@ -417,7 +417,7 @@ int test_nat_flush(struct nat *nat)
     return su_seterrno(EFAULT);
 
   return su_task_execute(su_clone_task(nat->clone), 
-			 (int (*)(void *))invalidate_bindings, nat, NULL);
+			 invalidate_bindings, nat, NULL);
 }
 
 /* ====================================================================== */
@@ -449,7 +449,7 @@ struct binding *nat_binding_new(struct nat *nat,
   b->nat = nat;
   b->socktype = socktype;
   b->protocol = protocol;
-  b->in_socket = in_socket, b->out_socket = (unsigned)-1;
+  b->in_socket = in_socket, b->out_socket = INVALID_SOCKET;
   b->in_register = -1, b->out_register = -1;
 
   if (binding_init(b, protoname, connected, nat->fake, from, fromlen) < 0)
@@ -586,13 +586,15 @@ static void flush_bindings(struct nat *nat)
   }
 }
 
-static void invalidate_bindings(struct nat *nat)
+static int invalidate_bindings(void *arg)
 {
+  struct nat *nat = arg;
   struct binding *b;
 
   for (b = nat->bindings; b; b = b->next) {
     invalidate_binding(b);
   }
+  return 0;
 }
 
 #if 0
@@ -617,7 +619,7 @@ static struct binding *nat_binding_find(struct nat *nat,
 
   if (b == NULL)
     b = nat_binding_new(nat, "UDP", SOCK_DGRAM, IPPROTO_UDP, nat->symmetric, 
-			-1, from, fromlen);
+			INVALID_SOCKET, from, fromlen);
 
   return b;
 }
@@ -639,23 +641,23 @@ static int new_udp(struct nat *nat, su_wait_t *wait, struct binding *dummy)
 
   events = su_wait_events(wait, nat->udp_socket);
 
-  n = recvfrom(nat->udp_socket, nat->buffer, sizeof nat->buffer, 0,
-	       (void *)from, &fromlen);
+  n = su_recvfrom(nat->udp_socket, nat->buffer, sizeof nat->buffer, 0,
+		  from, &fromlen);
   if (n < 0) {
     su_perror("new_udp: recvfrom");
     return 0;
   }
 
   b = nat_binding_new(nat, "UDP", SOCK_DGRAM, IPPROTO_UDP, nat->symmetric, 
-		      (unsigned)-1, from, fromlen);
+		      INVALID_SOCKET, from, fromlen);
   if (b == NULL)
     return 0;
 
   if (nat->symmetric)
-    m = send(b->out_socket, nat->buffer, n, 0);
+    m = su_send(b->out_socket, nat->buffer, n, 0);
   else
-    m = sendto(b->out_socket, nat->buffer, n, 0, 
-	       (void *)nat->out_address, nat->out_addrlen);
+    m = su_sendto(b->out_socket, nat->buffer, n, 0, 
+		  nat->out_address, nat->out_addrlen);
 
   if (nat->logging)
     printf("nat: udp out %d/%d %s => %s\n",
@@ -671,17 +673,17 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   events = su_wait_events(wait, b->in_socket);
 
-  n = recv(b->in_socket, nat->buffer, sizeof nat->buffer, 0);
+  n = su_recv(b->in_socket, nat->buffer, sizeof nat->buffer, 0);
   if (n < 0) {
     su_perror("udp_in_to_out: recv");
     return 0;
   }
 
   if (nat->symmetric)
-    m = send(b->out_socket, nat->buffer, n, 0);
+    m = su_send(b->out_socket, nat->buffer, n, 0);
   else
-    m = sendto(b->out_socket, nat->buffer, n, 0,
-	       (void *)nat->out_address, nat->out_addrlen);
+    m = su_sendto(b->out_socket, nat->buffer, n, 0,
+		  nat->out_address, nat->out_addrlen);
 
   if (nat->logging)
     printf("nat: udp out %d/%d %s => %s\n",
@@ -697,13 +699,13 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   events = su_wait_events(wait, b->out_socket);
 
-  n = recv(b->out_socket, nat->buffer, sizeof nat->buffer, 0);
+  n = su_recv(b->out_socket, nat->buffer, sizeof nat->buffer, 0);
   if (n < 0) {
     su_perror("udp_out_to_out: recv");
     return 0;
   }
 
-  m = send(b->in_socket, nat->buffer, n, 0);
+  m = su_send(b->in_socket, nat->buffer, n, 0);
 
   if (nat->logging)
     printf("nat: udp in %d/%d %s => %s\n",
@@ -745,7 +747,7 @@ static int tcp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   events = su_wait_events(wait, b->in_socket);
 
-  n = recv(b->in_socket, nat->buffer, sizeof nat->buffer, 0);
+  n = su_recv(b->in_socket, nat->buffer, sizeof nat->buffer, 0);
   if (n < 0) {
     su_perror("tcp_in_to_out: recv");
     return 0;
@@ -763,7 +765,7 @@ static int tcp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
   }
 
   for (m = 0; m < n; m += o) {
-    o = send(b->out_socket, nat->buffer + m, n - m, 0);
+    o = su_send(b->out_socket, nat->buffer + m, n - m, 0);
     if (o < 0) {
       su_perror("tcp_in_to_out: send");
       break;
@@ -784,7 +786,7 @@ static int tcp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 
   events = su_wait_events(wait, b->out_socket);
 
-  n = recv(b->out_socket, nat->buffer, sizeof nat->buffer, 0);
+  n = su_recv(b->out_socket, nat->buffer, sizeof nat->buffer, 0);
   if (n < 0) {
     su_perror("tcp_out_to_in: recv");
     return 0;
@@ -802,7 +804,7 @@ static int tcp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
   }
 
   for (m = 0; m < n; m += o) {
-    o = send(b->in_socket, nat->buffer + m, n - m, 0);
+    o = su_send(b->in_socket, nat->buffer + m, n - m, 0);
     if (o < 0) {
       if (su_errno() != EPIPE)
 	su_perror("tcp_in_to_out: send");
