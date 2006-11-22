@@ -84,18 +84,6 @@ dnl SOSXXX: AC_PATH_ADJUST
 ])
 
 dnl ======================================================================
-dnl Check if ranlib is needed
-dnl ======================================================================
-AC_DEFUN([AX_PROG_RANLIB], [
-AC_REQUIRE([SAC_CANONICAL_SYSTEM_CACHE_CHECK])
-if test -z "$no_ranlib"; then
-  AC_CHECK_TOOL([RANLIB], ranlib, ranlib)
-else
-  AC_SUBST([RANLIB], [":"])
-fi
-])
-
-dnl ======================================================================
 dnl Find C compiler
 dnl ======================================================================
 
@@ -264,55 +252,6 @@ if test "$ac_cv_sys_ipv6_recverr" = yes ; then
 		[Define to 1 if you have IPV6_RECVERR in <netinet/in6.h>])
 fi
 ])dnl
-
-dnl ======================================================================
-dnl Version of AC_CHECK_HEADER with a list of alternative locations
-dnl ======================================================================
-dnl AX_CHECK_HEADER_IN(HEADER-FILE, 
-dnl         LIST-OF-PATHS, [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
-AC_DEFUN([AX_CHECK_HEADER_IN], [
-ax_safe=`echo "$1" | sed 'y%./+-%__p_%'`
-AC_MSG_CHECKING([for $1])
-AC_CACHE_VAL(ax_cv_header_$ax_safe,
-   [eval ax_cv_header_$ax_safe="no"
-    for ax_path in yes $2
-    do
-	old_CPPFLAGS="$CPPFLAGS"
-       	test "$ax_path" != "yes" && CPPFLAGS="-I$ax_path $CPPFLAGS"
-      	AC_PREPROC_IFELSE([AC_LANG_SOURCE([[#include <$1>]])],[eval ax_cv_header_$ax_safe="$ax_path";
-	  CPPFLAGS="$old_CPPFLAGS";
-          break],[CPPFLAGS="$old_CPPFLAGS"
-	 ])
-   done
-])
-
-if eval "test \"`echo '$ax_cv_header_'$ax_safe`\" != no"; then
-   if eval 'test "$ax_cv_header_'$ax_safe'" != "yes"'
-   then
-     eval ax_path='"$ax_cv_header_'$ax_safe'"'
-     CPPFLAGS="-I$ax_path $CPPFLAGS"
-   else
-     unset ax_path
-   fi 
-   AC_MSG_RESULT([yes${ax_path+ (in $ax_path)}])
-   ifelse([$3], , :, [$3])
-else
-   AC_MSG_RESULT(no)
-   ifelse([$4], , , [$4])dnl
-fi
-])
-
-dnl AX_CHECK_HEADERS_IN(HEADER-FILE..., 
-dnl                 LIST-OF-PATHS [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
-AC_DEFUN([AX_CHECK_HEADERS_IN],
-[for ax_hdr in $1
-do
-AX_CHECK_HEADER_IN($ax_hdr, $2,
-[ ax_tr_hdr=HAVE_`echo $ax_hdr | sed 'y%abcdefghijklmnopqrstuvwxyz./-%ABCDEFGHIJKLMNOPQRSTUVWXYZ___%'`
-  AC_DEFINE_UNQUOTED($ax_tr_hdr, 1, [Define to 1 if you have the <$ax_hdr> header file])
-  $3], $4)dnl
-done
-])
 
 dnl ======================================================================
 dnl @synopsis AC_C_VAR_FUNC
