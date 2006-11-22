@@ -64,7 +64,8 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W4 /WX /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W4 /WX /Gm /GX /ZI /Od /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\..\libsofia-sip-ua\features" /I "..\pthread" /I "." /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /D "IN_LIBSOFIA_SIP_UA_STATIC" /D "LIBSOFIA_SIP_UA_STATIC" /D "LIBSRES_STATIC" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GX /ZI /Od /I ".." /I "..\..\libsofia-sip-ua\su" /I "..\..\libsofia-sip-ua\ipt" /I "..\..\libsofia-sip-ua\sresolv" /I "..\..\libsofia-sip-ua\bnf" /I "..\..\libsofia-sip-ua\url" /I "..\..\libsofia-sip-ua\msg" /I "..\..\libsofia-sip-ua\sip" /I "..\..\libsofia-sip-ua\nta" /I "..\..\libsofia-sip-ua\nua" /I "..\..\libsofia-sip-ua\iptsec" /I "..\..\libsofia-sip-ua\http" /I "..\..\libsofia-sip-ua\nth" /I "..\..\libsofia-sip-ua\nea" /I "..\..\libsofia-sip-ua\sdp" /I "..\..\libsofia-sip-ua\soa" /I "..\..\libsofia-sip-ua\stun" /I "..\..\libsofia-sip-ua\tport" /I "..\..\libsofia-sip-ua\features" /I "..\pthread" /I "." /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /D "IN_LIBSOFIA_SIP_UA_STATIC" /D "LIBSOFIA_SIP_UA_STATIC" /D "LIBSRES_STATIC" /FR /FD /GZ /c
+# SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x40b /d "_DEBUG"
 # ADD RSC /l 0x40b /d "_DEBUG"
 BSC32=bscmake.exe
