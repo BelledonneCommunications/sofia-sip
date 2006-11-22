@@ -210,7 +210,7 @@ static int register_test(root_test_t *rt)
 
   for (i = 0; i < 5; i++) {
     test_ep_t *ep = rt->rt_ep[i];
-    TEST(sendto(s, msg, sizeof(msg), 0, &ep->addr->su_sa, ep->addrlen), 
+    TEST(su_sendto(s, msg, sizeof(msg), 0, ep->addr, ep->addrlen), 
 	 sizeof(msg));
     test_run(rt);
     TEST(rt->rt_received, i);
@@ -233,7 +233,7 @@ static int register_test(root_test_t *rt)
 
   for (i = 0; i < 5; i++) {
     test_ep_t *ep = rt->rt_ep[i];
-    TEST(sendto(s, msg, sizeof(msg), 0, &ep->addr->su_sa, ep->addrlen), 
+    TEST(su_sendto(s, msg, sizeof(msg), 0, ep->addr, ep->addrlen), 
 	 sizeof(msg));
     test_run(rt);
     TEST(rt->rt_received, i);
@@ -256,7 +256,7 @@ static int register_test(root_test_t *rt)
 
   for (i = 0; i < 5; i++) {
     test_ep_t *ep = rt->rt_ep[i];
-    TEST(sendto(s, msg, sizeof(msg), 0, &ep->addr->su_sa, ep->addrlen), 
+    TEST(su_sendto(s, msg, sizeof(msg), 0, ep->addr, ep->addrlen), 
 	 sizeof(msg));
     test_run(rt);
     TEST(rt->rt_received, i);

@@ -159,8 +159,8 @@ do_ping(struct pinger *p, su_timer_t *t, void *p0)
   p->when = su_now();
 
   snprintf(buf, sizeof(buf), "Ping %d at %s", p->id++, snow(p->when));
-  if (sendto(p->s, buf, strlen(buf), 0, 
-	     &p->addr.su_sa, su_sockaddr_size(&p->addr)) == -1) {
+  if (su_sendto(p->s, buf, strlen(buf), 0, 
+		&p->addr, su_sockaddr_size(&p->addr)) == -1) {
     su_perror("do_ping: send");
   }
 
@@ -223,8 +223,8 @@ do_pong(struct pinger *p, su_timer_t *t, void *p0)
   p->id = 0;
 
   snprintf(buf, sizeof(buf), "Pong at %s", snow(su_now()));
-  if (sendto(p->s, buf, strlen(buf), 0, 
-	     &p->addr.su_sa, su_sockaddr_size(&p->addr)) == -1) {
+  if (su_sendto(p->s, buf, strlen(buf), 0, 
+		&p->addr, su_sockaddr_size(&p->addr)) == -1) {
     su_perror("do_pong: send");
   }
 
