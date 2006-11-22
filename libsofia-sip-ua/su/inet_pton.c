@@ -74,7 +74,6 @@ inet_pton(int af, const char * src, void * dst)
 static int
 inet_pton4(const char *src, unsigned char *dst)
 {
-	static const char digits[] = "0123456789";
 	int saw_digit, octets, ch;
 	unsigned char tmp[4], *tp;
 
@@ -82,16 +81,14 @@ inet_pton4(const char *src, unsigned char *dst)
 	octets = 0;
 	*(tp = tmp) = 0;
 	while ((ch = *src++) != '\0') {
-		const char *pch;
-
-		if ((pch = strchr(digits, ch)) != NULL) {
-			u_int new = *tp * 10 + (pch - digits);
+		if ('0' <= ch && ch <= '9') {
+			unsigned octet = *tp * 10 + ch - '0';
 
 			if (saw_digit && *tp == 0)
 				return (0);
-			if (new > 255)
+			if (octet > 255)
 				return (0);
-			*tp = new;
+			*tp = octet;
 			if (!saw_digit) {
 				if (++octets > 4)
 					return (0);
@@ -129,10 +126,8 @@ inet_pton4(const char *src, unsigned char *dst)
 static int
 inet_pton6(const char *src, unsigned char *dst)
 {
-	static const char xdigits_l[] = "0123456789abcdef",
-			  xdigits_u[] = "0123456789ABCDEF";
 	uint8_t tmp[16], *tp, *endp, *colonp;
-	const char *xdigits, *curtok;
+	const char *curtok;
 	int ch, saw_xdigit;
 	unsigned val;
 
@@ -147,18 +142,6 @@ inet_pton6(const char *src, unsigned char *dst)
 	saw_xdigit = 0;
 	val = 0;
 	while ((ch = *src++) != '\0') {
-		const char *pch;
-
-		if ((pch = strchr((xdigits = xdigits_l), ch)) == NULL)
-			pch = strchr((xdigits = xdigits_u), ch);
-		if (pch != NULL) {
-			val <<= 4;
-			val |= (pch - xdigits);
-			if (val > 0xffff)
-				return (0);
-			saw_xdigit = 1;
-			continue;
-		}
 		if (ch == ':') {
 			curtok = src;
 			if (!saw_xdigit) {
@@ -183,7 +166,20 @@ inet_pton6(const char *src, unsigned char *dst)
 			saw_xdigit = 0;
 			break;	/* '\0' was seen by inet_pton4(). */
 		}
-		return (0);
+
+		if ('0' <= ch && ch <= '9')
+			ch = ch - '0';
+		else if ('A' <= ch && ch <= 'F')
+			ch = ch - 'A' + 10;
+		else if ('a' <= ch && ch <= 'f')
+			ch = ch - 'a' + 10;
+		else
+			return (0);
+		val <<= 4;
+		val |= ch;
+		if (val > 0xffff)
+			return (0);
+		saw_xdigit = 1;
 	}
 	if (saw_xdigit) {
 		if (tp + 2 > endp)
