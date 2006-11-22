@@ -643,7 +643,7 @@ int readfile(FILE *f, void **contents)
   }
 
   if (!(buffer = malloc(len + 2)) ||
-      fread(buffer, 1, len, f) != len) {
+      fread(buffer, 1, len, f) != (size_t)len) {
     fprintf(stderr, "%s: unable to read file (%s)\n", __func__, strerror(errno));
     if (buffer)
       free(buffer);
@@ -2306,7 +2306,7 @@ int alice_leg_callback(agent_t *ag,
   if (sip->sip_request->rq_method == sip_method_bye) {
     leg_zap(ag, leg);
   }
-
+  if (sip)
   return 200;
 
   END();
@@ -2359,8 +2359,10 @@ int bob_leg_callback(agent_t *ag,
 			      sip->sip_contact), 0);
   }
 
-  if (sip->sip_request->rq_method == sip_method_invite) {
-    nta_incoming_bind(irq, test_for_ack, ag); 
+  if (sip->sip_request->rq_method != sip_method_invite) {
+    return 200;
+  } else {
+	nta_incoming_bind(irq, test_for_ack, ag); 
 #if 1
     nta_incoming_treply(irq,
 			SIP_180_RINGING,
@@ -2378,9 +2380,6 @@ int bob_leg_callback(agent_t *ag,
 			SIPTAG_CONTACT(ag->ag_m_bob),
 			TAG_END());
     ag->ag_irq = irq;
-    return 0;
-  } else {
-    return 200;
   }
 
   END();
@@ -2452,8 +2451,6 @@ int outgoing_invite_callback(agent_t *ag,
   nta_outgoing_destroy(orq);
   ag->ag_orq = NULL;
   ag->ag_call_leg = NULL;
-  return 0;
-
   END();
 }
 
@@ -2600,8 +2597,6 @@ int test_for_ack_or_timeout(agent_t *ag,
   TEST_P(irq, ag->ag_irq);
   ag->ag_irq = NULL;
 
-  return 0;
-
   END();
 }
 
@@ -2649,7 +2644,9 @@ int bob_leg_callback2(agent_t *ag,
 			      sip->sip_contact), 0);
   }
 
-  if (sip->sip_request->rq_method == sip_method_invite) {
+  if (sip->sip_request->rq_method != sip_method_invite) {
+    return 200;
+  } else {
     nta_incoming_bind(irq, test_for_ack_or_timeout, ag); 
     nta_incoming_treply(irq,
 			SIP_183_SESSION_PROGRESS,
@@ -2669,9 +2666,6 @@ int bob_leg_callback2(agent_t *ag,
 			SIPTAG_CONTACT(ag->ag_m_bob),
 			TAG_END());
     ag->ag_irq = irq;
-    return 0;
-  } else {
-    return 200;
   }
 
   END();
@@ -2826,7 +2820,9 @@ int bob_leg_callback3(agent_t *ag,
 			      sip->sip_contact), 0);
   }
 
-  if (sip->sip_request->rq_method == sip_method_invite) {
+  if (sip->sip_request->rq_method != sip_method_invite) {
+    return 200;
+  } else {
     nta_reliable_t *rel;
     nta_incoming_bind(irq, test_for_ack_or_timeout, ag);
     rel = nta_reliable_treply(irq, process_prack, ag,
@@ -2836,9 +2832,6 @@ int bob_leg_callback3(agent_t *ag,
 			      SIPTAG_CONTACT(ag->ag_m_bob),
 			      TAG_END());
     ag->ag_irq = irq;
-    return 0;
-  } else {
-    return 200;
   }
 
   END();
@@ -3085,12 +3078,13 @@ int test_prack(agent_t *ag)
 			    TAG_END()), 2);
   }
   END();
-
+/*
   nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
   ag->ag_latest_leg = NULL;
   ag->ag_call_leg = NULL;
   if (ag->ag_call_tag)
     su_free(ag->ag_home, (void *)ag->ag_call_tag), ag->ag_call_tag = NULL;
+*/
 }
 
 int alice_leg_callback2(agent_t *ag,
@@ -3161,7 +3155,8 @@ int alice_leg_callback2(agent_t *ag,
     leg_zap(ag, leg);
   }
 
-  return 200;
+  if(sip)
+	return 200;
 
   END();
 }
@@ -3236,10 +3231,11 @@ int test_fix_467(agent_t *ag)
   TEST_P(ag->ag_alice_leg, NULL);
 
   END();
-
+/*
   nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
   ag->ag_latest_leg = NULL;
   ag->ag_call_leg = NULL;
+*/
 }
 
 #if HAVE_ALARM
