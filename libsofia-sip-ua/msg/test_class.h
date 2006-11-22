@@ -53,7 +53,7 @@
 
 SOFIA_BEGIN_DECLS
 
-#define MSG_TEST_PROTOCOL_TAG ((void *)0xdeadbeef)
+#define MSG_TEST_PROTOCOL_TAG ((void *)(size_t)0xdeadbeef)
 
 #define MSG_TEST_VERSION_CURRENT "msg/1.0"
 

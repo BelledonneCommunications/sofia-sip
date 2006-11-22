@@ -97,7 +97,7 @@ issize_t msg_request_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 
 isize_t msg_request_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
+  isize_t rv = offset;
   msg_request_t const *rq = (msg_request_t const *)h;
 
   rv += url_xtra(rq->rq_url);
@@ -169,7 +169,7 @@ issize_t msg_status_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 /** Extra size of a msg_status_t object. */
 isize_t msg_status_dup_xtra(msg_header_t const *h, isize_t offset)
 {
-  int rv = offset;
+  isize_t rv = offset;
   msg_status_t const *st = (msg_status_t const *)h;
   rv += MSG_STRING_SIZE(st->st_version);
   rv += MSG_STRING_SIZE(st->st_phrase);
@@ -351,7 +351,7 @@ tagi_t *tsttag_filter(tagi_t *dst,
       return dst;
 
     stub[0].t_tag = tt;
-    stub[0].t_value = (long)h;
+    stub[0].t_value = (tag_value_t)h;
     src = stub; sctt = tt;
   }
 

@@ -162,7 +162,7 @@ static int check_msg(tp_test_t *tt, msg_t *msg, char const *ident)
 {
   msg_test_t *tst;
   msg_payload_t *pl;
-  int i, len;
+  usize_t i, len;
 
   BEGIN();
   
@@ -182,6 +182,7 @@ static int check_msg(tp_test_t *tt, msg_t *msg, char const *ident)
       break;
   }
 
+  if (pl)
   return i != len;
 
   END();
@@ -224,8 +225,6 @@ static int test_check_md5(tp_test_t *tt, msg_t *msg)
   TEST(memcmp(digest, tt->tt_digest, sizeof digest), 0);
 
   END();
-
-  return 0;
 }
 
 static int test_msg_md5(tp_test_t *tt, msg_t *msg)
@@ -342,8 +341,6 @@ static int new_test_msg(tp_test_t *tt, msg_t **retval,
   *retval = msg;
 
   END();
-
-  return 0;
 }
 
 static
@@ -1107,8 +1104,6 @@ static int tls_test(tp_test_t *tt)
 #endif
 
   END();
-
-  return 0;
 }
 
 static int sigcomp_test(tp_test_t *tt)
