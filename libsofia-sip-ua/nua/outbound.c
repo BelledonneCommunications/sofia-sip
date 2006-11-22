@@ -524,7 +524,7 @@ int outbound_nat_detect(outbound_t *ob,
   if (nat_detected && host_cmp(received, nat_detected) == 0) {
     if (nat_port && strcasecmp(rport, nat_port) == 0)
       return 1;
-    if (v->v_rport == NULL)
+    if (!v->v_rport || !v->v_rport[0])
       return 1;
   }
 
