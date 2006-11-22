@@ -305,10 +305,12 @@ int main(int argc, char *argv[])
   int retval = 0;
   int i;
 
+#if SU_HAVE_WINSOCK
   if (N > SU_WAIT_MAX)
     N = SU_WAIT_MAX;
-  if (I > SU_WAIT_MAX + 1)
-    I = SU_WAIT_MAX + 1;
+  if (I - 1 >= SU_WAIT_MAX)
+    I = (unsigned)SU_WAIT_MAX + 1;
+#endif
 
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
