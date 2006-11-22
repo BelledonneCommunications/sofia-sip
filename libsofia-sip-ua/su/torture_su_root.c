@@ -193,7 +193,7 @@ static int register_test(root_test_t *rt)
 {
   int i;
   int s;
-  char msg[3] = "foo";
+  char *msg = "foo";
 
   BEGIN();
 
