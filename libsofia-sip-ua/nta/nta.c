@@ -66,6 +66,8 @@
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/sip_status.h>
 
+#include <sofia-sip/hostdomain.h>
+
 #include <sofia-sip/msg_addr.h>
 #include <sofia-sip/msg_parser.h>
 
@@ -2327,7 +2329,7 @@ int agent_aliases(nta_agent_t const *agent, url_t url[], tport_t *tport)
     if (url->url_type != m->m_url->url_type)
       continue;
 
-    if (strcasecmp(url->url_host, m->m_url->url_host))
+    if (host_cmp(url->url_host, m->m_url->url_host))
       continue;
 
     if (url->url_port == NULL)
@@ -3800,7 +3802,7 @@ int addr_cmp(url_t const *a, url_t const *b)
     return 0;
   else
     return
-      str0casecmp(a->url_host, b->url_host)
+      host_cmp(a->url_host, b->url_host)
       || str0cmp(a->url_port, b->url_port)
       || str0cmp(a->url_user, b->url_user);
 }

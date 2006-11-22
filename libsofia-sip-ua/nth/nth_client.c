@@ -61,6 +61,8 @@
 #include <sofia-sip/http_tag.h>
 #include <sofia-sip/http_status.h>
 
+#include <sofia-sip/hostdomain.h>
+
 #include <sofia-sip/msg_addr.h>
 #include <sofia-sip/su_tagarg.h>
 
@@ -744,7 +746,7 @@ url_string_t const *hc_request_complete(nth_client_t * hc,
     hc->hc_route_url = (url_string_t *) u;
 
   if (host &&
-      (str0casecmp(host->h_host, u->url_host) ||
+      (host_cmp(host->h_host, u->url_host) ||
        str0cmp(host->h_port, u->url_port)))
     host = NULL;
 

@@ -1532,9 +1532,7 @@ int url_cmp(url_t const *a, url_t const *b)
 	(rv = strcasecmp(a->url_scheme, b->url_scheme)))))
     return rv;
 
-  if (a->url_host != b->url_host && 
-      ((rv = !a->url_host - !b->url_host) ||
-       (rv = strcasecmp(a->url_host, b->url_host))))
+  if ((rv = host_cmp(a->url_host, b->url_host)))
     return rv;
 
   if (a->url_port != b->url_port) {
@@ -1645,9 +1643,7 @@ int url_cmp_all(url_t const *a, url_t const *b)
   if ((rv = a->url_root - b->url_root))
     return rv;
 
-  if (a->url_host != b->url_host && 
-      ((rv = !a->url_host - !b->url_host) ||
-       (rv = strcasecmp(a->url_host, b->url_host))))
+  if ((rv = host_cmp(a->url_host, b->url_host)))
     return rv;
 
   if (a->url_port != b->url_port) {

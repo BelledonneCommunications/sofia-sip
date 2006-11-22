@@ -61,6 +61,8 @@ typedef struct server_s server_t;
 #include <sofia-sip/msg_addr.h>
 #include <sofia-sip/su_tagarg.h>
 
+#include <sofia-sip/hostdomain.h>
+
 /* We are customer of tport_t */
 #define TP_STACK_T   server_t
 #define TP_MAGIC_T   void
@@ -569,7 +571,7 @@ nth_site_t **site_get_host(nth_site_t **list, char const *host, char const *port
   assert(host);
 
   for (; (site = *list); list = &site->site_next) {
-    if (strcasecmp(host, site->site_url->url_host) == 0 &&
+    if (host_cmp(host, site->site_url->url_host) == 0 &&
 	str0cmp(port, site->site_url->url_port) == 0) {
       break;
     }
