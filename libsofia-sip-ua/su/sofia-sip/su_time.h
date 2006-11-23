@@ -78,6 +78,9 @@ typedef uint64_t su_ntp_t;
 
 #define SU_TIME_CMP(t1, t2) su_time_cmp(t1, t2)
 
+/** Seconds from 1.1.1900 to 1.1.1970 */
+#define SU_TIME_EPOCH 2208988800UL 
+
 SOFIAPUBFUN su_time_t su_now(void);
 SOFIAPUBFUN void su_time(su_time_t *tv);
 SOFIAPUBFUN long su_time_cmp(su_time_t const t1, su_time_t const t2);
