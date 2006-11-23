@@ -463,6 +463,13 @@ void nth_site_bind(nth_site_t *site,
 }
 
 
+/** Get the site URL. */
+url_t const *nth_site_url(nth_site_t const *site)
+{
+  return site ? site->site_url : NULL;
+}
+
+/** Return server name and version */
 char const *nth_site_server_version(void)
 {
   return "nth/" NTH_VERSION;

@@ -177,6 +177,7 @@ NTH_DLL int nth_site_get_params(nth_site_t const *site,
 NTH_DLL int nth_site_get_stats(nth_site_t const *site,
 			       tag_type_t tag, tag_value_t value, ...);
 
+NTH_DLL url_t const *nth_site_url(nth_site_t const *site);
 
 /* ----------------------------------------------------------------------
  * 6) Prototypes for server transactions 
