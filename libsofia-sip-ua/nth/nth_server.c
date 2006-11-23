@@ -129,6 +129,8 @@ struct nth_site_s
   nth_request_f       *site_callback;
   nth_site_magic_t    *site_magic;
 
+  su_time_t            site_access; /**< Last request served */
+
   /** Host header must match with server name */
   unsigned             site_strict : 1;
   /** Site can have kids */
@@ -282,7 +284,14 @@ nth_site_t *nth_site_create(nth_site_t *parent,
   if (parent && url_is_string(address)) {
     char const *s = (char const *)address;
     size_t sep = strcspn(s, "/:");
-    if (s[sep] == ':')
+
+    if (parent->site_path) {
+      /* subpath */
+      url_init(url0, parent->site_url->url_type);
+      url0->url_path = s;
+      address = (url_string_t*)url0;
+    }
+    else if (s[sep] == ':')
       /* absolute URL with scheme */;
     else if (s[sep] == '\0' && strchr(s, '.') && host_is_valid(s)) {
       /* looks like a domain name */;
@@ -473,6 +482,14 @@ url_t const *nth_site_url(nth_site_t const *site)
 char const *nth_site_server_version(void)
 {
   return "nth/" NTH_VERSION;
+}
+
+/** Get the time last time served. */
+su_time_t const nth_site_access_time(nth_site_t const *site)
+{
+  su_time_t const never = { 0, 0 };
+
+  return site ? site->site_access : never;
 }
 
 int nth_site_set_params(nth_site_t *site,
@@ -762,8 +779,11 @@ void server_destroy(server_t *srv)
 static inline
 int server_timer_init(server_t *srv)
 {
-  srv->srv_timer = su_timer_create(su_root_task(srv->srv_root), SERVER_TICK);
-  return su_timer_set(srv->srv_timer, server_timer, srv);
+  if (0) {
+    srv->srv_timer = su_timer_create(su_root_task(srv->srv_root), SERVER_TICK);
+    return su_timer_set(srv->srv_timer, server_timer, srv);
+  }
+  return 0;
 }
 
 /**
@@ -792,7 +812,6 @@ uint32_t server_now(server_t const *srv)
   else
     return su_time_ms(su_now());
 }
-
 
 /** Process incoming request message */
 static
@@ -862,6 +881,11 @@ void server_request(server_t *srv,
   if (path[0])
     subsite = site_get_subdir(site, path, &subpath);
 
+  if (subsite)
+    subsite->site_access = now;
+  else
+    site->site_access = now;
+
   if (subsite && subsite->site_isdir && subpath == site_nodir_match) {
     /* Answer with 301 */
     http_location_t loc[1];
@@ -886,7 +910,7 @@ void server_request(server_t *srv,
     loc->loc_url->url_path = subsite->site_url->url_path;
 
     msg_header_add_dup(response, NULL, (msg_header_t *)loc);
-      
+
     server_reply(srv, tport, request, response, HTTP_301_MOVED_PERMANENTLY);
   }
   else if (subsite)
