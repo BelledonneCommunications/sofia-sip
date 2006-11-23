@@ -56,10 +56,12 @@ libsofia-sip-ua:
   unit test (test_nua) built against original 1.12.0 release.
 
 libsofia-sip-ua-glib:
-- API updated with new "incoming-subscribe" signal. The release is backwards
-  compatible with applications linked against previous 1.12.x releases.
-  Note, libsofia-sip-ua-glib interface is still not considered stable and may
-  change in future 1.12.x releases.
+- API updated with new "incoming-subscribe" signal. 
+- This release is backwards compatible with applications linked against 
+  previous 1.12.x releases.
+- Note, the nua-glib interface (sofia-sip/nua-glib.h) will be moved to 
+  a separate package in the next release, so the library ABI will change. 	
+  The rest of libsofia-sip-ua-glib interface is now considered stable.
 
 Contributors to this release
 ----------------------------
