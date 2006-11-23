@@ -166,10 +166,12 @@ int test_register(void)
   int wakeups[256] = { 0 };
   int prioritized;
   su_wait_t wait[256];
-  su_root_magic_t magic[1] = {{ 0, sockets, reg, wakeups }};
-  su_root_t root[1] = {{ sizeof root, magic }};
+  su_root_magic_t magic[1] = {{ 0 }};
+  su_root_t root[1] = {{ sizeof root }};
 
   BEGIN();
+
+  root->sur_magic = magic;
 
   memset(su, 0, sizeof su);
   su->su_len = sizeof su->su_sin;
@@ -178,9 +180,9 @@ int test_register(void)
 
   memset(wait, 0, sizeof wait);
 
-  memset(sockets, -1, sizeof sockets);
-  memset(reg, 0, sizeof reg);
-  memset(wakeups, 0, sizeof wakeups);
+  memset(magic->sockets = sockets, -1, sizeof sockets);
+  memset(magic->regs = reg, 0, sizeof reg);
+  memset(magic->wakeups = wakeups, 0, sizeof wakeups);
 
   su_root_size_hint = 16;
 
