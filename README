@@ -28,9 +28,11 @@ sh> make install
 See also 'docs/devel_platform_notes.txt' for notes on compiling
 Sofia-SIP in different environments.
 
-See the "options-client-example" module in Sofia-SIP CVS-tree
-for an example of a small app that is utilizing Sofia-SIP,
-and specifically the libsofia-sip-ua library component.
+See the "options-client-example" (available using darcs at
+http://sofia-sip.org/repos/options-client-example/ or with CVS as
+a module in Sofia-SIP CVS tree) for an example of a small app that
+is utilizing Sofia-SIP, and specifically the libsofia-sip-ua
+library component.
 
 There are also multiple example clients under
 the "sofia-sip/utils" directory:
