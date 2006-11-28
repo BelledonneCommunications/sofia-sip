@@ -84,11 +84,9 @@ extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 #define STUN_LIFETIME_CI  5        /**< 5 sec confidence interval */
 #endif
 
-#define STUN_ERROR(errno, what) \
-        do { int stun_error_ = errno; \
-        SU_DEBUG_5(("%s: %s: %s\n", __func__, #what, \
-	su_strerror(stun_error_))); \
-        } while(0)
+#define STUN_ERROR(err, what) \
+  SU_DEBUG_5(("%s: %s: %s\n", __func__, #what, su_strerror(err))), \
+    -1								   \
 
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 

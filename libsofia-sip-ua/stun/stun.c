@@ -564,20 +564,17 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
   s = su_socket(family = AF_INET, SOCK_STREAM, 0);
 
   if (s == INVALID_SOCKET) {
-    STUN_ERROR(errno, socket);
-    return -1;
+    return STUN_ERROR(errno, socket);
   }
 
   /* asynchronous connect() */
   if (su_setblocking(s, 0) < 0) {
-    STUN_ERROR(errno, su_setblocking);
-    return -1;
+    return STUN_ERROR(errno, su_setblocking);
   }
 
   if (setsockopt(s, SOL_TCP, TCP_NODELAY,
 		 (void *)&one, sizeof one) == -1) {
-    STUN_ERROR(errno, setsockopt);
-    return -1;
+    return STUN_ERROR(errno, setsockopt);
   }
 
   /* Do an asynchronous connect(). Three error codes are ok,
@@ -586,8 +583,7 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
 	      ai->ai_addrlen) == SOCKET_ERROR) {
     err = su_errno();
     if (err != EINPROGRESS && err != EAGAIN && err != EWOULDBLOCK) {
-      STUN_ERROR(err, connect);
-      return -1;
+      return STUN_ERROR(err, connect);
     }
   }
 
@@ -600,14 +596,13 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
 
   events = SU_WAIT_CONNECT | SU_WAIT_ERR;
   if (su_wait_create(wait, s, events) == -1)
-    STUN_ERROR(errno, su_wait_create);
+    return STUN_ERROR(errno, su_wait_create);
 
   /* su_root_eventmask(sh->sh_root, sh->sh_root_index, s, events); */
 
   if ((sd->sd_index =
        su_root_register(sh->sh_root, wait, stun_tls_callback, (su_wakeup_arg_t *) sd, 0)) == -1) {
-    STUN_ERROR(errno, su_root_register);
-    return -1;
+    return STUN_ERROR(errno, su_root_register);
   }
 
   ta_start(ta, tag, value);
@@ -764,7 +759,6 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   su_sockaddr_t bind_addr;
   socklen_t bind_len;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
-  su_sockaddr_t *sa;
   int err;
   
   su_wait_t wait[1] = { SU_WAIT_INIT };
@@ -791,10 +785,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
 
   /* set socket asynchronous */
   if (su_setblocking(s, 0) < 0) {
-    STUN_ERROR(errno, su_setblocking);
-
-    su_close(s);
-    return -1;
+    return STUN_ERROR(errno, su_setblocking);
   }
 
   /* xxx -- check if socket is already assigned to this root */
@@ -1345,7 +1336,7 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
   getsockopt(sd->sd_socket, SOL_SOCKET, SO_ERROR,
 	     (void *)&one, &onelen);
   if (one != 0) {
-    STUN_ERROR(one, getsockopt);
+    STUN_ERROR(one, SO_ERROR);
   }
 
   if (one || events & SU_WAIT_ERR) {
