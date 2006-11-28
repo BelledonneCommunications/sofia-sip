@@ -578,6 +578,7 @@ int test_msg_parsing(void)
   msg_status_t *status;
   msg_content_location_t *location;
   msg_content_language_t *language;
+  msg_accept_language_t *se;
   msg_separator_t *separator;
   msg_payload_t *payload;
 
@@ -681,6 +682,10 @@ int test_msg_parsing(void)
 
     TEST_P((char *)en->aa_common->h_data + en->aa_common->h_len, 
 	   fi->aa_common->h_data);
+    TEST(fi->aa_common->h_len, 0);
+    TEST_P((char *)en->aa_common->h_data + en->aa_common->h_len, 
+	   se->aa_common->h_data);
+    TEST(se->aa_common->h_len, 0);
 
     TEST_1(de = msg_accept_language_make(msg_home(msg), "de;q=0.3"));
 
@@ -725,7 +730,6 @@ int test_msg_parsing(void)
 
   /* Bug #2429 */
   orig = read_msg("GET a-life HTTP/1.1" CRLF
-		 "Accept-Language: en;q=0.8, fi, se ; q = 0.6" CRLF
 		 "Foo: bar" CRLF
 		 "Content-Length: 6" CRLF
 		 CRLF
@@ -756,6 +760,10 @@ int test_msg_parsing(void)
   TEST_1(language = 
 	 msg_content_language_make(home, "se-FI, fi-FI, sv-FI"));
   TEST(msg_header_insert(msg, (msg_pub_t *)tst, (void *)language), 0);
+
+  TEST_1(se = msg_accept_language_make(home, "se, fi, sv"));
+  TEST_1(se->aa_next);  TEST_1(se->aa_next->aa_next);
+  TEST(msg_header_insert(msg, (msg_pub_t *)tst, (void *)se), 0);
   
   TEST(msg_serialize(msg, (msg_pub_t *)tst), 0);
   TEST_1(msg_prepare(msg) > 0);
@@ -781,6 +789,30 @@ int test_msg_parsing(void)
       "Content-Language: se-FI, fi-FI, sv-FI\r\n";
     TEST_SIZE(language->k_common->h_len, strlen(encoded));
     TEST_M(language->k_common->h_data, encoded, language->k_common->h_len);
+  }
+
+  {
+    char const encoded[] = "Accept-Language: se, fi, sv\r\n";
+    TEST_SIZE(se->aa_common->h_len, strlen(encoded));
+    TEST_M(se->aa_common->h_data, encoded, se->aa_common->h_len);
+    TEST_P((char *)se->aa_common->h_data + se->aa_common->h_len, 
+	   se->aa_next->aa_common->h_data);
+    TEST_P((char *)se->aa_common->h_data + se->aa_common->h_len, 
+	   se->aa_next->aa_next->aa_common->h_data);
+  }
+
+  {
+    size_t size = SIZE_MAX;
+    char *s = msg_as_string(msg_home(msg), msg, NULL, 0, &size);
+    TEST_S(s, 
+"GET a-wife HTTP/1.1" CRLF
+"Foo: bar" CRLF
+"Content-Length: 6" CRLF
+"Content-Location: http://localhost:8080/wife\r\n"
+"Content-Language: se-FI, fi-FI, sv-FI\r\n"
+"Accept-Language: se, fi, sv\r\n"
+CRLF
+"test" CRLF);
   }
 
   msg_destroy(msg);

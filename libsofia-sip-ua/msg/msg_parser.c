@@ -1308,7 +1308,7 @@ issize_t msg_extract_separator(msg_t *msg, msg_pub_t *mo,
   if (hr->hr_class->hc_parse(msg_home(msg), h, b, l) < 0)
     return -1;
 
-  h->sh_data = b, h->sh_len  = l;
+  h->sh_data = b, h->sh_len = l;
 
   append_parsed(msg, mo, hr, h, 0);
 
@@ -1527,7 +1527,8 @@ extract_trailers(msg_t *msg, msg_pub_t *mo,
 static inline size_t
 msg_header_name_e(char b[], size_t bsiz, msg_header_t const *h, int flags);
 static size_t msg_header_prepare(msg_mclass_t const *, int flags,
-				 msg_header_t *h, char *b, size_t bsiz);
+				 msg_header_t *h, msg_header_t **return_next,
+				 char *b, size_t bsiz);
 
 /**Encode all message fragments.
  *
@@ -1596,7 +1597,7 @@ int msg_is_prepared(msg_t const *msg)
 issize_t msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
 {
   msg_mclass_t const *mc = msg->m_class;
-  msg_header_t *h;
+  msg_header_t *h, *next;
   ssize_t n = 0;
   size_t bsiz = 0, used = 0;
   char *b;
@@ -1609,13 +1610,18 @@ issize_t msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
     return -1;
 
   for (h = headers; h;) {
+
     if (h->sh_data) {
       total += h->sh_len;
       h = h->sh_succ;
       continue;
     }
 
-    n = msg_header_prepare(mc, flags, h, b, bsiz - used);
+    for (next = h->sh_succ; next; next = next->sh_succ)
+      if (next->sh_class != h->sh_class || next->sh_data)
+	break;
+
+    n = msg_header_prepare(mc, flags, h, &next, b, bsiz - used);
 
     if (n == (ssize_t)-1) {
       errno = EINVAL;
@@ -1630,12 +1636,16 @@ issize_t msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
       continue;
     }
 
+    h->sh_data = b, h->sh_len = n;
+
+    for (h = h->sh_succ; h != next; h = h->sh_succ)
+      h->sh_data = b + n, h->sh_len = 0;
+
     msg_buf_used(msg, n);
 
     total += n;
     used += n;
     b += n;
-    h = h->sh_succ;
   }
 
   return total;
@@ -1644,31 +1654,29 @@ issize_t msg_headers_prepare(msg_t *msg, msg_header_t *headers, int flags)
 /** Encode a header or a list of headers */
 static
 size_t msg_header_prepare(msg_mclass_t const *mc, int flags,
-			  msg_header_t *h, char *b, size_t bsiz)
+			  msg_header_t *h, msg_header_t **return_next,
+			  char *b, size_t bsiz)
 {
   msg_header_t *h0, *next;
   msg_hclass_t *hc;
   char const *s;
   size_t n; ssize_t m;
-  int middle = 0, compact, one_line_list, comma_list;
+  int compact, one_line_list, comma_list;
 
   assert(h); assert(h->sh_class);
 
   hc = h->sh_class;
   compact = MSG_IS_COMPACT(flags);
-  one_line_list = compact || hc->hc_kind == msg_kind_apndlist;
-  comma_list = one_line_list || MSG_IS_COMMA_LISTS(flags);
+  one_line_list = hc->hc_kind == msg_kind_apndlist;
+  comma_list = compact || one_line_list || MSG_IS_COMMA_LISTS(flags);
 
-  for (h0 = h, n = 0; h; h = next) {
+  for (h0 = h, n = 0; ; h = next) {
     next = h->sh_succ;
 
-    if (!next || next->sh_class != hc || next->sh_data || !comma_list)
-      next = NULL;
-
-    if (!middle && hc->hc_name && hc->hc_name[0])
+    if (h == h0 && hc->hc_name && hc->hc_name[0])
       n += msg_header_name_e(b + n, bsiz >= n ? bsiz - n : 0, h, flags);
 
-    if ((m = hc->hc_print(b + n, bsiz >= n ? bsiz - n : 0, h, flags)) < 0) {
+    if ((m = hc->hc_print(b + n, bsiz >= n ? bsiz - n : 0, h, flags)) == -1) {
       if (bsiz >= n + 64)
 	m = 2 * (bsiz - n);
       else
@@ -1678,41 +1686,26 @@ size_t msg_header_prepare(msg_mclass_t const *mc, int flags,
     n += m;
 
     if (hc->hc_name) {
-      /* Encode continuation */
-      if (!next)
-	s = CRLF;
+      if (!comma_list || !next || next == *return_next)
+	s = CRLF, m = 2;
+      /* Else encode continuation */
       else if (compact)
-	s = ",";
+	s = ",", m = 1;
       else if (one_line_list)
-	s = ", ";
+	s = ", ", m = 2;
       else
-	s = "," CRLF "\t";
+	s = "," CRLF "\t", m = 4;
 
-      m = strlen(s);
-      if (bsiz <= n + m) {
-	if (!next)
-	  return n + m;
-      }
-      else {
-	strcpy(b + n, s);
-      }
+      if (bsiz > n + m)
+	memcpy(b + n, s, m);
       n += m;
     }
 
-    middle = 1;
+    if (!comma_list || !next || next == *return_next)
+      break;
   }
 
-  if (bsiz > n) {		/* XXX */
-    h0->sh_data = b, h0->sh_len = n;
-
-    for (h = h0; h; h = next) {
-      next = h->sh_succ;
-      if (!next || next->sh_class != hc || next->sh_data || !comma_list)
-	break;
-      else
-	next->sh_data = b, next->sh_len = 0;
-    }
-  }
+  *return_next = next;
 
   return n;
 }
@@ -1778,6 +1771,97 @@ msg_header_name_e(char b[], size_t bsiz, msg_header_t const *h, int flags)
   }
 
   return n2;
+}
+
+/** Convert a message to a string.
+ *
+ * A message is encoded and the encoding result is returned as a string. 
+ * Because the message may contain binary payload (or NUL in headers), the
+ * message length is returned separately in @a *return_len, too.
+ *
+ * Note that the message is serialized as a side effect. 
+ *
+ * @param home memory home used to allocate the string
+ * @param msg  message to encode
+ * @param pub  message object to encode (may be NULL)
+ * @param flags flags used when encoding
+ * @param return_len return-value parameter for encoded message length
+ * 
+ * @return Encoding result as a C string. 
+ *
+ * @since New in @VERSION_1_12_4
+ *
+ * @sa msg_make(), msg_prepare(), msg_serialize().
+ */
+char *msg_as_string(su_home_t *home, msg_t *msg, msg_pub_t *pub, int flags,
+		    size_t *return_len)
+{
+  msg_mclass_t const *mc = msg->m_class;
+  msg_header_t *h, *next;
+  ssize_t n = 0;
+  size_t bsiz = 0, used = 0;
+  char *b, *b2;
+
+  if (pub == NULL)
+    pub = msg->m_object;
+
+  if (msg_serialize(msg, pub) < 0)
+    return NULL;
+
+  if (return_len == NULL)
+    return_len = &used;
+
+  b = su_alloc(home, bsiz = msg_min_size);
+
+  if (!b)
+    return NULL;
+
+  if (pub == msg->m_object)
+    h = msg->m_chain;
+  else
+    h = pub->msg_common->h_succ;
+
+  while (h) {
+    for (next = h->sh_succ; next; next = next->sh_succ)
+      if (next->sh_class != h->sh_class)
+	break;
+
+    n = msg_header_prepare(mc, flags, h, &next, b + used, bsiz - used);
+
+    if (n == -1) {
+      errno = EINVAL;
+      su_free(home, b);
+      return NULL;
+    }
+
+    if (bsiz > used + n) {
+      used += n;
+      h = next;
+    }
+    else {
+      /* Realloc */
+      if (h->sh_succ)
+	bsiz = (used + n + msg_min_size) / msg_min_size * msg_min_size;
+      else
+	bsiz = used + n + 1;
+
+      b2 = su_realloc(home, b, bsiz);
+
+      if (b2 == NULL || bsiz < msg_min_size) {
+	errno = ENOMEM; 
+	su_free(home, b);
+	return NULL;
+      }
+
+      continue;
+    }
+  }
+
+  *return_len = used;
+
+  b[used] = '\0';		/* NUL terminate */
+
+  return su_realloc(home, b, used + 1);
 }
 
 /* ====================================================================== */

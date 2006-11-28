@@ -35,6 +35,7 @@
  */
 
 #include <sofia-sip/msg_types.h>
+#include <sofia-sip/su_alloc.h>
 
 SOFIA_BEGIN_DECLS
 
@@ -45,7 +46,10 @@ SOFIAPUBFUN msg_t *msg_copy(msg_t *);
 SOFIAPUBFUN msg_t *msg_dup(msg_t const *);
 
 SOFIAPUBFUN msg_t *msg_make(msg_mclass_t const *mc, int flags,
-			    char const *data, ssize_t len);
+			    void const *data, ssize_t len);
+SOFIAPUBFUN char *msg_as_string(su_home_t *home,
+				msg_t *msg, msg_pub_t *pub, int flags,
+				size_t *return_len);
 
 SOFIAPUBFUN void msg_set_parent(msg_t *kid, msg_t *dad);
 

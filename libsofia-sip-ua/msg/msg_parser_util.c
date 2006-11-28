@@ -1817,7 +1817,16 @@ issize_t msg_random_token(char token[], isize_t tlen,
 
 /** Parse a message.
  *
- * Parse a message with parser @a mc.
+ * Parse a text message with parser @a mc. The @a data is copied and it is
+ * not modified or referenced by the parsed message.
+ *
+ * @par Example
+ * Parse a SIP message fragment (e.g., payload of NOTIFY sent in response to
+ * REFER):
+ * @code
+ * msg_t *m = msg_make(sip_default_mclass(), 0, pl->pl_data, pl->pl_len);
+ * sip_t *frag = sip_object(m);
+ * @endcode
  *
  * @param mc message class (parser table)
  * @param flags message flags (see #msg_flg_user)
@@ -1826,13 +1835,15 @@ issize_t msg_random_token(char token[], isize_t tlen,
  * 
  * @retval A pointer to a freshly allocated and parsed message.
  *
- * Upon parsing error, the MSG_FLG_ERROR is set in 
- * @a msg_object(msg)->msg_flags.
+ * Upon parsing error, the header structure may be left incomplete. The
+ * #MSG_FLG_ERROR is set in @a msg_object(msg)->msg_flags.
  *
  * @since New in @VERSION_1_12_4
+ *
+ * @sa msg_as_string(), msg_extract()
  */
 msg_t *msg_make(msg_mclass_t const *mc, int flags,
-		char const *data, ssize_t len)
+		void const *data, ssize_t len)
 {
   msg_t *msg;
   msg_iovec_t iovec[2];
@@ -1849,7 +1860,7 @@ msg_t *msg_make(msg_mclass_t const *mc, int flags,
   if (msg_recv_iovec(msg, iovec, 2, len, 1) < 0) {
     perror("msg_recv_iovec");
   }
-  assert(iovec->mv_len == len);
+  assert((ssize_t)iovec->mv_len == len);
   memcpy(iovec->mv_base, data, len);
   msg_recv_commit(msg, len, 1);
 

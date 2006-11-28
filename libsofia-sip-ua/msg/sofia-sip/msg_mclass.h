@@ -74,9 +74,9 @@ struct msg_href_s
  * The message class object contains all the information needed to parse a
  * message. It used when headers are added or removed from the message. When
  * a message is sent, the message class is used to order message components
- * and print the message.
+ * and print (encode) the message in text format.
  *
- * The message class contains references to headers and other components
+ * The message class contains reference objects to headers and other components
  * within the message. Each reference contains a pointer to a @ref
  * msg_hclass_s "header class" and a offset to the header objects within
  * public message structure. The parser engine uses these references when it
@@ -88,6 +88,10 @@ struct msg_href_s
  * class with the msg_mclass_insert_header() and msg_mclass_insert()
  * functions. The message class of an existing message object can be found
  * out with the function msg_mclass().
+ *
+ * @sa sip_default_mclass(), http_default_mclass(), msg_create(),
+ * msg_mclass(), msg_mclass_clone(), msg_mclass_insert_header(),
+ * msg_mclass_insert_with_mask(), msg_mclass_insert().
  */
 struct msg_mclass_s
 {
