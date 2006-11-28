@@ -657,10 +657,7 @@ static stun_request_t *stun_request_create(stun_discovery_t *sd)
   memcpy(req->sr_local_addr, sd->sd_bind_addr, sizeof(su_sockaddr_t));
 
   /* Insert this request to the request queue */
-  if (sh->sh_requests)
-    x_insert(sh->sh_requests, req, sr);
-  else
-    sh->sh_requests = req;
+  x_insert(sh->sh_requests, req, sr);
 
   return req;
 }
@@ -676,9 +673,6 @@ void stun_request_destroy(stun_request_t *req)
 
   if (x_is_inserted(req, sr))
     x_remove(req, sr);
-
-  if (!x_is_inserted(req, sr) && !req->sr_next)
-    sh->sh_requests = NULL;
 
   req->sr_handle = NULL;
   req->sr_discovery = NULL;
@@ -756,8 +750,8 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   int events;
   stun_discovery_t *tmp;
   /* su_localinfo_t clientinfo[1]; */
-  su_sockaddr_t bind_addr;
-  socklen_t bind_len;
+  su_sockaddr_t su[1];
+  socklen_t sulen;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
   int err;
   
@@ -789,66 +783,54 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   }
 
   /* xxx -- check if socket is already assigned to this root */
+
+  memset(su, 0, sulen = sizeof su);
+
+  /* Try to bind it if not already bound */
+  if (getsockname(s, &su->su_sa, &sulen) == -1 || su->su_port == 0) {
+
+    sulen = su->su_len = sizeof su->su_sin;
+    su->su_family = AF_INET;
+
+#if defined (__CYGWIN__)
+    get_localinfo(su, &sulen);
+#endif
+
+    if ((err = bind(s, &su->su_sa, sulen)) < 0) {
+      SU_DEBUG_3(("%s: bind(%s:%u): %s\n",  __func__, 
+		  inet_ntop(su->su_family, SU_ADDR(su), 
+			    ipaddr, sizeof(ipaddr)),
+		  (unsigned) ntohs(su->su_port),
+		  su_strerror(su_errno())));
+      return -1;
+    }
+
+    if (getsockname(s, &su->su_sa, &sulen) == -1) {
+      return STUN_ERROR(errno, getsockname);
+    }
+  }
+
+  memcpy(&sd->sd_bind_addr, su, sulen);
+
+  SU_DEBUG_3(("%s: local socket is bound to %s:%u\n", __func__,
+	      inet_ntop(su->su_family, SU_ADDR(su), 
+			ipaddr, sizeof(ipaddr)),
+	      (unsigned) ntohs(su->su_port)));
+
   events = SU_WAIT_IN | SU_WAIT_ERR;
 
   if (su_wait_create(wait, s, events) == -1) {
-    STUN_ERROR(su_errno(), su_wait_create);
-    return -1;
+    return STUN_ERROR(su_errno(), su_wait_create);
   }
 
   /* Register receiving function with events specified above */
   if ((sd->sd_index = su_root_register(sh->sh_root,
 				       wait, stun_bind_callback,
 				       (su_wakeup_arg_t *) sd, 0)) < 0) {
-    STUN_ERROR(errno, su_root_register);
-    return -1;
+    return STUN_ERROR(errno, su_root_register);
   }
 
   SU_DEBUG_7(("%s: socket registered.\n", __func__));
-
-  sa = (void *) &bind_addr;
-  bind_len = SU_SOCKADDR_SIZE(sa);
-  memset(sa, 0, bind_len);
-  /* if bound check the error */
-  err = getsockname(s, (struct sockaddr *) sa, &bind_len);
-  if (err < 0) {
-    STUN_ERROR(errno, getsockname);
-    return -1;
-  }
-
-  /* Not bound - bind it */
-  if (sa->su_port == 0) {
-#if defined (__CYGWIN__)
-    get_localinfo(clientinfo);
-#endif
-
-    sa->su_family = AF_INET;
-
-    if ((err = bind(s, (struct sockaddr *) sa, bind_len)) < 0) {
-      STUN_ERROR(errno, bind);
-      SU_DEBUG_3(("%s: Error binding to %s:%u\n", __func__, 
-		  inet_ntop(sa->su_family, SU_ADDR(sa), 
-			    ipaddr, sizeof(ipaddr)),
-		  (unsigned) ntohs(sa->su_port)));
-      return -1;
-    }
-
-    /* bind_len = clientinfo->li_addrlen; */
-    /* clientinfo->li_addrlen = bind_len; */
-    sa->su_len = bind_len; /* ? */
-  }
-
-  memcpy(&sd->sd_bind_addr, &bind_addr, sizeof bind_addr);
-
-  if (getsockname(s, (struct sockaddr *) &bind_addr, &bind_len) != 0) {
-    STUN_ERROR(errno, getsockname);
-    return -1;
-  }
-
-  SU_DEBUG_3(("%s: local socket is bound to %s:%u\n", __func__,
-	      inet_ntop(bind_addr.su_family, SU_ADDR(&bind_addr), 
-			ipaddr, sizeof(ipaddr)),
-	      (unsigned) ntohs(bind_addr.su_port)));
 
   return 0;
 }
@@ -858,17 +840,16 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
  * Helper function needed by Cygwin builds.
  */
 #if defined (__CYGWIN__)
-static int get_localinfo(su_localinfo_t *clientinfo)
+static int get_localinfo(su_sockaddr_t *su, socklen_t sulen)
 {
-  su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
+  su_localinfo_t hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
   su_sockaddr_t *sa;
-  int i, error, found = 0;
+  int i, error;
   char ipaddr[SU_ADDRSIZE + 2] = { 0 };
 
-
   hints->li_family = AF_INET;
+
   if ((error = su_getlocalinfo(hints, &res)) == 0) {
-    
     /* try to bind to the first available address */
     for (i = 0, li = res; li; li = li->li_next) {
       if (li->li_family != AF_INET)
@@ -883,23 +864,20 @@ static int get_localinfo(su_localinfo_t *clientinfo)
 		  __func__, 
 		  inet_ntop(clientinfo->li_family, SU_ADDR(sa),
 			    ipaddr, sizeof(ipaddr))));
-      found = 1;
       break;
     }
+
+    su_freelocalinfo(res);
     
-    if (!found) {
-      STUN_ERROR(error, su_getlocalinfo);
-      return -1;
+    if (!li) {			/* Not found */
+      return STUN_ERROR(error, su_getlocalinfo);
     }
+
+    return 0;
   }
   else {
-    STUN_ERROR(error, su_getlocalinfo);
-    return -1;
+    return STUN_ERROR(error, su_getlocalinfo);
   }
-  if (res)
-    su_freelocalinfo(res);
-
-  return 0;
 }
 #endif
 
@@ -1050,7 +1028,7 @@ int stun_bind(stun_handle_t *sh,
   stun_request_t *req = NULL;
   stun_discovery_t *sd = NULL;
   ta_list ta;
-  int index, s_reg = 0;
+  int s_reg = 0;
   
   enter;
 
@@ -1078,7 +1056,7 @@ int stun_bind(stun_handle_t *sh,
   ta_end(ta);
 
   sd = stun_discovery_create(sh, stun_action_binding_request, sdf, magic);
-  if ((index = assign_socket(sd, s, s_reg)) < 0)
+  if (assign_socket(sd, s, s_reg) < 0)
     return -1;
 
   req = stun_request_create(sd);
@@ -1146,14 +1124,11 @@ static stun_discovery_t *stun_discovery_create(stun_handle_t *sh,
   sd->sd_lt = STUN_LIFETIME_EST;
   sd->sd_lt_max = STUN_LIFETIME_MAX;
 
-  sd->sd_pri_info.ai_addrlen = 16;
+  sd->sd_pri_info.ai_addrlen = sizeof sd->sd_pri_addr->su_sin;
   sd->sd_pri_info.ai_addr = &sd->sd_pri_addr->su_sa;
 
   /* Insert this action to the discovery queue */
-  if (sh->sh_discoveries)
-    x_insert(sh->sh_discoveries, sd, sd);
-  else
-    sh->sh_discoveries = sd;
+  x_insert(sh->sh_discoveries, sd, sd);
 
   return sd;
 }
@@ -1175,9 +1150,6 @@ static int stun_discovery_destroy(stun_discovery_t *sd)
   /* if we are in the queue*/
   if (x_is_inserted(sd, sd))
     x_remove(sd, sd);
-  /* if we were the only one */
-  else if (!sd->sd_next)
-    sh->sh_discoveries = NULL;
 
   sd->sd_next = NULL;
 
@@ -1331,7 +1303,6 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 	      events & SU_WAIT_ERR     ? " ERR"       : "",
 	      events & SU_WAIT_IN      ? " IN"        : "",
 	      events & SU_WAIT_OUT     ? " OUT"       : ""));
-
 
   getsockopt(sd->sd_socket, SOL_SOCKET, SO_ERROR,
 	     (void *)&one, &onelen);
