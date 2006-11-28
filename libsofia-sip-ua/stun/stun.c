@@ -341,7 +341,9 @@ static int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
 static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
 
+#if defined (__CYGWIN__)
 static int get_localinfo(int family, su_sockaddr_t *su, socklen_t *return_len);
+#endif
 
 /* timers */
 static void stun_sendto_timer_cb(su_root_magic_t *magic, 
