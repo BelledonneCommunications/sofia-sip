@@ -136,7 +136,9 @@ SOFIA_BEGIN_DECLS
 
 enum {
   /** If (TSTFLAGS & tst_verbatim) is non-zero, be verbatim. */
-  tst_verbatim = 1
+  tst_verbatim = 1,
+  /** If (TSTFLAGS & tst_abort) is non-zero, abort() when failed. */
+  tst_abort = 2,
 };
 
 #ifndef TSTFLAGS
@@ -183,6 +185,9 @@ enum {
 #define END(flags) (void) tstdef_dummy;  } END_(flags) 
 #endif
 
+#define TEST_FAILED(flags) \
+  ((flags) & tst_abort) ? abort() : (void)0; return 1
+
 /** @HIDE */
 #define TEST_1_(flags, suite) do { \
   if (flags & tst_verbatim) { \
@@ -191,7 +196,8 @@ enum {
   if ((suite)) { if (flags & tst_verbatim) \
   printf("%s: %s%sok: (%s)\n", TSTNAME, #suite); break ; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: (%s)\n", \
-          __FILE__, __LINE__, TSTNAME, #suite); fflush(stderr); return 1; } \
+          __FILE__, __LINE__, TSTNAME, #suite); fflush(stderr); \
+  TEST_FAILED(flags); }						\
   while(0)
 
 /** @HIDE */
@@ -220,7 +226,7 @@ enum {
 	    __FILE__, __LINE__, TSTNAME,				\
 	    #suite, #expect, (size_t)_value, (size_t)_expect);		\
     fflush(stderr);							\
-    return 1;								\
+    TEST_FAILED(flags);							\
   } while(0)
 
 /** @HIDE */
@@ -236,8 +242,9 @@ enum {
   }									\
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or %p != %p\n",	\
 	  __FILE__, __LINE__, TSTNAME,					\
-	  #suite, #expect, _value, _expect); fflush(stderr); return 1; } \
-  while(0)
+	  #suite, #expect, _value, _expect); fflush(stderr);		\
+  TEST_FAILED(flags);							\
+  } while(0)
 
 /** @HIDE */
 #define TEST_SIZE_(flags, suite, expect) do {	\
@@ -251,8 +258,9 @@ enum {
   printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or "MOD_ZU" != "MOD_ZU"\n", \
 	 __FILE__, __LINE__, TSTNAME, \
-	  #suite, #expect, _value, _expect); fflush(stderr); return 1; } \
-  while(0)
+	  #suite, #expect, _value, _expect); fflush(stderr);		\
+  TEST_FAILED(flags);							\
+  } while(0)
 
 
 /** @HIDE */
@@ -268,7 +276,7 @@ enum {
 	 __FILE__, __LINE__, TSTNAME, \
 	  #suite, #expect, (unsigned longlong)_value,	\
 	 (unsigned longlong)_expect); fflush(stderr);	\
-    return 1; \
+  TEST_FAILED(flags);					\
   } while(0)
 
 /** @HIDE */
@@ -283,7 +291,7 @@ enum {
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or %g != %g\n", \
 	 __FILE__, __LINE__, TSTNAME, \
          #suite, #expect, _value, _expect); fflush(stderr); \
-    return 1; \
+  TEST_FAILED(flags);					    \
   } while(0)
 
 /** @HIDE */
@@ -302,8 +310,9 @@ enum {
 	 __FILE__, __LINE__, TSTNAME, \
 	  #suite, #expect, \
 	  _value ? "\"" : "", _value ? _value : "NULL", _value ? "\"" : "", \
-	  _expect); fflush(stderr); return 1; }				\
-  while(0)
+	  _expect); fflush(stderr);					\
+  TEST_FAILED(flags);							\
+  } while(0)
 
 /** @HIDE */
 #define TEST_M_(flags, suite, expect, len) do { \
@@ -323,8 +332,9 @@ enum {
                   "or \"%.*s\" != \"%.*s\"\n", \
 	 __FILE__, __LINE__, TSTNAME, \
 	  #suite, #expect, _len, (char *)_value, _len, (char *)_expect); \
-  fflush(stderr); return 1; } \
-  while(0)
+  fflush(stderr);							\
+  TEST_FAILED(flags);							\
+  } while(0)
 
 /** @HIDE */
 #define BEGIN_(flags) \
