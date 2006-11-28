@@ -240,7 +240,7 @@ int test_sip(void)
   char sipsurl[] = 
     "sips:user:pass@host:32;param=1"
     "?From=foo@bar&To=bar@baz#unf";
-  int i, j;
+  size_t i, j;
   url_t *a, *b;
 
   BEGIN();
@@ -263,6 +263,9 @@ int test_sip(void)
   TEST_S(url->url_params, "method=MESSAGE");
   TEST_S(url->url_headers, "body=CANNED%20MSG");
   TEST_P(url->url_fragment, NULL);
+
+  TEST_S(url_query_as_header_string(home, url->url_headers),
+	 "\n\nCANNED MSG");
   
   sip->url_user = "user";
   sip->url_password = "pass";
@@ -281,7 +284,7 @@ int test_sip(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_sip);
   TEST_1(url_cmp(sip, u) == 0);
-  TEST_1(url_e(sip2, sizeof(sip2), u) == strlen(sipurl));
+  TEST(url_e(sip2, sizeof(sip2), u), strlen(sipurl));
   TEST_1(strcmp(sip2, sipurl) == 0);
   TEST_SIZE(snprintf(sip2, sizeof(sip2), URL_PRINT_FORMAT, 
 		     URL_PRINT_ARGS(sip)), strlen(sipurl));
@@ -294,6 +297,9 @@ int test_sip(void)
   TEST_1(tst = su_strdup(home, sip2url));
   TEST_1(url_d(url, tst) == 0);
   TEST_S(url->url_user, "user/path;tel-param");
+
+  TEST_S(url_query_as_header_string(home, url->url_headers),
+	 "From:foo@bar\nTo:bar@baz");
 
   url_digest(hash1, sizeof(hash1), url, NULL);
   url_digest(hash2, sizeof(hash2), (url_t *)sip2url, NULL);
@@ -742,7 +748,7 @@ int test_rtsp(void)
   TEST_1(u = url_hdup(home, url));
   TEST(u->url_type, url_rtsp);
   TEST_1(url_cmp(rtsp, u) == 0);
-  TEST_1(url_e(rtsp2, sizeof(rtsp2), u) == strlen(rtspurl));
+  TEST(url_e(rtsp2, sizeof(rtsp2), u), strlen(rtspurl));
   TEST_1(strcmp(rtsp2, rtspurl) == 0);
   TEST_SIZE(snprintf(rtsp2, sizeof(rtsp2), URL_PRINT_FORMAT, 
 		     URL_PRINT_ARGS(rtsp)), strlen(rtspurl));
