@@ -520,26 +520,7 @@ int hash_test(void)
 
 msg_t *read_msg(char const buffer[])
 {
-  int n, m;
-  msg_t *msg;
-  msg_iovec_t iovec[2];
-
-  n = strlen(buffer);
-  if (n == 0) 
-    return NULL;
-
-  msg = msg_create(msg_test_mclass, MSG_DO_EXTRACT_COPY);
-  su_home_preload(msg_home(msg), 1, 4096);
-
-  if (msg_recv_iovec(msg, iovec, 2, n, 1) < 0) {
-    perror("msg_recv_iovec");
-  }
-  memcpy(iovec->mv_base, buffer, n);
-  msg_recv_commit(msg, n, 1);
-
-  m = msg_extract(msg);
-
-  return msg;
+  return msg_make(msg_test_mclass, MSG_DO_EXTRACT_COPY, buffer, -1);
 }
 
 /**Check if header chain contains any loops. 

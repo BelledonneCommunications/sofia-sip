@@ -44,6 +44,9 @@ SOFIAPUBFUN void msg_destroy(msg_t *);
 SOFIAPUBFUN msg_t *msg_copy(msg_t *);
 SOFIAPUBFUN msg_t *msg_dup(msg_t const *);
 
+SOFIAPUBFUN msg_t *msg_make(msg_mclass_t const *mc, int flags,
+			    char const *data, ssize_t len);
+
 SOFIAPUBFUN void msg_set_parent(msg_t *kid, msg_t *dad);
 
 SOFIAPUBFUN msg_t *msg_ref_create(msg_t *);

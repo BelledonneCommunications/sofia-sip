@@ -1813,3 +1813,48 @@ issize_t msg_random_token(char token[], isize_t tlen,
 
   return i;
 }
+
+
+/** Parse a message.
+ *
+ * Parse a message with parser @a mc.
+ *
+ * @param mc message class (parser table)
+ * @param flags message flags (see #msg_flg_user)
+ * @param data message text
+ * @param len size of message text (if -1, use strlen(data))
+ * 
+ * @retval A pointer to a freshly allocated and parsed message.
+ *
+ * Upon parsing error, the MSG_FLG_ERROR is set in 
+ * @a msg_object(msg)->msg_flags.
+ *
+ * @since New in @VERSION_1_12_4
+ */
+msg_t *msg_make(msg_mclass_t const *mc, int flags,
+		char const *data, ssize_t len)
+{
+  msg_t *msg;
+  msg_iovec_t iovec[2];
+
+  if (len == -1)
+    len = strlen(data);
+  if (len == 0) 
+    return NULL;
+
+  msg = msg_create(mc, flags);
+
+  su_home_preload(msg_home(msg), 1, len + 1024);
+
+  if (msg_recv_iovec(msg, iovec, 2, len, 1) < 0) {
+    perror("msg_recv_iovec");
+  }
+  assert(iovec->mv_len == len);
+  memcpy(iovec->mv_base, data, len);
+  msg_recv_commit(msg, len, 1);
+
+  if (msg_extract(msg) < 0)
+    msg->m_object->msg_flags |= MSG_FLG_ERROR;
+
+  return msg;
+}
