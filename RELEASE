@@ -5,13 +5,15 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
+On Linux systems, the sockets are handled with epoll allowing large number
+of concurrent connections, like 100 000 or more.
+
+Headers in SIP URIs are now included in the request by nta and nua.
+
 The nua API now supports arbitratry SIP methods.
 
 There is now also reactive mode of handing subscriptions in nua, using
 nua_i_subscribe()/nua_respond()/nua_notify()/nua_i_publish().
-
-On Linux systems, the sockets are handled with epoll allowing large number
-of concurrent connections, like 100 000 or more.
 
 Severe bug in STUN functionality was fixed.
 
@@ -28,8 +30,15 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
-- Added nua_method() and NUTAG_METHOD()
-- Added nth_request_auth() and NTHTAG_AUTH_MODULE()
+- Added host_cmp() for comparing host names or IP addresses in numeric
+  format.
+- Added auth_mod_name() to <sofia-sip/auth_module.c>
+- Added msg_make() and msg_as_string() to <sofia-sip/msg.h>
+- Added SU_TIME_EPOCH to <sofia-sip/su_time.h>
+- Added host_cmp() to <sofia-sip/hostdomain.h>
+- Added nua_method() and NUTAG_METHOD() to <sofia-sip/nua.h>
+- Added nth_request_auth(), NTHTAG_AUTH_MODULE(), nth_site_url(), and
+  nth_site_access_time() to <sofia-sip/nth.h>
 - Added functions msg_header_find_item(), msg_header_replace_item(),
   msg_header_remove_item()
   (handling Allow and Allow-Events headers)
@@ -68,6 +77,8 @@ Contributors to this release
 
 - Michael Jerris contributed nua_i_register code along with number of 
   platform-specific fixes 
+- Steve Underwood contributed code detecting RED and UDPTL used for T.38 in
+  SDP.
 
 <list of people who contributed to _this_ release
  - update as people's patches are added, or when you commit stuff
@@ -101,6 +112,11 @@ nua_method()/nua_r_method/nua_i_method and NUTAG_ALLOW().
 Bugs fixed in this release
 --------------------------
 
+- If there was an application-provided Contact no Contact was used 
+  when creating dialog. Thanks for Michael Jerris and Anthony Minessale for
+  reporting this bug.
+- Portability problems in stun code fixed
+  Thanks for Konstantin Belousov for reporting this bug.
 - Outbound now ignores Via rport parameter without value.
   Thanks for Anthony Minessale for reporting this bug.
 - Subsite handling in nth was fixed.
