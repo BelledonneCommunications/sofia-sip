@@ -42,6 +42,7 @@ char const *name = "torture_su_root_osx";
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define TSTFLAGS rt->rt_flags
 #include <sofia-sip/tstdef.h>

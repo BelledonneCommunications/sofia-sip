@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include <sofia-sip/su_time.h>
 

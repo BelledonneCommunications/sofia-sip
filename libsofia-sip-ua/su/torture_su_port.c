@@ -32,6 +32,9 @@
 
 #include "config.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 struct su_root_magic_s;
 
 #define SU_ROOT_MAGIC_T struct su_root_magic_s
@@ -49,7 +52,6 @@ int tstflags;
 
 #define TSTFLAGS tstflags
 
-#include <stdio.h>
 #include <sofia-sip/tstdef.h>
 
 char const *name = "torture_su_port";

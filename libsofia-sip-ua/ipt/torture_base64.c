@@ -39,6 +39,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "sofia-sip/base64.h"
 

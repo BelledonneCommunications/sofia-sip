@@ -41,6 +41,7 @@ char const *name = "su_root_test";
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define TSTFLAGS rt->rt_flags
 #include <sofia-sip/tstdef.h>

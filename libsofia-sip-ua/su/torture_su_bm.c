@@ -36,6 +36,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include <sofia-sip/tstdef.h>
 
 char const *name = "torture_su_bm";

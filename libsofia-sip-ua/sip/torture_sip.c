@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 /* Avoid casting sip_t to msg_pub_t and sip_header_t to msg_header_t */
 #define MSG_PUB_T       struct sip_s
@@ -915,8 +916,6 @@ static int test_encoding(void)
   su_home_check(home);
   su_home_zap(home);
 
-  home = su_home_new(sizeof *home); TEST_1(home);
-
   msg = read_message(0, 
 		     "SIP/2.0 200 Ok\r\n"
 		     "Via: SIP/2.0/UDP 135.180.130.133\r\n"
@@ -1595,7 +1594,8 @@ static int sip_header_test(void)
   su_home_t *home;
   void const *x;
   sip_via_t *v, *v0;
-  tagi_t const *tl, *tl0;
+  tagi_t const *tl;
+  tagi_t *tl0;
 
   BEGIN();
 
@@ -1729,6 +1729,8 @@ static int sip_header_test(void)
   /* sip_add_tagis should stop after SIPTAG_END() */
   TEST(sip_add_tagis(msg, sip, &tl), 0);
   TEST_P(tl, tl0 + 2);
+
+  tl_free(tl0);
 
   TEST_P(sip_timestamp_make(home, "+1"), NULL);
   TEST_P(sip_timestamp_make(home, "1.0e6 13.0"), NULL);

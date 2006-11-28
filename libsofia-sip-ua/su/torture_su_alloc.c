@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_strlst.h>
