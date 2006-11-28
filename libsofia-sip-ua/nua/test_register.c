@@ -213,7 +213,7 @@ int test_register_to_proxy(struct context *ctx)
     printf("TEST NUA-2.3.2: PASSED\n");
 
   if (ctx->p)
-    test_proxy_set_expiration(ctx->p, 30, 3600, 36000);
+    test_proxy_set_expiration(ctx->p, 600, 3600, 36000);
 
   if (print_headings)
     printf("TEST NUA-2.3.3: REGISTER c\n");
