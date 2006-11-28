@@ -1359,6 +1359,8 @@ void sdp_media_type(sdp_media_t *m, char const *s)
     m->m_type = sdp_media_message, m->m_type_name = "message";
   else if (strcasecmp(s, "image") == 0)
     m->m_type = sdp_media_image, m->m_type_name = "image";
+  else if (strcasecmp(s, "red") == 0)
+    m->m_type = sdp_media_red, m->m_type_name = "red";
   else
     m->m_type = sdp_media_x, m->m_type_name = s;
 }
@@ -1371,6 +1373,8 @@ void sdp_media_transport(sdp_media_t *m, char const *s)
     m->m_proto = sdp_proto_rtp, m->m_proto_name = "RTP/AVP";
   else if (strcasecmp(s, "RTP/SAVP") == 0)
     m->m_proto = sdp_proto_srtp, m->m_proto_name = "RTP/SAVP";
+  else if (strcasecmp(s, "UDPTL") == 0)
+    m->m_proto = sdp_proto_udptl, m->m_proto_name = "UDPTL";
   else if (strcasecmp(s, "UDP") == 0)
     m->m_proto = sdp_proto_udp, m->m_proto_name = "UDP";
   else if (strcasecmp(s, "TCP") == 0)
