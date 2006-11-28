@@ -221,6 +221,28 @@ int test_basic_call_1(struct context *ctx)
 
   run_ab_until(ctx, -1, until_ready, -1, accept_call_with_early_sdp);
 
+  TEST_1(nua_handle_has_active_call(a_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
+
+  TEST_1(nua_handle_has_active_call(b_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(b_call->nh));
+
+  TEST_1(repa = nua_handle_make_replaces(a_call->nh, nua_handle_home(a_call->nh), 0));
+  TEST_1(repb = nua_handle_make_replaces(b_call->nh, nua_handle_home(b_call->nh), 0));
+
+  TEST_S(repa->rp_call_id, repb->rp_call_id);
+
+  TEST_1(!nua_handle_by_replaces(a->nua, repa));
+  TEST_1(!nua_handle_by_replaces(b->nua, repb));
+
+  TEST_1(nh = nua_handle_by_replaces(a->nua, repb));
+  TEST_P(nh, a_call->nh);
+  nua_handle_unref(nh);
+
+  TEST_1(nh = nua_handle_by_replaces(b->nua, repa));
+  TEST_P(nh, b_call->nh);
+  nua_handle_unref(nh);
+
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
      CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
@@ -243,13 +265,13 @@ int test_basic_call_1(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip->sip_payload);
   TEST_1(sip = sip_object(e->data->e_msg));
+  /* Test that B uses application-specific contact */
+  if (ctx->proxy_tests)
+    TEST_1(sip->sip_contact->m_url->url_user);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
   TEST_1(!e->next);
   free_events_in_list(ctx, a->events);
-
-  TEST_1(nua_handle_has_active_call(a_call->nh));
-  TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
 
   /*
    Server transitions:
@@ -278,25 +300,6 @@ int test_basic_call_1(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
   TEST_1(!e->next);
   free_events_in_list(ctx, b->events);
-
-  TEST_1(nua_handle_has_active_call(b_call->nh));
-  TEST_1(!nua_handle_has_call_on_hold(b_call->nh));
-
-  TEST_1(repa = nua_handle_make_replaces(a_call->nh, nua_handle_home(a_call->nh), 0));
-  TEST_1(repb = nua_handle_make_replaces(b_call->nh, nua_handle_home(b_call->nh), 0));
-
-  TEST_S(repa->rp_call_id, repb->rp_call_id);
-
-  TEST_1(!nua_handle_by_replaces(a->nua, repa));
-  TEST_1(!nua_handle_by_replaces(b->nua, repb));
-
-  TEST_1(nh = nua_handle_by_replaces(a->nua, repb));
-  TEST_P(nh, a_call->nh);
-  nua_handle_unref(nh);
-
-  TEST_1(nh = nua_handle_by_replaces(b->nua, repa));
-  TEST_P(nh, b_call->nh);
-  nua_handle_unref(nh);
 
   BYE(b, b_call, b_call->nh, TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, until_terminated);
@@ -391,13 +394,15 @@ int test_basic_call_2(struct context *ctx)
   a_call->sdp = "m=audio 5008 RTP/AVP 8";
   b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
 
-  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, 
+				 SIPTAG_TO_STR("<sip:b@x.org>"),
+				 TAG_END()));
 
   TEST_1(!nua_handle_has_active_call(a_call->nh));
   TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
 
   INVITE(a, a_call, a_call->nh,
-	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	 NUTAG_URL(b->contact->m_url),
 	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
@@ -422,6 +427,9 @@ int test_basic_call_2(struct context *ctx)
   TEST_1(sip->sip_content_type); 
   TEST_S(sip->sip_content_type->c_type, "application/sdp");
   TEST_1(sip->sip_payload);	/* there is sdp in 200 OK */
+  TEST_1(sip->sip_contact);
+  /* Test that B does not use application-specific contact */
+  TEST_1(!sip->sip_contact->m_url->url_user);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
   TEST_1(!is_answer_recv(e->data->e_tags)); /* but it is ignored */

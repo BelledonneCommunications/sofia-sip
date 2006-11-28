@@ -1368,8 +1368,11 @@ nua_registration_t *nua_registration_by_aor(nua_registration_t const *list,
       if (!namewise && alt_aor && url_cmp(nr->nr_aor->a_url, aor->a_url) == 0)
 	namewise = nr;
     }
-    if (!sipswise && ((sips_aor || sips_uri) ? nr->nr_secure : !nr->nr_secure))
-      sipswise = nr;
+    else {
+      if (!sipswise && ((sips_aor || sips_uri) ? 
+			nr->nr_secure : !nr->nr_secure))
+	sipswise = nr;
+    }
     if (!public && nr->nr_public)
       public = nr;
     if (!any)
