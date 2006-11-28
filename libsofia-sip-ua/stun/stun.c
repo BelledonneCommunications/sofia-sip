@@ -341,6 +341,8 @@ static int stun_send_binding_request(stun_request_t *req,
 			      su_sockaddr_t *srvr_addr);
 static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg);
 
+static int get_localinfo(int family, su_sockaddr_t *su, socklen_t *return_len);
+
 /* timers */
 static void stun_sendto_timer_cb(su_root_magic_t *magic, 
 				 su_timer_t *t,
@@ -752,7 +754,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   /* su_localinfo_t clientinfo[1]; */
   su_sockaddr_t su[1];
   socklen_t sulen;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  char addr[SU_ADDRSIZE];
   int err;
   
   su_wait_t wait[1] = { SU_WAIT_INIT };
@@ -793,13 +795,12 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
     su->su_family = AF_INET;
 
 #if defined (__CYGWIN__)
-    get_localinfo(su, &sulen);
+    get_localinfo(AF_INET, su, &sulen);
 #endif
 
     if ((err = bind(s, &su->su_sa, sulen)) < 0) {
       SU_DEBUG_3(("%s: bind(%s:%u): %s\n",  __func__, 
-		  inet_ntop(su->su_family, SU_ADDR(su), 
-			    ipaddr, sizeof(ipaddr)),
+		  inet_ntop(su->su_family, SU_ADDR(su), addr, sizeof(addr)),
 		  (unsigned) ntohs(su->su_port),
 		  su_strerror(su_errno())));
       return -1;
@@ -813,8 +814,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   memcpy(&sd->sd_bind_addr, su, sulen);
 
   SU_DEBUG_3(("%s: local socket is bound to %s:%u\n", __func__,
-	      inet_ntop(su->su_family, SU_ADDR(su), 
-			ipaddr, sizeof(ipaddr)),
+	      inet_ntop(su->su_family, SU_ADDR(su), addr, sizeof(addr)),
 	      (unsigned) ntohs(su->su_port)));
 
   events = SU_WAIT_IN | SU_WAIT_ERR;
@@ -840,30 +840,28 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
  * Helper function needed by Cygwin builds.
  */
 #if defined (__CYGWIN__)
-static int get_localinfo(su_sockaddr_t *su, socklen_t sulen)
+static int get_localinfo(int family, su_sockaddr_t *su, socklen_t *return_len)
 {
   su_localinfo_t hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
-  su_sockaddr_t *sa;
   int i, error;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  char addr[SU_ADDRSIZE];
 
-  hints->li_family = AF_INET;
+  hints->li_family = family;
 
   if ((error = su_getlocalinfo(hints, &res)) == 0) {
     /* try to bind to the first available address */
     for (i = 0, li = res; li; li = li->li_next) {
-      if (li->li_family != AF_INET)
+      if (li->li_family != family)
 	continue;
-      
-      clientinfo->li_family = li->li_family;
-      clientinfo->li_addrlen = li->li_addrlen;
-      
-      sa = clientinfo->li_addr;
-      memcpy(sa, li->li_addr, sizeof(su_sockaddr_t));
-      SU_DEBUG_3(("%s: local address found to be %s.\n",
-		  __func__, 
-		  inet_ntop(clientinfo->li_family, SU_ADDR(sa),
-			    ipaddr, sizeof(ipaddr))));
+      if (li->li_scope == LI_SCOPE_HOST)
+	continue;
+
+      assert(*return_len >= li->li_addrlen);
+
+      memcpy(su, li->li_addr, *return_len = li->li_addrlen);
+
+      SU_DEBUG_3(("%s: using local address %s\n", __func__, 
+		  inet_ntop(family, SU_ADDR(su), addr, sizeof(addr))));
       break;
     }
 
@@ -1654,7 +1652,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
   stun_handle_t *self = sd->sd_handle;
 
   int retval = -1, err = -1, dgram_len;
-  char ipaddr[SU_ADDRSIZE + 2];
+  char addr[SU_ADDRSIZE];
   stun_msg_t binding_response, *msg;
   unsigned char dgram[512] = { 0 };
   su_sockaddr_t recv;
@@ -1700,7 +1698,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   
   SU_DEBUG_5(("%s: response from server %s:%u\n", __func__,
-	      inet_ntop(recv.su_family, SU_ADDR(&recv), ipaddr, sizeof(ipaddr)),
+	      inet_ntop(recv.su_family, SU_ADDR(&recv), addr, sizeof(addr)),
 	      ntohs(recv.su_port)));
 
   debug_print(&binding_response.enc_buf);      
@@ -2012,46 +2010,39 @@ static int action_bind(stun_request_t *req, stun_msg_t *binding_response)
 
 /**
  * Returns a non-zero value if some local interface address
- * matches 'sockaddr'.
+ * matches address in su.
  */
-static int priv_find_matching_localadress(su_sockaddr_t *sockaddr)
+static int priv_find_matching_localadress(su_sockaddr_t *su)
 {
-  su_localinfo_t  hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
-  int i, error, found = 0;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  su_localinfo_t hints[1] = {{ LI_CANONNAME | LI_NUMERIC }}, *li, *res = NULL;
+  int af;
+  char addr[SU_ADDRSIZE];
 
-  SU_DEBUG_5(("%s: checking if %s is a local address.\n",
-	      __func__, 
-	      inet_ntop(AF_INET, SU_ADDR(sockaddr),
-			ipaddr, sizeof(ipaddr))));
+  SU_DEBUG_5(("%s: checking if %s is a local address.\n", __func__, 
+	      inet_ntop(AF_INET, SU_ADDR(su), addr, sizeof(addr))));
 
-  hints->li_family = AF_INET;
-  if ((error = su_getlocalinfo(hints, &res)) == 0) {
-    
-    /* check if any of the address match 'sockaddr'  */
-    for (i = 0, li = res; li; li = li->li_next) {
-      if (li->li_family != AF_INET)
-	continue;
+  hints->li_family = af = su->su_family;
+
+  if (su_getlocalinfo(hints, &res) != 0)
+    return 0;
+
+  /* check if any of the address match 'sockaddr'  */
+  for (li = res; li; li = li->li_next) {
+    if (li->li_family != af)
+      continue;
       
-      if (memcmp(SU_ADDR(sockaddr), SU_ADDR(li->li_addr), SU_ADDRLEN(sockaddr)) == 0
-) {
-	SU_DEBUG_5(("%s: found matching local address %s.\n",
-		    __func__, 
-		    inet_ntop(li->li_family, SU_ADDR(li->li_addr),
-			      ipaddr, sizeof(ipaddr))));
-	found = 1;
-	break;
-      }
-      else {
-	SU_DEBUG_9(("%s: skipping local address %s.\n",
-		    __func__, 
-		    inet_ntop(li->li_family, SU_ADDR(li->li_addr),
-			      ipaddr, sizeof(ipaddr))));
-      }
+    if (memcmp(SU_ADDR(su), SU_ADDR(li->li_addr), SU_ADDRLEN(su)) == 0) {
+      SU_DEBUG_5(("%s: found matching local address\n", __func__));
+      break;
     }
+
+    SU_DEBUG_9(("%s: skipping local address %s.\n", __func__, 
+		inet_ntop(af, SU_ADDR(li->li_addr), addr, sizeof(addr))));
   }  
 
-  return found;
+  su_freelocalinfo(res);
+
+  return li != NULL;
 }
 
 /**
@@ -2690,7 +2681,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   ta_list ta;
   su_socket_t s = INVALID_SOCKET;
   int err, index = 0, s_reg = 0;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  char addr[SU_ADDRSIZE];
   char const *server = NULL;
   su_socket_t sockfdy;
   socklen_t y_len;
@@ -2741,7 +2732,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   /* ci = &req->sr_localinfo; */
 
   /* get local ip address */
-  /* get_localinfo(ci); */
+  /* get_localinfo(); */
 
   /* initialize socket y */
   sockfdy = su_socket(AF_INET, SOCK_DGRAM, 0);
@@ -2771,7 +2762,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   }
 
   SU_DEBUG_3(("%s: socket y bound to %s:%u\n", __func__,
-	      inet_ntop(y_addr.su_family, SU_ADDR(&y_addr), ipaddr, sizeof(ipaddr)),
+	      inet_ntop(y_addr.su_family, SU_ADDR(&y_addr), addr, sizeof(addr)),
 	      (unsigned) ntohs(y_addr.su_port)));
 
   req->sr_from_y = -1;
@@ -2928,7 +2919,7 @@ int stun_keepalive(stun_handle_t *sh,
   stun_discovery_t *sd;
   stun_request_t *req;
   stun_action_t action = stun_action_keepalive;
-  char ipaddr[SU_ADDRSIZE + 2] = { 0 };
+  char addr[SU_ADDRSIZE];
 
   enter;
 
@@ -2959,8 +2950,7 @@ int stun_keepalive(stun_handle_t *sh,
   req = stun_request_create(sd);
 
   SU_DEBUG_3(("%s: Starting to send STUN keepalives to %s:%u\n", __func__, 
-	      inet_ntop(sa->su_family, SU_ADDR(sa), 
-			ipaddr, sizeof(ipaddr)),
+	      inet_ntop(sa->su_family, SU_ADDR(sa), addr, sizeof(addr)),
 	      (unsigned) ntohs(sa->su_port)));
   
   if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0 ||
