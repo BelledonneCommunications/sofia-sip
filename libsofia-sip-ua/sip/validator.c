@@ -86,7 +86,7 @@ typedef struct {
 } options_t;
 
 typedef struct {
-  uint32_t N;
+  size_t N;
   uint32_t bsize;
   double buckets[32768];
 } histogram_t;
@@ -94,7 +94,7 @@ typedef struct {
 static
 histogram_t *histogram_create(uint64_t max, uint32_t bsize)
 {
-  uint32_t N = (max + bsize - 1) / bsize;
+  size_t N = (max + bsize - 1) / bsize;
   histogram_t *h = calloc(1, offsetof(histogram_t, buckets[N + 1]));
   if (!h) { perror("calloc"); exit(1); }
   h->N = N, h->bsize = bsize;
@@ -116,7 +116,7 @@ double *histogram_update(histogram_t *h, uint32_t n)
 static void
 histogram_div(histogram_t *h, histogram_t const *n)
 {
-  uint32_t i;
+  size_t i;
   assert(h->N == n->N); assert(h->bsize == n->bsize);
   
   for (i = 0; i <= h->N; i++) {
@@ -332,7 +332,7 @@ int search_msg(char **bb, char const *protocol)
 
 int validate_dump(char *b, off_t size, context_t *ctx)
 {
-  int n = 0, N = 0;
+  size_t n = 0, N = 0;
   struct message { 
     char *b;
     int   size;
@@ -520,7 +520,7 @@ void sipstats(msg_t *msg, uint32_t msize, sipstats_t *ss, context_t *ctx)
   sip_t const *sip = sip_object(msg);
   msg_header_t *h;
   sipstat_t *sss;
-  uint32_t n, bytes;
+  size_t n, bytes;
 
   if (!sip)
     return;
@@ -545,7 +545,7 @@ void sipstats(msg_t *msg, uint32_t msize, sipstats_t *ss, context_t *ctx)
 
   sss->headers += n;
 
-  bytes = sip->sip_payload ? sip->sip_payload->pl_len : 0;
+  bytes = sip->sip_payload ? (size_t)sip->sip_payload->pl_len : 0;
 
   if (bytes) {
     sss->payloads++;
@@ -564,7 +564,7 @@ void sipstats(msg_t *msg, uint32_t msize, sipstats_t *ss, context_t *ctx)
 
 void report_histogram(char const *title, histogram_t const *h)
 {
-  int i, min_i, max_i;
+  size_t i, min_i, max_i;
 
   for (i = 0; i < h->N && h->buckets[i] == 0.0; i++)
     ;

@@ -696,7 +696,7 @@ tport_test_run(tp_test_t *tt, unsigned timeout)
     su_root_step(tt->tt_root, 500L);
 
     if (!getenv("TPORT_TEST_DEBUG") && 
-	time(NULL) > now + timeout)
+	time(NULL) > (time_t)(now + timeout))
       return 0;
   }
 

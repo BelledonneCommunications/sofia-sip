@@ -1197,7 +1197,7 @@ static int test_http_encoding(void)
   http_t *http;
   su_home_t *home;
   char b[160];
-  int n;
+  size_t n;
 
   BEGIN();
 

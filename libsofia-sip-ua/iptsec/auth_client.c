@@ -810,7 +810,7 @@ int auc_register_plugin(auth_client_plugin_t const *plugin)
       plugin->auc_authorize == NULL)
     return errno = EFAULT, -1;
 
-  if (plugin->auc_size < sizeof (auth_client_t))
+  if (plugin->auc_size < (int) sizeof (auth_client_t))
     return errno = EINVAL, -1;
 
   for (i = 0; i < MAX_AUC; i++) {
@@ -847,7 +847,7 @@ auth_client_t *ca_create(su_home_t *home,
       break;
   }
 
-  aucsize = auc ? auc->auc_size : (sizeof *ca);
+  aucsize = auc ? (size_t)auc->auc_size : (sizeof *ca);
   size = aucsize + realmlen;
   if (!auc)
     size += strlen(scheme) + 1;

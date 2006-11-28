@@ -179,11 +179,11 @@ su_inline tag_value_t tag_uint_vr(unsigned *vp) { return (tag_value_t)vp; }
 su_inline tag_value_t tag_bool_v(int v) { return v != 0; }
 su_inline tag_value_t tag_bool_vr(int *vp) { return (tag_value_t)vp; }
 su_inline tag_value_t tag_ptr_v(void *v) { return (tag_value_t)v; }
-su_inline tag_value_t tag_ptr_vr(void *vp,
-				 void *v) {return(tag_value_t)vp;}
+su_inline tag_value_t tag_ptr_vr(void *vp, void *v)
+  { (void)v; return(tag_value_t)vp; }
 su_inline tag_value_t tag_cptr_v(void const *v) { return (tag_value_t)v; }
-su_inline tag_value_t tag_cptr_vr(void *vp,
-				  void const *v) {return(tag_value_t)vp;}
+su_inline tag_value_t tag_cptr_vr(void *vp, void const *v) 
+  { (void)v; return(tag_value_t)vp; }
 su_inline tag_value_t tag_cstr_v(char const *v) { return (tag_value_t)v; }
 su_inline tag_value_t tag_cstr_vr(char const**vp) {return(tag_value_t)vp;}
 su_inline tag_value_t tag_str_v(char const *v) { return (tag_value_t)v; }

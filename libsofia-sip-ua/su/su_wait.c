@@ -239,9 +239,10 @@ int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout)
       return SU_WAIT_TIMEOUT;
 
     if (i > 0) {
-      for (i = 0; i < n; i++) {
-	if (waits[i].revents)
-	  return i;
+      unsigned j;
+      for (j = 0; j < n; j++) {
+	if (waits[j].revents)
+	  return j;
       }
     }
   

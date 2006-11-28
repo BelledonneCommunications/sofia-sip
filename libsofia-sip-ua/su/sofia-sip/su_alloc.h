@@ -60,7 +60,7 @@ struct su_home_s {
   su_alock_t *suh_lock;
 };
 
-#define SU_HOME_INIT(obj) { 0 }
+#define SU_HOME_INIT(obj) { 0, NULL, NULL }
 
 SU_DLL void *su_home_new(isize_t size)
      __attribute__((__malloc__));

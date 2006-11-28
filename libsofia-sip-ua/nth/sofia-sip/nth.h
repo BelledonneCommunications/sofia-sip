@@ -170,7 +170,7 @@ NTH_DLL void nth_site_bind(nth_site_t *site,
 			   nth_request_f *callback, 
 			   nth_site_magic_t *);
 
-NTH_DLL su_time_t const nth_site_access_time(nth_site_t const *site);
+NTH_DLL su_time_t nth_site_access_time(nth_site_t const *site);
 
 NTH_DLL int nth_site_set_params(nth_site_t *site, 
 				tag_type_t tag, tag_value_t value, ...);

@@ -485,7 +485,7 @@ char const *nth_site_server_version(void)
 }
 
 /** Get the time last time served. */
-su_time_t const nth_site_access_time(nth_site_t const *site)
+su_time_t nth_site_access_time(nth_site_t const *site)
 {
   su_time_t const never = { 0, 0 };
 
