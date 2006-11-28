@@ -174,6 +174,8 @@ SOFIAPUBFUN void auth_mod_destroy(auth_mod_t *);
 SOFIAPUBFUN auth_mod_t *auth_mod_ref(auth_mod_t *am);
 SOFIAPUBFUN void auth_mod_unref(auth_mod_t *am);
 
+SOFIAPUBFUN char const *auth_mod_name(auth_mod_t *am);
+
 SOFIAPUBFUN auth_status_t *auth_status_init(void *, isize_t size);
 SOFIAPUBFUN auth_status_t *auth_status_init_with(void *, isize_t size,
 						 int status,

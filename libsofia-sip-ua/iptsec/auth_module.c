@@ -278,6 +278,11 @@ void auth_mod_unref(auth_mod_t *am)
   auth_mod_destroy(am);
 }
 
+/** Get authenticatin module name */
+char const *auth_mod_name(auth_mod_t *am)
+{
+  return am ? am->am_scheme->asch_method : "<nil>";
+}
 
 /** Initialize a auth_status_t stucture.
  *
