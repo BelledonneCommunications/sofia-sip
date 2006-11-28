@@ -3122,7 +3122,8 @@ int tport_prepare_and_send(tport_t *self, msg_t *msg,
 
 /** Send a message.
  *
- * 
+ * @retval 0 when succesful
+ * @retval -1 upon an error
  */
 int tport_send_msg(tport_t *self, msg_t *msg, 
 		   tp_name_t const *tpn, 
@@ -3130,7 +3131,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 {
   msg_iovec_t *iov, auto_iov[40];
   size_t iovlen, iovused, i, total;
-  ssize_t n;
+  size_t n;
   ssize_t nerror;
   int sdwn_after, close_after;
   su_time_t now;
@@ -3188,7 +3189,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 	iov[i].mv_len -= (su_ioveclen_t)(n - total);
 	iov[i].mv_base = (char *)iov[i].mv_base + (n - total);
 	if (tport_queue_rest(self, msg, &iov[i], iovused - i) >= 0)
-	  return n;
+	  return 0;
       }
       else {
 	char const *comp = tpn->tpn_comp;
@@ -3217,7 +3218,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
   if (close_after || sdwn_after)
     tport_shutdown(self, close_after ? 2 : 1);
 
-  return n;
+  return 0;
 }
 
 static 
