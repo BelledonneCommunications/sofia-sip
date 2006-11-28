@@ -174,10 +174,18 @@ int test_register_to_proxy(struct context *ctx)
 
   TEST_1(b_reg->nh = nua_handle(b->nua, b_reg, TAG_END()));
 
-  REGISTER(b, b_reg, b_reg->nh, SIPTAG_TO(b->to), 
-	   NUTAG_M_DISPLAY("B"),
-	   NUTAG_M_USERNAME("b"),
-	   TAG_END());
+  /* Test application-supplied contact */
+  {
+    sip_contact_t m[1];
+    sip_contact_init(m)->m_url[0] = b->contact->m_url[0];
+
+    m->m_display = "B";
+    m->m_url->url_user = "b";
+
+    REGISTER(b, b_reg, b_reg->nh, SIPTAG_TO(b->to), 
+	     SIPTAG_CONTACT(m),
+	     TAG_END());
+  }
   run_ab_until(ctx, -1, save_events, -1, save_until_final_response);
 
   TEST_1(e = b->events->head);

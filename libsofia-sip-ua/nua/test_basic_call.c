@@ -221,22 +221,6 @@ int test_basic_call_1(struct context *ctx)
 
   run_ab_until(ctx, -1, until_ready, -1, accept_call_with_early_sdp);
 
-  TEST_1(repa = nua_handle_make_replaces(a_call->nh, nua_handle_home(a_call->nh), 0));
-  TEST_1(repb = nua_handle_make_replaces(b_call->nh, nua_handle_home(b_call->nh), 0));
-
-  TEST_S(repa->rp_call_id, repb->rp_call_id);
-
-  TEST_1(!nua_handle_by_replaces(a->nua, repa));
-  TEST_1(!nua_handle_by_replaces(b->nua, repb));
-
-  TEST_1(nh = nua_handle_by_replaces(a->nua, repb));
-  TEST_P(nh, a_call->nh);
-  nua_handle_unref(nh);
-
-  TEST_1(nh = nua_handle_by_replaces(b->nua, repa));
-  TEST_P(nh, b_call->nh);
-  nua_handle_unref(nh);
-
   /* Client transitions:
      INIT -(C1)-> CALLING: nua_invite(), nua_i_state
      CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
@@ -297,6 +281,22 @@ int test_basic_call_1(struct context *ctx)
 
   TEST_1(nua_handle_has_active_call(b_call->nh));
   TEST_1(!nua_handle_has_call_on_hold(b_call->nh));
+
+  TEST_1(repa = nua_handle_make_replaces(a_call->nh, nua_handle_home(a_call->nh), 0));
+  TEST_1(repb = nua_handle_make_replaces(b_call->nh, nua_handle_home(b_call->nh), 0));
+
+  TEST_S(repa->rp_call_id, repb->rp_call_id);
+
+  TEST_1(!nua_handle_by_replaces(a->nua, repa));
+  TEST_1(!nua_handle_by_replaces(b->nua, repb));
+
+  TEST_1(nh = nua_handle_by_replaces(a->nua, repb));
+  TEST_P(nh, a_call->nh);
+  nua_handle_unref(nh);
+
+  TEST_1(nh = nua_handle_by_replaces(b->nua, repa));
+  TEST_P(nh, b_call->nh);
+  nua_handle_unref(nh);
 
   BYE(b, b_call, b_call->nh, TAG_END());
   run_ab_until(ctx, -1, until_terminated, -1, until_terminated);

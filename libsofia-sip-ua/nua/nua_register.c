@@ -583,23 +583,21 @@ nua_stack_register(nua_t *nua, nua_handle_t *nh, nua_event_t e,
       goto error;
   }
 
-  if (du->du_msg == NULL)
-    du->du_msg = msg_ref_create(cr->cr_msg); /* Save original message */
-
   if (terminating)
     /* Add Expires: 0 and remove the expire parameters from contacts */
     unregister_expires_contacts(msg, sip);
 
-  if (nua_tagis_have_contact_tag(tags) ||
-      nua_tagis_have_contact_tag(nh->nh_tags)) {
-    if (!sip->sip_contact)
-      terminating = 1;
+  if (!sip->sip_contact && cr->cr_has_contact) {
+    terminating = 1;
   }
   else if (nua_registration_set_contact(nh, nr, sip->sip_contact, terminating)
 	   < 0)
     goto error;
 
   du->du_terminating = terminating;
+
+  if (du->du_msg == NULL && !terminating)
+    du->du_msg = msg_ref_create(cr->cr_msg); /* Save original message */
 
   ob = nr->nr_ob;
   
@@ -1362,7 +1360,7 @@ nua_registration_t *nua_registration_by_aor(nua_registration_t const *list,
     alt_aor = memcpy(_alt_aor, aor, sizeof _alt_aor);
 
   for (nr = list; nr; nr = nr->nr_next) {
-    if (!nr->nr_ready)
+    if (!nr->nr_ready || !nr->nr_contact)
       continue;
     if (nr->nr_aor) {
       if (aor && url_cmp(nr->nr_aor->a_url, aor->a_url) == 0)
@@ -1414,6 +1412,7 @@ nua_registration_for_response(nua_registration_t const *list,
 			      sip_record_route_t const *record_route,
 			      sip_contact_t const *remote_contact)
 {
+  nua_registration_t *nr;
   sip_to_t const *aor = NULL;
   url_t const *uri = NULL;
 
@@ -1429,7 +1428,9 @@ nua_registration_for_response(nua_registration_t const *list,
   else if (sip && sip->sip_from)
     uri = sip->sip_from->a_url;
 
-  return nua_registration_by_aor(list, aor, uri, 0);
+  nr = nua_registration_by_aor(list, aor, uri, 0);
+
+  return nr;
 }
 
 
@@ -1479,7 +1480,8 @@ int nua_registration_add_contact_to_request(nua_handle_t *nh,
     nr = nua_registration_for_request(nh->nh_nua->nua_registrations, sip);
 
   return nua_registration_add_contact_and_route(nr, msg, sip, 
-						add_contact, add_service_route);
+						add_contact, 
+						add_service_route);
 }
 
 /** Add a Contact header to response.
@@ -1634,6 +1636,7 @@ int nua_registration_set_contact(nua_handle_t *nh,
 /** Mark registration as ready */
 void nua_registration_set_ready(nua_registration_t *nr, int ready)
 {
+  assert(!ready || nr->nr_contact);
   nr->nr_ready = ready;
 }
 

@@ -120,6 +120,8 @@ struct nua_client_request
 
   unsigned            cr_offer_recv:1;  /**< Recv offer in a response */
   unsigned            cr_answer_sent:1; /**< Sent answer in (PR)ACK */
+
+  unsigned            cr_has_contact:1; /**< Request has application contact */
 };
 
 

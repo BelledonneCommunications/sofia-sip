@@ -1084,6 +1084,9 @@ msg_t *nua_creq_msg(nua_t *nua,
 	add_contact = t->t_value != 0;
     }
 
+    if (!restart)
+      cr->cr_has_contact = has_contact;
+
     if (has_contact) add_contact = 0;
 
     if (method == sip_method_register && url == NULL)
