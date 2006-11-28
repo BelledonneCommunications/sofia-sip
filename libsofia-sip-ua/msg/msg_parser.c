@@ -2662,7 +2662,7 @@ int msg_header_add_make(msg_t *msg,
  *
  * @param msg  message object
  * @param pub  message header structure where heades are added (may be NULL)
- * @param s    string to be copied and parsed (not modified, may be NULL)
+ * @param str  string to be copied and parsed (not modified, may be NULL)
  *
  * @retval 0 when succesful
  * @retval -1 upon an error

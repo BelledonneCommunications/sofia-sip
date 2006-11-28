@@ -1132,7 +1132,7 @@ char const *msg_header_find_item(msg_common_t const *h, char const *item)
  *
  * @param home      memory home used to re-allocate list in header
  * @param h         pointer to a header
- * @param param     item to be removed
+ * @param item      item to be removed
  *
  * @retval 0 if item was added
  * @retval 1 if item was replaced
@@ -1161,8 +1161,8 @@ int msg_header_replace_item(su_home_t *home,
  *
  * The shortcuts, if any, to item values are updated accordingly.
  *
- * @param h         pointer to a header
- * @param param     item to be removed
+ * @param h        pointer to a header
+ * @param name     item to be removed
  *
  * @retval 0 if item was added
  * @retval 1 if item was replaced

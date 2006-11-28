@@ -4,6 +4,7 @@ OUTPUT_DIRECTORY     = ../docs/html/msg
 INPUT 		     = msg.docs . sofia-sip
 
 @INCLUDE = ../docs/Doxyfile.conf
+@INCLUDE = ../sip/sip.doxyaliases
 
 TAGFILES             += ../docs/ipt.doxytags=../ipt  \
 			../docs/su.doxytags=../su    \
