@@ -1666,43 +1666,6 @@ SOFIAPUBVAR tag_typedef_t nutag_allow;
 SOFIAPUBVAR tag_typedef_t nutag_allow_ref;
 
 
-/** Indicate that a method (or methods) are handled by application.
- *
- * This tag is used to add a new method to the already existing set of
- * methods handled by application, or clear the set. If you want to
- * determine the set explicitly, include NUTAG_APPL_METHOD() twice,
- * first with NULL and then with your supported set.
- *
- * The default set of application methods now include INVITE, REGISTER,
- * PUBLISH and SUBSCRIBE.
- *
- * If the request method is in the set of methods handled by application,
- * the nua stack does not automatically respond to the incoming request nor
- * it will automatically send such a request. Note if the application adds
- * the PRACK and UPDATE requests to the set of application methods it must
- * also take care for sending the PRACK and UPDATE requests during the call
- * setup when necessary.
- *
- * @par Used with
- *    nua_set_params() \n
- *    nua_set_hparams() \n
- *    any handle-specific nua call
- *
- * @par Parameter type
- *    char const *
- *
- * @par Values
- *    Valid method name, or comma-separated list of them.
- *
- * Corresponding tag taking reference parameter is NUTAG_APPL_METHOD_REF()
- */
-#define NUTAG_APPL_METHOD(x)     nutag_appl_method, tag_str_v(x)
-SOFIAPUBVAR tag_typedef_t nutag_appl_method;
-
-#define NUTAG_APPL_METHOD_REF(x) nutag_appl_method_ref, tag_str_vr(&(x))
-SOFIAPUBVAR tag_typedef_t nutag_appl_method_ref;
-
-
 /** Support a feature.
  *
  * This tag is used to add a new feature to the existing set of supported
