@@ -217,6 +217,7 @@ int test_session_timer(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_session_expires);
+  TEST(sip->sip_session_expires->x_delta, 120);
   TEST_S(sip->sip_session_expires->x_refresher, "uac");
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
@@ -266,6 +267,7 @@ int test_session_timer(struct context *ctx)
   if (!e->next)
     run_b_until(ctx, -1, until_ready);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_update);
+  TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_session_expires);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
