@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include <sofia-sip/su_types.h>
 
