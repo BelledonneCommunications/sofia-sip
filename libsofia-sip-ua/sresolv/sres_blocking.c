@@ -267,7 +267,7 @@ int sres_is_blocking(sres_resolver_t *res)
  * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
  * @ERROR ENETDOWN no DNS servers configured
  * @ERROR ENOMEM memory exhausted
- * @ERROR EOPNOTSUPP  resolver @ares is in asynchronous mode 
+ * @ERROR EOPNOTSUPP  resolver @a res is in asynchronous mode 
  *
  * @sa sres_query(), sres_blocking_search()
  *
@@ -331,7 +331,7 @@ int sres_blocking_query(sres_resolver_t *res,
  * @ERROR ENAMETOOLONG @a domain is longer than SRES_MAXDNAME
  * @ERROR ENETDOWN no DNS servers configured
  * @ERROR ENOMEM memory exhausted
- * @ERROR EOPNOTSUPP  resolver @ares is in asynchronous mode 
+ * @ERROR EOPNOTSUPP  resolver @a res is in asynchronous mode 
  *
  * @sa sres_blocking_query(), sres_search()
  *
@@ -389,7 +389,7 @@ int sres_blocking_search(sres_resolver_t *res,
  * @ERROR EFAULT @a res or @a addr point outside the address space
  * @ERROR ENOMEM memory exhausted
  * @ERROR ENETDOWN no DNS servers configured
- * @ERROR EOPNOTSUPP  resolver @ares is in asynchronous mode 
+ * @ERROR EOPNOTSUPP  resolver @a res is in asynchronous mode 
  *
  * @sa sres_blocking_query(), sres_query_sockaddr(), sres_cached_answers_sockaddr()
  *

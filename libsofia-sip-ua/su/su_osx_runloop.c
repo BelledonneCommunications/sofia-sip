@@ -1389,13 +1389,14 @@ int su_port_osx_threadsafe(su_port_t *port)
 }
 
 /** Prepare root to be run on OSX Run Loop.
- * The function @c su_root_osx_prepare_run() sets @c su_root_t
- * object to be callable by the application's run loop. This
- * function is to be used instead of @c su_root_run() for OSX
- * applications using Core Foundation's Run Loop.
- * The function @c su_root_osx_prepare_run() returns immmediately.
+ *
+ * Sets #su_root_t object to be callable by the application's run loop. This
+ * function is to be used instead of su_root_run() for OSX applications
+ * using Core Foundation's Run Loop.
+ *
+ * The function su_root_osx_prepare_run() returns immmediately.
  * 
- * @param self     pointer to root object
+ * @param root     pointer to root object
  * 
  */
 void su_root_osx_prepare_run(su_root_t *root)
