@@ -152,8 +152,9 @@ typedef enum nua_event_e {
 
   /* NOTE: Post 1.12 release events come here (below) to keep ABI
      compatibility! */
-  nua_i_network_changed,        /**< Local IP(v6) address has changed */
-  nua_i_register,		/**< Incoming REGISTER */
+  nua_i_network_changed,        /**< Local IP(v6) address has changed. 
+				   @NEW_1_12_2 */
+  nua_i_register,		/**< Incoming REGISTER. @NEW_1_12_4. */
 } nua_event_t;
 
 typedef struct event_s {

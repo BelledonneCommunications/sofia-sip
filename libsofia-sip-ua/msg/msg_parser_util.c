@@ -1138,7 +1138,7 @@ char const *msg_header_find_item(msg_common_t const *h, char const *item)
  * @retval 1 if item was replaced
  * @retval -1 upon an error
  *
- * @since New in @VERSION_1_12_4
+ * @since New in @VERSION_1_12_4.
  *
  * @sa msg_header_remove_item(), @Allow, @AllowEvents,
  * msg_header_replace_param(), msg_header_remove_param(), 
@@ -1168,7 +1168,7 @@ int msg_header_replace_item(su_home_t *home,
  * @retval 1 if item was replaced
  * @retval -1 upon an error
  *
- * @since New in @VERSION_1_12_4
+ * @since New in @VERSION_1_12_4.
  *
  * @sa msg_header_replace_item(), @Allow, @AllowEvents,
  * msg_header_replace_param(), msg_header_remove_param(), 

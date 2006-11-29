@@ -264,6 +264,8 @@ char *url_escape(char *d, char const *s, char const reserved[])
  * @param n  maximum number of characters to unescape
  *
  * @return Length of unescaped string
+ *
+ * @NEW_1_12_4.
  */
 size_t url_unescape_to(char *d, char const *s, size_t n)
 {

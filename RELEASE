@@ -22,12 +22,11 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - Added sdp_media_red, sdp_proto_udptl.
-- Added host_cmp() for comparing host names or IP addresses in numeric
-  format.
 - Added auth_mod_name() to <sofia-sip/auth_module.c>
 - Added msg_make() and msg_as_string() to <sofia-sip/msg.h>
 - Added SU_TIME_EPOCH to <sofia-sip/su_time.h>
-- Added host_cmp() to <sofia-sip/hostdomain.h>
+- Added host_cmp() for comparing host names or IP addresses in numeric
+  format to <sofia-sip/hostdomain.h>
 - Added nua_method() and NUTAG_METHOD() to <sofia-sip/nua.h>
 - Added nth_request_auth(), NTHTAG_AUTH_MODULE(), nth_site_url(), and
   nth_site_access_time() to <sofia-sip/nth.h>
@@ -37,7 +36,7 @@ libsofia-sip-ua:
   msg_header_remove_item()
   (handling Allow and Allow-Events headers)
 - Added function msg_parse_next_field() for parsing headers with
-   multiple fields
+  multiple fields
 - Added functions for handling SIP headers encoded in SIP URL:
   sip_headers_as_url_query(), sip_url_query_as_taglist(),
   url_query_as_header_string(), url_unescape_to(),
@@ -47,11 +46,12 @@ libsofia-sip-ua:
 - Added NUTAG_INCLUDE_EXTRA_SDP()
 - Added nua_handle_by_replaces(), nua_handle_make_replaces(),
   nua_handle_magic() and nua_magic() functions
-- Added Refer-Sub header 
 - Added nua_i_register event for incoming REGISTER requests (nua.h)
-- Added NUTAG_WITH(), nutag_with, NUTAG_WITH_CURRENT(),
+- Added NUTAG_WITH(), nutag_with, NUTAG_WITH_THIS(),
   nua_current_request(), NUTAG_WITH_SAVED(), nua_saved_event_request()
   (nua_tag.h, nua.h)
+- Added <sofia-sip/su_osx_runloop.h>, su_root_osx_runloop_create() and
+  su_root_osx_prepare_run()
 - Added tport_is_closed() and tport_is_shutdown() to the public API.
 - This release is ABI/API compatible with applications linked against
   any 1.12.x release. However, applications built against this release won't 

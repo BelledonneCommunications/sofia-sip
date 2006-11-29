@@ -232,6 +232,8 @@ void nua_destroy(nua_t *nua)
  * @param nua         Pointer to @nua stack object
  *
  * @return Callback context pointer.
+ *
+ * @NEW_1_12_4.
  */
 nua_magic_t *nua_magic(nua_t *nua)
 {
@@ -344,6 +346,8 @@ void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *hmagic)
  *
  * @par Events:
  *     none
+ *
+ * @NEW_1_12_4.
  */
 nua_hmagic_t *nua_handle_magic(nua_handle_t *nh)
 {
@@ -1019,13 +1023,13 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   su_msg_destroy(nua->nua_current);
 }
 
-/** Get current request message. */
+/** Get current request message. @NEW_1_12_4. */
 msg_t *nua_current_request(nua_t const *nua)
 {
   return nua && nua->nua_current ? su_msg_data(nua->nua_current)->e_msg : NULL;
 }
 
-/** Get request message from saved nua event. */
+/** Get request message from saved nua event. @NEW_1_12_4. */
 msg_t *nua_saved_event_request(nua_saved_event_t const *saved)
 {
   return saved ? su_msg_data(saved)->e_msg : NULL;

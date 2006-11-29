@@ -1202,7 +1202,7 @@ msg_header_t *error_header_parse(msg_t *msg, msg_pub_t *mo,
  *             	 separating header fields)
  * @param slen 	 ignored
  *
- * @since New in @VERSION_1_12_4
+ * @since New in @VERSION_1_12_4.
  *
  * @retval >= 0 when successful
  * @retval -1 upon an error
@@ -2785,7 +2785,7 @@ int msg_header_add_str(msg_t *msg,
  *
  * @sa msg_header_add_str(), url_headers_as_string()
  * 
- * @since New in @VERSION_1_12_4
+ * @since New in @VERSION_1_12_4.
  */
 int msg_header_parse_str(msg_t *msg,
 			 msg_pub_t *pub,

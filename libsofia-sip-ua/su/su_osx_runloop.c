@@ -406,6 +406,8 @@ static void su_port_osx_destroy(su_port_t *self);
  * @param magic     pointer to user data
  *
  * @return A pointer to allocated su_root_t instance, NULL on error.
+ *
+ * @NEW_1_12_4.
  */
 su_root_t *su_root_osx_runloop_create(su_root_magic_t *magic)
 {
@@ -1398,6 +1400,7 @@ int su_port_osx_threadsafe(su_port_t *port)
  * 
  * @param root     pointer to root object
  * 
+ * @NEW_1_12_4.
  */
 void su_root_osx_prepare_run(su_root_t *root)
 {

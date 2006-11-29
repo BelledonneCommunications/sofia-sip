@@ -278,7 +278,7 @@ void auth_mod_unref(auth_mod_t *am)
   auth_mod_destroy(am);
 }
 
-/** Get authenticatin module name */
+/** Get authenticatin module name. @NEW_1_12_4. */
 char const *auth_mod_name(auth_mod_t *am)
 {
   return am ? am->am_scheme->asch_method : "<nil>";

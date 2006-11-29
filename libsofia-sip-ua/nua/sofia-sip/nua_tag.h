@@ -124,17 +124,54 @@ SOFIAPUBVAR tag_typedef_t nutag_address_ref;
 
 /**Specify request to respond to.
  *
+ * @par Used with
+ *    nua_respond()
+ *
  * @par Parameter type
  *    msg_t *
  *
  * @par Values
  *   Pointer to a request message.
+ *
+ * @NEW_1_12_4.
+ *
+ * @sa NUTAG_WITH_THIS(), NUTAG_WITH_SAVED()
  */
 #define NUTAG_WITH(x)         nutag_with, tag_ptr_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_with;
 
+/**Specify request to respond to.
+ *
+ * @par Used with
+ *    nua_respond()
+ *
+ * @par Parameter type
+ *    nua_t *
+ *
+ * @par Values
+ *   Pointer to the nua agent instance object.
+ *
+ * @NEW_1_12_4.
+ *
+ * @sa nua_save_event(), NUTAG_WITH(), NUTAG_WITH_SAVED()
+ */
 #define NUTAG_WITH_THIS(nua) nutag_with, tag_ptr_v(nua_current_request((nua)))
 
+/**Specify request to respond to.
+ *
+ * @par Used with
+ *    nua_respond()
+ *
+ * @par Parameter type
+ *    msg_t *
+ *
+ * @par Values
+ *   Pointer to a saved event.
+ *
+ * @NEW_1_12_4.
+ *
+ * @sa nua_save_event(), NUTAG_WITH(), NUTAG_WITH_THIS()
+ */
 #define NUTAG_WITH_SAVED(e) nutag_with, tag_ptr_v(nua_saved_event_request((e)))
 
 /**Set request retry count.
@@ -152,6 +189,8 @@ SOFIAPUBVAR tag_typedef_t nutag_with;
  *
  * @par Values
  *    @c 0   Never retry automatically \n
+ *
+ * @NEW_1_12_4.
  *
  * Corresponding tag taking reference parameter is NUTAG_RETRY_COUNT_REF()
  */
@@ -1724,6 +1763,8 @@ SOFIAPUBVAR tag_typedef_t nutag_supported_ref;
  * @sa @AllowEvents, @RFC3265, @RFC3903, #nua_i_subscribe, #nua_i_publish,
  * nua_subscribe(), nua_publish(), SIPTAG_ALLOW_EVENTS(),
  * SIPTAG_ALLOW_EVENTS_STR()
+ *
+ * @NEW_1_12_4.
  *
  * Corresponding tag taking reference parameter is NUTAG_ALLOW_EVENTS_REF()
  */

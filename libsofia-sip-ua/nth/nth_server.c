@@ -472,7 +472,7 @@ void nth_site_bind(nth_site_t *site,
 }
 
 
-/** Get the site URL. */
+/** Get the site URL. @NEW_1_12_4. */
 url_t const *nth_site_url(nth_site_t const *site)
 {
   return site ? site->site_url : NULL;
@@ -484,7 +484,7 @@ char const *nth_site_server_version(void)
   return "nth/" NTH_VERSION;
 }
 
-/** Get the time last time served. */
+/** Get the time last time served. @NEW_1_12_4. */
 su_time_t nth_site_access_time(nth_site_t const *site)
 {
   su_time_t const never = { 0, 0 };

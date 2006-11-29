@@ -378,6 +378,8 @@ char const *append_escaped(su_strlst_t *l,
  * sip_headers_as_url_query(), url_query_as_header_string(),
  * @RFC3261 section 19.1.1 "Headers", #url_t, url_s#url_headers
  *
+ * @NEW_1_12_4.
+ *
  * @bug Extension headers are ignored. The @a parser parameter is not used
  * at the moment.
  */

@@ -179,7 +179,7 @@ NTH_DLL extern tag_typedef_t nthtag_strict_host_ref;
 #define NTHTAG_STRICT_HOST_REF(x) nthtag_strict_host_ref, tag_bool_vr(&(x))
 
 NTH_DLL extern tag_typedef_t nthtag_auth_module;
-/** Pointer to authentication module. @HI */
+/** Pointer to authentication module. @HI. @NEW_1_12_4. */
 #define NTHTAG_AUTH_MODULE(x) nthtag_auth_module, tag_ptr_v((x))
 
 NTH_DLL extern tag_typedef_t nthtag_auth_module_ref;

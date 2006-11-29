@@ -28,12 +28,13 @@
 
 /**
  * @file sofia-sip/su_osx_runloop.h
- * @brief 
+ * @brief OSX Run Loop integration.
  * 
  * @author Martti Mela <Martti.Mela@nokia.com>
  *  
  * @date Created: Fri Sep 22 16:49:51 EEST 2006 mela
  * 
+ * @NEW_1_12_4.
  */
 
 #ifndef SU_WAIT_H
