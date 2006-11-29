@@ -75,8 +75,8 @@ libsofia-sip-ua-glib:
 Contributors to this release
 ----------------------------
 
-- Michael Jerris contributed nua_i_register code along with number of 
-  platform-specific fixes 
+- Michael Jerris contributed nua_i_register code along with a large number
+  of fixes
 - Steve Underwood contributed code detecting RED and UDPTL used for T.38 in
   SDP.
 
@@ -112,9 +112,9 @@ nua_method()/nua_r_method/nua_i_method and NUTAG_ALLOW().
 Bugs fixed in this release
 --------------------------
 
-- If there was an application-provided Contact no Contact was used 
-  when creating dialog. Thanks for Michael Jerris and Anthony Minessale for
-  reporting this bug.
+- No Contact was used when creating dialog if there was an 
+  application-provided Contact. Thanks for Michael Jerris and Anthony
+  Minessale for reporting this bug.
 - Portability problems in stun code fixed
   Thanks for Konstantin Belousov for reporting this bug.
 - Outbound now ignores Via rport parameter without value.
