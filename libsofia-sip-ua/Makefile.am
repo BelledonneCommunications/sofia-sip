@@ -78,8 +78,8 @@ doxygen: built-sources
 	  test -r $$d/Doxyfile \
 	  && pushd $$d > /dev/null \
 	  && echo running ${DOXYGEN} first time in $$d \
-          && ${DOXYGEN} | fgrep -v -e resolve \
-	  | fgrep -v -e 'Warning: Unsupported xml/html tag' \
+          && ${DOXYGEN} 2>&1 \
+	  | egrep -v -i -e 'Warning: (unsupported (xml/)?html tag|unable to resolve reference)' \
           ; popd > /dev/null ; \
 	  test -r docs/$$d.doxytags && \
 	  sed '2,10s!<name>index</name>!<name>'$$d'_index</name>!' \
@@ -91,7 +91,8 @@ doxygen: built-sources
 	  test -r $$d/Doxyfile \
 	  && pushd $$d > /dev/null \
 	  && echo running ${DOXYGEN} in second time in $$d \
-          && ${DOXYGEN} | fgrep -v -e 'Warning: Unsupported xml/html tag' \
+          && ${DOXYGEN} 2>&1 \
+	   | egrep -v -i -e 'Warning: Unsupported (xml/)?html tag' \
           ; popd > /dev/null ; \
 	  test -r docs/$$d.doxytags && \
 	  sed '2,10s!<name>index</name>!<name>'$$d'_index</name>!' \
