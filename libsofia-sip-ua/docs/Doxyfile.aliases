@@ -40,4 +40,4 @@ ALIASES = \
  "ERRORS=\par Errors: " \
  "ERROR=\par \n \b " \
  "VERSION_1_12_2=<a href=\"http://sofia-sip.sf.net/relnotes/relnotes-sofia-sip-1.12.2.txt\">1.12.2</a>" \
- "VERSION_1_12_4=<a href=\"http://sofia-sip.sf.net/relnotes/relnotes-sofia-sip-1.12.3.txt\">1.12.4</a>" \
+ "VERSION_1_12_4=<a href=\"http://sofia-sip.sf.net/relnotes/relnotes-sofia-sip-1.12.4.txt\">1.12.4</a>" \
