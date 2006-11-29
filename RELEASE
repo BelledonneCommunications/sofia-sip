@@ -10,10 +10,10 @@ of concurrent connections, like 100 000 or more.
 
 Headers in SIP URIs are now included in the request by nta and nua.
 
-The nua API now supports arbitratry SIP methods.
-
-There is now also reactive mode of handing subscriptions in nua, using
-nua_i_subscribe()/nua_respond()/nua_notify()/nua_i_publish().
+The nua API now supports arbitratry SIP methods. It supports handling
+incoming REGISTER and PUBLISH, too. There is now also reactive mode of
+handing subscriptions in nua, using nua_i_subscribe()/nua_respond()/
+nua_notify()/nua_i_publish().
 
 Severe bug in STUN functionality was fixed.
 
@@ -21,6 +21,7 @@ API/ABI changes and versioning
 ------------------------------
 
 libsofia-sip-ua:
+- Added sdp_media_red, sdp_proto_udptl.
 - Added host_cmp() for comparing host names or IP addresses in numeric
   format.
 - Added auth_mod_name() to <sofia-sip/auth_module.c>
@@ -30,6 +31,8 @@ libsofia-sip-ua:
 - Added nua_method() and NUTAG_METHOD() to <sofia-sip/nua.h>
 - Added nth_request_auth(), NTHTAG_AUTH_MODULE(), nth_site_url(), and
   nth_site_access_time() to <sofia-sip/nth.h>
+- Added NUTAG_ALLOW_EVENTS() and leave it to application to accept or 
+  reject SUBSCRIBE and PUBLISH requests
 - Added functions msg_header_find_item(), msg_header_replace_item(),
   msg_header_remove_item()
   (handling Allow and Allow-Events headers)
