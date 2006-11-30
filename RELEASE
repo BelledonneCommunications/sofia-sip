@@ -96,6 +96,8 @@ nua_method()/nua_r_method/nua_i_method and NUTAG_ALLOW().
 Bugs fixed in this release
 --------------------------
 
+- A memory leak with nua_handle_destroy() was plugged.
+  Thanks for Colin Whittaker for reporting the problem.
 - No Contact was used when creating dialog if there was an 
   application-provided Contact. Thanks for Michael Jerris and Anthony
   Minessale for reporting this bug.
