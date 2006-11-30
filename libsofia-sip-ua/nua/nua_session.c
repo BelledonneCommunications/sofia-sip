@@ -1349,8 +1349,7 @@ static int nua_session_usage_shutdown(nua_handle_t *nh,
 					NULL, NULL, NULL,
 					bye,
 					TAG_END());
-      if (cr->cr_orq)		/* Wait for BYE to complete? */
-	nua_creq_deinit(cr, NULL);
+      nua_creq_deinit(cr, NULL);
     }
   }
 
