@@ -46,6 +46,7 @@ Contributors to this release
 /> 
 
 - **template**: First Surname (patch to nua/soa/msg)
+- Petteri Puolakka (patch to stun)
 
 See the AUTHORS file in the distribution package.
 
@@ -68,3 +69,5 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Bug in zero-padding STUN messages with a message integrity 
+  attribute. Patch by Petteri Puolakka.
