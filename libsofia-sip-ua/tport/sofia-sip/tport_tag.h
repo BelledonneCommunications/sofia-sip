@@ -101,10 +101,10 @@ TPORT_DLL extern tag_typedef_t tptag_public_ref;
 
 TPORT_DLL extern tag_typedef_t tptag_mtu;
 /** Specify MTU. */
-#define TPTAG_MTU(x) tptag_mtu, tag_uint_v((x))
+#define TPTAG_MTU(x) tptag_mtu, tag_usize_v((x))
 
 TPORT_DLL extern tag_typedef_t tptag_mtu_ref;
-#define TPTAG_MTU_REF(x) tptag_mtu_ref, tag_uint_vr(&(x))
+#define TPTAG_MTU_REF(x) tptag_mtu_ref, tag_usize_vr(&(x))
 
 TPORT_DLL extern tag_typedef_t tptag_connect;
 /** Specify that tport must always use connections. */
