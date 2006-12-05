@@ -56,16 +56,6 @@ AC_SUBST(ACLOCAL_AMFLAGS, "-I m4")
 AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [echo])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test $DOXYGEN = doxygen])
 
-AC_ARG_WITH([aclocal],
-[  --with-aclocal          Install m4 files in aclocal --print-ac-dir],
-[if test "$with_aclocal" = "yes" ;  then
-	m4dir=`$ACLOCAL --print-ac-dir`
-else
-	m4dir=`$with_aclocal --print-ac-dir`
-fi], [m4dir='${datadir}/aclocal'])
-
-AC_SUBST([m4dir])
-
 ### checks for libraries
 ### --------------------
 
