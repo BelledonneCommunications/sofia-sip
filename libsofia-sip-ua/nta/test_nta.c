@@ -630,20 +630,20 @@ int readfile(FILE *f, void **contents)
   /* Read in whole (binary!) file */
   char *buffer = NULL;
   long size;
-  int len = -1;
+  size_t len;
   
   /* Read whole file in */
   if (fseek(f, 0, SEEK_END) < 0 ||
       (size = ftell(f)) < 0 ||
       fseek(f, 0, SEEK_SET) < 0 ||
-      (long)(len = size) != size) {
+      (long)(len = (size_t)size) != size) {
     fprintf(stderr, "%s: unable to determine file size (%s)\n", 
 	    __func__, strerror(errno));
     return -1;
   }
 
   if (!(buffer = malloc(len + 2)) ||
-      fread(buffer, 1, len, f) != (size_t)len) {
+      fread(buffer, 1, len, f) != len) {
     fprintf(stderr, "%s: unable to read file (%s)\n", __func__, strerror(errno));
     if (buffer)
       free(buffer);
@@ -771,9 +771,9 @@ static unsigned char const code[] =
 
 #include <sofia-sip/su_uniqueid.h>
 
-sip_payload_t *test_payload(su_home_t *home, int size)
+sip_payload_t *test_payload(su_home_t *home, size_t size)
 {
-  sip_payload_t *pl = sip_payload_create(home, NULL, size);
+  sip_payload_t *pl = sip_payload_create(home, NULL, (isize_t)size);
 
   if (pl) {
     int i;
@@ -928,7 +928,7 @@ int test_tports(agent_t *ag)
   if (tcp_comp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 1024;
+    size_t size = 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -973,7 +973,7 @@ int test_tports(agent_t *ag)
   if (tcp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 512 * 1024;
+    usize_t size = 512 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1009,7 +1009,7 @@ int test_tports(agent_t *ag)
   if (tcp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 512 * 1024;
+    usize_t size = 512 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1043,7 +1043,7 @@ int test_tports(agent_t *ag)
   {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 2 * 1024;
+    usize_t size = 2 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1082,7 +1082,7 @@ int test_tports(agent_t *ag)
   if (v_udp_only) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 2 * 1024;
+    usize_t size = 2 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1125,7 +1125,7 @@ int test_tports(agent_t *ag)
   if (udp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 2 * 1024;
+    usize_t size = 2 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1206,7 +1206,7 @@ int test_tports(agent_t *ag)
   if (sctp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 16 * 1024;
+    usize_t size = 16 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1243,7 +1243,7 @@ int test_tports(agent_t *ag)
   if (tcp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 128 * 1024;
+    usize_t size = 128 * 1024;
 
     nta_agent_set_params(ag->ag_agent, 
 			 NTATAG_MAXSIZE(65536),
@@ -1698,7 +1698,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
   if (tcp_comp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 1024;
+    usize_t size = 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1736,7 +1736,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
   if (tcp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 512 * 1024;
+    usize_t size = 512 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1777,7 +1777,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
   if (tcp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 512 * 1024;
+    usize_t size = 512 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1811,7 +1811,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
   {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 2 * 1024;
+    usize_t size = 2 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1850,7 +1850,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
   if (udp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 2 * 1024;
+    usize_t size = 2 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1930,7 +1930,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
   if (sctp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 16 * 1024;
+    usize_t size = 16 * 1024;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1967,7 +1967,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
   if (tcp) {
     url_t url[1];
     sip_payload_t *pl;
-    unsigned size = 128 * 1024;
+    usize_t size = 128 * 1024;
 
     nta_agent_set_params(ag->ag_agent, 
 			 NTATAG_MAXSIZE(65536),
