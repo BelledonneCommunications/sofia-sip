@@ -2614,6 +2614,9 @@ int stun_atoaddr(su_home_t *home,
   dstaddr = (su_sockaddr_t *) info->ai_addr;
 
   /* note: works only for IPv4 */
+  if (ai_family != AF_INET) 
+    return -1;
+
   hints->ai_family = ai_family;
 
   port = strstr(in, ":");
