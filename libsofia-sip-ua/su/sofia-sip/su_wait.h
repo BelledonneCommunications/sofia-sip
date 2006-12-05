@@ -89,7 +89,7 @@ SOFIA_BEGIN_DECLS
 #define SU_WAIT_IN      (FD_READ)
 #define SU_WAIT_OUT     (FD_WRITE)
 #define SU_WAIT_CONNECT (FD_CONNECT)
-#define SU_WAIT_ERR     (0)	/* fuck this shit */
+#define SU_WAIT_ERR     (0)	/* let's get it on */
 #define SU_WAIT_HUP     (FD_CLOSE)
 #define SU_WAIT_ACCEPT  (FD_ACCEPT)
 
