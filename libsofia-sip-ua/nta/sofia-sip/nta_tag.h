@@ -182,17 +182,17 @@ NTA_DLL extern tag_typedef_t ntatag_smime_ref;
  
 NTA_DLL extern tag_typedef_t ntatag_maxsize;
 /** Maximum size of incoming message. @HI */
-#define NTATAG_MAXSIZE(x) ntatag_maxsize, tag_uint_v((x))
+#define NTATAG_MAXSIZE(x) ntatag_maxsize, tag_usize_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_maxsize_ref;
-#define NTATAG_MAXSIZE_REF(x) ntatag_maxsize_ref, tag_uint_vr(&(x))
+#define NTATAG_MAXSIZE_REF(x) ntatag_maxsize_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_udp_mtu;
 /** Maximum size of outgoing UDP request. @HI */
-#define NTATAG_UDP_MTU(x) ntatag_udp_mtu, tag_uint_v((x))
+#define NTATAG_UDP_MTU(x) ntatag_udp_mtu, tag_usize_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_udp_mtu_ref;
-#define NTATAG_UDP_MTU_REF(x) ntatag_udp_mtu_ref, tag_uint_vr(&(x))
+#define NTATAG_UDP_MTU_REF(x) ntatag_udp_mtu_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_max_forwards;
 /** Default value for @MaxForwards header. 

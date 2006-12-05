@@ -178,7 +178,7 @@ static char const * stateless_branch(nta_agent_t *, msg_t *, sip_t const *,
 #define NTA_BRANCH_PRIME SU_U64_C(0xB9591D1C361C6521)
 #define NTA_TAG_PRIME    SU_U64_C(0xB9591D1C361C6521)
 
-HTABLE_PROTOS(leg_htable, lht, nta_leg_t);
+HTABLE_PROTOS_WITH(leg_htable, lht, nta_leg_t, size_t, hash_value_t);
 static nta_leg_t *leg_find(nta_agent_t const *sa,
 			   char const *method_name,
 			   url_t const *request_uri,
@@ -194,7 +194,7 @@ static void leg_free(nta_agent_t *sa, nta_leg_t *leg);
 
 #define NTA_HASH(i, cs) ((i)->i_hash + 26839U * (uint32_t)(cs))
 
-HTABLE_PROTOS(incoming_htable, iht, nta_incoming_t);
+HTABLE_PROTOS_WITH(incoming_htable, iht, nta_incoming_t, size_t, hash_value_t);
 static nta_incoming_t *incoming_create(nta_agent_t *agent,
 				       msg_t *request,
 				       sip_t *sip,
@@ -237,7 +237,7 @@ static int reliable_recv(nta_incoming_t *, msg_t *, sip_t *, tport_t *);
 static void reliable_flush(nta_incoming_t *irq);
 static void reliable_timeout(nta_incoming_t *irq, int timeout);
 
-HTABLE_PROTOS(outgoing_htable, oht, nta_outgoing_t);
+HTABLE_PROTOS_WITH(outgoing_htable, oht, nta_outgoing_t, size_t, hash_value_t);
 static nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 				       nta_response_f *callback,
 				       nta_outgoing_magic_t *magic,
@@ -368,7 +368,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_magic = magic;
     agent->sa_flags = MSG_DO_CANONIC;
 
-    agent->sa_maxsize         = 2 * 1024 * 1024;
+    agent->sa_maxsize         = 2 * 1024 * 1024; /* 2 MB */
     agent->sa_t1 	      = NTA_SIP_T1;
     agent->sa_t2 	      = NTA_SIP_T2;
     agent->sa_t4              = NTA_SIP_T4;
@@ -798,9 +798,9 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   int n, m;
   unsigned bad_req_mask = agent->sa_bad_req_mask;
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
-  unsigned maxsize    = agent->sa_maxsize;
+  usize_t  maxsize    = agent->sa_maxsize;
   unsigned max_forwards = agent->sa_max_forwards->mf_count;
-  unsigned udp_mtu    = agent->sa_udp_mtu;
+  usize_t  udp_mtu    = agent->sa_udp_mtu;
   unsigned sip_t1     = agent->sa_t1;
   unsigned sip_t2     = agent->sa_t2;
   unsigned sip_t4     = agent->sa_t4;
@@ -954,8 +954,10 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   if (udp_mtu == 0) udp_mtu = 1300;
   if (udp_mtu > 65535) udp_mtu = 65535;
-  if (agent->sa_udp_mtu != udp_mtu)
+  if (agent->sa_udp_mtu != udp_mtu) {
+    agent->sa_udp_mtu = udp_mtu;
     agent_set_udp_params(agent, udp_mtu);
+  }
 
   if (sip_t1 == 0) sip_t1 = NTA_SIP_T1;
   if (sip_t1 > NTA_TIME_MAX) sip_t1 = NTA_TIME_MAX;
@@ -1019,18 +1021,16 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 }
 
 static 
-void agent_set_udp_params(nta_agent_t *self, unsigned udp_mtu)
+void agent_set_udp_params(nta_agent_t *self, usize_t udp_mtu)
 {
   tport_t *tp;
-
-  self->sa_udp_mtu = udp_mtu;
 
   /* Set via fields for the tports */
   for (tp = tport_primaries(self->sa_tports); tp; tp = tport_next(tp)) {
     if (tport_is_udp(tp))
       tport_set_params(tp,
 		       TPTAG_TIMEOUT(2 * self->sa_t1x64),
-		       TPTAG_MTU(self->sa_udp_mtu),
+		       TPTAG_MTU(udp_mtu),
 		       TAG_END());
   }
 }
@@ -3143,7 +3143,7 @@ static int leg_route(nta_leg_t *leg,
 static int leg_callback_default(nta_leg_magic_t*, nta_leg_t*,
 				nta_incoming_t*, sip_t const *);
 #define HTABLE_HASH_LEG(leg) ((leg)->leg_hash)
-HTABLE_BODIES(leg_htable, lht, nta_leg_t, HTABLE_HASH_LEG);
+HTABLE_BODIES_WITH(leg_htable, lht, nta_leg_t, HTABLE_HASH_LEG, size_t, hash_value_t);
 static inline
 hash_value_t hash_istring(char const *, char const *, hash_value_t);
 
@@ -4132,7 +4132,8 @@ leg_callback_default(nta_leg_magic_t *magic,
 /* 7) Server-side (incoming) transactions */
 
 #define HTABLE_HASH_IRQ(irq) ((irq)->irq_hash)
-HTABLE_BODIES(incoming_htable, iht, nta_incoming_t, HTABLE_HASH_IRQ);
+HTABLE_BODIES_WITH(incoming_htable, iht, nta_incoming_t, HTABLE_HASH_IRQ,
+		   size_t, hash_value_t);
 
 static void incoming_insert(nta_agent_t *agent, 
 			    incoming_queue_t *queue, 
@@ -5724,15 +5725,15 @@ static inline
 int incoming_timer(nta_agent_t *sa, su_duration_t now)
 {
   nta_incoming_t *irq, *irq_next;
-  unsigned retransmitted = 0, timeout = 0, terminated = 0, destroyed = 0;
-  unsigned unconfirmed = 
+  size_t retransmitted = 0, timeout = 0, terminated = 0, destroyed = 0;
+  size_t unconfirmed = 
     sa->sa_in.inv_completed->q_length + 
     sa->sa_in.preliminary->q_length;
-  unsigned unterminated = 
+  size_t unterminated = 
     sa->sa_in.inv_confirmed->q_length + 
     sa->sa_in.completed->q_length;
-  
-  int total = sa->sa_incoming->iht_used;
+  size_t total = sa->sa_incoming->iht_used;
+
   incoming_queue_t rq[1];
 
   incoming_queue_init(rq, 0);
@@ -5915,7 +5916,10 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
 
   if (retransmitted || timeout || terminated || destroyed)
     SU_DEBUG_5(("nta_incoming_timer: "
-		"%u/%u resent, %u/%u tout, %u/%u term, %u/%u free\n",
+		MOD_ZU"/"MOD_ZU" resent, "
+		MOD_ZU"/"MOD_ZU" tout, "
+		MOD_ZU"/"MOD_ZU" term, "
+		MOD_ZU"/"MOD_ZU" free\n",
 		retransmitted, unconfirmed, 
 		timeout, unconfirmed,
 		terminated, unterminated, 
@@ -5931,7 +5935,7 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
 static inline
 int incoming_mass_destroy(nta_agent_t *sa, incoming_queue_t *q)
 {
-  unsigned destroyed = q->q_length;
+  size_t destroyed = q->q_length;
 
   if (destroyed > 2 && *sa->sa_terminator) {
     su_msg_r m = SU_MSG_R_INIT;
@@ -5961,7 +5965,8 @@ int incoming_mass_destroy(nta_agent_t *sa, incoming_queue_t *q)
 
 #define HTABLE_HASH_ORQ(orq) ((orq)->orq_hash)
 
-HTABLE_BODIES(outgoing_htable, oht, nta_outgoing_t, HTABLE_HASH_ORQ);
+HTABLE_BODIES_WITH(outgoing_htable, oht, nta_outgoing_t, HTABLE_HASH_ORQ,
+		   size_t, hash_value_t);
 
 static nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 				       nta_response_f *callback,
@@ -5990,10 +5995,10 @@ static inline void outgoing_queue(outgoing_queue_t *queue,
 static inline void outgoing_remove(nta_outgoing_t *orq);
 static inline void outgoing_set_timer(nta_outgoing_t *orq, unsigned interval);
 static inline void outgoing_reset_timer(nta_outgoing_t *orq);
-static int outgoing_timer_dk(outgoing_queue_t *q, 
+static size_t outgoing_timer_dk(outgoing_queue_t *q, 
 			     char const *timer, 
 			     su_duration_t now);
-static int outgoing_timer_bf(outgoing_queue_t *q, 
+static size_t outgoing_timer_bf(outgoing_queue_t *q, 
 			     char const *timer, 
 			     su_duration_t now);
 
@@ -6005,7 +6010,7 @@ static void outgoing_trying(nta_outgoing_t *orq);
 static void outgoing_timeout(nta_outgoing_t *orq, su_duration_t now);
 static int outgoing_complete(nta_outgoing_t *orq);
 static int outgoing_terminate(nta_outgoing_t *orq);
-static int outgoing_mass_destroy(nta_agent_t *sa, outgoing_queue_t *q);
+static size_t outgoing_mass_destroy(nta_agent_t *sa, outgoing_queue_t *q);
 static void outgoing_estimate_delay(nta_outgoing_t *orq, sip_t *sip);
 static int outgoing_duplicate(nta_outgoing_t *orq,
 			      msg_t *msg,
@@ -7420,11 +7425,11 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
 {
   nta_outgoing_t *orq;
   outgoing_queue_t rq[1];
-  int retransmitted = 0, terminated = 0, timeout = 0, destroyed;
-  int total = sa->sa_outgoing->oht_used;
-  int trying = sa->sa_out.re_length;
-  int pending = sa->sa_out.trying->q_length + sa->sa_out.inv_calling->q_length;
-  int completed = sa->sa_out.completed->q_length + 
+  size_t retransmitted = 0, terminated = 0, timeout = 0, destroyed;
+  size_t total = sa->sa_outgoing->oht_used;
+  size_t trying = sa->sa_out.re_length;
+  size_t pending = sa->sa_out.trying->q_length + sa->sa_out.inv_calling->q_length;
+  size_t completed = sa->sa_out.completed->q_length + 
     sa->sa_out.inv_completed->q_length;
 
   outgoing_queue_init(sa->sa_out.free = rq, 0);
@@ -7481,7 +7486,10 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
 
   if (retransmitted || timeout || terminated || destroyed) {
     SU_DEBUG_5(("nta_outgoing_timer: "
-		"%u/%u resent, %u/%u tout, %u/%u term, %u/%u free\n",
+		MOD_ZU"/"MOD_ZU" resent, "
+		MOD_ZU"/"MOD_ZU" tout, "
+		MOD_ZU"/"MOD_ZU" term, "
+		MOD_ZU"/"MOD_ZU" free\n",
 		retransmitted, trying,
 		timeout, pending,
 		terminated, completed, 
@@ -7524,11 +7532,11 @@ void outgoing_trying(nta_outgoing_t *orq)
 
 /** Handle timers B and F */
 static
-int outgoing_timer_bf(outgoing_queue_t *q, 
-		       char const *timer, 
-		       su_duration_t now)
+size_t outgoing_timer_bf(outgoing_queue_t *q, 
+			 char const *timer, 
+			 su_duration_t now)
 {
-  int timeout = 0;
+  size_t timeout = 0;
 
   for (;;) {
     nta_outgoing_t *orq = q->q_head;
@@ -7600,11 +7608,11 @@ int outgoing_complete(nta_outgoing_t *orq)
 
 /** Handle timers D and K */
 static
-int outgoing_timer_dk(outgoing_queue_t *q, 
-		      char const *timer, 
-		      su_duration_t now)
+size_t outgoing_timer_dk(outgoing_queue_t *q, 
+			 char const *timer, 
+			 su_duration_t now)
 {
-  int terminated = 0;
+  size_t terminated = 0;
 
   for (;;) {
     nta_outgoing_t *orq = q->q_head;
@@ -7646,9 +7654,9 @@ int outgoing_terminate(nta_outgoing_t *orq)
 
 /** Mass destroy client transactions */
 static
-int outgoing_mass_destroy(nta_agent_t *sa, outgoing_queue_t *q)
+size_t outgoing_mass_destroy(nta_agent_t *sa, outgoing_queue_t *q)
 {
-  int destroyed = q->q_length;
+  size_t destroyed = q->q_length;
 
   if (destroyed > 2 && *sa->sa_terminator) {
     su_msg_r m = SU_MSG_R_INIT;
@@ -8332,7 +8340,7 @@ static void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
 static void outgoing_query_results(nta_outgoing_t *orq,
 				   struct sipdns_query *sq,
 				   char *results[],
-				   int rlen);
+				   size_t rlen);
 
 
 #define SIPDNS_503_ERROR 503, "DNS Error"
@@ -9002,7 +9010,7 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
   su_home_t *home = msg_home(orq->orq_request);
   struct sipdns_query *sq = sr->sr_current;
 
-  int i, j, found;
+  size_t i, j, found;
   char *result, **results = NULL;
 
   assert(sq); assert(sq->sq_type == sres_type_aaaa);
@@ -9133,7 +9141,7 @@ static void
 outgoing_query_results(nta_outgoing_t *orq,
 		       struct sipdns_query *sq,
 		       char *results[],
-		       int rlen)
+		       size_t rlen)
 {
   struct sipdns_resolver *sr = orq->orq_resolver;
 

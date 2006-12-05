@@ -68,7 +68,7 @@ tag_typedef_t ntatag_tport = PTRTAG_TYPEDEF(tport);
 tag_typedef_t ntatag_smime = PTRTAG_TYPEDEF(smime);
 tag_typedef_t ntatag_remote_cseq = UINTTAG_TYPEDEF(remote_cseq);
 
-tag_typedef_t ntatag_maxsize = UINTTAG_TYPEDEF(maxsize);
+tag_typedef_t ntatag_maxsize = USIZETAG_TYPEDEF(maxsize);
 tag_typedef_t ntatag_udp_mtu = UINTTAG_TYPEDEF(udp_mtu);
 tag_typedef_t ntatag_max_forwards = UINTTAG_TYPEDEF(max_forwards);
 tag_typedef_t ntatag_sip_t1 = UINTTAG_TYPEDEF(sip_t1);

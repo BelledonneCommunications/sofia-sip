@@ -70,21 +70,21 @@ enum nta_res_order_e
   nta_res_ip4_only
 };
 
-HTABLE_DECLARE(leg_htable, lht, nta_leg_t);
-HTABLE_DECLARE(outgoing_htable, oht, nta_outgoing_t);
-HTABLE_DECLARE(incoming_htable, iht, nta_incoming_t);
+HTABLE_DECLARE_WITH(leg_htable, lht, nta_leg_t, size_t, hash_value_t);
+HTABLE_DECLARE_WITH(outgoing_htable, oht, nta_outgoing_t, size_t, hash_value_t);
+HTABLE_DECLARE_WITH(incoming_htable, iht, nta_incoming_t, size_t, hash_value_t);
 
 typedef struct outgoing_queue_t {
   nta_outgoing_t **q_tail;
   nta_outgoing_t  *q_head;
-  unsigned         q_length;
+  size_t           q_length;
   unsigned         q_timeout;
 } outgoing_queue_t;
 
 typedef struct incoming_queue_t {
   nta_incoming_t **q_tail;
   nta_incoming_t  *q_head;
-  unsigned         q_length;
+  size_t           q_length;
   unsigned         q_timeout;
 } incoming_queue_t;
 
@@ -141,10 +141,10 @@ struct nta_agent_s
   unsigned short        sa_bad_resp_mask;
 
   /** Maximum size of incoming messages */
-  unsigned              sa_maxsize;
+  size_t                sa_maxsize;
   
   /** Maximum size of outgoing UDP requests */
-  unsigned              sa_udp_mtu;
+  size_t                sa_udp_mtu;
 
   /** SIP T1 - initial interval of retransmissions (500 ms) */
   unsigned              sa_t1;
@@ -289,45 +289,45 @@ struct nta_agent_s
 
   /* Queues (states) for outgoing client transactions */
   struct {
-    /** List for retrying client transactions */
-    nta_outgoing_t     *re_list;
-    nta_outgoing_t    **re_t1;
-    int                 re_length;
+    /** Queue for retrying client transactions */
+    nta_outgoing_t   *re_list;
+    nta_outgoing_t  **re_t1;	        /**< Special place for T1 timer */
+    size_t            re_length;	/**< Length of sa_out.re_list */
 
-    outgoing_queue_t    delayed[1]; 
-    outgoing_queue_t    resolving[1]; 
+    outgoing_queue_t  delayed[1]; 
+    outgoing_queue_t  resolving[1]; 
 
-    outgoing_queue_t    trying[1];		/* Timer F/E */
-    outgoing_queue_t    completed[1];	/* Timer K */
-    outgoing_queue_t    terminated[1];
+    outgoing_queue_t  trying[1];	/* Timer F/E */
+    outgoing_queue_t  completed[1];	/* Timer K */
+    outgoing_queue_t  terminated[1];
 
     /* Special queues (states) for outgoing INVITE transactions */
-    outgoing_queue_t    inv_calling[1];	/* Timer B/A */
-    outgoing_queue_t    inv_proceeding[1];
-    outgoing_queue_t    inv_completed[1];	/* Timer D */
+    outgoing_queue_t  inv_calling[1];	/* Timer B/A */
+    outgoing_queue_t  inv_proceeding[1];
+    outgoing_queue_t  inv_completed[1];	/* Timer D */
 
     /* Temporary queue for transactions waiting to be freed */
-    outgoing_queue_t    *free;
+    outgoing_queue_t *free;
   } sa_out;
 
   /* Queues (states) for incoming server transactions */
   struct {
-    /** Queue for retrying server transactions */
-    nta_incoming_t     *re_list;
-    nta_incoming_t    **re_t1;	        /**< Special place for T1 timer */
-    int                 re_length;
+    /** Queue for retransmitting response of server transactions */
+    nta_incoming_t   *re_list;
+    nta_incoming_t  **re_t1;	        /**< Special place for T1 timer */
+    size_t            re_length;
 
-    incoming_queue_t    proceeding[1];	/**< Request received */
-    incoming_queue_t    preliminary[1];    /**< 100rel sent  */
-    incoming_queue_t    completed[1];	/**< Final answer sent (non-invite). */
-    incoming_queue_t    inv_completed[1];	/**< Final answer sent (INVITE). */
-    incoming_queue_t    inv_confirmed[1];	/**< Final answer sent, ACK recvd. */
-    incoming_queue_t    terminated[1];	/**< Terminated, ready to free. */
-    incoming_queue_t    final_failed[1];   
+    incoming_queue_t  proceeding[1];	/**< Request received */
+    incoming_queue_t  preliminary[1];   /**< 100rel sent  */
+    incoming_queue_t  completed[1];	/**< Final answer sent (non-invite). */
+    incoming_queue_t  inv_completed[1];	/**< Final answer sent (INVITE). */
+    incoming_queue_t  inv_confirmed[1];	/**< Final answer sent, ACK recvd. */
+    incoming_queue_t  terminated[1];	/**< Terminated, ready to free. */
+    incoming_queue_t  final_failed[1];   
   } sa_in;
 
   /* Special task for freeing memory */
-  su_clone_r            sa_terminator;
+  su_clone_r          sa_terminator;
 };
 
 struct nta_leg_s
