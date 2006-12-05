@@ -8,13 +8,9 @@
 
 AUTOMAKE_OPTIONS = foreign 1.7
 
-SUBDIRS=su-glib nua-glib
+SUBDIRS=su-glib
 
 GLIB_TARGETS=su-glib/libsu-glib.la
-
-if HAVE_GOBJECT
-GOBJECT_TARGETS=nua-glib/libnua-glib.la
-endif
 
 lib_LTLIBRARIES =
 if HAVE_GLIB
@@ -22,8 +18,7 @@ lib_LTLIBRARIES += libsofia-sip-ua-glib.la
 endif
 
 libsofia_sip_ua_glib_la_SOURCES = 
-libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GOBJECT_TARGETS) \
-	$(GOBJECT_LIBS) $(GLIB_LIBS)
+libsofia_sip_ua_glib_la_LIBADD = $(GLIB_TARGETS) $(GLIB_LIBS)
 
 # set the libtool version info version:revision:age for libsofia-sip-ua-glib
 # - soname to 'libsofia-sip-ua-glib.so.(CUR-AGE)'

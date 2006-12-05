@@ -367,21 +367,17 @@ AC_ARG_WITH(glib-dir,
 
 if test "$with_glib" = no || test "$with_glib_dir" = "no" ; then
 
-  : # No glib (also disable gobject)
+  : # No glib
 
 elif test "$with_glib_dir" = "pkg-config" ; then 
 
   PKG_CHECK_MODULES(GLIB, glib-$with_glib, [HAVE_GLIB=yes], [HAVE_GLIB=no])
-  PKG_CHECK_MODULES(GOBJECT, gobject-$with_glib >= 2.4, [HAVE_GOBJECT=yes], [HAVE_GOBJECT=no])
 
 else # GLib path is explicitly defined 
 
   gprefix=$with_glib_dir
   GLIB_VERSION="$with_glib"
   GLIBXXX=glib-$with_glib
-
-  # XXX: add non-pkgconfig checks for gobject
-  HAVE_GOBJECT=no
 
   if test "$gprefix" = "yes" ; then 
     for gprefix in /usr /usr/local /opt/$GLIBXXX
@@ -398,7 +394,6 @@ else # GLib path is explicitly defined
     gincludedir=${gprefix}/include
 
     # glib_genmarshal=glib-genmarshal
-    # gobject_query=gobject-query
     # glib_mkenums=glib-mkenums
 
     HAVE_GLIB=yes
@@ -413,23 +408,14 @@ else # GLib path is explicitly defined
 
 fi # GLib path is explicitly defined 
 
-
-
 if test "x$HAVE_GLIB" = xyes ; then
   SAC_COMMA_APPEND([SOFIA_GLIB_PKG_REQUIRES],[glib-2.0])
 fi
-if test "x$HAVE_GLIB" = xyes ; then
-  SAC_COMMA_APPEND([SOFIA_GLIB_PKG_REQUIRES],[gobject-2.0 >= 2.4])
-fi
 
 AM_CONDITIONAL([HAVE_GLIB], [test "x$HAVE_GLIB" = xyes])
-AM_CONDITIONAL([HAVE_GOBJECT], [test "x$HAVE_GOBJECT" = xyes])
 AC_SUBST([GLIB_LIBS])
 AC_SUBST([GLIB_CFLAGS])
 AC_SUBST([GLIB_VERSION])
-AC_SUBST([GOBJECT_LIBS])
-AC_SUBST([GOBJECT_CFLAGS])
-AC_SUBST([GOBJECT_VERSION])
 AC_SUBST([SOFIA_GLIB_PKG_REQUIRES])
 
 # ===========================================================================

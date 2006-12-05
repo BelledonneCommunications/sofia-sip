@@ -20,10 +20,10 @@ AC_SUBST(LIBVER_SOFIA_SIP_UA_CUR, [3])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_REV, [0])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_AGE, [3])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_SOVER, [0]) # CUR-AGE
-AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_CUR, [2])
+AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_CUR, [3])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_REV, [0])
-AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_AGE, [2])
-AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_SOVER, [0]) # CUR-AGE
+AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_AGE, [0])
+AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_SOVER, [1]) # CUR-AGE
 					    
 # dnl calls AC_CANONICAL_ macros that are required by AM_INIT_AUTOMAKE
 SAC_CANONICAL_SYSTEM_CACHE_CHECK
@@ -191,7 +191,6 @@ libsofia-sip-ua/tport/Makefile
 libsofia-sip-ua/url/Makefile
 libsofia-sip-ua/features/sofia-sip/sofia_features.h
 libsofia-sip-ua-glib/Makefile
-libsofia-sip-ua-glib/nua-glib/Makefile
 libsofia-sip-ua-glib/su-glib/Makefile
 utils/Makefile
 utils/Doxyfile.build

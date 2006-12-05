@@ -30,9 +30,12 @@ libsofia-sip-ua:
   unit test (test_nua) built against original 1.12.0 release.
 
 libsofia-sip-ua-glib:
-- No ABI/API changes, compatible with 1.12.0. Note, libsofia-sip-ua-glib
-  interface is not considered stable and may change in a future 1.12.x
-  release.
+- The 'nua-glib' module has been removed from the library and moved
+  to a separate package 'sofia-nua-glib'. The remaining library (su-glib) 
+  is now considered stable and will be API/ABI compatible with later 
+  releases in the 1.12.x series.
+- ABI has been modified and applications built against 1.12.4 and earlier 
+  releases need to be rebuilt.
 
 Contributors to this release
 ----------------------------
