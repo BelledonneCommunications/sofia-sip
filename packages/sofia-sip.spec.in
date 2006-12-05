@@ -6,13 +6,11 @@
 %{!?bcond_without:%define bcond_without() %{expand:%%{!?_without_%{1}:%%global with_%{1} 1}}}
 
 # Options:
-# --with doxygen   - Generate documents using doxygen and dot
-# --with check     - Run tests
-# --with openssl   - Always use OpenSSL (TLS)
-# --with glib      - Always use glib-2.0 (>= 2.2)
-# --with gobject   - Always use gobject (>= 2.4)
-# --with sctp      - with SCTP
-#
+%bcond_with doxygen    - Generate documents using doxygen and dot
+%bcond_with check      - Run tests
+%bcond_with openssl    - Always use OpenSSL (TLS)
+%bcond_with glib       - Always use glib-2.0 (>= 2.2)
+%bcond_with sctp       - Include SCTP transport
 
 Summary: Sofia SIP User-Agent library 
 Name: sofia-sip
@@ -28,7 +26,6 @@ BuildRequires: pkgconfig
 
 %define have_openssl %(%{?!_with_openssl:pkg-config 'openssl >= 0.9.7'&&}echo 1||echo 0)
 %define have_glib %(%{?!_with_glib:pkg-config 'glib-2.0 >= 2.2'&&}echo 1||echo 0)
-%define have_gobject %(%{?!_with_gobject:pkg-config 'gobject >= 2.4'&&}echo 1||echo 0)
 
 %if %{with doxygen}
 BuildRequires: doxygen >= 1.3
@@ -142,9 +139,6 @@ Summary:        GLIB bindings for Sofia SIP development files
 Group: 		Development/Libraries
 Requires:       sofia-sip-glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@ = %{version}-%{release}
 Requires:	sofia-sip-devel >= 1.12
-%if %{have_gobject}
-BuildRequires:	glib2-devel >= 2.4
-%endif
 %if %{have_glib}
 BuildRequires:	glib2-devel >= 2.2
 %endif
@@ -196,7 +190,14 @@ Command line utilities for Sofia SIP UA library.
 %{_mandir}/man?/*
 
 %changelog
-* Fri Oct  6 2006 Pekka Pessi
+* The Dec  5 2006 Pekka Pessi <ppessi at gmail.com> - 1.12.4
+- Bumped version. rpmlinted.
+
+* Tue Dec  5 2006 Kai Vehmanen
+- The 'nua-glib' module, and the related dependency to gobject, has been 
+  removed from the sofia-sip package
+
+* Fri Oct  6 2006 Pekka Pessi <ppessi at gmail.com> - 1.12.3
 - Autodetecting openssl, glib and gobject support with pkg-config
   (use --with openssl --with glib and --with gobject to force them)
 
