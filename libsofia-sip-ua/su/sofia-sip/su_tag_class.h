@@ -53,6 +53,8 @@ SOFIA_BEGIN_DECLS
 
 #define INTTAG_TYPEDEF(t)      TAG_TYPEDEF(t, int)
 #define UINTTAG_TYPEDEF(t)     TAG_TYPEDEF(t, uint)
+#define USIZETAG_TYPEDEF(t)    TAG_TYPEDEF(t, usize)
+#define SIZETAG_TYPEDEF(t)     TAG_TYPEDEF(t, size)
 #define BOOLTAG_TYPEDEF(t)     TAG_TYPEDEF(t, bool)
 #define PTRTAG_TYPEDEF(t)      TAG_TYPEDEF(t, ptr)
 #define SOCKETTAG_TYPEDEF(t)   TAG_TYPEDEF(t, socket)
@@ -81,6 +83,8 @@ struct tag_class_s {
 SOFIAPUBVAR tag_class_t end_tag_class[];
 SOFIAPUBVAR tag_class_t int_tag_class[];
 SOFIAPUBVAR tag_class_t uint_tag_class[];
+SOFIAPUBVAR tag_class_t usize_tag_class[];
+SOFIAPUBVAR tag_class_t size_tag_class[];
 SOFIAPUBVAR tag_class_t bool_tag_class[];
 SOFIAPUBVAR tag_class_t ptr_tag_class[];
 SOFIAPUBVAR tag_class_t socket_tag_class[];

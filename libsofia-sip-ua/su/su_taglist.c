@@ -39,6 +39,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <limits.h>
 
 #if defined(va_copy)
 /* Xyzzy */
@@ -1254,6 +1255,109 @@ tag_class_t uint_tag_class[1] =
     /* tc_filter */   NULL,
     /* tc_ref_set */  t_uint_ref_set,
     /* tc_scan */     t_uint_scan,
+  }};
+
+
+/* ====================================================================== */
+/* size tag - pass size_t value @NEW_1_12_5 */
+
+static
+int t_size_snprintf(tagi_t const *t, char b[], size_t size)
+{
+  return snprintf(b, size, MOD_ZU, (size_t)t->t_value);
+}
+
+static
+int t_size_ref_set(tag_type_t tt, void *ref, tagi_t const value[])
+{
+  *(size_t *)ref = (size_t)value->t_value;
+
+  return 1;
+}
+
+static
+int t_size_scan(tag_type_t tt, su_home_t *home, 
+		 char const *s, 
+		 tag_value_t *return_value)
+{
+  unsigned longlong value;
+  char *rest;
+
+  value = strtoull(s, &rest, 0);
+  
+  if (s != rest && value <= SIZE_MAX) {
+    *return_value = (tag_value_t)value;
+    return 1;
+  }
+  else {
+    *return_value = (tag_value_t)0;
+    return -1;
+  }
+}
+
+/** Tag class for tags with size_t value. @NEW_1_12_5 */
+tag_class_t size_tag_class[1] = 
+  {{
+    sizeof(int_tag_class),
+    /* tc_next */     NULL,
+    /* tc_len */      NULL,
+    /* tc_move */     NULL,
+    /* tc_xtra */     NULL,
+    /* tc_dup */      NULL,
+    /* tc_free */     NULL,
+    /* tc_find */     NULL,
+    /* tc_snprintf */ t_size_snprintf,
+    /* tc_filter */   NULL,
+    /* tc_ref_set */  t_size_ref_set,
+    /* tc_scan */     t_size_scan,
+  }};
+
+/* ====================================================================== */
+/* usize tag - pass usize_t value */
+
+static
+int t_usize_ref_set(tag_type_t tt, void *ref, tagi_t const value[])
+{
+  *(usize_t *)ref = (usize_t)value->t_value;
+
+  return 1;
+}
+
+static
+int t_usize_scan(tag_type_t tt, su_home_t *home, 
+		 char const *s, 
+		 tag_value_t *return_value)
+{
+  unsigned longlong value;
+  char *rest;
+
+  value = strtoull(s, &rest, 0);
+  
+  if (s != rest && value <= USIZE_MAX) {
+    *return_value = (tag_value_t)value;
+    return 1;
+  }
+  else {
+    *return_value = (tag_value_t)0;
+    return -1;
+  }
+}
+
+/** Tag class for tags with usize_t value. @NEW_1_12_5 */
+tag_class_t usize_tag_class[1] = 
+  {{
+    sizeof(int_tag_class),
+    /* tc_next */     NULL,
+    /* tc_len */      NULL,
+    /* tc_move */     NULL,
+    /* tc_xtra */     NULL,
+    /* tc_dup */      NULL,
+    /* tc_free */     NULL,
+    /* tc_find */     NULL,
+    /* tc_snprintf */ t_size_snprintf,
+    /* tc_filter */   NULL,
+    /* tc_ref_set */  t_usize_ref_set,
+    /* tc_scan */     t_usize_scan,
   }};
 
 
