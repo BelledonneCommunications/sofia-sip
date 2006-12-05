@@ -127,7 +127,7 @@ struct tport_s {
   
   unsigned            tp_accepted:1;    /**< Originally server? */
   unsigned            tp_conn_orient:1;	/**< Is connection-oriented */
-  unsigned            tp_connected : 1;	/**< Has real connection */
+  unsigned            tp_has_connection:1; /**< Has real connection */
   unsigned            tp_reusable:1;    /**< Can this connection be reused */
   unsigned            tp_closed : 1;    /**< This transport is closed */
   /**< Remote end has sent FIN (2) or we should not just read */
@@ -137,6 +137,7 @@ struct tport_s {
   unsigned            tp_has_keepalive:1;
   unsigned            tp_has_stun_server:1;
   unsigned            tp_trunc:1;
+  unsigned            tp_is_connected:1; /**< Connection is established */
   unsigned:0;
 
   tport_t *tp_left, *tp_right, *tp_dad; /**< Links in tport tree */
@@ -352,10 +353,10 @@ static inline int tport_is_connection_oriented(tport_t const *self)
   return self->tp_conn_orient;
 }
 
-/** Test if transport has actual connection. */
-static inline int tport_is_connected(tport_t const *self)
+/** Test if transport involves connection. @NEW_1_12_5 */
+static inline int tport_has_connection(tport_t const *self)
 {
-  return self->tp_connected;
+  return self->tp_has_connection;
 }
 
 void tport_has_been_updated(tport_t *tport);

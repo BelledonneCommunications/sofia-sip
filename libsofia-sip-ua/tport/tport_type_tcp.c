@@ -168,7 +168,7 @@ int tport_tcp_init_secondary(tport_t *self, int socket, int accepted,
 {
   int one = 1;
 
-  self->tp_connected = 1;
+  self->tp_has_connection = 1;
 
   if (setsockopt(socket, SOL_TCP, TCP_NODELAY, (void *)&one, sizeof one) == -1)
     return *return_reason = "TCP_NODELAY", -1;

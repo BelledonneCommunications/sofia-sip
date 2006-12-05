@@ -276,6 +276,9 @@ TPORT_DLL int tport_is_closed(tport_t const *self);
 /** Test if transport has been shut down (added to @VERSION_1_12_4 ) */
 TPORT_DLL int tport_is_shutdown(tport_t const *self);
 
+/** Test if transport is connected. @NEW_1_12_5 */
+TPORT_DLL int tport_is_connected(tport_t const *self);
+
 /** Set transport magic. */
 TPORT_DLL void tport_set_magic(tport_t *self, tp_magic_t *magic);
 

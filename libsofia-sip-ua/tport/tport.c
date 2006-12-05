@@ -285,6 +285,12 @@ static inline int tport_is_bound(tport_t const *self)
   return self->tp_protoname != NULL;
 }
 
+/** Test if transport connection has been established. @NEW_1_12_5 */
+inline int tport_is_connected(tport_t const *self)
+{
+  return self->tp_is_connected;
+}
+
 /** MTU for transport  */
 static inline unsigned tport_mtu(tport_t const *self)
 {
@@ -680,7 +686,7 @@ tport_primary_t *tport_listen(tport_master_t *mr,
     tp->tp_index = index;
   }
 
-  pri->pri_primary->tp_connected = 0;
+  pri->pri_primary->tp_has_connection = 0;
 
   SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
 	      __func__, pri, "listening at",
@@ -941,6 +947,7 @@ tport_t *tport_base_connect(tport_primary_t *pri,
   }
   else {
     what = "connected";
+    self->tp_is_connected = 1;
   }
 
   if (su_wait_create(wait, s, self->tp_events = events) == -1)
@@ -2305,7 +2312,7 @@ void tport_error_report(tport_t *self, int errcode,
     addr = NULL;
 
   /* Mark this connection as unusable */
-  if (errcode > 0 && tport_is_connected(self))
+  if (errcode > 0 && tport_has_connection(self))
     self->tp_reusable = 0;
 
   if (addr == NULL && tport_is_connection_oriented(self))
@@ -2333,7 +2340,7 @@ void tport_error_report(tport_t *self, int errcode,
   }
 
   /* Close connection */
-  if (!self->tp_closed && errcode > 0 && tport_is_connected(self))
+  if (!self->tp_closed && errcode > 0 && tport_has_connection(self))
     tport_close(self);
 }
 
@@ -2389,6 +2396,7 @@ int tport_accept(tport_primary_t *pri, int events)
 
       self->tp_index     = i;
       self->tp_conn_orient = 1;
+      self->tp_is_connected = 1;
       self->tp_events = events;
 
       if (tport_setname(self, pri->pri_protoname, ai, NULL) != -1) {
@@ -2467,6 +2475,8 @@ static int tport_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
     tport_error_report(self, error, NULL);
     return 0;
   }
+
+  self->tp_is_connected = 1;
 
   su_root_deregister(mr->mr_root, self->tp_index);
   self->tp_index = -1;
@@ -2628,7 +2638,7 @@ void tport_recv_event(tport_t *self)
       if (!su_is_blocking(error)) {
 	tport_error_report(self, error, NULL);
 	/* Failure: shutdown socket */
-	if (tport_is_connected(self))
+	if (tport_has_connection(self))
 	  tport_close(self);
 	return;
       } 
@@ -3321,7 +3331,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
 
   if (tport_is_connection_oriented(self)) {
     tport_error_report(self, error, NULL);
-    if (tport_is_connected(self))
+    if (tport_has_connection(self))
       tport_close(self);
   }
 
