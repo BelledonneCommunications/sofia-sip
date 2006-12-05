@@ -3614,9 +3614,9 @@ char const *nta_leg_get_rtag(nta_leg_t const *leg)
     return NULL;
 }
 
-/** Add UAC route.
+/** Save target and route set at UAC side.
  *
- * bis04 section 16.1
+ * @sa nta_leg_server_route(), @RFC3261 section 12.1.2
  */
 int nta_leg_client_route(nta_leg_t *leg,
 			 sip_record_route_t const *route,
@@ -3625,9 +3625,9 @@ int nta_leg_client_route(nta_leg_t *leg,
   return leg_route(leg, NULL, route, contact);
 }
 
-/** Add UAS route.
+/** Save target and route set at UAS side.
  *
- * bis04 section 16.2
+ * @sa nta_leg_client_route(), @RFC3261 section 12.1.1
  */
 int nta_leg_server_route(nta_leg_t *leg,
 			 sip_record_route_t const *route,
@@ -3636,7 +3636,7 @@ int nta_leg_server_route(nta_leg_t *leg,
   return leg_route(leg, route, NULL, contact);
 }
 
-/** Get route components */
+/** Return route components. */
 int nta_leg_get_route(nta_leg_t *leg, 
 		      sip_route_t const **return_route, 
 		      sip_contact_t const **return_target)
@@ -6963,6 +6963,8 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
 
   if (!orq->orq_reliable)
     outgoing_set_timer(orq, agent->sa_t1); /* Timer A/E */
+  else if (orq->orq_try_tcp_instead && !tport_is_connected(tp))
+    outgoing_set_timer(orq, agent->sa_t4); /* Timer N3 */
 }
 
 static void
@@ -6987,6 +6989,7 @@ outgoing_try_tcp_instead(nta_outgoing_t *orq)
     orq->orq_tpn->tpn_proto = "tcp";
     tport_decref(&orq->orq_tport);
     orq->orq_tport = tport_ref(tp);
+
     return;
   }
 
@@ -7262,13 +7265,14 @@ void outgoing_set_timer(nta_outgoing_t *orq, unsigned interval)
     return;
   }
 
-  /** The transaction will be removed from the retry dequeue. */
   if (orq->orq_rprev) {
+    /* Remove transaction from retry dequeue, re-insert it later. */
     if ((*orq->orq_rprev = orq->orq_rnext)) 
       orq->orq_rnext->orq_rprev = orq->orq_rprev;
     if (orq->orq_agent->sa_out.re_t1 == &orq->orq_rnext)
       orq->orq_agent->sa_out.re_t1 = orq->orq_rprev;
-  } else {
+  }
+  else {
     orq->orq_agent->sa_out.re_length++;
   }
 
@@ -7430,7 +7434,20 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
 	|| retransmitted >= timer_max_retransmit)
       break;
 
-    retransmitted++;
+    if (orq->orq_reliable) {
+      outgoing_reset_timer(orq);
+
+      if (!tport_is_connected(orq->orq_tport)) {
+	/*
+	 * Timer N3: try to use UDP if trying to send via TCP
+	 * but no connection is established within SIP T4
+	 */
+	SU_DEBUG_5(("nta: timer %s fired, %s %s (%u)\n", "N3", 
+		    "try UDP instead", orq->orq_method_name, orq->orq_cseq->cs_seq));
+	outgoing_try_udp_instead(orq);
+      }
+      continue;
+    }
 
     assert(!orq->orq_reliable && orq->orq_interval != 0);
 
@@ -7446,7 +7463,8 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
     else
       outgoing_set_timer(orq, sa->sa_t2);
 
-    su_root_yield(sa->sa_root);	/* Handle received packets */
+    if (++retransmitted % 5 == 0)
+      su_root_yield(sa->sa_root);	/* Handle received packets */
   }
 
   terminated
@@ -7799,7 +7817,7 @@ int outgoing_recv(nta_outgoing_t *orq,
   /* The state machines */
   if (orq->orq_method == sip_method_invite) {
     if (orq->orq_destroyed && status > 100 && status < 300)
-      return -1;		/* Proxy statelessly (Bis04 17.4) */
+      return -1;  /* Proxy statelessly (RFC3261 section 16.11) */
 
     outgoing_reset_timer(orq);
 
