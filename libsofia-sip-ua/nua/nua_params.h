@@ -128,8 +128,8 @@ typedef struct nua_handle_preferences
   /**< Network detection: NONE, INFORMAL, TRY_FULL */
   int                 nhp_detect_network_updates;
 
-  /* A bit for each feature set by application */
-  struct {
+  union { struct {
+    /* A bit for each feature set by application */
     unsigned nhb_retry_count:1;
     unsigned nhb_max_subscriptions:1;
 
@@ -177,8 +177,12 @@ typedef struct nua_handle_preferences
     unsigned nhb_outbound:1;
     unsigned nhb_detect_network_updates:1;
     unsigned :0;
-  } nhp_set;
+  } set_bits; 
+    unsigned set_unsigned[2];
+  } nhp_set_;
 } nua_handle_preferences_t;
+
+#define nhp_set nhp_set_.set_bits
 
 #define DNHP_GET(dnhp, pref) ((dnhp)->nhp_##pref)
 

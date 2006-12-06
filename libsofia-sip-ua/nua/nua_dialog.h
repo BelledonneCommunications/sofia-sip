@@ -87,8 +87,10 @@ struct nua_server_request {
   unsigned sr_answer_recv:1;	/**< We have received SDP answer */
 };
 
-#define SR_INIT(sr) \
-  (memset((sr), 0, sizeof (sr)[0]), SR_STATUS1((sr), SIP_100_TRYING), sr)
+#define SR_INIT(sr)			     \
+  ((void)memset((sr), 0, sizeof (sr)[0]),    \
+   (void)(SR_STATUS1((sr), SIP_100_TRYING)), \
+   sr)
 
 #define SR_STATUS(sr, status, phrase) \
   ((sr)->sr_phrase = (phrase), (sr)->sr_status = (status))
