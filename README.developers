@@ -1,5 +1,5 @@
 ===============================================================
-README.developers - Sofia-SIP development practises
+README.developers - Sofia-SIP development practices
 ===============================================================
 
 Introduction
@@ -71,7 +71,7 @@ variables (see the library 'Makefile.am' files and
 All changes to the library versions should be marked to the
 appropriate library 'ChangeLog' file. The library version should
 be changed at the same time as the first interface change is 
-commmitted since the previous release. The interface version is 
+committed since the previous release. The interface version is 
 frozen (should be marked to the 'ChangeLog' file) at the time
 the next release is tagged (in other words, intra-release changes
 need not be tracked with libtool versions).

@@ -1,6 +1,6 @@
-=====================================================
-Notes on compiling Sofia-SIP in different enviroments
-=====================================================
+======================================================
+Notes on compiling Sofia-SIP in different environments
+======================================================
 
 Using GNU Autotools
 -------------------
@@ -38,3 +38,5 @@ Visual-C on win32
 -----------------
 
 See sofia-sip/win32/README.txt
+
+ LocalWords:  automake

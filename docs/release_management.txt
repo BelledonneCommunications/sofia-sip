@@ -62,7 +62,7 @@ Making the release tarball
 - take a fresh checkout of the release using the release tag
     sh> darcs get http://sofia-sip.org/repos/sofia-sip --tag=rel-sofia-sip-1_yy_z
 - create the release tarball with "make distcheck"
-- calculate md5 and sha1 hashes using md5sum and sha1sum utils,
+- calculate md5 and sha1 hashes using md5sum and sha1sum utilities,
   and copy the values to the release-notes (see below)
 
 Creating the release notes and updating the website
@@ -112,7 +112,7 @@ After release
 Syncing CVS and darcs (or some other VCS)
 =========================================
 
-Some tips for synching from/to different version controlled
+Some tips for synchronizing from/to different version controlled
 tree.
 
 - As CVS cannot trace file addition/move/removals, you need
@@ -132,5 +132,5 @@ Checking API/ABI compatibility
 
 - Use a unit test binary built against an old library, 
   to verify a new library version (forwards-compatibility).
-- Use the 'icheck' tool (in Debian) to make comparsion
-  with two released versions.
+- Use the 'icheck' tool (in Debian) to make comparison
+  between two released versions.
