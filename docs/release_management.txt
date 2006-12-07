@@ -95,7 +95,7 @@ Announcing releases
 ===================
 
 - send an announcement mail, containing the
-  release notes, to sofia-sip-devel@isource.nokia.com
+  release notes, to sofia-sip-devel@lists.sourceforge.net
 - post a news item to freshmeat.net 'sofia-sip'
   project (current project owner: Kai Vehmanen)
 
