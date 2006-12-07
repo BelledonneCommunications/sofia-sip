@@ -821,7 +821,7 @@ int soa_get_warning(soa_session_t *ss, char const **return_text)
  *
  * @sa @RFC3261 section 11, soa_set_capability_sdp(), 
  * SOATAG_CAPS_SDP(), SOATAG_CAPS_SDP_STR(), 
- * nua_options(), #nua_i_options()
+ * nua_options(), #nua_i_options
  */
 int soa_get_capability_sdp(soa_session_t const *ss,
 			   sdp_session_t const **return_sdp,
@@ -871,7 +871,7 @@ int soa_get_capability_sdp(soa_session_t const *ss,
  *
  * @sa @RFC3261 section 11, soa_get_capability_sdp(),
  * SOATAG_CAPS_SDP(), SOATAG_CAPS_SDP_STR(), 
- * nua_options(), #nua_i_options()
+ * nua_options(), #nua_i_options
  */
 int soa_set_capability_sdp(soa_session_t *ss, 
 			   sdp_session_t const *sdp,

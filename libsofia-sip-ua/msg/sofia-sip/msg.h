@@ -74,8 +74,10 @@ SOFIAPUBFUN int msg_is_prepared(msg_t const *msg);
 SOFIAPUBFUN usize_t msg_size(msg_t const *msg);
 SOFIAPUBFUN usize_t msg_maxsize(msg_t *msg, usize_t maxsize);
 
+/** Cast a #msg_t pointer to a #su_home_t pointer. */
 #define msg_home(h) ((su_home_t*)(h))
 
+/** Streaming state of a #msg_t object. */
 enum msg_streaming_status {
   /** Disable streaming */
   msg_stop_streaming = 0,

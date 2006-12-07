@@ -283,14 +283,14 @@ union sm_arg_u {
 
 /* Global module data */
 
-/**@var NTA_DEBUG
+/**@var char const NTA_DEBUG[];
  *
  * Environment variable determining the default debug log level.
  *
  * The NTA_DEBUG environment variable is used to determine the default
  * debug logging level. The normal level is 3.
  * 
- * @sa <su_debug.h>, su_log_global, SOFIA_DEBUG
+ * @sa <su_debug.h>, #su_log_global, #SOFIA_DEBUG
  */
 extern char const NTA_DEBUG[];
 

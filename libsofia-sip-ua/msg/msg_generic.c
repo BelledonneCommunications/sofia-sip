@@ -136,6 +136,12 @@ issize_t msg_numeric_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
 /* ====================================================================== */
 /* Comma-separated list */
 
+/** @typedef struct msg_list_s msg_list_t; 
+ *
+ * Type for token list headers.
+ *
+ */
+
 issize_t msg_list_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
 {
   return msg_commalist_d(home, &s, &h->sh_list->k_items, NULL);
