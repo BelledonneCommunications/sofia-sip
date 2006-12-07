@@ -548,7 +548,7 @@ char *sip_refer_sub_dup_one(sip_header_t *dst, sip_header_t const *src,
   b = msg_params_dup(&rs_dst->rs_params, rs_src->rs_params, b, xtra);
   MSG_STRING_DUP(b, rs_dst->rs_value, rs_src->rs_value);
 
-  assert(b <= end);
+  assert(b <= end); (void)end;
 
   return b;
 }

@@ -136,10 +136,12 @@ sip_tag.c: sofia-sip/sip.h sip_extra_headers.txt
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sip_tag.c.in $< \
 		sip_extra_headers.txt
 
+sip_parser_table.c: sip_extra_headers.txt
+
 sip_parser_table.c: sofia-sip/sip.h
 	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/sip_parser_table.c.in \
 		FLAGFILE=$(srcdir)/sip_bad_mask \
-		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $<
+		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $< sip_extra_headers.txt
 
 sofia-sip/sip_extra.h: sofia-sip/sip_extra.h.in sip_extra_headers.txt
 	@-mkdir -p sofia-sip 2>/dev/null
