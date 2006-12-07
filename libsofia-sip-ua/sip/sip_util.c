@@ -1120,7 +1120,7 @@ int sip_response_terminates_dialog(int response_code,
       This response indicates that the peer has lost its copy of the dialog
       state. The dialog and any usages sharing it are destroyed.
 
-The dialog
+      The dialog
       itself should not be destroyed unless this was the last usage.
       The effects of a 481 on a dialog and its usages are the most
       ambiguous of any final response.  There are implementations that

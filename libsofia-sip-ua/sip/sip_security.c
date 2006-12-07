@@ -218,8 +218,8 @@ issize_t sip_proxy_authenticate_e(char b[], isize_t bsiz, sip_header_t const *h,
  *
  * The Proxy-Authorization header consists of credentials containing the
  * authentication information of the user agent for the proxy and/or realm
- * of the resource being requested.  Its syntax is defined in [H14.34,
- * S10.32] (as follows:
+ * of the resource being requested.  Its syntax is defined in @RFC3261
+ * as follows:
  *
  * @code
  *    Proxy-Authorization  = "Proxy-Authorization" ":" credentials
@@ -273,16 +273,17 @@ issize_t sip_proxy_authorization_e(char b[], isize_t bsiz, sip_header_t const *h
  *
  * The WWW-Authenticate header consists of at least one challenge that
  * indicates the authentication scheme(s) and parameters applicable to the
- * Request-URI.  Its syntax is defined in [H14.47, S10.48] as
+ * Request-URI.  Its syntax is defined in @RFC3261 as
  * follows:
  *
  * @code
- *    WWW-Authenticate  = "WWW-Authenticate" ":" 1#challenge
- *    challenge         = auth-scheme 1*SP #auth-param
+ *    WWW-Authenticate  = "WWW-Authenticate" HCOLON challenge
+ *    challenge         =  ("Digest" LWS digest-cln *(COMMA digest-cln))
+ *                      / other-challenge
+ *    other-challenge   =  auth-scheme LWS auth-param *(COMMA auth-param)
  * @endcode
  *
- * @todo Currently the parser fails if several challenges are included one
- * header.
+ * See @ProxyAuthenticate for the definition of \<digest-cln\>.
  *
  * The parsed WWW-Authenticate header
  * is stored in #sip_www_authenticate_t structure.

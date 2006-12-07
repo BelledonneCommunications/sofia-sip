@@ -172,7 +172,8 @@ static int sip_event_update(msg_common_t *h,
  * follows:
  * 
  * @code
- *    Allow-Events = ( "Allow-Events" | "u" ) ":" 1#event-type
+ *    Allow-Events = ( "Allow-Events" / "u" ) HCOLON event-type 
+ *                                           *(COMMA event-type)
  * @endcode
  *
  * The parsed Allow-Events header is stored in #sip_allow_events_t structure.
