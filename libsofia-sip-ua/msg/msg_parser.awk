@@ -55,14 +55,21 @@ BEGIN {
   split("", Comments);
   split("", COMMENTS);
 
+  # indexed by the C name of the header
+  split("", Since);		# Non-NUL if extra
+  split("", Extra);		# Offset in extra headers
+
   template="";
   template1="";
   template2="";
   template3="";
   prefix="";
   tprefix="";
+  extra=0;
   failed=0;
   success=0;
+
+  extra_struct = "msg_pub_extra";
 
   ERRNO="error";
 }
@@ -143,6 +150,10 @@ function protos (name, comment, hash, since)
   COMMENTS[N] = COMMENT; 
 
   symbols[name] = comment;
+  if (since) {
+    Since[name] = since;
+    Extra[name] = extra++;
+  }
 
   if (PR) {
     replace(template, hash, name, NAME, comment, Comment, COMMENT, since);
@@ -322,7 +333,7 @@ function templates ()
 }
 
 /^#### EXTRA HEADER LIST STARTS HERE ####$/ { HLIST=1; templates(); }
-HLIST && /^[a-z]/ { protos($1, $0, 0, $2); }
+HLIST && /^[a-z]/ { protos($1, $0, 0, $2); headers[total++] = $1; }
 /^#### EXTRA HEADER LIST ENDS HERE ####$/ { HLIST=0;  }
 
 
@@ -410,6 +421,13 @@ END {
 
     # printf("extern msg_hclass_t msg_multipart_class[];\n\n") > PT;
 
+    if (extra > 0) {
+      printf("struct %s {\n", extra_struct) > PT;
+      printf("  %s_t base;\n", module) > PT;
+      printf("  msg_header_t *extra[%u];\n", extra) > PT;
+      printf("};\n\n") > PT;
+    }
+
     printf("msg_mclass_t const %s_mclass[1] = \n{{\n", module) > PT;
     printf("# if defined (%s_HCLASS)\n", toupper(module)) > PT;
     printf("  %s_HCLASS,\n", toupper(module)) > PT;
@@ -471,8 +489,14 @@ END {
 	n = header_hash[i];
         flags = header_flags[n]; if (flags) flags = ",\n      " flags;
 
-	printf("    { %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
-	       tprefix, n, module, prefix, n, flags, c) > PT;
+	if (Since[n]) {
+	  printf("    { %s_%s_class, offsetof(struct %s, extra[%u])%s }%s\n", 
+		 tprefix, n, extra_struct, Extra[n], flags, c) > PT;
+	}
+	else {
+	  printf("    { %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
+		 tprefix, n, module, prefix, n, flags, c) > PT;
+	}
       }
       else {
 	printf("    { NULL, 0 }%s\n", c) > PT;
