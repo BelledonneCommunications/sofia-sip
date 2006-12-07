@@ -3,11 +3,14 @@
 @section sresolv_meta Module Information
 
 The Sofia @b sresolv module consists of an asynchronous DNS resolver with
-EDNS extensions. The interface to library is declared in <sofia-sip/sresolv.h>.
+EDNS extensions. The interface to library using #su_root_t is declared in
+<sofia-sip/sresolv.h>.
 
 An alternative interface is defined by <sofia-resolv/sres.h>,
 <sofia-resolv/sres_record.h>, <sofia-resolv/sres_async.h>, and
 <sofia-resolv/sres_cache.h>.
+
+@sa @RFC1034, @RFC1035, @RFC1886, @RFC2671, @RFC2782, @RFC2915
 
 @CONTACT Pekka Pessi <Pekka.Pessi@nokia.com>
 
@@ -19,11 +22,28 @@ An alternative interface is defined by <sofia-resolv/sres.h>,
 
 The policy for caching non-authoritave entries should be solved.
 
-@section sresolv_overview Using Sofia Resolver
+@section sresolv_overview Why Sofia Resolver?
 
-The sresolv works usually asynchronously, in other words, it sends a query
-to DNS server and returns immediately to the caller. When the query is
-completed, sresolv signals application through a callback function.
+The generally available open source DNS libraries are either synchronous,
+that is, they block the thread making the query or they resolve only host
+names. As SIP protocol uses NAPTR and SRV records in addition ot the usual A
+or AAAA records, these DNS libraries are inadequate for a SIP application.
+
+Sofia resolver uses the usual configuration for DNS. In Unix-based systems,
+the DNS configuration is stored in the file /etc/resolv.conf, on Windows, it
+is available through the registry. Sofia resolvers reloads the configuration
+when it detect that it has been changed. 
+
+In addition to the configuration files, the environment variables
+#SRES_OPTIONS and #RES_OPTIONS can be used to change the behaviour of the
+resolver.
+
+@section sresolv_interfaces Using Sofia Resolver
+
+Sofia resolver works usually asynchronously, in other words, it generates a
+a query, sends it to DNS server and returns immediately to the caller. When
+a response is received and the query is completed, sresolv signals
+application through a callback function.
 
 The application can either explicitly poll(2) or select(2) on file
 descriptors used by resolver and call the driver functions, or it can use

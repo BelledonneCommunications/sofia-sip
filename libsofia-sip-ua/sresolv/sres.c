@@ -620,8 +620,8 @@ sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
  *
  * @par Environment Variables
  * - LOCALDOMAIN overrides @c domain or @c search directives
- * - RES_OPTIONS overrides values of @a options in resolv.conf
- * - SRES_OPTIONS overrides values of @a options in resolv.conf, RES_OPTIONS,
+ * - #RES_OPTIONS overrides values of @a options in resolv.conf
+ * - #SRES_OPTIONS overrides values of @a options in resolv.conf, #RES_OPTIONS,
  *   and @a options, ... list given as argument for this function
  *
  * @return A pointer to a newly created sres resolver object, or NULL upon
@@ -1079,7 +1079,7 @@ sres_search(sres_resolver_t *res,
  * IPv4 (AF_INET) or IPv6 (AF_INET6) address.
  *
  * If the #SRES_OPTIONS environment variable, #RES_OPTIONS environment
- * variable or an "options" entry in resolv.conf file contains an option
+ * variable, or an "options" entry in resolv.conf file contains an option
  * "ip6-dotint", the IPv6 addresses are resolved using suffix ".ip6.int"
  * instead of the standard ".ip6.arpa" suffix.
  *
@@ -2196,6 +2196,42 @@ int sres_parse_config(sres_config_t *c, FILE *f)
   return i;
 }
 
+/**Environment variable containing options for Sofia resolver. The options
+ * recognized by Sofia resolver are as follows:
+ * - debug           turn on debugging (no effect)
+ * - ndots:<i>n</i>  when searching, try first to query name as absolute
+ *                   domain if it contains at least <i>n</i> dots
+ * - timeout:<i>secs</i> timeout in seconds
+ * - attempts:<i>n</i> fail after <i>n</i> retries
+ * - rotate          use round robin selection of nameservers
+ * - no-check-names  do not check names for invalid characters
+ * - inet6           (no effect) 
+ * - ip6-dotint      IPv6 addresses are resolved using suffix ".ip6.int"
+ *                   instead of the standard ".ip6.arpa" suffix
+ * - ip6-bytestring  (no effect)
+ * The following option is a Sofia-specific extension:
+ * - no-edns0        do not try to use EDNS0 extension (@RFC2671)
+ *
+ * The same options can be listed in @b options directive in resolv.conf, or
+ * in #RES_OPTIONS environment variable. Note that options given in
+ * #SRES_OPTIONS override those specified in #RES_OPTIONS which in turn
+ * override options specified in the @b options directive of resolve.conf.
+ *
+ * The meaning of an option can be reversed with prefix "no-".
+ *
+ * @sa Manual page for resolv.conf, #RES_OPTIONS.
+ */
+extern char const SRES_OPTIONS[];
+
+/**Environment variable containing resolver options. This environment
+ * variable is also used by standard BIND resolver.
+ *
+ * @sa Manual page for resolv.conf, #SRES_OPTIONS.
+ */
+extern char const RES_OPTIONS[];
+
+
+/* Parse options line or #SRES_OPTIONS or #RES_OPTIONS environment variable. */
 static int 
 sres_parse_options(sres_config_t *c, char const *value)
 {

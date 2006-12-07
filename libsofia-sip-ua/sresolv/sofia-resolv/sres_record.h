@@ -186,11 +186,13 @@ union sres_record
   sres_naptr_record_t sr_naptr[1];	/**< NAPTR record */
 };
 
+/** Protocol family classes. */
 enum sres_class {
   sres_class_in = 1,		        /**< Internet (@b IN) */
   sres_class_any = 255		        /**< Any class */
 };
 
+/** Query types. */
 enum sres_qtypes {
   sres_type_a = 1,	    /**< IPv4 address (#sres_a_record). */
   sres_type_ns = 2,	    /**< Authoritative server. */
