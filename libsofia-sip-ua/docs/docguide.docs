@@ -41,16 +41,16 @@ comment. For example, documenting a function happens like this:
  * Orches a candometer. If orching candometer is not possible, it
  * tries to schadule hearping.
  * 
- * @param k        pointer to a candometer [IN]
- * @param level    orching level [IN]
- * @param return_h return value for schaduled hearping [OUT]
+ * @param[in]  k        pointer to a candometer
+ * @param[in]  level    orching level
+ * @param[out] return_hearping return value for schaduled hearping
  *
  * @return
  * The function orch() returns the candometer value, or #ERROR upon an error.
  * If the returned value is 0, the newly schaduled hearping is returned in
- * @a return_h.
+ * @a return_hearping.
  */
-int orch(cando_t *k, int level, hearping_t *return_h)
+int orch(cando_t *k, int level, hearping_t *return_hearping)
 {
   ...
 }
@@ -82,7 +82,7 @@ subdirectory at top level. A separate output directory is created for
 each submodule under it. Doxytags for the module are generated in the @e
 doxytags file in the output directory. 
 
-@subsection module_docs Module documentation in <module>.docs
+@subsection module_docs Module documentation in \<module\>.docs
 
 Each module contains a documentation file containing at least the module
 mainpage called @e \<module\>.docs. There should be the module
@@ -118,6 +118,7 @@ the commands are explained in the manual.
 The commands include 
 - @ref doxystyle "style commands (@@a, @@b, @@c, @@e, @@em, @@p)"
 - @ref doxyfuncs "function parameters and return values (@@param, @@return, @@retval)"
+
 @subsection doxystyle Style Commands - @a, @b, @c, @e
 
 The text style can be changed with @@b @b (bold), @@c @c (code), or
@@ -139,8 +140,8 @@ well as @@c and @@p.
 
 Parameters to a function are documented with @@param commands. (See
 the @ref orch "orch()" function above.) As a convention, the data flow
-direction [IN], [OUT] or [IN/OUT] is indicated in the brackets at
-the end of @@param command.
+direction [in], [out] or [in,out] is indicated in the brackets after the
+@@param command keyword.
 
 Return values can be documented in two alternative manners, either
 using @@return command (see @ref orch "orch()") or @@retval command. The
@@ -152,7 +153,7 @@ values, e.g., enumeration or success/failure indication.
  * 
  * The function schadule() schadules a hearping.
  * 
- * @param h pointer to hearping [IN]
+ * @param[in] h pointer to hearping
  * 
  * @retval 0  hearping was successful
  * @retval -1 an error occurred
@@ -173,7 +174,7 @@ commands.
  * The function hearping_destroy() deinitializes a hearping and
  * reclaims the memory allocated for it. 
  * 
- * @param h pointer to pointer to hearping [IN/OUT]
+ * @param[in,out] h pointer to pointer to hearping
  * 
  * The function clears the pointer to hearping, so it must be called
  * with a pointer to pointer:
@@ -192,16 +193,11 @@ the same line with @@par is used as a subtitle for the paragraph. The
 commands @@date, @@note, @@bug, @@todo, @@sa (See Also) and
 @@deprecated can be used to add common paragraphs to documentation entries.
 
-@subsection doclicense License Text
-
-There is special commands @@NOKOS, @@LGPL or @@LICENSE for adding specific
-copying terms to the documentation entry.
-
 @subsection docfiles Documenting Files
 
 In most files there is documentation entry for the file itself. It is
-usually at top, containing @@file command or alias @@CFILE/@@IFILE. There
-are Emacs macros for creating the boilerplate entry.
+usually at top after the LGPL reference, containing @@file command or alias
+@@CFILE/@@IFILE. There are Emacs macros for creating the boilerplate entry.
 
 @subsection docgrouping Grouping Entries
 
