@@ -4325,9 +4325,7 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
       if (irq->irq_must_100rel ||
 	  (sip->sip_supported &&
 	   sip_has_feature(sip->sip_supported, "100rel"))) {
-	/* Initialize rseq */
-	irq->irq_rseq = (random() & 0x7fffffff);
-	irq->irq_rseq += irq->irq_rseq == 0;
+	irq->irq_rseq = su_randint(1, 0x7fffffff); /* Initialize rseq */
       }
 
       queue = agent->sa_in.proceeding;
