@@ -79,7 +79,7 @@ doxygen: built-sources
 	  && pushd $$d > /dev/null \
 	  && echo running ${DOXYGEN} first time in $$d \
           && ${DOXYGEN} 2>&1 \
-	  | egrep -v -i -e 'Warning: (unsupported (xml/)?html tag|unable to resolve reference)' \
+	  | egrep -v -i -e 'Warning: (unsupported (xml/)?html tag|unable to resolve reference|could not be resolved)' \
           ; popd > /dev/null ; \
 	  test -r docs/$$d.doxytags && \
 	  sed '2,10s!<name>index</name>!<name>'$$d'_index</name>!' \
