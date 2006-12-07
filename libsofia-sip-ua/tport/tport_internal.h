@@ -101,6 +101,7 @@ typedef struct {
   unsigned tpp_qsize;		/**< Size of queue */
 
   unsigned tpp_drop;		/**< Packet drop probablity */
+  int      tpp_tos;         	/**< IP TOS */
 
   unsigned tpp_conn_orient:1;   /**< Connection-orienteded */
   unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
@@ -364,6 +365,8 @@ void tport_has_been_updated(tport_t *tport);
 int tport_primary_compression(tport_primary_t *pri,
 			      char const *compression,
 			      tagi_t const *tl);
+
+void tport_set_tos(su_socket_t socket, su_addrinfo_t *ai, int tos);
 
 tport_t *tport_base_connect(tport_primary_t *pri, 
 			    su_addrinfo_t *ai,

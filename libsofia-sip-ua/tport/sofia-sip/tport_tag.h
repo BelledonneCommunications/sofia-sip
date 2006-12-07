@@ -258,6 +258,13 @@ TPORT_DLL extern tag_typedef_t tptag_stun_server;
 TPORT_DLL extern tag_typedef_t tptag_stun_server_ref;
 #define TPTAG_STUN_SERVER_REF(x) tptag_stun_server_ref, tag_bool_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_tos;
+/** Sets the IP TOS for the socket. */
+#define TPTAG_TOS(x) tptag_tos, tag_int_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_tos_ref;
+#define TPTAG_TOS_REF(x) tptag_tos_ref, tag_int_vr(&(x))
+
 SOFIA_END_DECLS
 
 #endif /* !defined TPORT_TAG_H */

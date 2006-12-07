@@ -125,6 +125,9 @@ int tport_stream_init_primary(tport_primary_t *pri,
 {
   pri->pri_primary->tp_socket = socket;
 
+  /* Set IP TOS if set */
+  tport_set_tos(socket, ai, pri->pri_params->tpp_tos);
+
 #if defined(__linux__)
   /* Linux does not allow reusing TCP port while this one is open,
      so we can safely call su_setreuseaddr() before bind(). */

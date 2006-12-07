@@ -303,6 +303,17 @@ int tport_has_sigcomp(tport_t const *self)
   return self->tp_name->tpn_comp != NULL;
 }
 
+/** Set IP TOS for socket */
+void tport_set_tos(su_socket_t socket, su_addrinfo_t *ai, int tos)
+{
+  if (tos >= 0 && 
+      ai->ai_family == AF_INET && 
+      setsockopt(socket, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) < 0) {
+    SU_DEBUG_3(("tport: setsockopt(IP_TOS): %s\n",
+		su_strerror(su_errno())));
+  }
+}
+
 static 
 tport_t *tport_connect(tport_primary_t *pri, su_addrinfo_t *ai, 
 		       tp_name_t const *tpn);
@@ -455,6 +466,7 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tpp->tpp_timeout = UINT_MAX;
   tpp->tpp_sigcomp_lifetime = UINT_MAX;
   tpp->tpp_stun_server = 1;
+  tpp->tpp_tos = -1;                  /* set invalid, valid values are 0-255 */
 
   tpn = mr->mr_master->tp_name;
   tpn->tpn_proto = "*";
@@ -824,6 +836,11 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
       su_home_zap(self->tp_home);
       return NULL;
     }
+
+    /* Set IP TOS if it is set in primary */
+    tport_set_tos(socket,
+		  pri->pri_primary->tp_addrinfo,
+		  pri->pri_params->tpp_tos);
   }
   else {
     su_close(socket);
@@ -1099,6 +1116,7 @@ int tport_get_params(tport_t const *self,
 	       TPTAG_THRPSIZE(tpp->tpp_thrpsize),
 	       TPTAG_THRPRQSIZE(tpp->tpp_thrprqsize),
 	       TAG_IF(pri, TPTAG_PUBLIC(pri ? pri->pri_public : 0)),
+	       TPTAG_TOS(tpp->tpp_tos),
 	       TAG_END());
 
   ta_end(ta);
@@ -1148,6 +1166,7 @@ int tport_set_params(tport_t *self,
 	      TPTAG_REUSE_REF(reusable),
 	      TPTAG_COMPARTMENT_REF(cc),
 	      TPTAG_STUN_SERVER_REF(stun_server),
+	      TPTAG_TOS_REF(tpp->tpp_tos),
 	      TAG_END());
 
   ta_end(ta);

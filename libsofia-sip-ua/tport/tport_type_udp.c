@@ -115,6 +115,8 @@ int tport_udp_init_primary(tport_primary_t *pri,
   if (tport_bind_socket(s, ai, return_culprit) < 0)
     return -1;
 
+  tport_set_tos(s, ai, pri->pri_params->tpp_tos);
+
 #if HAVE_IP_RECVERR
   if (ai->ai_family == AF_INET || ai->ai_family == AF_INET6) {
     int const one = 1;
