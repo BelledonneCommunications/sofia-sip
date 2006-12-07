@@ -62,8 +62,10 @@ struct auth_client_s {
 
 struct auth_client_plugin
 {
-  int auc_plugin_size, auc_size;
-  char const *auc_name;
+  int auc_plugin_size;		/* Size of this structure */
+  int auc_size;			/* Size of the client structure */
+
+  char const *auc_name;		/* Name of the autentication scheme */
   
   /** Store challenge */
   int (*auc_challenge)(auth_client_t *ca, 
@@ -77,7 +79,8 @@ struct auth_client_plugin
 		       msg_payload_t const *body,
 		       msg_header_t **return_headers);
 
-  
+  /** Store nextnonce from Authentication-Info or Proxy-Authentication-Info. */
+  int (*auc_info)(auth_client_t *ca, msg_auth_info_t const *ai);
 };
 
 SOFIA_END_DECLS

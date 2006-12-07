@@ -34,9 +34,11 @@
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_md5.h>
 
+#include "sofia-sip/auth_common.h"
 #include "sofia-sip/auth_client.h"
 #include "sofia-sip/auth_client_plugin.h"
 
+#include <sofia-sip/msg_types.h>
 #include <sofia-sip/msg_header.h>
 
 #include <sofia-sip/auth_digest.h>
@@ -64,6 +66,10 @@ static int ca_challenge(auth_client_t *ca,
 			msg_hclass_t *credential_class,
 			char const *scheme,
 			char const *realm);
+
+static int ca_info(auth_client_t *ca,
+		   msg_auth_info_t const *ai,
+		   msg_hclass_t *credential_class);
 
 static int ca_credentials(auth_client_t *ca, 
 			  char const *scheme,
@@ -176,6 +182,87 @@ int ca_challenge(auth_client_t *ca,
 
   return stale ? 2 : 1;
 }
+
+/** Store authentication info to authenticators.
+ *
+ * The function auc_info() feeds the authentication data from the
+ * authentication info @a info to the list of authenticators @a auc_list.
+ *
+ * @param auc_list [in/out] list of authenticators to be updated
+ * @param info     [in] info to be processed
+ * @param crcl     [in] corresponding credential class
+ *
+ * The authentication info can be in either Authentication-Info or in
+ * Proxy-Authentication-Info headers.
+ * If the header is Authentication-Info, the @a crcl should be
+ * #sip_authorization_class or #http_authorization_class.
+ * Likewise, If the header is Proxy-Authentication-Info, the @a crcl should
+ * be #sip_proxy_authorization_class or #http_proxy_authorization_class.
+
+ * The authentication into usually contains next nonce or mutual
+ * authentication information. We handle only nextnonce parameter. 
+ *
+ * @bug
+ * The result can be quite unexpected if there are more than one
+ * authenticator with the given type (specified by @a crcl). In principle,
+ * SIP allows more than one challenge for a single request.
+ *
+ * @retval number of challenges to updated
+ * @retval 0 when there was no challenge to update
+ * @retval -1 upon an error
+ */
+int auc_info(auth_client_t **auc_list,
+	     msg_auth_info_t const *ai,
+	     msg_hclass_t *credential_class)
+{
+  auth_client_t *ca;
+  int retval = 0;
+
+  /* Go through each challenge in Authenticate or Proxy-Authenticate headers */
+
+  /* Update matching authenticator */
+  for (ca = *auc_list; ca; ca = ca->ca_next) {
+    int updated = ca_info(ca, ai, credential_class);
+    if (updated < 0)
+      return -1;
+    if (updated >= 1)
+      retval = 1;		/* Updated authenticator */
+  }
+
+  return retval;
+}
+
+/** Update authentication client with authentication info. 
+ *
+ * @retval -1 upon an error
+ * @retval 0 when challenge did not match
+ * @retval 1 when challenge did match but was not updated
+ * @retval 2 when challenge did match and updated client
+ */
+static
+int ca_info(auth_client_t *ca, 
+	    msg_auth_info_t const *ai,
+	    msg_hclass_t *credential_class)
+{
+  assert(ca); assert(ai);
+
+  if (!ca || !ai)
+    return -1;
+
+  if (!ca->ca_credential_class)
+    return 0;
+
+  if (ca->ca_credential_class != credential_class)
+    return 0;
+
+  if (!ca->ca_auc
+      || ca->ca_auc->auc_plugin_size <= offsetof(auth_client_plugin_t, auc_info)
+      || !ca->ca_auc->auc_info)
+    return 0;
+
+  return ca->ca_auc->auc_info(ca, ai);
+}
+
 
 /**Feed authentication data to the authenticator.
  *
@@ -531,11 +618,12 @@ static int auc_basic_authorization(auth_client_t *ca,
 
 const auth_client_plugin_t ca_basic_plugin = 
 { 
-  sizeof ca_basic_plugin,
-  sizeof (auth_client_t),
-  "Basic",
-  NULL,
-  auc_basic_authorization
+  /* auc_plugin_size: */ sizeof ca_basic_plugin,
+  /* auc_size: */        sizeof (auth_client_t),
+  /* auc_name: */       "Basic",
+  /* auc_challenge: */   NULL,
+  /* auc_authorize: */   auc_basic_authorization,
+  /* auc_info: */        NULL
 };
 
 /**Create a basic authorization header.
@@ -625,14 +713,17 @@ static int auc_digest_authorization(auth_client_t *ca,
 				    url_t const *url, 
 				    msg_payload_t const *body,
 				    msg_header_t **);
+static int auc_digest_info(auth_client_t *ca, 
+			   msg_auth_info_t const *ai);
 
 static const auth_client_plugin_t ca_digest_plugin = 
 { 
-  sizeof ca_digest_plugin,
-  sizeof (auth_digest_client_t),
-  "Digest", 
-  auc_digest_challenge,
-  auc_digest_authorization
+  /* auc_plugin_size: */ sizeof ca_digest_plugin,
+  /* auc_size: */        sizeof (auth_digest_client_t),
+  /* auc_name: */       "Digest", 
+  /* auc_challenge: */   auc_digest_challenge,
+  /* auc_authorize: */   auc_digest_authorization,
+  /* auc_info: */        auc_digest_info
 };
 
 /** Store a digest authorization challenge.
@@ -678,6 +769,25 @@ static int auc_digest_challenge(auth_client_t *ca, msg_auth_t const *ch)
   return -1;
 }
 
+static int auc_digest_info(auth_client_t *ca,
+			   msg_auth_info_t const *ai)
+{
+  auth_digest_client_t *cda = (auth_digest_client_t *)ca;
+  su_home_t *home = ca->ca_home;
+  char const *nextnonce = NULL;
+  issize_t n;
+
+  n = auth_get_params(home, ai->ai_params,
+		      "nextnonce=", &nextnonce,
+		      NULL);
+
+  if (n <= 0)
+    return n;
+
+  cda->cda_ac->ac_nonce = nextnonce;
+
+  return 1;
+}
 
 /**Create a digest authorization header.
  *

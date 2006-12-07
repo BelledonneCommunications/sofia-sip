@@ -109,8 +109,7 @@ typedef msg_accept_language_t       http_accept_language_t;
 typedef msg_list_t                  http_accept_ranges_t;
 typedef msg_numeric_t               http_age_t;
 typedef msg_list_t                  http_allow_t;
-typedef 
-struct http_authentication_info_s   http_authentication_info_t;
+typedef msg_auth_info_t             http_authentication_info_t;
 typedef msg_auth_t                  http_authorization_t;
 typedef msg_list_t                  http_cache_control_t;
 typedef msg_list_t                  http_connection_t;
@@ -197,6 +196,8 @@ struct http_status_s {
 
 /**@ingroup http_authentication_info
  * @brief Structure for @b Authentication-Info header.
+ *
+ * @deprecated Use struct msg_auth_info_s instead.
  */
 struct http_authentication_info_s
 {

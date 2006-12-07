@@ -350,11 +350,11 @@ issize_t sip_www_authenticate_e(char b[], isize_t bsiz, sip_header_t const *h, i
  *
  * The #sip_authentication_info_t is defined as follows:
  * @code
- * typedef struct msg_list_s
+ * typedef struct msg_auth_info_s
  * {
- *   msg_common_t       k_common[1];  // Common fragment info
- *   msg_list_t        *k_next;	      // Dummy link to next header
- *   msg_param_t       *k_items;      // List of ainfo
+ *   msg_common_t       ai_common[1];  // Common fragment info
+ *   msg_error_t       *ai_next;       // Dummy link to next header
+ *   msg_param_t       *ai_items;      // List of ainfo
  * } sip_authentication_info_t;
  * @endcode
  */
@@ -408,18 +408,18 @@ issize_t sip_authentication_info_e(char b[], isize_t bsiz, sip_header_t const *h
  */
 
 /**@ingroup sip_proxy_authentication_info
- * @typedef typedef struct sip_proxy_authentication_info_s sip_proxy_authentication_info_t;
+ * @typedef typedef struct msg_authentication_info_s sip_proxy_authentication_info_t;
  *
  * The structure #sip_proxy_authentication_info_t contains representation of SIP
  * @ProxyAuthenticationInfo header.
  *
  * The #sip_proxy_authentication_info_t is defined as follows:
  * @code
- * typedef struct msg_list_s
+ * typedef struct msg_auth_info_s
  * {
- *   msg_common_t       k_common[1];  // Common fragment info
- *   msg_list_t        *k_next;	      // Dummy link to next header
- *   msg_param_t       *k_items;      // List of ainfo
+ *   msg_common_t       ai_common[1];  // Common fragment info
+ *   msg_error_t       *ai_next;       // Dummy link to next header
+ *   msg_param_t       *ai_items;      // List of ainfo
  * } sip_proxy_authentication_info_t;
  * @endcode
  *
@@ -442,7 +442,7 @@ issize_t sip_proxy_authentication_info_d(su_home_t *home, sip_header_t *h,
 issize_t sip_proxy_authentication_info_e(char b[], isize_t bsiz, 
 					 sip_header_t const *h, int f)
 {
-  assert(sip_is_authentication_info(h));
+  assert(sip_is_proxy_authentication_info(h)); /* This is soo popular */
   return msg_list_e(b, bsiz, h, f);
 }
 

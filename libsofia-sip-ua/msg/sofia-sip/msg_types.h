@@ -100,6 +100,7 @@ typedef struct msg_numeric_s  	    msg_numeric_t;
 typedef struct msg_generic_s  	    msg_generic_t;
 typedef struct msg_list_s     	    msg_list_t;
 typedef struct msg_auth_s     	    msg_auth_t;
+typedef struct msg_auth_info_s      msg_auth_info_t;
 
 #define MSG_HEADER_N 16377
 
@@ -172,6 +173,17 @@ struct msg_auth_s {
   msg_auth_t        *au_next;	    /**< Link to next header */
   char const        *au_scheme;	    /**< Auth-scheme like Basic or Digest */
   msg_param_t const *au_params;	    /**< Comma-separated parameters */
+};
+
+/**Authentication-Info header
+ *
+ * An Authentication-Info header has comma-separated list of parameters as its value.
+ */
+struct msg_auth_info_s
+{
+  msg_common_t        ai_common[1]; /**< Common fragment info */
+  msg_error_t        *ai_next;	    /**< Dummy link to next */
+  msg_param_t const  *ai_params;    /**< List of ainfo */
 };
 
 /** Unknown header. */
