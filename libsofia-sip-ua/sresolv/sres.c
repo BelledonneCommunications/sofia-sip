@@ -714,7 +714,7 @@ sres_resolver_new_internal(sres_cache_t *cache,
 #if HAVE_DEV_URANDOM
     int fd;
     if ((fd = open("/dev/urandom", O_RDONLY, 0)) != -1) {
-      read(fd, &res->res_id, (sizeof res->res_id));
+      size_t len = read(fd, &res->res_id, (sizeof res->res_id)); (void)len;
       close(fd);
     }
     else

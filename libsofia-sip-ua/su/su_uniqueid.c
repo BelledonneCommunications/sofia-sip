@@ -148,7 +148,7 @@ static void init(void)
 #endif	/* HAVE_DEV_URANDOM */
 
   if (urandom) {
-    fread(seed, sizeof seed, 1, urandom);
+    size_t len = fread(seed, sizeof seed, 1, urandom); (void)len;
   }
   else {
     for (i = 0; i < 16; i++) {
@@ -225,7 +225,7 @@ void init_node(void)
 #endif
 
   if (urandom) {
-    fread(node, sizeof node, 1, urandom);
+    size_t len = fread(node, sizeof node, 1, urandom); (void)len;
   }
   else for (i = 0; i < sizeof(node); i++) {
     unsigned r = random();
@@ -294,7 +294,7 @@ int su_randint(int lb, int ub)
   if (!initialized) init(); 
 
   if (urandom) {
-    fread(&rnd, 1, sizeof rnd, urandom);
+    size_t len = fread(&rnd, 1, sizeof rnd, urandom); (void)len;
   }
   else
     rnd = random();
@@ -312,7 +312,7 @@ void *su_randmem(void *mem, size_t siz)
   if (!initialized) init(); 
 
   if (urandom) {
-    fread(mem, 1, siz, urandom);
+    size_t len = fread(mem, 1, siz, urandom); (void)len;
   }
   else for (i = 0; i < siz; i++) {
     unsigned r = random();
@@ -329,14 +329,13 @@ void *su_randmem(void *mem, size_t siz)
  */
 uint32_t su_random(void)
 {
-  uint32_t rnd;
-
   if (!initialized) init(); 
 
-  if (urandom)
-    fread(&rnd, 1, sizeof rnd, urandom);
-  else
-    rnd = (uint32_t)random();
+  if (urandom) {
+    uint32_t rnd;
+    size_t len = fread(&rnd, 1, sizeof rnd, urandom); (void)len;
+    return rnd;
+  }
 
-  return rnd;
+  return (uint32_t)random();
 }
