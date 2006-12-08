@@ -226,12 +226,15 @@ void prefix##_remove(prefix##_t *pr, entry_t const *e) \
   size_t size = pr->pr##_size; \
   entry_t **htable = pr->pr##_table; \
 \
+  if (!e) return; \
+\
   /* Search for entry */ \
   for (i = hfun(e) % size; htable[i]; i = (i + 1) % size) \
     if (e == htable[i]) \
       break; \
 \
-  assert(htable[i]); if (!htable[i]) abort(); \
+  /* Entry is not in table? */ \
+  assert(htable[i]); if (!e) return; \
 \
   /* Move table entries towards their primary place  */ \
   for (j = (i + 1) % size; htable[j]; j = (j + 1) % size) { \
