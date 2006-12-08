@@ -131,6 +131,12 @@ ssize_t sres_recvfrom(sres_socket_t s, void *buffer, size_t length, int flags,
   return (ssize_t)retval;
 }
 
+static inline
+int sres_close(sres_socket_t s)
+{
+  return closesocket(s);
+}
+
 #if !defined(IPPROTO_IPV6)
 #if HAVE_SIN6
 #include <tpipv6.h>
@@ -148,6 +154,7 @@ struct sockaddr_storage {
 #define sres_send(s,b,len,flags) send((s),(b),(len),(flags))
 #define sres_recvfrom(s,b,len,flags,a,alen) \
   recvfrom((s),(b),(len),(flags),(a),(alen))
+#define sres_close(s) close((s))
 #define SOCKET_ERROR   (-1)
 #define INVALID_SOCKET ((sres_socket_t)-1)
 #endif
@@ -2433,7 +2440,7 @@ void sres_servers_close(sres_resolver_t *res,
     if (servers[i]->dns_socket != -1) {
       if (res->res_updcb)
 	res->res_updcb(res->res_async, INVALID_SOCKET, servers[i]->dns_socket);
-      close(servers[i]->dns_socket);
+      sres_close(servers[i]->dns_socket);
     }
   }
 }
@@ -2509,7 +2516,7 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     SU_DEBUG_1(("%s: %s: %s: %s%s%s:%u\n", "sres_server_socket", "connect",
 		su_strerror(su_errno()), lb, ipaddr, rb,
 		ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
-    close(s);
+    sres_close(s);
     dns->dns_error = time(NULL);
     return INVALID_SOCKET;
   }
@@ -2518,7 +2525,7 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     if (res->res_updcb(res->res_async, s, INVALID_SOCKET) < 0) {
       SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "update callback",
 		  su_strerror(su_errno())));
-      close(s);
+      sres_close(s);
       dns->dns_error = time(NULL);
       return INVALID_SOCKET;
     }
