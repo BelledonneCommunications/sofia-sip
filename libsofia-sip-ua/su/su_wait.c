@@ -249,7 +249,7 @@ int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout)
     if (errno == EINTR)
       continue;
 
-    return i;
+    return -1;
   }  
 #endif
 }

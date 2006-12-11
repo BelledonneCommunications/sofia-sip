@@ -1285,9 +1285,9 @@ int su_port_wait_events(su_port_t *self, su_duration_t tout)
   }
 #endif
 
-  i = su_wait(waits, n, tout);
+  i = su_wait(waits, (unsigned)n, tout);
 
-  if (i >= 0 && (unsigned)i < n) {
+  if (i >= 0 && i < n) {
 #if HAVE_POLL			
     /* poll() can return events for multiple wait objects */
     if (self->sup_multishot) {

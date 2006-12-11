@@ -110,7 +110,7 @@ int main(int ac, char *av[])
     usage();
 
   if ((s = av[1])) {
-    int n, m;
+    size_t n, m;
     /* Concatenate all arguments with a space in between them */
     for (n = 0; (s = av[1]); av++) {
       m = strlen(s);

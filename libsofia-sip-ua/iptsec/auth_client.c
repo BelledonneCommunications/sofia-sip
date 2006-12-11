@@ -256,7 +256,8 @@ int ca_info(auth_client_t *ca,
     return 0;
 
   if (!ca->ca_auc
-      || ca->ca_auc->auc_plugin_size <= offsetof(auth_client_plugin_t, auc_info)
+      || (size_t)ca->ca_auc->auc_plugin_size <= 
+         offsetof(auth_client_plugin_t, auc_info)
       || !ca->ca_auc->auc_info)
     return 0;
 
