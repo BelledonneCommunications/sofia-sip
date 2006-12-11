@@ -778,6 +778,8 @@ int test_digest_client()
 				  AUTHTAG_ALGORITHM("MD5"),
 				  AUTHTAG_QOP("auth-int"),
 				  AUTHTAG_EXPIRES(90),
+				  /* Generate nextnonce
+				     if NEXT_EXPIRES in nonzero */
 				  AUTHTAG_NEXT_EXPIRES(900),
 				  TAG_END()));
       
@@ -798,9 +800,12 @@ int test_digest_client()
       reinit_as(as);
       auth_mod_check_client(am, as, sip->sip_authorization, ach);
       TEST(as->as_status, 0);
+      /* We got authentication-info */
       TEST_1(as->as_info);
+      /* It contains nextnonce */
       TEST_1(nextnonce = msg_header_find_param(as->as_info->sh_common, "nextnonce"));
 
+      /* Store it in authenticator */
       TEST(auc_info(&aucs, (msg_auth_info_t const *)as->as_info, sip_authorization_class), 1);
 
       msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
@@ -810,10 +815,14 @@ int test_digest_client()
       TEST_1(sip->sip_authorization);
       TEST_1(nonce2 = msg_header_find_param(sip->sip_authorization->au_common, "nonce"));
 
+      /*
+       * Make sure that server-side sends nextnonce in Authentication-info
+       * header, nextnonce differs from nonce sent in Challenge
+       */
       TEST_1(strcmp(nonce1, nextnonce));
-      TEST_1(strcmp(nonce1, nonce2));
+      /* And client-side uses it */
       TEST_S(nonce2, nextnonce);
-      
+
       auth_mod_destroy(am); aucs = NULL;
     }
 
