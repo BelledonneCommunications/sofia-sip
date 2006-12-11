@@ -171,7 +171,7 @@ int msg_mclass_insert_header(msg_mclass_t *mc,
   }
 
   if (msg_hclass_offset(mc, NULL, hc))
-    return (void)(errno = EEXISTS), -1;
+    return (void)(errno = EEXIST), -1;
 
   if (offset == 0)
     offset = mc->mc_msize, mc->mc_msize += sizeof(msg_header_t *);
@@ -214,7 +214,7 @@ int msg_mclass_insert_with_mask(msg_mclass_t *mc,
   }
 
   if (msg_hclass_offset(mc, NULL, hc))
-    return (void)(errno = EEXISTS), -1;
+    return (void)(errno = EEXIST), -1;
 
   if (offset == 0)
     offset = mc->mc_msize, mc->mc_msize += sizeof(msg_header_t *);
