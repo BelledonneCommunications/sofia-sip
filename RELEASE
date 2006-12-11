@@ -24,6 +24,7 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added auc_info() function (sofia-sip/auth_client.h)
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 
@@ -72,5 +73,7 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Not using close() with sockets in sres.c. Problem reported by
+  Roman Filonenko.
 - Bug in zero-padding STUN messages with a message integrity 
   attribute. Patch by Petteri Puolakka.
