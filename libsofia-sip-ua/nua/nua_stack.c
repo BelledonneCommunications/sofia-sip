@@ -1517,15 +1517,15 @@ int nua_creq_check_restart(nua_handle_t *nh,
 {
   int status = sip->sip_status->st_status;
   sip_method_t method = nta_outgoing_method(orq);
-  int removed = 0;
 
   nua_dialog_usage_t *du = cr->cr_usage;
 
   assert(restart_function);
 
-  if (orq == cr->cr_orq)
-    removed = 1, cr->cr_orq = NULL;
+  if (orq != cr->cr_orq)
+    return 0;
 
+  cr->cr_orq = NULL;
   cr->cr_restart = NULL;
 
   if (cr->cr_msg == NULL || status < 200)
@@ -1596,13 +1596,10 @@ int nua_creq_check_restart(nua_handle_t *nh,
   }
 
   /* This was final response that cannot be restarted. */
-  if (removed)
-    cr->cr_orq = orq;
+  cr->cr_orq = orq;
 
-  if (du) {
+  if (du)
     du->du_refresh = 0;
-  }
-
   cr->cr_retry_count = 0;
 
   if (cr->cr_msg)
