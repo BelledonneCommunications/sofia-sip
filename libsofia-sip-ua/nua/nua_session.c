@@ -3247,13 +3247,26 @@ nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 
   nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
-  msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
-		     SIP_METHOD_BYE,
-		     TAG_NEXT(tags));
-  orq = nta_outgoing_mcreate(nua->nua_nta,
-			     process_response_to_bye, nh, NULL,
-			     msg,
-			     SIPTAG_END(), TAG_NEXT(tags));
+  if (cr->cr_orq) {
+    msg = NULL;
+    orq = nta_outgoing_tcreate(nh->nh_ds->ds_leg,
+			       /* If event is not nua_r_bye, 
+				  destroy orq immediately */
+			       e == nua_r_bye ?
+			       process_response_to_bye : NULL, nh, NULL,
+			       SIP_METHOD_BYE,
+			       NULL,
+			       TAG_NEXT(tags));
+  }
+  else {
+    msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
+		       SIP_METHOD_BYE,
+		       TAG_NEXT(tags));
+    orq = nta_outgoing_mcreate(nua->nua_nta,
+			       process_response_to_bye, nh, NULL,
+			       msg,
+			       SIPTAG_END(), TAG_NEXT(tags));
+  }
 
   if (orq && cr->cr_orq == NULL)
     cr->cr_orq = orq, cr->cr_event = e;
@@ -3308,15 +3321,22 @@ static int process_response_to_bye(nua_handle_t *nh,
 				   nta_outgoing_t *orq,
 				   sip_t const *sip)
 {
-  nua_client_request_t *cr = nh->nh_ds->ds_cr;
+  nua_client_request_t *cr = NULL;
   nua_session_usage_t *ss;
-
   int status = sip ? sip->sip_status->st_status : 400;
+  char const *phrase = sip ? sip->sip_status->st_phrase : "";
 
-  if (nua_creq_check_restart(nh, cr, orq, sip, restart_bye))
-    return 0;
-
-  nua_stack_process_response(nh, cr, orq, sip, TAG_END());
+  if (nh->nh_ds->ds_cr->cr_orq == orq) {
+    cr = nh->nh_ds->ds_cr;
+    if (nua_creq_check_restart(nh, cr, orq, sip, restart_bye))
+      return 0;
+    nua_stack_process_response(nh, cr, orq, sip, TAG_END());
+  }
+  else {			/* No cr for BYE */
+    msg_t *msg = nta_outgoing_getresponse(orq);
+    nua_stack_event(nh->nh_nua, nh, msg, nua_r_bye, status, phrase, TAG_END());
+    nta_outgoing_destroy(orq);
+  }
 
   ss = nua_session_usage_get(nh->nh_ds);
 
