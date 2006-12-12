@@ -356,6 +356,7 @@ int nua_stack_notify2(nua_t *nua,
   struct notifier_usage *nu;
   msg_t *msg;
   sip_t *sip;
+  sip_event_t const *o;
   sip_time_t now;
   int refresh = du != NULL;
 
@@ -380,7 +381,12 @@ int nua_stack_notify2(nua_t *nua,
   if (!sip)
     return UA_EVENT1(e, NUA_INTERNAL_ERROR);
 
-  du = nua_dialog_usage_get(nh->nh_ds, nua_notify_usage, sip->sip_event);
+  if (nh->nh_ds->ds_has_notifys == 1 && !sip->sip_event)
+    o = NONE;
+  else
+    o = sip->sip_event;
+
+  du = nua_dialog_usage_get(nh->nh_ds, nua_notify_usage, o);
   nu = nua_dialog_usage_private(du);
 
   if (du && du->du_event && !sip->sip_event)
