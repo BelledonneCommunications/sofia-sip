@@ -130,7 +130,7 @@ static void agent_timer(su_root_magic_t *rm, su_timer_t *, nta_agent_t *);
 static int agent_launch_terminator(nta_agent_t *agent);
 static void agent_kill_terminator(nta_agent_t *agent);
 static int agent_set_params(nta_agent_t *agent, tagi_t *tags);
-static void agent_set_udp_params(nta_agent_t *self, unsigned udp_mtu);
+static void agent_set_udp_params(nta_agent_t *self, usize_t udp_mtu);
 static int agent_get_params(nta_agent_t *agent, tagi_t *tags);
 
 /* Transport interface */
@@ -3451,7 +3451,7 @@ void leg_insert(nta_agent_t *sa, nta_leg_t *leg)
   if (leg_htable_is_full(leg_hash)) {
     leg_htable_resize(sa->sa_home, leg_hash, 0);
     assert(leg_hash->lht_table);
-    SU_DEBUG_7(("nta: resized%s leg hash to %d\n",
+    SU_DEBUG_7(("nta: resized%s leg hash to "MOD_ZU"\n",
 		leg->leg_dialog ? "" : " default", leg_hash->lht_size));
   }
 
