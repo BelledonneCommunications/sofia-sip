@@ -823,7 +823,9 @@ static int nhp_set_tags(su_home_t *home,
       sip_allow_t *allow = NULL;
 
       ok = nhp_merge_lists(home, 
-			   sip_allow_class, &allow, nhp->nhp_allow,
+			   sip_allow_class,
+			   (msg_list_t **)&allow,
+			   (msg_list_t const *)nhp->nhp_allow,
 			   NHP_ISSET(nhp, allow), /* already set by tags */
 			   tag == siptag_allow, /* dup it, don't make */
 			   tag == nutag_allow, /* merge with old value */
