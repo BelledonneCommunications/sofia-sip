@@ -384,7 +384,7 @@ int test_nat_public(struct nat *nat, void const *address, int addrlen)
     return 0;
   }
 
-  if (addrlen > sizeof nat->out_address)
+  if ((size_t)addrlen > sizeof nat->out_address)
     return su_seterrno(EINVAL);
 
   for (li = nat->localinfo; li; li = li->li_next) {
