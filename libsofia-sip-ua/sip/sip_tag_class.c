@@ -190,6 +190,9 @@ int sip_add_tagis(msg_t *msg, sip_t *sip, tagi_t const **inout_list)
   if (!msg || !inout_list)
     return -1;
 
+  if (sip == NULL)
+    sip = sip_object(msg);
+
   for (t = *inout_list; t; t = t_next(t)) {
     tag = t->t_tag, value = t->t_value;
 
