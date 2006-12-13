@@ -1458,7 +1458,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sip_contact_t const *m;
 
   /* nta */
-  unsigned udp_mtu = 0, sip_t1 = 0, sip_t2 = 0, sip_t4 = 0, sip_t1x64 = 0;
+  usize_t udp_mtu = 0;
+  unsigned sip_t1 = 0, sip_t2 = 0, sip_t4 = 0, sip_t1x64 = 0;
   unsigned debug_drop_prob = 0;
   url_string_t const *proxy = NULL;
   sip_contact_t const *aliases = NULL;
