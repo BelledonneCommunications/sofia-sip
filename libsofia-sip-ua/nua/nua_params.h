@@ -127,6 +127,8 @@ typedef struct nua_handle_preferences
   
   /**< Network detection: NONE, INFORMAL, TRY_FULL */
   int                 nhp_detect_network_updates;
+  
+  sip_allow_t        *nhp_appl_method;
 
   union { struct {
     /* A bit for each feature set by application */
@@ -176,6 +178,7 @@ typedef struct nua_handle_preferences
     unsigned nhb_instance:1;
     unsigned nhb_outbound:1;
     unsigned nhb_detect_network_updates:1;
+    unsigned nhb_appl_method:1;
     unsigned :0;
   } set_bits; 
     unsigned set_unsigned[2];

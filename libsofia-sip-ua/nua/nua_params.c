@@ -177,6 +177,9 @@ int nua_stack_set_defaults(nua_handle_t *nh,
 
   NHP_SET(nhp, keepalive, 120000);
 
+  NHP_SET(nhp, appl_method,
+	  sip_allow_make(home, "INVITE, REGISTER, PUBLISH, SUBSCRIBE"));
+
   if (!nhp->nhp_allow ||
       !nhp->nhp_supported ||
       !nhp->nhp_user_agent ||
@@ -474,6 +477,7 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   sip_supported_t const *supported = NULL;
   sip_allow_t const *allow = NULL;
   sip_allow_events_t const *allow_events = NULL;
+  sip_allow_t const *appl_method = NULL;
 
   enter;
 
@@ -481,13 +485,16 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   *tmp = *nhp; NHP_UNSET_ALL(tmp);
 
-  /* Supported features and allowed methods can be merged with previous ones */
+  /* Supported features, allowed methods and events are merged 
+     with previous ones */
   if (!NHP_ISSET(nhp, supported)) 
     supported = tmp->nhp_supported = dnhp->nhp_supported;
   if (!NHP_ISSET(nhp, allow)) 
     allow = tmp->nhp_allow = dnhp->nhp_allow;
   if (!NHP_ISSET(nhp, allow_events)) 
     allow_events = tmp->nhp_allow_events = dnhp->nhp_allow_events;
+  if (!NHP_ISSET(nhp, appl_method)) 
+    appl_method = tmp->nhp_appl_method = dnhp->nhp_appl_method;
 
   error = 0;
   global = nh == dnh;			/* save also stack-specific params */
@@ -501,10 +508,15 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     if (NHP_IS_ANY_SET(tmp)) {
       if (tmp->nhp_supported == supported)
 	tmp->nhp_supported = NULL;
+
       if (tmp->nhp_allow == allow)
 	tmp->nhp_allow = NULL;
+
       if (tmp->nhp_allow_events == allow_events)
 	tmp->nhp_allow_events = NULL;
+
+      if (tmp->nhp_appl_method == appl_method)
+	tmp->nhp_appl_method = NULL;
 
       /* Move parameters from tmp to nhp (or allocate new nhp) */
       if (nh != dnh && nhp == dnh->nh_prefs)
@@ -820,11 +832,11 @@ static int nhp_set_tags(su_home_t *home,
 	     tag == siptag_allow_str ||
 	     tag == siptag_allow) {
       int ok;
-      sip_allow_t *allow = NULL;
+      msg_list_t *allow = NULL;
 
       ok = nhp_merge_lists(home, 
 			   sip_allow_class,
-			   (msg_list_t **)&allow,
+			   &allow,
 			   (msg_list_t const *)nhp->nhp_allow,
 			   NHP_ISSET(nhp, allow), /* already set by tags */
 			   tag == siptag_allow, /* dup it, don't make */
@@ -833,7 +845,7 @@ static int nhp_set_tags(su_home_t *home,
       if (ok < 0)
 	return -1;
       else if (ok)
-	NHP_SET(nhp, allow, allow);
+	NHP_SET(nhp, allow, (sip_allow_t *)allow);
     }
     /* NUTAG_ALLOW_EVENTS(allow_events) */
     /* SIPTAG_ALLOW_EVENTS_STR(allow_events) */
@@ -845,7 +857,8 @@ static int nhp_set_tags(su_home_t *home,
       sip_allow_events_t *allow_events = NULL;
 
       ok = nhp_merge_lists(home, 
-			   sip_allow_events_class, &allow_events, 
+			   sip_allow_events_class,
+			   &allow_events, 
 			   nhp->nhp_allow_events,
 			   NHP_ISSET(nhp, allow_events), /* already set */
 			   tag == siptag_allow_events, /* dup it, don't make */
@@ -855,6 +868,29 @@ static int nhp_set_tags(su_home_t *home,
 	return -1;
       else if (ok)
 	NHP_SET(nhp, allow_events, allow_events);
+    }
+    /* NUTAG_APPL_METHOD(appl_method) */
+    else if (tag == nutag_appl_method) {
+      if (t->t_value == 0) {
+	NHP_SET(nhp, appl_method, NULL);
+      }
+      else {
+	int ok;
+	msg_list_t *appl_method = NULL;
+
+	ok = nhp_merge_lists(home,
+			     sip_allow_class,
+			     &appl_method,
+			     (msg_list_t const *)nhp->nhp_appl_method,
+			     NHP_ISSET(nhp, allow), /* already set by tags */
+			     0, /* dup it, don't make */
+			     1, /* merge with old value */
+			     t->t_value);
+	if (ok < 0)
+	  return -1;
+	else if (ok)
+	  NHP_SET(nhp, appl_method, (sip_allow_t *)appl_method);
+      }
     }
     /* SIPTAG_USER_AGENT(user_agent) */
     else if (tag == siptag_user_agent) {

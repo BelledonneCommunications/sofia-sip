@@ -2032,17 +2032,19 @@ int nua_default_respond(nua_server_request_t *sr,
  * NUTAG_WITH_SAVED()). Otherwise, NUTAG_WITH() will contain an indication
  * of the request being responded.
  *
- * In order to simplify the application, most requests are responded
+ * In order to simplify the simple applications, most requests are responded
  * automatically. The set of requests always responded by the stack include
  * BYE, CANCEL and NOTIFY. The application can add methods that it likes to
  * handle by itself with NUTAG_APPL_METHOD(). The default set of
- * NUTAG_APPL_METHOD() include INVITE, PUBLISH, REGISTER and SUBSCRIBE. Note
- * that unless the method is also added to the set of allowed methods with
- * NUTAG_ALLOW(), the stack will respond to the incoming methods with <i>405
- * Not Allowed</i>.
+ * NUTAG_APPL_METHOD() includes INVITE, PUBLISH, REGISTER and SUBSCRIBE. 
+ * Note that unless the method is also included in the set of allowed
+ * methods with NUTAG_ALLOW(), the stack will respond to the incoming
+ * methods with <i>405 Not Allowed</i>.
  *
  * Note that certain methods are rejected outside a SIP session (created
- * with INVITE transaction). They include BYE, UPDATE, PRACK and INFO.
+ * with INVITE transaction). They include BYE, UPDATE, PRACK and INFO. Also
+ * the auxiliary methods ACK and CANCEL are rejected by stack if there is no
+ * ongoing INVITE transaction corresponding to them.
  *
  * @param nh              Pointer to operation handle
  * @param status          SIP response status (see RFCs of SIP)
