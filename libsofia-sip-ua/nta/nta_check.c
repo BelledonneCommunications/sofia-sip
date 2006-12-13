@@ -152,24 +152,24 @@ int nta_check_method(nta_incoming_t *irq,
 		     tag_type_t tag, tag_value_t value, ...)
 {
   /* Check extensions */
+  sip_method_t method = sip->sip_request->rq_method;
   char const *name = sip->sip_request->rq_method_name;
-  sip_param_t const *allowed;
-  int i = 0;
 
-  if (allow && (allowed = allow->k_items))
-    for (i = 0; allowed[i]; i++)
-      if (strcasecmp(name, allowed[i]) == 0)
-	return 0;
+  if (sip_is_allowed(allow, method, name))
+    return 0;
 
   if (irq) {
     ta_list ta;
     ta_start(ta, tag, value);
-    if (sip->sip_request->rq_method != sip_method_unknown)
+
+    if (method != sip_method_unknown)
+      /* Well-known method */
       nta_incoming_treply(irq,
 			  SIP_405_METHOD_NOT_ALLOWED,
 			  SIPTAG_ALLOW(allow),
 			  ta_tags(ta));
     else
+      /* Completeley unknown method */
       nta_incoming_treply(irq,
 			  SIP_501_NOT_IMPLEMENTED,
 			  SIPTAG_ALLOW(allow),
@@ -177,10 +177,7 @@ int nta_check_method(nta_incoming_t *irq,
     ta_end(ta);
   }
 
-  if (sip->sip_request->rq_method != sip_method_unknown)
-    return 405;
-  else
-    return 501;
+  return method != sip_method_unknown ? 405 : 501;
 }
 
 static char const application_sdp[] = "application/sdp";
