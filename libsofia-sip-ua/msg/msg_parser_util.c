@@ -1055,22 +1055,26 @@ int msg_header_remove_param(msg_common_t *h, char const *name)
  */
 int msg_header_update_params(msg_common_t *h, int clear)
 {
+  msg_hclass_t *hc;
+  unsigned char offset;
+  msg_update_f *update;
   int retval;
   msg_param_t const *params;
   size_t n;
   char const *p, *v;
-
+  
   if (h == NULL)
     return errno = EFAULT, -1;
 
-  if (h->h_class->hc_params == 0 ||
-      h->h_class->hc_update == NULL)
+  hc = h->h_class; offset = hc->hc_params; update = hc->hc_update;
+
+  if (offset == 0 || update == NULL)
     return 0;
 
   if (clear)
-    h->h_class->hc_update(h, NULL, 0, NULL);
+    update(h, NULL, 0, NULL);
 
-  params = *(msg_param_t **)((char *)h + h->h_class->hc_params);
+  params = *(msg_param_t **)((char *)h + offset);
   if (params == NULL)
     return 0;
 
@@ -1079,7 +1083,7 @@ int msg_header_update_params(msg_common_t *h, int clear)
   for (p = *params; p; p = *++params) {
     n = strcspn(p, "=");
     v = p + n + (p[n] == '=');
-    if (h->h_class->hc_update(h, p, n, v) < 0)
+    if (update(h, p, n, v) < 0)
       retval = -1;
   }
 
@@ -1496,6 +1500,105 @@ issize_t msg_params_join(su_home_t *home,
       d[n++] = su_strdup(home, src[m]);	/* XXX */
     else
       d[n++] = src[m];
+  }  
+
+  d[n] = NULL;
+
+  return 0;
+}
+
+/**Join header item lists.
+ *
+ * Add a item list to a header. Do not add entries already in list.
+ * Do duplicate items.
+ *
+ * @param home    memory home
+ * @param h       destination header
+ * @param src     parameters to add to the list
+ *
+ * @return
+ * @retval >= 0 when successful
+ * @retval -1 upon an error
+ */
+int msg_header_join_items(su_home_t *home,
+			  msg_common_t *h,
+			  msg_common_t const *src_h)
+{
+  size_t n, n0, m, i, n_before, n_after, pruned, total;
+  char *dup;
+  msg_param_t *d, **dd, *src;
+  msg_update_f *update = NULL;
+
+  if (h == NULL || src_h == NULL)
+    return -1;
+
+  if (h->h_class->hc_params == 0 ||
+      src_h->h_class->hc_params == 0)
+    return -1;
+
+  update = h->h_class->hc_update;
+
+  dd = (msg_param_t **)((char *)h + h->h_class->hc_params);
+  d = *dd;
+  src = *(msg_param_t **)((char *)src_h + src_h->h_class->hc_params);
+
+  /* Count number of parameters */
+  for (n = 0; d && d[n]; n++)
+    ;
+
+  for (m = 0, pruned = 0; src[m]; m++) {
+    for (i = 0; i < n; i++) {
+      if (strcmp(d[i], src[m]) == 0) {
+	pruned++;
+	break;
+      }
+    }
+    total += strlen(src[m]) + 1;
+  }
+
+  if (total == 0)
+    return 0;
+
+  dup = su_alloc(home, total); if (!dup) return -1;
+
+  n0 = n;
+  n_before = MSG_PARAMS_NUM(n + 1);
+  n_after = MSG_PARAMS_NUM(n + m - pruned + 1);
+
+  if (n_before != n_after || !d) {
+    d = su_alloc(home, n_after * sizeof(*d));
+    if (!d)
+      return (void)su_free(home, dup), -1;
+    if (n)
+      memcpy(d, *dd, n * sizeof(*d));
+    *dd = d;
+  }
+
+  for (m = 0; src[m]; m++) {
+    size_t len = strlen(src[m]) + 1;
+
+    if (pruned > 0) {
+      for (i = 0; i < n; i++)
+	if (memcmp(d[i], src[m], len) == 0)
+	  break;
+      if (i < n) {
+	if (i < n0)
+	  pruned--;
+	continue;
+      }
+    }
+
+    d[n] = memcpy(dup, src[m], len); dup += len;
+    
+    if (update) {
+      char const *p = src[m];
+      size_t n = strcspn(p, "=");
+      char const *v = p + n + (p[n] == '=');
+
+      update(h, p, n, v);
+    }
+
+    n++;
   }  
 
   d[n] = NULL;

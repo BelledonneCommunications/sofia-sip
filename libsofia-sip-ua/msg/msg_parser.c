@@ -1190,9 +1190,8 @@ msg_header_t *error_header_parse(msg_t *msg, msg_pub_t *mo,
 /** Complete this header field and parse next header field. 
  *
  * This function completes parsing a multi-field header like @Accept,
- * @Contact, @Via or @Warning. It updates the shortcuts to header parameters
- * (see msg_header_update_params()) and then scans for the next header field.
- * If one is found, it calls the parsing function recursively.
+ * @Contact, @Via or @Warning. It scans for the next header field and 
+ * if one is found, it calls the parsing function recursively.
  *
  * @param home 	 memory home used ot allocate 
  *             	 new header structures and parameter lists
@@ -1214,22 +1213,10 @@ issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev,
   msg_header_t *h;
   char *end = s + slen;
 
-  if (hc->hc_update && hc->hc_params) {
-    /* Update shortcuts to parameters */
-    msg_param_t p, v, *params;
-
-    params = *(msg_param_t **)((char *)prev + hc->hc_params);
-    if (params) {
-      for (p = *params; p; p = *++params) {
-	size_t n = strcspn(p, "=");
-	v = p + n + (p[n] == '=');
-	if (hc->hc_update(prev->sh_common, p, n, v) < 0)
-	  return -1;
-      }
-    }
-  }
-
   if (*s && *s != ',')
+    return -1;
+
+  if (msg_header_update_params(prev->sh_common, 0) < 0)
     return -1;
 
   while (*s == ',') /* Skip comma and following whitespace */
@@ -1238,14 +1225,14 @@ issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev,
   if (*s == 0)
     return 0;
   
-  h = msg_header_alloc(home, prev->sh_class, 0);
+  h = msg_header_alloc(home, hc, 0);
   if (!h)
     return -1;
 
   prev->sh_succ = h, h->sh_prev = &prev->sh_succ;
   prev->sh_next = h;
 
-  return prev->sh_class->hc_parse(home, h, s, end - s);
+  return hc->hc_parse(home, h, s, end - s);
 }
 
 /** Decode a message header. */
@@ -2524,6 +2511,10 @@ append_parsed(msg_t *msg, msg_pub_t *mo, msg_href_t const *hr, msg_header_t *h,
   *hh = h;
 }
 
+static int _msg_header_add_list_items(msg_t *msg, 
+				      msg_header_t **hh,
+				      msg_header_t const *src);
+
 /**Duplicate and add a (list of) header(s) to the message.
  *
  * The function @c msg_header_add_dup() duplicates and adds a (list of)
@@ -2588,24 +2579,8 @@ int msg_header_add_dup(msg_t *msg,
       hh = &h->sh_next;
     }
     else {
-      /* Add list items */
-      msg_header_t *h = *hh;
-      msg_param_t **d, **s;
-
-      d = msg_header_params(h->sh_common); assert(d);
-      s = msg_header_params(src->sh_common);
-
-      if (!s || !*s)
-	return 0;
-
-      msg_fragment_clear(h->sh_common);
-
-      /* Remove empty headers */
-      for (hh = &h->sh_next; *hh; *hh = (*hh)->sh_next)
-	msg_chain_remove(msg, *hh);
-
-      if (msg_params_join(msg_home(msg), d, *s, 2 /* prune case */, 1) < 0)
-	return -1;
+      if (_msg_header_add_list_items(msg, hh, src) < 0)
+	break;
     }
   }
 
@@ -2661,30 +2636,37 @@ int _msg_header_add_dup_as(msg_t *msg,
   if (hh == NULL)
     return -1;
 
-  if (*hh && hc->hc_kind == msg_kind_list) {
-    /* Add list items */
-    msg_header_t *h = *hh;
-    msg_param_t **d, **s;
-
-    d = msg_header_params(h->sh_common); assert(d);
-    s = msg_header_params(src->sh_common);
-
-    if (!s || !*s)
-      return 0;
-
-    msg_fragment_clear(h->sh_common);
-
-    /* Remove empty headers */
-    for (hh = &h->sh_next; *hh; *hh = (*hh)->sh_next)
-      msg_chain_remove(msg, *hh);
-
-    return msg_params_join(msg_home(msg), d, *s, 2 /* prune case */, 1);
-  }
+  if (*hh && hc->hc_kind == msg_kind_list)
+    return _msg_header_add_list_items(msg, hh, src);
 
   if (!(h = msg_header_dup_as(msg_home(msg), hc, src)))
     return -1;
 
   return msg_header_add(msg, pub, hh, h);
+}
+
+/* Add list items */
+static int _msg_header_add_list_items(msg_t *msg, 
+				      msg_header_t **hh,
+				      msg_header_t const *src)
+{
+  msg_header_t *h = *hh;
+  msg_param_t **s = msg_header_params(src->sh_common);
+
+  if (!s || !*s)
+    return 0;
+  
+  msg_fragment_clear(h->sh_common);
+  
+  /* Remove empty headers */
+  for (hh = &h->sh_next; *hh; *hh = (*hh)->sh_next)
+    msg_chain_remove(msg, *hh);
+  
+  if (msg_header_join_items(msg_home(msg), h->sh_common, src->sh_common)
+      < 0)
+    return -1;
+  
+  return 0;
 }
 
 /** Parse a string as a given header field and add result to the message. */

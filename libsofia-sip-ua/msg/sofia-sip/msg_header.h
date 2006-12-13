@@ -233,6 +233,10 @@ SOFIAPUBFUN int msg_header_replace_item(su_home_t *, msg_common_t *h,
 					char const *item);
 SOFIAPUBFUN int msg_header_remove_item(msg_common_t *h, char const *name);
 
+SOFIAPUBFUN int msg_header_join_items(su_home_t *home,
+				      msg_common_t *h,
+				      msg_common_t const *src_h);
+
 /** Append a list of constant items to a list. */
 SOFIAPUBFUN int msg_list_append_items(su_home_t *home, msg_list_t *k,
 				      msg_param_t const items[]);
