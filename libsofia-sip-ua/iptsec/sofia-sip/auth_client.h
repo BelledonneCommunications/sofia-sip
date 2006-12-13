@@ -77,6 +77,9 @@ SOFIAPUBFUN
 int auc_copy_credentials(auth_client_t **dst, auth_client_t const *src);
 
 SOFIAPUBFUN
+int auc_has_authorization(auth_client_t **auc_list);
+
+SOFIAPUBFUN
 int auc_authorization(auth_client_t **auc_list, msg_t *msg, msg_pub_t *pub,
 		      char const *method, 
 		      url_t const *url, 

@@ -491,6 +491,27 @@ int ca_clear_credentials(auth_client_t *ca,
   return 1;
 }
 
+/** Check if we have all required credentials.
+ * 
+ * @retval 1 when authorization can proceed
+ * @retval 0 when there is not enough credentials
+ */
+int auc_has_authorization(auth_client_t **auc_list)
+{
+  auth_client_t const *ca;
+
+  if (auc_list == NULL)
+    return 0;
+
+  /* Make sure every challenge has credentials */
+  for (ca = *auc_list; ca; ca = ca->ca_next) {
+    if (!ca->ca_user || !ca->ca_pass || !ca->ca_credential_class)
+      return 0;
+  }
+
+  return 1;
+}
+
 /**Authorize a request.
  *
  * The function auc_authorization() is used to add correct authentication
@@ -519,14 +540,11 @@ int auc_authorization(auth_client_t **auc_list, msg_t *msg, msg_pub_t *pub,
   if (auc_list == NULL || msg == NULL)
     return -1;
 
+  if (!auc_has_authorization(auc_list))
+    return 0;
+
   if (pub == NULL)
     pub = msg_object(msg);
-
-  /* Make sure every challenge has credentials */
-  for (ca = *auc_list; ca; ca = ca->ca_next) {
-    if (!ca->ca_user || !ca->ca_pass || !ca->ca_credential_class)
-      return 0;
-  }
 
   /* Remove existing credentials */
   for (ca = *auc_list; ca; ca = ca->ca_next) {
@@ -581,10 +599,8 @@ int auc_authorization_headers(auth_client_t **auc_list,
   auth_client_t *ca;
 
   /* Make sure every challenge has credentials */
-  for (ca = *auc_list; ca; ca = ca->ca_next) {
-    if (!ca->ca_user || !ca->ca_pass || !ca->ca_credential_class)
-      return 0;
-  }
+  if (!auc_has_authorization(auc_list))
+    return 0;
 
   /* Insert new credentials */
   for (; *auc_list; auc_list = &(*auc_list)->ca_next) {
