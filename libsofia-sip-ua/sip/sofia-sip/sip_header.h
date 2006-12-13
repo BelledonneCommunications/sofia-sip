@@ -345,6 +345,9 @@ int sip_has_supported(sip_supported_t const *support, char const *feature);
 SOFIAPUBFUN
 int sip_has_feature(msg_list_t const *supported, char const *feature);
 
+SOFIAPUBFUN int sip_is_allowed(sip_allow_t const *allow, 
+			       sip_method_t method, char const *name);
+
 /* ---------------------------------------------------------------------------
  * Bitmasks for header classifications
  */

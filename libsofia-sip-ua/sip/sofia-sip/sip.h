@@ -139,7 +139,7 @@ typedef msg_payload_t               sip_payload_t;
 typedef struct sip_accept_s  	    sip_accept_t;
 typedef msg_accept_any_t      	    sip_accept_encoding_t;
 typedef msg_accept_any_t      	    sip_accept_language_t;
-typedef msg_list_t	      	    sip_allow_t;
+typedef struct sip_allow_s	    sip_allow_t;
 typedef struct msg_auth_info_s      sip_authentication_info_t;
 typedef struct msg_auth_s 	    sip_authorization_t;
 typedef struct sip_call_id_s 	    sip_call_id_t;
@@ -404,6 +404,20 @@ struct sip_accept_s
   char const         *ac_subtype;   /**< Points after first slash in type */
   msg_param_t const  *ac_params;    /**< List of parameters */
   char const         *ac_q;	    /**< Value of q parameter */
+};
+
+/**@ingroup sip_allow
+ * @brief Structure for @Allow header field.
+ *
+ * @NEW_1_12_5 (before used struct msg_list_s with @Allow).
+ */
+struct sip_allow_s
+{
+  msg_common_t       k_common[1];   /**< Common fragment info */
+  msg_list_t        *k_next;	    /**< Link to next */
+  msg_param_t       *k_items;	    /**< List of allowed items */
+  uint32_t           k_bitmap;	    /**< Bitmap of allowed methods. 
+				       @NEW_1_12_5 */
 };
 
 /**@ingroup sip_authentication_info

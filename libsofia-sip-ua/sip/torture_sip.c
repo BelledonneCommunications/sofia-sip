@@ -1829,6 +1829,7 @@ static int test_sip_list_header(void)
     "Allow: BYE\r\n"
     "Allow: OPTIONS\r\n"
     "Allow: MESSAGE\r\n"
+    "Allow: KUIK\r\n"
     "Max-Forwards: 12\r\n"
     "Content-Type: text/plain\r\n"
     "\r\n"
@@ -1839,10 +1840,42 @@ static int test_sip_list_header(void)
   TEST_1(a->k_items);
   TEST_1(a->k_next == NULL);
 
-  msg_destroy(msg), msg = NULL;
+  TEST_1(sip_is_allowed(a, SIP_METHOD_INVITE));
+  TEST_1(!sip_is_allowed(a, SIP_METHOD_PUBLISH));
+  TEST_1(sip_is_allowed(a, SIP_METHOD(KUIK)));
+  TEST_1(!sip_is_allowed(a, SIP_METHOD(kuik)));
 
   TEST_1(a = sip_allow_make(home, ""));
   TEST_S(sip_header_as_string(home, (void *)a), "");
+
+  TEST_1(a = sip_allow_make(home, "INVITE, PUBLISH"));
+
+  TEST_1(sip_is_allowed(a, SIP_METHOD_INVITE));
+
+  /* Test with list header */
+  TEST_1(msg_header_add_dup(msg, NULL, (msg_header_t *)a) == 0);
+
+  TEST_1(a = sip_allow_make(home, "MESSAGE, SUBSCRIBE"));
+
+  TEST_1(msg_header_add_dup(msg, NULL, (msg_header_t *)a) == 0);
+
+  TEST_1(msg_header_add_make(msg, NULL, sip_allow_class, "kuik") == 0);
+
+  TEST_1(a = sip->sip_allow);
+  TEST_1(a->k_items);
+  TEST_S(a->k_items[0], "INVITE");
+  TEST_S(a->k_items[1], "ACK");
+  TEST_S(a->k_items[2], "CANCEL");
+  TEST_S(a->k_items[3], "BYE");
+  TEST_S(a->k_items[4], "OPTIONS");
+  TEST_S(a->k_items[5], "MESSAGE");
+  TEST_S(a->k_items[6], "KUIK");
+  TEST_S(a->k_items[7], "PUBLISH");
+  TEST_S(a->k_items[8], "SUBSCRIBE");
+  TEST_S(a->k_items[9], "kuik");
+  TEST_P(a->k_items[10], NULL);
+
+  msg_destroy(msg), msg = NULL;
 
   su_home_unref(home), home = NULL;
 

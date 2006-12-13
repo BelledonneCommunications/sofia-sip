@@ -72,22 +72,31 @@
  *
  * The #sip_allow_t is defined as follows:
  * @code
- * typedef struct msg_list_s
+ * typedef struct msg_allow_s
  * {
  *   msg_common_t       k_common[1];  // Common fragment info
  *   msg_list_t        *k_next;	      // Link to next header
  *   msg_param_t       *k_items;      // List of items
+ *   uint32_t           k_bitmap;     // Bitmap of allowed methods
  * } sip_allow_t;
  * @endcode
+ *
+ * @note The field @a k_bitmap was added in @VERSION_1_12_5.
  */
 
+#define sip_allow_dup_xtra msg_list_dup_xtra
+#define sip_allow_dup_one  msg_list_dup_one
+static msg_update_f sip_allow_update;
+
 msg_hclass_t sip_allow_class[] = 
-SIP_HEADER_CLASS_LIST(allow, "Allow", "", list);
+SIP_HEADER_CLASS(allow, "Allow", "", k_items, list, allow);
 
 issize_t sip_allow_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_allow_t *k = (sip_allow_t *)h;
-  return msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
+  issize_t retval = msg_commalist_d(home, &s, &k->k_items, msg_token_scan);
+  msg_header_update_params(k->k_common, 0);
+  return retval;
 }
 
 issize_t sip_allow_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
@@ -95,6 +104,45 @@ issize_t sip_allow_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
   assert(sip_is_allow(h));
   return msg_list_e(b, bsiz, h, f);
 }
+
+static int sip_allow_update(msg_common_t *h, 
+			  char const *name, isize_t namelen,
+			  char const *value)
+{
+  sip_allow_t *k = (sip_allow_t *)h;
+
+  if (name == NULL) {
+    k->k_bitmap = 0;
+  }
+  else {
+    sip_method_t method = sip_method_code(name);
+
+    if (method >= 0 && method < 32) 
+      k->k_bitmap |= 1 << method;
+  }
+
+  return 0;
+}
+
+/** Return true if the method is listed in @Allow header. */
+int sip_is_allowed(sip_allow_t const *allow,
+		   sip_method_t method,
+		   char const *name)
+{
+  if (method < sip_method_unknown || !allow)
+    return 0;
+
+  if (sip_method_unknown < method && method < 32)
+    /* Well-known method */
+    return (allow->k_bitmap & (1 << method)) != 0;
+
+  if (method == sip_method_unknown &&
+      (allow->k_bitmap & (1 << sip_method_unknown)) == 0)
+    return 0;
+
+  return msg_header_find_item(allow->k_common, name) != NULL;
+}
+
 
 /* ====================================================================== */
 
