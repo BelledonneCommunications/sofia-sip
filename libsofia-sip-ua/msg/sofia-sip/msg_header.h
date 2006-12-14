@@ -233,18 +233,20 @@ SOFIAPUBFUN int msg_header_replace_item(su_home_t *, msg_common_t *h,
 					char const *item);
 SOFIAPUBFUN int msg_header_remove_item(msg_common_t *h, char const *name);
 
-SOFIAPUBFUN int msg_header_join_items(su_home_t *home,
-				      msg_common_t *h,
-				      msg_common_t const *src_h);
-
 /** Append a list of constant items to a list. */
-SOFIAPUBFUN int msg_list_append_items(su_home_t *home, msg_list_t *k,
+SOFIAPUBFUN int msg_list_append_items(su_home_t *home,
+				      msg_list_t *k,
 				      msg_param_t const items[]);
 
 /** Replace a list of constant items on a list */
 SOFIAPUBFUN int msg_list_replace_items(su_home_t *home,
 				       msg_list_t *k,
 				       msg_param_t const items[]);
+
+SOFIAPUBFUN int msg_header_join_items(su_home_t *home,
+				      msg_common_t *dst,
+				      msg_common_t const *src,
+				      int duplicate);
 
 SOFIAPUBFUN issize_t msg_random_token(char token[], isize_t tlen,
 				      void const *d, isize_t dlen);

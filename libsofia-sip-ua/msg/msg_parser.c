@@ -2662,7 +2662,7 @@ static int _msg_header_add_list_items(msg_t *msg,
   for (hh = &h->sh_next; *hh; *hh = (*hh)->sh_next)
     msg_chain_remove(msg, *hh);
   
-  if (msg_header_join_items(msg_home(msg), h->sh_common, src->sh_common)
+  if (msg_header_join_items(msg_home(msg), h->sh_common, src->sh_common, 1)
       < 0)
     return -1;
   

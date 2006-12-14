@@ -1509,101 +1509,118 @@ issize_t msg_params_join(su_home_t *home,
 
 /**Join header item lists.
  *
- * Add a item list to a header. Do not add entries already in list.
- * Do duplicate items.
+ * Join items from a source header to the destination header. The item are
+ * compared with the existing ones. If a match is found, it is not added to
+ * the list. If @a duplicate is true, the entries are duplicated while they
+ * are added to the list.
  *
- * @param home    memory home
- * @param h       destination header
- * @param src     parameters to add to the list
+ * @param home       memory home
+ * @param dst        destination header
+ * @param src        source header
+ * @param duplicate  if true, allocate and copy items that are added
  *
  * @return
  * @retval >= 0 when successful
  * @retval -1 upon an error
+ *
+ * @NEW_1_12_5.
  */
 int msg_header_join_items(su_home_t *home,
-			  msg_common_t *h,
-			  msg_common_t const *src_h)
+			  msg_common_t *dst,
+			  msg_common_t const *src,
+			  int duplicate)
 {
-  size_t n, n0, m, i, n_before, n_after, pruned, total;
-  char *dup;
-  msg_param_t *d, **dd, *src;
+  size_t N, m, M, i, n_before, n_after, total;
+  char *dup = NULL;
+  msg_param_t *d, **dd, *s;
+  msg_param_t t, *temp, temp0[16];
+  size_t *len, len0[(sizeof temp0)/(sizeof temp0[0])];
   msg_update_f *update = NULL;
 
-  if (h == NULL || src_h == NULL)
+  if (dst == NULL || dst->h_class->hc_params == 0 ||
+      src == NULL || src->h_class->hc_params == 0)
     return -1;
 
-  if (h->h_class->hc_params == 0 ||
-      src_h->h_class->hc_params == 0)
-    return -1;
-
-  update = h->h_class->hc_update;
-
-  dd = (msg_param_t **)((char *)h + h->h_class->hc_params);
-  d = *dd;
-  src = *(msg_param_t **)((char *)src_h + src_h->h_class->hc_params);
-
-  /* Count number of parameters */
-  for (n = 0; d && d[n]; n++)
-    ;
-
-  for (m = 0, pruned = 0; src[m]; m++) {
-    for (i = 0; i < n; i++) {
-      if (strcmp(d[i], src[m]) == 0) {
-	pruned++;
-	break;
-      }
-    }
-    total += strlen(src[m]) + 1;
-  }
-
-  if (total == 0)
+  s = *(msg_param_t **)((char *)src + src->h_class->hc_params);
+  if (s == NULL)
     return 0;
 
-  dup = su_alloc(home, total); if (!dup) return -1;
+  for (M = 0; s[M]; M++);
 
-  n0 = n;
-  n_before = MSG_PARAMS_NUM(n + 1);
-  n_after = MSG_PARAMS_NUM(n + m - pruned + 1);
+  if (M == 0)
+    return 0;
 
-  if (n_before != n_after || !d) {
-    d = su_alloc(home, n_after * sizeof(*d));
-    if (!d)
-      return (void)su_free(home, dup), -1;
-    if (n)
-      memcpy(d, *dd, n * sizeof(*d));
+  if (M <= (sizeof temp0) / (sizeof temp0[0])) {
+    temp = temp0, len = len0;
+  }
+  else {
+    temp = malloc(M * (sizeof *temp) + M * (sizeof *len));
+    if (!temp) return -1;
+    len = (void *)(temp + M);
+  }
+
+  dd = (msg_param_t **)((char *)dst + dst->h_class->hc_params);
+  d = *dd;
+
+  for (N = 0; d && d[N]; N++);
+
+  for (m = 0, M = 0, total = 0; s[m]; m++) {
+    t = s[m];
+    for (i = 0; i < N; i++)
+      if (strcmp(t, d[i]) == 0)
+	break;
+    if (i < N)
+      continue;
+
+    for (i = 0; i < M; i++)
+      if (strcmp(t, temp[i]) == 0)
+	break;
+    if (i < M)
+      continue;
+
+    temp[M] = t;
+    len[M] = strlen(t);
+    total += len[M++] + 1;
+  }
+
+  if (M == 0)
+    goto success;
+
+  dup = su_alloc(home, total); if (!dup) goto error;
+
+  n_before = MSG_PARAMS_NUM(N + 1);
+  n_after = MSG_PARAMS_NUM(N + M + 1);
+
+  if (d == NULL || n_before != n_after) {
+    d = su_alloc(home, n_after * sizeof(*d)); if (!d) goto error;
+    if (N)
+      memcpy(d, *dd, N * sizeof(*d));
     *dd = d;
   }
 
-  for (m = 0; src[m]; m++) {
-    size_t len = strlen(src[m]) + 1;
+  update = dst->h_class->hc_update;
 
-    if (pruned > 0) {
-      for (i = 0; i < n; i++)
-	if (memcmp(d[i], src[m], len) == 0)
-	  break;
-      if (i < n) {
-	if (i < n0)
-	  pruned--;
-	continue;
-      }
-    }
-
-    d[n] = memcpy(dup, src[m], len); dup += len;
+  for (m = 0; m < M; m++) {
+    d[N++] = memcpy(dup, temp[m], len[m] + 1);
     
-    if (update) {
-      char const *p = src[m];
-      size_t n = strcspn(p, "=");
-      char const *v = p + n + (p[n] == '=');
+    if (update)
+      update(dst, dup, len[m], dup + len[m]);
 
-      update(h, p, n, v);
-    }
-
-    n++;
+    dup += len[m] + 1;
   }  
 
-  d[n] = NULL;
+  d[N] = NULL;
 
+ success:
+  if (temp != temp0)
+    free(temp);
   return 0;
+
+ error:
+  if (temp != temp0)
+    free(temp);
+  su_free(home, dup);
+  return -1;
 }
 
 /**Compare parameter lists.
