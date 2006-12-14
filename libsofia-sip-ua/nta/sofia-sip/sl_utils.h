@@ -71,7 +71,7 @@ sl_via_print(FILE *, char const *fmt, sip_via_t const *v);
 /* Logging functions */
 SOFIAPUBFUN void 
 sl_sip_log(su_log_t*, int lvl, char const *, sip_t const *, int details),
-sl_header_log(su_log_t *, char const *prefix, sip_header_t const *h),
+sl_header_log(su_log_t *, int lvl, char const *, sip_header_t const *h),
 sl_from_log(su_log_t *, int lvl, char const *, sip_from_t const *from),
 sl_to_log(su_log_t *, int lvl, char const *, sip_to_t const *to),
 sl_contact_log(su_log_t *, int lvl, char const *, sip_contact_t const *m),

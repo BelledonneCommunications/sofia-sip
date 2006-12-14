@@ -35,6 +35,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 
@@ -116,19 +117,16 @@ void sl_message_log(FILE *stream,
  */
 issize_t sl_from_print(FILE *stream, char const *fmt, sip_from_t const *from)
 {
-  char s[1024];
+  sip_addr_t a[1];
 
-  char const *d = from->a_display;
+  if (from == NULL)
+    return -1;
 
-  snprintf(s, sizeof(s), "%s%s<" URL_FORMAT_STRING ">",
-	   d ? d : "", d ? " " : "",
-	   URL_PRINT_ARGS(from->a_url));
-
-  if (fmt && strcmp(fmt, "%s"))
-    return fprintf(stream, fmt, s);
-  if (fputs(s, stream) >= 0)
-    return (issize_t)strlen(s);
-  return -1;
+  memcpy(a, from, sizeof a);
+  a->a_params = NULL;
+  if (!a->a_display) a->a_display = "";
+    
+  return sl_header_print(stream, fmt, (sip_header_t *)a);
 }
 
 /** Print @To header.
@@ -166,7 +164,8 @@ issize_t sl_to_print(FILE *stream, char const *fmt, sip_to_t const *to)
  * The function sl_contact_print() returns number of bytes printed,
  * or -1 upon an error.
 */
-issize_t sl_contact_print(FILE *stream, char const *fmt, sip_contact_t const *m)
+issize_t sl_contact_print(FILE *stream, char const *fmt,
+			  sip_contact_t const *m)
 {
   return sl_from_print(stream, fmt, (sip_from_t const *)m);
 }
@@ -186,27 +185,11 @@ issize_t sl_contact_print(FILE *stream, char const *fmt, sip_contact_t const *m)
  * The function sl_allow_print() returns number of bytes printed,
  * or -1 upon an error.
 */
-issize_t sl_allow_print(FILE *stream, char const *fmt, sip_allow_t const *allow)
+issize_t sl_allow_print(FILE *stream,
+			char const *fmt,
+			sip_allow_t const *allow)
 {
-  char *s, b[1024], *end = b + sizeof(b) - 1;
-  msg_param_t const *p;
-  sip_allow_t const *k = allow;
-
-  s = b; *end = '\0';
-
-  for (; k; k = k->k_next) {
-    for (p = k->k_items; p && *p; p++) {
-      strncpy(s, s == b ? "" : ",", end - s);
-      strncat(s, *p, end - s);
-      s += strlen(s);
-    }
-  }
-
-  if (fmt && strcmp(fmt, "%s"))
-    return fprintf(stream, fmt, b);
-  if (fputs(b, stream) >= 0)
-    return (issize_t)strlen(b);
-  return -1;
+  return sl_header_print(stream, fmt, (sip_header_t *)allow);
 }
 
 
@@ -274,31 +257,41 @@ issize_t sl_via_print(FILE *stream, char const *fmt, sip_via_t const *v)
   return -1;
 }
 
-/** Print an header. 
+/** Print a header. 
  *
- * The function sl_header_print() prints the contents of an header to the
- * output @a stream.  The @a fmt specifies the output format, where %s is
- * replaced with header contents. If @a fmt is @c NULL, only the header
- * contents are printed.
+ * Prints the contents of an header to the output @a stream. The @a fmt
+ * specifies the output format, where %s is replaced with header contents. 
+ * If @a fmt is @c NULL, only the header contents are printed.
  * 
  * @param stream   output stream
  * @param fmt      output format 
  * @param v        header object
  * 
  * @return 
- * The function sl_header_print() returns number of bytes printed,
- * or -1 upon an error.
+ * Number of bytes logged, or -1 upon an error.
  */
 issize_t sl_header_print(FILE *stream, char const *fmt, sip_header_t const *h)
 {
-  char s[1024];
+  char *s, b[1024];
+  issize_t len;
 
-  sip_header_field_e(s, sizeof(s), h, 0);
-  s[sizeof(s) - 1] = '\0';
+  len = sip_header_field_e(s = b, sizeof b, h, 0);
+  if (len == -1)
+    return len;
 
-  if (fmt && strcmp(fmt, "%s"))
-    return fprintf(stream, fmt, s);
-  if (fputs(s, stream) >= 0)
-    return (issize_t)strlen(s);
-  return -1;
+  if ((size_t)len >= sizeof b) {
+    s = malloc(len + 1); if (!s) return -1;
+    sip_header_field_e(s, len + 1, h, 0);
+  }    
+  s[len] = '\0';
+
+  if (fmt != NULL && strcmp(fmt, "%s") != 0)
+    len = fprintf(stream, fmt, s);
+  else if (fputs(s, stream) < 0)
+    len = -1;
+
+  if (s != b)
+    free(s);
+  
+  return len;
 }

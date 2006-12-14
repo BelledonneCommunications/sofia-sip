@@ -35,6 +35,7 @@
 #include "config.h"
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
@@ -123,24 +124,21 @@ void sl_sip_log(su_log_t *log,
  * @param log      output log
  * @param level    logging level of output
  * @param fmt      output format 
- * @param from     header object
- * 
+ * @param from     @From header
  */
 void sl_from_log(su_log_t *log, int level, 
 		 char const *fmt, sip_from_t const *from)
 {
-  char s[1024];
+  sip_addr_t a[1];
 
-  char const *d = from->a_display;
+  if (from == NULL)
+    return;
 
-  snprintf(s, sizeof(s), "%s%s<" URL_FORMAT_STRING ">",
-	   d ? d : "", d ? " " : "",
-	   URL_PRINT_ARGS(from->a_url));
-
-  if (log == NULL)
-    log = su_log_default;
-
-  su_llog(log, level, fmt, s);
+  memcpy(a, from, sizeof a);
+  a->a_params = NULL;
+  if (!a->a_display) a->a_display = "";
+    
+  return sl_header_log(log, level, fmt, (sip_header_t *)a);
 }
 
 /**Log a @To header.
@@ -153,7 +151,7 @@ void sl_from_log(su_log_t *log, int level,
  * @param log      output log
  * @param level    logging level of output
  * @param fmt      output format 
- * @param to       header object
+ * @param to       @To header
  */
 void sl_to_log(su_log_t *log, int level, char const *fmt, sip_to_t const *to)
 {
@@ -170,7 +168,7 @@ void sl_to_log(su_log_t *log, int level, char const *fmt, sip_to_t const *to)
  * @param log      output log
  * @param level    logging level of output
  * @param fmt      output format 
- * @param contact  header object
+ * @param contact  @Contact header
  */
 void sl_contact_log(su_log_t *log, int level, 
 		     char const *fmt, sip_contact_t const *m)
@@ -188,29 +186,13 @@ void sl_contact_log(su_log_t *log, int level,
  * @param log      output log
  * @param level    logging level of output
  * @param fmt      output format 
- * @param allow    header object
+ * @param allow    @Allow header
+ *
  */
 void sl_allow_log(su_log_t *log, int level, 
 		  char const *fmt, sip_allow_t const *allow)
 {
-  char *s, b[1024], *end = b + sizeof(b) - 1;
-  msg_param_t const *p;
-  sip_allow_t const *k = allow;
-
-  s = b; *end = '\0';
-
-  for (; k; k = k->k_next) {
-    for (p = k->k_items; p && *p; p++) {
-      strncpy(s, s == b ? "" : ",", end - s);
-      strncat(s, *p, end - s);
-      s += strlen(s);
-    }
-  }
-
-  if (log == NULL)
-    log = su_log_default;
-
-  su_llog(log, level, fmt, b);
+  sl_header_log(log, level, fmt, (sip_header_t *)allow);
 }
 
 
@@ -221,25 +203,13 @@ void sl_allow_log(su_log_t *log, int level,
  * is replaced with header contents. If @a fmt is @c NULL, only the header
  * contents are logged.
  * 
- * @param log      output log
- * @param fmt      output format 
- * @param v        header object
- * 
- * @return 
- * The function sl_via_log() returns number of bytes logged,
- * or -1 upon an error.
+ * @param log  output log
+ * @param fmt  format used when logging
+ * @param v    via header
  */
 void sl_via_log(su_log_t *log, int level, char const *fmt, sip_via_t const *v)
 {
-  char s[256];
-
-  sip_header_field_e(s, sizeof(s), (sip_header_t const *)v, 0);
-  s[sizeof(s) - 1] = '\0';
-
-  if (!fmt) 
-    fmt = "%s";
-
-  su_llog(log, level, fmt, s);
+  sl_header_log(log, level, fmt, (sip_header_t *)v);
 }
 
 
@@ -280,4 +250,38 @@ void sl_payload_log(su_log_t *log, int level,
     su_llog(log, level, "%s%s\n", prefix, line);
     s += n + crlf;
   }
+}
+
+/** Log a header. 
+ *
+ * Logs the contents of an header to the output @a stream. The @a fmt
+ * specifies the output format, where %s is replaced with header contents. 
+ * If @a fmt is @c NULL, only the header contents are logged.
+ * 
+ * @param stream   output stream
+ * @param fmt      output format 
+ * @param h        a SIP header object
+ */
+void sl_header_log(su_log_t *log, int level, char const *fmt,
+		   sip_header_t const *h)
+{
+  char *s, b[1024];
+  issize_t len;
+
+  len = sip_header_field_e(s = b, sizeof b, h, 0);
+  if (len == -1)
+    return;
+
+  if ((size_t)len >= sizeof b) {
+    s = malloc(len + 1); if (!s) return -1;
+    sip_header_field_e(s, len + 1, h, 0);
+  }    
+  s[len] = '\0';
+
+  if (fmt == NULL)
+    fmt = "%s\n";
+  su_llog(log, level, fmt, s);
+
+  if (s != b)
+    free(s);
 }
