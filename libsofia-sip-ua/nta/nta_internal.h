@@ -136,9 +136,9 @@ struct nta_agent_s
 
 
   /** Request error mask */
-  unsigned short        sa_bad_req_mask;
+  unsigned              sa_bad_req_mask;
   /** Response error mask */
-  unsigned short        sa_bad_resp_mask;
+  unsigned              sa_bad_resp_mask;
 
   /** Maximum size of incoming messages */
   size_t                sa_maxsize;

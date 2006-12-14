@@ -369,6 +369,8 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_flags = MSG_DO_CANONIC;
 
     agent->sa_maxsize         = 2 * 1024 * 1024; /* 2 MB */
+    agent->sa_bad_req_mask    = ~(sip_mask_response | sip_mask_proxy);
+    agent->sa_bad_resp_mask   = ~(sip_mask_request | sip_mask_proxy);
     agent->sa_t1 	      = NTA_SIP_T1;
     agent->sa_t2 	      = NTA_SIP_T2;
     agent->sa_t4              = NTA_SIP_T4;
@@ -2053,7 +2055,7 @@ void agent_recv_request(nta_agent_t *agent,
 
   insane = 0;
 
-  if (agent->sa_bad_req_mask)
+  if (agent->sa_bad_req_mask != ~0)
     errors = msg_extract_errors(msg) & agent->sa_bad_req_mask;
   else
     errors = sip->sip_error != NULL;
