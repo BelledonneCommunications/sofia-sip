@@ -3226,8 +3226,11 @@ nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
   nta_outgoing_t *orq;
 
   ss = nua_session_usage_get(nh->nh_ds);
-  if (!ss)
+  
+  if (!ss || ss->ss_state >= nua_callstate_terminating)
     return UA_EVENT2(e, 900, "Invalid handle for BYE");
+
+  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
 
   if (!nua_dialog_is_established(nh->nh_ds)) {
     nua_client_request_t *cri = ss->ss_crequest;
@@ -3245,43 +3248,39 @@ nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
     return 0;
   }
 
-  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
-
   if (cr->cr_orq) {
-    msg = NULL;
-    orq = nta_outgoing_tcreate(nh->nh_ds->ds_leg,
-			       /* If event is not nua_r_bye, 
-				  destroy orq immediately */
-			       e == nua_r_bye ?
-			       process_response_to_bye : NULL, nh, NULL,
-			       SIP_METHOD_BYE,
-			       NULL,
-			       TAG_NEXT(tags));
-  }
-  else {
-    msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
-		       SIP_METHOD_BYE,
-		       TAG_NEXT(tags));
-    orq = nta_outgoing_mcreate(nua->nua_nta,
-			       process_response_to_bye, nh, NULL,
-			       msg,
-			       SIPTAG_END(), TAG_NEXT(tags));
+    if (cr->cr_usage == nua_dialog_usage_public(ss)) {
+      nua_creq_deinit(cr, cr->cr_orq);
+    }
+    else {
+      cr = ss->ss_crequest;
+      if (cr->cr_orq)
+	nua_creq_deinit(cr, cr->cr_orq);
+    }
   }
 
-  if (orq && cr->cr_orq == NULL)
-    cr->cr_orq = orq, cr->cr_event = e;
+  assert(!cr->cr_orq);
+
+  msg = nua_creq_msg(nua, nh, cr, 0, SIP_METHOD_BYE, TAG_NEXT(tags));
+
+  cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
+				    process_response_to_bye, nh, NULL,
+				    msg,
+				    SIPTAG_END(), TAG_NEXT(tags));
 
   ss->ss_state = nua_callstate_terminating;
   if (nh->nh_soa)
     soa_terminate(nh->nh_soa, 0);
 
-  if (!orq) {
+  if (cr->cr_orq) {
+    cr->cr_event = e;
+  }
+  else {
     msg_destroy(msg);
     UA_EVENT2(e, 400, "Internal error");
     signal_call_state_change(nh, ss, 400, "Failure sending BYE",
 			     nua_callstate_terminated, 0, 0);
     nua_session_usage_destroy(nh, ss);
-    return 0;
   }
 
   return 0;
@@ -3326,8 +3325,9 @@ static int process_response_to_bye(nua_handle_t *nh,
   int status = sip ? sip->sip_status->st_status : 400;
   char const *phrase = sip ? sip->sip_status->st_phrase : "";
 
-  if (nh->nh_ds->ds_cr->cr_orq == orq) {
-    cr = nh->nh_ds->ds_cr;
+  cr = nua_client_request_by_orq(nh->nh_ds->ds_cr, orq); assert(cr);
+
+  if (cr) {
     if (nua_creq_check_restart(nh, cr, orq, sip, restart_bye))
       return 0;
     nua_stack_process_response(nh, cr, orq, sip, TAG_END());
@@ -3343,7 +3343,8 @@ static int process_response_to_bye(nua_handle_t *nh,
   if (status >= 200 && ss) {
     if (ss->ss_crequest->cr_orq) {
       /* Do not destroy usage while INVITE is alive */
-    } else {
+    }
+    else {
       signal_call_state_change(nh, ss, status, "to BYE",
 			       nua_callstate_terminated, 0, 0);
       nua_session_usage_destroy(nh, ss);
