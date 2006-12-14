@@ -215,10 +215,10 @@ int main(int argc, char *argv[])
   }
 
   if (o_attach) {
-    char line[10];
+    char line[10], *l;
     printf("%s: pid %lu\n", name, (unsigned long)getpid());
     printf("<Press RETURN to continue>\n");
-    fgets(line, sizeof line, stdin);
+    l = fgets(line, sizeof line, stdin);
   }
 #if HAVE_ALARM
   else if (o_alarm) {
