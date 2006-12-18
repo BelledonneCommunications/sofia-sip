@@ -204,7 +204,7 @@ int msg_list_append_items(su_home_t *home,
   if (items == NULL) return 0;
 
   for (i = 0; items[i]; i++) {
-    if (msg_header_add_param(home, (msg_header_t *)k, items[i]) < 0)
+    if (msg_header_add_param(home, (msg_common_t *)k, items[i]) < 0)
       return -1;
   }
 
@@ -226,7 +226,7 @@ int msg_list_replace_items(su_home_t *home,
   if (items == NULL) return 0;
 
   for (i = 0; items[i]; i++) {
-    if (msg_header_replace_item(home, (msg_header_t *)k, items[i]) < 0)
+    if (msg_header_replace_item(home, (msg_common_t *)k, items[i]) < 0)
       return -1;
   }
 
