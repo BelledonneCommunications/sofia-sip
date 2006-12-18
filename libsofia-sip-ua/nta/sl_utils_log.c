@@ -273,7 +273,7 @@ void sl_header_log(su_log_t *log, int level, char const *fmt,
     return;
 
   if ((size_t)len >= sizeof b) {
-    s = malloc(len + 1); if (!s) return -1;
+    s = malloc(len + 1); if (!s) return;
     sip_header_field_e(s, len + 1, h, 0);
   }    
   s[len] = '\0';
