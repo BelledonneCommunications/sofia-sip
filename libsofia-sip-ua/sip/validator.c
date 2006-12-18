@@ -356,7 +356,7 @@ int validate_dump(char *b, off_t size, context_t *ctx)
       ;
     else {
       if (o->o_very_verbose)
-	printf("message %d: %.*s\n", n, linelen, b);
+	printf("message "MOD_ZU": %.*s\n", n, linelen, b);
 
       if (n == N) {
 	N *= 2; if (n == N) N = 16;
@@ -416,7 +416,7 @@ int validate_dump(char *b, off_t size, context_t *ctx)
     m = msg_extract(msg);
 
     if (m < 0) {
-      fprintf(stderr, "%s%sparsing error in message %d\n", 
+      fprintf(stderr, "%s%sparsing error in message "MOD_ZU"\n", 
 	      ctx->name, ctx->sep, n);
       ctx->errors++;
     }
@@ -441,7 +441,7 @@ int validate_dump(char *b, off_t size, context_t *ctx)
 
     ctx->time += dur;
 
-    printf("%s%s%d messages in %g seconds (%g msg/sec)\n"
+    printf("%s%s"MOD_ZU" messages in %g seconds (%g msg/sec)\n"
 	   "      parse speed %.1f Mb/s (on Ethernet wire %.1f Mb/s)\n",
 	   ctx->name, ctx->sep, N, dur, (double)N / dur,
 	   (double)ctx->bytes * 8 / ctx->time / 1e6,
@@ -558,7 +558,7 @@ void sipstats(msg_t *msg, uint32_t msize, sipstats_t *ss, context_t *ctx)
   }
 
   if (o->o_very_verbose)
-    printf("%s%s%d headers, %d bytes in payload\n",
+    printf("%s%s"MOD_ZU" headers, "MOD_ZU" bytes in payload\n",
 	   ctx->name, ctx->sep, n, bytes);
 }
 
@@ -579,7 +579,7 @@ void report_histogram(char const *title, histogram_t const *h)
 
   printf("%s histogram\n", title);
   for (i = min_i; i < max_i; i++)
-    printf("\t%d..%d: %.1f\n", i * h->bsize, (i + 1) * h->bsize, h->buckets[i]);
+    printf("\t"MOD_ZU".."MOD_ZU": %.1f\n", i * h->bsize, (i + 1) * h->bsize, h->buckets[i]);
 
   if (h->buckets[h->N])
     printf("\t%d..: %.1f\n", h->N * h->bsize, h->buckets[h->N]);
