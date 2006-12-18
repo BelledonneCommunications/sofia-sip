@@ -1641,7 +1641,7 @@ int test_net(sres_context_t *ctx)
   TEST_1(bin = hex2bin(__func__, hextest, NULL, &binlen));
 
   /* Send responses with one erroneus byte */
-  for (i = 1; i < binlen; i++) {
+  for (i = 1; i < (int)binlen; i++) {
     if (!q) {
       /* We got an error => make new query */
       TEST_1(q = sres_query(res, test_answer, ctx, /* Send query */
@@ -1669,7 +1669,7 @@ int test_net(sres_context_t *ctx)
   }
 
   /* Send runt responses */
-  for (i = 1; i <= binlen; i++) {
+  for (i = 1; i <= (int)binlen; i++) {
     if (!q) {
       /* We got an error => make new query */
       TEST_1(q = sres_query(res, test_answer, ctx, /* Send query */
