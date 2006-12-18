@@ -582,7 +582,7 @@ void report_histogram(char const *title, histogram_t const *h)
     printf("\t"MOD_ZU".."MOD_ZU": %.1f\n", i * h->bsize, (i + 1) * h->bsize, h->buckets[i]);
 
   if (h->buckets[h->N])
-    printf("\t%d..: %.1f\n", h->N * h->bsize, h->buckets[h->N]);
+    printf("\t"MOD_ZU"..: %.1f\n", h->N * h->bsize, h->buckets[h->N]);
 }
 
 int report(context_t const *ctx)
