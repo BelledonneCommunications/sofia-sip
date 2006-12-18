@@ -212,7 +212,7 @@ int test_nua_params(struct context *ctx)
 		 NUTAG_ALLOW("ACK, INFO"),
 
 		 SIPTAG_ALLOW_EVENTS_STR("reg"),
-		 SIPTAG_ALLOW_EVENTS(sip_allow_make(tmphome, "presence")),
+		 SIPTAG_ALLOW_EVENTS(sip_allow_events_make(tmphome, "presence")),
 		 NUTAG_ALLOW_EVENTS("presence.winfo"),
 
 		 SIPTAG_USER_AGENT(sip_user_agent_make(tmphome, "test_nua")),
