@@ -776,7 +776,7 @@ sip_payload_t *test_payload(su_home_t *home, size_t size)
   sip_payload_t *pl = sip_payload_create(home, NULL, (isize_t)size);
 
   if (pl) {
-    int i;
+    size_t i;
     char *data = (char *)pl->pl_data;
     
     for (i = 0; i < size; i++) {
