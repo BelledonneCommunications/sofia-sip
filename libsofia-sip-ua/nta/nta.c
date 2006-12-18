@@ -2055,7 +2055,7 @@ void agent_recv_request(nta_agent_t *agent,
 
   insane = 0;
 
-  if (agent->sa_bad_req_mask != ~0)
+  if (agent->sa_bad_req_mask != ~0U)
     errors = msg_extract_errors(msg) & agent->sa_bad_req_mask;
   else
     errors = sip->sip_error != NULL;
