@@ -332,7 +332,7 @@ int test_balance(void)
     nodes[i] = node = node_new(home, i); TEST_1(node);
     TEST(redblack_insert(&tree, node, &o), 0);
     TEST_P(o, NULL);
-    TEST_1(redblack_height(tree) <= 2 * log2ceil(i + 1 + 1));
+    TEST_1(redblack_height(tree) <= 2 * (int)log2ceil(i + 1 + 1));
     TEST_1(redblack_check(tree));
   }
 
@@ -468,7 +468,7 @@ int test_balance(void)
     TEST(nodes[sn]->inserted, 1);
     redblack_remove(&tree, nodes[sn]);
     nodes[sn]->inserted = 0;
-    TEST_1(redblack_height(tree) <= 2 * log2ceil(N - i + 1));
+    TEST_1(redblack_height(tree) <= 2 * (int)log2ceil(N - i + 1));
     TEST_1(redblack_check(tree));
   }
 
@@ -504,7 +504,7 @@ int test_balance(void)
     TEST(node->inserted, 1);
     redblack_remove(&tree, node);
     node->inserted = 0;
-    TEST_1(redblack_height(tree) <= 2 * log2ceil(N - i + 1));
+    TEST_1(redblack_height(tree) <= 2 * (int)log2ceil(N - i + 1));
     TEST_1(redblack_check(tree));
   }
 
@@ -540,7 +540,7 @@ int test_balance(void)
     TEST(node->inserted, 1);
     redblack_remove(&tree, node);
     node->inserted = 0;
-    TEST_1(redblack_height(tree) <= 2 * log2ceil(N - i + 1));
+    TEST_1(redblack_height(tree) <= 2 * (int)log2ceil(N - i + 1));
     TEST_1(redblack_check(tree));
   }
 
@@ -576,7 +576,7 @@ int test_balance(void)
     TEST(node->inserted, 1);
     redblack_remove(&tree, node);
     node->inserted = 0;
-    TEST_1(redblack_height(tree) <= 2 * log2ceil(N - i + 1));
+    TEST_1(redblack_height(tree) <= 2 * (int)log2ceil(N - i + 1));
     TEST_1(redblack_check(tree));
   }
 
@@ -630,7 +630,7 @@ int test_balance(void)
     TEST(node->inserted, 1);
     redblack_remove(&tree, node);
     node->inserted = 0;
-    TEST_1(redblack_height(tree) <= 2 * log2ceil(N - i + 1));
+    TEST_1(redblack_height(tree) <= 2 * (int)log2ceil(N - i + 1));D
     TEST_1(redblack_check(tree));
   }
 
@@ -648,7 +648,7 @@ int test_speed(void)
   Node *tree = NULL, *o = NULL;
   Node *node;
   unsigned i;
-  int const N = 1000000;
+  unsigned int const N = 1000000U;
 
   BEGIN();
 
@@ -660,7 +660,7 @@ int test_speed(void)
     TEST_P(o, NULL);
   }
 
-  TEST_1(redblack_height(tree) <= 2 * log2ceil(i + 1));
+  TEST_1(redblack_height(tree) <= 2 * (int)log2ceil(i + 1));
 
   for (i = 0; i < N; i++) {
     node = node_find(tree, i);
