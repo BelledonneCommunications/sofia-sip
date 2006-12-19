@@ -24,6 +24,10 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added sip_is_allowed() function and k_bitmap field to the 
+  sip_allow_t structure 
+- Added SIP header Refer-Sub and related functions
+- Added <sofia-sip/sip_extra.h> include file
 - Added auc_info() function (sofia-sip/auth_client.h)
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
@@ -57,6 +61,16 @@ See the AUTHORS file in the distribution package.
 Notes on new features
 ---------------------
 
+RFC 4488 defines the Refer-Sub header. Its datatypes, related functions and
+methods declared in <sofia-sip/sip_extra.h> include file. The Refer-Sub
+header structure can be accessed from sip_t structure with sip_refer_sub()
+method, e.g.,
+
+  if (sip_refer_sub(sip) && 
+      strcasecmp("false", sip_refer_sub(sip)->rs_value) == 0) {
+     /* Do not create implicit subscription */ 
+  }
+
 <information about major new features
  - new/changed/removed functionality
  - links to further documentation
@@ -73,6 +87,9 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+
+- Fixed crash when nua_bye() was called while a NOTIFY client transaction
+  was in progress. Problem reported by Anthony Minnessale.
 - Not using close() with sockets in sres.c. Problem reported by
   Roman Filonenko.
 - Bug in zero-padding STUN messages with a message integrity 
