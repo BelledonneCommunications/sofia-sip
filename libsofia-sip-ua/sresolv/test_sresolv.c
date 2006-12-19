@@ -101,7 +101,7 @@ struct sres_context_s
   sres_record_t  **result;
 
   int              timeout;
-  int              sink;
+  sres_socket_t    sink;
   int              sinkidx;
   char const      *sinkconf;
   
@@ -1356,14 +1356,15 @@ int sink_make(sres_context_t *ctx)
 {
   char *tmpdir = getenv("TMPDIR");
   char *template;
-  int fd, sink;
+  int fd;
+  sres_socket_t sink;
   struct sockaddr_in sin[1];
   socklen_t sinsize = sizeof sin;
   FILE *f;
   
   BEGIN();
 
-  sink = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(sink != -1);
+  sink = socket(AF_INET, SOCK_DGRAM, 0); TEST_1(sink != INVALID_SOCKET);
   TEST(getsockname(sink, (struct sockaddr *)sin, &sinsize), 0);
   sin->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   TEST(bind(sink, (struct sockaddr *)sin, sinsize), 0);
@@ -1427,7 +1428,7 @@ int sink_deinit(sres_context_t *ctx)
   if (ctx->sinkidx)
     su_root_deregister(ctx->root, ctx->sinkidx);
   ctx->sinkidx = 0;
-  su_close(ctx->sink), ctx->sink = -1;
+  su_close(ctx->sink), ctx->sink = INVALID_SOCKET;
 
   END();
 }
@@ -1541,12 +1542,12 @@ int test_expiration(sres_context_t *ctx)
 /* Convert lowercase hex to binary */
 static
 void *hex2bin(char const *test_name,
-	      char const *hex1, char const *hex2, unsigned *binsize)
+	      char const *hex1, char const *hex2, size_t *binsize)
 {
   char output[2048];
   char *bin;
   char const *b;
-  int j;
+  size_t j;
 
   if (hex1 == NULL || binsize == NULL)
     return NULL;
@@ -1619,18 +1620,18 @@ int test_net(sres_context_t *ctx)
 {
   sres_resolver_t *res = ctx->resolver;
   sres_query_t *q = NULL;
-  int c = ctx->sink;
+  sres_socket_t c = ctx->sink;
   struct sockaddr_storage ss[1];
   struct sockaddr *sa = (void *)ss;
-  socklen_t salen = sizeof ss, binlen;
+  socklen_t salen = sizeof ss;
   char *bin;
-  int i, n;
+  size_t i, n, binlen;
   char const *domain = "example.com";
   char query[512];
 
   BEGIN();
 
-  TEST_1(ctx->sink != -1 && ctx->sink != 0);
+  TEST_1(ctx->sink != INVALID_SOCKET && ctx->sink != (sres_socket_t)0);
 
   /* Prepare for test_answer() callback */
   sres_free_answers(ctx->resolver, ctx->result); 
@@ -1641,7 +1642,7 @@ int test_net(sres_context_t *ctx)
   TEST_1(bin = hex2bin(__func__, hextest, NULL, &binlen));
 
   /* Send responses with one erroneus byte */
-  for (i = 1; i < (int)binlen; i++) {
+  for (i = 1; i < binlen; i++) {
     if (!q) {
       /* We got an error => make new query */
       TEST_1(q = sres_query(res, test_answer, ctx, /* Send query */
@@ -1669,7 +1670,7 @@ int test_net(sres_context_t *ctx)
   }
 
   /* Send runt responses */
-  for (i = 1; i <= (int)binlen; i++) {
+  for (i = 1; i <= binlen; i++) {
     if (!q) {
       /* We got an error => make new query */
       TEST_1(q = sres_query(res, test_answer, ctx, /* Send query */
@@ -1938,12 +1939,12 @@ int main(int argc, char **argv)
   }
 
   if (o_attach) {
-    char buf[8];
+    char buf[8], *line;
 
     fprintf(stderr, "test_sresolv: started with pid %u"
 	    " (press enter to continue)\n", getpid());
 
-    fgets(buf, sizeof buf, stdin);
+    line = fgets(buf, sizeof buf, stdin); (void) line;
   }
 #if HAVE_ALARM
   else if (o_alarm) {
