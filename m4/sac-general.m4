@@ -120,8 +120,8 @@ AC_CACHE_CHECK([for maximum warnings compiler flag],
   ;;
 esac])
 AC_SUBST([CWFLAG], [$ac_cv_cwflag])
-SOFIA_CFLAGS="$SOFIA_CFLAGS $ac_cv_cwflag"
-AC_SUBST([SOFIA_CFLAGS])
+
+AC_ARG_VAR([SOFIA_CFLAGS], [CFLAGS not used during configure])
 
 #
 # GCoverage
