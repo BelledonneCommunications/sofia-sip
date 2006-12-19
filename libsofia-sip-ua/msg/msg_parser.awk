@@ -390,6 +390,8 @@ END {
     getline footer < TEMPLATE;
     RS=RS0;
 
+    module_struct = module "_t";
+
     sub(/.*[\/]/, "", TEMPLATE);
     gsub(/#AUTO#/, auto, header);
     gsub(/#DATE#/, "@date Generated: " date, header);
@@ -423,9 +425,10 @@ END {
 
     if (extra > 0) {
       printf("struct %s {\n", extra_struct) > PT;
-      printf("  %s_t base;\n", module) > PT;
+      printf("  %s base;\n", module_struct) > PT;
       printf("  msg_header_t *extra[%u];\n", extra) > PT;
       printf("};\n\n") > PT;
+      module_struct = "struct " extra_struct;
     }
 
     printf("msg_mclass_t const %s_mclass[1] = \n{{\n", module) > PT;
@@ -441,7 +444,7 @@ END {
     printf("#else\n") > PT;
     printf("  0,\n") > PT;
     printf("#endif\n") > PT;
-    printf("  sizeof(%s_t),\n", module) > PT;
+    printf("  sizeof (%s),\n", module_struct) > PT;
     printf("  %s_extract_body,\n", module) > PT;
 
     len = split("request status separator payload unknown error", unnamed, " ");

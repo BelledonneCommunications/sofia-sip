@@ -1081,7 +1081,7 @@ static int parser_tag_test(void)
   sip = sip_object(msg);
 
   TEST_1(home && msg && sip);
-  TEST_SIZE(sip->sip_size, sizeof *sip);
+  TEST_1(sip->sip_size >= sizeof *sip);
 
   TEST_1(sip_is_status((sip_header_t *)sip->sip_status));
   TEST_1(sip_is_via((sip_header_t *)sip->sip_via));
