@@ -52,12 +52,18 @@
  *
  * @code
  * #include "config.h"
- * #include <su.h>
+ * 
  * #include <stdio.h>
  * #include <limits.h>
- * #define TSTFLAGS tstflags
  * 
- * int tstflags = 0;
+ * #include <sofia-sip/su.h>
+ * 
+ * #define TSTFLAGS tstflags
+ *
+ * #include <stdlib.h>
+ * #include <sofia-sip/tstdef.h>
+ *
+ * static int tstflags = 0;
  * 
  * void usage(void)
  * {
