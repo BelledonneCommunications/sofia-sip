@@ -120,6 +120,8 @@ $(GENERATED_H): $(MSG_PARSER_AWK)
 sip_parser_table.c: sip_parser_table.c.in $(MSG_PARSER_AWK)
 sip_tag.c: sip_tag.c.in $(MSG_PARSER_AWK)
 
+EXTRA = $(srcdir)/sip_extra_headers.txt
+
 sofia-sip/sip_hclasses.h: sofia-sip/sip.h
 	@-mkdir sofia-sip 2>/dev/null || true
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_hclasses.h.in $<
@@ -133,15 +135,14 @@ sofia-sip/sip_tag.h: sofia-sip/sip.h
 	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_tag.h.in $<
 
 sip_tag.c: sofia-sip/sip.h sip_extra_headers.txt
-	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sip_tag.c.in $< \
-		sip_extra_headers.txt
+	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sip_tag.c.in $< $(EXTRA)
 
 sip_parser_table.c: sip_extra_headers.txt
 
 sip_parser_table.c: sofia-sip/sip.h
 	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/sip_parser_table.c.in \
 		FLAGFILE=$(srcdir)/sip_bad_mask \
-		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $< sip_extra_headers.txt
+		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $< $(EXTRA)
 
 sofia-sip/sip_extra.h: sofia-sip/sip_extra.h.in sip_extra_headers.txt
 	@-mkdir -p sofia-sip 2>/dev/null
@@ -150,4 +151,4 @@ sofia-sip/sip_extra.h: sofia-sip/sip_extra.h.in sip_extra_headers.txt
 		PACKAGE_VERSION="${PACKAGE_VERSION}" \
 		TEMPLATE1=${srcdir}/sofia-sip/sip_hclasses.h.in \
 		TEMPLATE2=${srcdir}/sofia-sip/sip_protos.h.in \
-		TEMPLATE=$< sip_extra_headers.txt
+		TEMPLATE=$< $(EXTRA)
