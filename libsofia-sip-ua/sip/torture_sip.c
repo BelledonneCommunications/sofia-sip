@@ -829,6 +829,9 @@ static int test_encoding(void)
     "Min-SE: 123\r\n"
     "Session-Expires: 1200\r\n"
     "Content-Type: text/plain\r\n"
+    "Refer-Sub: true\r\n"
+    "Suppress-Body-If-Match: humppa\r\n"
+    "Suppress-Notify-If-Match: zumppa\r\n"
     "\r\n"
     "Heippa!");
   sip = sip_object(msg);
@@ -1626,6 +1629,9 @@ static int sip_header_test(void)
     "Max-Forwards: 12\r\n"
     "Min-Expires: 150\r\n"
     "Timestamp: 10.010 0.000100\r\n"
+    "Suppress-Body-If-Match: humppa \t\r\n"
+    "Suppress-Notify-If-Match: zumppa\r\n"
+    " \r\n"
     "Content-Type: application/sdp\r\n"
     "\r\n"
     "v=0\r\n"
@@ -1660,6 +1666,23 @@ static int sip_header_test(void)
 
   TEST(sip->sip_max_forwards->mf_count, 12);
   TEST(sip->sip_min_expires->me_delta, 150);
+
+  {
+    sip_suppress_body_if_match_t *sbim;
+    sip_suppress_notify_if_match_t *snim;
+
+    TEST_1(sbim = sip_suppress_body_if_match(sip));
+    TEST_S(sbim->sbim_tag, "humppa");
+
+    TEST_SIZE(offsetof(msg_generic_t, g_value),
+	      offsetof(sip_suppress_body_if_match_t, sbim_tag));
+
+    TEST_1(snim = sip_suppress_notify_if_match(sip));
+    TEST_S(snim->snim_tag, "zumppa");
+
+    TEST_SIZE(offsetof(msg_generic_t, g_value),
+	      offsetof(sip_suppress_notify_if_match_t, snim_tag));
+  }
 
   TEST_1(sip->sip_from->a_display);
   TEST_S(sip->sip_from->a_display, "h");

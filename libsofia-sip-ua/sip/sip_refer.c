@@ -454,8 +454,9 @@ static int sip_replaces_update(msg_common_t *h,
  *
  * The parsed Refer-Sub header is stored in #sip_refer_sub_t structure.
  * 
- * @since New in @VERSION_1_12_4. Note that #sip_t does not contain @c
- * sip_refer_sub field, but use sip_refer_sub() accessor function.
+ * @NEW_1_12_5. Note that #sip_t does not contain @a sip_refer_sub field,
+ * but sip_refer_sub() accessor function should be used for accessing @b
+ * Refer-Sub header structure.
  *
  * @sa @RFC4488, nua_refer(), #nua_i_refer
  */
@@ -478,7 +479,7 @@ static int sip_replaces_update(msg_common_t *h,
  * } sip_refer_sub_t;
  * @endcode
  * 
- * @since New in @VERSION_1_12_4.
+ * @NEW_1_12_5.
  */
 
 static msg_xtra_f sip_refer_sub_dup_xtra;

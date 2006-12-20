@@ -63,4 +63,8 @@ ALIASES += \
  "UserAgent=@ref sip_user_agent \"User-Agent\"" \
  "Via=@ref sip_via \"Via\"" \
  "WWWAuthenticate=@ref sip_www_authenticate \"WWW-Authenticate\"" \
- "Warning=@ref sip_warning \"Warning\"" 
+ "Warning=@ref sip_warning \"Warning\"" \
+ "ReferSub=@ref sip_refer_sub \"Refer-Sub\"" \
+ "SuppressBodyIfMatch=@ref sip_suppress_body_if_match \"Suppress-Body-If-Match\"" \
+ "SuppressNotifyIfMatch=@ref sip_suppress_notify_if_match \"Suppress-Notify-If-Match\"" \
+  

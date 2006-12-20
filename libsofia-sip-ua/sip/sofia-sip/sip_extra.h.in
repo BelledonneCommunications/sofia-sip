@@ -1,11 +1,11 @@
 /**@file sofia-sip/sip_extra.h.in
- *
+ *  -*- C -*-
  * Template for <sofia-sip/sip_extra.h>.
  *
  * @date Created: Thu Oct  5 19:10:58 EEST 2006
  */
 
-/*  -*- C -*-
+/* -*- C -*-
  *
  * This file is part of the Sofia-SIP package
  *
@@ -30,13 +30,13 @@
  *
  */
 
-#ifndef SIP_EXTRAS_H
-/** Defined when <sofia-sip/sip_extras.h> has been included. */
-#define SIP_EXTRAS_H
+#ifndef SIP_EXTRA_H
+/** Defined when <sofia-sip/sip_extra.h> has been included. */
+#define SIP_EXTRA_H
 
-/**@file sofia-sip/sip_extras.h
+/**@file sofia-sip/sip_extra.h
 *
- * @brief Extra headers for SIP.
+ * @brief Extension headers for SIP.
  *
  * #AUTO#
  *
@@ -60,16 +60,39 @@ typedef struct sip_refer_sub_s      sip_refer_sub_t;
  */
 struct sip_refer_sub_s
 {
-  sip_common_t        rs_common[1];   /**< Common fragment info */
-  sip_error_t        *rs_next;        /**< Dummy link to next */
-  char const         *rs_value;       /**< "true" or "false" */
-  msg_param_t const  *rs_params;      /**< List of extension parameters */
+  sip_common_t        rs_common[1];   	/**< Common fragment info */
+  sip_error_t        *rs_next;        	/**< Dummy link to next */
+  char const         *rs_value;       	/**< "true" or "false" */
+  msg_param_t const  *rs_params;      	/**< List of extension parameters */
+};
+
+typedef struct sip_suppress_body_if_match_s sip_suppress_body_if_match_t;
+
+/**@ingroup sip_suppress_body_if_match
+ * @brief Structure for @SuppressBodyIfMatch header.
+ */
+struct sip_suppress_body_if_match_s
+{
+  sip_common_t   sbim_common[1];	/**< Common fragment info */
+  sip_error_t   *sbim_next;		/**< Dummy link to next header */
+  char const    *sbim_tag;		/**< Entity-tag */
+};
+
+typedef struct sip_suppress_notify_if_match_s sip_suppress_notify_if_match_t;
+
+/**@ingroup sip_suppress_notify_if_match
+ * @brief Structure for @SuppressNotifyIfMatch header.
+ */
+struct sip_suppress_notify_if_match_s
+{
+  sip_common_t   snim_common[1];	/**< Common fragment info */
+  sip_error_t   *snim_next;		/**< Dummy link to next header */
+  char const    *snim_tag;		/**< Entity-tag */
 };
 
 
-/* Foo */
 
 
 SOFIA_END_DECLS
 
-#endif /** !defined(SIP_EXTRAS_H) */
+#endif /** !defined(SIP_EXTRA_H) */

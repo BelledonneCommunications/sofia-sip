@@ -41,6 +41,7 @@
 #define MSG_HDR_T       union sip_header_u
 
 #include "sofia-sip/sip_parser.h"
+#include "sofia-sip/sip_extra.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -753,3 +754,137 @@ char *sip_info_dup_one(sip_header_t *dst,
 
   return b;
 }
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_suppress_body_if_match Suppress-Body-If-Match Header
+ *
+ * The @b Suppress-Body-If-Match header field identifies a SIP event content
+ * already known by the watcher. Its syntax is defined in
+ * draft-niemi-sip-subnot-etags-01 as follows:
+ *
+ * @code
+ *    Suppress-Body-If-Match = "Suppress-Body-If-Match" HCOLON entity-tag
+ *    entity-tag             = token
+ * @endcode
+ *
+ * The parsed Suppress-Body-If-Match header is stored in
+ * #sip_suppress_body_if_match_t structure.
+ *
+ * @sa @RFC3265, draft-niemi-sip-subnot-etags-01.txt
+ *
+ * @NEW_1_12_5. Note that #sip_t does not contain @a
+ * sip_suppress_body_if_match field, but sip_suppress_body_if_match()
+ * function should be used for accessing the @b Suppress-Body-If-Match
+ * header structure.
+ */
+
+/**@ingroup sip_suppress_body_if_match
+ * @typedef struct sip_suppress_body_if_match_s sip_suppress_body_if_match_t;
+ *
+ * The structure #sip_suppress_body_if_match_t contains representation of a
+ * SIP @SuppressBodyIfMatch header.
+ *
+ * The #sip_suppress_body_if_match_t is defined as follows:
+ * @code
+ * typedef struct sip_suppress_body_if_match_s
+ * {
+ *   sip_common_t   sbim_common[1]; // Common fragment info
+ *   sip_error_t   *sbim_next;      // Dummy link to next header
+ *   char const    *sbim_tag;       // entity-tag
+ * } sip_suppress_body_if_match_t;
+ * @endcode
+ */
+
+#define sip_suppress_body_if_match_dup_xtra  msg_generic_dup_xtra
+#define sip_suppress_body_if_match_dup_one   msg_generic_dup_one
+#define sip_suppress_body_if_match_update NULL
+
+msg_hclass_t sip_suppress_body_if_match_class[] =
+SIP_HEADER_CLASS(suppress_body_if_match,
+		 "Suppress-Body-If-Match", "",
+		 sbim_common, single, suppress_body_if_match);
+
+issize_t sip_suppress_body_if_match_d(su_home_t *home,
+				      sip_header_t *h,
+				      char *s, isize_t slen)
+{
+  sip_suppress_body_if_match_t *sbim = (void *)h;
+  return msg_token_d(&s, &sbim->sbim_tag);
+}
+
+issize_t sip_suppress_body_if_match_e(char b[], isize_t bsiz,
+				      sip_header_t const *h,
+				      int f)
+{
+  return sip_etag_e(b, bsiz, h, f);
+}
+
+
+/* ====================================================================== */
+
+/**@SIP_HEADER sip_suppress_notify_if_match Suppress-Notify-If-Match Header
+ *
+ * The @b Suppress-Notify-If-Match header is used to suppress
+ * superfluous NOTIFY transactions. Its syntax is defined in
+ * draft-niemi-sip-subnot-etags-01 as follows:
+ *
+ * @code
+ *    Suppress-Notify-If-Match = "Suppress-Notify-If-Match" HCOLON entity-tag
+ *    entity-tag               = token
+ * @endcode
+ *
+ * The parsed Suppress-Notify-If-Match header is stored in
+ * #sip_suppress_notify_if_match_t structure.
+ *
+ * @sa @RFC3265, draft-niemi-sip-subnot-etag-01
+ *
+ * @NEW_1_12_5. Note that #sip_t does not contain @a
+ * sip_suppress_notify_if_match field, but sip_suppress_notify_if_match()
+ * function should be used for accessing the @b Suppress-Notify-If-Match
+ * header structure.
+ */
+
+/**@ingroup sip_suppress_notify_if_match
+ * @typedef struct sip_suppress_notify_if_match_s \
+ * sip_suppress_notify_if_match_t;
+ *
+ * The structure #sip_suppress_notify_if_match_t contains representation of a
+ * SIP @SuppressNotifyIfMatch header.
+ *
+ * The #sip_suppress_notify_if_match_t is defined as follows:
+ * @code
+ * typedef struct sip_suppress_notify_if_match_s
+ * {
+ *   sip_common_t   snim_common[1]; // Common fragment info
+ *   sip_error_t   *snim_next;      // Dummy link to next header
+ *   char const    *snim_tag;       // entity-tag
+ * } sip_suppress_notify_if_match_t;
+ * @endcode
+ */
+
+#define sip_suppress_notify_if_match_dup_xtra  msg_generic_dup_xtra
+#define sip_suppress_notify_if_match_dup_one   msg_generic_dup_one
+#define sip_suppress_notify_if_match_update NULL
+
+msg_hclass_t sip_suppress_notify_if_match_class[] =
+SIP_HEADER_CLASS(suppress_notify_if_match,
+		 "Suppress-Notify-If-Match", "",
+		 snim_common, single, suppress_notify_if_match);
+
+issize_t sip_suppress_notify_if_match_d(su_home_t *home,
+					sip_header_t *h,
+					char *s, isize_t slen)
+{
+  sip_suppress_notify_if_match_t *snim = (void *)h;
+  return msg_token_d(&s, &snim->snim_tag);
+}
+
+issize_t sip_suppress_notify_if_match_e(char b[], isize_t bsiz,
+					sip_header_t const *h,
+					int f)
+{
+  return msg_generic_e(b, bsiz, h, f);
+}
+
+
