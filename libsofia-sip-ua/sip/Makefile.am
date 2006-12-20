@@ -17,7 +17,7 @@ INCLUDES = 	-I$(srcdir)/../bnf -I../bnf \
 noinst_LTLIBRARIES = 	libsip.la
 
 check_PROGRAMS =       torture_sip \
-			sip_test_msg validator date_test
+			test_sip_msg validator date_test
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

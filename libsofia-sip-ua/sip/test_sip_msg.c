@@ -24,7 +24,7 @@
 
 /**@SIP_PARSER
  *
- * @file sip_test_msg.c  Simple SIP message parser/printer tester.
+ * @file test_sip_msg.c  Simple SIP message parser/printer tester.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  *
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
     n = read(0, iovec->mv_base, 1);
 
     if (n < 0) {
-      perror("sip_test_msg read");
+      perror("test_sip_msg read");
       exit(1);
     }
 
@@ -198,22 +198,22 @@ int main(int argc, char *argv[])
     fprintf(stdout, "sip flags = %x\n", sip->sip_flags);
 
   if (m < 0) {
-    fprintf(stderr, "sip_test_msg: parsing error ("MOD_ZD")\n", n);
+    fprintf(stderr, "test_sip_msg: parsing error ("MOD_ZD")\n", n);
     exit(1);
   }
 
   if (sip->sip_flags & MSG_FLG_TRUNC) {
-    fprintf(stderr, "sip_test_msg: message truncated\n");
+    fprintf(stderr, "test_sip_msg: message truncated\n");
     exit(1);
   }
 
   if (msg_next(msg)) {
-    fprintf(stderr, "sip_test_msg: stuff after message\n");
+    fprintf(stderr, "test_sip_msg: stuff after message\n");
     exit(1);
   }
 
 #if 0
-  fprintf(stderr, "sip_test_msg: %d headers (%d short ones), %d unknown\n",
+  fprintf(stderr, "test_sip_msg: %d headers (%d short ones), %d unknown\n",
 	  msg->mh_n_headers, msg->mh_n_short, msg->mh_n_unknown);
 
   if (msg->mh_payload) {
@@ -223,11 +223,11 @@ int main(int argc, char *argv[])
 #endif
 
   if (MSG_HAS_ERROR(sip->sip_flags) || sip->sip_error) {
-    fprintf(stderr, "sip_test_msg: parsing error\n");
+    fprintf(stderr, "test_sip_msg: parsing error\n");
     exit(1);
   }
   else if (sip_sanity_check(sip) < 0) {
-    fprintf(stderr, "sip_test_msg: message failed sanity check\n");
+    fprintf(stderr, "test_sip_msg: message failed sanity check\n");
     exit(1);
   }
 
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 	    sip->sip_request->rq_version);
     if (sip->sip_request->rq_url->url_type == url_unknown) {
       exitcode = 1;
-      fprintf(stderr, "sip_test_msg: invalid request URI\n");
+      fprintf(stderr, "test_sip_msg: invalid request URI\n");
     }
   }
 
@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
   }
 
   if (msg_next(msg)) {
-    fprintf(stderr, "sip_test_msg: extra stuff after valid message\n");
+    fprintf(stderr, "test_sip_msg: extra stuff after valid message\n");
     exit(1);
   }
 

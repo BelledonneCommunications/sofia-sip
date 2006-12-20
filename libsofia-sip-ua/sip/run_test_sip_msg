@@ -38,7 +38,7 @@ then
     exit 77
 fi
 
-test=./sip_test_msg
+test=./test_sip_msg
 
 # These are messages that the parser should pass
 good="-t test1.txt test2.txt test3.txt test4.txt 
