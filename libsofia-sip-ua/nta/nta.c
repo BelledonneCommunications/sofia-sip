@@ -4296,7 +4296,20 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
     irq->irq_call_id = sip_call_id_copy(home, sip->sip_call_id);
     irq->irq_cseq = sip_cseq_copy(home, sip->sip_cseq);
     irq->irq_via = sip_via_copy(home, sip->sip_via);
-    irq->irq_record_route = sip_record_route_copy(home, sip->sip_record_route);
+    switch (method) {
+    case sip_method_ack:
+    case sip_method_cancel:
+    case sip_method_bye:
+    case sip_method_options:
+    case sip_method_register:	/* Handling Path is up to application */
+    case sip_method_info:
+    case sip_method_prack:
+    case sip_method_publish:
+      break;
+    default:
+      irq->irq_record_route = 
+	sip_record_route_copy(home, sip->sip_record_route);
+    }
     irq->irq_branch  = irq->irq_via->v_branch;
     irq->irq_reliable_tp = tport_is_reliable(tport);
 
@@ -5317,8 +5330,7 @@ int nta_incoming_complete_response(nta_incoming_t *irq,
   if (!sip->sip_via)
     clone = 1, sip->sip_via = sip_via_copy(home, irq->irq_via);
   if (status < 300 && 
-      !sip->sip_record_route && irq->irq_record_route &&
-      sip->sip_cseq && sip->sip_cseq->cs_method != sip_method_register)
+      !sip->sip_record_route && irq->irq_record_route)
     sip_add_dup(msg, sip, (sip_header_t *)irq->irq_record_route);
 
   if (clone)
