@@ -1328,6 +1328,105 @@ int test_tports(agent_t *ag)
   END();
 }
 
+int leg_callback_destroy(agent_t *ag,
+			 nta_leg_t *leg,
+			 nta_incoming_t *irq,
+			 sip_t const *sip)
+{
+  if (tstflags & tst_verbatim) {
+    printf("%s: %s: %s " URL_PRINT_FORMAT " %s\n",
+	   name, __func__, sip->sip_request->rq_method_name, 
+	   URL_PRINT_ARGS(sip->sip_request->rq_url),
+	   sip->sip_request->rq_version);
+  }
+
+  ag->ag_latest_leg = leg;
+
+  nta_incoming_destroy(irq);
+
+  return 0;
+}
+
+int leg_callback_save(agent_t *ag,
+		      nta_leg_t *leg,
+		      nta_incoming_t *irq,
+		      sip_t const *sip)
+{
+  if (tstflags & tst_verbatim) {
+    printf("%s: %s: %s " URL_PRINT_FORMAT " %s\n",
+	   name, __func__, sip->sip_request->rq_method_name, 
+	   URL_PRINT_ARGS(sip->sip_request->rq_url),
+	   sip->sip_request->rq_version);
+  }
+
+  ag->ag_latest_leg = leg;
+  ag->ag_irq = irq;
+  ag->ag_status = 1000;
+
+  return 0;
+}
+
+
+int test_destroy_incoming(agent_t *ag)
+{
+  BEGIN();
+
+  url_t url[1];
+
+  *url = *ag->ag_contact->m_url;
+
+  /* Test 3.1
+   * Check that when a incoming request is destroyed in callback, 
+   * a 500 response is sent
+   */
+  ag->ag_expect_leg = ag->ag_default_leg;
+  nta_leg_bind(ag->ag_default_leg, leg_callback_destroy, ag);
+
+  TEST_1(ag->ag_orq = 
+	 nta_outgoing_tcreate(ag->ag_default_leg, 
+			      outgoing_callback, ag,
+			      ag->ag_obp,
+			      SIP_METHOD_MESSAGE,
+			      (url_string_t *)url,
+			      SIPTAG_SUBJECT_STR("Test 3.1"),
+			      SIPTAG_FROM(ag->ag_alice),
+			      SIPTAG_TO(ag->ag_bob),
+			      TAG_END()));
+
+  nta_test_run(ag);
+  TEST(ag->ag_status, 500);
+  TEST_P(ag->ag_orq, NULL);
+  TEST_P(ag->ag_latest_leg, ag->ag_default_leg);
+
+  /* Test 3.1
+   * Check that when a incoming request is destroyed, a 500 response is sent
+   */
+  nta_leg_bind(ag->ag_default_leg, leg_callback_save, ag);
+
+  TEST_1(ag->ag_orq = 
+	 nta_outgoing_tcreate(ag->ag_default_leg, 
+			      outgoing_callback, ag,
+			      ag->ag_obp,
+			      SIP_METHOD_MESSAGE,
+			      (url_string_t *)url,
+			      SIPTAG_SUBJECT_STR("Test 3.1"),
+			      SIPTAG_FROM(ag->ag_alice),
+			      SIPTAG_TO(ag->ag_bob),
+			      TAG_END()));
+
+  nta_test_run(ag);
+  TEST(ag->ag_status, 1000);
+  TEST_1(ag->ag_irq);
+  TEST_1(ag->ag_orq);
+  TEST_P(ag->ag_latest_leg, ag->ag_default_leg);
+  nta_incoming_destroy(ag->ag_irq), ag->ag_irq = NULL;
+  nta_test_run(ag);
+  TEST(ag->ag_status, 500);
+  TEST_P(ag->ag_orq, NULL);
+
+  END();
+}
+
 int test_resolv(agent_t *ag, char const *resolv_conf)
 {
   int udp = 0, tcp = 0, sctp = 0, tls = 0;
@@ -1339,6 +1438,8 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     return 0;
 
   BEGIN();
+
+  nta_leg_bind(ag->ag_default_leg, leg_callback_200, ag);
 
   nta_agent_set_params(ag->ag_agent, 
 		       NTATAG_SIP_T1(8 * 25), 
@@ -2063,6 +2164,8 @@ int test_routing(agent_t *ag)
 
   *url = *ag->ag_aliases->m_url;
   url->url_user = "bob";
+
+  nta_leg_bind(ag->ag_default_leg, leg_callback_200, ag);
 
   nta_agent_set_params(ag->ag_agent, 
 		       NTATAG_MAXSIZE(2 * 1024 * 1024),
@@ -3364,6 +3467,7 @@ int main(int argc, char *argv[])
     retval |= test_bad_messages(ag); SINGLE_FAILURE_CHECK();
     retval |= test_reinit(ag); SINGLE_FAILURE_CHECK();
     retval |= test_tports(ag); SINGLE_FAILURE_CHECK();
+    retval |= test_destroy_incoming(ag); SINGLE_FAILURE_CHECK();
     retval |= test_resolv(ag, argv[i]); SINGLE_FAILURE_CHECK();
     retval |= test_routing(ag); SINGLE_FAILURE_CHECK();
     retval |= test_dialog(ag); SINGLE_FAILURE_CHECK();

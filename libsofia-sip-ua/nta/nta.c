@@ -3766,9 +3766,13 @@ void leg_recv(nta_leg_t *leg, msg_t *msg, sip_t *sip, tport_t *tport)
   status = incoming_callback(leg, irq, sip);
   irq->irq_in_callback = 0;
 
-  if (irq->irq_destroyed && irq->irq_terminated) {
-    incoming_free(irq);
-    return;
+  if (irq->irq_destroyed) {
+    if (irq->irq_terminated) {
+      incoming_free(irq);
+      return;
+    }
+    if (status < 200)
+      status = 500;
   }
 
   if (status == 0)
@@ -4453,9 +4457,12 @@ void nta_incoming_destroy(nta_incoming_t *irq)
     irq->irq_callback = NULL;
     irq->irq_magic = NULL;
     irq->irq_destroyed = 1;
-    if (!irq->irq_in_callback)
+    if (!irq->irq_in_callback) {
       if (irq->irq_terminated || irq->irq_default)
 	incoming_free(irq);
+      else if (irq->irq_status < 200)
+	nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
+    }
   }
 }
 
