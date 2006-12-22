@@ -265,6 +265,32 @@ TPORT_DLL extern tag_typedef_t tptag_tos;
 TPORT_DLL extern tag_typedef_t tptag_tos_ref;
 #define TPTAG_TOS_REF(x) tptag_tos_ref, tag_int_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_log;
+/** If set, print out parsed or sent messages at transport layer.
+ *
+ * Use with tport_tcreate(), nua_create(), nta_agent_create(), 
+ * nth_engine_create(), or initial nth_site_create().
+ *
+ * @sa #TPORT_DUMP, TPTAG_DUMP()
+ */
+#define TPTAG_LOG(x) tptag_log, tag_bool_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_log_ref;
+#define TPTAG_LOG_REF(x) tptag_log_ref, tag_bool_vr(&(x))
+
+TPORT_DLL extern tag_typedef_t tptag_dump;
+/** Filename for dumping unparsed messages from transport. 
+ *
+ * Use with tport_tcreate(), nta_agent_create(), nua_create(),
+ * nth_engine_create(), or initial nth_site_create().
+ *
+ * @sa #TPORT_DUMP, TPTAG_LOG().
+ */
+#define TPTAG_DUMP(x) tptag_dump, tag_str_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_dump_ref;
+#define TPTAG_DUMP_REF(x) tptag_dump_ref, tag_str_vr(&(x))
+
 SOFIA_END_DECLS
 
 #endif /* !defined TPORT_TAG_H */
