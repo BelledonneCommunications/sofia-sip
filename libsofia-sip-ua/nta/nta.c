@@ -9721,6 +9721,9 @@ int outgoing_recv_reliable(nta_outgoing_t *orq,
  * @param magic
  * @param to_tag
  * @param rseq
+ *
+ * @bug Fix the memory leak - either one of the requests is left unreleased
+ * for ever.
  */
 nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
 				    nta_response_f *callback,
@@ -9760,8 +9763,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
 
   tagged->orq_to 	   = to;
   tagged->orq_tport        = tport_ref(orq->orq_tport);
-  tagged->orq_request      = (msg_t *)msg_ref_create(orq->orq_request);
-  tagged->orq_response     = NULL;
+  tagged->orq_request      = msg_ref_create(orq->orq_request);
+  tagged->orq_response     = msg_ref_create(orq->orq_response);
   tagged->orq_cancel       = NULL;
 
   tagged->orq_pending = tport_pend(orq->orq_tport, 
