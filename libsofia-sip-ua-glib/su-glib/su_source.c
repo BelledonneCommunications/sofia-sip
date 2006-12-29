@@ -989,26 +989,27 @@ su_duration_t su_source_step(su_port_t *self, su_duration_t tout)
   gmc = g_source_get_context(self->sup_source);
 
   if (gmc && g_main_context_acquire(gmc)) {
-    gint n = 0;
     GPollFD *fds = NULL;
+    gint fds_size = 0;
+    gint fds_wait;
     gint priority = G_MAXINT;
+    gint src_tout = -1;
 
-    if (g_main_context_prepare(gmc, &priority)) {
-      gint src_tout = -1;
+    g_main_context_prepare(gmc, &priority);
 
-      n = g_main_context_query(gmc, priority, &src_tout, NULL, 0);
-      if (n > 0) {
-        fds = g_alloca(n * (sizeof *fds));
-        n = g_main_context_query(gmc, priority, &src_tout, fds, n);	
-      }
-
-      if (src_tout >= 0 && tout > (su_duration_t)src_tout)
-        tout = src_tout;
-
-      su_wait((su_wait_t *)fds, n, tout);
+    fds_wait = g_main_context_query(gmc, priority, &src_tout, NULL, 0);
+    while (fds_wait > fds_size) {
+      fds = g_alloca(fds_wait * sizeof(fds[0]));
+      fds_size = fds_wait;
+      fds_wait = g_main_context_query(gmc, priority, &src_tout, fds, fds_size);
     }
 
-    g_main_context_check(gmc, priority, fds, n);
+    if (src_tout >= 0 && tout > (su_duration_t)src_tout)
+      tout = src_tout;
+
+    su_wait((su_wait_t *)fds, fds_wait, tout);
+
+    g_main_context_check(gmc, priority, fds, fds_wait);
 
     g_main_context_dispatch(gmc);
 
