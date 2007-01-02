@@ -58,6 +58,13 @@ int tport_udp_init_client(tport_primary_t *pri,
 			  tagi_t const *tags,
 			  char const **return_culprit);
 
+#if HAVE_FUNC
+#elif HAVE_FUNCTION
+#define __func__ __FUNCTION__
+#else
+static char const __func__[] = "tport_type_udp";
+#endif
+
 tport_vtable_t const tport_udp_client_vtable =
 {
   "udp", tport_type_client,

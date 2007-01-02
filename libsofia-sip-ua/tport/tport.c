@@ -286,7 +286,7 @@ static inline int tport_is_bound(tport_t const *self)
 }
 
 /** Test if transport connection has been established. @NEW_1_12_5 */
-inline int tport_is_connected(tport_t const *self)
+int tport_is_connected(tport_t const *self)
 {
   return self->tp_is_connected;
 }
@@ -308,7 +308,7 @@ void tport_set_tos(su_socket_t socket, su_addrinfo_t *ai, int tos)
 {
   if (tos >= 0 && 
       ai->ai_family == AF_INET && 
-      setsockopt(socket, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) < 0) {
+      setsockopt(socket, IPPROTO_IP, IP_TOS, (const void*)&tos, sizeof(tos)) < 0) {
     SU_DEBUG_3(("tport: setsockopt(IP_TOS): %s\n",
 		su_strerror(su_errno())));
   }
