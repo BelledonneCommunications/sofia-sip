@@ -340,44 +340,25 @@ int outbound_set_features(outbound_t *ob, char *features)
 
 /* ---------------------------------------------------------------------- */
 
-/** Hook for sending register request with extra outbound-ish headers. */
-nta_outgoing_t *outbound_register_request(outbound_t *ob, int terminating, 
-					  sip_contact_t *stack_contact,
-					  nta_agent_t *nta,
-					  nta_response_f *callback,
-					  nta_outgoing_magic_t *magic,
-					  url_string_t *next_hop,
-					  msg_t *msg,
-					  tag_type_t tag, tag_value_t value,
-					  ...)
+/** Obtain contacts for REGISTER */
+int outbound_get_contacts(outbound_t *ob, 
+			  sip_contact_t **return_current_contact, 
+			  sip_contact_t **return_previous_contact)
 {
-  sip_contact_t *previous_contact = NULL;
-  ta_list ta;
-  nta_outgoing_t *orq;
-
-  if (stack_contact) {
-    if (ob) {
-      if (ob->ob_contacts)
-	stack_contact = ob->ob_rcontact;
-      previous_contact = ob->ob_previous;
-    }
+  if (ob) {
+    if (ob->ob_contacts)
+      *return_current_contact = ob->ob_rcontact;
+    *return_previous_contact = ob->ob_previous;
   }
+  return 0;
+}
 
-  ta_start(ta, tag, value);
-
-  orq = nta_outgoing_mcreate(nta, callback, magic, next_hop, msg,
-			     TAG_IF(previous_contact,
-				    SIPTAG_CONTACT(previous_contact)),
-			     TAG_IF(stack_contact,
-				    SIPTAG_CONTACT(stack_contact)),
-			     ta_tags(ta));
-
-  ta_end(ta);
-
-  if (orq && ob)
+/** REGISTER request has been sent */
+int outbound_start_registering(outbound_t *ob)
+{
+  if (ob)
     ob->ob_registering = 1;
-
-  return orq;
+  return 0;
 }
 
 /** Process response to REGISTER request */
@@ -391,17 +372,16 @@ int outbound_register_response(outbound_t *ob,
   if (!ob)
     return 0;
 
-  assert(!request || request->sip_request);
-  assert(!response || response->sip_status);
-  
-  if (!response || !request)
-    return 0;
-
   if (terminating) {
-    ob->ob_registered = ob->ob_registering = 0;
+    ob->ob_registering = ob->ob_registered = 0;
     return 0;			/* Cleanup is done separately */
   }  
 
+  if (!response || !request)
+    return 0;
+
+  assert(request->sip_request); assert(response->sip_status);
+  
   reregister = outbound_check_for_nat(ob, request, response);
   if (reregister)
     return reregister;
@@ -423,7 +403,13 @@ int outbound_register_response(outbound_t *ob,
 }
 
 
-/** @internal Check if there is a NAT between us and registrar */
+/** @internal Check if there is a NAT between us and registrar.
+ *
+ * @retval -1 upon an error
+ * @retval #ob_register_ok (0) if the registration was OK
+ * @retval #ob_reregister (1) if client needs to re-register
+ * @retval #ob_reregister_now (2) if client needs to re-register immediately
+ */
 static
 int outbound_check_for_nat(outbound_t *ob,
 			   sip_t const *request,
@@ -457,11 +443,11 @@ int outbound_check_for_nat(outbound_t *ob,
   if (!m || binding_changed >= ob_nat_changed) {
     if (ob->ob_stun) {
       /* Use STUN? */
-      return 1;
+      return ob_reregister;
     }
     else if (ob->ob_upnp) {
       /* Use UPnP */
-      return 1;
+      return ob_reregister;
     }
     else {
       if (outbound_contacts_from_via(ob, response->sip_via) < 0)
@@ -1037,8 +1023,6 @@ int outbound_contacts_from_via(outbound_t *ob, sip_via_t const *via)
 
   dcontact = sip_contact_make(home, uri);
 
-
-
   if (ob->ob_instance) {
     char reg_id[20];
 
@@ -1172,8 +1156,10 @@ int outbound_set_contact(outbound_t *ob,
       previous = ob->ob_contacts ? ob->ob_rcontact : NULL;
     }
   }
-
+    
   ob->ob_by_stack = application_contact == NULL;
+
+  ob->ob_contacts = rcontact != NULL;
 
   ob->ob_rcontact = rcontact;
   ob->ob_dcontact = dcontact;
