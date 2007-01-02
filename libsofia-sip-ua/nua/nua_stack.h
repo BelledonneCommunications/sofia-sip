@@ -103,6 +103,26 @@ typedef struct register_usage nua_registration_t;
   TAG_IF((include) && (soa) && soa_is_remote_chat_active(soa) >= 0,	\
 	 SOATAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
 
+#if HAVE_NUA_HANDLE_DEBUG
+
+#define nua_handle_ref(nh) nua_handle_ref_by((nh), __func__)
+#define nua_handle_unref(nh) nua_handle_unref_by((nh), __func__)
+
+static inline nua_handle_t *nua_handle_ref_by(nua_handle_t *nh,
+					      char const *by)
+{
+  SU_DEBUG_0(("nua_handle_ref(%p) by %s\n", nh, by));
+  return (nua_handle_t *)su_home_ref((su_home_t *)nh);
+}
+
+static inline int nua_handle_unref_by(nua_handle_t *nh, char const *by)
+{
+  SU_DEBUG_0(("nua_handle_unref(%p) by %s\n", nh, by));
+  return su_home_unref((su_home_t *)nh);
+}
+
+#endif
+
 /** NUA handle. 
  *
  */
@@ -349,47 +369,7 @@ int nua_stack_process_request(nua_handle_t *nh,
 			      nta_incoming_t *irq,
 			      sip_t const *sip);
 
-int nua_stack_process_response(nua_handle_t *nh,
-			       nua_client_request_t *cr,
-			       nta_outgoing_t *orq,
-			       sip_t const *sip,
-			       tag_type_t tag, tag_value_t value, ...);
-
 int nua_stack_launch_network_change_detector(nua_t *nua);
-
-msg_t *nua_creq_msg(nua_t *nua, nua_handle_t *nh,
-		    nua_client_request_t *cr,
-		    int restart, 
-		    sip_method_t method, char const *name,
-		    tag_type_t tag, tag_value_t value, ...);
-
-int nua_tagis_have_contact_tag(tagi_t const *t);
-
-int nua_creq_check_restart(nua_handle_t *nh,
-			   nua_client_request_t *cr,
-			   nta_outgoing_t *orq,
-			   sip_t const *sip,
-			   nua_creq_restart_f *f);
-
-int nua_creq_restart_with(nua_handle_t *nh,
-			  nua_client_request_t *cr,
-			  nta_outgoing_t *orq,
-			  int status, char const *phrase,
-			  nua_creq_restart_f *f, 
-			  tag_type_t tag, tag_value_t value, ...);
-
-int nua_creq_save_restart(nua_handle_t *nh,
-			  nua_client_request_t *cr,
-			  nta_outgoing_t *orq,
-			  int status, char const *phrase,
-			  nua_creq_restart_f *f);
-
-int nua_creq_restart(nua_handle_t *nh,
-		     nua_client_request_t *cr,
-		     nta_response_f *cb,
-		     tagi_t *tags);
-
-void nua_creq_deinit(nua_client_request_t *cr, nta_outgoing_t *orq);
 
 sip_contact_t const *nua_stack_get_contact(nua_registration_t const *nr);
 
@@ -430,11 +410,7 @@ nua_stack_process_request_t nua_stack_process_unknown;
 nua_stack_process_request_t nua_stack_process_register;
 nua_stack_process_request_t nua_stack_process_method;
 
-nua_client_request_t
-  *nua_client_request_pending(nua_client_request_t const *),
-  *nua_client_request_restarting(nua_client_request_t const *),
-  *nua_client_request_by_orq(nua_client_request_t const *cr,
-			     nta_outgoing_t const *orq);
+/* ---------------------------------------------------------------------- */
 
 nua_server_request_t *nua_server_request(nua_t *nua,
 					 nua_handle_t *nh,
@@ -465,15 +441,6 @@ extern char const nua_application_sdp[];
 /* Private tags */
 #define NUTAG_ADD_CONTACT(v) _nutag_add_contact, tag_bool_v(v)
 extern tag_typedef_t _nutag_add_contact;
-
-#define NUTAG_ADD_CONTACT_REF(v) _nutag_add_contact_ref, tag_bool_vr(&v)
-extern tag_typedef_t _nutag_add_contact_ref;
-
-#define NUTAG_COPY(v) _nutag_copy, tag_bool_v(v)
-extern tag_typedef_t _nutag_copy;
-
-#define NUTAG_COPY_REF(v) _nutag_copy_ref, tag_bool_vr(&v)
-extern tag_typedef_t _nutag_copy_ref;
 
 /* ---------------------------------------------------------------------- */
 

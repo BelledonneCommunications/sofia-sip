@@ -45,9 +45,6 @@
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/su_tagarg.h>
 
-#define NTA_LEG_MAGIC_T      struct nua_handle_s
-#define NTA_OUTGOING_MAGIC_T struct nua_handle_s
-
 #define NEA_SMAGIC_T         struct nua_handle_s
 #define NEA_EMAGIC_T         struct nua_handle_s
 

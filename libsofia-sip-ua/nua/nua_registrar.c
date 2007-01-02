@@ -44,8 +44,6 @@
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_util.h>
 
-#define NTA_LEG_MAGIC_T      struct nua_handle_s
-#define NTA_OUTGOING_MAGIC_T struct nua_handle_s
 #define NTA_INCOMING_MAGIC_T struct nua_handle_s
 #define NTA_RELIABLE_MAGIC_T struct nua_handle_s
 
@@ -97,7 +95,7 @@ int nua_stack_process_register(nua_t *nua,
   nua_server_request_t *sr, sr0[1];
 
   sr = nua_server_request(nua, nh, irq, sip, SR_INIT(sr0), sizeof *sr,
-			  nua_default_respond, 0);
+			  NULL, 0);
 
   return nua_stack_server_event(nua, sr, nua_i_register, TAG_END());
 }

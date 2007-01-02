@@ -50,12 +50,22 @@ typedef NUA_OWNER_T nua_owner_t;
 
 typedef struct nua_server_request nua_server_request_t; 
 typedef struct nua_client_request nua_client_request_t; 
+typedef su_msg_r nua_saved_signal_t;
 
 /** Respond to an incoming request. */
 typedef int nua_server_respond_f(nua_server_request_t *, tagi_t const *);
 
 /** Restart an outgoing request. */
 typedef void nua_creq_restart_f(nua_owner_t *, tagi_t *tags);
+
+/** Initialize an outgoing request */
+typedef int nua_client_init_f(nua_client_request_t *,
+			      nua_dialog_usage_t *,
+			      tagi_t const *tags);
+
+/** Send an outgoing request. */
+typedef int nua_client_request_f(nua_client_request_t *,
+				 msg_t *msg, sip_t *);
 
 /** Server side transaction */
 struct nua_server_request {
@@ -64,19 +74,21 @@ struct nua_server_request {
   nua_owner_t *sr_owner;	/**< Backpointer to handle */
   nua_dialog_usage_t *sr_usage;	/**< Backpointer to usage */
 
-  /** When the application responds to an request with
+  /** When the application responds to a request with
    * nua_respond(), the sr_respond() is called
    */
   nua_server_respond_f *sr_respond;
   
   nta_incoming_t *sr_irq;	/**< Server transaction object */
-  msg_t *sr_msg;		/**< Request message */
+  msg_t *sr_request;		/**< Request message */
+  msg_t *sr_response;		/**< Response message */
 
   sip_method_t sr_method;	/**< Request method */
   int sr_status;		/**< Status code */
   char const *sr_phrase;	/**< Status phrase */
 
-  unsigned sr_auto:1;		/**< Autoresponse - no event has been sent */
+  unsigned sr_event:1;		/**< Sent to application */
+  unsigned sr_application:1;	/**< Response by application */
   unsigned sr_initial:1;	/**< Handle was created by this request */
 
   /* Flags used with offer-answer */
@@ -104,36 +116,170 @@ int sr_status(nua_server_request_t *sr, int status, char const *phrase)
   return (void)(sr->sr_phrase = phrase), (sr->sr_status = status);
 }
 
+/** Methods for client request */
+typedef struct {
+  sip_method_t crm_method;
+  char const *crm_method_name;
+  size_t crm_extra;		/**< Size of private data */
+
+  struct {
+    unsigned create_dialog:1, in_dialog:1, target_refresh:1;
+    unsigned:0;
+  } crm_flags;
+
+  /** Generate a request message.
+   *
+   * @retval 1 when request message has been created
+   * @retval 0 when request message should be created in normal fashion
+   * @retval -1 upon an error
+   */
+  int (*crm_template)(nua_client_request_t *cr,
+		      msg_t **return_msg,
+		      tagi_t const *tags);
+
+  /**@a crm_init is called when a client request is sent first time. 
+   *
+   * @retval 1 when request has been responded
+   * @retval 0 when request should be sent in normal fashion
+   * @retval -1 upon an error
+   */
+  int (*crm_init)(nua_client_request_t *, msg_t *msg, sip_t *sip,
+		  tagi_t const *tags);
+
+  /** @a crm_send is called each time when a client request is sent.
+   *
+   * @retval 1 when request has been responded
+   * @retval 0 when request has been sent
+   * @retval -1 upon an error (request message has not been destroyed)
+   * @retval -2 upon an error (request message has been destroyed)
+   */
+  int (*crm_send)(nua_client_request_t *,
+		  msg_t *msg, sip_t *sip,
+		  tagi_t const *tags);
+
+  /** @a crm_check_restart is called each time when a response is received.
+   *
+   * It is used to restart reqquest after responses with method-specific
+   * status code or method-specific way of restarting the request.
+   *
+   * @retval 1 when request has been restarted
+   * @retval 0 when response should be processed normally
+   */
+  int (*crm_check_restart)(nua_client_request_t *,
+			   int status, char const *phrase,
+			   sip_t const *sip);
+
+  /** @a crm_recv is called each time a final response is received.
+   *
+   * A final response is in range 200 .. 699 (or internal response) and it
+   * cannot be restarted.
+   *
+   * crm_recv() should call nua_base_client_response() or
+   * nua_base_client_tresponse(). The return values below are documented with
+   * nua_base_client_response(), too.
+   *
+   * @retval 0 if response was preliminary
+   * @retval 1 if response was final
+   * @retval 2 if response destroyed the handle, too.
+   */
+  int (*crm_recv)(nua_client_request_t *,
+		  int status, char const *phrase,
+		  sip_t const *sip);
+
+  /** @a crm_preliminary is called each time a preliminary response is received.
+   *
+   * A preliminary response is in range 101 .. 199.
+   *
+   * crm_preliminary() should call nua_base_client_response() or
+   * nua_base_client_tresponse().
+   *
+   * @retval 0 if response was preliminary
+   * @retval 1 if response was final
+   * @retval 2 if response destroyed the handle, too.
+   */
+  int (*crm_preliminary)(nua_client_request_t *,
+			 int status, char const *phrase,
+			 sip_t const *sip);
+
+  /** @a crm_report is called each time a response is received and it is
+   * reported to the application.
+   *
+   * The status and phrase may be different from the status and phrase
+   * received from the network, e.g., when the request is restarted.
+   *
+   * @return The return value should be 0. It is currently ignored.
+   */
+  int (*crm_report)(nua_client_request_t *,
+		    int status, char const *phrase,
+		    sip_t const *sip,
+		    nta_outgoing_t *orq,
+		    tagi_t const *tags);
+
+} nua_client_methods_t;
+
+/* Client-side request. Documented by nua_client_create() */
 struct nua_client_request
 {
-  nua_client_request_t *cr_next;        /**< Linked list of requests */
-  /*nua_event_t*/ int cr_event;		/**< Request event */
-  nua_creq_restart_f *cr_restart;
-  nta_outgoing_t     *cr_orq;
-  msg_t              *cr_msg;
+  nua_client_request_t *cr_next, **cr_prev; /**< Linked list of requests */
+  nua_owner_t        *cr_owner;
   nua_dialog_usage_t *cr_usage;
+
+  nua_saved_signal_t cr_signal;
+  tagi_t const      *cr_tags;
+
+  nua_client_methods_t const *cr_methods;
+
+  msg_t              *cr_msg;
+  sip_t              *cr_sip;
+
+  nta_outgoing_t     *cr_orq;
+
+  /*nua_event_t*/ int cr_event;		/**< Request event */
+  sip_method_t        cr_method;
+  char const         *cr_method_name;
+
+  url_t              *cr_target;
+
+  uint32_t            cr_seq;
+
+  unsigned short      cr_status;        /**< Latest status */
+
   unsigned short      cr_retry_count;   /**< Retry count for this request */
 
   /* Flags used with offer-answer */
   unsigned short      cr_answer_recv;   /**< Recv answer in response 
 					 *  with this status.
 					 */
-  unsigned            cr_offer_sent:1;  /**< Sent offer in this request */
+  unsigned cr_offer_sent:1;	/**< Sent offer in this request */
 
-  unsigned            cr_offer_recv:1;  /**< Recv offer in a response */
-  unsigned            cr_answer_sent:1; /**< Sent answer in (PR)ACK */
+  unsigned cr_offer_recv:1;	/**< Recv offer in a response */
+  unsigned cr_answer_sent:1;	/**< Sent answer in (PR)ACK */
 
-  unsigned            cr_has_contact:1; /**< Request has application contact */
+  /* Lifelong flags? */
+  unsigned cr_auto:1;		/**< Request was generated by stack */
+  unsigned cr_has_contact:1;	/**< Request has user Contact */
+  unsigned cr_contactize:1;	/**< Request needs Contact */
+
+  /* Current state */
+  unsigned cr_challenged:1;	/**< Request was challenged, pending auth */
+  unsigned cr_restarting:1;	/**< Request is being restarted */
+  unsigned cr_reporting:1;	/**< Reporting in progress */
+  unsigned cr_terminating:1;	/**< Request terminates the usage */
+  signed int cr_terminated:2;	/**< Response terminated usage (1) or 
+				    whole dialog (-1) */
+  unsigned cr_graceful:1;	/**< Graceful termination required */
 };
 
 
 struct nua_dialog_state
 {
-  nua_client_request_t ds_cr[1];
-  nua_server_request_t *ds_sr;
-
   /** Dialog usages. */
   nua_dialog_usage_t     *ds_usage;
+
+  /** Client requests */
+  nua_client_request_t   *ds_cr;
+  /** Server requests */
+  nua_server_request_t *ds_sr;
 
   /* Dialog and subscription state */
   unsigned ds_route:1;		/**< We have route */
@@ -143,7 +289,7 @@ struct nua_dialog_state
   unsigned ds_has_register:1;	/**< We have registration */
   unsigned ds_has_publish:1;	/**< We have publish */
 
-  unsigned ds_has_referrals:1;	/**< We have (or have had) referrals */
+  unsigned ds_got_referrals:1;	/**< We have (or have had) referrals */
 
   unsigned :0;
 
@@ -196,8 +342,8 @@ typedef struct {
 struct nua_dialog_usage {
   nua_dialog_usage_t *du_next;
   nua_usage_class const *du_class;
+  nua_client_request_t *du_cr;	        /**< Client request bound with usage */
 
-  unsigned     du_terminating:1;	/**< Now trying to terminate usage */
   unsigned     du_ready:1;	        /**< Established usage */
   unsigned     du_shutdown:1;	        /**< Shutdown in progress */
   unsigned:0;
@@ -212,7 +358,6 @@ struct nua_dialog_usage {
 
   sip_event_t const *du_event;		/**< Event of usage */
 
-  msg_t *du_msg;			/**< Template message */
 };
 
 void nua_dialog_uac_route(nua_owner_t *, nua_dialog_state_t *ds,
@@ -262,6 +407,10 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now);
 
+void nua_dialog_usage_terminate(nua_owner_t *owner,
+				nua_dialog_state_t *ds,
+				nua_dialog_usage_t *du);
+
 static inline
 int nua_dialog_is_established(nua_dialog_state_t const *ds)
 {
@@ -287,6 +436,114 @@ nua_dialog_usage_t *nua_dialog_usage_public(void const *p)
 
 /* ---------------------------------------------------------------------- */
 
+int nua_client_create(nua_owner_t *owner,
+		      int event,
+		      nua_client_methods_t const *methods,
+		      tagi_t const *tags);
+
+int nua_client_tcreate(nua_owner_t *nh, 
+		       int event,
+		       nua_client_methods_t const *methods,
+		       tag_type_t tag, tag_value_t value, ...);
+
+static inline 
+void *nua_private_client_request(nua_client_request_t const *cr)
+{
+  return (void *)(cr + 1);
+}
+
+void nua_client_request_destroy(nua_client_request_t *);
+
+int nua_client_request_queue(nua_client_request_t *cr);
+
+static inline int nua_client_is_queued(nua_client_request_t const *cr)
+{
+  return cr && cr->cr_prev;
+}
+
+nua_client_request_t *nua_client_request_remove(nua_client_request_t *cr);
+
+int nua_client_bind(nua_client_request_t *cr, nua_dialog_usage_t *du);
+
+static inline int nua_client_is_bound(nua_client_request_t const *cr)
+{
+  return cr && cr->cr_usage && cr->cr_usage->du_cr == cr;
+}
+
+static inline int nua_client_is_reporting(nua_client_request_t const *cr)
+{
+  return cr && cr->cr_reporting;
+}
+
+/** Mark client request as a terminating one */
+static inline void nua_client_terminating(nua_client_request_t *cr)
+{
+  cr->cr_terminating = 1;
+}
+
+int nua_client_init_request(nua_client_request_t *cr);
+
+int nua_client_resend_request(nua_client_request_t *cr,
+			      int terminating,
+			      tagi_t const *tags);
+
+int nua_base_client_request(nua_client_request_t *cr,
+			    msg_t *msg,
+			    sip_t *sip,
+			    tagi_t const *tags);
+
+int nua_base_client_trequest(nua_client_request_t *cr,
+			     msg_t *msg,
+			     sip_t *sip,
+			     tag_type_t tag, tag_value_t value, ...);
+
+extern nta_response_f nua_client_orq_response;
+
+int nua_client_return(nua_client_request_t *cr,
+		      int status,
+		      char const *phrase,
+		      msg_t *to_be_destroyed);
+
+int nua_client_response(nua_client_request_t *cr,
+			int status,
+			char const *phrase,
+			sip_t const *sip);
+
+int nua_client_check_restart(nua_client_request_t *cr,
+			     int status,
+			     char const *phrase,
+			     sip_t const *sip);
+
+int nua_base_client_check_restart(nua_client_request_t *cr,
+				  int status,
+				  char const *phrase,
+				  sip_t const *sip);
+
+int nua_client_restart(nua_client_request_t *cr,
+		       int status, char const *phrase);
+
+int nua_base_client_response(nua_client_request_t *cr,
+			     int status, char const *phrase,
+			     sip_t const *sip,
+			     tagi_t const *tags);
+
+int nua_base_client_tresponse(nua_client_request_t *cr,
+			      int status, char const *phrase,
+			      sip_t const *sip,
+			      tag_type_t tag, tag_value_t value, ...);
+
+int nua_client_set_target(nua_client_request_t *cr, url_t const *target);
+
+int nua_client_report(nua_client_request_t *cr,
+		      int status, char const *phrase,
+		      sip_t const *sip,
+		      nta_outgoing_t *orq,
+		      tagi_t const *tags);
+
+nua_client_request_t *nua_client_request_pending(nua_client_request_t const *);
+
+/* ---------------------------------------------------------------------- */
+
 void nua_server_request_destroy(nua_server_request_t *sr);
 
 int nua_server_respond(nua_server_request_t *sr,
@@ -300,5 +557,7 @@ msg_t *nua_server_response(nua_server_request_t *sr,
 int nua_default_respond(nua_server_request_t *sr,
 			tagi_t const *tags);
 
+
+/* ---------------------------------------------------------------------- */
 
 #endif /* NUA_DIALOG_H */

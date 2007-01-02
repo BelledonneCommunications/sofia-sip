@@ -345,6 +345,15 @@ void nua_dialog_usage_remove_at(nua_owner_t *own,
     nua_client_request_t *cr, *cr_next;
     nua_server_request_t *sr, *sr_next;
 
+    /* Destroy saved client request */
+    if (nua_client_is_bound(du->du_cr)) {
+      nua_client_bind(cr = du->du_cr, NULL);
+      if (!nua_client_is_queued(cr) &&
+	  !nua_client_is_reporting(cr))
+	nua_client_request_destroy(cr);
+    }
+
+    /* Clean references from queued client requests */
     for (cr = ds->ds_cr; cr; cr = cr_next) {
       cr_next = cr->cr_next;
       if (cr->cr_usage == du)
@@ -365,7 +374,6 @@ void nua_dialog_usage_remove_at(nua_owner_t *own,
 		own, nua_dialog_usage_name(du), 
 		o ? " with event " : "", o ? o->o_type :""));
     du->du_class->usage_remove(own, ds, du);
-    msg_destroy(du->du_msg), du->du_msg = NULL;
     su_home_unref(own);
     su_free(own, du);
   }
@@ -524,7 +532,8 @@ void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du,
 /**@internal Do not refresh. */
 void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
 {
-  du->du_refresh = 0;
+  if (du)
+    du->du_refresh = 0;
 }
 
 /** @internal Refresh usage or shutdown usage if @a now is 0. */
@@ -537,18 +546,26 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
     du->du_refresh = 0;
 
     if (now > 0) {
-      if (du->du_class->usage_refresh) {
-	du->du_class->usage_refresh(owner, ds, du, now);
-	return;
-      }
+      assert(du->du_class->usage_refresh);
+      du->du_class->usage_refresh(owner, ds, du, now);
     }
     else {
       du->du_shutdown = 1;
-      if (du->du_class->usage_shutdown) {
-	du->du_class->usage_shutdown(owner, ds, du);
-	return;
-      }
+      assert(du->du_class->usage_shutdown);
+      du->du_class->usage_shutdown(owner, ds, du);
     }
   }
 }
 
+/** (Gracefully) terminate usage */
+void nua_dialog_usage_terminate(nua_owner_t *owner,
+				nua_dialog_state_t *ds,
+				nua_dialog_usage_t *du)
+{
+  if (du) {
+    du->du_refresh = 0;
+    du->du_shutdown = 1;
+    assert(du->du_class->usage_shutdown);
+    du->du_class->usage_shutdown(owner, ds, du);
+  }
+}

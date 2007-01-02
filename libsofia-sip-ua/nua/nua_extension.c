@@ -43,16 +43,7 @@
 #include <sofia-sip/sip_protos.h>
 #include <sofia-sip/sip_status.h>
 
-#define NTA_LEG_MAGIC_T      struct nua_handle_s
-#define NTA_OUTGOING_MAGIC_T struct nua_handle_s
-
 #include "nua_stack.h"
-
-static int process_response_to_method(nua_handle_t *nh,
-				       nta_outgoing_t *orq,
-				       sip_t const *sip);
-static void restart_method(nua_handle_t *nh, tagi_t *tags);
-static int respond_to_method(nua_server_request_t *sr, tagi_t const *tags);
 
 /** Send an extension request. 
  *
@@ -78,32 +69,25 @@ static int respond_to_method(nua_server_request_t *sr, tagi_t const *tags);
  * @since New in @VERSION_1_12_4.
  */
 
+static nua_client_methods_t nua_method_client_methods = {
+  SIP_METHOD_UNKNOWN,
+  0,
+  { 
+    /* create_dialog */ 0,
+    /* in_dialog */ 0,
+    /* target_refresh */ 0
+  },
+  /* nua_method_client_template */ NULL,
+  /* nua_method_client_init */ NULL,
+  /* nua_method_client_request */ NULL,
+  /* nua_method_client_check_restart */ NULL,
+  /* nua_method_client_response */ NULL
+};
+
 int 
 nua_stack_method(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 { 
-  nua_client_request_t *cr = nh->nh_ds->ds_cr;
-  msg_t *msg;
-
-  if (cr->cr_orq)
-    return UA_EVENT2(e, 900, "Request already in progress");
-
-  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
-
-  msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
-		     SIP_METHOD_UNKNOWN,
-		     TAG_NEXT(tags));
-  if (msg)
-    cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
-				      process_response_to_method, nh, NULL,
-				      msg,
-				      SIPTAG_END(),
-				      TAG_NEXT(tags));
-  if (!cr->cr_orq) {
-    msg_destroy(msg);
-    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
-  }
-
-  return cr->cr_event = e;
+  return nua_client_create(nh, e, &nua_method_client_methods, tags);
 }
 
 /** @NUA_EVENT nua_r_method
@@ -126,20 +110,6 @@ nua_stack_method(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
  *
  * @END_NUA_EVENT
  */
-
-static int process_response_to_method(nua_handle_t *nh,
-				       nta_outgoing_t *orq,
-				       sip_t const *sip)
-{
-  if (nua_creq_check_restart(nh, nh->nh_ds->ds_cr, orq, sip, restart_method))
-    return 0;
-  return nua_stack_process_response(nh, nh->nh_ds->ds_cr, orq, sip, TAG_END());
-}
-
-void restart_method(nua_handle_t *nh, tagi_t *tags)
-{
-  nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_method, tags);
-}
 
 /** @NUA_EVENT nua_i_method
  *
@@ -165,6 +135,8 @@ void restart_method(nua_handle_t *nh, tagi_t *tags)
  * @END_NUA_EVENT
  */
 
+static int respond_to_method(nua_server_request_t *sr, tagi_t const *tags);
+
 int nua_stack_process_method(nua_t *nua,
 			      nua_handle_t *nh,
 			      nta_incoming_t *irq,
@@ -172,9 +144,7 @@ int nua_stack_process_method(nua_t *nua,
 {
   nua_server_request_t *sr, sr0[1];
   
-  sr = SR_INIT(sr0);
-  
-  sr = nua_server_request(nua, nh, irq, sip, sr, sizeof *sr,
+  sr = nua_server_request(nua, nh, irq, sip, SR_INIT(sr0), sizeof sr0,
 			  respond_to_method, 0);
 
   return nua_stack_server_event(nua, sr, nua_i_method, TAG_END());
@@ -185,20 +155,14 @@ int respond_to_method(nua_server_request_t *sr, tagi_t const *tags)
 {
   nua_handle_t *nh = sr->sr_owner;
   nua_t *nua = nh->nh_nua;
-  msg_t *msg;
+  int status = sr->sr_status;
 
-  msg = nua_server_response(sr, sr->sr_status, sr->sr_phrase, TAG_NEXT(tags));
+  int final = nua_default_respond(sr, tags);
 
-  if (msg) {
-    nta_incoming_mreply(sr->sr_irq, msg);
-  }
-  else {
-    SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
-    nta_incoming_treply(sr->sr_irq, sr->sr_status, sr->sr_phrase, TAG_END());
+  if (status != sr->sr_status) 
     nua_stack_event(nua, nh, NULL,
 		    nua_i_error, 900, "Response to Extension Method Fails",
 		    TAG_END());
-  }
   
-  return sr->sr_status >= 200 ? sr->sr_status : 0;
+  return final;
 }

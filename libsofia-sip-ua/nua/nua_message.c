@@ -43,9 +43,6 @@
 #include <sofia-sip/sip_protos.h>
 #include <sofia-sip/sip_status.h>
 
-#define NTA_LEG_MAGIC_T      struct nua_handle_s
-#define NTA_OUTGOING_MAGIC_T struct nua_handle_s
-
 #include "nua_stack.h"
 
 /* ======================================================================== */
@@ -72,48 +69,41 @@
  * @sa #nua_i_message, @RFC3428
  */
 
-static int process_response_to_message(nua_handle_t *nh,
-				       nta_outgoing_t *orq,
-				       sip_t const *sip);
+static int nua_message_client_init(nua_client_request_t *cr, 
+				   msg_t *, sip_t *,
+				   tagi_t const *tags);
+
+static nua_client_methods_t nua_message_client_methods = {
+  SIP_METHOD_MESSAGE,
+  0,
+  { 
+    /* create_dialog */ 0,
+    /* in_dialog */ 0,
+    /* target refresh */ 0
+  },
+  /* nua_message_client_template */ NULL,
+  nua_message_client_init,
+  /*nua_message_client_request*/ NULL,
+  /* nua_message_client_check_restart */ NULL,
+  /*nua_message_client_response*/ NULL
+};
 
 int 
-nua_stack_message(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
+nua_stack_message(nua_t *nua,
+		  nua_handle_t *nh,
+		  nua_event_t e,
+		  tagi_t const *tags)
 { 
-  nua_client_request_t *cr = nh->nh_ds->ds_cr;
-  msg_t *msg;
-  sip_t *sip;
-
-  if (nh_is_special(nh)) {
-    return UA_EVENT2(e, 900, "Invalid handle for MESSAGE");
-  }
-  else if (cr->cr_orq) {
-    return UA_EVENT2(e, 900, "Request already in progress");
-  }
-
-  nua_stack_init_handle(nua, nh, TAG_NEXT(tags));
-
-  msg = nua_creq_msg(nua, nh, cr, cr->cr_retry_count,
-			 SIP_METHOD_MESSAGE,
-			 NUTAG_ADD_CONTACT(NH_PGET(nh, win_messenger_enable)),
-			 TAG_NEXT(tags));
-  sip = sip_object(msg);
-
-  if (sip)
-    cr->cr_orq = nta_outgoing_mcreate(nua->nua_nta,
-				      process_response_to_message, nh, NULL,
-				      msg,
-				      SIPTAG_END(), TAG_NEXT(tags));
-  if (!cr->cr_orq) {
-    msg_destroy(msg);
-    return UA_EVENT1(e, NUA_INTERNAL_ERROR);
-  }
-
-  return cr->cr_event = e;
+  return nua_client_create(nh, e, &nua_message_client_methods, tags);
 }
 
-void restart_message(nua_handle_t *nh, tagi_t *tags)
+static int nua_message_client_init(nua_client_request_t *cr, 
+				   msg_t *msg, sip_t *sip,
+				   tagi_t const *tags)
 {
-  nua_creq_restart(nh, nh->nh_ds->ds_cr, process_response_to_message, tags);
+  if (NH_PGET(cr->cr_owner, win_messenger_enable))
+    cr->cr_contactize = 1;
+  return 0;
 }
 
 /** @NUA_EVENT nua_r_message
@@ -136,15 +126,6 @@ void restart_message(nua_handle_t *nh, tagi_t *tags)
  *
  * @END_NUA_EVENT
  */
-
-static int process_response_to_message(nua_handle_t *nh,
-				       nta_outgoing_t *orq,
-				       sip_t const *sip)
-{
-  if (nua_creq_check_restart(nh, nh->nh_ds->ds_cr, orq, sip, restart_message))
-    return 0;
-  return nua_stack_process_response(nh, nh->nh_ds->ds_cr, orq, sip, TAG_END());
-}
 
 /** @NUA_EVENT nua_i_message
  *
@@ -173,27 +154,14 @@ int nua_stack_process_message(nua_t *nua,
 			      nta_incoming_t *irq,
 			      sip_t const *sip)
 {
-  msg_t *msg;
+  nua_server_request_t *sr, sr0[1];
 
-  if (nh
-      ? !NH_PGET(nh, message_enable)
-      : !DNH_PGET(nua->nua_dhandle, message_enable))
-    return 403;
+  sr = SR_INIT(sr0);
+  
+  if (!NUA_PGET(nua, nh, message_enable))
+    SR_STATUS1(sr, SIP_403_FORBIDDEN);
 
-  if (nh == NULL)
-    if (!(nh = nua_stack_incoming_handle(nua, irq, sip, 0)))
-      return 500;		/* respond with 500 Internal Server Error */
+  sr = nua_server_request(nua, nh, irq, sip, sr, sizeof *sr, NULL, 0);
 
-  msg = nta_incoming_getrequest(irq);
-
-  nua_stack_event(nh->nh_nua, nh, msg, nua_i_message, SIP_200_OK, TAG_END());
-
-#if 0 /* XXX */
-  if (nh->nh_nua->nua_messageRespond) {	
-    nh->nh_irq = irq;
-    return 0;
-  }
-#endif
-
-  return 200;
+  return nua_stack_server_event(nua, sr, nua_i_message, TAG_END());
 }

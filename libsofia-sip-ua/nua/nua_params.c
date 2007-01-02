@@ -762,12 +762,6 @@ static int nhp_set_tags(su_home_t *home,
     else if (tag == nutag_enablemessenger) {
       NHP_SET(nhp, win_messenger_enable, value != 0);
     }
-#if 0
-    /* NUTAG_AUTORESPOND(autorespond) */
-    else if (tag == nutag_autorespond) {
-      NHP_SET(nhp, autorespond, value);
-    }
-#endif
     /* NUTAG_CALLEE_CAPS(callee_caps) */
     else if (tag == nutag_callee_caps) {
       NHP_SET(nhp, callee_caps, value != 0);
@@ -1171,10 +1165,10 @@ int nua_handle_save_tags(nua_handle_t *nh, tagi_t *tags)
 
   nh->nh_tags = 
     tl_filtered_tlist(nh->nh_home, tagfilter,
-		      SIPTAG_FROM(p_from),
-		      TAG_FILTER(nua_handle_tags_filter),
-		      SIPTAG_TO(p_to),
-		      TAG_FILTER(nua_handle_tags_filter),
+		      TAG_IF(p_from != SIP_NONE, SIPTAG_FROM(p_from)),
+		      TAG_IF(p_from != SIP_NONE, TAG_FILTER(nua_handle_tags_filter)),
+		      TAG_IF(p_to != SIP_NONE, SIPTAG_TO(p_to)),
+		      TAG_IF(p_to != SIP_NONE, TAG_FILTER(nua_handle_tags_filter)),
 		      TAG_NEXT(tags));
 
   nh->nh_ptags = 
@@ -1366,7 +1360,8 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *               application contact associated with the operation handle 
  *               when responding to nua_get_hparams()
  * @param sip    NULL
- * @param tags   
+ * @param tags
+ *   NUTAG_APPL_METHOD() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -1559,6 +1554,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF_STR(SIPTAG_SUPPORTED_STR, supported),
      TIF(SIPTAG_ALLOW, allow),
      TIF_STR(SIPTAG_ALLOW_STR, allow),
+     TIF_STR(NUTAG_APPL_METHOD, appl_method),
      TIF(SIPTAG_ALLOW_EVENTS, allow_events),
      TIF_STR(SIPTAG_ALLOW_EVENTS_STR, allow_events),
      TIF_SIP(SIPTAG_USER_AGENT, user_agent),
