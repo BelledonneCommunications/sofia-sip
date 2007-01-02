@@ -638,11 +638,12 @@ int test_reject_401(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
   TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_proxy_authorization);
+  /* Ensure that nua_authenticate() tags get added to the request */
   TEST_1(sip->sip_subject);
   TEST_S(sip->sip_subject->g_value, "Got 407");
-  TEST_1(sip->sip_proxy_authorization);
-  TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
@@ -911,7 +912,7 @@ int test_mime_negotiation(struct context *ctx)
 
   /*
    Client transitions in reject-3:
-   INIT -(C1)-> PROCEEDING -(C6a)-> TERMINATED
+   INIT -(C1)-> CALLING -(C6a)-> TERMINATED
   */
 
   TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_state);
@@ -927,7 +928,7 @@ int test_mime_negotiation(struct context *ctx)
   /* No content-encoding is supported */
   TEST_S(sip->sip_accept_encoding->aa_value, "");
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
-  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* CALLING */
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
 
   free_events_in_list(ctx, a->events);

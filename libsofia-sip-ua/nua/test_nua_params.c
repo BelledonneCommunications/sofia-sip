@@ -117,12 +117,12 @@ int test_nua_params(struct context *ctx)
   nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
   run_a_until(ctx, nua_r_get_params, save_until_final_response);
 
-  TEST_1(e = ctx->a.events->head);
+  TEST_1(e = ctx->a.specials->head);
   TEST_E(e->data->e_event, nua_r_get_params);
   for (n = 0, t = e->data->e_tags; t; n++, t = tl_next(t))
     ;
   TEST_1(n > 32);
-  free_events_in_list(ctx, ctx->a.events);
+  free_events_in_list(ctx, ctx->a.specials);
 
   nh = nua_handle(ctx->a.nua, NULL, TAG_END()); TEST_1(nh);
   nua_handle_unref(nh);
@@ -291,7 +291,7 @@ int test_nua_params(struct context *ctx)
     nua_get_params(ctx->a.nua, TAG_ANY(), TAG_END());
     run_a_until(ctx, nua_r_get_params, save_until_final_response);
 
-    TEST_1(e = ctx->a.events->head);
+    TEST_1(e = ctx->a.specials->head);
     TEST_E(e->data->e_event, nua_r_get_params);
 
     n = tl_gets(e->data->e_tags,
@@ -414,7 +414,7 @@ int test_nua_params(struct context *ctx)
     TEST_S(m_features, expect_m_features); }
     TEST_S(outbound, "foo");
 
-    free_events_in_list(ctx, ctx->a.events);
+    free_events_in_list(ctx, ctx->a.specials);
   }
 
   /* Test that only those tags that have been set per handle are returned by nua_get_hparams() */

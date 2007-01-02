@@ -138,6 +138,10 @@ struct context
     sip_contact_t *contact;
     sip_from_t *to;
 
+    sip_allow_t *allow;
+    char const *appl_method;
+    sip_supported_t *supported;
+
     printer_function *printer;
 
     char const *instance;
@@ -185,6 +189,9 @@ int save_event_in_list(struct context *,
 		       struct call *);
 void free_events_in_list(struct context *,
 			 struct eventlist *);
+void free_event_in_list(struct context *ctx,
+			struct eventlist *list,
+			struct event *e);
 
 #define CONDITION_PARAMS			\
   nua_event_t event,				\

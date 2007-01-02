@@ -142,6 +142,7 @@ int test_register_to_proxy(struct context *ctx)
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST(e->data->e_status, 401);
   TEST(sip->sip_status->st_status, 401);
+  /* Check that CSeq included in tags is actually used in the request */
   TEST(sip->sip_cseq->cs_seq, 13);
   TEST_1(!sip->sip_contact);
   TEST_1(!e->next);
@@ -552,7 +553,8 @@ int test_nat_timeout(struct context *ctx)
 
   BEGIN();
 
-  struct endpoint *a = &ctx->a,  *b = &ctx->b, *c = &ctx->c;
+  struct endpoint *a = &ctx->a,  *b = &ctx->b;
+  struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
   sip_t const *sip;
 
@@ -586,7 +588,38 @@ int test_nat_timeout(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-2.5.1: PASSED\n");
   
-  (void)b; (void)c; (void)sip;
+  if (print_headings)
+    printf("TEST NUA-2.5.2: OPTIONS from B to A\n");
+
+  TEST_1(b_call->nh = nua_handle(b->nua, b_call, SIPTAG_TO(a->to), TAG_END()));
+
+  OPTIONS(b, b_call, b_call->nh, TAG_END());
+
+  run_ab_until(ctx, -1, save_until_received,
+	       -1, save_until_final_response);
+
+  /* Client events: nua_options(), nua_r_options */
+  TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_r_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_allow); TEST_1(sip->sip_accept); TEST_1(sip->sip_supported);
+  /* TEST_1(sip->sip_content_type); */
+  /* TEST_1(sip->sip_payload); */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b->events);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  /* Server events: nua_i_options */
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_options);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-2.5.2: PASSED\n");
 
   END();
 }
