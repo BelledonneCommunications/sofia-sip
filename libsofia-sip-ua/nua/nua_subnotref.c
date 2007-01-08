@@ -422,11 +422,11 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
 		nh, o ? o->o_type : "(empty)",
 		id ? "; id=" : "", id ? id : ""));
 
-    nua_stack_event(nh->nh_nua, nh,  NULL,
-		    nua_i_notify, 408, "Fetch Timeouts without NOTIFY", 
-		    NUTAG_SUBSTATE(nua_substate_terminated),
-		    SIPTAG_EVENT(du->du_event),
-		    TAG_END());
+    nua_stack_tevent(nh->nh_nua, nh,  NULL,
+		     nua_i_notify, 408, "Fetch Timeouts without NOTIFY", 
+		     NUTAG_SUBSTATE(nua_substate_terminated),
+		     SIPTAG_EVENT(du->du_event),
+		     TAG_END());
     nua_dialog_usage_remove(nh, ds, du);
 
     return;
@@ -444,11 +444,11 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
      */
   }
 
-  nua_stack_event(nh->nh_nua, nh, NULL,
-		  nua_i_notify, NUA_INTERNAL_ERROR,
-		  NUTAG_SUBSTATE(nua_substate_terminated),
-		  SIPTAG_EVENT(du->du_event),
-		  TAG_END());
+  nua_stack_tevent(nh->nh_nua, nh, NULL,
+		   nua_i_notify, NUA_INTERNAL_ERROR,
+		   NUTAG_SUBSTATE(nua_substate_terminated),
+		   SIPTAG_EVENT(du->du_event),
+		   TAG_END());
 
   nua_dialog_usage_remove(nh, ds, du);
 }
@@ -623,10 +623,10 @@ int nua_stack_process_notify(nua_t *nua,
   if (eu->eu_substate == nua_substate_terminated && retry > 0)
     eu->eu_substate = nua_substate_embryonic;
 
-  nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-		  nua_i_notify, SIP_200_OK, 
-		  NUTAG_SUBSTATE(eu->eu_substate),
-		  TAG_END());
+  nua_stack_tevent(nh->nh_nua, nh, nta_incoming_getrequest(irq),
+		   nua_i_notify, SIP_200_OK, 
+		   NUTAG_SUBSTATE(eu->eu_substate),
+		   TAG_END());
 
   nta_incoming_destroy(irq), irq = NULL;
 
@@ -820,10 +820,10 @@ static int nua_refer_client_request(nua_client_request_t *cr,
 
   if (!error) {
     /* Give application an Event header for matching NOTIFYs with REFER */
-    nua_stack_event(nh->nh_nua, nh, NULL,
-		    cr->cr_event, SIP_100_TRYING,
-		    NUTAG_REFER_EVENT(event),
-		    TAG_END());
+    nua_stack_tevent(nh->nh_nua, nh, NULL,
+		     cr->cr_event, SIP_100_TRYING,
+		     NUTAG_REFER_EVENT(event),
+		     TAG_END());
     su_free(nh->nh_home, event);
   }
 

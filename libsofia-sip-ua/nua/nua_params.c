@@ -1603,7 +1603,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
      TAG_NEXT(media_params));
 
-  nua_stack_event(nua, nh, NULL, nua_r_get_params, SIP_200_OK, TAG_NEXT(lst));
+  nua_stack_event(nua, nh, NULL, nua_r_get_params, SIP_200_OK, lst);
 
   su_home_deinit(tmphome);
 

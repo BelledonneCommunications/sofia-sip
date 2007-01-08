@@ -922,6 +922,7 @@ static void nua_register_usage_refresh(nua_handle_t *nh,
 				       nua_dialog_usage_t *du,
 				       sip_time_t now)
 {
+  nua_t *nua = nh->nh_nua;
   nua_client_request_t *cr = du->du_cr;
 
   if (cr) {
@@ -931,8 +932,7 @@ static void nua_register_usage_refresh(nua_handle_t *nh,
   }
 
   /* Report that we have de-registered */
-  nua_stack_event(nh->nh_nua, nh, NULL, nua_r_register, NUA_INTERNAL_ERROR,
-		  TAG_END());
+  nua_stack_event(nua, nh, NULL, nua_r_register, NUA_INTERNAL_ERROR, NULL);
   nua_dialog_usage_remove(nh, ds, du);
 }
 
@@ -1065,9 +1065,7 @@ void nua_network_changed_cb(nua_t *nua, su_root_t *root)
 
   switch (nw_updates) {
   case NUA_NW_DETECT_ONLY_INFO:
-    nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
-		    SIP_200_OK, TAG_END());
-
+    nua_stack_event(nua, NULL, NULL, nua_i_network_changed, SIP_200_OK, NULL);
     break;
     
   case NUA_NW_DETECT_TRY_FULL:
@@ -1079,10 +1077,10 @@ void nua_network_changed_cb(nua_t *nua, su_root_t *root)
     if (nua_stack_init_transport(nua, nua->nua_args) < 0)
       /* We are hosed */
       nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
-		      900, "Internal Error", TAG_END());
+		      900, "Internal Error", NULL);
     else
       nua_stack_event(nua, NULL, NULL, nua_i_network_changed,
-		      SIP_200_OK, TAG_END());
+		      SIP_200_OK, NULL);
 
     break;
     
@@ -1702,7 +1700,7 @@ static int nua_stack_outbound_status(nua_handle_t *nh, outbound_t *ob,
 
   nua_stack_event(nh->nh_nua, nh, NULL,
 		  nua_i_outbound, status, phrase,
-		  ta_tags(ta));
+		  ta_args(ta));
 
   ta_end(ta);
 
@@ -1719,7 +1717,7 @@ static int nua_stack_outbound_failed(nua_handle_t *nh, outbound_t *ob,
 
   nua_stack_event(nh->nh_nua, nh, NULL,
 		  nua_i_outbound, status, phrase,
-		  ta_tags(ta));
+		  ta_args(ta));
 
   ta_end(ta);
 

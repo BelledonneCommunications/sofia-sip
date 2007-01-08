@@ -801,7 +801,7 @@ static int nua_invite_client_report(nua_client_request_t *cr,
 		  nta_outgoing_getresponse(orq),
 		  cr->cr_event,
 		  status, phrase,
-		  TAG_NEXT(tags));
+		  tags);
 
   if (orq != cr->cr_orq && status != 100)
     return 1;
@@ -1410,7 +1410,7 @@ static int nua_prack_client_request(nua_client_request_t *cr,
 		  nh, status, phrase));
       nua_stack_event(nh->nh_nua, nh, NULL,
 		      nua_i_media_error, status, phrase,
-		      TAG_END());
+		      NULL);
       return nua_client_return(cr, status, phrase, msg);
     }
     else {
@@ -1425,7 +1425,7 @@ static int nua_prack_client_request(nua_client_request_t *cr,
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
       SU_DEBUG_3(("nua(%p): PRACK offer: %d %s\n", nh, status, phrase));
       nua_stack_event(nh->nh_nua, nh, NULL,
-		      nua_i_media_error, status, phrase, TAG_END());
+		      nua_i_media_error, status, phrase, NULL);
       return nua_client_return(cr, status, phrase, msg);
     }
     else {
@@ -1475,7 +1475,7 @@ static int nua_prack_client_report(nua_client_request_t *cr,
 		  nta_outgoing_getresponse(orq),
 		  cr->cr_event,
 		  status, phrase,
-		  TAG_NEXT(tags));
+		  tags);
 
   if (!ss || orq != cr->cr_orq || cr->cr_terminated || cr->cr_graceful)
     return 1;
@@ -1856,11 +1856,11 @@ int process_invite(nua_t *nua,
 		      SIPTAG_USER_AGENT_STR(NUA_PGET(nua, nh, user_agent)),
 		      TAG_END());
 
-  nua_stack_event(nh->nh_nua, nh, 
-		  msg_ref_create(sr->sr_request),
-		  nua_i_invite, SIP_100_TRYING,
-		  NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-		  TAG_END());
+  nua_stack_tevent(nh->nh_nua, nh, 
+		   msg_ref_create(sr->sr_request),
+		   nua_i_invite, SIP_100_TRYING,
+		   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		   TAG_END());
 
   signal_call_state_change(nh, ss, SIP_100_TRYING, nua_callstate_received);
 
@@ -2045,13 +2045,13 @@ int respond_to_invite(nua_server_request_t *sr, tagi_t const *tags)
 
   if (initial) {
     sr->sr_event = 1;
-    nua_stack_event(nh->nh_nua, nh, msg_ref_create(sr->sr_request),
-		    nua_i_invite, status, phrase,
-		    NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-		    TAG_END());
+    nua_stack_tevent(nh->nh_nua, nh, msg_ref_create(sr->sr_request),
+		     nua_i_invite, status, phrase,
+		     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		     TAG_END());
   }
   else if (status != sr->sr_status)
-    nua_stack_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
+    nua_stack_event(nua, nh, NULL, nua_i_error, status, phrase, NULL);
 
   sr->sr_status = status, sr->sr_phrase = phrase;
 
@@ -2169,9 +2169,7 @@ int process_prack(nua_handle_t *nh,
   else if (sip == NULL) {
     SET_STATUS(504, "Reliable Response Timeout");
 
-    nua_stack_event(nh->nh_nua, nh, NULL,
-		    nua_i_error, status, phrase,
-		    TAG_END());
+    nua_stack_event(nh->nh_nua, nh, NULL, nua_i_error, status, phrase, NULL);
 
     nua_server_respond(sri, status, phrase, TAG_END());
 
@@ -2232,7 +2230,7 @@ int process_prack(nua_handle_t *nh,
   }
 
   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-		  nua_i_prack, status, phrase, TAG_END());
+		  nua_i_prack, status, phrase, NULL);
 
   if (status >= 300)
     return status;
@@ -2297,9 +2295,9 @@ int process_ack(nua_server_request_t *sr,
       reason = soa_error_as_sip_reason(nh->nh_soa);
 
       nua_stack_event(nh->nh_nua, nh, msg,
-	       nua_i_ack, status, phrase, TAG_END());
+		      nua_i_ack, status, phrase, NULL);
       nua_stack_event(nh->nh_nua, nh, NULL,
-	       nua_i_media_error, status, phrase, TAG_END());
+		      nua_i_media_error, status, phrase, NULL);
 
       assert(ss->ss_oa_recv == NULL);
 
@@ -2317,7 +2315,7 @@ int process_ack(nua_server_request_t *sr,
   }
 
   soa_clear_remote_sdp(nh->nh_soa);
-  nua_stack_event(nh->nh_nua, nh, msg, nua_i_ack, SIP_200_OK, TAG_END());
+  nua_stack_event(nh->nh_nua, nh, msg, nua_i_ack, SIP_200_OK, NULL);
   signal_call_state_change(nh, ss, 200, "OK", nua_callstate_ready);
   set_session_timer(ss);
 
@@ -2355,7 +2353,7 @@ int process_cancel(nua_server_request_t *sr,
   assert(nta_incoming_status(irq) < 200);  assert(sr->sr_respond);
   assert(ss); assert(ss == nua_session_usage_get(nh->nh_ds)); (void)ss;
 
-  nua_stack_event(nh->nh_nua, nh, cancel, nua_i_cancel, SIP_200_OK, TAG_END());
+  nua_stack_event(nh->nh_nua, nh, cancel, nua_i_cancel, SIP_200_OK, NULL);
 
   nua_server_respond(sr, SIP_487_REQUEST_TERMINATED, TAG_END());
 
@@ -2374,7 +2372,7 @@ int process_timeout(nua_server_request_t *sr,
 
   nua_stack_event(nh->nh_nua, nh, 0, nua_i_error,
 		  408, "Response timeout",
-		  TAG_END());
+		  NULL);
 
   if (sr->sr_respond) {
     /* PRACK timeout */
@@ -3005,7 +3003,7 @@ static int nua_update_client_report(nua_client_request_t *cr,
 		  nta_outgoing_getresponse(orq),
 		  cr->cr_event,
 		  status, phrase,
-		  TAG_NEXT(tags));
+		  tags);
 
   if (!ss || orq != cr->cr_orq || 
       cr->cr_terminated || cr->cr_graceful || !cr->cr_offer_sent)
@@ -3142,7 +3140,7 @@ int nua_stack_process_update(nua_t *nua,
   }
 
   if (status != original_status) {
-    nua_stack_event(nua, nh, NULL, nua_i_error, status, phrase, TAG_END());
+    nua_stack_event(nua, nh, NULL, nua_i_error, status, phrase, NULL);
     nta_incoming_treply(irq, status, phrase, TAG_END());
     msg_destroy(rmsg), rmsg = NULL;
   }
@@ -3163,7 +3161,7 @@ int nua_stack_process_update(nua_t *nua,
  * @END_NUA_EVENT
  */
 
-  nua_stack_event(nh->nh_nua, nh, msg, nua_i_update, status, phrase, TAG_END());
+  nua_stack_event(nh->nh_nua, nh, msg, nua_i_update, status, phrase, NULL);
 
   if (offer_recv || answer_sent) {
     assert(!offer_recv || !ss->ss_oa_recv);
@@ -3337,7 +3335,7 @@ static int nua_bye_client_report(nua_client_request_t *cr,
 		  nta_outgoing_getresponse(orq),
 		  cr->cr_event,
 		  status, phrase,
-		  TAG_NEXT(tags));
+		  tags);
 
   if (du == NULL) {
     /* No more session */
@@ -3391,7 +3389,7 @@ int nua_stack_process_bye(nua_t *nua,
   assert(nh && ss);
 
   nua_stack_event(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-		  nua_i_bye, SIP_200_OK, TAG_END());
+		  nua_i_bye, SIP_200_OK, NULL);
   nta_incoming_treply(irq, SIP_200_OK, TAG_END());
   nta_incoming_destroy(irq), irq = NULL;
 
@@ -3562,20 +3560,20 @@ static void signal_call_state_change(nua_handle_t *nh,
  * @END_NUA_EVENT
  */
 
-  nua_stack_event(nh->nh_nua, nh, NULL, nua_i_state,
-		  status, phrase,
-		  NUTAG_CALLSTATE(next_state),
-		  NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-		  /* NUTAG_SOA_SESSION(nh->nh_soa), */
-		  TAG_IF(offer_recv, NUTAG_OFFER_RECV(offer_recv)),
-		  TAG_IF(answer_recv, NUTAG_ANSWER_RECV(answer_recv)),
-		  TAG_IF(offer_sent, NUTAG_OFFER_SENT(offer_sent)),
-		  TAG_IF(answer_sent, NUTAG_ANSWER_SENT(answer_sent)),
-		  TAG_IF(oa_recv, SOATAG_REMOTE_SDP(remote_sdp)),
-		  TAG_IF(oa_recv, SOATAG_REMOTE_SDP_STR(remote_sdp_str)),
-		  TAG_IF(oa_sent, SOATAG_LOCAL_SDP(local_sdp)),
-		  TAG_IF(oa_sent, SOATAG_LOCAL_SDP_STR(local_sdp_str)),
-		  TAG_END());
+  nua_stack_tevent(nh->nh_nua, nh, NULL, nua_i_state,
+		   status, phrase,
+		   NUTAG_CALLSTATE(next_state),
+		   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		   /* NUTAG_SOA_SESSION(nh->nh_soa), */
+		   TAG_IF(offer_recv, NUTAG_OFFER_RECV(offer_recv)),
+		   TAG_IF(answer_recv, NUTAG_ANSWER_RECV(answer_recv)),
+		   TAG_IF(offer_sent, NUTAG_OFFER_SENT(offer_sent)),
+		   TAG_IF(answer_sent, NUTAG_ANSWER_SENT(answer_sent)),
+		   TAG_IF(oa_recv, SOATAG_REMOTE_SDP(remote_sdp)),
+		   TAG_IF(oa_recv, SOATAG_REMOTE_SDP_STR(remote_sdp_str)),
+		   TAG_IF(oa_sent, SOATAG_LOCAL_SDP(local_sdp)),
+		   TAG_IF(oa_sent, SOATAG_LOCAL_SDP_STR(local_sdp_str)),
+		   TAG_END());
 
 /** @NUA_EVENT nua_i_active
  *
@@ -3599,10 +3597,10 @@ static void signal_call_state_change(nua_handle_t *nh,
  */
 
   if (next_state == nua_callstate_ready && ss_state <= nua_callstate_ready) {
-    nua_stack_event(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active",
-	     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-	     /* NUTAG_SOA_SESSION(nh->nh_soa), */
-	     TAG_END());
+    nua_stack_tevent(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active",
+		     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+		     /* NUTAG_SOA_SESSION(nh->nh_soa), */
+		     TAG_END());
   }
 
 /** @NUA_EVENT nua_i_terminated
@@ -3630,8 +3628,9 @@ static void signal_call_state_change(nua_handle_t *nh,
  */
 
   else if (next_state == nua_callstate_terminated) {
-    nua_stack_event(nh->nh_nua, nh, NULL, nua_i_terminated, status, phrase,
-	     TAG_END());
+    nua_stack_event(nh->nh_nua, nh, NULL,
+		    nua_i_terminated, status, phrase,
+		    NULL);
   }
 }
 

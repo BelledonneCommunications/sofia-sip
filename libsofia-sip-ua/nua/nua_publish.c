@@ -405,7 +405,7 @@ static void nua_publish_usage_refresh(nua_handle_t *nh,
 
   nua_stack_event(nh->nh_nua, nh, NULL,
 		  nua_r_publish, NUA_INTERNAL_ERROR,
-		  TAG_END());
+		  NULL);
 
   nua_dialog_usage_remove(nh, ds, du);
 }

@@ -305,20 +305,23 @@ nua_stack_signal_handler
   nua_stack_method;
 
 #define UA_EVENT1(e, statusphrase) \
-  nua_stack_event(nua, nh, NULL, e, statusphrase, TAG_END())
+  nua_stack_event(nua, nh, NULL, e, statusphrase, NULL)
 
 #define UA_EVENT2(e, status, phrase)			\
-  nua_stack_event(nua, nh, NULL, e, status, phrase, TAG_END())
+  nua_stack_event(nua, nh, NULL, e, status, phrase, NULL)
 
 #define UA_EVENT3(e, status, phrase, tag)			\
-  nua_stack_event(nua, nh, NULL, e, status, phrase, tag, TAG_END())
+  nua_stack_event(nua, nh, NULL, e, status, phrase, tag, NULL)
+
+int nua_stack_tevent(nua_t *nua, nua_handle_t *nh, msg_t *msg,
+		     nua_event_t event, int status, char const *phrase,
+		     tag_type_t tag, tag_value_t value, ...);
 
 int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 		    nua_event_t event, int status, char const *phrase,
-		    tag_type_t tag, tag_value_t value, ...);
+		    tagi_t const *tags);
 
-nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic,
-			       tagi_t *tags);
+nua_handle_t *nh_create_handle(nua_t *nua, nua_hmagic_t *hmagic, tagi_t *tags);
 
 nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 					nta_incoming_t *irq,

@@ -556,9 +556,9 @@ static void nua_notify_usage_refresh(nua_handle_t *nh,
       return;
   }
 
-  nua_stack_event(nh->nh_nua, nh, NULL, e, NUA_INTERNAL_ERROR,
-		  NUTAG_SUBSTATE(nua_substate_terminated),
-		  TAG_END());
+  nua_stack_tevent(nh->nh_nua, nh, NULL, e, NUA_INTERNAL_ERROR,
+		   NUTAG_SUBSTATE(nua_substate_terminated),
+		   TAG_END());
 
   nua_dialog_usage_remove(nh, ds, du);
 }

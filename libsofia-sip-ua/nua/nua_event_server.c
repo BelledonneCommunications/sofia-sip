@@ -118,13 +118,13 @@ nua_stack_notifier(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *ta
     status = 900, phrase = "Error when notifying watchers";
 
   else 
-    nua_stack_event(nua, nh, NULL, e, status = SIP_200_OK, 
-		    SIPTAG_EVENT(event),
-		    SIPTAG_CONTENT_TYPE(ct),
-		    TAG_END());
+    nua_stack_tevent(nua, nh, NULL, e, status = SIP_200_OK, 
+		     SIPTAG_EVENT(event),
+		     SIPTAG_CONTENT_TYPE(ct),
+		     TAG_END());
 	     
   if (status != 200)
-    nua_stack_event(nua, nh, NULL, e, status, phrase, TAG_END());
+    nua_stack_event(nua, nh, NULL, e, status, phrase, NULL);
 
   su_home_deinit(home);
 }
@@ -235,10 +235,10 @@ void authorize_watcher(nea_server_t *nes,
 		nh, "watcher is removed")); 
   }
 
-  nua_stack_event(nua, nh, msg, nua_i_subscription, status, phrase,
-	   NUTAG_SUBSTATE(substate),
-	   NEATAG_SUB(sn->sn_subscriber),
-	   TAG_END());
+  nua_stack_tevent(nua, nh, msg, nua_i_subscription, status, phrase,
+		   NUTAG_SUBSTATE(substate),
+		   NEATAG_SUB(sn->sn_subscriber),
+		   TAG_END());
 }
 
 /* ---------------------------------------------------------------------- */
@@ -259,12 +259,11 @@ void nua_stack_authorize(nua_t *nua,
 
   if (sub && state > 0) {
     nea_sub_auth(sub, state, TAG_NEXT(tags));
-    nua_stack_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
+    nua_stack_event(nua, nh, NULL, e, SIP_200_OK, NULL);
   }
   else {
-    nua_stack_event(nua, nh, NULL, e, NUA_INTERNAL_ERROR, TAG_END());
+    nua_stack_event(nua, nh, NULL, e, NUA_INTERNAL_ERROR, NULL);
   }
-  return;
 }
 
 /** @internal Shutdown notifier object */
@@ -344,5 +343,5 @@ void nua_stack_terminate(nua_t *nua,
 		       NEATAG_REASON("noresource"), 
 		       TAG_NEXT(tags));
 
-  nua_stack_event(nua, nh, NULL, e, SIP_200_OK, TAG_END());
+  nua_stack_event(nua, nh, NULL, e, SIP_200_OK, NULL);
 }

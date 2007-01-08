@@ -162,7 +162,7 @@ int respond_to_method(nua_server_request_t *sr, tagi_t const *tags)
   if (status != sr->sr_status) 
     nua_stack_event(nua, nh, NULL,
 		    nua_i_error, 900, "Response to Extension Method Fails",
-		    TAG_END());
+		    NULL);
   
   return final;
 }

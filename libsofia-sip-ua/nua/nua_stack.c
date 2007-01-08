@@ -228,14 +228,24 @@ void
 int nh_notifier_shutdown(nua_handle_t *nh, nea_event_t *ev,
 			 tag_type_t t, tag_value_t v, ...);
 
+int nua_stack_tevent(nua_t *nua, nua_handle_t *nh, msg_t *msg,
+		     nua_event_t event, int status, char const *phrase,
+		     tag_type_t tag, tag_value_t value, ...)
+{
+  ta_list ta;
+  int retval;
+  ta_start(ta, tag, value);
+  retval = nua_stack_event(nua, nh, msg, event, status, phrase, ta_args(ta));
+  ta_end(ta);
+  return retval;
+}
+
 /** @internal Send an event to the application. */
 int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 		    nua_event_t event, int status, char const *phrase,
-		    tag_type_t tag, tag_value_t value, ...)
+		    tagi_t const *tags)
 {
   su_msg_r sumsg = SU_MSG_R_INIT;
-
-  ta_list ta;
   size_t e_len, len, xtra, p_len;
 
   if (event == nua_r_ack || event == nua_i_none)
@@ -269,35 +279,41 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
     return event;
   }
 
-  ta_start(ta, tag, value);
-
-  e_len = offsetof(event_t, e_tags);
-  len = tl_len(ta_args(ta));
-  xtra = tl_xtra(ta_args(ta), len);
+  if (tags) {
+    e_len = offsetof(event_t, e_tags);
+    len = tl_len(tags);
+    xtra = tl_xtra(tags, len);
+  }
+  else {
+    e_len = sizeof(event_t), len = 0, xtra = 0;
+  }
   p_len = phrase ? strlen(phrase) + 1 : 1;
 
   if (su_msg_create(sumsg, nua->nua_client, su_task_null,
 		    nua_event, e_len + len + xtra + p_len) == 0) {
     event_t *e = su_msg_data(sumsg);
+    void *p;
 
-    tagi_t *t = e->e_tags, *t_end = (tagi_t *)((char *)t + len);
-    void *b = t_end, *end = (char *)b + xtra;
+    if (tags) {
+      tagi_t *t = e->e_tags, *t_end = (tagi_t *)((char *)t + len);
+      void *b = t_end, *end = (char *)b + xtra;
 
-    t = tl_dup(t, ta_args(ta), &b);
-    assert(t == t_end); assert(b == end);
+      t = tl_dup(t, tags, &b); p = b;
+      assert(t == t_end); assert(b == end);
+    }
+    else
+      p = e + 1;
 
     e->e_event = event;
     e->e_nh = nh ? nua_handle_ref(nh) : nua->nua_dhandle;
     e->e_status = status;
-    e->e_phrase = strcpy(end, phrase ? phrase : "");
+    e->e_phrase = strcpy(p, phrase ? phrase : "");
     if (msg)
       e->e_msg = msg, su_home_threadsafe(msg_home(msg));
 
     if (su_msg_send(sumsg) != 0 && nh)
       nua_handle_unref(nh);
   }
-
-  ta_end(ta);
 
   return event;
 }
@@ -359,7 +375,7 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
     /* Shutting down */
     nua_stack_event(nua, nh, NULL, event,
 		    901, "Stack is going down",
-		    TAG_END());
+		    NULL);
   }
 
   else switch (event) {
@@ -440,11 +456,7 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
   }
 
   if (error < 0) {
-    nua_stack_event(nh->nh_nua, nh, 
-		    NULL,
-		    event,
-		    NUA_INTERNAL_ERROR,
-		    TAG_END());
+    nua_stack_event(nh->nh_nua, nh, NULL, event, NUA_INTERNAL_ERROR, NULL);
   }
 
   if (su_msg_is_non_null(nua->nua_signal))
@@ -642,7 +654,7 @@ void nua_stack_shutdown(nua_t *nua)
     nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
   }
 
-  nua_stack_event(nua, NULL, NULL, nua_r_shutdown, status, phrase, TAG_END());
+  nua_stack_event(nua, NULL, NULL, nua_r_shutdown, status, phrase, NULL);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1121,14 +1133,14 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     else {
       nua_stack_event(nua, nh, NULL, e, 
 		      202, "No operation to restart",
-		      TAG_END());
+		      NULL);
     }
   }
   else if (status < 0) {
-    nua_stack_event(nua, nh, NULL, e, 900, "Cannot add credentials", TAG_END());
+    nua_stack_event(nua, nh, NULL, e, 900, "Cannot add credentials", NULL);
   }
   else {
-    nua_stack_event(nua, nh, NULL, e, 904, "No matching challenge", TAG_END());
+    nua_stack_event(nua, nh, NULL, e, 904, "No matching challenge", NULL);
   }
 }
 
@@ -1407,7 +1419,7 @@ int nua_stack_server_event(nua_t *nua,
     assert(sr->sr_owner);
     nua_stack_event(nua, sr->sr_owner, msg_ref_create(sr->sr_request), event,
 		    sr->sr_status, sr->sr_phrase, 
-		    ta_tags(ta));
+		    ta_args(ta));
     ta_end(ta);
 
     if (final)
@@ -1594,12 +1606,12 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
   }
   else if (sr) {
     nua_stack_event(nua, nh, NULL, nua_i_error,
-		    500, "Already Sent Final Response", TAG_END());
+		    500, "Already Sent Final Response", NULL);
     return;
   }
 
   nua_stack_event(nua, nh, NULL, nua_i_error,
-		  500, "Responding to a Non-Existing Request", TAG_END());
+		  500, "Responding to a Non-Existing Request", NULL);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1688,7 +1700,7 @@ int nua_client_create(nua_handle_t *nh,
 			   NULL,
 			   event,
 			   NUA_INTERNAL_ERROR,
-			   TAG_END());
+			   NULL);
   }
 
   cr->cr_owner = nh;
@@ -2604,7 +2616,7 @@ int nua_client_report(nua_client_request_t *cr,
 		  nta_outgoing_getresponse(orq),
 		  cr->cr_event,
 		  status, phrase,
-		  TAG_NEXT(tags));
+		  tags);
   return 1;
 }
 
