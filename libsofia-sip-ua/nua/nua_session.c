@@ -3807,12 +3807,6 @@ int nua_stack_process_options(nua_t *nua,
 			      sip_t const *sip)
 {
   nua_server_request_t *sr, sr0[1];
-  int done;
-
-  /* Hook to outbound */
-  done = nua_registration_process_request(nua->nua_registrations, irq, sip);
-  if (done)
-    return done;
 
   sr = nua_server_request(nua, nh, irq, sip, SR_INIT(sr0), sizeof *sr,
 			  respond_to_options, 0);

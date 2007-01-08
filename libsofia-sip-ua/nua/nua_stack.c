@@ -1148,6 +1148,8 @@ int nua_stack_process_request(nua_handle_t *nh,
   char const *user_agent = NH_PGET(nh, user_agent);
   sip_supported_t const *supported = NH_PGET(nh, supported);
   sip_allow_t const *allow = NH_PGET(nh, allow);
+  int status;
+
   enter;
 
   nta_incoming_tag(irq, NULL);
@@ -1231,6 +1233,11 @@ int nua_stack_process_request(nua_handle_t *nh,
     return nua_stack_process_register(nua, nh, irq, sip);
 
   case sip_method_options:
+    /* Hook to outbound */
+    status = nua_registration_process_request(nua->nua_registrations, irq, sip);
+    if (status)
+      return status;
+
     return nua_stack_process_options(nua, nh, irq, sip);
 
   case sip_method_refer:
