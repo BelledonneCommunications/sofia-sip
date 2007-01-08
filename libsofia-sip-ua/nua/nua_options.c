@@ -87,7 +87,7 @@
  * @END_NUA_EVENT
  */
 
-static nua_client_methods_t nua_options_client_methods = {
+static nua_client_methods_t const nua_options_client_methods = {
   SIP_METHOD_OPTIONS,
   0,
   { 

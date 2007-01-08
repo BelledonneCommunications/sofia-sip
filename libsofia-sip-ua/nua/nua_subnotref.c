@@ -177,7 +177,7 @@ static int nua_subscribe_client_response(nua_client_request_t *cr,
 					 int status, char const *phrase,
 					 sip_t const *sip);
 
-static nua_client_methods_t nua_subscribe_client_methods = {
+static nua_client_methods_t const nua_subscribe_client_methods = {
   SIP_METHOD_SUBSCRIBE,
   0,
   { 
@@ -741,7 +741,7 @@ static int nua_refer_client_response(nua_client_request_t *cr,
 				     int status, char const *phrase,
 				     sip_t const *sip);
 
-static nua_client_methods_t nua_refer_client_methods = {
+static nua_client_methods_t const nua_refer_client_methods = {
   SIP_METHOD_REFER,
   0,
   { 

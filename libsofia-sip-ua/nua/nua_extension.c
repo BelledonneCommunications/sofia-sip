@@ -69,7 +69,7 @@
  * @since New in @VERSION_1_12_4.
  */
 
-static nua_client_methods_t nua_method_client_methods = {
+static nua_client_methods_t const nua_method_client_methods = {
   SIP_METHOD_UNKNOWN,
   0,
   { 

@@ -73,7 +73,7 @@ static int nua_message_client_init(nua_client_request_t *cr,
 				   msg_t *, sip_t *,
 				   tagi_t const *tags);
 
-static nua_client_methods_t nua_message_client_methods = {
+static nua_client_methods_t const nua_message_client_methods = {
   SIP_METHOD_MESSAGE,
   0,
   { 

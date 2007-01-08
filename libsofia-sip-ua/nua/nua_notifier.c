@@ -329,7 +329,7 @@ static int nua_notify_client_response(nua_client_request_t *cr,
 				      int status, char const *phrase,
 				      sip_t const *sip);
 
-static nua_client_methods_t nua_notify_client_methods = {
+static nua_client_methods_t const nua_notify_client_methods = {
   SIP_METHOD_NOTIFY,
   0,
   { 

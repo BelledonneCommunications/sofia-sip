@@ -240,7 +240,7 @@ static int nua_publish_client_response(nua_client_request_t *cr,
 				       int status, char const *phrase,
 				       sip_t const *sip);
 
-static nua_client_methods_t nua_publish_client_methods = {
+static nua_client_methods_t const nua_publish_client_methods = {
   SIP_METHOD_PUBLISH,
   0,
   {

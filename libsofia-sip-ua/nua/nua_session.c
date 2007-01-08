@@ -488,7 +488,7 @@ static int nua_invite_client_ack_msg(nua_client_request_t *cr,
 				     msg_t *msg, sip_t *sip,
 				     tagi_t const *tags);
 
-nua_client_methods_t nua_invite_client_methods = {
+nua_client_methods_t const nua_invite_client_methods = {
   SIP_METHOD_INVITE,
   0,
   { 
@@ -505,11 +505,11 @@ nua_client_methods_t nua_invite_client_methods = {
   nua_invite_client_report
 };
 
-extern nua_client_methods_t nua_bye_client_methods;
-extern nua_client_methods_t nua_cancel_client_methods;
-extern nua_client_methods_t nua_info_client_methods;
-extern nua_client_methods_t nua_update_client_methods;
-extern nua_client_methods_t nua_prack_client_methods;
+extern nua_client_methods_t const nua_bye_client_methods;
+extern nua_client_methods_t const nua_cancel_client_methods;
+extern nua_client_methods_t const nua_info_client_methods;
+extern nua_client_methods_t const nua_update_client_methods;
+extern nua_client_methods_t const nua_prack_client_methods;
 
 int nua_stack_invite(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		     tagi_t const *tags)
@@ -1115,7 +1115,7 @@ static int nua_cancel_client_request(nua_client_request_t *cr,
 				     msg_t *msg, sip_t *sip,
 				     tagi_t const *tags);
 
-static nua_client_methods_t nua_cancel_client_methods = {
+static nua_client_methods_t const nua_cancel_client_methods = {
   SIP_METHOD_CANCEL,
   0,
   { 
@@ -1336,7 +1336,7 @@ static int nua_prack_client_report(nua_client_request_t *cr,
 				   nta_outgoing_t *orq,
 				   tagi_t const *tags);
 
-nua_client_methods_t nua_prack_client_methods = {
+nua_client_methods_t const nua_prack_client_methods = {
   SIP_METHOD_PRACK,
   0,
   { 
@@ -2711,7 +2711,7 @@ static int nua_info_client_request(nua_client_request_t *cr,
 				   msg_t *msg, sip_t *sip,
 				   tagi_t const *tags);
 
-static nua_client_methods_t nua_info_client_methods = {
+static nua_client_methods_t const nua_info_client_methods = {
   SIP_METHOD_INFO,
   0,
   { 
@@ -2852,9 +2852,9 @@ static int nua_update_client_report(nua_client_request_t *cr,
 				    nta_outgoing_t *orq,
 				    tagi_t const *tags);
 
-nua_client_methods_t nua_update_client_methods = {
+nua_client_methods_t const nua_update_client_methods = {
   SIP_METHOD_UPDATE,
-  0,
+  0,				/* size of private data */
   { 
     /* create_dialog */ 0,
     /* in_dialog */ 1,
@@ -3231,7 +3231,7 @@ static int nua_bye_client_report(nua_client_request_t *cr,
 				 nta_outgoing_t *orq,
 				 tagi_t const *tags);
 
-nua_client_methods_t nua_bye_client_methods = {
+nua_client_methods_t const nua_bye_client_methods = {
   SIP_METHOD_BYE,
   0,
   { 
