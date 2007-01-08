@@ -325,9 +325,11 @@ static int nua_notify_client_init(nua_client_request_t *cr,
 static int nua_notify_client_request(nua_client_request_t *cr,
 				     msg_t *, sip_t *,
 				     tagi_t const *tags);
-static int nua_notify_client_response(nua_client_request_t *cr,
-				      int status, char const *phrase,
-				      sip_t const *sip);
+static int nua_notify_client_report(nua_client_request_t *cr,
+				    int status, char const *phrase,
+				    sip_t const *sip,
+				    nta_outgoing_t *orq,
+				    tagi_t const *tags);
 
 static nua_client_methods_t const nua_notify_client_methods = {
   SIP_METHOD_NOTIFY,
@@ -341,8 +343,9 @@ static nua_client_methods_t const nua_notify_client_methods = {
   nua_notify_client_init,
   nua_notify_client_request,
   /* nua_notify_client_check_restart */ NULL,
-  nua_notify_client_response,
-  nua_notify_client_response
+  /* nua_notify_client_response */ NULL,
+  /* nua_notify_client_preliminary */ NULL,
+  nua_notify_client_report
 };
 
 /**@internal Send NOTIFY. */
@@ -369,9 +372,9 @@ static int nua_notify_client_init(nua_client_request_t *cr,
     o = NONE;
 
   du = nua_dialog_usage_get(nh->nh_ds, nua_notify_usage, o);
+  nu = nua_dialog_usage_private(du);
   if (!du)
     return -1;
-  nu = nua_dialog_usage_private(du);
 
   if (nu->nu_substate == nua_substate_terminated) {
     /*Xyzzy*/;
@@ -382,7 +385,7 @@ static int nua_notify_client_init(nua_client_request_t *cr,
 
     if (ss->ss_expires) {
       unsigned long expires = strtoul(ss->ss_expires, NULL, 10);
-      if (expires > 3600)
+      if (expires > 3600)	/* Why? */
         expires = 3600;
       nu->nu_expires = now + expires;
     }
@@ -503,25 +506,31 @@ int nua_notify_client_request(nua_client_request_t *cr,
  * @END_NUA_EVENT
  */
 
-static int nua_notify_client_response(nua_client_request_t *cr,
-				      int status, char const *phrase,
-				      sip_t const *sip)
+static int nua_notify_client_report(nua_client_request_t *cr,
+				    int status, char const *phrase,
+				    sip_t const *sip,
+				    nta_outgoing_t *orq,
+				    tagi_t const *tags)
 {
-  nua_dialog_usage_t *du = cr->cr_usage; 
+  nua_handle_t *nh = cr->cr_owner;
+  nua_dialog_usage_t *du = cr->cr_usage;
   struct notifier_usage *nu = nua_dialog_usage_private(du);
   enum nua_substate substate = nua_substate_terminated;
 
-  if (nu && !cr->cr_terminated) {
+  if (nu && !cr->cr_terminated)
     substate = nu->nu_substate;
-    if (substate == nua_substate_terminated)
-      cr->cr_terminated = 1;
-  }
 
-  return nua_base_client_tresponse(cr, status, phrase, sip,
-				   NUTAG_SUBSTATE(substate),
-				   SIPTAG_EVENT(du ? du->du_event : NULL),
-				   TAG_END());
+  nua_stack_tevent(nh->nh_nua, nh, 
+		   nta_outgoing_getresponse(orq),
+		   cr->cr_event,
+		   status, phrase,
+		   NUTAG_SUBSTATE(substate),
+		   SIPTAG_EVENT(du ? du->du_event : NULL),
+		   TAG_NEXT(tags));
+
+  return 0;
 }
+
 
 static void nua_notify_usage_refresh(nua_handle_t *nh,
 				     nua_dialog_state_t *ds,
