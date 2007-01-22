@@ -555,7 +555,7 @@ enum url_type_e url_get_type(char const *scheme, size_t len)
 static
 int _url_d(url_t *url, char *s)
 {
-  size_t n;
+  size_t n, p;
   char *s0, rest_c, *host;
   int net_path = 1;
 
@@ -592,9 +592,15 @@ int _url_d(url_t *url, char *s)
 
   if (url->url_type == url_sip || url->url_type == url_sips) {
     /* SIP URL may have /; in user part */
-    n = strcspn(s, "@#");	/* Opaque part */
-    if (s[n] != '@')
-      n = 0;
+    /* Some #*@#* phones include unescaped # there, too */
+    n = strcspn(s, "@#");   /* Opaque part */
+    if (s[n] == '#') {
+      p = strcspn(s + n + 1, "@") + 1;
+      if (s[n + p] == '@')
+        n += p;
+      else
+	n = 0;
+    }
     n += strcspn(s + n, "/;?#");
   }
   else if (url->url_type == url_wv) {

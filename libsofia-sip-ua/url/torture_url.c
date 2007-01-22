@@ -333,6 +333,10 @@ int test_sip(void)
   TEST_P(url_hdup(home, (url_t*)"sip:test@127.0.0.1:55:"), NULL);
   TEST_P(url_hdup(home, (url_t*)"sip:test@127.0.0.1:sip"), NULL);
 
+  u = url_hdup(home, (url_t*)"SIP:#**00**#;foo=/bar@127.0.0.1"); TEST_1(u);
+  TEST(u->url_type, url_sip);
+  TEST_S(u->url_user, "#**00**#;foo=/bar");
+
   for (i = 32; i <= 256; i++) {
     char pu[512];
     char param[512];
