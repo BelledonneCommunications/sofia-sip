@@ -225,7 +225,7 @@ static inline int incoming_cancel(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 static inline int incoming_merge(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 				 tport_t *tport);
 static inline int incoming_timestamp(nta_incoming_t *, msg_t *, sip_t *);
-static inline int incoming_timer(nta_agent_t *, su_duration_t);
+static inline su_duration_t incoming_timer(nta_agent_t *, su_duration_t);
 
 static nta_reliable_t *reliable_mreply(nta_incoming_t *,
 				       nta_prack_f *, nta_reliable_magic_t *,
@@ -259,7 +259,7 @@ static nta_outgoing_t *outgoing_find(nta_agent_t const *sa,
 				     sip_via_t const *v);
 static int outgoing_recv(nta_outgoing_t *orq, int status, msg_t *, sip_t *);
 static void outgoing_default_recv(nta_outgoing_t *, int, msg_t *, sip_t *);
-static inline int outgoing_timer(nta_agent_t *, su_duration_t);
+static inline su_duration_t outgoing_timer(nta_agent_t *, su_duration_t);
 static int outgoing_recv_reliable(nta_outgoing_t *orq, msg_t *msg, sip_t *sip);
 
 /* Internal message passing */
@@ -667,12 +667,18 @@ static int agent_tag_init(nta_agent_t *self)
 static
 int agent_timer_init(nta_agent_t *agent)
 {
-  return su_timer_set(agent->sa_timer =
-		      su_timer_create(su_root_task(agent->sa_root),
-				      NTA_SIP_T1 / 8),
+  agent->sa_timer = su_timer_create(su_root_task(agent->sa_root),
+				    NTA_SIP_T1 / 8);
+#if 0
+  return su_timer_set(agent->sa_timer,
 		      agent_timer,
 		      agent);
+#endif
+  return -(agent->sa_timer == NULL);
 }
+
+#define NEXT_TIMEOUT(next, p, f, now) \
+  (p && p->f - (next) < 0 ? (p->f - (now) > 0 ? p->f : (now)) : (next))
 
 /**
  * Agent timer routine.
@@ -680,40 +686,89 @@ int agent_timer_init(nta_agent_t *agent)
 static
 void agent_timer(su_root_magic_t *rm, su_timer_t *timer, nta_agent_t *agent)
 {
-  su_duration_t now = su_time_ms(agent->sa_now = su_now());
-  int again;
+  su_time_t stamp = su_now();
+  su_duration_t now = su_time_ms(stamp), next;
 
   now += now == 0;
 
+  agent->sa_now = stamp;
   agent->sa_millisec = now;
+  agent->sa_next = 0;
+  agent->sa_in_timer = 1;
 
-  again = outgoing_timer(agent, now);
-  again = incoming_timer(agent, now) || again;
+  next = now + SU_DURATION_MAX;
+  next = outgoing_timer(agent, next);
+  next = incoming_timer(agent, next);
 
   agent->sa_millisec = 0;
+  agent->sa_in_timer = 0;
 
-  if (again)
-    su_timer_set_at(timer, agent_timer, agent, su_time_add(su_now(), 1));
-  else
-    su_timer_set(timer, agent_timer, agent);
+  if (agent->sa_next)
+    next = NEXT_TIMEOUT(next, agent, sa_next, now);
+
+  if (next == now + SU_DURATION_MAX) {
+    /* Do not set timer */
+    SU_DEBUG_9(("nta: timer not set\n"));
+    assert(!agent->sa_out.completed->q_head);
+    assert(!agent->sa_out.trying->q_head);
+    assert(!agent->sa_out.inv_calling->q_head);
+    assert(!agent->sa_out.re_list);
+    assert(!agent->sa_in.inv_confirmed->q_head);
+    assert(!agent->sa_in.preliminary->q_head);
+    assert(!agent->sa_in.completed->q_head);
+    assert(!agent->sa_in.inv_completed->q_head);
+    assert(!agent->sa_in.re_list);
+    return;
+  }
+
+  if (next == now) if (++next == 0) ++next;
+
+  SU_DEBUG_9(("nta: timer %s to %ld ms\n", "set next", (long)(next - now)));
+
+  agent->sa_next = next;
+
+  su_timer_set_at(timer, agent_timer, agent, su_time_add(stamp, next - now));
 }
 
-/** Calculate nonzero value for timer */
-static inline
-su_duration_t set_timeout(nta_agent_t const *agent, su_duration_t offset)
+/** Calculate nonzero value for timeout.
+ *
+ * Sets or adjusts agent timer when needed.
+ *
+ * @retval 0 if offset is 0
+ * @retval timeout (millisecond counter) otherwise
+ */
+static
+su_duration_t set_timeout(nta_agent_t *agent, su_duration_t offset)
 {
-  su_duration_t now;
+  su_time_t now;
+  su_duration_t next, ms;
 
-#if 0
-  if (agent->sa_millisec)
-    now = agent->sa_millisec;
+  if (offset == 0)
+    return 0;
+
+  if (agent->sa_millisec) /* Avoid expensive call to su_timer_ms() */
+    now = agent->sa_now, ms = agent->sa_millisec;
   else
-#endif
-    now = (su_duration_t)su_time_ms(su_now());
+    now = su_now(), ms = (su_duration_t)su_time_ms(now);
+  
+  next = ms + offset; if (next == 0) next = 1;
 
-  now += offset;
+  if (agent->sa_in_timer)
+    return next;
 
-  return now ? now : 1;
+  if (agent->sa_next == 0 || agent->sa_next - next - 5L > 0) {
+    /* Set timer */
+    if (agent->sa_next)
+      SU_DEBUG_9(("nta: timer %s to %ld ms\n", "shortened", (long)offset));
+    else
+      SU_DEBUG_9(("nta: timer %s to %ld ms\n", "set", (long)offset));
+      
+    su_timer_set_at(agent->sa_timer, agent_timer, agent, 
+		    su_time_add(now, next));
+    agent->sa_next = next;
+  }
+
+  return next;
 }
 
 
@@ -4531,10 +4586,7 @@ void incoming_queue(incoming_queue_t *queue,
 
   assert(*queue->q_tail == NULL);
 
-  if (queue->q_timeout)
-    irq->irq_timeout = set_timeout(irq->irq_agent, queue->q_timeout);
-  else
-    irq->irq_timeout = 0;
+  irq->irq_timeout = set_timeout(irq->irq_agent, queue->q_timeout);
 
   irq->irq_queue = queue;
   irq->irq_prev = queue->q_tail; 
@@ -5783,8 +5835,9 @@ enum {
 
 /** @internal Timer routine for the incoming request. */
 static inline
-int incoming_timer(nta_agent_t *sa, su_duration_t now)
+su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
 {
+  su_duration_t now = sa->sa_millisec;
   nta_incoming_t *irq, *irq_next;
   size_t retransmitted = 0, timeout = 0, terminated = 0, destroyed = 0;
   size_t unconfirmed = 
@@ -5801,8 +5854,9 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
 
   /* Handle retry queue */
   while ((irq = sa->sa_in.re_list)) {
-    if ((irq->irq_retry && irq->irq_retry - now > 0) ||
-	retransmitted >= timer_max_retransmit) 
+    if (irq->irq_retry - now > 0)
+      break;
+    if (retransmitted >= timer_max_retransmit)
       break;
 
     if (irq->irq_method == sip_method_invite && irq->irq_status >= 200) {
@@ -5840,13 +5894,16 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
 	retransmitted++;
 	incoming_retransmit_reply(irq, irq->irq_tport);
       }
-    } else {
+    }
+    else {
       /* Timer N1 */
       SU_DEBUG_5(("nta: timer N1 fired, sending %u %s\n", SIP_100_TRYING));
       incoming_reset_timer(irq);
       nta_incoming_treply(irq, SIP_100_TRYING, TAG_END());
     }
   }
+
+  next = NEXT_TIMEOUT(next, irq, irq_retry, now);
 
   while ((irq = sa->sa_in.final_failed->q_head)) {
     incoming_remove(irq);
@@ -5880,8 +5937,9 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
     assert(irq->irq_status < 200);
     assert(irq->irq_timeout);
 
-    if (irq->irq_timeout - now > 0 
-	|| timeout >= timer_max_timeout)
+    if (irq->irq_timeout - now > 0)
+      break;
+    if (timeout >= timer_max_timeout)
       break;
 
     timeout++;
@@ -5893,6 +5951,8 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
     irq->irq_timeout = 0;
     reliable_timeout(irq, 1);
   }
+
+  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
 
   while ((irq = sa->sa_in.inv_completed->q_head)) {
     assert(irq->irq_status >= 200);
@@ -5922,13 +5982,14 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
     }
   } 
 
+  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
+
   while ((irq = sa->sa_in.inv_confirmed->q_head)) {
     assert(irq->irq_timeout);
     assert(irq->irq_status >= 200);
     assert(irq->irq_method == sip_method_invite);
 
-    if (irq->irq_timeout - now > 0 || 
-	terminated >= timer_max_terminate)
+    if (irq->irq_timeout - now > 0 || terminated >= timer_max_terminate)
       break;
     
     /* Timer I */
@@ -5944,13 +6005,14 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
       incoming_free_queue(rq, irq);
   }
 
+  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
+
   while ((irq = sa->sa_in.completed->q_head)) {
     assert(irq->irq_status >= 200);
     assert(irq->irq_timeout);
     assert(irq->irq_method != sip_method_invite);
 
-    if (irq->irq_timeout - now > 0 || 
-	terminated >= timer_max_terminate)
+    if (irq->irq_timeout - now > 0 || terminated >= timer_max_terminate)
       break;
 
     /* Timer J */
@@ -5966,6 +6028,8 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
     else
       incoming_free_queue(rq, irq);
   }
+
+  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
 
   for (irq = sa->sa_in.terminated->q_head; irq; irq = irq_next) {
     irq_next = irq->irq_next;
@@ -5986,10 +6050,7 @@ int incoming_timer(nta_agent_t *sa, su_duration_t now)
 		terminated, unterminated, 
 		destroyed, total));
 
-  return 
-    retransmitted >= timer_max_retransmit
-    || timeout >= timer_max_timeout
-    || terminated >= timer_max_terminate;
+  return next;
 }
 
 /** Mass destroy server transactions */
@@ -6057,11 +6118,11 @@ static inline void outgoing_remove(nta_outgoing_t *orq);
 static inline void outgoing_set_timer(nta_outgoing_t *orq, unsigned interval);
 static inline void outgoing_reset_timer(nta_outgoing_t *orq);
 static size_t outgoing_timer_dk(outgoing_queue_t *q, 
-			     char const *timer, 
-			     su_duration_t now);
+				char const *timer, 
+				su_duration_t now);
 static size_t outgoing_timer_bf(outgoing_queue_t *q, 
-			     char const *timer, 
-			     su_duration_t now);
+				char const *timer, 
+				su_duration_t now);
 
 static void outgoing_ack(nta_outgoing_t *orq, msg_t *msg, sip_t *sip);
 static msg_t *outgoing_ackmsg(nta_outgoing_t *, sip_method_t, char const *,
@@ -7285,7 +7346,7 @@ void outgoing_queue(outgoing_queue_t *queue,
   assert(*queue->q_tail == NULL);
 
   orq->orq_timeout = set_timeout(orq->orq_agent, queue->q_timeout);
-    
+
   orq->orq_queue = queue;
   orq->orq_prev = queue->q_tail; 
   *queue->q_tail = orq;
@@ -7344,6 +7405,7 @@ void outgoing_set_timer(nta_outgoing_t *orq, unsigned interval)
 
   orq->orq_retry = set_timeout(orq->orq_agent, orq->orq_interval = interval);
 
+  /* Shortcut into queue at SIP T1 */
   rq = orq->orq_agent->sa_out.re_t1;
 
   if (!(*rq) || (*rq)->orq_retry - orq->orq_retry > 0)
@@ -7480,24 +7542,29 @@ void outgoing_destroy(nta_outgoing_t *orq)
   }
 }
 
-/** @internal Outgoing transaction timer routine. */
-static
-int outgoing_timer(nta_agent_t *sa, su_duration_t now)
+/** @internal Outgoing transaction timer routine. 
+ *
+ */
+static inline 
+su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
 {
+  su_duration_t now = sa->sa_millisec;
   nta_outgoing_t *orq;
   outgoing_queue_t rq[1];
   size_t retransmitted = 0, terminated = 0, timeout = 0, destroyed;
   size_t total = sa->sa_outgoing->oht_used;
   size_t trying = sa->sa_out.re_length;
-  size_t pending = sa->sa_out.trying->q_length + sa->sa_out.inv_calling->q_length;
+  size_t pending = sa->sa_out.trying->q_length + 
+    sa->sa_out.inv_calling->q_length;
   size_t completed = sa->sa_out.completed->q_length + 
     sa->sa_out.inv_completed->q_length;
 
   outgoing_queue_init(sa->sa_out.free = rq, 0);
 
   while ((orq = sa->sa_out.re_list)) {
-    if ((orq->orq_retry && orq->orq_retry - now > 0)
-	|| retransmitted >= timer_max_retransmit)
+    if (orq->orq_retry - now > 0)
+      break;
+    if (retransmitted >= timer_max_retransmit)
       break;
 
     if (orq->orq_reliable) {
@@ -7533,13 +7600,21 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
       su_root_yield(sa->sa_root);	/* Handle received packets */
   }
 
+  next = NEXT_TIMEOUT(next, orq, orq_retry, now);
+
   terminated
     = outgoing_timer_dk(sa->sa_out.inv_completed, "D", now)
     + outgoing_timer_dk(sa->sa_out.completed, "K", now);
 
+  next = NEXT_TIMEOUT(next, sa->sa_out.inv_completed->q_head, orq_timeout, now);
+  next = NEXT_TIMEOUT(next, sa->sa_out.completed->q_head, orq_timeout, now);
+
   timeout
     = outgoing_timer_bf(sa->sa_out.inv_calling, "B", now)
     + outgoing_timer_bf(sa->sa_out.trying, "F", now);
+
+  next = NEXT_TIMEOUT(next, sa->sa_out.inv_calling->q_head, orq_timeout, now);
+  next = NEXT_TIMEOUT(next, sa->sa_out.trying->q_head, orq_timeout, now);
 
   destroyed = outgoing_mass_destroy(sa, rq);
 
@@ -7557,10 +7632,7 @@ int outgoing_timer(nta_agent_t *sa, su_duration_t now)
 		destroyed, total));
   }
 
-  return 
-    retransmitted >= timer_max_retransmit || 
-    terminated >= timer_max_terminate || 
-    timeout >= timer_max_timeout;
+  return next;
 }
 
 /** @internal Retransmit the outgoing request. */
@@ -7597,16 +7669,12 @@ size_t outgoing_timer_bf(outgoing_queue_t *q,
 			 char const *timer, 
 			 su_duration_t now)
 {
+  nta_outgoing_t *orq;
   size_t timeout = 0;
 
-  for (;;) {
-    nta_outgoing_t *orq = q->q_head;
-
-    if (!orq 
-	|| !orq->orq_timeout
-	|| orq->orq_timeout - now > 0 
-	|| timeout >= timer_max_timeout)
-      return timeout;
+  while ((orq = q->q_head)) {
+    if (orq->orq_timeout - now > 0 || timeout >= timer_max_timeout)
+      break;
 
     timeout++;
     
@@ -7618,6 +7686,8 @@ size_t outgoing_timer_bf(outgoing_queue_t *q,
 
     assert(q->q_head != orq || orq->orq_timeout - now > 0);
   }
+
+  return timeout;
 }
 
 /** @internal Signal transaction timeout to the application. */
@@ -7673,16 +7743,12 @@ size_t outgoing_timer_dk(outgoing_queue_t *q,
 			 char const *timer, 
 			 su_duration_t now)
 {
+  nta_outgoing_t *orq;
   size_t terminated = 0;
 
-  for (;;) {
-    nta_outgoing_t *orq = q->q_head;
-
-    if (!orq 
-	|| !orq->orq_timeout 
-	|| orq->orq_timeout - now > 0 
-	|| terminated >= timer_max_terminate)
-      return terminated;
+  while ((orq = q->q_head)) {
+    if (orq->orq_timeout - now > 0 || terminated >= timer_max_terminate)
+      break;
 
     terminated++;
 
@@ -7691,6 +7757,8 @@ size_t outgoing_timer_dk(outgoing_queue_t *q,
 
     outgoing_terminate(orq);
   }
+  
+  return terminated;
 }
 
 /** Terminate a client transaction. */

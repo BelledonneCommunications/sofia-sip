@@ -98,13 +98,14 @@ struct nta_agent_s
   nta_agent_magic_t    *sa_magic;
   nta_message_f        *sa_callback;     
 
-  uint32_t              sa_nw_updates; /* Shall we enable network detector? */
-
   nta_update_magic_t   *sa_update_magic;
   nta_update_tport_f   *sa_update_tport;
 
   su_time_t             sa_now;	/**< Timestamp in microsecond resolution. */
   uint32_t              sa_millisec; /**< Timestamp in milliseconds resolution. */
+  uint32_t              sa_next; /**< Timestamp for next timer. */
+
+  uint32_t              sa_nw_updates; /* Shall we enable network detector? */
 
   uint32_t              sa_flags;	/**< Message flags */
   msg_mclass_t         *sa_mclass;
@@ -222,6 +223,9 @@ struct nta_agent_s
 
   /** If true, automatically create compartments */
   unsigned              sa_auto_comp:1;
+
+  /** Set when executing timer */
+  unsigned              sa_in_timer:1;
 
   unsigned              :0;
 
