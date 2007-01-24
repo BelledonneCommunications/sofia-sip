@@ -149,19 +149,39 @@ static int nua_message_client_init(nua_client_request_t *cr,
  * @END_NUA_EVENT
  */
 
-int nua_stack_process_message(nua_t *nua,
-			      nua_handle_t *nh,
-			      nta_incoming_t *irq,
-			      sip_t const *sip)
+int nua_message_server_init(nua_server_request_t *sr);
+int nua_message_server_params(nua_server_request_t *, tagi_t const *);
+
+nua_server_methods_t const nua_message_server_methods = 
+  {
+    SIP_METHOD_MESSAGE,
+    nua_i_message,		/* Event */
+    { 
+      0,			/* Do not create dialog */
+      0,			/* Can be initial request */
+      0,			/* Perhaps a target refresh request? */
+      0,			/* Do not add contact by default */
+    },
+    nua_message_server_init,
+    nua_base_server_preprocess,
+    nua_message_server_params,
+    nua_base_server_respond,
+    nua_base_server_report,
+  };
+
+int nua_message_server_init(nua_server_request_t *sr)
 {
-  nua_server_request_t *sr, sr0[1];
+  if (!NH_PGET(sr->sr_owner, message_enable))
+    return SR_STATUS1(sr, SIP_403_FORBIDDEN);
 
-  sr = SR_INIT(sr0);
-  
-  if (!NUA_PGET(nua, nh, message_enable))
-    SR_STATUS1(sr, SIP_403_FORBIDDEN);
+  return 0;
+}
 
-  sr = nua_server_request(nua, nh, irq, sip, sr, sizeof *sr, NULL, 0);
+int nua_message_server_params(nua_server_request_t *sr,
+			      tagi_t const *tags)
+{
+  if (NH_PGET(sr->sr_owner, win_messenger_enable))
+    sr->sr_add_contact = 1;
 
-  return nua_stack_server_event(nua, sr, nua_i_message, TAG_END());
+  return 0;
 }

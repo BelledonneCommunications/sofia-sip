@@ -135,34 +135,19 @@ nua_stack_method(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
  * @END_NUA_EVENT
  */
 
-static int respond_to_method(nua_server_request_t *sr, tagi_t const *tags);
-
-int nua_stack_process_method(nua_t *nua,
-			      nua_handle_t *nh,
-			      nta_incoming_t *irq,
-			      sip_t const *sip)
-{
-  nua_server_request_t *sr, sr0[1];
-  
-  sr = nua_server_request(nua, nh, irq, sip, SR_INIT(sr0), sizeof sr0,
-			  respond_to_method, 0);
-
-  return nua_stack_server_event(nua, sr, nua_i_method, TAG_END());
-}
-
-static
-int respond_to_method(nua_server_request_t *sr, tagi_t const *tags)
-{
-  nua_handle_t *nh = sr->sr_owner;
-  nua_t *nua = nh->nh_nua;
-  int status = sr->sr_status;
-
-  int final = nua_default_respond(sr, tags);
-
-  if (status != sr->sr_status) 
-    nua_stack_event(nua, nh, NULL,
-		    nua_i_error, 900, "Response to Extension Method Fails",
-		    NULL);
-  
-  return final;
-}
+nua_server_methods_t const nua_extension_server_methods = 
+  {
+    SIP_METHOD_UNKNOWN,
+    nua_i_method,		/* Event */
+    { 
+      0,			/* Do not create dialog */
+      0,			/* Can be an initial request */
+      1,			/* Perhaps a target refresh request? */
+      1,			/* Add a contact? */
+    },
+    nua_base_server_init,
+    nua_base_server_preprocess,
+    nua_base_server_params,
+    nua_base_server_respond,
+    nua_base_server_report,
+  };

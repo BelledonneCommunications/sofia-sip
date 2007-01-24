@@ -48,48 +48,72 @@ typedef NUA_OWNER_T nua_owner_t;
 #include <sofia-sip/nta.h>
 #endif
 
-typedef struct nua_server_request nua_server_request_t; 
-typedef struct nua_client_request nua_client_request_t; 
 typedef su_msg_r nua_saved_signal_t;
 
-/** Respond to an incoming request. */
-typedef int nua_server_respond_f(nua_server_request_t *, tagi_t const *);
+typedef struct nua_server_request nua_server_request_t; 
+typedef struct nua_client_request nua_client_request_t; 
 
-/** Restart an outgoing request. */
-typedef void nua_creq_restart_f(nua_owner_t *, tagi_t *tags);
+typedef struct {
+  sip_method_t sm_method; 
+  char const *sm_method_name;
 
-/** Initialize an outgoing request */
-typedef int nua_client_init_f(nua_client_request_t *,
-			      nua_dialog_usage_t *,
-			      tagi_t const *tags);
+  int sm_event;
 
-/** Send an outgoing request. */
-typedef int nua_client_request_f(nua_client_request_t *,
-				 msg_t *msg, sip_t *);
+  struct {
+    unsigned create_dialog:1, in_dialog:1, target_refresh:1, add_contact:1;
+    unsigned :0;
+  } sm_flags;
+
+  /** Initialize server-side request. */
+  int (*sm_init)(nua_server_request_t *sr);
+
+  /** Preprocess server-side request (after handle has been created). */
+  int (*sm_preprocess)(nua_server_request_t *sr);
+
+  /** Update server-side request parameters */
+  int (*sm_params)(nua_server_request_t *sr, tagi_t const *tags);
+
+  /** Respond to server-side request. */
+  int (*sm_respond)(nua_server_request_t *sr, tagi_t const *tags);
+
+  /** Report server-side request to application. */
+  int (*sm_report)(nua_server_request_t *sr, tagi_t const *tags);
+
+} nua_server_methods_t;
 
 /** Server side transaction */
 struct nua_server_request {
   struct nua_server_request *sr_next, **sr_prev;
 
+  nua_server_methods_t const *sr_methods;
+
   nua_owner_t *sr_owner;	/**< Backpointer to handle */
   nua_dialog_usage_t *sr_usage;	/**< Backpointer to usage */
 
-  /** When the application responds to a request with
-   * nua_respond(), the sr_respond() is called
-   */
-  nua_server_respond_f *sr_respond;
-  
   nta_incoming_t *sr_irq;	/**< Server transaction object */
-  msg_t *sr_request;		/**< Request message */
-  msg_t *sr_response;		/**< Response message */
+  
+  struct {
+    msg_t *msg;			/**< Request message */
+    sip_t const *sip;		/**< Headers in request message */
+  } sr_request;
+
+  struct {
+    msg_t *msg;			/**< Response message */
+    sip_t *sip;			/**< Headers in response message */
+  } sr_response;
 
   sip_method_t sr_method;	/**< Request method */
+
+  int sr_application;		/**< Status by application */
+
   int sr_status;		/**< Status code */
   char const *sr_phrase;	/**< Status phrase */
 
-  unsigned sr_event:1;		/**< Sent to application */
-  unsigned sr_application:1;	/**< Response by application */
+  unsigned sr_event:1;		/**< Reported to application */
   unsigned sr_initial:1;	/**< Handle was created by this request */
+  unsigned sr_add_contact:1;	/**< Add Contact header to the response */
+  unsigned sr_terminating:1;	/**< Terminate usage after final response */
+  unsigned sr_gracefully:1;	/**< Terminate usage gracefully */
 
   /* Flags used with offer-answer */
   unsigned sr_offer_recv:1;	/**< We have received an offer */
@@ -97,12 +121,11 @@ struct nua_server_request {
 
   unsigned sr_offer_sent:1;	/**< We have offered SDP */
   unsigned sr_answer_recv:1;	/**< We have received SDP answer */
-};
+  unsigned :0;
 
-#define SR_INIT(sr)			     \
-  ((void)memset((sr), 0, sizeof (sr)[0]),    \
-   (void)(SR_STATUS1((sr), SIP_100_TRYING)), \
-   sr)
+  char const *sr_sdp;		/**< SDP received from client */
+  size_t sr_sdp_len;		/**< ... and its length  */
+};
 
 #define SR_STATUS(sr, status, phrase) \
   ((sr)->sr_phrase = (phrase), (sr)->sr_status = (status))
@@ -394,10 +417,12 @@ void nua_dialog_usage_remove(nua_owner_t *,
 void nua_dialog_deinit(nua_owner_t *own,
 		       nua_dialog_state_t *ds);
 
-void nua_dialog_terminated(nua_owner_t *,
-			   struct nua_dialog_state *ds,
-			   int status,
-			   char const *phrase);
+int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds);
+
+void nua_dialog_remove_usages(nua_owner_t *,
+			      struct nua_dialog_state *ds,
+			      int status,
+			      char const *phrase);
 
 void nua_dialog_usage_set_expires(nua_dialog_usage_t *du, unsigned delta);
 
@@ -413,7 +438,7 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now);
 
-void nua_dialog_usage_terminate(nua_owner_t *owner,
+void nua_dialog_usage_shutdown(nua_owner_t *owner,
 				nua_dialog_state_t *ds,
 				nua_dialog_usage_t *du);
 
@@ -550,19 +575,57 @@ nua_client_request_t *nua_client_request_pending(nua_client_request_t const *);
 
 /* ---------------------------------------------------------------------- */
 
+extern nua_server_methods_t const
+  nua_extension_server_methods,
+  nua_invite_server_methods,	/**< INVITE */
+  nua_bye_server_methods,	/**< BYE */
+  nua_options_server_methods,	/**< OPTIONS */
+  nua_register_server_methods,	/**< REGISTER */
+  nua_info_server_methods,	/**< INFO */
+  nua_prack_server_methods,	/**< PRACK */
+  nua_update_server_methods,	/**< UPDATE */
+  nua_message_server_methods,	/**< MESSAGE */
+  nua_subscribe_server_methods, /**< SUBSCRIBE */
+  nua_notify_server_methods,	/**< NOTIFY */
+  nua_refer_server_methods,	/**< REFER */
+  nua_publish_server_methods;	/**< PUBLISH */
+
+static inline 
+int nua_server_request_is_pending(nua_server_request_t const *sr)
+{
+  return sr && sr->sr_response.msg;
+}
+
 void nua_server_request_destroy(nua_server_request_t *sr);
 
-int nua_server_respond(nua_server_request_t *sr,
-		       int status, char const *phrase,
-		       tag_type_t tag, tag_value_t value, ...);
+int nua_base_server_init(nua_server_request_t *sr);
 
-msg_t *nua_server_response(nua_server_request_t *sr,
-			   int status, char const *phrase,
-			   tag_type_t tag, tag_value_t value, ...);
+#define nua_base_server_init NULL
 
-int nua_default_respond(nua_server_request_t *sr,
-			tagi_t const *tags);
+int nua_base_server_preprocess(nua_server_request_t *sr);
 
+#define nua_base_server_preprocess NULL
+
+int nua_server_params(nua_server_request_t *sr, tagi_t const *tags);
+
+int nua_base_server_params(nua_server_request_t *sr, tagi_t const *tags);
+
+#define nua_base_server_params NULL
+
+int nua_server_trespond(nua_server_request_t *sr,
+			tag_type_t tag, tag_value_t value, ...);
+int nua_server_respond(nua_server_request_t *sr, tagi_t const *tags);
+
+int nua_base_server_trespond(nua_server_request_t *sr,
+			     tag_type_t tag, tag_value_t value, ...);
+int nua_base_server_respond(nua_server_request_t *sr,
+			    tagi_t const *tags);
+
+int nua_server_report(nua_server_request_t *sr);
+
+int nua_base_server_treport(nua_server_request_t *sr, 
+			    tag_type_t tag, tag_value_t value, ...);
+int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags);
 
 /* ---------------------------------------------------------------------- */
 

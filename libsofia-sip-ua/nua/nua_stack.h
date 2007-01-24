@@ -388,47 +388,6 @@ int nua_registration_add_contact_to_response(nua_handle_t *nh,
 					     sip_record_route_t const *,
 					     sip_contact_t const *remote);
 
-msg_t *nh_make_response(nua_t *nua, nua_handle_t *nh, 
-			nta_incoming_t *irq,
-			int status, char const *phrase,
-			tag_type_t tag, tag_value_t value, ...);
-
-
-typedef int nua_stack_process_request_t(nua_t *nua,
-					nua_handle_t *nh,
-					nta_incoming_t *irq,
-					sip_t const *sip);
-
-nua_stack_process_request_t nua_stack_process_invite;
-nua_stack_process_request_t nua_stack_process_info;
-nua_stack_process_request_t nua_stack_process_update;
-nua_stack_process_request_t nua_stack_process_bye;
-nua_stack_process_request_t nua_stack_process_message;
-nua_stack_process_request_t nua_stack_process_options;
-nua_stack_process_request_t nua_stack_process_publish;
-nua_stack_process_request_t nua_stack_process_subscribe;
-nua_stack_process_request_t nua_stack_process_notify;
-nua_stack_process_request_t nua_stack_process_refer;
-nua_stack_process_request_t nua_stack_process_unknown;
-nua_stack_process_request_t nua_stack_process_register;
-nua_stack_process_request_t nua_stack_process_method;
-
-/* ---------------------------------------------------------------------- */
-
-nua_server_request_t *nua_server_request(nua_t *nua,
-					 nua_handle_t *nh,
-					 nta_incoming_t *irq,
-					 sip_t const *sip,
-					 nua_server_request_t *sr,
-					 size_t size,
-					 nua_server_respond_f *respond,
-					 int create_dialog);
-
-int nua_stack_server_event(nua_t *nua,
-			   nua_server_request_t *sr,
-			   nua_event_t event,
-			   tag_type_t tag, tag_value_t value, ...);
-
 /* ---------------------------------------------------------------------- */
 
 #ifndef SDP_MIME_TYPE

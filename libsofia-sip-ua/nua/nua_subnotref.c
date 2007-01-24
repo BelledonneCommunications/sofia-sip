@@ -499,169 +499,177 @@ static int nua_subscribe_usage_shutdown(nua_handle_t *nh,
  * @END_NUA_EVENT
  */
 
-/** @internal Process incoming NOTIFY. */
-int nua_stack_process_notify(nua_t *nua,
-			     nua_handle_t *nh,
-			     nta_incoming_t *irq,
-			     sip_t const *sip)
+int nua_notify_server_init(nua_server_request_t *sr);
+int nua_notify_server_preprocess(nua_server_request_t *sr);
+int nua_notify_server_report(nua_server_request_t *, tagi_t const *);
+
+nua_server_methods_t const nua_notify_server_methods = 
+  {
+    SIP_METHOD_NOTIFY,
+    nua_i_notify,		/* Event */
+    { 
+      0,			/* Do not create dialog */
+      1,			/* In-dialog request */
+      1,			/* Target refresh request  */
+      1,			/* Add Contact */
+    },
+    nua_notify_server_init,
+    nua_notify_server_preprocess,
+    nua_base_server_params,
+    nua_base_server_respond,
+    nua_notify_server_report,
+  };
+
+
+int nua_notify_server_init(nua_server_request_t *sr)
 {
-  nua_dialog_state_t *ds = nh->nh_ds;
-  nua_dialog_usage_t *du;
-  struct event_usage *eu;
-  sip_subscription_state_t *subs = sip ? sip->sip_subscription_state : NULL;
-  sip_subscription_state_t ss0[1];
-  msg_t *response;
-  char expires[32];
-  int retry = -1;
-  char const *what = NULL, *why = NULL;
+  if (!sr->sr_initial) {
+    nua_dialog_state_t *ds = sr->sr_owner->nh_ds;
 
-  enter;
+    /* Check for forked subscription. */
+    if (ds->ds_remote_tag && ds->ds_remote_tag[0] && 
+	str0cmp(ds->ds_remote_tag, sr->sr_request.sip->sip_from->a_tag)) {
+      sip_contact_t const *m = NULL;
 
-  if (nh == NULL) {
-    nta_incoming_treply(irq, 481, "Subscription Does Not Exist", 
-			TAG_END());
-    return 481;
-  }
-  assert(nh);
+      m = nua_stack_get_contact(sr->sr_owner->nh_nua->nua_registrations);
+      
+      if (m) {
+	sip_warning_t w[1];
+	
+	sip_warning_init(w)->w_code = 399;
+	w->w_host = m->m_url->url_host;
+	w->w_port = m->m_url->url_port;
+	w->w_text = "Forking SUBSCRIBEs are not supported";
 
-  if (/* XXX - support forking of subscriptions?... */
-      ds->ds_remote_tag && ds->ds_remote_tag[0] && 
-      sip && sip->sip_from->a_tag &&
-      strcmp(ds->ds_remote_tag, sip->sip_from->a_tag)) {
-    sip_contact_t const *m = NULL;
-    sip_warning_t *w = NULL, w0[1];
+	sip_add_dup(sr->sr_response.msg, NULL, (sip_header_t*)w);
+      }
 
-    m = nua_stack_get_contact(nua->nua_registrations);
-    if (m) {
-      w = sip_warning_init(w0);
-      w->w_code = 399;
-      w->w_host = m->m_url->url_host;
-      w->w_port = m->m_url->url_port;
-      w->w_text = "Forking SUBSCRIBEs are not supported";
+      return SR_STATUS(sr, 481, "Subscription Does Not Exist");
     }
-
-    nta_incoming_treply(irq, 481, "Subscription Does Not Exist", 
-			SIPTAG_WARNING(w),
-			TAG_END());
-    return 481;
-  }
-
-  du = nua_dialog_usage_get(nh->nh_ds, nua_subscribe_usage, sip->sip_event);
-
-  if (du == NULL) {
-    nta_incoming_treply(irq, 481, "Subscription Does Not Exist", TAG_END());
-    return 481;
-  }
-
-  eu = nua_dialog_usage_private(du); assert(eu);
-  eu->eu_notified++;
-
-  if (!sip->sip_event->o_id) {
-    eu->eu_no_id = 1;
-  }
-
-  if (subs == NULL) {
-    /* Do some compatibility stuff here */
-    unsigned long delta;
-
-    sip_subscription_state_init(subs = ss0);
-
-    delta = sip->sip_expires ? sip->sip_expires->ex_delta : eu->eu_expires;
-
-    if (delta == 0)
-      subs->ss_substate = "terminated";
-    else
-      subs->ss_substate = "active";
-
-    if (delta > 0 && sip->sip_expires) {
-      snprintf(expires, sizeof expires, "%lu", delta);
-      subs->ss_expires = expires;
-    }
-  }
-
-  nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
-  nua_dialog_uas_route(nh, nh->nh_ds, sip, 1);
-
-  if (strcasecmp(subs->ss_substate, what = "terminated") == 0) {
-    eu->eu_substate = nua_substate_terminated;
-
-    if (str0casecmp(subs->ss_reason, why = "deactivated") == 0) {
-      eu->eu_substate = nua_substate_embryonic;
-      retry = 0;		/* retry immediately */
-    } 
-    else if (str0casecmp(subs->ss_reason, why = "probation") == 0) {
-      eu->eu_substate = nua_substate_embryonic;
-      retry = 30;
-      if (subs->ss_retry_after)
-	retry = strtoul(subs->ss_retry_after, NULL, 10);
-      if (retry > 3600)
-	retry = 3600;
-    }
-    else
-      why = subs->ss_reason;
-  }
-  else if (strcasecmp(subs->ss_substate, what = "pending") == 0)
-    eu->eu_substate = nua_substate_pending;
-  else /* if (strcasecmp(subs->ss_substate, "active") == 0) */ {
-    /* Any extended state is considered as active */
-    what = subs->ss_substate ? subs->ss_substate : "active";
-    eu->eu_substate = nua_substate_active;
-  }
-
-  if (du->du_shutdown || (du->du_cr && du->du_cr->cr_terminating))
-    retry = -1;
-  
-  response = nh_make_response(nua, nh, irq, SIP_200_OK,
-			      SIPTAG_SUPPORTED(NH_PGET(nh, supported)),
-			      TAG_END());
-
-  if (response)
-    nta_incoming_mreply(irq, response);
-  else
-    nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
-
-  if (eu->eu_substate == nua_substate_terminated && retry > 0)
-    eu->eu_substate = nua_substate_embryonic;
-
-  nua_stack_tevent(nh->nh_nua, nh, nta_incoming_getrequest(irq),
-		   nua_i_notify, SIP_200_OK, 
-		   NUTAG_SUBSTATE(eu->eu_substate),
-		   TAG_END());
-
-  nta_incoming_destroy(irq), irq = NULL;
-
-  SU_DEBUG_5(("nua(%p): nua_stack_process_notify: %s (%s)\n", 
-	      nh, what, why ? why : ""));
-
-  if (eu->eu_substate == nua_substate_terminated) {
-    /* Leaves subscribe client transaction without cr_usage  */
-    nua_dialog_usage_remove(nh, nh->nh_ds, du);	
-  }
-  else if (eu->eu_substate == nua_substate_embryonic) {
-    if (retry >= 0) {
-      /* Try to subscribe again */
-      nua_dialog_remove(nh, nh->nh_ds, du); /* tear down */
-      nua_dialog_usage_refresh_range(du, retry, retry + 5);
-    }
-    else
-      nua_dialog_usage_remove(nh, nh->nh_ds, du);
-  }
-  else if (retry < 0) {
-    nua_dialog_usage_reset_refresh(du);
-  }
-  else {
-    sip_time_t delta;
-
-    if (subs->ss_expires)
-      delta = strtoul(subs->ss_expires, NULL, 10);
-    else
-      delta = eu->eu_expires;
-    
-    nua_dialog_usage_set_refresh(du, delta);
   }
 
   return 0;
 }
+
+int nua_notify_server_preprocess(nua_server_request_t *sr)
+{
+  nua_dialog_state_t *ds = sr->sr_owner->nh_ds;
+  nua_dialog_usage_t *du;
+  struct event_usage *eu;
+  sip_t const *sip = sr->sr_request.sip;
+  sip_event_t *o = sip->sip_event;
+  enum nua_substate substate = nua_substate_terminated;
+  sip_subscription_state_t *subs = sip->sip_subscription_state;
+  char const *what = "", *reason = NULL;
+
+  du = nua_dialog_usage_get(ds, nua_subscribe_usage, o);
+  if (du == NULL) 
+    return SR_STATUS(sr, 481, "Subscription Does Not Exist");
+  sr->sr_usage = du;
+  
+  eu = nua_dialog_usage_private(du); assert(eu);
+  eu->eu_notified++;
+  if (!o->o_id) 
+    eu->eu_no_id = 1;
+
+  if (subs == NULL) {
+    /* Compatibility */
+    unsigned long delta = eu->eu_expires;
+    if (sip->sip_expires) 
+      delta = sip->sip_expires->ex_delta;
+
+    if (delta == 0)
+      substate = nua_substate_terminated, what = "terminated";
+    else
+      substate = nua_substate_active, what = "active";
+  }
+  else if (strcasecmp(subs->ss_substate, what = "terminated") == 0) {
+    substate = nua_substate_terminated;
+    reason = subs->ss_reason;
+
+    if (str0casecmp(reason, "deactivated") == 0 ||
+	str0casecmp(reason, "probation") == 0) 
+      substate = nua_substate_embryonic;
+  }
+  else if (strcasecmp(subs->ss_substate, what = "pending") == 0) {
+    substate = nua_substate_pending;
+  }
+  else /* if (strcasecmp(subs->ss_substate, what = "active") == 0) */ {
+    /* Any extended state is considered as active */
+    what = subs->ss_substate;
+    substate = nua_substate_active;
+  }
+
+  eu->eu_substate = substate;
+
+  SU_DEBUG_5(("nua(%p): %s: %s (%s)\n", 
+	      sr->sr_owner, "nua_notify_server_preprocess",
+	      what, reason ? reason : ""));
+
+  return SR_STATUS1(sr, SIP_200_OK);
+}
+
+
+int nua_notify_server_report(nua_server_request_t *sr, tagi_t const *tags)
+{
+  nua_handle_t *nh = sr->sr_owner;
+  nua_dialog_usage_t *du = sr->sr_usage;
+  struct event_usage *eu = nua_dialog_usage_private(du);
+  sip_t const *sip = sr->sr_request.sip;
+  enum nua_substate substate = nua_substate_terminated;
+  sip_time_t delta = SIP_TIME_MAX;
+  int retry = -1;
+  int retval;
+
+  if (eu) {
+    sip_subscription_state_t *subs = sip->sip_subscription_state;
+
+    substate = eu->eu_substate;
+
+    if (substate == nua_substate_active || substate == nua_substate_pending) {
+      if (subs && subs->ss_expires)
+	delta = strtoul(subs->ss_expires, NULL, 10);
+      else
+	delta = eu->eu_expires;
+    }
+    else if (substate == nua_substate_embryonic) {
+      if (subs && subs->ss_reason) {
+	if (str0casecmp(subs->ss_reason, "deactivated") == 0) {
+	  retry = 0;		/* retry immediately */
+	} 
+	else if (str0casecmp(subs->ss_reason, "probation") == 0) {
+	  retry = 30;
+	  if (subs->ss_retry_after)
+	    retry = strtoul(subs->ss_retry_after, NULL, 10);
+	  if (retry > 3600)
+	    retry = 3600;
+	}
+      }
+    }
+    else if (substate == nua_substate_terminated) {
+      sr->sr_terminating = 1;
+    }
+  }
+  
+  retval = nua_base_server_treport(sr, /* can destroy sr */
+				   NUTAG_SUBSTATE(substate),
+				   TAG_NEXT(tags)); 
+
+  if (retval >= 2 || du == NULL)
+    return retval;
+
+  if (retry >= 0) {		/* Try to subscribe again */
+    /* XXX - this needs through testing */
+    nua_dialog_remove(nh, nh->nh_ds, du); /* tear down */
+    nua_dialog_usage_refresh_range(du, retry, retry + 5);
+  }
+  else {
+    nua_dialog_usage_set_refresh(du, delta);
+  }
+
+  return retval;
+}
+
 
 /* ======================================================================== */
 /* REFER */

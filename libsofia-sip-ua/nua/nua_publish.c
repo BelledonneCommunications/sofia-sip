@@ -475,24 +475,35 @@ static int nua_publish_usage_shutdown(nua_handle_t *nh,
  * @END_NUA_EVENT
  */
 
-int nua_stack_process_publish(nua_t *nua,
-			      nua_handle_t *nh,
-			      nta_incoming_t *irq,
-			      sip_t const *sip)
+int nua_publish_server_init(nua_server_request_t *sr);
+
+nua_server_methods_t const nua_publish_server_methods = 
+  {
+    SIP_METHOD_PUBLISH,
+    nua_i_publish,		/* Event */
+    { 
+      0,			/* Do not create dialog */
+      0,			/* Initial request */
+      0,			/* Not a target refresh request  */
+      1,			/* Add Contact */
+    },
+    nua_publish_server_init,
+    nua_base_server_preprocess,
+    nua_base_server_params,
+    nua_base_server_respond,
+    nua_base_server_report,
+  };
+
+int nua_publish_server_init(nua_server_request_t *sr)
 {
-  nua_server_request_t *sr, sr0[1];
-  sip_allow_events_t *allow_events = NUA_PGET(nua, nh, allow_events);
-  sip_event_t *o = sip->sip_event;
+  sip_allow_events_t *allow_events = NH_PGET(sr->sr_owner, allow_events);
+  sip_event_t *o = sr->sr_request.sip->sip_event;
   char const *event = o ? o->o_type : NULL;
   
-  sr = SR_INIT(sr0);
-  
   if (!allow_events)
-    SR_STATUS1(sr, SIP_501_NOT_IMPLEMENTED);
+    return SR_STATUS1(sr, SIP_501_NOT_IMPLEMENTED);
   else if (!event || !msg_header_find_param(allow_events->k_common, event))
-    SR_STATUS1(sr, SIP_489_BAD_EVENT);
+    return SR_STATUS1(sr, SIP_489_BAD_EVENT);
 
-  sr = nua_server_request(nua, nh, irq, sip, sr, sizeof *sr, NULL, 0);
-
-  return nua_stack_server_event(nua, sr, nua_i_publish, TAG_END());
+  return 0;
 }

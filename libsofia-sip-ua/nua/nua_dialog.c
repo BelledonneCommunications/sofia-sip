@@ -438,12 +438,11 @@ void nua_dialog_deinit(nua_owner_t *own,
 
 
 /** @internal Dialog has been terminated. Remove all usages. */
-void nua_dialog_terminated(nua_owner_t *own,
-			   struct nua_dialog_state *ds,
-			   int status,
-			   char const *phrase)
+void nua_dialog_remove_usages(nua_owner_t *own,
+			      struct nua_dialog_state *ds,
+			      int status,
+			      char const *phrase)
 {
-
   ds->ds_terminated = 1;
 
   while (ds->ds_usage) {
@@ -457,6 +456,8 @@ void nua_dialog_terminated(nua_owner_t *own,
 #endif
     nua_dialog_usage_remove_at(own, ds, &ds->ds_usage);
   }
+
+  nua_dialog_remove(own, ds, NULL);
 }
 
 /**@internal
@@ -557,8 +558,25 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
   }
 }
 
+/** Terminate all dialog usages gracefully. */
+int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
+{
+  nua_dialog_usage_t *du;
+
+  do {
+    for (du = ds->ds_usage; du; du = du->du_next) {
+      if (!du->du_shutdown) {
+	nua_dialog_usage_shutdown(owner, ds, du);
+	break;
+      }
+    }
+  } while (du);
+
+  return 1;
+}
+
 /** (Gracefully) terminate usage */
-void nua_dialog_usage_terminate(nua_owner_t *owner,
+void nua_dialog_usage_shutdown(nua_owner_t *owner,
 				nua_dialog_state_t *ds,
 				nua_dialog_usage_t *du)
 {
