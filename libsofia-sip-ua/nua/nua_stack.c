@@ -1793,6 +1793,9 @@ void nua_client_request_destroy(nua_client_request_t *cr)
   if (cr == NULL)
     return;
 
+  if (cr->cr_methods->crm_deinit)
+    cr->cr_methods->crm_deinit(cr);
+
   nh = cr->cr_owner;
 
   su_msg_destroy(cr->cr_signal);
@@ -1804,11 +1807,9 @@ void nua_client_request_destroy(nua_client_request_t *cr)
     msg_destroy(cr->cr_msg);
   cr->cr_msg = NULL, cr->cr_sip = NULL;
 
-  if (cr->cr_orq) {
-    if (cr->cr_method == sip_method_invite)
-      nta_outgoing_cancel(cr->cr_orq);
+  if (cr->cr_orq)
     nta_outgoing_destroy(cr->cr_orq);
-  }
+
   cr->cr_orq = NULL;
 
   if (cr->cr_target)
@@ -2544,6 +2545,7 @@ int nua_base_client_response(nua_client_request_t *cr,
 			     tagi_t const *tags)
 {
   nua_handle_t *nh = cr->cr_owner;
+  int next;
 
   cr->cr_reporting = 1;
 
@@ -2555,8 +2557,10 @@ int nua_base_client_response(nua_client_request_t *cr,
   if (status >= 200)
     nua_client_request_remove(cr);
 
-  if (cr->cr_method == sip_method_invite ? status < 300 : status < 200)
+  if (cr->cr_method == sip_method_invite ? status < 300 : status < 200) {
+    cr->cr_reporting = 0;
     return 1;
+  }
 
   if (cr->cr_orq)
     nta_outgoing_destroy(cr->cr_orq), cr->cr_orq = NULL;
@@ -2583,10 +2587,12 @@ int nua_base_client_response(nua_client_request_t *cr,
   if (nua_client_is_queued(cr))
     return 1;
 
+  next = cr->cr_method != sip_method_invite && cr->cr_method != sip_method_cancel;
+
   if (!nua_client_is_bound(cr))
     nua_client_request_destroy(cr);
 
-  if (nh->nh_ds->ds_cr != NULL && nh->nh_ds->ds_cr != cr) {
+  if (next && nh->nh_ds->ds_cr != NULL && nh->nh_ds->ds_cr != cr) {
     cr = nh->nh_ds->ds_cr;
     if (cr->cr_method != sip_method_invite && cr->cr_method != sip_method_cancel)
       nua_client_init_request(cr);

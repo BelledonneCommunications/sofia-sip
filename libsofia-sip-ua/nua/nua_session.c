@@ -140,8 +140,7 @@ sip_response_terminates_dialog().
 /** Session-related state */
 typedef struct nua_session_usage
 {
-  /* enum nua_callstate */
-  unsigned        ss_state:4;		/**< Session status (enum nua_callstate) */
+  enum nua_callstate ss_state;		/**< Session status (enum nua_callstate) */
   
   unsigned        ss_100rel:1;	        /**< Use 100rel, send 183 */
   unsigned        ss_alerting:1;	/**< 180 is sent/received */
@@ -488,6 +487,8 @@ static int nua_invite_client_ack_msg(nua_client_request_t *cr,
 				     msg_t *msg, sip_t *sip,
 				     tagi_t const *tags);
 
+static int nua_invite_client_deinit(nua_client_request_t *cr);
+
 nua_client_methods_t const nua_invite_client_methods = {
   SIP_METHOD_INVITE,
   0,
@@ -502,7 +503,8 @@ nua_client_methods_t const nua_invite_client_methods = {
   session_timer_check_restart,
   nua_invite_client_response,
   nua_invite_client_preliminary,
-  nua_invite_client_report
+  nua_invite_client_report,
+  nua_invite_client_deinit
 };
 
 extern nua_client_methods_t const nua_bye_client_methods;
@@ -834,8 +836,6 @@ static int nua_invite_client_report(nua_client_request_t *cr,
       ss->ss_reporting = 1;
       error = nua_client_tcreate(nh, nua_r_prack, &nua_prack_client_methods, 
 				 SIPTAG_RACK(rack),
-				 NUTAG_STATUS(status),
-				 NUTAG_PHRASE(phrase),
 				 TAG_END());
       ss->ss_reporting = 0;
 
@@ -1092,6 +1092,19 @@ int nua_invite_client_ack_msg(nua_client_request_t *cr,
   return status < 300 ? 1 : -2;
 }
 
+/** Deinitialize client request */
+static int nua_invite_client_deinit(nua_client_request_t *cr)
+{
+  if (cr->cr_orq == NULL)
+    /* Xyzzy */;
+  else if (cr->cr_status < 200)
+    nta_outgoing_cancel(cr->cr_orq);
+  else
+    nua_invite_client_ack(cr, NULL);
+
+  return 0;
+}
+
 /**@fn void nua_cancel(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
  *
  * Cancel an INVITE operation 
@@ -1115,7 +1128,7 @@ static int nua_cancel_client_request(nua_client_request_t *cr,
 				     msg_t *msg, sip_t *sip,
 				     tagi_t const *tags);
 
-static nua_client_methods_t const nua_cancel_client_methods = {
+nua_client_methods_t const nua_cancel_client_methods = {
   SIP_METHOD_CANCEL,
   0,
   { 
@@ -1272,7 +1285,11 @@ static int nua_session_usage_shutdown(nua_handle_t *nh,
     return nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL);
 
   case nua_callstate_terminating:
+  case nua_callstate_terminated: /* XXX */
     return 0;
+
+  default:
+    break;
   }
   
   nua_dialog_usage_remove(nh, ds, du);
@@ -1389,12 +1406,6 @@ static int nua_prack_client_request(nua_client_request_t *cr,
 
   cri = du->du_cr;
 
-  if (cr->cr_tags)
-    tl_gets(cr->cr_tags,
-	    NUTAG_STATUS_REF(status),
-	    NUTAG_PHRASE_REF(phrase),
-	    TAG_END());
-
   if (sip->sip_rack)
     rseq = sip->sip_rack->ra_response;
 
@@ -1419,7 +1430,7 @@ static int nua_prack_client_request(nua_client_request_t *cr,
     }
   }
   /* When 100rel response status was 183 fake support for preconditions */
-  else if (cr->cr_auto && status == 183 && ss->ss_precondition) {
+  else if (cr->cr_auto && cri->cr_status == 183 && ss->ss_precondition) {
     if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
 	session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
@@ -2709,7 +2720,7 @@ static int nua_info_client_request(nua_client_request_t *cr,
 				   msg_t *msg, sip_t *sip,
 				   tagi_t const *tags);
 
-static nua_client_methods_t const nua_info_client_methods = {
+nua_client_methods_t const nua_info_client_methods = {
   SIP_METHOD_INFO,
   0,
   { 
@@ -2720,7 +2731,7 @@ static nua_client_methods_t const nua_info_client_methods = {
   /*nua_info_client_template*/ NULL,
   nua_info_client_init,
   nua_info_client_request,
-  /* nua_info_client_check_restart */ NULL,
+  /*nua_info_client_check_restart*/ NULL,
   /*nua_info_client_response*/ NULL
 };
 

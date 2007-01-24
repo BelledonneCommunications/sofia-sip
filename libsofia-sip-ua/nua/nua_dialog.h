@@ -215,6 +215,12 @@ typedef struct {
 		    nta_outgoing_t *orq,
 		    tagi_t const *tags);
 
+  /** @a crm_deinit is called when a client-side request is destroyed.
+   *
+   * @return The return value should be 0. It is currently ignored.
+   */
+  int (*crm_deinit)(nua_client_request_t *);
+
 } nua_client_methods_t;
 
 /* Client-side request. Documented by nua_client_create() */
