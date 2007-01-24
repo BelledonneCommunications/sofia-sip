@@ -5276,6 +5276,34 @@ int incoming_set_compartment(nta_incoming_t *irq, tport_t *tport, msg_t *msg,
   return 0;
 }
 
+/** Add essential headers to the response message */
+static int nta_incoming_response_headers(nta_incoming_t *irq, 
+					 msg_t *msg,
+					 sip_t *sip)
+{
+  int clone = 0;
+  su_home_t *home = msg_home(msg);
+
+  if (!sip->sip_from)
+    clone = 1, sip->sip_from = sip_from_copy(home, irq->irq_from);
+  if (!sip->sip_to)
+    clone = 1, sip->sip_to = sip_to_copy(home, irq->irq_to);
+  if (!sip->sip_call_id)
+    clone = 1, sip->sip_call_id = sip_call_id_copy(home, irq->irq_call_id);
+  if (!sip->sip_cseq)
+    clone = 1, sip->sip_cseq = sip_cseq_copy(home, irq->irq_cseq);
+  if (!sip->sip_via)
+    clone = 1, sip->sip_via = sip_via_copy(home, irq->irq_via);
+
+  if (clone)
+    msg_set_parent(msg, (msg_t *)irq->irq_home);
+
+  if (!sip->sip_from || !sip->sip_to || !sip->sip_call_id || !sip->sip_cseq || !sip->sip_via)
+    return -1;
+
+  return 0;
+}
+
 /** Complete a response message.
  *
  * @param irq     server transaction object
@@ -5297,7 +5325,6 @@ int nta_incoming_complete_response(nta_incoming_t *irq,
 {
   su_home_t *home = msg_home(msg);
   sip_t *sip = sip_object(msg);
-  int clone = 0;
   int retval;
   ta_list ta;
 
@@ -5307,7 +5334,7 @@ int nta_incoming_complete_response(nta_incoming_t *irq,
   if (status != 0 && (status < 100 || status > 699))
     return su_seterrno(EINVAL), -1;
 
-  if (!sip->sip_status)
+  if (status != 0 && !sip->sip_status)
     sip->sip_status = sip_status_create(home, status, phrase, NULL);
 
   ta_start(ta, tag, value);
@@ -5320,39 +5347,51 @@ int nta_incoming_complete_response(nta_incoming_t *irq,
   if (irq->irq_default)
     return sip_complete_message(msg);
 
-  if (!sip->sip_from)
-    clone = 1, sip->sip_from = sip_from_copy(home, irq->irq_from);
   if (status > 100 && !irq->irq_tag) {
     if (sip->sip_to)
       nta_incoming_tag(irq, sip->sip_to->a_tag);
     else
       nta_incoming_tag(irq, NULL);
   }
-  if (!sip->sip_to)
-    clone = 1, sip->sip_to = sip_to_copy(home, irq->irq_to);
-  if (sip->sip_status && sip->sip_status->st_status > 100 &&
-      irq->irq_tag && sip->sip_to && !sip->sip_to->a_tag)
-    sip_to_tag(home, sip->sip_to, irq->irq_tag);
-  if (!sip->sip_call_id)
-    clone = 1, sip->sip_call_id = sip_call_id_copy(home, irq->irq_call_id);
-  if (!sip->sip_cseq)
-    clone = 1, sip->sip_cseq = sip_cseq_copy(home, irq->irq_cseq);
-  if (!sip->sip_via)
-    clone = 1, sip->sip_via = sip_via_copy(home, irq->irq_via);
-  if (status < 300 && 
-      !sip->sip_record_route && irq->irq_record_route)
-    sip_add_dup(msg, sip, (sip_header_t *)irq->irq_record_route);
 
-  if (clone)
-    msg_set_parent(msg, (msg_t *)irq->irq_home);
-
-  if (retval < 0 || !sip->sip_from || !sip->sip_to || !sip->sip_call_id
-      || !sip->sip_cseq || !sip->sip_via
-      || (status < 300 && irq->irq_record_route && !sip->sip_record_route &&
-	  sip->sip_cseq && sip->sip_cseq->cs_method != sip_method_register))
+  if (nta_incoming_response_headers(irq, msg, sip) < 0)
     return -1;
 
+  if (sip->sip_status && sip->sip_status->st_status > 100 &&
+      irq->irq_tag && sip->sip_to && !sip->sip_to->a_tag)
+    if (sip_to_tag(home, sip->sip_to, irq->irq_tag) < 0)
+      return -1;
+
+  if (status < 300 && !sip->sip_record_route && irq->irq_record_route)
+    if (sip_add_dup(msg, sip, (sip_header_t *)irq->irq_record_route) < 0)
+      return -1;
+
   return sip_complete_message(msg);
+}
+
+
+/** Create a response message for request.
+ *
+ * @NEW_1_12_5.
+ */
+msg_t *nta_incoming_create_response(nta_incoming_t *irq,
+				    int status, char const *phrase)
+{
+  msg_t *msg = NULL;
+  sip_t *sip;
+
+  if (irq) {
+    msg = nta_msg_create(irq->irq_agent, 0);
+    sip = sip_object(msg);
+
+    if (status != 0)
+      sip->sip_status = sip_status_create(msg_home(msg), status, phrase, NULL);
+
+    if (nta_incoming_response_headers(irq, msg, sip) < 0)
+      msg_destroy(msg), msg = NULL;
+  }
+  
+  return msg;
 }
 
 
