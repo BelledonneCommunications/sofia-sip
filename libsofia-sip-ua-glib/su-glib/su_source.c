@@ -25,7 +25,11 @@
 /**
  * @file su_source.c
  * @brief Wrapper for glib GSource.
- * *  
+ *  
+ * Refs: 
+ *  - http://sofia-sip.sourceforge.net/refdocs/su/group__su__wait.html
+ *  - http://developer.gnome.org/doc/API/glib/glib-the-main-event-loop.html
+ *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>.
  * 
  * @date Created: Thu Mar  4 15:15:15 2004 ppessi
@@ -238,6 +242,15 @@ su_root_t *su_root_source_create(su_root_magic_t *magic)
   return su_glib_root_create(magic);
 }
 
+/** 
+ * Returns a GSource object for the root 
+ *
+ * Note that you need to unref the GSource with g_source_unref() 
+ * before destroying the root object.
+ *
+ * @return NULL on error (for instance if root was not created with 
+ *         su_glib_root_create())
+ */
 GSource *su_glib_root_gsource(su_root_t *root)
 {
   g_assert(root);
