@@ -70,6 +70,10 @@ typedef int socklen_t;
 #endif
 #endif
 
+#if HAVE_IPHLPAPI_H
+#include <iphlpapi.h>
+#endif
+
 #include <time.h>
 
 #include "sofia-resolv/sres.h"
@@ -1895,6 +1899,36 @@ int sres_update_config(sres_resolver_t *res, int always, time_t now)
 #define MAX_DATALEN           65535
 
 /**
+ * Uses IP Helper IP to get DNS servers list.
+ */
+static int sres_parse_win32_ip(sres_config_t *c)
+{
+  int ret = -1;
+
+#if HAVE_IPHLPAPI_H
+  DWORD dw;
+  su_home_t *home = c->c_home;
+  ULONG size = sizeof(FIXED_INFO);
+
+  do {
+    FIXED_INFO *info = (FIXED_INFO *)su_alloc(home, size);
+    dw = GetNetworkParams(info, &size);
+    if (dw == ERROR_SUCCESS) {
+      IP_ADDR_STRING* addr = &info->DnsServerList;
+      for (; addr; addr = addr->Next) {
+       SU_DEBUG_3(("Adding nameserver: %s\n", addr->IpAddress.String));
+       sres_parse_nameserver(c, addr->IpAddress.String);
+      }
+      ret = 0;
+    }
+    su_free(home, info);
+  } while (dw == ERROR_BUFFER_OVERFLOW);
+#endif
+
+  return ret;
+}
+
+/**
  * Parses name servers listed in registry key 'key+lpValueName'. The
  * key is expected to contain a whitespace separate list of
  * name server IP addresses.
@@ -2072,7 +2106,7 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res,
 #if _WIN32    
     /* note: no 127.0.0.1 on win32 systems */
     /* on win32, query the registry for nameservers */
-    if (sres_parse_win32_reg(c) == 0) 
+    if (sres_parse_win32_ip(c) == 0 || sres_parse_win32_reg(c) == 0)
       /* success */;
     else
       /* now what? */;
