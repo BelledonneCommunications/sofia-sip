@@ -101,35 +101,41 @@ SOFIA_BEGIN_DECLS
 #define SU_WAIT_MAX    (64)
 
 #else
-#define SU_WAIT_CMP(x, y) 
-#define SU_WAIT_IN      
-#define SU_WAIT_OUT     
-#define SU_WAIT_ERR     
-#define SU_WAIT_HUP     
-#define SU_WAIT_ACCEPT  
-#define SU_WAIT_FOREVER 
-#define SU_WAIT_TIMEOUT 
+/* If nothing works, define these as in Linux poll.h */
+#define SU_WAIT_CMP(x, y) \
+ (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
 
-#define SU_WAIT_INIT
+#define SU_WAIT_IN      0x0001
+#define SU_WAIT_OUT     0x0004
+#define SU_WAIT_CONNECT 0x0004
+#define SU_WAIT_ERR     0x0008
+#define SU_WAIT_HUP     0x0010
+#define SU_WAIT_ACCEPT  0x0001
+#define SU_WAIT_FOREVER (-1)
+#define SU_WAIT_TIMEOUT (-2)
+
+#define SU_WAIT_INIT    { INVALID_SOCKET, 0, 0 }
+
+/** Maximum number of sources supported by su_wait() */
+#define SU_WAIT_MAX    (0x7fffffff)
 
 #endif
 
 /* ---------------------------------------------------------------------- */
 /* Types */
 
-#if 0
-typedef struct _pollfd {
-  su_socket_t fd;           /* file descriptor */
-  short events;     /* requested events */
-  short revents;    /* returned events */
-} su_wait_t;
-#elif SU_HAVE_POLL
+/** Wait object. */
+#if SU_HAVE_POLL
 typedef struct pollfd su_wait_t;
 #elif SU_HAVE_WINSOCK
 typedef HANDLE su_wait_t;
 #else
-/** Wait object. */
-typedef struct os_specific su_wait_t;
+/* typedef struct os_specific su_wait_t; */
+typedef struct _pollfd {
+  su_socket_t fd;   /* file descriptor */
+  short events;     /* requested events */
+  short revents;    /* returned events */
+} su_wait_t;
 #endif
 
 /* Used by AD */

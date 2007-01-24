@@ -189,6 +189,8 @@ int su_wait_destroy(su_wait_t *waitobj)
     WSACloseEvent(*waitobj);
 #elif SU_HAVE_POLL
   su_wait_t w0 = { INVALID_SOCKET, 0, 0 };
+#else
+  su_wait_t w0 = { INVALID_SOCKET, 0, 0 };
 #endif
   assert(waitobj != NULL);
   *waitobj = w0;
