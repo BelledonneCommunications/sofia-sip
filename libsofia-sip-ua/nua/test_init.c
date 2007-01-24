@@ -35,6 +35,8 @@
 
 #include "test_nua.h"
 
+#include <sofia-sip/tport_tag.h>
+
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
 #define __func__ __FUNCTION__
@@ -109,6 +111,7 @@ int test_nua_init(struct context *ctx,
 			       AUTHTAG_DB(passwd_name),
 			       AUTHTAG_QOP("auth-int"),
 			       AUTHTAG_ALGORITHM("md5-sess"),
+			       TAG_IF(ctx->proxy_logging, TPTAG_LOG(1)),
 			       TAG_END());
 
     ctx->proxy_tests = ctx->p != NULL;
@@ -223,6 +226,7 @@ int test_nua_init(struct context *ctx,
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 			  NTATAG_SIP_T1X64(4000),
 			  NUTAG_INSTANCE(ctx->a.instance),
+			  TAG_IF(ctx->a.logging, TPTAG_LOG(1)),
 			  TAG_END());
   TEST_1(ctx->a.nua);
 
@@ -258,6 +262,7 @@ int test_nua_init(struct context *ctx,
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
 			  NUTAG_INSTANCE(ctx->b.instance),
+			  TAG_IF(ctx->b.logging, TPTAG_LOG(1)),
 			  TAG_END());
   TEST_1(ctx->b.nua);
 
@@ -294,6 +299,7 @@ int test_nua_init(struct context *ctx,
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5400 RTP/AVP 8 0"),
 			  NUTAG_INSTANCE(ctx->c.instance),
+			  TAG_IF(ctx->c.logging, TPTAG_LOG(1)),
 			  TAG_END());
   TEST_1(ctx->c.nua);
 

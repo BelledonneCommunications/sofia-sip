@@ -126,9 +126,13 @@ struct context
   int threading, proxy_tests, expensive, quit_on_single_failure, osx_runloop;
   char const *external_proxy;
 
+  int proxy_logging;
+
   struct endpoint {
     char name[4];
     struct context *ctx;	/* Backpointer */
+
+    int logging;
 
     int running;
 

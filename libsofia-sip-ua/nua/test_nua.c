@@ -79,6 +79,10 @@ static char const options_usage[] =
   "   -A                print nua events for A\n"
   "   -B                print nua events for B\n"
   "   -C                print nua events for C\n"
+  "   --log=a           log messages for A\n"
+  "   --log=b           log messages for B\n"
+  "   --log=c           log messages for C\n"
+  "   --log=proxy       log messages for proxy\n"
   "   --attach          print pid, wait for a debugger to be attached\n"
   "   --no-proxy        do not use internal proxy\n"
   "   --no-nat          do not use internal \"nat\"\n"
@@ -203,6 +207,18 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(argv[i], "--loop") == 0) {
       o_alarm = 0, o_loop = 1;
+    }
+    else if (strcmp(argv[i], "--log=a") == 0) {
+      ctx->a.logging = 1;
+    }
+    else if (strcmp(argv[i], "--log=b") == 0) {
+      ctx->b.logging = 1;
+    }
+    else if (strcmp(argv[i], "--log=c") == 0) {
+      ctx->c.logging = 1;
+    }
+    else if (strcmp(argv[i], "--log=proxy") == 0) {
+      ctx->proxy_logging = 1;
     }
 #if SU_HAVE_OSX_CF_API /* If compiled with CoreFoundation events */
     else if (strcmp(argv[i], "--osx-runloop") == 0) {
