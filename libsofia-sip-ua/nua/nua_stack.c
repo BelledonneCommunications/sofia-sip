@@ -2075,7 +2075,7 @@ int nua_client_request_try(nua_client_request_t *cr)
     if (!error)
       return 0;
 
-    if (error > -2)
+    if (error == -1)
       msg_destroy(msg);
   }
 
@@ -2090,7 +2090,8 @@ int nua_client_request_try(nua_client_request_t *cr)
  *
  * @retval 0 if request is pending
  * @retval >=1 if error event has been sent
- * @retval -1 if error occurred but event has not been sent
+ * @retval -1 if error occurred but event has not been sent,
+               and @a msg has not been destroyed
  * @retval -2 if error occurred, event has not been sent,
  *            but @a msg has been destroyed
  */
@@ -2232,7 +2233,7 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 				    msg,
 				    TAG_NEXT(tags));
 
-  return cr->cr_orq ? 0 : -2;
+  return cr->cr_orq ? 0 : -1;
 }
 
 /** Callback for nta client transaction */
