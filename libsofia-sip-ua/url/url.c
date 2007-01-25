@@ -1941,7 +1941,7 @@ void url_string_update(su_md5_t *md5, char const *s)
       n += p;
       /* Ignore password in hash */
       colon = memchr(s, ':', n);
-      p = colon ? colon - s : n;
+      p = colon ? (size_t)(colon - s) : n;
       canon_update(md5, s, p, SIP_USER_UNRESERVED);
       s += n + 1; n = 0;
     }
@@ -1970,7 +1970,7 @@ void url_string_update(su_md5_t *md5, char const *s)
     if (s[n] == '@') {
       /* Ignore password in hash */
       colon = type != url_unknown ? memchr(s, ':', n) : NULL;
-      p = colon ? colon - s : n;
+      p = colon ? (size_t)(colon - s) : n;
       canon_update(md5, s, p, SIP_USER_UNRESERVED);
       s += n + 1;
       n = strcspn(s, "/;?#");	/* Until path, query or fragment */
