@@ -794,13 +794,15 @@ static int nua_register_client_response(nua_client_request_t *cr,
   ready = du && !cr->cr_terminated && status < 300;
 
   if (ready) {
-    msg_t *_reqmsg = nta_outgoing_getrequest(cr->cr_orq);
-    sip_t *req = sip_object(_reqmsg); msg_destroy(_reqmsg);
-
     sip_time_t mindelta = 0;
     sip_time_t now = sip_now(), delta, reqdelta, mdelta;
 
     sip_contact_t const *m, *sent;
+
+    msg_t *_reqmsg = nta_outgoing_getrequest(cr->cr_orq);
+    sip_t *req = sip_object(_reqmsg);
+
+    msg_destroy(_reqmsg);
 
     assert(nr); assert(sip); assert(req);
 
