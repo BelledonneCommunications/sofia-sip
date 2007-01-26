@@ -350,7 +350,7 @@ int test_register_to_c(struct context *ctx)
   sip_t const *sip;
 
   if (print_headings)
-    printf("TEST NUA-2.3.2: REGISTER b to c\n");
+    printf("TEST NUA-2.6.1: REGISTER b to c\n");
 
   nua_set_params(ctx->c.nua,
 		 NUTAG_ALLOW("REGISTER"),
@@ -373,9 +373,6 @@ int test_register_to_c(struct context *ctx)
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(!sip->sip_contact);
 
-  if (print_headings)
-    printf("TEST NUA-2.6.1: PASSED\n");
-
   free_events_in_list(ctx, b->events);
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
@@ -389,7 +386,7 @@ int test_register_to_c(struct context *ctx)
   nua_handle_destroy(c_call->nh), c_call->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-2.3.4: PASSED\n");
+    printf("TEST NUA-2.6.1: PASSED\n");
 
   END();
 }
