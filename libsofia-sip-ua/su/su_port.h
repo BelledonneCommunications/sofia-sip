@@ -128,80 +128,95 @@ typedef struct {
   int (*su_port_multishot)(su_port_t *port, int multishot);
 
   int (*su_port_threadsafe)(su_port_t *port);
-  
   /* Extension from > 1.12.0 */
   int (*su_port_yield)(su_port_t *port);
+  /* Extension from >= 1.12.4 */
+  int (*su_port_wait_events)(su_port_t *port, su_duration_t timeout);
+  int (*su_port_getmsgs)(su_port_t *port);
 } su_port_vtable_t;
 
 SOFIAPUBFUN su_port_t *su_port_create(void)
+     __attribute__((__malloc__));
+
+/* Extension from >= 1.12.5 */
+SOFIAPUBFUN void su_port_prefer(su_port_t *(*implementation)(void));
+
+SOFIAPUBFUN su_port_t *su_epoll_port_create(void)
+     __attribute__((__malloc__));
+SOFIAPUBFUN su_port_t *su_poll_port_create(void)
+     __attribute__((__malloc__));
+SOFIAPUBFUN su_port_t *su_select_port_create(void)
      __attribute__((__malloc__));
 
 SOFIAPUBFUN void su_msg_delivery_report(su_msg_r msg);
 SOFIAPUBFUN su_duration_t su_timer_next_expires(su_timer_t const * t,
 						su_time_t now);
 SOFIAPUBFUN su_root_t *su_root_create_with_port(su_root_magic_t *magic,
-						su_port_t *port);
+						su_port_t *port)
+  __attribute__((__malloc__));
 
-#if SU_PORT_IMPLEMENTATION
+/* ---------------------------------------------------------------------- */
+/* Virtual functions */
 
-#else
-struct su_port_s {
-  su_home_t               sup_home[1];
+typedef struct su_virtual_port_s {
+  su_home_t        sup_home[1];
   su_port_vtable_t const *sup_vtable;
-};
+} su_virtual_port_t;
+
+static inline
+su_home_t *su_port_home(su_port_t const *self)
+{
+  return (su_home_t *)self;
+}
 
 static inline
 void su_port_lock(su_port_t *self, char const *who)
 {
-  if (self) self->sup_vtable->su_port_lock(self, who);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base) base->sup_vtable->su_port_lock(self, who);
 }
 
-#define SU_PORT_LOCK(p, f)      (su_port_lock(p, #f))
- 
 static inline
 void su_port_unlock(su_port_t *self, char const *who)
 {
-  if (self) self->sup_vtable->su_port_unlock(self, who);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base) base->sup_vtable->su_port_unlock(self, who);
 }
-
-#define SU_PORT_UNLOCK(p, f)    (su_port_unlock(p, #f))
 
 static inline
 void su_port_incref(su_port_t *self, char const *who)
 {
-  if (self) self->sup_vtable->su_port_incref(self, who);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base) base->sup_vtable->su_port_incref(self, who);
 }
 
-#define SU_PORT_INCREF(p, f)    (su_port_incref(p, #f))
- 
 static inline
 void su_port_decref(su_port_t *self, char const *who)
 {
-  if (self) self->sup_vtable->su_port_decref(self, 0, who);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base) base->sup_vtable->su_port_decref(self, 0, who);
 }
-
-#define SU_PORT_DECREF(p, f)    (su_port_decref(p, #f))
 
 static inline
 void su_port_zapref(su_port_t *self, char const *who)
 {
-  if (self) self->sup_vtable->su_port_decref(self, 1, who);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base) base->sup_vtable->su_port_decref(self, 1, who);
 }
-
-#define SU_PORT_ZAPREF(p, f)    (su_port_zapref(p, #f))
 
 static inline
 struct _GSource *su_port_gsource(su_port_t *self)
 {
-  return self ? self->sup_vtable->su_port_gsource(self) : NULL;
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  return base ? base->sup_vtable->su_port_gsource(self) : NULL;
 }
-
 
 static inline
 int su_port_send(su_port_t *self, su_msg_r rmsg)
 {
-  if (self) 
-    return self->sup_vtable->su_port_send(self, rmsg);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base) 
+    return base->sup_vtable->su_port_send(self, rmsg);
   errno = EINVAL;
   return -1;
 }
@@ -215,8 +230,9 @@ int su_port_register(su_port_t *self,
 		     su_wakeup_arg_t *arg,
 		     int priority)
 {
-  if (self)
-    return self->sup_vtable->su_port_register(self, root, wait,
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->su_port_register(self, root, wait,
 					      callback, arg, priority);
   errno = EINVAL;
   return -1;
@@ -229,8 +245,9 @@ int su_port_unregister(su_port_t *self,
 		       su_wakeup_f callback, 
 		       su_wakeup_arg_t *arg)
 {
-  if (self)
-    return self->sup_vtable->
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->
       su_port_unregister(self, root, wait, callback, arg);
   errno = EINVAL;
   return -1;
@@ -239,9 +256,9 @@ int su_port_unregister(su_port_t *self,
 static inline
 int su_port_deregister(su_port_t *self, int i)
 {
-  if (self)
-    return self->sup_vtable->
-      su_port_deregister(self, i);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->su_port_deregister(self, i);
   errno = EINVAL;
   return -1;
 }
@@ -250,8 +267,9 @@ static inline
 int su_port_unregister_all(su_port_t *self,
 			   su_root_t *root)
 {
-  if (self)
-    return self->sup_vtable->
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->
       su_port_unregister_all(self, root);
   errno = EINVAL;
   return -1;
@@ -260,10 +278,11 @@ int su_port_unregister_all(su_port_t *self,
 static inline
 int su_port_eventmask(su_port_t *self, int index, int socket, int events)
 {
-  if (self)
-    return self->sup_vtable->
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->
       su_port_eventmask(self, index, socket, events);
-  assert(self);
+  assert(base);
   errno = EINVAL;
   return -1;
 }
@@ -271,22 +290,25 @@ int su_port_eventmask(su_port_t *self, int index, int socket, int events)
 static inline
 void su_port_run(su_port_t *self)
 {
-  if (self)
-    self->sup_vtable->su_port_run(self);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    base->sup_vtable->su_port_run(self);
 }
 
 static inline
 void su_port_break(su_port_t *self)
 {
-  if (self)
-    self->sup_vtable->su_port_break(self);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    base->sup_vtable->su_port_break(self);
 }
 
 static inline
 su_duration_t su_port_step(su_port_t *self, su_duration_t tout)
 {
-  if (self)
-    return self->sup_vtable->su_port_step(self, tout);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->su_port_step(self, tout);
   errno = EINVAL;
   return (su_duration_t)-1;
 }
@@ -295,7 +317,8 @@ su_duration_t su_port_step(su_port_t *self, su_duration_t tout)
 static inline
 int su_port_own_thread(su_port_t const *self)
 {
-  return self == NULL || self->sup_vtable->su_port_own_thread(self);
+  su_virtual_port_t const *base = (su_virtual_port_t *)self;
+  return base == NULL || base->sup_vtable->su_port_own_thread(self);
 }
 
 static inline
@@ -304,8 +327,9 @@ int su_port_add_prepoll(su_port_t *self,
 			su_prepoll_f *prepoll, 
 			su_prepoll_magic_t *magic)
 {
-  if (self)
-    return self->sup_vtable->
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->
       su_port_add_prepoll(self, root, prepoll, magic);
   errno = EINVAL;
   return -1;
@@ -315,8 +339,9 @@ static inline
 int su_port_remove_prepoll(su_port_t *self,
 			   su_root_t *root)
 {
-  if (self)
-    return self->sup_vtable->su_port_remove_prepoll(self, root);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->su_port_remove_prepoll(self, root);
   errno = EINVAL;
   return -1;
 }
@@ -324,8 +349,9 @@ int su_port_remove_prepoll(su_port_t *self,
 static inline
 su_timer_t **su_port_timers(su_port_t *self)
 {
-  if (self)
-    return self->sup_vtable->su_port_timers(self);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->su_port_timers(self);
   errno = EINVAL;
   return NULL;
 }
@@ -333,10 +359,11 @@ su_timer_t **su_port_timers(su_port_t *self)
 static inline
 int su_port_multishot(su_port_t *self, int multishot)
 {
-  if (self)
-    return self->sup_vtable->su_port_multishot(self, multishot);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->su_port_multishot(self, multishot);
 
-  assert(self);
+  assert(base);
   errno = EINVAL;
   return -1;
 }
@@ -344,14 +371,120 @@ int su_port_multishot(su_port_t *self, int multishot)
 static inline
 int su_port_threadsafe(su_port_t *self)
 {
-  if (self)
-    return self->sup_vtable->su_port_threadsafe(self);
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  if (base)
+    return base->sup_vtable->su_port_threadsafe(self);
 
-  assert(self);
+  assert(base);
   errno = EINVAL;
   return -1;
 }
 
+/* ---------------------------------------------------------------------- */
+
+/** Base port object.
+ *
+ * Port is a per-thread reactor. Multiple root objects executed by a single
+ * thread share the su_port_t object.
+ */
+typedef struct su_base_port_s {
+  su_home_t        sup_home[1];
+  su_port_vtable_t const *sup_vtable;
+
+  /* Implementation may vary stuff below, too. */
+  
+  /* Pre-poll callback */
+  su_prepoll_f    *sup_prepoll; 
+  su_prepoll_magic_t *sup_pp_magic;
+  su_root_t       *sup_pp_root;
+
+  /* Message list - this is protected by su_port_lock()/su_port_unlock() */
+  su_msg_t        *sup_head, **sup_tail;
+
+  /* Timer list */
+  su_timer_t      *sup_timers;
+
+  unsigned         sup_running;	  /**< In su_root_run() loop? */
+} su_base_port_t;
+
+/* Base methods */
+
+SOFIAPUBFUN int su_base_port_init(su_port_t *, su_port_vtable_t const *);
+SOFIAPUBFUN void su_base_port_deinit(su_port_t *self);
+
+SOFIAPUBFUN void su_base_port_lock(su_port_t *self, char const *who);
+SOFIAPUBFUN void su_base_port_unlock(su_port_t *self, char const *who);
+
+SOFIAPUBFUN int su_base_port_own_thread(su_port_t const *self);
+
+SOFIAPUBFUN void su_base_port_incref(su_port_t *self, char const *who);
+SOFIAPUBFUN int su_base_port_decref(su_port_t *self,
+				    int blocking,
+				    char const *who);
+
+SOFIAPUBFUN struct _GSource *su_base_port_gsource(su_port_t *self);
+
+SOFIAPUBFUN su_socket_t su_base_port_mbox(su_port_t *self);
+SOFIAPUBFUN int su_base_port_send(su_port_t *self, su_msg_r rmsg);
+SOFIAPUBFUN int su_base_port_getmsgs(su_port_t *self);
+
+SOFIAPUBFUN void su_base_port_run(su_port_t *self);
+SOFIAPUBFUN void su_base_port_break(su_port_t *self);
+SOFIAPUBFUN su_duration_t su_base_port_step(su_port_t *self,
+					    su_duration_t tout);
+
+SOFIAPUBFUN int su_base_port_add_prepoll(su_port_t *self,
+					 su_root_t *root, 
+					 su_prepoll_f *, 
+					 su_prepoll_magic_t *);
+
+SOFIAPUBFUN int su_base_port_remove_prepoll(su_port_t *self, su_root_t *root);
+
+SOFIAPUBFUN su_timer_t **su_base_port_timers(su_port_t *self);
+
+SOFIAPUBFUN int su_base_port_multishot(su_port_t *self, int multishot);
+SOFIAPUBFUN int su_base_port_threadsafe(su_port_t *self);
+SOFIAPUBFUN int su_base_port_yield(su_port_t *self);
+
+/* ---------------------------------------------------------------------- */
+
+#if SU_HAVE_PTHREADS
+
+#include <pthread.h>
+
+#define SU_MBOX_SIZE 2
+
+/** Pthread port object */ 
+typedef struct su_pthread_port_s {
+  su_base_port_t   sup_base[1];
+  pthread_t        sup_tid;
+  pthread_mutex_t  sup_mutex[1];
+  int              sup_mbox_index;
+  su_socket_t      sup_mbox[SU_MBOX_SIZE];
+} su_pthread_port_t;
+
+/* Pthread methods */
+
+SOFIAPUBFUN int su_pthread_port_init(su_port_t *, su_port_vtable_t const *);
+SOFIAPUBFUN void su_pthread_port_deinit(su_port_t *self);
+
+SOFIAPUBFUN void su_pthread_port_lock(su_port_t *self, char const *who);
+SOFIAPUBFUN void su_pthread_port_unlock(su_port_t *self, char const *who);
+
+SOFIAPUBFUN int su_pthread_port_own_thread(su_port_t const *self);
+
+SOFIAPUBFUN int su_pthread_port_send(su_port_t *self, su_msg_r rmsg);
+
+#else
+
+typedef su_base_port_t su_pthread_port_t;
+
+#define su_pthread_port_init   su_base_port_init
+#define su_pthread_port_deinit su_base_port_deinit
+#define su_pthread_port_lock   su_base_port_lock
+#define su_pthread_port_unlock su_base_port_unlock
+#define su_pthread_port_own_thread su_base_port_own_thread
+#define su_pthread_port_send   su_base_port_send
 
 #endif
 

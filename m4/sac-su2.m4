@@ -457,6 +457,20 @@ fi
 SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull \
 		   inet_ntop inet_pton])
 
+# ===========================================================================
+# Check how to implement su_port
+# ===========================================================================
+
+AC_ARG_ENABLE(poll-port,
+[  --disable-poll-port              disable su_poll_port (enabled)
+                                   Use this option in systems emulating poll
+                                   with select], , enable_poll_port=yes)
+
+if test $enable_poll_port = yes ; then
+  if test $ac_cv_func_poll = yes ; then
+    AC_DEFINE([HAVE_POLL_PORT], 1, [Define to 1 if you use poll in su_port.])
+  fi
+fi
 
 # ===========================================================================
 # Check pthread_rwlock_unlock()

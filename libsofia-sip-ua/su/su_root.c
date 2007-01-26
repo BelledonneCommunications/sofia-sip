@@ -136,11 +136,11 @@ su_task_r const su_task_null = SU_TASK_R_INIT;
 
 #define SU_TASK_ZAP(t, f) \
   while (t->sut_port) { \
-   SU_PORT_DECREF(t->sut_port, f); t->sut_port = NULL; break; }
+   su_port_decref(t->sut_port, #f); t->sut_port = NULL; break; }
 
 #define SU_TASK_ZAPP(t, f) \
   do { if (t->sut_port) { \
-   SU_PORT_DECREF(t->sut_port, f); t->sut_port = NULL; } \
+   su_port_decref(t->sut_port, #f); t->sut_port = NULL; } \
    t->sut_root = NULL; } while(0)
 
 /**
@@ -186,7 +186,7 @@ _su_task_r su_task_new(su_task_r task, su_root_t *root, su_port_t *port)
 
   task->sut_root = root;
   if ((task->sut_port = port)) {
-    SU_PORT_INCREF(port, su_task_new);
+    su_port_incref(port, "su_task_new");
   }
   return task;
 }
@@ -207,14 +207,14 @@ void su_task_copy(su_task_r dst, su_task_r const src)
 
   port = src->sut_port;
   if (port) {
-    SU_PORT_INCREF(port, su_task_copy);
+    su_port_incref(port, "su_task_copy");
   }
 
   dst[0] = src[0];
 }
 
 #define SU_TASK_COPY(d, s, by) (void)((d)[0]=(s)[0], \
-  (s)->sut_port?(void)SU_PORT_INCREF(s->sut_port, by):(void)0)
+  (s)->sut_port?(void)su_port_incref(s->sut_port, #by):(void)0)
 
 /**
  * Moves a task handle.
@@ -242,8 +242,10 @@ void su_task_move(su_task_r dst, su_task_r src)
  */
 int su_task_cmp(su_task_r const a, su_task_r const b)
 {
-  intptr_t retval = a->sut_port - b->sut_port;
-  retval = retval ? retval : (char *)a->sut_root - (char *)b->sut_root;
+  intptr_t retval = (char *)a->sut_port - (char *)b->sut_port;
+
+  if (retval == 0)
+    retval = (char *)a->sut_root - (char *)b->sut_root;
 
   if (sizeof(retval) != sizeof(int)) {
     if (retval < 0)
@@ -486,9 +488,13 @@ su_root_t *su_root_create(su_root_magic_t *magic)
   return su_root_create_with_port(magic, su_port_create());
 }
 
-/** Create a reactor object using given message port.
+/**@internal
  *
- * Allocate and initialize the instance of su_root_t.
+ * Create a reactor object using given message port.
+ *
+ * Allocate and initialize the instance of su_root_t. Note that this
+ * function always uses a reference to su_port_t, even when creating the
+ * root fails.
  *
  * @param magic     pointer to user data
  * @param port      pointer to a message port
@@ -512,10 +518,12 @@ su_root_t *su_root_create_with_port(su_root_magic_t *magic,
 #else
     self->sur_threading = 0;
 #endif
+    /* This one creates a new reference to port */
     su_task_new(self->sur_task, self, port);
-  } else {
-    su_port_decref(port, "su_root_create");
-  }
+    /* ... so we zap the old one below */
+  } 
+
+  su_port_decref(port, "su_root_create_with_port");
 
   return self;
 }
@@ -852,12 +860,20 @@ su_duration_t su_root_sleep(su_root_t *self, su_duration_t duration)
 int su_root_yield(su_root_t *self)
 {
   if (self && self->sur_task[0].sut_port) {
-    su_port_t *port = self->sur_task[0].sut_port;
+    su_virtual_port_t *port = (su_virtual_port_t *)self->sur_task[0].sut_port;
+    /* Make sure we have su_port_wait_events extension */
+    if (port->sup_vtable->su_vtable_size >= 
+	offsetof(su_port_vtable_t, su_port_wait_events) 
+	&& port->sup_vtable->su_port_wait_events)
+      return port->sup_vtable->
+	su_port_wait_events(self->sur_task[0].sut_port, 0);
+
     /* Make sure we have su_port_yield extension */
     if (port->sup_vtable->su_vtable_size >= 
 	offsetof(su_port_vtable_t, su_port_yield) 
 	&& port->sup_vtable->su_port_yield)
-      return port->sup_vtable->su_port_yield(port);
+    return port->sup_vtable->
+      su_port_yield(self->sur_task[0].sut_port);
   }
   errno = EINVAL;
   return -1;
@@ -1016,10 +1032,9 @@ static void *su_clone_main(void *varg)
   if (!port)
     pthread_exit(NULL);
   su_port_threadsafe(port);
-  SU_PORT_INCREF(port, su_clone_main);
 
   /* Change task ownership */
-  SU_PORT_INCREF(self->sur_task->sut_port = port, su_clone_main);
+  su_port_incref(self->sur_task->sut_port = port, "su_clone_main");
   self->sur_task->sut_root = self;
 
   if (su_msg_create(arg->clone,
@@ -1057,7 +1072,7 @@ static void *su_clone_main(void *varg)
 
   su_root_destroy(self);   /* Cleanup root */   
 
-  SU_PORT_ZAPREF(port, su_clone_main);
+  su_port_zapref(port, "su_clone_main");
 
 #if SU_HAVE_WINSOCK
   su_deinit();
@@ -1405,12 +1420,9 @@ int su_msg_create(su_msg_r        rmsg,
 		  su_msg_f        wakeup,
 		  isize_t         size)
 {
-  su_port_t *port = to->sut_port;
   su_msg_t *msg;
 
-  SU_PORT_LOCK(port, su_msg_create);
-  msg = su_zalloc(NULL /*port->sup_home*/, sizeof(*msg) + size);
-  SU_PORT_UNLOCK(port, su_msg_create);
+  msg = su_zalloc(NULL, sizeof(*msg) + size);
 
   if (msg) {
     msg->sum_size = sizeof(*msg) + size;
@@ -1522,14 +1534,14 @@ void su_msg_destroy(su_msg_r rmsg)
   if (rmsg[0]) {
     /* su_port_t *port = rmsg[0]->sum_to->sut_port; */
 
-    /* SU_PORT_INCREF(port, su_msg_destroy); */
+    /* su_port_incref(port, "su_msg_destroy"); */
     SU_TASK_ZAP(rmsg[0]->sum_to, su_msg_destroy);
     SU_TASK_ZAP(rmsg[0]->sum_from, su_msg_destroy);
 
     su_free(NULL /* port->sup_home */, rmsg[0]);
     /* SU_PORT_UNLOCK(port, su_msg_destroy); */
 
-    /* SU_PORT_DECREF(port, su_msg_destroy); */
+    /* su_port_decref(port, "su_msg_destroy"); */
   }
 
   rmsg[0] = NULL;

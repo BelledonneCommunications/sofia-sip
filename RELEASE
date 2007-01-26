@@ -29,6 +29,11 @@ libsofia-sip-ua:
 - Added SIP header Refer-Sub and related functions
 - Added <sofia-sip/sip_extra.h> include file
 - Added auc_info() function (sofia-sip/auth_client.h)
+- Added alternative implementations to event reactor object (su_port_t,
+  referenced by su_root_t) that can be changed at runtime
+  - Internal semantics of su_port_t reference counting have changed:
+    now su_port_create() has one reference, and su_root_create_with_port()
+    uses it reference
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 

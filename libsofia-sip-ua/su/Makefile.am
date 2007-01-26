@@ -77,7 +77,9 @@ libsu_la_SOURCES = \
 	su_alloc.c su_alloc_lock.c su_strdup.c su_sprintf.c \
 	su_strlst.c su_vector.c \
 	su_time.c su_time0.c \
-	su_wait.c su_root.c su_timer.c su_port.c su_port.h \
+	su_wait.c su_root.c su_timer.c \
+	su_port.c  su_port.h \
+	su_base_port.c su_pthread_port.c su_poll_port.c su_select_port.c \
 	su_localinfo.c \
 	su_os_nw.c \
 	su_taglist.c su_tag.c su_tag_io.c \

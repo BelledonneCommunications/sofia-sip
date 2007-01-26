@@ -78,8 +78,8 @@ static int test_alloc(void)
 
   d0 = d1a = d1 = d2 = d3 = 0;
   h0->p = &d0; h1->p = &d1a;
-  TEST(su_home_desctructor(h0->home, exdestructor), 0);
-  TEST(su_home_desctructor(h1->home, exdestructor), 0);
+  TEST(su_home_destructor(h0->home, exdestructor), 0);
+  TEST(su_home_destructor(h1->home, exdestructor), 0);
 
   TEST_1(h2 = su_home_ref(h0->home));
   su_home_unref(h0->home);
@@ -95,7 +95,7 @@ static int test_alloc(void)
   TEST(d1a, destructed_once);
 
   TEST_1(h1 = su_home_clone(h0->home, sizeof(*h1)));
-  TEST(su_home_desctructor(h1->home, exdestructor), 0);
+  TEST(su_home_destructor(h1->home, exdestructor), 0);
   h1->p = &d1;
 
   for (i = 0; i < 128; i++)
