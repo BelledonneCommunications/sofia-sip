@@ -48,6 +48,7 @@ char const *name = "su_root_test";
 
 typedef struct root_test_s root_test_t;
 typedef struct test_ep_s   test_ep_t;
+typedef struct test_ep_s   test_ep_at[1];
 
 #define SU_ROOT_MAGIC_T  root_test_t
 #define SU_WAKEUP_ARG_T  test_ep_t
@@ -55,14 +56,15 @@ typedef struct test_ep_s   test_ep_t;
 #include <sofia-sip/su_wait.h>
 #include <sofia-sip/su_alloc.h>
 
-typedef struct test_ep_s {
+struct test_ep_s {
+  test_ep_t     *next, **prev, **list;
   int           i;
   int           s;
   su_wait_t     wait[1];
   int           registered;
   socklen_t     addrlen;
   su_sockaddr_t addr[1];
-} test_ep_at[1];
+};
 
 struct root_test_s {
   su_home_t  rt_home[1];
@@ -82,6 +84,8 @@ struct root_test_s {
   unsigned   rt_success_deinit:1;
 
   test_ep_at rt_ep[5];
+
+  int rt_sockets, rt_woken;
 };
 
 /** Test root initialization */
@@ -179,7 +183,6 @@ static int wakeup4(root_test_t *rt, su_wait_t *w, test_ep_t *ep)
 static
 su_wakeup_f wakeups[5] = { wakeup0, wakeup1, wakeup2, wakeup3, wakeup4 };
 
-
 static
 void test_run(root_test_t *rt)
 {
@@ -271,6 +274,118 @@ static int register_test(root_test_t *rt)
   END();
 }
 
+
+int wakeup_remove(root_test_t *rt, su_wait_t *w, test_ep_t *node)
+{
+  char buffer[64];
+  ssize_t x;
+  test_ep_t *n = node->next; 
+
+  su_wait_events(w, node->s);
+
+  x = recv(node->s, buffer, sizeof(buffer), 0);
+
+  if (x < 0)
+    fprintf(stderr, "%s: %s\n", "recv", su_strerror(su_errno()));
+
+  if (node->prev) {		/* first run */
+    *node->prev = n;
+
+    if (n) {
+      *node->prev = node->next;    
+      node->next->prev = node->prev;
+      sendto(n->s, "foo", 3, 0, (void *)n->addr, n->addrlen);
+    }
+
+    node->next = NULL;
+    node->prev = NULL;
+    
+    if (!*node->list) {
+      su_root_break(rt->rt_root);
+    }
+  }
+  else {			/* second run */
+    if (++rt->rt_woken == rt->rt_sockets)
+      su_root_break(rt->rt_root);
+  }
+
+  return 0;
+}
+
+
+int event_test(root_test_t rt[1])
+{
+  BEGIN();
+  int i = 0, N = 2048;
+  test_ep_t *n, *nodes, *list = NULL;
+  su_sockaddr_t su[1];
+  socklen_t sulen;
+  
+  TEST_1(nodes = calloc(N, sizeof *nodes));
+  
+  memset(su, 0, sulen = sizeof su);
+  su->su_len = sizeof su->su_sin;
+  su->su_family = AF_INET;
+  su->su_sin.sin_addr.s_addr = htonl(0x7f000001); /* 127.0.0.1 */
+
+  for (i = 0; i < N; i++) {
+    n = nodes + i;
+    n->s = su_socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (n->s == INVALID_SOCKET)
+      break;
+
+    n->addrlen = sizeof n->addr;
+
+    if (bind(n->s, (void *)su, sulen) < 0 ||
+	getsockname(n->s, (void *)n->addr, &n->addrlen) ||
+	su_wait_create(n->wait, n->s, SU_WAIT_IN)) {
+      su_close(n->s);
+      break;
+    }
+
+    n->registered = su_root_register(rt->rt_root, n->wait, wakeup_remove, n, 0);
+    if (n->registered < 0) {
+      su_wait_destroy(n->wait);
+      su_close(n->s);
+      break;
+    }
+    
+    n->list = &list, n->prev = &list;
+    if ((n->next = list))
+      n->next->prev = &n->next;
+    list = n;
+  }
+
+  TEST_1(i >= 1);
+
+  N = i;
+
+  /* Wake up socket at a time */
+  n = list; sendto(n->s, "foo", 3, 0, (void *)n->addr, n->addrlen);
+
+  su_root_run(rt->rt_root);
+
+  for (i = 0; i < N; i++) {
+    n = nodes + i;
+    TEST_1(n->prev == NULL);
+    sendto(n->s, "bar", 3, 0, (void *)n->addr, n->addrlen);
+  }
+
+  rt->rt_sockets = N;
+
+  /* Wake up all sockets */
+  su_root_run(rt->rt_root);
+
+  for (i = 0; i < N; i++) {
+    n = nodes + i;
+    su_root_deregister(rt->rt_root, n->registered);
+    TEST_1(su_close(n->s) == 0);
+  }
+
+  END();
+}
+
 int fail_init(su_root_t *root, root_test_t *rt)
 {
   rt->rt_fail_init = 1;
@@ -353,6 +468,7 @@ int main(int argc, char *argv[])
 
   retval |= init_test(rt);
   retval |= register_test(rt);
+  retval |= event_test(rt);
   retval |= clone_test(rt);
   su_root_threading(rt->rt_root, 0);
   retval |= clone_test(rt);

@@ -51,36 +51,13 @@
 #include "su_port.h"
 #include "sofia-sip/su_alloc.h"
 
-/* React to multiple events per one poll() to make sure 
- * that high-priority events can never completely mask other events.
- * Enabled by default on all platforms except WIN32 */
-#if !defined(WIN32)
-#define SU_ENABLE_MULTISHOT_POLL 1
-#else
-#define SU_ENABLE_MULTISHOT_POLL 0
-#endif
-
-#if HAVE_EPOLL
-#include <sys/epoll.h>
-
-#define POLL2EPOLL_NEEDED \
-  (POLLIN != EPOLLIN || POLLOUT != EPOLLOUT || POLLPRI != EPOLLPRI || \
-   POLLERR != EPOLLERR || POLLHUP != EPOLLHUP)
- 
-#define POLL2EPOLL(e) (e & (POLLIN|POLLOUT|POLLPRI|POLLERR|POLLHUP))
-#define EPOLL2POLL(e) (e & (POLLIN|POLLOUT|POLLPRI|POLLERR|POLLHUP))
-
-#endif
-
-/** Port based on poll() or epoll(). */
+/** Port based on poll(). */
 
 struct su_poll_port_s {
   su_pthread_port_t sup_base[1];
 
-#if HAVE_EPOLL
-  /** epoll() fd */
-  int              sup_epoll;
-#endif
+#define sup_home sup_base->sup_base->sup_home
+
   unsigned         sup_multishot; /**< Multishot operation? */
 
   unsigned         sup_registers; /** Counter incremented by 
@@ -173,21 +150,6 @@ static void su_poll_port_deinit(void *arg)
   SU_DEBUG_9(("%s(%p) called\n", "su_poll_port_deinit", self));
 
   su_pthread_port_deinit(self);
-
-  if (self->sup_waits) 
-    free(self->sup_waits), self->sup_waits = NULL;
-  if (self->sup_wait_cbs)
-    free(self->sup_wait_cbs), self->sup_wait_cbs = NULL;
-  if (self->sup_wait_args)
-    free(self->sup_wait_args), self->sup_wait_args = NULL;
-  if (self->sup_wait_roots)
-    free(self->sup_wait_roots), self->sup_wait_roots = NULL;
-  if (self->sup_reverses)
-    free(self->sup_reverses), self->sup_reverses = NULL;
-  if (self->sup_indices)
-    free(self->sup_indices), self->sup_indices = NULL;
-
-  SU_DEBUG_9(("%s(%p) freed registrations\n", "su_poll_port_deinit", self));
 }
 
 static void su_poll_port_decref(su_port_t *self, int blocking, char const *who)
@@ -233,6 +195,7 @@ int su_poll_port_register(su_port_t *self,
     return su_seterrno(ENOMEM);
 
   if (n >= self->sup_size_waits) {
+    su_home_t *h = self->sup_home;
     /* Reallocate size arrays */
     int size;
     int *indices;
@@ -254,7 +217,7 @@ int su_poll_port_register(su_port_t *self,
     if (-3 - size > 0)
       return (errno = ENOMEM), -1;
 
-    indices = realloc(self->sup_indices, (size + 1) * sizeof(*indices));
+    indices = su_realloc(h, self->sup_indices, (size + 1) * sizeof(*indices));
     if (indices) {
       self->sup_indices = indices;
 
@@ -265,27 +228,27 @@ int su_poll_port_register(su_port_t *self,
 	indices[i] = -1 - i;
     }
 
-    reverses = realloc(self->sup_reverses, size * sizeof(*waits));
+    reverses = su_realloc(h, self->sup_reverses, size * sizeof(*waits));
     if (reverses) {
       for (i = self->sup_size_waits; i < size; i++)
 	reverses[i] = -1;
       self->sup_reverses = reverses;
     }
       
-    waits = realloc(self->sup_waits, size * sizeof(*waits));
+    waits = su_realloc(h, self->sup_waits, size * sizeof(*waits));
     if (waits)
       self->sup_waits = waits;
 
-    wait_cbs = realloc(self->sup_wait_cbs, size * sizeof(*wait_cbs));
+    wait_cbs = su_realloc(h, self->sup_wait_cbs, size * sizeof(*wait_cbs));
     if (wait_cbs)
       self->sup_wait_cbs = wait_cbs;
 
-    wait_args = realloc(self->sup_wait_args, size * sizeof(*wait_args));
+    wait_args = su_realloc(h, self->sup_wait_args, size * sizeof(*wait_args));
     if (wait_args)
       self->sup_wait_args = wait_args;
 
     /* Add sup_wait_roots array, if needed */
-    wait_tasks = realloc(self->sup_wait_roots, size * sizeof(*wait_tasks));
+    wait_tasks = su_realloc(h, self->sup_wait_roots, size * sizeof(*wait_tasks));
     if (wait_tasks) 
       self->sup_wait_roots = wait_tasks;
 
@@ -299,22 +262,6 @@ int su_poll_port_register(su_port_t *self,
 
   i = -self->sup_indices[0]; assert(i <= self->sup_size_waits);
 
-#if HAVE_EPOLL
-  if (self->sup_epoll != -1) {
-    struct epoll_event ev;
-
-    ev.events = POLL2EPOLL(wait->events);
-    ev.data.u64 = 0;
-    ev.data.u32 = (uint32_t)i;
-
-    if (epoll_ctl(self->sup_epoll, EPOLL_CTL_ADD, wait->fd, &ev) == -1) {
-      SU_DEBUG_0(("EPOLL_CTL_ADD(%u, %u) failed: %s\n",
-		  wait->fd, ev.events, strerror(errno)));
-      return -1;
-    }
-  }
-  else
-#endif  
   if (priority > 0) {
     /* Insert */
     for (n = self->sup_n_waits; n > 0; n--) {
@@ -361,22 +308,6 @@ static int su_poll_port_deregister0(su_port_t *self, int i, int destroy_wait)
   reverses = self->sup_reverses;
 
   n = indices[i]; assert(n >= 0);
-
-#if HAVE_EPOLL
-  if (self->sup_epoll != -1) {
-    su_wait_t *wait = &self->sup_waits[n];
-    struct epoll_event ev;
-
-    ev.events = POLL2EPOLL(wait->events);
-    ev.data.u64 = (uint64_t)0;
-    ev.data.u32 = (uint32_t)i;
-
-    if (epoll_ctl(self->sup_epoll, EPOLL_CTL_DEL, wait->fd, &ev) == -1) {
-      SU_DEBUG_1(("su_port(%p): EPOLL_CTL_DEL(%u): %s\n", self, 
-		  wait->fd, su_strerror(su_errno())));
-    }
-  }
-#endif
 
   if (destroy_wait)
     su_wait_destroy(&self->sup_waits[n]);
@@ -538,21 +469,6 @@ int su_poll_port_unregister_all(su_port_t *self,
 
     if (wait_roots[i] == root) {
       /* XXX - we should free all resources associated with this, too */
-#if HAVE_EPOLL
-      if (self->sup_epoll != -1) {
-	int fd = waits[i].fd;
-	struct epoll_event ev;
-
-	ev.events = POLL2EPOLL(waits[i].events);
-	ev.data.u64 = (uint64_t)0;
-	ev.data.u32 = (uint32_t)index;
-
-	if (epoll_ctl(self->sup_epoll, EPOLL_CTL_DEL, fd, &ev) == -1) {
-	  SU_DEBUG_1(("EPOLL_CTL_DEL(%u): %s\n", 
-		      waits[i].fd, su_strerror(su_errno())));
-	}
-      }
-#endif
       if (i < self->sup_pri_offset)
 	self->sup_pri_offset--;
 
@@ -612,25 +528,6 @@ int su_poll_port_eventmask(su_port_t *self, int index, int socket, int events)
   if (n < 0)
     return su_seterrno(EBADF);
 
-#if HAVE_EPOLL
-  if (self->sup_epoll != -1) {
-    su_wait_t *wait = &self->sup_waits[n];
-    struct epoll_event ev;
-
-    wait->events = events;
-
-    ev.events = POLL2EPOLL(events);
-    ev.data.u64 = (uint64_t)0;
-    ev.data.u32 = (uint32_t)index;
-
-    if (epoll_ctl(self->sup_epoll, EPOLL_CTL_MOD, wait->fd, &ev) == -1) {
-      SU_DEBUG_1(("su_port(%p): EPOLL_CTL_MOD(%u): %s\n", self, 
-		  wait->fd, su_strerror(su_errno())));
-      return -1;
-    }
-  }
-#endif
-
   return su_wait_mask(&self->sup_waits[n], socket, events);
 }
 
@@ -676,43 +573,6 @@ int su_poll_port_wait_events(su_port_t *self, su_duration_t tout)
   int n = self->sup_n_waits;
   su_root_t *root;
   unsigned version = self->sup_registers;
-
-#if HAVE_EPOLL
-  
-  if (self->sup_epoll != -1) {
-    int const M = 4;
-    struct epoll_event ev[M];
-    int j, index;
-    int *indices = self->sup_indices;
-    
-    n = epoll_wait(self->sup_epoll, ev, 
-		   self->sup_multishot ? M : 1, 
-		   tout);
-
-    assert(n <= M);
-
-    for (j = 0; j < n; j++) {
-      su_root_t *root;
-      su_root_magic_t *magic;
-
-      if (!ev[j].events || ev[j].data.u32 > INDEX_MAX)
-	continue;
-      index = (int)ev[j].data.u32;
-      assert(index > 0 && index <= self->sup_size_waits);
-      i = indices[index]; assert(i >= 0 && i <= self->sup_n_waits);
-      root = self->sup_wait_roots[i];
-      magic = root ? su_root_magic(root) : NULL;
-      waits[i].revents = ev[j].events;
-      self->sup_wait_cbs[i](magic, &waits[i], self->sup_wait_args[i]);
-      events++;
-      /* Callback function used su_register()/su_deregister() */
-      if (version != self->sup_registers)
-	break;
-    }
-    
-    return n < 0 ? n : events;
-  }
-#endif
 
   i = su_wait(waits, (unsigned)n, tout);
 
@@ -791,16 +651,6 @@ su_port_t *su_poll_port_create(void)
     return su_home_unref(su_port_home(self)), NULL;
 
   self->sup_multishot = SU_ENABLE_MULTISHOT_POLL;
-
-#if HAVE_EPOLL
-  self->sup_epoll = epoll_create(su_root_size_hint);
-  if (self->sup_epoll == -1)
-    SU_DEBUG_3(("%s(%p): epoll_create() => %u: %s\n", 
-		"su_port_create", self, self->sup_epoll, strerror(errno)));
-  else
-    SU_DEBUG_9(("%s(%p): epoll_create() => %u: %s\n",
-		"su_port_create", self, self->sup_epoll, "OK"));
-#endif
 
   if (su_pthread_port_init(self, su_poll_port_vtable) < 0)
     return su_home_unref(su_port_home(self)), NULL;

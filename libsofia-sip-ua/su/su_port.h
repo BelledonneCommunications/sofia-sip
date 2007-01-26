@@ -156,6 +156,17 @@ SOFIAPUBFUN su_root_t *su_root_create_with_port(su_root_magic_t *magic,
   __attribute__((__malloc__));
 
 /* ---------------------------------------------------------------------- */
+
+/* React to multiple events per one poll() to make sure 
+ * that high-priority events can never completely mask other events.
+ * Enabled by default on all platforms except WIN32 */
+#if !defined(WIN32)
+#define SU_ENABLE_MULTISHOT_POLL 1
+#else
+#define SU_ENABLE_MULTISHOT_POLL 0
+#endif
+
+/* ---------------------------------------------------------------------- */
 /* Virtual functions */
 
 typedef struct su_virtual_port_s {

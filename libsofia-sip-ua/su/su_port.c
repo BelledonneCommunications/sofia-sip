@@ -44,50 +44,63 @@
 #include <string.h>
 #include <stdlib.h>
 
-static su_port_t *(*create)(void);
+static su_port_t *(*preferred_su_port_create)(void);
 
+/** Explicitly set the preferred su_port_t implementation.
+ *
+ * @sa su_epoll_port_create(), su_poll_port_create(), su_select_port_create()
+ */
 void su_port_prefer(su_port_t *(*implementation)(void))
 {
-  create = implementation;
+  preferred_su_port_create = implementation;
 }
 
 /** Create the preferred su_port_t implementation.
  */
 su_port_t *su_port_create(void)
 {
-  if (create == NULL) {
+  if (preferred_su_port_create == NULL) {
     char const *SU_PORT = getenv("SU_PORT");
+    su_port_t *(*create)(void) = NULL;
 
     if (SU_PORT == NULL)
       ;
 #if HAVE_POLL_PORT
 #if HAVE_EPOLL
-    else if (strcmp("SU_PORT", "epoll") == 0)
+    else if (strcmp(SU_PORT, "epoll") == 0)
       create = su_epoll_port_create;
 #endif
-    else if (strcmp("SU_PORT", "poll") == 0)
+    else if (strcmp(SU_PORT, "poll") == 0)
       create = su_poll_port_create;
+#else
+#error no poll!
 #endif
 #if HAVE_SELECT
-    else if (strcmp("SU_PORT", "select") == 0)
+    else if (strcmp(SU_PORT, "select") == 0)
       create = su_select_port_create;
 #endif
-    else {
+
+    if (create == NULL) {
+      create = su_epoll_port_create;
 #if HAVE_POLL_PORT
 #if HAVE_EPOLL
       create = su_epoll_port_create;
 #else
       create = su_poll_port_create;
 #endif
-#endif
+#else
 #if HAVE_SELECT
       create = su_select_port_create;
 #endif
+#endif
     }
+
+    if (create)
+      preferred_su_port_create = create;
   }
 
-  if (create)
-    return create();
+  if (preferred_su_port_create)
+    return preferred_su_port_create();
 
   return NULL;
 }

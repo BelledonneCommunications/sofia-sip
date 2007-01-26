@@ -57,15 +57,6 @@
 #include <sys/time.h>
 #endif
 
-/* React to multiple events per one select() to make sure 
- * that high-priority events can never completely mask other events.
- * Enabled by default on all platforms except WIN32 */
-#if !defined(WIN32)
-#define SU_ENABLE_MULTISHOT_POLL 1
-#else
-#define SU_ENABLE_MULTISHOT_POLL 0
-#endif
-
 /** Port based on select(). */
 
 struct su_select_port_s {

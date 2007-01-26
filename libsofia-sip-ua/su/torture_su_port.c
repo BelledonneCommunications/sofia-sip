@@ -41,6 +41,9 @@ struct su_root_magic_s;
 
 #include "su_poll_port.c"
 
+#undef HAVE_EPOLL
+#define HAVE_EPOLL 0
+
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
 #define __func__ __FUNCTION__
