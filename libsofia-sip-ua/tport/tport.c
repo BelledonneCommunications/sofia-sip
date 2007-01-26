@@ -2512,7 +2512,7 @@ static int tport_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
 
   su_root_deregister(mr->mr_root, self->tp_index);
   self->tp_index = -1;
-  self->tp_events = SU_WAIT_IN | SU_WAIT_ERR;
+  self->tp_events = SU_WAIT_IN | SU_WAIT_ERR | SU_WAIT_HUP;
   if (su_wait_create(wait, self->tp_socket, self->tp_events) == -1 ||
       (self->tp_index = su_root_register(mr->mr_root, 
 					 wait, tport_wakeup, self, 0))
