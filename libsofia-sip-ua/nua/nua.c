@@ -1104,10 +1104,25 @@ static int nua_stack_handle_make_replaces_call(void *arg)
 
 /**Generate a @Replaces header for handle.
  *
+ * A @Replaces header contains the @CallID value, @From and @To tags
+ * corresponding to SIP dialog associated with handle @a nh. Note that the
+ * @Replaces matches with dialog of the remote peer,
+ * nua_handle_by_replaces() does not return same handle (unless you swap
+ * rp_from_tag and rp_to_tag in @Replaces header).
+ *
+ * A @Replaces header is used in attended transfer, among other things.
+ *
+ * @param nh pointer to operation handle
+ * @param home memory home used to allocate the header
+ * @param early_only if true, include "early-only" parameter in @Replaces, too
+ *
+ * @return A newly created @Replaces header.
+ *
  * @since New in @VERSION_1_12_4.
  *
- * @sa nua_handle_by_replaces(), @Replaces, @RFC3891, nua_refer(),
- * #nua_i_refer, @ReferTo, nta_leg_make_replaces()
+ * @sa nua_handle_by_replaces(), @Replaces, @RFC3891, @RFC3515, nua_refer(),
+ * #nua_i_refer(), @ReferTo, nta_leg_make_replaces(),
+ * sip_headers_as_url_query()
  */
 sip_replaces_t *nua_handle_make_replaces(nua_handle_t *nh,
 					 su_home_t *home,
@@ -1146,7 +1161,7 @@ static int nua_stack_handle_by_replaces_call(void *arg)
  *
  * @note
  * You should release the reference with nua_handle_unref() when you are
- * done with handle.
+ * done with the handle.
  *
  * @sa nua_handle_make_replaces(), @Replaces, @RFC3891, nua_refer(),
  * #nua_i_refer, @ReferTo, nta_leg_by_replaces()

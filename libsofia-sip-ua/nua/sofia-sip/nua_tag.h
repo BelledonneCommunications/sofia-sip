@@ -1864,18 +1864,31 @@ SOFIAPUBFUN char const *nua_callstate_name(enum nua_callstate state);
  * @par Used with
  *    #nua_notify() \n
  *    #nua_r_subscribe \n
- *    #nua_i_notify
+ *    #nua_i_notify \n
+ *    #nua_i_subscribe \n
+ *    #nua_r_notify \n
+ *    nua_notify() \n
+ *    nua_respond() to SUBSCRIBE
  *
  * @par Parameter type
  *    int
  *
  * @par Values
- *   @c nua_substate_embryonic (0) \n
- *   @c nua_substate_pending (1) \n
- *   @c nua_substate_active (2) \n
- *   @c nua_substate_terminated	(3) \n
+ *   - #nua_substate_embryonic (0)
+ *   - #nua_substate_pending (1)
+ *   - #nua_substate_active (2)
+ *   - #nua_substate_terminated (3)
  *
- * @sa @RFC3265
+ * Note that the @SubscriptionState or @Expires headers specified by
+ * application overrides the subscription state specified by
+ * NUTAG_SUBSTATE(). Application can terminate subscription by including
+ * NUTAG_SUBSTATE(nua_substate_terminated), @SubscriptionState with value
+ * "terminated" or @Expires header with value 0 in the NOTIFY request sent
+ * by nua_notify().
+ *
+ * @sa @RFC3265, @SubscriptionState, SIPTAG_SUBSCRIPTION_STATE(),
+ * SIPTAG_SUBSCRIPTION_STATE_STR(), #nua_r_subscribe, #nua_i_subscribe,
+ * #nua_i_refer, #nua_r_notify, #nua_i_notify.
  *
  * Corresponding tag taking reference parameter is NUTAG_SUBSTATE_REF()
  */
