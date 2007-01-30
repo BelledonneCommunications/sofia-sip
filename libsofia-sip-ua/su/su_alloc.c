@@ -196,6 +196,8 @@ void (*su_home_unlocker)(void *mutex);
 void (*su_home_mutex_locker)(void *mutex);
 void (*su_home_mutex_unlocker)(void *mutex);
 
+void (*su_home_destroy_mutexes)(void *mutex);
+
 #define MEMLOCK(h)   \
   (((h) && (h)->suh_lock ? su_home_locker((h)->suh_lock) : (void)0), (h)->suh_blocks)
 #define UNLOCK(h) (((h) && (h)->suh_lock ? su_home_unlocker((h)->suh_lock) : (void)0), NULL)
@@ -949,6 +951,9 @@ void _su_home_deinit(su_home_t *home)
       free(b);
 
     home->suh_blocks = NULL;
+
+    if (home->suh_lock)
+      su_home_destroy_mutexes(home->suh_lock);
   }
 
   home->suh_lock = NULL;

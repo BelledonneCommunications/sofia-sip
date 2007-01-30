@@ -186,6 +186,8 @@ void su_pthread_port_deinit(su_port_t *self)
     su_close(self->sup_mbox[1]); self->sup_mbox[1] = INVALID_SOCKET;
 #endif
 
+  pthread_mutex_destroy(self->sup_mutex);
+
   su_base_port_deinit(self);
 }
 

@@ -48,7 +48,6 @@ char const *name = "su_root_test";
 
 typedef struct root_test_s root_test_t;
 typedef struct test_ep_s   test_ep_t;
-typedef struct test_ep_s   test_ep_at[1];
 
 #define SU_ROOT_MAGIC_T  root_test_t
 #define SU_WAKEUP_ARG_T  test_ep_t
@@ -65,6 +64,8 @@ struct test_ep_s {
   socklen_t     addrlen;
   su_sockaddr_t addr[1];
 };
+
+typedef struct test_ep_s   test_ep_at[1];
 
 struct root_test_s {
   su_home_t  rt_home[1];

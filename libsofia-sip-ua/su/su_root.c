@@ -1087,6 +1087,10 @@ static void su_clone_xyzzy(su_root_magic_t *m,
 			   su_cloned_t *sc)
 {
   su_root_destroy(sc->sc_root);
+
+  pthread_mutex_destroy(sc->sc_pause);
+  pthread_cond_destroy(sc->sc_resume);
+
   if (sc->sc_wait)
     *sc->sc_wait = 0;
 }
@@ -1192,6 +1196,9 @@ int su_clone_start(su_root_t *parent,
       thread_created = 1;
     }
     pthread_mutex_unlock(&arg.mutex);
+
+    pthread_mutex_destroy(&arg.mutex);
+    pthread_cond_destroy(&arg.cv);
 
     if (arg.retval != 0) {
       if (thread_created)
