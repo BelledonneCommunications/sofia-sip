@@ -39,6 +39,7 @@
 #if SU_HAVE_PTHREADS
 #include <pthread.h>
 #include <assert.h>
+#include <stdlib.h>
 
 extern void (*su_home_locker)(void *mutex);
 extern void (*su_home_unlocker)(void *mutex);
@@ -66,6 +67,7 @@ static void mutex_destroy(void *_mutex)
   pthread_mutex_t *mutex = _mutex;
   pthread_mutex_destroy(mutex + 0);
   pthread_mutex_destroy(mutex + 1);
+  free(_mutex);
 }
 
 #endif
@@ -107,7 +109,7 @@ int su_home_threadsafe(su_home_t *home)
     su_home_destroy_mutexes = mutex_destroy;
   }
 
-  mutex = su_alloc(home, 2 * sizeof (pthread_mutex_t));
+  mutex = calloc(1, 2 * (sizeof *mutex));
   assert(mutex);
   if (mutex) {
     /* Mutex for memory operations */
