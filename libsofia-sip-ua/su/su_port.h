@@ -469,7 +469,6 @@ SOFIAPUBFUN int su_base_port_yield(su_port_t *self);
 typedef struct su_pthread_port_s {
   su_base_port_t   sup_base[1];
   pthread_t        sup_tid;
-  pthread_mutex_t  sup_mutex[1];
   int              sup_mbox_index;
   su_socket_t      sup_mbox[SU_MBOX_SIZE];
 } su_pthread_port_t;

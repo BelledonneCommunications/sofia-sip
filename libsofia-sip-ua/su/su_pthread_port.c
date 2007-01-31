@@ -85,14 +85,14 @@ int su_pthread_port_init(su_port_t *self, su_port_vtable_t const *vtable)
 {
   SU_DEBUG_9(("su_pthread_port_init(%p, %p) called\n", self, vtable));
 
-  if (su_base_port_init(self, vtable) == 0) {
+  if (su_base_port_init(self, vtable) == 0 &&
+      su_base_port_threadsafe(self) == 0) {
     int af;
     su_socket_t mb = INVALID_SOCKET;
     su_wait_t wait[1] = { SU_WAIT_INIT };
     char const *why;
 
     self->sup_tid = pthread_self();
-    pthread_mutex_init(self->sup_mutex, NULL);
 
 #if HAVE_SOCKETPAIR
 #if defined(AF_LOCAL)
@@ -186,8 +186,6 @@ void su_pthread_port_deinit(su_port_t *self)
     su_close(self->sup_mbox[1]); self->sup_mbox[1] = INVALID_SOCKET;
 #endif
 
-  pthread_mutex_destroy(self->sup_mutex);
-
   su_base_port_deinit(self);
 }
 
@@ -196,7 +194,7 @@ void su_pthread_port_lock(su_port_t *self, char const *who)
   PORT_LOCK_DEBUG(("%p at %s locking(%p)...",
 		   (void *)pthread_self(), who, self));
 
-  pthread_mutex_lock(self->sup_mutex);
+  su_home_mutex_lock(self->sup_base->sup_home);
 
   PORT_LOCK_DEBUG((" ...%p at %s locked(%p)...", 
 		   (void *)pthread_self(), who, self));
@@ -204,7 +202,7 @@ void su_pthread_port_lock(su_port_t *self, char const *who)
 
 void su_pthread_port_unlock(su_port_t *self, char const *who)
 {
-  pthread_mutex_unlock(self->sup_mutex);
+  su_home_mutex_unlock(self->sup_base->sup_home);
 
   PORT_LOCK_DEBUG((" ...%p at %s unlocked(%p)\n", 
 		   (void *)pthread_self(), who, self));
