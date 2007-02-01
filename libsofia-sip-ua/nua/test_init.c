@@ -224,7 +224,7 @@ int test_nua_init(struct context *ctx,
 			  NUTAG_URL(a_bind),
 			  TAG_IF(a_bind != a_bind2, NUTAG_SIPS_URL(a_bind2)),
 			  SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
-			  NTATAG_SIP_T1X64(4000),
+			  NTATAG_SIP_T1X64(2000),
 			  NUTAG_INSTANCE(ctx->a.instance),
 			  TAG_IF(ctx->a.logging, TPTAG_LOG(1)),
 			  TAG_END());
@@ -262,6 +262,8 @@ int test_nua_init(struct context *ctx,
 			  NUTAG_URL("sip:0.0.0.0:*"),
 			  SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
 			  NUTAG_INSTANCE(ctx->b.instance),
+			  /* Quicker timeout */
+			  NTATAG_SIP_T1X64(2000),
 			  TAG_IF(ctx->b.logging, TPTAG_LOG(1)),
 			  TAG_END());
   TEST_1(ctx->b.nua);

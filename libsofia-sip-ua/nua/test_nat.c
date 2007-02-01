@@ -91,6 +91,8 @@ struct nat {
 
   struct binding *bindings;
 
+  struct nat_filter *in_filters, *out_filters;
+
   /* True if we act in symmetric way */
   int symmetric;
   /* True if we do logging */
@@ -152,6 +154,14 @@ static int tcp_in_to_out(struct nat *, su_wait_t *wait, struct binding *);
 static int tcp_out_to_in(struct nat *, su_wait_t *wait, struct binding *);
 
 static int invalidate_binding(struct binding *b);
+
+LIST_PROTOS(static, nat_filter, struct nat_filter);
+
+struct nat_filter
+{
+  struct nat_filter *next, **prev;
+  int (*condition)(void const *message, size_t len);
+};
 
 /* nat entry point */
 static int
@@ -670,6 +680,7 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
 {
   int events;
   ssize_t n, m;
+  struct nat_filter *f;
 
   events = su_wait_events(wait, b->in_socket);
 
@@ -677,6 +688,15 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
   if (n < 0) {
     su_perror("udp_in_to_out: recv");
     return 0;
+  }
+
+  for (f = nat->out_filters; f; f = f->next) {
+    if (f->condition(nat->buffer, (size_t)n)) {
+      if (nat->logging)
+	printf("nat: udp filtered %d %s => %s\n",
+	       (int)n, b->in_name, b->out_name);
+      return 0;
+    }
   }
 
   if (nat->symmetric)
@@ -696,6 +716,7 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 {
   int events;
   ssize_t n, m;
+  struct nat_filter *f;
 
   events = su_wait_events(wait, b->out_socket);
 
@@ -703,6 +724,15 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
   if (n < 0) {
     su_perror("udp_out_to_out: recv");
     return 0;
+  }
+
+  for (f = nat->in_filters; f; f = f->next) {
+    if (f->condition(nat->buffer, (size_t)n)) {
+      if (nat->logging)
+	printf("nat: udp filtered %d %s => %s\n",
+	       (int)n, b->out_name, b->in_name);
+      return 0;
+    }
   }
 
   m = su_send(b->in_socket, nat->buffer, n, 0);
@@ -880,5 +910,74 @@ static int invalidate_binding(struct binding *b)
   if (nat->logging)
     printf("nat: flushed binding %s <=> %s\n", b->in_name, b->out_name);
 
+  return 0;
+}
+
+LIST_BODIES(static, nat_filter, struct nat_filter, next, prev);
+
+struct args {
+  struct nat *nat;
+  struct nat_filter *f;
+  int outbound;
+};
+
+int execute_nat_filter_insert(void *_args)
+{
+  struct args *a = (struct args *)_args;
+  if (a->outbound)
+    nat_filter_insert(&a->nat->out_filters, a->f);
+  else
+    nat_filter_insert(&a->nat->in_filters, a->f);
+  return 0;
+}
+
+int execute_nat_filter_remove(void *_args)
+{
+  struct args *a = (struct args *)_args;
+  nat_filter_remove(a->f);
+  return 0;
+}
+
+struct nat_filter *test_nat_add_filter(struct nat *nat,
+				       int (*condition)(void const *message,
+							size_t len),
+				       int outbound)
+{
+  struct args a[1];
+
+  if (nat == NULL)
+    return su_seterrno(EFAULT), NULL;
+
+  a->nat = nat;
+  a->f = su_zalloc(nat->home, sizeof *a->f);
+  a->outbound = outbound;
+
+  if (a->f) {
+    a->f->condition = condition;
+    if (su_task_execute(su_clone_task(nat->clone),
+			execute_nat_filter_insert, a, NULL) < 0)
+      su_free(nat->home, a->f), a->f = NULL;
+  }
+
+  return a->f;
+}
+
+
+int test_nat_remove_filter(struct nat *nat,
+			   struct nat_filter *filter)
+{
+  struct args a[1];
+
+  if (nat == NULL)
+    return su_seterrno(EFAULT);
+
+  a->nat = nat;
+  a->f = filter;
+  
+  if (su_task_execute(su_clone_task(nat->clone),
+		      execute_nat_filter_remove, a, NULL) < 0)
+    return -1;
+
+  su_free(nat->home, filter);
   return 0;
 }

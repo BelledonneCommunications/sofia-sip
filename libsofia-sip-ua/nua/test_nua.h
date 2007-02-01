@@ -332,6 +332,7 @@ int test_reject_b(struct context *ctx);
 int test_reject_302(struct context *ctx);
 int test_reject_401(struct context *ctx);
 int test_mime_negotiation(struct context *ctx);
+int test_call_timeouts(struct context *ctx);
 int test_reject_401_aka(struct context *ctx);
 int test_call_cancel(struct context *ctx);
 int test_call_destroy(struct context *ctx);

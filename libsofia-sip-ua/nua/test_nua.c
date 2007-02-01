@@ -231,8 +231,10 @@ int main(int argc, char *argv[])
     else if (argv[i][0] != '-') {
       break;
     }
-    else
+    else {
+      fprintf(stderr, "test_nua: unknown argument \"%s\"\n\n", argv[i]);
       usage(1);
+    }
   }
 
   if (o_attach) {
@@ -301,13 +303,13 @@ int main(int argc, char *argv[])
       retval |= test_nat_timeout(ctx);
 
     while (retval == 0) {
-      retval |= test_extension(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_302(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_401(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_mime_negotiation(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_call_timeouts(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reject_401_aka(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_destroy(ctx); SINGLE_FAILURE_CHECK();
@@ -318,6 +320,7 @@ int main(int argc, char *argv[])
       retval |= test_100rel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_events(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_simple(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_extension(ctx); SINGLE_FAILURE_CHECK();
       if (!o_loop)
 	break;
     }
