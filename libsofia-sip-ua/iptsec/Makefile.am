@@ -77,4 +77,5 @@ EXTRA_DIST = 		Doxyfile iptsec.docs testpasswd \
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
-include ../sofia.am
+include $(top_srcdir)/rules/sofia.am
+

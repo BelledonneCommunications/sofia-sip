@@ -100,7 +100,7 @@ dist_noinst_SCRIPTS = 	run_test_sip_msg run_test_date
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
-include ../sofia.am
+include $(top_srcdir)/rules/sofia.am
 
 MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
 

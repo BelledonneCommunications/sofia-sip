@@ -1,7 +1,7 @@
-# common Makefile targets for libsofia-sip-ua modules
-# ---------------------------------------------------
+# common Makefile targets for libsofia-sip-ua(-glib) modules
+# ----------------------------------------------------------
 
-AM_CFLAGS = $(CWFLAG) $(SOFIA_CFLAGS) $(SOFIA_COVERAGE)
+AM_CFLAGS = $(CWFLAG) $(SOFIA_COVERAGE)
 
 # Use with --enable-ndebug
 if NDEBUG
@@ -56,3 +56,5 @@ INTERNAL_INCLUDES = \
 	-I$(srcdir)/../stun -I../stun \
 	-I$(srcdir)/../url -I../url \
 	-I$(srcdir)/../su -I../su
+
+include $(top_srcdir)/rules/valcheck.am

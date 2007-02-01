@@ -38,26 +38,13 @@ libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
 				stun/libstun.la \
 				tport/libtport.la \
 				url/liburl.la
+
 # set the libtool version info version:revision:age for libsofia-sip-ua
 # - soname to 'libsofia-sip-ua.so.(CUR-AGE)'
 libsofia_sip_ua_la_LDFLAGS = \
 	-version-info $(LIBVER_SOFIA_SIP_UA_CUR):$(LIBVER_SOFIA_SIP_UA_REV):$(LIBVER_SOFIA_SIP_UA_AGE)
 
-if ENABLE_COVERAGE
-COVERAGE_RECURSIVE = coverage-recursive
-coverage: $(COVERAGE_RECURSIVE)
-endif
-
-all-recursive: built-sources-recursive
-built-sources: built-sources-recursive 
-clean-built-sources: clean-built-sources-recursive
-
-built-sources-recursive clean-built-sources-recursive $(COVERAGE_RECURSIVE):
-	target=`echo $@ | sed s/-recursive//`; \
-	list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
-	  echo "Making $@ in $$subdir"; \
-	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target) \
-	done;
+include $(top_srcdir)/rules/recursive.am
 
 doxygen: built-sources
 	@echo Generating empty doxytags
