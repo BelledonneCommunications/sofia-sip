@@ -808,6 +808,8 @@ static int nua_invite_client_report(nua_client_request_t *cr,
   if (orq != cr->cr_orq && status != 100)
     return 1;
 
+  ss->ss_reporting = 1;
+
   if (ss == NULL) {
     next_state = nua_callstate_terminated;
   }
@@ -817,9 +819,7 @@ static int nua_invite_client_report(nua_client_request_t *cr,
   else if (status < 300 && cr->cr_graceful) {
     next_state = nua_callstate_terminating;
     if (200 <= status) {
-      ss->ss_reporting = 1;
       nua_invite_client_ack(cr, NULL);
-      ss->ss_reporting = 0;
     }
   }
   else if (status < 200) {
@@ -833,12 +833,9 @@ static int nua_invite_client_report(nua_client_request_t *cr,
       rack->ra_method      = sip->sip_cseq->cs_method;
       rack->ra_method_name = sip->sip_cseq->cs_method_name;
 
-      ss->ss_reporting = 1;
       error = nua_client_tcreate(nh, nua_r_prack, &nua_prack_client_methods, 
 				 SIPTAG_RACK(rack),
 				 TAG_END());
-      ss->ss_reporting = 0;
-
       if (error < 0) {
 	cr->cr_graceful = 1;
 	next_state = nua_callstate_terminating;
@@ -859,8 +856,10 @@ static int nua_invite_client_report(nua_client_request_t *cr,
   }
 
   if (next_state == nua_callstate_calling) {
-    if (sip && sip->sip_status && sip->sip_status->st_status == 100)
+    if (sip && sip->sip_status && sip->sip_status->st_status == 100) {
+      ss->ss_reporting = 0;
       return 1;
+    }
   }
 
   if (next_state == nua_callstate_completing) {
@@ -869,25 +868,30 @@ static int nua_invite_client_report(nua_client_request_t *cr,
 	(ss->ss_state == nua_callstate_ready &&
 	 !NH_PISSET(nh, auto_ack))) {
 
-      ss->ss_reporting = 1;
-
       if (nua_invite_client_ack(cr, NULL) > 0)
 	next_state = nua_callstate_ready;
       else
 	next_state = nua_callstate_terminating;
-
-      ss->ss_reporting = 0;
     }
   }
 
   if (next_state == nua_callstate_terminating) {
-    /* Send BYE */
-    error = nua_stack_bye(nh->nh_nua, nh, nua_r_bye, NULL);
-    if (error < 0) {
+    /* Send BYE or CANCEL */
+    /* XXX - Forking - send BYE to early dialog?? */
+    if (ss->ss_state > nua_callstate_proceeding || status >= 200)
+      error = nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL);
+    else
+      error = nua_client_create(nh, nua_r_cancel, 
+				&nua_cancel_client_methods, tags);
+
+    if (error) {
       next_state = nua_callstate_terminated;
       cr->cr_terminated = 1;
     }
+    cr->cr_graceful = 0;
   }
+
+  ss->ss_reporting = 0;
 
   signal_call_state_change(nh, ss, status, phrase, next_state);
 
@@ -939,8 +943,15 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   }
 
   if (nua_invite_client_ack(du->du_cr, tags) < 0) {
+    int error;
     ss->ss_reason = "SIP;cause=500;text=\"Internal Error\"";
-    nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL);
+    ss->ss_reporting = 1;	/* We report state here if BYE fails */
+    error = nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL);
+    ss->ss_reporting = 0;
+    signal_call_state_change(nh, ss, 500, "Internal Error", 
+			     error 
+			     ? nua_callstate_terminated
+			     : nua_callstate_terminating);
   }
 
   return 0;
@@ -1046,9 +1057,9 @@ int nua_invite_client_ack_msg(nua_client_request_t *cr,
   else if (cr->cr_offer_recv && !cr->cr_answer_sent) {
     if (soa_generate_answer(nh->nh_soa, NULL) < 0 ||
 	session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
-      reason = soa_error_as_sip_reason(nh->nh_soa);
       status = 900, phrase = "Internal media error";
       reason = "SIP;cause=500;text=\"Internal media error\"";
+      /* reason = soa_error_as_sip_reason(nh->nh_soa); */
     }
     else {
       cr->cr_answer_sent = 1;
@@ -1081,14 +1092,8 @@ int nua_invite_client_ack_msg(nua_client_request_t *cr,
     if (reason)
       ss->ss_reason = reason;
 
-    if (!ss->ss_reporting) {
-      unsigned next_state;
-      if (status < 300) 
-	next_state = nua_callstate_ready;
-      else 
-	next_state = nua_callstate_terminating;
-      signal_call_state_change(nh, ss, status, phrase, next_state);
-    }
+    if (!ss->ss_reporting && status < 300)
+      signal_call_state_change(nh, ss, status, phrase, nua_callstate_ready);
   }
   
   return status < 300 ? 1 : -2;
@@ -1289,7 +1294,9 @@ static int nua_session_usage_shutdown(nua_handle_t *nh,
       else if (cri->cr_status < 300)
 	nua_invite_client_ack(cri, NULL);
     }
-    return nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL);
+    if (nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL) != 0)
+      break;
+    return 0;
 
   case nua_callstate_terminating:
   case nua_callstate_terminated: /* XXX */
@@ -2120,6 +2127,7 @@ int process_ack(nua_server_request_t *sr,
   if (nh->nh_soa && sr->sr_offer_sent && !sr->sr_answer_recv) {
     char const *sdp;
     size_t len;
+    int error;
 
     if (!session_get_description(sip, &sdp, &len) ||
 	!(recv = "answer") ||
@@ -2140,12 +2148,14 @@ int process_ack(nua_server_request_t *sr,
 
       ss->ss_oa_recv = recv;
 
-      signal_call_state_change(nh, ss, 488, "Offer-Answer Error",
-			       nua_callstate_terminating);
+      ss->ss_reporting = 1;	/* We report state here if BYE fails */
+      error = nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL);
+      ss->ss_reporting = 0;
 
-      nua_client_tcreate(nh, nua_r_bye, &nua_bye_client_methods,
-			 SIPTAG_REASON_STR(reason),
-			 TAG_END());
+      signal_call_state_change(nh, ss, 488, "Offer-Answer Error",
+			       error
+			       ? nua_callstate_terminated
+			       : nua_callstate_terminating);
 
       return 0;
     }
@@ -2208,32 +2218,41 @@ int process_timeout(nua_server_request_t *sr,
 {
   nua_handle_t *nh = sr->sr_owner;
   nua_session_usage_t *ss = nua_dialog_usage_private(sr->sr_usage);
+  char const *phrase = "ACK Timeout";
+  char const *reason = "SIP;cause=408;text=\"ACK Timeout\"";
+  int error;
 
   assert(ss); assert(ss == nua_session_usage_get(nh->nh_ds));
 
-  nua_stack_event(nh->nh_nua, nh, 0, nua_i_error,
-		  408, "Response timeout",
-		  NULL);
+  if (nua_server_request_is_pending(sr)) {
+    phrase = "PRACK Timeout";
+    reason = "SIP;cause=504;text=\"PRACK Timeout\"";
+  }
+
+  nua_stack_event(nh->nh_nua, nh, 0, nua_i_error, 408, phrase, NULL);
 
   if (nua_server_request_is_pending(sr)) {
     /* PRACK timeout */
     SR_STATUS1(sr, SIP_504_GATEWAY_TIME_OUT);
     nua_server_trespond(sr, 
-			SIPTAG_REASON_STR("SIP;cause=504;"
-					  "text=\"PRACK Timeout\""),
+			SIPTAG_REASON_STR(reason),
 			TAG_END());
     if (nua_server_report(sr) >= 2)
       return 0;			/* Done */
     sr = NULL;
   }
 
-  /* send BYE, too if 200 OK (or 183 to re-INVITE) timeouts  */
-  signal_call_state_change(nh, ss, 0, "Timeout", nua_callstate_terminating);
+  /* send BYE, too, if 200 OK (or 183 to re-INVITE) timeouts  */
+  ss->ss_reason = reason;
 
-  nua_stack_post_signal(nh, nua_r_bye,
-			SIPTAG_REASON_STR("SIP;cause=408;"
-					  "text=\"ACK Timeout\""),
-			TAG_END());
+  ss->ss_reporting = 1;		/* We report state here if BYE fails */
+  error = nua_client_create(nh, nua_r_bye, &nua_bye_client_methods, NULL);
+  ss->ss_reporting = 0;
+
+  signal_call_state_change(nh, ss, 0, phrase,
+			   error
+			   ? nua_callstate_terminated
+			   : nua_callstate_terminating);
 
   if (sr)
     nua_server_request_destroy(sr);
@@ -3321,10 +3340,13 @@ static int nua_bye_client_init(nua_client_request_t *cr,
   nua_dialog_usage_t *du = nua_dialog_usage_for_session(nh->nh_ds);
   nua_session_usage_t *ss = nua_dialog_usage_private(du);
 
-  if (!ss || ss->ss_state >= nua_callstate_terminating)
+  if (!ss || (ss->ss_state >= nua_callstate_terminating && !cr->cr_auto))
     return nua_client_return(cr, 900, "Invalid handle for BYE", msg);
 
-  ss->ss_state = nua_callstate_terminating;
+  if (!cr->cr_auto)
+    /* Implicit state transition by nua_bye() */
+    ss->ss_state = nua_callstate_terminating;
+
   if (nh->nh_soa)
     soa_terminate(nh->nh_soa, 0);
   cr->cr_usage = du;
@@ -3345,7 +3367,6 @@ static int nua_bye_client_request(nua_client_request_t *cr,
 
   ss = nua_dialog_usage_private(du);
   reason = ss->ss_reason;
-  ss->ss_state = nua_callstate_terminating;
 
   return nua_base_client_trequest(cr, msg, sip,
 				  SIPTAG_REASON_STR(reason),
@@ -3403,7 +3424,7 @@ static int nua_bye_client_report(nua_client_request_t *cr,
     signal_call_state_change(nh, ss, status, "to BYE", 
 			     nua_callstate_terminated);
 
-    if (!nua_client_is_queued(du->du_cr)) {
+    if (ss && !ss->ss_reporting && !nua_client_is_queued(du->du_cr)) {
       /* Do not destroy session usage while INVITE is alive */
       nua_session_usage_destroy(nh, ss);
     }
@@ -3533,6 +3554,9 @@ static void signal_call_state_change(nua_handle_t *nh,
   char const *oa_sent = NULL;
 
   int offer_recv = 0, answer_recv = 0, offer_sent = 0, answer_sent = 0;
+
+  if (ss && ss->ss_reporting)
+    return;
 
   if (ss) {
     ss_state = ss->ss_state;
