@@ -227,9 +227,10 @@ AC_CHECK_HEADERS([winsock2.h], [
      GetSystemTimeAsFileTime().])
 ],[
 dnl no winsock2
+
 SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define to 1 if you have BSD socket interface])
 AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h \
-		  sys/select.h])
+		  sys/select.h sys/epoll.h])
 AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
                   net/if.h net/if_types.h ifaddr.h netpacket/packet.h],,,
 		[
@@ -441,7 +442,8 @@ if test $ac_cv_func_poll = yes ; then
   SAC_SU_DEFINE([SU_HAVE_POLL], 1, [Define to 1 if you have poll().])
 fi
 
-if test $ac_cv_func_epoll_create = yes ; then
+if test $ac_cv_func_epoll_create = yes && test $ac_cv_header_sys_epoll_h = yes
+then
   AC_DEFINE([HAVE_EPOLL], 1, [Define to 1 if you have epoll interface.])
 fi
 
