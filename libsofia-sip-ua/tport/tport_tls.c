@@ -55,7 +55,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 
 #include "tport_tls.h"
 
@@ -161,9 +160,6 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
       /* return -1; */
     }
   }
-
-  /* Avoid possible SIGPIPE when sending close_notify */
-  signal(SIGPIPE, SIG_IGN);
 
   if (tls->bio_err == NULL)
     tls->bio_err = BIO_new_fp(stderr, BIO_NOCLOSE);
@@ -294,8 +290,6 @@ tls_t *tls_init_master(tls_issues_t *ti)
   /* Default id in case RAND fails */ 
   unsigned char sessionId[32] = "sofia/tls"; 
   tls_t *tls;
-
-  signal(SIGPIPE, SIG_IGN);  /* Ignore spurios SIGPIPE from OpenSSL */
 
   tls_set_default(ti);
 

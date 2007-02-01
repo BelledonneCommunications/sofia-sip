@@ -429,9 +429,10 @@ AC_SEARCH_LIBS(getipnodebyname, xnet socket nsl)
 AC_SEARCH_LIBS(gethostbyname, xnet nsl)
 AC_SEARCH_LIBS(getaddrinfo, xnet socket nsl)
 
-AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock alarm \
+AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock \
                 socketpair gethostname gethostbyname getipnodebyname \
                 poll epoll_create select if_nameindex \
+		signal alarm \
 	        getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs \
                 getline getdelim getpass])
 # getline getdelim getpass are _GNU_SOURCE stuff
@@ -456,6 +457,14 @@ fi
 
 SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull \
 		   inet_ntop inet_pton])
+
+if test $ac_cv_func_signal = yes ; then
+AC_CHECK_DECL([SIGPIPE], [
+AC_DEFINE([HAVE_SIGPIPE], 1, [Define to 1 if you have SIGPIPE])],,[
+#include <signal.h>
+])
+dnl add SIGHUP SIGQUIT if needed
+fi
 
 # ===========================================================================
 # Check how to implement su_port

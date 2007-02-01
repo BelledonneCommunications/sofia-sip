@@ -104,10 +104,6 @@ AC_HEADER_STDC
 
 ### checks for declarations
 ### -----------------------
-AC_CHECK_DECL([SIGPIPE], [
-AC_DEFINE([HAVE_SIGPIPE], 1, [Define to 1 if you have SIGPIPE])],,[
-#include <signal.h>
-])
 
 ### checks for types
 ### ----------------
