@@ -48,22 +48,10 @@
 
 struct su_root_s;
 
-typedef struct su_cloned_s {
-  struct su_root_s *sc_root;
-  int *sc_wait;
-#if SU_HAVE_PTHREADS
-  pthread_t  sc_tid;
-  pthread_mutex_t sc_pause[1];
-  pthread_cond_t sc_resume[1];
-  int sc_paused;
-#endif  
-} su_cloned_t;
-
 #define SU_ROOT_MAGIC_T struct su_root_magic_s
 #define SU_WAKEUP_ARG_T struct su_wakeup_arg_s
 #define SU_TIMER_ARG_T  struct su_timer_arg_s
 #define SU_CLONE_T      su_msg_t
-#define SU_MSG_ARG_T    struct su_cloned_s
 
 #include "su_port.h"
 #include "sofia-sip/su_alloc.h"
@@ -331,32 +319,7 @@ su_timer_t **su_task_timers(su_task_r const task)
   return task ? su_port_timers(task->sut_port) : NULL;
 }
 
-#if SU_HAVE_PTHREADS
-
-struct su_task_execute
-{
-  pthread_mutex_t mutex[1];
-  pthread_cond_t cond[1];
-  int (*function)(void *);
-  void *arg;
-  int value;
-};
-
-static void _su_task_execute(su_root_magic_t *m,
-			     su_msg_r msg,
-			     su_msg_arg_t *a)
-{
-  struct su_task_execute *frame = *(struct su_task_execute **)a;
-  pthread_mutex_lock(frame->mutex);
-  frame->value = frame->function(frame->arg);
-  frame->function = NULL;	/* Mark as completed */
-  pthread_cond_signal(frame->cond);
-  pthread_mutex_unlock(frame->mutex);
-}
-
-#endif
-
-/** Execute by task thread
+/** Execute the @a function by @a task thread.
  *
  * @retval 0 if successful
  * @retval -1 upon an error
@@ -369,42 +332,7 @@ int su_task_execute(su_task_r const task,
     return (errno = EFAULT), -1;
 
   if (!su_port_own_thread(task->sut_port)) {
-#if SU_HAVE_PTHREADS
-    int success;
-    su_msg_r m = SU_MSG_R_INIT;
-    struct su_task_execute frame = {
-      { PTHREAD_MUTEX_INITIALIZER },
-      { PTHREAD_COND_INITIALIZER },
-      function, arg, 0
-    };
-
-    if (su_msg_create(m, task, su_task_null,
-		      _su_task_execute, (sizeof &frame)) < 0)
-      return -1;
-
-    *(struct su_task_execute **)su_msg_data(m) = &frame;
-
-    pthread_mutex_lock(frame.mutex);
-
-    success = su_msg_send(m);
-
-    if (success == 0)
-      while (frame.function)
-	pthread_cond_wait(frame.cond, frame.mutex);
-    else
-      su_msg_destroy(m);
-
-    pthread_mutex_unlock(frame.mutex);
-    pthread_mutex_destroy(frame.mutex);
-    pthread_cond_destroy(frame.cond);
-
-    if (return_value)
-      *return_value = frame.value;
-
-    return success;
-#else
-    return (errno = ENOSYS), -1;
-#endif
+    return su_port_execute(task, function, arg, return_value);
   }
   else {
     int value = function(arg);
@@ -465,8 +393,6 @@ int su_timer_reset_all(su_timer_t **t0, su_task_r);
  * task may not call su_root_break(), su_root_run() or su_root_step().
  */
 
-static void su_root_deinit(su_root_t *self);
-
 /* Note that is *not* necessary same as su_root_t,
  * as su_root_t can be extended */
 
@@ -509,7 +435,7 @@ su_root_t *su_root_create_with_port(su_root_magic_t *magic,
   if (!port)
     return NULL;
 
-  self = su_salloc(NULL, sizeof(struct su_root_s));
+  self = su_salloc(su_port_home(port), sizeof(struct su_root_s));
 
   if (self) {
     self->sur_magic = magic;
@@ -528,7 +454,7 @@ su_root_t *su_root_create_with_port(su_root_magic_t *magic,
   return self;
 }
 
-/** Destroy a synchronization object.
+/** Destroy a root object.
  * 
  *  Stop and free an instance of su_root_t
  *
@@ -536,21 +462,14 @@ su_root_t *su_root_create_with_port(su_root_magic_t *magic,
  */
 void su_root_destroy(su_root_t *self)
 {
-  if (self) {
-    assert(SU_ROOT_OWN_THREAD(self));
-    su_root_deinit(self);
-    su_free(NULL, self);
-  }
-}
+  su_port_t *port;
+  int unregistered, reset;
 
-/** @internal Deinitialize a synchronization object.
- *
- *  Deinitialize an instance of su_root_t
- *
- * @param self     pointer to a root object.
- */
-static void su_root_deinit(su_root_t *self)
-{
+  if (!self)
+    return;
+
+  assert(SU_ROOT_OWN_THREAD(self));
+
   self->sur_deiniting = 1;
 
   if (self->sur_deinit) {
@@ -560,17 +479,21 @@ static void su_root_deinit(su_root_t *self)
     deinit(self, magic);
   }
 
-  if (self->sur_port) {
-    int n_w = su_port_unregister_all(self->sur_port, self);
-    int n_t = su_timer_reset_all(su_task_timers(self->sur_task), self->sur_task);
+  port = self->sur_port; assert(port);
 
-    if (n_w || n_t)
-      SU_DEBUG_1(("su_root_deinit: "
-		  "%u registered waits, %u timers\n", n_w, n_t));
-  }
+  unregistered = su_port_unregister_all(port, self);
+  reset = su_timer_reset_all(su_task_timers(self->sur_task), self->sur_task);
 
-  SU_TASK_ZAP(self->sur_parent, su_root_deinit);
-  SU_TASK_ZAP(self->sur_task, su_root_deinit);
+  if (unregistered || reset)
+    SU_DEBUG_1(("su_root_destroy: "
+		"%u registered waits, %u timers\n",
+		unregistered, reset));
+
+  SU_TASK_ZAP(self->sur_parent, su_root_destroy);
+
+  su_free(su_port_home(port), self);
+
+  su_port_decref(port, "su_root_destroy");
 }
 
 /** Set the context pointer.
@@ -768,7 +691,6 @@ int su_root_multishot(su_root_t *self, int multishot)
   }
 }
 
-
 /** Run event and message loop.
  *
  * The function su_root_run() runs the root main loop. The root loop waits
@@ -939,170 +861,23 @@ int su_root_remove_prepoll(su_root_t *root)
  * su_clone_t
  */
 
-/* - su_clone_forget() */
-
-#if SU_HAVE_PTHREADS
-struct clone_args
+static int su_root_init_nothing(su_root_t *root, su_root_magic_t *magic)
 {
-  su_root_t      * self;
-  su_root_init_f   init;
-  su_root_deinit_f deinit;
-  pthread_mutex_t  mutex;
-  pthread_cond_t   cv;
-  int              retval;
-  su_msg_r         clone;
-  su_root_t const *parent;
-};
-
-static void su_clone_report2(su_root_magic_t *m,
-			     su_msg_r msg,
-			     su_cloned_t *sc);
-
-static void su_clone_signal_parent(void *varg)
-{
-  struct clone_args *arg = (struct clone_args *)varg;
-
-  pthread_mutex_lock(&arg->mutex);
-  pthread_cond_signal(&arg->cv);
-  pthread_mutex_unlock(&arg->mutex);
+  return 0;
 }
 
-/** Message function for clone message.
- *
- * This calls the clone task deinitialization function, which should make
- * sure that no more messages are sent by clone task.
- *
- * @sa su_clone_wait()
- */
-static void su_clone_break(su_root_magic_t *m,
-			   su_msg_r msg,
-			   su_cloned_t *sc)
+static void su_root_deinit_nothing(su_root_t *root, su_root_magic_t *magic)
 {
-  su_root_t *root = sc->sc_root;
-
-  root->sur_deiniting = 1;
-
-  if (root->sur_deinit) {
-    su_root_deinit_f deinit = root->sur_deinit;
-    su_root_magic_t *magic = root->sur_magic;
-    root->sur_deinit = NULL;
-    deinit(root, magic);
-  }
-}
-
-/** Delivery report function for clone message.
- *
- * This is executed by parent task. This is the last message sent by clone task.
- */
-static void su_clone_report(su_root_magic_t *m,
-			    su_msg_r msg,
-			    su_cloned_t *sc)
-{
-  su_msg_report(msg, su_clone_report2);
-}
-
-/** Back delivery report function for clone message.
- *
- * This is executed by clone task. It completes the three way handshake and
- * it is used to signal clone that it can destroy its port.
- */
-static void su_clone_report2(su_root_magic_t *m,
-			    su_msg_r msg,
-			    su_cloned_t *sc)
-{
-  su_root_break(sc->sc_root);
-  if (sc->sc_wait)
-    *sc->sc_wait = 0;
-}
-
-static void *su_clone_main(void *varg)
-{
-  struct clone_args *arg = (struct clone_args *)varg;
-  su_root_t *self = arg->self;
-  su_port_t *port;
-  su_cloned_t *sc;
-
-  pthread_cleanup_push(su_clone_signal_parent, varg);
-
-#if SU_HAVE_WINSOCK
-  su_init();
-#endif
-
-  port = su_port_create();
-  if (!port)
-    pthread_exit(NULL);
-  su_port_threadsafe(port);
-
-  /* Change task ownership */
-  su_port_incref(self->sur_task->sut_port = port, "su_clone_main");
-  self->sur_task->sut_root = self;
-
-  if (su_msg_create(arg->clone,
-		    self->sur_task, su_root_task(arg->parent),
-		    su_clone_break, sizeof(self)) != 0) {
-    su_port_decref(self->sur_port, "su_clone_main");
-    self->sur_port = NULL;
-    pthread_exit(NULL);
-  }
-
-  su_msg_report(arg->clone, su_clone_report);
-
-  sc = su_msg_data(arg->clone);
-  sc->sc_root = self;
-  sc->sc_tid = pthread_self();
-
-  pthread_mutex_init(sc->sc_pause, NULL);
-  pthread_cond_init(sc->sc_resume, NULL);
-  pthread_mutex_lock(sc->sc_pause);
-
-  if (arg->init && arg->init(self, self->sur_magic) != 0) {
-    if (arg->deinit)
-      arg->deinit(self, self->sur_magic);
-    su_msg_destroy(arg->clone);
-    su_port_decref(self->sur_port, "su_clone_main");
-    self->sur_port = NULL;
-    pthread_exit(NULL);
-  }
-
-  arg->retval = 0;
-
-  pthread_cleanup_pop(1);  /* signal change of ownership */
-
-  su_root_run(self);   /* Do the work */
-
-  su_root_destroy(self);   /* Cleanup root */   
-
-  su_port_zapref(port, "su_clone_main");
-
-#if SU_HAVE_WINSOCK
-  su_deinit();
-#endif
-
-  return NULL;
-}
-#endif
-
-static void su_clone_xyzzy(su_root_magic_t *m,
-			   su_msg_r msg,
-			   su_cloned_t *sc)
-{
-  su_root_destroy(sc->sc_root);
-
-  pthread_mutex_destroy(sc->sc_pause);
-  pthread_cond_destroy(sc->sc_resume);
-
-  if (sc->sc_wait)
-    *sc->sc_wait = 0;
 }
 
 /** Start a clone task.
  *
- * The function su_clone_start() allocates and initializes a sub-task. 
- * Depending on the settings, a separate thread may be created to execute
- * the sub-task. The sub-task is represented by clone handle to the rest of
- * the application. The function su_clone_start() returns the clone handle
- * in @a return_clone. The clone handle is used to communicate with the
- * newly created clone task using messages.
+ * Allocate and initialize a sub-task. Depending on the su_root_threading()
+ * settings, a separate thread may be created to execute the sub-task. The
+ * sub-task is represented by clone handle to the rest of the application. 
+ * The function su_clone_start() returns the clone handle in @a
+ * return_clone. The clone handle is used to communicate with the newly
+ * created clone task using messages.
  *
  * A new #su_root_t object is created for the sub-task with the @a magic as
  * the root context pointer. Because the sub-task may or may not have its
@@ -1130,13 +905,16 @@ static void su_clone_xyzzy(su_root_magic_t *m,
  * function) calls the deinitialization function, and su_clone_start()
  * returns NULL.
  *
- * @param parent   root to be cloned (may be NULL if multi-threaded)
+ * @param parent   root to be cloned
  * @param return_clone reference to a clone [OUT]
  * @param magic    pointer to user data
  * @param init     initialization function
  * @param deinit   deinitialization function
  *
  * @return 0 if successfull, -1 upon an error.
+ *
+ * @note Earlier documentation mentioned that @a parent could be NULL. That
+ * feature has never been implemented, however.
  *
  * @sa su_root_threading(), su_clone_task(), su_clone_stop(), su_clone_wait(),
  * su_clone_forget().
@@ -1147,110 +925,18 @@ int su_clone_start(su_root_t *parent,
 		   su_root_init_f init,
 		   su_root_deinit_f deinit)
 {
-  su_root_t *child;
-  int retval = -1;
+  if (parent == NULL)
+    return errno = EFAULT;
 
-  if (parent) {
-    assert(SU_ROOT_OWN_THREAD(parent));
-    assert(parent->sur_port);
-  }
-#if !SU_HAVE_PTHREADS
-  else {
-    /* if we don't have threads, we *must* have parent root */
-    return -1;
-  }
-#endif
+  if (init == NULL)
+    init = su_root_init_nothing;
+  if (deinit == NULL)
+    deinit = su_root_deinit_nothing;
 
-  child = su_salloc(NULL, sizeof(struct su_root_s));
-
-#if SU_HAVE_PTHREADS
-  if (child && (parent == NULL || parent->sur_threading)) {
-    struct clone_args arg = {
-      NULL, NULL, NULL,
-      PTHREAD_MUTEX_INITIALIZER,
-      PTHREAD_COND_INITIALIZER,
-      -1,
-      SU_MSG_R_INIT,
-      NULL
-    };
-
-    int thread_created = 0;
-    pthread_t tid;
-
-    su_port_threadsafe(parent->sur_port);
-
-    arg.self = child;
-    arg.init = init;
-    arg.deinit = deinit;
-    arg.parent = parent;
-
-    child->sur_magic = magic;
-    child->sur_deinit = deinit;
-    child->sur_threading = parent->sur_threading;
-
-    SU_TASK_COPY(child->sur_parent, su_root_task(parent), su_clone_start);
-
-    pthread_mutex_lock(&arg.mutex);
-    if (pthread_create(&tid, NULL, su_clone_main, &arg) == 0) {
-      pthread_cond_wait(&arg.cv, &arg.mutex);
-      thread_created = 1;
-    }
-    pthread_mutex_unlock(&arg.mutex);
-
-    pthread_mutex_destroy(&arg.mutex);
-    pthread_cond_destroy(&arg.cv);
-
-    if (arg.retval != 0) {
-      if (thread_created)
-	pthread_join(tid, NULL);
-      su_root_destroy(child), child = NULL;
-    }
-    else {
-      retval = 0;
-      *return_clone = *arg.clone;
-    }
-  } else
-#endif
-  if (child) {
-    assert(parent);
-
-    child->sur_magic = magic;
-    child->sur_deinit = deinit;
-    child->sur_threading = parent->sur_threading;
-
-    SU_TASK_COPY(child->sur_parent, su_root_task(parent), su_clone_start);
-    SU_TASK_COPY(child->sur_task, child->sur_parent, su_clone_start);
-    su_task_attach(child->sur_task, child);
-
-    if (su_msg_create(return_clone,
-		      child->sur_task, su_root_task(parent),
-		      su_clone_xyzzy, sizeof(child)) == 0) {
-      if (init == NULL || init(child, magic) == 0) {
-	su_cloned_t *sc = su_msg_data(return_clone);
-	sc->sc_root = child;
-#if SU_HAVE_PTHREADS
-	sc->sc_tid = pthread_self();
-	pthread_mutex_init(sc->sc_pause, NULL);
-	pthread_cond_init(sc->sc_resume, NULL);
-	pthread_mutex_lock(sc->sc_pause);
-#endif
-	retval = 0;
-      } else {
-	if (deinit)
-	  deinit(child, magic);
-	su_msg_destroy(return_clone);
-	su_root_destroy(child), child = NULL;
-      }
-    }
-    else {
-      su_root_destroy(child), child = NULL;
-    }
-  }
-
-  return retval;
+  return su_port_start(parent, return_clone, magic, init, deinit);
 }
 
-/** Get reference to clone task.
+/** Get reference to a clone task.
  * 
  * @param clone Clone pointer
  *
@@ -1276,6 +962,9 @@ void su_clone_forget(su_clone_r rclone)
 
 /** Stop the clone.
  *
+ * This can used only if clone task has sent no report messages (messages
+ * with delivery report sent back to clone).
+ * 
  * @deprecated. Use su_clone_wait().
  */
 void su_clone_stop(su_clone_r rclone)
@@ -1296,109 +985,69 @@ void su_clone_stop(su_clone_r rclone)
  * after calling su_clone_wait(). The su_clone_wait() function blocks until
  * the cloned task is destroyed. During that time, the parent task must be
  * prepared to process all the messages sent by clone task. This includes
- * all the messages sent by clone before destroy message reached the clone.
+ * all the messages sent by clone before destroy the message reached the
+ * clone.
  */
 void su_clone_wait(su_root_t *root, su_clone_r rclone)
 {
-  su_cloned_t *sc = su_msg_data(rclone);
-
-  if (sc) {
-#if SU_HAVE_PTHREADS
-    pthread_t clone_tid = sc->sc_tid;
-#endif
-    int one = 1;
-    /* This does 3-way handshake. 
-     * First, su_clone_break() is executed by clone. 
-     * The message is returned to parent (this task), 
-     * which executes su_clone_report().
-     * Then the message is again returned to clone, 
-     * which executes su_clone_report2() and exits.
-     */
-    sc->sc_wait = &one;
-    su_msg_send(rclone);
-
-    su_root_step(root, 0);
-    su_root_step(root, 0);
-
-    while (one)
-      su_root_step(root, 10);
-
-#if SU_HAVE_PTHREADS
-    if (!pthread_equal(clone_tid, pthread_self()))
-      pthread_join(clone_tid, NULL);
-#endif
+  if (rclone[0]) {
+    assert(root == NULL || root == su_msg_from(rclone)->sut_root);
+    su_port_wait(rclone);
   }
 }
 
-#if SU_HAVE_PTHREADS		/* No-op without threads */
-static
-void su_clone_paused(su_root_magic_t *magic, su_msg_r msg, su_msg_arg_t *arg)
-{
-  su_cloned_t *cloned = *(su_cloned_t **)arg;
-  assert(cloned);
-  pthread_cond_wait(cloned->sc_resume, cloned->sc_pause);
-}
-#endif
-
 /** Pause a clone.
  *
- * Obtain a exclusive lock on clone's private data.
+ * Obtain an exclusive lock on clone's private data.
  *
  * @retval 0 if successful (and clone is paused)
  * @retval -1 upon an error
+ *
+ * @deprecated Never implemented.
  */
 int su_clone_pause(su_clone_r rclone)
 {
-#if SU_HAVE_PTHREADS		/* No-op without threads */
-  su_cloned_t *cloned = su_msg_data(rclone);
-  su_msg_r m = SU_MSG_R_INIT;
+#if 0
+  su_root_t *cloneroot = su_task_root(su_msg_to(rclone));
 
-  if (!cloned)
+  if (!cloneroot)
     return (errno = EFAULT), -1;
 
-  if (pthread_equal(pthread_self(), cloned->sc_tid))
+  if (SU_ROOT_OWN_THREAD(cloneroot))
+    /* We own it already */
     return 0;
 
-  if (su_msg_create(m, su_clone_task(rclone), su_task_null,
-		    su_clone_paused, sizeof cloned) < 0)
-    return -1;
-
-  *(su_cloned_t **)su_msg_data(m) = cloned;
-
-  if (su_msg_send(m) < 0)
-    return -1;
-
-  if (pthread_mutex_lock(cloned->sc_pause) < 0)
-    return -1;
-  pthread_cond_signal(cloned->sc_resume);
+  return su_port_pause(cloneroot->sur_port);
+#else
+  return errno = ENOSYS, -1;
 #endif
-
-  return 0;
 }
 
 /** Resume a clone.
  *
- * Give up a exclusive lock on clone's private data.
+ * Give up an exclusive lock on clone's private data.
  *
  * @retval 0 if successful (and clone is resumed)
  * @retval -1 upon an error
+ *
+ * @deprecated Never implemented.
  */
 int su_clone_resume(su_clone_r rclone)
 {
-#if SU_HAVE_PTHREADS		/* No-op without threads */
-  su_cloned_t *cloned = su_msg_data(rclone);
+#if 0
+  su_root_t *cloneroot = su_task_root(su_msg_to(rclone));
 
-  if (!cloned)
+  if (!cloneroot)
     return (errno = EFAULT), -1;
 
-  if (pthread_equal(pthread_self(), cloned->sc_tid))
+  if (SU_ROOT_OWN_THREAD(cloneroot))
+    /* We cannot give it away */
     return 0;
 
-  if (pthread_mutex_unlock(cloned->sc_pause) < 0)
-    return -1;
+  return su_port_resume(cloneroot->sur_port);
+#else
+  return errno = ENOSYS, -1;
 #endif
-
-  return 0;
 }
 
 

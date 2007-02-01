@@ -140,7 +140,11 @@ su_port_vtable_t const su_poll_port_vtable[1] =
       su_base_port_threadsafe,
       su_base_port_yield,
       su_poll_port_wait_events,
-      su_base_port_getmsgs
+      su_base_port_getmsgs,
+      su_poll_port_create,
+      su_pthread_port_start,
+      su_pthread_port_wait,
+      su_pthread_port_execute,
     }};
 
 static void su_poll_port_deinit(void *arg)

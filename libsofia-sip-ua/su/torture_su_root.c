@@ -84,6 +84,12 @@ struct root_test_s {
   unsigned   rt_success_init:1;
   unsigned   rt_success_deinit:1;
 
+  unsigned   rt_sent_reporter:1;
+  unsigned   rt_recv_reporter:1;
+  unsigned   rt_reported_reporter:1;
+
+  unsigned :0;
+
   test_ep_at rt_ep[5];
 
   int rt_sockets, rt_woken;
@@ -384,6 +390,8 @@ int event_test(root_test_t rt[1])
     TEST_1(su_close(n->s) == 0);
   }
 
+  free(nodes);
+
   END();
 }
 
@@ -409,14 +417,49 @@ void success_deinit(su_root_t *root, root_test_t *rt)
   rt->rt_success_deinit = 1;
 }
 
+void receive_a_reporter(root_test_t *rt, 
+			su_msg_r msg,
+			su_msg_arg_t *arg)
+{
+  rt->rt_recv_reporter = 1;
+}
+
+void receive_recv_report(root_test_t *rt, 
+			 su_msg_r msg,
+			 su_msg_arg_t *arg)
+{
+  rt->rt_reported_reporter = 1;
+}
+
+void send_a_reporter_msg(root_test_t *rt, 
+			 su_msg_r msg,
+			 su_msg_arg_t *arg)
+{
+  su_msg_r m = SU_MSG_R_INIT;
+
+  if (su_msg_create(m,
+		    su_msg_from(msg),
+		    su_msg_to(msg),
+		    receive_a_reporter,
+		    0) == 0 &&
+      su_msg_report(m, receive_recv_report) == 0 &&
+      su_msg_send(m) == 0)
+    rt->rt_sent_reporter = 1;
+}
+
 static int clone_test(root_test_t rt[1])
 {
   BEGIN();
+
+  su_msg_r m = SU_MSG_R_INIT;
 
   rt->rt_fail_init = 0;
   rt->rt_fail_deinit = 0;
   rt->rt_success_init = 0;
   rt->rt_success_deinit = 0;
+  rt->rt_sent_reporter = 0;
+  rt->rt_recv_reporter = 0;
+  rt->rt_reported_reporter = 0;
 
   TEST(su_clone_start(rt->rt_root,
 		      rt->rt_clone,
@@ -434,10 +477,36 @@ static int clone_test(root_test_t rt[1])
   TEST_1(rt->rt_success_init);
   TEST_1(!rt->rt_success_deinit);
 
+  /* Make sure 3-way handshake is done as expected */
+  TEST(su_msg_create(m,
+		     su_clone_task(rt->rt_clone),
+		     su_root_task(rt->rt_root),
+		     send_a_reporter_msg,
+		     0), 0);
+  TEST(su_msg_send(m), 0);
+
   TEST_VOID(su_clone_wait(rt->rt_root, rt->rt_clone));
 
   TEST_1(rt->rt_success_deinit);
-  
+  TEST_1(rt->rt_sent_reporter);
+  TEST_1(rt->rt_recv_reporter);
+  TEST_1(rt->rt_reported_reporter);
+
+  rt->rt_recv_reporter = 0;
+
+  /* Make sure we can handle messages done as expected */
+  TEST(su_msg_create(m,
+		     su_root_task(rt->rt_root),
+		     su_task_null,
+		     receive_a_reporter,
+		     0), 0);
+  TEST(su_msg_send(m), 0);
+  su_root_step(rt->rt_root, 0);
+  TEST_1(rt->rt_recv_reporter);
+
+  rt->rt_success_init = 0;
+  rt->rt_success_deinit = 0;
+
   END();
 }
 
@@ -470,6 +539,7 @@ int main(int argc, char *argv[])
   retval |= init_test(rt);
   retval |= register_test(rt);
   retval |= event_test(rt);
+  su_root_threading(rt->rt_root, 1);
   retval |= clone_test(rt);
   su_root_threading(rt->rt_root, 0);
   retval |= clone_test(rt);

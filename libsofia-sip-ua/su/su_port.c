@@ -39,6 +39,10 @@
 
 #include "config.h"
 
+#define SU_CLONE_T      su_msg_t
+
+#define su_port_s su_virtual_port_s
+
 #include "su_port.h"
 
 #include <string.h>
@@ -104,3 +108,59 @@ su_port_t *su_port_create(void)
 
   return NULL;
 }
+
+/** Create a su-task (su_clone) using its own thread. */
+int su_port_start(su_root_t *parent,
+		  su_clone_r return_clone,
+		  su_root_magic_t *magic,
+		  su_root_init_f init,
+		  su_root_deinit_f deinit)
+{
+  su_port_vtable_t const *svp;
+    
+  if (parent == NULL)
+    return su_seterrno(EINVAL);	/* For now */
+
+  svp = parent->sur_task->sut_port->sup_vtable;
+
+  if (svp->su_port_start == NULL)
+    return su_seterrno(EINVAL);
+
+  return svp->su_port_start(parent, return_clone, magic, init, deinit);
+}
+
+void su_port_wait(su_clone_r rclone)
+{
+  su_port_t *parentport;
+
+  assert(su_msg_to(rclone)->sut_port);
+
+  parentport = su_msg_from(rclone)->sut_port;
+  assert(parentport); 
+  assert(parentport->sup_vtable->su_port_wait);
+  parentport->sup_vtable->su_port_wait(rclone);
+}
+
+int su_port_execute(su_task_r const task,
+		    int (*function)(void *), void *arg,
+		    int *return_value)
+{
+  assert(task->sut_port->sup_vtable->su_port_execute);
+
+  return task->sut_port->sup_vtable->
+    su_port_execute(task, function, arg, return_value);
+}
+
+#if notyet
+int su_port_pause(su_port_t *self)
+{
+  assert(self->sup_vtable->su_port_pause);
+  return self->sup_vtable->su_port_pause(self);
+}
+
+int su_port_resume(su_port_t *self)
+{
+  assert(self->sup_vtable->su_port_resume);
+  return self->sup_vtable->su_port_resume(self);
+}
+#endif

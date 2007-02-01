@@ -197,7 +197,7 @@ typedef SU_ROOT_MAGIC_T su_root_magic_t;
  */
 typedef SU_WAKEUP_ARG_T su_wakeup_arg_t;
 
-/** Wakeup callback function prototype. 
+/** Wakeup callback function pointer type. 
  *
  * Whenever a registered wait object receives an event, the @link
  * ::su_wakeup_f callback function @endlink is invoked.
@@ -322,9 +322,13 @@ typedef su_msg_t * const su_msg_cr[1];
 #define SU_MSG_R_INIT   { NULL }
 
 /** Message delivery function type. */
-typedef void (*su_msg_f)(su_root_magic_t *magic, 
-			 su_msg_r msg,
-			 su_msg_arg_t *arg);
+typedef void su_msg_function(su_root_magic_t *magic, 
+			     su_msg_r msg,
+			     su_msg_arg_t *arg);
+
+/** Message delivery function pointer type. */
+typedef su_msg_function *su_msg_f;
+
 
 /* ---------------------------------------------------------------------- */
 
