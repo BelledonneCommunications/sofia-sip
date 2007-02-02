@@ -161,7 +161,33 @@ static int test_alloc(void)
   su_home_check(h0->home);
   su_home_zap(h0->home);
 
+  {
+    su_home_t h1[1];
+    void test_destructor(void *);
+
+    memset(h1, 0, sizeof h1);
+
+    TEST(su_home_init(h1), 0);
+    TEST(su_home_threadsafe(h1), 0);
+
+    TEST_1(su_home_ref(h1));
+    TEST_1(su_home_ref(h1));
+
+    TEST(su_home_destructor(h1, test_destructor), 0);
+
+    TEST_1(!su_home_unref(h1));
+    TEST_1(!su_home_unref(h1));
+    TEST_1(su_home_unref(h1));
+    TEST(h1->suh_size, 13);
+  }
+
   END();
+}
+
+void test_destructor(void *a)
+{
+  su_home_t *h = a;
+  h->suh_size = 13;
 }
 
 static int test_strdupcat(void)
