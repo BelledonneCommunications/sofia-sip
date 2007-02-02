@@ -1053,3 +1053,13 @@ static su_port_t *su_source_port_create(void)
 }
 
 /* No su_source_port_start */
+
+/** Use su_source implementation when su_root_create() is called.
+ *
+ * @NEW_1_12_5
+ */
+void su_glib_prefer_gsource(void)
+{
+  su_port_prefer(su_source_port_create, NULL);
+}
+
