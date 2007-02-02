@@ -210,6 +210,8 @@ int ca_challenge(auth_client_t *ca,
  * @retval number of challenges to updated
  * @retval 0 when there was no challenge to update
  * @retval -1 upon an error
+ *
+ * @NEW_1_12_5
  */
 int auc_info(auth_client_t **auc_list,
 	     msg_auth_info_t const *ai,
@@ -495,6 +497,8 @@ int ca_clear_credentials(auth_client_t *ca,
  * 
  * @retval 1 when authorization can proceed
  * @retval 0 when there is not enough credentials
+ *
+ * @NEW_1_12_5
  */
 int auc_has_authorization(auth_client_t **auc_list)
 {
