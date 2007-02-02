@@ -970,7 +970,8 @@ static int nua_register_usage_shutdown(nua_handle_t *nh,
 #endif
 
 static void nua_stack_tport_update(nua_t *nua, nta_agent_t *nta);
-static int nua_registration_add_contact_and_route(nua_registration_t *nr,
+static int nua_registration_add_contact_and_route(nua_handle_t *nh,
+						  nua_registration_t *nr,
 						  msg_t *msg,
 						  sip_t *sip,
 						  int add_contact,
@@ -1466,7 +1467,7 @@ int nua_registration_add_contact_to_request(nua_handle_t *nh,
   if (nr == NULL)
     nr = nua_registration_for_request(nh->nh_nua->nua_registrations, sip);
 
-  return nua_registration_add_contact_and_route(nr, msg, sip, 
+  return nua_registration_add_contact_and_route(nh, nr, msg, sip, 
 						add_contact, 
 						add_service_route);
 }
@@ -1497,12 +1498,15 @@ int nua_registration_add_contact_to_response(nua_handle_t *nh,
     nr = nua_registration_for_response(nh->nh_nua->nua_registrations, sip,
 				       record_route, remote_contact);
 
-  return nua_registration_add_contact_and_route(nr, msg, sip, 1, 0);
+  return nua_registration_add_contact_and_route(nh, nr, msg, sip, 
+						1,
+						0);
 }
 
 /** Add a Contact (and Route) header to request */
 static 
-int nua_registration_add_contact_and_route(nua_registration_t *nr,
+int nua_registration_add_contact_and_route(nua_handle_t *nh,
+					   nua_registration_t *nr,
 					   msg_t *msg,
 					   sip_t *sip,
 					   int add_contact,
@@ -1513,7 +1517,34 @@ int nua_registration_add_contact_and_route(nua_registration_t *nr,
 
   if (add_contact) {
     sip_contact_t const *m = nua_registration_contact(nr);
-    if (!m || msg_header_add_dup(msg, (msg_pub_t *)sip, (void const *)m) < 0)
+
+    char const *m_display = NH_PGET(nh, m_display);
+    char const *m_username = NH_PGET(nh, m_username);
+    char const *m_params = NH_PGET(nh, m_params);
+    url_t const *u = m->m_url;
+
+    if (!m)
+      return -1;
+
+    if (str0cmp(m_params, u->url_params) == 0)
+      m_params = NULL;
+
+    m = sip_contact_format(msg_home(msg),
+			   "%s<%s:%s%s%s%s%s%s%s%s%s>",
+			   m_display ? m_display : 
+			   m->m_display ? m->m_display : "",
+			   u->url_scheme,
+			   m_username ? m_username : "",
+			   m_username ? "@" : "",
+			   u->url_host,
+			   u->url_port ? ":" : "",
+			   u->url_port ? u->url_port : "",
+			   u->url_params ? ";" : "",
+			   u->url_params ? u->url_params : "",
+			   m_params ? ";" : "",
+			   m_params ? m_params : "");
+
+    if (msg_header_insert(msg, (msg_pub_t *)sip, (void *)m) < 0)
       return -1;
   }
 

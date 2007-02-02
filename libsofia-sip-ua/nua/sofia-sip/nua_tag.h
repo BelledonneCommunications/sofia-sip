@@ -1327,6 +1327,7 @@ SOFIAPUBVAR tag_typedef_t nutag_authtime_ref;
  *
  * @par Used with
  *    nua_register(), nua_set_hparams(), nua_set_params().
+ *    nua_invite(), nua_respond(), nua_subscribe(), nua_notify()
  *
  * @par Parameter type
  *    string (char *)
@@ -1358,6 +1359,7 @@ SOFIAPUBVAR tag_typedef_t nutag_m_display_ref;
  *
  * @par Used with
  *    nua_register(), nua_set_hparams(), nua_set_params().
+ *    nua_invite(), nua_respond(), nua_subscribe(), nua_notify()
  *
  * @par Parameter type
  *    string (char *)
@@ -1388,7 +1390,8 @@ SOFIAPUBVAR tag_typedef_t nutag_m_username_ref;
  * user-agent.
  *
  * @par Used with
- *    nua_register(), nua_set_hparams(), nua_set_params().
+ *    nua_register(), nua_set_hparams(), nua_set_params(), 
+ *    nua_invite(), nua_respond(), nua_subscribe(), nua_notify()
  *
  * @par Parameter type
  *    string (char *)

@@ -117,6 +117,8 @@ int accept_call_with_early_sdp(CONDITION_PARAMS)
   case nua_callstate_received:
     RESPOND(ep, call, nh, SIP_180_RINGING, 
 	    TAG_IF(call->sdp, SOATAG_USER_SDP_STR(call->sdp)),
+	    NUTAG_M_DISPLAY("Bob"),
+	    NUTAG_M_USERNAME("b+b"),
 	    TAG_END());
     return 0;
   case nua_callstate_early:
@@ -217,6 +219,8 @@ int test_basic_call_1(struct context *ctx)
   INVITE(a, a_call, a_call->nh,
 	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
 	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 NUTAG_M_USERNAME("a+a"),
+	 NUTAG_M_DISPLAY("Alice"),
 	 TAG_END());
 
   run_ab_until(ctx, -1, until_ready, -1, accept_call_with_early_sdp);
@@ -263,8 +267,11 @@ int test_basic_call_1(struct context *ctx)
   TEST_1(is_answer_recv(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 200);
-  TEST_1(sip->sip_payload);
   TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_payload);
+  TEST_1(sip->sip_contact);
+  TEST_S(sip->sip_contact->m_display, "Bob");
+  TEST_S(sip->sip_contact->m_url->url_user, "b+b");
   /* Test that B uses application-specific contact */
   if (ctx->proxy_tests)
     TEST_1(sip->sip_contact->m_url->url_user);
@@ -282,6 +289,10 @@ int test_basic_call_1(struct context *ctx)
   */
   TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_invite);
   TEST(e->data->e_status, 100);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_contact);
+  TEST_S(sip->sip_contact->m_display, "Alice");
+  TEST_S(sip->sip_contact->m_url->url_user, "a+a");
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
