@@ -1654,7 +1654,7 @@ int test_net(sres_context_t *ctx)
       bin[i] ^= 0xff;
     else
       bin[3] ^= SRES_FORMAT_ERR; /* format error -> EDNS0 failure */
-    n = sendto(c, bin, binlen, 0, sa, salen);
+    n = su_sendto(c, bin, binlen, 0, sa, salen);
     if (i != 1)
       bin[i] ^= 0xff;
     else
@@ -1675,10 +1675,10 @@ int test_net(sres_context_t *ctx)
       /* We got an error => make new query */
       TEST_1(q = sres_query(res, test_answer, ctx, /* Send query */
 				 sres_type_naptr, domain));
-      TEST_1((n = recvfrom(c, query, sizeof query, 0, sa, &salen)) != -1);
+      TEST_1((n = su_recvfrom(c, query, sizeof query, 0, sa, &salen)) != -1);
       memcpy(bin, query, 2); /* Copy ID */
     }
-    n = sendto(c, bin, i, 0, sa, salen);
+    n = su_sendto(c, bin, i, 0, sa, salen);
     if (n == -1)
       perror("sendto");
     while (!poll_sockets(ctx))
