@@ -61,10 +61,12 @@ struct notifier_usage
   enum nua_substate  nu_substate;	/**< Subscription state */
   sip_time_t         nu_expires; 	/**< Expiration time */
   sip_time_t         nu_requested;      /**< Requested expiration time */
+#if SU_HAVE_EXPERIMENTAL
   char              *nu_tag;	        /**< @ETag in last NOTIFY */
   unsigned           nu_etags:1;	/**< Subscriber supports etags */
   unsigned           nu_appl_etags:1;   /**< Application generates etags */
   unsigned           nu_no_body:1;      /**< Suppress body */
+#endif
 };
 
 static char const *nua_notify_usage_name(nua_dialog_usage_t const *du);
@@ -243,11 +245,13 @@ int nua_subscribe_server_preprocess(nua_server_request_t *sr)
     expires = sip->sip_expires->ex_delta;
   nu->nu_requested = sip_now() + expires;
 
+#if SU_HAVE_EXPERIMENTAL
   nu->nu_etags = 
     sip_suppress_body_if_match(sip) ||
     sip_suppress_notify_if_match(sip) ||
     sip_has_feature(sr->sr_request.sip->sip_supported, "etags");
-  
+#endif
+
   sr->sr_usage = du;
 
   return sr->sr_status <= 100 ? 0 : sr->sr_status;
@@ -309,6 +313,7 @@ int nua_subscribe_server_report(nua_server_request_t *sr, tagi_t const *tags)
 
   /* nu_requested is set by SUBSCRIBE and cleared when NOTIFY is sent */
   if (nu && nu->nu_requested && substate != nua_substate_embryonic) {
+#if SU_HAVE_EXPERIMENTAL
     sip_t const *sip = sr->sr_request.sip;
     sip_suppress_notify_if_match_t *snim = sip_suppress_notify_if_match(sip);
     sip_suppress_body_if_match_t *sbim = sip_suppress_body_if_match(sip);
@@ -320,6 +325,7 @@ int nua_subscribe_server_report(nua_server_request_t *sr, tagi_t const *tags)
     else if (sbim && !strcasecmp(snim->snim_tag, nu->nu_tag))
       notify = 1, nu->nu_no_body = 1;
     else 
+#endif
       notify = 1;
   }
 
@@ -499,6 +505,7 @@ static int nua_notify_client_init_etag(nua_client_request_t *cr,
 				       msg_t *msg, sip_t *sip,
 				       tagi_t const *tags)
 {
+#if SU_HAVE_EXPERIMENTAL
   nua_handle_t *nh = cr->cr_owner;
   struct notifier_usage *nu = nua_dialog_usage_private(cr->cr_usage);
   nua_server_request_t *sr;
@@ -563,6 +570,7 @@ static int nua_notify_client_init_etag(nua_client_request_t *cr,
     if (sbim && !strcasecmp(sbim->sbim_tag, nu->nu_tag))
       nu->nu_no_body = 1;
   }
+#endif
 
   return 0;
 }
@@ -613,6 +621,7 @@ int nua_notify_client_request(nua_client_request_t *cr,
     msg_header_replace_param(home, ss->ss_common, expires);
   }
 
+#if SU_HAVE_EXPERIMENTAL
   if (nu->nu_tag && !sip->sip_etag)
     msg_header_add_make(msg, (void *)sip, sip_etag_class, nu->nu_tag);
 
@@ -621,6 +630,7 @@ int nua_notify_client_request(nua_client_request_t *cr,
     msg_header_remove(msg, (void *)sip, (void *)sip->sip_payload);
     msg_header_remove(msg, (void *)sip, (void *)sip->sip_content_length);
   }
+#endif
 
   if (nu->nu_substate == nua_substate_terminated)
     cr->cr_terminating = 1;

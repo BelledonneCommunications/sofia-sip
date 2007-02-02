@@ -46,6 +46,14 @@ else
   SAC_SU_DEFINE([SU_HAVE_PTHREADS], 1, [Sofia SU uses pthreads])
 fi
 
+AC_ARG_ENABLE(experimental,
+[  --enable-experimental       enable experimental features (disabled)],
+ , enable_experimental=no)
+
+if test $enable_experimental = yes ; then
+  SAC_SU_DEFINE([SU_HAVE_EXPERIMENTAL], 1, [Enable experimental features])
+fi
+
 dnl ===========================================================================
 dnl Checks for typedefs, headers, structures, and compiler characteristics.
 dnl ===========================================================================

@@ -1667,6 +1667,7 @@ static int sip_header_test(void)
   TEST(sip->sip_max_forwards->mf_count, 12);
   TEST(sip->sip_min_expires->me_delta, 150);
 
+#if SU_HAVE_EXPERIMENTAL
   {
     sip_suppress_body_if_match_t *sbim;
     sip_suppress_notify_if_match_t *snim;
@@ -1683,6 +1684,7 @@ static int sip_header_test(void)
     TEST_SIZE(offsetof(msg_generic_t, g_value),
 	      offsetof(sip_suppress_notify_if_match_t, snim_tag));
   }
+#endif
 
   TEST_1(sip->sip_from->a_display);
   TEST_S(sip->sip_from->a_display, "h");
