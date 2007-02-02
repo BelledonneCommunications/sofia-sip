@@ -14,7 +14,6 @@ SUBDIRS = su features bnf sresolv sdp url msg sip stun ipt soa \
 	  tport http nta nea iptsec nth nua
 DIST_SUBDIRS = $(SUBDIRS) docs
 
-EXTRA_DIST = sofia.am
 DOXYGEN = doxygen
 
 lib_LTLIBRARIES = libsofia-sip-ua.la
