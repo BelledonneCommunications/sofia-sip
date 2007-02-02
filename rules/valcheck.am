@@ -44,7 +44,6 @@ valcheck-TESTS:	$(TESTS)
 	    if test -f ./$$tst; then dir=./; \
 	    elif test -f $$tst; then dir=; \
 	    else dir="$(srcdir)/"; fi; \
-	    set -x; \
 	    if case $$tst in \
             run*) VALGRIND="$(VALGRIND) $(VALGRINDFLAGS)" \
 		  $(TESTS_ENVIRONMENT) $${dir}$$tst ;; \
@@ -78,7 +77,6 @@ valcheck-TESTS:	$(TESTS)
 	      skip=`expr $$skip + 1`; \
 	      echo "SKIP: $$tst"; \
 	    fi; \
-            set +x; \
 	  done; \
 	  if test "$$failed" -eq 0; then \
 	    if test "$$xfail" -eq 0; then \
