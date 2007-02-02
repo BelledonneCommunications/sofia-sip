@@ -508,10 +508,10 @@ nua_server_methods_t const nua_notify_server_methods =
     SIP_METHOD_NOTIFY,
     nua_i_notify,		/* Event */
     { 
-      0,			/* Do not create dialog */
-      1,			/* In-dialog request */
+      1,			/* Do create dialog */
+      0,			/* Not always in-dialog request */
       1,			/* Target refresh request  */
-      1,			/* Add Contact */
+      1,			/* Add Contact to response */
     },
     nua_notify_server_init,
     nua_notify_server_preprocess,
@@ -563,9 +563,14 @@ int nua_notify_server_preprocess(nua_server_request_t *sr)
   char const *what = "", *reason = NULL;
 
   du = nua_dialog_usage_get(ds, nua_subscribe_usage, o);
-  if (du == NULL) 
-    return SR_STATUS(sr, 481, "Subscription Does Not Exist");
   sr->sr_usage = du;
+
+  if (du == NULL) {
+    if (!sip_is_allowed(NH_PGET(sr->sr_owner, appl_method), SIP_METHOD_NOTIFY))
+      return SR_STATUS(sr, 481, "Subscription Does Not Exist");
+    /* Let application to handle unsolicited NOTIFY */
+    return 0;
+  }
   
   eu = nua_dialog_usage_private(du); assert(eu);
   eu->eu_notified++;

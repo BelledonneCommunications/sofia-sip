@@ -1915,6 +1915,40 @@ SOFIAPUBFUN char const *nua_substate_name(enum nua_substate substate);
 /** Convert string to enum nua_substate. @NEW_1_12_5. */
 SOFIAPUBFUN enum nua_substate nua_substate_make(char const *sip_substate);
 
+/**Send unsolicited NOTIFY request.
+ *
+ * Some applications may require sending unsolicited NOTIFY requests, that
+ * is, NOTIFY without SUBSCRIBE or REFER request sent by event watcher. 
+ * However, sending NOTIFY request requires an existing dialog usage by
+ * default. If NUTAG_NEWSUB(1) is included in the nua_notify() the usage
+ * is create the usage by itself.
+ *
+ * If you want to create a subscription that does not terminate immediately
+ * include SIPTAG_SUBSCRIPTION_STATE_STR() with an "expires" parameter in
+ * the argument list, too.
+ *
+ * @par Used with
+ *    nua_notify()
+ *
+ * @par Parameter type
+ *    int (boolean)
+ *
+ * @par Values
+ *   - 0 - false (default) - do not create new subscription 
+ *         but reject NOTIFY with 481 locally \n
+ *   - 1 - true - create a subscription if it does not exist \n
+ *
+ * Corresponding tag taking reference parameter is NUTAG_NEWSUB().
+ *
+ * @since @NEW_1_12_5.
+ */
+#define NUTAG_NEWSUB(x)   nutag_newsub, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_newsub;
+
+#define NUTAG_NEWSUB_REF(x) nutag_newsub_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_newsub_ref;
+
+
 /**Default lifetime for implicit subscriptions created by REFER.
  *
  * Default expiration time in seconds for implicit subscriptions created by

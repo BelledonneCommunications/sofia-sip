@@ -424,9 +424,24 @@ static int nua_notify_client_init(nua_client_request_t *cr,
     o = NONE;
 
   du = nua_dialog_usage_get(nh->nh_ds, nua_notify_usage, o);
-  nu = nua_dialog_usage_private(du);
-  if (!du)
-    return -1;
+
+  if (!du) {
+    tagi_t const *newsub = tl_find_last(tags, nutag_newsub);
+
+    if (!newsub || !newsub->t_value)
+      return 0; /* Rejected eventually by nua_notify_client_request() */
+
+    /* Create new notifier */
+    du = nua_dialog_usage_add(nh, nh->nh_ds, nua_notify_usage, o);
+    if (du == NULL)
+      return -1;
+
+    nu = nua_dialog_usage_private(du);
+    nu->nu_expires = now;
+  }
+  else
+    nu = nua_dialog_usage_private(du);
+
 
   if (nu->nu_substate == nua_substate_terminated) {
     /*Xyzzy*/;
@@ -437,8 +452,8 @@ static int nua_notify_client_init(nua_client_request_t *cr,
 
     if (ss->ss_expires) {
       unsigned long expires = strtoul(ss->ss_expires, NULL, 10);
-      if (expires > 3600)	/* Why? */
-        expires = 3600;
+      if (now + expires < now)
+	expires = SIP_TIME_MAX - now - 1;
 
       /* Notifier can only shorten the subscription time */ 
       if (nu->nu_requested == 0 || nu->nu_requested >= now + expires)
