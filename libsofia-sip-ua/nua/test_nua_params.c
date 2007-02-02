@@ -148,8 +148,11 @@ int test_nua_params(struct context *ctx)
 
 		 SIPTAG_SUPPORTED_STR("test"),
 		 SIPTAG_ALLOW_STR("DWIM, OPTIONS, INFO"),
+		 NUTAG_APPL_METHOD(NULL),
+		 NUTAG_APPL_METHOD("INVITE, REGISTER, PUBLISH, SUBSCRIBE"),
 		 SIPTAG_ALLOW_EVENTS_STR("reg"),
 		 SIPTAG_USER_AGENT_STR("test_nua/1.0"),
+
 
 		 SIPTAG_ORGANIZATION_STR("Open Laboratory"),
 		 
@@ -211,9 +214,12 @@ int test_nua_params(struct context *ctx)
 		 SIPTAG_ALLOW(sip_allow_make(tmphome, "INFO")),
 		 NUTAG_ALLOW("ACK, INFO"),
 
+		 NUTAG_APPL_METHOD("NOTIFY"),
+
 		 SIPTAG_ALLOW_EVENTS_STR("reg"),
 		 SIPTAG_ALLOW_EVENTS(sip_allow_events_make(tmphome, "presence")),
 		 NUTAG_ALLOW_EVENTS("presence.winfo"),
+
 
 		 SIPTAG_USER_AGENT(sip_user_agent_make(tmphome, "test_nua")),
 
@@ -268,6 +274,7 @@ int test_nua_params(struct context *ctx)
 
     sip_allow_t const *allow = NONE;
     char const *allow_str = "NONE";
+    char const *appl_method = "NONE";
     sip_allow_events_t const *allow_events = NONE;
     char const *allow_events_str = "NONE";
     sip_supported_t const *supported = NONE;
@@ -332,6 +339,7 @@ int test_nua_params(struct context *ctx)
 	       	SIPTAG_SUPPORTED_STR_REF(supported_str),
 	       	SIPTAG_ALLOW_REF(allow),
 	       	SIPTAG_ALLOW_STR_REF(allow_str),
+		NUTAG_APPL_METHOD_REF(appl_method),
 		SIPTAG_ALLOW_EVENTS_REF(allow_events),
 		SIPTAG_ALLOW_EVENTS_STR_REF(allow_events_str),
 	       	SIPTAG_USER_AGENT_REF(user_agent),
@@ -353,7 +361,7 @@ int test_nua_params(struct context *ctx)
 		NUTAG_INSTANCE_REF(instance),
 
 		TAG_END());
-    TEST(n, 46);
+    TEST(n, 47);
 
     TEST_S(sip_header_as_string(tmphome, (void *)from), Alice);
     TEST_S(from_str, Alice);
@@ -389,6 +397,7 @@ int test_nua_params(struct context *ctx)
 
     TEST_S(sip_header_as_string(tmphome, (void *)allow), "OPTIONS, INFO, ACK");
     TEST_S(allow_str, "OPTIONS, INFO, ACK");
+    TEST_S(appl_method, "INVITE, REGISTER, PUBLISH, SUBSCRIBE, NOTIFY");
     TEST_S(sip_header_as_string(tmphome, (void *)allow_events), 
 	   "reg, presence, presence.winfo");
     TEST_S(allow_events_str, "reg, presence, presence.winfo");

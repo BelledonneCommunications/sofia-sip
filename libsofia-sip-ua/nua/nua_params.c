@@ -876,7 +876,8 @@ static int nhp_set_tags(su_home_t *home,
 			     sip_allow_class,
 			     &appl_method,
 			     (msg_list_t const *)nhp->nhp_appl_method,
-			     NHP_ISSET(nhp, allow), /* already set by tags */
+			     /* already set by tags? */
+			     NHP_ISSET(nhp, appl_method), 
 			     0, /* dup it, don't make */
 			     1, /* merge with old value */
 			     t->t_value);
