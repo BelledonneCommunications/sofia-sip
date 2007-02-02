@@ -158,8 +158,8 @@ function protos (name, comment, hash, since)
   }
 
   expr = (without_experimental > 0 && do_hash);
-  if (without_experimental > 0) {
-    printf "%s is %sexperimental\n", Comment, expr ? "" : "not ";
+  if (expr) {
+    printf "%s is experimental\n", Comment;
   }    
   
   experimental[N] = expr;
@@ -235,7 +235,7 @@ function process_footer (text)
 	    print "#if SU_HAVE_EXPERIMENTAL" > PR;
 	  }
 	  else {
-	    print "#endif" > PR;
+	    print "#endif /* SU_HAVE_EXPERIMENTAL */" > PR;
 	  }
 	}
 	gsub(/#hash#/, hashes[j], l);
@@ -248,7 +248,7 @@ function process_footer (text)
       }
 
       if (expr) {
-	print "#endif" > PR;
+	print "#endif /* SU_HAVE_EXPERIMENTAL */" > PR;
       }
     } else {
       print l > PR;
@@ -466,7 +466,7 @@ END {
       }
       if (total - without_experimental > 0) {
 	print "#if SU_HAVE_EXPERIMENTAL" > PT;
-	printf("  msg_header_t *extra[%u];\n", 
+	printf("  msg_header_t *experimental[%u];\n", 
 	       total - without_experimental) > PT;
 	print "#endif" > PT;
       }
