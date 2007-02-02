@@ -78,6 +78,10 @@ method, e.g.,
      /* Do not create implicit subscription */ 
   }
 
+Transport connections used for client registrations are now maintained 
+in a persistent fashion. For example a TCP connection used for registration
+is not closed until client is unregisters, or the whole stack is shut down.
+
 <information about major new features
  - new/changed/removed functionality
  - links to further documentation
