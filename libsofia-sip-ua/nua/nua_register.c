@@ -27,6 +27,7 @@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Martti Mela <Martti.Mela@nokia.com>
+ * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
  *
  * @date Created: Wed Mar  8 11:48:49 EET 2006 ppessi
  */
@@ -902,6 +903,11 @@ static int nua_register_client_response(nua_client_request_t *cr,
       outbound_start_keepalive(nr->nr_ob, cr->cr_orq);
     }
 
+    /* persistant connection for registration */
+    if (!nr->nr_tport)
+      /* note: nta_outgoing_transport() takes a ref */
+      nr->nr_tport = nta_outgoing_transport (cr->cr_orq); 
+
     nua_registration_set_ready(nr, 1);
   }
   else if (du) {
@@ -911,6 +917,10 @@ static int nua_register_client_response(nua_client_request_t *cr,
     nr->nr_route = NULL;
 
     outbound_stop_keepalive(nr->nr_ob);
+
+    /* release the persistant transport for registration */
+    if (nr->nr_tport)
+      tport_decref(&nr->nr_tport), nr->nr_tport = NULL;
 
     nua_registration_set_ready(nr, 0);
   }
@@ -949,6 +959,7 @@ static int nua_register_usage_shutdown(nua_handle_t *nh,
 				     nua_dialog_usage_t *du)
 {
   nua_client_request_t *cr = du->du_cr;
+  nua_registration_t *nr = nua_dialog_usage_private(du);
 
   if (cr) {
     if (nua_client_is_queued(cr)) /* Already registering. */
@@ -957,6 +968,10 @@ static int nua_register_usage_shutdown(nua_handle_t *nh,
     if (nua_client_resend_request(cr, 1, NULL) >= 0)
       return 0;
   }
+
+  /* release the persistant transport for registration */
+  if (nr->nr_tport)
+    tport_decref(&nr->nr_tport), nr->nr_tport = NULL;
 
   nua_dialog_usage_remove(nh, ds, du);
   return 200;
