@@ -105,11 +105,12 @@ static int su_select_port_unregister(su_port_t *port,
 static int su_select_port_deregister(su_port_t *self, int i);
 static int su_select_port_unregister_all(su_port_t *self, su_root_t *root);
 static int su_select_port_eventmask(su_port_t *self, 
-				  int index,
-				  int socket,
-				  int events);
+				    int index,
+				    int socket,
+				    int events);
 static int su_select_port_multishot(su_port_t *self, int multishot);
 static int su_select_port_wait_events(su_port_t *self, su_duration_t tout);
+static char const *su_select_port_name(su_port_t const *self);
 
 su_port_vtable_t const su_select_port_vtable[1] =
   {{
@@ -137,36 +138,16 @@ su_port_vtable_t const su_select_port_vtable[1] =
       su_base_port_yield,
       su_select_port_wait_events,
       su_base_port_getmsgs,
-      su_select_port_create,
-      su_pthread_port_start,
+      su_base_port_getmsgs_from,
+      su_select_port_name,
+      su_base_port_start_shared,
       su_pthread_port_wait,
       su_pthread_port_execute
     }};
 
-static void su_select_port_deinit(void *self_arg);
-
-/** Create a port using select().
- */
-su_port_t *su_select_port_create(void)
+static char const *su_select_port_name(su_port_t const *self)
 {
-#if notyet
-  su_port_t *self = su_home_new(sizeof *self);
-
-  if (!self)
-    return self;
-
-  if (su_home_destructor(su_port_home(self), su_select_port_deinit) < 0)
-    return su_home_unref(su_port_home(self)), NULL;
-
-  self->sup_multishot = SU_ENABLE_MULTISHOT_POLL;
-
-  if (su_pthread_port_init(self, su_select_port_vtable) < 0)
-    return su_home_unref(su_port_home(self)), NULL;
-
-  return self;
-#else
-  return NULL;
-#endif
+  return "select";
 }
 
 static void su_select_port_deinit(void *arg)
@@ -647,5 +628,39 @@ void su_port_dump(su_port_t const *self, FILE *f)
 }
 
 #endif
+
+/** Create a port using select().
+ */
+su_port_t *su_select_port_create(void)
+{
+#if notyet
+  su_port_t *self = su_home_new(sizeof *self);
+
+  if (!self)
+    return self;
+
+  if (su_home_destructor(su_port_home(self), su_select_port_deinit) < 0)
+    return su_home_unref(su_port_home(self)), NULL;
+
+  self->sup_multishot = SU_ENABLE_MULTISHOT_POLL;
+
+  if (su_pthread_port_init(self, su_select_port_vtable) < 0)
+    return su_home_unref(su_port_home(self)), NULL;
+
+  return self;
+#else
+  return NULL;
+#endif
+}
+
+int su_select_clone_start(su_root_t *parent,
+			  su_clone_r return_clone,
+			  su_root_magic_t *magic,
+			  su_root_init_f init,
+			  su_root_deinit_f deinit)
+{
+  return su_pthreaded_port_start(su_select_port_create, 
+				 parent, return_clone, magic, init, deinit);
+}
 
 #endif

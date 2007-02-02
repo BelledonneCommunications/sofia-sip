@@ -183,7 +183,7 @@ int su_base_port_getmsgs(su_port_t *self)
 }
 
 
-int su_base_port_getmsgs_from_port(su_port_t *self, su_port_t *from)
+int su_base_port_getmsgs_from(su_port_t *self, su_port_t *from)
 {
   su_msg_t *msg, *selected;
   su_msg_t **next = &self->sup_head, **tail= &selected;
@@ -509,11 +509,11 @@ static void su_base_port_clone_break(su_root_magic_t *m,
 				     su_msg_r msg,
 				     su_msg_arg_t *arg);
 
-int su_base_port_start(su_root_t *parent,
-		       su_clone_r return_clone,
-		       su_root_magic_t *magic,
-		       su_root_init_f init,
-		       su_root_deinit_f deinit)
+int su_base_port_start_shared(su_root_t *parent,
+			      su_clone_r return_clone,
+			      su_root_magic_t *magic,
+			      su_root_init_f init,
+			      su_root_deinit_f deinit)
 {
   su_port_t *self = parent->sur_task->sut_port;
   su_root_t *child;

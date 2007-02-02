@@ -133,13 +133,14 @@ typedef struct su_port_vtable {
   /* Extension from >= 1.12.4 */
   int (*su_port_wait_events)(su_port_t *port, su_duration_t timeout);
   int (*su_port_getmsgs)(su_port_t *port);
-  /* Extension from >= 1.12.5 - create a cloned port */
-  su_port_t *(*su_port_create)(void);
-  int (*su_port_start)(su_root_t *parent,
-		       su_clone_r return_clone,
-		       su_root_magic_t *magic,
-		       su_root_init_f init,
-		       su_root_deinit_f deinit);
+  /* Extension from >= 1.12.5 */
+  int (*su_port_getmsgs_from)(su_port_t *port, su_port_t *cloneport);
+  char const *(*su_port_name)(su_port_t const *port);
+  int (*su_port_start_shared)(su_root_t *root,
+			      su_clone_r return_clone,
+			      su_root_magic_t *magic,
+			      su_root_init_f init,
+			      su_root_deinit_f deinit);
   void (*su_port_wait)(su_clone_r rclone);
   int (*su_port_execute)(su_task_r const task,
 			 int (*function)(void *), void *arg,
@@ -150,7 +151,15 @@ SOFIAPUBFUN su_port_t *su_port_create(void)
      __attribute__((__malloc__));
 
 /* Extension from >= 1.12.5 */
-SOFIAPUBFUN void su_port_prefer(su_port_t *(*implementation)(void));
+
+typedef su_port_t *su_port_create_f(void);
+typedef int su_clone_start_f(su_root_t *parent,
+			    su_clone_r return_clone,
+			    su_root_magic_t *magic,
+			    su_root_init_f init,
+			    su_root_deinit_f deinit);
+
+SOFIAPUBFUN void su_port_prefer(su_port_create_f *f, su_clone_start_f *);
 
 SOFIAPUBFUN su_port_t *su_epoll_port_create(void)
      __attribute__((__malloc__));
@@ -158,6 +167,10 @@ SOFIAPUBFUN su_port_t *su_poll_port_create(void)
      __attribute__((__malloc__));
 SOFIAPUBFUN su_port_t *su_select_port_create(void)
      __attribute__((__malloc__));
+
+SOFIAPUBFUN su_clone_start_f su_epoll_clone_start;
+SOFIAPUBFUN su_clone_start_f su_poll_clone_start;
+SOFIAPUBFUN su_clone_start_f su_select_clone_start;
 
 SOFIAPUBFUN void su_msg_delivery_report(su_msg_r msg);
 SOFIAPUBFUN su_duration_t su_timer_next_expires(su_timer_t const * t,
@@ -410,11 +423,14 @@ int su_port_getmsgs(su_port_t *self)
   return base->sup_vtable->su_port_getmsgs(self);
 }
 
-SOFIAPUBFUN int su_port_start(su_root_t *parent,
-			      su_clone_r return_clone,
-			      su_root_magic_t *magic,
-			      su_root_init_f init,
-			      su_root_deinit_f deinit);
+static inline
+int su_port_getmsgs_from(su_port_t *self, su_port_t *cloneport)
+{
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+
+  return base->sup_vtable->su_port_getmsgs_from(self, cloneport);
+}
+
 SOFIAPUBFUN void su_port_wait(su_clone_r rclone);
 
 SOFIAPUBFUN int su_port_execute(su_task_r const task,
@@ -468,8 +484,8 @@ SOFIAPUBFUN struct _GSource *su_base_port_gsource(su_port_t *self);
 SOFIAPUBFUN su_socket_t su_base_port_mbox(su_port_t *self);
 SOFIAPUBFUN int su_base_port_send(su_port_t *self, su_msg_r rmsg);
 SOFIAPUBFUN int su_base_port_getmsgs(su_port_t *self);
-SOFIAPUBFUN int su_base_port_getmsgs_from_port(su_port_t *self,
-					       su_port_t *from);
+SOFIAPUBFUN int su_base_port_getmsgs_from(su_port_t *self,
+					   su_port_t *from);
 
 SOFIAPUBFUN void su_base_port_run(su_port_t *self);
 SOFIAPUBFUN void su_base_port_break(su_port_t *self);
@@ -489,11 +505,11 @@ SOFIAPUBFUN int su_base_port_multishot(su_port_t *self, int multishot);
 SOFIAPUBFUN int su_base_port_threadsafe(su_port_t *self);
 SOFIAPUBFUN int su_base_port_yield(su_port_t *self);
 
-SOFIAPUBFUN int su_base_port_start(su_root_t *parent,
-				   su_clone_r return_clone,
-				   su_root_magic_t *magic,
-				   su_root_init_f init,
-				   su_root_deinit_f deinit);
+SOFIAPUBFUN int su_base_port_start_shared(su_root_t *parent,
+					  su_clone_r return_clone,
+					  su_root_magic_t *magic,
+					  su_root_init_f init,
+					  su_root_deinit_f deinit);
 SOFIAPUBFUN void su_base_port_wait(su_clone_r rclone);
 
 /* ---------------------------------------------------------------------- */
@@ -532,26 +548,32 @@ SOFIAPUBFUN int su_pthread_port_own_thread(su_port_t const *self);
 
 SOFIAPUBFUN int su_pthread_port_send(su_port_t *self, su_msg_r rmsg);
 
+#if 0				/* not yet  */
 SOFIAPUBFUN su_port_t *su_pthread_port_create(void);
+SOFIAPUBFUN su_port_t *su_pthread_port_start(su_root_t *parent,
+					     su_clone_r return_clone,
+					     su_root_magic_t *magic,
+					     su_root_init_f init,
+					     su_root_deinit_f deinit);
+#endif
 
-SOFIAPUBFUN int su_pthread_port_start(su_root_t *parent,
-				      su_clone_r return_clone,
-				      su_root_magic_t *magic,
-				      su_root_init_f init,
-				      su_root_deinit_f deinit);
+SOFIAPUBFUN int su_pthreaded_port_start(su_port_create_f *create,
+					su_root_t *parent,
+					su_clone_r return_clone,
+					su_root_magic_t *magic,
+					su_root_init_f init,
+					su_root_deinit_f deinit);
+
 SOFIAPUBFUN void su_pthread_port_wait(su_clone_r rclone);
 SOFIAPUBFUN int su_pthread_port_execute(su_task_r const task,
 					int (*function)(void *), void *arg,
 					int *return_value);
 
+
 #if 0
 SOFIAPUBFUN int su_pthread_port_pause(su_port_t *self);
 SOFIAPUBFUN int su_pthread_port_resume(su_port_t *self);
 #endif
-
-SOFIAPUBFUN int su_pthread_port_execute(su_task_r const task,
-					int (*function)(void *), void *arg,
-					int *return_value);
 
 #else
 
@@ -563,7 +585,6 @@ typedef su_base_port_t su_pthread_port_t;
 #define su_pthread_port_unlock su_base_port_unlock
 #define su_pthread_port_own_thread su_base_port_own_thread
 #define su_pthread_port_send   su_base_port_send
-#define su_pthread_port_start  su_base_port_start
 #define su_pthread_port_wait   su_base_port_wait
 #define su_pthread_port_execute  su_base_port_execute
 

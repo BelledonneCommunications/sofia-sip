@@ -205,7 +205,6 @@ void su_pthread_port_deinit(su_port_t *self)
   su_base_port_deinit(self);
 }
 
-
 void su_pthread_port_lock(su_port_t *self, char const *who)
 {
   PORT_LOCK_DEBUG(("%p at %s locking(%p)...",
@@ -264,6 +263,7 @@ int su_pthread_port_own_thread(su_port_t const *self)
 
 struct clone_args
 {
+  su_port_create_f*create;
   su_root_t       *parent;
   su_root_magic_t *magic;
   su_root_init_f   init;
@@ -287,11 +287,11 @@ struct su_pthread_port_waiting_parent {
   int waiting;
 };
 
-/** Start a clone task by a pthread.
+/** Start a clone task running under a pthread.
  *
  * @internal
  *
- * Allocates and initializes a sub-task with its own thread. The sub-task is
+ * Allocates and initializes a sub-task with its own pthread. The sub-task is
  * represented by clone handle to the rest of the application. The function
  * su_clone_start() returns the clone handle in @a return_clone. The clone
  * handle is used to communicate with the newly created clone task using
@@ -331,13 +331,15 @@ struct su_pthread_port_waiting_parent {
  * su_clone_forget().
  * 
  */
-int su_pthread_port_start(su_root_t *parent,
-			  su_clone_r return_clone,
-			  su_root_magic_t *magic,
-			  su_root_init_f init,
-			  su_root_deinit_f deinit)
+int su_pthreaded_port_start(su_port_create_f *create,
+			    su_root_t *parent,
+			    su_clone_r return_clone,
+			    su_root_magic_t *magic,
+			    su_root_init_f init,
+			    su_root_deinit_f deinit)
 {
   struct clone_args arg = {
+    /* create: */ NULL,
     /* parent: */ NULL,
     /* magic: */  NULL,
     /* init: */   NULL,
@@ -351,9 +353,7 @@ int su_pthread_port_start(su_root_t *parent,
   int thread_created = 0;
   pthread_t tid;
 
-  if (parent && !parent->sur_threading)
-    return su_base_port_start(parent, return_clone, magic, init, deinit);
-
+  arg.create = create;
   arg.parent = parent;
   arg.magic = magic;
   arg.init = init;
@@ -388,15 +388,13 @@ static void *su_pthread_port_clone_main(void *varg)
 {
   struct clone_args *arg = (struct clone_args *)varg;
   su_task_r task;
-  int zap;
+  int zap = 1;
 
 #if SU_HAVE_WINSOCK
   su_init();
 #endif
 
-  task->sut_port = 
-    arg->parent->sur_task->sut_port->sup_base->sup_vtable->
-    su_port_create();
+  task->sut_port = arg->create();
 
   if (task->sut_port) {
     task->sut_port->sup_thread = 1;
@@ -498,14 +496,14 @@ static void su_pthread_port_clone_break(su_root_magic_t *m,
  */
 void su_pthread_port_wait(su_clone_r rclone)
 {
-  su_port_t *parent, *clone;
+  su_port_t *clone, *parent;
   struct su_pthread_port_waiting_parent mom[1];
   pthread_t tid;
 
-  parent = su_msg_from(rclone)->sut_port;
   clone = su_msg_to(rclone)->sut_port;
+  parent = su_msg_from(rclone)->sut_port;
 
-  if (parent == clone) {
+  if (clone == parent) {
     su_base_port_wait(rclone);
     return;
   }
@@ -541,9 +539,10 @@ void su_pthread_port_wait(su_clone_r rclone)
     pthread_cond_wait(mom->cv, mom->mutex);
 
   /* Run all messages from clone */
-  su_base_port_getmsgs_from_port(parent, clone);
+  while (su_port_getmsgs_from(parent, clone))
+    ;
 
-  /* Wait for clone thread to exit */
+  /* Allow clone thread to exit */
   pthread_mutex_unlock(mom->deinit);
   pthread_join(tid, NULL);
 

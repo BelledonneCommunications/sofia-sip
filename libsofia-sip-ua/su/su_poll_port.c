@@ -35,7 +35,7 @@
 
 #include "config.h"
 
-#if HAVE_POLL
+#if HAVE_POLL || HAVE_WIN32
 
 #include <stdlib.h>
 #include <assert.h>
@@ -114,6 +114,7 @@ static int su_poll_port_eventmask(su_port_t *self,
 				  int events);
 static int su_poll_port_multishot(su_port_t *self, int multishot);
 static int su_poll_port_wait_events(su_port_t *self, su_duration_t tout);
+static char const *su_poll_port_name(su_port_t const *self);
 
 su_port_vtable_t const su_poll_port_vtable[1] =
   {{
@@ -141,11 +142,17 @@ su_port_vtable_t const su_poll_port_vtable[1] =
       su_base_port_yield,
       su_poll_port_wait_events,
       su_base_port_getmsgs,
-      su_poll_port_create,
-      su_pthread_port_start,
+      su_base_port_getmsgs_from,
+      su_poll_port_name,
+      su_base_port_start_shared,
       su_pthread_port_wait,
       su_pthread_port_execute,
     }};
+
+static char const *su_poll_port_name(su_port_t const *self)
+{
+  return "poll";
+}
 
 static void su_poll_port_deinit(void *arg)
 {
@@ -660,6 +667,16 @@ su_port_t *su_poll_port_create(void)
     return su_home_unref(su_port_home(self)), NULL;
 
   return self;
+}
+
+int su_poll_clone_start(su_root_t *parent,
+			su_clone_r return_clone,
+			su_root_magic_t *magic,
+			su_root_init_f init,
+			su_root_deinit_f deinit)
+{
+  return su_pthreaded_port_start(su_poll_port_create, 
+				 parent, return_clone, magic, init, deinit);
 }
 
 #endif  /* HAVE_POLL */

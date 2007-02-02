@@ -108,6 +108,7 @@ static int su_epoll_port_eventmask(su_port_t *self,
 				   int events);
 static int su_epoll_port_multishot(su_port_t *self, int multishot);
 static int su_epoll_port_wait_events(su_port_t *self, su_duration_t tout);
+static char const *su_epoll_port_name(su_port_t const *self);
 
 su_port_vtable_t const su_epoll_port_vtable[1] =
   {{
@@ -135,12 +136,17 @@ su_port_vtable_t const su_epoll_port_vtable[1] =
       su_base_port_yield,
       su_epoll_port_wait_events,
       su_base_port_getmsgs,
-      su_epoll_port_create,
-      su_pthread_port_start,
+      su_base_port_getmsgs_from,
+      su_epoll_port_name,
+      su_base_port_start_shared,
       su_pthread_port_wait,
       su_pthread_port_execute,
     }};
 
+static char const *su_epoll_port_name(su_port_t const *self)
+{
+  return "epoll";
+}
 
 static void su_epoll_port_decref(su_port_t *self, int blocking, char const *who)
 {
@@ -546,6 +552,16 @@ su_port_t *su_epoll_port_create(void)
 
   return self;
 }
+
+int su_epoll_clone_start(su_root_t *parent,
+			 su_clone_r return_clone,
+			 su_root_magic_t *magic,
+			 su_root_init_f init,
+			 su_root_deinit_f deinit)
+{
+  return su_pthreaded_port_start(su_epoll_port_create, 
+				 parent, return_clone, magic, init, deinit);
+}
 #else
 
 su_port_t *su_epoll_port_create(void)
@@ -553,4 +569,15 @@ su_port_t *su_epoll_port_create(void)
   return su_poll_port_create();
 }
 
+int su_epoll_clone_start(su_root_t *parent,
+			su_clone_r return_clone,
+			su_root_magic_t *magic,
+			su_root_init_f init,
+			su_root_deinit_f deinit)
+{
+  return su_pthreaded_port_start(su_poll_port_create, 
+				 parent, return_clone, magic, init, deinit);
+}
+
 #endif  /* HAVE_EPOLL */
+
