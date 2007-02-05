@@ -1653,7 +1653,11 @@ static int sip_header_test(void)
   TEST(count(sip->sip_content_type->c_common), 1);
   TEST(count(sip->sip_route->r_common), 0);
   TEST(count(sip->sip_record_route->r_common), 4);
+#if SU_HAVE_EXPERIMENTAL
   TEST(count(sip->sip_unknown->un_common), 2);
+#else
+  TEST(count(sip->sip_unknown->un_common), 4);
+#endif
   TEST(count(sip->sip_error->er_common), 1);
   TEST(count(sip->sip_max_forwards->mf_common), 1);
   TEST(count(sip->sip_min_expires->me_common), 1);
