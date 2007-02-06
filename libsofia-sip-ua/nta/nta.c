@@ -7535,6 +7535,14 @@ void outgoing_destroy(nta_outgoing_t *orq)
   if (orq->orq_terminated || orq->orq_default) {
     outgoing_free(orq);
   }
+  /* We have to handle 200 OK statelessly => 
+     kill transaction immediately */
+  else if (orq->orq_method == sip_method_invite && !orq->orq_completed
+	   /* (unless we have to wait to send CANCEL) */
+	   && !orq->orq_cancel) {
+    orq->orq_destroyed = 1;
+    outgoing_terminate(orq);
+  }
   else {
     orq->orq_destroyed = 1;
     orq->orq_callback = outgoing_default_cb;
@@ -7942,6 +7950,16 @@ int outgoing_recv(nta_outgoing_t *orq,
       outgoing_send(cancel, 0);
     else
       outgoing_reply(cancel, SIP_481_NO_TRANSACTION, 0);
+
+    if (status < 300 && orq->orq_destroyed && 
+	orq->orq_method == sip_method_invite) {
+      outgoing_terminate(orq);      /* We can now kill transaction */
+      if (status == 100) {
+	msg_destroy(msg);
+	return 0;
+      }
+      return -1;
+    }
   }
 
   if (orq->orq_pending) {

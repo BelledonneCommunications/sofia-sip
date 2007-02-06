@@ -103,8 +103,6 @@ typedef struct register_usage nua_registration_t;
   TAG_IF((include) && (soa) && soa_is_remote_chat_active(soa) >= 0,	\
 	 SOATAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
 
-#define HAVE_NUA_HANDLE_DEBUG 1
-
 #if HAVE_NUA_HANDLE_DEBUG
 
 #define nua_handle_ref(nh) nua_handle_ref_by((nh), __func__)
