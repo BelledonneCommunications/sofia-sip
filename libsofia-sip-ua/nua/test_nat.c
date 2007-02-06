@@ -160,7 +160,7 @@ LIST_PROTOS(static, nat_filter, struct nat_filter);
 struct nat_filter
 {
   struct nat_filter *next, **prev;
-  int (*condition)(void const *message, size_t len);
+  size_t (*condition)(void *message, size_t len);
 };
 
 /* nat entry point */
@@ -680,29 +680,35 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
 {
   int events;
   ssize_t n, m;
+  size_t len, filtered;
   struct nat_filter *f;
 
   events = su_wait_events(wait, b->in_socket);
 
   n = su_recv(b->in_socket, nat->buffer, sizeof nat->buffer, 0);
-  if (n < 0) {
+  if (n == -1) {
     su_perror("udp_in_to_out: recv");
     return 0;
   }
 
+  len = (size_t)n;
+
   for (f = nat->out_filters; f; f = f->next) {
-    if (f->condition(nat->buffer, (size_t)n)) {
+    filtered = f->condition(nat->buffer, len);
+    if (filtered != len) {
       if (nat->logging)
-	printf("nat: udp filtered %d %s => %s\n",
-	       (int)n, b->in_name, b->out_name);
-      return 0;
+	printf("nat: udp filtered "MOD_ZU" from %s => "MOD_ZU" to %s\n",
+	       len, b->in_name, filtered, b->out_name);
+      if (filtered == 0)
+	return 0;
+      len = filtered;
     }
   }
 
   if (nat->symmetric)
-    m = su_send(b->out_socket, nat->buffer, n, 0);
+    m = su_send(b->out_socket, nat->buffer, len, 0);
   else
-    m = su_sendto(b->out_socket, nat->buffer, n, 0,
+    m = su_sendto(b->out_socket, nat->buffer, len, 0,
 		  nat->out_address, nat->out_addrlen);
 
   if (nat->logging)
@@ -716,6 +722,7 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
 {
   int events;
   ssize_t n, m;
+  size_t len, filtered;
   struct nat_filter *f;
 
   events = su_wait_events(wait, b->out_socket);
@@ -726,12 +733,17 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
     return 0;
   }
 
+  len = (size_t)n;
+
   for (f = nat->in_filters; f; f = f->next) {
-    if (f->condition(nat->buffer, (size_t)n)) {
+    filtered = f->condition(nat->buffer, len);
+    if (filtered != len) {
       if (nat->logging)
-	printf("nat: udp filtered %d %s => %s\n",
-	       (int)n, b->out_name, b->in_name);
-      return 0;
+	printf("nat: udp filtered "MOD_ZU" from %s => "MOD_ZU" to %s\n",
+	       len, b->out_name, filtered, b->in_name);
+      if (filtered == 0)
+	return 0;
+      len = filtered;
     }
   }
 
@@ -939,8 +951,8 @@ int execute_nat_filter_remove(void *_args)
 }
 
 struct nat_filter *test_nat_add_filter(struct nat *nat,
-				       int (*condition)(void const *message,
-							size_t len),
+				       size_t (*condition)(void *message,
+							   size_t len),
 				       int outbound)
 {
   struct args a[1];

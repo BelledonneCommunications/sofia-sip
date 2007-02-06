@@ -948,14 +948,18 @@ int test_mime_negotiation(struct context *ctx)
 
 /* ---------------------------------------------------------------------- */
 
-int filter_200_OK(void const *message, size_t len)
+size_t filter_200_OK(void *message, size_t len)
 {
-  return len >= 11 && strncasecmp(message, "SIP/2.0 200", 11) == 0;
+  if (len >= 11 && strncasecmp(message, "SIP/2.0 200", 11) == 0)
+    return 0;
+  return len;
 }
 
-int filter_ACK(void const *message, size_t len)
+size_t filter_ACK(void *message, size_t len)
 {
-  return len >= 7 && strncasecmp(message, "ACK sip", 7) == 0;
+  if (len >= 7 && strncasecmp(message, "ACK sip", 7) == 0) 
+    return 0;
+  return len;
 }
 
 int call_with_bad_ack(CONDITION_PARAMS);
