@@ -166,7 +166,9 @@ int tport_udp_init_primary(tport_primary_t *pri,
 
   tport_check_trunc(pri->pri_primary, ai);
 
+#if HAVE_SOFIA_STUN
   tport_stun_server_add_socket(pri->pri_primary);
+#endif
 
   return 0;
 }
@@ -295,9 +297,11 @@ int tport_recv_dgram(tport_t *self)
     /* SigComp */
     return tport_recv_comp_dgram(self, self->tp_comp, &self->tp_msg, 
 				 from, fromlen);
+#if HAVE_SOFIA_STUN
   else if (sample[0] == 0 || sample[0] == 1)
     /* STUN request or response */
     return tport_recv_stun_dgram(self, &self->tp_msg, from, fromlen);
+#endif
   else
     return 0;
 }

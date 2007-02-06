@@ -10272,8 +10272,12 @@ int nta_tport_keepalive(nta_outgoing_t *orq)
 
   assert(orq); (void)tp;
 
+#if HAVE_SOFIA_STUN
   return tport_keepalive(orq->orq_tport, msg_addrinfo(orq->orq_request),
 			 TAG_END());
+#else
+  return -1;
+#endif
 }
 
 /** Close all transports. @since Experimental in @VERSION_1_12_2. */

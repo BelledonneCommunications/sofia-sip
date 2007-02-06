@@ -273,6 +273,9 @@
 /* Define to 1 if you have the `socketpair' function. */
 #undef HAVE_SOCKETPAIR
 
+/* Define to 1 if we use NTH library */
+#define HAVE_SOFIA_NTH 1
+
 /* Define to 1 if we use NTLM library */
 #undef HAVE_SOFIA_NTLM
 

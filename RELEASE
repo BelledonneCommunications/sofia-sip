@@ -109,6 +109,10 @@ Notes on new features
   registration is not closed until client is unregisters, or the whole stack
   is shut down.
 
+- New build time options have been added: ability to build without 
+  STUN and HTTP support. See 'docs/devel_platform_notes.txt' for some
+  additional notes to distributors.
+
 <information about major new features
  - new/changed/removed functionality
  - links to further documentation

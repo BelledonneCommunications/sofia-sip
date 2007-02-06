@@ -492,7 +492,9 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   if (tick < 200)
     tick = 200;
 
+#if HAVE_SOFIA_STUN
   tport_init_stun_server(mr, ta_args(ta));
+#endif
 
   mr->mr_timer = su_timer_create(su_root_task(root), tick);
   su_timer_set(mr->mr_timer, tport_tick, mr);
@@ -531,7 +533,9 @@ void tport_destroy(tport_t *self)
   while (mr->mr_primaries)
     tport_zap_primary(mr->mr_primaries);
 
+#if HAVE_SOFIA_STUN
   tport_deinit_stun_server(mr);
+#endif
 
   if (mr->mr_dump_file)
     fclose(mr->mr_dump_file), mr->mr_dump_file = NULL;
@@ -1035,7 +1039,9 @@ void tport_zap_secondary(tport_t *self)
 
   mr = self->tp_master;
 
+#if HAVE_SOFIA_STUN
   tport_stun_server_remove_socket(self);
+#endif
 
   if (self->tp_index)
     su_root_deregister(mr->mr_root, self->tp_index);
@@ -1226,7 +1232,9 @@ extern tport_vtable_t const tport_threadpool_vtable;
 
 tport_vtable_t const *tport_vtables[TPORT_NUMBER_OF_TYPES + 1] =
 {
+#if HAVE_SOFIA_NTH
   &tport_http_connect_vtable,
+#endif
 #if HAVE_TLS
   &tport_tls_client_vtable,
   &tport_tls_vtable,
@@ -1294,7 +1302,9 @@ tport_set_f const *tport_set_methods[TPORT_NUMBER_OF_TYPES + 1] =
     tport_server_bind_set,
     tport_client_bind_set,
     tport_threadpool_set,
+#if HAVE_SOFIA_NTH
     tport_http_connect_set,
+#endif
 #if HAVE_TLS
     tport_tls_set,
 #endif
@@ -2661,8 +2671,10 @@ void tport_recv_event(tport_t *self)
 
     self->tp_time = su_time_ms(now);
 
+#if HAVE_SOFIA_STUN
     if (again == 3) /* STUN keepalive */
       return;
+#endif
 
     if (again < 0) {
       int error = su_errno();
