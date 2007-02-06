@@ -438,6 +438,8 @@ AC_SEARCH_LIBS(getipnodebyname, xnet socket nsl)
 AC_SEARCH_LIBS(gethostbyname, xnet nsl)
 AC_SEARCH_LIBS(getaddrinfo, xnet socket nsl)
 
+AC_FUNC_ALLOCA
+
 AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock \
                 socketpair gethostname gethostbyname getipnodebyname \
                 poll epoll_create select if_nameindex \
@@ -466,7 +468,7 @@ if test "${with_rt}" != no; then
 fi
 
 SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull \
-		   inet_ntop inet_pton])
+		   inet_ntop inet_pton poll])
 
 if test $ac_cv_func_signal = yes ; then
 AC_CHECK_DECL([SIGPIPE], [
@@ -483,12 +485,14 @@ fi
 AC_ARG_ENABLE(poll-port,
 [  --disable-poll-port              disable su_poll_port (enabled)
                                    Use this option in systems emulating poll
-                                   with select], , enable_poll_port=yes)
+                                   with select], , enable_poll_port=maybe)
 
-if test $enable_poll_port = yes ; then
+if test $enable_poll_port = maybe ; then
   if test $ac_cv_func_poll = yes ; then
     AC_DEFINE([HAVE_POLL_PORT], 1, [Define to 1 if you use poll in su_port.])
   fi
+elif test $enable_poll_port = yes ; then
+    AC_DEFINE([HAVE_POLL_PORT], 1, [Define to 1 if you use poll in su_port.])
 fi
 
 # ===========================================================================
