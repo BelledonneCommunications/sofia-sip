@@ -44,10 +44,12 @@ libsofia-sip-ua:
 - Added <sofia-sip/sip_extra.h> include file
 - Added auc_info() function (sofia-sip/auth_client.h)
 - Added alternative implementations to event reactor object (su_port_t,
-  referenced by su_root_t) that can be changed at runtime
+  referenced by su_root_t) that can be changed at runtime using SU_PORT
+  environment variable, for instance
   - Internal semantics of su_port_t reference counting have changed:
     now su_port_create() has one reference, and su_root_create_with_port()
     always consumes one reference
+- Changed return type of bm_memmem() and bm_memcasemem() to non-const
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 
@@ -129,6 +131,7 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Fixed problem in dialog matching. Problem reported by Fabio Margarido.
 - Fixed #1624446 - su_wait_clone() (and nua_destroy()) blocking for ever if
   the root object was created using su_glib
 - Fixed #1626330 - leak in nta.c which happened if INVITE never got a final
