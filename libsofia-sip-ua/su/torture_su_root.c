@@ -54,6 +54,7 @@ typedef struct test_ep_s   test_ep_t;
 
 #include <sofia-sip/su_wait.h>
 #include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_log.h>
 
 struct test_ep_s {
   test_ep_t     *next, **prev, **list;
@@ -330,7 +331,7 @@ int event_test(root_test_t rt[1])
   
   TEST_1(nodes = calloc(N, sizeof *nodes));
   
-  memset(su, 0, sulen = sizeof su);
+  memset(su, 0, sulen = sizeof su->su_sin);
   su->su_len = sizeof su->su_sin;
   su->su_family = AF_INET;
   su->su_sin.sin_addr.s_addr = htonl(0x7f000001); /* 127.0.0.1 */
@@ -344,9 +345,22 @@ int event_test(root_test_t rt[1])
 
     n->addrlen = sizeof n->addr;
 
-    if (bind(n->s, (void *)su, sulen) < 0 ||
-	getsockname(n->s, (void *)n->addr, &n->addrlen) ||
-	su_wait_create(n->wait, n->s, SU_WAIT_IN)) {
+    n->addr->su_len = sizeof n->addr;
+
+    if (bind(n->s, (void *)su, sulen) < 0) {
+      su_perror("bind()");
+      su_close(n->s);
+      break;
+    }
+      
+    if (getsockname(n->s, (void *)n->addr, &n->addrlen)) {
+      su_perror("getsockname()");
+      su_close(n->s);
+      break;
+    }
+
+    if (su_wait_create(n->wait, n->s, SU_WAIT_IN)) {
+      su_perror("su_wait_create()");
       su_close(n->s);
       break;
     }

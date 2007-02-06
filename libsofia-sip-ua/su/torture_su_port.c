@@ -148,6 +148,7 @@ int test_wakeup(su_port_t *port, su_root_magic_t *magic)
     if (su_sendto(magic->sockets[1], "X", 1, 0, su, sulen) < 0)
       su_perror("su_sendto"), exit(1);
     n = su_poll_port_wait_events(port, 100);
+
     if (n != 1)
       return 1;
     if (magic->error)
