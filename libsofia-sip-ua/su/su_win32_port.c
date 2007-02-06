@@ -583,7 +583,6 @@ int su_poll_port_wait_events(su_port_t *self, su_duration_t tout)
   su_wait_t *waits = self->sup_waits;
   int n = self->sup_n_waits;
   su_root_t *root;
-  unsigned version = self->sup_registers;
 
   i = su_wait(waits, (unsigned)n, tout);
 
@@ -591,6 +590,8 @@ int su_poll_port_wait_events(su_port_t *self, su_duration_t tout)
 #if 0
     /* poll() can return events for multiple wait objects */
     if (self->sup_multishot) {
+      unsigned version = self->sup_registers;
+
       for (; i < n; i++) {
         if (waits[i].revents) {
           root = self->sup_wait_roots[i];

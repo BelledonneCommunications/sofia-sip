@@ -59,6 +59,12 @@ void exdestructor(void *arg)
   (*ex->p)++;
 }
 
+void test_destructor(void *a)
+{
+  su_home_t *h = a;
+  h->suh_size = 13;
+}
+
 /** Test basic memory home operations  */
 static int test_alloc(void)
 {
@@ -163,7 +169,6 @@ static int test_alloc(void)
 
   {
     su_home_t h1[1];
-    void test_destructor(void *);
 
     memset(h1, 0, sizeof h1);
 
@@ -182,12 +187,6 @@ static int test_alloc(void)
   }
 
   END();
-}
-
-void test_destructor(void *a)
-{
-  su_home_t *h = a;
-  h->suh_size = 13;
 }
 
 static int test_strdupcat(void)
