@@ -101,16 +101,33 @@ SOFIA_BEGIN_DECLS
 #define SU_WAIT_MAX    (64)
 
 #else
-/* If nothing works, define these as in Linux poll.h */
+/* If nothing works, try these */
+
+#define	POLLIN		0x001
+#define	POLLPRI		0x002
+#define	POLLOUT		0x004
+
+#ifdef __USE_XOPEN
+#define	POLLRDNORM	0x040
+#define	POLLRDBAND	0x080
+#define	POLLWRNORM	0x100
+#define	POLLWRBAND	0x200
+#endif
+
+/* These for pollfd.revents */
+#define POLLERR         0x008
+#define POLLHUP         0x010
+#define POLLNVAL        0x020
+
 #define SU_WAIT_CMP(x, y) \
  (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
 
-#define SU_WAIT_IN      0x0001
-#define SU_WAIT_OUT     0x0004
-#define SU_WAIT_CONNECT 0x0004
-#define SU_WAIT_ERR     0x0008
-#define SU_WAIT_HUP     0x0010
-#define SU_WAIT_ACCEPT  0x0001
+#define SU_WAIT_IN      POLLIN
+#define SU_WAIT_OUT     POLLOUT
+#define SU_WAIT_CONNECT POLLOUT
+#define SU_WAIT_ERR     POLLERR
+#define SU_WAIT_HUP     POLLHUP
+#define SU_WAIT_ACCEPT  POLLIN
 #define SU_WAIT_FOREVER (-1)
 #define SU_WAIT_TIMEOUT (-2)
 
@@ -131,11 +148,24 @@ typedef struct pollfd su_wait_t;
 typedef HANDLE su_wait_t;
 #else
 /* typedef struct os_specific su_wait_t; */
-typedef struct _pollfd {
+typedef struct pollfd su_wait_t;
+struct pollfd {
   su_socket_t fd;   /* file descriptor */
   short events;     /* requested events */
   short revents;    /* returned events */
-} su_wait_t;
+};
+
+
+/* Type used for the number of file descriptors.  */
+typedef unsigned long int nfds_t;
+
+/* Poll the file descriptors described by the NFDS structures starting at
+   FDS.  If TIMEOUT is nonzero and not -1, allow TIMEOUT milliseconds for
+   an event to occur; if TIMEOUT is -1, block until an event occurs.
+   Returns the number of file descriptors with events, zero if timed out,
+   or -1 for errors.  */
+int poll (struct pollfd *__fds, nfds_t __nfds, int __timeout);
+
 #endif
 
 /* Used by AD */
@@ -360,7 +390,7 @@ SOFIAPUBFUN int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout);
 SOFIAPUBFUN int su_wait_events(su_wait_t *wait, su_socket_t s);
 SOFIAPUBFUN int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
 
-#if SU_HAVE_POLL
+#if !HAVE_WIN32 && (SU_HAVE_POLL || HAVE_SELECT)
 static inline
 su_socket_t su_wait_socket(su_wait_t *wait)
 {
