@@ -103,6 +103,8 @@ typedef struct register_usage nua_registration_t;
   TAG_IF((include) && (soa) && soa_is_remote_chat_active(soa) >= 0,	\
 	 SOATAG_ACTIVE_CHAT(soa_is_remote_chat_active(soa)))
 
+#define HAVE_NUA_HANDLE_DEBUG 1
+
 #if HAVE_NUA_HANDLE_DEBUG
 
 #define nua_handle_ref(nh) nua_handle_ref_by((nh), __func__)
@@ -111,13 +113,19 @@ typedef struct register_usage nua_registration_t;
 static inline nua_handle_t *nua_handle_ref_by(nua_handle_t *nh,
 					      char const *by)
 {
-  SU_DEBUG_0(("nua_handle_ref(%p) by %s\n", nh, by));
+  if (nh)
+    SU_DEBUG_0(("nua_handle_ref(%p) => "MOD_ZU" by %s\n", nh, 
+		su_home_refcount((su_home_t *)nh) + 1,
+		by));
   return (nua_handle_t *)su_home_ref((su_home_t *)nh);
 }
 
 static inline int nua_handle_unref_by(nua_handle_t *nh, char const *by)
 {
-  SU_DEBUG_0(("nua_handle_unref(%p) by %s\n", nh, by));
+  if (nh)
+    SU_DEBUG_0(("nua_handle_unref(%p) => "MOD_ZU" by %s\n", nh, 
+		su_home_refcount((su_home_t *)nh) - 1,
+		by));
   return su_home_unref((su_home_t *)nh);
 }
 

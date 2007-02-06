@@ -251,6 +251,9 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
   if (event == nua_r_ack || event == nua_i_none)
     return event;
 
+  if (nh == nua->nua_dhandle)
+    nh = NULL;
+
   if (nua_log->log_level >= 5) {
     char const *name = nua_event_name(event) + 4;
     char const *p = phrase ? phrase : "";
@@ -704,12 +707,10 @@ void nua_stack_destroy_handle(nua_t *nua, nua_handle_t *nh, tagi_t const *tags)
 
   nua_dialog_shutdown(nh, nh->nh_ds);
 
-#if 0
   if (nh->nh_ref_by_user) {
     nh->nh_ref_by_user = 0;
     nua_handle_unref(nh);
   }
-#endif
 
   nh_destroy(nua, nh);
 }
@@ -1552,6 +1553,7 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
   char const *phrase = sr->sr_phrase;
 
   int terminated;
+  int handle_can_be_terminated = initial && !sr->sr_event;
 
   assert(nh);
 
@@ -1596,6 +1598,9 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
     /* Remove all usages of the dialog */
     nua_dialog_remove_usages(nh, nh->nh_ds, status, phrase);
 
+    return 3;
+  }
+  else if (!handle_can_be_terminated) {
     return 3;
   }
   else {

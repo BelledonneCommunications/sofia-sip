@@ -955,16 +955,13 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
     e->e_status = status;
     e->e_phrase = phrase;
 
-  if (nua_log->log_level >= 7) {
-    char const *name = nua_event_name(event) + 4;
-    SU_DEBUG_7(("nua(%p): signal %s\n", nh, name));
-  }
+    SU_DEBUG_7(("nua(%p): signal %s\n", nh, nua_event_name(event) + 4));
 
     if (su_msg_send(sumsg) != 0 && event != nua_r_destroy)
       nua_handle_unref(nh);
   }
   else {
-    /* XXX  - we should return error code to application */
+    /* XXX  - we should return error code to application but we just abort() */
     assert(ENOMEM == 0);
   }
 
@@ -992,7 +989,11 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
       SU_DEBUG_7(("nua(%p): event %s dropped\n", nh, name));
     }
     if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
+#if HAVE_NUA_HANDLE_DEBUG
+      SU_DEBUG_0(("nua(%p): freed by application\n", nh));
+#else
       SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+#endif
     }
     if (e->e_msg)
       msg_destroy(e->e_msg), e->e_msg = NULL;
@@ -1021,7 +1022,11 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
 		    e->e_tags);
 
   if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
+#if HAVE_NUA_HANDLE_DEBUG
+    SU_DEBUG_0(("nua(%p): freed by application\n", nh));
+#else
     SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+#endif
   }
 
   if (!su_msg_is_non_null(nua->nua_current))
