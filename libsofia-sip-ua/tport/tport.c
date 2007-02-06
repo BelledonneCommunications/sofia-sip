@@ -3152,7 +3152,7 @@ int tport_prepare_and_send(tport_t *self, msg_t *msg,
     return -1;
   }
 
-  if (msg_size(msg) > (mtu ? mtu : tport_mtu(self))) {
+  if (msg_size(msg) > (usize_t)(mtu ? mtu : tport_mtu(self))) {
     msg_set_errno(msg, EMSGSIZE);
     return -1;
   }
