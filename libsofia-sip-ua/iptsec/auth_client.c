@@ -770,12 +770,13 @@ static int auc_digest_challenge(auth_client_t *ca, msg_auth_t const *ch)
   if (ac->ac_qop && (cda->cda_cnonce == NULL || ac->ac_stale)) {
     su_guid_t guid[1];
     char *cnonce;
+    size_t b64len = BASE64_MINSIZE(sizeof(guid)) + 1;
     if (cda->cda_cnonce != NULL)
       /* Free the old one if we are updating after stale=true */
       su_free(home, (void *)cda->cda_cnonce);
     su_guid_generate(guid);
-    cda->cda_cnonce = cnonce = su_alloc(home, BASE64_SIZE(sizeof(guid)) + 1);
-    base64_e(cnonce, BASE64_SIZE(sizeof(guid)) + 1, guid, sizeof(guid));
+    cda->cda_cnonce = cnonce = su_alloc(home, b64len);
+    base64_e(cnonce, b64len, guid, sizeof(guid));
     cda->cda_ncount = 0;
   }
 

@@ -608,7 +608,7 @@ struct nonce {
   uint8_t    digest[6];
 };
 
-#define AUTH_DIGEST_NONCE_LEN (BASE64_SIZE(sizeof (struct nonce)) + 1)
+#define AUTH_DIGEST_NONCE_LEN (BASE64_MINSIZE(sizeof (struct nonce)) + 1)
 
 /** Authenticate a request with @b Digest authentication scheme.
  *
