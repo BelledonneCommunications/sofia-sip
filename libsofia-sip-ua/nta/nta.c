@@ -3621,6 +3621,7 @@ char const *nta_leg_tag(nta_leg_t *leg, char const *tag)
   if (tag) {
     if (sip_to_tag(leg->leg_home, leg->leg_local, tag) < 0)
       return NULL;
+    leg->leg_tagged = 1;
     return leg->leg_local->a_tag;
   }
 
@@ -3628,6 +3629,8 @@ char const *nta_leg_tag(nta_leg_t *leg, char const *tag)
 
   if (!tag || sip_to_add_param(leg->leg_home, leg->leg_local, tag) < 0)
     return NULL;
+
+  leg->leg_tagged = 1;
 
   return leg->leg_local->a_tag;
 }
@@ -3977,6 +3980,14 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
     /* Do not match if the incoming To has tag, but the local does not */
     if (!local_tag && to_tag)
       continue;
+
+    /*
+     * Do not match if incoming To has no tag and we have local tag
+     * and the tag has been there from the beginning.
+     */
+    if (local_tag && !to_tag && !leg->leg_tagged)
+      continue;
+
     /* Do not match if incoming From has no tag but remote has a tag */
     if (remote_tag && !from_tag)
       continue;

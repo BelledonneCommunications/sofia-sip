@@ -346,6 +346,11 @@ struct nta_leg_s
   unsigned          leg_loose_route : 1; /**< Topmost route in set is LR */
 #endif
   unsigned          leg_local_is_to : 1; /**< Backwards-compatibility. */
+  unsigned          leg_tagged : 1; /**< Tagged after creation.
+				     *
+				     * Request missing To tag matches it
+				     * even after tagging.
+				     */
   unsigned:0;
   nta_request_f    *leg_callback;
   nta_leg_magic_t  *leg_magic;
