@@ -77,7 +77,7 @@ Contributors to this release
 - **template**: First Surname (patch to nua/soa/msg)
 - Petteri Puolakka (patch to stun)
 - Mikhail Zabluev (patch to su-glib mainloop integration)
-- Michael Jerris (patch to url)
+- Michael Jerris (patch to url parsing # in sip/sips userpart)
 - Colin Whittaker (TPTAG_TOS())
 - Roman Filonenko (TPTAG_LOG(), TPTAG_DUMP(), 
 	           patch to query DNS-servers with IP-Helper on win32)
@@ -129,6 +129,10 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Fixed #1624446 - su_wait_clone() (and nua_destroy()) blocking for ever if
+  the root object was created using su_glib
+- Fixed #1626330 - leak in nta.c which happened if INVITE never got a final
+  response nor timed out.
 - Fixed handle leak (pthread_*_init without pthread_*_destroy). Problem
   reported by Maxim Zaikin.
 - Fixed crash when nua_bye() was called while a NOTIFY client transaction
