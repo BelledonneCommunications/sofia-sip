@@ -35,7 +35,7 @@
 
 #include "config.h"
 
-#if HAVE_POLL || HAVE_WIN32
+#if HAVE_POLL || HAVE_SELECT
 
 #include <stdlib.h>
 #include <assert.h>
@@ -679,4 +679,4 @@ int su_poll_clone_start(su_root_t *parent,
 				 parent, return_clone, magic, init, deinit);
 }
 
-#endif  /* HAVE_POLL */
+#endif  /* HAVE_POLL || HAVE_SELECT */

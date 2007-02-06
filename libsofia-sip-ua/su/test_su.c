@@ -456,6 +456,8 @@ RETSIGTYPE term(int n)
 
   exit(1);
 }
+#else
+static char const no_alarm[] = "";
 #endif
 
 

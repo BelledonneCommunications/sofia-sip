@@ -124,7 +124,7 @@ static int callback(su_root_magic_t *magic,
 
   magic->wakeups[i]++;
 
-#if HAVE_POLL
+#if HAVE_POLL || HAVE_SELECT
   if (w->fd != magic->sockets[i])
     return ++magic->error;
 #endif
