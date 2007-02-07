@@ -766,7 +766,7 @@ su_duration_t set_timeout(nta_agent_t *agent, su_duration_t offset)
       SU_DEBUG_9(("nta: timer %s to %ld ms\n", "set", (long)offset));
       
     su_timer_set_at(agent->sa_timer, agent_timer, agent, 
-		    su_time_add(now, next));
+		    su_time_add(now, offset));
     agent->sa_next = next;
   }
 
