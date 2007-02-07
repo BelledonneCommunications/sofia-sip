@@ -302,7 +302,7 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
       void *b = t_end, *end = (char *)b + xtra;
 
       t = tl_dup(t, tags, &b); p = b;
-      assert(t == t_end); assert(b == end);
+      assert(t == t_end); assert(b == end); (void)end;
     }
     else
       p = e + 1;

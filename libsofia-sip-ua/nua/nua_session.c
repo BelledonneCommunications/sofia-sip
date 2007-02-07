@@ -1773,14 +1773,13 @@ nua_session_server_init(nua_server_request_t *sr)
 int nua_invite_server_preprocess(nua_server_request_t *sr)
 {
   nua_handle_t *nh = sr->sr_owner;
-  nua_t *nua = nh->nh_nua;
   nua_dialog_state_t *ds = nh->nh_ds;
   nua_session_usage_t *ss;
 
   sip_t const *request = sr->sr_request.sip;
 
   assert(sr->sr_status == 100);
-  assert(nh != nua->nua_dhandle);
+  assert(nh != nh->nh_nua->nua_dhandle);
 
   if (sr->sr_status > 100)
     return sr->sr_status;
