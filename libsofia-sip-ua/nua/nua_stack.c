@@ -149,7 +149,7 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
     return -1;
 
   dnh->nh_prefs = (void *)(dnh + 1);
-  dnh->nh_valid = nua_handle;
+  dnh->nh_valid = nua_valid_handle_cookie;
   dnh->nh_nua = nua;
   nua_handle_ref(dnh); dnh->nh_ref_by_stack = 1; 
   nua_handle_ref(dnh); dnh->nh_ref_by_user = 1;
@@ -259,9 +259,9 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
     char const *p = phrase ? phrase : "";
 
     if (status == 0)
-      SU_DEBUG_5(("nua(%p): event %s %s\n", nh, name, p));
+      SU_DEBUG_5(("nua(%p): event %s %s\n", (void *)nh, name, p));
     else
-      SU_DEBUG_5(("nua(%p): event %s %u %s\n", nh, name, status, p));
+      SU_DEBUG_5(("nua(%p): event %s %u %s\n", (void *)nh, name, status, p));
   }
 
   if (event == nua_r_destroy) {
@@ -348,7 +348,7 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
 
   if (nua_log->log_level >= 7) {
     char const *name = nua_event_name(e->e_event) + 4;
-    SU_DEBUG_7(("nua(%p): recv %s\n", nh, name));
+    SU_DEBUG_7(("nua(%p): recv %s\n", (void *)nh, name));
   }
 
   if (nh) {
@@ -364,10 +364,11 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
   if (nua_log->log_level >= 5) {
     char const *name = nua_event_name(e->e_event);
     if (e->e_status == 0)
-      SU_DEBUG_5(("nua(%p): signal %s\n", nh, name + 4));
+      SU_DEBUG_5(("nua(%p): signal %s\n", (void *)nh, name + 4));
     else
       SU_DEBUG_5(("nua(%p): signal %s %u %s\n",
-		  nh, name + 4, e->e_status, e->e_phrase ? e->e_phrase : ""));
+		  (void *)nh, name + 4,
+		  e->e_status, e->e_phrase ? e->e_phrase : ""));
   }
 
   su_msg_save(nua->nua_signal, msg);
@@ -1133,8 +1134,8 @@ int nua_stack_process_request(nua_handle_t *nh,
   initial = nh == nua->nua_dhandle;
 
   if (sm == NULL) {
-    SU_DEBUG_1(("nua(%p): strange %s from <" URL_PRINT_FORMAT ">\n", nh,
-		sip->sip_request->rq_method_name,
+    SU_DEBUG_1(("nua(%p): strange %s from <" URL_PRINT_FORMAT ">\n",
+		(void *)nh, sip->sip_request->rq_method_name,
 		URL_PRINT_ARGS(sip->sip_from->a_url)));
   }
   else if (initial && sm->sm_flags.in_dialog) {

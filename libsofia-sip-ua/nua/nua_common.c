@@ -110,13 +110,14 @@ nua_handle_t *nh_create_handle(nua_t *nua,
   assert(nua->nua_home);
 
   if ((nh = su_home_clone(nua->nua_home, sizeof(*nh)))) {
-    nh->nh_valid = nua_handle;
+    nh->nh_valid = nua_valid_handle_cookie;
     nh->nh_nua = nua;
     nh->nh_magic = hmagic;
     nh->nh_prefs = nua->nua_dhandle->nh_prefs;
 
     if (nua_handle_save_tags(nh, tags) < 0) {
-      SU_DEBUG_5(("nua(%p): creating handle %p failed\n", nua, nh));
+      SU_DEBUG_5(("nua(%p): creating handle %p failed\n",
+		  (void *)nua, (void *)nh));
       su_home_unref(nh->nh_home), nh = NULL;
     }
     
@@ -136,7 +137,7 @@ nua_handle_t *nh_create_handle(nua_t *nua,
       } 
       else {
 	_handle_lifetime = 2;
-	SU_DEBUG_0(("nh_handle_create(%p)\n", nh));
+	SU_DEBUG_0(("nh_handle_create(%p)\n", (void *)nh));
 	su_home_destructor(nh->nh_home, nh_destructor);
       }
     }
@@ -159,7 +160,7 @@ extern char const _NUA_HANDLE_DEBUG[];
 static void nh_destructor(void *arg)
 {
   nua_handle_t *nh = arg;
-  SU_DEBUG_0(("nh_destructor(%p)\n", nh));
+  SU_DEBUG_0(("nh_destructor(%p)\n", (void *)nh));
 }
 
 #undef nua_handle_ref

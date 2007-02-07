@@ -25,7 +25,7 @@
 /**@ingroup su_wait
  * @CFILE su_pthread_port.c
  *
- * OS-Independent Socket Syncronization Interface with pthreads
+ * OS-Independent Syncronization Interface with pthreads
  *
  * This implements #su_msg_t message passing functionality using pthreads.
  *
@@ -87,7 +87,8 @@ static int su_mbox_port_wakeup(su_root_magic_t *magic, /* NULL */
  */
 int su_pthread_port_init(su_port_t *self, su_port_vtable_t const *vtable)
 {
-  SU_DEBUG_9(("su_pthread_port_init(%p, %p) called\n", self, vtable));
+  SU_DEBUG_9(("su_pthread_port_init(%p, %p) called\n",
+	      (void *)self, (void *)vtable));
 
   if (su_base_port_init(self, vtable) == 0 &&
       su_base_port_threadsafe(self) == 0) {

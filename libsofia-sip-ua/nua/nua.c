@@ -212,7 +212,8 @@ void nua_destroy(nua_t *nua)
 
   if (nua) {
     if (!nua->nua_shutdown_final) {
-      SU_DEBUG_0(("nua_destroy(%p): FATAL: nua_shutdown not completed\n", nua));
+      SU_DEBUG_0(("nua_destroy(%p): FATAL: nua_shutdown not completed\n",
+		  (void *)nua));
       assert(nua->nua_shutdown);
       return;
     }
@@ -591,7 +592,7 @@ void nua_get_params(nua_t *nua, tag_type_t tag, tag_value_t value, ...)
     ta_end(ta); \
   } \
   else { \
-    SU_DEBUG_1(("nua: " #event " with invalid handle %p\n", nh));	\
+    SU_DEBUG_1(("nua: " #event " with invalid handle %p\n", (void *)nh)); \
   }
 
 /* Documented with nua_stack_set_params() */
@@ -876,7 +877,7 @@ void nua_respond(nua_handle_t *nh,
     ta_end(ta);
   }
   else {
-    SU_DEBUG_1(("nua: respond with invalid handle %p\n", nh));
+    SU_DEBUG_1(("nua: respond with invalid handle %p\n", (void *)nh));
   }
 }
 
@@ -955,7 +956,8 @@ void nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg, int always,
     e->e_status = status;
     e->e_phrase = phrase;
 
-    SU_DEBUG_7(("nua(%p): signal %s\n", nh, nua_event_name(event) + 4));
+    SU_DEBUG_7(("nua(%p): signal %s\n", (void *)nh,
+		nua_event_name(event) + 4));
 
     if (su_msg_send(sumsg) != 0 && event != nua_r_destroy)
       nua_handle_unref(nh);
@@ -986,13 +988,13 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   if (!nh || !nh->nh_valid) {	/* Handle has been destroyed */
     if (nua_log->log_level >= 7) {
       char const *name = nua_event_name(e->e_event) + 4;
-      SU_DEBUG_7(("nua(%p): event %s dropped\n", nh, name));
+      SU_DEBUG_7(("nua(%p): event %s dropped\n", (void *)nh, name));
     }
     if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
 #if HAVE_NUA_HANDLE_DEBUG
-      SU_DEBUG_0(("nua(%p): freed by application\n", nh));
+      SU_DEBUG_0(("nua(%p): freed by application\n", (void *)nh));
 #else
-      SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+      SU_DEBUG_9(("nua(%p): freed by application\n", (void *)nh));
 #endif
     }
     if (e->e_msg)
@@ -1023,9 +1025,9 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
 
   if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
 #if HAVE_NUA_HANDLE_DEBUG
-    SU_DEBUG_0(("nua(%p): freed by application\n", nh));
+    SU_DEBUG_0(("nua(%p): freed by application\n", (void *)nh));
 #else
-    SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+    SU_DEBUG_9(("nua(%p): freed by application\n", (void *)nh));
 #endif
   }
 
@@ -1081,7 +1083,7 @@ void nua_destroy_event(nua_saved_event_t saved[1])
       msg_destroy(e->e_msg), e->e_msg = NULL;
 
     if (nh && !NH_IS_DEFAULT(nh) && nua_handle_unref(nh)) {
-      SU_DEBUG_9(("nua(%p): freed by application\n", nh));
+      SU_DEBUG_9(("nua(%p): freed by application\n", (void *)nh));
     }
 
     su_msg_destroy(saved);

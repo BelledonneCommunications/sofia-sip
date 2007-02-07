@@ -950,7 +950,8 @@ int auth_readdb_if_needed(auth_mod_t *am)
 #include <sys/file.h>
 #endif
 
-#define auth_apw_local auth_readdb_internal
+/* This is just a magic value */
+#define auth_apw_local ((void *)(intptr_t)auth_readdb_internal)
 
 /** Read authentication database */
 static

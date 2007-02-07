@@ -157,7 +157,7 @@ static void su_epoll_port_deinit(void *arg)
 {
   su_port_t *self = arg;
 
-  SU_DEBUG_9(("%s(%p) called\n", "su_epoll_port_deinit", self));
+  SU_DEBUG_9(("%s(%p) called\n", "su_epoll_port_deinit", (void* )self));
 
   su_pthread_port_deinit(self);
 
@@ -280,7 +280,7 @@ static int su_epoll_port_deregister0(su_port_t *self, int i, int destroy_wait)
   assert(ser->ser_id == i);
 
   if (epoll_ctl(self->sup_epoll, EPOLL_CTL_DEL, ser->ser_wait->fd, NULL) == -1) {
-    SU_DEBUG_1(("su_port(%p): EPOLL_CTL_DEL(%u): %s\n", self, 
+    SU_DEBUG_1(("su_port(%p): EPOLL_CTL_DEL(%u): %s\n", (void *)self, 
 		ser->ser_wait->fd, su_strerror(su_errno())));
   }
 
@@ -435,7 +435,7 @@ int su_epoll_port_eventmask(su_port_t *self, int index, int socket, int events)
   ev.data.u32 = (uint32_t)index;
 
   if (epoll_ctl(self->sup_epoll, EPOLL_CTL_MOD, ser->ser_wait->fd, &ev) == -1) {
-    SU_DEBUG_1(("su_port(%p): EPOLL_CTL_MOD(%u): %s\n", self, 
+    SU_DEBUG_1(("su_port(%p): EPOLL_CTL_MOD(%u): %s\n", (void *)self, 
 		ser->ser_wait->fd, su_strerror(su_errno())));
     return -1;
   }
@@ -532,7 +532,7 @@ su_port_t *su_epoll_port_create(void)
   }
 
   SU_DEBUG_9(("%s(%p): epoll_create() => %u: %s\n",
-	      "su_port_create", self, self->sup_epoll, "OK"));
+	      "su_port_create", (void *)self, self->sup_epoll, "OK"));
 
   if (su_home_destructor(su_port_home(self), su_epoll_port_deinit) < 0 ||
       !(self->sup_indices = 

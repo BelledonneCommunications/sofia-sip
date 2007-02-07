@@ -226,10 +226,10 @@ enum {
 
 #define ALIGNMENT (8)
 #define ALIGN(n) (size_t)(((n) + (ALIGNMENT - 1)) & (size_t)~(ALIGNMENT - 1))
-#define SIZEBITS (sizeof (size_t) * 8 - 1)
+#define SIZEBITS (sizeof (unsigned) * 8 - 1)
 
 typedef struct {
-  size_t   sua_size:SIZEBITS;	/**< Size of the block */
+  unsigned sua_size:SIZEBITS;	/**< Size of the block */
   unsigned sua_home:1;		/**< Is this another home? */
   unsigned :0;
   void    *sua_data;		/**< Data pointer */
@@ -261,7 +261,7 @@ static void su_home_check_blocks(su_block_t const *b);
 static void su_home_stats_alloc(su_block_t *, void *p, void *preload,
 				size_t size, int zero);
 static void su_home_stats_free(su_block_t *sub, void *p, void *preload,
-			       size_t size);
+			       unsigned size);
 
 static void _su_home_deinit(su_home_t *home);
 
@@ -351,7 +351,7 @@ static inline int su_alloc_check(su_block_t const *sub, su_alloc_t const *sua)
   size_t size, term;
   assert(sua);
   if (sua) {
-    size = sua->sua_size;
+    size = (size_t)sua->sua_size;
     memcpy(&term, (char *)sua->sua_data + size, sizeof (term));
     assert(size - term == 0);
     return size - term == 0;
@@ -412,7 +412,10 @@ void *sub_alloc(su_home_t *home,
 {
   void *data, *preload = NULL;
   
-  assert (size < (1UL << SIZEBITS));
+  assert (size < (((size_t)1) << SIZEBITS));
+
+  if (size >= ((size_t)1) << SIZEBITS)
+    return (void)(errno = ENOMEM), NULL;
 
   if (sub == NULL || 3 * sub->sub_used > 2 * sub->sub_n) {
     /* Resize the hash table */
@@ -505,7 +508,7 @@ void *sub_alloc(su_home_t *home,
     /* OK, add the block to the hash table. */
 
     sua = su_block_add(sub, data); assert(sua);
-    sua->sua_size = size;
+    sua->sua_size = (unsigned)size;
     sua->sua_home = zero > 1;
 
     if (sub->sub_stats)
@@ -539,9 +542,9 @@ void *su_home_new(isize_t size)
   assert(size >= sizeof (*home));
 
   if (size < sizeof (*home))
-    return (errno = EINVAL), NULL;
+    return (void)(errno = EINVAL), NULL;
   else if (size > INT_MAX)
-    return (errno = ENOMEM), NULL;
+    return (void)(errno = ENOMEM), NULL;
 
   home = calloc(1, size);
   if (home) {
@@ -806,7 +809,7 @@ void su_free(su_home_t *home, void *data)
       }
 
 #if MEMCHECK != 0
-      memset(data, 0xaa, allocation->sua_size);
+      memset(data, 0xaa, (size_t)allocation->sua_size);
 #endif
 
       memset(allocation, 0, sizeof (*allocation));
@@ -1248,7 +1251,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
 #endif
       memset(sua, 0, sizeof *sua);
       sub->sub_used--;
-      su_block_add(sub, ndata)->sua_size = size;
+      su_block_add(sub, ndata)->sua_size = (unsigned)size;
     }
     UNLOCK(home);
 
@@ -1279,7 +1282,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
       return data;
     }
   }
-  else if (size < sua->sua_size) {
+  else if (size < (size_t)sua->sua_size) {
     /* Reduce existing preload */
     if (sub->sub_stats) {
       su_home_stats_free(sub, data, data, sua->sua_size);
@@ -1288,7 +1291,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
 #if MEMCHECK_EXTRA
     memcpy((char *)data + size, &term, sizeof (term));
 #endif
-    sua->sua_size = size;
+    sua->sua_size = (unsigned)size;
     UNLOCK(home);
     return data;
   }
@@ -1303,7 +1306,10 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
 	su_home_stats_free(sub, data, data, sua->sua_size);
     }
     
-    memcpy(ndata, data, sua->sua_size < size ? sua->sua_size : size);
+    memcpy(ndata, data,
+	   (size_t)sua->sua_size < size
+	   ? (size_t)sua->sua_size
+	   : size);
 #if MEMCHECK_EXTRA
     memcpy((char *)ndata + size, &term, sizeof (term));
 #endif
@@ -1313,7 +1319,7 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
 
     memset(sua, 0, sizeof *sua); sub->sub_used--;
 
-    su_block_add(sub, ndata)->sua_size = size;
+    su_block_add(sub, ndata)->sua_size = (unsigned)size;
   }
 
   UNLOCK(home);
@@ -1572,7 +1578,8 @@ void su_home_stats_alloc(su_block_t *sub, void *p, void *preload,
 }
 
 static 
-void su_home_stats_free(su_block_t *sub, void *p, void *preload, size_t size)
+void su_home_stats_free(su_block_t *sub, void *p, void *preload,
+			unsigned size)
 {
   su_home_stat_t *hs = sub->sub_stats;
 

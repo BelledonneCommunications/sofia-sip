@@ -220,7 +220,7 @@ void authorize_watcher(nea_server_t *nes,
       what = "active";
     }
 
-    SU_DEBUG_7(("nua(%p): authorize_watcher: %s\n", nh, what)); 
+    SU_DEBUG_7(("nua(%p): authorize_watcher: %s\n", (void *)nh, what)); 
     nea_sub_auth(sn->sn_subscriber, substate,
 		 TAG_IF(substate == nua_substate_pending,
 			NEATAG_FAKE(1)),
@@ -232,7 +232,7 @@ void authorize_watcher(nea_server_t *nes,
     substate = nua_substate_terminated;
     nea_server_flush(nes, NULL);
     SU_DEBUG_7(("nua(%p): authorize_watcher: %s\n", 
-		nh, "watcher is removed")); 
+		(void *)nh, "watcher is removed")); 
   }
 
   nua_stack_tevent(nua, nh, msg, nua_i_subscription, status, phrase,

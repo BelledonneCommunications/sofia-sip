@@ -1047,7 +1047,7 @@ static su_port_t *su_source_port_create(void)
     su_perror("su_source_port_create(): g_source_new");
   }
 
-  SU_DEBUG_1(("su_source_port_create() returns %p\n", self));
+  SU_DEBUG_1(("su_source_port_create() returns %p\n", (void *)self));
 
   return self;
 }

@@ -269,7 +269,7 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
     du = *prev_du;
     if (du) {		/* Already exists */
       SU_DEBUG_5(("nua(%p): adding already existing %s usage%s%s\n",
-		  own, nua_dialog_usage_name(du), 
+		  (void *)own, nua_dialog_usage_name(du), 
 		  event ? "  with event " : "", event ? event->o_type : ""));
       
       if (prev_du != &ds->ds_usage) {
@@ -297,7 +297,7 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
       }
 	
       SU_DEBUG_5(("nua(%p): adding %s usage%s%s\n",
-		  own, nua_dialog_usage_name(du), 
+		  (void *)own, nua_dialog_usage_name(du), 
 		  o ? " with event " : "", o ? o->o_type :""));
 
       su_home_ref(own);
@@ -371,7 +371,7 @@ void nua_dialog_usage_remove_at(nua_owner_t *own,
     o = du->du_event;
 
     SU_DEBUG_5(("nua(%p): removing %s usage%s%s\n",
-		own, nua_dialog_usage_name(du), 
+		(void *)own, nua_dialog_usage_name(du), 
 		o ? " with event " : "", o ? o->o_type :""));
     du->du_class->usage_remove(own, ds, du);
     su_home_unref(own);
@@ -420,7 +420,7 @@ void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
       }
     }
     
-    SU_DEBUG_3(("nua(%p): handle with %s%s%s\n", own,
+    SU_DEBUG_3(("nua(%p): handle with %s%s%s\n", (void *)own,
 		ds->ds_has_session ? "session and " : "", 
 		ds->ds_has_events ? "events " : "",
 		buffer));

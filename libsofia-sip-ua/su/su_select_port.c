@@ -154,7 +154,7 @@ static void su_select_port_deinit(void *arg)
 {
   su_port_t *self = arg;
 
-  SU_DEBUG_9(("%s(%p) called\n", "su_select_port_deinit", self));
+  SU_DEBUG_9(("%s(%p) called\n", "su_select_port_deinit", (void *)self));
 
   su_pthread_port_deinit(self);
 
@@ -171,7 +171,8 @@ static void su_select_port_deinit(void *arg)
   if (self->sup_indices)
     free(self->sup_indices), self->sup_indices = NULL;
 
-  SU_DEBUG_9(("%s(%p) freed registrations\n", "su_select_port_deinit", self));
+  SU_DEBUG_9(("%s(%p) freed registrations\n",
+	      "su_select_port_deinit", (void *)self));
 }
 
 static void su_select_port_decref(su_port_t *self, int blocking, char const *who)

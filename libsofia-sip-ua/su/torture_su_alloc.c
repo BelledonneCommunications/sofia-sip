@@ -131,7 +131,7 @@ static int test_alloc(void)
 
   TEST_1(su_in_home(h2->home, m));
   TEST_1(!su_in_home(h2->home, (char *)m + 1));
-  TEST_1(!su_in_home(h2->home, su_in_home));
+  TEST_1(!su_in_home(h2->home, (void *)(intptr_t)su_in_home));
   TEST_1(!su_in_home(h3->home, m));
   TEST_1(!su_in_home(NULL, m));
   TEST_1(!su_in_home(h3->home, NULL));

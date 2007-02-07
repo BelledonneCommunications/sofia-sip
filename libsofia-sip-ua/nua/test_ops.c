@@ -147,45 +147,45 @@ void print_event(nua_event_t event,
 
   if (event == nua_i_state) {
     fprintf(stderr, "%s.nua(%p): event %s %s\n",
-	    ep->name, nh, nua_event_name(event),
+	    ep->name, (void *)nh, nua_event_name(event),
 	    nua_callstate_name(callstate(tags)));
   }
   else if ((int)event >= nua_r_set_params) {
     t = tl_find(tags, nutag_substate);
     if (t) {
       fprintf(stderr, "%s.nua(%p): event %s status %u %s (%s)\n",
-	      ep->name, nh, nua_event_name(event), status, phrase,
+	      ep->name, (void*)nh, nua_event_name(event), status, phrase,
 	      nua_substate_name(t->t_value));
     }
     else {
       fprintf(stderr, "%s.nua(%p): event %s status %u %s\n",
-	      ep->name, nh, nua_event_name(event), status, phrase);
+	      ep->name, (void *)nh, nua_event_name(event), status, phrase);
     }
   }
   else if (event == nua_i_notify) {
     t = tl_find(tags, nutag_substate);
     fprintf(stderr, "%s.nua(%p): event %s %s (%s)\n",
-	    ep->name, nh, nua_event_name(event), phrase,
+	    ep->name, (void *)nh, nua_event_name(event), phrase,
 	    nua_substate_name(t ? t->t_value : 0));
   }
   else if ((int)event >= 0) {
     fprintf(stderr, "%s.nua(%p): event %s %s\n",
-	    ep->name, nh, nua_event_name(event), phrase);
+	    ep->name, (void *)nh, nua_event_name(event), phrase);
   }
   else if (status > 0) {
     fprintf(stderr, "%s.nua(%p): call %s() with status %u %s\n",
-	    ep->name, nh, operation, status, phrase);
+	    ep->name, (void *)nh, operation, status, phrase);
   }
   else {
     t = tl_find(tags, siptag_subject_str);
     if (t && t->t_value) {
       char const *subject = (char const *)t->t_value;
       fprintf(stderr, "%s.nua(%p): call %s() \"%s\"\n",
-	      ep->name, nh, operation, subject);
+	      ep->name, (void *)nh, operation, subject);
     }
     else
       fprintf(stderr, "%s.nua(%p): call %s()\n",
-	      ep->name, nh, operation);
+	      ep->name, (void *)nh, operation);
   }
 
   if ((tstflags & tst_verbatim) && tags)

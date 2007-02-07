@@ -1532,7 +1532,7 @@ int nta_agent_add_tport(nta_agent_t *self,
 	(nta_compressor_vtable == NULL || 
 	 strcasecmp(tpn->tpn_comp, nta_compressor_vtable->ncv_name) != 0)) {
       SU_DEBUG_1(("nta(%p): comp=%s not supported for " URL_PRINT_FORMAT "\n",
-		  self, tpn->tpn_comp, URL_PRINT_ARGS(url)));
+		  (void *)self, tpn->tpn_comp, URL_PRINT_ARGS(url)));
     }
   }
 
@@ -2017,7 +2017,8 @@ static void agent_update_tport(nta_agent_t *self, tport_t *tport)
   }
   else {
     /* XXX - we should do something else? */
-    SU_DEBUG_3(("nta(%p): transport address updated\n", self));
+    SU_DEBUG_3(("%s(%p): %s\n", "nta", (void *)self, 
+		"transport address updated"));
   }
 }
 
@@ -3478,7 +3479,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
 
   leg_insert(agent, leg);
 
-  SU_DEBUG_9(("nta_leg_create(%p)\n", leg));
+  SU_DEBUG_9(("nta_leg_create(%p)\n", (void *)leg));
 
   return leg;
 
@@ -3528,7 +3529,7 @@ void leg_insert(nta_agent_t *sa, nta_leg_t *leg)
  */
 void nta_leg_destroy(nta_leg_t *leg)
 {
-  SU_DEBUG_9(("nta_leg_destroy(%p)\n", leg));
+  SU_DEBUG_9(("nta_leg_destroy(%p)\n", (void *)leg));
 
   if (leg) {
     leg_htable_t *leg_hash;
@@ -3817,7 +3818,7 @@ void leg_recv(nta_leg_t *leg, msg_t *msg, sip_t *sip, tport_t *tport)
 
   if (!(irq = incoming_create(agent, msg, sip, tport, tag))) {
     SU_DEBUG_3(("nta: leg_recv(%p): cannot create transaction for %s\n",
-		leg, method_name));
+		(void *)leg, method_name));
     nta_msg_treply(agent, msg,
 		   SIP_500_INTERNAL_SERVER_ERROR,
 		   NTATAG_TPORT(tport),
@@ -3843,12 +3844,12 @@ void leg_recv(nta_leg_t *leg, msg_t *msg, sip_t *sip, tport_t *tport)
 
   if (status < 100 || status > 699) {
     SU_DEBUG_3(("nta_leg(%p): invalid status %03d from callback\n",
-		leg, status));
+		(void *)leg, status));
     status = 500;
   }
   else if (method == sip_method_invite && status >= 200 && status < 300) {
     SU_DEBUG_3(("nta_leg(%p): invalid INVITE status %03d from callback\n",
-		leg, status));
+		(void *)leg, status));
     status = 500;
   }
 
@@ -4504,7 +4505,7 @@ int incoming_callback(nta_leg_t *leg, nta_incoming_t *irq, sip_t *sip)
 
     if (leg->leg_rseq > sip->sip_cseq->cs_seq) {
       SU_DEBUG_3(("nta_leg(%p): out-of-order %s (%u < %u)\n",
-		  leg, method_name, seq, leg->leg_rseq));
+		  (void *)leg, method_name, seq, leg->leg_rseq));
       return 500;
     }
 
@@ -4691,7 +4692,7 @@ void incoming_reset_timer(nta_incoming_t *irq)
 static
 void incoming_free(nta_incoming_t *irq)
 {
-  SU_DEBUG_9(("nta: incoming_free(%p)\n", irq));
+  SU_DEBUG_9(("nta: incoming_free(%p)\n", (void *)irq));
 
   incoming_cut_off(irq);
   incoming_reclaim(irq);
@@ -4771,7 +4772,8 @@ void incoming_reclaim_queued(su_root_magic_t *rm,
   incoming_queue_t *q = u->a_incoming_queue;
   nta_incoming_t *irq, *irq_next;
 
-  SU_DEBUG_9(("incoming_reclaim_all(%p, %p, %p)\n", rm, msg, u));
+  SU_DEBUG_9(("incoming_reclaim_all(%p, %p, %p)\n",
+	      (void *)rm, (void *)msg, (void *)u));
 
   for (irq = q->q_head; irq; irq = irq_next) {
     irq_next = irq->irq_next;
@@ -6494,7 +6496,8 @@ void nta_outgoing_destroy(nta_outgoing_t *orq)
     return;
 
   if (orq->orq_destroyed) {
-    SU_DEBUG_1(("nta_outgoing_destroy(%p): already destroyed\n", orq));
+    SU_DEBUG_1(("%s(%p): %s\n", "nta_outgoing_destroy", (void *)orq, 
+		"already destroyed"));
     return;
   }
 
@@ -7457,7 +7460,7 @@ void outgoing_reset_timer(nta_outgoing_t *orq)
 static
 void outgoing_free(nta_outgoing_t *orq)
 {
-  SU_DEBUG_9(("nta: outgoing_free(%p)\n", orq));
+  SU_DEBUG_9(("nta: outgoing_free(%p)\n", (void *)orq));
   outgoing_cut_off(orq);
   outgoing_reclaim(orq);
 }
@@ -7524,7 +7527,8 @@ void outgoing_reclaim_queued(su_root_magic_t *rm,
   outgoing_queue_t *q = u->a_outgoing_queue;
   nta_outgoing_t *orq, *orq_next;
 
-  SU_DEBUG_9(("outgoing_reclaim_all(%p, %p, %p)\n", rm, msg, u));
+  SU_DEBUG_9(("outgoing_reclaim_all(%p, %p, %p)\n",
+	      (void *)rm, (void *)msg, (void *)u));
 
   for (orq = q->q_head; orq; orq = orq_next) {
     orq_next = orq->orq_next;
@@ -7717,7 +7721,8 @@ void outgoing_timeout(nta_outgoing_t *orq, su_duration_t now)
   nta_outgoing_t *cancel;
 
   if (outgoing_other_destinations(orq)) {
-    SU_DEBUG_5(("nta(%p): try next after timeout\n", orq));
+    SU_DEBUG_5(("%s(%p): %s\n", "nta", (void *)orq,
+		"try next after timeout"));
     outgoing_try_another(orq);
     return;
   }
@@ -8305,7 +8310,8 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
 
   if (orq->orq_method == sip_method_ack) {
     if (status != delayed)
-      SU_DEBUG_3(("nta(%p): responding %u %s to ACK!\n", orq, status, phrase));
+      SU_DEBUG_3(("nta(%p): responding %u %s to ACK!\n",
+		  (void *)orq, status, phrase));
     orq->orq_status = status;
     if (orq->orq_queue == NULL)
       outgoing_complete(orq);	/* Timer D/K */
@@ -8585,8 +8591,8 @@ outgoing_resolve(nta_outgoing_t *orq)
 
     /* Nothing found */
     if (!sr->sr_tports[0]) {
-      SU_DEBUG_3(("nta(%p): transport %s is not supported%s%s\n", orq, tpname,
-		  ident ? " by interface " : "", ident ? ident : ""));
+      SU_DEBUG_3(("nta(%p): transport %s is not supported%s%s\n", (void *)orq,
+		  tpname, ident ? " by interface " : "", ident ? ident : ""));
       outgoing_resolving_error(orq, SIPDNS_503_ERROR);
       return;
     }
@@ -9200,10 +9206,10 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
     inet_ntop(AF_INET6, &aaaa->aaaa_addr, addr, sizeof(addr));
 
     if (j == 0)
-      SU_DEBUG_5(("nta(%p): %s IN AAAA %s\n", orq, 
+      SU_DEBUG_5(("nta(%p): %s IN AAAA %s\n", (void *)orq, 
 		  aaaa->aaaa_record->r_name, addr));
     else
-      SU_DEBUG_5(("nta(%p):  AAAA %s\n", orq, addr));
+      SU_DEBUG_5(("nta(%p):  AAAA %s\n", (void *)orq, addr));
 
     assert(j < found);
     results[j++] = su_strdup(home, addr);
@@ -9285,7 +9291,7 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
     if (j == 0)
       SU_DEBUG_5(("nta: %s IN A %s\n", a->a_record->r_name, addr));
     else
-      SU_DEBUG_5(("nta(%p):  A %s\n", orq, addr));
+      SU_DEBUG_5(("nta(%p):  A %s\n", (void *)orq, addr));
 
     assert(j < found);
     results[j++] = su_strdup(home, addr);
@@ -9309,7 +9315,7 @@ outgoing_query_results(nta_outgoing_t *orq,
       sq->sq_type != sr->sr_a_aaaa2) {
     sq->sq_type = sr->sr_a_aaaa2;
 
-    SU_DEBUG_7(("nta(%p): %s %s record still unresolved\n", orq,
+    SU_DEBUG_7(("nta(%p): %s %s record still unresolved\n", (void *)orq,
 		sq->sq_domain, sq->sq_type == sres_type_a ? "A" : "AAAA"));
 
     /*
@@ -9769,7 +9775,7 @@ void nta_reliable_destroy(nta_reliable_t *rel)
     return;
 
   if (rel->rel_callback == nta_reliable_destroyed)
-    SU_DEBUG_1(("%s(%p): already destroyed\n", __func__, rel));
+    SU_DEBUG_1(("%s(%p): %s\n", __func__, (void *)rel, "already destroyed"));
 
   rel->rel_callback = nta_reliable_destroyed;
 
@@ -9796,7 +9802,7 @@ int nta_reliable_destroyed(nta_reliable_magic_t *rmagic,
 
   if (!*prev) {
     assert(*prev);
-    SU_DEBUG_1(("%s(%p): not linked\n", __func__, rel));
+    SU_DEBUG_1(("%s(%p): %s\n", __func__, (void *)rel, "not linked"));
     return 200;
   }
 
@@ -9877,7 +9883,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
   if (orq == NULL || to_tag == NULL)
     return NULL;
   if (orq->orq_to->a_tag) {
-    SU_DEBUG_1(("%s: transaction %p already in dialog\n", __func__, orq));
+    SU_DEBUG_1(("%s: transaction %p already in dialog\n", __func__,
+		(void *)orq));
     return NULL;
   }
 

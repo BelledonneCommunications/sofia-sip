@@ -158,7 +158,7 @@ static void su_poll_port_deinit(void *arg)
 {
   su_port_t *self = arg;
 
-  SU_DEBUG_9(("%s(%p) called\n", "su_poll_port_deinit", self));
+  SU_DEBUG_9(("%s(%p) called\n", "su_poll_port_deinit", (void *)self));
 
   su_pthread_port_deinit(self);
 }

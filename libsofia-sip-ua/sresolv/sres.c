@@ -927,8 +927,8 @@ sres_query(sres_resolver_t *res,
   size_t dlen;
   
   char b[8];
-  SU_DEBUG_9(("sres_query(%p, %p, %p, %s, \"%s\") called\n",
-	      res, callback, context, sres_record_type(type, b), domain));
+  SU_DEBUG_9(("sres_query(%p, %p, %s, \"%s\") called\n",
+			  (void *)res, (void *)context, sres_record_type(type, b), domain));
 
   if (res == NULL || domain == NULL)
     return su_seterrno(EFAULT), (void *)NULL;
@@ -994,8 +994,8 @@ sres_search(sres_resolver_t *res,
   unsigned dots; char const *dot;
   char b[8];
 
-  SU_DEBUG_9(("sres_search(%p, %p, %p, %s, \"%s\") called\n",
-	      res, callback, context, sres_record_type(type, b), domain));
+  SU_DEBUG_9(("sres_search(%p, %p, %s, \"%s\") called\n",
+			  (void *)res, (void *)context, sres_record_type(type, b), domain));
 
   if (res == NULL || domain == NULL)
     return su_seterrno(EFAULT), (void *)NULL;
@@ -1239,7 +1239,7 @@ sres_search_cached_answers(sres_resolver_t *res,
   int i;
 
   SU_DEBUG_9(("sres_search_cached_answers(%p, %s, \"%s\") called\n",
-	      res, sres_record_type(type, rooted_domain), domain));
+	      (void *)res, sres_record_type(type, rooted_domain), domain));
 
   if (!res || !name)
     return su_seterrno(EFAULT), (void *)NULL;
@@ -2592,7 +2592,7 @@ sres_send_dns_query(sres_resolver_t *res,
 
   if (now == 0) time(&now);
 
-  SU_DEBUG_9(("sres_send_dns_query(%p, %p) called\n", res, q));
+  SU_DEBUG_9(("sres_send_dns_query(%p, %p) called\n", (void *)res, (void *)q));
 
   if (domain == NULL)
     return -1;
@@ -2679,7 +2679,7 @@ sres_send_dns_query(sres_resolver_t *res,
 
   SU_DEBUG_5(("%s(%p, %p) id=%u %s %s (to [%s]:%u)\n", 
 	      "sres_send_dns_query",
-	      res, q, id, sres_record_type(type, b), domain, 
+	      (void *)res, (void *)q, id, sres_record_type(type, b), domain, 
 	      dns->dns_name, 
 	      htons(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
 
@@ -2797,7 +2797,7 @@ sres_query_report_error(sres_query_t *q,
     }
 
     SU_DEBUG_5(("sres(q=%p): reporting errors for %u %s\n",
-		q, q->q_type, q->q_name));
+		(void *)q, q->q_type, q->q_name));
  
     sres_remove_query(q->q_res, q, 1);
     (q->q_callback)(q->q_context, q, answers);
@@ -2864,7 +2864,7 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
   sres_server_t *dns;
 
   SU_DEBUG_9(("sres_resend_dns_query(%p, %p, %u) called\n",
-	      res, q, timeout));
+	      (void *)res, (void *)q, timeout));
   
   N = res->res_n_servers;
 
@@ -3032,7 +3032,8 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
   int n;
   char info[128] = "";
 
-  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_error", res, socket));
+  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_error",
+	      (void *)res, socket));
 
   msg->msg_name = name, msg->msg_namelen = sizeof(name);
   msg->msg_iov = iov, msg->msg_iovlen = 1;
@@ -3145,7 +3146,8 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
   int errcode = 0;
   socklen_t errorlen = sizeof(errcode);
 
-  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_error", res, socket));
+  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_error",
+	      (void *)res, socket));
 
   getsockopt(socket, SOL_SOCKET, SO_ERROR, (void *)&errcode, &errorlen);
 
@@ -3237,7 +3239,8 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
   struct sockaddr_storage from[1];
   socklen_t fromlen = sizeof from;
 
-  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_receive", res, socket));
+  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_receive",
+	      (void *)res, socket));
 
   memset(m, 0, offsetof(sres_message_t, m_data)); 
   
@@ -3316,7 +3319,7 @@ void sres_log_response(sres_resolver_t const *res,
 #endif
 
     SU_DEBUG_5(("sres_resolver_receive(%p, %p) id=%u (from [%s]:%u)\n", 
-		res, query, m->m_id, 
+		(void *)res, (void *)query, m->m_id, 
 		host, ntohs(((struct sockaddr_in *)from)->sin_port)));
   }
 }

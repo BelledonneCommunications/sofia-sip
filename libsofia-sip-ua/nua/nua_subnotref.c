@@ -419,7 +419,7 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
     char const *id = o ? o->o_id : NULL;
 
     SU_DEBUG_3(("nua(%p): event %s%s%s fetch timeouts\n",
-		nh, o ? o->o_type : "(empty)",
+		(void *)nh, o ? o->o_type : "(empty)",
 		id ? "; id=" : "", id ? id : ""));
 
     nua_stack_tevent(nh->nh_nua, nh,  NULL,
@@ -608,7 +608,7 @@ int nua_notify_server_preprocess(nua_server_request_t *sr)
   eu->eu_substate = substate;
 
   SU_DEBUG_5(("nua(%p): %s: %s (%s)\n", 
-	      sr->sr_owner, "nua_notify_server_preprocess",
+	      (void *)sr->sr_owner, "nua_notify_server_preprocess",
 	      what, reason ? reason : ""));
 
   return SR_STATUS1(sr, SIP_200_OK);

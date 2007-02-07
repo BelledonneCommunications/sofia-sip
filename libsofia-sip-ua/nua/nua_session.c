@@ -255,7 +255,7 @@ void nua_session_usage_destroy(nua_handle_t *nh,
   /* Remove usage */
   nua_dialog_usage_remove(nh, nh->nh_ds, nua_dialog_usage_public(ss));
 
-  SU_DEBUG_5(("nua: terminated session %p\n", nh));
+  SU_DEBUG_5(("nua: terminated session %p\n", (void *)nh));
 }
 
 /* ======================================================================== */
@@ -683,16 +683,16 @@ static int nua_invite_client_preliminary(nua_client_request_t *cr,
     }
   
     if (!rseq) {
-      SU_DEBUG_5(("nua(%p): 100rel missing RSeq\n", nh));
+      SU_DEBUG_5(("nua(%p): 100rel missing RSeq\n", (void *)nh));
     }
     else if (nta_outgoing_rseq(cr->cr_orq) > rseq->rs_response) {
-      SU_DEBUG_5(("nua(%p): 100rel bad RSeq %u (got %u)\n", nh, 
+      SU_DEBUG_5(("nua(%p): 100rel bad RSeq %u (got %u)\n", (void *)nh, 
 		  (unsigned)rseq->rs_response,
 		  nta_outgoing_rseq(cr->cr_orq)));
       return 1;    /* Do not send event */
     }
     else if (nta_outgoing_setrseq(cr->cr_orq, rseq->rs_response) < 0) {
-      SU_DEBUG_1(("nua(%p): cannot set RSeq %u\n", nh, 
+      SU_DEBUG_1(("nua(%p): cannot set RSeq %u\n", (void *)nh, 
 		  (unsigned)rseq->rs_response));
       cr->cr_graceful = 1;
       ss->ss_reason = "SIP;cause=400;text=\"Bad RSeq\"";
@@ -717,11 +717,11 @@ static int nua_session_client_response(nua_client_request_t *cr,
 
 #define LOG3(m) \
   SU_DEBUG_3(("nua(%p): %s: %s %s in %u %s\n", \
-	      nh, cr->cr_method_name, (m), \
+	      (void *)nh, cr->cr_method_name, (m),		\
 	      received ? received : "SDP", status, phrase))
 #define LOG5(m) \
   SU_DEBUG_5(("nua(%p): %s: %s %s in %u %s\n", \
-	      nh, cr->cr_method_name, (m), received, status, phrase))
+	      (void *)nh, cr->cr_method_name, (m), received, status, phrase))
 
   if (nh->nh_soa == NULL || !ss || !sip || 300 <= status)
     /* Xyzzy */;
@@ -1432,7 +1432,7 @@ static int nua_prack_client_request(nua_client_request_t *cr,
 	session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
       SU_DEBUG_3(("nua(%p): local response to PRACK: %d %s\n",
-		  nh, status, phrase));
+		  (void *)nh, status, phrase));
       nua_stack_event(nh->nh_nua, nh, NULL,
 		      nua_i_media_error, status, phrase,
 		      NULL);
@@ -1448,7 +1448,8 @@ static int nua_prack_client_request(nua_client_request_t *cr,
     if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0 ||
 	session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
       status = soa_error_as_sip_response(nh->nh_soa, &phrase);
-      SU_DEBUG_3(("nua(%p): PRACK offer: %d %s\n", nh, status, phrase));
+      SU_DEBUG_3(("nua(%p): PRACK offer: %d %s\n", (void *)nh,
+		  status, phrase));
       nua_stack_event(nh->nh_nua, nh, NULL,
 		      nua_i_media_error, status, phrase, NULL);
       return nua_client_return(cr, status, phrase, msg);
@@ -1790,7 +1791,8 @@ int nua_invite_server_preprocess(nua_server_request_t *sr)
     if (sr->sr_sdp) {
       if (soa_set_remote_sdp(nh->nh_soa, NULL,
 			     sr->sr_sdp, sr->sr_sdp_len) < 0) {
-	SU_DEBUG_5(("nua(%p): error parsing SDP in INVITE\n", nh));
+	SU_DEBUG_5(("nua(%p): %s server: error parsing SDP\n", (void *)nh,
+		    "INVITE"));
 	return SR_STATUS(sr, 400, "Bad Session Description");
       }
       else
@@ -2372,7 +2374,8 @@ int nua_prack_server_init(nua_server_request_t *sr)
 
     if (nh->nh_soa &&
 	soa_set_remote_sdp(nh->nh_soa, NULL, sr->sr_sdp, sr->sr_sdp_len) < 0) {
-      SU_DEBUG_5(("nua(%p): error parsing SDP in PRACK\n", nh));
+      SU_DEBUG_5(("nua(%p): %s server: error parsing %s\n", (void *)nh,
+		  "PRACK", "offer"));
       return 
 	sr->sr_status = soa_error_as_sip_response(nh->nh_soa, &sr->sr_phrase);
     }
@@ -2400,7 +2403,10 @@ int nua_prack_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 
     if ((sr->sr_offer_recv && soa_generate_answer(nh->nh_soa, NULL) < 0) ||
 	(sr->sr_answer_recv && soa_process_answer(nh->nh_soa, NULL) < 0)) {
-      SU_DEBUG_5(("nua(%p): error processing SDP in %s\n", nh, "PRACK"));
+      SU_DEBUG_5(("nua(%p): %s server: %s %s\n", 
+		  (void *)nh, "PRACK", 
+		  "error processing",
+		  sr->sr_offer_recv ? "offer" : "answer"));
       sr->sr_status = soa_error_as_sip_response(nh->nh_soa, &sr->sr_phrase);
     }
     else if (sr->sr_offer_recv) {
@@ -2697,7 +2703,7 @@ nh_referral_respond(nua_handle_t *nh, int status, char const *phrase)
     if (ref) {
       if (ref->ref_handle)
 	SU_DEBUG_1(("nh_handle_referral: stale referral handle %p\n",
-		    ref->ref_handle));
+		    (void *)ref->ref_handle));
       ref->ref_handle = NULL;
     }
     return;
@@ -3152,7 +3158,8 @@ int nua_update_server_init(nua_server_request_t *sr)
 
     if (nh->nh_soa &&
 	soa_set_remote_sdp(nh->nh_soa, NULL, sr->sr_sdp, sr->sr_sdp_len) < 0) {
-      SU_DEBUG_5(("nua(%p): error parsing SDP in UPDATE\n", nh));
+      SU_DEBUG_5(("nua(%p): %s server: error parsing %s\n", (void *)nh,
+		  "UPDATE", "offer"));
       return 
 	sr->sr_status = soa_error_as_sip_response(nh->nh_soa, &sr->sr_phrase);
     }
@@ -3183,12 +3190,13 @@ int nua_update_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 
   if (200 <= sr->sr_status && sr->sr_status < 300 && soa && sr->sr_sdp) {
     if (soa_generate_answer(nh->nh_soa, NULL) < 0) {
-      SU_DEBUG_5(("nua(%p): error processing SDP in UPDATE\n", nh));
+      SU_DEBUG_5(("nua(%p): %s server: %s %s\n", 
+		  (void *)nh, "UPDATE", "error processing", "offer"));
       sr->sr_status = soa_error_as_sip_response(nh->nh_soa, &sr->sr_phrase);
     }
     else if (soa_activate(nh->nh_soa, NULL) < 0) {
-      SU_DEBUG_5(("nua(%p): error activating media after %s\n",
-		  nh, "UPDATE"));
+      SU_DEBUG_5(("nua(%p): %s server: error activating media\n",
+		  (void *)nh, "UPDATE"));
       /* XXX */
     }
     else if (session_include_description(nh->nh_soa, 1, msg, sip) < 0) {
@@ -3566,14 +3574,14 @@ static void signal_call_state_change(nua_handle_t *nh,
 
   if (ss_state < nua_callstate_ready || next_state > nua_callstate_ready)
     SU_DEBUG_5(("nua(%p): call state changed: %s -> %s%s%s%s%s\n",
-		nh, nua_callstate_name(ss_state),
+		(void *)nh, nua_callstate_name(ss_state),
 		nua_callstate_name(next_state),
 		oa_recv ? ", received " : "", oa_recv ? oa_recv : "",
 		oa_sent && oa_recv ? ", and sent " :
 		oa_sent ? ", sent " : "", oa_sent ? oa_sent : ""));
   else
     SU_DEBUG_5(("nua(%p): ready call updated: %s%s%s%s%s\n",
-		nh, nua_callstate_name(next_state),
+		(void *)nh, nua_callstate_name(next_state),
 		oa_recv ? " received " : "", oa_recv ? oa_recv : "",
 		oa_sent && oa_recv ? ", sent " :
 		oa_sent ? " sent " : "", oa_sent ? oa_sent : ""));

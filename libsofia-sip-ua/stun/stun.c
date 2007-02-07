@@ -1298,7 +1298,7 @@ static int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *
 
   enter;
 
-  SU_DEBUG_7(("%s(%p): events%s%s%s%s\n", __func__, self,
+  SU_DEBUG_7(("%s(%p): events%s%s%s%s\n", __func__, (void *)self,
 	      events & SU_WAIT_CONNECT ? " CONNECTED" : "",
 	      events & SU_WAIT_ERR     ? " ERR"       : "",
 	      events & SU_WAIT_IN      ? " IN"        : "",
@@ -1664,7 +1664,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   enter;
 
-  SU_DEBUG_7(("%s(%p): events%s%s%s\n", __func__, self,
+  SU_DEBUG_7(("%s(%p): events%s%s%s\n", __func__, (void *)self,
 	      events & SU_WAIT_IN ? " IN" : "",
 	      events & SU_WAIT_OUT ? " OUT" : "",
 	      events & SU_WAIT_ERR ? " ERR" : ""));

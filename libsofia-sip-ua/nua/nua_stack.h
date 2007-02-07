@@ -139,7 +139,8 @@ struct nua_handle_s
   nua_handle_t  **nh_prev;
 
   nua_t        	 *nh_nua;	/**< Pointer to NUA object  */
-  void           *nh_valid;
+  void           *nh_valid;	/**< Cookie */
+#define nua_valid_handle_cookie ((void *)(intptr_t)nua_handle)
   nua_hmagic_t 	 *nh_magic;	/**< Application context */
 
   tagi_t         *nh_tags;	/**< Initial tags */
@@ -180,7 +181,8 @@ struct nua_handle_s
   nea_server_t   *nh_notifier;	/**< SIP notifier */
 };
 
-#define NH_IS_VALID(nh) ((nh) && (nh)->nh_valid)
+#define NH_IS_VALID(nh) \
+  ((nh) && (nh)->nh_valid == nua_valid_handle_cookie)
 
 #define NH_STATUS(nh) \
   (nh)->nh_status, \

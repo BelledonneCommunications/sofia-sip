@@ -618,7 +618,7 @@ ssize_t tls_read(tls_t *tls)
   }
 
   if (0)
-    fprintf(stderr, "tls_read(%p) called on %s (events %u)\n", tls,
+    fprintf(stderr, "tls_read(%p) called on %s (events %u)\n", (void *)tls,
 	    tls->type == tls_slave ? "server" : "client",
 	    tls->read_events);
 
@@ -681,7 +681,7 @@ ssize_t tls_write(tls_t *tls, void *buf, size_t size)
 
   if (0) 
     fprintf(stderr, "tls_write(%p, %p, "MOD_ZU") called on %s\n", 
-	    tls, buf, size,
+	    (void *)tls, buf, size,
 	    tls && tls->type == tls_slave ? "server" : "client");
 
   if (tls == NULL || buf == NULL) {

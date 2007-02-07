@@ -105,7 +105,7 @@ struct auth_scheme
 typedef struct
 {
   unsigned        apw_index;	/**< Key to hash table */
-  void const     *apw_type;	/**< Magic pointer */
+  void const     *apw_type;	/**< Magic identifier */
 
   char const   	 *apw_user;	/**< Username */
   char const     *apw_realm;	/**< Realm */
