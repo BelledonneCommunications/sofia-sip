@@ -31,7 +31,7 @@ TESTS = 		test_auth_digest
 
 BUILT_SOURCES = 	auth_tag_ref.c
 
-HTTP_SRC =		auth_plugin_http.c
+HTTP_SRC =		auth_module_http.c
 if HAVE_NTH
 USE_HTTP_SRC = 		$(HTTP_SRC)
 OPT_LDDD =		../http/libhttp.la
