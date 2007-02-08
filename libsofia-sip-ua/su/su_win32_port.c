@@ -45,18 +45,21 @@
 #include <limits.h>
 #include <errno.h>
 
-#define su_port_s su_poll_port_s
+#define su_port_s su_win32_port_s
 
 #include "sofia-sip/su.h"
 #include "su_port.h"
 #include "sofia-sip/su_alloc.h"
 
-/** Port based on poll(). */
+/** Port based on su_wait() aka WSAWaitForMultipleEvents. */
 
-struct su_poll_port_s {
-  su_pthread_port_t sup_base[1];
+/* We use WSAWaitForMultipleEvents() */
+#define INDEX_MAX (64)
 
-#define sup_home sup_base->sup_base->sup_home
+struct su_win32_port_s {
+  su_socket_port_t sup_base[1];
+
+#define sup_home sup_base->sup_base->sup_base->sup_home
 
   unsigned         sup_multishot; /**< Multishot operation? */
 
@@ -68,13 +71,6 @@ struct su_poll_port_s {
   int              sup_n_waits; /**< Active su_wait_t in su_waits */
   int              sup_size_waits; /**< Size of allocated su_waits */
   int              sup_pri_offset; /**< Offset to prioritized waits */
-
-#if !SU_HAVE_WINSOCK
-#define INDEX_MAX (0x7fffffff)
-#else 
-  /* We use WSAWaitForMultipleEvents() */
-#define INDEX_MAX (64)
-#endif
 
   /** Indices from index returned by su_root_register() to tables below. 
    *
@@ -124,7 +120,7 @@ su_port_vtable_t const su_poll_port_vtable[1] =
       su_base_port_incref,
       su_poll_port_decref,
       su_base_port_gsource,
-      su_pthread_port_send,
+      su_socket_port_send,
       su_poll_port_register,
       su_poll_port_unregister,
       su_poll_port_deregister,
@@ -160,7 +156,7 @@ static void su_poll_port_deinit(void *arg)
 
   SU_DEBUG_9(("%s(%p) called\n", "su_poll_port_deinit", self));
 
-  su_pthread_port_deinit(self);
+  su_socket_port_deinit(self->sup_base);
 }
 
 static void su_poll_port_decref(su_port_t *self, int blocking, char const *who)
@@ -668,7 +664,7 @@ su_port_t *su_poll_port_create(void)
 
   self->sup_multishot = SU_ENABLE_MULTISHOT_POLL;
 
-  if (su_pthread_port_init(self, su_poll_port_vtable) < 0)
+  if (su_socket_port_init(self->sup_base, su_poll_port_vtable) < 0)
     return su_home_unref(su_port_home(self)), NULL;
 
   return self;
