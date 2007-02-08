@@ -38,8 +38,9 @@ libsofia-sip-ua:
 - Added sip_is_allowed() function and k_bitmap field to the 
   sip_allow_t structure 
 - Added sl_header_log implementation, updated its prototype
-- Added experimental SIP headers and related functions, 
-  enabled with ./configure option --enable-experimental 
+- Added experimental SIP headers Suppress-Notify-If-Match and
+  Suppress-Body-If-Match and functions related to them,
+  enabled with ./configure option --enable-experimental
 - Added SIP header Refer-Sub and related functions
 - Added <sofia-sip/sip_extra.h> include file
 - Added auc_info() function (sofia-sip/auth_client.h)
@@ -89,6 +90,9 @@ See the AUTHORS file in the distribution package.
 Notes on new features
 ---------------------
 
+- The su_root_t reactor uses different implementation (epoll, poll or select
+  on Linux), depending on SU_PORT environment variable.
+
 - nua now supports request queuing, for instance, an application can send
   overlapping BYE and NOTIFY requests. The stack engine takes care of
   sending the new request only after the previous one has been responded.
@@ -131,6 +135,9 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Fixed su_from_create() returning a sip_to_t instance. Problem reported by
+  Ludovico Cavedon.
+- Partially fixed problem #1633969 with too frequent timer
 - Fixed problem in dialog matching. Problem reported by Fabio Margarido.
 - Fixed #1624446 - su_wait_clone() (and nua_destroy()) blocking for ever if
   the root object was created using su_glib
