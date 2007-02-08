@@ -149,13 +149,11 @@ int su_socket_port_init(su_port_t *self, su_port_vtable_t const *vtable)
     goto error;
   }
 
-  retval = 0;
+  return 0;
   
-  if (retval) {
   error:
     su_log("%s: %s: %s\n", "su_socket_port_init", 
 	   why, su_strerror(su_errno()));
-  }
 
   return retval;
 }

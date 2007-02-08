@@ -152,26 +152,6 @@ SOFIAPUBFUN su_port_t *su_port_create(void)
 
 /* Extension from >= 1.12.5 */
 
-typedef su_port_t *su_port_create_f(void);
-typedef int su_clone_start_f(su_root_t *parent,
-			    su_clone_r return_clone,
-			    su_root_magic_t *magic,
-			    su_root_init_f init,
-			    su_root_deinit_f deinit);
-
-SOFIAPUBFUN void su_port_prefer(su_port_create_f *f, su_clone_start_f *);
-
-SOFIAPUBFUN su_port_t *su_epoll_port_create(void)
-     __attribute__((__malloc__));
-SOFIAPUBFUN su_port_t *su_poll_port_create(void)
-     __attribute__((__malloc__));
-SOFIAPUBFUN su_port_t *su_select_port_create(void)
-     __attribute__((__malloc__));
-
-SOFIAPUBFUN su_clone_start_f su_epoll_clone_start;
-SOFIAPUBFUN su_clone_start_f su_poll_clone_start;
-SOFIAPUBFUN su_clone_start_f su_select_clone_start;
-
 SOFIAPUBFUN void su_msg_delivery_report(su_msg_r msg);
 SOFIAPUBFUN su_duration_t su_timer_next_expires(su_timer_t const * t,
 						su_time_t now);

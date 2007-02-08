@@ -512,6 +512,30 @@ SOFIAPUBFUN void su_clone_wait(su_root_t *root, su_clone_r clone);
 SOFIAPUBFUN int su_clone_pause(su_clone_r);
 SOFIAPUBFUN int su_clone_resume(su_clone_r);
 
+/* ---------------------------------------------------------------------- */
+/* Different su_root_t implementations */
+
+typedef su_port_t *su_port_create_f(void);
+typedef int su_clone_start_f(su_root_t *parent,
+			    su_clone_r return_clone,
+			    su_root_magic_t *magic,
+			    su_root_init_f init,
+			    su_root_deinit_f deinit);
+
+SOFIAPUBFUN void su_port_prefer(su_port_create_f *f, su_clone_start_f *);
+
+SOFIAPUBFUN su_port_t *su_epoll_port_create(void)
+     __attribute__((__malloc__));
+SOFIAPUBFUN su_port_t *su_poll_port_create(void)
+     __attribute__((__malloc__));
+SOFIAPUBFUN su_port_t *su_select_port_create(void)
+     __attribute__((__malloc__));
+
+SOFIAPUBFUN su_clone_start_f su_epoll_clone_start;
+SOFIAPUBFUN su_clone_start_f su_poll_clone_start;
+SOFIAPUBFUN su_clone_start_f su_select_clone_start;
+
+
 SOFIA_END_DECLS
 
 #endif /* SU_WAIT_H */

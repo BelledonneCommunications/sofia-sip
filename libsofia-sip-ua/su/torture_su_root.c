@@ -52,8 +52,6 @@ typedef struct test_ep_s   test_ep_t;
 #define SU_ROOT_MAGIC_T  root_test_t
 #define SU_WAKEUP_ARG_T  test_ep_t
 
-#include "su_port.h"
-
 #include <sofia-sip/su_wait.h>
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_log.h>
