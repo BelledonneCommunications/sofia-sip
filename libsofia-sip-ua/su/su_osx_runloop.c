@@ -1259,8 +1259,8 @@ su_duration_t su_osx_port_step(su_port_t *self, su_duration_t tout)
     tout = 0;
 
   ret = CFRunLoopRunInMode(kCFRunLoopDefaultMode,
-			   tout/1000,
-			   TRUE);
+			   tout/1000000.0,
+			   true);
 
   CFRunLoopWakeUp(rl);
 
