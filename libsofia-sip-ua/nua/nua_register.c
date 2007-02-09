@@ -433,6 +433,11 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  * the desired transport-layer keepalive interval for stream-based
  * transports like TLS and TCP.
  *
+ * As alternative to OPTIONS/STUN keepalives, the client can propose
+ * a more frequent registration refresh interval with
+ * NUTAG_M_FEATURES() (e.g. NUTAG_M_FEATURES("expires=120") given as 
+ * parameter to nua_register()).
+ * 
  * @sa #nua_r_register, nua_unregister(), #nua_r_unregister, 
  * #nua_i_register,
  * @RFC3261 section 10,
