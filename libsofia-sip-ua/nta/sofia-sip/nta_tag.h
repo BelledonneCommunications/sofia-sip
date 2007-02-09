@@ -59,10 +59,10 @@ NTA_DLL extern tag_typedef_t ntatag_any;
 
 NTA_DLL extern tag_typedef_t ntatag_mclass;
 /** Message class used by NTA. @HI */
-#define NTATAG_MCLASS(x) ntatag_mclass, tag_ptr_v((x))
+#define NTATAG_MCLASS(x) ntatag_mclass, tag_cptr_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_mclass_ref;
-#define NTATAG_MCLASS_REF(x) ntatag_mclass_ref, tag_ptr_vr(&(x), (x))
+#define NTATAG_MCLASS_REF(x) ntatag_mclass_ref, tag_cptr_vr(&(x), (x))
 
 NTA_DLL extern tag_typedef_t ntatag_bad_req_mask;
 /** Mask for bad request messages. 

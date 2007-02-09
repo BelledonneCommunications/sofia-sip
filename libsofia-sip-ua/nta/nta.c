@@ -890,7 +890,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned threadpool      = agent->sa_tport_threadpool;
   char const *sigcomp = agent->sa_sigcomp_options;
   char const *algorithm = NONE;
-  msg_mclass_t *mclass = NONE;
+  msg_mclass_t const *mclass = NONE;
   sip_contact_t const *aliases = NONE;
   url_string_t const *proxy = NONE;
   tport_t *tport;

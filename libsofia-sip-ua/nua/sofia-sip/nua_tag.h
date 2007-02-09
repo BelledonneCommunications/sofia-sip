@@ -1211,7 +1211,7 @@ SOFIAPUBVAR tag_typedef_t nutag_outbound_set4_ref;
  *    nua_create()
  *
  * @par Parameter type
- *    msg_mclass_t *
+ *    msg_mclass_t const *
  *
  * @par Values
  *    Pointer to an extended SIP parser.

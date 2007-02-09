@@ -1301,10 +1301,10 @@ int main(int argc, char *argv[])
   }
 
   if (o_attach) {
-    char line[10];
+    char *response, line[10];
     printf("nua_test: pid %lu\n", (unsigned long)getpid());
     printf("<Press RETURN to continue>\n");
-    fgets(line, sizeof line, stdin);
+    response = fgets(line, sizeof line, stdin);
   }
 #if HAVE_ALARM
   else if (o_alarm) {
