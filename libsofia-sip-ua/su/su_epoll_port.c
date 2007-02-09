@@ -571,7 +571,7 @@ int su_epoll_clone_start(su_root_t *parent,
 
 su_port_t *su_epoll_port_create(void)
 {
-  return su_default_port_create(void);
+  return su_default_port_create();
 }
 
 int su_epoll_clone_start(su_root_t *parent,

@@ -36,6 +36,12 @@
 
 #include "config.h"
 
+#define su_port_s su_poll_port_s
+
+#include "su_port.h"
+#include "sofia-sip/su_alloc.h"
+#include "sofia-sip/su.h"
+
 #if HAVE_POLL_PORT
 
 #include <stdlib.h>
@@ -45,12 +51,6 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
-
-#define su_port_s su_poll_port_s
-
-#include "sofia-sip/su.h"
-#include "su_port.h"
-#include "sofia-sip/su_alloc.h"
 
 /** Port based on poll(). */
 
@@ -679,7 +679,7 @@ int su_poll_clone_start(su_root_t *parent,
 
 su_port_t *su_poll_port_create(void)
 {
-  return su_default_port_create(void);
+  return su_default_port_create();
 }
 
 int su_poll_clone_start(su_root_t *parent,
