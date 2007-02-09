@@ -228,7 +228,7 @@
 #undef HAVE_POLL
 
 /* Define to 1 if you use poll in su_port. */
-#define HAVE_POLL_PORT 1
+#undef HAVE_POLL_PORT
 
 /* Define to 1 if you have /proc/net/if_inet6 control file */
 #undef HAVE_PROC_NET_IF_INET6

@@ -524,15 +524,16 @@ typedef int su_clone_start_f(su_root_t *parent,
 
 SOFIAPUBFUN void su_port_prefer(su_port_create_f *f, su_clone_start_f *);
 
-SOFIAPUBFUN su_port_t *su_epoll_port_create(void)
-     __attribute__((__malloc__));
-SOFIAPUBFUN su_port_t *su_poll_port_create(void)
-     __attribute__((__malloc__));
-SOFIAPUBFUN su_port_t *su_select_port_create(void)
-     __attribute__((__malloc__));
+SOFIAPUBFUN su_port_create_f su_default_port_create;
+SOFIAPUBFUN su_port_create_f su_epoll_port_create;
+SOFIAPUBFUN su_port_create_f su_poll_port_create;
+SOFIAPUBFUN su_port_create_f su_wsaevent_port_create;
+SOFIAPUBFUN su_port_create_f su_select_port_create;
 
+SOFIAPUBFUN su_clone_start_f su_default_clone_start;
 SOFIAPUBFUN su_clone_start_f su_epoll_clone_start;
 SOFIAPUBFUN su_clone_start_f su_poll_clone_start;
+SOFIAPUBFUN su_clone_start_f su_wsaevent_clone_start;
 SOFIAPUBFUN su_clone_start_f su_select_clone_start;
 
 

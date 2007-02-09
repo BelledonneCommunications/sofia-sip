@@ -36,7 +36,14 @@
 
 #include "config.h"
 
+#define su_port_s su_epoll_port_s
+
+#include "su_port.h"
+
 #if HAVE_EPOLL
+
+#include "sofia-sip/su.h"
+#include "sofia-sip/su_alloc.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -45,12 +52,6 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
-
-#define su_port_s su_epoll_port_s
-
-#include "sofia-sip/su.h"
-#include "su_port.h"
-#include "sofia-sip/su_alloc.h"
 
 #include <sys/epoll.h>
 
@@ -570,18 +571,16 @@ int su_epoll_clone_start(su_root_t *parent,
 
 su_port_t *su_epoll_port_create(void)
 {
-  return su_poll_port_create();
+  return su_default_port_create(void);
 }
 
 int su_epoll_clone_start(su_root_t *parent,
-			su_clone_r return_clone,
-			su_root_magic_t *magic,
-			su_root_init_f init,
-			su_root_deinit_f deinit)
+			 su_clone_r return_clone,
+			 su_root_magic_t *magic,
+			 su_root_init_f init,
+			 su_root_deinit_f deinit)
 {
-  return su_pthreaded_port_start(su_poll_port_create, 
-				 parent, return_clone, magic, init, deinit);
+  return su_default_clone_start(parent, return_clone, magic, init, deinit);
 }
 
 #endif  /* HAVE_EPOLL */
-

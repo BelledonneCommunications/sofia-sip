@@ -36,7 +36,7 @@
 
 #include "config.h"
 
-#if HAVE_POLL || HAVE_SELECT
+#if HAVE_POLL_PORT
 
 #include <stdlib.h>
 #include <assert.h>
@@ -70,12 +70,7 @@ struct su_poll_port_s {
   int              sup_size_waits; /**< Size of allocated su_waits */
   int              sup_pri_offset; /**< Offset to prioritized waits */
 
-#if !SU_HAVE_WINSOCK
 #define INDEX_MAX (0x7fffffff)
-#else 
-  /* We use WSAWaitForMultipleEvents() */
-#define INDEX_MAX (64)
-#endif
 
   /** Indices from index returned by su_root_register() to tables below. 
    *
@@ -676,8 +671,25 @@ int su_poll_clone_start(su_root_t *parent,
 			su_root_init_f init,
 			su_root_deinit_f deinit)
 {
-  return su_pthreaded_port_start(su_poll_port_create, 
+  return su_pthreaded_port_start(su_default_port_create, 
 				 parent, return_clone, magic, init, deinit);
 }
 
-#endif  /* HAVE_POLL || HAVE_SELECT */
+#else
+
+su_port_t *su_poll_port_create(void)
+{
+  return su_default_port_create(void);
+}
+
+int su_poll_clone_start(su_root_t *parent,
+			su_clone_r return_clone,
+			su_root_magic_t *magic,
+			su_root_init_f init,
+			su_root_deinit_f deinit)
+{
+  return su_default_clone_start(parent, return_clone, magic, init, deinit);
+}
+
+#endif  /* HAVE_POLL_PORT */
+
