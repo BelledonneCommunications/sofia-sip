@@ -1554,23 +1554,51 @@ int nua_registration_add_contact_and_route(nua_handle_t *nh,
     return -1;
 
   if (add_contact) {
-    sip_contact_t const *m = nua_registration_contact(nr);
+    sip_contact_t const *m = NULL;
+    char const *m_display;
+    char const *m_username;
+    char const *m_params;
+    url_t const *u;
 
-    char const *m_display = NH_PGET(nh, m_display);
-    char const *m_username = NH_PGET(nh, m_username);
-    char const *m_params = NH_PGET(nh, m_params);
-    url_t const *u = m->m_url;
+    if (nr->nr_by_stack && nr->nr_ob) {
+      m = outbound_dialog_gruu(nr->nr_ob);
+
+      if (m)
+	return msg_header_add_dup(msg, (msg_pub_t *)sip, (void const *)m);
+
+      m = outbound_dialog_contact(nr->nr_ob);
+    }
+
+    if (m == NULL)
+      m = nr->nr_contact;
 
     if (!m)
       return -1;
 
-    if (u->url_params && m_params && strstr(u->url_params, m_params) == 0)
+    u = m->m_url;
+
+    if (NH_PISSET(nh, m_display))
+      m_display = NH_PGET(nh, m_display);
+    else
+      m_display = m->m_display;
+
+    if (NH_PISSET(nh, m_username))
+      m_username = NH_PGET(nh, m_username);
+    else
+      m_username = m->m_url->url_user;
+
+    if (NH_PISSET(nh, m_params)) {
+      m_params = NH_PGET(nh, m_params);
+
+      if (u->url_params && m_params && strstr(u->url_params, m_params) == 0)
+	m_params = NULL;
+    }
+    else
       m_params = NULL;
 
     m = sip_contact_format(msg_home(msg),
 			   "%s<%s:%s%s%s%s%s%s%s%s%s>",
-			   m_display ? m_display : 
-			   m->m_display ? m->m_display : "",
+			   m_display ? m_display : "",
 			   u->url_scheme,
 			   m_username ? m_username : "",
 			   m_username ? "@" : "",

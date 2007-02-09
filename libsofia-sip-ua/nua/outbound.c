@@ -1160,6 +1160,11 @@ sip_contact_t const *outbound_dialog_contact(outbound_t const *ob)
     return ob->ob_dcontact;
 }
 
+sip_contact_t const *outbound_dialog_gruu(outbound_t const *ob)
+{
+  return ob ? ob->ob_gruu : NULL;
+}
+
 /* ---------------------------------------------------------------------- */
 
 

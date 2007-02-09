@@ -96,6 +96,8 @@ int outbound_set_contact(outbound_t *ob,
 
 sip_contact_t const *outbound_dialog_contact(outbound_t const *ob);
 
+sip_contact_t const *outbound_dialog_gruu(outbound_t const *ob);
+
 int outbound_gruuize(outbound_t *ob, sip_t const *sip);
 
 void outbound_start_keepalive(outbound_t *ob,
