@@ -84,7 +84,8 @@ int su_socket_port_init(su_port_t *self, su_port_vtable_t const *vtable)
   su_wait_t wait[1] = { SU_WAIT_INIT };
   char const *why;
 
-  SU_DEBUG_9(("su_socket_port_init(%p, %p) called\n", self, vtable));
+  SU_DEBUG_9(("su_socket_port_init(%p, %p) called\n", 
+	      (void *)self, (void *)vtable));
 
   if (su_pthread_port_init(self, vtable) != 0)
     return -1;
