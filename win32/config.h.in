@@ -156,7 +156,7 @@
 #else
 // XXX: vehmanek-win32-fix for VC6
 #undef HAVE_IPHLPAPI_H
-#undef
+#endif
 
 /* Define to 1 if you have IPV6_RECVERR in <netinet/in6.h> */
 #undef HAVE_IPV6_RECVERR
