@@ -66,11 +66,12 @@ Contributors to this release
 ----------------------------
 
 - Petteri Puolakka (patch to stun)
-- Mikhail Zabluev (patch to su-glib mainloop integration)
+- Mikhail Zabaluev (patch to su-glib mainloop integration)
 - Michael Jerris (patch to url parsing # in sip/sips userpart)
 - Colin Whittaker (TPTAG_TOS())
 - Roman Filonenko (TPTAG_LOG(), TPTAG_DUMP(), 
 	           patch to query DNS-servers with IP-Helper on win32)
+- Remi Denis-Courmont (patch to network change API)
 - Martti Mela (poll() emulation with select(), IPv6 and OS X fixes)
 - Kai Vehmanen (persistent registrations, release management)
 - Pekka Pessi (all the rest)
