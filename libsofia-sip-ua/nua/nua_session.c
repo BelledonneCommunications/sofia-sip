@@ -2198,10 +2198,11 @@ int process_cancel(nua_server_request_t *sr,
   nua_session_usage_t *ss = nua_dialog_usage_private(sr->sr_usage);
   msg_t *cancel = nta_incoming_getrequest_ackcancel(irq);
 
-  assert(nta_incoming_status(irq) < 200);
   assert(ss); assert(ss == nua_session_usage_get(nh->nh_ds)); (void)ss;
 
   if (nua_server_request_is_pending(sr)) {
+    assert(nta_incoming_status(irq) < 200);
+
     nua_stack_event(nh->nh_nua, nh, cancel, nua_i_cancel, SIP_200_OK, NULL);
 
     SR_STATUS1(sr, SIP_487_REQUEST_TERMINATED);
