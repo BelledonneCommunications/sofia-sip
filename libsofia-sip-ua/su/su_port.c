@@ -55,6 +55,8 @@ su_port_t *su_default_port_create(void)
   return su_epoll_port_create();
 #elif HAVE_POLL_PORT
   return su_poll_port_create();
+#elif SU_HAVE_KQUEUE
+  return su_kqueue_port_create();
 #elif HAVE_WIN32
   return su_wsaevent_port_create();
 #elif HAVE_SELECT
@@ -72,6 +74,8 @@ int su_default_clone_start(su_root_t *parent,
 {
 #if HAVE_EPOLL
   return su_epoll_clone_start(parent, return_clone, magic, init, deinit);;
+#elif SU_HAVE_KQUEUE
+  return su_kqueue_clone_start(parent, return_clone, magic, init, deinit);;
 #elif HAVE_POLL_PORT
   return su_poll_clone_start(parent, return_clone, magic, init, deinit);;
 #elif HAVE_WIN32
@@ -111,6 +115,12 @@ void su_port_set_system_preferences(char const *name)
     start = su_epoll_clone_start;
   }
 #endif
+#if SU_HAVE_KQUEUE
+  else if (strcmp(name, "kqueue") == 0) {
+    create = su_kqueue_port_create;
+    start = su_kqueue_clone_start;
+  }
+#endif
 #if HAVE_POLL_PORT
   else if (strcmp(name, "poll") == 0) {
     create = su_poll_port_create;
@@ -123,7 +133,7 @@ void su_port_set_system_preferences(char const *name)
     start = su_wsaevent_clone_start;
   }
 #endif
-#if HAVE_SELECT && !HAVE_WIN32
+#if HAVE_SELECT && !HAVE_WIN32 && !SU_HAVE_KQUEUE
   else if (strcmp(name, "select") == 0) {
     create = su_select_port_create;
     start = su_select_clone_start;
