@@ -31,6 +31,7 @@
  * (poll()/select()/WaitForMultipleObjects()) functionality.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
  *
  */
@@ -149,6 +150,34 @@ int su_wait_create(su_wait_t *newwait, su_socket_t socket, int events)
 
   *newwait = h;
 
+#elif SU_HAVE_KQUEUE
+  int mode;
+
+  if (newwait == NULL || events == 0 || socket == INVALID_SOCKET) {
+    su_seterrno(EINVAL);
+    return -1;
+  }
+
+  mode = fcntl(socket, F_GETFL, 0);
+  if (mode < 0)
+     return -1;
+  mode |= O_NDELAY | O_NONBLOCK;
+  if (fcntl(socket, F_SETFL, mode) < 0)
+    return -1;
+  
+#if 0
+  newwait->ident = socket;
+  newwait->filter = POLL2KQUEUE(events);
+  newwait->flags = EV_ENABLE;
+  newwait->fflags = 0;
+  newwait->data = 0;
+  newwait->udata = NULL;
+#endif
+
+  EV_SET(newwait, socket,
+	 events, EV_ADD,
+	 0, 0, 0);
+
 #elif SU_HAVE_POLL || HAVE_SELECT
   int mode;
 
@@ -187,6 +216,10 @@ int su_wait_destroy(su_wait_t *waitobj)
   su_wait_t w0 = NULL;
   if (*waitobj)
     WSACloseEvent(*waitobj);
+#elif SU_HAVE_KQUEUE
+  su_wait_t w0 = { 0 }; /* { INVALID_SOCKET, 0, EV_DELETE, 0, 0, NULL }; */
+  EV_SET(&w0, waitobj->ident, EVFILT_READ, EV_DELETE, 0, 0, 0);
+  /* XXX -- mela: should we EV_SET with EV_DISABLE here? */
 #elif SU_HAVE_POLL || HAVE_SELECT
   su_wait_t w0 = { INVALID_SOCKET, 0, 0 };
 #else
@@ -233,6 +266,8 @@ int su_wait(su_wait_t waits[], unsigned n, su_duration_t timeout)
   else
     return i;
 
+#elif SU_HAVE_KQUEUE
+  return -1;
 #elif SU_HAVE_POLL || HAVE_SELECT
   for (;;) {
     int i = poll(waits, n, timeout);
@@ -275,6 +310,9 @@ int su_wait_events(su_wait_t *waitobj, su_socket_t s)
 
   return net_events.lNetworkEvents;
 
+#elif SU_HAVE_KQUEUE
+  return -1;
+
 #elif SU_HAVE_POLL || HAVE_SELECT
   /* poll(e, 1, 0); */
   return waitobj->revents;
@@ -304,6 +342,8 @@ int su_wait_mask(su_wait_t *waitobj, su_socket_t s, int events)
     WSASetLastError(error);
     return -1;
   }
+#elif SU_HAVE_KQUEUE
+  return -1;
 #elif SU_HAVE_POLL || HAVE_SELECT
   waitobj->fd = s;
   waitobj->events = events;
