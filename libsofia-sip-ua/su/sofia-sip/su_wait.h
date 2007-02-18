@@ -30,6 +30,7 @@
  * @file sofia-sip/su_wait.h Syncronization and threading interface.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
+ * @author Martti Mela <Martti.Mela@nokia.com>
  * 
  * @date Created: Tue Sep 14 15:51:04 1999 ppessi
  */
@@ -44,7 +45,10 @@
 #ifndef SU_TIME_H
 #include "sofia-sip/su_time.h"
 #endif
-#if SU_HAVE_POLL
+
+#if SU_HAVE_KQUEUE
+#include <sys/event.h>
+#elif SU_HAVE_POLL
 #include <sys/poll.h>
 #endif
 
@@ -53,7 +57,36 @@ SOFIA_BEGIN_DECLS
 /* ---------------------------------------------------------------------- */
 /* Constants */
 
-#if SU_HAVE_POLL || DOCUMENTATION_ONLY
+#if SU_HAVE_KQUEUE
+/** Compare wait object. @HI */
+#define SU_WAIT_CMP(x, y) \
+ (((x).ident - (y).ident) ? ((x).ident - (y).ident) : ((x).flags - (y).flags))
+
+/** Incoming data is available on socket. @HI */
+#define SU_WAIT_IN      (EVFILT_READ)
+/** Data can be sent on socket. @HI */
+#define SU_WAIT_OUT     (EVFILT_WRITE)
+/** Socket is connected. @HI */
+#define SU_WAIT_CONNECT (EVFILT_WRITE)
+/** An error occurred on socket. @HI */
+#define SU_WAIT_ERR     (EV_ERROR)
+/** The socket connection was closed. @HI */
+#define SU_WAIT_HUP     (EV_EOF)
+/** A listening socket accepted a new connection. @HI */
+#define SU_WAIT_ACCEPT  (EVFILT_READ)
+
+/** No timeout for su_wait(). */
+#define SU_WAIT_FOREVER (-1)
+/** The return value of su_wait() if timeout occurred. */
+#define SU_WAIT_TIMEOUT (-2)
+
+/** Initializer for a wait object. @HI */
+#define SU_WAIT_INIT    { INVALID_SOCKET, 0, 0, 0, 0, NULL }
+
+/** Maximum number of sources supported by su_wait() */
+#define SU_WAIT_MAX    (0x7fffffff)
+
+#elif SU_HAVE_POLL || DOCUMENTATION_ONLY
 /** Compare wait object. @HI */
 #define SU_WAIT_CMP(x, y) \
  (((x).fd - (y).fd) ? ((x).fd - (y).fd) : ((x).events - (y).events))
@@ -142,7 +175,9 @@ SOFIA_BEGIN_DECLS
 /* Types */
 
 /** Wait object. */
-#if SU_HAVE_POLL
+#if SU_HAVE_KQUEUE
+typedef struct kevent su_wait_t;
+#elif SU_HAVE_POLL
 typedef struct pollfd su_wait_t;
 #elif SU_HAVE_WINSOCK
 typedef HANDLE su_wait_t;
@@ -394,7 +429,11 @@ SOFIAPUBFUN int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
 static inline
 su_socket_t su_wait_socket(su_wait_t *wait)
 {
+#if SU_HAVE_KQUEUE
+  return wait->ident;
+#else
   return wait->fd;
+#endif
 }
 #endif
 
@@ -529,12 +568,14 @@ SOFIAPUBFUN su_port_create_f su_epoll_port_create;
 SOFIAPUBFUN su_port_create_f su_poll_port_create;
 SOFIAPUBFUN su_port_create_f su_wsaevent_port_create;
 SOFIAPUBFUN su_port_create_f su_select_port_create;
+SOFIAPUBFUN su_port_create_f su_kqueue_port_create;
 
 SOFIAPUBFUN su_clone_start_f su_default_clone_start;
 SOFIAPUBFUN su_clone_start_f su_epoll_clone_start;
 SOFIAPUBFUN su_clone_start_f su_poll_clone_start;
 SOFIAPUBFUN su_clone_start_f su_wsaevent_clone_start;
 SOFIAPUBFUN su_clone_start_f su_select_clone_start;
+SOFIAPUBFUN su_clone_start_f su_kqueue_clone_start;
 
 
 SOFIA_END_DECLS
