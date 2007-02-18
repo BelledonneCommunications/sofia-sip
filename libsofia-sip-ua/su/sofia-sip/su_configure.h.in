@@ -54,6 +54,8 @@
 #undef SU_HAVE_PTHREADS
 /** Define as 1 if you have poll() */
 #undef SU_HAVE_POLL
+/** Define as 1 if you have kqueue() */
+#undef SU_HAVE_KQUEUE
 /** Define as 1 if you have IPv6 structures, macros and constants */
 #undef SU_HAVE_IN6
 
