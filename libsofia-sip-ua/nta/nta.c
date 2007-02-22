@@ -8071,7 +8071,8 @@ int outgoing_recv(nta_outgoing_t *orq,
   }
   else if (orq->orq_method != sip_method_ack) {
     /* Non-INVITE */
-    if (orq->orq_queue == sa->sa_out.trying) {
+    if (orq->orq_queue == sa->sa_out.trying ||
+	orq->orq_queue == sa->sa_out.resolving) {
       assert(orq_status < 200); (void)orq_status;
 
       if (status < 200) {
@@ -8086,7 +8087,8 @@ int outgoing_recv(nta_outgoing_t *orq,
 	msg_destroy(msg);
 	return 0;
       }
-    } else {
+    }
+    else {
       /* Already completed or terminated */
       assert(orq->orq_queue == sa->sa_out.completed ||
 	     orq->orq_queue == sa->sa_out.terminated);

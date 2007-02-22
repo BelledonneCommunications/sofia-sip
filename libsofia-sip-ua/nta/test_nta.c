@@ -713,7 +713,7 @@ static int test_bad_messages(agent_t *ag)
   
   TEST(su_getaddrinfo(host, port, hints, &ai), 0); TEST_1(ai);
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol); TEST_1(s != -1);
-  memset(su, 0, sulen = sizeof su); 
+  memset(su, 0, sulen = ai->ai_addrlen); 
   su->su_len = sizeof su; su->su_family = ai->ai_family;
   TEST_1(bind(s, &su->su_sa, sulen) == 0);
   TEST_1(getsockname(s, &su->su_sa, &sulen) == 0);
@@ -733,6 +733,7 @@ static int test_bad_messages(agent_t *ag)
     strncpy(name + offset, d->d_name, PATH_MAX - offset);
     TEST_1(f = fopen(name, "rb"));
     TEST_1((blen = readfile(f, &buffer)) > 0);
+    fclose(f);
     r = buffer;
 
     if (strncmp(r, "JUNK ", 5) == 0) {
