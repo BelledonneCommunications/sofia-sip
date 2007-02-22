@@ -542,6 +542,9 @@ int main(int argc, char *argv[])
 
   root = su_root_create(NULL);
   if (!root) perror("su_root_create"), exit(1);
+
+  fprintf(stdout, "test_su: testing %s port implementation\n",
+	  su_root_name(root));
   
   su_root_threading(root, !opt_singlethread);
 

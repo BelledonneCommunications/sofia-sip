@@ -4,11 +4,11 @@ rc=0
 
 run=no
 
-for SU_PORT in select epoll poll ; do
+for SU_PORT in select kqueue devpoll epoll poll ; do
 
 export SU_PORT
 
-grep -q -i '^#define have_'$SU_PORT ../../config.h ||
+egrep -q -i '^#define have_(sys_)?'$SU_PORT ../../config.h ||
 continue
 
 run=yes

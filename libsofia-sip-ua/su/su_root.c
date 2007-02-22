@@ -452,6 +452,22 @@ void su_root_destroy(su_root_t *self)
   su_port_decref(port, "su_root_destroy");
 }
 
+/** Get instance name.
+ *
+ * @param self      pointer to a root object
+ *
+ * @return Instance name (e.g., "epoll", "devpoll", "select").
+ *
+ * @NEW_1_12_6
+ */
+char const *su_root_name(su_root_t *self)
+{
+  if (self && self->sur_task->sut_port)
+    return su_port_name(self->sur_task->sut_port);
+  else
+    return NULL;
+}
+
 /** Set the context pointer.
  *
  *  Set the context pointer (magic) of a root object.

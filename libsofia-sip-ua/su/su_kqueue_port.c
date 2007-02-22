@@ -39,7 +39,7 @@
 
 #include "su_port.h"
 
-#if SU_HAVE_KQUEUE
+#if HAVE_KQUEUE
 
 #include "sofia-sip/su_alloc.h"
 
@@ -708,5 +708,5 @@ int su_kqueue_clone_start(su_root_t *parent,
   return su_default_clone_start(parent, return_clone, magic, init, deinit);
 }
 
-#endif  /* SU_HAVE_KQUEUE */
+#endif  /* HAVE_KQUEUE */
 

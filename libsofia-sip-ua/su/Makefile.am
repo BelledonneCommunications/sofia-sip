@@ -81,6 +81,7 @@ libsu_la_SOURCES = \
 	su_port.c  su_port.h \
 	su_base_port.c su_pthread_port.c su_socket_port.c \
 	su_poll_port.c su_epoll_port.c su_select_port.c su_kqueue_port.c \
+	su_devpoll_port.c \
 	su_localinfo.c \
 	su_os_nw.c \
 	su_taglist.c su_tag.c su_tag_io.c \

@@ -53,10 +53,12 @@ su_port_t *su_default_port_create(void)
 {
 #if HAVE_EPOLL
   return su_epoll_port_create();
+#elif HAVE_KQUEUE
+  return su_kqueue_port_create();
+#elif HAVE_SYS_DEVPOLL_H
+  return su_devpoll_port_create();
 #elif HAVE_POLL_PORT
   return su_poll_port_create();
-#elif SU_HAVE_KQUEUE
-  return su_kqueue_port_create();
 #elif HAVE_WIN32
   return su_wsaevent_port_create();
 #elif HAVE_SELECT
@@ -73,22 +75,24 @@ int su_default_clone_start(su_root_t *parent,
 			   su_root_deinit_f deinit)
 {
 #if HAVE_EPOLL
-  return su_epoll_clone_start(parent, return_clone, magic, init, deinit);;
-#elif SU_HAVE_KQUEUE
-  return su_kqueue_clone_start(parent, return_clone, magic, init, deinit);;
+  return su_epoll_clone_start(parent, return_clone, magic, init, deinit);
+#elif HAVE_KQUEUE
+  return su_kqueue_clone_start(parent, return_clone, magic, init, deinit);
+#elif HAVE_SYS_DEVPOLL_H
+  return su_devpoll_clone_start(parent, return_clone, magic, init, deinit);
 #elif HAVE_POLL_PORT
-  return su_poll_clone_start(parent, return_clone, magic, init, deinit);;
+  return su_poll_clone_start(parent, return_clone, magic, init, deinit);
 #elif HAVE_WIN32
-  return su_wsaevent_clone_start(parent, return_clone, magic, init, deinit);;
+  return su_wsaevent_clone_start(parent, return_clone, magic, init, deinit);
 #elif HAVE_SELECT
-  return su_select_clone_start(parent, return_clone, magic, init, deinit);;
+  return su_select_clone_start(parent, return_clone, magic, init, deinit);
 #else
   errno = ENOSYS;
   return -1;
 #endif
 }
 
-static su_port_create_f *preferred_su_port_create = su_default_port_create;
+static su_port_create_f *preferred_su_port_create;
 static su_clone_start_f *preferred_su_clone_start;
 
 /** Explicitly set the preferred su_port_t implementation.
@@ -115,10 +119,16 @@ void su_port_set_system_preferences(char const *name)
     start = su_epoll_clone_start;
   }
 #endif
-#if SU_HAVE_KQUEUE
+#if HAVE_KQUEUE
   else if (strcmp(name, "kqueue") == 0) {
     create = su_kqueue_port_create;
     start = su_kqueue_clone_start;
+  }
+#endif
+#if HAVE_SYS_DEVPOLL_H
+  else if (strcmp(name, "devpoll") == 0) {
+    create = su_devpoll_port_create;
+    start = su_devpoll_clone_start;
   }
 #endif
 #if HAVE_POLL_PORT
@@ -132,8 +142,7 @@ void su_port_set_system_preferences(char const *name)
     create = su_wsaevent_port_create;
     start = su_wsaevent_clone_start;
   }
-#endif
-#if HAVE_SELECT && !HAVE_WIN32 && !SU_HAVE_KQUEUE
+#elif HAVE_SELECT
   else if (strcmp(name, "select") == 0) {
     create = su_select_port_create;
     start = su_select_clone_start;
@@ -162,6 +171,12 @@ su_port_t *su_port_create(void)
     su_port_set_system_preferences(getenv("SU_PORT"));
 
   return preferred_su_port_create();
+}
+
+/** Return name of the su_port_t instance. */
+char const *su_port_name(su_port_t const *port)
+{
+  return port->sup_vtable->su_port_name(port);
 }
 
 /* ========================================================================

@@ -241,7 +241,7 @@ dnl no winsock2
 
 SAC_SU_DEFINE([SU_HAVE_BSDSOCK], 1, [Define to 1 if you have BSD socket interface])
 AC_CHECK_HEADERS([sys/socket.h sys/ioctl.h sys/filio.h sys/sockio.h \
-		  sys/select.h sys/epoll.h])
+		  sys/select.h sys/epoll.h sys/devpoll.h])
 AC_CHECK_HEADERS([netinet/in.h arpa/inet.h netdb.h \
                   net/if.h net/if_types.h ifaddr.h netpacket/packet.h],,,
 		[
@@ -445,7 +445,7 @@ AC_FUNC_ALLOCA
 
 AC_CHECK_FUNCS([gettimeofday strerror random initstate tcsetattr flock \
                 socketpair gethostname gethostbyname getipnodebyname \
-                poll epoll_create select if_nameindex \
+                poll epoll_create kqueue select if_nameindex \
 		signal alarm \
 	        getaddrinfo getnameinfo freeaddrinfo gai_strerror getifaddrs \
                 getline getdelim getpass])

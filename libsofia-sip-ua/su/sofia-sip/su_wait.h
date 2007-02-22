@@ -441,6 +441,7 @@ su_socket_t su_wait_socket(su_wait_t *wait)
 SOFIAPUBFUN su_root_t *su_root_create(su_root_magic_t *magic)
   __attribute__((__malloc__));
 SOFIAPUBFUN void su_root_destroy(su_root_t*);
+SOFIAPUBFUN char const *su_root_name(su_root_t *self);
 SOFIAPUBFUN int su_root_set_magic(su_root_t *self, su_root_magic_t *magic);
 SOFIAPUBFUN su_root_magic_t *su_root_magic(su_root_t *root);
 SOFIAPUBFUN int su_root_register(su_root_t*, su_wait_t *, 
@@ -569,6 +570,7 @@ SOFIAPUBFUN su_port_create_f su_poll_port_create;
 SOFIAPUBFUN su_port_create_f su_wsaevent_port_create;
 SOFIAPUBFUN su_port_create_f su_select_port_create;
 SOFIAPUBFUN su_port_create_f su_kqueue_port_create;
+SOFIAPUBFUN su_port_create_f su_devpoll_port_create;
 
 SOFIAPUBFUN su_clone_start_f su_default_clone_start;
 SOFIAPUBFUN su_clone_start_f su_epoll_clone_start;
@@ -576,7 +578,7 @@ SOFIAPUBFUN su_clone_start_f su_poll_clone_start;
 SOFIAPUBFUN su_clone_start_f su_wsaevent_clone_start;
 SOFIAPUBFUN su_clone_start_f su_select_clone_start;
 SOFIAPUBFUN su_clone_start_f su_kqueue_clone_start;
-
+SOFIAPUBFUN su_clone_start_f su_devpoll_clone_start;
 
 SOFIA_END_DECLS
 

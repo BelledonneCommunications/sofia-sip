@@ -159,6 +159,10 @@ SOFIAPUBFUN su_root_t *su_root_create_with_port(su_root_magic_t *magic,
 						su_port_t *port)
   __attribute__((__malloc__));
 
+/* Extension from >= 1.12.6 */
+
+SOFIAPUBFUN char const *su_port_name(su_port_t const *port);
+
 /* ---------------------------------------------------------------------- */
 
 /* React to multiple events per one poll() to make sure 

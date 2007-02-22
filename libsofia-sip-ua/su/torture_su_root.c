@@ -37,7 +37,7 @@
 
 #include "config.h"
 
-char const *name = "su_root_test";
+char const *name = "torture_su_root";
 
 #include <stdio.h>
 #include <string.h>
@@ -104,11 +104,7 @@ int init_test(root_test_t *rt)
 
   BEGIN();
 
-  su_init();
-
   su->su_family = rt->rt_family;
-
-  TEST_1(rt->rt_root = su_root_create(rt));
 
   for (i = 0; i < 5; i++) {
     test_ep_t *ep = rt->rt_ep[i];
@@ -544,10 +540,16 @@ int main(int argc, char *argv[])
   } prefer[] =
       {
 	{ NULL, NULL, "default" },
-#if HAVE_POLL_PORT
 #if HAVE_EPOLL
 	{ su_epoll_port_create, su_epoll_clone_start, "epoll", },
 #endif
+#if HAVE_KQUEUE
+	{ su_kqueue_port_create, su_kqueue_clone_start, "kqueue", },
+#endif
+#if HAVE_SYS_DEVPOLL_H
+	{ su_devpoll_port_create, su_devpoll_clone_start, "devpoll", },
+#endif
+#if HAVE_POLL_PORT
 	{ su_poll_port_create, su_poll_clone_start, "poll" },
 #endif
 #if HAVE_SELECT
@@ -574,9 +576,13 @@ int main(int argc, char *argv[])
 
   do {
     rt = rt1, *rt = *rt0;
-    printf("%s: testing %s implementation\n",
-	   name, prefer[i].preference);
+
     su_port_prefer(prefer[i].create, prefer[i].start);
+
+    TEST_1(rt->rt_root = su_root_create(rt));
+
+    printf("%s: testing %s (%s) implementation\n",
+	   name, prefer[i].preference, su_root_name(rt->rt_root));
 
     retval |= init_test(rt);
     retval |= register_test(rt);
