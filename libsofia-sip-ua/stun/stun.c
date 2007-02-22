@@ -181,7 +181,7 @@ struct stun_request_s {
   su_sockaddr_t     sr_local_addr[1];   /**< local address */
   su_sockaddr_t     sr_destination[1];
 
-  stun_state_t      sr_state;           /**< Progress states */
+  stun_req_state_t  sr_state;           /**< Progress states */
   int               sr_retry_count;     /**< current retry number */
   long              sr_timeout;         /**< timeout for next sendto() */
 
@@ -1842,7 +1842,7 @@ static int process_binding_request(stun_request_t *req, stun_msg_t *binding_resp
     if (stun_process_error_response(binding_response) < 0) {
       SU_DEBUG_3(("%s: Error in Binding Error Response.\n", __func__));
     }
-    req->sr_state = stun_discovery_error;
+    req->sr_state = stun_req_error;
       
     break;
   }
@@ -1932,7 +1932,7 @@ static int process_test_lifetime(stun_request_t *req, stun_msg_t *binding_respon
     return 0;
   }
   else if (req->sr_from_y == 0) {
-    if (req->sr_state != stun_discovery_timeout) {
+    if (req->sr_state != stun_req_timeout) {
       /* mapping with X still valid */
       sd->sd_lt_cur = sd->sd_lt;
       sd->sd_lt = (int) (sd->sd_lt + sd->sd_lt_max) / 2;
@@ -2318,8 +2318,6 @@ static void stun_sendto_timer_cb(su_root_magic_t *magic,
 
     default:
       break;
-      
-      return;
     }
 
     /* Destroy me immediately */
