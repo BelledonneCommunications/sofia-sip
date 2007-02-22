@@ -32,8 +32,9 @@
 
 #include <sofia-sip/su_config.h>
 
-#if !SU_HAVE_INLINE
-
+#if SU_HAVE_INLINE
+extern int xyzzy;
+#else
 #include "sofia-sip/msg_header.h"
 #include "sofia-sip/su_tag.h"
 
