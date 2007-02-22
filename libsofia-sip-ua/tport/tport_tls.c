@@ -427,6 +427,7 @@ tls_t *tls_clone(tls_t *master, int sock, int accept)
     SSL_set_connect_state(tls->con);
   SSL_set_mode(tls->con, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
+  su_setblocking(sock, 0);
   tls_read(tls); /* XXX - works only with non-blocking sockets */
 
   return tls;
