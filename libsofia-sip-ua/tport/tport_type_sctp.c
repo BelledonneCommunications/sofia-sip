@@ -57,6 +57,12 @@
 #undef MAX_STREAMS
 #define MAX_STREAMS MAX_STREAMS
 
+/* Missing socket symbols */
+#ifndef SOL_SCTP
+#define SOL_SCTP IPPROTO_SCTP
+#endif
+
+
 enum { MAX_STREAMS = 1 };
 typedef struct tport_sctp_t
 {

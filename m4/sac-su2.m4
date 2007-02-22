@@ -77,9 +77,10 @@ case "$ac_cv_c_inline" in
 		Define to 1 if you have inline functions.
 	])dnl
   ;;
-  no)  SAC_SU_DEFINE(su_inline, static)dnl
-       SAC_SU_DEFINE(SU_INLINE)dnl
-       SAC_SU_DEFINE(SU_HAVE_INLINE)dnl
+  no | "" )
+       SAC_SU_DEFINE(su_inline, static)dnl
+       SAC_SU_DEFINE(SU_INLINE, /*inline*/)dnl
+       SAC_SU_DEFINE(SU_HAVE_INLINE, 0)dnl
   ;;
   *)   SAC_SU_DEFINE_UNQUOTED(su_inline, static $ac_cv_c_inline)dnl
        SAC_SU_DEFINE_UNQUOTED(SU_INLINE, $ac_cv_c_inline)dnl

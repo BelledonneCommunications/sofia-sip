@@ -38,7 +38,7 @@ nobase_include_sofia_HEADERS = $(BUILT_H) $(PUBLIC_H)
 
 libhttp_la_SOURCES = 	$(INTERNAL_H) \
 			http_parser.c http_header.c \
-			http_basic.c http_extra.c \
+			http_basic.c http_extra.c http_inlined.c \
 			http_status.c http_tag_class.c \
 			$(BUILT_C)
 
@@ -48,6 +48,7 @@ LDADD = 		libhttp.la \
 			../bnf/libbnf.la \
 			../msg/libmsg.la \
 			../url/liburl.la \
+			../ipt/libipt.la \
 			../su/libsu.la
 
 test_http_LDFLAGS = 	-static

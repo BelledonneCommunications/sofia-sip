@@ -34,6 +34,7 @@ COVERAGE_INPUT = 	$(liburl_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		liburl.la \
 			../bnf/libbnf.la \
+			../ipt/libipt.la \
 			../su/libsu.la
 
 test_urlmap_SOURCES = 	urlmap.c urlmap.h

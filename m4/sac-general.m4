@@ -113,7 +113,7 @@ AC_CACHE_CHECK([for maximum warnings compiler flag],
   *gcc*) ac_cv_cwflag=-Wall;;
   *)	case "$host" in
     *irix*)	ac_cv_cwflag=-fullwarn ;;
-    *solaris*)  ac_cv_cwflag="-erroff=%none,E_END_OF_LOOP_CODE_NOT_REACHED -xCC"
+    *solaris*)  ac_cv_cwflag="-erroff=%none,E_END_OF_LOOP_CODE_NOT_REACHED,E_BAD_PTR_INT_COMBINATION -errtags"
 	        ;;
     *)		ac_cv_cwflag=;;
 		esac 

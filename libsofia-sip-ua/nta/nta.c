@@ -145,7 +145,7 @@ static msg_t *nta_msg_create_for_transport(nta_agent_t *agent, int flags,
 
 static int complete_response(msg_t *response, 
 			     int status, char const *phrase, 
-			     msg_t const *request);
+			     msg_t *request);
 
 #define IF_SIGCOMP_TPTAG_COMPARTMENT(cc)     TAG_IF(cc, TPTAG_COMPARTMENT(cc)),
 #define IF_SIGCOMP_TPTAG_COMPARTMENT_REF(cc) TPTAG_COMPARTMENT_REF(cc),
@@ -778,7 +778,10 @@ su_duration_t set_timeout(nta_agent_t *agent, su_duration_t offset)
 static
 su_time_t agent_now(nta_agent_t const *agent)
 {
-  return agent->sa_millisec ? agent->sa_now : su_now();
+  if (agent && agent->sa_millisec != 0)
+    return agent->sa_now;
+  else 
+    return su_now();
 }
 
 
@@ -986,7 +989,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
     agent->sa_algorithm = su_strdup(home, algorithm);
 
   if (str0cmp(sigcomp, agent->sa_sigcomp_options)) {
-    char const * const *l = NULL;
+    msg_param_t const *l = NULL;
     char *s = su_strdup(home, sigcomp);
     char *s1 = su_strdup(home, s), *s2 = s1;
 
@@ -2858,7 +2861,7 @@ int nta_msg_mreply(nta_agent_t *agent,
 static
 int complete_response(msg_t *response, 
 		      int status, char const *phrase, 
-		      msg_t const *request)
+		      msg_t *request)
 {
   su_home_t *home = msg_home(response);
   sip_t *response_sip = sip_object(response);

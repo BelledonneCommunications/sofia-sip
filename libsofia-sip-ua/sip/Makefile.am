@@ -46,7 +46,7 @@ libsip_la_SOURCES = 	$(INTERNAL_H) \
 			sip_refer.c sip_session.c \
 			sip_caller_prefs.c sip_reason.c \
 			sip_status.c sip_time.c \
-			sip_tag_class.c \
+			sip_tag_class.c sip_inlined.c \
 			$(GENERATED_C)
 
 COVERAGE_INPUT = 	$(libsip_la_SOURCES) $(include_sofia_HEADERS)
@@ -55,6 +55,7 @@ LDADD = 		libsip.la \
 			../msg/libmsg.la \
 			../bnf/libbnf.la \
 			../url/liburl.la \
+			../ipt/libipt.la \
 			../su/libsu.la
 
 torture_sip_LDFLAGS = 	-static

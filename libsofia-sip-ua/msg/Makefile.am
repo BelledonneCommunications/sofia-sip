@@ -38,7 +38,7 @@ nobase_include_sofia_HEADERS = \
 BUILT_SOURCES = $(GENERATED_H) msg_mime_table.c test_table.c test_protos.h
 
 libmsg_la_SOURCES = $(INTERNAL_H) \
-	msg.c msg_tag.c \
+	msg.c msg_tag.c msg_inlined.c \
 	msg_mime.c msg_mime_table.c \
 	msg_header_copy.c msg_header_make.c \
 	msg_parser.c msg_mclass.c msg_parser_util.c \
@@ -46,11 +46,12 @@ libmsg_la_SOURCES = $(INTERNAL_H) \
 
 COVERAGE_INPUT = 	$(libmsg_la_SOURCES) $(include_sofia_HEADERS)
 
-libtest_msg_a_SOURCES = test_class.c test_table.c test_protos.h
+libtest_msg_a_SOURCES = test_class.c test_table.c test_inlined.c test_protos.h
 
 LDADD = 		libtest_msg.a libmsg.la \
 			../bnf/libbnf.la \
 			../url/liburl.la \
+			../ipt/libipt.la \
 			../su/libsu.la 
 
 test_msg_LDFLAGS = 	-static
