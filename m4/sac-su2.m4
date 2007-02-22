@@ -47,7 +47,7 @@ else
 fi
 
 AC_ARG_ENABLE(experimental,
-[  --enable-experimental       enable experimental features (disabled)],
+[  --enable-experimental   enable experimental features [[disabled]]],
  , enable_experimental=no)
 
 if test $enable_experimental = yes ; then
@@ -89,7 +89,7 @@ case "$ac_cv_c_inline" in
 esac
 
 AC_ARG_ENABLE(size-compat,
-[  --disable-size-compat            use compatibility size_t types (enabled)],
+[  --disable-size-compat   use compatibility size_t types [[enabled]]],
  , enable_size_compat=yes)
 
 if test X$enable_size_compat != Xyes; then
@@ -113,7 +113,8 @@ dnl ======================================================================
 dnl SAC_ENABLE_COREFOUNDATION
 dnl ======================================================================
 AC_ARG_ENABLE(corefoundation,
-[  --enable-corefoundation     compile with OSX COREFOUNDATION (disabled)],
+[  --enable-corefoundation 
+                          compile with OSX COREFOUNDATION [[disabled]]],
  , enable_corefoundation=no)
 AM_CONDITIONAL(COREFOUNDATION, test $enable_corefoundation = yes)
 
@@ -485,9 +486,9 @@ fi
 # ===========================================================================
 
 AC_ARG_ENABLE(poll-port,
-[  --disable-poll-port              disable su_poll_port (enabled)
-                                   Use this option in systems emulating poll
-                                   with select], , enable_poll_port=maybe)
+[  --disable-poll-port     disable su_poll_port [[enabled]]
+                          Use this option in systems emulating poll with select],
+ , enable_poll_port=maybe)
 
 if test $enable_poll_port = maybe ; then
   if test $ac_cv_func_poll = yes ; then

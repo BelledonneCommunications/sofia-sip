@@ -4,7 +4,7 @@ dnl ======================================================================
 AC_DEFUN([SAC_OPENSSL], [
 
 AC_ARG_WITH(openssl,
-[  --with-openssl          use OpenSSL (enabled)],, with_openssl=yes)
+[  --with-openssl          use OpenSSL [[enabled]]],, with_openssl=yes)
 
 dnl SOSXXX:SAC_ASSERT_DEF([openssl libraries])
 
