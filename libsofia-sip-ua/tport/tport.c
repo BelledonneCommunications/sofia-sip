@@ -3271,6 +3271,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
   /* We have sent a complete message */
 
   self->tp_slogged = NULL;
+  self->tp_stats.sent_msgs ++;
 
   ai = msg_addrinfo(msg); assert(ai);
   close_after = (ai->ai_flags & TP_AI_CLOSE) == TP_AI_CLOSE;
@@ -3690,8 +3691,11 @@ void tport_send_queue(tport_t *self)
     }
     assert(total == n);
 
+    /* We have sent a complete message */
+    
     self->tp_queue[qhead] = NULL;
     msg_destroy(msg);
+    self->tp_stats.sent_msgs++;
     self->tp_slogged = NULL;
 
     qhead = (qhead + 1) % N;
@@ -3792,11 +3796,15 @@ msg_select_addrinfo(msg_t *msg, su_addrinfo_t *res)
       continue;
 #endif
 
+    if (ai->ai_protocol == 0)
+      continue;
     if (ai->ai_addrlen > sizeof(su_sockaddr_t))
       continue;
+
     mai->ai_family = ai->ai_family;
     mai->ai_socktype = ai->ai_socktype;
     mai->ai_protocol = ai->ai_protocol;
+
     if (ai->ai_addrlen < sizeof(su_sockaddr_t))
       memset(su, 0, sizeof(su_sockaddr_t));
     memcpy(su, ai->ai_addr, ai->ai_addrlen);

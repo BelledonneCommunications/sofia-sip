@@ -180,9 +180,6 @@ static int tport_sctp_init_secondary(tport_t *self, int socket, int accepted,
 {
   self->tp_has_connection = 1;
 
-  if (su_setblocking(socket, 0) < 0)
-    return *return_reason = "su_setblocking", -1;
-
   if (accepted) {
     /* Accepted socket inherit the init information from listen socket */
     return 0;

@@ -175,8 +175,6 @@ int tport_tcp_init_secondary(tport_t *self, int socket, int accepted,
 
   if (setsockopt(socket, SOL_TCP, TCP_NODELAY, (void *)&one, sizeof one) == -1)
     return *return_reason = "TCP_NODELAY", -1;
-  if (su_setblocking(socket, 0) < 0)
-    return *return_reason = "su_setblocking", -1;
 
   if (!accepted)
     tport_tcp_setsndbuf(socket, 64 * 1024);
