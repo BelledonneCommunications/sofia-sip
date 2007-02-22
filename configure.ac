@@ -53,8 +53,15 @@ SAC_ENABLE_EXPENSIVE_CHECKS
 dnl Add parameters for aclocal
 AC_SUBST(ACLOCAL_AMFLAGS, "-I m4")
 
-AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [echo])
-AM_CONDITIONAL([HAVE_DOXYGEN], [test $DOXYGEN = doxygen])
+AC_ARG_WITH(doxygen,
+[  --with-doxygen[[=CMD]]    use doxygen command CMD [[doxygen]]],[
+case $enable_doxygen in 
+yes ) doxygen=doxygen ;;
+no ) doxygen=echo ;;
+esac], doxygen=doxygen)
+
+AC_CHECK_PROG([DOXYGEN], [doxygen], [$doxygen], [echo])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test $DOXYGEN != echo])
 
 ### checks for libraries
 ### --------------------
