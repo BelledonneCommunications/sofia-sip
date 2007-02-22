@@ -2297,7 +2297,7 @@ sres_parse_options(sres_config_t *c, char const *value)
       value += strspn(value, " \t");
 
     if (n > 65536) {
-      SU_DEBUG_3(("sres: %s: invalid %*.s\n", c->c_filename,
+      SU_DEBUG_3(("sres: %s: invalid %*.0s\n", c->c_filename,
 		  (int)(len + extra), b));
       continue;
     }
@@ -2322,7 +2322,7 @@ sres_parse_options(sres_config_t *c, char const *value)
     else if (MATCH("no-edns0")) c->c_opt.edns = edns_not_supported;
     else if (MATCH("edns0")) c->c_opt.edns = edns0_configured;
     else {
-      SU_DEBUG_3(("sres: %s: unknown option %*.s\n",
+      SU_DEBUG_3(("sres: %s: unknown option %*.0s\n",
 		  c->c_filename, (int)(len + extra), b));
     }
   }
@@ -2471,7 +2471,7 @@ void sres_servers_close(sres_resolver_t *res,
     if (!servers[i])
       break;
 
-    if (servers[i]->dns_socket != -1) {
+    if (servers[i]->dns_socket != INVALID_SOCKET) {
       if (res->res_updcb)
 	res->res_updcb(res->res_async, INVALID_SOCKET, servers[i]->dns_socket);
       sres_close(servers[i]->dns_socket);
@@ -2501,7 +2501,7 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
   int family = dns->dns_addr->ss_family;
   sres_socket_t s;
 
-  if (dns->dns_socket != -1)
+  if (dns->dns_socket != INVALID_SOCKET)
     return dns->dns_socket;
 
   s = socket(family, SOCK_DGRAM, IPPROTO_UDP);

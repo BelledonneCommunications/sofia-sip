@@ -1610,7 +1610,7 @@ int url_cmp(url_t const *a, url_t const *b)
 static
 int url_tel_cmp_numbers(char const *A, char const *B)
 {
-  char a, b;
+  short a, b;
   int rv;
 
   while (*A && *B) {

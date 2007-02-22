@@ -1884,10 +1884,11 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
     /* Make transport parameter lowercase */
     if (strlen(transport) < (sizeof _transport)) {
       char *s = strcpy(_transport, transport);
+      short c;
 
-      for (s = _transport; *s && *s != ';'; s++)
-	if (isupper(*s))
-	  *s = tolower(*s);
+      for (s = _transport; (c = *s) && c != ';'; s++)
+	if (isupper(c))
+	  *s = tolower(c);
 
       transport = _transport;
     }
