@@ -3167,7 +3167,7 @@ int nta_msg_request_complete(msg_t *msg,
   method = sip->sip_request->rq_method;
   method_name = sip->sip_request->rq_method_name;
 
-  if (!leg->leg_id && !sip->sip_call_id && sip->sip_cseq)
+  if (!leg->leg_id && sip->sip_cseq)
     seq = sip->sip_cseq->cs_seq; 
   else if (method == sip_method_ack || method == sip_method_cancel)
     /* Dangerous - we may do PRACK/UPDATE meanwhile */
