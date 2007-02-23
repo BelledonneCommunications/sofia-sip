@@ -317,7 +317,7 @@ struct nua_dialog_state
 
   /* Dialog and subscription state */
   unsigned ds_route:1;		/**< We have route */
-  unsigned ds_terminated:1;	/**< Being terminated */
+  unsigned ds_terminating:1;	/**< Being terminated */
 
   unsigned ds_has_session:1;	/**< We have session */
   unsigned ds_has_register:1;	/**< We have registration */
@@ -424,11 +424,6 @@ void nua_dialog_deinit(nua_owner_t *own,
 		       nua_dialog_state_t *ds);
 
 int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds);
-
-void nua_dialog_remove_usages(nua_owner_t *,
-			      struct nua_dialog_state *ds,
-			      int status,
-			      char const *phrase);
 
 void nua_dialog_usage_set_expires(nua_dialog_usage_t *du, unsigned delta);
 
@@ -605,6 +600,12 @@ static inline
 int nua_server_request_is_pending(nua_server_request_t const *sr)
 {
   return sr && sr->sr_response.msg;
+}
+
+static inline 
+int nua_server_request_status(nua_server_request_t const *sr)
+{
+  return sr ? nta_incoming_status(sr->sr_irq) : 500;
 }
 
 void nua_server_request_destroy(nua_server_request_t *sr);

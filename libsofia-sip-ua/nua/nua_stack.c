@@ -1602,7 +1602,7 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
       return 2;
 
     /* Remove all usages of the dialog */
-    nua_dialog_remove_usages(nh, nh->nh_ds, status, phrase);
+    nua_dialog_deinit(nh, nh->nh_ds);
 
     return 3;
   }
@@ -2341,12 +2341,10 @@ int nua_client_response(nua_client_request_t *cr,
 
     if (terminated < 0)
       cr->cr_terminated = terminated;      
-    else if (cr->cr_terminating)
+    else if (cr->cr_terminating || terminated)
       cr->cr_terminated = 1;
-    else if (terminated && graceful)
+    else if (graceful)
       cr->cr_graceful = graceful;
-    else if (terminated)
-      cr->cr_terminated = 1;
   }
   
   if (status < 200) {
@@ -2553,6 +2551,7 @@ int nua_base_client_response(nua_client_request_t *cr,
 {
   nua_handle_t *nh = cr->cr_owner;
   sip_method_t method = cr->cr_method;
+  nua_dialog_usage_t *du;
 
   cr->cr_reporting = 1;
 
@@ -2573,12 +2572,13 @@ int nua_base_client_response(nua_client_request_t *cr,
   if (cr->cr_orq)
     nta_outgoing_destroy(cr->cr_orq), cr->cr_orq = NULL;
 
-  if (cr->cr_usage) {
-    nua_dialog_usage_t *du = cr->cr_usage;
+  du = cr->cr_usage;
 
-    if (cr->cr_terminated < 0)
-      /* XXX - dialog has been terminated */;
-
+  if (cr->cr_terminated < 0) {
+    /* XXX - dialog has been terminated */;
+    nua_dialog_deinit(nh, nh->nh_ds);
+  }
+  else if (du) {
     if (cr->cr_terminated ||
 	(!du->du_ready && status >= 300 && nua_client_is_bound(cr))) {
       /* Usage has been destroyed */
@@ -2588,6 +2588,10 @@ int nua_base_client_response(nua_client_request_t *cr,
       /* Terminate usage gracefully */
       nua_dialog_usage_shutdown(nh, nh->nh_ds, du); 
     }
+  }
+  else if (cr->cr_terminated) {
+    if (nh->nh_ds->ds_usage == NULL)
+      nua_dialog_remove(nh, nh->nh_ds, NULL);
   }
 
   cr->cr_reporting = 0;

@@ -380,12 +380,11 @@ void nua_dialog_usage_remove_at(nua_owner_t *own,
   }
 
   /* Zap dialog if there are no more usages */
-  if (ds->ds_terminated)
+  if (ds->ds_terminating)
     ;
   else if (ds->ds_usage == NULL) {
     nua_dialog_remove(own, ds, NULL);
     ds->ds_has_events = 0;
-    ds->ds_terminated = 0;
     return;
   }
   else {
@@ -432,34 +431,18 @@ void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
 void nua_dialog_deinit(nua_owner_t *own,
 		       nua_dialog_state_t *ds)
 {
-  while (ds->ds_usage) {
-    nua_dialog_usage_remove_at(own, ds, &ds->ds_usage);
-  }
-}
-
-
-/** @internal Dialog has been terminated. Remove all usages. */
-void nua_dialog_remove_usages(nua_owner_t *own,
-			      struct nua_dialog_state *ds,
-			      int status,
-			      char const *phrase)
-{
-  ds->ds_terminated = 1;
+  ds->ds_terminating = 1;
 
   while (ds->ds_usage) {
-#if 0
-    int call = 0;
-
-    if (ds->ds_usage->du_kind == nua_session_usage)
-      call = 1;			/* Delay sending the event */
-    else
-      /* XXX */;
-#endif
     nua_dialog_usage_remove_at(own, ds, &ds->ds_usage);
   }
 
   nua_dialog_remove(own, ds, NULL);
+
+  ds->ds_has_events = 0;
+  ds->ds_terminating = 0;
 }
+
 
 /**@internal
  * Set expiration time. 
@@ -564,7 +547,7 @@ int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
 {
   nua_dialog_usage_t *du;
 
-  ds->ds_terminated = 1;
+  ds->ds_terminating = 1;
 
   do {
     for (du = ds->ds_usage; du; du = du->du_next) {
