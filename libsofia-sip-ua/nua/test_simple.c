@@ -773,6 +773,7 @@ int test_newsub_notify(struct context *ctx)
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
   sip_t const *sip;
+  sip_call_id_t *i;
   tagi_t const *n_tags, *r_tags;
 
   if (print_headings)
@@ -805,11 +806,41 @@ int test_newsub_notify(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-11.7.2: rejecting NOTIFY without subscription\n");
 
-  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+  TEST_1(i = sip_call_id_create(nua_handle_home(a_call->nh), NULL));
 
   NOTIFY(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
 	 NUTAG_NEWSUB(1),
-	 SIPTAG_SUBJECT_STR("NUA-11.7.2"),
+	 SIPTAG_SUBJECT_STR("NUA-11.7.2 first"),
+	 SIPTAG_FROM_STR("<sip:alice@example.com>;tag=nua-11.7.2"),
+	 SIPTAG_CALL_ID(i),
+	 SIPTAG_CSEQ_STR("1 NOTIFY"),
+	 SIPTAG_EVENT_STR("message-summary"),
+	 SIPTAG_CONTENT_TYPE_STR("application/simple-message-summary"),
+	 SIPTAG_PAYLOAD_STR("Messages-Waiting: yes"),
+	 TAG_END());
+
+  run_a_until(ctx, -1, save_until_final_response);
+
+  /* Client events:
+     nua_notify(), nua_r_notify
+  */
+  TEST_1(e = a->events->head);
+  TEST_E(e->data->e_event, nua_r_notify);
+  TEST(e->data->e_status, 481);
+  TEST_1(e->data->e_msg);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  
+  /* 2nd NOTIFY using same dialog */
+  /* Check that server really discards the dialog */
+
+  NOTIFY(a, a_call, a_call->nh, NUTAG_URL(b->contact->m_url),
+	 NUTAG_NEWSUB(1),
+	 SIPTAG_SUBJECT_STR("NUA-11.7.2 second"),
+	 SIPTAG_FROM_STR("<sip:alice@example.com>;tag=nua-11.7.2"),
+	 SIPTAG_CALL_ID(i),
+	 SIPTAG_CSEQ_STR("2 NOTIFY"),
 	 SIPTAG_EVENT_STR("message-summary"),
 	 SIPTAG_CONTENT_TYPE_STR("application/simple-message-summary"),
 	 SIPTAG_PAYLOAD_STR("Messages-Waiting: yes"),
