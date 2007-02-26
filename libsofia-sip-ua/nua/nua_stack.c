@@ -1280,6 +1280,8 @@ void nua_server_request_destroy(nua_server_request_t *sr)
   if (sr->sr_irq)
     nta_incoming_destroy(sr->sr_irq), sr->sr_irq = NULL;
 
+  su_msg_destroy(sr->sr_signal);
+
   if (sr->sr_request.msg)
     msg_destroy(sr->sr_request.msg), sr->sr_request.msg = NULL;
 
@@ -1370,23 +1372,35 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
   if (sr == NULL) {
     nua_stack_event(nua, nh, NULL, nua_i_error,
 		    500, "Responding to a Non-Existing Request", NULL);
+    return;
   }
   else if (!nua_server_request_is_pending(sr)) {
     nua_stack_event(nua, nh, NULL, nua_i_error,
 		    500, "Already Sent Final Response", NULL);
+    return;
+  }
+  else if (sr->sr_100rel && !sr->sr_pracked && 200 <= status && status < 300) {
+    /* Save signal until we have received PRACK */
+    if (tags && nua_stack_set_params(nua, nh, nua_i_none, tags) < 0) {
+      sr->sr_application = status;
+      SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
+    }
+    else {
+      su_msg_save(sr->sr_signal, nh->nh_nua->nua_signal);
+      return;
+    }
   }
   else {
     sr->sr_application = status;
-
     if (tags && nua_stack_set_params(nua, nh, nua_i_none, tags) < 0)
       SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
     else
       sr->sr_status = status, sr->sr_phrase = phrase;
-
-    nua_server_params(sr, tags);
-    nua_server_respond(sr, tags);
-    nua_server_report(sr);
   }
+
+  nua_server_params(sr, tags);
+  nua_server_respond(sr, tags);
+  nua_server_report(sr);
 }
 
 int nua_server_params(nua_server_request_t *sr, tagi_t const *tags)
@@ -1715,7 +1729,7 @@ int nua_client_create(nua_handle_t *nh,
   cr->cr_auto = 1;
 
   if (su_msg_is_non_null(nh->nh_nua->nua_signal)) {
-    nua_event_data_t const *e = su_msg_data(cr->cr_signal);
+    nua_event_data_t const *e = su_msg_data(nh->nh_nua->nua_signal);
 
     if (tags == e->e_tags && event == e->e_event) {
       cr->cr_auto = 0;

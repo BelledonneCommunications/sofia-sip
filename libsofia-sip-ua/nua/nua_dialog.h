@@ -117,6 +117,9 @@ struct nua_server_request {
 
   unsigned sr_neutral:1;	/**< No effect on session or other usage */
 
+  /* Flags used with 100rel */
+  unsigned sr_100rel:1, sr_pracked:1;
+
   /* Flags used with offer-answer */
   unsigned sr_offer_recv:1;	/**< We have received an offer */
   unsigned sr_answer_sent:2;	/**< We have answered (reliably, if >1) */
@@ -126,7 +129,10 @@ struct nua_server_request {
   unsigned :0;
 
   char const *sr_sdp;		/**< SDP received from client */
-  size_t sr_sdp_len;		/**< ... and its length  */
+  size_t sr_sdp_len;		/**< SDP length */
+
+  /**< Save 200 OK nua_respond() signal until PRACK has been received */
+  nua_saved_signal_t sr_signal;	
 };
 
 #define SR_STATUS(sr, status, phrase) \
