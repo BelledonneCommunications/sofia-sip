@@ -506,6 +506,10 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath="..\..\..\libsofia-sip-ua\nua\test_offer_answer.c"
+			>
+		</File>
+		<File
 			RelativePath="..\..\..\libsofia-sip-ua\nua\test_ops.c"
 			>
 			<FileConfiguration
