@@ -398,8 +398,7 @@ static void nua_publish_usage_refresh(nua_handle_t *nh,
   nua_client_request_t *cr = du->du_cr;
 
   if (cr) {
-    if (nua_client_is_queued(cr) /* Already publishing. */
-	|| nua_client_resend_request(cr, 0, NULL) >= 0)
+    if (nua_client_resend_request(cr, 0) >= 0)
       return;
   }
 
@@ -423,10 +422,7 @@ static int nua_publish_usage_shutdown(nua_handle_t *nh,
   nua_client_request_t *cr = du->du_cr;
 
   if (cr) {
-    if (nua_client_is_queued(cr)) /* Already publishing. */
-      return -1;
-
-    if (nua_client_resend_request(cr, 1, NULL) >= 0)
+    if (nua_client_resend_request(cr, 1) >= 0)
       return 0;
   }
 

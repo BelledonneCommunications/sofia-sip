@@ -960,8 +960,7 @@ static void nua_register_usage_refresh(nua_handle_t *nh,
   nua_client_request_t *cr = du->du_cr;
 
   if (cr) {
-    if (nua_client_is_queued(cr) /* Already registering. */
-	|| nua_client_resend_request(cr, 0, NULL) >= 0)
+    if (nua_client_resend_request(cr, 0) >= 0)
       return;
   }
 
@@ -987,7 +986,7 @@ static int nua_register_usage_shutdown(nua_handle_t *nh,
     if (nua_client_is_queued(cr)) /* Already registering. */
       return -1;
     cr->cr_event = nua_r_unregister;
-    if (nua_client_resend_request(cr, 1, NULL) >= 0)
+    if (nua_client_resend_request(cr, 1) >= 0)
       return 0;
   }
 

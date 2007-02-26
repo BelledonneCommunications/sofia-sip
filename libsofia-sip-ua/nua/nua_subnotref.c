@@ -433,8 +433,7 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
   }
 
   if (cr) {
-    if (nua_client_is_queued(cr) || /* Already refreshing */
-	nua_client_resend_request(cr, 0, NULL) >= 0)
+    if (nua_client_resend_request(cr, 0) >= 0)
       return;
   }
   else if (eu->eu_refer) {
@@ -469,10 +468,7 @@ static int nua_subscribe_usage_shutdown(nua_handle_t *nh,
   assert(eu); (void)eu;
 
   if (cr) {
-    if (nua_client_is_queued(cr)) /* Subscribing. */
-      return -1;  /* Request in progress */
-
-    if (nua_client_resend_request(cr, 1, NULL) >= 0)
+    if (nua_client_resend_request(cr, 1) >= 0)
       return 0;
   }
   

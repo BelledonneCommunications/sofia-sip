@@ -1012,7 +1012,8 @@ int nua_stack_ack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   if (!nua_client_is_queued(cr) && !nua_client_is_bound(cr))
     nua_client_request_destroy(cr);
-  nua_client_init_requests(nh->nh_ds->ds_cr, cr, 1);
+
+  nua_client_next_request(nh->nh_ds->ds_cr, 1);
 
   return 0;
 }
@@ -1286,7 +1287,7 @@ static void nua_session_usage_refresh(nua_handle_t *nh,
   if (!ss->ss_refresher) {
     if (du->du_expires == 0 || now < du->du_expires)
       /* Refresh contact & route set using re-INVITE */
-      nua_client_resend_request(du->du_cr, 0, NULL);
+      nua_client_resend_request(du->du_cr, 0);
     else {
       ss->ss_reason = "SIP;cause=408;text=\"Session timeout\""; 
       nua_stack_bye(nh->nh_nua, nh, nua_r_bye, NULL);
@@ -1296,7 +1297,7 @@ static void nua_session_usage_refresh(nua_handle_t *nh,
     nua_stack_update(nh->nh_nua, nh, nua_r_update, NULL);
   }
   else {
-    nua_client_resend_request(du->du_cr, 0, NULL);
+    nua_client_resend_request(du->du_cr, 0);
   }
 }
 

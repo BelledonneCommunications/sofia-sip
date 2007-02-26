@@ -322,6 +322,8 @@ struct nua_dialog_state
   nua_server_request_t *ds_sr;
 
   /* Dialog and subscription state */
+  unsigned ds_reporting:1;	/**< We are reporting */
+
   unsigned ds_route:1;		/**< We have route */
   unsigned ds_terminating:1;	/**< Being terminated */
 
@@ -410,6 +412,11 @@ void nua_dialog_store_peer_info(nua_owner_t *, nua_dialog_state_t *ds,
 int nua_dialog_remove(nua_owner_t *own,
 		      nua_dialog_state_t *ds,
 		      nua_dialog_usage_t *usage);
+
+static inline int nua_dialog_is_reporting(nua_dialog_state_t const *ds)
+{
+  return ds && ds->ds_reporting;
+}
 
 char const *nua_dialog_usage_name(nua_dialog_usage_t const *du);
 
@@ -521,9 +528,12 @@ static inline void nua_client_terminating(nua_client_request_t *cr)
 
 int nua_client_init_request(nua_client_request_t *cr);
 
+int nua_client_restart_request(nua_client_request_t *cr,
+			       int terminating,
+			       tagi_t const *tags);
+
 int nua_client_resend_request(nua_client_request_t *cr,
-			      int terminating,
-			      tagi_t const *tags);
+			      int terminating);
 
 int nua_base_client_request(nua_client_request_t *cr,
 			    msg_t *msg,
@@ -580,9 +590,7 @@ int nua_client_report(nua_client_request_t *cr,
 
 nua_client_request_t *nua_client_request_pending(nua_client_request_t const *);
 
-int nua_client_init_requests(nua_client_request_t *cr,
-			     void const *cr0,
-			     int invite);
+int nua_client_next_request(nua_client_request_t *cr, int invite);
 
 /* ---------------------------------------------------------------------- */
 

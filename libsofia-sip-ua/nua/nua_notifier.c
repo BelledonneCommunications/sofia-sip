@@ -690,6 +690,10 @@ static int nua_notify_client_report(nua_client_request_t *cr,
 		   SIPTAG_EVENT(du ? du->du_event : NULL),
 		   TAG_NEXT(tags));
 
+  if (nu && nu->nu_requested && du->du_cr == cr)
+    /* Re-SUBSCRIBEd while NOTIFY was in progress, resend NOTIFY */
+    nua_client_resend_request(cr, 0);
+
   return 0;
 }
 
@@ -699,18 +703,19 @@ static void nua_notify_usage_refresh(nua_handle_t *nh,
 				     nua_dialog_usage_t *du,
 				     sip_time_t now)
 {
+  struct notifier_usage *nu = nua_dialog_usage_private(du);
   nua_client_request_t *cr = du->du_cr;
   nua_event_t e = nua_r_notify;
 
   if (cr) {
-    int terminating;
+    int terminating = 0;
 
-    if (nua_client_is_queued(cr)) /* Already notifying. */
-      return;
+    if (du->du_expires && du->du_expires <= now)
+      terminating = 1;
+    else if (nu->nu_requested && nu->nu_requested <= now)
+      terminating = 1;
 
-    terminating = du->du_expires && du->du_expires <= now;
-
-    if (nua_client_resend_request(cr, terminating, NULL) >= 0)
+    if (nua_client_resend_request(cr, terminating) >= 0)
       return;
   }
   else {
@@ -738,13 +743,10 @@ static int nua_notify_usage_shutdown(nua_handle_t *nh,
   struct notifier_usage *nu = nua_dialog_usage_private(du);
   nua_client_request_t *cr = du->du_cr;
 
-  if (nua_client_is_queued(cr)) /* Already notifying. */
-    return -1;  /* Request in progress */
-
   nu->nu_substate = nua_substate_terminated;
 
   if (cr) {
-    if (nua_client_resend_request(cr, 1, NULL) >= 0)
+    if (nua_client_resend_request(cr, 1) >= 0)
       return 0;
   }
   else {
