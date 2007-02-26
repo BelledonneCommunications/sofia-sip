@@ -146,6 +146,7 @@ int alert_call(CONDITION_PARAMS)
   }
 }
 
+int accept_after_183(CONDITION_PARAMS);
 
 int test_call_cancel(struct context *ctx)
 {
@@ -213,7 +214,7 @@ int test_call_cancel(struct context *ctx)
   /* ------------------------------------------------------------------------ */
 
   if (print_headings)
-    printf("TEST NUA-5.2: cancel call when ringing\n");
+    printf("TEST NUA-5.2.1: cancel call when ringing\n");
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
@@ -280,10 +281,55 @@ int test_call_cancel(struct context *ctx)
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-5.2: PASSED\n");
+    printf("TEST NUA-5.2.1: PASSED\n");
+
+  /* ------------------------------------------------------------------------ */
+  if (print_headings)
+    printf("TEST NUA-5.2.2: CANCEL call when server waits for PRACK\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  INVITE(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 NUTAG_APPL_METHOD("PRACK"),
+	 /*SIPTAG_REJECT_CONTACT_STR("*;audio=FALSE"),*/
+	 TAG_END());
+
+  run_ab_until(ctx, -1, cancel_when_ringing, -1, accept_after_183);
+
+  free_events_in_list(ctx, a->events);
+  free_events_in_list(ctx, b->events);
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-5.2.2: PASSED\n");
+
 
   END();
 }
+
+int accept_after_183(CONDITION_PARAMS)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    RESPOND(ep, call, nh, SIP_183_SESSION_PROGRESS, TAG_END());
+    RESPOND(ep, call, nh, SIP_200_OK, TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    return 1;
+  default:
+    return 0;
+  }
+}
+
 
 /* ======================================================================== */
 /* Destroy call handle */
