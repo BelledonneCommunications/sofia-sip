@@ -80,6 +80,7 @@ test_nua_SOURCES = 	test_nua.c test_nua.h test_ops.c \
 			test_init.c \
 			test_nua_api.c test_nua_params.c \
 			test_register.c test_basic_call.c \
+			test_offer_answer.c \
 			test_call_reject.c test_cancel_bye.c \
 			test_call_hold.c test_session_timer.c \
 			test_refer.c test_100rel.c \

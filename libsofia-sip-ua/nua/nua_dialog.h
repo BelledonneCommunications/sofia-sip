@@ -121,7 +121,7 @@ struct nua_server_request {
   unsigned sr_offer_recv:1;	/**< We have received an offer */
   unsigned sr_answer_sent:2;	/**< We have answered (reliably, if >1) */
 
-  unsigned sr_offer_sent:1;	/**< We have offered SDP */
+  unsigned sr_offer_sent:2;	/**< We have offered SDP (reliably, if >1) */
   unsigned sr_answer_recv:1;	/**< We have received SDP answer */
   unsigned :0;
 

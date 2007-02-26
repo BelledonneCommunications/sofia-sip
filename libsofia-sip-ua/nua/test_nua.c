@@ -316,6 +316,7 @@ int main(int argc, char *argv[])
       retval |= test_reject_401_aka(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_destroy(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_offer_answer(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_early_bye(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_reinvites(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();

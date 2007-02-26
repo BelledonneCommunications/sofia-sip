@@ -1747,7 +1747,8 @@ SOFIAPUBVAR tag_typedef_t nutag_allow_ref;
  *
  * Corresponding tag taking reference parameter is NUTAG_APPL_METHOD_REF()
  *
- * @since Working since @VERSION_1_12_5. 
+ * @since Working since @VERSION_1_12_5. Handling of client-side PRACK and
+ * UPDATE was fixed in @VERSION_1_12_6.
  */
 #define NUTAG_APPL_METHOD(x)     nutag_appl_method, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_appl_method;

@@ -329,6 +329,7 @@ int test_nat_timeout(struct context *ctx);
 int test_unregister(struct context *ctx);
 
 int test_basic_call(struct context *ctx);
+int test_offer_answer(struct context *ctx);
 int test_reject_a(struct context *ctx);
 int test_reject_b(struct context *ctx);
 int test_reject_302(struct context *ctx);
