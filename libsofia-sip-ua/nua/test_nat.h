@@ -44,8 +44,10 @@ int test_nat_public(struct nat *nat, void const *address, int addrlen);
 int test_nat_flush(struct nat *nat);
 
 struct nat_filter *test_nat_add_filter(struct nat *nat,
-				       size_t (*condition)(void *message,
+				       size_t (*condition)(void *arg,
+							   void *message,
 							   size_t len),
+				       void *arg,
 				       int outbound);
 
 enum { nat_inbound, nat_outbound };

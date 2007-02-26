@@ -815,10 +815,13 @@ int bye_when_completing(CONDITION_PARAMS);
 
 static int ack_sent = 0;
 
-size_t count_acks(void *message, size_t len)
+size_t count_acks(void *arg, void *message, size_t len)
 {
+  (void)arg;
+
   if (strncasecmp(message, "ACK sip:", 8) == 0)
     ack_sent++;
+
   return len;
 }
 
@@ -920,7 +923,7 @@ int test_early_bye(struct context *ctx)
     printf("TEST NUA-6.2: BYE call when completing\n");
 
   if (ctx->nat)
-    TEST_1(f = test_nat_add_filter(ctx->nat, count_acks, nat_outbound));
+    TEST_1(f = test_nat_add_filter(ctx->nat, count_acks, NULL, nat_outbound));
   ack_sent = 0;
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));

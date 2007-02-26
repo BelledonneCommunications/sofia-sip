@@ -160,7 +160,8 @@ LIST_PROTOS(static, nat_filter, struct nat_filter);
 struct nat_filter
 {
   struct nat_filter *next, **prev;
-  size_t (*condition)(void *message, size_t len);
+  size_t (*condition)(void *arg, void *message, size_t len);
+  void *arg;
 };
 
 /* nat entry point */
@@ -694,7 +695,7 @@ static int udp_in_to_out(struct nat *nat, su_wait_t *wait, struct binding *b)
   len = (size_t)n;
 
   for (f = nat->out_filters; f; f = f->next) {
-    filtered = f->condition(nat->buffer, len);
+    filtered = f->condition(f->arg, nat->buffer, len);
     if (filtered != len) {
       if (nat->logging)
 	printf("nat: udp filtered "MOD_ZU" from %s => "MOD_ZU" to %s\n",
@@ -736,7 +737,7 @@ static int udp_out_to_in(struct nat *nat, su_wait_t *wait, struct binding *b)
   len = (size_t)n;
 
   for (f = nat->in_filters; f; f = f->next) {
-    filtered = f->condition(nat->buffer, len);
+    filtered = f->condition(f->arg, nat->buffer, len);
     if (filtered != len) {
       if (nat->logging)
 	printf("nat: udp filtered "MOD_ZU" from %s => "MOD_ZU" to %s\n",
@@ -951,8 +952,10 @@ int execute_nat_filter_remove(void *_args)
 }
 
 struct nat_filter *test_nat_add_filter(struct nat *nat,
-				       size_t (*condition)(void *message,
+				       size_t (*condition)(void *arg,
+							   void *message,
 							   size_t len),
+				       void *arg,
 				       int outbound)
 {
   struct args a[1];
@@ -966,6 +969,7 @@ struct nat_filter *test_nat_add_filter(struct nat *nat,
 
   if (a->f) {
     a->f->condition = condition;
+    a->f->arg = arg;
     if (su_task_execute(su_clone_task(nat->clone),
 			execute_nat_filter_insert, a, NULL) < 0)
       su_free(nat->home, a->f), a->f = NULL;

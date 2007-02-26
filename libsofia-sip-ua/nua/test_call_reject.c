@@ -948,15 +948,19 @@ int test_mime_negotiation(struct context *ctx)
 
 /* ---------------------------------------------------------------------- */
 
-size_t filter_200_OK(void *message, size_t len)
+size_t filter_200_OK(void *arg, void *message, size_t len)
 {
+  (void)arg;
+
   if (len >= 11 && strncasecmp(message, "SIP/2.0 200", 11) == 0)
     return 0;
   return len;
 }
 
-size_t filter_ACK(void *message, size_t len)
+size_t filter_ACK(void *arg, void *message, size_t len)
 {
+  (void)arg;
+
   if (len >= 7 && strncasecmp(message, "ACK sip", 7) == 0) 
     return 0;
   return len;
@@ -988,7 +992,7 @@ int test_call_timeouts(struct context *ctx)
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
-  TEST_1(f = test_nat_add_filter(ctx->nat, filter_200_OK, nat_inbound));
+  TEST_1(f = test_nat_add_filter(ctx->nat, filter_200_OK, NULL, nat_inbound));
   
   INVITE(a, a_call, a_call->nh,
 	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
@@ -1072,7 +1076,7 @@ int test_call_timeouts(struct context *ctx)
 
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
-  TEST_1(f = test_nat_add_filter(ctx->nat, filter_ACK, nat_outbound));
+  TEST_1(f = test_nat_add_filter(ctx->nat, filter_ACK, NULL, nat_outbound));
   
   INVITE(a, a_call, a_call->nh,
 	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
