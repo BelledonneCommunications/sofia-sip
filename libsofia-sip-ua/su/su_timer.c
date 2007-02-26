@@ -158,7 +158,7 @@ struct su_timer_s {
 };
 
 enum sut_running {
-  reset = 0,
+  reset = 0,		/**< Timer is not running */
   run_at_intervals = 1, /**< Compensate missed wakeup calls */
   run_for_ever = 2	/**< Do not compensate  */
 };

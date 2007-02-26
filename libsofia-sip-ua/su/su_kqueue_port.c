@@ -23,7 +23,7 @@
  */
 
 /**@ingroup su_wait
- * @CFILE su_poll_port.c
+ * @CFILE su_kqueue_port.c
  *
  * Port implementation using kqueue()
  *

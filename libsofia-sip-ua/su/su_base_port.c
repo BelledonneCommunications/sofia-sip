@@ -23,7 +23,7 @@
  */
 
 /**@ingroup su_wait
- * @CFILE su_port.c
+ * @CFILE su_base_port.c
  *
  * OS-Independent Socket Syncronization Interface.
  *
