@@ -1300,9 +1300,9 @@ void nua_server_request_destroy(nua_server_request_t *sr)
  *
  * When nua protocol engine receives an incoming SIP request, it can either
  * respond to the request automatically or let it up to application to
- * respond to the request. The automatic answer is sent if the request fails
- * because of method, SIP extension or, in some times, MIME content
- * negotiation fails.
+ * respond to the request. The automatic response is returned to the client
+ * if the request fails syntax check, or the method, SIP extension or
+ * content negotiation fails.
  *
  * When responding to an incoming INVITE request, the nua_respond() can be
  * called without NUTAG_WITH() (or NUTAG_WITH_CURRENT() or
@@ -1310,13 +1310,15 @@ void nua_server_request_destroy(nua_server_request_t *sr)
  * of the request being responded.
  *
  * In order to simplify the simple applications, most requests are responded
- * automatically. The set of requests always responded by the stack include
- * BYE, CANCEL and NOTIFY. The application can add methods that it likes to
- * handle by itself with NUTAG_APPL_METHOD(). The default set of
- * NUTAG_APPL_METHOD() includes INVITE, PUBLISH, REGISTER and SUBSCRIBE. 
- * Note that unless the method is also included in the set of allowed
- * methods with NUTAG_ALLOW(), the stack will respond to the incoming
- * methods with <i>405 Not Allowed</i>.
+ * automatically. The BYE and CANCEL requests are always responded by the
+ * stack. Likewise, the NOTIFY requests associated with an event
+ * subscription are responded by the stack.
+ *
+ * The application can add methods that it likes to handle by itself with
+ * NUTAG_APPL_METHOD(). The default set of NUTAG_APPL_METHOD() includes
+ * INVITE, PUBLISH, REGISTER and SUBSCRIBE. Note that unless the method is
+ * also included in the set of allowed methods with NUTAG_ALLOW(), the stack
+ * will respond to the incoming methods with <i>405 Not Allowed</i>.
  *
  * Note that certain methods are rejected outside a SIP session (created
  * with INVITE transaction). They include BYE, UPDATE, PRACK and INFO. Also
@@ -1655,7 +1657,7 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
  * The crm_init() is called when the template message and dialog leg has
  * been created and populated by the tags procided by the application. Its
  * parameters msg and sip are pointer to the template request message that
- * is saved in the @ref "cr_msg" nua_client_request::cr_msg field.
+ * is saved in the nua_client_request::cr_msg field.
  *
  * The crm_send() is called with a copy of the template message that has
  * been populated with all the fields included in the request, including

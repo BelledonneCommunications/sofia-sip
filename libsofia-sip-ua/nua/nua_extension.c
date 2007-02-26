@@ -125,12 +125,18 @@ nua_stack_method(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags
  * @param nh     operation handle associated with the method
  * @param hmagic application context associated with the handle
  *               (maybe NULL if outside session)
- * @param sip    incoming request
+ * @param sip    headers in incoming request (see also nua_current_request())
  * @param tags   NUTAG_METHOD()
  *
- * The extension name is in sip->sip_request->rq_method_name, too.
+ * The extension method name is in sip->sip_request->rq_method_name, too.
  *
- * @sa nua_method(), #nua_r_method
+ * @note If the @a status is < 200, it is up to application to respond to
+ * the request with nua_respond(). If the handle is destroyed, the stack
+ * returns a <i>500 Internal Server Error</i> response to any unresponded
+ * request.
+ *
+ * @sa nua_method(), #nua_r_method, NUTAG_ALLOW(), NUTAG_APPL_METHOD(),
+ * nua_respond(), NUTAG_WITH(), NUTAG_WITH_THIS(), NUTAG_
  *
  * @END_NUA_EVENT
  */
