@@ -97,12 +97,24 @@ struct root_test_s {
 };
 
 /** Test root initialization */
-int init_test(root_test_t *rt)
+int init_test(root_test_t *rt,
+	      char const *preference,
+	      su_port_create_f *create,
+	      su_clone_start_f *start)
 {
   su_sockaddr_t su[1] = {{ 0 }};
   int i;
 
   BEGIN();
+
+  su_init();
+
+  su_port_prefer(create, start);
+
+  TEST_1(rt->rt_root = su_root_create(rt));
+
+  printf("%s: testing %s (%s) implementation\n",
+	 name, preference, su_root_name(rt->rt_root));
 
   su->su_family = rt->rt_family;
 
@@ -536,7 +548,7 @@ int main(int argc, char *argv[])
   struct {
     su_port_create_f *create;
     su_clone_start_f *start;
-    char const *preference;
+    char const *name;
   } prefer[] =
       {
 	{ NULL, NULL, "default" },
@@ -577,14 +589,7 @@ int main(int argc, char *argv[])
   do {
     rt = rt1, *rt = *rt0;
 
-    su_port_prefer(prefer[i].create, prefer[i].start);
-
-    TEST_1(rt->rt_root = su_root_create(rt));
-
-    printf("%s: testing %s (%s) implementation\n",
-	   name, prefer[i].preference, su_root_name(rt->rt_root));
-
-    retval |= init_test(rt);
+    retval |= init_test(rt, prefer[i].name, prefer[i].create, prefer[i].start);
     retval |= register_test(rt);
     retval |= event_test(rt);
     su_root_threading(rt->rt_root, 1);
