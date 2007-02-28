@@ -890,6 +890,9 @@ int su_getaddrinfo(char const *node, char const *service,
   int retval;
   su_addrinfo_t *ai;
 
+  if (!service || service[0] == '\0')
+    service = "0";
+
 #if HAVE_SCTP
   if (res && hints && hints->ai_protocol == IPPROTO_SCTP) {
     su_addrinfo_t system_hints[1];
