@@ -112,11 +112,6 @@ char const name[] = "tport_test";
 
 SOFIAPUBVAR su_log_t tport_log[];
 
-void usage(void)
-{
-  fprintf(stderr, "usage: %s [-v]\n", name);
-}
-
 static int name_test(tp_test_t *tt)
 {
   tp_name_t tpn[1];
@@ -1357,6 +1352,12 @@ static int filter_test(tp_test_t *tt)
   END();
 }
 
+void usage(int exitcode)
+{
+  fprintf(stderr, "usage: %s [-v] [-a]\n", name);
+  exit(exitcode);
+}
+
 int main(int argc, char *argv[])
 {
   int flags = 0;	/* XXX */
@@ -1365,10 +1366,12 @@ int main(int argc, char *argv[])
   tp_test_t tt[1] = {{{ SU_HOME_INIT(tt) }}};
 
   for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
+    if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbatim") == 0)
       tstflags |= tst_verbatim;
+    else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--abort") == 0)
+      tstflags |= tst_abort;
     else
-      usage();
+      usage(1);
   }
 
   /* Use log */

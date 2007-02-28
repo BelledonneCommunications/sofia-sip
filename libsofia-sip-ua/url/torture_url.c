@@ -49,11 +49,6 @@ static int tstflags = 0;
 
 char const name[] = "torture_url";
 
-void usage(void)
-{
-  fprintf(stderr, "usage: %s [-v]\n", name);
-}
-
 unsigned char hash1[16], hash2[16];
 
 /* test unquoting and canonizing */
@@ -1049,7 +1044,11 @@ int test_print(void)
   END();
 }
 
-
+void usage(int exitcode)
+{
+  fprintf(stderr, "usage: %s [-v] [-a]\n", name);
+  exit(exitcode);
+}
 
 int main(int argc, char *argv[])
 {
@@ -1059,8 +1058,10 @@ int main(int argc, char *argv[])
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
       tstflags |= tst_verbatim;
+    else if (strcmp(argv[i], "-a") == 0)
+      tstflags |= tst_abort;
     else
-      usage();
+      usage(1);
   }
 
   retval |= test_quote(); fflush(stdout);

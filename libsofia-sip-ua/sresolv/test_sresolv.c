@@ -1964,11 +1964,16 @@ static RETSIGTYPE sig_alarm(int s)
 }
 #endif
 
-void usage(void)
+void usage(int exitcode)
 {
   fprintf(stderr, 
-	  "usage: %s [-v] [-l level] [-] [conf-file] [error-conf-file]\n", 
+	  "usage: %s OPTIONS [-] [conf-file] [error-conf-file]\n"
+	  "\twhere OPTIONS are\n"
+	  "\t    -v be verbose\n"
+	  "\t    -a abort on error\n"
+	  "\t    -l level\n",
 	  name);
+  exit(exitcode);
 }
 
 #include <sofia-sip/su_log.h>
@@ -1990,6 +1995,8 @@ int main(int argc, char **argv)
     }
     else if (strcmp(argv[i], "-v") == 0)
       tstflags |= tst_verbatim;
+    else if (strcmp(argv[i], "-a") == 0)
+      tstflags |= tst_abort;
     else if (strcmp(argv[i], "--no-alarm") == 0) {
       o_alarm = 0;
     }
@@ -2008,11 +2015,11 @@ int main(int argc, char **argv)
 	level = 3, rest = "";
 
       if (rest == NULL || *rest)
-	usage();
+	usage(1);
       
       su_log_set_level(sresolv_log, level);
     } else
-      usage();
+      usage(1);
   }
 
   if (o_attach) {

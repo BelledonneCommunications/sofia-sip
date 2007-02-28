@@ -1238,6 +1238,7 @@ char const nta_test_api_usage[] =
   "usage: %s OPTIONS\n"
   "where OPTIONS are\n"
   "   -v | --verbose    be verbose\n"
+  "   -a | --abort      abort() on error\n"
   "   -q | --quiet      be quiet\n"
   "   -1                quit on first error\n"
   "   -l level          set logging level (0 by default)\n"
@@ -1247,10 +1248,10 @@ char const nta_test_api_usage[] =
 #endif
   ;
 
-void usage(void)
+void usage(int exitcode)
 {
   fprintf(stderr, nta_test_api_usage, name);
-  exit(1);
+  exit(exitcode);
 }
 
 int main(int argc, char *argv[])
@@ -1261,9 +1262,11 @@ int main(int argc, char *argv[])
   agent_t ag[1] = {{ { SU_HOME_INIT(ag) }, 0, NULL }};
 
   for (i = 1; argv[i]; i++) {
-    if (strcmp(argv[i], "-v") == 0)
+    if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0)
       tstflags |= tst_verbatim;
-    else if (strcmp(argv[i], "-q") == 0)
+    else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--abort") == 0)
+      tstflags |= tst_abort;
+    else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
       tstflags &= ~tst_verbatim;
     else if (strcmp(argv[i], "-1") == 0)
       quit_on_single_failure = 1;
@@ -1279,7 +1282,7 @@ int main(int argc, char *argv[])
 	level = 3, rest = "";
 
       if (rest == NULL || *rest)
-	usage();
+	usage(1);
       
       su_log_set_level(nta_log, level);
       su_log_set_level(tport_log, level);
@@ -1297,7 +1300,7 @@ int main(int argc, char *argv[])
       break;
     }
     else
-      usage();
+      usage(1);
   }
 
   if (o_attach) {

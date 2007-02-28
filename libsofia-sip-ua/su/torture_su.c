@@ -49,15 +49,8 @@ int tstflags;
 
 char const *name = "torture_su";
 
-static int test_sockaddr(void);
-
-void usage(void)
-{
-  fprintf(stderr, "usage: %s [-v]\n", name);
-}
-
 /**  */
-int test_sockaddr(void)
+static int test_sockaddr(void)
 {
   su_localinfo_t hints[1] = {{ LI_CANONNAME }};
   su_localinfo_t *li, *res = NULL;
@@ -494,6 +487,12 @@ int test_md5(void)
   END();
 }
 
+void usage(int exitcode)
+{
+  fprintf(stderr, "usage: %s [-v] [-a]\n", name);
+  exit(exitcode);
+}
+
 int main(int argc, char *argv[])
 {
   int retval = 0;
@@ -504,8 +503,10 @@ int main(int argc, char *argv[])
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
       tstflags |= tst_verbatim;
+    else if (strcmp(argv[i], "-a") == 0)
+      tstflags |= tst_abort;
     else
-      usage();
+      usage(1);
   }
   
   retval |= test_sockaddr();

@@ -3358,6 +3358,7 @@ char const nta_test_usage[] =
   "usage: %s OPTIONS\n"
   "where OPTIONS are\n"
   "   -v | --verbose    be verbose\n"
+  "   -a | --abort      abort() on error\n"
   "   -q | --quiet      be quiet\n"
   "   -1                quit on first error\n"
   "   -l level          set logging level (0 by default)\n"
@@ -3369,10 +3370,10 @@ char const nta_test_usage[] =
 #endif
   ;
 
-void usage(void)
+void usage(int exitcode)
 {
   fprintf(stderr, nta_test_usage, name);
-  exit(1);
+  exit(exitcode);
 }
 
 int main(int argc, char *argv[])
@@ -3385,6 +3386,8 @@ int main(int argc, char *argv[])
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0)
       tstflags |= tst_verbatim;
+    else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--abort") == 0)
+      tstflags |= tst_abort;
     else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
       tstflags &= ~tst_verbatim;
     else if (strcmp(argv[i], "-1") == 0)
@@ -3401,7 +3404,7 @@ int main(int argc, char *argv[])
 	level = 3, rest = "";
 
       if (rest == NULL || *rest)
-	usage();
+	usage(1);
       
       su_log_set_level(nta_log, level);
       su_log_set_level(tport_log, level);
@@ -3412,7 +3415,7 @@ int main(int argc, char *argv[])
       else if (argv[i + 1])
 	ag->ag_obp = (url_string_t *)(argv[++i]);
       else
-	usage();
+	usage(1);
     }
     else if (strncmp(argv[i], "-m", 2) == 0) {
       if (argv[i][2])
@@ -3420,7 +3423,7 @@ int main(int argc, char *argv[])
       else if (argv[i + 1])
 	ag->ag_m = argv[++i];
       else
-	usage();
+	usage(1);
     }
     else if (strcmp(argv[i], "--attach") == 0) {
       o_attach = 1;
@@ -3435,7 +3438,7 @@ int main(int argc, char *argv[])
       break;
     }
     else
-      usage();
+      usage(1);
   }
 
   if (o_attach) {

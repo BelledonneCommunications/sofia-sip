@@ -1245,12 +1245,12 @@ static RETSIGTYPE sig_alarm(int s)
 }
 #endif
 
-void usage(void)
+void usage(int exitcode)
 {
   fprintf(stderr, 
-	  "usage: %s [-v|-q] [-l level] [-p outbound-proxy-uri]\n", 
+	  "usage: %s [-v|-q] [-a] [-l level] [-p outbound-proxy-uri]\n", 
 	  name);
-  exit(1);
+  exit(exitcode);
 }
 
 int main(int argc, char *argv[])
@@ -1263,6 +1263,8 @@ int main(int argc, char *argv[])
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0)
       tstflags |= tst_verbatim;
+    else if (strcmp(argv[i], "-a") == 0)
+      tstflags |= tst_abort;
     else if (strcmp(argv[i], "-q") == 0)
       tstflags &= ~tst_verbatim;
     else if (strcmp(argv[i], "-1") == 0)
@@ -1279,7 +1281,7 @@ int main(int argc, char *argv[])
 	level = 3, rest = "";
 
       if (rest == NULL || *rest)
-	usage();
+	usage(1);
       
       su_log_set_level(soa_log, level);
     }
@@ -1296,7 +1298,7 @@ int main(int argc, char *argv[])
       break;
     }
     else
-      usage();
+      usage(1);
   }
 
   if (o_attach) {

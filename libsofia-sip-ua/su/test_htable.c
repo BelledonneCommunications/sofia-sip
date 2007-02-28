@@ -52,10 +52,10 @@
 
 char const name[] = "htable_test";
 
-void usage(void)
+void usage(int exitcode)
 {
-  fprintf(stderr, "usage: %s [-v|--verbatim]\n", name);
-  exit(2);
+  fprintf(stderr, "usage: %s [-v|--verbatim] [-a|--abort]\n", name);
+  exit(exitcode);
 }
 
 static int table_test(int flags);
@@ -70,8 +70,10 @@ int main(int argc, char *argv[])
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbatim") == 0)
       flags |= tst_verbatim;
+    else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--abort") == 0)
+      flags |= tst_abort;
     else
-      usage();
+      usage(1);
   }
 
   retval |= table_test(flags); fflush(stdout);
