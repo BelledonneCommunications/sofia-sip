@@ -21,8 +21,10 @@ TAG_AWK=$(top_srcdir)/libsofia-sip-ua/su/tag_dll.awk
 
 *_tag_ref.c: $(TAG_AWK)
 
-%_tag_ref.c: %_tag.c
-	$(AWK) -f $(TAG_AWK) NODLL=1 $(TAG_DLL_FLAGS) $<
+SUFFIXES = _tag_ref.c _tag.c
+
+_tag.c_tag_ref.c:
+	$(AWK) -f $(TAG_AWK) NODLL=1 $(TAG_DLL_FLAGS) REF=$@ $<
 
 if ENABLE_COVERAGE
 coverage:

@@ -69,26 +69,23 @@ include $(top_srcdir)/rules/sofia.am
 
 TAG_DLL_FLAGS = DLLREF=1
 
-MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
+MSG_PARSER_AWK = ${srcdir}/../msg/msg_parser.awk
 
-AWK_HTTP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=http
+AWK_HTTP_AWK = ${AWK} -f ${MSG_PARSER_AWK} module=http
 
-sofia-sip/http_tag.h: sofia-sip/http_tag.h.in $(MSG_PARSER_AWK)
-sofia-sip/http_protos.h: sofia-sip/http_protos.h.in $(MSG_PARSER_AWK)
-http_tag.c: http_tag.c.in $(MSG_PARSER_AWK)
-http_parser_table.c: http_parser_table.c.in $(MSG_PARSER_AWK)
+SS_HTTP_H = ${srcdir}/sofia-sip/http.h
 
-sofia-sip/http_protos.h: sofia-sip/http.h
+sofia-sip/http_protos.h: ${SS_HTTP_H} ${srcdir}/$@.in ${MSG_PARSER_AWK}
 	@-mkdir sofia-sip 2>/dev/null || true
-	$(AWK_HTTP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/http_protos.h.in $<
+	${AWK_HTTP_AWK} PR=$@ TEMPLATE=${srcdir}/$@.in ${SS_HTTP_H}
 
-sofia-sip/http_tag.h: sofia-sip/http.h
+sofia-sip/http_tag.h: ${SS_HTTP_H} ${srcdir}/$@.in ${MSG_PARSER_AWK}
 	@-mkdir sofia-sip 2>/dev/null || true
-	$(AWK_HTTP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/http_tag.h.in $<
+	${AWK_HTTP_AWK} PR=$@ TEMPLATE=${srcdir}/$@.in ${SS_HTTP_H}
 
-http_tag.c: sofia-sip/http.h
-	$(AWK_HTTP_AWK) PR=$@ TEMPLATE=$(srcdir)/http_tag.c.in $<
+http_tag.c: ${SS_HTTP_H} ${srcdir}/$@.in ${MSG_PARSER_AWK}
+	${AWK_HTTP_AWK} PR=$@ TEMPLATE=${srcdir}/$@.in ${SS_HTTP_H}
 
-http_parser_table.c: sofia-sip/http.h
-	$(AWK_HTTP_AWK) PT=$@ TEMPLATE=$(srcdir)/http_parser_table.c.in \
-		MC_HASH_SIZE=127 $<
+http_parser_table.c: ${SS_HTTP_H} ${srcdir}/$@.in ${MSG_PARSER_AWK}
+	${AWK_HTTP_AWK} PT=$@ TEMPLATE=${srcdir}/$@.in \
+		MC_HASH_SIZE=127 ${SS_HTTP_H}

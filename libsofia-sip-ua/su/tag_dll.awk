@@ -46,10 +46,17 @@ HEADER {
     fn = FILENAME;
   }
 
-  DLL = fn;
-  sub(/[.]c(at)?/, "_dll.c", DLL);
+  if (REF == "") {
+    REF = fn;
+    sub(/[.]c(at)?/, "_ref.c", REF);
+  }
 
   if (NODLL) DLL = "/dev/null";
+
+  if (DLL == "") {
+    DLL = fn;
+    sub(/[.]c(at)?/, "_dll.c", DLL);
+  }
 
   base = fn;
   sub(/.*\//, "", base);
@@ -72,9 +79,6 @@ HEADER {
       "#include \"config.h\"\n\n" \
       "#include <sofia-sip/su_tag_class.h>\n\n" > DLL;
   }
-
-  REF = fn;
-  sub(/[.]c(at)?/, "_ref.c", REF);
 
   printf("/*\n" \
 	 " * PLEASE NOTE: \n" \

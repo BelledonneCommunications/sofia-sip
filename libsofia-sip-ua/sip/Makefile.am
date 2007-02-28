@@ -116,40 +116,40 @@ sofia-sip/sip_hclasses.h: sofia-sip/sip_hclasses.h.in
 sofia-sip/sip_protos.h: sofia-sip/sip_protos.h.in
 sofia-sip/sip_tag.h: sofia-sip/sip_tag.h.in
 
-$(GENERATED_H): $(MSG_PARSER_AWK)
+${GENERATED_H}: ${MSG_PARSER_AWK}
 
-sip_parser_table.c: sip_parser_table.c.in $(MSG_PARSER_AWK)
-sip_tag.c: sip_tag.c.in $(MSG_PARSER_AWK)
+sip_parser_table.c: sip_parser_table.c.in ${MSG_PARSER_AWK}
+sip_tag.c: sip_tag.c.in ${MSG_PARSER_AWK}
 
-EXTRA = $(srcdir)/sip_extra_headers.txt
+SS_SIP_H = ${srcdir}/sofia-sip/sip.h
+EXTRA = ${srcdir}/sip_extra_headers.txt
 
-sofia-sip/sip_hclasses.h: sofia-sip/sip.h
+sofia-sip/sip_hclasses.h: ${SS_SIP_H} ${srcdir}/$@.in
 	@-mkdir sofia-sip 2>/dev/null || true
-	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_hclasses.h.in $<
+	${AWK_SIP_AWK} PR=$@ TEMPLATE=${srcdir}/$@.in ${SS_SIP_H}
 
-sofia-sip/sip_protos.h: sofia-sip/sip.h
+sofia-sip/sip_protos.h: ${SS_SIP_H}
 	@-mkdir sofia-sip 2>/dev/null || true
-	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_protos.h.in $<
+	${AWK_SIP_AWK} PR=$@ TEMPLATE=${srcdir}/$@.in ${SS_SIP_H}
 
-sofia-sip/sip_tag.h: sofia-sip/sip.h
+sofia-sip/sip_tag.h: ${SS_SIP_H}
 	@-mkdir sofia-sip 2>/dev/null || true
-	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sofia-sip/sip_tag.h.in $<
+	${AWK_SIP_AWK} PR=$@ TEMPLATE=${srcdir}/$@.in ${SS_SIP_H}
 
-sip_tag.c: sofia-sip/sip.h sip_extra_headers.txt
-	$(AWK_SIP_AWK) PR=$@ TEMPLATE=$(srcdir)/sip_tag.c.in $< $(EXTRA)
+sip_tag.c: ${SS_SIP_H} ${EXTRA}
+	${AWK_SIP_AWK} PR=$@ TEMPLATE=${srcdir}/$@.in ${SS_SIP_H} ${EXTRA}
 
-sip_parser_table.c: sip_extra_headers.txt
+sip_parser_table.c: ${SS_SIP_H} ${EXTRA}
+	${AWK_SIP_AWK} PT=$@ TEMPLATE=${srcdir}/$@.in \
+		FLAGFILE=${srcdir}/sip_bad_mask \
+		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 \
+		${SS_SIP_H} ${EXTRA}
 
-sip_parser_table.c: sofia-sip/sip.h
-	$(AWK_SIP_AWK) PT=$@ TEMPLATE=$(srcdir)/sip_parser_table.c.in \
-		FLAGFILE=$(srcdir)/sip_bad_mask \
-		MC_HASH_SIZE=127 MC_SHORT_SIZE=26 $< $(EXTRA)
-
-sofia-sip/sip_extra.h: sofia-sip/sip_extra.h.in sip_extra_headers.txt
+sofia-sip/sip_extra.h: ${srcdir}/$@.in ${EXTRA}
 	@-mkdir -p sofia-sip 2>/dev/null
 	${AWK_SIP_AWK} PR=$@ NO_FIRST=1 NO_LAST=1 \
 		PACKAGE_NAME="${PACKAGE_NAME}" \
 		PACKAGE_VERSION="${PACKAGE_VERSION}" \
 		TEMPLATE1=${srcdir}/sofia-sip/sip_hclasses.h.in \
 		TEMPLATE2=${srcdir}/sofia-sip/sip_protos.h.in \
-		TEMPLATE=$< $(EXTRA)
+		TEMPLATE=${srcdir}/$@.in ${EXTRA}
