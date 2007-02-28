@@ -545,7 +545,8 @@ static int m_get_domain(char *d, int n, sres_message_t *m, uint16_t offset);
 #include <winreg.h>
 #endif
 
-/**@var SRESOLV_DEBUG
+#if DOXYGEN_ONLY
+/**@ingroup sresolv_env
  *
  * Environment variable determining the debug log level for @b sresolv
  * module.
@@ -555,7 +556,8 @@ static int m_get_domain(char *d, int n, sres_message_t *m, uint16_t offset);
  * 
  * @sa <su_debug.h>, sresolv_log, SOFIA_DEBUG
  */
-extern char const SRESOLV_DEBUG[];
+extern SRESOLV_DEBUG;
+#endif
 
 /**Debug log for @b sresolv module. 
  * 
@@ -630,7 +632,7 @@ sres_resolver_t *sres_resolver_copy(sres_resolver_t *res)
  *                       (overriding options in conf_file)
  *
  * @par Environment Variables
- * - LOCALDOMAIN overrides @c domain or @c search directives
+ * - #LOCALDOMAIN overrides @c domain or @c search directives
  * - #RES_OPTIONS overrides values of @a options in resolv.conf
  * - #SRES_OPTIONS overrides values of @a options in resolv.conf, #RES_OPTIONS,
  *   and @a options, ... list given as argument for this function
@@ -2237,21 +2239,24 @@ int sres_parse_config(sres_config_t *c, FILE *f)
   return i;
 }
 
-/**Environment variable containing options for Sofia resolver. The options
+#if DOXYGEN_ONLY
+/**@ingroup sresolv_env
+ *
+ * Environment variable containing options for Sofia resolver. The options
  * recognized by Sofia resolver are as follows:
- * - debug           turn on debugging (no effect)
- * - ndots:<i>n</i>  when searching, try first to query name as absolute
- *                   domain if it contains at least <i>n</i> dots
- * - timeout:<i>secs</i> timeout in seconds
- * - attempts:<i>n</i> fail after <i>n</i> retries
- * - rotate          use round robin selection of nameservers
- * - no-check-names  do not check names for invalid characters
- * - inet6           (no effect) 
- * - ip6-dotint      IPv6 addresses are resolved using suffix ".ip6.int"
- *                   instead of the standard ".ip6.arpa" suffix
- * - ip6-bytestring  (no effect)
+ * - @b debug           turn on debugging (no effect)
+ * - @b ndots:<i>n</i>  when searching, try first to query name as absolute
+ *                      domain if it contains at least <i>n</i> dots
+ * - @b timeout:<i>secs</i> timeout in seconds
+ * - @b attempts:<i>n</i> fail after <i>n</i> retries
+ * - @b rotate          use round robin selection of nameservers
+ * - @b no-check-names  do not check names for invalid characters
+ * - @b inet6           (no effect) 
+ * - @b ip6-dotint      IPv6 addresses are resolved using suffix ".ip6.int"
+ *                      instead of the standard ".ip6.arpa" suffix
+ * - @b ip6-bytestring  (no effect)
  * The following option is a Sofia-specific extension:
- * - no-edns0        do not try to use EDNS0 extension (@RFC2671)
+ * - @b no-edns0        do not try to use EDNS0 extension (@RFC2671)
  *
  * The same options can be listed in @b options directive in resolv.conf, or
  * in #RES_OPTIONS environment variable. Note that options given in
@@ -2262,15 +2267,26 @@ int sres_parse_config(sres_config_t *c, FILE *f)
  *
  * @sa Manual page for resolv.conf, #RES_OPTIONS.
  */
-extern char const SRES_OPTIONS[];
+extern SRES_OPTIONS;
 
-/**Environment variable containing resolver options. This environment
+/**@ingroup sresolv_env
+ *
+ * Environment variable containing resolver options. This environment
  * variable is also used by standard BIND resolver.
  *
  * @sa Manual page for resolv.conf, #SRES_OPTIONS.
  */
-extern char const RES_OPTIONS[];
+extern RES_OPTIONS;
 
+/**@ingroup sresolv_env
+ *
+ * Environment variable containing search domain. This environment
+ * variable is also used by standard BIND resolver.
+ *
+ * @sa Manual page for resolv.conf, #RES_OPTIONS, #SRES_OPTIONS.
+ */
+extern LOCALDOMAIN;
+#endif
 
 /* Parse options line or #SRES_OPTIONS or #RES_OPTIONS environment variable. */
 static int 
