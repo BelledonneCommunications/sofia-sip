@@ -163,6 +163,7 @@ struct sockaddr_storage {
 #define INVALID_SOCKET ((sres_socket_t)-1)
 #endif
 
+#define SRES_TIME_MAX ((time_t)LONG_MAX)
 
 #if !HAVE_INET_PTON
 int inet_pton(int af, char const *src, void *dst);
@@ -215,7 +216,10 @@ struct sres_server {
 
   /** ICMP/temporary error received, zero when successful. */
   time_t                  dns_icmp;
-  /** Persisten error, zero when successful. */
+  /** Persistent error, zero when successful or timeout. 
+   *
+   * Never selected if dns_error is SRES_TIME_MAX.
+   */
   time_t                  dns_error;
 };
 
@@ -438,7 +442,7 @@ sres_config_t *sres_parse_resolv_conf(sres_resolver_t *res,
 static
 sres_server_t *sres_next_server(sres_resolver_t *res, 
 				uint8_t *in_out_i,
-				int timeout);
+				int always);
 
 static
 int sres_send_dns_query(sres_resolver_t *res, sres_query_t *q);
@@ -2524,7 +2528,6 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
   if (s == -1) {
     SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
 		su_strerror(su_errno())));
-    dns->dns_error = time(NULL);
     return s;
   }
 
@@ -2567,7 +2570,6 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 		su_strerror(su_errno()), lb, ipaddr, rb,
 		ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
     sres_close(s);
-    dns->dns_error = time(NULL);
     return INVALID_SOCKET;
   }
   
@@ -2576,7 +2578,6 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
       SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "update callback",
 		  su_strerror(su_errno())));
       sres_close(s);
-      dns->dns_error = time(NULL);
       return INVALID_SOCKET;
     }
   }
@@ -2597,7 +2598,7 @@ sres_send_dns_query(sres_resolver_t *res,
   sres_message_t m[1];
   uint8_t i, i0, N = res->res_n_servers;
   sres_socket_t s;
-  int transient, error = 0;
+  int error = 0;
   ssize_t size, no_edns_size, edns_size;
   uint16_t id = q->q_id;
   uint16_t type = q->q_type;
@@ -2650,17 +2651,14 @@ sres_send_dns_query(sres_resolver_t *res,
     return -1;
   }
 
-  transient = 0;
+  i0 = q->q_i_server;
+  if (i0 > N) i0 = 0; /* Number of DNS servers reduced */
+  dns = servers[i = i0];
 
-  i0 = q->q_i_server; if (i0 > N) i0 = 0; /* Number of DNS servers reduced */
+  if (res->res_config->c_opt.rotate || dns->dns_error || dns->dns_icmp)
+    dns = sres_next_server(res, &q->q_i_server, 1), i = q->q_i_server;
 
-  if (res->res_config->c_opt.rotate || 
-      servers[i0]->dns_error || servers[i0]->dns_icmp)
-    dns = sres_next_server(res, &q->q_i_server, 0), i = q->q_i_server;
-  else 
-    dns = servers[i0], i = i0;
-
-  for (; dns; dns = sres_next_server(res, &i, 0)) {
+  for (; dns; dns = sres_next_server(res, &i, 1)) {
     /* If server supports EDNS, include EDNS0 record */
     q->q_edns = dns->dns_edns;
     /* 0 (no EDNS) or 1 (EDNS supported) additional data records */
@@ -2670,17 +2668,18 @@ sres_send_dns_query(sres_resolver_t *res,
 
     s = sres_server_socket(res, dns);
 
-    /* Send the DNS message via the UDP socket */
-    if (s != INVALID_SOCKET && sres_send(s, m->m_data, size, 0) == size)
-      break;
-
-    error = su_errno();
-    dns->dns_icmp = now;
-    /* EINVAL is returned if destination address is bad */
-    if (transient++ < 3 && error != EINVAL && s != -1)
+    if (s == INVALID_SOCKET) {
+      dns->dns_icmp = now;
+      dns->dns_error = SRES_TIME_MAX;
       continue;
-    transient = 0;
+    }
 
+    /* Send the DNS message via the UDP socket */
+    if (sres_send(s, m->m_data, size, 0) == size)
+      break;
+    error = su_errno();
+
+    dns->dns_icmp = now;
     dns->dns_error = now;	/* Mark as a bad destination */
   }
 
@@ -2702,39 +2701,69 @@ sres_send_dns_query(sres_resolver_t *res,
   return 0;
 }
 
+/** Retry time after ICMP error */
+#define DNS_ICMP_TIMEOUT 60
 
-/** Select next server */
+/** Retry time after immediate error */
+#define DNS_ERROR_TIMEOUT 10
+
+/** Select next server.
+ *
+ * @param res resolver object
+ * @param[in,out] in_out_i index to DNS server table
+ * @param always return always a server
+ */
 static
 sres_server_t *sres_next_server(sres_resolver_t *res, 
 				uint8_t *in_out_i,
-				int timeout)
+				int always)
 {
   int i, j, N;
-  sres_server_t **servers;
-
-  assert(res && in_out_i);
+  sres_server_t *dns, **servers;
+  time_t now = res->res_now;
 
   N = res->res_n_servers;
   servers = res->res_servers;
   i = *in_out_i;
 
   assert(res->res_servers && res->res_servers[i]);
+
+  for (j=0; j < N; j++) {
+    dns = servers[j]; if (!dns) continue;
+    if (dns->dns_icmp + DNS_ICMP_TIMEOUT < now)
+      dns->dns_icmp = 0;
+    if (dns->dns_error + DNS_ERROR_TIMEOUT < now &&
+	dns->dns_error != SRES_TIME_MAX)
+      dns->dns_error = 0;
+  }
   
   /* Retry using another server? */
   for (j = (i + 1) % N; (j != i); j = (j + 1) % N) {
-    if (servers[j]->dns_icmp == 0) {
-      return *in_out_i = j, servers[j];
+    dns = servers[j]; if (!dns) continue;
+    if (dns->dns_icmp == 0) {
+      return *in_out_i = j, dns;
     }
   }
 
   for (j = (i + 1) % N; (j != i); j = (j + 1) % N) {
-    if (servers[j]->dns_error == 0) {
-      return *in_out_i = j, servers[j];
+    dns = servers[j]; if (!dns) continue;
+    if (dns->dns_error == 0) {
+      return *in_out_i = j, dns;
     }
   }
 
-  if (timeout)
-    return servers[i];
+  if (!always)
+    return NULL;
+
+  dns = servers[i]; 
+  if (dns && dns->dns_error < now && dns->dns_error != SRES_TIME_MAX)
+    return dns;
+
+  for (j = (i + 1) % N; j != i; j = (j + 1) % N) {
+    dns = servers[j]; if (!dns) continue;
+    if (dns->dns_error < now && dns->dns_error != SRES_TIME_MAX)
+      return *in_out_i = j, dns;
+  }
   
   return NULL;
 }
@@ -2872,15 +2901,21 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
   sres_cache_clean(res->res_cache, res->res_now);
 }
 
-/** Resend DNS query, report error if cannot resend any more. */
+/** Resend DNS query, report error if cannot resend any more.
+ * 
+ * @param res  resolver object
+ * @param q    query object
+ * @param timeout  true if resent because of timeout
+ *                (false if because icmp error report)
+ */
 static void
 sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
 {
   uint8_t i, N;
   sres_server_t *dns;
-
-  SU_DEBUG_9(("sres_resend_dns_query(%p, %p, %u) called\n",
-	      (void *)res, (void *)q, timeout));
+  
+  SU_DEBUG_9(("sres_resend_dns_query(%p, %p, %s) called\n",
+	      (void *)res, (void *)q, timeout ? "timeout" : "error"));
   
   N = res->res_n_servers;
 
@@ -3005,6 +3040,11 @@ int sres_resolver_sockets(sres_resolver_t *res,
     sres_server_t *dns = res->res_servers[i];
 
     s = sres_server_socket(res, dns);
+
+    if (s == INVALID_SOCKET) {	/* Mark as a bad destination */
+      dns->dns_icmp = SRES_TIME_MAX;
+      dns->dns_error = SRES_TIME_MAX;	
+    }
 
     return_sockets[i++] = s;
   }
@@ -3228,7 +3268,7 @@ sres_resolver_report_error(sres_resolver_t *res,
 	  continue;
 
 	/* Resend query/report error to application */
-	sres_resend_dns_query(res, q, 1);
+	sres_resend_dns_query(res, q, 0);
 
 	if (q != res->res_queries->qt_table[i])
 	  i--;
