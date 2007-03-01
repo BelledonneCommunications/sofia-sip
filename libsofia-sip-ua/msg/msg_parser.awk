@@ -431,6 +431,10 @@ END {
     gsub(/#DATE#/, "@date Generated: " date, header);
     print header > PT;
 
+    print "" > PT;
+    print "#define msg_offsetof(s, f) ((unsigned short)offsetof(s ,f))" > PT;
+    print "" > PT;
+
     if (MC_SHORT_SIZE) {
       printf("static msg_href_t const " \
 	     "%s_short_forms[MC_SHORT_SIZE] = \n{\n", 
@@ -442,7 +446,7 @@ END {
 	  n = shorts[i];
         flags = header_flags[n]; if (flags) flags = ",\n      " flags;
 	  
-	  printf("  { /* %s */ %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
+	  printf("  { /* %s */ %s_%s_class, msg_offsetof(%s_t, %s_%s)%s }%s\n", 
 		 substr(lower_case, i, 1), 
 		 tprefix, n, module, prefix, n, flags, c)	\
 	    > PT;
@@ -493,11 +497,11 @@ END {
     len = split("request status separator payload unknown error", unnamed, " ");
 
     for (i = 1; i <= len; i++) {
-      printf("  {{ %s_%s_class, offsetof(%s_t, %s_%s) }},\n", 
+      printf("  {{ %s_%s_class, msg_offsetof(%s_t, %s_%s) }},\n", 
 	     tprefix, unnamed[i], module, prefix, unnamed[i]) > PT;
     }
     if (multipart) {
-      printf("  {{ %s_class, offsetof(%s_t, %s_multipart) }},\n",
+      printf("  {{ %s_class, msg_offsetof(%s_t, %s_multipart) }},\n",
 	     multipart, module, prefix) > PT;
     } else {
       printf("  {{ NULL, 0 }},\n") > PT;
@@ -548,11 +552,11 @@ END {
 
 	if (Since[n]) {
 	  printf("    { %s_%s_class,\n" \
-		 "      offsetof(struct %s, extra[%u])%s }%s\n", 
+		 "      msg_offsetof(struct %s, extra[%u])%s }%s\n", 
 		 tprefix, n, extra_struct, Extra[n], flags, c) > PT;
 	}
 	else {
-	  printf("    { %s_%s_class, offsetof(%s_t, %s_%s)%s }%s\n", 
+	  printf("    { %s_%s_class, msg_offsetof(%s_t, %s_%s)%s }%s\n", 
 		 tprefix, n, module, prefix, n, flags, c) > PT;
 	}
 
