@@ -25,6 +25,14 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added kqueue and /dev/poll interfaces (su_devpoll_port_create(),
+  su_devpoll_clone_start(), su_kqueue_port_create(), su_kqueue_clone_start()
+  in <sofia-sip/su_wait.h>)
+- Added SIP_IS_ALLOWED() macro to <sofia-sip/sip_util.h>
+- Fixed NUTAG_APPL_METHOD() implementation for UPDATE and PRACK as documented
+  ("100rel" and "precondition" extensions now require explicit calls to
+  nua_update() and nua_prack() if those methods are included in
+  NUTAG_APPL_METHOD())
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 
@@ -49,11 +57,20 @@ Contributors to this release
 /> 
 
 - **template**: First Surname (patch to nua/soa/msg)
+- Martti Mela (kqueue interface to Max OS X and FreeBSD)
+- Pekka Pessi (/dev/poll interface to Solaris)
+- Michael Jerris (Solaris patches)
+- Colin Whittaker (sresolv patch)
 
 See the AUTHORS file in the distribution package.
 
 Notes on new features
 ---------------------
+
+The Sofia-SIP has been compiled and tested on Solaris. The /dev/poll
+interface (in su_devpoll_port.c) has been added for Solaris. Likewise, the
+kqueue interface (in su_kqueue_port.c) has been added for FreeBSD and Mac OS
+X.
 
 <information about major new features
  - new/changed/removed functionality
@@ -71,3 +88,19 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Fixed problems resuming DNS after server or link downtime.
+  Problem reported by Colin Whittaker.
+- Fixed NUTAG_APPL_METHOD() implementation for UPDATE and PRACK as documented
+- Fixed crashes in nua state engines:
+  - when nua_invite() was called second time before receiving
+    final response to first INVITE
+  - when UAS expected PRACK but received CANCEL
+  - when UAC received error response to PRACK, it tried to send BYE and crashed
+  - when UAS rejected initial request, the subsequent request with same 
+    dialog id (Call-ID, From-tag) crashed (dialog cleanup code left dialog
+    dangling)
+  Problems reported by Michael Jerris
+- Fixed crash in nta state engine:
+  - DNS resolver failure in non-invite transctions crashed
+- Fixed sdp handling when soa is disabled (NUTAG_MEDIA_ENABLE(0)).
+  Problem reported by Marcin Michalak
