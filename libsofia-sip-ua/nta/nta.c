@@ -29,7 +29,7 @@
  * 1) agent
  * 2) tport handling
  * 3) dispatching messages received from network
- * 4) message creation, message utility
+ * 4) message creation and message utility functions
  * 5) stateless operation
  * 6) dialogs (legs)
  * 7) server transactions (incoming)
@@ -311,7 +311,7 @@ su_log_t nta_log[] = { SU_LOG_INIT("nta", "NTA_DEBUG", SU_DEBUG) };
 /**
  * Create an NTA agent object.
  *
- * The function nta_agent_create() creates an NTA agent object.  The agent
+ * Create an NTA agent object.  The agent
  * object creates and binds a server socket with address specified in @e url.
  * If the @e host portion of the @e url is @c "*", the agent listens to all
  * addresses available on the host.
@@ -326,6 +326,8 @@ su_log_t nta_log[] = { SU_LOG_INIT("nta", "NTA_DEBUG", SU_DEBUG) };
  *
  * @note
  * If @e url is @c NULL, the default @e url @c "sip:*" is used.
+ * @par
+ * If @e url is @c NONE (iow, (void*)-1), no server sockets are bound.
  * @par
  * If @p transport parameters are specified in @a url, agent uses only
  * specified transport type.
@@ -565,13 +567,9 @@ nta_agent_magic_t *nta_agent_magic(nta_agent_t const *agent)
 
 /** Return @Contact header.
  *
- * The function nta_agent_contact() returns a @Contact header, which can be
- * used to reach @a agent.
+ * Get a @Contact header, which can be used to reach @a agent.
  *
  * @param agent NTA agent object
- *
- * @return The function nta_agent_contact() returns a sip_contact_t object
- * corresponding to the @a agent.
  *
  * User agents can insert the @Contact header in the outgoing REGISTER,
  * INVITE, and ACK requests and replies to incoming INVITE and OPTIONS
@@ -584,6 +582,8 @@ nta_agent_magic_t *nta_agent_magic(nta_agent_t const *agent)
  *	 			 sip->sip_request->rq_url,
  *				 contact->m_url);
  * @endcode
+ *
+ * @return A sip_contact_t object corresponding to the @a agent.
  */
 sip_contact_t *nta_agent_contact(nta_agent_t const *agent)
 {
@@ -592,29 +592,24 @@ sip_contact_t *nta_agent_contact(nta_agent_t const *agent)
 
 /** Return a list of @Via headers.
  *
- * The function nta_agent_via() returns @Via headers for all activated
- * transport.
+ * Get @Via headers for all activated transport.
  *
  * @param agent NTA agent object
  *
- * @return The function nta_agent_via() returns a list of sip_via_t objects
- * used by the @a agent.
+ * @return A list of #sip_via_t objects used by the @a agent.
  */
 sip_via_t *nta_agent_via(nta_agent_t const *agent)
 {
   return agent ? agent->sa_vias : NULL;
 }
 
-
 /** Return a list of public (UPnP, STUN) @Via headers.
  *
- * The function nta_agent_public_via() returns public @Via headers for all activated
- * transports.
+ * Get public @Via headers for all activated transports.
  *
  * @param agent NTA agent object
  *
- * @return The function nta_agent_public_via() returns a list of sip_via_t objects
- * used by the @a agent.
+ * @return A list of #sip_via_t objects used by the @a agent.
  */
 sip_via_t *nta_agent_public_via(nta_agent_t const *agent)
 {
@@ -623,13 +618,11 @@ sip_via_t *nta_agent_public_via(nta_agent_t const *agent)
 
 /** Return @UserAgent header.
  *
- * The function nta_agent_name() returns a @UserAgent information with
- * NTA version.
+ * Get @UserAgent information with NTA version.
  *
  * @param agent NTA agent object (may be NULL)
  *
- * @return The function nta_agent_contact() returns a string containing the
- * @a agent version.
+ * @return A string containing the @a agent version.
  */
 char const *nta_agent_version(nta_agent_t const *agent)
 {
@@ -1398,7 +1391,7 @@ static tport_stack_class_t nta_agent_class[1] =
 
 /** Add a transport to the agent.
  *
- * The function nta_agent_add_tport() creates a new transport and binds it
+ * Creates a new transport and binds it
  * to the port specified by the @a uri. The @a uri must have sip: or sips:
  * scheme or be a wildcard uri ("*"). The @a uri syntax allowed is as
  * follows:
@@ -3012,11 +3005,11 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 
 /**Complete a request with values from dialog.
  *
- * The function nta_msg_request_complete() completes a request message @a
- * msg belonging to a dialog associated with @a leg. It increments the local
- * @CSeq value, adds @CallID, @To, @From and @Route headers (if
- * there is such headers present in @a leg), and creates a new request line
- * object from @a method, @a method_name and @a request_uri.
+ * Complete a request message @a msg belonging to a dialog associated with
+ * @a leg. It increments the local @CSeq value, adds @CallID, @To, @From and
+ * @Route headers (if there is such headers present in @a leg), and creates
+ * a new request line object from @a method, @a method_name and @a
+ * request_uri.
  *
  * @param msg          pointer to a request message object
  * @param leg          pointer to a #nta_leg_t object
@@ -3240,9 +3233,9 @@ hash_value_t hash_istring(char const *, char const *, hash_value_t);
 /**
  * Create a new leg object.
  *
- * The function nta_leg_tcreate() creates a leg object. A leg object is used
- * to represent dialogs, partial dialogs (for example, in case of REGISTER),
- * and destinations within a particular NTA object.
+ * Creates a leg object, which is used to represent dialogs, partial dialogs
+ * (for example, in case of REGISTER), and destinations within a particular
+ * NTA object.
  *
  * When a leg is created, a callback pointer and a application context is
  * provided. All other parameters are optional.
@@ -3579,8 +3572,8 @@ nta_leg_magic_t *nta_leg_magic(nta_leg_t const *leg,
 
 /**Bind a callback function and context to a leg object.
  *
- * The function nta_leg_bind() is used to change the callback
- * and context pointer attached to a leg object.
+ * Change the callback function and context pointer attached to a leg
+ * object.
  *
  * @param leg      leg object to be bound
  * @param callback new callback function (or NULL if no callback is desired)
@@ -3882,8 +3875,8 @@ int addr_cmp(url_t const *a, url_t const *b)
 
 /** Get a leg by dialog.
  *
- * The function nta_leg_by_dialog() searches for a dialog leg from agent's
- * hash table. The matching rules based on parameters  are as follows:
+ * Search for a dialog leg from agent's hash table. The matching rules based
+ * on parameters are as follows:
  *
  * @param agent        pointer to agent object
  * @param request_uri  if non-NULL, and there is destination URI
@@ -4106,8 +4099,8 @@ nta_leg_t *dst_find(nta_agent_t const *sa,
 
 /** Set leg route and target URL.
  *
- * The function leg_route() sets the leg route and contact using the
- * @RecordRoute and @Contact headers.
+ * Sets the leg route and contact using the @RecordRoute and @Contact
+ * headers.
  */
 static
 int leg_route(nta_leg_t *leg,
@@ -4280,9 +4273,9 @@ nta_incoming_t *nta_incoming_default(nta_agent_t *agent)
 
 /** Create a server transaction. 
  *
- * The function nta_incoming_create() creates a server transaction for a
- * request message. This function is used when an element processing
- * requests statelessly wants to process a particular request statefully.
+ * Create a server transaction for a request message. This function is used
+ * when an element processing requests statelessly wants to process a
+ * particular request statefully.
  *
  * @param agent pointer to agent object
  * @param leg  pointer to leg object (either @a agent or @a leg may be NULL)
@@ -4586,8 +4579,8 @@ int incoming_is_queued(nta_incoming_t const *irq)
 /** @internal
  * Insert an incoming transaction into a queue. 
  *
- * The function incoming_queue() inserts a server transaction into a queue,
- * and sets the corresponding timeout at the same time.
+ * Insert a server transaction into a queue, and sets the corresponding
+ * timeout at the same time.
  */
 static inline
 void incoming_queue(incoming_queue_t *queue, 
@@ -4786,10 +4779,10 @@ void incoming_reclaim_queued(su_root_magic_t *rm,
 
 /**Bind a callback and context to an incoming transaction object
  *
- * The function nta_incoming_bind() is used to set the callback and
- * context pointer attached to an incoming request object.  The callback
- * function will be invoked if the incoming request is cancelled, or if the
- * final response to an incoming @b INVITE request has been acknowledged.
+ * Set the callback function and context pointer attached to an incoming
+ * request object. The callback function will be invoked if the incoming
+ * request is cancelled, or if the final response to an incoming @b INVITE
+ * request has been acknowledged.
  *
  * If the callback is NULL, or no callback has been bound, NTA invokes the
  * request callback of the call leg.
@@ -6240,12 +6233,11 @@ nta_outgoing_t *nta_outgoing_default(nta_agent_t *agent,
 
 /**Create an outgoing request and client transaction belonging to the leg.
  *
- * The function nta_outgoing_tcreate() creates a request message and passes
- * the request message to an outgoing client transaction object. The request
- * is sent to the @a route_url (if non-NULL), default proxy (if defined by
- * NTATAG_DEFAULT_PROXY()), or to the address specified by @a request_uri.
- * If no @a request_uri is specified, it is taken from route-set target or
- * from the @To header.
+ * Create a request message and pass the request message to an outgoing
+ * client transaction object. The request is sent to the @a route_url (if
+ * non-NULL), default proxy (if defined by NTATAG_DEFAULT_PROXY()), or to
+ * the address specified by @a request_uri. If no @a request_uri is
+ * specified, it is taken from route-set target or from the @To header.
  *
  * When NTA receives response to the request, it invokes the @a callback
  * function.
@@ -6622,10 +6614,10 @@ msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq)
 
 /**Create an outgoing request.
  *
- * The function outgoing_create() creates an outgoing transaction object and
- * sends the request to the network. The request is sent to the @a route_url
- * (if non-NULL), default proxy (if defined by NTATAG_DEFAULT_PROXY()), or
- * to the address specified by @a sip->sip_request->rq_url.
+ * Create an outgoing transaction object and send the request to the
+ * network. The request is sent to the @a route_url (if non-NULL), default
+ * proxy (if defined by NTATAG_DEFAULT_PROXY()), or to the address specified
+ * by @a sip->sip_request->rq_url.
  *
  * When NTA receives response to the request, it invokes the @a callback
  * function.
@@ -7376,8 +7368,8 @@ int outgoing_is_queued(nta_outgoing_t const *orq)
 /** @internal
  * Insert an outgoing transaction into a queue. 
  *
- * The function outgoing_queue() inserts a client transaction into a queue,
- * and sets the corresponding timeout at the same time.
+ * Insert a client transaction into a queue and set the corresponding
+ * timeout at the same time.
  */
 static inline
 void outgoing_queue(outgoing_queue_t *queue, 
@@ -7425,8 +7417,7 @@ void outgoing_remove(nta_outgoing_t *orq)
 
 /** Set retransmit timer (orq_retry).
  *
- * The function outgoing_set_timer() will set the retry timer (B/D) on
- * the outgoing request (client transaction). 
+ * Set the retry timer (B/D) on the outgoing request (client transaction).
  */
 static inline
 void outgoing_set_timer(nta_outgoing_t *orq, unsigned interval)
@@ -9801,8 +9792,7 @@ int nta_reliable_leg_prack(nta_reliable_magic_t *magic,
 
 /** Destroy a reliable response.
  *
- * The function nta_reliable_destroy() marks a reliable response object for
- * destroyal, and frees it if possible.
+ * Mark a reliable response object for destroyal and free it if possible.
  */
 void nta_reliable_destroy(nta_reliable_t *rel)
 {
@@ -9967,8 +9957,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
 
 /**PRACK a provisional response.
  *
- * The function nta_outgoing_prack() creates and sends a PRACK request used
- * to acknowledge a provisional response. 
+ * Create and send a PRACK request used to acknowledge a provisional
+ * response.
  *
  * The request is sent using the route of the original request @a oorq.
  *
@@ -9984,9 +9974,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
  * @param tag,value,... optional
  *
  * @return
- * If successful, the function nta_outgoing_prack() returns a pointer
- * to newly created client transaction object for PRACK request, NULL
- * otherwise.
+ * If successful, return a pointer to newly created client transaction
+ * object for PRACK request, NULL otherwise.
  *
  * @sa
  * nta_outgoing_tcreate(), nta_outgoing_tcancel(), nta_outgoing_destroy().
