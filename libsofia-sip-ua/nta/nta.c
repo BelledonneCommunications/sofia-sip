@@ -616,6 +616,37 @@ sip_via_t *nta_agent_public_via(nta_agent_t const *agent)
   return agent ? agent->sa_public_vias : NULL;
 }
 
+/** Match a @Via header @a v with @Via headers in @a agent.
+ *
+ */
+static
+sip_via_t *agent_has_via(nta_agent_t const *agent, sip_via_t const *via)
+{
+  sip_via_t const *v;
+
+  for (v = agent->sa_public_vias; v; v = v->v_next) {
+    if (strcasecmp(via->v_host, v->v_host))
+      continue;
+    if (str0cmp(via->v_port, v->v_port))
+      continue;
+    if (strcasecmp(via->v_protocol, v->v_protocol))
+      continue;
+    return (sip_via_t *)v;
+  }
+
+  for (v = agent->sa_vias; v; v = v->v_next) {
+    if (strcasecmp(via->v_host, v->v_host))
+      continue;
+    if (str0cmp(via->v_port, v->v_port))
+      continue;
+    if (strcasecmp(via->v_protocol, v->v_protocol))
+      continue;
+    return (sip_via_t *)v;
+  }
+
+  return NULL;
+}
+
 /** Return @UserAgent header.
  *
  * Get @UserAgent information with NTA version.
@@ -2528,7 +2559,10 @@ void agent_recv_response(nta_agent_t *agent,
 
   if (sip->sip_cseq->cs_method == sip_method_invite
       && 200 <= sip->sip_status->st_status
-      && sip->sip_status->st_status < 300) {
+      && sip->sip_status->st_status < 300
+      /* Exactly one Via header, belonging to us */
+      && sip->sip_via && !sip->sip_via->v_next 
+      && agent_has_via(agent, sip->sip_via)) {
     agent->sa_stats->as_trless_200++;
     /* Orphan 200 Ok to INVITE. ACK and BYE it */
     SU_DEBUG_5(("nta: %03d %s must be ACK&BYE\n", status, phrase));
@@ -2539,6 +2573,7 @@ void agent_recv_response(nta_agent_t *agent,
   SU_DEBUG_5(("nta: %03d %s was discarded\n", status, phrase));
   msg_destroy(msg);
 }
+
 /** @internal Agent receives garbage */
 static
 void agent_recv_garbage(nta_agent_t *agent,
