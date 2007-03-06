@@ -94,9 +94,6 @@ static int nh_challenge(nua_handle_t *nh, sip_t const *sip);
 
 static void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a);
 
-inline int nua_client_request_queue(nua_client_request_t *cr);
-inline nua_client_request_t *nua_client_request_remove(nua_client_request_t *cr);
-
 /* ---------------------------------------------------------------------- */
 /* Constant data */
 
@@ -1764,7 +1761,7 @@ int nua_client_tcreate(nua_handle_t *nh,
   return retval;
 }
 
-inline int nua_client_request_queue(nua_client_request_t *cr)
+int nua_client_request_queue(nua_client_request_t *cr)
 {
   int queued = 0;
   nua_client_request_t **queue = &cr->cr_owner->nh_ds->ds_cr;
@@ -1799,7 +1796,7 @@ inline int nua_client_request_queue(nua_client_request_t *cr)
   return queued;
 }
 
-inline nua_client_request_t *nua_client_request_remove(nua_client_request_t *cr)
+nua_client_request_t *nua_client_request_remove(nua_client_request_t *cr)
 {
   if (cr->cr_prev)
     if ((*cr->cr_prev = cr->cr_next))
