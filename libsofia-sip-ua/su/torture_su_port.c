@@ -39,8 +39,7 @@ struct su_root_magic_s;
 
 #define SU_ROOT_MAGIC_T struct su_root_magic_s
 
-#define HAVE_WIN32_PORT 1
-#include "su_win32_port.c"
+#include "su_poll_port.c"
 
 #undef HAVE_EPOLL
 #define HAVE_EPOLL 0
