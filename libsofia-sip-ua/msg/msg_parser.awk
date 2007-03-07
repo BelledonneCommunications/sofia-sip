@@ -80,11 +80,16 @@ function name_hash (name)
 {
   hash = 0;
 
-  len = split(name, chars, "");
+  len = length(name); 
 
   for (i = 1; i <= len; i++) {
-    c = tolower(chars[i]);
+    c = tolower(substr(name, i, 1));
     hash = (38501 * (hash + index(ascii, c))) % 65536;
+  }
+
+  if (hash == 0) {
+    print "*** msg_parser.awk: calculating hash failed\n";
+    exit(5);
   }
 
   if (0) {
