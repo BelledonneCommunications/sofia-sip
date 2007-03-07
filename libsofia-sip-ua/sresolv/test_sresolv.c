@@ -1926,8 +1926,8 @@ int test_conf_errors(sres_context_t *ctx, char const *conf_file)
     
   TEST(sres_resolver_sockets(res, &socket, 1), n);
 
-#if HAVE_SA_LEN			
-  /* We fail this test in BSD systems */
+#if !__linux
+  /* We fail this test in most systems */
   /* conf_file looks like this:
 --8<--8<--8<--8<--8<--8<--8<--8<--8<--8<--8<--8<--
 nameserver 0.0.0.2
