@@ -1,8 +1,7 @@
 # common Makefile targets for libsofia-sip-ua(-glib) modules
 # ----------------------------------------------------------
 
-AM_CFLAGS = $(CWFLAG) $(SOFIA_COVERAGE) $(SOFIA_CFLAGS) $(OPENSSL_CFLAGS)
-AM_LIBS =   $(OPENSSL_LIBS)
+AM_CFLAGS = $(CWFLAG) $(SOFIA_COVERAGE) $(SOFIA_CFLAGS) $(openssl_CFLAGS)
 
 # Use with --enable-ndebug
 if NDEBUG
