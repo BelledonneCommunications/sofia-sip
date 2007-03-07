@@ -133,7 +133,6 @@ static int msg_time_test(void)
   }
 
   END();
-  return 0;
 }
 
 static int addr_test(void)
