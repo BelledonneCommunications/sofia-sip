@@ -28,6 +28,7 @@
  * Port implementation using kqueue()
  *
  * @author Martti Mela <Martti.Mela@nokia.com>
+ * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
  * @date Created: Sun Feb 18 19:55:37 EET 2007 mela
  */
@@ -42,6 +43,8 @@
 #if HAVE_KQUEUE
 
 #include "sofia-sip/su_alloc.h"
+
+#include <sys/event.h>
 
 #define SU_ENABLE_MULTISHOT_KQUEUE 1
 
@@ -68,28 +71,21 @@ struct su_kqueue_port_s {
 				      su_port_register() or 
 				      su_port_unregister()
 				   */
-
-  int              sup_n_waits; /**< Active su_wait_t in su_waits */
-  int              sup_size_waits; /**< Size of allocated su_waits */
-  int              sup_pri_offset; /**< Offset to prioritized waits */
+  int              sup_n_registrations;
+  int              sup_max_index; /**< Indexes are equal or smaller than this */
+  int              sup_size_indices; /**< Size of allocated index table */
 
 #define INDEX_MAX (0x7fffffff)
 
-  /** Indices from index returned by su_root_register() to tables below. 
-   *
-   * Free elements are negative. Free elements form a list, value of free
-   * element is (0 - index of next free element).
-   *
-   * First element sup_indices[0] points to first free element. 
-   */
-  int             *sup_indices;
-
-  int             *sup_reverses; /** Reverse index */
-  su_wakeup_f     *sup_wait_cbs; 
-  su_wakeup_arg_t**sup_wait_args; 
-  su_root_t      **sup_wait_roots; 
-  su_wait_t       *sup_waits; 
-
+  /** Structure containing registration data */
+  struct su_register {
+    struct su_register *ser_next; /* Next in free list */
+    su_wakeup_f     ser_cb; 
+    su_wakeup_arg_t*ser_arg; 
+    su_root_t      *ser_root; 
+    int             ser_id; /** registration identifier */
+    su_wait_t       ser_wait[1];
+  } **sup_indices;
 };
 
 static void su_kqueue_port_decref(su_port_t *, int blocking, char const *who);
@@ -160,6 +156,8 @@ static void su_kqueue_port_deinit(void *arg)
   SU_DEBUG_9(("%s(%p) called\n", "su_kqueue_port_deinit", (void *)self));
 
   su_socket_port_deinit(self->sup_base);
+
+  close(self->sup_kqueue);
 }
 
 static void su_kqueue_port_decref(su_port_t *self, int blocking, char const *who)
@@ -189,180 +187,137 @@ static void su_kqueue_port_decref(su_port_t *self, int blocking, char const *who
  *   or -1 upon an error.
  */
 int su_kqueue_port_register(su_port_t *self,
-			  su_root_t *root, 
-			  su_wait_t *wait, 
-			  su_wakeup_f callback,
-			  su_wakeup_arg_t *arg,
-			  int priority)
+			    su_root_t *root, 
+			    su_wait_t *wait, 
+			    su_wakeup_f callback,
+			    su_wakeup_arg_t *arg,
+			    int priority)
 {
   int i, j, n;
+  struct su_register *ser;
+  struct su_register **indices = self->sup_indices;
+  struct kevent ev[1];
+  int flags;
 
   assert(su_port_own_thread(self));
 
-  n = self->sup_n_waits;
+  n = self->sup_size_indices;
 
   if (n >= SU_WAIT_MAX)
     return su_seterrno(ENOMEM);
 
-  if (n >= self->sup_size_waits) {
-    su_home_t *h = self->sup_home;
-    /* Reallocate size arrays */
-    int size;
-    int *indices;
-    int *reverses;
-    su_wait_t *waits;
-    su_wakeup_f *wait_cbs;
-    su_wakeup_arg_t **wait_args;
-    su_root_t **wait_tasks;
+  ser = indices[0];
 
-    if (self->sup_size_waits == 0)
-      size = su_root_size_hint;
-    else 
-      size = 2 * self->sup_size_waits;
+  if (!ser) {
+    su_home_t *h = su_port_home(self);
 
-    if (size < SU_WAIT_MIN)
-      size = SU_WAIT_MIN;
-
-    /* Too large */
-    if (-3 - size > 0)
-      return (errno = ENOMEM), -1;
-
-    indices = su_realloc(h, self->sup_indices, (size + 1) * sizeof(*indices));
-    if (indices) {
+    i = self->sup_max_index, j = i == 0 ? 15 : i + 16;
+    
+    if (j >= self->sup_size_indices) {
+      /* Reallocate index table */
+      n = n < 1024 ? 2 * n : n + 1024;
+      indices = su_realloc(h, indices, n * sizeof(indices[0]));
+      if (!indices)
+	return -1;
       self->sup_indices = indices;
-
-      if (self->sup_size_waits == 0)
-	indices[0] = -1;
-
-      for (i = self->sup_size_waits + 1; i <= size; i++)
-	indices[i] = -1 - i;
+      self->sup_size_indices = n;
     }
 
-    reverses = su_realloc(h, self->sup_reverses, size * sizeof(*waits));
-    if (reverses) {
-      for (i = self->sup_size_waits; i < size; i++)
-	reverses[i] = -1;
-      self->sup_reverses = reverses;
-    }
-      
-    waits = su_realloc(h, self->sup_waits, size * sizeof(*waits));
-    if (waits)
-      self->sup_waits = waits;
-
-    wait_cbs = su_realloc(h, self->sup_wait_cbs, size * sizeof(*wait_cbs));
-    if (wait_cbs)
-      self->sup_wait_cbs = wait_cbs;
-
-    wait_args = su_realloc(h, self->sup_wait_args, size * sizeof(*wait_args));
-    if (wait_args)
-      self->sup_wait_args = wait_args;
-
-    /* Add sup_wait_roots array, if needed */
-    wait_tasks = su_realloc(h, self->sup_wait_roots, size * sizeof(*wait_tasks));
-    if (wait_tasks) 
-      self->sup_wait_roots = wait_tasks;
-
-    if (!(indices && 
-	  reverses && waits && wait_cbs && wait_args && wait_tasks)) {
+    /* Allocate registrations */
+    ser = su_zalloc(h, (j - i) * (sizeof *ser));
+    if (!ser)
       return -1;
+
+    indices[0] = ser;
+
+    for (i++; i <= j; i++) {
+      ser->ser_id = i;
+      ser->ser_next = i < j ? ser + 1 : NULL;
+      indices[i] = ser++;
     }
 
-    self->sup_size_waits = size;
+    self->sup_max_index = j;
+
+    ser = indices[0];
   }
 
-  i = -self->sup_indices[0]; assert(i <= self->sup_size_waits);
+  i = ser->ser_id;
 
-  if (priority > 0) {
-    /* Insert */
-    for (n = self->sup_n_waits; n > 0; n--) {
-      j = self->sup_reverses[n-1]; assert(self->sup_indices[j] == n - 1);
-      self->sup_indices[j] = n;
-      self->sup_reverses[n] = j;
-      self->sup_waits[n] = self->sup_waits[n-1];
-      self->sup_wait_cbs[n] = self->sup_wait_cbs[n-1];
-      self->sup_wait_args[n] = self->sup_wait_args[n-1];
-      self->sup_wait_roots[n] = self->sup_wait_roots[n-1];	
-    }
-
-    self->sup_pri_offset++;
-  }
-  else {
-    /* Append - no need to move anything */
-    n = self->sup_n_waits;
+  flags = (wait->events & SU_WAIT_IN) ? EV_ADD : EV_ADD | EV_DISABLE;
+  EV_SET(ev, wait->fd, EVFILT_READ, flags, 0, 0, (void *)i);
+  if (kevent(self->sup_kqueue, ev, 1, NULL, 0, NULL) == -1) {
+    SU_DEBUG_0(("kevent((%u, %s, %u, %p)) failed: %s\n",
+		wait->fd, "EVFILT_READ", flags, (void *)i, strerror(errno)));
+    return -1;
   }
 
-  self->sup_n_waits++;
+  flags = (wait->events & SU_WAIT_OUT) ? EV_ADD : EV_ADD | EV_DISABLE;
+  EV_SET(ev, wait->fd, EVFILT_WRITE, flags, 0, 0, (void *)i);
+  if (kevent(self->sup_kqueue, ev, 1, NULL, 0, NULL) == -1) {
+    int error = errno;
+    SU_DEBUG_0(("kevent((%u, %s, %u, %p)) failed: %s\n",
+		wait->fd, "EVFILT_WRITE", flags, (void *)i, strerror(error)));
 
-  self->sup_indices[0] = self->sup_indices[i];  /* Free index */
-  self->sup_indices[i] = n;
+    EV_SET(ev, wait->fd, EVFILT_READ, EV_DELETE, 0, 0, (void *)i);
+    kevent(self->sup_kqueue, ev, 1, NULL, 0, NULL);
 
-  self->sup_reverses[n] = i;
-  self->sup_waits[n] = *wait;
-  self->sup_wait_cbs[n] = callback;
-  self->sup_wait_args[n] = arg;
-  self->sup_wait_roots[n] = root;
+    errno = error;
+    return -1;
+  }
+  indices[0] = ser->ser_next;
+
+  ser->ser_next = NULL;
+  *ser->ser_wait = *wait;
+  ser->ser_cb = callback;
+  ser->ser_arg = arg;
+  ser->ser_root = root;
 
   self->sup_registers++;
+  self->sup_n_registrations++;
 
-  /* Just like epoll, we return -1 or positive integer */
-
-  return i;
+  return i;			/* return index */
 }
 
 /** Deregister a su_wait_t object. */
 static int su_kqueue_port_deregister0(su_port_t *self, int i, int destroy_wait)
 {
-  int n, N, *indices, *reverses;
+  struct su_register **indices = self->sup_indices;
+  struct su_register *ser;
+  struct kevent ev[1];
+  su_wait_t *wait;
 
-  indices = self->sup_indices;
-  reverses = self->sup_reverses;
+  ser = self->sup_indices[i];
+  if (ser == NULL || ser->ser_cb == NULL) {
+    su_seterrno(ENOENT);
+    return -1;
+  }
 
-  n = indices[i]; assert(n >= 0);
+  assert(ser->ser_id == i);
+
+  wait = ser->ser_wait;
+
+  EV_SET(ev, wait->fd, EVFILT_READ, EV_DELETE, 0, 0, (void *)i);
+  if (kevent(self->sup_kqueue, ev, 1, NULL, 0, NULL) == -1) {
+    SU_DEBUG_0(("remove kevent((%u, %s, %s, %p)) failed: %s\n",
+		wait->fd, "EVFILT_READ", "EV_DELETE", (void *)i,
+		strerror(errno)));
+  }
+
+  EV_SET(ev, wait->fd, EVFILT_WRITE, EV_DELETE, 0, 0, (void *)i);
+  if (kevent(self->sup_kqueue, ev, 1, NULL, 0, NULL) == -1) {
+    SU_DEBUG_0(("remove kevent((%u, %s, %s, %p)) failed: %s\n",
+		wait->fd, "EVFILT_WRITE", "EV_DELETE", (void *)i,
+		strerror(errno)));
+  }
 
   if (destroy_wait)
-    su_wait_destroy(&self->sup_waits[n]);
+    su_wait_destroy(wait);
   
-  N = --self->sup_n_waits;
-  
-  if (n < self->sup_pri_offset) {
-    int j = --self->sup_pri_offset;
-    if (n != j) {
-      assert(reverses[j] > 0);
-      assert(indices[reverses[j]] == j);
-      indices[reverses[j]] = n;
-      reverses[n] = reverses[j];
+  memset(ser, 0, sizeof *ser);
+  ser->ser_id = i;
+  ser->ser_next = indices[0], indices[0] = ser;
 
-      self->sup_waits[n] = self->sup_waits[j];
-      self->sup_wait_cbs[n] = self->sup_wait_cbs[j];
-      self->sup_wait_args[n] = self->sup_wait_args[j];
-      self->sup_wait_roots[n] = self->sup_wait_roots[j];
-      n = j;
-    }
-  }
-
-  if (n < N) {
-    assert(reverses[N] > 0);
-    assert(indices[reverses[N]] == N);
-
-    indices[reverses[N]] = n;
-    reverses[n] = reverses[N];
-
-    self->sup_waits[n] = self->sup_waits[N];
-    self->sup_wait_cbs[n] = self->sup_wait_cbs[N];
-    self->sup_wait_args[n] = self->sup_wait_args[N];
-    self->sup_wait_roots[n] = self->sup_wait_roots[N];
-    n = N;
-  }
-
-  reverses[n] = -1;
-  memset(&self->sup_waits[n], 0, sizeof self->sup_waits[n]);
-  self->sup_wait_cbs[n] = NULL;
-  self->sup_wait_args[n] = NULL;
-  self->sup_wait_roots[n] = NULL;
-  
-  indices[i] = indices[0];
-  indices[0] = -i;
-
+  self->sup_n_registrations--;
   self->sup_registers++;
 
   return i;
@@ -392,17 +347,22 @@ int su_kqueue_port_unregister(su_port_t *self,
 			      su_wakeup_f callback, /* XXX - ignored */
 			      su_wakeup_arg_t *arg)
 {
-  int n, N;
+  int i, I;
+
+  struct su_register *ser;
 
   assert(self);
   assert(su_port_own_thread(self));
 
-  N = self->sup_n_waits;
+  I = self->sup_max_index;
 
-  for (n = 0; n < N; n++) {
-    if (SU_WAIT_CMP(wait[0], self->sup_waits[n]) == 0) {
-      return su_kqueue_port_deregister0(self, self->sup_reverses[n], 0);
-    }
+  for (i = 1; i <= I; i++) {
+    ser = self->sup_indices[i];
+
+    if (ser->ser_cb &&
+	arg == ser->ser_arg &&
+	SU_WAIT_CMP(wait[0], ser->ser_wait[0]) == 0)
+      return su_kqueue_port_deregister0(self, ser->ser_id, 0);
   }
 
   su_seterrno(ENOENT);
@@ -423,28 +383,20 @@ int su_kqueue_port_unregister(su_port_t *self,
  */
 int su_kqueue_port_deregister(su_port_t *self, int i)
 {
-  su_wait_t wait[1] = { SU_WAIT_INIT };
-  int retval;
+  struct su_register *ser;
 
-  assert(self);
-  assert(su_port_own_thread(self));
-
-  if (i <= 0 || i > self->sup_size_waits)
+  if (i <= 0 || i > self->sup_max_index)
     return su_seterrno(EBADF);
 
-  if (self->sup_indices[i] < 0)
+  ser = self->sup_indices[i];
+  if (!ser->ser_cb)
     return su_seterrno(EBADF);
-    
-  retval = su_kqueue_port_deregister0(self, i, 1);
 
-  su_wait_destroy(wait);
-
-  return retval;
+  return su_kqueue_port_deregister0(self, i, 1);
 }
 
-
 /** @internal
- * Unregister all su_wait_t objects.
+ * Unregister all su_wait_t objects belonging to a root.
  *
  * The function su_kqueue_port_unregister_all() unregisters all su_wait_t objects
  * and destroys all queued timers associated with given root object.
@@ -457,60 +409,24 @@ int su_kqueue_port_deregister(su_port_t *self, int i)
 int su_kqueue_port_unregister_all(su_port_t *self, 
 				su_root_t *root)
 {
-  int i, j, index, N;
-  int             *indices, *reverses;
-  su_wait_t       *waits;
-  su_wakeup_f     *wait_cbs;
-  su_wakeup_arg_t**wait_args;
-  su_root_t      **wait_roots;
+  int i, I, n;
 
+  struct su_register *ser;
+
+  assert(self); assert(root);
   assert(su_port_own_thread(self));
 
-  N          = self->sup_n_waits;
-  indices    = self->sup_indices;
-  reverses   = self->sup_reverses;
-  waits      = self->sup_waits; 
-  wait_cbs   = self->sup_wait_cbs; 
-  wait_args  = self->sup_wait_args;
-  wait_roots = self->sup_wait_roots; 
-  
-  for (i = j = 0; i < N; i++) {
-    index = reverses[i]; assert(index > 0 && indices[index] == i);
+  I = self->sup_max_index;
 
-    if (wait_roots[i] == root) {
-      /* XXX - we should free all resources associated with this, too */
-      if (i < self->sup_pri_offset)
-	self->sup_pri_offset--;
-
-      indices[index] = indices[0];
-      indices[0] = -index;
+  for (i = 1, n = 0; i <= I; i++) {
+    ser = self->sup_indices[i];
+    if (ser->ser_root != root)
       continue;
-    }
-
-    if (i != j) {
-      indices[index] = j;
-      reverses[j]   = reverses[i];
-      waits[j]      = waits[i];
-      wait_cbs[j]   = wait_cbs[i];
-      wait_args[j]  = wait_args[i];
-      wait_roots[j] = wait_roots[i];
-    }
-    
-    j++;
+    su_kqueue_port_deregister0(self, ser->ser_id, 0);
+    n++;
   }
-  
-  for (i = j; i < N; i++) {
-    reverses[i] = -1;
-    wait_cbs[i] = NULL;
-    wait_args[i] = NULL;
-    wait_roots[i] = NULL;
-  }
-  memset(&waits[j], 0, (char *)&waits[N] - (char *)&waits[j]);
 
-  self->sup_n_waits = j;
-  self->sup_registers++;
-
-  return N - j;
+  return n;
 }
 
 /**Set mask for a registered event. @internal
@@ -528,17 +444,43 @@ int su_kqueue_port_unregister_all(su_port_t *self,
  */
 int su_kqueue_port_eventmask(su_port_t *self, int index, int socket, int events)
 {
-  int n;
-  assert(self);
-  assert(su_port_own_thread(self));
+  struct su_register *ser;
+  struct kevent ev[1];
+  su_wait_t *wait;
+  int flags;
 
-  if (index <= 0 || index > self->sup_size_waits)
-    return su_seterrno(EBADF);
-  n = self->sup_indices[index];
-  if (n < 0)
+  if (index <= 0 || index > self->sup_max_index)
     return su_seterrno(EBADF);
 
-  return su_wait_mask(&self->sup_waits[n], socket, events);
+  ser = self->sup_indices[index];
+  if (!ser->ser_cb)
+    return su_seterrno(EBADF);
+
+  wait = ser->ser_wait;
+
+  assert(socket == wait->fd);
+
+  wait->events = events;
+
+  flags = (wait->events & SU_WAIT_IN) ? EV_ADD | EV_ENABLE : EV_ADD | EV_DISABLE;
+  EV_SET(ev, wait->fd, EVFILT_READ, flags, 0, 0, (void *)index);
+  if (kevent(self->sup_kqueue, ev, 1, NULL, 0, NULL) == -1) {
+    SU_DEBUG_0(("modify kevent((%u, %s, %s, %p)) failed: %s\n",
+		wait->fd, "EVFILT_READ",
+		(events & SU_WAIT_IN) ? "EV_ENABLE" : "EV_DISABLE",
+		(void *)index, strerror(errno)));
+  }
+
+  flags = (wait->events & SU_WAIT_OUT) ? EV_ADD | EV_ENABLE : EV_ADD | EV_DISABLE;
+  EV_SET(ev, wait->fd, EVFILT_WRITE, flags, 0, 0, (void *)index);
+  if (kevent(self->sup_kqueue, ev, 1, NULL, 0, NULL) == -1) {
+    SU_DEBUG_0(("modify kevent((%u, %s, %s, %p)) failed: %s\n",
+		wait->fd, "EVFILT_WRITE",
+		(events & SU_WAIT_OUT) ? "EV_ENABLE" : "EV_DISABLE",
+		(void *)index, strerror(errno)));
+  }
+
+  return 0;
 }
 
 /** @internal Enable multishot mode.
@@ -578,108 +520,94 @@ int su_kqueue_port_multishot(su_port_t *self, int multishot)
 static
 int su_kqueue_port_wait_events(su_port_t *self, su_duration_t tout)
 {
-  int i, j, events = 0;
-  su_wait_t *waits = self->sup_waits;
-  int n = self->sup_n_waits;
-  su_root_t *root;
+  int j, n, events = 0, index;
   unsigned version = self->sup_registers;
-  struct timespec timeout[1] = {{ 0 }};
 
-  timeout->tv_nsec = tout;
+  int const M = 4;
+  struct kevent ev[M];
+  
+  struct timespec ts;
 
-  i = kevent(self->sup_kqueue,
-	     self->sup_waits, n, /* Active waits */
-	     self->sup_waits, self->sup_size_waits, /* Total waits */
-	     timeout);
+  ts.tv_sec = tout / 1000;
+  ts.tv_nsec = tout % 1000 * 1000000;
 
-  if (i >= 0 && i < n) {
-    /* kqueue() can return events for multiple wait objects */
-    if (self->sup_multishot) {
-      for (j = 0; j < i; j++) {
-        if (self->sup_waits[j].filter == EVFILT_READ ||
-	    self->sup_waits[j].filter == EVFILT_WRITE) {
-          root = self->sup_wait_roots[i];
-          self->sup_wait_cbs[i](root ? su_root_magic(root) : NULL,
-                                &waits[i],
-                                self->sup_wait_args[i]);
-          events++;
-          /* Callback function used su_register()/su_deregister() */
-          if (version != self->sup_registers)
-            break;
-        }
-      }
-    }
-    else {
-      root = self->sup_wait_roots[i];
-      self->sup_wait_cbs[i](root ? su_root_magic(root) : NULL,
-                            &self->sup_waits[i],
-                            self->sup_wait_args[i]);
+  n = kevent(self->sup_kqueue, NULL, 0,
+	     ev, self->sup_multishot ? M : 1,
+	     tout < SU_DURATION_MAX ? &ts : NULL);
+
+  assert(n <= M);
+  
+  for (j = 0; j < n; j++) {
+    struct su_register *ser;
+    su_root_magic_t *magic;
+
+    index = (int)ev[j].udata;
+    if (index <= 0 || self->sup_max_index < index)
+      continue;
+    ser = self->sup_indices[index];
+
+    magic = ser->ser_root ? su_root_magic(ser->ser_root) : NULL;
+    ser->ser_wait->revents =
+      (ser->ser_wait->events | SU_WAIT_HUP) &
+      (
+       ((ev[j].filter == EVFILT_READ) ? SU_WAIT_IN : 0) |
+       ((ev[j].filter == EVFILT_WRITE) ? SU_WAIT_OUT : 0) |
+       ((ev[j].flags & EV_EOF) ? SU_WAIT_HUP : 0)
+       );
+    if (ser->ser_wait->revents) {
+      ser->ser_cb(magic, ser->ser_wait, ser->ser_arg);
       events++;
+      if (version != self->sup_registers)
+	/* Callback function used su_register()/su_deregister() */
+	return events;
     }
-  }
+  }    
 
-  return events;
+  return n;
 }
 
-#if 0
-/** @internal
- *  Prints out the contents of the port.
- *
- * @param self pointer to a port
- * @param f    pointer to a file (if @c NULL, uses @c stdout).
- */
-void su_port_dump(su_port_t const *self, FILE *f)
-{
-  int i;
-#define IS_WAIT_IN(x) (((x)->events & SU_WAIT_IN) ? "IN" : "")
-#define IS_WAIT_OUT(x) (((x)->events & SU_WAIT_OUT) ? "OUT" : "")
-#define IS_WAIT_ACCEPT(x) (((x)->events & SU_WAIT_ACCEPT) ? "ACCEPT" : "")
 
-  if (f == NULL)
-    f = stdout;
-
-  fprintf(f, "su_port_t at %p:\n", self);
-  fprintf(f, "\tport is%s running\n", self->sup_running ? "" : "not ");
-#if SU_HAVE_PTHREADS
-  fprintf(f, "\tport tid %p\n", (void *)self->sup_tid);
-  fprintf(f, "\tport mbox %d (%s%s%s)\n", self->sup_mbox[0],
-	  IS_WAIT_IN(&self->sup_mbox_wait),
-	  IS_WAIT_OUT(&self->sup_mbox_wait),
-	  IS_WAIT_ACCEPT(&self->sup_mbox_wait));
-#endif
-  fprintf(f, "\t%d wait objects\n", self->sup_n_waits);
-  for (i = 0; i < self->sup_n_waits; i++) {
-    
-  }
-}
-
-#endif
-
-/** Create a port using poll() or kqueue().
+/** Create a port using kqueue() (or poll()/select(), if kqueue() fails).
  */
 su_port_t *su_kqueue_port_create(void)
 {
-  int kq = kqueue();
   su_port_t *self = NULL;
+  int kq = kqueue();
 
-  if (kq < 0);
-  return self;
+  if (kq < 0) {
+#if HAVE_POLL
+    return su_poll_port_create();
+#else
+    return su_select_port_create();
+#endif
+  }
 
   self = su_home_new(sizeof *self);
   if (!self)
-    return self;
+    goto failed;
 
   if (su_home_destructor(su_port_home(self), su_kqueue_port_deinit) < 0)
-    return su_home_unref(su_port_home(self)), NULL;
+    goto failed;
+
+  self->sup_kqueue = kq, kq = -1;
+  self->sup_indices = su_zalloc(su_port_home(self),
+				(sizeof self->sup_indices[0]) * 
+				(self->sup_size_indices = 64));
+  if (!self->sup_indices)
+    goto failed;
+
+  if (su_socket_port_init(self->sup_base, su_kqueue_port_vtable) < 0)
+    goto failed;
 
   self->sup_multishot = SU_ENABLE_MULTISHOT_KQUEUE;
 
-  if (su_socket_port_init(self->sup_base, su_kqueue_port_vtable) < 0)
-    return su_home_unref(su_port_home(self)), NULL;
-
-  self->sup_kqueue = kq;
-
   return self;
+
+ failed:
+  if (kq != -1)
+    close(kq);
+  su_home_unref(su_port_home(self));
+  return NULL;
 }
 
 int su_kqueue_clone_start(su_root_t *parent,
@@ -688,7 +616,7 @@ int su_kqueue_clone_start(su_root_t *parent,
 			su_root_init_f init,
 			su_root_deinit_f deinit)
 {
-  return su_pthreaded_port_start(su_default_port_create, 
+  return su_pthreaded_port_start(su_kqueue_port_create, 
 				 parent, return_clone, magic, init, deinit);
 }
 
@@ -709,4 +637,3 @@ int su_kqueue_clone_start(su_root_t *parent,
 }
 
 #endif  /* HAVE_KQUEUE */
-
