@@ -49,6 +49,11 @@ endif
 CLEANFILES = $(dist_man_MANS)
 
 coverage built-sources clean-built-sources valcheck doxygen:
-	for i in libsofia-sip-ua $(GLIB_SUBDIRS) ; do $(MAKE) $(AM_MAKEFLAGS) -C $$i $@ ; done
+	@failcom='exit 1'; for f in x $$MAKEFLAGS; do \
+	case $$f in *=* | --[!k]*);; *k*) failcom='fail=yes';; esac; done; \
+	for i in libsofia-sip-ua $(GLIB_SUBDIRS) ; do \
+	  (cd $$i && $(MAKE) $(AM_MAKEFLAGS) $@) || eval $$failcom; \
+	done ; \
+	test -z "$$fail"
 
-.PHONY: coverage built-sources clean-built-sources doxygen manpages
+.PHONY: coverage built-sources clean-built-sources valcheck doxygen manpages

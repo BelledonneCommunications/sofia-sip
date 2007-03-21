@@ -27,7 +27,9 @@ fi
 AC_SYS_IP_RECVERR
 AC_SYS_IPV6_RECVERR
 
-AC_CHECK_HEADERS(netinet/tcp.h netinet/sctp.h)
+AC_CHECK_HEADERS([netinet/tcp.h netinet/sctp.h],[],[],[
+#include <sys/socket.h>
+])
 
 AC_ARG_ENABLE(sctp,
 [  --enable-sctp           use SCTP [[disabled]]],,
