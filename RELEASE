@@ -25,6 +25,8 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added tag NUTAG_AUTH_CACHE() determining when to include credentials in
+  the request
 - Added kqueue and /dev/poll interfaces (su_devpoll_port_create(),
   su_devpoll_clone_start(), su_kqueue_port_create(), su_kqueue_clone_start()
   in <sofia-sip/su_wait.h>)
@@ -58,7 +60,7 @@ Contributors to this release
 
 - **template**: First Surname (patch to nua/soa/msg)
 - Martti Mela (kqueue interface to Max OS X and FreeBSD)
-- Pekka Pessi (/dev/poll interface to Solaris)
+- Pekka Pessi (/dev/poll interface to Solaris, kqueue)
 - Michael Jerris (Solaris patches)
 - Colin Whittaker (sresolv patch)
 
@@ -88,8 +90,16 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Fixed assertion failure because BYE destroyed a session twice.
+  Problem reported by Michael Jerris.
+- Fixed crash caused by a 0-length UDP datagram.
+  Problem reported by Michael Jerris.
+- Fixed the 305 response handling by nua stack.
+  Bug #1676445 reported by Fabio Margarido.
+- Fixed authentication-related bugs #1685245 and #1570746.
+  #1685245 reported by Mikhail Zabaluev.
 - Fixed problems resuming DNS after server or link downtime.
-  Problem reported by Colin Whittaker.
+  Bug #1631198 reported and initial patch submitted by Colin Whittaker.
 - Fixed NUTAG_APPL_METHOD() implementation for UPDATE and PRACK as documented
 - Fixed crashes in nua state engines:
   - when nua_invite() was called second time before receiving
