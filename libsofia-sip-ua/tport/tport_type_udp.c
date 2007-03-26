@@ -252,6 +252,11 @@ int tport_recv_dgram(tport_t *self)
 		su_strerror(err), err));
     return -1;
   }
+  if (N == 0) {
+    su_recv(self->tp_socket, sample, 1, 0);
+    SU_DEBUG_3(("tport(%p): zero length packet", (void *)self));
+    return 0;
+  }
 #endif
 
   veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 1);
