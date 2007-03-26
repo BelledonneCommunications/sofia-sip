@@ -663,6 +663,8 @@ int readfile(FILE *f, void **contents)
 
 static int test_bad_messages(agent_t *ag)
 {
+  BEGIN();
+
 #if HAVE_DIRENT_H
   DIR *dir;
   struct dirent *d;
@@ -687,12 +689,9 @@ static int test_bad_messages(agent_t *ag)
   if (dir == NULL) {
     fprintf(stderr, "test_nta: cannot find sip torture messages\n"); 
     fprintf(stderr, "test_nta: tried %s\n", name); 
-    return 0;
   }
 
   offset = strlen(name);
-
-  BEGIN();
 
   TEST_1(ag->ag_default_leg = nta_leg_tcreate(ag->ag_agent, 
 					      leg_callback_500,
@@ -720,7 +719,7 @@ static int test_bad_messages(agent_t *ag)
   sprintf(via, "v: SIP/2.0/UDP is.invalid:%u\r\n", ntohs(su->su_port));
   vlen = strlen(via);
 
-  for (d = readdir(dir); d; d = readdir(dir)) {
+  for (d = dir ? readdir(dir) : NULL; d; d = readdir(dir)) {
     size_t len = strlen(d->d_name);
     FILE *f;
     int blen, n;
@@ -752,6 +751,8 @@ static int test_bad_messages(agent_t *ag)
     su_root_step(ag->ag_root, 1);
   }
 
+  TEST_SIZE(su_sendto(s, "", 0, 0, ai->ai_addr, ai->ai_addrlen), 0);
+
   su_close(s);
 
   for (i = 0; i < 20; i++)
@@ -759,12 +760,12 @@ static int test_bad_messages(agent_t *ag)
 
   nta_leg_destroy(ag->ag_default_leg), ag->ag_default_leg = NULL;
 
-  closedir(dir);
+  if (dir)
+    closedir(dir);
+
+#endif /* HAVE_DIRENT_H */
 
   END();
-#else
-  return 0;
-#endif /* HAVE_DIRENT_H */
 }
 
 static unsigned char const code[] = 
