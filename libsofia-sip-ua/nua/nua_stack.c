@@ -2410,13 +2410,30 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 
   /* XXX - handle Retry-After */
 
-  if (status == 302) {
+  if (status == 302 || status == 305) {
+    sip_route_t r[1];
+
     if (!can_redirect(sip->sip_contact, cr->cr_method))
       return 0;
 
-    if (nua_client_set_target(cr, sip->sip_contact->m_url) >= 0)
-      return nua_client_restart(cr, 100, "Redirected");
+    switch (status) {
+    case 302:
+      if (nua_client_set_target(cr, sip->sip_contact->m_url) >= 0)
+	return nua_client_restart(cr, 100, "Redirected");
+      break;
+
+    case 305:
+      sip_route_init(r);
+      *r->r_url = *sip->sip_contact->m_url;
+      if (sip_add_dup(cr->cr_msg, cr->cr_sip, (sip_header_t *)r) >= 0)
+	return nua_client_restart(cr, 100, "Redirected via a proxy");
+      break;
+
+    default:
+      break;
+    }
   }
+
 
   if (status == 423) {
     unsigned my_expires = 0;

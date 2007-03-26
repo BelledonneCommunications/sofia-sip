@@ -261,7 +261,7 @@ int test_reject_b(struct context *ctx)
 
 /* ------------------------------------------------------------------------ */
 
-int reject_302(CONDITION_PARAMS);
+int reject_302(CONDITION_PARAMS), reject_305(CONDITION_PARAMS);
 int reject_604(CONDITION_PARAMS);
 
 /*
@@ -281,6 +281,7 @@ int reject_604(CONDITION_PARAMS);
  |<---604 Nowhere-----|
  |--------ACK-------->|
 */
+
 int reject_302(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
@@ -301,12 +302,40 @@ int reject_302(CONDITION_PARAMS)
   case nua_callstate_terminated:
     if (call)
       nua_handle_destroy(call->nh), call->nh = NULL;
+    ep->next_condition = reject_305;
+    return 0;
+  default:
+    return 0;
+  }
+}
+
+int reject_305(CONDITION_PARAMS)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    {
+      sip_contact_t m[1];
+      *m = *ep->contact;
+      m->m_url->url_user = "305";
+      m->m_url->url_params = "lr=1";
+      RESPOND(ep, call, nh, SIP_305_USE_PROXY, SIPTAG_CONTACT(m), TAG_END());
+    }
+    return 0;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
     ep->next_condition = reject_604;
     return 0;
   default:
     return 0;
   }
 }
+
 
 int reject_604(CONDITION_PARAMS)
 {
@@ -338,6 +367,7 @@ int test_reject_302(struct context *ctx)
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
+  sip_t const *sip;
 
   /* Make call reject-3 */
   if (print_headings)
@@ -388,6 +418,12 @@ int test_reject_302(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 100);
+  TEST(sip_object(e->data->e_msg)->sip_status->st_status, 305);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 180);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
@@ -411,6 +447,18 @@ int test_reject_302(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
   TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_request);
+  TEST_S(sip->sip_request->rq_url->url_user, "302");
+  TEST_1(sip->sip_route);
+  TEST_S(sip->sip_route->r_url->url_user, "305");
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));
