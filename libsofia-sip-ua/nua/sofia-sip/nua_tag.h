@@ -1247,6 +1247,38 @@ SOFIAPUBVAR tag_typedef_t nutag_auth;
 #define NUTAG_AUTH_REF(x)	    nutag_auth_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_auth_ref;
 
+/** Authentication caching policy
+ *
+ * @par Used with
+ *    nua_set_params(), nua_set_hparams() \n
+ *    nua_get_params(), nua_get_hparams() \n
+ *    @NUA_HPARAM_CALLS 
+ *
+ * @par Parameter type
+ *    enum nua_auth_cache
+ *
+ * @par Values
+ *    - nua_auth_cache_dialog (0) - include credentials within dialog
+ *    - nua_auth_cache_challenged (1) - include credentials only when 
+ *                                      challenged
+ *    
+ * Corresponding tag taking reference parameter is NUTAG_AUTH_CACHE_REF()
+ */
+#define NUTAG_AUTH_CACHE(x)   nutag_auth_cache, tag_int_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_auth_cache;
+
+#define NUTAG_AUTH_CACHE_REF(x) nutag_auth_cache_ref, tag_int_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_auth_cache_ref;
+
+/** Authentication caching policy */
+enum nua_auth_cache {
+  /** Include credentials within dialog (default) */
+  nua_auth_cache_dialog = 0,
+  /** Include credentials only when challenged */
+  nua_auth_cache_challenged = 1,
+  _nua_auth_cache_invalid
+};
+
 /** Keepalive interval in milliseconds.
  *
  * This setting applies to OPTIONS/STUN keepalives. See documentation 

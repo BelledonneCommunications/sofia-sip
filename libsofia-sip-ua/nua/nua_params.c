@@ -393,6 +393,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
  *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and 
  *                         SIPTAG_ALLOW_EVENTS_STR() \n
+ *   NUTAG_AUTH_CACHE() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -777,6 +778,11 @@ static int nhp_set_tags(su_home_t *home,
     /* NUTAG_PATH_ENABLE(path_enable) */
     else if (tag == nutag_path_enable) {
       NHP_SET(nhp, path_enable, value != 0);
+    }
+    /* NUTAG_AUTH_CACHE(auth_cache) */
+    else if (tag == nutag_auth_cache) {
+      if (value >= 0 && value < (tag_value_t)_nua_auth_cache_invalid)
+	NHP_SET(nhp, auth_cache, (int)value);
     }
     /* NUTAG_REFER_EXPIRES(refer_expires) */
     else if (tag == nutag_refer_expires) {
@@ -1363,6 +1369,7 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  * @param sip    NULL
  * @param tags
  *   NUTAG_APPL_METHOD() \n
+ *   NUTAG_AUTH_CACHE() \n
  *   NUTAG_AUTOACK() \n
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
@@ -1546,6 +1553,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_MEDIA_FEATURES, media_features),
      TIF(NUTAG_SERVICE_ROUTE_ENABLE, service_route_enable),
      TIF(NUTAG_PATH_ENABLE, path_enable),
+     TIF(NUTAG_AUTH_CACHE, auth_cache),
      TIF(NUTAG_REFER_EXPIRES, refer_expires),
      TIF(NUTAG_REFER_WITH_ID, refer_with_id),
 

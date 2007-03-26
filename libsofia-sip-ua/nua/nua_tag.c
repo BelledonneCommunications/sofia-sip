@@ -144,6 +144,7 @@ tag_typedef_t nutag_supported = STRTAG_TYPEDEF(supported);
 tag_typedef_t nutag_path_enable = BOOLTAG_TYPEDEF(path_enable);
 tag_typedef_t nutag_service_route_enable = 
   BOOLTAG_TYPEDEF(service_route_enable);
+tag_typedef_t nutag_auth_cache = INTTAG_TYPEDEF(auth_cache);
 
 tag_typedef_t nutag_detect_network_updates = UINTTAG_TYPEDEF(detect_network_updates);
 
