@@ -451,8 +451,8 @@ SOFIAPUBVAR tag_typedef_t nutag_include_extra_sdp_ref;
  *
  * @par Used with
  *    nua_invite() \n
- *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_set_params(), nua_set_hparams(),
+ *    nua_get_params(), nua_get_hparams()
  *
  * @par Parameter type
  *    int (enum nua_af)
