@@ -46,9 +46,7 @@
 #include "sofia-sip/su_time.h"
 #endif
 
-#if SU_HAVE_KQUEUE
-#include <sys/event.h>
-#elif SU_HAVE_POLL
+#if SU_HAVE_POLL
 #include <sys/poll.h>
 #endif
 
