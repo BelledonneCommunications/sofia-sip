@@ -404,17 +404,21 @@ int test_prack_auth(struct context *ctx)
   TEST_1(is_answer_recv(e->data->e_tags));
   TEST_1(!is_offer_sent(e->data->e_tags));
 
-  if (md5 && !md5sess) {
-    TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_prack);
-    TEST(e->data->e_status, 407);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_prack);
+
+  if (e->data->e_status != 200 && md5 && !md5sess) {
+    if (e->data->e_status != 100) {
+      TEST(e->data->e_status, 407);
+    }
 
     TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
     TEST(callstate(e->data->e_tags), nua_callstate_proceeding);
     TEST_1(!is_answer_recv(e->data->e_tags));
     TEST_1(!is_offer_sent(e->data->e_tags));
+
+    TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_prack);
   }
 
-  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_prack);
   TEST(e->data->e_status, 200);
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);

@@ -110,7 +110,8 @@ int test_nua_init(struct context *ctx,
 			       AUTHTAG_OPAQUE("kuik"),
 			       AUTHTAG_DB(passwd_name),
 			       AUTHTAG_QOP("auth-int"),
-			       AUTHTAG_ALGORITHM("md5-sess"),
+			       AUTHTAG_ALGORITHM("md5"),
+			       AUTHTAG_NEXT_EXPIRES(60),
 			       TAG_IF(ctx->proxy_logging, TPTAG_LOG(1)),
 			       TAG_END());
 

@@ -307,13 +307,7 @@ int main(int argc, char *argv[])
 
     while (retval == 0) {
       retval |= test_basic_call(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_reject_a(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_reject_b(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_reject_302(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_reject_401(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_mime_negotiation(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_call_timeouts(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_reject_401_aka(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_rejects(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_cancel(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_call_destroy(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_offer_answer(ctx); SINGLE_FAILURE_CHECK();

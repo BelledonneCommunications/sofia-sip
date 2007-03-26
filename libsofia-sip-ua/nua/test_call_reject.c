@@ -724,7 +724,7 @@ int test_reject_401_aka(struct context *ctx)
   sip_t const *sip;
 
   if (print_headings)
-    printf("TEST NUA-4.6: invalid challenge \n");
+    printf("TEST NUA-4.6.1: invalid challenge \n");
 
   a_call->sdp = "m=audio 5008 RTP/AVP 8";
   b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
@@ -773,7 +773,160 @@ int test_reject_401_aka(struct context *ctx)
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-4.6: PASSED\n");
+    printf("TEST NUA-4.6.1: PASSED\n");
+
+  END();
+}
+
+
+/* ------------------------------------------------------------------------ */
+
+/* Reject call with 401, twice */
+
+/*
+ A   reject-401-bad   B
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |<--------401--------|
+ |---------ACK------->|
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |<--------401--------|
+ |---------ACK------->|
+*/
+
+int reject_401_bad(CONDITION_PARAMS)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  switch (callstate(tags)) {
+  case nua_callstate_received:
+    RESPOND(ep, call, nh, SIP_401_UNAUTHORIZED,
+	    /* Send a challenge that we do not grok */
+	    SIPTAG_WWW_AUTHENTICATE_STR("Digest realm=\"No hope\", "
+					"nonce=\"goO541ftNrw327aWpu2\", "
+					"algorithm=MD5, "
+					"qop=\"auth\""),
+	    TAG_END());
+    return 0;
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    if (ep->flags.bit0)		/* Terminate 2 calls */
+      return 1;
+    ep->flags.bit0 = 1;
+    return 0;
+  default:
+    return 0;
+  }
+}
+
+int authenticate_once(CONDITION_PARAMS)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  save_event_in_list(ctx, event, ep, call);
+
+  if (event == nua_r_invite && status == 401) {
+    if (ep->flags.bit0) {
+      nua_handle_destroy(nh); if (call) call->nh = NULL;
+      return 1;
+    }
+    ep->flags.bit0 = 1;
+    AUTHENTICATE(ep, call, nh, NUTAG_AUTH("Digest:\"No hope\":jaska:secret"),
+		 SIPTAG_SUBJECT_STR("Got 401"),
+		 TAG_END());
+    return 0;
+  }
+
+  switch (callstate(tags)) {
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+
+int test_reject_401_bad(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a, *b = &ctx->b;
+  struct call *a_call = a->call, *b_call = b->call;
+  struct event const *e;
+  sip_t const *sip;
+
+  if (print_headings)
+    printf("TEST NUA-4.6.2: bad username/password\n");
+
+  a_call->sdp = "m=audio 5008 RTP/AVP 8";
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+  INVITE(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	 SIPTAG_SUBJECT_STR("reject-401-bad"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 TAG_END());
+
+  run_ab_until(ctx, -1, authenticate_once, -1, reject_401_bad);
+
+  /*
+   Client transitions
+   INIT -(C1)-> CALLING -(C6a)-> TERMINATED/INIT
+  */
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(sip_object(e->data->e_msg)->sip_status->st_status, 401);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(sip_object(e->data->e_msg)->sip_status->st_status, 401);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED -(S6a)-> TERMINATED
+  */
+  TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b->events);
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-4.6.2: PASSED\n");
 
   END();
 }
@@ -1261,4 +1414,20 @@ int call_with_bad_ack(CONDITION_PARAMS)
   }
 
   return event == nua_i_state && callstate(tags) == nua_callstate_terminated;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int test_rejects(struct context *ctx)
+{
+  return
+    test_reject_401_bad(ctx) ||
+    test_reject_a(ctx) ||
+    test_reject_b(ctx) ||
+    test_reject_302(ctx) ||
+    test_reject_401(ctx) ||
+    test_mime_negotiation(ctx) ||
+    test_call_timeouts(ctx) ||
+    test_reject_401_aka(ctx) ||
+    0;
 }
