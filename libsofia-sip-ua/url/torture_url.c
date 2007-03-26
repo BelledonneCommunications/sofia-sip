@@ -403,6 +403,10 @@ int test_sip(void)
   TEST_S(u->url_params, "isfocus");
   TEST_1(!url_have_transport(u));
 
+  u = url_hdup(home, (void *)"sip:%22foo%22@172.21.55.55:5060");
+  TEST_1(u);
+  TEST_S(u->url_user, "%22foo%22");
+
   a = url_hdup(home, (void *)"sip:172.21.55.55:5060");
   b = url_hdup(home, (void *)"sip:172.21.55.55");
   TEST_1(a); TEST_1(b);
