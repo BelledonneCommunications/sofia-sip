@@ -1177,7 +1177,7 @@ int test_call_timeouts(struct context *ctx)
   struct endpoint *a = &ctx->a, *b = &ctx->b;
   struct call *a_call = a->call, *b_call = b->call;
   struct event *e;
-  struct nat_filter *f;
+  struct nat_filter *f, *f2;
 
   if (print_headings)
     printf("TEST NUA-4.7: check for error and timeout handling\n");
@@ -1194,6 +1194,8 @@ int test_call_timeouts(struct context *ctx)
   TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
 
   TEST_1(f = test_nat_add_filter(ctx->nat, filter_200_OK, NULL, nat_inbound));
+  TEST_1(f2 = test_nat_add_filter(ctx->nat, filter_200_OK,
+				  NULL, nat_outbound));
   
   INVITE(a, a_call, a_call->nh,
 	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
@@ -1215,7 +1217,7 @@ int test_call_timeouts(struct context *ctx)
  |   X-----200--------|
  |                    |
  |<--------BYE--------|
- |--------200 OK----->|
+ |--------200 OK---X  |
 
   */
 
@@ -1253,6 +1255,7 @@ int test_call_timeouts(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminating); /* TERMINATING */
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_bye);
+  TEST(e->data->e_status, 408);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
@@ -1263,6 +1266,7 @@ int test_call_timeouts(struct context *ctx)
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
   TEST_1(test_nat_remove_filter(ctx->nat, f) == 0);
+  TEST_1(test_nat_remove_filter(ctx->nat, f2) == 0);
 
   if (print_headings)
     printf("TEST NUA-4.7.1: PASSED\n");

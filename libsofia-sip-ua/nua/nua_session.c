@@ -3533,10 +3533,13 @@ static int nua_bye_client_report(nua_client_request_t *cr,
 			     nua_callstate_terminated);
 
     if (ss && !ss->ss_reporting) {
-      if (nua_client_is_queued(du->du_cr) && du->du_cr->cr_status < 200)
-	/* No final response to INVITE received yet */;
-      else
+      if (du->du_cr == NULL ||
+	  !nua_client_is_queued(du->du_cr) ||
+	  du->du_cr->cr_status >= 200) {
+	/* INVITE is completed, we can zap the session... */;
+	cr->cr_usage = NULL;
 	nua_session_usage_destroy(nh, ss);
+      }
     }
   }
 
