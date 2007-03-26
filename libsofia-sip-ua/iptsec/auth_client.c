@@ -178,9 +178,9 @@ int ca_challenge(auth_client_t *ca,
     return -1;
 
   if (!ca->ca_credential_class)
-    stale = 1, ca->ca_credential_class = credential_class;
+    stale = 2, ca->ca_credential_class = credential_class;
 
-  return stale ? 2 : 1;
+  return stale > 1 ? 2 : 1;
 }
 
 /** Store authentication info to authenticators.
@@ -748,6 +748,10 @@ static const auth_client_plugin_t ca_digest_plugin =
 };
 
 /** Store a digest authorization challenge.
+ *
+ * @retval 2 if credentials need to be (re)sent
+ * @retval 1 if challenge was updated
+ * @retval -1 upon an error
  */
 static int auc_digest_challenge(auth_client_t *ca, msg_auth_t const *ch)
 {
@@ -765,7 +769,7 @@ static int auc_digest_challenge(auth_client_t *ca, msg_auth_t const *ch)
   if (ac->ac_qop && !ac->ac_auth && !ac->ac_auth_int)
     goto error;
 
-  stale = ac->ac_stale || str0cmp(ac->ac_nonce, cda->cda_ac->ac_nonce);
+  stale = ac->ac_stale || cda->cda_ac->ac_nonce == NULL;
 
   if (ac->ac_qop && (cda->cda_cnonce == NULL || ac->ac_stale)) {
     su_guid_t guid[1];
