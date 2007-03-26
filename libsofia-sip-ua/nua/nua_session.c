@@ -1269,7 +1269,7 @@ static void nua_session_usage_refresh(nua_handle_t *nh,
       /* No INVITE template */
       cr == NULL || 
       /* INVITE is in progress or being authenticated */
-      cr->cr_orq || cr->cr_challenged)
+      cr->cr_orq || cr->cr_wait_for_cred)
     return;
 
   /* UPDATE in progress or being authenticated */

@@ -301,7 +301,8 @@ struct nua_client_request
   unsigned cr_contactize:1;	/**< Request needs Contact */
 
   /* Current state */
-  unsigned cr_challenged:1;	/**< Request was challenged, pending auth */
+  unsigned cr_challenged:1;	/**< Request was challenged */
+  unsigned cr_wait_for_cred:1;	/**< Request is pending authentication */
   unsigned cr_restarting:1;	/**< Request is being restarted */
   unsigned cr_reporting:1;	/**< Reporting in progress */
   unsigned cr_terminating:1;	/**< Request terminates the usage */

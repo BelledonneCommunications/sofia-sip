@@ -90,8 +90,6 @@ static void nh_remove(nua_t *nua, nua_handle_t *nh);
 static int nh_authorize(nua_handle_t *nh,
 			tag_type_t tag, tag_value_t value, ...);
 
-static int nh_challenge(nua_handle_t *nh, sip_t const *sip);
-
 static void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a);
 
 /* ---------------------------------------------------------------------- */
@@ -939,33 +937,6 @@ int nh_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
   return retval;
 }
 
-/**@internal
- * Collect challenges from response.
- *
- * @return Number of updated challenges, 0 if no updates found.
- * @retval -1 upon error.
- */
-static
-int nh_challenge(nua_handle_t *nh, sip_t const *sip)
-{
-  int server = 0, proxy = 0;
-
-  if (sip->sip_www_authenticate)
-    server = auc_challenge(&nh->nh_auth, nh->nh_home,
-			   sip->sip_www_authenticate,
-			   sip_authorization_class);
-
-  if (sip->sip_proxy_authenticate)
-    proxy = auc_challenge(&nh->nh_auth, nh->nh_home,
-			  sip->sip_proxy_authenticate,
-			  sip_proxy_authorization_class);
-
-  if (server < 0 || proxy < 0)
-    return -1;
-
-  return server + proxy;
-}
-
 static inline
 int can_redirect(sip_contact_t const *m, sip_method_t method)
 {
@@ -1023,7 +994,7 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (status > 0) {
     nua_client_request_t *cr = nh->nh_ds->ds_cr;
 
-    if (cr && cr->cr_challenged) {
+    if (cr && cr->cr_wait_for_cred) {
       nua_client_restart_request(cr, cr->cr_terminating, tags);
     }
     else {
@@ -2043,6 +2014,8 @@ int nua_client_init_request(nua_client_request_t *cr)
 
 /** Restart the request message.
  *
+ * A restarted request has not completed successfully.
+ *
  * @retval 0 if request is pending
  * @retval >=1 if error event has been sent
  */
@@ -2067,6 +2040,8 @@ int nua_client_restart_request(nua_client_request_t *cr,
 
 /** Resend the request message.
  *
+ * A resent request has completed once successfully - restarted has not.
+ *
  * @retval 0 if request is pending
  * @retval >=1 if error event has been sent
  */
@@ -2075,6 +2050,7 @@ int nua_client_resend_request(nua_client_request_t *cr,
 {
   if (cr) {
     cr->cr_retry_count = 0;
+    cr->cr_challenged = 0;
 
     if (nua_client_is_queued(cr)) {
       if (terminating)
@@ -2223,7 +2199,7 @@ int nua_client_request_sendmsg(nua_client_request_t *cr, msg_t *msg, sip_t *sip)
       return -1;
   }
 
-  cr->cr_challenged = 0;
+  cr->cr_wait_for_cred = 0;
 
   if (cr->cr_methods->crm_send)
     return cr->cr_methods->crm_send(cr, msg, sip, NULL);
@@ -2264,8 +2240,13 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 {
   nua_handle_t *nh = cr->cr_owner;
 
-  if (nh->nh_auth && auc_authorize(&nh->nh_auth, msg, sip) < 0)
-    return nua_client_return(cr, 900, "Cannot add credentials", msg);
+  if (nh->nh_auth) {
+    if (cr->cr_challenged || 
+	NH_PGET(nh, auth_cache) == nua_auth_cache_dialog) {
+      if (auc_authorize(&nh->nh_auth, msg, sip) < 0)
+	return nua_client_return(cr, 900, "Cannot add credentials", msg);
+    }
+  }
 
   cr->cr_seq = sip->sip_cseq->cs_seq; /* Save last sequence number */
 
@@ -2456,20 +2437,40 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
     }
   }
 
-  if (((status == 401 && sip->sip_www_authenticate) ||
-       (status == 407 && sip->sip_proxy_authenticate)) &&
-      nh_challenge(nh, sip) > 0) {
+  if ((status == 401 && sip->sip_www_authenticate) ||
+      (status == 407 && sip->sip_proxy_authenticate)) {
+    int server = 0, proxy = 0;
     nta_outgoing_t *orq;
-    if (auc_has_authorization(&nh->nh_auth)) 
-      return nua_client_restart(cr, 100, "Request Authorized by Cache");
 
-    orq = cr->cr_orq, cr->cr_orq = NULL;
-    cr->cr_challenged = 1;
-    cr->cr_retry_count++;
-    nua_client_report(cr, status, phrase, NULL, orq, NULL);
-    nta_outgoing_destroy(orq);
+    if (sip->sip_www_authenticate)
+      server = auc_challenge(&nh->nh_auth, nh->nh_home,
+			     sip->sip_www_authenticate,
+			     sip_authorization_class);
 
-    return 1;
+    if (sip->sip_proxy_authenticate)
+      proxy = auc_challenge(&nh->nh_auth, nh->nh_home,
+			    sip->sip_proxy_authenticate,
+			    sip_proxy_authorization_class);
+
+    if (server >= 0 && proxy >= 0) {
+      int invalid = cr->cr_challenged && server + proxy == 0;
+
+      cr->cr_challenged = 1;
+
+      if (invalid)
+	/* Bad username/password */
+	auc_clear_credentials(&nh->nh_auth, NULL, NULL);
+      else if (auc_has_authorization(&nh->nh_auth)) 
+	return nua_client_restart(cr, 100, "Request Authorized by Cache");
+
+      orq = cr->cr_orq, cr->cr_orq = NULL;
+      cr->cr_wait_for_cred = 1;
+      cr->cr_retry_count++;
+      nua_client_report(cr, status, phrase, NULL, orq, NULL);
+      nta_outgoing_destroy(orq);
+
+      return 1;
+    }
   }
 
   return 0;  /* This was a final response that cannot be restarted. */
@@ -2591,8 +2592,18 @@ int nua_base_client_response(nua_client_request_t *cr,
 
   cr->cr_reporting = 1, nh->nh_ds->ds_reporting = 1;
 
-  if (status >= 200 && status < 300)
-    nh_challenge(nh, sip);  /* Collect nextnonce */
+  if (nh->nh_auth && sip &&
+      (sip->sip_authentication_info || sip->sip_proxy_authentication_info)) {
+    /* Collect nextnonce */
+    if (sip->sip_authentication_info)
+      auc_info(&nh->nh_auth,
+	       sip->sip_authentication_info,
+	       sip_authorization_class);
+    if (sip->sip_proxy_authentication_info) 
+      auc_info(&nh->nh_auth,
+	       sip->sip_proxy_authentication_info,
+	       sip_proxy_authorization_class);
+  }
 
   if ((method != sip_method_invite && status >= 200) || status >= 300)
     nua_client_request_remove(cr);
