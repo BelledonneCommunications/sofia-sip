@@ -8006,10 +8006,11 @@ int outgoing_recv(nta_outgoing_t *orq,
 {
   nta_agent_t *sa = orq->orq_agent;
   short orq_status = orq->orq_status;
+  int internal = sip == NULL || (sip->sip_flags & NTA_INTERNAL_MSG) == 0;
 
   if (status < 100) status = 100;
 
-  if (sip && orq->orq_delay == UINT_MAX)
+  if (!internal && orq->orq_delay == UINT_MAX)
     outgoing_estimate_delay(orq, sip);
 
   if (orq->orq_cc)
@@ -8067,7 +8068,7 @@ int outgoing_recv(nta_outgoing_t *orq,
     }
     else {
       /* Final response */
-      if (status >= 300)
+      if (status >= 300 && !internal)
 	outgoing_ack(orq, msg, sip);
 
       if (!orq->orq_completed) {
