@@ -1823,10 +1823,20 @@ int agent_init_contact(nta_agent_t *self)
   if (self->sa_contact)
     return 0;
 
-  if (self->sa_vias)
-    v1 = self->sa_vias;
-  else
-    v1 = self->sa_public_vias;
+  for (v1 = self->sa_vias ? self->sa_vias : self->sa_public_vias;
+       v1;
+       v1 = v1->v_next) {
+    if (host_is_ip_address(v1->v_host)) {
+      if (!host_is_local(v1->v_host))
+	break;
+    }
+    else if (!host_has_domain_invalid(v1->v_host)) {
+      break;
+    }
+  }
+
+  if (v1 == NULL)
+    v1 = self->sa_vias ? self->sa_vias : self->sa_public_vias;
 
   if (!v1)
     return -1;

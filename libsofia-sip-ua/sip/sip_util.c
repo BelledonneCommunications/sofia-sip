@@ -247,8 +247,8 @@ sip_contact_string_from_via(su_home_t *home,
     if (port || host_is_ip_address(host))
       transport = NULL;
   }
-  else if (port && host_is_ip_address(host) &&
-	   strcmp(port, SIP_DEFAULT_SERV) == 0) {
+  else if (port && strcmp(port, SIP_DEFAULT_SERV) == 0 &&
+	   (host_is_ip_address(host) || host_has_domain_invalid(host))) {
     port = NULL;
   }
 
