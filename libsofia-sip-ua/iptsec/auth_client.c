@@ -185,22 +185,24 @@ int ca_challenge(auth_client_t *ca,
 
 /** Store authentication info to authenticators.
  *
- * The function auc_info() feeds the authentication data from the
- * authentication info @a info to the list of authenticators @a auc_list.
+ * The function auc_info() feeds the authentication data from the @b
+ * Authentication-Info header @a info to the list of authenticators @a
+ * auc_list.
  *
  * @param[in,out] auc_list  list of authenticators to be updated
- * @param[in] info      info to be processed
- * @param[in] crcl      corresponding credential class
+ * @param[in] info        info header to be processed
+ * @param[in] credential_class      corresponding credential class
  *
- * The authentication info can be in either Authentication-Info or in
- * Proxy-Authentication-Info headers.
- * If the header is Authentication-Info, the @a crcl should be
- * #sip_authorization_class or #http_authorization_class.
- * Likewise, If the header is Proxy-Authentication-Info, the @a crcl should
- * be #sip_proxy_authorization_class or #http_proxy_authorization_class.
+ * The authentication info can be in either @AuthenticationInfo or in
+ * @ProxyAuthenticationInfo headers. If the header is @AuthenticationInfo,
+ * the @a credential_class should be #sip_authorization_class or
+ * #http_authorization_class. Likewise, If the header is
+ * @ProxyAuthenticationInfo, the @a credential_class should be
+ * #sip_proxy_authorization_class or #http_proxy_authorization_class.
 
- * The authentication into usually contains next nonce or mutual
- * authentication information. We handle only nextnonce parameter. 
+ * The authentication into header usually contains next nonce or mutual
+ * authentication information. Currently, only the nextnonce parameter is
+ * processed.
  *
  * @bug
  * The result can be quite unexpected if there are more than one
@@ -214,7 +216,7 @@ int ca_challenge(auth_client_t *ca,
  * @NEW_1_12_5
  */
 int auc_info(auth_client_t **auc_list,
-	     msg_auth_info_t const *ai,
+	     msg_auth_info_t const *info,
 	     msg_hclass_t *credential_class)
 {
   auth_client_t *ca;
@@ -224,7 +226,7 @@ int auc_info(auth_client_t **auc_list,
 
   /* Update matching authenticator */
   for (ca = *auc_list; ca; ca = ca->ca_next) {
-    int updated = ca_info(ca, ai, credential_class);
+    int updated = ca_info(ca, info, credential_class);
     if (updated < 0)
       return -1;
     if (updated >= 1)
@@ -243,12 +245,12 @@ int auc_info(auth_client_t **auc_list,
  */
 static
 int ca_info(auth_client_t *ca, 
-	    msg_auth_info_t const *ai,
+	    msg_auth_info_t const *info,
 	    msg_hclass_t *credential_class)
 {
-  assert(ca); assert(ai);
+  assert(ca); assert(info);
 
-  if (!ca || !ai)
+  if (!ca || !info)
     return -1;
 
   if (!ca->ca_credential_class)
@@ -263,7 +265,7 @@ int ca_info(auth_client_t *ca,
       || !ca->ca_auc->auc_info)
     return 0;
 
-  return ca->ca_auc->auc_info(ca, ai);
+  return ca->ca_auc->auc_info(ca, info);
 }
 
 
@@ -735,7 +737,7 @@ static int auc_digest_authorization(auth_client_t *ca,
 				    msg_payload_t const *body,
 				    msg_header_t **);
 static int auc_digest_info(auth_client_t *ca, 
-			   msg_auth_info_t const *ai);
+			   msg_auth_info_t const *info);
 
 static const auth_client_plugin_t ca_digest_plugin = 
 { 
@@ -796,14 +798,14 @@ static int auc_digest_challenge(auth_client_t *ca, msg_auth_t const *ch)
 }
 
 static int auc_digest_info(auth_client_t *ca,
-			   msg_auth_info_t const *ai)
+			   msg_auth_info_t const *info)
 {
   auth_digest_client_t *cda = (auth_digest_client_t *)ca;
   su_home_t *home = ca->ca_home;
   char const *nextnonce = NULL;
   issize_t n;
 
-  n = auth_get_params(home, ai->ai_params,
+  n = auth_get_params(home, info->ai_params,
 		      "nextnonce=", &nextnonce,
 		      NULL);
 
