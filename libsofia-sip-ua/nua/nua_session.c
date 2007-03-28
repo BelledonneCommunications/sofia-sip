@@ -4010,7 +4010,7 @@ int session_make_description(su_home_t *home,
     else
       *return_cd = NULL;
 
-    if (!*return_pl || !*return_cd)
+    if (!*return_pl || !*return_ct)
       return -1;
 
     if (session && !*return_cd)
