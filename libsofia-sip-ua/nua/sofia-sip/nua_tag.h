@@ -1262,7 +1262,9 @@ SOFIAPUBVAR tag_typedef_t nutag_auth_ref;
  *    - nua_auth_cache_challenged (1) - include credentials only when 
  *                                      challenged
  *    
- * Corresponding tag taking reference parameter is NUTAG_AUTH_CACHE_REF()
+ * Corresponding tag taking reference parameter is NUTAG_AUTH_CACHE_REF().
+ *
+ * @NEW_1_12_6
  */
 #define NUTAG_AUTH_CACHE(x)   nutag_auth_cache, tag_int_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_auth_cache;
@@ -1270,7 +1272,7 @@ SOFIAPUBVAR tag_typedef_t nutag_auth_cache;
 #define NUTAG_AUTH_CACHE_REF(x) nutag_auth_cache_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_auth_cache_ref;
 
-/** Authentication caching policy */
+/** Authentication caching policy. @NEW_1_12_6 */
 enum nua_auth_cache {
   /** Include credentials within dialog (default) */
   nua_auth_cache_dialog = 0,

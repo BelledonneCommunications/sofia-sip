@@ -5,28 +5,16 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-<changes since last written in freshmeat.net "Changes:" style;
- and in less than 10 lines, written in 3rd person English, with
- complete sentences />
-
-Bugs in blaa and foo have been fixed. The stack now supports
-use of foobar...
+Numerous nua bugs introduced in the release 1.12.5 have been fixed. Support
+for nextnonce in Authentication-Info header has been added. The nua engine
+now fully supports application-driven SDP.
 
 API/ABI changes and versioning
 ------------------------------
 
-<see previous release notes at
- http://sofia-sip.sourceforge.net/relnotes/ for examples ;
- - should include all changes to public headers, and 
-   other important information to developers; 
- - and should be updated _continuously_! />
-
-**template**: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
-
 libsofia-sip-ua:
-- **template**: Added foobar() function (sofia-sip/foobar.h).
-- Added tag NUTAG_AUTH_CACHE() determining when to include credentials in
-  the request
+- Added tag NUTAG_AUTH_CACHE() <sofia-sip/nua_tag.h> determining when to 
+  include credentials in the request
 - Added kqueue and /dev/poll interfaces (su_devpoll_port_create(),
   su_devpoll_clone_start(), su_kqueue_port_create(), su_kqueue_clone_start()
   in <sofia-sip/su_wait.h>)
@@ -48,19 +36,8 @@ libsofia-sip-ua-glib:
 Contributors to this release
 ----------------------------
 
-<list of people who contributed to _this_ release
- - update as people's patches are added, or when you commit stuff
- - current development team members (see AUTHORS) may be omitted,
-   or listed at the end of the contribur list (depending on the scope 
-   of the work done since the last release)
- - name of the contributor should be enough (email addresses in AUTHORS),
-   plus a _brief_ description of what was contributed
- - roughly sorted by number of patches accepted
-/> 
-
-- **template**: First Surname (patch to nua/soa/msg)
-- Martti Mela (kqueue interface to Max OS X and FreeBSD)
 - Pekka Pessi (/dev/poll interface to Solaris, kqueue)
+- Martti Mela (kqueue interface to Max OS X and FreeBSD)
 - Michael Jerris (Solaris patches)
 - Colin Whittaker (sresolv patch)
 
@@ -72,24 +49,25 @@ Notes on new features
 The Sofia-SIP has been compiled and tested on Solaris. The /dev/poll
 interface (in su_devpoll_port.c) has been added for Solaris. Likewise, the
 kqueue interface (in su_kqueue_port.c) has been added for FreeBSD and Mac OS
-X.
+X. There is also select-based reactor for systems without poll().
 
-<information about major new features
- - new/changed/removed functionality
- - links to further documentation
- - section may be omitted for minor releases
-/> 
+The client authentication in nua has been updated. The nextnonce in
+Authentication-Info or Proxy-Authentication-Info headers is now. The
+NUTAG_AUTH_CACHE() policy determines how the cached credentials are used. By
+default, the credentials are included in each request within the dialog,
+however, with the NUTAG_AUTH_CACHE(nua_auth_cache_challenged) the client
+authenticates requests only after they have been challenged.
+
+The application can now fully control the SDP negotiation (when soa is
+disabled with NUTAG_MEDIA_ENABLE(0)). The application can send UPDATE and
+PRACK requests and respond to them.
 
 Bugs fixed in this release
 --------------------------
 
-< notable bugs fixed in this release
- - check the sf.net bug tracker; see closed bugs,
-   sorted by closing date
- - other bugs as fixed in CVS/darcs
-/>
-
-- **template**: #9499652 sf.net bug item title
+- Fixed problem logging long lines from with TPORT_LOG.
+  Problem reported by Mike Murdock and Michael Jerris.
+- Nua now includes the SDP capabilities in the response to the OPTIONS
 - Fixed assertion failure because BYE destroyed a session twice.
   Problem reported by Michael Jerris.
 - Fixed crash caused by a 0-length UDP datagram.
