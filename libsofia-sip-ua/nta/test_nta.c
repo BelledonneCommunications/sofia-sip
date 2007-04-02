@@ -751,6 +751,10 @@ static int test_bad_messages(agent_t *ag)
     su_root_step(ag->ag_root, 1);
   }
 
+  TEST_SIZE(su_sendto(s, "\r\n\r\n", 4, 0, (void *)ai->ai_addr, ai->ai_addrlen), 4);
+
+  su_root_step(ag->ag_root, 1);
+
   TEST_SIZE(su_sendto(s, "", 0, 0, ai->ai_addr, ai->ai_addrlen), 0);
 
   su_close(s);
