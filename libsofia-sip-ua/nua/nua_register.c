@@ -800,7 +800,7 @@ static int nua_register_client_check_restart(nua_client_request_t *cr,
 
   /* Restart only if nua_base_client_check_restart() did not try to restart */
   if (restart && retry_count == cr->cr_retry_count)
-    return nua_client_restart(cr, status, phrase);
+    return nua_client_restart(cr, 100, "Outbound NAT Detected");
   
   return 0;
 }

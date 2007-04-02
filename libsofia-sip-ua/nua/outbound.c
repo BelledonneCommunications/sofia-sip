@@ -442,7 +442,7 @@ int outbound_check_for_nat(outbound_t *ob,
         return -1;
     }
 
-    return 2;
+    return ob_reregister_now;
   }
 
   return 0;
