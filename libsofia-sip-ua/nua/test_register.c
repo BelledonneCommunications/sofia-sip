@@ -141,12 +141,25 @@ int test_register_to_proxy(struct context *ctx)
   run_a_until(ctx, -1, save_until_final_response);
 
   TEST_1(e = a->events->head);
-  TEST_E(e->data->e_event, nua_r_register);
   TEST_1(sip = sip_object(e->data->e_msg));
+  if (ctx->nat) {
+    TEST_E(e->data->e_event, nua_r_register);
+    TEST(e->data->e_status, 100);
+    TEST(sip->sip_status->st_status, 406);
+    /* Check that CSeq included in tags is actually used in the request */
+    TEST(sip->sip_cseq->cs_seq, 13);
+    TEST_1(!sip->sip_contact);
+    TEST_1(e = e->next);
+    TEST_1(sip = sip_object(e->data->e_msg));
+    TEST(sip->sip_cseq->cs_seq, 14);
+  }
+  else {
+    /* Check that CSeq included in tags is actually used in the request */
+    TEST(sip->sip_cseq->cs_seq, 13);
+  }
+  TEST_E(e->data->e_event, nua_r_register);
   TEST(e->data->e_status, 401);
   TEST(sip->sip_status->st_status, 401);
-  /* Check that CSeq included in tags is actually used in the request */
-  TEST(sip->sip_cseq->cs_seq, 13);
   TEST_1(!sip->sip_contact);
   TEST_1(!e->next);
   free_events_in_list(ctx, a->events);
@@ -166,7 +179,6 @@ int test_register_to_proxy(struct context *ctx)
   TEST_S(sip->sip_contact->m_url->url_user, "a");
   TEST_1(strstr(sip->sip_contact->m_url->url_params, "foo=bar"));
   TEST_S(sip->sip_contact->m_q, "0.9");
-  TEST(sip->sip_cseq->cs_seq, 14);
 
   if (ctx->nat) {
     TEST_1(e = a->specials->head);
@@ -217,7 +229,6 @@ int test_register_to_proxy(struct context *ctx)
   TEST_S(sip->sip_contact->m_display, "B");
   TEST_S(sip->sip_contact->m_url->url_user, "b");
   free_events_in_list(ctx, b->events);
-  
   if (print_headings)
     printf("TEST NUA-2.3.2: PASSED\n");
 

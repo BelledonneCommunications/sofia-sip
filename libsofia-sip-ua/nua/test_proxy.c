@@ -52,6 +52,7 @@ struct binding;
 #include <sofia-sip/auth_module.h>
 #include <sofia-sip/su_tagarg.h>
 #include <sofia-sip/msg_addr.h>
+#include <sofia-sip/hostdomain.h>
 
 #include <stdlib.h>
 #include <assert.h>
@@ -708,8 +709,8 @@ static int binding_update(struct proxy *p,
 sip_contact_t *binding_contacts(su_home_t *home, struct binding *bindings);
 
 int process_register(struct proxy *proxy,
-       	      nta_incoming_t *irq,
-       	      sip_t const *sip)
+		     nta_incoming_t *irq,
+		     sip_t const *sip)
 {
   auth_status_t *as;
   msg_t *msg;
@@ -752,6 +753,13 @@ static int process_register2(struct proxy *p,
 			     sip_t const *sip)
 {
   struct registration_entry *e = NULL;
+  sip_contact_t *m = sip->sip_contact;
+  sip_via_t *v = sip->sip_via;
+
+  if (m && v && v->v_received && m->m_url->url_host
+      && strcasecmp(v->v_received, m->m_url->url_host) 
+      && host_is_ip_address(m->m_url->url_host))
+    return set_status(as, 406, "Unacceptable Contact");
 
   auth_mod_check_client(p->auth, as, sip->sip_authorization,
 			registrar_challenger);
