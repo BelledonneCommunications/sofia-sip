@@ -516,7 +516,7 @@ int test_basic(void)
 
     v = sip_via_make(home, "SIP/2.0/UDP domain.invalid:5060"); TEST_1(v);
     s = sip_contact_string_from_via(home, v, NULL, v->v_protocol);
-    TEST_S(s, "<sip:domain.invalid:5060;transport=udp>");
+    TEST_S(s, "<sip:domain.invalid;transport=udp>");
     su_free(home, v), su_free(home, s);
 
     TEST_1(sip_transport_has_tls("SIP/2.0/TLS-SCTP"));
