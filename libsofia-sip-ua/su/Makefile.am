@@ -95,7 +95,6 @@ EXTRA_libsu_la_SOURCES = \
 			inet_ntop.c inet_pton.c poll.c getopt.c \
 			su_tag_ref.c su_win32_port.c
 
-libsu_la_CFLAGS = 	$(AM_CFLAGS) $(SOFIA_CFLAGS)
 libsu_la_LIBADD = 	$(REPLACE_LIBADD)
 libsu_la_DEPENDENCIES = $(REPLACE_LIBADD)
 
