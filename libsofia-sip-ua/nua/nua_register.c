@@ -622,18 +622,20 @@ static int nua_register_client_init(nua_client_request_t *cr,
     return -1;
   nr = nua_dialog_usage_private(du);
 
-  nua_registration_add(&nh->nh_nua->nua_registrations, nr);
-
   if (nua_client_bind(cr, du) < 0)
     return -1;
 
-  if (aor == NULL)
-    aor = sip->sip_from;
-  if (aor == NULL)
-    aor = nh->nh_nua->nua_from;
+  if (!nr->nr_list) {
+    nua_registration_add(&nh->nh_nua->nua_registrations, nr);
 
-  if (nua_registration_set_aor(nh->nh_home, nr, aor) < 0)
-    return -1;
+    if (aor == NULL)
+      aor = sip->sip_from;
+    if (aor == NULL)
+      aor = nh->nh_nua->nua_from;
+
+    if (nua_registration_set_aor(nh->nh_home, nr, aor) < 0)
+      return -1;
+  }
 
   if (nua_registration_set_contact(nh, nr, sip->sip_contact, unreg) < 0)
     return -1;

@@ -1091,6 +1091,9 @@ int outbound_set_contact(outbound_t *ob,
   m3 = ob->ob_previous;
 
   if (terminating) {
+    if (ob->ob_by_stack && application_contact == NULL)
+      return 0;
+    
     if (ob->ob_contacts)
       previous = ob->ob_rcontact;
   }
@@ -1100,6 +1103,9 @@ int outbound_set_contact(outbound_t *ob,
       contact_uri_changed = 1;
       previous = ob->ob_contacts ? ob->ob_rcontact : NULL;
     }
+  }
+  else if (ob->ob_by_stack) {
+    return 0;    /* Xyzzy - nothing happens */
   }
   else if (v) {
     char const *tport = !v->v_next ? v->v_protocol : NULL; 
