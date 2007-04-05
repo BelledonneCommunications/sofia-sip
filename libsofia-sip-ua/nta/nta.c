@@ -8016,7 +8016,7 @@ int outgoing_recv(nta_outgoing_t *orq,
 {
   nta_agent_t *sa = orq->orq_agent;
   short orq_status = orq->orq_status;
-  int internal = sip == NULL || (sip->sip_flags & NTA_INTERNAL_MSG) == 0;
+  int internal = sip == NULL || (sip->sip_flags & NTA_INTERNAL_MSG) != 0;
 
   if (status < 100) status = 100;
 
