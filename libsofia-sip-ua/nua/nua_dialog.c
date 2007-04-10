@@ -561,8 +561,13 @@ int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
   return 1;
 }
 
-/** (Gracefully) terminate usage */
-void nua_dialog_usage_shutdown(nua_owner_t *owner,
+/** (Gracefully) terminate usage.
+ *
+ * @retval >0  shutdown done
+ * @retval 0   shutdown in progress
+ * @retval <0  try again later
+ */
+int nua_dialog_usage_shutdown(nua_owner_t *owner,
 			       nua_dialog_state_t *ds,
 			       nua_dialog_usage_t *du)
 {
@@ -570,6 +575,8 @@ void nua_dialog_usage_shutdown(nua_owner_t *owner,
     du->du_refresh = 0;
     du->du_shutdown = 1;
     assert(du->du_class->usage_shutdown);
-    du->du_class->usage_shutdown(owner, ds, du);
+    return du->du_class->usage_shutdown(owner, ds, du);
   }
+  else
+    return 200;
 }

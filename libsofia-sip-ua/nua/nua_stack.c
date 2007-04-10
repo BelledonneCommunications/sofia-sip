@@ -2641,22 +2641,23 @@ int nua_base_client_response(nua_client_request_t *cr,
 
   if (cr->cr_terminated < 0) {
     /* XXX - dialog has been terminated */;
-    nua_dialog_deinit(nh, nh->nh_ds);
+    nua_dialog_deinit(nh, nh->nh_ds), cr->cr_usage = NULL;
   }
   else if (du) {
     if (cr->cr_terminated ||
 	(!du->du_ready && status >= 300 && nua_client_is_bound(cr))) {
       /* Usage has been destroyed */
-      nua_dialog_usage_remove(nh, nh->nh_ds, du);
+      nua_dialog_usage_remove(nh, nh->nh_ds, du), cr->cr_usage = NULL;
     }
     else if (cr->cr_graceful) {
       /* Terminate usage gracefully */
-      nua_dialog_usage_shutdown(nh, nh->nh_ds, du); 
+      if (nua_dialog_usage_shutdown(nh, nh->nh_ds, du) > 0)
+	cr->cr_usage = NULL;
     }
   }
   else if (cr->cr_terminated) {
     if (nh->nh_ds->ds_usage == NULL)
-      nua_dialog_remove(nh, nh->nh_ds, NULL);
+      nua_dialog_remove(nh, nh->nh_ds, NULL), cr->cr_usage = NULL;
   }
 
   cr->cr_reporting = 0, nh->nh_ds->ds_reporting = 0;

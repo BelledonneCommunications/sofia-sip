@@ -453,9 +453,9 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now);
 
-void nua_dialog_usage_shutdown(nua_owner_t *owner,
-				nua_dialog_state_t *ds,
-				nua_dialog_usage_t *du);
+int nua_dialog_usage_shutdown(nua_owner_t *owner,
+			      nua_dialog_state_t *ds,
+			      nua_dialog_usage_t *du);
 
 static inline
 int nua_dialog_is_established(nua_dialog_state_t const *ds)
