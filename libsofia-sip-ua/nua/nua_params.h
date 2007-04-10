@@ -169,8 +169,8 @@ typedef struct nua_handle_preferences
 
     unsigned nhb_allow:1;
     unsigned nhb_supported:1;
-    unsigned nhb_allow_events:1;
     unsigned :0;		/* at most 32 bits ... */
+    unsigned nhb_allow_events:1;
     unsigned nhb_user_agent:1;
     unsigned nhb_organization:1;
 
