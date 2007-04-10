@@ -6,7 +6,8 @@
 #
 
 test_sdp="${1:-./test_sdp}"
-tests="${2:-${0%/*}/tests}"
+sdp_path=`dirname $0`
+tests="${2:-${sdp_path}/tests}"
 
 if test -r $tests/message-1.sdp ; then
 
@@ -20,4 +21,3 @@ else
     echo "sdp run-tests: no tests found in $tests, skipping."
     exit 77
 fi
-
