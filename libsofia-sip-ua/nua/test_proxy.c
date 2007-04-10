@@ -375,6 +375,27 @@ void test_proxy_get_expiration(struct proxy *p,
   }
 }
 
+void test_proxy_set_session_timer(struct proxy *p,
+				  sip_time_t session_expires, 
+				  sip_time_t min_se)
+{
+  if (p) {
+    p->prefs.session_expires = session_expires;
+    p->prefs.min_se = min_se;
+  }
+}
+
+void test_proxy_get_session_timer(struct proxy *p,
+				  sip_time_t *return_session_expires,
+				  sip_time_t *return_min_se)
+{
+  if (p) {
+    if (return_session_expires)
+      *return_session_expires = p->prefs.session_expires;
+    if (return_min_se) *return_min_se = p->prefs.min_se;
+  }
+}
+
 /* ---------------------------------------------------------------------- */
 
 static sip_contact_t *create_transport_contacts(struct proxy *p)
@@ -427,6 +448,7 @@ int proxy_request(struct proxy *proxy,
 
   sip_session_expires_t *x = NULL, x0[1];
   sip_min_se_t *min_se = NULL, min_se0[1];
+  char const *require = NULL;
 
   mf = sip->sip_max_forwards;
 
@@ -447,24 +469,33 @@ int proxy_request(struct proxy *proxy,
   }
 
   if (method == sip_method_invite) {
-    if (!sip->sip_min_se || 
-	sip->sip_min_se->min_delta < proxy->prefs.min_se) {
-      min_se = sip_min_se_init(min_se0);
-      min_se->min_delta = proxy->prefs.min_se;
+    if (proxy->prefs.min_se) {
+      if (!sip->sip_min_se || 
+	  sip->sip_min_se->min_delta < proxy->prefs.min_se) {
+	min_se = sip_min_se_init(min_se0);
+	min_se->min_delta = proxy->prefs.min_se;
+      }
+
+      if (sip->sip_session_expires
+	  && sip->sip_session_expires->x_delta < proxy->prefs.min_se
+	  && sip_has_supported(sip->sip_supported, "timer")) {
+	if (min_se == NULL)
+	  min_se = sip->sip_min_se; assert(min_se);
+	nta_incoming_treply(irq, SIP_422_SESSION_TIMER_TOO_SMALL,
+			    SIPTAG_MIN_SE(min_se),
+			    TAG_END());
+	return 422;
+      }
     }
 
-    if (!sip->sip_session_expires) {
-      x = sip_session_expires_init(x0);
-      x->x_delta = proxy->prefs.session_expires;
-    }
-    else if (sip->sip_session_expires->x_delta < proxy->prefs.min_se
-	     && sip_has_supported(sip->sip_supported, "timer")) {
-      if (min_se == NULL)
-	min_se = sip->sip_min_se; assert(min_se);
-      nta_incoming_treply(irq, SIP_422_SESSION_TIMER_TOO_SMALL,
-			  SIPTAG_MIN_SE(min_se),
-			  TAG_END());
-      return 422;
+    if (proxy->prefs.session_expires) {
+      if (!sip->sip_session_expires ||
+	  sip->sip_session_expires->x_delta > proxy->prefs.session_expires) {
+	x = sip_session_expires_init(x0);
+	x->x_delta = proxy->prefs.session_expires;
+	if (!sip_has_supported(sip->sip_supported, "timer"))
+	  require = "timer";
+      }
     }
   }
 
@@ -528,6 +559,7 @@ int proxy_request(struct proxy *proxy,
 				   SIPTAG_REQUEST(rq),
 				   SIPTAG_SESSION_EXPIRES(x),
 				   SIPTAG_MIN_SE(min_se),
+				   SIPTAG_REQUIRE_STR(require),
 				   TAG_END());
   if (t->client == NULL) {
     proxy_transaction_destroy(t);

@@ -1197,14 +1197,14 @@ int test_preconditions2(struct context *ctx)
 
   nua_set_params(ctx->a.nua,
 		 NUTAG_EARLY_MEDIA(1),
-		 SIPTAG_SUPPORTED_STR("100rel, precondition"),
+		 SIPTAG_SUPPORTED_STR("100rel, precondition, timer"),
 		 TAG_END());
   run_a_until(ctx, nua_r_set_params, until_final_response);
 
   nua_set_params(ctx->b.nua,
 		 NUTAG_EARLY_MEDIA(1),
 		 NUTAG_ONLY183_100REL(1),
-		 SIPTAG_SUPPORTED_STR("100rel, precondition"),
+		 SIPTAG_SUPPORTED_STR("100rel, precondition, timer"),
 		 TAG_END());
   run_b_until(ctx, nua_r_set_params, until_final_response);
 
