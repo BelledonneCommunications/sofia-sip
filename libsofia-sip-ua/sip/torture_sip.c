@@ -354,7 +354,7 @@ int test_basic(void)
     su_home_t home[1] = { SU_HOME_INIT(home) };
     char const *display;
     url_t url[1];
-    char const * const *params;
+    msg_param_t const *params;
     char const *comment;
     char const na[] = "Raaka Arska <tel:+358501970>;param=1;humppa (test) ";
     char const na2[] = "tel:+358501970;param=1;humppa (test) ";
@@ -744,8 +744,6 @@ int test_sip_msg_class(msg_mclass_t const *mc)
   }
 
   END();
-
-  return 0;
 }
 
 msg_t *read_message(int flags, char const buffer[])
