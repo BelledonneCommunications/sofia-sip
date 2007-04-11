@@ -19,3 +19,6 @@ TAGFILES           += ../docs/nta.doxytags=../nta
 GENERATE_TAGFILE    = ../docs/iptsec.doxytags
 
 ALIASES 	   += 
+
+PREDEFINED         += SOFIA_EXTEND_AUTH_CLIENT=1
+
