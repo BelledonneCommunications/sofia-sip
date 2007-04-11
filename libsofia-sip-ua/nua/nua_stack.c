@@ -2040,7 +2040,6 @@ int nua_client_restart_request(nua_client_request_t *cr,
       if (sip_add_tagis(cr->cr_msg, NULL, &tags) < 0)
 	/* XXX */;
 
-    cr->cr_retry_count = 0;
     cr->cr_terminating = terminating;
 
     return nua_client_request_try(cr);
@@ -2134,6 +2133,8 @@ int nua_client_request_sendmsg(nua_client_request_t *cr, msg_t *msg, sip_t *sip)
   nta_leg_t *leg;
 
   assert(cr->cr_orq == NULL);
+
+  cr->cr_retry_count++;
 
   if (ds->ds_leg)
     leg = ds->ds_leg;
@@ -2402,7 +2403,7 @@ int nua_client_check_restart(nua_client_request_t *cr,
 
   assert(cr && status >= 200 && phrase && sip);
 
-  if (cr->cr_retry_count >= NH_PGET(nh, retry_count))
+  if (cr->cr_retry_count > NH_PGET(nh, retry_count))
     return 0;
 
   if (cr->cr_methods->crm_check_restart)
@@ -2492,7 +2493,6 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 
       orq = cr->cr_orq, cr->cr_orq = NULL;
       cr->cr_wait_for_cred = 1;
-      cr->cr_retry_count++;
       nua_client_report(cr, status, phrase, NULL, orq, NULL);
       nta_outgoing_destroy(orq);
 
@@ -2517,7 +2517,7 @@ int nua_client_restart(nua_client_request_t *cr,
   msg_t *msg;
   sip_t *sip;
 
-  if (++cr->cr_retry_count > NH_PGET(nh, retry_count))
+  if (cr->cr_retry_count > NH_PGET(nh, retry_count))
     return 0;
 
   orq = cr->cr_orq, cr->cr_orq = NULL;  assert(orq);

@@ -262,6 +262,7 @@ int test_reject_b(struct context *ctx)
 /* ------------------------------------------------------------------------ */
 
 int reject_302(CONDITION_PARAMS), reject_305(CONDITION_PARAMS);
+int redirect_always(CONDITION_PARAMS);
 int reject_604(CONDITION_PARAMS);
 
 /*
@@ -336,6 +337,26 @@ int reject_305(CONDITION_PARAMS)
   }
 }
 
+int redirect_always(CONDITION_PARAMS)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  if (event == nua_i_invite) {
+    char user[30];
+    sip_contact_t m[1];
+    *m = *ep->contact;
+    snprintf(user, sizeof user, "user-%u", ep->flags.n++);
+    m->m_url->url_user = user;
+    RESPOND(ep, call, nh, SIP_302_MOVED_TEMPORARILY,
+	    SIPTAG_CONTACT(m), TAG_END());
+    nua_handle_destroy(nh);
+    call->nh = NULL;
+    return 1;
+  }
+
+  return 0;
+}
 
 int reject_604(CONDITION_PARAMS)
 {
@@ -467,6 +488,25 @@ int test_reject_302(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
   TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  free_events_in_list(ctx, b->events);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  if (print_headings)
+    printf("TEST NUA-4.3: PASSED\n");
+
+  if (print_headings)
+    printf("TEST NUA-4.3.1: redirect until retry count is exceeded\n");
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+  INVITE(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	 SIPTAG_SUBJECT_STR("redirect always"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 TAG_END());
+  run_ab_until(ctx, -1, until_terminated, -1, redirect_always);
 
   free_events_in_list(ctx, a->events);
   nua_handle_destroy(a_call->nh), a_call->nh = NULL;
