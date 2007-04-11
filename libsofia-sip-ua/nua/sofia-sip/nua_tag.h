@@ -174,6 +174,26 @@ SOFIAPUBVAR tag_typedef_t nutag_with;
  */
 #define NUTAG_WITH_SAVED(e) nutag_with, tag_ptr_v(nua_saved_event_request((e)))
 
+/**An (extension) method is used to create dialog or refresh target.
+ *
+ * @par Used with
+ *    nua_method()
+ *
+ * @par Parameter type
+ *    unsigned int (0, 1, 2) 
+ *
+ * @par Values
+ *   - 0 if dialog target is not refreshed
+ *   - 1 if dialog target is refreshed
+ *   - > 1 if dialog is to be created 
+ *
+ * @NEW_1_12_6.
+ *
+ * @sa nua_method(), #nua_i_method
+ */
+#define NUTAG_DIALOG(b) nutag_dialog, tag_uint_v((b))
+SOFIAPUBVAR tag_typedef_t nutag_dialog;
+
 /**Set request retry count.
  *
  * Retry count determines how many times stack will automatically retry

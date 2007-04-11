@@ -1049,6 +1049,7 @@ int nua_stack_process_request(nua_handle_t *nh,
   nua_server_methods_t const *sm;
   nua_server_request_t *sr, sr0[1];
   int status, initial = 1;
+  int create_dialog;
 
   char const *user_agent = NH_PGET(nh, user_agent);
   sip_supported_t const *supported = NH_PGET(nh, supported);
@@ -1135,11 +1136,15 @@ int nua_stack_process_request(nua_handle_t *nh,
     return 481;
   }
 
+  create_dialog = sm->sm_flags.create_dialog;
+  if (method == sip_method_message && NH_PGET(nh, win_messenger_enable))
+    create_dialog = 1;
   sr = memset(sr0, 0, (sizeof sr0));
 
   sr->sr_methods = sm;
   sr->sr_method = method = sip->sip_request->rq_method;
   sr->sr_add_contact = sm->sm_flags.add_contact;
+  sr->sr_target_refresh = sm->sm_flags.target_refresh;
 
   sr->sr_owner = nh;
   sr->sr_initial = initial;
@@ -1171,12 +1176,12 @@ int nua_stack_process_request(nua_handle_t *nh,
   }
 
   if (sr->sr_status < 300 && sm->sm_preprocess && sm->sm_preprocess(sr)) {
-    if (sr->sr_status < 200)    /* Preprocess may have set response status */
+    if (sr->sr_status < 200)    /* Set response status if preprocess did not */
       SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
   }
 
   if (sr->sr_status < 300) {
-    if (sm->sm_flags.target_refresh)
+    if (sr->sr_target_refresh)
       nua_dialog_uas_route(nh, nh->nh_ds, sip, 1); /* Set route and tags */
     nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
   }
@@ -1696,6 +1701,7 @@ int nua_client_create(nua_handle_t *nh,
   cr->cr_method = method;
   cr->cr_method_name = name;
   cr->cr_contactize = methods->crm_flags.target_refresh;
+  cr->cr_dialog = methods->crm_flags.create_dialog;
   cr->cr_auto = 1;
 
   if (su_msg_is_non_null(nh->nh_nua->nua_signal)) {
@@ -1927,6 +1933,10 @@ int nua_client_init_request(nua_client_request_t *cr)
       has_contact = 1;
     else if (t->t_tag == nutag_url)
       url = (url_string_t const *)t->t_value;
+    else if (t->t_tag == nutag_dialog) {
+      cr->cr_dialog = t->t_value > 1;
+      cr->cr_contactize = t->t_value >= 1;
+    }
     else if (t->t_tag == nutag_auth && t->t_value) {
       /* XXX ignoring errors */
       if (nh->nh_auth)
@@ -1965,7 +1975,7 @@ int nua_client_init_request(nua_client_request_t *cr)
 	sip_add_dup(msg, sip, (sip_header_t *)nua->nua_from) < 0)
       goto error;
 
-    if (cr->cr_methods->crm_flags.create_dialog) {
+    if (cr->cr_dialog) {
       ds->ds_leg = nta_leg_tcreate(nua->nua_nta,
 				   nua_stack_process_request, nh,
 				   SIPTAG_CALL_ID(sip->sip_call_id),
@@ -2337,7 +2347,7 @@ int nua_client_response(nua_client_request_t *cr,
     }
     else {
       if (sip) {
-	if (cr->cr_methods->crm_flags.target_refresh)
+	if (cr->cr_contactize)
 	  nua_dialog_uac_route(nh, nh->nh_ds, sip, 1);
 	nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
       }

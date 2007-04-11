@@ -75,7 +75,7 @@ static nua_client_methods_t const nua_method_client_methods = {
   { 
     /* create_dialog */ 0,
     /* in_dialog */ 0,
-    /* target_refresh */ 0
+    /* target_refresh */ 1,
   },
   /* nua_method_client_template */ NULL,
   /* nua_method_client_init */ NULL,
@@ -146,7 +146,7 @@ nua_server_methods_t const nua_extension_server_methods =
     SIP_METHOD_UNKNOWN,
     nua_i_method,		/* Event */
     { 
-      0,			/* Do not create dialog */
+      1,			/* Do create dialog */
       0,			/* Can be an initial request */
       1,			/* Perhaps a target refresh request? */
       1,			/* Add a contact? */

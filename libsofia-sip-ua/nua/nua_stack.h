@@ -336,8 +336,6 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 					sip_t const *sip,
 					int create_dialog);
 
-enum { create_dialog = 1 };
-
 int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh, 
 			  tag_type_t tag, tag_value_t value, ...);
 

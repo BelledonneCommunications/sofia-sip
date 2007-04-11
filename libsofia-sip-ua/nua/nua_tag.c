@@ -149,3 +149,4 @@ tag_typedef_t nutag_auth_cache = INTTAG_TYPEDEF(auth_cache);
 tag_typedef_t nutag_detect_network_updates = UINTTAG_TYPEDEF(detect_network_updates);
 
 tag_typedef_t nutag_with = PTRTAG_TYPEDEF(with);
+tag_typedef_t nutag_dialog = UINTTAG_TYPEDEF(dialog);
