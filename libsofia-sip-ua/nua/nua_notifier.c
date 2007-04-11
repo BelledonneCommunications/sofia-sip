@@ -135,7 +135,7 @@ void nua_notify_usage_remove(nua_handle_t *nh,
  * (or SIPTAG_ALLOW_EVENTS() or SIPTAG_ALLOW_EVENTS_STR()). The application
  * can decide whether to accept the SUBSCRIBE request or reject it. The
  * nua_response() call responding to a SUBSCRIBE request must have
- * NUTAG_WITH() (or NUTAG_WITH_CURRENT()/NUTAG_WITH_SAVED()) tag.
+ * NUTAG_WITH() (or NUTAG_WITH_THIS()/NUTAG_WITH_SAVED()) tag.
  *
  * If the application accepts the SUBSCRIBE request, it must immediately
  * send an initial NOTIFY establishing the dialog. This is because the

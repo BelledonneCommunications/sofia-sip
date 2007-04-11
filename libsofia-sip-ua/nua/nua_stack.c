@@ -1278,7 +1278,7 @@ void nua_server_request_destroy(nua_server_request_t *sr)
  * content negotiation fails.
  *
  * When responding to an incoming INVITE request, the nua_respond() can be
- * called without NUTAG_WITH() (or NUTAG_WITH_CURRENT() or
+ * called without NUTAG_WITH() (or NUTAG_WITH_THIS() or
  * NUTAG_WITH_SAVED()). Otherwise, NUTAG_WITH() will contain an indication
  * of the request being responded.
  *
@@ -1307,7 +1307,7 @@ void nua_server_request_destroy(nua_server_request_t *sr)
  *    nothing
  *
  * @par Related Tags:
- *    NUTAG_WITH(), NUTAG_WITH_CURRENT(), NUTAG_WITH_SAVED() \n
+ *    NUTAG_WITH(), NUTAG_WITH_THIS(), NUTAG_WITH_SAVED() \n
  *    NUTAG_EARLY_ANSWER() \n
  *    SOATAG_ADDRESS() \n
  *    SOATAG_AF() \n

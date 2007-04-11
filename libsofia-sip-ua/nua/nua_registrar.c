@@ -60,7 +60,7 @@
  * the REGISTER method with NUTAG_ALLOW() tag.
  *
  * The nua_response() call responding to a REGISTER request must have
- * NUTAG_WITH() (or NUTAG_WITH_CURRENT()/NUTAG_WITH_SAVED()) tag. Note that
+ * NUTAG_WITH() (or NUTAG_WITH_THIS()/NUTAG_WITH_SAVED()) tag. Note that
  * a successful response to REGISTER @b MUST include the @Contact header
  * bound to the the AoR URI (in @To header).
  *

@@ -443,7 +443,7 @@ static int nua_publish_usage_shutdown(nua_handle_t *nh,
  * events with nua_set_params() tag NUTAG_ALLOW_EVENTS(). 
  *
  * The nua_response() call responding to a PUBLISH request must have
- * NUTAG_WITH() (or NUTAG_WITH_CURRENT()/NUTAG_WITH_SAVED()) tag. Note that
+ * NUTAG_WITH() (or NUTAG_WITH_THIS()/NUTAG_WITH_SAVED()) tag. Note that
  * a successful response to PUBLISH @b MUST include @Expires and @SIPETag
  * headers.
  *

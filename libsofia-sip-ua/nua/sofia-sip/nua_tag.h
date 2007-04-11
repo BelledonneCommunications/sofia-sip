@@ -157,6 +157,9 @@ SOFIAPUBVAR tag_typedef_t nutag_with;
  */
 #define NUTAG_WITH_THIS(nua) nutag_with, tag_ptr_v(nua_current_request((nua)))
 
+#define NUTAG_WITH_CURRENT(nua) \
+   nutag_with, tag_ptr_v(nua_current_request((nua)))
+
 /**Specify request to respond to.
  *
  * @par Used with
