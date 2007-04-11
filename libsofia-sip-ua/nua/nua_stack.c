@@ -989,11 +989,10 @@ void
 nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		       tagi_t const *tags)
 {
+  nua_client_request_t *cr = nh->nh_ds->ds_cr;
   int status = nh_authorize(nh, TAG_NEXT(tags));
 
   if (status > 0) {
-    nua_client_request_t *cr = nh->nh_ds->ds_cr;
-
     if (cr && cr->cr_wait_for_cred) {
       nua_client_restart_request(cr, cr->cr_terminating, tags);
     }
@@ -1002,6 +1001,14 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		      202, "No operation to restart",
 		      NULL);
     }
+  }
+  else if (cr && cr->cr_wait_for_cred) {
+    cr->cr_wait_for_cred = 0;
+
+    if (status < 0)
+      nua_client_response(cr, 900, "Cannot add credentials", NULL);
+    else
+      nua_client_response(cr, 904, "No matching challenge", NULL);
   }
   else if (status < 0) {
     nua_stack_event(nua, nh, NULL, e, 900, "Cannot add credentials", NULL);

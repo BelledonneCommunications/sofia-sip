@@ -86,7 +86,7 @@ int test_no_answer_1(struct context *ctx)
   sip_t *sip;
 
   if (print_headings)
-    printf("TEST NUA-6.3: No SDP answer from callee\n");
+    printf("TEST NUA-6.5: No SDP answer from callee\n");
 
   a_call->sdp = "m=audio 5008 RTP/AVP 8";
   b_call->sdp = NULL;
@@ -184,7 +184,7 @@ int test_no_answer_1(struct context *ctx)
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-6.3: PASSED\n");
+    printf("TEST NUA-6.5: PASSED\n");
 
   END();
 }
@@ -229,7 +229,7 @@ int test_no_answer_2(struct context *ctx)
   sip_t const *sip;
 
   if (print_headings)
-    printf("TEST NUA-6.4: No SDP offer from caller\n");
+    printf("TEST NUA-6.6: No SDP offer from caller\n");
 
   a_call->sdp = "v=0\r\n"
     "o=- 1 1 IN IP4 127.0.0.1\r\n"
@@ -330,7 +330,7 @@ int test_no_answer_2(struct context *ctx)
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
   if (print_headings)
-    printf("TEST NUA-6.4: PASSED\n");
+    printf("TEST NUA-6.6: PASSED\n");
 
   END();
 }

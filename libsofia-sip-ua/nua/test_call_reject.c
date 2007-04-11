@@ -914,7 +914,7 @@ int reject_401_bad(CONDITION_PARAMS)
   }
 }
 
-int authenticate_once(CONDITION_PARAMS)
+int authenticate_bad(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
@@ -922,13 +922,8 @@ int authenticate_once(CONDITION_PARAMS)
   save_event_in_list(ctx, event, ep, call);
 
   if (event == nua_r_invite && status == 401) {
-    if (ep->flags.bit0) {
-      nua_handle_destroy(nh); if (call) call->nh = NULL;
-      return 1;
-    }
-    ep->flags.bit0 = 1;
     AUTHENTICATE(ep, call, nh, NUTAG_AUTH("Digest:\"No hope\":jaska:secret"),
-		 SIPTAG_SUBJECT_STR("Got 401"),
+		 SIPTAG_SUBJECT_STR("Bad password"),
 		 TAG_END());
     return 0;
   }
@@ -965,7 +960,8 @@ int test_reject_401_bad(struct context *ctx)
 	 SOATAG_USER_SDP_STR(a_call->sdp),
 	 TAG_END());
 
-  run_ab_until(ctx, -1, authenticate_once, -1, reject_401_bad);
+
+  run_ab_until(ctx, -1, authenticate_bad, -1, reject_401_bad);
 
   /*
    Client transitions
@@ -981,7 +977,12 @@ int test_reject_401_bad(struct context *ctx)
   TEST_1(is_offer_sent(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(sip_object(e->data->e_msg)->sip_status->st_status, 401);
-  TEST_1(!e->next);
+  /* nua_authenticate() fails and INVITE returns an internal error response */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 904);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next); 
 
   free_events_in_list(ctx, a->events);
 
