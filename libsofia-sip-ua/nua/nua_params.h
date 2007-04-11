@@ -226,4 +226,9 @@ typedef struct nua_handle_preferences
   (NHP_ISSET((nh)->nh_prefs, pref) &&					\
    (nh)->nh_nua->nua_dhandle->nh_prefs != (nh)->nh_prefs)
 
+/* Check if preference has been set by applicationx */
+#define NUA_PISSET(nua, nh, pref)					\
+  (NHP_ISSET((nua)->nua_dhandle->nh_prefs, pref) ||			\
+   ((nh) && NHP_ISSET((nh)->nh_prefs, pref)))
+
 #endif /* NUA_PARAMS_H */

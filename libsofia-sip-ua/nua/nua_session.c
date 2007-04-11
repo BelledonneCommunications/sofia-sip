@@ -149,14 +149,23 @@ typedef struct nua_session_usage
 
   unsigned        ss_precondition:1;	/**< Precondition required */
 
-  unsigned        ss_timer_set:1;       /**< We have active session timer. */
-
   unsigned        ss_reporting:1;       /**< True if reporting state */
   unsigned        : 0;
-  
-  unsigned        ss_session_timer;	/**< Value of Session-Expires (delta) */
-  unsigned        ss_min_se;		/**< Minimum session expires */
-  enum nua_session_refresher ss_refresher; /**< none, local or remote */
+
+  struct session_timer {
+    unsigned  interval;		/**< Negotiated expiration time */
+    enum nua_session_refresher refresher; /**< Our Negotiated role */
+
+    struct {
+      unsigned expires, defaults; /**< Value of Session-Expires (delta) */
+      unsigned min_se;	/**< Minimum session expires */
+      /** none, local or remote */
+      enum nua_session_refresher refresher;
+      unsigned    supported:1, require:1, :0;
+    } local, remote;
+
+    unsigned      timer_set:1;  /**< We have active session timer. */
+  } ss_timer[1];
 
   char const     *ss_reason;	        /**< Reason for termination. */
 
@@ -204,10 +213,15 @@ int nua_session_usage_add(nua_handle_t *nh,
 			   nua_dialog_state_t *ds,
 			   nua_dialog_usage_t *du)
 {
+  nua_session_usage_t *ss = nua_dialog_usage_private(du);  
+
   if (ds->ds_has_session)
     return -1;
   ds->ds_has_session = 1;
   ds->ds_got_session = 1;
+
+  ss->ss_timer->local.refresher = nua_any_refresher;
+  ss->ss_timer->remote.refresher = nua_any_refresher;
 
   return 0;
 }
@@ -297,19 +311,29 @@ void nua_session_usage_destroy(nua_handle_t *nh,
 int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 		    tagi_t const *tags);
 
-static void session_timer_preferences(nua_session_usage_t *ss,
-				      unsigned expires,
-				      unsigned min_se,
-				      enum nua_session_refresher refresher);
+static int session_timer_is_supported(struct session_timer const *t);
 
-static int session_timer_is_supported(nua_handle_t const *nh);
+static void session_timer_preferences(struct session_timer *t,
+				      sip_t const *sip,
+				      sip_supported_t const *supported,
+				      unsigned expires, int isset,
+				      enum nua_session_refresher refresher,
+				      unsigned min_se);
 
-static int prefer_session_timer(nua_handle_t const *nh);
+static void session_timer_store(struct session_timer *t,
+				sip_t const *sip);
 
-static int use_session_timer(nua_session_usage_t *ss, int uas, int always,
-			     msg_t *msg, sip_t *);
-static int init_session_timer(nua_session_usage_t *ss, sip_t const *, int refresher);
-static void set_session_timer(nua_session_usage_t *ss);
+static int session_timer_check_min_se(msg_t *msg, sip_t *sip,
+				      sip_t const *request,
+				      unsigned long min_se);
+
+static int session_timer_add_headers(struct session_timer *t,
+				     int initial,
+				     msg_t *msg, sip_t *sip);
+
+static void session_timer_negotiate(struct session_timer *t);
+
+static void session_timer_set(nua_session_usage_t *ss);
 
 static int session_timer_check_restart(nua_client_request_t *cr,
 				       int status, char const *phrase,
@@ -551,6 +575,7 @@ static int nua_invite_client_init(nua_client_request_t *cr,
 {
   nua_handle_t *nh = cr->cr_owner;
   nua_dialog_usage_t *du;
+  nua_session_usage_t *ss;
 
   cr->cr_usage = du = nua_dialog_usage_for_session(nh->nh_ds);
   /* Errors returned by nua_invite_client_init() 
@@ -573,16 +598,22 @@ static int nua_invite_client_init(nua_client_request_t *cr,
   }
   else
     du = nua_dialog_usage_add(nh, nh->nh_ds, nua_session_usage, NULL);
+
   if (!du)
     return -1;
 
   if (nua_client_bind(cr, du) < 0)
     return nua_client_return(cr, 900, "INVITE already in progress", msg);
 
-  session_timer_preferences(nua_dialog_usage_private(du), 
+  ss = nua_dialog_usage_private(du);
+
+  session_timer_preferences(ss->ss_timer,
+			    sip,
+			    NH_PGET(nh, supported),		     
 			    NH_PGET(nh, session_timer),
-			    NH_PGET(nh, min_se),
-			    NH_PGET(nh, refresher));
+			    NUA_PISSET(nh->nh_nua, nh, session_timer),
+			    NH_PGET(nh, refresher),
+			    NH_PGET(nh, min_se));
 
   cr->cr_neutral = 0;
 
@@ -608,12 +639,13 @@ static int nua_invite_client_request(nua_client_request_t *cr,
   if (invite_timeout == 0)
     invite_timeout = UINT_MAX;
   /* Send CANCEL if we don't get response within timeout*/
-  nua_dialog_usage_set_expires(du, invite_timeout);
+  /* nua_dialog_usage_set_expires(du, invite_timeout); Xyzzy */
   nua_dialog_usage_set_refresh(du, 0);
 
   /* Add session timer headers */
-  if (session_timer_is_supported(nh))
-    use_session_timer(ss, 0, prefer_session_timer(nh), msg, sip);
+  if (session_timer_is_supported(ss->ss_timer))
+    session_timer_add_headers(ss->ss_timer, ss->ss_state == nua_callstate_init,
+			      msg, sip);
 
   ss->ss_100rel = NH_PGET(nh, early_media);
   ss->ss_precondition = sip_has_feature(sip->sip_require, "precondition");
@@ -672,7 +704,6 @@ static int nua_invite_client_response(nua_client_request_t *cr,
 				      int status, char const *phrase,
 				      sip_t const *sip)
 {
-  nua_handle_t *nh = cr->cr_owner;
   nua_dialog_usage_t *du = cr->cr_usage;
   nua_session_usage_t *ss = nua_dialog_usage_private(du);
 
@@ -682,8 +713,10 @@ static int nua_invite_client_response(nua_client_request_t *cr,
   else if (status < 300) {
     du->du_ready = 1;
 
-    init_session_timer(ss, sip, NH_PGET(nh, refresher));
-    set_session_timer(ss);
+    if (session_timer_is_supported(ss->ss_timer))
+      session_timer_store(ss->ss_timer, sip);
+
+    session_timer_set(ss);
   }
   
   return nua_session_client_response(cr, status, phrase, sip);
@@ -1263,41 +1296,36 @@ static void nua_session_usage_refresh(nua_handle_t *nh,
   nua_client_request_t const *cr = du->du_cr;
   nua_server_request_t const *sr;
 
-  assert(cr);
-
   if (ss->ss_state >= nua_callstate_terminating || 
-      /* No INVITE template */
-      cr == NULL || 
       /* INVITE is in progress or being authenticated */
-      cr->cr_orq || cr->cr_wait_for_cred)
+      (cr && (cr->cr_orq || cr->cr_wait_for_cred)))
     return;
 
-  /* UPDATE in progress or being authenticated */
+  /* UPDATE has been queued */
   for (cr = ds->ds_cr; cr; cr = cr->cr_next) 
     if (cr->cr_method == sip_method_update)
       return;
 
-  /* INVITE or UPDATE in progress */
+  /* INVITE or UPDATE in progress on server side */
   for (sr = ds->ds_sr; sr; sr = sr->sr_next)
     if (sr->sr_usage == du && 
 	(sr->sr_method == sip_method_invite || 
 	 sr->sr_method == sip_method_update))
       return;
 
-  if (!ss->ss_refresher) {
-    if (du->du_expires == 0 || now < du->du_expires)
-      /* Refresh contact & route set using re-INVITE */
-      nua_client_resend_request(du->du_cr, 0);
-    else {
-      ss->ss_reason = "SIP;cause=408;text=\"Session timeout\""; 
-      nua_stack_bye(nh->nh_nua, nh, nua_r_bye, NULL);
-    }
+  if (ss->ss_timer->refresher == nua_remote_refresher) {
+    ss->ss_reason = "SIP;cause=408;text=\"Session timeout\""; 
+    nua_stack_bye(nh->nh_nua, nh, nua_r_bye, NULL);
+    return;
   }
   else if (NH_PGET(nh, update_refresh)) {
     nua_stack_update(nh->nh_nua, nh, nua_r_update, NULL);
   }
-  else {
+  else if (du->du_cr) {
     nua_client_resend_request(du->du_cr, 0);
+  }
+  else {
+    nua_stack_invite(nh->nh_nua, nh, nua_r_invite, NULL);
   }
 }
 
@@ -1787,8 +1815,6 @@ nua_session_server_init(nua_server_request_t *sr)
 
   sip_t const *request = sr->sr_request.sip;
 
-  unsigned min = NH_PGET(nh, min_se);
-
   if (!sr->sr_initial)
     sr->sr_usage = nua_dialog_usage_get(nh->nh_ds, nua_session_usage, NULL);
 
@@ -1817,21 +1843,15 @@ nua_session_server_init(nua_server_request_t *sr)
   }
 
   if (request->sip_session_expires &&
-      nta_check_session_expires(NULL, request, min, TAG_END())) {
-    sip_min_se_t *min_se, min_se0[1];
-
-    min_se = sip_min_se_init(min_se0);
-    min_se->min_delta = min;
-    
-    if (request->sip_min_se && request->sip_min_se->min_delta > min)
-      min_se = request->sip_min_se;
-
-    sip_add_dup(msg, sip, (sip_header_t *)min_se);
-    
-    return SR_STATUS1(sr, SIP_422_SESSION_TIMER_TOO_SMALL);
+      sip_has_feature(NH_PGET(nh, supported), "timer") &&
+      session_timer_check_min_se(msg, sip, request, NH_PGET(nh, min_se))) {
+    if (sip->sip_min_se)
+      return SR_STATUS1(sr, SIP_422_SESSION_TIMER_TOO_SMALL);
+    else
+      return SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
   }
 
-  session_get_description(sr->sr_request.sip, &sr->sr_sdp, &sr->sr_sdp_len);
+  session_get_description(request, &sr->sr_sdp, &sr->sr_sdp_len);
 
   return 0;
 }
@@ -1885,14 +1905,7 @@ int nua_invite_server_preprocess(nua_server_request_t *sr)
   if (ss->ss_precondition)
     ss->ss_100rel = 1;
 
-  session_timer_preferences(ss, 
-			    NH_PGET(nh, session_timer),
-			    NH_PGET(nh, min_se),
-			    NH_PGET(nh, refresher));
-
-  /* Session Timer negotiation */
-  if (sip_has_supported(NH_PGET(nh, supported), "timer"))
-    init_session_timer(ss, request, ss->ss_refresher);
+  session_timer_store(ss->ss_timer, request);
 
   assert(ss->ss_state >= nua_callstate_ready ||
 	 ss->ss_state == nua_callstate_init);
@@ -2043,9 +2056,18 @@ int nua_invite_server_respond(nua_server_request_t *sr, tagi_t const *tags)
     return 0;
   }
 
-  if (ss->ss_refresher && 200 <= sr->sr_status && sr->sr_status < 300)
-    if (session_timer_is_supported(nh))
-      use_session_timer(ss, 1, 1, msg, sip);
+  if (200 <= sr->sr_status && sr->sr_status < 300) {
+    session_timer_preferences(ss->ss_timer,
+			      sip,
+			      NH_PGET(nh, supported),		     
+			      NH_PGET(nh, session_timer),
+			      NUA_PISSET(nh->nh_nua, nh, session_timer),
+			      NH_PGET(nh, refresher),
+			      NH_PGET(nh, min_se));
+
+    if (session_timer_is_supported(ss->ss_timer))
+      session_timer_add_headers(ss->ss_timer, 0, msg, sip);
+  }
 
   return nua_base_server_respond(sr, tags);  
 }
@@ -2249,7 +2271,7 @@ int process_ack(nua_server_request_t *sr,
 
   nua_stack_event(nh->nh_nua, nh, msg, nua_i_ack, SIP_200_OK, NULL);
   signal_call_state_change(nh, ss, 200, "OK", nua_callstate_ready);
-  set_session_timer(ss);
+  session_timer_set(ss);
 
   nua_server_request_destroy(sr);
 
@@ -2560,171 +2582,6 @@ int nua_prack_server_report(nua_server_request_t *sr, tagi_t const *tags)
 }
 
 /* ---------------------------------------------------------------------- */
-/* Session timer - RFC 4028 */
-
-static int session_timer_is_supported(nua_handle_t const *nh)
-{
-  /* Is timer feature supported? */
-  return sip_has_supported(NH_PGET(nh, supported), "timer");
-}
-
-static int prefer_session_timer(nua_handle_t const *nh)
-{
-  return 
-    NH_PGET(nh, refresher) != nua_no_refresher || 
-    NH_PGET(nh, session_timer) != 0;
-}
-
-/* Initialize session timer */ 
-static
-void session_timer_preferences(nua_session_usage_t *ss,
-			       unsigned expires,
-			       unsigned min_se,
-			       enum nua_session_refresher refresher)
-{
-  if (expires < min_se)
-    expires = min_se;
-  if (refresher && expires == 0)
-    expires = 3600;
-
-  ss->ss_min_se = min_se;
-  ss->ss_session_timer = expires;
-  ss->ss_refresher = refresher;
-}
-
-
-/** Add timer featuretag and Session-Expires/Min-SE headers */
-static int
-use_session_timer(nua_session_usage_t *ss, int uas, int always,
-		  msg_t *msg, sip_t *sip)
-{
-  sip_min_se_t min_se[1];
-  sip_session_expires_t session_expires[1];
-
-  static sip_param_t const x_params_uac[] = {"refresher=uac", NULL};
-  static sip_param_t const x_params_uas[] = {"refresher=uas", NULL};
-
-  /* Session-Expires timer */
-  if (ss->ss_refresher == nua_no_refresher && !always)
-    return 0;
-
-  sip_min_se_init(min_se)->min_delta = ss->ss_min_se;
-  sip_session_expires_init(session_expires)->x_delta = ss->ss_session_timer;
-
-  if (ss->ss_refresher == nua_remote_refresher)
-    session_expires->x_params = uas ? x_params_uac : x_params_uas;
-  else if (ss->ss_refresher == nua_local_refresher)
-    session_expires->x_params = uas ? x_params_uas : x_params_uac;
-
-  sip_add_tl(msg, sip,
-	     TAG_IF(ss->ss_session_timer,
-		    SIPTAG_SESSION_EXPIRES(session_expires)),
-	     TAG_IF(ss->ss_min_se != 0
-		    /* Min-SE: 0 is optional with initial INVITE */
-		    || ss->ss_state != nua_callstate_init,
-		    SIPTAG_MIN_SE(min_se)),
-	     TAG_IF(ss->ss_refresher == nua_remote_refresher,
-		    SIPTAG_REQUIRE_STR("timer")),
-	     TAG_END());
-
-  return 1;
-}
-
-static int
-init_session_timer(nua_session_usage_t *ss,
-		   sip_t const *sip,
-		   int refresher)
-{
-  int server;
-
-  /* Session timer is not needed */
-  if (!sip->sip_session_expires) {
-    if (!sip_has_supported(sip->sip_supported, "timer"))
-      ss->ss_refresher = nua_local_refresher;
-    return 0;
-  }
-
-  ss->ss_refresher = nua_no_refresher;
-  ss->ss_session_timer = sip->sip_session_expires->x_delta;
-
-  if (sip->sip_min_se != NULL
-      && sip->sip_min_se->min_delta > ss->ss_min_se)
-    ss->ss_min_se = sip->sip_min_se->min_delta;
-
-  server = sip->sip_request != NULL;
-
-  if (!sip_has_supported(sip->sip_supported, "timer"))
-    ss->ss_refresher = nua_local_refresher;
-  else if (!str0casecmp("uac", sip->sip_session_expires->x_refresher))
-    ss->ss_refresher = server ? nua_remote_refresher : nua_local_refresher;
-  else if (!str0casecmp("uas", sip->sip_session_expires->x_refresher))
-    ss->ss_refresher = server ? nua_local_refresher : nua_remote_refresher;
-  else if (!server)
-    return 0;			/* XXX */
-  /* User preferences */
-  else if (refresher == nua_local_refresher)
-    ss->ss_refresher = nua_local_refresher;
-  else
-    ss->ss_refresher = nua_remote_refresher;
-
-  SU_DEBUG_7(("nua session: session expires in %u refreshed by %s (%s %s)\n",
-	      ss->ss_session_timer,
-	      ss->ss_refresher == nua_local_refresher ? "local" : "remote",
-	      server ? sip->sip_request->rq_method_name : "response to",
-	      server ? "request" : sip->sip_cseq->cs_method_name));
-
-  return 1;
-}
-
-static int session_timer_check_restart(nua_client_request_t *cr,
-				       int status, char const *phrase,
-				       sip_t const *sip)
-{
-  if (cr->cr_usage && status == 422) {
-    nua_session_usage_t *ss = nua_dialog_usage_private(cr->cr_usage);
-
-    if (sip->sip_min_se && ss->ss_min_se < sip->sip_min_se->min_delta)
-      ss->ss_min_se = sip->sip_min_se->min_delta;
-    if (ss->ss_min_se > ss->ss_session_timer)
-      ss->ss_session_timer = ss->ss_min_se;
-  
-    return nua_client_restart(cr, 100, "Re-Negotiating Session Timer");
-  }
-
-  return nua_base_client_check_restart(cr, status, phrase, sip);
-}
-
-static void
-set_session_timer(nua_session_usage_t *ss)
-{
-  nua_dialog_usage_t *du = nua_dialog_usage_public(ss);
-
-  if (ss == NULL)
-    return;
-
-  if (ss->ss_refresher == nua_local_refresher) {
-    ss->ss_timer_set = 1;
-    nua_dialog_usage_set_expires(du, ss->ss_session_timer);
-  }
-  else if (ss->ss_refresher == nua_remote_refresher) {
-    ss->ss_timer_set = 1;
-    nua_dialog_usage_set_expires(du, ss->ss_session_timer + 32);
-    nua_dialog_usage_reset_refresh(du);
-  }
-  else {
-    ss->ss_timer_set = 0;
-    nua_dialog_usage_set_expires(du, UINT_MAX);
-    nua_dialog_usage_reset_refresh(du);
-  }
-}
-
-static inline int
-is_session_timer_set(nua_session_usage_t *ss)
-{
-  return ss->ss_timer_set;
-}
-
-/* ---------------------------------------------------------------------- */
 /* Automatic notifications from a referral */
 
 static int
@@ -2786,7 +2643,6 @@ nh_referral_check(nua_handle_t *nh, tagi_t const *tags)
 
   return 0;
 }
-
 
 static void
 nh_referral_respond(nua_handle_t *nh, int status, char const *phrase)
@@ -3099,8 +2955,17 @@ static int nua_update_client_request(nua_client_request_t *cr,
   }
 
   /* Add session timer headers */
-  if (session_timer_is_supported(nh))
-    use_session_timer(ss, 0, prefer_session_timer(nh), msg, sip);
+  session_timer_preferences(ss->ss_timer,
+			    sip,
+			    NH_PGET(nh, supported),		     
+			    NH_PGET(nh, session_timer),
+			    NUA_PISSET(nh->nh_nua, nh, session_timer),
+			    NH_PGET(nh, refresher),
+			    NH_PGET(nh, min_se));
+
+  if (session_timer_is_supported(ss->ss_timer))
+    session_timer_add_headers(ss->ss_timer, ss->ss_state < nua_callstate_ready,
+			      msg, sip);
 
   retval = nua_base_client_request(cr, msg, sip, NULL);
 
@@ -3129,9 +2994,18 @@ static int nua_update_client_response(nua_client_request_t *cr,
   assert(200 <= status);
 
   if (ss && sip && status < 300) {
-    if (is_session_timer_set(ss)) {
-      init_session_timer(ss, sip, NH_PGET(nh, refresher));
-      set_session_timer(ss);
+    if (session_timer_is_supported(ss->ss_timer)) {
+      nua_server_request_t *sr;
+
+      for (sr = nh->nh_ds->ds_sr; sr; sr = sr->sr_next)
+	if (sr->sr_method == sip_method_invite ||
+	    sr->sr_method == sip_method_update)
+	  break;
+
+      if (!sr && (!du->du_cr || !du->du_cr->cr_orq)) {
+	session_timer_store(ss->ss_timer, sip);
+	session_timer_set(ss);
+      }
     }
   }
 
@@ -3225,7 +3099,7 @@ int nua_update_server_init(nua_server_request_t *sr)
 
   /* Do session timer negotiation */
   if (request->sip_session_expires)
-    init_session_timer(ss, request, NH_PGET(nh, refresher));
+    session_timer_store(ss->ss_timer, request);
 
   if (sr->sr_sdp) {		/* Check for overlap */
     nua_client_request_t *cr;
@@ -3306,11 +3180,28 @@ int nua_update_server_respond(nua_server_request_t *sr, tagi_t const *tags)
     }
   }
 
-  if (ss->ss_refresher && 200 <= sr->sr_status && sr->sr_status < 300)
-    if (session_timer_is_supported(nh)) {
-      use_session_timer(ss, 1, 1, msg, sip);
-      set_session_timer(ss);	/* XXX */
+  if (200 <= sr->sr_status && sr->sr_status < 300) {
+    session_timer_preferences(ss->ss_timer,
+			      sip,
+			      NH_PGET(nh, supported),		     
+			      NH_PGET(nh, session_timer),
+			      NUA_PISSET(nh->nh_nua, nh, session_timer),
+			      NH_PGET(nh, refresher),
+			      NH_PGET(nh, min_se));
+
+    if (ss && session_timer_is_supported(ss->ss_timer)) {
+      nua_server_request_t *sr0;
+
+      session_timer_add_headers(ss->ss_timer, 0, msg, sip);
+
+      for (sr0 = nh->nh_ds->ds_sr; sr0; sr0 = sr0->sr_next)
+	if (sr0->sr_method == sip_method_invite)
+	  break;
+
+      if (!sr0 && (!sr->sr_usage->du_cr || !sr->sr_usage->du_cr->cr_orq))
+	session_timer_set(ss);
     }
+  }
 
   return nua_base_server_respond(sr, tags);
 }
@@ -3900,6 +3791,287 @@ int nua_server_retry_after(nua_server_request_t *sr,
 }
 
 /* ======================================================================== */
+/* Session timer - RFC 4028 */
+
+static int session_timer_is_supported(struct session_timer const *t)
+{
+  return t->local.supported;
+}
+
+/** Set session timer preferences  */ 
+static
+void session_timer_preferences(struct session_timer *t,
+			       sip_t const *sip,
+			       sip_supported_t const *supported,
+			       unsigned expires,
+			       int isset,
+			       enum nua_session_refresher refresher,
+			       unsigned min_se)
+{
+  memset(&t->local, 0, sizeof t->local);
+
+  t->local.require = sip_has_feature(sip->sip_require, "timer");
+  t->local.supported =
+    sip_has_feature(supported, "timer") ||
+    sip_has_feature(sip->sip_supported, "timer");
+  if (isset && refresher != nua_no_refresher)
+    t->local.expires = expires;
+  else
+    t->local.defaults = expires;
+  t->local.min_se = min_se;
+  t->local.refresher = refresher;
+}
+
+static int session_timer_check_restart(nua_client_request_t *cr,
+				       int status, char const *phrase,
+				       sip_t const *sip)
+{
+  if (status == 422) {
+    nua_session_usage_t *ss = nua_dialog_usage_private(cr->cr_usage);
+
+    if (ss && session_timer_is_supported(ss->ss_timer)) {
+      struct session_timer *t = ss->ss_timer;
+
+      if (sip->sip_min_se && t->local.min_se < sip->sip_min_se->min_delta)
+	t->local.min_se = sip->sip_min_se->min_delta;
+      if (t->local.expires != 0 && t->local.min_se > t->local.expires)
+	t->local.expires = t->local.min_se;
+  
+      return nua_client_restart(cr, 100, "Re-Negotiating Session Timer");
+    }
+  }
+
+  return nua_base_client_check_restart(cr, status, phrase, sip);
+}
+
+/** Check that received Session-Expires is longer than Min-SE */
+static
+int session_timer_check_min_se(msg_t *msg,
+			       sip_t *sip,
+			       sip_t const *request,
+			       unsigned long min)
+{
+  if (min == 0)
+    min = 1;
+
+  /*
+   If an incoming request contains a Supported header field with a value
+   'timer' and a Session Expires header field, the UAS MAY reject the
+   INVITE request with a 422 (Session Interval Too Small) response if
+   the session interval in the Session-Expires header field is smaller
+   than the minimum interval defined by the UAS' local policy.  When
+   sending the 422 response, the UAS MUST include a Min-SE header field
+   with the value of its minimum interval.  This minimum interval MUST
+   NOT be lower than 90 seconds.
+  */
+  if (request->sip_session_expires &&
+      sip_has_feature(request->sip_supported, "timer") &&
+      request->sip_session_expires->x_delta < min) {
+    sip_min_se_t min_se[1];
+
+    if (min < 90)
+      min = 90;
+
+    sip_min_se_init(min_se)->min_delta = min;
+
+    /* Include extension parameters, if any */
+    if (request->sip_min_se)
+      min_se->min_params = request->sip_min_se->min_params;
+    
+    sip_add_dup(msg, sip, (sip_header_t *)min_se);
+
+    return 422;
+  }
+
+  return 0;
+}
+
+/** Store session timer parameters in request from uac / response from uas */ 
+static
+void session_timer_store(struct session_timer *t,
+			 sip_t const *sip)
+{
+  sip_require_t const *require = sip->sip_require;
+  sip_supported_t const *supported = sip->sip_supported;
+  sip_session_expires_t const *x = sip->sip_session_expires;
+
+  t->remote.require = require && sip_has_feature(require, "timer");
+  t->remote.supported =
+    t->remote.supported || (supported && sip_has_feature(supported, "timer"));
+
+  t->remote.expires = 0;
+  t->remote.refresher = nua_any_refresher;
+  t->remote.min_se = 0;
+
+  if (x) {
+    t->remote.expires = x->x_delta;
+
+    if (x->x_refresher) {
+      int uas = sip->sip_request != NULL;
+
+      if (strcasecmp(x->x_refresher, "uac") == 0)
+	t->remote.refresher = uas ? nua_remote_refresher : nua_local_refresher;
+      else if (strcasecmp(x->x_refresher, "uas") == 0)
+	t->remote.refresher = uas ? nua_local_refresher : nua_remote_refresher;
+    }
+  }
+
+  if (sip->sip_min_se)
+    t->remote.min_se = sip->sip_min_se->min_delta;
+}
+
+/** Add timer feature and Session-Expires/Min-SE headers to request/response
+ * 
+ */
+static int
+session_timer_add_headers(struct session_timer *t,
+			  int initial,
+			  msg_t *msg, sip_t *sip)
+{
+  unsigned long expires, min;
+  sip_min_se_t min_se[1];
+  sip_session_expires_t x[1];
+  int uas;
+
+  enum nua_session_refresher refresher = nua_any_refresher;
+
+  static sip_param_t const x_params_uac[] = {"refresher=uac", NULL};
+  static sip_param_t const x_params_uas[] = {"refresher=uas", NULL};
+
+  if (!t->local.supported)
+    return 0;
+
+  uas = sip->sip_status != NULL;
+
+  min = t->local.min_se;
+  if (min < t->remote.min_se)
+    min = t->remote.min_se;
+
+  if (uas) {
+    session_timer_negotiate(t);
+    
+    refresher = t->refresher;
+    expires = t->interval;
+  }
+  else {
+    /* RFC 4028:
+     * The UAC MAY include the refresher parameter with value 'uac' if it
+     * wants to perform the refreshes.  However, it is RECOMMENDED that the
+     * parameter be omitted so that it can be selected by the negotiation
+     * mechanisms described below.
+     */
+    if (t->local.refresher == nua_local_refresher)
+      refresher = nua_local_refresher;
+
+    expires = t->local.expires;
+    if (expires != 0 && expires < min)
+      expires = min;
+  }
+
+  sip_min_se_init(min_se)->min_delta = min;
+
+  sip_session_expires_init(x)->x_delta = expires;
+  if (refresher == nua_remote_refresher)
+    x->x_params = uas ? x_params_uac : x_params_uas;
+  else if (refresher == nua_local_refresher)
+    x->x_params = uas ? x_params_uas : x_params_uac;
+
+  sip_add_tl(msg, sip,
+	     TAG_IF(expires != 0, SIPTAG_SESSION_EXPIRES(x)),
+	     TAG_IF(min != 0
+		    /* Min-SE: 0 is optional with initial INVITE */
+		    || !initial,
+		    SIPTAG_MIN_SE(min_se)),
+	     TAG_IF(refresher == nua_remote_refresher && expires != 0,
+		    SIPTAG_REQUIRE_STR("timer")),
+	     TAG_END());
+
+  return 1;
+}
+
+static
+void session_timer_negotiate(struct session_timer *t)
+{
+  if (!t->local.supported)
+    t->refresher = nua_no_refresher;
+  else if (!t->remote.supported)
+    t->refresher = nua_local_refresher;
+  else if (t->remote.refresher == nua_local_refresher)
+    t->refresher = nua_local_refresher;
+  else if (t->remote.refresher == nua_remote_refresher)
+    t->refresher = nua_remote_refresher;
+  else if (t->local.refresher == nua_local_refresher)
+    t->refresher = nua_local_refresher;
+  else
+    t->refresher = nua_remote_refresher;
+
+  t->interval = t->remote.expires;
+  if (t->interval == 0)
+    t->interval = t->local.expires;
+  if (t->local.expires != 0 && t->interval > t->local.expires)
+    t->interval = t->local.expires;
+  if (t->local.defaults != 0 && t->interval > t->local.defaults)
+    t->interval = t->local.defaults;
+    
+  if (t->interval != 0) {
+    if (t->interval < t->local.min_se)
+      t->interval = t->local.min_se;
+    if (t->interval < t->remote.min_se)
+      t->interval = t->remote.min_se;
+  }
+
+  if (t->interval == 0)
+    t->refresher = nua_no_refresher;
+}
+
+static void
+session_timer_set(nua_session_usage_t *ss)
+{
+  nua_dialog_usage_t *du = nua_dialog_usage_public(ss);
+  struct session_timer *t;
+
+  if (ss == NULL)
+    return;
+
+  t = ss->ss_timer;
+
+  session_timer_negotiate(t);
+
+  if (t->refresher == nua_local_refresher) {
+    unsigned low = t->interval / 2, high = t->interval / 2;
+
+    if (t->interval >= 90)
+      low -=5, high += 5;
+
+    nua_dialog_usage_refresh_range(du, low, high);
+    t->timer_set = 1;
+  }
+  else if (t->refresher == nua_remote_refresher) {
+    /* if the side not performing refreshes does not receive a
+       session refresh request before the session expiration, it SHOULD send
+       a BYE to terminate the session, slightly before the session
+       expiration.  The minimum of 32 seconds and one third of the session
+       interval is RECOMMENDED. */
+    unsigned interval = t->interval;
+
+    interval -= 32 > interval / 6 ? interval / 3 : 32 + interval / 3;
+
+    nua_dialog_usage_refresh_range(du, interval, interval);
+    t->timer_set = 1;
+  }
+  else {
+    nua_dialog_usage_reset_refresh(du);
+    t->timer_set = 0;
+  }
+}
+
+static inline int
+session_timer_has_been_set(struct session_timer const *t)
+{
+  return t->timer_set;
+}
+
+/* ======================================================================== */
 
 /** Get SDP from a SIP message.
  *
@@ -4020,6 +4192,8 @@ int session_make_description(su_home_t *home,
   return retval;
 }
 
+/* ====================================================================== */
+
 /** @NUA_EVENT nua_i_options
  *
  * Incoming OPTIONS request. The user-agent should respond to an OPTIONS
@@ -4093,4 +4267,3 @@ int nua_options_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 
   return nua_base_server_respond(sr, tags);
 }
-

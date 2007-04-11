@@ -149,9 +149,10 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, auto_ack, 1);
   NHP_SET(nhp, invite_timeout, 120);
 
-  NHP_SET(nhp, session_timer, 1800);
+  nhp->nhp_session_timer = 1800;
+  nhp->nhp_refresher = nua_no_refresher;
+
   NHP_SET(nhp, min_se, 120);
-  NHP_SET(nhp, refresher, nua_no_refresher);
   NHP_SET(nhp, update_refresh, 0);
 
   NHP_SET(nhp, message_enable, 1);
@@ -1503,6 +1504,11 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 #define TIF(TAG, pref) \
   TAG_IF(nhp->nhp_set.nhb_##pref, TAG(nhp->nhp_##pref))
 
+  /* Include tag in the list returned to user
+   * if it has been earlier set (by user) returning default parameters */
+#define TIFD(TAG, pref) \
+  TAG_IF(nh == dnh || nhp->nhp_set.nhb_##pref, TAG(nhp->nhp_##pref))
+
   /* Include string tag made out of SIP header
    * if it has been earlier set (by user) */
 #define TIF_STR(TAG, pref)						\
@@ -1540,9 +1546,9 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_AUTOACK, auto_ack),
      TIF(NUTAG_INVITE_TIMER, invite_timeout),
 
-     TIF(NUTAG_SESSION_TIMER, session_timer),
+     TIFD(NUTAG_SESSION_TIMER, session_timer),
      TIF(NUTAG_MIN_SE, min_se),
-     TIF(NUTAG_SESSION_REFRESHER, refresher),
+     TIFD(NUTAG_SESSION_REFRESHER, refresher),
      TIF(NUTAG_UPDATE_REFRESH, update_refresh),
 
      TIF(NUTAG_ENABLEMESSAGE, message_enable),

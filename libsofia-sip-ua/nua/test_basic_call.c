@@ -205,6 +205,8 @@ int test_basic_call_1(struct context *ctx)
   sip_replaces_t *repa, *repb;
   nua_handle_t *nh;
 
+  static int once = 0;
+
   if (print_headings)
     printf("TEST NUA-3.1: Basic call\n");
 
@@ -272,6 +274,10 @@ int test_basic_call_1(struct context *ctx)
   TEST_1(sip->sip_contact);
   TEST_S(sip->sip_contact->m_display, "Bob");
   TEST_S(sip->sip_contact->m_url->url_user, "b+b");
+  if (!once) {
+    /* The session expiration is not used by default. */
+    TEST_1(sip->sip_session_expires == NULL);
+  }
   /* Test that B uses application-specific contact */
   if (ctx->proxy_tests)
     TEST_1(sip->sip_contact->m_url->url_user);
@@ -293,6 +299,10 @@ int test_basic_call_1(struct context *ctx)
   TEST_1(sip->sip_contact);
   TEST_S(sip->sip_contact->m_display, "Alice");
   TEST_S(sip->sip_contact->m_url->url_user, "a+a");
+  if (!once++) {
+    /* The Session-Expires header is not used by default. */
+    TEST_1(sip->sip_session_expires == NULL);
+  }
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
   TEST_1(is_offer_recv(e->data->e_tags));

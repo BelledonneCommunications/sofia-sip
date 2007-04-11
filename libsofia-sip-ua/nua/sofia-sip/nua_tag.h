@@ -494,46 +494,58 @@ SOFIAPUBVAR tag_typedef_t nutag_invite_timer_ref;
 
 /**Default session timer in seconds.
  *
- * Set default session timer in seconds when using session timer extension. 
- * The value given here is the proposed session expiration time in seconds.
- * Note that the session timer extension is ponly used 
+ * Set default value for session timer in seconds when the session timer
+ * extension is used. The tag value is the proposed session expiration time
+ * in seconds, the session is refreshed twice during the expiration time.
  *
  * @par Sending INVITE and UPDATE Requests 
  *
- * If NUTAG_SESSION_TIMER() is used with non-zero value, the value is
- * used in the @SessionExpires header included in the INVITE or UPDATE
- * requests. The intermediate proxies or the ultimate destination can lower
- * the interval in @SessionExpires header. If the value is too low, they can
+ * If NUTAG_SESSION_TIMER() is used with non-zero value, the value is used
+ * in the @SessionExpires header included in the INVITE or UPDATE requests. 
+ * The intermediate proxies or the ultimate destination can lower the
+ * interval in @SessionExpires header. If the value is too low, they can
  * reject the request with the status code <i>422 Session Timer Too
- * Small</i>. When Re-INVITE will be sent in given intervals. In that case,
- * @b nua retries the request automatically.
- * 
- * @par Returning Response to the INVITE and UPDATE Requests 
+ * Small</i>. In that case, @b nua increases the value of @SessionExpires
+ * header and retries the request automatically.
+ *
+ * @par Returning a Response to the INVITE and UPDATE Requests 
  *
  * The NUTAG_SESSION_TIMER() value is also used when sending the final
  * response to the INVITE or UPDATE requests. If the NUTAG_SESSION_TIMER()
- * value is 0 or the value in the @SessionExpires header of the requeast is
+ * value is 0 or the value in the @SessionExpires header of the request is
  * lower than the value in NUTAG_SESSION_TIMER(), the value from the
  * incoming @SessionExpires header is used. However, if the value in
  * @SessionExpires is lower than the minimal acceptable session expiration
  * interval specified with the tag NUTAG_MIN_SE() the request is
  * automatically rejected with <i>422 Session Timer Too Small</i>.
  *
+ * @par Refreshes
+ *
+ * After the initial INVITE request, the SIP session is refreshed at the
+ * intervals indicated by the @SessionExpires header returned in the 2XX
+ * response. The party indicated with the "refresher" parameter of the
+ * @SessionExpires header sends a re-INVITE requests (or an UPDATE
+ * request if NUTAG_UPDATE_REFRESH(1) parameter tag has been set).
+ * 
  * @par When to Use NUTAG_SESSION_TIMER()?
  *
  * The session time extension is enabled ("timer" feature tag is included in
  * @Supported header) but not activated by default (no @SessionExpires
  * header is included in the requests or responses by default). Using
- * non-zero value with NUTAG_SESSION_TIMER() activates it. When the
- * extension is activated, @nua refreshes the call state by sending periodic
- * re-INVITE or UPDATE requests unless the remote end indicated that it will
- * take care of refreshes.
+ * non-zero value with NUTAG_SESSION_TIMER() or NUTAG_SESSION_REFRESHER()
+ * activates it. When the extension is activated, @nua refreshes the call
+ * state by sending periodic re-INVITE or UPDATE requests unless the remote
+ * end indicated that it will take care of refreshes.
  *
  * The session timer extension is mainly useful for proxies or back-to-back
  * user agents that keep call state. The call state is "soft" meaning that
  * if no call-related SIP messages are processed for certain time the state
  * will be destroyed. An ordinary user-agent can also make use of session
  * timer if it cannot get any activity feedback from RTP or other media.
+ *
+ * @note The session timer extension is used only if the feature
+ * tag "timer" is listed in the @Supported header, set by NUTAG_SUPPORTED(),
+ * SIPTAG_SUPPORTED(), or SIPTAG_SUPPORTED_STR() tags.
  *
  * @par Used with
  *    nua_invite(), nua_update(), nua_respond() \n
@@ -553,8 +565,8 @@ SOFIAPUBVAR tag_typedef_t nutag_invite_timer_ref;
  * Corresponding tag taking reference parameter is NUTAG_SESSION_TIMER_REF()
  *
  * @sa NUTAG_SUPPORTED(), NUTAG_MIN_SE(), NUTAG_SESSION_REFRESHER(),
- * nua_invite(), #nua_r_invite, #nua_i_invite, nua_update(), #nua_r_update,
- * #nua_i_update, 
+ * nua_invite(), #nua_r_invite, #nua_i_invite, nua_respond(), 
+ * nua_update(), #nua_r_update, #nua_i_update, 
  * NUTAG_UPDATE_REFRESH(), @RFC4028, @SessionExpires, @MinSE
  */
 #define NUTAG_SESSION_TIMER(x)  nutag_session_timer, tag_uint_v((x))
