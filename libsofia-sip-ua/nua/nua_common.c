@@ -216,6 +216,50 @@ char const *nua_generate_instance_identifier(su_home_t *home)
   return su_strdup(home, str);
 }
 
+/** Check if event is a request that can be responded with nua_respond().
+ *
+ * Note that if event status is 200 or greater, it already has been
+ * responded. This function is provided for compatibility with future
+ * versions of nua. An unknown event can always be handled in the event
+ * callback like this:
+ * @code
+ * switch (event) {
+ *   ...
+ *   default:
+ *     if (status < 200 && nua_event_is_incoming_request(event))
+ *       nua_respond(nh, SIP_501_NOT_IMPLEMENTED,
+ *                   NUTAG_WITH_THIS(nua), TAG_END());
+ *     if (hmagic == NULL)
+ *       nua_handle_destroy(nh);
+ *     return;
+ *   ...
+ * @endcode
+ *
+ * @sa #nua_event_t, nua_respond()
+ *
+ * @NEW_1_12_6
+ */
+int nua_event_is_incoming_request(nua_event_t event)
+{
+  switch (event) {
+  case nua_i_invite: return 1;
+  case nua_i_cancel: return 1;
+  case nua_i_register: return 1;
+  case nua_i_bye: return 1;
+  case nua_i_options: return 1;
+  case nua_i_refer: return 1;
+  case nua_i_publish: return 1;
+  case nua_i_prack: return 1;
+  case nua_i_info: return 1;
+  case nua_i_update: return 1;
+  case nua_i_message: return 1;
+  case nua_i_subscribe: return 1;
+  case nua_i_notify: return 1;
+  case nua_i_method: return 1;
+  default: return 0;
+  }
+}
+
 /** Get name for a NUA event. */
 char const *nua_event_name(nua_event_t event)
 {

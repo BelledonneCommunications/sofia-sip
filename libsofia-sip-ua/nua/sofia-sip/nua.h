@@ -346,6 +346,9 @@ SOFIAPUBFUN void nua_respond(nua_handle_t *nh,
 			     tag_type_t, tag_value_t, 
 			     ...);
 
+/** Check if event can be responded with nua_respond() */
+SOFIAPUBFUN int nua_event_is_incoming_request(nua_event_t e);
+
 #define nua_handle_home(nh) ((su_home_t *)(nh))
 
 /** Generate an instance identifier */
