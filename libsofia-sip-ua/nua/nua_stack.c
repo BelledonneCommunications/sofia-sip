@@ -2161,7 +2161,7 @@ int nua_client_request_sendmsg(nua_client_request_t *cr, msg_t *msg, sip_t *sip)
    * are used: @Allow, @Supported, @Organization, and @UserAgent headers are
    * added to the request if they are not already set. 
    */
-  if (!sip->sip_allow && !ds->ds_route)
+  if (!sip->sip_allow)
     sip_add_dup(msg, sip, (sip_header_t*)NH_PGET(nh, allow));
   
   if (!sip->sip_supported && NH_PGET(nh, supported))
