@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
   }
 #if HAVE_ALARM
   else if (o_alarm) {
-    alarm(o_expensive ? 60 : 120);
+    alarm(o_expensive ? 240 : 120);
     signal(SIGALRM, sig_alarm);
   }
 #endif
