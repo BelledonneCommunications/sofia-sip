@@ -881,7 +881,7 @@ static int nua_register_client_response(nua_client_request_t *cr,
     if (mindelta == SIP_TIME_MAX)
       mindelta = 3600;
 
-    nua_dialog_usage_set_expires(du, mindelta);
+    nua_dialog_usage_set_refresh(du, mindelta);
 
   /*  RFC 3608 Section 6.1 Procedures at the UA
 
@@ -935,7 +935,7 @@ static int nua_register_client_response(nua_client_request_t *cr,
     nua_registration_set_ready(nr, 1);
   }
   else if (du) {
-    nua_dialog_usage_set_expires(du, 0);
+    nua_dialog_usage_set_refresh(du, 0);
 
     su_free(nh->nh_home, nr->nr_route);
     nr->nr_route = NULL;

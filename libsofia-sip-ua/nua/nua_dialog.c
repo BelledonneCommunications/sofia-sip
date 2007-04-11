@@ -443,24 +443,6 @@ void nua_dialog_deinit(nua_owner_t *own,
   ds->ds_terminating = 0;
 }
 
-
-/**@internal
- * Set expiration time. 
- */
-void nua_dialog_usage_set_expires(nua_dialog_usage_t *du,
-				  unsigned delta)
-{
-  if (delta) {
-    sip_time_t now = sip_now(), expires = now + delta;
-    if (expires < now)
-      expires = SIP_TIME_MAX;
-    du->du_expires = expires;
-    nua_dialog_usage_set_refresh(du, delta);
-  }
-  else
-    du->du_expires = 0, du->du_refresh = 0;
-}
-
 /**@internal
  * Set refresh value suitably. 
  *

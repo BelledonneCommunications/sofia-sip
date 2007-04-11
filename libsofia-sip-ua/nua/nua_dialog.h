@@ -398,7 +398,6 @@ struct nua_dialog_usage {
    * Non-zero if the usage is established, SIP_TIME_MAX if there no
    * expiration time.
    */
-  sip_time_t      du_expires;		
 
   sip_time_t      du_refresh;		/**< When to refresh */
 
@@ -440,8 +439,6 @@ void nua_dialog_deinit(nua_owner_t *own,
 		       nua_dialog_state_t *ds);
 
 int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds);
-
-void nua_dialog_usage_set_expires(nua_dialog_usage_t *du, unsigned delta);
 
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
 
