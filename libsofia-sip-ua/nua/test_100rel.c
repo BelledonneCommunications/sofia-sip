@@ -163,6 +163,7 @@ int test_180rel(struct context *ctx)
 
   nua_set_params(ctx->b.nua,
 		 NUTAG_EARLY_MEDIA(1),
+		 NUTAG_SESSION_TIMER(180),
 		 TAG_END());
   run_b_until(ctx, nua_r_set_params, until_final_response);
 
@@ -970,6 +971,8 @@ int test_preconditions(struct context *ctx)
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_update);
   TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_session_expires);
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_proceeding);
