@@ -690,9 +690,15 @@ static int nua_notify_client_report(nua_client_request_t *cr,
 		   SIPTAG_EVENT(du ? du->du_event : NULL),
 		   TAG_NEXT(tags));
 
-  if (nu && nu->nu_requested && du->du_cr == cr)
-    /* Re-SUBSCRIBEd while NOTIFY was in progress, resend NOTIFY */
-    nua_client_resend_request(cr, 0);
+  if (du && du->du_cr == cr && !cr->cr_terminated) {
+    if (nu->nu_requested) {
+      /* Re-SUBSCRIBEd while NOTIFY was in progress, resend NOTIFY */
+      nua_client_resend_request(cr, 0);
+    }
+    else if (nu->nu_expires) {
+      nua_dialog_usage_refresh_at(du, nu->nu_expires);
+    }
+  }
 
   return 0;
 }
@@ -710,7 +716,7 @@ static void nua_notify_usage_refresh(nua_handle_t *nh,
   if (cr) {
     int terminating = 0;
 
-    if (du->du_expires && du->du_expires <= now)
+    if (nu->nu_expires && nu->nu_expires <= now)
       terminating = 1;
     else if (nu->nu_requested && nu->nu_requested <= now)
       terminating = 1;

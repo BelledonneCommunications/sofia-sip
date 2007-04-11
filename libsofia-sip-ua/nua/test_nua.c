@@ -323,8 +323,8 @@ int main(int argc, char *argv[])
       retval |= test_session_timer(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_refer(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_100rel(ctx); SINGLE_FAILURE_CHECK();
-      retval |= test_events(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_simple(ctx); SINGLE_FAILURE_CHECK();
+      retval |= test_events(ctx); SINGLE_FAILURE_CHECK();
       retval |= test_extension(ctx); SINGLE_FAILURE_CHECK();
       if (!o_loop)
 	break;

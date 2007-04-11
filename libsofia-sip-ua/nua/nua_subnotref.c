@@ -61,6 +61,7 @@ struct event_usage
   enum nua_substate eu_substate;	/**< Subscription state */
   sip_time_t eu_expires;	        /**< Proposed expiration time */
   unsigned eu_notified;		        /**< Number of NOTIFYs received */
+  unsigned eu_unsolicited:1;	        /**< Not SUBSCRIBEd or REFERed */
   unsigned eu_refer:1;		        /**< Implied subscription by refer */
   unsigned eu_final_wait:1;	        /**< Waiting for final NOTIFY */
   unsigned eu_no_id:1;		        /**< Do not use "id" (even if we have one) */
@@ -443,11 +444,12 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
      */
   }
 
-  nua_stack_tevent(nh->nh_nua, nh, NULL,
-		   nua_i_notify, NUA_INTERNAL_ERROR,
-		   NUTAG_SUBSTATE(nua_substate_terminated),
-		   SIPTAG_EVENT(du->du_event),
-		   TAG_END());
+  if (!eu->eu_unsolicited)
+    nua_stack_tevent(nh->nh_nua, nh, NULL,
+		     nua_i_notify, NUA_INTERNAL_ERROR,
+		     NUTAG_SUBSTATE(nua_substate_terminated),
+		     SIPTAG_EVENT(du->du_event),
+		     TAG_END());
 
   nua_dialog_usage_remove(nh, ds, du);
 }
@@ -504,10 +506,10 @@ nua_server_methods_t const nua_notify_server_methods =
     SIP_METHOD_NOTIFY,
     nua_i_notify,		/* Event */
     { 
-      1,			/* Do create dialog */
-      0,			/* Not always in-dialog request */
-      1,			/* Target refresh request  */
-      1,			/* Add Contact to response */
+      /* create_dialog: */ 1,	/* Do create dialog */
+      /* in_dialog: */ 0,	/* Not always in-dialog request */
+      /* target_refresh: */ 1,	/* Target refresh request  */
+      /* add_contact: */ 1,	/* Add Contact to response */
     },
     nua_notify_server_init,
     nua_notify_server_preprocess,
@@ -557,17 +559,21 @@ int nua_notify_server_preprocess(nua_server_request_t *sr)
   enum nua_substate substate = nua_substate_terminated;
   sip_subscription_state_t *subs = sip->sip_subscription_state;
   char const *what = "", *reason = NULL;
+  int solicited = 1;
 
   du = nua_dialog_usage_get(ds, nua_subscribe_usage, o);
-  sr->sr_usage = du;
 
   if (du == NULL) {
     if (!sip_is_allowed(NH_PGET(sr->sr_owner, appl_method), SIP_METHOD_NOTIFY))
       return SR_STATUS(sr, 481, "Subscription Does Not Exist");
-    /* Let application to handle unsolicited NOTIFY */
-    return 0;
+
+    solicited = 0;    /* Let application to handle unsolicited NOTIFY */
+    du = nua_dialog_usage_add(sr->sr_owner, ds, nua_subscribe_usage, o);
+    if (!du)
+      return SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
   }
   
+  sr->sr_usage = du;
   eu = nua_dialog_usage_private(du); assert(eu);
   eu->eu_notified++;
   if (!o->o_id) 
@@ -602,12 +608,17 @@ int nua_notify_server_preprocess(nua_server_request_t *sr)
   }
 
   eu->eu_substate = substate;
+  if (!solicited)
+    eu->eu_unsolicited = 1;
 
   SU_DEBUG_5(("nua(%p): %s: %s (%s)\n", 
 	      (void *)sr->sr_owner, "nua_notify_server_preprocess",
 	      what, reason ? reason : ""));
 
-  return SR_STATUS1(sr, SIP_200_OK);
+  if (solicited)
+    return SR_STATUS1(sr, SIP_200_OK);
+
+  return 0;
 }
 
 
@@ -656,10 +667,13 @@ int nua_notify_server_report(nua_server_request_t *sr, tagi_t const *tags)
 				   NUTAG_SUBSTATE(substate),
 				   TAG_NEXT(tags)); 
 
-  if (retval >= 2 || du == NULL)
+  if (retval != 1 || du == NULL)
     return retval;
 
-  if (retry >= 0) {		/* Try to subscribe again */
+  if (eu->eu_unsolicited) {
+    /* Xyzzy */;
+  }
+  else if (retry >= 0) {		/* Try to subscribe again */
     /* XXX - this needs through testing */
     nua_dialog_remove(nh, nh->nh_ds, du); /* tear down */
     nua_dialog_usage_refresh_range(du, retry, retry + 5);

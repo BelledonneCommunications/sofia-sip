@@ -514,6 +514,15 @@ void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du,
   du->du_refresh = target;
 }
 
+/** Set absolute refresh time */
+void nua_dialog_usage_refresh_at(nua_dialog_usage_t *du,
+				 sip_time_t target)
+{
+  SU_DEBUG_7(("nua(): refresh %s after %lu seconds\n",
+	      nua_dialog_usage_name(du), target - sip_now()));
+  du->du_refresh = target;
+} 
+
 /**@internal Do not refresh. */
 void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
 {
