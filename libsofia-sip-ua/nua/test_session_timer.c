@@ -364,7 +364,7 @@ int test_session_timer(struct context *ctx)
 
   /* Events from B (who sent UPDATE) */
   TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_state);
-  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
   if (!e->next)
     run_b_until(ctx, -1, until_ready);
