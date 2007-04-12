@@ -1511,8 +1511,25 @@ int nua_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 int nua_base_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 {
   msg_t *response = sr->sr_response.msg;
+  sip_t *sip = sr->sr_response.sip;
 
   sr->sr_response.msg = NULL, sr->sr_response.sip = NULL;
+
+  if (sr->sr_status != sip->sip_status->st_status) {
+    msg_header_remove(response, (msg_pub_t *)sip,
+		      (msg_header_t *)sip->sip_status);
+    nta_incoming_complete_response(sr->sr_irq, response,
+				   sr->sr_status,
+				   sr->sr_phrase,    
+				   TAG_END());
+  }
+
+  if (sr->sr_status != sip->sip_status->st_status) {
+    msg_destroy(response);
+    SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
+    nta_incoming_treply(sr->sr_irq, sr->sr_status, sr->sr_phrase, TAG_END());
+    return 0;
+  }
 
   return nta_incoming_mreply(sr->sr_irq, response);
 }
