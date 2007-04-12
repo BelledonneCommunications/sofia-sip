@@ -2974,9 +2974,15 @@ static int nua_update_client_request(nua_client_request_t *cr,
     ss->ss_update_needed = 0;
 
     if (!cr->cr_restarting) {
+      enum nua_callstate state = ss->ss_state;
+
+      if (state == nua_callstate_ready)
+	state = nua_callstate_calling;
+
       if (offer_sent)
 	ss->ss_oa_sent = "offer";
-      signal_call_state_change(nh, ss, 0, "UPDATE sent", ss->ss_state);
+
+      signal_call_state_change(nh, ss, 0, "UPDATE sent", state);
     }
   }
 
@@ -3239,9 +3245,15 @@ int nua_update_server_report(nua_server_request_t *sr, tagi_t const *tags)
     return retval;
   }
 
-  if (offer_recv_or_answer_sent)
+  if (offer_recv_or_answer_sent) {
     /* signal offer received, answer sent */
-    signal_call_state_change(nh, ss, status, phrase, ss->ss_state);
+    enum nua_callstate state = ss->ss_state;
+    
+    if (state == nua_callstate_ready && status < 200)
+      state = nua_callstate_received;
+
+    signal_call_state_change(nh, ss, status, phrase, state);
+  }
 
   if (200 <= status && status < 300
       && ss->ss_state < nua_callstate_ready
@@ -3814,7 +3826,7 @@ void session_timer_preferences(struct session_timer *t,
   t->local.supported =
     sip_has_feature(supported, "timer") ||
     sip_has_feature(sip->sip_supported, "timer");
-  if (isset && refresher != nua_no_refresher)
+  if (isset || refresher != nua_no_refresher)
     t->local.expires = expires;
   else
     t->local.defaults = expires;
