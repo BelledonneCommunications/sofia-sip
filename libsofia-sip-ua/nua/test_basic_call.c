@@ -206,9 +206,14 @@ int test_basic_call_1(struct context *ctx)
   nua_handle_t *nh;
 
   static int once = 0;
+  sip_time_t se, min_se;
 
   if (print_headings)
     printf("TEST NUA-3.1: Basic call\n");
+
+  /* Disable session timer from proxy */
+  test_proxy_get_session_timer(ctx->p, &se, &min_se); 
+  test_proxy_set_session_timer(ctx->p, 0, 0); 
 
   a_call->sdp = "m=audio 5008 RTP/AVP 8";
   b_call->sdp = "m=audio 5010 RTP/AVP 0 8";
@@ -351,6 +356,8 @@ int test_basic_call_1(struct context *ctx)
 
   nua_handle_destroy(a_call->nh), a_call->nh = NULL;
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  test_proxy_set_session_timer(ctx->p, se, min_se); 
 
   if (print_headings)
     printf("TEST NUA-3.1: PASSED\n");
