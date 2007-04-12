@@ -67,6 +67,8 @@ Bugs fixed in this release
 
 - Fixed status code reported to application when REGISTER transaction was
   restarted by nua stack. Problem reported by Mikhail Zabaluev.
+- An invalid Contact was used if STUN was disabled but there was no STUN
+  server. Problem reported by Miguel Freitas.
 - Fixed problem logging long lines from with TPORT_LOG.
   Problem reported by Mike Murdock and Michael Jerris.
 - Nua now includes the SDP capabilities in the response to the OPTIONS
