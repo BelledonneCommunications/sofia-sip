@@ -349,6 +349,7 @@ int accept_call_until_terminated(CONDITION_PARAMS)
     return 0;
   case nua_callstate_early:
     RESPOND(ep, call, nh, SIP_200_OK,
+	    NUTAG_MEDIA_ENABLE(1),
 	    TAG_IF(call->sdp, SOATAG_USER_SDP_STR(call->sdp)),
 	    TAG_END());
     return 0;
@@ -362,8 +363,117 @@ int accept_call_until_terminated(CONDITION_PARAMS)
 }
 
 
+/* No offer in INVITE, no user SDP in 200 OK */
+int test_missing_user_sdp(struct context *ctx)
+{
+  BEGIN();
+
+  struct endpoint *a = &ctx->a,  *b = &ctx->b;
+  struct call *a_call = a->call, *b_call = b->call;
+  struct event *e;
+
+  if (print_headings)
+    printf("TEST NUA-6.6.2: No SDP offer from caller\n");
+
+  a_call->sdp = "v=0\r\n"
+    "o=- 1 1 IN IP4 127.0.0.1\r\n"
+    "s=-\r\n"
+    "c=IN IP4 127.0.0.1\r\n"
+    "t=0 0\r\n"
+    "m=audio 5008 RTP/AVP 8\r\n";
+
+  b_call->sdp = NULL;
+
+  nua_set_params(b->nua, NUTAG_MEDIA_ENABLE(0), TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, 
+				 SIPTAG_TO_STR("<sip:b@x.org>"),
+				 TAG_END()));
+
+  TEST_1(!nua_handle_has_active_call(a_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
+
+  INVITE(a, a_call, a_call->nh,
+	 NUTAG_MEDIA_ENABLE(0),
+	 NUTAG_URL(b->contact->m_url),
+	 NUTAG_AUTOACK(1),
+	 TAG_END());
+
+  run_ab_until(ctx, -1, until_terminated,
+	       -1, accept_call_until_terminated);
+
+  /* Client transitions:
+     INIT -(C1)-> CALLING: nua_invite(), nua_i_state
+     CALLING -(C2)-> PROCEEDING: nua_r_invite, nua_i_state
+     PROCEEDING -(C3+C4)-> READY: nua_r_invite, nua_i_state
+  */
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(!is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+  TEST_1(!is_answer_recv(e->data->e_tags));
+  TEST_1(!is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 500);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* READY */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, a->events);
+
+  TEST_1(!nua_handle_has_active_call(a_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(a_call->nh));
+
+  /*
+   Server transitions:
+   INIT -(S1)-> RECEIVED: nua_i_invite, nua_i_state
+   RECEIVED -(S2a)-> EARLY: nua_respond(), nua_i_state
+   EARLY -(S3b)-> COMPLETED: nua_respond(), nua_i_state
+   COMPLETED -(S4)-> READY: nua_i_ack, nua_i_state
+  */
+  TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(!is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
+  TEST_1(!is_answer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_error);
+  TEST(e->data->e_status, 500);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* COMPLETED */
+  TEST_1(!e->next);
+  free_events_in_list(ctx, b->events);
+
+  TEST_1(!nua_handle_has_active_call(b_call->nh));
+  TEST_1(!nua_handle_has_call_on_hold(b_call->nh));
+
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  nua_set_params(b->nua,
+		 NUTAG_MEDIA_ENABLE(1), 
+		 SOATAG_USER_SDP_STR("m=audio 5006 RTP/AVP 8 0"),
+		 TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+  if (print_headings)
+    printf("TEST NUA-6.6.2: PASSED\n");
+
+  END();
+}
+
+
 
 int test_offer_answer(struct context *ctx)
 {
-  return test_no_answer_1(ctx) || test_no_answer_2(ctx);
+  return
+    test_no_answer_1(ctx) ||
+    test_no_answer_2(ctx) ||
+    test_missing_user_sdp(ctx) ||
+    0;
 }
