@@ -1799,49 +1799,65 @@ int soa_is_complete(soa_session_t const *ss)
 /** Return true if audio has been activated. */
 int soa_is_audio_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_local_activity->ma_audio : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_local_activity->ma_audio : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /** Return true if video has been activated. */
 int soa_is_video_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_local_activity->ma_video : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_local_activity->ma_video : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /** Return true if image sharing has been activated. */
 int soa_is_image_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_local_activity->ma_image : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_local_activity->ma_image : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /** Return true if messaging session has been activated. */
 int soa_is_chat_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_local_activity->ma_chat : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_local_activity->ma_chat : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /** Return true if remote audio is active (not on hold). */
 int soa_is_remote_audio_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_remote_activity->ma_audio : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_remote_activity->ma_audio : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /** Return true if remote video is active (not on hold). */
 int soa_is_remote_video_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_remote_activity->ma_video : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_remote_activity->ma_video : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /** Return true if image sharing is active (not on hold). */
 int soa_is_remote_image_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_remote_activity->ma_image : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_remote_activity->ma_image : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /** Return true if chat session is active (not on hold). */
 int soa_is_remote_chat_active(soa_session_t const *ss)
 {
-  return ss ? ss->ss_remote_activity->ma_chat : SOA_ACTIVE_DISABLED;
+  int ma = ss ? ss->ss_remote_activity->ma_chat : SOA_ACTIVE_DISABLED;
+  if (ma >= 4) ma |= -8;
+  return ma;
 }
 
 /* ======================================================================== */
