@@ -13,6 +13,10 @@ API/ABI changes and versioning
 ------------------------------
 
 libsofia-sip-ua:
+- Use calling/received callstate in nua_i_state event sent because of UPDATE
+  while call is ready
+- Added tag define NUTAG_WITH_CURRENT() as an alias to NUTAG_WITH_THIS()
+- Added tag NUTAG_DIALOG() controlling whether nua_method() creates a dialog.
 - Added tag NUTAG_AUTH_CACHE() <sofia-sip/nua_tag.h> determining when to 
   include credentials in the request
 - Added kqueue and /dev/poll interfaces (su_devpoll_port_create(),
@@ -23,6 +27,9 @@ libsofia-sip-ua:
   ("100rel" and "precondition" extensions now require explicit calls to
   nua_update() and nua_prack() if those methods are included in
   NUTAG_APPL_METHOD())
+- Added auc_clear field and member to authentication client plugin interface
+  in <sofia-sip/auth_client_plugin.h>
+- Added nua_event_is_incoming_request() to <sofia-sip/nua.h>
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
   work against an older library. The ABI has been tested with the nua module 
@@ -52,19 +59,26 @@ kqueue interface (in su_kqueue_port.c) has been added for FreeBSD and Mac OS
 X. There is also select-based reactor for systems without poll().
 
 The client authentication in nua has been updated. The nextnonce in
-Authentication-Info or Proxy-Authentication-Info headers is now. The
-NUTAG_AUTH_CACHE() policy determines how the cached credentials are used. By
-default, the credentials are included in each request within the dialog,
-however, with the NUTAG_AUTH_CACHE(nua_auth_cache_challenged) the client
-authenticates requests only after they have been challenged.
+Authentication-Info or Proxy-Authentication-Info headers is now used during
+the next . The NUTAG_AUTH_CACHE() policy determines how the cached
+credentials are used. By default, the credentials are included in each
+request within the dialog, however, with the
+NUTAG_AUTH_CACHE(nua_auth_cache_challenged) the client authenticates
+requests only after they have been challenged.
 
 The application can now fully control the SDP negotiation (when soa is
 disabled with NUTAG_MEDIA_ENABLE(0)). The application can send UPDATE and
-PRACK requests and respond to them.
+PRACK requests and respond to them. The callstate sent in nua_i_state after
+UPDATE while the call has already been completed has been also changed.
 
 Bugs fixed in this release
 --------------------------
 
+- Fixed status code sent to network and returned to the client if there was
+  an internal error while responding to a request. 
+  The problem was reported by Michael Jerris and Joshua Engelbrecht.
+- Fixed #1685249, unclear termination of call in absense of credentials by
+  nua_authenticate(). Problem reported by Mikhail Zabaluev.
 - Fixed status code reported to application when REGISTER transaction was
   restarted by nua stack. Problem reported by Mikhail Zabaluev.
 - An invalid Contact was used if STUN was disabled but there was no STUN
