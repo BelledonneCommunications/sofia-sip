@@ -398,6 +398,7 @@ int test_publish(struct context *ctx)
 	  SIPTAG_EVENT_STR("presence"),
 	  SIPTAG_CONTENT_TYPE_STR("text/urllist"),
 	  SIPTAG_PAYLOAD_STR("sip:example.com\n"),
+	  SIPTAG_EXPIRES_STR("5"),
 	  TAG_END());
 
   run_ab_until(ctx, -1, save_until_final_response, -1, respond_with_etag);
@@ -423,6 +424,37 @@ int test_publish(struct context *ctx)
   free_events_in_list(ctx, a->events);
   free_events_in_list(ctx, b->events);
   nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  if (!ctx->expensive && 0)
+    goto skip_republish;
+  
+  run_ab_until(ctx, -1, save_until_final_response, -1, respond_with_etag); 
+
+
+  /* Client events: nua_r_publish
+  */
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_r_publish);
+  TEST(e->data->e_status, 200);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_etag);
+  TEST_S(sip->sip_etag->g_string, "tagtag");
+  TEST_1(!e->next);
+ 
+  /*
+   Server events:
+   nua_i_publish
+  */
+  TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_publish);
+  TEST(e->data->e_status, 100);
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip = sip_object(e->data->e_msg));
+  TEST_1(sip->sip_if_match);
+  TEST_S(sip->sip_if_match->g_string, "tagtag");
+  TEST_1(!sip->sip_content_type);
+  TEST_1(!sip->sip_payload);
+  TEST_1(!e->next);
+
+ skip_republish:
 
   UNPUBLISH(a, a_call, a_call->nh, TAG_END());
 
