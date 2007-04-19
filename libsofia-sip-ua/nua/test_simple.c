@@ -243,6 +243,8 @@ int accept_request(CONDITION_PARAMS)
   return 0;
 }
 
+char const *test_etag = "tagtag";
+
 int respond_with_etag(CONDITION_PARAMS)
 {
   msg_t *with = nua_current_request(nua);
@@ -256,18 +258,18 @@ int respond_with_etag(CONDITION_PARAMS)
     char const *etag;
   case nua_i_publish:
     etag = sip->sip_if_match ? sip->sip_if_match->g_value : NULL;
-    if (sip->sip_if_match && (etag == NULL || strcmp(etag, "tagtag"))) {
+    if (sip->sip_if_match && (etag == NULL || strcmp(etag, test_etag))) {
       RESPOND(ep, call, nh, SIP_412_PRECONDITION_FAILED,
 	      NUTAG_WITH(with),
 	      TAG_END());
     } 
     else {
-	RESPOND(ep, call, nh, SIP_200_OK,
-		NUTAG_WITH(with),
-		SIPTAG_ETAG_STR("tagtag"),
-		SIPTAG_EXPIRES_STR("3600"),
-		SIPTAG_EXPIRES(sip->sip_expires),	/* overrides 3600 */
-		TAG_END());
+      RESPOND(ep, call, nh, SIP_200_OK,
+	      NUTAG_WITH(with),
+	      SIPTAG_ETAG_STR(test_etag),
+	      SIPTAG_EXPIRES_STR("3600"),
+	      SIPTAG_EXPIRES(sip->sip_expires),	/* overrides 3600 */
+	      TAG_END());
     }
     return 1;
   default:
@@ -410,7 +412,7 @@ int test_publish(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_etag);
-  TEST_S(sip->sip_etag->g_string, "tagtag");
+  TEST_S(sip->sip_etag->g_string, test_etag);
   TEST_1(!e->next);
 
   /*
@@ -427,9 +429,8 @@ int test_publish(struct context *ctx)
 
   if (!ctx->expensive && 0)
     goto skip_republish;
-  
-  run_ab_until(ctx, -1, save_until_final_response, -1, respond_with_etag); 
 
+  run_ab_until(ctx, -1, save_until_final_response, -1, respond_with_etag); 
 
   /* Client events: nua_r_publish
   */
@@ -437,8 +438,10 @@ int test_publish(struct context *ctx)
   TEST(e->data->e_status, 200);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_etag);
-  TEST_S(sip->sip_etag->g_string, "tagtag");
+  TEST_S(sip->sip_etag->g_string, test_etag);
   TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
  
   /*
    Server events:
@@ -453,6 +456,9 @@ int test_publish(struct context *ctx)
   TEST_1(!sip->sip_content_type);
   TEST_1(!sip->sip_payload);
   TEST_1(!e->next);
+
+  free_events_in_list(ctx, b->events);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
 
  skip_republish:
 
