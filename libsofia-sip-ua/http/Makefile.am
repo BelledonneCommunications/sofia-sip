@@ -71,7 +71,7 @@ TAG_DLL_FLAGS = DLLREF=1
 
 MSG_PARSER_AWK = ${srcdir}/../msg/msg_parser.awk
 
-AWK_HTTP_AWK = ${AWK} -f ${MSG_PARSER_AWK} module=http
+AWK_HTTP_AWK = LC_ALL=C ${AWK} -f ${MSG_PARSER_AWK} module=http
 
 SS_HTTP_H = ${srcdir}/sofia-sip/http.h
 

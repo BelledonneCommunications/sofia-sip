@@ -106,7 +106,7 @@ include $(top_srcdir)/rules/sofia.am
 
 MSG_PARSER_AWK = $(srcdir)/../msg/msg_parser.awk
 
-AWK_SIP_AWK = $(AWK) -f $(MSG_PARSER_AWK) module=sip
+AWK_SIP_AWK = LC_ALL=C $(AWK) -f $(MSG_PARSER_AWK) module=sip
 
 SS_SIP_H = ${srcdir}/sofia-sip/sip.h
 

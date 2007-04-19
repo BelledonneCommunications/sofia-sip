@@ -85,7 +85,7 @@ include $(top_srcdir)/rules/sofia.am
 
 MSG_PARSER_AWK = $(srcdir)/msg_parser.awk
 
-AWK_MSG_AWK = $(AWK) -f $(MSG_PARSER_AWK)
+AWK_MSG_AWK = LC_ALL=C $(AWK) -f $(MSG_PARSER_AWK)
 
 ${GENERATED_HC}: ${MSG_PARSER_AWK}
 
