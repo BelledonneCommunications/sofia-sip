@@ -37,7 +37,7 @@ dist_man_MANS = man/man1/sip-date.1 man/man1/sip-options.1 \
 
 $(dist_man_MANS): manpages
 
-manpages: built-sources
+manpages:
 	-mkdir -p man man/man1 2> /dev/null
 if HAVE_DOXYGEN
 	@echo 'cd utils && $(DOXYGEN)'
