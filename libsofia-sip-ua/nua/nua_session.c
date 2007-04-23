@@ -4077,7 +4077,7 @@ session_timer_set(nua_session_usage_t *ss)
   }
 }
 
-static inline int
+su_inline int
 session_timer_has_been_set(struct session_timer const *t)
 {
   return t->timer_set;

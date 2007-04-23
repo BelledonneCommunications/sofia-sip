@@ -424,7 +424,7 @@ SOFIAPUBFUN int su_wait_events(su_wait_t *wait, su_socket_t s);
 SOFIAPUBFUN int su_wait_mask(su_wait_t *dst, su_socket_t s, int events);
 
 #if !HAVE_WIN32 && (SU_HAVE_POLL || HAVE_SELECT)
-static inline
+su_inline
 su_socket_t su_wait_socket(su_wait_t *wait)
 {
 #if SU_HAVE_KQUEUE

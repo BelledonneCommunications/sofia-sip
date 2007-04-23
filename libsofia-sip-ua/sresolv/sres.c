@@ -105,7 +105,7 @@ typedef int socklen_t;
 
 #if HAVE_WINSOCK2_H
 /* Posix send() */
-static inline 
+su_inline 
 ssize_t sres_send(sres_socket_t s, void *b, size_t length, int flags)
 {
   if (length > INT_MAX)
@@ -114,7 +114,7 @@ ssize_t sres_send(sres_socket_t s, void *b, size_t length, int flags)
 }
 
 /* Posix recvfrom() */
-static inline 
+su_inline 
 ssize_t sres_recvfrom(sres_socket_t s, void *buffer, size_t length, int flags,
 		      struct sockaddr *from, socklen_t *fromlen)
 {
@@ -135,7 +135,7 @@ ssize_t sres_recvfrom(sres_socket_t s, void *buffer, size_t length, int flags,
   return (ssize_t)retval;
 }
 
-static inline
+su_inline
 int sres_close(sres_socket_t s)
 {
   return closesocket(s);
@@ -1648,7 +1648,7 @@ sres_query_alloc(sres_resolver_t *res,
   return query;
 }
 
-static inline
+su_inline
 void 
 sres_remove_query(sres_resolver_t *res, sres_query_t *q, int all)
 {

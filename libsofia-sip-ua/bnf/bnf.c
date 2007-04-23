@@ -106,7 +106,7 @@ char * bnf_span_token_end(char const *s)
 }
 
 /** Return length of decimal-octet */
-static inline int span_ip4_octet(char const *host)
+su_inline int span_ip4_octet(char const *host)
 {
   /*
       decimal-octet =       DIGIT
@@ -242,7 +242,7 @@ int scan_ip4_address(char **inout_host)
 }
 
 /** Return length of hex4 */
-static inline int span_hex4(char const *host)
+su_inline int span_hex4(char const *host)
 {
   if (!IS_HEX(host[0]))
     return 0;
@@ -256,7 +256,7 @@ static inline int span_hex4(char const *host)
 }
 
 /** Return length of valid IP6 address */
-static inline
+su_inline
 int span_canonic_ip6_address(char const *host,
 			     int *return_canonize,
 			     char *hexparts[9])
@@ -337,7 +337,7 @@ int span_canonic_ip6_address(char const *host,
  *
  * @retval Length of canonized IP6 address.
  */
-static inline
+su_inline
 int canonize_ip6_address(char *host, char *hexparts[9])
 {
   char *dst, *hex, *ip4 = NULL;
@@ -565,7 +565,7 @@ int scan_ip_address(char **inout_host)
 }
 
 /** Return length of a valid domain label */
-static inline
+su_inline
 size_t span_domain_label(char const *label)
 {
   /* domainlabel =  alphanum / alphanum *( alphanum / "-" ) alphanum */
@@ -581,7 +581,7 @@ size_t span_domain_label(char const *label)
 }
 
 /** Scan valid domain name and count number of labels in it. */
-static inline
+su_inline
 size_t span_domain_labels(char const *host, size_t *return_labels)
 {
   size_t len, n, labels;

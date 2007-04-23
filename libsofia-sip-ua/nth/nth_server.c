@@ -204,9 +204,9 @@ static char const __func__[] = "nth";
 static server_t *server_create(url_t const *url,
 			       tag_type_t tag, tag_value_t value, ...);
 void server_destroy(server_t *srv);
-static inline int server_timer_init(server_t *srv);
+su_inline int server_timer_init(server_t *srv);
 static void server_timer(su_root_magic_t *rm, su_timer_t *timer, server_t *srv);
-static inline uint32_t server_now(server_t const *srv);
+su_inline uint32_t server_now(server_t const *srv);
 static void server_request(server_t *srv, tport_t *tport, msg_t *msg,
 				    void *arg, su_time_t now);
 static nth_site_t **site_get_host(nth_site_t **, char const *host, char const *port);
@@ -776,7 +776,7 @@ void server_destroy(server_t *srv)
 }
 
 /** Initialize server timer. */
-static inline
+su_inline
 int server_timer_init(server_t *srv)
 {
   if (0) {
@@ -804,7 +804,7 @@ void server_timer(su_root_magic_t *rm, su_timer_t *timer, server_t *srv)
 }
 
 /** Get current timestamp in milliseconds */
-static inline
+su_inline
 uint32_t server_now(server_t const *srv)
 {
   if (srv->srv_now)

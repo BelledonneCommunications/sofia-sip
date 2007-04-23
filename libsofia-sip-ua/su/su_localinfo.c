@@ -363,7 +363,7 @@ li_scope4(uint32_t ip4)
 
 #if HAVE_WINSOCK2_H
 #define IN6_IS_ADDR_LOOPBACK SU_IN6_IS_ADDR_LOOPBACK
-static inline int
+su_inline int
 IN6_IS_ADDR_LOOPBACK(void const *ip6)
 {
   uint8_t const *u = ip6;

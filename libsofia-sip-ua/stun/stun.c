@@ -1611,7 +1611,7 @@ int stun_make_sharedsecret_req(stun_msg_t *msg)
 
 
 /* Return action of the request. If no request, return default value */
-static inline
+su_inline
 stun_action_t get_action(stun_request_t *req)
 {
   stun_discovery_t *sd = NULL;
@@ -1626,7 +1626,7 @@ stun_action_t get_action(stun_request_t *req)
 
 
 /* Find request from the request queue, based on TID */
-static inline
+su_inline
 stun_request_t *find_request(stun_handle_t *self, void *id)
 {
   void *match;
