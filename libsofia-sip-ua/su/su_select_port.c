@@ -572,13 +572,15 @@ int su_select_port_wait_events(su_port_t *self, su_duration_t tout)
 
   n = select(self->sup_maxfd, rset, wset, NULL, &tv);
 
-  if (n <= 0) {
+  if (n < 0) {
     SU_DEBUG_0(("su_select_port_wait_events(%p): %s (%d)\n",
 		(void *)self, su_strerror(su_errno()), su_errno()));
     return 0;
   }
+  else if (n == 0)
+    return 0;
 
-  for (j = 1; j < self->sup_max_index; j++) {
+  for (j = 1; j <= self->sup_max_index; j++) {
     struct su_select_register *ser;
     su_root_magic_t *magic;
     int fd;
