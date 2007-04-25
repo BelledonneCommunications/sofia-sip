@@ -1,6 +1,6 @@
-==================================
-Release notes for Sofia-SIP 1.12.6
-==================================
+===============================================
+Release notes for Sofia-SIP 1.12.6 (2007-04-25)
+===============================================
 
 Changes since last release
 --------------------------
@@ -56,13 +56,13 @@ Notes on new features
 The Sofia-SIP has been compiled and tested on Solaris. The /dev/poll
 interface (in su_devpoll_port.c) has been added for Solaris. Likewise, the
 kqueue interface (in su_kqueue_port.c) has been added for FreeBSD and Mac OS
-X. There is also select-based reactor for systems without poll().
+X. There is also a select-based reactor for systems without poll().
 
 The client authentication in nua has been updated. The nextnonce in
-Authentication-Info or Proxy-Authentication-Info headers is now used during
-the next . The NUTAG_AUTH_CACHE() policy determines how the cached
-credentials are used. By default, the credentials are included in each
-request within the dialog, however, with the
+Authentication-Info or Proxy-Authentication-Info headers is now used with
+the next authorized operation. The NUTAG_AUTH_CACHE() policy determines how
+the cached credentials are used. By default, the credentials are included in
+each request within the dialog, however, with the
 NUTAG_AUTH_CACHE(nua_auth_cache_challenged) the client authenticates
 requests only after they have been challenged.
 
@@ -81,7 +81,7 @@ Bugs fixed in this release
 - Fixed status code sent to network and returned to the client if there was
   an internal error while responding to a request. 
   The problem was reported by Michael Jerris and Joshua Engelbrecht.
-- Fixed #1685249, unclear termination of call in absense of credentials by
+- Fixed #1685249, unclear termination of call in absence of credentials by
   nua_authenticate(). Problem reported by Mikhail Zabaluev.
 - Fixed status code reported to application when REGISTER transaction was
   restarted by nua stack. Problem reported by Mikhail Zabaluev.
@@ -111,6 +111,6 @@ Bugs fixed in this release
     dangling)
   Problems reported by Michael Jerris
 - Fixed crash in nta state engine:
-  - DNS resolver failure in non-invite transctions crashed
-- Fixed sdp handling when soa is disabled (NUTAG_MEDIA_ENABLE(0)).
+  - DNS resolver failure in non-invite transactions crashed
+- Fixed SDP handling when soa is disabled (NUTAG_MEDIA_ENABLE(0)).
   Problem reported by Marcin Michalak
