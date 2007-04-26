@@ -69,6 +69,7 @@ unsigned char const _bnf_table[256] = {
   alpha, alpha, alpha, sep,   0,     sep,   mtok,  0,     /* xyz{|}~  */
 };
 
+#if 0				/* This escaped lab */
 
 #define BM(c, m00, m32, m64, m96)			   \
   ((c < 64)						   \
@@ -104,6 +105,7 @@ char * bnf_span_token_end(char const *s)
 {
   return (char *)s;
 }
+#endif
 
 /** Return length of decimal-octet */
 su_inline int span_ip4_octet(char const *host)
@@ -211,6 +213,9 @@ int scan_ip4_address(char **inout_host)
   char *src = *inout_host, *dst = src;
   issize_t n;
   int canonize = 0;
+
+  if (src == NULL)
+    return -1;
 
   n = span_canonic_ip4_address(src, &canonize);
   if (n == 0)
@@ -851,12 +856,11 @@ static size_t convert_ip_address(char const *s,
       }
       return (void)(*return_addrlen = 16), len;
     }
-    else
-      return 0;
   }
+  else
 #endif
-
   len = span_canonic_ip4_address(s, &canonize);
+
   if (len) {
     if (canonize) {
       char *tmp = buf;
@@ -865,8 +869,6 @@ static size_t convert_ip_address(char const *s,
     }
     if (s[len] == '\0' && inet_pton(AF_INET, s, addr) == 1)
       return (void)(*return_addrlen = 4), len;
-    else
-      return 0;
   }
 
   return 0;
@@ -892,22 +894,27 @@ int host_cmp(char const *a, char const *b)
 {
   uint8_t a6[16], b6[16];
   size_t alen, blen, asize = 0, bsize = 0;
+  int retval;
 
-  if (a == NULL || b == NULL)
-    return (a != NULL) - (b != NULL);
-
-  alen = convert_ip_address(a, a6, &asize);
-  blen = convert_ip_address(b, b6, &bsize);
-
-  if (alen > 0 && blen > 0) {
-    if (asize < bsize)
-      return -1;
-    else if (asize > bsize)
-      return 1;
-    else
-      return memcmp(a6, b6, asize);
+  if (a == NULL || b == NULL) {
+    retval = (a != NULL) - (b != NULL);
   }
   else {
-    return strcasecmp(a, b);
+    alen = convert_ip_address(a, a6, &asize);
+    blen = convert_ip_address(b, b6, &bsize);
+
+    if (alen > 0 && blen > 0) {
+      if (asize < bsize)
+	retval = -1;
+      else if (asize > bsize)
+	retval = 1;
+      else
+	retval = memcmp(a6, b6, asize);
+    }
+    else {
+      retval = strcasecmp(a, b);
+    }
   }
+
+  return retval;
 }

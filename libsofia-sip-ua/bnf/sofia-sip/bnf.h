@@ -195,7 +195,6 @@ su_inline isize_t span_token_lws(char const *s)
   return e - s; 
 }
 
-#if 1
 /** Calculate span of a token characters.  */
 su_inline isize_t span_token(char const *s)
 {
@@ -204,11 +203,6 @@ su_inline isize_t span_token(char const *s)
     e++; 
   return e - s; 
 }
-#else
-size_t bnf_span_token(char const *s);
-#define span_token(s) bnf_span_token((s))
-#endif
-
 
 /** Calculate span of a alphabetic characters.  */
 su_inline isize_t span_alpha(char const *s)
