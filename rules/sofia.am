@@ -60,3 +60,6 @@ INTERNAL_INCLUDES = \
 	-I$(srcdir)/../su -I../su
 
 include $(top_srcdir)/rules/valcheck.am
+if HAVE_LCOV
+include $(top_srcdir)/rules/covcheck.am
+endif

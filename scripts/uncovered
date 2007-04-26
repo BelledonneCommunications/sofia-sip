@@ -1,0 +1,99 @@
+#! /bin/sh
+#
+# mark uncovered lines as errors
+#
+
+#
+# Copyright (C) 2007 Nokia Corporation
+# Contact: Pekka Pessi <pekka.pessi@nokia.com>
+# Licensed under LGPL. See file COPYING.
+#
+
+usage()
+{
+  test X$1 == X0 || exec >&2
+  echo usage: uncovered [--top_builddir=DIR] [PATH...]
+  exit $1;
+}
+
+bdir=`pwd`;
+prefix=lcov/
+
+top=.
+case $0 in */*) top=${0%/scripts/*};; esac
+
+while test $# -gt 0;
+do
+  case $1 in 
+  --top_builddir ) test -z "$2" && usage 1 ; shift; top=$1; shift; ;;
+  --top_builddir=* ) top=${1#--top_builddir=}; shift ;;
+  - ) shift; break ;;
+  -* ) usage 1; ;;
+  * ) break;
+  esac
+done
+
+cd $top
+tdir=`pwd`;
+
+if test $tdir != $bdir; then
+  prefix=lcov${bdir#$tdir}
+fi
+
+if test $# -gt 0; then
+for p in $@
+  do 
+    if test -d $bdir/$p ; then
+      find $prefix/$p -name '*.gcov.html'
+    else
+      echo $prefix/$p.gcov.html
+    fi
+  done 
+else 
+  find $prefix/ -name '*.gcov.html'
+fi |
+xargs perl -e '
+$base="'${prefix}/'";
+
+while (<>) {
+  if (m:<pre[^>]*>:) { $pre=1; }
+  if ($pre && m:</pre[^>]*>:) {
+    $pre=0;
+    if ($uncovered) {
+      print $uncovered;
+      $uncovered = "";
+    }
+  }
+  if ($pre) {
+    s/<[^>]+>//g;
+
+    s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g; s/&amp;/&/g;
+
+    if (m/^ *\d+ *[1-9]\d* :/) {
+      if ($uncovered) {
+        print $uncovered;
+        $uncovered = "";
+      }
+    }
+    else {
+      if ($uncovered) {
+        if (m/^[^:]+: [{]/) { # Hack: show line number if line starts with {
+          s/^ +(\d+)[^:]+:/$1:/;
+        }
+        else {
+          s/^ +(\d+)[^:]+:/sprintf("%*s", 1 + length($1), " ")/e;
+        }
+        $uncovered .= $f . ":" . $_;
+      }
+      elsif (m/^ *\d+ *0 :/) {
+        for ($f = $ARGV) {
+          s:^${base}/?::o;
+          s:[.]gcov[.]html$::;
+        } 
+        s/^ +(\d+)[^:]+:/$1:/;
+        $uncovered = $f . ":" . $_;
+      }
+    }
+  }
+}
+' /dev/null

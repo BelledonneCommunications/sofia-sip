@@ -1,0 +1,52 @@
+#
+# Generate coverage report
+#
+lcov:
+	make lcov-report
+
+# rerun checks before lcov
+lcov-rerun: clean-lcov
+	$(MAKE) $(AM_MAKEFLAGS) check
+	$(MAKE) $(AM_MAKEFLAGS) lcov-report
+
+clean:: clean-lcov
+
+clean-lcov:
+	-rm -rf lcov
+	find . -name "*.gcda" | xargs rm -f || true
+
+if HAVE_GENPNG
+GENHTML_FRAMES = --frames
+else
+GENHTML_FIX = true
+endif
+
+GENHTML_OPTIONS = --show-details --legend $(GENHTML_FRAMES)
+
+#
+# generate report based on current coverage data
+#
+lcov-report:
+	@-rm -rf lcov
+	mkdir lcov
+	for sub in ${LCOV_SUBDIRS}; do \
+	${LCOV} --compat-libtool --directory $$sub --capture --output-file lcov/$$sub.info0 && \
+	{ : remove system includes with with inlined functions ; \
+	  ${LCOV} -l lcov/$$sub.info0 | grep -v "`cd ${top_srcdir} && pwd`" ; \
+	  : remove source files in builddir ; \
+          test ${top_srcdir} = ${top_builddir} || \
+	  ${LCOV} -l lcov/$$sub.info0 | grep "`cd ${top_builddir} && pwd`" ; \
+	  : remove test programs ; \
+	  ${LCOV} -l lcov/$$sub.info0 | grep "/test\|/torture\|_test[.]c$$" ; } | cut -d: -f1 | \
+	  xargs ${LCOV} -r lcov/$$sub.info0 > lcov/$$sub.info && \
+	${GENHTML} ${GENHTML_OPTIONS} --title "${PACKAGE_NAME}-${PACKAGE_VERSION}/$$sub" \
+	   --output-directory lcov/$$sub lcov/$$sub.info || \
+	break; \
+	done
+if HAVE_GENPNG
+	find lcov -name '*.overview.html' | \
+	xargs perl -pi.bak -e 's/usemap="[#]overview"/usemap="overview"/;'
+	find lcov -name '*.bak' | xargs rm -f
+endif
+
+PHONY +=  lcov-report lcov-rerun clean-lcov

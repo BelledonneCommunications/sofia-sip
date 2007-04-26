@@ -59,4 +59,10 @@ coverage built-sources clean-built-sources valcheck doxygen:
 	done ; \
 	test -z "$$fail"
 
-.PHONY: coverage built-sources clean-built-sources valcheck doxygen manpages
+PHONY = coverage built-sources clean-built-sources valcheck doxygen manpages
+
+if ENABLE_COVERAGE
+include rules/coverage.am
+endif
+
+.PHONY: $(PHONY)

@@ -1,0 +1,22 @@
+# 
+# Generate lcov output
+#
+
+#
+# Copyright (C) 2007 Nokia Corporation
+# Contact: Pekka Pessi <pekka.pessi@nokia.com>
+# Licensed under LGPL. See file COPYING.
+#
+
+if HAVE_LCOV
+
+LCOV_SUBDIRS=libsofia-sip-ua libsofia-sip-ua-glib
+
+include rules/lcov.am
+
+lcov-upload: lcov
+	rsync -rvz -e ssh --delete lcov/* sofia-sip.org:/var/www/coverage/lcov/
+
+include rules/covcheck.am
+
+endif
