@@ -68,12 +68,4 @@ lcov --compat-libtool --directory . --capture --output-file ${info} &&
 } |
 cut -d: -f1 |
 xargs lcov -r ${info} > ${geninfo}
-genhtml ${GENHTML_OPTIONS} --output-directory $o ${geninfo} &&
-case ${GENHTML_OPTIONS} in
-*--frames* )
-  : Fix broken links
-  find $o -name '*.overview.html' |
-  xargs perl -pi.bak -e 's/usemap="[#]overview"/usemap="overview"/;' &&
-  find $o -name '*.bak' | xargs rm -f
-  ;;
-esac
+genhtml ${GENHTML_OPTIONS} --output-directory $o ${geninfo}
