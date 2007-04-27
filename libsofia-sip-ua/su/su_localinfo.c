@@ -608,6 +608,8 @@ int localinfo4(su_localinfo_t const *hints, su_localinfo_t **rresult)
 		  if_name, if_index));
       continue;
     }
+#elif defined(SIOCGIFACTIVECONF)
+/* Handled above in SIOCGIFACTIVECONF vs. SIOCGIFCONF*/
 #else
 #error su_localinfo() cannot determine interface status
 #endif
