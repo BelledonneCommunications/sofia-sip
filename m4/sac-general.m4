@@ -123,66 +123,7 @@ AC_SUBST([CWFLAG], [$ac_cv_cwflag])
 
 AC_ARG_VAR([SOFIA_CFLAGS], [CFLAGS not used during configure])
 
-#
-# GCoverage
-#
-AC_ARG_ENABLE(coverage,
-[  --enable-coverage       compile test-coverage [[disabled]]],
- , enable_coverage=no)
-
-if test X$enable_coverage = Xno ; then
-:
-elif test X$GCC != Xyes ; then
-  AC_MSG_ERROR([--enable-coverage requires gcc])
-else
-  AC_SUBST([SOFIA_COVERAGE], ["-fprofile-arcs -ftest-coverage"])
-dnl old_CFLAGS=$CFLAGS
-dnl CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
-dnl AC_SEARCH_LIBS(_gcov_init, gcov)
-dnl CFLAGS=$old_CFLAGS
-dnl
-dnl libtool 1.5.22 and lower strip -fprofile-arcs from the flags
-dnl passed to the linker, which is a bug; -fprofile-arcs implicitly
-dnl links in -lgcov, so we do it explicitly here for the same effect
-dnl
-  AC_CHECK_LIB(gcov, __gcov_init)
-  GCOV=`echo $CC | sed s/gcc/gcov/g`
-  AC_SUBST(GCOV)
-  AC_DEFINE([HAVE_COVERAGE], 1,
-    [Defined when gcov is enabled to force by changing config.h])
-
-  dnl Check for lcov utility
-  AC_CHECK_PROG([LCOV], [lcov], [lcov], [false])
-  if test X$LCOV != Xfalse ; then
-    AC_MSG_CHECKING([whether $LCOV accepts --compat-libtool])
-    if $LCOV --compat-libtool --help > /dev/null 2>&1 ; then
-      AC_MSG_RESULT(ok)
-    else
-      AC_MSG_RESULT(not supported)
-      AC_MSG_WARN([lcov option --compat-libtool is not supported])
-      AC_MSG_WARN([Update lcov to version > 1.5])
-      LCOV=false
-    fi
-  fi
-  AC_CHECK_PROG([GENHTML], [genhtml], [genhtml], [false])
-  AC_CHECK_PROG([GENPNG], [genpng], [genpng], [false])
-  if test X$LCOV != Xfalse ; then
-    AC_MSG_CHECKING([whether $GENPNG has all required modules])
-    if $GENPNG --help > /dev/null 2>&1 ; then
-      AC_MSG_RESULT(ok)
-    else
-      AC_MSG_RESULT(not supported)
-      AC_MSG_WARN([GD.pm perl module is not installed])
-      GENPNG=false
-    fi
-  fi
-fi
-
-AM_CONDITIONAL([ENABLE_COVERAGE], test X$enable_coverage != Xno)
-AM_CONDITIONAL([HAVE_LCOV], test X$LCOV != Xfalse)
-AM_CONDITIONAL([HAVE_GENPNG], test X$GENPNG != Xfalse)
-
-AC_SUBST([MOSTLYCLEANFILES], "*.bb *.bbg *.da *.gcov *.gcda *.gcno")
+SAC_COVERAGE
 ])
 
 dnl ======================================================================

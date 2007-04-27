@@ -46,4 +46,8 @@ PHONY = doxygen
 
 include $(top_srcdir)/rules/recursive.am
 
+if HAVE_LCOV
+include $(top_srcdir)/rules/lcov.am
+endif
+
 .PHONY = $(PHONY)

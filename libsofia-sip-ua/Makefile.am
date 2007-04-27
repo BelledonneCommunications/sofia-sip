@@ -55,7 +55,7 @@ libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
 libsofia_sip_ua_la_LDFLAGS = \
 	-version-info $(LIBVER_SOFIA_SIP_UA_CUR):$(LIBVER_SOFIA_SIP_UA_REV):$(LIBVER_SOFIA_SIP_UA_AGE)
 
-PHONY = doxygen
+PHONY = doxygen built-sources
 
 include $(top_srcdir)/rules/recursive.am
 
@@ -99,7 +99,7 @@ doxygen: built-sources
 	${srcdir}/docs/hide_emails.sh docs/html
 
 if HAVE_LCOV
-include $(top_srcdir)/rules/covcheck.am
+include $(top_srcdir)/rules/lcov.am
 endif
 
 .PHONY: $(PHONY)

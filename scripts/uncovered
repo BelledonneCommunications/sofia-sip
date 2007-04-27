@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# mark uncovered lines as errors
+# show uncovered lines as errors
 #
 
 #
@@ -12,49 +12,67 @@
 usage()
 {
   test X$1 == X0 || exec >&2
-  echo usage: uncovered [--top_builddir=DIR] [PATH...]
+  cat <<EOF
+usage: uncovered OPTIONS
+where OPTIONS are
+   --srcdir=DIR                  specify source directory
+   --lcov-dir=DIR | -l DIR       specify directory for lcov.info files
+EOF
   exit $1;
 }
 
-bdir=`pwd`;
-prefix=lcov/
-
-top=.
-case $0 in */*) top=${0%/scripts/*};; esac
+GENHTML_OPTIONS= o= ldir=
 
 while test $# -gt 0;
 do
   case $1 in 
-  --top_builddir ) test -z "$2" && usage 1 ; shift; top=$1; shift; ;;
-  --top_builddir=* ) top=${1#--top_builddir=}; shift ;;
+  --lcov-dir | -l ) test -z "$2" && usage 1; shift; ldir=$1; shift; ;;
+  --lcov-dir=* ) ldir=${1#--ldir=}; shift ;;
+  --srcdir | -s )
+    test -z "$2" && usage 1; shift; srcdir=$1; shift; ;;
+  --srcdir=* )
+    srcdir=${1#--srcdir=}; shift ;;
+  --help | '-?' | -h ) usage 0 ;;
   - ) shift; break ;;
   -* ) usage 1; ;;
-  * ) break;
+  * ) break ;;
   esac
 done
 
-cd $top
-tdir=`pwd`;
+cwd=`pwd`
 
-if test $tdir != $bdir; then
-  prefix=lcov${bdir#$tdir}
-fi
+tdir=${TMPDIR:-/tmp}/$USER.uncovered.$$ 
+info=${tdir}/lcov.info geninfo=${tdir}/genhtml.info
 
-if test $# -gt 0; then
-for p in $@
-  do 
-    if test -d $bdir/$p ; then
-      find $prefix/$p -name '*.gcov.html'
-    else
-      echo $prefix/$p.gcov.html
-    fi
-  done 
-else 
-  find $prefix/ -name '*.gcov.html'
-fi |
+test -d ${tdir} && { echo ${tdir}: already exists ; exit 2 ; }
+
+mkdir -p ${tdir} &&
+{
+    # Find all lcov.info0 under -t DIR 
+    test -d ${ldir} &&
+    find ${ldir} -name lcov.info |
+    while read s
+    do
+      find $cwd -type f -not -newer $s | xargs lcov -q -e $s 
+    done
+    
+    lcov -q -c -d . --compat-libtool
+} > ${info}
+
+test -e ${info} || exit 1
+
+{
+  # remove system includes with with inlined functions
+  lcov -q -l ${info} | grep -v "`cd ${srcdir:-.} && pwd`"
+  # remove test programs
+  lcov -q -l ${info} | grep "/test\|/torture\|_test[.]c$" 
+} | 
+cut -d: -f1 |
+xargs lcov -q -r ${info} > ${geninfo} &&
+cd ${tdir} &&
+genhtml -q --prefix=$cwd/ --output-directory . ${geninfo} &&
+find . -name '*.gcov.html' |
 xargs perl -e '
-$base="'${prefix}/'";
-
 while (<>) {
   if (m:<pre[^>]*>:) { $pre=1; }
   if ($pre && m:</pre[^>]*>:) {
@@ -87,7 +105,7 @@ while (<>) {
       }
       elsif (m/^ *\d+ *0 :/) {
         for ($f = $ARGV) {
-          s:^${base}/?::o;
+          s:^[.]'$cwd/'::o;
           s:[.]gcov[.]html$::;
         } 
         s/^ +(\d+)[^:]+:/$1:/;
@@ -97,3 +115,8 @@ while (<>) {
   }
 }
 ' /dev/null
+
+rc=$?
+cd /
+rm -rf $tdir
+exit $rc
