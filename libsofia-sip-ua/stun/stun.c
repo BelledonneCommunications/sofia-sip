@@ -52,6 +52,11 @@
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_localinfo.h>
 
+/* avoid Open C complaints */
+#if !HAVE_OPEN_C
+#include <netinet/tcp.h>
+#endif
+
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
