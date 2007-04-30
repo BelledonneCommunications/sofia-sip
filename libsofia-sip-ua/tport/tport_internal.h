@@ -66,7 +66,7 @@
 #define MSG_NOSIGNAL (0)
 #endif
 
-#if !HAVE_MSG_TRUNC
+#if !HAVE_MSG_TRUNC && !defined(MSG_TRUNC)
 #define MSG_TRUNC (0)
 #endif
 
