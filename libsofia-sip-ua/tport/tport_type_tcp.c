@@ -36,6 +36,11 @@
 
 #include "tport_internal.h"
 
+/* avoid Open C complaints */
+#if !HAVE_OPEN_C
+#include <netinet/tcp.h>
+#endif
+
 #ifndef SOL_TCP
 #define SOL_TCP IPPROTO_TCP
 #endif
