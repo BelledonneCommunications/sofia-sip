@@ -42,9 +42,9 @@
 
 #define SU_ROOT_MAGIC_T struct stun_magic_t
 
-#include "sofia-sip/stun.h"
+#include <sofia-sip/stun.h>
 #include "stun_internal.h"
-#include "sofia-sip/stun_tag.h"
+#include <sofia-sip/stun_tag.h>
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_tagarg.h>
