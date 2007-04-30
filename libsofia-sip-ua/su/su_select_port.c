@@ -560,7 +560,7 @@ int su_select_port_wait_events(su_port_t *self, su_duration_t tout)
   if (self->sup_maxfd == 0)
     su_select_port_update_maxfd(self);
 
-  bytes = self->sup_maxfd ? FDSETSIZE(self->sup_maxfd - 1) : 0;
+  bytes = FDSETSIZE(self->sup_maxfd);
 
   if (bytes) {
     rset = memcpy(self->sup_readfds2, self->sup_readfds, bytes);
