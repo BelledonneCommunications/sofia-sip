@@ -32,19 +32,8 @@
 
 #include "config.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <assert.h>
-
 #include <sofia-sip/string0.h>
-#include <sofia-sip/hostdomain.h>
-
-#if !defined(EALREADY) && defined(_WIN32)
-#define EALREADY WSAEALREADY
-#endif
+#include <sofia-sip/su.h>
 
 typedef struct server_s server_t;
 
@@ -71,6 +60,13 @@ typedef struct server_s server_t;
 #include <sofia-sip/htable.h>
 
 #include <sofia-sip/auth_module.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <assert.h>
 
 #ifndef UINT32_MAX
 #define UINT32_MAX (0xffffffffU)

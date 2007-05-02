@@ -56,17 +56,8 @@
 #include <netinet/tcp.h>
 #endif
 
-#if HAVE_WINSOCK2_H
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif
-
 #if HAVE_OPENSSL
 #include <openssl/opensslv.h>
-#endif
-
-#if !defined(ETIMEDOUT) && defined(_WIN32)
-#define ETIMEDOUT WSAETIMEDOUT
 #endif
 
 /* Missing socket symbols */

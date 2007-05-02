@@ -1836,9 +1836,7 @@ int test_api_errors(sres_context_t *noctx)
   TEST(errno, EFAULT); errno = 0;
   TEST_P(sres_query_sockaddr(res, test_answer, ctx,
 			     sres_qtype_any, sa), NULL);
-#if defined(EAFNOSUPPORT)
   TEST(errno, EAFNOSUPPORT); errno = 0;
-#endif
 
   TEST_P(sres_cached_answers(NULL, sres_qtype_any, "example.com"), NULL);
   TEST(errno, EFAULT); errno = 0;
