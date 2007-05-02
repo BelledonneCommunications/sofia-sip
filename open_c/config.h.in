@@ -10,13 +10,13 @@
 /* #undef C_ALLOCA */
 
 /* Define to the random number source name. */
-#define DEV_URANDOM 0
+/* #undef DEV_URANDOM */
 
 /* Define to 1 if you have addrinfo structure. */
 #define HAVE_ADDRINFO 1
 
 /* Define to 1 if you have the `alarm' function. */
-#define HAVE_ALARM 0
+/* #undef HAVE_ALARM */
 
 /* Define to 1 if you have `alloca', as a function or macro. */
 /* #undef HAVE_ALLOCA */
@@ -35,7 +35,7 @@
 /* #undef HAVE_CLOCK_GETTIME */
 
 /* Define to 1 if you have /dev/urandom. */
-#define HAVE_DEV_URANDOM 0
+/* #undef HAVE_DEV_URANDOM */
 
 /* Define to 1 if you have the <dirent.h> header file. */
 #define HAVE_DIRENT_H 1
@@ -57,7 +57,7 @@
 /* #undef HAVE_FILETIME */
 
 /* Define to 1 if you have the `flock' function. */
-#define HAVE_FLOCK 0
+/* #undef HAVE_FLOCK */
 
 /* Define to 1 if you have the `freeaddrinfo' function. */
 #define HAVE_FREEADDRINFO 1
@@ -183,7 +183,7 @@
 /* #undef HAVE_MINGW */
 
 /* Define to 1 if you have MSG_TRUNC flag */
-/* #undef HAVE_MSG_TRUNC 1 */
+#define HAVE_MSG_TRUNC 1
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #define HAVE_NETDB_H 1
@@ -195,7 +195,7 @@
 /* #undef HAVE_NETINET_SCTP_H */
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
-#define HAVE_NETINET_TCP_H 1
+/* #undef HAVE_NETINET_TCP_H */
 
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 /* #undef HAVE_NETPACKET_PACKET_H */
