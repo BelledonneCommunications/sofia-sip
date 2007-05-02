@@ -33,6 +33,7 @@ torture_su_tag.mmp
 torture_su_alloc.mmp
 torture_url.mmp
 test_msg.mmp
+torture_sip.mmp
 
 PRJ_TESTMMPFILES
 
