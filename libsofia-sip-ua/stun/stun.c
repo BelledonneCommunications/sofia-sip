@@ -52,6 +52,10 @@
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_localinfo.h>
 
+#if HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
