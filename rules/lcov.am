@@ -54,7 +54,9 @@ covcheck:
 	$(MAKE) $(AM_MAKEFLAGS) check
 	${LCOV_UNCOVERED} --lcov-dir=${lcovdir} --srcdir=${srcdir}
 
-clean:: clean-lcov
+clean-local::
+	-rm -rf ${lcovdir}`pwd|sed "s'\`cd ${top_builddir};pwd\`''"`
+	find . -name "*.gcda" | xargs rm -f || true
 
 clean-lcov:
 	-rm -rf ${lcovdir}`pwd|sed "s'\`cd ${top_builddir};pwd\`''"`
