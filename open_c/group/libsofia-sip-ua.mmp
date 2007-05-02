@@ -4,7 +4,7 @@ TARGETTYPE      lib
 CAPABILITY      ALL -TCB
 UID             0x1000008D 0xA000017E
 VENDORID        0
-OPTION CW       -dialect c99 -inline on
+OPTION CW       -dialect c99 -inline on -warn nounusedarg,nounusedvar
 
 //EPOCHEAPSIZE 4 4194304 // min. 4KB ja max 4MB
 
