@@ -606,6 +606,10 @@ int main(int argc, char *argv[])
       usage(1);
   }
 
+#if HAVE_OPEN_C
+  rt->rt_flags |= tst_verbatim;
+#endif
+
   i = 0;
 
   do {
