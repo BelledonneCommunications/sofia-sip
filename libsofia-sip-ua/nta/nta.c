@@ -4436,6 +4436,7 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
     /* Tag transaction */
     if (tag)
       sip_to_tag(home, irq->irq_to, tag);
+    irq->irq_tag = irq->irq_to->a_tag;
 
     if (method != sip_method_ack) {
       int *use_rport = NULL;
@@ -5006,9 +5007,11 @@ nta_incoming_t *nta_incoming_find(nta_agent_t const *agent,
 }
 
 su_inline
-int addr_match(sip_addr_t const *a, sip_addr_t const *b)
+int addr_match(sip_addr_t const *a, char const *a_tag, sip_addr_t const *b)
 {
-  if (a->a_tag && b->a_tag)
+  if (a_tag && b->a_tag)
+    return strcasecmp(a_tag, b->a_tag) == 0;
+  else if (a->a_tag && b->a_tag)
     return strcasecmp(a->a_tag, b->a_tag) == 0;
   else
     return
@@ -5059,7 +5062,7 @@ nta_incoming_t *incoming_find(nta_agent_t const *agent,
       if (is_uas_ack &&
 	  irq->irq_method == sip_method_invite && 
 	  200 <= irq->irq_status && irq->irq_status < 300 &&
-	  addr_match(irq->irq_to, to))
+	  addr_match(irq->irq_to, irq->irq_tag, to))
 	*return_ack = irq;
       /* RFC3261 - section 8.2.2.2 Merged Requests */
       else if (return_merge && agent->sa_merge_482 &&
@@ -5075,7 +5078,7 @@ nta_incoming_t *incoming_find(nta_agent_t const *agent,
     }
 
     if (is_uas_ack) {
-      if (!addr_match(irq->irq_to, to))
+      if (!addr_match(irq->irq_to, irq->irq_tag, to))
 	continue;
     }
     else if (irq->irq_tag_set || !irq->irq_tag) {
@@ -5129,8 +5132,8 @@ nta_incoming_t *incoming_find(nta_agent_t const *agent,
 	continue;
       if (irq->irq_cseq->cs_seq != rack->ra_cseq)
 	continue;
-      if (!addr_match(irq->irq_to, to) ||
-	  !addr_match(irq->irq_from, from))
+      if (!addr_match(irq->irq_to, NULL, to) ||
+	  !addr_match(irq->irq_from, NULL, from))
 	continue;
       if (!irq->irq_from->a_tag != !from->a_tag)
 	continue;
@@ -6620,6 +6623,14 @@ unsigned nta_outgoing_delay(nta_outgoing_t const *orq)
   return orq != NULL && orq != NONE ? orq->orq_delay : UINT_MAX;
 }
 
+/** Get the branch parameter. */
+char const *nta_outgoing_branch(nta_outgoing_t const *orq)
+{
+  return orq != NULL && orq != NONE && orq->orq_branch
+    ? orq->orq_branch + strlen("branch=")
+    : NULL;
+}
+
 /**Get reference to response message.
  *
  * Retrieve the latest incoming response message to the outgoing
@@ -6847,7 +6858,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   }
 
   if (branch && branch != NONE) {
-    if (strchr(branch, '='))
+    if (strncasecmp(branch, "branch=", 7) == 0)
       branch = su_strdup(home, branch);
     else
       branch = su_sprintf(home, "branch=%s", branch);
@@ -6864,7 +6875,10 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 
   if (orq->orq_method == sip_method_ack) {
     if (ack_branch != NULL && ack_branch != NONE) {
-      orq->orq_branch = su_strdup(home, ack_branch);
+      if (strncasecmp(ack_branch, "branch=", 7) == 0)
+	orq->orq_branch = su_strdup(home, ack_branch);
+      else
+	orq->orq_branch = su_sprintf(home, "branch=%s", ack_branch);
     } 
     else if (!stateless && agent->sa_is_a_uas) {
       /*
@@ -7983,9 +7997,7 @@ nta_outgoing_t *outgoing_find(nta_agent_t const *sa,
       continue;
     if (str0casecmp(orq->orq_from->a_tag, sip->sip_from->a_tag))
       continue;
-    if (orq->orq_to->a_tag && sip->sip_to->a_tag
-	? strcasecmp(orq->orq_to->a_tag, sip->sip_to->a_tag)
-	: !addr_match(orq->orq_to, sip->sip_to))
+    if (!addr_match(orq->orq_to, NULL, sip->sip_to))
       continue;
     if (orq->orq_method == method ?
 	/* Don't match if request To has a tag and response has no To tag */

@@ -24,6 +24,7 @@ API/ABI changes and versioning
 New features in API are marked with Doxytag macro @VERSION_1_12_7.
 
 libsofia-sip-ua:
+- Added accessor function nta_outgoing_branch()
 - **template**: Added foobar() function (sofia-sip/foobar.h).
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
@@ -71,3 +72,5 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Fixed #1472682 sf.net bug: ACK does not find INVITE when
+  To URI has been changed.
