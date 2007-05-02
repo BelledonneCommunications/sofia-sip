@@ -75,14 +75,6 @@
 #include "sofia-sip/nta_stateless.h"
 #include "sofia-sip/url_tag.h"
 
-#if !defined(random) && defined(HAVE_WIN32)
-#define random rand
-#endif
-
-#if !defined(EMSGSIZE) && defined(HAVE_WIN32)
-#define EMSGSIZE WSAEMSGSIZE
-#endif
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
