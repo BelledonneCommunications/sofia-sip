@@ -908,7 +908,7 @@ int su_msg_reply(su_msg_r reply, su_msg_r const msg,
 
   assert(msg != reply);
 
-  *msg0 = (struct su_msg_s *) msg;
+  *msg0 = *(su_msg_t **) msg;
   *reply = NULL;
 
   return su_msg_create(reply, su_msg_from(msg0), su_msg_to(msg0), wakeup, size);
