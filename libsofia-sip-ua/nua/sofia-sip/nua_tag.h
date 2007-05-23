@@ -166,7 +166,7 @@ SOFIAPUBVAR tag_typedef_t nutag_with;
  *    nua_respond()
  *
  * @par Parameter type
- *    msg_t *
+ *    nua_saved_event_t *
  *
  * @par Values
  *   Pointer to a saved event.
