@@ -28,6 +28,8 @@ libsofia-sip-ua:
 - Added global variable su_socket_blocking. If it is set to true,
   sockets are created as blocking.
 - Added accessor function nta_outgoing_branch()
+- Added SIP headers Alert-Info and Reply-To.
+- Added macros SIP_HAVE_XXXX for extra headers, e.g., SIP_HAVE_ALERT_INFO().
 - **template**: Added foobar() function (sofia-sip/foobar.h).
 - This release is ABI/API compatible with applications linked against 
   any 1.12.x release. However, applications built against this release won't 
