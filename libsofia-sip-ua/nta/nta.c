@@ -6754,6 +6754,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   char const *scheme = NULL;
   char const *port = NULL;
   int invalid, resolved, stateless = 0, user_via = agent->sa_user_via;
+  int invite_100rel = agent->sa_invite_100rel;
+
   tagi_t const *t;
   tport_t const *override_tport = NULL;
 
@@ -6818,6 +6820,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     else if (ntatag_tport == tt) {
       override_tport = (tport_t *)t->t_value;
     }
+    else if (ntatag_rel100 == tt) {
+      invite_100rel = t->t_value != 0;
+    }
   }
 
   orq->orq_agent    = agent;
@@ -6839,6 +6844,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   orq->orq_delay     = UINT_MAX;
   orq->orq_stateless = stateless != 0;
   orq->orq_user_via  = user_via != 0 && sip->sip_via;
+  orq->orq_100rel    = invite_100rel;
+
   if (cc)
     orq->orq_cc = nta_compartment_ref(cc);
 
@@ -7373,17 +7380,18 @@ int outgoing_features(nta_agent_t *agent, nta_outgoing_t *orq,
   supported[i = 0] = NULL;
 
   if (orq->orq_method == sip_method_invite) {
-    int add_100rel = agent->sa_invite_100rel;
     int require_100rel = sip_has_feature(sip->sip_require, "100rel");
 
-    tl_gets(tags,
-	    NTATAG_REL100_REF(add_100rel),
-	    TAG_END());
-    if (add_100rel && !require_100rel &&
-	!sip_has_feature(sip->sip_supported, "100rel"))
-      supported[i++] = "100rel";
-
-    orq->orq_must_100rel = require_100rel;
+    if (require_100rel) {
+      orq->orq_must_100rel = 1;
+      orq->orq_100rel = 1;
+    }
+    else if (sip_has_feature(sip->sip_supported, "100rel")) {
+      orq->orq_100rel = 1;
+    }
+    else if (orq->orq_100rel) {
+	supported[i++] = "100rel";
+    }
   }
 
   if (i) {

@@ -517,6 +517,7 @@ struct nta_outgoing_s
   unsigned orq_sigcomp_zap:1;	/**< Reset SigComp after completing */
   unsigned orq_must_100rel : 1;
   unsigned orq_timestamp : 1;	/**< Insert @Timestamp header. */
+  unsigned orq_100rel:1;	/**< Support 100rel */
   unsigned : 0;	/* pad */
 
 #if HAVE_SOFIA_SRESOLV
