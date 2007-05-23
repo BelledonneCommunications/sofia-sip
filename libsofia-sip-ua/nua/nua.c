@@ -101,11 +101,11 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  *     NUTAG_URL()              \n
  *     NUTAG_SIPS_URL()         \n
  *     NUTAG_SIP_PARSER()       \n
- *     NUTAG_UICC()             \n
  *     NUTAG_CERTIFICATE_DIR()  \n
- *     and all tags listed in nua_set_params(), \n
- *     and all relevant NTATAG_* are passed to NTA \n
- *     and all tport tags listed in <sofia-sip/tport_tag.h>
+ *     all tags listed in nua_set_params(), \n
+ *     all NTATAG_* are passed to NTA listed in <sofia-sip/nta_tag.h> \n
+ *     all tport tags listed in <sofia-sip/tport_tag.h> \n
+ *     STUNTAG_DOMAIN(), STUNTAG_SERVER() \n
  *
  * @note
  * From the @VERSION_1_12_2 all the nua_set_params() tags are processed.
@@ -119,7 +119,7 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  * @par Events:
  *     none
  *
- * @sa nua_shutdown(), nua_destroy(), nua_handle()
+ * @sa nua_shutdown(), nua_destroy(), nua_handle(), nta_agent_create().
  */
 nua_t *nua_create(su_root_t *root,
 		  nua_callback_f callback,

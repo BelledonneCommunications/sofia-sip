@@ -334,13 +334,35 @@ su_log_t nta_log[] = { SU_LOG_INIT("nta", "NTA_DEBUG", SU_DEBUG) };
  * @param contact_url   URL that agent uses to bind the server sockets
  * @param callback      pointer to callback function
  * @param magic         pointer to user data
- * @param tag,value,... other arguments
+ * @param tag,value,... tagged arguments
  *
- * @note It is possible to provide -1 as @a contact_url.
+ * @TAGS
+ * NTATAG_ALIASES(),
+ * NTATAG_BAD_REQ_MASK(), NTATAG_BAD_RESP_MASK(), NTATAG_BLACKLIST(),
+ * NTATAG_CANCEL_2543(), NTATAG_CANCEL_487(), NTATAG_CLIENT_RPORT(),
+ * NTATAG_DEBUG_DROP_PROB(), NTATAG_DEFAULT_PROXY(),
+ * NTATAG_EXTRA_100(),
+ * NTATAG_MAXSIZE(), NTATAG_MAX_FORWARDS(), NTATAG_MERGE_482(), NTATAG_MCLASS()
+ * NTATAG_PASS_100(), NTATAG_PASS_408(), NTATAG_PRELOAD(), NTATAG_PROGRESS(), 
+ * NTATAG_REL100(), 
+ * NTATAG_SERVER_RPORT(),
+ * NTATAG_SIPFLAGS(),
+ * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
+ * NTATAG_STATELESS(),
+ * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
+ * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
+ * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
+ *
+ * @note The value from following tags are stored, but they currently do nothing:
+ * NTATAG_SIGCOMP_ALGORITHM(), NTATAG_SIGCOMP_OPTIONS(), NTATAG_SMIME()
+ *
+ * @note It is possible to provide @c (url_string_t*)-1 as @a contact_url. 
+ * In that case, no server sockets are bound.
  * 
  * @retval handle to the agent when successful,
  * @retval NULL upon an error.
  *
+ * @sa NUTAG_
  */
 nta_agent_t *nta_agent_create(su_root_t *root,
 			      url_string_t const *contact_url,
@@ -364,9 +386,15 @@ nta_agent_t *nta_agent_create(su_root_t *root,
 
     agent->sa_maxsize         = 2 * 1024 * 1024; /* 2 MB */
     agent->sa_bad_req_mask    = 
-      (unsigned) ~(sip_mask_response | sip_mask_proxy);
+      /*
+       * Bit-wise not of these - what is left is suitable for UAs with 
+       * 100rel, timer, events, publish 
+       */
+      (unsigned) ~(sip_mask_response | sip_mask_proxy | sip_mask_registrar | 
+		   sip_mask_pref | sip_mask_privacy);
     agent->sa_bad_resp_mask   = 
-      (unsigned) ~(sip_mask_request | sip_mask_proxy);
+      (unsigned) ~(sip_mask_request | sip_mask_proxy | sip_mask_registrar | 
+		   sip_mask_pref | sip_mask_privacy);
     agent->sa_t1 	      = NTA_SIP_T1;
     agent->sa_t2 	      = NTA_SIP_T2;
     agent->sa_t4              = NTA_SIP_T4;
@@ -839,17 +867,24 @@ void agent_kill_terminator(nta_agent_t *agent)
  * 0 selects the default value.
  *
  * @TAGS
- * NTATAG_ALIASES(), NTATAG_BAD_REQ_MASK(), NTATAG_BAD_RESP_MASK(),
- * NTATAG_CANCEL_2543(), NTATAG_CANCEL_487(), NTATAG_DEBUG_DROP_PROB(),
- * NTATAG_DEFAULT_PROXY(), NTATAG_EXTRA_100(), NTATAG_MAXSIZE(),
- * NTATAG_MAX_FORWARDS(),
- * NTATAG_UDP_MTU(), NTATAG_MERGE_482(), NTATAG_PASS_100(),
- * NTATAG_PRELOAD(), NTATAG_REL100(), NTATAG_RPORT(), NTATAG_SERVER_RPORT(),
- * NTATAG_TCP_RPORT(),
- * NTATAG_SIPFLAGS(), NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(),
- * NTATAG_SIP_T4(), NTATAG_SMIME(), NTATAG_STATELESS(), NTATAG_TAG_3261(),
- * NTATAG_TIMEOUT_408(), NTATAG_PASS_408(), NTATAG_UA(), NTATAG_USER_VIA(),
- * and NTATAG_USE_TIMESTAMP().
+ * NTATAG_ALIASES(),
+ * NTATAG_BAD_REQ_MASK(), NTATAG_BAD_RESP_MASK(), NTATAG_BLACKLIST(),
+ * NTATAG_CANCEL_2543(), NTATAG_CANCEL_487(), NTATAG_CLIENT_RPORT(),
+ * NTATAG_DEBUG_DROP_PROB(), NTATAG_DEFAULT_PROXY(),
+ * NTATAG_EXTRA_100(),
+ * NTATAG_MAXSIZE(), NTATAG_MAX_FORWARDS(), NTATAG_MERGE_482(), NTATAG_MCLASS()
+ * NTATAG_PASS_100(), NTATAG_PASS_408(), NTATAG_PRELOAD(), NTATAG_PROGRESS(), 
+ * NTATAG_REL100(), 
+ * NTATAG_SERVER_RPORT(),
+ * NTATAG_SIPFLAGS(),
+ * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
+ * NTATAG_STATELESS(),
+ * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
+ * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
+ * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
+ *
+ * @note The value from following tags are stored, but they currently do nothing:
+ * NTATAG_SIGCOMP_ALGORITHM(), NTATAG_SIGCOMP_OPTIONS(), NTATAG_SMIME()
  */
 int nta_agent_set_params(nta_agent_t *agent,
 			 tag_type_t tag, tag_value_t value, ...)
@@ -917,49 +952,49 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   su_home_t *home = agent->sa_home;
 
   n = tl_gets(tags,
-	      NTATAG_MCLASS_REF(mclass),
+	      NTATAG_ALIASES_REF(aliases),
 	      NTATAG_BAD_REQ_MASK_REF(bad_req_mask),
 	      NTATAG_BAD_RESP_MASK_REF(bad_resp_mask),
-	      NTATAG_ALIASES_REF(aliases),
-	      NTATAG_UA_REF(ua),
-	      NTATAG_STATELESS_REF(stateless),
+	      NTATAG_BLACKLIST_REF(blacklist),
+	      NTATAG_CANCEL_2543_REF(cancel_2543),
+	      NTATAG_CANCEL_487_REF(cancel_487),
+	      NTATAG_DEBUG_DROP_PROB_REF(drop_prob),
+	      NTATAG_DEFAULT_PROXY_REF(proxy),
+	      NTATAG_EXTRA_100_REF(extra_100),
 	      NTATAG_MAXSIZE_REF(maxsize),
 	      NTATAG_MAX_FORWARDS_REF(max_forwards),
-	      NTATAG_UDP_MTU_REF(udp_mtu),
+	      NTATAG_MCLASS_REF(mclass),
+	      NTATAG_MERGE_482_REF(merge_482),
+	      NTATAG_PASS_100_REF(pass_100),
+	      NTATAG_PASS_408_REF(pass_408),
+	      NTATAG_PRELOAD_REF(preload),
+	      NTATAG_PROGRESS_REF(progress),
+	      NTATAG_REL100_REF(invite_100rel),
+	      NTATAG_RPORT_REF(rport),
+	      NTATAG_SERVER_RPORT_REF(server_rport),
+	      NTATAG_SIGCOMP_ALGORITHM_REF(algorithm),
+	      NTATAG_SIGCOMP_OPTIONS_REF(sigcomp),
+	      NTATAG_SIPFLAGS_REF(flags),
+	      NTATAG_SIP_T1X64_REF(sip_t1x64),
 	      NTATAG_SIP_T1_REF(sip_t1),
 	      NTATAG_SIP_T2_REF(sip_t2),
 	      NTATAG_SIP_T4_REF(sip_t4),
-	      NTATAG_SIP_T1X64_REF(sip_t1x64),
-	      NTATAG_PROGRESS_REF(progress),
-	      NTATAG_BLACKLIST_REF(blacklist),
-	      NTATAG_DEBUG_DROP_PROB_REF(drop_prob),
-	      NTATAG_USER_VIA_REF(user_via),
-	      NTATAG_EXTRA_100_REF(extra_100),
-	      NTATAG_PASS_100_REF(pass_100),
-	      NTATAG_TIMEOUT_408_REF(timeout_408),
-	      NTATAG_PASS_408_REF(pass_408),
-	      NTATAG_MERGE_482_REF(merge_482),
-	      NTATAG_DEFAULT_PROXY_REF(proxy),
-	      NTATAG_CANCEL_2543_REF(cancel_2543),
-	      NTATAG_CANCEL_487_REF(cancel_487),
-	      NTATAG_REL100_REF(invite_100rel),
-	      NTATAG_USE_TIMESTAMP_REF(use_timestamp),
-	      NTATAG_USE_NAPTR_REF(use_naptr),
-	      NTATAG_USE_SRV_REF(use_srv),
 #if HAVE_SOFIA_SMIME
 	      NTATAG_SMIME_REF(smime),
 #endif
-	      NTATAG_SIPFLAGS_REF(flags),
-	      NTATAG_RPORT_REF(rport),
-	      NTATAG_SERVER_RPORT_REF(server_rport),
+	      NTATAG_STATELESS_REF(stateless),
 	      NTATAG_TCP_RPORT_REF(tcp_rport),
-	      NTATAG_PRELOAD_REF(preload),
+	      NTATAG_TIMEOUT_408_REF(timeout_408),
+	      NTATAG_UA_REF(ua),
+	      NTATAG_UDP_MTU_REF(udp_mtu),
+	      NTATAG_USER_VIA_REF(user_via),
+	      NTATAG_USE_NAPTR_REF(use_naptr),
+	      NTATAG_USE_SRV_REF(use_srv),
+	      NTATAG_USE_TIMESTAMP_REF(use_timestamp),
 #ifdef TPTAG_THRPSIZE
 	      /* If threadpool is enabled, start a separate "reaper thread" */
 	      TPTAG_THRPSIZE_REF(threadpool),
 #endif
-	      NTATAG_SIGCOMP_OPTIONS_REF(sigcomp),
-	      NTATAG_SIGCOMP_ALGORITHM_REF(algorithm),
 	      TAG_END());
 
   if (mclass != NONE)
@@ -2815,6 +2850,7 @@ int nta_msg_mreply(nta_agent_t *agent,
 	  NTATAG_TPORT_REF(tport),
 	  NTATAG_INCOMPLETE_REF(incomplete),
 	  TPTAG_COMPARTMENT_REF(cc),
+	  /* XXX - should also check ntatag_sigcomp_close() */
 	  TAG_END());
 
   if (reply == NULL) {
@@ -3338,6 +3374,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   nta_leg_t *leg;
   su_home_t *home;
   url_t *url;
+  char const *what = NULL;
 
   if (agent == NULL)
     return su_seterrno(EINVAL), NULL;
@@ -3421,32 +3458,35 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   leg->leg_url = url;
 
   if (from && from != NONE && leg->leg_local == NULL) {
-    SU_DEBUG_3(("nta_leg_tcreate(): cannot duplicate local address\n"));
+    what = "cannot duplicate local address";
     goto err;
   }
   else if (to && to != NONE && leg->leg_remote == NULL) {
-    SU_DEBUG_3(("nta_leg_tcreate(): cannot duplicate remote address\n"));
+    what = "cannot duplicate remote address";
     goto err;
   }
   else if (route && route != NONE && leg->leg_route == NULL) {
-    SU_DEBUG_3(("nta_leg_tcreate(): cannot duplicate route\n"));
+    what = "cannot duplicate route";
     goto err;
   }
   else if (contact && contact != NONE && leg->leg_target == NULL) {
-    SU_DEBUG_3(("nta_leg_tcreate(): cannot duplicate target\n"));
+    what = "cannot duplicate target";
     goto err;
   }
   else if (url_string && leg->leg_url == NULL) {
-    SU_DEBUG_3(("nta_leg_tcreate(): cannot duplicate local destination\n"));
+    what = "cannot duplicate local destination";
     goto err;
   }
 
   if (!no_dialog) {
     if (!leg->leg_local || !leg->leg_remote) {
       /* To and/or From header missing */
-      SU_DEBUG_3(("nta_leg_tcreate(): missing%s%s header\n",
-		  !leg->leg_remote ? " To" : "",
-		  !leg->leg_local ? " From" : ""));
+      if (leg->leg_remote)
+	what = "Missing local dialog address";
+      else if (leg->leg_local)
+	what = "Missing remote dialog address";
+      else 
+	what = "Missing dialog addresses";
       goto err;
     }
 
@@ -3460,7 +3500,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
       leg->leg_id = sip_call_id_create(home, NULL);
 
     if (!leg->leg_id) {
-      SU_DEBUG_3(("nta_leg_tcreate(): cannot create Call-ID\n"));
+      what = "cannot create Call-ID";
       goto err;
     }
 
@@ -3496,7 +3536,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   else {
     /* This is "default leg" without a destination URL. */
     if (agent->sa_default_leg) {
-      SU_DEBUG_1(("leg_create(): tried to create second default leg\n"));
+      SU_DEBUG_1(("%s(): %s\n", "nta_leg_tcreate", "tried to create second default leg"));
       su_seterrno(EEXIST);
       goto err;
     }
@@ -3513,11 +3553,14 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
 
   leg_insert(agent, leg);
 
-  SU_DEBUG_9(("nta_leg_create(%p)\n", (void *)leg));
+  SU_DEBUG_9(("%s(%p)\n", "nta_leg_tcreate", (void *)leg));
 
   return leg;
 
  err:
+  if (what)
+    SU_DEBUG_9(("%s(): %s\n", "nta_leg_tcreate", what));
+
   su_home_zap(leg->leg_home);
 
   return NULL;
@@ -4476,7 +4519,7 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
     } 
     else {
       queue = agent->sa_in.proceeding;
-	/* draft-sparks-sip-nit-actions-03:
+	/* RFC 4320 (nit-actions-03):
 
    Blacklisting on a late response occurs even over reliable transports.
    Thus, if an element processing a request received over a reliable
@@ -5659,7 +5702,7 @@ int incoming_reply(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
       irq->irq_method != sip_method_invite && 
       !agent->sa_pass_408 &&
       !irq->irq_default) {
-    /* draft-sparks-sip-nit-actions-03 Action 2:
+    /* RFC 4320 nit-actions-03 Action 2:
        
    A transaction-stateful SIP element MUST NOT send a response with
    Status-Code of 408 to a non-INVITE request.  As a consequence, an
@@ -6383,7 +6426,7 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
  * transaction is freed before returning from the function.
  *
  * @sa
- * nta_outgoing_tcreate(), nnta_outgoing_tcancel(), nta_outgoing_destroy().
+ * nta_outgoing_tcreate(), nta_outgoing_tcancel(), nta_outgoing_destroy().
  *
  * @TAGS
  * NTATAG_STATELESS(), NTATAG_DELAY_SENDING(), NTATAG_BRANCH_KEY(),
@@ -6609,7 +6652,7 @@ unsigned nta_outgoing_delay(nta_outgoing_t const *orq)
   return orq != NULL && orq != NONE ? orq->orq_delay : UINT_MAX;
 }
 
-/** Get the branch parameter. */
+/** Get the branch parameter. @NEW_1_12_7 */
 char const *nta_outgoing_branch(nta_outgoing_t const *orq)
 {
   return orq != NULL && orq != NONE && orq->orq_branch
@@ -8090,6 +8133,10 @@ int outgoing_recv(nta_outgoing_t *orq,
 	  return 0;
 
 	if (sip && sa->sa_is_a_uas) {
+	  /*
+	   * We silently discard duplicate final responses to INVITE below
+	   * with outgoing_duplicate()
+	   */
 	  su_home_t *home = msg_home(orq->orq_request);
 	  orq->orq_tag = su_strdup(home, sip->sip_to->a_tag);
 	}
@@ -8117,6 +8164,10 @@ int outgoing_recv(nta_outgoing_t *orq,
       assert(orq_status < 200); (void)orq_status;
 
       if (status < 200) {
+	/* @RFC3261 17.1.2.1:
+	 * retransmissions continue for unreliable transports, 
+	 * but at an interval of T2 
+	 */
 	if (!orq->orq_reliable)
 	  outgoing_set_timer(orq, sa->sa_t2);
       } 

@@ -58,7 +58,25 @@ NTA_DLL extern tag_typedef_t ntatag_any;
 /* Tags for parameters */
 
 NTA_DLL extern tag_typedef_t ntatag_mclass;
-/** Message class used by NTA. @HI */
+/** Message class used by NTA. 
+ *
+ * The nta can use a custom or extended parser created with
+ * msg_mclass_clone().
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    pointer to #msg_mclass_t.
+ *
+ * @par Values
+ *    - custom or extended parser created with msg_mclass_clone()
+ *    - NULL - use default parser
+ *
+ * @sa NTATAG_SIPFLAGS()
+ */
 #define NTATAG_MCLASS(x) ntatag_mclass, tag_cptr_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_mclass_ref;
@@ -68,9 +86,33 @@ NTA_DLL extern tag_typedef_t ntatag_bad_req_mask;
 /** Mask for bad request messages. 
  * 
  * If an incoming request has erroneous headers matching with the mask, nta
- * automatically returns a 400 Bad Message response to them. If no mask is
- * specified, all requests with any bad header are dropped.
+ * automatically returns a 400 Bad Message response to them. 
+ *
+ * If mask ~0U (all bits set) is specified, all requests with any bad header
+ * are dropped. By default only the requests with bad headers essential for
+ * request processing or proxying are dropped.
  * 
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    - bitwise or of enum #sip_bad_mask values
+ *
+ * @sa enum #sip_bad_mask, NTATAG_BAD_RESP_MASK()
+ *
+ * @note
+ * The following headers are considered essential by default:
+ * - @ref sip_request \"request line\"", @From, @To, @CSeq, @CallID,
+ *   @ContentLength, @Via, @ContentType, @ContentDisposition,
+ *   @ContentEncoding, @Supported, @Contact, @Require, @RecordRoute, @RAck,
+ *   @RSeq, @Event, @Expires, @SubscriptionState, @SessionExpires,
+ *   @MinSE, @SIPEtag, and @SIPIfMatch.
+ *  
  */
 #define NTATAG_BAD_REQ_MASK(x) ntatag_bad_req_mask, tag_uint_v((x))
 
@@ -81,8 +123,32 @@ NTA_DLL extern tag_typedef_t ntatag_bad_resp_mask;
 /** Mask for bad response messages. 
  * 
  * If an incoming response has erroneous headers matching with the mask, nta
- * drops the response message. If no mask is specified, all responses with
- * any bad header are dropped.
+ * drops the response message. 
+ *
+ * If mask ~0U (all bits set) is specified, all responses with any bad header
+ * are dropped. By default only the responses with bad headers essential for
+ * response processing or proxying are dropped.
+ * 
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    - bitwise or of enum #sip_bad_mask values
+ *
+ * @sa enum #sip_bad_mask, NTATAG_BAD_REQ_MASK()
+ *
+ * @note
+ * The following headers are considered essential by default:
+ * - @ref sip_status \"status line\"", @From, @To, @CSeq, @CallID,
+ *   @ContentLength, @Via, @ContentType, @ContentDisposition,
+ *   @ContentEncoding, @Supported, @Contact, @Require, @RecordRoute, @RAck,
+ *   @RSeq, @Event, @Expires, @SubscriptionState, @SessionExpires, 
+ *   @MinSE, @SIPEtag, and @SIPIfMatch.
  */
 #define NTATAG_BAD_RESP_MASK(x) ntatag_bad_resp_mask, tag_uint_v((x))
 
@@ -90,18 +156,37 @@ NTA_DLL extern tag_typedef_t ntatag_bad_resp_mask_ref;
 #define NTATAG_BAD_RESP_MASK_REF(x) ntatag_bad_resp_mask_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_default_proxy;
-/** URL for (default) proxy. @HI */
-#define NTATAG_DEFAULT_PROXY(x) \
-ntatag_default_proxy, urltag_url_v((x))
+/** URL for (default) proxy.
+ *
+ * The requests are sent towards the <i>default outbound proxy</i> regardless
+ * the values of request-URI or @Route headers in the request. The URL of
+ * the default proxy is not added to the request in the @Route header or in
+ * the request-URI (against the recommendation of @RFC3261 section 8.1.2).
+ *
+ * The outbound proxy set by NTATAG_DEFAULT_PROXY() is used even if the
+ * dialog had an established route set or registration provided User-Agent
+ * with a @ServiceRoute set.
+ *
+ * @par Used with
+ *    nua_create(), nta_agent_create(), nta_agent_set_params() \n
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
+ *    nta_outgoing_tcancel(), nta_outgoing_prack(), nta_msg_tsend()
+ *
+ * @par Parameter type
+ *    Pointer to a url_t structure or a string containg a SIP or SIPS URI
+ *
+ * @par Values
+ *    - Valid SIP or SIPS URI
+ */
+#define NTATAG_DEFAULT_PROXY(x) ntatag_default_proxy, urltag_url_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_default_proxy_ref;
 #define NTATAG_DEFAULT_PROXY_REF(x) \
 ntatag_default_proxy_ref, urltag_url_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_contact;
-/** Contact used by NTA. @HI */
-#define NTATAG_CONTACT(x) \
-ntatag_contact, siptag_contact_v((x))
+/** Contact used by NTA. */
+#define NTATAG_CONTACT(x) ntatag_contact, siptag_contact_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_contact_ref;
 #define NTATAG_CONTACT_REF(x) \
@@ -136,21 +221,42 @@ ntatag_branch_key_ref, tag_str_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_ack_branch;
 /** Branch for ACKed transaction. @HI */
-#define NTATAG_ACK_BRANCH(x) \
-ntatag_ack_branch, tag_str_v((x))
+#define NTATAG_ACK_BRANCH(x) ntatag_ack_branch, tag_str_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_ack_branch_ref;
-#define NTATAG_ACK_BRANCH_REF(x) \
-ntatag_ack_branch_ref, tag_str_vr(&(x))
+#define NTATAG_ACK_BRANCH_REF(x) ntatag_ack_branch_ref, tag_str_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_comp;
-/** Compression algorithm. @HI */
-#define NTATAG_COMP(x) \
-ntatag_comp, tag_str_v((x))
+/** Compression algorithm. 
+ *
+ * Set compression algorithm for request as described in @RFC3486.
+ *
+ * @note This tag is has no effect without a compression plugin.
+ *
+ * @par Used with
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
+ *    nta_outgoing_tcancel(), nta_outgoing_prack(), nta_msg_tsend()
+ *
+ * @par
+ * Note that NTATAG_COMP(NULL) can be used with nta_incoming_set_params()
+ * and nta_incoming_treply(), too. It indicates that the response is sent
+ * uncompressed, no matter what the client has in @a comp parameter of @Via
+ * header.
+ *
+ * @par Parameter type
+ *    string
+ *
+ * @par Values
+ *    - name of the compression algorithm ("sigcomp")
+ *
+ * @sa @RFC3320, @RFC3486, TPTAG_COMPARTMENT(),
+ * NTATAG_SIGCOMP_ALGORITHM(), NTATAG_SIGCOMP_AWARE(),
+ * NTATAG_SIGCOMP_CLOSE(), NTATAG_SIGCOMP_OPTIONS()
+ */
+#define NTATAG_COMP(x) ntatag_comp, tag_str_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_comp_ref;
-#define NTATAG_COMP_REF(x) \
-ntatag_comp_ref, tag_str_vr(&(x))
+#define NTATAG_COMP_REF(x) ntatag_comp_ref, tag_str_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_msg;
 /** Pass a SIP message to treply()/tcreate() functions. @HI */
@@ -181,14 +287,49 @@ NTA_DLL extern tag_typedef_t ntatag_smime_ref;
 #define NTATAG_SMIME_REF(x) ntatag_smime_ref, tag_ptr_vr(&(x), (x))
  
 NTA_DLL extern tag_typedef_t ntatag_maxsize;
-/** Maximum size of incoming message. @HI */
+/** Maximum size of incoming message. @HI 
+ *
+ * If the size of an incoming request message would exceed the
+ * given limit, the stack will automatically respond with <i>413 Request
+ * Entity Too Large</i>.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    usize_t 
+ *
+ * @par Values
+ *    - Maximum acceptable size of an incoming request message.
+ *      Default value is 2 megabytes (2097152 bytes).
+ *
+ * @sa msg_maxsize()
+ */
 #define NTATAG_MAXSIZE(x) ntatag_maxsize, tag_usize_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_maxsize_ref;
 #define NTATAG_MAXSIZE_REF(x) ntatag_maxsize_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_udp_mtu;
-/** Maximum size of outgoing UDP request. @HI */
+/** Maximum size of outgoing UDP request. @HI 
+ *
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    
+ *
+ * @par Values
+ *    - 
+ *
+ * @sa
+ *
+ */
 #define NTATAG_UDP_MTU(x) ntatag_udp_mtu, tag_usize_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_udp_mtu_ref;
@@ -197,8 +338,22 @@ NTA_DLL extern tag_typedef_t ntatag_udp_mtu_ref;
 NTA_DLL extern tag_typedef_t ntatag_max_forwards;
 /** Default value for @MaxForwards header. 
  *
+ * The default value of @MaxForwards header added to the requests. The
+ * initial value recommended by @RFC3261 is 70, but usually SIP proxies use
+ * much lower default value, such as 24.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned
+ *
+ * @par Values
+ *    - Default value added to the @MaxForwards header in the sent requests
+ *
  * @since New in @VERSION_1_12_2.
- * @hideinitializer 
  */
 #define NTATAG_MAX_FORWARDS(x) ntatag_max_forwards, tag_uint_v((x))
 
@@ -206,42 +361,160 @@ NTA_DLL extern tag_typedef_t ntatag_max_forwards_ref;
 #define NTATAG_MAX_FORWARDS_REF(x) ntatag_max_forwards_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t1;
-/** Initial retransmission interval (in milliseconds) @HI */
+/** Initial retransmission interval (in milliseconds) @HI 
+ *
+ * Set the T1 retransmission interval used by the SIP transaction engine. The
+ * T1 is the initial duration used by request retransmission timers A and E
+ * (UDP) as well as response retransmission timer G.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    - Value of SIP T1 in milliseconds 
+ *
+ * @sa @RFC3261 appendix A, SIPTAG_SIP_T1X4(), SIPTAG_SIP_T1(), SIPTAG_SIP_T4()
+ */
 #define NTATAG_SIP_T1(x) ntatag_sip_t1, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t1_ref;
 #define NTATAG_SIP_T1_REF(x) ntatag_sip_t1_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t1x64;
-/** Transaction timeout (defaults to T1 * 64). @HI */
+/** Transaction timeout (defaults to T1 * 64). @HI 
+ *
+ * Set the T1x64  timeout value used by the SIP transaction engine. The T1x64 is
+ * duration used for timers B, F, H, and J (UDP) by the SIP transaction engine. 
+ * The timeout value T1x64 can be adjusted separately from the initial
+ * retransmission interval T1, which is set with NTATAG_SIP_T1().
+ * 
+ * The default value for T1x64 is 64 times value of T1, or 32000 milliseconds.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    - Value of T1x64 in milliseconds
+ *
+ * @sa @RFC3261 appendix A, SIPTAG_SIP_T1(), SIPTAG_SIP_T2(), SIPTAG_SIP_T4()
+ *
+ */
 #define NTATAG_SIP_T1X64(x) ntatag_sip_t1x64, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t1x64_ref;
 #define NTATAG_SIP_T1X64_REF(x) ntatag_sip_t1x64_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t2;
-/** Maximum retransmission interval (in milliseconds) @HI */
+/** Maximum retransmission interval (in milliseconds) @HI 
+ *
+ * Set the maximum retransmission interval used by the SIP transaction
+ * engine. The T2 is the maximum duration used for the timers E (UDP) and G
+ * by the SIP transaction engine. Note that the timer A is not capped by T2. 
+ * Retransmission interval of INVITE requests grows exponentially until the
+ * timer B fires.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    - Value of SIP T2 in milliseconds 
+ *
+ * @sa @RFC3261 appendix A, SIPTAG_SIP_T1X4(), SIPTAG_SIP_T1(), SIPTAG_SIP_T4()
+ */
 #define NTATAG_SIP_T2(x) ntatag_sip_t2, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t2_ref;
 #define NTATAG_SIP_T2_REF(x) ntatag_sip_t2_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t4;
-/** Transaction lifetime (in milliseconds) @HI */
+/** Transaction lifetime (in milliseconds) @HI 
+ *
+ * Set the lifetime for completed transactions used by the SIP transaction
+ * engine. A completed transaction is kept around for the duration of T4 in
+ * order to catch late responses. The T4 is the maximum duration for the
+ * messages to stay in the network and the duration of SIP timer K.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    - Value of SIP T4 in milliseconds
+ *
+ * @sa @RFC3261 appendix A, SIPTAG_SIP_T1X4(), SIPTAG_SIP_T1(), SIPTAG_SIP_T2()
+ */
 #define NTATAG_SIP_T4(x)    ntatag_sip_t4, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sip_t4_ref;
 #define NTATAG_SIP_T4_REF(x) ntatag_sip_t4_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_progress;
-/** Progress timer for User-Agents (interval for retranmitting 1XXs) @HI */
+/** Progress timer for User-Agents (interval for retranmitting 1XXs) @HI.
+ *
+ * The UAS should retransmit preliminary responses to the INVITE
+ * transactions every minute in order to re-set the timer C within the
+ * intermediate proxies.
+ *
+ * The default value for the progress timer is 60000.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    Value of progress timer in milliseconds.
+ *
+ * @sa @RFC3261 sections 13.3.1.1, 16.7 and 16.8.
+ */
 #define NTATAG_PROGRESS(x)    ntatag_progress, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_progress_ref;
 #define NTATAG_PROGRESS_REF(x) ntatag_progress_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_blacklist;
-/** Add Retry-After header to internally-generated error messages. @HI */
+/** Add Retry-After header to internally-generated error messages. @HI 
+ *
+ * The NTATAG_BLACKLIST() provides a default value for @RetryAfter header
+ * added to the internally generated responses such as <i>503 DNS Error</i>
+ * or <i>408 Timeout</i>. The idea is that the application can retain its
+ * current state and retry the operation after a while.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *     unsigned int
+ *
+ * @par Values
+ *    - Value of @RetryAfter header (in seconds)
+ *
+ * @sa NTATAG_TIMEOUT_408()
+ */
 #define NTATAG_BLACKLIST(x)  ntatag_blacklist, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_blacklist_ref;
@@ -250,38 +523,133 @@ NTA_DLL extern tag_typedef_t ntatag_blacklist_ref;
 NTA_DLL extern tag_typedef_t ntatag_debug_drop_prob;
 /** Packet drop probability for debugging. 
  *
- * The packet drop probability parameter is useful mainly in proxies for
- * debugging purposes. The stack drops an incoming message with the given
- * probability. The range is in 0 .. 1000, 500 means p=0.5.
- @HI */
+ * The packet drop probability parameter is useful mainly for debugging
+ * purposes. The stack drops an incoming message with the given probability. 
+ * The range is in 0 .. 1000, 500 means p=0.5.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned integer
+ *
+ * @par Values
+ *    - Valid values are in range 0 ... 1000
+ *    - Probablity to drop a given message is value / 1000.
+ *
+ * @HI
+ */
 #define NTATAG_DEBUG_DROP_PROB(x) ntatag_debug_drop_prob, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_debug_drop_prob_ref;
 #define NTATAG_DEBUG_DROP_PROB_REF(x) ntatag_debug_drop_prob_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sigcomp_options;
-/** Semicolon-separate SigComp options. @HI */
+/** Semicolon-separated SigComp options.
+ *
+ * @note This tag is has no effect without a SigComp plugin.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *    nta_agent_add_tport() \n
+ *
+ * @par Parameter type
+ *    string 
+ *
+ * @par Values
+ *    - semicolon-separated parameter-value pairs, passed to the SigComp plugin
+ *
+ * @sa NTATAG_COMP(), NTATAG_SIGCOMP_ALGORITHM(), NTATAG_SIGCOMP_AWARE(),
+ * NTATAG_SIGCOMP_CLOSE(), @RFC3320
+ * @HI
+ */
 #define NTATAG_SIGCOMP_OPTIONS(x)    ntatag_sigcomp_options, tag_str_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sigcomp_options_ref;
 #define NTATAG_SIGCOMP_OPTIONS_REF(x) ntatag_sigcomp_options_ref, tag_str_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sigcomp_close;
-/** Close SigComp compartment after completing transaction. @HI */
+/** Close SigComp compartment after completing transaction.
+ *
+ * @note This tag is has no effect without a SigComp plugin.
+ *
+ * @par Used with
+ *    nta_incoming_set_params(), nta_incoming_treply()
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
+ *    nta_outgoing_tmcreate(), nta_outgoing_tcancel()
+ *    nta_outgoing_prack(), nta_msg_tsend(), nta_msg_treply()
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - application takes care of compartment management
+ *    - false - stack manages compartments
+ *
+ * @sa NTATAG_COMP(), TPTAG_COMPARTMENT(),
+ * NTATAG_SIGCOMP_ALGORITHM(), NTATAG_SIGCOMP_AWARE(),
+ * NTATAG_SIGCOMP_OPTIONS(), @RFC3320
+ * @HI
+ */
 #define NTATAG_SIGCOMP_CLOSE(x)  ntatag_sigcomp_close, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sigcomp_close_ref;
 #define NTATAG_SIGCOMP_CLOSE_REF(x) ntatag_sigcomp_close_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sigcomp_aware;
-/** Indicate that the application is SigComp-aware. */
+/** Indicate that the application is SigComp-aware. 
+ *
+ * @note This tag is has no effect without a SigComp plugin.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - application takes care of compartment management
+ *    - false - stack manages compartments
+ *
+ * @sa NTATAG_COMP(), NTATAG_SIGCOMP_ALGORITHM(), NTATAG_SIGCOMP_CLOSE(),
+ * NTATAG_SIGCOMP_OPTIONS(), @RFC3320
+ * 
+ * @HI
+ */
 #define NTATAG_SIGCOMP_AWARE(x) ntatag_sigcomp_aware, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sigcomp_aware_ref;
 #define NTATAG_SIGCOMP_AWARE_REF(x) ntatag_sigcomp_aware_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_sigcomp_algorithm;
-/** Specify SigComp algorithm. For example, NULL, LZSS, or LZSS-POC.
+/** Specify SigComp algorithm.  
+ *
+ * @note This tag is has no effect without a SigComp plugin.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *    nta_agent_add_tport() \n
+ *
+ * @par Parameter type
+ *    string 
+ *
+ * @par Values
+ *    - opaque string passed to the SigComp plugin
+ *
+ * @sa NTATAG_COMP(), NTATAG_SIGCOMP_AWARE(), NTATAG_SIGCOMP_CLOSE(),
+ * NTATAG_SIGCOMP_OPTIONS(), @RFC3320
+ * 
+ * @HI
  */
 #define NTATAG_SIGCOMP_ALGORITHM(x) ntatag_sigcomp_algorithm, tag_str_v((x))
 
@@ -290,49 +658,220 @@ NTA_DLL extern tag_typedef_t ntatag_sigcomp_algorithm_ref;
 ntatag_sigcomp_algorithm_ref, tag_str_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_ua;
-/** If true, NTA acts as User Agent Server or Client by default. @HI */
+/** If true, NTA acts as User Agent Server or Client by default.
+ *
+ * When acting as an UA, the NTA stack will
+ * - respond with 481 to a PRACK request with no matching "100rel" response
+ * - check for out-of-order CSeq headers for each #nta_leg_t dialog object
+ * - if NTATAG_MERGE_482(1) is also used, return <i>482 Request Merged</i> to
+ *   a duplicate request with same @CallID, @CSeq, @From tag but different
+ *   topmost @Via header (see @RFC3261 section 8.2.2.2 Merged Requests)
+ * - silently discard duplicate final responses to INVITE
+ * - retransmit preliminary responses (101..199) to INVITE request in regular
+ *   intervals ("timer N2")
+ * - retransmit 2XX response to INVITE request with exponential intervals 
+ * - handle ACK sent in 2XX response to an INVITE using the
+ *   #nta_ack_cancel_f callback bound to #nta_incoming_t with
+ *   nta_incoming_bind()
+ *
+ * @note This NUTAG_UA(1) is set internally by nua_create()
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - act as an UA 
+ *    - false - act as an proxy 
+ *
+ * @sa NTATAG_MERGE_482()
+ */
 #define NTATAG_UA(x) ntatag_ua, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_ua_ref;
 #define NTATAG_UA_REF(x) ntatag_ua_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_stateless;
-/** If true, agent processes incoming requests statelessly by default. @HI */
+/** Enable stateless processing. @HI 
+ *
+ * @par Server side
+ * The incoming requests are processed statefully if there is a default leg
+ * (created with nta_leg_default()). This option is provided for proxies or
+ * other server elements that process requests statelessly.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Values
+ *    - true - do not pass incoming requests to default leg
+ *    - false - pass incoming requests to default leg, if it exists
+ *
+ * @par Client side
+ * The outgoing requests can be sent statelessly, too, if the
+ * NTATAG_STATELESS(1) is included in the tag list of nta_outgoing_tcreate().
+ *
+ * @par Used with
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
+ *    nta_outgoing_tcancel(), nta_outgoing_prack()
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - create only a transient #nta_outgoing_t transaction object
+ *    - false - create an ordinary client transaction object
+ *
+ * @sa NTATAG_IS_UA(), nta_incoming_default(), nta_outgoing_default(),
+ * nta_leg_default()
+ */
 #define NTATAG_STATELESS(x) ntatag_stateless, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_stateless_ref;
 #define NTATAG_STATELESS_REF(x) ntatag_stateless_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_user_via;
-/** Allow application to insert Via headers. @HI */
+/** Allow application to insert Via headers. @HI 
+ *
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - 
+ *    - false - 
+ *
+ * @sa
+ *
+ */
 #define NTATAG_USER_VIA(x) ntatag_user_via, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_user_via_ref;
 #define NTATAG_USER_VIA_REF(x) ntatag_user_via_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_extra_100;
-/** Respond with "100 Trying" if application has not responded. @HI */
+/** Respond with "100 Trying" if application has not responded.
+ *
+ * As per recommended by @RFC4320, the stack can generate a 100 Trying
+ * response to the non-INVITE requests if the application has not responded
+ * to a request within half of the SIP T2 (the default value for T2 is 4000
+ * milliseconds, so the extra <i>100 Trying<i/> would be sent after 2 seconds).
+ *
+ * @par Used with	
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - send extra 100 Trying if application does not respond
+ *    - false - do not send 100 Trying (default)
+ *
+ * @sa @RFC4320, NTATAG_PASS_408(), NTATAG_TIMEOUT_408()
+ */
 #define NTATAG_EXTRA_100(x)    ntatag_extra_100, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_extra_100_ref;
 #define NTATAG_EXTRA_100_REF(x) ntatag_extra_100_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_pass_100;
-/** Pass "100 Trying" provisional answers to the application. @HI */
+/** Pass "100 Trying" provisional answers to the application. @HI 
+ *
+ * By default, the stack silently processes the <i>100 Trying</i> responses
+ * from the server. Usually the <i>100 Trying</i> responses are not
+ * important to the application but rather sent by the outgoing proxy
+ * immediately after it has received the request. However, the application
+ * can ask nta for them by setting NTATAG_PASS_100(1) if, for instance, the
+ * <i>100 Trying</i> responses are needed for user feedback.
+ *
+ * @par Used with
+ *    nua_create(), nta_agent_create(), nta_agent_set_params() \n
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
+ *    nta_outgoing_tcancel(), nta_outgoing_prack(), nta_msg_tsend()
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - pass <i>100 Trying</i> to application
+ *    - false - silently process <i>100 Trying</i> responses
+ *
+ * @sa NTATAG_EXTRA_100(), NTATAG_DEFAULT_PROXY()
+ */
 #define NTATAG_PASS_100(x) ntatag_pass_100, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_pass_100_ref;
 #define NTATAG_PASS_100_REF(x) ntatag_pass_100_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_timeout_408;
-/** Generate "408 Request Timeout" response when request times out. @HI */
+/** Generate "408 Request Timeout" response when request times out. @HI 
+ *
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - 
+ *    - false - 
+ *
+ * @sa
+ *
+ */
 #define NTATAG_TIMEOUT_408(x)  ntatag_timeout_408, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_timeout_408_ref;
 #define NTATAG_TIMEOUT_408_REF(x) ntatag_timeout_408_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_pass_408;
-/** Pass "408 Request Timeout" responses to client. @HI */
+/** Pass "408 Request Timeout" responses to the client. @HI 
+ *
+ * As per recommended by @RFC4320, the <i>408 Request Timeout</i> responses
+ * to non-INVITE transaction are not sent over the network to the client by
+ * default. The application can ask stack to pass the 408 responses with
+ * NTATAG_PASS_408(1). 
+ *
+ * Note that unlike NTATAG_PASS_100(), this tags changes the way server side
+ * works.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - pass superfluous 408 responses 
+ *    - false - discard superfluous 408 responses
+ *
+ * @sa @RFC4320, NTATAG_EXTRA_100(), NTATAG_TIMEOUT_408()
+ *
+ */
 #define NTATAG_PASS_408(x)  ntatag_pass_408, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_pass_408_ref;
@@ -346,70 +885,306 @@ NTA_DLL extern tag_typedef_t ntatag_no_dialog_ref;
 #define NTATAG_NO_DIALOG_REF(x)   ntatag_no_dialog_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_merge_482;
-/** Merge requests, send 482 to other requests. @HI */
+/** Merge requests, send 482 to other requests. @HI 
+ *
+ * If an User-Agent receives a duplicate request with same @CallID, @CSeq,
+ * @From tag but different topmost @Via header (see @RFC3261 section 8.2.2.2
+ * Merged Requests), it should return <i>482 Request Merged</i> response to
+ * the duplicate request. Such a duplicate request has been originally
+ * generated by a forking proxy and usually routed via different route to
+ * the User-Agent. The User-Agent should only respond meaningfully to the
+ * first request and return the 482 response to the following forked
+ * requests.
+ *
+ * Note that also NTATAG_UA(1) should be set before nta detects merges and
+ * responds with 482 to them.
+ *
+ * @note If your application is an multi-lined user-agent, you may consider
+ * disabling request merging. However, you have to somehow handle merging
+ * within a single line.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - detect duplicate requests and respond with 482 to them
+ *    - false - process duplicate requests separately
+ *
+ * @sa NTATAG_UA(1)
+ */
 #define NTATAG_MERGE_482(x)       ntatag_merge_482, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_merge_482_ref;
 #define NTATAG_MERGE_482_REF(x)   ntatag_merge_482_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_cancel_2543;
-/** Send a CANCEL to an INVITE without an provisional response. @HI */
+/**Follow @RFC2543 semantics with CANCEL.
+ *
+ * By default, the nta follows "@RFC3261" semantics when CANCELing a
+ * request. The CANCEL does not terminate transaction, rather, it is just a
+ * hint to the server that it should respond immediately (with <i>487
+ * Request Terminated</i> if it has no better response). Also, if the
+ * original request was sent over unreliable transport such as UDP, the
+ * CANCEL is delayed until the server has sent a preliminary response to the
+ * original request.
+ *
+ * If NTATAG_CANCEL_2543(1) is given, the transaction is canceled
+ * immediately internally (a 487 response is generated locally) and the
+ * CANCEL request is sent without waiting for an provisional response.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *    nta_outgoing_tcancel()
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - follow "RFC 2543" semantics with CANCEL
+ *    - false - follow "RFC 3261" semantics with CANCEL
+ *
+ * @sa NTATAG_CANCEL_408()
+ * 
+ * @HI
+ */
 #define NTATAG_CANCEL_2543(x)     ntatag_cancel_2543, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_cancel_2543_ref;
 #define NTATAG_CANCEL_2543_REF(x) ntatag_cancel_2543_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_cancel_408;
-/** Do not send a CANCEL but just timeout the request. @HI */
+/** Do not send a CANCEL but just timeout the request. 
+ *
+ * Calling nta_outgoing_tcancel() with this tag set marks request as
+ * canceled but does not actually send a CANCEL request. If
+ * NTATAG_CANCEL_2543(1) is also included, a 487 response is generated
+ * internally.
+ *
+ * @par Used with
+ *    nta_outgoing_tcancel() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - do not send CANCEL
+ *    - false - let request to timeout
+ *
+ * @sa NTATAG_CANCEL_2543()
+ */
 #define NTATAG_CANCEL_408(x)     ntatag_cancel_408, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_cancel_408_ref;
 #define NTATAG_CANCEL_408_REF(x) ntatag_cancel_408_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_tag_3261;
-/** When responding to requests, use unique tags. @HI */
+/** When responding to requests, use unique tags. @HI 
+ *
+ * If set the UA would generate an unique @From/@To tag for all dialogs. If
+ * unset UA would reuse same tag in order to make it easier to re-establish
+ * dialog state after a reboot.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - use different tag for each dialog
+ *    - false - use same tag for all dialogs
+ *
+ * @sa @RFC3261 section 12.2.2
+ */
 #define NTATAG_TAG_3261(x)        ntatag_tag_3261, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_tag_3261_ref;
 #define NTATAG_TAG_3261_REF(x)    ntatag_tag_3261_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_use_timestamp;
-/** Use Timestamp header. @HI */
+/** Use @Timestamp header. @HI 
+ *
+ * If set, a @Timestamp header would be added to stateful requests. The
+ * header can be used to calculate the roundtrip transport latency between
+ * client and server.
+ *
+ * @par Used with
+ *    nua_create(), 
+ *    nta_agent_create(),
+ *    nta_agent_set_params(),
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
+ *    nta_outgoing_tcancel(), and nta_outgoing_prack().
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - Add @Timestamp header
+ *    - false - do not add @Timestamp header
+ *
+ * @sa @RFC3261 section 8.2.6
+ */
 #define NTATAG_USE_TIMESTAMP(x) ntatag_use_timestamp, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_use_timestamp_ref;
 #define NTATAG_USE_TIMESTAMP_REF(x) ntatag_use_timestamp_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_method;
-/** Method name. @HI */
+/**Method name. @HI 
+ *
+ * Create a dialogless #nta_leg_t object matching only requests with
+ * the specified method.
+ *
+ * @par Used with
+ *   nta_leg_tcreate()
+ *
+ * @par Parameter type
+ *    String containing method name.
+ *
+ * @par Values
+ *    SIP method name (e.g., "SUBSCRIBE").
+ *
+ */
 #define NTATAG_METHOD(x)          ntatag_method, tag_str_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_method_ref;
 #define NTATAG_METHOD_REF(x)      ntatag_method_ref, tag_str_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_cancel_487;
-/** When a CANCEL is received, reply with 487 response. True by default. @HI */
+/** When a CANCEL is received, automatically return 487 response to original request.
+ *
+ * When the CANCEL is received for an ongoing server transaction
+ * #nta_incoming_t, the stack will automatically return a <i>487 Request
+ * Terminated</i> response to the client after returning from the
+ * #nta_incoming_f callback bound to the transaction with
+ * nta_incoming_bind()
+ * 
+ * The application can delay sending the response to the original request
+ * when NTATAG_CANCEL_408(0) is used. This is useful, for instance, with a
+ * proxy that forwards the CANCEL downstream and the forwards the response
+ * back to upstream.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - respond automatically to the CANCELed transaction
+ *    - false - application takes care of responding
+ *
+ * @sa NTATAG_CANCEL_2543(), nta_incoming_bind()
+ *
+ * @HI
+ */
 #define NTATAG_CANCEL_487(x)     ntatag_cancel_487, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_cancel_487_ref;
 #define NTATAG_CANCEL_487_REF(x) ntatag_cancel_487_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_rel100;
-/** Include rel100 in INVITE requests. @HI */
+/** Include rel100 in INVITE requests. @HI 
+ *
+ * Include feature tag "100rel" in @Supported header of the INVITE requests.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - include "100rel"
+ *    - false - do not include "100rel"
+ *
+ * @sa nta_outgoing_prack(), nta_reliable_treply(), nta_reliable_mreply()
+ */
 #define NTATAG_REL100(x)     ntatag_rel100, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_rel100_ref;
 #define NTATAG_REL100_REF(x) ntatag_rel100_ref, tag_bool_vr(&(x))
  
 NTA_DLL extern tag_typedef_t ntatag_sipflags;
-/** Set SIP parser flags. @HI */
+/** Set SIP parser flags. @HI 
+ *
+ * The SIP parser flags affect how the messages are parsed and the result
+ * presented to the application. They also control encoding of messages.
+ * The most important flags are as follows:
+ * - MSG_FLG_COMPACT - use compact form 
+ *                     (single-letter header names, minimum whitespace)
+ * - MSG_FLG_EXTRACT_COPY - cache printable copy of headers when parsing. 
+ *   Using this flag can speed up proxy processing considerably. It is
+ *   implied when the parsed messages are logged (because #TPORT_LOG
+ *   environment variable is set, or TPTAG_LOG() is used.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int 
+ *
+ * @par Values
+ *    - Bitwise OR of SIP parser flags (enum #msg_flg_user)
+ *
+ * @sa NTATAG_PRELOAD(), enum #msg_flg_user, sip_s::sip_flags
+ */
 #define NTATAG_SIPFLAGS(x)     ntatag_sipflags, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_sipflags_ref;
 #define NTATAG_SIPFLAGS_REF(x) ntatag_sipflags_ref, tag_uint_vr(&(x))
  
 NTA_DLL extern tag_typedef_t ntatag_client_rport;
-/** Add rport at client. @HI */
+/** Enable client-side "rport". @HI 
+ *
+ * This tag controls @RFC3581 support on client side. The "rport" parameter
+ * is used when the response has to be routed symmetrically through a NAT box.
+ *
+ * The client-side support involves just adding the "rport" parameter to the topmost
+ * @Via header before the request is sent. 
+ *
+ * @note By default, the client "rport" is disabled when nta is used, and
+ * enabled when nua is used.
+ *
+ * @par Used with
+ *    nua_create() (nua uses NTATAG_CLIENT_RPORT(1) by default) \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - add "rport" parameter
+ *    - false - do not add "rport" parameter
+ *
+ * @note The NTATAG_RPORT() is a synonym for this.
+ *
+ * @sa @RFC3581, NTATAG_SERVER_RPORT(), @Via
+ */
 #define NTATAG_CLIENT_RPORT(x) ntatag_client_rport, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_client_rport_ref;
@@ -419,42 +1194,158 @@ NTA_DLL extern tag_typedef_t ntatag_client_rport_ref;
 #define NTATAG_RPORT_REF(x) ntatag_client_rport_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_server_rport;
-/** Use rport at server. @HI */
+/** Use rport parameter at server.
+ *
+ * This tag controls @RFC3581 support on server side. The "rport" parameter
+ * is used when the response has to be routed symmetrically through a NAT
+ * box.
+ *
+ * If the topmost @Via header has an "rport" parameter, the server stores
+ * the port number from which the request was sent in it. When sending the
+ * response back to the client, the server uses the port number in the
+ * "rport" parameter rather than the client-supplied port number in @Via
+ * header.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - use "rport" parameter (default)
+ *    - false - do not use "rport" parameterx
+ *
+ * @sa @RFC3581, NTATAG_CLIENT_RPORT(), @Via
+ */
 #define NTATAG_SERVER_RPORT(x) ntatag_server_rport, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_server_rport_ref;
 #define NTATAG_SERVER_RPORT_REF(x) ntatag_server_rport_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_tcp_rport;
-/** Use rport with TCP, too. @HI */
+/** Use rport with TCP, too. @HI 
+ *
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - 
+ *    - false - 
+ *
+ * @sa
+ *
+ */
 #define NTATAG_TCP_RPORT(x) ntatag_tcp_rport, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_tcp_rport_ref;
 #define NTATAG_TCP_RPORT_REF(x) ntatag_tcp_rport_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_preload;
-/** Preload by N bytes. @HI */
+/** Preload by N bytes. @HI 
+ *
+ * When the memory block is allocated for an incoming request by the stack,
+ * the stack can allocate some extra memory for the parser in addition to
+ * the memory used by the actual message contents. 
+ * 
+ * While wasting some memory, this can speed up parsing considerably.
+ * Recommended amount of preloading per packet is 1500 bytes.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned
+ *
+ * @par Values
+ *    Amount of extra per-message memory allocated for parser.
+ *
+ * @sa NTATAG_SIPFLAGS() and #MSG_FLG_EXTRACT_COPY
+ */
 #define NTATAG_PRELOAD(x) ntatag_preload, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_preload_ref;
 #define NTATAG_PRELOAD_REF(x) ntatag_preload_ref, tag_uint_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_use_naptr;
-/** If true, try to use NAPTR records when resolving. @HI */
+/** If true, try to use NAPTR records when resolving. @HI 
+ *
+ * The application can disable NTA from using NAPTR records when resolving
+ * SIP URIs.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - enable NAPTR resolving
+ *    - false - disable NAPTR resolving
+ *
+ * @bug NAPTRs are not used with SIPS URIs in any case.
+ *
+ * @sa @RFC3263, NTATAG_USE_SRV()
+ */
 #define NTATAG_USE_NAPTR(x) ntatag_use_naptr, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_use_naptr_ref;
 #define NTATAG_USE_NAPTR_REF(x) ntatag_use_naptr_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_use_srv;
-/** If true, try to use SRV records when resolving. @HI */
+/** If true, try to use SRV records when resolving.
+ *
+ * The application can disable NTA from using SRV records when resolving
+ * SIP URIs.
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - enable SRV resolving
+ *    - false - disable SRV resolving
+ *
+ * @sa @RFC3263, NTATAG_USE_NAPTR()
+ */
 #define NTATAG_USE_SRV(x) ntatag_use_srv, tag_bool_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_use_srv_ref;
 #define NTATAG_USE_SRV_REF(x) ntatag_use_srv_ref, tag_bool_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_rseq;
-/** RSeq value for nta_outgoing_prack(), @HI */
+
+/** @RSeq value for nta_outgoing_prack(). @HI 
+ *
+ * @par Used with
+ *    nta_outgoing_prack()
+ *
+ * @par Parameter type
+ *    @c unsigned @c int
+ *
+ * @par Values
+ *    Response sequence number from the @RSeq header.
+*/
 #define NTATAG_RSEQ(x)    ntatag_rseq, tag_uint_v((x))
 
 NTA_DLL extern tag_typedef_t ntatag_rseq_ref;
