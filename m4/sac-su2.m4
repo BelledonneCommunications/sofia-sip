@@ -2,10 +2,10 @@ dnl ======================================================================
 dnl su module
 dnl ======================================================================
 
+AC_DEFUN([SAC_SU])
+
 AC_DEFUN([SAC_SOFIA_SU], [
 # Beginning of SAC_SOFIA_SU
-
-AC_REQUIRE([SAC_WITH_RT])
 
 # ======================================================================
 # Check for features used by su
@@ -368,7 +368,15 @@ fi
 # Checks for libraries
 # ===========================================================================
 
-SAC_CHECK_SU_LIBS
+AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(socket, socketpair,,,-lnsl)
+
+AC_ARG_WITH(rt,  
+[  --with-rt               use POSIX realtime library [[used by default]]])
+if test "${with_rt}" != no; then
+	AC_SEARCH_LIBS(clock_gettime, rt)
+        AC_CHECK_FUNCS([clock_gettime clock_getcpuclockid])
+fi
 
 # No GLib path explicitly defined, use pkg-config
 AC_ARG_WITH(glib,
@@ -468,11 +476,6 @@ fi
 if test $ac_cv_func_if_nameindex = yes ; then
   SAC_SU_DEFINE([SU_HAVE_IF_NAMEINDEX], 1, 
     [Define to 1 if you have if_nameindex().])
-fi
-
-AC_REQUIRE([SAC_WITH_RT])
-if test "${with_rt}" != no; then
-    AC_CHECK_FUNCS([clock_gettime clock_getcpuclockid])
 fi
 
 SAC_REPLACE_FUNCS([memmem memccpy memspn memcspn strcasestr strtoull \
