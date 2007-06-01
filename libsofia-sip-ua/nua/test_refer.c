@@ -321,7 +321,8 @@ int test_refer0(struct context *ctx, char const *tests,
     TEST_1(sip->sip_subscription_state);
     TEST_S(sip->sip_subscription_state->ss_substate, "pending");
     TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
-    TEST_S(sip->sip_payload->pl_data, "SIP/2.0 100 Trying\r\n");
+    TEST_M(sip->sip_payload->pl_data, "SIP/2.0 100 Trying\r\n",
+	   sip->sip_payload->pl_len);
   }
 
   free_events_in_list(ctx, a_revents);
@@ -379,7 +380,8 @@ int test_refer0(struct context *ctx, char const *tests,
   TEST_1(sip->sip_subscription_state);
   TEST_S(sip->sip_subscription_state->ss_substate, "pending");
   TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
-  TEST_S(sip->sip_payload->pl_data, "SIP/2.0 100 Trying\r\n");
+  TEST_M(sip->sip_payload->pl_data, "SIP/2.0 100 Trying\r\n",
+	 sip->sip_payload->pl_len);
   TEST_1(e = e->next);
   }
   TEST_E(e->data->e_event, nua_r_subscribe);
@@ -492,7 +494,7 @@ int test_refer0(struct context *ctx, char const *tests,
   TEST_1(sip->sip_subscription_state);
   TEST_S(sip->sip_subscription_state->ss_substate, "active");
   TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
-  TEST_S(sip->sip_payload->pl_data, "SIP/2.0 180 Ringing\r\n");
+  TEST_M(sip->sip_payload->pl_data, "SIP/2.0 180 Ringing\r\n", sip->sip_payload->pl_len);
   TEST_1(sip->sip_event);
   if (refer_with_id)
     TEST_S(sip->sip_event->o_id, b_event->o_id);
@@ -502,7 +504,7 @@ int test_refer0(struct context *ctx, char const *tests,
   TEST_1(sip->sip_subscription_state);
   TEST_S(sip->sip_subscription_state->ss_substate, "terminated");
   TEST_1(sip->sip_payload && sip->sip_payload->pl_data);
-  TEST_S(sip->sip_payload->pl_data, "SIP/2.0 200 OK\r\n");
+  TEST_M(sip->sip_payload->pl_data, "SIP/2.0 200 OK\r\n", sip->sip_payload->pl_len);
   TEST_1(sip->sip_event);
   if (refer_with_id)
     TEST_S(sip->sip_event->o_id, b_event->o_id);
