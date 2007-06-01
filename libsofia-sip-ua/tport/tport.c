@@ -1164,7 +1164,7 @@ int tport_set_params(tport_t *self,
   if (self == NULL)
     return su_seterrno(EINVAL);
 
-  memcpy(tpp, tpp0 = self->tp_params, sizeof *tpp);
+  memcpy(tpp, tpp0 = self->tp_params, sizeof tpp);
 
   mtu = tpp->tpp_mtu;
   connect = tpp->tpp_conn_orient;
@@ -1220,9 +1220,10 @@ int tport_set_params(tport_t *self,
   if (tport_is_secondary(self) && 
       self->tp_params == self->tp_pri->pri_primary->tp_params) {
     tpp0 = su_zalloc(self->tp_home, sizeof *tpp0); if (!tpp0) return -1;
+    self->tp_params = tpp0;
   }
 
-  memcpy(tpp0, tpp, sizeof *tpp);
+  memcpy(tpp0, tpp, sizeof tpp);
 
   return n;
 }
