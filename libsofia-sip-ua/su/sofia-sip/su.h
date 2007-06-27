@@ -274,7 +274,9 @@ SOFIAPUBFUN int su_close(su_socket_t s);
 /** Control socket. */
 SOFIAPUBFUN int su_ioctl(su_socket_t s, int request, ...);
 
-/** Checks if the @a errcode indicates that the socket call failed because
+/**Check for in-progress error codes.
+ * 
+ * Checks if the @a errcode indicates that the socket call failed because
  * it would have blocked.
  *
  * Defined as macro with POSIX sockets.

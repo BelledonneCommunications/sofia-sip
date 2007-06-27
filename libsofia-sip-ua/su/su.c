@@ -53,26 +53,55 @@
 int su_socket_close_on_exec = 0;
 int su_socket_blocking = 0;
 
-/** Create an endpoint for communication. */
+/** Create a socket endpoint for communication.
+ *
+ * @param af addressing family 
+ * @param socktype socket type 
+ * @param proto protocol number specific to the addressing family
+ *
+ * The newly created socket is nonblocking unless global variable
+ * su_socket_blocking is set to true. 
+ *
+ * Also, the newly created socket is closed on exec() if global variable
+ * su_socket_close_on_exec is set to true. Note that a multithreaded program
+ * can fork() and exec() before the close-on-exec flag is set.
+ *
+ * @return A valid socket descriptor or INVALID_SOCKET (-1) upon an error.
+ */
 su_socket_t su_socket(int af, int socktype, int proto)
 {
   su_socket_t s = socket(af, socktype, proto);
-#if SU_HAVE_BSDSOCK
   if (s != INVALID_SOCKET) {
+#if SU_HAVE_BSDSOCK
     if (su_socket_close_on_exec)
       fcntl(s, F_SETFD, FD_CLOEXEC); /* Close on exec */
+#endif
     if (!su_socket_blocking)	/* All sockets are born blocking */
       su_setblocking(s, 0);
   }
-#endif
   return s;
 }
 
-#if SU_HAVE_BSDSOCK
+#if SU_HAVE_BSDSOCK || DOCUMENTATION_ONLY
+/** Initialize socket implementation.
+ *
+ * Before using any sofia-sip-ua functions, the application should call
+ * su_init() in order to initialize run-time environment including sockets. 
+ * This function may prepare plugins if there are any. 
+ *
+ * @par POSIX Implementation
+ * The su_init() initializes debugging logs and ignores the SIGPIPE signal.
+ *
+ * @par Windows Implementation
+ * The function su_init() initializes Winsock2 library on Windows.
+ *
+ * @par Symbian Implementation
+ * The function su_init() prompts user to select an access point (interface
+ * towards Internet) and uses the activated access point for the socket
+ * operations.
+ */
 int su_init(void)
 {
-  su_home_threadsafe(NULL);
-
 #if HAVE_SIGPIPE
   signal(SIGPIPE, SIG_IGN);	/* we want to get EPIPE instead */
 #endif
@@ -83,6 +112,7 @@ int su_init(void)
   return 0;
 }
 
+/** Deinitialize socket implementation. */
 void su_deinit(void)
 {
 }
@@ -133,7 +163,7 @@ void su_deinit(void)
   WSACleanup();
 }
 
-/** Close an socket descriptor. */
+/** Close a socket descriptor. */
 int su_close(su_socket_t s)
 {
   return closesocket(s);
@@ -222,8 +252,9 @@ struct in_addr6 const *su_in6addr_loopback(void)
 }
 #endif
 
-#if SU_HAVE_WINSOCK
+#if SU_HAVE_WINSOCK || DOCUMENTATION_ONLY
 
+/** Call send() with POSIX-compatible signature */
 ssize_t su_send(su_socket_t s, void *buffer, size_t length, int flags)
 {
   if (length > INT_MAX)
@@ -231,6 +262,7 @@ ssize_t su_send(su_socket_t s, void *buffer, size_t length, int flags)
   return (ssize_t)send(s, buffer, (int)length, flags);
 }
 
+/** Call sendto() with POSIX-compatible signature */
 ssize_t su_sendto(su_socket_t s, void *buffer, size_t length, int flags,
 		   su_sockaddr_t const *to, socklen_t tolen)
 {
@@ -240,6 +272,7 @@ ssize_t su_sendto(su_socket_t s, void *buffer, size_t length, int flags,
 			 &to->su_sa, (int) tolen);
 }
 
+/** Call recv() with POSIX-compatible signature */
 ssize_t su_recv(su_socket_t s, void *buffer, size_t length, int flags)
 {
   if (length > INT_MAX)
@@ -248,6 +281,7 @@ ssize_t su_recv(su_socket_t s, void *buffer, size_t length, int flags)
   return (ssize_t)recv(s, buffer, (int)length, flags);
 }
 
+/** Call recvfrom() with POSIX-compatible signature */
 ssize_t su_recvfrom(su_socket_t s, void *buffer, size_t length, int flags,
 		    su_sockaddr_t *from, socklen_t *fromlen)
 {

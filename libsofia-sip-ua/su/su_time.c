@@ -61,7 +61,7 @@
  * OS-independent timing functions and types for the @b su library.
  *  
  * The @b su library provides three different time formats with different
- * ranges and epochs in the file @b su_time.h:
+ * ranges and epochs in <sofia-sip/su_time.h>:
  *
  *   - #su_time_t, second and microsecond as 32-bit values since 1900,
  *   - #su_duration_t, milliseconds between two times, and
