@@ -138,7 +138,7 @@ void nua_subscribe_usage_remove(nua_handle_t *nh,
  *
  * @par Related Tags:
  *    NUTAG_URL()
- *    Tags in <sip_tag.h>
+ *    Header tags defined in <sofia-sip/sip_tag.h>
  *
  * @par Events:
  *    #nua_r_subscribe \n
@@ -164,7 +164,7 @@ void nua_subscribe_usage_remove(nua_handle_t *nh,
  *
  * @par Related Tags:
  *    SIPTAG_EVENT() or SIPTAG_EVENT_STR() \n
- *    Tags in <sip_tag.h> except SIPTAG_EXPIRES() or SIPTAG_EXPIRES_STR()
+ *    Header tags defined in <sofia-sip/sip_tag.h> except SIPTAG_EXPIRES() or SIPTAG_EXPIRES_STR()
  *
  * @par Events:
  *    #nua_r_unsubscribe 
@@ -727,7 +727,7 @@ int nua_notify_server_report(nua_server_request_t *sr, tagi_t const *tags)
  * @par Related Tags:
  *    NUTAG_URL() \n
  *    Tags of nua_set_hparams() \n
- *    Tags in <sip_tag.h>
+ *    Header tags defined in <sofia-sip/sip_tag.h>
  *
  * @par Events:
  *    #nua_r_refer \n

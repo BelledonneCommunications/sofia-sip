@@ -1040,19 +1040,30 @@ void nua_event(nua_t *root_magic, su_msg_r sumsg, event_t *e)
   su_msg_destroy(nua->nua_current);
 }
 
-/** Get current request message. @NEW_1_12_4. */
+/** Get current request message. @NEW_1_12_4.
+ *
+ * @note A response message is returned when processing response message.
+ *
+ * @sa #nua_event_e, nua_respond(), NUTAG_WITH_CURRENT()
+ */
 msg_t *nua_current_request(nua_t const *nua)
 {
   return nua && nua->nua_current ? su_msg_data(nua->nua_current)->e_msg : NULL;
 }
 
-/** Get request message from saved nua event. @NEW_1_12_4. */
+/** Get request message from saved nua event. @NEW_1_12_4. 
+ *
+ * @sa nua_save_event(), nua_respond(), NUTAG_WITH_SAVED(), 
+ */
 msg_t *nua_saved_event_request(nua_saved_event_t const *saved)
 {
   return saved && saved[0] ? su_msg_data(saved)->e_msg : NULL;
 }
 
-/** Save nua event and its arguments */
+/** Save nua event and its arguments.
+ *
+ * @sa #nua_event_e, nua_event_data() nua_saved_event_request(), nua_destroy_event()
+ */
 int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1])
 {
   if (nua && return_saved) {
@@ -1066,13 +1077,19 @@ int nua_save_event(nua_t *nua, nua_saved_event_t return_saved[1])
   return 0;
 }
 
-/** Get event data */
+/** Get event data.
+ *
+ * @sa #nua_event_e, nua_event_save(), nua_saved_event_request(), nua_destroy_event().
+ */
 nua_event_data_t const *nua_event_data(nua_saved_event_t const saved[1])
 {
   return saved ? su_msg_data(saved) : NULL;
 }
 
-/** Destroy saved event */
+/** Destroy saved event.
+ *
+ * @sa #nua_event_e, nua_event_save(), nua_event_data(), nua_saved_event_request().
+ */
 void nua_destroy_event(nua_saved_event_t saved[1])
 {
   if (su_msg_is_non_null(saved)) {

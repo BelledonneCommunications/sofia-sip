@@ -516,7 +516,7 @@ outbound_owner_vtable nua_stack_outbound_callbacks = {
  *
  * @par Related tags:
  *     NUTAG_REGISTRAR() \n
- *     Tags in <sip_tag.h> except SIPTAG_EXPIRES() or SIPTAG_EXPIRES_STR()
+ *     Header tags defined in <sofia-sip/sip_tag.h> except SIPTAG_EXPIRES() or SIPTAG_EXPIRES_STR()
  *
  * @par Events:
  *     #nua_r_unregister

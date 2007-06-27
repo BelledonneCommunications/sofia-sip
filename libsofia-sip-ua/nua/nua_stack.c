@@ -1336,7 +1336,7 @@ void nua_server_request_destroy(nua_server_request_t *sr)
  *    SOATAG_AF() \n
  *    SOATAG_HOLD() \n
  *    Tags used with nua_set_hparams() \n
- *    Tags in <sip_tag.h>.
+ *    Header tags defined in <sofia-sip/sip_tag.h>.
  *
  * @par Events:
  *    #nua_i_state \n
