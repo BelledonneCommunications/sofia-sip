@@ -2602,10 +2602,12 @@ void agent_recv_response(nta_agent_t *agent,
       && sip->sip_via && !sip->sip_via->v_next 
       && agent_has_via(agent, sip->sip_via)) {
     agent->sa_stats->as_trless_200++;
-    /* Orphan 200 Ok to INVITE. ACK and BYE it */
-    SU_DEBUG_5(("nta: %03d %s must be ACK&BYE\n", status, phrase));
-    if (nta_msg_ackbye(agent, msg) != -1)
-      return;
+    if (agent->sa_is_a_uas) {
+      /* Orphan 200 Ok to INVITE. ACK and BYE it */
+      SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "is ACK&BYE"));
+      if (nta_msg_ackbye(agent, msg) != -1)
+	return;
+    }
   }
 
   SU_DEBUG_5(("nta: %03d %s was discarded\n", status, phrase));
