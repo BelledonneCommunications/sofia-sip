@@ -64,7 +64,7 @@ tag_typedef_t authtag_module = PTRTAG_TYPEDEF(module);
  * authentication module, like "Digest" or "Basic", or an plugin module,
  * like "SGMF+Digest". 
  *
- * @sa See <auth_plugin.h> for plugin interface.
+ * @sa See <sofia-sip/auth_plugin.h> for plugin interface.
  */
 tag_typedef_t authtag_method = STRTAG_TYPEDEF(method);
 

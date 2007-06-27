@@ -558,7 +558,7 @@ static int m_get_domain(char *d, int n, sres_message_t *m, uint16_t offset);
  * The SRESOLV_DEBUG environment variable is used to determine the debug
  * logging level for @b sresolv module. The default level is 3.
  * 
- * @sa <su_debug.h>, sresolv_log, SOFIA_DEBUG
+ * @sa <sofia-sip/su_debug.h>, sresolv_log, SOFIA_DEBUG
  */
 extern SRESOLV_DEBUG;
 #endif

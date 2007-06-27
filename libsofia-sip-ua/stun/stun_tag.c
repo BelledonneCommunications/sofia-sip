@@ -159,7 +159,7 @@ tag_typedef_t stuntag_register_events = BOOLTAG_TYPEDEF(register_events);
  *    int (stun_action_t)
  *
  * @par Values
- *    See types for stun_action_t in stun.h
+ *    See types for stun_action_t in <sofia-sip/stun.h>
  *
  * Corresponding tag taking reference parameter is STUNTAG_ACTION_REF()
  */

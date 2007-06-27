@@ -282,7 +282,7 @@ union sm_arg_u {
  * The NTA_DEBUG environment variable is used to determine the default
  * debug logging level. The normal level is 3.
  * 
- * @sa <su_debug.h>, #su_log_global, #SOFIA_DEBUG
+ * @sa <sofia-sip/su_debug.h>, #su_log_global, #SOFIA_DEBUG
  */
 extern char const NTA_DEBUG[];
 
@@ -6344,7 +6344,7 @@ nta_outgoing_t *nta_outgoing_default(nta_agent_t *agent,
  * NTATAG_STATELESS(), NTATAG_DELAY_SENDING(), NTATAG_BRANCH_KEY(),
  * NTATAG_ACK_BRANCH(), NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(),
  * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(), NTATAG_TPORT(). All
- * SIP tags from <sip_tag.h> can be used to manipulate the request message. 
+ * SIP tags from <sofia-sip/sip_tag.h> can be used to manipulate the request message. 
  * SIP tags after SIPTAG_END() are ignored, however.
  */
 nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
@@ -6432,7 +6432,7 @@ nta_outgoing_t *nta_outgoing_tcreate(nta_leg_t *leg,
  * NTATAG_STATELESS(), NTATAG_DELAY_SENDING(), NTATAG_BRANCH_KEY(),
  * NTATAG_ACK_BRANCH(), NTATAG_DEFAULT_PROXY(), NTATAG_PASS_100(),
  * NTATAG_USE_TIMESTAMP(), NTATAG_USER_VIA(), TPTAG_IDENT(), NTATAG_TPORT(). All
- * SIP tags from <sip_tag.h> can be used to manipulate the request message. 
+ * SIP tags from <sofia-sip/sip_tag.h> can be used to manipulate the request message. 
  * SIP tags after SIPTAG_END() are ignored, however.
  */
 nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
