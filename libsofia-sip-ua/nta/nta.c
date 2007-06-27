@@ -1655,7 +1655,6 @@ int agent_create_master_transport(nta_agent_t *self, tagi_t *tags)
     tport_tcreate(self, nta_agent_class, self->sa_root,
 		  TPTAG_SDWN_ERROR(0),
 		  TPTAG_IDLE(1800000),
-		  TPTAG_DEBUG_DROP(self->sa_drop_prob),
 		  TAG_NEXT(tags));
 
   if (!self->sa_tports)
@@ -2152,6 +2151,16 @@ void agent_recv_request(nta_agent_t *agent,
 	      URL_PRINT_ARGS(sip->sip_request->rq_url),
 	      sip->sip_request->rq_version, cseq));
 
+  if (agent->sa_drop_prob && !tport_is_reliable(tport)) {
+    if ((unsigned)su_randint(0, 1000) < agent->sa_drop_prob) {
+      SU_DEBUG_5(("nta: %s (%u) is %s\n", 
+		  method_name, cseq, "dropped simulating packet loss"));
+      agent->sa_stats->as_drop_request++;
+      msg_destroy(msg);
+      return;
+    }
+  }
+
   stream = tport_is_stream(tport);
 
   /* Try to use compression on reverse direction if @Via has comp=sigcomp  */
@@ -2525,6 +2534,16 @@ void agent_recv_response(nta_agent_t *agent,
 
   SU_DEBUG_5(("nta: received %03d %s for %s (%u)\n", 
 	      status, phrase, method, cseq));
+
+  if (agent->sa_drop_prob && !tport_is_reliable(tport)) {
+    if ((unsigned)su_randint(0, 1000) < agent->sa_drop_prob) {
+      SU_DEBUG_5(("nta: %03d %s %s\n",
+		  status, phrase, "dropped simulating packet loss"));
+      agent->sa_stats->as_drop_response++;
+      msg_destroy(msg);
+      return;
+    }
+  }
 
   if (agent->sa_bad_resp_mask)
     errors = msg_extract_errors(msg) & agent->sa_bad_resp_mask;
