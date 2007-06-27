@@ -2364,8 +2364,9 @@ void agent_recv_request(nta_agent_t *agent,
   }
   else {
     agent->sa_stats->as_trless_request++;
-    SU_DEBUG_5(("nta: %s (%u) no place to go: %d %s\n",
-		method_name, cseq, SIP_501_NOT_IMPLEMENTED));
+    SU_DEBUG_5(("nta: %s (%u) %s\n",
+		method_name, cseq, 
+		"not processed by application: returning 501"));
     if (method != sip_method_ack)
       nta_msg_treply(agent, msg, SIP_501_NOT_IMPLEMENTED,
 		     NTATAG_TPORT(tport),
@@ -2575,7 +2576,10 @@ void agent_recv_response(nta_agent_t *agent,
     agent->sa_stats->as_bad_response++;
     agent->sa_stats->as_bad_message++;
 
-    SU_DEBUG_5(("nta: %03d %s failed sanity check\n", status, phrase));
+    SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase,
+		errors
+		? "has fatal syntax errors"
+		: "failed sanity check"));
 
     for (h = (sip_header_t const *)sip->sip_error; h; h = h->sh_next) {
       if (h->sh_class->hc_name) {
@@ -2602,7 +2606,7 @@ void agent_recv_response(nta_agent_t *agent,
     /* Drop response messages to ACK */
     agent->sa_stats->as_bad_response++;
     agent->sa_stats->as_bad_message++;
-    SU_DEBUG_5(("nta: %03d %s is response to ACK\n", status, phrase));
+    SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "is response to ACK"));
     msg_destroy(msg);
     return;
   }
@@ -2610,7 +2614,8 @@ void agent_recv_response(nta_agent_t *agent,
   /* XXX - should check if msg should be discarded based on via? */
 
   if ((orq = outgoing_find(agent, msg, sip, sip->sip_via))) {
-    SU_DEBUG_5(("nta: %03d %s going to a transaction\n", status, phrase));
+    SU_DEBUG_5(("nta: %03d %s %s\n", 
+		status, phrase, "is going to a transaction"));
     if (outgoing_recv(orq, status, msg, sip) == 0)
       return;
   }
@@ -2618,12 +2623,13 @@ void agent_recv_response(nta_agent_t *agent,
   agent->sa_stats->as_trless_response++;
 
   if ((orq = agent->sa_default_outgoing)) {
-    SU_DEBUG_5(("nta: %03d %s to the default transaction\n", status, phrase));
+    SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, 
+		"to the default transaction"));
     outgoing_default_recv(orq, status, msg, sip);
     return;
   }
   else if (agent->sa_callback) {
-    SU_DEBUG_5(("nta: %03d %s to message callback\n", status, phrase));
+    SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "to message callback"));
     /*
      * Store message and transport to hook for the duration of the callback
      * so that the transport can be obtained by nta_transport().
@@ -2647,7 +2653,7 @@ void agent_recv_response(nta_agent_t *agent,
     }
   }
 
-  SU_DEBUG_5(("nta: %03d %s was discarded\n", status, phrase));
+  SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "was discarded"));
   msg_destroy(msg);
 }
 
