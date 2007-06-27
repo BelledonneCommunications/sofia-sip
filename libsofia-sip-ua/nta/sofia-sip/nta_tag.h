@@ -378,7 +378,7 @@ NTA_DLL extern tag_typedef_t ntatag_sip_t1;
  * @par Values
  *    - Value of SIP T1 in milliseconds 
  *
- * @sa @RFC3261 appendix A, SIPTAG_SIP_T1X4(), SIPTAG_SIP_T1(), SIPTAG_SIP_T4()
+ * @sa @RFC3261 appendix A, NTATAG_SIP_T1X4(), NTATAG_SIP_T1(), NTATAG_SIP_T4()
  */
 #define NTATAG_SIP_T1(x) ntatag_sip_t1, tag_uint_v((x))
 
@@ -406,7 +406,7 @@ NTA_DLL extern tag_typedef_t ntatag_sip_t1x64;
  * @par Values
  *    - Value of T1x64 in milliseconds
  *
- * @sa @RFC3261 appendix A, SIPTAG_SIP_T1(), SIPTAG_SIP_T2(), SIPTAG_SIP_T4()
+ * @sa @RFC3261 appendix A, NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4()
  *
  */
 #define NTATAG_SIP_T1X64(x) ntatag_sip_t1x64, tag_uint_v((x))
@@ -434,7 +434,7 @@ NTA_DLL extern tag_typedef_t ntatag_sip_t2;
  * @par Values
  *    - Value of SIP T2 in milliseconds 
  *
- * @sa @RFC3261 appendix A, SIPTAG_SIP_T1X4(), SIPTAG_SIP_T1(), SIPTAG_SIP_T4()
+ * @sa @RFC3261 appendix A, NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T4()
  */
 #define NTATAG_SIP_T2(x) ntatag_sip_t2, tag_uint_v((x))
 
@@ -460,7 +460,7 @@ NTA_DLL extern tag_typedef_t ntatag_sip_t4;
  * @par Values
  *    - Value of SIP T4 in milliseconds
  *
- * @sa @RFC3261 appendix A, SIPTAG_SIP_T1X4(), SIPTAG_SIP_T1(), SIPTAG_SIP_T2()
+ * @sa @RFC3261 appendix A, NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T2()
  */
 #define NTATAG_SIP_T4(x)    ntatag_sip_t4, tag_uint_v((x))
 
@@ -487,7 +487,8 @@ NTA_DLL extern tag_typedef_t ntatag_progress;
  * @par Values
  *    Value of progress timer in milliseconds.
  *
- * @sa @RFC3261 sections 13.3.1.1, 16.7 and 16.8.
+ * @sa @RFC3261 sections 13.3.1.1, 16.7 and 16.8, NTATAG_TIMER_C(),
+ * NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T2(), NTATAG_SIP_T4()
  */
 #define NTATAG_PROGRESS(x)    ntatag_progress, tag_uint_v((x))
 
@@ -557,8 +558,9 @@ NTA_DLL extern tag_typedef_t ntatag_debug_drop_prob;
 /** Packet drop probability for debugging. 
  *
  * The packet drop probability parameter is useful mainly for debugging
- * purposes. The stack drops an incoming message with the given probability. 
- * The range is in 0 .. 1000, 500 means p=0.5.
+ * purposes. The stack drops an incoming message received over an unreliable
+ * transport (such as UDP) with the given probability. The range is in 0 .. 
+ * 1000, 500 means p=0.5.
  *
  * @par Used with
  *    nua_create() \n
@@ -706,6 +708,7 @@ NTA_DLL extern tag_typedef_t ntatag_ua;
  * - handle ACK sent in 2XX response to an INVITE using the
  *   #nta_ack_cancel_f callback bound to #nta_incoming_t with
  *   nta_incoming_bind()
+ * - not use timer C unless its value has been explicitly set
  *
  * @note This NUTAG_UA(1) is set internally by nua_create()
  *
@@ -856,6 +859,12 @@ NTA_DLL extern tag_typedef_t ntatag_pass_100_ref;
 NTA_DLL extern tag_typedef_t ntatag_timeout_408;
 /** Generate "408 Request Timeout" response when request times out. @HI 
  *
+ * This tag is used to prevent stack from generating extra 408 response
+ * messages to non-INVITE requests upon timeout. As per recommended by
+ * @RFC4320, the <i>408 Request Timeout</i> responses to non-INVITE
+ * transaction are not sent over the network to the client by default. The
+ * application can ask stack to pass the 408 responses with
+ * NTATAG_PASS_408(1).
  *
  * @par Used with
  *    nua_create() \n
@@ -867,11 +876,11 @@ NTA_DLL extern tag_typedef_t ntatag_timeout_408;
  *          or false (zero or NULL pointer)
  *
  * @par Values
- *    - true - 
- *    - false - 
+ *    - true - generate 408 response
+ *    - false - invoke #nta_response_f callback with NULL sip pointer
+ *              when a non-INVITE transaction times out
  *
- * @sa
- *
+ * @sa @RFC4320, NTATAG_PASS_408(), NTATAG_EXTRA_100(),
  */
 #define NTATAG_TIMEOUT_408(x)  ntatag_timeout_408, tag_bool_v((x))
 
@@ -1391,24 +1400,56 @@ NTA_DLL extern tag_typedef_t ntatag_s_irq_hash;
 #define NTATAG_S_IRQ_HASH(x) ntatag_s_irq_hash, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_irq_hash_ref;
+/** Get size of hash table for server-side transactions.
+ *
+ * Return number of transactions that fit in the hash table for server-side
+ * transactions.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_IRQ_HASH_USED_REF(),
+ * NTATAG_S_ORQ_HASH_REFxs(), NTATAG_S_LEG_HASH_REF()
+ */
 #define NTATAG_S_IRQ_HASH_REF(x) ntatag_s_irq_hash_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_s_orq_hash;
 #define NTATAG_S_ORQ_HASH(x) ntatag_s_orq_hash, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_orq_hash_ref;
+/** Get size of hash table for client-side transactions.
+ *
+ * Return number of transactions that fit in the hash table for client-side
+ * transactions.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_ORQ_HASH_USED_REF(),
+ * NTATAG_S_IRQ_HASH_REF(), NTATAG_S_LEG_HASH_REF()
+ */
 #define NTATAG_S_ORQ_HASH_REF(x) ntatag_s_orq_hash_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_s_leg_hash;
 #define NTATAG_S_LEG_HASH(x) ntatag_s_leg_hash, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_leg_hash_ref;
+/** Get size of hash table for dialogs.
+ *
+ * Return number of dialog objects that fit in the hash table for dialogs.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_LEG_HASH_USED_REF(),
+ * NTATAG_S_IRQ_HASH_REF(), NTATAG_S_ORQ_HASH_REF()
+ */
 #define NTATAG_S_LEG_HASH_REF(x) ntatag_s_leg_hash_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_s_irq_hash_used;
 #define NTATAG_S_IRQ_HASH_USED(x) ntatag_s_irq_hash_used, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_irq_hash_used_ref;
+/** Get number of server-side transactions in the hash table.
+ *
+ * Return number of server-side transactions objects in the hash table. The
+ * number includes all transactions destroyed by the application which have
+ * not expired yet.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_IRQ_HASH_REF(),
+ * NTATAG_S_ORQ_HASH_USED_REF(), NTATAG_S_LEG_HASH_USED_REF()
+ */
 #define NTATAG_S_IRQ_HASH_USED_REF(x) \
 ntatag_s_irq_hash_used_ref, tag_usize_vr(&(x))
 
@@ -1416,6 +1457,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_orq_hash_used;
 #define NTATAG_S_ORQ_HASH_USED(x) ntatag_s_orq_hash_used, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_orq_hash_used_ref;
+/** Get number of client-side transactions in the hash table.
+ *
+ * Return number of client-side transactions objects in the hash table. The
+ * number includes all transactions destroyed by the application which have
+ * not expired yet.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_ORQ_HASH_REF(),
+ * NTATAG_S_IRQ_HASH_USED_REF(), NTATAG_S_LEG_HASH_USED_REF()
+ */
 #define NTATAG_S_ORQ_HASH_USED_REF(x) \
 ntatag_s_orq_hash_used_ref, tag_usize_vr(&(x))
 
@@ -1423,6 +1473,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_leg_hash_used;
 #define NTATAG_S_LEG_HASH_USED(x) ntatag_s_leg_hash_used, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_leg_hash_used_ref;
+/** Get number of dialogs in the hash table.
+ *
+ * Return number of dialog objects in the hash table. Note that the
+ * nta_leg_t objects created with NTATAG_NO_DIALOG(1) and this not
+ * corresponding to a dialog are not included in the number.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_LEG_HASH_REF(),
+ * NTATAG_S_IRQ_HASH_USED_REF(), NTATAG_S_ORQ_HASH_USED_REF()
+ */
 #define NTATAG_S_LEG_HASH_USED_REF(x) \
 ntatag_s_leg_hash_used_ref, tag_usize_vr(&(x))
 
@@ -1430,12 +1489,28 @@ NTA_DLL extern tag_typedef_t ntatag_s_recv_msg;
 #define NTATAG_S_RECV_MSG(x) ntatag_s_recv_msg, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_recv_msg_ref;
+/** Get number of SIP messages received.
+ *
+ * Return number SIP messages that has been received.  The number includes
+ * also bad and unparsable messages.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_BAD_MESSAGE_REF(),
+ * NTATAG_S_RECV_REQUEST_REF(), NTATAG_S_RECV_RESPONSE_REF()
+ */
 #define NTATAG_S_RECV_MSG_REF(x) ntatag_s_recv_msg_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_s_recv_request;
 #define NTATAG_S_RECV_REQUEST(x) ntatag_s_recv_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_recv_request_ref;
+/** Get number of SIP requests received.
+ *
+ * Return number SIP requests that has been received. The number includes
+ * also number of bad requests available with NTATAG_S_BAD_REQUEST_REF().
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_BAD_REQUEST_REF(),
+ * NTATAG_S_RECV_MSG_REF(), NTATAG_S_RECV_RESPONSE_REF()
+ */
 #define NTATAG_S_RECV_REQUEST_REF(x)\
  ntatag_s_recv_request_ref, tag_usize_vr(&(x))
 
@@ -1443,6 +1518,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_recv_response;
 #define NTATAG_S_RECV_RESPONSE(x) ntatag_s_recv_response, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_recv_response_ref;
+/** Get number of SIP responses received.
+ *
+ * Return number SIP responses that has been received. The number includes
+ * also number of bad and unusable responses available with
+ * NTATAG_S_BAD_RESPONSE_REF().
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_BAD_RESPONSE_REF(),
+ * NTATAG_S_RECV_MSG_REF(), NTATAG_S_RECV_REQUEST_REF()
+ */
 #define NTATAG_S_RECV_RESPONSE_REF(x)\
  ntatag_s_recv_response_ref, tag_usize_vr(&(x))
 
@@ -1450,6 +1534,13 @@ NTA_DLL extern tag_typedef_t ntatag_s_bad_message;
 #define NTATAG_S_BAD_MESSAGE(x) ntatag_s_bad_message, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_bad_message_ref;
+/** Get number of bad SIP messages received.
+ *
+ * Return number of bad SIP messages that has been received.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_RECV_MSG_REF(), 
+ * NTATAG_S_BAD_REQUEST_REF(), NTATAG_S_BAD_RESPONSE_REF().
+ */
 #define NTATAG_S_BAD_MESSAGE_REF(x)\
  ntatag_s_bad_message_ref, tag_usize_vr(&(x))
 
@@ -1457,6 +1548,13 @@ NTA_DLL extern tag_typedef_t ntatag_s_bad_request;
 #define NTATAG_S_BAD_REQUEST(x) ntatag_s_bad_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_bad_request_ref;
+/** Get number of bad SIP requests received.
+ *
+ * Return number of bad SIP requests that has been received.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_BAD_MESSAGE_REF(),
+ * NTATAG_S_BAD_RESPONSE_REF().
+ */
 #define NTATAG_S_BAD_REQUEST_REF(x)\
  ntatag_s_bad_request_ref, tag_usize_vr(&(x))
 
@@ -1464,6 +1562,13 @@ NTA_DLL extern tag_typedef_t ntatag_s_bad_response;
 #define NTATAG_S_BAD_RESPONSE(x) ntatag_s_bad_response, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_bad_response_ref;
+/** Get number of bad SIP responses received.
+ *
+ * Return number of bad SIP responses that has been received.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_BAD_MESSAGE_REF(),
+ * NTATAG_S_BAD_REQUEST_REF()
+ */
 #define NTATAG_S_BAD_RESPONSE_REF(x)\
  ntatag_s_bad_response_ref, tag_usize_vr(&(x))
 
@@ -1471,6 +1576,16 @@ NTA_DLL extern tag_typedef_t ntatag_s_drop_request;
 #define NTATAG_S_DROP_REQUEST(x) ntatag_s_drop_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_drop_request_ref;
+/** Get number of SIP requests dropped.
+ *
+ * Return number of SIP requests that has been randomly dropped after
+ * receiving them because of NTATAG_DEBUG_DROP_PROB() has been set.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_DEBUG_DROP_PROB(),
+ * NTATAG_S_DROP_RESPONSE_REF()
+ * 
+ * @note The value was not calculated before @VERSION_1_12_7.
+ */
 #define NTATAG_S_DROP_REQUEST_REF(x)\
  ntatag_s_drop_request_ref, tag_usize_vr(&(x))
 
@@ -1478,6 +1593,16 @@ NTA_DLL extern tag_typedef_t ntatag_s_drop_response;
 #define NTATAG_S_DROP_RESPONSE(x) ntatag_s_drop_response, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_drop_response_ref;
+/** Get number of SIP responses dropped.
+ *
+ * Return number of SIP responses that has been randomly dropped after
+ * receiving them because of NTATAG_DEBUG_DROP_PROB() has been set.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_DEBUG_DROP_PROB(),
+ * NTATAG_S_DROP_REQUEST_REF()
+ * 
+ * @note The value was not calculated before @VERSION_1_12_7.
+ */
 #define NTATAG_S_DROP_RESPONSE_REF(x)\
  ntatag_s_drop_response_ref, tag_usize_vr(&(x))
 
@@ -1485,6 +1610,18 @@ NTA_DLL extern tag_typedef_t ntatag_s_client_tr;
 #define NTATAG_S_CLIENT_TR(x) ntatag_s_client_tr, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_client_tr_ref;
+/** Get number of client transactions created.
+ *
+ * Return number of client transactions created. The number also includes
+ * client transactions with which stack failed to send the request because
+ * the DNS resolving failed or the transport failed.
+ *
+ * @note The number include stateless requests sent with nta_msg_tsend(),
+ * too.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_SENT_REQUEST_REF(),
+ * NTATAG_S_SERVER_TR_REF().
+ */
 #define NTATAG_S_CLIENT_TR_REF(x)\
  ntatag_s_client_tr_ref, tag_usize_vr(&(x))
 
@@ -1492,6 +1629,13 @@ NTA_DLL extern tag_typedef_t ntatag_s_server_tr;
 #define NTATAG_S_SERVER_TR(x) ntatag_s_server_tr, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_server_tr_ref;
+/** Get number of server transactions created.
+ *
+ * Return number of server transactions created. 
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_RECV_RESPONSE_REF(),
+ * NTATAG_S_CLIENT_TR_REF(), NTATAG_S_DIALOG_TR_REF(),
+ */
 #define NTATAG_S_SERVER_TR_REF(x)\
  ntatag_s_server_tr_ref, tag_usize_vr(&(x))
 
@@ -1499,6 +1643,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_dialog_tr;
 #define NTATAG_S_DIALOG_TR(x) ntatag_s_dialog_tr, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_dialog_tr_ref;
+/** Get number of in-dialog server transactions created.
+ *
+ * Return number of in-dialog server transactions created. The number
+ * includes only those transactions that were correlated with a dialog
+ * object.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_SERVER_TR_REF(),
+ * NTATAG_S_CLIENT_TR_REF(), NTATAG_S_RECV_RESPONSE_REF().
+ */
 #define NTATAG_S_DIALOG_TR_REF(x)\
  ntatag_s_dialog_tr_ref, tag_usize_vr(&(x))
 
@@ -1506,12 +1659,29 @@ NTA_DLL extern tag_typedef_t ntatag_s_acked_tr;
 #define NTATAG_S_ACKED_TR(x) ntatag_s_acked_tr, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_acked_tr_ref;
+/** Get number of server transactions that have received ACK.
+ *
+ * Return number of INVITE server transactions for which an ACK request has
+ * been received.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_SERVER_TR_REF(),
+ * NTATAG_S_CANCELED_TR_REF()
+ */
 #define NTATAG_S_ACKED_TR_REF(x) ntatag_s_acked_tr_ref, tag_usize_vr(&(x))
 
 NTA_DLL extern tag_typedef_t ntatag_s_canceled_tr;
 #define NTATAG_S_CANCELED_TR(x) ntatag_s_canceled_tr, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_canceled_tr_ref;
+/** Get number of server transactions that have been CANCELed.
+ *
+ * Return number of server transactions for which an CANCEL request has been
+ * received. Currently, the count includes only INVITE server transactions
+ * that have been CANCELed.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_SERVER_TR_REF(),
+ * NTATAG_S_ACKED_TR_REF().
+ */
 #define NTATAG_S_CANCELED_TR_REF(x)  \
  ntatag_s_canceled_tr_ref, tag_usize_vr(&(x))
 
@@ -1519,6 +1689,17 @@ NTA_DLL extern tag_typedef_t ntatag_s_trless_request;
 #define NTATAG_S_TRLESS_REQUEST(x) ntatag_s_trless_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_trless_request_ref;
+/** Get number of requests that were processed stateless.
+ *
+ * Return number of received requests that were processed statelessly,
+ * either with #nta_message_f message callback given with the
+ * nta_agent_create() or, missing the callback, by returning a <i>501 Not
+ * Implemented</i> response to the request.
+ *
+ * @sa nta_agent_get_stats(), <sofia-sip/nta_stateless.h>,
+ * nta_agent_create(), #nta_message_f, NTATAG_S_TRLESS_TO_TR_REF(),
+ * NTATAG_S_TRLESS_RESPONSE_REF()
+ */
 #define NTATAG_S_TRLESS_REQUEST_REF(x)\
  ntatag_s_trless_request_ref, tag_usize_vr(&(x))
 
@@ -1526,6 +1707,14 @@ NTA_DLL extern tag_typedef_t ntatag_s_trless_to_tr;
 #define NTATAG_S_TRLESS_TO_TR(x) ntatag_s_trless_to_tr, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_trless_to_tr_ref;
+/** Get number of requests converted to transactions by message callback.
+ *
+ * Return number of requests that were converted to a server transaction
+ * with nta_incoming_create().
+ *
+ * @sa nta_agent_get_stats(), nta_incoming_create(), nta_agent_create(),
+ * #nta_message_f, NTATAG_S_TRLESS_REQUEST_REF()
+ */
 #define NTATAG_S_TRLESS_TO_TR_REF(x)\
  ntatag_s_trless_to_tr_ref, tag_usize_vr(&(x))
 
@@ -1533,6 +1722,23 @@ NTA_DLL extern tag_typedef_t ntatag_s_trless_response;
 #define NTATAG_S_TRLESS_RESPONSE(x) ntatag_s_trless_response, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_trless_response_ref;
+/** Get number of responses without matching request.
+ *
+ * Return number of received responses for which no matching client
+ * transaction was found. Such responses are processed either by the default
+ * client transaction created with nta_outgoing_default(), the
+ * #nta_message_f message callback given to nta_agent_create(), or, missing
+ * both the default client transaction and message callback, they are
+ * silently discarded.
+ *
+ * When stack is in UA mode, the successful 2XX responses to the INVITE
+ * transaction are an exception: when such a response is received the stack
+ * tries to send an ACK and BYE requests to the originator of 2XX response.
+ *
+ * @sa nta_agent_get_stats(), nta_outgoing_default(), nta_agent_create(),
+ * <sofia-sip/nta_stateless.h>, #nta_message_f, nta_msg_ackbye(),
+ * NTATAG_S_TRLESS_REQUEST_REF(), NTATAG_S_TRLESS_200_REF().
+ */
 #define NTATAG_S_TRLESS_RESPONSE_REF(x)\
  ntatag_s_trless_response_ref, tag_usize_vr(&(x))
 
@@ -1540,6 +1746,21 @@ NTA_DLL extern tag_typedef_t ntatag_s_trless_200;
 #define NTATAG_S_TRLESS_200(x) ntatag_s_trless_200, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_trless_200_ref;
+/** Get number of successful responses missing INVITE client transaction.
+ *
+ * Return number of received 2XX responses to INVITE transaction for which
+ * no matching client transaction was found nor which were processed by a
+ * default client transaction created with nta_outgoing_default() or
+ * #nta_message_f message callback given to nta_agent_create().
+ *
+ * When such a successful 2XX responses to the INVITE is received but it is
+ * not processed, the stack tries to send an ACK and BYE requests to the
+ * originator of 2XX response if stack is in UA mode (set by NTATAG_UA(1). 
+ *
+ * @sa nta_agent_get_stats(), nta_outgoing_default(), nta_agent_create(),
+ * <sofia-sip/nta_stateless.h>, #nta_message_f, nta_msg_ackbye(),
+ * NTATAG_S_TRLESS_RESPONSE_REF().
+ */
 #define NTATAG_S_TRLESS_200_REF(x)\
  ntatag_s_trless_200_ref, tag_usize_vr(&(x))
 
@@ -1547,6 +1768,14 @@ NTA_DLL extern tag_typedef_t ntatag_s_merged_request;
 #define NTATAG_S_MERGED_REQUEST(x) ntatag_s_merged_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_merged_request_ref;
+/** Get number of requests merged by UAS.
+ *
+ * Return number of requests for which UAS already has returned a response
+ * and which were merged (that is, returned a <i>482 Request Merged</i>
+ * response).
+ *
+ * @sa nta_agent_get_stats(), NTATAG_UA(1), @RFC3261 section 8.2.2.2
+ */
 #define NTATAG_S_MERGED_REQUEST_REF(x)\
  ntatag_s_merged_request_ref, tag_usize_vr(&(x))
 
@@ -1554,6 +1783,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_sent_msg;
 #define NTATAG_S_SENT_MSG(x) ntatag_s_sent_msg, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_sent_msg_ref;
+/** Get number of SIP messages sent by stack.
+ *
+ * Return number of SIP messages given to the transport layer for
+ * transmission by the SIP stack. The number includes also messages which
+ * the transport layer failed to send for different reasons.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_RECV_MSG_REF(),
+ * NTATAG_S_SENT_REQUEST_REF(), NTATAG_S_SENT_RESPONSE_REF()
+ */
 #define NTATAG_S_SENT_MSG_REF(x)\
  ntatag_s_sent_msg_ref, tag_usize_vr(&(x))
 
@@ -1561,6 +1799,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_sent_request;
 #define NTATAG_S_SENT_REQUEST(x) ntatag_s_sent_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_sent_request_ref;
+/** Get number of SIP requests sent by stack.
+ *
+ * Return number of SIP requests given to the transport layer for
+ * transmission by the SIP stack. The number includes retransmissions and
+ * messages which the transport layer failed to send for different reasons.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_RECV_REQUEST_REF(),
+ * NTATAG_S_SENT_MSG_REF(), NTATAG_S_SENT_RESPONSE_REF()
+ */
 #define NTATAG_S_SENT_REQUEST_REF(x)\
  ntatag_s_sent_request_ref, tag_usize_vr(&(x))
 
@@ -1568,6 +1815,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_sent_response;
 #define NTATAG_S_SENT_RESPONSE(x) ntatag_s_sent_response, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_sent_response_ref;
+/** Get number of SIP responses sent by stack.
+ *
+ * Return number of SIP responses given to the transport layer for
+ * transmission by the SIP stack. The number includes retransmissions and
+ * messages which the transport layer failed to send for different reasons.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_RECV_RESPONSE_REF(),
+ * NTATAG_S_SENT_MSG_REF(), NTATAG_S_SENT_REQUEST_REF()
+ */
 #define NTATAG_S_SENT_RESPONSE_REF(x)\
  ntatag_s_sent_response_ref, tag_usize_vr(&(x))
 
@@ -1575,6 +1831,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_retry_request;
 #define NTATAG_S_RETRY_REQUEST(x) ntatag_s_retry_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_retry_request_ref;
+/** Get number of SIP requests retransmitted by stack.
+ *
+ * Return number of SIP requests given to the transport layer for
+ * retransmission by the SIP stack. The number includes messages which the
+ * transport layer failed to send for different reasons.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_SENT_MSG_REF(),
+ * NTATAG_S_SENT_REQUEST_REF(), NTATAG_S_RETRY_RESPONSE_REF()
+ */
 #define NTATAG_S_RETRY_REQUEST_REF(x)\
  ntatag_s_retry_request_ref, tag_usize_vr(&(x))
 
@@ -1582,6 +1847,15 @@ NTA_DLL extern tag_typedef_t ntatag_s_retry_response;
 #define NTATAG_S_RETRY_RESPONSE(x) ntatag_s_retry_response, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_retry_response_ref;
+/** Get number of SIP responses retransmitted by stack.
+ *
+ * Return number of SIP responses given to the transport layer for
+ * retransmission by the SIP stack. The number includes messages which the
+ * transport layer failed to send for different reasons.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_SENT_MSG_REF(),
+ * NTATAG_S_SENT_REQUEST_REF(), NTATAG_S_RETRY_REQUEST_REF()
+ */
 #define NTATAG_S_RETRY_RESPONSE_REF(x)\
  ntatag_s_retry_response_ref, tag_usize_vr(&(x))
 
@@ -1589,6 +1863,14 @@ NTA_DLL extern tag_typedef_t ntatag_s_recv_retry;
 #define NTATAG_S_RECV_RETRY(x) ntatag_s_recv_retry, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_recv_retry_ref;
+/** Get number of retransmitted SIP requests received by stack.
+ *
+ * Return number of SIP requests received by the stack. This number only
+ * includes retransmission for which a matching server transaction object
+ * was found.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_RETRY_REQUEST_REF().
+ */
 #define NTATAG_S_RECV_RETRY_REF(x)\
  ntatag_s_recv_retry_ref, tag_usize_vr(&(x))
 
@@ -1596,6 +1878,12 @@ NTA_DLL extern tag_typedef_t ntatag_s_tout_request;
 #define NTATAG_S_TOUT_REQUEST(x) ntatag_s_tout_request, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_tout_request_ref;
+/** Get number of SIP client transactions that has timeout.
+ *
+ * Return number of SIP client transactions that has timeout.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_TOUT_RESPONSE_REF().
+ */
 #define NTATAG_S_TOUT_REQUEST_REF(x)\
  ntatag_s_tout_request_ref, tag_usize_vr(&(x))
 
@@ -1603,6 +1891,14 @@ NTA_DLL extern tag_typedef_t ntatag_s_tout_response;
 #define NTATAG_S_TOUT_RESPONSE(x) ntatag_s_tout_response, tag_usize_v(x)
 
 NTA_DLL extern tag_typedef_t ntatag_s_tout_response_ref;
+/** Get number of SIP server transactions that has timeout.
+ *
+ * Return number of SIP server transactions that has timeout. The number
+ * includes only the INVITE transactions for which the stack has received no
+ * ACK requests.
+ *
+ * @sa nta_agent_get_stats(), NTATAG_S_TOUT_REQUEST_REF().
+ */
 #define NTATAG_S_TOUT_RESPONSE_REF(x)\
  ntatag_s_tout_response_ref, tag_usize_vr(&(x))
 
