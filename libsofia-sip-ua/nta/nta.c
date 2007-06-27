@@ -379,6 +379,8 @@ nta_agent_t *nta_agent_create(su_root_t *root,
   ta_start(ta, tag, value);
 
   if ((agent = su_home_new(sizeof(*agent)))) {
+    unsigned timer_c;
+
     agent->sa_root = root;
     agent->sa_callback = callback;
     agent->sa_magic = magic;
@@ -399,6 +401,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_t2 	      = NTA_SIP_T2;
     agent->sa_t4              = NTA_SIP_T4;
     agent->sa_t1x64 	      = 64 * NTA_SIP_T1;
+    agent->sa_timer_c         = 185 * 1000;
     agent->sa_drop_prob       = 0;
     agent->sa_is_a_uas        = 0;
     agent->sa_progress        = 60 * 1000;
@@ -447,7 +450,9 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     outgoing_queue_init(agent->sa_out.terminated, 0); 
     /* Special queues (states) for outgoing INVITE transactions */
     outgoing_queue_init(agent->sa_out.inv_calling, agent->sa_t1x64); /* B */
-    outgoing_queue_init(agent->sa_out.inv_proceeding, 0); 
+    timer_c = (agent->sa_use_timer_c || !agent->sa_is_a_uas)
+      ? agent->sa_timer_c : 0;
+    outgoing_queue_init(agent->sa_out.inv_proceeding, timer_c); /* C */
     outgoing_queue_init(agent->sa_out.inv_completed, 32000); /* Timer D */
 
     if (leg_htable_resize(agent->sa_home, agent->sa_dialogs, 0) < 0 ||
@@ -908,7 +913,7 @@ int nta_agent_set_params(nta_agent_t *agent,
 static
 int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 {
-  int n, m;
+  int n, nC, m;
   unsigned bad_req_mask = agent->sa_bad_req_mask;
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
   usize_t  maxsize    = agent->sa_maxsize;
@@ -918,6 +923,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned sip_t2     = agent->sa_t2;
   unsigned sip_t4     = agent->sa_t4;
   unsigned sip_t1x64  = agent->sa_t1x64;
+  unsigned timer_c    = agent->sa_timer_c;
   unsigned blacklist  = agent->sa_blacklist;
   int ua              = agent->sa_is_a_uas;
   unsigned progress   = agent->sa_progress;
@@ -996,6 +1002,10 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      TPTAG_THRPSIZE_REF(threadpool),
 #endif
 	      TAG_END());
+  nC = tl_gets(tags,
+	       NTATAG_TIMER_C_REF(timer_c),
+	       TAG_END());
+  n += nC;
 
   if (mclass != NONE)
     agent->sa_mclass = mclass ? mclass : sip_default_mclass();
@@ -1098,6 +1108,14 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
     outgoing_queue_adjust(agent, agent->sa_out.inv_calling, sip_t1x64);
   }
   agent->sa_t1x64 = sip_t1x64;
+  if (nC == 1) {
+    agent->sa_use_timer_c = 1;
+    if (timer_c == 0)
+      timer_c = 185 * 1000;
+    agent->sa_timer_c = timer_c;
+    outgoing_queue_adjust(agent, agent->sa_out.inv_proceeding, timer_c);
+  }
+
   agent->sa_blacklist = blacklist;
 
   if (progress == 0)
@@ -6261,6 +6279,9 @@ static size_t outgoing_timer_dk(outgoing_queue_t *q,
 static size_t outgoing_timer_bf(outgoing_queue_t *q, 
 				char const *timer, 
 				su_duration_t now);
+static size_t outgoing_timer_c(outgoing_queue_t *q, 
+			       char const *timer, 
+			       su_duration_t now);
 
 static void outgoing_ack(nta_outgoing_t *orq, msg_t *msg, sip_t *sip);
 static msg_t *outgoing_ackmsg(nta_outgoing_t *, sip_method_t, char const *,
@@ -7474,7 +7495,8 @@ outgoing_queue_adjust(nta_agent_t *sa,
   latest = set_timeout(sa, queue->q_timeout = timeout);
 
   for (orq = queue->q_head; orq; orq = orq->orq_next) {
-    if (orq->orq_timeout - latest > 0)
+    if (orq->orq_timeout == 0 ||
+	orq->orq_timeout - latest > 0)
       orq->orq_timeout = latest;
   }
 }
@@ -7729,6 +7751,7 @@ su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
     sa->sa_out.inv_calling->q_length;
   size_t completed = sa->sa_out.completed->q_length + 
     sa->sa_out.inv_completed->q_length;
+  outgoing_queue_t *proceeding = sa->sa_out.inv_proceeding;
 
   outgoing_queue_init(sa->sa_out.free = rq, 0);
 
@@ -7782,9 +7805,12 @@ su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
 
   timeout
     = outgoing_timer_bf(sa->sa_out.inv_calling, "B", now)
+    + outgoing_timer_c(proceeding, "C", now);
     + outgoing_timer_bf(sa->sa_out.trying, "F", now);
 
   next = NEXT_TIMEOUT(next, sa->sa_out.inv_calling->q_head, orq_timeout, now);
+  if (proceeding->q_timeout)
+    next = NEXT_TIMEOUT(next, proceeding->q_head, orq_timeout, now);
   next = NEXT_TIMEOUT(next, sa->sa_out.trying->q_head, orq_timeout, now);
 
   destroyed = outgoing_mass_destroy(sa, rq);
@@ -7856,6 +7882,38 @@ size_t outgoing_timer_bf(outgoing_queue_t *q,
     outgoing_timeout(orq, now);
 
     assert(q->q_head != orq || orq->orq_timeout - now > 0);
+  }
+
+  return timeout;
+}
+
+/** Handle timer C */
+static
+size_t outgoing_timer_c(outgoing_queue_t *q, 
+			char const *timer, 
+			su_duration_t now)
+{
+  nta_outgoing_t *orq;
+  size_t timeout = 0;
+
+  if (q->q_timeout == 0)
+    return 0;
+
+  while ((orq = q->q_head)) {
+    if (orq->orq_timeout - now > 0 || timeout >= timer_max_timeout)
+      break;
+
+    timeout++;
+    
+    SU_DEBUG_5(("nta: timer %s fired, %s %s (%u)\n",
+		timer, "CANCEL and timeout", 
+		orq->orq_method_name, orq->orq_cseq->cs_seq));
+
+    nta_outgoing_tcancel(orq, NULL, NULL, TAG_NULL());
+
+    outgoing_timeout(orq, now);
+
+    assert(q->q_head != orq);
   }
 
   return timeout;
@@ -8143,6 +8201,13 @@ int outgoing_recv(nta_outgoing_t *orq,
       if (orq->orq_queue == sa->sa_out.inv_calling) {
 	orq->orq_status = status;
 	outgoing_queue(sa->sa_out.inv_proceeding, orq);
+      }
+      else if (orq->orq_queue == sa->sa_out.inv_proceeding) {
+	orq->orq_status = status;
+	if (sa->sa_out.inv_proceeding->q_timeout) {
+	  outgoing_remove(orq);
+	  outgoing_queue(sa->sa_out.inv_proceeding, orq);
+	}
       }
 
       /* Handle 100rel */
@@ -8496,7 +8561,9 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
   /* Create response message, if needed */
   if (!orq->orq_stateless &&
       !(orq->orq_callback == outgoing_default_cb) &&
-      !(status == 408 && !orq->orq_agent->sa_timeout_408)) {
+      !(status == 408 &&
+	orq->orq_method != sip_method_invite && 
+	!orq->orq_agent->sa_timeout_408)) {
     char const *to_tag;
 
     msg = nta_msg_create(agent, NTA_INTERNAL_MSG);

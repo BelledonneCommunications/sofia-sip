@@ -87,6 +87,10 @@ int tstflags = 0;
 
 #define NONE ((void *)-1)
 
+int expensive_checks;
+
+#define EXPENSIVE_CHECKS (expensive_checks)
+
 struct sigcomp_compartment;
 
 char const name[] = "test_nta";
@@ -107,6 +111,7 @@ struct agent_t {
 
   nta_outgoing_t *ag_orq;
   int             ag_status;
+  unsigned        ag_canceled:1, ag_acked:1, :0;
 
   char const     *ag_comp;
   struct sigcomp_compartment *ag_client_compartment;
@@ -405,6 +410,30 @@ void
 nta_test_run(agent_t *ag)
 {
   for (ag->ag_status = 0; ag->ag_status < 200;) {
+    if (tstflags & tst_verbatim) {
+      fputs(".", stdout); fflush(stdout);
+    }
+    su_root_step(ag->ag_root, 500L);
+  }
+}
+
+void 
+nta_test_run_until_acked(agent_t *ag)
+{
+  ag->ag_status = 0;
+  for (ag->ag_acked = 0; !ag->ag_acked;) {
+    if (tstflags & tst_verbatim) {
+      fputs(".", stdout); fflush(stdout);
+    }
+    su_root_step(ag->ag_root, 500L);
+  }
+}
+
+void 
+nta_test_run_until_canceled(agent_t *ag)
+{
+  ag->ag_status = 0;
+  for (ag->ag_canceled = 0; !ag->ag_canceled;) {
     if (tstflags & tst_verbatim) {
       fputs(".", stdout); fflush(stdout);
     }
@@ -2690,11 +2719,11 @@ int test_for_ack_or_timeout(agent_t *ag,
 
   if (method == sip_method_ack) {
     TEST(method, sip_method_ack);
-  
-    ag->ag_status = 200;
+    ag->ag_acked = 1;
   }
   else if (method == sip_method_cancel) {
     nta_incoming_treply(irq, SIP_487_REQUEST_CANCELLED, TAG_END());
+    ag->ag_canceled = 1;
   }
   else {
     if (ag->ag_bob_leg) {
@@ -2818,6 +2847,9 @@ int invite_prack_callback(agent_t *ag,
     orq = tagged;
   }
 
+  if (status > ag->ag_status)
+    ag->ag_status = status;
+
   if (status > 100 && status < 200 && sip->sip_rseq) {
     nta_outgoing_t *prack;
     prack = nta_outgoing_prack(ag->ag_call_leg, orq, NULL, NULL,
@@ -2857,9 +2889,6 @@ int invite_prack_callback(agent_t *ag,
     nta_outgoing_destroy(ack);
     msg_destroy(msg);
   }
-  else {
-    ag->ag_status = status;
-  }
 
   TEST_1(sip->sip_to && sip->sip_to->a_tag);
 
@@ -2876,16 +2905,22 @@ static int process_prack(nta_reliable_magic_t *arg,
 			 sip_t const *sip)
 {
   agent_t *ag = (agent_t *)arg;
-  if (ag->ag_irq) {
+
+  if (irq) {
+    return 200;
+  }
+  else if (ag->ag_irq) {
     nta_incoming_treply(ag->ag_irq, 
 			504, "Reliable Response Timeout",
 			TAG_END());
     nta_incoming_destroy(ag->ag_irq);
+    return 487;
   }
-  return 504;
+
+  return 487;
 }
 
-/* send invite, wait for 183, send CANCEL */
+/* respond with 183 when receiving invite */
 int bob_leg_callback3(agent_t *ag,
 		      nta_leg_t *leg,
 		      nta_incoming_t *irq,
@@ -2931,7 +2966,8 @@ int bob_leg_callback3(agent_t *ag,
 
   if (sip->sip_request->rq_method != sip_method_invite) {
     return 200;
-  } else {
+  }
+  else {
     nta_reliable_t *rel;
     nta_incoming_bind(irq, test_for_ack_or_timeout, ag);
     rel = nta_reliable_treply(irq, process_prack, ag,
@@ -3073,7 +3109,7 @@ int test_prack(agent_t *ag)
 			      SIPTAG_CONTENT_TYPE(c),
 			      SIPTAG_PAYLOAD(sdp),
 			      TAG_END()));
-  nta_test_run(ag);
+  nta_test_run_until_acked(ag);
   TEST(ag->ag_status, 200);
   /*TEST(ag->ag_tag_status, 183);*/
   TEST_P(ag->ag_orq, NULL);
@@ -3104,6 +3140,8 @@ int test_prack(agent_t *ag)
   nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
   ag->ag_latest_leg = NULL;
   ag->ag_call_leg = NULL;
+  if (ag->ag_call_tag)
+    su_free(ag->ag_home, (void *)ag->ag_call_tag), ag->ag_call_tag = NULL;
 
   /* Test CANCELing a call after received PRACK */
   TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
@@ -3139,7 +3177,7 @@ int test_prack(agent_t *ag)
   ag->ag_latest_leg = NULL;
   ag->ag_call_leg = NULL;
 
-  if (getenv("EXPENSIVE_CHECKS")) {
+  if (EXPENSIVE_CHECKS) {
   printf("%s: starting 100rel timeout test, test will complete in 4 seconds\n",
 	 name);
   
@@ -3186,14 +3224,60 @@ int test_prack(agent_t *ag)
 			    NTATAG_SIP_T1X64(64 * 500), 
 			    TAG_END()), 2);
   }
-  END();
-/*
+
+  if (EXPENSIVE_CHECKS || 1) {
+  printf("%s: starting timer C, test will complete in 1 seconds\n",
+	 name);
+  
+  TEST(nta_agent_set_params(ag->ag_agent,
+			    NTATAG_TIMER_C(1000),
+			    TAG_END()), 1);
+
+  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+					    alice_leg_callback,
+					    ag,
+					    SIPTAG_FROM(ag->ag_alice),
+					    SIPTAG_TO(ag->ag_bob),
+					    TAG_END()));
+  TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
+
+  /* Send INVITE, 
+   * send precious provisional response
+   * timeout after timer C
+   */
+  nta_leg_bind(ag->ag_server_leg, bob_leg_callback3, ag);
+  ag->ag_expect_leg = ag->ag_server_leg;
+  TEST_1(ag->ag_orq = 
+	 nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_alice_leg, 
+			      invite_prack_callback, ag,
+			      ag->ag_obp,
+			      SIP_METHOD_INVITE,
+			      (url_string_t *)ag->ag_m_bob->m_url,
+			      SIPTAG_SUBJECT_STR("Call 4"),
+			      SIPTAG_CONTACT(ag->ag_m_alice),
+			      SIPTAG_REQUIRE_STR("100rel"),
+			      SIPTAG_CONTENT_TYPE(c),
+			      SIPTAG_PAYLOAD(sdp),
+			      TAG_END()));
+  nta_test_run_until_canceled(ag);
+  TEST(ag->ag_status, 408);
+  TEST_1(ag->ag_canceled != 0); 
+  TEST_P(ag->ag_orq, NULL);
+  TEST_P(ag->ag_latest_leg, ag->ag_server_leg);
+  TEST_1(ag->ag_bob_leg);
+  nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
+
+  TEST(nta_agent_set_params(ag->ag_agent, 
+			    NTATAG_TIMER_C(185 * 1000), 
+			    TAG_END()), 1);
+
   nta_leg_destroy(ag->ag_bob_leg), ag->ag_bob_leg = NULL;
   ag->ag_latest_leg = NULL;
   ag->ag_call_leg = NULL;
   if (ag->ag_call_tag)
     su_free(ag->ag_home, (void *)ag->ag_call_tag), ag->ag_call_tag = NULL;
-*/
+  }
+  END();
 }
 
 int alice_leg_callback2(agent_t *ag,
@@ -3365,6 +3449,7 @@ char const nta_test_usage[] =
   "   -v | --verbose    be verbose\n"
   "   -a | --abort      abort() on error\n"
   "   -q | --quiet      be quiet\n"
+  "   --expensive       run expensive tests, too\n"
   "   -1                quit on first error\n"
   "   -l level          set logging level (0 by default)\n"
   "   -p uri            specify uri of outbound proxy\n"
@@ -3388,6 +3473,8 @@ int main(int argc, char *argv[])
 
   agent_t ag[1] = {{ { SU_HOME_INIT(ag) }, 0, NULL }};
 
+  expensive_checks = getenv("EXPENSIVE_CHECKS") != NULL;
+
   for (i = 1; argv[i]; i++) {
     if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0)
       tstflags |= tst_verbatim;
@@ -3395,6 +3482,8 @@ int main(int argc, char *argv[])
       tstflags |= tst_abort;
     else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
       tstflags &= ~tst_verbatim;
+    else if (strcmp(argv[i], "--expensive") == 0)
+      expensive_checks = 1;
     else if (strcmp(argv[i], "-1") == 0)
       quit_on_single_failure = 1;
     else if (strncmp(argv[i], "-l", 2) == 0) {
