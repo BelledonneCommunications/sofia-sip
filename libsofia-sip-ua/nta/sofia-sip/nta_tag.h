@@ -494,6 +494,39 @@ NTA_DLL extern tag_typedef_t ntatag_progress;
 NTA_DLL extern tag_typedef_t ntatag_progress_ref;
 #define NTATAG_PROGRESS_REF(x) ntatag_progress_ref, tag_uint_vr(&(x))
 
+NTA_DLL extern tag_typedef_t ntatag_timer_c;
+/** Value for timer C in milliseconds. @HI
+ *
+ * By default the INVITE transaction will not timeout after a preliminary
+ * response has been received. However, an intermediate proxy can timeout
+ * the transaction using timer C. Timer C is reset every time a response
+ * belonging to the transaction is received.
+ *
+ * The default value for the timer C is 185000 milliseconds (3 minutes and 5
+ * seconds). By default, timer C is not run on user agents (if NTATAG_UA(1)
+ * without NTATAG_TIMER_C() is fgiven).
+ *
+ * @par Used with
+ *    nua_create() \n
+ *    nta_agent_create() \n
+ *    nta_agent_set_params() \n
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *    Value of SIP timer C in milliseconds. The default value is used
+ *    instead if NTATAG_TIMER_C(0) is given.
+ *
+ * @sa @RFC3261 sections 13.3.1.1, 16.7 and 16.8,
+ * NTATAG_UA(1), NTATAG_TIMER_C(),
+ * NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T2(), NTATAG_SIP_T4()
+ */
+#define NTATAG_TIMER_C(x)    ntatag_timer_c, tag_uint_v((x))
+
+NTA_DLL extern tag_typedef_t ntatag_timer_c_ref;
+#define NTATAG_TIMER_C_REF(x) ntatag_timer_c_ref, tag_uint_vr(&(x))
+
 NTA_DLL extern tag_typedef_t ntatag_blacklist;
 /** Add Retry-After header to internally-generated error messages. @HI 
  *
