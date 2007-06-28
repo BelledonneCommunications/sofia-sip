@@ -54,8 +54,8 @@ struct call;
 #include <sofia-sip/su_osx_runloop.h>
 #endif
 
-#include <test_proxy.h>
-#include <test_nat.h>
+#include "test_proxy.h"
+#include "test_nat.h"
 #include <sofia-sip/auth_module.h>
 
 #include <stddef.h>
