@@ -53,7 +53,30 @@
 int su_socket_close_on_exec = 0;
 int su_socket_blocking = 0;
 
-/** Create an endpoint for communication. */
+#if HAVE_OPEN_C && HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+
+#if SU_HAVE_BSDSOCK && HAVE_OPEN_C
+char su_global_ap_name[IFNAMSIZ];
+extern int su_get_local_ip_addr(su_sockaddr_t *su);
+#endif
+
+/** Create a socket endpoint for communication.
+ *
+ * @param af addressing family 
+ * @param socktype socket type 
+ * @param proto protocol number specific to the addressing family
+ *
+ * The newly created socket is nonblocking unless global variable
+ * su_socket_blocking is set to true. 
+ *
+ * Also, the newly created socket is closed on exec() if global variable
+ * su_socket_close_on_exec is set to true. Note that a multithreaded program
+ * can fork() and exec() before the close-on-exec flag is set.
+ *
+ * @return A valid socket descriptor or INVALID_SOCKET (-1) upon an error.
+ */
 su_socket_t su_socket(int af, int socktype, int proto)
 {
 #if HAVE_OPEN_C
@@ -65,7 +88,7 @@ su_socket_t su_socket(int af, int socktype, int proto)
 #endif
 
   su_socket_t s = socket(af, socktype, proto);
-#if SU_HAVE_BSDSOCK
+
   if (s != INVALID_SOCKET) {
 #if SU_HAVE_BSDSOCK
     if (su_socket_close_on_exec)
@@ -74,13 +97,126 @@ su_socket_t su_socket(int af, int socktype, int proto)
     if (!su_socket_blocking)	/* All sockets are born blocking */
       su_setblocking(s, 0);
   }
+
+#if HAVE_OPEN_C
+  /* Use AP we have raised up */
+  memset(&ifr, 0, sizeof(struct ifreq));
+  strncpy(ifr.ifr_name, (char const *) su_global_ap_name, IFNAMSIZ);
+
+  /* Assign socket to an already active access point (interface) */
+  ioctl(s, SIOCSIFNAME, &ifr);
+  ioctl(s, SIOCIFSTART, &ifr);	
 #endif
+
   return s;
 }
 
-#if SU_HAVE_BSDSOCK
+#if HAVE_OPEN_C
+#include <errno.h>
+su_sockaddr_t su_ap[1];
+int ifindex;
+void *aConnection;
+extern void *su_localinfo_ap_set(su_sockaddr_t *su, int *index);
+extern int su_localinfo_ap_deinit(void *aconn);
+#define NUMIFS 64
+  
+int su_localinfo_ap_name_to_index(int ap_index)
+{
+  struct ifconf ifc;
+
+  struct ifreq *ifr, *ifr_next;
+  int error = EFAULT;
+  char *buffer, buf[NUMIFS * sizeof(struct ifreq)];
+  su_socket_t s;
+
+  s= socket(AF_INET, SOCK_STREAM, 0);
+  if (s < 0)
+    return -1;
+  
+  ifc.ifc_len = NUMIFS * sizeof (struct ifreq);
+
+  memset(buf, 0, ifc.ifc_len);
+  ifc.ifc_buf = buf;
+  if (ioctl(s, SIOCGIFCONF, (char *)&ifc) < 0) {
+    return error;
+  }
+
+  buffer = ifc.ifc_buf + ifc.ifc_len;
+
+  for (ifr = ifc.ifc_req;
+       (void *)ifr < (void *)buffer;
+       ifr = ifr_next) {
+    struct ifreq ifreq[1];
+    int scope, if_index, flags = 0, gni_flags = 0;
+    char *if_name;
+    su_sockaddr_t su2[1];
+
+#if SA_LEN
+    if (ifr->ifr_addr.sa_len > sizeof(ifr->ifr_addr))
+      ifr_next = (struct ifreq *)
+	(ifr->ifr_addr.sa_len + (char *)(&ifr->ifr_addr));
+    else
+#else
+      ifr_next = ifr + 1;
+#endif
+
+    if_name = ifr->ifr_name;
+
+#if defined(SIOCGIFINDEX)
+    ifreq[0] = *ifr;
+    if (ioctl(s, SIOCGIFINDEX, ifreq) < 0) {
+return -1;
+    }
+#if HAVE_IFR_INDEX
+    if_index = ifreq->ifr_index;
+#elif HAVE_IFR_IFINDEX
+    if_index = ifreq->ifr_ifindex;
+#else
+#error Unknown index field in struct ifreq
+#endif
+
+    if (ap_index == if_index) 
+    {
+      strncpy(su_global_ap_name, (const char *) if_name, sizeof(su_global_ap_name));
+      error = 0;
+    };
+  
+#else
+#error su_localinfo() cannot map interface name to number
+#endif
+
+  }
+
+  close(s);
+  return error;
+}
+#endif
+
+#if SU_HAVE_BSDSOCK || DOCUMENTATION_ONLY
+/** Initialize socket implementation.
+ *
+ * Before using any sofia-sip-ua functions, the application should call
+ * su_init() in order to initialize run-time environment including sockets. 
+ * This function may prepare plugins if there are any. 
+ *
+ * @par POSIX Implementation
+ * The su_init() initializes debugging logs and ignores the SIGPIPE signal.
+ *
+ * @par Windows Implementation
+ * The function su_init() initializes Winsock2 library on Windows.
+ *
+ * @par Symbian Implementation
+ * The function su_init() prompts user to select an access point (interface
+ * towards Internet) and uses the activated access point for the socket
+ * operations.
+ */
 int su_init(void)
 {
+#if HAVE_OPEN_C
+  char apname[60];
+  su_socket_t s;
+#endif
+
   su_home_threadsafe(NULL);
 
 #if HAVE_SIGPIPE
