@@ -95,6 +95,9 @@ enum {
   /** Return code for an unsuccessful call */
   su_failure = -1
 };
+#if SYMBIAN && !defined(MSG_NOSIGNAL)
+#define MSG_NOSIGNAL (0)
+#endif
 #elif SU_HAVE_WINSOCK
 enum { 
   su_success = 0, 
