@@ -1153,7 +1153,14 @@ sip_replaces_t *nua_handle_make_replaces(nua_handle_t *nh,
 					 int early_only)
 {
   if (nh && nh->nh_valid && nh->nh_nua) {
+#if HAVE_OPEN_C
+    struct nua_stack_handle_make_replaces_args a = { NULL, NULL, NULL, 0 };
+    a.nh = nh;
+    a.home = home;
+    a.early_only = early_only;
+#else
     struct nua_stack_handle_make_replaces_args a = { NULL, nh, home, early_only };
+#endif
 
     if (su_task_execute(nh->nh_nua->nua_server,
 			nua_stack_handle_make_replaces_call, (void *)&a,
@@ -1193,7 +1200,14 @@ static int nua_stack_handle_by_replaces_call(void *arg)
 nua_handle_t *nua_handle_by_replaces(nua_t *nua, sip_replaces_t const *r)
 {
   if (nua) {
+#if HAVE_OPEN_C
+    struct nua_stack_handle_by_replaces_args a;
+	a.retval = NULL;
+    a.nua = nua;
+    a.r = r;
+#else
     struct nua_stack_handle_by_replaces_args a = { NULL, nua, r };
+#endif
 
     if (su_task_execute(nua->nua_server,
 			nua_stack_handle_by_replaces_call, (void *)&a,
