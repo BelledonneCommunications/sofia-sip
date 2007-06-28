@@ -1015,7 +1015,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
     m = tport_set_params(tport, TAG_NEXT(tags));
   }
 
-  if (n == 0 || m == -1)
+  if (m == -1)
     return m;
 
   n += m;
