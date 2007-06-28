@@ -70,6 +70,10 @@ typedef struct agent_t agent_t;
 #include <assert.h>
 #include <unistd.h>
 
+#if HAVE_OPEN_C
+#include <sys/param.h>
+#endif
+
 SOFIAPUBVAR su_log_t nta_log[];
 SOFIAPUBVAR su_log_t tport_log[];
 
@@ -449,13 +453,15 @@ int test_init(agent_t *ag, char const *resolv_conf)
   su_sockaddr_t su;
   socklen_t sulen, sulen0;
   su_socket_t s; 
-  int af;
+  int af, err = -1;
 
   BEGIN();
 
-  TEST_1(ag->ag_root = su_root_create(ag));
+  ag->ag_root = su_root_create(ag);
+  TEST_1(ag->ag_root);
 
-  TEST_1(ag->ag_mclass = msg_mclass_clone(sip_default_mclass(), 0, 0));
+  ag->ag_mclass = msg_mclass_clone(sip_default_mclass(), 0, 0);
+  TEST_1(ag->ag_mclass);
 
 #if SU_HAVE_IN6
   if (str0cmp(getenv("ipv6"), "true") == 0) {
@@ -477,7 +483,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
     contact = getenv("SIPCONTACT");
 
   /* Sink server */
-  s = socket(af, SOCK_DGRAM, 0); TEST_1(s != INVALID_SOCKET);
+  s = su_socket(af, SOCK_DGRAM, 0); TEST_1(s != INVALID_SOCKET);
   memset(&su, 0, sulen = sulen0);
   su.su_family = af;
   if (getenv("sink")) {
@@ -490,7 +496,7 @@ int test_init(agent_t *ag, char const *resolv_conf)
   ag->ag_sink_socket = s;
 
   /* Down server */
-  s = socket(af, SOCK_STREAM, 0); TEST_1(s != INVALID_SOCKET);
+  s = su_socket(af, SOCK_STREAM, 0); TEST_1(s != INVALID_SOCKET);
   memset(&su, 0, sulen = sulen0);
   su.su_family = af;
   if (getenv("down")) {
@@ -500,17 +506,18 @@ int test_init(agent_t *ag, char const *resolv_conf)
   ag->ag_down_socket = s;
   
   /* Create agent */
-  TEST_1(ag->ag_agent = nta_agent_create(ag->ag_root,
-					 (url_string_t *)contact,
-					 NULL,
-					 NULL,
-					 NTATAG_MCLASS(ag->ag_mclass),
-					 NTATAG_USE_TIMESTAMP(1),
-					 SRESTAG_RESOLV_CONF(resolv_conf),
-					 NTATAG_USE_NAPTR(0),
-					 NTATAG_USE_SRV(0),
-					 NTATAG_PRELOAD(2048),
-					 TAG_END()));
+  ag->ag_agent = nta_agent_create(ag->ag_root,
+			 (url_string_t *)contact,
+			 NULL,
+			 NULL,
+			 NTATAG_MCLASS(ag->ag_mclass),
+			 NTATAG_USE_TIMESTAMP(1),
+			 SRESTAG_RESOLV_CONF(resolv_conf),
+			 NTATAG_USE_NAPTR(0),
+			 NTATAG_USE_SRV(0),
+			 NTATAG_PRELOAD(2048),
+			 TAG_END());
+  TEST_1(ag->ag_agent);
 
   {
     /* Initialize our headers */
@@ -574,29 +581,32 @@ int test_init(agent_t *ag, char const *resolv_conf)
     m->m_next = ag->ag_aliases;
     ag->ag_aliases = m;
 
-    TEST(nta_agent_set_params(ag->ag_agent, 
-			      NTATAG_ALIASES(ag->ag_aliases),
-			      NTATAG_REL100(1),
-			      NTATAG_UA(1), 
-			      NTATAG_USE_NAPTR(1),
-			      NTATAG_USE_SRV(1),
-			      NTATAG_MAX_FORWARDS(20),
-			      TAG_END()),
-	 6);
+    err = nta_agent_set_params(ag->ag_agent, 
+		      NTATAG_ALIASES(ag->ag_aliases),
+		      NTATAG_REL100(1),
+		      NTATAG_UA(1), 
+		      NTATAG_USE_NAPTR(1),
+		      NTATAG_USE_SRV(1),
+		      NTATAG_MAX_FORWARDS(20),
+		      TAG_END());
+    TEST(err, 6);
 
-    TEST(nta_agent_set_params(ag->ag_agent, 
-			      NTATAG_ALIASES(ag->ag_aliases),
-			      NTATAG_DEFAULT_PROXY("sip:127.0.0.1"),
-			      TAG_END()), 2);
+    err = nta_agent_set_params(ag->ag_agent, 
+		      NTATAG_ALIASES(ag->ag_aliases),
+		      NTATAG_DEFAULT_PROXY("sip:127.0.0.1"),
+		      TAG_END());
+    TEST(err, 2);
 
-    TEST(nta_agent_set_params(ag->ag_agent, 
-			      NTATAG_ALIASES(ag->ag_aliases),
-			      NTATAG_DEFAULT_PROXY(NULL),
-			      TAG_END()), 2);
+    err = nta_agent_set_params(ag->ag_agent, 
+		      NTATAG_ALIASES(ag->ag_aliases),
+		      NTATAG_DEFAULT_PROXY(NULL),
+		      TAG_END());
+    TEST(err, 2);
 
-    TEST(nta_agent_set_params(ag->ag_agent, 
-			      NTATAG_DEFAULT_PROXY("tel:+35878008000"),
-			      TAG_END()), -1);
+    err = nta_agent_set_params(ag->ag_agent, 
+		      NTATAG_DEFAULT_PROXY("tel:+35878008000"),
+		      TAG_END());
+    TEST(err, -1);
 
   }
   
@@ -606,12 +616,13 @@ int test_init(agent_t *ag, char const *resolv_conf)
     /* Create the server leg */
     *url = *ag->ag_aliases->m_url;
     url->url_user = "%";
-    TEST_1(ag->ag_server_leg = nta_leg_tcreate(ag->ag_agent, 
-					       leg_callback_200,
-					       ag,
-					       NTATAG_NO_DIALOG(1),
-					       URLTAG_URL(url),
-					       TAG_END()));
+    ag->ag_server_leg = nta_leg_tcreate(ag->ag_agent, 
+		       leg_callback_200,
+		       ag,
+		       NTATAG_NO_DIALOG(1),
+		       URLTAG_URL(url),
+		       TAG_END());
+    TEST_1(ag->ag_server_leg);
   }
 
   END();
@@ -888,7 +899,7 @@ int test_tports(agent_t *ag)
     ag->ag_expect_leg = ag->ag_default_leg;
     su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
 
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, 
 			       outgoing_callback, ag,
 			       ag->ag_obp,
@@ -899,7 +910,8 @@ int test_tports(agent_t *ag)
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
 			       SIPTAG_HEADER_STR(p_acid),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
 
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
@@ -929,7 +941,7 @@ int test_tports(agent_t *ag)
     ag->ag_expect_leg = ag->ag_default_leg;
     su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
 
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, 
 			       outgoing_callback, ag,
 			       ag->ag_obp,
@@ -939,7 +951,8 @@ int test_tports(agent_t *ag)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
 
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
@@ -977,7 +990,7 @@ int test_tports(agent_t *ag)
     ag->ag_expect_leg = ag->ag_server_leg;
     su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
 
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	   nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 				ag->ag_obp,
 				SIP_METHOD_MESSAGE,
@@ -988,7 +1001,8 @@ int test_tports(agent_t *ag)
 				SIPTAG_TO(ag->ag_alice),
 				SIPTAG_CONTACT(ag->ag_m_bob),
 				SIPTAG_PAYLOAD(pl),
-				TAG_END()));
+				TAG_END());
+    TEST_1(ag->ag_orq);
     su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
@@ -1017,18 +1031,19 @@ int test_tports(agent_t *ag)
     TEST_1(pl = test_payload(ag->ag_home, size));
 
     ag->ag_expect_leg = ag->ag_server_leg;
-    TEST_1(ag->ag_orq = 
-          nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
-			       NULL,
-			       SIP_METHOD_MESSAGE,
-			       (url_string_t *)url,
-			       SIPTAG_SUBJECT_STR("Test 0.2"),
-			       SIPTAG_FROM(ag->ag_bob),
-			       SIPTAG_TO(ag->ag_alice),
-			       SIPTAG_CONTACT(ag->ag_m_bob),
-			       SIPTAG_PAYLOAD(pl),
-			       NTATAG_DEFAULT_PROXY(ag->ag_obp),
-			       TAG_END()));
+    ag->ag_orq = 
+    nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
+		       NULL,
+		       SIP_METHOD_MESSAGE,
+		       (url_string_t *)url,
+		       SIPTAG_SUBJECT_STR("Test 0.2"),
+		       SIPTAG_FROM(ag->ag_bob),
+		       SIPTAG_TO(ag->ag_alice),
+		       SIPTAG_CONTACT(ag->ag_m_bob),
+		       SIPTAG_PAYLOAD(pl),
+		       NTATAG_DEFAULT_PROXY(ag->ag_obp),
+		       TAG_END());
+    TEST_1(ag->ag_orq);
     su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
@@ -1052,17 +1067,18 @@ int test_tports(agent_t *ag)
     TEST_1(pl = test_payload(ag->ag_home, size));
 
     ag->ag_expect_leg = ag->ag_server_leg;
-    TEST_1(ag->ag_orq = 
-          nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
-			       ag->ag_obp,
-			       SIP_METHOD_MESSAGE,
-			       (url_string_t *)url,
-			       SIPTAG_SUBJECT_STR("Test 0.3"),
-			       SIPTAG_FROM(ag->ag_bob),
-			       SIPTAG_TO(ag->ag_alice),
-			       SIPTAG_CONTACT(ag->ag_m_bob),
-			       SIPTAG_PAYLOAD(pl),
-			       TAG_END()));
+    ag->ag_orq = 
+      nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
+		       ag->ag_obp,
+		       SIP_METHOD_MESSAGE,
+		       (url_string_t *)url,
+		       SIPTAG_SUBJECT_STR("Test 0.3"),
+		       SIPTAG_FROM(ag->ag_bob),
+		       SIPTAG_TO(ag->ag_alice),
+		       SIPTAG_CONTACT(ag->ag_m_bob),
+		       SIPTAG_PAYLOAD(pl),
+		       TAG_END());
+    TEST_1(ag->ag_orq);
     su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
@@ -1087,17 +1103,18 @@ int test_tports(agent_t *ag)
     su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
 
     ag->ag_expect_leg = ag->ag_server_leg;
-    TEST_1(ag->ag_orq = 
-          nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
-			       ag->ag_obp,
-			       SIP_METHOD_MESSAGE,
-			       (url_string_t *)url,
-			       SIPTAG_SUBJECT_STR("Test 0.4.1"),
-			       SIPTAG_FROM(ag->ag_bob),
-			       SIPTAG_TO(ag->ag_alice),
-			       SIPTAG_CONTACT(ag->ag_m_bob),
-			       SIPTAG_PAYLOAD(pl),
-			       TAG_END()));
+    ag->ag_orq = 
+      nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
+		       ag->ag_obp,
+		       SIP_METHOD_MESSAGE,
+		       (url_string_t *)url,
+		       SIPTAG_SUBJECT_STR("Test 0.4.1"),
+		       SIPTAG_FROM(ag->ag_bob),
+		       SIPTAG_TO(ag->ag_alice),
+		       SIPTAG_CONTACT(ag->ag_m_bob),
+		       SIPTAG_PAYLOAD(pl),
+		       TAG_END());
+    TEST_1(ag->ag_orq);
     su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
@@ -1131,17 +1148,18 @@ int test_tports(agent_t *ag)
 
     su_free(ag->ag_home, ag->ag_in_via), ag->ag_in_via = NULL;
 
-    TEST_1(ag->ag_orq = 
-          nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
-			       ag->ag_obp,
-			       SIP_METHOD_MESSAGE,
-			       (url_string_t *)url,
-			       SIPTAG_SUBJECT_STR("Test 0.4.2"),
-			       SIPTAG_FROM(ag->ag_bob),
-			       SIPTAG_TO(ag->ag_alice),
-			       SIPTAG_CONTACT(ag->ag_m_bob),
-			       SIPTAG_PAYLOAD(pl),
-			       TAG_END()));
+    ag->ag_orq = 
+      nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
+		       ag->ag_obp,
+		       SIP_METHOD_MESSAGE,
+		       (url_string_t *)url,
+		       SIPTAG_SUBJECT_STR("Test 0.4.2"),
+		       SIPTAG_FROM(ag->ag_bob),
+		       SIPTAG_TO(ag->ag_alice),
+		       SIPTAG_CONTACT(ag->ag_m_bob),
+		       SIPTAG_PAYLOAD(pl),
+		       TAG_END());
+    TEST_1(ag->ag_orq);
     su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
@@ -1170,18 +1188,19 @@ int test_tports(agent_t *ag)
     su_free(ag->ag_home, (void *)ag->ag_out_via), ag->ag_out_via = NULL;
 
     ag->ag_expect_leg = ag->ag_server_leg;
-    TEST_1(ag->ag_orq = 
-          nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
-			       ag->ag_obp,
-			       SIP_METHOD_MESSAGE,
-			       (url_string_t *)url,
-			       SIPTAG_SUBJECT_STR("Test 0.5"),
-			       SIPTAG_FROM(ag->ag_bob),
-			       SIPTAG_TO(ag->ag_alice),
-			       SIPTAG_CONTACT(ag->ag_m_bob),
-			       SIPTAG_PAYLOAD(pl),
-			       TPTAG_MTU(0xffffffff),
-			       TAG_END()));
+    ag->ag_orq = 
+      nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
+		       ag->ag_obp,
+		       SIP_METHOD_MESSAGE,
+		       (url_string_t *)url,
+		       SIPTAG_SUBJECT_STR("Test 0.5"),
+		       SIPTAG_FROM(ag->ag_bob),
+		       SIPTAG_TO(ag->ag_alice),
+		       SIPTAG_CONTACT(ag->ag_m_bob),
+		       SIPTAG_PAYLOAD(pl),
+		       TPTAG_MTU(0xffffffff),
+		       TAG_END());
+    TEST_1(ag->ag_orq);
     su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
@@ -1213,7 +1232,7 @@ int test_tports(agent_t *ag)
 			 TAG_END());
 
     ag->ag_expect_leg = ag->ag_server_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, 
 			       magic_callback, ag,
 			       ag->ag_obp,
@@ -1224,7 +1243,8 @@ int test_tports(agent_t *ag)
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
 			       SIPTAG_VIA(via),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1255,7 +1275,7 @@ int test_tports(agent_t *ag)
     TEST_1(pl = test_payload(ag->ag_home, size));
 
     ag->ag_expect_leg = ag->ag_server_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
           nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1265,8 +1285,9 @@ int test_tports(agent_t *ag)
 			       SIPTAG_TO(ag->ag_alice),
 			       SIPTAG_CONTACT(ag->ag_m_bob),
 			       SIPTAG_PAYLOAD(pl),
-			       TAG_END()));
-    su_free(ag->ag_home, pl);
+			       TAG_END());
+   TEST_1(ag->ag_orq);
+   su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
@@ -1291,7 +1312,7 @@ int test_tports(agent_t *ag)
 
     ag->ag_expect_leg = ag->ag_server_leg;
     ag->ag_latest_leg = NULL;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
           nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1301,7 +1322,8 @@ int test_tports(agent_t *ag)
 			       SIPTAG_TO(ag->ag_alice),
 			       SIPTAG_CONTACT(ag->ag_m_bob),
 			       SIPTAG_PAYLOAD(pl),
-			       TAG_END()));
+	    	       TAG_END());
+    TEST_1(ag->ag_orq);
     su_free(ag->ag_home, pl);
 
     nta_test_run(ag);
@@ -1335,7 +1357,7 @@ int test_tports(agent_t *ag)
 
     ag->ag_expect_leg = ag->ag_server_leg;
     ag->ag_latest_leg = NULL;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
           nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1344,8 +1366,9 @@ int test_tports(agent_t *ag)
 			       SIPTAG_FROM(ag->ag_bob),
 			       SIPTAG_TO(ag->ag_alice),
 			       SIPTAG_CONTACT(ag->ag_m_bob),
-			       TAG_END()));
+			       TAG_END());
 
+    TEST_1(ag->ag_orq);
     nta_test_run(ag);
     TEST(ag->ag_status, 408);
     TEST_P(ag->ag_orq, NULL);
@@ -1417,7 +1440,7 @@ int test_destroy_incoming(agent_t *ag)
   ag->ag_expect_leg = ag->ag_default_leg;
   nta_leg_bind(ag->ag_default_leg, leg_callback_destroy, ag);
 
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	 nta_outgoing_tcreate(ag->ag_default_leg, 
 			      outgoing_callback, ag,
 			      ag->ag_obp,
@@ -1426,8 +1449,9 @@ int test_destroy_incoming(agent_t *ag)
 			      SIPTAG_SUBJECT_STR("Test 3.1"),
 			      SIPTAG_FROM(ag->ag_alice),
 			      SIPTAG_TO(ag->ag_bob),
-			      TAG_END()));
-
+			      TAG_END());
+  TEST_1(ag->ag_orq);
+  
   nta_test_run(ag);
   TEST(ag->ag_status, 500);
   TEST_P(ag->ag_orq, NULL);
@@ -1438,7 +1462,7 @@ int test_destroy_incoming(agent_t *ag)
    */
   nta_leg_bind(ag->ag_default_leg, leg_callback_save, ag);
 
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	 nta_outgoing_tcreate(ag->ag_default_leg, 
 			      outgoing_callback, ag,
 			      ag->ag_obp,
@@ -1447,7 +1471,8 @@ int test_destroy_incoming(agent_t *ag)
 			      SIPTAG_SUBJECT_STR("Test 3.1"),
 			      SIPTAG_FROM(ag->ag_alice),
 			      SIPTAG_TO(ag->ag_bob),
-			      TAG_END()));
+			      TAG_END());
+  TEST_1(ag->ag_orq);
 
   nta_test_run(ag);
   TEST(ag->ag_status, 1000);
@@ -1502,7 +1527,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
      * Send a message to sip:example.org
      */
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1511,7 +1536,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+    
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1524,7 +1551,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
      */
     url->url_host = "srv.example.org";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1533,7 +1560,8 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1546,7 +1574,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
      */
     url->url_host = "ipv.example.org";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1555,7 +1583,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1568,7 +1598,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
      */
     url->url_host = "down.example.org";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1577,8 +1607,10 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
-    nta_test_run(ag);
+			       TAG_END());
+   TEST_1(ag->ag_orq);
+
+   nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
     TEST_P(ag->ag_latest_leg, ag->ag_default_leg);
@@ -1591,7 +1623,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
      */
     url->url_host = "na503.example.org";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1600,7 +1632,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 503);
     TEST_P(ag->ag_orq, NULL);
@@ -1613,7 +1647,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
      */
     url->url_host = "nona.example.org";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1622,7 +1656,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1637,7 +1673,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
      */
     url->url_host = "nosrv.example.org";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1646,7 +1682,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1661,7 +1699,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     url->url_host = "srv.example.org";
     url->url_params = "transport=tcp";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1670,7 +1708,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1686,7 +1726,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     url->url_host = "srv.example.org";
     url->url_params = "transport=udp";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1695,7 +1735,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1711,7 +1753,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     url->url_host = "srv2.example.org";
     url->url_params = "transport=udp";
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1720,7 +1762,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1736,7 +1780,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     url->url_host = "srv.example.org";
     url->url_port = ag->ag_contact->m_url->url_port;
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1745,7 +1789,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 503);
     TEST_P(ag->ag_orq, NULL);
@@ -1760,7 +1806,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     url->url_host = "a.example.org";
     url->url_port = ag->ag_contact->m_url->url_port;
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1769,7 +1815,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -1810,7 +1858,7 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
     url->url_host = "down2.example.org";
     url->url_port = ag->ag_contact->m_url->url_port;
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_MESSAGE,
@@ -1819,7 +1867,9 @@ int test_resolv(agent_t *ag, char const *resolv_conf)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -2221,7 +2271,7 @@ int test_routing(agent_t *ag)
     url2->url_port = "9";	/* discard service */
 
     ag->ag_expect_leg = ag->ag_default_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       (url_string_t *)url,
 			       SIP_METHOD_MESSAGE,
@@ -2230,7 +2280,9 @@ int test_routing(agent_t *ag)
 			       SIPTAG_FROM(ag->ag_alice),
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -2252,19 +2304,20 @@ int test_dialog(agent_t *ag)
    * Alice sends a message to Bob, then Bob back to the Alice, and again
    * Alice to Bob.
    */
-  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+  ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
 					   leg_callback_200,
 					   ag,
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
-					   TAG_END()));
+					   TAG_END());
+  TEST_1(ag->ag_alice_leg);
   TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
   nta_leg_bind(ag->ag_server_leg, new_leg_callback_200, ag);
 
   /* Send message from Alice to Bob establishing the dialog */
   ag->ag_expect_leg = ag->ag_server_leg;
   ag->ag_tag_remote = ag->ag_alice_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
         nta_outgoing_tcreate(ag->ag_alice_leg, outgoing_callback, ag,
 			     ag->ag_obp,
 			     SIP_METHOD_MESSAGE,
@@ -2273,7 +2326,9 @@ int test_dialog(agent_t *ag)
 			     SIPTAG_FROM(ag->ag_alice),
 			     SIPTAG_TO(ag->ag_bob),
 			     SIPTAG_CONTACT(ag->ag_m_alice),
-			     TAG_END()));
+			     TAG_END());
+  TEST_1(ag->ag_orq);
+
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   TEST_P(ag->ag_orq, NULL);
@@ -2284,13 +2339,15 @@ int test_dialog(agent_t *ag)
 
   /* Send message from Bob to Alice */
   ag->ag_expect_leg = ag->ag_alice_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
         nta_outgoing_tcreate(ag->ag_bob_leg, outgoing_callback, ag,
       		       NULL,
       		       SIP_METHOD_MESSAGE,
       		       (url_string_t *)ag->ag_m_alice->m_url,
       		       SIPTAG_SUBJECT_STR("Test 2.2"),
-      		       TAG_END()));
+      		       TAG_END());
+  TEST_1(ag->ag_orq);
+
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   TEST_P(ag->ag_orq, NULL);
@@ -2298,13 +2355,15 @@ int test_dialog(agent_t *ag)
 
   /* Send again message from Alice to Bob */
   ag->ag_expect_leg = ag->ag_bob_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
         nta_outgoing_tcreate(ag->ag_alice_leg, outgoing_callback, ag,
       		       NULL,
       		       SIP_METHOD_MESSAGE,
       		       (url_string_t *)ag->ag_m_bob->m_url,
       		       SIPTAG_SUBJECT_STR("Test 2.3"),
-      		       TAG_END()));
+      		       TAG_END());
+  TEST_1(ag->ag_orq);
+
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   TEST_P(ag->ag_orq, NULL);
@@ -2315,13 +2374,15 @@ int test_dialog(agent_t *ag)
    */
   {
     ag->ag_expect_leg = ag->ag_alice_leg;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
           nta_outgoing_tcreate(ag->ag_bob_leg, outgoing_callback, ag,
       			 NULL,
       			 SIP_METHOD_MESSAGE,
       			 (url_string_t *)ag->ag_m_alice->m_url,
       			 SIPTAG_SUBJECT_STR("Test 2.4"),
-      			 TAG_END()));
+      			 TAG_END());
+    TEST_1(ag->ag_orq);
+
     nta_test_run(ag);
     TEST(ag->ag_status, 200);
     TEST_P(ag->ag_orq, NULL);
@@ -2607,18 +2668,20 @@ int test_call(agent_t *ag)
    *
    * Alice sends a INVITE to Bob, then Bob sends 200 Ok.
    */
-  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+  ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
 					   alice_leg_callback,
 					   ag,
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
-					   TAG_END()));
+					   TAG_END());
+  TEST_1(ag->ag_alice_leg);
+  
   TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
   nta_leg_bind(ag->ag_server_leg, bob_leg_callback, ag);
   
   /* Send INVITE */
   ag->ag_expect_leg = ag->ag_server_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	 nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_alice_leg, 
 			      outgoing_invite_callback, ag,
 			      ag->ag_obp,
@@ -2631,8 +2694,9 @@ int test_call(agent_t *ag)
 			      SIPTAG_PAYLOAD(sdp),
 			      NTATAG_USE_TIMESTAMP(1),
 			      NTATAG_PASS_100(1),
-			      TAG_END()));
-
+			      TAG_END());
+  TEST_1(ag->ag_orq);
+  
   /* Try to CANCEL it immediately */
   TEST_1(nta_outgoing_cancel(ag->ag_orq) == 0);
   /* As Bob immediately answers INVITE with 200 Ok, 
@@ -2657,7 +2721,7 @@ int test_call(agent_t *ag)
    * waits for PRACKs, then sends 200, waits for ACK.
    */
   ag->ag_expect_leg = ag->ag_alice_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_bob_leg, 
 			     outgoing_invite_callback, ag,
 			     NULL,
@@ -2668,7 +2732,8 @@ int test_call(agent_t *ag)
 			     SIPTAG_SUPPORTED_STR("foo"),
 			     SIPTAG_CONTENT_TYPE(c),
 			     SIPTAG_PAYLOAD(sdp),
-			     TAG_END()));
+			     TAG_END());
+  TEST_1(ag->ag_orq);
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   TEST_P(ag->ag_orq, NULL);
@@ -2680,7 +2745,7 @@ int test_call(agent_t *ag)
 
   /* Send BYE from Bob to Alice */
   old_leg = ag->ag_expect_leg = ag->ag_alice_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	nta_outgoing_tcreate(ag->ag_bob_leg, outgoing_callback, ag,
 			     NULL,
 			     SIP_METHOD_BYE,
@@ -2691,8 +2756,9 @@ int test_call(agent_t *ag)
 			     SIPTAG_CONTACT(ag->ag_m_alice),
 			     SIPTAG_CONTENT_TYPE(c),
 			     SIPTAG_PAYLOAD(sdp),
-			     TAG_END()));
-
+			     TAG_END());
+  TEST_1(ag->ag_orq);
+  
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   TEST_P(ag->ag_orq, NULL);
@@ -3069,7 +3135,7 @@ int test_prack(agent_t *ag)
 
     ag->ag_expect_leg = ag->ag_server_leg;
     ag->ag_latest_leg = NULL;
-    TEST_1(ag->ag_orq = 
+    ag->ag_orq = 
 	  nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ag,
 			       ag->ag_obp,
 			       SIP_METHOD_PRACK,
@@ -3079,25 +3145,29 @@ int test_prack(agent_t *ag)
 			       SIPTAG_TO(ag->ag_bob),
 			       SIPTAG_CONTACT(ag->ag_m_alice),
 			       SIPTAG_RACK_STR("1432432 42332432 INVITE"),
-			       TAG_END()));
+			       TAG_END());
+    TEST_1(ag->ag_orq);
+    
     nta_test_run(ag);
     TEST(ag->ag_status, 481);
     TEST_P(ag->ag_orq, NULL);
     TEST_P(ag->ag_latest_leg, NULL);
   }
 
-  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+  ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
 					   alice_leg_callback,
 					   ag,
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
-					   TAG_END()));
+					   TAG_END());
+  TEST_1(ag->ag_alice_leg);
+  
   TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
 
   /* Send INVITE */
   nta_leg_bind(ag->ag_server_leg, bob_leg_callback2, ag);
   ag->ag_expect_leg = ag->ag_server_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	 nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_alice_leg, 
 			      invite_prack_callback, ag,
 			      ag->ag_obp,
@@ -3108,7 +3178,9 @@ int test_prack(agent_t *ag)
 			      SIPTAG_REQUIRE_STR("100rel"),
 			      SIPTAG_CONTENT_TYPE(c),
 			      SIPTAG_PAYLOAD(sdp),
-			      TAG_END()));
+			      TAG_END());
+  TEST_1(ag->ag_orq);
+  
   nta_test_run_until_acked(ag);
   TEST(ag->ag_status, 200);
   /*TEST(ag->ag_tag_status, 183);*/
@@ -3118,7 +3190,7 @@ int test_prack(agent_t *ag)
 
   /* Send BYE from Bob to Alice */
   old_leg = ag->ag_expect_leg = ag->ag_alice_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	nta_outgoing_tcreate(ag->ag_bob_leg, outgoing_callback, ag,
 			     NULL,
 			     SIP_METHOD_BYE,
@@ -3129,8 +3201,9 @@ int test_prack(agent_t *ag)
 			     SIPTAG_CONTACT(ag->ag_m_alice),
 			     SIPTAG_CONTENT_TYPE(c),
 			     SIPTAG_PAYLOAD(sdp),
-			     TAG_END()));
-
+			     TAG_END());
+  TEST_1(ag->ag_orq);
+  
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   TEST_P(ag->ag_orq, NULL);
@@ -3144,18 +3217,20 @@ int test_prack(agent_t *ag)
     su_free(ag->ag_home, (void *)ag->ag_call_tag), ag->ag_call_tag = NULL;
 
   /* Test CANCELing a call after received PRACK */
-  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+  ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
 					   alice_leg_callback,
 					   ag,
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
-					   TAG_END()));
+					   TAG_END());
+  TEST_1(ag->ag_alice_leg);
+  
   TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
 
   /* Send INVITE */
   nta_leg_bind(ag->ag_server_leg, bob_leg_callback3, ag);
   ag->ag_expect_leg = ag->ag_server_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	 nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_alice_leg, 
 			      invite_183_cancel_callback, ag,
 			      ag->ag_obp,
@@ -3166,7 +3241,9 @@ int test_prack(agent_t *ag)
 			      SIPTAG_REQUIRE_STR("100rel"),
 			      SIPTAG_CONTENT_TYPE(c),
 			      SIPTAG_PAYLOAD(sdp),
-			      TAG_END()));
+			      TAG_END());
+  TEST_1(ag->ag_orq);
+  
   nta_test_run(ag);
   TEST_1(ag->ag_status == 487 || ag->ag_status == 504);
   TEST_P(ag->ag_orq, NULL);
@@ -3186,12 +3263,14 @@ int test_prack(agent_t *ag)
 			    NTATAG_SIP_T1X64(64 * 25),
 			    TAG_END()), 2);
 
-  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+  ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
 					   alice_leg_callback,
 					   ag,
 					   SIPTAG_FROM(ag->ag_alice),
 					   SIPTAG_TO(ag->ag_bob),
-					   TAG_END()));
+					   TAG_END());
+  TEST_1(ag->ag_alice_leg);
+  
   TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
 
   /* Send INVITE, 
@@ -3201,7 +3280,7 @@ int test_prack(agent_t *ag)
    */
   nta_leg_bind(ag->ag_server_leg, bob_leg_callback2, ag);
   ag->ag_expect_leg = ag->ag_server_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	 nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_alice_leg, 
 			      outgoing_callback, ag,
 			      ag->ag_obp,
@@ -3212,7 +3291,9 @@ int test_prack(agent_t *ag)
 			      SIPTAG_REQUIRE_STR("100rel"),
 			      SIPTAG_CONTENT_TYPE(c),
 			      SIPTAG_PAYLOAD(sdp),
-			      TAG_END()));
+			      TAG_END());
+  TEST_1(ag->ag_orq);
+  
   nta_test_run(ag);
   TEST(ag->ag_status, 503);
   TEST_P(ag->ag_orq, NULL);
@@ -3369,12 +3450,14 @@ int test_fix_467(agent_t *ag)
 
   BEGIN();
 
-  TEST_1(ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
+  ag->ag_alice_leg = nta_leg_tcreate(ag->ag_agent, 
 					    alice_leg_callback2,
 					    ag,
 					    SIPTAG_FROM(ag->ag_alice),
 					    SIPTAG_TO(ag->ag_bob),
-					    TAG_END()));
+					    TAG_END());
+  TEST_1(ag->ag_alice_leg);
+  
   TEST_1(nta_leg_tag(ag->ag_alice_leg, NULL));
   ag->ag_bob_leg = NULL;
   ag->ag_call_tag = NULL;
@@ -3382,7 +3465,7 @@ int test_fix_467(agent_t *ag)
   /* Send INVITE */
   nta_leg_bind(ag->ag_server_leg, bob_leg_callback2, ag);
   ag->ag_expect_leg = ag->ag_server_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	nta_outgoing_tcreate(ag->ag_call_leg = ag->ag_alice_leg, 
 			     invite_prack_callback, ag,
 			     ag->ag_obp,
@@ -3393,7 +3476,9 @@ int test_fix_467(agent_t *ag)
 			     SIPTAG_REQUIRE_STR("100rel"),
 			     SIPTAG_CONTENT_TYPE(c),
 			     SIPTAG_PAYLOAD(sdp),
-			     TAG_END()));
+			     TAG_END());
+  TEST_1(ag->ag_orq);
+  
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
   /*TEST(ag->ag_tag_status, 183);*/
@@ -3403,7 +3488,7 @@ int test_fix_467(agent_t *ag)
 
   /* Send BYE from Bob to Alice */
   old_leg = ag->ag_expect_leg = ag->ag_alice_leg;
-  TEST_1(ag->ag_orq = 
+  ag->ag_orq = 
 	nta_outgoing_tcreate(ag->ag_bob_leg, outgoing_callback, ag,
 			     NULL,
 			     SIP_METHOD_BYE,
@@ -3414,8 +3499,8 @@ int test_fix_467(agent_t *ag)
 			     SIPTAG_CONTACT(ag->ag_m_alice),
 			     SIPTAG_CONTENT_TYPE(c),
 			     SIPTAG_PAYLOAD(sdp),
-			     TAG_END()));
-
+			     TAG_END());
+  TEST_1(ag->ag_orq);
   
   nta_test_run(ag);
   TEST(ag->ag_status, 200);
@@ -3548,6 +3633,16 @@ int main(int argc, char *argv[])
   }
 #endif
 
+#if HAVE_OPEN_C
+  tstflags |= tst_verbatim;
+  su_log_soft_set_level(su_log_default, 9);
+  su_log_soft_set_level(nta_log, 9);
+  su_log_soft_set_level(tport_log, 9);
+  setenv("SU_DEBUG", "9", 1);
+  setenv("NUA_DEBUG", "9", 1);
+  setenv("NTA_DEBUG", "9", 1);
+  setenv("TPORT_DEBUG", "9", 1);
+#endif
   su_init();
 
   if (!(TSTFLAGS & tst_verbatim)) {
@@ -3555,11 +3650,18 @@ int main(int argc, char *argv[])
     su_log_soft_set_level(tport_log, 0);
   }
 
+#if HAVE_OPEN_C
 #define SINGLE_FAILURE_CHECK()						\
-  do { fflush(stdout);							\
-    if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
-  } while(0)
-
+	  do { fflush(stdout);							\
+	    if (retval && quit_on_single_failure) { su_deinit(); sleep(7); return retval; } \
+	  } while(0)
+#else
+  #define SINGLE_FAILURE_CHECK()						\
+	  do { fflush(stdout);							\
+	    if (retval && quit_on_single_failure) { su_deinit(); return retval; } \
+	  } while(0)
+#endif
+  
   retval |= test_init(ag, argv[i]); SINGLE_FAILURE_CHECK();
   if (retval == 0) {
     retval |= test_bad_messages(ag); SINGLE_FAILURE_CHECK();
@@ -3579,5 +3681,9 @@ int main(int argc, char *argv[])
 
   su_deinit();
 
+#if HAVE_OPEN_C
+  sleep(7);
+#endif  
+  
   return retval;
 }
