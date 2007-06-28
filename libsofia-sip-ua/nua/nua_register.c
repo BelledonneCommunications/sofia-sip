@@ -48,7 +48,7 @@
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/sip_status.h>
 
-#define NTA_UPDATE_MAGIC_T   struct nua_handle_s
+#define NTA_UPDATE_MAGIC_T   struct nua_s
 
 #include "nua_stack.h"
 
