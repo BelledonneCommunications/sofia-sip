@@ -350,6 +350,7 @@ su_log_t nta_log[] = { SU_LOG_INIT("nta", "NTA_DEBUG", SU_DEBUG) };
  * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
  * NTATAG_STATELESS(),
  * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
+ * NTATAG_TIMER_C(),
  * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
  * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
  *
@@ -885,6 +886,7 @@ void agent_kill_terminator(nta_agent_t *agent)
  * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
  * NTATAG_STATELESS(),
  * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
+ * NTATAG_TIMER_C(),
  * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
  * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
  *
@@ -1174,16 +1176,25 @@ void agent_set_udp_params(nta_agent_t *self, usize_t udp_mtu)
  * INVITE transactions, or how the @Via headers are generated.
  *
  * @TAGS
- * NTATAG_ALIASES_REF(), NTATAG_CANCEL_2543_REF(), NTATAG_CANCEL_487_REF(),
- * NTATAG_CONTACT_REF(), NTATAG_DEBUG_DROP_PROB_REF(),
- * NTATAG_DEFAULT_PROXY_REF(), NTATAG_EXTRA_100_REF(), NTATAG_MAXSIZE_REF(),
- * NTATAG_MAX_FORWARDS_REF(),
- * NTATAG_MERGE_482_REF(), NTATAG_PASS_100_REF(), NTATAG_PRELOAD_REF(),
- * NTATAG_REL100_REF(), NTATAG_RPORT_REF(), NTATAG_SIPFLAGS_REF(),
- * NTATAG_SIP_T1X64_REF(), NTATAG_SIP_T1_REF(), NTATAG_SIP_T2_REF(),
+ * NTATAG_ALIASES_REF(), NTATAG_BLACKLIST_REF(), 
+ * NTATAG_CANCEL_2543_REF(), NTATAG_CANCEL_487_REF(),
+ * NTATAG_CLIENT_RPORT_REF(), NTATAG_CONTACT_REF(), 
+ * NTATAG_DEBUG_DROP_PROB_REF(), NTATAG_DEFAULT_PROXY_REF(),
+ * NTATAG_EXTRA_100_REF(),
+ * NTATAG_MAXSIZE_REF(), NTATAG_MAX_FORWARDS_REF(), NTATAG_MCLASS_REF(),
+ * NTATAG_MERGE_482_REF(), 
+ * NTATAG_PASS_100_REF(), NTATAG_PASS_408_REF(), NTATAG_PRELOAD_REF(),
+ * NTATAG_PROGRESS_REF(),
+ * NTATAG_REL100_REF(), 
+ * NTATAG_SERVER_RPORT_REF(), 
+ * NTATAG_SIGCOMP_ALGORITHM_REF(), NTATAG_SIGCOMP_OPTIONS_REF(),
+ * NTATAG_SIPFLAGS_REF(),
+ * NTATAG_SIP_T1_REF(), NTATAG_SIP_T1X64_REF(), NTATAG_SIP_T2_REF(),
  * NTATAG_SIP_T4_REF(), NTATAG_SMIME_REF(), NTATAG_STATELESS_REF(),
- * NTATAG_TAG_3261_REF(), NTATAG_TIMEOUT_408_REF(), NTATAG_PASS_408_REF(),
- * NTATAG_UA_REF(), NTATAG_USER_VIA_REF(), and NTATAG_USE_TIMESTAMP_REF().
+ * NTATAG_TAG_3261_REF(), NTATAG_TIMEOUT_408_REF(), NTATAG_TIMER_C_REF(),
+ * NTATAG_UA_REF(), NTATAG_UDP_MTU_REF(), NTATAG_USER_VIA_REF(), 
+ * NTATAG_USE_NAPTR_REF(), NTATAG_USE_SRV_REF(),
+ * and NTATAG_USE_TIMESTAMP_REF().
  *
  */
 int nta_agent_get_params(nta_agent_t *agent,
@@ -1196,12 +1207,11 @@ int nta_agent_get_params(nta_agent_t *agent,
     ta_start(ta, tag, value);
     n = agent_get_params(agent, ta_args(ta));
     ta_end(ta);
-  } else {
-    su_seterrno(EINVAL);
-    n = -1;
+    return n;
   }
 
-  return n;
+  su_seterrno(EINVAL);
+  return -1;
 }
 
 /** Get NTA parameters */
@@ -1210,46 +1220,49 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 {
   return
     tl_tgets(tags,
-	     NTATAG_MCLASS(agent->sa_mclass),
-	     NTATAG_CONTACT(agent->sa_contact),
 	     NTATAG_ALIASES(agent->sa_aliases),
-	     NTATAG_UA(agent->sa_is_a_uas),
-	     NTATAG_STATELESS(agent->sa_is_stateless),
-	     NTATAG_MAXSIZE(agent->sa_maxsize),
-	     NTATAG_MAX_FORWARDS(agent->sa_max_forwards->mf_count),
-	     NTATAG_UDP_MTU(agent->sa_udp_mtu),
-	     NTATAG_SIP_T1(agent->sa_t1),
-	     NTATAG_SIP_T2(agent->sa_t2),
-	     NTATAG_SIP_T4(agent->sa_t4),
-	     NTATAG_SIP_T1X64(agent->sa_t1x64),
 	     NTATAG_BLACKLIST(agent->sa_blacklist),
-	     NTATAG_DEBUG_DROP_PROB(agent->sa_drop_prob),
-	     NTATAG_USER_VIA(agent->sa_user_via),
-	     NTATAG_EXTRA_100(agent->sa_extra_100),
-	     NTATAG_PASS_100(agent->sa_pass_100),
-	     NTATAG_TIMEOUT_408(agent->sa_timeout_408),
-	     NTATAG_PASS_408(agent->sa_pass_408),
-	     NTATAG_MERGE_482(agent->sa_merge_482),
-	     NTATAG_DEFAULT_PROXY(agent->sa_default_proxy),
 	     NTATAG_CANCEL_2543(agent->sa_cancel_2543),
 	     NTATAG_CANCEL_487(agent->sa_cancel_487),
-	     NTATAG_TAG_3261(1),
+	     NTATAG_CLIENT_RPORT(agent->sa_rport),
+	     NTATAG_CONTACT(agent->sa_contact),
+	     NTATAG_DEBUG_DROP_PROB(agent->sa_drop_prob),
+	     NTATAG_DEFAULT_PROXY(agent->sa_default_proxy),
+	     NTATAG_EXTRA_100(agent->sa_extra_100),
+	     NTATAG_MAXSIZE(agent->sa_maxsize),
+	     NTATAG_MAX_FORWARDS(agent->sa_max_forwards->mf_count),
+	     NTATAG_MCLASS(agent->sa_mclass),
+	     NTATAG_MERGE_482(agent->sa_merge_482),
+	     NTATAG_PASS_100(agent->sa_pass_100),
+	     NTATAG_PASS_408(agent->sa_pass_408),
+	     NTATAG_PRELOAD(agent->sa_preload),
+	     NTATAG_PROGRESS(agent->sa_progress),
 	     NTATAG_REL100(agent->sa_invite_100rel),
-	     NTATAG_USE_TIMESTAMP(agent->sa_timestamp),
-	     NTATAG_USE_NAPTR(agent->sa_use_naptr),
-	     NTATAG_USE_SRV(agent->sa_use_srv),
+	     NTATAG_SERVER_RPORT(agent->sa_server_rport),
+	     NTATAG_SIGCOMP_ALGORITHM(agent->sa_algorithm),
+	     NTATAG_SIGCOMP_OPTIONS(agent->sa_sigcomp_options ?
+				    agent->sa_sigcomp_options :
+				    "sip"),
+	     NTATAG_SIPFLAGS(agent->sa_flags),
+	     NTATAG_SIP_T1(agent->sa_t1),
+	     NTATAG_SIP_T1X64(agent->sa_t1x64),
+	     NTATAG_SIP_T2(agent->sa_t2),
+	     NTATAG_SIP_T4(agent->sa_t4),
 #if HAVE_SOFIA_SMIME
 	     NTATAG_SMIME(agent->sa_smime),
 #else
 	     NTATAG_SMIME(NULL),
 #endif
-	     NTATAG_SIPFLAGS(agent->sa_flags),
-	     NTATAG_RPORT(agent->sa_rport),
-	     NTATAG_PRELOAD(agent->sa_preload),
-	     NTATAG_SIGCOMP_ALGORITHM(agent->sa_algorithm),
-	     NTATAG_SIGCOMP_OPTIONS(agent->sa_sigcomp_options ?
-				    agent->sa_sigcomp_options :
-				    "sip"),
+	     NTATAG_STATELESS(agent->sa_is_stateless),
+	     NTATAG_TAG_3261(1),
+	     NTATAG_TIMEOUT_408(agent->sa_timeout_408),
+	     NTATAG_TIMER_C(agent->sa_timer_c),
+	     NTATAG_UA(agent->sa_is_a_uas),
+	     NTATAG_UDP_MTU(agent->sa_udp_mtu),
+	     NTATAG_USER_VIA(agent->sa_user_via),
+	     NTATAG_USE_NAPTR(agent->sa_use_naptr),
+	     NTATAG_USE_SRV(agent->sa_use_srv),
+	     NTATAG_USE_TIMESTAMP(agent->sa_timestamp),
 	     TAG_END());
 }
 
@@ -1258,8 +1271,38 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
  * The nta_agent_get_stats() function retrieves the stack statistics.
  *
  * @TAGS
- * @TAG NTATAG_S_*
- *
+ * NTATAG_S_ACKED_TR_REF(),
+ * NTATAG_S_BAD_MESSAGE_REF(),
+ * NTATAG_S_BAD_REQUEST_REF(),
+ * NTATAG_S_BAD_RESPONSE_REF(),
+ * NTATAG_S_CANCELED_TR_REF(),
+ * NTATAG_S_CLIENT_TR_REF(),
+ * NTATAG_S_DIALOG_TR_REF(),
+ * NTATAG_S_DROP_REQUEST_REF(),
+ * NTATAG_S_DROP_RESPONSE_REF(),
+ * NTATAG_S_IRQ_HASH_REF(),
+ * NTATAG_S_IRQ_HASH_USED_REF(),
+ * NTATAG_S_LEG_HASH_REF(),
+ * NTATAG_S_LEG_HASH_USED_REF(),
+ * NTATAG_S_MERGED_REQUEST_REF(),
+ * NTATAG_S_ORQ_HASH_REF(),
+ * NTATAG_S_ORQ_HASH_USED_REF(),
+ * NTATAG_S_RECV_MSG_REF(),
+ * NTATAG_S_RECV_REQUEST_REF(),
+ * NTATAG_S_RECV_RESPONSE_REF(),
+ * NTATAG_S_RECV_RETRY_REF(),
+ * NTATAG_S_RETRY_REQUEST_REF(),
+ * NTATAG_S_RETRY_RESPONSE_REF(),
+ * NTATAG_S_SENT_MSG_REF(),
+ * NTATAG_S_SENT_REQUEST_REF(),
+ * NTATAG_S_SENT_RESPONSE_REF(),
+ * NTATAG_S_SERVER_TR_REF(),
+ * NTATAG_S_TOUT_REQUEST_REF(), 
+ * NTATAG_S_TOUT_RESPONSE_REF(),
+ * NTATAG_S_TRLESS_200_REF(),
+ * NTATAG_S_TRLESS_REQUEST_REF(),
+ * NTATAG_S_TRLESS_RESPONSE_REF(), and
+ * NTATAG_S_TRLESS_TO_TR_REF(),
  */
 int nta_agent_get_stats(nta_agent_t *agent,
 			tag_type_t tag, tag_value_t value, ...)
