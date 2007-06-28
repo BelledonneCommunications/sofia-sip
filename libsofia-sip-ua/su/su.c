@@ -53,24 +53,19 @@
 int su_socket_close_on_exec = 0;
 int su_socket_blocking = 0;
 
-/** Create a socket endpoint for communication.
- *
- * @param af addressing family 
- * @param socktype socket type 
- * @param proto protocol number specific to the addressing family
- *
- * The newly created socket is nonblocking unless global variable
- * su_socket_blocking is set to true. 
- *
- * Also, the newly created socket is closed on exec() if global variable
- * su_socket_close_on_exec is set to true. Note that a multithreaded program
- * can fork() and exec() before the close-on-exec flag is set.
- *
- * @return A valid socket descriptor or INVALID_SOCKET (-1) upon an error.
- */
+/** Create an endpoint for communication. */
 su_socket_t su_socket(int af, int socktype, int proto)
 {
+#if HAVE_OPEN_C
+  struct ifconf ifc;
+  int numifs = 64;
+  char *buffer;
+  struct ifreq ifr;
+  int const su_xtra = 0;
+#endif
+
   su_socket_t s = socket(af, socktype, proto);
+#if SU_HAVE_BSDSOCK
   if (s != INVALID_SOCKET) {
 #if SU_HAVE_BSDSOCK
     if (su_socket_close_on_exec)
@@ -79,31 +74,23 @@ su_socket_t su_socket(int af, int socktype, int proto)
     if (!su_socket_blocking)	/* All sockets are born blocking */
       su_setblocking(s, 0);
   }
+#endif
   return s;
 }
 
-#if SU_HAVE_BSDSOCK || DOCUMENTATION_ONLY
-/** Initialize socket implementation.
- *
- * Before using any sofia-sip-ua functions, the application should call
- * su_init() in order to initialize run-time environment including sockets. 
- * This function may prepare plugins if there are any. 
- *
- * @par POSIX Implementation
- * The su_init() initializes debugging logs and ignores the SIGPIPE signal.
- *
- * @par Windows Implementation
- * The function su_init() initializes Winsock2 library on Windows.
- *
- * @par Symbian Implementation
- * The function su_init() prompts user to select an access point (interface
- * towards Internet) and uses the activated access point for the socket
- * operations.
- */
+#if SU_HAVE_BSDSOCK
 int su_init(void)
 {
+  su_home_threadsafe(NULL);
+
 #if HAVE_SIGPIPE
   signal(SIGPIPE, SIG_IGN);	/* we want to get EPIPE instead */
+#endif
+
+#if HAVE_OPEN_C
+  /* This code takes care of enabling an access point (interface) */
+  aConnection = su_localinfo_ap_set(su_ap, &ifindex);
+  su_localinfo_ap_name_to_index(ifindex);
 #endif
 
   su_log_init(su_log_default);
@@ -115,6 +102,7 @@ int su_init(void)
 /** Deinitialize socket implementation. */
 void su_deinit(void)
 {
+	su_localinfo_ap_deinit(aConnection);
 }
 
 /** Close an socket descriptor. */
@@ -223,6 +211,14 @@ issize_t su_getmsgsize(su_socket_t s)
 {
   unsigned long n = (unsigned long)-1;
   if (ioctlsocket(s, FIONREAD, &n) == -1)
+    return -1;
+  return (issize_t)n;
+}
+#elif HAVE_OPEN_C
+issize_t su_getmsgsize(su_socket_t s)
+{
+  int n = -1;
+  if (su_ioctl(s, E32IONREAD, &n) == -1)
     return -1;
   return (issize_t)n;
 }
