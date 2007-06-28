@@ -16,7 +16,7 @@ TARGETPATH 	    \private\10003a3f\import\apps
 #endif
 END //RESOURCE
 
-//EPOCHEAPSIZE 4 4194304 // min. 4KB ja max 4MB
+EPOCHEAPSIZE 4 4194304 // min. 4KB ja max 4MB
 
 // Allow global writeable static data
 EPOCALLOWDLLDATA
