@@ -49,6 +49,7 @@ struct call;
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/su_tagarg.h>
 #include <sofia-sip/su_tag_io.h>
+#include <sofia-sip/nua_tag.h>
 
 #if __APPLE_CC__
 #include <sofia-sip/su_osx_runloop.h>
