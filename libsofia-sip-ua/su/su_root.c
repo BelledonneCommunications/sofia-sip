@@ -901,7 +901,7 @@ int su_msg_report(su_msg_r msg,
  * @retval -1 otherwise.
  */
 
-int su_msg_reply(su_msg_r reply, su_msg_r const msg,
+int su_msg_reply(su_msg_r reply, su_msg_cr msg,
 		 su_msg_f wakeup, isize_t size)
 {
   su_msg_r msg0;
