@@ -238,7 +238,9 @@ int su_init(void)
 /** Deinitialize socket implementation. */
 void su_deinit(void)
 {
+#if HAVE_OPEN_C
 	su_localinfo_ap_deinit(aConnection);
+#endif
 }
 
 /** Close an socket descriptor. */
