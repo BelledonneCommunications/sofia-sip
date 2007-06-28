@@ -32,6 +32,7 @@
 
 #include "config.h"
 
+#include "su_port.h"
 #include "sofia-sip/su.h"
 #include "sofia-sip/su_wait.h"
 #include "sofia-sip/su_alloc.h"
