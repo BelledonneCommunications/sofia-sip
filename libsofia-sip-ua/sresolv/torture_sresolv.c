@@ -79,7 +79,7 @@ typedef unsigned _int32 uint32_t;
 #endif
 
 #define TSTFLAGS tstflags
-int tstflags;
+int tstflags, o_timing;
 
 #include <sofia-sip/tstdef.h>
 
@@ -222,6 +222,139 @@ int test_api_errors(void)
   END();
 }
 
+extern void sres_cache_clean(sres_cache_t *cache, time_t now);
+
+static
+int test_cache(void)
+{
+  BEGIN();
+ 
+  sres_a_record_t *a, a0[1], **all;
+  char host[128];
+  sres_cache_t *cache;
+  time_t now, base;
+  struct timespec t0, t1, t2;
+
+  size_t i, N, N1 = 1000, N3 = 1000000;
+
+  time(&base);
+
+  cache = sres_cache_new(N1);
+  TEST_1(cache);
+
+  all = calloc(N3, sizeof *all); if (!all) perror("calloc"), exit(2);
+
+  memset(a0, 0, sizeof a0);
+
+  a0->a_record->r_refcount = 1;
+  a0->a_record->r_size = sizeof *a;
+  a0->a_record->r_type = sres_type_a;
+  a0->a_record->r_class = sres_class_in;
+  a0->a_record->r_ttl = 3600;
+  a0->a_record->r_rdlen = sizeof a->a_addr;
+  a0->a_record->r_parsed = 1;
+
+  for (i = 0, N = N3; i < N; i++) {
+    a0->a_record->r_name = host;
+
+    snprintf(host, sizeof host, "%u.example.com.", (unsigned)i);
+
+    a = (sres_a_record_t *)
+      sres_cache_alloc_record(cache, (sres_record_t *)a0, 0);
+
+    if (!a)
+      perror("sres_cache_alloc_record"), exit(2);
+
+    all[i] = a, a->a_record->r_refcount = 1;
+  }
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
+
+  for (i = 0, N = N3; i < N; i++) {
+    now = base + (3600 * i + N / 2) / N;
+    a->a_record->r_ttl = 60 + (i * 60) % 3600;
+    sres_cache_store(cache, (sres_record_t *)all[i], now);
+  }
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
+  if (o_timing) {
+    t2.tv_sec = t1.tv_sec - t0.tv_sec, t2.tv_nsec = t1.tv_nsec - t0.tv_nsec;
+    if (t1.tv_nsec < t0.tv_nsec)
+      t2.tv_sec--, t2.tv_nsec += 1000000000;
+    printf("sres_cache: stored %u entries: %lu.%09lu sec\n", 
+	   N, t2.tv_sec, t2.tv_nsec);
+  }
+
+  for (i = 0, N; i < N; i++)
+    TEST(all[i]->a_record->r_refcount, 2);
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
+
+  for (now = base; now <= base + 3660; now += 30)
+    sres_cache_clean(cache, now + 3600);
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
+  if (o_timing) {
+    t2.tv_sec = t1.tv_sec - t0.tv_sec, t2.tv_nsec = t1.tv_nsec - t0.tv_nsec;
+    if (t1.tv_nsec < t0.tv_nsec)
+      t2.tv_sec--, t2.tv_nsec += 1000000000;
+    printf("sres_cache: cleaned %u entries: %lu.%09lu sec\n", 
+	   N, t2.tv_sec, t2.tv_nsec);
+  }
+
+  for (i = 0, N; i < N; i++)
+    TEST(all[i]->a_record->r_refcount, 1);
+
+  base += 24 * 3600;
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
+
+  for (i = 0, N; i < N; i++) {
+    now = base + (3600 * i + N / 2) / N;
+    a->a_record->r_ttl = 60 + (i * 60) % 3600;
+    sres_cache_store(cache, (sres_record_t *)all[i], now);
+  }
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
+  if (o_timing) {
+    t2.tv_sec = t1.tv_sec - t0.tv_sec, t2.tv_nsec = t1.tv_nsec - t0.tv_nsec;
+    if (t1.tv_nsec < t0.tv_nsec)
+      t2.tv_sec--, t2.tv_nsec += 1000000000;
+    printf("sres_cache: stored %u entries: %lu.%09lu sec\n", 
+	   N, t2.tv_sec, t2.tv_nsec);
+  }
+
+  for (i = 0, N; i < N; i++)
+    TEST(all[i]->a_record->r_refcount, 2);
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
+
+  for (now = base; now <= base + 3660; now += 1)
+    sres_cache_clean(cache, now + 3600);
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
+  
+  if (o_timing) {
+    t2.tv_sec = t1.tv_sec - t0.tv_sec, t2.tv_nsec = t1.tv_nsec - t0.tv_nsec;
+    if (t1.tv_nsec < t0.tv_nsec)
+      t2.tv_sec--, t2.tv_nsec += 1000000000;
+    printf("sres_cache: cleaned %u entries: %lu.%09lu sec\n", 
+	   N, t2.tv_sec, t2.tv_nsec);
+  }
+
+  for (i = 0, N; i < N; i++) {
+    TEST(all[i]->a_record->r_refcount, 1);
+    sres_cache_free_one(cache, (sres_record_t *)all[i]);
+  }
+
+  sres_cache_unref(cache);
+
+  free(all);
+
+  END();
+}
+
+
 #if HAVE_ALARM
 static RETSIGTYPE sig_alarm(int s)
 {
@@ -264,6 +397,8 @@ int main(int argc, char **argv)
       tstflags |= tst_verbatim;
     else if (strcmp(argv[i], "-a") == 0)
       tstflags |= tst_abort;
+    else if (strcmp(argv[i], "-t") == 0)
+      o_timing = 1;
     else if (strcmp(argv[i], "--no-alarm") == 0) {
       o_alarm = 0;
     }
@@ -299,6 +434,7 @@ int main(int argc, char **argv)
   }
 
   error |= test_api_errors();
+  error |= test_cache();
 
   return error;
 }
