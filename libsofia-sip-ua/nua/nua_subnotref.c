@@ -401,9 +401,10 @@ static int nua_subscribe_client_response(nua_client_request_t *cr,
       /* let nua_base_client_tresponse to remove usage */
       cr->cr_terminated = 1;	
   }
-  
+
   return nua_base_client_tresponse(cr, status, phrase, sip, 
 				   NUTAG_SUBSTATE(substate),
+				   SIPTAG_EVENT(du ? du->du_event : NULL),
 				   TAG_END());
 }
 
@@ -852,6 +853,7 @@ static int nua_refer_client_request(nua_client_request_t *cr,
     nua_stack_tevent(nh->nh_nua, nh, NULL,
 		     cr->cr_event, SIP_100_TRYING,
 		     NUTAG_REFER_EVENT(event),
+		     SIPTAG_EVENT(event),
 		     TAG_END());
     su_free(nh->nh_home, event);
   }
@@ -885,5 +887,6 @@ static int nua_refer_client_response(nua_client_request_t *cr,
   
   return nua_base_client_tresponse(cr, status, phrase, sip, 
 				   NUTAG_SUBSTATE(substate),
+				   SIPTAG_EVENT(du ? du->du_event : NULL),
 				   TAG_END());
 }
