@@ -16,20 +16,6 @@ noinst_LTLIBRARIES = 	libsu.la
 
 bin_PROGRAMS = 		addrinfo localinfo 
 
-if COREFOUNDATION
-OSXSOURCES = \
-	su_osx_runloop.c
-OSXHEADERS = \
-	sofia-sip/su_osx_runloop.h
-OSXPROGS = \
-	torture_su_root_osx test_su_osx
-OSXTESTS = \
-	torture_su_root_osx run_test_su_osx
-else
-OSXSOURCES =
-OSXHEADERS =
-endif
-
 check_PROGRAMS = 	torture_su torture_su_port \
 			torture_su_alloc torture_su_time torture_su_tag \
 			test_htable torture_rbtree \
@@ -122,3 +108,15 @@ AUTOMAKE_OPTIONS = 	foreign
 # Sofia specific rules
 
 include $(top_srcdir)/rules/sofia.am
+
+# ----------------------------------------------------------------------
+# OS X stuff
+
+if COREFOUNDATION
+OSXSOURCES =  su_osx_runloop.c
+OSXHEADERS =  sofia-sip/su_osx_runloop.h
+OSXPROGS =    torture_su_root_osx test_su_osx
+OSXTESTS =    torture_su_root_osx run_test_su_osx
+endif
+
+EXTRA_DIST += su_osx_runloop.c sofia-sip/su_osx_runloop.h
