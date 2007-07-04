@@ -92,11 +92,9 @@ char const name[] = "test_auth_digest";
 
 unsigned offset;
 
-void su_time(su_time_t *tv)
+void offset_time(su_time_t *tv)
 {
-  tv->tv_sec = time(NULL) + offset + 
-    /* Seconds from 1.1.1900 to 1.1.1970 */ 2208988800UL ;
-  tv->tv_usec = 555555;
+  tv->tv_sec += offset;
 }
 
 int test_digest()
@@ -1210,6 +1208,9 @@ int main(int argc, char *argv[])
 {
   int retval = 0;
   int i;
+  extern void (*_su_time)(su_time_t *tv);
+
+  _su_time = offset_time;
 
   argv0 = argv[0];
 
