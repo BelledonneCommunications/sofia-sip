@@ -87,10 +87,9 @@ typedef struct sres_rr_hash_entry_s sres_rr_hash_entry_t;
 
 HTABLE_DECLARE_WITH(sres_htable, ht, sres_rr_hash_entry_t, unsigned, size_t);
 
-typedef struct sres_heap sres_heap_t;
-HEAP_DECLARE(sres_heap, he_, sres_rr_hash_entry_t *);
+typedef HEAP_TYPE sres_heap_t;
 
-HEAP_PROTOS(static inline, sres_heap_t, sres_heap_, sres_rr_hash_entry_t *);
+HEAP_DECLARE(static inline, sres_heap_t, sres_heap_, sres_rr_hash_entry_t *);
 
 struct sres_rr_hash_entry_s {
   sres_record_t *rr;
@@ -109,7 +108,7 @@ struct sres_cache
   su_home_t           cache_home[1];
   time_t              cache_cleaned;
   sres_htable_t       cache_hash[1];
-  sres_heap_t         cache_heap[1];
+  sres_heap_t         cache_heap;
 };
 
 #define sr_refcount sr_record->r_refcount
@@ -136,7 +135,6 @@ static unsigned sres_hash_key(const char *string);
 
 HTABLE_PROTOS_WITH(sres_htable, ht, sres_rr_hash_entry_t, unsigned, size_t);
 
-
 /* ---------------------------------------------------------------------- */
 /* Public functions */
 
@@ -151,8 +149,7 @@ sres_cache_t *sres_cache_new(int n)
   if (cache) {
     su_home_threadsafe(cache->cache_home);
     if (sres_htable_resize(cache->cache_home, cache->cache_hash, n) < 0 ||
-	sres_heap_resize(cache->cache_home, cache->cache_heap, 
-			 cache->cache_hash->ht_size) < 0)
+	sres_heap_resize(cache->cache_home, &cache->cache_heap, 0) < 0)
       su_home_unref(cache->cache_home), cache = NULL;
   }
 
@@ -319,7 +316,7 @@ sres_cache_store(sres_cache_t *cache, sres_record_t *rr, time_t now)
     sres_htable_resize(cache->cache_home, cache->cache_hash, 0);
 
   if (sres_heap_is_full(cache->cache_heap))
-    if (sres_heap_resize(cache->cache_home, cache->cache_heap, 0) < 0) {
+    if (sres_heap_resize(cache->cache_home, &cache->cache_heap, 0) < 0) {
       UNLOCK(cache);
       return;
     }
@@ -448,49 +445,40 @@ void sres_cache_clean(sres_cache_t *cache, time_t now)
   if (now < cache->cache_cleaned + SRES_CACHE_TIMER_INTERVAL)
     return;
 
-  if (!LOCK(cache))
-    return;
-
   /* Clean cache from old entries */
-  cache->cache_cleaned = now;
 
-  while (cache->cache_heap->he_used > 0 &&
-	 cache->cache_heap->he_heap[0]->rr_expires < now) {
+  for (;;) {
+    if (!LOCK(cache))
+      return;
+
+    cache->cache_cleaned = now;
+
     for (i = 0; i < 100; i++) {
-      sres_rr_hash_entry_t *e = cache->cache_heap->he_heap[0];
+      sres_rr_hash_entry_t *e = sres_heap_get(cache->cache_heap, 1);
 
-      if (cache->cache_heap->he_used == 0 || e->rr_expires >= now) {
+      if (e == NULL || e->rr_expires >= now) {
 	UNLOCK(cache);
 	return;
       }
       
-      sres_heap_remove(cache->cache_heap, 0);
+      sres_heap_remove(cache->cache_heap, 1);
       sres_htable_remove(cache->cache_hash, e);
       _sres_cache_free_one(cache, e->rr);
       su_free(cache->cache_home, e);
     }
 
     UNLOCK(cache);
-    if (!LOCK(cache))
-      return;
   }
-
-  UNLOCK(cache);
 }
 
 HTABLE_BODIES_WITH(sres_htable, ht, sres_rr_hash_entry_t, SRES_HENTRY_HASH,
 		   unsigned, size_t);
 
 static inline
-int sres_heap_cmp_entry(sres_rr_hash_entry_t const *a,
-			sres_rr_hash_entry_t *b)
+int sres_heap_earlier_entry(sres_rr_hash_entry_t const *a,
+			    sres_rr_hash_entry_t const *b)
 {
-  if (a->rr_expires < b->rr_expires)
-    return -1;
-  else if (a->rr_expires > b->rr_expires)
-    return 1;
-  else
-    return 0;
+  return a->rr_expires < b->rr_expires;
 }
 
 static inline
@@ -502,8 +490,11 @@ void sres_heap_set_entry(sres_rr_hash_entry_t **heap,
   heap[index] = entry;
 }  
 
-HEAP_BODIES(static inline, sres_heap_t, sres_heap_, he_,
+HEAP_BODIES(static inline,
+	    sres_heap_t,
+	    sres_heap_,
 	    sres_rr_hash_entry_t *,
-	    sres_heap_cmp_entry,
+	    sres_heap_earlier_entry,
 	    sres_heap_set_entry,
-	    su_realloc);
+	    su_realloc,
+	    NULL);
