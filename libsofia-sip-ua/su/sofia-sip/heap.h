@@ -28,19 +28,20 @@
 
 /**@file sofia-sip/heap.h
  *
- * Heap implemented with dynamic array.
+ * Heap template implemented with dynamic array.
  *
- * This file contain template macros implementing heap in C. The @a heap
+ * This file contain template macros implementing @a heap in C. The @a heap
  * keeps its element in a known order and it can be used to implement, for
  * example, a prioritye queue or an ordered queue. 
  *
  * The ordering within the heap is defined as follows:
+ * - indexing starts from 1
  * - for each element with index @a [i] in the heap there are two descendant
- *   elements with indices @a [2*i+1] and @a [2*i+2],
+ *   elements with indices @a [2*i] and @a [2*i+1],
  * - the heap guarantees that the descendant elements are never smaller than
  *   their parent element.
- * There is no element smaller than element at index [0] in the
- * rest of the heap.
+ * Therefore it follows that there is no element smaller than element at
+ * index [1] in the rest of the heap.
  *
  * Adding and removing elements to the heap is an @a O(logN)
  * operation.
@@ -52,10 +53,11 @@
  * to be removed. The template defines also a predicate used to check if the
  * heap is full, and a function used to resize the heap.
  *
- * The heap user must define three primitives: 
+ * The heap user must define four primitives: 
  * - less than comparison 
  * - array setter
  * - heap array allocator
+ * - empty element
  *
  * Please note that in order to remove an entry in the heap, the application
  * must know its index in the heap array. 
@@ -76,65 +78,65 @@
 
 /** Declare heap structure type.
  * 
- * The macro HEAP_DECLARE() expands to the declaration of the heap
- * structure. The field names start with @a pr. The type of heap array
- * element is @a entrytype.
- *
- * @param sname     name of struct
- * @param pr        heap type prefix
- * @param entrytype entry type
+ * The macro #HEAP_TYPE contains declaration of the heap structure.
  * 
  * @showinitializer
  */
-#define HEAP_DECLARE(sname, pr, entrytype)	\
-struct sname { \
-  size_t pr##size;     /**< Number of elements in pr##heap */ \
-  size_t pr##used;     /**< Number of elements used from pr##heap */ \
-  entrytype *pr##heap; /**< Array of entries in the heap */ \
-}
+#define HEAP_TYPE struct { void *private; }
 
 /** Prototypes for heap.
  *
  * The macro HEAP_PROTOS() expands to the prototypes of heap functions:
- * - prefix ## resize(argument, heap, size)
+ * - prefix ## resize(argument, in_out_heap, size)
+ * - prefix ## free(argument, in_heap)
  * - prefix ## is_full(heap)
+ * - prefix ## size(heap)
+ * - prefix ## used(heap)
  * - prefix ## add(heap, entry)
  * - prefix ## remove(heap, index)
+ * - prefix ## get(heap, index)
  *
  * @param scope     scope of functions
- * @param type      heap type or typedef
+ * @param heaptype  type of heap
  * @param prefix    function prefix
- * @param entrytype entry type
+ * @param type      type of entries
  * 
  * The declared functions will have scope @a scope (for example, @c static
  * or @c static inline). The declared function names will have prefix @a
- * prefix. The heap structure has type @a type. The heap element type is @a
- * entrytype.
+ * prefix. The heap structure has type @a heaptype. The heap element type is
+ * @a entrytype.
  *
  * @showinitializer
  */
-#define HEAP_PROTOS(scope, type, prefix, entrytype)	\
-scope int prefix##resize(void *argument, type heap[1], size_t size); \
-scope int prefix##is_full(type const *heap); \
-scope int prefix##add(type *heap, entrytype entry); \
-scope int prefix##remove(type *heap, size_t index)
+#define HEAP_DECLARE(scope, heaptype, prefix, type) \
+scope int prefix##resize(void *, heaptype *, size_t); \
+scope int prefix##free(void *, heaptype *); \
+scope int prefix##is_full(heaptype const); \
+scope size_t prefix##size(heaptype const); \
+scope size_t prefix##used(heaptype const); \
+scope int prefix##add(heaptype, type); \
+scope type prefix##remove(heaptype, size_t); \
+scope type prefix##get(heaptype, size_t)
 
 /**Heap implementation.
  *
  * The macro HEAP_BODIES() expands to the bodies of heap functions:
  * - prefix ## resize(argument, heap, size)
+ * - prefix ## free(argument, in_heap)
  * - prefix ## is_full(heap)
+ * - prefix ## size(heap)
+ * - prefix ## used(heap)
  * - prefix ## add(heap, entry)
  * - prefix ## remove(heap, index)
+ * - prefix ## get(heap, index)
  *
  * @param scope     scope of functions
- * @param type      hash table type
  * @param prefix    function prefix for heap
- * @param pr        field prefix for heap structure
- * @param entrytype type of element
+ * @param type      type of heaped elements
  * @param less      function or macro comparing two entries
  * @param set       function or macro assigning entry to array
- * @param halloc    function allocating or freeing memory
+ * @param alloc     function allocating or freeing memory
+ * @param null      empty element (returned when index is invalid)
  *
  * Functions have scope @a scope, e.g., @c static @c inline.
  * The heap structure has type @a type.
@@ -154,85 +156,108 @@ scope int prefix##remove(type *heap, size_t index)
  * resize(), second the pointer to existing heap and third is the number of
  * bytes in the heap.
  */
-#define HEAP_BODIES(scope, type, prefix, pr, entrytype, less, set, alloc) \
-/** Resize heap. */ \
-scope int prefix##resize(void *realloc_arg, \
-			  type pr[1],	     \
-			  size_t new_size)   \
+#define HEAP_BODIES(scope, heaptype, prefix, type, less, set, alloc, null) \
+scope int prefix##resize(void *realloc_arg, heaptype h[1], size_t new_size) \
 { \
-  entrytype *heap; \
-  size_t bytes; \
-\
-  (void)realloc_arg; \
-\
-  if (new_size == 0) \
-    new_size = 2 * pr->pr##size + 1; \
-  if (new_size < HEAP_MIN_SIZE) \
-    new_size = HEAP_MIN_SIZE; \
-\
-  bytes = new_size * (sizeof heap[0]); \
-\
-  heap = alloc(realloc_arg, pr->pr##heap, bytes); \
-  if (!heap) \
+  struct prefix##priv { size_t _size, _used; type _heap[2]; }; \
+  struct prefix##priv *_priv; \
+  size_t _offset = \
+    (offsetof(struct prefix##priv, _heap[1]) - 1) / sizeof (type); \
+  size_t _min_size = 32 - _offset; \
+  size_t _bytes; \
+  size_t _used = 0; \
+ \
+  _priv = *(void **)h; \
+ \
+  if (_priv) { \
+    if (new_size == 0) \
+      new_size = 2 * _priv->_size + _offset + 1; \
+    _used = _priv->_used; \
+    if (new_size < _used) \
+      new_size = _used; \
+  } \
+ \
+  if (new_size < _min_size) \
+    new_size = _min_size; \
+ \
+  _bytes = (_offset + 1 + new_size) * sizeof (type); \
+ \
+  (void)realloc_arg; /* avoid warning */ \
+  _priv = alloc(realloc_arg, *(struct prefix##priv **)h, _bytes); \
+  if (!_priv) \
     return -1; \
-\
-  pr->pr##size = new_size; \
-  if (pr->pr##used > new_size) \
-    pr->pr##used = new_size; \
-  pr->pr##heap = heap; \
-\
+ \
+  *(struct prefix##priv **)h = _priv; \
+  _priv->_size = new_size; \
+  _priv->_used = _used; \
+ \
   return 0; \
 } \
-\
-/** Check if heap is full */ \
-scope \
-int prefix##is_full(type const *pr) \
+ \
+/** Free heap. */ \
+scope int prefix##free(void *realloc_arg, heaptype h[1]) \
 { \
-  return pr->pr##heap == NULL || pr->pr##used >= pr->pr##size; \
+  (void)realloc_arg; \
+  *(void **)h = alloc(realloc_arg, *(void **)h, 0); \
+  return 0; \
 } \
-\
-/** Add an element to the heap */ \
-scope \
-int prefix##add(type *pr, entrytype e) \
+ \
+/** Check if heap is full */ \
+scope int prefix##is_full(heaptype h) \
 { \
+  struct prefix##priv { size_t _size, _used; type _heap[1];}; \
+  struct prefix##priv *_priv = *(void **)&h; \
+ \
+  return _priv == NULL || _priv->_used >= _priv->_size; \
+} \
+ \
+/** Add an element to the heap */ \
+scope int prefix##add(heaptype h, type e) \
+{ \
+  struct prefix##priv { size_t _size, _used; type _heap[1];};	\
+  struct prefix##priv *_priv = *(void **)&h; \
+  type *heap = _priv->_heap - 1; \
   size_t i, parent; \
-  entrytype *heap = pr->pr##heap; \
-\
-  if (pr->pr##used >= pr->pr##size) \
+ \
+  if (_priv == NULL || _priv->_used >= _priv->_size) \
     return -1; \
-\
-  for (i = pr->pr##used++; i > 0; i = parent) { \
-    parent = (i - 1) / 2; \
+ \
+  for (i = ++_priv->_used; i > 1; i = parent) { \
+    parent = i / 2; \
     if (!less(e, heap[parent])) \
       break; \
     set(heap, i, heap[parent]); \
   } \
-\
+ \
   set(heap, i, e); \
-\
+ \
   return 0; \
 } \
-\
+ \
 /** Remove element from heap */ \
-scope \
-int prefix##remove(type *pr, size_t index) \
+scope type prefix##remove(heaptype h, size_t index) \
 { \
-  entrytype *heap = pr->pr##heap; \
-  entrytype e; \
-  size_t top, left, right;   \
-  size_t used = pr->pr##used; \
-\
-  if (index >= used) \
-    return -1; \
-\
-  pr->pr##used = --used; \
-  top = index; \
-\
+  struct prefix##priv { size_t _size, _used; type _heap[1];}; \
+  struct prefix##priv *_priv = *(void **)&h; \
+  type *heap = _priv->_heap - 1; \
+  type retval; \
+  type e; \
+ \
+  size_t top, left, right, move; \
+ \
+  move = _priv->_used; \
+ \
+  if (index - 1 >= _priv->_used) \
+    return (null); \
+ \
+  move = _priv->_used--; \
+  retval = heap[top = index]; \
+ \
   for (;;) { \
-    left = 2 * top + 1; \
-    right = 2 * top + 2; \
-\
-    if (right >= used) \
+    left = 2 * top; \
+    right = 2 * top + 1; \
+ \
+    if (right >= move) \
       break; \
     if (less(heap[right], heap[left])) \
       top = right; \
@@ -241,21 +266,49 @@ int prefix##remove(type *pr, size_t index) \
     set(heap, index, heap[top]); \
     index = top; \
   } \
-\
-  if (index == used) \
-    return 0; \
-\
-  e = heap[used]; \
-  for (; index > 0; index = top) { \
-    top = (index - 1) / 2; \
+ \
+  if (index == move) \
+    return retval; \
+ \
+  e = heap[move]; \
+  for (; index > 1; index = top) { \
+    top = index / 2; \
     if (!less(e, heap[top])) \
       break; \
     set(heap, index, heap[top]); \
   } \
-\
+ \
   set(heap, index, e); \
-\
-  return 0; \
+ \
+  return retval; \
+} \
+ \
+scope \
+type prefix##get(heaptype h, size_t index) \
+{ \
+  struct prefix##priv { size_t _size, _used; type _heap[1];}; \
+  struct prefix##priv *_priv = *(void **)&h; \
+ \
+  if (--index >= _priv->_used) \
+    return (null); \
+ \
+  return _priv->_heap[index]; \
+} \
+ \
+scope \
+size_t prefix##size(heaptype const h) \
+{ \
+  struct prefix##priv { size_t _size, _used; type _heap[1];}; \
+  struct prefix##priv *_priv = *(void **)&h; \
+  return _priv ? _priv->_size : 0; \
+} \
+ \
+scope \
+size_t prefix##used(heaptype const h) \
+{ \
+  struct prefix##priv { size_t _size, _used; type _heap[1];}; \
+  struct prefix##priv *_priv = *(void **)&h; \
+  return _priv ? _priv->_used : 0; \
 } \
 extern int const prefix##dummy_heap
 
