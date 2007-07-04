@@ -313,7 +313,7 @@ int su_task_detach(su_task_r self)
  * @return A timer list of the task. If there are no timers, it returns
  * NULL.
  */
-su_timer_t **su_task_timers(su_task_r const task)
+su_timer_queue_t *su_task_timers(su_task_r const task)
 {
   return task ? su_port_timers(task->sut_port) : NULL;
 }
