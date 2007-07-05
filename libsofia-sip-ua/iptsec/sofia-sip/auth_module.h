@@ -350,13 +350,6 @@ SOFIAPUBVAR tag_typedef_t authtag_anonymous;
 #define AUTHTAG_ANONYMOUS_REF(x)    authtag_anonymous_ref, tag_bool_vr((&x))
 SOFIAPUBVAR tag_typedef_t authtag_anonymous_ref;
 
-/** Fake authentication procedure - do not check result. */
-#define AUTHTAG_FAKE(x)    authtag_fake, tag_bool_v((x))
-SOFIAPUBVAR tag_typedef_t authtag_fake;
-
-#define AUTHTAG_FAKE_REF(x)    authtag_fake_ref, tag_bool_vr((&x))
-SOFIAPUBVAR tag_typedef_t authtag_fake_ref;
-
 /** HSS client structure. */
 #define AUTHTAG_HSS(x)        authtag_hss, tag_ptr_v((x))
 SOFIAPUBVAR tag_typedef_t authtag_hss;
