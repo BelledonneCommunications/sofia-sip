@@ -322,6 +322,13 @@ SOFIAPUBVAR tag_typedef_t authtag_next_expires;
   authtag_next_expires_ref, tag_uint_vr((&x))
 SOFIAPUBVAR tag_typedef_t authtag_next_expires_ref;
 
+/** Maximum nonce count allowed. */
+#define AUTHTAG_MAX_NCOUNT(x)    authtag_max_ncount, tag_uint_v((x))
+SOFIAPUBVAR tag_typedef_t authtag_max_ncount;
+
+#define AUTHTAG_MAX_NCOUNT_REF(x)    authtag_max_ncount_ref, tag_uint_vr((&x))
+SOFIAPUBVAR tag_typedef_t authtag_max_ncount_ref;
+
 /** Extra delay when responding if provided invalid credentials or nonce. */
 #define AUTHTAG_BLACKLIST(x)    authtag_blacklist, tag_uint_v((x))
 SOFIAPUBVAR tag_typedef_t authtag_blacklist;

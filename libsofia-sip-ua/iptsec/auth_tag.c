@@ -150,6 +150,17 @@ tag_typedef_t authtag_expires = UINTTAG_TYPEDEF(expires);
  */
 tag_typedef_t authtag_next_expires = UINTTAG_TYPEDEF(next_expires);
 
+/**@def AUTHTAG_MAX_NCOUNT()
+ *
+ * Max nonce count value.
+ * 
+ * The tag AUTHTAG_MAX_NCOUNT() specifies the maximum number of times a
+ * nonce should be used. 
+ *
+ * @todo Count actual usages and don't trust "nc" parameter only.
+ */
+tag_typedef_t authtag_max_ncount = UINTTAG_TYPEDEF(max_ncount);
+
 /**@def AUTHTAG_BLACKLIST()
  *
  * Blacklist time.
