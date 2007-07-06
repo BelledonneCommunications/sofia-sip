@@ -5127,6 +5127,21 @@ nta_incoming_magic_t *nta_incoming_magic(nta_incoming_t *irq,
   return irq && irq->irq_callback == callback ? irq->irq_magic : NULL;
 }
 
+/** When received */
+sip_time_t nta_incoming_received(nta_incoming_t *irq,
+				 su_nanotime_t *return_nano)
+{
+  su_time_t tv = { 0, 0 };
+
+  if (irq)
+    tv = irq->irq_received;
+
+  if (return_nano)
+    *return_nano = (su_nanotime_t)tv.tv_sec * 1000000000 + tv.tv_usec * 1000;
+
+  return tv.tv_sec;
+}
+
 /** Find incoming transaction. */
 nta_incoming_t *nta_incoming_find(nta_agent_t const *agent,
 				  sip_t const *sip,
