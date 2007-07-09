@@ -779,10 +779,6 @@ int nua_stack_init_handle(nua_t *nua, nua_handle_t *nh,
   if (nua_stack_set_params(nua, nh, nua_i_error, ta_args(ta)) < 0)
     retval = -1;
 
-  if (!retval && nh->nh_soa)
-    if (soa_set_params(nh->nh_soa, ta_tags(ta)) < 0)
-      retval = -1;
-
   ta_end(ta);
 
   if (retval || nh->nh_init) /* Already initialized? */
