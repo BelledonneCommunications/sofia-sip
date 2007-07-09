@@ -8516,6 +8516,33 @@ msg_t *outgoing_ackmsg(nta_outgoing_t *orq, sip_method_t m, char const *mname,
   if (!sip)
     return NULL;
 
+  if (tags) {
+    sip_add_tl(msg, sip, TAG_NEXT(tags));
+    /* Bug sf.net # 173323:
+     * Ensure that request-URI, topmost Via, From, To, Call-ID, CSeq, 
+     * Max-Forward, Route, Accept-Contact, Reject-Contact and
+     * Request-Disposition are copied from original request
+     */
+    if (sip->sip_from)
+      sip_header_remove(msg, sip, (void *)sip->sip_from);
+    if (sip->sip_to)
+      sip_header_remove(msg, sip, (void *)sip->sip_to);
+    if (sip->sip_call_id)
+      sip_header_remove(msg, sip, (void *)sip->sip_call_id);
+    while (sip->sip_route)
+      sip_header_remove(msg, sip, (void *)sip->sip_route);
+    while (sip->sip_accept_contact)
+      sip_header_remove(msg, sip, (void *)sip->sip_accept_contact);
+    while (sip->sip_reject_contact)
+      sip_header_remove(msg, sip, (void *)sip->sip_reject_contact);
+    if (sip->sip_request_disposition)
+      sip_header_remove(msg, sip, (void *)sip->sip_request_disposition);
+    while (sip->sip_via)
+      sip_header_remove(msg, sip, (void *)sip->sip_via);
+    if (sip->sip_max_forwards)
+      sip_header_remove(msg, sip, (void *)sip->sip_max_forwards);
+  }
+
   sip->sip_request =
     sip_request_create(home, m, mname, (url_string_t *)orq->orq_url, NULL);
 
@@ -8527,6 +8554,7 @@ msg_t *outgoing_ackmsg(nta_outgoing_t *orq, sip_method_t m, char const *mname,
   sip_add_dup(msg, sip, (sip_header_t *)old->sip_accept_contact);
   sip_add_dup(msg, sip, (sip_header_t *)old->sip_reject_contact);
   sip_add_dup(msg, sip, (sip_header_t *)old->sip_request_disposition);
+  sip_add_dup(msg, sip, (sip_header_t *)old->sip_max_forwards);
 
   if (old->sip_via) {
     /* Add only the topmost Via header */
@@ -8535,12 +8563,6 @@ msg_t *outgoing_ackmsg(nta_outgoing_t *orq, sip_method_t m, char const *mname,
   }
 
   sip->sip_cseq = sip_cseq_create(home, old->sip_cseq->cs_seq, m, mname);
-
-  if (tags)
-    sip_add_tl(msg, sip, TAG_NEXT(tags));
-
-  if (!sip->sip_max_forwards)
-    sip_add_dup(msg, sip, (sip_header_t *)orq->orq_agent->sa_max_forwards);
 
   if (sip->sip_request &&
       sip->sip_to &&
