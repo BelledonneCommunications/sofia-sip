@@ -100,7 +100,7 @@ void su_time(su_time_t *tv)
 #endif
 
   if (_su_time)
-    return _su_time(tv);
+    _su_time(tv);
 }
 
 /** Get current time as nanoseconds since epoch.
