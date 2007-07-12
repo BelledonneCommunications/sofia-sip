@@ -1,21 +1,9 @@
-/*
-* ==============================================================================
-*  Name        : bld.inf
-*  Part of     : Camcorder
-*  Description : Camcorder application build information
-*  Version     : 
-*
-*  Copyright (c) 2003-2006 Nokia Corporation.
-*  This material, including documentation and any related 
-*  computer programs, is protected by copyright controlled by 
-*  Nokia Corporation. All rights are reserved. Copying, 
-*  including reproducing, storing, adapting or translating, any 
-*  or all of this material requires the prior written consent of 
-*  Nokia Corporation. This material also contains confidential 
-*  information which may not be disclosed to others without the 
-*  prior written consent of Nokia Corporation.
-* ==============================================================================
-*/
+//
+// bld.inf for sofia-sip package
+//
+// Copyright (C) 2005,2006,2007 Nokia Corporation
+// Contact: Pekka Pessi <pekka.pessi@nokia.com>
+// Licensed under LGPL. See file COPYING.
 
 PRJ_PLATFORMS
 DEFAULT
@@ -150,8 +138,5 @@ test_tport.mmp
 test_nua.mmp
 //test_nta.mmp
 su_source_test.mmp
-//test_nu.mmp
-
-PRJ_TESTMMPFILES
 
 //  End of File  
