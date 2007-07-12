@@ -1441,7 +1441,7 @@ int auth_validate_digest_nonce(auth_mod_t *am,
   }
 
   if (am->am_max_ncount && ar->ar_nc) {
-    unsigned long nc = strtoull(ar->ar_nc, NULL, 10);
+    unsigned long nc = strtoul(ar->ar_nc, NULL, 10);
 
     if (nc == 0 || nc > am->am_max_ncount) {
       SU_DEBUG_5(("auth_method_digest: nonce used %s times, max %u\n",
