@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005,2006,2007 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -66,15 +66,14 @@
 #if SU_HAVE_WINSOCK		/* Windows includes */
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
-
-#  if defined(IPPROTO_IPV6)
-/* IPv6 defined in ws2tcpip.h */
-#  elif SU_HAVE_IN6 
-#    include <tpipv6.h>		/* From "IPv6 Tech Preview"  */
-#  else
-#    error Winsock with IPv6 support required
+#  if SU_HAVE_IN6
+#    if defined(IPPROTO_IPV6)
+/*     case 1: IPv6 defined in winsock2.h/ws2tcpip.h */
+#    else
+/*     case 2: try to use "IPv6 Tech Preview" */
+#      include <tpipv6.h>		
+#    endif
 #  endif
-
 #endif
 
 SOFIA_BEGIN_DECLS
