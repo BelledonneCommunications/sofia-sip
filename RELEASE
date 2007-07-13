@@ -58,7 +58,7 @@ Contributors to this release
  - roughly sorted by number of patches accepted
 /> 
 
-- **template**: First Surname (patch to nua/soa/msg)
+- Kai Vehmanen (fixes to win32 VC6/2005 project files)
 
 See the AUTHORS file in the distribution package.
 
@@ -70,6 +70,9 @@ Notes on new features
  - links to further documentation
  - section may be omitted for minor releases
 /> 
+
+IPv6 support can now be disabled in VC6/VC2005 builds, by
+setting SU_HAVE_IN6 to zero `win32/sofia-sip/su_configure.h'.
 
 Symbian Open C build and packaging (SIS) files for libsofia-sip-ua,
 libsofia-sip-ua-glib and for several test apps have been added under
@@ -84,6 +87,5 @@ Bugs fixed in this release
  - other bugs as fixed in CVS/darcs
 />
 
-- **template**: #9499652 sf.net bug item title
 - Fixed #1472682 sf.net bug: ACK does not find INVITE when
   To URI has been changed.
