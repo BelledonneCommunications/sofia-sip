@@ -58,7 +58,6 @@ int less1(type1 a, type1 b)
 static inline
 void set1(type1 *heap, size_t index, type1 e)
 {
-  assert(index > 0);
   e.index = index;
   heap[index] = e;
 }
@@ -74,7 +73,6 @@ int less2(type2 a, type2 b)
 static inline
 void set2(type2 *heap, size_t index, type2 e)
 {
-  assert(index > 0);
   e->index = index;
   heap[index] = e;
 }
@@ -145,7 +143,7 @@ int test_smooth_sort()
 
     _set = 0;
 
-    write(1, ".", 1);
+    /* write(1, ".", 1); */
 
     test_sort(array, 0, n);
 
@@ -165,7 +163,7 @@ int test_smooth_sort()
       array[i] = (int)(n - i - 1);
     }
 
-    write(1, "/", 1);
+    /* write(1, "/", 1); */
 
     test_sort(array, 0, n / 2);
     test_sort(array, n / 2, n / 2);
@@ -236,7 +234,8 @@ int test_value()
     tests[e.value] |= 4;
 
     previous = e.key;
-    TEST(heap1_remove(heap, 1).index, 1);
+    TEST(heap1_get(heap, 1).index, 1);
+    TEST(heap1_remove(heap, 1).index, 0);
   }
   TEST(n, N);
 
@@ -266,7 +265,8 @@ int test_value()
     e = heap1_get(heap, n);
     TEST(e.index, n);
     TEST(tests[e.value] & 8, 0); tests[e.value] |= 8;
-    TEST(heap1_remove(heap, n).index, n);
+    TEST(heap1_get(heap, n).index, n);
+    TEST(heap1_remove(heap, n).index, 0);
   }
 
   for (i = 1; i <= heap1_used(heap); i++) {
@@ -285,7 +285,8 @@ int test_value()
     tests[e.value] |= 8;
     TEST_1(previous <= e.key);
     previous = e.key;
-    TEST(heap1_remove(heap, 1).index, 1);
+    TEST(heap1_get(heap, 1).index, 1);
+    TEST(heap1_remove(heap, 1).index, 0);
   }
 
   for (i = 1; i <= N; i++) {
@@ -445,7 +446,7 @@ int test_ref()
   /* Remove rest */
   for (n = 0, previous = 0; heap2_used(heap) > 0; n++) {
     type2 e = heap2_remove(heap, 1);
-    TEST_1(e); TEST(e->index, 1);
+    TEST_1(e); TEST(e->index, 0);
     TEST(tests[e->value] & 8, 0);
     tests[e->value] |= 8;
     TEST_1(previous <= e->key);

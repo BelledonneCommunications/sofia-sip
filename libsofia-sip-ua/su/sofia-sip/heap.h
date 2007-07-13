@@ -240,20 +240,18 @@ scope type prefix##remove(heaptype h, size_t index) \
   struct prefix##priv { size_t _size, _used; type _heap[1];}; \
   struct prefix##priv *_priv = *(void **)&h; \
   type *heap = _priv->_heap - 1; \
-  type retval; \
+  type retval[1]; \
   type e; \
  \
   size_t top, left, right, move; \
- \
-  move = _priv->_used; \
  \
   if (index - 1 >= _priv->_used) \
     return (null); \
  \
   move = _priv->_used--; \
-  retval = heap[top = index]; \
+  set(retval, 0, heap[index]); \
  \
-  for (;;) { \
+  for (top = index;;index = top) { \
     left = 2 * top; \
     right = 2 * top + 1; \
  \
@@ -264,11 +262,10 @@ scope type prefix##remove(heaptype h, size_t index) \
     else \
       top = left; \
     set(heap, index, heap[top]); \
-    index = top; \
   } \
  \
   if (index == move) \
-    return retval; \
+    return *retval; \
  \
   e = heap[move]; \
   for (; index > 1; index = top) { \
@@ -280,7 +277,7 @@ scope type prefix##remove(heaptype h, size_t index) \
  \
   set(heap, index, e); \
  \
-  return retval; \
+  return *retval; \
 } \
  \
 scope \
