@@ -272,6 +272,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath="..\..\libsofia-sip-ua\su\string0.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\libsofia-sip-ua\su\su.c"
 					>
 					<FileConfiguration
