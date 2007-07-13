@@ -7854,7 +7854,7 @@ su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
 
   timeout
     = outgoing_timer_bf(sa->sa_out.inv_calling, "B", now)
-    + outgoing_timer_c(proceeding, "C", now);
+    + outgoing_timer_c(proceeding, "C", now)
     + outgoing_timer_bf(sa->sa_out.trying, "F", now);
 
   next = NEXT_TIMEOUT(next, sa->sa_out.inv_calling->q_head, orq_timeout, now);
