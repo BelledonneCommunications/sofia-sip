@@ -13,9 +13,15 @@ Preparing the build tree
 ------------------------
 
 The script autogen.cmd should be used to prepare source tree before
-compiling Sofia SIP. Note that it uses the gawk utility - see
-http://unxutils.sourceforge.net (download from 
-http://sourceforge.net/project/showfiles.php?group_id=9328 ).
+compiling Sofia SIP. Note that it uses AWK, so an AWK interpreter
+is needed. You can for example use gawk (3.1.5 or newer) or mawk (tested
+with 1.3.3) implementations. Precompiled binaries are available
+for instance at:
+ 
+  - http://gnuwin32.sourceforge.net/packages/mawk.htm
+  - http://ftp.uni-kl.de/pub/windows/cygwin/release/gawk/
+  - plus many sites, a web search for "win32 awk" will
+    provide you many more links
 
 Notes pthread support
 ---------------------
