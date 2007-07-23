@@ -752,20 +752,24 @@ int test_call_destroy_4(struct context *ctx)
   TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
-  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
-  TEST(e->data->e_status, 180);
-  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
-  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
-  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
-  TEST(e->data->e_status, 200);
-  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
-  TEST(callstate(e->data->e_tags), nua_callstate_completing); /* COMPLETING */
-  TEST_1(is_answer_recv(e->data->e_tags));
-  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_bye);
+  TEST_1(e = e->next); if (e->data->e_event == nua_r_invite) {
+    TEST_E(e->data->e_event, nua_r_invite);
+    TEST(e->data->e_status, 180);
+    TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+    TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
+    TEST_1(e = e->next); 
+  }
+  if (e->data->e_event == nua_r_invite) {
+    TEST_E(e->data->e_event, nua_r_invite);
+    TEST(e->data->e_status, 200);
+    TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+    TEST(callstate(e->data->e_tags), nua_callstate_completing); /* COMPLETING */
+    TEST_1(is_answer_recv(e->data->e_tags));
+    TEST_1(e = e->next); 
+  }
+  TEST_E(e->data->e_event, nua_i_bye);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
-  TEST_1(!e->next);
-  TEST_1(!e->next);
 
   free_events_in_list(ctx, a->events);
   nua_handle_destroy(a_call->nh), a_call->nh = NULL;
