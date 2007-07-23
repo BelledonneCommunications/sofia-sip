@@ -255,9 +255,9 @@ scope type prefix##remove(heaptype h, size_t index) \
     left = 2 * top; \
     right = 2 * top + 1; \
  \
-    if (right >= move) \
+    if (left >= move) \
       break; \
-    if (less(heap[right], heap[left])) \
+    if (right < move && less(heap[right], heap[left])) \
       top = right; \
     else \
       top = left; \

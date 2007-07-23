@@ -467,6 +467,51 @@ int test_ref()
   END();
 }
 
+int test_triplet()
+{
+  BEGIN();
+
+  Heap2 heap = { NULL };
+  
+  unsigned i, N;
+  type1 *items;
+
+  N = 3;
+
+  TEST_1(items = calloc((sizeof *items), N + 1));
+
+  TEST(heap2_resize(NULL, &heap, 0), 0);
+
+  for (i = 1; i <= N; i++) {
+    type2 e = items + i;
+
+    e->key = i, e->value = i;
+
+    if (heap2_is_full(heap))
+      TEST(heap2_resize(NULL, &heap, 0), 0);
+    TEST(heap2_is_full(heap), 0);
+    TEST(heap2_add(heap, e), 0);
+  }
+
+  for (i = 1; i <= N; i++) {
+    type2 e = heap2_get(heap, i);
+    TEST(e->key, i);
+    TEST(e->value, i);
+  }
+  
+  for (i = 1; i <= N; i++) {
+    type2 e = heap2_remove(heap, 1);
+    TEST(e->key, i);
+    TEST(e->value, i);
+  }
+
+  TEST(heap2_free(NULL, &heap), 0);
+  free(items);
+
+  END();
+}
+
+
 void usage(int exitcode)
 {
   fprintf(stderr,
@@ -489,6 +534,7 @@ int main(int argc, char *argv[])
       usage(1);
   }
 
+  retval |= test_triplet(); fflush(stdout);
   retval |= test_smooth_sort(); fflush(stdout);
   retval |= test_value(); fflush(stdout);
   retval |= test_ref(); fflush(stdout);
