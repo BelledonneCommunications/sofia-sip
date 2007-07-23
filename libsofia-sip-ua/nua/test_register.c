@@ -142,7 +142,7 @@ int test_register_to_proxy(struct context *ctx)
 
   TEST_1(e = a->events->head);
   TEST_1(sip = sip_object(e->data->e_msg));
-  if (ctx->nat) {
+  if (ctx->nat && e->data->e_status == 100) {
     TEST_E(e->data->e_event, nua_r_register);
     TEST(e->data->e_status, 100);
     TEST(sip->sip_status->st_status, 406);
