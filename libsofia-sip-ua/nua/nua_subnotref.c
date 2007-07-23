@@ -389,7 +389,7 @@ static int nua_subscribe_client_response(nua_client_request_t *cr,
       if (eu->eu_substate == nua_substate_terminated)
 	eu->eu_substate = nua_substate_embryonic;
 
-      nua_dialog_usage_refresh_range(du, delta, delta);
+      nua_dialog_usage_set_refresh_range(du, delta, delta);
     }
     else {
       eu->eu_substate = nua_substate_terminated;
@@ -681,7 +681,7 @@ int nua_notify_server_report(nua_server_request_t *sr, tagi_t const *tags)
   else if (retry >= 0) {		/* Try to subscribe again */
     /* XXX - this needs through testing */
     nua_dialog_remove(nh, nh->nh_ds, du); /* tear down */
-    nua_dialog_usage_refresh_range(du, retry, retry + 5);
+    nua_dialog_usage_set_refresh_range(du, retry, retry + 5);
   }
   else {
     nua_dialog_usage_set_refresh(du, delta);

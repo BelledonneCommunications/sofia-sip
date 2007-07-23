@@ -43,6 +43,10 @@
 #include <sofia-sip/su_uniqueid.h>
 
 #include <sofia-sip/sip_protos.h>
+#include <sofia-sip/sip_status.h>
+
+#define SU_TIMER_ARG_T struct nua_usage_queue
+#include <sofia-sip/su_wait.h>
 
 #define NUA_OWNER_T su_home_t
 
@@ -127,9 +131,9 @@ void nua_dialog_store_peer_info(nua_owner_t *own,
 				nua_dialog_state_t *ds,
 				sip_t const *sip)
 {
-  nua_remote_t *nr = ds->ds_remote_ua;
+  nua_dialog_peer_info_t *nr = ds->ds_remote_ua;
   nua_dialog_usage_t *du;
-  nua_remote_t old[1];
+  nua_dialog_peer_info_t old[1];
 
   *old = *nr;
 
@@ -287,6 +291,8 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
       du = su_zalloc(own, sizeof *du + uclass->usage_size);
 
     if (du) {
+      su_home_ref(own);
+      du->du_dialog = ds; 
       du->du_class = uclass;
       du->du_event = o;
 
@@ -300,7 +306,6 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
 		  (void *)own, nua_dialog_usage_name(du), 
 		  o ? " with event " : "", o ? o->o_type :""));
 
-      su_home_ref(own);
       du->du_next = ds->ds_usage, ds->ds_usage = du;
 
       return du;
@@ -375,6 +380,9 @@ void nua_dialog_usage_remove_at(nua_owner_t *own,
 	nua_server_request_destroy(sr);
     }
 
+    if (du->du_queued)
+      nua_dialog_usage_reset_refresh(du);
+
     su_home_unref(own);
     su_free(own, du);
   }
@@ -427,22 +435,6 @@ void nua_dialog_log_usage(nua_owner_t *own, nua_dialog_state_t *ds)
   }
 }
 
-/** Deinitialize dialog and its usage. @internal */
-void nua_dialog_deinit(nua_owner_t *own,
-		       nua_dialog_state_t *ds)
-{
-  ds->ds_terminating = 1;
-
-  while (ds->ds_usage) {
-    nua_dialog_usage_remove_at(own, ds, &ds->ds_usage);
-  }
-
-  nua_dialog_remove(own, ds, NULL);
-
-  ds->ds_has_events = 0;
-  ds->ds_terminating = 0;
-}
-
 /**@internal
  * Set refresh value suitably. 
  *
@@ -456,25 +448,26 @@ void nua_dialog_deinit(nua_owner_t *own,
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 {
   if (delta == 0)
-    du->du_refresh = 0;
+    nua_dialog_usage_reset_refresh(du);
   else if (delta > 90 && delta < 5 * 60)
     /* refresh 30..60 seconds before deadline */
-    nua_dialog_usage_refresh_range(du, delta - 60, delta - 30);
+    nua_dialog_usage_set_refresh_range(du, delta - 60, delta - 30);
   else {
     /* By default, refresh around half time before deadline */
     unsigned min = (delta + 2) / 4;
     unsigned max = (delta + 2) / 4 + (delta + 1) / 2;
     if (min == 0)
       min = 1;
-    nua_dialog_usage_refresh_range(du, min, max);
+    nua_dialog_usage_set_refresh_range(du, min, max);
   }
 }
 
 /**@internal Set refresh in range min..max seconds in the future. */
-void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du, 
-				    unsigned min, unsigned max)
+void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du, 
+					unsigned min, unsigned max)
 {
-  sip_time_t now = sip_now(), target;
+  su_time_t now = su_now();
+  su_time_t target = now;
   unsigned delta;
 
   if (max < min)
@@ -485,31 +478,16 @@ void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du,
   else
     delta = min;
 
-  if (now + delta >= now)
-    target = now + delta;
+  if (now.tv_sec + delta >= now.tv_sec)
+    target.tv_sec = now.tv_sec + delta;
   else
-    target = SIP_TIME_MAX;
+    target.tv_sec = SIP_TIME_MAX;
 
-  SU_DEBUG_7(("nua(): refresh %s after %lu seconds (in [%u..%u])\n",
-	      nua_dialog_usage_name(du), target - now, min, max));
+  SU_DEBUG_7(("nua(): refresh %s@%p after %u seconds (in [%u..%u])\n",
+	      nua_dialog_usage_name(du), du->du_dialog->ds_usage,
+	      delta, min, max));
 
-  du->du_refresh = target;
-}
-
-/** Set absolute refresh time */
-void nua_dialog_usage_refresh_at(nua_dialog_usage_t *du,
-				 sip_time_t target)
-{
-  SU_DEBUG_7(("nua(): refresh %s after %lu seconds\n",
-	      nua_dialog_usage_name(du), target - sip_now()));
-  du->du_refresh = target;
-} 
-
-/**@internal Do not refresh. */
-void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
-{
-  if (du)
-    du->du_refresh = 0;
+  nua_dialog_usage_set_refresh_at(du, target);
 }
 
 /** @internal Refresh usage or shutdown usage if @a now is 0. */
@@ -518,19 +496,8 @@ void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now)
 {
-  if (du) {
-    du->du_refresh = 0;
-
-    if (now > 0) {
-      assert(du->du_class->usage_refresh);
-      du->du_class->usage_refresh(owner, ds, du, now);
-    }
-    else {
-      du->du_shutdown = 1;
-      assert(du->du_class->usage_shutdown);
-      du->du_class->usage_shutdown(owner, ds, du);
-    }
-  }
+  assert(du && du->du_class->usage_refresh);
+  du->du_class->usage_refresh(owner, ds, du, now);
 }
 
 /** Terminate all dialog usages gracefully. */
@@ -559,11 +526,12 @@ int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
  * @retval <0  try again later
  */
 int nua_dialog_usage_shutdown(nua_owner_t *owner,
-			       nua_dialog_state_t *ds,
-			       nua_dialog_usage_t *du)
+			      nua_dialog_state_t *ds,
+			      nua_dialog_usage_t *du)
 {
   if (du) {
-    du->du_refresh = 0;
+    if (du->du_queued)
+      nua_dialog_usage_reset_refresh(du);
     du->du_shutdown = 1;
     assert(du->du_class->usage_shutdown);
     return du->du_class->usage_shutdown(owner, ds, du);
@@ -571,3 +539,300 @@ int nua_dialog_usage_shutdown(nua_owner_t *owner,
   else
     return 200;
 }
+
+
+/** Repeat shutdown all usage.
+ *
+ * @note Caller must have a reference to nh
+ */
+int nua_dialog_repeat_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
+{
+  nua_dialog_usage_t *du;
+  nua_server_request_t *sr, *sr_next;
+
+  for (sr = ds->ds_sr; sr; sr = sr_next) {
+    sr_next = sr->sr_next;
+
+    if (nua_server_request_is_pending(sr)) {
+      SR_STATUS1(sr, SIP_410_GONE); /* 410 terminates dialog */
+      nua_server_respond(sr, NULL);
+      nua_server_report(sr);
+    }
+  }
+
+  for (du = ds->ds_usage; du ;) {
+    nua_dialog_usage_t *du_next = du->du_next;
+
+    nua_dialog_usage_shutdown(owner, ds, du);
+
+    if (du_next == NULL)
+      break;
+
+    for (du = ds->ds_usage; du; du = du->du_next) {
+      if (du == du_next)
+	break;
+      else if (!du->du_shutdown)
+	break;
+    }
+  }
+
+  return ds->ds_usage != NULL;
+}
+
+/** Deinitialize dialog and its usage. @internal */
+void nua_dialog_deinit(nua_owner_t *own,
+		       nua_dialog_state_t *ds)
+{
+  ds->ds_terminating = 1;
+
+  while (ds->ds_usage) {
+    nua_dialog_usage_remove_at(own, ds, &ds->ds_usage);
+  }
+
+  nua_dialog_remove(own, ds, NULL);
+
+  ds->ds_has_events = 0;
+  ds->ds_terminating = 0;
+}
+
+/* ---------------------------------------------------------------------- */
+
+static void nua_usage_queue_run(nua_usage_queue_t *queue,
+				su_timer_t *t);
+static void nua_usage_queue_timer(su_root_magic_t *magic,
+				  su_timer_t *t,
+				  nua_usage_queue_t *queue);
+
+#include <sofia-sip/heap.h>
+
+HEAP_DECLARE(su_inline,
+	     struct nua_usage_heap,
+	     nua_usage_queue_,
+	     nua_dialog_usage_t *);
+
+int nua_usage_queue_init(nua_usage_queue_t *queue,
+			 su_root_t *root)
+{
+  queue->queue_timer = su_timer_create(su_root_task(root), 0);
+  nua_usage_queue_resize(NULL, queue->queue_heap, 0);
+  return queue->queue_timer != NULL ? 0 : -1;
+}
+
+int nua_usage_queue_deinit(nua_usage_queue_t *queue)
+{
+  su_timer_destroy(queue->queue_timer), queue->queue_timer = NULL;
+  nua_usage_queue_free(NULL, queue->queue_heap);
+  return 0;
+}
+
+/** Run queue */
+static
+void nua_usage_queue_run(nua_usage_queue_t *queue, su_timer_t *t)
+{
+  short i;
+  nua_dialog_usage_t *du;
+  nua_dialog_state_t *ds;
+  su_time_t now;
+
+  su_time(&now);
+
+  if (queue->queue_shutdown)
+    return;
+
+  for (i = 0; ; i++) {
+    du = nua_usage_queue_get(queue->queue_heap[0], 1);
+    
+    if (du == NULL 
+	|| now.tv_sec < du->du_refresh.tv_sec 
+	|| (now.tv_sec == du->du_refresh.tv_sec 
+	    && now.tv_usec < du->du_refresh.tv_usec))
+      break;
+
+    ds = du->du_dialog;
+    nua_dialog_usage_refresh(ds->ds_owner, ds, du, now.tv_sec);
+
+    if (t && (i & 31) == 31)
+      su_root_yield(su_timer_root(t));	/* Handle received packets */
+  }
+
+  if (du) {
+    su_timer_set_at(queue->queue_timer, nua_usage_queue_timer, queue,
+		    du->du_refresh);
+  }
+  else {
+    /* No need to reset timer */
+  }
+
+#if 0
+  if (du)
+    SU_DEBUG_0(("nua(): refresh %s@%p at %.3f s\n", 
+		nua_dialog_usage_name(du), du->du_dialog->ds_owner,
+		su_time_diff(du->du_refresh, su_now())));
+  else
+    SU_DEBUG_0(("nua(): no refresh\n"));
+
+  for (i = 2; ; i++) {
+    du = nua_usage_queue_get(queue->queue_heap[0], i);
+    if (!du) break;
+    SU_DEBUG_0(("\t%s@%p at %.3f s\n", 
+		nua_dialog_usage_name(du), du->du_dialog->ds_owner,
+		su_time_diff(du->du_refresh, su_now())));
+  }
+#endif
+}
+
+/** Set absolute refresh time */
+void nua_dialog_usage_set_refresh_at(nua_dialog_usage_t *du,
+				     su_time_t target)
+{
+  nua_usage_queue_t *queue;
+  int first;
+
+  SU_DEBUG_7(("nua(): refresh %s after %lu milliseconds\n",
+	      nua_dialog_usage_name(du), 
+	      su_duration(target, su_now())));
+
+  assert(du); if (!du) return;
+
+  queue = nua_usage_queue_by_owner(du->du_dialog->ds_owner);
+  assert(queue);
+
+  first = du->du_queued == 1;
+
+  if (du->du_queued) {
+    nua_usage_queue_remove(queue->queue_heap[0], du->du_queued);
+  }
+
+  du->du_refresh = target;
+
+  if (queue->queue_shutdown)
+    return;
+    
+  if (nua_usage_queue_is_full(queue->queue_heap[0]))
+    nua_usage_queue_resize(NULL, queue->queue_heap, 0);
+  nua_usage_queue_add(queue->queue_heap[0], du);
+
+  if (du->du_queued == 1)
+    du = du;
+  else if (first)
+    du = nua_usage_queue_get(queue->queue_heap[0], 1);
+  else
+    return;			/* No need to reschedule */
+
+  if (du) {
+    su_timer_set_at(queue->queue_timer, nua_usage_queue_timer, queue,
+		    du->du_refresh);
+  }
+  else {
+    su_timer_reset(queue->queue_timer);
+  }
+
+#if 0
+  if (du)
+    SU_DEBUG_0(("nua(): refresh %s@%p at %.3f s\n", 
+		nua_dialog_usage_name(du), du->du_dialog->ds_owner,
+		su_time_diff(du->du_refresh, su_now())));
+  else
+    SU_DEBUG_0(("nua(): no refresh\n"));
+
+  for (first = 2; ; first++) {
+    du = nua_usage_queue_get(queue->queue_heap[0], first);
+    if (!du) break;
+    SU_DEBUG_0(("\t%s@%p at %.3f s\n", 
+		nua_dialog_usage_name(du), du->du_dialog->ds_owner,
+		su_time_diff(du->du_refresh, su_now())));
+  }
+#endif
+} 
+
+void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
+{
+  nua_usage_queue_t *queue;
+  int first;
+  
+  assert(du); if (!du) return;
+
+  SU_DEBUG_7(("nua(): reset refresh %s@%p\n",
+	      nua_dialog_usage_name(du), du->du_dialog->ds_owner));
+
+  queue = nua_usage_queue_by_owner(du->du_dialog->ds_owner);
+  assert(queue);
+
+  first = du->du_queued == 1;
+
+  nua_usage_queue_remove(queue->queue_heap[0], du->du_queued);
+
+  if (!first)
+    return;			/* No need to reschedule */
+
+  if (queue->queue_shutdown)
+    return;			
+
+  du = nua_usage_queue_get(queue->queue_heap[0], 1);
+
+  if (du) {
+    su_timer_set_at(queue->queue_timer, nua_usage_queue_timer, queue,
+		    du->du_refresh);
+  }
+  else {
+    su_timer_reset(queue->queue_timer);
+  }
+
+#if 0
+  if (du)
+    SU_DEBUG_0(("nua(): refresh %s@%p at %.3f s\n", 
+		nua_dialog_usage_name(du), du->du_dialog->ds_owner,
+		su_time_diff(du->du_refresh, su_now())));
+  else
+    SU_DEBUG_0(("nua(): no refresh\n"));
+
+  for (first = 2; ; first++) {
+    du = nua_usage_queue_get(queue->queue_heap[0], first);
+    if (!du) break;
+    SU_DEBUG_0(("\t%s@%p at %.3f s\n", 
+		nua_dialog_usage_name(du), du->du_dialog->ds_owner,
+		su_time_diff(du->du_refresh, su_now())));
+  }
+#endif
+}
+
+static void nua_usage_queue_timer(su_root_magic_t *magic,
+				  su_timer_t *t,
+				  nua_usage_queue_t *queue)
+{
+  nua_usage_queue_run(queue, t);
+}
+
+su_inline void nua_usage_heap_set(nua_dialog_usage_t **array,
+				  size_t index,
+				  nua_dialog_usage_t *du)
+{
+  array[du->du_queued = index] = du;
+}
+
+su_inline int nua_usage_heap_less(nua_dialog_usage_t *a, nua_dialog_usage_t *b)
+{
+  return
+    a->du_refresh.tv_sec < b->du_refresh.tv_sec
+    || (a->du_refresh.tv_sec == b->du_refresh.tv_sec 
+	&& a->du_refresh.tv_usec < b->du_refresh.tv_usec);
+}
+
+su_inline void *nua_usage_heap_alloc(void *argument, void *memory, size_t size)
+{
+  (void)argument;
+
+  if (size)
+    return realloc(memory, size);
+  else
+    return free(memory), NULL;
+}
+
+HEAP_BODIES(su_inline,
+	    struct nua_usage_heap,
+	    nua_usage_queue_,
+	    nua_dialog_usage_t *,
+	    nua_usage_heap_less,
+	    nua_usage_heap_set,
+	    nua_usage_heap_alloc,
+	    NULL);

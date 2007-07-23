@@ -109,7 +109,7 @@ typedef struct register_usage nua_registration_t;
 #define nua_handle_unref(nh) nua_handle_unref_by((nh), __func__)
 
 su_inline nua_handle_t *nua_handle_ref_by(nua_handle_t *nh,
-					      char const *by)
+					  char const *by)
 {
   if (nh)
     SU_DEBUG_0(("nua_handle_ref(%p) => "MOD_ZU" by %s\n", nh, 
@@ -238,11 +238,8 @@ struct nua_s {
   su_root_t          *nua_root;
   su_task_r           nua_server;
   nta_agent_t        *nua_nta;
-  su_timer_t         *nua_timer;
 
   void         	      *nua_sip_parser;
-
-  sip_time_t           nua_shutdown;
 
   /* Route */
   sip_service_route_t *nua_service_route;
@@ -258,6 +255,8 @@ struct nua_s {
 
   nua_handle_t        *nua_handles;
   nua_handle_t       **nua_handles_tail;
+
+  nua_usage_queue_t    nua_usage_queue[1];
 };
 
 #define nua_dhandle    nua_handles
