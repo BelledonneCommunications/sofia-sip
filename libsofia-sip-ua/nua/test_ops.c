@@ -304,7 +304,7 @@ void run_abc_until(struct context *ctx,
   memset(&c->flags, 0, sizeof c->flags);
 
   for (; a->running || b->running || c->running;) {
-    su_root_step(ctx->root, 1000);
+    su_root_step(ctx->root, 100);
   }
 }
 
