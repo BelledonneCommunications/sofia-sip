@@ -696,8 +696,7 @@ static int nua_notify_client_report(nua_client_request_t *cr,
       nua_client_resend_request(cr, 0);
     }
     else if (nu->nu_expires) {
-      su_time_t tv; tv.tv_sec = nu->nu_expires, tv.tv_usec = 313313;
-      nua_dialog_usage_set_refresh_at(du, tv);
+      nua_dialog_usage_refresh_at(du, nu->nu_expires);
     }
   }
 

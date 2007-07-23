@@ -214,7 +214,7 @@ void nua_destroy(nua_t *nua)
     if (!nua->nua_shutdown_final) {
       SU_DEBUG_0(("nua_destroy(%p): FATAL: nua_shutdown not completed\n",
 		  (void *)nua));
-      assert(nua->nua_usage_queue->queue_shutdown);
+      assert(nua->nua_shutdown);
       return;
     }
 

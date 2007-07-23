@@ -46,7 +46,6 @@
 
 #define SU_ROOT_MAGIC_T   struct nua_s
 #define SU_MSG_ARG_T      struct event_s
-#define SU_TIMER_ARG_T    struct nua_client_request
 
 #define NUA_SAVED_EVENT_T su_msg_t *
 
@@ -91,6 +90,8 @@ static void nh_remove(nua_t *nua, nua_handle_t *nh);
 static int nh_authorize(nua_handle_t *nh,
 			tag_type_t tag, tag_value_t value, ...);
 
+static void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a);
+
 /* ---------------------------------------------------------------------- */
 /* Constant data */
 
@@ -129,6 +130,10 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
   }
 
   nua->nua_root = root;
+  nua->nua_timer = su_timer_create(su_root_task(root),
+				   NUA_STACK_TIMER_INTERVAL);
+  if (!nua->nua_timer)
+    return -1;
 
   home = nua->nua_home;
   nua->nua_handles_tail = &nua->nua_handles;
@@ -185,8 +190,7 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
   if (NHP_ISSET(dnh->nh_prefs, detect_network_updates))
     nua_stack_launch_network_change_detector(nua);
 
-  if (nua_usage_queue_init(nua->nua_usage_queue, root) < 0)
-    return -1;
+  nua_stack_timer(nua, nua->nua_timer, NULL);
 
   return 0;
 }
@@ -195,7 +199,7 @@ void nua_stack_deinit(su_root_t *root, nua_t *nua)
 {
   enter;
 
-  nua_usage_queue_deinit(nua->nua_usage_queue);
+  su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
   nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
 }
 
@@ -267,8 +271,7 @@ int nua_stack_event(nua_t *nua, nua_handle_t *nh, msg_t *msg,
   if ((event > nua_r_authenticate && event <= nua_r_ack)
       || event < nua_i_error
       || (nh && !nh->nh_valid)
-      || (nua->nua_usage_queue->queue_shutdown && 
-	  event != nua_r_shutdown)) {
+      || (nua->nua_shutdown && event != nua_r_shutdown)) {
     if (msg)
       msg_destroy(msg);
     return event;
@@ -367,7 +370,7 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
 
   event = e->e_event;
 
-  if (nua->nua_usage_queue->queue_shutdown && !e->e_always) {
+  if (nua->nua_shutdown && !e->e_always) {
     /* Shutting down */
     nua_stack_event(nua, nh, NULL, event,
 		    901, "Stack is going down",
@@ -464,6 +467,82 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
 
 /* ====================================================================== */
 
+static int nh_call_pending(nua_handle_t *nh, sip_time_t time);
+
+/**@internal
+ * Timer routine.
+ *
+ * Go through all active handles and execute pending tasks
+ */
+void nua_stack_timer(nua_t *nua, su_timer_t *t, su_timer_arg_t *a)
+{
+  nua_handle_t *nh, *nh_next;
+  sip_time_t now = sip_now();
+  su_root_t *root = su_timer_root(t);
+
+  su_timer_set(t, nua_stack_timer, a);
+
+  if (nua->nua_shutdown) {
+    nua_stack_shutdown(nua);
+    return;
+  }
+
+  for (nh = nua->nua_handles; nh; nh = nh_next) {
+    nh_next = nh->nh_next;
+    nh_call_pending(nh, now);
+    su_root_yield(root);	/* Handle received packets */
+  }
+}
+
+
+static
+int nh_call_pending(nua_handle_t *nh, sip_time_t now)
+{
+  nua_dialog_state_t *ds = nh->nh_ds;
+  nua_dialog_usage_t *du;
+  sip_time_t next = now + NUA_STACK_TIMER_INTERVAL / 1000;
+
+  for (du = ds->ds_usage; du; du = du->du_next) {
+    if (now == 0)
+      break;
+    if (du->du_refresh && du->du_refresh < next)
+      break;
+  }
+
+  if (du == NULL)
+    return 0;
+
+  nua_handle_ref(nh);
+
+  while (du) {
+    nua_dialog_usage_t *du_next = du->du_next;
+
+    nua_dialog_usage_refresh(nh, ds, du, now);
+
+    if (du_next == NULL)
+      break;
+
+    for (du = nh->nh_ds->ds_usage; du; du = du->du_next)
+      if (du == du_next)
+	break;
+
+    for (; du; du = du->du_next) {
+      if (now == 0)
+	break;
+      if (du->du_refresh && du->du_refresh < next)
+	break;
+    }
+  }
+
+  nua_handle_unref(nh);
+
+  return 1;
+}
+
+
+
+/* ====================================================================== */
+
 /**Shutdown a @nua stack.
  *
  * When the @nua stack is shutdown, ongoing calls are released,
@@ -508,13 +587,6 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
  * @END_NUA_EVENT
  */
 
-static void nua_shutdown_timer(nua_t *nua,
-			       su_timer_t *timer, 
-			       su_timer_arg_t *extra)
-{
-  (void)timer; (void)extra; nua_stack_shutdown(nua);
-}
-
 /** @internal Shut down stack. */
 void nua_stack_shutdown(nua_t *nua)
 {
@@ -526,15 +598,26 @@ void nua_stack_shutdown(nua_t *nua)
 
   enter;
 
-  if (nua->nua_usage_queue->queue_shutdown == 0)
-    nua->nua_usage_queue->queue_shutdown = now;
+  if (!nua->nua_shutdown)
+    nua->nua_shutdown = now;
 
   for (nh = nua->nua_handles; nh; nh = nh_next) {
     nua_dialog_state_t *ds = nh->nh_ds;
+    nua_server_request_t *sr, *sr_next;
 
-    nua_handle_ref(nh);
+    nh_next = nh->nh_next;
 
-    busy += nua_dialog_repeat_shutdown(nh, ds);
+    for (sr = ds->ds_sr; sr; sr = sr_next) {
+      sr_next = sr->sr_next;
+
+      if (nua_server_request_is_pending(sr)) {
+	SR_STATUS1(sr, SIP_410_GONE); /* 410 terminates dialog */
+	nua_server_respond(sr, NULL);
+	nua_server_report(sr);
+      }
+    }
+
+    busy += nh_call_pending(nh, 0);
 
     if (nh->nh_soa) {
       soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
@@ -545,17 +628,13 @@ void nua_stack_shutdown(nua_t *nua)
 
     if (nh_notifier_shutdown(nh, NULL, NEATAG_REASON("noresource"), TAG_END()))
       busy++;
-
-    nh_next = nh->nh_next;
-
-    nua_handle_unref(nh);
   }
 
   if (!busy)
     SET_STATUS(200, "Shutdown successful");
-  else if (now == nua->nua_usage_queue->queue_shutdown)
+  else if (now == nua->nua_shutdown)
     SET_STATUS(100, "Shutdown started");
-  else if (now - nua->nua_usage_queue->queue_shutdown < 30)
+  else if (now - nua->nua_shutdown < 30)
     SET_STATUS(101, "Shutdown in progress");
   else
     SET_STATUS(500, "Shutdown timeout");
@@ -567,15 +646,8 @@ void nua_stack_shutdown(nua_t *nua)
 	nua_dialog_usage_remove(nh, nh->nh_ds, nh->nh_ds->ds_usage);
       }
     }
-
-    nua_usage_queue_deinit(nua->nua_usage_queue);
+    su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
     nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
-  }
-  else {
-    su_timer_set_interval(nua->nua_usage_queue->queue_timer,
-			  nua_shutdown_timer, 
-			  NULL,
-			  1000);
   }
 
   nua_stack_event(nua, NULL, NULL, nua_r_shutdown, status, phrase, NULL);
@@ -831,6 +903,7 @@ nua_handle_t *nua_stack_handle_by_replaces(nua_t *nua,
   return NULL;
 }
 
+
 /** @internal Add authorization data */
 int nh_authorize(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 {
@@ -876,11 +949,6 @@ int can_redirect(sip_contact_t const *m, sip_method_t method)
   return 0;
 }
 
-nua_usage_queue_t *nua_usage_queue_by_owner(nua_owner_t *nh)
-{
-  return nh->nh_nua->nua_usage_queue;
-}
-
 /* ======================================================================== */
 /* Authentication */
 
@@ -922,7 +990,6 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   if (status > 0) {
     if (cr && cr->cr_wait_for_cred) {
-      cr->cr_waiting = cr->cr_wait_for_cred = 0;
       nua_client_restart_request(cr, cr->cr_terminating, tags);
     }
     else {
@@ -932,8 +999,8 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     }
   }
   else if (cr && cr->cr_wait_for_cred) {
-    cr->cr_waiting = cr->cr_wait_for_cred = 0;
-    
+    cr->cr_wait_for_cred = 0;
+
     if (status < 0)
       nua_client_response(cr, 900, "Cannot add credentials", NULL);
     else
@@ -1645,9 +1712,6 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
 static int nua_client_request_try(nua_client_request_t *cr);
 static int nua_client_request_sendmsg(nua_client_request_t *cr,
   				      msg_t *msg, sip_t *sip);
-static void nua_client_restart_after(su_root_magic_t *magic,
-				     su_timer_t *timer,
-				     nua_client_request_t *cr);
 
 /**Create a client request.
  *
@@ -1793,9 +1857,6 @@ void nua_client_request_destroy(nua_client_request_t *cr)
     nta_outgoing_destroy(cr->cr_orq);
 
   cr->cr_orq = NULL;
-
-  if (cr->cr_timer)
-    su_timer_destroy(cr->cr_timer), cr->cr_timer = NULL;
 
   if (cr->cr_target)
     su_free(nh->nh_home, cr->cr_target);
@@ -2380,7 +2441,7 @@ int nua_client_response(nua_client_request_t *cr,
 
 /** Check if request should be restarted.
  *
- * @retval 1 if restarted or waiting for restart
+ * @retval 1 if restarted or waring for restart
  * @retval 0 otherwise
  */
 int nua_client_check_restart(nua_client_request_t *cr,
@@ -2407,7 +2468,8 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 				  sip_t const *sip)
 {
   nua_handle_t *nh = cr->cr_owner; 
-  nta_outgoing_t *orq;
+
+  /* XXX - handle Retry-After */
 
   if (status == 302 || status == 305) {
     sip_route_t r[1];
@@ -2456,6 +2518,7 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
   if ((status == 401 && sip->sip_www_authenticate) ||
       (status == 407 && sip->sip_proxy_authenticate)) {
     int server = 0, proxy = 0;
+    nta_outgoing_t *orq;
 
     if (sip->sip_www_authenticate)
       server = auc_challenge(&nh->nh_auth, nh->nh_home,
@@ -2479,8 +2542,7 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 	return nua_client_restart(cr, 100, "Request Authorized by Cache");
 
       orq = cr->cr_orq, cr->cr_orq = NULL;
-
-      cr->cr_waiting = cr->cr_wait_for_cred = 1;
+      cr->cr_wait_for_cred = 1;
       nua_client_report(cr, status, phrase, NULL, orq, NULL);
       nta_outgoing_destroy(orq);
 
@@ -2488,42 +2550,7 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
     }
   }
 
-  if (500 <= status && status < 600 && 
-      sip->sip_retry_after && 
-      sip->sip_retry_after->af_delta < 32) {
-    char phrase[18];		/* Retry-After: XXXX\0 */
-
-    if (cr->cr_timer == NULL)
-      cr->cr_timer = su_timer_create(su_root_task(nh->nh_nua->nua_root), 0);
-
-    if (su_timer_set_interval(cr->cr_timer, nua_client_restart_after, cr,
-			      sip->sip_retry_after->af_delta * 1000) < 0)
-      return 0; /* Too bad */
-
-    snprintf(phrase, sizeof phrase, "Retry After %u", 
-	     (unsigned)sip->sip_retry_after->af_delta);
-
-    orq = cr->cr_orq, cr->cr_orq = NULL;
-    cr->cr_waiting = cr->cr_wait_for_timer = 1;
-    nua_client_report(cr, 100, phrase, NULL, orq, NULL);
-    nta_outgoing_destroy(orq);
-    return 1;
-  }
-
   return 0;  /* This was a final response that cannot be restarted. */
-}
-
-/** Request restarted by timer */
-static
-void nua_client_restart_after(su_root_magic_t *magic,
-			      su_timer_t *timer,
-			      nua_client_request_t *cr) 
-{
-  if (!cr->cr_wait_for_timer)
-    return;
-
-  cr->cr_waiting = cr->cr_wait_for_timer = 0;
-  nua_client_restart_request(cr, cr->cr_terminating, NULL);
 }
 
 /** Restart request.
@@ -2557,6 +2584,7 @@ int nua_client_restart(nua_client_request_t *cr,
     if (error !=0 && error != -2)
       msg_destroy(msg);
   }
+
 
   if (error) {
     cr->cr_graceful = graceful;

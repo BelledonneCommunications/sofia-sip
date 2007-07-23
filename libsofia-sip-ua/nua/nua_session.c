@@ -642,7 +642,7 @@ static int nua_invite_client_request(nua_client_request_t *cr,
     invite_timeout = UINT_MAX;
   /* Send CANCEL if we don't get response within timeout*/
   /* nua_dialog_usage_set_expires(du, invite_timeout); Xyzzy */
-  nua_dialog_usage_reset_refresh(du);
+  nua_dialog_usage_set_refresh(du, 0);
 
   /* Add session timer headers */
   if (session_timer_is_supported(ss->ss_timer))
@@ -4131,7 +4131,7 @@ session_timer_set(nua_session_usage_t *ss)
     if (t->interval >= 90)
       low -=5, high += 5;
 
-    nua_dialog_usage_set_refresh_range(du, low, high);
+    nua_dialog_usage_refresh_range(du, low, high);
     t->timer_set = 1;
   }
   else if (t->refresher == nua_remote_refresher) {
@@ -4144,7 +4144,7 @@ session_timer_set(nua_session_usage_t *ss)
 
     interval -= 32 > interval / 6 ? interval / 3 : 32 + interval / 3;
 
-    nua_dialog_usage_set_refresh_range(du, interval, interval);
+    nua_dialog_usage_refresh_range(du, interval, interval);
     t->timer_set = 1;
   }
   else {
