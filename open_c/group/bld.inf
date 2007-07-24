@@ -82,6 +82,7 @@ PRJ_EXPORTS
 ../../libsofia-sip-ua/stun/sofia-sip/stun.h \epoc32\include\osextensions\sofia-sip\stun.h
 ../../libsofia-sip-ua/stun/sofia-sip/stun_common.h \epoc32\include\osextensions\sofia-sip\stun_common.h
 ../../libsofia-sip-ua/stun/sofia-sip/stun_tag.h \epoc32\include\osextensions\sofia-sip\stun_tag.h
+../../libsofia-sip-ua/su/sofia-sip/heap.h \epoc32\include\osextensions\sofia-sip\heap.h
 ../../libsofia-sip-ua/su/sofia-sip/htable.h \epoc32\include\osextensions\sofia-sip\htable.h
 ../../libsofia-sip-ua/su/sofia-sip/htable2.h \epoc32\include\osextensions\sofia-sip\htable2.h
 ../../libsofia-sip-ua/su/sofia-sip/rbtree.h \epoc32\include\osextensions\sofia-sip\rbtree.h
