@@ -278,10 +278,9 @@ USERINCLUDE		..\..\libsofia-sip-ua\nea
 USERINCLUDE		..\..\libsofia-sip-ua\nua
 
 SYSTEMINCLUDE   \epoc32\include
-SYSTEMINCLUDE   \epoc32\include\libc
+SYSTEMINCLUDE   \epoc32\include\stdapis
+SYSTEMINCLUDE   \epoc32\include\stdapis\openssl
 SYSTEMINCLUDE   \epoc32\include\osextensions
-SYSTEMINCLUDE   \epoc32\include\osextensions\stdapis
-SYSTEMINCLUDE   \epoc32\include\osextensions\stdapis\openssl
 
 // Library dependencies
 

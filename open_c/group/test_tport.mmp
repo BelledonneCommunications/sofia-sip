@@ -41,11 +41,10 @@ USERINCLUDE     ..
 USERINCLUDE     ..\..\libsofia-sip-ua\msg
 USERINCLUDE     ..\..\libsofia-sip-ua\tport
 
-SYSTEMINCLUDE   \Epoc32\include
-SYSTEMINCLUDE 	\Epoc32\include\osextensions
-SYSTEMINCLUDE 	\Epoc32\include\osextensions\stdapis
-SYSTEMINCLUDE   \epoc32\include\libc
-SYSTEMINCLUDE   \epoc32\include\osextensions\stdapis\openssl
+SYSTEMINCLUDE   \epoc32\include
+SYSTEMINCLUDE 	\epoc32\include\osextensions
+SYSTEMINCLUDE 	\epoc32\include\stdapis
+SYSTEMINCLUDE   \epoc32\include\stdapis\openssl
 
 
 // Library dependencies
