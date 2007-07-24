@@ -35,13 +35,13 @@
 
 #include "config.h"
 
-#include "sofia-sip/su.h"
-#include "sofia-sip/su_localinfo.h"
-#include "su_module_debug.h"
-
 #if HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
 #endif
+
+#include <sofia-sip/su.h>
+#include <sofia-sip/su_localinfo.h>
+#include "su_module_debug.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -25,7 +25,7 @@
 /**@ingroup su_open_c_localinfo.cpp
  *
  * @CFILE su_open_c_localinfo.cpp
- * Functionality for choosing an access point for sockets.
+ * Functionality for choosing an access point for sockets on Symbian.
  *
  * @author Martti Mela <Martti.Mela@nokia.com>
  * @date Created: Fri May 18 14:31:41 2007 mela
@@ -33,16 +33,15 @@
  */
 
 #include "config.h"
-#include <stdio.h>
+
 #include <unistd.h>
-#include "in_sock.h" 
-#include "es_sock.h"
-#include "e32base.h"
-#include "s32mem.h"
-#include "s32strm.h"
+#include <in_sock.h> 
+#include <es_sock.h>
+#include <e32base.h>
+#include <s32mem.h>
+#include <s32strm.h>
 #include <commdbconnpref.h>
 
-#include <sofia-sip/su_config.h>
 #include <sofia-sip/su.h>
 
 
