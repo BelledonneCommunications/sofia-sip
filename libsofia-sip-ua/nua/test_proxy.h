@@ -64,6 +64,11 @@ void test_proxy_get_session_timer(struct proxy *p,
 void test_proxy_domain_set_authorize(struct domain *d, int authorize);
 void test_proxy_domain_get_authorize(struct domain *d, int *return_authorize);
 
+void test_proxy_domain_set_outbound(struct domain *d,
+				    int use_outbound);
+void test_proxy_domain_get_outbound(struct domain *d,
+				    int *return_use_outbound);
+
 int test_proxy_close_tports(struct proxy *p);
 
 SOFIA_END_DECLS

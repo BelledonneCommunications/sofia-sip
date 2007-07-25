@@ -1522,8 +1522,6 @@ int test_bye_to_invalid_contact(struct context *ctx)
   TEST_1(e = b->events->head);  TEST_E(e->data->e_event, nua_r_bye);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
-  TEST_1(!e->next);
-  free_events_in_list(ctx, b->events);
 
   TEST_1(!nua_handle_has_active_call(b_call->nh));
   TEST_1(nua_handle_has_active_call(a_call->nh));
@@ -1534,19 +1532,21 @@ int test_bye_to_invalid_contact(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-6.4.3: PASSED\n");
 
-  if (!ctx->p)
+  if (!ctx->p) {
+    free_events_in_list(ctx, b->events);
     return 0;
+  }
 
   if (print_headings)
     printf("TEST NUA-6.4.4: Wait for re-REGISTER after connection has been closed\n");
 
-  /* B is supposed to re-register pretty soon, wait for re-registration */
-
-  run_b_until(ctx, -1, save_until_final_response);
+  if (!e->next || (!e->next->next || !e->next->data->e_status != 200))
+    /* B is supposed to re-register pretty soon, wait for re-registration */
+    run_b_until(ctx, -1, save_until_final_response);
 
   seen_401 = 0;
 
-  for (e = b->events->head; e; e = e->next) {
+  for (e = e->next; e; e = e->next) {
     TEST_E(e->data->e_event, nua_r_register);
     TEST_1(sip = sip_object(e->data->e_msg));
 

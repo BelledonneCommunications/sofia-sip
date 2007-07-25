@@ -136,6 +136,8 @@ int test_nua_init(struct context *ctx,
 			      AUTHTAG_NEXT_EXPIRES(60),
 			      TAG_END());
 
+      test_proxy_domain_set_outbound(ctx->b.domain, 1);
+
       ctx->c.domain = 
 	test_proxy_add_domain(ctx->p,
 			      URL_STRING_MAKE("sip:example.net")->us_url,
