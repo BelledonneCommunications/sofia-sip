@@ -483,6 +483,9 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tpp->tpp_idle = UINT_MAX;
   tpp->tpp_timeout = UINT_MAX;
   tpp->tpp_sigcomp_lifetime = UINT_MAX;
+  tpp->tpp_keepalive = 0;
+  tpp->tpp_pingpong = 0;
+  tpp->tpp_pong2ping = 0;
   tpp->tpp_stun_server = 1;
   tpp->tpp_tos = -1;                  /* set invalid, valid values are 0-255 */
 
@@ -1115,6 +1118,14 @@ void tport_decref(tport_t **ttp)
  *
  * @param self          pointer to a transport object
  * @param tag,value,... list of tags
+ *
+ * @TAGS
+ * TPTAG_MTU_REF(), TPTAG_QUEUESIZE_REF(), TPTAG_IDLE_REF(),
+ * TPTAG_TIMEOUT_REF(), TPTAG_KEEPALIVE_REF(), TPTAG_PINGPONG_REF(),
+ * TPTAG_PONG2PING_REF(), TPTAG_DEBUG_DROP_REF(), TPTAG_THRPSIZE_REF(),
+ * TPTAG_THRPRQSIZE_REF(), TPTAG_SIGCOMP_LIFETIME_REF(),
+ * TPTAG_CONNECT_REF(), TPTAG_SDWN_ERROR_REF(), TPTAG_REUSE_REF(),
+ * TPTAG_STUN_SERVER_REF(), TPTAG_PUBLIC_REF() and TPTAG_TOS_REF().
  */
 int tport_get_params(tport_t const *self,
 		     tag_type_t tag, tag_value_t value, ...)
@@ -1142,10 +1153,15 @@ int tport_get_params(tport_t const *self,
 	       TPTAG_QUEUESIZE(tpp->tpp_qsize),
 	       TPTAG_IDLE(tpp->tpp_idle),
 	       TPTAG_TIMEOUT(tpp->tpp_timeout),
+	       TPTAG_KEEPALIVE(tpp->tpp_keepalive),
+	       TPTAG_PINGPONG(tpp->tpp_pingpong),
+	       TPTAG_PONG2PING(tpp->tpp_pong2ping),
 	       TPTAG_SDWN_ERROR(tpp->tpp_sdwn_error),
 	       TPTAG_DEBUG_DROP(tpp->tpp_drop),
 	       TPTAG_THRPSIZE(tpp->tpp_thrpsize),
 	       TPTAG_THRPRQSIZE(tpp->tpp_thrprqsize),
+	       TPTAG_SIGCOMP_LIFETIME(tpp->tpp_sigcomp_lifetime),
+	       TPTAG_STUN_SERVER(tpp->tpp_stun_server),
 	       TAG_IF(pri, TPTAG_PUBLIC(pri ? pri->pri_public : 0)),
 	       TPTAG_TOS(tpp->tpp_tos),
 	       TAG_END());
@@ -1162,6 +1178,7 @@ int tport_get_params(tport_t const *self,
  *
  * @TAGS
  * TPTAG_MTU(), TPTAG_QUEUESIZE(), TPTAG_IDLE(), TPTAG_TIMEOUT(),
+ * TPTAG_KEEPALIVE(), TPTAG_PINGPONG(), TPTAG_PONG2PING(),
  * TPTAG_DEBUG_DROP(), TPTAG_THRPSIZE(), TPTAG_THRPRQSIZE(),
  * TPTAG_SIGCOMP_LIFETIME(), TPTAG_CONNECT(), TPTAG_SDWN_ERROR(),
  * TPTAG_REUSE(), TPTAG_STUN_SERVER(), and TPTAG_TOS().
@@ -1174,7 +1191,7 @@ int tport_set_params(tport_t *self,
   tport_params_t tpp[1], *tpp0;
   
   usize_t mtu;
-  int connect, sdwn_error, reusable, stun_server;
+  int connect, sdwn_error, reusable, stun_server, pong2ping;
   
   if (self == NULL)
     return su_seterrno(EINVAL);
@@ -1186,6 +1203,7 @@ int tport_set_params(tport_t *self,
   sdwn_error = tpp->tpp_sdwn_error;
   reusable = self->tp_reusable;
   stun_server = tpp->tpp_stun_server;
+  pong2ping = tpp->tpp_pong2ping;
 
   ta_start(ta, tag, value);
 
@@ -1194,6 +1212,9 @@ int tport_set_params(tport_t *self,
 	      TAG_IF(!self->tp_queue, TPTAG_QUEUESIZE_REF(tpp->tpp_qsize)),
 	      TPTAG_IDLE_REF(tpp->tpp_idle),
 	      TPTAG_TIMEOUT_REF(tpp->tpp_timeout),
+	      TPTAG_KEEPALIVE_REF(tpp->tpp_keepalive),
+	      TPTAG_PINGPONG_REF(tpp->tpp_pingpong),
+	      TPTAG_PONG2PING_REF(pong2ping),
 	      TPTAG_DEBUG_DROP_REF(tpp->tpp_drop),
 	      TPTAG_THRPSIZE_REF(tpp->tpp_thrpsize),
 	      TPTAG_THRPRQSIZE_REF(tpp->tpp_thrprqsize),
@@ -1231,6 +1252,10 @@ int tport_set_params(tport_t *self,
   tpp->tpp_sdwn_error = sdwn_error;
   self->tp_reusable = reusable;
   tpp->tpp_stun_server = stun_server;
+  tpp->tpp_pong2ping = pong2ping;
+
+  if (memcmp(tpp0, tpp, sizeof tpp) == 0)
+    return n;
 
   if (tport_is_secondary(self) && 
       self->tp_params == self->tp_pri->pri_primary->tp_params) {

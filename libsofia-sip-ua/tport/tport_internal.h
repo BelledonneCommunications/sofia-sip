@@ -94,6 +94,9 @@ typedef struct {
   unsigned tpp_mtu;		/**< Maximum packet size */
   unsigned tpp_idle;		/**< Allowed connection idle time. */
   unsigned tpp_timeout;		/**< Allowed idle time for message. */
+  unsigned tpp_keepalive;	/**< Keepalive PING interval */
+  unsigned tpp_pingpong;	/**< PONG-to-PING interval */
+
   unsigned tpp_sigcomp_lifetime;  /**< SigComp compartment lifetime  */
   unsigned tpp_thrpsize;	/**< Size of thread pool */
 
@@ -106,6 +109,7 @@ typedef struct {
   unsigned tpp_conn_orient:1;   /**< Connection-orienteded */
   unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
   unsigned tpp_stun_server:1;	/**< If true, use stun server */
+  unsigned tpp_pong2ping:1;	/**< If true, respond with pong to ping */
 
   unsigned :0;
 
