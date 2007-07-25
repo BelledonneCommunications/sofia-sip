@@ -311,6 +311,7 @@ int test_nua_init(struct context *ctx,
 			  NUTAG_INSTANCE(ctx->b.instance),
 			  /* Quicker timeout */
 			  NTATAG_SIP_T1X64(2000),
+			  TPTAG_KEEPALIVE(100),
 			  TAG_IF(ctx->b.logging, TPTAG_LOG(1)),
 			  TAG_END());
   TEST_1(ctx->b.nua);
