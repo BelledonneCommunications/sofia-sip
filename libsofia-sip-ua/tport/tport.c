@@ -47,7 +47,7 @@
 typedef struct tport_nat_s tport_nat_t;
 
 #define SU_WAKEUP_ARG_T         struct tport_s
-#define SU_TIMER_ARG_T          struct tport_master
+#define SU_TIMER_ARG_T          struct tport_s
 #define SU_MSG_ARG_T            union tport_su_msg_arg
 
 #include <sofia-sip/su_wait.h>
@@ -126,6 +126,33 @@ RBTREE_BODIES(su_inline, tprb, tport_t,
 	      TP_LEFT, TP_RIGHT, TP_PARENT,
 	      TP_IS_RED, TP_SET_RED, TP_IS_BLACK, TP_SET_BLACK, TP_COPY_COLOR,
 	      tp_cmp, TP_INSERT, TP_REMOVE);
+
+static void tplist_insert(tport_t **list, tport_t *tp)
+{
+  if (*list == NULL)
+    *list = tp;
+  else
+    tp->tp_right = *list, (*list)->tp_left = tp, *list = tp;
+
+  for (tp = *list; tp; tp = tp->tp_right) {
+    assert(tp->tp_left == NULL || tp == tp->tp_left->tp_right);
+    assert(tp->tp_right == NULL || tp == tp->tp_right->tp_left);
+  }
+}
+
+static void tplist_remove(tport_t **list, tport_t *tp)
+{
+  if (*list == tp) {
+    *list = tp->tp_right; assert(tp->tp_left == NULL);
+  }
+  else if (tp->tp_left) {
+    tp->tp_left->tp_right = tp->tp_right;
+  }
+  if (tp->tp_right) {
+    tp->tp_right->tp_left = tp->tp_left;
+  }
+  TP_REMOVE(tp);
+}
 
 enum {
   /** Default per-thread read queue length */
@@ -304,6 +331,12 @@ int tport_is_clear_to_send(tport_t const *self)
      !self->tp_send_close);
 }
 
+/** Return true if transport has message in send queue. @NEW_1_12_7  */
+int tport_has_queued(tport_t const *self)
+{
+  return self && self->tp_queue && self->tp_queue[self->tp_qhead];
+}
+
 /** MTU for transport  */
 su_inline unsigned tport_mtu(tport_t const *self)
 {
@@ -387,9 +420,6 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 			   tp_name_t const *tpn);
 
 void tport_peer_address(tport_t *self, msg_t *msg);
-static unsigned long tport_now(void);
-
-static void tport_tick(su_root_magic_t *, su_timer_t *, tport_master_t *mr);
 
 static void tport_parse(tport_t *self, int complete, su_time_t now);
 
@@ -410,7 +440,6 @@ static void tport_zap_primary(tport_primary_t *);
 static char *localipname(int pf, char *buf, size_t bufsiz);
 static int getprotohints(su_addrinfo_t *hints,
 			 char const *proto, int flags);
-static void tport_send_queue(tport_t *self);
 
 
 /* Stack class used when transports are being destroyed */
@@ -454,7 +483,6 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tport_master_t *mr;
   tp_name_t *tpn;
   tport_params_t *tpp;
-  unsigned tick;
   ta_list ta;
 
   if (!stack || !tpac || !root) {
@@ -500,20 +528,9 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tport_set_params(mr->mr_master, ta_tags(ta));
   tport_open_log(mr, ta_args(ta));
 
-  tick = 5000; /* For testing, usually 30000 is enough */  
-  if (tpp->tpp_idle < 4 * tick)
-    tick = tpp->tpp_idle / 4;
-  if (tpp->tpp_timeout < 4 * tick)
-    tick = tpp->tpp_timeout / 4;
-  if (tick < 200)
-    tick = 200;
-
 #if HAVE_SOFIA_STUN
   tport_init_stun_server(mr, ta_args(ta));
 #endif
-
-  mr->mr_timer = su_timer_create(su_root_task(root), tick);
-  su_timer_set(mr->mr_timer, tport_tick, mr);
 
   ta_end(ta);
 
@@ -643,8 +660,10 @@ void tport_zap_primary(tport_primary_t *pri)
   if (pri->pri_vtable->vtp_deinit_primary)
     pri->pri_vtable->vtp_deinit_primary(pri);
 
-  while (pri->pri_secondary)
-    tport_zap_secondary(pri->pri_secondary);
+  while (pri->pri_open)
+    tport_zap_secondary(pri->pri_open);
+  while (pri->pri_closed)
+    tport_zap_secondary(pri->pri_closed);
 
   /* We have just a single-linked list for primary transports */
   for (prip = &pri->pri_master->mr_primaries;
@@ -654,7 +673,7 @@ void tport_zap_primary(tport_primary_t *pri)
 
   *prip = pri->pri_next;
 
-  tport_zap_secondary(pri->pri_primary);
+  tport_zap_secondary((tport_t *)pri);
 }
 
 /**Create a primary transport object with socket.
@@ -815,9 +834,8 @@ int tport_set_events(tport_t *self, int set, int clear)
 
 /**Allocate a secondary transport. @internal
  *
- * The function tport_alloc_secondary() creates a secondary transport
- * object. The new transport initally shares parameters structure with the
- * original transport.
+ * Create a secondary transport object. The new transport initally shares
+ * parameters structure with the original transport.
  *
  * @param pri    primary transport
  * @param socket socket for transport
@@ -854,7 +872,10 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
     self->tp_addrinfo->ai_addr = (void *)self->tp_addr;
 
     self->tp_socket = socket;
-    
+
+    self->tp_timer = su_timer_create(su_root_task(mr->mr_root), 0);
+    self->tp_stime = self->tp_ktime = self->tp_rtime = su_now();
+
     if (pri->pri_vtable->vtp_init_secondary &&
 	pri->pri_vtable->vtp_init_secondary(self, socket, accepted,
 					    return_reason) < 0) {
@@ -893,13 +914,18 @@ tport_t *tport_connect(tport_primary_t *pri,
 		       su_addrinfo_t *ai,
 		       tp_name_t const *tpn)
 {
+  tport_t *tp;
+
   if (ai == NULL || ai->ai_addrlen > sizeof (pri->pri_primary->tp_addr))
     return NULL;
 
   if (pri->pri_vtable->vtp_connect)
     return pri->pri_vtable->vtp_connect(pri, ai, tpn);
-  else
-    return tport_base_connect(pri, ai, ai, tpn);
+
+  tp = tport_base_connect(pri, ai, ai, tpn);
+  if (tp)
+    tport_set_secondary_timer(tp);
+  return tp;
 }
 
 /**Create a connected transport object with socket.
@@ -1017,8 +1043,8 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 		tport_hostport(buf, sizeof(buf), (void *)ai->ai_addr, 2),
 		TPN_ARGS(self->tp_name)));
   }
-  
-  tprb_append(&pri->pri_secondary, self);
+
+  tprb_append(&pri->pri_open, self);
 
   return self;
 }
@@ -1032,7 +1058,13 @@ void tport_zap_secondary(tport_t *self)
     return;
 
   /* Remove from rbtree */
-  tprb_remove(&self->tp_pri->pri_secondary, self);
+  if (!tport_is_closed(self))
+    tprb_remove(&self->tp_pri->pri_open, self);
+  else
+    tplist_remove(&self->tp_pri->pri_closed, self);
+
+  if (self->tp_timer)
+    su_timer_destroy(self->tp_timer), self->tp_timer = NULL;
 
   /* Do not deinit primary as secondary! */
   if (tport_is_secondary(self) &&
@@ -1045,7 +1077,7 @@ void tport_zap_secondary(tport_t *self)
 		__func__, (void *)self));
   }
 
-  if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
+  if (tport_has_queued(self)) {
     size_t n = 0, i, N = self->tp_params->tpp_qsize;
     for (i = self->tp_qhead; self->tp_queue[i]; i = (i + 1) % N) {
       msg_destroy(self->tp_queue[i]), self->tp_queue[i] = NULL;
@@ -1056,7 +1088,7 @@ void tport_zap_secondary(tport_t *self)
   }
 
   if (self->tp_pused) {
-    SU_DEBUG_3(("%s(%p): zapped with pending requests\n",
+    SU_DEBUG_3(("%s(%p): zapped while pending\n",
 		__func__, (void *)self));
   }
 
@@ -1091,10 +1123,18 @@ tport_t *tport_ref(tport_t *tp)
 /** Destroy reference to a transport object. */
 void tport_unref(tport_t *tp)
 {
-  if (tp && tp->tp_refs > 0)
-    if (--tp->tp_refs == 0 && tp->tp_params->tpp_idle == 0)
-      if (!tport_is_closed(tp))
-	tport_close(tp);
+  if (tp == NULL || tp->tp_refs <= 0)
+    return;
+  if (--tp->tp_refs > 0)
+    return;
+  
+  if (!tport_is_secondary(tp))
+    return;
+
+  if (tp->tp_params->tpp_idle == 0)
+    tport_close(tp);
+
+  tport_set_secondary_timer(tp);
 }
 
 /** Create a new reference to transport object. */
@@ -1231,10 +1271,10 @@ int tport_set_params(tport_t *self,
   if (n == 0)
     return 0;
 
-  if (tpp->tpp_idle > 0 && tpp->tpp_idle < 2000)
-    tpp->tpp_idle = 2000;
-  if (tpp->tpp_timeout < 1000)
-    tpp->tpp_timeout = 1000;
+  if (tpp->tpp_idle > 0 && tpp->tpp_idle < 100)
+    tpp->tpp_idle = 100;
+  if (tpp->tpp_timeout < 100)
+    tpp->tpp_timeout = 100;
   if (tpp->tpp_drop > 1000)
     tpp->tpp_drop = 1000;
   if (tpp->tpp_thrprqsize > 0)
@@ -1264,6 +1304,9 @@ int tport_set_params(tport_t *self,
   }
 
   memcpy(tpp0, tpp, sizeof tpp);
+
+  if (tport_is_secondary(self))
+    tport_set_secondary_timer(self);
 
   return n;
 }
@@ -2002,13 +2045,19 @@ int tport_addrinfo_copy(su_addrinfo_t *dst, void *addr, socklen_t addrlen,
 
 /** Close a transport. 
  * 
- * The function tport_close() closes a socket associated with a transport
- * object.
+ * Close the socket associated with a transport object. Report an error to
+ * all pending clients, if required. Set/reset timer, too.
  */
 void tport_close(tport_t *self)
 {
-  SU_DEBUG_5(("%s(%p): " TPN_FORMAT "\n", "tport_close", (void *)self,
-	      TPN_ARGS(self->tp_name)));
+  SU_DEBUG_5(("%s(%p): " TPN_FORMAT "\n",
+	      __func__, (void *)self, TPN_ARGS(self->tp_name)));
+
+  if (self->tp_closed || !tport_is_secondary(self))
+    return;
+
+  tprb_remove(&self->tp_pri->pri_open, self);
+  tplist_insert(&self->tp_pri->pri_closed, self);
 
   self->tp_closed = 1;
   self->tp_send_close = 3;
@@ -2039,7 +2088,7 @@ void tport_close(tport_t *self)
 	msg_ref_destroy(self->tp_queue[i]), self->tp_queue[i] = NULL;
     }
   }
-
+  
   self->tp_index = 0;
   self->tp_events = 0;
 }
@@ -2054,16 +2103,23 @@ void tport_close(tport_t *self)
  */
 int tport_shutdown(tport_t *self, int how)
 {
+  int retval;
   if (!tport_is_secondary(self))
     return -1;
-  
+  retval = tport_shutdown0(self, how);
+  tport_set_secondary_timer(self);
+  return retval;
+}
+
+/** Internal shutdown function */
+int tport_shutdown0(tport_t *self, int how)
+{
   SU_DEBUG_7(("%s(%p, %d)\n", __func__, (void *)self, how));
 
   if (!tport_is_tcp(self) ||
-      how < 0 || 
+      how < 0 || how >= 2 ||
       (how == 0 && self->tp_send_close) ||
-      (how == 1 && self->tp_recv_close > 1) || 
-      how >= 2) {
+      (how == 1 && self->tp_recv_close > 1)) {
     tport_close(self);
     return 1;
   }
@@ -2082,7 +2138,7 @@ int tport_shutdown(tport_t *self, int how)
   else if (how == 1) {
     self->tp_send_close = 2;
     tport_set_events(self, 0, SU_WAIT_OUT);
-    if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
+    if (tport_has_queued(self)) {
       unsigned short i, N = self->tp_params->tpp_qsize;
       for (i = 0; i < N; i++) {
 	if (self->tp_queue[i]) {
@@ -2093,108 +2149,143 @@ int tport_shutdown(tport_t *self, int how)
     }
   }
 
+  return 0;
+}
+
+static void tport_secondary_timer(su_root_magic_t *magic,
+				  su_timer_t *t,
+				  tport_t *self)
+{
+  su_time_t now;
+
+  if (tport_is_closed(self)) {
+    if (self->tp_refs == 0)
+      tport_zap_secondary(self);
+    return;
+  }
+
+  now = /* su_timer_expired(t); */ su_now();
+
+  if (self->tp_pri->pri_vtable->vtp_secondary_timer)
+    self->tp_pri->pri_vtable->vtp_secondary_timer(self, now);
+  else
+    tport_base_timer(self, now);
+}
+
+/** Base timer for secondary transports.  
+ *
+ * Closes and zaps unused transports.  Sets the timer again.
+ */
+void tport_base_timer(tport_t *self, su_time_t now)
+{
+  unsigned timeout = self->tp_params->tpp_idle;
+
+  if (timeout != UINT_MAX) {
+    if (self->tp_refs == 0 && 
+	self->tp_msg == NULL && 
+	!tport_has_queued(self) &&
+	su_time_cmp(su_time_add(self->tp_rtime, timeout), now) < 0 &&
+	su_time_cmp(su_time_add(self->tp_stime, timeout), now) < 0) {
+      SU_DEBUG_7(("%s(%p): unused for %d ms,%s zapping\n",
+		  __func__, (void *)self,
+		  timeout, tport_is_closed(self) ? "" : " closing and"));
+      if (!tport_is_closed(self))
+	tport_close(self);
+      tport_zap_secondary(self);
+      return;
+    }
+  }
+
+  tport_set_secondary_timer(self);
+}
+
+/** Set timer for a secondary transport. 
+ *
+ * This function should be called after any network activity:
+ * tport_base_connect(), tport_send_msg(), tport_send_queue(),
+ * tport_recv_data(), tport_shutdown0(), tport_close(),
+ *
+ * @retval 0 always
+ */
+int tport_set_secondary_timer(tport_t *self)
+{
+  su_time_t const infinity = { ULONG_MAX, 999999 };
+  su_time_t target = infinity;
+  char const *why = "not specified";
+  su_timer_f timer = tport_secondary_timer;
+
+  if (!tport_is_secondary(self))
+    return 0;
+
+  if (tport_is_closed(self)) {
+    if (self->tp_refs == 0) {
+      SU_DEBUG_7(("tport(%p): set timer at %u ms because %s\n",
+		  self, 0, "zap"));
+      su_timer_set_interval(self->tp_timer, timer, self, 0);
+    }
+    else
+      su_timer_reset(self->tp_timer);
+
+    return 0;
+  }
+
+  if (self->tp_params->tpp_idle != UINT_MAX) {
+    if (self->tp_refs == 0 && 
+	self->tp_msg == NULL && !tport_has_queued(self)) {
+      if (su_time_cmp(self->tp_stime, self->tp_rtime) < 0) {
+	target = su_time_add(self->tp_rtime, self->tp_params->tpp_idle);
+	why = "idle since recv";
+      }
+      else {
+	target = su_time_add(self->tp_stime, self->tp_params->tpp_idle);
+	why = "idle since send";
+      }
+    }
+  }
+
+  if (self->tp_pri->pri_vtable->vtp_next_secondary_timer)
+    self->tp_pri->pri_vtable->
+      vtp_next_secondary_timer(self, &target, &why);
+
+  if (su_time_cmp(target, infinity)) {
+    SU_DEBUG_7(("tport(%p): set timer at %ld ms because %s\n",
+		(void *)self, su_duration(target, su_now()), why));
+    su_timer_set_at(self->tp_timer, timer, self, target);
+  }
+  else {
+    SU_DEBUG_9(("tport(%p): reset timer\n", (void *)self));
+    su_timer_reset(self->tp_timer);
+  }
 
   return 0;
 }
 
-su_inline
-unsigned long tport_now(void)
-{
-  return su_now().tv_sec;
-}
-
-/** Transport timer function. */
-static
-void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
-{
-  tport_primary_t *dad;
-  tport_t *tp, *tp_next;
-  su_time_t now = su_now();
-  int ts = (int)su_time_ms(now);
-
-  /* Go through all primary transports */
-  for (dad = mr->mr_primaries; dad; dad = dad->pri_next) {
-    if (dad->pri_primary->tp_addrinfo->ai_protocol == IPPROTO_SCTP) {
-      /* Go through all SCTP connections */
-
-      tp = dad->pri_secondary;
-
-      for (tp = tprb_first(tp); tp; tp = tp_next) {
-	tp_next = tprb_succ(tp);
-	if (tp->tp_queue && tp->tp_queue[tp->tp_qhead]) {
-	  SU_DEBUG_9(("tport_tick(%p) - trying to send to %s/%s:%s\n", 
-		      (void *)tp, tp->tp_protoname, tp->tp_host, tp->tp_port));
-	  tport_send_queue(tp);
-	}
-      }      
-    }
-
-    /* Go through all secondary transports with incomplete messages */
-    for (tp = tprb_first(dad->pri_secondary); tp; tp = tp_next) {
-      msg_t *msg = tp->tp_msg;
-      int closed;
-
-      if (msg &&
-	  tp->tp_params->tpp_timeout < INT_MAX && 
-	  (int)tp->tp_params->tpp_timeout < ts - (int)tp->tp_time &&
-	  !msg_is_streaming(msg)) {
-	SU_DEBUG_5(("tport_tick(%p): incomplete message idle for %d ms\n",
-		    (void *)tp, ts - (int)tp->tp_time));
-	msg_set_streaming(msg, 0);
-	msg_set_flags(msg, MSG_FLG_ERROR | MSG_FLG_TRUNC | MSG_FLG_TIMEOUT);
-	tport_deliver(tp, msg, NULL, NULL, now);
-	tp->tp_msg = NULL;
-      }
-
-      tp_next = tprb_succ(tp);
-
-      if (tp->tp_refs)
-	continue;
-
-      closed = tport_is_closed(tp);
-
-      if (!closed &&
-	  !(tp->tp_params->tpp_idle > 0 
-	    && (int)tp->tp_params->tpp_idle < ts - (int)tp->tp_time)) {
-	continue;
-      }
-
-      if (closed) {
-	SU_DEBUG_5(("tport_tick(%p): closed, zapping\n", (void *)tp));
-      }
-      else {
-	SU_DEBUG_5(("tport_tick(%p): unused for %d ms, closing and zapping\n",
-		    (void *)tp, ts - (int)tp->tp_time));
-	if (!tport_is_closed(tp))
-	  tport_close(tp);
-      }
-
-      tport_zap_secondary(tp);
-    }
-  }
-
-  su_timer_set(t, tport_tick, mr);
-}
 
 /** Flush idle connections. */
 int tport_flush(tport_t *tp)
 {
   tport_t *tp_next;
+  tport_primary_t *pri;
 
   if (tp == NULL)
     return -1;
 
+  pri = tp->tp_pri;
+
+  while (pri->pri_closed)
+    tport_zap_secondary(pri->pri_closed);
+
   /* Go through all secondary transports, zap idle ones */
-  for (tp = tprb_first(tp->tp_pri->pri_secondary); tp; tp = tp_next) {
+  for (tp = tprb_first(tp->tp_pri->pri_open); tp; tp = tp_next) {
     tp_next = tprb_succ(tp);
 
     if (tp->tp_refs != 0)
       continue;
 
     SU_DEBUG_1(("tport_flush(%p): %szapping\n",
-				(void *)tp, tport_is_closed(tp) ? "" : "closing and "));
-    if (!tport_is_closed(tp))
-      tport_close(tp);
+		(void *)tp, tport_is_closed(tp) ? "" : "closing and "));
+
+    tport_close(tp);
     tport_zap_secondary(tp);
   }
 
@@ -2503,7 +2594,7 @@ int tport_accept(tport_primary_t *pri, int events)
 	SU_DEBUG_5(("%s(%p): new connection from " TPN_FORMAT "\n", 
 		    __func__,  (void *)self, TPN_ARGS(self->tp_name)));
 
-	tprb_append(&pri->pri_secondary, self);
+	tprb_append(&pri->pri_open, self);
 
 	/* Return succesfully */
 	return 0;
@@ -2581,15 +2672,20 @@ static int tport_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
   su_root_deregister(mr->mr_root, self->tp_index);
   self->tp_index = -1;
   self->tp_events = SU_WAIT_IN | SU_WAIT_ERR | SU_WAIT_HUP;
+
   if (su_wait_create(wait, self->tp_socket, self->tp_events) == -1 ||
       (self->tp_index = su_root_register(mr->mr_root, 
 					 wait, tport_wakeup, self, 0))
       == -1) {
     tport_close(self);
+    tport_set_secondary_timer(self);
+    return 0;
   }
-  else if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
+
+  if (tport_has_queued(self))
     tport_send_event(self);
-  }
+  else
+    tport_set_secondary_timer(self);
 
   return 0;
 }
@@ -2660,8 +2756,12 @@ static int tport_base_wakeup(tport_t *self, int events)
   if ((events & SU_WAIT_HUP) && !self->tp_closed)
     tport_hup_event(self);
 
-  if (error)
+  if (error) {
+    if (self->tp_closed && error == EPIPE)
+      return 0;
+
     tport_error_report(self, error, NULL);
+  }
 
   return 0;
 }
@@ -2693,8 +2793,12 @@ void tport_hup_event(tport_t *self)
     tport_parse(self, 1, now);
   }
 
+  if (!tport_is_secondary(self))
+    return;
+
   /* End of stream */
-  tport_shutdown(self, 0);
+  tport_shutdown0(self, 0);
+  tport_set_secondary_timer(self);
 }
 
 /** Receive data available on the socket.
@@ -2716,18 +2820,15 @@ int tport_recv_data(tport_t *self)
  */
 void tport_recv_event(tport_t *self)
 {
-  su_time_t now;
   int again;
   
   SU_DEBUG_7(("%s(%p)\n", "tport_recv_event", (void *)self));
 
   do {
-    now = su_now(); 
-
     /* Receive data from socket */
     again = tport_recv_data(self);
 
-    self->tp_time = su_time_ms(now);
+    su_time(&self->tp_rtime);
 
 #if HAVE_SOFIA_STUN
     if (again == 3) /* STUN keepalive */
@@ -2739,9 +2840,6 @@ void tport_recv_event(tport_t *self)
 
       if (!su_is_blocking(error)) {
 	tport_error_report(self, error, NULL);
-	/* Failure: shutdown socket */
-	if (tport_has_connection(self))
-	  tport_close(self);
 	return;
       } 
       else {
@@ -2751,17 +2849,22 @@ void tport_recv_event(tport_t *self)
     }
 
     if (again >= 0)
-      tport_parse(self, !again, now);
+      tport_parse(self, !again, self->tp_rtime);
   } 
   while (again > 1);
+
+  if (!tport_is_secondary(self))
+    return;
 
   if (again == 0 && !tport_is_dgram(self)) {
     /* End of stream */
     if (!self->tp_closed) {
       /* Don't shutdown completely if there are queued messages */
-      tport_shutdown(self, self->tp_queue && self->tp_queue[self->tp_qhead] ? 0 : 2);
+      tport_shutdown0(self, tport_has_queued(self) ? 0 : 2);
     }
   }
+
+  tport_set_secondary_timer(self);
 }
 
 /* 
@@ -3199,6 +3302,8 @@ int tport_prepare_and_send(tport_t *self, msg_t *msg,
 			   struct sigcomp_compartment *cc,
 			   unsigned mtu)
 {
+  int retval;
+
   /* Prepare message for sending - i.e., encode it */
   if (msg_prepare(msg) < 0) {
     msg_set_errno(msg, errno);
@@ -3224,7 +3329,11 @@ int tport_prepare_and_send(tport_t *self, msg_t *msg,
     return 0;
   }
   
-  return tport_send_msg(self, msg, tpn, cc);
+  retval = tport_send_msg(self, msg, tpn, cc);
+
+  tport_set_secondary_timer(self);
+
+  return retval;
 }
 
 
@@ -3274,7 +3383,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 
   assert(iovused > 0);
 
-  self->tp_time = su_time_ms(now = su_now());
+  self->tp_stime = self->tp_ktime = now = su_now();
 
   nerror = tport_vsend(self, msg, tpn, iov, iovused, cc);
   SU_DEBUG_9(("tport_vsend returned "MOD_ZD"\n", nerror));
@@ -3319,14 +3428,17 @@ int tport_send_msg(tport_t *self, msg_t *msg,
   self->tp_slogged = NULL;
   self->tp_stats.sent_msgs ++;
 
+  if (!tport_is_secondary(self))
+    return 0;
+
   ai = msg_addrinfo(msg); assert(ai);
   close_after = (ai->ai_flags & TP_AI_CLOSE) == TP_AI_CLOSE;
   sdwn_after = (ai->ai_flags & TP_AI_SHUTDOWN) == TP_AI_SHUTDOWN ||
     self->tp_send_close;
 
   if (close_after || sdwn_after)
-    tport_shutdown(self, close_after ? 2 : 1);
-
+    tport_shutdown0(self, close_after ? 2 : 1);
+  
   return 0;
 }
 
@@ -3548,7 +3660,8 @@ int tport_queue(tport_t *self, msg_t *msg)
   unsigned short N = self->tp_params->tpp_qsize;
   
   SU_DEBUG_7(("tport_queue(%p): queueing %p for %s/%s:%s\n", 
-			  (void *)self, (void *)msg, self->tp_protoname, self->tp_host, self->tp_port));
+	      (void *)self, (void *)msg,
+	      self->tp_protoname, self->tp_host, self->tp_port));
 
   if (self->tp_queue == NULL) {
     assert(N > 0);
@@ -3631,8 +3744,10 @@ int tport_tqsend(tport_t *self, msg_t *msg, msg_t *next,
     if (close_after)
       ai->ai_flags |= TP_AI_CLOSE;
 
-    if (self->tp_queue[qhead] == msg)
+    if (self->tp_queue[qhead] == msg) {
       tport_send_queue(self);
+      tport_set_secondary_timer(self);
+    }
     return 0;
   }
 
@@ -3646,6 +3761,7 @@ int tport_tqsend(tport_t *self, msg_t *msg, msg_t *next,
   if (self->tp_queue[qhead] == msg) {
     /* XXX - what about errors? */
     tport_send_msg(self, msg, self->tp_name, NULL);
+    tport_set_secondary_timer(self);
     if (!self->tp_unsent) {
       msg_destroy(self->tp_queue[qhead]);
       if ((self->tp_queue[qhead] = msg_ref_create(next)))
@@ -3688,21 +3804,18 @@ void tport_send_event(tport_t *self)
   SU_DEBUG_7(("tport_send_event(%p) - ready to send to (%s/%s:%s)\n", 
 	      (void *)self, self->tp_protoname, self->tp_host, self->tp_port));
   tport_send_queue(self);
+  tport_set_secondary_timer(self);
 }
 
 /** Send queued messages */
-static
 void tport_send_queue(tport_t *self)
 {
   msg_t *msg;
   msg_iovec_t *iov;
   size_t i, iovused, n, total;
   unsigned short qhead = self->tp_qhead, N = self->tp_params->tpp_qsize;
-  su_time_t now;
 
   assert(self->tp_queue && self->tp_queue[qhead]);
-
-  self->tp_time = su_time_ms(now = su_now());
 
   msg = self->tp_queue[qhead];
 
@@ -3711,6 +3824,9 @@ void tport_send_queue(tport_t *self)
 
   if (iov && iovused) {
     ssize_t e;
+
+    self->tp_stime = self->tp_ktime = su_now();
+
     e = tport_vsend(self, msg, self->tp_name, iov, iovused, NULL);
 
     if (e == -1)				/* XXX */
@@ -3719,7 +3835,7 @@ void tport_send_queue(tport_t *self)
     n = (size_t)e;
 
     if (n > 0 && self->tp_master->mr_log && self->tp_slogged != msg) {
-      tport_log_msg(self, msg, "send", "to", now);
+      tport_log_msg(self, msg, "send", "to", self->tp_stime);
       self->tp_slogged = msg;
     }
     
@@ -3750,7 +3866,7 @@ void tport_send_queue(tport_t *self)
   while (msg_is_prepared(msg = self->tp_queue[self->tp_qhead = qhead])) {
     /* XXX - what about errors? */
     tport_send_msg(self, msg, self->tp_name, NULL); 
-    if (self->tp_unsent) 
+    if (self->tp_unsent)
       return;
 
     msg = self->tp_queue[qhead]; /* tport_send_msg() may flush queue! */
@@ -3923,7 +4039,7 @@ int tport_pend(tport_t *self,
 {
   tport_pending_t *pending;
 
-  if (self == NULL || callback == NULL || client == NULL)
+  if (self == NULL || callback == NULL)
     return -1;
 
   if (msg == NULL && tport_is_primary(self))
@@ -4137,7 +4253,7 @@ tport_t *tport_next(tport_t const *self)
 tport_t *tport_secondary(tport_t const *self)
 {
   if (tport_is_primary(self))
-    return self->tp_pri->pri_secondary;
+    return self->tp_pri->pri_open;
   else
     return NULL;
 }
@@ -4273,7 +4389,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
     socklen_t sulen;
     su_sockaddr_t su[1];
 
-    sub = self->tp_pri->pri_secondary;
+    sub = self->tp_pri->pri_open;
 
     memset(su, 0, sizeof su);
 
@@ -4387,7 +4503,7 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 
   sa = ai->ai_addr;
 
-  sub = pri->pri_secondary, maybe = NULL;
+  sub = pri->pri_open, maybe = NULL;
 
   comp = tport_canonize_comp(tpn->tpn_comp);
 
