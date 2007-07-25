@@ -262,6 +262,7 @@ int test_reject_b(struct context *ctx)
 /* ------------------------------------------------------------------------ */
 
 int reject_302(CONDITION_PARAMS), reject_305(CONDITION_PARAMS);
+int reject_500_retry_after(CONDITION_PARAMS);
 int redirect_always(CONDITION_PARAMS);
 int reject_604(CONDITION_PARAMS);
 
@@ -270,8 +271,17 @@ int reject_604(CONDITION_PARAMS);
  |                    |
  |-------INVITE------>|
  |<----100 Trying-----|
- |                    |
  |<-----302 Other-----|
+ |--------ACK-------->|
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |<--305 Use Proxy----|
+ |--------ACK-------->|
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |<----500 Retry------|
  |--------ACK-------->|
  |                    |
  |-------INVITE------>|
@@ -330,29 +340,33 @@ int reject_305(CONDITION_PARAMS)
   case nua_callstate_terminated:
     if (call)
       nua_handle_destroy(call->nh), call->nh = NULL;
-    ep->next_condition = reject_604;
+    ep->next_condition = reject_500_retry_after;
     return 0;
   default:
     return 0;
   }
 }
 
-int redirect_always(CONDITION_PARAMS)
+int reject_500_retry_after(CONDITION_PARAMS)
 {
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
 
+  save_event_in_list(ctx, event, ep, call);
+
   if (event == nua_i_invite) {
-    char user[30];
-    sip_contact_t m[1];
-    *m = *ep->contact;
-    snprintf(user, sizeof user, "user-%u", ep->flags.n++);
-    m->m_url->url_user = user;
-    RESPOND(ep, call, nh, SIP_302_MOVED_TEMPORARILY,
-	    SIPTAG_CONTACT(m), TAG_END());
-    nua_handle_destroy(nh);
-    call->nh = NULL;
-    return 1;
+    sip_retry_after_t af[1];
+    sip_retry_after_init(af)->af_delta = 1;
+    RESPOND(ep, call, nh, 500, "Retry After", SIPTAG_RETRY_AFTER(af), TAG_END());
+  }
+  else if (event == nua_i_state) switch (callstate(tags)) {
+  case nua_callstate_terminated:
+    if (call)
+      nua_handle_destroy(call->nh), call->nh = NULL;
+    ep->next_condition = reject_604;
+    break;
+  default:
+    break;
   }
 
   return 0;
@@ -381,6 +395,28 @@ int reject_604(CONDITION_PARAMS)
   }
 }
 
+int redirect_always(CONDITION_PARAMS)
+{
+  if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
+    return 0;
+
+  if (event == nua_i_invite) {
+    char user[30];
+    sip_contact_t m[1];
+    *m = *ep->contact;
+    snprintf(user, sizeof user, "user-%u", ep->flags.n++);
+    m->m_url->url_user = user;
+    RESPOND(ep, call, nh, SIP_302_MOVED_TEMPORARILY,
+	    SIPTAG_CONTACT(m), TAG_END());
+    nua_handle_destroy(nh);
+    call->nh = NULL;
+    return 1;
+  }
+
+  return 0;
+}
+
+
 int test_reject_302(struct context *ctx)
 {
   BEGIN();
@@ -407,18 +443,29 @@ int test_reject_302(struct context *ctx)
 
   /*
    A      reject-3      B
-   |			|
+   |                    |
    |-------INVITE------>|
    |<----100 Trying-----|
-   |			|
+   |                    |
    |<-----302 Other-----|
    |--------ACK-------->|
-   |			|
+   |                    |
    |-------INVITE------>|
    |<----100 Trying-----|
-   |			|
+   |<---305 Use Proxy---|
+   |--------ACK-------->|
+   |                    |
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |<-----500 Retry-----|
+   |--------ACK-------->|
+   |                    |
+   |                    |
+   |-------INVITE------>|
+   |<----100 Trying-----|
+   |                    |
    |<----180 Ringing----|
-   |			|
+   |                    |
    |<---604 Nowhere-----|
    |--------ACK-------->|
   */
@@ -445,6 +492,12 @@ int test_reject_302(struct context *ctx)
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
   TEST_1(is_offer_sent(e->data->e_tags));
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 100);
+  TEST(sip_object(e->data->e_msg)->sip_status->st_status, 500);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(is_offer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
   TEST(e->data->e_status, 180);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_proceeding); /* PROCEEDING */
@@ -460,6 +513,13 @@ int test_reject_302(struct context *ctx)
    INIT -(S1)-> RECEIVED -(S2)-> EARLY -(S6b)-> TERMINATED
   */
   TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_invite);
   TEST(e->data->e_status, 100);
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
