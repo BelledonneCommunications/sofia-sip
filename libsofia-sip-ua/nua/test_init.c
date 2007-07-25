@@ -148,6 +148,7 @@ int test_nua_init(struct context *ctx,
 			      AUTHTAG_QOP("auth-int"),
 			      AUTHTAG_ALGORITHM("md5"),
 			      AUTHTAG_NEXT_EXPIRES(60),
+			      AUTHTAG_MAX_NCOUNT(1),
 			      TAG_END());
 
       ctx->proxy_tests = 1;

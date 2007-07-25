@@ -332,7 +332,6 @@ int test_prack_auth(struct context *ctx)
   struct event *e, *ep, *ei;
   sip_t *sip;
   sip_proxy_authenticate_t *au;
-  char const *md5 = NULL, *md5sess = NULL;
 
   if (print_headings)
     printf("TEST NUA-10.1.3: Call with 100rel, PRACK is challenged\n");
@@ -396,10 +395,6 @@ int test_prack_auth(struct context *ctx)
   TEST(e->data->e_status, 407);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(au = sip->sip_proxy_authenticate); 
-  TEST_1(auth_get_params(NULL, au->au_params, 
-			 "algorithm=md5", &md5,
-			 "algorithm=md5-sess", &md5sess,
-			 NULL) > 0);
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
   TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
@@ -417,16 +412,7 @@ int test_prack_auth(struct context *ctx)
   ep = event_by_type(e->next, nua_r_prack);
 
   TEST_1(e = ep); TEST_E(e->data->e_event, nua_r_prack);
-  if (e->data->e_status != 200 && md5 && !md5sess) {
-    if (e->data->e_status != 100) {
-      TEST(e->data->e_status, 407);
-    }
-
-    TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
-    TEST(callstate(e->data->e_tags), nua_callstate_proceeding);
-    TEST_1(!is_answer_recv(e->data->e_tags));
-    TEST_1(!is_offer_sent(e->data->e_tags));
-
+  if (e->data->e_status == 100 || e->data->e_status == 407) {
     TEST_1(e = ep = event_by_type(e->next, nua_r_prack));
   }
   TEST_E(e->data->e_event, nua_r_prack);
