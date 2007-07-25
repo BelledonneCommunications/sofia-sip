@@ -724,7 +724,7 @@ tport_primary_t *tport_listen(tport_master_t *mr,
   pri->pri_primary->tp_has_connection = 0;
 
   SU_DEBUG_5(("%s(%p): %s " TPN_FORMAT "\n", 
-			  __func__, (void *)pri, "listening at",
+	      __func__, (void *)pri, "listening at",
 	      TPN_ARGS(pri->pri_primary->tp_name)));
 
   return pri;
@@ -836,7 +836,8 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
   self = su_home_clone(mr->mr_home, pri->pri_vtable->vtp_secondary_size);
 
   if (self) {
-	  SU_DEBUG_7(("%s(%p): new secondary tport %p\n", __func__, (void *)pri, (void *)self));
+    SU_DEBUG_7(("%s(%p): new secondary tport %p\n", 
+		__func__, (void *)pri, (void *)self));
 
     self->tp_refs = -1;			/* Freshly allocated  */
     self->tp_master = mr;
@@ -961,14 +962,14 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 
     /* Bind this socket to same IP address as the primary server socket */
     if (getsockname(server_socket, &susa.su_sa, &susalen) < 0) {
-      SU_DEBUG_3(("tport_connect: getsockname(): %s\n", 
-		  su_strerror(su_errno())));
+      SU_DEBUG_3(("%s(%p): getsockname(): %s\n", 
+		  __func__, (void *)self, su_strerror(su_errno())));
     }
     else {
       susa.su_port = 0;
       if (bind(s, &susa.su_sa, susalen) < 0) {
-	SU_DEBUG_3(("tport_connect: bind(local-ip): %s\n", 
-		    su_strerror(su_errno())));
+	SU_DEBUG_3(("%s(%p): bind(local-ip): %s\n", 
+		    __func__, (void *)self, su_strerror(su_errno())));
       }
     }
   }
@@ -1005,11 +1006,11 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 
   if (ai == real_ai) {
     SU_DEBUG_5(("%s(%p): %s to " TPN_FORMAT "\n", 
-				__func__, (void *)self, what, TPN_ARGS(self->tp_name)));
+		__func__, (void *)self, what, TPN_ARGS(self->tp_name)));
   }
   else {
     SU_DEBUG_5(("%s(%p): %s via %s to " TPN_FORMAT "\n",
-				__func__, (void *)self, what,
+		__func__, (void *)self, what,
 		tport_hostport(buf, sizeof(buf), (void *)ai->ai_addr, 2),
 		TPN_ARGS(self->tp_name)));
   }
@@ -1038,7 +1039,7 @@ void tport_zap_secondary(tport_t *self)
   if (self->tp_msg) {
     msg_destroy(self->tp_msg), self->tp_msg = NULL;
     SU_DEBUG_3(("%s(%p): zapped partially received message\n", 
-				__func__, (void *)self));
+		__func__, (void *)self));
   }
 
   if (self->tp_queue && self->tp_queue[self->tp_qhead]) {
@@ -1048,11 +1049,12 @@ void tport_zap_secondary(tport_t *self)
       n++;
     }
     SU_DEBUG_3(("%s(%p): zapped %lu queued messages\n", 
-				__func__, (void *)self, (LU)n));
+		__func__, (void *)self, (LU)n));
   }
 
   if (self->tp_pused) {
-	  SU_DEBUG_3(("%s(%p): zapped with pending requests\n", __func__, (void *)self));
+    SU_DEBUG_3(("%s(%p): zapped with pending requests\n",
+		__func__, (void *)self));
   }
 
   mr = self->tp_master;
@@ -1441,7 +1443,8 @@ int tport_bind_client(tport_master_t *mr,
   if (public == tport_type_local)
     public = tport_type_client;
   
-  SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n", __func__, (void *)mr, TPN_ARGS(tpn)));
+  SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n",
+	      __func__, (void *)mr, TPN_ARGS(tpn)));
 
   memset(tpn0, 0, sizeof(tpn0));
 
@@ -1503,7 +1506,8 @@ int tport_bind_server(tport_master_t *mr,
 
   (void)hostname;
   
-  SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n", __func__, (void *)mr, TPN_ARGS(tpn)));
+  SU_DEBUG_5(("%s(%p) to " TPN_FORMAT "\n",
+	      __func__, (void *)mr, TPN_ARGS(tpn)));
 
   if (tpn->tpn_host == NULL || strcmp(tpn->tpn_host, tpn_any) == 0) {
     /* Use a local IP address */
@@ -1618,7 +1622,7 @@ int tport_bind_server(tport_master_t *mr,
       break;
 
     SU_DEBUG_3(("%s(%p): cannot bind all transports to port %u, trying %u\n", 
-				__func__, (void *)mr, old, port));
+		__func__, (void *)mr, old, port));
   }
 
   tport_freeaddrinfo(res);
@@ -1723,7 +1727,8 @@ int tport_server_addrinfo(tport_master_t *mr,
     int error = tport_getaddrinfo(host, service, hints, return_addrinfo);
     if (error || !*return_addrinfo) {
       SU_DEBUG_3(("%s(%p): su_getaddrinfo(%s, %s) for %s: %s\n", 
-				  __func__, (void *)mr, host ? host : "\"\"", service, protocol,
+		  __func__, (void *)mr,
+		  host ? host : "\"\"", service, protocol,
 		  su_gai_strerror(error)));
       return su_seterrno(error != EAI_MEMORY ? ENOENT : ENOMEM);
     }
@@ -1774,13 +1779,13 @@ tport_get_local_addrinfo(tport_master_t *mr,
   if (error) {
 #if SU_HAVE_IN6
     SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
-				__func__, (void *)mr, 
+		__func__, (void *)mr, 
 		family == AF_INET6 ? "ip6" 
 		: family == AF_INET ? "ip4" : "ip",
 		su_gli_strerror(error)));
 #else
     SU_DEBUG_3(("%s(%p): su_getlocalinfo() for %s address: %s\n", 
-				__func__, (void *)mr, 
+		__func__, (void *)mr, 
 		family == AF_INET ? "ip4" : "ip",
 		su_gli_strerror(error)));
 #endif
@@ -2027,7 +2032,7 @@ int tport_shutdown(tport_t *self, int how)
   if (!tport_is_secondary(self))
     return -1;
   
-  SU_DEBUG_7(("%s(%p, %d)\n", "tport_shutdown", (void *)self, how));
+  SU_DEBUG_7(("%s(%p, %d)\n", __func__, (void *)self, how));
 
   if (!tport_is_tcp(self) ||
       how < 0 || 
@@ -2093,7 +2098,7 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
 	tp_next = tprb_succ(tp);
 	if (tp->tp_queue && tp->tp_queue[tp->tp_qhead]) {
 	  SU_DEBUG_9(("tport_tick(%p) - trying to send to %s/%s:%s\n", 
-				  (void *)tp, tp->tp_protoname, tp->tp_host, tp->tp_port));
+		      (void *)tp, tp->tp_protoname, tp->tp_host, tp->tp_port));
 	  tport_send_queue(tp);
 	}
       }      
@@ -2109,7 +2114,7 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
 	  (int)tp->tp_params->tpp_timeout < ts - (int)tp->tp_time &&
 	  !msg_is_streaming(msg)) {
 	SU_DEBUG_5(("tport_tick(%p): incomplete message idle for %d ms\n",
-				(void *)tp, ts - (int)tp->tp_time));
+		    (void *)tp, ts - (int)tp->tp_time));
 	msg_set_streaming(msg, 0);
 	msg_set_flags(msg, MSG_FLG_ERROR | MSG_FLG_TRUNC | MSG_FLG_TIMEOUT);
 	tport_deliver(tp, msg, NULL, NULL, now);
@@ -2130,10 +2135,11 @@ void tport_tick(su_root_magic_t *magic, su_timer_t *t, tport_master_t *mr)
       }
 
       if (closed) {
-		  SU_DEBUG_5(("tport_tick(%p): closed, zapping\n", (void *)tp));
-      } else {
+	SU_DEBUG_5(("tport_tick(%p): closed, zapping\n", (void *)tp));
+      }
+      else {
 	SU_DEBUG_5(("tport_tick(%p): unused for %d ms, closing and zapping\n",
-				(void *)tp, ts - (int)tp->tp_time));
+		    (void *)tp, ts - (int)tp->tp_time));
 	if (!tport_is_closed(tp))
 	  tport_close(tp);
       }
@@ -2401,10 +2407,10 @@ void tport_error_report(tport_t *self, int errcode,
   }
   else {
     if (tport_is_primary(self))
-		SU_DEBUG_3(("%s(%p): %s (with %s)\n", __func__, (void *)self, 
+      SU_DEBUG_3(("%s(%p): %s (with %s)\n", __func__, (void *)self, 
 		  errmsg, self->tp_protoname));
     else
-		SU_DEBUG_3(("%s(%p): %s (with %s/%s:%s)\n", __func__, (void *)self, 
+      SU_DEBUG_3(("%s(%p): %s (with %s/%s:%s)\n", __func__, (void *)self, 
 		  errmsg, self->tp_protoname, self->tp_host, self->tp_port));
   }
 
@@ -2470,7 +2476,7 @@ int tport_accept(tport_primary_t *pri, int events)
 
       if (tport_setname(self, pri->pri_protoname, ai, NULL) != -1) {
 	SU_DEBUG_5(("%s(%p): new connection from " TPN_FORMAT "\n", 
-				__func__,  (void *)self, TPN_ARGS(self->tp_name)));
+		    __func__,  (void *)self, TPN_ARGS(self->tp_name)));
 
 	tprb_append(&pri->pri_secondary, self);
 
@@ -2574,7 +2580,7 @@ static int tport_wakeup_pri(su_root_magic_t *m, su_wait_t *w, tport_t *self)
 #endif
 
   SU_DEBUG_7(("%s(%p): events%s%s%s%s%s%s\n", 
-			  "tport_wakeup_pri", (void *)self,
+	      "tport_wakeup_pri", (void *)self,
 	      events & SU_WAIT_IN ? " IN" : "",
 	      SU_WAIT_ACCEPT != SU_WAIT_IN && 
 	      (events & SU_WAIT_ACCEPT) ? " ACCEPT" : "",
@@ -2600,7 +2606,7 @@ static int tport_wakeup(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
 #endif
 
   SU_DEBUG_7(("%s(%p): events%s%s%s%s%s\n", 
-			  "tport_wakeup", (void *)self,
+	      "tport_wakeup", (void *)self,
 	      events & SU_WAIT_IN ? " IN" : "",
 	      events & SU_WAIT_OUT ? " OUT" : "",
 	      events & SU_WAIT_HUP ? " HUP" : "",
@@ -2654,7 +2660,7 @@ int tport_continue(tport_t *self)
  */
 void tport_hup_event(tport_t *self)
 {
-	SU_DEBUG_7(("%s(%p)\n", __func__, (void *)self));
+  SU_DEBUG_7(("%s(%p)\n", __func__, (void *)self));
 
   if (self->tp_msg) {
     su_time_t now = su_now();
@@ -2757,7 +2763,7 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
 
     if (msg_get_flags(msg, MSG_FLG_TOOLARGE))
       SU_DEBUG_3(("%s(%p): too large message from " TPN_FORMAT "\n",
-				  __func__, (void *)self, TPN_ARGS(self->tp_name)));
+		  __func__, (void *)self, TPN_ARGS(self->tp_name)));
 
     /* Do not try to read anymore from this connection? */
     if (tport_is_stream(self) && 
@@ -2934,7 +2940,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
     if (!(*in_out_msg = msg = tport_msg_alloc(self, N))) {
       SU_DEBUG_7(("%s(%p): cannot allocate msg for "MOD_ZU" bytes "
 		  "from (%s/%s:%s)\n", 
-				  __func__, (void *)self, N, 
+		  __func__, (void *)self, N, 
 		  self->tp_protoname, self->tp_host, self->tp_port));
       return -1;
     }
@@ -2953,7 +2959,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
     int err = su_errno();
     SU_DEBUG_7(("%s(%p): cannot get msg %p buffer for "MOD_ZU" bytes "
 		"from (%s/%s:%s): %s\n", 
-				__func__, (void *)self, (void *)msg, N, 
+		__func__, (void *)self, (void *)msg, N, 
 		self->tp_protoname, self->tp_host, self->tp_port,
 		su_strerror(err)));
     su_seterrno(err);
@@ -2965,7 +2971,7 @@ ssize_t tport_recv_iovec(tport_t const *self,
   SU_DEBUG_7(("%s(%p) msg %p from (%s/%s:%s) has "MOD_ZU" bytes, "
 	      "veclen = "MOD_ZD"\n",
               __func__, (void *)self, 
-			  (void *)msg, self->tp_protoname, self->tp_host, self->tp_port, 
+	      (void *)msg, self->tp_protoname, self->tp_host, self->tp_port, 
 	      N, veclen));
 
   for (i = 0; veclen > 1 && i < veclen; i++) {
@@ -3070,7 +3076,7 @@ tport_t *tport_tsend(tport_t *self,
   if (tpn->tpn_comp) {
     ai->ai_flags |= TP_AI_COMPRESSED;
     SU_DEBUG_9(("%s: compressed msg(%p) with %s\n", 
-				__func__, (void *)msg, tpn->tpn_comp));
+		__func__, (void *)msg, tpn->tpn_comp));
   } 
 
   if (!tpn->tpn_comp || cc == NONE)
@@ -3272,7 +3278,7 @@ int tport_send_msg(tport_t *self, msg_t *msg,
 	char const *comp = tpn->tpn_comp;
 	
 	SU_DEBUG_1(("tport(%p): send truncated for %s/%s:%s%s%s\n", 
-				(void *)self, tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port,
+		    (void *)self, tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port,
 		    comp ? ";comp=" : "", comp ? comp : ""));
 
 	su_seterrno(EIO);
@@ -3339,7 +3345,7 @@ ssize_t tport_vsend(tport_t *self,
       tpn = self->tp_name;
     
     SU_DEBUG_7(("tport_vsend(%p): "MOD_ZU" bytes of "MOD_ZU" to %s/%s:%s%s\n", 
-				(void *)self, n, m, tpn->tpn_proto, tpn->tpn_host, 
+		(void *)self, n, m, tpn->tpn_proto, tpn->tpn_host, 
 		tpn->tpn_port, 
 		(ai->ai_flags & TP_AI_COMPRESSED) ? ";comp=sigcomp" : ""));
   }
@@ -3370,7 +3376,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
 
   if (self->tp_addrinfo->ai_family == AF_INET) {
     SU_DEBUG_3(("tport_vsend(%p): %s with (s=%d %s/%s:%s%s)\n", 
-				(void *)self, su_strerror(error), (int)self->tp_socket, 
+		(void *)self, su_strerror(error), (int)self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp));
   }
 #if SU_HAVE_IN6
@@ -3378,7 +3384,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
     su_sockaddr_t const *su = (su_sockaddr_t const *)ai->ai_addr;
     SU_DEBUG_3(("tport_vsend(%p): %s with "
 		"(s=%d, IP6=%s/%s:%s%s (scope=%i) addrlen=%u)\n", 
-				(void *)self, su_strerror(error), (int)self->tp_socket, 
+		(void *)self, su_strerror(error), (int)self->tp_socket, 
 		tpn->tpn_proto, tpn->tpn_host, tpn->tpn_port, comp,
 		su->su_scope_id, (unsigned)ai->ai_addrlen));
   }
@@ -3386,7 +3392,7 @@ int tport_send_error(tport_t *self, msg_t *msg,
   else {
     SU_DEBUG_3(("\ttport_vsend(%p): %s with "
 		"(s=%d, AF=%u addrlen=%u)%s\n", 
-				(void *)self, su_strerror(error), 
+		(void *)self, su_strerror(error), 
 		(int)self->tp_socket, ai->ai_family, (unsigned)ai->ai_addrlen, comp));
   }
 
@@ -3655,7 +3661,7 @@ void tport_send_event(tport_t *self)
   assert(tport_is_connection_oriented(self));
   
   SU_DEBUG_7(("tport_send_event(%p) - ready to send to (%s/%s:%s)\n", 
-			  (void *)self, self->tp_protoname, self->tp_host, self->tp_port));
+	      (void *)self, self->tp_protoname, self->tp_host, self->tp_port));
   tport_send_queue(self);
 }
 
@@ -3899,7 +3905,7 @@ int tport_pend(tport_t *self,
     return -1;
 
   SU_DEBUG_7(("tport_pend(%p): pending %p for %s/%s:%s (already %u)\n", 
-			  (void *)self, (void *)msg, 
+	      (void *)self, (void *)msg, 
 	      self->tp_protoname, self->tp_host, self->tp_port,
 	      self->tp_pused));
 
@@ -3954,13 +3960,15 @@ int tport_release(tport_t *self,
 
   if (pending->p_client != client || 
       pending->p_msg != msg) {
-	  SU_DEBUG_1(("tport_release(%p): %u %p by %p not pending\n", (void *)self, 
-				  pendd, (void *)msg, (void *)client));
+	  SU_DEBUG_1(("%s(%p): %u %p by %p not pending\n",
+		      __func__, (void *)self, 
+		      pendd, (void *)msg, (void *)client));
     return su_seterrno(EINVAL), -1;
   }
   
-  SU_DEBUG_7(("tport_release(%p): %p by %p with %p%s\n", 
-			  (void *)self, (void *)msg, (void *)client, (void *)reply,
+  SU_DEBUG_7(("%s(%p): %p by %p with %p%s\n",
+	      __func__, (void *)self,
+	      (void *)msg, (void *)client, (void *)reply,
 	      still_pending ? " (preliminary)" : ""));
 
   /* sigcomp can here associate request (msg) with response (reply) */
@@ -4302,7 +4310,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
     }
     else {
       SU_DEBUG_7(("tport(%p): EXPENSIVE unresolved " TPN_FORMAT "\n",
-				  (void *)self, TPN_ARGS(tpn)));
+		  (void *)self, TPN_ARGS(tpn)));
 
       sub = tprb_first(sub);
     }
@@ -4322,11 +4330,11 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
 	if ((socklen_t)sub->tp_addrlen != sulen ||
 	    memcmp(sub->tp_addr, su, sulen)) {
 	  SU_DEBUG_7(("tport(%p): not found by name " TPN_FORMAT "\n",
-				  (void *)self, TPN_ARGS(tpn)));
+		      (void *)self, TPN_ARGS(tpn)));
 	  break;
 	}
 	SU_DEBUG_7(("tport(%p): found %p by name " TPN_FORMAT "\n",
-				(void *)self, (void *)sub, TPN_ARGS(tpn)));
+		    (void *)self, (void *)sub, TPN_ARGS(tpn)));
       }
       else if ((strcasecmp(canon, sub->tp_canon) &&
 		strcasecmp(host, sub->tp_host)) ||
@@ -4407,10 +4415,10 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
 
   if (sub)
     SU_DEBUG_7(("%s(%p): found %p by name " TPN_FORMAT "\n",
-				__func__, (void *)pri, (void *)sub, TPN_ARGS(tpn)));
+		__func__, (void *)pri, (void *)sub, TPN_ARGS(tpn)));
   else
     SU_DEBUG_7(("%s(%p): not found by name " TPN_FORMAT "\n",
-				__func__, (void *)pri, TPN_ARGS(tpn)));
+		__func__, (void *)pri, TPN_ARGS(tpn)));
 
   return (tport_t *)sub;
 }
