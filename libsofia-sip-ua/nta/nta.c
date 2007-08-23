@@ -7769,11 +7769,11 @@ void outgoing_destroy(nta_outgoing_t *orq)
   if (orq->orq_terminated || orq->orq_default) {
     outgoing_free(orq);
   }
-  /* We have to handle 200 OK statelessly => 
-     kill transaction immediately */
+  /* Application is expected to handle 200 OK statelessly
+     => kill transaction immediately */
   else if (orq->orq_method == sip_method_invite && !orq->orq_completed
-	   /* (unless we have to wait to send CANCEL) */
-	   && !orq->orq_cancel) {
+	   /* (unless we the transaction has been canceled) */
+	   && !orq->orq_canceled) {
     orq->orq_destroyed = 1;
     outgoing_terminate(orq);
   }
