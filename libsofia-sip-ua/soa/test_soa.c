@@ -1419,6 +1419,11 @@ int test_asynch_offer_answer(struct context *ctx)
 int test_deinit(struct context *ctx)
 {
   BEGIN();
+
+  su_root_destroy(ctx->root), ctx->root = NULL;
+  soa_destroy(ctx->a);
+  soa_destroy(ctx->b);
+  
   END();
 }
 
