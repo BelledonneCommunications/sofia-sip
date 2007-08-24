@@ -180,11 +180,6 @@ typedef int nta_request_f(nta_leg_magic_t *lmagic,
 			  nta_incoming_t *irq, 
 			  sip_t const *sip);
 
-typedef int nta_leg_response_f(nta_leg_magic_t *lmagic, 
-			       nta_leg_t *leg,
-			       msg_t *msg, 
-			       sip_t *sip);
-
 SOFIAPUBFUN 
 nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,  
 			   nta_request_f *req_callback,
@@ -250,10 +245,6 @@ SOFIAPUBFUN sip_replaces_t *nta_leg_make_replaces(nta_leg_t *leg,
 /** Get dialog leg by Replaces header */
 SOFIAPUBFUN
 nta_leg_t *nta_leg_by_replaces(nta_agent_t *, sip_replaces_t const *);
-
-/** Bind response callback to leg */
-SOFIAPUBFUN void nta_leg_bind_response(nta_leg_t *leg,
-				       nta_leg_response_f *callback);
 
 /* ----------------------------------------------------------------------
  * 6) Prototypes for incoming transactions 

@@ -2671,21 +2671,7 @@ void agent_recv_response(nta_agent_t *agent,
     outgoing_default_recv(orq, status, msg, sip);
     return;
   }
-
-  /* Try to match response with a dialog */
-  {
-    nta_leg_t *leg = leg_find(agent, NULL, NULL, 
-			      sip->sip_call_id,
-			      sip->sip_to->a_tag, sip->sip_to->a_url, 
-			      sip->sip_from->a_tag, sip->sip_from->a_url);
-    if (leg && leg->leg_response_callback) {
-      int result = leg->leg_response_callback(leg->leg_magic, leg, msg, sip);
-      if (result != -1)
-	return;
-    }
-  }
-
-  if (agent->sa_callback) {
+  else if (agent->sa_callback) {
     SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "to message callback"));
     /*
      * Store message and transport to hook for the duration of the callback
@@ -2701,9 +2687,9 @@ void agent_recv_response(nta_agent_t *agent,
       /* Exactly one Via header, belonging to us */
       && sip->sip_via && !sip->sip_via->v_next 
       && agent_has_via(agent, sip->sip_via)) {
-    agent->sa_stats->as_trless_200++;    /* Orphan 200 Ok to INVITE. */
+    agent->sa_stats->as_trless_200++;
     if (agent->sa_is_a_uas) {
-      /* ACK and BYE it */
+      /* Orphan 200 Ok to INVITE. ACK and BYE it */
       SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "is ACK&BYE"));
       if (nta_msg_ackbye(agent, msg) != -1)
 	return;
@@ -3468,7 +3454,6 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   char const *method = NULL;
   char const *i_str = NULL, *to_str = NULL, *from_str = NULL, *cs_str = NULL;
   url_string_t const *url_string = NULL;
-  nta_leg_response_f *response_callback = NULL;
   int no_dialog = 0;
   unsigned rseq = 0;
   /* RFC 3261 section 12.2.1.1 */
@@ -3499,7 +3484,6 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
 	  NTATAG_REMOTE_CSEQ_REF(rseq),
 	  SIPTAG_CSEQ_REF(cs),
 	  SIPTAG_CSEQ_STR_REF(cs_str),
-	  NTATAG_RESPONSE_CALLBACK_REF(response_callback),
 	  TAG_END());
 
   ta_end(ta);
@@ -3609,8 +3593,6 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
     }
 
     leg->leg_hash = leg->leg_id->i_hash;
-
-    leg->leg_response_callback = response_callback;
   }
   else if (url) {
     /* This is "default leg" with a destination URL. */
@@ -3778,30 +3760,6 @@ void nta_leg_bind(nta_leg_t *leg,
     leg->leg_magic = magic;
   }
 }
-
-/**Bind a response callback function to a leg object.
- *
- * Store the response callback function to a leg object. The response
- * callback is used to process incoming responses that do not match an
- * ongoing client transaction but match the dialog. The 2XX responses to the
- * INVITE can be processed here. If the ACK transaction has timed out, such
- * a response is received most probably because the ACK is lost in transit
- * and the SIP session should be terminated.
- *
- * @param leg      leg object
- * @param callback new callback function (or NULL if no callback is desired)
- *
- * @sa NTATAG_RESPONSE_CALLBACK()
- *
- * @NEW_1_12_7
- */
-void nta_leg_bind_response(nta_leg_t *leg, nta_leg_response_f *callback)
-{
-  if (leg) {
-    leg->leg_response_callback = callback;
-  }
-}
-
 
 /** Add a local tag to the leg.
  *

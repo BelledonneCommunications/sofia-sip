@@ -1106,32 +1106,6 @@ NTA_DLL extern tag_typedef_t ntatag_method;
 NTA_DLL extern tag_typedef_t ntatag_method_ref;
 #define NTATAG_METHOD_REF(x)      ntatag_method_ref, tag_str_vr(&(x))
 
-NTA_DLL extern tag_typedef_t ntatag_response_callback;
-/**Provide response callback to a dialog leg.
- *
- * The response callback is invoked when a response is received that does
- * not match an existing client transaction but which does match the dialog.
- *
- * @par Used with
- *    nta_leg_tcreate() \n
- *
- * @par Parameter type
- *    pointer to #nta_leg_response_f.
- *
- * @par Values
- *    Pointer to a function processing orphan responses or NULL.
- *
- * @sa nta_leg_bind_response(), nta_msg_ackbye()
- *
- * @NEW_1_12_7
- */
-#define NTATAG_RESPONSE_CALLBACK(x) ntatag_response_callback, tag_cptr_v((x))
-
-NTA_DLL extern tag_typedef_t ntatag_response_callback_ref;
-#define NTATAG_RESPONSE_CALLBACK_REF(x) \
-  ntatag_response_callback_ref, tag_cptr_vr(&(x), (x))
-
-
 NTA_DLL extern tag_typedef_t ntatag_cancel_487;
 /** When a CANCEL is received, automatically return 487 response to original request.
  *
