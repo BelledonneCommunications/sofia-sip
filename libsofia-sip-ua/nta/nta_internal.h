@@ -361,6 +361,8 @@ struct nta_leg_s
   nta_request_f    *leg_callback;
   nta_leg_magic_t  *leg_magic;
   nta_agent_t      *leg_agent;
+  nta_leg_response_f *leg_response_callback;
+
   /** Leg URL.
    *
    * This is the URL used to match incoming requests.

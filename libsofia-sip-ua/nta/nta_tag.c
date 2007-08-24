@@ -60,6 +60,7 @@ tag_typedef_t ntatag_target = SIPHDRTAG_NAMED_TYPEDEF(target, contact);
 tag_typedef_t ntatag_aliases = SIPHDRTAG_NAMED_TYPEDEF(aliases, contact);
 
 tag_typedef_t ntatag_method = STRTAG_TYPEDEF(method);
+tag_typedef_t ntatag_response_callback = PTRTAG_TYPEDEF(response_callback);
 tag_typedef_t ntatag_branch_key = STRTAG_TYPEDEF(branch_key);
 tag_typedef_t ntatag_ack_branch = STRTAG_TYPEDEF(ack_branch);
 tag_typedef_t ntatag_comp = CSTRTAG_TYPEDEF(comp);
