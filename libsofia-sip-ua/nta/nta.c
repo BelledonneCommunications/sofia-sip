@@ -7013,6 +7013,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   orq->orq_via_branch = branch;
 
   if (orq->orq_method == sip_method_ack) {
+    /* Find the original INVITE which we are ACKing */
     if (ack_branch != NULL && ack_branch != NONE) {
       if (strncasecmp(ack_branch, "branch=", 7) == 0)
 	orq->orq_branch = su_strdup(home, ack_branch);
@@ -7319,16 +7320,11 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
   if (retransmit)
     return;
 
-  /* Set timers */
-  if (orq->orq_method == sip_method_ack) {
-    /* ACK */
-    outgoing_complete(orq); /* Timer K */
-    return;
-  }
-
   outgoing_trying(orq);		/* Timer B / F */
 
-  if (!orq->orq_reliable)
+  if (orq->orq_method == sip_method_ack)
+    ;
+  else if (!orq->orq_reliable)
     outgoing_set_timer(orq, agent->sa_t1); /* Timer A/E */
   else if (orq->orq_try_tcp_instead && !tport_is_connected(tp))
     outgoing_set_timer(orq, agent->sa_t4); /* Timer N3 */
@@ -7933,10 +7929,14 @@ size_t outgoing_timer_bf(outgoing_queue_t *q,
     timeout++;
     
     SU_DEBUG_5(("nta: timer %s fired, %s %s (%u)\n",
-		timer, "timeout", 
+		timer, 
+		orq->orq_method != sip_method_ack ? "timeout" : "terminating",
 		orq->orq_method_name, orq->orq_cseq->cs_seq));
 
-    outgoing_timeout(orq, now);
+    if (orq->orq_method != sip_method_ack)
+      outgoing_timeout(orq, now);
+    else
+      outgoing_terminate(orq);
 
     assert(q->q_head != orq || orq->orq_timeout - now > 0);
   }
@@ -8008,10 +8008,7 @@ int outgoing_complete(nta_outgoing_t *orq)
 
   outgoing_reset_timer(orq); /* Timer A/E */
 
-  if (orq->orq_stateless)
-    return outgoing_terminate(orq);
-
-  if (orq->orq_reliable && orq->orq_method != sip_method_ack)
+  if (orq->orq_stateless || orq->orq_reliable)
     return outgoing_terminate(orq);
 
   if (orq->orq_method == sip_method_invite) {
@@ -8613,7 +8610,7 @@ int outgoing_reply(nta_outgoing_t *orq, int status, char const *phrase,
 		  (void *)orq, status, phrase));
     orq->orq_status = status;
     if (orq->orq_queue == NULL)
-      outgoing_complete(orq);	/* Timer D/K */
+      outgoing_trying(orq);	/* Timer F */
     return 0;
   }
     
