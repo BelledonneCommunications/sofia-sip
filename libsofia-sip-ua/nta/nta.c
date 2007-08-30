@@ -2688,12 +2688,14 @@ void agent_recv_response(nta_agent_t *agent,
       && sip->sip_via && !sip->sip_via->v_next 
       && agent_has_via(agent, sip->sip_via)) {
     agent->sa_stats->as_trless_200++;
+#if nomore /* sf.net bug #1750691. Let UAS to cope with it. */
     if (agent->sa_is_a_uas) {
       /* Orphan 200 Ok to INVITE. ACK and BYE it */
       SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "is ACK&BYE"));
       if (nta_msg_ackbye(agent, msg) != -1)
 	return;
     }
+#endif
   }
 
   SU_DEBUG_5(("nta: %03d %s %s\n", status, phrase, "was discarded"));
@@ -3065,15 +3067,19 @@ int complete_response(msg_t *response,
 
 /** ACK and BYE an unknown 200 OK response to INVITE.
  *
- * A UAS may still return a 2XX series response to an INVITE request after
- * the client transaction has been terminated. In that case, the UAC can not
- * really accept the call, but it may send a ACK request to UAS followed
- * immediately by BYE using nta_msg_ackbye(). The function does not create a
- * transaction objects, but just sends the ACK and BYE request messages
- * according to the @RecordRoute and @Contact headers in the @a msg.
+ * A UAS may still return a 2XX series response to client request after the
+ * client transactions has been terminated. In that case, the UAC can not
+ * really accept the call. This function was used to accept and immediately
+ * terminate such a call.
+ *
+ * @deprecated This was a bad idea: see sf.net bug #1750691. It can be used
+ * to amplify DoS attacks. Let UAS take care of retransmission timeout and
+ * let it terminate the session. As of @VERSION_1_12_7, this function just
+ * returns -1.
  */
 int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 {
+#if nomore
   sip_t *sip = sip_object(msg);
   msg_t *amsg = nta_msg_create(agent, 0);
   sip_t *asip = sip_object(amsg);
@@ -3162,6 +3168,8 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
  err:
   msg_destroy(amsg);
   msg_destroy(bmsg);
+#endif
+  (void)agent; (void)msg;
   return -1;
 }
 
