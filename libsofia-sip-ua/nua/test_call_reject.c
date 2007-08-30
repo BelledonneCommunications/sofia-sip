@@ -1430,8 +1430,8 @@ int test_call_timeouts(struct context *ctx)
  |<--------200--------|
  |--ACK-X             |
  |                    |
- |---------BYE------->|
- |<-------200 OK------|
+ |<--------BYE--------|
+ |--------200 OK----->|
 
   */
 
@@ -1483,6 +1483,109 @@ int test_call_timeouts(struct context *ctx)
 
   if (print_headings)
     printf("TEST NUA-4.7.3: PASSED\n");
+
+  if (!ctx->nat)
+    goto completed_4_7_4;
+
+  if (print_headings)
+    printf("TEST NUA-4.7.4: 200 OK timeout after client has timed out\n");
+
+  if (ctx->expensive)
+    nua_set_params(b->nua, NTATAG_SIP_T1X64(34000), TAG_END());
+  else
+    nua_set_params(b->nua, NTATAG_SIP_T1X64(4000), TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+  TEST_1(a_call->nh = nua_handle(a->nua, a_call, SIPTAG_TO(b->to), TAG_END()));
+
+  TEST_1(f = test_nat_add_filter(ctx->nat, filter_ACK, NULL, nat_outbound));
+  
+  INVITE(a, a_call, a_call->nh,
+	 TAG_IF(!ctx->proxy_tests, NUTAG_URL(b->contact->m_url)),
+	 SIPTAG_SUBJECT_STR("NUA-4.7.4"),
+	 SOATAG_USER_SDP_STR(a_call->sdp),
+	 TAG_END());
+  run_ab_until(ctx, -1, until_terminated, -1, accept_call);
+
+  /*
+ A     accept_call    B
+ |                    |
+ |-------INVITE------>|
+ |<----100 Trying-----|
+ |                    |
+ |<----180 Ringing----|
+ |                    |
+ |<--------200--------| Timer H'
+ |--------ACK-----X   X--+
+ |                    |  |
+ |<--------200--------|  |
+ |--------ACK-----X   |  |
+ |                    |  |
+ |<--------200--------|  |
+ |                    |  |
+ |<--------200--------|  |
+ |                    |  |
+ |                    |<-+
+ |<--------BYE--------|
+ |--------200 OK----->|
+
+  */
+
+  /*
+  */
+
+  TEST_1(e = a->events->head); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_calling); /* CALLING */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 180);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_proceeding); 
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_invite);
+  TEST(e->data->e_status, 200);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_ready); /* READY */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_bye);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); 
+  TEST_1(!e->next);
+
+  /*
+   Server transitions:
+   -(S1)-> RECEIVED -(S2a)-> EARLY -(S3b)-> COMPLETED -(S5)-> TERMINATING
+   -(S10)-> TERMINATED -X
+  */
+  TEST_1(e = b->events->head); TEST_E(e->data->e_event, nua_i_invite);
+  TEST(e->data->e_status, 100);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_received); /* RECEIVED */
+  TEST_1(is_offer_recv(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_early); /* EARLY */
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_completed); /* COMPLETED */
+  TEST_1(is_answer_sent(e->data->e_tags));
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_error);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminating); 
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_bye);
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_state);
+  TEST(callstate(e->data->e_tags), nua_callstate_terminated); /* TERMINATED */
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, a->events);
+  nua_handle_destroy(a_call->nh), a_call->nh = NULL;
+  free_events_in_list(ctx, b->events);
+  nua_handle_destroy(b_call->nh), b_call->nh = NULL;
+
+  TEST_1(test_nat_remove_filter(ctx->nat, f) == 0);
+
+  if (print_headings)
+    printf("TEST NUA-4.7.4: PASSED\n");
+
+  nua_set_params(b->nua, NTATAG_SIP_T1X64(2000), TAG_END());
+  run_b_until(ctx, nua_r_set_params, until_final_response);
+
+ completed_4_7_4:
 
   /* XXX - PRACK timeout, PRACK failing, media failing, re-INVITEs */
 
