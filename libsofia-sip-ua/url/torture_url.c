@@ -134,10 +134,12 @@ int test_quote(void)
   d = url_as_string(home, u); TEST_1(d);
   TEST_S(d, c);
 
-  d = "http://&=+$,;:&=+$,;@host:8080/foo;param=+$,/:@&;another=@"
+  d = "http://&=+$,;:&=+$,;@host:8080/foo%2F%3B%3D"
+    ";param=+$,%2f%3b%3d/bar;param=:@&;another=@"
     "?query=" RESERVED;
   u = url_hdup(home, (url_t *)d); TEST_1(u);
   TEST_S(u->url_user, "&=+$,;"); TEST_S(u->url_password, "&=+$,;");
+  TEST_S(u->url_path, "foo%2F%3B%3D;param=+$,%2F%3B%3D/bar;param=:@&;another=@");
   url_digest(hash1, sizeof(hash1), u, NULL);
   url_digest(hash2, sizeof(hash2), (url_t const *)d, NULL);
   TEST(memcmp(hash1, hash2, sizeof(hash1)), 0);
@@ -242,7 +244,7 @@ int test_sip(void)
     "sip:user:pass@host:32;param=1"
     "?From=foo@bar&To=bar@baz#unf";
   char sip2url[] = 
-    "sip:user/path;tel-param:pass@host:32;param=1"
+    "sip:user/path;tel-param:pass@host:32;param=1%3d%3d1"
     "?From=foo@bar&To=bar@baz#unf";
   char sip2[sizeof(sipurl) + 32];
   char sipsurl[] = 
@@ -305,6 +307,7 @@ int test_sip(void)
   TEST_1(tst = su_strdup(home, sip2url));
   TEST_1(url_d(url, tst) == 0);
   TEST_S(url->url_user, "user/path;tel-param");
+  TEST_S(url->url_params, "param=1%3D%3D1");
 
   TEST_S(url_query_as_header_string(home, url->url_headers),
 	 "From:foo@bar\nTo:bar@baz");
