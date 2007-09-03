@@ -120,11 +120,12 @@ int test_quote(void)
   d = url_as_string(home, u); TEST_1(d);
   TEST_S(d, c);
 
-  d = "sip:&=+$,;?/:&=+$,@[::1]:56001;param=+$,/:@&;another=@"
+  d = "sip:&=+$,;?/:&=+$,@[::1]:56001;param=+$,/:@&;another=@%40%2F"
     "?header=" RESERVED "&%3b%2f%3f%3a%40%26%3d%2b%24%2c";
   u = url_hdup(home, (url_t *)d); TEST_1(u);
   TEST_S(u->url_user, "&=+$,;?/");
   TEST_S(u->url_host, "[::1]");
+  TEST_S(u->url_params, "param=+$,/:@&;another=@%40/");
   TEST_S(u->url_headers, "header=" RESERVED "&%3B%2F%3F%3A%40%26%3D%2B%24%2C");
   url_digest(hash1, sizeof(hash1), u, NULL);
   url_digest(hash2, sizeof(hash2), (url_t const *)d, NULL);
