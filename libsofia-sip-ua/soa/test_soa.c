@@ -1274,9 +1274,7 @@ int test_media_reject(struct context *ctx)
   char const *offer = NONE, *answer = NONE;
   isize_t offerlen = (isize_t)-1, answerlen = (isize_t)-1;
 
-  sdp_session_t const *a_sdp, *b_sdp;
-  sdp_media_t const *m;
-  sdp_rtpmap_t const *rm;
+  sdp_session_t const *b_sdp;
 
   char const a_caps[] = 
     "v=0\r\n"
