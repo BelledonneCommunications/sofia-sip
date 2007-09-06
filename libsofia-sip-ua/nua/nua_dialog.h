@@ -319,6 +319,9 @@ struct nua_client_request
 
 struct nua_dialog_state
 {
+  /** Dialog owner */
+  nua_owner_t            *ds_owner;
+
   /** Dialog usages. */
   nua_dialog_usage_t     *ds_usage;
 
@@ -387,6 +390,7 @@ typedef struct {
 struct nua_dialog_usage {
   nua_dialog_usage_t *du_next;
   nua_usage_class const *du_class;
+  nua_dialog_state_t *du_dialog;
   nua_client_request_t *du_cr;	        /**< Client request bound with usage */
 
   unsigned     du_ready:1;	        /**< Established usage */

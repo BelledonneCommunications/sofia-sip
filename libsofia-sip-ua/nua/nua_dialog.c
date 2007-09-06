@@ -288,6 +288,8 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
       du = su_zalloc(own, sizeof *du + uclass->usage_size);
 
     if (du) {
+      su_home_ref(own);
+      du->du_dialog = ds; 
       du->du_class = uclass;
       du->du_event = o;
 
@@ -301,7 +303,6 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
 		  (void *)own, nua_dialog_usage_name(du), 
 		  o ? " with event " : "", o ? o->o_type :""));
 
-      su_home_ref(own);
       du->du_next = ds->ds_usage, ds->ds_usage = du;
 
       return du;
