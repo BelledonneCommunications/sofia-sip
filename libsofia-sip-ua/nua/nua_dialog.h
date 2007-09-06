@@ -442,11 +442,11 @@ int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds);
 
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
 
-void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du, 
-				    unsigned min, unsigned max);
+void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du, 
+					unsigned min, unsigned max);
 
-void nua_dialog_usage_refresh_at(nua_dialog_usage_t *du, 
-				 sip_time_t target);
+void nua_dialog_usage_set_refresh_at(nua_dialog_usage_t *du, 
+				     sip_time_t target);
 
 void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du);
 

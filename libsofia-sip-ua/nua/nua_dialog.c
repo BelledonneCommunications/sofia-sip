@@ -450,29 +450,28 @@ void nua_dialog_deinit(nua_owner_t *own,
  * if @a delta is less than 5 minutes but longer than 90 seconds, 30..60
  * seconds before end of interval.
  *
- * If @a delta is 0, the refresh time is set at the end of the world
- * (maximum time, for 32-bit systems sometimes during 2036).
+ * If @a delta is 0, the dialog usage is never refreshed.
  */
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 {
   if (delta == 0)
-    du->du_refresh = 0;
+    nua_dialog_usage_reset_refresh(du);
   else if (delta > 90 && delta < 5 * 60)
     /* refresh 30..60 seconds before deadline */
-    nua_dialog_usage_refresh_range(du, delta - 60, delta - 30);
+    nua_dialog_usage_set_refresh_range(du, delta - 60, delta - 30);
   else {
     /* By default, refresh around half time before deadline */
     unsigned min = (delta + 2) / 4;
     unsigned max = (delta + 2) / 4 + (delta + 1) / 2;
     if (min == 0)
       min = 1;
-    nua_dialog_usage_refresh_range(du, min, max);
+    nua_dialog_usage_set_refresh_range(du, min, max);
   }
 }
 
 /**@internal Set refresh in range min..max seconds in the future. */
-void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du, 
-				    unsigned min, unsigned max)
+void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du, 
+					unsigned min, unsigned max)
 {
   sip_time_t now = sip_now(), target;
   unsigned delta;
@@ -493,12 +492,12 @@ void nua_dialog_usage_refresh_range(nua_dialog_usage_t *du,
   SU_DEBUG_7(("nua(): refresh %s after %lu seconds (in [%u..%u])\n",
 	      nua_dialog_usage_name(du), target - now, min, max));
 
-  du->du_refresh = target;
+  nua_dialog_usage_set_refresh_at(du, target);
 }
 
 /** Set absolute refresh time */
-void nua_dialog_usage_refresh_at(nua_dialog_usage_t *du,
-				 sip_time_t target)
+void nua_dialog_usage_set_refresh_at(nua_dialog_usage_t *du,
+				     sip_time_t target)
 {
   SU_DEBUG_7(("nua(): refresh %s after %lu seconds\n",
 	      nua_dialog_usage_name(du), target - sip_now()));
@@ -552,18 +551,18 @@ int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
   return 1;
 }
 
-/** (Gracefully) terminate usage.
+/** Shutdown (gracefully terminate) usage.
  *
  * @retval >0  shutdown done
  * @retval 0   shutdown in progress
  * @retval <0  try again later
  */
 int nua_dialog_usage_shutdown(nua_owner_t *owner,
-			       nua_dialog_state_t *ds,
-			       nua_dialog_usage_t *du)
+			      nua_dialog_state_t *ds,
+			      nua_dialog_usage_t *du)
 {
   if (du) {
-    du->du_refresh = 0;
+    nua_dialog_usage_reset_refresh(du);
     du->du_shutdown = 1;
     assert(du->du_class->usage_shutdown);
     return du->du_class->usage_shutdown(owner, ds, du);

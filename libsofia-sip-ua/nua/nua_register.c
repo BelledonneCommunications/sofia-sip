@@ -973,7 +973,7 @@ static int nua_register_client_response(nua_client_request_t *cr,
     nua_registration_set_ready(nr, 1);
   }
   else if (du) {
-    nua_dialog_usage_set_refresh(du, 0);
+    nua_dialog_usage_reset_refresh(du);
 
     su_free(nh->nh_home, nr->nr_route);
     nr->nr_route = NULL;
@@ -1028,7 +1028,7 @@ void nua_register_connection_closed(tp_stack_t *sip_stack,
   tport_unref(nr->nr_tport), nr->nr_tport = NULL;
 
   /* Schedule re-REGISTER immediately */
-  nua_dialog_usage_refresh_at(nua_dialog_usage_public(nr), sip_now());
+  nua_dialog_usage_set_refresh_range(nua_dialog_usage_public(nr), 0, 0);
 }
 
 
