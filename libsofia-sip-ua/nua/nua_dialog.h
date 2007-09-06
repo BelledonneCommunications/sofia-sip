@@ -271,6 +271,8 @@ struct nua_client_request
 
   nta_outgoing_t     *cr_orq;
 
+  su_timer_t         *cr_timer;	        /**< Expires or retry timer */
+
   /*nua_event_t*/ int cr_event;		/**< Request event */
   sip_method_t        cr_method;
   char const         *cr_method_name;
@@ -302,8 +304,10 @@ struct nua_client_request
   unsigned cr_dialog:1;		/**< Request can initiate dialog */
 
   /* Current state */
+  unsigned cr_waiting:1;	/**< Request is waiting */
   unsigned cr_challenged:1;	/**< Request was challenged */
   unsigned cr_wait_for_cred:1;	/**< Request is pending authentication */
+  unsigned cr_wait_for_timer:1;	/**< Request is waiting for a timer to expire  */
   unsigned cr_restarting:1;	/**< Request is being restarted */
   unsigned cr_reporting:1;	/**< Reporting in progress */
   unsigned cr_terminating:1;	/**< Request terminates the usage */

@@ -46,6 +46,7 @@
 
 #define SU_ROOT_MAGIC_T   struct nua_s
 #define SU_MSG_ARG_T      struct event_s
+#define SU_TIMER_ARG_T    struct nua_client_request
 
 #define NUA_SAVED_EVENT_T su_msg_t *
 
@@ -979,6 +980,7 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
   if (status > 0) {
     if (cr && cr->cr_wait_for_cred) {
+      cr->cr_waiting = cr->cr_wait_for_cred = 0;
       nua_client_restart_request(cr, cr->cr_terminating, tags);
     }
     else {
@@ -988,8 +990,8 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     }
   }
   else if (cr && cr->cr_wait_for_cred) {
-    cr->cr_wait_for_cred = 0;
-
+    cr->cr_waiting = cr->cr_wait_for_cred = 0;
+    
     if (status < 0)
       nua_client_response(cr, 900, "Cannot add credentials", NULL);
     else
@@ -1701,6 +1703,9 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
 static int nua_client_request_try(nua_client_request_t *cr);
 static int nua_client_request_sendmsg(nua_client_request_t *cr,
   				      msg_t *msg, sip_t *sip);
+static void nua_client_restart_after(su_root_magic_t *magic,
+				     su_timer_t *timer,
+				     nua_client_request_t *cr);
 
 /**Create a client request.
  *
@@ -1846,6 +1851,9 @@ void nua_client_request_destroy(nua_client_request_t *cr)
     nta_outgoing_destroy(cr->cr_orq);
 
   cr->cr_orq = NULL;
+
+  if (cr->cr_timer)
+    su_timer_destroy(cr->cr_timer), cr->cr_timer = NULL;
 
   if (cr->cr_target)
     su_free(nh->nh_home, cr->cr_target);
@@ -2430,7 +2438,7 @@ int nua_client_response(nua_client_request_t *cr,
 
 /** Check if request should be restarted.
  *
- * @retval 1 if restarted or waring for restart
+ * @retval 1 if restarted or waiting for restart
  * @retval 0 otherwise
  */
 int nua_client_check_restart(nua_client_request_t *cr,
@@ -2457,8 +2465,7 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 				  sip_t const *sip)
 {
   nua_handle_t *nh = cr->cr_owner; 
-
-  /* XXX - handle Retry-After */
+  nta_outgoing_t *orq;
 
   if (status == 302 || status == 305) {
     sip_route_t r[1];
@@ -2507,7 +2514,6 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
   if ((status == 401 && sip->sip_www_authenticate) ||
       (status == 407 && sip->sip_proxy_authenticate)) {
     int server = 0, proxy = 0;
-    nta_outgoing_t *orq;
 
     if (sip->sip_www_authenticate)
       server = auc_challenge(&nh->nh_auth, nh->nh_home,
@@ -2531,7 +2537,8 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 	return nua_client_restart(cr, 100, "Request Authorized by Cache");
 
       orq = cr->cr_orq, cr->cr_orq = NULL;
-      cr->cr_wait_for_cred = 1;
+
+      cr->cr_waiting = cr->cr_wait_for_cred = 1;
       nua_client_report(cr, status, phrase, NULL, orq, NULL);
       nta_outgoing_destroy(orq);
 
@@ -2539,7 +2546,42 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
     }
   }
 
+  if (500 <= status && status < 600 && 
+      sip->sip_retry_after && 
+      sip->sip_retry_after->af_delta < 32) {
+    char phrase[18];		/* Retry-After: XXXX\0 */
+
+    if (cr->cr_timer == NULL)
+      cr->cr_timer = su_timer_create(su_root_task(nh->nh_nua->nua_root), 0);
+
+    if (su_timer_set_interval(cr->cr_timer, nua_client_restart_after, cr,
+			      sip->sip_retry_after->af_delta * 1000) < 0)
+      return 0; /* Too bad */
+
+    snprintf(phrase, sizeof phrase, "Retry After %u", 
+	     (unsigned)sip->sip_retry_after->af_delta);
+
+    orq = cr->cr_orq, cr->cr_orq = NULL;
+    cr->cr_waiting = cr->cr_wait_for_timer = 1;
+    nua_client_report(cr, 100, phrase, NULL, orq, NULL);
+    nta_outgoing_destroy(orq);
+    return 1;
+  }
+
   return 0;  /* This was a final response that cannot be restarted. */
+}
+
+/** Request restarted by timer */
+static
+void nua_client_restart_after(su_root_magic_t *magic,
+			      su_timer_t *timer,
+			      nua_client_request_t *cr) 
+{
+  if (!cr->cr_wait_for_timer)
+    return;
+
+  cr->cr_waiting = cr->cr_wait_for_timer = 0;
+  nua_client_restart_request(cr, cr->cr_terminating, NULL);
 }
 
 /** Restart request.
@@ -2573,7 +2615,6 @@ int nua_client_restart(nua_client_request_t *cr,
     if (error !=0 && error != -2)
       msg_destroy(msg);
   }
-
 
   if (error) {
     cr->cr_graceful = graceful;
