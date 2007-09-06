@@ -128,9 +128,9 @@ void nua_dialog_store_peer_info(nua_owner_t *own,
 				nua_dialog_state_t *ds,
 				sip_t const *sip)
 {
-  nua_remote_t *nr = ds->ds_remote_ua;
+  nua_dialog_peer_info_t *nr = ds->ds_remote_ua;
   nua_dialog_usage_t *du;
-  nua_remote_t old[1];
+  nua_dialog_peer_info_t old[1];
 
   *old = *nr;
 

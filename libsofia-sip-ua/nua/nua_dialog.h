@@ -35,10 +35,6 @@
  * @date Created: Wed Mar  8 11:38:18 EET 2006  ppessi
  */
 
-typedef struct nua_dialog_state nua_dialog_state_t;
-typedef struct nua_dialog_usage nua_dialog_usage_t;
-typedef struct nua_remote_s nua_remote_t;
-
 #ifndef NUA_OWNER_T
 #define NUA_OWNER_T struct nua_owner_s
 #endif
@@ -48,10 +44,13 @@ typedef NUA_OWNER_T nua_owner_t;
 #include <sofia-sip/nta.h>
 #endif
 
-typedef su_msg_r nua_saved_signal_t;
-
+typedef struct nua_dialog_state nua_dialog_state_t;
+typedef struct nua_dialog_usage nua_dialog_usage_t;
 typedef struct nua_server_request nua_server_request_t; 
 typedef struct nua_client_request nua_client_request_t; 
+typedef struct nua_dialog_peer_info nua_dialog_peer_info_t;
+
+typedef su_msg_r nua_saved_signal_t;
 
 typedef struct {
   sip_method_t sm_method; 
@@ -351,7 +350,7 @@ struct nua_dialog_state
 					 * if dialog is established.
 					 */
 
-  struct nua_remote_s {
+  struct nua_dialog_peer_info {
     sip_allow_t      *nr_allow;
     sip_accept_t     *nr_accept;
     sip_require_t    *nr_require;
@@ -359,10 +358,6 @@ struct nua_dialog_state
     sip_user_agent_t *nr_user_agent;
   } ds_remote_ua[1];
 };
-
-typedef void nh_pending_f(nua_owner_t *, 
-			  nua_dialog_usage_t *du,
-			  sip_time_t now);
 
 /** Virtual function pointer table for dialog usage. */
 typedef struct {
