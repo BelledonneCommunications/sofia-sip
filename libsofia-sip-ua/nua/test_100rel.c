@@ -413,6 +413,9 @@ int test_prack_auth(struct context *ctx)
 
   TEST_1(e = ep); TEST_E(e->data->e_event, nua_r_prack);
   if (e->data->e_status == 100 || e->data->e_status == 407) {
+    /* The final response to PRACK may be received after ACK is sent */
+    if (!event_by_type(e->next, nua_r_prack))
+      run_bc_until(ctx, -1, save_events, -1, save_until_final_response);
     TEST_1(e = ep = event_by_type(e->next, nua_r_prack));
   }
   TEST_E(e->data->e_event, nua_r_prack);
