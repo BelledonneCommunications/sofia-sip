@@ -635,6 +635,7 @@ int nua_notify_server_report(nua_server_request_t *sr, tagi_t const *tags)
   sip_t const *sip = sr->sr_request.sip;
   enum nua_substate substate = nua_substate_terminated;
   sip_time_t delta = SIP_TIME_MAX;
+  sip_event_t const *o = sip->sip_event;
   int retry = -1;
   int retval;
 
@@ -670,6 +671,7 @@ int nua_notify_server_report(nua_server_request_t *sr, tagi_t const *tags)
   
   retval = nua_base_server_treport(sr, /* can destroy sr */
 				   NUTAG_SUBSTATE(substate),
+				   SIPTAG_EVENT(o),
 				   TAG_NEXT(tags)); 
 
   if (retval != 1 || du == NULL)
