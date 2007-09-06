@@ -603,21 +603,10 @@ void nua_stack_shutdown(nua_t *nua)
 
   for (nh = nua->nua_handles; nh; nh = nh_next) {
     nua_dialog_state_t *ds = nh->nh_ds;
-    nua_server_request_t *sr, *sr_next;
 
     nh_next = nh->nh_next;
 
-    for (sr = ds->ds_sr; sr; sr = sr_next) {
-      sr_next = sr->sr_next;
-
-      if (nua_server_request_is_pending(sr)) {
-	SR_STATUS1(sr, SIP_410_GONE); /* 410 terminates dialog */
-	nua_server_respond(sr, NULL);
-	nua_server_report(sr);
-      }
-    }
-
-    busy += nh_call_pending(nh, 0);
+    busy += nua_dialog_repeat_shutdown(nh, ds);
 
     if (nh->nh_soa) {
       soa_destroy(nh->nh_soa), nh->nh_soa = NULL;

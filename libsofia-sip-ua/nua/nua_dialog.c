@@ -43,6 +43,7 @@
 #include <sofia-sip/su_uniqueid.h>
 
 #include <sofia-sip/sip_protos.h>
+#include <sofia-sip/sip_status.h>
 
 #define NUA_OWNER_T su_home_t
 
@@ -511,25 +512,14 @@ void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
     du->du_refresh = 0;
 }
 
-/** @internal Refresh usage or shutdown usage if @a now is 0. */
+/** @internal Refresh usage. */
 void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_state_t *ds,
 			      nua_dialog_usage_t *du, 
 			      sip_time_t now)
 {
-  if (du) {
-    du->du_refresh = 0;
-
-    if (now > 0) {
-      assert(du->du_class->usage_refresh);
-      du->du_class->usage_refresh(owner, ds, du, now);
-    }
-    else {
-      du->du_shutdown = 1;
-      assert(du->du_class->usage_shutdown);
-      du->du_class->usage_shutdown(owner, ds, du);
-    }
-  }
+  assert(du && du->du_class->usage_refresh);
+  du->du_class->usage_refresh(owner, ds, du, now);
 }
 
 /** Terminate all dialog usages gracefully. */
@@ -569,4 +559,42 @@ int nua_dialog_usage_shutdown(nua_owner_t *owner,
   }
   else
     return 200;
+}
+
+/** Repeat shutdown of all usages.
+ *
+ * @note Caller must have a reference to nh
+ */
+int nua_dialog_repeat_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
+{
+  nua_dialog_usage_t *du;
+  nua_server_request_t *sr, *sr_next;
+
+  for (sr = ds->ds_sr; sr; sr = sr_next) {
+    sr_next = sr->sr_next;
+
+    if (nua_server_request_is_pending(sr)) {
+      SR_STATUS1(sr, SIP_410_GONE); /* 410 terminates dialog */
+      nua_server_respond(sr, NULL);
+      nua_server_report(sr);
+    }
+  }
+
+  for (du = ds->ds_usage; du ;) {
+    nua_dialog_usage_t *du_next = du->du_next;
+
+    nua_dialog_usage_shutdown(owner, ds, du);
+
+    if (du_next == NULL)
+      break;
+
+    for (du = ds->ds_usage; du; du = du->du_next) {
+      if (du == du_next)
+	break;
+      else if (!du->du_shutdown)
+	break;
+    }
+  }
+
+  return ds->ds_usage != NULL;
 }

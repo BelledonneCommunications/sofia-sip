@@ -440,6 +440,9 @@ void nua_dialog_deinit(nua_owner_t *own,
 
 int nua_dialog_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds);
 
+int nua_dialog_repeat_shutdown(nua_owner_t *owner,
+			       nua_dialog_state_t *ds);
+
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
 
 void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du, 
