@@ -352,11 +352,12 @@ struct nua_dialog_state
   sip_from_t const *ds_local;		/**< Local address */
   sip_to_t const *ds_remote;		/**< Remote address */
   nta_leg_t      *ds_leg;
+  sip_contact_t  *ds_ltarget;	        /**< Local target */
   char const     *ds_remote_tag;	/**< Remote tag (if any). 
 					 * Should be non-NULL 
 					 * if dialog is established.
 					 */
-
+  
   struct nua_dialog_peer_info {
     sip_allow_t      *nr_allow;
     sip_accept_t     *nr_accept;

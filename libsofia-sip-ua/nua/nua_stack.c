@@ -1428,9 +1428,10 @@ int nua_server_trespond(nua_server_request_t *sr,
 int nua_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 {
   nua_handle_t *nh = sr->sr_owner;
+  nua_dialog_state_t *ds = nh->nh_ds;
   sip_method_t method = sr->sr_method;
   struct { msg_t *msg; sip_t *sip; } next = { NULL, NULL };
-  int retval;
+  int retval, user_contact = 1;
 #if HAVE_OPEN_C
   /* Nice. And old arm symbian compiler; see below. */
   tagi_t next_tags[2];
@@ -1485,14 +1486,25 @@ int nua_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 	   sip_add_dup(msg, sip, (void *)NH_PGET(nh, allow_events)) < 0)
     ;
   else if (!sip->sip_contact && sr->sr_status < 300 && sr->sr_add_contact &&
-	   nua_registration_add_contact_to_response(nh, msg, sip, NULL, m) < 0)
+	   (user_contact = 0,
+	    ds->ds_ltarget 
+	    ? sip_add_dup(msg, sip, (sip_header_t *)ds->ds_ltarget) 
+	    : nua_registration_add_contact_to_response(nh, msg, sip, NULL, m))
+	   < 0)
     ;
   else {
     int term;
-    
+    sip_contact_t *ltarget = NULL;
+
     term = sip_response_terminates_dialog(sr->sr_status, sr->sr_method, NULL);
 
     sr->sr_terminating = (term < 0) ? -1 : (term > 0 || sr->sr_terminating);
+
+    if (sr->sr_target_refresh && sr->sr_status < 300 && !sr->sr_terminating && 
+	user_contact && sip->sip_contact) {
+      /* Save Contact given by application */
+      ltarget = sip_contact_dup(nh->nh_home, sip->sip_contact);
+    }
 
     retval = sr->sr_methods->sm_respond(sr, next_tags);
 
@@ -1502,6 +1514,16 @@ int nua_server_respond(nua_server_request_t *sr, tagi_t const *tags)
       msg_destroy(next.msg);
 
     assert(sr->sr_status >= 200 || sr->sr_response.msg);
+
+    if (ltarget) {
+      if (sr->sr_status < 300) {
+	nua_dialog_state_t *ds = nh->nh_ds;
+	msg_header_free(nh->nh_home, (msg_header_t *)ds->ds_ltarget);
+	ds->ds_ltarget = ltarget;	
+      }
+      else 
+	msg_header_free(nh->nh_home, (msg_header_t *)ltarget);
+    }
 
     return retval;
   }
@@ -2250,9 +2272,20 @@ int nua_client_request_sendmsg(nua_client_request_t *cr, msg_t *msg, sip_t *sip)
    * registrar is also added to the request message.
    */
   if (cr->cr_method != sip_method_register) {
+    if (cr->cr_contactize && cr->cr_has_contact) {
+      sip_contact_t *ltarget = sip_contact_dup(nh->nh_home, sip->sip_contact);
+      if (ds->ds_ltarget) 
+	msg_header_free(nh->nh_home, (msg_header_t *)ds->ds_ltarget);
+      ds->ds_ltarget = ltarget;
+    }
+
+    if (ds->ds_ltarget && !cr->cr_has_contact)
+      sip_add_dup(msg, sip, (sip_header_t *)ds->ds_ltarget);
+
     if (nua_registration_add_contact_to_request(nh, msg, sip,
 						cr->cr_contactize &&
-						!cr->cr_has_contact,
+						!cr->cr_has_contact &&
+						!ds->ds_ltarget,
 						!ds->ds_route) < 0)
       return -1;
   }

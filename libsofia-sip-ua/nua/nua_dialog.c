@@ -190,6 +190,7 @@ int nua_dialog_remove(nua_owner_t *own,
 {
   if (ds->ds_usage == usage && (usage == NULL || usage->du_next == NULL)) {
     nua_dialog_store_peer_info(own, ds, NULL); /* zap peer info */
+    msg_header_free(own, (msg_header_t *)ds->ds_ltarget), ds->ds_ltarget = NULL;
     nta_leg_destroy(ds->ds_leg), ds->ds_leg = NULL;
     su_free(own, (void *)ds->ds_remote_tag), ds->ds_remote_tag = NULL;
     ds->ds_route = 0;
