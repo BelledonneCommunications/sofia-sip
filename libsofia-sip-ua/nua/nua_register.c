@@ -1926,11 +1926,12 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
 {
   su_strlst_t *l;
   char const *s;
-  char const *scheme = "sip:", *host, *port, *maddr, *comp;
+  char const *host, *port, *maddr, *comp;
   int one = 1;
   char _transport[16];
   va_list va;
   sip_contact_t *m;
+  url_t url = URL_INIT_AS(sip);
 
   if (!v) return NULL;
 
@@ -1946,7 +1947,7 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
 
   if (sip_transport_has_tls(v->v_protocol) ||
       sip_transport_has_tls(transport)) {
-    scheme = "sips:";
+    url.url_type = url_sips;
     if (port && strcmp(port, SIPS_DEFAULT_SERV) == 0)
       port = NULL;
     if (port || host_is_ip_address(host))
@@ -1974,6 +1975,26 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
     }
   }
 
+  s = NH_PGET(nh, m_username);
+  if (s)
+    url.url_user = s;
+  /* OMGWTF? if (extra_username) su_strlst_append(l, s); */
+  url.url_host = host;
+  url.url_port = port;
+  url.url_params = su_strdup(home, NH_PGET(nh, m_params));
+  if (transport) {
+    url.url_params = url_strip_param_string((char*)url.url_params, "transport");
+    url_param_add(home, &url, su_sprintf(home, "transport=%s", transport));
+  }
+  if (maddr) {
+    url.url_params = url_strip_param_string((char*)url.url_params, "maddr");
+    url_param_add(home, &url, su_sprintf(home, "maddr=%s", maddr));
+  }
+  if (comp) {
+    url.url_params = url_strip_param_string((char*)url.url_params, "comp");
+    url_param_add(home, &url, su_sprintf(home, "comp=%s", maddr));
+  }
+
   l = su_strlst_create(NULL);
 
   s = NH_PGET(nh, m_display);
@@ -1984,25 +2005,9 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
     su_strlst_append(l, s);
     su_strlst_append(l, quote ? "\" " : " ");
   }
+
   su_strlst_append(l, "<");
-  su_strlst_append(l, scheme);
-  s = NH_PGET(nh, m_username);
-  if (s) su_strlst_append(l, s);
-  if (extra_username) su_strlst_append(l, s);
-  if (s || extra_username)
-    su_strlst_append(l, "@");
-  su_strlst_append(l, host);
-  if (port)
-    su_strlst_append(l, ":"), su_strlst_append(l, port);
-  if (transport)
-    su_strlst_append(l, ";transport="), su_strlst_append(l, transport);
-  if (maddr)
-    su_strlst_append(l, ";maddr="), su_strlst_append(l, maddr);
-  if (comp)
-    su_strlst_append(l, ";comp="), su_strlst_append(l, comp);
-  s = NH_PGET(nh, m_params);
-  if (s) 
-    s[0] == ';' ? "" : su_strlst_append(l, ";"), su_strlst_append(l, s);
+  su_strlst_append(l, url_as_string(home, &url));
   su_strlst_append(l, ">");
 
   va_start(va, m_param);
