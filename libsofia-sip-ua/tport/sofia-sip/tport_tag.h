@@ -237,6 +237,8 @@ TPORT_DLL extern tag_typedef_t tptag_keepalive;
  * initial nth_site_create().
  *
  * @sa TPTAG_PINGPONG(), TPTAG_PONG2PING(), TPTAG_TIMEOUT(), TPTAG_IDLE()
+ *
+ * @NEW_1_12_7
  */
 #define TPTAG_KEEPALIVE(x) tptag_keepalive, tag_uint_v((x))
 
@@ -259,6 +261,8 @@ TPORT_DLL extern tag_typedef_t tptag_pingpong;
  *
  * @sa TPTAG_PONG2PING(), TPTAG_KEEPALIVE(), TPTAG_TIMEOUT(), TPTAG_IDLE(),
  * draft-ietf-sip-outbound-10.txt
+ *
+ * @NEW_1_12_7
  */
 #define TPTAG_PINGPONG(x) tptag_pingpong, tag_uint_v((x))
 
@@ -279,6 +283,8 @@ TPORT_DLL extern tag_typedef_t tptag_pong2ping;
  * initial nth_site_create().
  *
  * @sa TPTAG_PINGPONG(), TPTAG_KEEPALIVE(), TPTAG_TIMEOUT(), TPTAG_IDLE()
+ *
+ * @NEW_1_12_7
  */
 #define TPTAG_PONG2PING(x) tptag_pong2ping, tag_bool_v((x))
 
