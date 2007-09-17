@@ -245,7 +245,6 @@ static void nua_register_connection_closed(tp_stack_t *sip_stack,
 sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
 					 su_home_t *home,
 					 int in_dialog,
-					 char const *extra_username,
 					 sip_via_t const *v,
 					 char const *transport,
 					 char const *m_param,
@@ -268,12 +267,12 @@ static int nua_stack_outbound_credentials(nua_handle_t *, auth_client_t **auc);
 
 outbound_owner_vtable nua_stack_outbound_callbacks = {
     sizeof nua_stack_outbound_callbacks,
-    nua_handle_contact_by_via,
-    nua_stack_outbound_refresh,
-    nua_stack_outbound_status,
-    nua_stack_outbound_failed,
-    nua_stack_outbound_failed,
-    nua_stack_outbound_credentials
+    /* oo_contact */ nua_handle_contact_by_via,
+    /* oo_refresh */ nua_stack_outbound_refresh,
+    /* oo_status */  nua_stack_outbound_status,
+    /* oo_probe_error */     nua_stack_outbound_failed,
+    /* oo_keepalive_error */ nua_stack_outbound_failed,
+    /* oo_credentials */     nua_stack_outbound_credentials
   };
 
 /**@fn void nua_register(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...);
@@ -1364,7 +1363,7 @@ int nua_registration_from_via(nua_registration_t **list,
 
     v2[1].v_next = NULL;
 
-    contact = nua_handle_contact_by_via(nh, home, 0, NULL, v2, protocol, NULL);
+    contact = nua_handle_contact_by_via(nh, home, 0, v2, protocol, NULL);
 
     v = sip_via_dup(home, v2);
 
@@ -1780,7 +1779,7 @@ int nua_registration_set_contact(nua_handle_t *nh,
     if (nr0 && nr0->nr_via) {
       char const *tport = nr0->nr_via->v_next ? NULL : nr0->nr_via->v_protocol;
       m = nua_handle_contact_by_via(nh, nh->nh_home, 0,
-				    NULL, nr0->nr_via, tport, NULL);
+				    nr0->nr_via, tport, NULL);
     }
   }
 
@@ -1918,7 +1917,6 @@ static int nua_stack_outbound_credentials(nua_handle_t *nh,
 sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
 					 su_home_t *home,
 					 int in_dialog,
-					 char const *extra_username,
 					 sip_via_t const *v,
 					 char const *transport,
 					 char const *m_param,
@@ -1978,7 +1976,6 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
   s = NH_PGET(nh, m_username);
   if (s)
     url.url_user = s;
-  /* OMGWTF? if (extra_username) su_strlst_append(l, s); */
   url.url_host = host;
   url.url_port = port;
   url.url_params = su_strdup(home, NH_PGET(nh, m_params));
@@ -1992,7 +1989,7 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
   }
   if (comp) {
     url.url_params = url_strip_param_string((char*)url.url_params, "comp");
-    url_param_add(home, &url, su_sprintf(home, "comp=%s", maddr));
+    url_param_add(home, &url, su_sprintf(home, "comp=%s", comp));
   }
 
   l = su_strlst_create(NULL);

@@ -1461,7 +1461,7 @@ SOFIAPUBVAR tag_typedef_t nutag_m_username_ref;
 
 /**URL parameters for @Contact.
  *
- * Specify URL parameters for the Contact header URI generated for
+ * Specify URL parameters for the @Contact header URI generated for
  * registration request and dialog-creating requests/responses.
  *
  * Please note that some proxies may remove even the non-transport
